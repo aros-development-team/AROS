@@ -256,7 +256,13 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         pftags[13].ti_Data = XSD(cl)->clut_shift;
 	pftags[14].ti_Data = XSD(cl)->clut_mask;		
     }*/
-	
+    pftags[9].ti_Data = XSD(cl)->depth;
+    pftags[10].ti_Data = XSD(cl)->depth >> 4;
+    pftags[11].ti_Data = XSD(cl)->depth;
+    pftags[12].ti_Data = vHidd_StdPixFmt_Native;
+    /* We assume chunky */
+    pftags[15].ti_Data = vHidd_BitMapType_Chunky;
+
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     if (NULL != o)
     {
@@ -449,6 +455,8 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
     struct gfx_data *data;
 	
     data = OOP_INST_DATA(cl, o);
+
+    D(bug("[GDI] hidd.gfx.wingdi::Show(0x%p)\n", msg->bitMap));
 
     if (!msg->bitMap)
     {

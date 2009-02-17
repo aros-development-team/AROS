@@ -31,7 +31,7 @@ DWORD WINAPI gdithread_entry(LPVOID p)
     ATOM wcl;
     WINDOWPLACEMENT wpos;
     WNDCLASS wcl_desc = {
-        CS_SAVEBITS|CS_NOCLOSE,
+        CS_NOCLOSE,
         window_callback,
         0,
         0,
@@ -61,9 +61,6 @@ DWORD WINAPI gdithread_entry(LPVOID p)
             	    ShowWindow(nw->window, SW_SHOW);
             	    UpdateWindow(nw->window);
             	    CauseException(2);
-            	    break;
-            	case NOTY_WINDISPOSE:
-            	    DestroyWindow(msg.hwnd);
             	    break;
             	case NOTY_RESIZEWINDOW:
             	    wpos.length = sizeof(wpos);
