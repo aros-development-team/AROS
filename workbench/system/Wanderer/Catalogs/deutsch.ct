@@ -9,7 +9,7 @@ Wanderer
 ;
 MSG_DESCRIPTION
 Dateimanager
-; File Manager
+; File manager
 ;
 MSG_SCREENTITLE
 Wanderer %s Grafikspeicher %s sonstiger Speicher
@@ -45,7 +45,7 @@ B
 ;
 MSG_MEN_EXECUTE
 Befehl ausführen ...
-; Execute ...
+; Execute...
 ;
 MSG_MEN_SC_EXECUTE
 E
@@ -53,7 +53,7 @@ E
 ;
 MSG_MEN_SHELL
 Shell öffnen
-; Shell ...
+; Shell...
 ;
 MSG_MEN_SC_SHELL
 W
@@ -61,15 +61,15 @@ W
 ;
 MSG_MEN_GUISET
 Benutzeroberfläche einstellen ...
-; GUI Settings ...
+; GUI settings...
 ;
 MSG_MEN_ABOUT
-Über
-; About ...
+Über ...
+; About...
 ;
 MSG_MEN_QUIT
 Wanderer beenden ...
-; Quit ...
+; Quit...
 ;
 MSG_MEN_SC_QUIT
 Q
@@ -81,7 +81,7 @@ Fenster
 ;
 MSG_MEN_NEWDRAW
 Neue Schublade anlegen ...
-; New Drawer ...
+; New drawer...
 ;
 MSG_MEN_SC_NEWDRAW
 N
@@ -89,7 +89,7 @@ N
 ;
 MSG_MEN_OPENPAR
 Übergeordnete Schublade öffnen
-; Open Parent
+; Open parent
 ;
 MSG_MEN_CLOSE
 Schließen
@@ -105,7 +105,7 @@ Aktualisieren
 ;
 MSG_MEN_CONTENTS
 Alles auswählen
-; Select Contents
+; Select contents
 ;
 MSG_MEN_SC_CONTENTS
 A
@@ -161,7 +161,7 @@ nach Name
 ;
 MSG_MEN_BYDATE
 nach Datum
-; By Date
+; By date
 ;
 MSG_MEN_BYSIZE
 nach Größe
@@ -193,7 +193,7 @@ O
 ;
 MSG_MEN_RENAME
 Umbenennen ...
-; Rename ...
+; Rename...
 ;
 MSG_MEN_SC_RENAME
 R
@@ -201,7 +201,7 @@ R
 ;
 MSG_MEN_INFO
 Informationen anzeigen ...
-; Information ...
+; Information...
 ;
 MSG_MEN_SC_INFO
 I
@@ -209,7 +209,7 @@ I
 ;
 MSG_MEN_DELETE
 Löschen ...
-; Delete ...
+; Delete...
 ;
 MSG_MEN_TOOLS
 Hilfsmittel
@@ -234,7 +234,7 @@ Wanderer %pc Grafikspeicher %pf sonstiger Speicher
 ;
 MSG_MEN_SHUTDOWN (//)
 Herunterfahren ...
-; Shut down ...
+; Shut down...
 ;
 MSG_SHUTDOWN_TITLE (//)
 System herunterfahren
@@ -258,7 +258,7 @@ Papierkorb leeren
 ;
 MSG_MEN_FORMAT (//)
 Disk formatieren ...
-; Format disk ...
+; Format disk...
 ;
 MSG_PUT_AWAY (//)
 Zurücklegen
@@ -278,11 +278,11 @@ Fixieren
 ;
 MSG_REQU_DELETE (//)
 Datei Löschen ...
-; Delete file ...
+; Delete file...
 ;
 MSG_REQU_DELETE_YESNO (//)
 _Ja|Ja, _alle|_Nein|Nein, alles _behalten
-; _Yes|Yes to _All|_No|No _to all
+; _Yes|Yes to _all|_No|No _to all
 ;
 MSG_REQU_DELETE_DRAWER_S (//)
 Schublade
@@ -306,7 +306,7 @@ wirklich gelöscht werden?
 ;
 MSG_REQU_OVERWRITE (//)
 Datei überschreiben ...
-; Overwrite file ...
+; Overwrite file...
 ;
 MSG_REQU_OVERWRITE_S (//)
 Soll die Datei
@@ -322,10 +322,59 @@ wirklich überschrieben werden?
 ;
 MSG_REQU_OVERWRITE_YESNO (//)
 _Überschreiben|_Alles überschreiben|_Nein|Nein, alles _behalten
-; _Overwrite|Overwrite _All|_No|No _to All
+; _Overwrite|Overwrite _all|_No|No _to all
 ;
 MSG_REQU_OVERWRITE_SKIPABORT (//)
 _Überspringen|_Abbrechen
+; _Skip|_Abort
+;
+MSG_REQU_PROTECTION (//)
+Dateischutz bearbeiten
+; File Protection
+;
+MSG_REQU_PROTECTION_UNPROTECT (//)
+_Entsichern|_Alle entsichern|_Nein|Nein, _keine Datei entsichern
+; _Unprotect|Unprotect _All|_No|No _to ALL
+;
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_S (//)
+Soll der Ordner
+; Do you wish to unprotect drawer
+;
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_E (//)
+entsichert werden?
+; ?
+;
+MSG_NOFILEACCESS_S (//)
+Kann auf Datei
+; Can't access file
+;
+MSG_NOFILEACCESS_M (//)
+in Schublade
+; located in
+;
+MSG_NOFILEACCESS_E (//)
+nicht zugreifen
+; 
+;
+MSG_NODRAWERACCESS_S (//)
+Auf die Schublade  
+; Can't access drawer
+;
+MSG_NODRAWERACCESS_E (//)
+kann nicht zugegriffen werden
+; 
+;
+MSG_REQU_FILEUNPROTECT_S (//)
+Soll die Datei
+; Do you wish to unprotect file
+;
+MSG_REQU_FILEUNPROTECT_M (//)
+in Schublade
+; located in
+;
+MSG_REQU_FILEUNPROTECT_E (//)
+entsperrt werden?
+; ?
 ;
 MSG_WANDERER_FILEACCESS (//)
 Wanderer Dateizugriff
@@ -333,7 +382,7 @@ Wanderer Dateizugriff
 ;
 MSG_WANDERER_FILEACCESS_PROCESSING (//)
 Verarbeite ...
-; Processing ...
+; Processing...
 ;
 MSG_WANDERER_FILEACCESS_STOP (//)
 Abbrechen

@@ -299,8 +299,8 @@ HOOKPROTO(Wanderer__HookFunc_AskDeleteFunc, ULONG, struct dCopyStruct *obj, APTR
         }
         else if (obj->type == 1) 
         {
-            string = CombineString("Do you wish to unprotect file\n\033b%s\033n\nlocated in\n\033b%s\033n ?", 
-                obj->file, obj->spath);
+            string = CombineString("%s\n\033b%s\033n\n%s\n\033b%s\033n %s", 
+                _(MSG_REQU_FILEUNPROTECT_S), obj->file, _(MSG_REQU_FILEUNPROTECT_M), obj->spath, _(MSG_REQU_FILEUNPROTECT_E) );
         }
         else if (obj->type == 2) 
         {
@@ -309,21 +309,21 @@ HOOKPROTO(Wanderer__HookFunc_AskDeleteFunc, ULONG, struct dCopyStruct *obj, APTR
         }
         else 
         {
-            string = CombineString("Can't access file\n\033b%s\033n\nlocated in\n\033b%s\033n", 
-                obj->file, obj->spath);
+            string = CombineString("%s\n\033b%s\033n\n%s\n\033b%s\033n%s", 
+                _(MSG_NOFILEACCESS_S), obj->file, _(MSG_NOFILEACCESS_M), obj->spath, _(MSG_NOFILEACCESS_E) );
         }
     } 
     else 
     {
         if (obj->type == 0) string = CombineString("%s \033b%s\033n %s", _(MSG_REQU_DELETE_DRAWER_S), obj->spath, _(MSG_REQU_DELETE_DRAWER_E) );
-        else if (obj->type == 1) string = CombineString("Do you wish to unprotect drawer\n\033b%s\033n ?", obj->spath);
-        else if (obj->type == 3) string = CombineString("Can't access drawer\n\033b%s", obj->spath);
+        else if (obj->type == 1) string = CombineString("%s\n\033b%s\033n %s", _(MSG_REQU_PROTECTION_UNPROTECTDRAWER_S), obj->spath, _(MSG_REQU_PROTECTION_UNPROTECTDRAWER_E) );
+        else if (obj->type == 3) string = CombineString("%s\n\033b%s %s", _(MSG_NODRAWERACCESS_S), obj->spath, _(MSG_NODRAWERACCESS_E) );
     }
 
     if (string) 
     {
         if (obj->type == 0) ret = AskChoiceCentered( _(MSG_REQU_DELETE), string, _(MSG_REQU_DELETE_YESNO), 0);
-        else if (obj->type == 1) ret = AskChoiceCentered("Protection Requester:", string, "_Unprotect|Unprotect _All|_No|No _to ALL", 0);
+        else if (obj->type == 1) ret = AskChoiceCentered( _(MSG_REQU_PROTECTION), string, _(MSG_REQU_PROTECTION_UNPROTECT), 0);
         else if (obj->type == 2) ret = AskChoiceCentered( _(MSG_REQU_OVERWRITE), string, _(MSG_REQU_OVERWRITE_YESNO), 0);
         else ret = AskChoiceCentered( _(MSG_REQU_OVERWRITE), string, _(MSG_REQU_OVERWRITE_SKIPABORT), 0);
         freeString(NULL, string);
@@ -2973,7 +2973,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
     
             {NM_ITEM,  _(MSG_MEN_SHELL),   _(MSG_MEN_SC_SHELL)   , 0                         , 0, (APTR) MEN_WANDERER_SHELL},
 #if defined(__AROS__)
-            {NM_ITEM,  "AROS .."},
+            {NM_ITEM,  "AROS"},
             {NM_SUB,   _(MSG_MEN_ABOUT),   NULL                  , 0                         , 0, (APTR) MEN_WANDERER_AROS_ABOUT},
             {NM_SUB,   _(MSG_MEN_GUISET),  NULL                  , 0                         , 0, (APTR) MEN_WANDERER_AROS_GUISETTINGS},
 #endif

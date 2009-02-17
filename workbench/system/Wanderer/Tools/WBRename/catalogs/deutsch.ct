@@ -36,8 +36,8 @@ _Abbrechen
 ; Ca_ncel
 ;
 MSG_ERROR_TITLE
-WBRename: Fehler
-; WBRename: Error
+Fehler
+; Error
 ;
 MSG_ALREADY_EXIST
 '%s' existiert bereits!

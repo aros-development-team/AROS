@@ -24,7 +24,7 @@ MSG_CANCEL (//)
 Ca_ncel
 ;
 MSG_ERROR_TITLE (//)
-WBRename: Error
+Error
 ;
 MSG_ALREADY_EXIST (//)
 '%s' already exists!
