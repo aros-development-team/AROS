@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -587,6 +587,7 @@ static void render_on_rastport(struct Picture_Data *pd, struct Gadget *g, LONG S
 
     if ((depth >= 15) && (bmhd->bmh_Masking == mskHasAlpha))
     {
+        /* FIXME: This method does not work on scalled datatype images */
         /* Transparency on high color rast port with alpha channel in picture*/
         ULONG * img = (ULONG *) AllocVec(SizeX * SizeY * 4, MEMF_ANY);
         if (img)
