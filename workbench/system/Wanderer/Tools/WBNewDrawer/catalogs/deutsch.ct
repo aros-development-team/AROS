@@ -16,7 +16,7 @@ MSG_COPYRIGHT
 ; ©2006, AROS Dev Team
 ;
 MSG_WINDOW_TITLE
-Erzeuge neue Schublade
+Neue Schublade anlegen
 ; Create new drawer
 ;
 MSG_LINE
@@ -44,8 +44,8 @@ Bitte_umbenennen
 ; Rename_Me
 ;
 MSG_ERROR_TITLE
-WBNewDrawer: Fehler
-; WBNewDrawer: Error
+Fehler
+; Error
 ;
 MSG_ALREADY_EXIST
 '%s' existiert bereits!

@@ -30,7 +30,7 @@ MSG_BASENAME (//)
 Rename_Me
 ;
 MSG_ERROR_TITLE (//)
-WBNewDrawer: Error
+Error
 ;
 MSG_ALREADY_EXIST (//)
 '%s' already exists!

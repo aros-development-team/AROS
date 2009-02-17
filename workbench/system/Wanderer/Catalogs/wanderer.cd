@@ -3,7 +3,7 @@ MSG_TITLE (//)
 Wanderer
 ;
 MSG_DESCRIPTION (//)
-File Manager
+File manager
 ;
 MSG_SCREENTITLE (//)
 Wanderer %s graphics mem %s other mem
@@ -30,7 +30,7 @@ MSG_MEN_SC_BACKDROP (//)
 B
 ;
 MSG_MEN_EXECUTE (//)
-Execute ...
+Execute...
 ;
 MSG_MEN_SC_EXECUTE (//)
 E
@@ -42,13 +42,13 @@ MSG_MEN_SC_SHELL (//)
 W
 ;
 MSG_MEN_GUISET (//)
-GUI Settings ...
+GUI settings...
 ;
 MSG_MEN_ABOUT (//)
-About ...
+About...
 ;
 MSG_MEN_QUIT (//)
-Quit ...
+Quit...
 ;
 MSG_MEN_SC_QUIT (//)
 Q
@@ -57,13 +57,13 @@ MSG_MEN_WINDOW (//)
 Window
 ;
 MSG_MEN_NEWDRAW (//)
-New Drawer ...
+New drawer...
 ;
 MSG_MEN_SC_NEWDRAW (//)
 N
 ;
 MSG_MEN_OPENPAR (//)
-Open Parent
+Open parent
 ;
 MSG_MEN_CLOSE (//)
 Close
@@ -75,13 +75,13 @@ MSG_MEN_UPDATE (//)
 Update
 ;
 MSG_MEN_CONTENTS (//)
-Select Contents
+Select contents
 ;
 MSG_MEN_SC_CONTENTS (//)
 A
 ;
 MSG_MEN_CLRSEL (//)
-Clear Selection
+Clear selection
 ;
 MSG_MEN_SC_CLRSEL (//)
 Z
@@ -96,40 +96,40 @@ MSG_MEN_VIEW (//)
 View
 ;
 MSG_MEN_ICVIEW (//)
-Icon View
+Icon view
 ;
 MSG_MEN_DCVIEW (//)
-Detail View
+Detail view
 ;
 MSG_MEN_ALLFIL (//)
-All Files
+All files
 ;
 MSG_MEN_SORTIC (//)
 Sort
 ;
 MSG_MEN_CLNUP (//)
-Clean Up
+Clean up
 ;
 MSG_MEN_SC_CLNUP (//)
 U
 ;
 MSG_MEN_BYNAME (//)
-By Name
+By name
 ;
 MSG_MEN_BYDATE (//)
-By Date
+By date
 ;
 MSG_MEN_BYSIZE (//)
-By Size
+By size
 ;
 MSG_MEN_BYTYPE (//)
-By Type
+By type
 ;
 MSG_MEN_REVERSE (//)
 Reverse
 ;
 MSG_MEN_DRWFRST (//)
-Drawers First
+Drawers first
 ;
 MSG_MEN_ICON (//)
 Icon
@@ -141,19 +141,19 @@ MSG_MEN_SC_OPEN (//)
 O
 ;
 MSG_MEN_RENAME (//)
-Rename ...
+Rename...
 ;
 MSG_MEN_SC_RENAME (//)
 R
 ;
 MSG_MEN_INFO (//)
-Information ...
+Information...
 ;
 MSG_MEN_SC_INFO (//)
 I
 ;
 MSG_MEN_DELETE (//)
-Delete ...
+Delete...
 ;
 MSG_MEN_TOOLS  (//)
 Tools
@@ -171,19 +171,19 @@ MSG_USERSCREENTITLE (//)
 Wanderer %pc graphics mem %pf other mem
 ;
 MSG_MEN_FORMAT (//)
-Format Disk ...
+Format disk...
 ;
 MSG_MEN_SHUTDOWN (//)
-Shut Down ...
+Shut down...
 ;
 MSG_SHUTDOWN_TITLE (//)
-System Shutdown
+System shutdown
 ;
 MSG_SHUTDOWN_BODY (//)
 What would you like to do?
 ;
 MSG_SHUTDOWN_BUTTONS (//)
-Power Off|Restart Computer|Restart AROS|*Cancel
+Power off|Restart computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED (//)
 The selected action is not supported by your system.
@@ -192,13 +192,13 @@ MSG_OK (//)
 *OK
 ;
 MSG_EMPTY_TRASH (//)
-Empty Trash
+Empty trash
 ;
 MSG_PUT_AWAY (//)
-Put Away
+Put away
 ;
 MSG_LEAVE_OUT (//)
-Leave Out
+Leave out
 ;
 MSG_UNSNAPSHOT (//)
 Unsnapshot
@@ -207,10 +207,10 @@ MSG_SNAPSHOT (//)
 Snapshot
 ;
 MSG_REQU_DELETE (//)
-Delete file ...
+Delete file...
 ;
 MSG_REQU_DELETE_YESNO (//)
-_Yes|Yes to _All|_No|No _to All
+_Yes|Yes to _all|_No|No _to all
 ;
 MSG_REQU_DELETE_DRAWER_S (//)
 Really delete drawer
@@ -228,7 +228,7 @@ MSG_REQU_DELETE_FILE_E (//)
 ?
 ;
 MSG_REQU_OVERWRITE (//)
-Overwrite file ...
+Overwrite file...
 ;
 MSG_REQU_OVERWRITE_S (//)
 Really overwrite file
@@ -240,16 +240,52 @@ MSG_REQU_OVERWRITE_E (//)
 ?
 ;
 MSG_REQU_OVERWRITE_YESNO (//)
-_Overwrite|Overwrite _All|_No|No _to All
+_Overwrite|Overwrite _all|_No|No _to all
 ;
 MSG_REQU_OVERWRITE_SKIPABORT (//)
 _Skip|_Abort
+;
+MSG_REQU_PROTECTION (//)
+File Protection
+;
+MSG_REQU_PROTECTION_UNPROTECT (//)
+_Unprotect|Unprotect _All|_No|No _to ALL
+;
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_S (//)
+Do you wish to unprotect drawer
+;
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_E (//)
+?
+;
+MSG_NOFILEACCESS_S (//)
+Can't access file
+;
+MSG_NOFILEACCESS_M (//)
+located in
+;
+MSG_NOFILEACCESS_E (//)
+ 
+;
+MSG_NODRAWERACCESS_S (//)
+Can't access drawer
+;
+MSG_NODRAWERACCESS_E (//)
+ 
+;
+MSG_REQU_FILEUNPROTECT_S (//)
+Do you wish to unprotect file
+;
+MSG_REQU_FILEUNPROTECT_M (//)
+located in
+;
+MSG_REQU_FILEUNPROTECT_E (//)
+?
 ;
 MSG_WANDERER_FILEACCESS (//)
 Wanderer file access
 ;
 MSG_WANDERER_FILEACCESS_PROCESSING (//)
-Processing ...
+Processing...
 ;
 MSG_WANDERER_FILEACCESS_STOP (//)
 Stop
