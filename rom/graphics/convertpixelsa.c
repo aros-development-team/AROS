@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Function to convert pixels from one pixfmt into another
@@ -63,13 +63,18 @@
 {
     AROS_LIBFUNC_INIT
 	
-    OOP_Object *srcpf, *dstpf;
+    OOP_Object *srcpf, *dstpf, *bm;
     APTR    	src = srcPixels;
     APTR    	dst = dstPixels;
     
     (void)tags;
     
     if (!SDD(GfxBase)->gfxhidd) return 0;
+    bm = SDD(GfxBase)->bm_bak;
+    if (!bm)
+        bm = SDD(GfxBase)->framebuffer;
+    if (!bm)
+        return 0;
     
     srcpf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, srcPixFmt);
     dstpf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, dstPixFmt);
@@ -80,7 +85,7 @@
 	return 0;
     }
         	
-    HIDD_BM_ConvertPixels(SDD(GfxBase)->framebuffer, &src, srcpf, srcMod, 
+    HIDD_BM_ConvertPixels(bm, &src, srcpf, srcMod, 
     	    	    	  &dst, dstpf, dstMod,
 			  width, height, NULL);
         

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Function to replace pixel conversion routine
@@ -60,8 +60,14 @@
     AROS_LIBFUNC_INIT
 	
     (void)tags;
+    OOP_Object *bm = SDD(GfxBase)->bm_bak;
+
+    if (!bm)
+        bm = SDD(GfxBase)->framebuffer;
+    if (!bm)
+        return NULL;
     
-    return (APTR)HIDD_BM_SetRGBConversionFunction(SDD(GfxBase)->framebuffer,
+    return (APTR)HIDD_BM_SetRGBConversionFunction(bm,
     	    	    	    	    	    	  (HIDDT_StdPixFmt)srcPixFmt,
 						  (HIDDT_StdPixFmt)dstPixFmt,
 						  (HIDDT_RGBConversionFunction)function);
