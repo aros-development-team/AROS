@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Driver for using gfxhidd for gfx output
@@ -645,13 +645,15 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
     D(bug("driver_LateGfxInit: gfxhidd=%p\n", SDD(GfxBase)->gfxhidd));
 
     if (NULL != SDD(GfxBase)->gfxhidd) {
-	IPTR hwcursor;
+	IPTR hwcursor = 0;
+	IPTR noframebuffer = 0;
 	BOOL ok = TRUE;
 
     	/* Get method id here, to avoid any possible semaphore involment when calling the method */ 
     	SDD(GfxBase)->hiddGfxShowImminentReset_MethodID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ShowImminentReset);
 
 	OOP_GetAttr(SDD(GfxBase)->gfxhidd, aHidd_Gfx_SupportsHWCursor, &hwcursor);
+	OOP_GetAttr(SDD(GfxBase)->gfxhidd, aHidd_Gfx_NoFrameBuffer, &noframebuffer);
 	SDD(GfxBase)->has_hw_cursor = (BOOL)hwcursor;
 	if (!hwcursor) {
 	    OOP_Object *fgh;
@@ -691,17 +693,17 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 		    /* Move the modes into the displayinfo DB */
 		    SDD(GfxBase)->dispinfo_db = build_dispinfo_db(GfxBase);
 		    if (NULL != SDD(GfxBase)->dispinfo_db) {
-
-			SDD(GfxBase)->framebuffer = create_framebuffer(GfxBase);
-			if (NULL != SDD(GfxBase)->framebuffer) {
-D(bug("FRAMEBUFFER OK: %p\n", SDD(GfxBase)->framebuffer));
+		        if (!noframebuffer)
+			    SDD(GfxBase)->framebuffer = create_framebuffer(GfxBase);
+			if (noframebuffer || SDD(GfxBase)->framebuffer) {
+			    D(bug("FRAMEBUFFER OK: %p\n", SDD(GfxBase)->framebuffer));
 			    if (init_cursor(GfxBase)) {
-
-D(bug("MOUSE INITED\n"));
-		            	ReturnBool("driver_LateGfxInit", TRUE);
+			        D(bug("MOUSE INITED\n"));
+		                ReturnBool("driver_LateGfxInit", TRUE);
 			    }
+			}
+			if (SDD(GfxBase)->framebuffer)
 			    OOP_DisposeObject(SDD(GfxBase)->framebuffer);
-		    	} /* if (framebuffer inited) */
 		    	destroy_dispinfo_db(SDD(GfxBase)->dispinfo_db, GfxBase);
 		    	SDD(GfxBase)->dispinfo_db = NULL;
 		    } /* if (displayinfo db inited) */

@@ -2,7 +2,7 @@
 #define HIDD_GRAPHICS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definitions for the Graphics HIDD system.
@@ -108,6 +108,7 @@ enum
     
     aoHidd_Gfx_NumSyncs,		/* [..G] (ULONG) - The number of different syncs the gfxcard can do */
     aoHidd_Gfx_SupportsHWCursor,	/* [..G] (BOOL) - if the hidd supports hardware cursors */
+    aoHidd_Gfx_NoFrameBuffer,		/* [..G] (BOOL) - if the hidd does not need a framebuffer */
     
     num_Hidd_Gfx_Attrs
 };
@@ -125,6 +126,7 @@ enum
 #define aHidd_Gfx_ModeTags		(HiddGfxAttrBase + aoHidd_Gfx_ModeTags			)
 #define aHidd_Gfx_NumSyncs		(HiddGfxAttrBase + aoHidd_Gfx_NumSyncs			)
 #define aHidd_Gfx_SupportsHWCursor	(HiddGfxAttrBase + aoHidd_Gfx_SupportsHWCursor		)
+#define aHidd_Gfx_NoFrameBuffer		(HiddGfxAttrBase + aoHidd_Gfx_NoFrameBuffer		)
 
 #define IS_GFX_ATTR(attr, idx)	\
 	( ( ( idx ) = (attr) - HiddGfxAttrBase) < num_Hidd_Gfx_Attrs)
