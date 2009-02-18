@@ -684,7 +684,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
         case CT_LBA28:
             if (block->sectors > 256)
             {
-                bug("[ATA%02ld] ERROR: Transfer length (%ld) exceeds 256 sectors. Aborting.\n", au->au_UnitNum, block->sectors);
+                bug("[ATA%02ld] ata_exec_cmd: ERROR: Transfer length (%ld) exceeds 256 sectors. Aborting.\n", au->au_UnitNum, block->sectors);
                 return IOERR_BADLENGTH;
             }
 
@@ -696,12 +696,12 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
         case CT_LBA48:
             if (block->sectors > 65536)
             {
-                bug("[ATA%02ld] ERROR: Transfer length (%ld) exceeds 65536 sectors. Aborting.\n", au->au_UnitNum, block->sectors);
+                bug("[ATA%02ld] ata_exec_cmd: ERROR: Transfer length (%ld) exceeds 65536 sectors. Aborting.\n", au->au_UnitNum, block->sectors);
                 return IOERR_BADLENGTH;
             }
             if (block->secmul == 0)
             {
-                bug("[ATA%02ld] ERROR: Invalid transfer multiplier. Should be at least set to 1 (correcting)\n", au->au_UnitNum);
+                bug("[ATA%02ld] ata_exec_cmd: ERROR: Invalid transfer multiplier. Should be at least set to 1 (correcting)\n", au->au_UnitNum);
                 block->secmul = 1;
             }
            break;
@@ -710,12 +710,12 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
             break;
 
         default:
-            bug("[ATA%02ld] ERROR: Invalid command type %lx. Aborting.\n", au->au_UnitNum, block->type);
+            bug("[ATA%02ld] ata_exec_cmd: ERROR: Invalid command type %lx. Aborting.\n", au->au_UnitNum, block->type);
             return IOERR_NOCMD;
     }
 
     block->actual = 0;
-    D(bug("[ATA%02ld] Executing command %02lx\n", au->au_UnitNum, block->command));
+    D(bug("[ATA%02ld] ata_exec_cmd: Executing command %02lx\n", au->au_UnitNum, block->command));
 
     if (block->feature != 0)
         ata_out(block->feature, ata_Feature, port);
@@ -726,7 +726,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
     switch (block->type)
     {
         case CT_LBA28:
-            DATA(bug("[ATA%02ld] Command uses 28bit LBA addressing (OLD)\n", au->au_UnitNum));
+            DATA(bug("[ATA%02ld] ata_exec_cmd: Command uses 28bit LBA addressing (OLD)\n", au->au_UnitNum));
             ata_out(((block->blk >> 24) & 0x0f) | 0x40 | au->au_DevMask, ata_DevHead, port);
             ata_out(block->blk >> 16, ata_LBAHigh, port);
             ata_out(block->blk >> 8, ata_LBAMid, port);
@@ -735,7 +735,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
             break;
 
         case CT_LBA48:
-            DATA(bug("[ATA%02ld] Command uses 48bit LBA addressing (NEW)\n", au->au_UnitNum));
+            DATA(bug("[ATA%02ld] ata_exec_cmd: Command uses 48bit LBA addressing (NEW)\n", au->au_UnitNum));
             ata_out(block->blk >> 40, ata_LBAHigh, port);
             ata_out(block->blk >> 32, ata_LBAMid, port);
             ata_out(block->blk >> 24, ata_LBALow, port);
@@ -749,10 +749,9 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
             break;
 
         case CT_NoBlock:
-            DATA(bug("[ATA%02ld] Command does not address any block\n", au->au_UnitNum));
+            DATA(bug("[ATA%02ld] ata_exec_cmd: Command does not address any block\n", au->au_UnitNum));
             break;
     }
-
 
     switch (block->method)
     {
@@ -791,7 +790,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
      * send command now
      * let drive propagate its signals
      */
-    DATA(bug("[ATA%02ld] Sending command\n", au->au_UnitNum));
+    DATA(bug("[ATA%02ld] ata_exec_cmd: Sending command\n", au->au_UnitNum));
     ata_out(block->command, ata_Command, port);
     ata_400ns(au->au_Bus->ab_Alt);
     
@@ -802,16 +801,16 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
      */
     if (block->method == CM_PIOWrite) {
 	if (FALSE == ata_WaitBusyTO(au, 300, FALSE, &status)) {
-	    D(bug("[ATA%02ld] PIOWrite - no response from device\n", au->au_UnitNum));
+	    D(bug("[ATA%02ld] ata_exec_cmd: PIOWrite - no response from device\n", au->au_UnitNum));
 	    return IOERR_UNITBUSY;
 	}
 	if (status & ATAF_DATAREQ) {
-	    DATA(bug("[ATA%02ld] PIOWrite - DRQ.\n", au->au_UnitNum));
+	    DATA(bug("[ATA%02ld] ata_exec_cmd: PIOWrite - DRQ.\n", au->au_UnitNum));
 	    ata_PIOWriteBlk(au);
 	}
 	else
 	{
-	    D(bug("[ATA%02ld] PIOWrite - bad status: %02X\n", status));
+	    D(bug("[ATA%02ld] ata_exec_cmd: PIOWrite - bad status: %02X\n", status));
 	    return HFERR_BadStatus;
 	}
     }
@@ -821,13 +820,13 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
      */
     if (FALSE == ata_WaitBusyTO(au, 300, TRUE, NULL))
     {
-        bug("[ATA%02ld] Device is late - no response\n", au->au_UnitNum);
+        bug("[ATA%02ld] ata_exec_cmd: Device is late - no response\n", au->au_UnitNum);
         err = IOERR_UNITBUSY;
     }
     else
         err = au->au_cmd_error;
 
-    DATA(bug("[ATA%02ld] Command done\n", au->au_UnitNum));
+    DATA(bug("[ATA%02ld] ata_exec_cmd: Command done\n", au->au_UnitNum));
     /*
      * clean up DMA
      * don't use 'mem' pointer here as it's already invalid.
@@ -843,7 +842,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
         dma_Cleanup(block->buffer, block->length, FALSE);
     }
 
-    D(bug("[ATA%02ld] return code %ld\n", au->au_UnitNum, err));
+    D(bug("[ATA%02ld] ata_exec_cmd: return code %ld\n", au->au_UnitNum, err));
     return err;
 }
 
@@ -1030,10 +1029,10 @@ ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
     /*
      * on check condition - grab sense data
      */
-    DATAPI(bug("[ATA%02lx] SCSI Flags: %02lx / Error: %ld\n", unit->au_UnitNum, cmd->scsi_Flags, err));
+    DATAPI(bug("[ATA%02lx] atapi_DirectSCSI: SCSI Flags: %02lx / Error: %ld\n", unit->au_UnitNum, cmd->scsi_Flags, err));
     if ((err != 0) && (cmd->scsi_Flags & SCSIF_AUTOSENSE))
     {
-        DATAPI(bug("[DSCSI] Packet Failed. Calling atapi_RequestSense\n"));
+        DATAPI(bug("[DSCSI] atapi_DirectSCSI: Packet Failed. Calling atapi_RequestSense\n"));
         atapi_RequestSense(unit, cmd->scsi_SenseData, cmd->scsi_SenseLength);
         DUMP(dump(cmd->scsi_SenseData, cmd->scsi_SenseLength));
     }
@@ -1055,7 +1054,7 @@ static ULONG ata_exec_blk(struct ata_Unit *unit, ata_CommandBlock *blk)
     if (blk->type == CT_LBA48)
         max <<= 8;
 
-    DATA(bug("[ATA%02ld] Accessing %ld sectors starting from %lx\n", unit->au_UnitNum, count, blk->blk));
+    DATA(bug("[ATA%02ld] ata_exec_blk: Accessing %ld sectors starting from %lx\n", unit->au_UnitNum, count, blk->blk));
     while ((count > 0) && (err == 0))
     {
         part = (count > max) ? max : count;
@@ -1063,6 +1062,7 @@ static ULONG ata_exec_blk(struct ata_Unit *unit, ata_CommandBlock *blk)
         blk->length  = part << unit->au_SectorShift;
 
         err = ata_exec_cmd(unit, blk);
+        DATA(bug("[ATA%02ld] ata_exec_blk: ata_exec_cmd returned %lx\n", err));
 
         blk->blk    += part;
         blk->buffer  = &((char*)blk->buffer)[part << unit->au_SectorShift];
@@ -1078,7 +1078,7 @@ BOOL ata_init_unit(struct ata_Bus *bus, UBYTE u)
 {
     struct ata_Unit *unit=NULL;
 
-    DINIT(bug("[ATA  ] Initializing unit %ld\n", u));
+    DINIT(bug("[ATA  ] ata_init_unit(%ld)\n", u));
 
     unit = bus->ab_Units[u];
     if (NULL == unit)
@@ -1125,7 +1125,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
      * this stuff always goes along the same way
      * WARNING: NO INTERRUPTS AT THIS POINT!
      */
-    DINIT(bug("[ATA  ] setting up unit %ld\n", u));
+    DINIT(bug("[ATA  ] ata_setup_unit(%ld)\n", u));
 
     unit = bus->ab_Units[u];
     if (NULL == unit)
@@ -1135,7 +1135,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
 
     if (FALSE == ata_WaitBusyTO(unit, 1, FALSE, NULL))
     {
-        DINIT(bug("[ATA%02ld] ERROR: Drive not ready for use. Keeping functions stubbed\n", unit->au_UnitNum));
+        DINIT(bug("[ATA%02ld] ata_setup_unit: ERROR: Drive not ready for use. Keeping functions stubbed\n", unit->au_UnitNum));
         FreePooled(bus->ab_Base->ata_MemPool, unit->au_Drive, sizeof(struct DriveIdent));
         unit->au_Drive = 0;
         return FALSE;
@@ -1158,13 +1158,13 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
 
 
         default:
-            DINIT(bug("[ATA%02ld] Unsupported device %lx. All functions will remain stubbed.\n", unit->au_UnitNum, bus->ab_Dev[u]));
+            DINIT(bug("[ATA%02ld] ata_setup_unit: Unsupported device %lx. All functions will remain stubbed.\n", unit->au_UnitNum, bus->ab_Dev[u]));
             FreePooled(bus->ab_Base->ata_MemPool, unit->au_Drive, sizeof(struct DriveIdent));
             unit->au_Drive = 0;
             return FALSE;
     }
 
-    bug("[ATA  ] Enabling Bus IRQs\n");
+    bug("[ATA  ] ata_setup_unit: Enabling Bus IRQs\n");
     ata_EnableIRQ(bus, TRUE);
     /*
      * now make unit self diagnose
@@ -1205,11 +1205,10 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
 
     if ((unit->au_DMAPort == 0) && (mode > AB_XFER_PIO7))
     {
-        DINIT(bug("[ATA%02ld] This controller does not own DMA port! Will set best PIO\n", unit->au_UnitNum));
+        DINIT(bug("[ATA%02ld] common_SetXferMode: This controller does not own DMA port! Will set best PIO\n", unit->au_UnitNum));
         common_SetBestXferMode(unit);
         return;
     }
-
 
     /*
      * first, ONLY for ATA devices, set new commands
@@ -1297,7 +1296,7 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
     acb.sectors = type;
     if (0 != ata_exec_cmd(unit, &acb))
     {
-        DINIT(bug("[ATA%02ld] ERROR: Failed to apply new xfer mode.\n", unit->au_UnitNum));
+        DINIT(bug("[ATA%02ld] common_SetXferMode: ERROR: Failed to apply new xfer mode.\n", unit->au_UnitNum));
     }
 
     if (unit->au_DMAPort)
@@ -1313,17 +1312,17 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
             type &= ~(1 << (5 + (unit->au_UnitNum & 1)));
         }
 
-        DINIT(bug("[DSCSI] Trying to apply new DMA (%lx) status: %02lx (unit %ld)\n", unit->au_DMAPort, type, unit->au_UnitNum & 1));
+        DINIT(bug("[DSCSI] common_SetXferMode: Trying to apply new DMA (%lx) status: %02lx (unit %ld)\n", unit->au_DMAPort, type, unit->au_UnitNum & 1));
 
         ata_SelectUnit(unit);
         ata_out(type, dma_Status, unit->au_DMAPort);
         if (type == (ata_in(dma_Status, unit->au_DMAPort) & 0x60))
         {
-            DINIT(bug("[DSCSI] New DMA Status: %02lx\n", type));
+            DINIT(bug("[DSCSI] common_SetXferMode: New DMA Status: %02lx\n", type));
         }
         else
         {
-            DINIT(bug("[DSCSI] Failed to modify DMA state for this device\n"));
+            DINIT(bug("[DSCSI] common_SetXferMode: Failed to modify DMA state for this device\n"));
             dma = FALSE;
         }
     }
@@ -1345,7 +1344,7 @@ static void common_SetBestXferMode(struct ata_Unit* unit)
          * make sure you reduce scan search to pio here!
          * otherwise this and above function will fall into infinite loop
          */
-        DINIT(bug("[ATA%02ld] This controller does not own DMA port\n", unit->au_UnitNum));
+        DINIT(bug("[ATA%02ld] common_SetBestXferMode: This controller does not own DMA port\n", unit->au_UnitNum));
         max = AB_XFER_PIO7;
     }
 
@@ -1357,7 +1356,7 @@ static void common_SetBestXferMode(struct ata_Unit* unit)
             return;
         }
     }
-    bug("[ATA%02ld] ERROR: device never reported any valid xfer modes. will continue at default\n", unit->au_UnitNum);
+    bug("[ATA%02ld] common_SetBestXferMode: ERROR: device never reported any valid xfer modes. will continue at default\n", unit->au_UnitNum);
     common_SetXferMode(unit, AB_XFER_PIO0);
 }
 
@@ -1365,40 +1364,40 @@ void common_DetectXferModes(struct ata_Unit* unit)
 {
     int iter;
     
-    DINIT(bug("[ATA%02ld] Supports\n", unit->au_UnitNum));
+    DINIT(bug("[ATA%02ld] common_DetectXferModes: Supports\n", unit->au_UnitNum));
 
     if (unit->au_Drive->id_Commands4 & (1 << 4))
     {
-        DINIT(bug("[ATA%02ld] - Packet interface\n", unit->au_UnitNum));
+        DINIT(bug("[ATA%02ld] common_DetectXferModes: - Packet interface\n", unit->au_UnitNum));
         unit->au_XferModes     |= AF_XFER_PACKET;
         unit->au_DirectSCSI     = atapi_DirectSCSI;
     }
     else if (unit->au_Drive->id_Commands5 & (1 << 10))
     {
         /* ATAPI devices do not use this bit. */
-        DINIT(bug("[ATA%02ld] - 48bit I/O\n", unit->au_UnitNum));
+        DINIT(bug("[ATA%02ld] common_DetectXferModes: - 48bit I/O\n", unit->au_UnitNum));
         unit->au_XferModes     |= AF_XFER_48BIT;
     }
     
     if ((unit->au_XferModes & AF_XFER_PACKET) || (unit->au_Drive->id_Capabilities & (1<< 9)))
     {
-        DINIT(bug("[ATA%02ld] - LBA Addressing\n", unit->au_UnitNum));
+        DINIT(bug("[ATA%02ld] common_DetectXferModes: - LBA Addressing\n", unit->au_UnitNum));
         unit->au_XferModes     |= AF_XFER_LBA;
     }
     else
     {
-        DINIT(bug("[ATA%02ld] - DEVICE DOES NOT SUPPORT LBA ADDRESSING >> THIS IS A POTENTIAL PROBLEM <<\n", unit->au_UnitNum));
+        DINIT(bug("[ATA%02ld] common_DetectXferModes: - DEVICE DOES NOT SUPPORT LBA ADDRESSING >> THIS IS A POTENTIAL PROBLEM <<\n", unit->au_UnitNum));
     }
 
     if (unit->au_Drive->id_RWMultipleSize & 0xff)
     {
-        DINIT(bug("[ATA%02ld] - R/W Multiple (%ld sectors per xfer)\n", unit->au_UnitNum, unit->au_Drive->id_RWMultipleSize & 0xff));
+        DINIT(bug("[ATA%02ld] common_DetectXferModes: - R/W Multiple (%ld sectors per xfer)\n", unit->au_UnitNum, unit->au_Drive->id_RWMultipleSize & 0xff));
         unit->au_XferModes     |= AF_XFER_RWMULTI;
     }
 
     if (unit->au_Drive->id_PIOSupport & 0xff)
     {
-        DINIT(bug("[ATA%02ld] - ", unit->au_UnitNum));
+        DINIT(bug("[ATA%02ld] common_DetectXferModes: - ", unit->au_UnitNum));
         for (iter=0; iter<8; iter++)
         {
             if (unit->au_Drive->id_MWDMASupport & (1 << iter))
@@ -1412,10 +1411,10 @@ void common_DetectXferModes(struct ata_Unit* unit)
 
     if (unit->au_Drive->id_Capabilities & (1<<8))
     {
-        DINIT(bug("[ATA%02ld] DMA:\n", unit->au_UnitNum));
+        DINIT(bug("[ATA%02ld] common_DetectXferModes: DMA:\n", unit->au_UnitNum));
         if (unit->au_Drive->id_MWDMASupport & 0xff)
         {
-            DINIT(bug("[ATA%02ld] - ", unit->au_UnitNum));
+            DINIT(bug("[ATA%02ld] common_DetectXferModes: - ", unit->au_UnitNum));
             for (iter=0; iter<8; iter++)
             {
                 if (unit->au_Drive->id_MWDMASupport & (1 << iter))
@@ -1436,7 +1435,7 @@ void common_DetectXferModes(struct ata_Unit* unit)
 
         if (unit->au_Drive->id_UDMASupport & 0xff)
         {
-            DINIT(bug("[ATA%02ld] - ", unit->au_UnitNum));
+            DINIT(bug("[ATA%02ld] common_DetectXferModes: - ", unit->au_UnitNum));
             for (iter=0; iter<8; iter++)
             {
                 if (unit->au_Drive->id_UDMASupport & (1 << iter))
@@ -1553,7 +1552,7 @@ ULONG atapi_Identify(struct ata_Unit* unit)
     ata_strcpy(unit->au_Drive->id_SerialNumber, unit->au_SerialNumber, 20);
     ata_strcpy(unit->au_Drive->id_FirmwareRev, unit->au_FirmwareRev, 8);
 
-    bug("[ATA%02ld] Unit info: %s / %s / %s\n", unit->au_UnitNum, unit->au_Model, unit->au_SerialNumber, unit->au_FirmwareRev);
+    bug("[ATA%02ld] atapi_Identify: Unit info: %s / %s / %s\n", unit->au_UnitNum, unit->au_Model, unit->au_SerialNumber, unit->au_FirmwareRev);
     common_DetectXferModes(unit);
     common_SetBestXferMode(unit);
 
@@ -1565,7 +1564,7 @@ ULONG atapi_Identify(struct ata_Unit* unit)
 
     unit->au_Capacity   = unit->au_Drive->id_LBASectors;
     unit->au_Capacity48 = unit->au_Drive->id_LBA48Sectors;
-    bug("[ATA%02ld] Unit info: %07lx 28bit / %04lx:%08lx 48bit addressable blocks\n", unit->au_UnitNum, unit->au_Capacity, (ULONG)(unit->au_Capacity48 >> 32), (ULONG)(unit->au_Capacity48 & 0xfffffffful));
+    bug("[ATA%02ld] atapi_Identify: Unit info: %07lx 28bit / %04lx:%08lx 48bit addressable blocks\n", unit->au_UnitNum, unit->au_Capacity, (ULONG)(unit->au_Capacity48 >> 32), (ULONG)(unit->au_Capacity48 & 0xfffffffful));
 
     /*
      * ok, this is not very original, but quite compatible :P
@@ -1693,19 +1692,19 @@ ULONG ata_Identify(struct ata_Unit* unit)
     ata_strcpy(unit->au_Drive->id_SerialNumber, unit->au_SerialNumber, 20);
     ata_strcpy(unit->au_Drive->id_FirmwareRev, unit->au_FirmwareRev, 8);
 
-    bug("[ATA%02ld] Unit info: %s / %s / %s\n", unit->au_UnitNum, unit->au_Model, unit->au_SerialNumber, unit->au_FirmwareRev);
+    bug("[ATA%02ld] ata_Identify: Unit info: %s / %s / %s\n", unit->au_UnitNum, unit->au_Model, unit->au_SerialNumber, unit->au_FirmwareRev);
     common_DetectXferModes(unit);
     common_SetBestXferMode(unit);
 
     if (unit->au_Drive->id_General & 0x80)
     {
-        DINIT(bug("[ATA%02ld] Device is removable.\n", unit->au_UnitNum));
+        DINIT(bug("[ATA%02ld] ata_Identify: Device is removable.\n", unit->au_UnitNum));
         unit->au_Flags |= AF_Removable;
     }
 
     unit->au_Capacity   = unit->au_Drive->id_LBASectors;
     unit->au_Capacity48 = unit->au_Drive->id_LBA48Sectors;
-    bug("[ATA%02ld] Unit info: %07lx 28bit / %04lx:%08lx 48bit addressable blocks\n", unit->au_UnitNum, unit->au_Capacity, (ULONG)(unit->au_Capacity48 >> 32), (ULONG)(unit->au_Capacity48 & 0xfffffffful));
+    bug("[ATA%02ld] ata_Identify: Unit info: %07lx 28bit / %04lx:%08lx 48bit addressable blocks\n", unit->au_UnitNum, unit->au_Capacity, (ULONG)(unit->au_Capacity48 >> 32), (ULONG)(unit->au_Capacity48 & 0xfffffffful));
 
     /*
        For drive capacities > 8.3GB assume maximal possible layout.
@@ -1787,6 +1786,8 @@ static ULONG ata_ReadSector32(struct ata_Unit *unit, ULONG block, ULONG count, A
     };
     register ULONG err;
 
+    D(bug("[ATA%02ld] ata_ReadSector32()\n", unit->au_UnitNum));
+
     *act = 0;
     if (0 != (err = ata_exec_blk(unit, &acb)))
         return err;
@@ -1812,6 +1813,8 @@ static ULONG ata_ReadMultiple32(struct ata_Unit *unit, ULONG block, ULONG count,
         CT_LBA28
     };
     register ULONG err;
+
+    D(bug("[ATA%02ld] ata_ReadMultiple32()\n", unit->au_UnitNum));
 
     *act = 0;
     if (0 != (err = ata_exec_blk(unit, &acb)))
@@ -1839,6 +1842,8 @@ static ULONG ata_ReadDMA32(struct ata_Unit *unit, ULONG block, ULONG count, APTR
         CT_LBA28
     };
 
+    D(bug("[ATA%02ld] ata_ReadDMA32()\n", unit->au_UnitNum));
+    
     *act = 0;
     if (0 != (err = ata_exec_blk(unit, &acb)))
         return err;
@@ -1869,6 +1874,8 @@ static ULONG ata_ReadSector64(struct ata_Unit *unit, UQUAD block, ULONG count, A
     };
     register ULONG err = 0;
 
+    D(bug("[ATA%02ld] ata_ReadSector64()\n", unit->au_UnitNum));
+
     *act = 0;
     if (0 != (err = ata_exec_blk(unit, &acb)))
         return err;
@@ -1895,6 +1902,8 @@ static ULONG ata_ReadMultiple64(struct ata_Unit *unit, UQUAD block, ULONG count,
     };
     register ULONG err;
 
+    D(bug("[ATA%02ld] ata_ReadMultiple64()\n", unit->au_UnitNum));
+
     *act = 0;
     if (0 != (err = ata_exec_blk(unit, &acb)))
         return err;
@@ -1920,6 +1929,8 @@ static ULONG ata_ReadDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR
         CT_LBA48
     };
     register ULONG err;
+
+    D(bug("[ATA%02ld] ata_ReadDMA64()\n", unit->au_UnitNum));
 
     *act = 0;
     if (0 != (err = ata_exec_blk(unit, &acb)))
@@ -1951,6 +1962,8 @@ static ULONG ata_WriteSector32(struct ata_Unit *unit, ULONG block, ULONG count, 
     };
     register ULONG err;
 
+    D(bug("[ATA%02ld] ata_WriteSector32()\n", unit->au_UnitNum));
+
     *act = 0;
     if (0 != (err = ata_exec_blk(unit, &acb)))
         return err;
@@ -1977,6 +1990,8 @@ static ULONG ata_WriteMultiple32(struct ata_Unit *unit, ULONG block, ULONG count
     };
     register ULONG err;
 
+    D(bug("[ATA%02ld] ata_WriteMultiple32()\n", unit->au_UnitNum));
+
     *act = 0;
     if (0 != (err = ata_exec_blk(unit, &acb)))
         return err;
@@ -2002,6 +2017,8 @@ static ULONG ata_WriteDMA32(struct ata_Unit *unit, ULONG block, ULONG count, APT
         CT_LBA28
     };
     register ULONG err;
+
+    D(bug("[ATA%02ld] ata_WriteDMA32()\n", unit->au_UnitNum));
 
     *act = 0;
     if (0 != (err = ata_exec_blk(unit, &acb)))
@@ -2033,6 +2050,8 @@ static ULONG ata_WriteSector64(struct ata_Unit *unit, UQUAD block, ULONG count, 
     };
     register ULONG err;
 
+    D(bug("[ATA%02ld] ata_WriteSector64()\n", unit->au_UnitNum));
+
     *act = 0;
     if (0 != (err = ata_exec_blk(unit, &acb)))
         return err;
@@ -2059,6 +2078,8 @@ static ULONG ata_WriteMultiple64(struct ata_Unit *unit, UQUAD block, ULONG count
     };
     register ULONG err;
 
+    D(bug("[ATA%02ld] ata_WriteMultiple64()\n", unit->au_UnitNum));
+
     *act = 0;
     if (0 != (err = ata_exec_blk(unit, &acb)))
         return err;
@@ -2084,6 +2105,8 @@ static ULONG ata_WriteDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APT
         CT_LBA48
     };
     register ULONG err;
+
+    D(bug("[ATA%02ld] ata_WriteDMA64()\n", unit->au_UnitNum));
 
     *act = 0;
     if (0 != (err = ata_exec_blk(unit, &acb)))
@@ -2113,6 +2136,8 @@ static ULONG ata_Eject(struct ata_Unit *unit)
         CT_NoBlock
     };
 
+    D(bug("[ATA%02ld] ata_Eject()\n", unit->au_UnitNum));
+
     return ata_exec_cmd(unit, &acb);
 }
 
@@ -2131,13 +2156,15 @@ int atapi_TestUnitOK(struct ata_Unit *unit)
        0
     };
 
+    D(bug("[ATA%02ld] atapi_TestUnitOK()\n", unit->au_UnitNum));
+
     sc.scsi_Command = (void*) &cmd;
     sc.scsi_CmdLength = sizeof(cmd);
     sc.scsi_SenseData = (void*)&sense;
     sc.scsi_SenseLength = sizeof(sense);
     sc.scsi_Flags = SCSIF_AUTOSENSE;
 
-    DATAPI(bug("[ATA%02ld] Testing Unit Ready sense...\n", unit->au_UnitNum));
+    DATAPI(bug("[ATA%02ld] atapi_TestUnitOK: Testing Unit Ready sense...\n", unit->au_UnitNum));
     unit->au_DirectSCSI(unit, &sc);
     unit->au_SenseKey = sense[2];
 
@@ -2164,7 +2191,7 @@ int atapi_TestUnitOK(struct ata_Unit *unit)
         unit->au_Flags |= AF_DiscChanged;
     }
 
-    DATAPI(bug("[ATA%02ld] Test Unit Ready sense: %02lx, Media %s\n", unit->au_UnitNum, sense[2], unit->au_Flags & AF_DiscPresent ? "PRESENT" : "ABSENT"));
+    DATAPI(bug("[ATA%02ld] atapi_TestUnitOK: Test Unit Ready sense: %02lx, Media %s\n", unit->au_UnitNum, sense[2], unit->au_Flags & AF_DiscPresent ? "PRESENT" : "ABSENT"));
     return sense[2];
 }
 
@@ -2176,6 +2203,8 @@ static ULONG atapi_Read(struct ata_Unit *unit, ULONG block, ULONG count, APTR bu
     struct SCSICmd sc = {
        0
     };
+
+    D(bug("[ATA%02ld] atapi_Read()\n", unit->au_UnitNum));
 
     sc.scsi_Command = (void*) &cmd;
     sc.scsi_CmdLength = sizeof(cmd);
@@ -2194,6 +2223,8 @@ static ULONG atapi_Write(struct ata_Unit *unit, ULONG block, ULONG count, APTR b
     struct SCSICmd sc = {
        0
     };
+
+    D(bug("[ATA%02ld] atapi_Write()\n", unit->au_UnitNum));
 
     sc.scsi_Command = (void*) &cmd;
     sc.scsi_CmdLength = sizeof(cmd);
@@ -2216,6 +2247,8 @@ static ULONG atapi_Eject(struct ata_Unit *unit)
        0
     };
 
+    D(bug("[ATA%02ld] atapi_Eject()\n", unit->au_UnitNum));
+
     sc.scsi_Command = (void*) &cmd;
     sc.scsi_CmdLength = sizeof(cmd);
     sc.scsi_Flags = SCSIF_READ;
@@ -2232,6 +2265,8 @@ ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen)
        0
     };
 
+    D(bug("[ATA%02ld] atapi_RequestSense()\n", unit->au_UnitNum));
+
     if ((senselen == 0) || (sense == 0))
     {
        return 0;
@@ -2245,7 +2280,7 @@ ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen)
     unit->au_DirectSCSI(unit, &sc);
 
     DATAPI(dump(sense, senselen));
-    DATAPI(bug("[SENSE] sensed data: %lx %lx %lx\n", sense[2]&0xf, sense[12], sense[13]));
+    DATAPI(bug("[SENSE] atapi_RequestSense: sensed data: %lx %lx %lx\n", sense[2]&0xf, sense[12], sense[13]));
     return ((sense[2]&0xf)<<16) | (sense[12]<<8) | (sense[13]);
 }
 
@@ -2254,25 +2289,27 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
     ULONG port = bus->ab_Port;
     UBYTE tmp1, tmp2;
 
+    D(bug("[ATA  ] ata_ReadSignature(%02ld)\n", unit));
+
     ata_out(0xa0 | (unit << 4), ata_DevHead, port);
     ata_400ns(bus->ab_Alt);
 
     /* Check basic signature. All live devices should provide it */
     tmp1 = ata_in(ata_Count, port);
     tmp2 = ata_in(ata_LBALow, port);
-    DINIT(bug("[ATA  ] Checking Count / LBA against expected values (%d:%d)\n", tmp1, tmp2));
+    DINIT(bug("[ATA  ] ata_ReadSignature: Checking Count / LBA against expected values (%d:%d)\n", tmp1, tmp2));
 
-    DINIT(bug("[ATA  ] Status %08lx Device %08lx\n", ata_in(ata_Status, port), ata_in(ata_DevHead, port)));
+    DINIT(bug("[ATA  ] ata_ReadSignature: Status %08lx Device %08lx\n", ata_in(ata_Status, port), ata_in(ata_DevHead, port)));
 
     if ((tmp1 == 0x01) && (tmp2 == 0x01))
     {
         /* Ok, ATA/ATAPI device. Get detailed signature */
-        DINIT(bug("[ATA  ] Found an ATA[PI] Device. Attempting to detect specific subtype\n"));
+        DINIT(bug("[ATA  ] ata_ReadSignature: Found an ATA[PI] Device. Attempting to detect specific subtype\n"));
 
         tmp1 = ata_in(ata_LBAMid, port);
         tmp2 = ata_in(ata_LBAHigh, port);
         
-        DINIT(bug("[ATA  ] Subtype check returned %02lx:%02lx (%04lx)\n", tmp1, tmp2, (tmp1 << 8) | tmp2));
+        DINIT(bug("[ATA  ] ata_ReadSignature: Subtype check returned %02lx:%02lx (%04lx)\n", tmp1, tmp2, (tmp1 << 8) | tmp2));
 
     
         switch ((tmp1 << 8) | tmp2)
@@ -2287,37 +2324,37 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
                 while (ata_ReadStatus(bus) & ATAF_BUSY)
                     ata_400ns(bus->ab_Alt);
                     
-                DINIT(bug("[ATA  ] Further validating  ATA signature: %lx & 0x7f = 1, %lx & 0x10 = unit\n", ata_in(ata_Error, port), ata_in(ata_DevHead, port)));
+                DINIT(bug("[ATA  ] ata_ReadSignature: Further validating  ATA signature: %lx & 0x7f = 1, %lx & 0x10 = unit\n", ata_in(ata_Error, port), ata_in(ata_DevHead, port)));
 
                 if ((1 == (0x7f & ata_in(ata_Error, port))) && 
                     (unit == ((ata_in(ata_DevHead, port) >> 4) & 1)))
                 {
-                    DINIT(bug("[ATA  ] Found *valid* signature for ATA device\n"));
+                    DINIT(bug("[ATA  ] ata_ReadSignature: Found *valid* signature for ATA device\n"));
                     return DEV_ATA;
                 }
                 return DEV_NONE;
 
             case 0x14eb:
-                DINIT(bug("[ATA  ] Found signature for ATAPI device\n"));
+                DINIT(bug("[ATA  ] ata_ReadSignature: Found signature for ATAPI device\n"));
                 return DEV_ATAPI;
 
             case 0x3cc3:
-                DINIT(bug("[ATA  ] Found signature for SATA device\n"));
+                DINIT(bug("[ATA  ] ata_ReadSignature: Found signature for SATA device\n"));
                 return DEV_SATA;
 
             case 0x6996:
-                DINIT(bug("[ATA  ] Found signature for SATAPI device\n"));
+                DINIT(bug("[ATA  ] ata_ReadSignature: Found signature for SATAPI device\n"));
                 return DEV_SATAPI;
 
             default:
                 if (((tmp1 | tmp2) == 0xff) &&
                     ((tmp1 & tmp2) == 0x00))
                 {
-                    bug("[ATA  ] Found valid subtype, but don't know how to handle this device: %02lx %02lx\n", tmp1, tmp2);
+                    bug("[ATA  ] ata_ReadSignature: Found valid subtype, but don't know how to handle this device: %02lx %02lx\n", tmp1, tmp2);
                 }
                 else
                 {
-                    bug("[ATA  ] Invalid signature: %02lx %02lx\n", tmp1, tmp2);
+                    bug("[ATA  ] ata_ReadSignature: Invalid signature: %02lx %02lx\n", tmp1, tmp2);
                 }
                 return DEV_NONE;
         }
@@ -2335,7 +2372,7 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
 
     /* Set and then reset the soft reset bit in the Device Control
      * register.  This causes device 0 be selected */
-    D(bug("[ATA] ata_ResetBus(%d)\n", bus->ab_BusNum));
+    D(bug("[ATA  ] ata_ResetBus(%d)\n", bus->ab_BusNum));
     ata_out(0xa0 | (0 << 4), ata_DevHead, port);    /* Select it never the less */
     ata_400ns(bus->ab_Alt);
 
@@ -2346,25 +2383,25 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
 
     /* If there is a device 0, wait for device 0 to clear BSY */
     if (DEV_NONE != bus->ab_Dev[0]) {
-        D(bug("[ATA%02d] Wait for Device to clear BSY\n", ((bus->ab_BusNum << 1 ) + 0)));
+        D(bug("[ATA%02ld] ata_ResetBus: Wait for Device to clear BSY\n", ((bus->ab_BusNum << 1 ) + 0)));
         TimeOut = 1000;     /* Timeout 1s (1ms x 1000) */
         while ( 1 ) {
             if( (ata_ReadStatus(bus) & ATAF_BUSY) == 0 )
                 break;
             ata_usleep(tr, 1000);
             if (!(--TimeOut)) {
-                D(bug("[ATA%02d] Device Timed Out!\n", ((bus->ab_BusNum << 1 ) + 0)));
+                D(bug("[ATA%02ld] ata_ResetBus: Device Timed Out!\n", ((bus->ab_BusNum << 1 ) + 0)));
                 bus->ab_Dev[0] = DEV_NONE;
                 break;
             }
         }
-        D(bug("[ATA%02d] Wait left after %d ms\n", ((bus->ab_BusNum << 1 ) + 0), (1000 - TimeOut)));
+        D(bug("[ATA%02ld] ata_ResetBus: Wait left after %d ms\n", ((bus->ab_BusNum << 1 ) + 0), (1000 - TimeOut)));
     }
 
     /* If there is a device 1, wait until device 1 allows
      * register access */
     if (DEV_NONE != bus->ab_Dev[1]) {
-        D(bug("[ATALOW] Wait DEV1 to allow access\n"));
+        D(bug("[ATA  ] ata_ResetBus: Wait DEV1 to allow access\n"));
         ata_out(0xa0 | (1 << 4), ata_DevHead, port);
         ata_400ns(bus->ab_Alt);
         TimeOut = 1000;     /* Timeout 1s (1ms x 1000) */
@@ -2373,27 +2410,27 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
                 break;
             ata_usleep(tr, 1000);
             if (!(--TimeOut)) {
-                D(bug("DEV1 1/2 TimeOut!\n"));
+                D(bug("[ATA  ] ata_ResetBus: DEV1 1/2 TimeOut!\n"));
                 bus->ab_Dev[1] = DEV_NONE;
                 break;
             }
         }
-        D(bug("DEV1 1/2 Wait left after %d ms\n", (1000 - TimeOut)));
+        D(bug("[ATA  ] ata_ResetBus: DEV1 1/2 Wait left after %d ms\n", (1000 - TimeOut)));
 
         if (DEV_NONE != bus->ab_Dev[1]) {
-            D(bug("[ATA%02d] Wait for Device to clear BSY\n", ((bus->ab_BusNum << 1 ) + 1)));
+            D(bug("[ATA%02ld] ata_ResetBus: Wait for Device to clear BSY\n", ((bus->ab_BusNum << 1 ) + 1)));
             TimeOut = 1000;     /* Timeout 1s (1ms x 1000) */
             while ( 1 ) {
                 if( (ata_ReadStatus(bus) & ATAF_BUSY) == 0 )
                     break;
                 ata_usleep(tr, 1000);
                 if (!(--TimeOut)) {
-                    D(bug("[ATA%02d] Device Timed Out!\n", ((bus->ab_BusNum << 1 ) + 1)));
+                    D(bug("[ATA%02ld] ata_ResetBus: Device Timed Out!\n", ((bus->ab_BusNum << 1 ) + 1)));
                     bus->ab_Dev[1] = DEV_NONE;
                     break;
                 }
             }
-            D(bug("[ATA%02d] Wait left after %d ms\n", ((bus->ab_BusNum << 1 ) + 1), 1000 - TimeOut));
+            D(bug("[ATA%02ld] ata_ResetBus: Wait left after %d ms\n", ((bus->ab_BusNum << 1 ) + 1), 1000 - TimeOut));
         }
     }
 
@@ -2431,7 +2468,7 @@ void ata_InitBus(struct ata_Bus *bus)
     ULONG port = bus->ab_Port;
     UBYTE tmp1, tmp2;
 
-    bug("[ATA  ] ata_InitBus()\n");
+    bug("[ATA  ] ata_InitBus(%d)\n", bus->ab_BusNum);
 
     struct MsgPort *p = CreateMsgPort();
     struct timerequest *tr = (struct timerequest *)CreateIORequest((struct MsgPort *)p,
@@ -2461,7 +2498,7 @@ void ata_InitBus(struct ata_Bus *bus)
 
     if ((tmp1 == 0x55) && (tmp2 == 0xaa))
         bus->ab_Dev[0] = DEV_UNKNOWN;
-    D(bug("[ATA%02d] Device type = %x\n", (bus->ab_BusNum << 1 ) + 0, bus->ab_Dev[0]));
+    D(bug("[ATA%02ld] ata_InitBus: Device type = %x\n", (bus->ab_BusNum << 1 ) + 0, bus->ab_Dev[0]));
 
     /* Select device 1 */
     ata_out(0xb0, ata_DevHead, port);
@@ -2480,7 +2517,7 @@ void ata_InitBus(struct ata_Bus *bus)
 
     if ((tmp1 == 0x55) && (tmp2 == 0xaa))
         bus->ab_Dev[1] = DEV_UNKNOWN;
-    D(bug("[ATA%02d] Device type = %x\n", (bus->ab_BusNum << 1 ) + 1, bus->ab_Dev[1]));
+    D(bug("[ATA%02ld] ata_InitBus: Device type = %x\n", (bus->ab_BusNum << 1 ) + 1, bus->ab_Dev[1]));
 
     ata_ResetBus(tr, bus);
 
@@ -2516,15 +2553,17 @@ static ULONG atapi_EndCmd(struct ata_Unit *unit)
 {
     UBYTE status;
 
+    DATAPI(bug("[ATA%02ld] atapi_EndCmd()\n", unit->au_UnitNum));
+
     /*
      * read alternate status register (per specs)
      */
     status = ata_in(ata_AltStatus, unit->au_Bus->ab_Alt);
-    DATAPI(bug("[ATAPI] Alternate status: %lx\n", status));
+    DATAPI(bug("[ATA%02ld] atapi_EndCmd: Alternate status: %lx\n", unit->au_UnitNum, status));
        
     status = ata_in(atapi_Status, unit->au_Bus->ab_Port);
 
-    DATAPI(bug("[ATAPI] Command complete. Status: %lx\n", status));
+    DATAPI(bug("[ATAPI] atapi_EndCmd: Command complete. Status: %lx\n", unit->au_UnitNum, status));
     
     if (!(status & ATAPIF_CHECK))
     {
@@ -2533,7 +2572,7 @@ static ULONG atapi_EndCmd(struct ata_Unit *unit)
     else
     {
        status = ata_in(atapi_Error, unit->au_Bus->ab_Port);
-       DATAPI(bug("[ATAPI] Error code 0x%lx\n", status >> 4));
+       DATAPI(bug("[ATA%02ld] atapi_EndCmd: Error code 0x%lx\n", unit->au_UnitNum, status >> 4));
        return ErrorMap[status >> 4];
     }
 }
