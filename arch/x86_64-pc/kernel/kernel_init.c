@@ -21,9 +21,9 @@
 
 #define CONFIG_LAPICS
 
-extern const unsigned char start64[];
-extern const unsigned char _binary_smpbootstrap_start[];
-extern const unsigned char _binary_smpbootstrap_size[];
+extern const unsigned long start64;
+extern const void * _binary_smpbootstrap_start;
+extern const unsigned long _binary_smpbootstrap_size;
 
 IPTR           _kern_initflags = 0;
 
@@ -58,14 +58,14 @@ void __clear_bss(struct TagItem *msg)
 {
     struct KernelBSS *bss;
     bss = krnGetTagData(KRN_KernelBss, 0, msg);
-    
+
     if (bss)
     {
         while (bss->addr)
         {
             bzero(bss->addr, bss->len);
             bss++;
-        }   
+        }
     }
 }
 
@@ -253,8 +253,8 @@ int kernel_cstart(struct TagItem *msg, void *entry)
         _kern_initflags |= KERNBOOTFLAG_SERDEBUGCONFIGURED;
     }
 
-    rkprintf("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [asm stub @ %p].\n", kernel_cstart, start64);
-//        while(1) asm volatile("hlt");
+    rkprintf("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [asm stub @ %p].\n", kernel_cstart, &start64);
+
     _APICBase = core_APICGetMSRAPICBase();
     _APICID = core_APICGetID(_APICBase);
     rkprintf("[Kernel] kernel_cstart: launching on APIC ID %d, base @ %p\n", _APICID, _APICBase);
@@ -303,8 +303,6 @@ int kernel_cstart(struct TagItem *msg, void *entry)
         _kern_early_ACPIRSDP = core_ACPIProbe(msg);
         rkprintf("[Kernel] kernel_cstart: core_ACPIProbe() returned %p\n", _kern_early_ACPIRSDP);
 
-#warning "TODO: Allocate Trampoline page better"
-
         IPTR lowpages = (krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
 
         rkprintf("[Kernel] kernel_cstart: lowpages = %p\n", lowpages);
@@ -317,11 +315,11 @@ int kernel_cstart(struct TagItem *msg, void *entry)
             rkprintf("[Kernel] kernel_cstart: Allocated %d bytes for APIC Trampoline @ %p\n", PAGE_SIZE, _Kern_APICTrampolineBase);
 
 #if defined(CONFIG_LAPICS)       
-            memcpy(_Kern_APICTrampolineBase, _binary_smpbootstrap_start,
-                        _binary_smpbootstrap_size);
+            memcpy(_Kern_APICTrampolineBase, &_binary_smpbootstrap_start,
+                        &_binary_smpbootstrap_size);
 
-            rkprintf("[Kernel] kernel_cstart: Copied APIC bootstrap code to Trampoline from %p, %d bytes\n", _binary_smpbootstrap_start,
-                        _binary_smpbootstrap_size);
+            rkprintf("[Kernel] kernel_cstart: Copied APIC bootstrap code to Trampoline from %p, %d bytes\n", &_binary_smpbootstrap_start,
+                        &_binary_smpbootstrap_size);
 #endif
         }
 
@@ -338,7 +336,7 @@ int kernel_cstart(struct TagItem *msg, void *entry)
         core_ProtKernelArea(addr, len, 1, 0, 1);
 
         /* Lock page 0! */
-        core_ProtKernelArea(0, 1, 0, 0, 0);
+        core_ProtKernelArea(0, PAGE_SIZE, 0, 0, 0);
     }
     else
     {
@@ -383,7 +381,7 @@ int kernel_cstart(struct TagItem *msg, void *entry)
 /* Small delay routine used by exec_cinit initializer */
 asm("\ndelay:\t.short   0x00eb\n\tretq");
 
-static uint64_t __attribute__((used)) tmp_stack[128]={01,};
+static uint64_t __attribute__((used, section(".data"), aligned(16))) tmp_stack[128];
 static const uint64_t *tmp_stack_end __attribute__((used, section(".text"))) = &tmp_stack[120];
 static uint64_t stack[STACK_SIZE] __attribute__((used));
 static uint64_t stack_panic[STACK_SIZE] __attribute__((used));

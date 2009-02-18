@@ -78,7 +78,7 @@ AROS_UFH1(int, ACPI_hook_Table_LAPIC_Parse,
     rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Local APIC %d:%d  [Flags=%08x]\n", processor->acpi_id, processor->id, processor->flags);
 
 #if defined(CONFIG_LAPICS)
-    if ((KernelBase->kb_APICIDMap[0] != processor->acpi_id) && processor->flags.enabled)
+    if ((KernelBase->kb_APICIDMap[0] != processor->id) && processor->flags.enabled)
     {
         if (_Kern_APICTrampolineBase != NULL)
         {
@@ -95,7 +95,7 @@ AROS_UFH1(int, ACPI_hook_Table_LAPIC_Parse,
             }
             FreeVec(apic_oldmap);
 
-            KernelBase->kb_APICIDMap[apic_newid] != processor->acpi_id;
+            KernelBase->kb_APICIDMap[apic_newid] = processor->id;
 
 #if (0)
             /* Allow access to page 0 again */
@@ -121,7 +121,7 @@ AROS_UFH1(int, ACPI_hook_Table_LAPIC_Parse,
             *((volatile unsigned short *)0x467) = _Kern_APICTrampolineBase & 0xf;
 #endif
             /* Start IPI sequence */
-            unsigned long wakeresult = core_APICIPIWake(processor->acpi_id, _Kern_APICTrampolineBase);
+            unsigned long wakeresult = core_APICIPIWake(processor->id, _Kern_APICTrampolineBase);
 
 #if (0)
             /* Lock page 0 access again! */
@@ -132,7 +132,7 @@ AROS_UFH1(int, ACPI_hook_Table_LAPIC_Parse,
         }
         else
         {
-            rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Warning - No APIC Trampoline.. Cannot start apic id %d\n", processor->acpi_id);
+            rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Warning - No APIC Trampoline.. Cannot start apic id %d\n", processor->id);
             return 0;
         }
     }
