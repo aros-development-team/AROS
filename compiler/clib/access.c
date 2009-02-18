@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <proto/dos.h>
 #include <dos/filesystem.h>
+#include <string.h>
 
 #include <aros/debug.h>
 
@@ -71,15 +72,18 @@
     /* Check if the volume exists. Calling Lock on non-existing volume will bring up System Requester */
     if (SplitName(__path_u2a(path), ':', vol, 0, sizeof(vol)-1) != -1)
     {
-        dl = LockDosList(LDF_ALL | LDF_READ);
-        dl = FindDosEntry(dl, vol, LDF_ALL);
-        UnLockDosList(LDF_ALL | LDF_READ);
-        /* Volume / Assign / Device not found */
-        if (dl == NULL)
-        {
-            errno = ENOENT;
-            return -1;
-        }
+	if(strcmp(vol, "PROGDIR") != 0)
+	{
+            dl = LockDosList(LDF_ALL | LDF_READ);
+            dl = FindDosEntry(dl, vol, LDF_ALL);
+            UnLockDosList(LDF_ALL | LDF_READ);
+            /* Volume / Assign / Device not found */
+            if (dl == NULL)
+            {
+                errno = ENOENT;
+                return -1;
+            }
+	}
     }
 
     /* Create a lock and examine a lock */
