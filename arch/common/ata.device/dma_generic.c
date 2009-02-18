@@ -41,12 +41,14 @@
     else will even touch PRD. It should be however truth, as for given bus all
     ATA accesses are protected with a semaphore.
 */
-LONG dma_Setup(APTR adr, ULONG len, BOOL read, struct PRDEntry* array)
+LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
 {
     ULONG tmp = 0, rem = 0;
     ULONG flg = read ? DMA_ReadFromRAM : 0;
     IPTR phy_mem;
     LONG items = 0;
+
+    D(bug("[ATA  ] dma_Setup(addr %p, len %d, PRDEntry  @ %p for %s)\n", addr, len, array, read ? "READ" : "WRITE"));
 
     /*
      * in future you may have to put this in prd construction procedure
@@ -54,13 +56,13 @@ LONG dma_Setup(APTR adr, ULONG len, BOOL read, struct PRDEntry* array)
     while (0 < len)
     {
         tmp = len;
-        phy_mem = (IPTR)CachePreDMA(adr, &tmp, flg);
+        phy_mem = (IPTR)CachePreDMA(addr, &tmp, flg);
 
-        D(bug("[ATA  ] DMA: Translating V:%08lx > P:%08lx (%ld bytes)\n", adr, phy_mem, tmp));
+        D(bug("[ATA  ] dma_Setup: Translating V:%p > P:%p (%ld bytes)\n", addr, phy_mem, tmp));
         /*
          * update all addresses for the next call
          */
-        adr = &((UBYTE*)adr)[tmp];
+        addr = &((UBYTE*)addr)[tmp];
         len -= tmp;
         flg |= DMA_Continue;
 
@@ -74,12 +76,12 @@ LONG dma_Setup(APTR adr, ULONG len, BOOL read, struct PRDEntry* array)
              */
             if (phy_mem > 0xffffffffull)
             {
-                bug("[ATA  ] DMA ERROR: ATA DMA POINTERS BEYOND MAXIMUM ALLOWED ADDRESS!\n");
+                bug("[ATA  ] dma_Setup: ERROR: ATA DMA POINTERS BEYOND MAXIMUM ALLOWED ADDRESS!\n");
                 return 0;
             }
             if (items > PRD_MAX)
             {
-                bug("[ATA  ] DMA ERROR: ATA DMA PRD TABLE SIZE TOO LARGE\n");
+                bug("[ATA  ] dma_Setup: ERROR: ATA DMA PRD TABLE SIZE TOO LARGE\n");
                 return 0;
             }
 
@@ -93,7 +95,7 @@ LONG dma_Setup(APTR adr, ULONG len, BOOL read, struct PRDEntry* array)
             /*
              * update PRD with address and remainder
              */
-            D(bug("[ATA  ] DMA: Inserting into PRD Table: %08lx / %ld @ %08lx\n", phy_mem, rem, array));
+            D(bug("[ATA  ] dma_Setup: Inserting into PRD Table: %p / %ld @ %p\n", phy_mem, rem, array));
             array->prde_Address = AROS_LONG2LE(phy_mem);
             array->prde_Length  = AROS_LONG2LE((rem & 0xffff));
             ++array;
@@ -112,7 +114,7 @@ LONG dma_Setup(APTR adr, ULONG len, BOOL read, struct PRDEntry* array)
         --array;
         array->prde_Length |= AROS_LONG2LE(PRDE_EOT);
     }
-    D(bug("[ATA  ] DMA: PRD Table set - %ld items in total.\n", items));
+    D(bug("[ATA  ] dma_Setup: PRD Table set - %ld items in total.\n", items));
     /*
      * PRD table all set.
      */
@@ -128,7 +130,9 @@ BOOL dma_SetupPRD(struct ata_Unit *unit, APTR buffer, ULONG sectors, BOOL io)
 BOOL dma_SetupPRDSize(struct ata_Unit *unit, APTR buffer, ULONG size, BOOL read)
 {
     LONG items = 0;
-    D(bug("[DMA] Setup PRD for %08lx/%ld bytes at %x for %s\n", buffer, size, unit->au_Bus->ab_PRD, read ? "read" : "write"));
+
+    D(bug("[ATA%02ld] dma_SetupPRDSize(buffer @ %p, %ld bytes, PRD @ %x for %s)\n", unit->au_UnitNum, buffer, size, unit->au_Bus->ab_PRD, read ? "READ" : "WRITE"));
+
     items = dma_Setup(buffer, size, read, unit->au_Bus->ab_PRD);
 
     if (0 == items)
@@ -146,16 +150,18 @@ BOOL dma_SetupPRDSize(struct ata_Unit *unit, APTR buffer, ULONG size, BOOL read)
     return TRUE;
 }
 
-VOID dma_Cleanup(APTR adr, ULONG len, BOOL read)
+VOID dma_Cleanup(APTR addr, ULONG len, BOOL read)
 {
     ULONG tmp = 0;
     ULONG flg = read ? DMA_ReadFromRAM : 0;
 
+    D(bug("[ATA  ] dma_Cleanup(%p, %d bytes)\n", addr, len));
+
     while (len > 0)
     {
         tmp = len;
-        CachePostDMA(adr, &tmp, flg);
-        adr = &((UBYTE*)adr)[tmp];
+        CachePostDMA(addr, &tmp, flg);
+        addr = &((UBYTE*)addr)[tmp];
         len -= tmp;
         flg |= DMA_Continue;
     }
@@ -163,6 +169,7 @@ VOID dma_Cleanup(APTR adr, ULONG len, BOOL read)
 
 VOID dma_StartDMA(struct ata_Unit *unit)
 {
+    D(bug("[ATA%02ld] dma_StartDMA()\n", unit->au_UnitNum));
     ata_in(dma_Command, unit->au_DMAPort);
     ata_in(dma_Status, unit->au_DMAPort);
     ata_out(ata_in(dma_Command, unit->au_DMAPort) | DMA_START, dma_Command, unit->au_DMAPort);
@@ -172,6 +179,7 @@ VOID dma_StartDMA(struct ata_Unit *unit)
 
 VOID dma_StopDMA(struct ata_Unit *unit)
 {
+    D(bug("[ATA%02ld] dma_StopDMA()\n", unit->au_UnitNum));
     ata_in(dma_Command, unit->au_DMAPort);
     ata_in(dma_Status, unit->au_DMAPort);
     ata_out(ata_in(dma_Command, unit->au_DMAPort) & ~DMA_START, dma_Command, unit->au_DMAPort);
