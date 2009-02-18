@@ -309,7 +309,7 @@ void ata_HandleIRQ(struct ata_Bus *bus)
      * pass irq ONLY if task is expecting one;
      */
 
-    if (0 != bus->ab_HandleIRQ)
+    if ((u != NULL) && (0 != bus->ab_HandleIRQ))
     {
         /*
          * ok, we have a routine to handle any form of transmission etc.
