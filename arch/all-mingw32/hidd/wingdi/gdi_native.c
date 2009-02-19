@@ -75,21 +75,21 @@ DWORD WINAPI gdithread_entry(LPVOID p)
             	    gdata = (struct gfx_data *)msg.wParam;
             	    if (gdata->bitmap) {
             	    	if (!gdata->fbwin) {
-            	    	    gdata->fbwin = CreateWindow(wcl, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
+            	    	    gdata->fbwin = CreateWindow((LPCTSTR)wcl, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
 						        CW_USEDEFAULT, CW_USEDEFAULT, gdata->width,  gdata->height, NULL, NULL,
 						        wcl_desc.hInstance, NULL);
             	    	    ShowWindow(gdata->fbwin, SW_SHOW);
             	        } else {
             	            wpos.length = sizeof(wpos);
 		            if (GetWindowPlacement(msg.hwnd, &wpos)) {
-            			wpos.rcNormalPosition.right = wpos.rcNormalPosition.left + gdata->width - 1;
-	            	    	wpos.rcNormalPosition.bottom = wpos.rcNormalPosition.top + gdata->height - 1;;
+            			wpos.rcNormalPosition.right = wpos.rcNormalPosition.left + gdata->width;
+	            	    	wpos.rcNormalPosition.bottom = wpos.rcNormalPosition.top + gdata->height;
 	            	    	SetWindowPlacement(msg.hwnd, &wpos);
 	            	    }
 	            	}
 	            	if (gdata->fbwin) {
 	            	    SetWindowLongPtr(gdata->fbwin, GWLP_USERDATA, gdata->bitmap_dc);
-            	            InvalidateRect(gdata->fbwin, NULL, FALSE);
+            	            RedrawWindow(gdata->fbwin, NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
             	        }
             	    } else {
             	        if (gdata->fbwin) {
