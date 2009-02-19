@@ -188,6 +188,7 @@ pid_t __vfork(jmp_buf env)
     /* Backup parent fd descriptor table */
     struct arosc_privdata *ppriv = GetIntETask(this)->iet_acpd;
 
+    udata->parent_acpd_fd_mempool = ppriv->acpd_fd_mempool;
     udata->parent_acpd_numslots = ppriv->acpd_numslots;
     udata->parent_acpd_fd_array = ppriv->acpd_fd_array;
 
@@ -252,6 +253,7 @@ pid_t __vfork(jmp_buf env)
 
 	D(bug("__vfork: restoring old fd_array\n"));
 	/* Restore parent's old fd_array */
+	((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_fd_mempool = GETUDATA->parent_acpd_fd_mempool;
 	((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_numslots = GETUDATA->parent_acpd_numslots;
 	((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_fd_array =  GETUDATA->parent_acpd_fd_array;
 
@@ -266,8 +268,10 @@ pid_t __vfork(jmp_buf env)
 	return (pid_t) 1; /* not reached */
     }
 
-    __get_arosc_privdata()->acpd_vfork_data = udata;
-    __get_arosc_privdata()->acpd_flags |= PRETEND_CHILD;
+    ppriv->acpd_vfork_data = udata;
+    ppriv->acpd_flags |= PRETEND_CHILD;
+    ppriv->acpd_fd_mempool = udata->cpriv->acpd_fd_mempool;
+    ppriv->acpd_numslots = udata->cpriv->acpd_numslots;
     ppriv->acpd_fd_array = udata->cpriv->acpd_fd_array;
     
     D(bug("__vfork: Jumping to jmp_buf %p\n", &udata->vfork_jump));

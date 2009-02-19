@@ -39,4 +39,6 @@ int __getfirstfd(register int startfd);
 int __open(int wanted_fd, const char *pathname, int flags, int mode);
 void __updatestdio(void);
 LONG __oflags2amode(int flags);
+fdesc *__alloc_fdesc(void);
+void __free_fdesc(fdesc *fdesc);
 #endif

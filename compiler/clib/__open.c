@@ -136,7 +136,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 
     cblock = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR);
     if (!cblock) { D(bug("__open: no memory [1]\n")); goto err; }
-    currdesc = malloc(sizeof(fdesc));
+    currdesc = __alloc_fdesc();
     if (!currdesc) { D(bug("__open: no memory [2]\n")); goto err; }
     currdesc->fdflags = 0;
     currdesc->fcb = cblock;
@@ -254,13 +254,30 @@ success:
 err:
     if (fib) FreeDosObject(DOS_FIB, fib);
     if (cblock) FreeVec(cblock);
-    if (currdesc) free(currdesc);
+    if (currdesc) __free_fdesc(currdesc);
     if (fh && fh != lock) Close(fh);
     if (lock) UnLock(lock);
 
     D(bug("__open: exiting with error %d\n", errno ));
 
     return -1;
+}
+
+fdesc *__alloc_fdesc(void)
+{
+    fdesc * fdesc;
+    
+    fdesc = AllocPooled(__fd_mempool, sizeof(fdesc));
+    
+    D(bug("Allocated fdesc %x from %x pool\n", fdesc, __fd_mempool));
+    
+    return fdesc;
+}
+
+void __free_fdesc(fdesc *fdesc)
+{
+    D(bug("Freeing fdesc %x from %x pool\n", fdesc, __fd_mempool));
+    FreePooled(__fd_mempool, fdesc, sizeof(fdesc));
 }
 
 
@@ -322,25 +339,25 @@ int __init_stdfiles(void)
     (
         res == -1                           ||
 	!(infcb  = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) ||
-	!(indesc  = malloc(sizeof(fdesc))) ||
+	!(indesc  = __alloc_fdesc()) ||
 	!(outfcb = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) ||
-	!(outdesc = malloc(sizeof(fdesc))) ||
+	!(outdesc = __alloc_fdesc()) ||
 	!(errfcb = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) ||
-	!(errdesc = malloc(sizeof(fdesc)))
+	!(errdesc = __alloc_fdesc())
     )
     {
         if(infcb)
             FreeVec(infcb);
         if(indesc)
-            free(indesc);
+            __free_fdesc(indesc);
         if(outfcb)
             FreeVec(outfcb);
         if(outdesc)
-            free(outdesc);
+            __free_fdesc(outdesc);
         if(errfcb)
             FreeVec(errfcb);
         if(errdesc)
-            free(errdesc);
+            __free_fdesc(errdesc);
     	SetIoErr(ERROR_NO_FREE_STORE);
     	return 0;
     }
@@ -383,7 +400,7 @@ static int __copy_fdarray(fdesc **__src_fd_array, int numslots)
             if(__getfdslot(i) != i)
                 return 0;
             
-            if((__fd_array[i] = malloc(sizeof(fdesc))) == NULL)
+            if((__fd_array[i] = __alloc_fdesc()) == NULL)
                 return 0;
             
             __fd_array[i]->fdflags = 0;
@@ -405,6 +422,8 @@ int __init_fd(void)
         __init_vars();
         __fdinit = 1;
     }
+
+    __fd_mempool = CreatePool(MEMF_PUBLIC, 16*sizeof(fdesc), 16*sizeof(fdesc));
     
     ObtainSemaphore(&__fdsem);
     ForeachNode(&__fdreglist, regnodeit)
@@ -442,6 +461,7 @@ void __exit_fd(void)
 	if (__fd_array[--i])
 	    close(i);
     }
+    DeletePool(__fd_mempool);
 }
 
 #include <stdio.h>

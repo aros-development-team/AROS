@@ -119,9 +119,9 @@ static AROS_UFH3(LONG, wait_entry,
     if (aroscbase == NULL)
         goto err2;
 
-    newin = malloc(sizeof(fdesc));
-    newout = malloc(sizeof(fdesc));
-    newerr = malloc(sizeof(fdesc));
+    newin = __alloc_fdesc();
+    newout = __alloc_fdesc();
+    newerr = __alloc_fdesc();
     if(!newin || !newout || !newerr)
     {
 	goto err2;
