@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function opendir().
@@ -127,7 +127,7 @@
         errno = ENOMEM;
         goto err4;
     }
-    desc = malloc(sizeof(fdesc));
+    desc = __alloc_fdesc();
     if(!desc)
     {
         errno = ENOMEM;

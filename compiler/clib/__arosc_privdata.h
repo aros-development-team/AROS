@@ -51,6 +51,7 @@ struct arosc_privdata
     struct DateStamp acpd_startup_datestamp;
 
     /* __open.c */
+    APTR acpd_fd_mempool;
     int    acpd_numslots;
     struct _fdesc **acpd_fd_array;
 
@@ -127,6 +128,7 @@ struct arosc_privdata
 #define __env_list                            (__get_arosc_privdata()->acpd_env_list)
 #define __stdio_files                         (__get_arosc_privdata()->acpd_stdio_files)
 #define __numslots                            (__get_arosc_privdata()->acpd_numslots)
+#define __fd_mempool                          (__get_arosc_privdata()->acpd_fd_mempool)
 #define __fd_array                            (__get_arosc_privdata()->acpd_fd_array)
 #define __startup_memsem                      (__get_arosc_privdata()->acpd_startup_memsem)
 #define __startup_mempool                     (__get_arosc_privdata()->acpd_startup_mempool)

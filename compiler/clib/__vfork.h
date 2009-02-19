@@ -39,6 +39,7 @@ struct vfork_data
     APTR old_UserData;
     ULONG child_id;
     BYTE parent_signal;
+    APTR parent_acpd_fd_mempool;
     void *parent_acpd_fd_array;
     int parent_acpd_numslots;
     BPTR parent_curdir;

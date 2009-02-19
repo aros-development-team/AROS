@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function closedir().
@@ -67,7 +67,7 @@
         UnLock(desc->fcb->fh);
         FreeVec(desc->fcb);
     }
-    free(desc);
+    __free_fdesc(desc);
     __setfdesc(dir->fd, NULL);
 
     FreeDosObject(DOS_FIB, dir->priv);

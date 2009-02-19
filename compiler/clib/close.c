@@ -86,7 +86,7 @@
 	FreeVec(fdesc->fcb);
     }
 
-    free(fdesc);
+    __free_fdesc(fdesc);
     __setfdesc(fd, NULL);
 
     return 0;

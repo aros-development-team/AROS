@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function dup2().
@@ -66,7 +66,7 @@
 	return -1;
     }
 
-    newfdesc = malloc(sizeof(fdesc));
+    newfdesc = __alloc_fdesc();
     if(!newfdesc)
     {
 	errno = ENOMEM;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -54,27 +54,27 @@
 
     if (
 	(rfcb = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) == NULL ||
-	(rdesc = malloc(sizeof(fdesc))) == NULL ||
+	(rdesc = __alloc_fdesc()) == NULL ||
 	(wfcb = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) == NULL ||
-	(wdesc = malloc(sizeof(fdesc))) == NULL
+	(wdesc = __alloc_fdesc()) == NULL
     )
     {
 	if(rfcb)
 	    FreeVec(rfcb);
 	if(rdesc)
-	    free(rdesc);
+	    __free_fdesc(rdesc);
 	if(wfcb)
 	    FreeVec(wfcb);
 	if(wdesc)
-	    free(wdesc);
+	    __free_fdesc(wdesc);
 	errno = ENOMEM;
 	return -1;
     }
 
     if (Pipe("XPIPE:", &reader, &writer) != DOSTRUE) {
         errno = IoErr2errno(IoErr());
-        free(rdesc);
-        free(wdesc);
+        __free_fdesc(rdesc);
+        __free_fdesc(wdesc);
         return -1;
     }
 
