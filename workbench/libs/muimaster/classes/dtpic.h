@@ -2,7 +2,7 @@
 #define _MUI_CLASSES_DTPIC_H
 
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,7 +10,7 @@
 #define MUIC_Dtpic          "Dtpic.mui"
 
 /*** Attributes *************************************************************/
-#define MUIA_Dtpic_Name     (MUIB_MUI|0x00423d72) /* i.. STRPTR */
+#define MUIA_Dtpic_Name     (MUIB_MUI|0x00423d72) /* MUI: V18 isg STRPTR */
 
 extern const struct __MUIBuiltinClass _MUI_Dtpic_desc; /* PRIV */
 
