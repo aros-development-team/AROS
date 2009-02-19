@@ -19,13 +19,13 @@
 
 enum
 {
-    aoHidd_GDIBitMap_Drawable,
-    aoHidd_GDIBitMap_MasterWindow,
+    aoHidd_GDIBitMap_DeviceContext,
+    aoHidd_GDIBitMap_Window,
     num_Hidd_GDIBitMap_Attrs
 };
 
-#define aHidd_GDIBitMap_Drawable	(HiddGDIBitMapAB + aoHidd_GDIBitMap_Drawable)
-#define aHidd_GDIBitMap_MasterWindow	(HiddGDIBitMapAB + aoHidd_GDIBitMap_MasterWindow)
+#define aHidd_GDIBitMap_DeviceContext	(HiddGDIBitMapAB + aoHidd_GDIBitMap_DeviceContext)
+#define aHidd_GDIBitMap_Window		(HiddGDIBitMapAB + aoHidd_GDIBitMap_Window)
 
 
 /* This structure is used for both onscreen and offscreen GDI bitmaps !! */
@@ -38,23 +38,18 @@ enum
 #define IS_GDIBM_ATTR(attr, idx)    ( ( (idx) = (attr) - HiddGDIBitMapAB) < num_Hidd_GDIBitMap_Attrs)
 
 
-/* This structure is used as instance data for both the
-   onbitmap and offbitmap classes.
+/* This structure is used as instance data for the bitmap class.
 */
 
 struct bitmap_data
 {
-    APTR drawable;
+    APTR dc;
     APTR bitmap;
     APTR dc_bitmap;
-    struct WindowControl *winctrl;
-/*  Window	    masterxwindow;    
-    Cursor	    cursor;
-    unsigned long   sysplanemask;
-    Colormap	    colmap;
-    GC 		    gc;	** !!! This is an GDI GC, NOT a HIDD gc */
-    APTR	    display;
-    int		    flags;    
+/*  Cursor	    cursor; */
+    APTR display;
+    APTR window;
+    int	 flags;    
 };
 
 #define BMDF_COLORMAP_ALLOCED 1

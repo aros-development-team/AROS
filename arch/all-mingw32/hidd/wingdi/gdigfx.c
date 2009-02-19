@@ -22,6 +22,7 @@
 #include <exec/memory.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <oop/oop.h>
@@ -34,7 +35,6 @@
 #include "gdigfx_intern.h"
 #include "gdi.h"
 #include "bitmap.h"
-#include "winapi.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -42,13 +42,9 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-#define XFLUSH(x) XCALL(XFlush, x)
-//#define XFLUSH(x)
-
 /****************************************************************************************/
 
 #define IS_GDIGFX_ATTR(attr, idx) ( ( (idx) = (attr) - HiddGDIGfxAB) < num_Hidd_GDIGfx_Attrs)
-
 
 /* Some attrbases needed as global vars.
   These are write-once read-many */
@@ -74,6 +70,11 @@ static struct OOP_ABDescr attrbases[] =
 
 static VOID cleanupgdistuff(struct gdi_staticdata *xsd);
 static BOOL initgdistuff(struct gdi_staticdata *xsd);
+
+static void GfxIntHandler(struct gfx_data *data, struct Task *task)
+{
+    Signal(task, SIGF_BLIT);
+}
 
 /****************************************************************************************/
 
@@ -320,14 +321,13 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     
     if (framebuffer)
     {
-    	tags[1].ti_Tag	= aHidd_BitMap_ClassPtr;
-	tags[1].ti_Data	= (IPTR)XSD(cl)->onbmclass;
-	D(bug("[GDI] Creating framebuffer, ClassPtr is %p\n", tags[5].ti_Data));
+        D(bug("[GDI] Attempt to create a framebuffer, we don't want it\n"));
+        return NULL;
     }
     else if (displayable)
     {
     	tags[1].ti_Tag	= aHidd_BitMap_ClassPtr;
-	tags[1].ti_Data	= (IPTR)XSD(cl)->offbmclass;
+	tags[1].ti_Data	= (IPTR)XSD(cl)->bmclass;
 	D(bug("[GDI] Creating displayable bitmap, ClassPtr is %p\n", tags[5].ti_Data));
     }
     else
@@ -352,7 +352,7 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 	    	APTR d;
 		
 	    	/* Is the friend a GDI bitmap ? */
-	    	d = (APTR)OOP_GetAttr(friend, aHidd_GDIBitMap_Drawable, (IPTR *)&d);
+	    	d = (APTR)OOP_GetAttr(friend, aHidd_GDIBitMap_DeviceContext, (IPTR *)&d);
 	    	if (d)
 		{
 	    	    usegdi = TRUE;
@@ -382,7 +382,7 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 	if (usegdi)
 	{
 	    tags[1].ti_Tag  = aHidd_BitMap_ClassPtr;
-	    tags[1].ti_Data = (IPTR)XSD(cl)->offbmclass;
+	    tags[1].ti_Data = (IPTR)XSD(cl)->bmclass;
 	    D(bug("[GDI] Creating offscreen bitmap, ClassPtr is %p\n", tags[5].ti_Data));
 	    
 	}
@@ -395,11 +395,6 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     p.attrList = tags;
     
     newbm = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
-    if (NULL != newbm && framebuffer)
-    {
-    	OOP_GetAttr(newbm, aHidd_GDIBitMap_Drawable, &drawable);
-	data->fbwin = (APTR)drawable;
-    }
     ReturnPtr("GDIGfx::NewBitMap", OOP_Object *, newbm);
 }
 
@@ -429,6 +424,7 @@ VOID GDICl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	{
 	    case aoHidd_Gfx_IsWindowed:
 	    case aoHidd_Gfx_SupportsHWCursor:
+	    case aoHidd_Gfx_NoFrameBuffer:
 	    	*msg->storage = (IPTR)TRUE;
 		break;
 	
@@ -449,35 +445,49 @@ VOID GDICl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
-    OOP_Object      *fb = 0;
-    IPTR    	     width, height, modeid;
-    OOP_Object      *pf, *sync;
     struct gfx_data *data;
+    struct Task *me;
+    void *gfx_int;
+    IPTR bm_win_tags[] = {aHidd_GDIBitMap_Window, 0, TAG_DONE};
 	
     data = OOP_INST_DATA(cl, o);
 
     D(bug("[GDI] hidd.gfx.wingdi::Show(0x%p)\n", msg->bitMap));
 
-    if (!msg->bitMap)
-    {
-    	return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    }
+    me = FindTask(NULL);
+    gfx_int = KrnAddExceptionHandler(2, GfxIntHandler, data, me);
+    if (gfx_int) {
+	LOCK_GDI
+
+	if (data->bitmap) {
+	    D(bug("[GDI] Show(): old displayed bitmap 0x%p\n", data->bitmap));
+	    bm_win_tags[1] = 0;
+	    OOP_SetAttrs(data->bitmap, (struct TagItem *)bm_win_tags);
+	}
+
+	data->bitmap = msg->bitMap;
+	if (msg->bitMap)
+	{
+	    OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_DeviceContext, (IPTR *)&data->bitmap_dc);
+	    OOP_GetAttr(msg->bitMap, aHidd_BitMap_Width, &data->width);
+	    OOP_GetAttr(msg->bitMap, aHidd_BitMap_Height, &data->height);
+	}
+	NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, 0);
+	Wait(SIGF_BLIT);
+
+	if (msg->bitMap) {
+	    bm_win_tags[1] = (IPTR)data->fbwin;
+	    OOP_SetAttrs(msg->bitMap, (struct TagItem *)bm_win_tags);
+	}
     
-    OOP_GetAttr(msg->bitMap, aHidd_BitMap_ModeID, &modeid);
-    if ( HIDD_Gfx_GetMode(o, (HIDDT_ModeID)modeid, &sync, &pf))
-    {
-    	struct MsgPort *port;
-	
-    	OOP_GetAttr(msg->bitMap, aHidd_BitMap_Width, &width);
-	OOP_GetAttr(msg->bitMap, aHidd_BitMap_Height, &height);
-		
-	/* Send resize message to the GDI thread */
-	NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_RESIZEWINDOW, width, height);
-		
-	fb = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    	/* Hosted system has no real blitter, however we have host-side window service thread that does some work asynchronously,
+	   and this looks like a real blitter. So we use this signal. */
+	UNLOCK_GDI
+	KrnRemExceptionHandler(gfx_int);
+	return msg->bitMap;
     }
-    
-    return fb;
+    return NULL;
+
 }
 
 /****************************************************************************************/
@@ -487,18 +497,17 @@ VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
     ULONG   	     	 mode;
     APTR 	     	 src = NULL, dest = NULL;
     struct gfx_data 	*data;
-    struct bitmap_data  *bmdata;
     
     data = OOP_INST_DATA(cl, o);
     
     mode = GC_DRMD(msg->gc);
     
-    OOP_GetAttr(msg->src,  aHidd_GDIBitMap_Drawable, (IPTR *)&src);
-    OOP_GetAttr(msg->dest, aHidd_GDIBitMap_Drawable, (IPTR *)&dest);
+    OOP_GetAttr(msg->src,  aHidd_GDIBitMap_DeviceContext, (IPTR *)&src);
+    OOP_GetAttr(msg->dest, aHidd_GDIBitMap_DeviceContext, (IPTR *)&dest);
 	
     if (NULL == dest || NULL == src)
     {
-	/* The destination object is no GDI bitmap, onscreen nor offscreen.
+	/* The destination object is no GDI bitmap.
 	    Let the superclass do the copying in a more general way
 	*/
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -507,10 +516,6 @@ VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
     }
 
     LOCK_GDI
-    /* This may seem ugly, but we know nobody has subclassed
-       the gdi class, since it's private
-    */
-    bmdata = OOP_INST_DATA(XSD(cl)->onbmclass, msg->src);
     GDICALL(BitBlt, dest, msg->destX, msg->destY, msg->width, msg->height, src, msg->srcX, msg->srcY, SRCCOPY);
     UNLOCK_GDI
 }

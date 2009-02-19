@@ -18,6 +18,19 @@
 #define CAPTUREBLT	0x40000000
 #define NOMIRRORBITMAP	0x80000000
 
+#define RDW_ERASE	    4
+#define RDW_FRAME	    1024
+#define RDW_INTERNALPAINT   2
+#define RDW_INVALIDATE	    1
+#define RDW_NOERASE	    32
+#define RDW_NOFRAME	    2048
+#define RDW_NOINTERNALPAINT 16
+#define RDW_VALIDATE	    8
+#define RDW_ERASENOW	    512
+#define RDW_UPDATENOW	    256
+#define RDW_ALLCHILDREN	    128
+#define RDW_NOCHILDREN	    64
+
 #define DRIVERVERSION 0
 #define TECHNOLOGY 2
 #define DT_PLOTTER 0
@@ -152,3 +165,10 @@
 
 #define WM_CLOSE 16
 #define WM_QUIT  18
+
+typedef struct tagRECT { 
+  LONG left; 
+  LONG top; 
+  LONG right; 
+  LONG bottom; 
+} RECT;

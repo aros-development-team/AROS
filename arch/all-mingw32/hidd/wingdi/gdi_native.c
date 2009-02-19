@@ -19,7 +19,24 @@ DWORD thread_id;
 
 LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
 {
-    return DefWindowProc(win, msg, wp, lp);
+    HDC bitmap_dc, window_dc;
+    PAINTSTRUCT ps;
+    LONG x, y, xsize, ysize;
+
+    switch(msg) {
+    case WM_PAINT:
+        bitmap_dc = (HDC)GetWindowLongPtr(win, GWLP_USERDATA);
+        window_dc = BeginPaint(win, &ps);
+        x = ps.rcPaint.left;
+        y = ps.rcPaint.top;
+        xsize = ps.rcPaint.right - ps.rcPaint.left + 1;
+        ysize = ps.rcPaint.bottom - ps.rcPaint.top + 1;
+        BitBlt(window_dc, x, y, xsize, ysize, bitmap_dc, x, y, SRCCOPY);
+        EndPaint(win, &ps);
+        return 0;
+    default:
+        return DefWindowProc(win, msg, wp, lp);
+    }
 }
 
 /****************************************************************************************/
@@ -42,7 +59,7 @@ DWORD WINAPI gdithread_entry(LPVOID p)
         NULL,
         "AROS_Screen"
     };
-    struct NewWindowMsg *nw;
+    struct gfx_data *gdata;
 
     wcl_desc.hInstance = GetModuleHandle(NULL);
     wcl = RegisterClass(&wcl_desc);
@@ -54,21 +71,33 @@ DWORD WINAPI gdithread_entry(LPVOID p)
             if (res > 0) {
             	D(printf("[GDI] Got message %lu\n", msg.message));
             	switch (msg.message) {
-            	case NOTY_WINCREATE:
-            	    nw = (struct NewWindowMsg *)msg.wParam;
-            	    nw->window = CreateWindow(wcl, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
-            	        		      CW_USEDEFAULT, CW_USEDEFAULT, nw->xsize,  nw->ysize, NULL, NULL, wcl_desc.hInstance, NULL);
-            	    ShowWindow(nw->window, SW_SHOW);
-            	    UpdateWindow(nw->window);
-            	    CauseException(2);
-            	    break;
-            	case NOTY_RESIZEWINDOW:
-            	    wpos.length = sizeof(wpos);
-            	    if (GetWindowPlacement(msg.hwnd, &wpos)) {
-            	        wpos.rcNormalPosition.right = wpos.rcNormalPosition.left + msg.wParam;
-            	        wpos.rcNormalPosition.bottom = wpos.rcNormalPosition.top + msg.lParam;
-            	        SetWindowPlacement(msg.hwnd, &wpos);
+            	case NOTY_SHOW:
+            	    gdata = (struct gfx_data *)msg.wParam;
+            	    if (gdata->bitmap) {
+            	    	if (!gdata->fbwin) {
+            	    	    gdata->fbwin = CreateWindow(wcl, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
+						        CW_USEDEFAULT, CW_USEDEFAULT, gdata->width,  gdata->height, NULL, NULL,
+						        wcl_desc.hInstance, NULL);
+            	    	    ShowWindow(gdata->fbwin, SW_SHOW);
+            	        } else {
+            	            wpos.length = sizeof(wpos);
+		            if (GetWindowPlacement(msg.hwnd, &wpos)) {
+            			wpos.rcNormalPosition.right = wpos.rcNormalPosition.left + gdata->width - 1;
+	            	    	wpos.rcNormalPosition.bottom = wpos.rcNormalPosition.top + gdata->height - 1;;
+	            	    	SetWindowPlacement(msg.hwnd, &wpos);
+	            	    }
+	            	}
+	            	if (gdata->fbwin) {
+	            	    SetWindowLongPtr(gdata->fbwin, GWLP_USERDATA, gdata->bitmap_dc);
+            	            InvalidateRect(gdata->fbwin, NULL, FALSE);
+            	        }
+            	    } else {
+            	        if (gdata->fbwin) {
+            	            DestroyWindow(gdata->fbwin);
+            	            gdata->fbwin = NULL;
+            	        }
             	    }
+            	    CauseException(2);
             	    break;
             	default:
             	    DispatchMessage(&msg);
