@@ -5,7 +5,7 @@ FLAGS := $(HOST_CFLAGS) -I$(GENINCDIR)
 
 KEYMAPTABLE_FILE := $(AROS_DEVS)/Keymaps/Host/keycode2rawkey.table
 
-FILES := gdi_init gdi_hostlib gdigfx onbitmap offbitmap gdikbd gdimouse
+FILES := gdi_init gdi_hostlib gdigfx bitmap gdikbd gdimouse
 # gdiclipboard xshm fullscreen
 
 #MM kernel-hidd-wingdi-kobj : kernel-hidd-wingdi-native
@@ -28,7 +28,7 @@ SO_LDFLAGS := -shared
 kernel-hidd-wingdi-native: $(NATIVE_BINDIR)/wingdi$(SOEXT)
 
 $(NATIVE_BINDIR)/wingdi$(SOEXT): $(NATIVE_OBJS) $(NATIVE_BINDIR)
-	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(SO_LDFLAGS) $(NATIVE_OBJS) -L $(NATIVE_DIR) -lkernel
+	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(SO_LDFLAGS) $(NATIVE_OBJS) -L $(NATIVE_DIR) -lkernel -lgdi32
 
 $(NATIVE_BINDIR) :
 	mkdir -p $(NATIVE_BINDIR)

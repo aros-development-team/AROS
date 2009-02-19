@@ -13,16 +13,6 @@
 #define WM_USER 1024
 #endif
 
-#define NOTY_WINCREATE    (WM_USER)
-#define NOTY_RESIZEWINDOW (WM_USER+1)
-
-struct NewWindowMsg
-{
-    void *window;
-    ULONG xsize;
-    ULONG ysize;
-};
-
 #ifdef __AROS__
 
 #include <exec/libraries.h>
@@ -31,8 +21,8 @@ struct NewWindowMsg
 
 /* #define GDI_LOAD_KEYMAPTABLE	1*/
 
+#include "winapi.h"
 #include "gdi_hostlib.h"
-
 
 /***** GDIMouse HIDD *******************/
 
@@ -108,8 +98,7 @@ struct gdi_staticdata
     ULONG   	    	     refcount;
 
     OOP_Class 	    	    *gfxclass;
-    OOP_Class 	    	    *onbmclass;
-    OOP_Class 	    	    *offbmclass;
+    OOP_Class 	    	    *bmclass;
     OOP_Class 	    	    *mouseclass;
     OOP_Class 	    	    *kbdclass;
     
@@ -162,15 +151,6 @@ struct gdiclbase
     struct gdi_staticdata xsd;
 };
 
-/* Private instance data for Gfx hidd class */
-struct gfx_data
-{
-    APTR	 display;
-    int		 depth;
-/*  Cursor	 cursor;*/
-    APTR	 fbwin; /* Frame buffer window */
-};
-
 #define HOSTCLIPBOARDSTATE_IDLE     	0
 #define HOSTCLIPBOARDSTATE_READ     	1
 #define HOSTCLIPBOARDSTATE_READ_INCR    2
@@ -196,12 +176,28 @@ VOID  gdiclipboard_handle_event(struct gdi_staticdata *, XEvent *);
 #define LOCK_GDI ObtainSemaphore (&XSD(cl)->gdisema);
 #define UNLOCK_GDI ReleaseSemaphore(&XSD(cl)->gdisema);
 
-#define SRCCOPY 0x00CC0020
+//#define SRCCOPY 0x00CC0020
 
 #else
 
 #include <windows.h>
+#define IPTR ULONG_PTR
 
 #endif
+
+#define NOTY_SHOW WM_USER
+
+/* Private instance data for Gfx hidd class */
+struct gfx_data
+{
+    void *display;
+    ULONG depth;
+/*  Cursor	 cursor;*/
+    void *bitmap;    /* Currently shown bitmap object			*/
+    void *fbwin;     /* Frame buffer window			        */
+    void *bitmap_dc; /* Memory device context of currently shown bitmap */
+    IPTR width;      /* Size of currently shown bitmap (window size)    */
+    IPTR height;
+};
 
 #endif /* HIDD_GDI_H */

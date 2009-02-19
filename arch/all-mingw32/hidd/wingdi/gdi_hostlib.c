@@ -37,8 +37,7 @@ static const char *gdi_func_names[] = {
 };
 
 static const char *user_func_names[] = {
-    "GetDC",
-    "ReleaseDC",
+    "RedrawWindow",
      NULL
 };
 

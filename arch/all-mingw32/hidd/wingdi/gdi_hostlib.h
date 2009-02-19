@@ -20,8 +20,7 @@ struct gdi_func {
 };
 
 struct user_func {
-    __attribute__((stdcall)) APTR (*GetDC)(APTR hWnd);
-    __attribute__((stdcall)) LONG (*ReleaseDC)(APTR hWnd, APTR hDC);
+    __attribute__((stdcall)) ULONG (*RedrawWindow)(APTR hWnd, CONST RECT* lpRect, APTR hrgnUpdate, ULONG flags);
 };
 
 struct native_func {
