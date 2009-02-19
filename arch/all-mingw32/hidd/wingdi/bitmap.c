@@ -144,10 +144,10 @@ HIDDT_Pixel GDIBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o, struct pH
 VOID GDIBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    APTR dc, br;
+    APTR br, orig_br;
     ULONG col, mode;
     
-    D(bug("[GDI] hidd.bitmap.gdibitmap::FillRect(%d,%d,%d,%d)\n", msg->minX, msg->minY, msg->maxX, msg->maxY));
+    D(bug("[GDI] hidd.bitmap.gdibitmap::FillRect(0x%p, %d,%d,%d,%d)\n", o, msg->minX, msg->minY, msg->maxX, msg->maxY));
     
     switch (GC_DRMD(msg->gc)) {
     case vHidd_GC_DrawMode_Clear:
@@ -186,10 +186,12 @@ VOID GDIBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     D(bug("[GDI] Brush color 0x%08lX, mode 0x%08lX\n", col, mode));
     br = GDICALL(CreateSolidBrush, col);
     if (br) {
-        GDICALL(PatBlt, dc, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, mode);
+        orig_br = GDICALL(SelectObject, data->dc, br);
+        GDICALL(PatBlt, data->dc, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, mode);
+        GDICALL(SelectObject, data->dc, orig_br);
         GDICALL(DeleteObject, br);
     }
-    REFRESH(msg->minX, msg->minY, msg->maxX, msg->maxY)
+    REFRESH(msg->minX, msg->minY, msg->maxX + 1 , msg->maxY + 1)
     UNLOCK_GDI    
 }
 
@@ -272,10 +274,8 @@ VOID GDIBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     ULONG   	    	idx;
     
-    D(bug("[GDI] hidd.bitmap.gdibitmap::Get(0x%p)\n", o));
     if (IS_GDIBM_ATTR(msg->attrID, idx))
     {
-        D(bug("[GDI] Getting attr %lu\n", idx));
 	switch (idx)
 	{
 	    case aoHidd_GDIBitMap_DeviceContext:
@@ -288,11 +288,7 @@ VOID GDIBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	}
     }
     else
-    {
-        D(bug("[GDI] 0x%08lX is a superclass attribute\n", msg->attrID));
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    }
-    
 }
 
 /****************************************************************************************/
@@ -303,8 +299,6 @@ VOID GDIBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     struct TagItem  *tag, *tstate;
     ULONG   	    idx;
 
-    EnterFunc(bug("GC::Set()\n"));
-
     tstate = msg->attrList;
     while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
@@ -314,7 +308,6 @@ VOID GDIBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
             {
                 case aoHidd_GDIBitMap_Window:
 		    data->window = (APTR)tag->ti_Data;
-                    D(bug("[GDI] Bitmap 0x%p : displayed in window 0x%p\n", obj, data->window));
 		    break;
 	    }
 	}
