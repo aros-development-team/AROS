@@ -113,7 +113,8 @@ void _aros_not_implemented(char *string) {}
     
 const char exec_chipname[] = "Chip Memory";
 const char exec_fastname[] = "Fast Memory";
-
+const char exec_sysbasename[] = "SysBase";
+const char exec_kernalname[] = "Kernel Memory";
 
 /*
     The MMU pages and directories. They are stored at fixed location and may be either reused in the 
@@ -533,6 +534,49 @@ int exec_main(struct TagItem *msg, void *entry)
         }
 
         SysBase->ChkSum = ~sum;
+    }
+
+    rkprintf("[exec] Registering Special Regions in MemList\n");
+
+    struct MemHeader *mh;
+
+    if ((mh = AllocMem(sizeof(struct MemHeader) + sizeof(struct MemChunk), MEMF_CLEAR)) != NULL)
+    {
+        mh->mh_Node.ln_Type=NT_MEMORY;
+        mh->mh_Node.ln_Pri = -10;
+        mh->mh_Node.ln_Name = exec_sysbasename;
+        mh->mh_Attributes = (MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA);
+        mh->mh_First = mh + sizeof(struct MemHeader);
+        mh->mh_First->mc_Next = NULL;
+        mh->mh_First->mc_Bytes =  (negsize + sizeof(struct ExecBase));
+        mh->mh_Lower = (struct MemChunk *)(SysBase - negsize);
+        mh->mh_Upper = (APTR)((UBYTE *)mh->mh_Lower + mh->mh_First->mc_Bytes);
+        mh->mh_Free = 0; /* All used! */
+
+        Forbid();
+            Enqueue(&SysBase->MemList,&mh->mh_Node);
+        Permit();
+    }
+
+    if ((mh = AllocMem(sizeof(struct MemHeader) + sizeof(struct MemChunk), MEMF_CLEAR)) != NULL)
+    {
+        uintptr_t kernLow = krnGetTagData(KRN_KernelLowest, 0, msg);
+        uintptr_t kernHigh = krnGetTagData(KRN_KernelHighest, 0, msg);
+
+        mh->mh_Node.ln_Type=NT_MEMORY;
+        mh->mh_Node.ln_Pri = -10;
+        mh->mh_Node.ln_Name = exec_kernalname;
+        mh->mh_Attributes = (MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
+        mh->mh_First = mh + sizeof(struct MemHeader);
+        mh->mh_First->mc_Next = NULL;
+        mh->mh_First->mc_Bytes =  kernHigh - kernLow + 1;
+        mh->mh_Lower = kernLow;
+        mh->mh_Upper = kernHigh;
+        mh->mh_Free = 0; /* All used! */
+
+        Forbid();
+            Enqueue(&SysBase->MemList,&mh->mh_Node);
+        Permit();
     }
 
     rkprintf("[exec] Creating the very first task...\n");
