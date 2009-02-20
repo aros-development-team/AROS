@@ -27,7 +27,7 @@
 #include <aros/symbolsets.h>
 
 #define SDEBUG 0
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
@@ -205,14 +205,15 @@ VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
     HIDDT_Pixel     	 fg, bg;
     ULONG   	    	 cemd;
     LONG    	    	 x, y;    
-    APTR 	    	 d = 0;
+    APTR 	    	 d = NULL;
     
     EnterFunc(bug("GDIGfx.BitMap::BlitColorExpansion(%p, %d, %d, %d, %d, %d, %d)\n",
     	    	  msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
 
-/*  OOP_GetAttr(msg->srcBitMap, aHidd_GDIBitMap_Window, (IPTR *)&d);
+/*  OOP_GetAttr(msg->srcBitMap, aHidd_GDIBitMap_DeviceContext, (IPTR *)&d);
+    D(bug("BlitColorExpansion(): Source DC: 0x%p\n", d));
     
-    if (0 == d)
+    if (!d)
     {*/
     	/* We know nothing about the source bitmap. Let the superclass handle this */
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -223,48 +224,15 @@ VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
     bg = GC_BG(msg->gc);
     cemd = GC_COLEXP(msg->gc);
 
-    if (0 != d)
-    {
-    	LOCK_GDI    
-
-	XCALL(XSetForeground, data->display, data->gc, fg);
-		
-    	if (cemd & vHidd_GC_ColExp_Opaque)  
-	{
-	    XCALL(XSetBackground, data->display, data->gc, bg);
-	    XCALL(XSetFunction, data->display, data->gc, GXcopy);
-	    
-	    XCALL(XCopyPlane, data->display, d, DRAWABLE(data), data->gc,
-	    	       msg->srcX, msg->srcY, msg->width, msg->height,
-		       msg->destX, msg->destY, 0x01);
-	}
-	else
-	{*/
-	    /* Do transparent blit */
-/*	    
-	    XGCValues val;
-	    
-	    val.stipple		= d;
-	    val.ts_x_origin	= msg->destX - msg->srcX;
-	    val.ts_y_origin	= msg->destY - msg->srcY;
-	    val.fill_style	= FillStippled;
-
-	    XCALL(XSetFunction, data->display, data->gc, GC_DRMD(msg->gc));
-	    
-	    XCALL(XChangeGC, data->display, data->gc,
-	    	      GCStipple|GCTileStipXOrigin|GCTileStipYOrigin|GCFillStyle,
-		      &val);
-		      
-	    XCALL(XFillRectangle, data->display, DRAWABLE(data), data->gc,
-	    	    	   msg->destX, msg->destY, msg->width, msg->height);
-	    
-	    XCALL(XSetFillStyle, data->display, data->gc, FillSolid);
-
-	}
-	
-    	UNLOCK_GDI	
-
-    }*/
+    LOCK_GDI
+  if (cemd & vHidd_GC_ColExp_Opaque) {
+	GDICALL(BitBlt, data->dc, msg->destX, msg->destY, msg->width, msg->height, d, msg->srcX, msg->srcY, SRCCOPY);
+  } else {
+    	MSIMGCALL(TransparentBlt, data->dc, msg->destX, msg->destY, msg->width, msg->height,
+		  d, msg->srcX, msg->srcY, 0);
+    }
+    REFRESH(msg->destX, msg->destY, msg->destX + msg->width, msg->destY + msg->height);
+    UNLOCK_GDI*/
 }
 
 /****************************************************************************************/

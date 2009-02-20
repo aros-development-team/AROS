@@ -60,6 +60,7 @@ DWORD WINAPI gdithread_entry(LPVOID p)
         "AROS_Screen"
     };
     struct gfx_data *gdata;
+    LONG width, height;
 
     wcl_desc.hInstance = GetModuleHandle(NULL);
     wcl = RegisterClass(&wcl_desc);
@@ -74,16 +75,18 @@ DWORD WINAPI gdithread_entry(LPVOID p)
             	case NOTY_SHOW:
             	    gdata = (struct gfx_data *)msg.wParam;
             	    if (gdata->bitmap) {
+            	        width = GetSystemMetrics(SM_CXFIXEDFRAME) * 2 + gdata->width;
+            	        height = GetSystemMetrics(SM_CYFIXEDFRAME) * 2 + gdata->height + GetSystemMetrics(SM_CYCAPTION);
             	    	if (!gdata->fbwin) {
-            	    	    gdata->fbwin = CreateWindow((LPCTSTR)wcl, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
-						        CW_USEDEFAULT, CW_USEDEFAULT, gdata->width,  gdata->height, NULL, NULL,
+            	    	    gdata->fbwin = CreateWindow(wcl, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
+						        CW_USEDEFAULT, CW_USEDEFAULT, width,  height, NULL, NULL,
 						        wcl_desc.hInstance, NULL);
             	    	    ShowWindow(gdata->fbwin, SW_SHOW);
             	        } else {
             	            wpos.length = sizeof(wpos);
 		            if (GetWindowPlacement(msg.hwnd, &wpos)) {
-            			wpos.rcNormalPosition.right = wpos.rcNormalPosition.left + gdata->width;
-	            	    	wpos.rcNormalPosition.bottom = wpos.rcNormalPosition.top + gdata->height;
+            			wpos.rcNormalPosition.right = wpos.rcNormalPosition.left + width;
+	            	    	wpos.rcNormalPosition.bottom = wpos.rcNormalPosition.top + height;
 	            	    	SetWindowPlacement(msg.hwnd, &wpos);
 	            	    }
 	            	}
