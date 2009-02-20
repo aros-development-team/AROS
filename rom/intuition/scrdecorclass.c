@@ -4,6 +4,8 @@
     $Id$
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
 
 #include <dos/dos.h>
 #include <dos/dosextens.h>
@@ -136,7 +138,9 @@ static UWORD getbgpen(ULONG state, UWORD *pens)
 IPTR ScrDecorClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct scrdecor_data *data;
-    
+
+    D(bug("[SCRDECOR] ScrDecorClass__OM_NEW()\n"));
+
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (obj)
     {
@@ -154,6 +158,8 @@ IPTR ScrDecorClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 IPTR ScrDecorClass__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
     struct scrdecor_data *data = INST_DATA(cl, obj);
+
+    D(bug("[SCRDECOR] ScrDecorClass__OM_GET()\n"));
 
     switch(msg->opg_AttrID)
     {
@@ -180,7 +186,9 @@ IPTR ScrDecorClass__SDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct sdpGe
     ULONG def_low_width = DEFSIZE_WIDTH, def_low_height = DEFSIZE_HEIGHT;
     ULONG def_med_width = DEFSIZE_WIDTH, def_med_height = DEFSIZE_HEIGHT;
     ULONG def_high_width = DEFSIZE_WIDTH, def_high_height = DEFSIZE_HEIGHT;
-    
+
+    D(bug("[SCRDECOR] ScrDecorClass__SDM_GETDEFSIZE_SYSIMAGE()\n"));
+
     switch(msg->sdp_Which)
     {
 	case SDEPTHIMAGE:
@@ -234,7 +242,9 @@ IPTR ScrDecorClass__SDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct sdpDrawSysI
     LONG   	    	  height = msg->sdp_Height;
     LONG    	    	  right = left + width - 1;
     LONG    	    	  bottom = top + height - 1;
-    
+
+    D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SYSIMAGE()\n"));
+
     SetDrMd(rp, JAM1);
     
     switch(msg->sdp_Which)
@@ -374,30 +384,48 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
     UWORD   	    	 *pens = DRI(msg->sdp_Dri)->dri_Pens;
     LONG    	    	  right, left;
     BOOL    	    	  beeping = FALSE;
-    
+
+    D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR()\n"));
+
 #if 0
 #if USE_NEWDISPLAYBEEP
-        beeping = (msg->sdp_Screen->Flags & BEEPING) && GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8;
+        beeping = (BOOL)((msg->sdp_Screen->Flags & BEEPING) && (GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8));
 #endif
 #endif
 
     findtitlearea(msg->sdp_Screen, &left, &right);
+
+    D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Title_Left = %d, Title_Right = %d\n", left, right));
+
+    D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: RastPort @  %p, Screen @ %p\n", rp, msg->sdp_Screen));
+    D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Screen Dimensions  %dx%d\n", msg->sdp_Screen->Width, msg->sdp_Screen->Height));
+    D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Bar Height  %d\n", msg->sdp_Screen->BarHeight));
 
     SetDrMd(rp, JAM1);
 
     SetAPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
     RectFill(rp, left + 1, 0, right - 1, msg->sdp_Screen->BarHeight - 1);
 
+    D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Filled Bar Area\n"));
+
     SetAPen(rp, pens[beeping ? BARDETAILPEN : BARTRIMPEN]);
     RectFill(rp, 0, msg->sdp_Screen->BarHeight, msg->sdp_Screen->Width - 1, msg->sdp_Screen->BarHeight);
 
-    SetAPen(rp, pens[beeping ? BARBLOCKPEN: BARDETAILPEN]);
-    SetBPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
+    D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Filled Bar Area\n"));
 
-    Move(rp, msg->sdp_Screen->BarHBorder, msg->sdp_Screen->BarVBorder + rp->TxBaseline);
+    if (msg->sdp_Screen->Title)
+    {
+        SetAPen(rp, pens[beeping ? BARBLOCKPEN: BARDETAILPEN]);
+        SetBPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
 
-    Text(rp, msg->sdp_Screen->Title, strlen(msg->sdp_Screen->Title));
-    
+        Move(rp, msg->sdp_Screen->BarHBorder, msg->sdp_Screen->BarVBorder + rp->TxBaseline);
+
+        D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Title Text @ %p\n", msg->sdp_Screen->Title));
+        D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Title '%s'\n", msg->sdp_Screen->Title));
+        Text(rp, msg->sdp_Screen->Title, strlen(msg->sdp_Screen->Title));
+
+        D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Text Rendered\n"));
+    }
     return TRUE;
 }
 
@@ -406,6 +434,8 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
 IPTR ScrDecorClass__SDM_LAYOUT_SCREENGADGETS(Class *cl, Object *obj, struct sdpLayoutScreenGadgets *msg)
 {
     struct Gadget *gadget = msg->sdp_Gadgets;
+
+    D(bug("[SCRDECOR] ScrDecorClass__SDM_LAYOUT_SCREENGADGETS()\n"));
 
     while(gadget)
     {
@@ -435,11 +465,15 @@ IPTR ScrDecorClass__SDM_LAYOUT_SCREENGADGETS(Class *cl, Object *obj, struct sdpL
 
 IPTR ScrDecorClass__SDM_INITSCREEN(Class *cl, Object *obj, struct sdpInitScreen *msg)
 {
+    D(bug("[SCRDECOR] ScrDecorClass__SDM_INITSCREEN()\n"));
+
     return TRUE;
 }
 
 IPTR ScrDecorClass__SDM_EXITSCREEN(Class *cl, Object *obj, struct sdpExitScreen *msg)
 {
+    D(bug("[SCRDECOR] ScrDecorClass__SDM_EXITSCREEN()\n"));
+
     return TRUE;
 }
 
