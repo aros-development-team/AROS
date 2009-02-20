@@ -11,7 +11,8 @@ FILES		:= bootstrap elfloader32 hostlib debug
 KOBJS_DEVICES   := $(KOBJSDIR)/timer_device.o	     $(KOBJSDIR)/gameport_device.o	   \
 		   $(KOBJSDIR)/input_device.o	     $(KOBJSDIR)/console_device.o	   \
 		   $(KOBJSDIR)/keyboard_device.o
-KOBJS_HIDD	:= $(KOBJSDIR)/hiddclass_hidd.o	     $(KOBJSDIR)/graphics_hidd.o
+KOBJS_HIDD	:= $(KOBJSDIR)/hiddclass_hidd.o	     $(KOBJSDIR)/graphics_hidd.o	   \
+		   $(KOBJSDIR)/wingdi_hidd.o
 KOBJS_LIBS	:= $(KOBJSDIR)/exec_library.o	     $(KOBJSDIR)/expansion_library.o	   \
 		   $(KOBJSDIR)/boot_library.o	     $(KOBJSDIR)/dos_library.o		   \
 		   $(KOBJSDIR)/utility_library.o     $(KOBJSDIR)/intuition_library.o	   \
@@ -38,6 +39,7 @@ KOBJS := $(K_RES) $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(KOBJS_HIDD)
 #MM			 kernel-dosboot-kobj		    \
 #MM			 kernel-aros			    \
 #MM			 workbench-hidd-graphics-kobj	    \
+#MM			 kernel-hidd-wingdi-kobj	    \
 #MM			 contrib-amberram-kobj
 
 #MM

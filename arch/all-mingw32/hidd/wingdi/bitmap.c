@@ -39,6 +39,9 @@
 
 /****************************************************************************************/
 
+#define AO(x) 	    	  (aoHidd_BitMap_ ## x)
+#define GOT_BM_ATTR(code) GOT_ATTR(code, aoHidd_BitMap, bitmap)
+
 static OOP_AttrBase HiddBitMapAttrBase;
 static OOP_AttrBase HiddPixFmtAttrBase;
 static OOP_AttrBase HiddGDIGfxAB;
@@ -61,54 +64,6 @@ if (data->window) {				   \
     RECT r = {left, top, right, bottom};	   \
         					   \
     USERCALL(RedrawWindow, data->window, &r, NULL, RDW_INVALIDATE|RDW_UPDATENOW); \
-}
-
-BOOL GDIBM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
-{
-    struct bitmap_data  *data = OOP_INST_DATA(cl, o);
-    HIDDT_PixelFormat 	*pf;    
-    ULONG   	    	 xc_i, col_i;
-
-    pf = BM_PIXFMT(o);
-
-    if (vHidd_ColorModel_StaticPalette == HIDD_PF_COLMODEL(pf) ||
-    	vHidd_ColorModel_TrueColor == HIDD_PF_COLMODEL(pf) )
-    {	 
-	 /* Superclass takes care of this case */
-
-	 return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    }
-
-    /* Ve have a vHidd_GT_Palette bitmap */    
-
-    if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) return FALSE;
-/*    
-    if (data->flags & BMDF_COLORMAP_ALLOCED)
-    {
-    	LOCK_GDI	
-
-	for ( xc_i = msg->firstColor, col_i = 0;
-    	      col_i < msg->numColors; 
-	      xc_i ++, col_i ++ )
-	{
-            XColor xcol;
-
-	    xcol.red   = msg->colors[col_i].red;
-	    xcol.green = msg->colors[col_i].green;
-	    xcol.blue  = msg->colors[col_i].blue;
-	    xcol.pad   = 0;
-	    xcol.pixel = xc_i;
-	    xcol.flags = DoRed | DoGreen | DoBlue;
-	    
-	    XCALL(XStoreColor, data->display, data->colmap, &xcol);
-
-	}
-	
-    	UNLOCK_GDI	
-	
-    }*/ /* if (data->flags & BMDF_COLORMAP_ALLOCED) */
-
-    return TRUE;
 }
 
 /****************************************************************************************/
@@ -141,6 +96,26 @@ HIDDT_Pixel GDIBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o, struct pH
 
 /****************************************************************************************/
 
+/* Table of raster operations (ROPs) corresponding to AROS GC drawmodes */
+static ULONG DrawModeTable[] = {
+    BLACKNESS,
+    0x00A000C9,
+    0x00500325,
+    PATCOPY,
+    0x000A0329,
+    0x00AA0029,
+    PATINVERT,
+    0x00FA0089,
+    0x000500A9,
+    0x00A50065, /* PDnx - not sure */
+    DSTINVERT,
+    0x00F50225,
+    0x000F0001,
+    0x00AF0229,
+    0x005F00E9,
+    WHITENESS
+};
+
 VOID GDIBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
@@ -149,41 +124,11 @@ VOID GDIBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     
     D(bug("[GDI] hidd.bitmap.gdibitmap::FillRect(0x%p, %d,%d,%d,%d)\n", o, msg->minX, msg->minY, msg->maxX, msg->maxY));
     
-    switch (GC_DRMD(msg->gc)) {
-    case vHidd_GC_DrawMode_Clear:
-        col = GC_BG(msg->gc);
-    	mode = BLACKNESS;
-    	break;
-    case vHidd_GC_DrawMode_Copy:
-        col = GC_FG(msg->gc);
-    	mode = PATCOPY;
-    	break;
-    case vHidd_GC_DrawMode_NoOp:
-        return;
-    case vHidd_GC_DrawMode_Xor:
-        col = GC_FG(msg->gc);
-    	mode = PATINVERT;
-    	break;
-    case vHidd_GC_DrawMode_Equiv:
-        col = !GC_FG(msg->gc);
-    	mode = PATINVERT;
-    	break;
-    case vHidd_GC_DrawMode_Invert:
-        col = 0xFFFFFFFF;
-    	mode = PATINVERT;
-    	break;
-    case vHidd_GC_DrawMode_CopyInverted:
-        col = !GC_FG(msg->gc);
-    	mode = PATCOPY;
-    	break;
-    case vHidd_GC_DrawMode_Set:
-        mode = WHITENESS;
-    	break;
-    default:
-        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    }
-    LOCK_GDI
+    col = GC_FG(msg->gc);
+    mode = DrawModeTable[GC_DRMD(msg->gc)];
     D(bug("[GDI] Brush color 0x%08lX, mode 0x%08lX\n", col, mode));
+
+    LOCK_GDI
     br = GDICALL(CreateSolidBrush, col);
     if (br) {
         orig_br = GDICALL(SelectObject, data->dc, br);
@@ -207,11 +152,11 @@ VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
     APTR mask_dc, mask_bm, mask_dc_bm;
     APTR br, dc_br;
     
-    EnterFunc(bug("GDIGfx.BitMap::BlitColorExpansion(%p, %d, %d, %d, %d, %d, %d)\n",
-    	    	  msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
+/*  EnterFunc(bug("GDIGfx.BitMap::BlitColorExpansion(%p, %d, %d, %d, %d, %d, %d)\n",
+    	    	  msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));*/
 
     OOP_GetAttr(msg->srcBitMap, aHidd_GDIBitMap_DeviceContext, (IPTR *)&d);
-    D(bug("BlitColorExpansion(): Source DC: 0x%p\n", d));
+/*  D(bug("BlitColorExpansion(): Source DC: 0x%p\n", d));*/
     
     if (!d)
     {
@@ -331,102 +276,6 @@ VOID GDIBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 
 /****************************************************************************************/
 
-VOID GDIBM__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawLine *msg)
-{
-/*  struct bitmap_data  *data = OOP_INST_DATA(cl, o);
-    OOP_Object      	*gc = msg->gc;
-    
-    if (GC_LINEPAT(gc) != (UWORD)~0)
-    {*/
-    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	
-	return;
-/*  }
-    
-    LOCK_GDI
-    
-    if (GC_DOCLIP(gc))
-    {
-    	XRectangle cr;
-	
-	cr.x = GC_CLIPX1(gc);
-	cr.y = GC_CLIPY1(gc);
-	cr.width  = GC_CLIPX2(gc) - cr.x + 1;
-	cr.height = GC_CLIPY2(gc) - cr.y + 1;
-    
-    	XCALL(XSetClipRectangles, data->display, data->gc,
-	    	    	   0, 0, &cr, 1, Unsorted);
-    }
-    
-    XCALL(XSetForeground, data->display, data->gc, GC_FG(gc));
-    XCALL(XSetFunction, data->display, data->gc, GC_DRMD(gc));
-    
-    XCALL(XDrawLine, data->display, DRAWABLE(data), data->gc,
-    	      msg->x1, msg->y1, msg->x2, msg->y2);
-	
-    if (GC_DOCLIP(gc))
-    {
-    	XCALL(XSetClipMask, data->display, data->gc, None);
-    }	
-    
-    XFLUSH(data->display);
-    
-    UNLOCK_GDI*/
-}
-
-/****************************************************************************************/
-
-VOID GDIBM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawEllipse *msg)
-{
-    EnterFunc(bug("[GDI] hidd.bitmap.gdibitmap::DrawEllipse()\n"));
-/*  struct bitmap_data  *data = OOP_INST_DATA(cl, o);
-    OOP_Object      	*gc = msg->gc;
-    
-    LOCK_GDI
-    
-    if (GC_DOCLIP(gc))
-    {
-    	XRectangle cr;
-	
-    	D(kprintf("GDI::Drawllipse: clip %d %d %d %d\n"
-	    	    , GC_CLIPX1(gc), GC_CLIPY1(gc), GC_CLIPX2(gc), GC_CLIPY2(gc)));
-		
-	cr.x = GC_CLIPX1(gc);
-	cr.y = GC_CLIPY1(gc);
-	cr.width  = GC_CLIPX2(gc) - cr.x + 1;
-	cr.height = GC_CLIPY2(gc) - cr.y + 1;
-    
-    	XCALL(XSetClipRectangles, data->display, data->gc,
-	    	    	   0, 0, &cr, 1, Unsorted);
-    }
-    
-    XCALL(XSetForeground, data->display, data->gc, GC_FG(gc));
-    XCALL(XSetFunction, data->display, data->gc, GC_DRMD(gc));
-    
-    D(kprintf("GDI::Drawllipse: coord %d %d %d %d\n"
-	    	, msg->x, msg->y, msg->rx, msg->ry));
-    
-    XCALL(XDrawArc, data->display, DRAWABLE(data), data->gc,
-    	     msg->x - msg->rx, msg->y - msg->ry,
-	     msg->rx * 2, msg->ry * 2, 0, 360 * 64);
-	
-    if (GC_DOCLIP(gc))
-    {
-    	XCALL(XSetClipMask, data->display, data->gc, None);
-    }	
-    
-    XFLUSH(data->display);
-    
-    UNLOCK_GDI*/
-}
-
-/****************************************************************************************/
-
-#define AO(x) 	    	  (aoHidd_BitMap_ ## x)
-#define GOT_BM_ATTR(code) GOT_ATTR(code, aoHidd_BitMap, bitmap)
-
-/****************************************************************************************/
-
 OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     OOP_Object  *friend = NULL, *pixfmt;
@@ -543,7 +392,9 @@ VOID GDIBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 VOID GDIBM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    IPTR   	    	width, height;
+    IPTR width, height;
+    APTR br;
+    RECT rect = {0, 0, 0, 0};
     
     EnterFunc(bug("[GDI] hidd.bitmap.gdibitmap::Clear()\n"));
     
@@ -551,14 +402,18 @@ VOID GDIBM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
   
     OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
     OOP_GetAttr(o, aHidd_BitMap_Height, &height);
+    rect.right = width;
+    rect.bottom = height;
     
-/*  LOCK_GDI 
-    XCALL(XSetForeground, data->display, data->gc, GC_BG(msg->gc));
-    XCALL(XFillRectangle, data->display, DRAWABLE(data), data->gc,
-    	    	   0 , 0, width, height);    
-    XCALL(XFlush, data->display);
-    UNLOCK_GDI*/
-    
+    D(bug("[GDI] Brush color 0x%08lX\n", GC_BG(msg->gc)));
+    LOCK_GDI
+    br = GDICALL(CreateSolidBrush, GC_BG(msg->gc));
+    if (br) {
+        USERCALL(FillRect, data->dc, &rect, br);
+        GDICALL(DeleteObject, br);
+    }
+    REFRESH(0, 0, width , height)
+    UNLOCK_GDI    
 }
 
 /****************************************************************************************/

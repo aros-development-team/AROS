@@ -9,7 +9,7 @@
 
 #include LC_LIBDEFS_FILE
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 void *gdi_handle = NULL;
@@ -38,6 +38,7 @@ static const char *gdi_func_names[] = {
 };
 
 static const char *user_func_names[] = {
+    "FillRect",
     "RedrawWindow",
      NULL
 };
@@ -48,7 +49,7 @@ static const char *native_func_names[] = {
     NULL
 };
 
-void *KernelBase;
+/* void *KernelBase; */
 void *HostLibBase;
 
 APTR *gdi_hostlib_load_so(const char *sofile, const char **names, void **handle)
@@ -79,10 +80,10 @@ APTR *gdi_hostlib_load_so(const char *sofile, const char **names, void **handle)
 static int gdi_hostlib_init(LIBBASETYPEPTR LIBBASE) {
     D(bug("[gdi] hostlib init\n"));
 
-    if ((KernelBase = OpenResource("kernel.resource")) == NULL) {
+/*  if ((KernelBase = OpenResource("kernel.resource")) == NULL) {
         kprintf("[gdi] couldn't open kernel.resource");
         return FALSE;
-    }
+    }*/
     if ((HostLibBase = OpenResource("hostlib.resource")) == NULL) {
         kprintf("[gdi] couldn't open hostlib.resource");
         return FALSE;

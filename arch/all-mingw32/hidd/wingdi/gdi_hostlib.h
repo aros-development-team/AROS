@@ -21,6 +21,7 @@ struct gdi_func {
 };
 
 struct user_func {
+    __attribute__((stdcall)) LONG (*FillRect)(APTR hDC, CONST RECT *lprc, APTR hbr);
     __attribute__((stdcall)) ULONG (*RedrawWindow)(APTR hWnd, CONST RECT* lpRect, APTR hrgnUpdate, ULONG flags);
 };
 
