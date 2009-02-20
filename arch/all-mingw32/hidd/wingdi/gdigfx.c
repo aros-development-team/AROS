@@ -567,9 +567,12 @@ static BOOL initgdistuff(struct gdi_staticdata *xsd)
 	xsd->red_mask    = 0x000000FF;
 	xsd->green_mask  = 0x0000FF00;
 	xsd->blue_mask   = 0x00FF0000;
-	xsd->red_shift	 = 0;
-	xsd->green_shift = 8;
-	xsd->blue_shift	 = 16;
+	/* Shifts are non-obviously calculated from the MSB, not from the LSB.
+	   I. e. color value is placed in the most significant byte of the ULONG
+	   before shifting (cc000000, not 000000cc) */
+	xsd->red_shift	 = 24;
+	xsd->green_shift = 16;
+	xsd->blue_shift	 = 8;
     } else {
 	kprintf("!!! GFX HIDD only supports truecolor diplays for now !!!\n");
 	return FALSE;
