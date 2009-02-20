@@ -12,6 +12,7 @@ struct gdi_func {
     __attribute__((stdcall)) APTR (*CreateSolidBrush)(ULONG crColor);
     __attribute__((stdcall)) LONG (*DeleteObject)(APTR hObject);
     __attribute__((stdcall)) APTR (*SelectObject)(APTR hdc, APTR hgdiobj);
+    __attribute__((stdcall)) ULONG (*SetBkColor)(APTR hdc, ULONG crColor);
     __attribute__((stdcall)) LONG (*BitBlt)(APTR hdcDest, LONG nXDest, LONG nYDest, LONG nWidth, LONG nHeight, APTR hdcSrc,
     					    LONG nXSrc, LONG nYSrc, ULONG dwRop);
     __attribute__((stdcall)) LONG (*PatBlt)(APTR hdc, LONG nXLeft, LONG nYLeft, LONG nWidth, LONG nHeight, ULONG dwRop);

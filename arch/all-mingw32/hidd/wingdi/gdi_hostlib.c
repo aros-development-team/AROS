@@ -29,6 +29,7 @@ static const char *gdi_func_names[] = {
     "CreateSolidBrush",
     "DeleteObject",
     "SelectObject",
+    "SetBkColor",
     "BitBlt",
     "PatBlt",
     "GetPixel",

@@ -63,6 +63,7 @@ DWORD WINAPI gdithread_entry(LPVOID p)
     LONG width, height;
 
     wcl_desc.hInstance = GetModuleHandle(NULL);
+    wcl_desc.hIcon = LoadIcon(wcl_desc.hInstance, MAKEINTRESOURCE(101));
     wcl = RegisterClass(&wcl_desc);
     D(printf("[GDI] Created window class 0x%p\n", wcl));
     if (wcl) {

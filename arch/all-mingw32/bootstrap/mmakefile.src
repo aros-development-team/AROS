@@ -5,7 +5,7 @@ TARGETDIR 	:= $(GENDIR)/$(CURDIR)
 
 BOBJS		:= $(TARGETDIR)/bootstrap.o $(TARGETDIR)/elfloader32.o \
 		   $(TARGETDIR)/hostlib.o $(TARGETDIR)/debug.o	       \
-		   $(TARGETDIR)/shutdown.o
+		   $(TARGETDIR)/shutdown.o $(TARGETDIR)/icon.o
 FILES		:= bootstrap elfloader32 hostlib debug
 
 KOBJS_DEVICES   := $(KOBJSDIR)/timer_device.o	     $(KOBJSDIR)/gameport_device.o	   \
@@ -56,6 +56,8 @@ $(BINDIR)/boot/kernel: setup-mingw32 $(KOBJS)
 	  -o $@ $(KOBJS) $(NOSTARTUP_LDFLAGS)\
 	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lhiddgraphicsstubs
 
+$(TARGETDIR)/icon.o: icon.rc icon.ico
+	windres --output-format=coff icon.rc $@
 
 $(BINDIR)/boot/AROSBootstrap: $(BOBJS)
 	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(BOBJS)
@@ -63,12 +65,6 @@ $(BINDIR)/boot/AROSBootstrap: $(BOBJS)
 #MM
 clean ::
 	-$(RM) $(TESTS)
-
-#$(TARGETDIR)/%.o : %.c
-#	%compile_q opt="$(CFLAGS) -m32 -fomit-frame-pointer -nostdinc -nostdlib"
-
-$(TARGETDIR)/%.o : %.S
-	%compile_q opt="$(CFLAGS) -m32 -fomit-frame-pointer -nostdinc -nostdlib"
 
 $(TARGETDIR)/%.d : %.c
 	%mkdepend_q cc="$(KERNEL_CC) $(KERNEL_CFLAGS) -I$(GENINCDIR)"
