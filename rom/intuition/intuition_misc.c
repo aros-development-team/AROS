@@ -725,14 +725,11 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
     	    msg.sdp_Flags	= 0;
 	    msg.sdp_Screen	= scr;
 	    msg.sdp_Dri		= dri;
-	    if ((msg.sdp_UserBuffer = ((struct IntScreen *)(scr))->DecorUserBuffer) != NULL)
-            {
-                msg.sdp_TrueColor   = (((struct IntScreen *)(scr))->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+	    msg.sdp_UserBuffer = ((struct IntScreen *)(scr))->DecorUserBuffer;
+            msg.sdp_TrueColor   = (((struct IntScreen *)(scr))->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
 
-                D(bug("[intuition] RenderScreenBar: ScrDecorObj @ %p, DecorUserBuffer @ %p\n", ((struct IntScreen *)(scr))->ScrDecorObj, ((struct IntScreen *)(scr))->DecorUserBuffer));
-
-                DoMethodA(((struct IntScreen *)(scr))->ScrDecorObj, (Msg)&msg);
-            }
+            D(bug("[intuition] RenderScreenBar: ScrDecorObj @ %p, DecorUserBuffer @ %p\n", ((struct IntScreen *)(scr))->ScrDecorObj, ((struct IntScreen *)(scr))->DecorUserBuffer));
+            DoMethodA(((struct IntScreen *)(scr))->ScrDecorObj, (Msg)&msg);
         }
 
         D(bug("[intuition] RenderScreenBar: Update gadgets .. \n"));
