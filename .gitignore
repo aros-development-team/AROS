@@ -232,11 +232,11 @@
 # /arch/all-mingw32/exec/
 /arch/all-mingw32/exec/mmakefile
 
+# /arch/all-mingw32/hidd/wingdi/
+/arch/all-mingw32/hidd/wingdi/mmakefile
+
 # /arch/all-mingw32/hostlib/
 /arch/all-mingw32/hostlib/mmakefile
-
-# /arch/all-mingw32/hostthread/
-/arch/all-mingw32/hostthread/mmakefile
 
 # /arch/all-mingw32/kernel/
 /arch/all-mingw32/kernel/mmakefile
@@ -619,6 +619,9 @@
 
 # /arch/ppc-chrp/dos/
 /arch/ppc-chrp/dos/mmakefile
+
+# /arch/ppc-chrp/efika/ata/
+/arch/ppc-chrp/efika/ata/mmakefile
 
 # /arch/ppc-chrp/efika/boot/
 /arch/ppc-chrp/efika/boot/mmakefile
