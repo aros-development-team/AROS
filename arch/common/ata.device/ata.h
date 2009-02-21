@@ -2,7 +2,7 @@
 #define _ATA_H
 
 /*
-   Copyright © 2004-2008, The AROS Development Team. All rights reserved
+   Copyright ï¿½ 2004-2008, The AROS Development Team. All rights reserved
    $Id$
 
 Desc: ata.device main private include file
@@ -15,7 +15,7 @@ Lang: English
  * 2008-01-25  T. Wiszkowski       Rebuilt, rearranged and partially fixed 60% of the code here
  *                                 Enabled implementation to scan for other PCI IDE controllers
  *                                 Implemented ATAPI Packet Support for both read and write
- *                                 Corrected ATAPI DMA handling                            
+ *                                 Corrected ATAPI DMA handling
  *                                 Fixed major IDE enumeration bugs severely handicapping transfers with more than one controller
  *                                 Compacted source and implemented major ATA support procedure
  *                                 Improved DMA and Interrupt management
@@ -26,11 +26,12 @@ Lang: English
  * 2008-03-31  M. Schulz           We do have asm/io.h include for ages... No need to define io functions here anymore.
  *                                 Redefined ata_in and ata_out. On x86-like systems they use inb/outb directly. On other systems
  *                                 they use pci_inb and pci_outb.
- * 2008-04-05  T. Wiszkowski       Improved IRQ management 
+ * 2008-04-05  T. Wiszkowski       Improved IRQ management
  * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
- * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling 
+ * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling
  *                                 medium removal, device detection, bus management and much more
  * 2008-06-24  P. Fedin            Added 'nomulti' flag to disable multisector operations
+ * 2009-02-21  M. Schulz           ata_in/ata_out declared as functions, if no PCI-io operations are defined.
  */
 
 #include <exec/types.h>
@@ -52,8 +53,6 @@ Lang: English
 
 #include <hidd/irq.h>
 #include <asm/io.h>
-
-#include LC_LIBDEFS_FILE
 
 #define MAX_DEVICEBUSES		2
 #define MAX_BUSUNITS		2
@@ -87,11 +86,11 @@ struct PRDEntry {
 #define PRD_MAX     514
 
 /* ata.device base */
-struct ataBase 
+struct ataBase
 {
    /*
     * Device structure - used to manage devices by exec guts^h^h^hoods
-    */ 
+    */
    struct Device           ata_Device;
 
    /*
@@ -126,7 +125,7 @@ struct ataBase
 /*
    The single IDE bus (channel)
    */
-struct ata_Bus 
+struct ata_Bus
 {
    struct MinNode          ab_Node;    /* exec node */
    struct ataBase          *ab_Base;   /* device self */
@@ -265,7 +264,7 @@ typedef struct
    Unit structure describing given device on the bus. It contains all the
    necessary information unit/device may need.
    */
-struct ata_Unit 
+struct ata_Unit
 {
    struct Unit         au_Unit;   /* exec's unit */
    struct DriveIdent  *au_Drive;  /* Drive Ident after IDENTIFY command */
@@ -394,11 +393,16 @@ typedef enum
 #define ata_out(val, offset, port)  outb((val), (offset)+(port))
 #define ata_in(offset, port)        inb((offset)+(port))
 #define ata_outl(val, offset, port) outl((val), (offset)+(port))
+#elif !defined (pci_outb)
+void ata_out(UBYTE val, UWORD offset, IPTR port);
+UBYTE ata_in(UWORD offset, IPTR port);
+void ata_outl(ULONG val, UWORD offset, IPTR port);
 #else
 #define ata_out(val, offset, port)  pci_outb((val), (offset)+(port))
 #define ata_in(offset, port)        pci_inb((offset)+(port))
 #define ata_outl(val, offset, port) pci_outl_le((val), (offset)+(port))
 #endif
+
 
 #define atapi_Error         1
 #define atapi_Features      1
@@ -495,7 +499,7 @@ ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen);
 void ata_EnableIRQ(struct ata_Bus *bus, BOOL enable);
 
 int ata_InitBusTask(struct ata_Bus *, struct SignalSemaphore*);
-int ata_InitDaemonTask(LIBBASETYPEPTR);
+int ata_InitDaemonTask(struct ataBase *);
 void ata_HandleIRQ(struct ata_Bus *bus);
 UBYTE ata_ReadStatus(struct ata_Bus *bus);
 
@@ -508,7 +512,7 @@ VOID dma_Cleanup(APTR adr, ULONG len, BOOL read);
 BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u);
 BOOL ata_init_unit(struct ata_Bus *bus, UBYTE u);
 BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit);
- 
+
 #define ATAPI_SS_EJECT  0x02
 #define ATAPI_SS_LOAD   0x03
 
@@ -529,7 +533,7 @@ static inline ULONG inl(UWORD port)
 {
     ULONG val;
     asm volatile ("inl %w1,%0":"=a"(val):"Nd"(port));
-    
+
     return val;
 }
 
