@@ -84,7 +84,6 @@ IPTR Dtpic__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             case MUIA_Dtpic_Name:
                 data->name = (STRPTR) AllocVec((ULONG) (strlen((char *)tag->ti_Data)+1) * sizeof(char),MEMF_ANY);
                 strcpy((char *)data->name,(char *)tag->ti_Data);
-                data->needs_setup = 1;
 	        break;
         }
         }
@@ -97,73 +96,71 @@ IPTR setup_datatype(struct IClass *cl, Object *obj)
 {
     struct Dtpic_DATA *data = INST_DATA(cl, obj);
 
-    if (data->needs_setup)
+    if (data->dto) killdto(data); /* Object already existed */
+
+    if (data->name)
     {
-        data->needs_setup = 0; /* Regardless of final result */
-        
-        if (data->dto) killdto(data); /* Object already existed */
+    if ((data->datatypesbase = OpenLibrary("datatypes.library", 39)))
+    {
+        /* Prevent DOS Requesters from showing up */
 
-        if (data->name)
+        struct Process *me = (struct Process *)FindTask(0);
+        APTR    	    oldwinptr = me->pr_WindowPtr;
+
+        me->pr_WindowPtr = (APTR)-1;
+
+        data->dto = NewDTObject(data->name, DTA_GroupID, GID_PICTURE,
+	            	    	    	    	OBP_Precision, PRECISION_IMAGE,
+	                    PDTA_Screen, _screen(obj),
+	                    PDTA_DestMode, PMODE_V43,
+	                    PDTA_UseFriendBitMap, TRUE,
+	                    TAG_DONE);
+        me->pr_WindowPtr = oldwinptr;
+
+        if (data->dto)
         {
-	        if ((data->datatypesbase = OpenLibrary("datatypes.library", 39)))
-        {
-            /* Prevent DOS Requesters from showing up */
-            
-            struct Process *me = (struct Process *)FindTask(0);
-            APTR    	    oldwinptr = me->pr_WindowPtr;
-            
-            me->pr_WindowPtr = (APTR)-1;
-            
-            data->dto = NewDTObject(data->name, DTA_GroupID, GID_PICTURE,
-            	    	    	    	    	OBP_Precision, PRECISION_IMAGE,
-					        PDTA_Screen, _screen(obj),
-					        PDTA_DestMode, PMODE_V43,
-					        PDTA_UseFriendBitMap, TRUE,
-					        TAG_DONE);
-	            me->pr_WindowPtr = oldwinptr;
-            
-            if (data->dto)
+	        struct FrameInfo fri = {0};
+
+            DoMethod(data->dto, DTM_FRAMEBOX, 0, &fri, &fri, sizeof(struct FrameInfo), 0);
+
+            if (fri.fri_Dimensions.Depth > 0)
             {
-            	struct FrameInfo fri = {0};
-	
-	        DoMethod(data->dto, DTM_FRAMEBOX, 0, &fri, &fri, sizeof(struct FrameInfo), 0);
-	
-	        if (fri.fri_Dimensions.Depth > 0)
-	        {
-	            if (DoMethod(data->dto, DTM_PROCLAYOUT, 0, 1))
-	            {
-	            	get(data->dto, PDTA_BitMapHeader, &data->bmhd);
-		
-		        if (data->bmhd)
-		        {
-		            if (data->bmhd->bmh_Masking != mskNone)
-		                set(obj, MUIA_FillArea, TRUE);
-		            else
-		                set(obj, MUIA_FillArea, FALSE);
 
-		            GetDTAttrs(data->dto, PDTA_DestBitMap, &data->bm, TAG_DONE);
-		            
-		            if (!data->bm)
-		            {			    
-		            	GetDTAttrs(data->dto, PDTA_BitMap, &data->bm, TAG_DONE);
-		            }
-		            
-		            if (data->bm) return TRUE;
-		            
-		        } /* if (data->bmhd) */
-		
-	            } /* if (DoMethod(data->dto, DTM_PROCLAYOUT, 0, 1)) */
-	            
-	        } /* if (fri.fri_Dimensions.Depth > 0) */
-	
-            } /* if (data->dto) */
-            
-        } /* if ((data->datatypesbase = OpenLibrary("datatypes.library", 39))) */
+                if (DoMethod(data->dto, DTM_PROCLAYOUT, 0, 1))
+                {
 
-        } /* if (data->name) */
+                    get(data->dto, PDTA_BitMapHeader, &data->bmhd);
 
-        killdto(data);
-    }
+                    if (data->bmhd)
+                    {
+                        if (data->bmhd->bmh_Masking != mskNone)
+                            set(obj, MUIA_FillArea, TRUE);
+                        else
+                            set(obj, MUIA_FillArea, FALSE);
+
+                        GetDTAttrs(data->dto, PDTA_DestBitMap, &data->bm, TAG_DONE);
+
+                        if (!data->bm)
+                        {			    
+                            GetDTAttrs(data->dto, PDTA_BitMap, &data->bm, TAG_DONE);
+                        }
+
+                        if (data->bm) return TRUE;
+
+                    } /* if (data->bmhd) */
+
+                } /* if (DoMethod(data->dto, DTM_PROCLAYOUT, 0, 1)) */
+
+            } /* if (fri.fri_Dimensions.Depth > 0) */
+
+        } /* if (data->dto) */
+        
+    } /* if ((data->datatypesbase = OpenLibrary("datatypes.library", 39))) */
+
+    } /* if (data->name) */
+
+    killdto(data);
+
 
     return TRUE;
 }
@@ -178,8 +175,8 @@ IPTR Dtpic__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *ms
 {
     struct Dtpic_DATA *data = INST_DATA(cl, obj);
 
-    killdto(data);
-    
+    killdto(data);  
+
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
@@ -286,7 +283,6 @@ IPTR Dtpic__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 if (data->name) FreeVec(data->name);
                 data->name = (STRPTR) AllocVec((ULONG) (strlen((char *)tag->ti_Data)+1) * sizeof(char), MEMF_ANY);
                 strcpy((char *)data->name,(char *)tag->ti_Data);
-                data->needs_setup = 1;
                 if (_flags(obj) & MADF_SETUP) setup_datatype(cl, obj); /* Run immediate setup only if base class is setup up */
                 needs_redraw = 1;
             }
