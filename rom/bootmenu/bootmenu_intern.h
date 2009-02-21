@@ -26,6 +26,7 @@ LIBBASETYPE {
     struct BootConfig    bm_BootConfig;
     struct Screen        *bm_Screen;
     struct Window        *bm_Window;
+    struct MsgPort  	 *bm_UserPort;
     struct MainGadgets   bm_MainGadgets;
     BOOL		 bm_Force;
 };
