@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2009, The AROS Development Team. All rights reserved
+    Copyright ï¿½ 2004-2009, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -18,7 +18,7 @@
  * 2008-01-25  T. Wiszkowski       Rebuilt, rearranged and partially fixed 60% of the code here
  *                                 Enabled implementation to scan for other PCI IDE controllers
  *                                 Implemented ATAPI Packet Support for both read and write
- *                                 Corrected ATAPI DMA handling                            
+ *                                 Corrected ATAPI DMA handling
  *                                 Fixed major IDE enumeration bugs severely handicapping transfers with more than one controller
  *                                 Compacted source and implemented major ATA support procedure
  *                                 Improved DMA and Interrupt management
@@ -32,15 +32,15 @@
  *                                 cleared debug flag
  * 2008-03-30  T. Wiszkowski       Added workaround for interrupt collision handling; fixed SATA in LEGACY mode.
  *                                 nForce and Intel SATA chipsets should now be operational (nForce confirmed)
- * 2008-03-31  M. Schulz           The ins/outs function definitions used only in case of x86 and x86_64 architectures. 
+ * 2008-03-31  M. Schulz           The ins/outs function definitions used only in case of x86 and x86_64 architectures.
  *                                 Otherwise, function declaratons are emitted.
  * 2008-04-01  M. Schulz           Use C functions ata_ins[wl] ata_outs[wl]
- * 2008-04-03  T. Wiszkowski       Fixed IRQ flood issue, eliminated and reduced obsolete / redundant code                                 
- * 2008-04-05  T. Wiszkowski       Improved IRQ management 
+ * 2008-04-03  T. Wiszkowski       Fixed IRQ flood issue, eliminated and reduced obsolete / redundant code
+ * 2008-04-05  T. Wiszkowski       Improved IRQ management
  * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
  *                                 increased failure timeout values to cover rainy day scenarios
  * 2008-04-20  T. Wiszkowski       Corrected the flaw in drive identification routines leading to ocassional system hangups
- * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling 
+ * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling
  *                                 medium removal, device detection, bus management and much more
  * 2008-05-12  P. Fedin	           Explicitly enable multisector transfers on the drive
  * 2008-05-18  T. Wiszkowski       Added extra checks to prevent duplicating drive0 in drive0 only configs
@@ -55,15 +55,15 @@
  * 2009-02-04  T. Wiszkowski       Disabled ATA debug on official builds
  */
 /*
- * TODO: 
+ * TODO:
  * - put a critical section around DMA transfers (shared dma channels)
  */
 
 #define DEBUG 0
 // use #define xxx(a) D(a) to enable particular sections.
 #define DIRQ(a) D(a)
-#define DIRQ_MORE(a) D(a) 
-#define DUMP(a) 
+#define DIRQ_MORE(a) D(a)
+#define DUMP(a)
 #define DATA(a) D(a)
 #define DATAPI(a) D(a)
 #define DINIT(a) D(a)
@@ -116,16 +116,16 @@ static ULONG atapi_Eject(struct ata_Unit *);
 static void common_SetBestXferMode(struct ata_Unit* unit);
 
 /*
-    Again piece of code which shouldn't be here. Geee. After removing all this 
-    asm constrictuins this ata.device will really deserve for location in 
+    Again piece of code which shouldn't be here. Geee. After removing all this
+    asm constrictuins this ata.device will really deserve for location in
     /arch/common
 */
 /*
  * having an x86 assembly here i dare to assume that this is meant to be
  * an x86[_64] device only.
- * 
+ *
  * Not anymore.
- * 
+ *
  * This functions will stay here for some time *IF* and only if the code is compiled for
  * x86 or x86_64 architecture. Otherwise, function declarations will be emitted and the
  * one who ports the driver will be reponsible for adding the missing code.
@@ -258,10 +258,10 @@ inline BOOL ata_SelectUnit(struct ata_Unit* unit)
 {
     ata_out(unit->au_DevMask, ata_DevHead, unit->au_Bus->ab_Port);
 
-    do 
+    do
     {
         ata_400ns(unit->au_Bus->ab_Alt);
-    } 
+    }
     while (0 != (ATAF_BUSY & ata_ReadStatus(unit->au_Bus)));
 
     return TRUE;
@@ -318,7 +318,7 @@ void ata_HandleIRQ(struct ata_Bus *bus)
         bus->ab_HandleIRQ(u, status);
         return;
     }
-    
+
     DIRQ_MORE({
         /*
          * if we got *here* then device is most likely not expected to have an irq.
@@ -447,7 +447,7 @@ void ata_IRQPIOReadAtapi(struct ata_Unit *unit, UBYTE status)
         ata_IRQNoData(unit, status);
     if (status & ATAF_ERROR)
         ata_IRQNoData(unit, status);
-    
+
     /* anything for us please? */
     if (ATAPIF_READ != (reason & ATAPIF_MASK))
         return;
@@ -483,7 +483,7 @@ void ata_IRQPIOWriteAtapi(struct ata_Unit *unit, UBYTE status)
         ata_IRQNoData(unit, status);
     if (status & ATAF_ERROR)
         ata_IRQNoData(unit, status);
-    
+
     /* anything for us please? */
     if (ATAPIF_READ != (reason & ATAPIF_MASK))
         return;
@@ -517,15 +517,15 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
     ULONG sigs = SIGBREAKF_CTRL_C;
     ULONG step = 0;
     BOOL res = TRUE;
-   
+
     if (irq && !unit->au_Bus->ab_IRQ)
     {
         bug("[ATA  ] Requested IRQ wait, but IRQ is not enabled\n");
     }
 
-    irq &= unit->au_Bus->ab_IRQ; 
+    irq &= unit->au_Bus->ab_IRQ;
     sigs |= (irq ? (1 << unit->au_Bus->ab_SleepySignal) : 0);
-            
+
     /*
      * clear up all old signals
      */
@@ -548,7 +548,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
     do
     {
 
-        /* 
+        /*
          * delay the check - this was found needed for some hardware
          */
 
@@ -557,7 +557,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
         /*
          * let's check if the drive is already good
          */
-        status = ata_in(ata_Status, unit->au_Bus->ab_Port);
+        status = ata_in(ata_AltStatus, unit->au_Bus->ab_Alt); //ata_in(ata_Status, unit->au_Bus->ab_Port);
         if (0 == (status & (ATAF_DATAREQ | ATAF_BUSY)))
             break;
 
@@ -583,6 +583,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
             if (SIGBREAKF_CTRL_C & step)
             {
                 bug("[ATA%02ld] Timeout while waiting for device to complete operation\n", unit->au_UnitNum);
+
                 res = FALSE;
             }
 
@@ -628,12 +629,12 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
     DIRQ(bug("[ATA%02ld] WaitBusy status: %lx / %ld\n", unit->au_UnitNum, status, res));
 
     /*
-     * clear up all our expectations 
+     * clear up all our expectations
      */
     Disable();
     unit->au_Bus->ab_Timeout = -1;
     Enable();
-            
+
     /*
      * release old junk
      */
@@ -653,7 +654,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
 void ata_Wait(struct ata_Unit *unit, UWORD tout)
 {
     SetSignal(0, SIGBREAKF_CTRL_C);
-            
+
     Disable();
     unit->au_Bus->ab_Timeout = tout;
     Enable();
@@ -666,8 +667,8 @@ void ata_Wait(struct ata_Unit *unit, UWORD tout)
  * it appears LARGE but there's a lot of COMMENTS here :)
  * handles *all* ata commands (no data, pio and dma)
  * naturally could be split at some point in the future
- * depends if anyone believes that the change for 50 lines 
- * would make slow ATA transfers any faster 
+ * depends if anyone believes that the change for 50 lines
+ * would make slow ATA transfers any faster
  */
 static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
 {
@@ -743,7 +744,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
             ata_out(block->blk >> 16, ata_LBAHigh, port);
             ata_out(block->blk >> 8, ata_LBAMid, port);
             ata_out(block->blk, ata_LBALow, port);
-            
+
             ata_out(block->sectors >> 8, ata_Count, port);
             ata_out(block->sectors, ata_Count, port);
             break;
@@ -793,7 +794,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
     DATA(bug("[ATA%02ld] ata_exec_cmd: Sending command\n", au->au_UnitNum));
     ata_out(block->command, ata_Command, port);
     ata_400ns(au->au_Bus->ab_Alt);
-    
+
     /*
      * In case of PIO write the drive won't issue an IRQ before first
      * data transfer, so we should poll the status and send the first
@@ -818,7 +819,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
     /*
      * wait for drive to complete what it has to do
      */
-    if (FALSE == ata_WaitBusyTO(au, 300, TRUE, NULL))
+    if (FALSE == ata_WaitBusyTO(au, 3, TRUE, NULL))
     {
         bug("[ATA%02ld] ata_exec_cmd: Device is late - no response\n", au->au_UnitNum);
         err = IOERR_UNITBUSY;
@@ -925,7 +926,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
     DATAPI(bug("[ATAPI] Issuing ATA_PACKET command.\n"));
     ata_out(ATA_PACKET, atapi_Command, port);
     ata_400ns(unit->au_Bus->ab_Alt);
-    
+
     ata_WaitBusyTO(unit, 30, FALSE, NULL);
     if (0 == (ata_ReadStatus(unit->au_Bus) & ATAF_DATAREQ))
         return HFERR_BadStatus;
@@ -946,7 +947,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
     unit->au_outs(cmd, unit->au_Bus->ab_Port, 12);
     ata_400ns(unit->au_Bus->ab_Alt);    /* give drive time to think about what we just said, then move on */
     /* how much time could it take for drive to raise DMARQ signal?? */
-    
+
     DATAPI(bug("[ATAPI] Status after packet: %lx\n", ata_ReadStatus(unit->au_Bus)));
 
     if (*dma)
@@ -972,7 +973,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
         }
     }
 
-    if ((0 == err) && (ata_WaitBusyTO(unit, 300, TRUE, NULL) == FALSE))
+    if ((0 == err) && (ata_WaitBusyTO(unit, 3, TRUE, NULL) == FALSE))
     {
         DATAPI(bug("[DSCSI] Command timed out.\n"));
         err = IOERR_UNITBUSY;
@@ -1054,15 +1055,16 @@ static ULONG ata_exec_blk(struct ata_Unit *unit, ata_CommandBlock *blk)
     if (blk->type == CT_LBA48)
         max <<= 8;
 
-    DATA(bug("[ATA%02ld] ata_exec_blk: Accessing %ld sectors starting from %lx\n", unit->au_UnitNum, count, blk->blk));
+    DATA(bug("[ATA%02ld] ata_exec_blk: Accessing %ld sectors starting from %x%08x\n", unit->au_UnitNum, count, (ULONG)(blk->blk >> 32), (ULONG)blk->blk));
     while ((count > 0) && (err == 0))
     {
         part = (count > max) ? max : count;
         blk->sectors = part;
         blk->length  = part << unit->au_SectorShift;
 
+        DATA(bug("[ATA%02ld] Transfer of %ld sectors from %x%08x\n", unit->au_UnitNum, part, (ULONG)(blk->blk >> 32), (ULONG)blk->blk));
         err = ata_exec_cmd(unit, blk);
-        DATA(bug("[ATA%02ld] ata_exec_blk: ata_exec_cmd returned %lx\n", err));
+        DATA(bug("[ATA%02ld] ata_exec_blk: ata_exec_cmd returned %lx\n", unit->au_UnitNum, err));
 
         blk->blk    += part;
         blk->buffer  = &((char*)blk->buffer)[part << unit->au_SectorShift];
@@ -1100,7 +1102,7 @@ BOOL ata_init_unit(struct ata_Bus *bus, UBYTE u)
     }
     unit->au_SectorShift= 9;    /* this really has to be set here. */
     unit->au_Flags      = 0;
-    
+
     NEWLIST(&unit->au_SoftList);
 
     /*
@@ -1332,7 +1334,7 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
     else
         unit->au_XferModes &= ~AF_XFER_DMA;
 }
-    
+
 static void common_SetBestXferMode(struct ata_Unit* unit)
 {
     int iter;
@@ -1363,7 +1365,7 @@ static void common_SetBestXferMode(struct ata_Unit* unit)
 void common_DetectXferModes(struct ata_Unit* unit)
 {
     int iter;
-    
+
     DINIT(bug("[ATA%02ld] common_DetectXferModes: Supports\n", unit->au_UnitNum));
 
     if (unit->au_Drive->id_Commands4 & (1 << 4))
@@ -1378,7 +1380,7 @@ void common_DetectXferModes(struct ata_Unit* unit)
         DINIT(bug("[ATA%02ld] common_DetectXferModes: - 48bit I/O\n", unit->au_UnitNum));
         unit->au_XferModes     |= AF_XFER_48BIT;
     }
-    
+
     if ((unit->au_XferModes & AF_XFER_PACKET) || (unit->au_Drive->id_Capabilities & (1<< 9)))
     {
         DINIT(bug("[ATA%02ld] common_DetectXferModes: - LBA Addressing\n", unit->au_UnitNum));
@@ -1536,7 +1538,7 @@ ULONG atapi_Identify(struct ata_Unit* unit)
     SWAP_LE_QUAD(unit->au_Drive->id_LBA48Sectors);
 #endif
 
-    
+
     DUMP(dump(unit->au_Drive, sizeof(struct DriveIdent)));
 
     unit->au_SectorShift    = 11;
@@ -1596,7 +1598,7 @@ ULONG atapi_Identify(struct ata_Unit* unit)
             }
             break;
     }
-                        
+
     atapi_TestUnitOK(unit);
 
     return 0;
@@ -1723,7 +1725,7 @@ ULONG ata_Identify(struct ata_Unit* unit)
 
         if (sec < unit->au_Capacity48)
             sec = ~0ul;
-        
+
         if (sec < unit->au_Capacity)
             sec = unit->au_Capacity;
 
@@ -1843,7 +1845,7 @@ static ULONG ata_ReadDMA32(struct ata_Unit *unit, ULONG block, ULONG count, APTR
     };
 
     D(bug("[ATA%02ld] ata_ReadDMA32()\n", unit->au_UnitNum));
-    
+
     *act = 0;
     if (0 != (err = ata_exec_blk(unit, &acb)))
         return err;
@@ -1942,7 +1944,7 @@ static ULONG ata_ReadDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR
 
 
 /*
- * ata write32 commands 
+ * ata write32 commands
  */
 static ULONG ata_WriteSector32(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
 {
@@ -2169,7 +2171,7 @@ int atapi_TestUnitOK(struct ata_Unit *unit)
     unit->au_SenseKey = sense[2];
 
     /*
-     * we may have just lost the disc...? 
+     * we may have just lost the disc...?
      */
     /*
      * per MMC, drives are expected to return 02-3a-0# status, when disc is not present
@@ -2197,7 +2199,7 @@ int atapi_TestUnitOK(struct ata_Unit *unit)
 
 static ULONG atapi_Read(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
 {
-    UBYTE cmd[] = { 
+    UBYTE cmd[] = {
        SCSI_READ10, 0, block>>24, block>>16, block>>8, block, 0, count>>8, count, 0
     };
     struct SCSICmd sc = {
@@ -2217,7 +2219,7 @@ static ULONG atapi_Read(struct ata_Unit *unit, ULONG block, ULONG count, APTR bu
 
 static ULONG atapi_Write(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
 {
-    UBYTE cmd[] = { 
+    UBYTE cmd[] = {
        SCSI_WRITE10, 0, block>>24, block>>16, block>>8, block, 0, count>>8, count, 0
     };
     struct SCSICmd sc = {
@@ -2258,8 +2260,8 @@ static ULONG atapi_Eject(struct ata_Unit *unit)
 
 ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen)
 {
-    UBYTE cmd[] = { 
-       3, 0, 0, 0, senselen & 0xfe, 0 
+    UBYTE cmd[] = {
+       3, 0, 0, 0, senselen & 0xfe, 0
     };
     struct SCSICmd sc = {
        0
@@ -2308,10 +2310,10 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
 
         tmp1 = ata_in(ata_LBAMid, port);
         tmp2 = ata_in(ata_LBAHigh, port);
-        
+
         DINIT(bug("[ATA  ] ata_ReadSignature: Subtype check returned %02lx:%02lx (%04lx)\n", tmp1, tmp2, (tmp1 << 8) | tmp2));
 
-    
+
         switch ((tmp1 << 8) | tmp2)
         {
             case 0x0000:
@@ -2323,10 +2325,10 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
 
                 while (ata_ReadStatus(bus) & ATAF_BUSY)
                     ata_400ns(bus->ab_Alt);
-                    
+
                 DINIT(bug("[ATA  ] ata_ReadSignature: Further validating  ATA signature: %lx & 0x7f = 1, %lx & 0x10 = unit\n", ata_in(ata_Error, port), ata_in(ata_DevHead, port)));
 
-                if ((1 == (0x7f & ata_in(ata_Error, port))) && 
+                if ((1 == (0x7f & ata_in(ata_Error, port))) &&
                     (unit == ((ata_in(ata_DevHead, port) >> 4) & 1)))
                 {
                     DINIT(bug("[ATA  ] ata_ReadSignature: Found *valid* signature for ATA device\n"));
@@ -2359,7 +2361,7 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
                 return DEV_NONE;
         }
     }
-        
+
     return DEV_NONE;
 }
 
@@ -2452,7 +2454,7 @@ void ata_usleep(struct timerequest *tr, ULONG usec)
     tr->tr_node.io_Command = TR_ADDREQUEST;
     tr->tr_time.tv_micro = usec % 1000000;
     tr->tr_time.tv_secs = usec / 1000000;
-    
+
     DoIO((struct IORequest *)tr);
 }
 
@@ -2477,7 +2479,7 @@ void ata_InitBus(struct ata_Bus *bus)
 
     bus->ab_Dev[0] = DEV_NONE;
     bus->ab_Dev[1] = DEV_NONE;
-    
+
     /* Disable IDE IRQ */
     ata_EnableIRQ(bus, FALSE);
 
@@ -2560,11 +2562,11 @@ static ULONG atapi_EndCmd(struct ata_Unit *unit)
      */
     status = ata_in(ata_AltStatus, unit->au_Bus->ab_Alt);
     DATAPI(bug("[ATA%02ld] atapi_EndCmd: Alternate status: %lx\n", unit->au_UnitNum, status));
-       
+
     status = ata_in(atapi_Status, unit->au_Bus->ab_Port);
 
     DATAPI(bug("[ATAPI] atapi_EndCmd: Command complete. Status: %lx\n", unit->au_UnitNum, status));
-    
+
     if (!(status & ATAPIF_CHECK))
     {
         return 0;
@@ -2577,6 +2579,6 @@ static ULONG atapi_EndCmd(struct ata_Unit *unit)
     }
 }
 
-/* 
+/*
  * vim: ts=4 et sw=4 fdm=marker fmr={,}
  */
