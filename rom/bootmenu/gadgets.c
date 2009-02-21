@@ -20,10 +20,10 @@ struct ButtonGadget *createButton
 {
 	struct TagItem tags[] =
 	{
-		{GA_Left,           left}, /* 0 */
-		{GA_Top,             top}, /* 1 */
-		{GA_Height,       height}, /* 2 */
-		{GA_Width,         width}, /* 3 */
+		{GA_Left,           (IPTR)left}, /* 0 */
+		{GA_Top,             (IPTR)top}, /* 1 */
+		{GA_Height,       (IPTR)height}, /* 2 */
+		{GA_Width,         (IPTR)width}, /* 3 */
 		{GA_Border,         NULL}, /* 4 */
 		{GA_SelectRender,   NULL}, /* 5 */
 		{GA_Previous, (IPTR)prev}, /* 6 */
@@ -35,8 +35,12 @@ struct ButtonGadget *createButton
 	};
 	struct ButtonGadget *button;
 
+        D(bug("[BootMenu] createButton()\n"));
+
 	if ((button = AllocMem(sizeof(struct ButtonGadget), MEMF_PUBLIC | MEMF_CLEAR)) != NULL)
 	{
+                if (!(prev)) tags[6].ti_Tag = TAG_IGNORE;
+
 		tags[4].ti_Data = (IPTR)&button->uborder2;
 		tags[5].ti_Data = (IPTR)&button->sborder2;
 		button->XY1[1] = height;
@@ -63,12 +67,11 @@ struct ButtonGadget *createButton
 		button->sborder2.Count = 3;
 		button->sborder2.XY = button->XY1;
 		button->sborder2.NextBorder = &button->sborder1;
-		button->button = NewObjectA(NULL, FRBUTTONCLASS, tags);
-		if (button->button)
+		if ((button->gadget = NewObjectA(NULL, FRBUTTONCLASS, tags)) != NULL)
 		{
-                    if (prev)
+                    if (prev != NULL)
                     {
-			prev->NextGadget = &button->gadget;
+			prev->NextGadget = button->gadget;
                     }
                     return button;
 		}
@@ -79,6 +82,8 @@ struct ButtonGadget *createButton
 
 void freeButtonGadget(struct ButtonGadget *button, struct BootMenuBase *BootMenuBase) 
 {
-	DisposeObject(button->button);
+        D(bug("[BootMenu] freeButtonGadget()\n"));
+
+	DisposeObject(button->gadget);
 	FreeMem(button, sizeof(struct ButtonGadget));
 }

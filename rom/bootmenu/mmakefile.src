@@ -3,8 +3,11 @@ include $(TOP)/config/make.cfg
 
 FILES := menu gadgets bootconfig
 
-#MM- kernel-bootmenu-includes : kernel-bootloader-$(ARCH)-$(CPU)-includes
-#MM- kernel-bootmenu : includes linklibs kernel-bootmenu-$(ARCH)
+##MM- kernel-bootmenu-includes : kernel-bootloader-$(ARCH)-$(CPU)-includes
+##MM- kernel-bootmenu : includes linklibs kernel-bootmenu-$(ARCH)
+
+##MM- kernel-bootmenu-includes : kernel-bootloader-$(ARCH)-$(CPU)-includes
+#MM- kernel-bootmenu : includes linklibs
 
 USER_INCLUDES := -I$(TOP)/rom/devs
 
