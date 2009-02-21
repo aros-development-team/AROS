@@ -281,8 +281,12 @@ static VOID __HandleLaunch_WB
 
     D(bug("[WBLIB] __HandleLaunch_WB('%s')\n", name));
 
-    if ((msgTags) && ((foundTag = FindTagItem(NP_StackSize, msgTags)) != NULL))
-        stacksize = foundTag->ti_Data;
+    if (msgTags)
+    {
+        if ((foundTag = FindTagItem(NP_StackSize, msgTags)) != NULL)
+            stacksize = foundTag->ti_Data;
+        FreeTagItems(msgTags);
+    }
 
     /* Change directory to where the program resides */
     cd = CurrentDir(startup->sm_ArgList[0].wa_Lock);
