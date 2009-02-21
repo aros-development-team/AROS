@@ -625,6 +625,7 @@ BOOL __WB_LaunchProgram
 {
     struct WBStartup        *startup = NULL;
     struct WBCommandMessage *message = NULL;
+    struct TagItem          *foundTag = NULL;
 
     /*-- Allocate memory for messages --------------------------------------*/
     startup = CreateWBS();
@@ -643,7 +644,13 @@ BOOL __WB_LaunchProgram
         goto error;
     }
 
-    message->wbcm_Tags = tags;
+    if ((tags) && ((foundTag = FindTagItem(NP_StackSize, tags)) != NULL))
+    {
+        message->wbcm_Tags =  AllocateTagItems(2);
+        message->wbcm_Tags[0].ti_Tag = foundTag->ti_Tag;
+        message->wbcm_Tags[0].ti_Data = foundTag->ti_Data;
+        message->wbcm_Tags[1].ti_Tag = TAG_DONE;
+    }
 
     /*-- Build the arguments array -----------------------------------------*/
     if (!WB_BuildArguments(startup, lock, name, tags))
