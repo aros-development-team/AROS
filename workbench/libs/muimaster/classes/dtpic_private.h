@@ -9,7 +9,6 @@ struct Dtpic_DATA
     APTR    	    	 dto;
     struct BitMapHeader *bmhd;
     struct BitMap   	*bm;
-    ULONG                needs_setup;
 };
 
 #endif /* _DTPIC_PRIVATE_H_ */
