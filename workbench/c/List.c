@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     List the contents of a directory.
@@ -1001,7 +1001,10 @@ int main(void)
 	error = IoErr();;
     }
 
-    if ((BOOL)args[ARG_ALL] && (stats.nFiles || stats.nDirs))
+    if ((BOOL)args[ARG_NOHEAD] == FALSE &&
+        (BOOL)args[ARG_LFORMAT] == FALSE &&
+        (BOOL)args[ARG_ALL] &&
+        (stats.nFiles || stats.nDirs))
     {
 	Printf("\nTOTAL: %ld files - %ld directories - %ld blocks used\n",
 	       stats.nFiles, stats.nDirs, stats.nBlocks);
