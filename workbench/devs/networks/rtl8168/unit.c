@@ -175,7 +175,9 @@ void RTL8168_Rx_Process(struct RTL8168Unit *unit)
 
     unsigned short cur_rx, rx_left;
     cur_rx = np->cur_rx;
-    rx_left = NUM_RX_DESC + np->dirty_rx - cur_rx;
+    rx_left = NUM_RX_DESC - np->dirty_rx;
+
+    RTLD(bug("[%s] RTL8168_Rx_Process: cur_rx = %d, rx_left = %d, dirty = %d\n", unit->rtl8168u_name, cur_rx, rx_left, np->dirty_rx))
 
     for (; rx_left > 0; rx_left--, cur_rx++) {
 	unsigned int entry = cur_rx % NUM_RX_DESC;
@@ -187,10 +189,13 @@ void RTL8168_Rx_Process(struct RTL8168Unit *unit)
 	if (status & DescOwn)
 	    break;
 
+	RTLD(bug("[%s] RTL8168_Rx_Process: Packet %d\n", unit->rtl8168u_name, entry))
+
 	if (status & RxRES) {
 	    RTLD(bug("[%s] RTL8168_Rx_Process: Rx ERROR, status = %08x\n",
 		    unit->rtl8168u_name, status))
 
+#warning "TODO: record rx errors .."
 /*	    RTLDEV->stats.rx_errors++;
 
 	    if (status & (RxRWT | RxRUNT))
@@ -205,7 +210,7 @@ void RTL8168_Rx_Process(struct RTL8168Unit *unit)
 	    int pkt_size = (status & 0x00003FFF) - ETH_CRCSIZE;
 
 	    frame = (UBYTE *)(desc->addr);
-	    RTLD(bug("[%s] RTL8168_Rx_Process: frame @ %p, pkt_size=%d", unit->rtl8168u_name, frame, pkt_size))
+	    RTLD(bug("[%s] RTL8168_Rx_Process: frame @ %p, pkt_size=%d\n", unit->rtl8168u_name, frame, pkt_size))
 
 	    /* got a valid packet - forward it to the network core */
 	    is_orphan = TRUE;
@@ -215,7 +220,11 @@ void RTL8168_Rx_Process(struct RTL8168Unit *unit)
 		    for (j = 0; j < pkt_size; j++) {
 			if ((j%16) == 0)
 			{
-			    bug("\n[%s] RTL8168_Rx_Process: %03x:", unit->rtl8168u_name, j);
+			    if (j != 0)
+			    {
+				bug("\n");
+			    }
+			    bug("[%s] RTL8168_Rx_Process: %03x:", unit->rtl8168u_name, j);
 			}
 			bug(" %02x", ((unsigned char*)frame)[j]);
 		    }
@@ -273,7 +282,7 @@ void RTL8168_Rx_Process(struct RTL8168Unit *unit)
 		    }
 		}
 
-		rtl8168_MarkToASIC(desc, np->rx_buf_sz);
+		rtl8168_MarkToASIC(desc, (ULONG)np->rx_buf_sz);
 
 		/* Update remaining statistics */
 		tracker =  FindTypeStats(LIBBASE, unit, &unit->rtl8168u_type_trackers, packet_type);
@@ -368,7 +377,7 @@ AROS_UFH3(void, RTL8168_TX_IntF,
 		{
 		    RTLD(
 			    APTR packet = np->TxDescArray[nr].addr;
-			    bug("[%s] RTL8168_TX_IntF: packet %d  @ %p [type = %d] queued for transmission.", unit->rtl8168u_name, nr, np->TxDescArray[nr].addr, AROS_BE2WORD(((struct eth_frame *)packet)->eth_packet_type))
+			    bug("[%s] RTL8168_TX_IntF: packet %d  @ %p [type = %d] queued for transmission.\n", unit->rtl8168u_name, nr, np->TxDescArray[nr].addr, AROS_BE2WORD(((struct eth_frame *)packet)->eth_packet_type))
 			)
 
 		    RTLDP(
@@ -376,7 +385,11 @@ AROS_UFH3(void, RTL8168_TX_IntF,
 			    for (j = 0; j < packet_size; j++) {
 				if ((j%16) == 0)
 				{
-				    bug("\n[%s] RTL8168_TX_IntF: %03x:", unit->rtl8168u_name, j);
+				    if (j != 0)
+				    {
+					bug("\n");
+				    }
+				    bug("[%s] RTL8168_TX_IntF: %03x:", unit->rtl8168u_name, j);
 				}
 				bug(" %02x", ((unsigned char*)np->TxDescArray[nr].addr)[j]);
 			    }
@@ -387,6 +400,7 @@ AROS_UFH3(void, RTL8168_TX_IntF,
 		    np->TxDescArray[nr].opts1 = AROS_LONG2LE(DescOwn | FirstFrag | LastFrag | packet_size | (RingEnd * !((nr + 1) % NUM_TX_DESC)));
 		    np->TxDescArray[nr].opts2 = AROS_LONG2LE(0);
 
+#warning "TODO: Perhaps set the Tx Poll bit after we leave the while loop .."
 		    RTL_W8(base + (TxPoll), NPQ);	/* set polling bit */
 		}
 
@@ -759,13 +773,13 @@ RTLD(bug("[%s] RTL8168_Schedular: Failed to create Input message port\n", taskSe
 
 	if (unit->rtl8168u_TimerSlowReq)
 	{
-	    if (!OpenDevice("timer.device", UNIT_VBLANK,
+	    if (!OpenDevice("timer.device", UNIT_MICROHZ,
 		(struct IORequest *)unit->rtl8168u_TimerSlowReq, 0))
 	    {
 		struct Message *msg = AllocVec(sizeof(struct Message), MEMF_PUBLIC|MEMF_CLEAR);
 		ULONG sigset;
 
-RTLD(bug("[%s] RTL8168_Schedular: Got VBLANK unit of timer.device\n", taskSelf->tc_Node.ln_Name))
+RTLD(bug("[%s] RTL8168_Schedular: Got MICROHZ unit of timer.device\n", taskSelf->tc_Node.ln_Name))
 
 		unit->initialize(unit);
 
