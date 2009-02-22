@@ -2166,7 +2166,7 @@ static void rtl8168nic_RxDescInit(struct rtl8168_priv *np)
 
     for (i = 0; i < NUM_RX_DESC; i++) {
 	if(i == (NUM_RX_DESC - 1))
-	    np->RxDescArray[i].opts1 = AROS_LONG2LE((DescOwn | RingEnd) | (ULONG)np->rx_buf_sz);
+	    np->RxDescArray[i].opts1 = AROS_LONG2LE((DescOwn | RingEnd | (ULONG)np->rx_buf_sz));
 	else
 	    np->RxDescArray[i].opts1 = AROS_LONG2LE(DescOwn | (ULONG)np->rx_buf_sz);
     }
