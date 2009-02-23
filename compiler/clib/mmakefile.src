@@ -302,6 +302,7 @@ SHARED	:= \
         setpwent \
 	setuid \
 	setvbuf \
+	sharecontextwithchild \
 	sigaction \
 	sigaddset \
 	sigdelset \

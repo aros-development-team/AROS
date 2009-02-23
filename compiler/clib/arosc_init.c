@@ -215,6 +215,23 @@ int arosc_internalinit(void)
 
     D(bug("\nEntering arosc_internalinit(): me->name = %s\n", me->pr_Task.tc_Node.ln_Name));
     D(bug("arosc_internalinit(): oldprivdata = %p\n", oldprivdata));
+
+    if (!oldprivdata)
+    {
+        /* This process does not have arosc_privdata. Check parent */
+        struct arosc_privdata * parentprivdata = __get_arosc_privdata();
+
+        if (parentprivdata)
+        {
+            /* Parent has arosc_privdata. Is is shared it with this process? */
+            if (parentprivdata->acpd_flags & SHARE_ACPD_WITH_CHILD)
+            {
+                /* Yes. Do nothing. (reuse parents arosc_privdata) */
+                return res;
+            }
+        }
+    }
+
     if
     (
         !oldprivdata ||
@@ -254,6 +271,22 @@ int arosc_internalexit(void)
     struct arosc_privdata *privdata = GetIntETask(FindTask(NULL))->iet_acpd;
 
     D(bug("arosc_internalexit(): --acpd_usercount\n"));
+
+    if (!privdata)
+    {
+        /* This process does not have priv data. Check if parent has */
+        struct arosc_privdata * parentprivdata = __get_arosc_privdata();
+
+        if (parentprivdata)
+        {
+            /* Parent has arosc_privdata. Is is shared it with this process? */
+            if (parentprivdata->acpd_flags & SHARE_ACPD_WITH_CHILD)
+            {
+                /* Yes. Do nothing. */
+                return 0;
+            }
+        }
+    }
 
     #warning FIXME: privdata should NEVER be NULL here
     ASSERT_VALID_PTR(privdata);
