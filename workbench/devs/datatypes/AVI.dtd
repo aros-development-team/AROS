@@ -1,0 +1,9 @@
+# DataType Description for AVI
+Name=AVI
+Version=$VER: AVI 1.0 (23.02.2009)
+BaseName=avi
+Pattern=#?.avi
+GroupID=movi
+ID=avi
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

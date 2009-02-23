@@ -1,0 +1,9 @@
+# DataType Description for WAV
+Name=WAV
+Version=$VER: WAV 1.0 (23.02.2009)
+BaseName=wav
+Pattern=#?.wav
+GroupID=musi
+ID=wav
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

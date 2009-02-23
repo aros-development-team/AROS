@@ -1,0 +1,9 @@
+# DataType Description for WMA
+Name=WMA
+Version=$VER: WMA 1.0 (23.02.2009)
+BaseName=wma
+Pattern=#?.wma
+GroupID=musi
+ID=wma
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

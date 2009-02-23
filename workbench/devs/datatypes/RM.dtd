@@ -1,0 +1,9 @@
+# DataType Description for RM
+Name=RM
+Version=$VER: RM 1.0 (23.02.2009)
+BaseName=rm
+Pattern=#?.rm#?
+GroupID=movi
+ID=rm
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

@@ -1,0 +1,9 @@
+# DataType Description for MPG
+Name=MPG
+Version=$VER: MPG 1.0 (23.02.2009)
+BaseName=mpg
+Pattern=#?.(mpg|mpe|mpeg)
+GroupID=movi
+ID=mpg
+Flags=DTF_BINARY,DTF_CASE
+Priority=0
