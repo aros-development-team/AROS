@@ -1,0 +1,9 @@
+# DataType Description for ASF
+Name=ASF
+Version=$VER: ASF 1.0 (23.02.2009)
+BaseName=asf
+Pattern=#?.asf
+GroupID=movi
+ID=asf
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

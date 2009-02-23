@@ -1,0 +1,9 @@
+# DataType Description for VOB
+Name=VOB
+Version=$VER: VOB 1.0 (23.02.2009)
+BaseName=vob
+Pattern=#?.vob
+GroupID=musi
+ID=vob
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

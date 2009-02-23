@@ -1,0 +1,9 @@
+# DataType Description for OGG
+Name=OGG
+Version=$VER: OGG 1.0 (23.02.2009)
+BaseName=ogg
+Pattern=#?.ogg
+GroupID=musi
+ID=ogg
+Flags=DTF_BINARY,DTF_CASE
+Priority=0
