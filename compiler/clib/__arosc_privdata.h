@@ -120,6 +120,11 @@ struct arosc_privdata
    this flag prevents creation of new arosc_privdata. */
 #define KEEP_OLD_ACPD 8
 
+/* By default a new process will get new ACPD when it(or any other library
+   it uses) opens arosc.library. This flag prohibits that and forces the
+   child process to share ACPD with parent process */
+#define SHARE_ACPD_WITH_CHILD 16
+
 /* !acpd_flags */
 
 #define __get_arosc_privdata() ((struct arosc_privdata *)__get_arosc_userdata())

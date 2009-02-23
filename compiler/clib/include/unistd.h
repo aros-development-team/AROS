@@ -289,6 +289,7 @@ int         usleep(useconds_t microseconds);
 pid_t       vfork(void);
 #endif
 
+void        sharecontextwithchild(int share); /* AROS specific call */
 #if __POSIX_VERSION >= 200112
 /* NOTIMPL int         fdatasync(int fd); */
 #endif
