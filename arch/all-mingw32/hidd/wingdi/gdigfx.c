@@ -494,20 +494,21 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 
 VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
-    ULONG   	     	 mode;
-    APTR 	     	 src = NULL, dest = NULL;
-    struct gfx_data 	*data;
+    APTR src = NULL, dest = NULL;
+    APTR wnd;
+    struct gfx_data *data;
     
+    EnterFunc(bug("[GDI] hidd.gfx.wingdi::CopyBox(0x%p(%lu, %lu, %lu, %lu) -> 0x%p(%lu, %lu,)\n", msg->src, msg->srcX, msg->srcY, msg->width, msg->height,
+    		  msg->dest, msg->destX, msg->destY));
     data = OOP_INST_DATA(cl, o);
-    
-    mode = GC_DRMD(msg->gc);
     
     OOP_GetAttr(msg->src,  aHidd_GDIBitMap_DeviceContext, (IPTR *)&src);
     OOP_GetAttr(msg->dest, aHidd_GDIBitMap_DeviceContext, (IPTR *)&dest);
 	
     if (NULL == dest || NULL == src)
     {
-	/* The destination object is no GDI bitmap.
+        D(bug("[GDI] Process by superclass\n"));
+	/* The destination object is not a GDI bitmap.
 	    Let the superclass do the copying in a more general way
 	*/
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -516,8 +517,17 @@ VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
     }
 
     LOCK_GDI
+    /* We do it inside the semaphore because Show() can be called from within another process */
+    OOP_GetAttr(msg->dest, aHidd_GDIBitMap_Window, (IPTR *)&wnd);
     GDICALL(BitBlt, dest, msg->destX, msg->destY, msg->width, msg->height, src, msg->srcX, msg->srcY, SRCCOPY);
+    if (wnd) {
+        RECT r = {msg->destX, msg->destY, msg->destX + msg->width, msg->destY + msg->height};
+
+        D(bug("[GDI] CopyBox(): Refresh\n"));
+        USERCALL(RedrawWindow, wnd, &r, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
+    }
     UNLOCK_GDI
+    
 }
 
 /****************************************************************************************/

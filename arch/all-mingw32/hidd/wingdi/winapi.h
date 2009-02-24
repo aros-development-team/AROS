@@ -165,6 +165,15 @@
 
 #define WM_CLOSE 16
 #define WM_QUIT  18
+#define WM_MOUSEWHEEL 522
+
+#define MK_LBUTTON	1
+#define MK_RBUTTON	2
+#define MK_SHIFT	4
+#define MK_CONTROL	8
+#define MK_MBUTTON	16
+#define MK_XBUTTON1	32
+#define MK_XBUTTON2	64
 
 typedef struct tagRECT { 
   LONG left; 

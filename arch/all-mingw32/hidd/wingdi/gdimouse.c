@@ -8,6 +8,7 @@
 
 #define __OOP_NOATTRBASES__
 
+#include <proto/kernel.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
@@ -17,7 +18,7 @@
 
 #include <aros/symbolsets.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
@@ -34,36 +35,16 @@ static struct OOP_ABDescr attrbases[] =
     { NULL  	    , NULL  	    }
 };
 
-/****************************************************************************************/
-/*
-static ULONG xbutton2hidd(XButtonEvent *xb)
-{
-    ULONG button;
-    
-    switch (xb->button)
-    {
-	case Button1:
-	    button = vHidd_Mouse_Button1;
-	    break;
-	
-	case Button2:
-	    button = vHidd_Mouse_Button3;
-	    break;
-	    
-	case Button3:
-	    button = vHidd_Mouse_Button2;
-	    break;
-	
-    }
-    
-    return button;
-}
-*/
+static VOID MouseIntHandler(struct gdimouse_data *data, void *p);
+
 /****************************************************************************************/
 
 OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    void *mouse_int;
     BOOL has_mouse_hidd = FALSE;
+    
+    D(EnterFunc("[GDIMouse] hidd.mouse.gdi::New()\n"));
     
     ObtainSemaphoreShared( &XSD(cl)->sema);
     
@@ -72,15 +53,28 @@ OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	
     ReleaseSemaphore( &XSD(cl)->sema);
     
-    if (has_mouse_hidd) /* Cannot open twice */
+    if (has_mouse_hidd) { /* Cannot open twice */
+    	D(bug("[GDIMouse] Attempt to create a second instance\n"));
     	return NULL; /* Should have some error code here */
+    }
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    D(bug("[GDIMouse] Object created by superclass: 0x%p\n"));
     if (o)
     {
 	struct gdimouse_data *data = OOP_INST_DATA(cl, o);
 	struct TagItem       *tag, *tstate;
 	
+	data->interrupt = mouse_int;
+	data->buttons = 0;
+	data->interrupt = KrnAddExceptionHandler(3, MouseIntHandler, data, NULL);
+	D(bug("[GDIMouse] Mouse interrupt object: 0x%p\n", data->interrupt));
+    	if (!data->interrupt) {
+    	    OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+	    
+    	    OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
+            return NULL;
+        }
 	tstate = msg->attrList;
 	while ((tag = NextTagItem((const struct TagItem **)&tstate)))
 	{
@@ -91,10 +85,12 @@ OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	    	switch (idx)
 		{
 		    case aoHidd_Mouse_IrqHandler:
+		        D(bug("[GDIMouse] Callback address 0x%p\n", tag->ti_Data));
 		    	data->mouse_callback = (VOID (*)())tag->ti_Data;
 			break;
 			
 		    case aoHidd_Mouse_IrqHandlerData:
+		        D(bug("[GDIMouse] Callback data 0x%p\n", tag->ti_Data));
 		    	data->callbackdata = (APTR)tag->ti_Data;
 			break;
 		}
@@ -115,68 +111,56 @@ OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
 /****************************************************************************************/
 
-VOID GDIMouse__Hidd_GDIMouse__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_GDIMouse_HandleEvent *msg)
+static BOOL check_button(UWORD new, UWORD mask, UWORD arosbutton, struct pHidd_Mouse_Event *e, struct gdimouse_data *data)
 {
+    UWORD old = data->buttons & mask;
 
-    struct gdimouse_data    	*data = OOP_INST_DATA(cl, o);    
-    struct pHidd_Mouse_Event 	 e;
-/*    
-    XButtonEvent *xb = &(msg->event->xbutton);
-    
-    e.x = xb->x;
-    e.y = xb->y;
-   
-    if (msg->event->type == ButtonRelease)
-    {
-    	switch(xb->button)
-	{
-	    case Button1:
-	    case Button2:
-	    case Button3:
-    	    	e.button = xbutton2hidd(xb);
-	    	e.type   = vHidd_Mouse_Release;
-	    	data->mouse_callback(data->callbackdata, &e);
-		break;
-	}
-    }
-    else if (msg->event->type == ButtonPress)
-    {
-    	switch(xb->button)
-	{
-	    case Button1:
-	    case Button2:
-	    case Button3:	    	
-    		e.button = xbutton2hidd(xb);
-		e.type   = vHidd_Mouse_Press;
-        	data->mouse_callback(data->callbackdata, &e);
-		break;
-		
-	    case Button4:
-	    	e.type   = vHidd_Mouse_WheelMotion;
-		e.button = vHidd_Mouse_NoButton;
-		e.x      = 0;
-		e.y      = -1;
-        	data->mouse_callback(data->callbackdata, &e);
-		break;
-		
-	    case Button5:
-	    	e.type   = vHidd_Mouse_WheelMotion;
-		e.button = vHidd_Mouse_NoButton;
-		e.x 	 = 0;
-		e.y 	 = 1;
-        	data->mouse_callback(data->callbackdata, &e);
-		break;
-		
-	}
-    }
-    else if (msg->event->type == MotionNotify)
-    {
-    	e.button = vHidd_Mouse_NoButton;
-	e.type = vHidd_Mouse_Motion;
-	
-        data->mouse_callback(data->callbackdata, &e);
-    }
+    new &= mask;
+    if (old != new) {
+        e->button = arosbutton;
+        e->type = new ? vHidd_Mouse_Press : vHidd_Mouse_Release;
+        data->mouse_callback(data->callbackdata, e);
+        return TRUE;
+    } else
+        return FALSE;
+}
+
+static VOID MouseIntHandler(struct gdimouse_data *data, void *p)
+{
+    struct pHidd_Mouse_Event e;
+    /* Due to asynchronous nature of host-side window service thread MOUSEDATA structure acts like hardware registers.
+       There can be many pending events before we get here and the structure will hold a summary of all states, however
+       EventCode will contain only last event. Because of this we read it ASAP and pay as little attention to EventCode
+       as possible.
     */
+    UWORD event = MOUSEDATA->EventCode;
+    UWORD new_buttons = MOUSEDATA->Buttons;
+    WORD wheel = MOUSEDATA->WheelDelta;
+    BOOL button;
+    
+    D(bug("[GDIMouse] Interrupt\n"));
+    if (event == WM_MOUSEWHEEL) {
+        /* Wheel delta comes only with WM_MOUSEWHEEL, otherwise it's zero */
+    	e.type   = vHidd_Mouse_WheelMotion;
+    	e.button = vHidd_Mouse_NoButton;
+    	e.x = 0;
+    	e.y = wheel;
+    	data->mouse_callback(data->callbackdata, &e);
+    } else {
+    	e.x = MOUSEDATA->MouseX;
+    	e.y = MOUSEDATA->MouseY;
+
+    	button = check_button(new_buttons, MK_LBUTTON, vHidd_Mouse_Button1, &e, data);
+    	button |= check_button(new_buttons, MK_RBUTTON, vHidd_Mouse_Button2, &e, data);
+    	button |= check_button(new_buttons, MK_MBUTTON, vHidd_Mouse_Button3, &e, data);
+    	if (button)
+    	    data->buttons = new_buttons;
+    	else {
+    	    e.button = vHidd_Mouse_NoButton;
+	    e.type = vHidd_Mouse_Motion;
+	    data->mouse_callback(data->callbackdata, &e);
+	}
+    }
 }
 
 /****************************************************************************************/
