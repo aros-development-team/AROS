@@ -19,7 +19,9 @@
 #include LC_LIBDEFS_FILE
 
 LIBBASETYPE {
-    struct Node          db_Node;
+    struct Node         db_Node;
+    BOOL                db_attemptingboot;
+    BOOL                db_bootdevicefound;
 };
 
 //#undef ExpansionBase
