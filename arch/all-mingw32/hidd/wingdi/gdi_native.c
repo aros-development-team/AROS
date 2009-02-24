@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2008, The AROS Development Team. All rights reserved.
+    Copyright  1995-2009, The AROS Development Team. All rights reserved.
     $Id: gdi.c 27757 2008-01-26 15:05:40Z verhaegs $
 
     Desc: Host-side part of GDI hidd. Handles windows and receives events.
@@ -13,9 +13,11 @@
 #include "gdi.h"
 
 #define D(x)
+#define DKBD(x)
 
 static DWORD thread_id;
 __declspec(dllexport) struct MouseData GDI_MouseData;
+__declspec(dllexport) struct KeyboardData GDI_KeyboardData;
 
 /****************************************************************************************/
 
@@ -51,6 +53,29 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
     	GDI_MouseData.WheelDelta = wp >> 16;
         CauseException(3);
     	return 0;
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
+        if (lp & 0x40000000) /* Ignore autorepeats */
+            return 0;
+    case WM_KEYUP:
+    case WM_SYSKEYUP:
+        /* Normally Windows does not distinguish between left and right keys, so we have to give it a hint (we ignore CTRL because
+           there's only one CTRL on Amiga) */
+        switch(wp) {
+        case VK_SHIFT:
+            /* Right SHIFT can be determined only by scancode. So this is HW-dependant (well, non-x86's are past) */
+            if ((lp & 0x00FF0000) == 0x00360000)
+            	wp = VK_RSHIFT;
+        case VK_MENU:
+            /* Right ALT can be easily determined by checking "extended key" flag */
+            if (lp & 0x01000000)
+            	wp = VK_RMENU;
+    	}
+        GDI_KeyboardData.EventCode = msg & 0xFFFFFFFB; /* This masks out difference between WM_SYSKEY* and WM_KEY* */
+        GDI_KeyboardData.KeyCode = wp;
+        DKBD(printf("[GDI] Keyboard event %lu key 0x%08lX\n", GDI_KeyboardData.EventCode, wp));
+        CauseException(4);
+        return 0;
     default:
         return DefWindowProc(win, msg, wp, lp);
     }

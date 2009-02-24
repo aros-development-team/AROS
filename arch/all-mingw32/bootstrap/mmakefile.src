@@ -42,9 +42,9 @@ KOBJS := $(K_RES) $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(KOBJS_HIDD)
 #MM			 kernel-hidd-wingdi-kobj	    \
 #MM			 contrib-amberram-kobj
 
-#MM workbench-mingw32: kernel-mathffp	      \
-#MM		       kernel-mathieeesingbas \
-#MM		       kernel-workbench
+#MM- workbench-mingw32: kernel-mathffp	      \
+#MM		        kernel-mathieeesingbas \
+#MM		        kernel-workbench
 
 #MM
 kernel-bootstrap-mingw32: setup-mingw32 $(BINDIR)/boot/AROSBootstrap

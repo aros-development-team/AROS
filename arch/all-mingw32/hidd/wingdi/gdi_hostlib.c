@@ -47,6 +47,7 @@ static const char *native_func_names[] = {
     "GDI_Init",
     "GDI_PutMsg",
     "GDI_MouseData",
+    "GDI_KeyboardData",
     NULL
 };
 

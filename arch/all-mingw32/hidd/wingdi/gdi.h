@@ -47,26 +47,12 @@ struct gdikbd_data
 {
     VOID  (*kbd_callback)(APTR, UWORD);
     APTR    callbackdata;
-    UWORD   prev_keycode;
+    void *interrupt;
 };
 
 /* IDs */
 #define IID_Hidd_GDIKbd		"hidd.kbd.gdi"
 #define CLID_Hidd_GDIKbd	"hidd.kbd.gdi"
-
-/* Methods */
-enum
-{
-    moHidd_GDIKbd_HandleEvent
-};
-
-struct pHidd_GDIKbd_HandleEvent
-{
-    OOP_MethodID     mID;
-//  XEvent  	    *event;
-};
-
-//VOID Hidd_GDIKbd_HandleEvent(OOP_Object *o, XEvent *event);
 
 struct gdi_staticdata
 {
@@ -186,5 +172,11 @@ struct MouseData
     unsigned short Buttons;
     unsigned short WheelDelta;
 };
+
+struct KeyboardData
+{
+    unsigned short EventCode;
+    unsigned int KeyCode;
+};  
 
 #endif /* HIDD_GDI_H */
