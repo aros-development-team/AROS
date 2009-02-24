@@ -45,7 +45,6 @@ struct emulbase
     void			* stdin_handle;
     void			* stdout_handle;
     void			* stderr_handle;
-    struct SignalSemaphore	  sem;
     struct SignalSemaphore	  memsem;
     APTR			  mempool;
     void			* EmulHandle;

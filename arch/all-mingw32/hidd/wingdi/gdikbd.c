@@ -20,7 +20,7 @@
 
 #include <aros/symbolsets.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE

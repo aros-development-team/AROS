@@ -341,7 +341,9 @@ void *DoOpen(char *path, int mode, int protect)
   else
       create = (flags & FMF_CLEAR) ? TRUNCATE_EXISTING : OPEN_EXISTING;
   DB2(bug("[emul] CreateFile: name \"%s\", flags 0x%08lX, lock 0x%08lX, create %lu\n", path, flags, lock, create));
+  Forbid();
   res = OpenFile(path, flags, lock, NULL, create, prot_a2w(protect), NULL);
+  Permit();
   DB2(bug("[emul] FileHandle = 0x%08lX\n", res));
   return res;
 }
@@ -359,14 +361,18 @@ static LONG free_lock(struct emulbase *emulbase, struct filehandle *current)
 	     (current->fd != emulbase->stderr_handle))
 	  {
 	        DB2(bug("[emul] CloseHandle(), fd = 0x%08lX\n", current->fd));
+	        Forbid();
 		DoClose(current->fd);
+		Permit();
 	  }
 	  break;
 	case FHD_DIRECTORY:
 	  if (current->fd != INVALID_HANDLE_VALUE)
 	  {
 	        D(bug("[emul] Closing directory search handle\n"));
+	        Forbid();
 		FindEnd(current->fd);
+		Permit();
 	  }
 	  break;
     }
@@ -480,9 +486,14 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
 	ret = makefilename(emulbase, &fh->hostname, &fh->name, *handle, filename);
 	if (!ret)
 	{
-	    if (MKDir(fh->hostname, NULL)) {
+	    Forbid();
+	    ret = MKDir(fh->hostname, NULL);
+	    Permit();
+	    if (ret) {
 	        *handle = fh;
+	        Forbid();
 	        Chmod(fh->hostname, prot_a2w(protect));
+	        Permit();
 	        return 0;
 	    }
 	    ret = Errno();
@@ -523,9 +534,11 @@ static LONG set_protect(struct emulbase *emulbase, struct filehandle* fh,
   
   if ((ret = makefilename(emulbase, &filename, NULL, fh, file)))
 	return ret;
-  
-  if (!Chmod(filename, prot_a2w(aprot)))
-	ret = Errno();
+
+  Forbid();
+  ret = Chmod(filename, prot_a2w(aprot));
+  Permit();
+  ret = ret ? 0 : Errno();
   
   emul_free(emulbase, filename);
   
@@ -567,7 +580,9 @@ static LONG startup(struct emulbase *emulbase)
 	fhv->dirpos   = 0;
 	fhv->pathname = NULL; /* just to make sure... */
 
+	Forbid();
 	res = GetCWD(256, fhv->hostname);
+	Permit();
 	if (res > 256)
 	    res = 0;
 	if(res)
@@ -582,16 +597,15 @@ static LONG startup(struct emulbase *emulbase)
 			  
 	    fhv->volumename = VOLNAME;
 
-	    DB2(bug("[emul] GetStdFile(STD_INPUT_HANDLE)\n"));
+	    Forbid();
 	    emulbase->stdin_handle = GetStdFile(STD_INPUT_HANDLE);
+	    emulbase->stdout_handle = GetStdFile(STD_OUTPUT_HANDLE);
+	    emulbase->stderr_handle = GetStdFile(STD_ERROR_HANDLE);
+	    Permit();
 	    if (!emulbase->stdin_handle)
 		emulbase->stdin_handle = INVALID_HANDLE_VALUE;
-	    DB2(bug("[emul] GetStdFile(STD_OUTPUT_HANDLE)\n"));
-	    emulbase->stdout_handle = GetStdFile(STD_OUTPUT_HANDLE);
 	    if (!emulbase->stdout_handle)
 		emulbase->stdout_handle = INVALID_HANDLE_VALUE;
-	    DB2(bug("[emul] GetStdFile(STD_ERROR_HANDLE)\n"));
-	    emulbase->stderr_handle = GetStdFile(STD_ERROR_HANDLE);
 	    if (!emulbase->stderr_handle)
 		emulbase->stderr_handle = INVALID_HANDLE_VALUE;
 
@@ -790,8 +804,13 @@ ULONG examine_start(struct emulbase *emulbase, struct filehandle *fh)
 /* Resets dirpos in directory handle and close existing search handle */
 static LONG CloseDir(struct filehandle *fh)
 {
+    ULONG r;
+
     if (fh->fd != INVALID_HANDLE_VALUE) {
-        if (!FindEnd(fh->fd))
+        Forbid();
+        r = FindEnd(fh->fd);
+        Permit();
+        if (!r)
             return Errno();
         fh->fd = INVALID_HANDLE_VALUE;
     }
@@ -835,10 +854,15 @@ ULONG ReadDir(struct filehandle *fh, LPWIN32_FIND_DATA FindData, ULONG *dirpos)
       do {
           if (fh->fd == INVALID_HANDLE_VALUE) {
               D(bug("[emul] Finding first file\n"));
+              Forbid();
               fh->fd = FindFirst(fh->pathname, FindData);
+              Permit();
               res = (fh->fd != INVALID_HANDLE_VALUE);
-          } else
+          } else {
+              Forbid();
               res = FindNext(fh->fd, FindData);
+              Permit();
+          }
           if (!res)
 	      return Errno();
 	  fh->dirpos++;
@@ -1079,7 +1103,7 @@ static LONG examine_all(struct emulbase *emulbase, struct filehandle *fh,
 
 static LONG create_hardlink(struct emulbase *emulbase, struct filehandle *handle, STRPTR name, struct filehandle *oldfile)
 {
-  LONG error=0L;
+  LONG error;
   char *fn;
   
   if (!KernelIFace->CreateHardLink)
@@ -1089,8 +1113,10 @@ static LONG create_hardlink(struct emulbase *emulbase, struct filehandle *handle
   if (!error)
   {
       D(bug("[emul] Creating hardlink %s to file %s\n", fn, oldfile->hostname));
-      if (!Link(fn, oldfile->hostname, NULL))
-	  error = Errno();
+      Forbid();
+      error = Link(fn, oldfile->hostname, NULL);
+      Permit();
+      error = error ? 0 : Errno();
       emul_free(emulbase, fn);
   }
 
@@ -1115,8 +1141,10 @@ static LONG create_softlink(struct emulbase * emulbase,
   {
       error = makefilename(emulbase, &dest, NULL, handle, ref);
       if (!error) {
-	  if (!SymLink(src, dest, 0))
-	      error = Errno();
+          Forbid();
+	  error = SymLink(src, dest, 0);
+	  Permit();
+	  error = error ? 0 : Errno();
 	  emul_free(emulbase, dest);
       }
       emul_free(emulbase, src);
@@ -1140,9 +1168,11 @@ static LONG rename_object(struct emulbase * emulbase,
 	ret = makefilename(emulbase, &newfilename, NULL, fh, newname);
 	if (!ret)
 	{
-	  if (!DoRename(filename,newfilename))
-		ret = Errno();
-	  emul_free(emulbase, newfilename);
+	    Forbid();
+	    ret = DoRename(filename,newfilename);
+	    Permit();
+	    ret = ret ? 0 : Errno();
+	    emul_free(emulbase, newfilename);
 	}
 	emul_free(emulbase, filename);
   }
@@ -1198,7 +1228,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR emulbase)
   if (loadhooks(emulbase) != 0)
 	  return FALSE;
 
-  InitSemaphore(&emulbase->sem);
   InitSemaphore(&emulbase->memsem);
   
   emulbase->mempool = CreatePool(MEMF_ANY, 4096, 2000);
@@ -1224,8 +1253,6 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
   struct filehandle 	*fhv;
   struct DosList  	*doslist;
   char    	    	*unixpath;
-  
-  ObtainSemaphore(&emulbase->sem);
   
   /* Volume name and Unix path are encoded into DEVICE entry of
    MountList like this: <volumename>:<unixpath> */
@@ -1308,7 +1335,6 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 			iofs->IOFS.io_Unit   = (struct Unit *)fhv;
 			iofs->IOFS.io_Device = &emulbase->device;
 			
-			ReleaseSemaphore(&emulbase->sem);
 			SendEvent(emulbase, IECLASS_DISKINSERTED);
 			
 			return TRUE;
@@ -1324,11 +1350,7 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 	} /* if (unixpath) */
 	
   } /* if (unixpath) */
-  
-  ReleaseSemaphore(&emulbase->sem);
-  
   return FALSE;
-  
 }
 
 /*********************************************************************************************/
@@ -1376,8 +1398,6 @@ AROS_LH1(void, beginio,
   
   /* WaitIO will look into this */
   iofs->IOFS.io_Message.mn_Node.ln_Type=NT_MESSAGE;
-  
-  ObtainSemaphore(&emulbase->sem);
   
   /*
    Do everything quick no matter what. This is possible
@@ -1447,8 +1467,10 @@ AROS_LH1(void, beginio,
 		        error = ERROR_UNKNOWN;
 		    }
 		} else {
-		    if (!DoRead(fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length, &iofs->io_Union.io_READ.io_Length, NULL))
-		        error = Errno();
+		    Forbid();
+		    error = DoRead(fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length, &iofs->io_Union.io_READ.io_Length, NULL);
+		    Permit();
+		    error = error ? 0 : Errno();
 		}
 	  }
 	  else
@@ -1491,7 +1513,9 @@ AROS_LH1(void, beginio,
 	  if (fh->type == FHD_FILE)
 	  {
 	        DB2(bug("[emul] LSeek() - getting current position\n"));
+	        Forbid();
 		oldpos = LSeek(fh->fd, 0, &pos_high, FILE_CURRENT);
+		Permit();
 		oldpos |= (UQUAD)pos_high << 32;
 		D(bug("[emul] Original position: %llu\n", oldpos));
 		
@@ -1507,10 +1531,10 @@ AROS_LH1(void, beginio,
 		}
 		pos_high = iofs->io_Union.io_SEEK.io_Offset >> 32;
 		DB2(bug("[emul] LSeek() - setting new position\n"));
-		if (LSeek(fh->fd, iofs->io_Union.io_SEEK.io_Offset, &pos_high, mode) == (ULONG)-1)
-		{
-		  error = Errno();
-		}
+		Forbid();
+		error = LSeek(fh->fd, iofs->io_Union.io_SEEK.io_Offset, &pos_high, mode);
+		Permit();
+		error = (error == (ULONG)-1) ? Errno() : 0;
 		
 		iofs->io_Union.io_SEEK.io_Offset = oldpos;
 	  }
@@ -1542,7 +1566,9 @@ AROS_LH1(void, beginio,
 	  if (fh->type == FHD_FILE)
 	  {
 	        DB2(bug("[emul] GetFileType()\n"));
+	        Forbid();
 		iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = (GetFileType(fh->fd) == FILE_TYPE_CHAR) ? TRUE : FALSE;
+		Permit();
 	  }
 	  else
 	  {
@@ -1712,8 +1738,6 @@ AROS_LH1(void, beginio,
 	  break;
   }
 
-  ReleaseSemaphore(&emulbase->sem);
-  
   /* Set error code */
   iofs->io_DosError = error;
   
