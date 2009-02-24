@@ -66,6 +66,9 @@
     CONST_STRPTR end = name;
     ULONG size;
 
+    if (!dlist)
+	return NULL;
+
     while (*end++)
 	;
 
