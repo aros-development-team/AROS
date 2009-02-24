@@ -13,13 +13,15 @@
 
 #define STACK_SIZE 4096
 
-#define EXCEPTIONS_NUM 3
+#define EXCEPTIONS_NUM 5
 #define INTERRUPTS_NUM 1
 
-#define HW_INTS_NUM 3
+#define HW_INTS_NUM 5
 #define INT_TIMER 0
 #define INT_IO    1
 #define INT_GFX   2
+#define INT_MOUSE 3
+#define INT_KBD	  4
 
 struct KernelBase {
     struct Node         kb_Node;

@@ -28,6 +28,7 @@ struct user_func {
 struct native_func {
     ULONG (*GDI_Init)(void);
     ULONG (*GDI_PutMsg)(void *win, ULONG msg, IPTR wp, IPTR lp);
+    struct MouseData *GDI_MouseData;
 };
 
 extern void *gdi_handle;
@@ -46,5 +47,6 @@ extern struct native_func *native_func;
 #define GDICALL(func,...) (gdi_func->func(__VA_ARGS__))
 #define USERCALL(func,...) (user_func->func(__VA_ARGS__))
 #define NATIVECALL(func,...) (native_func->func(__VA_ARGS__))
+#define MOUSEDATA (native_func->GDI_MouseData)
 
 #endif

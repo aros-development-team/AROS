@@ -7,13 +7,15 @@
 */
 
 #include <windows.h>
+#include <windowsx.h>
 #include <stdio.h>
 #include <aros/kernel_host.h>
 #include "gdi.h"
 
 #define D(x)
 
-DWORD thread_id;
+static DWORD thread_id;
+__declspec(dllexport) struct MouseData GDI_MouseData;
 
 /****************************************************************************************/
 
@@ -34,6 +36,21 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
         BitBlt(window_dc, x, y, xsize, ysize, bitmap_dc, x, y, SRCCOPY);
         EndPaint(win, &ps);
         return 0;
+    case WM_MOUSEMOVE:
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONUP:
+    case WM_RBUTTONDOWN:
+    case WM_RBUTTONUP:
+    case WM_MBUTTONDOWN:
+    case WM_MBUTTONUP:
+    case WM_MOUSEWHEEL:
+        GDI_MouseData.EventCode = msg;
+        GDI_MouseData.MouseX = GET_X_LPARAM(lp);
+    	GDI_MouseData.MouseY = GET_Y_LPARAM(lp);
+    	GDI_MouseData.Buttons = wp & 0x0000FFFF;
+    	GDI_MouseData.WheelDelta = wp >> 16;
+        CauseException(3);
+    	return 0;
     default:
         return DefWindowProc(win, msg, wp, lp);
     }
@@ -64,6 +81,7 @@ DWORD WINAPI gdithread_entry(LPVOID p)
 
     wcl_desc.hInstance = GetModuleHandle(NULL);
     wcl_desc.hIcon = LoadIcon(wcl_desc.hInstance, MAKEINTRESOURCE(101));
+    wcl_desc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wcl = RegisterClass(&wcl_desc);
     D(printf("[GDI] Created window class 0x%p\n", wcl));
     if (wcl) {

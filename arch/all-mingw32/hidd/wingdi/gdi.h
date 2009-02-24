@@ -32,26 +32,13 @@ struct gdimouse_data
 {
     VOID (*mouse_callback)(APTR, struct pHidd_Mouse_Event *);
     APTR callbackdata;
+    void *interrupt;
+    UWORD buttons;
 };
 
 /* IDs */
 #define IID_Hidd_GDIMouse	"hidd.mouse.gdi"
 #define CLID_Hidd_GDIMouse	"hidd.mouse.gdi"
-
-
-/* Methods */
-enum
-{
-    moHidd_GDIMouse_HandleEvent
-};
-
-struct pHidd_GDIMouse_HandleEvent
-{
-    OOP_MethodID mID;
-//  XEvent *event;
-};
-
-//VOID Hidd_GDIMouse_HandleEvent(OOP_Object *o, XEvent *event);
 
 /***** GDIKbd HIDD *******************/
 
@@ -85,18 +72,9 @@ struct gdi_staticdata
 {
     struct SignalSemaphore   sema; /* Protecting this whole struct */
     struct SignalSemaphore   gdisema;
-    
-    /* This port is used for asking the gdi task for notifications
-       on when some event occurs, for example MapNotify
-    */
-    struct MsgPort  	    *gditask_notify_port;
-    struct MsgPort  	    *gditask_quit_port;
-    
+     
     APTR 	    	     display;
-    BOOL    	    	     local_display;
     
-    ULONG   	    	     refcount;
-
     OOP_Class 	    	    *gfxclass;
     OOP_Class 	    	    *bmclass;
     OOP_Class 	    	    *mouseclass;
@@ -198,6 +176,15 @@ struct gfx_data
     void *bitmap_dc; /* Memory device context of currently shown bitmap */
     IPTR width;      /* Size of currently shown bitmap (window size)    */
     IPTR height;
+};
+
+struct MouseData
+{
+    unsigned short EventCode;
+    unsigned short MouseX;
+    unsigned short MouseY;
+    unsigned short Buttons;
+    unsigned short WheelDelta;
 };
 
 #endif /* HIDD_GDI_H */

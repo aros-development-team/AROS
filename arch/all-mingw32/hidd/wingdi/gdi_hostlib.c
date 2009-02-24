@@ -46,6 +46,7 @@ static const char *user_func_names[] = {
 static const char *native_func_names[] = {
     "GDI_Init",
     "GDI_PutMsg",
+    "GDI_MouseData",
     NULL
 };
 
