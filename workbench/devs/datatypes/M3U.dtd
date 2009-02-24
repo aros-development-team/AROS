@@ -1,0 +1,9 @@
+# DataType Description for M3U
+Name=M3U
+Version=$VER: M3U 1.0 (24.02.2009)
+BaseName=m3u
+Pattern=#?.m3u#?
+GroupID=text
+ID=m3u
+Flags=DTF_ASCII,DTF_CASE
+Priority=1
