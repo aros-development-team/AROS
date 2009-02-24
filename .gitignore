@@ -1088,6 +1088,9 @@
 # /rom/boot/
 /rom/boot/mmakefile
 
+# /rom/bootloader/
+/rom/bootloader/mmakefile
+
 # /rom/bootmenu/
 /rom/bootmenu/mmakefile
 /rom/bootmenu/libdefs.h
