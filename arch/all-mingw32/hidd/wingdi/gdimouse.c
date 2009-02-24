@@ -41,7 +41,6 @@ static VOID MouseIntHandler(struct gdimouse_data *data, void *p);
 
 OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    void *mouse_int;
     BOOL has_mouse_hidd = FALSE;
     
     D(EnterFunc("[GDIMouse] hidd.mouse.gdi::New()\n"));
@@ -65,7 +64,6 @@ OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	struct gdimouse_data *data = OOP_INST_DATA(cl, o);
 	struct TagItem       *tag, *tstate;
 	
-	data->interrupt = mouse_int;
 	data->buttons = 0;
 	data->interrupt = KrnAddExceptionHandler(3, MouseIntHandler, data, NULL);
 	D(bug("[GDIMouse] Mouse interrupt object: 0x%p\n", data->interrupt));
