@@ -76,6 +76,10 @@ void __dosboot_Boot(struct ExecBase *SysBase, BOOL hidds_ok)
             sseq = Open("S:Startup-Sequence", FMF_READ);
             tags[5].ti_Data = (IPTR)sseq;
         }
+        else
+        {
+            tags[5].ti_Tag = TAG_IGNORE;
+        }
 
         rc = SystemTagList("", tags);
         if (rc != -1)
