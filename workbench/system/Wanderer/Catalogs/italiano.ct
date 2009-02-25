@@ -132,7 +132,7 @@ MSG_MEN_REVERSE
 Inverso
 ;
 MSG_MEN_DRWFRST
-I cassetti per primi
+Prima i cassetti
 ;
 MSG_MEN_ICON
 Icona
@@ -165,7 +165,7 @@ MSG_REALLYQUIT (//)
 Vuoi davvero chiudere Wanderer?
 ;
 MSG_YESNO (//)
-*S√¨|No
+*SÏ|No
 ;
 MSG_DUMMY
 DUMMY
@@ -189,7 +189,7 @@ MSG_SHUTDOWN_BUTTONS (//)
 Spegni|Riavvia Computer|Riavvia AROS|*Annulla
 ;
 MSG_ACTION_NOT_SUPPORTED (//)
-L'opzione scelta non √® supportata da questo computer.
+L'opzione richiesta non Ë supportata da questo computer.
 ;
 MSG_OK (//)
 *OK
@@ -213,7 +213,7 @@ MSG_REQU_DELETE (//)
 Elimina file ...
 ;
 MSG_REQU_DELETE_YESNO (//)
-_S√¨|Elimina _Tutti|_No|No _Per Tutti
+_SÏ|Elimina _Tutti|_No|No _Per Tutti
 ;
 MSG_REQU_DELETE_DRAWER_S (//)
 Eliminare davvero il cassetto
@@ -234,7 +234,7 @@ MSG_REQU_OVERWRITE (//)
 Sovrascrivi file ...
 ;
 MSG_REQU_OVERWRITE_S (//)
-Sovrascrivi davvero il file
+Intendi sovrascrivere il file
 ;
 MSG_REQU_OVERWRITE_M (//)
 contenuto in
@@ -267,16 +267,16 @@ MSG_WANDERER_FILEACCESS_COPYFROM (//)
 Copia da
 ;
 MSG_WANDERER_FILEACCESS_COPYTO (//)
-Copia su
+Copia in
 ;
 MSG_WANDERER_FILEACCESS_FILE (//)
 File
 ;
 MSG_WANDERER_FILEACCESS_TRAFFIC (//)
-Velocit√† di trasferimento
+Velocit‡ di trasferimento
 ;
 MSG_WANDERER_FILEACCESS_DELETEFROM (//)
-Eliminazione da cassetto
+Elimina dal cassetto
 ;
 MSG_WANDERER_FILEACCESS_FILETODELETE (//)
 File da eliminare
