@@ -1,4 +1,4 @@
-## version $VER: AboutAROS.catalog 1.2 (24.11.2008)
+## version $VER: AboutAROS.catalog 1.3 (24.02.2009)
 ## language russian
 ## codeset 0
 ;
@@ -114,7 +114,7 @@ DOS
 ; DOS
 ;
 MSG_SECTION_NETWORK (//)
-Networking Components
+Сетевые компоненты
 ;Networking Components
 ;
 MSG_SECTION_LIBC_POSIX
@@ -137,3 +137,6 @@ MSG_SECTION_WEBSITE
 Веб-сайт
 ; Website
 ;
+MSG_SECTION_DATATYPES (//)
+Datatypes
+;Datatypes
