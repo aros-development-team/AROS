@@ -25,19 +25,6 @@ extern const unsigned long start64;
 extern const void * _binary_smpbootstrap_start;
 extern const unsigned long _binary_smpbootstrap_size;
 
-IPTR           _kern_initflags = 0;
-
-#define KERNBOOTFLAG_SERDEBUGCONFIGURED (1 << 0)
-#define KERNBOOTFLAG_DEBUG              (1 << 1)
-#define KERNBOOTFLAG_BOOTCPUSET         (1 << 2)
-
-IPTR           _kern_early_ACPIRSDP;
-IPTR           _Kern_APICTrampolineBase;
-
-static char     _kern_early_BOOTCmdLine[200];
-
-UBYTE          _kern_early_BOOTAPICID;
-
 /* Pre-exec init */
 
 asm(".section .aros.init,\"ax\"\n\t"
@@ -53,6 +40,8 @@ asm(".section .aros.init,\"ax\"\n\t"
     ".string \"Native/CORE v3 (" __DATE__ ")\""
     "\n\t.text\n\t"
 );
+
+static struct   KernBootPrivate *__KernBootPrivate = NULL;
 
 void __clear_bss(struct TagItem *msg)
 {
@@ -76,9 +65,9 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     int i;
     TLS_SET(KernelBase, LIBBASE);
     struct ExecBase *SysBase = TLS_GET(SysBase);
-    
+
     LIBBASE->kb_XTPIC_Mask = 0xfffb;
-     
+
     for (i=0; i < 256; i++)
     {
         NEWLIST(&LIBBASE->kb_Intr[i]);
@@ -96,58 +85,41 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
         }
     }
 
-    D(bug("[Kernel] Kernel_Init: Post-exec init\n"));
+    D(bug("[Kernel] Kernel_Init: Post-exec init. KernelBase @ %p\n", LIBBASE));
+    D(bug("[Kernel] Kernel_Init: Interupt List initialised\n"));
 
-    LIBBASE->kb_APICBase = core_APICGetMSRAPICBase();
+    LIBBASE->kb_APIC_Count = 1;
 
-    D(bug("[Kernel] Kernel_Init: APIC Base @ %012p\n", LIBBASE->kb_APICBase));
+    LIBBASE->kb_APIC_DriverID = __KernBootPrivate->kbp_APIC_DriverID;
+    LIBBASE->kb_APIC_Drivers = __KernBootPrivate->kbp_APIC_Drivers;
 
-    core_APICInitialise(LIBBASE->kb_APICBase);
+    LIBBASE->kb_APIC_IDMap = AllocVec(sizeof(UWORD), MEMF_CLEAR);
+    LIBBASE->kb_APIC_BaseMap = AllocVec(sizeof(IPTR), MEMF_CLEAR);
 
-    if (_kern_early_ACPIRSDP)
+    D(bug("[Kernel] Kernel_Init: APIC IDMap @ %p, BaseMap @ %p\n", LIBBASE->kb_APIC_IDMap, LIBBASE->kb_APIC_BaseMap));
+
+    D(bug("[Kernel] Kernel_Init: APIC Drivers @ %p, Using No %d\n", LIBBASE->kb_APIC_Drivers, LIBBASE->kb_APIC_DriverID));
+
+    LIBBASE->kb_APIC_IDMap[0] = __KernBootPrivate->kbp_APIC_BSPID;
+    LIBBASE->kb_APIC_BaseMap[0] = AROS_UFC0(IPTR,
+                ((struct GenericAPIC *)(LIBBASE->kb_APIC_Drivers[LIBBASE->kb_APIC_DriverID])->getbase));
+
+    LIBBASE->kb_APIC_TrampolineBase = __KernBootPrivate->kbp_APIC_TrampolineBase;
+
+    D(bug("[Kernel] Kernel_Init: BSP APIC ID %d, Base @ %p\n", LIBBASE->kb_APIC_IDMap[0], LIBBASE->kb_APIC_BaseMap[0]));
+
+    IPTR retval = AROS_UFC1(IPTR, ((struct GenericAPIC *)LIBBASE->kb_APIC_Drivers[LIBBASE->kb_APIC_DriverID])->init,
+            AROS_UFCA(IPTR, LIBBASE->kb_APIC_BaseMap[0], A0));
+
+    if (__KernBootPrivate->kbp_ACPIRSDP)
     {
-        LIBBASE->kb_ACPIRSDP = _kern_early_ACPIRSDP;
-        LIBBASE->kb_APICCount = 1;
-        LIBBASE->kb_APICIDMap = AllocVec(LIBBASE->kb_APICCount, MEMF_CLEAR);
-        LIBBASE->kb_APICIDMap[0] = _kern_early_BOOTAPICID;
+        LIBBASE->kb_ACPIRSDP = __KernBootPrivate->kbp_ACPIRSDP;
 
-        core_ACPIInitialise();
+        core_ACPIInitialise(LIBBASE);
     }
-
-    uint32_t *localAPIC = (uint32_t*)LIBBASE->kb_APICBase + 0x320;
 
     LIBBASE->kb_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096);
     D(bug("[Kernel] Kernel_Init: MemPool @ %012p\n", LIBBASE->kb_MemPool));
-
-/*
-    asm volatile ("movl %0,(%1)"::"r"(0),"r"((volatile uint32_t*)(LIBBASE->kb_APICBase + 0xb0)));
-    
-    D(bug("[Kernel] Kernel_Init: APIC SVR=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0xf0)));
-    D(bug("[Kernel] Kernel_Init: APIC ESR=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x280)));
-    D(bug("[Kernel] Kernel_Init: APIC TPR=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x80)));
-    D(bug("[Kernel] Kernel_Init: APIC ICR=%08x%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x314), *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x310)));
-    D(bug("[Kernel] Kernel_Init: APIC Timer divide=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x3e0)));
-    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
-    
-    asm volatile ("movl %0,(%1)"::"r"(0x000000fe),"r"((volatile uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
-    //*(volatile uint32_t *)localAPIC = 0x000000fe;
-    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
-    
-    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x380)));
-    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x390)));
-    *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x380) = 0x11111111;
-    asm volatile ("movl %0,(%1)"::"r"(0x000200fe),"r"((volatile uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
-    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
-    
-    for (i=0; i < 0x10000000; i++) asm volatile("nop;");
-    
-    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x380)));
-    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x390)));
-    for (i=0; i < 0x1000000; i++) asm volatile("nop;");
-    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x380)));
-    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x390)));
-
-    for (i=0; i < 0x1000000; i++) asm volatile("nop;"); */
 }
 
 ADD2INITLIB(Kernel_Init, 0)
@@ -160,6 +132,7 @@ static intptr_t len;
 
 int kernel_cstart(struct TagItem *msg, void *entry)
 {
+    IPTR lowpages = (krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
     struct TagItem *tag;
     IPTR _APICBase;
     UBYTE _APICID;
@@ -168,9 +141,25 @@ int kernel_cstart(struct TagItem *msg, void *entry)
     /* Enable fxsave/fxrstor */ 
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
 
+    if ((__KernBootPrivate == NULL) && (lowpages > 0x2000) && ((lowpages - 0x2000) > PAGE_SIZE))
+    {
+        __KernBootPrivate = (struct KernBootPrivate *)((lowpages - PAGE_SIZE) & ~PAGE_MASK);
+        lowpages = (IPTR)(__KernBootPrivate - 1)/1024;
+
+        krnSetTagData(KRN_MEMLower, lowpages, msg);
+        __KernBootPrivate->kbp_InitFlags = NULL;
+        __KernBootPrivate->kbp_PrivateNext = __KernBootPrivate;
+        __KernBootPrivate->kbp_PrivateNext += sizeof(struct KernBootPrivate);
+    }
+    else if (__KernBootPrivate == NULL)
+    {
+        /* Couldnt allocate private storage - so halt the cpu! */
+        asm("hlt");
+    }
+
     /* Initialise the serial hardware ASAP so all debug is output correctly!
         rkprintf (screen output) _may_ also be directed to the serial output */
-    if (!(_kern_initflags & KERNBOOTFLAG_SERDEBUGCONFIGURED))
+    if (!(__KernBootPrivate->kbp_InitFlags & KERNBOOTFLAG_SERDEBUGCONFIGURED))
     {
         BOOL            _DoDebug = FALSE;
 
@@ -200,7 +189,7 @@ int kernel_cstart(struct TagItem *msg, void *entry)
 
                     if (_DoDebug)
                     {
-                        _kern_initflags |= KERNBOOTFLAG_DEBUG;
+                        __KernBootPrivate->kbp_InitFlags |= KERNBOOTFLAG_DEBUG;
                         __serial_rawio_debug = 1;
                     }
                 }
@@ -250,30 +239,37 @@ int kernel_cstart(struct TagItem *msg, void *entry)
             struct ExecBase *SysBase = NULL;
             Exec_SerialRawIOInit();
         }
-        _kern_initflags |= KERNBOOTFLAG_SERDEBUGCONFIGURED;
+        __KernBootPrivate->kbp_InitFlags |= KERNBOOTFLAG_SERDEBUGCONFIGURED;
     }
 
     rkprintf("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [asm stub @ %p].\n", kernel_cstart, &start64);
 
-    _APICBase = core_APICGetMSRAPICBase();
-    _APICID = core_APICGetID(_APICBase);
-    rkprintf("[Kernel] kernel_cstart: launching on APIC ID %d, base @ %p\n", _APICID, _APICBase);
-
-    if (!(_kern_initflags & KERNBOOTFLAG_BOOTCPUSET))
+    if (!(__KernBootPrivate->kbp_InitFlags & KERNBOOTFLAG_BOOTCPUSET))
     {
-        if ((_EnableDebug == 1) && (_kern_initflags & KERNBOOTFLAG_SERDEBUGCONFIGURED))
+        if ((_EnableDebug == 1) && (__KernBootPrivate->kbp_InitFlags & KERNBOOTFLAG_SERDEBUGCONFIGURED))
         {
             rkprintf("[Kernel] kernel_cstart: Serial Debug initialised [port 0x%x, speed=%d, flags=0x%x].\n", __serial_rawio_port, __serial_rawio_speed, (__serial_rawio_databits | __serial_rawio_parity | __serial_rawio_stopbits));
         }
-        _kern_early_BOOTAPICID = _APICID;
-        _kern_initflags |= KERNBOOTFLAG_BOOTCPUSET;
+
+        core_APICProbe(__KernBootPrivate);
+
+        _APICBase = AROS_UFC0(IPTR,
+                ((struct GenericAPIC *)__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getbase);
+        _APICID = (UBYTE)AROS_UFC1(IPTR,
+                ((struct GenericAPIC *)__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getid,
+                        AROS_UFCA(IPTR, _APICBase, A0));
+        rkprintf("[Kernel] kernel_cstart[%d]: launching on BSP APIC ID %d, base @ %p\n", _APICID, _APICID, _APICBase);
+        rkprintf("[Kernel] kernel_cstart[%d]: KernelBootPrivate @ %p [%d bytes], Next @ %p\n", _APICID, __KernBootPrivate, sizeof(struct KernBootPrivate), __KernBootPrivate->kbp_PrivateNext);
+
+        __KernBootPrivate->kbp_APIC_BSPID = _APICID;
+        __KernBootPrivate->kbp_InitFlags |= KERNBOOTFLAG_BOOTCPUSET;
 
          tag = krnFindTagItem(KRN_CmdLine, msg);
         if (tag)
         {
-            if (tag->ti_Data != (IPTR)_kern_early_BOOTCmdLine) {
-                strncpy(_kern_early_BOOTCmdLine, tag->ti_Data, 200);
-                tag->ti_Data = (IPTR)_kern_early_BOOTCmdLine;
+            if (tag->ti_Data != (IPTR)__KernBootPrivate->kbp_BOOTCmdLine) {
+                strncpy(__KernBootPrivate->kbp_BOOTCmdLine, tag->ti_Data, 200);
+                tag->ti_Data = (IPTR)__KernBootPrivate->kbp_BOOTCmdLine;
             }
         }
 
@@ -297,57 +293,59 @@ int kernel_cstart(struct TagItem *msg, void *entry)
 
         BootMsg = msg;
 
-        core_APICProbe();
-
         /* Initialize the ACPI boot-time table parser. */
-        _kern_early_ACPIRSDP = core_ACPIProbe(msg);
-        rkprintf("[Kernel] kernel_cstart: core_ACPIProbe() returned %p\n", _kern_early_ACPIRSDP);
+        __KernBootPrivate->kbp_ACPIRSDP = core_ACPIProbe(msg, __KernBootPrivate);
+        rkprintf("[Kernel] kernel_cstart[%d]: core_ACPIProbe() returned %p\n", _APICID, __KernBootPrivate->kbp_ACPIRSDP);
 
-        IPTR lowpages = (krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
-
-        rkprintf("[Kernel] kernel_cstart: lowpages = %p\n", lowpages);
+        lowpages = (krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
+        rkprintf("[Kernel] kernel_cstart[%d]: lowpages = %p\n", _APICID, lowpages);
         if ((lowpages > 0x2000) && ((lowpages - 0x2000) > PAGE_SIZE))
         {
-            _Kern_APICTrampolineBase = (lowpages - PAGE_SIZE) & ~PAGE_MASK;
-            lowpages = (_Kern_APICTrampolineBase - 1)/1024;
+            __KernBootPrivate->kbp_APIC_TrampolineBase = (lowpages - PAGE_SIZE) & ~PAGE_MASK;
+            lowpages = (__KernBootPrivate->kbp_APIC_TrampolineBase - 1)/1024;
 
             krnSetTagData(KRN_MEMLower, lowpages, msg);
-            rkprintf("[Kernel] kernel_cstart: Allocated %d bytes for APIC Trampoline @ %p\n", PAGE_SIZE, _Kern_APICTrampolineBase);
+            rkprintf("[Kernel] kernel_cstart[%d]: Allocated %d bytes for APIC Trampoline @ %p\n", _APICID, PAGE_SIZE, __KernBootPrivate->kbp_APIC_TrampolineBase);
 
-#if defined(CONFIG_LAPICS)       
-            memcpy(_Kern_APICTrampolineBase, &_binary_smpbootstrap_start,
+#if defined(CONFIG_LAPICS)
+            memcpy(__KernBootPrivate->kbp_APIC_TrampolineBase, &_binary_smpbootstrap_start,
                         &_binary_smpbootstrap_size);
 
-            rkprintf("[Kernel] kernel_cstart: Copied APIC bootstrap code to Trampoline from %p, %d bytes\n", &_binary_smpbootstrap_start,
+            rkprintf("[Kernel] kernel_cstart[%d]: Copied APIC bootstrap code to Trampoline from %p, %d bytes\n", _APICID, &_binary_smpbootstrap_start,
                         &_binary_smpbootstrap_size);
 #endif
         }
+    }
+    else
+    {
+        _APICBase = AROS_UFC0(IPTR,
+                ((struct GenericAPIC *)__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getbase);
+        _APICID = (UBYTE)AROS_UFC1(IPTR,
+                ((struct GenericAPIC *)__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getid,
+                        AROS_UFCA(IPTR, _APICBase, A0));
 
-        /* Prepair GDT */
-        core_SetupGDT();
+        rkprintf("[Kernel] kernel_cstart[%d]: launching on AP APIC ID %d, base @ %p\n", _APICID, _APICID, _APICBase);
+        rkprintf("[Kernel] kernel_cstart[%d]: KernelBootPrivate @ %p\n", _APICID, __KernBootPrivate);
+    }
+    /* Prepair GDT */
+    core_SetupGDT(__KernBootPrivate);
 
-        /* Set TSS, GDT, LDT and MMU up */
-        core_CPUSetup(_APICBase);
-        core_SetupIDT();
-        core_SetupMMU();
+    /* Set TSS, GDT, LDT and MMU up */
+    core_CPUSetup(_APICBase);
+    core_SetupIDT(__KernBootPrivate);
+    core_SetupMMU(__KernBootPrivate);
 
+    (rkprintf("[Kernel] kernel_cstart[%d]: APIC_BASE_MSR=%016p\n", _APICID, _APICBase + 0x900));
+
+    if (_APICID == __KernBootPrivate->kbp_APIC_BSPID)
+    {
         addr = krnGetTagData(KRN_KernelBase, 0, msg);
         len = krnGetTagData(KRN_KernelHighest, 0, msg) - addr;
         core_ProtKernelArea(addr, len, 1, 0, 1);
 
         /* Lock page 0! */
         core_ProtKernelArea(0, PAGE_SIZE, 0, 0, 0);
-    }
-    else
-    {
-        core_CPUSetup(_APICBase);
-        core_SetupIDT();
-    }
 
-    (rkprintf("[Kernel] kernel_cstart[%d]: APIC_BASE_MSR=%016p\n", _APICID, rdmsrq(27)));
-
-    if (_APICID == _kern_early_BOOTAPICID)
-    {
         /* Setup the 8259 */
         asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0x20)); /* Initialization sequence for 8259A-1 */
         asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0xa0)); /* Initialization sequence for 8259A-2 */
@@ -417,95 +415,111 @@ GDT_sel = {sizeof(GDT)-1, (uint64_t)&GDT};
 
 static tls_t system_tls;
 
-void core_SetupGDT()
+void core_SetupGDT(struct KernBootPrivate *__KernBootPrivate)
 {
+    IPTR        _APICBase;
+    UBYTE       _APICID;
     int i;
-    
-    /* Supervisor segments */
-    GDT.super_cs.type=0x1a;     /* code segment */
-    GDT.super_cs.dpl=0;         /* supervisor level */
-    GDT.super_cs.p=1;           /* present */
-    GDT.super_cs.l=1;           /* long (64-bit) one */
-    GDT.super_cs.d=0;           /* must be zero */
-    GDT.super_cs.limit_low=0xffff;
-    GDT.super_cs.limit_high=0xf;
-    GDT.super_cs.g=1;
 
-    GDT.super_ds.type=0x12;     /* data segment */
-    GDT.super_ds.dpl=0;         /* supervisor level */
-    GDT.super_ds.p=1;           /* present */
-    GDT.super_ds.limit_low=0xffff;
-    GDT.super_ds.limit_high=0xf;
-    GDT.super_ds.g=1;
-    GDT.super_ds.d=1;
+    _APICBase = AROS_UFC0(IPTR,
+        (*(__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getbase));
 
-    /* User mode segments */
-    GDT.user_cs.type=0x1a;      /* code segment */
-    GDT.user_cs.dpl=3;          /* User level */
-    GDT.user_cs.p=1;            /* present */
-    GDT.user_cs.l=1;            /* long mode */
-    GDT.user_cs.d=0;            /* must be zero */
-    GDT.user_cs.limit_low=0xffff;
-    GDT.user_cs.limit_high=0xf;
-    GDT.user_cs.g=1;
+    _APICID = (UBYTE)AROS_UFC1(IPTR,
+        (*(__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getid),
+                AROS_UFCA(IPTR, _APICBase, A0));
 
-    GDT.user_cs32.type=0x1a;    /* code segment for legacy 32-bit code. NOT USED YET! */
-    GDT.user_cs32.dpl=3;        /* user elvel */
-    GDT.user_cs32.p=1;          /* present */
-    GDT.user_cs32.l=0;          /* 32-bit mode */
-    GDT.user_cs32.d=1;          /* 32-bit code */
-    GDT.user_cs32.limit_low=0xffff;
-    GDT.user_cs32.limit_high=0xf;
-    GDT.user_cs32.g=1;
+    D(rkprintf("[Kernel] core_SetupGDT(%d)\n", _APICID));
 
-    GDT.user_ds.type=0x12;      /* data segment */
-    GDT.user_ds.dpl=3;    /* user elvel */
-    GDT.user_ds.p=1;            /* present */
-    GDT.user_ds.limit_low=0xffff;
-    GDT.user_ds.limit_high=0xf;
-    GDT.user_ds.g=1;
-    GDT.user_ds.d=1;
-
-    for (i=0; i < 16; i++)
+    if (_APICID == __KernBootPrivate->kbp_APIC_BSPID)
     {
-        /* Task State Segment */
-        GDT.tss[i].tss_low.type=0x09;      /* 64-bit TSS */
-        GDT.tss[i].tss_low.limit_low=sizeof(TSS)-1;
-        GDT.tss[i].tss_low.base_low=((unsigned int)&TSS[i]) & 0xffff;
-        GDT.tss[i].tss_low.base_mid=(((unsigned int)&TSS[i]) >> 16) & 0xff;
-        GDT.tss[i].tss_low.dpl=3;          /* User mode task */
-        GDT.tss[i].tss_low.p=1;            /* present */
-        GDT.tss[i].tss_low.limit_high=((sizeof(TSS)-1) >> 16) & 0x0f;
-        GDT.tss[i].tss_low.base_high=(((unsigned int)&TSS[i]) >> 24) & 0xff;
-        GDT.tss[i].tss_high.base_ext = 0;  /* is within 4GB :-D */
-    }
-    intptr_t tls_ptr = (intptr_t)&system_tls;
-    
-    GDT.gs.type=0x12;      /* data segment */
-    GDT.gs.dpl=3;    /* user elvel */
-    GDT.gs.p=1;            /* present */
-    GDT.gs.base_low = tls_ptr & 0xffff;
-    GDT.gs.base_mid = (tls_ptr >> 16) & 0xff;
-    GDT.gs.base_high = (tls_ptr >> 24) & 0xff;   
-    GDT.gs.g=1;
-    GDT.gs.d=1;
-}
+        /* Supervisor segments */
+        GDT.super_cs.type=0x1a;     /* code segment */
+        GDT.super_cs.dpl=0;         /* supervisor level */
+        GDT.super_cs.p=1;           /* present */
+        GDT.super_cs.l=1;           /* long (64-bit) one */
+        GDT.super_cs.d=0;           /* must be zero */
+        GDT.super_cs.limit_low=0xffff;
+        GDT.super_cs.limit_high=0xf;
+        GDT.super_cs.g=1;
 
+        GDT.super_ds.type=0x12;     /* data segment */
+        GDT.super_ds.dpl=0;         /* supervisor level */
+        GDT.super_ds.p=1;           /* present */
+        GDT.super_ds.limit_low=0xffff;
+        GDT.super_ds.limit_high=0xf;
+        GDT.super_ds.g=1;
+        GDT.super_ds.d=1;
+
+        /* User mode segments */
+        GDT.user_cs.type=0x1a;      /* code segment */
+        GDT.user_cs.dpl=3;          /* User level */
+        GDT.user_cs.p=1;            /* present */
+        GDT.user_cs.l=1;            /* long mode */
+        GDT.user_cs.d=0;            /* must be zero */
+        GDT.user_cs.limit_low=0xffff;
+        GDT.user_cs.limit_high=0xf;
+        GDT.user_cs.g=1;
+
+        GDT.user_cs32.type=0x1a;    /* code segment for legacy 32-bit code. NOT USED YET! */
+        GDT.user_cs32.dpl=3;        /* user elvel */
+        GDT.user_cs32.p=1;          /* present */
+        GDT.user_cs32.l=0;          /* 32-bit mode */
+        GDT.user_cs32.d=1;          /* 32-bit code */
+        GDT.user_cs32.limit_low=0xffff;
+        GDT.user_cs32.limit_high=0xf;
+        GDT.user_cs32.g=1;
+
+        GDT.user_ds.type=0x12;      /* data segment */
+        GDT.user_ds.dpl=3;    /* user elvel */
+        GDT.user_ds.p=1;            /* present */
+        GDT.user_ds.limit_low=0xffff;
+        GDT.user_ds.limit_high=0xf;
+        GDT.user_ds.g=1;
+        GDT.user_ds.d=1;
+
+        for (i=0; i < 16; i++)
+        {
+            /* Task State Segment */
+            GDT.tss[i].tss_low.type=0x09;      /* 64-bit TSS */
+            GDT.tss[i].tss_low.limit_low=sizeof(TSS)-1;
+            GDT.tss[i].tss_low.base_low=((unsigned int)&TSS[i]) & 0xffff;
+            GDT.tss[i].tss_low.base_mid=(((unsigned int)&TSS[i]) >> 16) & 0xff;
+            GDT.tss[i].tss_low.dpl=3;          /* User mode task */
+            GDT.tss[i].tss_low.p=1;            /* present */
+            GDT.tss[i].tss_low.limit_high=((sizeof(TSS)-1) >> 16) & 0x0f;
+            GDT.tss[i].tss_low.base_high=(((unsigned int)&TSS[i]) >> 24) & 0xff;
+            GDT.tss[i].tss_high.base_ext = 0;  /* is within 4GB :-D */
+        }
+        intptr_t tls_ptr = (intptr_t)&system_tls;
+
+        GDT.gs.type=0x12;      /* data segment */
+        GDT.gs.dpl=3;    /* user elvel */
+        GDT.gs.p=1;            /* present */
+        GDT.gs.base_low = tls_ptr & 0xffff;
+        GDT.gs.base_mid = (tls_ptr >> 16) & 0xff;
+        GDT.gs.base_high = (tls_ptr >> 24) & 0xff;   
+        GDT.gs.g=1;
+        GDT.gs.d=1;
+    }
+}
 
 void core_CPUSetup(IPTR _APICBase)
 {
-    UBYTE CPU_ID = core_APICGetID(_APICBase);
-    rkprintf("[Kernel] core_CPUSetup(id:%d)\n", CPU_ID);
-    
+    UBYTE _APICID = AROS_UFC1(UBYTE,
+                ((struct GenericAPIC *)__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getid,
+                        AROS_UFCA(IPTR, _APICBase, A0));
+
+    D(rkprintf("[Kernel] core_CPUSetup(%d)\n", _APICID));
+
 //    system_tls.SysBase = (struct ExecBase *)0x12345678;
     
-    TSS[CPU_ID].ist1 = (uint64_t)&stack_panic[STACK_SIZE-2];
-    TSS[CPU_ID].rsp0 = (uint64_t)&stack_super[STACK_SIZE-2];
-    TSS[CPU_ID].rsp1 = (uint64_t)&stack_ring1[STACK_SIZE-2];
+    TSS[_APICID].ist1 = (uint64_t)&stack_panic[STACK_SIZE-2];
+    TSS[_APICID].rsp0 = (uint64_t)&stack_super[STACK_SIZE-2];
+    TSS[_APICID].rsp1 = (uint64_t)&stack_ring1[STACK_SIZE-2];
 
-    rkprintf("[Kernel] core_CPUSetup[%d]: Reloading the GDT and Task Register\n", CPU_ID);
+    rkprintf("[Kernel] core_CPUSetup[%d]: Reloading the GDT and Task Register\n", _APICID);
     asm volatile ("lgdt %0"::"m"(GDT_sel));
-    asm volatile ("ltr %w0"::"r"(TASK_SEG + (CPU_ID << 4)));
+    asm volatile ("ltr %w0"::"r"(TASK_SEG + (_APICID << 4)));
     asm volatile ("mov %0,%%gs"::"a"(SEG_GS));    
 }
 

@@ -211,11 +211,21 @@ const void __attribute__((section(".text"))) (*interrupt[256])(void) = {
     IRQLIST_16(0x0), IRQLIST_16(0x1), IRQLIST_16(0x2)
 };
 
-void core_SetupIDT()
+void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate)
 {
+    IPTR _APICBase;
+    UBYTE _APICID;
     int i;
     uintptr_t off;
-    rkprintf("[Kernel] Setting all interrupt handlers to default value\n");
+
+    _APICBase = AROS_UFC0(IPTR,
+            ((struct GenericAPIC *)__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getbase);
+
+    _APICID = AROS_UFC1(UBYTE,
+            ((struct GenericAPIC *)__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getid,
+                    AROS_UFCA(IPTR, _APICBase, A0));
+
+    rkprintf("[Kernel] core_SetupIDT[%d] Setting all interrupt handlers to default value\n", _APICID);
 
     for (i=0; i < 256; i++)
     {
@@ -262,7 +272,7 @@ void core_Cause(struct ExecBase *SysBase)
 static void core_APIC_AckIntr(uint8_t intnum)
 {
     struct KernelBase *KernelBase = TLS_GET(KernelBase);
-    asm volatile ("movl %0,(%1)"::"r"(0),"r"(KernelBase->kb_APICBase + 0xb0));
+    asm volatile ("movl %0,(%1)"::"r"(0),"r"(KernelBase->kb_APIC_BaseMap[0] + 0xb0));
 }
 
 static void core_XTPIC_DisableIRQ(uint8_t irqnum)

@@ -23,12 +23,8 @@
 #endif
 
 struct KernelACPIData {
-    BOOL                kb_APIC_Enabled;
-    int                 kb_APIC_IRQ_Model;
-    IPTR                kb_APIC_Driver;
-
     IPTR                kb_ACPI_SDT_Phys;
-    unsigned int                 kb_ACPI_SDT_Count;
+    ULONG               kb_ACPI_SDT_Count;
     IPTR                kb_ACPI_SDT_Entry[ACPI_MAX_TABLES];
 /*..*/
     int                 kb_ACPI_Disabled;
@@ -36,10 +32,10 @@ struct KernelACPIData {
 
     int                 kb_ACPI_HT;
 
-    int                 kb_ACPI_LAPIC;
     int                 kb_ACPI_IOAPIC;
 
-    BOOL                kb_SMP_Enabled;
+//    BOOL                kb_APIC_Enabled;
+//    BOOL                kb_SMP_Enabled;
     int                 kb_SMP_Config;
 };
 
@@ -430,21 +426,21 @@ struct acpi_table_ecdt
 
 /* ACPI Table Parser hook func protos */
 
-AROS_UFP1(int, ACPI_hook_Table_MADT_Parse,
+AROS_UFP1(IPTR, ACPI_hook_Table_MADT_Parse,
     AROS_UFPA(struct acpi_table_hook *,	table_hook,	A0));
-AROS_UFP1(int, ACPI_hook_Table_LAPIC_Parse,
+AROS_UFP1(IPTR, ACPI_hook_Table_LAPIC_Parse,
     AROS_UFPA(struct acpi_madt_entry_hook *,	table_hook,	A0));
-AROS_UFP1(int, ACPI_hook_Table_LAPIC_Addr_Ovr_Parse,
+AROS_UFP1(IPTR, ACPI_hook_Table_LAPIC_Addr_Ovr_Parse,
     AROS_UFPA(struct acpi_madt_entry_hook *,	table_hook,	A0));
-AROS_UFP1(int, ACPI_hook_Table_LAPIC_NMI_Parse,
+AROS_UFP1(IPTR, ACPI_hook_Table_LAPIC_NMI_Parse,
     AROS_UFPA(struct acpi_madt_entry_hook *,	table_hook,	A0));
-AROS_UFP1(int, ACPI_hook_Table_IOAPIC_Parse,
+AROS_UFP1(IPTR, ACPI_hook_Table_IOAPIC_Parse,
     AROS_UFPA(struct acpi_madt_entry_hook *,	table_hook,	A0));
-AROS_UFP1(int, ACPI_hook_Table_Int_Src_Ovr_Parse,
+AROS_UFP1(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
     AROS_UFPA(struct acpi_madt_entry_hook *,	table_hook,	A0));
-AROS_UFP1(int, ACPI_hook_Table_NMI_Src_Parse,
+AROS_UFP1(IPTR, ACPI_hook_Table_NMI_Src_Parse,
     AROS_UFPA(struct acpi_madt_entry_hook *,	table_hook,	A0));
-AROS_UFP1(int, ACPI_hook_Table_HPET_Parse,
+AROS_UFP1(IPTR, ACPI_hook_Table_HPET_Parse,
     AROS_UFPA(struct acpi_table_hook *,	table_hook,	A0));
 
 #endif /* __AROS_ACPI_H__ */
