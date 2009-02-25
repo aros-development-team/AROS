@@ -116,28 +116,47 @@ static ULONG DrawModeTable[] = {
     WHITENESS
 };
 
-VOID GDIBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
+static void FillRect(OOP_Class *cl, struct bitmap_data *data, OOP_Object *gc, ULONG minX, ULONG minY, ULONG maxX, ULONG maxY)
 {
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     APTR br, orig_br;
     ULONG col, mode;
     
-    D(bug("[GDI] hidd.bitmap.gdibitmap::FillRect(0x%p, %d,%d,%d,%d)\n", o, msg->minX, msg->minY, msg->maxX, msg->maxY));
-    
-    col = GC_FG(msg->gc);
-    mode = DrawModeTable[GC_DRMD(msg->gc)];
+    col = GC_FG(gc);
+    mode = DrawModeTable[GC_DRMD(gc)];
     D(bug("[GDI] Brush color 0x%08lX, mode 0x%08lX\n", col, mode));
 
     LOCK_GDI
     br = GDICALL(CreateSolidBrush, col);
     if (br) {
         orig_br = GDICALL(SelectObject, data->dc, br);
-        GDICALL(PatBlt, data->dc, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, mode);
+        GDICALL(PatBlt, data->dc, minX, minY, maxX - minX + 1, maxY - minY + 1, mode);
         GDICALL(SelectObject, data->dc, orig_br);
         GDICALL(DeleteObject, br);
     }
-    REFRESH(msg->minX, msg->minY, msg->maxX + 1 , msg->maxY + 1)
-    UNLOCK_GDI    
+    REFRESH(minX, minY, maxX + 1, maxY + 1)
+    UNLOCK_GDI
+}
+
+VOID GDIBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
+{
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
+
+    D(bug("[GDI] hidd.bitmap.gdibitmap::FillRect(0x%p, %d,%d,%d,%d)\n", o, msg->minX, msg->minY, msg->maxX, msg->maxY));
+    FillRect(cl, data, msg->gc, msg->minX, msg->minY, msg->maxX, msg->maxY);
+}
+
+/****************************************************************************************/
+
+ULONG GDIBM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPixel *msg)
+{
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
+    
+    /* Unfortunately GDI supports raster operations only in BitBlt() and in PatBlt() so we
+       have to emulate all functions using them. However it's necessary to overload as many
+       methods as possible because GetPixel()/PutPixel() are REALLY slow.
+       Here we implement DrawPixel() as filling 1x1 rectangle */
+    FillRect(cl, data, msg->gc, msg->x, msg->y, msg->x, msg->y);    
+    return 0;    
 }
 
 /****************************************************************************************/
