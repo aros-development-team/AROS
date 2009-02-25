@@ -265,19 +265,19 @@ err:
 
 fdesc *__alloc_fdesc(void)
 {
-    fdesc * fdesc;
+    fdesc * desc;
     
-    fdesc = AllocPooled(__fd_mempool, sizeof(fdesc));
+    desc = AllocPooled(__fd_mempool, sizeof(fdesc));
     
-    D(bug("Allocated fdesc %x from %x pool\n", fdesc, __fd_mempool));
+    D(bug("Allocated fdesc %x from %x pool\n", desc, __fd_mempool));
     
-    return fdesc;
+    return desc;
 }
 
-void __free_fdesc(fdesc *fdesc)
+void __free_fdesc(fdesc *desc)
 {
-    D(bug("Freeing fdesc %x from %x pool\n", fdesc, __fd_mempool));
-    FreePooled(__fd_mempool, fdesc, sizeof(fdesc));
+    D(bug("Freeing fdesc %x from %x pool\n", desc, __fd_mempool));
+    FreePooled(__fd_mempool, desc, sizeof(fdesc));
 }
 
 
