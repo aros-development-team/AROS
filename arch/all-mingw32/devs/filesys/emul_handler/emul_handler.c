@@ -264,23 +264,17 @@ ULONG prot_w2a(ULONG protect)
 
 static void FileTime2DateStamp(struct DateStamp *ds, UQUAD ft)
 {
-#ifdef FIXME
-    /* This does not work, produces bad values. Please help me! */
-    ULONG totalticks, totalmins;
+    UQUAD totalmins;
 
+    /* Adjust from 01.01.1601 to 01.01.1978. This offset was calculated using a specially written program
+       which puts "01.01.1978 00:00:00" into SYSTEMTIME structure and converts it into FILETIME. */
+    ft -= 118969344000000000LL;
     /* Adjust interval from 100 ns to 1/50 sec */
     ft /= 200000;
-    /* Adjust from 01.01.1601 to 01.01.1978. Number of days was calculated using a special program.
-       Result of this fits to single ULONG, so let's stop raping the CPU */
-    totalticks = ft - 137699LL*24*60*60*50;
-    totalmins = ft / 60*50;
+    totalmins = ft / (60*50);
     ds->ds_Days = totalmins / (24*60);
-    ds->ds_Minute = totalmins - ds->ds_Days * 24*60;
-    ds->ds_Tick = totalticks - totalmins * 60*50;
-#endif
-    ds->ds_Days = 0;
-    ds->ds_Minute = 0;
-    ds->ds_Tick = 0;
+    ds->ds_Minute = totalmins % (24*60);
+    ds->ds_Tick = ft % (60*50);
 }
 
 /*********************************************************************************************/
