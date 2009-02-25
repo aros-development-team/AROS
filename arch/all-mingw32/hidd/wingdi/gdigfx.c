@@ -472,6 +472,8 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	    OOP_GetAttr(msg->bitMap, aHidd_BitMap_Width, &data->width);
 	    OOP_GetAttr(msg->bitMap, aHidd_BitMap_Height, &data->height);
 	}
+	/* Force-reset the signal, it sometimes stays there after semaphore release (because it's the same as SIGF_SINGLE) */
+	SetSignal(0, SIGF_BLIT);
 	NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, 0);
 	Wait(SIGF_BLIT);
 

@@ -1,5 +1,5 @@
 /*
- Copyright  1995-2008, The AROS Development Team. All rights reserved.
+ Copyright  1995-2009, The AROS Development Team. All rights reserved.
  $Id$
  
  Desc: Filesystem that accesses an underlying Windows filesystem.
@@ -1435,9 +1435,10 @@ AROS_LH1(void, beginio,
 		    emulbase->ConsoleReader->fh = fh->fd;
 		    emulbase->ConsoleReader->addr = iofs->io_Union.io_READ.io_Buffer;
 		    emulbase->ConsoleReader->len = iofs->io_Union.io_READ.io_Length;
-		    emulbase->ConsoleReader->sig = SIGF_BLIT;
+		    emulbase->ConsoleReader->sig = SIGF_DOS;
 		    emulbase->ConsoleReader->task = FindTask(NULL);
 		    emulbase->ConsoleReader->cmd = ASYNC_CMD_READ;
+		    SetSignal(0, emulbase->ConsoleReader->sig);
 		    if (RaiseEvent(emulbase->ConsoleReader->CmdEvent)) {
 		    	Wait(emulbase->ConsoleReader->sig);
 		    	DASYNC(bug("[emul] Read %ld bytes, error %lu\n", emulbase->EmulMsg.actual, emulbase->EmulMsg.error));
