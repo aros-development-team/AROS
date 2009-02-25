@@ -27,8 +27,12 @@
 
 struct GenericAPIC
 { 
-	char                        *name; 
-	IPTR                        (*probe)(); 
+	char                        *name;
+	IPTR                        (*probe)();
+        IPTR                        (*getbase)();
+        IPTR                        (*getid)();
+	IPTR                        (*wake)();
+	IPTR                        (*init)();
 	IPTR                        (*apic_id_registered)();
 };
 

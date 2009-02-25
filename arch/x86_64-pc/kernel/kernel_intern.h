@@ -13,15 +13,38 @@
 #include "acpi.h"
 #include "apic.h"
 
+struct   KernBootPrivate
+{
+    IPTR                kbp_PrivateNext;
+    IPTR                kbp_InitFlags;
+    IPTR                kbp_ACPIRSDP;
+    IPTR                kbp_APIC_TrampolineBase;
+    const struct GenericAPIC  **kbp_APIC_Drivers;
+    IPTR                kbp_APIC_DriverID;
+    UWORD               kbp_APIC_BSPID;
+    int                 kbp_APIC_IRQ_Model;
+    char                kbp_BOOTCmdLine[200];
+};
+
+#define KERNBOOTFLAG_SERDEBUGCONFIGURED (1 << 0)
+#define KERNBOOTFLAG_DEBUG              (1 << 1)
+#define KERNBOOTFLAG_BOOTCPUSET         (1 << 2)
+
 struct KernelBase {
     struct Node         kb_Node;
     void *              kb_MemPool;
     struct List         kb_Intr[256];
+
     IPTR                kb_ACPIRSDP;
+
+    IPTR                kb_APIC_TrampolineBase;
+    const struct GenericAPIC  **kb_APIC_Drivers;
+    IPTR                kb_APIC_DriverID;
     uint16_t            kb_XTPIC_Mask;
-    IPTR                kb_APICBase;
-    UBYTE               *kb_APICIDMap;
-    UBYTE               kb_APICCount;
+    UBYTE               kb_APIC_Count;
+    UWORD               *kb_APIC_IDMap;                         /* ACPI_ID << 8 | LOGICAL_ID */
+    IPTR                *kb_APIC_BaseMap;
+    int                 kb_APIC_IRQ_Model;
 };
 
 #define KBL_INTERNAL    0
@@ -49,8 +72,8 @@ void core_ExitInterrupt(regs_t *regs) __attribute__((noreturn));
 void core_IRQHandle(regs_t regs);
 void core_Cause(struct ExecBase *SysBase);
 /** ACPI Functions **/
-IPTR core_ACPIProbe();
-ULONG core_ACPIInitialise();
+IPTR core_ACPIProbe(struct TagItem *, struct KernBootPrivate *);
+ULONG core_ACPIInitialise(struct KernelBase *);
 int core_ACPIIsBlacklisted();
 IPTR core_ACPIRootSystemDescriptionPointerLocate();
 IPTR core_ACPIRootSystemDescriptionPointerScan(IPTR, IPTR);
@@ -61,14 +84,11 @@ int core_ACPITableMADTParse(int, struct acpi_madt_entry_hook *);
 int core_ACPITableMADTFamParse(int, unsigned long, int, struct acpi_madt_entry_hook *);
 int core_ACPITableHeaderEarly(int, struct acpi_table_header **);
 /** CPU Functions **/
-IPTR core_APICProbe();
-IPTR core_APICGetMSRAPICBase();
-UBYTE core_APICGetID(IPTR);
-void core_APICInitialise(IPTR);
-unsigned long core_APICIPIWake(UBYTE, IPTR);
-void core_SetupIDT();
-void core_SetupGDT();
-void core_SetupMMU();
+IPTR core_APICProbe(struct KernBootPrivate *);
+UBYTE core_APICGetNumber();
+void core_SetupIDT(struct KernBootPrivate *);
+void core_SetupGDT(struct KernBootPrivate *);
+void core_SetupMMU(struct KernBootPrivate *);
 void core_CPUSetup(IPTR);
 void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us);
 void core_DefaultIRETQ();
