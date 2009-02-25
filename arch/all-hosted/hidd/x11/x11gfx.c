@@ -868,19 +868,29 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
 	ok = FALSE;
     }
 
-#if USE_XSHM    	    
-    /* Do we have Xshm support ? */
-    xsd->xshm_info = init_shared_mem(xsd->display);
+#if USE_XSHM
+    {
+    	char *displayname = XCALL(XDisplayName, xsd->display);
 	
-    if (NULL == xsd->xshm_info)
-    {
-        /* ok = FALSE; */
-        kprintf("INITIALIZATION OF XSHM FAILED !!\n");	    
-    }
-    else
-    {
-        InitSemaphore(&xsd->shm_sema);
-        xsd->use_xshm = TRUE;
+	if ((strncmp(displayname, ":", 1) == 0) ||
+	    (strncmp(displayname, "unix:", 5) == 0))
+	{
+	    /* Display is local, not remote. XSHM is possible */
+		        	    
+	    /* Do we have Xshm support ? */
+	    xsd->xshm_info = init_shared_mem(xsd->display);
+
+	    if (NULL == xsd->xshm_info)
+	    {
+        	/* ok = FALSE; */
+        	kprintf("INITIALIZATION OF XSHM FAILED !!\n");	    
+	    }
+	    else
+	    {
+        	InitSemaphore(&xsd->shm_sema);
+        	xsd->use_xshm = TRUE;
+	    }
+	}
     }    	
 #endif
 
