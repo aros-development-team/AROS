@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Private graphics function for setting mouse pointer position
@@ -51,8 +51,9 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    HIDD_Gfx_SetCursorPos(SDD(GfxBase)->gfxhidd, x, y);
+
+    if (SDD(GfxBase)->gfxhidd)
+    	HIDD_Gfx_SetCursorPos(SDD(GfxBase)->gfxhidd, x, y);
 
     AROS_LIBFUNC_EXIT
 } /* SetPointerPos */
