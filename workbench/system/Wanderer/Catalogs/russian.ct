@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 1.2 (24.11.2008)
+## version $VER: wanderer.catalog 1.3 (24.02.2009)
 ## language russian
 ## codeset 0
 ;
@@ -245,4 +245,173 @@ MSG_ACTION_NOT_SUPPORTED
 ;
 MSG_OK
 *Ok
+;
+MSG_EMPTY_TRASH (//)
+Очистить корзину
+;Empty trash
+;
+MSG_PUT_AWAY (//)
+Отложить
+;Put away
+;
+MSG_LEAVE_OUT (//)
+Оставить
+;Leave out
+;
+MSG_UNSNAPSHOT (//)
+Забыть
+;Unsnapshot
+;
+MSG_SNAPSHOT (//)
+Запомнить
+;Snapshot
+;
+MSG_REQU_DELETE (//)
+Удалить файл...
+;Delete file...
+;
+MSG_REQU_DELETE_YESNO (//)
+_Да|Да для _всех|_Нет|Нет для вс_ех
+;_Yes|Yes to _all|_No|No _to all
+;
+MSG_REQU_DELETE_DRAWER_S (//)
+Вы действительно хотите удалить папку
+;Really delete drawer
+;
+MSG_REQU_DELETE_DRAWER_E (//)
+?
+;
+MSG_REQU_DELETE_FILE_S (//)
+Вы действительно хотите удалить файл
+;Really delete file
+;
+MSG_REQU_DELETE_FILE_M (//)
+расположенный в
+;located in
+;
+MSG_REQU_DELETE_FILE_E (//)
+?
+;
+MSG_REQU_OVERWRITE (//)
+Перезаписать файл...
+;Overwrite file...
+;
+MSG_REQU_OVERWRITE_S (//)
+Вы действительно хотите перезаписать файл
+;Really overwrite file
+;
+MSG_REQU_OVERWRITE_M (//)
+расположенный в
+;located in
+;
+MSG_REQU_OVERWRITE_E (//)
+?
+;
+MSG_REQU_OVERWRITE_YESNO (//)
+_Перезаписать|Перезаписать _все|_Нет|_Оставить все
+;_Overwrite|Overwrite _all|_No|No _to all
+;
+MSG_REQU_OVERWRITE_SKIPABORT (//)
+_Пропустить|_Отмена
+;_Skip|_Abort
+;
+MSG_REQU_PROTECTION (//)
+Защита файлов
+;File Protection
+;
+MSG_REQU_PROTECTION_UNPROTECT (//)
+_Снять|Снять _все|_Нет|Нет _для ВСЕХ
+;_Unprotect|Unprotect _All|_No|No _to ALL
+;
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_S (//)
+Снять защиту с папки
+;Do you wish to unprotect drawer
+;
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_E (//)
+?
+;
+MSG_NOFILEACCESS_S (//)
+Не могу получить доступ к файлу
+;Can't access file
+;
+MSG_NOFILEACCESS_M (//)
+расположенному в
+;located in
+;
+MSG_NOFILEACCESS_E (//)
+ 
+;
+MSG_NODRAWERACCESS_S (//)
+Не могу получить доступ к папке
+;Can't access drawer
+;
+MSG_NODRAWERACCESS_E (//)
+ 
+;
+MSG_REQU_FILEUNPROTECT_S (//)
+Снять защиту с файла
+;Do you wish to unprotect file
+;
+MSG_REQU_FILEUNPROTECT_M (//)
+расположенного в
+;located in
+;
+MSG_REQU_FILEUNPROTECT_E (//)
+?
+;
+MSG_WANDERER_FILEACCESS (//)
+Wanderer: Операции с файлами 
+;Wanderer file access
+;
+MSG_WANDERER_FILEACCESS_PROCESSING (//)
+Обработка...
+;Processing...
+;
+MSG_WANDERER_FILEACCESS_STOP (//)
+Остановить
+;Stop
+;
+MSG_WANDERER_FILEACCESS_MOVEFROM (//)
+Перемещение из
+;Move from
+;
+MSG_WANDERER_FILEACCESS_MOVETO (//)
+Перемещение в
+;Move to
+;
+MSG_WANDERER_FILEACCESS_COPYFROM (//)
+Копирование из
+;Copy from
+;
+MSG_WANDERER_FILEACCESS_COPYTO (//)
+Копирование в
+;Copy to
+;
+MSG_WANDERER_FILEACCESS_FILE (//)
+Файл
+;File
+;
+MSG_WANDERER_FILEACCESS_TRAFFIC (//)
+Скорость передачи
+;Data transfer rate
+;
+MSG_WANDERER_FILEACCESS_DELETEFROM (//)
+Удаляется из папки
+;Delete from drawer
+;
+MSG_WANDERER_FILEACCESS_FILETODELETE (//)
+Удаляемый файл
+;File to delete
+;
+MSG_WANDERER_FILEACCESS_NOOFFILES (//)
+Обработано файлов:
+;Processed files:
+;
+MSG_WANDERER_FILEACCESS_ACTUAL (//)
+Размер текущего файла:
+;Size of current file:
+;
+MSG_WANDERER_FILEACCESS_TOTAL (//)
+Размер общий:
+;Overall size:
 ;
