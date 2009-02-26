@@ -20,8 +20,9 @@
 
 LIBBASETYPE {
     struct Node         db_Node;
+    char                *db_BootDevice;
     BOOL                db_attemptingboot;
-    BOOL                db_bootdevicefound;
+
 };
 
 //#undef ExpansionBase
