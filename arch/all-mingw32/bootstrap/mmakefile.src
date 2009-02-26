@@ -29,7 +29,7 @@ KOBJS_HANDLERS  := $(KOBJSDIR)/emul_handler.o	     $(KOBJSDIR)/packet_handler.o	
 
 KOBJS := $(K_RES) $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(KOBJS_HIDD)
 
-#MM- AROS-mingw32-i386: kernel-link-mingw32 workbench-mingw32 kernel-bootstrap-mingw32
+#MM- AROS-mingw32-i386: kernel-link-mingw32 workbench-mingw32 kernel-bootstrap-mingw32 arch-common-boot-generatebootsig
 #MM kernel-link-mingw32: kernel-bootloader-mingw32-kobj	    \
 #MM			 kernel-kernel-mingw32-kobj	    \
 #MM			 kernel				    \
@@ -42,7 +42,7 @@ KOBJS := $(K_RES) $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(KOBJS_HIDD)
 #MM			 kernel-hidd-wingdi-kobj	    \
 #MM			 contrib-amberram-kobj
 
-#MM- workbench-mingw32: kernel-mathffp	      \
+#MM- workbench-mingw32: kernel-mathffp	       \
 #MM		        kernel-mathieeesingbas \
 #MM		        kernel-workbench
 
