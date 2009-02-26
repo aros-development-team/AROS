@@ -323,6 +323,7 @@ void *DoOpen(char *path, int mode, int protect)
   ULONG create;
   void *res;
   
+  D(bug("[emul] DoOpen(): mode 0x%08lX\n", mode));
   if (mode & FMF_WRITE)
       flags = GENERIC_WRITE;
   if (mode & FMF_READ)
@@ -334,7 +335,7 @@ void *DoOpen(char *path, int mode, int protect)
       create = (flags & FMF_CLEAR) ? CREATE_ALWAYS : OPEN_ALWAYS;
   else
       create = (flags & FMF_CLEAR) ? TRUNCATE_EXISTING : OPEN_EXISTING;
-  DB2(bug("[emul] CreateFile: name \"%s\", flags 0x%08lX, lock 0x%08lX, create %lu\n", path, flags, lock, create));
+  D(bug("[emul] CreateFile: name \"%s\", flags 0x%08lX, lock 0x%08lX, create %lu\n", path, flags, lock, create));
   Forbid();
   res = OpenFile(path, flags, lock, NULL, create, prot_a2w(protect), NULL);
   Permit();
@@ -421,6 +422,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, STRPTR 
 	    case ST_SOFTLINK:
 	        ret = ERROR_IS_SOFT_LINK;
 	        break;
+	    case 0: /* Non-existing objects can be files opened for writing */
 	    case ST_FILE:
 		fh->type=FHD_FILE;
 		fh->fd = DoOpen(fh->hostname, mode, protect);
@@ -442,9 +444,6 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, STRPTR 
 		}
 		ret = ERROR_OBJECT_WRONG_TYPE;
 		break;
-	    case 0:
-	        ret = Errno();
-	        break;
 	    default:
 		ret = ERROR_OBJECT_WRONG_TYPE;
 	    }
