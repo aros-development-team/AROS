@@ -668,6 +668,7 @@ int exec_main(struct TagItem *msg, void *entry)
 
     Permit();
 
+    BOOL                 _debug = FALSE;
     struct TagItem *tag = krnFindTagItem(KRN_CmdLine, msg);
     if (tag)
     {
@@ -680,6 +681,7 @@ int exec_main(struct TagItem *msg, void *entry)
             temp = strcspn(cmd," ");
             if (strncmp(cmd, "DEBUG", 5)==0)
             {
+                _debug = TRUE;
                 SetFunction(&SysBase->LibNode, -84*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawIOInit, Exec));
                 SetFunction(&SysBase->LibNode, -86*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawPutChar, Exec));
                 break;
@@ -692,6 +694,10 @@ int exec_main(struct TagItem *msg, void *entry)
     SysBase->ResModules = exec_RomTagScanner(msg);
 
     rkprintf("[exec] InitCode(RTF_SINGLETASK)\n");
+    if (!(_debug))
+    {
+        rkprintf("\3");
+    }
     InitCode(RTF_SINGLETASK, 0);
 
     rkprintf("[exec] InitCode(RTF_COLDSTART)\n");
