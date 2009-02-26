@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2008, The AROS Development Team. All rights reserved.
+    Copyright  1995-2009, The AROS Development Team. All rights reserved.
     $Id: dosboot_init.c 30220 2009-01-04 22:38:44Z schulz $
 
     Desc: Start up the ol' Dos boot process.
@@ -136,13 +136,14 @@ static BOOL __dosboot_Mount(struct DeviceNode *dn, struct DosLibrary * DOSBase)
 static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DOSBase)
 {
     BOOL            result = FALSE;
-    BPTR            lock;
-    STRPTR          buffer;
+    BPTR            lock, file;
+    STRPTR          buffer, name;
     LONG            bufferLength;
     struct InfoData info;
 
-#if defined(AROS_BOOT_CHECKSIG)
-#define AROSBOOTSIG_FILE ":AROS.boot"
+#define STARTUP_SEQUENCE_FILE ":C/Shell"
+#define AROSBOOTSIG_FILE      ":AROS.boot"
+
     bufferLength = strlen(deviceName) + sizeof(AROSBOOTSIG_FILE) + 1;
 
     if ((buffer = AllocMem(bufferLength, MEMF_ANY)) == NULL)
@@ -151,42 +152,8 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
     }
 
     strcpy(buffer, deviceName);
-    strcat(buffer, AROSBOOTSIG_FILE);
-
-    if ((lock = Open(buffer, MODE_OLDFILE)) == 0)
-    {
-        D(bug("[DOSBoot] __dosboot_IsBootable: Failed to open '%s'\n", buffer));
-        goto cleanup;
-    }
-
-    D(bug("[DOSBoot] __dosboot_IsBootable: Opened '%s'\n", buffer));
-
-    if (Read(lock, buffer, bufferLength) != -1)
-    {
-        IPTR sigptr = NULL;
-        D(bug("[DOSBoot] __dosboot_IsBootable: Buffer contains '%s'\n", buffer));
-        if ((sigptr = strstr(buffer, AROS_ARCHITECTURE)) != NULL)
-        {
-            D(bug("[DOSBoot] __dosboot_IsBootable: Signature '%s' found\n", sigptr));
-            result = TRUE;
-        }
-    }
-
-    Close(lock);
-    lock = NULL;
-
-#else
-#define STARTUP_SEQUENCE_FILE ":C/Shell"
-
-    bufferLength = strlen(deviceName) + sizeof(STARTUP_SEQUENCE_FILE) + 1;
-
-    if ((buffer = AllocMem(bufferLength, MEMF_ANY)) == NULL)
-    {
-        Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
-    }
-
-    strcpy(buffer, deviceName);
-    strcat(buffer, STARTUP_SEQUENCE_FILE);
+    name = buffer + strlen(deviceName);
+    strcpy(name, STARTUP_SEQUENCE_FILE);
 
     D(bug("[DOSBoot] __dosboot_IsBootable: Trying to get a lock on '%s'\n", buffer));
 
@@ -206,6 +173,28 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
     {
         result = TRUE;
     }
+#if defined(AROS_BOOT_CHECKSIG)
+    strcpy(name, AROSBOOTSIG_FILE);
+
+    if ((file = Open(buffer, MODE_OLDFILE)) == 0)
+    {
+        D(bug("[DOSBoot] __dosboot_IsBootable: Failed to open '%s'\n", buffer));
+        goto cleanup;
+    }
+
+    D(bug("[DOSBoot] __dosboot_IsBootable: Opened '%s'\n", buffer));
+
+    if (Read(file, buffer, bufferLength) != -1)
+    {
+        STRPTR sigptr = NULL;
+        D(bug("[DOSBoot] __dosboot_IsBootable: Buffer contains '%s'\n", buffer));
+        if ((sigptr = strstr(buffer, AROS_ARCHITECTURE)) == NULL)
+        {
+            D(bug("[DOSBoot] __dosboot_IsBootable: Signature '%s' not found\n", AROS_ARCHITECTURE));
+            result = FALSE;
+        }
+    }
+    Close(file);
 #endif
 
 cleanup:
