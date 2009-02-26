@@ -141,8 +141,12 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
     LONG            bufferLength;
     struct InfoData info;
 
+    D(bug("[DOSBoot] __dosboot_IsBootable('%s')\n", deviceName));
+
 #if defined(AROS_BOOT_CHECKSIG)
 #define AROSBOOTSIG_FILE ":AROS.boot"
+    LONG readsize;
+    struct FileInfoBlock abfile_fib;
     bufferLength = strlen(deviceName) + sizeof(AROSBOOTSIG_FILE) + 1;
 
     if ((buffer = AllocMem(bufferLength, MEMF_ANY)) == NULL)
@@ -160,18 +164,35 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
     }
 
     D(bug("[DOSBoot] __dosboot_IsBootable: Opened '%s'\n", buffer));
+    FreeMem(buffer, bufferLength);
+    buffer = NULL;
 
-    if (Read(lock, buffer, bufferLength) != -1)
+    if (ExamineFH(lock, &abfile_fib))
     {
-        IPTR sigptr = NULL;
-        D(bug("[DOSBoot] __dosboot_IsBootable: Buffer contains '%s'\n", buffer));
-        if ((sigptr = strstr(buffer, AROS_ARCHITECTURE)) != NULL)
+        bufferLength = abfile_fib.fib_Size + 1;
+
+        if ((buffer = AllocMem(bufferLength, MEMF_ANY)) == NULL)
         {
-            D(bug("[DOSBoot] __dosboot_IsBootable: Signature '%s' found\n", sigptr));
-            result = TRUE;
+            Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
+        }
+        D(bug("[DOSBoot] __dosboot_IsBootable: Allocated %d bytes for Buffer @ %p\n", bufferLength, buffer));
+        if ((readsize = Read(lock, buffer, (bufferLength - 1))) != -1)
+        {
+            IPTR sigptr = NULL;
+
+            if (readsize != 0)
+                buffer[readsize] = '\0';
+            else
+                buffer[bufferLength - 1] = '\0';
+
+            D(bug("[DOSBoot] __dosboot_IsBootable: Buffer contains '%s'\n", buffer));
+            if ((sigptr = strstr(buffer, AROS_ARCHITECTURE)) != NULL)
+            {
+                D(bug("[DOSBoot] __dosboot_IsBootable: Signature '%s' found\n", sigptr));
+                result = TRUE;
+            }
         }
     }
-
     Close(lock);
     lock = NULL;
 
@@ -241,9 +262,6 @@ AROS_UFH3(void, __dosboot_BootProcess,
 
     D(bug("[DOSBoot] __dosboot_BootProcess()\n" ));
 
-    LIBBASE->db_bootdevicefound = FALSE;
-    LIBBASE->db_attemptingboot = FALSE;
-
 #define deviceName (((struct DosList *) bootNode->bn_DeviceNode)->dol_Ext.dol_AROS.dol_DevName)
 
     /**** Open all required libraries **********************************************/
@@ -283,7 +301,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
     }
 
     /**** Try to mount all filesystems in the MountList ****************************/
-    D(bug("[DOSBoot] __dosboot_BootProcess: Checking MountList for useable nodes:\n"));
+    D(bug("[DOSBoot] __dosboot_BootProcess: Checking expansion.library/MountList for useable nodes:\n"));
 
     ForeachNode(&ExpansionBase->MountList, bootNode)
     {
@@ -315,7 +333,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
     }
 
     /**** Try to find a bootable filesystem ****************************************/
-    while (LIBBASE->db_bootdevicefound == FALSE)
+    while (LIBBASE->db_BootDevice == NULL)
     {
         ForeachNode(&ExpansionBase->MountList, bootNode)
         {
@@ -327,14 +345,15 @@ AROS_UFH3(void, __dosboot_BootProcess,
             if ((!(bootNode->bn_Flags & BNF_RETRY)) && (bootNode->bn_Node.ln_Pri != -128) &&
 		__dosboot_IsBootable(deviceName, (struct DosLibrary *)DOSBase))
             {
-                LIBBASE->db_bootdevicefound = TRUE;
+                LIBBASE->db_BootDevice = deviceName;
                 break;
             }
         }
 
-        if (!(LIBBASE->db_bootdevicefound))
+        if (!(LIBBASE->db_BootDevice))
         {
-            if (!(LIBBASE->db_attemptingboot))
+            /* Check if Gfx are up .. and if so show insert media animation */
+            if (LIBBASE->db_attemptingboot == FALSE)
             {
 #warning "TODO: Show insert disc animation !"
                 LIBBASE->db_attemptingboot = TRUE;
@@ -368,17 +387,17 @@ AROS_UFH3(void, __dosboot_BootProcess,
         DeleteIORequest((struct IORequest *)tr);
     }
 
-    if (LIBBASE->db_bootdevicefound)
+    if (LIBBASE->db_BootDevice != NULL)
     {
         /* Construct the complete device name of the boot device */
-        bootNameLength = strlen(deviceName) + 2;
+        bootNameLength = strlen( LIBBASE->db_BootDevice) + 2;
 
         if ((bootName = AllocMem(bootNameLength, MEMF_ANY|MEMF_CLEAR)) == NULL)
         {
             Alert(AT_DeadEnd | AG_NoMemory | AO_DOSLib | AN_StartMem);
         }
 
-        strcpy(bootName, deviceName);
+        strcpy(bootName,  LIBBASE->db_BootDevice);
         strcat(bootName, ":");
 
         bug("[DOSBoot] __dosboot_BootProcess: Booting from device '%s'\n", bootName);
@@ -491,6 +510,9 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
 
     D(bug("[DOSBoot] dosboot_Init()\n"));
     D(bug("[DOSBoot] dosboot_Init: Launching Boot Process control task ..\n"));
+
+    LIBBASE->db_BootDevice = NULL;
+    LIBBASE->db_attemptingboot = FALSE;
 
     if (CreateNewProc(bootprocess) == NULL)
     {
