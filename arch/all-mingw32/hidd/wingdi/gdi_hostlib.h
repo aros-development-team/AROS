@@ -18,6 +18,11 @@ struct gdi_func {
     __attribute__((stdcall)) LONG (*PatBlt)(APTR hdc, LONG nXLeft, LONG nYLeft, LONG nWidth, LONG nHeight, ULONG dwRop);
     __attribute__((stdcall)) ULONG (*GetPixel)(APTR hdc, LONG nXPos, LONG nYPos);
     __attribute__((stdcall)) ULONG (*SetPixel)(APTR hdc, LONG X, LONG Y, ULONG crColor);
+    __attribute__((stdcall)) LONG (*GetDIBits)(APTR hdc, APTR hbmp, ULONG uStartScan, ULONG cScanLines,
+    					       void *lpvBits, BITMAPINFO *lpbi, ULONG uUsage);
+    __attribute__((stdcall)) LONG (*StretchDIBits)(APTR hdc, LONG XDest, LONG YDest, LONG nDestWidth, LONG nDestHeight,
+						   LONG XSrc, LONG YSrc, LONG nSrcWidth, LONG nSrcHeight,
+						   const void *lpBits, const BITMAPINFO *lpBitsInfo, ULONG iUsage, ULONG dwRop);
 };
 
 struct user_func {

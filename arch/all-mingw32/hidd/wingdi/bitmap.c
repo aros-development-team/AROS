@@ -123,7 +123,7 @@ static void FillRect(OOP_Class *cl, struct bitmap_data *data, OOP_Object *gc, UL
     
     col = GC_FG(gc);
     mode = DrawModeTable[GC_DRMD(gc)];
-    D(bug("[GDI] Brush color 0x%08lX, mode 0x%08lX\n", col, mode));
+    DB2(bug("[GDI] Brush color 0x%08lX, mode 0x%08lX\n", col, mode));
 
     LOCK_GDI
     br = GDICALL(CreateSolidBrush, col);
@@ -151,6 +151,7 @@ ULONG GDIBM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_B
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     
+    DB2(bug("[GDI] hidd.bitmap.gdibitmap::DrawPixel(0x%p): (%lu, %lu)\n", o, msg->x, msg->y));
     /* Unfortunately GDI supports raster operations only in BitBlt() and in PatBlt() so we
        have to emulate all functions using them. However it's necessary to overload as many
        methods as possible because GetPixel()/PutPixel() are REALLY slow.
@@ -158,8 +159,153 @@ ULONG GDIBM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_B
     FillRect(cl, data, msg->gc, msg->x, msg->y, msg->x, msg->y);    
     return 0;    
 }
+/****************************************************************************************/
+	
+VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
+{
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
+    HIDDT_PixelFormat *src_pixfmt, *dst_pixfmt;
+    OOP_Object *gfxhidd;
+    HIDDT_StdPixFmt src_stdpf;
+    APTR buf, src, dst;
+    ULONG bufmod, bufsize;
+    ULONG y;
+    BITMAPINFOHEADER bitmapinfo = {
+        sizeof(BITMAPINFOHEADER),
+        0, 0,
+        1,
+        32,
+        BI_RGB,
+        0, 0, 0,  0, 0
+    };
+
+/*  EnterFunc(bug("GDIGfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
+    	    	  msg->pixels, msg->x, msg->y, msg->width, msg->height));*/
+    
+    switch(msg->pixFmt) {
+    case vHidd_StdPixFmt_Native:
+        /* TODO: What if we are on < 32 bit ? */
+    case vHidd_StdPixFmt_Native32:
+        src_stdpf = vHidd_StdPixFmt_RGB032;
+    	break;
+    default:
+        src_stdpf = msg->pixFmt;
+    }
+
+    bufmod = msg->width * sizeof(HIDDT_Pixel);
+    bufsize = bufmod * msg->height;
+    buf = AllocMem(bufsize, MEMF_ANY);
+    if (buf) {
+        OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+        src_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, src_stdpf);
+        /* DIB pixels are expected to be 0x00RRGGBB (vHidd_StdPixFmt_BGR032) */
+        dst_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, vHidd_StdPixFmt_BGR032);
+        src = msg->pixels;
+        dst = buf;
+        HIDD_BM_ConvertPixels(o, &src, src_pixfmt, msg->modulo, &dst, dst_pixfmt, bufmod,
+			      msg->width, msg->height, NULL);
+    	bitmapinfo.biWidth = msg->width;
+    	bitmapinfo.biHeight = -msg->height; /* Minus here means top-down bitmap */
+    	LOCK_GDI
+        GDICALL(StretchDIBits, data->dc, msg->x, msg->y, msg->width, msg->height, 0, 0, msg->width, msg->height, buf, &bitmapinfo, DIB_RGB_COLORS, SRCCOPY);
+        REFRESH(msg->x, msg->y, msg->x + msg->width, msg->y + msg->height)
+    	UNLOCK_GDI
+        FreeMem(buf, bufsize);
+    }
+}
 
 /****************************************************************************************/
+
+/* TODO: These little stubs help to detect methods calls */
+
+VOID GDIBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
+{
+    EnterFunc(bug("GDIGfx.BitMap::PutImageLUT(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
+    	    	  msg->pixels, msg->x, msg->y, msg->width, msg->height));
+	
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+VOID GDIBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
+{
+    EnterFunc(bug("GDIGfx.BitMap::GetImageLUT(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
+    	    	  msg->pixels, msg->x, msg->y, msg->width, msg->height));
+	
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/****************************************************************************************/
+
+VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
+{
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
+    HIDDT_PixelFormat *src_pixfmt, *dst_pixfmt;
+    OOP_Object *gfxhidd;
+    HIDDT_StdPixFmt dst_stdpf;
+    APTR tmp_dc, tmp_bitmap, dc_bitmap;
+    APTR buf, src, dst;
+    ULONG bufmod, bufsize;
+    ULONG y;
+    BITMAPINFOHEADER bitmapinfo = {
+        sizeof(BITMAPINFOHEADER),
+        0, 0,
+        1,
+        32,
+        BI_RGB,
+        0, 0, 0,  0, 0
+    };
+
+/*  EnterFunc(bug("GDIGfx.BitMap::GetImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
+    	    	  msg->pixels, msg->x, msg->y, msg->width, msg->height));*/
+
+    switch(msg->pixFmt) {
+    case vHidd_StdPixFmt_Native:
+        /* TODO: What if we are on < 32 bit ? */
+    case vHidd_StdPixFmt_Native32:
+        dst_stdpf = vHidd_StdPixFmt_RGB032;
+    	break;
+    default:
+        dst_stdpf = msg->pixFmt;
+    }
+
+    bufmod = msg->width * sizeof(HIDDT_Pixel);
+    bufsize = bufmod * msg->height;
+    buf = AllocMem(bufsize, MEMF_ANY);
+    if (buf) {
+        /* First we have to extract requested rectangle into temporary bitmap because GetDIBits() can limit only scan lines number */
+    	LOCK_GDI
+    	tmp_dc = GDICALL(CreateCompatibleDC, data->display);
+    	if (tmp_dc) {
+            tmp_bitmap = GDICALL(CreateCompatibleBitmap, data->display, msg->width, msg->height);
+            if (tmp_bitmap) {
+            	dc_bitmap = GDICALL(SelectObject, tmp_dc, tmp_bitmap);
+            	if (dc_bitmap) {
+                    GDICALL(BitBlt, tmp_dc, 0, 0, msg->width, msg->height, data->dc, msg->x, msg->y, SRCCOPY);
+                    bitmapinfo.biWidth = msg->width;
+    		    bitmapinfo.biHeight = -msg->height; /* Minus here means top-down bitmap */
+        	    GDICALL(GetDIBits, tmp_dc, tmp_bitmap, 0, msg->height, buf, &bitmapinfo, DIB_RGB_COLORS);
+        	    GDICALL(SelectObject, tmp_dc, dc_bitmap);
+            	}
+            	GDICALL(DeleteObject, tmp_bitmap);
+            }
+            GDICALL(DeleteDC, tmp_dc);
+    	}
+    	UNLOCK_GDI
+        OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+	/* DIB pixels will be 0x00RRGGBB (vHidd_StdPixFmt_BGR032) */        
+        src_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, vHidd_StdPixFmt_BGR032);
+        dst_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, dst_stdpf);
+        dst = msg->pixels;
+        src = buf;
+        HIDD_BM_ConvertPixels(o, &src, src_pixfmt, bufmod, &dst, dst_pixfmt, msg->modulo,
+			      msg->width, msg->height, NULL);	
+    	FreeMem(buf, bufsize);
+    }
+}
+
+/****************************************************************************************/
+
+/* TODO: Support raster operations, currently we support only vHidd_GC_DrawMode_Copy */
 
 VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
 					    struct pHidd_BitMap_BlitColorExpansion *msg)

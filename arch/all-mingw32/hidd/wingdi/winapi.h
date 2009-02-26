@@ -317,9 +317,39 @@
 #define VK_PA1			0xFD
 #define VK_OEM_CLEAR		0xFE
 
+#define BI_RGB 0
+
+#define DIB_RGB_COLORS	0
+
 typedef struct tagRECT { 
   LONG left; 
   LONG top; 
   LONG right; 
   LONG bottom; 
 } RECT;
+
+typedef struct tagBITMAPINFOHEADER{
+  ULONG  biSize; 
+  LONG   biWidth; 
+  LONG   biHeight; 
+  WORD   biPlanes; 
+  WORD   biBitCount; 
+  ULONG  biCompression; 
+  ULONG  biSizeImage; 
+  LONG   biXPelsPerMeter; 
+  LONG   biYPelsPerMeter; 
+  ULONG  biClrUsed; 
+  ULONG  biClrImportant; 
+} BITMAPINFOHEADER, *PBITMAPINFOHEADER; 
+
+typedef struct tagRGBQUAD {
+  BYTE    rgbBlue; 
+  BYTE    rgbGreen; 
+  BYTE    rgbRed; 
+  BYTE    rgbReserved; 
+} RGBQUAD;
+
+typedef struct tagBITMAPINFO { 
+  BITMAPINFOHEADER bmiHeader; 
+  RGBQUAD          bmiColors[1];
+} BITMAPINFO, *PBITMAPINFO;
