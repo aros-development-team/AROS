@@ -34,6 +34,8 @@ static const char *gdi_func_names[] = {
     "PatBlt",
     "GetPixel",
     "SetPixel",
+    "GetDIBits",
+    "StretchDIBits",
     NULL
 };
 
