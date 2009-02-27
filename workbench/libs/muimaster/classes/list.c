@@ -552,8 +552,8 @@ static int CalcVertVisible(struct IClass *cl, Object *obj)
 **************************************************************************/
 AROS_UFH3S(int, default_compare_func,
 AROS_UFHA(struct Hook *, h, A0),
-AROS_UFHA(char *, s1, A2),
-AROS_UFHA(char *, s2, A1))
+AROS_UFHA(char *, s2, A2),
+AROS_UFHA(char *, s1, A1))
 {
     AROS_USERFUNC_INIT
 
@@ -1952,7 +1952,7 @@ IPTR List__MUIM_Compare(struct IClass *cl, Object *obj, struct MUIP_List_Compare
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
-    return CallHookPkt(data->compare_hook, msg->entry1, msg->entry2);
+    return CallHookPkt(data->compare_hook, msg->entry2, msg->entry1);
 }
 
 /**************************************************************************
