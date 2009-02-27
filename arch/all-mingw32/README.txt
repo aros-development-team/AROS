@@ -13,7 +13,7 @@ c) AROS-targetted crosscompiler. Cygwin version of it can be found on AROS Archi
    work too.
 d) Mingw32 libraries package for Cygwin.
 
- That's all. Execute configure, than make.
+ That's all. Execute "./configure --target=mingw32-i386", than make.
 
  2. RUNNING
 
