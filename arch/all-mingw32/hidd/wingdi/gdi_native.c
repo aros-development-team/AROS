@@ -51,7 +51,7 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
     	GDI_MouseData.MouseY = GET_Y_LPARAM(lp);
     	GDI_MouseData.Buttons = wp & 0x0000FFFF;
     	GDI_MouseData.WheelDelta = wp >> 16;
-        CauseException(3);
+        KrnCauseIRQ(3);
     	return 0;
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN:
@@ -74,7 +74,7 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
         GDI_KeyboardData.EventCode = msg & 0xFFFFFFFB; /* This masks out difference between WM_SYSKEY* and WM_KEY* */
         GDI_KeyboardData.KeyCode = wp;
         DKBD(printf("[GDI] Keyboard event %lu key 0x%08lX\n", GDI_KeyboardData.EventCode, wp));
-        CauseException(4);
+        KrnCauseIRQ(4);
         return 0;
     default:
         return DefWindowProc(win, msg, wp, lp);
@@ -144,7 +144,7 @@ DWORD WINAPI gdithread_entry(LPVOID p)
             	            gdata->fbwin = NULL;
             	        }
             	    }
-            	    CauseException(2);
+            	    KrnCauseIRQ(2);
             	    break;
             	default:
             	    DispatchMessage(&msg);

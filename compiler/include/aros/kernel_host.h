@@ -1,3 +1,10 @@
+/*
+   This include file is used for compiling host-side parts of hardware emulation modules
+   on hosted AROS. These functions reside in host-side kernel module.
+   
+   This API is experimental and subject to change.
+*/
+
 #ifndef _AROS_KERNEL_HOST_H
 #define _AROS_KERNEL_HOST_H
 
@@ -7,6 +14,6 @@
 #define IMPORT
 #endif
 
-unsigned long IMPORT CauseException(unsigned char irq);
+unsigned long IMPORT KrnCauseIRQ(unsigned char irq);
 
 #endif

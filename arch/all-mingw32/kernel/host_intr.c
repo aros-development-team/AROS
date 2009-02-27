@@ -26,31 +26,27 @@ typedef unsigned char UBYTE;
 
 struct SwitcherData {
     HANDLE MainThread;
-    HANDLE IntObjects[HW_INTS_NUM];
+    HANDLE IntObjects[INTERRUPTS_NUM];
 };
 
 struct SwitcherData SwData;
 DWORD *LastErrorPtr;
 unsigned char Ints_Enabled;
-unsigned char PendingInts[HW_INTS_NUM];
+unsigned char PendingInts[INTERRUPTS_NUM];
 unsigned char Supervisor;
 struct ExecBase **SysBasePtr;
 struct KernelBase **KernelBasePtr;
 
-void user_handler(uint8_t exception)
+void user_handler(uint8_t exception, struct List *list)
 {
-    struct KernelBase *KernelBase = *KernelBasePtr;
+    if (!IsListEmpty(&list[exception]))
+    {
+        struct IntrNode *in, *in2;
 
-    if (KernelBase) {
-        if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
+        ForeachNodeSafe(&list[exception], in, in2)
         {
-            struct IntrNode *in, *in2;
-
-            ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, in2)
-            {
-                if (in->in_Handler)
-                    in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
-            }
+            if (in->in_Handler)
+                in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
         }
     }
 }
@@ -108,7 +104,7 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     MSG msg;
 
     for (;;) {
-        obj = WaitForMultipleObjects(HW_INTS_NUM, args->IntObjects, FALSE, INFINITE);
+        obj = WaitForMultipleObjects(INTERRUPTS_NUM, args->IntObjects, FALSE, INFINITE);
         DS(bug("[Task switcher] Object %lu signalled\n", obj));
         DS(res =) SuspendThread(args->MainThread);
     	DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
@@ -125,7 +121,8 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     	    CONTEXT_SAVE_REGS(&MainCtx);
     	    DS(OutputDebugString("[Task switcher] original CPU context: ****\n"));
     	    DS(PrintCPUContext(&MainCtx));
-	    user_handler(obj);
+    	    if (*KernelBasePtr)
+	    	user_handler(obj, (*KernelBasePtr)->kb_Interrupts);
     	    core_ExitInterrupt(&MainCtx);
     	    DS(OutputDebugString("[Task switcher] new CPU context: ****\n"));
     	    DS(PrintCPUContext(&MainCtx));
@@ -157,8 +154,11 @@ long __declspec(dllexport) core_intr_enable(void)
 
     DI(printf("[KRN] enabling interrupts\n"));
     Ints_Enabled = 1;
-    /* FIXME: here we do not force timer interrupt, probably this is wrong */
-    for (i = 1; i < HW_INTS_NUM; i++) {
+    /* FIXME: here we do not force timer interrupt, probably this is wrong. However there's no way
+       to force-trigger a waitable timer in Windows. A workaround is possible, but the design will
+       be complicated then (we need a companion event in this case). Probably it will be implemented
+       in future. */
+    for (i = INT_IO; i < INTERRUPTS_NUM; i++) {
         if (PendingInts[1]) {
             DI(printf("[KRN] enable: sigalling about pending interrupt %lu\n", i));
             SetEvent(SwData.IntObjects[i]);
@@ -180,12 +180,12 @@ BOOL InitIntObjects(HANDLE *Objs)
 {
     int i;
 
-    for (i = 0; i < HW_INTS_NUM; i++) {
+    for (i = 0; i < INTERRUPTS_NUM; i++) {
         Objs[i] = NULL;
         PendingInts[i] = 0;
     }
     /* Timer interrupt is a waitable timer, it's not an event */
-    for (i = 1; i < HW_INTS_NUM; i++) {
+    for (i = INT_IO; i < INTERRUPTS_NUM; i++) {
         Objs[i] = CreateEvent(NULL, FALSE, FALSE, NULL);
         if (!Objs[i])
             return FALSE;
@@ -197,7 +197,7 @@ void CleanupIntObjects(HANDLE *Objs)
 {
     int i;
 
-    for (i = 0; i < HW_INTS_NUM; i++) {
+    for (i = 0; i < INTERRUPTS_NUM; i++) {
         if (Objs[i])
             CloseHandle(Objs[i]);
     }
@@ -259,11 +259,11 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
  * emul.handler and wingdi.hidd.
  */
 
-unsigned long __declspec(dllexport) CauseException(unsigned char irq)
+unsigned long __declspec(dllexport) KrnCauseIRQ(unsigned char irq)
 {
     unsigned long res;
 
-    D(printf("[kernel IRQ] Causing exception %u\n", irq));
+    D(printf("[kernel IRQ] Causing IRQ %u\n", irq));
     res = SetEvent(SwData.IntObjects[irq]);
     D(printf("[kernel IRQ] Result: %ld\n", res));
     return res;

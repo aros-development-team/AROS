@@ -332,7 +332,7 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	    }
     }
     /* Install the VBlank handler. We drop the handle because exec.library never expunges. */
-    KrnAddExceptionHandler(0, VBlankHandler, sysBase, NULL);
+    KrnAddIRQHandler(0, VBlankHandler, sysBase, NULL);
 
     /* We now start up the interrupts */
     Permit();
