@@ -6,7 +6,10 @@
     Lang: english
 */
 
+#define DEBUG 0
+
 #include "battclock_intern.h"
+#include <aros/debug.h>
 #include <proto/battclock.h>
 #include <proto/utility.h>
 #include <utility/date.h>
@@ -21,6 +24,8 @@ AROS_LH1(void, WriteBattClock,
     SYSTEMTIME tm;
     struct ClockData date;
     
+    D(bug("[Battclock] WriteBattClock()\n"));
+    
     Amiga2Date(time, &date);
 
     tm.wYear	  = date.year;
@@ -29,9 +34,11 @@ AROS_LH1(void, WriteBattClock,
     tm.wHour	  = date.hour;
     tm.wMinute    = date.min;
     tm.wSecond    = date.sec;
-    tm.wDayOfWeek = date.wday;
+    /* Day of week is just informative and can be ignored */
 
+    Forbid();
     BattClockBase->KernelIFace->SetSystemTime(&tm);
+    Permit();
 
     AROS_LIBFUNC_EXIT
 } /* ReadBattClock */

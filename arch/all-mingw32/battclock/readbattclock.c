@@ -18,14 +18,16 @@ AROS_LH0(ULONG, ReadBattClock, struct BattClockBase *, BattClockBase, 2, Battclo
     SYSTEMTIME tm;
     struct ClockData date;
     
+    Forbid();
     BattClockBase->KernelIFace->GetSystemTime(&tm);
+    Permit();
     date.year  = tm.wYear;
     date.month = tm.wMonth;
     date.mday  = tm.wDay;
     date.hour  = tm.wHour;
     date.min   = tm.wMinute;
     date.sec   = tm.wSecond;
-    date.wday  = tm.wDayOfWeek;
+    /* Day of week is just informative and can be ignored */
     
     return Date2Amiga(&date);
 
