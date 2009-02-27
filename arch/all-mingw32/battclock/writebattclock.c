@@ -11,6 +11,7 @@
 #include "battclock_intern.h"
 #include <aros/debug.h>
 #include <proto/battclock.h>
+#include <proto/exec.h>
 #include <proto/utility.h>
 #include <utility/date.h>
 
