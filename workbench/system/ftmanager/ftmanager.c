@@ -2014,12 +2014,7 @@ struct MUIP_FontList_AddEntry
 
 ULONG flAddEntry(Class *cl, Object *o, struct MUIP_FontList_AddEntry *msg)
 {
-#ifdef __AROS__
-#warning "MUIV_List_Insert_Sorted not yet working in AROS"
-	DoMethod(o, MUIM_List_InsertSingle, msg->Entry, MUIV_List_Insert_Bottom);
-#else
 	DoMethod(o, MUIM_List_InsertSingle, msg->Entry, MUIV_List_Insert_Sorted);
-#endif
 	FreeVec(msg->Entry);
 	return TRUE;
 }
