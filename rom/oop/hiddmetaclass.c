@@ -129,7 +129,7 @@ static OOP_Object *hiddmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 		  
     }
     
-    ReturnPtr ("HIDDMeta::New", Object *, o);
+    ReturnPtr ("HIDDMeta::New", OOP_Object *, o);
 }
 
 /********************************

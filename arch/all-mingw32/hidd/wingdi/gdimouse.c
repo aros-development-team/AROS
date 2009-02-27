@@ -65,7 +65,7 @@ OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	struct TagItem       *tag, *tstate;
 	
 	data->buttons = 0;
-	data->interrupt = KrnAddExceptionHandler(3, MouseIntHandler, data, NULL);
+	data->interrupt = KrnAddIRQHandler(3, MouseIntHandler, data, NULL);
 	D(bug("[GDIMouse] Mouse interrupt object: 0x%p\n", data->interrupt));
     	if (!data->interrupt) {
     	    OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
@@ -126,27 +126,28 @@ static BOOL check_button(UWORD new, UWORD mask, UWORD arosbutton, struct pHidd_M
 static VOID MouseIntHandler(struct gdimouse_data *data, void *p)
 {
     struct pHidd_Mouse_Event e;
+    UWORD new_buttons;
+    BOOL button;
     /* Due to asynchronous nature of host-side window service thread MOUSEDATA structure acts like hardware registers.
        There can be many pending events before we get here and the structure will hold a summary of all states, however
        EventCode will contain only last event. Because of this we read it ASAP and pay as little attention to EventCode
        as possible.
     */
-    UWORD event = MOUSEDATA->EventCode;
-    UWORD new_buttons = MOUSEDATA->Buttons;
-    WORD wheel = MOUSEDATA->WheelDelta;
-    BOOL button;
     
     D(bug("[GDIMouse] Interrupt\n"));
-    if (event == WM_MOUSEWHEEL) {
+    switch(MOUSEDATA->EventCode) {
+    case WM_MOUSEWHEEL:
         /* Wheel delta comes only with WM_MOUSEWHEEL, otherwise it's zero */
+        e.y = -MOUSEDATA->WheelDelta; /* Windows gives us inverted data */
+        e.x = 0;
     	e.type   = vHidd_Mouse_WheelMotion;
     	e.button = vHidd_Mouse_NoButton;
-    	e.x = 0;
-    	e.y = wheel;
     	data->mouse_callback(data->callbackdata, &e);
-    } else {
+    	break;
+    default:
     	e.x = MOUSEDATA->MouseX;
     	e.y = MOUSEDATA->MouseY;
+    	new_buttons = MOUSEDATA->Buttons;
 
     	button = check_button(new_buttons, MK_LBUTTON, vHidd_Mouse_Button1, &e, data);
     	button |= check_button(new_buttons, MK_RBUTTON, vHidd_Mouse_Button2, &e, data);

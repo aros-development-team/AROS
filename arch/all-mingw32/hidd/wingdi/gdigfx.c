@@ -455,7 +455,7 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
     D(bug("[GDI] hidd.gfx.wingdi::Show(0x%p)\n", msg->bitMap));
 
     me = FindTask(NULL);
-    gfx_int = KrnAddExceptionHandler(2, GfxIntHandler, data, me);
+    gfx_int = KrnAddIRQHandler(2, GfxIntHandler, data, me);
     if (gfx_int) {
 	LOCK_GDI
 
@@ -472,7 +472,9 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	    OOP_GetAttr(msg->bitMap, aHidd_BitMap_Width, &data->width);
 	    OOP_GetAttr(msg->bitMap, aHidd_BitMap_Height, &data->height);
 	}
-	/* Force-reset the signal, it sometimes stays there after semaphore release (because it's the same as SIGF_SINGLE) */
+    	/* Hosted system has no real blitter, however we have host-side window service thread that does some work asynchronously,
+	   and this looks like a real blitter. So we use this signal. Before we do it we ensure that it's reset (because it's
+	   the same as SIGF_SINGLE) */
 	SetSignal(0, SIGF_BLIT);
 	NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, 0);
 	Wait(SIGF_BLIT);
@@ -481,11 +483,9 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	    bm_win_tags[1] = (IPTR)data->fbwin;
 	    OOP_SetAttrs(msg->bitMap, (struct TagItem *)bm_win_tags);
 	}
-    
-    	/* Hosted system has no real blitter, however we have host-side window service thread that does some work asynchronously,
-	   and this looks like a real blitter. So we use this signal. */
+
 	UNLOCK_GDI
-	KrnRemExceptionHandler(gfx_int);
+	KrnRemIRQHandler(gfx_int);
 	return msg->bitMap;
     }
     return NULL;

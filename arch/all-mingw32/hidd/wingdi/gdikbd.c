@@ -267,7 +267,7 @@ OOP_Object * GDIKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     {
 	struct gdikbd_data *data = OOP_INST_DATA(cl, o);
 	
-	data->interrupt = KrnAddExceptionHandler(4, KbdIntHandler, data, NULL);
+	data->interrupt = KrnAddIRQHandler(4, KbdIntHandler, data, NULL);
 	if (!data->interrupt) {
     	    OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 	    

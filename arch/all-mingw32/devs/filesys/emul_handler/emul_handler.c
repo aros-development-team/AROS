@@ -639,7 +639,7 @@ static LONG startup(struct emulbase *emulbase)
 	    emulbase->ConsoleReader = InitNative();
 	    if (emulbase->ConsoleReader) {
 		D(bug("[Emulhandler] Created console reader %p\n", emulbase->ConsoleReader));
-	        emulbase->ConsoleInt = KrnAddExceptionHandler(1, EmulIntHandler, emulbase->ConsoleReader, NULL);
+	        emulbase->ConsoleInt = KrnAddIRQHandler(1, EmulIntHandler, emulbase->ConsoleReader, NULL);
 	        D(bug("[Emulhandler] Added console interrupt %p\n", emulbase->ConsoleReader));
 	        if (emulbase->ConsoleInt) {
 
