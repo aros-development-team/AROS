@@ -48,8 +48,8 @@ struct initbase
 #define OOPBase (base->oopbase)
 
 
-static BOOL init_gfx  ( STRPTR gfxclassname,   struct initbase *base);
-static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initbase *base);
+static BOOL __dosboot_InitGfx   ( STRPTR gfxclassname,   struct initbase *base);
+static BOOL __dosboot_InitDevice( STRPTR hiddclassname, STRPTR devicename,  struct initbase *base);
 
 /************************************************************************/
 
@@ -64,7 +64,7 @@ static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initba
 
 #include <proto/graphics.h>
 
-BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
+BOOL __dosboot_InitHidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 {
 /* This is the initialisation code for InitHIDDs module */
 
@@ -145,7 +145,7 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
         }
 
         /* Set up the graphics HIDD system */
-        if (!init_gfx(gfxname, base))
+        if (!__dosboot_InitGfx(gfxname, base))
         {
             bug("[DOS] InitHidds: Could not init gfx hidd %s\n", gfxname);
             success = FALSE;
@@ -174,7 +174,7 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 **  init_gfx()  **
 *****************/
 
-static BOOL init_gfx(STRPTR gfxclassname, struct initbase *base)
+static BOOL __dosboot_InitGfx(STRPTR gfxclassname, struct initbase *base)
 {
     struct GfxBase *GfxBase;
     BOOL success = FALSE;
@@ -216,7 +216,7 @@ static BOOL init_gfx(STRPTR gfxclassname, struct initbase *base)
 }
 
 
-static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initbase *base)
+static BOOL __dosboot_InitDevice( STRPTR hiddclassname, STRPTR devicename,  struct initbase *base)
 {
     BOOL success = FALSE;
     struct MsgPort *mp;

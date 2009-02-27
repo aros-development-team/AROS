@@ -6,6 +6,6 @@ USER_INCLUDES := -I.. -I$(TOP)/rom/dos
 %build_archspecific \
   mainmmake=kernel-dos maindir=rom/dos \
   arch=chrp-ppc \
-  files="inithidds runprocess"
+  files="runprocess"
 
 #MM- kernel-dos-chrp-ppc : kernel-bootloader-chrp-ppc-includes

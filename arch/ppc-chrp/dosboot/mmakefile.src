@@ -1,0 +1,9 @@
+# $Id: mmakefile.src 28503 2008-04-28 09:32:13Z schulz $
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.. -I$(TOP)/rom/dosboot
+
+%build_archspecific \
+  mainmmake=kernel-dosboot maindir=rom/dosboot \
+  arch=chrp-ppc \
+  files="inithidds"
