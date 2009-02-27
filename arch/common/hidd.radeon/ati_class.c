@@ -83,7 +83,6 @@ OOP_Object *METHOD(ATI, Hidd_Gfx, Show)
                 bm->usecount++;
 
                 LOCK_HW
-
                 LoadState(sd, bm->state);
                 DPMS(sd, sd->dpms);
 
@@ -538,9 +537,9 @@ OOP_Object *METHOD(ATI, Root, New)
          864,  870,  875,  916,
         "ATI:1152x864");
 
-    MAKE_SYNC(1280x1024_60, 107991,
-        1280, 1328, 1440, 1688,
-        1024, 1025, 1028, 1066,
+    MAKE_SYNC(1280x1024_60, 108880,
+        1280, 1360, 1496, 1712,
+        1024, 1025, 1028, 1060,
         "ATI:1280x1024");
 
     MAKE_SYNC(1600x1200_60, 155982,
