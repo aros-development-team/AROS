@@ -457,7 +457,7 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
     me = FindTask(NULL);
     gfx_int = KrnAddIRQHandler(2, GfxIntHandler, data, me);
     if (gfx_int) {
-	LOCK_GDI
+	Forbid();
 
 	if (data->bitmap) {
 	    D(bug("[GDI] Show(): old displayed bitmap 0x%p\n", data->bitmap));
@@ -484,7 +484,7 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	    OOP_SetAttrs(msg->bitMap, (struct TagItem *)bm_win_tags);
 	}
 
-	UNLOCK_GDI
+	Permit();
 	KrnRemIRQHandler(gfx_int);
 	return msg->bitMap;
     }
@@ -518,7 +518,7 @@ VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 	return;
     }
 
-    LOCK_GDI
+    Forbid();
     /* We do it inside the semaphore because Show() can be called from within another process */
     OOP_GetAttr(msg->dest, aHidd_GDIBitMap_Window, (IPTR *)&wnd);
     GDICALL(BitBlt, dest, msg->destX, msg->destY, msg->width, msg->height, src, msg->srcX, msg->srcY, SRCCOPY);
@@ -528,7 +528,7 @@ VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
         D(bug("[GDI] CopyBox(): Refresh\n"));
         USERCALL(RedrawWindow, wnd, &r, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
     }
-    UNLOCK_GDI
+    Permit();
     
 }
 
@@ -570,9 +570,9 @@ static BOOL initgdistuff(struct gdi_staticdata *xsd)
 
     EnterFunc(bug("initgdistuff()\n"));
 
-    LOCK_GDI
+    Forbid();
     xsd->depth = GDICALL(GetDeviceCaps, xsd->display, BITSPIXEL);
-    UNLOCK_GDI
+    Permit();
     D(bug("Screen depth: %lu\n", xsd->depth));
     if (xsd->depth == 32) {
 	/* Get the pixel masks */

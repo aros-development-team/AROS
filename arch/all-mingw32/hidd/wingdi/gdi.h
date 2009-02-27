@@ -57,7 +57,6 @@ struct gdikbd_data
 struct gdi_staticdata
 {
     struct SignalSemaphore   sema; /* Protecting this whole struct */
-    struct SignalSemaphore   gdisema;
      
     APTR 	    	     display;
     
@@ -132,16 +131,6 @@ VOID  gdiclipboard_handle_event(struct gdi_staticdata *, XEvent *);
 #undef XSD
 #define XSD(cl)     	(&((struct gdiclbase *)cl->UserData)->xsd)
 
-/* This lock has two uses:
-- Making GDI calls threadsafe.
-- In the bitmap class, protecting the bimtap GC from changes from other tasks
-*/
-
-#define LOCK_GDI ObtainSemaphore (&XSD(cl)->gdisema);
-#define UNLOCK_GDI ReleaseSemaphore(&XSD(cl)->gdisema);
-
-//#define SRCCOPY 0x00CC0020
-
 #else
 
 #include <windows.h>
@@ -176,7 +165,7 @@ struct MouseData
 struct KeyboardData
 {
     unsigned short EventCode;
-    unsigned int KeyCode;
+    unsigned short KeyCode;
 };  
 
 #endif /* HIDD_GDI_H */

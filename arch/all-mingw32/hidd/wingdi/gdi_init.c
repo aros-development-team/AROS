@@ -78,19 +78,16 @@ static VOID freeclasses(struct gdi_staticdata *xsd)
 
 static int GDI_Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct Task 	    	*gditask;
+    ULONG rc;
     struct gdi_staticdata *xsd = &LIBBASE->xsd;
 
     D(bug("Entering GDI_Init\n"));
     
     InitSemaphore( &xsd->sema );
-    InitSemaphore( &xsd->gdisema );
 		
-    /* Do not need to singlethread this
-     * since no other tasks are using GDI currently
-     */
-
+    Forbid();
     xsd->display = GDICALL(CreateDC, "DISPLAY", NULL, NULL, NULL);
+    Permit();
     if (xsd->display) {
 /*
         xsd->delete_win_atom         = XCALL(XInternAtom, xsd->display, "WM_DELETE_WINDOW", FALSE);
@@ -99,13 +96,15 @@ static int GDI_Init(LIBBASETYPEPTR LIBBASE)
         xsd->clipboard_incr_atom     = XCALL(XInternAtom, xsd->display, "INCR", FALSE);
         xsd->clipboard_targets_atom  = XCALL(XInternAtom, xsd->display, "TARGETS", FALSE);
 */
-	if (NATIVECALL(GDI_Init)) {
-	    if (initclasses(xsd))
-	    {
+	if (initclasses(xsd)) {
+	    Forbid();
+	    rc = NATIVECALL(GDI_Init);
+	    Permit();
+	    if (rc) {
 	        D(bug("GDI_Init succeeded\n"));
 	        return TRUE;
 	    }
-	    NATIVECALL(GDI_PutMsg, NULL, WM_QUIT, 0, 0);
+	    freeclasses(xsd);
         }
     }
     
