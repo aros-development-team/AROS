@@ -114,7 +114,7 @@ static const char * KMsgNotAllFilesCopied =
 "Should the instalation continue?\n";
 
 static const char * KMsgPartitioningFailed =
-"Partitionig of disk failed. InstallAROS\n"
+"Partitioning of disk failed. InstallAROS\n"
 "will now quit.";
 
 #if GRUB == 1
