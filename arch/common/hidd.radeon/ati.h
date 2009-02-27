@@ -2,7 +2,7 @@
 #define _ATI_H
 
 /*
-    Copyright © 2004-2007, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2004-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,6 +13,7 @@
 #include <exec/lists.h>
 #include <exec/semaphores.h>
 #include <exec/memory.h>
+#include <exec/memheaderext.h>
 #include <dos/bptr.h>
 
 #include <devices/timer.h>
@@ -60,7 +61,7 @@ typedef struct __bm {
     OOP_Object  *BitMap;    // BitMap OOP Object
     IPTR    framebuffer;    // Points to pixel data
     ULONG   width;      // Bitmap width
-    ULONG   height;     // Bitmap height   
+    ULONG   height;     // Bitmap height
     ULONG   pitch;      // BytesPerRow aligned
     UBYTE   depth;      // Bitmap depth
     UBYTE   bpp;        // BytesPerPixel
@@ -93,22 +94,24 @@ struct ati_staticdata {
     struct MemHeader    CardMem;
     ULONG               *CardMemBmp;
     LONG                CardMemSize;
-    
+
+    struct MemHeaderExt		managedMem;
+
     struct Card     Card;
     struct CardState *poweron_state;
     IPTR            scratch_buffer;
-    
+
     OOP_Object      *AtiObject;
     OOP_Object      *PCIObject;
     OOP_Object      *PCIDevice;
     OOP_Object      *PCIDriver;
-        
+
     OOP_Class       *AtiClass;
     OOP_Class       *AtiI2C;
     OOP_Class       *OnBMClass;
     OOP_Class       *OffBMClass;
     OOP_Class       *PlanarBMClass;
-    
+
     OOP_AttrBase    pciAttrBase;
     OOP_AttrBase    atiBitMapAttrBase;
     OOP_AttrBase    bitMapAttrBase;
@@ -137,7 +140,7 @@ struct ati_staticdata {
     OOP_MethodID    mid_PutMemPattern32;
     OOP_MethodID    mid_CopyLUTMemBox16;
     OOP_MethodID    mid_CopyLUTMemBox32;
-  
+
     HIDDT_DPMSLevel dpms;
 };
 
@@ -169,7 +172,6 @@ struct planarbm_data
 #define METHOD_NAME_S(base, id, name) \
   # base "__" # id "__" # name
 
- 
 #define LOCK_HW          { ObtainSemaphore(&sd->HWLock); }
 #define UNLOCK_HW        { ReleaseSemaphore(&sd->HWLock); }
 
@@ -181,5 +183,17 @@ struct planarbm_data
 
 #define LOCK_MULTI_BITMAP    { ObtainSemaphore(&sd->MultiBMLock); }
 #define UNLOCK_MULTI_BITMAP  { ReleaseSemaphore(&sd->MultiBMLock); }
+
+//#define LOCK_HW          { while (sd->HWLock.ss_QueueCount) Reschedule(FindTask(NULL)); sd->HWLock.ss_QueueCount=1; }
+//#define UNLOCK_HW        { sd->HWLock.ss_QueueCount=0; }
+//
+//#define LOCK_BITMAP      { while (bm->bmLock.ss_QueueCount) Reschedule(FindTask(NULL)); bm->bmLock.ss_QueueCount=1; }
+//#define UNLOCK_BITMAP        { bm->bmLock.ss_QueueCount=0; }
+//
+//#define LOCK_BITMAP_BM(bm)   { while (bm->bmLock.ss_QueueCount) Reschedule(FindTask(NULL)); bm->bmLock.ss_QueueCount=1; }
+//#define UNLOCK_BITMAP_BM(bm) { bm->bmLock.ss_QueueCount=0; }
+//
+//#define LOCK_MULTI_BITMAP    { while (sd->MultiBMLock.ss_QueueCount) Reschedule(FindTask(NULL)); sd->MultiBMLock.ss_QueueCount=1; }
+//#define UNLOCK_MULTI_BITMAP  { sd->MultiBMLock.ss_QueueCount=0; }
 
 #endif /* _ATI_H */
