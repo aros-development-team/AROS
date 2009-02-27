@@ -8,8 +8,8 @@
 #include "battclock_intern.h"
 
 static const char *Symbols[] = {
-    "GetSystemTime",
-    "SetSystemTime",
+    "GetLocalTime",
+    "SetLocalTime",
     NULL
 };
 
