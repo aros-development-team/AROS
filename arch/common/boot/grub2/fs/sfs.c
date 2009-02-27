@@ -172,8 +172,7 @@ grub_sfs_read_extent (struct grub_sfs_data *data, unsigned int block,
 	  return grub_errno;
 	}
 
-      grub_uint16_t nodescount = grub_be_to_cpu16(tree->nodes);
-      for (i = nodescount - 1; i >= 0; i--)
+      for (i = grub_be_to_cpu16 (tree->nodes) - 1; i >= 0; i--)
 	{
 
 #define EXTNODE(tree, index)						\
