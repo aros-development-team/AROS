@@ -73,10 +73,10 @@ VOID GDIBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     
     DB2(bug("[GDI] hidd.bitmap.gdibitmap::PutPixel(0x%p): (%lu, %lu) = 0x%08lX\n", o, msg->x, msg->y, msg->pixel));
-    LOCK_GDI
+    Forbid();
     GDICALL(SetPixel, data->dc, msg->x, msg->y, msg->pixel);
     REFRESH(msg->x, msg->y, msg->x+1, msg->y+1)
-    UNLOCK_GDI
+    Permit();
 }
 
 /****************************************************************************************/
@@ -87,9 +87,9 @@ HIDDT_Pixel GDIBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o, struct pH
     APTR dc;
     HIDDT_Pixel     	pixel;
 
-    LOCK_GDI
+    Forbid();
     pixel = GDICALL(GetPixel, data->dc, msg->x, msg->y);
-    UNLOCK_GDI
+    Permit();
 
     return pixel;
 }
@@ -125,7 +125,7 @@ static void FillRect(OOP_Class *cl, struct bitmap_data *data, OOP_Object *gc, UL
     mode = DrawModeTable[GC_DRMD(gc)];
     DB2(bug("[GDI] Brush color 0x%08lX, mode 0x%08lX\n", col, mode));
 
-    LOCK_GDI
+    Forbid();
     br = GDICALL(CreateSolidBrush, col);
     if (br) {
         orig_br = GDICALL(SelectObject, data->dc, br);
@@ -134,7 +134,7 @@ static void FillRect(OOP_Class *cl, struct bitmap_data *data, OOP_Object *gc, UL
         GDICALL(DeleteObject, br);
     }
     REFRESH(minX, minY, maxX + 1, maxY + 1)
-    UNLOCK_GDI
+    Permit();
 }
 
 VOID GDIBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
@@ -206,10 +206,10 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 			      msg->width, msg->height, NULL);
     	bitmapinfo.biWidth = msg->width;
     	bitmapinfo.biHeight = -msg->height; /* Minus here means top-down bitmap */
-    	LOCK_GDI
+    	Forbid();
         GDICALL(StretchDIBits, data->dc, msg->x, msg->y, msg->width, msg->height, 0, 0, msg->width, msg->height, buf, &bitmapinfo, DIB_RGB_COLORS, SRCCOPY);
         REFRESH(msg->x, msg->y, msg->x + msg->width, msg->y + msg->height)
-    	UNLOCK_GDI
+    	Permit();
         FreeMem(buf, bufsize);
     }
 }
@@ -273,7 +273,7 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     buf = AllocMem(bufsize, MEMF_ANY);
     if (buf) {
         /* First we have to extract requested rectangle into temporary bitmap because GetDIBits() can limit only scan lines number */
-    	LOCK_GDI
+    	Forbid();
     	tmp_dc = GDICALL(CreateCompatibleDC, data->display);
     	if (tmp_dc) {
             tmp_bitmap = GDICALL(CreateCompatibleBitmap, data->display, msg->width, msg->height);
@@ -290,7 +290,7 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
             }
             GDICALL(DeleteDC, tmp_dc);
     	}
-    	UNLOCK_GDI
+    	Permit();
         OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 	/* DIB pixels will be 0x00RRGGBB (vHidd_StdPixFmt_BGR032) */        
         src_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, vHidd_StdPixFmt_BGR032);
@@ -335,7 +335,7 @@ VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
     bg = GC_BG(msg->gc);
     cemd = GC_COLEXP(msg->gc);
 
-    LOCK_GDI
+    Forbid();
     /* First we convert a source bitmap to 1-plane mask. We do it by creating a monochrome bitmap and copying our mask to it. */
     mask_dc = GDICALL(CreateCompatibleDC, data->display);
     if (mask_dc) {
@@ -389,7 +389,7 @@ VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
     /* TODO: an alternative way to implement this function is to attach a palette to a monochrome bitmap and then directly blit it in
        opaque mode. Probably it will be even faster than this two-op version. */
     REFRESH(msg->destX, msg->destY, msg->destX + msg->width, msg->destY + msg->height);
-    UNLOCK_GDI
+    Permit();
 }
 
 /****************************************************************************************/
@@ -488,7 +488,7 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
     D(bug("Creating GDI bitmap: %ldx%ldx%ld\n", width, height, depth));
 
-    LOCK_GDI
+    Forbid();
     my_dc = GDICALL(CreateCompatibleDC, display);
     D(bug("[GDI] Memory device context: 0x%p\n", my_dc));
     if (my_dc) {
@@ -498,7 +498,7 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
             orig_bitmap = GDICALL(SelectObject, my_dc, my_bitmap);
         D(bug("[GDI] Olriginal DC bitmap: 0x%p\n", orig_bitmap));
     }
-    UNLOCK_GDI
+    Permit();
 
     if (!my_dc)
     	return NULL;
@@ -520,13 +520,13 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     	ReturnPtr("GDIGfx.BitMap::New()", OOP_Object *, o);
     } /* if (object allocated by superclass) */
 dispose_bitmap:    
-    LOCK_GDI
+    Forbid();
     if (orig_bitmap)
     	GDICALL(SelectObject, my_dc, orig_bitmap);
     if (my_bitmap)
         GDICALL(DeleteObject, my_bitmap);
     GDICALL(DeleteDC, my_dc);
-    UNLOCK_GDI
+    Permit();
     
     ReturnPtr("GDIGfx.BitMap::New()", OOP_Object *, NULL);
     
@@ -540,14 +540,14 @@ VOID GDIBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     EnterFunc(bug("GDIGfx.BitMap::Dispose()\n"));
     
-    LOCK_GDI
+    Forbid();
     if (data->dc_bitmap)
     	GDICALL(SelectObject, data->dc, data->dc_bitmap);
     if (data->bitmap)
         GDICALL(DeleteObject, data->bitmap);
     if (data->dc)
         GDICALL(DeleteDC, data->dc);
-    UNLOCK_GDI
+    Permit();
     
     OOP_DoSuperMethod(cl, o, msg);
     
@@ -573,14 +573,14 @@ VOID GDIBM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
     rect.bottom = height;
     
     D(bug("[GDI] Brush color 0x%08lX\n", GC_BG(msg->gc)));
-    LOCK_GDI
+    Forbid();
     br = GDICALL(CreateSolidBrush, GC_BG(msg->gc));
     if (br) {
         USERCALL(FillRect, data->dc, &rect, br);
         GDICALL(DeleteObject, br);
     }
     REFRESH(0, 0, width , height)
-    UNLOCK_GDI    
+    Permit();    
 }
 
 /****************************************************************************************/
