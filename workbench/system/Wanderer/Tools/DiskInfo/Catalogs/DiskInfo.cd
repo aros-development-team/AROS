@@ -30,5 +30,17 @@ MSG_AUTHOR (//)
 Olivier Adam
 ;
 MSG_COPYRIGHT (//)
-©2006 AROS Dev Team
+©2006-2009 AROS Dev Team
+;
+MSG_USED (//)
+Used
+;
+MSG_FREE (//)
+Free
+;
+MSG_SIZE (//)
+Size
+;
+MSG_BLOCK_SIZE (//)
+Block size
 ;
