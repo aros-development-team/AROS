@@ -44,3 +44,9 @@ Size
 MSG_BLOCK_SIZE (//)
 Block size
 ;
+MSG_BLOCKS (//)
+blocks
+;
+MSG_BYTES (//)
+bytes
+;
