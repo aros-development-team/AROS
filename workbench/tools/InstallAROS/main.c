@@ -73,6 +73,7 @@
 #define DEF_LIGHTBACK_IMAGE     "IMAGES:Logos/install.logo"
 
 #define POST_INSTALL_SCRIPT     "PROGDIR:InstallAROS-Post-Install"
+#define AROS_BOOT_FILE          "AROS.boot"
 
 #define GRUB_COPY_FILE_LOOP                                                     \
 SET(data->gauge2, MUIA_Gauge_Current, 0);                                       \
@@ -1786,6 +1787,13 @@ localecopydone:
 		TEXT srcPath[srcLen];
 		TEXT dstPath[dstLen];
 
+        /* Copy AROS.boot file */
+        sprintf(srcPath, "%s", source_Path);
+        sprintf(dstPath, "%s:", dest_Path);
+        AddPart(srcPath, AROS_BOOT_FILE, srcLen);
+        AddPart(dstPath, AROS_BOOT_FILE, dstLen);
+        DoMethod(self, MUIM_IC_CopyFile, srcPath, dstPath);
+        
 		/* Copy kernel files */
         sprintf(srcPath, "%s", source_Path);
 		sprintf(dstPath, "%s:", dest_Path);
