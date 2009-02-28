@@ -113,6 +113,9 @@ static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
 
     task->tc_SPReg = sp;
 
+    sp[0] = 0;
+    sp[1] = 0;
+
     D(bug("[exec] New context:\n[exec] SRR0=%08x, SRR1=%08x\n",ctx->cpu.srr0, ctx->cpu.srr1));
     D(bug("[exec] GPR00=%08x GPR01=%08x GPR02=%08x GPR03=%08x\n",
              ctx->cpu.gpr[0],ctx->cpu.gpr[1],ctx->cpu.gpr[2],ctx->cpu.gpr[3]));
