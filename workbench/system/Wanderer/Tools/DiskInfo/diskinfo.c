@@ -74,7 +74,11 @@ Object *DiskInfo__OM_NEW
     ULONG                       percent        = 0;
     LONG                        disktype       = ID_NO_DISK_PRESENT;
     LONG                        aspect         = 0;
-    char                        volname[108];
+    TEXT                        volname[108];
+    TEXT                        size[128];
+    TEXT                        used[128];
+    TEXT                        free[128];
+    TEXT                        blocksize[16];
     STRPTR			dtr;
     struct DosList	       *dl,
 			       *dn;
@@ -135,8 +139,11 @@ Object *DiskInfo__OM_NEW
         static struct InfoData id;
         if (Info(initial, &id) == DOSTRUE)
         {
-	    percent = (100 * id.id_NumBlocksUsed/id.id_NumBlocks);
-
+            percent = (100 * id.id_NumBlocksUsed/id.id_NumBlocks);
+            FormatSize(size, id.id_NumBlocks, id.id_NumBlocks, id.id_BytesPerBlock);
+            FormatSize(used, id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock);
+            FormatSize(free, id.id_NumBlocks - id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock);
+            sprintf(blocksize, "%d bytes", id.id_BytesPerBlock);
         }
     }
     /* Create application and window objects -------------------------------*/
@@ -145,7 +152,7 @@ Object *DiskInfo__OM_NEW
         CLASS, self, NULL,
 
         MUIA_Application_Title, __(MSG_TITLE),
-        MUIA_Application_Version, (IPTR) "$VER: DiskInfo 0.2 ("ADATE") ©2006 AROS Dev Team",
+        MUIA_Application_Version, (IPTR) "$VER: DiskInfo 0.3 ("ADATE") ©2006-2009 AROS Dev Team",
         MUIA_Application_Copyright, __(MSG_COPYRIGHT),
         MUIA_Application_Author, __(MSG_AUTHOR),
         MUIA_Application_Description, __(MSG_DESCRIPTION),
@@ -167,6 +174,48 @@ Object *DiskInfo__OM_NEW
                     Child, (IPTR) (grp = VGroup,
                         // grp object aspect sensitive
                     End),
+                End,
+                Child, (IPTR) HGroup,
+                    Child, (IPTR) VGroup, GroupFrame,
+                        Child, (IPTR) ColGroup(2),
+                            Child, (IPTR) TextObject, 
+                                MUIA_Text_PreParse, (IPTR) "\33r",
+                                MUIA_Text_Contents, (IPTR) __(MSG_SIZE),
+                            End,
+                            Child, (IPTR) TextObject, TextFrame,
+                                MUIA_Background, MUII_TextBack,
+                                MUIA_Text_PreParse, (IPTR) "\33l",
+                                MUIA_Text_Contents, (IPTR) size,
+                            End,
+                            Child, (IPTR) TextObject, 
+                                MUIA_Text_PreParse, (IPTR) "\33r",
+                                MUIA_Text_Contents, (IPTR) __(MSG_USED),
+                            End,
+                            Child, (IPTR) TextObject, TextFrame,
+                                MUIA_Background, MUII_TextBack,
+                                MUIA_Text_PreParse, (IPTR) "\33l",
+                                MUIA_Text_Contents, (IPTR) used,
+                            End,
+                            Child, (IPTR) TextObject,
+                                MUIA_Text_PreParse, (IPTR) "\33r",
+                                MUIA_Text_Contents, (IPTR) __(MSG_FREE),
+                            End,
+                            Child, (IPTR) TextObject, TextFrame,
+                                MUIA_Background, MUII_TextBack,
+                                MUIA_Text_PreParse, (IPTR) "\33l",
+                                MUIA_Text_Contents, (IPTR) free,
+                            End,
+                            Child, (IPTR) TextObject,
+                                MUIA_Text_PreParse, (IPTR) "\33r",
+                                MUIA_Text_Contents, (IPTR) __(MSG_BLOCK_SIZE),
+                            End,
+                            Child, (IPTR) TextObject, TextFrame,
+                                MUIA_Background, MUII_TextBack,
+                                MUIA_Text_PreParse, (IPTR) "\33l",
+                                MUIA_Text_Contents, (IPTR) blocksize,
+                            End,
+                        End,
+                    End,
                 End,
                 Child, (IPTR) HGroup,
                     Child, (IPTR) VGroup, GroupFrame,

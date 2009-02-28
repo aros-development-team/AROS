@@ -15,6 +15,8 @@
 #include "locale.h"
 #include "support.h"
 
+#include <stdio.h>
+
 STRPTR GetENV(CONST_STRPTR name)
 {
     UBYTE  dummy = 0;
@@ -70,4 +72,28 @@ VOID ShowError(Object *application, Object *window, CONST_STRPTR message, BOOL u
         application, window, 0, _(MSG_TITLE), _(MSG_ERROR_OK), 
         "%s:\n%s%s%s%s", _(MSG_ERROR_HEADER), message, newline, extra, period
     );
+}
+
+VOID FormatSize(STRPTR buffer, ULONG blocks, ULONG totalblocks, ULONG bytesperblock)
+{
+    static STRPTR suffixes[] = {"bytes", "K", "M", "G", "T", "P"};
+    DOUBLE internalsize = (DOUBLE)((UQUAD)blocks * bytesperblock);
+    ULONG divcount = 0;
+    ULONG percentage;
+
+    if (totalblocks != 0)
+        percentage = 100 * blocks / totalblocks;
+    else
+        percentage = 100;
+
+    while (internalsize > 1024)
+    {
+        internalsize /= 1024;
+        divcount++;
+    }
+    
+    if (blocks == totalblocks)
+        sprintf(buffer, "%.1f%s  (%d blocks)", internalsize, suffixes[divcount], blocks);
+    else
+        sprintf(buffer, "%.1f%s  (%d blocks, %d%%)", internalsize, suffixes[divcount], blocks, percentage);
 }
