@@ -1,0 +1,72 @@
+## version $VER: diskinfo.catalog 1.0 (28.02.2008)
+## language deutsch
+## codeset 0
+;
+;
+MSG_TITLE (//)
+; Disk Info
+;
+MSG_ERROR_HEADER (//)
+Fehler
+; ERROR
+;
+MSG_ERROR_OK (//)
+_Ok
+; _OK
+;
+MSG_ERROR_LOCALE (//)
+Die Spracheinstellungen können nicht initialisiert werden.
+; Can't initialize locale.
+;
+MSG_ERROR_CLASSES (//)
+Die notwendigen "Custom Klassen" konnten nicht initialisiert werden.
+; Can't initialize custom classes.
+;
+MSG_DESCRIPTION (//)
+Disk Icon Informationen
+; Disk Icon Informations
+;
+MSG_PERCENTFULL (//)
+%ld %% voll
+; %ld %% Full
+;
+MSG_FORMAT (//)
+Format
+; Format
+;
+MSG_UNKNOWN (//)
+Unbekannt
+; Unknown
+;
+MSG_AUTHOR (//)
+Olivier Adam
+; Olivier Adam
+;
+MSG_COPYRIGHT (//)
+©2006-2009 AROS Dev Team
+; ©2006-2009 AROS Dev Team
+;
+MSG_USED (//)
+Benutzt
+; Used
+;
+MSG_FREE (//)
+Frei
+; Free
+;
+MSG_SIZE (//)
+Größe
+; Size
+;
+MSG_BLOCK_SIZE (//)
+Blockgröße
+; Block size
+;
+MSG_BLOCKS (//)
+Blöcke
+; blocks
+;
+MSG_BYTES (//)
+Byte
+; bytes
+;

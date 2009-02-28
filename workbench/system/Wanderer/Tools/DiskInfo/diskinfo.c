@@ -79,9 +79,8 @@ Object *DiskInfo__OM_NEW
     TEXT                        used[128];
     TEXT                        free[128];
     TEXT                        blocksize[16];
-    STRPTR			dtr;
-    struct DosList	       *dl,
-			       *dn;
+    STRPTR			            dtr;
+    struct DosList	           *dl, *dn;
 
     static STRPTR disktypelist[] = {"No Disk", "Unreadable",
     "OFS", "FFS", "OFS-Intl", "FFS-Intl",
@@ -143,7 +142,7 @@ Object *DiskInfo__OM_NEW
             FormatSize(size, id.id_NumBlocks, id.id_NumBlocks, id.id_BytesPerBlock);
             FormatSize(used, id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock);
             FormatSize(free, id.id_NumBlocks - id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock);
-            sprintf(blocksize, "%d bytes", id.id_BytesPerBlock);
+            sprintf(blocksize, "%d %s", id.id_BytesPerBlock, _(MSG_BYTES) );
         }
     }
     /* Create application and window objects -------------------------------*/
