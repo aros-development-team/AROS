@@ -22,7 +22,8 @@ FILES  := test      	    \
 	  loginwindow	    \
 	  busy              \
 	  hideshow          \
-	  settings
+	  settings          \
+	  dynlist
 
 EXEDIR := $(AROS_TESTS)/Zune
 
