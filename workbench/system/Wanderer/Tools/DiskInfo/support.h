@@ -2,7 +2,7 @@
 #define _SUPPORT_H_
 
 /*
-    Copyright © 2005, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,6 +13,6 @@
 STRPTR GetENV(CONST_STRPTR name);
 BOOL   SetENV(CONST_STRPTR name, CONST_STRPTR value);
 VOID   ShowError(Object *application, Object *window, CONST_STRPTR message, BOOL useIOError);
-VOID   FormatSize(STRPTR buffer, ULONG blocks, ULONG totalblocks, ULONG bytesperblock);
+VOID   FormatSize(STRPTR buffer, ULONG blocks, ULONG totalblocks, ULONG bytesperblock, BOOL showPercentage);
 
 #endif /* _SUPPORT_H_ */

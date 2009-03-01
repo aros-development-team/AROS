@@ -1,5 +1,5 @@
 /*
-    Copyright © 2005, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -75,17 +75,21 @@ Object *DiskInfo__OM_NEW
     LONG                        disktype       = ID_NO_DISK_PRESENT;
     LONG                        aspect         = 0;
     TEXT                        volname[108];
-    TEXT                        size[128];
-    TEXT                        used[128];
-    TEXT                        free[128];
+    TEXT                        size[64];
+    TEXT                        used[64];
+    TEXT                        free[64];
     TEXT                        blocksize[16];
+    TEXT                        status[64];
     STRPTR			            dtr;
     struct DosList	           *dl, *dn;
+    BOOL                        disktypefound = FALSE;
+
+    static struct InfoData id;
 
     static STRPTR disktypelist[] = {"No Disk", "Unreadable",
     "OFS", "FFS", "OFS-Intl", "FFS-Intl",
     "OFS-DC", "FFS-DC", "Not DOS",
-    "KickStart", "MSDOS", "SFS", "sfs",
+    "KickStart", "MSDOS", "SFS0 BE", "SFS0 LE",
     "FAT12", "FAT16", "FAT32", "CD-ROM" };
 
     /* Parse initial taglist -----------------------------------------------*/
@@ -104,11 +108,17 @@ Object *DiskInfo__OM_NEW
                 break;
         }
     }
+    
+    /* Initial lock is required */
+    if (initial == NULL)
+    {
+        return NULL;
+    }
 
     // obtain the volume name from a lock
     if (!NameFromLock(initial, volname, sizeof(volname))) {
-	SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-	return NULL;
+        SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+        return NULL;
     }
     volname[strlen(volname)-1] = '\0';
     dtr = _(MSG_UNKNOWN);
@@ -119,11 +129,12 @@ Object *DiskInfo__OM_NEW
 	    ULONG i;
 
 	    disktype = dn->dol_misc.dol_volume.dol_DiskType;
-	    for (i = 0; i < sizeof(dt); ++i)
+	    for (i = 0; i < sizeof(dt) / sizeof(LONG); ++i)
 	    {
 		if (disktype == dt[i])
 		{
 		    dtr = disktypelist[i];
+            disktypefound = TRUE;
 		    break;
 		}
 	    }
@@ -132,19 +143,41 @@ Object *DiskInfo__OM_NEW
 	UnLockDosList(LDF_VOLUMES|LDF_READ);
     }
 
-    // extract volume info from InfoData
-    if (initial != NULL)
+    /* Extract volume info from InfoData */
+    if (Info(initial, &id) == DOSTRUE)
     {
-        static struct InfoData id;
-        if (Info(initial, &id) == DOSTRUE)
+        if (!disktypefound) /* Workaround for FFS-Intl having 0 as dol_DiskType */
         {
-            percent = (100 * id.id_NumBlocksUsed/id.id_NumBlocks);
-            FormatSize(size, id.id_NumBlocks, id.id_NumBlocks, id.id_BytesPerBlock);
-            FormatSize(used, id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock);
-            FormatSize(free, id.id_NumBlocks - id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock);
-            sprintf(blocksize, "%d %s", id.id_BytesPerBlock, _(MSG_BYTES) );
+            LONG i;
+            dtr = _(MSG_UNKNOWN);
+            disktype = id.id_DiskType;
+
+            for (i = 0; i < sizeof(dt) / sizeof(LONG); ++i)
+            {
+                if (disktype == dt[i])
+                {
+                    dtr = disktypelist[i];
+                    break;
+                }
+            }
         }
+
+        percent = (100 * id.id_NumBlocksUsed/id.id_NumBlocks);
+        FormatSize(size, id.id_NumBlocks, id.id_NumBlocks, id.id_BytesPerBlock, FALSE);
+        FormatSize(used, id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
+        FormatSize(free, id.id_NumBlocks - id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
+        sprintf(blocksize, "%d %s", id.id_BytesPerBlock, _(MSG_BYTES));
+
+        sprintf(status,"%s", _(MSG_UNKNOWN));
+        if ((id.id_DiskState & ID_WRITE_PROTECTED) == ID_WRITE_PROTECTED)
+            sprintf(status,"%s", _(MSG_READABLE));
+        if ((id.id_DiskState & ID_VALIDATING) == ID_VALIDATING)
+            sprintf(status,"%s", _(MSG_VALIDATING));
+        if ((id.id_DiskState & ID_VALIDATED) == ID_VALIDATED)
+            sprintf(status,"%s", _(MSG_READABLE_WRITABLE));
+            
     }
+
     /* Create application and window objects -------------------------------*/
     self = (Object *) DoSuperNewTags
     (
@@ -212,6 +245,15 @@ Object *DiskInfo__OM_NEW
                                 MUIA_Background, MUII_TextBack,
                                 MUIA_Text_PreParse, (IPTR) "\33l",
                                 MUIA_Text_Contents, (IPTR) blocksize,
+                            End,
+                            Child, (IPTR) TextObject,
+                                MUIA_Text_PreParse, (IPTR) "\33r",
+                                MUIA_Text_Contents, (IPTR) __(MSG_STATUS),
+                            End,
+                            Child, (IPTR) TextObject, TextFrame,
+                                MUIA_Background, MUII_TextBack,
+                                MUIA_Text_PreParse, (IPTR) "\33l",
+                                MUIA_Text_Contents, (IPTR) status,
                             End,
                         End,
                     End,

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2005, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -74,9 +74,9 @@ VOID ShowError(Object *application, Object *window, CONST_STRPTR message, BOOL u
     );
 }
 
-VOID FormatSize(STRPTR buffer, ULONG blocks, ULONG totalblocks, ULONG bytesperblock)
+VOID FormatSize(STRPTR buffer, ULONG blocks, ULONG totalblocks, ULONG bytesperblock, BOOL showPercentage)
 {
-    static STRPTR suffixes[] = {"bytes", "K", "M", "G", "T", "P"};
+    static STRPTR suffixes[] = {" bytes", "K", "M", "G", "T", "P"};
     DOUBLE internalsize = (DOUBLE)((UQUAD)blocks * bytesperblock);
     ULONG divcount = 0;
     ULONG percentage;
@@ -92,7 +92,7 @@ VOID FormatSize(STRPTR buffer, ULONG blocks, ULONG totalblocks, ULONG bytesperbl
         divcount++;
     }
     
-    if (blocks == totalblocks)
+    if (!showPercentage)
         sprintf(buffer, "%.1f%s  (%d %s)", internalsize, suffixes[divcount], blocks, _(MSG_BLOCKS) );
     else
         sprintf(buffer, "%.1f%s  (%d %s, %d%%)", internalsize, suffixes[divcount], blocks, _(MSG_BLOCKS), percentage);
