@@ -50,3 +50,15 @@ blocks
 MSG_BYTES (//)
 bytes
 ;
+MSG_STATUS (//)
+Status
+;
+MSG_READABLE (//)
+Readable
+;
+MSG_READABLE_WRITABLE (//)
+Readable/writable
+;
+MSG_VALIDATING (//)
+Validating
+;
