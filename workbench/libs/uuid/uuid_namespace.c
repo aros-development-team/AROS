@@ -47,7 +47,7 @@ static uuid_t NameSpace_X500 = { /* 6ba7b814-9dad-11d1-80b4-00c04fd430c8 */
        0x80, 0xb4, {0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8}
 };
 
-static uuid_t __null = {0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0}};
+static uuid_t _null = {0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0}};
 
 AROS_LH2(void, UUID_GetNameSpace,
          AROS_LHA(uint32_t, NameSpace, D0),
@@ -77,7 +77,7 @@ AROS_LH2(void, UUID_GetNameSpace,
             break;
             
         default:
-            *uuid = __null;
+            *uuid = _null;
             break;
     }
 
