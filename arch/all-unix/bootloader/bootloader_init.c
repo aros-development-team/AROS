@@ -42,7 +42,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 	    STRPTR cmd,buff;
 	    ULONG temp;
 	    struct Node *node;
-	    ULONG len = strlen(Kernel_Args);	    
+	    ULONG len = strlen(Kernel_Args) + 1;	    
 
 	    D(bug("[BootLdr] Kernel arguments: %s\n", Kernel_Args));
 	    /* First make a working copy of the command line */
