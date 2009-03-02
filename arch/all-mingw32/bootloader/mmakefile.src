@@ -1,6 +1,9 @@
 # $Id: mmakefile.src 29778 2008-10-16 19:40:21Z neil $
 include $(TOP)/config/make.cfg
 
+#MM kernel-bootloader-mingw32-kobj: includes
+#MM kernel-bootloader-mingw32: includes
+
 %build_module mmake=kernel-bootloader-mingw32 \
     modname=bootloader modtype=resource \
     files="bootloader_init getbootinfo" uselibs="rom utility"
