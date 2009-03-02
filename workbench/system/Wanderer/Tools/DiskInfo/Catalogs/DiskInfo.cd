@@ -62,3 +62,6 @@ Readable/writable
 MSG_VALIDATING (//)
 Validating
 ;
+MSG_NAME (//)
+Name
+;
