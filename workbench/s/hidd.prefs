@@ -1,6 +1,3 @@
-#Generic X11 Hidd.Prefs
-library DRIVERS:graphics.hidd
-library x11gfx.hidd
-gfx	hidd.gfx.x11
-mouse	hidd.mouse.x11
-kbd	hidd.kbd.x11
+# Generic Hidd.Prefs
+# This file is intentionally left blank
+# Default driver is now autoselected

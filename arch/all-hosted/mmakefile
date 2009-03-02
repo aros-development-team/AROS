@@ -3,7 +3,7 @@
 include $(TOP)/config/make.cfg
 
 #MM kernel-link-emul : kernel-objs
-kernel-link-emul : $(BINDIR)/aros
+kernel-link-emul : $(BINDIR)/boot/aros-unix
 
 #MM
 kernel-link-emul-quick : kernel-link-emul
@@ -12,7 +12,7 @@ KLIBS   := exec boot aros dos graphics utility intuition keymap mathffp \
       	   mathieeesingbas expansion oop layers workbench cybergraphics
 KDEVS   := timer input keyboard console gameport
 KHNDLRS := con nil packet emul amberram
-KHIDDS  := hiddclass unixio parallel serial
+KHIDDS  := hiddclass unixio parallel serial graphics
 ifeq ("$(AROS_HOST_ARCH)","linux")
 KHIDDS  += linux
     ifeq ("$(AROS_HOST_CPU)","i386")
@@ -22,7 +22,10 @@ KHIDDS  += linux
 	KHIDDS	+= pci pcilinux
     endif
 endif
-KRSRCS  := battclock dosboot hostlib
+ifeq ("$(X11_HIDD_TARGET)", "kernel-x11gfx-kobj")
+    KHIDDS += x11gfx
+endif
+KRSRCS  := battclock dosboot hostlib bootloader bootmenu
 ifeq ($(ENABLE_DBUS),1)
 KLIBS	+= dbus
 endif
@@ -42,9 +45,12 @@ DEP_LIBS := \
 	$(LIBDIR)/liblibinit.a
 
 LIBS :=	-L$(LIBDIR) \
-	-larossupport -lhiddgraphicsstubs -lhiddstubs -lamiga -lautoinit -llibinit
+	-larossupport -lhiddgraphicsstubs -lhiddstubs -lamiga -lautoinit -llibinit -lrom -lm
+
+$(BINDIR)/boot:
+	mkdir -p $(BINDIR)/boot
 
 USER_CFLAGS := -I$(GENINCDIR) -D__AROS__
-$(BINDIR)/aros: $(DEP_LIBS) $(KOBJS)
+$(BINDIR)/boot/aros-unix: $(DEP_LIBS) $(KOBJS) $(BINDIR)/boot
 	$(HOST_CC) $(CFLAGS) $(HOST_LDFLAGS) $< $(KOBJS) $(LIBS) \
 		-o $@ $(KERNEL_LDFLAGS) $(DBUS_LIBFLAGS)

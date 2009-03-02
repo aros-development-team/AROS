@@ -1441,11 +1441,12 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
                 dnl and they explicitly asked for it, bail out
                 AC_MSG_ERROR([X11 libs/headers not found, cannot build X11 hidd as requested])
             fi
+	    ENABLE_X11=0
         
         else
             dnl found it, setup the metatarget
-            x11_hidd_target=kernel-x11gfx
-
+            x11_hidd_target=kernel-x11gfx-kobj
+	    ENABLE_X11=1
 
             dnl setup shared memory extensions
             AC_ARG_ENABLE(x11_shm, AC_HELP_STRING([--enable-x11-shm],
@@ -1691,6 +1692,9 @@ AC_SUBST(DBUS_CFLAGS)
 AC_SUBST(DBUS_LIBFLAGS)
 AC_SUBST(KERNEL_DBUS_KOBJ)
 AC_SUBST(KERNEL_DBUS_INCLUDES)
+
+#X11 related
+AC_SUBST(ENABLE_X11)
 
 # Debug related
 AC_SUBST(aros_debug)

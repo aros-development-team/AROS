@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#define DEBUG 0
 
 #define _XOPEN_SOURCE 600L /* for posix_memalign */
 
@@ -34,6 +35,7 @@
 #define __USE_MISC /* for MAP_ANON */
 #include <sys/mman.h>
 #include <sys/termios.h>
+#include <sys/utsname.h>
 
 #include "../../../rom/exec/memory.h"   /* From $(TOP)/rom/exec */
 
@@ -42,6 +44,7 @@ extern const struct Resident
     Exec_resident,
     Utility_ROMTag,
     Aros_ROMTag,
+    Bootloader_ROMTag,
 /*    BOOPSI_resident,*/
     OOP_ROMTag,
     HIDDCl_ROMTag,
@@ -77,9 +80,12 @@ extern const struct Resident
     Ram_ROMTag,
     PCI_ROMTag,
     PCILx_ROMTag,
-    Dosboot_ROMTag;
-//    Packet_ROMTag,
-//    Bootmenu_ROMTag;
+    Dosboot_ROMTag,
+    GFX_ROMTag,
+#if ENABLE_X11 == 1
+    X11Cl_ROMTag,
+#endif
+    Bootmenu_ROMTag;
 
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
@@ -89,34 +95,46 @@ static const struct Resident *romtagList[] =
     &Utility_ROMTag,                    /* ColdStart,   103  */
     &Aros_ROMTag,                       /* ColdStart,   102  */
     &Mathieeesingbas_ROMTag,            /* ColdStart,   101  */
+    &Bootloader_ROMTag,			/* ColdStart,	100  */
 #if 0
-    &BOOPSI_resident,                   /* ColdStart,   95       */
+    &BOOPSI_resident,                   /* ColdStart,   95   */
 #endif
-    &OOP_ROMTag,                        /* ColdStart,   94       */
-    &HIDDCl_ROMTag,                     /* ColdStart,   92       */
-    &UXIO_ROMTag,                       /* ColdStart,   91       */
-    &HostLib_ROMTag,                    /* ColdStart,   91       */
+    &OOP_ROMTag,                        /* ColdStart,   94   */
+    &HIDDCl_ROMTag,                     /* ColdStart,   92   */
+    &UXIO_ROMTag,                       /* ColdStart,   91   */
+    &HostLib_ROMTag,                    /* ColdStart,   91   */
 #if defined(__i386__) || defined(__x86_64__)
-    &PCI_ROMTag,                        /* ColdStart,   90       */
-//    &PCILx_ROMTag,                      /* ColdStart,   89       */
+    &PCI_ROMTag,                        /* ColdStart,   90   */
+//  &PCILx_ROMTag,                      /* ColdStart,   89   */
 #endif
-    &Graphics_ROMTag,                   /* ColdStart,   65       */
-    &Layers_ROMTag,                     /* ColdStart,   60       */
-    &Timer_ROMTag,                      /* ColdStart,   50       */
-    &Battclock_ROMTag,                  /* ColdStart,   45       */
-    &Keyboard_ROMTag,                   /* ColdStart,   44       */
-    &Gameport_ROMTag,                   /* ColdStart,   43       */
-    &Keymap_ROMTag,                     /* ColdStart,   40       */
-    &Input_ROMTag,                      /* ColdStart,   30       */
-    &Intuition_ROMTag,                  /* ColdStart,   10       */
-    &LinuxFB_ROMTag,                    /* ColdStart,   9        */
-    &Cybergraphics_ROMTag,              /* ColdStart,   8        */
-    &Console_ROMTag,                    /* ColdStart,   5        */
+    &Graphics_ROMTag,                   /* ColdStart,   65   */
+    &Layers_ROMTag,                     /* ColdStart,   60   */
+    &Timer_ROMTag,                      /* ColdStart,   50   */
+    &Battclock_ROMTag,                  /* ColdStart,   45   */
+    &Keyboard_ROMTag,                   /* ColdStart,   44   */
+    &Gameport_ROMTag,                   /* ColdStart,   43   */
+    &Keymap_ROMTag,                     /* ColdStart,   40   */
+    &Input_ROMTag,                      /* ColdStart,   30   */
+    &Intuition_ROMTag,                  /* ColdStart,   10   */
+    &GFX_ROMTag,			/* ColdStart,   10   */
+/* This driver now causes segmentation fault and trashes the
+   display. Probably previously it failed to initialize because
+   its superclass was not initialized. Now everything is OK.
+   I've looked at the code, it creates input task during
+   resident initialization, not during driver instantiation.
+   I guess this causes some weird conflicts with running X server.
+   Disabled for now, needs to be seriously rewritten.
+   Pavel Fedin <sonic.amiga@gmail.com>
+    &LinuxFB_ROMTag,*/                  /* ColdStart,   9    */
+#if ENABLE_X11 == 1
+    &X11Cl_ROMTag,			/* ColdStart,   9    */
+#endif
+    &Cybergraphics_ROMTag,              /* ColdStart,   8    */
+    &Console_ROMTag,                    /* ColdStart,   5    */
 #if ENABLE_DBUS == 1
-    &Dbus_ROMTag,                       /* ColdStart,   0        */
+    &Dbus_ROMTag,                       /* ColdStart,   0    */
 #endif
-    &emul_handler_ROMTag,               /* ColdStart,   0        */
-    &Packet_ROMTag,                     /* ColdStart,   0    */
+    &emul_handler_ROMTag,               /* ColdStart,   0    */
     &UXSer_ROMTag,                      /* ColdStart,   0    */
     &UXPar_ROMTag,                      /* ColdStart,   0    */
     &Workbench_ROMTag,                  /* ColdStart,  -120  */
@@ -127,16 +145,16 @@ static const struct Resident *romtagList[] =
         which initialized boot_resident will directly call
         Dos_resident and anything between the two will be skipped.
     */
-    &boot_resident,                     /* ColdStart,  -50       */
-    &Dos_ROMTag,                        /* None,           -120  */
+    &boot_resident,                     /* ColdStart,  -50   */
+    &Dos_ROMTag,                        /* None,       -120  */
     &LDDemon_resident,                  /* AfterDOS,   -123  */
     &Con_ROMTag,                        /* AfterDOS,   -124  */
-//    &Packet_ROMTag,                        /* AfterDOS,   -124  */
-    &Nil_ROMTag,                        /* AfterDOS,   -125      */
-    &Ram_ROMTag,                        /* AfterDOS,   -125      */
+    &Packet_ROMTag,                     /* AfterDOS,   -124  */
+    &Nil_ROMTag,                        /* AfterDOS,   -125  */
+    &Ram_ROMTag,                        /* AfterDOS,   -125  */
 //    &Partition_ROMTag,                     
-//    &Bootmenu_ROMTag,                   /* AfterDOS,   -127      */
-    &Dosboot_ROMTag,                    /* AfterDOS,   -128      */
+    &Bootmenu_ROMTag,                 /* AfterDOS,   -127  */
+    &Dosboot_ROMTag,                    /* AfterDOS,   -128  */
     NULL
 };
 
@@ -288,6 +306,29 @@ APTR realloc(APTR mem, size_t size)
     return retval;
 }
 
+char *join_string(int argc, char **argv)
+{
+    char *str, *s;
+    int j;
+    int x = 0;
+
+    for (j = 0; j < argc; j++)
+	x += (strlen(argv[j]) + 1);
+    D(printf("[Init] Allocating %lu bytes for string\n", x));
+    str = __libc_malloc(x);
+    if (str) {
+	s = str;
+	for (j = 0; j < argc; j++) {
+	    strcpy(s, argv[j]);
+	    s += strlen(s);
+	    *s++ = ' ';
+	}
+	s[-1] = 0;
+	D(printf("[Init] Joined line: %s\n", str));
+    }
+    return str;
+}
+
 /*
     This is where AROS is first called by whatever system loaded it,
     either some kind of boot loader, or a "parent" operating system.
@@ -297,23 +338,17 @@ APTR realloc(APTR mem, size_t size)
 */
 
 extern char _start, _end;
+char *BootLoader_Name = NULL;
+char *Kernel_Args = NULL;
+char **Kernel_ArgV;
 
 int main(int argc, char **argv)
 {
-    /*  Well, if you want you can take in command line arguments here,
-        but that is not necessary, or perhaps rather complex...
-
-        eg: say you wished to allow people to specify the root directory
-            arosshell --rootdir /usr/local/AROS --memsize 4
-
-        For an example, you could ask how much memory you want for the
-        system, chip/fast whatever...
-    */
-
     struct ExecBase *SysBase;
-    struct termios t;
     int psize = 0;
-    int i = 0, x;
+    int i = 1, x;
+    struct utsname sysinfo;
+    char *nameparts[4];
     int ticrate = 100;
     BOOL mapSysBase   = FALSE;
     BOOL _use_hostmem = FALSE;
@@ -325,7 +360,8 @@ int main(int argc, char **argv)
         printf
         (
             "AROS for Linux\n"
-            "usage: %s [options]\n"
+            "usage: %s [options] [kernel arguments]\n"
+	    "Availible options:\n"
             " -h                 show this page\n"
             " -m <size>          allocate <size> Megabytes of memory for AROS\n"
             " -M                 allows programs to read SysBase from Address $4; SysBase is\n"
@@ -345,8 +381,7 @@ int main(int argc, char **argv)
         );
         return 0;
       }
-      else
-      if (!strcmp(argv[i], "--memsize") || !strcmp(argv[i], "-m"))
+      else if (!strcmp(argv[i], "--memsize") || !strcmp(argv[i], "-m"))
       {
         i++;
         x = 0;
@@ -358,14 +393,12 @@ int main(int argc, char **argv)
         }
         i++;
       }
-      else
-      if (!strcmp(argv[i], "--mapsysbase") || !strcmp(argv[i], "-M"))
+      else if (!strcmp(argv[i], "--mapsysbase") || !strcmp(argv[i], "-M"))
       {
         mapSysBase = TRUE;
         i++;
       }
-      else
-      if (!strcmp(argv[i], "--ticrate") || !strcmp(argv[i], "-t"))
+      else if (!strcmp(argv[i], "--ticrate") || !strcmp(argv[i], "-t"))
       {
         i++;
         x = 0;
@@ -377,15 +410,25 @@ int main(int argc, char **argv)
         }
         i++;
       }
-      else
-      if (!strcmp(argv[i], "--hostmem"))
+      else if (!strcmp(argv[i], "--hostmem"))
       {
         _use_hostmem = TRUE;
         i++;
       }
       else
-        i++;
+        break;
     }
+
+    if (i < argc)
+	Kernel_Args = join_string(argc - i, &argv[i]);
+
+    uname(&sysinfo);
+    nameparts[0] = sysinfo.sysname;
+    nameparts[1] = sysinfo.machine;
+    nameparts[2] = sysinfo.release;
+    nameparts[3] = sysinfo.version;
+    BootLoader_Name = join_string(4, nameparts);
+    Kernel_ArgV = argv;
 
     /*
     First up, set up the memory.

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 gfx HIDD for AROS.
@@ -488,14 +488,7 @@ OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 	    tags[5].ti_Data = (IPTR)XSD(cl)->offbmclass;
 	    
 	}
-	else
-	{
-	    /* Let the superclass allocate if it is a standard pixelformat thus do nothing */
-	    
-	    kprintf("x11 hidd: Could not create offscreen bitmap for supplied attrs! Superclass hopefully can.\n");
-	    
-//	    *((ULONG *)0) = 0;
-	}
+	    D(else kprintf("x11 hidd: Could not create offscreen bitmap for supplied attrs! Superclass hopefully can.\n");)
     }
     
     /* !!! IMPORTANT !!! */
