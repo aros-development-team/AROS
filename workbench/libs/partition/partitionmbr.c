@@ -83,6 +83,7 @@ struct
     {
         struct MBR mbr;
         struct FATBootSector bs;
+        UBYTE space[root->de.de_SizeBlock << 2];
     }
     u;
 }
