@@ -559,6 +559,27 @@ D(bug("[WBInfo] icon type is: %s\n", type));
         return RETURN_FAIL;
     }
 
+    if (icon->do_Type == 2)
+    {
+		sizespace = TextObject,
+                                        ButtonFrame,
+                                        MUIA_Background, MUII_TextBack,
+                                        MUIA_Text_PreParse, (IPTR) "\33r",
+                                        MUIA_Text_Contents, (IPTR) NULL,
+                                        MUIA_Text_Contents, (IPTR) "?",
+					MUIA_InputMode, MUIV_InputMode_RelVerify,
+                                    End;
+    }
+    else
+    {
+	sizespace = TextObject,
+                                        TextFrame,
+                                        MUIA_Background, MUII_TextBack,
+                                        MUIA_Text_PreParse, (IPTR) "\33r",
+                                        MUIA_Text_Contents, (IPTR) size,
+                                    End;
+    }
+
     application = ApplicationObject,
         MUIA_Application_Title,  __(MSG_TITLE),
         MUIA_Application_Version, (IPTR) "$VER: Info 0.3 ("ADATE") © AROS Dev Team",
@@ -608,26 +629,19 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                         Child, (IPTR) VGroup,
                             Child, (IPTR) HGroup,
                                 Child, (IPTR) ColGroup(2),
-                                    Child, (IPTR) Label2(__(MSG_SIZE)),
-                                    Child, (IPTR) (sizespace = TextObject,
-                                        TextFrame,
-                                        MUIA_Background, MUII_TextBack,
-                                        MUIA_Text_PreParse, (IPTR) "\33r",
-                                        MUIA_Text_Contents, (IPTR) size,
-                                    End),
-                                    Child, (IPTR) Label2(__(MSG_DATE)),
-                                    Child, (IPTR) (datespace = TextObject,
-                                        TextFrame,
-                                        MUIA_Background, MUII_TextBack,
-                                        MUIA_Text_PreParse, (IPTR) "\33r",
-                                        MUIA_Text_Contents, (IPTR) datetime,
-                                    End),
                                     Child, (IPTR) Label2(__(MSG_TYPE)),
                                     Child, (IPTR) (typespace = TextObject,
                                         TextFrame,
                                         MUIA_Background, MUII_TextBack,
                                         MUIA_Text_PreParse, (IPTR) "\33r",
                                         MUIA_Text_Contents, (IPTR) type,
+                                    End),
+                                   Child, (IPTR) Label2(__(MSG_DATE)),
+                                    Child, (IPTR) (datespace = TextObject,
+                                        TextFrame,
+                                        MUIA_Background, MUII_TextBack,
+                                        MUIA_Text_PreParse, (IPTR) "\33r",
+                                        MUIA_Text_Contents, (IPTR) datetime,
                                     End),
                                     Child, (IPTR) Label2(__(MSG_VERSION)),
                                     Child, (IPTR) (versionspace = TextObject,
@@ -638,7 +652,9 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                                         MUIA_Text_Contents, (IPTR) "?",
 					MUIA_InputMode, MUIV_InputMode_RelVerify,
                                     End),
-                                End,
+                                    Child, (IPTR) Label2(__(MSG_SIZE)),
+                                    Child, (IPTR) sizespace,
+                                 End,
                             End,
                             Child, (IPTR) HVSpace,
                             Child, (IPTR) (group = HGroup,
