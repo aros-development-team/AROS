@@ -70,7 +70,6 @@ Object *DiskInfo__OM_NEW
     struct TagItem             *tag            = NULL;
     BPTR                        initial        = NULL;
     Object                     *window, *grp, *grpformat;
-    Object                     *textspace, *levelspace, *typespace;
     ULONG                       percent        = 0;
     LONG                        disktype       = ID_NO_DISK_PRESENT;
     LONG                        aspect         = 0;
@@ -79,7 +78,7 @@ Object *DiskInfo__OM_NEW
     TEXT                        used[64];
     TEXT                        free[64];
     TEXT                        blocksize[16];
-    TEXT                        status[64];
+    STRPTR                      status = NULL;
     STRPTR			            dtr;
     struct DosList	           *dl, *dn;
     BOOL                        disktypefound = FALSE;
@@ -108,7 +107,7 @@ Object *DiskInfo__OM_NEW
                 break;
         }
     }
-    
+
     /* Initial lock is required */
     if (initial == NULL)
     {
@@ -168,14 +167,13 @@ Object *DiskInfo__OM_NEW
         FormatSize(free, id.id_NumBlocks - id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
         sprintf(blocksize, "%d %s", id.id_BytesPerBlock, _(MSG_BYTES));
 
-        sprintf(status,"%s", _(MSG_UNKNOWN));
-        if ((id.id_DiskState & ID_WRITE_PROTECTED) == ID_WRITE_PROTECTED)
-            sprintf(status,"%s", _(MSG_READABLE));
-        if ((id.id_DiskState & ID_VALIDATING) == ID_VALIDATING)
-            sprintf(status,"%s", _(MSG_VALIDATING));
-        if ((id.id_DiskState & ID_VALIDATED) == ID_VALIDATED)
-            sprintf(status,"%s", _(MSG_READABLE_WRITABLE));
-            
+        switch(id.id_DiskState)
+        {
+            case(ID_WRITE_PROTECTED): status = _(MSG_READABLE); break;
+            case(ID_VALIDATING): status = _(MSG_VALIDATING); break;
+            case(ID_VALIDATED): status = _(MSG_READABLE_WRITABLE); break;
+            default: status = _(MSG_UNKNOWN);
+        }
     }
 
     /* Create application and window objects -------------------------------*/
@@ -189,7 +187,7 @@ Object *DiskInfo__OM_NEW
         MUIA_Application_Author, __(MSG_AUTHOR),
         MUIA_Application_Description, __(MSG_DESCRIPTION),
         MUIA_Application_Base, (IPTR) "DISKINFO",
-        SubWindow, (IPTR) (window = WindowObject,
+        SubWindow, (IPTR) (window = (Object *)WindowObject,
             MUIA_Window_Title,(IPTR) volname,
             MUIA_Window_Activate,    TRUE,
             MUIA_Window_NoMenus,     TRUE,
@@ -203,8 +201,16 @@ Object *DiskInfo__OM_NEW
                             MUIA_IconImage_File, (IPTR) initial,
                         End,
                     End,
-                    Child, (IPTR) (grp = VGroup,
-                        // grp object aspect sensitive
+                    Child, (IPTR) (grp = (Object *)VGroup,
+                        Child, (IPTR) TextObject,
+                            MUIA_Text_PreParse, (IPTR) "\33I[6:24] \33b\33l",
+                            MUIA_Text_Contents, (IPTR) dtr,
+                        End,
+                        Child, (IPTR) GaugeObject, GaugeFrame,
+                            MUIA_Gauge_InfoText, __(MSG_PERCENTFULL),
+                            MUIA_Gauge_Horiz, TRUE,
+                            MUIA_Gauge_Current, percent,
+                        End,
                     End),
                 End,
                 Child, (IPTR) HGroup,
@@ -212,16 +218,25 @@ Object *DiskInfo__OM_NEW
                         Child, (IPTR) ColGroup(2),
                             Child, (IPTR) TextObject, 
                                 MUIA_Text_PreParse, (IPTR) "\33r",
-                                MUIA_Text_Contents, (IPTR) __(MSG_SIZE),
+                                MUIA_Text_Contents, __(MSG_NAME),
                             End,
-			    Child, (IPTR) GaugeObject, GaugeFrame,
-				MUIA_Gauge_InfoText, size,
-				MUIA_Gauge_Horiz, TRUE,
-				MUIA_Gauge_Current, percent,
-			    End,
+                            Child, (IPTR) TextObject, TextFrame,
+                                MUIA_Background, MUII_TextBack,
+                                MUIA_Text_PreParse, (IPTR) "\33l",
+                                MUIA_Text_Contents, (IPTR) volname,
+                            End,
                             Child, (IPTR) TextObject, 
                                 MUIA_Text_PreParse, (IPTR) "\33r",
-                                MUIA_Text_Contents, (IPTR) __(MSG_USED),
+                                MUIA_Text_Contents, __(MSG_SIZE),
+                            End,
+                            Child, (IPTR) TextObject, TextFrame,
+                                MUIA_Background, MUII_TextBack,
+                                MUIA_Text_PreParse, (IPTR) "\33l",
+                                MUIA_Text_Contents, (IPTR) size,
+                            End,
+                            Child, (IPTR) TextObject, 
+                                MUIA_Text_PreParse, (IPTR) "\33r",
+                                MUIA_Text_Contents, __(MSG_USED),
                             End,
                             Child, (IPTR) TextObject, TextFrame,
                                 MUIA_Background, MUII_TextBack,
@@ -230,7 +245,7 @@ Object *DiskInfo__OM_NEW
                             End,
                             Child, (IPTR) TextObject,
                                 MUIA_Text_PreParse, (IPTR) "\33r",
-                                MUIA_Text_Contents, (IPTR) __(MSG_FREE),
+                                MUIA_Text_Contents, __(MSG_FREE),
                             End,
                             Child, (IPTR) TextObject, TextFrame,
                                 MUIA_Background, MUII_TextBack,
@@ -239,7 +254,7 @@ Object *DiskInfo__OM_NEW
                             End,
                             Child, (IPTR) TextObject,
                                 MUIA_Text_PreParse, (IPTR) "\33r",
-                                MUIA_Text_Contents, (IPTR) __(MSG_BLOCK_SIZE),
+                                MUIA_Text_Contents, __(MSG_BLOCK_SIZE),
                             End,
                             Child, (IPTR) TextObject, TextFrame,
                                 MUIA_Background, MUII_TextBack,
@@ -248,7 +263,7 @@ Object *DiskInfo__OM_NEW
                             End,
                             Child, (IPTR) TextObject,
                                 MUIA_Text_PreParse, (IPTR) "\33r",
-                                MUIA_Text_Contents, (IPTR) __(MSG_STATUS),
+                                MUIA_Text_Contents, __(MSG_STATUS),
                             End,
                             Child, (IPTR) TextObject, TextFrame,
                                 MUIA_Background, MUII_TextBack,
@@ -258,7 +273,7 @@ Object *DiskInfo__OM_NEW
                         End,
                     End,
                 End,
-                Child, (IPTR) (grpformat = HGroup,
+                Child, (IPTR) (grpformat = (Object *)HGroup,
                     // grpformat object userlevel sensitive
                 End),
             End,
@@ -275,33 +290,6 @@ Object *DiskInfo__OM_NEW
     data->dki_Volname       = volname;
     data->dki_Percent       = percent;
     data->dki_Aspect        = aspect;
-
-    // aspect dependant GUI
-//    if (aspect > 0)
-//    {
-        textspace = MUI_NewObject(MUIC_Text,
-            MUIA_Text_PreParse, (IPTR) "\33I[6:24] \33b\33l",
-            MUIA_Text_Contents, (IPTR) volname, TAG_DONE);
-
-        DoMethod(grp, MUIM_Group_InitChange);
-        DoMethod(grp, OM_ADDMEMBER, textspace);
-        DoMethod(grp, MUIM_Group_ExitChange);
-//    } else {
-//        levelspace = MUI_NewObject(MUIC_Levelmeter,MUIA_Numeric_Min, 0,
-//            MUIA_Numeric_Max, 100,
-//            MUIA_Numeric_Value, percent, TAG_DONE);
-
-//        DoMethod(grp, MUIM_Group_InitChange);
-//        DoMethod(grp, OM_ADDMEMBER, levelspace);
-//        DoMethod(grp, MUIM_Group_ExitChange);
-//    }
-
-    typespace = MUI_NewObject(MUIC_Text,
-        MUIA_Text_PreParse, (IPTR) "\33I[6:24] \33b\33l",
-        MUIA_Text_Contents, (IPTR) dtr, TAG_DONE);
-    DoMethod(grp, MUIM_Group_InitChange);
-    DoMethod(grp, OM_ADDMEMBER, typespace);
-    DoMethod(grp, MUIM_Group_ExitChange);
 
     /* Setup notifications -------------------------------------------------*/
     DoMethod( window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
