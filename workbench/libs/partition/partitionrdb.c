@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -93,7 +93,7 @@ ULONG count=0;
 }
 
 void CopyHost2BEDosEnvec(SIPTR *src, ULONG *dst, ULONG size) {
-    
+
     ULONG count=0;
 
     while (count != size)
@@ -265,7 +265,7 @@ LONG PartitionRDBOpenPartitionTable
         struct PartitionHandle *root
     )
 {
-UBYTE buffer[512];
+UBYTE buffer[root->de.de_SizeBlock << 2];
 struct RDBData *data;
 UBYTE i;
 
@@ -436,7 +436,7 @@ LONG PartitionRDBWritePartitionTable
         struct PartitionHandle *root
     )
 {
-UBYTE buffer[512];
+UBYTE buffer[root->de.de_SizeBlock << 2];
 struct RDBData *data;
 struct PartitionHandle *ph;
 struct PartitionBlock *pblock;
@@ -446,7 +446,7 @@ ULONG block;
 
     data = root->table->data;
     block = data->rdbblock+1; /* RDB will be written at the end */
-    fillMem((UBYTE *)buffer, 512, 0);
+    fillMem((UBYTE *)buffer, root->de.de_SizeBlock << 2, 0);
 
     /* write bad blocks */
     bn = (struct BadBlockNode *)data->badblocklist.lh_Head;
@@ -560,7 +560,7 @@ ULONG i;
         data->rdb.rdb_WritePreComp = data->rdb.rdb_Cylinders;
         data->rdb.rdb_ReducedWrite = data->rdb.rdb_Cylinders;
         /* StepRate */
-        
+
         data->rdb.rdb_RDBBlocksLo = AROS_LONG2BE(1); /* leave a block for PC */
         data->rdb.rdb_RDBBlocksHi = AROS_LONG2BE((ph->dg.dg_Heads*ph->dg.dg_TrackSectors*2)-1); /* two cylinders */
         data->rdb.rdb_LoCylinder = AROS_LONG2BE(2);
@@ -849,7 +849,7 @@ ULONG PartitionRDBDestroyPartitionTable
     )
 {
 struct RDBData *data;
-UBYTE buffer[512];
+UBYTE buffer[root->de.de_SizeBlock << 2];
 
     data = root->table->data;
     CopyMem(&data->rdb, buffer, sizeof(struct RigidDiskBlock));

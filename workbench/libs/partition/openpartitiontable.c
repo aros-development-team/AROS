@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -59,7 +59,7 @@
         if (pst[0]->checkPartitionTable(PartitionBase, root))
         {
             root->table = AllocMem
-                (   
+                (
                     sizeof(struct PartitionTableHandler),
                     MEMF_PUBLIC | MEMF_CLEAR
                 );

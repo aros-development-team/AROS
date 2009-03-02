@@ -31,13 +31,17 @@ static LONG PartitionEBRCheckPartitionTable
         struct PartitionHandle *root
     )
 {
-struct MBR mbr;
+union {
+    struct MBR mbr;
+    UBYTE space[root->de.de_SizeBlock << 2];
+} sector;
+
 struct PartitionType type;
 struct TagItem tags[] = {{PT_TYPE, (IPTR)&type}, {TAG_DONE, 0}};
 
-    if (readBlock(PartitionBase, root, 0, &mbr) == 0)
+    if (readBlock(PartitionBase, root, 0, &sector.mbr) == 0)
     {
-        if (AROS_LE2WORD(mbr.magic) == 0xAA55)
+        if (AROS_LE2WORD(sector.mbr.magic) == 0xAA55)
         {
             if (root->root != NULL)
             {
