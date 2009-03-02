@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id: bootloader_intern.h 29778 2008-10-16 19:40:21Z neil $
 
     Internal data structures for bootloader.resource
@@ -25,8 +25,11 @@
 struct BootLoaderBase
 {
     struct Node		 bl_Node;
+    ULONG		 Flags;
     STRPTR		 LdrName;
     struct List		 Args;
 };
+
+#define BL_FLAGS_CMDLINE 0x01
 
 #endif //BOOTLOADER_INTERN_H

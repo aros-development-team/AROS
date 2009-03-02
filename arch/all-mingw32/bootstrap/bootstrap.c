@@ -21,6 +21,8 @@ typedef unsigned char UBYTE;
 #include "shutdown.h"
 #include "../kernel/hostinterface.h"
 
+#define D(x)
+
 static unsigned char __bss_track[32768];
 struct TagItem km[64];
 char bootstrapdir[MAX_PATH];
@@ -53,17 +55,82 @@ int main(int argc, char ** argv)
   char *error;
   unsigned long BadSyms;
   struct TagItem *t;
-  char *kernel = "boot\\kernel";
+  int x;
+  char _use_hostmem = 0;
+  int i = 1;
+  unsigned int memSize = 64;
+  char *kernel = "boot\\aros-mingw32";
+  char *KernelArgs = NULL;
 
   GetCurrentDirectory(MAX_PATH, bootstrapdir);
   bootstrapname = argv[0];
   cmdline = GetCommandLine();
-  if (argc > 1)
-      kernel = argv[1];
 
-  //alloc mem
-  unsigned int memSize = 100;  
-  printf("[Bootstrap] allocating working mem: %iMb\n",memSize);
+  while (i < argc)
+  {
+      if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
+      {
+        printf
+        (
+            "AROS for Windows\n"
+            "usage: %s [options] [kernel arguments]\n"
+	    "Availible options:\n"
+            " -h                 show this page\n"
+            " -m <size>          allocate <size> Megabytes of memory for AROS\n"
+            "                    (default is 64M)\n"
+            " -k <file>          use <file> as a kernel\n"
+            "                    (default is boot\\aros-mingw32)\n"
+            " --help             same as '-h'\n"
+            " --memsize <size>   same as '-m <size>'\n"
+            " --kernel <file>    same as '-k'\n"
+            " --hostmem          Let AROS use the host operating system's facilities to\n"
+            "                    manage memory.\n"
+            "\n"
+            "Please report bugs to the AROS development team. http://www.aros.org/\n",
+            argv[0]
+        );
+        return 0;
+      }
+      else if (!strcmp(argv[i], "--memsize") || !strcmp(argv[i], "-m"))
+      {
+        i++;
+        x = 0;
+        memSize = 0;
+        while ((argv[i])[x] >= '0' && (argv[i])[x] <= '9')
+        {
+          memSize = memSize * 10 + (argv[i])[x] - '0';
+          x++;
+        }
+        i++;
+      }
+      else if (!strcmp(argv[i], "--kernel") || !strcmp(argv[i], "-k"))
+      {
+        kernel = argv[++i];
+        i++;
+      }
+      else if (!strcmp(argv[i], "--hostmem"))
+      {
+        _use_hostmem = 1;
+        i++;
+      }
+      else
+        break;
+  }
+
+  D(printf("[Bootstrap] %ld arguments processed\n", i));
+  D(printf("[Bootstrap] Raw command line: %s\n", cmdline));
+  if (i < argc) {
+      KernelArgs = cmdline;
+      while(isspace(*KernelArgs++));
+      for (x = 0; x < i; x++) {
+          while (!isspace(*KernelArgs++));
+          while (isspace(*KernelArgs))
+          	KernelArgs++;
+      }
+  }
+  D(printf("[Bootstrap] Kernel arguments: %s\n", KernelArgs));
+  D(printf("[Bootstrap] allocating working mem: %iMb\n",memSize));
+
   void * memory = malloc((memSize << 20));
 
   //fill in kernel message related to allocated ram regions
@@ -116,7 +183,8 @@ int main(int argc, char ** argv)
   tag++;
 
   tag->ti_Tag = KRN_CmdLine;
-  tag->ti_Data = cmdline;
+  tag->ti_Data = KernelArgs;
+  tag++;
   
   tag->ti_Tag = KRN_HostInterface;
   tag->ti_Data = &HostIFace;

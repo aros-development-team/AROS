@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id: getbootinfo.c 29778 2008-10-16 19:40:21Z neil $
 
     GetBootInfo() function.
@@ -48,7 +48,8 @@
     switch (infoType)
     {
 	case BL_Args:
-	    return (APTR)&(BootLoaderBase->Args);
+	    if (BootLoaderBase->Flags & BL_FLAGS_CMDLINE)
+	        return &(BootLoaderBase->Args);
 	default:
 	    D(bug("[BootLdr] GetBootInfo: Unknown info requested\n"));
 	    return NULL;
