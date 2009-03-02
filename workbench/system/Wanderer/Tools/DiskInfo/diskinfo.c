@@ -214,11 +214,11 @@ Object *DiskInfo__OM_NEW
                                 MUIA_Text_PreParse, (IPTR) "\33r",
                                 MUIA_Text_Contents, (IPTR) __(MSG_SIZE),
                             End,
-                            Child, (IPTR) TextObject, TextFrame,
-                                MUIA_Background, MUII_TextBack,
-                                MUIA_Text_PreParse, (IPTR) "\33l",
-                                MUIA_Text_Contents, (IPTR) size,
-                            End,
+			    Child, (IPTR) GaugeObject, GaugeFrame,
+				MUIA_Gauge_InfoText, size,
+				MUIA_Gauge_Horiz, TRUE,
+				MUIA_Gauge_Current, percent,
+			    End,
                             Child, (IPTR) TextObject, 
                                 MUIA_Text_PreParse, (IPTR) "\33r",
                                 MUIA_Text_Contents, (IPTR) __(MSG_USED),
@@ -258,16 +258,6 @@ Object *DiskInfo__OM_NEW
                         End,
                     End,
                 End,
-                Child, (IPTR) HGroup,
-                    Child, (IPTR) VGroup, GroupFrame,
-                        Child, (IPTR) GaugeObject, GaugeFrame,
-                            MUIA_Gauge_InfoText, __(MSG_PERCENTFULL),
-                            MUIA_Gauge_Horiz, TRUE,
-                            MUIA_Gauge_Current, percent,
-                        End,
-                        Child, (IPTR) ScaleObject, End,
-                    End,
-                End,
                 Child, (IPTR) (grpformat = HGroup,
                     // grpformat object userlevel sensitive
                 End),
@@ -287,8 +277,8 @@ Object *DiskInfo__OM_NEW
     data->dki_Aspect        = aspect;
 
     // aspect dependant GUI
-    if (aspect > 0)
-    {
+//    if (aspect > 0)
+//    {
         textspace = MUI_NewObject(MUIC_Text,
             MUIA_Text_PreParse, (IPTR) "\33I[6:24] \33b\33l",
             MUIA_Text_Contents, (IPTR) volname, TAG_DONE);
@@ -296,15 +286,15 @@ Object *DiskInfo__OM_NEW
         DoMethod(grp, MUIM_Group_InitChange);
         DoMethod(grp, OM_ADDMEMBER, textspace);
         DoMethod(grp, MUIM_Group_ExitChange);
-    } else {
-        levelspace = MUI_NewObject(MUIC_Levelmeter,MUIA_Numeric_Min, 0,
-            MUIA_Numeric_Max, 100,
-            MUIA_Numeric_Value, percent, TAG_DONE);
+//    } else {
+//        levelspace = MUI_NewObject(MUIC_Levelmeter,MUIA_Numeric_Min, 0,
+//            MUIA_Numeric_Max, 100,
+//            MUIA_Numeric_Value, percent, TAG_DONE);
 
-        DoMethod(grp, MUIM_Group_InitChange);
-        DoMethod(grp, OM_ADDMEMBER, levelspace);
-        DoMethod(grp, MUIM_Group_ExitChange);
-    }
+//        DoMethod(grp, MUIM_Group_InitChange);
+//        DoMethod(grp, OM_ADDMEMBER, levelspace);
+//        DoMethod(grp, MUIM_Group_ExitChange);
+//    }
 
     typespace = MUI_NewObject(MUIC_Text,
         MUIA_Text_PreParse, (IPTR) "\33I[6:24] \33b\33l",
