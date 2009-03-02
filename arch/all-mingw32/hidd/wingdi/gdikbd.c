@@ -126,6 +126,21 @@ OOP_Object * GDIKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
 /****************************************************************************************/
 
+VOID GDIKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, struct pRoot_Dispose *msg)
+{
+    struct gdikbd_data *data = OOP_INST_DATA(cl, o);
+
+    EnterFunc(bug("[GDIKbd] Dispose()\n"));
+
+    KrnRemIRQHandler(data->interrupt);
+    ObtainSemaphore( &XSD(cl)->sema);
+    XSD(cl)->kbdhidd = NULL;
+    ReleaseSemaphore( &XSD(cl)->sema);
+    OOP_DoSuperMethod(cl, o, msg);
+}
+
+/****************************************************************************************/
+
 static VOID KbdIntHandler(struct gdikbd_data *data, void *p)
 {
     WORD *keytable;

@@ -107,6 +107,20 @@ OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     return o;
 }
 
+
+/****************************************************************************************/
+
+VOID GDIMouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, struct pRoot_Dispose *msg)
+{
+    struct gdimouse_data *data = OOP_INST_DATA(cl, o);
+    
+    KrnRemIRQHandler(data->interrupt);
+    ObtainSemaphore( &XSD(cl)->sema);
+    XSD(cl)->mousehidd = NULL;
+    ReleaseSemaphore( &XSD(cl)->sema);
+    OOP_DoSuperMethod(cl, o, msg);
+}
+
 /****************************************************************************************/
 
 static BOOL check_button(UWORD new, UWORD mask, UWORD arosbutton, struct pHidd_Mouse_Event *e, struct gdimouse_data *data)

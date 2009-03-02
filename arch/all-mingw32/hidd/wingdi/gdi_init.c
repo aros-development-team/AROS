@@ -82,9 +82,11 @@ static int GDI_Init(LIBBASETYPEPTR LIBBASE)
     struct gdi_staticdata *xsd = &LIBBASE->xsd;
 
     D(bug("Entering GDI_Init\n"));
-    
+    if (LIBBASE->library.lib_OpenCnt)
+	return TRUE;
+
     InitSemaphore( &xsd->sema );
-		
+
     Forbid();
     xsd->display = GDICALL(CreateDC, "DISPLAY", NULL, NULL, NULL);
     Permit();

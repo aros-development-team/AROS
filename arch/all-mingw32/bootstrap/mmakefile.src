@@ -32,8 +32,8 @@ KOBJS := $(K_RES) $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(KOBJS_HIDD)
 #MM- AROS-mingw32-i386: kernel-link-mingw32 workbench-mingw32 kernel-bootstrap-mingw32 arch-common-boot-generatebootsig
 #MM kernel-link-mingw32: kernel-bootloader-mingw32-kobj	    \
 #MM			 kernel-kernel-mingw32-kobj	    \
-#MM			 kernel				    \
 #MM			 kernel-hostlib-mingw32-kobj	    \
+#MM			 kernel				    \
 #MM			 kernel-fs-emul-mingw32-kobj	    \
 #MM			 kernel-fs-packet-kobj		    \
 #MM			 kernel-dosboot-kobj		    \
