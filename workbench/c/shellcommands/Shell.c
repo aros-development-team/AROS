@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     The shell program.
@@ -565,7 +565,7 @@ LONG interact(struct InterpreterState *is)
 	    PutStr
 	    (
 	    	"AROS - The AROS Research Operating System\n"
-		"Copyright © 1995-2008, The AROS Development Team. All rights reserved.\n"
+		"Copyright © 1995-2009, The AROS Development Team. All rights reserved.\n"
 		"AROS is licensed under the terms of the AROS Public License (APL),\n"
 		"a copy of which you should have received with this distribution.\n"
 		"Visit http://www.aros.org/ for more information.\n"
