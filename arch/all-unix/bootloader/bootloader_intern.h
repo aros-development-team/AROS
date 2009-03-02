@@ -28,7 +28,8 @@ struct BootLoaderBase
     ULONG		 Flags;
     STRPTR		 LdrName;
     struct List		 Args;
-    struct List		 DriveInfo;
 };
+
+#define BL_FLAGS_CMDLINE 0x01
 
 #endif //BOOTLOADER_INTERN_H

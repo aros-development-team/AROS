@@ -1,13 +1,19 @@
 /*
     Copyright © 1995-2009, The AROS Development Team. All rights reserved.
-    $Id$
+    $Id: shutdowna.c 29957 2008-11-01 19:06:57Z neil $
 
     Desc: ShutdownA() - Shut down the operating system.
     Lang: english
 */
+#define DEBUG 0
 
 #include <aros/debug.h>
 #include <proto/exec.h>
+
+#include <signal.h>
+#include <unistd.h>
+
+extern char **Kernel_ArgV;
 
 /*****************************************************************************
 
@@ -49,8 +55,20 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* This is a stub, we don't know what to do here. The actual implementation
-       is entirely arch-specific. */
+    struct MsgPort *port;
+    
+    switch(action) {
+    case SD_ACTION_POWEROFF:
+	raise(SIGINT);
+	break;
+    case SD_ACTION_COLDREBOOT:
+	D(bug("[exec] Machine reboot, re-executing %s\n", Kernel_ArgV[0]));
+	/* SIGARLM during execvp() aborts the whole thing.
+           In order to avoid it we Disable() */
+	Disable();
+	execvp(Kernel_ArgV[0], Kernel_ArgV);
+	Enable();
+    }
     return 0;
 
     AROS_LIBFUNC_EXIT

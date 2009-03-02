@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd initialization code.
@@ -115,6 +115,10 @@ static int X11_Init(LIBBASETYPEPTR LIBBASE)
     struct x11_staticdata *xsd = &LIBBASE->xsd;
 
     D(bug("Entering X11_Init\n"));
+    if (LIBBASE->library.lib_OpenCnt) {
+	D(bug("[X11GFX] Already initialized\n"));
+	return TRUE;
+    }
     
     InitSemaphore( &xsd->sema );
     InitSemaphore( &xsd->x11sema );

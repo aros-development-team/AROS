@@ -2,15 +2,17 @@
 
 #MM- kernel-unix : \
 #MM     kernel-unixio-kobj kernel-hostlib-kobj        \
-#MM     graphics-$(GFXSYSTEM) workbench-hidd-graphics \
+#MM     graphics-$(GFXSYSTEM)			      \
 #MM     $(X11_HIDD_TARGET) $(SDL_HIDD_TARGET)         \
 #MM     intuition-$(GFXSYSTEM)                        \
 #MM     kernel-fs-emul-kobj                           \
 #MM     contrib-amberram-kobj                         \
 #MM     kernel-dosboot-kobj                           \
+#MM	kernel-bootloader-unix-kobj		      \
+#MM	workbench-hidd-graphics-kobj		      \
 #MM     workbench-hidd-unix-parallel-kobj             \
-#MM     workbench-hidd-unix-serial-kobj               \
-#MM     arch-common-boot-generatebootsig
+#MM     workbench-hidd-unix-serial-kobj		      \
+#MM	arch-common-boot-generatebootsig
 
 #MM- workbench-unix : workbench-hidd-unix
 

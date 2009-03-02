@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd handling keypresses.
     Lang: English.
 */
+#define DEBUG 0
 
 #define __OOP_NOATTRBASES__
 
@@ -43,6 +44,10 @@ static UBYTE keycode2rawkey[256];
 static BOOL  havetable;
 
 long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd);
+
+#if X11_LOAD_KEYMAPTABLE
+static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd);
+#endif
 
 static OOP_AttrBase HiddKbdAB;
 
@@ -476,6 +481,7 @@ static struct _keytable template_keytable[] =
 OOP_Object * X11Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL    	    has_kbd_hidd = FALSE;
+    struct Task    *me;
     struct TagItem *tag, *tstate;
     APTR    	    callback = NULL;
     APTR    	    callbackdata = NULL;
@@ -489,8 +495,22 @@ OOP_Object * X11Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
     ReleaseSemaphore( &XSD(cl)->sema);
  
-    if (has_kbd_hidd) /* Cannot open twice */
+    if (has_kbd_hidd) { /* Cannot open twice */
+	D(bug("[X11Kbd] Attempt to create second instance\n"));
     	ReturnPtr("X11Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
+    }
+
+#if X11_LOAD_KEYMAPTABLE
+    /* During bootmenu initialization we are still task, not a process,
+       so we can't call DOS at that moment. Anyway there are no mounted
+       devices yet. */
+    me = FindTask(NULL);
+    if (me->tc_Node.ln_Type == NT_PROCESS) {
+	D(bug("[X11Kbd] Trying to load X keymap\n"));
+	LoadKeyCode2RawKeyTable(XSD(cl));
+    }
+	D(else bug("[X11Kbd] Early init, don't try to load X keymap\n");)
+#endif
 
     tstate = msg->attrList;
     D(bug("tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));	
@@ -538,6 +558,18 @@ OOP_Object * X11Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     }
     
     ReturnPtr("X11Kbd::New", OOP_Object *, o);
+}
+
+/****************************************************************************************/
+
+VOID X11Kbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, struct pRoot_Dispose *msg)
+{
+    EnterFunc(bug("[X11Kbd] Dispose()\n"));
+
+    ObtainSemaphore( &XSD(cl)->sema);
+    XSD(cl)->kbdhidd = NULL;
+    ReleaseSemaphore( &XSD(cl)->sema);
+    OOP_DoSuperMethod(cl, o, msg);
 }
 
 /****************************************************************************************/
@@ -653,6 +685,7 @@ static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd)
     struct DosLibrary *DOSBase;
     
     DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 37);
+    D(bug("[X11Kbd] DOSBase is %p\n", DOSBase));
     if (DOSBase == NULL)
     {
 	bug("LoadKeyCode2RawKeyTable: Opening %s failed\n", DOSNAME);
@@ -661,9 +694,10 @@ static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd)
 	
     if ((fh = Open(filename, MODE_OLDFILE)))
     {
+	D(bug("[X11Kbd] X keymap file handle: %p\n", fh));
 	if ((256 == Read(fh, keycode2rawkey, 256)))
 	{
-		bug("LoadKeyCode2RawKeyTable: keycode2rawkey.table successfully loaded!\n");
+		D(bug("LoadKeyCode2RawKeyTable: keycode2rawkey.table successfully loaded!\n"));
 		havetable = TRUE;
 	}
 	else
@@ -721,9 +755,6 @@ static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd)
 
 static int kbd_init(LIBBASETYPEPTR LIBBASE) 
 {
-#if X11_LOAD_KEYMAPTABLE
-    LoadKeyCode2RawKeyTable(&LIBBASE->xsd);
-#endif
 
     return OOP_ObtainAttrBases(attrbases);
 }

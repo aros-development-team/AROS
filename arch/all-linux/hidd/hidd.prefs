@@ -2,14 +2,14 @@
 # Linux Hidd.Prefs #
 ####################
 
-library DRIVERS:graphics.hidd
+# Default is autoselect between x11 and framebuffer
 
 # Uncomment following lines to activate X11 driver
 
-library x11gfx.hidd
-gfx	hidd.gfx.x11
-mouse	hidd.mouse.x11
-kbd	hidd.kbd.x11
+#library x11gfx.hidd
+#gfx	hidd.gfx.x11
+#mouse	hidd.mouse.x11
+#kbd	hidd.kbd.x11
 
 # Uncomment following lines to activate SDL driver
 

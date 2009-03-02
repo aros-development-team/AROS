@@ -390,9 +390,7 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
                 if (!kbd->hiddname[0]) {
                     D(bug("[BootMenu] bootmenu_Init: This system uses no keyboard HIDD\n"));
                     bmi_RetVal = (int)TRUE;
-                }
-                if (OpenLibrary(kbd->libname, 0) != NULL)
-                {
+                } else if (OpenLibrary(kbd->libname, 0) != NULL) {
                     if (init_device(kbd->hiddname, "keyboard.device", LIBBASE))
                     {
                             bmi_RetVal = (int)TRUE;

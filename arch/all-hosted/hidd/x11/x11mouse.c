@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd handling mouse events.
@@ -66,7 +66,8 @@ static ULONG xbutton2hidd(XButtonEvent *xb)
 OOP_Object * X11Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL has_mouse_hidd = FALSE;
-    
+
+    EnterFunc(bug("[X11Mouse] New()\n"));
     ObtainSemaphoreShared( &XSD(cl)->sema);
     
     if (XSD(cl)->mousehidd)
@@ -117,12 +118,25 @@ OOP_Object * X11Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
 /****************************************************************************************/
 
+VOID X11Mouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, struct pRoot_Dispose *msg)
+{
+    EnterFunc(bug("[X11Mouse] Dispose()\n"));
+
+    ObtainSemaphore( &XSD(cl)->sema);
+    XSD(cl)->mousehidd = NULL;
+    ReleaseSemaphore( &XSD(cl)->sema);
+    OOP_DoSuperMethod(cl, o, msg);
+}
+
+/****************************************************************************************/
+
 VOID X11Mouse__Hidd_X11Mouse__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_X11Mouse_HandleEvent *msg)
 {
 
     struct x11mouse_data    	*data = OOP_INST_DATA(cl, o);    
     struct pHidd_Mouse_Event 	 e;
-    
+
+    DB2(bug("[X11Mouse] HandleEvent()\n"));
     XButtonEvent *xb = &(msg->event->xbutton);
     
     e.x = xb->x;

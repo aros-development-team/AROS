@@ -33,5 +33,6 @@
 #define USE_VIDMODE			@DO_VIDMODE_SUPPORT@
 
 #define ENABLE_DBUS			@ENABLE_DBUS@
+#define ENABLE_X11			@ENABLE_X11@
 
 #endif /* AROS_CONFIG_H */

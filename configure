@@ -809,6 +809,7 @@ DBUS_CFLAGS
 DBUS_LIBFLAGS
 KERNEL_DBUS_KOBJ
 KERNEL_DBUS_INCLUDES
+ENABLE_X11
 aros_debug
 aros_mungwall_debug
 aros_stack_debug
@@ -11638,10 +11639,11 @@ fi
 echo "$as_me: error: X11 libs/headers not found, cannot build X11 hidd as requested" >&2;}
    { (exit 1); exit 1; }; }
             fi
+	    ENABLE_X11=0
 
         else
-                        x11_hidd_target=kernel-x11gfx
-
+                        x11_hidd_target=kernel-x11gfx-kobj
+	    ENABLE_X11=1
 
                         # Check whether --enable-x11_shm was given.
 if test "${enable_x11_shm+set}" = set; then
@@ -12594,6 +12596,9 @@ echo "${ECHO_T}$dbus" >&6; }
 
 
 
+
+
+#X11 related
 
 
 # Debug related
@@ -13602,6 +13607,7 @@ for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
 KERNEL_DBUS_KOBJ!$KERNEL_DBUS_KOBJ$ac_delim
 KERNEL_DBUS_INCLUDES!$KERNEL_DBUS_INCLUDES$ac_delim
+ENABLE_X11!$ENABLE_X11$ac_delim
 aros_debug!$aros_debug$ac_delim
 aros_mungwall_debug!$aros_mungwall_debug$ac_delim
 aros_stack_debug!$aros_stack_debug$ac_delim
@@ -13611,7 +13617,7 @@ gcc_target_cpu!$gcc_target_cpu$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 9; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 10; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

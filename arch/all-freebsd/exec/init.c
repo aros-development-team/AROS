@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: $(ARCH) init code for emulated (Unix) systems.
@@ -60,9 +60,13 @@ extern const struct Resident
     boot_resident,
     Con_ROMTag,
     Nil_ROMTag,
-    Ram_ROMTag;
-
-
+    Ram_ROMTag,
+    Dosboot_ROMTag,
+    GFX_ROMTag,
+#if ENABLE_X11 == 1
+    X11Cl_ROMTag,
+#endif
+    Bootmenu_ROMTag;
 
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
@@ -72,29 +76,32 @@ static const struct Resident *romtagList[] =
     &Utility_ROMTag,                    /* ColdStart,   103  */
     &Aros_ROMTag,                       /* ColdStart,   102  */
     &Mathieeesingbas_ROMTag,            /* ColdStart,   101  */
+    &Bootloader_ROMTag,			/* ColdStart,	100  */
 #if 0
-    &BOOPSI_resident,                   /* ColdStart,   95       */
+    &BOOPSI_resident,                   /* ColdStart,   95   */
 #endif
-    &OOP_ROMTag,                        /* ColdStart,   94       */
-    &HIDDCl_ROMTag,                     /* ColdStart,   92       */
-    &UXIO_ROMTag,                       /* ColdStart,   91       */
-    &HostLib_ROMTag,                    /* ColdStart,   91       */
-    &Graphics_ROMTag,                   /* ColdStart,   65       */
-    &Layers_ROMTag,                     /* ColdStart,   60       */
-    &Timer_ROMTag,                      /* ColdStart,   50       */
-    &Battclock_ROMTag,                  /* ColdStart,   45       */
-    &Keyboard_ROMTag,                   /* ColdStart,   44       */
-    &Gameport_ROMTag,                   /* ColdStart,   43       */
-    &Keymap_ROMTag,                     /* ColdStart,   40       */
-    &Input_ROMTag,                      /* ColdStart,   30       */
-    &Intuition_ROMTag,                  /* ColdStart,   10       */
-    &Cybergraphics_ROMTag,              /* ColdStart,   8        */
-    &Console_ROMTag,                    /* ColdStart,   5        */
+    &OOP_ROMTag,                        /* ColdStart,   94   */
+    &HIDDCl_ROMTag,                     /* ColdStart,   92   */
+    &UXIO_ROMTag,                       /* ColdStart,   91   */
+    &HostLib_ROMTag,                    /* ColdStart,   91   */
+    &Graphics_ROMTag,                   /* ColdStart,   65   */
+    &Layers_ROMTag,                     /* ColdStart,   60   */
+    &Timer_ROMTag,                      /* ColdStart,   50   */
+    &Battclock_ROMTag,                  /* ColdStart,   45   */
+    &Keyboard_ROMTag,                   /* ColdStart,   44   */
+    &Gameport_ROMTag,                   /* ColdStart,   43   */
+    &Keymap_ROMTag,                     /* ColdStart,   40   */
+    &Input_ROMTag,                      /* ColdStart,   30   */
+    &Intuition_ROMTag,                  /* ColdStart,   10   */
+#if ENABLE_X11 == 1
+    &X11Cl_ROMTag,			/* ColdStart,   9    */
+#endif
+    &Cybergraphics_ROMTag,              /* ColdStart,   8    */
+    &Console_ROMTag,                    /* ColdStart,   5    */
 #if ENABLE_DBUS ==1
-    &Dbus_ROMTag,                       /* ColdStart,   0        */
+    &Dbus_ROMTag,                       /* ColdStart,   0    */
 #endif
-    &emul_handler_ROMTag,               /* ColdStart,   0        */
-    &Packet_ROMTag,                     /* ColdStart,   0    */
+    &emul_handler_ROMTag,               /* ColdStart,   0    */
     &UXSer_ROMTag,                      /* ColdStart,   0    */
     &UXPar_ROMTag,                      /* ColdStart,   0    */
     &Workbench_ROMTag,                  /* ColdStart,  -120  */
@@ -107,11 +114,13 @@ static const struct Resident *romtagList[] =
     */
     &boot_resident,                     /* ColdStart,  -50   */
     &Dos_ROMTag,                        /* None,       -120  */
-    &LDDemon_resident,                  /* AfterDOS,   -125  */
-    &Con_ROMTag,                        /* AfterDOS,   -126  */
-    &Nil_ROMTag,                        /* AfterDOS,   -127  */
-    &Ram_ROMTag,                        /* AfterDOS,   -128  */
-
+    &LDDemon_resident,                  /* AfterDOS,   -123  */
+    &Con_ROMTag,                        /* AfterDOS,   -124  */
+    &Packet_ROMTag,                     /* AfterDOS,   -124  */
+    &Nil_ROMTag,                        /* AfterDOS,   -125  */
+    &Ram_ROMTag,                        /* AfterDOS,   -125  */    
+    &Bootmenu_ROMTag,                   /* AfterDOS,   -127  */
+    &Dosboot_ROMTag,                    /* AfterDOS,   -128  */
     NULL
 };
 
@@ -124,7 +133,33 @@ int memSize = 32;
 extern void InitCore(void);
 extern struct ExecBase *PrepareExecBase(struct MemHeader *mh);
 
+char *join_string(int argc, char **argv)
+{
+    char *str, *s;
+    int j;
+    int x = 0;
+
+    for (j = 0; j < argc; j++)
+	x += (strlen(argv[j]) + 1);
+    D(printf("[Init] Allocating %lu bytes for string\n", x));
+    str = malloc(x);
+    if (str) {
+	s = str;
+	for (j = 0; j < argc; j++) {
+	    strcpy(s, argv[j]);
+	    s += strlen(s);
+	    *s++ = ' ';
+	}
+	s[-1] = 0;
+	D(printf("[Init] Joined line: %s\n", str));
+    }
+    return str;
+}
+
 extern char _start, _end;
+char *BootLoader_Name = "FreeBSD";
+char *Kernel_Args = NULL;
+char **Kernel_ArgV;
 
 /*
     This is where AROS is first called by whatever system loaded it,
@@ -136,16 +171,6 @@ extern char _start, _end;
 
 int main(int argc, char **argv)
 {
-    /*  Well, if you want you can take in command line arguments here,
-        but that is not necessary, or perhaps rather complex...
-
-        eg: say you wished to allow people to specify the root directory
-            arosshell --rootdir /usr/local/AROS --memsize 4
-
-        For an example, you could ask how much memory you want for the
-        system, chip/fast whatever...
-    */
-
     struct ExecBase *SysBase;
     struct termios t;
     int psize = 0;
@@ -157,7 +182,8 @@ int main(int argc, char **argv)
       if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
       {
         printf("AROS for FreeBSD\n");
-        printf("usage: %s [options]\n",argv[0]);
+        printf("usage: %s [options] [kernel arguments]\n",argv[0]);
+	printf("Availible options:\n");
         printf(" -h                 show this page\n");
         printf(" -m <size>          allocate <size> Megabytes of memory for AROS\n");
         printf(" -M                 allows programs to read SysBase from Address $4; SysBase is");
@@ -188,8 +214,13 @@ int main(int argc, char **argv)
         i++;
       }
       else
-        i++;
+        break;
     }
+
+    if (i < argc)
+	Kernel_Args = join_string(argc - i, &argv[i]);
+    Kernel_ArgV = argv;
+
     /*
     First up, set up the memory.
 

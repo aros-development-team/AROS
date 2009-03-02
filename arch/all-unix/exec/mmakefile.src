@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 FILES := kernel alert cause disable enable exception preparecontext stackswap switch \
-      	 rawioinit rawputchar rawmaygetchar idletask
+      	 rawioinit rawputchar rawmaygetchar idletask shutdowna
 
 USER_INCLUDES   := -I$(GENINCDIR) -I$(TOP)/rom/exec -I..
 %build_archspecific \
