@@ -1204,6 +1204,7 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
         CM_NoData,
         CT_LBA28
     };
+    DINIT(bug("[ATA%02ld] common_SetXferMode: Trying to set mode %d\n", unit->au_UnitNum, mode));
 
     if ((unit->au_DMAPort == 0) && (mode > AB_XFER_PIO7))
     {
@@ -1282,12 +1283,12 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
     }
     else if ((mode >= AB_XFER_MDMA0) & (mode <= AB_XFER_MDMA7))
     {
-        type = 32 + (mode - AB_XFER_MDMA7);
+        type = 32 + (mode - AB_XFER_MDMA0);
         dma=TRUE;
     }
     else if ((mode >= AB_XFER_UDMA0) & (mode <= AB_XFER_UDMA7))
     {
-        type = 64 + (mode - AB_XFER_MDMA7);
+        type = 64 + (mode - AB_XFER_UDMA0);
         dma=TRUE;
     }
     else
@@ -1442,7 +1443,7 @@ void common_DetectXferModes(struct ata_Unit* unit)
             {
                 if (unit->au_Drive->id_UDMASupport & (1 << iter))
                 {
-                    unit->au_XferModes     |= AF_XFER_MDMA(iter);;
+                    unit->au_XferModes     |= AF_XFER_UDMA(iter);;
                     if (unit->au_Drive->id_UDMASupport & (256 << iter))
                     {
                         DINIT(bug("[UDMA%ld] ", iter));
