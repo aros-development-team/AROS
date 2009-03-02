@@ -198,6 +198,9 @@ struct RTL8168Unit {
     struct MsgPort          *rtl8168u_TimerFastPort;
     struct timerequest      *rtl8168u_TimerFastReq;
 
+    struct MsgPort          rtl8168u_DelayPort;
+    struct timerequest      rtl8168u_DelayReq;
+
     ULONG                   rtl8168u_mtu;
     ULONG                   rtl8168u_flags;
     struct Sana2DeviceQuery  rtl8168u_Sana2Info;
@@ -970,5 +973,6 @@ struct RxDesc {
 };
 
 void rtl8168nic_get_functions(struct RTL8168Unit *Unit);
-
+void rtl8168nic_USecDelay(struct net_device *, ULONG);
+#define udelay(usec)     rtl8168nic_USecDelay(unit, usec)
 #endif

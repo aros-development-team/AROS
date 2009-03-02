@@ -25,3 +25,9 @@ TODO/Limitations/Known Issues:
 * Support for Jumbo frames.
 * Support for checksum offloading.
 * Move generic defines to generic driver header files.
+
+NOTES
+* Some Linux kernel rtl8168 drivers have been known to wipe the eeprom
+MAC address. If this affects you, then remove all power from your system
+(laptops must have their battery removed, desktops should be unplugged
+from the mains) and it should be restored.

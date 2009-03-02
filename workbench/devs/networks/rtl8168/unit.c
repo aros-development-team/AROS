@@ -1060,6 +1060,17 @@ RTLD(bug("[%s] CreateUnit: Invalid MMIO Reg size (%d, expected %d)\n", unit->rtl
 
 RTLD(bug("[%s] CreateUnit:   PCI_BaseMem @ 0x%p\n", unit->rtl8168u_name, unit->rtl8168u_BaseMem))
 
+            unit->rtl8168u_DelayPort.mp_SigBit = SIGB_SINGLE;
+            unit->rtl8168u_DelayPort.mp_Flags = PA_SIGNAL;
+            unit->rtl8168u_DelayPort.mp_SigTask = FindTask(NULL);
+            unit->rtl8168u_DelayPort.mp_Node.ln_Type = NT_MSGPORT;
+            NEWLIST(&unit->rtl8168u_DelayPort.mp_MsgList);
+
+            unit->rtl8168u_DelayReq.tr_node.io_Message.mn_ReplyPort = &unit->rtl8168u_DelayPort;
+            unit->rtl8168u_DelayReq.tr_node.io_Message.mn_Length = sizeof(struct timerequest);
+
+            OpenDevice((STRPTR)"timer.device", UNIT_MICROHZ, (struct IORequest *)&unit->rtl8168u_DelayReq, 0);
+
 	    if ((unit->rtl8168u_priv = AllocMem(sizeof(struct rtl8168_priv), MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
 	    {
 		unit->rtl8168u_priv->pci_dev = unit;

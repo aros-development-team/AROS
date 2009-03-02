@@ -290,7 +290,7 @@ D(bug("[rtl8168] OpenDevice: Invalid Unit! (unitno = %d)\n", unitnum));
 
     req->ios2_Req.io_Error = error;
 
-    return (error !=0) ? FALSE : TRUE;
+    return (error != 0) ? FALSE : TRUE;
 }
 
 static int GM_UNIQUENAME(Close)
@@ -302,19 +302,21 @@ static int GM_UNIQUENAME(Close)
     struct RTL8168Unit *unit = (struct RTL8168Unit *)req->ios2_Req.io_Unit;
     struct Opener *opener;
 
+    if ((unit = (struct RTL8168Unit *)req->ios2_Req.io_Unit) != NULL)
+    {
 RTLD(bug("[rtl8168] CloseDevice(unit @ %p, unitno %d)\n", unit, unit->rtl8168u_UnitNum))
 
-    unit->stop(unit);
+        unit->stop(unit);
 
-    opener = (APTR)req->ios2_BufferManagement;
-    if (opener != NULL)
-    {
-	Disable();
-	Remove((struct Node *)opener);
-	Enable();
-	FreeVec(opener);
+        opener = (APTR)req->ios2_BufferManagement;
+        if (opener != NULL)
+        {
+            Disable();
+            Remove((struct Node *)opener);
+            Enable();
+            FreeVec(opener);
+        }
     }
-
     return TRUE;
 }
 
@@ -331,19 +333,24 @@ AROS_LH1(void, BeginIO,
     AROS_LIBFUNC_INIT
     struct RTL8168Unit *unit;
 
-RTLD(bug("[rtl8168] BeginIO()\n"))
+D(bug("[rtl8168] BeginIO()\n"));
 
     req->ios2_Req.io_Error = 0;
-    unit = (APTR)req->ios2_Req.io_Unit;
-
-    if (AttemptSemaphore(&unit->rtl8168u_unit_lock))
+    if ((unit = (struct RTL8168Unit *)req->ios2_Req.io_Unit) != NULL)
     {
-	    handle_request(LIBBASE, req);
+        if (AttemptSemaphore(&unit->rtl8168u_unit_lock))
+        {
+            handle_request(LIBBASE, req);
+        }
+        else
+        {
+            req->ios2_Req.io_Flags &= ~IOF_QUICK;
+            PutMsg(unit->rtl8168u_input_port, (struct Message *)req);
+        }
     }
     else
     {
-	    req->ios2_Req.io_Flags &= ~IOF_QUICK;
-	    PutMsg(unit->rtl8168u_input_port, (struct Message *)req);
+D(bug("[rtl8168] BeginIO: Called with unit == NULL\n"));
     }
 
     AROS_LIBFUNC_EXIT
@@ -355,21 +362,22 @@ AROS_LH1(LONG, AbortIO,
 {
     AROS_LIBFUNC_INIT
     struct RTL8168Unit *unit;
-    unit = (APTR)req->ios2_Req.io_Unit;
 
-RTLD(bug("[rtl8168] AbortIO()\n"))
+D(bug("[rtl8168] AbortIO()\n"));
 
-    Disable();
-    if ((req->ios2_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE) &&
-       (req->ios2_Req.io_Flags & IOF_QUICK) == 0)
+    if ((unit = (struct RTL8168Unit *)req->ios2_Req.io_Unit) != NULL)
     {
-	Remove((struct Node *)req);
-	req->ios2_Req.io_Error = IOERR_ABORTED;
-	req->ios2_WireError = S2WERR_GENERIC_ERROR;
-	ReplyMsg((struct Message *)req);
+        Disable();
+        if ((req->ios2_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE) &&
+           (req->ios2_Req.io_Flags & IOF_QUICK) == 0)
+        {
+            Remove((struct Node *)req);
+            req->ios2_Req.io_Error = IOERR_ABORTED;
+            req->ios2_WireError = S2WERR_GENERIC_ERROR;
+            ReplyMsg((struct Message *)req);
+        }
+        Enable();
     }
-    Enable();
-
     return 0;
 
     AROS_LIBFUNC_EXIT

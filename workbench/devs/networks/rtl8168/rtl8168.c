@@ -132,33 +132,16 @@ static const struct {
 };
 #undef _R
 
-#define TIMER_RPROK 3599597124UL
-
-static ULONG usec2tick(ULONG usec)
+void rtl8168nic_USecDelay(struct net_device *unit, ULONG usec)
 {
-    ULONG ret, timer_rpr = TIMER_RPROK;
-    asm volatile("movl $0,%%eax; divl %2":"=a"(ret):"d"(usec),"m"(timer_rpr));
-    return ret;
-}
-
-void udelay(LONG usec)
-{
-    int oldtick, tick;
-    usec = usec2tick(usec);
-
-    BYTEOUT(0x43, 0x80);
-    oldtick = BYTEIN(0x42);
-    oldtick += BYTEIN(0x42) << 8;
-
-    while (usec > 0)
+    if (unit != NULL)
     {
-	BYTEOUT(0x43, 0x80);
-	tick = BYTEIN(0x42);
-	tick += BYTEIN(0x42) << 8;
+        unit->rtl8168u_DelayPort.mp_SigTask = FindTask(NULL);
+        unit->rtl8168u_DelayReq.tr_node.io_Command = TR_ADDREQUEST;
+        unit->rtl8168u_DelayReq.tr_time.tv_micro = usec % 1000000;
+        unit->rtl8168u_DelayReq.tr_time.tv_secs = usec / 1000000;
 
-	usec -= (oldtick - tick);
-	if (tick > oldtick) usec -= 0x10000;
-	oldtick = tick;
+        DoIO((struct IORequest *)&unit->rtl8168u_DelayReq);
     }
 }
 
@@ -200,8 +183,9 @@ void MMIO_W32(APTR addr, ULONG val32)
     tmp = RTL_R32(addr);
 }
 
-static void mdio_write(UBYTE *base, int RegAddr, int value)
+static void mdio_write(struct net_device *unit, int RegAddr, UWORD value)
 {
+    APTR		base = get_hwbase(unit);
     int i;
 
     RTL_W32(base + (PHYAR), PHYAR_Write | 
@@ -217,16 +201,18 @@ static void mdio_write(UBYTE *base, int RegAddr, int value)
     }
 }
 
-static int mdio_read(UBYTE *base, int RegAddr)
+static ULONG mdio_read(struct net_device *unit, int RegAddr)
 {
-    int i, value = -1;
+    APTR		base = get_hwbase(unit);
+    UWORD value = 0xffff;
+    int i;
 
     RTL_W32(base + (PHYAR), PHYAR_Read | (RegAddr & PHYAR_Reg_Mask) << PHYAR_Reg_shift);
 
     for (i = 0; i < 10; i++) {
 	/* Check if the RTL8168 has completed retrieving data from the specified MII register */
 	if (RTL_R32(base + (PHYAR)) & PHYAR_Flag) {
-	    value = (int) (RTL_R32(base + (PHYAR)) & PHYAR_Data_Mask);
+	    value = (UWORD)(RTL_R32(base + (PHYAR)) & PHYAR_Data_Mask);
 	    break;
 	}
 	udelay(100);
@@ -234,8 +220,9 @@ static int mdio_read(UBYTE *base, int RegAddr)
     return value;
 }
 
-static void rtl8168nic_EPHYWrite(UBYTE *base, int RegAddr, int value)
+static void rtl8168nic_EPHYWrite(struct net_device *unit, int RegAddr, UWORD value)
 {
+    APTR		base = get_hwbase(unit);
     int i;
 
     RTL_W32(base + (EPHYAR), 
@@ -254,10 +241,11 @@ static void rtl8168nic_EPHYWrite(UBYTE *base, int RegAddr, int value)
     udelay(20);
 }
 
-static UWORD rtl8168nic_EPHYRead(UBYTE *base, int RegAddr)
+static UWORD rtl8168nic_EPHYRead(struct net_device *unit, int RegAddr)
 {
-    int i;
+    APTR		base = get_hwbase(unit);
     UWORD value = 0xffff;
+    int i;
 
     RTL_W32(base + (EPHYAR), 
 	    EPHYAR_Read | (RegAddr & EPHYAR_Reg_Mask) << EPHYAR_Reg_shift);
@@ -267,7 +255,7 @@ static UWORD rtl8168nic_EPHYRead(UBYTE *base, int RegAddr)
 
 	/* Check if the RTL8168 has completed EPHY read */
 	if (RTL_R32(base + (EPHYAR)) & EPHYAR_Flag) {
-	    value = (UWORD) (RTL_R32(base + (EPHYAR)) & EPHYAR_Data_Mask);
+	    value = (UWORD)(RTL_R32(base + (EPHYAR)) & EPHYAR_Data_Mask);
 	    break;
 	}
     }
@@ -277,8 +265,9 @@ static UWORD rtl8168nic_EPHYRead(UBYTE *base, int RegAddr)
     return value;
 }
 
-static void rtl8168nic_CSIWrite(UBYTE *base, int addr, int value)
+static void rtl8168nic_CSIWrite(struct net_device *unit, int addr, ULONG value)
 {
+    APTR		base = get_hwbase(unit);
     int i;
 
     RTL_W32(base + (CSIDR), value);
@@ -298,9 +287,11 @@ static void rtl8168nic_CSIWrite(UBYTE *base, int addr, int value)
     udelay(20);
 }
 
-static int rtl8168nic_CSIRead(UBYTE *base, int addr)
+static ULONG rtl8168nic_CSIRead(struct net_device *unit, int addr)
 {
-    int i, value = -1;
+    APTR		base = get_hwbase(unit);
+    ULONG value = 0xffffffff;
+    int i;
 
     RTL_W32(base + (CSIAR), 
 	    CSIAR_Read | 
@@ -312,7 +303,7 @@ static int rtl8168nic_CSIRead(UBYTE *base, int addr)
 
 	/* Check if the RTL8168 has completed CSI read */
 	if (RTL_R32(base + (CSIAR)) & CSIAR_Flag) {
-	    value = (int)RTL_R32(base + (CSIDR));
+	    value = RTL_R32(base + (CSIDR));
 	    break;
 	}
     }
@@ -328,8 +319,8 @@ static void rtl8168nic_PHYPowerUP(struct net_device *unit)
 
 RTLD(bug("[%s] rtl8168nic_PHYPowerUP()\n", unit->rtl8168u_name))
 
-    mdio_write(base, 0x1F, 0x0000);
-    mdio_write(base, 0x0E, 0x0000);
+    mdio_write(unit, 0x1F, 0x0000);
+    mdio_write(unit, 0x0E, 0x0000);
 }
 
 static void rtl8168nic_GetMACVersion(struct net_device *unit)
@@ -428,424 +419,424 @@ RTLD(bug("[%s] rtl8168nic_HWPHYConfig()\n", unit->rtl8168u_name))
 
     if (np->mcfg == CFG_METHOD_1)
     {
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x0B, 0x94B0);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x0B, 0x94B0);
 
-	mdio_write(base, 0x1F, 0x0003);
-	mdio_write(base, 0x12, 0x6096);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0003);
+	mdio_write(unit, 0x12, 0x6096);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x0D, 0xF8A0);
+	mdio_write(unit, 0x0D, 0xF8A0);
     } else if (np->mcfg == CFG_METHOD_2) {
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x0B, 0x94B0);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x0B, 0x94B0);
 
-	mdio_write(base, 0x1F, 0x0003);
-	mdio_write(base, 0x12, 0x6096);
+	mdio_write(unit, 0x1F, 0x0003);
+	mdio_write(unit, 0x12, 0x6096);
 
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0000);
     } else if (np->mcfg == CFG_METHOD_3) {
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x0B, 0x94B0);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x0B, 0x94B0);
 
-	mdio_write(base, 0x1F, 0x0003);
-	mdio_write(base, 0x12, 0x6096);
+	mdio_write(unit, 0x1F, 0x0003);
+	mdio_write(unit, 0x12, 0x6096);
 
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0000);
     } else if (np->mcfg == CFG_METHOD_4) {
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x12, 0x2300);
-	mdio_write(base, 0x1F, 0x0000);
-	mdio_write(base, 0x1F, 0x0003);
-	mdio_write(base, 0x16, 0x000A);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x12, 0x2300);
+	mdio_write(unit, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0003);
+	mdio_write(unit, 0x16, 0x000A);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0003);
-	mdio_write(base, 0x12, 0xC096);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0003);
+	mdio_write(unit, 0x12, 0xC096);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x00, 0x88DE);
-	mdio_write(base, 0x01, 0x82B1);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x00, 0x88DE);
+	mdio_write(unit, 0x01, 0x82B1);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x08, 0x9E30);
-	mdio_write(base, 0x09, 0x01F0);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x08, 0x9E30);
+	mdio_write(unit, 0x09, 0x01F0);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x0A, 0x5500);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x0A, 0x5500);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x03, 0x7002);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x03, 0x7002);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x0C, 0x00C8);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x0C, 0x00C8);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0000);
-	mdio_write(base, 0x14, mdio_read(base, 0x14) | (1 << 5));
-	mdio_write(base, 0x0D, mdio_read(base, 0x0D) | (1 << 5));
+	mdio_write(unit, 0x1F, 0x0000);
+	mdio_write(unit, 0x14, mdio_read(unit, 0x14) | (1 << 5));
+	mdio_write(unit, 0x0D, mdio_read(unit, 0x0D) | (1 << 5));
     } else if (np->mcfg == CFG_METHOD_5) {
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x12, 0x2300);
-	mdio_write(base, 0x1F, 0x0003);
-	mdio_write(base, 0x16, 0x0F0A);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x12, 0x2300);
+	mdio_write(unit, 0x1F, 0x0003);
+	mdio_write(unit, 0x16, 0x0F0A);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x00, 0x88DE);
-	mdio_write(base, 0x01, 0x82B1);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x00, 0x88DE);
+	mdio_write(unit, 0x01, 0x82B1);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x0C, 0x7EB8);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x0C, 0x7EB8);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x06, 0x0761);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x06, 0x0761);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x03, 0x802F);
-	mdio_write(base, 0x02, 0x4F02);
-	mdio_write(base, 0x01, 0x0409);
-	mdio_write(base, 0x00, 0xF099);
-	mdio_write(base, 0x04, 0x9800);
-	mdio_write(base, 0x04, 0x9000);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x03, 0x802F);
+	mdio_write(unit, 0x02, 0x4F02);
+	mdio_write(unit, 0x01, 0x0409);
+	mdio_write(unit, 0x00, 0xF099);
+	mdio_write(unit, 0x04, 0x9800);
+	mdio_write(unit, 0x04, 0x9000);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0000);
-	mdio_write(base, 0x16, mdio_read(base, 0x16) | (1 << 0));
+	mdio_write(unit, 0x1F, 0x0000);
+	mdio_write(unit, 0x16, mdio_read(unit, 0x16) | (1 << 0));
 
-	mdio_write(base, 0x1F, 0x0000);
-	mdio_write(base, 0x14, mdio_read(base, 0x14) | (1 << 5));
-	mdio_write(base, 0x0D, mdio_read(base, 0x0D) | (1 << 5));
+	mdio_write(unit, 0x1F, 0x0000);
+	mdio_write(unit, 0x14, mdio_read(unit, 0x14) | (1 << 5));
+	mdio_write(unit, 0x0D, mdio_read(unit, 0x0D) | (1 << 5));
 
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x1D, 0x3D98);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x1D, 0x3D98);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x17, 0x0CC0);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x17, 0x0CC0);
+	mdio_write(unit, 0x1F, 0x0000);
     } else if (np->mcfg == CFG_METHOD_6) {
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x12, 0x2300);
-	mdio_write(base, 0x1F, 0x0003);
-	mdio_write(base, 0x16, 0x0F0A);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x12, 0x2300);
+	mdio_write(unit, 0x1F, 0x0003);
+	mdio_write(unit, 0x16, 0x0F0A);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x00, 0x88DE);
-	mdio_write(base, 0x01, 0x82B1);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x00, 0x88DE);
+	mdio_write(unit, 0x01, 0x82B1);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x0C, 0x7EB8);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x0C, 0x7EB8);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x06, 0x0761);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x06, 0x0761);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1F, 0x0000);
-	mdio_write(base, 0x16, mdio_read(base, 0x16) | (1 << 0));
+	mdio_write(unit, 0x1F, 0x0000);
+	mdio_write(unit, 0x16, mdio_read(unit, 0x16) | (1 << 0));
 
-	mdio_write(base, 0x1F, 0x0000);
-	mdio_write(base, 0x14, mdio_read(base, 0x14) | (1 << 5));
-	mdio_write(base, 0x0D, mdio_read(base, 0x0D) | (1 << 5));
+	mdio_write(unit, 0x1F, 0x0000);
+	mdio_write(unit, 0x14, mdio_read(unit, 0x14) | (1 << 5));
+	mdio_write(unit, 0x0D, mdio_read(unit, 0x0D) | (1 << 5));
 
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x1D, 0x3D98);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x1D, 0x3D98);
+	mdio_write(unit, 0x1F, 0x0000);
 
-	mdio_write(base, 0x1f, 0x0001);
-	mdio_write(base, 0x17, 0x0CC0);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1f, 0x0001);
+	mdio_write(unit, 0x17, 0x0CC0);
+	mdio_write(unit, 0x1F, 0x0000);
     } else if (np->mcfg == CFG_METHOD_7) {
-	mdio_write(base, 0x1F, 0x0000);
-	mdio_write(base, 0x14, mdio_read(base, 0x14) | (1 << 5));
-	mdio_write(base, 0x0D, mdio_read(base, 0x0D) | (1 << 5));
+	mdio_write(unit, 0x1F, 0x0000);
+	mdio_write(unit, 0x14, mdio_read(unit, 0x14) | (1 << 5));
+	mdio_write(unit, 0x0D, mdio_read(unit, 0x0D) | (1 << 5));
 
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x1D, 0x3D98);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x1D, 0x3D98);
 
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x14, 0xCAA3);
-	mdio_write(base, 0x1C, 0x000A);
-	mdio_write(base, 0x18, 0x65D0);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x14, 0xCAA3);
+	mdio_write(unit, 0x1C, 0x000A);
+	mdio_write(unit, 0x18, 0x65D0);
 	
-	mdio_write(base, 0x1F, 0x0003);
-	mdio_write(base, 0x17, 0xB580);
-	mdio_write(base, 0x18, 0xFF54);
-	mdio_write(base, 0x19, 0x3954);
+	mdio_write(unit, 0x1F, 0x0003);
+	mdio_write(unit, 0x17, 0xB580);
+	mdio_write(unit, 0x18, 0xFF54);
+	mdio_write(unit, 0x19, 0x3954);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x0D, 0x310C);
-	mdio_write(base, 0x0E, 0x310C);
-	mdio_write(base, 0x0F, 0x311C);
-	mdio_write(base, 0x06, 0x0761);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x0D, 0x310C);
+	mdio_write(unit, 0x0E, 0x310C);
+	mdio_write(unit, 0x0F, 0x311C);
+	mdio_write(unit, 0x06, 0x0761);
 
-	mdio_write(base, 0x1F, 0x0003);
-	mdio_write(base, 0x18, 0xFF55);
-	mdio_write(base, 0x19, 0x3955);
-	mdio_write(base, 0x18, 0xFF54);
-	mdio_write(base, 0x19, 0x3954);
+	mdio_write(unit, 0x1F, 0x0003);
+	mdio_write(unit, 0x18, 0xFF55);
+	mdio_write(unit, 0x19, 0x3955);
+	mdio_write(unit, 0x18, 0xFF54);
+	mdio_write(unit, 0x19, 0x3954);
 
-	mdio_write(base, 0x1f, 0x0001);
-	mdio_write(base, 0x17, 0x0CC0);
+	mdio_write(unit, 0x1f, 0x0001);
+	mdio_write(unit, 0x17, 0x0CC0);
 
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0000);
     } else if (np->mcfg == CFG_METHOD_8) {
-	mdio_write(base, 0x1F, 0x0000);
-	mdio_write(base, 0x0D, mdio_read(base, 0x0D) | (1 << 5));
+	mdio_write(unit, 0x1F, 0x0000);
+	mdio_write(unit, 0x0D, mdio_read(unit, 0x0D) | (1 << 5));
 
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x14, 0xCAA3);
-	mdio_write(base, 0x1C, 0x000A);
-	mdio_write(base, 0x18, 0x65D0);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x14, 0xCAA3);
+	mdio_write(unit, 0x1C, 0x000A);
+	mdio_write(unit, 0x18, 0x65D0);
 	
-	mdio_write(base, 0x1F, 0x0003);
-	mdio_write(base, 0x17, 0xB580);
-	mdio_write(base, 0x18, 0xFF54);
-	mdio_write(base, 0x19, 0x3954);
+	mdio_write(unit, 0x1F, 0x0003);
+	mdio_write(unit, 0x17, 0xB580);
+	mdio_write(unit, 0x18, 0xFF54);
+	mdio_write(unit, 0x19, 0x3954);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x0D, 0x310C);
-	mdio_write(base, 0x0E, 0x310C);
-	mdio_write(base, 0x0F, 0x311C);
-	mdio_write(base, 0x06, 0x0761);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x0D, 0x310C);
+	mdio_write(unit, 0x0E, 0x310C);
+	mdio_write(unit, 0x0F, 0x311C);
+	mdio_write(unit, 0x06, 0x0761);
 
-	mdio_write(base, 0x1F, 0x0003);
-	mdio_write(base, 0x18, 0xFF55);
-	mdio_write(base, 0x19, 0x3955);
-	mdio_write(base, 0x18, 0xFF54);
-	mdio_write(base, 0x19, 0x3954);
+	mdio_write(unit, 0x1F, 0x0003);
+	mdio_write(unit, 0x18, 0xFF55);
+	mdio_write(unit, 0x19, 0x3955);
+	mdio_write(unit, 0x18, 0xFF54);
+	mdio_write(unit, 0x19, 0x3954);
 
-	mdio_write(base, 0x1f, 0x0001);
-	mdio_write(base, 0x17, 0x0CC0);
+	mdio_write(unit, 0x1f, 0x0001);
+	mdio_write(unit, 0x17, 0x0CC0);
 
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0000);
     } else if (np->mcfg == CFG_METHOD_9) {
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x06, 0x4064);
-	mdio_write(base, 0x07, 0x2863);
-	mdio_write(base, 0x08, 0x059C);
-	mdio_write(base, 0x09, 0x26B4);
-	mdio_write(base, 0x0A, 0x6A19);
-	mdio_write(base, 0x0B, 0xACC0);
-	mdio_write(base, 0x10, 0xF06D);
-	mdio_write(base, 0x14, 0x7F68);
-	mdio_write(base, 0x18, 0x7FD9);
-	mdio_write(base, 0x1C, 0xF0FF);
-	mdio_write(base, 0x1D, 0x3D9C);
-	mdio_write(base, 0x1F, 0x0003);
-	mdio_write(base, 0x12, 0xF49F);
-	mdio_write(base, 0x13, 0x070B);
-	mdio_write(base, 0x1A, 0x05AD);
-	mdio_write(base, 0x14, 0x94C0);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x06, 0x4064);
+	mdio_write(unit, 0x07, 0x2863);
+	mdio_write(unit, 0x08, 0x059C);
+	mdio_write(unit, 0x09, 0x26B4);
+	mdio_write(unit, 0x0A, 0x6A19);
+	mdio_write(unit, 0x0B, 0xACC0);
+	mdio_write(unit, 0x10, 0xF06D);
+	mdio_write(unit, 0x14, 0x7F68);
+	mdio_write(unit, 0x18, 0x7FD9);
+	mdio_write(unit, 0x1C, 0xF0FF);
+	mdio_write(unit, 0x1D, 0x3D9C);
+	mdio_write(unit, 0x1F, 0x0003);
+	mdio_write(unit, 0x12, 0xF49F);
+	mdio_write(unit, 0x13, 0x070B);
+	mdio_write(unit, 0x1A, 0x05AD);
+	mdio_write(unit, 0x14, 0x94C0);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x0B, 0x0B10);
-	mdio_write(base, 0x0C, 0xA2F7);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x0B, 0x0B10);
+	mdio_write(unit, 0x0C, 0xA2F7);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x06, 0x5571);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x06, 0x5571);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x02, 0xC107);
-	mdio_write(base, 0x03, 0x1002);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x02, 0xC107);
+	mdio_write(unit, 0x03, 0x1002);
 
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x17, 0x0CC0);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x17, 0x0CC0);
 
-	mdio_write(base, 0x1F, 0x0005);
-	mdio_write(base, 0x05, 0x8200);
-	mdio_write(base, 0x06, 0xF8F9);
-	mdio_write(base, 0x06, 0xFAEF);
-	mdio_write(base, 0x06, 0x59EE);
-	mdio_write(base, 0x06, 0xF8EA);
-	mdio_write(base, 0x06, 0x00EE);
-	mdio_write(base, 0x06, 0xF8EB);
-	mdio_write(base, 0x06, 0x00E0);
-	mdio_write(base, 0x06, 0xF87C);
-	mdio_write(base, 0x06, 0xE1F8);
-	mdio_write(base, 0x06, 0x7D59);
-	mdio_write(base, 0x06, 0x0FEF);
-	mdio_write(base, 0x06, 0x0139);
-	mdio_write(base, 0x06, 0x029E);
-	mdio_write(base, 0x06, 0x06EF);
-	mdio_write(base, 0x06, 0x1039);
-	mdio_write(base, 0x06, 0x089F);
-	mdio_write(base, 0x06, 0x2AEE);
-	mdio_write(base, 0x06, 0xF8EA);
-	mdio_write(base, 0x06, 0x00EE);
-	mdio_write(base, 0x06, 0xF8EB);
-	mdio_write(base, 0x06, 0x01E0);
-	mdio_write(base, 0x06, 0xF87C);
-	mdio_write(base, 0x06, 0xE1F8);
-	mdio_write(base, 0x06, 0x7D58);
-	mdio_write(base, 0x06, 0x409E);
-	mdio_write(base, 0x06, 0x0F39);
-	mdio_write(base, 0x06, 0x46AA);
-	mdio_write(base, 0x06, 0x0BBF);
-	mdio_write(base, 0x06, 0x8251);
-	mdio_write(base, 0x06, 0xD682);
-	mdio_write(base, 0x06, 0x5902);
-	mdio_write(base, 0x06, 0x014F);
-	mdio_write(base, 0x06, 0xAE09);
-	mdio_write(base, 0x06, 0xBF82);
-	mdio_write(base, 0x06, 0x59D6);
-	mdio_write(base, 0x06, 0x8261);
-	mdio_write(base, 0x06, 0x0201);
-	mdio_write(base, 0x06, 0x4FEF);
-	mdio_write(base, 0x06, 0x95FE);
-	mdio_write(base, 0x06, 0xFDFC);
-	mdio_write(base, 0x06, 0x054D);
-	mdio_write(base, 0x06, 0x2000);
-	mdio_write(base, 0x06, 0x024E);
-	mdio_write(base, 0x06, 0x2200);
-	mdio_write(base, 0x06, 0x024D);
-	mdio_write(base, 0x06, 0xDFFF);
-	mdio_write(base, 0x06, 0x014E);
-	mdio_write(base, 0x06, 0xDDFF);
-	mdio_write(base, 0x06, 0x0100);
-	mdio_write(base, 0x06, 0x6010);
-	mdio_write(base, 0x05, 0xFFF6);
-	mdio_write(base, 0x06, 0x00EC);
-	mdio_write(base, 0x05, 0x83D4);
-	mdio_write(base, 0x06, 0x8200);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0005);
+	mdio_write(unit, 0x05, 0x8200);
+	mdio_write(unit, 0x06, 0xF8F9);
+	mdio_write(unit, 0x06, 0xFAEF);
+	mdio_write(unit, 0x06, 0x59EE);
+	mdio_write(unit, 0x06, 0xF8EA);
+	mdio_write(unit, 0x06, 0x00EE);
+	mdio_write(unit, 0x06, 0xF8EB);
+	mdio_write(unit, 0x06, 0x00E0);
+	mdio_write(unit, 0x06, 0xF87C);
+	mdio_write(unit, 0x06, 0xE1F8);
+	mdio_write(unit, 0x06, 0x7D59);
+	mdio_write(unit, 0x06, 0x0FEF);
+	mdio_write(unit, 0x06, 0x0139);
+	mdio_write(unit, 0x06, 0x029E);
+	mdio_write(unit, 0x06, 0x06EF);
+	mdio_write(unit, 0x06, 0x1039);
+	mdio_write(unit, 0x06, 0x089F);
+	mdio_write(unit, 0x06, 0x2AEE);
+	mdio_write(unit, 0x06, 0xF8EA);
+	mdio_write(unit, 0x06, 0x00EE);
+	mdio_write(unit, 0x06, 0xF8EB);
+	mdio_write(unit, 0x06, 0x01E0);
+	mdio_write(unit, 0x06, 0xF87C);
+	mdio_write(unit, 0x06, 0xE1F8);
+	mdio_write(unit, 0x06, 0x7D58);
+	mdio_write(unit, 0x06, 0x409E);
+	mdio_write(unit, 0x06, 0x0F39);
+	mdio_write(unit, 0x06, 0x46AA);
+	mdio_write(unit, 0x06, 0x0BBF);
+	mdio_write(unit, 0x06, 0x8251);
+	mdio_write(unit, 0x06, 0xD682);
+	mdio_write(unit, 0x06, 0x5902);
+	mdio_write(unit, 0x06, 0x014F);
+	mdio_write(unit, 0x06, 0xAE09);
+	mdio_write(unit, 0x06, 0xBF82);
+	mdio_write(unit, 0x06, 0x59D6);
+	mdio_write(unit, 0x06, 0x8261);
+	mdio_write(unit, 0x06, 0x0201);
+	mdio_write(unit, 0x06, 0x4FEF);
+	mdio_write(unit, 0x06, 0x95FE);
+	mdio_write(unit, 0x06, 0xFDFC);
+	mdio_write(unit, 0x06, 0x054D);
+	mdio_write(unit, 0x06, 0x2000);
+	mdio_write(unit, 0x06, 0x024E);
+	mdio_write(unit, 0x06, 0x2200);
+	mdio_write(unit, 0x06, 0x024D);
+	mdio_write(unit, 0x06, 0xDFFF);
+	mdio_write(unit, 0x06, 0x014E);
+	mdio_write(unit, 0x06, 0xDDFF);
+	mdio_write(unit, 0x06, 0x0100);
+	mdio_write(unit, 0x06, 0x6010);
+	mdio_write(unit, 0x05, 0xFFF6);
+	mdio_write(unit, 0x06, 0x00EC);
+	mdio_write(unit, 0x05, 0x83D4);
+	mdio_write(unit, 0x06, 0x8200);
+	mdio_write(unit, 0x1F, 0x0000);
     } else if (np->mcfg == CFG_METHOD_10) {
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x06, 0x4064);
-	mdio_write(base, 0x07, 0x2863);
-	mdio_write(base, 0x08, 0x059C);
-	mdio_write(base, 0x09, 0x26B4);
-	mdio_write(base, 0x0A, 0x6A19);
-	mdio_write(base, 0x0B, 0xACC0);
-	mdio_write(base, 0x10, 0xF06D);
-	mdio_write(base, 0x14, 0x7F68);
-	mdio_write(base, 0x18, 0x7FD9);
-	mdio_write(base, 0x1C, 0xF0FF);
-	mdio_write(base, 0x1D, 0x3D9C);
-	mdio_write(base, 0x1F, 0x0003);
-	mdio_write(base, 0x12, 0xF49F);
-	mdio_write(base, 0x13, 0x070B);
-	mdio_write(base, 0x1A, 0x05AD);
-	mdio_write(base, 0x14, 0x94C0);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x06, 0x4064);
+	mdio_write(unit, 0x07, 0x2863);
+	mdio_write(unit, 0x08, 0x059C);
+	mdio_write(unit, 0x09, 0x26B4);
+	mdio_write(unit, 0x0A, 0x6A19);
+	mdio_write(unit, 0x0B, 0xACC0);
+	mdio_write(unit, 0x10, 0xF06D);
+	mdio_write(unit, 0x14, 0x7F68);
+	mdio_write(unit, 0x18, 0x7FD9);
+	mdio_write(unit, 0x1C, 0xF0FF);
+	mdio_write(unit, 0x1D, 0x3D9C);
+	mdio_write(unit, 0x1F, 0x0003);
+	mdio_write(unit, 0x12, 0xF49F);
+	mdio_write(unit, 0x13, 0x070B);
+	mdio_write(unit, 0x1A, 0x05AD);
+	mdio_write(unit, 0x14, 0x94C0);
 	
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x06, 0x5571);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x06, 0x5571);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x05, 0x2642);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x05, 0x2642);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x02, 0xC107);
-	mdio_write(base, 0x03, 0x1002);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x02, 0xC107);
+	mdio_write(unit, 0x03, 0x1002);
 
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x17, 0x0CC0);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x17, 0x0CC0);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x0F, 0x0017);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x0F, 0x0017);
 
-	mdio_write(base, 0x1F, 0x0005);
-	mdio_write(base, 0x05, 0x8200);
-	mdio_write(base, 0x06, 0xF8F9);
-	mdio_write(base, 0x06, 0xFAEF);
-	mdio_write(base, 0x06, 0x59EE);
-	mdio_write(base, 0x06, 0xF8EA);
-	mdio_write(base, 0x06, 0x00EE);
-	mdio_write(base, 0x06, 0xF8EB);
-	mdio_write(base, 0x06, 0x00E0);
-	mdio_write(base, 0x06, 0xF87C);
-	mdio_write(base, 0x06, 0xE1F8);
-	mdio_write(base, 0x06, 0x7D59);
-	mdio_write(base, 0x06, 0x0FEF);
-	mdio_write(base, 0x06, 0x0139);
-	mdio_write(base, 0x06, 0x029E);
-	mdio_write(base, 0x06, 0x06EF);
-	mdio_write(base, 0x06, 0x1039);
-	mdio_write(base, 0x06, 0x089F);
-	mdio_write(base, 0x06, 0x2AEE);
-	mdio_write(base, 0x06, 0xF8EA);
-	mdio_write(base, 0x06, 0x00EE);
-	mdio_write(base, 0x06, 0xF8EB);
-	mdio_write(base, 0x06, 0x01E0);
-	mdio_write(base, 0x06, 0xF87C);
-	mdio_write(base, 0x06, 0xE1F8);
-	mdio_write(base, 0x06, 0x7D58);
-	mdio_write(base, 0x06, 0x409E);
-	mdio_write(base, 0x06, 0x0F39);
-	mdio_write(base, 0x06, 0x46AA);
-	mdio_write(base, 0x06, 0x0BBF);
-	mdio_write(base, 0x06, 0x8251);
-	mdio_write(base, 0x06, 0xD682);
-	mdio_write(base, 0x06, 0x5902);
-	mdio_write(base, 0x06, 0x014F);
-	mdio_write(base, 0x06, 0xAE09);
-	mdio_write(base, 0x06, 0xBF82);
-	mdio_write(base, 0x06, 0x59D6);
-	mdio_write(base, 0x06, 0x8261);
-	mdio_write(base, 0x06, 0x0201);
-	mdio_write(base, 0x06, 0x4FEF);
-	mdio_write(base, 0x06, 0x95FE);
-	mdio_write(base, 0x06, 0xFDFC);
-	mdio_write(base, 0x06, 0x054D);
-	mdio_write(base, 0x06, 0x2000);
-	mdio_write(base, 0x06, 0x024E);
-	mdio_write(base, 0x06, 0x2200);
-	mdio_write(base, 0x06, 0x024D);
-	mdio_write(base, 0x06, 0xDFFF);
-	mdio_write(base, 0x06, 0x014E);
-	mdio_write(base, 0x06, 0xDDFF);
-	mdio_write(base, 0x06, 0x0100);
-	mdio_write(base, 0x02, 0x6010);
-	mdio_write(base, 0x05, 0xFFF6);
-	mdio_write(base, 0x06, 0x00EC);
-	mdio_write(base, 0x05, 0x83D4);
-	mdio_write(base, 0x06, 0x8200);
-	mdio_write(base, 0x1F, 0x0000);
+	mdio_write(unit, 0x1F, 0x0005);
+	mdio_write(unit, 0x05, 0x8200);
+	mdio_write(unit, 0x06, 0xF8F9);
+	mdio_write(unit, 0x06, 0xFAEF);
+	mdio_write(unit, 0x06, 0x59EE);
+	mdio_write(unit, 0x06, 0xF8EA);
+	mdio_write(unit, 0x06, 0x00EE);
+	mdio_write(unit, 0x06, 0xF8EB);
+	mdio_write(unit, 0x06, 0x00E0);
+	mdio_write(unit, 0x06, 0xF87C);
+	mdio_write(unit, 0x06, 0xE1F8);
+	mdio_write(unit, 0x06, 0x7D59);
+	mdio_write(unit, 0x06, 0x0FEF);
+	mdio_write(unit, 0x06, 0x0139);
+	mdio_write(unit, 0x06, 0x029E);
+	mdio_write(unit, 0x06, 0x06EF);
+	mdio_write(unit, 0x06, 0x1039);
+	mdio_write(unit, 0x06, 0x089F);
+	mdio_write(unit, 0x06, 0x2AEE);
+	mdio_write(unit, 0x06, 0xF8EA);
+	mdio_write(unit, 0x06, 0x00EE);
+	mdio_write(unit, 0x06, 0xF8EB);
+	mdio_write(unit, 0x06, 0x01E0);
+	mdio_write(unit, 0x06, 0xF87C);
+	mdio_write(unit, 0x06, 0xE1F8);
+	mdio_write(unit, 0x06, 0x7D58);
+	mdio_write(unit, 0x06, 0x409E);
+	mdio_write(unit, 0x06, 0x0F39);
+	mdio_write(unit, 0x06, 0x46AA);
+	mdio_write(unit, 0x06, 0x0BBF);
+	mdio_write(unit, 0x06, 0x8251);
+	mdio_write(unit, 0x06, 0xD682);
+	mdio_write(unit, 0x06, 0x5902);
+	mdio_write(unit, 0x06, 0x014F);
+	mdio_write(unit, 0x06, 0xAE09);
+	mdio_write(unit, 0x06, 0xBF82);
+	mdio_write(unit, 0x06, 0x59D6);
+	mdio_write(unit, 0x06, 0x8261);
+	mdio_write(unit, 0x06, 0x0201);
+	mdio_write(unit, 0x06, 0x4FEF);
+	mdio_write(unit, 0x06, 0x95FE);
+	mdio_write(unit, 0x06, 0xFDFC);
+	mdio_write(unit, 0x06, 0x054D);
+	mdio_write(unit, 0x06, 0x2000);
+	mdio_write(unit, 0x06, 0x024E);
+	mdio_write(unit, 0x06, 0x2200);
+	mdio_write(unit, 0x06, 0x024D);
+	mdio_write(unit, 0x06, 0xDFFF);
+	mdio_write(unit, 0x06, 0x014E);
+	mdio_write(unit, 0x06, 0xDDFF);
+	mdio_write(unit, 0x06, 0x0100);
+	mdio_write(unit, 0x02, 0x6010);
+	mdio_write(unit, 0x05, 0xFFF6);
+	mdio_write(unit, 0x06, 0x00EC);
+	mdio_write(unit, 0x05, 0x83D4);
+	mdio_write(unit, 0x06, 0x8200);
+	mdio_write(unit, 0x1F, 0x0000);
     } else if (np->mcfg == CFG_METHOD_11) {
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x06, 0x4064);
-	mdio_write(base, 0x07, 0x2863);
-	mdio_write(base, 0x08, 0x059C);
-	mdio_write(base, 0x09, 0x26B4);
-	mdio_write(base, 0x0A, 0x6A19);
-	mdio_write(base, 0x0B, 0xACC0);
-	mdio_write(base, 0x10, 0xF06D);
-	mdio_write(base, 0x14, 0x7F68);
-	mdio_write(base, 0x18, 0x7FD9);
-	mdio_write(base, 0x1C, 0xF0FF);
-	mdio_write(base, 0x1D, 0x3D9C);
-	mdio_write(base, 0x1F, 0x0003);
-	mdio_write(base, 0x12, 0xF49F);
-	mdio_write(base, 0x13, 0x070B);
-	mdio_write(base, 0x1A, 0x05AD);
-	mdio_write(base, 0x14, 0x94C0);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x06, 0x4064);
+	mdio_write(unit, 0x07, 0x2863);
+	mdio_write(unit, 0x08, 0x059C);
+	mdio_write(unit, 0x09, 0x26B4);
+	mdio_write(unit, 0x0A, 0x6A19);
+	mdio_write(unit, 0x0B, 0xACC0);
+	mdio_write(unit, 0x10, 0xF06D);
+	mdio_write(unit, 0x14, 0x7F68);
+	mdio_write(unit, 0x18, 0x7FD9);
+	mdio_write(unit, 0x1C, 0xF0FF);
+	mdio_write(unit, 0x1D, 0x3D9C);
+	mdio_write(unit, 0x1F, 0x0003);
+	mdio_write(unit, 0x12, 0xF49F);
+	mdio_write(unit, 0x13, 0x070B);
+	mdio_write(unit, 0x1A, 0x05AD);
+	mdio_write(unit, 0x14, 0x94C0);
 	
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x06, 0x5571);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x06, 0x5571);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x05, 0x2642);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x05, 0x2642);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x02, 0xC107);
-	mdio_write(base, 0x03, 0x1002);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x02, 0xC107);
+	mdio_write(unit, 0x03, 0x1002);
 
-	mdio_write(base, 0x1F, 0x0001);
-	mdio_write(base, 0x17, 0x0CC0);
+	mdio_write(unit, 0x1F, 0x0001);
+	mdio_write(unit, 0x17, 0x0CC0);
 
-	mdio_write(base, 0x1F, 0x0002);
-	mdio_write(base, 0x0F, 0x0017);
+	mdio_write(unit, 0x1F, 0x0002);
+	mdio_write(unit, 0x0F, 0x0017);
     }
 }
 
@@ -942,10 +933,10 @@ RTLD(bug("[%s] rtl8168nic_SetSpeedXMII()\n", unit->rtl8168u_name))
 
 	rtl8168nic_PHYPowerUP(unit);
 
-	mdio_write(base, 0x1f, 0x0000);
-	mdio_write(base, MII_ADVERTISE, auto_nego);
-	mdio_write(base, MII_CTRL1000, giga_ctrl);
-	mdio_write(base, MII_BMCR, BMCR_RESET | BMCR_ANENABLE | BMCR_ANRESTART);
+	mdio_write(unit, 0x1f, 0x0000);
+	mdio_write(unit, MII_ADVERTISE, auto_nego);
+	mdio_write(unit, MII_CTRL1000, giga_ctrl);
+	mdio_write(unit, MII_BMCR, BMCR_RESET | BMCR_ANENABLE | BMCR_ANRESTART);
     } else {
 	    /*true force*/
 #ifndef BMCR_SPEED100
@@ -965,8 +956,8 @@ RTLD(bug("[%s] rtl8168nic_SetSpeedXMII()\n", unit->rtl8168u_name))
 		bmcr_true_force = BMCR_SPEED100 | BMCR_FULLDPLX;
 	}
 
-	mdio_write(base, 0x1f, 0x0000);
-	mdio_write(base, MII_BMCR, bmcr_true_force);
+	mdio_write(unit, 0x1f, 0x0000);
+	mdio_write(unit, MII_BMCR, bmcr_true_force);
     }
 
     return 0;
@@ -1410,27 +1401,27 @@ static void rtl8168nic_HWStart(struct net_device *unit)
     if (np->mcfg == CFG_METHOD_4) {
 	/*set PCI configuration space offset 0x70F to 0x27*/
 	/*When the register offset of PCI configuration space larger than 0xff, use CSI to access it.*/
-	csi_tmp = rtl8168nic_CSIRead(base, 0x70c) & 0x00ffffff;
-	rtl8168nic_CSIWrite(base, 0x70c, csi_tmp | 0x27000000);
+	csi_tmp = rtl8168nic_CSIRead(unit, 0x70c) & 0x00ffffff;
+	rtl8168nic_CSIWrite(unit, 0x70c, csi_tmp | 0x27000000);
 
 	RTL_W8(base + (DBG_reg), (0x0E << 4) | Fix_Nak_1 | Fix_Nak_2);
 
 	/*Set EPHY registers	begin*/
 	/*Set EPHY register offset 0x02 bit 11 to 0 and bit 12 to 1*/
-	ephy_data = rtl8168nic_EPHYRead(base, 0x02);
+	ephy_data = rtl8168nic_EPHYRead(unit, 0x02);
 	ephy_data &= ~(1 << 11);
 	ephy_data |= (1 << 12);
-	rtl8168nic_EPHYWrite(base, 0x02, ephy_data);
+	rtl8168nic_EPHYWrite(unit, 0x02, ephy_data);
 
 	/*Set EPHY register offset 0x03 bit 1 to 1*/
-	ephy_data = rtl8168nic_EPHYRead(base, 0x03);
+	ephy_data = rtl8168nic_EPHYRead(unit, 0x03);
 	ephy_data |= (1 << 1);
-	rtl8168nic_EPHYWrite(base, 0x03, ephy_data);
+	rtl8168nic_EPHYWrite(unit, 0x03, ephy_data);
 
 	/*Set EPHY register offset 0x06 bit 7 to 0*/
-	ephy_data = rtl8168nic_EPHYRead(base, 0x06);
+	ephy_data = rtl8168nic_EPHYRead(unit, 0x06);
 	ephy_data &= ~(1 << 7);
-	rtl8168nic_EPHYWrite(base, 0x06, ephy_data);
+	rtl8168nic_EPHYWrite(unit, 0x06, ephy_data);
 	/*Set EPHY registers	end*/
 
 	RTL_W8(base + (Config3), RTL_R8(base + (Config3)) & ~Beacon_en);
@@ -1495,21 +1486,21 @@ static void rtl8168nic_HWStart(struct net_device *unit)
     } else if (np->mcfg == CFG_METHOD_5) {
 	/*set PCI configuration space offset 0x70F to 0x27*/
 	/*When the register offset of PCI configuration space larger than 0xff, use CSI to access it.*/
-	csi_tmp = rtl8168nic_CSIRead(base, 0x70c) & 0x00ffffff;
-	rtl8168nic_CSIWrite(base, 0x70c, csi_tmp | 0x27000000);
+	csi_tmp = rtl8168nic_CSIRead(unit, 0x70c) & 0x00ffffff;
+	rtl8168nic_CSIWrite(unit, 0x70c, csi_tmp | 0x27000000);
 
 	/******set EPHY registers for RTL8168CP	begin******/
 	//Set EPHY register offset 0x01 bit 0 to 1.
-	ephy_data = rtl8168nic_EPHYRead(base, 0x01);
+	ephy_data = rtl8168nic_EPHYRead(unit, 0x01);
 	ephy_data |= (1 << 0);
-	rtl8168nic_EPHYWrite(base, 0x01, ephy_data);
+	rtl8168nic_EPHYWrite(unit, 0x01, ephy_data);
 
 	//Set EPHY register offset 0x03 bit 10 to 0, bit 9 to 1 and bit 5 to 1.
-	ephy_data = rtl8168nic_EPHYRead(base, 0x03);
+	ephy_data = rtl8168nic_EPHYRead(unit, 0x03);
 	ephy_data &= ~(1 << 10);
 	ephy_data |= (1 << 9);
 	ephy_data |= (1 << 5);
-	rtl8168nic_EPHYWrite(base, 0x03, ephy_data);
+	rtl8168nic_EPHYWrite(unit, 0x03, ephy_data);
 	/******set EPHY registers for RTL8168CP	end******/
 
 	RTL_W8(base + (Config3), RTL_R8(base + (Config3)) & ~Beacon_en);
@@ -1574,8 +1565,8 @@ static void rtl8168nic_HWStart(struct net_device *unit)
     } else if (np->mcfg == CFG_METHOD_6) {
 	/*set PCI configuration space offset 0x70F to 0x27*/
 	/*When the register offset of PCI configuration space larger than 0xff, use CSI to access it.*/
-	csi_tmp = rtl8168nic_CSIRead(base, 0x70c) & 0x00ffffff;
-	rtl8168nic_CSIWrite(base, 0x70c, csi_tmp | 0x27000000);
+	csi_tmp = rtl8168nic_CSIRead(unit, 0x70c) & 0x00ffffff;
+	rtl8168nic_CSIWrite(unit, 0x70c, csi_tmp | 0x27000000);
 
 	RTL_W8(base + (Config3), RTL_R8(base + (Config3)) & ~Beacon_en);
 
@@ -1633,8 +1624,8 @@ static void rtl8168nic_HWStart(struct net_device *unit)
     } else if (np->mcfg == CFG_METHOD_7) {
 	/*set PCI configuration space offset 0x70F to 0x27*/
 	/*When the register offset of PCI configuration space larger than 0xff, use CSI to access it.*/
-	csi_tmp = rtl8168nic_CSIRead(base, 0x70c) & 0x00ffffff;
-	rtl8168nic_CSIWrite(base, 0x70c, csi_tmp | 0x27000000);
+	csi_tmp = rtl8168nic_CSIRead(unit, 0x70c) & 0x00ffffff;
+	rtl8168nic_CSIWrite(unit, 0x70c, csi_tmp | 0x27000000);
 
 	RTL_W16(base + (CPlusCmd), RTL_R16(base + (CPlusCmd)) & 
 	    ~(EnableBist | Macdbgo_oe | Force_halfdup | Force_rxflow_en | Force_txflow_en | 
@@ -1692,8 +1683,8 @@ static void rtl8168nic_HWStart(struct net_device *unit)
     } else if (np->mcfg == CFG_METHOD_8) {
 	/*set PCI configuration space offset 0x70F to 0x27*/
 	/*When the register offset of PCI configuration space larger than 0xff, use CSI to access it.*/
-	csi_tmp = rtl8168nic_CSIRead(base, 0x70c) & 0x00ffffff;
-	rtl8168nic_CSIWrite(base, 0x70c, csi_tmp | 0x27000000);
+	csi_tmp = rtl8168nic_CSIRead(unit, 0x70c) & 0x00ffffff;
+	rtl8168nic_CSIWrite(unit, 0x70c, csi_tmp | 0x27000000);
 
 	RTL_W16(base + (CPlusCmd), RTL_R16(base + (CPlusCmd)) & 
 	    ~(EnableBist | Macdbgo_oe | Force_halfdup | Force_rxflow_en | Force_txflow_en | 
@@ -1754,8 +1745,8 @@ static void rtl8168nic_HWStart(struct net_device *unit)
     } else if (np->mcfg == CFG_METHOD_9) {
 	/*set PCI configuration space offset 0x70F to 0x27*/
 	/*When the register offset of PCI configuration space larger than 0xff, use CSI to access it.*/
-	csi_tmp = rtl8168nic_CSIRead(base, 0x70c) & 0x00ffffff;
-	rtl8168nic_CSIWrite(base, 0x70c, csi_tmp | 0x27000000);
+	csi_tmp = rtl8168nic_CSIRead(unit, 0x70c) & 0x00ffffff;
+	rtl8168nic_CSIWrite(unit, 0x70c, csi_tmp | 0x27000000);
 
 	//disable clock request.
 	pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
@@ -1814,17 +1805,17 @@ static void rtl8168nic_HWStart(struct net_device *unit)
 	}
 
 	/******set EPHY registers	begin******/
-	rtl8168nic_EPHYWrite(base, 0x01, 0x7C7D);
-	rtl8168nic_EPHYWrite(base, 0x02, 0x091F);
-	rtl8168nic_EPHYWrite(base, 0x06, 0xB271);
-	rtl8168nic_EPHYWrite(base, 0x07, 0xCE00);
+	rtl8168nic_EPHYWrite(unit, 0x01, 0x7C7D);
+	rtl8168nic_EPHYWrite(unit, 0x02, 0x091F);
+	rtl8168nic_EPHYWrite(unit, 0x06, 0xB271);
+	rtl8168nic_EPHYWrite(unit, 0x07, 0xCE00);
 	/******set EPHY registers	end******/
 
     } else if (np->mcfg == CFG_METHOD_10) {
 	/*set PCI configuration space offset 0x70F to 0x27*/
 	/*When the register offset of PCI configuration space larger than 0xff, use CSI to access it.*/
-	csi_tmp = rtl8168nic_CSIRead(base, 0x70c) & 0x00ffffff;
-	rtl8168nic_CSIWrite(base, 0x70c, csi_tmp | 0x27000000);
+	csi_tmp = rtl8168nic_CSIRead(unit, 0x70c) & 0x00ffffff;
+	rtl8168nic_CSIWrite(unit, 0x70c, csi_tmp | 0x27000000);
 
 	if (unit->rtl8168u_mtu > ETH_DATA_LEN) {
 	    RTL_W8(base + (Reserved1), Reserved1_data);
@@ -1875,12 +1866,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
 	RTL_W8(base + (Config1), 0xDF);
 
 	/******set EPHY registers	begin******/
-	rtl8168nic_EPHYWrite(base, 0x01, 0x7C7D);
-	rtl8168nic_EPHYWrite(base, 0x02, 0x091F);
-	rtl8168nic_EPHYWrite(base, 0x03, 0xC5BA);
-	rtl8168nic_EPHYWrite(base, 0x06, 0xB279);
-	rtl8168nic_EPHYWrite(base, 0x07, 0xAF00);
-	rtl8168nic_EPHYWrite(base, 0x1E, 0xB8EB);
+	rtl8168nic_EPHYWrite(unit, 0x01, 0x7C7D);
+	rtl8168nic_EPHYWrite(unit, 0x02, 0x091F);
+	rtl8168nic_EPHYWrite(unit, 0x03, 0xC5BA);
+	rtl8168nic_EPHYWrite(unit, 0x06, 0xB279);
+	rtl8168nic_EPHYWrite(unit, 0x07, 0xAF00);
+	rtl8168nic_EPHYWrite(unit, 0x1E, 0xB8EB);
 	/******set EPHY registers	end******/
 
 	//disable clock request.
@@ -1892,8 +1883,8 @@ static void rtl8168nic_HWStart(struct net_device *unit)
     } else if (np->mcfg == CFG_METHOD_11) {
 	/*set PCI configuration space offset 0x70F to 0x27*/
 	/*When the register offset of PCI configuration space larger than 0xff, use CSI to access it.*/
-	csi_tmp = rtl8168nic_CSIRead(base, 0x70c) & 0x00ffffff;
-	rtl8168nic_CSIWrite(base, 0x70c, csi_tmp | 0x27000000);
+	csi_tmp = rtl8168nic_CSIRead(unit, 0x70c) & 0x00ffffff;
+	rtl8168nic_CSIWrite(unit, 0x70c, csi_tmp | 0x27000000);
 
 	if (unit->rtl8168u_mtu > ETH_DATA_LEN) {
 	    RTL_W8(base + (Reserved1), Reserved1_data);
@@ -1944,12 +1935,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
 	RTL_W8(base + (Config1), 0xDF);
 
 	/******set EPHY registers	begin******/
-	rtl8168nic_EPHYWrite(base, 0x01, 0x6C7F);
-	rtl8168nic_EPHYWrite(base, 0x02, 0x011F);
-	rtl8168nic_EPHYWrite(base, 0x03, 0xC1B2);
-	rtl8168nic_EPHYWrite(base, 0x1A, 0x0546);
-	rtl8168nic_EPHYWrite(base, 0x1C, 0x80C4);
-	rtl8168nic_EPHYWrite(base, 0x1D, 0x78E4);
+	rtl8168nic_EPHYWrite(unit, 0x01, 0x6C7F);
+	rtl8168nic_EPHYWrite(unit, 0x02, 0x011F);
+	rtl8168nic_EPHYWrite(unit, 0x03, 0xC1B2);
+	rtl8168nic_EPHYWrite(unit, 0x1A, 0x0546);
+	rtl8168nic_EPHYWrite(unit, 0x1C, 0x80C4);
+	rtl8168nic_EPHYWrite(unit, 0x1D, 0x78E4);
 	/******set EPHY registers	end******/
 
 	//disable clock request.
@@ -2119,7 +2110,7 @@ static unsigned int rtl8168nic_XMIILinkOK(struct net_device *unit)
     struct rtl8168_priv *np = get_pcnpriv(unit);
     APTR base = get_hwbase(unit);
 
-    mdio_write(base, 0x1f, 0x0000);
+    mdio_write(unit, 0x1f, 0x0000);
 
     return RTL_R8(base + (PHYstatus)) & LinkStatus;
 }
@@ -2241,7 +2232,7 @@ static int rtl8168nic_Open(struct net_device *unit)
 
     if ((np->TxDescArray) && (np->RxDescArray))
     {
-RTLD(bug("[%s] rtl8168nic_Open: Allocated Descriptor Arrays - Tx @ %x (%d bytes), Rx @ %x (%d bytes)\n", unit->rtl8168u_name,
+RTLD(bug("[%s] rtl8168nic_Open: Allocated Descriptor Arrays - Tx @ %p (%d bytes), Rx @ %p (%d bytes)\n", unit->rtl8168u_name,
 						np->TxDescArray, R8168_TX_RING_BYTES,
 						np->RxDescArray, R8168_RX_RING_BYTES))
 	if (rtl8168nic_InitRings(unit) == 0)
