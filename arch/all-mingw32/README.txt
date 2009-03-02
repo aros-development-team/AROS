@@ -19,11 +19,9 @@ d) Mingw32 libraries package for Cygwin.
 
  In order to run AROS open a command line, go to root AROS directory ("AROS"), and run
 "boot\AROSBootstrap.exe". This port behaves like UNIX-hosted, it uses emul.handler, which
-makes your current directory to be root of your SYS:. Default kernel file expected by the
-bootstrap is "boot\kernel". You can explicitly specify another kernel to boot at bootstrap's
-command line.
- Currently bootstrap allocates a fixed 100MB chunk of memory for use by AROS. In future you'll
-be able to change this, i'm planning also managed memory support (like on Linux).
+makes your current directory to be root of your SYS:.
+ You can specify some options on the command line for bootstrap and AROS. Enter
+"boot\AROSBootstrap.exe -h" to learn about them. --hostmem option currently does nothing.
 
  3. HACKING
 
