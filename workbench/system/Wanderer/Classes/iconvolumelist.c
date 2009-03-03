@@ -122,237 +122,237 @@ struct NewDOSVolumeNode
 ///IconVolumeList__CreateDOSList()
 static struct NewDosList *IconVolumeList__CreateDOSList(void)
 {
-	APTR pool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,4096,4096);
+    APTR pool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,4096,4096);
 
 D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
 
-	if (pool)
+    if (pool)
+    {
+	struct NewDosList *ndl = (struct NewDosList*)AllocPooled(pool, sizeof(struct NewDosList));
+	if (ndl)
 	{
-		struct NewDosList *ndl = (struct NewDosList*)AllocPooled(pool, sizeof(struct NewDosList));
-		if (ndl)
+	    struct DosList *dl = NULL;
+
+	    NewList((struct List*)ndl);
+	    ndl->pool = pool;
+
+	    dl = LockDosList(LDF_VOLUMES|LDF_READ);
+	    while(( dl = NextDosEntry(dl, LDF_VOLUMES)))
+	    {
+		STRPTR vn_VolName;
+
+		UBYTE *dosname = (UBYTE*)AROS_BSTR_ADDR(dl->dol_Name);
+		LONG len = AROS_BSTR_strlen(dl->dol_Name);				
+
+		if ((vn_VolName = (STRPTR)AllocPooled(pool, len + 2)))
 		{
-			struct DosList *dl = NULL;
-    
-			NewList((struct List*)ndl);
-			ndl->pool = pool;
-    
-			dl = LockDosList(LDF_VOLUMES|LDF_READ);
-			while(( dl = NextDosEntry(dl, LDF_VOLUMES)))
-			{
-				STRPTR vn_VolName;
+		    struct NewDOSVolumeNode *ndn = NULL;
 
-				UBYTE *dosname = (UBYTE*)AROS_BSTR_ADDR(dl->dol_Name);
-				LONG len = AROS_BSTR_strlen(dl->dol_Name);				
+		    vn_VolName[len] = ':';
+		    vn_VolName[len + 1] = 0;
+		    strncpy(vn_VolName, dosname, len);
 
-				if ((vn_VolName = (STRPTR)AllocPooled(pool, len + 2)))
-				{
-					struct NewDOSVolumeNode *ndn = NULL;
-  
-					vn_VolName[len] = ':';
-					vn_VolName[len + 1] = 0;
-					strncpy(vn_VolName, dosname, len);
-  
-					if ((ndn = (struct NewDOSVolumeNode*)AllocPooled(pool, sizeof(*ndn))))
-					{
-						ndn->vn_VolName = vn_VolName;
-						ndn->unit = __DL_UNIT;
+		    if ((ndn = (struct NewDOSVolumeNode*)AllocPooled(pool, sizeof(*ndn))))
+		    {
+			ndn->vn_VolName = vn_VolName;
+			ndn->unit = __DL_UNIT;
 D(bug("[IconVolList] %s: Registering Volume '%s' @ %p (Device '%s' @ 0x%p, Unit @ 0x%p) Type: %d\n", __PRETTY_FUNCTION__, ndn->vn_VolName, dl, dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name, dl->dol_Ext.dol_AROS.dol_Device, ndn->unit, dl->dol_Type));
-						if (dl->dol_misc.dol_handler.dol_Startup)
-						{
-							struct FileSysStartupMsg *thisfs_SM = dl->dol_misc.dol_handler.dol_Startup;
+			if (dl->dol_misc.dol_handler.dol_Startup)
+			{
+			    struct FileSysStartupMsg *thisfs_SM = dl->dol_misc.dol_handler.dol_Startup;
 D(bug("[IconVolList] %s: Startup msg @ 0x%p\n", __PRETTY_FUNCTION__, thisfs_SM));
 D(bug("[IconVolList] %s: Startup Device @ %p, Unit %d\n", __PRETTY_FUNCTION__, thisfs_SM->fssm_Device, thisfs_SM->fssm_Unit));
-						}
-
-						if (dl->dol_Task != NULL)
-						{
-							ndn->port = dl->dol_Task;
-D(bug("[IconVolList] %s: Packet Style device\n", __PRETTY_FUNCTION__));
-						}
-#if defined(__AROS__)
-						else if (dl->dol_Ext.dol_AROS.dol_Device != NULL)
-						{
-D(bug("[IconVolList] %s: IOFS Style device\n", __PRETTY_FUNCTION__));
-							ndn->port = dl->dol_Ext.dol_AROS.dol_Device;
-						}
-#endif
-						else
-						{
-D(bug("[IconVolList] %s: Unknown device type\n", __PRETTY_FUNCTION__));
-						}
-						AddTail((struct List*)ndl, (struct Node*)ndn);
-					}
-				}
 			}
-			UnLockDosList(LDF_VOLUMES|LDF_READ);
 
-			dl = LockDosList(LDF_DEVICES|LDF_READ);
-			while(( dl = NextDosEntry(dl, LDF_DEVICES)))
+			if (dl->dol_Task != NULL)
 			{
-				struct NewDOSVolumeNode *ndn = NULL;
-				char 			  		*nd_nambuf = NULL;
-				BPTR               		nd_lock = (BPTR)NULL;
-				struct InfoData 		*nd_paramblock = NULL;
+D(bug("[IconVolList] %s: Packet Style device\n", __PRETTY_FUNCTION__));
+			    ndn->port = dl->dol_Task;
+			}
+#if defined(__AROS__)
+			else if (dl->dol_Ext.dol_AROS.dol_Device != NULL)
+			{
+D(bug("[IconVolList] %s: IOFS Style device\n", __PRETTY_FUNCTION__));
+			    ndn->port = dl->dol_Ext.dol_AROS.dol_Device;
+			}
+#endif
+			else
+			{
+D(bug("[IconVolList] %s: Unknown device type\n", __PRETTY_FUNCTION__));
+			}
+			AddTail((struct List*)ndl, (struct Node*)ndn);
+		    }
+		}
+	    }
+	    UnLockDosList(LDF_VOLUMES|LDF_READ);
 
-				UBYTE             		*dosname = (UBYTE*)AROS_BSTR_ADDR(dl->dol_Name);
-				LONG   					len = AROS_BSTR_strlen(dl->dol_Name);
+	    dl = LockDosList(LDF_DEVICES|LDF_READ);
+	    while(( dl = NextDosEntry(dl, LDF_DEVICES)))
+	    {
+		struct NewDOSVolumeNode *ndn = NULL;
+		char 			  		*nd_nambuf = NULL;
+		BPTR               		nd_lock = (BPTR)NULL;
+		struct InfoData 		*nd_paramblock = NULL;
+
+		UBYTE             		*dosname = (UBYTE*)AROS_BSTR_ADDR(dl->dol_Name);
+		LONG   					len = AROS_BSTR_strlen(dl->dol_Name);
 
 D(bug("[IconVolList] %s: Checking Device '%s' @ %p (Device '%s' @ 0x%p, Unit @ 0x%p) Type: %d\n", __PRETTY_FUNCTION__, dosname, dl, dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name, dl->dol_Ext.dol_AROS.dol_Device, __DL_UNIT, dl->dol_Type));
 #if defined(__AROS__)
-				if ((dl->dol_Task == NULL) && (dl->dol_Ext.dol_AROS.dol_Device != NULL))
-				{
+		if ((dl->dol_Task == NULL) && (dl->dol_Ext.dol_AROS.dol_Device != NULL))
+		{
 D(bug("[IconVolList] %s: '%s' : IOFS Device\n", __PRETTY_FUNCTION__, dosname));
-				}
-				else
+		}
+		else
 #endif
-				if (dl->dol_Task == NULL)
-				{
+		if (dl->dol_Task == NULL)
+		{
 D(bug("[IconVolList] %s: '%s' : dol_Task == NULL!\n", __PRETTY_FUNCTION__, dosname));
-					continue;
-				}
-				else
-				{
+		    continue;
+		}
+		else
+		{
 D(bug("[IconVolList] %s: '%s' : Packet Device\n", __PRETTY_FUNCTION__, dosname));
-				}
+		}
 
-				if ((nd_nambuf = AllocPooled(pool, len + 2)) != NULL)
-				{
-					strncpy(nd_nambuf, dosname, len);
-					nd_nambuf[len] = ':';
-					nd_nambuf[len + 1] = 0;
-					////sprintf(nd_nambuf, "%s:", dosname);
+		if ((nd_nambuf = AllocPooled(pool, len + 2)) != NULL)
+		{
+		    strncpy(nd_nambuf, dosname, len);
+		    nd_nambuf[len] = ':';
+		    nd_nambuf[len + 1] = 0;
+		    ////sprintf(nd_nambuf, "%s:", dosname);
 
-					nd_lock = NULL;
-					nd_paramblock = NULL;
+		    nd_lock = NULL;
+		    nd_paramblock = NULL;
 
 D(bug("[IconVolList] %s: '%s' : Checking for Attached Volumes ... \n", __PRETTY_FUNCTION__, dosname));
-					/* Find the Volume attached to this device */
-					BOOL found = FALSE;
-					ndn = (struct NewDOSVolumeNode*)GetHead(ndl);
-					while ((ndn))
-					{
-						if ((ndn->port != NULL) &&
-							(
-							   (ndn->port == dl->dol_Task)
+		    /* Find the Volume attached to this device */
+		    BOOL found = FALSE;
+		    ndn = (struct NewDOSVolumeNode*)GetHead(ndl);
+		    while ((ndn))
+		    {
+			if ((ndn->port != NULL) &&
+			    (
+			       (ndn->port == dl->dol_Task)
 #if defined(__AROS__)
-							   || (ndn->port == dl->dol_Ext.dol_AROS.dol_Device)
+			       || (ndn->port == dl->dol_Ext.dol_AROS.dol_Device)
 #endif
-							))
-						{
-							if (ndn->unit)
-							{
-								if (nd_lock == NULL)
-								{
+			    ))
+			{
+			    if (ndn->unit)
+			    {
+				if (nd_lock == NULL)
+				{
 D(bug("[IconVolList] %s: '%s' : Attempting to Lock() device ... \n", __PRETTY_FUNCTION__, dosname));
-									if ((nd_lock = Lock(nd_nambuf, SHARED_LOCK)) == NULL)
-									{
+				    if ((nd_lock = Lock(nd_nambuf, SHARED_LOCK)) == NULL)
+				    {
 D(bug("[IconVolList] %s: '%s' : Failed to obtain Lock()\n", __PRETTY_FUNCTION__, dosname));
-									}
-								}
-								if ((nd_lock) && (nd_paramblock == NULL))
-								{
-									if ((nd_paramblock = AllocMem(sizeof(struct InfoData), MEMF_CLEAR|MEMF_PUBLIC)) == NULL)
-									{
+				    }
+				}
+				if ((nd_lock) && (nd_paramblock == NULL))
+				{
+				    if ((nd_paramblock = AllocMem(sizeof(struct InfoData), MEMF_CLEAR|MEMF_PUBLIC)) == NULL)
+				    {
 D(bug("[IconVolList] %s: '%s' : Failed to allocate storage for device paramblock\n", __PRETTY_FUNCTION__, dosname));
-										UnLock(nd_lock);
-									}
+					    UnLock(nd_lock);
+				    }
 D(bug("[IconVolList] %s: Getting Info for '%s'\n", __PRETTY_FUNCTION__, nd_nambuf));
-									Info(nd_lock, nd_paramblock);
-								}
-								if (ndn->unit == __DL_UNIT)
-								{
-									if ((nd_paramblock) && (nd_paramblock->id_DiskType != ID_NO_DISK_PRESENT))
-									{
+				    Info(nd_lock, nd_paramblock);
+				}
+				if (ndn->unit == __DL_UNIT)
+				{
+				    if ((nd_paramblock) && (nd_paramblock->id_DiskType != ID_NO_DISK_PRESENT))
+				    {
 D(bug("[IconVolList] %s: '%s' : Device unit %d, state = %x, Vol node @ %p\n", __PRETTY_FUNCTION__, nd_nambuf, nd_paramblock->id_UnitNumber, nd_paramblock->id_DiskState, BADDR(nd_paramblock->id_VolumeNode)));
 
-										STRPTR nd_namext;
-										int nd_namext_len;
+					STRPTR nd_namext;
+					int nd_namext_len;
 
-										found = TRUE;
+					found = TRUE;
 
-										if (nd_paramblock->id_DiskState == ID_VALIDATING)
-										{
-D(bug("[IconVolList] %s: '%s' : Validating\n", __PRETTY_FUNCTION__, nd_nambuf));
-												nd_namext = "BUSY";
-												nd_namext_len = 4;
-										}
-										else
-										{
-											if (nd_paramblock->id_DiskState == ID_WRITE_PROTECTED)
-											{
-												ndn->vn_FLags |= ICONENTRY_VOL_READONLY;
-D(bug("[IconVolList] %s: '%s' : Volume is WRITE-PROTECTED\n", __PRETTY_FUNCTION__, nd_nambuf));
-											}
-
-											switch (nd_paramblock->id_DiskType)
-											{
-
-											case ID_UNREADABLE_DISK:
-												nd_namext = "BAD";
-												nd_namext_len = 3;
-												break;
-											case ID_NOT_REALLY_DOS:
-												nd_namext = "NDOS";
-												nd_namext_len = 4;
-												break;
-											case ID_KICKSTART_DISK:
-												nd_namext = "KICK";
-												nd_namext_len = 4;
-												break;
-											default:
-												/* A filesystem type.. ie  ID_DOS_DISK */
-												nd_namext_len = 0;
-												break;
-											}
-										}
-
-										if (nd_namext_len > 0)
-										{
-											char *newVolName = NULL;
-											newVolName = AllocPooled(pool, strlen(ndn->vn_VolName) + nd_namext_len + 2);
-											sprintf(newVolName, "%s%s", ndn->vn_VolName, nd_namext);
-											ndn->vn_VolName = newVolName;
-										}
-									}
-									else
-									{
-D(bug("[IconVolList] %s: '%s' : No Media Inserted (error state?)\n", __PRETTY_FUNCTION__, nd_nambuf));
-									}
-									ndn->vn_DevName = nd_nambuf;
-D(bug("[IconVolList] %s: DeviceName set to '%s' for '%s'\n", __PRETTY_FUNCTION__, ndn->vn_DevName, ndn->vn_VolName));
-								}
-								else
-								{
-D(bug("[IconVolList] %s: '%s' : Volume not attached to this device .. skipping\n", __PRETTY_FUNCTION__, nd_nambuf));
-								}
-							}
-							else
-							{
-D(bug("[IconVolList] %s: '%s' : Volume '%s' is OFFLINE\n", __PRETTY_FUNCTION__, nd_nambuf, ndn->vn_VolName));
-								ndn->vn_FLags |= ICONENTRY_VOL_OFFLINE;
-							}
-						}
-						ndn = (struct NewDOSVolumeNode*)GetSucc(ndn);
-					} /* ndn */
-
-					if (!(found))
+					if (nd_paramblock->id_DiskState == ID_VALIDATING)
 					{
-D(bug("[IconVolList] %s: '%s' : Couldnt find an associated Volume\n", __PRETTY_FUNCTION__, nd_nambuf));
+D(bug("[IconVolList] %s: '%s' : Validating\n", __PRETTY_FUNCTION__, nd_nambuf));
+					    nd_namext = "BUSY";
+					    nd_namext_len = 4;
+					}
+					else
+					{
+					    if (nd_paramblock->id_DiskState == ID_WRITE_PROTECTED)
+					    {
+D(bug("[IconVolList] %s: '%s' : Volume is WRITE-PROTECTED\n", __PRETTY_FUNCTION__, nd_nambuf));
+						ndn->vn_FLags |= ICONENTRY_VOL_READONLY;
+					    }
+
+					    switch (nd_paramblock->id_DiskType)
+					    {
+
+					    case ID_UNREADABLE_DISK:
+						    nd_namext = "BAD";
+						    nd_namext_len = 3;
+						    break;
+					    case ID_NOT_REALLY_DOS:
+						    nd_namext = "NDOS";
+						    nd_namext_len = 4;
+						    break;
+					    case ID_KICKSTART_DISK:
+						    nd_namext = "KICK";
+						    nd_namext_len = 4;
+						    break;
+					    default:
+						    /* A filesystem type.. ie  ID_DOS_DISK */
+						    nd_namext_len = 0;
+						    break;
+					    }
 					}
 
-					if (nd_paramblock)
-						FreeMem(nd_paramblock, sizeof(struct InfoData));
-					if (nd_lock)
-						UnLock(nd_lock);
+					if (nd_namext_len > 0)
+					{
+					    char *newVolName = NULL;
+					    newVolName = AllocPooled(pool, strlen(ndn->vn_VolName) + nd_namext_len + 2);
+					    sprintf(newVolName, "%s%s", ndn->vn_VolName, nd_namext);
+					    ndn->vn_VolName = newVolName;
+					}
+				    }
+				    else
+				    {
+D(bug("[IconVolList] %s: '%s' : No Media Inserted (error state?)\n", __PRETTY_FUNCTION__, nd_nambuf));
+				    }
+				    ndn->vn_DevName = nd_nambuf;
+D(bug("[IconVolList] %s: DeviceName set to '%s' for '%s'\n", __PRETTY_FUNCTION__, ndn->vn_DevName, ndn->vn_VolName));
 				}
+				else
+				{
+D(bug("[IconVolList] %s: '%s' : Volume not attached to this device .. skipping\n", __PRETTY_FUNCTION__, nd_nambuf));
+				}
+			    }
+			    else
+			    {
+D(bug("[IconVolList] %s: '%s' : Volume '%s' is OFFLINE\n", __PRETTY_FUNCTION__, nd_nambuf, ndn->vn_VolName));
+				ndn->vn_FLags |= ICONENTRY_VOL_OFFLINE;
+			    }
 			}
-			UnLockDosList(LDF_DEVICES|LDF_READ);
+			ndn = (struct NewDOSVolumeNode*)GetSucc(ndn);
+		    } /* ndn */
 
-			return ndl;
+		    if (!(found))
+		    {
+D(bug("[IconVolList] %s: '%s' : Couldnt find an associated Volume\n", __PRETTY_FUNCTION__, nd_nambuf));
+		    }
+
+		    if (nd_paramblock)
+			FreeMem(nd_paramblock, sizeof(struct InfoData));
+		    if (nd_lock)
+			UnLock(nd_lock);
 		}
-		DeletePool(pool);
+	    }
+	    UnLockDosList(LDF_DEVICES|LDF_READ);
+
+	    return ndl;
 	}
-	return NULL;
+	DeletePool(pool);
+    }
+    return NULL;
 }
 ///
 
@@ -360,7 +360,7 @@ D(bug("[IconVolList] %s: '%s' : Couldnt find an associated Volume\n", __PRETTY_F
 static void IconVolumeList__DestroyDOSList(struct NewDosList *ndl)
 {
 D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
-  if (ndl && ndl->pool) DeletePool(ndl->pool);
+    if (ndl && ndl->pool) DeletePool(ndl->pool);
 }
 ///
 /* sba: End SimpleFind3 */
@@ -377,18 +377,19 @@ IPTR IconVolumeList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *mes
 
 D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
 
-  obj = (Object *)DoSuperNewTags(CLASS, obj, NULL,
-    TAG_MORE, (IPTR) message->ops_AttrList);
+    obj = (Object *)DoSuperNewTags(CLASS, obj, NULL,
+				    TAG_MORE, (IPTR) message->ops_AttrList);
 
-  if (!obj) return FALSE;
+    if (!obj)
+	return FALSE;
 
-  data = INST_DATA(CLASS, obj);
+    data = INST_DATA(CLASS, obj);
 
-  SET(obj, MUIA_IconList_DisplayFlags, ICONLIST_DISP_VERTICAL);
-  SET(obj, MUIA_IconList_SortFlags, ICONLIST_SORT_MASK);
+    SET(obj, MUIA_IconList_DisplayFlags, ICONLIST_DISP_VERTICAL);
+    SET(obj, MUIA_IconList_SortFlags, ICONLIST_SORT_MASK);
 
 D(bug("[IconVolList] obj = %ld\n", obj));
-  return (IPTR)obj;
+    return (IPTR)obj;
 }
 ///
 
@@ -398,68 +399,66 @@ MUIM_IconList_Update
 **************************************************************************/
 IPTR IconVolumeList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Update *message)
 {
-	//struct IconVolumeList_DATA *data = INST_DATA(CLASS, obj);
-	struct IconEntry  	*this_Icon = NULL;
-	struct NewDosList 	*ndl = NULL;
-	struct Process    	*me;
-	APTR		     	oldwin;
-	char				*devname = NULL;
+    //struct IconVolumeList_DATA *data = INST_DATA(CLASS, obj);
+    struct IconEntry  	*this_Icon = NULL;
+    struct NewDosList 	*ndl = NULL;
+    char		*devname = NULL;
 
 D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
 
-	DoSuperMethodA(CLASS, obj, (Msg) message);
-  
-	DoMethod(obj, MUIM_IconList_Clear);
+    DoSuperMethodA(CLASS, obj, (Msg) message);
 
-	if ((ndl = IconVolumeList__CreateDOSList()) != NULL)
-	{
-		struct NewDOSVolumeNode   *nd = NULL;
+    DoMethod(obj, MUIM_IconList_Clear);
+
+    if ((ndl = IconVolumeList__CreateDOSList()) != NULL)
+    {
+	struct NewDOSVolumeNode   *nd = NULL;
 
 D(bug("[IconVolList] %s: DOSList @ %p\n", __PRETTY_FUNCTION__, ndl));
 #ifdef __AROS__
-		ForeachNode(ndl, nd)
+	ForeachNode(ndl, nd)
 #else
-		Foreach_Node(ndl, nd);
+	Foreach_Node(ndl, nd);
 #endif
-		{
+	{
 D(bug("[IconVolList] %s: DOSList Node  @ %p\n", __PRETTY_FUNCTION__, nd));
-			if (nd->vn_VolName)
-			{
+	    if (nd->vn_VolName)
+	    {
 D(bug("[IconVolList] %s: Adding icon for '%s'\n", __PRETTY_FUNCTION__, nd->vn_VolName));
 
-				if (nd->vn_FLags & ICONENTRY_VOL_OFFLINE)
-					devname = nd->vn_VolName;
-				else
-					devname = nd->vn_DevName;
+		if (nd->vn_FLags & ICONENTRY_VOL_OFFLINE)
+		    devname = nd->vn_VolName;
+		else
+		    devname = nd->vn_DevName;
 
-				if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)devname, (IPTR)nd->vn_VolName, (IPTR)NULL, (IPTR)NULL, ST_ROOT)) == NULL)
-				{
-D(bug("[IconVolList] %s: Failed to Add IconEntry for '%s'\n", __PRETTY_FUNCTION__, nd->vn_VolName));
-				}
-				else
-				{
-					if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
-						this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
+		if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)devname, (IPTR)nd->vn_VolName, (IPTR)NULL, (IPTR)NULL, ST_ROOT)) != NULL)
+		{
+		    if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
+			this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
 
-					if ((strcasecmp(nd->vn_VolName, "Ram Disk:")) == 0)
-					{
+		    if ((strcasecmp(nd->vn_VolName, "Ram Disk:")) == 0)
+		    {
 D(bug("[IconVolList] %s: Setting Ram Disk's icon node priority to 5\n", __PRETTY_FUNCTION__));
-						this_Icon->ile_IconNode.ln_Pri = 5;   // Special dirs get Priority 5
-					}
-					else
-					{
-						this_Icon->ile_IconNode.ln_Pri = 1;   // Fixed Media get Priority 1
-					}
-				}
-			} /* (nd->vn_VolName) */
+			this_Icon->ile_IconNode.ln_Pri = 5;   // Special dirs get Priority 5
+		    }
+		    else
+		    {
+			this_Icon->ile_IconNode.ln_Pri = 1;   // Fixed Media get Priority 1
+		    }
 		}
-		IconVolumeList__DestroyDOSList(ndl);
+		else
+		{
+D(bug("[IconVolList] %s: Failed to Add IconEntry for '%s'\n", __PRETTY_FUNCTION__, nd->vn_VolName));
+		}
+	    } /* (nd->vn_VolName) */
 	}
+	IconVolumeList__DestroyDOSList(ndl);
+    }
 
-	/* default display/sorting flags */
-	DoMethod(obj, MUIM_IconList_Sort);
+    /* default display/sorting flags */
+    DoMethod(obj, MUIM_IconList_Sort);
 
-	return 1;
+    return 1;
 }
 ///
 
@@ -467,33 +466,33 @@ D(bug("[IconVolList] %s: Setting Ram Disk's icon node priority to 5\n", __PRETTY
 BOOPSI_DISPATCHER(IPTR, IconVolumeList_Dispatcher, CLASS, obj, message)
 {
 #if !defined(__AROS__)
-	struct IClass *CLASS = cl;
-	Msg message = msg;
+    struct IClass	*CLASS = cl;
+    Msg			message = msg;
 #endif
-	switch (message->MethodID)
-	{
-    case OM_NEW: return IconVolumeList__OM_NEW(CLASS, obj, (struct opSet *)message);
-    case MUIM_IconList_Update: return IconVolumeList__MUIM_IconList_Update(CLASS,obj,(APTR)message);
-	}
+    switch (message->MethodID)
+    {
+	case OM_NEW: return IconVolumeList__OM_NEW(CLASS, obj, (struct opSet *)message);
+	case MUIM_IconList_Update: return IconVolumeList__MUIM_IconList_Update(CLASS,obj,(APTR)message);
+    }
 
-	return DoSuperMethodA(CLASS, obj, message);
+    return DoSuperMethodA(CLASS, obj, message);
 }
 BOOPSI_DISPATCHER_END
 
 #if defined(__AROS__)
 /* Class descriptor. */
 const struct __MUIBuiltinClass _MUI_IconVolumeList_desc = { 
-  MUIC_IconVolumeList, 
-  MUIC_IconList, 
-  sizeof(struct IconVolumeList_DATA), 
-  (void*)IconVolumeList_Dispatcher
+    MUIC_IconVolumeList, 
+    MUIC_IconList, 
+    sizeof(struct IconVolumeList_DATA), 
+    (void*)IconVolumeList_Dispatcher
 };
 #endif
 #else
 #if !defined(__AROS__)
 struct MUI_CustomClass  *initIconVolumeListClass(void)
 {
-  return (struct MUI_CustomClass *) MUI_CreateCustomClass(NULL,  NULL, IconList_Class, sizeof(struct IconVolumeList_DATA), ENTRY(IconVolumeList_Dispatcher));
+    return (struct MUI_CustomClass *) MUI_CreateCustomClass(NULL,  NULL, IconList_Class, sizeof(struct IconVolumeList_DATA), ENTRY(IconVolumeList_Dispatcher));
 }
 #endif
 #endif /* WANDERER_BUILTIN_ICONVOLUMELIST */
