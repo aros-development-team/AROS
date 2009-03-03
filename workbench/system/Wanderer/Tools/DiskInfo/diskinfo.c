@@ -5,7 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <exec/types.h>
@@ -53,11 +53,17 @@ static LONG dt[]={ID_NO_DISK_PRESENT, ID_UNREADABLE_DISK,
 /*** Instance data **********************************************************/
 struct DiskInfo_DATA
 {
-    Object *dki_Window;
-    STRPTR  dki_Volname;
-    ULONG   dki_Percent;
-    LONG    dki_DiskType;
-    LONG    dki_Aspect;
+    Object			*dki_Window;
+    Object			*dki_VolumeIcon;
+    Object			*dki_VolumeName;
+    Object			*dki_VolumeUseGauge;
+    Object			*dki_VolumeUsed;
+    Object			*dki_VolumeFree;
+    struct MsgPort              *dki_NotifyPort;
+    LONG			dki_DiskType;
+    LONG			dki_Aspect;
+    struct MUI_InputHandlerNode dki_NotifyIHN;
+    struct NotifyRequest        dki_FSNotifyRequest;
 };
 
 /*** Methods ****************************************************************/
@@ -66,14 +72,17 @@ Object *DiskInfo__OM_NEW
     Class *CLASS, Object *self, struct opSet *message 
 )
 {
-    struct DiskInfo_DATA       *data           = NULL;
-    const struct TagItem       *tstate         = message->ops_AttrList;
-    struct TagItem             *tag            = NULL;
+    struct DiskInfo_DATA	*data           = NULL;
+    const struct TagItem	*tstate         = message->ops_AttrList;
+    struct TagItem		*tag            = NULL;
     BPTR                        initial        = NULL;
-    Object                     *window, *grp, *grpformat;
+    Object			*window,
+				*volnameobj, *voliconobj, *volusegaugeobj, *volusedobj, *volfreeobj,
+				*grp, *grpformat;
     ULONG                       percent        = 0;
     LONG                        disktype       = ID_NO_DISK_PRESENT;
     LONG                        aspect         = 0;
+    TEXT                        volname[108];
     TEXT                        size[64];
     TEXT                        used[64];
     TEXT                        free[64];
@@ -83,7 +92,6 @@ Object *DiskInfo__OM_NEW
     STRPTR			filesystem = NULL;
     STRPTR			fstype = NULL;
     STRPTR			fshandler = NULL;
-    TEXT                        volname[108];
     STRPTR                      volicon = NULL;
     STRPTR			handlertype = "";
     STRPTR			deviceinfo = "";
@@ -115,7 +123,8 @@ Object *DiskInfo__OM_NEW
     };
 
     /* Parse initial taglist -----------------------------------------------*/
-    D(bug("[DiskInfo] %s\n", __PRETTY_FUNCTION__));
+    D(bug("[DiskInfo] %s()\n", __PRETTY_FUNCTION__));
+
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
@@ -289,10 +298,10 @@ Object *DiskInfo__OM_NEW
 			Child, HVSpace,
 			Child, (IPTR) HGroup,
 			    Child, HVSpace,
-			    Child, (IPTR) IconImageObject,
+			    Child, (IPTR)(voliconobj = IconImageObject,
 				MUIA_InputMode, MUIV_InputMode_Toggle,
 				MUIA_IconImage_File, (IPTR) volicon,
-			    End,
+			    End),
 			    Child, HVSpace,
 			End,
 			Child, HVSpace,
@@ -345,11 +354,11 @@ Object *DiskInfo__OM_NEW
 				MUIA_Text_PreParse, (IPTR) "\33r",
 				MUIA_Text_Contents, (IPTR) __(MSG_NAME),
 			    End,
-			    Child, (IPTR) TextObject, TextFrame,
+			    Child, (IPTR)(volnameobj = TextObject, TextFrame,
 				MUIA_Background, MUII_TextBack,
 				MUIA_Text_PreParse, (IPTR) "\33b\33l",
 				MUIA_Text_Contents, (IPTR) volname,
-			    End,
+			    End),
 			    Child, (IPTR) VGroup,
 				Child, (IPTR) TextObject, TextFrame,
 				    MUIA_FramePhantomHoriz, (IPTR)TRUE,
@@ -374,23 +383,22 @@ Object *DiskInfo__OM_NEW
 					MUIA_Text_PreParse, (IPTR) "\33l",
 					MUIA_Text_Contents, (IPTR) size,
 				    End,
-				    Child, (IPTR) TextObject, TextFrame,
+				    Child, (IPTR)(volusedobj = TextObject, TextFrame,
 					MUIA_Background, MUII_TextBack,
 					MUIA_Text_PreParse, (IPTR) "\33l",
 					MUIA_Text_Contents, (IPTR) used,
-				    End,
-				    Child, (IPTR) TextObject, TextFrame,
+				    End),
+				    Child, (IPTR)(volfreeobj = TextObject, TextFrame,
 					MUIA_Background, MUII_TextBack,
 					MUIA_Text_PreParse, (IPTR) "\33l",
 					MUIA_Text_Contents, (IPTR) free,
-				    End,				
+				    End),
 				End,
-				Child, (IPTR) GaugeObject, GaugeFrame,
-				    MUIA_Width, 6,
+				Child, (IPTR)(volusegaugeobj = GaugeObject, GaugeFrame,
 				    MUIA_Gauge_InfoText, "",
 				    MUIA_Gauge_Horiz, FALSE,
 				    MUIA_Gauge_Current, percent,
-				End,
+				End),
 			    End,
 			    Child, (IPTR) TextObject,
 				MUIA_Text_PreParse, (IPTR) "\33r",
@@ -431,28 +439,74 @@ Object *DiskInfo__OM_NEW
 
     /* Store instance data -------------------------------------------------*/
     data = INST_DATA(CLASS, self);
-    data->dki_Window        = window;
-    data->dki_Volname       = volname;
-    data->dki_Percent       = percent;
-    data->dki_Aspect        = aspect;
+
+    data->dki_NotifyPort = CreateMsgPort();
+
+    data->dki_Window		= window;
+
+    data->dki_VolumeName	= volnameobj;
+    data->dki_VolumeIcon	= voliconobj;
+    data->dki_VolumeUseGauge	= volusegaugeobj;
+    data->dki_VolumeUsed	= volusedobj;
+    data->dki_VolumeFree	= volfreeobj;
+
+    data->dki_Aspect		= aspect;
 
     /* Setup notifications -------------------------------------------------*/
     DoMethod( window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
         (IPTR) self, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-    return self;
+    if (data->dki_NotifyPort)
+    {
+	/* Setup filesystem notification handler ---------------------------*/
+	data->dki_NotifyIHN.ihn_Signals = 1UL << data->dki_NotifyPort->mp_SigBit;
+	data->dki_NotifyIHN.ihn_Object  = self;
+	data->dki_NotifyIHN.ihn_Method  = MUIM_DiskInfo_HandleNotify;
 
+	DoMethod
+	(
+	    self, MUIM_Application_AddInputHandler, (IPTR) &data->dki_NotifyIHN
+	);
+
+	data->dki_FSNotifyRequest.nr_Name                 = volname;
+	data->dki_FSNotifyRequest.nr_Flags                = NRF_SEND_MESSAGE;
+	data->dki_FSNotifyRequest.nr_stuff.nr_Msg.nr_Port = data->dki_NotifyPort;
+	if (StartNotify(&data->dki_FSNotifyRequest))
+	{
+	    D(bug("[DiskInfo] %s: FileSystem-Notification setup for '%s'\n", __PRETTY_FUNCTION__, data->dki_FSNotifyRequest.nr_Name));
+	}
+	else
+	{
+	    D(bug("[DiskInfo] %s: FAILED to setup FileSystem-Notification for '%s'\n", __PRETTY_FUNCTION__, data->dki_FSNotifyRequest.nr_Name));
+	    DeleteMsgPort(data->dki_NotifyPort);
+	    data->dki_NotifyPort = NULL;
+	}
+    }
+    return self;
 }
 
 IPTR DiskInfo__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 {
-    D(bug("[DiskInfo] OM_DISPOSE\n"));
+    struct DiskInfo_DATA *data = INST_DATA(CLASS, self);
+
+    D(bug("[DiskInfo] %s()\n", __PRETTY_FUNCTION__));
+
+    if (data->dki_NotifyPort)
+    {
+        DoMethod(self, MUIM_Application_RemInputHandler, (IPTR) &data->dki_NotifyIHN);
+
+        EndNotify(&data->dki_FSNotifyRequest);
+
+        DeleteMsgPort(data->dki_NotifyPort);
+    }
     return DoSuperMethodA(CLASS, self, message);
 }
 
 IPTR DiskInfo__MUIM_Application_Execute(Class *CLASS, Object *self, Msg message)
 {
     struct DiskInfo_DATA *data = INST_DATA(CLASS, self);
+
+    D(bug("[DiskInfo] %s()\n", __PRETTY_FUNCTION__));
 
     SET(data->dki_Window, MUIA_Window_Open, TRUE);
 
@@ -463,18 +517,42 @@ IPTR DiskInfo__MUIM_Application_Execute(Class *CLASS, Object *self, Msg message)
     return (IPTR) NULL;
 }
 
+IPTR DiskInfo__MUIM_DiskInfo_HandleNotify
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    struct DiskInfo_DATA *data = INST_DATA(CLASS, self);
+    struct NotifyMessage *npMessage = NULL;
+
+    D(bug("[DiskInfo] %s()\n", __PRETTY_FUNCTION__));
+
+    if (data->dki_NotifyPort)
+    {
+	while ((npMessage = (struct NotifyMessage *)GetMsg(data->dki_NotifyPort)) != NULL)
+	{
+	    D(bug("[DiskInfo] %s: FS notification recieved\n", __PRETTY_FUNCTION__));
+
+	    ReplyMsg((struct Message *)npMessage);
+	}
+    }
+    return (IPTR)NULL;
+}
+
 IPTR DiskInfo__OM_GET(Class *CLASS, Object *self, struct opGet *msg)
 {
     struct DiskInfo_DATA *data = INST_DATA(CLASS, self);
     IPTR retval = TRUE;
-    D(bug("[DiskInfo] OM_GET\n"));
+
+    D(bug("[DiskInfo] %s()\n", __PRETTY_FUNCTION__));
+
     switch(msg->opg_AttrID)
     {
         case MUIA_DiskInfo_Volname:
-            retval = (IPTR) data->dki_Volname;
+            retval = (IPTR)XGET(data->dki_VolumeName, MUIA_Text_Contents);
             break;
         case MUIA_DiskInfo_Percent:
-            retval = (ULONG) data->dki_Percent;
+            retval = (ULONG)XGET(data->dki_VolumeUseGauge, MUIA_Gauge_Current);
             break;
         case MUIA_DiskInfo_Aspect:
             retval = (ULONG) data->dki_Aspect;
@@ -491,7 +569,9 @@ ULONG DiskInfo__OM_SET(Class *CLASS, Object *self, struct opSet *msg)
     struct DiskInfo_DATA *data = INST_DATA(CLASS, self);
     const struct TagItem *tags = msg->ops_AttrList;
     struct TagItem       *tag;
-    D(bug("[DiskInfo] OM_SET\n"));
+
+    D(bug("[DiskInfo] %s()\n", __PRETTY_FUNCTION__));
+
     while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
         switch (tag->ti_Tag)
@@ -509,12 +589,13 @@ BOOPSI_DISPATCHER(IPTR, DiskInfo_Dispatcher, CLASS, self, message)
 {
     switch (message->MethodID)
     {
-        case OM_NEW:                    return (IPTR) DiskInfo__OM_NEW(CLASS, self, (struct opSet *) message);
-        case OM_DISPOSE:                return DiskInfo__OM_DISPOSE(CLASS, self, message);
-        case OM_GET:                    return (IPTR) DiskInfo__OM_GET(CLASS, self, (struct opGet *)message);
-        case OM_SET:                    return (IPTR) DiskInfo__OM_SET(CLASS, self, (struct opSet *)message);
-        case MUIM_Application_Execute:  return DiskInfo__MUIM_Application_Execute(CLASS, self, message);
-        default:                        return DoSuperMethodA(CLASS, self, message);
+        case OM_NEW:				return (IPTR) DiskInfo__OM_NEW(CLASS, self, (struct opSet *) message);
+        case OM_DISPOSE:			return DiskInfo__OM_DISPOSE(CLASS, self, message);
+        case OM_GET:				return (IPTR) DiskInfo__OM_GET(CLASS, self, (struct opGet *)message);
+        case OM_SET:				return (IPTR) DiskInfo__OM_SET(CLASS, self, (struct opSet *)message);
+	case MUIM_DiskInfo_HandleNotify:	return DiskInfo__MUIM_DiskInfo_HandleNotify(CLASS, self, message);
+        case MUIM_Application_Execute:		return DiskInfo__MUIM_Application_Execute(CLASS, self, message);
+        default:				return DoSuperMethodA(CLASS, self, message);
     }
     return 0;
 }
@@ -525,7 +606,8 @@ struct MUI_CustomClass *DiskInfo_CLASS;
 
 BOOL DiskInfo_Initialize()
 {
-    D(bug("[DiskInfo] Initialize\n"));
+    D(bug("[DiskInfo] %s()\n", __PRETTY_FUNCTION__));
+
     DiskInfo_CLASS = MUI_CreateCustomClass(
         NULL, MUIC_Application, NULL, 
         sizeof(struct DiskInfo_DATA), DiskInfo_Dispatcher);
@@ -535,7 +617,8 @@ BOOL DiskInfo_Initialize()
 
 VOID DiskInfo_Deinitialize()
 {
-    D(bug("[DiskInfo] Deinitialize\n"));
+    D(bug("[DiskInfo] %s()\n", __PRETTY_FUNCTION__));
+
     if (DiskInfo_CLASS != NULL)
     {
         MUI_DeleteCustomClass(DiskInfo_CLASS);
