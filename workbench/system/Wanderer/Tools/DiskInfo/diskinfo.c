@@ -59,6 +59,7 @@ struct DiskInfo_DATA
     Object			*dki_VolumeUseGauge;
     Object			*dki_VolumeUsed;
     Object			*dki_VolumeFree;
+    char			*dki_DOSDev;
     struct MsgPort              *dki_NotifyPort;
     LONG			dki_DiskType;
     LONG			dki_Aspect;
@@ -450,6 +451,9 @@ Object *DiskInfo__OM_NEW
     data->dki_VolumeUsed	= volusedobj;
     data->dki_VolumeFree	= volfreeobj;
 
+    data->dki_DOSDev		= AllocVec(strlen(dosdevname) +2, MEMF_CLEAR);
+    sprintf(data->dki_DOSDev, "%s:", dosdevname);
+
     data->dki_Aspect		= aspect;
 
     /* Setup notifications -------------------------------------------------*/
@@ -463,10 +467,7 @@ Object *DiskInfo__OM_NEW
 	data->dki_NotifyIHN.ihn_Object  = self;
 	data->dki_NotifyIHN.ihn_Method  = MUIM_DiskInfo_HandleNotify;
 
-	DoMethod
-	(
-	    self, MUIM_Application_AddInputHandler, (IPTR) &data->dki_NotifyIHN
-	);
+	DoMethod(self, MUIM_Application_AddInputHandler, (IPTR)&data->dki_NotifyIHN);
 
 	data->dki_FSNotifyRequest.nr_Name                 = volname;
 	data->dki_FSNotifyRequest.nr_Flags                = NRF_SEND_MESSAGE;
@@ -478,6 +479,7 @@ Object *DiskInfo__OM_NEW
 	else
 	{
 	    D(bug("[DiskInfo] %s: FAILED to setup FileSystem-Notification for '%s'\n", __PRETTY_FUNCTION__, data->dki_FSNotifyRequest.nr_Name));
+	    DoMethod(self, MUIM_Application_RemInputHandler, (IPTR)&data->dki_NotifyIHN);
 	    DeleteMsgPort(data->dki_NotifyPort);
 	    data->dki_NotifyPort = NULL;
 	}
@@ -499,6 +501,9 @@ IPTR DiskInfo__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 
         DeleteMsgPort(data->dki_NotifyPort);
     }
+
+    if (data->dki_DOSDev) FreeVec(data->dki_DOSDev);
+
     return DoSuperMethodA(CLASS, self, message);
 }
 
@@ -524,6 +529,9 @@ IPTR DiskInfo__MUIM_DiskInfo_HandleNotify
 {
     struct DiskInfo_DATA *data = INST_DATA(CLASS, self);
     struct NotifyMessage *npMessage = NULL;
+    static struct InfoData id;
+    BPTR fsdevlock = NULL;
+    BOOL di_Quit = FALSE;
 
     D(bug("[DiskInfo] %s()\n", __PRETTY_FUNCTION__));
 
@@ -533,9 +541,56 @@ IPTR DiskInfo__MUIM_DiskInfo_HandleNotify
 	{
 	    D(bug("[DiskInfo] %s: FS notification recieved\n", __PRETTY_FUNCTION__));
 
-#warning "TODO: If the volume has been removed, set MUIV_Application_ReturnID_Quit - else update the window to reflect changes"
+	    if ((fsdevlock = Lock(data->dki_DOSDev, SHARED_LOCK)) != NULL)
+	    {
+		/* Extract volume info from InfoData */
+		if (Info(fsdevlock, &id) == DOSTRUE)
+		{
+		    if (id.id_DiskType != ID_NO_DISK_PRESENT)
+		    {
+			ULONG                       percent;
+			TEXT                        volname[108];
+			TEXT                        used[64];
+			TEXT                        free[64];
+			//TEXT                        blocksize[16];
+
+			D(bug("[DiskInfo] %s: Updating Window from DOS Device '%s'\n", __PRETTY_FUNCTION__, data->dki_DOSDev));
+
+			//FormatSize(size, id.id_NumBlocks, id.id_NumBlocks, id.id_BytesPerBlock, FALSE);
+			percent = FormatSize(used, id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
+			FormatSize(free, id.id_NumBlocks - id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
+			//sprintf(blocksize, "%d %s", id.id_BytesPerBlock, _(MSG_BYTES));
+
+			//data->dki_VolumeName	= volnameobj;
+			SET(data->dki_VolumeUsed, MUIA_Text_Contents, used);
+			SET(data->dki_VolumeFree, MUIA_Text_Contents, free);
+			SET(data->dki_VolumeUseGauge, MUIA_Gauge_Current, percent);
+		    }
+		    else
+		    {
+			D(bug("[DiskInfo] %s: Volume no longer available on DOS Device '%s'\n", __PRETTY_FUNCTION__, data->dki_DOSDev));
+			di_Quit = TRUE;
+		    }
+		}
+		else
+		{
+		    D(bug("[DiskInfo] %s: Failed to obtain Info for DOS Device '%s'\n", __PRETTY_FUNCTION__, data->dki_DOSDev));
+		    di_Quit = TRUE;
+		}
+
+		UnLock(fsdevlock);
+	    }
+	    else
+	    {
+		D(bug("[DiskInfo] %s: Failed to lock DOS Device '%s'\n", __PRETTY_FUNCTION__, data->dki_DOSDev));
+		di_Quit = TRUE;
+	    }
 	    ReplyMsg((struct Message *)npMessage);
 	}
+    }
+    if (di_Quit)
+    {
+#warning "TODO: set MUIV_Application_ReturnID_Quit"
     }
     return (IPTR)NULL;
 }
