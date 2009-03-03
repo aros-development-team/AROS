@@ -74,7 +74,7 @@ VOID ShowError(Object *application, Object *window, CONST_STRPTR message, BOOL u
     );
 }
 
-VOID FormatSize(STRPTR buffer, ULONG blocks, ULONG totalblocks, ULONG bytesperblock, BOOL showPercentage)
+ULONG FormatSize(STRPTR buffer, ULONG blocks, ULONG totalblocks, ULONG bytesperblock, BOOL showPercentage)
 {
     static STRPTR suffixes[] = {" bytes", "K", "M", "G", "T", "P"};
     DOUBLE internalsize = (DOUBLE)((UQUAD)blocks * bytesperblock);
@@ -96,4 +96,6 @@ VOID FormatSize(STRPTR buffer, ULONG blocks, ULONG totalblocks, ULONG bytesperbl
         sprintf(buffer, "%.1f%s  (%d %s)", internalsize, suffixes[divcount], blocks, _(MSG_BLOCKS) );
     else
         sprintf(buffer, "%.1f%s  (%d %s, %d%%)", internalsize, suffixes[divcount], blocks, _(MSG_BLOCKS), percentage);
+    
+    return percentage;
 }

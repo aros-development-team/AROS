@@ -245,9 +245,8 @@ Object *DiskInfo__OM_NEW
             }
         }
 
-        percent = (100 * (id.id_NumBlocksUsed / id.id_NumBlocks));
         FormatSize(size, id.id_NumBlocks, id.id_NumBlocks, id.id_BytesPerBlock, FALSE);
-        FormatSize(used, id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
+        percent = FormatSize(used, id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
         FormatSize(free, id.id_NumBlocks - id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
         sprintf(blocksize, "%d %s", id.id_BytesPerBlock, _(MSG_BYTES));
 
@@ -384,7 +383,7 @@ Object *DiskInfo__OM_NEW
 				    End,				
 				End,
 				Child, (IPTR) GaugeObject, GaugeFrame,
-				    MUIA_Width, 4,
+				    MUIA_Width, 6,
 				    MUIA_Gauge_InfoText, "",
 				    MUIA_Gauge_Horiz, FALSE,
 				    MUIA_Gauge_Current, percent,
