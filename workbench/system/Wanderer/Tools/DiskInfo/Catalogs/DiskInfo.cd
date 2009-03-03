@@ -33,13 +33,13 @@ MSG_COPYRIGHT (//)
 ©2006-2009 AROS Dev Team
 ;
 MSG_USED (//)
-Used
+Used space
 ;
 MSG_FREE (//)
-Free
+Free space
 ;
 MSG_SIZE (//)
-Size
+Capacity
 ;
 MSG_BLOCK_SIZE (//)
 Block size
@@ -63,5 +63,17 @@ MSG_VALIDATING (//)
 Validating
 ;
 MSG_NAME (//)
-Name
+Volume Name
+;
+MSG_UNIT (//)
+unit
+;
+MSG_DOSDEVICE (//)
+DOS Device:
+;
+MSG_DEVICEINFO (//)
+Connected on:
+;
+MSG_FILESYSTEM (//)
+FileSystem:
 ;
