@@ -3,7 +3,7 @@
 ## codeset 0
 ;
 MSG_TITLE (//)
-Informazioni disco
+Informazioni
 ;
 MSG_ERROR_HEADER (//)
 ERRORE
@@ -35,3 +35,49 @@ Olivier Adam
 MSG_COPYRIGHT (//)
 ©2006 AROS Dev Team
 ;
+MSG_USED (//)
+Spazio utilizzato
+;
+MSG_FREE (//)
+Spazio libero
+;
+MSG_SIZE (//)
+Capacità
+;
+MSG_BLOCK_SIZE (//)
+Dimenszione blocco
+;
+MSG_BLOCKS (//)
+blocchi
+;
+MSG_BYTES (//)
+byte
+;
+MSG_STATUS (//)
+Stato
+;
+MSG_READABLE (//)
+Lettura
+;
+MSG_READABLE_WRITABLE (//)
+Lettura/scrittura
+;
+MSG_VALIDATING (//)
+Convalida
+;
+MSG_NAME (//)
+Nome volume
+;
+MSG_UNIT (//)
+unità
+;
+MSG_DOSDEVICE (//)
+Dispositivo DOS:
+;
+MSG_DEVICEINFO (//)
+Connesso a:
+;
+MSG_FILESYSTEM (//)
+FileSystem:
+;
+
