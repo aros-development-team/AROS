@@ -77,3 +77,9 @@ Connected on:
 MSG_FILESYSTEM (//)
 FileSystem:
 ;
+MSG_PACKETDEVICE (//)
+Packet Style device
+;
+MSG_IOFSDEVICE (//)
+IOFS Style device
+;

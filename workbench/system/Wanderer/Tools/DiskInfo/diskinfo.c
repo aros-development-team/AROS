@@ -169,11 +169,11 @@ Object *DiskInfo__OM_NEW
 
 	    if (dn->dol_Task != NULL)
 	    {
-		handlertype = "Packet Style device";
+		handlertype = _(MSG_PACKETDEVICE);
 	    }
 	    else if (dn->dol_Ext.dol_AROS.dol_Device != NULL)
 	    {
-		handlertype = "IOFS Style device";
+		handlertype = _(MSG_IOFSDEVICE);
 	    }
 
 	    disktype = dn->dol_misc.dol_volume.dol_DiskType;
