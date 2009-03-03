@@ -146,6 +146,8 @@ BOOL initVMWareSVGAHW(struct HWData *data, OOP_Object *device)
     data->vrambase = vmwareReadReg(data, SVGA_REG_FB_START);
     data->pseudocolor = vmwareReadReg(data, SVGA_REG_PSEUDOCOLOR);
 
+    D(bug("[VMWareSVGA] Init: VRAM at 0x%08x size %d\n",data->vrambase, data->vramsize));
+    D(bug("[VMWareSVGA] Init: no.displays: %d\n",data->displaycount));
     D(bug("[VMWareSVGA] Init: caps : 0x%08x\n",data->capabilities));
     D(bug("[VMWareSVGA] Init: no.displays: %d\n",data->displaycount));
     D(bug("[VMWareSVGA] Init: depth: %d\n",data->depth));
