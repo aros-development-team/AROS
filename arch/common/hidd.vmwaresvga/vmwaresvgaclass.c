@@ -90,7 +90,7 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         {TAG_DONE,                      0UL     }
     };
 #warning "TODO: Probe available sync modes"
-#define VMWARESVGA_SYNCMODES   3
+#define VMWARESVGA_SYNCMODES   5
     sync_modes = VMWARESVGA_SYNCMODES;
     sync_count = sync_modes * XSD(cl)->data.displaycount;
 
@@ -98,7 +98,7 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
 
     modetags[0].ti_Tag = aHidd_Gfx_PixFmtTags;
     modetags[0].ti_Data = (IPTR)pftags;
-    modetags[sync_count + 2].ti_Tag = TAG_DONE;
+    modetags[sync_count + 1].ti_Tag = TAG_DONE;
     
     sync_curr = 0;
 
