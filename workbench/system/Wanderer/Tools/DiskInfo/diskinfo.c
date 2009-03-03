@@ -5,7 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/types.h>
@@ -533,6 +533,7 @@ IPTR DiskInfo__MUIM_DiskInfo_HandleNotify
 	{
 	    D(bug("[DiskInfo] %s: FS notification recieved\n", __PRETTY_FUNCTION__));
 
+#warning "TODO: If the volume has been removed, set MUIV_Application_ReturnID_Quit - else update the window to reflect changes"
 	    ReplyMsg((struct Message *)npMessage);
 	}
     }
