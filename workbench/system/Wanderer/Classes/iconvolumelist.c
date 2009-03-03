@@ -19,14 +19,6 @@ $Id$
 #define DEBUG_ILC_LASSO
 #define DEBUG_ILC_MEMALLOC
 
-//#define CREATE_FULL_DRAGIMAGE
-
-#if !defined(__AROS__)
-#define DRAWICONSTATE DrawIconState
-#else
-#define DRAWICONSTATE DrawIconStateA
-#endif
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -85,6 +77,7 @@ $Id$
 //#include "support.h"
 //#include "imspec.h"
 #include "iconlist_attributes.h"
+//#include "icon_attributes.h"
 #include "iconlist.h"
 #include "iconvolumelist_private.h"
 
@@ -418,59 +411,47 @@ D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
   
 	DoMethod(obj, MUIM_IconList_Clear);
 
-	/* If not in setup do nothing */
-#warning "TODO: Handle MADF_SETUP"
-//  if (!(_flags(obj) & MADF_SETUP)) return 1;
-
-	if ((ndl = IconVolumeList__CreateDOSList()))
+	if ((ndl = IconVolumeList__CreateDOSList()) != NULL)
 	{
-		struct  MsgPort     *mp = NULL;
 		struct NewDOSVolumeNode   *nd = NULL;
-		BPTR                nd_lock = NULL;
 
-		if ((mp = CreateMsgPort()) != NULL)
-		{ 
-			me = (struct Process *)FindTask(NULL);
-			oldwin = me->pr_WindowPtr;
-			me->pr_WindowPtr = (APTR)-1;
-
+D(bug("[IconVolList] %s: DOSList @ %p\n", __PRETTY_FUNCTION__, ndl));
 #ifdef __AROS__
-			ForeachNode(ndl, nd)
+		ForeachNode(ndl, nd)
 #else
-			Foreach_Node(ndl, nd);
+		Foreach_Node(ndl, nd);
 #endif
+		{
+D(bug("[IconVolList] %s: DOSList Node  @ %p\n", __PRETTY_FUNCTION__, nd));
+			if (nd->vn_VolName)
 			{
-				if (nd->vn_VolName)
-				{
 D(bug("[IconVolList] %s: Adding icon for '%s'\n", __PRETTY_FUNCTION__, nd->vn_VolName));
 
-					if (nd->vn_FLags & ICONENTRY_VOL_OFFLINE)
-						devname = nd->vn_VolName;
-					else
-						devname = nd->vn_DevName;
+				if (nd->vn_FLags & ICONENTRY_VOL_OFFLINE)
+					devname = nd->vn_VolName;
+				else
+					devname = nd->vn_DevName;
 
-					if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)devname, (IPTR)nd->vn_VolName, (IPTR)NULL, (IPTR)NULL, ST_ROOT)) == NULL)
-					{
+				if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)devname, (IPTR)nd->vn_VolName, (IPTR)NULL, (IPTR)NULL, ST_ROOT)) == NULL)
+				{
 D(bug("[IconVolList] %s: Failed to Add IconEntry for '%s'\n", __PRETTY_FUNCTION__, nd->vn_VolName));
+				}
+				else
+				{
+					if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
+						this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
+
+					if ((strcasecmp(nd->vn_VolName, "Ram Disk:")) == 0)
+					{
+D(bug("[IconVolList] %s: Setting Ram Disk's icon node priority to 5\n", __PRETTY_FUNCTION__));
+						this_Icon->ile_IconNode.ln_Pri = 5;   // Special dirs get Priority 5
 					}
 					else
 					{
-						if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
-							this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
-
-						if ((strcasecmp(nd->vn_VolName, "Ram Disk:")) == 0)
-						{
-D(bug("[IconVolList] %s: Setting Ram Disk's icon node priority to 5\n", __PRETTY_FUNCTION__));
-							this_Icon->ile_IconNode.ln_Pri = 5;   // Special dirs get Priority 5
-						}
-						else
-						{
-							this_Icon->ile_IconNode.ln_Pri = 1;   // Fixed Media get Priority 1
-						}
+						this_Icon->ile_IconNode.ln_Pri = 1;   // Fixed Media get Priority 1
 					}
-				} /* (nd->vn_VolName) */
-			}
-			me->pr_WindowPtr = oldwin;
+				}
+			} /* (nd->vn_VolName) */
 		}
 		IconVolumeList__DestroyDOSList(ndl);
 	}
