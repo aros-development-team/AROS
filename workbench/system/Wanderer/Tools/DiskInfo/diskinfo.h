@@ -37,6 +37,9 @@
 +*/
 #define MUIA_DiskInfo_UserLevel (TAG_USER | 0x20000005)
 
+/*** Methods **************************************************************/
+#define MUIM_DiskInfo_HandleNotify (TAG_USER | 0x20000001)
+
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *DiskInfo_CLASS;
 
