@@ -260,6 +260,7 @@ void intr_init()
 	init_interrupt( 7, program_handler);	/* Program */
 	init_interrupt( 8, generic_handler);	/* Floating point unavailable */
 	init_interrupt( 9, decrementer_handler);/* Decrementer */
+	init_interrupt(10, generic_handler);	/* critical exception */
 	init_interrupt(12, syscall_handler);	/* Syscall */
 	init_interrupt(13, generic_handler);	/* Trace */
 	init_interrupt(16, generic_handler);	/* Instruction translation miss */
@@ -380,7 +381,7 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
     struct ExecBase *SysBase = getSysBase();
 //    static uint32_t cnt = 0;
 
-    asm volatile("mtdec %0"::"r"(33000000/200));
+    asm volatile("mtdec %0"::"r"(33000000/100));
 
     if (KernelBase)
     {
@@ -965,7 +966,7 @@ static void __attribute__((used)) __core_LeaveInterrupt()
                  "lwz %%r0,%[srr0](%%r3)        \n\t"
                  "mtsrr0 %%r0                   \n\t"
                  "lwz %%r0,%[srr1](%%r3)        \n\t"
-//                 "rlwinm %%r0,%%r0,0,14,12      \n\t"
+                 "rlwinm %%r0,%%r0,0,14,12      \n\t"
                  "mtsrr1 %%r0                   \n\t"
                  "lwz %%r0,%[ctr](%%r3)         \n\t"
                  "mtctr %%r0                    \n\t"

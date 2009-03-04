@@ -174,6 +174,9 @@ static struct OFWNode *ofw_root_node __attribute__((used,section(".data"))) = NU
 struct TagItem *BootMsg __attribute__((used,section(".data"))) = NULL;
 static uint8_t *memlo __attribute__((used,section(".data"))) = NULL;
 
+module_t *modlist;
+uint32_t modlength;
+
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 {
 	D(bug("[KRN] EFika5200B Kernel build on %s\n", __DATE__));
@@ -236,6 +239,54 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 				ofw_root_node = krnCopyOFWTree((struct OFWNode *)msg->ti_Data);
 				tmp->ti_Data = (intptr_t)ofw_root_node;
 			}
+			else if (tmp->ti_Tag == KRN_DebugInfo)
+			{
+				int i;
+				struct MinList *mlist = tmp->ti_Data;
+
+				D(bug("[KRN] DebugInfo at %08x\n", modlist));
+
+				module_t *mod = (module_t *)memlo;
+
+				ListLength(mlist, modlength);
+				modlist = mod;
+
+				memlo = &mod[modlength];
+
+				D(bug("[KRN] Bootstrap loaded debug info for %d modules\n", modlength));
+
+				/* Copy the module entries */
+				for (i=0; i < modlength; i++)
+				{
+					module_t *m = REMHEAD(mlist);
+					symbol_t *sym;
+
+					mod[i].m_lowest = m->m_lowest;
+					mod[i].m_highest = m->m_highest;
+					mod[i].m_str = NULL;
+					NEWLIST(&mod[i].m_symbols);
+					mod[i].m_name = (char *)memlo;
+					memlo += (strlen(m->m_name) + 4) & ~3;
+					strcpy(mod[i].m_name, m->m_name);
+
+					ForeachNode(&m->m_symbols, sym)
+					{
+						symbol_t *newsym = memlo;
+						memlo += sizeof(symbol_t);
+
+						newsym->s_name = memlo;
+						memlo += (strlen(sym->s_name)+4)&~3;
+						strcpy(newsym->s_name, sym->s_name);
+
+						newsym->s_lowest = sym->s_lowest;
+						newsym->s_highest = sym->s_highest;
+
+						ADDTAIL(&mod[i].m_symbols, newsym);
+					}
+				}
+
+				D(bug("[KRN] Debug info uses %d KB of memory\n", ((intptr_t)memlo - (intptr_t)mod) >> 10));
+			}
 
 			tmp++;
 			msg++;
@@ -279,6 +330,8 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 		}
 	}
 
+	/* Enable dynamic power management */
+	wrspr(1008, 0x0010c000);
 	D(bug("[KRN] HID0=%08x HID1=%08x\n", rdspr(1008), rdspr(1009)));
 
 	ictl_init(MBAR);
@@ -469,27 +522,104 @@ void idleTask(struct ExecBase *SysBase, struct KernelBase *KernelBase)
 
 	while(1)
 	{
+	    if (0)
+	    {
 		/* Superstate() done quickly */
+		int i;
 		uint32_t msr = goSuper();
+		uint32_t msr_sup = rdmsr() | MSR_EE | MSR_POW;
 		/* Enable external/decrementer interrupts */
-		wrmsr(rdmsr() | MSR_EE);
+		asm volatile("sync");
 		/* Sleep! */
-		wrmsr(rdmsr() | MSR_POW);
+		wrmsr(msr_sup);
 		/* Changing the POW bit needs a context synchronization now. */
 		asm volatile("isync");
+
+		/* CPU needs few cycles to enter sleep state */
+		for (i=0; i < 10; i++)
+		    asm volatile("nop");
+
 		/* Userstate() */
-		goUser(msr);
+		wrmsr(msr);
 		/* And reschedule! */
 		KrnSchedule();
+	    }
 	}
 }
 
 extern void *priv_KernelBase;
+struct MemHeader KernelMemory;
+
+void *(*__AllocMem)();
+
+#define ExecAllocMem(bytesize, requirements)        \
+AROS_CALL2(void *, __AllocMem,                      \
+		AROS_LCA(ULONG, byteSize,     D0),			\
+		AROS_LCA(ULONG, requirements, D1),			\
+		struct ExecBase *, SysBase)
+
+AROS_LH2(APTR, AllocMem,
+	AROS_LHA(ULONG, byteSize,     D0),
+	AROS_LHA(ULONG, requirements, D1),
+	struct ExecBase *, SysBase, 33, Kernel)
+{
+	AROS_LIBFUNC_INIT
+
+	return ExecAllocMem(bytesize, requirements & ~MEMF_CHIP);
+
+	AROS_LIBFUNC_EXIT
+}
+
 
 static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 {
     int i;
     struct ExecBase *SysBase = getSysBase();
+    int realchip = 0;
+
+	uintptr_t krn_lowest = (krnGetTagData(KRN_KernelLowest, 0, BootMsg) & ~4095) ^ 0xf8000000;
+	uintptr_t krn_highest = ((krnGetTagData(KRN_KernelHighest, 0, BootMsg) + 4095) & ~4095) ^ 0xf8000000;
+	char *cmd = krnGetTagData(KRN_CmdLine, 0, BootMsg);
+
+    KernelMemory.mh_Node.ln_Name = "Kernel";
+    KernelMemory.mh_Node.ln_Type = NT_MEMORY;
+    KernelMemory.mh_Node.ln_Pri = -128;
+    KernelMemory.mh_Attributes = MEMF_KICK;
+    KernelMemory.mh_First = NULL;
+    KernelMemory.mh_Free = 0;
+    KernelMemory.mh_Lower = krn_lowest;
+    KernelMemory.mh_Upper = krn_highest;
+
+    Forbid();
+	Enqueue(&SysBase->MemList, &KernelMemory.mh_Node);
+    Permit();
+
+    NEWLIST(&LIBBASE->kb_Modules);
+
+    /* Check whether the user passed realchip parameter. */
+    if (cmd)
+    {
+    	while(cmd[0])
+    	{
+    		uint32_t temp = strcspn(cmd, " ");
+
+    		if (strncmp(cmd, "realchip", 8) == 0)
+    		{
+    			realchip=1;
+    		}
+
+    		cmd = stpblk(cmd+temp);
+    	}
+    }
+
+    /*
+     * If no realchip parameter was given, the AllocMem function will be patched with a stub
+     * which *always* clears the MEMF_CHIP flag.
+     */
+    if (!realchip)
+    {
+    	__AllocMem = SetFunction(SysBase, -33*LIB_VECTSIZE, AROS_SLIB_ENTRY(AllocMem, Kernel));
+    }
 
     /*
      * Set the KernelBase into SPRG4. At this stage the SPRG5 should be already set by
@@ -517,7 +647,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     wrmsr(rdmsr() | (MSR_EE|MSR_FP));
     D(bug("[KRN] Interrupts enabled\n"));
 
-    asm volatile("mtdec %0"::"r"(132000000/200));
+    asm volatile("mtdec %0"::"r"(33000000/1000));
 
     wrmsr(rdmsr() | (MSR_PR));
     D(bug("[KRN] Entered user mode\n"));
