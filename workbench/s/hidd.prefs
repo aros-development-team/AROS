@@ -1,3 +1,24 @@
-# Generic Hidd.Prefs
-# This file is intentionally left blank
-# Default driver is now autoselected
+# In this file you can explicitly specify display, mouse and keyboard drivers to use.
+# Syntax is:
+# library <name> - load a specified library. You must do it before using drivers that
+#                  it provides;
+# gfx <name>     - use graphics driver <name>;
+# mouse <name>   - use mouse driver <name>;
+# kbd <name>     - use keyboard driver <name>.
+#
+# If you specify some settings in kernel arguments, they will override what is specified here
+# except 'library' command (they will always be executed, you can preload anything you want to
+# using them.
+# If nothing is specified, the system provides minimal working defaults.
+#
+# Examples:
+#
+# Use SDL driver on hosted:
+# library sdl.hidd
+# gfx	hidd.gfx.sdl
+# mouse	hidd.mouse.sdl
+# kbd	hidd.kbd.sdl
+#
+# Use Radeon graphics driver, default mouse and keyboard on native:
+# library radeon.hidd
+# gfx RadeonDriver

@@ -636,7 +636,9 @@ static LONG startup(struct emulbase *emulbase)
 	    ret = ERROR_NO_FREE_STORE;
 
 	    D(bug("[Emulhandler] Creating console reader\n"));
+	    Forbid();
 	    emulbase->ConsoleReader = InitNative();
+	    Permit();
 	    if (emulbase->ConsoleReader) {
 		D(bug("[Emulhandler] Created console reader %p\n", emulbase->ConsoleReader));
 	        emulbase->ConsoleInt = KrnAddIRQHandler(1, EmulIntHandler, emulbase->ConsoleReader, NULL);

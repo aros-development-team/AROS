@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2008, The AROS Development Team. All rights reserved.
+    Copyright  1995-2009, The AROS Development Team. All rights reserved.
     $Id: gdi_init.c 27757 2008-01-26 15:05:40Z verhaegs $
 
     Desc: GDI hidd initialization code.
@@ -16,6 +16,7 @@
 #include <exec/types.h>
 
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <proto/oop.h>
 
 #include <utility/utility.h>
@@ -24,7 +25,7 @@
 
 #include <aros/symbolsets.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
@@ -78,7 +79,8 @@ static VOID freeclasses(struct gdi_staticdata *xsd)
 
 static int GDI_Init(LIBBASETYPEPTR LIBBASE)
 {
-    ULONG rc;
+    struct Task *me;
+    void *gfx_int;
     struct gdi_staticdata *xsd = &LIBBASE->xsd;
 
     D(bug("Entering GDI_Init\n"));
@@ -99,12 +101,19 @@ static int GDI_Init(LIBBASETYPEPTR LIBBASE)
         xsd->clipboard_targets_atom  = XCALL(XInternAtom, xsd->display, "TARGETS", FALSE);
 */
 	if (initclasses(xsd)) {
-	    Forbid();
-	    rc = NATIVECALL(GDI_Init);
-	    Permit();
-	    if (rc) {
-	        D(bug("GDI_Init succeeded\n"));
-	        return TRUE;
+	    me = FindTask(NULL);
+	    gfx_int = KrnAddIRQHandler(2, GfxIntHandler, NULL, me);
+	    if (gfx_int) {
+	        SetSignal(0, SIGF_BLIT);
+		Forbid();
+		NATIVECALL(GDI_Init, &xsd->window_ready);
+		Permit();
+		Wait(SIGF_BLIT);
+		KrnRemIRQHandler(gfx_int);
+		if (xsd->window_ready) {
+	    	    D(bug("GDI_Init succeeded\n"));
+	    	    return TRUE;
+		}
 	    }
 	    freeclasses(xsd);
         }

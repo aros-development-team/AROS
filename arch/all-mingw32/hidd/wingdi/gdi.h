@@ -76,7 +76,9 @@ struct gdi_staticdata
     ULONG   	    	     green_shift;
     ULONG   	    	     blue_shift;
     ULONG   	    	     depth; /* Size of pixel in bits */
-    
+
+    ULONG		     window_ready;
+
 /*  ULONG   	    	     bytes_per_pixel;
     ULONG   	    	     clut_shift;
     ULONG   	    	     clut_mask;
@@ -166,6 +168,12 @@ struct KeyboardData
 {
     unsigned short EventCode;
     unsigned short KeyCode;
-};  
+};
+
+#ifdef __AROS__
+
+void GfxIntHandler(struct gfx_data *data, struct Task *task);
+
+#endif
 
 #endif /* HIDD_GDI_H */

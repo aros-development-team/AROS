@@ -71,7 +71,7 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
 
 /****************************************************************************************/
 
-DWORD WINAPI gdithread_entry(LPVOID p)
+DWORD WINAPI gdithread_entry(ULONG *p)
 {
     BOOL res;
     MSG msg;
@@ -98,6 +98,8 @@ DWORD WINAPI gdithread_entry(LPVOID p)
     wcl = RegisterClass(&wcl_desc);
     D(printf("[GDI] Created window class 0x%p\n", wcl));
     if (wcl) {
+        *p = 1;
+        KrnCauseIRQ(2);
     	do {
             res = GetMessage(&msg, NULL, 0, 0);
             D(printf("[GDI] GetMessage returned %ld\n", res));
@@ -141,15 +143,17 @@ DWORD WINAPI gdithread_entry(LPVOID p)
         } while (res > 0);
         UnregisterClass(wcl, wcl_desc.hInstance);
     }
+    KrnCauseIRQ(2);
 }
 
 /****************************************************************************************/
 
-ULONG __declspec(dllexport) GDI_Init(void)
+ULONG __declspec(dllexport) GDI_Init(ULONG *p)
 {
     HANDLE th;
     
-    th = CreateThread(NULL, 0, gdithread_entry, NULL, 0, &thread_id);
+    *p = 0;
+    th = CreateThread(NULL, 0, gdithread_entry, p, 0, &thread_id);
     D(printf("[GDI] Started thread 0x%p ID 0x%08lX\n", th, thread_id));
     if (th)
         CloseHandle(th);
