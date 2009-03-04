@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2008, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1714,7 +1714,7 @@ localecopydone:
         TEXT extraspath[100];
         BOOL undoenabled = data->instc_copt_undoenabled;
 
-        /* Explicitly disable undo. Some users might now have RAM for backup */
+        /* Explicitly disable undo. Some users might not have RAM for backup */
         data->instc_copt_undoenabled = FALSE;
 
 
@@ -1757,7 +1757,7 @@ localecopydone:
             TEXT developmentpath[100];
             BOOL undoenabled = data->instc_copt_undoenabled;
 
-            /* Explicitly disable undo. Some users might now have RAM for backup */
+            /* Explicitly disable undo. Some users might not have RAM for backup */
             data->instc_copt_undoenabled = FALSE;
 
             UnLock(lock);
