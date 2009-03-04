@@ -143,6 +143,10 @@ void core_Dispatch(regs_t *regs)
         /* Restore the task's state */
         //bcopy(GetIntETask(task)->iet_Context, regs, sizeof(regs_t));
         regs = GetIntETask(task)->iet_Context;
+
+        if (SysBase->IDNestCnt < 0)
+        	regs->srr1 |= MSR_EE;
+
         /* Copy the fpu, mmx, xmm state */
 #warning FIXME: Change to the lazy saving of the FPU state!!!!
 #warning TODO: No FPU support yet!!!!!!! Yay, it sucks! :-D
@@ -155,6 +159,8 @@ void core_Dispatch(regs_t *regs)
     /* Leave interrupt and jump to the new task */
     core_LeaveInterrupt(regs);
 }
+
+extern struct Task *idle_task;
 
 void core_Switch(regs_t *regs)
 {
@@ -187,7 +193,14 @@ void core_Switch(regs_t *regs)
         /* And enable interrupts */
         SysBase->IDNestCnt = -1;
 
-        wrmsr(rdmsr() | MSR_EE);
+//        	if (task->tc_Node.ln_Pri < 127)
+//        		task->tc_Node.ln_Pri++;
+//
+//        if (SysBase->Elapsed <= 1)
+//        	if (task->tc_Node.ln_Pri > -125)
+//        		task->tc_Node.ln_Pri--;
+
+//        wrmsr(rdmsr() | MSR_EE);
 
         /* Task says byebye. Update the CPU Time now. */
         GetIntETask(task)->iet_CpuTime += mftbu() - GetIntETask(task)->iet_private1;
@@ -241,6 +254,23 @@ void core_Schedule(regs_t *regs)
                 }
             }
         }
+
+#if 0
+        if (task != idle_task)
+        {
+        	/* almost no CPU time used? Good. Increase the pri */
+        	if (SysBase->Elapsed == SysBase->Quantum)
+        	{
+//        		if (task->tc_Node.ln_Pri < (GetIntETask(task)->iet_OrigPri) + 5)
+//        			task->tc_Node.ln_Pri++;
+        	}
+        	else
+        	{
+        		if (task->tc_Node.ln_Pri > (GetIntETask(task)->iet_OrigPri) - 5)
+        			task->tc_Node.ln_Pri--;
+        	}
+        }
+#endif
 
         /*
          * If we got here, then the rescheduling is necessary.

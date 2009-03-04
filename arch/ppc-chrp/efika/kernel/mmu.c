@@ -169,6 +169,7 @@ int mmu_map_page(uint64_t virt, uint32_t phys, uint32_t prot)
 
 int mmu_map_area(uint64_t virt, uint32_t phys, uint32_t length, uint32_t prot)
 {
+	bug("[KRN] mmu_map_area(%04x%08x, %08x, %08x, %04x)\n", (uint32_t)(virt >> 32), (uint32_t)virt, phys, length, prot);
 	while (length)
 	{
 		if (!mmu_map_page(virt, phys, prot))
@@ -243,11 +244,20 @@ void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void 
         }
     }
 
-	D(bug("[KRN] Exception %d handler. Context @ %p, SysBase @ %p, KernelBase @ %p\n", exception, ctx, SysBase, KernelBase));
+	D(bug("[KRN] Exception %d (%s) handler. Context @ %p, SysBase @ %p, KernelBase @ %p\n", exception, exception == 3 ? "DSI" : "ISI", ctx, SysBase, KernelBase));
 	if (SysBase)
 	{
 		struct Task *t = FindTask(NULL);
+		uint32_t offset;
+		char *func, *mod;
+
+		offset = findNames(ctx->srr0, &mod, &func);
 		D(bug("[KRN] %s %p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--"));
+
+		if (func)
+			D(bug("[KRN] Crash at byte %d in func %s, module %s\n", offset, func, mod));
+		else if (mod)
+			D(bug("[KRN] Crash at byte %d in module %s\n", offset, mod));
 	}
 	D(bug("[KRN] SRR0=%08x, SRR1=%08x\n",ctx->srr0, ctx->srr1));
 	D(bug("[KRN] CTR=%08x LR=%08x XER=%08x CCR=%08x\n", ctx->ctr, ctx->lr, ctx->xer, ctx->ccr));
@@ -301,8 +311,30 @@ void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void 
 	ULONG *p = (ULONG*)ctx->srr0;
 	for (i=0; i < 8; i++)
 	{
-		D(bug("[KRN] %08x: %08x\n", &p[i], p[i]));
+		if (find_pte((uint32_t)&p[i]))
+			D(bug("[KRN] %08x: %08x\n", &p[i], p[i]));
+		else
+			D(bug("[KRN] %08x: ?\n", &p[i]));
 	}
+
+	D(bug("[KRN] Backtrace:\n"));
+	uint32_t *sp = ctx->gpr[1];
+	while(*sp)
+	{
+		char *mod, *func;
+		sp = (uint32_t *)sp[0];
+		uint32_t offset;
+
+		offset = findNames(sp[1], &mod, &func);
+
+		if (func)
+			D(bug("[KRN]  %08x: byte %d in func %s, module %s\n", sp[1], offset, func, mod));
+		else if (mod)
+			D(bug("[KRN]  %08x: byte %d in module %s\n", sp[1], offset, mod));
+		else
+			D(bug("[KRN]  %08x\n", sp[1]));
+	}
+
 
 	D(bug("[KRN] **UNHANDLED EXCEPTION** stopping here...\n"));
 
@@ -410,7 +442,7 @@ AROS_LH1(void *, KrnVirtualToPhysical,
 	uintptr_t phys = 0xffffffff;
 	uint32_t msr = goSuper();
 
-	pte = find_pte(virtual);
+	pte = find_pte(virt);
 
 	if (pte)
 		phys = pte->rpn & ~0xfff;

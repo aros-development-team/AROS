@@ -27,6 +27,7 @@ static volatile mpc5200b_ictl_t *ictl;
 
 void ictl_init(void *MBAR)
 {
+	uint32_t tmp;
 	D(bug("[KRN] Entering ictl_init.\n"));
 	ictl = (mpc5200b_ictl_t *)((intptr_t)MBAR + 0x500);
 
@@ -36,9 +37,12 @@ void ictl_init(void *MBAR)
 	outl(0xffffff00, &ictl->ictl_pim);
 
 	/* Disable all master interrupts */
-	outl(0x0001ffff, &ictl->ictl_cpmim);
+	outl(0x00010fff, &ictl->ictl_cpmim);
 
-	/* Critical interrupts should generate EE */
+	/* Critical interrupts should generate EE. Keep the old IRQ[0..3] config! */
+	tmp = inl(&ictl->ictl_ee);
+	tmp &= 0x00ff0000;	/* Leave the IRQ configuration intact */
+	tmp |= 0x0f000000;	/* Clear any pending IRQ's */
 	outl(ICTL_EE_MEE | ICTL_EE_CEB,&ictl->ictl_ee);
 
 	/* Set all Main priorities to 0 */
