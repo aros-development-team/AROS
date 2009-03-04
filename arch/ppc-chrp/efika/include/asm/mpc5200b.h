@@ -230,4 +230,51 @@ typedef struct {
 
 #define SLT_TS_ST			0x01000000	/* Terminal count reached. Write 1 to clear */
 
+
+/* Ata device */
+typedef struct {
+	volatile uint32_t	ata_config;
+	volatile uint32_t	ata_status;
+
+	volatile uint32_t	ata_pio1;
+	volatile uint32_t 	ata_pio2;
+	volatile uint32_t	ata_dma1;
+	volatile uint32_t 	ata_dma2;
+	volatile uint32_t	ata_udma1;
+	volatile uint32_t	ata_udma2;
+	volatile uint32_t	ata_udma3;
+	volatile uint32_t	ata_udma4;
+	volatile uint32_t 	ata_udma5;
+	volatile uint32_t	ata_invalid;
+} ata_5k2_t;
+
+
+/* bestcomm */
+
+typedef struct {
+	uint32_t	bc_taskBar;
+	uint32_t	bc_currentPointer;
+	uint32_t	bc_endPointer;
+	uint32_t	bc_variablePointer;
+	uint32_t	bc_interruptVector;
+	uint32_t	bc_interruptPending;
+	uint32_t	bc_interruptMask;
+	uint16_t	bc_tcr[16];
+	uint8_t		bc_ipr[32];
+	uint32_t	bc_requestMuxControl;
+	uint32_t	bc_taskSize[2];
+} bestcomm_t;
+
+/* Bestcomm's task description table */
+typedef struct {
+	uint32_t	start;
+	uint32_t	stop;
+	uint32_t	var;
+	uint32_t	fdt;
+	uint32_t	exec_status;
+	uint32_t	mvtp;
+	uint32_t	context;
+	uint32_t	litbase;
+} bestcomm_tdt_t;
+
 #endif /* ASM_MPC5200B_H */
