@@ -1,5 +1,5 @@
 /*
-Copyright  2002-2008, The AROS Development Team. All rights reserved.
+Copyright  2002-2009, The AROS Development Team. All rights reserved.
 $Id$
 */
 #include "../portable_macros.h"
@@ -4833,7 +4833,8 @@ D(bug("[IconList] %s: drop entry: Selection dropped on File '%s' (window '%s')\n
 		else
 		{
 			/* not dropped on icon -> get path of DESTINATION iconlist */
-			if (message->obj != obj)
+			/* Note: directory_path is NULL when dropped on Wanderer's desktop */
+			if ((message->obj != obj) && directory_path)
 			{
 D(bug("[IconList] %s: drop entry: Selection dropped in window '%s'\n", __PRETTY_FUNCTION__, directory_path));
 				/* copy path */
