@@ -114,7 +114,8 @@ struct ataBase
    UBYTE                   ata_NoDMA;
    UBYTE                   ata_NoSubclass;
    UBYTE                   ata_ScanFlags;
-#define ATA_SCANPCI			(1 << 0)
+
+#define ATA_SCANPCI		(1 << 0)
 #define ATA_SCANLEGACY		(1 << 1)
    /*
     * memory pool
@@ -148,6 +149,7 @@ struct ata_Bus
    struct Task             *ab_Task;       /* Bus task handling all not-immediate transactions */
    struct MsgPort          *ab_MsgPort;    /* Task's message port */
    struct PRDEntry         *ab_PRD;
+   struct IORequest	   *ab_Timer;	   /* timer stuff */
 
    /* functions go here */
    void                   (*ab_HandleIRQ)(struct ata_Unit* unit, UBYTE status);
@@ -484,8 +486,7 @@ void ata_outl(ULONG val, UWORD offset, IPTR port);
 
 /* Function prototypes */
 
-void ata_usleep(struct timerequest *, ULONG);
-void ata_ResetBus(struct timerequest *, struct ata_Bus *);
+void ata_ResetBus(struct ata_Bus *);
 void ata_InitBus(struct ata_Bus *);
 
 int atapi_SendPacket(struct ata_Unit *, APTR, APTR, LONG, BOOL*, BOOL);

@@ -37,6 +37,7 @@
  *                                 medium removal, device detection, bus management and much more
  * 2008-05-18  T. Wiszkowski       corrected device naming to handle cases where more than 10 physical units may be available
  * 2008-06-24  P. Fedin            Added 'NoMulti' flag to disable multisector transfers
+ * 2009-03-05  T. Wiszkowski       remade timeouts, added timer-based and benchmark-based delays.
  */
 
 #define DEBUG 0
@@ -68,8 +69,9 @@
 #include <hidd/pci.h>
 #include <proto/oop.h>
 
-
 #include "ata.h"
+#include "timer.h"
+
 #include LC_LIBDEFS_FILE
 
 typedef struct 
