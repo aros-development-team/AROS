@@ -270,6 +270,13 @@ extern UBYTE *mbar;
 extern ata_5k2_t *ata_5k2;
 void ata_400ns();
 
+extern void *sram;
+extern void *bestcomm;
+extern uint32_t bestcomm_taskid;
+
+uint32_t bus_frequency = 0;
+void bestcomm_init();
+
 /*
     Here shall we start. Make function static as it shouldn't be visible from
     outside.
@@ -299,6 +306,60 @@ static int ata_init(struct ataBase *LIBBASE)
 
     		D(bug("[ATA] MBAR located at %08x\n", mbar));
     	}
+
+    	/* Get the bus frequency for Efika */
+    	prop = OF_FindProperty(key, "bus-frequency");
+    	if (prop)
+    	{
+    		bus_frequency = *(uint32_t *)OF_GetPropValue(prop);
+    		D(bug("[ATA] bus frequency: %d\n", bus_frequency));
+    	}
+    }
+
+    key = OF_OpenKey("/builtin/ata");
+    if (key)
+    {
+    	void *prop = OF_FindProperty(key, "reg");
+		if (prop)
+		{
+			ata_5k2 = *(ata_5k2_t **)OF_GetPropValue(prop);
+
+			D(bug("[ATA] ATA registers at %08x\n", ata_5k2));
+		}
+    }
+
+    key = OF_OpenKey("/builtin/ata/bestcomm-task");
+    if (key)
+    {
+    	void *prop = OF_FindProperty(key, "taskid");
+		if (prop)
+		{
+			bestcomm_taskid = *(uint32_t *)OF_GetPropValue(prop);
+
+			D(bug("[ATA] ATA uses bestcomm task %d\n", bestcomm_taskid));
+		}
+    }
+
+    key = OF_OpenKey("/builtin/sram");
+    if (key)
+    {
+    	void *prop = OF_FindProperty(key, "reg");
+    	if (prop)
+    	{
+    		sram = *(void **)OF_GetPropValue(prop);
+    	}
+    	D(bug("[ATA] SRAM at %08x\n", sram));
+    }
+
+    key = OF_OpenKey("/builtin/bestcomm");
+    if (key)
+    {
+    	void *prop = OF_FindProperty(key, "reg");
+    	if (prop)
+    	{
+    		bestcomm = *(void **)OF_GetPropValue(prop);
+    	}
+    	D(bug("[ATA] bestcomm at %08x\n", bestcomm));
     }
 
     D(bug("[ATA] ata_config=%08x\n", inl(&ata_5k2->ata_config)));
@@ -316,11 +377,18 @@ static int ata_init(struct ataBase *LIBBASE)
     for (i=0; i < 100 / 4; i++)
     	ata_400ns();
 
+	/* Hacky timing pokes */
     outl(0x03000000, &ata_5k2->ata_config);
     outl(132 << 16, &ata_5k2->ata_invalid);
 
+    /* PIO2 timing table. Replace it by correct calculations soon !!! */
+
+#warning TODO: Set the timings in right way!
+
     outl(0x21270e00, &ata_5k2->ata_pio1);
     outl(0x03050600, &ata_5k2->ata_pio2);
+
+    bestcomm_init();
 
     /*
      * store library pointer so we can use it later
