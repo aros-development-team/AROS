@@ -3,6 +3,7 @@
 #include <strings.h>
 #include <signal.h>
 #include <windows.h>
+#include <sys/stat.h>
 #include <aros/system.h>
 
 #define __typedef_LONG /* LONG, ULONG, WORD, BYTE and BOOL are declared in Windows headers. Looks like everything  */
@@ -56,6 +57,7 @@ int main(int argc, char ** argv)
   unsigned long BadSyms;
   struct TagItem *t;
   int x;
+  struct stat st;
   char _use_hostmem = 0;
   int i = 1;
   unsigned int memSize = 64;
@@ -129,6 +131,11 @@ int main(int argc, char ** argv)
       }
   }
   D(printf("[Bootstrap] Kernel arguments: %s\n", KernelArgs));
+  
+  if (!stat("..\\AROS.boot", &st)) {
+      chdir("..");
+  }
+  
   D(printf("[Bootstrap] allocating working mem: %iMb\n",memSize));
 
   void * memory = malloc((memSize << 20));
