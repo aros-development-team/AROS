@@ -71,7 +71,7 @@ static struct OOP_ABDescr attrbases[] =
 static VOID cleanupgdistuff(struct gdi_staticdata *xsd);
 static BOOL initgdistuff(struct gdi_staticdata *xsd);
 
-static void GfxIntHandler(struct gfx_data *data, struct Task *task)
+void GfxIntHandler(struct gfx_data *data, struct Task *task)
 {
     Signal(task, SIGF_BLIT);
 }
@@ -476,7 +476,9 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	   and this looks like a real blitter. So we use this signal. Before we do it we ensure that it's reset (because it's
 	   the same as SIGF_SINGLE) */
 	SetSignal(0, SIGF_BLIT);
+	Forbid();
 	NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, 0);
+	Permit();
 	Wait(SIGF_BLIT);
 
 	if (msg->bitMap) {

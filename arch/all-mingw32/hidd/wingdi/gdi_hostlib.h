@@ -31,7 +31,7 @@ struct user_func {
 };
 
 struct native_func {
-    ULONG (*GDI_Init)(void);
+    ULONG (*GDI_Init)(ULONG *ready);
     ULONG (*GDI_PutMsg)(void *win, ULONG msg, IPTR wp, IPTR lp);
     struct MouseData *GDI_MouseData;
     struct KeyboardData *GDI_KeyboardData;
