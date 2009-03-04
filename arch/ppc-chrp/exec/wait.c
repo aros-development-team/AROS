@@ -10,6 +10,8 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
+#include "etask.h"
+
 extern void *priv_KernelBase;
 
 /*****************************************************************************
@@ -67,6 +69,17 @@ extern void *priv_KernelBase;
     /* Protect the task lists against access by other tasks. */
     Disable();
 
+//    if (SysBase->Elapsed == SysBase->Quantum)
+//    {
+//    	if (me->tc_Node.ln_Pri < (GetIntETask(me)->iet_OrigPri) + 10)
+//    		me->tc_Node.ln_Pri++;
+//    }
+//    else
+//    {
+//    	if (me->tc_Node.ln_Pri > (GetIntETask(me)->iet_OrigPri) - 10)
+//    		me->tc_Node.ln_Pri--;
+//    }
+
     /* If at least one of the signals is already set do not wait. */
     while(!(me->tc_SigRecvd&signalSet))
     {
@@ -93,6 +106,8 @@ extern void *priv_KernelBase;
 	*/
 //        me->tc_Node.ln_Pred->ln_Succ = me->tc_Node.ln_Succ;
 //	me->tc_Node.ln_Succ->ln_Pred = me->tc_Node.ln_Pred;
+
+	/* almost no CPU time used? Good. Increase the pri */
 
 	Enqueue(&SysBase->TaskWait,&me->tc_Node);
 

@@ -134,6 +134,8 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
     /* I'm the parent task */
     GetETask(task)->et_Parent = FindTask(NULL);
 
+    GetIntETask(task)->iet_OrigPri = task->tc_Node.ln_Pri;
+
     /* Get new stackpointer. */
     /* sp=task->tc_SPReg; */
     if (task->tc_SPReg==NULL)

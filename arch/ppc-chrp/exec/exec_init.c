@@ -128,6 +128,9 @@ int exec_main(struct TagItem *msg, void *entry)
     SysBase->KickTagPtr = NULL;
     SysBase->KickCheckSum = NULL;
 
+    SysBase->DispCount = 0;
+    SysBase->IdleCount = 0;
+
     /*
      * Now everything is prepared to store ExecBase at the location 4UL and set
      * it complement in ExecBase structure
@@ -195,6 +198,7 @@ int exec_main(struct TagItem *msg, void *entry)
     SysBase->LibNode.lib_Revision = exec_Revision;
 
     SysBase->Quantum = 4;
+    SysBase->Elapsed = 4;
     SysBase->VBlankFrequency = 50;
     SysBase->PowerSupplyFrequency = 1;
 
@@ -207,7 +211,7 @@ int exec_main(struct TagItem *msg, void *entry)
     D(bug("[exec] Adding memory\n"));
 
     AddMemList(0x07000000 - lowmem,
-               MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL,
+               MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL,
                0,
                (APTR)lowmem,
                (STRPTR)exec_fastname);
