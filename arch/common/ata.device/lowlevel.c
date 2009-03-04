@@ -53,6 +53,7 @@
  * 2008-11-28  T. Wiszkowski       updated test unit ready to suit individual taste of hw manufacturers
  * 2009-01-20  J. Koivisto         Modified bus reseting scheme
  * 2009-02-04  T. Wiszkowski       Disabled ATA debug on official builds
+ * 2009-03-05  T. Wiszkowski       remade timeouts, added timer-based and benchmark-based delays.
  */
 /*
  * TODO:
@@ -83,6 +84,7 @@
 #include <asm/io.h>
 
 #include "ata.h"
+#include "timer.h"
 
 
 
@@ -162,24 +164,11 @@ static VOID ata_outsl(APTR address, UWORD port, ULONG count)
         outsl(port, address, count >> 2);
 }
 
-/*
- * Very short delay (TM) by someone who assumes slow data ports.
- * well, glad it works anyways.
- */
-void ata_400ns(ULONG port)
-{
-    ata_in(ata_AltControl, port);
-    ata_in(ata_AltControl, port);
-    ata_in(ata_AltControl, port);
-    ata_in(ata_AltControl, port);
-}
-
 #else
 extern VOID ata_insw(APTR address, UWORD port, ULONG count);
 extern VOID ata_insl(APTR address, UWORD port, ULONG count);
 extern VOID ata_outsw(APTR address, UWORD port, ULONG count);
 extern VOID ata_outsl(APTR address, UWORD port, ULONG count);
-extern void ata_400ns(ULONG port);
 #endif
 
 static void dump(APTR mem, ULONG len)
@@ -260,7 +249,8 @@ inline BOOL ata_SelectUnit(struct ata_Unit* unit)
 
     do
     {
-        ata_400ns(unit->au_Bus->ab_Alt);
+        ata_WaitNano(400);
+        //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
     }
     while (0 != (ATAF_BUSY & ata_ReadStatus(unit->au_Bus)));
 
@@ -552,7 +542,8 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
          * delay the check - this was found needed for some hardware
          */
 
-        ata_400ns(unit->au_Bus->ab_Alt);
+        ata_WaitNano(400);
+        //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
 
         /*
          * let's check if the drive is already good
@@ -617,7 +608,8 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
                  * no timeout just yet, but it's not a good idea to keep spinning like that.
                  * let's give the system some time.
                  */
-                ata_400ns(unit->au_Bus->ab_Alt);
+                ata_WaitNano(400);
+                //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
                 // TODO: Put some delay here!
             }
         }
@@ -793,7 +785,8 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
      */
     DATA(bug("[ATA%02ld] ata_exec_cmd: Sending command\n", au->au_UnitNum));
     ata_out(block->command, ata_Command, port);
-    ata_400ns(au->au_Bus->ab_Alt);
+    ata_WaitNano(400);
+    //ata_WaitTO(au->au_Bus->ab_Timer, 0, 1, 0);
 
     /*
      * In case of PIO write the drive won't issue an IRQ before first
@@ -925,7 +918,8 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
      */
     DATAPI(bug("[ATAPI] Issuing ATA_PACKET command.\n"));
     ata_out(ATA_PACKET, atapi_Command, port);
-    ata_400ns(unit->au_Bus->ab_Alt);
+    ata_WaitNano(400);
+    //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
 
     ata_WaitBusyTO(unit, 30, FALSE, NULL);
     if (0 == (ata_ReadStatus(unit->au_Bus) & ATAF_DATAREQ))
@@ -945,7 +939,8 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
 
     DATAPI(bug("[ATAPI] Sending packet\n"));
     unit->au_outs(cmd, unit->au_Bus->ab_Port, 12);
-    ata_400ns(unit->au_Bus->ab_Alt);    /* give drive time to think about what we just said, then move on */
+    ata_WaitNano(400);
+    //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0); /* give drive time to think about what we just said, then move on */
     /* how much time could it take for drive to raise DMARQ signal?? */
 
     DATAPI(bug("[ATAPI] Status after packet: %lx\n", ata_ReadStatus(unit->au_Bus)));
@@ -961,7 +956,8 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
                 break;
             }
             DATAPI(bug("[ATAPI] status %02lx\n", ata_ReadStatus(unit->au_Bus)));
-            ata_400ns(unit->au_Bus->ab_Alt);
+            ata_WaitNano(400);
+            //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
         }
 
         DATAPI(bug("[ATAPI] status %02lx\n", ata_ReadStatus(unit->au_Bus)));
@@ -2295,7 +2291,8 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
     D(bug("[ATA  ] ata_ReadSignature(%02ld)\n", unit));
 
     ata_out(0xa0 | (unit << 4), ata_DevHead, port);
-    ata_400ns(bus->ab_Alt);
+    ata_WaitNano(400);
+    //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
     /* Check basic signature. All live devices should provide it */
     tmp1 = ata_in(ata_Count, port);
@@ -2325,7 +2322,8 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
                 ata_out(0xa0 | (unit << 4), ata_DevHead, port);
 
                 while (ata_ReadStatus(bus) & ATAF_BUSY)
-                    ata_400ns(bus->ab_Alt);
+                    ata_WaitNano(400);
+                    //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
                 DINIT(bug("[ATA  ] ata_ReadSignature: Further validating  ATA signature: %lx & 0x7f = 1, %lx & 0x10 = unit\n", ata_in(ata_Error, port), ata_in(ata_DevHead, port)));
 
@@ -2366,7 +2364,7 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
     return DEV_NONE;
 }
 
-void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
+void ata_ResetBus(struct ata_Bus *bus)
 {
 
     ULONG alt = bus->ab_Alt;
@@ -2377,12 +2375,13 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
      * register.  This causes device 0 be selected */
     D(bug("[ATA  ] ata_ResetBus(%d)\n", bus->ab_BusNum));
     ata_out(0xa0 | (0 << 4), ata_DevHead, port);    /* Select it never the less */
-    ata_400ns(bus->ab_Alt);
+    ata_WaitNano(400);
+    //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
     ata_out(0x04, ata_AltControl, alt);
-    ata_usleep(tr, 10);                 /* minimum required: 5us */
+    ata_WaitTO(bus->ab_Timer, 0, 10, 0);    /* sleep 10us; min: 5us */
     ata_out(0x02, ata_AltControl, alt);
-    ata_usleep(tr, 20*1000);             /* minimum required: 2ms, but wait 20ms to make sure drive is awake from reset */
+    ata_WaitTO(bus->ab_Timer, 0, 20000, 0); /* sleep 20ms; min: 2ms */
 
     /* If there is a device 0, wait for device 0 to clear BSY */
     if (DEV_NONE != bus->ab_Dev[0]) {
@@ -2391,7 +2390,7 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
         while ( 1 ) {
             if( (ata_ReadStatus(bus) & ATAF_BUSY) == 0 )
                 break;
-            ata_usleep(tr, 1000);
+            ata_WaitTO(bus->ab_Timer, 0, 1000, 0);
             if (!(--TimeOut)) {
                 D(bug("[ATA%02ld] ata_ResetBus: Device Timed Out!\n", ((bus->ab_BusNum << 1 ) + 0)));
                 bus->ab_Dev[0] = DEV_NONE;
@@ -2406,12 +2405,13 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
     if (DEV_NONE != bus->ab_Dev[1]) {
         D(bug("[ATA  ] ata_ResetBus: Wait DEV1 to allow access\n"));
         ata_out(0xa0 | (1 << 4), ata_DevHead, port);
-        ata_400ns(bus->ab_Alt);
+        ata_WaitNano(400);
+        //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
         TimeOut = 1000;     /* Timeout 1s (1ms x 1000) */
         while ( 1 ) {
             if ( (ata_in(2, port) == 0x01) && (ata_in(3, port) == 0x01) )
                 break;
-            ata_usleep(tr, 1000);
+            ata_WaitTO(bus->ab_Timer, 0, 1000, 0);
             if (!(--TimeOut)) {
                 D(bug("[ATA  ] ata_ResetBus: DEV1 1/2 TimeOut!\n"));
                 bus->ab_Dev[1] = DEV_NONE;
@@ -2426,7 +2426,7 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
             while ( 1 ) {
                 if( (ata_ReadStatus(bus) & ATAF_BUSY) == 0 )
                     break;
-                ata_usleep(tr, 1000);
+                ata_WaitTO(bus->ab_Timer, 0, 1000, 0);
                 if (!(--TimeOut)) {
                     D(bug("[ATA%02ld] ata_ResetBus: Device Timed Out!\n", ((bus->ab_BusNum << 1 ) + 1)));
                     bus->ab_Dev[1] = DEV_NONE;
@@ -2450,15 +2450,6 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
  */
 
 
-void ata_usleep(struct timerequest *tr, ULONG usec)
-{
-    tr->tr_node.io_Command = TR_ADDREQUEST;
-    tr->tr_time.tv_micro = usec % 1000000;
-    tr->tr_time.tv_secs = usec / 1000000;
-
-    DoIO((struct IORequest *)tr);
-}
-
 /*
     Device scan routines - TO BE REPLACED
         Note: This code checks if a drive "shadows" non existent drive's registers
@@ -2471,12 +2462,12 @@ void ata_InitBus(struct ata_Bus *bus)
     ULONG port = bus->ab_Port;
     UBYTE tmp1, tmp2;
 
-    bug("[ATA  ] ata_InitBus(%d)\n", bus->ab_BusNum);
+    /*
+     * initialize timer for the sake of scanning
+     */
+    bus->ab_Timer = ata_OpenTimer();
 
-    struct MsgPort *p = CreateMsgPort();
-    struct timerequest *tr = (struct timerequest *)CreateIORequest((struct MsgPort *)p,
-        sizeof(struct timerequest));
-    OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)tr, 0);
+    bug("[ATA  ] ata_InitBus(%d)\n", bus->ab_BusNum);
 
     bus->ab_Dev[0] = DEV_NONE;
     bus->ab_Dev[1] = DEV_NONE;
@@ -2486,7 +2477,7 @@ void ata_InitBus(struct ata_Bus *bus)
 
     /* Select device 0 */
     ata_out(0xa0, ata_DevHead, port);
-    ata_usleep(tr, 100);
+    ata_WaitTO(bus->ab_Timer, 0, 100, 0);
 
     /* Write some pattern to registers */
     ata_out(0x55, ata_Count, port);
@@ -2505,7 +2496,7 @@ void ata_InitBus(struct ata_Bus *bus)
 
     /* Select device 1 */
     ata_out(0xb0, ata_DevHead, port);
-    ata_usleep(tr, 100);
+    ata_WaitTO(bus->ab_Timer, 0, 100, 0);
 
     /* Write some pattern to registers */
     ata_out(0x55, ata_Count, port);
@@ -2522,11 +2513,8 @@ void ata_InitBus(struct ata_Bus *bus)
         bus->ab_Dev[1] = DEV_UNKNOWN;
     D(bug("[ATA%02ld] ata_InitBus: Device type = %x\n", (bus->ab_BusNum << 1 ) + 1, bus->ab_Dev[1]));
 
-    ata_ResetBus(tr, bus);
-
-    CloseDevice((struct IORequest *)tr);
-    DeleteIORequest((struct IORequest *)tr);
-    DeleteMsgPort(p);
+    ata_ResetBus(bus);
+    ata_CloseTimer(bus->ab_Timer);
     bug("[ATA  ] ata_InitBus: Finished\n");
 }
 

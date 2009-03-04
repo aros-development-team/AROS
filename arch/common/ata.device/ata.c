@@ -25,6 +25,7 @@
  * 2008-04-20  T. Wiszkowski       Corrected the flaw in drive identification routines leading to ocassional system hangups
  * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling
  *                                 medium removal, device detection, bus management and much more
+ * 2009-03-05  T. Wiszkowski       remade timeouts, added timer-based and benchmark-based delays.
  */
 
 #define DEBUG 0
@@ -36,6 +37,7 @@
 #include <utility/utility.h>
 #include <utility/tagitem.h>
 #include <oop/oop.h>
+#include "timer.h"
 
 #include <dos/bptr.h>
 
@@ -64,6 +66,14 @@ static void cmd_Reset(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 static void cmd_Read32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct ata_Unit *unit = (struct ata_Unit *)IOStdReq(io)->io_Unit;
+
+	if (AF_Removable == (unit->au_Flags & (AF_Removable | AF_DiscPresent)))
+	{
+		bug("[ATA%02ld] cmd_Read32: USUALLY YOU'D WANT TO CHECK IF DISC IS PRESENT FIRST\n", unit->au_UnitNum);
+		io->io_Error = TDERR_DiskChanged;
+		return;
+	}
+
     ULONG block = IOStdReq(io)->io_Offset;
     ULONG count = IOStdReq(io)->io_Length;
 
@@ -108,6 +118,13 @@ static void cmd_Read32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct ata_Unit *unit = (struct ata_Unit *)IOStdReq(io)->io_Unit;
+
+	if (AF_Removable == (unit->au_Flags & (AF_Removable | AF_DiscPresent)))
+	{
+		bug("[ATA%02ld] cmd_Read64: USUALLY YOU'D WANT TO CHECK IF DISC IS PRESENT FIRST\n", unit->au_UnitNum);
+		io->io_Error = TDERR_DiskChanged;
+		return;
+	}
 
     UQUAD block = (UQUAD)(IOStdReq(io)->io_Offset & 0xffffffff) |
         ((UQUAD)(IOStdReq(io)->io_Actual)) << 32;
@@ -163,6 +180,14 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 static void cmd_Write32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct ata_Unit *unit = (struct ata_Unit *)IOStdReq(io)->io_Unit;
+
+	if (AF_Removable == (unit->au_Flags & (AF_Removable | AF_DiscPresent)))
+	{
+		bug("[ATA%02ld] cmd_Write32: USUALLY YOU'D WANT TO CHECK IF DISC IS PRESENT FIRST\n", unit->au_UnitNum);
+		io->io_Error = TDERR_DiskChanged;
+		return;
+	}
+
     ULONG block = IOStdReq(io)->io_Offset;
     ULONG count = IOStdReq(io)->io_Length;
 
@@ -209,6 +234,14 @@ static void cmd_Write32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 static void cmd_Write64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct ata_Unit *unit = (struct ata_Unit *)IOStdReq(io)->io_Unit;
+
+	if (AF_Removable == (unit->au_Flags & (AF_Removable | AF_DiscPresent)))
+	{
+		bug("[ATA%02ld] cmd_Write64: USUALLY YOU'D WANT TO CHECK IF DISC IS PRESENT FIRST\n", unit->au_UnitNum);
+		io->io_Error = TDERR_DiskChanged;
+		return;
+	}
+
 
     UQUAD block = IOStdReq(io)->io_Offset | (UQUAD)(IOStdReq(io)->io_Actual) << 32;
     ULONG count = IOStdReq(io)->io_Length;
@@ -782,9 +815,8 @@ int ata_InitDaemonTask(LIBBASETYPEPTR LIBBASE)
  */
 void DaemonCode(LIBBASETYPEPTR LIBBASE)
 {
-    struct MsgPort *mp;         // Message port used with timer.device
     struct MsgPort *myport;     // Message port used with ata.device
-    struct timerequest *tr;     // timer's time request message
+	struct IORequest *timer;	// timer
     struct IOStdReq *ios[64];   // Placeholer for unit messages
     int count = 0,b,d;
     struct ata_Bus *bus;
@@ -794,9 +826,8 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
     /*
      * Prepare message ports and timer.device's request
      */
-    mp          = CreateMsgPort();
     myport      = CreateMsgPort();
-    tr          = (struct timerequest *)CreateIORequest(mp, sizeof(struct timerequest));
+	timer		= ata_OpenTimer();
     bus         = (struct ata_Bus*)LIBBASE->ata_Buses.mlh_Head;
 
     /*
@@ -859,11 +890,6 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
     if (1)
     {
         /*
-         * Ok, open the timer.device
-         */
-        OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0);
-
-        /*
          * Endless loop
          */
         for (b=0;;++b)
@@ -896,10 +922,7 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
             /*
              * And then hide and wait for 1 second
              */
-            tr->tr_node.io_Command = TR_ADDREQUEST;
-            tr->tr_time.tv_secs = 1;
-            tr->tr_time.tv_micro = 0;
-            DoIO((struct IORequest *)tr);
+			ata_WaitTO(timer, 1, 0, 0);
         }
     }
     else
@@ -908,9 +931,7 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
          * Well, when there are no ATAPI devices, daemon is useless. Say goodbye and quit then
          */
         D(bug("[%s] Deamon useless (no ATAPI devices in system). Bye\n",FindTask(NULL)->tc_Node.ln_Name));
-        DeleteMsgPort(myport);
-        DeleteMsgPort(mp);
-        DeleteIORequest((struct IORequest *)tr);
+		ata_CloseTimer(timer);
     }
 }
 
@@ -1037,6 +1058,7 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSema
     ObtainSemaphoreShared(ssem);
     Signal(parent, SIGBREAKF_CTRL_C);
 
+	bus->ab_Timer = ata_OpenTimer();
 
     /* Get the signal used for sleeping */
     bus->ab_Task = FindTask(0);

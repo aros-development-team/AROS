@@ -1,0 +1,59 @@
+/*
+    Copyright © 2009, The AROS Development Team. All rights reserved
+    $Id: aoeui
+
+    Desc:
+    Lang: English
+*/
+/*
+ * CHANGELOG:
+ * DATE        NAME                ENTRY
+ * ----------  ------------------  -------------------------------------------------------------------
+ * 2005-03-05  T. Wiszkowski       created file; initial benchmarked nanowait and timer-based micro/sec wait
+ */
+
+/*
+ * ata_OpenTimer
+ *   create timerequest to manage timed operations
+ * result
+ *   timerequest to be used with any of the calls below
+ * note
+ *   only one task can use given timerequest
+ */
+struct IORequest *ata_OpenTimer();
+
+/*
+ * ata_CloseTimer
+ *   dispose timerequest; most likely never used ;)
+ * params
+ *   tmr - obtained via ata_OpenTimer()
+ * result
+ *   none
+ */
+void ata_CloseTimer(struct IORequest *tmr);
+
+/*
+ * ata_Wait
+ *   wait for a period of time or a signal
+ * params
+ *   tmr - obtained via ata_OpenTimer()
+ *   secs - number of seconds to wait
+ *   micro - number of microseconds to wait
+ *   sigs - additionally - signal to wait for
+ * result
+ *   ULONG signals - if caught before timeout
+ */
+ULONG ata_WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro, ULONG sigs);
+
+/*
+ * ata_WaitNano
+ *   waits for (pretty much) specified amount of time. benchmarked.
+ * params
+ *   ns - amount of nanoseconds; 
+ * result
+ *   none
+ * note
+ *   rounds up ns to nearest multiply of 100
+ */
+void ata_WaitNano(ULONG ns);
+
