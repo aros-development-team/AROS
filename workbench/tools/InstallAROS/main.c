@@ -1712,6 +1712,10 @@ localecopydone:
         };
 
         TEXT extraspath[100];
+        BOOL undoenabled = data->instc_copt_undoenabled;
+
+        /* Explicitly disable undo. Some users might now have RAM for backup */
+        data->instc_copt_undoenabled = FALSE;
 
 
         /* Copying Extras */
@@ -1723,6 +1727,9 @@ localecopydone:
         /* Set EXTRASPATH environment variable */
         AddPart(extraspath, "Extras", 100);
         create_environment_variable(dest_Path, "EXTRASPATH", extraspath);
+
+        /* Restore undo state */
+        data->instc_copt_undoenabled = undoenabled;
     }
 
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
@@ -1748,6 +1755,10 @@ localecopydone:
                 NULL
             };
             TEXT developmentpath[100];
+            BOOL undoenabled = data->instc_copt_undoenabled;
+
+            /* Explicitly disable undo. Some users might now have RAM for backup */
+            data->instc_copt_undoenabled = FALSE;
 
             UnLock(lock);
 
@@ -1760,6 +1771,9 @@ localecopydone:
             /* Set DEVELPATH environment variable */
             AddPart(developmentpath, "Development", 100);
             create_environment_variable(dest_Path, "DEVELPATH", developmentpath);
+
+            /* Restore undo state */
+            data->instc_copt_undoenabled = undoenabled;
         }
         else D(bug("[INSTALLER] Couldn't locate Developer Files...\n"));
     }
