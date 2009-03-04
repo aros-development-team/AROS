@@ -50,9 +50,9 @@ typedef __intptr_t              __pid_t;
 typedef __intptr_t              __ptrdiff_t;        /* XXX __intptr_t? */
 typedef __uint8_t               __sa_family_t;
 #undef __size_t
-typedef unsigned int            __size_t;           /* XXX Large Files? */
+typedef unsigned long           __size_t;           /* XXX Large Files? */
 typedef __uint32_t              __socklen_t;
-typedef int                     __ssize_t;
+typedef long                    __ssize_t;
 typedef __int32_t               __suseconds_t;
 typedef __int32_t               __time_t;           /* XXX Limiting? */
 typedef int                     __timer_t;
