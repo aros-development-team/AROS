@@ -1,6 +1,6 @@
-## version $VER: diskinfo.catalog 1.0 (24.11.2008)
+## version $VER: diskinfo.catalog 1.1 (4.03.2009)
 ## language russian
-## codeset 0
+## codeset 1251
 ;
 ;
 MSG_TITLE
@@ -44,6 +44,74 @@ Olivier Adam
 ; Olivier Adam
 ;
 MSG_COPYRIGHT
-Copyright (C) 2006 AROS Dev Team
+Copyright 2006-2009 AROS Dev Team
 ; ©2006 AROS Dev Team
+;
+MSG_USED
+Занято
+;Used space
+;
+MSG_FREE
+Свободно
+;Free space
+;
+MSG_SIZE
+Объём
+;Capacity
+;
+MSG_BLOCK_SIZE
+Размер блока
+;Block size
+;
+MSG_BLOCKS
+блоков
+;blocks
+;
+MSG_BYTES
+байт
+;bytes
+;
+MSG_STATUS
+Состояние
+;Status
+;
+MSG_READABLE
+Чтение
+;Readable
+;
+MSG_READABLE_WRITABLE
+Чтение/запись
+;Readable/writable
+;
+MSG_VALIDATING
+Проверка
+;Validating
+;
+MSG_NAME
+Имя тома
+;Volume Name
+;
+MSG_UNIT
+Устройство
+;unit
+;
+MSG_DOSDEVICE
+DOS имя:
+;DOS Device:
+;
+MSG_DEVICEINFO
+Подключен к:
+;Connected on:
+;
+MSG_FILESYSTEM
+Файловая система:
+;FileSystem:
+;
+MSG_PACKETDEVICE
+Packet-устройство
+;Packet Style device
+;
+MSG_IOFSDEVICE
+IOFS-устройство
+;IOFS Style device
 ;

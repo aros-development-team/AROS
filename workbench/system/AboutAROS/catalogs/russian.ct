@@ -113,7 +113,7 @@ MSG_SECTION_DOS
 DOS
 ; DOS
 ;
-MSG_SECTION_NETWORK (//)
+MSG_SECTION_NETWORK
 Сетевые компоненты
 ;Networking Components
 ;
@@ -137,6 +137,6 @@ MSG_SECTION_WEBSITE
 Веб-сайт
 ; Website
 ;
-MSG_SECTION_DATATYPES (//)
+MSG_SECTION_DATATYPES
 Datatypes
 ;Datatypes
