@@ -1,5 +1,0 @@
-# Windows hosted hidd.prefs
-library wingdi.hidd
-gfx	hidd.gfx.gdi
-mouse	hidd.mouse.gdi
-kbd	hidd.kbd.gdi

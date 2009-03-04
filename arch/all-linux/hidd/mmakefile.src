@@ -7,11 +7,3 @@ FILES := linux_init gfxclass bmclass kbdclass mouseclass inputtask
   modname=linux modtype=hidd \
   files=$(FILES)  cflags="$(HOST_CFLAGS) -I$(GENINCDIR) -D__AROS__" \
   compiler=host
-
-
-# Install Linux specific hidd.prefs file
-#MM workbench-s-hiddprefs-linux-$(CPU) : workbench-s-setup
-workbench-s-hiddprefs-linux-$(CPU) : $(AROS_S)/hidd.prefs
-	
-$(AROS_S)/hidd.prefs : hidd.prefs
-	@$(CP) $< $@
