@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-chrp-ppc-efika \
 #MM		kernel-chrp-ppc-irq \
 #MM		kernel-package-chrp-ppc-efika \
+#MM		arch-common-boot-generatebootsig \
 #MM		workbench-complete
 
 #MM kernel-package-chrp-ppc-efika: \
@@ -37,6 +38,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-workbench \
 #MM	kernel-boot \
 #MM kernel-dos \
+#MM kernel-dosboot \
 #MM kernel-ata \
 #MM	hidd-i2c \
 #MM	hidd-radeon \
@@ -49,7 +51,7 @@ include $(TOP)/config/make.cfg
 #MM	workbench-hidd-graphics
 
 PKG_GEN_LIBS 	:= aros mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench boot dos
-PKG_GEN_RSRC 	:= misc
+PKG_GEN_RSRC 	:= misc dosboot
 PKG_GEN_DEVS 	:= input gameport keyboard console
 PKG_GEN_HANDLERS:= con nil amberram packet cdrom
 PKG_GEN_HIDDS	:= graphics hiddclass i2c pci
