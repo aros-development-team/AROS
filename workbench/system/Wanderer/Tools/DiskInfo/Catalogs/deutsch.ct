@@ -70,3 +70,47 @@ MSG_BYTES (//)
 Byte
 ; bytes
 ;
+MSG_STATUS (//)
+Status
+; Status
+;
+MSG_READABLE (//)
+Lesbar
+; Readable
+;
+MSG_READABLE_WRITABLE (//)
+Lesbar/beschreibbar
+; Readable/writable
+;
+MSG_VALIDATING (//)
+Evauliere
+; Validating
+;
+MSG_NAME (//)
+Datenträgername
+; Volume Name
+;
+MSG_UNIT (//)
+Geräteeinheit
+; unit
+;
+MSG_DOSDEVICE (//)
+DOS Gerät:
+; DOS Device:
+;
+MSG_DEVICEINFO (//)
+Verbunden mit:
+; Connected on:
+;
+MSG_FILESYSTEM (//)
+Dateisystem:
+; FileSystem:
+;
+MSG_PACKETDEVICE (//)
+Packet-style Geräte
+; Packet Style device
+;
+MSG_IOFSDEVICE (//)
+IOFS-style Gerät
+; IOFS Style device
+;
