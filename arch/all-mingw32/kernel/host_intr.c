@@ -208,9 +208,11 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
     HANDLE ThisProcess;
     HANDLE SwitcherThread;
     LARGE_INTEGER VBLPeriod;
+    OSVERSIONINFO osver;
     void *MainTEB;
     int i;
     DWORD SwitcherId;
+    ULONG LastErrOffset = 0;
 
     D(printf("[KRN] Setting up interrupts, SysBasePtr = 0x%08lX, KernelBasePtr = 0x%08lX\n", SysBasePointer, KernelBasePointer));
     SysBasePtr = SysBasePointer;
@@ -223,26 +225,47 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
     	if (SwData.IntObjects[INT_TIMER]) {
 	    ThisProcess = GetCurrentProcess();
 	    if (DuplicateHandle(ThisProcess, GetCurrentThread(), ThisProcess, &SwData.MainThread, 0, TRUE, DUPLICATE_SAME_ACCESS)) {
-	        MainTEB = NtCurrentTeb();
-	        /* TODO: This currently works only on Windows NT family. In order to get it running on earlier Windows versions (98 and Me)
-	         * we should determine OS version and use appropriate offsets:
-	         * Windows 95 - 0x60
-	         * Windows 98 - ????
-	         * Windows Me - 0x74
+	        FillMemory(&osver, sizeof(osver), 0);
+	        osver.dwOSVersionInfoSize = sizeof(osver);
+	        GetVersionEx(&osver);
+	        /* LastError value is part of our context. In order to manipulate it we have to hack
+	           into Windows TEB (thread environment block).
+	           Since this structure is private, error code offset changes from version to version.
+	           The following offsets are known:
+	           * Windows 95 and 98 - 0x60
+	           * Windows Me - 0x74
+	           * Windows NT (all family, fixed at last) - 0x34
 	         */
-	        LastErrorPtr = MainTEB + 0x34;
-	        SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, &SwData, 0, &SwitcherId);
-	        if (SwitcherThread) {
-	   	    D(printf("[KRN] Task switcher started, ID %lu\n", SwitcherId));
+	        switch(osver.dwPlatformId) {
+	        case VER_PLATFORM_WIN32_WINDOWS:
+	            if (osver.dwMajorVersion == 4) {
+	                if (osver.dwMinorVersion > 10)
+	                    LastErrOffset = 0x74;
+	                else
+	                    LastErrOffset = 0x60;
+	            }
+	            break;
+	        case VER_PLATFORM_WIN32_NT:
+	            LastErrOffset = 0x34;
+	            break;
+	        }
+	        if (LastErrOffset) {
+		    MainTEB = NtCurrentTeb();
+		    LastErrorPtr = MainTEB + LastErrOffset;
+		    SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, &SwData, 0, &SwitcherId);
+		    if (SwitcherThread) {
+			D(printf("[KRN] Task switcher started, ID %lu\n", SwitcherId));
 #ifdef SLOW
-		    TimerPeriod = 5000;
+			TimerPeriod = 5000;
 #else
-		    TimerPeriod = 1000/TimerPeriod;
+			TimerPeriod = 1000/TimerPeriod;
 #endif
-		    VBLPeriod.QuadPart = -10000*(LONGLONG)TimerPeriod;
-		    return SetWaitableTimer(SwData.IntObjects[INT_TIMER], &VBLPeriod, TimerPeriod, NULL, NULL, 0);
-		}
-		    D(else printf("[KRN] Failed to run task switcher thread\n");)
+			VBLPeriod.QuadPart = -10000*(LONGLONG)TimerPeriod;
+			return SetWaitableTimer(SwData.IntObjects[INT_TIMER], &VBLPeriod, TimerPeriod, NULL, NULL, 0);
+		    }
+			D(else printf("[KRN] Failed to run task switcher thread\n");)
+		} else
+		    printf("Unsupported Windows version %u.%u, platform ID %u\n", osver.dwMajorVersion, osver.dwMinorVersion, osver.dwPlatformId);
 	    }
 		D(else printf("[KRN] failed to get thread handle\n");)
 	}
