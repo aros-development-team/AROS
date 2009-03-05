@@ -1,6 +1,6 @@
 /*
     Copyright © 2009, The AROS Development Team. All rights reserved
-    $Id: aoeui
+    $Id: timer.c
 
     Desc:
     Lang: English
@@ -9,6 +9,7 @@
  * CHANGELOG:
  * DATE        NAME                ENTRY
  * ----------  ------------------  -------------------------------------------------------------------
+ * 2005-03-06  T. Wiszkowski       few corrections (thanks, Georg)
  * 2005-03-05  T. Wiszkowski       created file; initial benchmarked nanowait and timer-based micro/sec wait
  */
 
@@ -152,9 +153,13 @@ ULONG ata_WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro, ULONG sigs)
     SendIO(tmr);
     sigs = Wait(sigs | sig);
     if (0 == (sigs & sig))
-	AbortIO(tmr);
+    {
+	if (!CheckIO(tmr))
+	    AbortIO(tmr);
+    }
+    WaitIO(tmr);
 
-    SetSignal(sig, 0);
+    SetSignal(0, sig);
 
     return sigs &~ sig;
 }
