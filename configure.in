@@ -770,6 +770,11 @@ case "$target_os" in
     darwin*)
 	aros_target_arch="darwin"
 	aros_flavour="emulation"
+	dnl FIXME
+	dnl This test bypass was implemented for Darwin by port's author.
+	dnl I wonder why, since darwin port needs this function.
+	dnl I left it here just because port author did it.
+	need_dlopen="no"
 	case "$target_cpu" in
 		*i?86*)
 			aros_target_cpu="i386"
@@ -953,6 +958,8 @@ case "$target_os" in
     mingw32*)
         aros_target_arch="mingw32"
 	aros_shared_default="no"
+	need_dlopen="no"
+	rescomp="windres"
 	case "$target_cpu" in
 	    *i?86*)
 		aros_target_cpu="i386"
@@ -971,6 +978,7 @@ case "$target_os" in
 		aros_target_strip="i386-aros-strip"
 		aros_target_objcopy="i386-aros-objcopy"
 		aros_target_objdump="i386-aros-objdump"
+		target_tool_prefix="i386-mingw32-"
 		;;
 	    *)
 		AC_MSG_ERROR("Unknown CPU for Mingw32 -- $target_cpu")
@@ -1129,7 +1137,9 @@ fi
 # Set prefix for target compiler etc. if we're cross-compiling
 # (should possibly be earlier but needs to be after AC_PROG_CC)
 if test "$cross_compiling" = "yes" ; then
-    target_tool_prefix=${target_cpu}-elf-
+    if test "$target_tool_prefix" = ""; then
+	target_tool_prefix=${target_cpu}-elf-
+    fi
     CC=${target_tool_prefix}gcc
 fi
 
@@ -1193,6 +1203,10 @@ if test "$crosstools" != "yes"; then
     AROS_REQUIRED(ranlib,$aros_target_ranlib_ln)
     AROS_TOOL_TARGET(aros_target_strip_ln,strip,$aros_target_strip)
     AROS_REQUIRED(strip,$aros_target_strip_ln)
+    if test "$rescomp" != ""; then
+	AROS_TOOL_TARGET(aros_kernel_rescomp,$rescomp,$aros_kernel_rescomp)
+	AROS_REQUIRED($rescomp,$aros_kernel_rescomp)
+    fi
 fi
 
 aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
@@ -1266,7 +1280,7 @@ dnl find out about the target cc's include path
 AC_MSG_CHECKING([for the target compiler's include path])
 if test "$aros_target_cc_includes" = "" ; then
     #try to guess where the directory is
-    aros_target_cc_includes=`dirname \`${aros_kernel_cc} -print-libgcc-file-name\``/include
+    aros_target_cc_includes=`dirname \`${orig_target_cc} -print-libgcc-file-name\``/include
     if ! test -d $aros_target_cc_includes; then
         #the directory doesn't exist, we need to do some more work
         aros_target_cc_includes=${PWD}/${aros_gendir}/cc_include
@@ -1393,7 +1407,7 @@ AC_MSG_RESULT($nesting_supervisor)
 dnl things specifically required for hosted flavours
 if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
 
-    if test "x-$aros_host_arch" != "x-darwin" ; then
+    if test "x-$need_dlopen" != "x-no" ; then
       dnl some kind of dynamic library access system is required for hostlib.resource
       AC_CHECK_FUNC(dlopen, have_dl="yes", have_dl="no")
       if test "x-$have_dl" = "x-no" ; then
@@ -1641,6 +1655,7 @@ AC_SUBST(aros_target_objdump)
 AC_SUBST(aros_target_objcopy)
 AC_SUBST(aros_target_strip)
 AC_SUBST(aros_target_nm)
+AC_SUBST(aros_kernel_rescomp)
 AC_SUBST(aros_shared_default)
 AC_SUBST(aros_shared_ld)
 AC_SUBST(aros_object_format)

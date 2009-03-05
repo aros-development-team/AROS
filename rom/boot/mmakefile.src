@@ -9,11 +9,16 @@ include $(TOP)/config/make.cfg
 
 # The next is a hack so the AROS ctype is used on native platforms
 # This should be removed when a proper kernel compiler is present
-ifeq ($(AROS_TARGET_ARCH),pc)
-    USER_CFLAGS := -I$(AROS_INCLUDES)
-else
-    USER_CFLAGS := -I$(SYS_INCLUDES) -I$(GENINCDIR)
-endif
+#
+# 04.03.2009 - this breaks cross-build of Win32-hosted AROS on x86-64 machine.
+# Is it still needed? Anyway toupper() isn't used in this code
+# Pavel Fedin <sonic.amiga@gmail.com>
+#
+#ifeq ($(AROS_TARGET_ARCH),pc)
+#    USER_CFLAGS := -I$(AROS_INCLUDES)
+#else
+#    USER_CFLAGS := -I$(SYS_INCLUDES) -I$(GENINCDIR)
+#endif
 
 %build_module_simple mmake=kernel-boot \
   modname=boot modtype=library \

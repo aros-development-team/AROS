@@ -53,7 +53,14 @@
     The downside of all this is that we will end up with quite a few
     signed/unsigned problems.
 */
-#define _AROS_WCHAR_T_	    LONG
+/* This definition causes omitting wchar_t declaration in gcc's stddef.h in
+   i386-aros-gcc >= 4.2.2 because _AROS_WCHAR_T is used there as a flag
+   telling that wchar_t is already defined. This renders stdlib.h unusable
+   under some conditions (for example this breaks dhclient build).
+   I've looked throughout the AROS code and it seems that this definition
+   isn't used anywhere. So i've just commented it out.
+   Pavel Fedin <sonic.amiga@gmail.com>
+#define _AROS_WCHAR_T_	    LONG */
 #define _AROS_WINT_T_	    LONG
 
 /*
