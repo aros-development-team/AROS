@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 FILES := vartest
 EXEDIR := $(AROS_TESTS)/rexx
 
-USER_CFLAGS := -I$(TOP)/workbench/libs
+USER_CFLAGS := -I$(SRCDIR)/workbench/libs
 
 #MM- test : test-rexx
 #MM- test-rexx : test-rexx-util test-rexx-copy

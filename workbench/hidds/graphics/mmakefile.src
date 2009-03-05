@@ -35,7 +35,7 @@ $(STUB_OBJS) : $(OBJDIR)/%.o : %.c
 	%compile_q	
 
 
-INCLUDE_FILES    := $(wildcard include/*.h)
+INCLUDE_FILES    := $(call WILDCARD, include/*.h)
 
 %copy_includes path=hidd dir=include
 

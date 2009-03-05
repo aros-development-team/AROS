@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-COUNTRIES    := $(basename $(wildcard *.c))
+COUNTRIES    := $(basename $(call WILDCARD, *.c))
 
 COUNTRYDIR   := $(AROS_LOCALE)/Countries
 MAKECOUNTRY  := $(OBJDIR)/makecountry
@@ -30,7 +30,7 @@ workbench-locale-countries-quick : workbench-locale-countries
 $(COUNTIFF) : | $(MAKECOUNTRY) $(COUNTRYDIR)
 $(COUNTRYDIR)/%.country : $(OBJDIR)/%.o
 	@$(ECHO) "Making $(notdir $@)..."
-	@$(MAKECOUNTRY) $(COUNTRYDIR)/ $*
+	@cd $(SRCDIR)/$(CURDIR); $(MAKECOUNTRY) $(COUNTRYDIR)/ $*
 
 $(MAKECOUNTRY) : $(OBJS) $(OBJDIR)/makecountry.o
 	@$(ECHO) "Making $(@F)..."

@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I$(TOP)/rom/devs
+USER_INCLUDES := -I$(SRCDIR)/rom/devs
 USER_CFLAGS := -D__DOS_NOLIBBASE__
 
 IMAGE_TYPES := aos aout elf elf64 elf_aros

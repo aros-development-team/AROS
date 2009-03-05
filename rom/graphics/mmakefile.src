@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I$(TOP)/rom/cgfx
+USER_INCLUDES := -I$(SRCDIR)/rom/cgfx
 
 FILES	  := \
 	intregions \

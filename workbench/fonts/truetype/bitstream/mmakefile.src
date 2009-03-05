@@ -7,10 +7,10 @@ include $(TOP)/config/make.cfg
 #MM workbench-fonts-truetype : setup
 
 workbench-fonts-truetype : files-copy files-copy-extra
-%copy_files_q files="$(wildcard *.ttf)" dst=$(AROSDIR)/Fonts/TrueType
+%copy_files_q files="$(call WILDCARD, *.ttf)" dst=$(AROSDIR)/Fonts/TrueType
 
 files-copy-extra :
-	@for file in *.font *.otag; do \
+	@cd $(SRCDIR)/$(CURDIR); for file in *.font *.otag; do \
             if [ ! -e "$(AROSDIR)/Fonts/$$file" ]; then \
                 $(ECHO) Copying "$$file"...; \
                 $(CP) "$$file" $(AROSDIR)/Fonts; \

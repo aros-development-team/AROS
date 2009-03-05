@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 #MM- kernel-gameport : includes linklibs
 
-USER_INCLUDES := -I$(TOP)/rom/devs
+USER_INCLUDES := -I$(SRCDIR)/rom/devs
 
 %build_module mmake=kernel-gameport \
   modname=gameport modtype=device \
@@ -11,5 +11,5 @@ USER_INCLUDES := -I$(TOP)/rom/devs
 
 #MM includes-copy
 
-INCLUDE_FILES := $(wildcard include/*.h)
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
 %copy_includes path=devices dir=include

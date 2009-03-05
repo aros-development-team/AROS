@@ -19,15 +19,15 @@ workbench-libs-openurl-catalogs : \
 
 
 $(AROS_CATALOGS)/deutsch/OpenURL.catalog  : OpenURL_deu.ct
-	@$(FLEXCAT) OpenURL.cd $< CATALOG=$@
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
 
 $(AROS_CATALOGS)/italiano/OpenURL.catalog : OpenURL_ita.ct
-	@$(FLEXCAT) OpenURL.cd $< CATALOG=$@
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
 
 $(AROS_CATALOGS)/svenska/OpenURL.catalog  : OpenURL_swe.ct
-	@$(FLEXCAT) OpenURL.cd $< CATALOG=$@
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
 
 $(AROS_CATALOGS)/français/OpenURL.catalog  : OpenURL_fra.ct
-	@$(FLEXCAT) OpenURL.cd $< CATALOG=$@
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
 
 %common

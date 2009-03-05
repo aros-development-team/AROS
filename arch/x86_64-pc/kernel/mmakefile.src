@@ -11,12 +11,12 @@ kernel-kernel-pc-x86_64-kobj : $(KOBJSDIR)/smpboot.bin.o
 
 %build_module mmake=kernel-kernel-pc-x86_64 	\
   modname=kernel modtype=resource		\
-  cflags="$(CFLAGS) -I$(TOP)/rom/exec"		\
+  cflags="$(CFLAGS) -I$(SRCDIR)/rom/exec"	\
   files="$(KERNELFILES)" uselibs="rom"
 
 $(KOBJSDIR)/smpboot.bin.o : smpbootstrap.c
 	%mkdirs_q $(GENDIR)/$(CURDIR)/arch		
-	$(TARGET_CC) $(CFLAGS) -m32 -fomit-frame-pointer -c smpbootstrap.c
+	$(TARGET_CC) $(CFLAGS) -m32 -fomit-frame-pointer -c $(SRCDIR)/$(CURDIR)/smpbootstrap.c
 	$(KERNEL_LD) -melf_i386	-Ttext=0 -o smpbootstrap smpbootstrap.o
 	$(OBJCOPY) -O binary smpbootstrap
 	$(KERNEL_LD) -r --format binary smpbootstrap -o $(KOBJSDIR)/smpboot.bin.o

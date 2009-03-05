@@ -9,7 +9,7 @@ FILES := JanoPrefs PrefsPort Prefs Prefs_Strings SampleEd Utils
 EXEDIR := $(AROS_PREFS)
 
 USER_CFLAGS := -DJANOPREF
-USER_INCLUDES := -I../../tools/Edit
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../../tools/Edit
 
 #MM- workbench-prefs : workbench-prefs-editor
 #MM workbench-prefs-editor : includes linklibs workbench-prefs-editor-catalogs

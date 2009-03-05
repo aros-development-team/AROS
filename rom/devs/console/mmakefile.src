@@ -14,6 +14,6 @@ FUNCS	:=  cdinputhandler rawkeyconvert
 
 #MM includes-copy
 
-INCLUDE_FILES := $(wildcard include/*.h)
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
 %copy_includes path=devices dir=include
 

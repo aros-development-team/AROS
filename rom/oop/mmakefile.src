@@ -31,5 +31,5 @@ USER_CFLAGS := -DAROS_USE_OOP -D__OOP_NOLIBBASE__
 
 #MM includes-copy
 
-INCLUDE_FILES := $(wildcard include/*.h)
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
 %copy_includes path=oop dir=include

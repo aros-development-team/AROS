@@ -88,8 +88,8 @@ AROS_CONTRIB         := $(AROSDIR)/$(AROS_DIR_CONTRIB)
 # The generated files all go under the GENDIR path
 SCRIPTDIR            := $(GENDIR)/scripts
 
-MKDEPEND             := $(TOP)/scripts/mkdep
-FETCH                := $(TOP)/scripts/fetch.sh
+MKDEPEND             := $(SRCDIR)/scripts/mkdep
+FETCH                := $(SRCDIR)/scripts/fetch.sh
    
 # The paths to the generated tools
 TOOLDIR		:= $(HOSTDIR)/tools
@@ -178,3 +178,9 @@ endif
 
 # Dirs to create a makedir rule for
 GLOB_MKDIRS :=
+
+# Source directory is added to the target search path
+VPATH := $(SRCDIR)/$(CURDIR)
+
+# Macro for expanding wildcards in source directory
+WILDCARD = $(subst $(SRCDIR)/$(CURDIR)/,,$(wildcard $(addprefix $(SRCDIR)/$(CURDIR)/,$(1))))

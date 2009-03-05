@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 FONTSDIR    := $(BINDIR)/Fonts
 
 FONTS       := fixed arial stop ttcourier XEN
-FONTFILES   := $(foreach f, $(FONTS), $(foreach s, $(filter-out $(f)/CVS, $(wildcard $(f)/*)), $(FONTSDIR)/$(s)))
+FONTFILES   := $(foreach f, $(FONTS), $(foreach s, $(filter-out $(f)/CVS, $(call WILDCARD, $(f)/*)), $(FONTSDIR)/$(s)))
 
 DIRS        := $(FONTSDIR) $(addprefix $(FONTSDIR)/,$(FONTS))
 

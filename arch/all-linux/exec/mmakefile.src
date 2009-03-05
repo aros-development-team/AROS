@@ -6,9 +6,9 @@ kernel-linux-sigcore : $(GENINCDIR)/sigcore.h
 
 $(GENINCDIR)/sigcore.h : ../$(AROS_TARGET_CPU)/sigcore.h.src mksigcore.sh
 	%mkdirs_q $(GENINCDIR)
-	CC="$(HOST_CC)" CPU=$(AROS_TARGET_CPU) $(SHELL) ./mksigcore.sh $(TOP)/$(CURDIR) $(GENINCDIR)/sigcore.h
+	CC="$(HOST_CC)" CPU=$(AROS_TARGET_CPU) $(SHELL) $(SRCDIR)/$(CURDIR)/mksigcore.sh $(SRCDIR)/$(CURDIR) $(GENINCDIR)/sigcore.h
 
-USER_INCLUDES := -I$(TOP)/rom/exec -I$(GENINCDIR)
+USER_INCLUDES := -I$(SRCDIR)/rom/exec -I$(GENINCDIR)
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=linux \
   files=init compiler=host

@@ -248,7 +248,10 @@ callmake (Project * prj, const char * tname, Makefile * makefile)
 
 debug(printf("MMAKE:project.c->callmake()\n"));
 
-    chdir (prj->srctop);
+    if (makefile->generated)
+	chdir (prj->buildtop);
+    else
+	chdir (prj->srctop);
     chdir (path);
 
     setvar (&prj->vars, "CURDIR", path);

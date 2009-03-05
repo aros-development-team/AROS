@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 #MM- kernel-dosboot-freebsd : kernel-dosboot-hosted
 
 USER_INCLUDES	:= -I$(GENINCDIR)
-USER_CFLAGS	:= -I$(TOP)/rom/dosboot -I..
+USER_CFLAGS	:= -I$(SRCDIR)/rom/dosboot -I..
 %build_archspecific \
   mainmmake=kernel-dosboot maindir=rom/dosboot \
   arch=hosted files="boot"

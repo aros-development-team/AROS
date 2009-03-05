@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 FILES := kernel alert cause disable enable exception preparecontext stackswap switch \
       	 rawioinit rawputchar rawmaygetchar idletask shutdowna
 
-USER_INCLUDES   := -I$(GENINCDIR) -I$(TOP)/rom/exec -I..
+USER_INCLUDES   := -I$(GENINCDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/$(CURDIR)/..
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
   arch=unix compiler=host \

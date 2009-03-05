@@ -1,7 +1,7 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
-MY_INCLS    := $(wildcard include/*.h)
+MY_INCLS    := $(call WILDCARD, include/*.h)
 DEST_INC    := $(foreach f,$(MY_INCLS), $(AROS_INCLUDES)/hidd/$(notdir $f))
 GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
 
@@ -10,10 +10,10 @@ includes-copy : $(DEST_INC) $(GEN_INC)
 	@$(NOP)
 
 $(AROS_INCLUDES)/hidd/%.h : include/%.h
-	@$(CP) include/$(notdir $<) $@
+	@$(CP) $< $@
 
 $(GENINCDIR)/hidd/%.h : include/%.h
-	@$(CP) include/$(notdir $<) $@
+	@$(CP) $< $@
 
 #MM
 setup-includes :

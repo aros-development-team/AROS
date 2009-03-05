@@ -837,6 +837,13 @@ readmakefile (FILE * fh)
     }
     makefile->time = intt;
 
+    if (!readuint32 (fh, &intt)) 
+    {
+	error ("readmakefile:fread():%d", __LINE__);
+	exit (20);
+    }
+    makefile->generated = intt;
+
     for (;;)
     {
 	int32_t in;
@@ -907,6 +914,12 @@ writemakefile (FILE * fh, Makefile * makefile)
     }
 
     if (!writeuint32 (fh, makefile->time))
+    {
+	error ("writemakefile/fwrite():%d", __LINE__);
+	return 0;
+    }
+
+    if (!writeuint32 (fh, makefile->generated))
     {
 	error ("writemakefile/fwrite():%d", __LINE__);
 	return 0;

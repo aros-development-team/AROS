@@ -4,12 +4,12 @@ include $(TOP)/config/make.cfg
 MODNAME	:=  serial
 MODTYPE	:=  hidd
 
-USER_CFLAGS :=	-DAROS_USE_OOP -I.
+USER_CFLAGS :=	-DAROS_USE_OOP -I$(SRCDIR)/$(CURDIR)
 
 FILES       :=
 STUBS	    := $(MODNAME)_stubs
 
-INCLUDE_FILES := $(wildcard include/*.h)
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
 
 # When there is actually a hidd.serial class for here, generate the whole
 # lot.

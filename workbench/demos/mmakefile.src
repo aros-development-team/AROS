@@ -70,7 +70,7 @@ FILES	:= \
     winshape
 endif
 
-USER_CFLAGS := -I$(TOP)/workbench/libs
+USER_CFLAGS := -I$(SRCDIR)/workbench/libs
 
 #MM demos :includes linklibs demos-images-setup workbench-demos-zune
 

@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 #MM workbench-classes-zune-betterstring-class : includes linklibs
 
-USER_INCLUDES = -I../includes -I../mcp -I..
+USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../includes -I$(SRCDIR)/$(CURDIR)/../mcp -I$(SRCDIR)/$(CURDIR)/..
 
 FILES := AllocBitMap \
 	 AllocFunctions \

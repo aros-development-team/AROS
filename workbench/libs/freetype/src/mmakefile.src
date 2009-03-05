@@ -54,7 +54,7 @@ SHFILES := \
     aros/obtaininfoa \
     aros/releaseinfoa \
 
-USER_INCLUDES := -I. -I../include $(addprefix -I,$(DIRS))
+USER_INCLUDES := -I. -I$(SRCDIR)/$(CURDIR)/../include $(addprefix -I,$(DIRS))
 
 USER_CFLAGS := -DFT2_BUILD_LIBRARY
 

@@ -38,7 +38,7 @@ FILES	:= \
     Unsetenv \
     Why
 
-USER_CFLAGS := -I$(TOP)/rom/dos
+USER_CFLAGS := -I$(SRCDIR)/rom/dos
 
 #MM- workbench-c : workbench-c-shellcommands
 #MM- workbench-c-quick : workbench-c-shellcommands-quick

@@ -378,8 +378,8 @@ else
 endif
 
 CLASSFILES    := $(foreach f, $(CLASSES), classes/$(f))
-CLASSINCLUDES := $(foreach f, $(CLASSES), classes/$(f).h) \
-                 $(foreach f, $(EXTCLASSES), classes/$(f).h)
+CLASSINCLUDES := $(foreach f, $(CLASSES), $(SRCDIR)/$(CURDIR)/classes/$(f).h) \
+                 $(foreach f, $(EXTCLASSES), $(SRCDIR)/$(CURDIR)/classes/$(f).h)
 FILES         := $(FILES) $(CLASSFILES)
 
 #MM- workbench-libs-muimaster : includes linklibs workbench-libs-coolimages
@@ -411,7 +411,7 @@ $(AROS_INCLUDES)/libraries/mui.h : $(GENINCDIR)/libraries/mui.h
 
 $(GENINCDIR)/libraries/mui.h : $(BUILDINCTOOL) mui.h macros.h $(CLASSINCLUDES)
 	@$(ECHO) Rebuilding $@
-	@$(BUILDINCTOOL) > $@
+	@cd $(SRCDIR)/$(CURDIR); $(BUILDINCTOOL) > $@
 
 $(BUILDINCTOOL) : buildincludes.c
 	%mkdirs_q $(dir $(BUILDINCTOOL))

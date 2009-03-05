@@ -12,8 +12,8 @@ AFILES		:= coldreboot corelow stackswap
 
 #MM kernel-exec-pc-i386 : kernel-exec-includes includes-asm_h-i386
 
-USER_CFLAGS 	:= -I$(TOP)/rom/exec
-USER_AFLAGS 	:= -I$(TOP)/rom/exec -I$(GENINCDIR)
+USER_CFLAGS 	:= -I$(SRCDIR)/rom/exec
+USER_AFLAGS 	:= -I$(SRCDIR)/rom/exec -I$(GENINCDIR)
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=pc-i386 \
   files=$(CFILES) asmfiles=$(AFILES) modulename=exec
@@ -23,7 +23,7 @@ TARGETDIR = $(BD_OBJDIR$(BDID))
 kernel-exec-pc-i386 :: $(TARGETDIR)/vesa.bin.o
 
 $(TARGETDIR)/vesa.bin.o: vesa.c
-	$(TARGET_CC) $(CFLAGS) -c -I$(GENINCDIR) vesa.c -o $(TARGETDIR)/vesa.o
+	$(TARGET_CC) $(CFLAGS) -c -I$(GENINCDIR) $< -o $(TARGETDIR)/vesa.o
 	$(KERNEL_LD) -e 0x1000 -Ttext 0x1000 -N -d -nostdlib --oformat binary -o $(TARGETDIR)/vesa $(TARGETDIR)/vesa.o
 	rm $(TARGETDIR)/vesa.o
 	cd $(TARGETDIR) && $(TARGET_LD) -r --format binary vesa -o vesa.bin.o

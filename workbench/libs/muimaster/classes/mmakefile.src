@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS := -I..
+USER_CFLAGS := -I$(SRCDIR)/$(CURDIR)/..
 USER_LIBS   := amiga rom m mui
 
 #MM- workbench-libs-muimaster : \

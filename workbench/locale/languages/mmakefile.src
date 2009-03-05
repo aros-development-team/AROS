@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-LANGUAGES := $(basename $(wildcard *.c))
+LANGUAGES := $(basename $(call WILDCARD, *.c))
 
 MODDIR  := $(AROS_LOCALE)/Languages
 OBJDIR  := $(GENDIR)/$(CURDIR)

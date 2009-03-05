@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.. -I$(TOP)/workbench/libs/locale
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/.. -I$(SRCDIR)/workbench/libs/locale
 
 %build_archspecific \
   mainmmake=workbench-libs-locale maindir=workbench/libs/locale \

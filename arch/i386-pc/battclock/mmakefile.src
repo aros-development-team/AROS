@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS 	:= -I$(TOP)/rom/battclock
+USER_CFLAGS 	:= -I$(SRCDIR)/rom/battclock
 %build_archspecific \
   mainmmake=kernel-battclock maindir=rom/battclock arch=pc-i386 \
   files=readbattclock modulename=battclock

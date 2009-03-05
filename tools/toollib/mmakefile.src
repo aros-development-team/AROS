@@ -12,8 +12,6 @@ HFILES := \
 	toollib.h \
 	vstring.h
 
-TOOLLIBINCS := $(foreach f,$(HFILES),$(AROS_INCLUDES)/toollib/$(f))
-
 FILES := \
 	error \
 	filesup \
@@ -31,12 +29,7 @@ FILES := \
 %build_linklib mmake=linklibs-toollib libname=toollib files=$(FILES)
 
 #MM
-includes-copy : $(AROS_INCLUDES)/toollib $(TOOLLIBINCS)
-
-$(AROS_INCLUDES)/toollib : 
-	@$(MKDIR) $@
-
-$(AROS_INCLUDES)/toollib/%.h : %.h
-	$(CP) $< $(AROS_INCLUDES)/toollib
+includes-copy : 
+	%copy_includes includes=$(HFILES) path=toollib
 
 %common
