@@ -10,7 +10,7 @@ USER_CFLAGS := -DDBUS_API_SUBJECT_TO_CHANGE
   modname=dbus modtype=library \
   files=amiga_threads
 
-MY_INCLS    := $(wildcard include/*.h)
+MY_INCLS    := $(call WILDCARD, include/*.h)
 DEST_INC    := $(foreach f,$(MY_INCLS), $(AROS_INCLUDES)/dbus/$(notdir $f))
 GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/dbus/$(notdir $f))
 
@@ -18,10 +18,10 @@ GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/dbus/$(notdir $f))
 includes-copy : $(DEST_INC) $(GEN_INC)
 
 $(AROS_INCLUDES)/dbus/%.h : include/%.h
-	@$(CP) include/$(notdir $<) $@
+	@$(CP) $< $@
 
 $(GENINCDIR)/dbus/%.h : include/%.h
-	@$(CP) include/$(notdir $<) $@
+	@$(CP) $< $@
 
 #MM
 setup-includes :

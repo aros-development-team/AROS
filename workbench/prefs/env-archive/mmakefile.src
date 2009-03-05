@@ -4,7 +4,7 @@
 include $(TOP)/config/make.cfg
 
 SUBDIRS := Zune SYS SYS/Packages
-FILES   := $(foreach dir, $(SUBDIRS), $(filter-out $(dir)/CVS, $(wildcard $(dir)/*)))
+FILES   := $(foreach dir, $(SUBDIRS), $(filter-out $(dir)/CVS, $(call WILDCARD, $(dir)/*)))
 
 #MM- workbench-prefs : workbench-prefs-envarc
 #MM- workbench-prefs-envarc : workbench-prefs-envarc-copyfiles workbench-prefs-envarc-theme

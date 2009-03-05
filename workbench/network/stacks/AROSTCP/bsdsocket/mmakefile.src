@@ -158,7 +158,7 @@ api: $(API_O)
 
 STACK_NAME := AROSTCP
 
-USER_INCLUDES := -isystem ../netinclude -isystem . -isystem protos
+USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/../netinclude -isystem $(SRCDIR)/$(CURDIR) -isystem $(SRCDIR)/$(CURDIR)/protos
 USER_CFLAGS := \
 	-Wno-uninitialized -Wno-parentheses \
 	-Wno-implicit-function-declaration -DAMITCP -DKERNEL \

@@ -31,7 +31,7 @@ sponsors.h : db/sponsors scripts/sponsors2header.py
 	@$(ECHO) Generating $@
 	@$(PYTHON) scripts/sponsors2header.py <$< >$@
 
-acknowledgements.h : $(TOP)/ACKNOWLEDGEMENTS scripts/acknowledgements2header.py
+acknowledgements.h : $(SRCDIR)/ACKNOWLEDGEMENTS scripts/acknowledgements2header.py
 	@$(ECHO) Generating $@
 	@$(PYTHON) scripts/acknowledgements2header.py <$< >$@
 

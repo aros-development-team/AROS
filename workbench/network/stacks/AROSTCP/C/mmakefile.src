@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -isystem ../netinclude  -isystem  ../bsdsocket/
+USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/../netinclude  -isystem  $(SRCDIR)/$(CURDIR)/../bsdsocket/
 USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
 
 #MM- workbench-network-stacks-arostcp : workbench-network-stacks-arostcp-c

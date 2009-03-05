@@ -55,7 +55,7 @@ endif
 
 # I need the private includes (for SIZEOF_ALL_REGISTERS) and they
 # have to be first in the list
-USER_CFLAGS := -I. -I$(GENINCDIR) -idirafter /usr/include
+USER_CFLAGS := -I$(SRCDIR)/$(CURDIR) -I$(GENINCDIR) -idirafter /usr/include
 
 # As a hack the SYS_FILES are added as the initfile.
 %build_module mmake=kernel-exec \

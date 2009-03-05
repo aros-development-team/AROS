@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 #MM					    workbench-classes-zune-betterstring-class \
 #MM					    workbench-classes-zune-betterstring-mcp-locale
 
-USER_INCLUDES = -I../includes -I../mcc -I..
+USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../includes -I$(SRCDIR)/$(CURDIR)/../mcc -I$(SRCDIR)/$(CURDIR)/..
 
 FILES := locale \
 	 CreatePrefsGroup \
@@ -27,8 +27,8 @@ INCLUDE_FILES := BetterString_mcp.h
 workbench-classes-zune-betterstring-mcp-locale : locale.c locale.h
 
 locale.h : locale.c
-locale.c : locale/BetterString_mcp.cd C_h.sd C_c.sd
+locale.c : $(SRCDIR)/$(CURDIR)/locale/BetterString_mcp.cd $(SRCDIR)/$(CURDIR)/C_h.sd $(SRCDIR)/$(CURDIR)/C_c.sd
 	@$(ECHO) "Generating locale file $@..."
-	@$(FLEXCAT) locale/BetterString_mcp.cd locale.h=C_h.sd locale.c=C_c.sd
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/BetterString_mcp.cd locale.h=$(SRCDIR)/$(CURDIR)/C_h.sd locale.c=$(SRCDIR)/$(CURDIR)/C_c.sd
 
 %common

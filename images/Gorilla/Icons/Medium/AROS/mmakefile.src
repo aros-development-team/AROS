@@ -18,4 +18,4 @@ ICONS := Demos Development Devs Fonts \
 
 #MM
 themes-gorilla-icons-aros-livecd :  
-	@$(ILBMTOICON) LiveCD.info.src LiveCD.png $(AROSDIR)/disk.info
+	@$(ILBMTOICON) $(SRCDIR)/$(CURDIR)/LiveCD.info.src $(SRCDIR)/$(CURDIR)/LiveCD.png $(AROSDIR)/disk.info

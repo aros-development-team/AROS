@@ -10,6 +10,6 @@ bootloader-grub2-pc-x86_64: $(BINDIR)/boot/grub/grub.cfg
 
 bootloader-grub2gfx-pc-x86_64: $(BINDIR)/boot/grub/grub.cfg
 
-$(BINDIR)/boot/grub/grub.cfg:
-		$(CP) grub.cfg $(BINDIR)/boot/grub/
+$(BINDIR)/boot/grub/grub.cfg: grub.cfg
+		$(CP) $< $(BINDIR)/boot/grub/
 

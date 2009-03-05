@@ -53,7 +53,7 @@ FUNCS := adddtobject \
     uselibs="amiga rom"
 
 
-INCLUDE_FILES := $(wildcard include/*.h)
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
 
 #MM copy-includes
 %copy_lib_includes path=datatypes

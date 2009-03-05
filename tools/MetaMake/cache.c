@@ -61,6 +61,7 @@ Boston, MA 02111-1307, USA.  */
 #define CHECK_ID(id)    (((id) & 0xFFFF0000) == ((ID) & 0xFFFF0000))
 
 extern char *mm_srcdir;
+extern char *mm_builddir;
 
 typedef struct {
     Cache publicpart;
@@ -307,6 +308,7 @@ void
 checknewsrc (Cache_priv * cache, Makefile * makefile, List * regeneratefiles)
 {
     char * mfsrc = xmalloc (strlen (makefile->node.name) + 5);
+    char * mfdst = xmalloc (strlen (mm_builddir) + 1 + strlen (buildpath(makefile->dir)) + 1 + strlen (makefile->node.name) + 1);
     struct stat sst, dst;
 
 debug(printf("MMAKE:cache.c->checknewsrc('%s')\n", makefile->node.name));
@@ -320,7 +322,13 @@ debug(printf("MMAKE:cache.c->checknewsrc('%s')\n", makefile->node.name));
 	return;
     }
 
-    if (stat (makefile->node.name, &dst) == -1
+    strcpy (mfdst, mm_builddir);
+    strcat (mfdst, "/");
+    strcat (mfdst, buildpath(makefile->dir));
+    strcat (mfdst, "/");
+    strcat (mfdst, makefile->node.name);
+
+    if (stat (mfdst, &dst) == -1
 	|| sst.st_mtime > dst.st_mtime
 	|| checkdeps (&cache->project->genmakefiledeps, dst.st_mtime)
     )

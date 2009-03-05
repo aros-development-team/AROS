@@ -6,6 +6,6 @@ include $(TOP)/config/make.cfg
 #MM workbench-network-stacks-arostcp-db
 
 workbench-network-stacks-arostcp-db : files-copy
-%copy_files_q files="$(wildcard [^Cm]*)" \
+%copy_files_q files="$(call WILDCARD, [^Cm]*)" \
     dst=$(AROS_SYSTEM)/Network/AROSTCP/db
 

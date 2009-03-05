@@ -60,7 +60,7 @@ FUNCS= 	\
 
 EXEDIR := $(AROSDIR)/MuFS
 
-USER_INCLUDES := -I../Include
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../Include
 
 ##MM workbench-libs-security : includes linklibs
 

@@ -65,7 +65,7 @@ PURE_FILES := \
     Copy \
     Dir
 
-USER_CFLAGS     := -I$(TOP)/rom/dos
+USER_CFLAGS     := -I$(SRCDIR)/rom/dos
 
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick
@@ -85,7 +85,7 @@ $(OBJDIR)/evalParser.tab.c : evalParser.y
 	@$(ECHO) Generating $(notdir $@) from $<...
 	@$(BISON) -o $@ $<
 
-$(OBJDIR)/Eval.o : $(OBJDIR)/evalParser.tab.c Eval.c
-	%compile_q from=Eval.c opt="$(CFLAGS) -I$(OBJDIR)"
+$(OBJDIR)/Eval.o : $(OBJDIR)/evalParser.tab.c $(SRCDIR)/$(CURDIR)/Eval.c
+	%compile_q from=$(SRCDIR)/$(CURDIR)/Eval.c opt="$(CFLAGS) -I$(OBJDIR)"
 
 %common

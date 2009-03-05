@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FLAGS := $(notdir $(wildcard countries/*))
+FLAGS := $(notdir $(call WILDCARD, countries/*))
 
 #MM- workbench-locale : workbench-locale-flags-countries
 #MM workbench-locale-flags-countries: setup

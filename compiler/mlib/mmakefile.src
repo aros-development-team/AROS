@@ -179,7 +179,7 @@ endif
 #MM includes-copy : setup-includes
 includes-copy : $(AROS_INCLUDES)/math.h
 
-%rule_copy from=%.h to=$(AROS_INCLUDES)/%.h
+%rule_copy from=$(SRCDIR)/$(CURDIR)/%.h to=$(AROS_INCLUDES)/%.h
 
 #MM- linklibs-core : linklibs-mlib
 #MM- linklibs : linklibs-mlib

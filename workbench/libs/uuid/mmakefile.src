@@ -11,7 +11,7 @@ FILES:= uuid_compare uuid_namespace uuid_parse uuid_pack uuid_clear \
     uselibs=rom
 
 #MM includes-copy
-INCLUDE_FILES := $(wildcard include/*.h)
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
 %copy_includes path=libraries dir=include
 
 %common

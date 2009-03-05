@@ -25,7 +25,7 @@ FILES := saveimage  	\
 	 buttonclass 	\
 	 imageclass
 
-USER_CFLAGS := -Iinclude
+USER_CFLAGS := -I$(SRCDIR)/$(CURDIR)/include
 
 #MM- linklibs : linklibs-coolimagesstatic
 #MM linklibs-coolimagesstatic : includes

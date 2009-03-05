@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 FILES  := ftmanager
 EXEDIR := $(AROS_SYSTEM)
 
-USER_CFLAGS := -I$(TOP)/rom/exec
+USER_CFLAGS := -I$(SRCDIR)/rom/exec
 
 %build_prog mmake=workbench-system-ftmanager \
     progname=FTManager targetdir=$(EXEDIR) \

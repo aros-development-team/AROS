@@ -3,6 +3,6 @@ include $(TOP)/config/make.cfg
 #MM
 workbench-libs-freetype-includes : includes-copy
 
-INCLUDE_FILES := $(wildcard ./*.h)
+INCLUDE_FILES := $(call WILDCARD, ./*.h)
 
 %copy_includes path=freetype/internal

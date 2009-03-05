@@ -24,7 +24,7 @@ COMMON := cdjpeg \
 #MM     test-jpeg-rdjpgcom \
 #MM     test-jpeg-wrjpgcom
 
-USER_INCLUDES := -I. -I../main
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)/../main
 
 %build_prog mmake=test-jpeg-cjpeg \
     progname=cjpeg targetdir=$(EXEDIR) \

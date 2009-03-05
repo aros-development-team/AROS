@@ -14,7 +14,7 @@ include $(TOP)/config/make.cfg
 #MM workbench-libs-freetype-demos-ftview : includes linklibs \
 #MM     workbench-libs-freetype-linklib workbench-libs-freetype-graph
 
-USER_INCLUDES		:= -I../graph -I../../include -I../../src/base -I../../config
+USER_INCLUDES		:= -I$(SRCDIR)/$(CURDIR)/../graph -I$(SRCDIR)/$(CURDIR)/../../include -I$(SRCDIR)/$(CURDIR)/../../src/base -I$(SRCDIR)/$(CURDIR)/../../config
 
 %build_prog mmake=workbench-libs-freetype-demos-ftstring \
     progname=ftstring targetdir=$(BINDIR)/Demos/FreeType \

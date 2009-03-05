@@ -33,7 +33,7 @@ FILES := \
 #MM- linklibs-png : linklibs-png-stdio linklibs-png-nostdio
 #MM- linklibs-png-clean : linklibs-png-stdio-clean linklibs-png-nostdio-clean
 
-USER_INCLUDES	:= -Iinclude
+USER_INCLUDES	:= -I$(SRCDIR)/$(CURDIR)/include
 USER_CFLAGS	:= -DAROS -DNO_ERRNO_H
 
 %build_linklib mmake=linklibs-png-stdio libname=png files=$(FILES)

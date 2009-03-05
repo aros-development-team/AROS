@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 #MM- kernel-keyboard : includes linklibs
 
-USER_INCLUDES := -I$(TOP)/rom/devs
+USER_INCLUDES := -I$(SRCDIR)/rom/devs
 
 %build_module mmake=kernel-keyboard \
   modname=keyboard modtype=device \

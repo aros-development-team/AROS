@@ -12,7 +12,7 @@ include $(TOP)/config/make.cfg
 EXE := OpenURL
 EXEDIR := $(AROS_PREFS)
 
-USER_INCLUDES := -I../include/aros
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include/aros
 
 USER_CFLAGS := -Wall \
 	  -Wno-missing-braces \

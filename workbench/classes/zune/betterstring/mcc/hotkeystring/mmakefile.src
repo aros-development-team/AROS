@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 #MM workbench-classes-zune-hotkeystring-class : includes linklibs
 
-USER_INCLUDES = -I../../includes
+USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../../includes
 
 FILES := Dispatcher \
 	 HandleInput
