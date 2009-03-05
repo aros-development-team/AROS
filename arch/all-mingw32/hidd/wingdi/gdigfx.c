@@ -576,7 +576,7 @@ static BOOL initgdistuff(struct gdi_staticdata *xsd)
     xsd->depth = GDICALL(GetDeviceCaps, xsd->display, BITSPIXEL);
     Permit();
     D(bug("Screen depth: %lu\n", xsd->depth));
-    if (xsd->depth == 32) {
+/*  if (xsd->depth == 32) {*/
 	/* Get the pixel masks */
 	xsd->red_mask    = 0x000000FF;
 	xsd->green_mask  = 0x0000FF00;
@@ -587,10 +587,10 @@ static BOOL initgdistuff(struct gdi_staticdata *xsd)
 	xsd->red_shift	 = 24;
 	xsd->green_shift = 16;
 	xsd->blue_shift	 = 8;
-    } else {
+/*  } else {
 	kprintf("!!! GFX HIDD only supports truecolor diplays for now !!!\n");
 	return FALSE;
-    }
+    }*/
     ReturnBool("initgdistuff", TRUE);
 }
 
