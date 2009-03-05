@@ -1203,10 +1203,14 @@ if test "$crosstools" != "yes"; then
     AROS_REQUIRED(ranlib,$aros_target_ranlib_ln)
     AROS_TOOL_TARGET(aros_target_strip_ln,strip,$aros_target_strip)
     AROS_REQUIRED(strip,$aros_target_strip_ln)
-    if test "$rescomp" != ""; then
-	AROS_TOOL_TARGET(aros_kernel_rescomp,$rescomp,$aros_kernel_rescomp)
-	AROS_REQUIRED($rescomp,$aros_kernel_rescomp)
+fi
+
+if test "$rescomp" != ""; then
+    if test "$cross_compiling" = "yes" ; then
+	rescomp=${target_tool_prefix}${rescomp}
     fi
+    AC_PATH_PROG(aros_kernel_rescomp,$rescomp)
+    AROS_REQUIRED($rescomp,$aros_kernel_rescomp)
 fi
 
 aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
