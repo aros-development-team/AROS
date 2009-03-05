@@ -39,7 +39,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
     bootinfo = KrnGetBootInfo();
     BootLoaderBase->LdrName = NULL; /* TODO */
 
-    Kernel_Args = GetTagData(KRN_CmdLine, NULL, bootinfo);
+    Kernel_Args = (STRPTR)GetTagData(KRN_CmdLine, 0, bootinfo);
     if (Kernel_Args) {
 	    STRPTR cmd,buff;
 	    ULONG temp;

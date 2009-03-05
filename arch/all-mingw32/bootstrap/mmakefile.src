@@ -30,8 +30,8 @@ KOBJS_HANDLERS  := $(KOBJSDIR)/emul_handler.o	     $(KOBJSDIR)/packet_handler.o	
 KOBJS := $(K_RES) $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(KOBJS_HIDD)
 
 #MM- AROS-mingw32-i386: kernel-link-mingw32 workbench-mingw32 kernel-bootstrap-mingw32 arch-common-boot-generatebootsig
-#MM kernel-link-mingw32: kernel-bootloader-mingw32-kobj	    \
-#MM			 kernel-kernel-mingw32-kobj	    \
+#MM kernel-link-mingw32: kernel-kernel-mingw32-kobj	    \
+#MM			 kernel-bootloader-mingw32-kobj	    \
 #MM			 kernel-hostlib-mingw32-kobj	    \
 #MM			 kernel				    \
 #MM			 kernel-fs-emul-mingw32-kobj	    \
@@ -47,7 +47,7 @@ KOBJS := $(K_RES) $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(KOBJS_HIDD)
 #MM		        kernel-workbench
 
 #MM
-kernel-bootstrap-mingw32: setup-mingw32 $(BINDIR)/boot/AROSBootstrap
+kernel-bootstrap-mingw32: setup-mingw32 $(BINDIR)/boot/AROSBootstrap.exe
 
 #MM
 kernel-link-mingw32: $(BINDIR)/boot/aros-mingw32
@@ -63,9 +63,9 @@ $(BINDIR)/boot/aros-mingw32: setup-mingw32 $(KOBJS)
 	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lhiddgraphicsstubs
 
 $(TARGETDIR)/icon.o: icon.rc icon.ico
-	windres --output-format=coff icon.rc $@
+	$(KERNEL_RESCOMP) --output-format=coff icon.rc $@
 
-$(BINDIR)/boot/AROSBootstrap: $(BOBJS)
+$(BINDIR)/boot/AROSBootstrap.exe: $(BOBJS)
 	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(BOBJS)
 
 #MM
@@ -80,12 +80,5 @@ DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 
 $(TARGETDIR)/%.o : %.c
 	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/rom/exec
-
-#$(TARGETDIR)/%.o : %.S
-#	%compile_q opt="$(CFLAGS)"
-
-#$(TARGETDIR)/%.d : %.c
-#	%mkdepend_q
-
 
 %common

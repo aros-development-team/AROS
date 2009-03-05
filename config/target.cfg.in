@@ -21,6 +21,7 @@ GENMAP		:= @aros_target_genmap@
 TARGET_OBJCOPY	:= @aros_target_objcopy@
 TARGET_STRIP	:= @aros_target_strip@ @aros_target_strip_flags@
 TARGET_OBJDUMP	:= @aros_target_objdump@
+KERNEL_RESCOMP  := @aros_kernel_rescomp@
 
 CONFIG_CFLAGS	:= @aros_config_cflags@
 CONFIG_AFLAGS	:= @aros_config_aflags@

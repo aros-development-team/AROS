@@ -15,6 +15,9 @@
 #define DASYNC(x)
 
 #define __DOS_NOLIBBASE__
+#define __HOSTLIB_NOLIBBASE__
+#define __KERNEL_NOLIBBASE__
+
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/system.h>

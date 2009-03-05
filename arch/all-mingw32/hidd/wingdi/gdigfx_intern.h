@@ -31,7 +31,7 @@
 
 #define HiddGDIGfxAB  	    	__abHidd_GDIGfx
 
-extern OOP_AttrBase HiddGDIGfxAB;
+/* extern OOP_AttrBase HiddGDIGfxAB; */
 
 enum
 {
