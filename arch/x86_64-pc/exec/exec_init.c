@@ -61,6 +61,7 @@ AROS_UFP5S(void, IntServer,
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);
 IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList);
+void krnSetTagData(Tag tagValue, intptr_t newtagValue, const struct TagItem *tagList);
 
 /*
  * First, we will define exec.library (global) to make it usable outside this
