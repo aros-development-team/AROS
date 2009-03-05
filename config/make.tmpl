@@ -1698,9 +1698,15 @@ endif
 
 %buildid targets="%(mainmmake)-%(arch)"
 
+ifeq ($(AROS_TARGET_VARIANT),)
 #MM- %(mainmmake) : %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
 #MM- %(mainmmake)-linklib : %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
 #MM- %(mainmmake)-kobj : %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
+else
+#MM- %(mainmmake) : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
+#MM- %(mainmmake)-linklib : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
+#MM- %(mainmmake)-kobj : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
+endif
 
 #MM %(mainmmake)-%(arch) : %(mainmmake)-includes
 
