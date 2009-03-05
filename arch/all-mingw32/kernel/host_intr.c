@@ -159,7 +159,7 @@ long __declspec(dllexport) core_intr_enable(void)
        be complicated then (we need a companion event in this case). Probably it will be implemented
        in future. */
     for (i = INT_IO; i < INTERRUPTS_NUM; i++) {
-        if (PendingInts[1]) {
+        if (PendingInts[i]) {
             DI(printf("[KRN] enable: sigalling about pending interrupt %lu\n", i));
             SetEvent(SwData.IntObjects[i]);
         }
