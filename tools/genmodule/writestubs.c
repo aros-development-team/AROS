@@ -10,7 +10,7 @@
 void writestubs(struct config *cfg)
 {
     FILE *out, *outasm;
-    char line[256], *type, *name;
+    char line[256], *type, *name, *banner;
     struct functionhead *funclistit;
     struct stringlist *aliasesit;
     struct functionarg *arglistit;
@@ -24,6 +24,7 @@ void writestubs(struct config *cfg)
     	exit(20);
     }
 
+    banner = getBanner(cfg);
     fprintf
     (
         out,
@@ -32,7 +33,7 @@ void writestubs(struct config *cfg)
         "/* Be sure that the libbases are included in the stubs file */\n"
         "#undef __NOLIBBASE__\n"
         "#undef __%s_NOLIBBASE__\n",
-        getBanner(cfg), cfg->modulenameupper
+        banner, cfg->modulenameupper
     );
 
     if (cfg->intcfg & CFG_GENASTUBS)
@@ -44,9 +45,10 @@ void writestubs(struct config *cfg)
 	    fprintf(stderr, "Could not write %s\n", line);
 	    exit(20);
 	}
-	fprintf(outasm, "%s", getBanner(cfg));
+	fprintf(outasm, "%s", banner);
 	fprintf(outasm, STUBCODE_INIT);
     }
+    freeBanner(banner);
 
     if (cfg->modtype != MCC && cfg->modtype != MUI && cfg->modtype != MCP)
     {

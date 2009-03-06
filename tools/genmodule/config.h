@@ -140,6 +140,7 @@ struct config
 
 struct config *initconfig(int, char **);
 
-const char* getBanner(struct config* config);
+const char* getBanner(struct config*);
+void freeBanner(char*);
 
 #endif //_CONFIG_H

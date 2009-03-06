@@ -9,7 +9,7 @@
 void writeincclib(struct config *cfg)
 {
     FILE *out;
-    char line[256];
+    char line[256], *banner;
     struct functionhead *funclistit;
     struct functionarg *arglistit;
     struct stringlist *linelistit;
@@ -24,6 +24,7 @@ void writeincclib(struct config *cfg)
         exit(20);
     }
 
+    banner = getBanner(cfg);
     fprintf(out,
 	    "#ifndef CLIB_%s_PROTOS_H\n"
 	    "#define CLIB_%s_PROTOS_H\n"
@@ -31,8 +32,10 @@ void writeincclib(struct config *cfg)
         "%s"
 	    "\n"
 	    "#include <aros/libcall.h>\n",
-	    cfg->modulenameupper, cfg->modulenameupper, getBanner(cfg)
+	    cfg->modulenameupper, cfg->modulenameupper, banner
     );
+    freeBanner(banner);
+
     for (linelistit = cfg->cdeflines; linelistit!=NULL; linelistit = linelistit->next)
 	fprintf(out, "%s\n", linelistit->s);
 

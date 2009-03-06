@@ -9,7 +9,7 @@
 void writeautoinit(struct config *cfg)
 {
     FILE *out;
-    char line[256];
+    char line[256], *banner;
     
     snprintf(line, 255, "%s/%s_autoinit.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
@@ -20,6 +20,7 @@ void writeautoinit(struct config *cfg)
     	exit(20);
     }
 
+    banner = getBanner(cfg);
     fprintf(out,
         "%s"
 	    "\n"
@@ -27,9 +28,10 @@ void writeautoinit(struct config *cfg)
 	    "#include <aros/symbolsets.h>\n"
 	    "\n"
 	    "ADD2LIBS((CONST_STRPTR)\"%s.library\",%u, %s, %s);\n",
-	    getBanner(cfg), cfg->modulename,
+	    banner, cfg->modulename,
 	    cfg->modulename, cfg->majorversion, cfg->libbasetypeptrextern, cfg->libbase
     );
+    freeBanner(banner);
 
     if (cfg->forcelist!=NULL)
     {

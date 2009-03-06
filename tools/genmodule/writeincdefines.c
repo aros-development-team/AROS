@@ -14,7 +14,7 @@ static void writealiases(FILE *, struct functionhead *, struct config *);
 void writeincdefines(struct config *cfg)
 {
     FILE *out;
-    char line[256];
+    char line[256], *banner;
     struct functionhead *funclistit;
 
     snprintf(line, 255, "%s/defines/%s.h", cfg->gendir, cfg->modulename);
@@ -26,6 +26,7 @@ void writeincdefines(struct config *cfg)
         exit(20);
     }
 
+    banner = getBanner(cfg);
     fprintf(out,
 	    "#ifndef DEFINES_%s_H\n"
 	    "#define DEFINES_%s_H\n"
@@ -40,8 +41,10 @@ void writeincdefines(struct config *cfg)
 	    "#include <exec/types.h>\n"
 	    "#include <aros/preprocessor/variadic/cast2iptr.hpp>\n"
 	    "\n",
-	    cfg->modulenameupper, cfg->modulenameupper, getBanner(cfg), cfg->modulename
+	    cfg->modulenameupper, cfg->modulenameupper, banner, cfg->modulename
     );
+    freeBanner(banner);
+
     if (cfg->command!=DUMMY)
     {
 	for (funclistit = cfg->funclist; funclistit!=NULL; funclistit = funclistit->next)

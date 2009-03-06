@@ -8,7 +8,7 @@
 void writeincproto(struct config *cfg)
 {
     FILE *out;
-    char line[256];
+    char line[256], *banner;
     struct linelist *linelistit;
     
     snprintf(line, 255, "%s/proto/%s.h", cfg->gendir, cfg->modulename);
@@ -20,6 +20,7 @@ void writeincproto(struct config *cfg)
     	exit(20);
     }
 
+    banner = getBanner(cfg);
     fprintf(out,
 	    "#ifndef PROTO_%s_H\n"
 	    "#define PROTO_%s_H\n"
@@ -39,14 +40,15 @@ void writeincproto(struct config *cfg)
 	    " #endif\n"
 	    "#endif\n"
 	    "\n",
-	    cfg->modulenameupper, cfg->modulenameupper, getBanner(cfg),
+	    cfg->modulenameupper, cfg->modulenameupper, banner,
 	    cfg->modulename,
 	    cfg->libbase, cfg->modulenameupper,
 	    cfg->modulenameupper,
 	    cfg->libbase,
 	    cfg->libbasetypeptrextern, cfg->libbase
     );
-    
+    freeBanner(banner);
+
     fprintf(out,
 	    "#if !defined(NOLIBDEFINES) && !defined(%s_NOLIBDEFINES)\n"
 	    "#   include <defines/%s.h>\n"

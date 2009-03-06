@@ -25,7 +25,7 @@ static void writesets(FILE *, struct config *);
 void writestart(struct config *cfg)
 {
     FILE *out;
-    char line[256];
+    char line[256], *banner;
     struct classinfo *cl;
     
     snprintf(line, 255, "%s/%s_start.c", cfg->gendir, cfg->modulename);
@@ -37,7 +37,9 @@ void writestart(struct config *cfg)
         exit(20);
     }
 
-    fprintf(out, getBanner(cfg));
+    banner = getBanner(cfg);
+    fprintf(out, banner);
+    freeBanner(banner);
 
     writedecl(out, cfg);
     if (!(cfg->options & OPTION_NORESIDENT))
