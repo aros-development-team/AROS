@@ -30,11 +30,11 @@ INCLUDE_FILES := TextEditor_mcp.h
 %copy_includes path=mui
 
 #MM workbench-classes-zune-texteditor-mcp-locale :
-workbench-classes-zune-texteditor-mcp-locale : locale.c locale.h
+workbench-classes-zune-texteditor-mcp-locale : $(TOP)/$(CURDIR)/locale.c $(TOP)/$(CURDIR)/locale.h
 
-locale.h : locale.c
-locale.c : locale/TextEditor_mcp.cd C_h.sd C_c.sd
+$(TOP)/$(CURDIR)/locale.h : $(TOP)/$(CURDIR)/locale.c
+$(TOP)/$(CURDIR)/locale.c : $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $(SRCDIR)/$(CURDIR)/C_h.sd $(SRCDIR)/$(CURDIR)/C_c.sd
 	@$(ECHO) "Generating locale file $@..."
-	@$(FLEXCAT) locale/TextEditor_mcp.cd locale.h=C_h.sd locale.c=C_c.sd
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd locale.h=$(SRCDIR)/$(CURDIR)/C_h.sd locale.c=$(SRCDIR)/$(CURDIR)/C_c.sd
 
 %common
