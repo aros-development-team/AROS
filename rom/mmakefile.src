@@ -1,4 +1,4 @@
-# $Id: mmakefile.in 29897 2008-10-27 09:27:10Z sonic $
+# $Id$
 
 #MM- kernel-objs : kernel-exec-kobj \
 #MM	    kernel-aros-kobj \
