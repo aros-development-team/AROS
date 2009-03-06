@@ -3,8 +3,9 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(GENINCDIR)
 
-#MM- kernel-fs-emul-linklib : includes linklibs
-#MM- kernel-fs-emul-kobj : includes linklibs
+#MM- kernel-fs-emul : includes linklibs kernel-battclock-includes
+#MM- kernel-fs-emul-linklib : includes linklibs kernel-battclock-includes
+#MM- kernel-fs-emul-kobj : includes linklibs kernel-battclock-includes
 
 %build_module mmake=kernel-fs-emul \
   modname=emul modtype=device modsuffix=handler \
