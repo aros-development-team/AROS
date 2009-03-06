@@ -89,7 +89,7 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
         	
         	if (t)
         	    printf("[KRN] %s %p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
-        	} else
+        	else
         	    printf("[KRN] No task\n");
     	    }
     	    PRINT_CPUCONTEXT(Except->ContextRecord);
