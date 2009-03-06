@@ -14,6 +14,8 @@ USER_INCLUDES = -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)
 #MM     workbench-system-aboutaros-catalogs \
 #MM     workbench-system-aboutaros-generated
 
+#MM- clean :  aboutaros-clean
+
 %build_prog mmake=workbench-system-aboutaros \
     progname=About targetdir=$(EXEDIR) \
     files=$(FILES) uselibs="arossupport amiga arosc m"
@@ -40,5 +42,10 @@ $(TOP)/$(CURDIR)/acknowledgements.h : $(SRCDIR)/ACKNOWLEDGEMENTS $(SRCDIR)/$(CUR
 
 $(TOP)/$(CURDIR)/svnrev.h :
 	- $(ECHO) '#define SVNREV "'`svnversion $(SRCDIR)`'"' >$(TOP)/$(CURDIR)/svnrev.h
+
+
+#MM
+aboutaros-clean :
+	-$(RM) $(GENERATED)
 
 %common
