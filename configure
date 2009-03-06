@@ -13101,7 +13101,7 @@ ac_config_commands="$ac_config_commands genmf_executable"
 ac_config_commands="$ac_config_commands adflib_myaros.conf_executable"
 
 
-ac_config_files="$ac_config_files Makefile rom/mmakefile config/make.cfg ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in ${aros_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py tools/adflib/myconf.aros tools/collect-aros/env.h"
+ac_config_files="$ac_config_files Makefile config/make.cfg ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in ${aros_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py tools/adflib/myconf.aros tools/collect-aros/env.h"
 
 
 cat >confcache <<\_ACEOF
@@ -13729,7 +13729,6 @@ do
     "genmf_executable") CONFIG_COMMANDS="$CONFIG_COMMANDS genmf_executable" ;;
     "adflib_myaros.conf_executable") CONFIG_COMMANDS="$CONFIG_COMMANDS adflib_myaros.conf_executable" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
-    "rom/mmakefile") CONFIG_FILES="$CONFIG_FILES rom/mmakefile" ;;
     "config/make.cfg") CONFIG_FILES="$CONFIG_FILES config/make.cfg" ;;
     "${aros_inc_dir}/config.h") CONFIG_FILES="$CONFIG_FILES ${aros_inc_dir}/config.h:config/config.h.in" ;;
     "${aros_geninc_dir}/config.h") CONFIG_FILES="$CONFIG_FILES ${aros_geninc_dir}/config.h:config/config.h.in" ;;

@@ -1828,7 +1828,6 @@ AC_CONFIG_COMMANDS([adflib_myaros.conf_executable],
 
 AC_CONFIG_FILES(
     Makefile
-    rom/mmakefile
     config/make.cfg
     ${aros_inc_dir}/config.h:config/config.h.in
     ${aros_geninc_dir}/config.h:config/config.h.in
