@@ -18,7 +18,7 @@ USER_CFLAGS     := -DADATE="\"$(shell date '+%d.%m.%Y')\""
     files=$(FILES) uselibs="arossupport amiga arosc m"
 
 
-GENERATED   := $(TOP)/$(CURDIR)/authors.h $(TOP)/$(CURDIR)/sponsors.h $(TOP)/$(CURDIR)/acknowledgements.h $(TOP)/$(CURDIR)/svnrev
+GENERATED   := $(TOP)/$(CURDIR)/authors.h $(TOP)/$(CURDIR)/sponsors.h $(TOP)/$(CURDIR)/acknowledgements.h $(TOP)/$(CURDIR)/svnrev.h
 
 #MM
 workbench-system-aboutaros-generated : $(GENERATED)
@@ -35,9 +35,9 @@ $(TOP)/$(CURDIR)/acknowledgements.h : $(SRCDIR)/ACKNOWLEDGEMENTS $(SRCDIR)/$(CUR
 	@$(ECHO) Generating $@
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/acknowledgements2header.py <$< >$@
 
-.PHONY : svnrev
+.PHONY : $(TOP)/$(CURDIR)/svnrev.h
 
-svnrev :
+$(TOP)/$(CURDIR)/svnrev.h :
 	- $(ECHO) '#define SVNREV "'`svnversion $(SRCDIR)`'"' >$(TOP)/$(CURDIR)/svnrev.h
 
 %common
