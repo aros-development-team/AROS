@@ -8,6 +8,8 @@ include $(TOP)/config/make.cfg
 #MM					    workbench-classes-zune-betterstring-class \
 #MM					    workbench-classes-zune-hotkeystring-class
 
+#MM- clean :  texteditor-mcp-clean
+
 USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../../../zune/betterstring/includes -I$(SRCDIR)/$(CURDIR)/../mcc -I$(SRCDIR)/$(CURDIR)/..
 
 FILES := locale \
@@ -36,5 +38,9 @@ $(TOP)/$(CURDIR)/locale.h : $(TOP)/$(CURDIR)/locale.c
 $(TOP)/$(CURDIR)/locale.c : $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $(SRCDIR)/$(CURDIR)/C_h.sd $(SRCDIR)/$(CURDIR)/C_c.sd
 	@$(ECHO) "Generating locale file $@..."
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd locale.h=$(SRCDIR)/$(CURDIR)/C_h.sd locale.c=$(SRCDIR)/$(CURDIR)/C_c.sd
+
+#MM
+texteditor-mcp-clean :
+	-$(RM) $(TOP)/$(CURDIR)/locale.h $(TOP)/$(CURDIR)/locale.c
 
 %common
