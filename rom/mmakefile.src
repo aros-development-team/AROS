@@ -1,0 +1,41 @@
+# $Id: mmakefile.in 29897 2008-10-27 09:27:10Z sonic $
+
+#MM- kernel-objs : kernel-exec-kobj \
+#MM	    kernel-aros-kobj \
+#MM	    kernel-dos-kobj \
+#MM	    kernel-boot-kobj \
+#MM	    kernel-bootmenu-kobj \
+#MM	    kernel-graphics-kobj \
+#MM	    kernel-utility-kobj \
+#MM	    kernel-intuition-kobj \
+#MM	    kernel-keymap-kobj \
+#MM	    kernel-mathffp-kobj \
+#MM	    kernel-mathieeesingbas-kobj \
+#MM	    kernel-devs \
+#MM	    kernel-expansion-kobj \
+#MM	    kernel-hidd-kobj \
+#MM	    kernel-timer-kobj \
+#MM	    kernel-battclock-kobj \
+#MM	    kernel-oop-kobj \
+#MM	    kernel-layers-kobj \
+#MM	    kernel-workbench-kobj \
+#MM	    kernel-cgfx-kobj
+
+#MM- includes-generate : \
+#MM      kernel-exec-includes \
+#MM      kernel-aros-includes \
+#MM      kernel-dos-includes \
+#MM      kernel-boot-includes \
+#MM      kernel-graphics-includes \
+#MM      kernel-utility-includes \
+#MM      kernel-intuition-includes \
+#MM      kernel-keymap-includes \
+#MM      kernel-mathffp-includes \
+#MM      kernel-mathieeesingbas-includes \
+#MM      kernel-expansion-includes \
+#MM      kernel-layers-includes \
+#MM      kernel-workbench-includes \
+#MM      kernel-cgfx-includes \
+#MM      kernel-timer-includes \
+#MM      kernel-oop-includes \
+#MM      kernel-battclock-includes
