@@ -15,25 +15,27 @@
 #include "functionhead.h"
 #include "config.h"
 
-#define MAX_BANNER_SIZE 512
-
-static char banner[512] = "\0";
-
+const static char bannertemplate[] =
+    "/*\n"
+    "    *** Automatically generated from '%s'. Edits will be lost. ***\n"
+    "    Copyright © 1995-2008, The AROS Development Team. All rights reserved.\n"
+    "*/\n";
 
 const char*
 getBanner(struct config* config)
 {
-    if (banner[0] == '\0')
-    {
-        snprintf (banner, MAX_BANNER_SIZE,
-"/*\n"
-"    *** Automatically generated from '%s'. Edits will be lost. ***\n"
-"    Copyright © 1995-2008, The AROS Development Team. All rights reserved.\n"
-"*/\n", config->conffile
-        );
-    }
+    int bannerlength = strlen(config->conffile) + strlen(bannertemplate) -1;
+    char * banner = malloc(bannerlength);
+
+    snprintf (banner, bannerlength, bannertemplate, config->conffile);
 
     return(banner);
+}
+
+void
+freeBanner(char *banner)
+{
+    free((void *)banner);
 }
 
 const static char usage[] =
