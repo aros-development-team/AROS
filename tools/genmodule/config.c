@@ -15,7 +15,9 @@
 #include "functionhead.h"
 #include "config.h"
 
-static char banner[256] = "\0";
+#define MAX_BANNER_SIZE 512
+
+static char banner[512] = "\0";
 
 
 const char*
@@ -23,7 +25,7 @@ getBanner(struct config* config)
 {
     if (banner[0] == '\0')
     {
-        snprintf (banner, 255,
+        snprintf (banner, MAX_BANNER_SIZE,
 "/*\n"
 "    *** Automatically generated from '%s'. Edits will be lost. ***\n"
 "    Copyright © 1995-2008, The AROS Development Team. All rights reserved.\n"
