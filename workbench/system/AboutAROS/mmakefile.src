@@ -28,7 +28,7 @@ $(TOP)/$(CURDIR)/authors.h : $(SRCDIR)/$(CURDIR)/db/credits $(SRCDIR)/$(CURDIR)/
 	@$(ECHO) Generating $@
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/authors2header.py <$< >$@
 
-$(TOP)/$(CURDIR)/sponsors.h : $(SRCDIR)/$(CURDIR)/db/sponsors scripts/sponsors2header.py
+$(TOP)/$(CURDIR)/sponsors.h : $(SRCDIR)/$(CURDIR)/db/sponsors $(SRCDIR)/$(CURDIR)/scripts/sponsors2header.py
 	@$(ECHO) Generating $@
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/sponsors2header.py <$< >$@
 
