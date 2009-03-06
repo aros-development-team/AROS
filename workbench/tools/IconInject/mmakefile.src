@@ -1,0 +1,16 @@
+# Copyright © 2009, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES   := main
+EXEDIR  := $(AROS_TOOLS)
+
+#MM- workbench-tools : workbench-tools-injecticon
+
+%build_prog mmake=workbench-tools-injecticon \
+    progname=InjectIcon targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc m"
+
+%common
+
