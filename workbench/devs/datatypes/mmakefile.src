@@ -24,7 +24,7 @@ workbench-devs-datatypes-quick : workbench-devs-datatypes
 #MM workbench-devs-datatypes-setup :
 %rule_makedirs dirs=$(DTDIR) setuptarget=workbench-devs-datatypes-setup
 
-$(DTDIR)/% : %.dtd
+$(DTDIR)/% : $(SRCDIR)/$(CURDIR)/%.dtd
 	cd $(DTDIR) && $(CREATEDTDESC) $<
 	
 %common
