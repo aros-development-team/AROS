@@ -1,12 +1,12 @@
 /*
-    Copyright  1995-2008, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2009, The AROS Development Team. All rights reserved.
     $Id: dosboot_init.c 30220 2009-01-04 22:38:44Z schulz $
 
     Desc: Start up the ol' Dos boot process.
     Lang: english
 */
 
-#define AROS_BOOT_CHECKSIG
+//#define AROS_BOOT_CHECKSIG
 #define DOSBOOT_DISCINSERT_SCREENPRINT
 
 # define  DEBUG 0
@@ -136,7 +136,7 @@ static BOOL __dosboot_Mount(struct DeviceNode *dn, struct DosLibrary * DOSBase)
 static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DOSBase)
 {
     BOOL            result = FALSE;
-    BPTR            lock;
+    BPTR            lock, seglist;
     STRPTR          buffer;
     LONG            bufferLength;
     struct InfoData info;
@@ -197,41 +197,34 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
     lock = NULL;
 
 #else
-#define STARTUP_SEQUENCE_FILE ":C/Shell"
+#define SHELL_FILE ":C/Shell"
 
-    bufferLength = strlen(deviceName) + sizeof(STARTUP_SEQUENCE_FILE) + 1;
+    bufferLength = strlen(deviceName) + sizeof(SHELL_FILE) + 1;
 
-    if ((buffer = AllocMem(bufferLength, MEMF_ANY)) == NULL)
+    if ((buffer = AllocMem(bufferLength, MEMF_PUBLIC)) == NULL)
     {
         Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
     }
 
     strcpy(buffer, deviceName);
-    strcat(buffer, STARTUP_SEQUENCE_FILE);
+    strcat(buffer, SHELL_FILE);
 
-    D(bug("[DOSBoot] __dosboot_IsBootable: Trying to get a lock on '%s'\n", buffer));
+    D(bug("[DOSBoot] __dosboot_IsBootable: "
+        "Trying to load '%s' as an executable\n", buffer));
 
-    if ((lock = Lock(buffer, SHARED_LOCK)) == 0)
+    if ((seglist = LoadSeg(buffer)) == (BPTR)NULL)
     {
-        D(bug("[DOSBoot] __dosboot_IsBootable: could not lock '%s'\n", buffer));
-        goto cleanup;
+        D(bug("[DOSBoot] __dosboot_IsBootable: could not load '%s'\n", buffer));
     }
-
-    if (!Info(lock, &info))
+    else
     {
-        D(bug("[DOSBoot] __dosboot_IsBootable: could not get info on '%s'\n", buffer));
-        goto cleanup;
-    }
-
-    if (info.id_DiskType != ID_NO_DISK_PRESENT)
-    {
+        UnLoadSeg(seglist);
         result = TRUE;
     }
 #endif
 
 cleanup:
     if (buffer != NULL ) FreeMem(buffer, bufferLength);
-    if (lock   != 0    ) UnLock(lock);
 
     return result;
 }
