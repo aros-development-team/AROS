@@ -180,6 +180,9 @@ unpack()
         *.tar.gz | *.tgz)
 	    if ! tar xfz "$archivepath/$archive"; then ret=false; fi
 	    ;;
+        *.zip)
+	    if ! unzip "$archivepath/$archive"; then ret=false; fi
+	    ;;
 	*)
 	    echo "Unknown archive format for \`$archive'."
 	    ret=false
@@ -290,7 +293,7 @@ for patch in $patches; do
     patch=`echo $patch | cut -d: -f1`
     if test "x$patch" != "x"; then
         if ! fetch_cached "$patches_origins" "$patch" "" "$destination"; then
-	    fetch_cached "$patches_origins" "$patch" "tar.bz2 tar.gz" "$destination" patch2
+	    fetch_cached "$patches_origins" "$patch" "tar.bz2 tar.gz zip" "$destination" patch2
             test -z "$patch2" && error "fetch: Error while fetching the patch \`$patch'."
 	    if ! unpack_cached "$destination" "$patch2" "$destination"; then
 		error "fetch: Error while unpacking \`$patch2'."
