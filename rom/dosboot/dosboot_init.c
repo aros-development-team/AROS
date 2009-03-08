@@ -1,12 +1,12 @@
 /*
     Copyright � 1995-2009, The AROS Development Team. All rights reserved.
-    $Id: dosboot_init.c 30220 2009-01-04 22:38:44Z schulz $
+    $Id$
 
     Desc: Start up the ol' Dos boot process.
     Lang: english
 */
 
-//#define AROS_BOOT_CHECKSIG
+#define AROS_BOOT_CHECKSIG
 #define DOSBOOT_DISCINSERT_SCREENPRINT
 
 # define  DEBUG 0
