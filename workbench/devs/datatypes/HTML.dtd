@@ -2,7 +2,7 @@
 Name=HTML
 Version=$VER: HTML 41.0 (3.12.2004)
 BaseName=html
-Pattern=#?.html
+Pattern=#?.(htm|html)
 GroupID=text
 ID=_htm
 Flags=DTF_ASCII,DTF_CASE
