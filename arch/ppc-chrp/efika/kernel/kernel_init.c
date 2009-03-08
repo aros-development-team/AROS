@@ -595,6 +595,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     Permit();
 
     NEWLIST(&LIBBASE->kb_Modules);
+    NEWLIST(&LIBBASE->kb_DeadTasks);
 
     /* Check whether the user passed realchip parameter. */
     if (cmd)

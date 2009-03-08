@@ -26,6 +26,8 @@ struct KernelBase {
     struct MemHeader    *kb_SupervisorMem;
     struct MinList		kb_Modules;
     context_t			*kb_FPUOwner;
+    struct List			kb_DeadTasks;
+    struct Task			*kb_LastDeadTask;
 };
 
 struct OFWNode {

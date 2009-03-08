@@ -258,6 +258,11 @@ void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void 
 			D(bug("[KRN] Crash at byte %d in func %s, module %s\n", offset, func, mod));
 		else if (mod)
 			D(bug("[KRN] Crash at byte %d in module %s\n", offset, mod));
+
+		D(bug("[KRN] SPLower=%08x SPUpper=%08x\n", t->tc_SPLower, t->tc_SPUpper));
+
+		if (ctx->gpr[1] >= t->tc_SPLower && ctx->gpr[1] < t->tc_SPUpper)
+			D(bug("[KRN] Stack in bounds\n"));
 	}
 	D(bug("[KRN] SRR0=%08x, SRR1=%08x\n",ctx->srr0, ctx->srr1));
 	D(bug("[KRN] CTR=%08x LR=%08x XER=%08x CCR=%08x\n", ctx->ctr, ctx->lr, ctx->xer, ctx->ccr));
@@ -333,6 +338,18 @@ void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void 
 			D(bug("[KRN]  %08x: byte %d in module %s\n", sp[1], offset, mod));
 		else
 			D(bug("[KRN]  %08x\n", sp[1]));
+	}
+
+	if (SysBase)
+	{
+		struct Task *dead = SysBase->ThisTask;
+
+		SysBase->ThisTask = NULL;
+		KernelBase->kb_LastDeadTask = dead;
+		Remove(dead);
+		Enqueue(&KernelBase->kb_DeadTasks, dead);
+
+		core_Dispatch(ctx);
 	}
 
 
