@@ -2,7 +2,7 @@
 #define _ATA_H
 
 /*
-   Copyright ï¿½ 2004-2008, The AROS Development Team. All rights reserved
+   Copyright © 2004-2008, The AROS Development Team. All rights reserved
    $Id$
 
 Desc: ata.device main private include file

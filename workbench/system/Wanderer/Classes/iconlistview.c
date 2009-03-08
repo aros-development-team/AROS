@@ -1,5 +1,5 @@
 /*
-Copyright ï¿½ 2002-2008, The AROS Development Team. 
+Copyright © 2002-2008, The AROS Development Team. 
 $Id$
 */
 #ifndef __AROS__

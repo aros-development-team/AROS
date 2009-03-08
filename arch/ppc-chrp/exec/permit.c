@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Permit() - Allow tasks switches to occur.
