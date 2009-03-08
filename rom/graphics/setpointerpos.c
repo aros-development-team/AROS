@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Private graphics function for setting mouse pointer position

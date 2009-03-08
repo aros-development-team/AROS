@@ -2,7 +2,7 @@
 #define AROS_KERNEL_H
 
 /*
-    Copyright ï¿½ 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: TagItems for the kernel.resource

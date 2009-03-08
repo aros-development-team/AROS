@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2002-2008, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include "portable_macros.h"
