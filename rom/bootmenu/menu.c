@@ -190,7 +190,7 @@ static void msgLoop(struct BootMenuBase_intern *BootMenuBase, struct Window *win
         if (win->UserPort)
         {
             WaitPort(win->UserPort);
-            while ((msg = (struct IntuiMessage *)GetMsg(BootMenuBase->bm_UserPort)))
+            while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
             {
                 if (msg->Class == IDCMP_GADGETUP)
                 {
