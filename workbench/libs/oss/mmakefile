@@ -1,4 +1,0 @@
-# Make a stub for a possible arch specific implementation of oss.library
-
-#MM- workbench-libs-oss : workbench-libs-oss-$(ARCH)-$(CPU) \
-#MM      workbench-libs-oss-$(ARCH)
