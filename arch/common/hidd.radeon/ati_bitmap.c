@@ -338,7 +338,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, Clear)
         bm->dp_gui_master_cntl_clip = (bm->dp_gui_master_cntl
                                      | RADEON_GMC_BRUSH_SOLID_COLOR
                                      | RADEON_GMC_SRC_DATATYPE_COLOR
-                                     | RADEON_ROP[GC_DRMD(vHidd_GC_DrawMode_Copy)].pattern);
+                                     | RADEON_ROP[vHidd_GC_DrawMode_Copy].pattern);
 
         RADEONWaitForFifo(sd, 4);
 
@@ -743,6 +743,101 @@ HIDDT_Pixel METHOD(ATIOnBM, Hidd_BitMap, GetPixel)
     return pixel;
 }
 
+
+void METHOD(ATIOffBM, Hidd_BitMap, BlitColorExpansion)
+    __attribute__((alias(METHOD_NAME_S(ATIOnBM, Hidd_BitMap, BlitColorExpansion))));
+
+void METHOD(ATIOnBM, Hidd_BitMap, BlitColorExpansion)
+{
+    atiBitMap *bm = OOP_INST_DATA(cl, o);
+
+    LOCK_BITMAP
+
+    if ((OOP_OCLASS(msg->srcBitMap) == sd->PlanarBMClass) && bm->fbgfx)
+    {
+    	struct planarbm_data    *planar = OOP_INST_DATA(OOP_OCLASS(msg->srcBitMap), msg->srcBitMap);
+    	HIDDT_Pixel             bg, fg;
+    	ULONG                   cemd;
+    	ULONG                   skipleft = msg->srcX - (msg->srcX & ~31);
+    	ULONG                   mask = ~0 << bm->depth;
+
+    	cemd = GC_COLEXP(msg->gc);
+    	bg   = GC_BG(msg->gc) | mask;
+    	fg   = GC_FG(msg->gc) | mask;
+
+    	ULONG bw = (msg->width + 31 + skipleft) & ~31;
+    	LONG x = msg->destX, y = msg->destY, w = msg->width, h = msg->height;
+
+    	LOCK_HW
+
+        bm->usecount++;
+    	sd->Card.Busy = TRUE;
+
+    	RADEONWaitForFifo(sd, 1);
+    	OUTREG(RADEON_DST_PITCH_OFFSET, bm->pitch_offset);
+
+        bm->dp_gui_master_cntl_clip = (bm->dp_gui_master_cntl
+									 | RADEON_GMC_WR_MSK_DIS
+                                     | RADEON_GMC_BRUSH_NONE
+                                     | RADEON_DP_SRC_SOURCE_HOST_DATA
+                                     | RADEON_GMC_DST_CLIPPING
+                                     | RADEON_GMC_BYTE_MSB_TO_LSB
+                                     | RADEON_ROP[vHidd_GC_DrawMode_Copy].rop);
+
+        if (cemd & vHidd_GC_ColExp_Transparent)
+        {
+        	bm->dp_gui_master_cntl_clip |= RADEON_GMC_SRC_DATATYPE_MONO_FG_LA;
+
+            RADEONWaitForFifo(sd, 6);
+            OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+            OUTREG(RADEON_DP_SRC_FRGD_CLR,  fg);
+        }
+        else
+        {
+        	bm->dp_gui_master_cntl_clip |= RADEON_GMC_SRC_DATATYPE_MONO_FG_BG;
+
+        	RADEONWaitForFifo(sd, 7);
+            OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+            OUTREG(RADEON_DP_SRC_FRGD_CLR,  fg);
+            OUTREG(RADEON_DP_SRC_BKGD_CLR,  bg);
+        }
+
+        OUTREG(RADEON_SC_TOP_LEFT,        (y << 16) | x);
+		OUTREG(RADEON_SC_BOTTOM_RIGHT,    ((y+h) << 16) | (x+w));
+
+        OUTREG(RADEON_DST_X_Y,          ((x - skipleft) << 16) | y);
+        OUTREG(RADEON_DST_WIDTH_HEIGHT, (bw << 16) | h);
+
+    	ULONG *ptr = (ULONG*)planar->planes[0];
+    	ptr += ((msg->srcY * planar->bytesperrow) >> 2) + (msg->srcX >> 5);
+
+#if AROS_BIG_ENDIAN
+        RADEONWaitForFifo(sd, 1);
+        OUTREG(RADEON_RBBM_GUICNTL, RADEON_HOST_DATA_SWAP_32BIT);
+#endif
+
+        while(h--)
+        {
+        	int i;
+
+        	for (i=0; i < bw >> 5; i++)
+        	{
+                RADEONWaitForFifo(sd, 1);
+                OUTREG(RADEON_HOST_DATA0, ptr[i]);
+        	}
+
+        	ptr += planar->bytesperrow >> 2;
+        }
+
+    	UNLOCK_HW
+
+    }
+    else
+    	OOP_DoSuperMethod(cl, o, msg);
+
+    UNLOCK_BITMAP
+
+}
 
 ULONG METHOD(ATIOffBM, Hidd_BitMap, BytesPerLine)
     __attribute__((alias(METHOD_NAME_S(ATIOnBM, Hidd_BitMap, BytesPerLine))));
