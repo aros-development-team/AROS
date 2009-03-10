@@ -40,8 +40,10 @@ void collect_sets(const char *file, setnode **setlist_ptr)
 
     FILE *pipe = my_popen("objdump -h ", file);
 
+    /* This fscanf() simply splits the whole stream into separate words */
     while (fscanf(pipe, " %200s ", secname) > 0)
     {
+	parse_format(secname);
         parse_secname(secname, setlist_ptr);
     }
 

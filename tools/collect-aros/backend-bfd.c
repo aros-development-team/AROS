@@ -87,6 +87,7 @@ void collect_sets(const char *file, setnode **setlist_ptr)
         bfd_fatal(file);
     }
 
+    parse_format(abfd->xvec->name);
     bfd_map_over_sections(abfd, setfunc, setlist_ptr);
 
     bfd_close(abfd);
