@@ -1,0 +1,12 @@
+CFG_PACKAGES=(hosted.svn.mingw32-i386)
+
+CFG_MAIL_ENABLE=yes
+CFG_MAIL_CC=sonic.amiga@gmail.com
+
+CFG_UPLOAD_ENABLE=yes
+CFG_DS_KEY=/home/sonic/.ssh/id_dsa.aros-nightly-upload
+CFG_DS_USER=sonic_amiga,aros
+CFG_BACKUP_ENABLE=no
+
+# This host runs ISO-8859-15 and it's okay for AROS, but ISO-8859-1 fails here
+export LANG=en_US.ISO-8859-15

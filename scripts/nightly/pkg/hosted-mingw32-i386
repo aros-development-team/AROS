@@ -1,0 +1,35 @@
+#!/bin/zsh
+# Creates mingw32-i386 "hosted" binary packages.
+
+BUILDTARGET=mingw32-i386
+
+source $SP/setup
+# The log-name MUST match the name of the package script
+setl   hosted-$BUILDTARGET.log
+
+ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
+
+printi "Creating AROS/"$BUILDTARGET" system package..."
+PACKAGE=$BASENAME-$BUILDTARGET-system
+ARCHIVE=$ARCHIVE_BASE/$PACKAGE.zip
+
+delete  $BUILD_BASE/AROS
+copy    $SOURCE_AROS      $BUILD_BASE/AROS
+copy    $SOURCE_NECESSARY $BUILD_BASE/AROS/contrib
+
+cd      $BUILD_BASE/AROS
+execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly
+make
+
+cd      $BUILD_BASE/AROS/bin/$BUILDTARGET
+move    AROS $PACKAGE
+
+copy    $SOURCE_AROS/LICENSE $PACKAGE
+copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
+delete	$PACKAGE/Include
+delete	$PACKAGE/lib
+
+ziparc  $ARCHIVE $PACKAGE
+
+cd      $ROOT
+resetl
