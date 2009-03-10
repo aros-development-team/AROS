@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,6 +18,9 @@ typedef struct setnode
     long  pri;
     struct setnode *next;
 } setnode;
+
+static char* pointer_size = "LONG";
+static char pointer_bytes = 4;
 
 static setnode *new_setnode(const char *name, setnode *next, int off, long pri){
    setnode *n;
@@ -85,7 +88,7 @@ void emit_sets(setnode *setlist, FILE *out)
             out,
             "    __%s_LIST__ = .;\n"
             "    %s((__%s_END__ - __%s_LIST__) / %d - 2)\n",
-	    setname_big, sizeof(long)==4?"LONG":"QUAD", setname_big, setname_big, sizeof(long)
+	    setname_big, pointer_size, setname_big, setname_big, pointer_bytes
 	);
 
 	do
@@ -107,7 +110,7 @@ void emit_sets(setnode *setlist, FILE *out)
             "    KEEP(*(%s))\n"
             "    %s(0)\n"
             "    __%s_END__ = .;\n",
-            oldnode->secname, sizeof(long)==4?"LONG":"QUAD", setname_big
+            oldnode->secname, pointer_size, setname_big
         );
     }
 }
@@ -140,3 +143,10 @@ void parse_secname(const char *secname, setnode **setlist_ptr)
     get_setnode(setlist_ptr, secname, off, pri);
 }
 
+void parse_format(const char *format)
+{
+    if (strncmp(format, "elf64", 5) == 0) {
+	pointer_size = "QUAD";
+	pointer_bytes = 8;
+    }
+}

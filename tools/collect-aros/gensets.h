@@ -17,6 +17,7 @@ typedef struct setnode
 } setnode;
 
 void parse_secname(const char *secname, setnode **setlist_ptr);
+void parse_format(const char *format);
 void emit_sets(setnode *setlist, FILE *out);
 
 #endif /* !_GENSETS_H_ */
