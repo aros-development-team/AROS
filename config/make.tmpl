@@ -14,15 +14,15 @@
 # and use the options in %(opt).
 %define compile_q cmd=$(TARGET_CC) opt=$(CFLAGS) from=$< to=$@
 	@$(ECHO) "Compiling %(from)"
-	@$(IF) %(cmd) -iquote $(SRCDIR)/$(CURDIR) -iquote . %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
+	@$(IF) %(cmd) $(CFLAGS_IQUOTE) $(SRCDIR)/$(CURDIR) $(CFLAGS_IQUOTE) . $(CFLAGS_IQUOTE_END) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-		$(ECHO) "%(from): %(cmd) %(opt) -iquote $(SRCDIR)/$(CURDIR) -iquote . -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
+		$(ECHO) "%(from): %(cmd) $(CFLAGS_IQUOTE) $(SRCDIR)/$(CURDIR) $(CFLAGS_IQUOTE) . $(CFLAGS_IQUOTE_END) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
 		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
 	    else \
 		$(NOP) ; \
 	    fi ; \
 	else \
-	    $(ECHO) "Compile failed: %(cmd) %(opt) -iquote $(SRCDIR)/$(CURDIR) -iquote . -c %(from) -o %(to)" 1>&2 ; \
+	    $(ECHO) "Compile failed: %(cmd) $(CFLAGS_IQUOTE) $(SRCDIR)/$(CURDIR) $(CFLAGS_IQUOTE) . $(CFLAGS_IQUOTE_END) %(opt) -c %(from) -o %(to)" 1>&2 ; \
 	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 	    exit 1 ; \
 	fi
