@@ -61,11 +61,28 @@ IPTR FrButtonClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
     struct RastPort *rp = msg->gpr_RPort;
     struct IBox      container;
 
-    DEBUG_FRBUTTON(dprintf("frbutton_render: rp %p[%p] win %p[%p] req %p[%p] gi->rp %p[%p]\n",
-                           rp, rp->Layer,
-                           msg->gpr_GInfo->gi_Window, msg->gpr_GInfo->gi_Window->WLayer,
-                           msg->gpr_GInfo->gi_Requester, msg->gpr_GInfo->gi_Requester->ReqLayer,
-                           msg->gpr_GInfo->gi_RastPort, msg->gpr_GInfo->gi_RastPort->Layer));
+    DEBUG_FRBUTTON(
+        if (rp)
+            dprintf("frbutton_render: rp @ %p, rp->layer @ %p\n", rp, rp->Layer);
+        else
+            dprintf("frbutton_render: rp == NULL!\n");
+
+        if (msg->gpr_GInfo->gi_Window)
+            dprintf("frbutton_render: msg->gpr_GInfo->gi_Window @ %p, msg->gpr_GInfo->gi_Window->WLayer @ %p\n", msg->gpr_GInfo->gi_Window, msg->gpr_GInfo->gi_Window->WLayer);
+        else
+            dprintf("frbutton_render: msg->gpr_GInfo->gi_Window == NULL!\n");
+
+        if (msg->gpr_GInfo->gi_Requester)
+            dprintf("frbutton_render: msg->gpr_GInfo->gi_Requester @ %p, msg->gpr_GInfo->gi_Requester->ReqLayer @ %p\n", msg->gpr_GInfo->gi_Requester, msg->gpr_GInfo->gi_Requester->ReqLayer);
+        else
+            dprintf("frbutton_render: msg->gpr_GInfo->gi_Requester == NULL!\n");
+
+        if (msg->gpr_GInfo->gi_RastPort)
+            dprintf("frbutton_render: msg->gpr_GInfo->gi_RastPort @ %p, msg->gpr_GInfo->gi_RastPort->Layer @ %p\n", msg->gpr_GInfo->gi_RastPort, msg->gpr_GInfo->gi_RastPort->Layer);
+        else
+            dprintf("frbutton_render: msg->gpr_GInfo->gi_RastPort == NULL!\n");
+    );
+
     SANITY_CHECK(rp)
     
     GetGadgetIBox(g, msg->gpr_GInfo, &container);
@@ -172,7 +189,7 @@ void frbutton_setsize(Class *cl, struct Gadget *g, struct opSet *msg)
 {
     struct Image *image = (struct Image *)g->GadgetRender;
 
-    DEBUG_FRBUTTON(dprintf("frbutton_setsize: o %p\n", o));
+    DEBUG_FRBUTTON(dprintf("frbutton_setsize: g %p\n", g));
 
     if ((FindTagItem(GA_Width, msg->ops_AttrList) == NULL ||
             FindTagItem(GA_Height, msg->ops_AttrList) == NULL) &&
@@ -259,6 +276,8 @@ IPTR FrButtonClass__GM_HITTEST(Class *cl, struct Gadget * g, struct gpHitTest * 
 {
     struct Image *image = (struct Image *)g->GadgetRender;
 
+    DEBUG_FRBUTTON(dprintf("FrButtonClass__GM_HITTEST()\n"));
+    
     IPTR retval = GMR_GADGETHIT;
 
     if (image)
@@ -283,6 +302,9 @@ IPTR FrButtonClass__GM_HITTEST(Class *cl, struct Gadget * g, struct gpHitTest * 
 IPTR FrButtonClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     struct Gadget *g = (struct Gadget *)DoSuperMethodA(cl, o, (Msg)msg);
+
+    DEBUG_FRBUTTON(dprintf("FrButtonClass__OM_NEW()\n"));
+
     if (g)
     {
 	frbutton_setsize(cl, g, msg);
@@ -295,7 +317,9 @@ IPTR FrButtonClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 IPTR FrButtonClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
-    
+
+    DEBUG_FRBUTTON(dprintf("FrButtonClass__OM_SET()\n"));
+
     /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
      * because it would circumvent the subclass from fully overriding it.
      * The check of cl == OCLASS(o) should fail if we have been
