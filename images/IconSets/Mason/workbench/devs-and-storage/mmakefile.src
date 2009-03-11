@@ -8,7 +8,7 @@ ICONS     := Keymaps
 ICONDIR   := $(AROSDIR)/Devs
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
-#MM- masonicons : masonworkbenchprefsicons
+#MM- iconset-Mason-icons : masonworkbenchprefsicons
 
 #MM
 masonworkbenchprefsicons : setup $(ICONFILES)

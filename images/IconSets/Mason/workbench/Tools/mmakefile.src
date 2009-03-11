@@ -8,7 +8,7 @@ ICONS     := HDToolBox WiMP Commodities Calculator
 ICONDIR   := $(AROSDIR)/Tools
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
-#MM- masonicons : masonworkbenchtoolicons
+#MM- iconset-Mason-icons : masonworkbenchtoolicons
 
 #MM
 masonworkbenchtoolicons : setup $(ICONFILES)
