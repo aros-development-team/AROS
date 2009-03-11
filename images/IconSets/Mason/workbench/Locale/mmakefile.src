@@ -7,7 +7,7 @@ ICONDIR := $(AROS_LOCALE)
 
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
-#MM- masonicons : masonworkbenchicons
+#MM- iconset-Mason-icons : masonworkbenchicons
 
 #MM
 masonworkbenchicons : setup $(ICONFILES)

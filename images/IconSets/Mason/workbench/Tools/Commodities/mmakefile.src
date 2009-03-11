@@ -8,7 +8,7 @@ ICONS     := AutoPoint Blanker ClickToFront Exchange Opaque
 ICONDIR   := $(AROSDIR)/Tools/Commodities
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
-#MM- masonicons : masonworkbenchcxicons
+#MM- iconset-Mason-icons : masonworkbenchcxicons
 
 #MM
 masonworkbenchcxicons : setup $(ICONFILES)

@@ -8,7 +8,7 @@ ICONS     := Multiview Clock More Installer
 ICONDIR   := $(AROSDIR)/Utilities
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
-#MM- masonicons : masonworkbenchutilityicons
+#MM- iconset-Mason-icons : masonworkbenchutilityicons
 
 #MM
 masonworkbenchutilityicons : setup $(ICONFILES)

@@ -8,7 +8,7 @@ ICONS     := def_Disk def_RAM def_Drawer def_Project def_Tool def_Text def_Docum
 ICONDIR   := $(AROSDIR)/Prefs/Env-Archive/SYS
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
-#MM- masonicons : masonworkbenchenvicons
+#MM- iconset-Mason-icons : masonworkbenchenvicons
 
 #MM
 masonworkbenchenvicons : setup $(ICONFILES)

@@ -8,7 +8,7 @@ ICONS     := Input Zune Time ReqTools Font Locale Serial
 ICONDIR   := $(AROSDIR)/Prefs
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
-#MM- masonicons : masonworkbenchprefsicons
+#MM- iconset-Mason-icons : masonworkbenchprefsicons
 
 #MM
 masonworkbenchprefsicons : setup $(ICONFILES)

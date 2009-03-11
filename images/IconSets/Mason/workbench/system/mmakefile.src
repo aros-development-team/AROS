@@ -8,7 +8,7 @@ ICONS     := FixFonts
 ICONDIR   := $(AROSDIR)/System
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
-#MM- masonicons : masonworkbenchsystemicons
+#MM- iconset-Mason-icons : masonworkbenchsystemicons
 
 #MM
 masonworkbenchsystemicons : setup $(ICONFILES)
