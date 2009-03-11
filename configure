@@ -698,6 +698,7 @@ aros_target_variant
 aros_target_cpu
 aros_target_arch
 aros_target_bootloader
+aros_target_iconset
 aros_target_guitheme
 aros_tools_dir
 aros_host_lib_suffix
@@ -856,6 +857,7 @@ with_optimization
 enable_target_variant
 with_portssources
 with_bootloader
+with_iconset
 with_theme
 enable_includes
 with_resolution
@@ -1552,6 +1554,7 @@ Optional Packages:
                           Use optimization flags FLAGS (default=-O2).
   --with-portssources=DIR Where to download sourcecode for external ports
   --with-bootloader=NAME  Use a specific bootloader
+  --with-iconset=NAME     Use a specific Icon-set (default=Gorilla).
   --with-theme=NAME       Use a specific GUI Theme
   --with-resolution=XRESxYRESxDEPTH
                           Default resolution of the initial WorkbenchScreen
@@ -9073,6 +9076,25 @@ fi
 { $as_echo "$as_me:$LINENO: result: $target_bootloader" >&5
 $as_echo "$target_bootloader" >&6; }
 
+{ $as_echo "$as_me:$LINENO: checking which icon-set to use" >&5
+$as_echo_n "checking which icon-set to use... " >&6; }
+
+# Check whether --with-iconset was given.
+if test "${with_iconset+set}" = set; then
+  withval=$with_iconset; target_iconset=$withval
+else
+  target_iconset="default"
+fi
+
+if test "$target_iconset" = "default"; then
+    aros_target_iconset="Gorilla"
+    target_iconset="default (Gorilla)"
+else
+    aros_target_iconset="$target_iconset"
+fi
+{ $as_echo "$as_me:$LINENO: result: $target_iconset" >&5
+$as_echo "$target_iconset" >&6; }
+
 # Check LZO when compiling the grub2 bootloader on i386/x86_64.
 aros_liblzo_check="no"
 case "$aros_target_bootloader" in
@@ -13051,6 +13073,7 @@ $as_echo "$dbus" >&6; }
 
 
 # Target Related
+
 
 
 
