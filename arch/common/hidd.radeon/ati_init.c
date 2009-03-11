@@ -172,6 +172,7 @@ AROS_UFH3(void, Enumerator,
 
                 sd->scratch_buffer = AllocBitmapArea(sd, 4096, 16, 4, TRUE);
                 sd->Card.CursorStart = AllocBitmapArea(sd, 64, 64, 4, TRUE);
+		sd->cpuscratch = AllocPooled(sd->memPool, 4096*4);
 
                 OUTREG(RADEON_CUR_HORZ_VERT_OFF,RADEON_CUR_LOCK |  0);
                 OUTREG(RADEON_CUR_HORZ_VERT_POSN,RADEON_CUR_LOCK | 0);

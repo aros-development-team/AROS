@@ -100,6 +100,7 @@ struct ati_staticdata {
     struct Card     Card;
     struct CardState *poweron_state;
     IPTR            scratch_buffer;
+    UBYTE           *cpuscratch;
 
     OOP_Object      *AtiObject;
     OOP_Object      *PCIObject;
