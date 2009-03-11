@@ -70,6 +70,7 @@
 #define OUTREG8(addr, val)  (*(volatile UBYTE*)((UBYTE*)(RADEONMMIO)+(addr)) = (val))
 #define OUTREG16(addr, val) (*(volatile UWORD*)((UBYTE*)(RADEONMMIO)+(addr)) = AROS_WORD2LE((val)))
 #define OUTREG(addr, val)   (*(volatile ULONG*)((UBYTE*)(RADEONMMIO)+(addr)) = AROS_LONG2LE((val)))
+#define OUTREGN(addr, val) (*(volatile ULONG*)((UBYTE*)(RADEONMMIO)+(addr)) = (val))
 
 #define ADDRREG(addr)       ((volatile ULONG *)(APTR)(RADEONMMIO + (addr)))
 

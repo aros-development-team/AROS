@@ -829,6 +829,11 @@ void METHOD(ATIOnBM, Hidd_BitMap, BlitColorExpansion)
         	ptr += planar->bytesperrow >> 2;
         }
 
+#if AROS_BIG_ENDIAN
+        RADEONWaitForFifo(sd, 1);
+        OUTREG(RADEON_RBBM_GUICNTL, RADEON_HOST_DATA_SWAP_NONE);
+#endif
+
     	UNLOCK_HW
 
     }
@@ -901,6 +906,8 @@ VOID METHOD(ATIOffBM, Hidd_BitMap, PutImageLUT)
 VOID METHOD(ATIOnBM, Hidd_BitMap, PutImageLUT)
 {
     atiBitMap *bm = OOP_INST_DATA(cl, o);
+
+    bug("[ATI] PutImageLUT(%d, %d, %d, %d, %d, %p)\n", msg->x, msg->y, msg->width, msg->height, msg->modulo, msg->pixels);
 
     LOCK_BITMAP
 
@@ -979,156 +986,444 @@ VOID METHOD(ATIOffBM, Hidd_BitMap, PutImage)
 VOID METHOD(ATIOnBM, Hidd_BitMap, PutImage)
 {
     atiBitMap *bm = OOP_INST_DATA(cl, o);
+    BOOL done = FALSE;
 
     LOCK_BITMAP
 
     IPTR VideoData = bm->framebuffer;
 
+    /* Try to PutImage with 2D engine first */
     if (bm->fbgfx)
     {
-       VideoData += (IPTR)sd->Card.FrameBuffer;
+    	UBYTE *src = msg->pixels;
+    	ULONG x_add = msg->modulo;
+    	UWORD height = msg->height;
+    	UWORD bw = msg->width;
 
-        if (sd->Card.Busy)
-        {
-            LOCK_HW
-#warning TODO: NVSync(sd)
-            RADEONWaitForIdleMMIO(sd);
-            UNLOCK_HW
-        }
+    	if (bm->bpp == 2)
+    		bw = (bw + 1) & ~1;
+
+    	done = TRUE;
+
+    	if (done)
+    	{
+			LOCK_HW
+
+	        bm->usecount++;
+	    	sd->Card.Busy = TRUE;
+
+			RADEONWaitForFifo(sd, 1);
+			OUTREG(RADEON_DST_PITCH_OFFSET, bm->pitch_offset);
+
+			bm->dp_gui_master_cntl_clip = (bm->dp_gui_master_cntl
+										 | RADEON_GMC_WR_MSK_DIS
+										 | RADEON_GMC_BRUSH_NONE
+										 | RADEON_DP_SRC_SOURCE_HOST_DATA
+										 | RADEON_GMC_DST_CLIPPING
+										 | RADEON_GMC_SRC_DATATYPE_COLOR
+										 | RADEON_ROP[vHidd_GC_DrawMode_Copy].rop);
+
+			RADEONWaitForFifo(sd, 5);
+			OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+
+			OUTREG(RADEON_SC_TOP_LEFT,        (msg->y << 16) | msg->x);
+			OUTREG(RADEON_SC_BOTTOM_RIGHT,    ((msg->y+msg->height) << 16) | (msg->x+msg->width));
+
+			OUTREG(RADEON_DST_X_Y,          ((msg->x) << 16) | msg->y);
+			OUTREG(RADEON_DST_WIDTH_HEIGHT, (bw << 16) | msg->height);
+
+			switch (msg->pixFmt)
+			{
+				case vHidd_StdPixFmt_Native32:
+				case vHidd_StdPixFmt_Native:
+					if (bm->bpp == 4)
+					{
+#if AROS_BIG_ENDIAN
+			        	RADEONWaitForFifo(sd, 1);
+			        	OUTREG(RADEON_RBBM_GUICNTL, RADEON_HOST_DATA_SWAP_32BIT);
+#endif
+						while (height--)
+						{
+							ULONG *line = (ULONG*)src;
+							ULONG width = msg->width;
+
+							while(width)
+							{
+								if (width <= 8)
+								{
+									RADEONWaitForFifo(sd, width);
+									switch (width)
+									{
+										case 8: OUTREGN(RADEON_HOST_DATA0, *line++);
+										case 7: OUTREGN(RADEON_HOST_DATA1, *line++);
+										case 6: OUTREGN(RADEON_HOST_DATA2, *line++);
+										case 5: OUTREGN(RADEON_HOST_DATA3, *line++);
+										case 4: OUTREGN(RADEON_HOST_DATA4, *line++);
+										case 3: OUTREGN(RADEON_HOST_DATA5, *line++);
+										case 2: OUTREGN(RADEON_HOST_DATA6, *line++);
+										case 1: OUTREGN(RADEON_HOST_DATA7, *line++);
+									}
+									width = 0;
+								}
+								else
+								{
+									RADEONWaitForFifo(sd, 8);
+
+									OUTREGN(RADEON_HOST_DATA0, *line++);
+									OUTREGN(RADEON_HOST_DATA1, *line++);
+									OUTREGN(RADEON_HOST_DATA2, *line++);
+									OUTREGN(RADEON_HOST_DATA3, *line++);
+									OUTREGN(RADEON_HOST_DATA4, *line++);
+									OUTREGN(RADEON_HOST_DATA5, *line++);
+									OUTREGN(RADEON_HOST_DATA6, *line++);
+									OUTREGN(RADEON_HOST_DATA7, *line++);
+
+									width -= 8;
+								}
+							}
+
+							src += x_add;
+						}
+#if AROS_BIG_ENDIAN
+					RADEONWaitForFifo(sd, 1);
+					OUTREG(RADEON_RBBM_GUICNTL, RADEON_HOST_DATA_SWAP_NONE);
+#endif
+
+					}
+					else if (bm->bpp == 2)
+					{
+#if AROS_BIG_ENDIAN
+						RADEONWaitForFifo(sd, 1);
+						OUTREG(RADEON_RBBM_GUICNTL, RADEON_HOST_DATA_SWAP_HDW);
+#endif
+						if (msg->pixFmt == vHidd_StdPixFmt_Native)
+						{
+							while (height--)
+							{
+								ULONG *line = (ULONG*)src;
+								ULONG width = bw >> 1;
+
+								while(width--)
+								{
+									RADEONWaitForFifo(sd, 1);
+									OUTREG(RADEON_HOST_DATA0, *line++);
+								}
+
+								src += x_add;
+							}
+						}
+						else
+						{
+							while (height--)
+							{
+								ULONG *line = (ULONG*)src;
+								ULONG width = bw >> 1;
+
+								while(width--)
+								{
+									ULONG tmp = (line[0] << 16) | (line[1] & 0x0000ffff);
+									RADEONWaitForFifo(sd, 1);
+									OUTREG(RADEON_HOST_DATA0, tmp);
+									line+=2;
+								}
+
+								src += x_add;
+							}
+
+						}
+					}
+#if AROS_BIG_ENDIAN
+					RADEONWaitForFifo(sd, 1);
+					OUTREG(RADEON_RBBM_GUICNTL, RADEON_HOST_DATA_SWAP_NONE);
+#endif
+
+					break;
+
+				default:
+				{
+					OOP_Object *dstpf;
+					OOP_Object *srcpf;
+
+					srcpf = HIDD_Gfx_GetPixFmt(sd->AtiObject, msg->pixFmt);
+			        OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&dstpf);
+
+			        if (bm->bpp == 4)
+			        {
+#if AROS_BIG_ENDIAN
+			        	RADEONWaitForFifo(sd, 1);
+			        	OUTREG(RADEON_RBBM_GUICNTL, RADEON_HOST_DATA_SWAP_32BIT);
+#endif
+			        	while(height--)
+			        	{
+			        		ULONG *line = (ULONG*)sd->cpuscratch;
+			        		ULONG width = bw;
+			        		APTR _src = src;
+
+			        		HIDD_BM_ConvertPixels(o, &_src, srcpf, msg->modulo, &line, dstpf, msg->modulo, msg->width, 1, NULL);
+
+			        		line = (ULONG*)sd->cpuscratch;
+
+			        		while(width)
+			        		{
+			        			if (width <= 8)
+			        			{
+			        				RADEONWaitForFifo(sd, width);
+			        				switch (width)
+			        				{
+			        				case 8: OUTREGN(RADEON_HOST_DATA0, *line++);
+			        				case 7: OUTREGN(RADEON_HOST_DATA1, *line++);
+			        				case 6: OUTREGN(RADEON_HOST_DATA2, *line++);
+			        				case 5: OUTREGN(RADEON_HOST_DATA3, *line++);
+			        				case 4: OUTREGN(RADEON_HOST_DATA4, *line++);
+			        				case 3: OUTREGN(RADEON_HOST_DATA5, *line++);
+			        				case 2: OUTREGN(RADEON_HOST_DATA6, *line++);
+			        				case 1: OUTREGN(RADEON_HOST_DATA7, *line++);
+			        				}
+			        				width = 0;
+			        			}
+			        			else
+			        			{
+			        				RADEONWaitForFifo(sd, 8);
+
+			        				OUTREGN(RADEON_HOST_DATA0, *line++);
+			        				OUTREGN(RADEON_HOST_DATA1, *line++);
+			        				OUTREGN(RADEON_HOST_DATA2, *line++);
+			        				OUTREGN(RADEON_HOST_DATA3, *line++);
+			        				OUTREGN(RADEON_HOST_DATA4, *line++);
+			        				OUTREGN(RADEON_HOST_DATA5, *line++);
+			        				OUTREGN(RADEON_HOST_DATA6, *line++);
+			        				OUTREGN(RADEON_HOST_DATA7, *line++);
+
+			        				width -= 8;
+			        			}
+			        		}
+
+			        		src += x_add;
+			        	}
+#if AROS_BIG_ENDIAN
+					RADEONWaitForFifo(sd, 1);
+					OUTREG(RADEON_RBBM_GUICNTL, RADEON_HOST_DATA_SWAP_NONE);
+#endif
+
+			        }
+			        else if (bm->bpp == 2)
+			        {
+#if AROS_BIG_ENDIAN
+			        	RADEONWaitForFifo(sd, 1);
+			        	OUTREG(RADEON_RBBM_GUICNTL, RADEON_HOST_DATA_SWAP_HDW);
+#endif
+
+			        	while(height--)
+			        	{
+			        		ULONG *line = (ULONG*)sd->cpuscratch;
+			        		ULONG width = bw;
+			        		APTR _src = src;
+
+			        		HIDD_BM_ConvertPixels(o, &_src, srcpf, msg->modulo, &line, dstpf, msg->modulo, msg->width, 1, NULL);
+
+			        		line = (ULONG*)sd->cpuscratch;
+
+			        		while(width)
+			        		{
+			        			if (width <= 16)
+			        			{
+			        				RADEONWaitForFifo(sd, width >> 1);
+			        				switch (width)
+			        				{
+			        				case 16: OUTREG(RADEON_HOST_DATA0, *line++);
+			        				case 14: OUTREG(RADEON_HOST_DATA1, *line++);
+			        				case 12: OUTREG(RADEON_HOST_DATA2, *line++);
+			        				case 10: OUTREG(RADEON_HOST_DATA3, *line++);
+			        				case 8: OUTREG(RADEON_HOST_DATA4, *line++);
+			        				case 6: OUTREG(RADEON_HOST_DATA5, *line++);
+			        				case 4: OUTREG(RADEON_HOST_DATA6, *line++);
+			        				case 2: OUTREG(RADEON_HOST_DATA7, *line++);
+			        				}
+			        				width = 0;
+			        			}
+			        			else
+			        			{
+			        				RADEONWaitForFifo(sd, 8);
+
+			        				OUTREG(RADEON_HOST_DATA0, *line++);
+			        				OUTREG(RADEON_HOST_DATA1, *line++);
+			        				OUTREG(RADEON_HOST_DATA2, *line++);
+			        				OUTREG(RADEON_HOST_DATA3, *line++);
+			        				OUTREG(RADEON_HOST_DATA4, *line++);
+			        				OUTREG(RADEON_HOST_DATA5, *line++);
+			        				OUTREG(RADEON_HOST_DATA6, *line++);
+			        				OUTREG(RADEON_HOST_DATA7, *line++);
+
+			        				width -= 16;
+			        			}
+			        		}
+
+			        		src += x_add;
+			        	}
+			        }
+#if AROS_BIG_ENDIAN
+			        RADEONWaitForFifo(sd, 1);
+			        OUTREG(RADEON_RBBM_GUICNTL, RADEON_HOST_DATA_SWAP_NONE);
+#endif
+
+				}
+			}
+
+			UNLOCK_HW
+    	}
     }
 
-    switch(msg->pixFmt)
+    if (!done)
     {
-        case vHidd_StdPixFmt_Native:
-            switch(bm->bpp)
-            {
-                case 1:
-                {
-                    struct pHidd_BitMap_CopyMemBox8 __m = {
-                            sd->mid_CopyMemBox8,
-                            msg->pixels,
-                            0,
-                            0,
-                            (APTR)VideoData,
-                            msg->x,
-                            msg->y,
-                            msg->width,
-                            msg->height,
-                            msg->modulo,
-                            bm->pitch
-                    }, *m = &__m;
+//    	bug("[ATI] PutImage x=%d y=%d w=%d h=%d bpp=%d fmt=%d\n", msg->x, msg->y, msg->width, msg->height, bm->bpp, msg->pixFmt);
 
-                    OOP_DoMethod(o, (OOP_Msg)m);
-                }
-                break;
 
-            case 2:
-                {
-                    struct pHidd_BitMap_CopyMemBox16 __m = {
-                            sd->mid_CopyMemBox16,
-                            msg->pixels,
-                            0,
-                            0,
-                            (APTR)VideoData,
-                            msg->x,
-                            msg->y,
-                            msg->width,
-                            msg->height,
-                            msg->modulo,
-                            bm->pitch
-                    }, *m = &__m;
+    	if (bm->fbgfx)
+        {
+			VideoData += (IPTR)sd->Card.FrameBuffer;
 
-                    OOP_DoMethod(o, (OOP_Msg)m);
-                }
-                break;
+			if (sd->Card.Busy)
+			{
+				LOCK_HW
+#warning TODO: NVSync(sd)
+				RADEONWaitForIdleMMIO(sd);
+				UNLOCK_HW
+			}
+        }
 
-            case 4:
-                {
-                    struct pHidd_BitMap_CopyMemBox32 __m = {
-                            sd->mid_CopyMemBox32,
-                            msg->pixels,
-                            0,
-                            0,
-                            (APTR)VideoData,
-                            msg->x,
-                            msg->y,
-                            msg->width,
-                            msg->height,
-                            msg->modulo,
-                            bm->pitch
-                    }, *m = &__m;
+    	switch(msg->pixFmt)
+		{
+			case vHidd_StdPixFmt_Native:
+				switch(bm->bpp)
+				{
+					case 1:
+					{
+						struct pHidd_BitMap_CopyMemBox8 __m = {
+								sd->mid_CopyMemBox8,
+								msg->pixels,
+								0,
+								0,
+								(APTR)VideoData,
+								msg->x,
+								msg->y,
+								msg->width,
+								msg->height,
+								msg->modulo,
+								bm->pitch
+						}, *m = &__m;
 
-                    OOP_DoMethod(o, (OOP_Msg)m);
-                }
-                break;
+						OOP_DoMethod(o, (OOP_Msg)m);
+					}
+					break;
 
-                } /* switch(data->bytesperpix) */
-            break;
+				case 2:
+					{
+						struct pHidd_BitMap_CopyMemBox16 __m = {
+								sd->mid_CopyMemBox16,
+								msg->pixels,
+								0,
+								0,
+								(APTR)VideoData,
+								msg->x,
+								msg->y,
+								msg->width,
+								msg->height,
+								msg->modulo,
+								bm->pitch
+						}, *m = &__m;
 
-        case vHidd_StdPixFmt_Native32:
-            switch(bm->bpp)
-            {
-                case 1:
-                {
-                struct pHidd_BitMap_PutMem32Image8 __m = {
-                            sd->mid_PutMem32Image8,
-                            msg->pixels,
-                            (APTR)VideoData,
-                            msg->x,
-                            msg->y,
-                            msg->width,
-                            msg->height,
-                            msg->modulo,
-                            bm->pitch
-                    }, *m = &__m;
-                OOP_DoMethod(o, (OOP_Msg)m);
-                }
-                break;
+						OOP_DoMethod(o, (OOP_Msg)m);
+					}
+					break;
 
-            case 2:
-                {
-                struct pHidd_BitMap_PutMem32Image16 __m = {
-                            sd->mid_PutMem32Image16,
-                            msg->pixels,
-                            (APTR)VideoData,
-                            msg->x,
-                            msg->y,
-                            msg->width,
-                            msg->height,
-                            msg->modulo,
-                            bm->pitch
-                    }, *m = &__m;
-                OOP_DoMethod(o, (OOP_Msg)m);
-                }
-                break;
+				case 4:
+					{
+						struct pHidd_BitMap_CopyMemBox32 __m = {
+								sd->mid_CopyMemBox32,
+								msg->pixels,
+								0,
+								0,
+								(APTR)VideoData,
+								msg->x,
+								msg->y,
+								msg->width,
+								msg->height,
+								msg->modulo,
+								bm->pitch
+						}, *m = &__m;
 
-            case 4:
-                {
-                struct pHidd_BitMap_CopyMemBox32 __m = {
-                        sd->mid_CopyMemBox32,
-                        msg->pixels,
-                        0,
-                        0,
-                        (APTR)VideoData,
-                        msg->x,
-                        msg->y,
-                        msg->width,
-                        msg->height,
-                        msg->modulo,
-                        bm->pitch
-                }, *m = &__m;
+						OOP_DoMethod(o, (OOP_Msg)m);
+					}
+					break;
 
-                OOP_DoMethod(o, (OOP_Msg)m);
-                }
-                break;
+					} /* switch(data->bytesperpix) */
+				break;
 
-            } /* switch(data->bytesperpix) */
-            break;
+			case vHidd_StdPixFmt_Native32:
+				switch(bm->bpp)
+				{
+					case 1:
+					{
+					struct pHidd_BitMap_PutMem32Image8 __m = {
+								sd->mid_PutMem32Image8,
+								msg->pixels,
+								(APTR)VideoData,
+								msg->x,
+								msg->y,
+								msg->width,
+								msg->height,
+								msg->modulo,
+								bm->pitch
+						}, *m = &__m;
+					OOP_DoMethod(o, (OOP_Msg)m);
+					}
+					break;
 
-        default:
-            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-            break;
-    } /* switch(msg->pixFmt) */
+				case 2:
+					{
+					struct pHidd_BitMap_PutMem32Image16 __m = {
+								sd->mid_PutMem32Image16,
+								msg->pixels,
+								(APTR)VideoData,
+								msg->x,
+								msg->y,
+								msg->width,
+								msg->height,
+								msg->modulo,
+								bm->pitch
+						}, *m = &__m;
+					OOP_DoMethod(o, (OOP_Msg)m);
+					}
+					break;
+
+				case 4:
+					{
+					struct pHidd_BitMap_CopyMemBox32 __m = {
+							sd->mid_CopyMemBox32,
+							msg->pixels,
+							0,
+							0,
+							(APTR)VideoData,
+							msg->x,
+							msg->y,
+							msg->width,
+							msg->height,
+							msg->modulo,
+							bm->pitch
+					}, *m = &__m;
+
+					OOP_DoMethod(o, (OOP_Msg)m);
+					}
+					break;
+
+				} /* switch(data->bytesperpix) */
+				break;
+
+			default:
+				OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+				break;
+		} /* switch(msg->pixFmt) */
+    }
 
     UNLOCK_BITMAP
 }
