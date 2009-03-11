@@ -3,13 +3,11 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- themes-gorilla-old : themes-gorilla-old-icons-aros
-
 ICONS := C Demos Development Devs Extras Fonts \
          Libs Locale Prefs S Storage System \
          T Tests Tools Utilities WBStartup \
          boot Rexxc
 
-#MM- themes-gorilla-old-icons-clean : themes-gorilla-old-icons-aros-clean
-#MM- themes-gorilla-old-icons : themes-gorilla-old-icons-aros
-%build_icons mmake=themes-gorilla-old-icons-aros icons=$(ICONS) dir=$(AROSDIR)
+#MM- iconset-Gorilla-old-icons-clean : iconset-Gorilla-old-icons-aros-clean
+#MM- iconset-Gorilla-old-icons : iconset-Gorilla-old-icons-aros
+%build_icons mmake=iconset-Gorilla-old-icons-aros icons=$(ICONS) dir=$(AROSDIR)
