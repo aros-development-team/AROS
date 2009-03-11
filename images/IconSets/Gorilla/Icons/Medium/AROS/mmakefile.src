@@ -3,19 +3,17 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- workbench-complete : themes-gorilla-icons-aros
-
 ICONS := Demos Development Devs Fonts \
          Libs Locale Prefs Storage System \
          Tests Tools Utilities WBStartup \
          Rexxc
 
-#MM- themes-gorilla-icons-clean : themes-gorilla-icons-aros-clean
-#MM- themes-gorilla-icons : themes-gorilla-icons-aros
-#MM themes-gorilla-icons-aros : themes-gorilla-icons-aros-livecd
+#MM- iconset-Gorilla-icons-clean : iconset-Gorilla-icons-aros-clean
+#MM- iconset-Gorilla-icons : iconset-Gorilla-icons-aros
+#MM iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-livecd
 
-%build_icons mmake=themes-gorilla-icons-aros icons=$(ICONS) dir=$(AROSDIR)
+%build_icons mmake=iconset-Gorilla-icons-aros icons=$(ICONS) dir=$(AROSDIR)
 
 #MM
-themes-gorilla-icons-aros-livecd :  
+iconset-Gorilla-icons-aros-livecd :  
 	@$(ILBMTOICON) $(SRCDIR)/$(CURDIR)/LiveCD.info.src $(SRCDIR)/$(CURDIR)/LiveCD.png $(AROSDIR)/disk.info
