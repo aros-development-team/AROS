@@ -3,10 +3,10 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- themes-gorilla-old : themes-gorilla-old-icons-mmedia
+#MM- iconset-Gorilla-old : iconset-Gorilla-old-icons-mmedia
 
 ICONS := AMP2
 
-#MM- themes-gorilla-old-icons-clean : themes-gorilla-old-icons-aros-clean
-#MM- themes-gorilla-old-icons : themes-gorilla-old-icons-mmedia
-%build_icons mmake=themes-gorilla-old-icons-mmedia icons=$(ICONS) dir=$(CONTRIBDIR)/MultiMedia
+#MM- iconset-Gorilla-old-icons-clean : iconset-Gorilla-old-icons-aros-clean
+#MM- iconset-Gorilla-old-icons : iconset-Gorilla-old-icons-mmedia
+%build_icons mmake=iconset-Gorilla-old-icons-mmedia icons=$(ICONS) dir=$(CONTRIBDIR)/MultiMedia
