@@ -1050,6 +1050,16 @@ else
 fi
 AC_MSG_RESULT($target_bootloader)
 
+AC_MSG_CHECKING([which icon-set to use])
+AC_ARG_WITH(iconset,AC_HELP_STRING([--with-iconset=NAME],[Use a specific Icon-set (default=Gorilla).]),target_iconset=$withval,target_iconset="default")
+if test "$target_iconset" = "default"; then
+    aros_target_iconset="Gorilla"
+    target_iconset="default (Gorilla)"
+else
+    aros_target_iconset="$target_iconset"
+fi
+AC_MSG_RESULT($target_iconset)
+
 # Check LZO when compiling the grub2 bootloader on i386/x86_64.
 aros_liblzo_check="no"
 case "$aros_target_bootloader" in
@@ -1642,6 +1652,7 @@ AC_SUBST(aros_host_automake)
 
 # Target Related
 AC_SUBST(aros_target_guitheme)
+AC_SUBST(aros_target_iconset)
 AC_SUBST(aros_target_bootloader)
 AC_SUBST(aros_target_arch)
 AC_SUBST(aros_target_cpu)

@@ -13,6 +13,7 @@ AROS_TARGET_VARIANT ?= @aros_target_variant@
 
 # normally, these variable's should go in mmake.config/globalvarfile
 export AROS_TARGET_BOOTLOADER := @aros_target_bootloader@
+export AROS_TARGET_ICONSET := @aros_target_iconset@
 export AROS_GUI_THEME := @aros_target_guitheme@
 
 TOP := @AROS_BUILDDIR@
