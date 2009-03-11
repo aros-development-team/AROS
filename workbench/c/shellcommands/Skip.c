@@ -48,7 +48,8 @@
 
     HISTORY
 
-    14.01.2000  SDuvan   implemented
+    09.03.2009  OTigreat  41.2  Let's find Lab even after an empty line
+    14.01.2000  SDuvan    41.1  Implemented
 
 ******************************************************************************/
 
@@ -61,7 +62,7 @@
 
 #include <aros/shcommands.h>
 
-AROS_SH2(Skip, 41.1,
+AROS_SH2(Skip, 41.2,
 AROS_SHA(STRPTR, , LABEL,  , NULL),
 AROS_SHA(BOOL,   , BACK, /S, FALSE))
 {
@@ -79,7 +80,7 @@ AROS_SHA(BOOL,   , BACK, /S, FALSE))
     }
 
     {
-	char  buffer[256];
+	char  buffer[256], a = 0;
 	LONG  status;
 	BOOL  quit = FALSE;
 
@@ -102,8 +103,10 @@ AROS_SHA(BOOL,   , BACK, /S, FALSE))
 
 	    if (status == ITEM_NOTHING)
 	    {
-		if(FGetC(Input()) == ENDSTREAMCH)
-		    break;
+	        if (a == ENDSTREAMCH)		
+	            break;
+	        else
+	            continue;
 	    }
 
 	    switch (FindArg("LAB,ENDSKIP", buffer))
@@ -127,14 +130,10 @@ AROS_SHA(BOOL,   , BACK, /S, FALSE))
 	    }
 
 	    /* Skip to the next line */
+	    do
 	    {
-		char a;
-
-		do
-		{
-		    a = FGetC(Input());
-		} while (a != '\n' && a != ENDSTREAMCH);
-	    }
+	        a = FGetC(Input());
+	    } while (a != '\n' && a != ENDSTREAMCH);
 	}
     }
 
