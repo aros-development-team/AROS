@@ -1,0 +1,6 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 30832 2009-03-11 12:32:34Z NicJA $
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-complete : iconset-$(AROS_TARGET_ICONSET)-icons
