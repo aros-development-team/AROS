@@ -36,6 +36,8 @@ DEBUG_AFLAGS	:= @aros_debug_aflags@
 DEBUG_LDFLAGS	:= @aros_debug_ldflags@
 
 NOSTDINC_CFLAGS   := @aros_target_nostdinc_cflags@
+KERNEL_IQUOTE     := @kernel_cflags_iquote@
+KERNEL_IQUOTE_END := @kernel_cflags_iquote_end@
 CFLAGS_IQUOTE     := @aros_cflags_iquote@
 CFLAGS_IQUOTE_END := @aros_cflags_iquote_end@
 NOSTARTUP_LDFLAGS := @aros_target_nostartup_ldflags@

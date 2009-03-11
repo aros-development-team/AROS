@@ -2,18 +2,28 @@
 
  1. COMPILING
 
- This port currently can only be compiled under Windows OS. In order to do this
-you need:
+ In order to compile it natively under Windows OS you need:
 
 a) Working Cygwin environment (Mingw's MSYS is expected to work too but it's not tested).
 b) Netpbm package of course.
-c) AROS-targetted crosscompiler. Cygwin version of it can be found on AROS Archives:
+c) Native gcc v3 (for Cygwin). In gcc v4 -mno-cygwin option is no more supported. If you use MSYS
+   you're free from this restriction.
+d) AROS-targetted crosscompiler. Cygwin version of it can be found on AROS Archives:
    http://archives.aros-exec.org/index.php?function=browse&cat=development/cross
-   I compile it using gcc version 3.3.1, however i beleive more recent versions will
-   work too.
-d) Mingw32 libraries package for Cygwin.
+   Use the latest gcc version, however i386-aros-gcc v3 also works.
+e) Mingw32 libraries package for Cygwin.
 
- That's all. Execute "./configure --target=mingw32-i386", than make.
+ That's all. Execute "./configure --target=mingw32-i386", then "make".
+
+ At the moment native build is succesfully performed under cygwin using Cygwin's gcc v3.4.4 and
+i386-aros-gcc v4.2.2. Building under MSYS is a work in progress.
+
+ You can also crosscompile it under other OS. The only restriction (implied by configure script,
+needs to be fixed): build system CPU should be different from i386. Otherwise configure suggests native build
+and attempts to use host's gcc as a kernel compiler (one that builds a bootstrap and helper DLLs). Of course
+it won't work. For cross-compiling you need the same toolset as for native build, plus Mingw32-targetted
+crosscompiler. Currently cross-build is succesfully performed on Linux/x86-64 using native gcc v4.1.2 and
+both crosscompilers v4.2.2 (built from vanilla source tree).
 
  2. RUNNING
 
@@ -75,4 +85,4 @@ drivers in order to communicate with VH threads. Currently their allocation is s
 will be implemented in future.
  For more details see kernel.resource, i hope the code is clear enough.
 
- 26.02.2009, Pavel Fedin <sonic.amiga@gmail.com>
+ 11.03.2009, Pavel Fedin <sonic.amiga@gmail.com>
