@@ -14,15 +14,15 @@
 # and use the options in %(opt). Use %(iquote) and %(iquote_end) for supplying -iquote or -I- flags
 %define compile_q cmd=$(TARGET_CC) opt=$(CFLAGS) from=$< to=$@ iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
 	@$(ECHO) "Compiling %(from)"
-	@$(IF) %(cmd) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
+	@$(IF) %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-		$(ECHO) "%(from): %(cmd) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
+		$(ECHO) "%(from): %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
 		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
 	    else \
 		$(NOP) ; \
 	    fi ; \
 	else \
-	    $(ECHO) "Compile failed: %(cmd) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to)" 1>&2 ; \
+	    $(ECHO) "Compile failed: %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to)" 1>&2 ; \
 	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 	    exit 1 ; \
 	fi
@@ -287,18 +287,24 @@ ifeq (%(compiler),target)
 $(TMP_TARGETBASE).o : TMP_CMD:=$(TARGET_CC)
 $(TMP_TARGETBASE).d : TMP_CMD:=$(TARGET_CC)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
+$(TMP_TARGETBASE).d : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
+$(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
 ifeq (%(compiler),host)
 $(TMP_TARGETBASE).o : TMP_CMD:=$(HOST_CC)
 $(TMP_TARGETBASE).d : TMP_CMD:=$(HOST_CC)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(HOST_IQUOTE)
+$(TMP_TARGETBASE).d : TMP_IQUOTE:=$(HOST_IQUOTE)
+$(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
 $(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
 $(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(KERNEL_IQUOTE)
+$(TMP_TARGETBASE).d : TMP_IQUOTE:=$(KERNEL_IQUOTE)
+$(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
 
@@ -1990,7 +1996,7 @@ $(HIDD_LIB)($(STUBS_MEM)) : $(STUBS_OBJ)
 	%mklib_q from=$^
 
 $(STUBS_OBJ) : $(STUBS_SRC) 
-	%compile_q cmd=$(TARGET_CC) opt=%(cflags) iquote=$(CGLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
+	%compile_q cmd=$(TARGET_CC) opt=%(cflags) iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
 
 $(STUBS_DEP) : $(STUBS_SRC)
 	%mkdepend_q flags=%(dflags)
