@@ -725,6 +725,10 @@ SDL_CONFIG
 XMKMF
 aros_cflags_iquote_end
 aros_cflags_iquote
+kernel_cflags_iquote_end
+kernel_cflags_iquote
+host_cflags_iquote_end
+host_cflags_iquote
 aros_target_nostdlib_ldflags
 aros_target_detach_ldflags
 aros_target_nix_ldflags
@@ -8920,36 +8924,6 @@ $as_echo "$as_me: error: \"Unknown CPU for Amiga $target_cpu\"" >&2;}
         esac
 	;;
 
-    cygwin*)
-	aros_target_arch="cygwin"
-	aros_shared_default="no"
-	case "$target_cpu" in
-	    *i?86*)
-		aros_target_cpu="i386"
-		aros_object_format="elf_i386"
-		aros_flavour="emulation"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__CYGWIN32__"
-		aros_shared_cflags=""
-		aros_default_wbdepth=8
-		gcc_target_cpu="i386"
-		aros_target_cc="i386-aros-gcc"
-		aros_target_ld="i386-aros-ld"
-		aros_target_as="i386-aros-as"
-		aros_target_ar="i386-aros-ar"
-		aros_target_ranlib="i386-aros-ranlib"
-		aros_target_nm="i386-aros-nm"
-		aros_target_strip="i386-aros-strip"
-		aros_target_objcopy="i386-aros-objcopy"
-		aros_target_objdump="i386-aros-objdump"
-		;;
-	    *)
-		{ { $as_echo "$as_me:$LINENO: error: \"Unknown CPU for CygWin -- $target_cpu\"" >&5
-$as_echo "$as_me: error: \"Unknown CPU for CygWin -- $target_cpu\"" >&2;}
-   { (exit 1); exit 1; }; }
-		;;
-	esac
-    ;;
-
     mingw32*)
         aros_target_arch="mingw32"
 	aros_shared_default="no"
@@ -11426,7 +11400,6 @@ $as_echo "$aros_target_cc_includes" >&6; }
 
 save_cc="$CC"
 save_cflags="$CFLAGS"
-CC="$aros_kernel_cc"
 CFLAGS="-iquote."
 { $as_echo "$as_me:$LINENO: checking whether ${CC} accepts -iquote" >&5
 $as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
@@ -11475,14 +11448,134 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:$LINENO: result: $has_iquote" >&5
 $as_echo "$has_iquote" >&6; }
 if test "x-$has_iquote" = "x-yes" ; then
-    aros_cflags_iquote=-iquote
-    aros_cflags_iquote_end=
+    host_cflags_iquote=-iquote
+    host_cflags_iquote_end=
 else
-    aros_cflags_iquote=-I
-    aros_cflags_iquote_end=-I-
+    host_cflags_iquote=-I
+    host_cflags_iquote_end=-I-
+fi
+kernel_cflags_iquote=$host_cflags_iquote
+kernel_cflags_iquote_end=$host_cflags_iquote_end
+if test "x-$cross_compiling" = "x-yes"; then
+    CC="$aros_kernel_cc"
+    { $as_echo "$as_me:$LINENO: checking whether ${CC} accepts -iquote" >&5
+$as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
+    cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
+$as_echo "$ac_try_echo") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  has_iquote="yes"
+else
+  $as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	has_iquote="no"
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    { $as_echo "$as_me:$LINENO: result: $has_iquote" >&5
+$as_echo "$has_iquote" >&6; }
+    if test "x-$has_iquote" = "x-yes" ; then
+        kernel_cflags_iquote=-iquote
+        kernel_cflags_iquote_end=
+    else
+        kernel_cflags_iquote=-I
+        kernel_cflags_iquote_end=-I-
+    fi
+fi
+aros_cflags_iquote=$kernel_cflags_iquote
+aros_cflags_iquote_end=$kernel_cflags_iquote_end
+if test "$orig_target_cc" != "$aros_kernel_cc"; then
+    CC="$orig_target_cc"
+    { $as_echo "$as_me:$LINENO: checking whether ${CC} accepts -iquote" >&5
+$as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
+    cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
+$as_echo "$ac_try_echo") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  has_iquote="yes"
+else
+  $as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	has_iquote="no"
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    { $as_echo "$as_me:$LINENO: result: $has_iquote" >&5
+$as_echo "$has_iquote" >&6; }
+    if test "x-$has_iquote" = "x-yes" ; then
+        aros_cflags_iquote=-iquote
+        aros_cflags_iquote_end=
+    else
+        aros_cflags_iquote=-I
+        aros_cflags_iquote_end=-I-
+    fi
 fi
 CC="$save_cc"
 CFLAGS="$save_cflags"
+
+
+
+
 
 
 

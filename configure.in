@@ -927,34 +927,6 @@ case "$target_os" in
         esac
 	;;
 
-    cygwin*)
-	aros_target_arch="cygwin"
-	aros_shared_default="no"
-	case "$target_cpu" in
-	    *i?86*)
-		aros_target_cpu="i386"
-		aros_object_format="elf_i386"
-		aros_flavour="emulation"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__CYGWIN32__"
-		aros_shared_cflags=""
-		aros_default_wbdepth=8
-		gcc_target_cpu="i386"
-		aros_target_cc="i386-aros-gcc"
-		aros_target_ld="i386-aros-ld"
-		aros_target_as="i386-aros-as"
-		aros_target_ar="i386-aros-ar"
-		aros_target_ranlib="i386-aros-ranlib"
-		aros_target_nm="i386-aros-nm"
-		aros_target_strip="i386-aros-strip"
-		aros_target_objcopy="i386-aros-objcopy"
-		aros_target_objdump="i386-aros-objdump"
-		;;
-	    *)
-		AC_MSG_ERROR("Unknown CPU for CygWin -- $target_cpu")
-		;;
-	esac
-    ;;
-
     mingw32*)
         aros_target_arch="mingw32"
 	aros_shared_default="no"
@@ -1321,21 +1293,54 @@ AC_MSG_RESULT($aros_target_cc_includes)
 
 save_cc="$CC"
 save_cflags="$CFLAGS"
-CC="$aros_kernel_cc"
 CFLAGS="-iquote."
 AC_MSG_CHECKING([whether ${CC} accepts -iquote])
 AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
 AC_MSG_RESULT($has_iquote)
 if test "x-$has_iquote" = "x-yes" ; then
-    aros_cflags_iquote=-iquote
-    aros_cflags_iquote_end=
+    host_cflags_iquote=-iquote
+    host_cflags_iquote_end=
 else
-    aros_cflags_iquote=-I
-    aros_cflags_iquote_end=-I-
+    host_cflags_iquote=-I
+    host_cflags_iquote_end=-I-
+fi
+kernel_cflags_iquote=$host_cflags_iquote
+kernel_cflags_iquote_end=$host_cflags_iquote_end
+if test "x-$cross_compiling" = "x-yes"; then
+    CC="$aros_kernel_cc"
+    AC_MSG_CHECKING([whether ${CC} accepts -iquote])
+    AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
+    AC_MSG_RESULT($has_iquote)
+    if test "x-$has_iquote" = "x-yes" ; then
+        kernel_cflags_iquote=-iquote
+        kernel_cflags_iquote_end=
+    else
+        kernel_cflags_iquote=-I
+        kernel_cflags_iquote_end=-I-
+    fi
+fi
+aros_cflags_iquote=$kernel_cflags_iquote
+aros_cflags_iquote_end=$kernel_cflags_iquote_end
+if test "$orig_target_cc" != "$aros_kernel_cc"; then
+    CC="$orig_target_cc"
+    AC_MSG_CHECKING([whether ${CC} accepts -iquote])
+    AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
+    AC_MSG_RESULT($has_iquote)
+    if test "x-$has_iquote" = "x-yes" ; then
+        aros_cflags_iquote=-iquote
+        aros_cflags_iquote_end=
+    else
+        aros_cflags_iquote=-I
+        aros_cflags_iquote_end=-I-
+    fi
 fi
 CC="$save_cc"
 CFLAGS="$save_cflags"
 
+AC_SUBST(host_cflags_iquote)
+AC_SUBST(host_cflags_iquote_end)
+AC_SUBST(kernel_cflags_iquote)
+AC_SUBST(kernel_cflags_iquote_end)
 AC_SUBST(aros_cflags_iquote)
 AC_SUBST(aros_cflags_iquote_end)
 
