@@ -175,7 +175,7 @@ void __attribute__((noreturn)) ictl_handler(regs_t *ctx, uint8_t exception, void
 				}
 				else
 				{
-					D(bug("[KRN] Orphan peripheral interrupt %d! Disabling\n", i));
+//					D(bug("[KRN] Orphan peripheral interrupt %d! Disabling\n", i));
 					outl(inl(&ictl->ictl_pim) | __BV32(i), &ictl->ictl_pim);
 				}
 			}
