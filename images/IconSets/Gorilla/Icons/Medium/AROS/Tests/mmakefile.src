@@ -5,9 +5,9 @@ include $(TOP)/config/make.cfg
 
 ICONS := DualPNG
 
-#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-tests-clean
+#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-tests-clean
 
-#MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-tests
+#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-tests
 
-%build_icons mmake=themes-gorilla-icons-aros-tests icons=$(ICONS) \
+%build_icons mmake=iconset-Gorilla-icons-aros-tests icons=$(ICONS) \
              dir=$(AROS_TESTS)/Icon

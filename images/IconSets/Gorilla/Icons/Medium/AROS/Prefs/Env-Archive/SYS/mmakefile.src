@@ -14,7 +14,7 @@ ICONS := \
     def_Archive def_Python def_REXX def_NetworkHost def_UserHome def_Trashcan \
     def_PLS def_M3U
 
-#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-prefs-envarc-clean
-#MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-prefs-envarc
-%build_icons mmake=themes-gorilla-icons-aros-prefs-envarc icons=$(ICONS) \
+#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-prefs-envarc-clean
+#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-prefs-envarc
+%build_icons mmake=iconset-Gorilla-icons-aros-prefs-envarc icons=$(ICONS) \
              dir=$(AROS_ENVARC)/SYS 

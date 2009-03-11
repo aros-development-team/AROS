@@ -3,10 +3,10 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- workbench-complete : themes-gorilla-icons-contrib
+#MM- workbench-complete : iconset-Gorilla-icons-contrib
 
 ICONS := MultiMedia DOpus Demos Development Games Networking
 
-#MM- themes-gorilla-icons-clean : themes-gorilla-icons-aros-clean
-#MM- themes-gorilla-icons : themes-gorilla-icons-contrib
-%build_icons mmake=themes-gorilla-icons-contrib icons=$(ICONS) dir=$(CONTRIBDIR)
+#MM- iconset-Gorilla-icons-clean : iconset-Gorilla-icons-aros-clean
+#MM- iconset-Gorilla-icons : iconset-Gorilla-icons-contrib
+%build_icons mmake=iconset-Gorilla-icons-contrib icons=$(ICONS) dir=$(CONTRIBDIR)
