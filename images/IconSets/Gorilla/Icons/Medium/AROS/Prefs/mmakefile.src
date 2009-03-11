@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 ICONS := Time Locale Serial Presets Input IControl Font ReqTools Wanderer \
          Zune ScreenMode AHI EditPrefs Trackdisk
 
-#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-prefs-clean
-#MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-prefs
-%build_icons mmake=themes-gorilla-icons-aros-prefs icons=$(ICONS) \
+#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-prefs-clean
+#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-prefs
+%build_icons mmake=iconset-Gorilla-icons-aros-prefs icons=$(ICONS) \
              dir=$(AROS_PREFS)

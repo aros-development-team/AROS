@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 ICONS := Calculator HDToolBox PCITool InstallAROS Editor Commodities Debug WiMP \
          ScreenGrabber
 
-#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-tools-clean
-#MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-tools
-%build_icons mmake=themes-gorilla-icons-aros-tools icons=$(ICONS) \
+#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-tools-clean
+#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-tools
+%build_icons mmake=iconset-Gorilla-icons-aros-tools icons=$(ICONS) \
              dir=$(AROS_TOOLS)

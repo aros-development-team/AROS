@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 ICONS := Patterns
 
-#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-prefs-presets-clean
-#MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-prefs-presets
-%build_icons mmake=themes-gorilla-icons-aros-prefs-presets icons=$(ICONS) \
+#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-prefs-presets-clean
+#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-prefs-presets
+%build_icons mmake=iconset-Gorilla-icons-aros-prefs-presets icons=$(ICONS) \
              dir=$(AROS_PREFS)/Presets
