@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2009, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -156,10 +156,15 @@ WFLG_WINDOWACTIVE )
     if (newWindow->Flags & WFLG_NW_EXTENDED)
     {
         tagList = ((struct ExtNewWindow *)newWindow)->Extension;
-    #if 1
+    #if 0
         /* Sanitycheck the taglist pointer. Some Am*gaOS 1.3/2.x era
          * apps have WFLG_NW_EXTENDED set with bogus Extension taglist
          * pointer... (older CygnusED for example) - Piru
+         *
+         * Disabled at 12.03.2009 - many AROS targets don't have ROM in their memory lists, this
+         * results in ignoring taglist from bootmenu.
+         * Anyway this doesn't matter until AROS runs on m68k
+         * Pavel Fedin <sonic.amiga@gmail.com>
          */
         if (((ULONG) tagList & 1) || !TypeOfMem(tagList))
         {

@@ -2,7 +2,7 @@
 #define INTUITION_INTERN_H
 
 /*
-    Copyright  1995-2006, The AROS Development Team. All rights reserved.
+    Copyright  1995-2009, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -96,9 +96,12 @@
 
 #include <aros/asmcall.h>
 
-// FIXME: implement macro for AROS ??
-#ifndef __MORPHOS__
-#   define ASSERT_VALID_PTR_ROMOK(ptr)
+#if DEBUG_ASSERTS
+#define ASSERT_VALID_PTR_ROMOK(ptr)       \
+if (((ULONG) ptr & 1) || !TypeOfMem(ptr)) \
+    bug("[intuition] Invalid pointer value %p at %s, line %u\n", ptr, __FILE__, __LINE__);
+#else
+#define ASSERT_VALID_PTR_ROMOK(ptr)
 #endif
 
 // FIXME: seems only used for RefreshWindowTitles() ? -> better names
