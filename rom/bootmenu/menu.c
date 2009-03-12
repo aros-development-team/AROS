@@ -212,7 +212,8 @@ static void msgLoop(struct BootMenuBase_intern *BootMenuBase, struct Window *win
         }
         else
         {
-            D(bug("[BootMenu] msgLoop: Window lacks a userport!\n"));
+            bug("[BootMenu] msgLoop: Window lacks a userport!\n");
+            Wait(0);
         }
     } while (exit == FALSE);
     while ((msg=(struct IntuiMessage *)GetMsg(win->UserPort)))
@@ -243,28 +244,17 @@ static BOOL initScreen(struct BootMenuBase_intern *BootMenuBase, struct BootConf
             D(bug("[BootMenu] initScreen: Gadgets created @ %p\n", first));
             struct TagItem wintags[] =
             {
-                {WA_Left,               0}, /* 0 */
-                {WA_Top,                0}, /* 1 */
-                {WA_Width,              BootMenuBase->bm_Screen->Width}, /* 2 */
-                {WA_Height,             BootMenuBase->bm_Screen->Height}, /* 3 */
-                {WA_CustomScreen,       (IPTR)BootMenuBase->bm_Screen}, /* 4 */
-                {WA_Gadgets,            (IPTR)first}, /* 5 */
-//                {WA_UserPort,         NULL}, /* 6 */
+                {WA_Left,               0},
+                {WA_Top,                0},
+                {WA_Width,              BootMenuBase->bm_Screen->Width},
+                {WA_Height,             BootMenuBase->bm_Screen->Height},
+                {WA_CustomScreen,       (IPTR)BootMenuBase->bm_Screen},
+                {WA_Gadgets,            (IPTR)first},
                 {WA_IDCMP,              (IPTR)(IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_VANILLAKEY | IDCMP_GADGETUP | IDCMP_GADGETDOWN)},
                 {WA_Borderless,         TRUE},
                 {WA_RMBTrap,            TRUE},
                 {TAG_DONE,              0UL}
             };
-
-            /*BootMenuBase->bm_UserPort = CreateMsgPort();
-            if (BootMenuBase->bm_UserPort)
-            {
-                wintags[6].ti_Data = BootMenuBase->bm_UserPort;
-            }
-            else
-            {
-                wintags[6].ti_Tag = TAG_IGNORE;
-            }*/
 
             if ((BootMenuBase->bm_Window = OpenWindowTagList(NULL, wintags)) != NULL)
             {
