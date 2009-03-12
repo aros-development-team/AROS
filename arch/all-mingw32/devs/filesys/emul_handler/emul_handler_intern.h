@@ -94,6 +94,7 @@ struct KernelInterface
     __attribute__((stdcall)) ULONG (*ReadFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToRead, ULONG *lpNumberOfBytesRead, void *lpOverlapped);
     __attribute__((stdcall)) ULONG (*WriteFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToWrite, ULONG *lpNumberOfBytesWritten, void *lpOverlapped);
     __attribute__((stdcall)) ULONG (*SetFilePointer)(void *hFile, LONG lDistanceToMove, LONG *lpDistanceToMoveHigh, ULONG dwMoveMethod);
+    __attribute__((stdcall)) ULONG (*SetEndOfFile)(void *hFile);
     __attribute__((stdcall)) ULONG (*GetFileType)(void *hFile);
     __attribute__((stdcall)) void *(*GetStdHandle)(ULONG nStdHandle);
     __attribute__((stdcall)) ULONG (*MoveFile)(char *lpExistingFileName, char *lpNewFileName);
@@ -114,6 +115,7 @@ struct KernelInterface
 #define DoRead KernelIFace->ReadFile
 #define DoWrite KernelIFace->WriteFile
 #define LSeek KernelIFace->SetFilePointer
+#define SetEOF KernelIFace->SetEndOfFile
 #define GetFileType KernelIFace->GetFileType
 #define GetStdFile KernelIFace->GetStdHandle
 #define DoRename KernelIFace->MoveFile
