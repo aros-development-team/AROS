@@ -12,6 +12,8 @@
 
 #define DEBUG 0
 #define DERROR(x)
+#define DFNAME(x) x
+#define DOPEN(x) x
 #define DASYNC(x)
 
 #define __DOS_NOLIBBASE__
@@ -143,7 +145,7 @@ BOOL shrink(struct emulbase *emulbase, char *filename)
   /* We skip the first slash because it separates volume root prefix and the actual pathname */
   s = filename;
   if (*s == '\\')
-      *s++;
+      s++;
   
   for(;;)
   {
@@ -177,17 +179,39 @@ BOOL shrink(struct emulbase *emulbase, char *filename)
 /* Allocate a buffer, in which the filename is appended to the pathname. */
 static LONG makefilename(struct emulbase *emulbase, char **dest, char **part, struct filehandle * fh, STRPTR filename)
 {
-  LONG ret = 0;
-  int len, flen, dirlen;
-  char *c, *s;
+    LONG ret = 0;
+    int len, flen, dirlen;
+    char *c, *s;
 
-  D(bug("[emul] makefilename(): directory \"%s\", file \"%s\")\n", fh->hostname, filename));
-  dirlen = strlen(fh->hostname);
-  flen = strlen(filename);
-  len = flen + dirlen + 2;
-  *dest=(char *)emul_malloc(emulbase, len);
-  if ((*dest))
-  {
+    DFNAME(bug("[emul] makefilename(): directory \"%s\", file \"%s\")\n", fh->hostname, filename));
+  
+    s = filename;
+    while (*s) {
+	if (*s == '.') {
+	    do {
+		s++;
+	    } while (*s == '.');
+	    if ((*s == '/') || (!*s)) {
+	        DFNAME(bug("[emul] Bad file name, contains dots-only component\n"));
+		return ERROR_INVALID_COMPONENT_NAME;
+	    }
+	}
+	do {
+	    if (*s == '\\') {
+	        DFNAME(bug("[emul] Bad file name, contains backslash\n"));
+		return ERROR_INVALID_COMPONENT_NAME;
+	    }
+	    s++;
+	} while ((*s != '/') && *s);
+	while (*s == '/')
+	    s++;
+    }
+  
+    dirlen = strlen(fh->hostname);
+    flen = strlen(filename);
+    len = flen + dirlen + 2;
+    *dest=(char *)emul_malloc(emulbase, len);
+    if ((*dest)) {
 	CopyMem(fh->hostname, *dest, dirlen);
 	c = *dest + dirlen;
 	if (flen) {
@@ -199,22 +223,22 @@ static LONG makefilename(struct emulbase *emulbase, char **dest, char **part, st
 	*c = 0;
 
 	c = *dest + (fh->name - fh->hostname);
-	D(bug("[emul] Shrinking filename: \"%s\"\n", c));
+	DFNAME(bug("[emul] Shrinking filename: \"%s\"\n", c));
 	if (!shrink(emulbase, c))
 	{
 	  emul_free(emulbase, *dest);
 	  *dest = NULL;
 	  ret = ERROR_OBJECT_NOT_FOUND;
 	} else {
-	  D(bug("[emul] resulting host filename: \"%s\"\n", *dest));
+	  DFNAME(bug("[emul] resulting host filename: \"%s\"\n", *dest));
 	  if (part) {
 	      *part = c;
-	      D(bug("[emul] resulting AROS filename: \"%s\"\n", c));
+	      DFNAME(bug("[emul] resulting AROS filename: \"%s\"\n", c));
 	  }
 	}
-  } else
+    } else
 	ret = ERROR_NO_FREE_STORE;
-  return ret;
+    return ret;
 }
 
 /*********************************************************************************************/
@@ -390,12 +414,13 @@ static LONG free_lock(struct emulbase *emulbase, struct filehandle *current)
 
 static LONG open_(struct emulbase *emulbase, struct filehandle **handle, STRPTR name, LONG mode, LONG protect, BOOL AllowDir)
 {
-  LONG ret = 0;
-  struct filehandle *fh;
+    LONG ret = 0;
+    struct filehandle *fh;
   
-  fh=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
-  if(fh!=NULL)
-  {
+    DOPEN(bug("[emul] open_(\"%s\"), directories allowed: %lu\n", name, AllowDir));
+  
+    fh=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
+    if(fh!=NULL) {
 	fh->pathname = NULL; /* just to make sure... */
 	fh->dl = (*handle)->dl;
 	/* If no filename is given and the file-descriptor is one of the
@@ -418,9 +443,12 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, STRPTR 
 	ret = makefilename(emulbase, &fh->hostname, &fh->name, *handle, name);
 	if (!ret)
 	{
-	    int kind = Stat(fh->hostname, NULL);
+	    int kind;
+	    
+	    DOPEN(bug("[emul] Host object name: %s\n", fh->hostname));	    
+	    kind = Stat(fh->hostname, NULL);
+	    DOPEN(bug("[emul] object type: %ld\n", kind));
 
-	    D(bug("[emul] object type: %ld\n", kind));
 	    switch (kind) {
 	    case ST_SOFTLINK:
 	        ret = ERROR_IS_SOFT_LINK;
@@ -455,10 +483,10 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, STRPTR 
 	}
 	D(bug("[emul] Freeing filehandle\n"));
 	FreeMem(fh, sizeof(struct filehandle));
-  } else
+    } else
 	ret = ERROR_NO_FREE_STORE;
-  D(bug("[emul] open_() returns %lu\n", ret));
-  return ret;
+    DOPEN(bug("[emul] open_() returns %lu\n", ret));
+    return ret;
 }
 
 /*********************************************************************************************/
@@ -945,7 +973,7 @@ ULONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR Fou
 	  ead->ed_Comment = NULL;
 	  /* TODO: Write Windows shell-compatible comments support using NTFS streams */
 	case ED_DATE:
-	  FileTime2DateStamp(&ead->ed_Days, FIB.ftLastWriteTime);
+	  FileTime2DateStamp((struct DateStamp *)&ead->ed_Days, FIB.ftLastWriteTime);
 	case ED_PROTECTION:
 	  ead->ed_Prot 	= prot_w2a(FIB.dwFileAttributes);
 	case ED_SIZE:

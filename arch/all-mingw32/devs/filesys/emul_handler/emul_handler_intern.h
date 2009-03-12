@@ -1,7 +1,7 @@
 #ifndef __EMUL_HANDLER_INTERN_H
 #define __EMUL_HANDLER_INTERN_H
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header-file for emulation-handler.
@@ -27,7 +27,6 @@ struct AsyncReaderControl
 
 #ifdef __AROS__
 
-#include <aros/hostthread.h>
 #include <exec/libraries.h>
 #include <exec/types.h>
 #include <dos/dosextens.h>
