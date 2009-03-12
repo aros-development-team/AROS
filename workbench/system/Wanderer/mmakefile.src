@@ -3,6 +3,8 @@
 
 include $(TOP)/config/make.cfg
 
+USER_CFLAGS := -I $(SRCDIR)/$(CURDIR)/Classes
+
 FILES := main locale support filesystems wanderer wandererprefs iconwindow iconwindowcontents iconwindowbackfill wandererprefsinternal
 
 #MM- workbench-system : workbench-system-wanderer
