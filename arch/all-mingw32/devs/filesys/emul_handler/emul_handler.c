@@ -494,7 +494,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, STRPTR 
 
 /*********************************************************************************************/
 
-static LONG seek_file(struct filehandle *fh, struct IFS_SEEK *io_SEEK)
+static LONG seek_file(struct filehandle *fh, struct IFS_SEEK *io_SEEK, UQUAD *newpos)
 {
     ULONG error, mode;
     ULONG pos_high = 0;
@@ -523,7 +523,15 @@ static LONG seek_file(struct filehandle *fh, struct IFS_SEEK *io_SEEK)
 	Forbid();
 	error = LSeek(fh->fd, io_SEEK->io_Offset, &pos_high, mode);
 	Permit();
-	error = (error == (ULONG)-1) ? Errno() : 0;
+	if (error == (ULONG)-1)
+	    error = Errno();
+	else {
+	    if (newpos) {
+	        *newpos = error;
+	        *newpos |= (UQUAD)pos_high << 32;
+	    }
+	    error = 0;
+	}
 	
 	io_SEEK->io_Offset = oldpos;
     } else
@@ -1576,21 +1584,34 @@ AROS_LH1(void, beginio,
 	struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
 
     	DSEEK(bug("[emul] FSA_SEEK, mode %ld, offset %llu\n", iofs->io_Union.io_SEEK.io_SeekMode, iofs->io_Union.io_SEEK.io_Offset));
-	error = seek_file(fh, &iofs->io_Union.io_SEEK);
+	error = seek_file(fh, &iofs->io_Union.io_SEEK, NULL);
 	DSEEK(bug("[emul] FSA_SEEK returning %lu\n", error));
 	break;
     }
     case FSA_SET_FILE_SIZE:
     {
         struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
+        UQUAD newpos;
+        LONG error2;
         
         DFSIZE(bug("[emul] FSA_SET_FILE_SIZE, mode %ld, offset %llu\n", iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode, iofs->io_Union.io_SET_FILE_SIZE.io_Offset));
-        error = seek_file(fh, &iofs->io_Union.io_SEEK);
+        /* First seek to the requested position. io_Offset will contain OLD position after that. NEW position will be in newpos */
+        error = seek_file(fh, &iofs->io_Union.io_SEEK, &newpos);
         if (!error) {
+            /* Set EOF to NEW position */
             Forbid();
             error = SetEOF(fh->fd);
             Permit();
             error = error ? 0 : Errno();
+            /* If our OLD position was less than new file size, we seek back to it. io_Offset will again contain
+               position before this seek - i. e. our NEW file size. */
+            if (iofs->io_Union.io_SEEK.io_Offset < newpos) {
+                iofs->io_Union.io_SEEK.io_SeekMode = OFFSET_BEGINNING;
+        	error2 = seek_file(fh, &iofs->io_Union.io_SEEK, NULL);
+        	if (!error)
+        	    error = error2;
+            } else
+                iofs->io_Union.io_SEEK.io_Offset = newpos;
         }
 	D(bug("[emul] FSA_SET_FILE_SIZE returning %lu\n", error));
 	break;
