@@ -312,13 +312,13 @@ LONG printm(CONST_STRPTR head, ULONG *array, LONG num)
     {
         if (num == 1)
         {
-            res = VPrintf("%lu", array);
+            res = VPrintf("%lu", (IPTR *)array);
         }
         else
         {
             while (num--)
             {
-                res = VPrintf(fmt, array);
+                res = VPrintf(fmt, (IPTR *)array);
                 if (res < 0)
                     break;
 

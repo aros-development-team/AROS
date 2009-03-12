@@ -148,7 +148,7 @@ int main(void)
     anchor      = AllocMem(sizeof(struct AnchorPath), MEMF_CLEAR);
     path_buffer = AllocMem(PATH_BUF_SIZE,MEMF_ANY);
 
-    if(args && anchor && spaces && path_buffer)
+    if(anchor && spaces && path_buffer)
     {
 	locale = OpenLocale(NULL);
 

@@ -412,7 +412,7 @@ int printFileData(struct AnchorPath *ap,
 {
     STRPTR  	       filename = ap->ap_Buf;
     BOOL    	       isDir = (ap->ap_Info.fib_DirEntryType >= 0);
-    struct DateStampe *ds = &ap->ap_Info.fib_Date;
+    struct DateStamp  *ds = &ap->ap_Info.fib_Date;
     ULONG   	       protection = ap->ap_Info.fib_Protection;
     ULONG   	       size = ap->ap_Info.fib_Size;
     STRPTR  	       filenote = ap->ap_Info.fib_Comment;

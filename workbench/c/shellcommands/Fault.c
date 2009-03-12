@@ -61,7 +61,7 @@ AROS_SHAH(ULONG **, ,NUMBERS,/N/M, NULL, "The error numbers you wish to query"))
 	while( *theNum != NULL )
 	{
 	    PutStr("Fault ");
-	    VPrintf("%ld", *theNum);
+	    VPrintf("%ld", (IPTR *)*theNum);
 	    PrintFault(**theNum, "");
 	    theNum++;
 	}

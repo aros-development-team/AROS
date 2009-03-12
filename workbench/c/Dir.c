@@ -132,11 +132,11 @@ static
 LONG doDir(STRPTR dir, BOOL all, BOOL dirs, BOOL files, BOOL inter, struct data *data);
 
 static
-void showline(char *fmt, LONG *args, struct data *data);
+void showline(char *fmt, IPTR *args, struct data *data);
 static
-void maybeShowline(char *format, LONG *args, BOOL doIt, BOOL inter, struct data *data);
+void maybeShowline(char *format, IPTR *args, BOOL doIt, BOOL inter, struct data *data);
 static
-void maybeShowlineCR(char *format, LONG *args, BOOL doIt, BOOL inter, struct data *data);
+void maybeShowlineCR(char *format, IPTR *args, BOOL doIt, BOOL inter, struct data *data);
 
 static
 int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
@@ -178,7 +178,7 @@ AROS_UFH3(__startup static int, Start,
 
     struct data _data, *data = &_data;
     struct RDArgs *rda;
-    IPTR           args[] = { NULL, NULL, (IPTR)FALSE, (IPTR)FALSE, (IPTR)FALSE, (IPTR)FALSE };
+    IPTR           args[] = { (IPTR)NULL, (IPTR)NULL, (IPTR)FALSE, (IPTR)FALSE, (IPTR)FALSE, (IPTR)FALSE };
 
     LONG error = RETURN_FAIL;
 
@@ -207,7 +207,7 @@ AROS_UFH3(__startup static int, Start,
                 /* Convert the OPT arguments (if any) into the regular switches */
                 if (opt != NULL)
                 {
-                    while (*opt != NULL)
+                    while (*opt != 0)
                     {
                         switch (ToUpper(*opt))
                         {
@@ -370,7 +370,7 @@ int compare_strings(const void * s1, const void * s2)
 
 
 static
-void maybeShowlineCR(char *format, LONG *args, BOOL doIt, BOOL inter, struct data *data)
+void maybeShowlineCR(char *format, IPTR *args, BOOL doIt, BOOL inter, struct data *data)
 {
     maybeShowline(format, args, doIt, inter, data);
 
@@ -383,7 +383,7 @@ void maybeShowlineCR(char *format, LONG *args, BOOL doIt, BOOL inter, struct dat
 
 
 static
-void maybeShowline(char *format, LONG *args, BOOL doIt, BOOL inter, struct data *data)
+void maybeShowline(char *format, IPTR *args, BOOL doIt, BOOL inter, struct data *data)
 {
     if(doIt)
     {
@@ -439,7 +439,7 @@ void maybeShowline(char *format, LONG *args, BOOL doIt, BOOL inter, struct data 
 
 
 static
-void showline(char *fmt, LONG *args, struct data *data)
+void showline(char *fmt, IPTR *args, struct data *data)
 {
     int t;
 
@@ -776,7 +776,7 @@ int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
             break;
         }
 
-        if(eac->eac_Entries != NULL)
+        if(eac->eac_Entries != 0)
         {
             do
             {

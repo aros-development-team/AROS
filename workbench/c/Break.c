@@ -104,7 +104,7 @@ main(void)
     {
         rda->RDA_ExtHelp = (STRPTR) exthelp;
 
-        if ((rd = ReadArgs(ARG_TEMPLATE, (LONG *) args, rda)))
+        if ((rd = ReadArgs(ARG_TEMPLATE, (IPTR *) args, rda)))
         {
 	    struct Process *pr = NULL;
 	    Forbid();

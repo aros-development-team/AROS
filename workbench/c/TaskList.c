@@ -119,12 +119,12 @@ int main(void)
     struct TimerBase *TimerBase = NULL;
     struct EClockVal ec;
     struct MsgPort *port = CreateMsgPort();
-    struct timerequest *io = CreateIORequest(port, sizeof(struct timerequest));
-    OpenDevice("timer.device", UNIT_VBLANK, io, 0);
-    TimerBase = io->tr_node.io_Device;
+    struct timerequest *io = (struct timerequest *)CreateIORequest(port, sizeof(struct timerequest));
+    OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)io, 0);
+    TimerBase = (struct TimerBase *)io->tr_node.io_Device;
     eclock = ReadEClock(&ec);
-    CloseDevice(io);
-    DeleteIORequest(io);
+    CloseDevice((struct IORequest *)io);
+    DeleteIORequest((struct IORequest *)io);
     DeleteMsgPort(port);
 
     for(size=2048;;size+=2048)
