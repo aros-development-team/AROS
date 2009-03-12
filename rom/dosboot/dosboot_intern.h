@@ -3,7 +3,7 @@
 
 /*
 	Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-   $Id: dosboot_intern.h 29897 2008-10-27 09:27:10Z sonic $
+   $Id$
 
    Desc: Internal definitions for dosboot
    Lang: english

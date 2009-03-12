@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 29897 2008-10-27 09:27:10Z sonic $
+# $Id$
 include $(TOP)/config/make.cfg
 
 FILES := dosboot_init inithidds boot
