@@ -334,7 +334,7 @@ void BltTemplateBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
 
 static struct Library *CyberGfxBase = NULL;
 
-static AROS_SET_LIBFUNC(CGFX_Expunge, LIBBASETYPE, LIBBASE)
+static void AROS_SET_LIBFUNC(CGFX_Expunge, LIBBASETYPE, LIBBASE)
 {
     if (CyberGfxBase != NULL)
     {

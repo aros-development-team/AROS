@@ -705,8 +705,8 @@ static OOP_Object *fakefb_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     OOP_Object *framebuffer;
     OOP_Object *fakegfxhidd;
 
-    framebuffer = (OOP_Object *)GetTagData(aHidd_FakeFB_RealBitMap,	NULL, msg->attrList);
-    fakegfxhidd = (OOP_Object *)GetTagData(aHidd_FakeFB_FakeGfxHidd,	NULL, msg->attrList);
+    framebuffer = (OOP_Object *)GetTagData(aHidd_FakeFB_RealBitMap,	0, msg->attrList);
+    fakegfxhidd = (OOP_Object *)GetTagData(aHidd_FakeFB_FakeGfxHidd,	0, msg->attrList);
 
     if (NULL == framebuffer || NULL == fakegfxhidd)
     {

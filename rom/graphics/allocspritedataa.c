@@ -81,7 +81,7 @@
 #define SCALE_NORMAL  16
         ULONG height = (ULONG)GetBitMapAttr(bitmap, BMA_HEIGHT);
         ULONG width = 16;
-        struct TagItem * tstate = tagList;
+        const struct TagItem * tstate = tagList;
         struct TagItem * tag;
         struct BitScaleArgs bsa;
         LONG xrep = 0, yrep = 0;

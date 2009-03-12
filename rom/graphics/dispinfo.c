@@ -99,7 +99,8 @@ VOID driver_FreeCModeList(struct List *modeList, struct GfxBase *GfxBase)
 
 APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct GfxBase *GfxBase )
 {
-    struct TagItem *tag, *tstate;
+    const struct TagItem *tstate;
+    struct TagItem *tag;
     
     ULONG minwidth = 320;
     ULONG maxwidth = 1600;
@@ -268,7 +269,8 @@ failexit:
 
 ULONG driver_BestCModeIDTagList(struct TagItem *tags, struct GfxBase *GfxBase)
 {
-    struct TagItem *tag, *tstate;
+    const struct TagItem *tstate;
+    struct TagItem *tag;
       
     ULONG nominal_width, nominal_height, depth;
     ULONG monitorid;

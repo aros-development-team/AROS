@@ -557,13 +557,12 @@ static BOOL init_cursor(struct GfxBase *GfxBase)
 	gc = obtain_cache_object(SDD(GfxBase)->gc_cache, GfxBase);
 	if (NULL != gc) {
 	    /* Copy the default pointer image into the created pointer bitmap */
-	    ULONG i;
 	    struct TagItem gc_tags[] = {
 		{ aHidd_GC_DrawMode,	vHidd_GC_DrawMode_Copy	},
 		{ TAG_DONE, 0UL }
 	    };
 	    
-	    HIDDT_Color col[DEF_POINTER_DEPTH] = {0};
+	    HIDDT_Color col[DEF_POINTER_DEPTH] = {{0}};
 	    
 	    col[0].red		= 0x0000;
 	    col[0].green	= 0x0000;

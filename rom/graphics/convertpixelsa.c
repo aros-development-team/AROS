@@ -85,8 +85,8 @@
 	return 0;
     }
         	
-    HIDD_BM_ConvertPixels(bm, &src, srcpf, srcMod, 
-    	    	    	  &dst, dstpf, dstMod,
+    HIDD_BM_ConvertPixels(bm, &src, (HIDDT_PixelFormat *)srcpf, srcMod, 
+    	    	    	  &dst, (HIDDT_PixelFormat *)dstpf, dstMod,
 			  width, height, NULL);
         
     return 1;
