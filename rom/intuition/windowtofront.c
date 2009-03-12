@@ -93,10 +93,10 @@ static VOID int_windowtofront(struct WindowToFrontActionMsg *msg,
         {
             /* bring outer window to front first!! */
 
-            UpfrontLayer(NULL, BLAYER(window));
+            UpfrontLayer(0, BLAYER(window));
         }
 
-        UpfrontLayer(NULL, layer);
+        UpfrontLayer(0, layer);
 
         for (req = window->FirstRequest; req; req = req->OlderRequest)
         {

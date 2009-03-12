@@ -41,7 +41,7 @@ void intrequest_freegadgets(struct Gadget *gadgets, struct IntuitionBase *Intuit
     {
         struct Gadget* nextgadget = 0;
 
-        GetAttr(GA_Next,gadgets,(ULONG*)&nextgadget);
+        GetAttr(GA_Next, (Object *)gadgets, (IPTR *)&nextgadget);
         DisposeObject(gadgets);
         gadgets = nextgadget;
     }

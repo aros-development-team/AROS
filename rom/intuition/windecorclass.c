@@ -356,7 +356,6 @@ IPTR WinDecorClass__WDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct wdpGe
 
 IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysImage *msg)
 {
-    struct windecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rp = msg->wdp_RPort;
     UWORD   	    	 *pens = DRI(msg->wdp_Dri)->dri_Pens;
     LONG    	    	  state = msg->wdp_State;
@@ -917,7 +916,6 @@ static void findtitlearea(struct Window *win, LONG *left, LONG *right)
 
 IPTR INTERNAL_WDM_DRAW_WINTITLE(Class *cl, Object *obj, struct wdpDrawWinBorder *msg)
 {
-    struct windecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rp = msg->wdp_RPort;
     struct Window   	 *window = msg->wdp_Window;
     UWORD   	    	 *pens = DRI(msg->wdp_Dri)->dri_Pens;
@@ -965,7 +963,6 @@ IPTR INTERNAL_WDM_DRAW_WINTITLE(Class *cl, Object *obj, struct wdpDrawWinBorder 
 
 IPTR WinDecorClass__WDM_DRAW_WINBORDER(Class *cl, Object *obj, struct wdpDrawWinBorder *msg)
 {
-    struct windecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rp = msg->wdp_RPort;
     struct Window   	 *window = msg->wdp_Window;
     UWORD   	    	 *pens = DRI(msg->wdp_Dri)->dri_Pens;
@@ -1171,7 +1168,6 @@ IPTR WinDecorClass__WDM_LAYOUT_BORDERGADGETS(Class *cl, Object *obj, struct wdpL
 
 IPTR WinDecorClass__WDM_DRAW_BORDERPROPBACK(Class *cl, Object *obj, struct wdpDrawBorderPropBack *msg)
 {
-    struct windecor_data *data = INST_DATA(cl, obj);
     struct Window   	 *window = msg->wdp_Window;
     struct RastPort 	 *rp = msg->wdp_RPort;
     struct Gadget   	 *gadget = msg->wdp_Gadget;
@@ -1204,7 +1200,6 @@ IPTR WinDecorClass__WDM_DRAW_BORDERPROPBACK(Class *cl, Object *obj, struct wdpDr
 
 IPTR WinDecorClass__WDM_DRAW_BORDERPROPKNOB(Class *cl, Object *obj, struct wdpDrawBorderPropKnob *msg)
 {
-    struct windecor_data *data = INST_DATA(cl, obj);
     struct Window   	 *window = msg->wdp_Window;
     struct RastPort 	 *rp = msg->wdp_RPort;
     struct Gadget   	 *gadget = msg->wdp_Gadget;
@@ -1296,5 +1291,5 @@ IPTR WinDecorClass__WDM_EXITWINDOW(Class *cl, Object *obj, struct wdpExitWindow 
 
 IPTR WinDecorClass__WDM_WINDOWSHAPE(Class *cl, Object *obj, struct wdpWindowShape *msg)
 {
-    return NULL;
+    return 0;
 }

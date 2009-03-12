@@ -3498,7 +3498,7 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
                                 pointer = GetPrivIBase(IntuitionBase)->BusyPointer;
                             }
 
-                            GetAttr(POINTERA_SharedPointer, pointer, (ULONG *) &shared_pointer);
+                            GetAttr(POINTERA_SharedPointer, pointer, (IPTR *) &shared_pointer);
 
                             DEBUG_POINTER(dprintf("InputHandler: scr 0x%lx pointer 0x%lx shared_pointer 0x%lx\n",
                                           scr, pointer, shared_pointer));
@@ -3602,7 +3602,7 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
 		    struct Gadget *lhg = iihdata->LastHelpGadget;
                     fire_intuimessage(iihdata->LastHelpWindow,
                                       IDCMP_GADGETHELP,
-                                      lhg ? lhg->GadgetID : NULL, /* Don't know what it should be */
+                                      lhg ? lhg->GadgetID : 0, /* Don't know what it should be */
                                       lhg,
                                       IntuitionBase);
                     iihdata->HelpGadgetFindTime = 0;

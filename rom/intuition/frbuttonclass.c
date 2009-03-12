@@ -83,7 +83,7 @@ IPTR FrButtonClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
             dprintf("frbutton_render: msg->gpr_GInfo->gi_RastPort == NULL!\n");
     );
 
-    SANITY_CHECK(rp)
+    SANITY_CHECKR(rp, 0)
     
     GetGadgetIBox(g, msg->gpr_GInfo, &container);
 

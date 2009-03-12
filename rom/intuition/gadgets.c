@@ -493,7 +493,7 @@ void EraseRelGadgetArea(struct Window *win, struct Rectangle *clipto,
     {
         lay = rp->Layer;
 
-        LockLayer(NULL,lay);
+        LockLayer(0, lay);
 
         if (!onlydamagelist)
         {

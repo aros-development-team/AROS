@@ -54,13 +54,13 @@
 
     BOOL back;
 
-    if (notify == NULL) return TRUE;
+    if (notify == 0) return TRUE;
 
-    if (back = AttemptSemaphore(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock))
+    if ((back = AttemptSemaphore(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock)))
     {
         if (((struct IntScreenNotify*) notify)->pubname) FreeVec(((struct IntScreenNotify*) notify)->pubname);
         Remove((struct Node *) notify);
-        FreeVec(notify);
+        FreeVec((void *)notify);
     	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock);
     }
 

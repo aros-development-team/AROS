@@ -287,7 +287,7 @@ static const char THIS_FILE[] = __FILE__;
 
             case SA_ID:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_ID <%s>\n",tag->ti_Data));
-                screen->ID = (STRPTR) StrDup(tag->ti_Data);
+                screen->ID = StrDup((STRPTR)tag->ti_Data);
                 break;
 
             case SA_Font:
@@ -1506,7 +1506,7 @@ static const char THIS_FILE[] = __FILE__;
 
         struct DosLibrary    *DOSBase;
 
-        DOSBase = OpenLibrary("dos.library", 40);
+        DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 40);
         if (DOSBase)
         {
             struct Node *node;
@@ -1930,7 +1930,7 @@ static const char THIS_FILE[] = __FILE__;
 
         if (screen->DecorUserBuffer)
         {
-            FreeMem((IPTR) screen->DecorUserBuffer, screen->DecorUserBufferSize);
+            FreeMem((void *)screen->DecorUserBuffer, screen->DecorUserBufferSize);
         }
 
         if (screen->Decorator) screen->Decorator->nd_cnt--;

@@ -101,7 +101,7 @@
         }
     }
 
-    ReturnPtr ("StartScreenNotifyTagList", APTR, notify);
+    ReturnPtr ("StartScreenNotifyTagList", IPTR, notify);
 
     AROS_LIBFUNC_EXIT
 } /* StartScreenNotifyTagList */

@@ -150,7 +150,7 @@ IPTR ButtonGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
         struct RastPort *rp = msg->gpr_RPort;
         struct IBox 	 container;
 
-        SANITY_CHECK(msg->gpr_RPort)
+        SANITY_CHECKR(msg->gpr_RPort, 0)
 
         /*dprintf("button_render: rp %p[%p] win %p[%p] req %p[%p] gi->rp %p[%p]\n",
                 rp, rp->Layer,

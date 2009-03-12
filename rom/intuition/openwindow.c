@@ -651,7 +651,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
     {
 	((struct IntWindow *)w)->DecorUserBufferSize = userbuffersize;
 	((struct IntWindow *)w)->DecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
-	if (NULL == ((struct IntWindow *)w)->DecorUserBuffer)
+	if (0 == ((struct IntWindow *)w)->DecorUserBuffer)
 		goto failexit;
     }
 	
@@ -1194,7 +1194,7 @@ failexit:
 
         if (((struct IntWindow *)w)->DecorUserBuffer)
         {
-            FreeMem((IPTR) ((struct IntWindow *)w)->DecorUserBuffer, ((struct IntWindow *)w)->DecorUserBufferSize);
+            FreeMem((APTR)((struct IntWindow *)w)->DecorUserBuffer, ((struct IntWindow *)w)->DecorUserBufferSize);
         }
 
         FreeMem (w, sizeof(struct IntWindow));

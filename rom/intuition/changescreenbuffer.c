@@ -65,16 +65,16 @@
     struct IIHData   *iihdata;
     ULONG   	      lock;
 
-    if (!screen) return NULL;
-    if (!screenbuffer) return NULL;
+    if (!screen) return 0;
+    if (!screenbuffer) return 0;
 
-    if (MENUS_ACTIVE) return NULL;
+    if (MENUS_ACTIVE) return 0;
     iihdata = (struct IIHData *)((struct IntIntuitionBase *)(IntuitionBase))->InputHandler->is_Data;
-    if (iihdata->ActiveGadget) return NULL;
+    if (iihdata->ActiveGadget) return 0;
 
     ChangeVPBitMap(&screen->ViewPort,screenbuffer->sb_BitMap,screenbuffer->sb_DBufInfo);
 
-    lock = LockIBase(NULL);
+    lock = LockIBase(0);
 
     screen->BitMap = *screenbuffer->sb_BitMap;
     screen->RastPort.BitMap = screenbuffer->sb_BitMap;
