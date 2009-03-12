@@ -78,6 +78,9 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
             bug("[ATIBitMap] size mismatch!\n");
         }
 
+        if (depth == 24)
+        	depth = 32;
+
         if (depth <= 8)
             bytesPerPixel = 1;
         else if (depth <= 16)

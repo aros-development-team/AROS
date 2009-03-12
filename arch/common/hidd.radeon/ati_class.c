@@ -470,11 +470,11 @@ OOP_Object *METHOD(ATI, Root, New)
         { aHidd_PixFmt_BlueMask,    0x000000ff }, /* 6 */
         { aHidd_PixFmt_AlphaMask,   0x00000000 }, /* 7 */
         { aHidd_PixFmt_ColorModel,  vHidd_ColorModel_TrueColor }, /* 8 */
-        { aHidd_PixFmt_Depth,       32  }, /* 9 */
+        { aHidd_PixFmt_Depth,       24  }, /* 9 */
         { aHidd_PixFmt_BytesPerPixel,   4   }, /* 10 */
         { aHidd_PixFmt_BitsPerPixel,    24  }, /* 11 */
-//        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native }, /* 12 Native */
-        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_BGR032 }, /* 12 Native */
+        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native }, /* 12 Native */
+//        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_BGR032 }, /* 12 Native */
         { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky }, /* 15 */
         { TAG_DONE, 0UL }
     };
@@ -492,8 +492,8 @@ OOP_Object *METHOD(ATI, Root, New)
         { aHidd_PixFmt_Depth,       16  }, /* 9 */
         { aHidd_PixFmt_BytesPerPixel,   2   }, /* 10 */
         { aHidd_PixFmt_BitsPerPixel,    16  }, /* 11 */
-//        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native }, /* 12 */
-        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_RGB16_LE }, /* 12 */
+        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native }, /* 12 */
+//        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_RGB16_LE }, /* 12 */
         { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky }, /* 15 */
         { TAG_DONE, 0UL }
     };
@@ -511,8 +511,8 @@ OOP_Object *METHOD(ATI, Root, New)
         { aHidd_PixFmt_Depth,       15  }, /* 9 */
         { aHidd_PixFmt_BytesPerPixel,   2   }, /* 10 */
         { aHidd_PixFmt_BitsPerPixel,    15  }, /* 11 */
-//        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native }, /* 12 */
-        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_RGB15_LE }, /* 12 */
+        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native }, /* 12 */
+//        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_RGB15_LE }, /* 12 */
         { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky }, /* 15 */
         { TAG_DONE, 0UL }
     };
