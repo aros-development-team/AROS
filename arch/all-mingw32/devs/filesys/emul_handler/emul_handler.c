@@ -11,9 +11,12 @@
 /*********************************************************************************************/
 
 #define DEBUG 0
+#define DCMD(x)
 #define DERROR(x)
 #define DFNAME(x)
+#define DFSIZE(x)
 #define DOPEN(x)
+#define DSEEK(x)
 #define DASYNC(x)
 
 #define __DOS_NOLIBBASE__
@@ -487,6 +490,45 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, STRPTR 
 	ret = ERROR_NO_FREE_STORE;
     DOPEN(bug("[emul] open_() returns %lu\n", ret));
     return ret;
+}
+
+/*********************************************************************************************/
+
+static LONG seek_file(struct filehandle *fh, struct IFS_SEEK *io_SEEK)
+{
+    ULONG error, mode;
+    ULONG pos_high = 0;
+    UQUAD oldpos;
+
+    if (fh->type == FHD_FILE) {
+	DB2(bug("[emul] LSeek() - getting current position\n"));
+	Forbid();
+	oldpos = LSeek(fh->fd, 0, &pos_high, FILE_CURRENT);
+	Permit();
+	oldpos |= (UQUAD)pos_high << 32;
+	D(bug("[emul] Original position: %llu\n", oldpos));
+	
+	switch(io_SEEK->io_SeekMode) {
+	case OFFSET_BEGINNING:
+	    mode = FILE_BEGIN;
+	    break;
+	case OFFSET_CURRENT:
+	    mode = FILE_CURRENT;
+	    break;
+	default:
+	    mode = FILE_END;
+	}
+	pos_high = io_SEEK->io_Offset >> 32;
+	DB2(bug("[emul] LSeek() - setting new position\n"));
+	Forbid();
+	error = LSeek(fh->fd, io_SEEK->io_Offset, &pos_high, mode);
+	Permit();
+	error = (error == (ULONG)-1) ? Errno() : 0;
+	
+	io_SEEK->io_Offset = oldpos;
+    } else
+	error = ERROR_OBJECT_WRONG_TYPE;
+    return error;
 }
 
 /*********************************************************************************************/
@@ -1418,19 +1460,19 @@ AROS_LH1(void, beginio,
 		 AROS_LHA(struct IOFileSys *, iofs, A1),
 		 struct emulbase *, emulbase, 5, emul_handler)
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
   
-  LONG error = 0;
+    LONG error = 0;
   
-  /* WaitIO will look into this */
-  iofs->IOFS.io_Message.mn_Node.ln_Type=NT_MESSAGE;
+    /* WaitIO will look into this */
+    iofs->IOFS.io_Message.mn_Node.ln_Type=NT_MESSAGE;
   
-  /*
-   Do everything quick no matter what. This is possible
-   because I never need to Wait().
-   */
-  switch(iofs->IOFS.io_Command)
-  {
+    /*
+     Do everything quick no matter what. This is possible
+     because I never need to Wait().
+     */
+    switch(iofs->IOFS.io_Command)
+    {
     case FSA_OPEN:
           D(bug("[emul] FSA_OPEN(\"%s\")\n", iofs->io_Union.io_OPEN.io_Filename));
 	  error = open_(emulbase, (struct filehandle **)&iofs->IOFS.io_Unit,
@@ -1448,13 +1490,13 @@ AROS_LH1(void, beginio,
 	  
 	  break;
 	  
-	  case FSA_CLOSE:
+    case FSA_CLOSE:
 	  D(bug("[emul] FSA_CLOSE\n"));
 	  error = free_lock(emulbase, (struct filehandle *)iofs->IOFS.io_Unit);
 	  D(bug("[emul] FSA_CLOSE returning %lu\n", error));
 	  break;
 	  
-	  case FSA_READ:
+    case FSA_READ:
 	{
 	  struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
 	  
@@ -1508,7 +1550,7 @@ AROS_LH1(void, beginio,
 	  break;
 	}
 	  
-	  case FSA_WRITE:
+    case FSA_WRITE:
 	{
 	  struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
 	  
@@ -1529,64 +1571,31 @@ AROS_LH1(void, beginio,
 	  break;
 	}
 	  
-	  case FSA_SEEK:
-	{
-	  struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
-	  ULONG mode;
-	  ULONG pos_high = 0;
-	  UQUAD oldpos;
-	  
-	  D(bug("[emul] FSA_SEEK, mode %ld, offset %lu\n", iofs->io_Union.io_SEEK.io_SeekMode, iofs->io_Union.io_SEEK.io_Offset));
-	  if (fh->type == FHD_FILE)
-	  {
-	        DB2(bug("[emul] LSeek() - getting current position\n"));
-	        Forbid();
-		oldpos = LSeek(fh->fd, 0, &pos_high, FILE_CURRENT);
-		Permit();
-		oldpos |= (UQUAD)pos_high << 32;
-		D(bug("[emul] Original position: %llu\n", oldpos));
-		
-		switch(iofs->io_Union.io_SEEK.io_SeekMode) {
-		case OFFSET_BEGINNING:
-		  mode = FILE_BEGIN;
-		  break;
-		case OFFSET_CURRENT:
-		  mode = FILE_CURRENT;
-		  break;
-		default:
-		  mode = FILE_END;
-		}
-		pos_high = iofs->io_Union.io_SEEK.io_Offset >> 32;
-		DB2(bug("[emul] LSeek() - setting new position\n"));
-		Forbid();
-		error = LSeek(fh->fd, iofs->io_Union.io_SEEK.io_Offset, &pos_high, mode);
-		Permit();
-		error = (error == (ULONG)-1) ? Errno() : 0;
-		
-		iofs->io_Union.io_SEEK.io_Offset = oldpos;
-	  }
-	  else
-	  {
-		error = ERROR_OBJECT_WRONG_TYPE;
-	  }
-	  D(bug("[emul] FSA_SEEK returning %lu\n", error));
-	  break;
-	}
-	  
-	  case FSA_SET_FILE_SIZE:
-#warning FIXME: Implement FSA_SET_FILE_SIZE
-	  /* We could manually change the size, but this is currently not
-	   implemented. FIXME */
-	  case FSA_WAIT_CHAR:
-#warning FIXME: Implement FSA_WAIT_CHAR
-	  /* We could manually wait for a character to arrive, but this is
-	   currently not implemented. FIXME */
-	  case FSA_FILE_MODE:
-#warning FIXME: Implement FSA_FILE_MODE
-	  error=ERROR_ACTION_NOT_KNOWN;
-	  break;
-	  
-	  case FSA_IS_INTERACTIVE:
+    case FSA_SEEK:
+    {
+	struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
+
+    	DSEEK(bug("[emul] FSA_SEEK, mode %ld, offset %llu\n", iofs->io_Union.io_SEEK.io_SeekMode, iofs->io_Union.io_SEEK.io_Offset));
+	error = seek_file(fh, &iofs->io_Union.io_SEEK);
+	DSEEK(bug("[emul] FSA_SEEK returning %lu\n", error));
+	break;
+    }
+    case FSA_SET_FILE_SIZE:
+    {
+        struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
+        
+        DFSIZE(bug("[emul] FSA_SET_FILE_SIZE, mode %ld, offset %llu\n", iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode, iofs->io_Union.io_SET_FILE_SIZE.io_Offset));
+        error = seek_file(fh, &iofs->io_Union.io_SEEK);
+        if (!error) {
+            Forbid();
+            error = SetEOF(fh->fd);
+            Permit();
+            error = error ? 0 : Errno();
+        }
+	D(bug("[emul] FSA_SET_FILE_SIZE returning %lu\n", error));
+	break;
+    }
+    case FSA_IS_INTERACTIVE:
 	{
 	  struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
 	  
@@ -1605,7 +1614,7 @@ AROS_LH1(void, beginio,
 	  break;
 	}
 	  
-	  case FSA_SAME_LOCK:
+    case FSA_SAME_LOCK:
 	{
 	  struct filehandle *lock1 = iofs->io_Union.io_SAME_LOCK.io_Lock[0],
 	  *lock2 = iofs->io_Union.io_SAME_LOCK.io_Lock[1];
@@ -1622,7 +1631,7 @@ AROS_LH1(void, beginio,
 	  break;
 	}
 	  
-	  case FSA_EXAMINE:
+    case FSA_EXAMINE:
 	  D(bug("[emul] FSA_EXAMINE\n"));
 	  error = examine(emulbase,
 					  (struct filehandle *)iofs->IOFS.io_Unit,
@@ -1632,14 +1641,14 @@ AROS_LH1(void, beginio,
 					  &(iofs->io_DirPos));
 	  break;
 	  
-	  case FSA_EXAMINE_NEXT:
+    case FSA_EXAMINE_NEXT:
 	  D(bug("[emul] FSA_EXAMINE_NEXT\n"));
 	  error = examine_next(emulbase,
 						   (struct filehandle *)iofs->IOFS.io_Unit,
 						   iofs->io_Union.io_EXAMINE_NEXT.io_fib);
 	  break;
 	  
-	  case FSA_EXAMINE_ALL:
+    case FSA_EXAMINE_ALL:
 	  D(bug("[emul] FSA_EXAMINE_ALL\n"));
 	  error = examine_all(emulbase,
 						  (struct filehandle *)iofs->IOFS.io_Unit,
@@ -1649,12 +1658,12 @@ AROS_LH1(void, beginio,
 						  iofs->io_Union.io_EXAMINE_ALL.io_Mode);
 	  break;
 	  
-	  case FSA_EXAMINE_ALL_END:
+    case FSA_EXAMINE_ALL_END:
 	  CloseDir((struct filehandle *)iofs->IOFS.io_Unit);
 	  error = 0;
 	  break;
 	  
-	  case FSA_OPEN_FILE:
+    case FSA_OPEN_FILE:
 	  D(bug("[emul] FSA_OPEN_FILE: name \"%s\", mode 0x%08lX)\n", iofs->io_Union.io_OPEN_FILE.io_Filename, iofs->io_Union.io_OPEN_FILE.io_FileMode));
 	  error = open_(emulbase, (struct filehandle **)&iofs->IOFS.io_Unit,
 			iofs->io_Union.io_OPEN_FILE.io_Filename, iofs->io_Union.io_OPEN_FILE.io_FileMode,
@@ -1672,14 +1681,14 @@ AROS_LH1(void, beginio,
 	  D(bug("[emul] FSA_OPEN_FILE returning %lu\n", error));
 	  break;
 	  
-	  case FSA_CREATE_DIR:
+    case FSA_CREATE_DIR:
 	  error = create_dir(emulbase,
 						 (struct filehandle **)&iofs->IOFS.io_Unit,
 						 iofs->io_Union.io_CREATE_DIR.io_Filename,
 						 iofs->io_Union.io_CREATE_DIR.io_Protection);
 	  break;
 	  
-	  case FSA_CREATE_HARDLINK:
+    case FSA_CREATE_HARDLINK:
 	  D(bug("[emul] FSA_CREATE_HARDLINK: link name \"%s\"\n", iofs->io_Union.io_CREATE_HARDLINK.io_Filename));
 	  error = create_hardlink(emulbase,
 							  (struct filehandle *)iofs->IOFS.io_Unit,
@@ -1688,59 +1697,59 @@ AROS_LH1(void, beginio,
 	  D(bug("[emul] FSA_CREATE_HARDLINK returning %lu\n", error));
 	  break;
 	  
-	  case FSA_CREATE_SOFTLINK:
+    case FSA_CREATE_SOFTLINK:
 	  error = create_softlink(emulbase,
 							  (struct filehandle *)&iofs->IOFS.io_Unit,
 							  iofs->io_Union.io_CREATE_SOFTLINK.io_Filename,
 							  iofs->io_Union.io_CREATE_SOFTLINK.io_Reference);
 	  break;
 	  
-	  case FSA_RENAME:
+    case FSA_RENAME:
 	  error = rename_object(emulbase,
 							(struct filehandle *)iofs->IOFS.io_Unit,
 							iofs->io_Union.io_RENAME.io_Filename,
 							iofs->io_Union.io_RENAME.io_NewName);
 	  break;
 	  
-	  case FSA_READ_SOFTLINK:
+    case FSA_READ_SOFTLINK:
 	  error = read_softlink(emulbase,
 							(struct filehandle *)iofs->IOFS.io_Unit,
 							iofs->io_Union.io_READ_SOFTLINK.io_Buffer,
 							iofs->io_Union.io_READ_SOFTLINK.io_Size);
 	  break;
 	  
-	  case FSA_DELETE_OBJECT:
+    case FSA_DELETE_OBJECT:
 	  error = delete_object(emulbase,
 							(struct filehandle *)iofs->IOFS.io_Unit,
 							iofs->io_Union.io_DELETE_OBJECT.io_Filename);
 	  break;
 	  
-	  case FSA_SET_PROTECT:
+    case FSA_SET_PROTECT:
 	  error = set_protect(emulbase,
 						  (struct filehandle *)iofs->IOFS.io_Unit,
 						  iofs->io_Union.io_SET_PROTECT.io_Filename,
 						  iofs->io_Union.io_SET_PROTECT.io_Protection);
 	  break;
 	  
-	  case FSA_PARENT_DIR:
+    case FSA_PARENT_DIR:
 	  /* error will always be 0 */
 	  error = parent_dir(emulbase,
 						 (struct filehandle *)iofs->IOFS.io_Unit,
 						 &(iofs->io_Union.io_PARENT_DIR.io_DirName));
 	  break;
 	  
-	  case FSA_PARENT_DIR_POST:
+    case FSA_PARENT_DIR_POST:
 	  /* error will always be 0 */
 	  error = 0;
 	  parent_dir_post(emulbase, &(iofs->io_Union.io_PARENT_DIR.io_DirName));
 	  break;    
 	  
-	  case FSA_IS_FILESYSTEM:
+    case FSA_IS_FILESYSTEM:
 	  iofs->io_Union.io_IS_FILESYSTEM.io_IsFilesystem = TRUE;
 	  error = 0;
 	  break;
 	  
-	  case FSA_DISK_INFO:
+    case FSA_DISK_INFO:
 	{
 	  struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
 	  struct InfoData *id = iofs->io_Union.io_INFO.io_Info;
@@ -1752,17 +1761,18 @@ AROS_LH1(void, beginio,
 	      id->id_VolumeNode = fh->dl;
 	  break;
 	}
-	  
-	  case FSA_SET_COMMENT:
-	  case FSA_SET_OWNER:
-	  case FSA_SET_DATE:
-	  case FSA_MORE_CACHE:
-	  case FSA_MOUNT_MODE:
-#warning FIXME: not supported yet
-	  
-	  default:
-	  error = ERROR_ACTION_NOT_KNOWN;
-	  break;
+/* FIXME: not supported yet
+    case FSA_SET_COMMENT:
+    case FSA_SET_OWNER:
+    case FSA_SET_DATE:
+    case FSA_MORE_CACHE:
+    case FSA_MOUNT_MODE:
+    case FSA_WAIT_CHAR:
+    case FSA_FILE_MODE:*/
+    default:
+        DCMD(bug("[emul] Unknown action %lu\n", iofs->IOFS.io_Command));
+	error = ERROR_ACTION_NOT_KNOWN;
+	break;
   }
 
   /* Set error code */
@@ -1808,6 +1818,7 @@ const char *KernelSymbols[] = {
     "ReadFile",
     "WriteFile",
     "SetFilePointer",
+    "SetEndOfFile",
     "GetFileType",
     "GetStdHandle",
     "MoveFileA",
