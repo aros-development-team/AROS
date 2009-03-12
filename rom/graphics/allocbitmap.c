@@ -125,7 +125,6 @@
     AROS_LIBFUNC_INIT
 
     struct BitMap *nbm;
-    ULONG attributes;
     HIDDT_ModeID hiddmode = vHidd_ModeID_Invalid;
 
     /*

@@ -108,7 +108,7 @@ static int GfxOpen(struct GfxBase *LIBBASE)
         def = OpenFont (&sysTA);
 
         if (!def)
-            return NULL;
+            return 0;
 
         LIBBASE->DefaultFont = def;
         sysTA.ta_YSize = def->tf_YSize;
@@ -118,7 +118,7 @@ static int GfxOpen(struct GfxBase *LIBBASE)
     if (!driver_open (LIBBASE))
     {
         Enable();
-        return NULL;
+        return 0;
     }
     Enable();
 
@@ -129,7 +129,7 @@ static int GfxOpen(struct GfxBase *LIBBASE)
     	LIBBASE->hash_table = (LONG *)AllocMem(8*sizeof(LONG *), 
                                            MEMF_CLEAR|MEMF_PUBLIC);
     if (!LIBBASE->hash_table)
-	return NULL;
+	return 0;
 
 
     if(LIBBASE->LibNode.lib_OpenCnt == 0)
