@@ -85,7 +85,7 @@
             struct timerequest req =
             {
                 {{{0}, 0}, 0},
-                {0}
+                {{0}}
             };
 
             if (size > offsetof(struct Preferences, KeyRptDelay))

@@ -1572,7 +1572,7 @@ IPTR SizeButtonClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInac
 
 IPTR SizeButtonClass__OM_NEW(Class *cl, Object *o, Msg msg)
 {
-    struct Gadget *g = DoSuperMethodA(cl, o, msg);
+    struct Gadget *g = (struct Gadget *)DoSuperMethodA(cl, o, msg);
     if (g)
     {
 	g->GadgetType |= GTYP_SYSGADGET | GTYP_SIZING;

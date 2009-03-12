@@ -219,7 +219,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 		smsg.sdp_Height	    	= &height;
 		smsg.sdp_Flags	    	= 0;
 		smsg.sdp_Dri            = data->dri;
-		smsg.sdp_UserBuffer 	= NULL;
+		smsg.sdp_UserBuffer 	= 0;
 
         DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->ScrDecorObj, (Msg)&smsg);  
 
@@ -253,7 +253,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 		wmsg.wdp_Height	    	= &height;
 		wmsg.wdp_Flags	    	= 0;
 		wmsg.wdp_Dri            = data->dri;
-		wmsg.wdp_UserBuffer	= NULL;
+		wmsg.wdp_UserBuffer	= 0;
 
         DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wmsg);  
 

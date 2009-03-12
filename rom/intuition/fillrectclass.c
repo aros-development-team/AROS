@@ -45,7 +45,8 @@
 
 IPTR fillrect_set(Class *cl, Object *obj, struct opSet *msg)
 {
-    struct TagItem  	*tag, *tstate = msg->ops_AttrList;
+    const struct TagItem *tstate = msg->ops_AttrList;
+    struct TagItem  	*tag;
     struct FillRectData *data = INST_DATA(cl, obj);
 
     IPTR retval = 0;

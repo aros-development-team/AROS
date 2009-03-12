@@ -902,7 +902,7 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
 	{
 	    mhd->DecorUserBufferSize = userbuffersize;
 	    mhd->BarDecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
-	    if (NULL == mhd->BarDecorUserBuffer) return;
+	    if (0 == mhd->BarDecorUserBuffer) return;
 	}
 
 	{
@@ -957,9 +957,9 @@ static void KillMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
 
 	    if (mhd->BarDecorUserBuffer)
 	    {
-	        FreeMem((IPTR) mhd->BarDecorUserBuffer, mhd->DecorUserBufferSize);
+	        FreeMem((void *)mhd->BarDecorUserBuffer, mhd->DecorUserBufferSize);
     	    }
-	    mhd->BarDecorUserBuffer = NULL;
+	    mhd->BarDecorUserBuffer = 0;
 	}
 
     }
@@ -974,7 +974,6 @@ static void RenderMenuBar(struct MenuHandlerData *mhd, struct IntuitionBase *Int
     {
         struct Menu 	*menu = mhd->menu;
         struct RastPort *rp = mhd->menubarwin->RPort;
-        struct Layer 	*oldlayerhook;
 
         SetFont(rp, mhd->dri->dri_Font);
 
@@ -1062,7 +1061,6 @@ static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
     {
         if (menu->FirstItem)
         {
-	    WORD state = ((menu->Flags & HIGHITEM) && ((menu->Flags & HIGHFLAGS) == HIGHCOMP)) ? IDS_SELECTED : IDS_NORMAL;
             WORD x2 = mhd->scr->MenuHBorder + mhd->menubaritemwidth - ITEXT_EXTRA_RIGHT - mhd->submenuimage->Width;
 
 	    DrawImageState(rp, mhd->submenuimage, x2, y + ((mhd->menubaritemheight - mhd->submenuimage->Height) >> 1), IDS_NORMAL, mhd->dri);
@@ -1183,7 +1181,7 @@ static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
 	    {
 		mhd->DecorUserBufferSize = userbuffersize;
 		mhd->DecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
-		if (NULL == mhd->DecorUserBuffer) return;
+		if (0 == mhd->DecorUserBuffer) return;
 	    }
 
     		struct mdpInitMenu  msg;
@@ -1239,9 +1237,9 @@ static void KillMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
 
 	if (mhd->DecorUserBuffer)
 	{
-	    FreeMem((IPTR) mhd->DecorUserBuffer, mhd->DecorUserBufferSize);
+	    FreeMem((void *)mhd->DecorUserBuffer, mhd->DecorUserBufferSize);
     	}
-	mhd->DecorUserBuffer = NULL;
+	mhd->DecorUserBuffer = 0;
 
         mhd->activemenu->Flags &= ~MIDRAWN;
 
@@ -1342,7 +1340,7 @@ static void MakeSubMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
     {
 	mhd->DecorUserBufferSize = userbuffersize;
 	mhd->SubDecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
-	if (NULL == mhd->SubDecorUserBuffer) return;
+	if (0 == mhd->SubDecorUserBuffer) return;
     }
 
     {
@@ -1387,9 +1385,9 @@ static void KillSubMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
 
         if (mhd->SubDecorUserBuffer)
         {
-            FreeMem((IPTR) mhd->SubDecorUserBuffer, mhd->DecorUserBufferSize);
+            FreeMem((void *)mhd->SubDecorUserBuffer, mhd->DecorUserBufferSize);
         }
-        mhd->SubDecorUserBuffer = NULL;
+        mhd->SubDecorUserBuffer = 0;
 
         mhd->submenuwin = NULL;
 

@@ -73,7 +73,7 @@ static void RenderPropBackground(struct Gadget *gad, struct Window *win, struct 
         {
             if ((((struct ExtGadget *) gad)->MoreFlags & GMORE_BOOPSIGADGET) != 0)
             {
-                GetAttr(PGA_DisplayHook, (Object *) gad, &dhook);
+                GetAttr(PGA_DisplayHook, (Object *) gad, (IPTR *)&dhook);
             }
         }
         if (dhook) {
@@ -724,7 +724,7 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                     {
                         if ((((struct ExtGadget *) gadget)->MoreFlags & GMORE_BOOPSIGADGET) != 0)
                         {
-                            GetAttr(PGA_DisplayHook, (Object *) gadget, &dhook);
+                            GetAttr(PGA_DisplayHook, (Object *) gadget, (IPTR *)&dhook);
                         }
                     }
                     if (dhook) {

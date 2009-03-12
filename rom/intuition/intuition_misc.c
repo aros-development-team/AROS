@@ -179,7 +179,7 @@ Object* CreateStdSysImage(WORD which, WORD preferred_height, struct Screen *scr,
 	{SYSIA_DrawInfo , (IPTR)dri         	    	    },
 	{SYSIA_Size 	, scr->Flags & SCREENHIRES ?
                 	  SYSISIZE_MEDRES : SYSISIZE_LOWRES },
-    {SYSIA_UserBuffer , buffer                          },
+    {SYSIA_UserBuffer , (IPTR)buffer                    },
 	{TAG_DONE                   	    	    	    }
     };
 
@@ -1088,16 +1088,16 @@ void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct Intui
                         msg->snm_Message.mn_Length = sizeof(struct ScreenNotifyMessage);
                         if (sn->flags & SNOTIFY_WAIT_REPLY)
                         {
-                            reply = CreateMsgPort();
+                            reply = (struct ReplyPort *)CreateMsgPort();
                             if (reply)
                             {
                                 msg->snm_Message.mn_ReplyPort = reply;
 
-                                PutMsg(sn->port, (struct Message *) msg);
-                                WaitPort(reply);
-                                GetMsg(reply);
+                                PutMsg((struct MsgPort *)sn->port, (struct Message *) msg);
+                                WaitPort((struct MsgPort *)reply);
+                                GetMsg((struct MsgPort *)reply);
                                 FreeMem((APTR) msg, sizeof(struct ScreenNotifyMessage));
-                                DeleteMsgPort(reply);
+                                DeleteMsgPort((struct MsgPort *)reply);
                             } else FreeMem((APTR) msg, sizeof(struct ScreenNotifyMessage));
                         }
                         else

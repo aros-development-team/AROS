@@ -53,7 +53,7 @@ struct ICData;
 */
 static ULONG set_gadgetclass(Class *cl, struct ExtGadget *eg, struct opSet *msg)
 {
-    struct TagItem  	 *tstate = msg->ops_AttrList;
+    const struct TagItem *tstate = msg->ops_AttrList;
     struct TagItem  	 *tag;
     IPTR    	    	  tidata;
     ULONG   	    	  retval = 0UL; /* set to non-zero to signal visual changes */

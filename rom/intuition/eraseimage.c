@@ -79,9 +79,10 @@
         if (image->Depth == CUSTOMIMAGEDEPTH)
         {
             struct impErase method;
-            IPTR penmode;
 
     	#ifdef __MORPHOS__
+            IPTR penmode;
+
             GetRPAttrs(rp,RPTAG_PenMode,(ULONG)&penmode,TAG_DONE);
     	#endif
 

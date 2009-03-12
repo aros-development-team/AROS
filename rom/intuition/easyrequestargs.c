@@ -65,7 +65,7 @@
     LONG    	   result;
 
     req = BuildEasyRequestArgs(window, easyStruct,
-                               IDCMP_ptr != NULL ? *IDCMP_ptr : NULL, argList);
+                               IDCMP_ptr != NULL ? *IDCMP_ptr : 0, argList);
 
     /* req = 0/1 is handled by SysReqHandler */
     while ((result = SysReqHandler(req, IDCMP_ptr, TRUE)) == -2)

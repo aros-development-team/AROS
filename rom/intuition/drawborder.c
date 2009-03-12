@@ -87,7 +87,9 @@
     IPTR   apen;
     IPTR   bpen;
     IPTR   drmd;
+#ifdef __MORPHOS__
     IPTR   penmode;
+#endif
     WORD  *ptr;
     WORD   x, y;
     WORD   xoff, yoff;

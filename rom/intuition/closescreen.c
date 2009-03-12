@@ -223,7 +223,7 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
     /* Free the memory */
     if (((struct IntScreen *)screen)->DecorUserBuffer)
     {
-        FreeMem((IPTR) ((struct IntScreen *)screen)->DecorUserBuffer, ((struct IntScreen *)screen)->DecorUserBufferSize);
+        FreeMem((APTR)((struct IntScreen *)screen)->DecorUserBuffer, ((struct IntScreen *)screen)->DecorUserBufferSize);
     }
 
     {
@@ -242,7 +242,7 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
                 struct MsgPort *port = CreateMsgPort();
                 if (port)
                 {
-                    Remove(nd);
+                    Remove((struct Node *)nd);
 
                     if (nd->nd_IntPattern) FreeVec(nd->nd_IntPattern);
 
@@ -342,7 +342,6 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
             if (GetPrivIBase(IntuitionBase)->DefaultPubScreen == screen)
             {
                 struct Screen *scr;
-                BOOL nexttry = TRUE;
 
                 GetPrivIBase(IntuitionBase)->DefaultPubScreen = NULL;
                 scr = IntuitionBase->FirstScreen;

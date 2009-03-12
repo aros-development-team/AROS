@@ -232,7 +232,6 @@ IPTR ScrDecorClass__SDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct sdpGe
 
 IPTR ScrDecorClass__SDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct sdpDrawSysImage *msg)
 {
-    struct scrdecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rp = msg->sdp_RPort;
     UWORD   	    	 *pens = DRI(msg->sdp_Dri)->dri_Pens;
     LONG    	    	  state = msg->sdp_State;
@@ -379,7 +378,6 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
 
 IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScreenBar *msg)
 {
-    struct scrdecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rp = msg->sdp_RPort;
     UWORD   	    	 *pens = DRI(msg->sdp_Dri)->dri_Pens;
     LONG    	    	  right, left;

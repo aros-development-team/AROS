@@ -445,7 +445,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
 
     if (((struct IntWindow *)window)->DecorUserBuffer)
     {
-        FreeMem((IPTR) ((struct IntWindow *)window)->DecorUserBuffer, ((struct IntWindow *)window)->DecorUserBufferSize);
+        FreeMem((APTR)((struct IntWindow *)window)->DecorUserBuffer, ((struct IntWindow *)window)->DecorUserBufferSize);
     }
 
 

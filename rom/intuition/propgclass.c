@@ -223,7 +223,8 @@ static VOID UpdateTop(Class *cl, struct Gadget *g, struct GadgetInfo *gi, BOOL f
 
 IPTR PropGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 {
-    struct TagItem  	*tag, *tstate;
+    const struct TagItem *tstate;
+    struct TagItem  	*tag;
     struct PropGData    *data;
     struct BBox     	 old_knobbox;
     struct opSet    	 method;
@@ -501,7 +502,7 @@ IPTR PropGClass__OM_GET(Class *cl, struct Gadget *g,struct opGet *msg)
         break;
 
    case PGA_DisplayHook:
-        *(msg->opg_Storage) = data->DisplayHook;
+        *(msg->opg_Storage) = (IPTR)data->DisplayHook;
         break;
 
     case PGA_Visible:

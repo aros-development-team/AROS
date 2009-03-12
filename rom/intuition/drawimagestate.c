@@ -76,7 +76,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    IPTR apen, bpen, drmd, penmode;
+    IPTR apen, bpen, drmd;
+#ifdef __MORPHOS__
+    IPTR penmode;
+#endif
 
     EXTENDWORD(leftOffset);
     EXTENDWORD(topOffset);

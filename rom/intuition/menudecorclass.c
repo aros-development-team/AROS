@@ -164,17 +164,14 @@ IPTR MenuDecorClass__MDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct mdpG
 
 IPTR MenuDecorClass__MDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct mdpDrawSysImage *msg)
 {
-    struct menuecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rport = msg->mdp_RPort;
     UWORD   	    	 *pens = DRI(msg->mdp_Dri)->dri_Pens;
-    LONG    	    	  state = msg->mdp_State;
     LONG    	     	  left = msg->mdp_X;
     LONG    	     	  top = msg->mdp_Y;
     LONG   	          width = msg->mdp_Width;
     LONG   	    	  height = msg->mdp_Height;
     LONG    	    	  right = left + width - 1;
     LONG    	    	  bottom = top + height - 1;
-    LONG    	    	  h_spacing, v_spacing;
     
     SetDrMd(rport, JAM1);
     

@@ -60,7 +60,7 @@ static inline ULONG beepcolor(ULONG x)
 #if USE_NEWDISPLAYBEEP
 
     BOOL AllScreens = FALSE;
-    ULONG lock;
+    //ULONG lock;
 
     //dprintf("INT_DisplayBeep: entry, screen 0x%lx\n", (ULONG) screen);
 

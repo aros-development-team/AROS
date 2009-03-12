@@ -284,7 +284,7 @@
         struct TagItem tags[2] =
         {
             {WA_AutoAdjust  ,  TRUE 	},
-            {TAG_END	    ,       NULL}
+            {TAG_END	    ,       0}
         };
 
         nw.Extension = tags;

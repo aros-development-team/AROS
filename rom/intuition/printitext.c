@@ -72,7 +72,9 @@ void int_PrintIText(struct RastPort * rp, struct IntuiText * iText,
     IPTR   	     apen;
     IPTR   	     bpen;
     IPTR   	     drmd;
+#ifdef __MORPHOS__
     IPTR   	     penmode;
+#endif
     UBYTE   	     style;
     struct TextFont *font;
     struct TextFont *newfont = NULL;

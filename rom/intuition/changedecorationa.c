@@ -91,7 +91,7 @@ static VOID int_removedecorator(struct RemoveDecoratorMsg *m, struct IntuitionBa
                 nd->nd_IntPattern = AllocVec(strlen(nd->nd_Pattern) * 2 + 1, MEMF_CLEAR);
                 if (nd->nd_IntPattern) {
                     struct DosLibrary    *DOSBase;
-                    DOSBase = OpenLibrary("dos.library", 40);
+                    DOSBase = (struct DOSLibrary *)OpenLibrary("dos.library", 40);
                     if (DOSBase)
                     {
                         if (ParsePattern(nd->nd_Pattern, nd->nd_IntPattern, strlen(nd->nd_Pattern) * 2 + 1) == -1) {
@@ -104,7 +104,7 @@ static VOID int_removedecorator(struct RemoveDecoratorMsg *m, struct IntuitionBa
                 }
             }
 
-            Enqueue(&((struct IntIntuitionBase *)(IntuitionBase))->Decorations, nd);
+            Enqueue(&((struct IntIntuitionBase *)(IntuitionBase))->Decorations, (struct Node *)nd);
 
             if (global)
             {
@@ -128,7 +128,7 @@ static VOID int_removedecorator(struct RemoveDecoratorMsg *m,
     struct MsgPort *port = CreateMsgPort();
     if (port)
     {
-        Remove(m->nd);
+        Remove((struct Node *)m->nd);
         if (m->nd->nd_IntPattern) FreeVec(m->nd->nd_IntPattern);
         msg.dm_Message.mn_ReplyPort = port;
         msg.dm_Message.mn_Magic = MAGIC_DECORATOR;

@@ -164,11 +164,11 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 
     DEBUG_INIT(dprintf("LIB_Init: create menu handler task\n"));
     /* FIXME: no cleanup routines for MenuHandler task */
-    if (!InitDefaultMenuHandler(IntuitionBase))
+    if (!InitDefaultMenuHandler((struct IntuitionBase *)IntuitionBase))
 	return FALSE;
 
     /* FIXME: no cleanup routines for ScreennotifyHandler task */
-    if (!InitDefaultScreennotifyHandler(IntuitionBase))
+    if (!InitDefaultScreennotifyHandler((struct IntuitionBase *)IntuitionBase))
 	return FALSE;
 
 
@@ -260,7 +260,7 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
 
     if (!GetPrivIBase(LIBBASE)->InputDeviceOpen)
     {
-	if (!OpenDevice("input.device", -1, (struct IORequest *)GetPrivIBase(LIBBASE)->InputIO, NULL))
+	if (!OpenDevice("input.device", -1, (struct IORequest *)GetPrivIBase(LIBBASE)->InputIO, 0))
 	{
 	    GetPrivIBase(LIBBASE)->InputDeviceOpen = TRUE;
 	    InputBase = (struct Library *)GetPrivIBase(LIBBASE)->InputIO->io_Device;
@@ -374,14 +374,14 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
     /* FIXME: no cleanup routines for MenuHandler task */
     if (!GetPrivIBase(LIBBASE)->MenuHandlerPort)
     {
-	if (!InitDefaultMenuHandler(LIBBASE))
+	if (!InitDefaultMenuHandler((struct IntuitionBase *)LIBBASE))
 	    return FALSE;
     }
 
     /* FIXME: no cleanup routines for ScreennotifyHandler task */
     if (!GetPrivIBase(LIBBASE)->ScreenNotifyReplyPort)
     {
-	if (!InitDefaultScreennotifyHandler(LIBBASE))
+	if (!InitDefaultScreennotifyHandler((struct IntuitionBase *)LIBBASE))
 	    return FALSE;
     }
 
