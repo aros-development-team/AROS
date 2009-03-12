@@ -910,74 +910,193 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImageLUT)
 {
     atiBitMap *bm = OOP_INST_DATA(cl, o);
 
-    bug("[ATI] PutImageLUT(%d, %d, %d, %d, %d, %p)\n", msg->x, msg->y, msg->width, msg->height, msg->modulo, msg->pixels);
+//    bug("[ATI] PutImageLUT(%d, %d, %d, %d, %d, %p)\n", msg->x, msg->y, msg->width, msg->height, msg->modulo, msg->pixels);
 
     LOCK_BITMAP
 
-    IPTR VideoData = bm->framebuffer;
 
+
+//    IPTR VideoData = bm->framebuffer;
+//
     if (bm->fbgfx)
     {
-       VideoData += (IPTR)sd->Card.FrameBuffer;
 
-        if (sd->Card.Busy)
-        {
-            LOCK_HW
-#warning TODO: NVSync(sd)
-            RADEONWaitForIdleMMIO(sd);
-            UNLOCK_HW
-        }
+    	UBYTE *src = msg->pixels;
+    	ULONG x_add = msg->modulo;
+    	UWORD height = msg->height;
+    	UWORD bw = msg->width;
+		HIDDT_Pixel *colmap = msg->pixlut->pixels;
+
+    	if (bm->bpp == 2)
+    		bw = (bw + 1) & ~1;
+
+		LOCK_HW
+
+        bm->usecount++;
+    	sd->Card.Busy = TRUE;
+
+		RADEONWaitForFifo(sd, 1);
+		OUTREG(RADEON_DST_PITCH_OFFSET, bm->pitch_offset);
+
+		bm->dp_gui_master_cntl_clip = (bm->dp_gui_master_cntl
+									 | RADEON_GMC_WR_MSK_DIS
+									 | RADEON_GMC_BRUSH_NONE
+									 | RADEON_DP_SRC_SOURCE_HOST_DATA
+									 | RADEON_GMC_DST_CLIPPING
+									 | RADEON_GMC_SRC_DATATYPE_COLOR
+									 | RADEON_ROP[vHidd_GC_DrawMode_Copy].rop);
+
+		RADEONWaitForFifo(sd, 5);
+		OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+
+		OUTREG(RADEON_SC_TOP_LEFT,        (msg->y << 16) | msg->x);
+		OUTREG(RADEON_SC_BOTTOM_RIGHT,    ((msg->y+msg->height) << 16) | (msg->x+msg->width));
+
+		OUTREG(RADEON_DST_X_Y,          ((msg->x) << 16) | msg->y);
+		OUTREG(RADEON_DST_WIDTH_HEIGHT, (bw << 16) | msg->height);
+
+		if (bm->bpp == 4)
+		{
+#if AROS_BIG_ENDIAN
+        	RADEONWaitForFifo(sd, 1);
+        	OUTREG(RADEON_RBBM_GUICNTL, RADEON_HOST_DATA_SWAP_32BIT);
+#endif
+			while (height--)
+			{
+				UBYTE *line = (UBYTE*)src;
+				ULONG width = msg->width;
+
+				while(width)
+				{
+					if (width <= 8)
+					{
+						RADEONWaitForFifo(sd, width);
+						switch (width)
+						{
+							case 8: OUTREGN(RADEON_HOST_DATA0, colmap[*line++]);
+							case 7: OUTREGN(RADEON_HOST_DATA1, colmap[*line++]);
+							case 6: OUTREGN(RADEON_HOST_DATA2, colmap[*line++]);
+							case 5: OUTREGN(RADEON_HOST_DATA3, colmap[*line++]);
+							case 4: OUTREGN(RADEON_HOST_DATA4, colmap[*line++]);
+							case 3: OUTREGN(RADEON_HOST_DATA5, colmap[*line++]);
+							case 2: OUTREGN(RADEON_HOST_DATA6, colmap[*line++]);
+							case 1: OUTREGN(RADEON_HOST_DATA7, colmap[*line++]);
+						}
+						width = 0;
+					}
+					else
+					{
+						RADEONWaitForFifo(sd, 8);
+
+						OUTREGN(RADEON_HOST_DATA0, colmap[*line++]);
+						OUTREGN(RADEON_HOST_DATA1, colmap[*line++]);
+						OUTREGN(RADEON_HOST_DATA2, colmap[*line++]);
+						OUTREGN(RADEON_HOST_DATA3, colmap[*line++]);
+						OUTREGN(RADEON_HOST_DATA4, colmap[*line++]);
+						OUTREGN(RADEON_HOST_DATA5, colmap[*line++]);
+						OUTREGN(RADEON_HOST_DATA6, colmap[*line++]);
+						OUTREGN(RADEON_HOST_DATA7, colmap[*line++]);
+
+						width -= 8;
+					}
+				}
+
+				src += x_add;
+			}
+		}
+		else if (bm->bpp == 2)
+		{
+#if AROS_BIG_ENDIAN
+			RADEONWaitForFifo(sd, 1);
+			OUTREG(RADEON_RBBM_GUICNTL, RADEON_HOST_DATA_SWAP_HDW);
+#endif
+			while (height--)
+			{
+				UBYTE *line = (UBYTE*)src;
+				ULONG width = bw >> 1;
+
+				while(width--)
+				{
+					ULONG tmp = (colmap[line[0]] << 16) | (colmap[line[1]] & 0x0000ffff);
+					RADEONWaitForFifo(sd, 1);
+					OUTREG(RADEON_HOST_DATA0, tmp);
+					line+=2;
+				}
+
+				src += x_add;
+			}
+
+		}
+
+#if AROS_BIG_ENDIAN
+		RADEONWaitForFifo(sd, 1);
+		OUTREG(RADEON_RBBM_GUICNTL, RADEON_HOST_DATA_SWAP_NONE);
+#endif
+
+		UNLOCK_HW
+
+//       VideoData += (IPTR)sd->Card.FrameBuffer;
+//
+//        if (sd->Card.Busy)
+//        {
+//            LOCK_HW
+//#warning TODO: NVSync(sd)
+//            RADEONWaitForIdleMMIO(sd);
+//            UNLOCK_HW
+//        }
+//    }
+//
+//    switch(bm->bpp)
+//    {
+//        case 2:
+//            {
+//            struct pHidd_BitMap_CopyLUTMemBox16 __m = {
+//                    sd->mid_CopyLUTMemBox16,
+//                    msg->pixels,
+//                    0,
+//                    0,
+//                    (APTR)VideoData,
+//                    msg->x,
+//                    msg->y,
+//                    msg->width,
+//                    msg->height,
+//                    msg->modulo,
+//                    bm->pitch,
+//                    msg->pixlut
+//            }, *m = &__m;
+//
+//            OOP_DoMethod(o, (OOP_Msg)m);
+//            }
+//            break;
+//
+//        case 4:
+//            {
+//            struct pHidd_BitMap_CopyLUTMemBox32 __m = {
+//                    sd->mid_CopyLUTMemBox32,
+//                    msg->pixels,
+//                    0,
+//                    0,
+//                    (APTR)VideoData,
+//                    msg->x,
+//                    msg->y,
+//                    msg->width,
+//                    msg->height,
+//                    msg->modulo,
+//                    bm->pitch,
+//                    msg->pixlut
+//            }, *m = &__m;
+//
+//            OOP_DoMethod(o, (OOP_Msg)m);
+//            }
+//            break;
+//
+//        default:
+//            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+//            break;
+//
     }
-
-    switch(bm->bpp)
-    {
-        case 2:
-            {
-            struct pHidd_BitMap_CopyLUTMemBox16 __m = {
-                    sd->mid_CopyLUTMemBox16,
-                    msg->pixels,
-                    0,
-                    0,
-                    (APTR)VideoData,
-                    msg->x,
-                    msg->y,
-                    msg->width,
-                    msg->height,
-                    msg->modulo,
-                    bm->pitch,
-                    msg->pixlut
-            }, *m = &__m;
-
-            OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        case 4:
-            {
-            struct pHidd_BitMap_CopyLUTMemBox32 __m = {
-                    sd->mid_CopyLUTMemBox32,
-                    msg->pixels,
-                    0,
-                    0,
-                    (APTR)VideoData,
-                    msg->x,
-                    msg->y,
-                    msg->width,
-                    msg->height,
-                    msg->modulo,
-                    bm->pitch,
-                    msg->pixlut
-            }, *m = &__m;
-
-            OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        default:
-            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-            break;
-
-    } /* switch(data->bytesperpix) */
+    else
+    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     UNLOCK_BITMAP
 }
