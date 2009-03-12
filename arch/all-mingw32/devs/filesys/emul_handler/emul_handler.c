@@ -12,8 +12,8 @@
 
 #define DEBUG 0
 #define DERROR(x)
-#define DFNAME(x) x
-#define DOPEN(x) x
+#define DFNAME(x)
+#define DOPEN(x)
 #define DASYNC(x)
 
 #define __DOS_NOLIBBASE__
