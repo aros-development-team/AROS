@@ -66,7 +66,7 @@ int main(void)
     STRPTR dev;
     int rc = RETURN_FAIL;
 
-    ra = ReadArgs("DEVICE/A", &dev, NULL);
+    ra = ReadArgs("DEVICE/A", (IPTR *)&dev, NULL);
     if (ra) {
 	if (Inhibit(dev, DOSTRUE) && Inhibit(dev, DOSFALSE))
 	    rc = RETURN_OK;

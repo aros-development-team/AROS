@@ -165,7 +165,7 @@ AROS_SHA(BOOL, ,HEAD,/S,NULL))
         else    /* add */
         {
                 PathEntryPtr
-            insertAfter = &cli->cli_CommandDir;
+            insertAfter = (PathEntryPtr)&cli->cli_CommandDir;
             
             if (!SHArg(HEAD))
             {
@@ -192,7 +192,7 @@ AROS_SHA(BOOL, ,HEAD,/S,NULL))
     }
     else
     {
-        SHArg(SHOW) = SHArg(RESET) == NULL;
+        SHArg(SHOW) = SHArg(RESET) == 0;
     }
 
     if (SHArg(SHOW))

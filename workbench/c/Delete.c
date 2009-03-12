@@ -212,7 +212,6 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
     BOOL  deleteit = FALSE;
     BOOL  deletedfile = FALSE;
     BOOL  firstmatch = TRUE;
-    STRPTR file;
 
     if (!files)
     {

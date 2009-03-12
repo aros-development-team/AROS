@@ -363,7 +363,7 @@ D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
 				struct PartitionHandle *pn;
 				struct DosEnvec de;
 				struct PartitionHandle *extph = NULL;
-				struct PartitionType ptype = {0};
+				struct PartitionType ptype = {{0}};
 
 					tags[0].ti_Tag = PT_DOSENVEC;
 					tags[0].ti_Data = (STACKIPTR)&de;
