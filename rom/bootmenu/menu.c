@@ -233,6 +233,7 @@ static BOOL initScreen(struct BootMenuBase_intern *BootMenuBase, struct BootConf
     };
 
     struct Gadget *first = NULL;
+    BOOL res = FALSE;
 
     D(bug("[BootMenu] initScreen()\n"));
 
@@ -274,7 +275,7 @@ static BOOL initScreen(struct BootMenuBase_intern *BootMenuBase, struct BootConf
                 Text(BootMenuBase->bm_Window->RPort, "(press a key to toggle the display between PAL and NTSC)", 23);
 #endif
                 msgLoop(BootMenuBase, BootMenuBase->bm_Window, bcfg);
-                return TRUE;
+                res = TRUE;
             }
             else
                 Alert(AT_DeadEnd | AN_OpenWindow);
@@ -290,7 +291,7 @@ static BOOL initScreen(struct BootMenuBase_intern *BootMenuBase, struct BootConf
     else
         Alert(AT_DeadEnd | AN_OpenScreen);
 
-    return FALSE;
+    return res;
 }
 
 /* From keyboard.device/keyboard_intern.h */
