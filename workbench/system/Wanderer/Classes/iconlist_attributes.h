@@ -2,7 +2,7 @@
 #define _MUI_CLASSES_ICONLIST_ATTRIBUTES_H
 
 /*
-	Copyright  2002-2007, The AROS Development Team. All rights reserved.
+	Copyright  2002-2009, The AROS Development Team. All rights reserved.
 	$Id$
 */
 
@@ -19,8 +19,7 @@
 #define MUIA_IconList_Clicked                               (MUIB_IconList | 0x00000001) /* Zune: V1 ..G (struct IconList_Click *) */
 #define MUIA_IconList_DoubleClick                           (MUIB_IconList | 0x00000002) /* Zune: V1 ..G BOOL                      */
 #define MUIA_IconList_SelectionChanged                      (MUIB_IconList | 0x00000003) /* Zune: V1 ..GBOOL                         */
-#define MUIA_IconList_Left                                  (MUIB_IconList | 0x0000000a) /* Zune: V1 .SG LONG                      */
-#define MUIA_IconList_Top                                   (MUIB_IconList | 0x0000000b) /* Zune: V1 .SG LONG                      */
+
 #define MUIA_IconList_Width                                 (MUIB_IconList | 0x0000000c) /* Zune: V1 .SG LONG                      */
 #define MUIA_IconList_Height                                (MUIB_IconList | 0x0000000d) /* Zune: V1 .SG LONG                      */
 #define MUIA_IconList_IconsMoved                            (MUIB_IconList | 0x00000010) /* Zune: V1 ..G (struct IconList_Entry *) */
@@ -30,6 +29,11 @@
 
 #define MUIA_IconList_DisplayFlags                          (MUIB_IconList | 0x00000020) /* Zune: V1 ISG ULONG                     */
 #define MUIA_IconList_SortFlags                             (MUIB_IconList | 0x00000021) /* Zune: V1 ISG ULONG                     */
+
+
+/* OBSOLETE */
+//#define MUIA_IconList_Left                                  (MUIB_IconList | 0x0000000a) /* Zune: V1 .SG LONG                      */
+//#define MUIA_IconList_Top                                   (MUIB_IconList | 0x0000000b) /* Zune: V1 .SG LONG                      */
 
 /* Configuration Attributes */
 #define MUIB_IconList_ConfigTags                            (MUIB_IconList | 0x00000100)
@@ -62,25 +66,6 @@
 #define MUIA_IconList_BufferHeight                          (MUIB_IconList | 0x00000053)            /* Zune: V1 ..G LONG                      */
 
 /****************************************************************************/
-#define ICONENTRY_DRAWMODE_NONE      0         /* Do nothing .. */
-#define ICONENTRY_DRAWMODE_PLAIN     1         /* Draw operations should clear the background first .. */
-#define ICONENTRY_DRAWMODE_NOBACK    2         /* Draw operations shouldnt clear the background        */
-#define ICONENTRY_DRAWMODE_BACKONLY  3         /* Draw operation should _only_ draw the background     */
-
-/* Internal Icon state flags */
-#define ICONENTRY_FLAG_SELECTED      (1<<1)		/* icon selected state                */
-#define ICONENTRY_FLAG_FOCUS         (1<<2)		/* icon input focus state             */
-#define ICONENTRY_FLAG_VISIBLE       (1<<3)		/* icon for entry should be drawn     */
-#define ICONENTRY_FLAG_HASICON	     (1<<4)		/* entry has an '.info' file          */
-#define ICONENTRY_FLAG_TODAY	     (1<<7)		/* entry's timestamp is from today    */
-#define ICONENTRY_FLAG_LASSO         (1<<8)		/* Icon is being altered by a lasso  */
-
-
-/* For Icons of type ST_ROOT */
-#define ICONENTRY_VOL_OFFLINE	     (1<<1)		/* Volume is Offline               */
-#define ICONENTRY_VOL_READONLY	     (1<<2)		/* Media is Read-Only           */
-#define ICONENTRY_VOL_REMOVABLE	     (1<<3)		/* Media is Removable          */
-
 /* iconlist rendering control flags */
 /* SORTFLAGS 
 	((flags & (ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == 0)

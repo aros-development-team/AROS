@@ -1,3 +1,8 @@
+/*
+    Copyright © 2007-2009, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include  "filesystems.h"
 
 struct TagItem DummyTags[] = { {TAG_DONE, 0}};

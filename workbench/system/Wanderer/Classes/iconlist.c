@@ -2,6 +2,7 @@
 Copyright  2002-2009, The AROS Development Team. All rights reserved.
 $Id$
 */
+
 #include "../portable_macros.h"
 #ifndef __AROS__
 #define WANDERER_BUILTIN_ICONLIST 1
@@ -19,7 +20,7 @@ $Id$
 #define DEBUG_ILC_LASSO
 #define DEBUG_ILC_MEMALLOC
 
-//#define CREATE_FULL_DRAGIMAGE
+#define CREATE_FULL_DRAGIMAGE
 
 #include <string.h>
 #include <stdlib.h>
@@ -79,6 +80,7 @@ $Id$
 #include <proto/muimaster.h>
 #include <libraries/mui.h>
 #include "iconlist_attributes.h"
+#include "icon_attributes.h"
 #include "iconlist.h"
 #include "iconlist_private.h"
 #include "iconlistview.h"
@@ -502,15 +504,28 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
 {
     struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
+    BOOL outside = FALSE;
+
     struct Rectangle iconrect;
     struct Rectangle objrect;
 
-    //LONG tx,ty;
     LONG offsetx,offsety;
-    //LONG txwidth, txheight;
 
-    ULONG iconX;
-    ULONG iconY;
+    ULONG objX, objY, objW, objH;
+    LONG iconX, iconY;
+    ULONG iconW, iconH;
+
+    if (data->icld_BufferRastPort == data->icld_DisplayRastPort)
+    {
+        objX = _mleft(obj);
+        objY = _mtop(obj);
+    }
+    else
+    {
+        objX = objY = 0;
+    }
+    objW = _mright(obj) - _mleft(obj) + 1;
+    objH = _mbottom(obj) - _mtop(obj) + 1;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList]: %s(message->icon = 0x%p)\n", __PRETTY_FUNCTION__, message->icon));
@@ -528,9 +543,11 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
     
     /* Get the dimensions and affected area of message->icon */
     IconList_GetIconImageRectangle(obj, data, message->icon, &iconrect);
-
+    iconW = iconrect.MaxX - iconrect.MinX + 1;
+    iconH = iconrect.MaxY - iconrect.MinY + 1;
+    
     /* Add the relative position offset of the message->icon */
-    offsetx = _mleft(obj) - data->icld_ViewX + message->icon->ile_IconX;
+    offsetx = objX - data->icld_ViewX + message->icon->ile_IconX;
     /* Centre our image with our text */
     if (message->icon->ile_IconWidth < message->icon->ile_AreaWidth)
         offsetx += (message->icon->ile_AreaWidth - message->icon->ile_IconWidth)/2;
@@ -542,50 +559,85 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
     iconrect.MinX += offsetx;
     iconrect.MaxX += offsetx;
 
-    offsety = _mtop(obj) - data->icld_ViewY + message->icon->ile_IconY;
+    offsety = objY - data->icld_ViewY + message->icon->ile_IconY;
     iconrect.MinY += offsety;
     iconrect.MaxY += offsety;
 
     /* Add the relative position of the window */
-    objrect.MinX = _mleft(obj);
-    objrect.MinY = _mtop(obj);
-    objrect.MaxX = _mright(obj);
-    objrect.MaxY = _mbottom(obj);
+    objrect.MinX = objX;
+    objrect.MinY = objY;
+    objrect.MaxX = objX + objW;
+    objrect.MaxY = objY + objH;
 
-    if (!RectAndRect(&iconrect, &objrect)) return FALSE;
+    if (!RectAndRect(&iconrect, &objrect))
+    {
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s: Icon '%s' image outside of visible area .. skipping\n", __PRETTY_FUNCTION__, message->icon->ile_IconListEntry.label));
+#endif
+        return FALSE;
+    }
 
     /* data->update_rect1 and data->update_rect2 may
        point to rectangles to indicate that only icons
        in any of this rectangles need to be drawn      */
-    
-    if (data->update_rect1 && data->update_rect2)
+    if (data->update_rect1)
     {
-        if (!RectAndRect(&iconrect, data->update_rect1) &&
-        !RectAndRect(&iconrect, data->update_rect2)) return FALSE;
+        if (!RectAndRect(&iconrect, data->update_rect1)) outside = TRUE;
     }
-    else if (data->update_rect1)
-    {
-        if (!RectAndRect(&iconrect, data->update_rect1)) return FALSE;
-    }
-    else if (data->update_rect2)
-    {
-        if (!RectAndRect(&iconrect, data->update_rect2)) return FALSE;
-    }
-    
-    if (message->drawmode == ICONENTRY_DRAWMODE_NONE) return TRUE;
-    
-    // Center icon image
-    iconX = iconrect.MinX - _mleft(obj) + data->icld_DrawOffsetX;
-    iconY = iconrect.MinY - _mtop(obj) + data->icld_DrawOffsetY;
 
-    DrawIconStateA
-        (
-            data->icld_BufferRastPort ? data->icld_BufferRastPort : data->icld_BufferRastPort, message->icon->ile_DiskObj, NULL,
-            iconX, 
-            iconY, 
-            (message->icon->ile_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
-            __iconList_DrawIconStateTags
-        );
+    if (data->update_rect2)
+    {
+        if (data->update_rect1)
+        {
+            if ((outside == TRUE) && RectAndRect(&iconrect, data->update_rect2)) outside = FALSE;
+        }
+        else
+        {
+            if (!RectAndRect(&iconrect, data->update_rect2)) outside = TRUE;
+        }
+    }
+
+    if (outside == TRUE)
+    {
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s: Icon '%s' image outside of update area .. skipping\n", __PRETTY_FUNCTION__, message->icon->ile_IconListEntry.label));
+#endif
+        return FALSE;
+    }
+
+    if (message->drawmode == ICONENTRY_DRAWMODE_NONE) return TRUE;
+
+    // Center icon image
+    iconX = iconrect.MinX - objX + data->icld_DrawOffsetX;
+    iconY = iconrect.MinY - objY + data->icld_DrawOffsetY;
+
+    if ((data->icld_BufferRastPort == data->icld_DisplayRastPort) || 
+         ((data->icld_BufferRastPort != data->icld_DisplayRastPort) && 
+          ((iconX > objX) && (iconX < (objX + objW)) && (iconY > objY) && (iconY < (objY + objH))) &&
+          (((iconX + iconW) > objX) && ((iconX + iconW)< (objX + objW)) && ((iconY + iconH) > objY) && ((iconY + iconH) < (objY + objH)))
+         ))
+    {
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s: DrawIconState('%s') .. %d, %d\n", __PRETTY_FUNCTION__, message->icon->ile_IconListEntry.label, iconX, iconY));
+#endif
+        DrawIconStateA
+            (
+                data->icld_BufferRastPort, message->icon->ile_DiskObj, NULL,
+                iconX, 
+                iconY, 
+                (message->icon->ile_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
+                __iconList_DrawIconStateTags
+            );
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s: DrawIconState Done\n", __PRETTY_FUNCTION__));
+#endif
+    }
+    else
+    {
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s: DrawIconState('%s') NEEDS CLIPPED!\n", __PRETTY_FUNCTION__, message->icon->ile_IconListEntry.label));
+#endif
+    }
 
     return TRUE;
 }
@@ -856,6 +908,7 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
     struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
     STRPTR          buf = NULL;
+    BOOL outside = FALSE;
 
     struct Rectangle  iconlabelrect;
     struct Rectangle  objrect;
@@ -863,9 +916,23 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
     ULONG               txtbox_width = 0;
     LONG        tx,ty,offsetx,offsety;
     LONG        txwidth; // txheight;
-    
-    ULONG labelX;
-    ULONG labelY;
+
+    ULONG objX, objY, objW, objH;
+    LONG labelX, labelY;
+    ULONG labelW, labelH;
+
+    if (data->icld_BufferRastPort == data->icld_DisplayRastPort)
+    {
+        objX = _mleft(obj);
+        objY = _mtop(obj);
+    }
+    else
+    {
+        objX = objY = 0;
+    }
+    objW = _mright(obj) - _mleft(obj) + 1;
+    objH = _mbottom(obj) - _mtop(obj) + 1;
+
     ULONG txtarea_width;
     ULONG curlabel_TotalLines, curlabel_CurrentLine, offset_y;
 
@@ -882,12 +949,14 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
 #endif
         return FALSE;
     }
-    
+
     /* Get the dimensions and affected area of message->icon's label */
     IconList_GetIconLabelRectangle(obj, data, message->icon, &iconlabelrect);
+    labelW = iconlabelrect.MaxX - iconlabelrect.MinX + 1;
+    labelH = iconlabelrect.MaxY - iconlabelrect.MinY + 1;
 
     /* Add the relative position offset of the message->icon's label */
-    offsetx = (_mleft(obj) - data->icld_ViewX) + message->icon->ile_IconX;
+    offsetx = (objX - data->icld_ViewX) + message->icon->ile_IconX;
     txtbox_width = (iconlabelrect.MaxX - iconlabelrect.MinX) + 1;
 
     if (txtbox_width < message->icon->ile_AreaWidth)
@@ -900,7 +969,7 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
     iconlabelrect.MinX += offsetx;
     iconlabelrect.MaxX += offsetx;
 
-    offsety = (_mtop(obj) - data->icld_ViewY) + message->icon->ile_IconY + data->icld__Option_IconImageSpacing;
+    offsety = (objY - data->icld_ViewY) + message->icon->ile_IconY + data->icld__Option_IconImageSpacing;
     if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
     {
         offsety = offsety + data->icld_IconLargestHeight;
@@ -913,237 +982,263 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
     iconlabelrect.MaxY += offsety;
 
     /* Add the relative position of the window */
-    objrect.MinX = _mleft(obj);
-    objrect.MinY = _mtop(obj);
-    objrect.MaxX = _mright(obj);
-    objrect.MaxY = _mbottom(obj);
+    objrect.MinX = objX;
+    objrect.MinY = objX;
+    objrect.MaxX = objX + objW;
+    objrect.MaxY = objY + objH;
 
-    if (!RectAndRect(&iconlabelrect, &objrect)) return FALSE;
+    if (!RectAndRect(&iconlabelrect, &objrect))
+    {
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s: Icon '%s' label outside of visible area .. skipping\n", __PRETTY_FUNCTION__, message->icon->ile_IconListEntry.label));
+#endif
+        return FALSE;
+    }
 
     /* data->update_rect1 and data->update_rect2 may
        point to rectangles to indicate that only icons
        in any of this rectangles need to be drawn      */
-    
-    if (data->update_rect1 && data->update_rect2)
+    if (data->update_rect1)
     {
-        if (!RectAndRect(&iconlabelrect, data->update_rect1) &&
-        !RectAndRect(&iconlabelrect, data->update_rect2)) return FALSE;
+        if (!RectAndRect(&iconlabelrect, data->update_rect1)) outside = TRUE;
     }
-    else if (data->update_rect1)
+
+    if (data->update_rect2)
     {
-        if (!RectAndRect(&iconlabelrect, data->update_rect1)) return FALSE;
+        if (data->update_rect1)
+        {
+            if ((outside == TRUE) && RectAndRect(&iconlabelrect, data->update_rect2)) outside = FALSE;
+        }
+        else
+        {
+            if (!RectAndRect(&iconlabelrect, data->update_rect2)) outside = TRUE;
+        }
     }
-    else if (data->update_rect2)
+
+    if (outside == TRUE)
     {
-        if (!RectAndRect(&iconlabelrect, data->update_rect2)) return FALSE;
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s: Icon '%s' label outside of update area .. skipping\n", __PRETTY_FUNCTION__, message->icon->ile_IconListEntry.label));
+#endif
+        return FALSE;
     }
     
     if (message->drawmode == ICONENTRY_DRAWMODE_NONE) return TRUE;
     
     SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[MPEN_TEXT], 0, JAM1);
 
-    iconlabelrect.MinX = (iconlabelrect.MinX - _mleft(obj)) + data->icld_DrawOffsetX;
-    iconlabelrect.MinY = (iconlabelrect.MinY - _mtop(obj)) + data->icld_DrawOffsetY;
-    iconlabelrect.MaxX = (iconlabelrect.MaxX - _mleft(obj)) + data->icld_DrawOffsetX;
-    iconlabelrect.MaxY = (iconlabelrect.MaxY - _mtop(obj)) + data->icld_DrawOffsetY;
+    iconlabelrect.MinX = (iconlabelrect.MinX - objX) + data->icld_DrawOffsetX;
+    iconlabelrect.MinY = (iconlabelrect.MinY - objY) + data->icld_DrawOffsetY;
+    iconlabelrect.MaxX = (iconlabelrect.MaxX - objX) + data->icld_DrawOffsetX;
+    iconlabelrect.MaxY = (iconlabelrect.MaxY - objY) + data->icld_DrawOffsetY;
 
     labelX = iconlabelrect.MinX + data->icld__Option_LabelTextBorderWidth + data->icld__Option_LabelTextHorizontalPadding;
     labelY = iconlabelrect.MinY + data->icld__Option_LabelTextBorderHeight + data->icld__Option_LabelTextVerticalPadding;
 
     txtarea_width = txtbox_width - ((data->icld__Option_LabelTextBorderWidth + data->icld__Option_LabelTextHorizontalPadding) * 2);
 
-    if (message->icon->ile_IconListEntry.label && message->icon->ile_TxtBuf_DisplayedLabel)
+    if ((data->icld_BufferRastPort == data->icld_DisplayRastPort) || 
+         ((data->icld_BufferRastPort != data->icld_DisplayRastPort) && 
+          ((iconlabelrect.MinX > objX) && (iconlabelrect.MinX < (objX + objW)) && (iconlabelrect.MinY > objY) && (iconlabelrect.MinY < (objY + objH))) &&
+          ((iconlabelrect.MaxX > objX) && (iconlabelrect.MaxX < (objX + objW)) && (iconlabelrect.MaxY > objY) && (iconlabelrect.MaxY < (objY + objH)))
+         ))
     {
-  char *curlabel_StrPtr;
-
-        if ((message->icon->ile_Flags & ICONENTRY_FLAG_FOCUS) && ((BOOL)XGET(_win(obj), MUIA_Window_Activate)))
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s: Drawing Label '%s' .. %d, %d\n", __PRETTY_FUNCTION__, message->icon->ile_IconListEntry.label, labelX, labelY));
+#endif
+        if (message->icon->ile_IconListEntry.label && message->icon->ile_TxtBuf_DisplayedLabel)
         {
-            //Draw the focus box around the selected label ..
-            if (data->icld__Option_LabelTextBorderHeight > 0)
+      char *curlabel_StrPtr;
+
+            if ((message->icon->ile_Flags & ICONENTRY_FLAG_FOCUS) && ((BOOL)XGET(_win(obj), MUIA_Window_Activate)))
             {
-                InvertPixelArray(data->icld_BufferRastPort,
-                            iconlabelrect.MinX, iconlabelrect.MinY,
-                            (iconlabelrect.MaxX - iconlabelrect.MinX) + 1, data->icld__Option_LabelTextBorderHeight);
-
-                InvertPixelArray(data->icld_BufferRastPort,
-                            iconlabelrect.MinX, iconlabelrect.MaxY - (data->icld__Option_LabelTextBorderHeight - 1),
-                            (iconlabelrect.MaxX - iconlabelrect.MinX) + 1, data->icld__Option_LabelTextBorderHeight);
-            }
-            if (data->icld__Option_LabelTextBorderWidth > 0)
-            {
-                InvertPixelArray(data->icld_BufferRastPort,
-                            iconlabelrect.MinX, iconlabelrect.MinY + data->icld__Option_LabelTextBorderHeight,
-                            data->icld__Option_LabelTextBorderWidth, (((iconlabelrect.MaxY - iconlabelrect.MinY) + 1) - (data->icld__Option_LabelTextBorderHeight *  2)));
-
-                InvertPixelArray(data->icld_BufferRastPort,
-                            iconlabelrect.MaxX - (data->icld__Option_LabelTextBorderWidth - 1), iconlabelrect.MinY  + data->icld__Option_LabelTextBorderHeight,
-                            data->icld__Option_LabelTextBorderWidth, (((iconlabelrect.MaxY - iconlabelrect.MinY) + 1) - (data->icld__Option_LabelTextBorderHeight * 2)));
-            }
-        }
-
-        SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
-
-        curlabel_TotalLines = message->icon->ile_SplitParts;
-              curlabel_CurrentLine = 0;
-
-        if (curlabel_TotalLines == 0)
-            curlabel_TotalLines = 1;
-
-        if (!(data->icld__Option_LabelTextMultiLineOnFocus) || (data->icld__Option_LabelTextMultiLineOnFocus && (message->icon->ile_Flags & ICONENTRY_FLAG_FOCUS)))
-        {
-            if (curlabel_TotalLines > data->icld__Option_LabelTextMultiLine)
-                curlabel_TotalLines = data->icld__Option_LabelTextMultiLine;
-        }
-        else
-            curlabel_TotalLines = 1;
-
-        curlabel_StrPtr = message->icon->ile_TxtBuf_DisplayedLabel;
-        
-        ty = labelY - 1;
-
-D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->icld_IconLabelFont->tf_YSize, data->icld_IconLabelFont->tf_Baseline));
-
-        for (curlabel_CurrentLine = 0; curlabel_CurrentLine < curlabel_TotalLines; curlabel_CurrentLine++)
-        {
-      ULONG ile_LabelLength;
-
-            if (curlabel_CurrentLine > 0) curlabel_StrPtr = curlabel_StrPtr + strlen(curlabel_StrPtr) + 1;
-            if ((curlabel_CurrentLine >= (curlabel_TotalLines -1)) && (curlabel_TotalLines < message->icon->ile_SplitParts))
-            {
-                char *tmpLine = curlabel_StrPtr;
-                ULONG tmpLen = strlen(tmpLine);
-
-                if ((curlabel_StrPtr = AllocVecPooled(data->icld_Pool, tmpLen + 1)) != NULL)
+                //Draw the focus box around the selected label ..
+                if (data->icld__Option_LabelTextBorderHeight > 0)
                 {
-                    memset(curlabel_StrPtr, 0, tmpLen + 1);
-                    strncpy(curlabel_StrPtr, tmpLine, tmpLen - 3);
-                    strcat(curlabel_StrPtr , " ..");
+                    InvertPixelArray(data->icld_BufferRastPort,
+                                iconlabelrect.MinX, iconlabelrect.MinY,
+                                (iconlabelrect.MaxX - iconlabelrect.MinX) + 1, data->icld__Option_LabelTextBorderHeight);
+
+                    InvertPixelArray(data->icld_BufferRastPort,
+                                iconlabelrect.MinX, iconlabelrect.MaxY - (data->icld__Option_LabelTextBorderHeight - 1),
+                                (iconlabelrect.MaxX - iconlabelrect.MinX) + 1, data->icld__Option_LabelTextBorderHeight);
                 }
-                else return FALSE;
-                
+                if (data->icld__Option_LabelTextBorderWidth > 0)
+                {
+                    InvertPixelArray(data->icld_BufferRastPort,
+                                iconlabelrect.MinX, iconlabelrect.MinY + data->icld__Option_LabelTextBorderHeight,
+                                data->icld__Option_LabelTextBorderWidth, (((iconlabelrect.MaxY - iconlabelrect.MinY) + 1) - (data->icld__Option_LabelTextBorderHeight *  2)));
+
+                    InvertPixelArray(data->icld_BufferRastPort,
+                                iconlabelrect.MaxX - (data->icld__Option_LabelTextBorderWidth - 1), iconlabelrect.MinY  + data->icld__Option_LabelTextBorderHeight,
+                                data->icld__Option_LabelTextBorderWidth, (((iconlabelrect.MaxY - iconlabelrect.MinY) + 1) - (data->icld__Option_LabelTextBorderHeight * 2)));
+                }
             }
+
+            SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
+
+            curlabel_TotalLines = message->icon->ile_SplitParts;
+                  curlabel_CurrentLine = 0;
+
+            if (curlabel_TotalLines == 0)
+                curlabel_TotalLines = 1;
+
+            if (!(data->icld__Option_LabelTextMultiLineOnFocus) || (data->icld__Option_LabelTextMultiLineOnFocus && (message->icon->ile_Flags & ICONENTRY_FLAG_FOCUS)))
+            {
+                if (curlabel_TotalLines > data->icld__Option_LabelTextMultiLine)
+                    curlabel_TotalLines = data->icld__Option_LabelTextMultiLine;
+            }
+            else
+                curlabel_TotalLines = 1;
+
+            curlabel_StrPtr = message->icon->ile_TxtBuf_DisplayedLabel;
             
-            ile_LabelLength = strlen(curlabel_StrPtr);
-            offset_y = 0;
+            ty = labelY - 1;
 
-            // Center message->icon's label
-            tx = (labelX + (message->icon->ile_TxtBuf_DisplayedLabelWidth / 2) - (TextLength(data->icld_BufferRastPort, curlabel_StrPtr, strlen(curlabel_StrPtr)) / 2));
+    D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->icld_IconLabelFont->tf_YSize, data->icld_IconLabelFont->tf_Baseline));
 
-            if (message->icon->ile_TxtBuf_DisplayedLabelWidth < txtarea_width)
-                tx += ((txtarea_width - message->icon->ile_TxtBuf_DisplayedLabelWidth)/2);
-
-            ty = ty + data->icld_IconLabelFont->tf_YSize;
-
-            switch ( data->icld__Option_LabelTextMode )
+            for (curlabel_CurrentLine = 0; curlabel_CurrentLine < curlabel_TotalLines; curlabel_CurrentLine++)
             {
-                case ICON_TEXTMODE_DROPSHADOW:
-                    SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
-                    Move(data->icld_BufferRastPort, tx + 1, ty + 1); 
-                    Text(data->icld_BufferRastPort, curlabel_StrPtr, ile_LabelLength);
-                    offset_y = 1;
-                case ICON_TEXTMODE_PLAIN:
-                    SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
-                    Move(data->icld_BufferRastPort, tx, ty); 
-                    Text(data->icld_BufferRastPort, curlabel_StrPtr, ile_LabelLength);
-                    break;
+          ULONG ile_LabelLength;
+
+                if (curlabel_CurrentLine > 0) curlabel_StrPtr = curlabel_StrPtr + strlen(curlabel_StrPtr) + 1;
+                if ((curlabel_CurrentLine >= (curlabel_TotalLines -1)) && (curlabel_TotalLines < message->icon->ile_SplitParts))
+                {
+                    char *tmpLine = curlabel_StrPtr;
+                    ULONG tmpLen = strlen(tmpLine);
+
+                    if ((curlabel_StrPtr = AllocVecPooled(data->icld_Pool, tmpLen + 1)) != NULL)
+                    {
+                        memset(curlabel_StrPtr, 0, tmpLen + 1);
+                        strncpy(curlabel_StrPtr, tmpLine, tmpLen - 3);
+                        strcat(curlabel_StrPtr , " ..");
+                    }
+                    else return FALSE;
                     
-                default:
-                    // Outline mode:
-                    
-                    SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
+                }
+                
+                ile_LabelLength = strlen(curlabel_StrPtr);
+                offset_y = 0;
 
-                    SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
-                    Move(data->icld_BufferRastPort, tx + 1, ty ); 
-                    Text(data->icld_BufferRastPort, curlabel_StrPtr, ile_LabelLength);
-                    Move(data->icld_BufferRastPort, tx - 1, ty ); 
-                    Text(data->icld_BufferRastPort, curlabel_StrPtr, ile_LabelLength);
-                    Move(data->icld_BufferRastPort, tx, ty + 1);  
-                    Text(data->icld_BufferRastPort, curlabel_StrPtr, ile_LabelLength);
-                    Move(data->icld_BufferRastPort, tx, ty - 1);
-                    Text(data->icld_BufferRastPort, curlabel_StrPtr, ile_LabelLength);
-                    
-                    SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
-                    Move(data->icld_BufferRastPort, tx , ty ); 
-                    Text(data->icld_BufferRastPort, curlabel_StrPtr, ile_LabelLength);
-                    
-                    SetSoftStyle(data->icld_BufferRastPort, FS_NORMAL, AskSoftStyle(data->icld_BufferRastPort));
-                    offset_y = 2;
-                    break;
-            }
-            if ((curlabel_CurrentLine >= (curlabel_TotalLines -1)) && (curlabel_TotalLines < message->icon->ile_SplitParts))
-            {
-                FreeVecPooled(data->icld_Pool, curlabel_StrPtr);
-            }
-            ty = ty + offset_y;
-        }
+                // Center message->icon's label
+                tx = (labelX + (message->icon->ile_TxtBuf_DisplayedLabelWidth / 2) - (TextLength(data->icld_BufferRastPort, curlabel_StrPtr, strlen(curlabel_StrPtr)) / 2));
 
-        /*date/size sorting has the date/size appended under the message->icon label*/
+                if (message->icon->ile_TxtBuf_DisplayedLabelWidth < txtarea_width)
+                    tx += ((txtarea_width - message->icon->ile_TxtBuf_DisplayedLabelWidth)/2);
 
-        if ((message->icon->ile_IconListEntry.type != ST_USERDIR) && ((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE|ICONLIST_SORT_BY_DATE) != 0))
-        {
-            buf = NULL;
-            SetFont(data->icld_BufferRastPort, data->icld_IconInfoFont);
-
-            if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_SIZE)
-            {
-                buf = message->icon->ile_TxtBuf_SIZE;
-                txwidth = message->icon->ile_TxtBuf_SIZEWidth;
-            }
-            else if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_DATE)
-            {
-				if (message->icon->ile_Flags & ICONENTRY_FLAG_TODAY)
-				{
-					buf  = message->icon->ile_TxtBuf_TIME;
-					txwidth = message->icon->ile_TxtBuf_TIMEWidth;
-				}
-				else
-				{
-					buf = message->icon->ile_TxtBuf_DATE;
-					txwidth = message->icon->ile_TxtBuf_DATEWidth;
-				}
-            }
-
-            if (buf)
-            {
-                ULONG ile_LabelLength = strlen(buf);
-                tx = labelX;
-
-                if (txwidth < txtarea_width)
-                    tx += ((txtarea_width - txwidth)/2);
-
-                ty = labelY + ((data->icld__Option_LabelTextVerticalPadding + data->icld_IconLabelFont->tf_YSize ) * curlabel_TotalLines) + data->icld_IconInfoFont->tf_YSize;
+                ty = ty + data->icld_IconLabelFont->tf_YSize;
 
                 switch ( data->icld__Option_LabelTextMode )
                 {
                     case ICON_TEXTMODE_DROPSHADOW:
-                        SetAPen(data->icld_BufferRastPort, data->icld_InfoShadowPen);
-                        Move(data->icld_BufferRastPort, tx + 1, ty + 1); Text(data->icld_BufferRastPort, buf, ile_LabelLength);
+                        SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
+                        Move(data->icld_BufferRastPort, tx + 1, ty + 1); 
+                        Text(data->icld_BufferRastPort, curlabel_StrPtr, ile_LabelLength);
+                        offset_y = 1;
                     case ICON_TEXTMODE_PLAIN:
-                        SetAPen(data->icld_BufferRastPort, data->icld_InfoPen);
-                        Move(data->icld_BufferRastPort, tx, ty); Text(data->icld_BufferRastPort, buf, ile_LabelLength);
+                        SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
+                        Move(data->icld_BufferRastPort, tx, ty); 
+                        Text(data->icld_BufferRastPort, curlabel_StrPtr, ile_LabelLength);
                         break;
                         
                     default:
-                        // Outline mode..
+                        // Outline mode:
+                        
                         SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
-                        SetAPen(data->icld_BufferRastPort, data->icld_InfoShadowPen);
-                        
+
+                        SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
                         Move(data->icld_BufferRastPort, tx + 1, ty ); 
-                        Text(data->icld_BufferRastPort, buf, ile_LabelLength);
-                        Move(data->icld_BufferRastPort, tx - 1, ty );  
-                        Text(data->icld_BufferRastPort, buf, ile_LabelLength);
-                        Move(data->icld_BufferRastPort, tx, ty - 1 );  
-                        Text(data->icld_BufferRastPort, buf, ile_LabelLength);
-                        Move(data->icld_BufferRastPort, tx, ty + 1 );  
-                        Text(data->icld_BufferRastPort, buf, ile_LabelLength);
+                        Text(data->icld_BufferRastPort, curlabel_StrPtr, ile_LabelLength);
+                        Move(data->icld_BufferRastPort, tx - 1, ty ); 
+                        Text(data->icld_BufferRastPort, curlabel_StrPtr, ile_LabelLength);
+                        Move(data->icld_BufferRastPort, tx, ty + 1);  
+                        Text(data->icld_BufferRastPort, curlabel_StrPtr, ile_LabelLength);
+                        Move(data->icld_BufferRastPort, tx, ty - 1);
+                        Text(data->icld_BufferRastPort, curlabel_StrPtr, ile_LabelLength);
                         
-                        SetAPen(data->icld_BufferRastPort, data->icld_InfoPen);
-                        
-                        Move(data->icld_BufferRastPort, tx, ty );
-                        Text(data->icld_BufferRastPort, buf, ile_LabelLength);
+                        SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
+                        Move(data->icld_BufferRastPort, tx , ty ); 
+                        Text(data->icld_BufferRastPort, curlabel_StrPtr, ile_LabelLength);
                         
                         SetSoftStyle(data->icld_BufferRastPort, FS_NORMAL, AskSoftStyle(data->icld_BufferRastPort));
+                        offset_y = 2;
                         break;
+                }
+                if ((curlabel_CurrentLine >= (curlabel_TotalLines -1)) && (curlabel_TotalLines < message->icon->ile_SplitParts))
+                {
+                    FreeVecPooled(data->icld_Pool, curlabel_StrPtr);
+                }
+                ty = ty + offset_y;
+            }
+
+            /*date/size sorting has the date/size appended under the message->icon label*/
+
+            if ((message->icon->ile_IconListEntry.type != ST_USERDIR) && ((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE|ICONLIST_SORT_BY_DATE) != 0))
+            {
+                buf = NULL;
+                SetFont(data->icld_BufferRastPort, data->icld_IconInfoFont);
+
+                if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_SIZE)
+                {
+                    buf = message->icon->ile_TxtBuf_SIZE;
+                    txwidth = message->icon->ile_TxtBuf_SIZEWidth;
+                }
+                else if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_DATE)
+                {
+                    if (message->icon->ile_Flags & ICONENTRY_FLAG_TODAY)
+                    {
+                        buf  = message->icon->ile_TxtBuf_TIME;
+                        txwidth = message->icon->ile_TxtBuf_TIMEWidth;
+                    }
+                    else
+                    {
+                        buf = message->icon->ile_TxtBuf_DATE;
+                        txwidth = message->icon->ile_TxtBuf_DATEWidth;
+                    }
+                }
+
+                if (buf)
+                {
+                    ULONG ile_LabelLength = strlen(buf);
+                    tx = labelX;
+
+                    if (txwidth < txtarea_width)
+                        tx += ((txtarea_width - txwidth)/2);
+
+                    ty = labelY + ((data->icld__Option_LabelTextVerticalPadding + data->icld_IconLabelFont->tf_YSize ) * curlabel_TotalLines) + data->icld_IconInfoFont->tf_YSize;
+
+                    switch ( data->icld__Option_LabelTextMode )
+                    {
+                        case ICON_TEXTMODE_DROPSHADOW:
+                            SetAPen(data->icld_BufferRastPort, data->icld_InfoShadowPen);
+                            Move(data->icld_BufferRastPort, tx + 1, ty + 1); Text(data->icld_BufferRastPort, buf, ile_LabelLength);
+                        case ICON_TEXTMODE_PLAIN:
+                            SetAPen(data->icld_BufferRastPort, data->icld_InfoPen);
+                            Move(data->icld_BufferRastPort, tx, ty); Text(data->icld_BufferRastPort, buf, ile_LabelLength);
+                            break;
+                            
+                        default:
+                            // Outline mode..
+                            SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
+                            SetAPen(data->icld_BufferRastPort, data->icld_InfoShadowPen);
+                            
+                            Move(data->icld_BufferRastPort, tx + 1, ty ); 
+                            Text(data->icld_BufferRastPort, buf, ile_LabelLength);
+                            Move(data->icld_BufferRastPort, tx - 1, ty );  
+                            Text(data->icld_BufferRastPort, buf, ile_LabelLength);
+                            Move(data->icld_BufferRastPort, tx, ty - 1 );  
+                            Text(data->icld_BufferRastPort, buf, ile_LabelLength);
+                            Move(data->icld_BufferRastPort, tx, ty + 1 );  
+                            Text(data->icld_BufferRastPort, buf, ile_LabelLength);
+                            
+                            SetAPen(data->icld_BufferRastPort, data->icld_InfoPen);
+                            
+                            Move(data->icld_BufferRastPort, tx, ty );
+                            Text(data->icld_BufferRastPort, buf, ile_LabelLength);
+                            
+                            SetSoftStyle(data->icld_BufferRastPort, FS_NORMAL, AskSoftStyle(data->icld_BufferRastPort));
+                            break;
+                    }
                 }
             }
         }
@@ -1613,14 +1708,14 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     {
         switch (tag->ti_Tag)
         {
-            case MUIA_IconList_Left:
-D(bug("[IconList] %s: MUIA_IconList_Left %ld\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            case MUIA_Virtgroup_Left:
+D(bug("[IconList] %s: MUIA_Virtgroup_Left %ld\n", __PRETTY_FUNCTION__, tag->ti_Data));
                 if (data->icld_ViewX != tag->ti_Data)
                     data->icld_ViewX = tag->ti_Data;
             break;
     
-            case MUIA_IconList_Top:
-D(bug("[IconList] %s: MUIA_IconList_Top %ld\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            case MUIA_Virtgroup_Top:
+D(bug("[IconList] %s: MUIA_Virtgroup_Top %ld\n", __PRETTY_FUNCTION__, tag->ti_Data));
                 if (data->icld_ViewY != tag->ti_Data)
                     data->icld_ViewY = tag->ti_Data;
             break;
@@ -1883,8 +1978,8 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         case MUIA_IconList_BufferRastport:               STORE = (IPTR)data->icld_BufferRastPort; return 1;
         case MUIA_IconList_BufferLeft:                   STORE = (IPTR)data->icld_DrawOffsetX; return 1;
         case MUIA_IconList_BufferTop:                    STORE = (IPTR)data->icld_DrawOffsetY; return 1;
-        case MUIA_IconList_Left:                         STORE = (IPTR)data->icld_ViewX; return 1;
-        case MUIA_IconList_Top:                          STORE = (IPTR)data->icld_ViewY; return 1;
+        case MUIA_Virtgroup_Left:                         STORE = (IPTR)data->icld_ViewX; return 1;
+        case MUIA_Virtgroup_Top:                          STORE = (IPTR)data->icld_ViewY; return 1;
         case MUIA_IconList_BufferWidth:
         case MUIA_IconList_Width:                        STORE = (IPTR)data->icld_AreaWidth; return 1;
         case MUIA_IconList_BufferHeight:
@@ -1919,6 +2014,9 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         /* Settings defined by the view class */
         case MUIA_IconListview_FixedBackground:          STORE = (IPTR)data->icld__Option_IconListFixedBackground; return 1;
         case MUIA_IconListview_ScaledBackground:         STORE = (IPTR)data->icld__Option_IconListScaledBackground; return 1;
+            
+        /* ICON obj Changes */
+        case MUIA_Group_ChildList :    STORE = (IPTR)&data->icld_IconList; return 1; /* Get our list object */
     }
 
     if (DoSuperMethodA(CLASS, obj, (Msg) message)) 
@@ -2017,8 +2115,8 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
         if ((newleft != data->icld_ViewX) || (newtop != data->icld_ViewY))
         {    
-            SetAttrs(obj, MUIA_IconList_Left, newleft,
-                MUIA_IconList_Top, newtop,
+            SetAttrs(obj, MUIA_Virtgroup_Left, newleft,
+                MUIA_Virtgroup_Top, newtop,
                 TAG_DONE);
         }
 
@@ -2312,14 +2410,18 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEICON: Calling MUIM_DrawBackground (A)\n", 
                     if (RectAndRect(&rect, &rect2))
                     {  
                         // Update icon here
+                        icon->ile_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
                         DoMethod(obj, MUIM_IconList_DrawEntry, icon, ICONENTRY_DRAWMODE_PLAIN);
                         DoMethod(obj, MUIM_IconList_DrawEntryLabel, icon, ICONENTRY_DRAWMODE_PLAIN);
+                        icon->ile_Flags &= ~ICONENTRY_FLAG_NEEDSUPDATE;
                     }
                 }
             }
 
+            icon->ile_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
             DoMethod(obj, MUIM_IconList_DrawEntry, data->update_icon, ICONENTRY_DRAWMODE_PLAIN);
             DoMethod(obj, MUIM_IconList_DrawEntryLabel, data->update_icon, ICONENTRY_DRAWMODE_PLAIN);
+            icon->ile_Flags &= ~ICONENTRY_FLAG_NEEDSUPDATE;
             data->icld_UpdateMode = 0;
             data->update_icon = NULL;
 
@@ -2360,7 +2462,7 @@ D(bug("[IconList] %s#%d: UPDATE_SCROLL.\n", __PRETTY_FUNCTION__, draw_id));
                     (abs(data->update_scrolldy) >= _mheight(obj)))
                 {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: UPDATE_SCROLL: Moved outside current view\n", __PRETTY_FUNCTION__, draw_id));
+D(bug("[IconList] %s#%d: UPDATE_SCROLL: Moved outside current view -> Causing Redraw .. MADF_DRAWOBJECT\n", __PRETTY_FUNCTION__, draw_id));
 #endif 
                     MUI_Redraw(obj, MADF_DRAWOBJECT);
                     goto draw_done;
@@ -2369,7 +2471,7 @@ D(bug("[IconList] %s#%d: UPDATE_SCROLL: Moved outside current view\n", __PRETTY_
                 if (!(region = NewRegion()))
                 {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: UPDATE_SCROLL: Couldnt Alloc Region\n", __PRETTY_FUNCTION__, draw_id));
+D(bug("[IconList] %s#%d: UPDATE_SCROLL: Couldnt Alloc Region -> Causing Redraw ...MADF_DRAWOBJECT\n", __PRETTY_FUNCTION__, draw_id));
 #endif
                     MUI_Redraw(obj, MADF_DRAWOBJECT);
                     goto draw_done;
@@ -2451,7 +2553,7 @@ D(bug("[IconList] %s#%d: UPDATE_SCROLL: Scrolling Raster..\n", __PRETTY_FUNCTION
             }
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: UPDATE_SCROLL: Causing Redraw..\n", __PRETTY_FUNCTION__, draw_id));
+D(bug("[IconList] %s#%d: UPDATE_SCROLL: Causing Redraw -> MADF_DRAWOBJECT..\n", __PRETTY_FUNCTION__, draw_id));
 #endif
             MUI_Redraw(obj, MADF_DRAWOBJECT);
 
@@ -2474,7 +2576,9 @@ D(bug("[IconList] %s#%d: UPDATE_SCROLL: Causing Redraw..\n", __PRETTY_FUNCTION__
 
                         GET(_win(obj),MUIA_Window_RootObject, &o);
                         MUI_Redraw(o, MADF_DRAWOBJECT);
-
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s#%d: UPDATE_SCROLL: Causing Redraw -> MADF_DRAWOBJECT..\n", __PRETTY_FUNCTION__, draw_id));
+#endif
                         MUI_EndRefresh(muiRenderInfo(obj), 0);
                     }
                 }
@@ -2511,7 +2615,7 @@ D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
                 struct Bitmap *bitmap_Old = data->icld_BufferRastPort->BitMap;
                 struct Bitmap *bitmap_New;
     
-    ULONG tmp_RastDepth;
+                ULONG tmp_RastDepth;
 
                 data->icld_BufferRastPort->BitMap = NULL;
 
@@ -2551,6 +2655,9 @@ D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
             {
                 if (!(region = NewRegion()))
                 {
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s#%d: UPDATE_RESIZE: Causing Redraw -> MADF_DRAWOBJECT..\n", __PRETTY_FUNCTION__, draw_id));
+#endif
                     MUI_Redraw(obj, MADF_DRAWOBJECT);
                     goto draw_done;
                 }
@@ -2594,6 +2701,9 @@ D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
                 }
             }
 
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s#%d: UPDATE_RESIZE: Causing Redraw -> MADF_DRAWOBJECT..\n", __PRETTY_FUNCTION__, draw_id));
+#endif
             MUI_Redraw(obj, MADF_DRAWOBJECT);
 
             if (!data->icld__Option_IconListScaledBackground)
@@ -2722,12 +2832,12 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     data->icld_ViewX = data->icld_ViewY = data->icld_AreaWidth = data->icld_AreaHeight = 0;
 
 D(bug("[IconList]: %s: call SetSuperAttrs()\n", __PRETTY_FUNCTION__));
-    SetSuperAttrs(CLASS, obj, MUIA_IconList_Left, data->icld_ViewX,
-                  MUIA_IconList_Top, data->icld_ViewY,
+    SetSuperAttrs(CLASS, obj, MUIA_Virtgroup_Left, data->icld_ViewX,
+                  MUIA_Virtgroup_Top, data->icld_ViewY,
             TAG_DONE);
 D(bug("[IconList]: %s: call SetAttrs()\n", __PRETTY_FUNCTION__));
-    SetAttrs(obj, MUIA_IconList_Left, data->icld_ViewX,
-                  MUIA_IconList_Top, data->icld_ViewY,
+    SetAttrs(obj, MUIA_Virtgroup_Left, data->icld_ViewX,
+                  MUIA_Virtgroup_Top, data->icld_ViewY,
             TAG_DONE);
 
 D(bug("[IconList]: %s: Set MUIA_IconList_Width and MUIA_IconList_Height\n", __PRETTY_FUNCTION__));
@@ -2752,6 +2862,20 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     {
         if (message->icon->ile_Flags & ICONENTRY_FLAG_SELECTED)
         {
+            if (data->icld_SelectionLastClicked == message->icon)
+            {
+                struct IconList_Entry *nextentry    = &message->icon->ile_IconListEntry;
+
+                /* get selected entries from SOURCE iconlist */
+                DoMethod(obj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&nextentry);
+                if (nextentry)
+                    data->icld_SelectionLastClicked = (struct IconEntry *)((IPTR)nextentry - ((IPTR)&message->icon->ile_IconListEntry - (IPTR)message->icon));
+                else
+                    data->icld_SelectionLastClicked = NULL;
+            }
+            if (data->icld_FocusIcon == message->icon)
+                data->icld_FocusIcon = data->icld_SelectionLastClicked;
+
             Remove(&message->icon->ile_SelectionNode);
         }
         if (message->icon->ile_TxtBuf_DisplayedLabel) FreeVecPooled(data->icld_Pool, message->icon->ile_TxtBuf_DisplayedLabel);
@@ -2821,6 +2945,7 @@ D(bug("[IconList] %s: Failed to Allocate Entry Storage!\n", __PRETTY_FUNCTION__)
         return NULL;
     }
     memset(entry, 0, sizeof(struct IconEntry));
+    entry->ile_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
 
     /* Allocate Text Buffers */
     
@@ -3004,8 +3129,8 @@ static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG whe
 
     if ((newleft != data->icld_ViewX) || (newtop != data->icld_ViewY))
     {
-        SetAttrs(obj, MUIA_IconList_Left, newleft,
-            MUIA_IconList_Top, newtop,
+        SetAttrs(obj, MUIA_Virtgroup_Left, newleft,
+            MUIA_Virtgroup_Top, newtop,
             TAG_DONE);
     }
 }
@@ -3165,7 +3290,7 @@ D(bug("[IconList] %s: RAWKEY_PAGEUP\n", __PRETTY_FUNCTION__));
 
                             if (new_ViewY != data->icld_ViewY)
                             {
-                                SET(obj, MUIA_IconList_Top, new_ViewY);
+                                SET(obj, MUIA_Virtgroup_Top, new_ViewY);
                             }
                             break;
 
@@ -3185,7 +3310,7 @@ D(bug("[IconList] %s: RAWKEY_PAGEDOWN\n", __PRETTY_FUNCTION__));
 
                             if (new_ViewY != data->icld_ViewY)
                             {
-                                SET(obj, MUIA_IconList_Top, new_ViewY);
+                                SET(obj, MUIA_Virtgroup_Top, new_ViewY);
                             }
                             break;
 
@@ -4356,7 +4481,7 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
 
                             if ((newleft != data->icld_ViewX) || (newtop != data->icld_ViewY))
                             {
-                                SetAttrs(obj, MUIA_IconList_Left, newleft, MUIA_IconList_Top, newtop, TAG_DONE);
+                                SetAttrs(obj, MUIA_Virtgroup_Left, newleft, MUIA_Virtgroup_Top, newtop, TAG_DONE);
                             }
                         } 
 
@@ -4455,8 +4580,8 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
         
                     if ((newleft != data->icld_ViewX) || (newtop != data->icld_ViewY))
                     {
-                        SetAttrs(obj, MUIA_IconList_Left, newleft,
-                            MUIA_IconList_Top, newtop,
+                        SetAttrs(obj, MUIA_Virtgroup_Left, newleft,
+                            MUIA_Virtgroup_Top, newtop,
                             TAG_DONE);
                     }
         
@@ -4658,6 +4783,9 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         img->touchx = message->touchx;
         img->touchy = message->touchy;
         img->flags = 0;
+#if defined(__MORPHOS__)
+        img->dragmode = DD_TRANSPARENT;
+#endif
     }
     return (IPTR)img;
 }
@@ -5103,11 +5231,21 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     /*move list into our local list struct(s)*/
     while ((entry = (struct IconEntry *)RemTail((struct List*)&data->icld_IconList)))
     {
-		if (entry->ile_DiskObj)
-		{
-			entry->ile_IconX = entry->ile_DiskObj->do_CurrentX;
-			entry->ile_IconY = entry->ile_DiskObj->do_CurrentY;
-		}
+        if (entry->ile_DiskObj)
+        {
+            if (entry->ile_IconX != entry->ile_DiskObj->do_CurrentX)
+            {
+                entry->ile_IconX = entry->ile_DiskObj->do_CurrentX;
+                if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == 0)
+                    entry->ile_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
+            }
+            if (entry->ile_IconY != entry->ile_DiskObj->do_CurrentY)
+            {
+                entry->ile_IconY = entry->ile_DiskObj->do_CurrentY;
+                if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == 0)
+                    entry->ile_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
+            }
+        }
 
         if (!(entry->ile_Flags & ICONENTRY_FLAG_HASICON))
         {
@@ -5153,105 +5291,106 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     }
 
     /* Copy each visible icon entry back to the main list, sorting as we go*/
-    while ((entry = (struct IconEntry *)RemHead((struct List*)&list_VisibleIcons)))
+    if ((data->icld_SortFlags & ICONLIST_SORT_MASK) != 0)
     {
-        icon1 = (struct IconEntry *)GetHead(&list_SortedIcons);
-        icon2 = NULL;
-
-        sortme = FALSE;
-
-        if (visible_count > 1)
+        while ((entry = (struct IconEntry *)RemHead((struct List*)&list_VisibleIcons)))
         {
-//D(bug(" - %s %s %s %i\n",entry->ile_IconListEntry.label,entry->ile_TxtBuf_DATE,entry->ile_TxtBuf_TIME,entry->ile_FileInfoBlock.fib_Size));
+            icon1 = (struct IconEntry *)GetHead(&list_SortedIcons);
+            icon2 = NULL;
 
-            while (icon1)
+            sortme = FALSE;
+
+            if (visible_count > 1)
             {
-                if(data->icld_SortFlags & ICONLIST_SORT_DRAWERS_MIXED)
+    //D(bug(" - %s %s %s %i\n",entry->ile_IconListEntry.label,entry->ile_TxtBuf_DATE,entry->ile_TxtBuf_TIME,entry->ile_FileInfoBlock.fib_Size));
+
+                while (icon1)
                 {
-                    /*drawers mixed*/
-                    sortme = TRUE;
-                }
-                else
-                {
-                    /*drawers first*/
-                    if ((icon1->ile_IconListEntry.type == ST_USERDIR) && (entry->ile_IconListEntry.type == ST_USERDIR))
+                    if(data->icld_SortFlags & ICONLIST_SORT_DRAWERS_MIXED)
                     {
+                        /*drawers mixed*/
                         sortme = TRUE;
                     }
                     else
                     {
-                        if ((icon1->ile_IconListEntry.type != ST_USERDIR) && (entry->ile_IconListEntry.type != ST_USERDIR))
+                        /*drawers first*/
+                        if ((icon1->ile_IconListEntry.type == ST_USERDIR) && (entry->ile_IconListEntry.type == ST_USERDIR))
+                        {
                             sortme = TRUE;
+                        }
                         else
                         {
-                            /* we are the first drawer to arrive or we need to insert ourselves
-                               due to being sorted to the end of the drawers*/
-
-                            if ((!icon2 || icon2->ile_IconListEntry.type == ST_USERDIR) &&
-                                (entry->ile_IconListEntry.type == ST_USERDIR) &&
-                                (icon1->ile_IconListEntry.type != ST_USERDIR))
+                            if ((icon1->ile_IconListEntry.type != ST_USERDIR) && (entry->ile_IconListEntry.type != ST_USERDIR))
+                                sortme = TRUE;
+                            else
                             {
-//D(bug("force %s\n",entry->ile_IconListEntry.label));
-                                break;
+                                /* we are the first drawer to arrive or we need to insert ourselves
+                                   due to being sorted to the end of the drawers*/
+
+                                if ((!icon2 || icon2->ile_IconListEntry.type == ST_USERDIR) &&
+                                    (entry->ile_IconListEntry.type == ST_USERDIR) &&
+                                    (icon1->ile_IconListEntry.type != ST_USERDIR))
+                                {
+    //D(bug("force %s\n",entry->ile_IconListEntry.label));
+                                    break;
+                                }
                             }
                         }
                     }
-                }
-        
-                if (sortme)
-                {
-                    i = 0;
             
-                    if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_DATE)
+                    if (sortme)
                     {
-                        /* Sort by Date */
-                        i = CompareDates((const struct DateStamp *)&entry->ile_FileInfoBlock.fib_Date,(const struct DateStamp *)&icon1->ile_FileInfoBlock.fib_Date);
+                        i = 0;
+                
+                        if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_DATE)
+                        {
+                            /* Sort by Date */
+                            i = CompareDates((const struct DateStamp *)&entry->ile_FileInfoBlock.fib_Date,(const struct DateStamp *)&icon1->ile_FileInfoBlock.fib_Date);
+                        }
+                        else if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_SIZE)
+                                            {
+                                                    /* Sort by Size .. */
+                                                    i = entry->ile_FileInfoBlock.fib_Size - icon1->ile_FileInfoBlock.fib_Size;
+                                            }
+                                            else if (((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK) && (entry->ile_IconListEntry.type != ST_ROOT))
+                                            {
+                                               /* Sort by Type .. */
+    #warning "TODO: Sort icons based on type using datatypes"
+                                            }
+                                            else
+                                            {
+                                                    if (
+                                                            ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK) || 
+                                                            ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_NAME) ||
+                                                            (entry->ile_IconX == NO_ICON_POSITION)
+                                                       )
+                                                    {
+                                                            /* Sort by Name .. */
+                                                            i = Stricmp(entry->ile_IconListEntry.label, icon1->ile_IconListEntry.label);
+                                                            if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK)
+                                                                    enqueue = TRUE;
+                                                    }
+                                                    else
+                                                    {
+                                                            /* coord sort */
+    #warning "TODO: Implement default coord sorting.."
+                                                    }
+                                            }
+
+                        if (data->icld_SortFlags & ICONLIST_SORT_REVERSE)
+                                            {
+                                                    if (i > 0)
+                                                            break;
+                                            }
+                        else if	(i < 0)
+                            break;
                     }
-                    else if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_SIZE)
-					{
-						/* Sort by Size .. */
-						i = entry->ile_FileInfoBlock.fib_Size - icon1->ile_FileInfoBlock.fib_Size;
-					}
-					else if (((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK) && (entry->ile_IconListEntry.type != ST_ROOT))
-					{
-					   /* Sort by Type .. */
-#warning "TODO: Sort icons based on type using datatypes"
-					}
-					else
-					{
-						if (
-							((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK) || 
-							((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_NAME) ||
-							(entry->ile_IconX == NO_ICON_POSITION)
-						   )
-						{
-							/* Sort by Name .. */
-							i = Stricmp(entry->ile_IconListEntry.label, icon1->ile_IconListEntry.label);
-							if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK)
-								enqueue = TRUE;
-						}
-						else
-						{
-							/* coord sort */
-#warning "TODO: Implement default coord sorting.."
-						}
-					}
-
-                    if (data->icld_SortFlags & ICONLIST_SORT_REVERSE)
-					{
-						if (i > 0)
-							break;
-					}
-                    else if	(i < 0)
-                        break;
+                    icon2 = icon1;
+                    icon1 = (struct IconEntry *)GetSucc(&icon1->ile_IconNode);
                 }
-                icon2 = icon1;
-                icon1 = (struct IconEntry *)GetSucc(&icon1->ile_IconNode);
             }
+            Insert((struct List*)&list_SortedIcons, (struct Node *)&entry->ile_IconNode, (struct Node *)&icon2->ile_IconNode);
         }
-        Insert((struct List*)&list_SortedIcons, (struct Node *)&entry->ile_IconNode, (struct Node *)&icon2->ile_IconNode);
-    }
-
 	if (enqueue)
 	{
 		/* Quickly resort based on node priorities .. */
@@ -5267,11 +5406,21 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 			AddTail((struct List*)&data->icld_IconList, (struct Node *)&entry->ile_IconNode);
 		}
 	}
+    }
+    else
+    {
+        DoMethod(obj, MUIM_IconList_CoordsSort);
+    }
 
     DoMethod(obj, MUIM_IconList_PositionIcons);
     MUI_Redraw(obj, MADF_DRAWOBJECT);
 
-#warning "TODO: leave hidden icons on a seperate list to speed up normal list parsing"
+    if ((data->icld_SortFlags & ICONLIST_SORT_MASK) != 0)
+    {
+        DoMethod(obj, MUIM_IconList_CoordsSort);
+    }
+
+    /* leave hidden icons on a seperate list to speed up normal list parsing ? */
     while ((entry = (struct IconEntry *)RemHead((struct List*)&list_HiddenIcons)))
     {
         AddTail((struct List*)&data->icld_IconList, (struct Node *)&entry->ile_IconNode);
@@ -5370,6 +5519,10 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
         case MUIM_IconList_PositionIcons:       return IconList__MUIM_IconList_PositionIcons(CLASS, obj, (APTR)message);
         case MUIM_IconList_SelectAll:           return IconList__MUIM_IconList_SelectAll(CLASS, obj, (APTR)message);
 //      case MUIM_IconList_ViewIcon:            return IconList__MUIM_IconList_ViewIcon(CLASS, obj, (APTR)message);
+        
+        /* NEW Icon class changes */
+        //case OM_ADDMEMBER:           return IconList__MUIM_IconList_AddMember(CLASS, obj, (APTR)message);
+        //case OM_REMMEMBER:           return IconList__MUIM_IconList_RemMember(CLASS, obj, (APTR)message);
     }
 
     return DoSuperMethodA(CLASS, obj, message);

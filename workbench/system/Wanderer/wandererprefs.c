@@ -153,8 +153,8 @@ static void fmtlarge(UBYTE *buf, ULONG num)
   UBYTE ch;
   struct
   {
-    ULONG val;
-    LONG  dec;
+    IPTR val;
+    IPTR  dec;
   } array =
   {
     num,
@@ -246,22 +246,23 @@ STRPTR ProcessUserScreenTitle(STRPTR screentitle_Template)
   char infostr[10];
   int screentitle_curChar;
 
-D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitle_Template = %s\n", screentitle_Template));   
-
   if (screentitle_Template == NULL)
   {
 D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitle = NULL\n"));   
     return screentitle_Template;
+  }
+  else
+  {
+D(bug("[Wanderer] ProcessUserScreenTitle('%s')\n", screentitle_Template));
   }
 
   screentitle_TemplateLen = strlen(screentitle_Template);
 
   if (screentitle_TemplateLen < 1)
   {
-D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitle_TemplateLen = %d\n", screentitle_TemplateLen));   
+D(bug("[Wanderer] ProcessUserScreenTitle: EXTERN screentitle_TemplateLen = %d\n", screentitle_TemplateLen));   
     return (STRPTR) screentitle_TemplateLen;
   }
-
   
   strcpy(temp, screentitle_Template);
   
