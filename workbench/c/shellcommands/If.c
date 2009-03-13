@@ -175,7 +175,7 @@ AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
 
 	if(!result)
 	{
-	    char a;
+	    char a = 0;
 	    char buffer[256];
 	    int  level = 1;	    /* If block level */
 	    BOOL found = FALSE; /* Have we found a matching Else or
@@ -194,8 +194,10 @@ AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
 
 		if(status == ITEM_NOTHING)
 		{
-		    if(FGetC(Input()) == ENDSTREAMCH)
+		    if (a == ENDSTREAMCH)
 			break;
+		    else
+		        continue;
 		}
 
 		switch(FindArg("IF,ELSE,ENDIF", buffer))
