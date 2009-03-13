@@ -16,6 +16,7 @@ void Host_Shutdown(unsigned long action)
     	break;
     case SD_ACTION_COLDREBOOT:
         D(printf("[Shutdown] Cold reboot, dir: %s, name: %s, command line: %s\n", bootstrapdir, bootstrapname, cmdline));
+        SetCurrentDirectory(bootstrapdir);
     	FillMemory(&runinfo, sizeof(runinfo), 0);
         runinfo.cb = sizeof(runinfo);
         /* If we create new process without CREATE_NEW_CONSOLE, strange thing will happen if we start AROS
