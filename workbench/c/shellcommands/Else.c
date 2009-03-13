@@ -72,7 +72,7 @@ AROS_SH0(Else,41.1)
     {
 	BOOL found = FALSE;
 	int  level = 1;
-	char buffer[256];
+	char buffer[256], a = 0;
 
 	SelectInput(cli->cli_CurrentInput);
 
@@ -83,9 +83,15 @@ AROS_SH0(Else,41.1)
 
 	    status = ReadItem(buffer, sizeof(buffer), NULL);
 
-	    if (status == ITEM_ERROR || ITEM_NOTHING)
+	    if (status == ITEM_ERROR)
+	        break;
+	        
+	    if (status == ITEM_NOTHING)
 	    {
-		break;
+		if (a == ENDSTREAMCH)
+		    break;
+		else
+		    continue;
 	    }
 
 	    switch ((temp = FindArg("IF,ENDIF", buffer)))
@@ -106,14 +112,11 @@ AROS_SH0(Else,41.1)
 	    }
 
 	    /* Take care of long lines */
+	    do
 	    {
-		char a;
-
-		do
-		{
-		    a = FGetC(Input());
-		} while(a != '\n' && a != ENDSTREAMCH);
-	    }
+		a = FGetC(Input());
+	    } while(a != '\n' && a != ENDSTREAMCH);
+	    
 	}
 
 	if (!found)
