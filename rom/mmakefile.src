@@ -4,6 +4,7 @@
 #MM	    kernel-aros-kobj \
 #MM	    kernel-dos-kobj \
 #MM	    kernel-boot-kobj \
+#MM	    kernel-dosboot-kobj \
 #MM	    kernel-bootmenu-kobj \
 #MM	    kernel-graphics-kobj \
 #MM	    kernel-utility-kobj \
