@@ -16,6 +16,17 @@
 #include <aros/kernel.h>
 #include <proto/kernel.h>
 
+AROS_LH3I(void, KrnSetProtection,
+		 AROS_LHA(void *, address, A0),
+		 AROS_LHA(uint32_t, length, D0),
+         AROS_LHA(KRN_MapAttr, flags, D1),
+         struct KernelBase *, KernelBase, 9, Kernel)
+{
+    AROS_LIBFUNC_INIT
+
+    AROS_LIBFUNC_EXIT
+}
+
 AROS_LH4I(int, KrnMapGlobal,
          AROS_LHA(void *, virtual, A0),
          AROS_LHA(void *, physical, A1),
@@ -38,6 +49,17 @@ AROS_LH2I(int, KrnUnmapGlobal,
 	AROS_LIBFUNC_INIT
 
 	return 0;
+
+	AROS_LIBFUNC_EXIT
+}
+
+AROS_LH1I(void *, KrnVirtualToPhysical,
+		AROS_LHA(void *, virtual, A0),
+		struct KernelBase *, KernelBase, 0, Kernel)
+{
+	AROS_LIBFUNC_INIT
+
+	return virtual;
 
 	AROS_LIBFUNC_EXIT
 }
