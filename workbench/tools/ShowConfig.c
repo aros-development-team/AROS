@@ -60,7 +60,7 @@ ULONG ComputeKBytes(APTR a, APTR b)
 }
 
 int __nocommandline;
-char __stdiowin[]="CON:///500//AUTO/CLOSE";
+char __stdiowin[]="CON://700//ShowConfig/AUTO/CLOSE/WAIT";
 
 int main()
 {

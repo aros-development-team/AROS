@@ -1,11 +1,13 @@
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Common startup code
     Lang: english
 */
+#define DEBUG 0
+
 #include <aros/config.h>
 #include <setjmp.h>
 #include <dos/dos.h>
@@ -46,6 +48,7 @@ extern char *__argstr;
 extern ULONG __argsize;
 extern char **__argv;
 extern int  __argc;
+extern char __stdiowin[];
 extern struct DosLibrary *DOSBase;
 
 static struct aros_startup __aros_startup;
@@ -67,7 +70,7 @@ AROS_UFH3(static LONG, __startup_entry,
     AROS_USERFUNC_INIT
 
     struct Process *myproc;
-
+    BPTR win = NULL;
     SysBase = sysbase;
 
     /*
@@ -93,6 +96,17 @@ AROS_UFH3(static LONG, __startup_entry,
 	WBenchMsg = (struct WBStartup *)GetMsg(&myproc->pr_MsgPort);
 	__argv = (char **) WBenchMsg;
         __argc = 0;
+
+	D(bug("[startup] Started from Workbench\n"));
+        if(__stdiowin[0]) {
+            D(bug("[startup] Opening console window: %s\n", __stdiowin));
+            win = Open(__stdiowin, MODE_OLDFILE);
+            if (win) {
+                D(bug("[startup] Success!\n"));
+		SelectInput(win);
+		SelectOutput(win);
+	    }
+	}
     }
 
     __aros_startup.as_startup_error = RETURN_FAIL;
@@ -126,6 +140,8 @@ AROS_UFH3(static LONG, __startup_entry,
         ReplyMsg((struct Message *) WBenchMsg);
     }
 
+    if (win)
+        Close(win);
     CloseLibrary((struct Library *)DOSBase);
 
     return __aros_startup.as_startup_error;
