@@ -2,7 +2,7 @@
 ## version $VER: reqtools.catalog 38.2 (21.11.95)
 ## codeset 0
 ## language polski
-## charset ISO 8859-2
+;## charset ISO 8859-2
 ;
 MSG_OK
  _Ok

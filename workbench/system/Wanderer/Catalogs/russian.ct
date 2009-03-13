@@ -9,7 +9,7 @@ Wanderer
 ;
 MSG_DESCRIPTION
 Файловый менеджер
-; File Manager
+; File manager
 ;
 MSG_SCREENTITLE
 Wanderer %s - Графическая память %s - прочая память
@@ -45,7 +45,7 @@ B
 ;
 MSG_MEN_EXECUTE
 Выполнить ...
-; Execute ...
+; Execute...
 ;
 MSG_MEN_SC_EXECUTE
 E
@@ -53,7 +53,7 @@ E
 ;
 MSG_MEN_SHELL
 Оболочка CLI
-; Shell ...
+; Shell
 ;
 MSG_MEN_SC_SHELL
 W
@@ -61,15 +61,15 @@ W
 ;
 MSG_MEN_GUISET
 Настройки интерфейса ...
-; GUI Settings ...
+; GUI settings...
 ;
 MSG_MEN_ABOUT
 О системе
-; About ...
+; About...
 ;
 MSG_MEN_QUIT
 Выход ...
-; Quit ...
+; Quit...
 ;
 MSG_MEN_SC_QUIT
 Q
@@ -81,7 +81,7 @@ MSG_MEN_WINDOW
 ;
 MSG_MEN_NEWDRAW
 Новый каталог ...
-; New Drawer ...
+; New drawer...
 ;
 MSG_MEN_SC_NEWDRAW
 N
@@ -89,7 +89,7 @@ N
 ;
 MSG_MEN_OPENPAR
 Уровнем выше
-; Open Parent
+; Open parent
 ;
 MSG_MEN_CLOSE
 Закрыть
@@ -105,7 +105,7 @@ MSG_MEN_UPDATE
 ;
 MSG_MEN_CONTENTS
 Выделить содержимое
-; Select Contents
+; Select contents
 ;
 MSG_MEN_SC_CONTENTS
 A
@@ -145,11 +145,11 @@ MSG_MEN_ALLFIL
 ;
 MSG_MEN_SORTIC
 Сортировка
-; Sorted
+; Sort
 ;
 MSG_MEN_CLNUP
 Подчистить
-; Clean Up
+; Clean up
 ;
 MSG_MEN_SC_CLNUP
 U
@@ -161,11 +161,17 @@ MSG_MEN_BYNAME
 ;
 MSG_MEN_BYDATE
 По дате
-; By Date
+; By date
 ;
 MSG_MEN_BYSIZE
 По размеру
 ; By size
+;
+MSG_MEN_BYTYPE
+
+; By type
+;
+; ***NEW***
 ;
 MSG_MEN_REVERSE
 Наоборот
@@ -189,6 +195,7 @@ O
 ;
 MSG_MEN_RENAME
 Переименовать ...
+; Rename...
 ;
 MSG_MEN_SC_RENAME
 R
@@ -196,7 +203,7 @@ R
 ;
 MSG_MEN_INFO
 Сведения ...
-; Information ...
+; Information...
 ;
 MSG_MEN_SC_INFO
 I
@@ -204,7 +211,7 @@ I
 ;
 MSG_MEN_DELETE
 Удалить ...
-; Delete ...
+; Delete...
 ;
 MSG_MEN_TOOLS
 Инструменты
@@ -220,198 +227,213 @@ MSG_YESNO
 ;
 MSG_DUMMY
 DUMMY
+; DUMMY
 ; DUMMY :)
-;
 MSG_USERSCREENTITLE
 Wanderer %pc графической памяти, %pf прочей памяти
+; Wanderer %pc graphics mem %pf other mem
 ;
 MSG_MEN_FORMAT
 Форматировать диск...
+; Format disk...
 ;
 MSG_MEN_SHUTDOWN
 Выключить...
+; Shut down...
 ;
 MSG_SHUTDOWN_TITLE
 Выключение системы
+; System shutdown
 ;
 MSG_SHUTDOWN_BODY
 Выберите действие
+; What would you like to do?
 ;
 MSG_SHUTDOWN_BUTTONS
 Выключить|Рестарт машины|Рестарт AROS|*Отменить
+; Power off|Restart computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED
 Выбранное действие не поддерживается на вашей машине
+; The selected action is not supported by your system.
 ;
 MSG_OK
 *Ok
+; *OK
 ;
-MSG_EMPTY_TRASH (//)
+MSG_EMPTY_TRASH
 Очистить корзину
-;Empty trash
+; Empty trash
 ;
-MSG_PUT_AWAY (//)
+MSG_PUT_AWAY
 Отложить
-;Put away
+; Put away
 ;
-MSG_LEAVE_OUT (//)
+MSG_LEAVE_OUT
 Оставить
-;Leave out
+; Leave out
 ;
-MSG_UNSNAPSHOT (//)
+MSG_UNSNAPSHOT
 Забыть
-;Unsnapshot
+; Unsnapshot
 ;
-MSG_SNAPSHOT (//)
+MSG_SNAPSHOT
 Запомнить
-;Snapshot
+; Snapshot
 ;
-MSG_REQU_DELETE (//)
+MSG_REQU_DELETE
 Удалить файл...
-;Delete file...
+; Delete file...
 ;
-MSG_REQU_DELETE_YESNO (//)
+MSG_REQU_DELETE_YESNO
 _Да|Да для _всех|_Нет|Нет для вс_ех
-;_Yes|Yes to _all|_No|No _to all
+; _Yes|Yes to _all|_No|No _to all
 ;
-MSG_REQU_DELETE_DRAWER_S (//)
+MSG_REQU_DELETE_DRAWER_S
 Вы действительно хотите удалить папку
-;Really delete drawer
+; Really delete drawer
 ;
-MSG_REQU_DELETE_DRAWER_E (//)
+MSG_REQU_DELETE_DRAWER_E
 ?
+; ?
 ;
-MSG_REQU_DELETE_FILE_S (//)
+MSG_REQU_DELETE_FILE_S
 Вы действительно хотите удалить файл
-;Really delete file
+; Really delete file
 ;
-MSG_REQU_DELETE_FILE_M (//)
+MSG_REQU_DELETE_FILE_M
 расположенный в
-;located in
+; located in
 ;
-MSG_REQU_DELETE_FILE_E (//)
+MSG_REQU_DELETE_FILE_E
 ?
+; ?
 ;
-MSG_REQU_OVERWRITE (//)
+MSG_REQU_OVERWRITE
 Перезаписать файл...
-;Overwrite file...
+; Overwrite file...
 ;
-MSG_REQU_OVERWRITE_S (//)
+MSG_REQU_OVERWRITE_S
 Вы действительно хотите перезаписать файл
-;Really overwrite file
+; Really overwrite file
 ;
-MSG_REQU_OVERWRITE_M (//)
+MSG_REQU_OVERWRITE_M
 расположенный в
-;located in
+; located in
 ;
-MSG_REQU_OVERWRITE_E (//)
+MSG_REQU_OVERWRITE_E
 ?
+; ?
 ;
-MSG_REQU_OVERWRITE_YESNO (//)
+MSG_REQU_OVERWRITE_YESNO
 _Перезаписать|Перезаписать _все|_Нет|_Оставить все
-;_Overwrite|Overwrite _all|_No|No _to all
+; _Overwrite|Overwrite _all|_No|No _to all
 ;
-MSG_REQU_OVERWRITE_SKIPABORT (//)
+MSG_REQU_OVERWRITE_SKIPABORT
 _Пропустить|_Отмена
-;_Skip|_Abort
+; _Skip|_Abort
 ;
-MSG_REQU_PROTECTION (//)
+MSG_REQU_PROTECTION
 Защита файлов
-;File Protection
+; File Protection
 ;
-MSG_REQU_PROTECTION_UNPROTECT (//)
+MSG_REQU_PROTECTION_UNPROTECT
 _Снять|Снять _все|_Нет|Нет _для ВСЕХ
-;_Unprotect|Unprotect _All|_No|No _to ALL
+; _Unprotect|Unprotect _All|_No|No _to ALL
 ;
-MSG_REQU_PROTECTION_UNPROTECTDRAWER_S (//)
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_S
 Снять защиту с папки
-;Do you wish to unprotect drawer
+; Do you wish to unprotect drawer
 ;
-MSG_REQU_PROTECTION_UNPROTECTDRAWER_E (//)
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
 ?
+; ?
 ;
-MSG_NOFILEACCESS_S (//)
+MSG_NOFILEACCESS_S
 Не могу получить доступ к файлу
-;Can't access file
+; Can't access file
 ;
-MSG_NOFILEACCESS_M (//)
+MSG_NOFILEACCESS_M
 расположенному в
-;located in
+; located in
 ;
-MSG_NOFILEACCESS_E (//)
+MSG_NOFILEACCESS_E
  
+;  
 ;
-MSG_NODRAWERACCESS_S (//)
+MSG_NODRAWERACCESS_S
 Не могу получить доступ к папке
-;Can't access drawer
+; Can't access drawer
 ;
-MSG_NODRAWERACCESS_E (//)
+MSG_NODRAWERACCESS_E
  
+;  
 ;
-MSG_REQU_FILEUNPROTECT_S (//)
+MSG_REQU_FILEUNPROTECT_S
 Снять защиту с файла
-;Do you wish to unprotect file
+; Do you wish to unprotect file
 ;
-MSG_REQU_FILEUNPROTECT_M (//)
+MSG_REQU_FILEUNPROTECT_M
 расположенного в
-;located in
+; located in
 ;
-MSG_REQU_FILEUNPROTECT_E (//)
+MSG_REQU_FILEUNPROTECT_E
 ?
+; ?
 ;
-MSG_WANDERER_FILEACCESS (//)
+MSG_WANDERER_FILEACCESS
 Wanderer: Операции с файлами 
-;Wanderer file access
+; Wanderer file access
 ;
-MSG_WANDERER_FILEACCESS_PROCESSING (//)
+MSG_WANDERER_FILEACCESS_PROCESSING
 Обработка...
-;Processing...
+; Processing...
 ;
-MSG_WANDERER_FILEACCESS_STOP (//)
+MSG_WANDERER_FILEACCESS_STOP
 Остановить
-;Stop
+; Stop
 ;
-MSG_WANDERER_FILEACCESS_MOVEFROM (//)
+MSG_WANDERER_FILEACCESS_MOVEFROM
 Перемещение из
-;Move from
+; Move from
 ;
-MSG_WANDERER_FILEACCESS_MOVETO (//)
+MSG_WANDERER_FILEACCESS_MOVETO
 Перемещение в
-;Move to
+; Move to
 ;
-MSG_WANDERER_FILEACCESS_COPYFROM (//)
+MSG_WANDERER_FILEACCESS_COPYFROM
 Копирование из
-;Copy from
+; Copy from
 ;
-MSG_WANDERER_FILEACCESS_COPYTO (//)
+MSG_WANDERER_FILEACCESS_COPYTO
 Копирование в
-;Copy to
+; Copy to
 ;
-MSG_WANDERER_FILEACCESS_FILE (//)
+MSG_WANDERER_FILEACCESS_FILE
 Файл
-;File
+; File
 ;
-MSG_WANDERER_FILEACCESS_TRAFFIC (//)
+MSG_WANDERER_FILEACCESS_TRAFFIC
 Скорость передачи
-;Data transfer rate
+; Data transfer rate
 ;
-MSG_WANDERER_FILEACCESS_DELETEFROM (//)
+MSG_WANDERER_FILEACCESS_DELETEFROM
 Удаляется из папки
-;Delete from drawer
+; Delete from drawer
 ;
-MSG_WANDERER_FILEACCESS_FILETODELETE (//)
+MSG_WANDERER_FILEACCESS_FILETODELETE
 Удаляемый файл
-;File to delete
+; File to delete
 ;
-MSG_WANDERER_FILEACCESS_NOOFFILES (//)
+MSG_WANDERER_FILEACCESS_NOOFFILES
 Обработано файлов:
-;Processed files:
+; Processed files:
 ;
-MSG_WANDERER_FILEACCESS_ACTUAL (//)
+MSG_WANDERER_FILEACCESS_ACTUAL
 Размер текущего файла:
-;Size of current file:
+; Size of current file:
 ;
-MSG_WANDERER_FILEACCESS_TOTAL (//)
+MSG_WANDERER_FILEACCESS_TOTAL
 Размер общий:
-;Overall size:
+; Overall size:
 ;

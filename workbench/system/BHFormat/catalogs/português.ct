@@ -2,214 +2,295 @@
 ## language português
 ## codeset 0
 ;
-MSG_OK (//)
+MSG_OK
 OK
+; OK
 ;
-MSG_CANCEL (//)
+MSG_CANCEL
 Cancelar
+; Cancel
 ;
 ; ===========================================================
 ; cli.c
 ;
-MSG_INSERT_DISK (//)
+MSG_INSERT_DISK
 Inserir disco para ser formatado no dispositivo %s\n\
 Prima RETURN para iniciar formatação ou CTRL-C para abortar: 
+; Insert disk to be formatted in device %s\n\
+; Press RETURN to begin formatting or CTRL-C to abort: 
 ;
-MSG_FORMATTING (//)
+MSG_FORMATTING
 \rFormatando cilindro %lu, %lu a faltar 
+; \rFormatting cylinder %lu, %lu to go 
 ;
-MSG_VERIFYING (//)
+MSG_VERIFYING
 \rVerificando 
+; \rVerifying 
 ;
-MSG_INITIALIZING (//)
+MSG_INITIALIZING
 Inicializando o disco...\n
+; Initializing disk...\n
 ;
 ; ===========================================================
 ; gui.c
 ;
-MSG_GUI_FORMATTING (//)
+MSG_GUI_FORMATTING
 Formatando Disco...
+; Formatting Disk...
 ;
-MSG_GUI_INITIALIZING (//)
+MSG_GUI_INITIALIZING
 Inicializando Disco...
+; Initializing Disk...
 ;
-MSG_IN_DEVICE (//)
+MSG_IN_DEVICE
 no dispositivo %s
+; in device %s
 ;
-MSG_FORMAT_REQUEST_TITLE (//)
+MSG_FORMAT_REQUEST_TITLE
 Format Request
+; Format Request
 ;
-MSG_FORMAT_REQUEST_GADGETS (//)
+MSG_FORMAT_REQUEST_GADGETS
 Formatar|Cancelar
+; Format|Cancel
 ;
-MSG_FORMAT_REQUEST_TEXT (//)
+MSG_FORMAT_REQUEST_TEXT
 Formatar outro volume\n\
 %s?\n\n\
 AVISO!\n\n\
 Toda a informação contida será apagada!\n\
 (%s)
+; OK to format volume\n\
+; %s?\n\n\
+; WARNING!\n\n\
+; All data will be lost!\n\
+; (%s)
 ;
-MSG_UNITS (/6/6)
+MSG_UNITS
 KMGTPE
+; KMGTPE
 ; Kilo, Mega ...
 ;
-MSG_CAPACITY_USED (//)
+MSG_CAPACITY_USED
 %lu%lc capacidade, %lu%% usado
+; %lu%lc capacity, %lu%% used
 ;
-MSG_CAPACITY (//)
+MSG_CAPACITY
 %lu%lc capacidade
+; %lu%lc capacity
 ;
-MSG_ERROR_WANDERER (//)
+MSG_ERROR_WANDERER
 Deve ser iniciado a partir do Wanderer com o icone selecionado\n
+; Must be started from Wanderer with a selected icon\n
 ;
-MSG_WINDOW_TITLE (//)
+MSG_WINDOW_TITLE
 Formatar - %s
+; Format - %s
 ;
-MSG_DEVICE (//)
+MSG_DEVICE
 Dispostivo '%s'
+; Device '%s'
 ;
-MSG_VOLUME (//)
+MSG_VOLUME
 Volume '%b'
+; Volume '%b'
 ;
-MSG_APPLICATION_TITLE (//)
+MSG_APPLICATION_TITLE
 Formatar
+; Format
 ;
-MSG_DESCRIPTION (//)
+MSG_DESCRIPTION
 Utilitário de formatação de disco
+; Disk Formatting Utility
 ;
-MSG_COPYRIGHT (//)
+MSG_COPYRIGHT
 Copyright © 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
+; Copyright © 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
 ;
-MSG_AUTHOR (//)
+MSG_AUTHOR
 Ben Hutchings, Pavel Fedin, The AROS Development Team
+; Ben Hutchings, Pavel Fedin, The AROS Development Team
 ;
-MSG_LABEL_CURRENT_INFORMATION (//)
+MSG_LABEL_CURRENT_INFORMATION
 Informação currente:
+; Current Information:
 ;
-MSG_LABEL_NEW_VOLUME_NAME (//)
+MSG_LABEL_NEW_VOLUME_NAME
 Novo nome para o Volume:
+; New Volume Name:
 ;
-MSG_DEFAULT_VOLUME_NAME (//)
+MSG_DEFAULT_VOLUME_NAME
 Vazio
+; Empty
 ;
-MSG_LABEL_PUT_TRASHCAN (//)
+MSG_LABEL_PUT_TRASHCAN
 Colocar Trashcan:
+; Put Trashcan:
 ;
-MSG_LABEL_FFS (//)
+MSG_LABEL_FFS
 Fast File System:
+; Fast File System:
 ;
-MSG_LABEL_INTL (//)
+MSG_LABEL_INTL
 International Mode:
+; International Mode:
 ;
-MSG_LABEL_CACHE (//)
+MSG_LABEL_CACHE
 Directory Cache:
+; Directory Cache:
 ;
-MSG_BTN_FORMAT (//)
+MSG_BTN_FORMAT
 Formatar
+; Format
 ;
-MSG_BTN_QFORMAT (//)
+MSG_BTN_QFORMAT
 Formatar rápido
+; Quick Format
 ;
-MSG_BTN_CANCEL (//)
+MSG_BTN_CANCEL
 Cancelar
+; Cancel
 ;
-MSG_BTN_STOP (//)
+MSG_BTN_STOP
 Parar
+; Stop
 ;
-MSG_ERROR_NO_APPLICATION (//)
+MSG_ERROR_NO_APPLICATION
 Não pode criar a aplicação\n
+; Can't create application\n
 ;
-MSG_ERROR_NO_WINDOW (//)
+MSG_ERROR_NO_WINDOW
 Não pode abrir a janela\n
+; Can't open window\n
 ;
-MSG_REQ_ERROR_TITLE (//)
+MSG_REQ_ERROR_TITLE
 Erro
+; Error
 ;
 ; ===========================================================
 ; main.c
 ;
-MSG_ERRORS_WARNING (//)
+MSG_ERRORS_WARNING
 Aviso
+; Warning
 ;
-MSG_ERRORS_ERROR (//)
+MSG_ERRORS_ERROR
 Erro
+; Error
 ;
-MSG_ERRORS_FAILURE (//)
+MSG_ERRORS_FAILURE
 Falha
+; Failure
 ;
-MSG_FORMAT (//)
+MSG_FORMAT
 Formatar 
+; Format 
 ;
-MSG_ERROR_INVALID_DOSTYPE (//)
+MSG_ERROR_INVALID_DOSTYPE
 Invalid DosType specification
+; Invalid DosType specification
 ;
-MSG_ERROR_TOO_LARGE_1 (//)
+MSG_ERROR_TOO_LARGE_1
 O tamanho do dispositivo é maior que 4 GigaBytes. O\
 Amiga file-system pode não funcionar num dispositivo tão grande.
+; This device is larger than 4 gigabytes in size. The\
+;  Amiga file-system cannot handle a device this large.
 ;
-MSG_ERROR_TOO_LARGE_2 (//)
+MSG_ERROR_TOO_LARGE_2
 This device extends beyond the first 4 gigabytes of the\
  disk it is on.  In order to use it, you must install\
  version 43 or later of the Amiga file-system.
+; This device extends beyond the first 4 gigabytes of the\
+;  disk it is on.  In order to use it, you must install\
+;  version 43 or later of the Amiga file-system.
 ;
-MSG_ERROR_TOO_LARGE_3 (//)
+MSG_ERROR_TOO_LARGE_3
 This device is larger than 2 gigabytes in size. In order to\
  use it, you must install version 40 or later of the Amiga\
  file-system.
+; This device is larger than 2 gigabytes in size. In order to\
+;  use it, you must install version 40 or later of the Amiga\
+;  file-system.
 ;
-MSG_ERROR_TOO_LARGE_4 (//)
+MSG_ERROR_TOO_LARGE_4
 This device is set to use buffers in memory that may not be\
  \"public\". This can cause your computer to crash if you use a\
  virtual memory system. You should add 1 to the BufMemType\
  setting for this device to avoid this.
+; This device is set to use buffers in memory that may not be\
+;  \"public\". This can cause your computer to crash if you use a\
+;  virtual memory system. You should add 1 to the BufMemType\
+;  setting for this device to avoid this.
 ;
-MSG_ERROR_DEVICE (//)
+MSG_ERROR_DEVICE
 Abertura do dispositivo retornou erro %ld
+; Device open returned error %ld
 ;
-MSG_ERROR_IDE (//)
+MSG_ERROR_IDE
 This device appears to be on an IDE drive\
  using an old Commodore IDE driver.  This driver may\
  attempt to perform long data transfers that some IDE\
  drives do not carry out correctly.  To avoid the risk\
  of data loss, you should change this device's\
  MaxTransfer setting to 0x10000.
+; This device appears to be on an IDE drive\
+;  using an old Commodore IDE driver.  This driver may\
+;  attempt to perform long data transfers that some IDE\
+;  drives do not carry out correctly.  To avoid the risk\
+;  of data loss, you should change this device's\
+;  MaxTransfer setting to 0x10000.
 ;
-MSG_ERROR_DEVICE_QUERY (//)
+MSG_ERROR_DEVICE_QUERY
 Device query (NSCMD_DEVICEQUERY) returned error %ld
+; Device query (NSCMD_DEVICEQUERY) returned error %ld
 ;
-MSG_ERROR_64BIT (//)
+MSG_ERROR_64BIT
 This device extends beyond the first 4 gigabytes of the disk.\
  In order to use this device, you must either use a driver\
  that supports the NSD 64-bit commands or install and run the\
  NSDPatch program.
+; This device extends beyond the first 4 gigabytes of the disk.\
+;  In order to use this device, you must either use a driver\
+;  that supports the NSD 64-bit commands or install and run the\
+;  NSDPatch program.
 ;
-MSG_ERROR_DEVICE_RETURN (//)
+MSG_ERROR_DEVICE_RETURN
 Dispositivo %s retornou erro %ld
+; Device %s returned error %ld
 ;
-MSG_ERROR_FLUSH (//)
+MSG_ERROR_FLUSH
 flush (CMD_UPATE)
+; flush (CMD_UPATE)
 ;
-MSG_ERROR_INVALIDATE (//)
+MSG_ERROR_INVALIDATE
 invalidate (CMD_CLEAR)
+; invalidate (CMD_CLEAR)
 ;
-MSG_ERROR_VERIFY (//)
+MSG_ERROR_VERIFY
 Erro de verificação
+; Verify error
 ;
-MSG_COMMAND_FORMAT64 (//)
+MSG_COMMAND_FORMAT64
 format (NSCMD_TD_FORMAT64)
+; format (NSCMD_TD_FORMAT64)
 ;
-MSG_COMMAND_FORMAT (//)
+MSG_COMMAND_FORMAT
 format (TD_FORMAT)
+; format (TD_FORMAT)
 ;
-MSG_COMMAND_READ64 (//)
+MSG_COMMAND_READ64
 read (NSCMD_TD_READ64)
+; read (NSCMD_TD_READ64)
 ;
-MSG_COMMAND_READ (//)
+MSG_COMMAND_READ
 read (CMD_READ)
+; read (CMD_READ)
 ;
-MSG_ERROR_TRASHCAN (//)
+MSG_ERROR_TRASHCAN
 Não conseguiu criar a trashcan no volume\n%s
+; Couldn't create trashcan on volume\n%s
 ;
-MSG_ERROR_ICON (//)
+MSG_ERROR_ICON
 Não conseguiu criar Icone do disco no volume\n%s
+; Couldn't create disk icon on volume\n%s
 ;

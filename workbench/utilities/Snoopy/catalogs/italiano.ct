@@ -2,139 +2,186 @@
 ## language italiano
 ## codeset 0
 ;
-MSG_TITLE (//)
+;
+MSG_TITLE
 Snoopy
+; Snoopy
 ;
-MSG_COPYRIGHT (//)
+MSG_COPYRIGHT
 © 2006-2008, The AROS Development Team
+; © 2006-2008, The AROS Development Team
 ;
-MSG_AUTHOR (//)
+MSG_AUTHOR
 The AROS Development Team
+; The AROS Development Team
 ;
-MSG_PORTNAME (//)
+MSG_PORTNAME
 SNOOPY
+; SNOOPY
 ;
-MSG_DESCRIPTION (//)
+MSG_DESCRIPTION
 Semplice monitor di sistema
+; Simple system monitor
 ;
-MSG_SETTINGS (//)
+MSG_SETTINGS
 Impostazioni
+; Settings
 ;
-MSG_SHOW_FAILS (//)
+MSG_SHOW_FAILS
 Mostra solo errori
+; Only show fails
 ;
-MSG_CLI_NUMBER (//)
+MSG_CLI_NUMBER
 Mostra numero CLI
+; Show CLI number
 ;
-MSG_FULL_PATH (//)
+MSG_FULL_PATH
 Mostra percorsi completi
+; Show full paths
 ;
-MSG_DEVICE (//)
+MSG_DEVICE
 Usa i nomi dei dispositivi
+; Use device names
 ;
-MSG_IGNORE_WB (//)
+MSG_IGNORE_WB
 Ignora Workbench/Shell
+; Ignore Workbench/Shell
 ;
-MSG_BREAKPOINT (//)
+MSG_BREAKPOINT
 Inserisci punto di blocco
+; Set breakpoint
 ;
-MSG_MATCH (//)
+MSG_MATCH
 Ricerca
+; Match name
 ;
-MSG_SYSTEM_FUNC (//)
+MSG_SYSTEM_FUNC
 Funzioni di sistema
+; System Functions
 ;
-MSG_DOS_FUNC (//)
+MSG_DOS_FUNC
 Funzioni AmigaDOS
+; AmigaDOS Functions
 ;
-MSG_SAVE (//)
+MSG_SAVE
 Salva
+; Save
 ;
-MSG_OPEN (//)
+MSG_OPEN
 Apri
+; Open
 ;
-MSG_USE (//)
+MSG_USE
 Usa
+; Use
 ;
-MSG_UNDO (//)
+MSG_UNDO
 Ripristina
+; Undo
 ;
-MSG_RESET (//)
+MSG_RESET
 Azzera
+; Reset
 ;
-MSG_CANCEL (//)
+MSG_CANCEL
 Annulla
+; Cancel
 ;
-MSG_OUTPUT_FIELD (//)
+MSG_OUTPUT_FIELD
 Larghezza risultati
+; Output Field Width
 ;
-MSG_NAME (//)
+MSG_NAME
 Nome
+; Name
 ;
-MSG_ACTION (//)
+MSG_ACTION
 Azione
+; Action
 ;
-MSG_TARGET (//)
+MSG_TARGET
 Obiettivo
+; Target
 ;
-MSG_OPTION (//)
+MSG_OPTION
 Opzione
+; Option
 ;
-MSG_OK (//)
+MSG_OK
 OK
+; OK
 ;
-MSG_FAIL (//)
+MSG_FAIL
 Fallito
+; Fail
 ;
-MSG_ERROR_SAVE (//)
+MSG_ERROR_SAVE
 Errore durante il salvataggio di %s
+; An error happened when saving to %s
 ;
-MSG_ERROR_LOAD (//)
+MSG_ERROR_LOAD
 Errore durante il caricamento di %s
+; An error happened when loading from %s
 ;
-MSG_RESET_PATCHES (//)
+MSG_RESET_PATCHES
 Rimuovi tutto|Annulla
+; Reset Patches|Cancel
 ;
-MSG_ASK_RESET (//)
+MSG_ASK_RESET
 Vuoi davvero riportare tutte le funzioni del sistema allo stato originale?
+; Do you really want to reset the patches to their original functions?
 ;
-MSG_REMOVE_SNOOP (//)
+MSG_REMOVE_SNOOP
 Riporta|Mantieni
+; Remove|Keep
 ;
-MSG_ASK_REMOVE (//)
+MSG_ASK_REMOVE
 Vuoi davvero chiudere il processo di Snoopy?\n\
 Può rendere il sistema instabile se un altro processo modifica le patch di Snoopy.
+; Do you really want to remove the Snoopy process?\n\
+; This can be quite dangerous when another task has patched Snoopy's patches.
 ;
-MSG_GLOBAL (//)
+MSG_GLOBAL
 Globale
+; Global
 ;
-MSG_LOCAL (//)
+MSG_LOCAL
 Locale
+; Local
 ;
-MSG_ALIAS (//)
+MSG_ALIAS
 Alias
+; Alias
 ;
-MSG_UNKNOWN (//)
+MSG_UNKNOWN
 Unknown
+; Unknown
 ;
-MSG_ANY (//)
+MSG_ANY
 Qualsiasi
+; Any
 ;
-MSG_READ (//)
+MSG_READ
 Leggi
+; Read
 ;
-MSG_WRITE (//)
+MSG_WRITE
 Scrivi
+; Write
 ;
-MSG_READ_ASK (//)
+MSG_READ_ASK
 Leggi???
+; Read???
 ;
-MSG_MODIFY (//)
+MSG_MODIFY
 Modifica
+; Modify
 ;
-MSG_VERSION (//)
+MSG_VERSION
 Versione %ld
+; Version %ld
 ;
-MSG_SIZE (//)
+MSG_SIZE
 Dimensioni %d
+; Size %d
 ;

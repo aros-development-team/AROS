@@ -3,114 +3,151 @@
 ## codeset 0
 ;
 ;
-MSG_ERROR_CANT_CREATE_APPLICATION (//)
+MSG_ERROR_CANT_CREATE_APPLICATION
 Impossibile creare oggetto.
+; Can't create application object.
 ;
-MSG_CANT_CREATE_REQ (//)
+MSG_CANT_CREATE_REQ
 Impossibile aprire file requester!
+; Can't open create filerequester!
 ;
-MSG_CANT_CREATE_CONTEXT (//)
+MSG_CANT_CREATE_CONTEXT
 Impossibile creare contesto per Gadtools!
+; Can't create context for Gadtools!
 ;
-MSG_CANT_OPEN_STREAM (//)
+MSG_CANT_OPEN_STREAM
 Impossibile aprire flusso IFF!
+; Can't open IFF stream!
 ;
-MSG_CANT_WRITE_PREFFILE (//)
+MSG_CANT_WRITE_PREFFILE
 Impossibile registrare le impostazioni!
+; Can't write preferences!
 ;
-MSG_CANT_READ_PREFFILE (//)
+MSG_CANT_READ_PREFFILE
 Impossibile accedere alle impostazioni!
+; Can't read preferences!
 ;
-MSG_CANT_ALLOCATE_IFFPTR (//)
+MSG_CANT_ALLOCATE_IFFPTR
 Impossibile allocare risorse IFF!
+; Can't allocate IFF handle!
 ;
-MSG_CANT_ALLOCATE_MEM (//)
+MSG_CANT_ALLOCATE_MEM
 Impossibile allocare la memoria dell'applicazione (%s)!
+; Can't allocate application memory (%s)!
 ;
-MSG_NAME (//)
+MSG_NAME
 Impostazioni Input
+; Input Preferences
 ;
-MSG_MENU_PREFERENCES (//)
+MSG_MENU_PREFERENCES
 Impostazioni
+; Preferences
 ;
-MSG_MENU_PREFERENCES_IMPORT (//)
+MSG_MENU_PREFERENCES_IMPORT
 I\0Importa...
+; I\0Import...
 ;
-MSG_MENU_PREFERENCES_EXPORT (//)
+MSG_MENU_PREFERENCES_EXPORT
 E\0Esporta...
-
-MSG_ASL_OPEN_TITLE (//)
+; E\0Export...
+;
+MSG_ASL_OPEN_TITLE
 Carica impostazioni
+; Load Input Preferences
 ;
-MSG_ASL_SAVE_TITLE (//)
+MSG_ASL_SAVE_TITLE
 Salva impostazioni
+; Save Input Preferences
 ;
-MSG_OK (//)
+MSG_OK
 Ok
+; Ok
 ;
-MSG_DESCRIPTION (//)
+MSG_DESCRIPTION
 Impostazioni Input
+; Input preferences
 ;
-MSG_GAD_TAB_MOUSE (//)
+MSG_GAD_TAB_MOUSE
 Mouse
+; Mouse
 ;
-MSG_GAD_TAB_KEYBOARD (//)
+MSG_GAD_TAB_KEYBOARD
 Tastiera
+; Keyboard
 ;
-MSG_GAD_MOUSE_SPEED (//)
+MSG_GAD_MOUSE_SPEED
 Velocità mouse
+; Mouse Speed
 ;
-MSG_GAD_MOUSE_ACCELERATED (//)
+MSG_GAD_MOUSE_ACCELERATED
 Accelerato
+; Accelerated
 ;
-MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY (//)
+MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY
 Intervallo doppio click
+; Double-Click Delay
 ;
-MSG_GAD_KEY_REPEAT_DELAY (//)
+MSG_GAD_KEY_REPEAT_DELAY
 Ritardo ripetizione
+; Key Repeat Delay
 ;
-MSG_GAD_KEY_REPEAT_RATE (//)
+MSG_GAD_KEY_REPEAT_RATE
 Velocità ripetizione
+; Key Repeat Rate
 ;
-MSG_GAD_KEY_TEST (//)
+MSG_GAD_KEY_TEST
 Prova
+; Test
 ;
-MSG_GAD_KEY_TYPE (//)
+MSG_GAD_KEY_TYPE
 Scrivi
+; Type
 ;
-MSG_TIME_FORMAT (//)
+MSG_TIME_FORMAT
 %d.%02d s
+; %d.%02d s
 ;
-MSG_GAD_MOUSE_BUTTON_MAPPING (//)
+MSG_GAD_MOUSE_BUTTON_MAPPING
 Impostazione tasti
+; Button mapping
 ;
-MSG_GAD_MOUSE_MAPPING_SELECT (//)
+MSG_GAD_MOUSE_MAPPING_SELECT
 Seleziona
+; Select
 ;
-MSG_GAD_MOUSE_MAPPING_MENU (//)
+MSG_GAD_MOUSE_MAPPING_MENU
 Menu
+; Menu
 ;
-MSG_GAD_MOUSE_MAPPING_THIRD (//)
+MSG_GAD_MOUSE_MAPPING_THIRD
 Terzo
+; Third
 ;
-MSG_GAD_MOUSE_DOUBLECLICK_DELAY (//)
+MSG_GAD_MOUSE_DOUBLECLICK_DELAY
 Intervallo doppio click
+; Double-Click Delay
 ;
-MSG_GAD_MOUSE_SPEED_SLOW (//)
+MSG_GAD_MOUSE_SPEED_SLOW
 Lento
+; Slow
 ;
-MSG_GAD_MOUSE_SPEED_NORMAL (//)
+MSG_GAD_MOUSE_SPEED_NORMAL
 Normale
+; Normal
 ;
-MSG_GAD_MOUSE_SPEED_FAST (//)
+MSG_GAD_MOUSE_SPEED_FAST
 Veloce
+; Fast
 ;
-MSG_GAD_MOUSE_LEFT (//)
+MSG_GAD_MOUSE_LEFT
 Tasto sinistro
+; Left Button
 ;
-MSG_GAD_MOUSE_MIDDLE (//)
+MSG_GAD_MOUSE_MIDDLE
 Tasto centrale
+; Middle Button
 ;
-MSG_GAD_MOUSE_RIGHT (//)
+MSG_GAD_MOUSE_RIGHT
 Tasto destro
+; Right Button
 ;

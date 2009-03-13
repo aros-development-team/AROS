@@ -3,63 +3,82 @@
 ## codeset 0
 ;
 ;
-;
-MSG_TITLE (//)
+MSG_TITLE
 Nuovo cassetto
+; WBNewDrawer
 ;
-MSG_DESCRIPTION (//)
+MSG_DESCRIPTION
 Crea una nuovo cassetto con icona opzionale
+; Creates new drawer with optional icon
 ;
-MSG_COPYRIGHT (//)
+MSG_COPYRIGHT
 ©2006, AROS Dev Team
+; ©2006, AROS Dev Team
 ;
-MSG_WINDOW_TITLE (//)
+MSG_WINDOW_TITLE
 Crea nuovo cassetto
+; Create new drawer
 ;
-MSG_LINE (//)
+MSG_LINE
 Dai un nome al nuovo cassetto
+; Enter the name of the new drawer
 ;
-MSG_NAME (//)
+MSG_NAME
 Nome del cassetto:
+; New drawer name:
 ;
-MSG_ICON (//)
+MSG_ICON
 Icona
+; Icon
 ;
-MSG_OK (//)
+MSG_OK
 _OK
+; _OK
 ;
-MSG_CANCEL (//)
+MSG_CANCEL
 A_nnulla
+; Ca_ncel
 ;
-MSG_BASENAME (//)
+MSG_BASENAME
 Ca_mbia nome
+; Rename_Me
 ;
-MSG_ERROR_TITLE (//)
+MSG_ERROR_TITLE
 Errore
+; Error
 ;
-MSG_ALREADY_EXIST (//)
+MSG_ALREADY_EXIST
 '%s' esiste già!
+; '%s' already exists!
 ;
-MSG_CANT_CREATE (//)
+MSG_CANT_CREATE
 Impossibile creare cassetto '%s'!
+; Can't create drawer '%s'!
 ;
-MSG_INFO_ALREADY (//)
+MSG_INFO_ALREADY
 '%s'.info esiste già!
+; '%s'.info already exists!
 ;
-MSG_ILLEGAL_CHARS (//)
+MSG_ILLEGAL_CHARS
 '%s' contiene caratteri proibiti!
+; '%s' contains illegal characters!
 ;
-MSG_NEEDS_MORE_ARGS (//)
+MSG_NEEDS_MORE_ARGS
 Servono 2 argomenti!
+; Need 2 arguments!
 ;
-MSG_INVALID_LOCK (//)
+MSG_INVALID_LOCK
 Blocco della directory invalido!
+; Invalid directory lock!
 ;
-MSG_WB_ONLY (//)
+MSG_WB_ONLY
 Impossibile avviare da shell!\n
+; Cannot be started from shell!\n
 ;
-MSG_FAILED_CREATE_APP (//)
+MSG_FAILED_CREATE_APP
 Impossibile creare l'applicazione!
+; Failed to create Application!
 ;
-MSG_WRONG_ICON_TYPE (//)
+MSG_WRONG_ICON_TYPE
 L'icona '%s'.info non è associata a un cassetto!
+; The existing icon file '%s'.info isn't of type Drawer!

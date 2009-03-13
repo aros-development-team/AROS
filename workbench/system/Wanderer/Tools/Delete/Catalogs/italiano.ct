@@ -2,41 +2,52 @@
 ## language italiano
 ## codeset 0
 ;
-;
 ; 
-MSG_TITLE (//)
+MSG_TITLE
 Elimina
+; Delete
 ;
-MSG_DELETE_REQUEST (//)
+MSG_DELETE_REQUEST
 Elimino?
+; Delete?
 ;
-MSG_DELETE_CHOICE (//)
+MSG_DELETE_CHOICE
 Elimina|Annulla
+; Delete|Cancel
 ;
-MSG_REQUEST (//)
+MSG_REQUEST
 Sei sicuro di voler eliminare '%s'?
+; Are you sure you want to delete '%s'?
 ;
-MSG_ERROR (//)
+MSG_ERROR
 Errore
+; Error
 ;
-MSG_OK (//)
+MSG_OK
 OK
+; OK
 ;
-MSG_COULDNT_DELETE (//)
+MSG_COULDNT_DELETE
 Impossibile eliminare il file.
+; Could not delete file.
 ;
-MSG_COULDNT_ALLOCATE (//)
+MSG_COULDNT_ALLOCATE
 Impossibile allocare la memoria.
+; Could not allocate memory.
 ;
-MSG_COULDNT_LOCK (//)
+MSG_COULDNT_LOCK
 Impossibile marcare il file per la cancellazione.
+; Could not lock file for deletion.
 ;
-MSG_INFO (//)
+MSG_INFO
 Informazioni
+; Info
 ;
-MSG_WRONG_ARGS (//)
+MSG_WRONG_ARGS
 Errore: numero di argomenti sbagliato.
+; Error: Wrong number of arguments.
 ;
-MSG_WB_ONLY (//)
+MSG_WB_ONLY
 Errore: l'operazione va avviata da Wanderer.\n
+; Error: Must be started from Wanderer.\n
 ;

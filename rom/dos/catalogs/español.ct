@@ -1,257 +1,260 @@
 ## version $VER: dos.catalog 1.1 (28.09.2007)
-## codeset 0
 ## language español
+## codeset 0
 ;
-MSG_ERROR_NO_FREE_STORE (103//)
+MSG_ERROR_NO_FREE_STORE
 no hay suficiente memoria libre
-;not enough memory available
+; not enough memory available
 ;
-MSG_ERROR_TASK_TABLE_FULL (105//)
+MSG_ERROR_TASK_TABLE_FULL
 tabla de procesos llena
-;process table full
+; process table full
 ;
-MSG_ERROR_BAD_TEMPLATE (114//)
+MSG_ERROR_BAD_TEMPLATE
 plantilla incorrecta
-;bad template
+; bad template
 ;
-MSG_ERROR_BAD_NUMBER (115//)
+MSG_ERROR_BAD_NUMBER
 número incorrecto
-;bad number
+; bad number
 ;
-MSG_ERROR_REQUIRED_ARG_MISSING (116//)
+MSG_ERROR_REQUIRED_ARG_MISSING
 falta un argumento requerido
-;required argument missing
+; required argument missing
 ;
-MSG_ERROR_KEY_NEEDS_ARG (117//)
+MSG_ERROR_KEY_NEEDS_ARG
 falta el valor después de la palabra clave
-;value after keyword missing
+; value after keyword missing
 ;
-MSG_ERROR_TOO_MANY_ARGS (118//)
+MSG_ERROR_TOO_MANY_ARGS
 cantidad equivocada de argumentos
-;wrong number of arguments
+; wrong number of arguments
 ;
-MSG_ERROR_UNMATCHED_QUOTES (119//)
+MSG_ERROR_UNMATCHED_QUOTES
 comillas faltantes
-;comillas desparejas
-unmatched quotes
+; unmatched quotes
 ;
-MSG_ERROR_LINE_TOO_LONG (120//)
+MSG_ERROR_LINE_TOO_LONG
 renglón de argumento inválido o demasiado largo
-;argument line invalid or too long
+; argument line invalid or too long
 ;
-MSG_ERROR_FILE_NOT_OBJECT (121//)
+MSG_ERROR_FILE_NOT_OBJECT
 el archivo no es ejecutable
-;file is not executable
+; file is not executable
 ;
-MSG_ERROR_INVALID_RESIDENT_LIBRARY (122//)
+MSG_ERROR_INVALID_RESIDENT_LIBRARY
 biblioteca residente inválida
-;invalid resident library
+; invalid resident library
 ;
-MSG_ERROR_NO_DEFAULT_DIR (201//)
+MSG_ERROR_NO_DEFAULT_DIR
 error 201
+; error 201
 ;
-MSG_ERROR_OBJECT_IN_USE (202//)
+MSG_ERROR_OBJECT_IN_USE
 el objeto está en uso
-;object is in use
+; object is in use
 ;
-MSG_ERROR_OBJECT_EXISTS (203//)
+MSG_ERROR_OBJECT_EXISTS
 el objeto ya existe
-;object already exists
+; object already exists
 ;
-MSG_ERROR_DIR_NOT_FOUND (204//)
+MSG_ERROR_DIR_NOT_FOUND
 no se halló al directorio
-;directory not found
+; directory not found
 ;
-MSG_ERROR_OBJECT_NOT_FOUND (205//)
+MSG_ERROR_OBJECT_NOT_FOUND
 no se halló al objeto
-;object not found
+; object not found
 ;
-MSG_ERROR_BAD_STREAM_NAME (206//)
+MSG_ERROR_BAD_STREAM_NAME
 descripción de ventana inválida
-;invalid window description
+; invalid window description
 ;
-MSG_ERROR_OBJECT_TOO_LARGE (207//)
+MSG_ERROR_OBJECT_TOO_LARGE
 el objeto es demasiado grande
-;object too large
+; object too large
 ;
-MSG_ERROR_ACTION_NOT_KNOWN (209//)
+MSG_ERROR_ACTION_NOT_KNOWN
 tipo de acción del sistema de archivos desconocido
-;filesystem action type unknown
+; filesystem action type unknown
 ;
-MSG_ERROR_INVALID_COMPONENT_NAME (210//)
+MSG_ERROR_INVALID_COMPONENT_NAME
 nombre de objeto inválido
-;object name invalid
+; object name invalid
 ;
-MSG_ERROR_INVALID_LOCK (211//)
+MSG_ERROR_INVALID_LOCK
 bloqueo de objeto inválido
-;invalid object lock
+; invalid object lock
 ;
-MSG_ERROR_OBJECT_WRONG_TYPE (212//)
+MSG_ERROR_OBJECT_WRONG_TYPE
 el objeto no es del tipo requerido
-;object is not of required type
+; object is not of required type
 ;
-MSG_ERROR_DISK_NOT_VALIDATED (213//)
+MSG_ERROR_DISK_NOT_VALIDATED
 el disco no está validado
-;disk not validated
+; disk not validated
 ;
-MSG_ERROR_DISK_WRITE_PROTECTED (214//)
+MSG_ERROR_DISK_WRITE_PROTECTED
 el disco está protegido contra escritura
-;disk is write-protected
+; disk is write-protected
 ;
-MSG_ERROR_RENAME_ACROSS_DEVICES (215//)
+MSG_ERROR_RENAME_ACROSS_DEVICES
 se intentó renombrar los dispositivos
-;rename across devices attempted
+; rename across devices attempted
 ;
-MSG_ERROR_DIRECTORY_NOT_EMPTY (216//)
+MSG_ERROR_DIRECTORY_NOT_EMPTY
 el directorio no está vacío
-;directory not empty
+; directory not empty
 ;
-MSG_ERROR_TOO_MANY_LEVELS (217//)
+MSG_ERROR_TOO_MANY_LEVELS
 son demasiados niveles
-;too many levels
+; too many levels
 ;
-MSG_ERROR_DEVICE_NOT_MOUNTED (218//)
+MSG_ERROR_DEVICE_NOT_MOUNTED
 el dispositivo (o volumen) no está montado
-;device (or volume) is not mounted
+; device (or volume) is not mounted
 ;
-MSG_ERROR_SEEK_ERROR (219//)
+MSG_ERROR_SEEK_ERROR
 ocurrió una falla en la búsqueda
-;seek failure
+; seek failure
 ;
-MSG_ERROR_COMMENT_TOO_BIG (220//)
+MSG_ERROR_COMMENT_TOO_BIG
 el comentario es demasiado largo
-;comment is too long
+; comment is too long
 ;
-MSG_ERROR_DISK_FULL (221//)
+MSG_ERROR_DISK_FULL
 el disco está lleno
-;disk is full
+; disk is full
 ;
-MSG_ERROR_DELETE_PROTECTED (222//)
+MSG_ERROR_DELETE_PROTECTED
 el objeto está protegido de ser borrado
-;object is protected from deletion
+; object is protected from deletion
 ;
-MSG_ERROR_WRITE_PROTECTED (223//)
+MSG_ERROR_WRITE_PROTECTED
 el archivo está protegido contra la escritura
-;file is write protected
+; file is write protected
 ;
-MSG_ERROR_READ_PROTECTED (224//)
+MSG_ERROR_READ_PROTECTED
 el archivo está protegido contra la lectura
-;file is read protected
+; file is read protected
 ;
-MSG_ERROR_NOT_A_DOS_DISK (225//)
+MSG_ERROR_NOT_A_DOS_DISK
 no es un disco DOS válido
-;not a valid DOS disk
+; not a valid DOS disk
 ;
-MSG_ERROR_NO_DISK (226//)
+MSG_ERROR_NO_DISK
 no hay un disco en la unidad
-;no disk in drive
+; no disk in drive
 ;
-MSG_ERROR_NO_MORE_ENTRIES (232//)
+MSG_ERROR_NO_MORE_ENTRIES
 no hay más entradas en el directorio
-;no more entries in directory
+; no more entries in directory
 ;
-MSG_ERROR_IS_SOFT_LINK (233//)
+MSG_ERROR_IS_SOFT_LINK
 el objeto es un softlink
-;object is soft link
+; object is soft link
 ;
-MSG_ERROR_OBJECT_LINKED (234//)
+MSG_ERROR_OBJECT_LINKED
 el objeto está enlazado
-;object is linked
+; object is linked
 ;
-MSG_ERROR_BAD_HUNK (235//)
+MSG_ERROR_BAD_HUNK
 bad loadfile hunk
+; bad loadfile hunk
 ;
-MSG_ERROR_NOT_IMPLEMENTED (236//)
+MSG_ERROR_NOT_IMPLEMENTED
 la función no está implementada
-;function not implemented
+; function not implemented
 ;
-MSG_ERROR_RECORD_NOT_LOCKED (240//)
+MSG_ERROR_RECORD_NOT_LOCKED
 el registro no está bloqueado
-;record not locked
+; record not locked
 ;
-MSG_ERROR_LOCK_COLLISION (241//)
+MSG_ERROR_LOCK_COLLISION
 colisión en el bloqueo del registro
-;record lock collision
+; record lock collision
 ;
-MSG_ERROR_LOCK_TIMEOUT (242//)
+MSG_ERROR_LOCK_TIMEOUT
 vencido el bloqueo del registro
-;record lock timeout
+; record lock timeout
 ;
-MSG_ERROR_UNLOCK_ERROR (243//)
+MSG_ERROR_UNLOCK_ERROR
 error al desbloquear el registro
-;record unlock error
+; record unlock error
 ;
-MSG_ERROR_BUFFER_OVERFLOW (303//)
+MSG_ERROR_BUFFER_OVERFLOW
 desbordamiento del búfer
-;buffer overflow
+; buffer overflow
 ;
-MSG_ERROR_BREAK (304//)
+MSG_ERROR_BREAK
 ***Break
+; ***Break
 ;
-MSG_ERROR_NOT_EXECUTABLE (305//)
+MSG_ERROR_NOT_EXECUTABLE
 el archivo no es ejecutable
-;file not executable
+; file not executable
 ;
-MSG_STRING_DISK_NOT_VALIDATED (4000//)
+MSG_STRING_DISK_NOT_VALIDATED
 El volumen "%s" no está validado
-;Volume "%s" is not validated
+; Volume "%s" is not validated
 ;
-MSG_STRING_DISK_WRITE_PROTECTED (4001//)
+MSG_STRING_DISK_WRITE_PROTECTED
 El volumen "%s" está protegido contra la escritura
-;Volume "%s" is write protected
+; Volume "%s" is write protected
 ;
-MSG_STRING_DEVICE_NOT_MOUNTED_INSERT (4002//)
+MSG_STRING_DEVICE_NOT_MOUNTED_INSERT
 Por favor inserte el volumen "%s" en alguna unidad
-;Please insert volume "%s" in any drive
+; Please insert volume "%s" in any drive
 ;
-MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE (4003//)
+MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE
 Por favor reemplace al volumen "%s" en cualquier unidad
-;Please replace volume "%s" in any drive
+; Please replace volume "%s" in any drive
 ;
-MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET (4004//)
+MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET
 Por favor reemplace al volumen "%s" en "%s"
-;Please replace volume "%s" in "%s"
+; Please replace volume "%s" in "%s"
 ;
-MSG_STRING_DISK_FULL (4005//)
+MSG_STRING_DISK_FULL
 El volumen "%s" está lleno
-;Volume "%s" is full
+; Volume "%s" is full
 ;
-MSG_STRING_NOT_A_DOS_DISK (4006//)
+MSG_STRING_NOT_A_DOS_DISK
 No es un disco DOS el que está en "%s"
-;Not a DOS disk in "%s"
+; Not a DOS disk in "%s"
 ;
-MSG_STRING_NO_DISK (4007//)
+MSG_STRING_NO_DISK
 No hay un disco en "%s"
-;No disk present in "%s"
+; No disk present in "%s"
 ;
-MSG_STRING_ABORT_BUSY (4008//)
+MSG_STRING_ABORT_BUSY
 ¡DEBES reemplazar el volumen "%s" en "%s"!
-;You MUST replace volume "%s" in "%s"!
+; You MUST replace volume "%s" in "%s"!
 ;
-MSG_STRING_ABORT_DISK_ERROR (4009//)
+MSG_STRING_ABORT_DISK_ERROR
 El volumen "%s" tiene un error de lectura/escritura
-;Volume "%s" has a read/write error
+; Volume "%s" has a read/write error
 ;
-MSG_STRING_RETRY (5000//)
+MSG_STRING_RETRY
 Intentar de nuevo
-;Retry
+; Retry
 ;
-MSG_STRING_CANCEL (5001//)
+MSG_STRING_CANCEL
 Cancelar
-;Cancel
+; Cancel
 ;
-MSG_STRING_REQUESTTITLE (5002//)
+MSG_STRING_REQUESTTITLE
 Requester del sistema
-;System requester
+; System requester
 ;
-MSG_ERROR_NO_MATCHING_ELSEENDIF (10000//)
+MSG_ERROR_NO_MATCHING_ELSEENDIF
 no matching Else or EndIf
+; no matching Else or EndIf
 ;
-MSG_ERROR_SCRIPT_ONLY (10001//)
+MSG_ERROR_SCRIPT_ONLY
 se supone que este comando se use solamente en archivos de comandos
-;this command is supposed to be used in command files only
+; this command is supposed to be used in command files only
 ;
-MSG_ERROR_UNKNOWN (100//)
+MSG_ERROR_UNKNOWN
 error indefinido
-;undefined error
+; undefined error
 ;

@@ -2,55 +2,71 @@
 ## language español
 ## codeset 0
 ;
-; Translated by Paolo Besser
 ;
-MSG_TITLE (//)
+MSG_TITLE
 Rinomina
+; WBRename
 ;
-MSG_DESCRIPTION (//)
+MSG_DESCRIPTION
 Rinomina file e cartelle
+; Renames files and drawers
 ;
-MSG_COPYRIGHT (//)
+MSG_COPYRIGHT
 ©2006, AROS Dev Team
+; ©2006, AROS Dev Team
 ;
-MSG_WINDOW_TITLE (//)
+MSG_WINDOW_TITLE
 Rinomina
+; Rename
 ;
-MSG_LINE (//)
+MSG_LINE
 Inserisci il nuovo nome
+; Enter a new name
 ;
-MSG_NAME (//)
+MSG_NAME
 Nuovo nome:
+; New name:
 ;
-MSG_OK (//)
+MSG_OK
 _OK
+; _OK
 ;
-MSG_CANCEL (//)
+MSG_CANCEL
 A_nnulla
+; Ca_ncel
 ;
-MSG_ERROR_TITLE (//)
+MSG_ERROR_TITLE
 Rinomina: Errore
+; Error
 ;
-MSG_ALREADY_EXIST (//)
+MSG_ALREADY_EXIST
 '%s' esiste già!
+; '%s' already exists!
 ;
-MSG_FAILED (//)
+MSG_FAILED
 L'operazione su '%s' è fallita con l'errore:\n'%s'!
+; Rename of '%s' failed with error:\n'%s'!
 ;
-MSG_ILLEGAL_CHARS (//)
+MSG_ILLEGAL_CHARS
 '%s' contiene caratteri proibiti!
+; '%s' contains illegal characters!
 ;
-MSG_NEEDS_MORE_ARGS (//)
+MSG_NEEDS_MORE_ARGS
 Servono 2 argomenti!
+; Need 2 arguments!
 ;
-MSG_INVALID_LOCK (//)
+MSG_INVALID_LOCK
 Blocco della directory invalido!
+; Invalid directory lock!
 ;
-MSG_WB_ONLY (//)
+MSG_WB_ONLY
 Impossibile avviare da shell!\n
+; Cannot be started from shell!\n
 ;
-MSG_FAILED_CREATE_APP (//)
+MSG_FAILED_CREATE_APP
 Impossibile creare l'applicazione!
+; Failed to create Application!
 ;
-MSG_OUTOFMEMORY (//)
+MSG_OUTOFMEMORY
 Impossibile allocare la RAM!
+; Can't allocate RAM!

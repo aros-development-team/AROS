@@ -9,11 +9,11 @@ MSG_TITLE
 ;
 MSG_PERSONAL_BUILD
 Personal %s Build
-; Personal Build
+; Personal %s Build
 ;
 MSG_NIGHTLY_BUILD
 Nightly %s Build
-; Nightly Build
+; Nightly %s Build
 ;
 MSG_SNAPSHOT
 Schnappschuss
@@ -29,7 +29,7 @@ Ausgabe
 ;
 MSG_COPYRIGHT
 Copyright © 1995-2009, The AROS Development Team. Alle Rechte vorbehalten.
-; Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+; Copyright © 1995-2009, The AROS Development Team. All rights reserved.
 ;
 MSG_LICENSE_1
 Veröffentlicht gemäß den Richtlinien der
@@ -111,9 +111,9 @@ MSG_SECTION_DOS
 DOS
 ; DOS
 ;
-MSG_SECTION_NETWORK (//)
+MSG_SECTION_NETWORK
 Networking Components
-;Networking Components
+; Networking Components
 ;
 MSG_SECTION_LIBC_POSIX
 C Link Library und POSIX Layer
@@ -138,4 +138,3 @@ Webseiten
 MSG_SECTION_DATATYPES
 Datatypes
 ; Datatypes
-;

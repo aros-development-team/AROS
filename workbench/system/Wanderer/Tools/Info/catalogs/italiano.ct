@@ -3,135 +3,179 @@
 ## codeset 0
 ;
 ;
-MSG_TITLE (//)
+MSG_TITLE
 Informazioni
+; Informations
 ;
-MSG_DESCRIPTION (//)
+MSG_DESCRIPTION
 Informazioni sull'icona
+; Icon informations
 ;
-MSG_COPYRIGHT (//)
+MSG_COPYRIGHT
 Icon informations\n©AROS Dev Team
+; Icon informations\n©AROS Dev Team
 ;
-MSG_ICON (//)
+MSG_ICON
 Icona
+; Icon
 ;
-MSG_NAME (//)
+MSG_NAME
 Nome
+; Name
 ;
-MSG_COMMENT (//)
+MSG_COMMENT
 Commento
+; Comment
 ;
-MSG_STACK (//)
+MSG_STACK
 Stack
+; Stack
 ;
-MSG_DEFTOOL (//)
+MSG_DEFTOOL
 Strumento
+; Tool
 ;
-MSG_ICONTYPE (//)
+MSG_ICONTYPE
 Tipologia
+; Icon type
 ;
-MSG_DISK (//)
+MSG_DISK
 Disco
+; Disk
 ;
-MSG_DRAWER (//)
+MSG_DRAWER
 Cassetto
+; Drawer
 ;
-MSG_TOOL (//)
+MSG_TOOL
 Strumento
+; Tool
 ;
-MSG_PROJECT (//)
+MSG_PROJECT
 Progetto
+; Project
 ;
-MSG_GARBAGE (//)
+MSG_GARBAGE
 Immondizia
+; Garbage
 ;
-MSG_DEVICE (//)
+MSG_DEVICE
 Dispositivo
+; Device
 ;
-MSG_KICK (//)
+MSG_KICK
 Kick
+; Kick
 ;
-MSG_APPICON (//)
+MSG_APPICON
 AppIcon
+; AppIcon
 ;
-MSG_INFORMATION (//)
+MSG_INFORMATION
 Informazioni
+; Information
 ;
-MSG_PROTECTION (//)
+MSG_PROTECTION
 Protezione
+; Protection
 ;
-MSG_TOOLTYPES (//)
+MSG_TOOLTYPES
 Tooltypes
+; Tooltypes
 ;
-MSG_ERROR_SHELLSTART (//)
+MSG_ERROR_SHELLSTART
 Errore: non si può avviare da shell
+; Error: Cannot be started from shell
 ;
-MSG_ABOUT (//)
+MSG_ABOUT
 Informazioni su...
+; About...
 ;
-MSG_QUIT (//)
+MSG_QUIT
 Chiudi
+; Quit
 ;
-MSG_READ (//)
+MSG_READ
 Lettura
+; Read
 ;
-MSG_WRITE (//)
+MSG_WRITE
 Scrittura
+; Write
 ;
-MSG_EXECUTE (//)
+MSG_EXECUTE
 Esecuzione
+; Execute
 ;
-MSG_DELETE (//)
+MSG_DELETE
 Eliminazione
+; Delete
 ;
-MSG_SCRIPT (//)
+MSG_SCRIPT
 Script
+; Script
 ;
-MSG_PURE (//)
+MSG_PURE
 Puro
+; Pure
 ;
-MSG_ARCHIVED (//)
+MSG_ARCHIVED
 Archivio
+; Archived
 ;
-MSG_STICKY (//)
+MSG_STICKY
 Importante
+; Sticky
 ;
-MSG_SIZE (//)
+MSG_SIZE
 Dimensioni
+; Size
 ;
-MSG_VERSION (//)
+MSG_VERSION
 Versione
+; Version
 ;
-MSG_OWNERID (//)
+MSG_OWNERID
 ID Proprietario
+; Owner ID
 ;
-MSG_GROUPID (//)
+MSG_GROUPID
 ID Gruppo
+; Group ID
 ;
-MSG_OWNERNAME (//)
+MSG_OWNERNAME
 Proprietario
+; Owner
 ;
-MSG_GROUPNAME (//)
+MSG_GROUPNAME
 Gruppo
+; Group
 ;
-MSG_TYPE (//)
+MSG_TYPE
 Tipo
+; Type
 ;
-MSG_DATE (//)
+MSG_DATE
 Data
+; Date
 ;
-MSG_NEW_KEY (//)
+MSG_NEW_KEY
 Nuova chiave
+; New key
 ;
-MSG_DELETE_KEY (//)
+MSG_DELETE_KEY
 Chiave cancellazione
+; Delete key
 ;
-MSG_SAVE (//)
+MSG_SAVE
 _Salva
+; _Save
 ;
-MSG_CANCEL (//)
+MSG_CANCEL
 _Annulla
+; _Cancel
 ;
-MSG_OK (//)
+MSG_OK
 Ok
+; Ok
 ;

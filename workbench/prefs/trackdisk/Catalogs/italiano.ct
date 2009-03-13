@@ -2,34 +2,44 @@
 ## language italiano
 ## codeset 0
 ;
-; 
-MSG_NAME (//) 
+;
+MSG_NAME
 Trackdisk
+; Trackdisk
 ;
-MSG_TITLE (//)
+MSG_TITLE
 Impostazioni floppy
+; Trackdisk prefs
 ;
-MSG_SAVE (//)
+MSG_SAVE
 Salva
+; Save
 ;
-MSG_USE (//)
+MSG_USE
 Usa
+; Use
 ;
-MSG_CANCEL (//)
+MSG_CANCEL
 Cancella
+; Cancel
 ;
-MSG_DESCRIPTION (//)
+MSG_DESCRIPTION
 Preferenze trackdisk.device
+; trackdisk.device preferences editor
 ;
-MSG_WINDOW_TITLE (//)
+MSG_WINDOW_TITLE
 Preferenze trackdisk.device
+; trackdisk.device preferences
 ;
-MSG_DRIVE (//)
+MSG_DRIVE
 Drive %u
+; Drive %u
 ;
-MSG_NOCLICK (//)
+MSG_NOCLICK
 No click:
+; No click:
 ;
-MSG_RETRIES (//)
+MSG_RETRIES
 Prove:
+; Retries:
 ;

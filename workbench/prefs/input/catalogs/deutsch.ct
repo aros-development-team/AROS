@@ -67,66 +67,87 @@ MSG_DESCRIPTION
 Eingabe-Vorgaben
 ; Input preferences
 ;
-;MSG_GAD_TAB_MOUSE
+MSG_GAD_TAB_MOUSE
 Maus
+; Mouse
 ;
 MSG_GAD_TAB_KEYBOARD
 Tastatur
+; Keyboard
 ;
 MSG_GAD_MOUSE_SPEED
 Mausgeschwindigkeit
+; Mouse Speed
 ;
 MSG_GAD_MOUSE_ACCELERATED
 Mausbeschleunigung
+; Accelerated
 ;
 MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY
 Pause Doppelklick
+; Double-Click Delay
 ;
 MSG_GAD_KEY_REPEAT_DELAY
 Wiederhol-Verzögerung
+; Key Repeat Delay
 ;
 MSG_GAD_KEY_REPEAT_RATE
 Wiederhol-Geschwindigkeit
+; Key Repeat Rate
 ;
 MSG_GAD_KEY_TEST
 Test
+; Test
 ;
 MSG_GAD_KEY_TYPE
 Tastaturbelegung
+; Type
 ;
 MSG_TIME_FORMAT
 %d,%02d s
+; %d.%02d s
 ;
 MSG_GAD_MOUSE_BUTTON_MAPPING
 Tasten Zuordnung
+; Button mapping
 ;
 MSG_GAD_MOUSE_MAPPING_SELECT
 Auswahl
+; Select
 ;
 MSG_GAD_MOUSE_MAPPING_MENU
 Menü
+; Menu
 ;
 MSG_GAD_MOUSE_MAPPING_THIRD
 Dritte
+; Third
 ;
 MSG_GAD_MOUSE_DOUBLECLICK_DELAY
 Pause Doppelklick
+; Double-Click Delay
 ;
 MSG_GAD_MOUSE_SPEED_SLOW
 Langsam
+; Slow
 ;
 MSG_GAD_MOUSE_SPEED_NORMAL
 Normal
+; Normal
 ;
 MSG_GAD_MOUSE_SPEED_FAST
 Schnell
+; Fast
 ;
 MSG_GAD_MOUSE_LEFT
 Linke Taste
+; Left Button
 ;
 MSG_GAD_MOUSE_MIDDLE
 Mittlere Taste
+; Middle Button
 ;
 MSG_GAD_MOUSE_RIGHT
 Rechte Taste
+; Right Button
 ;

@@ -2,16 +2,18 @@
 ## language italiano
 ## codeset 0
 ;
+;
 MSG_TITLE
 Informazioni su AROS
+; About AROS
 ;
 MSG_PERSONAL_BUILD
 Build %s Personale
-; Personal Build
+; Personal %s Build
 ;
 MSG_NIGHTLY_BUILD
 Build %s Notturna
-; Nightly Build
+; Nightly %s Build
 ;
 MSG_SNAPSHOT
 Snapshot
@@ -27,83 +29,114 @@ Edizione
 ;
 MSG_COPYRIGHT
 Copyright © 1995-2009, The AROS Development Team. Tutti i diritti riservati.
+; Copyright © 1995-2009, The AROS Development Team. All rights reserved.
 ;
 MSG_LICENSE_1
 Rilasciato secondo i termini della
+; Released under the terms of the
 ;
 MSG_LICENSE_2
 AROS Public License
+; AROS Public License
 ;
 MSG_LICENSE_3
 , versione 1.1.
+; , version 1.1.
 ;
 MSG_MORE_INFORMATION
 Visitare il sito http://www.aros.org/ per maggiori informazioni.
+; Please visit http://www.aros.org/ for more information.
 ;
 MSG_PAGE_AUTHORS
 Autori
+; Authors
 ;
 MSG_PAGE_SPONSORS
 Sponsor
+; Sponsors
 ;
 MSG_PAGE_ACKNOWLEDGEMENTS
 Ringraziamenti
+; Acknowledgements
 ;
 MSG_SECTION_COORDINATION
 Coordinazione
+; Coordination
 ;
 MSG_SECTION_EVANGELISM
 Diffusione
+; Evangelism
 ;
 MSG_SECTION_HIDD
 Sottosistema HIDD
+; HIDD subsystem
 ;
 MSG_SECTION_INTUITION
 Intuition
+; Intuition
 ;
 MSG_SECTION_GRAPHICS
 Grafica
+; Graphics
 ;
 MSG_SECTION_SHELL_COMMANDS
 Comandi
+; Shell Commands
 ;
 MSG_SECTION_WORKBENCH
 Workbench
+; Workbench
 ;
 MSG_SECTION_TOOLS
 Strumenti
+; Tools
 ;
 MSG_SECTION_PREFERENCES
 Preferenze
+; Preferences
 ;
 MSG_SECTION_BGUI
 BGUI
+; BGUI
 ;
 MSG_SECTION_ZUNE
 Zune
+; Zune
 ;
 MSG_SECTION_KERNEL
 Kernel
+; Kernel
 ;
 MSG_SECTION_DOS
 DOS
+; DOS
 ;
-MSG_SECTION_NETWORK (//)
+MSG_SECTION_NETWORK
 Networking Components
-;Networking Components
+; Networking Components
 ;
 MSG_SECTION_LIBC_POSIX
 C link library e layer POSIX
+; C link library and POSIX layer
 ;
 MSG_SECTION_DOCUMENTATION
 Documentazione
+; Documentation
 ;
 MSG_SECTION_TRANSLATION
 Traduzione
+; Translation
 ;
 MSG_SECTION_ARTISTRY
 Contributi grafici
+; Artistry
 ;
 MSG_SECTION_WEBSITE
 Sito Internet
+; Website
 ;
+MSG_SECTION_DATATYPES
+
+; Datatypes
+;
+; ***NEW***

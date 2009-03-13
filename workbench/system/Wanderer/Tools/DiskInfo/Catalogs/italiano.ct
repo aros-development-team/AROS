@@ -2,82 +2,121 @@
 ## language italiano
 ## codeset 0
 ;
-MSG_TITLE (//)
+; FIXME: there are two missing strings at the end of this file
+;
+MSG_TITLE
 Informazioni
+; Disk Info
 ;
-MSG_ERROR_HEADER (//)
+MSG_ERROR_HEADER
 ERRORE
+; ERROR
 ;
-MSG_ERROR_OK (//)
+MSG_ERROR_OK
 _OK
+; _OK
 ;
-MSG_ERROR_LOCALE (//)
+MSG_ERROR_LOCALE
 Impossibile inizializzare lingua.
+; Can't initialize locale.
 ;
-MSG_ERROR_CLASSES (//)
+MSG_ERROR_CLASSES
 Impossibile inizializzare classi personalizzate.
+; Can't initialize custom classes.
 ;
-MSG_DESCRIPTION (//)
+MSG_DESCRIPTION
 Informazioni sull'icona
+; Disk Icon Informations
 ;
-MSG_PERCENTFULL (//)
+MSG_PERCENTFULL
 %ld %% Pieno
+; %ld %% Full
 ;
-MSG_FORMAT (//)
+MSG_FORMAT
 Formatta
+; Format
 ;
-MSG_UNKNOWN (//)
+MSG_UNKNOWN
 Sconosciuto
+; Unknown
 ;
-MSG_AUTHOR (//)
+MSG_AUTHOR
 Olivier Adam
+; Olivier Adam
 ;
-MSG_COPYRIGHT (//)
+MSG_COPYRIGHT
 ©2006 AROS Dev Team
+; ©2006-2009 AROS Dev Team
 ;
-MSG_USED (//)
+MSG_USED
 Spazio utilizzato
+; Used space
 ;
-MSG_FREE (//)
+MSG_FREE
 Spazio libero
+; Free space
 ;
-MSG_SIZE (//)
+MSG_SIZE
 Capacità
+; Capacity
 ;
-MSG_BLOCK_SIZE (//)
+MSG_BLOCK_SIZE
 Dimenszione blocco
+; Block size
 ;
-MSG_BLOCKS (//)
+MSG_BLOCKS
 blocchi
+; blocks
 ;
-MSG_BYTES (//)
+MSG_BYTES
 byte
+; bytes
 ;
-MSG_STATUS (//)
+MSG_STATUS
 Stato
+; Status
 ;
-MSG_READABLE (//)
+MSG_READABLE
 Lettura
+; Readable
 ;
-MSG_READABLE_WRITABLE (//)
+MSG_READABLE_WRITABLE
 Lettura/scrittura
+; Readable/writable
 ;
-MSG_VALIDATING (//)
+MSG_VALIDATING
 Convalida
+; Validating
 ;
-MSG_NAME (//)
+MSG_NAME
 Nome volume
+; Volume Name
 ;
-MSG_UNIT (//)
+MSG_UNIT
 unità
+; unit
 ;
-MSG_DOSDEVICE (//)
+MSG_DOSDEVICE
 Dispositivo DOS:
+; DOS Device:
 ;
-MSG_DEVICEINFO (//)
+MSG_DEVICEINFO
 Connesso a:
+; Connected on:
 ;
-MSG_FILESYSTEM (//)
+MSG_FILESYSTEM
 FileSystem:
+; FileSystem:
 ;
+MSG_PACKETDEVICE
 
+; Packet Style device
+;
+; ***NEW***
+;
+MSG_IOFSDEVICE
+
+; IOFS Style device
+;
+; ***NEW***
+;
