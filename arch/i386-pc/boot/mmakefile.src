@@ -12,7 +12,7 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #MM- software-pc-i386 : general-setup binary-pc-i386 \
 #MM	    workbench-pc-i386 demos contrib-necessary
 
-#MM- workbench-pc-i386 : workbench-complete workbench
+#MM- workbench-pc-i386 : workbench-complete workbench kernel-mathffp kernel-mathieeesingbas kernel-workbench
 
 #MM- AROS-complete-pc-i386 : general-setup-pc-i386 kernel-pc-i386 software-pc-i386 contrib
 
@@ -46,8 +46,7 @@ DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
 KRSRCS  := battclock bootloader bootmenu dosboot misc
 KLIBS   := exec boot aros dos graphics utility intuition keymap \
-      	   mathieeesingbas expansion oop layers workbench cybergraphics \
-	   partition
+      	   expansion oop layers cybergraphics partition
 KDEVS   := timer input keyboard console gameport ata trackdisk
 KHNDLRS := con nil packet amberram cdrom afs sfs
 KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah pci pcipc
