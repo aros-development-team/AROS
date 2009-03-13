@@ -29,6 +29,7 @@ LIBBASEFILES := \
 
 # libraries_nolibs must come BEFORE libraries
 LIBHANDLINGFILES := \
+	__stdiowin \
 	__showerror \
 	functions \
 	commandline \
