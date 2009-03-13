@@ -71,6 +71,8 @@ AROS_UFH3(static LONG, __startup_entry,
 
     struct Process *myproc;
     BPTR win = NULL;
+    BPTR old_in, old_out, old_err;
+    
     SysBase = sysbase;
 
     /*
@@ -103,8 +105,9 @@ AROS_UFH3(static LONG, __startup_entry,
             win = Open(__stdiowin, MODE_OLDFILE);
             if (win) {
                 D(bug("[startup] Success!\n"));
-		SelectInput(win);
-		SelectOutput(win);
+		old_in = SelectInput(win);
+		old_out = SelectOutput(win);
+		old_err = SelectError(win);
 	    }
 	}
     }
@@ -140,8 +143,12 @@ AROS_UFH3(static LONG, __startup_entry,
         ReplyMsg((struct Message *) WBenchMsg);
     }
 
-    if (win)
+    if (win) {
+        SelectInput(old_in);
+        SelectOutput(old_out);
+        SelectError(old_err);
         Close(win);
+    }
     CloseLibrary((struct Library *)DOSBase);
 
     return __aros_startup.as_startup_error;
