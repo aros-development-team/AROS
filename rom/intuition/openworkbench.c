@@ -11,7 +11,7 @@
 #include <proto/graphics.h>
 
 /*****************************************************************************
- 
+
     NAME */
 
     AROS_LH0(IPTR, OpenWorkBench,
@@ -23,28 +23,28 @@
 
 /*  FUNCTION
     Attempt to open the Workbench screen.
- 
+
     INPUTS
     None.
- 
+
     RESULT
     Tries to (re)open WorkBench screen. If successful return value
     is a pointer to the screen structure, which shouldn't be used,
     because other programs may close the WorkBench and make the
     pointer invalid.
     If this function fails the return value is NULL.
- 
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
     CloseWorkBench()
- 
+
     INTERNALS
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -53,6 +53,10 @@
 
     DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: <%s>\n",
                                 FindTask(NULL)->tc_Node.ln_Name));
+
+    /* Intuition not up yet? */
+    if (!GetPrivIBase(IntuitionBase)->DefaultPointer)
+    	return FALSE;
 
     LockPubScreenList();
 
@@ -75,14 +79,14 @@
     else
     {
         /* Open the Workbench screen if we don't have one. */
-        
+
 	WORD  width  = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width;
         WORD  height = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height;
         WORD  depth  = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth;
 	ULONG modeid = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID;
-	
+
         struct TagItem screenTags[] =
-        {   
+        {
             { SA_Width,                0                  }, /* 0 */
             { SA_Height,               0                  }, /* 1 */
             { SA_Depth,                depth              }, /* 2 */
@@ -94,9 +98,9 @@
             { SA_SharePens,            TRUE               }, /* 8 */
             { TAG_END,                 0           	  }
         };
-	
+
 	APTR disphandle = FindDisplayInfo(modeid);
-	
+
         if (!disphandle)
 	{
     	    struct TagItem modetags[] =
@@ -106,18 +110,18 @@
 	        { BIDTAG_Depth,         depth  },
 	        { TAG_DONE,             0  	   }
 	    };
-	    	                           
+
 	    modeid     = BestModeIDA(modetags);
 	    disphandle = FindDisplayInfo(modeid);
 	}
-	
+
 	if (disphandle)
 	{
 	    struct DimensionInfo dim;
 
 	    #define BOUND(min, val, max) \
 	        (((min) > (val)) ? (min) : ((max) < (val)) ? (max) : (val))
-            
+
 	    if (GetDisplayInfoData(disphandle, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, 0))
             {
 	        width  = BOUND(dim.MinRasterWidth,  width,  dim.MaxRasterWidth);
@@ -132,7 +136,7 @@
 
 	screenTags[0].ti_Data = width;
         screenTags[1].ti_Data = height;
-        
+
 	DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: Trying to open Workbench screen\n"));
 
         FireScreenNotifyMessage((IPTR) NULL, SNOTIFY_BEFORE_OPENWB, IntuitionBase);

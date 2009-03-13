@@ -2,7 +2,7 @@
     Copyright  1995-2007, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
- 
+
     Open a new screen.
 */
 
@@ -71,7 +71,7 @@ static const char THIS_FILE[] = __FILE__;
 #endif
 
 /*****************************************************************************
- 
+
     NAME */
 
     AROS_LH1(struct Screen *, OpenScreen,
@@ -83,25 +83,25 @@ static const char THIS_FILE[] = __FILE__;
          struct IntuitionBase *, IntuitionBase, 33, Intuition)
 
 /*  FUNCTION
- 
+
     INPUTS
- 
+
     RESULT
- 
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
+
     HISTORY
     29-10-95    digulla automatically created from
                 intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -142,6 +142,10 @@ static const char THIS_FILE[] = __FILE__;
         { TAG_DONE          	    	}
     };
     ULONG   	    	     modeid = INVALID_ID;
+
+    /* Intuition not up yet? */
+    if (!GetPrivIBase(IntuitionBase)->DefaultPointer)
+    	return FALSE;
 
     ASSERT_VALID_PTR_ROMOK(newScreen);
 
@@ -596,7 +600,7 @@ static const char THIS_FILE[] = __FILE__;
     {
     	modetags[1].ti_Tag = TAG_IGNORE;
     }
-    
+
     if (ns.Height != STDSCREENHEIGHT)
     {
     	modetags[2].ti_Data = ns.Height;
@@ -641,7 +645,7 @@ static const char THIS_FILE[] = __FILE__;
                     DEBUG_OPENSCREEN(dprintf("BestCModeIDTagList returned %ld\n",modeid);)
                 }
                 break;
-		
+
             default:
                 break;
             }
@@ -719,7 +723,7 @@ static const char THIS_FILE[] = __FILE__;
             if (IsCyberModeID(modeid) && custombm)
             {
                 int pixfmt = GetCyberIDAttr(CYBRIDATTR_PIXFMT,modeid);
-                                                               
+
                 if(GetCyberMapAttr(custombm,CYBRMATTR_PIXFMT) != pixfmt)
                 {
                         // incompatible formats !
@@ -742,7 +746,7 @@ static const char THIS_FILE[] = __FILE__;
         }
         else
         {
-            screen->Screen.RastPort.BitMap = NULL;                        
+            screen->Screen.RastPort.BitMap = NULL;
         }
 
 
@@ -834,7 +838,7 @@ static const char THIS_FILE[] = __FILE__;
             ns.Height = dclip->MaxY - dclip->MinY + 1;
 
     }
-    
+
     if ((success = InitRastPort (&screen->Screen.RastPort)))
     {
         rp_inited = TRUE;
@@ -1255,9 +1259,9 @@ static const char THIS_FILE[] = __FILE__;
             screen->DInfo.dri.dri_Font->tf_Accessors++;
             Permit();
     	#endif
-	
+
 	    screen->SpecialFlags |= SF_SysFont;
-	    
+
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Set ScreenFont\n"));
 
         }
@@ -1488,7 +1492,7 @@ static const char THIS_FILE[] = __FILE__;
         }
 #ifdef TITLEHACK
         screen->Screen.WBorTop   += wcprefs->titlebarincrement;
-#endif 
+#endif
         int_FreeCustomPrefs(TYPE_WINDOWCLASS,&screen->DInfo,IntuitionBase);
     }
 
@@ -1560,7 +1564,7 @@ static const char THIS_FILE[] = __FILE__;
             {SYSIA_Which    , MENUCHECK     	    },
             {SYSIA_DrawInfo , (IPTR)&screen->DInfo  },
             {SYSIA_UserBuffer, screen->DecorUserBuffer },
-            
+
             {TAG_DONE                       	    }
         };
 
@@ -1642,7 +1646,7 @@ static const char THIS_FILE[] = __FILE__;
         msg.sdp_BarHeight      = msg.sdp_FontHeight + msg.sdp_BarVBorder * 2 + msg.sdp_TitleHack;
         msg.sdp_UserBuffer      = ((struct IntScreen *)screen)->DecorUserBuffer;
 
-        if (!DoMethodA(((struct IntScreen *)(screen))->ScrDecorObj, (Msg)&msg)) ok = FALSE;	
+        if (!DoMethodA(((struct IntScreen *)(screen))->ScrDecorObj, (Msg)&msg)) ok = FALSE;
         if (ok)
         {
             screen->Screen.BarHeight     = msg.sdp_BarHeight;
@@ -1712,7 +1716,7 @@ static const char THIS_FILE[] = __FILE__;
 		msg.sdp_Flags   	= SDF_LSG_INITIAL | SDF_LSG_MULTIPLE;
 	    	msg.sdp_UserBuffer      = ((struct IntScreen *)screen)->DecorUserBuffer;
 
-		DoMethodA(((struct IntScreen *)(screen))->ScrDecorObj, (Msg)&msg);	
+		DoMethodA(((struct IntScreen *)(screen))->ScrDecorObj, (Msg)&msg);
 
 	    #if 0
                 struct TagItem gadtags[] =
@@ -1723,11 +1727,11 @@ static const char THIS_FILE[] = __FILE__;
                 IPTR width;
 
                 GetAttr(GA_Width, screen->depthgadget, &width);
- 	     
+
                 gadtags[0].ti_Data = -width + 1;
                 SetAttrsA(screen->depthgadget, gadtags);
     	    #endif
-		
+
             }
             else
             {
@@ -1739,7 +1743,7 @@ static const char THIS_FILE[] = __FILE__;
 #if 1
         {
             int i;
-	    
+
             for (i = 0;i <= screen->DInfo.dri.dri_NumPens; i++)
             {
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: dri_Pen[%ld] = %ld\n",i,screen->DInfo.dri.dri_Pens[i]));
