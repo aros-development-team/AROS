@@ -3,114 +3,115 @@
 ## codeset 0
 ;
 ;
-MSG_TITLE (//)
+MSG_TITLE
+; Disk Info
 ; Disk Info
 ;
-MSG_ERROR_HEADER (//)
+MSG_ERROR_HEADER
 Fehler
 ; ERROR
 ;
-MSG_ERROR_OK (//)
+MSG_ERROR_OK
 _Ok
 ; _OK
 ;
-MSG_ERROR_LOCALE (//)
+MSG_ERROR_LOCALE
 Die Spracheinstellungen können nicht initialisiert werden.
 ; Can't initialize locale.
 ;
-MSG_ERROR_CLASSES (//)
+MSG_ERROR_CLASSES
 Die notwendigen "Custom Klassen" konnten nicht initialisiert werden.
 ; Can't initialize custom classes.
 ;
-MSG_DESCRIPTION (//)
+MSG_DESCRIPTION
 Disk Icon Informationen
 ; Disk Icon Informations
 ;
-MSG_PERCENTFULL (//)
+MSG_PERCENTFULL
 %ld %% voll
 ; %ld %% Full
 ;
-MSG_FORMAT (//)
+MSG_FORMAT
 Format
 ; Format
 ;
-MSG_UNKNOWN (//)
+MSG_UNKNOWN
 Unbekannt
 ; Unknown
 ;
-MSG_AUTHOR (//)
+MSG_AUTHOR
 Olivier Adam
 ; Olivier Adam
 ;
-MSG_COPYRIGHT (//)
+MSG_COPYRIGHT
 ©2006-2009 AROS Dev Team
 ; ©2006-2009 AROS Dev Team
 ;
-MSG_USED (//)
+MSG_USED
 Benutzt
-; Used
+; Used space
 ;
-MSG_FREE (//)
+MSG_FREE
 Frei
-; Free
+; Free space
 ;
-MSG_SIZE (//)
+MSG_SIZE
 Größe
-; Size
+; Capacity
 ;
-MSG_BLOCK_SIZE (//)
+MSG_BLOCK_SIZE
 Blockgröße
 ; Block size
 ;
-MSG_BLOCKS (//)
+MSG_BLOCKS
 Blöcke
 ; blocks
 ;
-MSG_BYTES (//)
+MSG_BYTES
 Byte
 ; bytes
 ;
-MSG_STATUS (//)
+MSG_STATUS
 Status
 ; Status
 ;
-MSG_READABLE (//)
+MSG_READABLE
 Lesbar
 ; Readable
 ;
-MSG_READABLE_WRITABLE (//)
+MSG_READABLE_WRITABLE
 Lesbar/beschreibbar
 ; Readable/writable
 ;
-MSG_VALIDATING (//)
+MSG_VALIDATING
 Evauliere
 ; Validating
 ;
-MSG_NAME (//)
+MSG_NAME
 Datenträgername
 ; Volume Name
 ;
-MSG_UNIT (//)
+MSG_UNIT
 Geräteeinheit
 ; unit
 ;
-MSG_DOSDEVICE (//)
+MSG_DOSDEVICE
 DOS Gerät:
 ; DOS Device:
 ;
-MSG_DEVICEINFO (//)
+MSG_DEVICEINFO
 Verbunden mit:
 ; Connected on:
 ;
-MSG_FILESYSTEM (//)
+MSG_FILESYSTEM
 Dateisystem:
 ; FileSystem:
 ;
-MSG_PACKETDEVICE (//)
+MSG_PACKETDEVICE
 Packet-style Geräte
 ; Packet Style device
 ;
-MSG_IOFSDEVICE (//)
+MSG_IOFSDEVICE
 IOFS-style Gerät
 ; IOFS Style device
 ;

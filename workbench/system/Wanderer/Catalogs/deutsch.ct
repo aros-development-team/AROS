@@ -53,7 +53,7 @@ E
 ;
 MSG_MEN_SHELL
 Shell öffnen
-; Shell...
+; Shell
 ;
 MSG_MEN_SC_SHELL
 W
@@ -145,11 +145,11 @@ alle Dateien
 ;
 MSG_MEN_SORTIC
 Inhalt auflisten
-; Sorted
+; Sort
 ;
 MSG_MEN_CLNUP
 Aufräumen
-; Clean Up
+; Clean up
 ;
 MSG_MEN_SC_CLNUP
 U
@@ -227,208 +227,213 @@ MSG_DUMMY
 DUMMY
 ; DUMMY
 ; DUMMY :)
-;
 MSG_USERSCREENTITLE
 Wanderer %pc Grafikspeicher %pf sonstiger Speicher
 ; Wanderer %pc graphics mem %pf other mem
 ;
-MSG_MEN_SHUTDOWN (//)
-Herunterfahren ...
-; Shut down...
-;
-MSG_SHUTDOWN_TITLE (//)
-System herunterfahren
-; System shut down
-;
-MSG_SHUTDOWN_BODY (//)
-Was möchten Sie tun?
-; What would you like to do ?
-;
-MSG_SHUTDOWN_BUTTONS (//)
-Abschalten|Rechner neustarten|AROS neustarten|*Abbrechen
-; Power off|Reboot machine|Reboot AROS|*Cancel
-;
-MSG_ACTION_NOT_SUPPORTED (//)
-Die gewählte Funktion wird von Ihrem System nicht unterstützt
-; Selected action is not supported by your system
-;
-MSG_EMPTY_TRASH (//)
-Papierkorb leeren
-; Empty Trash
-;
-MSG_MEN_FORMAT (//)
+MSG_MEN_FORMAT
 Disk formatieren ...
 ; Format disk...
 ;
-MSG_PUT_AWAY (//)
+MSG_MEN_SHUTDOWN
+Herunterfahren ...
+; Shut down...
+;
+MSG_SHUTDOWN_TITLE
+System herunterfahren
+; System shutdown
+;
+MSG_SHUTDOWN_BODY
+Was möchten Sie tun?
+; What would you like to do?
+;
+MSG_SHUTDOWN_BUTTONS
+Abschalten|Rechner neustarten|AROS neustarten|*Abbrechen
+; Power off|Restart computer|Restart AROS|*Cancel
+;
+MSG_ACTION_NOT_SUPPORTED
+Die gewählte Funktion wird von Ihrem System nicht unterstützt
+; The selected action is not supported by your system.
+;
+MSG_OK
+
+; *OK
+;
+; ***NEW***
+;
+MSG_EMPTY_TRASH
+Papierkorb leeren
+; Empty trash
+;
+MSG_PUT_AWAY
 Zurücklegen
-; Put Away
+; Put away
 ;
-MSG_LEAVE_OUT (//)
+MSG_LEAVE_OUT
 Auslagern
-; Leave Out
+; Leave out
 ;
-MSG_UNSNAPSHOT (//)
+MSG_UNSNAPSHOT
 Position freigeben
 ; Unsnapshot
 ;
-MSG_SNAPSHOT (//)
+MSG_SNAPSHOT
 Fixieren
 ; Snapshot
 ;
-MSG_REQU_DELETE (//)
+MSG_REQU_DELETE
 Datei Löschen ...
 ; Delete file...
 ;
-MSG_REQU_DELETE_YESNO (//)
+MSG_REQU_DELETE_YESNO
 _Ja|Ja, _alle|_Nein|Nein, alles _behalten
 ; _Yes|Yes to _all|_No|No _to all
 ;
-MSG_REQU_DELETE_DRAWER_S (//)
+MSG_REQU_DELETE_DRAWER_S
 Schublade
 ; Really delete drawer
 ;
-MSG_REQU_DELETE_DRAWER_E (//)
+MSG_REQU_DELETE_DRAWER_E
 wirklich löschen?
 ; ?
 ;
-MSG_REQU_DELETE_FILE_S (//)
+MSG_REQU_DELETE_FILE_S
 Soll die Datei
 ; Really delete file
 ;
-MSG_REQU_DELETE_FILE_M (//)
+MSG_REQU_DELETE_FILE_M
 in Schublade
 ; located in
 ;
-MSG_REQU_DELETE_FILE_E (//)
+MSG_REQU_DELETE_FILE_E
 wirklich gelöscht werden?
 ; ?
 ;
-MSG_REQU_OVERWRITE (//)
+MSG_REQU_OVERWRITE
 Datei überschreiben ...
 ; Overwrite file...
 ;
-MSG_REQU_OVERWRITE_S (//)
+MSG_REQU_OVERWRITE_S
 Soll die Datei
 ; Really overwrite file
 ;
-MSG_REQU_OVERWRITE_M (//)
+MSG_REQU_OVERWRITE_M
 in Schublade
 ; located in
 ;
-MSG_REQU_OVERWRITE_E (//)
+MSG_REQU_OVERWRITE_E
 wirklich überschrieben werden?
 ; ?
 ;
-MSG_REQU_OVERWRITE_YESNO (//)
+MSG_REQU_OVERWRITE_YESNO
 _Überschreiben|_Alles überschreiben|_Nein|Nein, alles _behalten
 ; _Overwrite|Overwrite _all|_No|No _to all
 ;
-MSG_REQU_OVERWRITE_SKIPABORT (//)
+MSG_REQU_OVERWRITE_SKIPABORT
 _Überspringen|_Abbrechen
 ; _Skip|_Abort
 ;
-MSG_REQU_PROTECTION (//)
+MSG_REQU_PROTECTION
 Dateischutz bearbeiten
 ; File Protection
 ;
-MSG_REQU_PROTECTION_UNPROTECT (//)
+MSG_REQU_PROTECTION_UNPROTECT
 _Entsichern|_Alle entsichern|_Nein|Nein, _keine Datei entsichern
 ; _Unprotect|Unprotect _All|_No|No _to ALL
 ;
-MSG_REQU_PROTECTION_UNPROTECTDRAWER_S (//)
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_S
 Soll der Ordner
 ; Do you wish to unprotect drawer
 ;
-MSG_REQU_PROTECTION_UNPROTECTDRAWER_E (//)
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
 entsichert werden?
 ; ?
 ;
-MSG_NOFILEACCESS_S (//)
+MSG_NOFILEACCESS_S
 Kann auf Datei
 ; Can't access file
 ;
-MSG_NOFILEACCESS_M (//)
+MSG_NOFILEACCESS_M
 in Schublade
 ; located in
 ;
-MSG_NOFILEACCESS_E (//)
+MSG_NOFILEACCESS_E
 nicht zugreifen
-; 
+;  
 ;
-MSG_NODRAWERACCESS_S (//)
+MSG_NODRAWERACCESS_S
 Auf die Schublade  
 ; Can't access drawer
 ;
-MSG_NODRAWERACCESS_E (//)
+MSG_NODRAWERACCESS_E
 kann nicht zugegriffen werden
-; 
+;  
 ;
-MSG_REQU_FILEUNPROTECT_S (//)
+MSG_REQU_FILEUNPROTECT_S
 Soll die Datei
 ; Do you wish to unprotect file
 ;
-MSG_REQU_FILEUNPROTECT_M (//)
+MSG_REQU_FILEUNPROTECT_M
 in Schublade
 ; located in
 ;
-MSG_REQU_FILEUNPROTECT_E (//)
+MSG_REQU_FILEUNPROTECT_E
 entsperrt werden?
 ; ?
 ;
-MSG_WANDERER_FILEACCESS (//)
+MSG_WANDERER_FILEACCESS
 Wanderer Dateizugriff
 ; Wanderer file access
 ;
-MSG_WANDERER_FILEACCESS_PROCESSING (//)
+MSG_WANDERER_FILEACCESS_PROCESSING
 Verarbeite ...
 ; Processing...
 ;
-MSG_WANDERER_FILEACCESS_STOP (//)
+MSG_WANDERER_FILEACCESS_STOP
 Abbrechen
 ; Stop
 ;
-MSG_WANDERER_FILEACCESS_MOVEFROM (//)
+MSG_WANDERER_FILEACCESS_MOVEFROM
 Verschiebe von
 ; Move from
 ;
-MSG_WANDERER_FILEACCESS_MOVETO (//)
+MSG_WANDERER_FILEACCESS_MOVETO
 Verschiebe nach
 ; Move to
 ;
-MSG_WANDERER_FILEACCESS_COPYFROM (//)
+MSG_WANDERER_FILEACCESS_COPYFROM
 Kopiere von
 ; Copy from
 ;
-MSG_WANDERER_FILEACCESS_COPYTO (//)
+MSG_WANDERER_FILEACCESS_COPYTO
 Kopiere nach
 ; Copy to
 ;
-MSG_WANDERER_FILEACCESS_FILE (//)
+MSG_WANDERER_FILEACCESS_FILE
 Datei
 ; File
 ;
-MSG_WANDERER_FILEACCESS_TRAFFIC (//)
+MSG_WANDERER_FILEACCESS_TRAFFIC
 Datenrate
 ; Data transfer rate
 ;
-MSG_WANDERER_FILEACCESS_DELETEFROM (//)
+MSG_WANDERER_FILEACCESS_DELETEFROM
 Lösche aus Schublade
 ; Delete from drawer
 ;
-MSG_WANDERER_FILEACCESS_FILETODELETE (//)
+MSG_WANDERER_FILEACCESS_FILETODELETE
 Zu löschende Datei
 ; File to delete
 ;
-MSG_WANDERER_FILEACCESS_NOOFFILES (//)
+MSG_WANDERER_FILEACCESS_NOOFFILES
 Bearbeitete Dateien:
 ; Processed files:
 ;
-MSG_WANDERER_FILEACCESS_ACTUAL (//)
+MSG_WANDERER_FILEACCESS_ACTUAL
 Größe der aktuellen Datei:
 ; Size of current file:
 ;
-MSG_WANDERER_FILEACCESS_TOTAL (//)
+MSG_WANDERER_FILEACCESS_TOTAL
 Gesamtgröße:
 ; Overall size:
 ;

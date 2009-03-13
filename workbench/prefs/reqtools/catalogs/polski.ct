@@ -1,7 +1,7 @@
 ## version $VER: reqtoolsprefs.catalog 38.3 (21.11.95)
 ## codeset 0
 ## language polski
-## charset ISO 8859-2
+;## charset ISO 8859-2
 ;
 MSG_WINDOW_TITLE
 Preferencje ReqTools
