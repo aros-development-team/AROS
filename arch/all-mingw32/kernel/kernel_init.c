@@ -161,10 +161,9 @@ char *kernel_functions[] = {
 
 
 //make this the entry point
-int startup(struct TagItem *msg) __attribute__ ((section (".aros.init")));
-void prepare_host_hook(struct Hook * hook);
+//int startup(struct TagItem *msg) __attribute__ ((section (".aros.init")));
 
-int startup(struct TagItem *msg)
+int __startup startup(struct TagItem *msg)
 {
   void *hostlib;
   char *errstr;

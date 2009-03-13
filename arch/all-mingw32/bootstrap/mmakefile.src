@@ -37,12 +37,12 @@ KOBJS := $(K_RES) $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(KOBJS_HIDD)
 #MM			 kernel-fs-emul-mingw32-kobj	    \
 #MM			 kernel-fs-packet-kobj		    \
 #MM			 kernel-dosboot-kobj		    \
-#MM			 kernel-aros			    \
 #MM			 workbench-hidd-graphics-kobj	    \
 #MM			 kernel-hidd-wingdi-kobj	    \
 #MM			 contrib-amberram-kobj
 
-#MM- workbench-mingw32: kernel-mathffp	       \
+#MM- workbench-mingw32: kernel-aros	       \
+#MM			kernel-mathffp	       \
 #MM		        kernel-mathieeesingbas \
 #MM		        kernel-workbench
 
@@ -58,7 +58,7 @@ setup-mingw32 :
 	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
 
 $(BINDIR)/boot/aros-mingw32: setup-mingw32 $(KOBJS)
-	$(TARGET_CC) $(GENMAP) $(OSGENDIR)/boot/kernel.map -Wl,-T,kernel.lds\
+	$(TARGET_CC) $(GENMAP) $(OSGENDIR)/boot/kernel.map \
 	  -o $@ $(KOBJS) $(NOSTARTUP_LDFLAGS)\
 	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lhiddgraphicsstubs
 
