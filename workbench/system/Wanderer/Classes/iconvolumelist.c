@@ -1,12 +1,13 @@
 /*
-Copyright  2002-2008, The AROS Development Team. All rights reserved.
+Copyright  2002-2009, The AROS Development Team. All rights reserved.
 $Id$
 */
-#define DEBUG 0
+
 #ifndef __AROS__
 #include "../portable_macros.h"
 #define WANDERER_BUILTIN_ICONVOLUMELIST 1 
 #else
+#define DEBUG 0
 #include <aros/debug.h>
 #endif
 
@@ -77,7 +78,7 @@ $Id$
 //#include "support.h"
 //#include "imspec.h"
 #include "iconlist_attributes.h"
-//#include "icon_attributes.h"
+#include "icon_attributes.h"
 #include "iconlist.h"
 #include "iconvolumelist_private.h"
 
@@ -267,6 +268,7 @@ D(bug("[IconVolList] %s: '%s' : Device unit %d, state = %x, Vol node @ %p\n", __
 					int nd_namext_len;
 
 					found = TRUE;
+                                        dvn->dvn_FLags &= ~ICONENTRY_VOL_OFFLINE;
 
 					if (nd_paramblock->id_DiskState == ID_VALIDATING)
 					{
@@ -391,6 +393,19 @@ D(bug("[IconVolList] obj = %ld\n", obj));
 }
 ///
 
+struct IconEntry *FindIconlistIcon(struct List *iconlist, char *icondevname)
+{
+    struct IconEntry *foundEntry = NULL;
+
+    ForeachNode(iconlist, foundEntry)
+    {
+        if (((strcasecmp(foundEntry->ile_IconListEntry.filename, icondevname)) == 0) ||
+            ((strcasecmp(foundEntry->ile_IconListEntry.label, icondevname)) == 0))
+            return foundEntry;
+    }
+    return NULL;
+}
+
 ///MUIM_IconList_Update()
 /**************************************************************************
 MUIM_IconList_Update
@@ -401,59 +416,90 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, str
     struct IconEntry  		*this_Icon = NULL;
     struct DOSVolumeList 	*dvl = NULL;
     struct DOSVolumeNode	*dvn = NULL;
-    char			*devname = NULL;
+    char                        *devname = NULL;
+    struct List                 *iconlist = NULL;
+    struct List                 newiconlist;
+    struct Node                 *tmpNode = NULL;
 
 D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
 
     DoSuperMethodA(CLASS, obj, (Msg) message);
 
-    if ((dvl = IconVolumeList__CreateDOSList()) != NULL)
+    GET(obj, MUIA_Group_ChildList, &iconlist);
+
+    if (iconlist != NULL)
     {
+        NewList(&newiconlist);
+
+        if ((dvl = IconVolumeList__CreateDOSList()) != NULL)
+        {
 D(bug("[IconVolList] %s: DOSVolumeList @ %p\n", __PRETTY_FUNCTION__, dvl));
 
-#warning "TODO: Dont clear the list, but instead really update it"
-	DoMethod(obj, MUIM_IconList_Clear);
-
 #ifdef __AROS__
-	ForeachNode(dvl, dvn)
+            ForeachNode(dvl, dvn)
 #else
-	Foreach_Node(dvl, dvn);
+            Foreach_Node(dvl, dvn);
 #endif
-	{
+            {
 D(bug("[IconVolList] %s: DOSVolumeNode  @ %p\n", __PRETTY_FUNCTION__, dvn));
-	    if (dvn->dvn_VolName)
-	    {
-D(bug("[IconVolList] %s: Adding icon for '%s'\n", __PRETTY_FUNCTION__, dvn->dvn_VolName));
+                if (dvn->dvn_VolName)
+                {
+D(bug("[IconVolList] %s: DOSList Entry '%s'\n", __PRETTY_FUNCTION__, dvn->dvn_VolName));
 
-		if (dvn->dvn_FLags & ICONENTRY_VOL_OFFLINE)
-		    devname = dvn->dvn_VolName;
-		else
-		    devname = dvn->dvn_DevName;
+                    if (dvn->dvn_FLags & ICONENTRY_VOL_OFFLINE)
+                        devname = dvn->dvn_VolName;
+                    else
+                        devname = dvn->dvn_DevName;
 
-		if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)devname, (IPTR)dvn->dvn_VolName, (IPTR)NULL, (IPTR)NULL, ST_ROOT)) != NULL)
-		{
-		    if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
-			this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
+D(bug("[IconVolList] %s: Processing '%s'\n", __PRETTY_FUNCTION__, devname));
 
-		    if ((strcasecmp(dvn->dvn_VolName, "Ram Disk:")) == 0)
-		    {
-D(bug("[IconVolList] %s: Setting Ram Disk's icon node priority to 5\n", __PRETTY_FUNCTION__));
-			this_Icon->ile_IconNode.ln_Pri = 5;   // Special dirs get Priority 5
-		    }
-		    else
-		    {
-			this_Icon->ile_IconNode.ln_Pri = 1;   // Fixed Media get Priority 1
-		    }
-		}
-		else
-		{
+                    if ((this_Icon = FindIconlistIcon(iconlist, devname)) != NULL)
+                    {
+D(bug("[IconVolList] %s: Found existing IconEntry for '%s' @ %p\n", __PRETTY_FUNCTION__, this_Icon->ile_IconListEntry.label, this_Icon));
+                        Remove((struct Node*)&this_Icon->ile_IconNode);
+                        /* Compare the Icon and update as needed ... */
+                        this_Icon->ile_Flags = ICONENTRY_FLAG_NEEDSUPDATE;
+                        AddTail(&newiconlist, (struct Node*)&this_Icon->ile_IconNode);
+                    }
+                    else if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)devname, (IPTR)dvn->dvn_VolName, (IPTR)NULL, (IPTR)NULL, ST_ROOT)) != NULL)
+                    {
+                        Remove((struct Node*)&this_Icon->ile_IconNode);
+D(bug("[IconVolList] %s: Created IconEntry for '%s' @ %p\n", __PRETTY_FUNCTION__, this_Icon->ile_IconListEntry.label, this_Icon));
+                        if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
+                            this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
+
+                        if ((strcasecmp(dvn->dvn_VolName, "Ram Disk:")) == 0)
+                        {
+D(bug("[IconVolList] %s: Setting '%s' icon node priority to 5\n", __PRETTY_FUNCTION__, this_Icon->ile_IconListEntry.label));
+                            this_Icon->ile_IconNode.ln_Pri = 5;   // Special dirs get Priority 5
+                        }
+                        else
+                        {
+                            this_Icon->ile_IconNode.ln_Pri = 1;   // Fixed Media get Priority 1
+                        }
+                        AddTail(&newiconlist, (struct Node*)&this_Icon->ile_IconNode);
+                    }
+                    else
+                    {
 D(bug("[IconVolList] %s: Failed to Add IconEntry for '%s'\n", __PRETTY_FUNCTION__, dvn->dvn_VolName));
-		}
-	    } /* (dvn->dvn_VolName) */
-	}
-	IconVolumeList__DestroyDOSList(dvl);
-    }
+                    }
+                } /* (dvn->dvn_VolName) */
+            }
+            IconVolumeList__DestroyDOSList(dvl);
+            ForeachNodeSafe(iconlist, this_Icon, tmpNode)
+            {
+D(bug("[IconVolList] %s: Destroying Removed IconEntry for '%s' @ %p\n", __PRETTY_FUNCTION__, this_Icon->ile_IconListEntry.label, this_Icon));
+                //if (this_Icon->ile_Flags & ICONENTRY_FLAG_SELECTED)
+                //    Remove(this_Icon->ile_SelectionNode);
 
+                DoMethod(obj, MUIM_IconList_DestroyEntry, this_Icon);
+            }
+            ForeachNodeSafe(&newiconlist, this_Icon, tmpNode)
+            {
+                AddTail(iconlist, (struct Node*)&this_Icon->ile_IconNode);
+            }
+        }
+    }
     /* default display/sorting flags */
     DoMethod(obj, MUIM_IconList_Sort);
 

@@ -6,15 +6,24 @@ include $(TOP)/config/make.cfg
 USER_LIBS   := amiga rom m mui
 
 #MM-  workbench-system-wanderer-classes : \
+##MM  wanderer-classes-icon \
 #MM  wanderer-classes-iconlist \
 #MM  wanderer-classes-icondrawerlist \
 #MM  wanderer-classes-iconvolumelist \
 #MM  wanderer-classes-iconlistview
 
+#MM wanderer-classes-icon : includes workbench-libs-muimaster
 #MM wanderer-classes-iconlist : includes workbench-libs-muimaster
 #MM wanderer-classes-icondrawerlist : includes workbench-libs-muimaster
 #MM wanderer-classes-iconvolumelist : includes workbench-libs-muimaster
 #MM wanderer-classes-iconlistview : includes workbench-libs-muimaster
+
+%build_module \
+    mmake=wanderer-classes-icon \
+    modname=Icon modtype=mui files=icon \
+    conffile=icon.conf \
+    cflags="$(CFLAGS)" \
+    uselibs=$(USER_LIBS)
 
 %build_module \
     mmake=wanderer-classes-iconlist \

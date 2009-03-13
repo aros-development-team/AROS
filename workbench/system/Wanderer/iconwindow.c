@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2008, The AROS Development Team. All rights reserved.
+  Copyright  2004-2009, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -9,8 +9,8 @@
 #endif
 
 #define ICONWINDOW_OPTION_NOSEARCHBUTTON
-//#define ICONWINDOW_BUFFERLIST
 #define ICONWINDOW_NODETAILVIEWCLASS
+//#define ICONWINDOW_BUFFERLIST
 
 #ifdef __AROS__
 #define DEBUG 0

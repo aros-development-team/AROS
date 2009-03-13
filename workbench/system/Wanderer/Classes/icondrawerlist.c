@@ -1,7 +1,8 @@
 /*
-Copyright  2002-2008, The AROS Development Team. All rights reserved.
+Copyright  2002-2009, The AROS Development Team. All rights reserved.
 $Id$
 */
+
 #ifndef __AROS__
 #include "../portable_macros.h"
 #define WANDERER_BUILTIN_ICONDRAWERLIST 1
@@ -88,6 +89,7 @@ $Id$
 //#include "support.h"
 //#include "imspec.h"
 #include "iconlist_attributes.h"
+#include "icon_attributes.h"
 #include "iconlist.h"
 #include "icondrawerlist_private.h"
 

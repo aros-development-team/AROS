@@ -1,7 +1,8 @@
 /*
-Copyright © 2002-2008, The AROS Development Team. 
+Copyright © 2002-2009, The AROS Development Team. 
 $Id$
 */
+
 #ifndef __AROS__
 #include "../portable_macros.h"
 #define WANDERER_BUILTIN_ICONLISTVIEW 1
@@ -183,14 +184,14 @@ ULONG IconListview_Function(struct Hook *hook, APTR dummyobj, void **msg)
         case 1:
         {
             get(data->vert,MUIA_Prop_First,&val);
-            SetAttrs(data->iconlist,MUIA_IconList_Top, val, MUIA_NoNotify, TRUE, TAG_DONE);
+            SetAttrs(data->iconlist,MUIA_Virtgroup_Top, val, MUIA_NoNotify, TRUE, TAG_DONE);
             break;
         }
 
         case 2:
         {
             get(data->horiz,MUIA_Prop_First,&val);
-            SetAttrs(data->iconlist,MUIA_IconList_Left, val, MUIA_NoNotify, TRUE, TAG_DONE);
+            SetAttrs(data->iconlist,MUIA_Virtgroup_Left, val, MUIA_NoNotify, TRUE, TAG_DONE);
             break;
         }
         case 3: 
@@ -287,8 +288,8 @@ D(bug("[IconListview] %s: SELF = 0x%p\n", __PRETTY_FUNCTION__, obj));
 
     DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 1, MUIV_TriggerValue);
     DoMethod(horiz, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 2, MUIV_TriggerValue);
-    DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Left, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 3, MUIV_TriggerValue);
-    DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Top, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 4, MUIV_TriggerValue);
+    DoMethod(iconlist, MUIM_Notify, MUIA_Virtgroup_Left, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 3, MUIV_TriggerValue);
+    DoMethod(iconlist, MUIM_Notify, MUIA_Virtgroup_Top, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 4, MUIV_TriggerValue);
     DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Width, MUIV_EveryTime, (IPTR)horiz, 3, MUIM_NoNotifySet, MUIA_Prop_Entries, MUIV_TriggerValue);
     DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Height, MUIV_EveryTime, (IPTR)vert, 3, MUIM_NoNotifySet, MUIA_Prop_Entries, MUIV_TriggerValue);
 
@@ -332,8 +333,8 @@ IPTR IconListview__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *m
     struct IconListview_DATA *data = INST_DATA(cl, obj);
     LONG top,left,width,height;
 
-    get(data->iconlist, MUIA_IconList_Left, &left);
-    get(data->iconlist, MUIA_IconList_Top, &top);
+    get(data->iconlist, MUIA_Virtgroup_Left, &left);
+    get(data->iconlist, MUIA_Virtgroup_Top, &top);
     get(data->iconlist, MUIA_IconList_Width, &width);
     get(data->iconlist, MUIA_IconList_Height, &height);
 

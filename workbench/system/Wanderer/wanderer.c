@@ -826,8 +826,8 @@ static void fmtlarge(UBYTE *buf, ULONG num)
     UBYTE *ch;
     struct
     {
-        ULONG val;
-        LONG  dec;
+        IPTR val;
+        IPTR  dec;
     } array =
     {
         num,
@@ -882,12 +882,15 @@ static void fmtlarge(UBYTE *buf, ULONG num)
 ///GetScreenTitle()
 STRPTR GetScreenTitle(VOID)
 {
-    STATIC TEXT title[256];
-    UBYTE chip[10], fast[10];
-    fmtlarge(chip, AvailMem(MEMF_CHIP));
-    fmtlarge(fast, AvailMem(MEMF_FAST));
+    static TEXT         title[256];
+    UBYTE               chip[10], fast[10];
+    ULONG               __availMem;
 
-    /* AROS probably don't have graphics mem but without it looks so empty */
+    __availMem = AvailMem(MEMF_CHIP);
+    fmtlarge(chip, __availMem);
+    __availMem = AvailMem(MEMF_FAST);
+    fmtlarge(fast, __availMem);
+
     sprintf(title, _(MSG_SCREENTITLE), chip, fast);
 
     return title;
@@ -2508,10 +2511,11 @@ D(bug("[Wanderer] Wanderer__OM_NEW: FAILED to setup Prefs-notification!\n"));
     data->wd_Prefs = NewObject(WandererPrefs_CLASS->mcc_Class, NULL, TAG_DONE); // FIXME: error handling
     #endif
 
-D(bug("[Wanderer] Wanderer__OM_NEW: Prefs-SCREENTITLE IS = '%s'\n",XGET(data->wd_Prefs, MUIA_IconWindowExt_ScreenTitle_String)));
-
-        if (data->wd_Prefs) 
+        if (data->wd_Prefs)
+        {
+D(bug("[Wanderer] Wanderer__OM_NEW: Prefs-Screentitle = '%s'\n",XGET(data->wd_Prefs, MUIA_IconWindowExt_ScreenTitle_String)));
             data->wd_PrefsIntern = InitWandererPrefs();
+        }
     }
 D(bug("[Wanderer] obj = %ld\n", self));
     return self;

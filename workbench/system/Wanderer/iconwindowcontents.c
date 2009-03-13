@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2008, The AROS Development Team. All rights reserved.
+  Copyright  2004-2009, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -55,6 +55,7 @@
 
 #include "Classes/iconlist.h"
 #include "Classes/iconlist_attributes.h"
+#include "Classes/icon_attributes.h"
 
 #include "wanderer.h"
 #include "wandererprefs.h"
