@@ -1404,22 +1404,8 @@ BD_ARCHOBJS   := $(wildcard %(objdir)/arch/*.o)
 BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
 BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
 
-TMP_IQUOTE := $(CFLAGS_IQUOTE)
-TMP_IQUOTE_END := $(CFLAGS_IQUOTE_END)
-ifeq (%(compiler),host)
-TMP_IQUOTE := $(HOST_IQUOTE)
-TMP_IQUOTE_END := $(HOST_IQUOTE_END)
-endif
-ifeq (%(compiler),kernel)
-TMP_IQUOTE := $(KERNEL_IQUOTE)
-TMP_IQUOTE_END := $(KERNEL_IQUOTE_END)
-endif
-
-TMP_QUOTE     := $(TMP_IQUOTE) $(TOP)/$(CURDIR) \
-    $(addprefix $(TMP_IQUOTE),$(BD_FDIRS)) \
-    $(TMP_IQUOTE_END)
-BD_CFLAGS     := $(TMP_QUOTE) %(cflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC)
-BD_DFLAGS     := $(TMP_QUOTE) %(dflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC)
+BD_CFLAGS     := %(cflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC)
+BD_DFLAGS     := %(dflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC)
 
 BD_LINKLIBCFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBFILES))
 BD_LINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBAFILES))
