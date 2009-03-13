@@ -649,7 +649,7 @@ void IconList__LabelFunc_SplitLabel(Object *obj, struct IconList_DATA *data, str
     ULONG   	labelSplit_MaxLabelLineLength = data->icld__Option_LabelTextMaxLen;
     ULONG       labelSplit_LabelLength = strlen(icon->ile_IconListEntry.label);
     ULONG       txwidth;
-    ULONG       labelSplit_FontY = data->icld_IconLabelFont->tf_YSize;
+//    ULONG       labelSplit_FontY = data->icld_IconLabelFont->tf_YSize;
      int        labelSplit_CharsDone,   labelSplit_CharsSplit;
     ULONG 		labelSplit_CurSplitWidth;
 
@@ -680,10 +680,10 @@ D(bug("[IconList]: %s: txwidth = %d\n", __PRETTY_FUNCTION__, txwidth));
     while (labelSplit_CharsDone < labelSplit_LabelLength)
     {
         ULONG labelSplit_CurSplitLength = labelSplit_LabelLength - labelSplit_CharsDone;
-        IPTR  labelSplit_SplitStart = icon->ile_IconListEntry.label + labelSplit_CharsDone;
-        int  tmp_checkoffs = 0;
-  IPTR   labelSplit_RemainingCharsAfterSplit;
-  IPTR labelSplit_CurSplitDest;
+        IPTR  labelSplit_SplitStart = (IPTR)(icon->ile_IconListEntry.label + labelSplit_CharsDone);
+        int   tmp_checkoffs = 0;
+        IPTR  labelSplit_RemainingCharsAfterSplit;
+        IPTR  labelSplit_CurSplitDest;
 
         while (*(char *)(labelSplit_SplitStart) == ' ')
         {
@@ -775,11 +775,11 @@ D(bug("[IconList]: %s: labelSplit_CurSplitLength = %d\n", __PRETTY_FUNCTION__, l
         }
         if ((labelSplit_CharsDone + labelSplit_CurSplitLength) > labelSplit_LabelLength) labelSplit_CurSplitLength = labelSplit_LabelLength - labelSplit_CharsDone;
 
-        labelSplit_CurSplitDest = icon->ile_TxtBuf_DisplayedLabel + labelSplit_CharsSplit + icon->ile_SplitParts;
+        labelSplit_CurSplitDest = (IPTR)(icon->ile_TxtBuf_DisplayedLabel + labelSplit_CharsSplit + icon->ile_SplitParts);
         
-        strncpy(labelSplit_CurSplitDest, labelSplit_SplitStart, labelSplit_CurSplitLength);
+        strncpy((char *)labelSplit_CurSplitDest, (char *)labelSplit_SplitStart, labelSplit_CurSplitLength);
         
-        labelSplit_CurSplitWidth = TextLength(data->icld_BufferRastPort, labelSplit_CurSplitDest, labelSplit_CurSplitLength);
+        labelSplit_CurSplitWidth = TextLength(data->icld_BufferRastPort, (char *)labelSplit_CurSplitDest, labelSplit_CurSplitLength);
         
         icon->ile_SplitParts = icon->ile_SplitParts + 1;
         
@@ -836,7 +836,7 @@ D(bug("[IconList]: %s: Building unsplit label (len = %d) ..\n", __PRETTY_FUNCTIO
         {
             if (!(icon->ile_TxtBuf_DisplayedLabel = AllocVecPooled(data->icld_Pool, data->icld__Option_LabelTextMaxLen + 1)))
             {
-                return NULL;
+                return (IPTR)NULL;
             }
             memset(icon->ile_TxtBuf_DisplayedLabel, 0, data->icld__Option_LabelTextMaxLen + 1);
             strncpy(icon->ile_TxtBuf_DisplayedLabel, icon->ile_IconListEntry.label, data->icld__Option_LabelTextMaxLen - 3);
@@ -846,7 +846,7 @@ D(bug("[IconList]: %s: Building unsplit label (len = %d) ..\n", __PRETTY_FUNCTIO
         {
             if (!(icon->ile_TxtBuf_DisplayedLabel = AllocVecPooled(data->icld_Pool, ile_LabelLength + 1)))
             {
-                return NULL;
+                return (IPTR)NULL;
             }
             memset(icon->ile_TxtBuf_DisplayedLabel, 0, ile_LabelLength + 1);
             strncpy(icon->ile_TxtBuf_DisplayedLabel, icon->ile_IconListEntry.label, ile_LabelLength );
@@ -857,7 +857,7 @@ D(bug("[IconList]: %s: Building unsplit label (len = %d) ..\n", __PRETTY_FUNCTIO
 
 //  if (icon->ile_TxtBuf_DisplayedLabelWidth > data->icld_LabelLargestWidth) data->icld_LabelLargestWidth = icon->ile_TxtBuf_DisplayedLabelWidth;
 
-    return icon->ile_TxtBuf_DisplayedLabel;
+    return (IPTR)icon->ile_TxtBuf_DisplayedLabel;
 }
 ///
 
@@ -891,7 +891,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
   Foreach_Node(&data->icld_IconList, iconentry_Current);
   #endif
         {
-            IconList__LabelFunc_CreateLabel(obj, data, iconentry_Current);
+            IconList__LabelFunc_CreateLabel((Object *)obj, data, iconentry_Current);
         }
     }
 
@@ -1173,7 +1173,7 @@ D(bug("[IconList] %s: Drawing Label '%s' .. %d, %d\n", __PRETTY_FUNCTION__, mess
 
             /*date/size sorting has the date/size appended under the message->icon label*/
 
-            if ((message->icon->ile_IconListEntry.type != ST_USERDIR) && ((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE|ICONLIST_SORT_BY_DATE) != 0))
+            if ((message->icon->ile_IconListEntry.type != ST_USERDIR) && ((data->icld_SortFlags & (ICONLIST_SORT_BY_SIZE|ICONLIST_SORT_BY_DATE)) != 0))
             {
                 buf = NULL;
                 SetFont(data->icld_BufferRastPort, data->icld_IconInfoFont);
@@ -1583,7 +1583,7 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
 {
     struct IconList_DATA  *data = NULL;
     struct TextFont      *icl_WindowFont = NULL;
-    struct RastPort      *icl_RastPort = NULL;
+//    struct RastPort      *icl_RastPort = NULL;
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -1956,7 +1956,7 @@ D(bug("[IconList] %s(), call MUI_Redraw()\n", __PRETTY_FUNCTION__));
     }
 
 D(bug("[IconList] %s(), call DoSuperMethodA()\n", __PRETTY_FUNCTION__));
-    return DoSuperMethodA(CLASS, obj, (struct opSet *)message);
+    return DoSuperMethodA(CLASS, obj, (Msg)message);
 }
 ///
 
@@ -2612,7 +2612,7 @@ D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
             if ((data->icld_BufferRastPort) && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
             {
                 //Free up the buffers rastport and bitmap so we can replace them ..
-                struct Bitmap *bitmap_Old = data->icld_BufferRastPort->BitMap;
+                struct Bitmap *bitmap_Old = (struct Bitmap *)data->icld_BufferRastPort->BitMap;
                 struct Bitmap *bitmap_New;
     
                 ULONG tmp_RastDepth;
@@ -2623,7 +2623,7 @@ D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
                 SET(obj, MUIA_IconList_BufferRastport, NULL);
 
                 tmp_RastDepth = GetCyberMapAttr(data->icld_DisplayRastPort->BitMap, CYBRMATTR_DEPTH);
-                if ((bitmap_New = AllocBitMap(data->icld_ViewWidth,
+                if ((bitmap_New = (struct Bitmap *)AllocBitMap(data->icld_ViewWidth,
                                     data->icld_ViewHeight,
                                     tmp_RastDepth,
                                     BMF_CLEAR,
@@ -2645,7 +2645,7 @@ D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
                     }
                 }
                 
-                if (bitmap_Old != data->icld_BufferRastPort->BitMap)
+                if (bitmap_Old != (struct Bitmap *)data->icld_BufferRastPort->BitMap)
                     FreeBitMap(bitmap_Old);
             }
 
@@ -2928,7 +2928,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         {
 D(bug("[IconList] %s: Fatal: Couldnt get DiskObject! (error code = 0x%p)\n", __PRETTY_FUNCTION__, geticon_error));
 
-            return NULL;
+            return (IPTR)NULL;
         }
     }
     else
@@ -2942,7 +2942,7 @@ D(bug("[IconList] %s: DiskObject @ 0x%p\n", __PRETTY_FUNCTION__, dob));
     {
 D(bug("[IconList] %s: Failed to Allocate Entry Storage!\n", __PRETTY_FUNCTION__));
         FreeDiskObject(dob);
-        return NULL;
+        return (IPTR)NULL;
     }
     memset(entry, 0, sizeof(struct IconEntry));
     entry->ile_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
@@ -2953,7 +2953,7 @@ D(bug("[IconList] %s: Failed to Allocate Entry Storage!\n", __PRETTY_FUNCTION__)
     {
 D(bug("[IconList] %s: Failed to Allocate Entry DATE Storage!\n", __PRETTY_FUNCTION__));
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
-        return NULL;
+        return (IPTR)NULL;
     }
     memset(entry->ile_TxtBuf_DATE, 0, LEN_DATSTRING);
 
@@ -2961,7 +2961,7 @@ D(bug("[IconList] %s: Failed to Allocate Entry DATE Storage!\n", __PRETTY_FUNCTI
     {
 D(bug("[IconList] %s: Failed to Allocate Entry TIME string Storage!\n", __PRETTY_FUNCTION__));
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
-        return NULL;
+        return (IPTR)NULL;
     }
     memset(entry->ile_TxtBuf_TIME, 0, LEN_DATSTRING);
 
@@ -2969,7 +2969,7 @@ D(bug("[IconList] %s: Failed to Allocate Entry TIME string Storage!\n", __PRETTY
     {
 D(bug("[IconList] %s: Failed to Allocate Entry SIZE string Storage!\n", __PRETTY_FUNCTION__));
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
-        return NULL;
+        return (IPTR)NULL;
     }
     memset(entry->ile_TxtBuf_SIZE, 0, 30);
 
@@ -2977,7 +2977,7 @@ D(bug("[IconList] %s: Failed to Allocate Entry SIZE string Storage!\n", __PRETTY
     {
 D(bug("[IconList] %s: Failed to Allocate Entry PROT Flag string Storage!\n", __PRETTY_FUNCTION__));
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
-        return NULL;
+        return (IPTR)NULL;
     }
     memset(entry->ile_TxtBuf_PROT, 0, 8);
     
@@ -2986,7 +2986,7 @@ D(bug("[IconList] %s: Failed to Allocate Entry PROT Flag string Storage!\n", __P
     {
 D(bug("[IconList] %s: Failed to Allocate Entry filename string Storage!\n", __PRETTY_FUNCTION__));
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
-        return NULL;
+        return (IPTR)NULL;
     }
 
     /*alloc icon label*/
@@ -2994,7 +2994,7 @@ D(bug("[IconList] %s: Failed to Allocate Entry filename string Storage!\n", __PR
     {
 D(bug("[IconList] %s: Failed to Allocate Entry label string Storage!\n", __PRETTY_FUNCTION__));
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
-        return NULL;
+        return (IPTR)NULL;
     }
 
     /*file info block*/
@@ -3012,9 +3012,9 @@ D(bug("[IconList] %s: Failed to Allocate Entry label string Storage!\n", __PRETT
 
             /*show byte size for small files*/
             if (i > 9999)
-                sprintf(entry->ile_TxtBuf_SIZE, "%ld KB", (LONG)(i/1024));
+                sprintf(entry->ile_TxtBuf_SIZE, "%d KB", (LONG)(i/1024));
             else
-                sprintf(entry->ile_TxtBuf_SIZE, "%ld B", (LONG)i);
+                sprintf(entry->ile_TxtBuf_SIZE, "%d B", (LONG)i);
         }
 
         dt.dat_Stamp    = entry->ile_FileInfoBlock.fib_Date;
@@ -3064,7 +3064,7 @@ D(bug("[IconList] %s: Entry Type = %x\n", __PRETTY_FUNCTION__, entry->ile_IconLi
     strcpy(entry->ile_IconListEntry.filename, message->filename);
     strcpy(entry->ile_IconListEntry.label, message->label);
 
-    if (IconList__LabelFunc_CreateLabel(obj, data, entry) != NULL)
+    if (IconList__LabelFunc_CreateLabel(obj, data, entry) != (IPTR)NULL)
     {
         entry->ile_DiskObj = dob;
         entry->ile_IconListEntry.udata = NULL;
@@ -3078,7 +3078,7 @@ D(bug("[IconList] %s: Entry Type = %x\n", __PRETTY_FUNCTION__, entry->ile_IconLi
     }
 
     DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
-    return NULL;
+    return (IPTR)NULL;
 }
 ///
 
@@ -4196,15 +4196,15 @@ D(bug("[IconList] %s: RAWKEY_END\n", __PRETTY_FUNCTION__));
                         struct IconEntry      *new_selected = NULL;
                         struct Rectangle     rect;
 
-                        int selections = 0;
-      BOOL icon_doubleclicked;
+//                        int selections = 0;
+                        BOOL icon_doubleclicked;
 
                         /* check if clicked on icon */
-      #ifdef __AROS__
+#ifdef __AROS__
                         ForeachNode(&data->icld_IconList, node)
-      #else
-      Foreach_Node(&data->icld_IconList, node);
-      #endif
+#else
+                        Foreach_Node(&data->icld_IconList, node);
+#endif
                         {
                             if (node->ile_Flags & ICONENTRY_FLAG_VISIBLE)
                             {
@@ -4456,7 +4456,7 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
                         struct Rectangle    iconrect;
 
                         struct IconEntry    *node = NULL;
-                        struct IconEntry    *new_selected = NULL; 
+//                        struct IconEntry    *new_selected = NULL; 
 
                         /* Remove previous Lasso frame */
                         GetAbsoluteLassoRect(data, &old_lasso);                          
@@ -4497,7 +4497,7 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
                         Foreach_Node(&data->icld_IconList, node);
                         #endif
                         {
-                            IPTR update_icon = NULL;
+                            IPTR update_icon = (IPTR)NULL;
 
                             if (node->ile_Flags & ICONENTRY_FLAG_VISIBLE)
                             {
@@ -4530,7 +4530,7 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
                                             node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
                                         }
                                          node->ile_Flags |= ICONENTRY_FLAG_LASSO;
-                                         update_icon = node;
+                                         update_icon = (IPTR)node;
                                      }
                                 } 
                                 else if (node->ile_Flags & ICONENTRY_FLAG_LASSO)
@@ -4547,13 +4547,13 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
                                         node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
                                     }
                                     node->ile_Flags &= ~ICONENTRY_FLAG_LASSO;
-                                    update_icon = node;
+                                    update_icon = (IPTR)node;
                                 }
 
                                 if (update_icon)
                                 {
                                     data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = update_icon;
+                                    data->update_icon = (struct IconEntry *)update_icon;
                                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                                 }
                             }
@@ -4605,7 +4605,7 @@ IPTR IconList__MUIM_IconList_NextIcon(struct IClass *CLASS, Object *obj, struct 
     struct IconList_DATA    *data = INST_DATA(CLASS, obj);
     struct IconEntry       *node = NULL;
     struct IconList_Entry  *ent = NULL;
-    IPTR                    node_successor = NULL;
+    IPTR                    node_successor = (IPTR)NULL;
 
     if (message->entry == NULL) return (IPTR)NULL;
     ent = *message->entry;
@@ -4631,7 +4631,7 @@ D(bug("[IconList] %s: Finding First Entry ..\n", __PRETTY_FUNCTION__));
 				if (node->ile_Flags & ICONENTRY_FLAG_VISIBLE)
 					break;
 
-				node = GetSucc(&node->ile_IconNode);
+				node = (struct IconEntry *)GetSucc(&node->ile_IconNode);
 			}
 		}
     }
@@ -4640,8 +4640,8 @@ D(bug("[IconList] %s: Finding First Entry ..\n", __PRETTY_FUNCTION__));
 		node = (struct IconEntry *)((IPTR)ent - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
 		if (message->nextflag == MUIV_IconList_NextIcon_Selected)
 		{
-			node_successor = GetSucc(&node->ile_SelectionNode);
-			if (node_successor != NULL)
+			node_successor = (IPTR)GetSucc(&node->ile_SelectionNode);
+			if (node_successor != (IPTR)NULL)
 				node = (struct IconEntry *)((IPTR)node_successor - ((IPTR)&node->ile_SelectionNode - (IPTR)node));
 			else
 			{
@@ -4651,13 +4651,13 @@ D(bug("[IconList] %s: GetSucc() == NULL\n", __PRETTY_FUNCTION__));
 		}
 		else if (message->nextflag == MUIV_IconList_NextIcon_Visible)
 		{
-			node = GetSucc(&node->ile_IconNode);
+			node = (struct IconEntry *)GetSucc(&node->ile_IconNode);
 			while (node != NULL)
 			{
 				if (node->ile_Flags & ICONENTRY_FLAG_VISIBLE)
 					break;
 
-				node = GetSucc(&node->ile_IconNode);
+				node = (struct IconEntry *)GetSucc(&node->ile_IconNode);
 			}
 		}
     }
@@ -4685,14 +4685,14 @@ MUIM_IconList_GetIconPrivate
 **************************************************************************/
 IPTR IconList__MUIM_IconList_GetIconPrivate(struct IClass *CLASS, Object *obj, struct MUIP_IconList_GetIconPrivate *message)
 {
-    struct IconList_DATA    *data = INST_DATA(CLASS, obj);
+//    struct IconList_DATA    *data = INST_DATA(CLASS, obj);
     struct IconEntry       *node = NULL;
 	
     if (message->entry == NULL) return (IPTR)NULL;
 
 	node = (struct IconEntry *)((IPTR)message->entry - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
 
-	return node;
+	return (IPTR)node;
 }
 
 ///MUIM_CreateDragImage()
@@ -4979,8 +4979,8 @@ D(bug("[IconList] %s: drop entry: Selection dropped in self ... Moving Icons\n",
 		}
 
 	   /* copy relevant data to drop entry */
-	   data->icld_DragDropEvent.source_iconlistobj = message->obj;
-	   data->icld_DragDropEvent.destination_iconlistobj = obj;
+	   data->icld_DragDropEvent.source_iconlistobj = (IPTR)message->obj;
+	   data->icld_DragDropEvent.destination_iconlistobj = (IPTR)obj;
 	   
 	   /* return drop entry */
 	   SET(obj, MUIA_IconList_IconsDropped, (IPTR)&data->icld_DragDropEvent); /* Now notify */
