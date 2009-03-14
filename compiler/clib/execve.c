@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function execve().
@@ -443,7 +443,6 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	else
 	{
 	    struct Library *aroscbase;
-	    int oldflags;
 	    int parent_does_upath;
 	    
 	    fdesc *in, *out, *err;
@@ -460,7 +459,6 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	    if(err)
 	        olderr = SelectError(err->fcb->fh);
 
-	    oldflags = __get_arosc_privdata()->acpd_flags;
 	    parent_does_upath = __doupath;
 	    
 	    /* Force arosc.library to open with new private data */
@@ -495,8 +493,6 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	    );
 
 	    CloseLibrary(aroscbase);
-	    /* Restore previous values */
-	    __get_arosc_privdata()->acpd_flags = oldflags;
 	        
 	    UnLoadSeg(seglist);
 	    free(argptr);
