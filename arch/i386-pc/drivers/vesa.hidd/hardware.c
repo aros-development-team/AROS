@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
  
     Desc: vesa "hardware" functions
@@ -55,6 +55,10 @@ BOOL initVesaGfxHW(struct HWData *data)
 		D(bug("[Vesa] Init: Textmode was specified. Aborting\n"));
 		return FALSE;
 	    }
+
+            /* Disable on-screen debug output to avoid trashing graphics */
+            bug("\03");
+
 	    data->width = vi->XSize; data->height = vi->YSize;
 	    data->bitsperpixel = data->depth = vi->BitsPerPixel;
 	    data->bytesperline = vi->BytesPerLine;
@@ -166,7 +170,7 @@ AROS_UFH3(void, Enumerator,
     struct pHidd_PCIDriver_MapPCI mappci,*msg = &mappci;
     struct HWData *sd = hook->h_Data;
 
-    D(bug("[VESA] Enumerator: Found deivce\n"));
+    D(bug("[VESA] Enumerator: Found device\n"));
 
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&driver);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, (APTR)&Vendor);
