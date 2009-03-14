@@ -15,8 +15,8 @@ endif
 #MM
 grub-copy-stages : $(AROSDIR)/boot/grub/stage1 $(AROSDIR)/boot/grub/stage2 $(AROSDIR)/boot/grub/stage2_hdisk $(AROSDIR)/boot/grub/iso9660_stage1_5
 
-CFLAGS := -minline-all-stringops
-export CFLAGS
+# DO NOT DECLARE CFLAGS HERE
+# OR MAKE SURE -fno-stack-protector IS DETECTED IF COMPILER SUPPORTS IT
 
 %build_with_configure mmake=grub compiler=kernel install_target= \
     extraoptions="$(GRUBOPTS)" 
