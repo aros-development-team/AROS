@@ -112,7 +112,7 @@ IPTR Popimage__MUIM_Popimage_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 
 	get(obj,MUIA_Imagedisplay_Spec, &img_spec);
 
-    	data->wnd = WindowObject,
+    	data->wnd = (Object *)WindowObject,
             MUIA_Window_Title,       (IPTR) data->wintitle,
             MUIA_Window_Activate,           TRUE,
             MUIA_Window_IsSubWindow,        TRUE,

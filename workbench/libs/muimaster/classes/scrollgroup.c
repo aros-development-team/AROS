@@ -270,12 +270,12 @@ IPTR Scrollgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         cl, obj, NULL,
     	
         MUIA_Group_Horiz, FALSE,
-    	Child, (IPTR) (group = GroupObject,
+    	Child, (IPTR) (group = (Object *)GroupObject,
 	    MUIA_Group_LayoutHook, (IPTR) layout_hook,
 	    Child, (IPTR) contents,
-	    Child, (IPTR) (vert   = ScrollbarObject, MUIA_Group_Horiz, FALSE, vbordertag, MUIV_Prop_UseWinBorder_Right, End),
-	    Child, (IPTR) (horiz  = ScrollbarObject, MUIA_Group_Horiz, TRUE, hbordertag, MUIV_Prop_UseWinBorder_Bottom, End),
-	    Child, (IPTR) (button = ScrollbuttonObject, End),
+	    Child, (IPTR) (vert   = (Object *)ScrollbarObject, MUIA_Group_Horiz, FALSE, vbordertag, MUIV_Prop_UseWinBorder_Right, End),
+	    Child, (IPTR) (horiz  = (Object *)ScrollbarObject, MUIA_Group_Horiz, TRUE, hbordertag, MUIV_Prop_UseWinBorder_Bottom, End),
+	    Child, (IPTR) (button = (Object *)ScrollbuttonObject, End),
         End),
 	
         TAG_DONE

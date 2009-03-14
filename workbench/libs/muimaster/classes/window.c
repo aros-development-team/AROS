@@ -2598,7 +2598,8 @@ static void WindowSelectDimensions (struct MUI_WindowData *data)
 IPTR Window__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowData *data;
-    struct TagItem *tags,*tag;
+    const struct TagItem *tags;
+    struct TagItem *tag;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj)
@@ -2845,7 +2846,7 @@ static ULONG WindowClose(struct IClass *cl, Object *obj);
 IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
-    struct TagItem        *tags = msg->ops_AttrList;
+    const struct TagItem        *tags = msg->ops_AttrList;
     const struct TagItem        *tag;
 
     while ((tag = NextTagItem(&tags)) != NULL)
@@ -3749,7 +3750,7 @@ IPTR Window__MUIM_DragObject(struct IClass *cl, Object *obj, struct MUIP_Window_
 	    }
     
 	    if (!(bmn = CreateBitMapNodeA(TAGLIST(
-		    GUI_BitMap, di->bm,
+		    GUI_BitMap, (IPTR)di->bm,
 		    GUI_LeftOffset, di->touchx,
 		    GUI_TopOffset, di->touchy,
 		    GUI_Width, di->width,
@@ -4097,7 +4098,7 @@ MUIM_Export : to export an objects "contents" to a dataspace object.
 static IPTR Window__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
-    DoMethodA(data->wd_RootObject, msg);
+    DoMethodA(data->wd_RootObject, (Msg)msg);
     return 0;
 }
 
@@ -4108,7 +4109,7 @@ MUIM_Import : to import an objects "contents" from a dataspace object.
 static IPTR Window__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
-    DoMethodA(data->wd_RootObject, msg);
+    DoMethodA(data->wd_RootObject, (Msg)msg);
     return 0;
 }
 

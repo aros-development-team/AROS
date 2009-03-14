@@ -1615,7 +1615,6 @@ static IPTR Application__MUIM_Execute(Class *CLASS, Object *self, Msg message)
 
 static IPTR Application__MUIM_UpdateMenus(struct IClass *cl, Object *obj, Msg message)
 {
-    struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct List *wlist;
     APTR         wstate;
     Object      *curwin;

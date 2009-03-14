@@ -36,7 +36,8 @@ extern struct Library *MUIMasterBase;
 IPTR Pendisplay__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Pendisplay_DATA   *data;
-    struct TagItem  	    	*tag, *tags;
+    const struct TagItem   	*tags;
+    struct TagItem  	    	*tag;
     
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return FALSE;
@@ -91,7 +92,8 @@ IPTR Pendisplay__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 IPTR Pendisplay__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Pendisplay_DATA   *data;
-    struct TagItem  	    	*tag, *tags;
+    const struct TagItem    	*tags;
+    struct TagItem  	    	*tag;
     BOOL    	    	    	 newcol = FALSE;
     IPTR    	    	    	 retval;
     

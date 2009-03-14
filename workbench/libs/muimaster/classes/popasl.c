@@ -257,7 +257,8 @@ static ULONG Popasl_Close_Function(struct Hook *hook, Object *obj, void **msg)
 IPTR Popasl__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Popasl_DATA   *data;
-    struct TagItem  	    *tag, *tags;
+    const struct TagItem    *tags;
+    struct TagItem  	    *tag;
     ULONG asl_type = GetTagData(MUIA_Popasl_Type,ASL_FileRequest,msg->ops_AttrList);
     APTR asl_req;
 
@@ -327,7 +328,7 @@ IPTR Popasl__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 IPTR Popasl__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Popasl_DATA *data = INST_DATA(cl, obj);
-    struct TagItem *tags  = msg->ops_AttrList;
+    const struct TagItem *tags  = msg->ops_AttrList;
     struct TagItem *tag;
 
     while ((tag = NextTagItem(&tags)) != NULL)
