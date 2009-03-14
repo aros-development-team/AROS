@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,6 +19,7 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <setjmp.h>
+#include <assert.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -209,7 +210,7 @@ int arosc_internalinit(void)
 {
     struct arosc_privdata *oldprivdata, *privdata;
     struct Process *me = (struct Process *)FindTask(NULL);
-    int res = TRUE;
+    int res = TRUE, makenew = FALSE;
 
     privdata = oldprivdata = GetIntETask(me)->iet_acpd;
 
@@ -232,15 +233,30 @@ int arosc_internalinit(void)
         }
     }
 
-    if
-    (
-        !oldprivdata ||
-	(oldprivdata->acpd_flags & CREATE_NEW_ACPD) ||
-	(
-	    !(oldprivdata->acpd_flags & KEEP_OLD_ACPD) && 
-	    oldprivdata->acpd_process_returnaddr != me->pr_ReturnAddr
-	)
-    )
+    if (!oldprivdata)
+    {
+        makenew = TRUE;
+    }
+    else
+    {
+        assert(!(oldprivdata->acpd_flags & (CREATE_NEW_ACPD | KEEP_OLD_ACPD)));
+        if (oldprivdata->acpd_flags & CREATE_NEW_ACPD)
+        {
+            makenew = TRUE;
+            oldprivdata->acpd_flags &= ~CREATE_NEW_ACPD;
+        }
+        else if (oldprivdata->acpd_flags & KEEP_OLD_ACPD)
+        {
+            oldprivdata->acpd_flags &= ~KEEP_OLD_ACPD;
+            oldprivdata->acpd_process_returnaddr = me->pr_ReturnAddr;
+        }
+        else
+        {
+            makenew = oldprivdata->acpd_process_returnaddr != me->pr_ReturnAddr;
+        }
+    }
+    
+    if (makenew)
     {
         D(bug("arosc_internalinit(): AllocMem()\n"));
         privdata = AllocMem(sizeof *privdata, MEMF_CLEAR|MEMF_ANY);
