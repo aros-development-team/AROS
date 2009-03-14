@@ -67,7 +67,8 @@
     AROS_LIBFUNC_INIT
 
     int             nAttrs = 0;
-    struct TagItem *tag, *tl = tagList;
+    const struct TagItem *tl = tagList;
+    struct TagItem *tag;
 
     /* Maybe we could use FindTagItem to initialize error and conductor
        first... */

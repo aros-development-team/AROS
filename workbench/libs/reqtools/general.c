@@ -578,10 +578,10 @@ struct Window *REGARGS OpenWindowBF (struct NewWindow *nw,
 #ifdef __AROS__
     if (backfillpattern)
     {
-        hook->h_Entry = (ULONG (*)())PatternWinBackFill;
+        hook->h_Entry = (HOOKFUNC)PatternWinBackFill;
     } else
 #endif
-    hook->h_Entry = (ULONG (*)())WinBackFill;
+    hook->h_Entry = (HOOKFUNC)WinBackFill;
 
     hook->h_Data = (void *)pens;
 
@@ -733,7 +733,7 @@ LONG BottomBorderHeight (struct Screen *scr)
 						SYSIA_Which, SIZEIMAGE,
 						TAG_DONE)))
 	{
-	    if (!GetAttr (IA_Height, obj, (ULONG *)&h))
+	    if (!GetAttr (IA_Height, obj, (IPTR *)&h))
 		    h = 10;  // Probably not needed.. Or?
 	    DisposeObject( obj );
 	}

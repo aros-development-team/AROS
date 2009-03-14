@@ -22,7 +22,7 @@ static void scantags(FT_GlyphEngine *ge, struct TagItem *tags)
 {
     Tag   otagtag;
     ULONG otagdata;
-    struct TagItem *tstate;
+    const struct TagItem *tstate;
     struct TagItem *tag;
     int temp, temp2;
 

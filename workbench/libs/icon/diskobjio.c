@@ -107,51 +107,51 @@ AROS_UFP3S(ULONG, ProcessIconNI,
 
 static const struct Hook ProcessClearMemHook =
 {
-    { NULL, NULL}, AROS_ASMSYMNAME(ProcessClearMem), NULL, NULL
+    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessClearMem), NULL, NULL
 },
 ProcessCheckFileTypeHook =
 {
-    { NULL, NULL}, AROS_ASMSYMNAME(ProcessCheckFileType), NULL, NULL
+    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessCheckFileType), NULL, NULL
 },
 ProcessOldDrawerDataHook =
 {
-    { NULL, NULL}, AROS_ASMSYMNAME(ProcessOldDrawerData), NULL, NULL
+    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessOldDrawerData), NULL, NULL
 },
 ProcessNewDrawerDataHook =
 {
-    { NULL, NULL}, AROS_ASMSYMNAME(ProcessNewDrawerData), NULL, NULL
+    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessNewDrawerData), NULL, NULL
 },
 ProcessGadgetRenderHook =
 {
-    { NULL, NULL}, AROS_ASMSYMNAME(ProcessGadgetRender), NULL, NULL
+    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessGadgetRender), NULL, NULL
 },
 ProcessSelectRenderHook =
 {
-    { NULL, NULL}, AROS_ASMSYMNAME(ProcessSelectRender), NULL, NULL
+    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessSelectRender), NULL, NULL
 },
 ProcessFlagPtrHook =
 {
-    { NULL, NULL}, AROS_ASMSYMNAME(ProcessFlagPtr), NULL, NULL
+    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessFlagPtr), NULL, NULL
 },
 ProcessDefaultToolHook =
 {
-    { NULL, NULL}, AROS_ASMSYMNAME(ProcessDefaultTool), NULL, NULL
+    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessDefaultTool), NULL, NULL
 },
 ProcessToolWindowHook =
 {
-    { NULL, NULL}, AROS_ASMSYMNAME(ProcessToolWindow), NULL, NULL
+    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessToolWindow), NULL, NULL
 },
 ProcessToolTypesHook =
 {
-    { NULL, NULL}, AROS_ASMSYMNAME(ProcessToolTypes), NULL, NULL
+    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessToolTypes), NULL, NULL
 },
 ProcessIcon35Hook =
 {
-    { NULL, NULL}, AROS_ASMSYMNAME(ProcessIcon35), NULL, NULL
+    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessIcon35), NULL, NULL
 },
 ProcessIconNIHook =
 {
-    { NULL, NULL}, AROS_ASMSYMNAME(ProcessIconNI), NULL, NULL
+    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessIconNI), NULL, NULL
 };
 
 /****************************************************************************************/

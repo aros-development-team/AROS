@@ -58,7 +58,8 @@ STATIC VOID notifylevel(Class *cl, Object *o, WORD level, struct GadgetInfo *gin
 IPTR GTSlider__OM_SET(Class * cl, Object * o, struct opSet * msg)
 {
     IPTR 		retval = 0UL;
-    struct TagItem 	*tag, *tstate, *dosuper_tags, tags[] =
+    const struct TagItem *tstate;
+    struct TagItem 	*tag, *dosuper_tags, tags[] =
     {
     	{PGA_Total	, 0	},
     	{PGA_Top	, 0	},

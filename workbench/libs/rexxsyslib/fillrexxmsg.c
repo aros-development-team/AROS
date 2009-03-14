@@ -91,7 +91,7 @@
 	else
 	{
 	    /* CreateArgstring with null terminated string if pointer is not null */
-	    if (msgptr->rm_Args[i] == NULL) args[i] = NULL;
+	    if (msgptr->rm_Args[i] == 0) args[i] = NULL;
 	    else
 	    {
 		args[i] = (STRPTR)CreateArgstring(RXARG(msgptr,i), strlen(RXARG(msgptr,i)));

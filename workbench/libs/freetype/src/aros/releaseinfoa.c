@@ -27,7 +27,7 @@ AROS_LH2(ULONG, ReleaseInfoA,
     Tag   otagtag;
     ULONG otagdata;
 
-    struct TagItem *tstate;
+    const struct TagItem *tstate;
     struct TagItem *tag;
     struct GlyphMap *GMap;
 

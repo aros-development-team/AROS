@@ -155,7 +155,7 @@ int get_kerning_dir(FT_GlyphEngine *ge)
     {
 	/* reset everything first */
 	if(SetInstance(ge)!=OTERR_Success)
-	    return NULL;
+	    return 0;
     }
 
     /* get left and right glyph indexes */

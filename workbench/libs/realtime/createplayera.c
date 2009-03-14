@@ -128,7 +128,8 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 {
     AROS_LIBFUNC_INIT
 
-    struct TagItem *tag, *tl = tagList;
+    const struct TagItem *tl = tagList;
+    struct TagItem *tag;
     struct Player  *player = AllocMem(sizeof(struct Player), 
 				      MEMF_PUBLIC | MEMF_CLEAR);
     LONG           *error;

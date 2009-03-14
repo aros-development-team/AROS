@@ -250,9 +250,9 @@ struct CompoundDatatype *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
 				Seek(file, 0, OFFSET_BEGINNING);
 				
 				dthc.dthc_SysBase = (struct Library *)SysBase;
-				dthc.dthc_DOSBase = DOSBase;
+				dthc.dthc_DOSBase = (struct Library *)DOSBase;
 				dthc.dthc_IFFParseBase = IFFParseBase;
-				dthc.dthc_UtilityBase = UtilityBase;
+				dthc.dthc_UtilityBase = (struct Library *)UtilityBase;
 				dthc.dthc_Lock = lock;
 				dthc.dthc_FIB = fib;
 				dthc.dthc_FileHandle = file;

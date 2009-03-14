@@ -70,9 +70,9 @@ static const struct TagItem map_tag_list[] =
    AROS_LIBFUNC_INIT
 
    struct LibBase *base = (APTR)PrometheusBase;
-   ULONG count = 0;
    Tag tag, aros_tag;
-   struct TagItem *tag_item, *temp_tag_list;
+   const struct TagItem *temp_tag_list;
+   struct TagItem *tag_item;
    struct PCIBoard *board, *tail;
    BOOL success = FALSE;
    UPINT board_data;
@@ -92,11 +92,11 @@ static const struct TagItem map_tag_list[] =
       while((tag_item = NextTagItem(&temp_tag_list)) != NULL)
       {
          tag = tag_item->ti_Tag;
-         aros_tag = GetTagData(tag, TAG_DONE, map_tag_list);
+         aros_tag = GetTagData(tag, TAG_DONE, (const struct TagItem *)map_tag_list);
          if(aros_tag != TAG_DONE)
          {
             OOP_GetAttr(board->aros_board,
-               base->pcidevice_attr_base + aros_tag, &board_data);
+               base->pcidevice_attr_base + aros_tag, (IPTR *)&board_data);
          }
          else if(tag == PRM_BoardOwner)
             board_data = (UPINT)board->owner;
@@ -147,7 +147,7 @@ static const struct TagItem map_tag_list[] =
    UPINT *tag_data_ptr;
    struct TagItem *tag_item;
 
-   while((tag_item = NextTagItem(&tag_list)) != NULL)
+   while((tag_item = NextTagItem((const struct TagItem **)&tag_list)) != NULL)
    {
       if(tag_item->ti_Tag == PRM_BoardOwner)
       {
@@ -162,7 +162,7 @@ static const struct TagItem map_tag_list[] =
          {
             OOP_GetAttr(board->aros_board,
                base->pcidevice_attr_base + aros_tag,
-               (UPINT *)tag_item->ti_Data);
+               (IPTR *)tag_item->ti_Data);
             count++;
          }
       }
@@ -197,7 +197,6 @@ static const struct TagItem map_tag_list[] =
 {
    AROS_LIBFUNC_INIT
 
-   struct LibBase *base = (APTR)PrometheusBase;
    ULONG count = 0;
    APTR new_owner;
    struct TagItem *tag_item;
@@ -243,7 +242,6 @@ static const struct TagItem map_tag_list[] =
 {
    AROS_LIBFUNC_INIT
 
-   struct LibBase *base = (APTR)PrometheusBase;
    struct pHidd_PCIDevice_ReadConfigByte message;
 
    message.mID =
@@ -280,7 +278,6 @@ static const struct TagItem map_tag_list[] =
 {
    AROS_LIBFUNC_INIT
 
-   struct LibBase *base = (APTR)PrometheusBase;
    struct pHidd_PCIDevice_WriteConfigByte message;
 
    message.mID =
@@ -317,7 +314,6 @@ static const struct TagItem map_tag_list[] =
 {
    AROS_LIBFUNC_INIT
 
-   struct LibBase *base = (APTR)PrometheusBase;
    struct pHidd_PCIDevice_ReadConfigWord message;
 
    message.mID =
@@ -354,7 +350,6 @@ static const struct TagItem map_tag_list[] =
 {
    AROS_LIBFUNC_INIT
 
-   struct LibBase *base = (APTR)PrometheusBase;
    struct pHidd_PCIDevice_WriteConfigWord message;
 
    message.mID =
@@ -391,7 +386,6 @@ static const struct TagItem map_tag_list[] =
 {
    AROS_LIBFUNC_INIT
 
-   struct LibBase *base = (APTR)PrometheusBase;
    struct pHidd_PCIDevice_ReadConfigLong message;
 
    message.mID =
@@ -428,7 +422,6 @@ static const struct TagItem map_tag_list[] =
 {
    AROS_LIBFUNC_INIT
 
-   struct LibBase *base = (APTR)PrometheusBase;
    struct pHidd_PCIDevice_WriteConfigLong message;
 
    message.mID =
@@ -488,7 +481,7 @@ static const struct TagItem map_tag_list[] =
    if(success)
    {
       OOP_GetAttr(board->aros_board,
-         base->pcidevice_attr_base + aoHidd_PCIDevice_INTLine, &int_no);
+         base->pcidevice_attr_base + aoHidd_PCIDevice_INTLine, (IPTR *)&int_no);
       board->aros_irq = aros_irq;
       aros_irq->h_Node.ln_Name = interrupt->is_Node.ln_Name;
       aros_irq->h_Code = WrapperIRQ;
@@ -563,7 +556,6 @@ static const struct TagItem map_tag_list[] =
 {
    AROS_LIBFUNC_INIT
 
-   struct LibBase *base = (APTR)PrometheusBase;
    APTR buffer;
 
    if(size != 0)
@@ -599,8 +591,6 @@ static const struct TagItem map_tag_list[] =
 ***************************************************************************/
 {
    AROS_LIBFUNC_INIT
-
-   struct LibBase *base = (APTR)PrometheusBase;
 
    if(buffer != NULL && size != 0)
       FreeMem(buffer, size);

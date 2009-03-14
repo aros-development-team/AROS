@@ -219,7 +219,7 @@ IPTR GTScroller__OM_NEW(Class * cl, Object * o, struct opSet *msg)
     {
     	data = INST_DATA(cl, o);
 	
-	dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, NULL, msg->ops_AttrList);
+	dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, 0, msg->ops_AttrList);
 	
 	fitags[0].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList) + BORDERPROPSPACINGX * 2;
 	fitags[1].ti_Data = GetTagData(GA_Height, 0, msg->ops_AttrList) + BORDERPROPSPACINGY * 2;

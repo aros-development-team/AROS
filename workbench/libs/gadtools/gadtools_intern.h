@@ -97,49 +97,49 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
 struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
 		      struct TagItem stdgadtags[],
 		      struct VisualInfo *vi,
-		      struct TagItem *taglist);
+		      const struct TagItem *taglist);
 
 struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
 		      	struct TagItem stdgadtags[],
 		      	struct VisualInfo *vi,
 		      	struct TextAttr *tattr,
-		      	struct TagItem *taglist);
+		      	const struct TagItem *taglist);
 
 struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
 		      	  struct TagItem stdgadtags[],
 		      	  struct VisualInfo *vi,
 		      	  struct TextAttr *tattr,
-		      	  struct TagItem *taglist);
+		      	  const struct TagItem *taglist);
 
 
 struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
 		      	  struct TagItem stdgadtags[],
 		      	  struct VisualInfo *vi,
 		      	  struct TextAttr *tattr,
-		      	  struct TagItem *taglist);
+		      	  const struct TagItem *taglist);
 
 struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
 		      	  struct TagItem stdgadtags[],
 		      	  struct VisualInfo *vi,
-		      	  struct TagItem *taglist);
+		      	  const struct TagItem *taglist);
 
 struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
 		      	  struct TagItem stdgadtags[],
 		      	  struct VisualInfo *vi,
 		      	  struct TextAttr *tattr,
-		      	  struct TagItem *taglist);
+		      	  const struct TagItem *taglist);
 
 struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
 		      	  struct TagItem stdgadtags[],
 		      	  struct VisualInfo *vi,
 		      	  struct TextAttr *tattr,
-		      	  struct TagItem *taglist);
+		      	  const struct TagItem *taglist);
 
 struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
 		      	  struct TagItem stdgadtags[],
 		      	  struct VisualInfo *vi,
 		      	  struct TextAttr *tattr,
-		      	  struct TagItem *taglist);
+		      	  const struct TagItem *taglist);
 
 struct Gadget *makegeneric(struct GadToolsBase_intern *GadToolsBase,
 		      	  struct TagItem stdgadtags[],

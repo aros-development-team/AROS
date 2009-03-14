@@ -356,7 +356,7 @@ retryopenwin:
     DoWaitPointer (glob->prwin, glob->waitpointer, TRUE);
 
     /* initialize hook structure */
-    glob->intuihook.h_Entry = (ULONG (*)())IntuiMsgFunc;
+    glob->intuihook.h_Entry = (HOOKFUNC)IntuiMsgFunc;
     glob->intuihook.h_Data = (void *)glob;
 
     glob->frontscr = IntuitionBase->FirstScreen;

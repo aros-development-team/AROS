@@ -52,10 +52,10 @@
     
     for (i = 0; i < count; i++)
     {
-	if (msgptr->rm_Args[i] != NULL)
+	if (msgptr->rm_Args[i] != 0)
 	{
 	    DeleteArgstring(RXARG(msgptr,i));
-	    msgptr->rm_Args[i] = NULL;
+	    msgptr->rm_Args[i] = 0;
 	}
     }
     

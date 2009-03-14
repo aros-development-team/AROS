@@ -75,7 +75,7 @@ AROS_LH2(ULONG, ObtainInfoA,
     struct MinList **gw_p;
     Tag   otagtag;
     ULONG otagdata;
-    struct TagItem *tstate;
+    const struct TagItem *tstate;
     struct TagItem *tag;
 
     ULONG rc = 0;
