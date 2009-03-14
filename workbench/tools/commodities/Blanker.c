@@ -98,7 +98,7 @@ static WORD 	    	num_stars = 200, blankwait = 30;
 static UBYTE 	    	actionsig;
 static BOOL 	    	blanked, quitme, disabled, pens_allocated;
 
-static LONG 	    	args[NUM_ARGS];
+static IPTR 	    	args[NUM_ARGS];
 static char 	    	s[256];
 static WORD 	    	star_x[MAX_STARS], star_y[MAX_STARS],
 	    	    	star_speed[MAX_STARS], star_col[MAX_STARS];

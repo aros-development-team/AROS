@@ -85,7 +85,7 @@ void findHDs(struct HDTBDevice *parent)
                     node->root_partition.listnode.ln.ln_Name = AllocVec(100, MEMF_PUBLIC | MEMF_CLEAR);
                     if (node->root_partition.listnode.ln.ln_Name)
                     {
-                        if (InitListNode(&node->root_partition.listnode, parent))
+                        if (InitListNode(&node->root_partition.listnode, (struct ListNode *)parent))
                         {
                             node->root_partition.listnode.ln.ln_Type = LNT_Harddisk;
                             node->unit = i;

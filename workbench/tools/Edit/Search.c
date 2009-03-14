@@ -173,7 +173,7 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 #ifdef	__GNUC__
 		/* Init strgad hook (v37+ only) */
 		hook.h_Entry    = HookEntry;
-		hook.h_SubEntry = CheckConfirm;
+		hook.h_SubEntry = (HOOKFUNC)CheckConfirm;
 #endif
 
 		/** `Search' string gadget **/

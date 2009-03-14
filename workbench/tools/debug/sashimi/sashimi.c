@@ -739,7 +739,7 @@ main(int argc,char **argv)
     {
         struct RDArgs * rdargs;
 
-        rdargs = ReadArgs((STRPTR)ShellTemplate,(LONG *)&ShellArguments,NULL);
+        rdargs = ReadArgs((STRPTR)ShellTemplate,(IPTR *)&ShellArguments,NULL);
         if(rdargs != NULL)
         {
             /* Before anything else happens, check if
