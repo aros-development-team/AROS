@@ -64,7 +64,8 @@
     AROS_LIBFUNC_INIT
 
     LONG           *error = NULL;
-    struct TagItem *tag, *tl = tagList;
+    const struct TagItem *tl = tagList;
+    struct TagItem *tag;
     APTR            lock;
 
     error = (LONG *)GetTagData(PLAYER_ErrorCode, NULL, tl);

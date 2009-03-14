@@ -245,7 +245,7 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
 struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
-                         struct TagItem *taglist)
+                         const struct TagItem *taglist)
 {
     struct Gadget *obj = NULL;
 
@@ -303,10 +303,9 @@ struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
                          struct TextAttr *tattr,
-                         struct TagItem *taglist)
+                         const struct TagItem *taglist)
 {
     struct Gadget *obj = NULL;
-    Class *cl;
     BOOL cliptag_found = FALSE;
     
     struct TagItem *tag, tags[] =
@@ -370,10 +369,9 @@ struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
                          struct TextAttr *tattr,
-                         struct TagItem *taglist)
+                         const struct TagItem *taglist)
 {
     struct Gadget *obj = NULL;
-    Class *cl;
     BOOL cliptag_found = FALSE;
     
     struct TagItem *tag, tags[] =
@@ -450,7 +448,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
                          struct TextAttr *tattr,
-                         struct TagItem *taglist)
+                         const struct TagItem *taglist)
 {
 
     struct TagItem *tag;
@@ -567,7 +565,6 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     {
 	WORD x = 0, y = 0;
 	UWORD ysize = 8;
-	Class *textcl;
 	
 	struct TagItem lntags[] =
 	{
@@ -680,7 +677,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
 struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
-                         struct TagItem *taglist)
+                         const struct TagItem *taglist)
 {
     struct Gadget *scroller = NULL,
     		  *arrow_dec = NULL,
@@ -938,13 +935,11 @@ struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
                          struct TextAttr *tattr,
-                         struct TagItem *taglist)
+                         const struct TagItem *taglist)
 {
     struct Gadget *obj = NULL;
     struct IBox bbox;
     
-    Class *cl;
-
     struct TagItem *tag, tags[] =
     {
     	{GA_Disabled		, FALSE			}, /* 0 */
@@ -1024,11 +1019,10 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
                          struct TextAttr *tattr,
-                         struct TagItem *taglist)
+                         const struct TagItem *taglist)
 {
     struct Gadget *obj = NULL;
     struct IBox bbox;
-    Class *cl;
 
     struct TagItem *tag, tags[] =
     {
@@ -1122,7 +1116,7 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
                          struct TextAttr *tattr,
-                         struct TagItem *taglist)
+                         const struct TagItem *taglist)
 {
     struct Gadget *lvgad = NULL, *showselgad = LV_SHOWSELECTED_NONE;
     struct Gadget *scrollergad;

@@ -133,7 +133,7 @@ static LONG PartitionEBROpenPartitionTable
 LONG error = 0;
 struct PartitionHandle *ph;
 struct MBR *ebr;
-UBYTE i, j = 0;
+UBYTE i;
 ULONG block_no = 0;
 BOOL atEnd = FALSE;
 

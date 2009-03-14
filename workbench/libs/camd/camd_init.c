@@ -26,7 +26,7 @@
 
 /****************************************************************************************/
 
-static int Expunge(struct CambBase *CamdBase)
+static int Expunge(struct CamdBase *CamdBase)
 {
     UninitCamd(CamdBase);
     return TRUE;
