@@ -629,7 +629,7 @@ char **mxlabels;
 	    }
 	    WaitCTRL(sigs);
 	}
-	GetAttr(MUIA_Radio_Active, levelmx, &usrlevel);
+	GetAttr(MUIA_Radio_Active, levelmx, (IPTR *)&usrlevel);
 	set_variable("@user-level", NULL, usrlevel);
 
 	DelContents(wc);
@@ -684,7 +684,7 @@ char **mxlabels;
 		}
 		WaitCTRL(sigs);
 	    }
-	    GetAttr(MUIA_Radio_Active, levelmx, &logval);
+	    GetAttr(MUIA_Radio_Active, levelmx, (IPTR *)&logval);
 	    switch (logval)
 	    {
 		case 0: /* Log to file */
@@ -742,7 +742,7 @@ char **mxlabels;
 		    }
 		    WaitCTRL(sigs);
 		}
-		GetAttr(MUIA_Radio_Active, levelmx, &logval);
+		GetAttr(MUIA_Radio_Active, levelmx, (IPTR *)&logval);
 		switch (logval)
 		{
 		    case 0: /* Really Install */

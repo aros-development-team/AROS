@@ -650,7 +650,7 @@ AROS_UFH3(LONG, New_SystemTagList,
     if (patches[PATCH_SystemTagList].enabled)
     {
 	char optstr[20];
-	sprintf(optstr, "%ld", result);
+	sprintf(optstr, "%d", result);
 	main_output("SystemTagList", command, optstr, result != -1, TRUE);
     }
 
@@ -773,7 +773,7 @@ AROS_UFH5(BYTE, New_OpenDevice,
     if (patches[PATCH_OpenDevice].enabled)
     {
 	char unitstr[20];
-	sprintf(unitstr, "Unit %ld", unitNumber);
+	sprintf(unitstr, "Unit %d", unitNumber);
 	main_output("OpenDevice", devName, unitstr, !result, TRUE);
     }
     
