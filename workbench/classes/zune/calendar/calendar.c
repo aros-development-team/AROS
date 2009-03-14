@@ -133,8 +133,8 @@ IPTR Calendar__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
     struct ClockData	 old_clockdata;
-    struct TagItem      *tags  = msg->ops_AttrList;
-    struct TagItem      *tag;
+    const struct TagItem *tags  = msg->ops_AttrList;
+    struct TagItem       *tag;
     BOOL    	    	 redraw = FALSE;
     
     old_clockdata = data->clockdata;

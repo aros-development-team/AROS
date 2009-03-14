@@ -231,7 +231,7 @@ VOID RenderEntries( Class                   *cl,
     SetFont(msg->gpr_RPort, data->lvd_Font);
 
     if (!(data->lvd_Flags & (LVFLG_READONLY|LVFLG_MULTISELECT)))
-	GetAttr(AROSA_List_Active, data->lvd_List, &activepos);
+	GetAttr(AROSA_List_Active, data->lvd_List, (IPTR *)&activepos);
 
     getentry_msg.MethodID  = AROSM_List_GetEntry;
     getentry_msg.ItemPtr   = &item;
@@ -585,7 +585,7 @@ UWORD ShownEntries(struct LVData        *data,
     ULONG numentries;
     UWORD shown;
 
-    GetAttr(AROSA_List_Entries, data->lvd_List, &numentries);
+    GetAttr(AROSA_List_Entries, data->lvd_List, (IPTR *)&numentries);
 
     /* This formula has a little "bug": The height of the rendered texts
     ** are ibox.Height - height of 2 borders  - 1 horizontal spacing line, but

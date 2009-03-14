@@ -199,7 +199,7 @@ IPTR PPM__OM_NEW(Class *cl, Object *o, struct opSet *msg)
   }
  }
 
- NumChars=StrToLong(LineBuffer, &Width);
+ NumChars=StrToLong(LineBuffer, (LONG *)&Width);
 
  if(!((NumChars>0) && (Width>0)))
  {
@@ -213,7 +213,7 @@ IPTR PPM__OM_NEW(Class *cl, Object *o, struct opSet *msg)
  D(bug("ppm.datatype/OM_NEW: Width: %ld\n", (long) Width));
  D(bug("ppm.datatype/OM_NEW: NumChars: %ld\n", (long) NumChars));
 
- NumChars=StrToLong(LineBuffer+NumChars, &Height);
+ NumChars=StrToLong(LineBuffer+NumChars, (LONG *)&Height);
 
  if(!((NumChars>0) && (Height>0)))
  {

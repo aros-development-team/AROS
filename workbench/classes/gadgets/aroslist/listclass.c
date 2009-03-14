@@ -56,7 +56,7 @@ STATIC VOID SetActive(LONG pos, struct ListData *data)
     data->ld_Active = pos;
     return;
 }
-STATIC _OM_SET(Class *cl, Object *o,struct opSet *msg)
+STATIC IPTR _OM_SET(Class *cl, Object *o,struct opSet *msg)
 {
     IPTR retval = (IPTR)0;
     
@@ -96,7 +96,7 @@ STATIC _OM_SET(Class *cl, Object *o,struct opSet *msg)
 }
 IPTR AROSList__OM_SET(Class *cl, Object *o,struct opSet *msg)
 {
-    IPTR retval = DoSuperMethodA(cl, o, msg);
+    IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     retval += _OM_SET(cl, o, msg);
     return retval;
 }

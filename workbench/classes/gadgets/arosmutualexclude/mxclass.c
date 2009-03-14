@@ -388,8 +388,8 @@ IPTR AROSMX__OM_GET(Class *cl, Object *o, struct opGet *msg)
     struct MXData *data = INST_DATA(cl, o);
     if (msg->opg_AttrID == GTMX_Active)
     {
-	msg->opg_Storage = (IPTR)data->active;
-	return (IPTR)1;
+	*(msg->opg_Storage) = (IPTR)data->active;
+	return 1;
     }
     else
 	return DoSuperMethodA(cl, o, msg);

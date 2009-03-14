@@ -167,9 +167,7 @@ void MakeNavGadget(Class *cl, Object *obj, struct IBox *domain)
 ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
 {
    ULONG rv;
-   CLASSBASE;
    INSTDATA;
-   Object *newobj;
 
    STRPTR nodename = "main";
    ULONG sourcetype;
@@ -178,7 +176,7 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
    struct TagItem *tstate = msg->ops_AttrList;
    struct TagItem *tag;
 
-   rv = DoSuperMethodA(cl, obj, msg);
+   rv = DoSuperMethodA(cl, obj, (Msg)msg);
    if (rv == 0)
 	return rv;
     else
@@ -305,7 +303,6 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
 
 ULONG om_dispose(Class *cl,Object *obj,Msg msg)
 {
-   CLASSBASE;
    INSTDATA;
    ULONG rv;
    struct AmigaGuideObject *ago;
@@ -443,7 +440,6 @@ ULONG om_get(Class *cl,Object *obj,struct opGet *msg)
 
 ULONG _om_update(Class *cl, Object *obj, struct opSet *msg)
 {
-   CLASSBASE;
    ULONG rv = 0;
 
    struct TagItem *tstate = msg->ops_AttrList;
@@ -496,7 +492,6 @@ ULONG _om_update(Class *cl, Object *obj, struct opSet *msg)
 
 ULONG _om_set(Class *cl,Object *obj,struct opSet *msg)
 {
-   CLASSBASE;
    INSTDATA;
    ULONG rv = 0;
 
@@ -544,7 +539,6 @@ ULONG _om_set(Class *cl,Object *obj,struct opSet *msg)
 
 ULONG gm_layout(Class *cl, Object *obj, struct gpLayout *msg)
 {
-   CLASSBASE;
    INSTDATA;
    ULONG rc;
 
@@ -633,7 +627,6 @@ ULONG gm_layout(Class *cl, Object *obj, struct gpLayout *msg)
 
 ULONG gm_render(Class *cl, Object *obj, struct gpRender *msg)
 {
-   CLASSBASE;
    INSTDATA;
    struct DTSpecialInfo *si= CAST_GAD(obj)->SpecialInfo;
    ULONG rv = 0;
@@ -736,7 +729,6 @@ ULONG gm_render(Class *cl, Object *obj, struct gpRender *msg)
 
 ULONG gm_input(Class *cl, Object *obj, struct gpInput *msg)
 {
-   CLASSBASE;
    INSTDATA;
    struct DTSpecialInfo *si= CAST_GAD(obj)->SpecialInfo;
    ULONG rv = GMR_MEACTIVE;
@@ -807,7 +799,6 @@ ULONG dtm_removedtobject(Class *cl, Object *obj, Msg msg)
 
 ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
 {
-   CLASSBASE;
    INSTDATA;
    struct DTSpecialInfo *si = (struct DTSpecialInfo *) CAST_GAD(obj)->SpecialInfo;
    struct DTSpecialInfo *sosi = (struct DTSpecialInfo *) CAST_GAD(data->ag_Actual)->SpecialInfo;
@@ -992,7 +983,6 @@ ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
 
 ULONG dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg)
 {
-   CLASSBASE;
    INSTDATA;
    ULONG rv = 0;
 
@@ -1142,7 +1132,6 @@ ULONG dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg)
 static
 void UpdateNavigator(Class *cl, Object *obj, struct GadgetInfo *ginfo)
 {
-   CLASSBASE;
    INSTDATA;
    struct AmigaGuideObject *agobj = data->ag_ActualObject;
 
@@ -1206,7 +1195,6 @@ static
 void ActivateAGObject(Class *cl, Object *obj, struct GadgetInfo *ginfo,
 		      struct AmigaGuideObject *agobj)
 {
-   CLASSBASE;
    INSTDATA;
    struct gpLayout layout;
    struct IBox *domain;

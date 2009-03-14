@@ -64,7 +64,7 @@ Object *MakeMenuitem(CONST_STRPTR text)
         shortcut = NULL;
     }
     
-    return MenuitemObject,
+    return (Object *)MenuitemObject,
         MUIA_Menuitem_Title,      (IPTR) title,
         shortcut != NULL       ?
         MUIA_Menuitem_Shortcut :
@@ -222,7 +222,8 @@ IPTR SystemPrefsWindow__OM_SET
 )
 {
     SETUP_INST_DATA;
-    struct TagItem *tstate = message->ops_AttrList, *tag;
+    const struct TagItem *tstate = message->ops_AttrList;
+    struct TagItem       *tag;
                                   
     while ((tag = NextTagItem(&tstate)) != NULL)
     {

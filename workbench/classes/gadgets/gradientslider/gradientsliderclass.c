@@ -105,7 +105,8 @@ STATIC VOID notify_curval(Class *cl, Object *o, struct GadgetInfo *gi, BOOL inte
 
 IPTR GradientSlider__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
-    struct TagItem 		*tag, *tstate;
+    const struct TagItem 	*tstate;
+    struct TagItem 		*tag;
     IPTR 			retval;
     struct GradientSliderData 	*data = INST_DATA(cl, o);
     BOOL    	    	    	redraw_all = data->savebm == NULL;
@@ -692,7 +693,7 @@ IPTR GradientSlider__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 IPTR GradientSlider__GM_DOMAIN(Class *cl, Object *o, struct gpDomain *msg)
 {
     struct GradientSliderData *data = INST_DATA(cl, o);
-    struct DrawInfo	      *dri = (struct DrawInfo *) GetTagData( GA_DrawInfo, NULL, msg->gpd_Attrs );
+    struct DrawInfo	      *dri = (struct DrawInfo *) GetTagData( GA_DrawInfo, 0, msg->gpd_Attrs );
     struct RastPort	      *rp = msg->gpd_RPort;
     UWORD		       width, height, x=1,y=1;
 

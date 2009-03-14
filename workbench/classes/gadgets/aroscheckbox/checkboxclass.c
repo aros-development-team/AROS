@@ -246,7 +246,7 @@ IPTR AROSCheckbox__OM_DISPOSE(Class *cl, Class *obj, struct opSet *msg)
 	DisposeObject(G(obj)->GadgetRender);
 	G(obj)->GadgetRender = NULL;
     }
-    return DoSuperMethodA(cl, obj, (Msg)msg);
+    return DoSuperMethodA(cl, (Object *)obj, (Msg)msg);
 }
 
 /****************************************************************************************/

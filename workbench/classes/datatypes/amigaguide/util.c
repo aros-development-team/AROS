@@ -106,7 +106,6 @@ LONG GetNodeCommand(struct ClassBase *cb,
 
 APTR AllocAGMem(Class *cl, Object *obj, ULONG size)
 {
-   CLASSBASE;
    INSTDATA;
    APTR mem;
 
@@ -115,7 +114,6 @@ APTR AllocAGMem(Class *cl, Object *obj, ULONG size)
 }
 void FreeAGMem(Class *cl, Object *obj, APTR mem, ULONG size)
 {
-   CLASSBASE;
    INSTDATA;
    FreePooled(data->ag_Pool, mem, size);
 }
@@ -255,7 +253,7 @@ BOOL GetDTDomain(Class *cl, Object *obj, struct IBox *domain)
 
    get.MethodID = OM_GET;
    get.opg_AttrID  = DTA_Domain;
-   get.opg_Storage = (ULONG *) &tmp;
+   get.opg_Storage = (IPTR *) &tmp;
 
    /* CHECK: get domain from superclass, because we have overloaded
       the DTA_Domain attribute */
@@ -272,7 +270,6 @@ BOOL GetDTDomain(Class *cl, Object *obj, struct IBox *domain)
 struct AmigaGuideNode *GetAGNode(Class *cl, Object *obj,
                                  struct AmigaGuideFile *agf, STRPTR name)
 {
-   CLASSBASE;
    struct Node *n;
 
    /* search node list for the given name case insensitive. */
@@ -342,16 +339,15 @@ ULONG GotoObject(Class *cl, Object *obj, struct GadgetInfo *ginfo, STRPTR name, 
 
 ULONG GotoObjectTag(Class *cl, Object *obj, struct GadgetInfo *ginfo, Tag tag)
 {
-   CLASSBASE;
    INSTDATA;
    STRPTR gobj = NULL;
 
    /* try to get the object to goto from the actual object */
-   GetAttr(tag, data->ag_Actual, (ULONG *) &gobj);
+   GetAttr(tag, data->ag_Actual, (IPTR *) &gobj);
 
    /* no object found. so try global object. */
    if(gobj == NULL)
-      GetAttr(tag, obj, (ULONG *) &gobj);
+      GetAttr(tag, obj, (IPTR *) &gobj);
 
    if(gobj == NULL)
       return 0;
@@ -362,7 +358,6 @@ ULONG GotoObjectTag(Class *cl, Object *obj, struct GadgetInfo *ginfo, Tag tag)
 
 struct AmigaGuideObject *AllocAGObject(Class *cl, Object *obj)
 {
-   CLASSBASE;
    struct AmigaGuideObject *agobj;
    agobj = AllocAGMem(cl, obj, sizeof(struct AmigaGuideObject));
    if(agobj == NULL)
@@ -376,7 +371,6 @@ struct AmigaGuideObject *AllocAGObjectNode(Class *cl, Object *obj,
                                            struct AmigaGuideFile *agf,
 					   struct AmigaGuideNode *agnode)
 {
-   CLASSBASE;
    struct AmigaGuideObject *agobj;
    LONG err = 0;
 
@@ -415,8 +409,6 @@ struct AmigaGuideObject *AllocAGObjectNode(Class *cl, Object *obj,
 
 void FreeAGObject(Class *cl, Object *obj, struct AmigaGuideObject *agobj)
 {
-   CLASSBASE;
-
    if(agobj != NULL)
    {
       if(agobj->ago_Object != NULL && !agobj->ago_NoDispose)
@@ -457,7 +449,6 @@ void FreeAGObject(Class *cl, Object *obj, struct AmigaGuideObject *agobj)
 
 void ParseFontLine(Class *cl, Object *obj, STRPTR args, struct TextAttr *ta)
 {
-   CLASSBASE;
    STRPTR ptr  = args;
    STRPTR tmp;
    LONG size;
@@ -544,7 +535,6 @@ static BPTR MyLock(struct ClassBase *cb,STRPTR file, BOOL *nodetype, BPTR dir)
 
 static BPTR GetObjectDir(Class *cl, Object *obj)
 {
-   CLASSBASE;
    struct DataType *dt;
    BPTR handle;
    ULONG type;
@@ -764,7 +754,6 @@ LONG mysprintf(struct ClassBase *cb, STRPTR buf, LONG len, STRPTR format,...)
 
 ULONG SendRexxCommand(Class *cl, Object *obj, STRPTR command, ULONG mode)
 {
-   CLASSBASE;
    INSTDATA;
 
    struct MsgPort *rxport;
@@ -824,7 +813,6 @@ ULONG SendRexxCommand(Class *cl, Object *obj, STRPTR command, ULONG mode)
 
 ULONG SystemCommand(Class *cl, Object *obj, STRPTR command)
 {
-   CLASSBASE;
    struct TagItem tags[] = { {SYS_Output, 0}, {TAG_DONE, 0} };
    ULONG rc = 0;
    BPTR dir = GetObjectDir(cl, obj);
@@ -857,7 +845,6 @@ ULONG SystemCommand(Class *cl, Object *obj, STRPTR command)
 
 BOOL GetFontDimension(Class *cl, Object *obj, STRPTR font, WORD *x, WORD *y)
 {
-   CLASSBASE;
    struct TextFont *tf;
    UBYTE fontname[128];
    struct TextAttr ta;
