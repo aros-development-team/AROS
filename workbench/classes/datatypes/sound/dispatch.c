@@ -639,7 +639,7 @@ void __regargs GetSoundDTPrefs( struct ClassBase *cb )
 			rdargs->RDA_Source.CS_Length = len;
 			rdargs->RDA_Flags = RDAF_NOPROMPT;
 		
-			if( ( freeargs = ReadArgs( TEMPLATE, (LONG *)&args, rdargs ) ) )
+			if( ( freeargs = ReadArgs( TEMPLATE, (IPTR *)&args, rdargs ) ) )
 			{
 				dbug( kprintf( "List of options:\n" ); )
 				
@@ -1458,7 +1458,7 @@ IPTR __regargs Sound_SET( Class *cl, Object *o, struct opSet *ops )
 
 	retval = DoSuperMethodA( cl, o, (Msg) ops );
 	dbug( kprintf("parsing list\n"); )
-	parsetaglist( cl, o, ops, &cnt );
+	parsetaglist( cl, o, ops, (ULONG *)&cnt );
 	dbug( kprintf("refreshing\n"); )
 	if( retval || ( ( id->ForceRefresh ) && ( id->Gadget ) ) )
 	{

@@ -15,7 +15,6 @@
 
 struct AmigaGuideFile *AllocAGFile(Class *cl, Object *obj)
 {
-   CLASSBASE;
    INSTDATA;
    struct AmigaGuideFile *agf;
 
@@ -42,8 +41,6 @@ void AddMacro(Class *cl, Object *obj, struct AmigaGuideFile *agf,
 	      STRPTR name, ULONG namelen,
 	      STRPTR macro, ULONG macrolen)
 {
-   CLASSBASE;
-
    struct AmigaGuideMacro *mac;
    struct Node *n;
    STRPTR macrostring;
@@ -84,7 +81,6 @@ struct AmigaGuideNode *
 ParseNodeLine(Class *cl, Object *obj, struct AmigaGuideFile *agf,
 	      STRPTR args, LONG linelen)
 {
-   CLASSBASE;
    struct AmigaGuideNode *agn;
    ULONG size = sizeof(struct AmigaGuideNode);
    STRPTR name;

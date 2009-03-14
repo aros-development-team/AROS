@@ -128,7 +128,6 @@ static
 void draw_button(Class *cl, Object *obj, struct GadgetInfo *ginfo,
 		 struct RastPort *rp, ULONG idx)
 {
-   CLASSBASE;
    INSTDATA;
 
    struct TextExtent textext;
@@ -173,7 +172,6 @@ BOOL gi_draw_button(Class *cl, Object *obj,
 		    struct GadgetInfo *ginfo,
 		    ULONG idx)
 {
-   CLASSBASE;
    struct RastPort *rp;
 
    if((rp = ObtainGIRPort(ginfo)) != NULL)
@@ -195,7 +193,6 @@ BOOL gi_draw_button(Class *cl, Object *obj,
 static
 ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
 {
-   CLASSBASE;
    INSTDATA;
    ULONG rv = 0;
 
@@ -309,7 +306,6 @@ ULONG gm_input(Class *cl, Object *obj, struct gpInput *msg)
 static
 ULONG gm_layout(Class *cl, Object *obj, struct gpLayout *msg)
 {
-   CLASSBASE;
    INSTDATA;
 
    struct GadgetInfo *ginfo = msg->gpl_GInfo;
@@ -368,7 +364,6 @@ ULONG gm_layout(Class *cl, Object *obj, struct gpLayout *msg)
 static
 ULONG gm_render(Class *cl, Object *obj, struct gpRender *msg)
 {
-   CLASSBASE;
    INSTDATA;
 
    struct GadgetInfo *ginfo = msg->gpr_GInfo;
@@ -479,7 +474,6 @@ ULONG nvm_changed(Class *cl, Object *obj, Msg msg)
 static
 ULONG navclass_dispatcher(Class *cl, Object *obj, Msg msg)
 {
-   CLASSBASE;
    LONG rv = 0;
 
    switch(msg->MethodID)

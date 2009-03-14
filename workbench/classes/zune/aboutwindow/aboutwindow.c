@@ -69,8 +69,8 @@ BOOL NamesToList
     Object *list, struct TagItem *tags, struct AboutWindow_DATA *data
 )
 {
-    struct TagItem *tstate       = tags,
-                   *tag          = NULL;
+    const struct TagItem *tstate       = tags;
+    struct TagItem       *tag          = NULL;
     BOOL            success      = TRUE;
     IPTR            section      = SID_NONE;
     CONST_STRPTR    sectionName  = NULL;
@@ -157,8 +157,8 @@ Object *AboutWindow__OM_NEW
 )
 {
     struct AboutWindow_DATA *data              = NULL; 
+    const struct TagItem    *tstate            = message->ops_AttrList;
     struct TagItem          *tag               = NULL, 
-                            *tstate            = message->ops_AttrList,
                             *authorsTags       = NULL,
                             *sponsorsTags      = NULL;
     struct Catalog          *catalog           = NULL;
@@ -256,7 +256,7 @@ Object *AboutWindow__OM_NEW
         {
             strlcat(path, "PROGDIR:", 512);
             strlcat(path, FilePart(program), 512);
-            imageObject = IconImageObject,
+            imageObject = (Object *)IconImageObject,
                 MUIA_IconImage_File, (IPTR) path,
             End;
         }
@@ -292,24 +292,24 @@ Object *AboutWindow__OM_NEW
         WindowContents, (IPTR) VGroup,
             GroupSpacing(6),
             
-            Child, (IPTR) (imageGroup = HGroup,
+            Child, (IPTR) (imageGroup = (Object *)HGroup,
                 MUIA_Weight,  0,
                 
                 Child, (IPTR) HVSpace,
                 Child, (IPTR) imageObject,
                 Child, (IPTR) HVSpace,
             End),
-            Child, (IPTR) (versionObject = TextObject,
+            Child, (IPTR) (versionObject = (Object *)TextObject,
                 MUIA_Text_PreParse, (IPTR) MUIX_C,
                 MUIA_Text_Contents, (IPTR) NULL,
             End),
-            Child, (IPTR) (copyrightObject = TextObject,
+            Child, (IPTR) (copyrightObject = (Object *)TextObject,
                 MUIA_Text_PreParse, (IPTR) MUIX_C,
                 MUIA_Text_Contents, (IPTR) NULL,
             End),
-            Child, (IPTR) (descriptionGroup = VGroup,
+            Child, (IPTR) (descriptionGroup = (Object *)VGroup,
                 Child, (IPTR) VSpace(6),
-                Child, (IPTR) (descriptionObject = TextObject,
+                Child, (IPTR) (descriptionObject = (Object *)TextObject,
                     MUIA_Text_PreParse, (IPTR) MUIX_I MUIX_C,
                     MUIA_Text_Contents, (IPTR) NULL,
                 End),
@@ -317,12 +317,12 @@ Object *AboutWindow__OM_NEW
             Child, (IPTR) VSpace(6),
             Child, (IPTR) RegisterGroup(pages),
                 Child, (IPTR) ListviewObject,
-                    MUIA_Listview_List, (IPTR) (authorsList = ListObject,
+                    MUIA_Listview_List, (IPTR) (authorsList = (Object *)ListObject,
                         ReadListFrame,
                     End),
                 End,
                 Child, (IPTR) ListviewObject,
-                    MUIA_Listview_List, (IPTR) (sponsorsList = ListObject,
+                    MUIA_Listview_List, (IPTR) (sponsorsList = (Object *)ListObject,
                         ReadListFrame,
                     End),
                 End,

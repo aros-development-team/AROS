@@ -104,7 +104,7 @@ STATIC IPTR _OM_SET(Class *cl, Object *o,struct opSet *msg)
 
 		data->lvd_List = (Object *)tag->ti_Data;
 
-		GetAttr(AROSA_List_Entries, data->lvd_List, &numentries);
+		GetAttr(AROSA_List_Entries, data->lvd_List, (IPTR *)&numentries);
 		SetAttrs(data->lvd_List,
 			AROSA_List_Active, AROSV_List_Active_None,
 			TAG_END);
@@ -262,7 +262,7 @@ STATIC IPTR _OM_SET(Class *cl, Object *o,struct opSet *msg)
 
 IPTR AROSListview__OM_SET(Class *cl, Object *o,struct opSet *msg)
 {
-    IPTR retval = DoSuperMethodA(cl, o, msg);
+    IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
 
     retval += (IPTR)_OM_SET(cl, o, (struct opSet *)msg);
     return retval;
@@ -274,7 +274,7 @@ IPTR AROSListview__OM_SET(Class *cl, Object *o,struct opSet *msg)
 
 IPTR AROSListview__OM_UPDATE(Class *cl, Object *o,struct opSet *msg)
 {
-    IPTR retval = DoSuperMethodA(cl, o, msg);
+    IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     struct LVData *data = INST_DATA(cl, o);
     
     retval += (IPTR)_OM_SET(cl, o, (struct opSet *)msg);
@@ -522,7 +522,7 @@ IPTR AROSListview__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 
     GetGadgetIBox(o, msg->gpi_GInfo, &container);
 
-    GetAttr(AROSA_List_Entries, data->lvd_List, &numentries);
+    GetAttr(AROSA_List_Entries, data->lvd_List, (IPTR *)&numentries);
 
     /* How many entries are currently shown in the listview ? */
     shown = ShownEntries(data, &container);
@@ -535,7 +535,7 @@ IPTR AROSListview__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 
     if (clickpos < shown)
     {
-	GetAttr(AROSA_List_Active, data->lvd_List, &active);
+	GetAttr(AROSA_List_Active, data->lvd_List, (IPTR *)&active);
 
 	/* Check for a doubleclick */
 	activepos = active - data->lvd_First;

@@ -181,8 +181,8 @@ IPTR PrefsWindow__OM_SET
 )
 {
     struct PrefsWindow_DATA *data   = INST_DATA(CLASS, self);
-    struct TagItem                *tstate = message->ops_AttrList,
-                                  *tag;
+    const struct TagItem          *tstate = message->ops_AttrList;
+    struct TagItem                *tag;
                                   
     while ((tag = NextTagItem(&tstate)) != NULL)
     {

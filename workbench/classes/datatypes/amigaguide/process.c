@@ -98,7 +98,6 @@ struct AmigaGuideDTMsg
 static
 void DoRexxTrigger(Class *cl, Object *obj, ULONG function, APTR trigger_data)
 {
-   CLASSBASE;
    INSTDATA;
 
    if(data->ag_Window != NULL)
@@ -389,7 +388,6 @@ RegCall GetA4 void asyncmethodfunc(void)
 
 BOOL SendAGTrigger(Class *cl, Object *obj, struct dtTrigger *dtt)
 {
-   CLASSBASE;
    INSTDATA;
    struct AmigaGuideDTMsg *msg;
 
@@ -409,7 +407,6 @@ BOOL SendAGTrigger(Class *cl, Object *obj, struct dtTrigger *dtt)
 
 BOOL SendAGLayout(Class *cl, Object *obj, struct gpLayout *gpl)
 {
-   CLASSBASE;
    INSTDATA;
    struct AmigaGuideDTMsg *msg;
 
@@ -463,7 +460,6 @@ struct Process *CreateAGProcess(Class *cl, Object *obj)
 
 void DeleteAGProcess(Class *cl, Object *obj)
 {
-   CLASSBASE;
    INSTDATA;
 
    if(data->ag_Process != NULL)

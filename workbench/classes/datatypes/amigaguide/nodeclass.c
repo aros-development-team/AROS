@@ -244,7 +244,6 @@ static ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg);
 static
 APTR AllocNodeMem(Class *cl, Object *obj, ULONG size)
 {
-   CLASSBASE;
    INSTDATA;
    APTR mem;
 
@@ -254,7 +253,6 @@ APTR AllocNodeMem(Class *cl, Object *obj, ULONG size)
 static
 void FreeNodeMem(Class *cl, Object *obj, APTR mem, ULONG size)
 {
-   CLASSBASE;
    INSTDATA;
    FreePooled(data->n_Pool, mem, size);
 }
@@ -281,7 +279,6 @@ void FreeNodeVec(Class *cl, Object *obj, APTR mem)
 static
 LONG GetAmigaGuideAttr(Class *cl, Object *obj, STRPTR attr, LONG attr_len)
 {
-   CLASSBASE;
    const struct AmigaGuideAttr *attrs = amigaguide_attrs;
 
    while(attrs->aga_Id != ATTR_MAX)
@@ -298,7 +295,6 @@ static
 LONG GetPenColor(Class *cl, Object *obj, struct ParseNodeData *pd,
                  STRPTR arg, LONG arg_len, LONG *val)
 {
-   CLASSBASE;
    const struct DrawInfoPen
    {
       STRPTR Name;
@@ -381,7 +377,6 @@ static
 STRPTR CopyLineString(Class *cl, Object *obj,
                       STRPTR str, LONG len)
 {
-   CLASSBASE;
    INSTDATA;
    STRPTR cpy;
    STRPTR end = str + ((len == -1) ? strlen(str) : len);
@@ -398,7 +393,6 @@ struct Line *AllocLine(Class *cl, Object *obj,
                        struct ParseNodeData *pd,
                        STRPTR text, LONG len)
 {
-   CLASSBASE;
    INSTDATA;
    struct Line *line;
 
@@ -459,7 +453,6 @@ struct Line *AllocTextLine(Class *cl, Object *obj,
                            struct ParseNodeData *pd,
                            STRPTR text, LONG len)
 {
-   CLASSBASE;
    INSTDATA;
    struct Line *line = NULL;
 
@@ -591,7 +584,6 @@ BOOL DoNodeAttr(Class *cl, Object *obj, struct ParseNodeData *pd,
                 LONG id, STRPTR attrargs, LONG attrargs_len,
                 STRPTR *ptr_ptr, BOOL *newline)
 {
-   CLASSBASE;
    INSTDATA;
    struct Line *line;
    STRPTR ptr = *ptr_ptr;
@@ -748,7 +740,6 @@ void FindAndExpandMacro(Class *cl, Object *obj, struct ParseNodeData *pd,
                         STRPTR attr, LONG attr_len, STRPTR args, LONG args_len,
                         STRPTR *ptr_ptr, BOOL *newline)
 {
-   CLASSBASE;
    INSTDATA;
    struct AmigaGuideMacro *agm = NULL;
    struct Node *n = data->n_AGFile->agf_Macros.lh_Head;
@@ -874,7 +865,6 @@ void FindAndExpandMacro(Class *cl, Object *obj, struct ParseNodeData *pd,
 static
 LONG ParseNode(Class *cl, Object *obj, struct ParseNodeData *pd)
 {
-   CLASSBASE;
    INSTDATA;
    struct Line *line;
 
@@ -1230,7 +1220,6 @@ static
 ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
 {
    ULONG rv = (ULONG) obj;
-   CLASSBASE;
    INSTDATA;
 
    ULONG sourcetype = DTST_FILE;
@@ -1326,7 +1315,6 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
 static
 ULONG om_dispose(Class *cl,Object *obj,Msg msg)
 {
-   CLASSBASE;
    INSTDATA;
    ULONG rv;
 
@@ -1383,7 +1371,6 @@ ULONG om_get(Class *cl,Object *obj,struct opGet *msg)
 static
 ULONG om_set(Class *cl,Object *obj,struct opSet *msg)
 {
-   CLASSBASE;
    INSTDATA;
    ULONG rv = 0;
 
@@ -1418,7 +1405,6 @@ ULONG om_set(Class *cl,Object *obj,struct opSet *msg)
 static
 ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
 {
-   CLASSBASE;
    INSTDATA;
    struct DTSpecialInfo *si= CAST_GAD(obj)->SpecialInfo;
    ULONG lines = 0;

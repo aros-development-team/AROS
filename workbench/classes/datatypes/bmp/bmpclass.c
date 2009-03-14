@@ -175,7 +175,7 @@ static BOOL LoadBMP_Colormap(BmpHandleType *bmphandle, int numcolors,
 	    colormap[i].blue = *(bmphandle->filebufpos)++;
 	    colormap[i].green = *(bmphandle->filebufpos)++;
 	    colormap[i].red = *(bmphandle->filebufpos)++;
-	    *(bmphandle->filebufpos)++;
+	    bmphandle->filebufpos++;
 	    colregs[j++] = ((ULONG)colormap[i].red)<<24;
 	    colregs[j++] = ((ULONG)colormap[i].green)<<24;
 	    colregs[j++] = ((ULONG)colormap[i].blue)<<24;
