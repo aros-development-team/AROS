@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: vesa gfx Hidd for standalone i386 AROS
@@ -50,8 +50,6 @@ static int PCVesa_Init(LIBBASETYPEPTR LIBBASE)
 #endif
     InitSemaphore(&xsd->HW_acc);
 
-  bug("\03");
-    
     if (initVesaGfxHW(&xsd->data))
     {
 	D(bug("[VESA] Init: Everything OK\n"));
