@@ -190,7 +190,7 @@ static int GM_UNIQUENAME(Open)
 	
 	struct TagItem conunit_tags[] =
 	{
-	    {A_Console_Window,	NULL},
+	    {A_Console_Window,	0},
 	    {TAG_DONE, 0}
 	};
 	

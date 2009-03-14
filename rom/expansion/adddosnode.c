@@ -98,7 +98,7 @@
 	    
 	       DeviceProc() will see that dn_Device for this node is NULL
 	       and start up the handler. */
-	    DeviceProc((struct DosList *)deviceNode);
+	    DeviceProc((struct Device *)deviceNode);
 	}
 
 	CloseLibrary((struct Library *)DOSBase);

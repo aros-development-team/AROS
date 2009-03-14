@@ -135,7 +135,7 @@
             /* If this is not the first MemHeader and it has some free space, move it to the head */
             if (mh->mh_Node.ln_Pred != NULL && mh->mh_Free > 32)
             {
-                Remove(mh);
+                Remove((struct Node *)mh);
                 AddHead((struct List *)&pool->pool.PuddleList, (struct Node *)&mh->mh_Node);
             }
 

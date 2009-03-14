@@ -309,7 +309,7 @@ struct BlockCache *blockbuffer, *priorbuffer;
 *********************************************/
 ULONG deleteFileRemainder(struct AFSBase *afsbase, struct AfsHandle *ah)
 {
-ULONG lastblock, key;
+ULONG key;
 struct BlockCache *blockbuffer;
 
 	invalidBitmap(afsbase, ah->volume);

@@ -69,7 +69,7 @@
         /* call the "interrupt" with the message as an argument */
         AROS_UFC4(void, ((struct Interrupt *) port->mp_SoftInt)->is_Code,
             AROS_UFCA(APTR,              ((struct Interrupt *) port->mp_SoftInt)->is_Data, A1),
-            AROS_UFCA(ULONG_FUNC,        ((struct Interrupt *) port->mp_SoftInt)->is_Code, A5),
+            AROS_UFCA(ULONG_FUNC,        (ULONG_FUNC)((struct Interrupt *) port->mp_SoftInt)->is_Code, A5),
             AROS_UFCA(struct Message *,  message,                                          D0),
             AROS_UFCA(struct ExecBase *, SysBase,                                          A6));
 

@@ -431,7 +431,7 @@ BOOL init_basemeta(struct IntOOPBase *OOPBase)
 {
     struct basemetaobject *bmo;
     BOOL success;
-    ULONG mbase = NULL;
+    ULONG mbase = 0;
     
     EnterFunc(bug("init_basemeta()\n"));
     
@@ -570,7 +570,7 @@ BOOL init_rootclass(struct IntOOPBase *OOPBase)
     
     rco->inst.data.public.ClassNode.ln_Name = CLID_Root;
     rco->inst.data.public.OOPBasePtr	= (struct Library *)OOPBase;
-    rco->inst.data.public.InstOffset	= NULL;
+    rco->inst.data.public.InstOffset	= 0;
     rco->inst.data.public.UserData	= (APTR)OOPBase;
     
     rco->inst.data.public.cl_DoMethod	= NULL;

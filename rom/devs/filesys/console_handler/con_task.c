@@ -206,7 +206,7 @@ LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
     {
 	{WA_PubScreen	,0	    },
 	{WA_AutoAdjust	,TRUE       },
-	{WA_PubScreenName, NULL     },
+	{WA_PubScreenName, 0        },
 	{WA_PubScreenFallBack, TRUE },
 	{TAG_DONE                   }
     };

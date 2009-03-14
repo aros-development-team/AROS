@@ -109,9 +109,9 @@ static OOP_Object *ifmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	
 	inst = (struct ifmeta_inst *)o;
 	
-	domethod 	= (IPTR (*)())GetTagData(aMeta_DoMethod, 	NULL, msg->attrList);
-	coercemethod 	= (IPTR (*)())GetTagData(aMeta_CoerceMethod, 	NULL, msg->attrList);
-	dosupermethod	= (IPTR (*)())GetTagData(aMeta_DoSuperMethod, 	NULL, msg->attrList);
+	domethod 	= (IPTR (*)())GetTagData(aMeta_DoMethod, 	0, msg->attrList);
+	coercemethod 	= (IPTR (*)())GetTagData(aMeta_CoerceMethod, 	0, msg->attrList);
+	dosupermethod	= (IPTR (*)())GetTagData(aMeta_DoSuperMethod, 	0, msg->attrList);
 	
 
         D(bug("Instance allocated %p\n", inst));

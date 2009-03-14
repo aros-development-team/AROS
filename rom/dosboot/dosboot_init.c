@@ -139,7 +139,6 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
     BPTR            lock, seglist;
     STRPTR          buffer;
     LONG            bufferLength;
-    struct InfoData info;
 
     D(bug("[DOSBoot] __dosboot_IsBootable('%s')\n", deviceName));
 
@@ -178,7 +177,7 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
         D(bug("[DOSBoot] __dosboot_IsBootable: Allocated %d bytes for Buffer @ %p\n", bufferLength, buffer));
         if ((readsize = Read(lock, buffer, (bufferLength - 1))) != -1)
         {
-            IPTR sigptr = NULL;
+            IPTR sigptr = 0;
 
             if (readsize != 0)
                 buffer[readsize] = '\0';
@@ -186,7 +185,7 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
                 buffer[bufferLength - 1] = '\0';
 
             D(bug("[DOSBoot] __dosboot_IsBootable: Buffer contains '%s'\n", buffer));
-            if ((sigptr = strstr(buffer, AROS_ARCHITECTURE)) != NULL)
+            if ((sigptr = (IPTR)strstr(buffer, AROS_ARCHITECTURE)) != 0)
             {
                 D(bug("[DOSBoot] __dosboot_IsBootable: Signature '%s' found\n", sigptr));
                 result = TRUE;

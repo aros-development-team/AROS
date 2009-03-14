@@ -204,11 +204,7 @@ UBYTE i;
  Output: -
 ********************************************/
 void remDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
-struct DosList *doslist;
 struct DosList *dl;
-BSTR bname;
-char string[32];
-UBYTE i;
 
 	dl = volume->volumenode;
 	if (dl) {

@@ -182,7 +182,7 @@
 	    icontrol->fib = AllocDosObject(DOS_FIB, NULL);
 	    if (!icontrol->fib)
 	    {
-	        iofs.io_DosError == IoErr();
+	        iofs.io_DosError = IoErr();
 	        goto end;
 	    }
 	}
@@ -198,7 +198,7 @@
 	{    
 	    if (!Examine(lock, icontrol->fib))
 	    {
-	        iofs.io_DosError == IoErr();
+	        iofs.io_DosError = IoErr();
 		goto end;
 	    }
 	    if (icontrol->fib->fib_DirEntryType <= 0)
