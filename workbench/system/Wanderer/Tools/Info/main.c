@@ -518,7 +518,7 @@ D(bug("[WBInfo] scan file\n"));
         sprintf(datetime, "%s %s", time, date);
 
         /* fill size */
-        sprintf(size, "%ld", ap->ap_Info.fib_Size);
+        sprintf(size, "%d", ap->ap_Info.fib_Size);
 
         /* fill protection */
         protection = ap->ap_Info.fib_Protection;
@@ -548,7 +548,7 @@ D(bug("[WBInfo] scan file\n"));
 D(bug("[WBInfo] file has icon\n"));
         type = (char *) typeNames[icon->do_Type];
 D(bug("[WBInfo] icon type is: %s\n", type));
-        sprintf(stack, "%ld", icon->do_StackSize);
+        sprintf(stack, "%d", icon->do_StackSize);
         if (icon->do_DefaultTool)
             sprintf(deftool, "%s", icon->do_DefaultTool);
         else
@@ -561,7 +561,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
 
     if (icon->do_Type == 2)
     {
-		sizespace = TextObject,
+		sizespace = (Object *)TextObject,
                                         ButtonFrame,
                                         MUIA_Background, MUII_TextBack,
                                         MUIA_Text_PreParse, (IPTR) "\33r",
@@ -572,7 +572,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
     }
     else
     {
-	sizespace = TextObject,
+	sizespace = (Object *)TextObject,
                                         TextFrame,
                                         MUIA_Background, MUII_TextBack,
                                         MUIA_Text_PreParse, (IPTR) "\33r",
@@ -580,7 +580,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                                     End;
     }
 
-    application = ApplicationObject,
+    application = (Object *)ApplicationObject,
         MUIA_Application_Title,  __(MSG_TITLE),
         MUIA_Application_Version, (IPTR) "$VER: Info 0.3 ("ADATE") © AROS Dev Team",
         MUIA_Application_Description,  __(MSG_DESCRIPTION),
@@ -588,21 +588,21 @@ D(bug("[WBInfo] icon type is: %s\n", type));
         MUIA_Application_Menustrip, (IPTR) MenuitemObject,
             MUIA_Family_Child, (IPTR) MenuitemObject,
                 MUIA_Menuitem_Title,  __(MSG_PROJECT),
-                MUIA_Family_Child, (IPTR)(infomenu = MenuitemObject, MUIA_Menuitem_Title,
+                MUIA_Family_Child, (IPTR)(infomenu = (Object *)MenuitemObject, MUIA_Menuitem_Title,
                         __(MSG_INFORMATION), MUIA_Menuitem_Shortcut, (IPTR) "I", End),
-                MUIA_Family_Child, (IPTR)(protectmenu = MenuitemObject, MUIA_Menuitem_Title,
+                MUIA_Family_Child, (IPTR)(protectmenu = (Object *)MenuitemObject, MUIA_Menuitem_Title,
                         __(MSG_PROTECTION),MUIA_Menuitem_Shortcut, (IPTR) "P", End),
-                MUIA_Family_Child, (IPTR)(toolmenu = MenuitemObject, MUIA_Menuitem_Title,
+                MUIA_Family_Child, (IPTR)(toolmenu = (Object *)MenuitemObject, MUIA_Menuitem_Title,
                         __(MSG_TOOLTYPES),MUIA_Menuitem_Shortcut, (IPTR) "T", End),
                 MUIA_Family_Child, (IPTR) MenuitemObject, MUIA_Menuitem_Title, ~0, End,
-                MUIA_Family_Child, (IPTR) (aboutmenu = MenuitemObject, MUIA_Menuitem_Title,
+                MUIA_Family_Child, (IPTR) (aboutmenu = (Object *)MenuitemObject, MUIA_Menuitem_Title,
                     __(MSG_ABOUT), (IPTR) MUIA_Menuitem_Shortcut, (IPTR) "?", End),
                 MUIA_Family_Child, (IPTR) MenuitemObject, MUIA_Menuitem_Title, ~0, End,
-                MUIA_Family_Child, (IPTR) (quit = MenuitemObject, MUIA_Menuitem_Title,
+                MUIA_Family_Child, (IPTR) (quit = (Object *)MenuitemObject, MUIA_Menuitem_Title,
                     __(MSG_QUIT), MUIA_Menuitem_Shortcut, (IPTR) "Q", End),
                 End,
             End,
-        SubWindow, (IPTR) (window = WindowObject,
+        SubWindow, (IPTR) (window = (Object *)WindowObject,
             MUIA_Window_Title, (IPTR) __(MSG_ICON),
             MUIA_Window_ID, MAKE_ID('I','N','F','O'),
             MUIA_Window_Activate, TRUE,
@@ -630,21 +630,21 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                             Child, (IPTR) HGroup,
                                 Child, (IPTR) ColGroup(2),
                                     Child, (IPTR) Label2(__(MSG_TYPE)),
-                                    Child, (IPTR) (typespace = TextObject,
+                                    Child, (IPTR) (typespace = (Object *)TextObject,
                                         TextFrame,
                                         MUIA_Background, MUII_TextBack,
                                         MUIA_Text_PreParse, (IPTR) "\33r",
                                         MUIA_Text_Contents, (IPTR) type,
                                     End),
                                    Child, (IPTR) Label2(__(MSG_DATE)),
-                                    Child, (IPTR) (datespace = TextObject,
+                                    Child, (IPTR) (datespace = (Object *)TextObject,
                                         TextFrame,
                                         MUIA_Background, MUII_TextBack,
                                         MUIA_Text_PreParse, (IPTR) "\33r",
                                         MUIA_Text_Contents, (IPTR) datetime,
                                     End),
                                     Child, (IPTR) Label2(__(MSG_VERSION)),
-                                    Child, (IPTR) (versionspace = TextObject,
+                                    Child, (IPTR) (versionspace = (Object *)TextObject,
                                         ButtonFrame,
                                         MUIA_Background, MUII_TextBack,
                                         MUIA_Text_PreParse, (IPTR) "\33r",
@@ -657,11 +657,11 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                                  End,
                             End,
                             Child, (IPTR) HVSpace,
-                            Child, (IPTR) (group = HGroup,
+                            Child, (IPTR) (group = (Object *)HGroup,
                             End),
                             Child, (IPTR) HGroup,
                                 Child, (IPTR) Label2(__(MSG_COMMENT)),
-                                Child, (IPTR) (commentspace = StringObject,
+                                Child, (IPTR) (commentspace = (Object *)StringObject,
                                     StringFrame,
                                     MUIA_CycleChain, 1,
                                 End),
@@ -714,7 +714,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
 				        GroupSpacing(0),
 				    	Child, (IPTR) (editor = MUI_NewObject(MUIC_TextEditor,
 				    	TAG_DONE)),
-					Child, (IPTR) (slider = ScrollbarObject,
+					Child, (IPTR) (slider = (Object *)ScrollbarObject,
 					End),
 				    End,
 				#endif

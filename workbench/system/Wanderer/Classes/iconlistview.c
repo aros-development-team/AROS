@@ -211,14 +211,14 @@ IPTR IconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct IconListview_DATA *data;
     //struct TagItem *tags,*tag;
-    Object *iconlist = (Object*)GetTagData(MUIA_IconListview_IconList, NULL, msg->ops_AttrList);
+    Object *iconlist = (Object*)GetTagData(MUIA_IconListview_IconList, 0, msg->ops_AttrList);
     Object *vert,*horiz,*button,*group;
 
     struct Hook *layout_hook = AllocVec(sizeof(struct Hook), MEMF_CLEAR);
     int usewinborder;
 
     if (!layout_hook) 
-        return NULL;
+        return 0;
     usewinborder = GetTagData(MUIA_IconListview_UseWinBorder, FALSE, msg->ops_AttrList);
 
     #ifdef __AROS__
@@ -266,7 +266,7 @@ IPTR IconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     {
         MUI_DisposeObject(group);
         FreeVec(layout_hook);
-        return NULL;
+        return 0;
     }
 
     data = INST_DATA(cl, obj);
@@ -310,7 +310,6 @@ IPTR IconListview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
 IPTR IconListview__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct IconListview_DATA *data = INST_DATA(cl, obj);
     struct TagItem         *tag, *tags;
     
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )

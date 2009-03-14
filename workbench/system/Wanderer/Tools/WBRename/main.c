@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 static void MakeGUI(void)
 {
     bt_ok_hook.h_Entry = (APTR)bt_ok_hook_function;
-    (IPTR)(app = ApplicationObject,
+    app = (Object *)ApplicationObject,
 	MUIA_Application_Title      , __(MSG_TITLE),
 	MUIA_Application_Version    , (IPTR) versionstring,
 	MUIA_Application_Copyright  , __(MSG_COPYRIGHT),
@@ -89,7 +89,7 @@ static void MakeGUI(void)
 	MUIA_Application_Base       , (IPTR) "WBRENAME",
 	MUIA_Application_UseCommodities, FALSE,
 	MUIA_Application_UseRexx, FALSE,
-        SubWindow, (IPTR)(window = WindowObject,
+        SubWindow, (IPTR)(window = (Object *)WindowObject,
             MUIA_Window_Title, __(MSG_WINDOW_TITLE),
             MUIA_Window_NoMenus, TRUE,
             MUIA_Window_CloseGadget, FALSE,
@@ -101,7 +101,7 @@ static void MakeGUI(void)
             End),
             Child, (IPTR) (HGroup,
                 Child, (IPTR) Label2(__(MSG_NAME)),
-                Child, (IPTR)(str_name = StringObject,
+                Child, (IPTR)(str_name = (Object *)StringObject,
                 MUIA_CycleChain, 1,
                 MUIA_String_Contents, (IPTR) oldname,
                 MUIA_String_MaxLen, MAXFILENAMELENGTH,
@@ -120,7 +120,7 @@ static void MakeGUI(void)
             End),
             End),
         End),
-    End);
+    End;
     
     if (!app) 
         Cleanup(_(MSG_FAILED_CREATE_APP));

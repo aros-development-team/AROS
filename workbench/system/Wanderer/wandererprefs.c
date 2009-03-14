@@ -593,7 +593,7 @@ BOOL WPEditor_ProccessNetworkChunk(Class *CLASS, Object *self, UBYTE *_viewSetti
 {
   //SETUP_INST_DATA;
 
-  struct TagItem *network_tags =(struct TagItem32 *) _viewSettings_Chunk;
+  struct TagItem *network_tags = (struct TagItem *)_viewSettings_Chunk;
   SET(self, AROS_LE2LONG(network_tags[0].ti_Tag), AROS_LE2LONG(network_tags[0].ti_Data));
 
   return TRUE;
@@ -644,7 +644,6 @@ BOOL WandererPrefs_ProccessViewSettingsChunk(Class *CLASS, Object *self, char *_
 {
   SETUP_INST_DATA;
 
-  BOOL                                 background_node_found = FALSE;
   struct WandererPrefs_ViewSettingsNode  *_viewSettings_Node = NULL;
 
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk()\n"));
@@ -666,7 +665,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Creating new no
     _viewSettings_Node->wpbn_Name = AllocVec(strlen(_viewSettings_ViewName) + 1, MEMF_CLEAR|MEMF_PUBLIC);
     strcpy(_viewSettings_Node->wpbn_Name, _viewSettings_ViewName);
     #ifdef __AROS__
-    _viewSettings_Node->wpbn_NotifyObject = NotifyObject, End;
+    _viewSettings_Node->wpbn_NotifyObject = (Object *)NotifyObject, End;
     #else
     _viewSettings_Node->wpbn_NotifyObject = MUI_NewObject(MUIC_Notify, TAG_DONE);
     #endif
@@ -895,7 +894,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetNotify
   current_Node->wpbn_Name = AllocVec(strlen(message->Background_Name) + 1, MEMF_CLEAR|MEMF_PUBLIC);
   strcpy(current_Node->wpbn_Name, message->Background_Name);
     #ifdef __AROS__
-    current_Node->wpbn_NotifyObject = NotifyObject, End;
+    current_Node->wpbn_NotifyObject = (Object *)NotifyObject, End;
     #else
     current_Node->wpbn_NotifyObject = MUI_NewObject(MUIC_Notify, TAG_DONE);
     #endif

@@ -56,7 +56,7 @@ int main(int argc, char **argv)
         }
     }
             
-    application = ExecuteCommandObject,
+    application = (Object *)ExecuteCommandObject,
         MUIA_ExecuteCommand_Parent,  (IPTR) parent,
         MUIA_ExecuteCommand_Initial, (IPTR) initial,
     End;

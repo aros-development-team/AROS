@@ -14,7 +14,7 @@ void  strcrem(char *s, char *d, char c)
 {
     while (*s) {
         if (*s != c) *d++= *s;
-        *s++;//"value computed is not used" ?
+        s++;
     }
     *d = 0;
 }

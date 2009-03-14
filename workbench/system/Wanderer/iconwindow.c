@@ -248,7 +248,9 @@ HOOKPROTO(IconWindow__HookFunc_ProcessBackgroundFunc, void, APTR *obj, APTR para
 
   AROS_USERFUNC_EXIT
 }
+#ifndef __AROS__
 MakeStaticHook(iwd_ProcessBackground_hook,IconWindow__HookFunc_ProcessBackgroundFunc);
+#endif
 ///
 
 ///IconWindow__HookFunc_WandererBackFillFunc()
@@ -561,9 +563,9 @@ D(bug("[IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETTY_FUNCTIO
 	else
 	{
 		struct DiskObject 	*drawericon = NULL;
-		IPTR				geticon_error = NULL, geticon_isdefault = NULL;
+		IPTR				geticon_error = 0, geticon_isdefault = 0;
 		IPTR				_newIconWin__TitleLen = 0;
-		IPTR 				current_DispFlags = 0, current_SortFlags = 0;
+		IPTR 				current_DispFlags = 0;
 		IPTR                icon__DispFlags = 0,icon__DispFlagMask = ~0;
 
 		_newIconWin__WindowTop = MUIV_Window_TopEdge_Centered;
@@ -1449,10 +1451,6 @@ IPTR IconWindow__MUIM_IconWindow_Open
 {
 //    SETUP_ICONWINDOW_INST_DATA;
 
-    #ifdef __AROS__
-    IPTR CURDISPFLAGS;
-    #endif
-  
 D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
 
     if (!XGET(self, MUIA_Window_Open))

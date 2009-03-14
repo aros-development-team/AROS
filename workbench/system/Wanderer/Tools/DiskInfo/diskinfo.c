@@ -165,7 +165,7 @@ Object *DiskInfo__OM_NEW
     D(bug("[DiskInfo] %s: Volume '%s'\n", __PRETTY_FUNCTION__, volname));
 
     /* find the volumes doslist information .. */
-    IPTR volunit = NULL;
+    IPTR volunit = 0;
     filesystem = _(MSG_UNKNOWN);
     dl = LockDosList(LDF_VOLUMES|LDF_READ);
     if (dl) {
@@ -173,7 +173,7 @@ Object *DiskInfo__OM_NEW
 	if (dn) {
 	    ULONG i;
 
-	    volunit = dn->dol_Ext.dol_AROS.dol_Unit;
+	    volunit = (IPTR)dn->dol_Ext.dol_AROS.dol_Unit;
 
 	    D(bug("[DiskInfo] %s: Volume's unit @ %p\n", __PRETTY_FUNCTION__, volunit));
 
@@ -202,13 +202,13 @@ Object *DiskInfo__OM_NEW
 	UnLockDosList(LDF_VOLUMES|LDF_READ);
     }
     /* If we know the volumes unit - find its device information .. */
-    if (volunit != NULL)
+    if (volunit != 0)
     {
 	dl = LockDosList(LDF_DEVICES|LDF_READ);
 	if (dl) {
 	    while((dl = NextDosEntry(dl, LDF_DEVICES)))
 	    {
-		if (dl->dol_Ext.dol_AROS.dol_Unit == volunit)
+		if ((IPTR)dl->dol_Ext.dol_AROS.dol_Unit == volunit)
 		{
 		    struct FileSysStartupMsg *fsstartup = (struct FileSysStartupMsg *)BADDR(dl->dol_misc.dol_handler.dol_Startup);
 		    dosdevname = (UBYTE*)AROS_BSTR_ADDR(dl->dol_Name);
@@ -299,7 +299,7 @@ Object *DiskInfo__OM_NEW
 			Child, HVSpace,
 			Child, (IPTR) HGroup,
 			    Child, HVSpace,
-			    Child, (IPTR)(voliconobj = IconImageObject,
+			    Child, (IPTR)(voliconobj = (Object *)IconImageObject,
 				MUIA_InputMode, MUIV_InputMode_Toggle,
 				MUIA_IconImage_File, (IPTR) volicon,
 			    End),
@@ -353,9 +353,9 @@ Object *DiskInfo__OM_NEW
 			Child, (IPTR) ColGroup(2),
 			    Child, (IPTR) TextObject, 
 				MUIA_Text_PreParse, (IPTR) "\33r",
-				MUIA_Text_Contents, (IPTR) __(MSG_NAME),
+				MUIA_Text_Contents, __(MSG_NAME),
 			    End,
-			    Child, (IPTR)(volnameobj = TextObject, TextFrame,
+			    Child, (IPTR)(volnameobj = (Object *)TextObject, TextFrame,
 				MUIA_Background, MUII_TextBack,
 				MUIA_Text_PreParse, (IPTR) "\33b\33l",
 				MUIA_Text_Contents, (IPTR) volname,
@@ -364,17 +364,17 @@ Object *DiskInfo__OM_NEW
 				Child, (IPTR) TextObject, TextFrame,
 				    MUIA_FramePhantomHoriz, (IPTR)TRUE,
 				    MUIA_Text_PreParse, (IPTR) "\33r",
-				    MUIA_Text_Contents, (IPTR) __(MSG_SIZE),
+				    MUIA_Text_Contents, __(MSG_SIZE),
 				End,
 				Child, (IPTR) TextObject, TextFrame,
 				    MUIA_FramePhantomHoriz, (IPTR)TRUE,
 				    MUIA_Text_PreParse, (IPTR) "\33r",
-				    MUIA_Text_Contents, (IPTR) __(MSG_USED),
+				    MUIA_Text_Contents, __(MSG_USED),
 				End,
 				Child, (IPTR) TextObject, TextFrame,
 				    MUIA_FramePhantomHoriz, (IPTR)TRUE,
 				    MUIA_Text_PreParse, (IPTR) "\33r",
-				    MUIA_Text_Contents, (IPTR) __(MSG_FREE),
+				    MUIA_Text_Contents, __(MSG_FREE),
 				End,
 			    End,
 			    Child, (IPTR) HGroup,
@@ -384,18 +384,18 @@ Object *DiskInfo__OM_NEW
 					MUIA_Text_PreParse, (IPTR) "\33l",
 					MUIA_Text_Contents, (IPTR) size,
 				    End,
-				    Child, (IPTR)(volusedobj = TextObject, TextFrame,
+				    Child, (IPTR)(volusedobj = (Object *)TextObject, TextFrame,
 					MUIA_Background, MUII_TextBack,
 					MUIA_Text_PreParse, (IPTR) "\33l",
 					MUIA_Text_Contents, (IPTR) used,
 				    End),
-				    Child, (IPTR)(volfreeobj = TextObject, TextFrame,
+				    Child, (IPTR)(volfreeobj = (Object *)TextObject, TextFrame,
 					MUIA_Background, MUII_TextBack,
 					MUIA_Text_PreParse, (IPTR) "\33l",
 					MUIA_Text_Contents, (IPTR) free,
 				    End),
 				End,
-				Child, (IPTR)(volusegaugeobj = GaugeObject, GaugeFrame,
+				Child, (IPTR)(volusegaugeobj = (Object *)GaugeObject, GaugeFrame,
 				    MUIA_Gauge_InfoText, "",
 				    MUIA_Gauge_Horiz, FALSE,
 				    MUIA_Gauge_Current, percent,
@@ -403,7 +403,7 @@ Object *DiskInfo__OM_NEW
 			    End,
 			    Child, (IPTR) TextObject,
 				MUIA_Text_PreParse, (IPTR) "\33r",
-				MUIA_Text_Contents, (IPTR) __(MSG_BLOCK_SIZE),
+				MUIA_Text_Contents, __(MSG_BLOCK_SIZE),
 			    End,
 			    Child, (IPTR) TextObject, TextFrame,
 				MUIA_Background, MUII_TextBack,
@@ -412,7 +412,7 @@ Object *DiskInfo__OM_NEW
 			    End,
 			    Child, (IPTR) TextObject,
 				MUIA_Text_PreParse, (IPTR) "\33r",
-				MUIA_Text_Contents, (IPTR) __(MSG_STATUS),
+				MUIA_Text_Contents, __(MSG_STATUS),
 			    End,
 			    Child, (IPTR) TextObject, TextFrame,
 				MUIA_Background, MUII_TextBack,
@@ -424,7 +424,7 @@ Object *DiskInfo__OM_NEW
 			End,
 			Child, HVSpace,
 		    End,
-		    Child, (IPTR) (grpformat = HGroup,
+		    Child, (IPTR) (grpformat = (Object *)HGroup,
 			// grpformat object userlevel sensitive
 			Child, HVSpace,
 		    End),
@@ -549,7 +549,6 @@ IPTR DiskInfo__MUIM_DiskInfo_HandleNotify
 		    if (id.id_DiskType != ID_NO_DISK_PRESENT)
 		    {
 			ULONG                       percent;
-			TEXT                        volname[108];
 			TEXT                        used[64];
 			TEXT                        free[64];
 			//TEXT                        blocksize[16];

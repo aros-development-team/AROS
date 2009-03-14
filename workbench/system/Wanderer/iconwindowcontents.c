@@ -545,7 +545,7 @@ BOOL IconWindowIconList__Func_ParseBackdrop(Class *CLASS, Object *self, char *bd
 	if ((bdrp_file = AllocVec(strlen(bdrp_dir) + 9 + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
 	{
 		sprintf(bdrp_file, "%s.backdrop", bdrp_dir);
-		if (bdrp_lock = Open(bdrp_file, MODE_OLDFILE))
+		if ((bdrp_lock = Open(bdrp_file, MODE_OLDFILE)))
 		{
 D(bug("[IconWindowIconList] IconWindowIconList__Func_ParseBackdrop: Loading config file: '%s'\n", bdrp_file));
 			if ((linebuf = AllocMem(BDRPLINELEN_MAX, MEMF_PUBLIC)) != NULL)
@@ -576,7 +576,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__Func_ParseBackdrop: LEAVEOUT Ico
 						if (bdrp_currfile_dob)
 						{
 							struct IconEntry *this_entry = NULL;
-							if (this_entry = DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)bdrp_fullfile, (IPTR)bdrp_namepart, (IPTR)NULL, (IPTR)bdrp_currfile_dob, 0))
+							if ((this_entry = (struct IconEntry *)DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)bdrp_fullfile, (IPTR)bdrp_namepart, (IPTR)NULL, (IPTR)bdrp_currfile_dob, 0)))
 							{
 								struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
 								if (fib)
@@ -624,11 +624,11 @@ D(bug("[IconWindowIconList] %s: LEAVEOUT Unknown Entry Type @ 0x%p\n", __PRETTY_
 ///OM_NEW()
 Object *IconWindowIconList__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-  IPTR                            _newIconList__FSNotifyPort = NULL;
+  IPTR                            _newIconList__FSNotifyPort = 0;
 
   D(bug("[IconWindowIconList] IconWindowIconList__OM_NEW()\n"));
 
-  _newIconList__FSNotifyPort = (Object *)GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
+  _newIconList__FSNotifyPort = GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
 
   self = (Object *) DoSuperNewTags
   (
@@ -648,9 +648,9 @@ Object *IconWindowIconList__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
     data->iwcd_ProcessIconListPrefs_hook = &Hook_ProcessIconListPrefsFunc;
     #endif
 
-    if (_newIconList__FSNotifyPort != NULL)
+    if (_newIconList__FSNotifyPort != 0)
     {
-      struct IconWindowIconDrawerList_DATA *drawerlist_data = (IPTR)data;
+      struct IconWindowIconDrawerList_DATA *drawerlist_data = (struct IconWindowIconDrawerList_DATA *)data;
       drawerlist_data->iwdcd_DrawerNotifyRequest.nr_stuff.nr_Msg.nr_Port = _newIconList__FSNotifyPort;
       D(bug("[IconWindowIconList] IconWindowIconList__OM_NEW: FS Notify Port @ 0x%p\n", _newIconList__FSNotifyPort));
     }
@@ -679,13 +679,13 @@ IPTR IconWindowIconList__OM_SET(Class *CLASS, Object *self, struct opSet *messag
       case MUIA_IconWindow_Window:
       {
         D(bug("[IconWindowIconList] %s: MUIA_IconWindow_Window @ %p\n", __PRETTY_FUNCTION__, tag->ti_Data));
-        data->iwcd_IconWindow = tag->ti_Data;
+        data->iwcd_IconWindow = (Object *)tag->ti_Data;
         break;
       }
             case MUIA_IconList_BufferRastport:
             {
         D(bug("[IconWindowIconList] %s: MUIA_IconList_BufferRastport @ %p\n", __PRETTY_FUNCTION__, tag->ti_Data));
-                data->iwcd_RastPort = tag->ti_Data;
+                data->iwcd_RastPort = (struct RastPort *)tag->ti_Data;
         break;
             }
     }
@@ -697,8 +697,8 @@ IPTR IconWindowIconList__OM_SET(Class *CLASS, Object *self, struct opSet *messag
 ///OM_GET()
 IPTR IconWindowIconList__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 {
-  SETUP_INST_DATA;
-  IPTR *store = message->opg_Storage;
+  //SETUP_INST_DATA;
+  //IPTR *store = message->opg_Storage;
   IPTR  rv    = TRUE;
 
   switch (message->opg_AttrID)
@@ -732,7 +732,7 @@ IPTR IconWindowIconList__MUIM_Setup
 
     GET(_win(self), MUIA_IconWindow_BackgroundAttrib, &data->iwcd_ViewPrefs_ID);
 D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Setup: Window Background = '%s'\n", data->iwcd_ViewPrefs_ID));
-    data->iwcd_ViewPrefs_NotificationObject = DoMethod(prefs,
+    data->iwcd_ViewPrefs_NotificationObject = (Object *)DoMethod(prefs,
                                 MUIM_WandererPrefs_ViewSettings_GetNotifyObject,
                                 data->iwcd_ViewPrefs_ID);
 
@@ -906,7 +906,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Setup: Background Notificat
 
     if (directory_path != NULL)
     {
-      struct IconWindowIconDrawerList_DATA *drawerlist_data = (IPTR)data;
+      struct IconWindowIconDrawerList_DATA *drawerlist_data = (struct IconWindowIconDrawerList_DATA *)data;
 
       if (drawerlist_data->iwdcd_DrawerNotifyRequest.nr_stuff.nr_Msg.nr_Port != NULL)
       {
@@ -1024,7 +1024,7 @@ IPTR IconWindowIconList__MUIM_Cleanup
   }
   else
   {
-    struct IconWindowIconDrawerList_DATA *drawerlist_data = (IPTR)data;
+    struct IconWindowIconDrawerList_DATA *drawerlist_data = (struct IconWindowIconDrawerList_DATA *)data;
     if (drawerlist_data->iwdcd_DrawerNotifyRequest.nr_Name != NULL)
     {
 D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Cleanup: (DRAWER WINDOW) Removing our Drawer Notification Request\n"));
@@ -1042,7 +1042,7 @@ IPTR IconWindowIconList__MUIM_HandleEvent
   Class *CLASS, Object *self, struct MUIP_HandleEvent *message
 )
 {
-  SETUP_INST_DATA;
+  //SETUP_INST_DATA;
 
   struct IntuiMessage *imsg = message->imsg;
 
@@ -1073,7 +1073,7 @@ IPTR IconWindowIconList__MUIM_DrawBackground
   SETUP_INST_DATA;
 
   IPTR        retVal = (IPTR)TRUE;
-  IPTR                clip = NULL, adjust_left = 0, adjust_top = 0;
+  IPTR                clip = 0;
   struct RastPort           *DrawBackGround_RastPort;
   struct IconWindowBackFillMsg  DrawBackGround_BackFillMsg;
 
@@ -1133,7 +1133,7 @@ IPTR IconWindowIconList__MUIM_DrawBackground
 
 iwc_ParentBackground:
 
-  clip = MUI_AddClipping(muiRenderInfo(self), message->left, message->top, message->width, message->height);
+  clip = (IPTR)MUI_AddClipping(muiRenderInfo(self), message->left, message->top, message->width, message->height);
 
   message->width = _mwidth(self);
   message->height = _mheight(self);
@@ -1142,7 +1142,7 @@ iwc_ParentBackground:
 
   retVal = DoSuperMethodA(CLASS, self, (Msg) message);
 
-  MUI_RemoveClipping(muiRenderInfo(self),clip);
+  MUI_RemoveClipping(muiRenderInfo(self), (APTR)clip);
 
   return retVal;
 }
@@ -1216,7 +1216,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: checking e
         if (_nb_dob)
         {
           struct Node *this_entry = NULL;
-          if (this_entry = DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)"?wanderer.networkbrowse?", (IPTR)"Network Access..", (IPTR)NULL, (IPTR)_nb_dob, 0))
+          if ((this_entry = (struct Node *)DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)"?wanderer.networkbrowse?", (IPTR)"Network Access..", (IPTR)NULL, (IPTR)_nb_dob, 0)))
           {
             this_entry->ln_Pri = 3;   /// Network Access gets Priority 3 so its displayed after special dirs
             sort_list = TRUE;
@@ -1263,7 +1263,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: checking e
             if (_nb_dob)
             {
               struct Node *this_entry = NULL;
-              if (this_entry = DoMethod(self, MUIM_IconList_CreateEntry, userfiles_path, (IPTR)"User Files..", (IPTR)NULL, (IPTR)_nb_dob, 0))
+              if ((this_entry = (struct Node *)DoMethod(self, MUIM_IconList_CreateEntry, userfiles_path, (IPTR)"User Files..", (IPTR)NULL, (IPTR)_nb_dob, 0)))
               {
                 this_entry->ln_Pri = 5;   /// Special dirs get Priority 5
                 sort_list = TRUE;

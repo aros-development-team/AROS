@@ -654,7 +654,7 @@ check_imagebuffer:
             break;
           }
 
-          if (this_Buffer->bfsib_BitMap = AllocBitMap(this_BFI->bfi_CopyWidth, this_BFI->bfi_CopyHeight, Depth, Depth == 8 ? BMF_MINPLANES : 0L, this_BFI->bfi_Screen->RastPort.BitMap))
+          if ((this_Buffer->bfsib_BitMap = AllocBitMap(this_BFI->bfi_CopyWidth, this_BFI->bfi_CopyHeight, Depth, Depth == 8 ? BMF_MINPLANES : 0L, this_BFI->bfi_Screen->RastPort.BitMap)))
           {
             struct Rectangle CopyBounds;
 
@@ -759,7 +759,7 @@ check_imagebuffer:
         this_Buffer->bfsib_BitMapWidth = this_BFI->bfi_CopyWidth;
         this_Buffer->bfsib_BitMapHeight = this_BFI->bfi_CopyHeight;
 
-        if (this_Buffer->bfsib_BitMap = AllocBitMap(this_BFI->bfi_CopyWidth, this_BFI->bfi_CopyHeight, Depth, Depth == 8 ? BMF_MINPLANES : 0L, this_BFI->bfi_Screen->RastPort.BitMap))
+        if ((this_Buffer->bfsib_BitMap = AllocBitMap(this_BFI->bfi_CopyWidth, this_BFI->bfi_CopyHeight, Depth, Depth == 8 ? BMF_MINPLANES : 0L, this_BFI->bfi_Screen->RastPort.BitMap)))
         {
           struct Rectangle CopyBounds;
 
@@ -841,7 +841,7 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_Setup
   this_BFI = AllocVec(sizeof(struct BackFillInfo), MEMF_CLEAR|MEMF_PUBLIC);
   D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_Setup: Allocated BackFillInfo @ %x\n", this_BFI));
 
-  return this_BFI;
+  return (IPTR)this_BFI;
 }
 ///
 
@@ -851,7 +851,7 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_Cleanup
   Class *CLASS, Object *self, struct MUIP_IconWindow_BackFill_Cleanup *message
 )
 {
-  struct BackFillInfo   *this_BFI = message->BackFill_Data;
+  struct BackFillInfo   *this_BFI = (struct BackFillInfo   *)message->BackFill_Data;
 
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_Cleanup()\n"));
 
@@ -881,10 +881,10 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_DrawBackground
 
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground()\n"));
     
-  if ((this_BFI = message->BackFill_Data) != NULL)
+  if ((this_BFI = (struct BackFillInfo   *)message->BackFill_Data) != NULL)
   {
     D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: Got BackFill_Data @ %x\n", this_BFI));
-    this_BFI->bfi_RastPort = message->draw_RastPort;
+    this_BFI->bfi_RastPort = (struct RastPort *)message->draw_RastPort;
 
     if ((this_BFI->bfi_Buffer) && (this_BFI->bfi_RastPort))
     {
