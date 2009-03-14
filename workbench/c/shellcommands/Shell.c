@@ -834,10 +834,10 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 			    	    bug("[Shell] substArgs: %s -> ",
 					is->argname[i]);
 
-				    arg = 1;
+				    arg = (STRPTR)1;
 				    while (*m)
 				    {
-					if (arg == 1)
+					if (arg == (STRPTR)1)
 					    arg = 0;
 					else
 					    appendString(filtered, " ", 1);
@@ -882,10 +882,10 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 				break;
 			    }
 
-			    arg = 1;
+			    arg = (STRPTR)1;
 			    while (*m)
 			    {
-				if (arg == 1)
+				if (arg == (STRPTR)1)
 				    arg = 0;
 				else
 				    appendString(filtered, " ", 1);
@@ -1395,10 +1395,10 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 			    return ERROR_REQUIRED_ARG_MISSING;
 			default:
 			    if (is->argdef[i])
-				FreeMem(is->argdef[i], is->argdeflen[i] + 1);
+				FreeMem((APTR)is->argdef[i], is->argdeflen[i] + 1);
 
-			    is->argdef[i] = AllocMem(len + 1, MEMF_LOCAL);
-			    CopyMem(argBuffer, is->argdef[i], len);
+			    is->argdef[i] = (IPTR)AllocMem(len + 1, MEMF_LOCAL);
+			    CopyMem(argBuffer, (APTR)is->argdef[i], len);
 			    ((STRPTR)is->argdef[i])[len] = '\0';
 			    is->argdeflen[i] = len;
 			    advance(len);

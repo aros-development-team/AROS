@@ -432,7 +432,7 @@ static Object *LoadPicture(CONST_STRPTR filename, struct Screen *scr)
 }
 
 
-    SetImage(struct NewImage *in, struct NewImage *out, BOOL truecolor, struct Screen* scr)
+    void SetImage(struct NewImage *in, struct NewImage *out, BOOL truecolor, struct Screen* scr)
     {
         out->ok = FALSE;
         if (in != NULL)
@@ -1099,7 +1099,7 @@ static IPTR windecor_new(Class *cl, Object *obj, struct opSet *msg)
          data = INST_DATA(cl, obj);
 
          STRPTR path = (STRPTR) GetTagData(WDA_Configuration, (IPTR) "Theme:", msg->ops_AttrList);
-         data->sd = (struct scrdecor_data *) GetTagData(WDA_ScreenData, NULL, msg->ops_AttrList);
+         data->sd = (struct scrdecor_data *) GetTagData(WDA_ScreenData, 0, msg->ops_AttrList);
 
          if (!InitWindowSkinning(path, data))
          {
@@ -2772,7 +2772,7 @@ IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayoutBorde
                         gadget->Height = wd->img_lock->h;
                         gadget->TopEdge = (data->winbarheight - gadget->Height) / 2;
 
-                        if ((eb & ETG_MUI) != NULL)
+                        if ((eb & ETG_MUI) != 0)
                         {
                             if (wd->img_mui->ok)
                             {
@@ -2780,7 +2780,7 @@ IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayoutBorde
                             }
                         }
 
-                        if ((eb & ETG_POPUP) != NULL)
+                        if ((eb & ETG_POPUP) != 0)
                         {
                             if (wd->img_popup->ok)
                             {
@@ -2788,7 +2788,7 @@ IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayoutBorde
                             }
                         }
 
-                        if ((eb & ETG_SNAPSHOT) != NULL)
+                        if ((eb & ETG_SNAPSHOT) != 0)
                         {
                             if (wd->img_snapshot->ok)
                             {
@@ -2796,7 +2796,7 @@ IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayoutBorde
                             }
                         }
 
-                        if ((eb & ETG_ICONIFY) != NULL)
+                        if ((eb & ETG_ICONIFY) != 0)
                         {
                             if (wd->img_iconify->ok)
                             {
@@ -3110,7 +3110,7 @@ IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawBorderPr
     {
 
 
-        if (ni->ok != NULL)
+        if (ni->ok != 0)
         {
             ULONG   color = 0x00cccccc;
 
@@ -3395,7 +3395,6 @@ void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8Image *shape,
     int                 xl0, xl1, xr0, xr1, defwidth;
     ULONG               textlen = 0, titlelen = 0, textpixellen = 0;
     struct TextExtent   te;
-    struct NewImage    *ni;
 
     BOOL                hastitle;
     BOOL                hastitlebar;
@@ -3511,14 +3510,14 @@ IPTR windecor_windowshape(Class *cl, Object *obj, struct wdpWindowShape *msg)
     if (data->barmasking)
     {
         struct  NewLUT8ImageContainer *shape;
-        IPTR    back = NULL;
-        shape = NewLUT8ImageContainer(window->Width, window->BorderTop);
+        IPTR    back = 0;
+        shape = (struct  NewLUT8ImageContainer *)NewLUT8ImageContainer(window->Width, window->BorderTop);
         if (shape)
         {
-            if (window->BorderTop == data->winbarheight) DrawShapePartialTitleBar(wd, shape, data, window, data->txt_align, 0, window->Width);
-            back =(IPTR) RegionFromLUT8Image(msg->wdp_Width, msg->wdp_Height, shape);
+            if (window->BorderTop == data->winbarheight) DrawShapePartialTitleBar(wd, (struct NewLUT8Image *)shape, data, window, data->txt_align, 0, window->Width);
+            back =(IPTR) RegionFromLUT8Image(msg->wdp_Width, msg->wdp_Height, (struct NewLUT8Image *)shape);
 
-            DisposeLUT8ImageContainer(shape);
+            DisposeLUT8ImageContainer((struct NewLUT8Image *)shape);
             return back;
 
         }
@@ -3586,10 +3585,8 @@ IPTR windecor_windowshape(Class *cl, Object *obj, struct wdpWindowShape *msg)
 
 IPTR windecor_initwindow(Class *cl, Object *obj, struct wdpInitWindow *msg)
 {
-    struct WindowData *wd = msg->wdp_UserBuffer;
-    struct ScreenData *sd = msg->wdp_ScreenUserBuffer;
-    struct windecor_data   *data = INST_DATA(cl, obj);
-    struct Screen *screen = msg->wdp_Screen;
+    struct WindowData *wd = (struct WindowData *)msg->wdp_UserBuffer;
+    struct ScreenData *sd = (struct ScreenData *)msg->wdp_ScreenUserBuffer;
 
     wd->truecolor = msg->wdp_TrueColor;
 
@@ -3746,7 +3743,7 @@ static IPTR scrdecor_get(Class *cl, Object *obj, struct opGet *msg)
             break;
 
         case SDA_ScreenData:
-            *msg->opg_Storage = (APTR) INST_DATA(cl, obj);
+            *msg->opg_Storage = (IPTR)INST_DATA(cl, obj);
             break;
 
         default:
@@ -3895,7 +3892,6 @@ IPTR scrdecor_layoutscrgadgets(Class *cl, Object *obj, struct sdpLayoutScreenGad
     struct Gadget          *gadget = msg->sdp_Gadgets;
 
     struct scrdecor_data   *data = INST_DATA(cl, obj);
-    struct ScreenData      *sd = (struct ScreenData *) msg->sdp_UserBuffer;
 
     while(gadget)
     {
@@ -3926,7 +3922,7 @@ IPTR scrdecor_layoutscrgadgets(Class *cl, Object *obj, struct sdpLayoutScreenGad
 IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *msg)
 {
     struct scrdecor_data *data = INST_DATA(cl, obj);
-    struct ScreenData *sd = msg->sdp_UserBuffer;
+    struct ScreenData *sd = (struct ScreenData *)msg->sdp_UserBuffer;
     struct Screen *screen = msg->sdp_Screen;
 
     sd->truecolor = msg->sdp_TrueColor;
@@ -3982,8 +3978,7 @@ IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *msg)
 
 IPTR scrdecor_exitscreen(Class *cl, Object *obj, struct sdpExitScreen *msg)
 {
-    struct scrdecor_data *data = INST_DATA(cl, obj);
-    struct ScreenData *sd = msg->sdp_UserBuffer;
+    struct ScreenData *sd = (struct ScreenData *)msg->sdp_UserBuffer;
 
     DELIMAGE_SCR(sdepth);
     DELIMAGE_SCR(sbarlogo);
@@ -4107,8 +4102,7 @@ IPTR menudecor_getdefsizes(Class *cl, Object *obj, struct mdpGetDefSizeSysImage 
 
 IPTR menudecor_draw_sysimage(Class *cl, Object *obj, struct mdpDrawSysImage *msg)
 {
-    struct menudecor_data  *data = INST_DATA(cl, obj);
-    struct ScreenData        *md = (struct ScreenData *) msg->mdp_UserBuffer;
+    struct ScreenData      *md = (struct ScreenData *) msg->mdp_UserBuffer;
     struct RastPort        *rp = msg->mdp_RPort;
     struct NewImage        *ni = NULL;
     LONG                    state = msg->mdp_State;
@@ -4205,8 +4199,6 @@ IPTR menudecor_initmenu(Class *cl, Object *obj, struct mdpInitMenu *msg)
     struct RastPort        *rp = msg->mdp_RPort;
     struct MenuData        *md = (struct MenuData *) msg->mdp_UserBuffer;
     struct ScreenData      *sd = (struct ScreenData *) msg->mdp_ScreenUserBuffer;
-
-    struct menudecor_data  *data = INST_DATA(cl, obj);
 
     SETIMAGE_MEN(menu);
     SETIMAGE_MEN(amigakey);
@@ -4380,7 +4372,7 @@ IPTR menudecor__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
         data = INST_DATA(cl, obj);
 
         STRPTR path = (STRPTR) GetTagData(MDA_Configuration, (IPTR) "Theme:", msg->ops_AttrList);
-        data->sd = (struct scrdecor_data *) GetTagData(MDA_ScreenData, NULL, msg->ops_AttrList);
+        data->sd = (struct scrdecor_data *) GetTagData(MDA_ScreenData, 0, msg->ops_AttrList);
 
         if (!InitMenuSkinning(path, data))
         {
@@ -4460,7 +4452,6 @@ BOOL InitWindowSkinning(STRPTR path, struct windecor_data *data) {
     BPTR    file;
     BPTR    lock;
     BPTR    olddir = 0;
-    struct  screendecor_data *sd = data->sd;
 
     lock = Lock(path, ACCESS_READ);
     if (lock)
@@ -4869,7 +4860,7 @@ struct NewDecorator *GetDecorator(STRPTR path)
 
     if (path != NULL) newpath = path; else newpath = "Theme:";
 
-    struct   TagItem        ScreenTags[] = { SDA_UserBuffer, sizeof(struct ScreenData), SDA_Configuration, (ULONG) newpath, TAG_DONE, };
+    struct TagItem ScreenTags[] = { {SDA_UserBuffer, sizeof(struct ScreenData)}, {SDA_Configuration, (ULONG) newpath}, {TAG_DONE} };
 
 
     nd = AllocVec(sizeof(struct NewDecorator), MEMF_CLEAR | MEMF_ANY);
@@ -4883,8 +4874,8 @@ struct NewDecorator *GetDecorator(STRPTR path)
 
             get(nd->nd_Screen, SDA_ScreenData, &screendata);
 
-            struct   TagItem        WindowTags[] = { WDA_UserBuffer, sizeof(struct WindowData), WDA_Configuration, (ULONG) newpath, WDA_ScreenData, screendata, TAG_DONE, };
-            struct   TagItem        MenuTags[] = { MDA_UserBuffer, sizeof(struct MenuData), MDA_Configuration, (ULONG) newpath, MDA_ScreenData, screendata, TAG_DONE, };
+            struct TagItem WindowTags[] = { {WDA_UserBuffer, sizeof(struct WindowData)}, {WDA_Configuration, (ULONG) newpath}, {WDA_ScreenData, (IPTR)screendata}, {TAG_DONE} };
+            struct TagItem MenuTags[]   = { {MDA_UserBuffer, sizeof(struct MenuData)}, {MDA_Configuration, (ULONG) newpath}, {MDA_ScreenData, (IPTR)screendata}, {TAG_DONE} };
 
 
             nd->nd_Window = NewObjectA(cl, NULL, WindowTags);
@@ -4929,7 +4920,7 @@ int main(void)
     args = ReadArgs(ARGUMENT_TEMPLATE, rd_Args, newargs);
 
     if (args == NULL) {
-        FreeDosObject (DOS_RDARGS, (IPTR) newargs);
+        FreeDosObject (DOS_RDARGS, (APTR) newargs);
         return 0;
     }
 
@@ -5034,7 +5025,7 @@ int main(void)
         }
         FreeClass(cl);
     }
-    FreeDosObject (DOS_RDARGS, (IPTR) newargs);
+    FreeDosObject (DOS_RDARGS, (APTR) newargs);
     FreeArgs(args);
     return 0;
 }
