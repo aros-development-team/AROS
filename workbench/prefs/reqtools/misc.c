@@ -64,7 +64,7 @@ GetString( STRPTR idstr )
 VOID
 LocalizeMenus( struct NewMenu *nm )
 {
-    STRPTR local;
+    CONST_STRPTR local;
 
     while( nm->nm_Type != NM_END )
     {

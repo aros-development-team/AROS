@@ -69,7 +69,6 @@ STATIC VOID init_country_list(struct MUI_CountryData *data) {
     struct CountryEntry *entry;
     BPTR                 lock;
     int                  i;
-    LONG                 act;
     char                 filename[MAX_COUNTRY_LEN];
 
     if(data->filled)
@@ -300,14 +299,14 @@ static IPTR Country_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	    ForeachNode(&country_list, entry) {
 		if(i==nr)
 		{
-		    rc=entry->lve.realname;
+		    rc = (ULONG)entry->lve.realname;
 		}
 		i++;
 	    }
 
 	    if(rc == -1)
 	    {
-		*msg->opg_Storage = NULL; /* hmm.. */
+		*msg->opg_Storage = 0;
 		return FALSE; 
 	    }
 	    break;
@@ -342,7 +341,7 @@ static IPTR Country_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		nr = -1;
 		i  = 0;
 		ForeachNode(&country_list, entry) {
-		    if(!stricmp(entry->lve.realname,tag->ti_Data))
+		    if(!stricmp(entry->lve.realname, (STRPTR)tag->ti_Data))
 		    {
 			nr=i;
 		    }
@@ -389,9 +388,9 @@ BOOPSI_DISPATCHER(IPTR, Country_Dispatcher, cl, obj, msg)
     {
 	case OM_NEW:       return (IPTR) Country_New(cl, obj, (struct opSet *)msg);
     	case MUIM_Show:    return Country_Fill(cl, obj, (struct MUIP_Show *)msg);
-	case OM_GET:       return Country_Get(cl, obj, msg);
-	case OM_SET:       return Country_Set(cl, obj, msg);
-	case MUIM_Cleanup: return Country_Cleanup(cl, obj, (struct MUIP_Clean *)msg);
+	case OM_GET:       return Country_Get(cl, obj, (APTR)msg);
+	case OM_SET:       return Country_Set(cl, obj, (APTR)msg);
+	case MUIM_Cleanup: return Country_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
 	case OM_DISPOSE:   return Country_Dispose(cl, obj, msg);
     }
     
@@ -412,8 +411,7 @@ const struct __MUIBuiltinClass _MUIP_Country_desc =
 
 void InitCountry() 
 {
-    Country_CLASS=MUI_CreateCustomClass(NULL,MUIC_List,NULL,sizeof(struct MUI_CountryData),(IPTR) &Country_Dispatcher);
-
+    Country_CLASS=MUI_CreateCustomClass(NULL,MUIC_List,NULL,sizeof(struct MUI_CountryData), &Country_Dispatcher);
 }
 
 void CleanCountry() 

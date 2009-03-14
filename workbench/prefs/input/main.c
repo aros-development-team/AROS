@@ -139,7 +139,7 @@ int main(void)
 
     mempool = (IPTR) CreatePool(MEMF_PUBLIC | MEMF_CLEAR, 2048, 2048);
 
-    if (mempool != NULL)
+    if (mempool != 0)
     {
         ScanDirectory("DEVS:Keymaps/#?_~(#?.info)", &keymap_list, sizeof(struct KeymapEntry));
 
@@ -169,7 +169,7 @@ int main(void)
             MUI_DeleteCustomClass(StringifyClass);
         }
 
-        DeletePool(mempool);
+        DeletePool((APTR)mempool);
     }
 
     kbd_cleanup();

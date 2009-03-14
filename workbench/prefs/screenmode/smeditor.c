@@ -50,8 +50,8 @@ Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_PrefsEditor_Path, (IPTR)"SYS/screenmode.prefs",
         
 	Child, (IPTR)VGroup,
-	    Child, (IPTR)(selector   = ScreenModeSelectorObject, End),
-	    Child, (IPTR)(properties = ScreenModePropertiesObject, GroupFrame, End),
+	    Child, (IPTR)(selector   = (Object *)ScreenModeSelectorObject, End),
+	    Child, (IPTR)(properties = (Object *)ScreenModePropertiesObject, GroupFrame, End),
 	End,
         
         TAG_DONE

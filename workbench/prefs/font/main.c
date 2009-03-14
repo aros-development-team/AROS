@@ -33,12 +33,12 @@ int main(void)
         FreeArguments();
     }
     
-    application = ApplicationObject,
+    application = (Object *)ApplicationObject,
         MUIA_Application_Title,  __(MSG_NAME),
         MUIA_Application_Version, (IPTR) VERSION,
         MUIA_Application_Description,  __(MSG_DESCRIPTION),
         MUIA_Application_Base, (IPTR) "FONTPREF",
-        SubWindow, (IPTR) (window = SystemPrefsWindowObject,
+        SubWindow, (IPTR) (window = (Object *)SystemPrefsWindowObject,
 		MUIA_Window_ID, MAKE_ID('F','W','I','N'),
             WindowContents, (IPTR) FPEditorObject,
             End,

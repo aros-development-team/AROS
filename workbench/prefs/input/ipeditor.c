@@ -38,9 +38,9 @@ extern struct InputPrefs    restore_prefs;
 
 extern struct MUI_CustomClass *StringifyClass;
 
-static    STRPTR InputTabs[] = {NULL, NULL, NULL, };
-static    STRPTR ButtonMappings[] = {NULL, NULL, NULL, NULL, };
-static    STRPTR MouseSpeed[] = {NULL, NULL, NULL, NULL, };
+static    CONST_STRPTR InputTabs[] = {NULL, NULL, NULL, };
+static    CONST_STRPTR ButtonMappings[] = {NULL, NULL, NULL, NULL, };
+static    CONST_STRPTR MouseSpeed[] = {NULL, NULL, NULL, NULL, };
 
 /*** Instance Data **********************************************************/
 
@@ -84,16 +84,16 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     display_hook.h_Entry = HookEntry;
     display_hook.h_SubEntry = (HOOKFUNC)keytypes_display_func;
 
-    InputTabs[0] = __(MSG_GAD_TAB_KEYBOARD);
-    InputTabs[1] = __(MSG_GAD_TAB_MOUSE);
+    InputTabs[0] = _(MSG_GAD_TAB_KEYBOARD);
+    InputTabs[1] = _(MSG_GAD_TAB_MOUSE);
 
-    ButtonMappings[0] = __(MSG_GAD_MOUSE_MAPPING_SELECT);
-    ButtonMappings[1] = __(MSG_GAD_MOUSE_MAPPING_MENU);
-    ButtonMappings[2] = __(MSG_GAD_MOUSE_MAPPING_THIRD);
+    ButtonMappings[0] = _(MSG_GAD_MOUSE_MAPPING_SELECT);
+    ButtonMappings[1] = _(MSG_GAD_MOUSE_MAPPING_MENU);
+    ButtonMappings[2] = _(MSG_GAD_MOUSE_MAPPING_THIRD);
 
-    MouseSpeed[0] = __(MSG_GAD_MOUSE_SPEED_SLOW);
-    MouseSpeed[1] = __(MSG_GAD_MOUSE_SPEED_NORMAL);
-    MouseSpeed[2] = __(MSG_GAD_MOUSE_SPEED_FAST);
+    MouseSpeed[0] = _(MSG_GAD_MOUSE_SPEED_SLOW);
+    MouseSpeed[1] = _(MSG_GAD_MOUSE_SPEED_NORMAL);
+    MouseSpeed[2] = _(MSG_GAD_MOUSE_SPEED_FAST);
 
     self = (Object *) DoSuperNewTags
     (
@@ -361,10 +361,6 @@ IPTR IPEditor__MUIM_PrefsEditor_ExportFH
 )
 {
     SETUP_INST_DATA;
-    struct PrefHeader header; 
-    struct IFFHandle *handle;
-    BOOL              success = TRUE;
-    LONG              error   = 0;
 
     if (Gadgets2InputPrefs(data))
     {

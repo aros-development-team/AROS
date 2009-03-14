@@ -287,7 +287,7 @@ __main( char *argstring )
     /* Get arguments if started from CLI */
     if( !_WBenchMsg )
     {
-        if( !( RDArgs = ReadArgs( TEMPLATE, ( LONG * ) &args, NULL ) ) )
+        if( !( RDArgs = ReadArgs( TEMPLATE, ( IPTR * ) &args, NULL ) ) )
         {
             PrintFault( IoErr(), GetString( MSG_ERROR_ARGS ) );
             __exit( 0 );
@@ -754,8 +754,8 @@ struct TagItem RTTags[] =
     {RT_Window,        0},
     {RT_LockWindow,        TRUE},
     {RT_ShareIDCMP,        TRUE},
-    {RT_IntuiMsgFunc,     &IntuiHook},
-    TAG_END
+    {RT_IntuiMsgFunc,     (IPTR)&IntuiHook},
+    {TAG_END}
 };
 
 #define TAG_FLAGS    0
@@ -766,7 +766,7 @@ LONG
 GetFilename( STRPTR file, STRPTR hail, ULONG flags )
 {
     RTTags[ TAG_FLAGS  ].ti_Data = flags;
-    RTTags[ TAG_WINDOW ].ti_Data = WindowPtr;
+    RTTags[ TAG_WINDOW ].ti_Data = (IPTR)WindowPtr;
 
     if( rtFileRequestA( FileReq, FileName, hail, RTTags ) )
     {

@@ -41,7 +41,7 @@ D(bug("[WPEditor.exe] Starting...\n"));
         MUIA_Application_Base, (IPTR)"WANDERERPREFS",
         MUIA_Application_SingleTask, TRUE,
         SubWindow, (IPTR)(
-            window = SystemPrefsWindowObject,
+            window = (Object *)SystemPrefsWindowObject,
                 MUIA_Window_ID, MAKE_ID('W','W','I','N'),
                 MUIA_Window_Title, __(MSG_NAME),
                 WindowContents, (IPTR)WPEditorObject,

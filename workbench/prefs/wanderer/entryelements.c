@@ -47,7 +47,7 @@ BOOL EntryElementRegister(struct List *entry_List, ULONG entry_ID, char *entry_N
 	strncpy(current_Node->EE_E_Name, entry_Name, element_NameLen);
 
 	current_Node->EE_E_ID = (IPTR)entry_ID;
-	AddTail(entry_List, current_Node);
+	AddTail(entry_List, (struct Node *)current_Node);
 
 	return TRUE;
 }
@@ -72,9 +72,9 @@ IPTR EntryElementFindNode(struct List *entry_List, ULONG entry_ID)
 	ForeachNode(entry_List, current_Node)
 	{
 		if (current_Node->EE_E_ID == (IPTR)entry_ID)
-			return current_Node;
+			return (IPTR)current_Node;
 	}
-	return NULL;
+	return 0;
 }
 
 IPTR EntryElementFindNamedNode(struct List *entry_List, char * entry_Name)
@@ -84,14 +84,14 @@ IPTR EntryElementFindNamedNode(struct List *entry_List, char * entry_Name)
 	ForeachNode(entry_List, current_Node)
 	{
 		if (strcmp(current_Node->EE_E_Name, entry_Name) == 0)
-			return current_Node;
+			return (IPTR)current_Node;
 	}
-	return NULL;
+	return 0;
 }
 
 IPTR GetEntryElementName(IPTR entry)
 {
-	return ((struct EntryElement__Entry *)entry)->EE_E_Name;	
+	return (IPTR)(((struct EntryElement__Entry *)entry)->EE_E_Name);
 }
 
 IPTR GetEntryElementID(IPTR  entry)

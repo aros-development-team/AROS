@@ -934,7 +934,7 @@ const struct __MUIBuiltinClass _MUIP_Timezone_desc =
 
 void InitTimezone() 
 {
-    Timezone_CLASS=MUI_CreateCustomClass(NULL,MUIC_Group,NULL,sizeof(struct MUI_TimezoneData),(IPTR) &Timezone_Dispatcher);
+    Timezone_CLASS=MUI_CreateCustomClass(NULL,MUIC_Group,NULL,sizeof(struct MUI_TimezoneData),(APTR) &Timezone_Dispatcher);
 }
 
 void CleanTimezone() 

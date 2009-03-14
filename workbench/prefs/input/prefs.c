@@ -123,7 +123,7 @@ void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
     {
     	if (ap.ap_Info.fib_DirEntryType < 0)
 	{
-	    entry = (struct ListviewEntry *)AllocPooled(mempool, entrysize);
+	    entry = (struct ListviewEntry *)AllocPooled((APTR)mempool, entrysize);
 	    if (entry)
 	    {
 	    	entry->node.ln_Name = entry->layoutname;
@@ -176,7 +176,7 @@ BOOL LoadPrefs(BPTR fh)
     
     if ((iff = AllocIFF()))
     {
-        iff->iff_Stream = fh;
+        iff->iff_Stream = (IPTR)fh;
         if (fh != NULL)
         {
             D(bug("LoadPrefs: stream opened.\n"));
@@ -260,7 +260,7 @@ BOOL SavePrefs(BPTR fh)
 	
     if ((iff = AllocIFF()))
     {
-        iff->iff_Stream = fh;
+        iff->iff_Stream = (IPTR)fh;
     	if (iff->iff_Stream)
 	{
     	    D(bug("SavePrefs: stream opened.\n"));
@@ -466,7 +466,7 @@ void try_setting_test_keymap(void)
         KeymapBase = OpenLibrary("keymap.library", 0);
         if (KeymapBase)
         {
-            SetKeyMapDefault((IPTR)&kmn->kn_KeyMap);
+            SetKeyMapDefault((struct KeyMap *)&kmn->kn_KeyMap);
             CloseLibrary(KeymapBase);
         }
     }
