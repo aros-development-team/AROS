@@ -3,8 +3,8 @@
 
 void InitLocale(STRPTR, ULONG);
 void CleanupLocale(void);
-STRPTR MSG(ULONG);
-STRPTR MSG_STD(ULONG);
+CONST_STRPTR MSG(ULONG);
+CONST_STRPTR MSG_STD(ULONG);
 
 #endif
 

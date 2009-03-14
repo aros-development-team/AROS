@@ -282,10 +282,10 @@ struct PartitionHandle *AddPartitionA(struct PartitionHandle *root, IPTR tag, ..
 #warning "TODO: Check varargs usage is correct"
 #ifdef __AROS__
     AROS_SLOWSTACKMETHODS_PRE(tag)
-    retval = AddPartition(root, AROS_SLOWSTACKMETHODS_ARG(tag));
+    retval = (IPTR)AddPartition(root, (struct TagItem *)AROS_SLOWSTACKMETHODS_ARG(tag));
     AROS_SLOWSTACKMETHODS_POST
 
-    return retval;
+    //return retval;  return is already done by AROS_SLOWSTACKMETHODS_POST
 #else
     return AddPartition(root, (struct TagItem *)&tag);
 #endif

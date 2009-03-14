@@ -42,9 +42,9 @@ void CleanupLocale(void)
 
 /*********************************************************************************************/
 
-STRPTR MSG(ULONG id)
+CONST_STRPTR MSG(ULONG id)
 {
-    STRPTR retval;
+    CONST_STRPTR retval;
     
     if (catalog)
     {
@@ -56,8 +56,8 @@ STRPTR MSG(ULONG id)
     return retval;
 }
 
-STRPTR MSG_STD(ULONG id) {
-STRPTR retval;
+CONST_STRPTR MSG_STD(ULONG id) {
+    CONST_STRPTR retval;
 
     if (locale)
     {

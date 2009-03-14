@@ -98,7 +98,7 @@ static BOOL quitme, disabled;
 static BOOL offScreenLayersFlag;
 static struct NotifyRequest *IControlChangeNR;
 
-static LONG args[NUM_ARGS];
+static IPTR args[NUM_ARGS];
 static char s[256];
 
 static void HandleAction(void);
