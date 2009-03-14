@@ -132,7 +132,8 @@ AROS_UFH3(ULONG,Popobject_Close_Function,
 IPTR Popobject__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Popobject_DATA   *data;
-    struct TagItem  	    *tag, *tags;
+    const struct TagItem    *tags;
+    struct TagItem  	    *tag;
     
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return FALSE;
@@ -211,7 +212,8 @@ IPTR Popobject__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 IPTR Popobject__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Popobject_DATA *data = INST_DATA(cl, obj);
-    struct TagItem  	  *tag, *tags;
+    const struct TagItem  *tags;
+    struct TagItem  	  *tag;
 
     /* parse initial taglist */
 

@@ -192,7 +192,8 @@ static void GradFunc(struct Hook *hook, Object *obj, APTR msg)
 IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Coloradjust_DATA   *data;
-    struct TagItem  	    	*tag, *tags;
+    const struct TagItem    	*tags;
+    struct TagItem  	    	*tag;
     struct Library  	    	*colorwheelbase, *gradientsliderbase;
     Object  	    	    	*rslider, *gslider, *bslider;
     Object  	    	    	*colfield, *wheel = NULL, *grad = NULL;
@@ -209,18 +210,18 @@ IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         MUIA_Group_VertSpacing, 1,
         
         Child, (IPTR) Label1("Red:"),
-        Child, (IPTR) (rslider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End),
+        Child, (IPTR) (rslider = (Object *)(SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End)),
         Child, (IPTR) Label1("Green:"),
-        Child, (IPTR) (gslider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End),
+        Child, (IPTR) (gslider = (Object *)(SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End)),
         Child, (IPTR) Label1("Blue:"),
-        Child, (IPTR) (bslider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End),
+        Child, (IPTR) (bslider = (Object *)(SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End)),
         Child, (IPTR) VSpace(1),
         Child, (IPTR) VSpace(1),
-        Child, (IPTR) (colfield = ColorfieldObject, TextFrame, MUIA_Weight, 0, End),
+        Child, (IPTR) (colfield = (Object *)(ColorfieldObject, TextFrame, MUIA_Weight, 0, End)),
         Child, (!colorwheelbase || !gradientsliderbase) ? (IPTR) HVSpace : (IPTR) HGroup,
             /* FIXME: this looks severely broken if the HVSpace path is taken... */
             MUIA_Group_HorizSpacing, 2,
-            Child, (IPTR) (wheel = BoopsiObject,
+            Child, (IPTR) (wheel = (Object *)BoopsiObject,
                 MUIA_Boopsi_ClassID,   (IPTR) "colorwheel.gadget",
                 MUIA_Boopsi_MinWidth,         16,
                 MUIA_Boopsi_MinHeight,        16,
@@ -235,7 +236,7 @@ IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                 ICA_TARGET,                   ICTARGET_IDCMP,
                 MUIA_FillArea,                TRUE,
             End),
-            Child, (IPTR) (grad = BoopsiObject,
+            Child, (IPTR) (grad = (Object *)BoopsiObject,
                 MUIA_Boopsi_ClassID,  (IPTR) "gradientslider.gadget",
                 MUIA_Boopsi_MinWidth,        16,
                 MUIA_Boopsi_MinHeight,       16,
@@ -382,7 +383,8 @@ IPTR Coloradjust__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 IPTR Coloradjust__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Coloradjust_DATA   *data;
-    struct TagItem  	    	*tag, *tags;
+    const struct TagItem    	*tags;
+    struct TagItem  	    	*tag;
     ULONG   	    	    	*rgb;
     BOOL    	    	    	 newcol = FALSE;
     

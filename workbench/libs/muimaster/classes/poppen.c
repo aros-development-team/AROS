@@ -83,11 +83,11 @@ IPTR Poppen__MUIM_Poppen_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 
 	get(obj,MUIA_Pendisplay_Spec, &penspec);
 
-    	data->wnd = WindowObject,
+    	data->wnd = (Object *)(WindowObject,
 	  MUIA_Window_Title, (IPTR)data->wintitle,
           MUIA_Window_Activate, TRUE,
     	    WindowContents, (IPTR)VGroup,
-		Child, (IPTR)(data->penadjust = PenadjustObject,
+		Child, (IPTR)(data->penadjust = (Object *)PenadjustObject,
 		    MUIA_CycleChain, 1,
 		    MUIA_Penadjust_Spec, (IPTR)penspec,
 		    End),
@@ -96,7 +96,7 @@ IPTR Poppen__MUIM_Poppen_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 		    Child, (IPTR)(cancel_button = MUI_MakeObject(MUIO_Button,(IPTR)"_Cancel")),
 		    End,
 		End,
-	    End;
+	    End);
 
 	if (data->wnd)
 	{

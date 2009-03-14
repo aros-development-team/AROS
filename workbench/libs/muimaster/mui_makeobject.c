@@ -53,7 +53,7 @@ STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Li
 {
     int i = 0;
 
-    Object *menustrip = MenuitemObject,End;
+    Object *menustrip = (Object *)MenuitemObject,End;
     Object *menu      = NULL;
     Object *menuitem  = NULL;
 
@@ -63,7 +63,7 @@ STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Li
     {
     	if (newmenu[i].nm_Type == NM_TITLE)
     	{
-	    menu = MenuitemObject, 
+	    menu = (Object *)MenuitemObject, 
 	               MUIA_Menuitem_Title,   (IPTR)newmenu[i].nm_Label, 
 		       MUIA_UserData,         (IPTR)newmenu[i].nm_UserData,
 		       MUIA_Menuitem_Enabled, (newmenu[i].nm_Flags & NM_MENUDISABLED) == 0,
@@ -92,7 +92,7 @@ STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Li
 
             if (newmenu[i].nm_Type == NM_ITEM || (menuitem != NULL && newmenu[i].nm_Type == NM_SUB))
     	    {
-	        Object *item = MenuitemObject,
+	        Object *item = (Object *)(MenuitemObject,
 	            MUIA_Menuitem_Title,         (IPTR)label,
 	            MUIA_Menuitem_Shortcut,      (IPTR)commkey,
 		    MUIA_UserData,               (IPTR)newmenu[i].nm_UserData,
@@ -102,7 +102,7 @@ STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Li
 		    MUIA_Menuitem_Toggle,        (newmenu[i].nm_Flags & MENUTOGGLE)       != 0,
 		    MUIA_Menuitem_CommandString, (newmenu[i].nm_Flags & NM_COMMANDSTRING) != 0,
 		    MUIA_Menuitem_Enabled,       (newmenu[i].nm_Flags & NM_ITEMDISABLED)  == 0,
-	        End;
+	        End);
 		
 		if (item != NULL)
 		{
@@ -138,7 +138,7 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath, struct 
         
         UnLock(lock);
     
-        return HGroup,
+        return (Object *)HGroup,
             ButtonFrame,
             MUIA_Background,               MUII_ButtonBack,
 	    MUIA_CycleChain,	    	   1,
@@ -302,7 +302,7 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath, struct 
 	    {
 		control_char = get_control_char(label);
 		
-		return HGroup,
+		return (Object *)HGroup,
 		    MUIA_VertWeight, 0,
 		    ButtonFrame,
 		    MUIA_Background, MUII_ButtonBack,
@@ -422,7 +422,7 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath, struct 
 	{
             int control_char = get_control_char((const char *)params[0]);
 
-	    return SliderObject,
+	    return (Object *)SliderObject,
 	        MUIA_Numeric_Min, params[1],
 	        MUIA_Numeric_Max, params[2],
 		control_char?MUIA_ControlChar:TAG_IGNORE, control_char,

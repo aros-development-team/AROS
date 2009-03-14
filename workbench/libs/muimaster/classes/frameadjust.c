@@ -128,7 +128,8 @@ static Object *MakeFrameDisplay(int i, int state)
 IPTR Frameadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Frameadjust_DATA   *data;
-    struct TagItem  	    *tag, *tags;
+    const struct TagItem    *tags;
+    struct TagItem  	    *tag;
     Object *FD_display;
     Object *SL_top, *SL_left, *SL_right, *SL_bottom;
     Object *GR_fd;
@@ -152,9 +153,9 @@ IPTR Frameadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         )),
         Child, (IPTR) VGroup,
             MUIA_Group_VertSpacing, 10,
-            Child, (IPTR) (GR_fd = RowGroup(2), End), /* RowGroup */
-            Child, (IPTR) (GR_fd1 = RowGroup(2), End), /* RowGroup */
-            Child, (IPTR) (GR_fd2 = RowGroup(2), End), /* RowGroup */
+            Child, (IPTR) (GR_fd = (Object *)RowGroup(2), End), /* RowGroup */
+            Child, (IPTR) (GR_fd1 = (Object *)RowGroup(2), End), /* RowGroup */
+            Child, (IPTR) (GR_fd2 = (Object *)RowGroup(2), End), /* RowGroup */
             Child, (IPTR) HGroup,
                 Child, (IPTR) Label("Inner Spacing:"),
                 Child, (IPTR) RowGroup(2),

@@ -753,7 +753,7 @@ IPTR Notify__MUIM_GetConfigItem(struct IClass *cl, Object *obj, struct MUIP_GetC
     
     if (found)
     {
-    	*msg->storage = found;
+    	*msg->storage = (IPTR *)found;
 	return TRUE;
     }
     else

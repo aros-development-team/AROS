@@ -281,7 +281,8 @@ const static struct def_strval DefStrValues[] =
 IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ConfigdataData *data;
-    struct TagItem *tags,*tag;
+    const struct TagItem *tags;
+    struct TagItem *tag;
     //APTR cdata;
     int i,res = 0;
 

@@ -814,7 +814,6 @@ IPTR Cycle__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 **************************************************************************/
 IPTR Cycle__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
-    struct MUI_CycleData *data = INST_DATA(cl, obj);
     ULONG id;
     LONG *s;
 

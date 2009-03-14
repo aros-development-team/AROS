@@ -120,7 +120,8 @@ IPTR Penadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     static const struct Hook muipen_display_hook = { {NULL, NULL}, HookEntry,  MuipenDisplayFunc, NULL };
 
     struct Penadjust_DATA   *data;
-    struct TagItem  	       *tag, *tags;
+    const struct TagItem       *tags;
+    struct TagItem  	       *tag;
     Object  	    	       *listobj, *sliderobj, *coloradjobj;
 
     obj = (Object *) DoSuperNewTags
@@ -129,19 +130,19 @@ IPTR Penadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     	
         MUIA_Register_Titles, (IPTR) register_labels,
 	Child, (IPTR) ListviewObject,
-            MUIA_Listview_List, (IPTR) (listobj = ListObject,
+            MUIA_Listview_List, (IPTR) (listobj = (Object *)ListObject,
                 InputListFrame,
 	        MUIA_List_SourceArray, (IPTR) lv_labels,
 	        MUIA_List_Format,      (IPTR) ",,",
 	        MUIA_List_DisplayHook, (IPTR) &muipen_display_hook,
             End),
         End,
-	Child, (IPTR) (sliderobj = SliderObject,
+	Child, (IPTR) (sliderobj = (Object *)SliderObject,
 	    MUIA_Slider_Horiz, TRUE,
 	    MUIA_Numeric_Min,  -128,
 	    MUIA_Numeric_Max,  127,
         End),  
-	Child, (IPTR) (coloradjobj = ColoradjustObject, End),
+	Child, (IPTR) (coloradjobj = (Object *)ColoradjustObject, End),
 	
         TAG_MORE, (IPTR) msg->ops_AttrList
     );
@@ -174,7 +175,8 @@ IPTR Penadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
 IPTR Penadjust__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct TagItem  	     *tags,*tag;
+    const struct TagItem     *tags;
+    struct TagItem  	     *tag;
     struct Penadjust_DATA *data = INST_DATA(cl, obj);
     BOOL    	    	      update = FALSE;
     

@@ -2079,7 +2079,6 @@ MUIM_Import : to import an objects "contents" from a dataspace object.
 **************************************************************************/
 static IPTR Area__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
-    struct MUI_AreaData *data = INST_DATA(cl, obj);
     ULONG id;
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))

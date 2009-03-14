@@ -935,7 +935,7 @@ void dt_put_on_rastport_tiled(struct dt_node *node, struct RastPort *rp, int x1,
 	if (bfi)
 	{
 	    LONG depth = GetBitMapAttr(bitmap,BMA_DEPTH);
-	    bfi->Hook.h_Entry = (ULONG (*)())WindowPatternBackFillFunc;
+	    bfi->Hook.h_Entry = (HOOKFUNC)WindowPatternBackFillFunc;
 #ifdef __SASC
 	    bfi->Hook.h_Data = (APTR)getreg(12);	/* register A4 */
 #endif

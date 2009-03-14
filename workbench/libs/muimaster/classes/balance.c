@@ -34,12 +34,13 @@ extern struct Library *MUIMasterBase;
 IPTR Balance__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Balance_DATA *data;
-    struct TagItem *tags,*tag;
+    const struct TagItem *tags;
+    struct TagItem *tag;
 
-    obj = (Object *)DoSuperMethodA(cl, obj, msg);
+    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
 
     if (!obj)
-	return NULL;
+	return 0;
 
     /* Initial local instance data */
     data = INST_DATA(cl, obj);

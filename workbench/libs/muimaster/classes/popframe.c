@@ -108,7 +108,7 @@ IPTR Popframe__MUIM_Popframe_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 
 	get(obj, MUIA_Framedisplay_Spec, &frame_spec);
 
-    	data->wnd = WindowObject,
+    	data->wnd = (Object *)(WindowObject,
 	  MUIA_Window_Title, (IPTR)data->wintitle,
           MUIA_Window_Activate, TRUE,
 	    MUIA_Window_IsSubWindow, TRUE,
@@ -128,7 +128,7 @@ IPTR Popframe__MUIM_Popframe_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 		    Child, (IPTR)(cancel_button = MUI_MakeObject(MUIO_Button, (IPTR)"_Cancel")),
 		    End,
 		End,
-	    End;
+	    End);
 
 	if (data->wnd)
 	{

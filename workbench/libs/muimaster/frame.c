@@ -276,7 +276,7 @@ void dt_do_frame_rects(struct RastPort *rp, struct dt_frame_image *fi, struct Ne
 
     ffi.fi = fi;
     
-    ffi.Hook.h_Entry = (ULONG (*)())WindowPatternBackFillFunc;
+    ffi.Hook.h_Entry = (HOOKFUNC)WindowPatternBackFillFunc;
 
     if (rp->Layer)
     {

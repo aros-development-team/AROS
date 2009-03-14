@@ -26,7 +26,8 @@ extern struct Library *MUIMasterBase;
 IPTR Radio__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Radio_DATA   *data;
-    struct TagItem  	    *tag, *tags;
+    const struct TagItem    *tags;
+    struct TagItem  	    *tag;
     int i;
     const char **entries = NULL;
     int entries_active = 0;
@@ -54,7 +55,7 @@ IPTR Radio__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	D(bug("Radio_New: No Entries specified!\n"));
 	CoerceMethod(cl,obj,OM_DISPOSE);
-	return NULL;
+	return 0;
     }
 
     /* Count the number of entries */
@@ -136,7 +137,8 @@ IPTR Radio__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 IPTR Radio__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Radio_DATA *data;
-    struct TagItem  	    *tag, *tags;
+    const struct TagItem    *tags;
+    struct TagItem  	    *tag;
 
     data = INST_DATA(cl, obj);
     
@@ -212,7 +214,6 @@ IPTR Radio__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 **************************************************************************/
 IPTR Radio__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
-    struct Radio_DATA *data = INST_DATA(cl, obj);
     ULONG id;
     LONG *s;
 

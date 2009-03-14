@@ -26,7 +26,8 @@ extern struct Library *MUIMasterBase;
 IPTR Settingsgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_Settingsgroup *data;
-    struct TagItem  	    *tag, *tags;
+    const struct TagItem    *tags;
+    struct TagItem  	    *tag;
 
     obj = (Object *) DoSuperNewTags
     (

@@ -61,12 +61,13 @@ struct MUI_ImageData
 IPTR Image__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ImageData   *data;
-    struct TagItem  	    *tag, *tags;
+    const struct TagItem    *tags;
+    struct TagItem  	    *tag;
     Object *prop;
 
 /*      D(bug("Image_New starts\n")); */
 
-    prop = GetTagData(MUIA_Image_Prop, 0, msg->ops_AttrList);
+    prop = (Object *)GetTagData(MUIA_Image_Prop, 0, msg->ops_AttrList);
 
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);

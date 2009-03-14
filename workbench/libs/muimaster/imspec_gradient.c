@@ -148,7 +148,6 @@ void FillPixelArrayGradientRelative(struct RastPort *rp, int xt, int yt, int xb,
     double sinarc = sin(rad);
 
     struct myrgb startRGB,endRGB;
-    struct NewImage *ni = NULL;
     
     int diffR, diffG, diffB;
 

@@ -515,7 +515,6 @@ IPTR Numeric__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *ms
 **************************************************************************/
 IPTR Numeric__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
-    struct MUI_NumericData *data = INST_DATA(cl, obj);
     ULONG id;
     LONG *s;
 
