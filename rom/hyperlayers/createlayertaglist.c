@@ -97,7 +97,8 @@
   struct Layer * l;
   struct RastPort * rp;
   struct Region * layershape = NULL, *shape;
-  struct TagItem *tag, *tstate = tagList;
+  const struct TagItem *tstate = tagList;
+  struct TagItem *tag;
   
   while((tag = NextTagItem(&tstate)))
   {

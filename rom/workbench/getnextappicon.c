@@ -110,7 +110,7 @@
             }
 
 
-        } while ( currentnode = GetSucc(currentnode) );
+        } while ((currentnode = GetSucc(currentnode)));
 
         /* return first entry if NULL was given or DiskObject could not be found */
         strcpy(text, ((struct AppIcon *)(appiconlist->lh_Head))->ai_Text );

@@ -127,21 +127,21 @@ static struct Gadget *createGadgets(struct BootMenuBase_intern *BootMenuBase)
     BootMenuBase->bm_MainGadgets.bootopt = createButton(
                                                         180, 63, 280, 14,
                                                         NULL, "Boot Options...",
-                                                        BUTTON_BOOT_OPTIONS, BootMenuBase);
+                                                        BUTTON_BOOT_OPTIONS, (struct BootMenuBase *)BootMenuBase);
     if (BootMenuBase->bm_MainGadgets.bootopt == NULL)
             return NULL;
 
     BootMenuBase->bm_MainGadgets.displayopt = createButton(
                                                         180, 84, 280, 14,
                                                         BootMenuBase->bm_MainGadgets.bootopt->gadget, "Display Options...",
-                                                        BUTTON_DISPLAY_OPTIONS, BootMenuBase);
+                                                        BUTTON_DISPLAY_OPTIONS, (struct BootMenuBase *)BootMenuBase);
     if (BootMenuBase->bm_MainGadgets.displayopt == NULL)
             return NULL;
 
     BootMenuBase->bm_MainGadgets.expboarddiag = createButton(
                                                         180, 105, 280, 14, 
                                                         BootMenuBase->bm_MainGadgets.displayopt->gadget, "Expansion Board Diagnostic...",
-                                                        BUTTON_EXPBOARDDIAG, BootMenuBase);
+                                                        BUTTON_EXPBOARDDIAG, (struct BootMenuBase *)BootMenuBase);
     if (BootMenuBase->bm_MainGadgets.expboarddiag == NULL)
             return NULL;
 
@@ -149,14 +149,14 @@ static struct Gadget *createGadgets(struct BootMenuBase_intern *BootMenuBase)
     BootMenuBase->bm_MainGadgets.boot = createButton(
                                                         16, 190, 280, 14,
                                                         BootMenuBase->bm_MainGadgets.expboarddiag->gadget, "Boot",
-                                                        BUTTON_BOOT, BootMenuBase);
+                                                        BUTTON_BOOT, (struct BootMenuBase *)BootMenuBase);
     if (BootMenuBase->bm_MainGadgets.boot == NULL)
             return NULL;
 
     BootMenuBase->bm_MainGadgets.bootnss = createButton(
                                                         344, 190, 280, 14,
                                                         BootMenuBase->bm_MainGadgets.boot->gadget, "Boot With No Startup-Sequence",
-                                                        BUTTON_BOOT_WNSS, BootMenuBase);
+                                                        BUTTON_BOOT_WNSS, (struct BootMenuBase *)BootMenuBase);
     if (BootMenuBase->bm_MainGadgets.bootnss == NULL)
             return NULL;
 
@@ -166,15 +166,15 @@ static struct Gadget *createGadgets(struct BootMenuBase_intern *BootMenuBase)
 static void freeGadgets(struct BootMenuBase_intern *BootMenuBase)
 {
     if (BootMenuBase->bm_MainGadgets.boot != NULL)
-        freeButtonGadget(BootMenuBase->bm_MainGadgets.boot, BootMenuBase);
+        freeButtonGadget(BootMenuBase->bm_MainGadgets.boot, (struct BootMenuBase *)BootMenuBase);
     if (BootMenuBase->bm_MainGadgets.bootnss != NULL);
-        freeButtonGadget(BootMenuBase->bm_MainGadgets.bootnss, BootMenuBase);
+        freeButtonGadget(BootMenuBase->bm_MainGadgets.bootnss, (struct BootMenuBase *)BootMenuBase);
     if (BootMenuBase->bm_MainGadgets.bootopt != NULL)
-        freeButtonGadget(BootMenuBase->bm_MainGadgets.bootopt, BootMenuBase);
+        freeButtonGadget(BootMenuBase->bm_MainGadgets.bootopt, (struct BootMenuBase *)BootMenuBase);
     if (BootMenuBase->bm_MainGadgets.displayopt != NULL)
-        freeButtonGadget(BootMenuBase->bm_MainGadgets.displayopt, BootMenuBase);
+        freeButtonGadget(BootMenuBase->bm_MainGadgets.displayopt, (struct BootMenuBase *)BootMenuBase);
     if (BootMenuBase->bm_MainGadgets.expboarddiag != NULL)
-        freeButtonGadget(BootMenuBase->bm_MainGadgets.expboarddiag, BootMenuBase);
+        freeButtonGadget(BootMenuBase->bm_MainGadgets.expboarddiag, (struct BootMenuBase *)BootMenuBase);
 }
 
 static void msgLoop(struct BootMenuBase_intern *BootMenuBase, struct Window *win, struct BootConfig *bcfg)

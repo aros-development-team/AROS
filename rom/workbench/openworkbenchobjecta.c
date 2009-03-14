@@ -164,7 +164,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                             struct TagItem wbp_Tags[] =
                             {
                                 { NP_StackSize, stacksize       },
-                                { TAG_MORE, tags                },
+                                { TAG_MORE, (IPTR)tags          },
                                 { TAG_DONE, 0                   }
                             };
 

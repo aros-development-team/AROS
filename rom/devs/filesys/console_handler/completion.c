@@ -150,8 +150,6 @@ static void PrepareCompletion(struct conbase *conbase, struct completioninfo *ci
 
 static void AddQuotes(struct completioninfo *ci, STRPTR s, LONG s_size)
 {
-    struct conbase *conbase = ci->conbase;
-    
     LONG len = strlen(s);
     
     if (!ci->wordquoted)

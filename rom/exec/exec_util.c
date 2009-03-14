@@ -361,7 +361,7 @@ Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
         )
         {
             REMOVE(et);
-            PutMsg(&parent->et_TaskMsgPort, et);
+            PutMsg(&parent->et_TaskMsgPort, (struct Message *)et);
         }
         else if(parent != NULL)
         {

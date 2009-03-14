@@ -116,7 +116,8 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     LONG rc            = -1;
     LONG *cliNumPtr    = NULL;
 
-    struct TagItem *newtags, *tags2 = tags, *tag;
+    const struct TagItem *tags2 = tags;
+    struct TagItem *newtags, *tag;
 
     while ((tag = NextTagItem(&tags2)))
     {

@@ -148,7 +148,7 @@ struct MinList debug_seglist, free_debug_segnodes;
 
 		/* copy the segments info list */
 		NEWLIST(&segnode->seginfos);
-		while ((si = REMHEAD(&seginfos)))
+		while ((si = (struct seginfo *)REMHEAD(&seginfos)))
 		    ADDTAIL(&segnode->seginfos, si);
 
 #if defined(__AROS_SET_START_ADDR)

@@ -24,8 +24,8 @@ struct ButtonGadget *createButton
 		{GA_Top,             (IPTR)top}, /* 1 */
 		{GA_Height,       (IPTR)height}, /* 2 */
 		{GA_Width,         (IPTR)width}, /* 3 */
-		{GA_Border,         NULL}, /* 4 */
-		{GA_SelectRender,   NULL}, /* 5 */
+		{GA_Border,         0}, /* 4 */
+		{GA_SelectRender,   0}, /* 5 */
 		{GA_Previous, (IPTR)prev}, /* 6 */
 		{GA_Text,     (IPTR)name}, /* 7 */
 		{GA_ID,         (IPTR)id}, /* 8 */

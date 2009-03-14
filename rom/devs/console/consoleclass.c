@@ -51,7 +51,7 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
     EnterFunc(bug("Console::New()\n"));
     
     /* Get console window */
-    win = (struct Window *)GetTagData(A_Console_Window, NULL, msg->ops_AttrList);
+    win = (struct Window *)GetTagData(A_Console_Window, 0, msg->ops_AttrList);
     if (!win)
     	ReturnPtr ("Console::New", Object *, NULL);
 	
