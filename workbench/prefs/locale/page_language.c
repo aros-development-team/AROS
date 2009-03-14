@@ -557,7 +557,7 @@ const struct __MUIBuiltinClass _MUIP_Language_desc =
 
 void InitLanguage() 
 {
-    Language_CLASS=MUI_CreateCustomClass(NULL,MUIC_Group,NULL,sizeof(struct MUI_LanguageData),(IPTR) &Language_Dispatcher);
+    Language_CLASS=MUI_CreateCustomClass(NULL,MUIC_Group,NULL,sizeof(struct MUI_LanguageData),(APTR) &Language_Dispatcher);
 
 }
 

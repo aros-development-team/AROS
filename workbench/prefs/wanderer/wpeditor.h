@@ -12,7 +12,6 @@
 #include <exec/types.h>
 #include <libraries/mui.h>
 #include <aros/debug.h>
-#define DEBUG 1
 
 /*** Identifier base ********************************************************/
 #define MUIB_WPEditor                  (TAG_USER | 0x10000000)

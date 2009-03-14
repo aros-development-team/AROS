@@ -74,7 +74,7 @@ Object *ScreenModeSelector__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
     if (!ids_array)
         goto err;
 	 
-    modes_array[0]           = __(MSG_SELECT);
+    modes_array[0]           = _(MSG_SELECT);
     ids_array[0]             = INVALID_ID;
     ids_array[num_modes + 1] = INVALID_ID;
     

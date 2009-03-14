@@ -315,7 +315,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_OpenAdvancedOptionsFunc: Found ViewSettings
 				if (XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_BackgroundGrpObj, MUIA_ShowMe) == TRUE)
 				{
 					ULONG current_RenderMode = GetTag32Data(MUIA_IconWindowExt_ImageBackFill_BGRenderMode, IconWindowExt_ImageBackFill_RenderMode_Tiled, _viewSettings_Node->wpedbo_Options);
-					IPTR current_RenderMode_entry = NULL;
+					IPTR current_RenderMode_entry = 0;
 					int i;
 
 					for (i = 0; i < data->wped_ViewSettings_Current->wpedbo_BFRenderModeCount; i++)
@@ -342,7 +342,6 @@ D(bug("[WPEditor] WandererPrefs_Hook_OpenAdvancedOptionsFunc: Found ViewSettings
 					{
 
 						ULONG current_TileMode = GetTag32Data(MUIA_IconWindowExt_ImageBackFill_BGTileMode, IconWindowExt_ImageBackFill_TileMode_Float, _viewSettings_Node->wpedbo_Options);
-						IPTR current_rendermode_entry = NULL;
 
 						for (i = 0; i < data->wped_ViewSettings_Current->wpedbo_BFTileModeCount; i++)
 						{
@@ -725,7 +724,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Object @ 0x%p reports image
 
 	IPTR  this_Background_type = (IPTR)(ImageSelector_Spec[0] - 48);
 
-	_viewSettings_Current->wpedbo_Type = (IPTR) this_Background_type;
+	_viewSettings_Current->wpedbo_Type = (APTR) this_Background_type;
 	data->wped_ViewSettings_Current = _viewSettings_Current;
 
 	if (_viewSettings_Current->wpedbo_AdvancedOptionsObject)
@@ -756,7 +755,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Existing options @ 0x%p\n",
 
 			switch ((int)_viewSettings_Current->wpedbo_Type)
 			{
-				IPTR DRAWMODEENTRY = NULL;
+				IPTR DRAWMODEENTRY = 0;
 
 				case 5:
 				{
@@ -820,10 +819,10 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Object @ 0x%p\n", new_TileM
 					}
 
 					if (old_bg_tilemodes)
-						FreeVec((IPTR)old_bg_tilemodes);
+						FreeVec((APTR)old_bg_tilemodes);
 
 					if (old_bg_tilemodeentries)
-						FreeVec((IPTR)old_bg_tilemodeentries);
+						FreeVec((APTR)old_bg_tilemodeentries);
 					
 					newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconWindowExt_ImageBackFill_BGRenderMode;
 					if (_viewSettings_Current->wpedbo_Options)
@@ -1006,10 +1005,10 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Object @ 0x%p\n", new_Rende
 			}
 
 			if (old_bg_drawmodes)
-				FreeVec((IPTR)old_bg_drawmodes);
+				FreeVec((APTR)old_bg_drawmodes);
 
 			if (old_bg_drawpages)
-				FreeVec((IPTR)old_bg_drawpages);
+				FreeVec((APTR)old_bg_drawpages);
 		}
 	}
 	else
@@ -1065,7 +1064,7 @@ D(bug("[WPEditor] WPEditor__NewViewSettingObjects('%s')\n", this_Name));
 		{
 			strcpy(_viewSettings_Current->wpedbo_ViewName, this_Name);
 
-			_viewSettings_Current->wpedbo_ImageSpecObject = PopimageObject,
+			_viewSettings_Current->wpedbo_ImageSpecObject = (Object *)PopimageObject,
 										MUIA_FixWidth, 50,
 										MUIA_FixHeight, 50,
 										MUIA_Window_Title, __(MSG_SELECT_WORKBENCH_BACKGROUND),
@@ -1189,23 +1188,23 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 	_wpeditor_intern_MainPageNames[WPD_APPEARANCE] = (STRPTR)_(MSG_APPEARANCE);
 	_wpeditor_intern_MainPageNames[WPD_TOOLBAR] = (STRPTR)_(MSG_TOOLBAR);
 
-	_WP_Prefs_PageGroupObj = RegisterObject,
+	_WP_Prefs_PageGroupObj = (Object *)RegisterObject,
 					MUIA_Register_Titles, (IPTR) _wpeditor_intern_MainPageNames,      
 				End;
 /*END _WP_Prefs_PageGroupObj-------------------------------------------------*/
 
 /*_WP_NavigationObj: "Navigation" page group---------------------------------*/
 
-	_WP_NavigationObj = GroupObject, End;
+	_WP_NavigationObj = (Object *)GroupObject, End;
 
-	_WP_Navigation_HGrp1 = HGroup,                    // general 
+	_WP_Navigation_HGrp1 = (Object *)HGroup,                    // general 
 					MUIA_FrameTitle, __(MSG_NAVIGATION),
 					MUIA_Group_SameSize, TRUE,
 					MUIA_Frame, MUIV_Frame_Group,
 					MUIA_Group_Columns, 2,
 				End;
 
-	_WP_Navigation_InnerHGrp1 = HGroup,
+	_WP_Navigation_InnerHGrp1 = (Object *)HGroup,
 					MUIA_Group_Columns, 2,
 					MUIA_Group_SameSize, FALSE,
 					Child, (IPTR) Label1(_(MSG_METHOD)),
@@ -1217,7 +1216,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 	_WP_Navigation_TypeObj = MUI_MakeObject(MUIO_Cycle, NULL, _wpeditor_intern_NavigationModes);
 
 	/*END Navigation cycle button----------------*/
-	_WP_Navigation_InnerHGrp2 = HGroup,
+	_WP_Navigation_InnerHGrp2 = (Object *)HGroup,
 					MUIA_Group_Columns, 2,
 					MUIA_Group_SameSize, FALSE,
 				End;
@@ -1227,15 +1226,15 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 #endif
 
 #if defined(DEBUG_CHANGESCREENTITLE)
-	_WP_Navigation_HGrp2 = HGroup,                   
-					MUIA_FrameTitle, "Wanderer ScreenTitle",
+	_WP_Navigation_HGrp2 = (Object *)HGroup,                   
+					MUIA_FrameTitle, (IPTR)"Wanderer ScreenTitle",
 					MUIA_Group_SameSize, TRUE,
 					MUIA_Frame, MUIV_Frame_Group,
 				End;
 
-	_WP_Navigation_InnerHGrp3 = HGroup, End;
+	_WP_Navigation_InnerHGrp3 = (Object *)HGroup, End;
 
-	_WP_Navigator_ScreenTitleObj = StringObject,
+	_WP_Navigator_ScreenTitleObj = (Object *)StringObject,
 					StringFrame,
 					MUIA_String_MaxLen, 256,
 					//MUIA_String_Contents, (IPTR)" ",
@@ -1245,18 +1244,18 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
 /*_WP_Appearance_GroupObj: "Appearance" page group---------------------------*/
 
-	_WP_Appearance_GroupObj= GroupObject,                     // appearance 
+	_WP_Appearance_GroupObj = (Object *)GroupObject,                     // appearance 
 					MUIA_Group_SameSize, FALSE,
 					MUIA_Group_Horiz, TRUE,
 				End;
 
 	/*Left part of Appearance*/
-	_WP_ViewSettings_ScrollGrpObj = ScrollgroupObject,
+	_WP_ViewSettings_ScrollGrpObj = (Object *)ScrollgroupObject,
 					MUIA_Group_SameSize, FALSE,
 					MUIA_Scrollgroup_FreeHoriz, FALSE,
 					MUIA_Scrollgroup_FreeVert, TRUE,
 					MUIA_Scrollgroup_Contents, 
-					(IPTR) (_WP_ViewSettings_VirtGrpObj = VirtgroupObject,
+					(IPTR) (_WP_ViewSettings_VirtGrpObj = (Object *)VirtgroupObject,
 						MUIA_FrameTitle, (IPTR)"View Settings",
 						MUIA_Frame, MUIV_Frame_ReadList,
 						MUIA_Virtgroup_Input, FALSE,
@@ -1267,7 +1266,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 	  of list called _wpeditor_intern_ViewSettings, 
 	  it's created after in this function...;
 	*/
-	_WP_ViewSettings_GroupObj = GroupObject,
+	_WP_ViewSettings_GroupObj = (Object *)GroupObject,
 					MUIA_Background, MUII_SHINE,
 					Child, (IPTR) (_WP_ViewSettings_SpacerObj = HVSpace),
 				End;
@@ -1277,18 +1276,18 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
 /*_WP_Toolbar_GroupObj: "Toolbar" page group---------------------------------*/
 	
-	_WP_Toolbar_GroupObj = GroupObject,                     // toolbar 
+	_WP_Toolbar_GroupObj = (Object *)GroupObject,                     // toolbar 
 				   MUIA_Group_SameSize, FALSE,
 				End;
 	
-	_WP_Toolbar_InnerGroupObj1 = HGroup,
+	_WP_Toolbar_InnerGroupObj1 = (Object *)HGroup,
 					MUIA_FrameTitle,  __(MSG_OBJECTS),
 					MUIA_Group_SameSize, TRUE,
 					MUIA_Frame, MUIV_Frame_Group,
 					MUIA_Group_Columns, 2,
 				End;
 	
-	_WP_Toolbar_InnerGroupObj2 = HGroup,
+	_WP_Toolbar_InnerGroupObj2 = (Object *)HGroup,
 					MUIA_Group_Columns, 2,
 					MUIA_Group_SameSize, FALSE,
 					Child, (IPTR)Label1(_(MSG_TOOLBAR_ENABLED)),
@@ -1296,7 +1295,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 			
 	_WP_Toolbar_EnabledObj = MUI_MakeObject(MUIO_Checkmark, NULL);
 
-	_WP_Toolbar_InnerGroupObj3 = HGroup,
+	_WP_Toolbar_InnerGroupObj3 = (Object *)HGroup,
 					MUIA_Group_Columns, 2,
 					MUIA_Group_SameSize, FALSE,
 					Child, (IPTR) HVSpace,
@@ -1305,13 +1304,13 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 					Child, (IPTR) HVSpace,
 				End;
 
-	_WP_Toolbar_PreviewObj = HGroup,
+	_WP_Toolbar_PreviewObj = (Object *)HGroup,
 				   MUIA_FrameTitle, __(MSG_PREVIEW),
 				   MUIA_Frame, MUIV_Frame_Group,
 				   MUIA_Group_SameSize, FALSE,
 				End;	
 
-	_WP_Toolbar_InnerGroupObj4 = HGroup,
+	_WP_Toolbar_InnerGroupObj4 = (Object *)HGroup,
 					MUIA_HorizWeight, 0,
 					MUIA_Group_SameSize, TRUE,
 				End;
@@ -1402,19 +1401,19 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 /*AdvancedViewWindow---------------------------------------------------------*/
 	
 	/*Window-------------------------------------------------------------*/
-	_WP_AdvancedViewWindow = WindowObject,
+	_WP_AdvancedViewWindow = (Object *)WindowObject,
 					MUIA_Window_CloseGadget, FALSE,
 					MUIA_Window_Title, (IPTR)"Advanced Options ..",
-					WindowContents, (IPTR) (_WP_AdvancedViewWindowVGrp = VGroup, End),
+					WindowContents, (IPTR) (_WP_AdvancedViewWindowVGrp = (Object *)VGroup, End),
 				End;
 
 	/*Draw Mode Group----------------------------------------------------*/    	
-	_WP_AdvancedViewBackgroundGrpObj = VGroup,
-					MUIA_FrameTitle, "Background Options ..",
+	_WP_AdvancedViewBackgroundGrpObj = (Object *)VGroup,
+					MUIA_FrameTitle, (IPTR)"Background Options ..",
 					MUIA_Frame, MUIV_Frame_Group,
 				End;
 
-	_WP_AdvancedViewRenderModeGrpObj = HGroup,
+	_WP_AdvancedViewRenderModeGrpObj = (Object *)HGroup,
 					Child, (IPTR) Label1("Draw Mode : "), End;
 
 	/*AdvancedViewRenderMode cycle button------------------------*/
@@ -1424,39 +1423,39 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 	/*END Draw Mode Group------------------------------------------------*/
 
 	/*Scale Mode/Tile Mode Group-----------------------------------------*/
-	_WP_AdvancedView_RenderModePageObj = GroupObject,
+	_WP_AdvancedView_RenderModePageObj = (Object *)GroupObject,
 					MUIA_Group_PageMode, TRUE,
 				End;
 
-	_WP_AdvancedView_ScaleModeGrpObj = GroupObject,
+	_WP_AdvancedView_ScaleModeGrpObj = (Object *)GroupObject,
 					MUIA_Group_SameSize, FALSE,
-					MUIA_FrameTitle, "Scale Mode Options ..",
+					MUIA_FrameTitle, (IPTR)"Scale Mode Options ..",
 					MUIA_Frame, MUIV_Frame_Group,
-					Child, HVSpace,
+					Child, (IPTR)HVSpace,
 				End;
 		
 	/*AdvancedView_TileModeNames cicle button--------------------*/
 	_WP_AdvancedView_TileModeObj = HVSpace;
-	_WP_AdvancedView_TileModeObjContainer = HGroup, Child, (IPTR)_WP_AdvancedView_TileModeObj, End;
+	_WP_AdvancedView_TileModeObjContainer = (Object *)HGroup, Child, (IPTR)_WP_AdvancedView_TileModeObj, End;
 	/*END AdvancedView_TileModeNames cicle button----------------*/
 
-	_WP_AdvancedView_TileModeGrpObj = GroupObject,	
+	_WP_AdvancedView_TileModeGrpObj = (Object *)GroupObject,	
 					MUIA_Group_SameSize, FALSE,
-					MUIA_FrameTitle, "Tile Mode Options ..",
+					MUIA_FrameTitle, (IPTR)"Tile Mode Options ..",
 					MUIA_Frame, MUIV_Frame_Group,
 					MUIA_Group_Columns, 2,
 				End;
 
-	_WP_AdvancedView_X_OffsetObj = StringObject,
+	_WP_AdvancedView_X_OffsetObj = (Object *)StringObject,
 					StringFrame,
 					MUIA_String_MaxLen, 3,
-					MUIA_String_Accept, "0123456789",
+					MUIA_String_Accept, (IPTR)"0123456789",
 				End;
 
-	_WP_AdvancedView_Y_OffsetObj = StringObject,
+	_WP_AdvancedView_Y_OffsetObj = (Object *)StringObject,
 					StringFrame,
 					MUIA_String_MaxLen, 3,
-					MUIA_String_Accept, "0123456789",
+					MUIA_String_Accept, (IPTR)"0123456789",
 				End;
 
 	/*END Scale Mode/Tile Mode Group-------------------------------------*/
@@ -1478,48 +1477,48 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
 	/*END Icon List Mode Cycle button--------------------*/
 
-	_WP_AdvancedView_IconLabel_MaxLineLenObj = StringObject,
+	_WP_AdvancedView_IconLabel_MaxLineLenObj = (Object *)StringObject,
 					StringFrame,
 					MUIA_String_MaxLen, 3,
 					MUIA_String_Format, MUIV_String_Format_Right,
 					MUIA_String_Accept, (IPTR)"0123456789",
 				End;
 
-	_WP_AdvancedView_Icon_HorSpacingObj = StringObject,
+	_WP_AdvancedView_Icon_HorSpacingObj = (Object *)StringObject,
 					StringFrame,
 					MUIA_String_MaxLen, 3,
 					MUIA_String_Format, MUIV_String_Format_Right,
 					MUIA_String_Accept, (IPTR)"0123456789",
 				End;
 
-	_WP_AdvancedView_Icon_VertSpacingObj = StringObject,
+	_WP_AdvancedView_Icon_VertSpacingObj = (Object *)StringObject,
 					StringFrame,
 					MUIA_String_MaxLen, 3,
 					MUIA_String_Format, MUIV_String_Format_Right,
 					MUIA_String_Accept, (IPTR)"0123456789",
 				End;
 
-	_WP_AdvancedView_Icon_ImageSpacingObj = StringObject,
+	_WP_AdvancedView_Icon_ImageSpacingObj = (Object *)StringObject,
 					StringFrame,
 					MUIA_String_MaxLen, 3,
 					MUIA_String_Format, MUIV_String_Format_Right,
 					MUIA_String_Accept, (IPTR)"0123456789",
 				End;
 
-	_WP_AdvancedView_IconLabel_LabelFontObj = StringObject,
+	_WP_AdvancedView_IconLabel_LabelFontObj = (Object *)StringObject,
 					StringFrame,
 					MUIA_String_MaxLen, 3,
 					MUIA_String_Format, MUIV_String_Format_Right,
 				End;
 
-	_WP_AdvancedView_IconLabel_InfoFontObj = StringObject,
+	_WP_AdvancedView_IconLabel_InfoFontObj = (Object *)StringObject,
 					StringFrame,
 					MUIA_String_MaxLen, 3,
 					MUIA_String_Format, MUIV_String_Format_Right,
 				End;
 
 #if defined(DEBUG_MULTLINE)
-	_WP_AdvancedView_IconLabel_MultiLineNoObj = StringObject,
+	_WP_AdvancedView_IconLabel_MultiLineNoObj = (Object *)StringObject,
 							StringFrame,
 							MUIA_String_MaxLen, 2,
 							MUIA_String_Format, MUIV_String_Format_Right,
@@ -1529,44 +1528,44 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 	_WP_AdvancedView_IconLabel_TextMultiLineObj = MUI_MakeObject(MUIO_Checkmark, NULL);
 	_WP_AdvancedView_IconLabel_MultiLineonFocusObj = MUI_MakeObject(MUIO_Checkmark, NULL);
 #endif
-	_WP_AdvancedView_IconLabel_HorPaddObj = StringObject,
+	_WP_AdvancedView_IconLabel_HorPaddObj = (Object *)StringObject,
 					StringFrame,
 					MUIA_String_MaxLen, 3,
 					MUIA_String_Format, MUIV_String_Format_Right,
 					MUIA_String_Accept, (IPTR)"0123456789",
 				End;
 
-	_WP_AdvancedView_IconLabel_VertPaddObj = StringObject,
+	_WP_AdvancedView_IconLabel_VertPaddObj = (Object *)StringObject,
 					StringFrame,
 					MUIA_String_MaxLen, 3,
 					MUIA_String_Format, MUIV_String_Format_Right,
 					MUIA_String_Accept, (IPTR)"0123456789",
 				End;
 
-	_WP_AdvancedView_IconLabel_BorderWidthObj = StringObject,
+	_WP_AdvancedView_IconLabel_BorderWidthObj = (Object *)StringObject,
 					StringFrame,
 					MUIA_String_MaxLen, 3,
 					MUIA_String_Format, MUIV_String_Format_Right,
 					MUIA_String_Accept, (IPTR)"0123456789",
 				End;
 
-	_WP_AdvancedView_IconLabel_BorderHeightObj = StringObject,
+	_WP_AdvancedView_IconLabel_BorderHeightObj = (Object *)StringObject,
 					StringFrame,
 					MUIA_String_MaxLen, 3,
 					MUIA_String_Format, MUIV_String_Format_Right,
 					MUIA_String_Accept, (IPTR)"0123456789",
 				End;
 
-	_WP_AdvancedView_IconRenderGrpObj = GroupObject,
+	_WP_AdvancedView_IconRenderGrpObj = (Object *)GroupObject,
 					MUIA_Group_SameSize, FALSE,
 					MUIA_FrameTitle, __(MSG_ICONSPREFS),
 					MUIA_Frame, MUIV_Frame_Group,
 					MUIA_Group_Columns, 2,
 				End;	
 	/*Button Group-------------------------------------------------------*/
-	_WP_AdvancedView_ButtonGrpObj = HGroup,
-					Child, _WP_AdvancedView_ButtonObj_Use = ImageButton("Use", "THEME:Images/Gadgets/Prefs/Use"),
-					Child, _WP_AdvancedView_ButtonObj_Cancel = ImageButton("Cancel", "THEME:Images/Gadgets/Prefs/Cancel"),
+	_WP_AdvancedView_ButtonGrpObj = (Object *)HGroup,
+					Child, (IPTR)(_WP_AdvancedView_ButtonObj_Use = ImageButton("Use", "THEME:Images/Gadgets/Prefs/Use")),
+					Child, (IPTR)(_WP_AdvancedView_ButtonObj_Cancel = ImageButton("Cancel", "THEME:Images/Gadgets/Prefs/Cancel")),
 				End;
 	/*END Button Group--------------------------------------------------*/
 
@@ -1833,7 +1832,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ 0x%p\n", advanced
 
 D(bug("[WPEditor] WPEditor__OM_NEW: Adding ViewSetting Objects for '%s' to Prefs GUI ..\n", _viewSettings_Node->wpedbo_ViewName));
 
-			thisViewImspecGrp = GroupObject,
+			thisViewImspecGrp = (Object *)GroupObject,
 							MUIA_Group_SameSize, FALSE,
 							MUIA_Frame, MUIV_Frame_None,
 							MUIA_Group_Columns, 2,
@@ -1850,7 +1849,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Adding ViewSetting Objects for '%s' to Prefs
 
 			if (_viewSettings_Node->wpedbo_AdvancedOptionsObject)
 			{
-				thisViewAdvancedGrp = GroupObject,
+				thisViewAdvancedGrp = (Object *)GroupObject,
 								MUIA_Group_SameSize, FALSE,
 								MUIA_Frame, MUIV_Frame_None,
 								MUIA_Group_Columns, 2,
@@ -2035,7 +2034,7 @@ D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: Creating new Objects for '
 
 D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: Adding ViewSetting Objects for '%s' to Prefs GUI ..\n", _viewSettings_Node->wpedbo_ViewName));
 
-		thisViewImspecGrp = GroupObject,
+		thisViewImspecGrp = (Object *)GroupObject,
 						MUIA_Group_SameSize, FALSE,
 						MUIA_Frame, MUIV_Frame_None,
 						MUIA_Group_Columns, 2,
@@ -2050,7 +2049,7 @@ D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: Adding ViewSetting Objects
 					End;
 					
 		if (_viewSettings_Node->wpedbo_AdvancedOptionsObject)
-			thisViewAdvancedGrp = GroupObject,
+			thisViewAdvancedGrp = (Object *)GroupObject,
 						MUIA_Group_SameSize, FALSE,
 						MUIA_Frame, MUIV_Frame_None,
 						MUIA_Group_Columns, 2,
@@ -2306,7 +2305,6 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
 	struct WandererPrefsIFFChunkHeader     wanderer_chunkdata = { };
 	BOOL                                   success = TRUE;
 	LONG                                   error   = 0;
-	int positionTemp =0;
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH()\n"));
 

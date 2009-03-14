@@ -187,9 +187,9 @@ void ControlsToPrefs(struct DriveControls *dc, struct TDU_Prefs *pr)
 
 	D(bug("[Trackdisk.Prefs] ControlsToPrefs()\n"));
 
-	GetAttr(MUIA_Selected, dc->NoClickSwitch, &NoClick);
+	GetAttr(MUIA_Selected, dc->NoClickSwitch, (IPTR *)&NoClick);
 	pr->PubFlags = NoClick ? TDPF_NOCLICK : 0 ;
-	GetAttr(MUIA_Numeric_Value, dc->RetriesSlider, &pr->RetryCnt);
+	GetAttr(MUIA_Numeric_Value, dc->RetriesSlider, (IPTR *)&pr->RetryCnt);
 
 }
 
