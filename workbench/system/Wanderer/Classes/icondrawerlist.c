@@ -352,7 +352,6 @@ MUIM_IconList_Update
 **************************************************************************/
 IPTR IconDrawerList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Update *message)
 {
-  struct IconDrawerList_DATA *data = INST_DATA(CLASS, obj);
   //struct IconEntry *node;
 
 D(bug("[IconDrawerList]: %s()\n", __PRETTY_FUNCTION__));

@@ -32,7 +32,7 @@ static void bt_ok_hook_function(void);
 static void Cleanup(STRPTR s);
 static BOOL doNewDrawer(void);
 static void MakeGUI(void);
-static const STRPTR SelectDefaultName(STRPTR basename);
+static CONST_STRPTR SelectDefaultName(STRPTR basename);
 
 static Object *app, *window, *bt_ok, *bt_cancel, *cm_icons, *str_name;
 static struct Hook bt_ok_hook;
@@ -75,9 +75,9 @@ int main(int argc, char **argv)
 
 static void MakeGUI(void)
 {
-    const STRPTR defname = SelectDefaultName(_(MSG_BASENAME));
+    CONST_STRPTR defname = SelectDefaultName(_(MSG_BASENAME));
     bt_ok_hook.h_Entry = (APTR)bt_ok_hook_function;
-    (IPTR)(app = ApplicationObject,
+    app = (Object *)ApplicationObject,
 	MUIA_Application_Title      , __(MSG_TITLE),
 	MUIA_Application_Version    , (IPTR) versionstring,
 	MUIA_Application_Copyright  , __(MSG_COPYRIGHT),
@@ -86,7 +86,7 @@ static void MakeGUI(void)
 	MUIA_Application_Base       , (IPTR) "NEWDRAWER",
 	MUIA_Application_UseCommodities, FALSE,
 	MUIA_Application_UseRexx, FALSE,
-	SubWindow, (IPTR)(window = WindowObject,
+	SubWindow, (IPTR)(window = (Object *)WindowObject,
 	    MUIA_Window_Title, __(MSG_WINDOW_TITLE),
 	    MUIA_Window_NoMenus, TRUE,
 	    MUIA_Window_CloseGadget, FALSE,
@@ -98,7 +98,7 @@ static void MakeGUI(void)
 		End),
 		Child, (IPTR) (ColGroup(2),
 		    Child, (IPTR) Label2(__(MSG_NAME)),
-		    Child, (IPTR)(str_name = StringObject,
+		    Child, (IPTR)(str_name = (Object *)StringObject,
 			MUIA_CycleChain, 1,
 			MUIA_String_Contents, (IPTR) defname,
 			MUIA_String_MaxLen, MAXFILENAMELENGTH,
@@ -122,8 +122,8 @@ static void MakeGUI(void)
 		End),
 	    End),
 	End),
-    End);
-    FreeVec(defname);
+    End;
+    FreeVec((APTR)defname);
 
     if (!app)
 	Cleanup(_(MSG_FAILED_CREATE_APP));
@@ -213,7 +213,7 @@ end:
  * You have to free the return value with FreeVec.
  * */
 
-static const STRPTR SelectDefaultName(STRPTR basename)
+static CONST_STRPTR SelectDefaultName(STRPTR basename)
 {
     if (basename == NULL)
 	basename = "Rename_Me";
@@ -229,7 +229,7 @@ static const STRPTR SelectDefaultName(STRPTR basename)
 	if (number == 0)
 	    strcpy(buffer, basename);   
 	else
-	    sprintf(buffer,"%s_%ld", basename, number);
+	    sprintf(buffer,"%s_%d", basename, number);
 
 	test = Lock(buffer, ACCESS_READ);
 	UnLock(test);

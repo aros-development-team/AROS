@@ -693,8 +693,8 @@ D(bug("[IconList]: %s: txwidth = %d\n", __PRETTY_FUNCTION__, txwidth));
             labelSplit_CharsDone = labelSplit_CharsDone + 1;
         }
 
-        while(TextLength(data->icld_BufferRastPort, labelSplit_SplitStart, labelSplit_CurSplitLength) < txwidth) labelSplit_CurSplitLength++;
-        while(TextLength(data->icld_BufferRastPort, labelSplit_SplitStart, labelSplit_CurSplitLength) > txwidth) labelSplit_CurSplitLength--;
+        while(TextLength(data->icld_BufferRastPort, (char *)labelSplit_SplitStart, labelSplit_CurSplitLength) < txwidth) labelSplit_CurSplitLength++;
+        while(TextLength(data->icld_BufferRastPort, (char *)labelSplit_SplitStart, labelSplit_CurSplitLength) > txwidth) labelSplit_CurSplitLength--;
 #if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList]: %s: labelSplit_CurSplitLength = %d\n", __PRETTY_FUNCTION__, labelSplit_CurSplitLength));
 #endif
@@ -2631,14 +2631,14 @@ D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
                 {
                     if ((data->icld_BufferRastPort = CreateRastPort())!=NULL)
                     {
-                        data->icld_BufferRastPort->BitMap = bitmap_New;
+                        data->icld_BufferRastPort->BitMap = (struct BitMap *)bitmap_New;
                         SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
                         data->icld_DrawOffsetX = 0;
                         data->icld_DrawOffsetY = 0;
                     }
                     else
                     {
-                        FreeBitMap(bitmap_New);
+                        FreeBitMap((struct BitMap *)bitmap_New);
                         data->icld_BufferRastPort = data->icld_DisplayRastPort;
                         data->icld_DrawOffsetX = _mleft(obj);
                         data->icld_DrawOffsetY = _mtop(obj);
@@ -2646,7 +2646,7 @@ D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
                 }
                 
                 if (bitmap_Old != (struct Bitmap *)data->icld_BufferRastPort->BitMap)
-                    FreeBitMap(bitmap_Old);
+                    FreeBitMap((struct BitMap *)bitmap_Old);
             }
 
             data->icld_UpdateMode = 0;
