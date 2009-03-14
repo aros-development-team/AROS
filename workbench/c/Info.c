@@ -247,7 +247,7 @@ CONST_STRPTR GetStrFromCat(ULONG id, CONST_STRPTR def)
 void VLPrintf(ULONG id, CONST_STRPTR def, const IPTR* argarray)
 {
     def = GetStrFromCat(id, def);
-    VPrintf(def, argarray);
+    VPrintf(def, (IPTR *)argarray);
 }
 
 
