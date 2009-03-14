@@ -78,8 +78,8 @@
 
         struct TagItem tags[] =
         {
-            { SYS_Input   , NULL                                            },
-	    { SYS_Output  , NULL                                            },
+            { SYS_Input   , 0                                               },
+	    { SYS_Output  , 0                                               },
 	    { SYS_Error   , SYS_DupStream                                   },
             { SYS_Asynch  , TRUE                                            },
             { NP_StackSize, Cli()->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT },

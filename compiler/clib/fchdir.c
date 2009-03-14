@@ -59,7 +59,6 @@
     	errno = EBADF;
         goto error;    
     }
-    struct FileHandle *h = (struct FileHandle *) BADDR(handle);
 
     newlock = DupLockFromFH(handle);
 

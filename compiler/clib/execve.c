@@ -445,7 +445,6 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	    struct Library *aroscbase;
 	    int oldflags;
 	    int parent_does_upath;
-	    APTR old_return_addr;
 	    
 	    fdesc *in, *out, *err;
 	    BPTR oldin, oldout, olderr;
