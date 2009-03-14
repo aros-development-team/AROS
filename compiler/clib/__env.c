@@ -146,7 +146,6 @@ LONG get_var(struct Hook *hook, APTR userdata, struct ScanVarsMsg *message)
    name=value strings. */
 int __env_get_environ(char **environ, int size)
 {
-    __env_item **curr;
     int i;
     struct Hook hook;
     struct EnvData u; 
@@ -156,7 +155,7 @@ int __env_get_environ(char **environ, int size)
     u.varbufsize = 0;
 
     memset(&hook, 0, sizeof(struct Hook));
-    hook.h_Entry = (IPTR) get_var_len;
+    hook.h_Entry = (HOOKFUNC) get_var_len;
     ScanVars(&hook, GVF_LOCAL_ONLY, &u);
 
     if(environ == NULL)
@@ -170,7 +169,7 @@ int __env_get_environ(char **environ, int size)
     /* time to fill in the buffers */
     u.varbufptr = varbuf;
     u.varbufptr[0] = '\0';   
-    hook.h_Entry = (IPTR) get_var;
+    hook.h_Entry = (HOOKFUNC) get_var;
     ScanVars(&hook, GVF_LOCAL_ONLY, &u);
 
     for(i = 0; i < u.envcount; i++)

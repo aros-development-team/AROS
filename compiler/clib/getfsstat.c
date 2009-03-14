@@ -78,7 +78,6 @@ short getnixfilesystemtype(LONG id_DiskType)
     struct DosList *dlist;
     struct InfoData data;
     int fscount = 0; /* number of filesystems */
-    char *upath;
     LONG ioerr = 0;
 
     dlist = LockDosList(LDF_READ | LDF_VOLUMES);
@@ -112,7 +111,7 @@ short getnixfilesystemtype(LONG id_DiskType)
 	strcat(name, ":");
 
 	/* Get filesystem data from lock */
-	if(lock = Lock(name, SHARED_LOCK))
+	if((lock = Lock(name, SHARED_LOCK)))
 	{
 	    if(Info(lock, &data))
 	    {

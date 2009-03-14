@@ -49,7 +49,6 @@
 
 ******************************************************************************/
 {
-    char *str_variant;
     IPTR version;
     IPTR release_minor;
     IPTR release_major;

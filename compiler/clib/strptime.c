@@ -16,7 +16,6 @@
 
 char *strptime(const char *s, const char *format, struct tm *tm)
 {
-    size_t size = 0;
     int matched;
     int val;
     

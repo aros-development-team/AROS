@@ -68,7 +68,7 @@ short getnixfilesystemtype(LONG id_DiskType);
     }
     
     /* Get filesystem data from lock */
-    if(lock = Lock(apath, SHARED_LOCK))
+    if(((lock = Lock(apath, SHARED_LOCK))))
     {
 	if(Info(lock, &data))
 	{

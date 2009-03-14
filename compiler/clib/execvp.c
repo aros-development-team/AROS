@@ -90,7 +90,7 @@
 	if(path_item[0] == '\0')
 	    path_item = ".";
 	
-	if(full_path = malloc(strlen(path_item) + strlen(file) + 2))
+	if((full_path = malloc(strlen(path_item) + strlen(file) + 2)))
 	{
 	    full_path[0] = '\0';
 	    strcat(full_path, path_item);

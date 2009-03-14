@@ -60,7 +60,6 @@ ULONG prot_u2a(mode_t protect);
     fdesc *fdesc;
     UBYTE *buffer;
     int buffersize = 256;
-    char *path;
 
     if (!(fdesc = __getfdesc(filedes)))
     {

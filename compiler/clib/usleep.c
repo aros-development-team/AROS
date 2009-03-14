@@ -48,7 +48,7 @@
     struct timerequest  *timerIO;
     int retval = -1;
     
-    if(timerMsgPort = CreateMsgPort())
+    if((timerMsgPort = CreateMsgPort()))
     {
 	timerIO = (struct timerequest *) CreateIORequest(timerMsgPort, sizeof (struct timerequest));
 	if(timerIO)
