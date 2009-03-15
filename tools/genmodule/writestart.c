@@ -532,7 +532,7 @@ static void writeresident(FILE *out, struct config *cfg)
 		"static struct InitTable\n"
 		"{\n"
 		"    IPTR              Size;\n"
-		"    APTR             *FuncTable;\n"
+		"    const APTR       *FuncTable;\n"
 		"    struct DataTable *DataTable;\n"
 		"    APTR              InitLibTable;\n"
 		"}\n"
