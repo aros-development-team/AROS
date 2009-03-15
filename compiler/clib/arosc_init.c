@@ -239,7 +239,10 @@ int arosc_internalinit(void)
     }
     else
     {
-        assert(!(oldprivdata->acpd_flags & (CREATE_NEW_ACPD | KEEP_OLD_ACPD)));
+        assert(!((oldprivdata->acpd_flags & CREATE_NEW_ACPD)
+                 && (oldprivdata->acpd_flags & KEEP_OLD_ACPD)
+                )
+        );
         if (oldprivdata->acpd_flags & CREATE_NEW_ACPD)
         {
             makenew = TRUE;
