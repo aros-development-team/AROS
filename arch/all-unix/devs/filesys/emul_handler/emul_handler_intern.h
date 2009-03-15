@@ -1,7 +1,7 @@
 #ifndef __EMUL_HANDLER_INTERN_H
 #define __EMUL_HANDLER_INTERN_H
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header-file for emulation-handler.
@@ -48,13 +48,5 @@ struct filehandle
 };
 #define FHD_FILE      0
 #define FHD_DIRECTORY 1
-
-
-/* Support functions */
-static LONG err_u2a(void);
-static LONG makefilename(struct emulbase *, char **dest, STRPTR path, STRPTR filename);
-
-/* Actions */
-static LONG read_softlink(struct emulbase *, struct filehandle *, STRPTR, STRPTR, ULONG*);
 
 #endif /* __EMUL_HANDLER_INTERN_H */

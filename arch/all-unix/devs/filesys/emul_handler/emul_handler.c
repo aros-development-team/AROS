@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Filesystem that accesses an underlying POSIX filesystem.
@@ -10,7 +10,7 @@
    as well as POSIX calls of the underlying operating system. This easily
    leads to complications. So take care, when updating this handler!
 
-   Please always update the version-string below, if you modify the code!
+   Please always update the version-string in emul.conf, if you modify the code!
 */
 
 /*********************************************************************************************/
@@ -493,7 +493,7 @@ static int nocase_rename(struct emulbase *emulbase, char *oldpath, char *newpath
 	result = -1;
     }
     else
-	result = rename((const char *)oldpath, (const char *)newpath);
+	result = rename(oldpath, newpath);
     
     return result;
 }
@@ -896,7 +896,7 @@ static LONG set_protect(struct emulbase *emulbase, struct filehandle* fh,
 
     if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
 
-    if (ret = makefilename(emulbase, &filename, fh->name, file))
+    if ((ret = makefilename(emulbase, &filename, fh->name, file)))
         return ret;
 
     if (chmod(filename, prot_a2u(aprot)))
@@ -1604,36 +1604,84 @@ static LONG read_softlink(struct emulbase *emulbase,
                           STRPTR buffer,
                           ULONG *size)
 {
+    char *ln;
     LONG ret = 0;
     char *filename = NULL;
 
+    if (DOSBase == NULL)
+        /* for FilePart */
+        DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 41);
+
+    if (DOSBase == NULL)
+    {
+        return ERROR_OBJECT_NOT_FOUND;
+    }
+
     if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
 
-    ret = makefilename(emulbase, &filename, fh->name, link);
+    /* don't mess with link itself */
+    ret = makefilename(emulbase, &ln, link, "");
+    if (ret)
+        return ERROR_NO_FREE_STORE;
+
+    /* this helps to fit resolved path into the buffer and strips trailing '/' */
+    if (!shrink(emulbase, ln))
+    {
+        emul_free(emulbase, ln);
+        return ERROR_OBJECT_NOT_FOUND;
+    }
+    
+    ret = makefilename(emulbase, &filename, fh->name, ln);
     if (!ret)
     {
-	int len;
-	if ((len = readlink(filename, buffer, *size)) == -1)
+	const int targetlen = readlink(filename, buffer, *size);
+        emul_free(emulbase, filename);
+        
+	if (targetlen == -1)
 	    ret = err_u2a();
 	else
 	{
-	    if(len == *size)
+	    if (targetlen == *size)
 	    {
 		/* Buffer was too small */
 		*size = -2;
 	    }
 	    else
 	    {
-		/* All ok, store size and add terminating nil */
-		*size = len;
-		buffer[len] = '\0';
-	    }
-	}
+                STRPTR source = FilePart(ln);
 
-	emul_free(emulbase, filename);
+                /* All ok, add terminating nil */
+                buffer[targetlen] = '\0';
+
+                /* strip file part of link */
+                *source = '\0';
+                if (strlen(ln) + targetlen >= *size)
+                {
+                    /* Buffer was too small */
+                    *size = -2;
+                }
+                else
+                {
+                    char* target;
+                    /* copy buffer to create resolved link path in it */
+                    ret = makefilename(emulbase, &target, buffer, "");
+                    if (!ret)
+                    {
+                        strcpy(buffer, ln);
+                        strcat(buffer, target);
+                        *size = strlen(buffer);
+                        emul_free(emulbase, target);
+                    }
+                    else
+                        ret = ERROR_NO_FREE_STORE;
+                }
+            }
+	}
     }
     else
 	ret = ERROR_NO_FREE_STORE;
+
+    emul_free(emulbase, ln);
 
     return ret;
 }
