@@ -226,7 +226,7 @@ void drawer_doubleclicked(void)
 
     DoMethod(drawer_iconlist, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, &ent);
     if ((int)ent == MUIV_IconList_NextIcon_End) return;
-    set(drawer_iconlist,MUIA_IconDrawerList_Drawer,ent->filename);
+    set(drawer_iconlist,MUIA_IconDrawerList_Drawer,ent->ile_IconEntry->ie_IconNode.ln_Name);
 }
 #endif
 

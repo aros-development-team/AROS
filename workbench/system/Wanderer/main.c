@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2008, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include "portable_macros.h"
@@ -404,10 +404,10 @@ int main(void)
 {
     LONG             retval = RETURN_ERROR;
 
-    #ifndef __AROS__
+#ifndef __AROS__
     if (initLibs())
-      return retval;
-    #endif
+        return retval;
+#endif
 
 D(bug("[Wanderer.EXE] Wanderer Initialising .. \n"));
 
@@ -415,16 +415,16 @@ D(bug("[Wanderer.EXE] Wanderer Initialising .. \n"));
     if ((_WandererIntern_AppObj = NewObject(Wanderer_CLASS->mcc_Class, NULL, TAG_DONE)) != NULL)
     {
 D(bug("[Wanderer.EXE] Handing control over to Zune .. \n"));
-    retval = DoMethod(_WandererIntern_AppObj, MUIM_Application_Execute);
+        retval = DoMethod(_WandererIntern_AppObj, MUIM_Application_Execute);
 D(bug("[Wanderer.EXE] Returned from Zune's control .. \n"));
-    MUI_DisposeObject(_WandererIntern_AppObj);
+        MUI_DisposeObject(_WandererIntern_AppObj);
     }
 
 D(bug("[Wanderer.EXE] Exiting .. \n"));
 
-    #ifndef __AROS__
+#ifndef __AROS__
     deInitLibs();
-    #endif
+#endif
 
     return retval;
 }

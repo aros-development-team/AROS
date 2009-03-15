@@ -66,58 +66,63 @@ struct MUIP_IconList_ViewIcon           {STACKED ULONG MethodID; STACKED struct 
 /* used by MUIM_IconList_NextIcon */
 struct IconList_Entry
 {
-	char *filename;  /* The absolute filename of the file which the icons represents (means without the */
-	char *label;     /* The label which is displayed (often FilePart(filename)) */
-	LONG type;
-	LONG flags;      /* If type == ST_ROOT, these flags will set volume attributes */
-	void *udata;     /* userdate given at MUIM_IconList_CreateEntry */
+    struct IconEntry    *ile_IconEntry;
+    char                *label;     /* The label which is displayed (often FilePart(filename)) */
+    LONG                type;
+    LONG                flags;      /* If type == ST_ROOT, these flags will set volume attributes */
+    void                *udata;     /* userdate given at MUIM_IconList_CreateEntry */
 };
 
 struct IconList_Click
 {
-	int shift; /* TRUE for shift click */
-	struct IconList_Entry *entry; /* might be NULL */
+    int         shift; /* TRUE for shift click */
+    struct IconList_Entry *entry; /* might be NULL */
 };
 
-struct IconList_Drop
+struct IconList_Drop_SourceEntry
 {
-	IPTR   source_iconlistobj;              /* iconlist obj */
-	IPTR   destination_iconlistobj;         /* iconlist obj */
-	unsigned char destination_string[1024];  /* destination path */
+    struct Node dropse_Node;
+};
+
+struct IconList_Drop_Event
+{
+    struct List drop_SourceList;       /* iconlist obj         */
+    Object      *drop_TargetObj;        /* iconlist obj         */
+    STRPTR      drop_TargetPath;        /* destination path     */
 };
 
 struct IconEntry
 {
-	struct Node                   ile_IconNode;
-	struct Node                   ile_SelectionNode;
+    struct Node                 ie_IconNode;
+    struct Node                 ie_SelectionNode;
 
-	struct IconList_Entry         ile_IconListEntry;
+    struct IconList_Entry       ie_IconListEntry;
 
-	struct DiskObject             *ile_DiskObj;                       /* The icons disk objects */
-	struct FileInfoBlock          ile_FileInfoBlock;
+    struct DiskObject           *ie_DiskObj;                     /* The icons disk objects */
+    struct FileInfoBlock        *ie_FileInfoBlock;
 
-	LONG                          ile_IconX,                          /* Top Left Co-ords of Icons "AREA" */
-								  ile_IconY;
+    LONG                        ie_IconX,                        /* Top Left Co-ords of Icons "AREA" */
+                                ie_IconY;
 
-	ULONG                         ile_IconWidth,					  /* Width/Height of Icon "Image" */
-								  ile_IconHeight,
-								  ile_AreaWidth,                      /* Width/Height of Icon "AREA" ..    */
-								  ile_AreaHeight;                     /* if the icons Label Width is larger than
-																		 ile_IconWidth, AreaWidth = the icons label Width
-																		 else it will be the same as ile_IconWidth */
+    ULONG                       ie_IconWidth,                    /* Width/Height of Icon "Image" */
+                                ie_IconHeight,
+                                ie_AreaWidth,                    /* Width/Height of Icon "AREA" ..    */
+                                ie_AreaHeight;                   /* if the icons Label Width is larger than
+                                                                        ie_IconWidth, AreaWidth = the icons label Width
+                                                                        else it will be the same as ie_IconWidth */
 
-	ULONG                         ile_Flags;
+    ULONG                       ie_Flags;
 
-	UBYTE                         *ile_TxtBuf_DisplayedLabel;
-	ULONG                         ile_SplitParts;
-	ULONG						  ile_TxtBuf_DisplayedLabelWidth;
-	UBYTE   	    	          *ile_TxtBuf_DATE;
-	ULONG   	    	          ile_TxtBuf_DATEWidth;
-	UBYTE   	    	          *ile_TxtBuf_TIME;
-	ULONG   	    	          ile_TxtBuf_TIMEWidth;
-	UBYTE   	    	          *ile_TxtBuf_SIZE;
-	ULONG   	    	          ile_TxtBuf_SIZEWidth;
-	UBYTE   	    	          *ile_TxtBuf_PROT;
+    UBYTE                       *ie_TxtBuf_DisplayedLabel;
+    ULONG                       ie_SplitParts;
+    ULONG                       ie_TxtBuf_DisplayedLabelWidth;
+    UBYTE                       *ie_TxtBuf_DATE;
+    ULONG                       ie_TxtBuf_DATEWidth;
+    UBYTE                       *ie_TxtBuf_TIME;
+    ULONG                       ie_TxtBuf_TIMEWidth;
+    UBYTE                       *ie_TxtBuf_SIZE;
+    ULONG                       ie_TxtBuf_SIZEWidth;
+    UBYTE                       *ie_TxtBuf_PROT;
 };
 
 /****************************************************************************/

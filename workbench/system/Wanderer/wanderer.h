@@ -2,7 +2,7 @@
 #define _WANDERER_H_
 
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004 - 2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -38,7 +38,6 @@ struct AppW
 struct Wanderer_FileEntry 
 {
     struct Node	wfe_Node;
-    char filename[1024];
 };
 
 struct Wanderer_FilelistMsg 

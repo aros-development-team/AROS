@@ -2,7 +2,7 @@
 #define _ICONWINDOW_ATTRIBUTES_H_
 
 /*
-    Copyright  2004, The AROS Development Team. All rights reserved.
+    Copyright  2004 - 2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -53,14 +53,6 @@
 
 #define IconWindowExt_ImageBackFill_TileMode_Float            1        // Default (moves with window scrolling)
 #define IconWindowExt_ImageBackFill_TileMode_Fixed            2        // Tile's are fixed in the background
-
-#warning "TODO: Toolbars Attributes etc should be in an own file"
-/*** Identifier Base ********************************************************/
-#define MUIB_IconWindowExt_Toolbar                            (MUIB_IconWindowExt | 0x200000)
-
-#define MUIA_IconWindowExt_Toolbar_Enabled                    (MUIB_IconWindowExt_Toolbar | 0x00000001) /* ISG */
-#define MUIA_IconWindowExt_Toolbar_NavigationMethod           (MUIB_IconWindowExt_Toolbar | 0x00000002) /* ISG */
-/*** Variables **************************************************************/
 
 #warning "TODO: NetworkBrowser Attributes etc should be in an own file"
 /*** Identifier Base ********************************************************/

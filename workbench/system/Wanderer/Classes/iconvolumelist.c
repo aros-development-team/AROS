@@ -399,8 +399,8 @@ struct IconEntry *FindIconlistIcon(struct List *iconlist, char *icondevname)
 
     ForeachNode(iconlist, foundEntry)
     {
-        if (((strcasecmp(foundEntry->ile_IconListEntry.filename, icondevname)) == 0) ||
-            ((strcasecmp(foundEntry->ile_IconListEntry.label, icondevname)) == 0))
+        if (((strcasecmp(foundEntry->ie_IconNode.ln_Name, icondevname)) == 0) ||
+            ((strcasecmp(foundEntry->ie_IconListEntry.label, icondevname)) == 0))
             return foundEntry;
     }
     return NULL;
@@ -422,8 +422,6 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, str
     struct Node                 *tmpNode = NULL;
 
 D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
-
-    DoSuperMethodA(CLASS, obj, (Msg) message);
 
     GET(obj, MUIA_Group_ChildList, &iconlist);
 
@@ -455,29 +453,29 @@ D(bug("[IconVolList] %s: Processing '%s'\n", __PRETTY_FUNCTION__, devname));
 
                     if ((this_Icon = FindIconlistIcon(iconlist, devname)) != NULL)
                     {
-D(bug("[IconVolList] %s: Found existing IconEntry for '%s' @ %p\n", __PRETTY_FUNCTION__, this_Icon->ile_IconListEntry.label, this_Icon));
-                        Remove((struct Node*)&this_Icon->ile_IconNode);
+D(bug("[IconVolList] %s: Found existing IconEntry for '%s' @ %p\n", __PRETTY_FUNCTION__, this_Icon->ie_IconListEntry.label, this_Icon));
+                        Remove((struct Node*)&this_Icon->ie_IconNode);
                         /* Compare the Icon and update as needed ... */
-                        this_Icon->ile_Flags = ICONENTRY_FLAG_NEEDSUPDATE;
-                        AddTail(&newiconlist, (struct Node*)&this_Icon->ile_IconNode);
+                        this_Icon->ie_Flags = ICONENTRY_FLAG_NEEDSUPDATE;
+                        AddTail(&newiconlist, (struct Node*)&this_Icon->ie_IconNode);
                     }
                     else if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)devname, (IPTR)dvn->dvn_VolName, (IPTR)NULL, (IPTR)NULL, ST_ROOT)) != NULL)
                     {
-                        Remove((struct Node*)&this_Icon->ile_IconNode);
-D(bug("[IconVolList] %s: Created IconEntry for '%s' @ %p\n", __PRETTY_FUNCTION__, this_Icon->ile_IconListEntry.label, this_Icon));
-                        if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
-                            this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
+                        Remove((struct Node*)&this_Icon->ie_IconNode);
+D(bug("[IconVolList] %s: Created IconEntry for '%s' @ %p\n", __PRETTY_FUNCTION__, this_Icon->ie_IconListEntry.label, this_Icon));
+                        if (!(this_Icon->ie_Flags & ICONENTRY_FLAG_HASICON))
+                            this_Icon->ie_Flags |= ICONENTRY_FLAG_HASICON;
 
                         if ((strcasecmp(dvn->dvn_VolName, "Ram Disk:")) == 0)
                         {
-D(bug("[IconVolList] %s: Setting '%s' icon node priority to 5\n", __PRETTY_FUNCTION__, this_Icon->ile_IconListEntry.label));
-                            this_Icon->ile_IconNode.ln_Pri = 5;   // Special dirs get Priority 5
+D(bug("[IconVolList] %s: Setting '%s' icon node priority to 5\n", __PRETTY_FUNCTION__, this_Icon->ie_IconListEntry.label));
+                            this_Icon->ie_IconNode.ln_Pri = 5;   // Special dirs get Priority 5
                         }
                         else
                         {
-                            this_Icon->ile_IconNode.ln_Pri = 1;   // Fixed Media get Priority 1
+                            this_Icon->ie_IconNode.ln_Pri = 1;   // Fixed Media get Priority 1
                         }
-                        AddTail(&newiconlist, (struct Node*)&this_Icon->ile_IconNode);
+                        AddTail(&newiconlist, (struct Node*)&this_Icon->ie_IconNode);
                     }
                     else
                     {
@@ -488,20 +486,22 @@ D(bug("[IconVolList] %s: Failed to Add IconEntry for '%s'\n", __PRETTY_FUNCTION_
             IconVolumeList__DestroyDOSList(dvl);
             ForeachNodeSafe(iconlist, this_Icon, tmpNode)
             {
-D(bug("[IconVolList] %s: Destroying Removed IconEntry for '%s' @ %p\n", __PRETTY_FUNCTION__, this_Icon->ile_IconListEntry.label, this_Icon));
-                //if (this_Icon->ile_Flags & ICONENTRY_FLAG_SELECTED)
-                //    Remove(this_Icon->ile_SelectionNode);
+D(bug("[IconVolList] %s: Destroying Removed IconEntry for '%s' @ %p\n", __PRETTY_FUNCTION__, this_Icon->ie_IconListEntry.label, this_Icon));
+                //if (this_Icon->ie_Flags & ICONENTRY_FLAG_SELECTED)
+                //    Remove(this_Icon->ie_SelectionNode);
 
                 DoMethod(obj, MUIM_IconList_DestroyEntry, this_Icon);
             }
             ForeachNodeSafe(&newiconlist, this_Icon, tmpNode)
             {
-                AddTail(iconlist, (struct Node*)&this_Icon->ile_IconNode);
+                AddTail(iconlist, (struct Node*)&this_Icon->ie_IconNode);
             }
         }
     }
     /* default display/sorting flags */
     DoMethod(obj, MUIM_IconList_Sort);
+
+    DoSuperMethodA(CLASS, obj, (Msg) message);
 
     return 1;
 }

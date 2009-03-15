@@ -588,12 +588,12 @@ D(bug("[IconWindowIconList] IconWindowIconList__Func_ParseBackdrop: LEAVEOUT Ico
 										{
 											if (fib->fib_DirEntryType == ST_FILE)
 											{
-												this_entry->ile_IconListEntry.type = ST_LINKFILE;
+												this_entry->ie_IconListEntry.type = ST_LINKFILE;
 D(bug("[IconWindowIconList] %s: LEAVEOUT ST_LINKFILE Entry @ 0x%p\n", __PRETTY_FUNCTION__, this_entry));
 											}
 											else if (fib->fib_DirEntryType == ST_USERDIR)
 											{
-												this_entry->ile_IconListEntry.type = ST_LINKDIR;
+												this_entry->ie_IconListEntry.type = ST_LINKDIR;
 D(bug("[IconWindowIconList] %s: LEAVEOUT ST_LINKDIR Entry @ 0x%p\n", __PRETTY_FUNCTION__, this_entry));
 											}
 											else
