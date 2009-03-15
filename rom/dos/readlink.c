@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Read the soft-link information.
@@ -74,17 +74,15 @@ struct ReadLinkDeviceUnit
 
     InitIOFS(&iofs, FSA_READ_SOFTLINK, DOSBase);
 
-    iofs.io_Union.io_READ_SOFTLINK.io_Filename = path;
-    iofs.io_Union.io_READ_SOFTLINK.io_Buffer   = buffer;
-    iofs.io_Union.io_READ_SOFTLINK.io_Size     = size;
+    iofs.io_Union.io_READ_SOFTLINK.io_Buffer = buffer;
+    iofs.io_Union.io_READ_SOFTLINK.io_Size   = size;
 
     if(fh)
     {
         iofs.IOFS.io_Device = fh->fh_Device;
         iofs.IOFS.io_Unit   = fh->fh_Unit;
 
-        DosDoIO(&iofs.IOFS);
-        err = iofs.io_DosError;
+        err = DoIOFS(&iofs, NULL, path, DOSBase);
         if(!err)
            ret = iofs.io_Union.io_READ_SOFTLINK.io_Size;
     }
@@ -140,8 +138,7 @@ struct ReadLinkDeviceUnit
 		iofs.IOFS.io_Unit = deviceunit->unit;
 		iofs.io_Union.io_READ_SOFTLINK.io_Size     = size;
     
-		DosDoIO(&iofs.IOFS);
-		err = iofs.io_DosError;
+                err = DoIOFS(&iofs, NULL, path, DOSBase);
 		if(!err)
 		{
 		    ret = iofs.io_Union.io_READ_SOFTLINK.io_Size;
