@@ -206,6 +206,8 @@ void set_project_name( Project p, STRPTR path )
 /*** Save one project ***/
 char save_project(Project p, char refresh, char ask)
 {
+        char retval;
+
 	/* Ask for a name if file doesn't have one */
 	if(p->path == NULL || ask)
 	{
@@ -218,13 +220,17 @@ char save_project(Project p, char refresh, char ask)
 			return 0;
 		p->state = 0;
 	}
-	unset_modif_mark(p, FALSE);
 
 	if( refresh )
 		UpdateTitle(Wnd, p),
 		update_panel_name( p );
 
-	return save_file(p->path, p->the_line, p->eol, p->protection);
+	retval = save_file(p->path, p->the_line, p->eol, p->protection);
+
+	if (retval)
+            unset_modif_mark(p, FALSE);
+
+        return retval;
 }
 
 /*** Save all modified projects ***/
