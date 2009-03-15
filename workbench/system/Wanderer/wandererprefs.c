@@ -759,7 +759,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload()\n"));
   if (!(handle = AllocIFF()))
     return FALSE;
 
-  handle->iff_Stream = (IPTR)Open("ENV:SYS/Wanderer.prefs", MODE_OLDFILE); 
+  handle->iff_Stream = (IPTR)Open("ENV:SYS/Wanderer/global.prefs", MODE_OLDFILE); 
 
   if (!handle->iff_Stream)
     return FALSE;
