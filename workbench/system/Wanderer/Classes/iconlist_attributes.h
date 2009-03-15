@@ -16,9 +16,10 @@
 #define MUIV_IconList_NextIcon_Visible    3
 
 /*** Attributes *************************************************************/
-#define MUIA_IconList_Clicked                               (MUIB_IconList | 0x00000001) /* Zune: V1 ..G (struct IconList_Click *) */
-#define MUIA_IconList_DoubleClick                           (MUIB_IconList | 0x00000002) /* Zune: V1 ..G BOOL                      */
-#define MUIA_IconList_SelectionChanged                      (MUIB_IconList | 0x00000003) /* Zune: V1 ..GBOOL                         */
+#define MUIA_IconList_Changed                               (MUIB_IconList | 0x00000001) /* Zune: V1 .SG BOOL */
+#define MUIA_IconList_Clicked                               (MUIB_IconList | 0x00000002) /* Zune: V1 ..G (struct IconList_Click *) */
+#define MUIA_IconList_DoubleClick                           (MUIB_IconList | 0x00000003) /* Zune: V1 ..G BOOL                      */
+#define MUIA_IconList_SelectionChanged                      (MUIB_IconList | 0x00000004) /* Zune: V1 ..G BOOL                         */
 
 #define MUIA_IconList_Width                                 (MUIB_IconList | 0x0000000c) /* Zune: V1 .SG LONG                      */
 #define MUIA_IconList_Height                                (MUIB_IconList | 0x0000000d) /* Zune: V1 .SG LONG                      */

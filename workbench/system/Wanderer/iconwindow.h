@@ -2,7 +2,7 @@
 #define _ICONWINDOW_H_
 
 /*
-    Copyright  2004, The AROS Development Team. All rights reserved.
+    Copyright  2004 - 2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -69,12 +69,11 @@ struct IconWindowBackFillMsg
 
 struct IconWindow_ActionMsg
 {
-    STACKED int type;
-    STACKED Object *iconlist;
-    STACKED int isroot;
-    STACKED struct IconList_Click *click;
-    STACKED struct IconList_Drop *drop;
-    /* to be continued...*/
+    STACKED int                         type;
+    STACKED Object                      *iconlist;
+    STACKED int                         isroot;
+    STACKED struct IconList_Click       *click;
+    STACKED struct IconList_Drop_Event  *drop;
 };
 
 struct IconWindow_BackFill_Descriptor
@@ -95,6 +94,14 @@ struct IconWindow_BackFillHookData
     Object                               *bfhd_IWObject;
 };
 
+struct IconWindow_Panel_Data
+{
+    Object                               *iwp_PanelContainerObj;
+    Object                               *iwp_PanelGroupObj;
+    Object                               *iwp_PanelGroupSpacerObj;
+    IPTR                                 iwp_PanelPrivate;
+};
+
 struct IconWindow_DATA
 {
     struct Screen                        *iwd_Screen;
@@ -107,44 +114,43 @@ struct IconWindow_DATA
     Object                               *iwd_RootViewObj;
     Object                               *iwd_IconListObj;
 
-    Object                               *iwd_ExtensionContainerObj;
-    Object                               *iwd_ExtensionGroupObj;
-    Object                               *iwd_ExtensionGroupSpacerObj;
+    struct IconWindow_Panel_Data         iwd_TopPanel;
+    struct IconWindow_Panel_Data         iwd_LeftPanel;
+    struct IconWindow_Panel_Data         iwd_BottomPanel;
 
-    Object                               *iwd_Toolbar_PrefsNotificationObject;
+    Object                               *iwd_PanelObj_ToolBar;
+    Object                               *iwd_PanelObj_StatusBar;
 
-    Object                               *iwd_Toolbar_PanelObj;
-    Object                               *iwd_Toolbar_LocationStringObj;
-
-    #ifdef __AROS__
+#ifdef __AROS__
     struct Hook                          iwd_PrefsUpdated_hook;
-    #else
+#else
     struct Hook                          *iwd_PrefsUpdated_hook;
-    #endif
+#endif
 
     struct Hook                          *iwd_ActionHook;
-    #ifdef __AROS__
-    struct Hook                          iwd_pathStrHook;
-    #else
-    struct Hook                          *iwd_pathStrHook;
-    #endif
-    #ifdef __AROS__
+#ifdef __AROS__
     struct Hook                          iwd_ProcessBackground_hook;
-    #else
+#else
     struct Hook                          *iwd_ProcessBackground_hook;
-    #endif
+#endif
 
     struct Hook                          *iwd_BackFill_hook;
     struct BackFillInfo                  *iwd_BackFillInfo;
     struct IconWindow_BackFillHookData   iwd_BackFillHookData;
     
     struct TextFont                      *iwd_WindowFont;
-    
-    BOOL                                 iwd_Flag_NEEDSUPDATE;
+
+#define IWDFLAG_SETUP                   (1<<0)
+#define IWDFLAG_NEEDSUPDATE             (1<<1)
+#define IWDFLAG_ISROOT                  (1<<4)
+#define IWDFLAG_ISBACKDROP              (1<<5)
+#define IWDFLAG_EXT_TOOLBARENABLED      (1<<7)
+    UBYTE                                iwd_Flags;
+/*    BOOL                                 iwd_Flag_NEEDSUPDATE;
     BOOL                                 iwd_Flag_ISROOT;
     BOOL                                 iwd_Flag_ISBACKDROP;
-    BOOL                                 iwd_Flag_EXT_TOOLBARENABLED;
-	UBYTE                                iwd_Flag_VOLVIEWMODE;
+    BOOL                                 iwd_Flag_EXT_TOOLBARENABLED;*/
+    UBYTE                                iwd_VolViewMode;
 };
 
 /*** Macros *****************************************************************/
@@ -158,6 +164,14 @@ struct IconWindow_DATA
 //#define IconWindowObject NewObject(IconWindow_Class->mcc_Class, NULL
 #endif
 
+struct iconWindow_Extension
+{
+    struct Node      iwe_Node;
+    IPTR             (*iwe_Setup)(Class *, Object *, struct opSet *);
+    IPTR             (*iwe_Cleanup)(Class *, Object *, struct opSet *);
+    IPTR             (*iwe_Set)(Class *, Object *, struct opSet *);
+    IPTR             (*iwe_Get)(Class *, Object *, struct opGet *);
+};
 
 /* this macro is based on the ZUNE_CUSTOMCLASS_10 macros from zune/customclasses.h
 and temporarily placed here */

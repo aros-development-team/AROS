@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2007, The AROS Development Team. All rights reserved.
+  Copyright  2004-2009, The AROS Development Team. All rights reserved.
   $Id$
 */
 #include "portable_macros.h"
@@ -83,6 +83,13 @@
   #define  D(...)
 #endif
 #endif
+
+#warning "TODO: Toolbars Attributes etc should be in an own file"
+/*** Identifier Base ********************************************************/
+#define MUIB_IconWindowExt_Toolbar                            (MUIB_IconWindowExt | 0x200000)
+
+#define MUIA_IconWindowExt_Toolbar_Enabled                    (MUIB_IconWindowExt_Toolbar | 0x00000001) /* ISG */
+#define MUIA_IconWindowExt_Toolbar_NavigationMethod           (MUIB_IconWindowExt_Toolbar | 0x00000002) /* ISG */
 
 struct TagItem32 {
   ULONG ti_Tag;

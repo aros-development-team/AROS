@@ -1942,7 +1942,7 @@ D(bug("[WPEditor] WPEditor_ProccessGlobalChunk(%d tags)\n", tag_count));
 						/* prefs file is stored in little endian */
 			switch ((int)AROS_LE2LONG(global_chunk[i].ti_Tag))
 			{
-				case MUIA_IconWindowExt_Toolbar_Enabled:
+/*				case MUIA_IconWindowExt_Toolbar_Enabled:
 				{
 D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindowExt_Toolbar_Enabled, val = %d\n", i, AROS_LE2LONG(global_chunk[i].ti_Data)));
 					SET(data->wped_cm_ToolbarEnabled, MUIA_Selected, (BOOL)AROS_LE2LONG(global_chunk[i].ti_Data)); 
@@ -1953,7 +1953,7 @@ D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindowExt_Tool
 D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindowExt_Toolbar_NavigationMethod, val = %d\n", i, AROS_LE2LONG(global_chunk[i].ti_Data)));
 					SET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, (IPTR)AROS_LE2LONG(global_chunk[i].ti_Data));
 					break;
-				}
+				}*/
 #if defined(DEBUG_SHOWUSERFILES)
 				case MUIA_IconWindowExt_UserFiles_ShowFilesFolder:
 				{
@@ -2354,6 +2354,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Prepare 'global' Wanderer
 								/* helper to convert to little endian */
 			STACKED IPTR       	ti_Data;
 
+/*
 			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindowExt_Toolbar_Enabled);
 			GET(data->wped_cm_ToolbarEnabled, MUIA_Selected, &ti_Data);
 			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
@@ -2362,14 +2363,14 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowE
 
 			if ((BOOL)ti_Data == TRUE)
 			{
-				/* save navigation bahaviour */
+				// save navigation bahaviour
 				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindowExt_Toolbar_NavigationMethod);
 				GET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &ti_Data);
 				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowExt_Toolbar_NavigationMethod @ Tag %d, data = %d\n", _wp_GlobalTagCounter, ti_Data));
 				_wp_GlobalTagCounter += 1;
 			}
-			
+*/
 #if defined(DEBUG_SHOWUSERFILES)
 			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindowExt_UserFiles_ShowFilesFolder);
 			GET(data->wped_cm_EnableUserFiles, MUIA_Selected, &ti_Data);

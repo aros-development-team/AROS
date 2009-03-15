@@ -8,7 +8,6 @@
 #define MUIMASTER_YES_INLINE_STDARG
 #endif
 
-#define ICONWINDOW_OPTION_NOSEARCHBUTTON
 #define ICONWINDOW_NODETAILVIEWCLASS
 //#define ICONWINDOW_BUFFERLIST
 
@@ -91,115 +90,51 @@
 struct MUI_CustomClass *IconWindowDetailDrawerList_CLASS;
 #endif
 
-static char __intern_wintitle_wanderer[] = "Wanderer";
-
 /*** Private Global Data *********************************************************/
 
-static struct List                     iconwindow_BackFillNodes;
-struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active = NULL;
+static struct List                      iconwindow_BackFillNodes;
+struct List                             iconwindow_Extensions;
+struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active;
+
+static const char __intern_wintitle_wanderer[] = "Wanderer";
 
 /*** Hook functions *********************************************************/
-
-///IconWindow__HookFunc_ToolbarLocationStringFunc()
-#ifdef __AROS__
-AROS_UFH3(
-  void, IconWindow__HookFunc_ToolbarLocationStringFunc,
-  AROS_UFHA(struct Hook *,    hook,   A0),
-  AROS_UFHA(APTR *,           obj,    A2),
-  AROS_UFHA(APTR,             param,  A1)
-)
-{
-#else
-HOOKPROTO(IconWindow__HookFunc_ToolbarLocationStringFunc, void, APTR *obj, APTR param)
-{
-#endif
-  AROS_USERFUNC_INIT
-
-  /* Get data */
-  Object                *self = ( Object *)obj;
-  Class                 *CLASS = *( Class **)param;
-  STRPTR                str = NULL;
-  BPTR                  fp = (BPTR) NULL;
-  struct FileInfoBlock  *fib;
-
-#warning "stegerg: doesn't allocate fib with AllocDOSObject"
-
-  SETUP_ICONWINDOW_INST_DATA;
-
-  /* Only change dir if it is a valid directory/volume */
-  GET(data->iwd_Toolbar_LocationStringObj, MUIA_String_Contents, &str);
-
-#warning "TODO: Signal that it is a wrong path"
-  /* so that the user understands (here where we abort with return) */
-
-  fib = AllocDosObject(DOS_FIB, NULL);
-  if (!fib)
-    return;
-  
-  if (!(fp = Lock(str, ACCESS_READ)))
-  {
-    FreeDosObject(DOS_FIB, fib);
-    return;
-  }
-
-  if (!(Examine(fp, fib)))
-  {
-    UnLock (fp );
-  FreeDosObject(DOS_FIB, fib);
-    return;
-  }
-
-  /* Change directory! */
-  if (fib->fib_DirEntryType >= 0)
-    SET(self, MUIA_IconWindow_Location, (IPTR)str);
-
-  UnLock(fp);
-  
-  FreeDosObject(DOS_FIB, fib);
-  
-  AROS_USERFUNC_EXIT
-}
-#ifndef __AROS__
-MakeStaticHook(iwd_pathStrHook,IconWindow__HookFunc_ToolbarLocationStringFunc);
-#endif
-
-///
 
 ///IconWindow__HookFunc_PrefsUpdatedFunc()
 #ifdef __AROS__
 AROS_UFH3(
-  void, IconWindow__HookFunc_PrefsUpdatedFunc,
-  AROS_UFHA(struct Hook *,    hook,   A0),
-  AROS_UFHA(APTR *,           obj,    A2),
-  AROS_UFHA(APTR,             param,  A1)
+    void, IconWindow__HookFunc_PrefsUpdatedFunc,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(APTR *,           obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
 )
 {
 #else
 HOOKPROTO(IconWindow__HookFunc_PrefsUpdatedFunc, void, APTR *obj, APTR param)
 {
 #endif
-  AROS_USERFUNC_INIT
+    AROS_USERFUNC_INIT
   
-  /* Get our private data */
-  Object *self = ( Object *)obj;
-  Class *CLASS = *( Class **)param;
-  IPTR changed_state;
+    /* Get our private data */
+    Object *self = ( Object *)obj;
+    Class *CLASS = *( Class **)param;
+    IPTR changed_state;
 
-  SETUP_ICONWINDOW_INST_DATA;
+    SETUP_ICONWINDOW_INST_DATA;
 
-  D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
 
-  changed_state = 0;
-  GET(self, MUIA_IconWindow_Changed, &changed_state);
+    changed_state = 0;
+    GET(self, MUIA_IconWindow_Changed, &changed_state);
 
-  if ((changed_state) && (data->iwd_IconListObj))
-  {
-    D(bug("[IconWindow] %s: Window contents have changed .. updating display ..\n", __PRETTY_FUNCTION__));
-    DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
-    SET(self, MUIA_IconWindow_Changed, FALSE);
-  }
+    if ((changed_state) && (data->iwd_IconListObj))
+    {
+        D(bug("[IconWindow] %s: Window contents have changed .. updating display ..\n", __PRETTY_FUNCTION__));
+        DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
+        SET(self, MUIA_IconWindow_Changed, FALSE);
+    }
 
-  AROS_USERFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 #ifndef __AROS__
 MakeStaticHook(iwd_PrefsUpdated_hook,IconWindow__HookFunc_PrefsUpdatedFunc);
@@ -209,44 +144,44 @@ MakeStaticHook(iwd_PrefsUpdated_hook,IconWindow__HookFunc_PrefsUpdatedFunc);
 ///IconWindow__HookFunc_ProcessBackgroundFunc()
 #ifdef __AROS__
 AROS_UFH3(
-  void, IconWindow__HookFunc_ProcessBackgroundFunc,
-  AROS_UFHA(struct Hook *,    hook,   A0),
-  AROS_UFHA(APTR *,           obj,    A2),
-  AROS_UFHA(APTR,             param,  A1)
+    void, IconWindow__HookFunc_ProcessBackgroundFunc,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(APTR *,           obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
 )
 {
 #else
 HOOKPROTO(IconWindow__HookFunc_ProcessBackgroundFunc, void, APTR *obj, APTR param)
 {
 #endif
-  AROS_USERFUNC_INIT
+    AROS_USERFUNC_INIT
   
-  /* Get our private data */
-  Object *self = ( Object *)obj,
-       *prefs = NULL;
-  Class *CLASS = *( Class **)param;
+    /* Get our private data */
+    Object      *self = ( Object *)obj,
+                *prefs = NULL;
+    Class *CLASS = *( Class **)param;
 
-  SETUP_ICONWINDOW_INST_DATA;
+    SETUP_ICONWINDOW_INST_DATA;
 
-  D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
 
-  DoMethod(self, MUIM_IconWindow_BackFill_ProcessBackground, data->iwd_BackFillInfo, data->iwd_RootViewObj);
+    DoMethod(self, MUIM_IconWindow_BackFill_ProcessBackground, data->iwd_BackFillInfo, data->iwd_RootViewObj);
 
-  GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
+    GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
 
-  if (prefs)
-  {
-//    BOOL    options_changed = FALSE;
-    IPTR  prefs_Processing = 0;
-
-    GET(prefs, MUIA_WandererPrefs_Processing, &prefs_Processing);
-    if (!prefs_Processing)
+    if (prefs)
     {
-#warning "TODO: We arent in prefs-processing so cause an update!"
-    }
-  }
+        //BOOL    options_changed = FALSE;
+        IPTR  prefs_Processing = 0;
 
-  AROS_USERFUNC_EXIT
+        GET(prefs, MUIA_WandererPrefs_Processing, &prefs_Processing);
+        if (!prefs_Processing)
+        {
+#warning "TODO: We arent in prefs-processing so cause an update!"
+        }
+    }
+
+    AROS_USERFUNC_EXIT
 }
 #ifndef __AROS__
 MakeStaticHook(iwd_ProcessBackground_hook,IconWindow__HookFunc_ProcessBackgroundFunc);
@@ -319,420 +254,338 @@ MakeStaticHook(Hook_WandererBackFillFunc,IconWindow__HookFunc_WandererBackFillFu
 #endif
 ///
 
-/*** Methods ****************************************************************/
-///IconWindow__SetupToolbar()
-void IconWindow__SetupToolbar(Class *CLASS, Object *self, Object *prefs)
-{
-  SETUP_ICONWINDOW_INST_DATA;
-
-  Object          *strObj = NULL,
-          *bt_dirup = NULL;
-  Object *toolbarPanel;
-  Object          *bt_search = NULL;
-#if !defined(ICONWINDOW_OPTION_NOSEARCHBUTTON)
-  Object          *bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test");
-#endif
-
-
-  D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
-  D(bug("[IconWindow] %s: App PrefsObj @ 0x%p\n", __PRETTY_FUNCTION__, prefs));
-
-  if (prefs != NULL)
-  {
-    data->iwd_Toolbar_PrefsNotificationObject =(Object *) DoMethod(prefs,
-                              MUIM_WandererPrefs_ViewSettings_GetNotifyObject,
-                              (STRPTR) "Toolbar");
-    //Set up our prefs notification handlers ..
-
-  }
-
-  /* Create the "ToolBar" panel object .. */
-  toolbarPanel = MUI_NewObject(MUIC_Group,
-    MUIA_InnerLeft,(0),
-    MUIA_InnerRight,(0),
-    MUIA_InnerTop,(0),
-    MUIA_InnerBottom,(0),
-    MUIA_Frame, MUIV_Frame_None,
-    Child, (IPTR)MUI_NewObject(MUIC_Group, MUIA_Group_Horiz, TRUE                      ,
-      MUIA_InnerLeft,(4),
-      MUIA_InnerRight,(4),
-      MUIA_InnerTop,(4),
-      MUIA_InnerBottom,(4),
-      MUIA_Frame, MUIV_Frame_None,
-      MUIA_Weight, 100,
-      Child, (IPTR)MUI_NewObject(MUIC_Group, MUIA_Group_Horiz, TRUE                      ,
-        MUIA_InnerLeft,(0),
-        MUIA_InnerRight,(0),
-        MUIA_InnerTop,(0),
-        MUIA_InnerBottom,(0),
-        MUIA_Weight, 100,
-        Child, (IPTR)( strObj = MUI_NewObject(MUIC_String,
-          MUIA_String_Contents, (IPTR)"",
-          MUIA_CycleChain, 1,
-          MUIA_Frame, MUIV_Frame_String,
-        TAG_DONE) ),
-      TAG_DONE),
-      Child, (IPTR)MUI_NewObject(MUIC_Group, MUIA_Group_Horiz, TRUE                      ,
-        MUIA_InnerLeft,(0),
-        MUIA_InnerRight,(0),
-        MUIA_InnerTop,(0),
-        MUIA_InnerBottom,(0),
-        MUIA_HorizWeight,   0,
-        MUIA_VertWeight,    100,
-        Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
-        (bt_search ? Child : TAG_IGNORE), (IPTR) (bt_search),
-      TAG_DONE),
-    TAG_DONE),
-    Child, (IPTR)MUI_NewObject(MUIC_Group, MUIA_Group_Horiz, TRUE                      ,
-      MUIA_InnerLeft,(0),
-      MUIA_InnerRight,(0),
-      MUIA_InnerTop,(0),
-      MUIA_InnerBottom,(0),
-      MUIA_Group_Spacing, 0,
-      MUIA_FixHeight, 1,
-      MUIA_Frame, MUIV_Frame_None,
-      MUIA_Background, MUII_SHADOW,
-      Child, (IPTR)MUI_NewObject(MUIC_Rectangle,
-        MUIA_Frame, MUIV_Frame_None,
-      TAG_DONE),
-    TAG_DONE),
-  TAG_DONE);
-  
-  /* Got a toolbarpanel? setup notifies and other values are 
-     copied to the data of the object */
-  if ( toolbarPanel != NULL )
-  {
-    SET(bt_dirup, MUIA_Background, XGET( toolbarPanel, MUIA_Background ) );
-    SET(bt_dirup, MUIA_CycleChain, 1);
-    SET(bt_dirup, MUIA_Frame, MUIV_Frame_None );
-#if !defined(ICONWINDOW_OPTION_NOSEARCHBUTTON)
-    SET(bt_search, MUIA_Background, XGET( toolbarPanel, MUIA_Background ) );
-    SET(bt_search, MUIA_CycleChain, 1);
-    SET(bt_search, MUIA_Frame, MUIV_Frame_None );
-#endif
-
-    if (DoMethod( data->iwd_ExtensionGroupObj, MUIM_Group_InitChange ))
-    {
-      DoMethod(data->iwd_ExtensionGroupObj, OM_ADDMEMBER, (IPTR)toolbarPanel);
-      if (data->iwd_ExtensionGroupSpacerObj)
-      {
-        DoMethod(data->iwd_ExtensionGroupObj, OM_REMMEMBER, (IPTR)data->iwd_ExtensionGroupSpacerObj);
-        data->iwd_ExtensionGroupSpacerObj = NULL;
-      }
-
-      DoMethod(data->iwd_ExtensionGroupObj, MUIM_Group_ExitChange);
-      data->iwd_Toolbar_PanelObj = toolbarPanel;
-    }
-
-    if (data->iwd_Toolbar_PanelObj)
-    {
-      DoMethod( 
-        bt_dirup, MUIM_Notify, MUIA_Pressed, FALSE, 
-        (IPTR)self, 1, MUIM_IconWindow_DirectoryUp
-      );
-
-      data->iwd_Toolbar_LocationStringObj = strObj;
-      #ifdef __AROS__
-      data->iwd_pathStrHook.h_Entry = ( HOOKFUNC )IconWindow__HookFunc_ToolbarLocationStringFunc;
-      #else
-      data->iwd_pathStrHook= &iwd_pathStrHook;
-      #endif
-
-      SET(
-        data->iwd_Toolbar_LocationStringObj, MUIA_String_Contents, 
-        XGET(data->iwd_IconListObj, MUIA_IconDrawerList_Drawer)
-      );
-
-      /* Make changes to string contents change dir on enter */
-      DoMethod ( 
-        strObj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, 
-        (IPTR)self, 3, MUIM_CallHook, &data->iwd_pathStrHook, (IPTR)CLASS
-      );
-    }
-  }
-  else
-  {
-    data->iwd_Toolbar_PanelObj = NULL;
-  }
-}
-///
-
 ///OM_NEW()
 Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-	struct Screen                   *_newIconWin__Screen = NULL;
-	Object                          *_newIconWin__IconListObj = NULL,
-                                  *_newIconWin__RootViewObj = NULL,
-                                  *_newIconWin__ExtensionContainerObj = NULL, // around extension group
-                                  *_newIconWin__ExtensionGroupObj = NULL,     // extension group top
-                                  *_newIconWin__ExtensionGroupSpacerObj = NULL,     // extension group top
-                                  *prefs = NULL;
+    struct iconWindow_Extension *iw_Extension = NULL;
 
-	char                            *_newIconWin__Title = NULL;
+    struct Screen               *_newIconWin__Screen = NULL;
+    Object                      *_newIconWin__IconListObj = NULL,
+                                *_newIconWin__RootViewObj = NULL,
 
-	UBYTE						_newIconWin__VOLVIEWMODE = MUIV_IconWindow_VolumeInfoMode_ShowAllIfNoInfo;
-	
-	BOOL                            isRoot = FALSE,
-                                  isBackdrop = FALSE,
-                                  hasToolbar = FALSE;
+                                *_newIconWin__TopPanelContainerObj = NULL,
+                                *_newIconWin__TopPanelRootGroupObj = NULL,
+                                *_newIconWin__TopPanelSpacerObj = NULL,
 
-	struct Hook                     *actionHook = NULL;
-	struct TextFont                 *_newIconWin__WindowFont = NULL;
+                                *_newIconWin__LeftPanelContainerObj = NULL,
+                                *_newIconWin__LeftPanelRootGroupObj = NULL,
+                                *_newIconWin__LeftPanelSpacerObj = NULL,
 
-	struct Hook                     *_newIconWin__BackFillHook = NULL;
+                                *_newIconWin__BottomPanelContainerObj = NULL,
+                                *_newIconWin__BottomPanelRootGroupObj = NULL,
+                                *_newIconWin__BottomPanelSpacerObj = NULL,
 
-	APTR                            WindowBF_TAG =(APTR) TAG_IGNORE;
+                                *prefs = NULL;
 
-	IPTR                            _newIconWin__WindowWidth = 0;
-	IPTR                            _newIconWin__WindowHeight = 0;
-	IPTR                            _newIconWin__WindowLeft = 0;
-	IPTR                            _newIconWin__WindowTop = 0;
+    char                        *_newIconWin__Title = NULL;
 
-	IPTR                            _newIconWin__FSNotifyPort =(IPTR) NULL;
-	struct MUI_CustomClass 			*iconviewclass = NULL;
+    UBYTE                       _newIconWin__VOLVIEWMODE = MUIV_IconWindow_VolumeInfoMode_ShowAllIfNoInfo;
+
+    BOOL                        isRoot = FALSE,
+                                isBackdrop = FALSE;
+
+    struct Hook                 *actionHook = NULL;
+    struct TextFont             *_newIconWin__WindowFont = NULL;
+
+    struct Hook                 *_newIconWin__BackFillHook = NULL;
+
+    IPTR                        WindowBF_TAG = (IPTR)TAG_IGNORE;
+
+    IPTR                        _newIconWin__WindowWidth = 0;
+    IPTR                        _newIconWin__WindowHeight = 0;
+    IPTR                        _newIconWin__WindowLeft = 0;
+    IPTR                        _newIconWin__WindowTop = 0;
+
+    IPTR                        _newIconWin__FSNotifyPort =(IPTR) NULL;
+    struct MUI_CustomClass      *iconviewclass = NULL;
 #if defined(ICONWINDOW_NODETAILVIEWCLASS)
-	IconWindowDetailDrawerList_CLASS = IconWindowIconDrawerList_CLASS;
+    IconWindowDetailDrawerList_CLASS = IconWindowIconDrawerList_CLASS;
 #endif
 
 D(bug("[iconwindow]: %s()\n", __PRETTY_FUNCTION__));
 
-	/* More than one GetTagData is not very efficient, however since this isn't called very often... */
-	isBackdrop = (BOOL)GetTagData(MUIA_IconWindow_IsBackdrop, (IPTR)FALSE, message->ops_AttrList);
+    /* More than one GetTagData is not very efficient, however since this isn't called very often... */
+    isBackdrop = (BOOL)GetTagData(MUIA_IconWindow_IsBackdrop, (IPTR)FALSE, message->ops_AttrList);
 
-	if (!(isRoot = (BOOL)GetTagData(MUIA_IconWindow_IsRoot, (IPTR)FALSE, message->ops_AttrList)))
-		hasToolbar = (BOOL)GetTagData(MUIA_IconWindowExt_Toolbar_Enabled, (IPTR)FALSE, message->ops_AttrList);
+    isRoot = (BOOL)GetTagData(MUIA_IconWindow_IsRoot, (IPTR)FALSE, message->ops_AttrList);
 
-	actionHook = (struct Hook *)GetTagData(MUIA_IconWindow_ActionHook, (IPTR) NULL, message->ops_AttrList);
-	_newIconWin__WindowFont = (struct TextFont *)GetTagData(MUIA_IconWindow_Font, (IPTR) NULL, message->ops_AttrList);
-	prefs = (Object *)GetTagData(MUIA_Wanderer_Prefs, (IPTR) NULL, message->ops_AttrList);
+    actionHook = (struct Hook *)GetTagData(MUIA_IconWindow_ActionHook, (IPTR) NULL, message->ops_AttrList);
+    _newIconWin__WindowFont = (struct TextFont *)GetTagData(MUIA_IconWindow_Font, (IPTR) NULL, message->ops_AttrList);
+    prefs = (Object *)GetTagData(MUIA_Wanderer_Prefs, (IPTR) NULL, message->ops_AttrList);
 
-	_newIconWin__FSNotifyPort = (IPTR)GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
+    _newIconWin__FSNotifyPort = (IPTR)GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
 
-	/* Request the screen we should use .. */
-	if (!(_newIconWin__Screen = (struct Screen *)GetTagData(MUIA_Wanderer_Screen, (IPTR) NULL, message->ops_AttrList)))
-	{
-		D(bug("[IconWindow] %s: NO SCREEN SET!\n", __PRETTY_FUNCTION__));
-		return NULL;
-	}
-D(bug("[iconwindow] %s: Screen @ 0x%x\n", __PRETTY_FUNCTION__, _newIconWin__Screen));
+    /* Request the screen we should use .. */
+    if (!(_newIconWin__Screen = (struct Screen *)GetTagData(MUIA_Wanderer_Screen, (IPTR) NULL, message->ops_AttrList)))
+    {
+            D(bug("[IconWindow] %s: NO SCREEN SET!\n", __PRETTY_FUNCTION__));
+            return NULL;
+    }
+D(bug("[iconwindow] %s: Screen @ 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__Screen));
 
-	if ((_newIconWin__BackFillHook = AllocVec(sizeof(struct Hook), MEMF_CLEAR|MEMF_PUBLIC))!=NULL)
-	{
+    if ((_newIconWin__BackFillHook = AllocVec(sizeof(struct Hook), MEMF_CLEAR|MEMF_PUBLIC))!=NULL)
+    {
 D(bug("[IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__BackFillHook));
 
 #ifdef __AROS__
-		_newIconWin__BackFillHook->h_Entry = ( HOOKFUNC )IconWindow__HookFunc_WandererBackFillFunc;
+            _newIconWin__BackFillHook->h_Entry = ( HOOKFUNC )IconWindow__HookFunc_WandererBackFillFunc;
 #else
-		_newIconWin__BackFillHook = &Hook_WandererBackFillFunc;
+            _newIconWin__BackFillHook = &Hook_WandererBackFillFunc;
 #endif
 
-	//#if defined(__MORPHOS__)
-	//    WindowBF_TAG = MUIA_Window_BackFillHook;
-	//#else
-		WindowBF_TAG =(APTR) WA_BackFill;
-	//#endif
-	}
+//#if defined(__MORPHOS__)
+//        WindowBF_TAG = MUIA_Window_BackFillHook;
+//#else
+        WindowBF_TAG = (APTR)WA_BackFill;
+//#endif
+    }
 
-	if (isRoot)
-	{
-		iconviewclass = IconWindowIconVolumeList_CLASS;
-		_newIconWin__IconListObj = (Object *)NewObject(iconviewclass->mcc_Class, NULL,
-											   MUIA_Font, (IPTR)_newIconWin__WindowFont,
-									TAG_DONE);
+    if (isRoot)
+    {
+        iconviewclass = IconWindowIconVolumeList_CLASS;
+        _newIconWin__IconListObj = (Object *)NewObject(iconviewclass->mcc_Class, NULL,
+                                                    MUIA_Font, (IPTR)_newIconWin__WindowFont,
+                                                    TAG_DONE);
 
-		_newIconWin__WindowWidth = GetBitMapAttr(_newIconWin__Screen->RastPort.BitMap, BMA_WIDTH);
-		_newIconWin__WindowHeight = GetBitMapAttr(_newIconWin__Screen->RastPort.BitMap, BMA_HEIGHT);
-		D(bug("[iconwindow] %s: Screen dimensions ..  %ld x %ld\n", __PRETTY_FUNCTION__, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
+        _newIconWin__WindowWidth = GetBitMapAttr(_newIconWin__Screen->RastPort.BitMap, BMA_WIDTH);
+        _newIconWin__WindowHeight = GetBitMapAttr(_newIconWin__Screen->RastPort.BitMap, BMA_HEIGHT);
+        D(bug("[iconwindow] %s: Screen dimensions ..  %ld x %ld\n", __PRETTY_FUNCTION__, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
 
-		if (isBackdrop)
-		{
-		  D(bug("[iconwindow] %s: BACKDROP ROOT Window\n", __PRETTY_FUNCTION__));
-		  _newIconWin__Title = NULL;
-		}
-		else
-		{
-		  D(bug("[iconwindow] %s: Plain ROOT Window\n", __PRETTY_FUNCTION__));
-		  _newIconWin__Title = __intern_wintitle_wanderer;
-		}
+        if (isBackdrop)
+        {
+            D(bug("[iconwindow] %s: BACKDROP ROOT Window\n", __PRETTY_FUNCTION__));
+            _newIconWin__Title = NULL;
+        }
+        else
+        {
+            D(bug("[iconwindow] %s: Plain ROOT Window\n", __PRETTY_FUNCTION__));
+            _newIconWin__Title = __intern_wintitle_wanderer;
+        }
 
-		_newIconWin__WindowTop = _newIconWin__Screen->BarHeight + 1;
-		_newIconWin__WindowLeft = 0;
+        _newIconWin__WindowTop = _newIconWin__Screen->BarHeight + 1;
+        _newIconWin__WindowLeft = 0;
 
-		_newIconWin__WindowHeight -= _newIconWin__WindowTop;
-	}
-	else
-	{
-		struct DiskObject 	*drawericon = NULL;
-		IPTR				geticon_error = 0, geticon_isdefault = 0;
-		IPTR				_newIconWin__TitleLen = 0;
-		IPTR 				current_DispFlags = 0;
-		IPTR                icon__DispFlags = 0,icon__DispFlagMask = ~0;
+        _newIconWin__WindowHeight -= _newIconWin__WindowTop;
+    }
+    else
+    {
+        struct DiskObject       *drawericon = NULL;
+        IPTR                    geticon_error = 0, geticon_isdefault = 0;
+        IPTR                    _newIconWin__TitleLen = 0;
+        IPTR                    current_DispFlags = 0, current_SortFlags = 0;
+        IPTR                    icon__DispFlags = 0,icon__DispFlagMask = ~0;
 
-		_newIconWin__WindowTop = MUIV_Window_TopEdge_Centered;
-		_newIconWin__WindowLeft = MUIV_Window_LeftEdge_Centered;
-		_newIconWin__WindowWidth = 300;
-		_newIconWin__WindowHeight = 300;
+        _newIconWin__WindowTop = MUIV_Window_TopEdge_Centered;
+        _newIconWin__WindowLeft = MUIV_Window_LeftEdge_Centered;
+        _newIconWin__WindowWidth = 300;
+        _newIconWin__WindowHeight = 300;
 
-		_newIconWin__Title = (STRPTR) GetTagData(MUIA_IconWindow_Location, (IPTR)NULL, message->ops_AttrList);
-		_newIconWin__TitleLen = strlen(_newIconWin__Title);
+        _newIconWin__Title = (STRPTR) GetTagData(MUIA_IconWindow_Location, (IPTR)NULL, message->ops_AttrList);
+        _newIconWin__TitleLen = strlen(_newIconWin__Title);
 
-		if (_newIconWin__Title[_newIconWin__TitleLen - 1] == ':')
-		{
+        if (_newIconWin__Title[_newIconWin__TitleLen - 1] == ':')
+        {
 D(bug("[iconwindow] %s: Opening Volume Root Window '%s'\n", __PRETTY_FUNCTION__, _newIconWin__Title));
-		}
-		else
-		{
+        }
+        else
+        {
 D(bug("[iconwindow] %s: Opening Drawer Window '%s'\n", __PRETTY_FUNCTION__, _newIconWin__Title));
-		}
+        }
 
-		drawericon = GetIconTags(_newIconWin__Title,
-					ICONGETA_FailIfUnavailable, FALSE,
-					ICONGETA_IsDefaultIcon, &geticon_isdefault,
-					ICONA_ErrorCode, &geticon_error,
-					TAG_DONE);
-	  
-		if ((drawericon) && (drawericon->do_DrawerData))
-		{
+        drawericon = GetIconTags(_newIconWin__Title,
+                                ICONGETA_FailIfUnavailable, FALSE,
+                                ICONGETA_IsDefaultIcon, &geticon_isdefault,
+                                ICONA_ErrorCode, &geticon_error,
+                                TAG_DONE);
+  
+        if ((drawericon) && (drawericon->do_DrawerData))
+        {
 D(bug("[iconwindow] %s: Directory Icon has DRAWER data!\n", __PRETTY_FUNCTION__));
-			_newIconWin__WindowTop = drawericon->do_DrawerData->dd_NewWindow.TopEdge;
-			_newIconWin__WindowLeft = drawericon->do_DrawerData->dd_NewWindow.LeftEdge;
-			_newIconWin__WindowWidth = drawericon->do_DrawerData->dd_NewWindow.Width;
-			_newIconWin__WindowHeight = drawericon->do_DrawerData->dd_NewWindow.Height;
-		}
+            _newIconWin__WindowTop = drawericon->do_DrawerData->dd_NewWindow.TopEdge;
+            _newIconWin__WindowLeft = drawericon->do_DrawerData->dd_NewWindow.LeftEdge;
+            _newIconWin__WindowWidth = drawericon->do_DrawerData->dd_NewWindow.Width;
+            _newIconWin__WindowHeight = drawericon->do_DrawerData->dd_NewWindow.Height;
+        }
 
-		iconviewclass = IconWindowIconDrawerList_CLASS;
-		if ((drawericon) && (drawericon->do_Gadget.UserData > 0))
-		{
+        iconviewclass = IconWindowIconDrawerList_CLASS;
+        if ((drawericon) && (drawericon->do_Gadget.UserData > 0))
+        {
 D(bug("[iconwindow] %s: Directory Icons has OS 2.x/3.x data: FLAGS %x [\n", __PRETTY_FUNCTION__, drawericon->do_DrawerData->dd_Flags));
-			switch (drawericon->do_DrawerData->dd_Flags)
-			{
-				case 0:
-				{
-					D(bug("Default"));
-					break;
-				}
-				case 1:
-				{
-					D(bug("Show only icons"));
-					icon__DispFlags |= ICONLIST_DISP_SHOWINFO;
-					break;
-				}
-				case 2:
-				{
-					D(bug("Show all files"));
-					icon__DispFlagMask &= ~ICONLIST_DISP_SHOWINFO;
-					break;
-				}
-				case 3:
-				{
-					D(bug("Show all files"));
-					icon__DispFlags |= ICONLIST_DISP_SHOWHIDDEN;
-					icon__DispFlagMask &= ~ICONLIST_DISP_SHOWINFO;
-					break;
-				}
-				default:
-				{
-					D(bug("INVALID"));
-				}
-			}
+            switch (drawericon->do_DrawerData->dd_Flags)
+            {
+                case 0:
+                {
+                    D(bug("Default"));
+                    break;
+                }
+                case 1:
+                {
+                    D(bug("Show only icons"));
+                    icon__DispFlags |= ICONLIST_DISP_SHOWINFO;
+                    break;
+                }
+                case 2:
+                {
+                    D(bug("Show all files"));
+                    icon__DispFlagMask &= ~ICONLIST_DISP_SHOWINFO;
+                    break;
+                }
+                case 3:
+                {
+                    D(bug("Show all files"));
+                    icon__DispFlags |= ICONLIST_DISP_SHOWHIDDEN;
+                    icon__DispFlagMask &= ~ICONLIST_DISP_SHOWINFO;
+                    break;
+                }
+                default:
+                {
+                    D(bug("INVALID"));
+                }
+            }
 
 D(bug("] VIEWMODES %x [", drawericon->do_DrawerData->dd_ViewModes));
 
-			switch (drawericon->do_DrawerData->dd_ViewModes)
-			{
-				case 0:
-				{
-					D(bug("Default (inherit from parent)"));
-					break;
-				}
-				case 1:
-				{
-					D(bug("View as icons"));
-					break;
-				}
-				case 2:
-				{
-					D(bug("View as text, sorted by name"));
-					iconviewclass = IconWindowDetailDrawerList_CLASS;
-					break;
-				}
-				case 3:
-				{
-					D(bug("View as text, sorted by date"));
-					iconviewclass = IconWindowDetailDrawerList_CLASS;
-					break;
-				}
-				case 4:
-				{
-					D(bug("View as text, sorted by size"));
-					iconviewclass = IconWindowDetailDrawerList_CLASS;
-					break;
-				}
-				case 5:
-				{
-					D(bug("View as text, sorted by type"));
-					iconviewclass = IconWindowDetailDrawerList_CLASS;
-					break;
-				}
-				default:
-				{
-					D(bug("INVALID"));
-				}
-			}
+            switch (drawericon->do_DrawerData->dd_ViewModes)
+            {
+                case 0:
+                {
+                    D(bug("Default (inherit from parent)"));
+                    break;
+                }
+                case 1:
+                {
+                    D(bug("View as icons"));
+                    break;
+                }
+                case 2:
+                {
+                    D(bug("View as text, sorted by name"));
+                    iconviewclass = IconWindowDetailDrawerList_CLASS;
+                    break;
+                }
+                case 3:
+                {
+                    D(bug("View as text, sorted by date"));
+                    iconviewclass = IconWindowDetailDrawerList_CLASS;
+                    break;
+                }
+                case 4:
+                {
+                    D(bug("View as text, sorted by size"));
+                    iconviewclass = IconWindowDetailDrawerList_CLASS;
+                    break;
+                }
+                case 5:
+                {
+                    D(bug("View as text, sorted by type"));
+                    iconviewclass = IconWindowDetailDrawerList_CLASS;
+                    break;
+                }
+                default:
+                {
+                    D(bug("INVALID"));
+                }
+            }
 D(bug("]\n"));
-		}
+        }
 
-		if ((_newIconWin__Title[_newIconWin__TitleLen - 1] == ':') &&
-			(((geticon_isdefault) && (_newIconWin__VOLVIEWMODE == MUIV_IconWindow_VolumeInfoMode_ShowAllIfNoInfo)) ||
-			(_newIconWin__VOLVIEWMODE == MUIV_IconWindow_VolumeInfoMode_ShowAll)))
-		{
+        if ((_newIconWin__Title[_newIconWin__TitleLen - 1] == ':') &&
+                (((geticon_isdefault) && (_newIconWin__VOLVIEWMODE == MUIV_IconWindow_VolumeInfoMode_ShowAllIfNoInfo)) ||
+                (_newIconWin__VOLVIEWMODE == MUIV_IconWindow_VolumeInfoMode_ShowAll)))
+        {
 D(bug("[iconwindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION__));
-			icon__DispFlagMask &= ~ICONLIST_DISP_SHOWINFO;
-		}
+                icon__DispFlagMask &= ~ICONLIST_DISP_SHOWINFO;
+        }
 
-		_newIconWin__IconListObj = (Object *) NewObject(iconviewclass->mcc_Class, NULL,
-									 MUIA_Font, (IPTR)_newIconWin__WindowFont,
-									 MUIA_IconDrawerList_Drawer, (IPTR) _newIconWin__Title,
-									 MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
-									TAG_DONE);
+        _newIconWin__IconListObj = (Object *) NewObject(iconviewclass->mcc_Class, NULL,
+                                                                 MUIA_Font, (IPTR)_newIconWin__WindowFont,
+                                                                 MUIA_IconDrawerList_Drawer, (IPTR) _newIconWin__Title,
+                                                                 MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
+                                                                TAG_DONE);
 
-		GET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
-		SET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, ((current_DispFlags & icon__DispFlagMask)|icon__DispFlags));
+        GET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
+        SET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, ((current_DispFlags & icon__DispFlagMask)|icon__DispFlags));
 
 D(bug("[iconwindow] %s: Window Co-ords %d,%d [%d x %d]\n", __PRETTY_FUNCTION__, _newIconWin__WindowLeft, _newIconWin__WindowTop, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
 
-		_newIconWin__ExtensionGroupObj = MUI_NewObject(MUIC_Group,
-			MUIA_InnerLeft,(0),
-			MUIA_InnerRight,(0),
-			MUIA_InnerTop,(0),
-			MUIA_InnerBottom,(0),
-			MUIA_Frame, MUIV_Frame_None,
-			MUIA_Group_Spacing, 0,
-			Child, (_newIconWin__ExtensionGroupSpacerObj = HSpace(0)),
-		TAG_DONE);
+        _newIconWin__TopPanelRootGroupObj = MUI_NewObject(MUIC_Group,
+                MUIA_InnerLeft,(0),
+                MUIA_InnerRight,(0),
+                MUIA_InnerTop,(0),
+                MUIA_InnerBottom,(0),
+                MUIA_Frame, MUIV_Frame_None,
+                MUIA_Group_Spacing, 0,
+                Child, (_newIconWin__TopPanelSpacerObj = HSpace(0)),
+        TAG_DONE);
 
-		if (_newIconWin__ExtensionGroupObj)
-		{
-		  _newIconWin__ExtensionContainerObj = MUI_NewObject(MUIC_Group, MUIA_Group_Horiz, TRUE,
-			InnerSpacing(0,0),
-			MUIA_HorizWeight,   100,
-			MUIA_VertWeight,    0,
-			MUIA_Frame,         MUIV_Frame_None,
-			MUIA_Group_Spacing, 3,
-			/* extension on top of the list */
-			Child, (IPTR)_newIconWin__ExtensionGroupObj,
-		  TAG_DONE);
-		}
-	}
+        if (_newIconWin__TopPanelRootGroupObj)
+        {
+          _newIconWin__TopPanelContainerObj = MUI_NewObject(MUIC_Group, MUIA_Group_Horiz, TRUE,
+                MUIA_ShowMe,            FALSE,
+                InnerSpacing(0,0),
+                MUIA_HorizWeight,       100,
+                MUIA_VertWeight,        0,
+                MUIA_Frame,             MUIV_Frame_None,
+                MUIA_Group_Spacing,     3,
+                Child, (IPTR)_newIconWin__TopPanelRootGroupObj,
+          TAG_DONE);
+        }
+
+        _newIconWin__BottomPanelRootGroupObj = MUI_NewObject(MUIC_Group,
+                MUIA_InnerLeft,(0),
+                MUIA_InnerRight,(0),
+                MUIA_InnerTop,(0),
+                MUIA_InnerBottom,(0),
+                MUIA_Frame, MUIV_Frame_None,
+                MUIA_Group_Spacing, 0,
+                Child, (_newIconWin__BottomPanelSpacerObj = HSpace(0)),
+        TAG_DONE);
+
+        if (_newIconWin__BottomPanelRootGroupObj)
+        {
+          _newIconWin__BottomPanelContainerObj = MUI_NewObject(MUIC_Group, MUIA_Group_Horiz, TRUE,
+                MUIA_ShowMe,            FALSE,
+                InnerSpacing(0,0),
+                MUIA_HorizWeight,       100,
+                MUIA_VertWeight,        0,
+                MUIA_Frame,             MUIV_Frame_None,
+                MUIA_Group_Spacing,     3,
+                Child, (IPTR)_newIconWin__BottomPanelRootGroupObj,
+          TAG_DONE);
+        }
+
+        _newIconWin__LeftPanelRootGroupObj = MUI_NewObject(MUIC_Group,
+                MUIA_InnerLeft,(0),
+                MUIA_InnerRight,(0),
+                MUIA_InnerTop,(0),
+                MUIA_InnerBottom,(0),
+                MUIA_Frame, MUIV_Frame_None,
+                MUIA_Group_Spacing, 0,
+                Child, (_newIconWin__LeftPanelSpacerObj = HVSpace),
+        TAG_DONE);
+
+        if (_newIconWin__LeftPanelRootGroupObj)
+        {
+          _newIconWin__LeftPanelContainerObj = MUI_NewObject(MUIC_Group, MUIA_Group_Horiz, TRUE,
+                MUIA_ShowMe,            FALSE,
+                InnerSpacing(0,0),
+                MUIA_HorizWeight,       100,
+                MUIA_VertWeight,        0,
+                MUIA_Frame,             MUIV_Frame_None,
+                MUIA_Group_Spacing,     3,
+                Child, (IPTR)_newIconWin__LeftPanelRootGroupObj,
+          TAG_DONE);
+        }
+    }
 
 #ifdef __AROS__
-  _newIconWin__RootViewObj = (Object *) IconListviewObject,
+    _newIconWin__RootViewObj = (Object *) IconListviewObject,
                                             MUIA_Weight,                    100,
                                             MUIA_IconListview_UseWinBorder, TRUE,
                                             MUIA_IconListview_IconList,     (IPTR) _newIconWin__IconListObj,
                                         End;
 #else
-  _newIconWin__RootViewObj = (Object *) NewObject(IconListview_Class->mcc_Class, NULL,
+    _newIconWin__RootViewObj = (Object *) NewObject(IconListview_Class->mcc_Class, NULL,
                                             MUIA_Weight,                        100,
                                             MUIA_IconListview_UseWinBorder,     TRUE,
                                             MUIA_IconListview_IconList,         (IPTR) _newIconWin__IconListObj,
@@ -743,269 +596,278 @@ D(bug("[iconwindow] %s: Window Co-ords %d,%d [%d x %d]\n", __PRETTY_FUNCTION__, 
 D(bug("[iconwindow] %s: Font @ 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__WindowFont));
 
 #ifdef __AROS__
-  self = (Object *) DoSuperNewTags
-  (
-    CLASS, self, NULL,
+    self = (Object *) DoSuperNewTags
+    (
+        CLASS, self, NULL,
 
-    MUIA_Window_Screen,                                    _newIconWin__Screen,
-    MUIA_Window_Backdrop,                                  isBackdrop ? TRUE : FALSE,
-    MUIA_Window_Borderless,                                isBackdrop ? TRUE : FALSE,
-    MUIA_Window_Width,                                     _newIconWin__WindowWidth,
-    MUIA_Window_Height,                                    _newIconWin__WindowHeight,
-    MUIA_Window_LeftEdge,                                  _newIconWin__WindowLeft,
-    MUIA_Window_TopEdge,                                   _newIconWin__WindowTop,
-    (!isBackdrop) ? MUIA_Window_AltWidth : TAG_IGNORE,     100,
-    (!isBackdrop) ? MUIA_Window_AltHeight : TAG_IGNORE,    80,
-    MUIA_Window_Title,                                   (IPTR)_newIconWin__Title,
-    
-    MUIA_Window_DragBar,                                   (!isBackdrop) ? TRUE : FALSE,
-    MUIA_Window_CloseGadget,                               (!isBackdrop) ? TRUE : FALSE,
-    MUIA_Window_SizeGadget,                                (!isBackdrop) ? TRUE : FALSE,
-    MUIA_Window_DepthGadget,                               (!isBackdrop) ? TRUE : FALSE,
+        MUIA_Window_Screen,                                     _newIconWin__Screen,
+        MUIA_Window_Backdrop,                                   isBackdrop ? TRUE : FALSE,
+        MUIA_Window_Borderless,                                 isBackdrop ? TRUE : FALSE,
+        MUIA_Window_Width,                                      _newIconWin__WindowWidth,
+        MUIA_Window_Height,                                     _newIconWin__WindowHeight,
+        MUIA_Window_LeftEdge,                                   _newIconWin__WindowLeft,
+        MUIA_Window_TopEdge,                                    _newIconWin__WindowTop,
+        (!isBackdrop) ? MUIA_Window_AltWidth : TAG_IGNORE,      100,
+        (!isBackdrop) ? MUIA_Window_AltHeight : TAG_IGNORE,     80,
+        MUIA_Window_Title,                                      (IPTR)_newIconWin__Title,
+        
+        MUIA_Window_DragBar,                                    (!isBackdrop) ? TRUE : FALSE,
+        MUIA_Window_CloseGadget,                                (!isBackdrop) ? TRUE : FALSE,
+        MUIA_Window_SizeGadget,                                 (!isBackdrop) ? TRUE : FALSE,
+        MUIA_Window_DepthGadget,                                (!isBackdrop) ? TRUE : FALSE,
 #if defined(MUIA_Window_ZoomGadget)
-    MUIA_Window_ZoomGadget,                                (!isBackdrop) ? TRUE : FALSE,
+        MUIA_Window_ZoomGadget,                                 (!isBackdrop) ? TRUE : FALSE,
 #endif
-    MUIA_Window_UseBottomBorderScroller,                   (!isBackdrop) ? TRUE : FALSE,
-    MUIA_Window_UseRightBorderScroller,                    (!isBackdrop) ? TRUE : FALSE,
-    MUIA_Window_IsSubWindow,                             TRUE,
+        MUIA_Window_UseBottomBorderScroller,                    (!isBackdrop) ? TRUE : FALSE,
+        MUIA_Window_UseRightBorderScroller,                     (!isBackdrop) ? TRUE : FALSE,
+        MUIA_Window_IsSubWindow,                                TRUE,
+
+        WindowBF_TAG,                                           _newIconWin__BackFillHook,
+
+        MUIA_Window_ScreenTitle,                                (IPTR) "",
+        MUIA_Font,                                              (IPTR) _newIconWin__WindowFont,
+
+        WindowContents, (IPTR) MUI_NewObject(MUIC_Group,
+            MUIA_Group_Spacing,  0,
+            MUIA_Group_SameSize, FALSE,
+            InnerSpacing(0,0),
+
+            ((!isRoot) && _newIconWin__TopPanelContainerObj) ? Child : TAG_IGNORE, (IPTR)_newIconWin__TopPanelContainerObj,
+
+            Child, HGroup,
+                ((!isRoot) && _newIconWin__LeftPanelContainerObj) ? Child : TAG_IGNORE, (IPTR)_newIconWin__LeftPanelContainerObj,
+                /* The actual icon list */
+                Child, (IPTR) _newIconWin__RootViewObj,
+            End,
+
+            ((!isRoot) && _newIconWin__BottomPanelContainerObj) ? Child : TAG_IGNORE, (IPTR)_newIconWin__BottomPanelContainerObj,
+
+        TAG_DONE),
+        
+        TAG_MORE, (IPTR) message->ops_AttrList
+    );
+#else
+    self = (Object *) DoSuperNew(CLASS, self, 
+        MUIA_Window_Screen,                                    _newIconWin__Screen,
+        MUIA_Window_Backdrop,                                  isBackdrop ? TRUE : FALSE,
+        MUIA_Window_Borderless,                                isBackdrop ? TRUE : FALSE,
+        MUIA_Window_Width,                                     _newIconWin__WindowWidth,
+        MUIA_Window_Height,                                    _newIconWin__WindowHeight,
+        MUIA_Window_LeftEdge,                                  _newIconWin__WindowLeft,
+        MUIA_Window_TopEdge,                                   _newIconWin__WindowTop,
+        (!isBackdrop) ? MUIA_Window_AltWidth : TAG_IGNORE,     100,
+        (!isBackdrop) ? MUIA_Window_AltHeight : TAG_IGNORE,    80,
+        MUIA_Window_Title,                                   (IPTR)_newIconWin__Title,
+
+        MUIA_Window_DragBar,                                   (!isBackdrop) ? TRUE : FALSE,
+        MUIA_Window_CloseGadget,                               (!isBackdrop) ? TRUE : FALSE,
+        MUIA_Window_SizeGadget,                                (!isBackdrop) ? TRUE : FALSE,
+        MUIA_Window_DepthGadget,                               (!isBackdrop) ? TRUE : FALSE,
+#if defined(MUIA_Window_ZoomGadget)
+        MUIA_Window_ZoomGadget,                                (!isBackdrop) ? TRUE : FALSE,
+#endif
+        MUIA_Window_UseBottomBorderScroller,                   (!isBackdrop) ? TRUE : FALSE,
+        MUIA_Window_UseRightBorderScroller,                    (!isBackdrop) ? TRUE : FALSE,
+        MUIA_Window_IsSubWindow,                             TRUE,
+
+        WindowBF_TAG,                                        *_newIconWin__BackFillHook,
+
+        MUIA_Window_ScreenTitle,                             (IPTR) "",
+        MUIA_Font,                                           (IPTR) _newIconWin__WindowFont,
+
+        WindowContents, (IPTR) MUI_NewObject(MUIC_Group,
+            MUIA_Group_Spacing,  0,
+            MUIA_Group_SameSize, FALSE,
+            InnerSpacing(0,0),
+
+            /* "Extension" group */
+            _newIconWin__TopPanelContainerObj ? Child : TAG_IGNORE, (IPTR)_newIconWin__TopPanelContainerObj,
+
+            /* icon list */
+            Child, (IPTR) _newIconWin__RootViewObj,
+
+        TAG_DONE),
+
+        TAG_MORE, (IPTR) message->ops_AttrList
+    );
+#endif
+
+    if (self != NULL)
+    {
+        SETUP_ICONWINDOW_INST_DATA;
+
+        D(bug("[iconwindow] %s: SELF = 0x%p\n", __PRETTY_FUNCTION__, self));
+
+	data->iwd_VolViewMode                           = _newIconWin__VOLVIEWMODE;
+
+        data->iwd_Screen                                = _newIconWin__Screen;
+        data->iwd_Title                                 = _newIconWin__Title;
+
+        data->iwd_RootViewObj                           = _newIconWin__RootViewObj;
+        data->iwd_IconListObj                           = _newIconWin__IconListObj;
+
+        SET(data->iwd_RootViewObj, MUIA_IconWindow_Window,      self);
+
+        data->iwd_ActionHook                            = actionHook;
+
+        data->iwd_TopPanel.iwp_PanelGroupObj            = _newIconWin__TopPanelRootGroupObj;
+        data->iwd_TopPanel.iwp_PanelContainerObj        = _newIconWin__TopPanelContainerObj;
+        data->iwd_TopPanel.iwp_PanelGroupSpacerObj      = _newIconWin__TopPanelSpacerObj;
+
+        data->iwd_LeftPanel.iwp_PanelGroupObj           = _newIconWin__LeftPanelRootGroupObj;
+        data->iwd_LeftPanel.iwp_PanelContainerObj       = _newIconWin__LeftPanelContainerObj;
+        data->iwd_LeftPanel.iwp_PanelGroupSpacerObj     = _newIconWin__LeftPanelSpacerObj;
+
+        data->iwd_BottomPanel.iwp_PanelGroupObj         = _newIconWin__BottomPanelRootGroupObj;
+        data->iwd_BottomPanel.iwp_PanelContainerObj     = _newIconWin__BottomPanelContainerObj;
+        data->iwd_BottomPanel.iwp_PanelGroupSpacerObj   = _newIconWin__BottomPanelSpacerObj;
+
+        data->iwd_PanelObj_ToolBar                      = NULL;
+        data->iwd_PanelObj_StatusBar                    = NULL;
+
+        data->iwd_Flags                                 = 0;
+
+        data->iwd_Flags                                 |= (isRoot) ? IWDFLAG_ISROOT : 0;
+        data->iwd_Flags                                 |= (isBackdrop) ? IWDFLAG_ISBACKDROP : 0;
+
+        data->iwd_WindowFont                            = _newIconWin__WindowFont;        
+
+        data->iwd_ViewSettings_Attrib                   = (data->iwd_Flags & IWDFLAG_ISROOT) 
+                                                          ? "Workbench"
+                                                          : "Drawer";
+
+        if (prefs)
+        {
 #ifdef __AROS__
-    WindowBF_TAG,                                        _newIconWin__BackFillHook,
+            data->iwd_PrefsUpdated_hook.h_Entry = ( HOOKFUNC )IconWindow__HookFunc_PrefsUpdatedFunc;
 #else
-    WindowBF_TAG,                                        *_newIconWin__BackFillHook,
+            data->iwd_PrefsUpdated_hook = &iwd_PrefsUpdated_hook;
 #endif
-    MUIA_Window_ScreenTitle,                             (IPTR) "",
-    MUIA_Font,                                           (IPTR) _newIconWin__WindowFont,
 
-    WindowContents, (IPTR) MUI_NewObject(MUIC_Group,
-      MUIA_Group_Spacing,  0,
-      MUIA_Group_SameSize, FALSE,
-      InnerSpacing(0,0),
+            DoMethod
+            (
+                prefs, MUIM_Notify, MUIA_WandererPrefs_Processing, FALSE,
+                (IPTR) self, 3, 
+                MUIM_CallHook, &data->iwd_PrefsUpdated_hook, (IPTR)CLASS
+              );
 
-      /* "Extension" group */
-      _newIconWin__ExtensionContainerObj ? Child : TAG_IGNORE, (IPTR)_newIconWin__ExtensionContainerObj,
+            data->iwd_ViewSettings_PrefsNotificationObject = (Object *) DoMethod(prefs,
+                                    MUIM_WandererPrefs_ViewSettings_GetNotifyObject,
+                                    data->iwd_ViewSettings_Attrib);
+        }
 
-      /* icon list */
-      Child, (IPTR) _newIconWin__RootViewObj,
-      
-    TAG_DONE),
-    
-    TAG_MORE, (IPTR) message->ops_AttrList
-  );
+#ifdef __AROS__
+        data->iwd_ProcessBackground_hook.h_Entry = ( HOOKFUNC )IconWindow__HookFunc_ProcessBackgroundFunc;
 #else
-  self = (Object *) DoSuperNew(CLASS, self, 
-    MUIA_Window_Screen,                                    _newIconWin__Screen,
-    MUIA_Window_Backdrop,                                  isBackdrop ? TRUE : FALSE,
-    MUIA_Window_Borderless,                                isBackdrop ? TRUE : FALSE,
-    MUIA_Window_Width,                                     _newIconWin__WindowWidth,
-    MUIA_Window_Height,                                    _newIconWin__WindowHeight,
-    MUIA_Window_LeftEdge,                                  _newIconWin__WindowLeft,
-    MUIA_Window_TopEdge,                                   _newIconWin__WindowTop,
-    (!isBackdrop) ? MUIA_Window_AltWidth : TAG_IGNORE,     100,
-    (!isBackdrop) ? MUIA_Window_AltHeight : TAG_IGNORE,    80,
-    MUIA_Window_Title,                                   (IPTR)_newIconWin__Title,
-
-    MUIA_Window_DragBar,                                   (!isBackdrop) ? TRUE : FALSE,
-    MUIA_Window_CloseGadget,                               (!isBackdrop) ? TRUE : FALSE,
-    MUIA_Window_SizeGadget,                                (!isBackdrop) ? TRUE : FALSE,
-    MUIA_Window_DepthGadget,                               (!isBackdrop) ? TRUE : FALSE,
-#if defined(MUIA_Window_ZoomGadget)
-    MUIA_Window_ZoomGadget,                                (!isBackdrop) ? TRUE : FALSE,
-#endif
-    MUIA_Window_UseBottomBorderScroller,                   (!isBackdrop) ? TRUE : FALSE,
-    MUIA_Window_UseRightBorderScroller,                    (!isBackdrop) ? TRUE : FALSE,
-    MUIA_Window_IsSubWindow,                             TRUE,
-    #ifdef __AROS__
-    WindowBF_TAG,                                        _newIconWin__BackFillHook,
-    #else
-    WindowBF_TAG,                                        *_newIconWin__BackFillHook,
-    #endif
-    MUIA_Window_ScreenTitle,                             (IPTR) "",
-    MUIA_Font,                                           (IPTR) _newIconWin__WindowFont,
-
-    WindowContents, (IPTR) MUI_NewObject(MUIC_Group,
-      MUIA_Group_Spacing,  0,
-      MUIA_Group_SameSize, FALSE,
-      InnerSpacing(0,0),
-
-      /* "Extension" group */
-      _newIconWin__ExtensionContainerObj ? Child : TAG_IGNORE, (IPTR)_newIconWin__ExtensionContainerObj,
-
-      /* icon list */
-      Child, (IPTR) _newIconWin__RootViewObj,
-
-    TAG_DONE),
-
-    TAG_MORE, (IPTR) message->ops_AttrList);
+        data->iwd_ProcessBackground_hook = &iwd_ProcessBackground_hook;
 #endif
 
+        if ((data->iwd_BackFill_hook = _newIconWin__BackFillHook))
+        {
+            data->iwd_BackFillHookData.bfhd_IWClass = CLASS;
+            data->iwd_BackFillHookData.bfhd_IWObject = self;
+            data->iwd_BackFill_hook->h_Data = &data->iwd_BackFillHookData;
+        }
 
+        ForeachNode(&iconwindow_Extensions, iw_Extension)
+        {
+            D(bug("[iconwindow] %s: Setting up '%s' @ %p\n", __PRETTY_FUNCTION__, iw_Extension->iwe_Node.ln_Name, iw_Extension));
+            iw_Extension->iwe_Setup(CLASS, self, message);
+        }
 
-  if (self != NULL)
-  {
-    SETUP_ICONWINDOW_INST_DATA;
+        data->iwd_Flags |= IWDFLAG_SETUP;
 
-    D(bug("[iconwindow] %s: SELF = 0x%p\n", __PRETTY_FUNCTION__, self));
-
-	data->iwd_Flag_VOLVIEWMODE        = _newIconWin__VOLVIEWMODE;
-
-    data->iwd_Screen                  = _newIconWin__Screen;
-
-    data->iwd_Title                   = _newIconWin__Title;
-
-    data->iwd_RootViewObj             = _newIconWin__RootViewObj;
-
-    data->iwd_IconListObj             = _newIconWin__IconListObj;
-
-    SET(data->iwd_RootViewObj, MUIA_IconWindow_Window,      self);
-
-    data->iwd_ActionHook              = actionHook;
-
-    data->iwd_ExtensionGroupObj       = _newIconWin__ExtensionGroupObj;
-    data->iwd_ExtensionContainerObj   = _newIconWin__ExtensionContainerObj;
-    data->iwd_ExtensionGroupSpacerObj = _newIconWin__ExtensionGroupSpacerObj;
-
-    data->iwd_Toolbar_PanelObj         = NULL;
-
-    data->iwd_Flag_ISROOT             = isRoot;
-    data->iwd_Flag_ISBACKDROP         = isBackdrop;
-
-    data->iwd_WindowFont              = _newIconWin__WindowFont;        
-
-    data->iwd_ViewSettings_Attrib = data->iwd_Flag_ISROOT 
-          ? "Workbench"
-          : "Drawer";
-
-    if (prefs)
-    {
-      #ifdef __AROS__
-      data->iwd_PrefsUpdated_hook.h_Entry = ( HOOKFUNC )IconWindow__HookFunc_PrefsUpdatedFunc;
-      #else
-      data->iwd_PrefsUpdated_hook = &iwd_PrefsUpdated_hook;
-      #endif
-
-      DoMethod
-      (
-        prefs, MUIM_Notify, MUIA_WandererPrefs_Processing, FALSE,
-        (IPTR) self, 3, 
-        MUIM_CallHook, &data->iwd_PrefsUpdated_hook, (IPTR)CLASS
-      );
-
-      data->iwd_ViewSettings_PrefsNotificationObject = (Object *) DoMethod(prefs,
-                                MUIM_WandererPrefs_ViewSettings_GetNotifyObject,
-                                data->iwd_ViewSettings_Attrib);
-
-      if (data->iwd_ExtensionContainerObj)
-      {
+        /* If double clicked then we call our own private methods, that's 
+           easier then using Hooks */
         DoMethod
-        (
-          prefs, MUIM_Notify, MUIA_IconWindowExt_Toolbar_Enabled, MUIV_EveryTime, 
-          (IPTR)self, 3, MUIM_Set, MUIA_IconWindowExt_Toolbar_Enabled, MUIV_TriggerValue
-        );
-      }
+          (
+            _newIconWin__IconListObj, MUIM_Notify, MUIA_IconList_DoubleClick, TRUE, 
+            (IPTR) self, 1, MUIM_IconWindow_DoubleClicked
+          );
+
+        /* notify when icons dropped on another (wanderer) window */
+        DoMethod
+          (
+            _newIconWin__IconListObj, MUIM_Notify, MUIA_IconList_IconsDropped, MUIV_EveryTime,
+            (IPTR) self, 1, MUIM_IconWindow_IconsDropped
+          );
+
+        /* notify when icons dropped on custom application */
+        DoMethod
+          (
+            _newIconWin__IconListObj, MUIM_Notify, MUIA_IconList_AppWindowDrop, MUIV_EveryTime,
+            (IPTR) self, 1, MUIM_IconWindow_AppWindowDrop
+          );
+
+        DoMethod
+          (
+            _newIconWin__IconListObj, MUIM_Notify, MUIA_IconList_Clicked, MUIV_EveryTime,
+            (IPTR) self, 1, MUIM_IconWindow_Clicked
+          );
     }
-
-    #ifdef __AROS__
-    data->iwd_ProcessBackground_hook.h_Entry = ( HOOKFUNC )IconWindow__HookFunc_ProcessBackgroundFunc;
-    #else
-    data->iwd_ProcessBackground_hook = &iwd_ProcessBackground_hook;
-    #endif
-
-    if ((data->iwd_BackFill_hook = _newIconWin__BackFillHook))
-    {
-      data->iwd_BackFillHookData.bfhd_IWClass = CLASS;
-      data->iwd_BackFillHookData.bfhd_IWObject = self;
-      data->iwd_BackFill_hook->h_Data = &data->iwd_BackFillHookData;
-    }
-
-    /* no tool bar when root */
-    if (!isRoot && hasToolbar && data->iwd_ExtensionContainerObj)
-      IconWindow__SetupToolbar(CLASS, self, prefs);
-
-    /* If double clicked then we call our own private methods, that's 
-       easier then using Hooks */
-    DoMethod
-    (
-      _newIconWin__IconListObj, MUIM_Notify, MUIA_IconList_DoubleClick, TRUE, 
-      (IPTR) self, 1, MUIM_IconWindow_DoubleClicked
-    );
-
-    /* notify when icons dropped on another (wanderer) window */
-    DoMethod
-    (
-      _newIconWin__IconListObj, MUIM_Notify, MUIA_IconList_IconsDropped, MUIV_EveryTime,
-      (IPTR) self, 1, MUIM_IconWindow_IconsDropped
-    );
-
-    /* notify when icons dropped on custom application */
-    DoMethod
-    (
-      _newIconWin__IconListObj, MUIM_Notify, MUIA_IconList_AppWindowDrop, MUIV_EveryTime,
-      (IPTR) self, 1, MUIM_IconWindow_AppWindowDrop
-    );
-
-    DoMethod
-    (
-      _newIconWin__IconListObj, MUIM_Notify, MUIA_IconList_Clicked, MUIV_EveryTime,
-      (IPTR) self, 1, MUIM_IconWindow_Clicked
-    );
-  }
 D(bug("[IconWindow] obj = %ld\n", self));
-  return self;
+    return self;
 }
 ///
 
 ///OM_DISPOSE()
 IPTR IconWindow__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 {
-  SETUP_ICONWINDOW_INST_DATA;
+    SETUP_ICONWINDOW_INST_DATA;
 
-  Object *prefs = NULL;
+    struct iconWindow_Extension *iw_Extension = NULL;
+    Object *prefs = NULL;
 
-  GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
+    GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
 
-  if (prefs)
-  {
-    DoMethod
-    (
-      prefs,
-      MUIM_KillNotifyObj, MUIA_WandererPrefs_Processing, (IPTR) self
-    );
+    if (prefs)
+    {
+        DoMethod
+          (
+            prefs,
+            MUIM_KillNotifyObj, MUIA_WandererPrefs_Processing, (IPTR) self
+          );
 
-    DoMethod
-    (
-      prefs,
-      MUIM_KillNotifyObj, MUIA_IconWindowExt_Toolbar_Enabled, (IPTR) self
-    );
-  }
+        if (data->iwd_Flags & IWDFLAG_SETUP)
+        {
+            ForeachNode(&iconwindow_Extensions, iw_Extension)
+            {
+                D(bug("[iconwindow] %s: Cleanup '%s'\n", __PRETTY_FUNCTION__, iw_Extension->iwe_Node.ln_Name));
+                iw_Extension->iwe_Cleanup(CLASS, self, message);
+            }
+        }
+    }
   
-  if (data->iwd_BackFill_hook)
-    FreeVec(data->iwd_BackFill_hook);
+    if (data->iwd_BackFill_hook)
+        FreeVec(data->iwd_BackFill_hook);
   
-  return DoSuperMethodA(CLASS, self, message);
+    return DoSuperMethodA(CLASS, self, message);
 }
 ///
 
 ///OM_SET()
 IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 {
-  SETUP_ICONWINDOW_INST_DATA;
+    SETUP_ICONWINDOW_INST_DATA;
 
-  struct TagItem  *tstate = message->ops_AttrList, *tag;
-  BOOL      UpdateIconlist = FALSE;
-  IPTR      focusicon = (IPTR) NULL;
-  IPTR        rv = TRUE;
+    struct iconWindow_Extension *iw_Extension = NULL;
 
-  while ((tag = NextTagItem((TAGITEM)&tstate)) != NULL)
-  {
-    switch (tag->ti_Tag)
+    struct TagItem  *tstate = message->ops_AttrList, *tag;
+    BOOL      UpdateIconlist = FALSE;
+    IPTR      focusicon = (IPTR) NULL;
+    IPTR        rv = TRUE;
+
+    while ((tag = NextTagItem((TAGITEM)&tstate)) != NULL)
     {
+        switch (tag->ti_Tag)
+        {
         case MUIA_Window_Screen:
             D(bug("[iconwindow] %s: MUIA_Window_Screen [screen @ %p]\n", __PRETTY_FUNCTION__, tag->ti_Data));
             data->iwd_Screen = (struct Screen *) tag->ti_Tag;
             break;
 
         case MUIA_ShowMe:
-      D(bug("[iconwindow] %s: MUIA_ShowMe [%x]\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            D(bug("[iconwindow] %s: MUIA_ShowMe [%x]\n", __PRETTY_FUNCTION__, tag->ti_Data));
             if ((BOOL)tag->ti_Data == TRUE)
             {
                 struct Screen *__Wanderer__Screen = NULL;
@@ -1014,7 +876,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                 {
                     D(bug("[iconwindow] %s: Screen Changed [old = %p, new = %p]\n", __PRETTY_FUNCTION__, data->iwd_Screen, __Wanderer__Screen));
                     SET(self, MUIA_Window_Screen, __Wanderer__Screen);
-                    if ((data->iwd_Flag_ISROOT) && (data->iwd_Flag_ISBACKDROP))
+                    if (((data->iwd_Flags & IWDFLAG_ISROOT)) && ((data->iwd_Flags & IWDFLAG_ISBACKDROP)))
                     {
                         IPTR                            _IconWin__NewWindowWidth = 0;
                         IPTR                            _IconWin__NewWindowHeight = 0;
@@ -1041,19 +903,19 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
             }
             break;
 
-    case MUIA_IconWindow_Changed:
-      data->iwd_Flag_NEEDSUPDATE = (BOOL)tag->ti_Data;
-      break;
+        case MUIA_IconWindow_Changed:
+            data->iwd_Flags |= (tag->ti_Data) ? IWDFLAG_NEEDSUPDATE : 0;
+            break;
 
-    case MUIA_Window_Open:
-      D(bug("[iconwindow] %s: MUIA_Window_Open [%ld]\n", __PRETTY_FUNCTION__, tag->ti_Data));
+        case MUIA_Window_Open:
+            D(bug("[iconwindow] %s: MUIA_Window_Open [%ld]\n", __PRETTY_FUNCTION__, tag->ti_Data));
             if ((BOOL)tag->ti_Data == TRUE)
-      {
+            {
                 DoMethod(data->iwd_IconListObj, MUIM_IconList_Clear);
 
                 rv = DoSuperMethodA(CLASS, self, (Msg) message);
 #if defined(ICONWINDOW_BUFFERLIST)
-                if (!(data->iwd_Flag_ISROOT))
+                if (!((data->iwd_Flags & IWDFLAG_ISROOT)))
                 {
                     IPTR        CURDISPFLAGS = NULL;
                     GET(data->iwd_IconListObj, MUIA_IconList_DisplayFlags, &CURDISPFLAGS);
@@ -1067,170 +929,143 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                 D(bug("[IconWindow] %s: Force an update of the list ..\n", __PRETTY_FUNCTION__));
                 DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
                 return rv;
-      }
+            }
             break;
 
-    case MUIA_Window_Activate:
-      if (data->iwd_IconListObj)
-        GET(data->iwd_IconListObj, MUIA_IconList_FocusIcon, &focusicon);
+        case MUIA_Window_Activate:
+            if (data->iwd_IconListObj)
+                GET(data->iwd_IconListObj, MUIA_IconList_FocusIcon, &focusicon);
 
-      break;
+            break;
 
-    case MUIA_IconWindow_Font:
-      data->iwd_WindowFont = (struct TextFont  *)tag->ti_Data;
-      D(bug("[iconwindow] %s: MUIA_IconWindow_Font [font @ 0x%p]\n", __PRETTY_FUNCTION__, data->iwd_WindowFont));
+        case MUIA_IconWindow_Font:
+            data->iwd_WindowFont = (struct TextFont  *)tag->ti_Data;
+            D(bug("[iconwindow] %s: MUIA_IconWindow_Font [font @ 0x%p]\n", __PRETTY_FUNCTION__, data->iwd_WindowFont));
 
-      if (!data->iwd_WindowFont)
-        SetFont(_rp(self), data->iwd_WindowFont);
+            if (!data->iwd_WindowFont)
+                SetFont(_rp(self), data->iwd_WindowFont);
 
-      break;
+            break;
 
-    case MUIA_IconWindow_Location:
-      D(bug("[iconwindow] %s: MUIA_IconWindow_Location [drawer '%s']\n", __PRETTY_FUNCTION__, data->iwd_DirectoryPath));
+        case MUIA_IconWindow_Location:
+            D(bug("[iconwindow] %s: MUIA_IconWindow_Location [drawer '%s']\n", __PRETTY_FUNCTION__, data->iwd_DirectoryPath));
 
-      if (!data->iwd_Flag_ISROOT)
-      {
-        strcpy(data->iwd_DirectoryPath, (STRPTR)tag->ti_Data);
-        SET(self, MUIA_Window_Title, (IPTR)data->iwd_DirectoryPath);
-        SET(data->iwd_Toolbar_LocationStringObj, MUIA_String_Contents, (IPTR)data->iwd_DirectoryPath);
-        SET(data->iwd_IconListObj, MUIA_IconDrawerList_Drawer, (IPTR)data->iwd_DirectoryPath);
-      }
-      break;
-
-    case MUIA_IconWindow_BackgroundAttrib:
-      D(bug("[iconwindow] %s: MUIA_IconWindow_BackgroundAttrib (not implemented)\n", __PRETTY_FUNCTION__));
-      break;
-
-    case MUIA_IconWindowExt_Toolbar_Enabled:   
-      if ((!(data->iwd_Flag_ISROOT)) && (data->iwd_ExtensionContainerObj))
-      {
-        // remove toolbar
-        if (!(( BOOL )tag->ti_Data))
-        {
-          //Force classic navigation when the toolbar is disabled ..
-          Object *prefs = NULL;
-
-          if (data->iwd_Toolbar_PanelObj != NULL)
-          {
-            data->iwd_ExtensionGroupSpacerObj = HSpace(0);
-            
-            SET(data->iwd_ExtensionContainerObj, MUIA_Frame, MUIV_Frame_None);
-            SET(data->iwd_ExtensionContainerObj, MUIA_Group_Spacing, 0);
-
-            if ((data->iwd_ExtensionGroupSpacerObj) && (DoMethod(data->iwd_ExtensionGroupObj, MUIM_Group_InitChange)))
+            if (!(data->iwd_Flags & IWDFLAG_ISROOT))
             {
-              DoMethod(data->iwd_ExtensionGroupObj, OM_REMMEMBER, (IPTR)data->iwd_Toolbar_PanelObj);
-              DoMethod(data->iwd_ExtensionGroupObj, OM_ADDMEMBER, (IPTR)data->iwd_ExtensionGroupSpacerObj);
-              DoMethod(data->iwd_ExtensionGroupObj, MUIM_Group_ExitChange);
-              data->iwd_Toolbar_PanelObj = NULL;
+                strcpy(data->iwd_DirectoryPath, (STRPTR)tag->ti_Data);
+                SET(self, MUIA_Window_Title, (IPTR)data->iwd_DirectoryPath);
+                SET(data->iwd_IconListObj, MUIA_IconDrawerList_Drawer, (IPTR)data->iwd_DirectoryPath);
             }
-          }
-        
+            break;
 
-          GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
-          if (prefs)
-            SET(prefs, MUIA_IconWindowExt_Toolbar_NavigationMethod, WPD_NAVIGATION_CLASSIC);
+        case MUIA_IconWindow_BackgroundAttrib:
+            D(bug("[iconwindow] %s: MUIA_IconWindow_BackgroundAttrib (not implemented)\n", __PRETTY_FUNCTION__));
+            break;
+
         }
-        else
-        {
-          // setup toolbar
-          if (data->iwd_Toolbar_PanelObj == NULL)
-          {
-            Object *prefs = NULL;
-            GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
-            IconWindow__SetupToolbar(CLASS, self, prefs);
-          }
-         }
-         data->iwd_Flag_EXT_TOOLBARENABLED = (IPTR)tag->ti_Data;
-       }
-       break;     
     }
-  }
 
-  if (UpdateIconlist)
-    DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
+    if (data->iwd_Flags & IWDFLAG_SETUP)
+    {
+        ForeachNode(&iconwindow_Extensions, iw_Extension)
+        {
+            D(bug("[iconwindow] %s: Checking '%s'\n", __PRETTY_FUNCTION__, iw_Extension->iwe_Node.ln_Name));
+            iw_Extension->iwe_Set(CLASS, self, message);
+        }
+    }
 
-  rv = DoSuperMethodA(CLASS, self, (Msg) message);
+    if (UpdateIconlist)
+        DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
 
-  if (focusicon)
-  {
-    D(bug("[iconwindow] %s: Updating focused icon (@ 0x%p)\n", __PRETTY_FUNCTION__, focusicon));
-  //  MUI_Redraw(data->iwd_IconListObj, MADF_DRAWOBJECT);
-  }
+    rv = DoSuperMethodA(CLASS, self, (Msg) message);
 
-  return rv;
+    if (focusicon)
+    {
+        D(bug("[iconwindow] %s: Updating focused icon (@ 0x%p)\n", __PRETTY_FUNCTION__, focusicon));
+        //MUI_Redraw(data->iwd_IconListObj, MADF_DRAWOBJECT);
+    }
+
+    return rv;
 }
 ///
 
 ///OM_GET()
 IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 {
-  SETUP_ICONWINDOW_INST_DATA;
+    SETUP_ICONWINDOW_INST_DATA;
+    struct iconWindow_Extension *iw_Extension = NULL;
+    IPTR *store = message->opg_Storage;
+    IPTR  rv    = TRUE;
 
-  IPTR *store = message->opg_Storage;
-  IPTR  rv    = TRUE;
-  
-  switch (message->opg_AttrID)
-  {
+    switch (message->opg_AttrID)
+    {
     case MUIA_IconWindow_Changed:
-      *store = (IPTR)data->iwd_Flag_NEEDSUPDATE;
-      break;
+        *store = (IPTR)(data->iwd_Flags & IWDFLAG_NEEDSUPDATE);
+        break;
 
     case MUIA_IconWindow_Window:
-      *store = (IPTR)self;
-      break;
+        *store = (IPTR)self;
+        break;
 
     case MUIA_IconWindow_Location:
-      *store = !data->iwd_Flag_ISROOT
-        ? XGET(data->iwd_IconListObj, MUIA_IconDrawerList_Drawer)
-        : (IPTR)NULL;
-      break;
+        *store = !(data->iwd_Flags & IWDFLAG_ISROOT)
+            ? XGET(data->iwd_IconListObj, MUIA_IconDrawerList_Drawer)
+            : (IPTR)NULL;
+        break;
 
     case MUIA_IconWindow_IconList:
-      *store = (IPTR)data->iwd_IconListObj;
-      break;
-
-    case MUIA_IconWindowExt_Toolbar_Enabled:
-      *store = (IPTR)data->iwd_Flag_EXT_TOOLBARENABLED;
-      break;
+        *store = (IPTR)data->iwd_IconListObj;
+        break;
 
     case MUIA_IconWindow_IsRoot:
-      *store = (IPTR)data->iwd_Flag_ISROOT;
-      break;
+        *store = (IPTR)(data->iwd_Flags & IWDFLAG_ISROOT);
+        break;
 
     case MUIA_IconWindow_IsBackdrop:
-      *store = (IPTR)data->iwd_Flag_ISBACKDROP;
-      break;
+        *store = (IPTR)(data->iwd_Flags & IWDFLAG_ISBACKDROP);
+        break;
 
     case MUIA_IconWindow_BackFillData:
-      *store = (IPTR)data->iwd_BackFillInfo;
-      break;
+        *store = (IPTR)data->iwd_BackFillInfo;
+        break;
 
     case MUIA_IconWindow_BackgroundAttrib:
-      *store = (IPTR)data->iwd_ViewSettings_Attrib;
-      break;
+        *store = (IPTR)data->iwd_ViewSettings_Attrib;
+        break;
 
     default:
-      rv = DoSuperMethodA(CLASS, self, (Msg) message);
-  }
-  
-  return rv;
+        rv = FALSE;
+    }
+
+    if (!rv)
+    {
+        ForeachNode(&iconwindow_Extensions, iw_Extension)
+        {
+            D(bug("[iconwindow] %s: Checking '%s'\n", __PRETTY_FUNCTION__, iw_Extension->iwe_Node.ln_Name));
+            if ((rv = iw_Extension->iwe_Get(CLASS, self, message)) == TRUE)
+                break;
+        }
+    }
+    if (!rv)
+        rv = DoSuperMethodA(CLASS, self, (Msg) message);
+
+    return rv;
 }
 ///
 
 ///IconWindow__MUIM_Window_Setup()
 IPTR IconWindow__MUIM_Window_Setup
 (
-  Class *CLASS, Object *self, Msg message
+    Class *CLASS, Object *self, Msg message
 )
 {
-  SETUP_ICONWINDOW_INST_DATA;
-  
-  Object *prefs = NULL;
+    SETUP_ICONWINDOW_INST_DATA;
 
-  D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
-  
-  if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
+    Object *prefs = NULL;
+
+    D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
+
+    if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
 
     if (iconwindow_BackFill_Active)
     {
@@ -1238,215 +1073,219 @@ IPTR IconWindow__MUIM_Window_Setup
         D(bug("[iconwindow] %s: Window BackFill_Data @ 0x%p for '%s'\n", __PRETTY_FUNCTION__, data->iwd_BackFillInfo, iconwindow_BackFill_Active->bfd_BackFillID));
     }
 
-  GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
+    GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
 
-  D(bug("[IconWindow] %s: App PrefsObj @ 0x%p\n", __PRETTY_FUNCTION__, prefs));
-  
-  if ((prefs) && (data->iwd_ViewSettings_PrefsNotificationObject))
-  {
-    D(bug("[IconWindow] %s: Setting up window background change hook\n", __PRETTY_FUNCTION__));
+    D(bug("[IconWindow] %s: App PrefsObj @ 0x%p\n", __PRETTY_FUNCTION__, prefs));
 
-    /* Set-up a hook to call ProcessBackground on prefs notification */
-    DoMethod
-    (
-      data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_Background, MUIV_EveryTime,
-      (IPTR) self, 3, 
-      MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
-    );
-    
-    if (data->iwd_Flag_ISROOT)
+    if ((prefs) && (data->iwd_ViewSettings_PrefsNotificationObject))
     {
-      DoMethod
-      (
-        data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindowExt_ImageBackFill_BGRenderMode, MUIV_EveryTime,
-        (IPTR) self, 3, 
-        MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
-      );
+        D(bug("[IconWindow] %s: Setting up window background change hook\n", __PRETTY_FUNCTION__));
+
+        /* Set-up a hook to call ProcessBackground on prefs notification */
+        DoMethod
+          (
+            data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_Background, MUIV_EveryTime,
+            (IPTR) self, 3, 
+            MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
+          );
+
+        if ((data->iwd_Flags & IWDFLAG_ISROOT))
+        {
+            DoMethod
+              (
+                data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindowExt_ImageBackFill_BGRenderMode, MUIV_EveryTime,
+                (IPTR) self, 3, 
+                MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
+              );
+        }
+
+        DoMethod
+          (
+            data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindowExt_ImageBackFill_BGTileMode, MUIV_EveryTime,
+            (IPTR) self, 3, 
+            MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
+          );
+
+        DoMethod
+          (
+            data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindowExt_ImageBackFill_BGXOffset, MUIV_EveryTime,
+            (IPTR) self, 3, 
+            MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
+          );
+
+        DoMethod
+          (
+            data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindowExt_ImageBackFill_BGYOffset, MUIV_EveryTime,
+            (IPTR) self, 3, 
+            MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
+          );
     }
 
-    DoMethod
-    (
-      data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindowExt_ImageBackFill_BGTileMode, MUIV_EveryTime,
-      (IPTR) self, 3, 
-      MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
-    );
+    D(bug("[iconwindow] %s: Setup complete!\n", __PRETTY_FUNCTION__));
 
-    DoMethod
-    (
-      data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindowExt_ImageBackFill_BGXOffset, MUIV_EveryTime,
-      (IPTR) self, 3, 
-      MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
-    );
-
-    DoMethod
-    (
-      data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindowExt_ImageBackFill_BGYOffset, MUIV_EveryTime,
-      (IPTR) self, 3, 
-      MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
-    );
-  }
-  
-  D(bug("[iconwindow] %s: Setup complete!\n", __PRETTY_FUNCTION__));
-  
-  return TRUE;
+    return TRUE;
 }
 ///
 
 ///IconWindow__MUIM_Window_Cleanup()
 IPTR IconWindow__MUIM_Window_Cleanup
 (
-  Class *CLASS, Object *self, Msg message
+    Class *CLASS, Object *self, Msg message
 )
 {
-  SETUP_ICONWINDOW_INST_DATA;
-  
-  D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
-  
-  if (data->iwd_BackFillInfo)
-  {
-    DoMethod(self, MUIM_IconWindow_BackFill_Cleanup, data->iwd_BackFillInfo);
-    data->iwd_BackFillInfo = NULL;
-  }
+    SETUP_ICONWINDOW_INST_DATA;
 
-  if (data->iwd_ViewSettings_PrefsNotificationObject)
-  {
-    DoMethod
-    (
-      data->iwd_ViewSettings_PrefsNotificationObject,
-      MUIM_KillNotifyObj, MUIA_IconWindowExt_ImageBackFill_BGYOffset, (IPTR) self
-    );
-  
-    DoMethod
-    (
-      data->iwd_ViewSettings_PrefsNotificationObject,
-      MUIM_KillNotifyObj, MUIA_IconWindowExt_ImageBackFill_BGXOffset, (IPTR) self
-    );
-  
-    DoMethod
-    (
-      data->iwd_ViewSettings_PrefsNotificationObject,
-      MUIM_KillNotifyObj, MUIA_IconWindowExt_ImageBackFill_BGTileMode, (IPTR) self
-    );
+    D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
 
-    if (data->iwd_Flag_ISROOT)
+    if (data->iwd_BackFillInfo)
     {
-      DoMethod
-      (
-        data->iwd_ViewSettings_PrefsNotificationObject,
-        MUIM_KillNotifyObj, MUIA_IconWindowExt_ImageBackFill_BGRenderMode, (IPTR) self
-      );
+        DoMethod(self, MUIM_IconWindow_BackFill_Cleanup, data->iwd_BackFillInfo);
+        data->iwd_BackFillInfo = NULL;
     }
 
-    DoMethod
-    (
-      data->iwd_ViewSettings_PrefsNotificationObject,
-      MUIM_KillNotifyObj, MUIA_Background, (IPTR) self
-    );
-  }
-  return DoSuperMethodA(CLASS, self, message);
+    if (data->iwd_ViewSettings_PrefsNotificationObject)
+    {
+        DoMethod
+          (
+            data->iwd_ViewSettings_PrefsNotificationObject,
+            MUIM_KillNotifyObj, MUIA_IconWindowExt_ImageBackFill_BGYOffset, (IPTR) self
+          );
+
+        DoMethod
+          (
+            data->iwd_ViewSettings_PrefsNotificationObject,
+            MUIM_KillNotifyObj, MUIA_IconWindowExt_ImageBackFill_BGXOffset, (IPTR) self
+          );
+
+        DoMethod
+          (
+            data->iwd_ViewSettings_PrefsNotificationObject,
+            MUIM_KillNotifyObj, MUIA_IconWindowExt_ImageBackFill_BGTileMode, (IPTR) self
+          );
+
+        if ((data->iwd_Flags & IWDFLAG_ISROOT))
+        {
+            DoMethod
+              (
+                data->iwd_ViewSettings_PrefsNotificationObject,
+                MUIM_KillNotifyObj, MUIA_IconWindowExt_ImageBackFill_BGRenderMode, (IPTR) self
+              );
+        }
+
+        DoMethod
+          (
+            data->iwd_ViewSettings_PrefsNotificationObject,
+            MUIM_KillNotifyObj, MUIA_Background, (IPTR) self
+          );
+    }
+    return DoSuperMethodA(CLASS, self, message);
 }
 ///
 
 ///IconWindow__MUIM_IconWindow_DoubleClicked()
 IPTR IconWindow__MUIM_IconWindow_DoubleClicked
 (
-  Class *CLASS, Object *self, Msg message
+    Class *CLASS, Object *self, Msg message
 )
 {
-  SETUP_ICONWINDOW_INST_DATA;
-  
-  D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
-  
-  if (data->iwd_ActionHook)
-  {
-    struct IconWindow_ActionMsg msg;
-    msg.type     = ICONWINDOW_ACTION_OPEN;
-    msg.iconlist = data->iwd_IconListObj;
-    msg.isroot   = data->iwd_Flag_ISROOT;
-    msg.click    = NULL;
-    CallHookPkt(data->iwd_ActionHook, self, &msg);
-  }
-  
-  return TRUE;
+    SETUP_ICONWINDOW_INST_DATA;
+
+    D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
+
+    if (data->iwd_ActionHook)
+    {
+        struct IconWindow_ActionMsg msg;
+        msg.type     = ICONWINDOW_ACTION_OPEN;
+        msg.iconlist = data->iwd_IconListObj;
+        msg.isroot   = (data->iwd_Flags & IWDFLAG_ISROOT);
+        msg.click    = NULL;
+        CallHookPkt(data->iwd_ActionHook, self, &msg);
+    }
+
+    return TRUE;
 }
 ///
 
 ///IconWindow__MUIM_IconWindow_Clicked()
 IPTR IconWindow__MUIM_IconWindow_Clicked
 (
-  Class *CLASS, Object *self, Msg message
+    Class *CLASS, Object *self, Msg message
 )
 {
-  SETUP_ICONWINDOW_INST_DATA;
-  
-  D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
-  
-  if (data->iwd_ActionHook)
-  {
-    struct IconWindow_ActionMsg msg;
-    msg.type     = ICONWINDOW_ACTION_CLICK;
-    msg.iconlist = data->iwd_IconListObj;
-    msg.isroot   = data->iwd_Flag_ISROOT;
-    GET(data->iwd_IconListObj, MUIA_IconList_Clicked, &msg.click);
-    CallHookPkt(data->iwd_ActionHook, self, &msg);
-  }
-  
-  return TRUE;
+    SETUP_ICONWINDOW_INST_DATA;
+
+    D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
+
+    if (data->iwd_ActionHook)
+    {
+        struct IconWindow_ActionMsg msg;
+        msg.type     = ICONWINDOW_ACTION_CLICK;
+        msg.iconlist = data->iwd_IconListObj;
+        msg.isroot   = (data->iwd_Flags & IWDFLAG_ISROOT);
+        GET(data->iwd_IconListObj, MUIA_IconList_Clicked, &msg.click);
+        CallHookPkt(data->iwd_ActionHook, self, &msg);
+    }
+
+    return TRUE;
 }
 ///
 
 ///IconWindow__MUIM_IconWindow_IconsDropped()
 IPTR IconWindow__MUIM_IconWindow_IconsDropped
 (
-  Class *CLASS, Object *self, Msg message
+    Class *CLASS, Object *self, Msg message
 )
 {
-  SETUP_ICONWINDOW_INST_DATA;
-  
-  D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
-  
-  if (data->iwd_ActionHook)
-  {
-    struct IconWindow_ActionMsg msg;
-    msg.type     = ICONWINDOW_ACTION_ICONDROP;
-    msg.iconlist = data->iwd_IconListObj;
-    msg.isroot   = data->iwd_Flag_ISROOT;
-    GET(data->iwd_IconListObj, MUIA_IconList_IconsDropped, &msg.drop);
-    CallHookPkt(data->iwd_ActionHook, self, &msg);
-  }
-  
-  return TRUE;
+    SETUP_ICONWINDOW_INST_DATA;
+
+    D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
+
+    if (data->iwd_ActionHook)
+    {
+        struct IconWindow_ActionMsg msg;
+        msg.type     = ICONWINDOW_ACTION_ICONDROP;
+        msg.iconlist = data->iwd_IconListObj;
+        msg.isroot   = (data->iwd_Flags & IWDFLAG_ISROOT);
+        GET(data->iwd_IconListObj, MUIA_IconList_IconsDropped, &msg.drop);
+        if (msg.drop)
+        {
+            NNSET(data->iwd_IconListObj, MUIA_IconList_IconsDropped, NULL);
+            CallHookPkt(data->iwd_ActionHook, self, &msg);
+        }
+    }
+
+    return TRUE;
 }
 ///
 
 ///IconWindow__MUIM_IconWindow_AppWindowDrop()
 IPTR IconWindow__MUIM_IconWindow_AppWindowDrop
 (
-  Class *CLASS, Object *self, Msg message
+    Class *CLASS, Object *self, Msg message
 )
 {
-  SETUP_ICONWINDOW_INST_DATA;
-  
+    SETUP_ICONWINDOW_INST_DATA;
+
 D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
-  
-  if (data->iwd_ActionHook)
-  {
-    struct IconWindow_ActionMsg msg;
-    msg.type     = ICONWINDOW_ACTION_APPWINDOWDROP;
-    msg.iconlist = data->iwd_IconListObj;
-    msg.isroot   = data->iwd_Flag_ISROOT;
-    GET(data->iwd_IconListObj, MUIA_IconList_IconsDropped, &msg.drop);
-    CallHookPkt(data->iwd_ActionHook, self, &msg);
-  }
-  
-  return TRUE;
+
+    if (data->iwd_ActionHook)
+    {
+        struct IconWindow_ActionMsg msg;
+        msg.type     = ICONWINDOW_ACTION_APPWINDOWDROP;
+        msg.iconlist = data->iwd_IconListObj;
+        msg.isroot   = (data->iwd_Flags & IWDFLAG_ISROOT);
+        GET(data->iwd_IconListObj, MUIA_IconList_IconsDropped, &msg.drop);
+        CallHookPkt(data->iwd_ActionHook, self, &msg);
+    }
+
+    return TRUE;
 }
 ///
 
 ///IconWindow__MUIM_IconWindow_Open()
 IPTR IconWindow__MUIM_IconWindow_Open
 (
-  Class *CLASS, Object *self, Msg message
+    Class *CLASS, Object *self, Msg message
 )
 {
 //    SETUP_ICONWINDOW_INST_DATA;
@@ -1462,7 +1301,7 @@ D(bug("[IconWindow] %s: Setting window as active ..\n", __PRETTY_FUNCTION__));
     SET(self, MUIA_Window_Activate, TRUE);
 
 D(bug("[IconWindow] %s: All done\n", __PRETTY_FUNCTION__));
-    
+
     return TRUE;
 }
 ///
@@ -1482,7 +1321,7 @@ IPTR IconWindow__MUIM_IconWindow_DirectoryUp
     struct IconWindow_ActionMsg msg;
     msg.type     = ICONWINDOW_ACTION_DIRUP;
     msg.iconlist = data->iwd_IconListObj;
-    msg.isroot   = data->iwd_Flag_ISROOT;
+    msg.isroot   = (data->iwd_Flags & IWDFLAG_ISROOT);
     msg.click    = NULL;
     CallHookPkt(data->iwd_ActionHook, self, &msg);
     
@@ -1677,12 +1516,15 @@ IPTR IconWindow__MUIM_IconWindow_BackFill_DrawBackground
 ///
 IPTR IconWindow__SetupClass()
 {
-  D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
 
-  NewList(&iconwindow_BackFillNodes);
-  iconwindow_BackFill_Active = NULL;
+    NewList(&iconwindow_BackFillNodes);
+    D(bug("[IconWindow] %s: iconwindow_BackFillNodes @ %p\n", __PRETTY_FUNCTION__, &iconwindow_BackFillNodes));
+    NewList(&iconwindow_Extensions);
+    D(bug("[IconWindow] %s: iconwindow_Extensions @ %p\n", __PRETTY_FUNCTION__, &iconwindow_Extensions));
+    iconwindow_BackFill_Active = NULL;
 
-  return TRUE;
+    return TRUE;
 }
 ///
 /*** Setup ******************************************************************/

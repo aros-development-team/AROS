@@ -1,11 +1,11 @@
-# Copyright © 2004-2008, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2009, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -I $(SRCDIR)/$(CURDIR)/Classes
 
-FILES := main locale support filesystems wanderer wandererprefs iconwindow iconwindowcontents iconwindowbackfill wandererprefsinternal
+FILES := main locale support filesystems wanderer wandererprefs iconwindow panel_toolbar panel_statusbar iconwindowcontents iconwindowbackfill wandererprefsinternal
 
 #MM- workbench-system : workbench-system-wanderer
 #MM- workbench-system-wanderer : \

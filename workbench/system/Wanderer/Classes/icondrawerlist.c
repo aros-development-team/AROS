@@ -190,29 +190,29 @@ D(bug("[IconDrawerList] %s: Icon entry allocated @ 0x%p\n", __PRETTY_FUNCTION__,
             {
 D(bug("[IconDrawerList] %s: File has a .info file .. updating info\n", __PRETTY_FUNCTION__));
               UnLock(tmplock); 
-              if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON)) 
-                this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
+              if (!(this_Icon->ie_Flags & ICONENTRY_FLAG_HASICON)) 
+                this_Icon->ie_Flags |= ICONENTRY_FLAG_HASICON;
             }
 
             if (list_DisplayFlags & ICONLIST_DISP_SHOWINFO)
             {
-              if ((this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON) && !(this_Icon->ile_Flags & ICONENTRY_FLAG_VISIBLE))
-                this_Icon->ile_Flags |= ICONENTRY_FLAG_VISIBLE;
+              if ((this_Icon->ie_Flags & ICONENTRY_FLAG_HASICON) && !(this_Icon->ie_Flags & ICONENTRY_FLAG_VISIBLE))
+                this_Icon->ie_Flags |= ICONENTRY_FLAG_VISIBLE;
             }
-            else if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_VISIBLE))
+            else if (!(this_Icon->ie_Flags & ICONENTRY_FLAG_VISIBLE))
             {
-              this_Icon->ile_Flags |= ICONENTRY_FLAG_VISIBLE;
+              this_Icon->ie_Flags |= ICONENTRY_FLAG_VISIBLE;
             }
-            this_Icon->ile_IconNode.ln_Pri = 0;
+            this_Icon->ie_IconNode.ln_Pri = 0;
 			
 			if (fib->fib_DirEntryType == ST_FILE)
 			{
-				this_Icon->ile_IconListEntry.type = ST_FILE;
+				this_Icon->ie_IconListEntry.type = ST_FILE;
 D(bug("[IconDrawerList] %s: ST_FILE Entry created\n", __PRETTY_FUNCTION__));
 			}
 			else if (fib->fib_DirEntryType == ST_USERDIR)
 			{
-				this_Icon->ile_IconListEntry.type = ST_USERDIR;
+				this_Icon->ie_IconListEntry.type = ST_USERDIR;
 D(bug("[IconDrawerList] %s: ST_USERDIR Entry created\n", __PRETTY_FUNCTION__));
 			}
 			else
@@ -356,8 +356,6 @@ IPTR IconDrawerList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, str
 
 D(bug("[IconDrawerList]: %s()\n", __PRETTY_FUNCTION__));
 
-  DoSuperMethodA(CLASS, obj, (Msg) message);
-
   DoMethod(obj, MUIM_IconList_Clear);
 
   /* If not in setup do nothing */
@@ -368,6 +366,8 @@ D(bug("[IconDrawerList]: %s()\n", __PRETTY_FUNCTION__));
 
   /*_Sort takes care of icon placement and redrawing for us*/
   DoMethod(obj, MUIM_IconList_Sort);
+
+  DoSuperMethodA(CLASS, obj, (Msg) message);
 
   return 1;
 }
