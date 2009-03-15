@@ -2650,7 +2650,7 @@ D(bug("[Wanderer] Wanderer__OM_NEW: SELF = %d, Private data @ %x\n", self, data)
         // All the following should be moved to InitWandererPrefs
 
         /* Setup notification on prefs file --------------------------------*/
-        data->wd_PrefsNotifyRequest.nr_Name                 = ExpandEnvName("ENV:SYS/Wanderer.prefs");
+        data->wd_PrefsNotifyRequest.nr_Name                 = ExpandEnvName("ENV:SYS/Wanderer/global.prefs");
         data->wd_PrefsNotifyRequest.nr_Flags                = NRF_SEND_MESSAGE;
         data->wd_PrefsNotifyRequest.nr_stuff.nr_Msg.nr_Port = data->wd_NotifyPort;
 
