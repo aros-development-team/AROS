@@ -240,6 +240,7 @@ BYTE save_file(STRPTR name, LINE *svg, unsigned char eol, LONG protection)
 	LONG   i;
 	BYTE   szeol = szEOL[eol];
 	LINE *ln; BPTR fh;
+        BYTE retval = 0;
 
 	BusyWindow(Wnd);
 
@@ -271,6 +272,7 @@ BYTE save_file(STRPTR name, LINE *svg, unsigned char eol, LONG protection)
 		/* Flush buffer */
 		if( i>szeol && FWrite(fh,buf,i-szeol,1)!=1 ) goto wrterr;
 		FClose( fh );
+                retval = 1;
 
 	} else if(IoErr() == ERROR_OBJECT_EXISTS)
 		ThrowError(Wnd, ErrMsg(ERR_WRONG_TYPE));
@@ -279,7 +281,7 @@ BYTE save_file(STRPTR name, LINE *svg, unsigned char eol, LONG protection)
 
 	SetProtection(name, protection);
 	WakeUp(Wnd);
-	return 1;
+	return retval;
 }
 
 /*** Show a requester to choose a file to load ***/
