@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2007, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2003-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -282,7 +282,7 @@ ULONG bmcnto(ULONG *bitmap, LONG bitoffset, LONG bits)
             mask = 0xffffffff << (32-bits);
             bits = 0;
         }
-        count += bfcntz(*scan++ & mask);
+        count += bfcnto(*scan++ & mask);
     }
 
     return count;
