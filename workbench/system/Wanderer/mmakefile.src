@@ -14,7 +14,8 @@ FILES := main locale support filesystems wanderer wandererprefs iconwindow panel
 #MM  workbench-system-wanderer-tools
 
 #MM  workbench-system-wanderer-app : \
-#MM  workbench-libs-muimaster \
+#MM  workbench-libs-muimaster-includes \
+#MM  workbench-system-wanderer-env \
 #MM  workbench-system-wanderer-catalogs \
 #MM  workbench-system-wanderer-classes
 

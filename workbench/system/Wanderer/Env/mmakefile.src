@@ -1,0 +1,13 @@
+# $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
+include $(TOP)/config/make.cfg
+
+#MM workbench-system-wanderer-env : workbench-system-wanderer-env-dir
+
+workbench-system-wanderer-env: $(AROS_ENVARC)/SYS/Wanderer/global.prefs
+
+$(AROS_ENVARC)/SYS/Wanderer/global.prefs: global.prefs
+		@$(CP) $< $@
+
+#MM
+workbench-system-wanderer-env-dir :
+	%mkdirs_q $(AROS_ENVARC)/SYS/Wanderer

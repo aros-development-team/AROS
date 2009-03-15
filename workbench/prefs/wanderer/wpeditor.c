@@ -1177,7 +1177,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 						(
 							CLASS, self, NULL,
 							MUIA_PrefsEditor_Name, __(MSG_NAME),
-							MUIA_PrefsEditor_Path, (IPTR) "SYS/Wanderer.prefs",
+							MUIA_PrefsEditor_Path, (IPTR) "SYS/Wanderer/global.prefs",
 							TAG_DONE
 						);
 
