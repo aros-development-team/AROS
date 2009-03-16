@@ -55,8 +55,8 @@
  *	@(#)uio.h	7.8 (Berkeley) 4/15/91
  */
 
-#ifndef SYS_UIO_H
-#define	SYS_UIO_H
+#ifndef UIO_H
+#define	UIO_H
 
 #ifndef AMITCP
 enum	uio_rw { UIO_READ, UIO_WRITE };
@@ -95,7 +95,7 @@ struct uio {
 #define UIO_MAXIOV	1024		/* max 1K of iov's */
 #define UIO_SMALLIOV	8		/* 8 on stack, else malloc */
 
-#endif /* !SYS_UIO_H */
+#endif /* !UIO_H */
 
 
 

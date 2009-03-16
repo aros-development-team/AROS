@@ -150,7 +150,7 @@ extern struct ExecBase *SysBase;
 #undef log
 
 #include <sys/time.h>
-#include "sys/uio.h"
+#include "kern/uio.h"
 
 #include <sys/errno.h>
 #include <sys/ioctl.h>
