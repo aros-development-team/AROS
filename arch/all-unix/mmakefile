@@ -1,5 +1,7 @@
 # $Id$
 
+include $(TOP)/config/make.cfg
+
 #MM- kernel-unix : \
 #MM     kernel-unixio-kobj kernel-hostlib-kobj        \
 #MM     graphics-$(GFXSYSTEM)			      \
@@ -14,6 +16,57 @@
 #MM     workbench-hidd-unix-serial-kobj		      \
 #MM	arch-common-boot-generatebootsig
 
-#MM- workbench-unix : workbench-hidd-unix
+#MM- workbench-unix : workbench-hidd-unix kernel-mathieeesingbas kernel-mathffp kernel-workbench
 
-#MM- workbench-hidd-unix :
+#MM kernel-link-emul : kernel-objs
+kernel-link-emul : $(BINDIR)/boot/aros-unix
+
+#MM
+kernel-link-emul-quick : kernel-link-emul
+
+KLIBS   := exec boot aros dos graphics utility intuition keymap \
+      	   expansion oop layers cybergraphics
+KDEVS   := timer input keyboard console gameport
+KHNDLRS := con nil packet emul amberram
+KHIDDS  := hiddclass unixio parallel serial graphics
+ifeq ("$(AROS_HOST_ARCH)","linux")
+KHIDDS  += linux
+    ifeq ("$(AROS_HOST_CPU)","i386")
+	KHIDDS	+= pci pcilinux
+    endif
+    ifeq ("$(AROS_HOST_CPU)","x86_64")
+	KHIDDS	+= pci pcilinux
+    endif
+endif
+ifeq ("$(X11_HIDD_TARGET)", "kernel-x11gfx-kobj")
+    KHIDDS += x11gfx
+endif
+KRSRCS  := battclock dosboot hostlib bootloader bootmenu
+ifeq ($(ENABLE_DBUS),1)
+KLIBS	+= dbus
+endif
+
+KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
+      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
+      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
+      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) )) \
+      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) ))
+
+DEP_LIBS := \
+	$(LIBDIR)/libamiga.a \
+	$(LIBDIR)/libarossupport.a \
+	$(LIBDIR)/libhiddgraphicsstubs.a \
+	$(LIBDIR)/libhiddstubs.a \
+	$(LIBDIR)/libautoinit.a \
+	$(LIBDIR)/liblibinit.a
+
+LIBS :=	-L$(LIBDIR) \
+	-larossupport -lhiddgraphicsstubs -lhiddstubs -lamiga -lautoinit -llibinit -lrom -lm
+
+$(BINDIR)/boot:
+	mkdir -p $(BINDIR)/boot
+
+USER_CFLAGS := -I$(GENINCDIR) -D__AROS__
+$(BINDIR)/boot/aros-unix: $(DEP_LIBS) $(KOBJS) $(BINDIR)/boot
+	$(HOST_CC) $(CFLAGS) $(HOST_LDFLAGS) $< $(KOBJS) $(LIBS) \
+		-o $@ $(KERNEL_LDFLAGS) $(DBUS_LIBFLAGS)

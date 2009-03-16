@@ -1,0 +1,81 @@
+Short:    A Plug And Play ISA software layer for AmigaOS.
+Uploader: Martin Blom <martin@blom.org>
+Author:   Martin Blom <martin@blom.org>
+Type:     hard/drivr
+Requires: 68020+, GG2 Bus+ ISA bridge card, some PnP ISA cards
+Version:  1.2
+
+                                  ISA-PnP
+                                  *******
+
+              A Plug And Play ISA software layer for AmigaOS.
+             Copyright (C) 2001 Martin Blom <martin@blom.org>
+
+
+Overview
+¯¯¯¯¯¯¯¯
+This is an implementation of (parts of) the Plug and Play ISA Specification
+version 1.0a for AmigaOS.  The bridge card GG2 Bus+ is supported.
+
+For a list of bugs and missing features, see BUGS.
+
+The code LGPL (see COPYING.LIB), which means that there are no restrictions
+on code that uses the provided API (see below), but any modifications to or
+derivates of ISA-PnP itself must stay LGPL.
+
+Installation
+¯¯¯¯¯¯¯¯¯¯¯¯
+Just drop the binary and the icon in the SYS:Expansion drawer and run
+C:BindDrivers (or reboot).
+
+Usage
+¯¯¯¯¯
+The following tool types are available, in addition to the required PRODUCT
+tooltype (that BindDrivers uses)
+
+* DISABLE_CARD=<card id>
+  DISABLE_CARD=<card id>/<serial number>
+
+  Disables a card completely.  No resources will be assigned this card
+  during the resource allocation phase.
+
+* DISABLE_DEVICE=<device id>
+  DISABLE_DEVICE=<card id>:<logical device number>
+  DISABLE_DEVICE=<card id>/<serial number>:<logical device number>
+
+  Disables a logical device.  No resources will be assigned this device
+  during the resource allocation phase.
+
+* LEGACY_DEVICE=<device id> [ IO=<address>/<length> [ IO=...] ... ]
+                [ DMA=<channel> [DMA=...] ... ] [ IRQ=<int> [IRQ=...] ... ]
+
+  Adds a non-PnP device to the resource database. All non-PnP devices must
+  be registered in order to avoid resource allocation conflicts.
+
+The ISA-PnP binary itself can also be run from the command line.  It uses
+the following template:
+
+SHOWCONFIG/S,SHOWOPTIONS/S,REMOVE/S
+
+SHOWCONFIG will display information about all cards found, and what
+resources they have allocated.
+
+If the SHOWOPTIONS switch is given as well, information about what
+resources each device requires.  Can be useful when conflicts occur and you
+need to manualy find out what logical device to disable.
+
+REMOVE should only be used for debug purposes.  It is very dangerous!  The
+isapnp.resource (see below) will be removed from the system.  Any drivers
+or applications currently using it will crash instantly!
+
+
+The API
+¯¯¯¯¯¯¯
+ISA-PnP installs a Exec resource named "isapnp.resource", that provides a
+few functions that can be used by drivers and applications to find PnP ISA
+cards and logical devices, gain exclusive access to them and a set of
+helper functions to access registers and memory on the ISA bus.
+
+The API is not final, not finished and probably not working either.
+
+$Id: README,v 1.4 2001/05/08 23:44:05 lcs Exp $

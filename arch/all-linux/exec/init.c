@@ -45,7 +45,6 @@ extern const struct Resident
     Utility_ROMTag,
     Aros_ROMTag,
     Bootloader_ROMTag,
-/*    BOOPSI_resident,*/
     OOP_ROMTag,
     HIDDCl_ROMTag,
     UXIO_ROMTag,
@@ -65,9 +64,6 @@ extern const struct Resident
 #if ENABLE_DBUS == 1
     Dbus_ROMTag,
 #endif
-    Mathffp_ROMTag,
-    Mathieeesingbas_ROMTag,
-    Workbench_ROMTag,
     Dos_ROMTag,
     LDDemon_resident,
     emul_handler_ROMTag,
@@ -90,15 +86,15 @@ extern const struct Resident
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
 {
+    /* On other architectures Exec starts up before expansion, but
+       here it renders emul.handler non-functional, so left as is
+       for now. */
     &Expansion_ROMTag,                  /* SingleTask,  110  */
-    &Exec_resident,                     /* SingleTask,  105  */
+    &Exec_resident,                     /* SingleTask,  126  */
+//  &Partition_ROMTag,			/* ColdStart,   104  */
     &Utility_ROMTag,                    /* ColdStart,   103  */
     &Aros_ROMTag,                       /* ColdStart,   102  */
-    &Mathieeesingbas_ROMTag,            /* ColdStart,   101  */
     &Bootloader_ROMTag,			/* ColdStart,	100  */
-#if 0
-    &BOOPSI_resident,                   /* ColdStart,   95   */
-#endif
     &OOP_ROMTag,                        /* ColdStart,   94   */
     &HIDDCl_ROMTag,                     /* ColdStart,   92   */
     &UXIO_ROMTag,                       /* ColdStart,   91   */
@@ -112,10 +108,10 @@ static const struct Resident *romtagList[] =
     &Timer_ROMTag,                      /* ColdStart,   50   */
     &Battclock_ROMTag,                  /* ColdStart,   45   */
     &Keyboard_ROMTag,                   /* ColdStart,   44   */
-    &Gameport_ROMTag,                   /* ColdStart,   43   */
+    &Gameport_ROMTag,                   /* ColdStart,   44   */
     &Keymap_ROMTag,                     /* ColdStart,   40   */
     &Input_ROMTag,                      /* ColdStart,   30   */
-    &Intuition_ROMTag,                  /* ColdStart,   10   */
+    &Intuition_ROMTag,                  /* ColdStart,   15   */
     &GFX_ROMTag,			/* ColdStart,   10   */
 /* This driver now causes segmentation fault and trashes the
    display. Probably previously it failed to initialize because
@@ -137,8 +133,6 @@ static const struct Resident *romtagList[] =
     &emul_handler_ROMTag,               /* ColdStart,   0    */
     &UXSer_ROMTag,                      /* ColdStart,   0    */
     &UXPar_ROMTag,                      /* ColdStart,   0    */
-    &Workbench_ROMTag,                  /* ColdStart,  -120  */
-    &Mathffp_ROMTag,                    /* ColdStart,  -120  */
 
     /*
         NOTE: You must not put anything between these two; the code
@@ -152,8 +146,7 @@ static const struct Resident *romtagList[] =
     &Packet_ROMTag,                     /* AfterDOS,   -124  */
     &Nil_ROMTag,                        /* AfterDOS,   -125  */
     &Ram_ROMTag,                        /* AfterDOS,   -125  */
-//    &Partition_ROMTag,                     
-    &Bootmenu_ROMTag,                 /* AfterDOS,   -127  */
+    &Bootmenu_ROMTag,                   /* AfterDOS,   -127  */
     &Dosboot_ROMTag,                    /* AfterDOS,   -128  */
     NULL
 };
@@ -166,6 +159,7 @@ int memSize = 32;
 
 extern void InitCore(void);
 extern struct ExecBase *PrepareExecBase(struct MemHeader *mh);
+extern ULONG **Exec_RomTagScanner(struct ExecBase*, UWORD**);
 
 extern APTR __libc_malloc(size_t);
 extern VOID __libc_free(APTR);
@@ -364,8 +358,7 @@ int main(int argc, char **argv)
 	    "Availible options:\n"
             " -h                 show this page\n"
             " -m <size>          allocate <size> Megabytes of memory for AROS\n"
-            " -M                 allows programs to read SysBase from Address $4; SysBase is\n"
-            "                    found there in big endian format\n"
+            " -M                 allows programs to read SysBase from Address $4\n"
             " -t <value>         timer ticks per second. Must be Multiple of 50; max value\n"
             "                    working on 2.4 kernels is 100; on 2.6 kernels it is 1000;\n"
             "                    default is 100.\n"
@@ -438,9 +431,6 @@ int main(int argc, char **argv)
     to make that invalid to trap NULL dereference errors.
 
     */
-/*
-#if defined(__linux__) && defined(__mc68000__)
-*/
     if (TRUE == mapSysBase)
     {
       psize = getpagesize();
@@ -460,9 +450,6 @@ int main(int argc, char **argv)
       }
     }
     else
-/*
-#else
-*/
     if (!_use_hostmem)
     {
       /* We allocate memSize megabytes */
@@ -489,9 +476,7 @@ int main(int argc, char **argv)
            allocate some more memory for it.  */
         memSize += 8;
     }
-/*
-#endif
-*/
+
     /* Prepare the first mem header */
     mh->mh_Node.ln_Type  = NT_MEMORY;
     mh->mh_Node.ln_Name  = "chip memory";
@@ -556,37 +541,27 @@ int main(int argc, char **argv)
     /* On Linux/m68k where we can run old Amiga binaries, we should
        put SysBase at location 4. On other systems, DON'T DO THIS.
     */
-/*
-#if defined(__linux__) && defined(__mc68000__)
-*/
+
     if (TRUE == mapSysBase)
     {
-      *(APTR *)4 = (APTR)SWAP(SysBase);
+      *(APTR *)4 = SysBase;
       if (mprotect((APTR)0, psize, PROT_READ))
       {
         perror("mprotect");
         exit(10);
       }
     }
-/*
-#endif
-*/
-    /* We might also be interested in using the BS key instead of the
-       delete key, this will do that
-    */
-#if 0 /* !defined(__x86_64__) */
-    tcgetattr(0, &t);
-    t.c_cc[VERASE] = '\b';
-#ifndef TCSASOFT
-#   define TCSASOFT 0
-#endif
-    tcsetattr(0, TCSANOW|TCSASOFT, &t);
-#endif
+
     /*  There is nothing more system dependant to set up,
         so lets start that ball rolling...
 
         The InitCode() call should never return in a working system.
     */
+/* Exec_RomTagScanner() crashes, probably this happens because ELF segments
+   are laid out in memory non-continuously. A solution needs to be found.
+    UWORD *ranges[] = {&_start, &_end, (UWORD *)~0};
+
+    SysBase->ResModules = Exec_RomTagScanner(SysBase,ranges);*/
     SysBase->ResModules = romtagList;
     InitCode(RTF_SINGLETASK, 0);
     fprintf(stderr,"Returned from InitCode()\n");

@@ -29,6 +29,7 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #MM	kernel-bootloader-pc-i386-kobj \
 #MM	kernel-bootmenu-kobj \
 #MM	kernel-dosboot-kobj \
+#MM	kernel-isapnp-kobj \
 #MM     workbench-libs-partition-kobj \
 #MM     kernel-fs-afs-kobj \
 #MM     workbench-hidd-graphics-kobj \
@@ -50,7 +51,7 @@ KLIBS   := exec boot aros dos graphics utility intuition keymap \
 KDEVS   := timer input keyboard console gameport ata trackdisk
 KHNDLRS := con nil packet amberram cdrom afs sfs
 KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah pci pcipc
-##Disabled RSRC cpu
+##Disabled RSRC cpu isapnp
 ##Disabled HIDD vmwaregfx usbuhci
 
 KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
@@ -72,9 +73,10 @@ kernel-link-pc-i386 : $(BINDIR)/boot/aros-pc-i386
 #MM kernel-package-pc-i386 : kernel-link-pc-i386
 kernel-package-pc-i386 : $(BINDIR)/boot/aros-pc-i386.gz
 
-$(BINDIR)/boot/aros-pc-i386 : $(OBJS) $(DEPLIBS)
-	@$(KERNEL_LD) -N -e kernel_startup -Ttext 0x00100000 \
-	    -Map $(OSGENDIR)/boot/aros.map -o $@ $(KOBJS) -L$(LIBDIR) $(LIBS)
+$(BINDIR)/boot/aros-pc-i386 : $(KOBJS) $(DEPLIBS)
+	@$(KERNEL_CC) -Wl,-N,-e,kernel_startup,-Ttext,0x00100000 \
+	    $(GENMAP) $(OSGENDIR)/boot/aros.map -o $@ $(KOBJS) \
+	    -static $(NOSTARTUP_LDFLAGS) -L$(LIBDIR) $(LIBS)
 	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
 
 $(BINDIR)/boot/aros-pc-i386.gz : $(BINDIR)/boot/aros-pc-i386
