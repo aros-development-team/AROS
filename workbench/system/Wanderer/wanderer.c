@@ -2331,7 +2331,7 @@ D(bug("[Wanderer] Wanderer__Func_UpdateMenuStates(IconList @ %p)\n", IconlistObj
     GET(IconlistObj, MUIA_IconList_SortFlags, &current_SortFlags);
     GET(IconlistObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
     GET(WindowObj, MUIA_Window_Menustrip, &current_Menustrip);
-    
+
 D(bug("[Wanderer] Wanderer__Func_UpdateMenuStates: Menu @ %p, Display Flags : %x, Sort Flags : %x\n", current_Menustrip, current_DispFlags, current_SortFlags));
 
     do
@@ -2369,119 +2369,119 @@ D(bug("[Wanderer] Wanderer__Func_UpdateMenuStates: ST_USERDIR/ST_FILE\n"));
         {
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_OPEN)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_RENAME)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_INFORMATION)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_SNAPSHOT)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_UNSNAPSHOT)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_DELETE)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_FORMAT)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_Format);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_Format);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_LEAVEOUT)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_LeaveOut);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_LeaveOut);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_PUTAWAY)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_PutAway);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_PutAway);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_EMPTYTRASH)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_EmptyTrash);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_EmptyTrash);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_CLEAR)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
             }
         }
         else
         {
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_OPEN)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_RENAME)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_INFORMATION)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_SNAPSHOT)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_UNSNAPSHOT)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_DELETE)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_FORMAT)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_LEAVEOUT)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_PUTAWAY)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_EMPTYTRASH)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
             }
             if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_CLEAR)) != NULL)
             {
-                SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
             }
         }
         if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_VIEW_ALL)) != NULL)
         {
-            SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)!(current_DispFlags & ICONLIST_DISP_SHOWINFO));
+            NNSET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)!(current_DispFlags & ICONLIST_DISP_SHOWINFO));
         }
         if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_VIEW_HIDDEN)) != NULL)
         {
-            SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)(current_DispFlags & ICONLIST_DISP_SHOWHIDDEN));
+            NNSET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)(current_DispFlags & ICONLIST_DISP_SHOWHIDDEN));
         }
         if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_NAME)) != NULL)
         {
-            SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)((current_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_NAME));
+            NNSET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)((current_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_NAME));
         }
         if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_DATE)) != NULL)
         {
-            SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)((current_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_DATE));
+            NNSET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)((current_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_DATE));
         }
         if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_SIZE)) != NULL)
         {
-            SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)((current_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_SIZE));
+            NNSET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)((current_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_SIZE));
         }
         if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_TYPE)) != NULL)
         {
-            SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)((current_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK));
+            NNSET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)((current_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK));
         }
     }
 }
