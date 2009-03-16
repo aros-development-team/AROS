@@ -25,6 +25,8 @@ FILES  := test      	    \
 	  settings          \
 	  dynlist
 
+USER_CFLAGS := -I $(SRCDIR)/workbench/system/Wanderer/Classes
+
 EXEDIR := $(AROS_TESTS)/Zune
 
 #MM test-zune : includes linklibs workbench-classes-zune-busy
