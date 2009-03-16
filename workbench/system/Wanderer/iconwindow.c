@@ -296,7 +296,7 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     IPTR                        _newIconWin__WindowLeft = 0;
     IPTR                        _newIconWin__WindowTop = 0;
 
-    IPTR                        _newIconWin__FSNotifyPort =(IPTR) NULL;
+    IPTR                        _newIconWin__FSNotifyPort = (IPTR)NULL;
     struct MUI_CustomClass      *iconviewclass = NULL;
 #if defined(ICONWINDOW_NODETAILVIEWCLASS)
     IconWindowDetailDrawerList_CLASS = IconWindowIconDrawerList_CLASS;
@@ -722,9 +722,6 @@ D(bug("[iconwindow] %s: Font @ 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__Window
         data->iwd_BottomPanel.iwp_PanelContainerObj     = _newIconWin__BottomPanelContainerObj;
         data->iwd_BottomPanel.iwp_PanelGroupSpacerObj   = _newIconWin__BottomPanelSpacerObj;
 
-        data->iwd_PanelObj_ToolBar                      = NULL;
-        data->iwd_PanelObj_StatusBar                    = NULL;
-
         data->iwd_Flags                                 = 0;
 
         data->iwd_Flags                                 |= (isRoot) ? IWDFLAG_ISROOT : 0;
@@ -735,6 +732,8 @@ D(bug("[iconwindow] %s: Font @ 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__Window
         data->iwd_ViewSettings_Attrib                   = (data->iwd_Flags & IWDFLAG_ISROOT) 
                                                           ? "Workbench"
                                                           : "Drawer";
+
+        data->iwd_FSNotifyPort                          = _newIconWin__FSNotifyPort;
 
         if (prefs)
         {

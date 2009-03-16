@@ -15,6 +15,7 @@
 /*** Public Attributes ******************************************************/
 #define MUIA_Wanderer_Prefs               (MUIB_Wanderer | 0x00000000)
 #define MUIA_Wanderer_FileSysNotifyPort   (MUIB_Wanderer | 0x00000001)
+#define MUIA_Wanderer_FileSysNotifyList   (MUIB_Wanderer | 0x00000002)
 #define MUIA_Wanderer_Screen              (MUIB_Wanderer | 0x00000010)
 #define MUIA_Wanderer_WorkbenchWindow     (MUIB_Wanderer | 0x00000020)
 #define MUIA_Wanderer_ActiveWindow        (MUIB_Wanderer | 0x00000021)
@@ -35,18 +36,11 @@ struct AppW
     char *name;
 };
 
-struct Wanderer_FileEntry 
+struct Wanderer_FSHandler
 {
-    struct Node	wfe_Node;
+    struct Node fshn_Node;
+    IPTR             (*HandleFSUpdate)();
 };
-
-struct Wanderer_FilelistMsg 
-{
-    struct List	files;
-    char source_string[1024];		
-    char destination_string[1024];	
-};
-
 
 /*** Macros *****************************************************************/
 #ifdef __AROS__

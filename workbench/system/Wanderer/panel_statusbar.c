@@ -8,10 +8,6 @@
 #define MUIMASTER_YES_INLINE_STDARG
 #endif
 
-#define ICONWINDOW_OPTION_NOSEARCHBUTTON
-#define ICONWINDOW_NODETAILVIEWCLASS
-//#define ICONWINDOW_BUFFERLIST
-
 #ifdef __AROS__
 #define DEBUG 0
 #include <aros/debug.h>
@@ -75,24 +71,61 @@ extern struct List                     iconwindow_Extensions;
 
 /*** Private Data *********************************************************/
 
-#warning "TODO: Toolbars Attributes etc should be in an own file"
-/*** Identifier Base ********************************************************/
-#define MUIB_IconWindowExt_Toolbar                            (MUIB_IconWindowExt | 0x200000)
-
-#define MUIA_IconWindowExt_Toolbar_Enabled                    (MUIB_IconWindowExt_Toolbar | 0x00000001) /* ISG */
-#define MUIA_IconWindowExt_Toolbar_NavigationMethod           (MUIB_IconWindowExt_Toolbar | 0x00000002) /* ISG */
-/*** Variables **************************************************************/
+static CONST_STRPTR                     extension_Name = "StatusBar Extension";
+static CONST_STRPTR                     extension_PrefsFile = "ENV:SYS/Wanderer/statusbar.prefs";
+static STRPTR                           extension_PrefsData;
+static struct iconWindow_Extension      panelStatusBar__Extension;
+static struct List                      panelStatusBar__StatusBars;
+static struct NotifyRequest             panelStatusBar__PrefsNotifyRequest;
+static Object                           *panelStatusBar__PrefsNotificationObject;
 
 struct panel_StatusBar_DATA
 {
-    Object                               *iwp_StatusBar_StatusTextObj;
+    struct Node                         iwp_Node;
+    IPTR                                iwp_Flags;
+    Object                              *iwp_StatusBar_StatusBarObj;
+    Object                              *iwp_StatusBar_StatusTextObj;
 #ifdef __AROS__
-    struct Hook                          iwp_StatusBar_updateHook;
+    struct Hook                         iwp_StatusBar_updateHook;
 #else
-    struct Hook                          *iwp_StatusBar_updateHook;
+    struct Hook                         *iwp_StatusBar_updateHook;
 #endif
 };
 
+///ExpandEnvName()
+/* Expand a passed in env: string to its full location */
+/* Wanderer doesnt free this mem at the moment but should 
+   incase it is every closed */
+static STRPTR ExpandEnvName(STRPTR env_path)
+{
+    BOOL     ok = FALSE;
+    char     tmp_envbuff[1024];
+    STRPTR   fullpath = NULL;
+    BPTR     env_lock = (BPTR) NULL;
+
+    env_lock = Lock("ENV:", SHARED_LOCK);
+    if (env_lock)
+    {
+        if (NameFromLock(env_lock, tmp_envbuff, 256)) ok = TRUE;
+        UnLock(env_lock);
+    }
+    
+    if (ok)
+    {
+        if ((fullpath = AllocVec(strlen(tmp_envbuff) + strlen(env_path) + 1 + 1 - 4, MEMF_CLEAR | MEMF_PUBLIC)) != NULL)
+        {
+            strcpy(fullpath, tmp_envbuff);
+            AddPart(fullpath, env_path + 4, 1019);
+            return fullpath;
+        }     
+    }
+
+    //We couldnt expand it so just use as is ..
+    return env_path;
+}
+///
+
+static
 /*** Hook functions *********************************************************/
 
 ///panelStatusBar__HookFunc_UpdateStatusFunc()
@@ -116,15 +149,18 @@ HOOKPROTO(panelStatusBar__HookFunc_UpdateStatusFunc, void, APTR *obj, APTR param
     STRPTR                              str = NULL;
     BPTR                                fp = (BPTR) NULL;
     struct FileInfoBlock                *fib;
-    struct panel_StatusBar_DATA         *sbpanel_Private = NULL;
+    struct panel_StatusBar_DATA         *panelStatusBarPrivate = NULL;
 
     SETUP_ICONWINDOW_INST_DATA;
 
     D(bug("[IW.statusbar]: %s()\n", __PRETTY_FUNCTION__));
 
     /* Only change dir if it is a valid directory/volume */
-    if ((sbpanel_Private = (struct panel_StatusBar_DATA *)data->iwd_BottomPanel.iwp_PanelPrivate) != NULL)
+    if ((panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_BottomPanel.iwp_PanelPrivate) != NULL)
     {
+        if (panelStatusBarPrivate->iwp_Node.ln_Name != extension_Name)
+            return;
+
         struct List *iconList = NULL;
         struct IconEntry    *icon = NULL;
         UBYTE buffer[1024];
@@ -156,7 +192,7 @@ HOOKPROTO(panelStatusBar__HookFunc_UpdateStatusFunc, void, APTR *obj, APTR param
             }
         }
         sprintf(buffer, "%dbytes in %d files, %d drawers (%d hidden)", size, files, dirs, hidden);
-        SET(sbpanel_Private->iwp_StatusBar_StatusTextObj, MUIA_Text_Contents, (IPTR)buffer);
+        SET(panelStatusBarPrivate->iwp_StatusBar_StatusTextObj, MUIA_Text_Contents, (IPTR)buffer);
     }
 
     AROS_USERFUNC_EXIT
@@ -167,27 +203,93 @@ MakeStaticHook(StatusBar_updateHook, panelStatusBar__HookFunc_UpdateStatusFunc);
 
 /*** Main Functions ****************************************************************/
 
+#define STATUSBAR_PREFSSIZE     1024
+IPTR panelStatusBar__HandleFSUpdate()
+{
+    if (GetVar(extension_PrefsFile, extension_PrefsData, STATUSBAR_PREFSSIZE, GVF_GLOBAL_ONLY) != -1)
+    {
+        D(bug("[IW.statusbar] %s: Prefs contain '%s'\n", __PRETTY_FUNCTION__, extension_PrefsData));
+        if ((strcasecmp(extension_PrefsData, "True")) == 0)
+        {
+            SET(panelStatusBar__PrefsNotificationObject, MUIA_ShowMe, TRUE);
+        }
+        else
+        {
+            SET(panelStatusBar__PrefsNotificationObject, MUIA_ShowMe, FALSE);
+        }
+    }
+    return NULL;
+}
+
+///panelStatusBar__PrefsSetup()
+static IPTR panelStatusBar__PrefsSetup(Class *CLASS, Object *self, struct opSet *message)
+{
+    IPTR                                panelStatusBarFSNotifyPort = 0;
+    struct panel_StatusBar_DATA         *panelStatusBarPrivate = NULL;
+    struct List                         *panelStatusBarFSNotifyList = NULL;
+
+    SETUP_ICONWINDOW_INST_DATA;
+
+    panelStatusBarFSNotifyPort = GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
+    panelStatusBarFSNotifyList = GetTagData(MUIA_Wanderer_FileSysNotifyList, (IPTR) NULL, message->ops_AttrList);
+
+    D(bug("[IW.statusbar]: %s()\n", __PRETTY_FUNCTION__));
+
+    if ((panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_BottomPanel.iwp_PanelPrivate) != (IPTR)NULL)
+    {
+        if (panelStatusBarPrivate->iwp_Node.ln_Name != extension_Name)
+            return NULL;
+
+        extension_PrefsData = AllocVec(STATUSBAR_PREFSSIZE, MEMF_CLEAR);
+
+        /* Setup notification on prefs file --------------------------------*/
+        struct Wanderer_FSHandler *_prefsNotifyHandler = NULL;
+
+        if ((_prefsNotifyHandler = AllocMem(sizeof(struct Wanderer_FSHandler), MEMF_CLEAR)) != NULL)
+        {
+            _prefsNotifyHandler->fshn_Node.ln_Name                     = ExpandEnvName(extension_PrefsFile);
+            panelStatusBar__PrefsNotifyRequest.nr_Name                 = _prefsNotifyHandler->fshn_Node.ln_Name;
+            panelStatusBar__PrefsNotifyRequest.nr_Flags                = NRF_SEND_MESSAGE;
+            panelStatusBar__PrefsNotifyRequest.nr_stuff.nr_Msg.nr_Port = panelStatusBarFSNotifyPort;
+            _prefsNotifyHandler->HandleFSUpdate                        = panelStatusBar__HandleFSUpdate;
+
+            if (StartNotify(&panelStatusBar__PrefsNotifyRequest))
+            {
+                D(bug("[IW.statusbar]%s: Prefs-notification setup on '%s'\n", __PRETTY_FUNCTION__, panelStatusBar__PrefsNotifyRequest.nr_Name));
+            }
+            else
+            {
+                D(bug("[IW.statusbar] %s: FAILED to setup Prefs-notification!\n", __PRETTY_FUNCTION__));
+            }
+            AddTail(panelStatusBarFSNotifyList, &_prefsNotifyHandler->fshn_Node);
+        }
+#ifdef __AROS__
+        panelStatusBar__PrefsNotificationObject = (Object *)NotifyObject, End;
+#else
+        panelStatusBar__PrefsNotificationObject = MUI_NewObject(MUIC_Notify, TAG_DONE);
+#endif
+	if (GetVar(extension_PrefsFile, extension_PrefsData, STATUSBAR_PREFSSIZE, GVF_GLOBAL_ONLY) != -1)
+	{
+            D(bug("[IW.statusbar] %s: Prefs contain '%s'\n", __PRETTY_FUNCTION__, extension_PrefsData));
+        }
+    }
+}
+///
+
 ///panelStatusBar__Setup()
-IPTR panelStatusBar__Setup(Class *CLASS, Object *self, struct opSet *message)
+static IPTR panelStatusBar__Setup(Class *CLASS, Object *self, struct opSet *message)
 {
     SETUP_ICONWINDOW_INST_DATA;
 
     Object                              *panel_StatusBar = NULL,
-                                        *panelStatusBar_TextStatus = NULL,
-                                        *wandererPrefsObj = NULL;
-    BOOL                                hasToolbar = FALSE;
+                                        *panelStatusBar_TextStatus = NULL;
 
     struct panel_StatusBar_DATA         *panelStatusBarPrivate = NULL;
 
-    hasToolbar = (BOOL)GetTagData(MUIA_IconWindowExt_Toolbar_Enabled, (IPTR)FALSE, message->ops_AttrList);
-
-    if (!(!(data->iwd_Flags & IWDFLAG_ISROOT) && hasToolbar && data->iwd_BottomPanel.iwp_PanelContainerObj))
+    if (!(!(data->iwd_Flags & IWDFLAG_ISROOT) && data->iwd_BottomPanel.iwp_PanelContainerObj))
         return NULL;
 
-    wandererPrefsObj = (Object *)GetTagData(MUIA_Wanderer_Prefs, (IPTR) NULL, message->ops_AttrList);
-
     D(bug("[IW.statusbar]: %s()\n", __PRETTY_FUNCTION__));
-    D(bug("[IW.statusbar] %s: App PrefsObj @ 0x%p\n", __PRETTY_FUNCTION__, wandererPrefsObj));
 
     if (data->iwd_BottomPanel.iwp_PanelPrivate == NULL)
     {
@@ -195,14 +297,7 @@ IPTR panelStatusBar__Setup(Class *CLASS, Object *self, struct opSet *message)
             return;
 
         panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_BottomPanel.iwp_PanelPrivate;
-
-        if (wandererPrefsObj != NULL)
-        {
-        /*    data->iwd_Toolbar_PrefsNotificationObject =(Object *) DoMethod(wandererPrefsObj,
-                                  MUIM_WandererPrefs_ViewSettings_GetNotifyObject,
-                                  (STRPTR) "StatusBar");
-        */
-        }
+        panelStatusBarPrivate->iwp_Node.ln_Name = extension_Name;
 
         /* Create the "StatusBar" panel object .. */
         panel_StatusBar = MUI_NewObject(MUIC_Group,
@@ -239,7 +334,7 @@ IPTR panelStatusBar__Setup(Class *CLASS, Object *self, struct opSet *message)
                     MUIA_Weight, 100,
                     Child, (IPTR)( panelStatusBar_TextStatus = MUI_NewObject(MUIC_Text,
                         MUIA_Font, MUIV_Font_Tiny,
-                        MUIA_Text_Contents, (IPTR)"Status Bar!",
+                        MUIA_Text_Contents, (IPTR)"",
                     TAG_DONE) ),
                 TAG_DONE),
             TAG_DONE),
@@ -249,9 +344,10 @@ IPTR panelStatusBar__Setup(Class *CLASS, Object *self, struct opSet *message)
          copied to the data of the object */
         if ( panel_StatusBar != NULL )
         {
-            SET(data->iwd_BottomPanel.iwp_PanelContainerObj, MUIA_ShowMe, TRUE);
+            D(bug("[IW.statusbar] %s: StatusBar Obj @ 0x%p\n", __PRETTY_FUNCTION__, panel_StatusBar));
 
             panelStatusBarPrivate->iwp_StatusBar_StatusTextObj = panelStatusBar_TextStatus;
+            panelStatusBarPrivate->iwp_StatusBar_StatusBarObj = panel_StatusBar;
 
             if (DoMethod(data->iwd_BottomPanel.iwp_PanelGroupObj, MUIM_Group_InitChange ))
             {
@@ -263,10 +359,9 @@ IPTR panelStatusBar__Setup(Class *CLASS, Object *self, struct opSet *message)
                 }
 
                 DoMethod(data->iwd_BottomPanel.iwp_PanelGroupObj, MUIM_Group_ExitChange);
-                data->iwd_PanelObj_StatusBar = panel_StatusBar;
             }
 
-            if (data->iwd_PanelObj_StatusBar)
+            if (panelStatusBarPrivate->iwp_StatusBar_StatusBarObj)
             {
 #ifdef __AROS__
                 panelStatusBarPrivate->iwp_StatusBar_updateHook.h_Entry = ( HOOKFUNC )panelStatusBar__HookFunc_UpdateStatusFunc;
@@ -277,29 +372,60 @@ IPTR panelStatusBar__Setup(Class *CLASS, Object *self, struct opSet *message)
                     data->iwd_IconListObj, MUIM_Notify, MUIA_IconList_Changed, MUIV_EveryTime, 
                     (IPTR)self, 3, MUIM_CallHook, &panelStatusBarPrivate->iwp_StatusBar_updateHook, (IPTR)CLASS
                   );
+
+                if (!(panelStatusBar__PrefsNotificationObject))
+                    panelStatusBar__PrefsSetup(CLASS, self, message);
+
+                DoMethod
+                  (
+                    panelStatusBar__PrefsNotificationObject, MUIM_Notify, MUIA_ShowMe, MUIV_EveryTime, 
+                    (IPTR)data->iwd_BottomPanel.iwp_PanelContainerObj, 3, MUIM_Set, MUIA_ShowMe, MUIV_TriggerValue
+                  );
+
+                if ((strcasecmp(extension_PrefsData, "True")) == 0)
+                {
+                    SET(data->iwd_BottomPanel.iwp_PanelContainerObj, MUIA_ShowMe, TRUE);
+                }
+
+                AddTail(&panelStatusBar__StatusBars, &panelStatusBarPrivate->iwp_Node);
             }
         }
         else
         {
-            data->iwd_PanelObj_StatusBar = NULL;
+            panelStatusBarPrivate->iwp_StatusBar_StatusBarObj = NULL;
         }
     }
 }
 ///
 
 ///panelStatusBar__Cleanup()
-IPTR panelStatusBar__Cleanup(Class *CLASS, Object *self, struct opSet *message)
+static IPTR panelStatusBar__Cleanup(Class *CLASS, Object *self, struct opSet *message)
 {
     SETUP_ICONWINDOW_INST_DATA;
+    struct panel_StatusBar_DATA *panelStatusBarPrivate;
 
     D(bug("[IW.statusbar]: %s()\n", __PRETTY_FUNCTION__));
 
+    if ((panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != (IPTR)NULL)
+    {
+        if (panelStatusBarPrivate->iwp_Node.ln_Name != extension_Name)
+            return NULL;
+
+        if (panelStatusBar__PrefsNotificationObject)
+        {
+            DoMethod
+              (
+                panelStatusBar__PrefsNotificationObject, MUIM_KillNotifyObj, MUIA_ShowMe, 
+                (IPTR)data->iwd_BottomPanel.iwp_PanelContainerObj
+              );
+        }
+    }
     return NULL;
 }
 ///
 
 ///panelStatusBar__OM_GET()
-IPTR panelStatusBar__OM_GET(Class *CLASS, Object *self, struct opGet *message)
+static IPTR panelStatusBar__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 {
     SETUP_ICONWINDOW_INST_DATA;
 
@@ -310,65 +436,68 @@ IPTR panelStatusBar__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 ///
 
 ///OM_SET()
-IPTR panelStatusBar__OM_SET(Class *CLASS, Object *self, struct opSet *message)
+static IPTR panelStatusBar__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 {
     SETUP_ICONWINDOW_INST_DATA;
 
-    struct TagItem  *tstate = message->ops_AttrList, *tag;
-    BOOL      UpdateIconlist = FALSE;
-    IPTR      focusicon = (IPTR) NULL;
-    IPTR        rv = TRUE;
+    struct panel_StatusBar_DATA *panelStatusBarPrivate = NULL;
+    struct TagItem              *tstate = message->ops_AttrList, *tag;
+    BOOL                        UpdateIconlist = FALSE;
+    IPTR                        focusicon = (IPTR) NULL;
+    IPTR                        rv = TRUE;
 
     D(bug("[IW.statusbar]: %s()\n", __PRETTY_FUNCTION__));
 
-    while ((tag = NextTagItem((TAGITEM)&tstate)) != NULL)
+    if ((panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_BottomPanel.iwp_PanelPrivate) != (IPTR)NULL)
     {
-        switch (tag->ti_Tag)
-        {
-        case MUIA_IconWindowExt_Toolbar_Enabled:   
-            if ((!(data->iwd_Flags & IWDFLAG_ISROOT)) && (data->iwd_BottomPanel.iwp_PanelContainerObj))
-            {
-                // remove statusbar
-                if (!(( BOOL )tag->ti_Data))
-                {
-                    if (data->iwd_PanelObj_StatusBar != NULL)
-                    {
-                        data->iwd_BottomPanel.iwp_PanelGroupSpacerObj = HSpace(0);
-            
-                        SET(data->iwd_BottomPanel.iwp_PanelContainerObj, MUIA_Frame, MUIV_Frame_None);
-                        SET(data->iwd_BottomPanel.iwp_PanelContainerObj, MUIA_Group_Spacing, 0);
+        if (panelStatusBarPrivate->iwp_Node.ln_Name != extension_Name)
+            return rv;
 
-                        if ((data->iwd_BottomPanel.iwp_PanelGroupSpacerObj) && (DoMethod(data->iwd_BottomPanel.iwp_PanelGroupObj, MUIM_Group_InitChange)))
+        while ((tag = NextTagItem((TAGITEM)&tstate)) != NULL)
+        {
+            switch (tag->ti_Tag)
+            {
+            /*case MUIA_IconWindowExt_ToolBar_Enabled:   
+                if ((!(data->iwd_Flags & IWDFLAG_ISROOT)) && (data->iwd_BottomPanel.iwp_PanelContainerObj))
+                {
+                    // remove statusbar
+                    if (!(( BOOL )tag->ti_Data))
+                    {
+                        if (panelStatusBarPrivate->iwp_StatusBar_StatusBarObj != NULL)
                         {
-                            DoMethod(data->iwd_BottomPanel.iwp_PanelGroupObj, OM_REMMEMBER, (IPTR)data->iwd_PanelObj_StatusBar);
-                            DoMethod(data->iwd_BottomPanel.iwp_PanelGroupObj, OM_ADDMEMBER, (IPTR)data->iwd_BottomPanel.iwp_PanelGroupSpacerObj);
-                            DoMethod(data->iwd_BottomPanel.iwp_PanelGroupObj, MUIM_Group_ExitChange);
-                            data->iwd_PanelObj_StatusBar = NULL;
+                            data->iwd_BottomPanel.iwp_PanelGroupSpacerObj = HSpace(0);
+                
+                            SET(data->iwd_BottomPanel.iwp_PanelContainerObj, MUIA_Frame, MUIV_Frame_None);
+                            SET(data->iwd_BottomPanel.iwp_PanelContainerObj, MUIA_Group_Spacing, 0);
+
+                            if ((data->iwd_BottomPanel.iwp_PanelGroupSpacerObj) && (DoMethod(data->iwd_BottomPanel.iwp_PanelGroupObj, MUIM_Group_InitChange)))
+                            {
+                                DoMethod(data->iwd_BottomPanel.iwp_PanelGroupObj, OM_REMMEMBER, (IPTR)panelStatusBarPrivate->iwp_StatusBar_StatusBarObj);
+                                DoMethod(data->iwd_BottomPanel.iwp_PanelGroupObj, OM_ADDMEMBER, (IPTR)data->iwd_BottomPanel.iwp_PanelGroupSpacerObj);
+                                DoMethod(data->iwd_BottomPanel.iwp_PanelGroupObj, MUIM_Group_ExitChange);
+                                panelStatusBarPrivate->iwp_StatusBar_StatusBarObj = NULL;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // setup statusbar
+                        if (panelStatusBarPrivate->iwp_StatusBar_StatusBarObj == NULL)
+                        {
+                            Object *prefs = NULL;
+                            GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
+                            panelStatusBar__Setup(CLASS, self, prefs);
                         }
                     }
                 }
-                else
-                {
-                    // setup toolbar
-                    if (data->iwd_PanelObj_StatusBar == NULL)
-                    {
-                        Object *prefs = NULL;
-                        GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
-                        panelStatusBar__Setup(CLASS, self, prefs);
-                    }
-                }
+                break;*/
             }
-            break;   
         }
     }
-
     return rv;
 }
 
 #define PANELSTATUSBAR_PRIORITY 10
-
-static const UBYTE extension_Name[] = "StatusBar Extension";
-static struct iconWindow_Extension panelStatusBar__Extension;
 
 IPTR panelStatusBar__Init()
 {
@@ -380,6 +509,8 @@ IPTR panelStatusBar__Init()
     panelStatusBar__Extension.iwe_Cleanup = panelStatusBar__Cleanup;
     panelStatusBar__Extension.iwe_Set = panelStatusBar__OM_SET;
     panelStatusBar__Extension.iwe_Get = panelStatusBar__OM_GET;
+
+    NewList(&panelStatusBar__StatusBars);
 
     Enqueue(&iconwindow_Extensions, (struct Node *)&panelStatusBar__Extension);
 

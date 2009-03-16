@@ -104,52 +104,42 @@ struct IconWindow_Panel_Data
 
 struct IconWindow_DATA
 {
-    struct Screen                        *iwd_Screen;
-    char                                 *iwd_Title;
-    char                                 iwd_DirectoryPath[IWD_MAX_DIRECTORYPATHLEN];
+    struct Screen                       *iwd_Screen;
+    char                                *iwd_Title;
+    char                                iwd_DirectoryPath[IWD_MAX_DIRECTORYPATHLEN];
 
-    char                                 *iwd_ViewSettings_Attrib;
-    Object                               *iwd_ViewSettings_PrefsNotificationObject;
+    char                                *iwd_ViewSettings_Attrib;
+    Object                              *iwd_ViewSettings_PrefsNotificationObject;
 
-    Object                               *iwd_RootViewObj;
-    Object                               *iwd_IconListObj;
+    Object                              *iwd_RootViewObj;
+    Object                              *iwd_IconListObj;
 
-    struct IconWindow_Panel_Data         iwd_TopPanel;
-    struct IconWindow_Panel_Data         iwd_LeftPanel;
-    struct IconWindow_Panel_Data         iwd_BottomPanel;
-
-    Object                               *iwd_PanelObj_ToolBar;
-    Object                               *iwd_PanelObj_StatusBar;
+    IPTR                                iwd_FSNotifyPort;
+    struct IconWindow_Panel_Data        iwd_TopPanel;
+    struct IconWindow_Panel_Data        iwd_LeftPanel;
+    struct IconWindow_Panel_Data        iwd_BottomPanel;
 
 #ifdef __AROS__
-    struct Hook                          iwd_PrefsUpdated_hook;
+    struct Hook                         iwd_PrefsUpdated_hook;
+    struct Hook                         iwd_ProcessBackground_hook;
 #else
-    struct Hook                          *iwd_PrefsUpdated_hook;
+    struct Hook                         *iwd_PrefsUpdated_hook;
+    struct Hook                         *iwd_ProcessBackground_hook;
 #endif
 
-    struct Hook                          *iwd_ActionHook;
-#ifdef __AROS__
-    struct Hook                          iwd_ProcessBackground_hook;
-#else
-    struct Hook                          *iwd_ProcessBackground_hook;
-#endif
+    struct Hook                         *iwd_ActionHook;
 
-    struct Hook                          *iwd_BackFill_hook;
-    struct BackFillInfo                  *iwd_BackFillInfo;
-    struct IconWindow_BackFillHookData   iwd_BackFillHookData;
+    struct Hook                         *iwd_BackFill_hook;
+    struct BackFillInfo                 *iwd_BackFillInfo;
+    struct IconWindow_BackFillHookData  iwd_BackFillHookData;
     
-    struct TextFont                      *iwd_WindowFont;
+    struct TextFont                     *iwd_WindowFont;
 
 #define IWDFLAG_SETUP                   (1<<0)
 #define IWDFLAG_NEEDSUPDATE             (1<<1)
 #define IWDFLAG_ISROOT                  (1<<4)
 #define IWDFLAG_ISBACKDROP              (1<<5)
-#define IWDFLAG_EXT_TOOLBARENABLED      (1<<7)
     UBYTE                                iwd_Flags;
-/*    BOOL                                 iwd_Flag_NEEDSUPDATE;
-    BOOL                                 iwd_Flag_ISROOT;
-    BOOL                                 iwd_Flag_ISBACKDROP;
-    BOOL                                 iwd_Flag_EXT_TOOLBARENABLED;*/
     UBYTE                                iwd_VolViewMode;
 };
 
