@@ -2931,7 +2931,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     if (message->icon_dob == NULL)
     {
         IPTR iconlistScreen = _screen(obj);
-bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistScreen);
+D(bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistScreen));
 
         dob = GetIconTags
         (

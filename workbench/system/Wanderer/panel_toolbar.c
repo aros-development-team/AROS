@@ -72,24 +72,59 @@ extern struct List                     iconwindow_Extensions;
 
 /*** Private Data *********************************************************/
 
-#warning "TODO: Toolbars Attributes etc should be in an own file"
-/*** Identifier Base ********************************************************/
-#define MUIB_IconWindowExt_Toolbar                            (MUIB_IconWindowExt | 0x200000)
-
-#define MUIA_IconWindowExt_Toolbar_Enabled                    (MUIB_IconWindowExt_Toolbar | 0x00000001) /* ISG */
-#define MUIA_IconWindowExt_Toolbar_NavigationMethod           (MUIB_IconWindowExt_Toolbar | 0x00000002) /* ISG */
-/*** Variables **************************************************************/
+static CONST_STRPTR                     extension_Name = "ToolBar Extension";
+static CONST_STRPTR                     extension_PrefsFile = "ENV:SYS/Wanderer/toolbar.prefs";
+static STRPTR                           extension_PrefsData;
+static struct iconWindow_Extension      panelToolBar__Extension;
+struct List                             panelToolBar__ToolBars;
+struct NotifyRequest                    panelToolBar__PrefsNotifyRequest;
+Object                                  *panelToolBar__PrefsNotificationObject;
 
 struct panel_ToolBar_DATA
 {
-    Object                               *iwp_Toolbar_PrefsNotificationObject;
-    Object                               *iwp_Toolbar_LocationStringObj;
+    struct Node                         iwp_Node;
+
+    Object                              *iwp_ToolBar_ToolBarObj;
+    Object                              *iwp_ToolBar_LocationStringObj;
 #ifdef __AROS__
-    struct Hook                          iwp_Toolbar_LocationStrHook;
+    struct Hook                         iwp_ToolBar_LocationStrHook;
 #else
-    struct Hook                          *iwp_Toolbar_LocationStrHook;
+    struct Hook                         *iwp_ToolBar_LocationStrHook;
 #endif
 };
+
+///ExpandEnvName()
+/* Expand a passed in env: string to its full location */
+/* Wanderer doesnt free this mem at the moment but should 
+   incase it is every closed */
+static STRPTR ExpandEnvName(STRPTR env_path)
+{
+    BOOL     ok = FALSE;
+    char     tmp_envbuff[1024];
+    STRPTR   fullpath = NULL;
+    BPTR     env_lock = (BPTR) NULL;
+
+    env_lock = Lock("ENV:", SHARED_LOCK);
+    if (env_lock)
+    {
+        if (NameFromLock(env_lock, tmp_envbuff, 256)) ok = TRUE;
+        UnLock(env_lock);
+    }
+    
+    if (ok)
+    {
+        if ((fullpath = AllocVec(strlen(tmp_envbuff) + strlen(env_path) + 1 + 1 - 4, MEMF_CLEAR | MEMF_PUBLIC)) != NULL)
+        {
+            strcpy(fullpath, tmp_envbuff);
+            AddPart(fullpath, env_path + 4, 1019);
+            return fullpath;
+        }     
+    }
+
+    //We couldnt expand it so just use as is ..
+    return env_path;
+}
+///
 
 /*** Hook functions *********************************************************/
 
@@ -114,16 +149,19 @@ HOOKPROTO(panelToolBar__HookFunc_LocationStringFunc, void, APTR *obj, APTR param
     STRPTR                              str = NULL;
     BPTR                                fp = (BPTR) NULL;
     struct FileInfoBlock                *fib;
-    struct panel_ToolBar_DATA           *tbpanel_Private = NULL;
+    struct panel_ToolBar_DATA           *panelToolBarPrivate = NULL;
 
 #warning "stegerg: doesn't allocate fib with AllocDOSObject"
 
     SETUP_ICONWINDOW_INST_DATA;
 
     /* Only change dir if it is a valid directory/volume */
-    if ((tbpanel_Private = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
+    if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != NULL)
     {
-        GET(tbpanel_Private->iwp_Toolbar_LocationStringObj, MUIA_String_Contents, &str);
+        if (panelToolBarPrivate->iwp_Node.ln_Name != extension_Name)
+            return;
+
+        GET(panelToolBarPrivate->iwp_ToolBar_LocationStringObj, MUIA_String_Contents, &str);
 
 #warning "TODO: Signal that it is a wrong path"
         /* so that the user understands (here where we abort with return) */
@@ -159,10 +197,83 @@ HOOKPROTO(panelToolBar__HookFunc_LocationStringFunc, void, APTR *obj, APTR param
     AROS_USERFUNC_EXIT
 }
 #ifndef __AROS__
-MakeStaticHook(Toolbar_locationstrHook, panelToolBar__HookFunc_LocationStringFunc);
+MakeStaticHook(ToolBar_locationstrHook, panelToolBar__HookFunc_LocationStringFunc);
 #endif
 
+#define TOOLBAR_PREFSSIZE     1024
+IPTR panelToolBar__HandleFSUpdate()
+{
+    if (GetVar(extension_PrefsFile, extension_PrefsData, TOOLBAR_PREFSSIZE, GVF_GLOBAL_ONLY) != -1)
+    {
+        D(bug("[IW.toolbar] %s: Prefs contain '%s'\n", __PRETTY_FUNCTION__, extension_PrefsData));
+        if ((strcasecmp(extension_PrefsData, "True")) == 0)
+        {
+            SET(panelToolBar__PrefsNotificationObject, MUIA_ShowMe, TRUE);
+        }
+        else
+        {
+            SET(panelToolBar__PrefsNotificationObject, MUIA_ShowMe, FALSE);
+        }
+    }
+    return NULL;
+}
+
 /*** Main Functions ****************************************************************/
+
+///panelToolBar__PrefsSetup()
+IPTR panelToolBar__PrefsSetup(Class *CLASS, Object *self, struct opSet *message)
+{
+    IPTR                                panelToolBarFSNotifyPort = 0;
+    struct panel_ToolBar_DATA           *panelToolBarPrivate = NULL;
+    struct List                         *panelToolBarFSNotifyList = NULL;
+
+    SETUP_ICONWINDOW_INST_DATA;
+
+    panelToolBarFSNotifyPort = GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
+    panelToolBarFSNotifyList = GetTagData(MUIA_Wanderer_FileSysNotifyList, (IPTR) NULL, message->ops_AttrList);
+
+    D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
+
+    if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != (IPTR)NULL)
+    {
+        if (panelToolBarPrivate->iwp_Node.ln_Name != extension_Name)
+            return NULL;
+
+        extension_PrefsData = AllocVec(TOOLBAR_PREFSSIZE, MEMF_CLEAR);
+
+        /* Setup notification on prefs file --------------------------------*/
+        struct Wanderer_FSHandler *_prefsNotifyHandler = NULL;
+
+        if ((_prefsNotifyHandler = AllocMem(sizeof(struct Wanderer_FSHandler), MEMF_CLEAR)) != NULL)
+        {
+            _prefsNotifyHandler->fshn_Node.ln_Name                      = ExpandEnvName(extension_PrefsFile);
+            panelToolBar__PrefsNotifyRequest.nr_Name                    = _prefsNotifyHandler->fshn_Node.ln_Name;
+            panelToolBar__PrefsNotifyRequest.nr_Flags                   = NRF_SEND_MESSAGE;
+            panelToolBar__PrefsNotifyRequest.nr_stuff.nr_Msg.nr_Port    = panelToolBarFSNotifyPort;
+            _prefsNotifyHandler->HandleFSUpdate                         = panelToolBar__HandleFSUpdate;
+
+            if (StartNotify(&panelToolBar__PrefsNotifyRequest))
+            {
+                D(bug("[IW.toolbar]%s: Prefs-notification setup on '%s'\n", __PRETTY_FUNCTION__, panelToolBar__PrefsNotifyRequest.nr_Name));
+            }
+            else
+            {
+                D(bug("[IW.toolbar] %s: FAILED to setup Prefs-notification!\n", __PRETTY_FUNCTION__));
+            }
+            AddTail(panelToolBarFSNotifyList, &_prefsNotifyHandler->fshn_Node);
+        }
+#ifdef __AROS__
+        panelToolBar__PrefsNotificationObject = (Object *)NotifyObject, End;
+#else
+        panelToolBar__PrefsNotificationObject = MUI_NewObject(MUIC_Notify, TAG_DONE);
+#endif
+	if (GetVar(extension_PrefsFile, extension_PrefsData, TOOLBAR_PREFSSIZE, GVF_GLOBAL_ONLY) != -1)
+	{
+            D(bug("[IW.toolbar] %s: Prefs contain '%s'\n", __PRETTY_FUNCTION__, extension_PrefsData));
+        }
+    }
+}
+///
 
 ///panelToolBar__Setup()
 IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
@@ -172,25 +283,18 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
     Object                              *panel_ToolBar;
     Object                              *panelToolBar_ButtonDirUp = NULL,
                                         *panelToolBar_ButtonSearch = NULL,
-                                        *panelToolBar_StringLocation = NULL,
-                                        *wandererPrefsObj = NULL;
-    BOOL                                hasToolbar = FALSE;
+                                        *panelToolBar_StringLocation = NULL;
 
     struct panel_ToolBar_DATA           *panelToolBarPrivate = NULL;
 
-    hasToolbar = (BOOL)GetTagData(MUIA_IconWindowExt_Toolbar_Enabled, (IPTR)FALSE, message->ops_AttrList);
-
-    if (!(!(data->iwd_Flags & IWDFLAG_ISROOT) && hasToolbar && data->iwd_TopPanel.iwp_PanelContainerObj))
+    if (!(!(data->iwd_Flags & IWDFLAG_ISROOT) && data->iwd_TopPanel.iwp_PanelContainerObj))
         return (IPTR)NULL;
-
-    wandererPrefsObj = (Object *)GetTagData(MUIA_Wanderer_Prefs, (IPTR) NULL, message->ops_AttrList);
 
 #if !defined(ICONWINDOW_OPTION_NOSEARCHBUTTON)
     panelToolBar_ButtonSearch = ImageButton("", "THEME:Images/Gadgets/Prefs/Test");
 #endif
 
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
-    D(bug("[IW.toolbar] %s: App PrefsObj @ 0x%p\n", __PRETTY_FUNCTION__, wandererPrefsObj));
 
     if (data->iwd_TopPanel.iwp_PanelPrivate == (IPTR)NULL)
     {
@@ -198,20 +302,7 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
             return NULL;
 
         panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate;
-
-        if (wandererPrefsObj != NULL)
-        {
-            panelToolBarPrivate->iwp_Toolbar_PrefsNotificationObject =(Object *) DoMethod(wandererPrefsObj,
-                                  MUIM_WandererPrefs_ViewSettings_GetNotifyObject,
-                                  (STRPTR) "Toolbar");
-
-            //Set up our prefs notification handlers ..
-            DoMethod
-            (
-                panelToolBarPrivate->iwp_Toolbar_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindowExt_Toolbar_Enabled, MUIV_EveryTime, 
-                (IPTR)self, 3, MUIM_Set, MUIA_IconWindowExt_Toolbar_Enabled, MUIV_TriggerValue
-              );
-        }
+        panelToolBarPrivate->iwp_Node.ln_Name = extension_Name;
 
         /* Create the "ToolBar" panel object .. */
         panel_ToolBar = MUI_NewObject(MUIC_Group,
@@ -269,7 +360,7 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
          copied to the data of the object */
         if ( panel_ToolBar != NULL )
         {
-            SET(data->iwd_TopPanel.iwp_PanelContainerObj, MUIA_ShowMe, TRUE);
+            D(bug("[IW.toolbar] %s: ToolBar Obj @ 0x%p\n", __PRETTY_FUNCTION__, panel_ToolBar));
 
             SET(panelToolBar_ButtonDirUp, MUIA_Background, XGET( panel_ToolBar, MUIA_Background ) );
             SET(panelToolBar_ButtonDirUp, MUIA_CycleChain, 1);
@@ -279,6 +370,7 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
             SET(panelToolBar_ButtonSearch, MUIA_CycleChain, 1);
             SET(panelToolBar_ButtonSearch, MUIA_Frame, MUIV_Frame_None );
 #endif
+            panelToolBarPrivate->iwp_ToolBar_ToolBarObj = panel_ToolBar;
 
             if (DoMethod(data->iwd_TopPanel.iwp_PanelGroupObj, MUIM_Group_InitChange ))
             {
@@ -290,38 +382,53 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
                 }
 
                 DoMethod(data->iwd_TopPanel.iwp_PanelGroupObj, MUIM_Group_ExitChange);
-                data->iwd_PanelObj_ToolBar = panel_ToolBar;
             }
 
-            if (data->iwd_PanelObj_ToolBar)
+            if (panelToolBarPrivate->iwp_ToolBar_ToolBarObj)
             {
                 DoMethod( 
                     panelToolBar_ButtonDirUp, MUIM_Notify, MUIA_Pressed, FALSE, 
                     (IPTR)self, 1, MUIM_IconWindow_DirectoryUp
                   );
 
-                panelToolBarPrivate->iwp_Toolbar_LocationStringObj = panelToolBar_StringLocation;
+                panelToolBarPrivate->iwp_ToolBar_LocationStringObj = panelToolBar_StringLocation;
 #ifdef __AROS__
-                panelToolBarPrivate->iwp_Toolbar_LocationStrHook.h_Entry = ( HOOKFUNC )panelToolBar__HookFunc_LocationStringFunc;
+                panelToolBarPrivate->iwp_ToolBar_LocationStrHook.h_Entry = ( HOOKFUNC )panelToolBar__HookFunc_LocationStringFunc;
 #else
-                panelToolBarPrivate->iwp_Toolbar_LocationStrHook= &Toolbar_locationstrHook;
+                panelToolBarPrivate->iwp_ToolBar_LocationStrHook= &ToolBar_locationstrHook;
 #endif
 
                 NNSET(
-                    panelToolBarPrivate->iwp_Toolbar_LocationStringObj, MUIA_String_Contents, 
+                    panelToolBarPrivate->iwp_ToolBar_LocationStringObj, MUIA_String_Contents, 
                     XGET(data->iwd_IconListObj, MUIA_IconDrawerList_Drawer)
                   );
 
                 /* Make changes to string contents change dir on enter */
                 DoMethod ( 
-                    panelToolBar_StringLocation, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, 
-                    (IPTR)self, 3, MUIM_CallHook, &panelToolBarPrivate->iwp_Toolbar_LocationStrHook, (IPTR)CLASS
+                    panelToolBarPrivate->iwp_ToolBar_LocationStringObj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, 
+                    (IPTR)self, 3, MUIM_CallHook, &panelToolBarPrivate->iwp_ToolBar_LocationStrHook, (IPTR)CLASS
                   );
+
+                if (!(panelToolBar__PrefsNotificationObject))
+                    panelToolBar__PrefsSetup(CLASS, self, message);
+
+                DoMethod
+                (
+                    panelToolBar__PrefsNotificationObject, MUIM_Notify, MUIA_ShowMe, MUIV_EveryTime, 
+                    (IPTR)data->iwd_TopPanel.iwp_PanelContainerObj, 3, MUIM_Set, MUIA_ShowMe, MUIV_TriggerValue
+                  );
+
+                if ((strcasecmp(extension_PrefsData, "True")) == 0)
+                {
+                    SET(data->iwd_TopPanel.iwp_PanelContainerObj, MUIA_ShowMe, TRUE);
+                }
+
+                AddTail(&panelToolBar__ToolBars, &panelToolBarPrivate->iwp_Node);
             }
         }
         else
         {
-            data->iwd_PanelObj_ToolBar = NULL;
+            panelToolBarPrivate->iwp_ToolBar_ToolBarObj = NULL;
         }
     }
     return NULL;
@@ -332,15 +439,33 @@ IPTR panelToolBar__Cleanup(Class *CLASS, Object *self, struct opSet *message)
 {
     SETUP_ICONWINDOW_INST_DATA;
 
-    struct panel_ToolBar_DATA *panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate;
+    struct panel_ToolBar_DATA *panelToolBarPrivate;
 
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
 
-    DoMethod
-      (
-        panelToolBarPrivate->iwp_Toolbar_PrefsNotificationObject,
-        MUIM_KillNotifyObj, MUIA_IconWindowExt_Toolbar_Enabled, (IPTR) self
-      );
+    if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != (IPTR)NULL)
+    {
+        if (panelToolBarPrivate->iwp_Node.ln_Name != extension_Name)
+            return NULL;
+        
+        if (panelToolBar__PrefsNotificationObject)
+        {
+            DoMethod
+              (
+                panelToolBar__PrefsNotificationObject, MUIM_KillNotifyObj, MUIA_ShowMe, 
+                (IPTR)data->iwd_TopPanel.iwp_PanelContainerObj
+              );
+        }
+        if (panelToolBarPrivate->iwp_ToolBar_LocationStringObj)
+        {
+            DoMethod
+              (
+                panelToolBarPrivate->iwp_ToolBar_LocationStringObj, MUIM_KillNotifyObj, MUIA_String_Acknowledge, 
+                (IPTR)self
+              );
+        }
+    }
+    return NULL;
 }
 
 ///OM_SET()
@@ -348,72 +473,30 @@ IPTR panelToolBar__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 {
     SETUP_ICONWINDOW_INST_DATA;
 
-    struct TagItem  *tstate = message->ops_AttrList, *tag;
-    BOOL      UpdateIconlist = FALSE;
-    IPTR      focusicon = (IPTR) NULL;
-    IPTR        rv = TRUE;
+    struct panel_ToolBar_DATA   *panelToolBarPrivate = NULL;
+    struct TagItem              *tstate = message->ops_AttrList, *tag;
+    BOOL                        UpdateIconlist = FALSE;
+    IPTR                        focusicon = (IPTR) NULL;
+    IPTR                        rv = FALSE;
 
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
 
-    while ((tag = NextTagItem((TAGITEM)&tstate)) != NULL)
+    if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != (IPTR)NULL)
     {
-        switch (tag->ti_Tag)
+        if (panelToolBarPrivate->iwp_Node.ln_Name != extension_Name)
+            return rv;
+
+        while ((tag = NextTagItem((TAGITEM)&tstate)) != NULL)
         {
-        case MUIA_IconWindowExt_Toolbar_Enabled:
-            D(bug("[IW.toolbar] %s: MUIA_IconWindowExt_Toolbar_Enabled\n", __PRETTY_FUNCTION__));
-            if ((!(data->iwd_Flags & IWDFLAG_ISROOT)) && (data->iwd_TopPanel.iwp_PanelContainerObj))
+            switch (tag->ti_Tag)
             {
-                // remove toolbar
-                if (!(( BOOL )tag->ti_Data))
-                {
-                    //Force classic navigation when the toolbar is disabled ..
-                    Object *prefs = NULL;
+            case MUIA_IconWindow_Location:
+                D(bug("[IW.toolbar] %s: MUIA_IconWindow_Location '%s'\n", __PRETTY_FUNCTION__, data->iwd_DirectoryPath));
 
-                    if (data->iwd_PanelObj_ToolBar != NULL)
-                    {
-                        data->iwd_TopPanel.iwp_PanelGroupSpacerObj = HSpace(0);
-            
-                        SET(data->iwd_TopPanel.iwp_PanelContainerObj, MUIA_Frame, MUIV_Frame_None);
-                        SET(data->iwd_TopPanel.iwp_PanelContainerObj, MUIA_Group_Spacing, 0);
+                SET(panelToolBarPrivate->iwp_ToolBar_LocationStringObj, MUIA_String_Contents, (IPTR)data->iwd_DirectoryPath);
 
-                        if ((data->iwd_TopPanel.iwp_PanelGroupSpacerObj) && (DoMethod(data->iwd_TopPanel.iwp_PanelGroupObj, MUIM_Group_InitChange)))
-                        {
-                            DoMethod(data->iwd_TopPanel.iwp_PanelGroupObj, OM_REMMEMBER, (IPTR)data->iwd_PanelObj_ToolBar);
-                            DoMethod(data->iwd_TopPanel.iwp_PanelGroupObj, OM_ADDMEMBER, (IPTR)data->iwd_TopPanel.iwp_PanelGroupSpacerObj);
-                            DoMethod(data->iwd_TopPanel.iwp_PanelGroupObj, MUIM_Group_ExitChange);
-                            data->iwd_PanelObj_ToolBar = NULL;
-                        }
-                    }
-
-                    GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
-                    if (prefs)
-                    {
-                        SET(prefs, MUIA_IconWindowExt_Toolbar_NavigationMethod, WPD_NAVIGATION_CLASSIC);
-                    }
-                }
-                else
-                {
-                    // setup toolbar
-                    if (data->iwd_PanelObj_ToolBar == NULL)
-                    {
-                        Object *prefs = NULL;
-                        GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
-                        panelToolBar__Setup(CLASS, self, prefs);
-                    }
-                }
-                data->iwd_Flags |= (tag->ti_Data) ? IWDFLAG_EXT_TOOLBARENABLED : 0;
+                break;
             }
-            break;
-        case MUIA_IconWindow_Location:
-            D(bug("[iconwindow] %s: MUIA_IconWindow_Location [drawer '%s']\n", __PRETTY_FUNCTION__, data->iwd_DirectoryPath));
-
-            if ((!(data->iwd_Flags & IWDFLAG_ISROOT)) && (data->iwd_TopPanel.iwp_PanelPrivate))
-            {
-                struct panel_ToolBar_DATA *panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate;
-
-                SET(panelToolBarPrivate->iwp_Toolbar_LocationStringObj, MUIA_String_Contents, (IPTR)data->iwd_DirectoryPath);
-            }
-            break;
         }
     }
 
@@ -426,22 +509,19 @@ IPTR panelToolBar__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     SETUP_ICONWINDOW_INST_DATA;
 
     IPTR *store = message->opg_Storage;
-    IPTR  rv    = TRUE;
+    IPTR  rv    = FALSE;
 
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
 
     switch (message->opg_AttrID)
     {
-        case MUIA_IconWindowExt_Toolbar_Enabled:
+/*        case MUIA_IconWindowExt_ToolBar_Enabled:
         *store = (IPTR)(data->iwd_Flags & IWDFLAG_EXT_TOOLBARENABLED);
-        break;
+        break;*/
     }
 }
 
 #define PANELTOOLBAR_PRIORITY 10
-
-static const UBYTE extension_Name[] = "ToolBar Extension";
-static struct iconWindow_Extension panelToolBar__Extension;
 
 IPTR panelToolBar__Init()
 {
@@ -453,6 +533,8 @@ IPTR panelToolBar__Init()
     panelToolBar__Extension.iwe_Cleanup = panelToolBar__Cleanup;
     panelToolBar__Extension.iwe_Set = panelToolBar__OM_SET;
     panelToolBar__Extension.iwe_Get = panelToolBar__OM_GET;
+
+    NewList(&panelToolBar__ToolBars);
 
     Enqueue(&iconwindow_Extensions, (struct Node *)&panelToolBar__Extension);
 
