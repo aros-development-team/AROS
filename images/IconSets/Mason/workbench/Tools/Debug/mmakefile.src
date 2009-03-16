@@ -4,8 +4,8 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Debug Commodities Calculator HDToolBox WiMP
-ICONDIR   := $(AROSDIR)/Tools
+ICONS     := Sashimi
+ICONDIR   := $(AROSDIR)/Tools/Debug
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
 #MM- iconset-Mason-icons : masonworkbenchtoolicons
@@ -19,6 +19,3 @@ $(ICONDIR)/%.info : %.info.src %_N.png %_S.png
 
 setup :
 	%mkdirs_q $(ICONDIR)
-
-
-
