@@ -21,7 +21,7 @@ $Id$
 //#define DEBUG_ILC_LASSO
 //#define DEBUG_ILC_MEMALLOC
 
-#define CREATE_FULL_DRAGIMAGE
+//#define CREATE_FULL_DRAGIMAGE
 
 #include <string.h>
 #include <stdlib.h>
@@ -4739,11 +4739,11 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap, BMA_DEPTH);
     
 #if defined(CREATE_FULL_DRAGIMAGE)
-        #ifdef __AROS__
+#ifdef __AROS__
         ForeachNode(&data->icld_SelectionList, node)
-        #else
+#else
         Foreach_Node(&data->icld_SelectionList, node);
-        #endif
+#endif
         {
             entry = (struct IconEntry *)((IPTR)node - ((IPTR)&entry->ie_SelectionNode - (IPTR)entry));
             if ((entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) && (entry->ie_Flags & ICONENTRY_FLAG_SELECTED))
@@ -4767,7 +4767,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         img->touchx = data->click_x - first_x;
         img->touchy = data->click_y - first_y;
 
-        if ((img->bm = AllocBitMap(img->width, img->height, depth, BMF_MINPLANES|BMF_CLEAR|BMF_SPECIALFMT|(PIXFMT_ARGB32<<24), _screen(obj)->RastPort.BitMap)))
+        if ((img->bm = AllocBitMap(img->width, img->height, depth, BMF_CLEAR, _screen(obj)->RastPort.BitMap)))
         {
             struct RastPort temprp;
             InitRastPort(&temprp);
