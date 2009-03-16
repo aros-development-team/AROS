@@ -29,7 +29,6 @@ extern const struct Resident
     Exec_resident,
     Utility_ROMTag,
     Aros_ROMTag,
-/*    BOOPSI_resident,*/
     OOP_ROMTag,
     HIDDCl_ROMTag,
     UXIO_ROMTag,
@@ -72,14 +71,10 @@ extern const struct Resident
 static const struct Resident *romtagList[] =
 {
     &Expansion_ROMTag,                  /* SingleTask,  110  */
-    &Exec_resident,                     /* SingleTask,  105  */
+    &Exec_resident,                     /* SingleTask,  126  */
     &Utility_ROMTag,                    /* ColdStart,   103  */
     &Aros_ROMTag,                       /* ColdStart,   102  */
-    &Mathieeesingbas_ROMTag,            /* ColdStart,   101  */
     &Bootloader_ROMTag,			/* ColdStart,	100  */
-#if 0
-    &BOOPSI_resident,                   /* ColdStart,   95   */
-#endif
     &OOP_ROMTag,                        /* ColdStart,   94   */
     &HIDDCl_ROMTag,                     /* ColdStart,   92   */
     &UXIO_ROMTag,                       /* ColdStart,   91   */
@@ -89,23 +84,22 @@ static const struct Resident *romtagList[] =
     &Timer_ROMTag,                      /* ColdStart,   50   */
     &Battclock_ROMTag,                  /* ColdStart,   45   */
     &Keyboard_ROMTag,                   /* ColdStart,   44   */
-    &Gameport_ROMTag,                   /* ColdStart,   43   */
+    &Gameport_ROMTag,                   /* ColdStart,   44   */
     &Keymap_ROMTag,                     /* ColdStart,   40   */
     &Input_ROMTag,                      /* ColdStart,   30   */
-    &Intuition_ROMTag,                  /* ColdStart,   10   */
+    &Intuition_ROMTag,                  /* ColdStart,   15   */
+    &GFX_ROMTag,			/* ColdStart,   10   */
 #if ENABLE_X11 == 1
     &X11Cl_ROMTag,			/* ColdStart,   9    */
 #endif
     &Cybergraphics_ROMTag,              /* ColdStart,   8    */
     &Console_ROMTag,                    /* ColdStart,   5    */
-#if ENABLE_DBUS ==1
+#if ENABLE_DBUS == 1
     &Dbus_ROMTag,                       /* ColdStart,   0    */
 #endif
     &emul_handler_ROMTag,               /* ColdStart,   0    */
     &UXSer_ROMTag,                      /* ColdStart,   0    */
     &UXPar_ROMTag,                      /* ColdStart,   0    */
-    &Workbench_ROMTag,                  /* ColdStart,  -120  */
-    &Mathffp_ROMTag,                    /* ColdStart,  -120  */
 
     /*
         NOTE: You must not put anything between these two; the code

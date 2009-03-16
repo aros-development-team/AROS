@@ -3,5 +3,5 @@ include $(TOP)/config/make.cfg
 
 %build_archspecific \
   mainmmake=kernel-workbench maindir=rom/workbench \
-  arch=chrp-ppc \
+  arch=ppc \
   files="atomic"

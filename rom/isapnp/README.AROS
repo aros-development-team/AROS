@@ -1,0 +1,16 @@
+ This is an attempt to adapt Martin Blom's ISA PnP driver for AROS.
+ This driver was originally written for GG2 Bus+ Zorro-ISA bridgeboard. I don't
+know if this product was ever released and sold.
+ This work is incomplete. I started it as an attempt to introduce support for my
+laptop's hardware to AROS. However it failed because my laptop does not usilize
+this mechanism. I have to get information about the hardware from PnP BIOS
+instead.
+ This driver compiles, and at least does not hang up. On my machine it reports
+"No ISA PnP cards found". I have no other ISA machine, so i have neither
+possibility nor motivation to continue this work. I leave it in current state
+for the case if someone needs it and picks it up.
+ There's an accompanying "ISApnp" command in Workbench/C, its purpose is to list
+some information about devices installed in the system. It also compiles and
+does not crash my machine, but i can't test it further.
+
+Pavel Fedin <sonic.amiga@gmail.com>

@@ -1,0 +1,32 @@
+2001-08-07  Martin Blom  <martin@blom.org>
+
+	* Released version 1.2.
+
+2001-05-29  Martin Blom  <martin@blom.org>
+
+	* Added functions to handle longwords (register and memory access).
+
+2001-05-14  Martin Blom  <martin@blom.org>
+
+	* Added a "ddk" target that generates include files for gcc, SAS/C
+	and Storm C.
+
+	* Added pads to the public structures, to make sure all fields are
+	aligned on their natural boundary.
+
+2001-05-10  Martin Blom  <martin@blom.org>
+
+	* Added functions to lock and unlock cards and devices.
+
+2001-05-09  Martin Blom  <martin@blom.org>
+
+	* Added patch to correct the wavetable device on SB AWE32.
+
+	* Added the possibility to select a device (in the tool types)
+	using card id, card serial number and logical device number.
+
+2001-05-08  Martin Blom  <martin@blom.org>
+
+	* Released version 1.1.
+
+	* First beta.
