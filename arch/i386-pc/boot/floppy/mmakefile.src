@@ -10,13 +10,15 @@ include $(TOP)/config/make.cfg
 
 #MM systemdisk-pc-i386 : AROS		\
 #MM			systemdisk-setup-pc-i386 \
+#MM                     arch-common-boot-generatebootsig  \
 #MM			bootloader-$(AROS_TARGET_BOOTLOADER)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
 SYSTEM_FILES := \
     C/Shell \
     C/Unpack \
     Libs/locale.library \
-    Libs/iffparse.library
+    Libs/iffparse.library \
+    AROS.boot
 
 BOOT_EXTRA_FILES :=
 
@@ -82,7 +84,9 @@ BOOT_TAR_ICONS := \
     System/Wanderer/Tools/WBNewDrawer.info System/Wanderer/Tools/WBRename.info \
     Tools.info \
     Tools/HDToolBox.info \
-    Tools/Debug/Sashimi.info
+    Tools/Debug.info \
+    Tools/Debug/Sashimi.info \
+    Utilities.info
 
 
 BOOT_TAR_MISC := \
