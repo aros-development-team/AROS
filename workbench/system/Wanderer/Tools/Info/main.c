@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -623,7 +623,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                         End,
                     End,
                 End,
-                Child, (IPTR) RegisterGroup(pages),
+                Child, (IPTR) (registergroup = RegisterGroup(pages),
                     MUIA_CycleChain, 1,
                     Child, (IPTR) HGroup, /* hgroup information pannel */
                         Child, (IPTR) VGroup,
@@ -729,7 +729,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
 			#endif
                         End,
                     End, /* end hgroup tooltypes pannel */
-                End,
+                End),
                 Child, (IPTR) HGroup,
                     MUIA_Group_SameSize, TRUE,
                     Child, (IPTR) (savebutton = 
