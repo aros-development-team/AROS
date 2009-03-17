@@ -2,7 +2,7 @@
 #define _ATI_H
 
 /*
-    Copyright © 2004-2007, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2004-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -60,6 +60,7 @@ typedef struct __bm {
 
     OOP_Object  *BitMap;    // BitMap OOP Object
     IPTR    framebuffer;    // Points to pixel data
+    void	**addresses;
     ULONG   width;      // Bitmap width
     ULONG   height;     // Bitmap height
     ULONG   pitch;      // BytesPerRow aligned
