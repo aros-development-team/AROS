@@ -61,7 +61,9 @@ static const __attribute__((section(".text"))) WORD e0_keytable[NUM_E0KEYS] =
     NOKEY   	    , /* 051 (0x33) */
     NOKEY   	    , /* 052 (0x34) */
     0x5B,  /* 053 (0x35) K_KP_Divide */
-    NOKEY   	    , /* 054 (0x36) */
+    /* For some weird reason Windows low-level kayboard hook marks K_RHhift as extended,
+       so it gets into this table. */
+    RAWKEY_RSHIFT   , /* 054 (0x36) */
     NOKEY   	    , /* 055 (0x37) */
     RAWKEY_RALT     ,  /* 056 (0x38) K_RAlt */
     NOKEY   	    , /* 057 (0x39) */
