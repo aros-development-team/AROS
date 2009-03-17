@@ -34,6 +34,7 @@ DWORD *LastErrorPtr;
 unsigned char Ints_Enabled;
 unsigned char PendingInts[INTERRUPTS_NUM];
 unsigned char Supervisor;
+unsigned char Sleep_Mode;
 struct ExecBase **SysBasePtr;
 struct KernelBase **KernelBasePtr;
 
@@ -65,8 +66,7 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
 	    switch (*Except->ExceptionRecord->ExceptionInformation)
 	    {
 	    case SC_CAUSE:
-	        if (SysBase)
-	            core_Cause(SysBase);
+	        core_Cause(SysBase);
 	        break;
 	    case SC_DISPATCH:
 	        core_Dispatch(Except->ContextRecord);
@@ -110,8 +110,10 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     for (;;) {
         obj = WaitForMultipleObjects(INTERRUPTS_NUM, args->IntObjects, FALSE, INFINITE);
         DS(bug("[Task switcher] Object %lu signalled\n", obj));
-        DS(res =) SuspendThread(args->MainThread);
-    	DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
+        if (Sleep_Mode != SLEEP_MODE_ON) {
+            DS(res =) SuspendThread(args->MainThread);
+    	    DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
+    	}
         if (Ints_Enabled) {
     	    Supervisor++;
     	    PendingInts[obj] = 0;
@@ -128,18 +130,25 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     	    if (*KernelBasePtr)
 	    	user_handler(obj, (*KernelBasePtr)->kb_Interrupts);
     	    core_ExitInterrupt(&MainCtx);
-    	    DS(OutputDebugString("[Task switcher] new CPU context: ****\n"));
-    	    DS(PrintCPUContext(&MainCtx));
-    	    CONTEXT_RESTORE_REGS(&MainCtx);
-    	    DS(res =)SetThreadContext(args->MainThread, &MainCtx);
-    	    DS(bug("[Task switcher] Set context result: %lu\n", res));
+    	    if (!Sleep_Mode) {
+    	        DS(OutputDebugString("[Task switcher] new CPU context: ****\n"));
+    	        DS(PrintCPUContext(&MainCtx));
+    	        CONTEXT_RESTORE_REGS(&MainCtx);
+    	        DS(res =)SetThreadContext(args->MainThread, &MainCtx);
+    	        DS(bug("[Task switcher] Set context result: %lu\n", res));
+    	    }
     	    Supervisor--;
     	} else {
     	    PendingInts[obj] = 1;
             DS(bug("[KRN] Interrupts are disabled, interrupt %lu is pending\n", obj));
         }
-        DS(res =) ResumeThread(args->MainThread);
-        DS(bug("[Task switcher] Resume thread result: %lu\n", res));
+        if (Sleep_Mode)
+            /* We've entered sleep mode */
+            Sleep_Mode = SLEEP_MODE_ON;
+        else {
+            DS(res =) ResumeThread(args->MainThread);
+            DS(bug("[Task switcher] Resume thread result: %lu\n", res));
+        }
     }
     return 0;
 }
@@ -173,6 +182,13 @@ long __declspec(dllexport) core_intr_enable(void)
 void __declspec(dllexport) core_syscall(unsigned long n)
 {
     RaiseException(AROS_EXCEPTION_SYSCALL, 0, 1, &n);
+    /* If after RaiseException we are still here, but Sleep_Mode != 0, this likely means
+       we've just called SC_SCHEDULE, SC_SWITCH or SC_DISPATCH, and it is putting us to sleep.
+       Sleep mode will be committed as soon as timer IRQ happens */
+    while(Sleep_Mode) {
+    	/* TODO: SwitchToThread() here maybe? But it's dangerous because context switch
+    	   will happen inside it and Windows will kill us */
+    }
 }
 
 unsigned char __declspec(dllexport) core_is_super(void)
@@ -223,6 +239,7 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
     KernelBasePtr = KernelBasePointer;
     Ints_Enabled = 0;
     Supervisor = 0;
+    Sleep_Mode = 0;
     SetUnhandledExceptionFilter(ExceptionHandler);
     if (InitIntObjects(SwData.IntObjects)) {
     	SwData.IntObjects[INT_TIMER] = CreateWaitableTimer(NULL, 0, NULL);

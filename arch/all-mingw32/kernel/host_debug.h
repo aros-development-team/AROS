@@ -4,9 +4,14 @@
  * timer interrupt thread leads to a deadlock. So we have to do this.
  */
 
+/* Be careful again - with this i was able to debug scheduler, but often this causes lockups. Looks like console
+   doesn't like concurrent output from several threads in some conditions (too fast maybe?)
+*/
+#define bug printf
+
 #if DEBUG
 #define D(x) x
-
+/*
 static inline void bug(char *format, ...)
 {
     va_list args;
@@ -17,6 +22,7 @@ static inline void bug(char *format, ...)
     OutputDebugString(buf);
     va_end(args);
 }
+*/
 
 static inline void PrintCPUContext(CONTEXT *ctx)
 {

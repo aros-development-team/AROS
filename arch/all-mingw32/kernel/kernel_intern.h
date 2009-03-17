@@ -109,9 +109,14 @@ static inline void bug(const char *format, ...)
 
 #else
 
+#define SLEEP_MODE_OFF     0
+#define SLEEP_MODE_PENDING 1
+#define SLEEP_MODE_ON      2
+
 extern DWORD SwitcherId;
 extern DWORD *LastErrorPtr;
 extern unsigned char Ints_Enabled;
+extern unsigned char Sleep_Mode;
 extern unsigned char PendingInts[INTERRUPTS_NUM];
 extern struct ExecBase **SysBasePtr;
 extern struct KernelBase **KernelBasePtr;
