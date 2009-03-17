@@ -32,14 +32,14 @@ extern struct MUI_CustomClass *Wanderer_CLASS;
 
 struct AppW 
 {
-    struct Node n;
-    char *name;
+    struct Node         n;
+    char                *name;
 };
 
 struct Wanderer_FSHandler
 {
-    struct Node fshn_Node;
-    IPTR             (*HandleFSUpdate)();
+    struct Node         fshn_Node;
+    IPTR                (*HandleFSUpdate)();
 };
 
 /*** Macros *****************************************************************/

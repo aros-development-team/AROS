@@ -56,8 +56,8 @@
 #include "../../system/Wanderer/iconwindow_attributes.h"
 
 struct TagItem32 {
-	ULONG ti_Tag;
-	ULONG ti_Data;
+    ULONG ti_Tag;
+    ULONG ti_Data;
 };
 
 /*** Private Methods ********************************************************/
@@ -65,104 +65,103 @@ struct TagItem32 {
 /*** Instance Data **********************************************************/
 struct WPEditor_ViewSettingsObject
 {
-	struct Node	        wpedbo_Node;
-	char		        *wpedbo_ViewName;
-	Object		        *wpedbo_ImageSpecObject;
-	Object		        *wpedbo_AdvancedOptionsObject;
-	IPTR		        *wpedbo_Type;
+    struct Node	        wpedbo_Node;
+    char		        *wpedbo_ViewName;
+    Object		        *wpedbo_ImageSpecObject;
+    Object		        *wpedbo_AdvancedOptionsObject;
+    IPTR		        *wpedbo_Type;
 
 #warning "TODO: Replace _wpeditor_intern_IconTextRenderModeNames and co. with per view list"
-	IPTR                *wpedbo_LabelRenderModeNames;
-	IPTR                *wpedbo_LabelRenderModeEntries;
-	IPTR                wpedbo_LabelRenderModeCount;
+    IPTR                *wpedbo_LabelRenderModeNames;
+    IPTR                *wpedbo_LabelRenderModeEntries;
+    IPTR                wpedbo_LabelRenderModeCount;
 
 #warning "TODO: Replace _wpeditor_intern_IconListModeNames and co. with per view list"
-	IPTR                *wpedbo_ListModeNames;
-	IPTR                *wpedbo_ListModeEntries;
-	IPTR                wpedbo_ListModeCount;
+    IPTR                *wpedbo_ListModeNames;
+    IPTR                *wpedbo_ListModeEntries;
+    IPTR                wpedbo_ListModeCount;
 
-	IPTR                *wpedbo_BFRenderModeNames;
-	IPTR                *wpedbo_BFRenderModeEntries;
-	IPTR                *wpedbo_BFRenderModePages;
-	IPTR                wpedbo_BFRenderModeCount;
+    IPTR                *wpedbo_BFRenderModeNames;
+    IPTR                *wpedbo_BFRenderModeEntries;
+    IPTR                *wpedbo_BFRenderModePages;
+    IPTR                wpedbo_BFRenderModeCount;
 
-	IPTR                *wpedbo_BFTileModeNames;
-	IPTR                *wpedbo_BFTileModeEntries;
-	IPTR                wpedbo_BFTileModeCount;
+    IPTR                *wpedbo_BFTileModeNames;
+    IPTR                *wpedbo_BFTileModeEntries;
+    IPTR                wpedbo_BFTileModeCount;
 
-	struct TagItem32	*wpedbo_Options;
-	struct Hook	        wpedbo_Hook_CheckImage;
-	struct Hook	        wpedbo_Hook_OpenAdvancedOptions;
-	IPTR		        wpedbo_state_AdvancedDisabled;
+    struct TagItem32	*wpedbo_Options;
+    struct Hook	        wpedbo_Hook_CheckImage;
+    struct Hook	        wpedbo_Hook_OpenAdvancedOptions;
+    IPTR		        wpedbo_state_AdvancedDisabled;
 };
 
 struct WPEditor_AdvancedBackgroundWindow_DATA
 {
-	Object	            *wpedabwd_Window_WindowObj,
-						*wpedabwd_Window_UseObj,
-						*wpedabwd_Window_CancelObj,
-						*wpedabwd_Window_BackgroundGrpObj,
-						*wpedabwd_Window_RenderModeGrpObj,
-						*wpedabwd_Window_RenderModeObj,
-						*wpedabwd_Window_RenderModePageObj,
-						*wpedabwd_Window_TileModeObjContainer,
-						*wpedabwd_Window_TileModeObj,
-						*wpedabwd_Window_XOffsetObj,
-						*wpedabwd_Window_YOffsetObj,
-						*wpedabwd_Window_IconLabel_LabelFont,
-						*wpedabwd_Window_IconLabel_InfoFont,
-						*wpedabwd_Window_Icon_ListMode,
-						*wpedabwd_Window_Icon_TextMode,
-						*wpedabwd_Window_IconLabel_MaxLineLen,
+    Object	            *wpedabwd_Window_WindowObj,
+                        *wpedabwd_Window_UseObj,
+                        *wpedabwd_Window_CancelObj,
+                        *wpedabwd_Window_BackgroundGrpObj,
+                        *wpedabwd_Window_RenderModeGrpObj,
+                        *wpedabwd_Window_RenderModeObj,
+                        *wpedabwd_Window_RenderModePageObj,
+                        *wpedabwd_Window_TileModeObjContainer,
+                        *wpedabwd_Window_TileModeObj,
+                        *wpedabwd_Window_XOffsetObj,
+                        *wpedabwd_Window_YOffsetObj,
+                        *wpedabwd_Window_IconLabel_LabelFont,
+                        *wpedabwd_Window_IconLabel_InfoFont,
+                        *wpedabwd_Window_Icon_ListMode,
+                        *wpedabwd_Window_Icon_TextMode,
+                        *wpedabwd_Window_IconLabel_MaxLineLen,
 #if defined(DEBUG_MULTLINE)
-						*wpedabwd_Window_IconLabel_TextMultiLine, 
-						*wpedabwd_Window_IconLabel_MultiLineonFocus, 
-						*wpedabwd_Window_IconLabel_MultiLineNo, 	
+                        *wpedabwd_Window_IconLabel_TextMultiLine, 
+                        *wpedabwd_Window_IconLabel_MultiLineonFocus, 
+                        *wpedabwd_Window_IconLabel_MultiLineNo, 	
 #endif
-						*wpedabwd_Window_Icon_HorSpacing,
-						*wpedabwd_Window_Icon_VertSpacing,
-						*wpedabwd_Window_Icon_ImageSpacing,
-						*wpedabwd_Window_IconLabel_HorPadd,
-						*wpedabwd_Window_IconLabel_VertPadd,
-						*wpedabwd_Window_IconLabel_BorderWidth,
-						*wpedabwd_Window_IconLabel_BorderHeight;
+                        *wpedabwd_Window_Icon_HorSpacing,
+                        *wpedabwd_Window_Icon_VertSpacing,
+                        *wpedabwd_Window_Icon_ImageSpacing,
+                        *wpedabwd_Window_IconLabel_HorPadd,
+                        *wpedabwd_Window_IconLabel_VertPadd,
+                        *wpedabwd_Window_IconLabel_BorderWidth,
+                        *wpedabwd_Window_IconLabel_BorderHeight;
 
-	struct List         wpedabwd_Window_AdvancedViewRenderModes;
-	struct List         wpedabwd_Window_AdvancedViewTileModes;
-	struct List         wpedabwd_Window_AdvancedViewIconListModes;
-	struct List         wpedabwd_Window_AdvancedViewIconTextRenderModes;
+    struct List         wpedabwd_Window_AdvancedViewRenderModes;
+    struct List         wpedabwd_Window_AdvancedViewTileModes;
+    struct List         wpedabwd_Window_AdvancedViewIconListModes;
+    struct List         wpedabwd_Window_AdvancedViewIconTextRenderModes;
 
-	struct Hook         wpedabwd_Hook_DrawModeChage;
+    struct Hook         wpedabwd_Hook_DrawModeChage;
 };
 
 struct WPEditor_DATA
 {
-	struct WPEditor_AdvancedBackgroundWindow_DATA   *wped_AdvancedViewSettings_WindowData;
+    struct WPEditor_AdvancedBackgroundWindow_DATA       *wped_AdvancedViewSettings_WindowData;
 
-	struct WPEditor_ViewSettingsObject              *wped_ViewSettings_Current;
+    struct WPEditor_ViewSettingsObject                  *wped_ViewSettings_Current;
 
-	Object                                          *wped_FirstBGImSpecObj,
-													*wped_FirstBGAdvancedObj;	
+    Object                                              *wped_FirstBGImSpecObj,
+                                                        *wped_FirstBGAdvancedObj;	
 
-	ULONG                                           wped_DimensionsSet;
+    ULONG                                               wped_DimensionsSet;
 
-	Object                                          *wped_ViewSettings_GroupObj,
-													*wped_ViewSettings_SpacerObj,
-													*wped_c_NavigationMethod,
-													*wped_cm_ToolbarEnabled, 
+    Object                                              *wped_ViewSettings_GroupObj,
+                                                        *wped_ViewSettings_SpacerObj,
+                                                        *wped_c_NavigationMethod,
+                                                        *wped_cm_ToolbarEnabled, 
 #if defined(DEBUG_CHANGESCREENTITLE)
-													*wped_s_screentitle, 
+                                                        *wped_s_screentitle, 
 #endif
-													*wped_toolbarpreview,
+                                                        *wped_toolbarpreview,
 #if defined(DEBUG_NETWORKBROWSER)
-													*wped_cm_EnableNetworkBrowser, 
+                                                        *wped_cm_EnableNetworkBrowser, 
 #endif
 #if defined(DEBUG_SHOWUSERFILES)
-													*wped_cm_EnableUserFiles, 
+                                                        *wped_cm_EnableUserFiles, 
 #endif
-													*wped_toolbarGroup;
-
-		struct Hook                           		wped_Hook_CloseAdvancedOptions;
+                                                        *wped_toolbarGroup;
+    struct Hook                                         wped_Hook_CloseAdvancedOptions;
 };
 
 //static struct Hook navichangehook;
@@ -1942,18 +1941,12 @@ D(bug("[WPEditor] WPEditor_ProccessGlobalChunk(%d tags)\n", tag_count));
 						/* prefs file is stored in little endian */
 			switch ((int)AROS_LE2LONG(global_chunk[i].ti_Tag))
 			{
-/*				case MUIA_IconWindowExt_Toolbar_Enabled:
+				case MUIA_IconWindow_WindowNavigationMethod:
 				{
-D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindowExt_Toolbar_Enabled, val = %d\n", i, AROS_LE2LONG(global_chunk[i].ti_Data)));
-					SET(data->wped_cm_ToolbarEnabled, MUIA_Selected, (BOOL)AROS_LE2LONG(global_chunk[i].ti_Data)); 
-					break;
-				}
-				case MUIA_IconWindowExt_Toolbar_NavigationMethod:
-				{
-D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindowExt_Toolbar_NavigationMethod, val = %d\n", i, AROS_LE2LONG(global_chunk[i].ti_Data)));
+D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindow_WindowNavigationMethod, val = %d\n", i, AROS_LE2LONG(global_chunk[i].ti_Data)));
 					SET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, (IPTR)AROS_LE2LONG(global_chunk[i].ti_Data));
 					break;
-				}*/
+				}
 #if defined(DEBUG_SHOWUSERFILES)
 				case MUIA_IconWindowExt_UserFiles_ShowFilesFolder:
 				{
@@ -2351,26 +2344,16 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Prepare 'global' Wanderer
 			/* save toolbar state*/
 			struct TagItem32	*_wp_GlobalTags = AllocVec((256 * sizeof(struct TagItem32)), MEMF_ANY|MEMF_CLEAR);
 			ULONG              _wp_GlobalTagCounter = 0;
-								/* helper to convert to little endian */
+                        /* helper to convert to little endian */
 			STACKED IPTR       	ti_Data;
 
-/*
-			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindowExt_Toolbar_Enabled);
-			GET(data->wped_cm_ToolbarEnabled, MUIA_Selected, &ti_Data);
-			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowExt_Toolbar_Enabled @ Tag %d, data = %d\n", _wp_GlobalTagCounter, ti_Data));
-			_wp_GlobalTagCounter += 1;
+                        // save navigation bahaviour
+                        _wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindow_WindowNavigationMethod);
+                        GET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &ti_Data);
+                        _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindow_WindowNavigationMethod @ Tag %d, data = %d\n", _wp_GlobalTagCounter, ti_Data));
+                        _wp_GlobalTagCounter += 1;
 
-			if ((BOOL)ti_Data == TRUE)
-			{
-				// save navigation bahaviour
-				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindowExt_Toolbar_NavigationMethod);
-				GET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &ti_Data);
-				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowExt_Toolbar_NavigationMethod @ Tag %d, data = %d\n", _wp_GlobalTagCounter, ti_Data));
-				_wp_GlobalTagCounter += 1;
-			}
-*/
 #if defined(DEBUG_SHOWUSERFILES)
 			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindowExt_UserFiles_ShowFilesFolder);
 			GET(data->wped_cm_EnableUserFiles, MUIA_Selected, &ti_Data);
