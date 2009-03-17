@@ -34,6 +34,12 @@
 #define HiddGfxAttrBase     (sd->gfxAttrBase)
 #define HiddSyncAttrBase    (sd->syncAttrBase)
 
+#define POINT_OUTSIDE_CLIP(gc, x, y)	\
+	(  (x) < GC_CLIPX1(gc)		\
+	|| (x) > GC_CLIPX2(gc)		\
+	|| (y) < GC_CLIPY1(gc)		\
+	|| (y) > GC_CLIPY2(gc) )
+
 struct pRoot_Dispose {
     OOP_MethodID mID;
 };
@@ -106,9 +112,14 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
         bm->state = NULL;
         bm->BitMap = o;
         bm->usecount = 0;
+        bm->addresses = AllocVecPooled(sd->memPool, height * sizeof(void*));
 
         if (bm->framebuffer != -1)
         {
+        	int __tmp;
+        	for (__tmp=0; __tmp < height; __tmp++)
+        		bm->addresses[__tmp] = (void*)(bm->framebuffer + sd->Card.FrameBuffer + __tmp*bm->pitch);
+
             ULONG pitch64 = ((bm->pitch)) >> 6;
 
             switch(depth)
@@ -232,9 +243,13 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
         {
             if (bm->framebuffer == -1)
             {
+            	int __tmp;
                 bm->framebuffer = (IPTR)AllocMem(bm->pitch * bm->height,
                             MEMF_PUBLIC | MEMF_CLEAR);
                 bm->fbgfx = FALSE;
+
+                for (__tmp=0; __tmp < height; __tmp++)
+                	bm->addresses[__tmp] = (void*)(bm->framebuffer + __tmp*bm->pitch);
             }
             else
                 bm->fbgfx = TRUE;
@@ -274,6 +289,8 @@ VOID METHOD(ATIOnBM, Root, Dispose)
     }
     else
         FreeMem((APTR)bm->framebuffer, bm->pitch * bm->height);
+
+    FreeVecPooled(sd->memPool, bm->addresses);
 
     if (bm->state)
         FreePooled(sd->memPool, bm->state, sizeof(struct CardState));
@@ -661,22 +678,18 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawPolygon)
     UNLOCK_BITMAP
 }
 
-
-
 VOID METHOD(ATIOffBM, Hidd_BitMap, PutPixel)
     __attribute__((alias(METHOD_NAME_S(ATIOnBM, Hidd_BitMap, PutPixel))));
 
 VOID METHOD(ATIOnBM, Hidd_BitMap, PutPixel)
 {
     atiBitMap *bm = OOP_INST_DATA(cl, o);
+    void *ptr = bm->addresses[msg->y];
 
     LOCK_BITMAP
 
-    UBYTE *ptr = (UBYTE*)((IPTR)bm->framebuffer + bm->bpp * msg->x + bm->pitch * msg->y);
-
     if (bm->fbgfx)
     {
-        ptr += (IPTR)sd->Card.FrameBuffer;
         if (sd->Card.Busy)
         {
             LOCK_HW
@@ -689,19 +702,269 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutPixel)
     switch (bm->bpp)
     {
         case 1:
-            *ptr = msg->pixel;
+            ((UBYTE *)ptr)[msg->x] = msg->pixel;
             break;
         case 2:
-            *(UWORD*)ptr = msg->pixel;
+            ((UWORD *)ptr)[msg->x] = msg->pixel;
             break;
         case 4:
-            *(ULONG*)ptr = msg->pixel;
+            ((ULONG *)ptr)[msg->x] = msg->pixel;
             break;
     }
 
     UNLOCK_BITMAP
 }
 
+VOID METHOD(ATIOffBM, Hidd_BitMap, DrawPixel)
+    __attribute__((alias(METHOD_NAME_S(ATIOnBM, Hidd_BitMap, DrawPixel))));
+
+VOID METHOD(ATIOnBM, Hidd_BitMap, DrawPixel)
+{
+    atiBitMap *bm = OOP_INST_DATA(cl, o);
+    void *ptr = bm->addresses[msg->y];
+	OOP_Object *gc = msg->gc;
+
+    HIDDT_Pixel     	    	    src, dest, val;
+	HIDDT_DrawMode  	    	    mode;
+	HIDDT_Pixel     	    	    writeMask;
+
+    src       = GC_FG(gc);
+    mode      = GC_DRMD(gc);
+
+    LOCK_BITMAP
+
+    if (bm->fbgfx)
+    {
+        if (sd->Card.Busy)
+        {
+            LOCK_HW
+#warning TODO: NVSync(sd)
+            RADEONWaitForIdleMMIO(sd);
+            UNLOCK_HW
+        }
+    }
+
+    if (vHidd_GC_DrawMode_Copy == mode && GC_COLMASK(gc) == ~0)
+	{
+		val = src;
+	}
+	else
+	{
+		switch (bm->bpp)
+	    {
+	        case 1:
+	            dest = ((UBYTE *)ptr)[msg->x];
+	            break;
+	        case 2:
+	            dest = ((UWORD *)ptr)[msg->x];
+	            break;
+	        case 4:
+	            dest = ((ULONG *)ptr)[msg->x];
+	            break;
+	    }
+
+		writeMask = ~GC_COLMASK(gc) & dest;
+
+		val = 0;
+
+		if(mode & 1) val = ( src &  dest);
+		if(mode & 2) val = ( src & ~dest) | val;
+		if(mode & 4) val = (~src &  dest) | val;
+		if(mode & 8) val = (~src & ~dest) | val;
+
+		val = (val & (writeMask | GC_COLMASK(gc) )) | writeMask;
+	}
+
+	switch (bm->bpp)
+    {
+        case 1:
+            ((UBYTE *)ptr)[msg->x] = val;
+            break;
+        case 2:
+            ((UWORD *)ptr)[msg->x] = val;
+            break;
+        case 4:
+            ((ULONG *)ptr)[msg->x] = val;
+            break;
+    }
+
+    UNLOCK_BITMAP
+}
+
+VOID METHOD(ATIOffBM, Hidd_BitMap, DrawEllipse)
+    __attribute__((alias(METHOD_NAME_S(ATIOnBM, Hidd_BitMap, DrawEllipse))));
+
+VOID METHOD(ATIOnBM, Hidd_BitMap, DrawEllipse)
+{
+	atiBitMap *bm = OOP_INST_DATA(cl, o);
+	OOP_Object *gc = msg->gc;
+	WORD    	x = msg->rx, y = 0;     /* ellipse points */
+	HIDDT_Pixel     	    	    src;
+	HIDDT_DrawMode  	    	    mode;
+	HIDDT_Pixel     	    	    writeMask;
+
+	/* intermediate terms to speed up loop */
+	LONG    	t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
+	LONG    	t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
+	LONG    	t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
+	LONG    	d1 = t2 - t7 + (t4 >> 1);    /* error terms */
+	LONG    	d2 = (t1 >> 1) - t8 + t5;
+
+	BOOL    	doclip = GC_DOCLIP(gc);
+
+    src       = GC_FG(gc);
+    mode      = GC_DRMD(gc);
+
+	void _drawpixel(int x, int y)
+	{
+		void *ptr = bm->addresses[y];
+		HIDDT_Pixel val, dest;
+
+		if (vHidd_GC_DrawMode_Copy == mode && GC_COLMASK(gc) == ~0)
+		{
+			val = src;
+		}
+		else
+		{
+			switch (bm->bpp)
+		    {
+		        case 1:
+		            dest = ((UBYTE *)ptr)[x];
+		            break;
+		        case 2:
+		            dest = ((UWORD *)ptr)[x];
+		            break;
+		        case 4:
+		            dest = ((ULONG *)ptr)[x];
+		            break;
+		    }
+
+			writeMask = ~GC_COLMASK(gc) & dest;
+
+			val = 0;
+
+			if(mode & 1) val = ( src &  dest);
+			if(mode & 2) val = ( src & ~dest) | val;
+			if(mode & 4) val = (~src &  dest) | val;
+			if(mode & 8) val = (~src & ~dest) | val;
+
+			val = (val & (writeMask | GC_COLMASK(gc) )) | writeMask;
+		}
+
+		switch (bm->bpp)
+	    {
+	        case 1:
+	            ((UBYTE *)ptr)[x] = val;
+	            break;
+	        case 2:
+	            ((UWORD *)ptr)[x] = val;
+	            break;
+	        case 4:
+	            ((ULONG *)ptr)[x] = val;
+	            break;
+	    }
+	}
+
+	LOCK_BITMAP
+
+	UBYTE *ptr = (UBYTE*)((IPTR)bm->framebuffer);
+    if (bm->fbgfx)
+    {
+        ptr += (IPTR)sd->Card.FrameBuffer;
+        if (sd->Card.Busy)
+        {
+            LOCK_HW
+#warning TODO: NVSync(sd)
+            RADEONWaitForIdleMMIO(sd);
+            UNLOCK_HW
+        }
+    }
+
+    while (d2 < 0)                  /* til slope = -1 */
+    {
+    	/* draw 4 points using symmetry */
+
+    	if  (doclip)
+    	{
+    		if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y + y))
+    			_drawpixel(msg->x + x, msg->y + y);
+
+    		if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y - y))
+    			_drawpixel(msg->x + x, msg->y - y);
+
+    		if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y + y))
+    			_drawpixel(msg->x - x, msg->y + y);
+
+    		if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y - y))
+    			_drawpixel(msg->x - x, msg->y - y);
+    	}
+    	else
+    	{
+    		_drawpixel(msg->x + x, msg->y + y);
+    		_drawpixel(msg->x + x, msg->y - y);
+    		_drawpixel(msg->x - x, msg->y + y);
+    		_drawpixel(msg->x - x, msg->y - y);
+    	}
+
+    	y++;            /* always move up here */
+    	t9 = t9 + t3;
+    	if (d1 < 0)     /* move straight up */
+    	{
+    		d1 = d1 + t9 + t2;
+    		d2 = d2 + t9;
+    	}
+    	else            /* move up and left */
+    	{
+    		x--;
+    		t8 = t8 - t6;
+    		d1 = d1 + t9 + t2 - t8;
+    		d2 = d2 + t9 + t5 - t8;
+    	}
+    }
+
+    do                              /* rest of top right quadrant */
+    {
+    	/* draw 4 points using symmetry */
+    	if  (doclip)
+    	{
+    		if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y + y))
+    			_drawpixel(msg->x + x, msg->y + y);
+
+    		if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y - y))
+    			_drawpixel(msg->x + x, msg->y - y);
+
+    		if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y + y))
+    			_drawpixel(msg->x - x, msg->y + y);
+
+    		if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y - y))
+    			_drawpixel(msg->x - x, msg->y - y);
+    	}
+    	else
+    	{
+    		_drawpixel(msg->x + x, msg->y + y);
+    		_drawpixel(msg->x + x, msg->y - y);
+    		_drawpixel(msg->x - x, msg->y + y);
+    		_drawpixel(msg->x - x, msg->y - y);
+    	}
+
+    	x--;            /* always move left here */
+    	t8 = t8 - t6;
+    	if (d2 < 0)     /* move up and left */
+    	{
+    		y++;
+    		t9 = t9 + t3;
+    		d2 = d2 + t9 + t5 - t8;
+    	}
+    	else            /* move straight left */
+    	{
+    		d2 = d2 + t5 - t8;
+    	}
+
+    } while (x >= 0);
+
+
+    UNLOCK_BITMAP
+}
 
 HIDDT_Pixel METHOD(ATIOffBM, Hidd_BitMap, GetPixel)
     __attribute__((alias(METHOD_NAME_S(ATIOnBM, Hidd_BitMap, GetPixel))));
@@ -713,11 +976,10 @@ HIDDT_Pixel METHOD(ATIOnBM, Hidd_BitMap, GetPixel)
 
     LOCK_BITMAP
 
-    UBYTE *ptr = (UBYTE*)((IPTR)bm->framebuffer + bm->bpp * msg->x + bm->pitch * msg->y);
+    void *ptr = bm->addresses[msg->y];
 
     if (bm->fbgfx)
     {
-        ptr += (IPTR)sd->Card.FrameBuffer;
         if (sd->Card.Busy)
         {
             LOCK_HW
@@ -730,13 +992,13 @@ HIDDT_Pixel METHOD(ATIOnBM, Hidd_BitMap, GetPixel)
     switch (bm->bpp)
     {
         case 1:
-            pixel = *ptr;
+            pixel = ((UBYTE *)ptr)[msg->x];
             break;
         case 2:
-            pixel = *(UWORD*)ptr;
+            pixel = ((UWORD *)ptr)[msg->x];
             break;
         case 4:
-            pixel = *(ULONG*)ptr;
+            pixel = ((ULONG *)ptr)[msg->x];
             break;
     }
 
