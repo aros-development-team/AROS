@@ -85,12 +85,6 @@
 #endif
 #endif
 
-#warning "TODO: Toolbars Attributes etc should be in an own file"
-/*** Identifier Base ********************************************************/
-#define MUIB_IconWindowExt_Toolbar                            (MUIB_IconWindowExt | 0x200000)
-
-#define MUIA_IconWindowExt_Toolbar_NavigationMethod           (MUIB_IconWindowExt_Toolbar | 0x00000002) /* ISG */
-
 static CONST_STRPTR                     wandererPrefs_PrefsFile = "ENV:SYS/Wanderer/global.prefs";
 static Object                           *wandererPrefs_PrefsObject;
 struct Wanderer_FSHandler               *wandererPrefs_PrefsNotifyHandler = NULL;
@@ -118,11 +112,11 @@ struct WandererPrefs_DATA
 
 struct WandererPrefs_ViewSettingsNode
 {
-  struct Node        wpbn_Node;
-  char               *wpbn_Name;
-  IPTR           wpbn_Background;
-  struct TagItem32   *wpbn_Options;
-  Object             *wpbn_NotifyObject;
+    struct Node                 wpbn_Node;
+    char                        *wpbn_Name;
+    IPTR                        wpbn_Background;
+    struct TagItem32            *wpbn_Options;
+    Object                      *wpbn_NotifyObject;
 };
 
 /*** Macros *****************************************************************/
@@ -132,30 +126,30 @@ struct WandererPrefs_ViewSettingsNode
 ///SetString()
 BOOL SetString(STRPTR *dst, STRPTR src)
 {
-  if (src != NULL)
-  {
-    if ((*dst == NULL) || (strcmp(src, *dst) != 0))
+    if (src != NULL)
     {
-      STRPTR tmp =(STRPTR) StrDup(src);
+        if ((*dst == NULL) || (strcmp(src, *dst) != 0))
+        {
+            STRPTR tmp =(STRPTR) StrDup(src);
 
-      if (tmp != NULL)
-      {
-        FreeVec(*dst);
-        *dst = tmp;
+            if (tmp != NULL)
+            {
+                FreeVec(*dst);
+                *dst = tmp;
 
-        return TRUE;
-      }
+                return TRUE;
+            }
+        }
     }
-  }
 
-  return FALSE;
+    return FALSE;
 }
 ///
 
 ///strtochar()
 static unsigned char strtochar(STRPTR st)
 {
-  return *st++;
+    return *st++;
 }
 ///
 /******** code from workbench/c/Info.c **************************************/
@@ -571,7 +565,7 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
         //data->wpd_ScreenTitleString = (LONG)tag->ti_Data;
         break;
 
-      case MUIA_IconWindowExt_Toolbar_NavigationMethod:
+      case MUIA_IconWindow_WindowNavigationMethod:
         data->wpd_NavigationMethod = (LONG)tag->ti_Data;
         break;
     }
@@ -607,7 +601,7 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 D(bug("[Wanderer:Prefs] WandererPrefs__GET: MUIA_IconWindowExt_ScreenTitle_String '%s'\n", data->wpd_ScreenTitleString));
       break;
 
-    case MUIA_IconWindowExt_Toolbar_NavigationMethod:
+    case MUIA_IconWindow_WindowNavigationMethod:
       *store = (IPTR)data->wpd_NavigationMethod;
       break;
 

@@ -11,9 +11,11 @@ $Id$
 #include <aros/debug.h>
 #endif
 
+//#define DEBUG_ILC_FUNCS
+//#define DEBUG_ILC_ATTRIBS
 //#define DEBUG_ILC_EVENTS
 //#define DEBUG_ILC_KEYEVENTS
-#define DEBUG_ILC_ICONDRAGDROP
+//#define DEBUG_ILC_ICONDRAGDROP
 //#define DEBUG_ILC_ICONRENDERING
 //#define DEBUG_ILC_ICONSORTING
 //#define DEBUG_ILC_ICONSORTING_DUMP
@@ -107,7 +109,7 @@ $Id$
 
 extern struct Library   *MUIMasterBase;
 
-struct Hook             __iconlist_UpdateLabels_hook;
+static struct Hook             __iconlist_UpdateLabels_hook;
 
 // N.B: We Handle frame/background rendering so make sure icon.library doesnt do it ..
 struct TagItem          __iconList_DrawIconStateTags[] = {
@@ -158,7 +160,7 @@ for                                                        \
 #define RPALPHAFLAT (1 << 0)
 #define RPALPHARADIAL (1 << 1)
 
-void RastPortSetAlpha(struct RastPort *arport, ULONG ax, ULONG ay, ULONG width, ULONG height, UBYTE val, UBYTE alphamode)
+static void RastPortSetAlpha(struct RastPort *arport, ULONG ax, ULONG ay, ULONG width, ULONG height, UBYTE val, UBYTE alphamode)
 {
 	ULONG x, y;
 	ULONG alphaval, pixelval;
@@ -182,7 +184,7 @@ void RastPortSetAlpha(struct RastPort *arport, ULONG ax, ULONG ay, ULONG width, 
 
 ///RectAndRect()
 // Icon/Label Area support functions
-int RectAndRect(struct Rectangle *a, struct Rectangle *b)
+static int RectAndRect(struct Rectangle *a, struct Rectangle *b)
 {
     if ((a->MinX > b->MaxX) || (a->MinY > b->MaxY) || (a->MaxX < b->MinX) || (a->MaxY < b->MinY))
         return 0;
@@ -192,7 +194,7 @@ int RectAndRect(struct Rectangle *a, struct Rectangle *b)
 
 ///Node_NextVisible()
 // IconEntry List navigation functions ..
-struct IconEntry *Node_NextVisible(struct IconEntry *current_Node)
+static struct IconEntry *Node_NextVisible(struct IconEntry *current_Node)
 {
     current_Node = (struct IconEntry *)GetSucc(&current_Node->ie_IconNode);
     while ((current_Node != NULL) && (!(current_Node->ie_Flags & ICONENTRY_FLAG_VISIBLE)))
@@ -204,7 +206,7 @@ struct IconEntry *Node_NextVisible(struct IconEntry *current_Node)
 ///
 
 ///Node_FirstVisible()
-struct IconEntry *Node_FirstVisible(struct List *icon_list)
+static struct IconEntry *Node_FirstVisible(struct List *icon_list)
 {
     struct IconEntry *current_Node = (struct IconEntry *)GetHead(icon_list);
 
@@ -216,7 +218,7 @@ struct IconEntry *Node_FirstVisible(struct List *icon_list)
 ///
 
 ///Node_PreviousVisible()
-struct IconEntry *Node_PreviousVisible(struct IconEntry *current_Node)
+static struct IconEntry *Node_PreviousVisible(struct IconEntry *current_Node)
 {
     current_Node = (struct IconEntry *)GetPred(&current_Node->ie_IconNode);
     while ((current_Node != NULL) && (!(current_Node->ie_Flags & ICONENTRY_FLAG_VISIBLE)))
@@ -228,7 +230,7 @@ struct IconEntry *Node_PreviousVisible(struct IconEntry *current_Node)
 ///
 
 ///Node_LastVisible()
-struct IconEntry *Node_LastVisible(struct List *icon_list)
+static struct IconEntry *Node_LastVisible(struct List *icon_list)
 {
     struct IconEntry *current_Node = (struct IconEntry *)GetTail(icon_list);
 
@@ -248,7 +250,7 @@ static void GetAbsoluteLassoRect(struct IconList_DATA *data, struct Rectangle *L
     WORD maxx = data->icld_LassoRectangle.MaxX;
     WORD maxy = data->icld_LassoRectangle.MaxY;
 
-#if defined(DEBUG_ILC_LASSO)
+#if defined(DEBUG_ILC_LASSO) && defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -280,7 +282,7 @@ static void IconList_InvertPixelRect(struct RastPort *rp, WORD minx, WORD miny, 
 {
     struct Rectangle r, clipped_r;
     
-#if defined(DEBUG_ILC_RENDERING)
+#if defined(DEBUG_ILC_RENDERING) && defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -315,12 +317,12 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
 ///IconList_InvertLassoOutlines()
 // Simple lasso drawing by inverting area outlines
-void IconList_InvertLassoOutlines(Object *obj, struct Rectangle *rect)
+static void IconList_InvertLassoOutlines(Object *obj, struct Rectangle *rect)
 {
     struct Rectangle lasso;
     struct Rectangle clip;
     
-#if defined(DEBUG_ILC_LASSO)
+#if defined(DEBUG_ILC_LASSO) && defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -349,7 +351,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 //We don't use icon.library's label drawing so we do this by hand
 static void IconList_GetIconImageRectangle(Object *obj, struct IconList_DATA *data, struct IconEntry *icon, struct Rectangle *rect)
 {
-#if defined(DEBUG_ILC_ICONPOSITIONING)
+#if defined(DEBUG_ILC_ICONPOSITIONING) && defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s(icon @ %p)\n", __PRETTY_FUNCTION__, icon));
 #endif
 
@@ -372,7 +374,7 @@ static void IconList_GetIconLabelRectangle(Object *obj, struct IconList_DATA *da
     ULONG      outline_offset = 0;
     ULONG      textwidth = 0;
 
-#if defined(DEBUG_ILC_ICONPOSITIONING)
+#if defined(DEBUG_ILC_ICONPOSITIONING) && defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -393,7 +395,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     /* Get icon box width including text width */
     if ((icon->ie_IconListEntry.label != NULL) && (icon->ie_TxtBuf_DisplayedLabel != NULL))
     {
-  ULONG curlabel_TotalLines;
+        ULONG curlabel_TotalLines;
         SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
         
         rect->MinX = 0;
@@ -460,7 +462,7 @@ static void IconList_GetIconAreaRectangle(Object *obj, struct IconList_DATA *dat
     ULONG iconlabel_Width;
     ULONG iconlabel_Height;
 
-#if defined(DEBUG_ILC_ICONPOSITIONING)
+#if defined(DEBUG_ILC_ICONPOSITIONING) && defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -802,7 +804,7 @@ D(bug("[IconList]: %s: labelSplit_CurSplitLength = %d\n", __PRETTY_FUNCTION__, l
 ///IconList__LabelFunc_CreateLabel()
 IPTR IconList__LabelFunc_CreateLabel(Object *obj, struct IconList_DATA *data, struct IconEntry *icon)
 {
-#if defined(DEBUG_ILC_ICONRENDERING)
+#if defined(DEBUG_ILC_ICONRENDERING) && defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s('%s')\n", __PRETTY_FUNCTION__, icon->ie_IconListEntry.label));
 #endif
     if (icon->ie_TxtBuf_DisplayedLabel)
@@ -877,7 +879,7 @@ AROS_UFH3(
 
     struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
-#if defined(DEBUG_ILC_LASSO)
+#if defined(DEBUG_ILC_LASSO) && defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -937,7 +939,7 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
     ULONG txtarea_width;
     ULONG curlabel_TotalLines, curlabel_CurrentLine, offset_y;
 
-#if defined(DEBUG_ILC_ICONRENDERING)
+#if defined(DEBUG_ILC_ICONRENDERING) && defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s(message->icon = 0x%p), '%s'\n", __PRETTY_FUNCTION__, message->icon, message->icon->ie_IconListEntry.label));
 #endif
 
@@ -1096,8 +1098,9 @@ D(bug("[IconList] %s: Drawing Label '%s' .. %d, %d\n", __PRETTY_FUNCTION__, mess
             
             ty = labelY - 1;
 
-    D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->icld_IconLabelFont->tf_YSize, data->icld_IconLabelFont->tf_Baseline));
-
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->icld_IconLabelFont->tf_YSize, data->icld_IconLabelFont->tf_Baseline));
+#endif
             for (curlabel_CurrentLine = 0; curlabel_CurrentLine < curlabel_TotalLines; curlabel_CurrentLine++)
             {
           ULONG ie_LabelLength;
@@ -1261,7 +1264,7 @@ IPTR IconList__MUIM_IconList_RethinkDimensions(struct IClass *CLASS, Object *obj
                       maxy = 0;
     struct Rectangle icon_rect;
 
-#if defined(DEBUG_ILC_ICONPOSITIONING)
+#if defined(DEBUG_ILC_ICONPOSITIONING) && defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -1273,12 +1276,12 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         icon = message->singleicon;
         maxx = data->icld_AreaWidth - 1,
         maxy = data->icld_AreaHeight - 1;
+#if defined(DEBUG_ILC_ICONPOSITIONING)
 D(bug("[IconList] %s: SingleIcon - maxx = %d, maxy = %d\n", __PRETTY_FUNCTION__, maxx, maxy));
+#endif
     }
     else icon = (struct IconEntry *)GetHead(&data->icld_IconList);
 
-   
-    
     while (icon != NULL)
     {
         if (icon->ie_DiskObj &&
@@ -1300,7 +1303,7 @@ D(bug("[IconList] %s: SingleIcon - maxx = %d, maxy = %d\n", __PRETTY_FUNCTION__,
         }
 
         if (message->singleicon) break;
-    
+
         icon = (struct IconEntry *)GetSucc(&icon->ie_IconNode);
     }
 
@@ -1420,7 +1423,7 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
     BOOL  next;
     struct Rectangle iconrect;
 
-#if defined(DEBUG_ILC_ICONPOSITIONING)
+#if defined(DEBUG_ILC_ICONPOSITIONING) && defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -1586,7 +1589,9 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
     struct TextFont      *icl_WindowFont = NULL;
 //    struct RastPort      *icl_RastPort = NULL;
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     icl_WindowFont = (struct TextFont *) GetTagData(MUIA_Font, (IPTR) NULL, message->ops_AttrList);
 
@@ -1606,16 +1611,17 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         CoerceMethod(CLASS,obj,OM_DISPOSE);
         return (IPTR)NULL;
     }
-    
-D(bug("[IconList] %s: SELF = 0x%p, muiRenderInfo = 0x%p\n", __PRETTY_FUNCTION__, obj, muiRenderInfo(obj)));
 
+#if defined(DEBUG_ILC_FUNCS)
+D(bug("[IconList] %s: SELF = 0x%p, muiRenderInfo = 0x%p\n", __PRETTY_FUNCTION__, obj, muiRenderInfo(obj)));
+#endif
     NewList((struct List*)&data->icld_IconList);
     NewList((struct List*)&data->icld_SelectionList);
     data->icld_IconLabelFont = icl_WindowFont;  
 
     /* Get/Set initial values */
 #warning "TODO: TrimVolumeNames should be prefs settable"
-	data->icld__Option_TrimVolumeNames = TRUE;
+    data->icld__Option_TrimVolumeNames = TRUE;
 #warning "TODO: Adjust overlap by window border width"
     data->icld__Option_IconBorderOverlap = 10;
 
@@ -1626,10 +1632,11 @@ D(bug("[IconList] %s: SELF = 0x%p, muiRenderInfo = 0x%p\n", __PRETTY_FUNCTION__,
     if ( data->icld__Option_LabelTextMaxLen < ILC_ICONLABEL_SHORTEST )
         data->icld__Option_LabelTextMaxLen = ILC_ICONLABEL_MAXLINELEN_DEFAULT;
 
-        data->icld__Option_LastLabelTextMaxLen = data->icld__Option_LabelTextMaxLen;
+    data->icld__Option_LastLabelTextMaxLen = data->icld__Option_LabelTextMaxLen;
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList] %s: MaxLineLen : %ld\n", __PRETTY_FUNCTION__, data->icld__Option_LabelTextMaxLen));
-
+#endif
     data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     data->ehn.ehn_Priority = 0;
     data->ehn.ehn_Flags    = 0;
@@ -1655,7 +1662,9 @@ D(bug("[IconList] %s: MaxLineLen : %ld\n", __PRETTY_FUNCTION__, data->icld__Opti
         MUIM_CallHook, &__iconlist_UpdateLabels_hook, (IPTR)CLASS
     );
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList] obj = %ld\n", obj));
+#endif
     return (IPTR)obj;
 }
 ///
@@ -1669,13 +1678,15 @@ IPTR IconList__OM_DISPOSE(struct IClass *CLASS, Object *obj, Msg message)
     struct IconList_DATA *data = INST_DATA(CLASS, obj);
     struct IconEntry    *node = NULL;
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
     
-    #ifdef __AROS__
+#ifdef __AROS__
     ForeachNode(&data->icld_IconList, node)
-    #else
+#else
     Foreach_Node(&data->icld_IconList, node);
-    #endif
+#endif
     {
         if (node->ie_DiskObj) FreeDiskObject(node->ie_DiskObj);
     }
@@ -1702,7 +1713,9 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
                          //oldwidth = data->icld_ViewWidth,
                          //oldheight = data->icld_ViewHeight;
 
+#if defined(DEBUG_ILC_FUNCS) && defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     /* parse initial taglist */
     for (tags = message->ops_AttrList; (tag = NextTagItem((TAGITEM)&tags)); )
@@ -1710,19 +1723,25 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         switch (tag->ti_Tag)
         {
             case MUIA_Virtgroup_Left:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_Virtgroup_Left %ld\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 if (data->icld_ViewX != tag->ti_Data)
                     data->icld_ViewX = tag->ti_Data;
                 break;
     
             case MUIA_Virtgroup_Top:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_Virtgroup_Top %ld\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 if (data->icld_ViewY != tag->ti_Data)
                     data->icld_ViewY = tag->ti_Data;
                 break;
 
             case MUIA_IconList_Rastport:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconList_Rastport 0x%p\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 data->icld_DisplayRastPort = (struct RastPort*)tag->ti_Data;
                 data->icld_DrawOffsetX = _mleft(obj);
                 data->icld_DrawOffsetY = _mtop(obj);
@@ -1734,23 +1753,31 @@ D(bug("[IconList] %s: MUIA_IconList_Rastport 0x%p\n", __PRETTY_FUNCTION__, tag->
                 break;
 
             case MUIA_IconList_BufferRastport:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconList_BufferRastport 0x%p\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 data->icld_BufferRastPort = (struct RastPort*)tag->ti_Data;
                 break;
 
             case MUIA_Font:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_Font 0x%p\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 data->icld_IconLabelFont = (struct TextFont*)tag->ti_Data;
                 break;
 
             case MUIA_IconList_LabelInfoText_Font:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconList_LabelInfoText_Font 0x%p\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 data->icld_IconInfoFont = (struct TextFont*)tag->ti_Data;
                 break;
             
             case MUIA_IconList_DisplayFlags:
                 {
-D(bug("[IconList] %s: MUIA_IconList_DisplayFlags\n", __PRETTY_FUNCTION__));
+#if defined(DEBUG_ILC_ATTRIBS)
+D(bug("[IconList] %s: MUIA_IconList_DisplayFlags %08x\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                     data->icld_DisplayFlags = (ULONG)tag->ti_Data;
 
                     if (data->icld_DisplayFlags & ICONLIST_DISP_BUFFERED)
@@ -1758,7 +1785,7 @@ D(bug("[IconList] %s: MUIA_IconList_DisplayFlags\n", __PRETTY_FUNCTION__));
                         struct BitMap *tmp_BuffBitMap = NULL;
                         ULONG tmp_RastDepth;
 
-#if defined(DEBUG_ILC_ICONRENDERING)
+#if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList] %s: MUIA_IconList_DisplayFlags & ICONLIST_DISP_BUFFERED\n", __PRETTY_FUNCTION__));
 #endif
                         if ((data->icld_BufferRastPort) && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
@@ -1808,22 +1835,30 @@ D(bug("[IconList] %s: MUIA_IconList_DisplayFlags & ICONLIST_DISP_BUFFERED\n", __
                 break;
 
             case MUIA_IconList_SortFlags:
-D(bug("[IconList] %s: MUIA_IconList_SortFlags\n", __PRETTY_FUNCTION__));
+#if defined(DEBUG_ILC_ATTRIBS)
+bug("[IconList] %s: MUIA_IconList_SortFlags %08x\n", __PRETTY_FUNCTION__, tag->ti_Data);
+#endif
                 data->icld_SortFlags = (ULONG)tag->ti_Data;
                 break;
                 
             case MUIA_IconList_IconListMode:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconList_IconListMode %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 data->icld__Option_IconListMode = (UBYTE)tag->ti_Data;
                 break;
             
             case MUIA_IconList_LabelText_Mode:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconList_LabelText_Mode %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 data->icld__Option_LabelTextMode = (UBYTE)tag->ti_Data;
                 break;
             
             case MUIA_IconList_LabelText_MaxLineLen:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconList_LabelText_MaxLineLen %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 if (tag->ti_Data >= ILC_ICONLABEL_SHORTEST)
                 {
                     data->icld__Option_LabelTextMaxLen = (ULONG)tag->ti_Data;
@@ -1835,48 +1870,66 @@ D(bug("[IconList] %s: MUIA_IconList_LabelText_MaxLineLen %d\n", __PRETTY_FUNCTIO
                 break;
             
             case MUIA_IconList_LabelText_MultiLine:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconList_LabelText_MultiLine %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 data->icld__Option_LabelTextMultiLine = (ULONG)tag->ti_Data;
                 if (data->icld__Option_LabelTextMultiLine == 0)data->icld__Option_LabelTextMultiLine = 1;
                 break;
 
             case MUIA_IconList_LabelText_MultiLineOnFocus:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconList_LabelText_MultiLineOnFocus %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 data->icld__Option_LabelTextMultiLineOnFocus = (BOOL)tag->ti_Data;
                 break;
 
             case MUIA_IconList_Icon_HorizontalSpacing:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconList_Icon_HorizontalSpacing %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 data->icld__Option_IconHorizontalSpacing = (UBYTE)tag->ti_Data;
                 break;
 
             case MUIA_IconList_Icon_VerticalSpacing:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconList_Icon_VerticalSpacing %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 data->icld__Option_IconVerticalSpacing = (UBYTE)tag->ti_Data;
                 break;
 
             case MUIA_IconList_Icon_ImageSpacing:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconList_Icon_ImageSpacing %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 data->icld__Option_IconImageSpacing = (UBYTE)tag->ti_Data;
                 break;
 
             case MUIA_IconList_LabelText_HorizontalPadding:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconList_LabelText_HorizontalPadding %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 data->icld__Option_LabelTextHorizontalPadding = (UBYTE)tag->ti_Data;
                 break;
 
             case MUIA_IconList_LabelText_VerticalPadding:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconList_LabelText_VerticalPadding %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 data->icld__Option_LabelTextVerticalPadding = (UBYTE)tag->ti_Data;
                 break;
 
             case MUIA_IconList_LabelText_BorderWidth:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconList_LabelText_BorderWidth %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 data->icld__Option_LabelTextBorderWidth = (UBYTE)tag->ti_Data;
                 break;
 
             case MUIA_IconList_LabelText_BorderHeight:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconList_LabelText_BorderHeight %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+#endif
                 data->icld__Option_LabelTextBorderHeight = (UBYTE)tag->ti_Data;
                 break;
 
@@ -1898,27 +1951,31 @@ D(bug("[IconList] %s: MUIA_IconList_LabelText_BorderHeight %d\n", __PRETTY_FUNCT
 
             /* Settings defined by the view class */
             case MUIA_IconListview_FixedBackground:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconListview_FixedBackground\n", __PRETTY_FUNCTION__));
+#endif
                 data->icld__Option_IconListFixedBackground = (BOOL)tag->ti_Data;
                 break;
 
             case MUIA_IconListview_ScaledBackground:
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s: MUIA_IconListview_ScaledBackground\n", __PRETTY_FUNCTION__));
+#endif
                 data->icld__Option_IconListScaledBackground = (BOOL)tag->ti_Data;
                 break;
 
             /* We listen for MUIA_Background and set default values for known types */
             case MUIA_Background:
-#if defined(DEBUG_ILC_ICONRENDERING)
+#if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList] %s: MUIA_Background\n", __PRETTY_FUNCTION__));
 #endif
                 {
                     char *bgmode_string = (char *)tag->ti_Data;
                     BYTE this_mode = bgmode_string[0] - 48;
 
-    #if defined(DEBUG_ILC_ICONRENDERING)
+#if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
     D(bug("[IconList] %s: MUIA_Background | MUI BG Mode = %d\n", __PRETTY_FUNCTION__, this_mode));
-    #endif
+#endif
                     switch (this_mode)
                     {
                     case 0:
@@ -1950,18 +2007,23 @@ D(bug("[IconList] %s: MUIA_Background\n", __PRETTY_FUNCTION__));
         }
     }
 
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s(), out of switch\n", __PRETTY_FUNCTION__));
-
+#endif
     if ((oldleft != data->icld_ViewX) || (oldtop != data->icld_ViewY))
     {
         data->icld_UpdateMode = UPDATE_SCROLL;
         data->update_scrolldx = data->icld_ViewX - oldleft;
         data->update_scrolldy = data->icld_ViewY - oldtop;
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s(), call MUI_Redraw()\n", __PRETTY_FUNCTION__));
+#endif
         MUI_Redraw(obj, MADF_DRAWUPDATE);
     }
 
+#if defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList] %s(), call DoSuperMethodA()\n", __PRETTY_FUNCTION__));
+#endif
     return DoSuperMethodA(CLASS, obj, (Msg)message);
 }
 ///
@@ -1976,61 +2038,82 @@ IPTR IconList__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *message)
 #define STORE *(message->opg_Storage)
     struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
+#if defined(DEBUG_ILC_FUNCS) && defined(DEBUG_ILC_ATTRIBS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     switch (message->opg_AttrID)
     {
-        case MUIA_IconList_Rastport:                     STORE = (IPTR)data->icld_DisplayRastPort; return 1;
-        case MUIA_IconList_BufferRastport:               STORE = (IPTR)data->icld_BufferRastPort; return 1;
-        case MUIA_IconList_BufferLeft:                   STORE = (IPTR)data->icld_DrawOffsetX; return 1;
-        case MUIA_IconList_BufferTop:                    STORE = (IPTR)data->icld_DrawOffsetY; return 1;
-        case MUIA_Virtgroup_Left:                         STORE = (IPTR)data->icld_ViewX; return 1;
-        case MUIA_Virtgroup_Top:                          STORE = (IPTR)data->icld_ViewY; return 1;
+        case MUIA_IconList_Rastport:                    STORE = (IPTR)data->icld_DisplayRastPort; return 1;
+        case MUIA_IconList_BufferRastport:              STORE = (IPTR)data->icld_BufferRastPort; return 1;
+        case MUIA_IconList_BufferLeft:                  STORE = (IPTR)data->icld_DrawOffsetX; return 1;
+        case MUIA_IconList_BufferTop:                   STORE = (IPTR)data->icld_DrawOffsetY; return 1;
         case MUIA_IconList_BufferWidth:
-        case MUIA_IconList_Width:                        STORE = (IPTR)data->icld_AreaWidth; return 1;
+        case MUIA_IconList_Width:                       STORE = (IPTR)data->icld_AreaWidth; return 1;
         case MUIA_IconList_BufferHeight:
-        case MUIA_IconList_Height:                       STORE = (IPTR)data->icld_AreaHeight; return 1;
-        case MUIA_IconList_IconsDropped:                 STORE = (IPTR)data->icld_DragDropEvent; return 1;
-        case MUIA_IconList_Clicked:                      STORE = (IPTR)&data->icld_ClickEvent; return 1;
-        case MUIA_IconList_IconListMode:                 STORE = (IPTR)data->icld__Option_IconListMode; return 1;
-        case MUIA_IconList_LabelText_Mode:               STORE = (IPTR)data->icld__Option_LabelTextMode; return 1;
-        case MUIA_IconList_LabelText_MaxLineLen:         STORE = (IPTR)data->icld__Option_LabelTextMaxLen; return 1;
-        case MUIA_IconList_LabelText_MultiLine:          STORE = (IPTR)data->icld__Option_LabelTextMultiLine; return 1;
-        case MUIA_IconList_LabelText_MultiLineOnFocus:   STORE = (IPTR)data->icld__Option_LabelTextMultiLineOnFocus; return 1;
-        case MUIA_IconList_DisplayFlags:                 STORE = (IPTR)data->icld_DisplayFlags; return 1;
-        case MUIA_IconList_SortFlags:                    STORE = (IPTR)data->icld_SortFlags; return 1;
+        case MUIA_IconList_Height:                      STORE = (IPTR)data->icld_AreaHeight; return 1;
+        case MUIA_IconList_IconsDropped:                STORE = (IPTR)data->icld_DragDropEvent; return 1;
+        case MUIA_IconList_Clicked:                     STORE = (IPTR)&data->icld_ClickEvent; return 1;
+        case MUIA_IconList_IconListMode:                STORE = (IPTR)data->icld__Option_IconListMode; return 1;
+        case MUIA_IconList_LabelText_Mode:              STORE = (IPTR)data->icld__Option_LabelTextMode; return 1;
+        case MUIA_IconList_LabelText_MaxLineLen:        STORE = (IPTR)data->icld__Option_LabelTextMaxLen; return 1;
+        case MUIA_IconList_LabelText_MultiLine:         STORE = (IPTR)data->icld__Option_LabelTextMultiLine; return 1;
+        case MUIA_IconList_LabelText_MultiLineOnFocus:  STORE = (IPTR)data->icld__Option_LabelTextMultiLineOnFocus; return 1;
+        case MUIA_IconList_DisplayFlags:                STORE = (IPTR)data->icld_DisplayFlags; return 1;
+        case MUIA_IconList_SortFlags:                   STORE = (IPTR)data->icld_SortFlags; return 1;
 
-        case MUIA_IconList_FocusIcon:                    STORE = (IPTR)data->icld_FocusIcon; return 1;
+        case MUIA_IconList_FocusIcon:                   STORE = (IPTR)data->icld_FocusIcon; return 1;
 
-        case MUIA_Font:                                  STORE = (IPTR)data->icld_IconLabelFont; return 1;
-        case MUIA_IconList_LabelText_Pen:                STORE = (IPTR)data->icld_LabelPen; return 1;
-        case MUIA_IconList_LabelText_ShadowPen:          STORE = (IPTR)data->icld_LabelShadowPen; return 1;
-        case MUIA_IconList_LabelInfoText_Font:           STORE = (IPTR)data->icld_IconInfoFont; return 1;
-        case MUIA_IconList_LabelInfoText_Pen:            STORE = (IPTR)data->icld_InfoPen; return 1;
-        case MUIA_IconList_LabelInfoText_ShadowPen:      STORE = (IPTR)data->icld_InfoShadowPen; return 1;
+        case MUIA_Font:                                 STORE = (IPTR)data->icld_IconLabelFont; return 1;
+        case MUIA_IconList_LabelText_Pen:               STORE = (IPTR)data->icld_LabelPen; return 1;
+        case MUIA_IconList_LabelText_ShadowPen:         STORE = (IPTR)data->icld_LabelShadowPen; return 1;
+        case MUIA_IconList_LabelInfoText_Font:          STORE = (IPTR)data->icld_IconInfoFont; return 1;
+        case MUIA_IconList_LabelInfoText_Pen:           STORE = (IPTR)data->icld_InfoPen; return 1;
+        case MUIA_IconList_LabelInfoText_ShadowPen:     STORE = (IPTR)data->icld_InfoShadowPen; return 1;
 
-        case MUIA_IconList_Icon_HorizontalSpacing:       STORE = (IPTR)data->icld__Option_IconHorizontalSpacing; return 1;
-        case MUIA_IconList_Icon_VerticalSpacing:         STORE = (IPTR)data->icld__Option_IconVerticalSpacing; return 1;
-        case MUIA_IconList_Icon_ImageSpacing:            STORE = (IPTR)data->icld__Option_IconImageSpacing; return 1;
-        case MUIA_IconList_LabelText_HorizontalPadding:  STORE = (IPTR)data->icld__Option_LabelTextHorizontalPadding; return 1;
-        case MUIA_IconList_LabelText_VerticalPadding:    STORE = (IPTR)data->icld__Option_LabelTextVerticalPadding; return 1;
-        case MUIA_IconList_LabelText_BorderWidth:        STORE = (IPTR)data->icld__Option_LabelTextBorderWidth; return 1;
-        case MUIA_IconList_LabelText_BorderHeight:       STORE = (IPTR)data->icld__Option_LabelTextBorderHeight; return 1;
+        case MUIA_IconList_Icon_HorizontalSpacing:      STORE = (IPTR)data->icld__Option_IconHorizontalSpacing; return 1;
+        case MUIA_IconList_Icon_VerticalSpacing:        STORE = (IPTR)data->icld__Option_IconVerticalSpacing; return 1;
+        case MUIA_IconList_Icon_ImageSpacing:           STORE = (IPTR)data->icld__Option_IconImageSpacing; return 1;
+        case MUIA_IconList_LabelText_HorizontalPadding: STORE = (IPTR)data->icld__Option_LabelTextHorizontalPadding; return 1;
+        case MUIA_IconList_LabelText_VerticalPadding:   STORE = (IPTR)data->icld__Option_LabelTextVerticalPadding; return 1;
+        case MUIA_IconList_LabelText_BorderWidth:       STORE = (IPTR)data->icld__Option_LabelTextBorderWidth; return 1;
+        case MUIA_IconList_LabelText_BorderHeight:      STORE = (IPTR)data->icld__Option_LabelTextBorderHeight; return 1;
 
         /* Settings defined by the view class */
-        case MUIA_IconListview_FixedBackground:          STORE = (IPTR)data->icld__Option_IconListFixedBackground; return 1;
-        case MUIA_IconListview_ScaledBackground:         STORE = (IPTR)data->icld__Option_IconListScaledBackground; return 1;
+        case MUIA_IconListview_FixedBackground:         STORE = (IPTR)data->icld__Option_IconListFixedBackground; return 1;
+        case MUIA_IconListview_ScaledBackground:        STORE = (IPTR)data->icld__Option_IconListScaledBackground; return 1;
             
         /* ICON obj Changes */
-        case MUIA_Group_ChildList :    STORE = (IPTR)&data->icld_IconList; return 1; /* Get our list object */
+        case MUIA_Virtgroup_Left:                       STORE = (IPTR)data->icld_ViewX; return 1;
+        case MUIA_Virtgroup_Top:                        STORE = (IPTR)data->icld_ViewY; return 1;
+        case MUIA_Group_ChildList:                      STORE = (IPTR)&data->icld_IconList; return 1; /* Get our list object */
     }
 
-    if (DoSuperMethodA(CLASS, obj, (Msg) message)) 
+    if (DoSuperMethodA(CLASS, obj, (Msg) message))
         return 1;
+
     return 0;
 #undef STORE
 }
 ///
+
+IPTR IconList__OM_ADDMEMBER(struct IClass *CLASS, Object *obj, APTR message)
+{
+#if defined(DEBUG_ILC_FUNCS)
+D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
+
+    return NULL;
+}
+
+IPTR IconList__OM_REMMEMBER(struct IClass *CLASS, Object *obj, APTR message)
+{
+#if defined(DEBUG_ILC_FUNCS)
+D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
+
+    return NULL;
+}
 
 ///MUIM_Setup()
 /**************************************************************************
@@ -2042,7 +2125,9 @@ IPTR IconList__MUIM_Setup(struct IClass *CLASS, Object *obj, struct MUIP_Setup *
     struct IconEntry    *node = NULL;
     IPTR                 geticon_error = 0;
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     if (!DoSuperMethodA(CLASS, obj, (Msg) message)) return 0;
 
@@ -2054,7 +2139,9 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
     if (data->icld_IconLabelFont == NULL)   data->icld_IconLabelFont = _font(obj);
     if (data->icld_IconInfoFont == NULL)    data->icld_IconInfoFont = data->icld_IconLabelFont;
+#if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList] %s: Use Font @ 0x%p, RastPort @ 0x%p\n", __PRETTY_FUNCTION__, data->icld_IconLabelFont, data->icld_BufferRastPort ));
+#endif
 
     /* Set our base options .. */
     data->icld_LabelPen                           = _pens(obj)[MPEN_SHINE];
@@ -2075,16 +2162,18 @@ D(bug("[IconList] %s: Use Font @ 0x%p, RastPort @ 0x%p\n", __PRETTY_FUNCTION__, 
     data->icld__Option_LabelTextBorderWidth       = ILC_ICONLABEL_BORDERWIDTH_DEFAULT;
     data->icld__Option_LabelTextBorderHeight      = ILC_ICONLABEL_BORDERHEIGHT_DEFAULT;
 
-    #ifdef __AROS__
+#ifdef __AROS__
     ForeachNode(&data->icld_IconList, node)
-    #else
+#else
     Foreach_Node(&data->icld_IconList, node);
-    #endif
+#endif
     {
         if (!node->ie_DiskObj)
         {
             IPTR iconlistScreen = _screen(obj);
+#if defined(DEBUG_ILC_ICONRENDERING)
 bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistScreen);
+#endif
             if (!(node->ie_DiskObj = GetIconTags(node->ie_IconNode.ln_Name,
                                                 (iconlistScreen) ? ICONGETA_Screen : TAG_IGNORE, iconlistScreen,
                                                 (iconlistScreen) ? ICONGETA_RemapIcon : TAG_IGNORE, TRUE,
@@ -2093,7 +2182,9 @@ bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistScr
                                                 ICONA_ErrorCode, &geticon_error,
                                                 TAG_DONE)))
             {
+#if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList] %s: Failed to obtain Icon '%s's diskobj! (error code = 0x%p)\n", __PRETTY_FUNCTION__, node->ie_IconNode.ln_Name, geticon_error));
+#endif
                 /*  We should probably remove this node if the icon cant be obtained ? */
             }
         }
@@ -2113,7 +2204,9 @@ IPTR IconList__MUIM_Show(struct IClass *CLASS, Object *obj, struct MUIP_Show *me
                         newtop;
     IPTR                rc;
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     if ((rc = DoSuperMethodA(CLASS, obj, (Msg)message)))
     {
@@ -2143,7 +2236,9 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
             }
             else
             {
+#if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList] IconList__MUIM_Show: ERROR - NULL RastPort!\n"));
+#endif
             }
         }
 
@@ -2180,7 +2275,9 @@ D(bug("[IconList] IconList__MUIM_Show: ERROR - NULL RastPort!\n"));
         }
         if (data->icld_IconLabelFont == NULL)       data->icld_IconLabelFont = _font(obj);
         if (data->icld_IconInfoFont == NULL)        data->icld_IconInfoFont = data->icld_IconLabelFont;
+#if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList] IconList__MUIM_Show: Use Font @ 0x%p, RastPort @ 0x%p\n", data->icld_IconLabelFont, data->icld_BufferRastPort ));
+#endif
 
         if ((data->icld_BufferRastPort) && (data->icld_IconLabelFont))
             SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
@@ -2198,7 +2295,9 @@ IPTR IconList__MUIM_Hide(struct IClass *CLASS, Object *obj, struct MUIP_Hide *me
     struct IconList_DATA *data = INST_DATA(CLASS, obj);
     IPTR                rc;
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     if ((rc = DoSuperMethodA(CLASS, obj, (Msg)message)))
     {
@@ -2228,7 +2327,10 @@ IPTR IconList__MUIM_Cleanup(struct IClass *CLASS, Object *obj, struct MUIP_Clean
     struct IconList_DATA *data = INST_DATA(CLASS, obj);
     struct IconEntry    *node = NULL;
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
+
 #ifdef __AROS__
     ForeachNode(&data->icld_IconList, node)
 #else
@@ -2256,7 +2358,9 @@ IPTR IconList__MUIM_AskMinMax(struct IClass *CLASS, Object *obj, struct MUIP_Ask
 {
     ULONG rc = DoSuperMethodA(CLASS, obj, (Msg) message);
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     message->MinMaxInfo->MinWidth  += 96;
     message->MinMaxInfo->MinHeight += 64;
@@ -2280,7 +2384,9 @@ IPTR IconList__MUIM_Layout(struct IClass *CLASS, Object *obj,struct MUIP_Layout 
     struct IconList_DATA *data = INST_DATA(CLASS, obj);
     ULONG rc;
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     rc = DoSuperMethodA(CLASS, obj, (Msg)message);
 
@@ -2311,7 +2417,9 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 
     IPTR          draw_id = DrawCount++;
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s(obj @ 0x%p)\n", __PRETTY_FUNCTION__, obj));
+#endif
 
 D(bug("[IconList] %s: id %d\n", __PRETTY_FUNCTION__, draw_id));
     
@@ -2341,14 +2449,16 @@ D(bug("[IconList] %s: id %d\n", __PRETTY_FUNCTION__, draw_id));
     if ((message->flags & MADF_DRAWUPDATE) || (data->icld_UpdateMode == UPDATE_RESIZE))
     {
 #if defined(DEBUG_ILC_ICONRENDERING)
-        if (message->flags & MADF_DRAWUPDATE)
-        {
-D(bug("[IconList] %s#%d: MADF_DRAWUPDATE\n", __PRETTY_FUNCTION__, draw_id));
-        }
-        else
-        {
-D(bug("[IconList] %s#%d: UPDATE_RESIZE\n", __PRETTY_FUNCTION__, draw_id));
-        }
+        D(
+            if (message->flags & MADF_DRAWUPDATE)
+            {
+                bug("[IconList] %s#%d: MADF_DRAWUPDATE\n", __PRETTY_FUNCTION__, draw_id);
+            }
+            else
+            {
+                bug("[IconList] %s#%d: UPDATE_RESIZE\n", __PRETTY_FUNCTION__, draw_id);
+            }
+        )
 #endif
         if ((data->icld_UpdateMode == UPDATE_SINGLEICON) && (data->update_icon != NULL)) /* draw only a single icon at update_icon */
         {
@@ -2816,7 +2926,9 @@ IPTR IconList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, struct MU
 {
     struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     data->icld_FocusIcon = NULL;
     SET(obj, MUIA_IconList_Changed, TRUE);
@@ -2834,7 +2946,9 @@ IPTR IconList__MUIM_IconList_Clear(struct IClass *CLASS, Object *obj, struct MUI
     struct IconList_DATA *data = INST_DATA(CLASS, obj);
     struct IconEntry    *node = NULL;
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     while ((node = (struct IconEntry*)RemTail((struct List*)&data->icld_IconList)))
     {
@@ -2871,7 +2985,9 @@ IPTR IconList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Object *obj, str
 {
     struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     if (message->icon)
     {
@@ -2924,8 +3040,10 @@ IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, stru
     struct Rectangle     rect;
 
     IPTR                 geticon_error = 0;
-    
+
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     /*disk object (icon)*/
     if (message->icon_dob == NULL)
@@ -3165,7 +3283,9 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 {
     struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     if (message->imsg)
     {
@@ -4512,11 +4632,12 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
 
                         /* get absolute Lasso coordinates */
                         GetAbsoluteLassoRect(data, &new_lasso);
-                        #ifdef __AROS__
+
+#ifdef __AROS__
                         ForeachNode(&data->icld_IconList, node)
-                        #else
+#else
                         Foreach_Node(&data->icld_IconList, node);
-                        #endif
+#endif
                         {
                             IPTR update_icon = (IPTR)NULL;
 
@@ -4631,7 +4752,9 @@ IPTR IconList__MUIM_IconList_NextIcon(struct IClass *CLASS, Object *obj, struct 
     if (message->entry == NULL) return (IPTR)NULL;
     ent = *message->entry;
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     if ((IPTR)ent == (IPTR)MUIV_IconList_NextIcon_Start)
     {
@@ -4708,12 +4831,12 @@ IPTR IconList__MUIM_IconList_GetIconPrivate(struct IClass *CLASS, Object *obj, s
 {
 //    struct IconList_DATA    *data = INST_DATA(CLASS, obj);
     struct IconEntry       *node = NULL;
-	
+
     if (message->entry == NULL) return (IPTR)NULL;
 
-	node = (struct IconEntry *)((IPTR)message->entry - ((IPTR)&node->ie_IconListEntry - (IPTR)node));
+    node = (struct IconEntry *)((IPTR)message->entry - ((IPTR)&node->ie_IconListEntry - (IPTR)node));
 
-	return (IPTR)node;
+    return (IPTR)node;
 }
 
 ///MUIM_CreateDragImage()
@@ -4727,7 +4850,9 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
     LONG                    first_x = -1,
                             first_y = -1;
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     if (!(data->icld_SelectionLastClicked)) DoSuperMethodA(CLASS, obj, (Msg)message);
 
@@ -4820,7 +4945,9 @@ IPTR IconList__MUIM_DeleteDragImage(struct IClass *CLASS, Object *obj, struct MU
 {
     struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     if (!(data->icld_SelectionLastClicked)) return DoSuperMethodA(CLASS,obj,(Msg)message);
 
@@ -4840,8 +4967,11 @@ MUIM_DragQuery
 **************************************************************************/
 IPTR IconList__MUIM_DragQuery(struct IClass *CLASS, Object *obj, struct MUIP_DragQuery *message)
 {
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
-    if (message->obj == obj) return MUIV_DragQuery_Accept;
+#endif
+    if (message->obj == obj)
+        return MUIV_DragQuery_Accept;
     else
     {
         BOOL           is_iconlist = FALSE;
@@ -4856,7 +4986,8 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
             }
             msg_cl = msg_cl->cl_Super;
         }
-        if (is_iconlist) return MUIV_DragQuery_Accept;
+        if (is_iconlist)
+            return MUIV_DragQuery_Accept;
     }
 
     return MUIV_DragQuery_Refuse;
@@ -4871,7 +5002,9 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
 {
     struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     struct IconList_Entry *entry    = (IPTR)MUIV_IconList_NextIcon_Start;
 
@@ -5115,15 +5248,17 @@ IPTR IconList__MUIM_IconList_UnselectAll(struct IClass *CLASS, Object *obj, Msg 
     struct Node         	*node = NULL, *next_node = NULL;
 	BOOL					changed = FALSE;
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     data->icld_SelectionLastClicked = NULL;
     data->icld_FocusIcon = NULL;
-    #ifdef __AROS__
+#ifdef __AROS__
     ForeachNodeSafe(&data->icld_SelectionList, node, next_node)
-    #else
+#else
     Foreach_NodeSafe(&data->icld_SelectionList, node, next_node);
-    #endif
+#endif
     {
         struct IconEntry    *entry = (struct IconEntry *)((IPTR)node - ((IPTR)&entry->ie_SelectionNode - (IPTR)entry));
         BOOL                update_icon = FALSE;
@@ -5169,7 +5304,9 @@ IPTR IconList__MUIM_IconList_SelectAll(struct IClass *CLASS, Object *obj, Msg me
     struct IconEntry    	*node = NULL;
 	BOOL					changed = FALSE;
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     node = (struct IconEntry *)GetHead(&data->icld_IconList);
 
@@ -5195,7 +5332,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
             if (update_icon)
             {
-				changed = TRUE;
+                changed = TRUE;
                 data->icld_UpdateMode = UPDATE_SINGLEICON;
                 data->update_icon = node;
                 MUI_Redraw(obj, MADF_DRAWUPDATE);
@@ -5209,16 +5346,16 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         data->icld_FocusIcon = data->icld_SelectionLastClicked;
         if (!(data->icld_FocusIcon->ie_Flags & ICONENTRY_FLAG_FOCUS))
         {
-                data->icld_FocusIcon->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                data->icld_FocusIcon->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                data->icld_UpdateMode = UPDATE_SINGLEICON;
-                data->update_icon = data->icld_FocusIcon;
-                MUI_Redraw(obj, MADF_DRAWUPDATE);
+            data->icld_FocusIcon->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
+            data->icld_FocusIcon->ie_Flags |= ICONENTRY_FLAG_FOCUS;
+            data->icld_UpdateMode = UPDATE_SINGLEICON;
+            data->update_icon = data->icld_FocusIcon;
+            MUI_Redraw(obj, MADF_DRAWUPDATE);
         }
     }
 
-	if (changed)
-		SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+    if (changed)
+        SET(obj, MUIA_IconList_SelectionChanged, TRUE);
 
     return 1;
 }
@@ -5239,7 +5376,7 @@ IPTR IconList__MUIM_IconList_CoordsSort(struct IClass *CLASS, Object *obj, struc
         perform a quick sort of the iconlist based on icon coords
         this method DOESNT cause any visual output.
     */
-#if defined(DEBUG_ILC_ICONSORTING)
+#if defined(DEBUG_ILC_FUNCS) && defined(DEBUG_ILC_ICONSORTING)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -5257,30 +5394,33 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
     while ((entry = (struct IconEntry *)RemTail((struct List*)&list_VisibleIcons)))
     {
-        test_icon = (struct IconEntry *)GetTail(&data->icld_IconList);
-
-        while (test_icon != NULL)
+        if ((test_icon = (struct IconEntry *)GetTail(&data->icld_IconList)) != NULL)
         {
-            if (((data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL) && (test_icon->ie_IconX > entry->ie_IconX)) ||
-                (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL) && (test_icon->ie_IconY > entry->ie_IconY)))
+            while (test_icon != NULL)
             {
-                test_icon = (struct IconEntry *)GetPred(&test_icon->ie_IconNode);
-                continue;
+                if (((data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL) && (test_icon->ie_IconX > entry->ie_IconX)) ||
+                    (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL) && (test_icon->ie_IconY > entry->ie_IconY)))
+                {
+                    test_icon = (struct IconEntry *)GetPred(&test_icon->ie_IconNode);
+                    continue;
+                }
+                else break;
             }
-            else break;
-        }
 
-        while (test_icon != NULL)
-        {
-            if (((data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL) && (test_icon->ie_IconY > entry->ie_IconY)) ||
-                (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL) && (test_icon->ie_IconX > entry->ie_IconX)))
+            while (test_icon != NULL)
             {
-                test_icon = (struct IconEntry *)GetPred(&test_icon->ie_IconNode);
-                continue;
+                if (((data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL) && (test_icon->ie_IconY > entry->ie_IconY)) ||
+                    (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL) && (test_icon->ie_IconX > entry->ie_IconX)))
+                {
+                    test_icon = (struct IconEntry *)GetPred(&test_icon->ie_IconNode);
+                    continue;
+                }
+                else break;
             }
-            else break;
+            Insert((struct List*)&data->icld_IconList, (struct Node *)&entry->ie_IconNode, (struct Node *)&test_icon->ie_IconNode);
         }
-        Insert((struct List*)&data->icld_IconList, (struct Node *)&entry->ie_IconNode, (struct Node *)&test_icon->ie_IconNode);
+        else
+            AddTail((struct List*)&data->icld_IconList, (struct Node *)&entry->ie_IconNode);
     }
 #if defined(DEBUG_ILC_ICONSORTING)
 D(bug("[IconList] %s: Done\n", __PRETTY_FUNCTION__));
@@ -5323,13 +5463,9 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
     BOOL                sortme, enqueue = FALSE;
     int                 i, visible_count = 0;
 
-#if defined(DEBUG_ILC_ICONSORTING)
+#if defined(DEBUG_ILC_FUNCS) && defined(DEBUG_ILC_ICONSORTING)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
-
-    NewList((struct List*)&list_VisibleIcons);
-    NewList((struct List*)&list_SortedIcons);
-    NewList((struct List*)&list_HiddenIcons);
 
     /* Reset incase view options have changed .. */
     data->icld_IconAreaLargestWidth = 0;
@@ -5337,77 +5473,85 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     data->icld_IconLargestHeight = 0;
     data->icld_LabelLargestHeight = 0;
 
-    /*move list into our local list struct(s)*/
-    while ((entry = (struct IconEntry *)RemTail((struct List*)&data->icld_IconList)))
-    {
-        if (entry->ie_DiskObj)
-        {
-            if (entry->ie_IconX != entry->ie_DiskObj->do_CurrentX)
-            {
-                entry->ie_IconX = entry->ie_DiskObj->do_CurrentX;
-                if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == 0)
-                    entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
-            }
-            if (entry->ie_IconY != entry->ie_DiskObj->do_CurrentY)
-            {
-                entry->ie_IconY = entry->ie_DiskObj->do_CurrentY;
-                if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == 0)
-                    entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
-            }
-        }
-
-        if (!(entry->ie_Flags & ICONENTRY_FLAG_HASICON))
-        {
-            if (data->icld_DisplayFlags & ICONLIST_DISP_SHOWINFO)
-            {
-                if (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-                {
-                    entry->ie_Flags &= ~(ICONENTRY_FLAG_VISIBLE|ICONENTRY_FLAG_NEEDSUPDATE);
-                }
-            }
-            else if (!(entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
-            {
-                entry->ie_Flags |= (ICONENTRY_FLAG_VISIBLE|ICONENTRY_FLAG_NEEDSUPDATE);
-            }
-        }
-        else
-        {
-            if (!(entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
-            {
-                entry->ie_Flags |= (ICONENTRY_FLAG_VISIBLE|ICONENTRY_FLAG_NEEDSUPDATE);
-            }
-        }
-
-        /* Now we have fixed visibility lets dump them into the correct list for sorting */
-        if (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-        {
-            if(entry->ie_AreaWidth > data->icld_IconAreaLargestWidth) data->icld_IconAreaLargestWidth = entry->ie_AreaWidth;
-            if(entry->ie_AreaHeight > data->icld_IconAreaLargestHeight) data->icld_IconAreaLargestHeight = entry->ie_AreaHeight;
-            if(entry->ie_IconHeight > data->icld_IconLargestHeight) data->icld_IconLargestHeight = entry->ie_IconHeight;
-            if((entry->ie_AreaHeight - entry->ie_IconHeight) > data->icld_LabelLargestHeight) data->icld_LabelLargestHeight = entry->ie_AreaHeight - entry->ie_IconHeight;
-
-            if (((data->icld_SortFlags & ICONLIST_SORT_MASK) == 0) && (entry->ie_IconX == NO_ICON_POSITION))
-                AddTail((struct List*)&list_VisibleIcons, (struct Node *)&entry->ie_IconNode);
-            else
-                AddHead((struct List*)&list_VisibleIcons, (struct Node *)&entry->ie_IconNode);
-            visible_count++;
-        }
-        else
-        {
-            if (entry->ie_Flags & ICONENTRY_FLAG_SELECTED)
-            {
-                Remove(&entry->ie_SelectionNode);
-            }
-            entry->ie_Flags &= ~(ICONENTRY_FLAG_SELECTED|ICONENTRY_FLAG_FOCUS);
-            if (data->icld_SelectionLastClicked == entry) data->icld_SelectionLastClicked = NULL;
-            if (data->icld_FocusIcon == entry) data->icld_FocusIcon = data->icld_SelectionLastClicked;
-            AddHead((struct List*)&list_HiddenIcons, (struct Node *)&entry->ie_IconNode);
-        }
-    }
-
-    /* Copy each visible icon entry back to the main list, sorting as we go*/
     if ((data->icld_SortFlags & ICONLIST_SORT_MASK) != 0)
     {
+#if defined(DEBUG_ILC_ICONSORTING)
+D(bug("[IconList] %s: Sorting (Flags %x)\n", __PRETTY_FUNCTION__, (data->icld_SortFlags & ICONLIST_SORT_MASK)));
+#endif
+        NewList((struct List*)&list_VisibleIcons);
+        NewList((struct List*)&list_SortedIcons);
+        NewList((struct List*)&list_HiddenIcons);
+
+        /*move list into our local list struct(s)*/
+        while ((entry = (struct IconEntry *)RemTail((struct List*)&data->icld_IconList)))
+        {
+            if (entry->ie_DiskObj)
+            {
+                if (entry->ie_IconX != entry->ie_DiskObj->do_CurrentX)
+                {
+                    entry->ie_IconX = entry->ie_DiskObj->do_CurrentX;
+                    if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == 0)
+                        entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
+                }
+                if (entry->ie_IconY != entry->ie_DiskObj->do_CurrentY)
+                {
+                    entry->ie_IconY = entry->ie_DiskObj->do_CurrentY;
+                    if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == 0)
+                        entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
+                }
+            }
+
+            if (!(entry->ie_Flags & ICONENTRY_FLAG_HASICON))
+            {
+                if (data->icld_DisplayFlags & ICONLIST_DISP_SHOWINFO)
+                {
+                    if (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+                    {
+                        entry->ie_Flags &= ~(ICONENTRY_FLAG_VISIBLE|ICONENTRY_FLAG_NEEDSUPDATE);
+                    }
+                }
+                else if (!(entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
+                {
+                    entry->ie_Flags |= (ICONENTRY_FLAG_VISIBLE|ICONENTRY_FLAG_NEEDSUPDATE);
+                }
+            }
+            else
+            {
+                if (!(entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
+                {
+                    entry->ie_Flags |= (ICONENTRY_FLAG_VISIBLE|ICONENTRY_FLAG_NEEDSUPDATE);
+                }
+            }
+
+            /* Now we have fixed visibility lets dump them into the correct list for sorting */
+            if (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+            {
+                if(entry->ie_AreaWidth > data->icld_IconAreaLargestWidth) data->icld_IconAreaLargestWidth = entry->ie_AreaWidth;
+                if(entry->ie_AreaHeight > data->icld_IconAreaLargestHeight) data->icld_IconAreaLargestHeight = entry->ie_AreaHeight;
+                if(entry->ie_IconHeight > data->icld_IconLargestHeight) data->icld_IconLargestHeight = entry->ie_IconHeight;
+                if((entry->ie_AreaHeight - entry->ie_IconHeight) > data->icld_LabelLargestHeight) data->icld_LabelLargestHeight = entry->ie_AreaHeight - entry->ie_IconHeight;
+
+                if (((data->icld_SortFlags & ICONLIST_SORT_MASK) == 0) && (entry->ie_IconX == NO_ICON_POSITION))
+                    AddTail((struct List*)&list_VisibleIcons, (struct Node *)&entry->ie_IconNode);
+                else
+                    AddHead((struct List*)&list_VisibleIcons, (struct Node *)&entry->ie_IconNode);
+                visible_count++;
+            }
+            else
+            {
+                if (entry->ie_Flags & ICONENTRY_FLAG_SELECTED)
+                {
+                    Remove(&entry->ie_SelectionNode);
+                }
+                entry->ie_Flags &= ~(ICONENTRY_FLAG_SELECTED|ICONENTRY_FLAG_FOCUS);
+                if (data->icld_SelectionLastClicked == entry) data->icld_SelectionLastClicked = NULL;
+                if (data->icld_FocusIcon == entry) data->icld_FocusIcon = data->icld_SelectionLastClicked;
+                AddHead((struct List*)&list_HiddenIcons, (struct Node *)&entry->ie_IconNode);
+            }
+        }
+
+        /* Copy each visible icon entry back to the main list, sorting as we go*/
+
         while ((entry = (struct IconEntry *)RemHead((struct List*)&list_VisibleIcons)))
         {
             icon1 = (struct IconEntry *)GetHead(&list_SortedIcons);
@@ -5508,22 +5652,25 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         }
 	if (enqueue)
 	{
-		/* Quickly resort based on node priorities .. */
-		while ((entry = (struct IconEntry *)RemHead((struct List*)&list_SortedIcons)))
-		{
-			Enqueue((struct List*)&data->icld_IconList, (struct Node *)&entry->ie_IconNode);
-		}
+            /* Quickly resort based on node priorities .. */
+            while ((entry = (struct IconEntry *)RemHead((struct List*)&list_SortedIcons)))
+            {
+                Enqueue((struct List*)&data->icld_IconList, (struct Node *)&entry->ie_IconNode);
+            }
 	}
 	else
 	{
-		while ((entry = (struct IconEntry *)RemHead((struct List*)&list_SortedIcons)))
-		{
-			AddTail((struct List*)&data->icld_IconList, (struct Node *)&entry->ie_IconNode);
-		}
+            while ((entry = (struct IconEntry *)RemHead((struct List*)&list_SortedIcons)))
+            {
+                AddTail((struct List*)&data->icld_IconList, (struct Node *)&entry->ie_IconNode);
+            }
 	}
     }
     else
     {
+#if defined(DEBUG_ILC_ICONSORTING)
+D(bug("[IconList] %s: Coord Sorting\n", __PRETTY_FUNCTION__));
+#endif
         DoMethod(obj, MUIM_IconList_CoordsSort);
     }
 
@@ -5533,14 +5680,13 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     if ((data->icld_SortFlags & ICONLIST_SORT_MASK) != 0)
     {
         DoMethod(obj, MUIM_IconList_CoordsSort);
-    }
 
-    /* leave hidden icons on a seperate list to speed up normal list parsing ? */
-    while ((entry = (struct IconEntry *)RemHead((struct List*)&list_HiddenIcons)))
-    {
-        AddTail((struct List*)&data->icld_IconList, (struct Node *)&entry->ie_IconNode);
+        /* leave hidden icons on a seperate list to speed up normal list parsing ? */
+        while ((entry = (struct IconEntry *)RemHead((struct List*)&list_HiddenIcons)))
+        {
+            AddTail((struct List*)&data->icld_IconList, (struct Node *)&entry->ie_IconNode);
+        }
     }
-
     SET(obj, MUIA_IconList_Changed, TRUE);
 
     return 1;
@@ -5559,7 +5705,9 @@ IPTR IconList__MUIM_DragReport(struct IClass *CLASS, Object *obj, struct MUIP_Dr
     struct Window   *wnd = _window(obj);
     struct Layer    *l = NULL;
 
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     l = WhichLayer(&wnd->WScreen->LayerInfo, wnd->LeftEdge + message->x, wnd->TopEdge + message->y);
 
@@ -5576,7 +5724,9 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
 IPTR IconList__MUIM_UnknownDropDestination(struct IClass *CLASS, Object *obj, struct MUIP_UnknownDropDestination *message)
 {
+#if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 D(bug("[IconList] %s: icons dropped on custom window \n", __PRETTY_FUNCTION__));
 
     SET(obj, MUIA_IconList_AppWindowDrop, (IPTR)message); /* Now notify */
@@ -5588,20 +5738,22 @@ D(bug("[IconList] %s: icons dropped on custom window \n", __PRETTY_FUNCTION__));
 #if WANDERER_BUILTIN_ICONLIST
 BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
 {
-    #ifdef __AROS__
+#ifdef __AROS__
     switch (message->MethodID)
-    #else
+#else
     struct IClass *CLASS = cl;
     Msg message = msg;
 
     switch (msg->MethodID)
-    #endif
+#endif
     {
         case OM_NEW:                            return IconList__OM_NEW(CLASS, obj, (struct opSet *)message);
         case OM_DISPOSE:                        return IconList__OM_DISPOSE(CLASS, obj, message);
         case OM_SET:                            return IconList__OM_SET(CLASS, obj, (struct opSet *)message);
         case OM_GET:                            return IconList__OM_GET(CLASS, obj, (struct opGet *)message);
-        
+        case OM_ADDMEMBER:                      return IconList__OM_ADDMEMBER(CLASS, obj, (APTR)message);
+        case OM_REMMEMBER:                      return IconList__OM_REMMEMBER(CLASS, obj, (APTR)message);
+
         case MUIM_Setup:                        return IconList__MUIM_Setup(CLASS, obj, (struct MUIP_Setup *)message);
         
         case MUIM_Show:                         return IconList__MUIM_Show(CLASS,obj, (struct MUIP_Show *)message);
@@ -5609,18 +5761,18 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
         case MUIM_Cleanup:                      return IconList__MUIM_Cleanup(CLASS, obj, (struct MUIP_Cleanup *)message);
         case MUIM_AskMinMax:                    return IconList__MUIM_AskMinMax(CLASS, obj, (struct MUIP_AskMinMax *)message);
         case MUIM_Draw:                         return IconList__MUIM_Draw(CLASS, obj, (struct MUIP_Draw *)message);
-  #ifdef __AROS__
+#ifdef __AROS__
         case MUIM_Layout:                       return IconList__MUIM_Layout(CLASS, obj, (struct MUIP_Layout *)message);
-  #endif
+#endif
         case MUIM_HandleEvent:                  return IconList__MUIM_HandleEvent(CLASS, obj, (struct MUIP_HandleEvent *)message);
         case MUIM_CreateDragImage:              return IconList__MUIM_CreateDragImage(CLASS, obj, (APTR)message);
         case MUIM_DeleteDragImage:              return IconList__MUIM_DeleteDragImage(CLASS, obj, (APTR)message);
         case MUIM_DragQuery:                    return IconList__MUIM_DragQuery(CLASS, obj, (APTR)message);
         case MUIM_DragReport:                   return IconList__MUIM_DragReport(CLASS, obj, (APTR)message);
         case MUIM_DragDrop:                     return IconList__MUIM_DragDrop(CLASS, obj, (APTR)message);
-  #ifdef __AROS__
+#ifdef __AROS__
         case MUIM_UnknownDropDestination:       return IconList__MUIM_UnknownDropDestination(CLASS, obj, (APTR)message);       
-  #endif
+#endif
         case MUIM_IconList_Update:              return IconList__MUIM_IconList_Update(CLASS, obj, (APTR)message);
         case MUIM_IconList_Clear:               return IconList__MUIM_IconList_Clear(CLASS, obj, (APTR)message);
         case MUIM_IconList_RethinkDimensions:   return IconList__MUIM_IconList_RethinkDimensions(CLASS, obj, (APTR)message);
@@ -5636,10 +5788,6 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
         case MUIM_IconList_PositionIcons:       return IconList__MUIM_IconList_PositionIcons(CLASS, obj, (APTR)message);
         case MUIM_IconList_SelectAll:           return IconList__MUIM_IconList_SelectAll(CLASS, obj, (APTR)message);
 //      case MUIM_IconList_ViewIcon:            return IconList__MUIM_IconList_ViewIcon(CLASS, obj, (APTR)message);
-        
-        /* NEW Icon class changes */
-        //case OM_ADDMEMBER:           return IconList__MUIM_IconList_AddMember(CLASS, obj, (APTR)message);
-        //case OM_REMMEMBER:           return IconList__MUIM_IconList_RemMember(CLASS, obj, (APTR)message);
     }
 
     return DoSuperMethodA(CLASS, obj, message);
@@ -5655,12 +5803,11 @@ const struct __MUIBuiltinClass _MUI_IconList_desc = {
     (void*)IconList_Dispatcher
 };
 #endif
-#endif
+#endif /* WANDERER_BUILTIN_ICONLIST */
 
 #ifndef __AROS__
 struct MUI_CustomClass  *initIconListClass(void)
 {
   return (struct MUI_CustomClass *) MUI_CreateCustomClass(NULL, MUIC_Area, NULL, sizeof(struct IconList_DATA), ENTRY(IconList_Dispatcher));
 }
-
 #endif

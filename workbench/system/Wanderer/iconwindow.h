@@ -33,12 +33,6 @@
 #define MUIM_IconWindow_BackFill_ProcessBackground         (MUIB_IconWindow | 0x0000001a)
 #define MUIM_IconWindow_BackFill_DrawBackground            (MUIB_IconWindow | 0x0000001b)
 
-#define MUIA_IconWindow_VolumeInfoMode                     (MUIB_IconWindow | 0x00000001)
-
-#define MUIV_IconWindow_VolumeInfoMode_ShowOnlyIcons       1
-#define MUIV_IconWindow_VolumeInfoMode_ShowAll             2
-#define MUIV_IconWindow_VolumeInfoMode_ShowAllIfNoInfo     3
-
 struct  MUIP_IconWindow_BackFill_Register                  {STACKED ULONG MethodID; STACKED struct IconWindow_BackFill_Descriptor *register_Node;};
 struct  MUIP_IconWindow_BackFill_Setup                     {STACKED ULONG MethodID;};
 struct  MUIP_IconWindow_BackFill_Cleanup                   {STACKED ULONG MethodID; STACKED IPTR BackFill_Data;};

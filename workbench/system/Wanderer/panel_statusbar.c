@@ -125,9 +125,77 @@ static STRPTR ExpandEnvName(STRPTR env_path)
 }
 ///
 
-static
-/*** Hook functions *********************************************************/
+const UBYTE MSG_MEM_G[] = "GB";
+const UBYTE MSG_MEM_M[] = "MB";
+const UBYTE MSG_MEM_K[] = "KB";
+const UBYTE MSG_MEM_B[] = "Bytes";
 
+///fmtlarge()
+static void fmtlarge(UBYTE *buf, ULONG num)
+{
+  UQUAD d;
+  UBYTE *ch;
+  struct
+  {
+    IPTR val;
+    IPTR  dec;
+  } array =
+  {
+    num,
+    0
+  };
+
+  if (num >= 1073741824)
+  {
+    //Gigabytes
+    array.val = num >> 30;
+    d = ((UQUAD)num * 10 + 536870912) / 1073741824;
+    array.dec = d % 10;
+    ch = MSG_MEM_G;
+  }
+  else if (num >= 1048576)
+  {
+    //Megabytes
+    array.val = num >> 20;
+    d = ((UQUAD)num * 10 + 524288) / 1048576;
+    array.dec = d % 10;
+    ch = MSG_MEM_M;
+  }
+  else if (num >= 1024)
+  {
+    //Kilobytes
+    array.val = num >> 10;
+    d = (num * 10 + 512) / 1024;
+    array.dec = d % 10;
+    ch = MSG_MEM_K;
+  }
+  else
+  {
+    //Bytes
+    array.val = num;
+    array.dec = 0;
+    d = 0;
+    ch = MSG_MEM_B;
+  }
+
+  if (!array.dec && (d > array.val * 10))
+  {
+    array.val++;
+  }
+
+  RawDoFmt(array.dec ? "%lu.%lu" : "%lu", &array, NULL, buf);
+
+  while (*buf)
+  {
+    buf++;
+  }
+
+  sprintf(buf, " %s", ch);
+}
+///
+
+/*** Hook functions *********************************************************/
+static
 ///panelStatusBar__HookFunc_UpdateStatusFunc()
 #ifdef __AROS__
 AROS_UFH3(
@@ -163,7 +231,8 @@ HOOKPROTO(panelStatusBar__HookFunc_UpdateStatusFunc, void, APTR *obj, APTR param
 
         struct List *iconList = NULL;
         struct IconEntry    *icon = NULL;
-        UBYTE buffer[1024];
+        UBYTE status_str[1024];
+        UBYTE size_str[256];
 
         int files = 0, dirs = 0, hidden = 0;
         ULONG size = 0;
@@ -191,8 +260,9 @@ HOOKPROTO(panelStatusBar__HookFunc_UpdateStatusFunc, void, APTR *obj, APTR param
                 }
             }
         }
-        sprintf(buffer, "%dbytes in %d files, %d drawers (%d hidden)", size, files, dirs, hidden);
-        SET(panelStatusBarPrivate->iwp_StatusBar_StatusTextObj, MUIA_Text_Contents, (IPTR)buffer);
+        fmtlarge(size_str, size);
+        sprintf(status_str, "%s in %d files, %d drawers (%d hidden)", size_str, files, dirs, hidden);
+        SET(panelStatusBarPrivate->iwp_StatusBar_StatusTextObj, MUIA_Text_Contents, (IPTR)status_str);
     }
 
     AROS_USERFUNC_EXIT
@@ -204,7 +274,7 @@ MakeStaticHook(StatusBar_updateHook, panelStatusBar__HookFunc_UpdateStatusFunc);
 /*** Main Functions ****************************************************************/
 
 #define STATUSBAR_PREFSSIZE     1024
-IPTR panelStatusBar__HandleFSUpdate()
+static IPTR panelStatusBar__HandleFSUpdate()
 {
     if (GetVar(extension_PrefsFile, extension_PrefsData, STATUSBAR_PREFSSIZE, GVF_GLOBAL_ONLY) != -1)
     {

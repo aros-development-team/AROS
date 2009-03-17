@@ -964,6 +964,8 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
         }
     }
 
+    rv = DoSuperMethodA(CLASS, self, (Msg) message);
+
     if (data->iwd_Flags & IWDFLAG_SETUP)
     {
         ForeachNode(&iconwindow_Extensions, iw_Extension)
@@ -975,8 +977,6 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 
     if (UpdateIconlist)
         DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
-
-    rv = DoSuperMethodA(CLASS, self, (Msg) message);
 
     if (focusicon)
     {
@@ -1037,6 +1037,9 @@ IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     }
 
     if (!rv)
+        rv = DoSuperMethodA(CLASS, self, (Msg) message);
+
+    if (!rv)
     {
         ForeachNode(&iconwindow_Extensions, iw_Extension)
         {
@@ -1045,8 +1048,6 @@ IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
                 break;
         }
     }
-    if (!rv)
-        rv = DoSuperMethodA(CLASS, self, (Msg) message);
 
     return rv;
 }
