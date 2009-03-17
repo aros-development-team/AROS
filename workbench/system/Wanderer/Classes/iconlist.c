@@ -241,6 +241,76 @@ static struct IconEntry *Node_LastVisible(struct List *icon_list)
 }
 ///
 
+
+const UBYTE MSG_MEM_G[] = "GB";
+const UBYTE MSG_MEM_M[] = "MB";
+const UBYTE MSG_MEM_K[] = "KB";
+const UBYTE MSG_MEM_B[] = "Bytes";
+
+///FmtSizeToString()
+static void FmtSizeToString(UBYTE *buf, ULONG num)
+{
+  UQUAD d;
+  UBYTE *ch;
+  struct
+  {
+    IPTR val;
+    IPTR  dec;
+  } array =
+  {
+    num,
+    0
+  };
+
+  if (num >= 1073741824)
+  {
+    //Gigabytes
+    array.val = num >> 30;
+    d = ((UQUAD)num * 10 + 536870912) / 1073741824;
+    array.dec = d % 10;
+    ch = MSG_MEM_G;
+  }
+  else if (num >= 1048576)
+  {
+    //Megabytes
+    array.val = num >> 20;
+    d = ((UQUAD)num * 10 + 524288) / 1048576;
+    array.dec = d % 10;
+    ch = MSG_MEM_M;
+  }
+  else if (num >= 1024)
+  {
+    //Kilobytes
+    array.val = num >> 10;
+    d = (num * 10 + 512) / 1024;
+    array.dec = d % 10;
+    ch = MSG_MEM_K;
+  }
+  else
+  {
+    //Bytes
+    array.val = num;
+    array.dec = 0;
+    d = 0;
+    ch = MSG_MEM_B;
+  }
+
+  if (!array.dec && (d > array.val * 10))
+  {
+    array.val++;
+  }
+
+  RawDoFmt(array.dec ? "%lu.%lu" : "%lu", &array, NULL, buf);
+
+  while (*buf)
+  {
+    buf++;
+  }
+
+  sprintf(buf, " %s", ch);
+}
+///
+
 ///GetAbsoluteLassoRect()
 // get positive lasso coords
 static void GetAbsoluteLassoRect(struct IconList_DATA *data, struct Rectangle *LassoRectangle)
@@ -3147,13 +3217,7 @@ D(bug("[IconList] %s: Failed to Allocate Entry label string Storage!\n", __PRETT
         }
         else
         {
-            int i = entry->ie_FileInfoBlock->fib_Size;
-
-            /*show byte size for small files*/
-            if (i > 9999)
-                sprintf(entry->ie_TxtBuf_SIZE, "%d KB", (LONG)(i/1024));
-            else
-                sprintf(entry->ie_TxtBuf_SIZE, "%d B", (LONG)i);
+            FmtSizeToString(entry->ie_TxtBuf_SIZE, entry->ie_FileInfoBlock->fib_Size);
         }
 
         dt.dat_Stamp    = entry->ie_FileInfoBlock->fib_Date;
