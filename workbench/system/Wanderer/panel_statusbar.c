@@ -214,9 +214,6 @@ HOOKPROTO(panelStatusBar__HookFunc_UpdateStatusFunc, void, APTR *obj, APTR param
     /* Get data */
     Object                              *self = ( Object *)obj;
     Class                               *CLASS = *( Class **)param;
-    STRPTR                              str = NULL;
-    BPTR                                fp = (BPTR) NULL;
-    struct FileInfoBlock                *fib;
     struct panel_StatusBar_DATA         *panelStatusBarPrivate = NULL;
 
     SETUP_ICONWINDOW_INST_DATA;
@@ -251,7 +248,11 @@ HOOKPROTO(panelStatusBar__HookFunc_UpdateStatusFunc, void, APTR *obj, APTR param
                     else
                     {
                         files += 1;
-                        size += icon->ie_FileInfoBlock->fib_Size;
+                        if (icon->ie_FileInfoBlock)
+                        {
+                            size += icon->ie_FileInfoBlock->fib_Size;
+D(bug("[IW.statusbar] %s: '%s' FIB Size = %d bytes\n", __PRETTY_FUNCTION__, icon->ie_IconNode.ln_Name, icon->ie_FileInfoBlock->fib_Size));
+                        }
                     }
                 }
                 else

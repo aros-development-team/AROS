@@ -1447,7 +1447,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
                         sort_bits &= ~ICONLIST_SORT_DRAWERS_MIXED;
                     }
                 }
-D(bug("[Wanderer] %s: Setting sort flags %08x\n", __PRETTY_FUNCTION__, sort_bits));
+D(bug("[Wanderer] %s: (enable) Setting sort flags %08x\n", __PRETTY_FUNCTION__, sort_bits));
             }
             else
             {
@@ -1475,7 +1475,7 @@ D(bug("[Wanderer] %s: Setting sort flags %08x\n", __PRETTY_FUNCTION__, sort_bits
                 {
                     NNSET(item, MUIA_Disabled, TRUE);
                 }
-D(bug("[Wanderer] %s: Setting sort flags %08x\n", __PRETTY_FUNCTION__, sort_bits));
+D(bug("[Wanderer] %s: (disable) Setting sort flags %08x\n", __PRETTY_FUNCTION__, sort_bits));
             }
 
             SET(iconList, MUIA_IconList_SortFlags, sort_bits);
@@ -2300,23 +2300,23 @@ VOID DoAllMenuNotifies(Object *wanderer, Object *strip, STRPTR path)
 
     DoMenuNotify(strip, MEN_WINDOW_SELECT, MUIA_Menuitem_Trigger,
 				wanderer_menufunc_window_select, NULL);
-    DoMenuNotify(strip, MEN_WINDOW_VIEW_ALL, MUIA_Menuitem_Checked,
+    DoMenuNotify(strip, MEN_WINDOW_VIEW_ALL, MUIA_Menuitem_Trigger,
 				wanderer_menufunc_window_view_icons, strip);
-//    DoMenuNotify(strip, MEN_WINDOW_VIEW_HIDDEN, MUIA_Menuitem_Checked,
+//    DoMenuNotify(strip, MEN_WINDOW_VIEW_HIDDEN, MUIA_Menuitem_Trigger,
 //				wanderer_menufunc_window_view_hidden, strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_ENABLE, MUIA_Menuitem_Checked,
+    DoMenuNotify(strip, MEN_WINDOW_SORT_ENABLE, MUIA_Menuitem_Trigger,
 				wanderer_menufunc_window_sort_enable, strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_NAME, MUIA_Menuitem_Checked,
+    DoMenuNotify(strip, MEN_WINDOW_SORT_NAME, MUIA_Menuitem_Trigger,
 				wanderer_menufunc_window_sort_name, strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_TYPE, MUIA_Menuitem_Checked,
+    DoMenuNotify(strip, MEN_WINDOW_SORT_TYPE, MUIA_Menuitem_Trigger,
 				wanderer_menufunc_window_sort_type, strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_DATE, MUIA_Menuitem_Checked,
+    DoMenuNotify(strip, MEN_WINDOW_SORT_DATE, MUIA_Menuitem_Trigger,
 				wanderer_menufunc_window_sort_date, strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_SIZE, MUIA_Menuitem_Checked,
+    DoMenuNotify(strip, MEN_WINDOW_SORT_SIZE, MUIA_Menuitem_Trigger,
 				wanderer_menufunc_window_sort_size, strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_REVERSE, MUIA_Menuitem_Checked,
+    DoMenuNotify(strip, MEN_WINDOW_SORT_REVERSE, MUIA_Menuitem_Trigger,
 				wanderer_menufunc_window_sort_reverse, strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_TOPDRAWERS, MUIA_Menuitem_Checked,
+    DoMenuNotify(strip, MEN_WINDOW_SORT_TOPDRAWERS, MUIA_Menuitem_Trigger,
 				wanderer_menufunc_window_sort_topdrawers, strip);
 
     DoMenuNotify(strip, MEN_ICON_OPEN, MUIA_Menuitem_Trigger,
@@ -2526,6 +2526,14 @@ D(bug("[Wanderer] %s: ST_USERDIR/ST_FILE\n", __PRETTY_FUNCTION__));
         {
             NNSET(current_MenuItem, MUIA_Menuitem_Checked, ((current_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK) ? TRUE : FALSE);
         }
+        if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_REVERSE)) != NULL)
+        {
+            NNSET(current_MenuItem, MUIA_Menuitem_Checked, ((current_SortFlags & ICONLIST_SORT_REVERSE) == ICONLIST_SORT_REVERSE) ? TRUE : FALSE);
+        }
+        if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_TOPDRAWERS)) != NULL)
+        {
+            NNSET(current_MenuItem, MUIA_Menuitem_Checked, ((current_SortFlags & ICONLIST_SORT_DRAWERS_MIXED) == ICONLIST_SORT_DRAWERS_MIXED) ? FALSE : TRUE);
+        }
         if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_ENABLE)) != NULL)
         {
             if (isRoot)
@@ -2537,7 +2545,7 @@ D(bug("[Wanderer] %s: ST_USERDIR/ST_FILE\n", __PRETTY_FUNCTION__));
                 NNSET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
             }
 
-            NNSET(current_MenuItem, MUIA_Menuitem_Checked, ((current_SortFlags & ICONLIST_SORT_MASK) == 0) ? TRUE : FALSE);
+            NNSET(current_MenuItem, MUIA_Menuitem_Checked, ((current_SortFlags & ICONLIST_SORT_MASK) == 0) ? FALSE : TRUE);
         }
     }
 }
