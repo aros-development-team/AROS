@@ -178,6 +178,14 @@
 #define MK_XBUTTON1	32
 #define MK_XBUTTON2	64
 
+#define VK_LWIN 0x5B
+#define VK_RWIN 0x5C
+
+#define WA_INACTIVE 0
+
+#define KF_EXTENDED 0x0100
+#define LLKHF_EXTENDED 0x01
+
 #define BI_RGB 0
 
 #define DIB_RGB_COLORS	0

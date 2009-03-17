@@ -16,10 +16,50 @@
 #define DKBD(x)
 
 static DWORD thread_id;
+static WPARAM window_active = WA_INACTIVE;
+static DWORD last_key = 0;
+
 __declspec(dllexport) struct MouseData GDI_MouseData;
 __declspec(dllexport) struct KeyboardData GDI_KeyboardData;
 
 /****************************************************************************************/
+
+static ULONG SendKbdIRQ(UINT msg, DWORD key)
+{
+    DKBD(printf("[GDI] Keyboard event 0x%04lX key 0x%04lX\n", msg, key));
+    GDI_KeyboardData.EventCode = msg;
+    GDI_KeyboardData.KeyCode = key;
+    return KrnCauseIRQ(4);
+}
+
+/* We have to use this weird hook technique because there's no other way to prevent "Win" keys
+   from opening theif stupid "Start menu". */
+LRESULT CALLBACK key_callback(int code, WPARAM wp, KBDLLHOOKSTRUCT *lp)
+{
+    DWORD key;
+
+    if (code == HC_ACTION) {
+    	if (window_active != WA_INACTIVE) {
+    	    wp &= 0xFFFFFFFB; /* This masks out difference between WM_SYSKEY* and WM_KEY* */
+    	    key = (lp->scanCode & 0xFF) | ((lp->flags & LLKHF_EXTENDED) << 8);
+    	    /* Here we get raw keypresses, including autorepeats. We have to sort out autorepeats
+    	       in some smart way. */
+    	    switch(wp) {
+	    case WM_KEYDOWN:
+	        if (key == last_key)
+	            return 1;
+	    	last_key = key;
+	    	break;
+	    case WM_KEYUP:
+	        if (key == last_key)
+	            last_key = 0;
+	    }
+    	    SendKbdIRQ(wp, key);
+            return 1;
+        }
+    }
+    return CallNextHookEx(NULL, code, wp, lp);
+}
 
 LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
 {
@@ -53,17 +93,18 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
     	GDI_MouseData.WheelDelta = wp >> 16;
         KrnCauseIRQ(3);
     	return 0;
+/* This keyboard-related fragment is not used on Windows NT because keyboard hook intercepts all keyboard messages.
+   It is left here for Windows 9x. */
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN:
         if (lp & 0x40000000) /* Ignore autorepeats */
             return 0;
     case WM_KEYUP:
     case WM_SYSKEYUP:
-        GDI_KeyboardData.EventCode = msg & 0xFFFFFFFB; /* This masks out difference between WM_SYSKEY* and WM_KEY* */
-        GDI_KeyboardData.KeyCode = (lp >> 16) & 0x000001FF; /* Leave only scancode and "extended" flag */
-        DKBD(printf("[GDI] Keyboard event %lu key 0x%03X\n", GDI_KeyboardData.EventCode, GDI_KeyboardData.KeyCode));
-        KrnCauseIRQ(4);
+        SendKbdIRQ(msg & 0xFFFFFFFB, (lp >> 16) & 0x000001FF);
         return 0;
+    case WM_ACTIVATE:
+        window_active = wp;
     default:
         return DefWindowProc(win, msg, wp, lp);
     }
@@ -73,6 +114,7 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
 
 DWORD WINAPI gdithread_entry(ULONG *p)
 {
+    HHOOK keyhook;
     BOOL res;
     MSG msg;
     ATOM wcl;
@@ -93,6 +135,7 @@ DWORD WINAPI gdithread_entry(ULONG *p)
     LONG width, height;
 
     wcl_desc.hInstance = GetModuleHandle(NULL);
+    keyhook = SetWindowsHookEx(WH_KEYBOARD_LL, key_callback, wcl_desc.hInstance, 0);
     wcl_desc.hIcon = LoadIcon(wcl_desc.hInstance, MAKEINTRESOURCE(101));
     wcl_desc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wcl = RegisterClass(&wcl_desc);
@@ -143,6 +186,8 @@ DWORD WINAPI gdithread_entry(ULONG *p)
         } while (res > 0);
         UnregisterClass(wcl, wcl_desc.hInstance);
     }
+    if (keyhook)
+        UnhookWindowsHookEx(keyhook);
     KrnCauseIRQ(2);
 }
 
