@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2008, The AROS Development Team. All rights reserved.
+    Copyright  1995-2000, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Remove a task
@@ -111,10 +111,11 @@
         task->tc_State=TS_REMOVED;
 
         /*
-            Since I don't know how many levels of Forbid()
+            Since I don't know how many levels of Forbid() and Disable()
             are already pending I set a default value.
         */
-        SysBase->TDNestCnt=-1;
+        SysBase->TDNestCnt = -1;
+        SysBase->IDNestCnt = -1;
 
 //        task->tc_Node.ln_Pred->ln_Succ = task->tc_Node.ln_Succ;
 //      task->tc_Node.ln_Succ->ln_Pred = task->tc_Node.ln_Pred;

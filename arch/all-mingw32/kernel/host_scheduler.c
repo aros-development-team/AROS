@@ -42,14 +42,18 @@ typedef unsigned char UBYTE;
  * because of OutputDebugString() calls. Looks like WinAPI functions love to perform stack
  * check and silently abort if they think something is wrong.
  */
+#define DINT(x)
 #define DS(x)
+#define DSLEEP(x)
 
 static inline void core_LeaveInterrupt(void)
 {
     struct ExecBase *SysBase = *SysBasePtr;
     
-    if ((char )SysBase->IDNestCnt < 0)
+    DINT(bug("[KRN] core_LeaveInterrupt(): IDNestCnt is %d\n", SysBase->IDNestCnt));
+    if ((char )SysBase->IDNestCnt < 0) {
         core_intr_enable();
+    }
 }
 
 /*
@@ -62,26 +66,26 @@ void core_Dispatch(CONTEXT *regs)
     struct AROSCPUContext *ctx;
 
     Ints_Enabled = 0;
+    D(bug("[KRN] core_Dispatch()\n"));
 
     /* 
-     * Is the list of ready tasks empty? Well, increment the idle switch cound and halt CPU.
-     * It should be extended by some plugin mechanism which would put CPU and whole machine
-     * into some more sophisticated sleep states (ACPI?)
+     * Is the list of ready tasks empty? Well, increment the idle switch cound and stop the main thread.
      */
-    while (IsListEmpty(&SysBase->TaskReady))
+    if (IsListEmpty(&SysBase->TaskReady))
     {
-        SysBase->IdleCount++;
-        SysBase->AttnResched |= ARF_AttnSwitch;
-            
-        printf("[KRN] TaskReady list empty. Sleeping for a while...\n");
-        /* Sleep almost forever ;) */
-            
-        if (SysBase->SysFlags & SFF_SoftInt)
-        {
-            core_Cause(SysBase);
+        if (!Sleep_Mode) {
+            SysBase->IdleCount++;
+            SysBase->AttnResched |= ARF_AttnSwitch;
+            DSLEEP(bug("[KRN] TaskReady list empty. Sleeping for a while...\n"));
+            /* We are entering sleep mode */
+	    Sleep_Mode = SLEEP_MODE_PENDING;
         }
+
+        core_LeaveInterrupt();
+        return;
     }
 
+    Sleep_Mode = SLEEP_MODE_OFF;
     SysBase->DispCount++;
         
     /* Get the first task from the TaskReady list, and populate it's settings through Sysbase */
@@ -119,6 +123,7 @@ void core_Switch(CONTEXT *regs)
     struct AROSCPUContext *ctx;
     
     Ints_Enabled = 0;
+    D(bug("[KRN] core_Switch()\n"));
     
     task = SysBase->ThisTask;
         
@@ -157,6 +162,7 @@ void core_Schedule(CONTEXT *regs)
     struct Task *task;
 
     Ints_Enabled = 0;
+    D(bug("[KRN] core_Schedule()\n"));
             
     task = SysBase->ThisTask;
     
@@ -206,13 +212,18 @@ void core_ExitInterrupt(CONTEXT *regs)
     struct ExecBase *SysBase = *SysBasePtr;
     char TDNestCnt;
 
-    DS(bug("[Scheduler] core_ExitInterrupt\n"));
+    D(bug("[Scheduler] core_ExitInterrupt\n"));
     if (SysBase)
     {
         /* Soft interrupt requested? It's high time to do it */
         if (SysBase->SysFlags & SFF_SoftInt) {
             DS(bug("[Scheduler] Causing SoftInt\n"));
             core_Cause(SysBase);
+        }
+    
+        if (Sleep_Mode) {
+            core_Dispatch(regs);
+            return;
         }
     
         /* If task switching is disabled, leave immediatelly */
