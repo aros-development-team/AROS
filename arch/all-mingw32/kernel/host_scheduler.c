@@ -61,58 +61,55 @@ void core_Dispatch(CONTEXT *regs)
     struct Task *task;
     struct AROSCPUContext *ctx;
 
-    if (SysBase)
+    Ints_Enabled = 0;
+
+    /* 
+     * Is the list of ready tasks empty? Well, increment the idle switch cound and halt CPU.
+     * It should be extended by some plugin mechanism which would put CPU and whole machine
+     * into some more sophisticated sleep states (ACPI?)
+     */
+    while (IsListEmpty(&SysBase->TaskReady))
     {
-        Ints_Enabled = 0;
-
-        /* 
-         * Is the list of ready tasks empty? Well, increment the idle switch cound and halt CPU.
-         * It should be extended by some plugin mechanism which would put CPU and whole machine
-         * into some more sophisticated sleep states (ACPI?)
-         */
-        while (IsListEmpty(&SysBase->TaskReady))
-        {
-            SysBase->IdleCount++;
-            SysBase->AttnResched |= ARF_AttnSwitch;
+        SysBase->IdleCount++;
+        SysBase->AttnResched |= ARF_AttnSwitch;
             
-            printf("[KRN] TaskReady list empty. Sleeping for a while...\n");
-            /* Sleep almost forever ;) */
+        printf("[KRN] TaskReady list empty. Sleeping for a while...\n");
+        /* Sleep almost forever ;) */
             
-            if (SysBase->SysFlags & SFF_SoftInt)
-            {
-                core_Cause(SysBase);
-            }
-        }
-
-        SysBase->DispCount++;
-        
-        /* Get the first task from the TaskReady list, and populate it's settings through Sysbase */
-        task = (struct Task *)REMHEAD(&SysBase->TaskReady);
-        SysBase->ThisTask = task;  
-        SysBase->Elapsed = SysBase->Quantum;
-        SysBase->SysFlags &= ~0x2000;
-        task->tc_State = TS_RUN;
-        SysBase->IDNestCnt = task->tc_IDNestCnt;
-
-        DS(bug("[KRN] New task = %p (%s)\n", task, task->tc_Node.ln_Name));
-
-        /* Handle tasks's flags */
-        if (task->tc_Flags & TF_EXCEPT)
-            Exception();
-        
-        if (task->tc_Flags & TF_LAUNCH)
+        if (SysBase->SysFlags & SFF_SoftInt)
         {
-            task->tc_Launch(SysBase);       
+            core_Cause(SysBase);
         }
-        
-        /* Restore the task's state */
-        ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
-        CopyMemory(regs, ctx, sizeof(CONTEXT));
-        *LastErrorPtr = ctx->LastError;
-        
-        /* Leave interrupt and jump to the new task */
-        core_LeaveInterrupt();
     }
+
+    SysBase->DispCount++;
+        
+    /* Get the first task from the TaskReady list, and populate it's settings through Sysbase */
+    task = (struct Task *)REMHEAD(&SysBase->TaskReady);
+    SysBase->ThisTask = task;  
+    SysBase->Elapsed = SysBase->Quantum;
+    SysBase->SysFlags &= ~0x2000;
+    task->tc_State = TS_RUN;
+    SysBase->IDNestCnt = task->tc_IDNestCnt;
+
+    DS(bug("[KRN] New task = %p (%s)\n", task, task->tc_Node.ln_Name));
+
+    /* Handle tasks's flags */
+    if (task->tc_Flags & TF_EXCEPT)
+        Exception();
+        
+    if (task->tc_Flags & TF_LAUNCH)
+    {
+        task->tc_Launch(SysBase);       
+    }
+        
+    /* Restore the task's state */
+    ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
+    CopyMemory(regs, ctx, sizeof(CONTEXT));
+    *LastErrorPtr = ctx->LastError;
+        
+    /* Leave interrupt and jump to the new task */
+    core_LeaveInterrupt();
 }
 
 void core_Switch(CONTEXT *regs)
@@ -121,32 +118,28 @@ void core_Switch(CONTEXT *regs)
     struct Task *task;
     struct AROSCPUContext *ctx;
     
-    if (SysBase)
-    {
-        Ints_Enabled = 0;
+    Ints_Enabled = 0;
     
-        task = SysBase->ThisTask;
+    task = SysBase->ThisTask;
         
-        DS(bug("[KRN] Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
+    DS(bug("[KRN] Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
         
-        /* Copy current task's context into the ETask structure */
-        ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
-        CopyMemory(ctx, regs, sizeof(CONTEXT));
-        ctx->LastError = *LastErrorPtr;
+    /* Copy current task's context into the ETask structure */
+    ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
+    CopyMemory(ctx, regs, sizeof(CONTEXT));
+    ctx->LastError = *LastErrorPtr;
         
-        /* store IDNestCnt into tasks's structure */  
-        task->tc_IDNestCnt = SysBase->IDNestCnt;
-        task->tc_SPReg = (APTR)regs->Esp;
+    /* store IDNestCnt into tasks's structure */  
+    task->tc_IDNestCnt = SysBase->IDNestCnt;
+    task->tc_SPReg = (APTR)regs->Esp;
         
-        /* And enable interrupts */
-        SysBase->IDNestCnt = -1;
-        Ints_Enabled = 1;
+    /* And enable interrupts */
+    SysBase->IDNestCnt = -1;
         
-        /* TF_SWITCH flag set? Call the switch routine */
-        if (task->tc_Flags & TF_SWITCH)
-        {
-            task->tc_Switch(SysBase);
-        }
+    /* TF_SWITCH flag set? Call the switch routine */
+    if (task->tc_Flags & TF_SWITCH)
+    {
+        task->tc_Switch(SysBase);
     }
     
     core_Dispatch(regs);
@@ -163,44 +156,41 @@ void core_Schedule(CONTEXT *regs)
     struct ExecBase *SysBase = *SysBasePtr;
     struct Task *task;
 
-    if (SysBase)
-    {
-        Ints_Enabled = 0;
+    Ints_Enabled = 0;
             
-        task = SysBase->ThisTask;
+    task = SysBase->ThisTask;
     
-        /* Clear the pending switch flag. */
-        SysBase->AttnResched &= ~ARF_AttnSwitch;
+    /* Clear the pending switch flag. */
+    SysBase->AttnResched &= ~ARF_AttnSwitch;
     
-        /* If task has pending exception, reschedule it so that the dispatcher may handle the exception */
-        if (!(task->tc_Flags & TF_EXCEPT))
+    /* If task has pending exception, reschedule it so that the dispatcher may handle the exception */
+    if (!(task->tc_Flags & TF_EXCEPT))
+    {
+        /* Is the TaskReady empty? If yes, then the running task is the only one. Let it work */
+        if (IsListEmpty(&SysBase->TaskReady)) {
+            core_LeaveInterrupt();
+            return;
+        }
+    
+        /* Does the TaskReady list contains tasks with priority equal or lower than current task?
+         * If so, then check further... */
+        if (((struct Task*)GetHead(&SysBase->TaskReady))->tc_Node.ln_Pri <= task->tc_Node.ln_Pri)
         {
-            /* Is the TaskReady empty? If yes, then the running task is the only one. Let it work */
-            if (IsListEmpty(&SysBase->TaskReady)) {
+            /* If the running task did not used it's whole quantum yet, let it work */
+            if (!(SysBase->SysFlags & 0x2000))
+            {
                 core_LeaveInterrupt();
                 return;
             }
-    
-            /* Does the TaskReady list contains tasks with priority equal or lower than current task?
-             * If so, then check further... */
-            if (((struct Task*)GetHead(&SysBase->TaskReady))->tc_Node.ln_Pri <= task->tc_Node.ln_Pri)
-            {
-                /* If the running task did not used it's whole quantum yet, let it work */
-                if (!(SysBase->SysFlags & 0x2000))
-                {
-                    core_LeaveInterrupt();
-                    return;
-                }
-            }
         }
+    }
     
-        /* 
-         * If we got here, then the rescheduling is necessary. 
-         * Put the task into the TaskReady list.
-         */
-        task->tc_State = TS_READY;
-        Enqueue(&SysBase->TaskReady, (struct Node *)task);
-     }
+    /* 
+     * If we got here, then the rescheduling is necessary. 
+     * Put the task into the TaskReady list.
+     */
+    task->tc_State = TS_READY;
+    Enqueue(&SysBase->TaskReady, (struct Node *)task);
     
     /* Select new task to run */
     core_Switch(regs);
@@ -209,7 +199,7 @@ void core_Schedule(CONTEXT *regs)
 
 /*
  * Leave the interrupt. This function receives the register frame used to leave the supervisor
- * mode. It never returns and reschedules the task if it was asked for.
+ * mode. It reschedules the task if it was asked for.
  */
 void core_ExitInterrupt(CONTEXT *regs) 
 {

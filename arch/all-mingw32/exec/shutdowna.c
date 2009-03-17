@@ -56,6 +56,7 @@ extern struct HostInterface *HostIFace;
        while it's running. There's no sense in this beyond this point, so we simply Disable() */
     Disable();
     HostIFace->_Shutdown(action);
+    Enable();
     return 0;
 
     AROS_LIBFUNC_EXIT

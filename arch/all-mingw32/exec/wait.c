@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Wait for some signal.
@@ -71,8 +71,6 @@
     /* If at least one of the signals is already set do not wait. */
     while(!(me->tc_SigRecvd&signalSet))
     {
-        BYTE old_TDNestCnt;
-	
 	D(bug("[Exec] Signals are not set, putting the task to sleep\n"));
 	/* Set the wait signal mask */
 	me->tc_SigWait=signalSet;
@@ -80,10 +78,8 @@
 	/*
 	    Clear TDNestCnt (because Switch() will not care about it),
 	    but memorize it first. IDNestCnt is handled by Switch().
-	    This could as well be stored in a local variable which makes
-	    the tc_TDNestCnt field somehow redundant.
 	*/
-	old_TDNestCnt=SysBase->TDNestCnt;
+	me->tc_TDNestCnt=SysBase->TDNestCnt;
 	SysBase->TDNestCnt=-1;
 
 	/* Move current task to the waiting list. */
@@ -93,7 +89,7 @@
 		remove it from what!?
 		sheutlin
 	*/
-//        me->tc_Node.ln_Pred->ln_Succ = me->tc_Node.ln_Succ;
+//      me->tc_Node.ln_Pred->ln_Succ = me->tc_Node.ln_Succ;
 //	me->tc_Node.ln_Succ->ln_Pred = me->tc_Node.ln_Pred;
 
 	Enqueue(&SysBase->TaskWait,&me->tc_Node);
@@ -110,7 +106,7 @@
 	*/
 
 	/* Restore TDNestCnt. */
-	SysBase->TDNestCnt=old_TDNestCnt;
+	SysBase->TDNestCnt=me->tc_TDNestCnt;
     }
     /* Get active signals. */
     rcvd=me->tc_SigRecvd&signalSet;
