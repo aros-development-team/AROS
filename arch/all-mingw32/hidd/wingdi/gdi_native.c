@@ -16,8 +16,8 @@
 #define DKBD(x)
 
 static DWORD thread_id;
-static WPARAM window_active = WA_INACTIVE;
-static DWORD last_key = 0;
+static WPARAM window_active;
+static DWORD last_key;
 
 __declspec(dllexport) struct MouseData GDI_MouseData;
 __declspec(dllexport) struct KeyboardData GDI_KeyboardData;
@@ -174,6 +174,7 @@ DWORD WINAPI gdithread_entry(ULONG *p)
             	    } else {
             	        if (gdata->fbwin) {
             	            DestroyWindow(gdata->fbwin);
+            	            window_active = WA_INACTIVE;
             	            gdata->fbwin = NULL;
             	        }
             	    }
@@ -197,7 +198,9 @@ ULONG __declspec(dllexport) GDI_Init(ULONG *p)
 {
     HANDLE th;
     
+    window_active = WA_INACTIVE;
     *p = 0;
+    last_key = 0;
     th = CreateThread(NULL, 0, gdithread_entry, p, 0, &thread_id);
     D(printf("[GDI] Started thread 0x%p ID 0x%08lX\n", th, thread_id));
     if (th)
