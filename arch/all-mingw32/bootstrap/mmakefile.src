@@ -42,7 +42,8 @@ KOBJS := $(K_RES) $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(KOBJS_HIDD)
 
 #MM- workbench-mingw32: kernel-mathffp	       \
 #MM		        kernel-mathieeesingbas \
-#MM		        kernel-workbench
+#MM		        kernel-workbench       \
+#MM			contrib-cdvdfs-packet
 
 #MM
 kernel-bootstrap-mingw32: setup-mingw32 $(BINDIR)/boot/AROSBootstrap.exe
