@@ -523,6 +523,8 @@ static IPTR panelStatusBar__OM_GET(Class *CLASS, Object *self, struct opGet *mes
 {
     SETUP_ICONWINDOW_INST_DATA;
 
+    struct panel_StatusBar_DATA *panelStatusBarPrivate = NULL;
+    IPTR                        *store = message->opg_Storage;
     IPTR                        rv = FALSE;
 
     D(bug("[IW.statusbar]: %s()\n", __PRETTY_FUNCTION__));
@@ -532,7 +534,7 @@ static IPTR panelStatusBar__OM_GET(Class *CLASS, Object *self, struct opGet *mes
         if (panelStatusBarPrivate->iwp_Node.ln_Name != extension_Name)
             return rv;
 
-        switch (tag->ti_Tag)
+        switch (message->opg_AttrID)
         {
         }
     }
