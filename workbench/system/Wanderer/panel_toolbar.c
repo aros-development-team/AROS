@@ -468,6 +468,30 @@ IPTR panelToolBar__Cleanup(Class *CLASS, Object *self, struct opSet *message)
     return NULL;
 }
 
+///OM_GET()
+IPTR panelToolBar__OM_GET(Class *CLASS, Object *self, struct opGet *message)
+{
+    SETUP_ICONWINDOW_INST_DATA;
+
+    struct panel_ToolBar_DATA   *panelToolBarPrivate = NULL;
+    IPTR                        *store = message->opg_Storage;
+    IPTR                        rv    = FALSE;
+
+    D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
+
+    if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != (IPTR)NULL)
+    {
+        if (panelToolBarPrivate->iwp_Node.ln_Name != extension_Name)
+            return rv;
+
+        switch (message->opg_AttrID)
+        {
+        }
+    }
+
+    return rv;
+}
+
 ///OM_SET()
 IPTR panelToolBar__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 {
@@ -497,29 +521,6 @@ IPTR panelToolBar__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 
                 break;
             }
-        }
-    }
-
-    return rv;
-}
-
-///OM_GET()
-IPTR panelToolBar__OM_GET(Class *CLASS, Object *self, struct opGet *message)
-{
-    SETUP_ICONWINDOW_INST_DATA;
-
-    IPTR *store = message->opg_Storage;
-    IPTR  rv    = FALSE;
-
-    D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
-
-    if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != (IPTR)NULL)
-    {
-        if (panelToolBarPrivate->iwp_Node.ln_Name != extension_Name)
-            return rv;
-
-        switch (message->opg_AttrID)
-        {
         }
     }
 
