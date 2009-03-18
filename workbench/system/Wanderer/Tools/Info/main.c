@@ -5,7 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -48,6 +48,7 @@
 #define RETURNID_STACKACK   10
 #define RETURNID_COMMENTACK 11
 #define RETURNID_VERSION    12
+#define RETURNID_PROTECT    13
 
 #define  MAX_PATH_LEN  1024
 #define  MAX_TOOLTYPE_LINE 256
@@ -56,6 +57,9 @@
 #define USE_TEXTEDITOR 1
 
 static Object *window, *commentspace, *filename_string, *stackspace, *savebutton;
+static Object *readobject, *writeobject, *executeobject, *deleteobject;
+static Object *scriptobject, *pureobject, *archiveobject;
+
 #if USE_TEXTEDITOR
 static Object *editor, *slider;
 #else
@@ -214,12 +218,33 @@ void SaveIcon(struct DiskObject *icon, STRPTR name, BPTR cd)
 
 void SaveFile(struct AnchorPath * ap, BPTR cd)
 {
+    ULONG protection = 0;
     STRPTR text=NULL;
     BPTR restored_cd;
     restored_cd = CurrentDir(cd);
+
     get(commentspace, MUIA_String_Contents, &text);
     if (text)
         SetComment(ap->ap_Buf, text);
+
+    if (XGET(scriptobject, MUIA_Selected))
+        protection |= FIBF_SCRIPT;
+    if (XGET(pureobject, MUIA_Selected))
+        protection |= FIBF_PURE;
+    if (XGET(archiveobject, MUIA_Selected))
+        protection |= FIBF_ARCHIVE;
+
+    if (! XGET(readobject, MUIA_Selected))
+        protection |= FIBF_READ;
+    if (! XGET(writeobject, MUIA_Selected))
+        protection |= FIBF_WRITE;
+    if (! XGET(executeobject, MUIA_Selected))
+        protection |= FIBF_EXECUTE;
+    if (! XGET(deleteobject, MUIA_Selected))
+        protection |= FIBF_DELETE;
+    
+    SetProtection(ap->ap_Buf, protection);
+
     CurrentDir(restored_cd);
     file_altered = FALSE;
 }
@@ -409,8 +434,6 @@ int main(int argc, char **argv)
 #if !USE_TEXTEDITOR
     Object *newkey=NULL, *delkey=NULL;
 #endif
-    Object *readobject=NULL, *writeobject=NULL, *executeobject=NULL, *deleteobject=NULL;
-    Object *scriptobject=NULL, *pureobject=NULL, *archiveobject=NULL;
     struct WBStartup *startup;
     struct DiskObject *icon=NULL;
     struct AnchorPath *ap=NULL;
@@ -582,7 +605,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
 
     application = (Object *)ApplicationObject,
         MUIA_Application_Title,  __(MSG_TITLE),
-        MUIA_Application_Version, (IPTR) "$VER: Info 0.3 ("ADATE") © AROS Dev Team",
+        MUIA_Application_Version, (IPTR) "$VER: Info 0.4 ("ADATE") © AROS Dev Team",
         MUIA_Application_Description,  __(MSG_DESCRIPTION),
         MUIA_Application_Base, (IPTR) "INFO",
         MUIA_Application_Menustrip, (IPTR) MenuitemObject,
@@ -623,7 +646,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                         End,
                     End,
                 End,
-                Child, (IPTR) (registergroup = RegisterGroup(pages),
+                Child, (IPTR) (registergroup = (Object *)RegisterGroup(pages),
                     MUIA_CycleChain, 1,
                     Child, (IPTR) HGroup, /* hgroup information pannel */
                         Child, (IPTR) VGroup,
@@ -796,6 +819,28 @@ D(bug("[WBInfo] icon type is: %s\n", type));
             (IPTR) application, 2,
             MUIM_Application_ReturnID, RETURNID_VERSION);
 
+        DoMethod(readobject, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) application, 2,
+            MUIM_Application_ReturnID, RETURNID_PROTECT);
+        DoMethod(writeobject, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) application, 2,
+            MUIM_Application_ReturnID, RETURNID_PROTECT);
+        DoMethod(executeobject, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) application, 2,
+            MUIM_Application_ReturnID, RETURNID_PROTECT);
+        DoMethod(deleteobject, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) application, 2,
+            MUIM_Application_ReturnID, RETURNID_PROTECT);
+        DoMethod(scriptobject, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) application, 2,
+            MUIM_Application_ReturnID, RETURNID_PROTECT);
+        DoMethod(pureobject, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) application, 2,
+            MUIM_Application_ReturnID, RETURNID_PROTECT);
+        DoMethod(archiveobject, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) application, 2,
+            MUIM_Application_ReturnID, RETURNID_PROTECT);
+
     #if USE_TEXTEDITOR
     	set(editor, MUIA_TextEditor_Slider, slider);
 
@@ -901,14 +946,14 @@ D(bug("[WBInfo] icon type is: %s\n", type));
         if (comment != NULL)
             set(commentspace, MUIA_String_Contents, comment);
 
-        set(readobject, MUIA_Selected, flags[3]);
-        set(writeobject, MUIA_Selected, flags[4]);
-        set(executeobject, MUIA_Selected, flags[5]);
-        set(deleteobject, MUIA_Selected, flags[6]);
+        nnset(readobject, MUIA_Selected, flags[3]);
+        nnset(writeobject, MUIA_Selected, flags[4]);
+        nnset(executeobject, MUIA_Selected, flags[5]);
+        nnset(deleteobject, MUIA_Selected, flags[6]);
 
-        set(scriptobject, MUIA_Selected, flags[0]);
-        set(pureobject, MUIA_Selected, flags[1]);
-        set(archiveobject, MUIA_Selected, flags[2]);
+        nnset(scriptobject, MUIA_Selected, flags[0]);
+        nnset(pureobject, MUIA_Selected, flags[1]);
+        nnset(archiveobject, MUIA_Selected, flags[2]);
 
         SetAttrs(window, MUIA_Window_Open, TRUE, TAG_DONE);
 
@@ -971,6 +1016,10 @@ D(bug("[WBInfo] broker command received: %ld\n", returnid));
                         break;
                     case RETURNID_VERSION:
                         set(versionspace, MUIA_Text_Contents, GetVersion(name, lock));
+                        break;
+                    case RETURNID_PROTECT:
+                        file_altered = TRUE;
+D(bug("[WBInfo: Protection bits changed\n"));
                         break;
                 }
 #ifdef DEBUG
