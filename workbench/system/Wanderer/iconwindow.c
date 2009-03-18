@@ -299,7 +299,7 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     IPTR                        _newIconWin__FSNotifyPort = (IPTR)NULL;
     struct MUI_CustomClass      *iconviewclass = NULL;
 #if defined(ICONWINDOW_NODETAILVIEWCLASS)
-    IconWindowDetailDrawerList_CLASS = IconWindowIconDrawerList_CLASS;
+    IconWindowDetailDrawerList_CLASS = IconWindowDrawerList_CLASS;
 #endif
 
 D(bug("[iconwindow]: %s()\n", __PRETTY_FUNCTION__));
@@ -342,7 +342,7 @@ D(bug("[IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETTY_FUNCTIO
 
     if (isRoot)
     {
-        iconviewclass = IconWindowIconVolumeList_CLASS;
+        iconviewclass = IconWindowVolumeList_CLASS;
         _newIconWin__IconListObj = (Object *)NewObject(iconviewclass->mcc_Class, NULL,
                                                     MUIA_Font, (IPTR)_newIconWin__WindowFont,
                                                     TAG_DONE);
@@ -407,7 +407,7 @@ D(bug("[iconwindow] %s: Directory Icon has DRAWER data!\n", __PRETTY_FUNCTION__)
             _newIconWin__WindowHeight = drawericon->do_DrawerData->dd_NewWindow.Height;
         }
 
-        iconviewclass = IconWindowIconDrawerList_CLASS;
+        iconviewclass = IconWindowDrawerList_CLASS;
         if ((drawericon) && (drawericon->do_Gadget.UserData > 0))
         {
 D(bug("[iconwindow] %s: Directory Icons has OS 2.x/3.x data: FLAGS %x [\n", __PRETTY_FUNCTION__, drawericon->do_DrawerData->dd_Flags));
