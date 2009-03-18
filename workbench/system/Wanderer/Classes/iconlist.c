@@ -3366,632 +3366,216 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         switch (message->imsg->Class)
         {
             case IDCMP_RAWKEY:
-            {
-                BOOL rawkey_handled = FALSE;
-
-                switch(message->imsg->Code)
                 {
-                    case RAWKEY_NM_WHEEL_UP:
-                        wheely = -1;
-                        rawkey_handled = TRUE;
-                        break;
+#if defined(DEBUG_ILC_EVENTS)
+bug("[IconList] %s: IDCMP_RAWKEY\n", __PRETTY_FUNCTION__);
+#endif
+                    BOOL rawkey_handled = FALSE;
 
-                    case RAWKEY_NM_WHEEL_DOWN:
-                        wheely = 1;
-                        rawkey_handled = TRUE;
-                        break;
+                    switch(message->imsg->Code)
+                    {
+                        case RAWKEY_NM_WHEEL_UP:
+                            wheely = -1;
+                            rawkey_handled = TRUE;
+                            break;
 
-                    case RAWKEY_NM_WHEEL_LEFT:
-                        wheelx = -1;
-                        rawkey_handled = TRUE;
-                        break;
+                        case RAWKEY_NM_WHEEL_DOWN:
+                            wheely = 1;
+                            rawkey_handled = TRUE;
+                            break;
 
-                    case RAWKEY_NM_WHEEL_RIGHT:
-                        wheelx = 1;
-                        rawkey_handled = TRUE;
-                        break;
-                }
+                        case RAWKEY_NM_WHEEL_LEFT:
+                            wheelx = -1;
+                            rawkey_handled = TRUE;
+                            break;
 
-                if (rawkey_handled)
-                {
+                        case RAWKEY_NM_WHEEL_RIGHT:
+                            wheelx = 1;
+                            rawkey_handled = TRUE;
+                            break;
+                    }
+
+                    if (rawkey_handled)
+                    {
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: Processing mouse wheel event\n", __PRETTY_FUNCTION__));
 #endif
-                    if (_isinobject(message->imsg->MouseX, message->imsg->MouseY) &&
-                        (wheelx || wheely))
-                    {
-                        DoWheelMove(CLASS, obj, wheelx, wheely, message->imsg->Qualifier);
+                        if (_isinobject(message->imsg->MouseX, message->imsg->MouseY) &&
+                            (wheelx || wheely))
+                        {
+                            DoWheelMove(CLASS, obj, wheelx, wheely, message->imsg->Qualifier);
+                        }
                     }
-                }
-                else if (!(message->imsg->Code & IECODE_UP_PREFIX))
-                {
-                    LONG new_ViewY = data->icld_ViewY;
-                    struct IconEntry *start_entry = NULL, *active_entry = NULL, *entry_next = NULL;
-                    IPTR              start_X = 0, start_Y = 0, active_X = 0, active_Y = 0, next_X = 0, next_Y = 0;
-                    IPTR              x_diff = 0;
+                    else if (!(message->imsg->Code & IECODE_UP_PREFIX))
+                    {
+                        LONG new_ViewY = data->icld_ViewY;
+                        struct IconEntry *start_entry = NULL, *active_entry = NULL, *entry_next = NULL;
+                        IPTR              start_X = 0, start_Y = 0, active_X = 0, active_Y = 0, next_X = 0, next_Y = 0;
+                        IPTR              x_diff = 0;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: Processing key up event\n", __PRETTY_FUNCTION__));
 #endif
 
-                    switch(message->imsg->Code)
-                    {
-                        case RAWKEY_RETURN:
-                            rawkey_handled = TRUE;
+                        switch(message->imsg->Code)
+                        {
+                            case RAWKEY_RETURN:
+                                rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RAWKEY_RETURN\n", __PRETTY_FUNCTION__));
 #endif
 
-                            if (data->icld_FocusIcon) active_entry = data->icld_FocusIcon;
-                            else if (data->icld_SelectionLastClicked) active_entry = data->icld_SelectionLastClicked;
+                                if (data->icld_FocusIcon) active_entry = data->icld_FocusIcon;
+                                else if (data->icld_SelectionLastClicked) active_entry = data->icld_SelectionLastClicked;
 
-                            if (active_entry)
-                            {
-                                if (!(active_entry->ie_Flags & ICONENTRY_FLAG_SELECTED))
+                                if (active_entry)
                                 {
-                                    active_entry->ie_Flags |= ICONENTRY_FLAG_SELECTED;
-                                    AddTail(&data->icld_SelectionList, &active_entry->ie_SelectionNode);
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = active_entry;
-                                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                                    if (!(active_entry->ie_Flags & ICONENTRY_FLAG_SELECTED))
+                                    {
+                                        active_entry->ie_Flags |= ICONENTRY_FLAG_SELECTED;
+                                        AddTail(&data->icld_SelectionList, &active_entry->ie_SelectionNode);
+                                        data->icld_UpdateMode = UPDATE_SINGLEICON;
+                                        data->update_icon = active_entry;
+                                        MUI_Redraw(obj, MADF_DRAWUPDATE);
+                                    }
+                                    data->icld_SelectionLastClicked = active_entry;
+                                    data->icld_FocusIcon = active_entry;
+
+                                    SET(obj, MUIA_IconList_DoubleClick, TRUE);
                                 }
-                                data->icld_SelectionLastClicked = active_entry;
-                                data->icld_FocusIcon = active_entry;
+                                break;
 
-                                SET(obj, MUIA_IconList_DoubleClick, TRUE);
-                            }
-                            break;
-
-                        case RAWKEY_SPACE:
-                            rawkey_handled = TRUE;
+                            case RAWKEY_SPACE:
+                                rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RAWKEY_SPACE\n", __PRETTY_FUNCTION__));
 #endif
 
-                            if (data->icld_FocusIcon) active_entry = data->icld_FocusIcon;
-                            else if (data->icld_SelectionLastClicked) active_entry = data->icld_SelectionLastClicked;
+                                if (data->icld_FocusIcon) active_entry = data->icld_FocusIcon;
+                                else if (data->icld_SelectionLastClicked) active_entry = data->icld_SelectionLastClicked;
 
-                            if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionLastClicked)||(data->icld_SelectionLastClicked != active_entry)))
-                            {
+                                if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionLastClicked)||(data->icld_SelectionLastClicked != active_entry)))
+                                {
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: SPACE: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
 #endif
-                                DoMethod(obj, MUIM_IconList_UnselectAll);
-                            }
-
-                            if (active_entry)
-                            {
-                                if (!(active_entry->ie_Flags & ICONENTRY_FLAG_SELECTED))
-                                {
-                                    AddTail(&data->icld_SelectionList, &active_entry->ie_SelectionNode);
-                                    active_entry->ie_Flags |= ICONENTRY_FLAG_SELECTED;
-                                    data->icld_SelectionLastClicked = active_entry;
-                                }
-                                else
-                                {
-                                    Remove(&active_entry->ie_SelectionNode);
-                                    active_entry->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
+                                    DoMethod(obj, MUIM_IconList_UnselectAll);
                                 }
 
-                                data->icld_FocusIcon = active_entry;
+                                if (active_entry)
+                                {
+                                    if (!(active_entry->ie_Flags & ICONENTRY_FLAG_SELECTED))
+                                    {
+                                        AddTail(&data->icld_SelectionList, &active_entry->ie_SelectionNode);
+                                        active_entry->ie_Flags |= ICONENTRY_FLAG_SELECTED;
+                                        data->icld_SelectionLastClicked = active_entry;
+                                    }
+                                    else
+                                    {
+                                        Remove(&active_entry->ie_SelectionNode);
+                                        active_entry->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
+                                    }
 
-                                data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                data->update_icon = active_entry;
-                                MUI_Redraw(obj, MADF_DRAWUPDATE);
-                            }
-                            break;
+                                    data->icld_FocusIcon = active_entry;
 
-                        case RAWKEY_PAGEUP:
-                            rawkey_handled = TRUE;
+                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
+                                    data->update_icon = active_entry;
+                                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                                }
+                                break;
+
+                            case RAWKEY_PAGEUP:
+                                rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RAWKEY_PAGEUP\n", __PRETTY_FUNCTION__));
 #endif
 
-                            if (data->icld_AreaHeight > data->icld_ViewHeight)
-                            {
-                                new_ViewY -= data->icld_ViewHeight;
-                                if (new_ViewY< 0)
-                                    new_ViewY = 0;
-                            }
+                                if (data->icld_AreaHeight > data->icld_ViewHeight)
+                                {
+                                    new_ViewY -= data->icld_ViewHeight;
+                                    if (new_ViewY< 0)
+                                        new_ViewY = 0;
+                                }
 
-                            if (new_ViewY != data->icld_ViewY)
-                            {
-                                SET(obj, MUIA_Virtgroup_Top, new_ViewY);
-                            }
-                            break;
+                                if (new_ViewY != data->icld_ViewY)
+                                {
+                                    SET(obj, MUIA_Virtgroup_Top, new_ViewY);
+                                }
+                                break;
 
-                        case RAWKEY_PAGEDOWN:
-                            rawkey_handled = TRUE;
+                            case RAWKEY_PAGEDOWN:
+                                rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RAWKEY_PAGEDOWN\n", __PRETTY_FUNCTION__));
 #endif
 
-                            if (data->icld_AreaHeight > data->icld_ViewHeight)
-                            {
-                                new_ViewY += data->icld_ViewHeight;
-                                if (new_ViewY > (data->icld_AreaHeight - data->icld_ViewHeight))
-                                    new_ViewY = data->icld_AreaHeight - data->icld_ViewHeight;
-                            }
+                                if (data->icld_AreaHeight > data->icld_ViewHeight)
+                                {
+                                    new_ViewY += data->icld_ViewHeight;
+                                    if (new_ViewY > (data->icld_AreaHeight - data->icld_ViewHeight))
+                                        new_ViewY = data->icld_AreaHeight - data->icld_ViewHeight;
+                                }
 
-                            if (new_ViewY != data->icld_ViewY)
-                            {
-                                SET(obj, MUIA_Virtgroup_Top, new_ViewY);
-                            }
-                            break;
+                                if (new_ViewY != data->icld_ViewY)
+                                {
+                                    SET(obj, MUIA_Virtgroup_Top, new_ViewY);
+                                }
+                                break;
 
-                        case RAWKEY_UP:
-                            rawkey_handled = TRUE;
+                            case RAWKEY_UP:
+                                rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RAWKEY_UP\n", __PRETTY_FUNCTION__));
 #endif
 
-                            if (data->icld_FocusIcon)
-                            {
-                                start_entry = data->icld_FocusIcon;
+                                if (data->icld_FocusIcon)
+                                {
+                                    start_entry = data->icld_FocusIcon;
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: UP: Clearing existing focused icon @ 0x%p\n", __PRETTY_FUNCTION__, start_entry));
 #endif
 
-                                start_entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                                data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                data->update_icon = start_entry;
-                                MUI_Redraw(obj, MADF_DRAWUPDATE);
+                                    start_entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
+                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
+                                    data->update_icon = start_entry;
+                                    MUI_Redraw(obj, MADF_DRAWUPDATE);
 
-                                start_X = start_entry->ie_IconX;
-                                start_Y = start_entry->ie_IconY;
+                                    start_X = start_entry->ie_IconX;
+                                    start_Y = start_entry->ie_IconY;
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: UP: start_icon @ 0x%p '%s' - start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_entry, start_entry->ie_IconListEntry.label, start_X, start_Y));
 #endif
-                                if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                                {
-                                    if (start_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
                                     {
-                                        start_X = start_X - ((data->icld_IconAreaLargestWidth - start_entry->ie_AreaWidth)/2);
+                                        if (start_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                        {
+                                            start_X = start_X - ((data->icld_IconAreaLargestWidth - start_entry->ie_AreaWidth)/2);
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: UP: adjusted start_X for grid = %d\n", __PRETTY_FUNCTION__, start_X));
 #endif
+                                        }
                                     }
-                                }
 
-                                if ((active_entry = Node_PreviousVisible(start_entry)) && !(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL))
-                                {
-                                    //Check if we are at the edge of the icon area ..
+                                    if ((active_entry = Node_PreviousVisible(start_entry)) && !(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL))
+                                    {
+                                        //Check if we are at the edge of the icon area ..
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: UP: active_entry @ 0x%p '%s' , X %d, Y %d\n", __PRETTY_FUNCTION__, active_entry, active_entry->ie_IconListEntry.label, active_entry->ie_IconX, active_entry->ie_IconY));
 #endif
-                                    active_Y = active_entry->ie_IconY;
+                                        active_Y = active_entry->ie_IconY;
 
-                                    if (active_Y == start_Y)
-                                    {
+                                        if (active_Y == start_Y)
+                                        {
 
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: UP: active_entry is on our row (not at the edge)\n", __PRETTY_FUNCTION__));
 #endif
-                                        entry_next = active_entry;
-                                        next_X = entry_next->ie_IconX;
-                                        if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                                        {
-                                            if (entry_next->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                                next_X = next_X - ((data->icld_IconAreaLargestWidth - entry_next->ie_AreaWidth)/2);
-                                        }
-                                    }
-                                }
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: using start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
-#endif
-                            }
-
-                            if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionLastClicked)&&(data->icld_SelectionLastClicked != active_entry)))
-                            {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
-#endif
-                                DoMethod(obj, MUIM_IconList_UnselectAll);
-                            }
-
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, active_entry, entry_next));
-#endif
-                            if (!(active_entry))
-                            {
-                                // If nothing is selected we will use the last visible icon ..
-                                active_entry = Node_LastVisible(&data->icld_IconList);
-                                start_X = active_entry->ie_IconX;
-                                if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                                {
-                                    if (active_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                        start_X = start_X - ((data->icld_IconAreaLargestWidth - active_entry->ie_AreaWidth)/2);
-                                }
-                                start_Y = active_entry->ie_IconY;
-                            }
-
-                            while (active_entry != NULL)
-                            {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, active_entry));
-#endif
-                                if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
-                                {
-                                    // Return the first visible since the list flow direction matches
-                                    // our cursor direction
-                                    if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-                                        break;
-                                }
-                                else
-                                {
-                                    active_X = active_entry->ie_IconX;
-
-                                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                                    {
-                                        if (active_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                            x_diff = ((data->icld_IconAreaLargestWidth - active_entry->ie_AreaWidth)/2);
-                                    }
-                                    active_Y = active_entry->ie_IconY;
-                                    
-                                    if (start_entry)
-                                    {
-                                        if (entry_next)
-                                        {
-                                            if ((active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
-                                                (active_Y < start_Y) &&
-                                                (((active_X - x_diff) >= start_X ) &&
-                                                ((active_X - x_diff) <= (start_X + start_entry->ie_AreaWidth + (x_diff*2)))))
-                                            {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: (A) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
-#endif
-                                                break;
-                                            }
-                                            else if (active_entry == (struct IconEntry *)GetHead(&data->icld_IconList))
-                                            {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: (A) reached list start .. restarting from the end ..\n", __PRETTY_FUNCTION__));
-#endif
-                                                start_X = next_X;
-
-                                                if ((entry_next = Node_PreviousVisible(entry_next)))
-                                                {
-                                                    if (entry_next->ie_IconX > start_X)
-                                                        entry_next = NULL;
-                                                    else
-                                                    {
-                                                        next_X = entry_next->ie_IconX;
-                                                        if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                                                        {
-                                                            if (entry_next->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                                                next_X = next_X - ((data->icld_IconAreaLargestWidth - entry_next->ie_AreaWidth)/2);
-                                                        }
-                                                    }
-                                                }
-                                                start_Y = 0;
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: (A) startx = %d, start_Y = %d, next_X = %d, entry_next @ 0x%p\n", __PRETTY_FUNCTION__, start_X, start_Y, next_X, entry_next));
-#endif
-                                                active_entry = Node_LastVisible(&data->icld_IconList);
-                                            }
-                                        }
-                                        else
-                                        {
-                                            if ((active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
-                                                (active_Y < start_Y) &&
-                                                ((active_X + x_diff) < (start_X + start_entry->ie_AreaWidth + x_diff)))
-                                            {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
-#endif
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-                                        {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
-#endif
-                                            break;
-                                        }
-                                    }
-                                }
-                                active_entry = (struct IconEntry *)(((struct Node *)active_entry)->ln_Pred);
-                            }
-
-                            if (!(active_entry))
-                            {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: No Next UP Node - Getting Last visible icon ..\n", __PRETTY_FUNCTION__));
-#endif
-                                /* We didnt find a "next UP" icon so just use the last visible */
-                                active_entry = Node_LastVisible(&data->icld_IconList);
-                            }
-                            
-                            if (active_entry)
-                            {
-                                if (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
-                                {
-                                    active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = active_entry;
-                                    MUI_Redraw(obj, MADF_DRAWUPDATE);
-                                }
-                                
-                            }
-                            data->icld_FocusIcon = active_entry;
-                            break;
-
-                        case RAWKEY_DOWN:
-                            rawkey_handled = TRUE;
-
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RAWKEY_DOWN\n", __PRETTY_FUNCTION__));
-#endif
-
-                            if (data->icld_FocusIcon)
-                            {
-                                start_entry = data->icld_FocusIcon;
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: Clearing existing focused icon @ 0x%p\n", __PRETTY_FUNCTION__, start_entry));
-#endif
-
-                                start_entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                                data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                data->update_icon = start_entry;
-                                MUI_Redraw(obj, MADF_DRAWUPDATE);
-
-                                start_X = start_entry->ie_IconX;
-                                start_Y = start_entry->ie_IconY;
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: start_icon @ 0x%p '%s' - start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_entry, start_entry->ie_IconListEntry.label, start_X, start_Y));
-#endif
-                                if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                                {
-                                    if (start_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                    {
-                                        start_X = start_X - ((data->icld_IconAreaLargestWidth - start_entry->ie_AreaWidth)/2);
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: adjusted start_X for grid = %d\n", __PRETTY_FUNCTION__, start_X));
-#endif
-                                    }
-                                }
-
-                                if ((active_entry = Node_NextVisible(start_entry)) &&
-                                    (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
-                                {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: active_entry @ 0x%p '%s' , X %d, Y %d\n", __PRETTY_FUNCTION__, active_entry, active_entry->ie_IconListEntry.label, active_entry->ie_IconX, active_entry->ie_IconY));
-#endif
-                                    active_Y = active_entry->ie_IconY;
-
-                                    if (active_Y == start_Y)
-                                    {
-
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: active_entry is on our row (not at the edge)\n", __PRETTY_FUNCTION__));
-#endif
-                                        entry_next = active_entry;
-                                        next_X = entry_next->ie_IconX;
-                                        if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                                        {
-                                            if (entry_next->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                                next_X = next_X - ((data->icld_IconAreaLargestWidth - entry_next->ie_AreaWidth)/2);
-                                        }
-                                    }
-                                }
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: using start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
-#endif
-                            }
-
-                            if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionLastClicked)&&(data->icld_SelectionLastClicked != active_entry)))
-                            {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
-#endif
-                                DoMethod(obj, MUIM_IconList_UnselectAll);
-                            }
-
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, active_entry, entry_next));
-#endif
-                            if (!(active_entry))
-                            {
-                                // If nothing is selected we will use the First visible icon ..
-                                active_entry = Node_FirstVisible(&data->icld_IconList);
-                                start_X = active_entry->ie_IconX;
-                                if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                                {
-                                    if (active_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                        start_X = start_X - ((data->icld_IconAreaLargestWidth - active_entry->ie_AreaWidth)/2);
-                                }
-                                start_Y = active_entry->ie_IconY;
-                            }
-
-                            while (active_entry != NULL)
-                            {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, active_entry));
-#endif
-                                if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
-                                {
-                                    if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-                                        break;
-                                }
-                                else
-                                {
-                                    active_X = active_entry->ie_IconX;
-
-                                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                                    {
-                                        if (active_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                            x_diff = ((data->icld_IconAreaLargestWidth - active_entry->ie_AreaWidth)/2);
-                                    }
-                                    active_Y = active_entry->ie_IconY;
-
-                                    if (start_entry)
-                                    {
-                                        if (entry_next)
-                                        {
-                                            if ((active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
-                                                (active_Y > start_Y) &&
-                                                (((active_X - x_diff) >= start_X ) &&
-                                                ((active_X - x_diff) <= (start_X + start_entry->ie_AreaWidth + (x_diff*2)))))
-                                            {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: (A) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
-#endif
-                                                break;
-                                            }
-                                            else if (active_entry == (struct IconEntry *)GetTail(&data->icld_IconList))
-                                            {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: (A) reached list end .. starting at the beginng ..\n", __PRETTY_FUNCTION__));
-#endif
-                                                start_X = entry_next->ie_IconX;
-                                                if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                                                {
-                                                    if (entry_next->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                                        start_X = start_X - ((data->icld_IconAreaLargestWidth - entry_next->ie_AreaWidth)/2);
-                                                }
-
-                                                if ((entry_next = (struct IconEntry *)Node_NextVisible(entry_next)))
-                                                {
-                                                    if (entry_next->ie_IconX < start_X)
-                                                        entry_next = NULL;
-                                                    else
-                                                    {
-                                                        next_X = entry_next->ie_IconX;
-                                                        if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                                                        {
-                                                            if (entry_next->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                                                next_X = next_X + ((data->icld_IconAreaLargestWidth - entry_next->ie_AreaWidth)/2);
-                                                        }
-                                                    }
-                                                }
-                                                start_Y = 0;
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: (A) startx = %d, start_Y = %d, next_X = %d, entry_next @ 0x%p\n", __PRETTY_FUNCTION__, start_X, start_Y, next_X, entry_next));
-#endif
-                                                active_entry = Node_FirstVisible(&data->icld_IconList);
-                                            }
-                                        }
-                                        else
-                                        {
-                                            if ((active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
-                                                (active_Y > start_Y) &&
-                                                (active_X > start_X - 1))
-                                            {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
-#endif
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-                                        {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
-#endif
-                                            break;
-                                        }
-                                    }
-                                }
-                                active_entry = (struct IconEntry *)GetSucc(&active_entry->ie_IconNode);
-                            }
-
-                            if (!(active_entry))
-                            {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: No Next DOWN Node - Getting first visable icon ..\n", __PRETTY_FUNCTION__));
-#endif
-                                /* We didnt find a "next DOWN" icon so just use the first visible */
-                                active_entry =  Node_FirstVisible(&data->icld_IconList);
-                            }
-                            
-                            if (active_entry)
-                            {
-                                if (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
-                                {
-                                    active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = active_entry;
-                                    MUI_Redraw(obj, MADF_DRAWUPDATE);
-                                }
-                                
-                            }
-                            data->icld_FocusIcon = active_entry;
-                            break;
-
-                        case RAWKEY_LEFT:
-                            rawkey_handled = TRUE;
-
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RAWKEY_LEFT\n", __PRETTY_FUNCTION__));
-#endif
-
-                            if (data->icld_FocusIcon)
-                            {
-                                start_entry = data->icld_FocusIcon;
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: Clearing existing focused icon @ 0x%p\n", __PRETTY_FUNCTION__, start_entry));
-#endif
-
-                                start_entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                                data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                data->update_icon = start_entry;
-                                MUI_Redraw(obj, MADF_DRAWUPDATE);
-
-                                start_X = start_entry->ie_IconX;
-                                if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                                {
-                                    if (start_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                        start_X = start_X - ((data->icld_IconAreaLargestWidth - start_entry->ie_AreaWidth)/2);
-                                }
-                                start_Y = start_entry->ie_IconY;
-
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
-#endif
-
-                                if (!(active_entry = Node_NextVisible(start_entry)) && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
-                                {
-                                    active_entry = (struct IconEntry *)GetHead(&data->icld_IconList);
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: Start at the beginning (Active @ 0x%p) using icon X + Width\n", __PRETTY_FUNCTION__, active_entry));
-#endif
-                                    start_X = start_X + start_entry->ie_AreaWidth;
-                                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                                    {
-                                        if (start_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                            start_X = start_X + ((data->icld_IconAreaLargestWidth - start_entry->ie_AreaWidth)/2);
-                                    }
-
-                                    start_Y = 0;
-                                    entry_next = NULL;
-                                }
-                                else if (active_entry && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
-                                {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: Active @ 0x%p, X %d\n", __PRETTY_FUNCTION__, active_entry, active_entry->ie_IconX));
-#endif
-                                    if ((entry_next = Node_NextVisible(start_entry)))
-                                    {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: Next @ 0x%p, X %d\n", __PRETTY_FUNCTION__, entry_next, entry_next->ie_IconX));
-#endif
-
-                                        if (entry_next->ie_IconX < start_X)
-                                            entry_next = NULL;
-                                        else
-                                        {
+                                            entry_next = active_entry;
                                             next_X = entry_next->ie_IconX;
                                             if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
                                             {
@@ -4000,402 +3584,821 @@ D(bug("[IconList] %s: LEFT: Next @ 0x%p, X %d\n", __PRETTY_FUNCTION__, entry_nex
                                             }
                                         }
                                     }
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: UP: using start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
+#endif
                                 }
+
+                                if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionLastClicked)&&(data->icld_SelectionLastClicked != active_entry)))
+                                {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: UP: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
+#endif
+                                    DoMethod(obj, MUIM_IconList_UnselectAll);
+                                }
+
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: UP: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, active_entry, entry_next));
+#endif
+                                if (!(active_entry))
+                                {
+                                    // If nothing is selected we will use the last visible icon ..
+                                    active_entry = Node_LastVisible(&data->icld_IconList);
+                                    start_X = active_entry->ie_IconX;
+                                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                    {
+                                        if (active_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                            start_X = start_X - ((data->icld_IconAreaLargestWidth - active_entry->ie_AreaWidth)/2);
+                                    }
+                                    start_Y = active_entry->ie_IconY;
+                                }
+
+                                while (active_entry != NULL)
+                                {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: UP: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, active_entry));
+#endif
+                                    if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
+                                    {
+                                        // Return the first visible since the list flow direction matches
+                                        // our cursor direction
+                                        if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+                                            break;
+                                    }
+                                    else
+                                    {
+                                        active_X = active_entry->ie_IconX;
+
+                                        if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                        {
+                                            if (active_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                                x_diff = ((data->icld_IconAreaLargestWidth - active_entry->ie_AreaWidth)/2);
+                                        }
+                                        active_Y = active_entry->ie_IconY;
+                                        
+                                        if (start_entry)
+                                        {
+                                            if (entry_next)
+                                            {
+                                                if ((active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
+                                                    (active_Y < start_Y) &&
+                                                    (((active_X - x_diff) >= start_X ) &&
+                                                    ((active_X - x_diff) <= (start_X + start_entry->ie_AreaWidth + (x_diff*2)))))
+                                                {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: UP: (A) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+#endif
+                                                    break;
+                                                }
+                                                else if (active_entry == (struct IconEntry *)GetHead(&data->icld_IconList))
+                                                {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: UP: (A) reached list start .. restarting from the end ..\n", __PRETTY_FUNCTION__));
+#endif
+                                                    start_X = next_X;
+
+                                                    if ((entry_next = Node_PreviousVisible(entry_next)))
+                                                    {
+                                                        if (entry_next->ie_IconX > start_X)
+                                                            entry_next = NULL;
+                                                        else
+                                                        {
+                                                            next_X = entry_next->ie_IconX;
+                                                            if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                                            {
+                                                                if (entry_next->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                                                    next_X = next_X - ((data->icld_IconAreaLargestWidth - entry_next->ie_AreaWidth)/2);
+                                                            }
+                                                        }
+                                                    }
+                                                    start_Y = 0;
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: UP: (A) startx = %d, start_Y = %d, next_X = %d, entry_next @ 0x%p\n", __PRETTY_FUNCTION__, start_X, start_Y, next_X, entry_next));
+#endif
+                                                    active_entry = Node_LastVisible(&data->icld_IconList);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                if ((active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
+                                                    (active_Y < start_Y) &&
+                                                    ((active_X + x_diff) < (start_X + start_entry->ie_AreaWidth + x_diff)))
+                                                {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: UP: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+#endif
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+                                            {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: UP: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+#endif
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    active_entry = (struct IconEntry *)(((struct Node *)active_entry)->ln_Pred);
+                                }
+
+                                if (!(active_entry))
+                                {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: UP: No Next UP Node - Getting Last visible icon ..\n", __PRETTY_FUNCTION__));
+#endif
+                                    /* We didnt find a "next UP" icon so just use the last visible */
+                                    active_entry = Node_LastVisible(&data->icld_IconList);
+                                }
+                                
+                                if (active_entry)
+                                {
+                                    if (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
+                                    {
+                                        active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
+                                        data->icld_UpdateMode = UPDATE_SINGLEICON;
+                                        data->update_icon = active_entry;
+                                        MUI_Redraw(obj, MADF_DRAWUPDATE);
+                                    }
+                                    
+                                }
+                                data->icld_FocusIcon = active_entry;
+                                break;
+
+                            case RAWKEY_DOWN:
+                                rawkey_handled = TRUE;
+
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: RAWKEY_DOWN\n", __PRETTY_FUNCTION__));
+#endif
+                                if (data->icld_FocusIcon)
+                                {
+                                    start_entry = data->icld_FocusIcon;
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: DOWN: Clearing existing focused icon @ 0x%p\n", __PRETTY_FUNCTION__, start_entry));
+#endif
+
+                                    start_entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
+                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
+                                    data->update_icon = start_entry;
+                                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+
+                                    start_X = start_entry->ie_IconX;
+                                    start_Y = start_entry->ie_IconY;
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: DOWN: start_icon @ 0x%p '%s' - start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_entry, start_entry->ie_IconListEntry.label, start_X, start_Y));
+#endif
+                                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                    {
+                                        if (start_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                        {
+                                            start_X = start_X - ((data->icld_IconAreaLargestWidth - start_entry->ie_AreaWidth)/2);
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: DOWN: adjusted start_X for grid = %d\n", __PRETTY_FUNCTION__, start_X));
+#endif
+                                        }
+                                    }
+
+                                    if ((active_entry = Node_NextVisible(start_entry)) &&
+                                        (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
+                                    {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: DOWN: active_entry @ 0x%p '%s' , X %d, Y %d\n", __PRETTY_FUNCTION__, active_entry, active_entry->ie_IconListEntry.label, active_entry->ie_IconX, active_entry->ie_IconY));
+#endif
+                                        active_Y = active_entry->ie_IconY;
+
+                                        if (active_Y == start_Y)
+                                        {
+
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: DOWN: active_entry is on our row (not at the edge)\n", __PRETTY_FUNCTION__));
+#endif
+                                            entry_next = active_entry;
+                                            next_X = entry_next->ie_IconX;
+                                            if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                            {
+                                                if (entry_next->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                                    next_X = next_X - ((data->icld_IconAreaLargestWidth - entry_next->ie_AreaWidth)/2);
+                                            }
+                                        }
+                                    }
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: DOWN: using start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
+#endif
+                                }
+
+                                if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionLastClicked)&&(data->icld_SelectionLastClicked != active_entry)))
+                                {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: DOWN: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
+#endif
+                                    DoMethod(obj, MUIM_IconList_UnselectAll);
+                                }
+
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: DOWN: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, active_entry, entry_next));
+#endif
+                                if (!(active_entry))
+                                {
+                                    // If nothing is selected we will use the First visible icon ..
+                                    active_entry = Node_FirstVisible(&data->icld_IconList);
+                                    start_X = active_entry->ie_IconX;
+                                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                    {
+                                        if (active_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                            start_X = start_X - ((data->icld_IconAreaLargestWidth - active_entry->ie_AreaWidth)/2);
+                                    }
+                                    start_Y = active_entry->ie_IconY;
+                                }
+
+                                while (active_entry != NULL)
+                                {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: DOWN: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, active_entry));
+#endif
+                                    if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
+                                    {
+                                        if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+                                            break;
+                                    }
+                                    else
+                                    {
+                                        active_X = active_entry->ie_IconX;
+
+                                        if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                        {
+                                            if (active_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                                x_diff = ((data->icld_IconAreaLargestWidth - active_entry->ie_AreaWidth)/2);
+                                        }
+                                        active_Y = active_entry->ie_IconY;
+
+                                        if (start_entry)
+                                        {
+                                            if (entry_next)
+                                            {
+                                                if ((active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
+                                                    (active_Y > start_Y) &&
+                                                    (((active_X - x_diff) >= start_X ) &&
+                                                    ((active_X - x_diff) <= (start_X + start_entry->ie_AreaWidth + (x_diff*2)))))
+                                                {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: DOWN: (A) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+#endif
+                                                    break;
+                                                }
+                                                else if (active_entry == (struct IconEntry *)GetTail(&data->icld_IconList))
+                                                {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: DOWN: (A) reached list end .. starting at the beginng ..\n", __PRETTY_FUNCTION__));
+#endif
+                                                    start_X = entry_next->ie_IconX;
+                                                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                                    {
+                                                        if (entry_next->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                                            start_X = start_X - ((data->icld_IconAreaLargestWidth - entry_next->ie_AreaWidth)/2);
+                                                    }
+
+                                                    if ((entry_next = (struct IconEntry *)Node_NextVisible(entry_next)))
+                                                    {
+                                                        if (entry_next->ie_IconX < start_X)
+                                                            entry_next = NULL;
+                                                        else
+                                                        {
+                                                            next_X = entry_next->ie_IconX;
+                                                            if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                                            {
+                                                                if (entry_next->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                                                    next_X = next_X + ((data->icld_IconAreaLargestWidth - entry_next->ie_AreaWidth)/2);
+                                                            }
+                                                        }
+                                                    }
+                                                    start_Y = 0;
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: DOWN: (A) startx = %d, start_Y = %d, next_X = %d, entry_next @ 0x%p\n", __PRETTY_FUNCTION__, start_X, start_Y, next_X, entry_next));
+#endif
+                                                    active_entry = Node_FirstVisible(&data->icld_IconList);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                if ((active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
+                                                    (active_Y > start_Y) &&
+                                                    (active_X > start_X - 1))
+                                                {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: DOWN: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+#endif
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+                                            {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: DOWN: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+#endif
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    active_entry = (struct IconEntry *)GetSucc(&active_entry->ie_IconNode);
+                                }
+
+                                if (!(active_entry))
+                                {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: DOWN: No Next DOWN Node - Getting first visable icon ..\n", __PRETTY_FUNCTION__));
+#endif
+                                    /* We didnt find a "next DOWN" icon so just use the first visible */
+                                    active_entry =  Node_FirstVisible(&data->icld_IconList);
+                                }
+                                
+                                if (active_entry)
+                                {
+                                    if (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
+                                    {
+                                        active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
+                                        data->icld_UpdateMode = UPDATE_SINGLEICON;
+                                        data->update_icon = active_entry;
+                                        MUI_Redraw(obj, MADF_DRAWUPDATE);
+                                    }
+                                    
+                                }
+                                data->icld_FocusIcon = active_entry;
+                                break;
+
+                            case RAWKEY_LEFT:
+                                rawkey_handled = TRUE;
+
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: RAWKEY_LEFT\n", __PRETTY_FUNCTION__));
+#endif
+                                if (data->icld_FocusIcon)
+                                {
+                                    start_entry = data->icld_FocusIcon;
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: LEFT: Clearing existing focused icon @ 0x%p\n", __PRETTY_FUNCTION__, start_entry));
+#endif
+
+                                    start_entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
+                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
+                                    data->update_icon = start_entry;
+                                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+
+                                    start_X = start_entry->ie_IconX;
+                                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                    {
+                                        if (start_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                            start_X = start_X - ((data->icld_IconAreaLargestWidth - start_entry->ie_AreaWidth)/2);
+                                    }
+                                    start_Y = start_entry->ie_IconY;
+
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: LEFT: start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
+#endif
+
+                                    if (!(active_entry = Node_NextVisible(start_entry)) && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
+                                    {
+                                        active_entry = (struct IconEntry *)GetHead(&data->icld_IconList);
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: LEFT: Start at the beginning (Active @ 0x%p) using icon X + Width\n", __PRETTY_FUNCTION__, active_entry));
+#endif
+                                        start_X = start_X + start_entry->ie_AreaWidth;
+                                        if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                        {
+                                            if (start_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                                start_X = start_X + ((data->icld_IconAreaLargestWidth - start_entry->ie_AreaWidth)/2);
+                                        }
+
+                                        start_Y = 0;
+                                        entry_next = NULL;
+                                    }
+                                    else if (active_entry && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
+                                    {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: LEFT: Active @ 0x%p, X %d\n", __PRETTY_FUNCTION__, active_entry, active_entry->ie_IconX));
+#endif
+                                        if ((entry_next = Node_NextVisible(start_entry)))
+                                        {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: LEFT: Next @ 0x%p, X %d\n", __PRETTY_FUNCTION__, entry_next, entry_next->ie_IconX));
+#endif
+
+                                            if (entry_next->ie_IconX < start_X)
+                                                entry_next = NULL;
+                                            else
+                                            {
+                                                next_X = entry_next->ie_IconX;
+                                                if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                                {
+                                                    if (entry_next->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                                        next_X = next_X - ((data->icld_IconAreaLargestWidth - entry_next->ie_AreaWidth)/2);
+                                                }
+                                            }
+                                        }
+                                    }
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: LEFT: using start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
 #endif
-                            }
+                                }
 
-                            if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionLastClicked)&&(data->icld_SelectionLastClicked != active_entry)))
-                            {
+                                if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionLastClicked)&&(data->icld_SelectionLastClicked != active_entry)))
+                                {
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: LEFT: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
 #endif
-                                DoMethod(obj, MUIM_IconList_UnselectAll);
-                            }
+                                    DoMethod(obj, MUIM_IconList_UnselectAll);
+                                }
 
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: LEFT: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, active_entry, entry_next));
 #endif
 
-                            if (!(active_entry))
-                            {
-                                active_entry = (struct IconEntry *)GetHead(&data->icld_IconList);
-                            }
+                                if (!(active_entry))
+                                {
+                                    active_entry = (struct IconEntry *)GetHead(&data->icld_IconList);
+                                }
 
-                            while (active_entry != NULL)
-                            {
+                                while (active_entry != NULL)
+                                {
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: LEFT: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, active_entry));
 #endif
-                                if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
-                                {
-                                    if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-                                        break;
-                                }
-                                else
-                                {
-                                    LONG active_entry_X = active_entry->ie_IconX;
-                                    LONG active_entry_Y;
-                                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                    if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
                                     {
-                                        if (active_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                            active_entry_X = active_entry_X - ((data->icld_IconAreaLargestWidth - active_entry->ie_AreaWidth)/2);
+                                        if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+                                            break;
                                     }
-                                    active_entry_Y = active_entry->ie_IconY;
-                                    
-                                    if (start_entry)
+                                    else
                                     {
-                                        if (entry_next)
+                                        LONG active_entry_X = active_entry->ie_IconX;
+                                        LONG active_entry_Y;
+                                        if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
                                         {
-                                            if ((active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
-                                                (active_entry_Y > start_Y) &&
-                                                ((active_entry_X > start_X - 1) &&
-                                                (active_entry_X < next_X)))
+                                            if (active_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                                active_entry_X = active_entry_X - ((data->icld_IconAreaLargestWidth - active_entry->ie_AreaWidth)/2);
+                                        }
+                                        active_entry_Y = active_entry->ie_IconY;
+                                        
+                                        if (start_entry)
+                                        {
+                                            if (entry_next)
                                             {
+                                                if ((active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
+                                                    (active_entry_Y > start_Y) &&
+                                                    ((active_entry_X > start_X - 1) &&
+                                                    (active_entry_X < next_X)))
+                                                {
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: LEFT: (A) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
 #endif
-                                                break;
-                                            }
-                                            else if (active_entry == (struct IconEntry *)GetTail(&data->icld_IconList))
-                                            {
+                                                    break;
+                                                }
+                                                else if (active_entry == (struct IconEntry *)GetTail(&data->icld_IconList))
+                                                {
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: LEFT: (A) reached list end .. starting at the beginng ..\n", __PRETTY_FUNCTION__));
 #endif
-                                                start_X = entry_next->ie_IconX;
-                                                if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                                                {
-                                                    if (entry_next->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                                        start_X = start_X - ((data->icld_IconAreaLargestWidth - entry_next->ie_AreaWidth)/2);
-                                                }
-
-                                                if ((entry_next = Node_NextVisible(entry_next)))
-                                                {
-                                                    if (entry_next->ie_IconX < start_X)
-                                                        entry_next = NULL;
-                                                    else
+                                                    start_X = entry_next->ie_IconX;
+                                                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
                                                     {
-                                                        next_X = entry_next->ie_IconX;
-                                                        if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                                        if (entry_next->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                                            start_X = start_X - ((data->icld_IconAreaLargestWidth - entry_next->ie_AreaWidth)/2);
+                                                    }
+
+                                                    if ((entry_next = Node_NextVisible(entry_next)))
+                                                    {
+                                                        if (entry_next->ie_IconX < start_X)
+                                                            entry_next = NULL;
+                                                        else
                                                         {
-                                                            if (entry_next->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                                                next_X = next_X + ((data->icld_IconAreaLargestWidth - entry_next->ie_AreaWidth)/2);
+                                                            next_X = entry_next->ie_IconX;
+                                                            if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                                            {
+                                                                if (entry_next->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                                                    next_X = next_X + ((data->icld_IconAreaLargestWidth - entry_next->ie_AreaWidth)/2);
+                                                            }
                                                         }
                                                     }
-                                                }
-                                                start_Y = 0;
+                                                    start_Y = 0;
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: LEFT: (A) startx = %d, start_Y = %d, next_X = %d, entry_next @ 0x%p\n", __PRETTY_FUNCTION__, start_X, start_Y, next_X, entry_next));
 #endif
-                                                active_entry = (struct IconEntry *)GetHead(&data->icld_IconList);
+                                                    active_entry = (struct IconEntry *)GetHead(&data->icld_IconList);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                if ((active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
+                                                    (active_entry_Y > start_Y) &&
+                                                    (active_entry_X > start_X - 1))
+                                                {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: LEFT: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+#endif
+                                                    break;
+                                                }
                                             }
                                         }
                                         else
                                         {
-                                            if ((active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
-                                                (active_entry_Y > start_Y) &&
-                                                (active_entry_X > start_X - 1))
+                                            if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
                                             {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+D(bug("[IconList] %s: LEFT: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                                 break;
                                             }
                                         }
                                     }
-                                    else
-                                    {
-                                        if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-                                        {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
-#endif
-                                            break;
-                                        }
-                                    }
+                                    active_entry = (struct IconEntry *)GetSucc(&active_entry->ie_IconNode);
                                 }
-                                active_entry = (struct IconEntry *)GetSucc(&active_entry->ie_IconNode);
-                            }
 
-                            if (!(active_entry))
-                            {
+                                if (!(active_entry))
+                                {
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: LEFT: No Next LEFT Node - Getting first visable icon ..\n", __PRETTY_FUNCTION__));
 #endif
-                                /* We didnt find a "next LEFT" icon so just use the last visible */
-                                active_entry =  (struct IconEntry *)GetHead(&data->icld_IconList);
-                                while ((active_entry != NULL) &&(!(active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)))
-                                {
-                                    active_entry = (struct IconEntry *)GetSucc(&active_entry->ie_IconNode);
-                                }
-                            }
-                            
-                            if (active_entry)
-                            {
-                                if (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
-                                {
-                                    active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = active_entry;
-                                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                                    /* We didnt find a "next LEFT" icon so just use the last visible */
+                                    active_entry =  (struct IconEntry *)GetHead(&data->icld_IconList);
+                                    while ((active_entry != NULL) &&(!(active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)))
+                                    {
+                                        active_entry = (struct IconEntry *)GetSucc(&active_entry->ie_IconNode);
+                                    }
                                 }
                                 
-                            }
-                            data->icld_FocusIcon = active_entry;
-                            break;
+                                if (active_entry)
+                                {
+                                    if (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
+                                    {
+                                        active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
+                                        data->icld_UpdateMode = UPDATE_SINGLEICON;
+                                        data->update_icon = active_entry;
+                                        MUI_Redraw(obj, MADF_DRAWUPDATE);
+                                    }
+                                    
+                                }
+                                data->icld_FocusIcon = active_entry;
+                                break;
 
-                        case RAWKEY_RIGHT:
-                            rawkey_handled = TRUE;
+                            case RAWKEY_RIGHT:
+                                rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RAWKEY_RIGHT\n", __PRETTY_FUNCTION__));
 #endif
 
-                            if (data->icld_FocusIcon)
-                            {
-                                start_entry = data->icld_FocusIcon;
+                                if (data->icld_FocusIcon)
+                                {
+                                    start_entry = data->icld_FocusIcon;
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RIGHT: Clearing existing focused icon @ 0x%p\n", __PRETTY_FUNCTION__, start_entry));
 #endif
-                                start_entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                                data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                data->update_icon = start_entry;
-                                MUI_Redraw(obj, MADF_DRAWUPDATE);
+                                    start_entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
+                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
+                                    data->update_icon = start_entry;
+                                    MUI_Redraw(obj, MADF_DRAWUPDATE);
 
-                                start_X = start_entry->ie_IconX;
-                                if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                                {
-                                    if (start_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                        start_X = start_X - ((data->icld_IconAreaLargestWidth - start_entry->ie_AreaWidth)/2);
-                                }
-                                start_Y = start_entry->ie_IconY;
+                                    start_X = start_entry->ie_IconX;
+                                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                    {
+                                        if (start_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                            start_X = start_X - ((data->icld_IconAreaLargestWidth - start_entry->ie_AreaWidth)/2);
+                                    }
+                                    start_Y = start_entry->ie_IconY;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RIGHT: start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
 #endif
-                                if (!(active_entry = Node_NextVisible(start_entry)) && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
-                                {
-                                    active_entry = (struct IconEntry *)GetHead(&data->icld_IconList);
+                                    if (!(active_entry = Node_NextVisible(start_entry)) && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
+                                    {
+                                        active_entry = (struct IconEntry *)GetHead(&data->icld_IconList);
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RIGHT: Start at the beginning (Active @ 0x%p) using icon X + Width\n", __PRETTY_FUNCTION__, active_entry));
 #endif
-                                    start_X = 0;
-                                    start_Y = start_Y + start_entry->ie_AreaHeight;
-                                    entry_next = NULL;
-                                }
-                                else if (active_entry && (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL))
-                                {
+                                        start_X = 0;
+                                        start_Y = start_Y + start_entry->ie_AreaHeight;
+                                        entry_next = NULL;
+                                    }
+                                    else if (active_entry && (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL))
+                                    {
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RIGHT: Active @ 0x%p, X %d\n", __PRETTY_FUNCTION__, active_entry, active_entry->ie_IconX));
 #endif
-                                    if ((entry_next = Node_NextVisible(start_entry)))
-                                    {
+                                        if ((entry_next = Node_NextVisible(start_entry)))
+                                        {
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RIGHT: Next @ 0x%p, X %d\n", __PRETTY_FUNCTION__, entry_next, entry_next->ie_IconX));
 #endif
 
-                                        if (entry_next->ie_IconY < start_Y)
-                                            entry_next = NULL;
-                                        else
-                                            next_Y = entry_next->ie_IconY;
+                                            if (entry_next->ie_IconY < start_Y)
+                                                entry_next = NULL;
+                                            else
+                                                next_Y = entry_next->ie_IconY;
+                                        }
                                     }
-                                }
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RIGHT: using start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
 #endif
-                            }
+                                }
 
-                            if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionLastClicked)&&(data->icld_SelectionLastClicked != active_entry)))
-                            {
+                                if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionLastClicked)&&(data->icld_SelectionLastClicked != active_entry)))
+                                {
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RIGHT: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
 #endif
-                                DoMethod(obj, MUIM_IconList_UnselectAll);
-                            }
+                                    DoMethod(obj, MUIM_IconList_UnselectAll);
+                                }
 
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RIGHT: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, active_entry, entry_next));
 #endif
 
-                            if (!(active_entry))
-                            {
-                                active_entry = (struct IconEntry *)GetHead(&data->icld_IconList);
-                            }
+                                if (!(active_entry))
+                                {
+                                    active_entry = (struct IconEntry *)GetHead(&data->icld_IconList);
+                                }
 
-                            while (active_entry != NULL)
-                            {
+                                while (active_entry != NULL)
+                                {
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RIGHT: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, active_entry));
 #endif
-                                if (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL))
-                                {
-                                    if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-                                        break;
-                                }
-                                else
-                                {
-                                    LONG active_entry_X = active_entry->ie_IconX;
-            LONG active_entry_Y;
-                                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                                    if (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL))
                                     {
-                                        if (active_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                                            active_entry_X = active_entry_X - ((data->icld_IconAreaLargestWidth - active_entry->ie_AreaWidth)/2);
+                                        if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+                                            break;
                                     }
-                                    active_entry_Y = active_entry->ie_IconY;
-                                    
-                                    if (start_entry)
+                                    else
                                     {
-                                        if (entry_next)
+                                        LONG active_entry_X = active_entry->ie_IconX;
+                                        LONG active_entry_Y;
+                                        if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
                                         {
-                                            if ((active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
-                                                (active_entry_X > start_X) &&
-                                                ((active_entry_Y > start_Y - 1) &&
-                                                (active_entry_Y < next_Y)))
+                                            if (active_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                                                active_entry_X = active_entry_X - ((data->icld_IconAreaLargestWidth - active_entry->ie_AreaWidth)/2);
+                                        }
+                                        active_entry_Y = active_entry->ie_IconY;
+                                        
+                                        if (start_entry)
+                                        {
+                                            if (entry_next)
                                             {
+                                                if ((active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
+                                                    (active_entry_X > start_X) &&
+                                                    ((active_entry_Y > start_Y - 1) &&
+                                                    (active_entry_Y < next_Y)))
+                                                {
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RIGHT: (A) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
 #endif
-                                                break;
-                                            }
-                                            else if (active_entry == (struct IconEntry *)GetTail(&data->icld_IconList))
-                                            {
+                                                    break;
+                                                }
+                                                else if (active_entry == (struct IconEntry *)GetTail(&data->icld_IconList))
+                                                {
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RIGHT: (A) reached list end .. starting at the beginng ..\n", __PRETTY_FUNCTION__));
 #endif
-                                                start_Y = entry_next->ie_IconY;
+                                                    start_Y = entry_next->ie_IconY;
 
-                                                if ((entry_next = Node_NextVisible(entry_next)))
-                                                {
-                                                    if (entry_next->ie_IconY < start_Y)
-                                                        entry_next = NULL;
-                                                    else
+                                                    if ((entry_next = Node_NextVisible(entry_next)))
                                                     {
-                                                        next_Y = entry_next->ie_IconY;
+                                                        if (entry_next->ie_IconY < start_Y)
+                                                            entry_next = NULL;
+                                                        else
+                                                        {
+                                                            next_Y = entry_next->ie_IconY;
+                                                        }
                                                     }
-                                                }
-                                                start_Y = 0;
+                                                    start_Y = 0;
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RIGHT: (A) startx = %d, start_Y = %d, next_X = %d, entry_next @ 0x%p\n", __PRETTY_FUNCTION__, start_X, start_Y, next_X, entry_next));
 #endif
-                                                active_entry = (struct IconEntry *)GetHead(&data->icld_IconList);
+                                                    active_entry = (struct IconEntry *)GetHead(&data->icld_IconList);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                if ((active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
+                                                    (active_entry_X > start_X) &&
+                                                    (active_entry_Y > start_Y - 1))
+                                                {
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: RIGHT: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+#endif
+                                                    break;
+                                                }
                                             }
                                         }
                                         else
                                         {
-                                            if ((active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
-                                                (active_entry_X > start_X) &&
-                                                (active_entry_Y > start_Y - 1))
+                                            if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
                                             {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+D(bug("[IconList] %s: RIGHT: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                                 break;
                                             }
                                         }
                                     }
-                                    else
-                                    {
-                                        if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-                                        {
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
-#endif
-                                            break;
-                                        }
-                                    }
+                                    active_entry = (struct IconEntry *)GetSucc(&active_entry->ie_IconNode);
                                 }
-                                active_entry = (struct IconEntry *)GetSucc(&active_entry->ie_IconNode);
-                            }
 
-                            if (!(active_entry))
-                            {
+                                if (!(active_entry))
+                                {
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RIGHT: No Next RIGHT Node - Getting first visable icon ..\n", __PRETTY_FUNCTION__));
 #endif
-                                /* We didnt find a "next RIGHT" icon so just use the first visible */
-                                active_entry =  (struct IconEntry *)GetHead(&data->icld_IconList);
-                                while ((active_entry != NULL) &&(!(active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)))
-                                {
-                                    active_entry = (struct IconEntry *)GetSucc(&active_entry->ie_IconNode);
+                                    /* We didnt find a "next RIGHT" icon so just use the first visible */
+                                    active_entry =  (struct IconEntry *)GetHead(&data->icld_IconList);
+                                    while ((active_entry != NULL) &&(!(active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)))
+                                    {
+                                        active_entry = (struct IconEntry *)GetSucc(&active_entry->ie_IconNode);
+                                    }
                                 }
-                            }
-                            
-                            if (active_entry)
-                            {
-                                if (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
+                                
+                                if (active_entry)
+                                {
+                                    if (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
+                                    {
+                                        active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
+                                        data->icld_UpdateMode = UPDATE_SINGLEICON;
+                                        data->update_icon = active_entry;
+                                        MUI_Redraw(obj, MADF_DRAWUPDATE);
+                                    }
+                                    
+                                }
+                                data->icld_FocusIcon = active_entry;
+                                break;
+
+                            case RAWKEY_HOME:
+                                rawkey_handled = TRUE;
+
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] %s: RAWKEY_HOME\n", __PRETTY_FUNCTION__));
+#endif
+
+                                if (data->icld_FocusIcon)
+                                {
+                                    data->icld_FocusIcon->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
+                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
+                                    data->update_icon = data->icld_FocusIcon;
+                                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                                }
+
+                                active_entry =  Node_FirstVisible(&data->icld_IconList);
+                                
+                                if ((active_entry) && (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS)))
                                 {
                                     active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
                                     data->icld_UpdateMode = UPDATE_SINGLEICON;
                                     data->update_icon = active_entry;
                                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                                 }
-                                
-                            }
-                            data->icld_FocusIcon = active_entry;
-                            break;
+                                data->icld_FocusIcon = active_entry;
+                                break;
 
-                        case RAWKEY_HOME:
-                            rawkey_handled = TRUE;
-
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RAWKEY_HOME\n", __PRETTY_FUNCTION__));
-#endif
-
-                            if (data->icld_FocusIcon)
-                            {
-                                data->icld_FocusIcon->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                                data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                data->update_icon = data->icld_FocusIcon;
-                                MUI_Redraw(obj, MADF_DRAWUPDATE);
-                            }
-
-                            active_entry =  Node_FirstVisible(&data->icld_IconList);
-                            
-                            if ((active_entry) && (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS)))
-                            {
-                                active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                                data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                data->update_icon = active_entry;
-                                MUI_Redraw(obj, MADF_DRAWUPDATE);
-                            }
-                            data->icld_FocusIcon = active_entry;
-                            break;
-
-                        case RAWKEY_END:
-                            rawkey_handled = TRUE;
+                            case RAWKEY_END:
+                                rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] %s: RAWKEY_END\n", __PRETTY_FUNCTION__));
 #endif
 
-                            if (data->icld_FocusIcon)
-                            {
-                                data->icld_FocusIcon->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                                data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                data->update_icon = data->icld_FocusIcon;
-                                MUI_Redraw(obj, MADF_DRAWUPDATE);
-                            }
+                                if (data->icld_FocusIcon)
+                                {
+                                    data->icld_FocusIcon->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
+                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
+                                    data->update_icon = data->icld_FocusIcon;
+                                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                                }
 
-                            active_entry = Node_LastVisible(&data->icld_IconList);
-                            
-                            if ((active_entry) && (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS)))
-                            {
-                                active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                                data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                data->update_icon = active_entry;
-                                MUI_Redraw(obj, MADF_DRAWUPDATE);
-                            }
-                            data->icld_FocusIcon = active_entry;
-                            break;
+                                active_entry = Node_LastVisible(&data->icld_IconList);
+                                
+                                if ((active_entry) && (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS)))
+                                {
+                                    active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
+                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
+                                    data->update_icon = active_entry;
+                                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                                }
+                                data->icld_FocusIcon = active_entry;
+                                break;
+                        }
                     }
+                    if (rawkey_handled) return MUI_EventHandlerRC_Eat;
                 }
-                if (rawkey_handled) return MUI_EventHandlerRC_Eat;
-            }
-            break;
+                break;
     
             case IDCMP_MOUSEBUTTONS:
-
+#if defined(DEBUG_ILC_EVENTS)
+bug("[IconList] %s: IDCMP_MOUSEBUTTONS\n", __PRETTY_FUNCTION__);
+#endif
                 if (message->imsg->Code == SELECTDOWN)
                 {
                     /* check if mouse pressed on iconlist area */
@@ -4474,12 +4477,18 @@ D(bug("[IconList] %s: Rendered icon '%s'\n", __PRETTY_FUNCTION__, node->ie_IconL
 
                         if ((DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros)) && (data->icld_SelectionLastClicked == new_selected))
                         {
+#if defined(DEBUG_ILC_EVENTS)
 D(bug("[IconList] %s: Icon double-clicked\n", __PRETTY_FUNCTION__));
+#endif
                             icon_doubleclicked = TRUE;
                         }
 
                         if (new_selected == NULL)
                         {
+                            struct Window * thisWindow = NULL;
+#if defined(DEBUG_ILC_EVENTS) && defined(DEBUG_ILC_LASSO)
+D(bug("[IconList] %s: Starting Lasso\n", __PRETTY_FUNCTION__));
+#endif
                             /* No icon clicked on ... Start Lasso-selection */
                             data->icld_LassoActive = TRUE;
                             if (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
@@ -4491,9 +4500,21 @@ D(bug("[IconList] %s: Icon double-clicked\n", __PRETTY_FUNCTION__));
                             data->icld_LassoRectangle.MinY = my - data->view_rect.MinY + data->icld_ViewY;
                             data->icld_LassoRectangle.MaxX = mx - data->view_rect.MinX + data->icld_ViewX;
                             data->icld_LassoRectangle.MaxY = my - data->view_rect.MinY + data->icld_ViewY; 
- 
+
                             /* Draw initial Lasso frame */
                             IconList_InvertLassoOutlines(obj, &data->icld_LassoRectangle);
+
+                            GET(obj, MUIA_Window, &thisWindow);
+                            if (thisWindow)
+                            {
+                                ModifyIDCMP(thisWindow, (thisWindow->IDCMPFlags|IDCMP_INTUITICKS));
+                                if (!(data->ehn.ehn_Events & IDCMP_INTUITICKS))
+                                {
+                                    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+                                    data->ehn.ehn_Events |= IDCMP_INTUITICKS;
+                                    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+                                }
+                            }
                         }
                         else
                         {
@@ -4566,7 +4587,7 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
                         data->click_x = mx;
                         data->click_y = my;
 
-						SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+                        SET(obj, MUIA_IconList_SelectionChanged, TRUE);
 
                         return MUI_EventHandlerRC_Eat;
                     }
@@ -4594,10 +4615,25 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
                     {
                         if (data->icld_LassoActive == TRUE)
                         {
+#if defined(DEBUG_ILC_EVENTS) && defined(DEBUG_ILC_LASSO)
+D(bug("[IconList] %s: Removing Lasso\n", __PRETTY_FUNCTION__));
+#endif
                             // End Lasso-selection
-                            struct Rectangle   old_lasso;
-                            struct IconEntry   *node = NULL;
+                            struct Rectangle    old_lasso;
+                            struct IconEntry    *node = NULL;
+                            struct Window       *thisWindow = NULL;
 
+                            GET(obj, MUIA_Window, &thisWindow);
+                            if (thisWindow)
+                            {
+                                ModifyIDCMP(thisWindow, (thisWindow->IDCMPFlags & ~(IDCMP_INTUITICKS)));
+                                if ((data->ehn.ehn_Events & IDCMP_INTUITICKS))
+                                {
+                                    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+                                    data->ehn.ehn_Events &= ~IDCMP_INTUITICKS;
+                                    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+                                }
+                            }
                             //Clear Lasso Frame..
                             GetAbsoluteLassoRect(data, &old_lasso); 
                             IconList_InvertLassoOutlines(obj, &old_lasso);
@@ -4616,7 +4652,7 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
                                     node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
                                 }
                             }
-							SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+                            SET(obj, MUIA_IconList_SelectionChanged, TRUE);
                         }
 
                         data->mouse_pressed &= ~LEFT_BUTTON;
@@ -4635,9 +4671,25 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
                     }
                 }
                 break;
-    
-            case IDCMP_MOUSEMOVE:
 
+            case IDCMP_INTUITICKS:
+                {
+#if defined(DEBUG_ILC_EVENTS)
+D(bug("[IconList] %s: IDCMP_INTUITICKS (%d, %d)\n", __PRETTY_FUNCTION__, mx, my));
+#endif
+                    if ((data->icld_LassoActive == FALSE)||(!(data->mouse_pressed & LEFT_BUTTON)))
+                    {
+                        break;
+                    }
+                    if (((mx >= 0) && (mx <= _mwidth(obj))) &&
+                        ((my >= 0) && (my <= _mheight(obj))))
+                        break;
+                }
+
+            case IDCMP_MOUSEMOVE:
+#if defined(DEBUG_ILC_EVENTS)
+D(bug("[IconList] %s: IDCMP_MOUSEMOVE\n", __PRETTY_FUNCTION__));
+#endif
                 if (data->mouse_pressed & LEFT_BUTTON)
                 {
                     LONG    move_x = mx;
@@ -4650,15 +4702,18 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
                         DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
                         data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
                         DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-            
+
                         data->mouse_pressed &= ~LEFT_BUTTON;
-            
+
                         data->touch_x = move_x + data->icld_ViewX - data->icld_SelectionLastClicked->ie_IconX;
                         data->touch_y = move_y + data->icld_ViewY - data->icld_SelectionLastClicked->ie_IconY;
                         DoMethod(obj,MUIM_DoDrag, data->touch_x, data->touch_y, 0);
                     }
                     else if (data->icld_LassoActive == TRUE)
                     {
+#if defined(DEBUG_ILC_EVENTS) && defined(DEBUG_ILC_LASSO)
+D(bug("[IconList] %s: Update Lasso\n", __PRETTY_FUNCTION__));
+#endif
                         //Lasso active ..
                         struct Rectangle    new_lasso,
                                             old_lasso;
@@ -4677,10 +4732,10 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
                             LONG newleft = data->icld_ViewX;
                             LONG newtop = data->icld_ViewY;
 
-                            if (mx >= _mwidth(obj)) newleft += 5;
-                               else if (mx < 0) newleft -= 5;
-                            if (my >= _mheight(obj)) newtop +=  5;
-                               else if (my < 0) newtop -= 5;
+                            if (mx >= _mwidth(obj)) newleft += (mx - _mwidth(obj));
+                               else if (mx < 0) newleft += mx;
+                            if (my >= _mheight(obj)) newtop += (my - _mheight(obj));
+                               else if (my < 0) newtop += my;
 
                             if (newleft + _mwidth(obj) > data->icld_AreaWidth) newleft = data->icld_AreaWidth - _mwidth(obj);
                             if (newleft < 0) newleft = 0;
@@ -4739,8 +4794,8 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
                                             AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
                                             node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
                                         }
-                                         node->ie_Flags |= ICONENTRY_FLAG_LASSO;
-                                         update_icon = (IPTR)node;
+                                        node->ie_Flags |= ICONENTRY_FLAG_LASSO;
+                                        update_icon = (IPTR)node;
                                      }
                                 } 
                                 else if (node->ie_Flags & ICONENTRY_FLAG_LASSO)
@@ -4771,33 +4826,33 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
                         /* Draw Lasso frame */                         
                         IconList_InvertLassoOutlines(obj, &new_lasso);                        
                     }
-                            
+
                     return MUI_EventHandlerRC_Eat;
                 }
                 else if (data->mouse_pressed & MIDDLE_BUTTON)
                 {
                     LONG     newleft,
                              newtop;
-        
+
                     newleft = data->click_x - mx;
                     newtop = data->click_y - my;
-        
+
                     if (newleft + _mwidth(obj) > data->icld_AreaWidth) newleft = data->icld_AreaWidth - _mwidth(obj);
                     if (newleft < 0) newleft = 0;
-        
+
                     if (newtop + _mheight(obj) > data->icld_AreaHeight) newtop = data->icld_AreaHeight - _mheight(obj);
                     if (newtop < 0) newtop = 0;
-        
+
                     if ((newleft != data->icld_ViewX) || (newtop != data->icld_ViewY))
                     {
                         SetAttrs(obj, MUIA_Virtgroup_Left, newleft,
                             MUIA_Virtgroup_Top, newtop,
                             TAG_DONE);
                     }
-        
+
                     return MUI_EventHandlerRC_Eat;
                 }
-    
+
             break;
         }
     }
