@@ -279,7 +279,14 @@ D(bug("[IW.statusbar] %s: '%s' FIB Size = %d bytes\n", __PRETTY_FUNCTION__, icon
             previous = strlen(status_str);
         }
 
-        SET(panelStatusBarPrivate->iwp_StatusBar_StatusTextObj, MUIA_Text_Contents, (IPTR)status_str);
+        if (previous > 0)
+        {
+            SET(panelStatusBarPrivate->iwp_StatusBar_StatusTextObj, MUIA_Text_Contents, (IPTR)status_str);
+        }
+        else
+        {
+            SET(panelStatusBarPrivate->iwp_StatusBar_StatusTextObj, MUIA_Text_Contents, (IPTR)"");
+        }
     }
 
     AROS_USERFUNC_EXIT
