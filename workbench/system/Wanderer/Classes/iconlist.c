@@ -23,7 +23,7 @@ $Id$
 //#define DEBUG_ILC_LASSO
 //#define DEBUG_ILC_MEMALLOC
 
-//#define CREATE_FULL_DRAGIMAGE
+#define CREATE_FULL_DRAGIMAGE
 
 #include <string.h>
 #include <stdlib.h>
