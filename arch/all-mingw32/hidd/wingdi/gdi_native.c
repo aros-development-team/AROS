@@ -104,7 +104,7 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
         SendKbdIRQ(msg & 0xFFFFFFFB, (lp >> 16) & 0x000001FF);
         return 0;
     case WM_ACTIVATE:
-        window_active = wp;
+        window_active = wp & 0x0000FFFF;
     default:
         return DefWindowProc(win, msg, wp, lp);
     }
