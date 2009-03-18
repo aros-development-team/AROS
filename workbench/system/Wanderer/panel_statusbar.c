@@ -71,7 +71,7 @@ extern struct List                     iconwindow_Extensions;
 
 /*** Private Data *********************************************************/
 
-static CONST_STRPTR                     extension_Name = "StatusBar Extension";
+static CONST_STRPTR                     extension_Name = "IconWindow StatusBar Extension";
 static CONST_STRPTR                     extension_PrefsFile = "ENV:SYS/Wanderer/statusbar.prefs";
 static STRPTR                           extension_PrefsData;
 static struct iconWindow_Extension      panelStatusBar__Extension;
@@ -523,9 +523,20 @@ static IPTR panelStatusBar__OM_GET(Class *CLASS, Object *self, struct opGet *mes
 {
     SETUP_ICONWINDOW_INST_DATA;
 
+    IPTR                        rv = FALSE;
+
     D(bug("[IW.statusbar]: %s()\n", __PRETTY_FUNCTION__));
 
-    return NULL;
+    if ((panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_BottomPanel.iwp_PanelPrivate) != (IPTR)NULL)
+    {
+        if (panelStatusBarPrivate->iwp_Node.ln_Name != extension_Name)
+            return rv;
+
+        switch (tag->ti_Tag)
+        {
+        }
+    }
+    return rv;
 }
 ///
 
@@ -538,7 +549,7 @@ static IPTR panelStatusBar__OM_SET(Class *CLASS, Object *self, struct opSet *mes
     struct TagItem              *tstate = message->ops_AttrList, *tag;
     BOOL                        UpdateIconlist = FALSE;
     IPTR                        focusicon = (IPTR) NULL;
-    IPTR                        rv = TRUE;
+    IPTR                        rv = FALSE;
 
     D(bug("[IW.statusbar]: %s()\n", __PRETTY_FUNCTION__));
 

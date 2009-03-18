@@ -72,7 +72,7 @@ extern struct List                     iconwindow_Extensions;
 
 /*** Private Data *********************************************************/
 
-static CONST_STRPTR                     extension_Name = "ToolBar Extension";
+static CONST_STRPTR                     extension_Name = "IconWindow ToolBar Extension";
 static CONST_STRPTR                     extension_PrefsFile = "ENV:SYS/Wanderer/toolbar.prefs";
 static STRPTR                           extension_PrefsData;
 static struct iconWindow_Extension      panelToolBar__Extension;
@@ -513,12 +513,17 @@ IPTR panelToolBar__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
 
-    switch (message->opg_AttrID)
+    if ((panelToolBarPrivate = (struct panel_ToolBar_DATA *)data->iwd_TopPanel.iwp_PanelPrivate) != (IPTR)NULL)
     {
-/*        case MUIA_IconWindowExt_ToolBar_Enabled:
-        *store = (IPTR)(data->iwd_Flags & IWDFLAG_EXT_TOOLBARENABLED);
-        break;*/
+        if (panelToolBarPrivate->iwp_Node.ln_Name != extension_Name)
+            return rv;
+
+        switch (message->opg_AttrID)
+        {
+        }
     }
+
+    return rv;
 }
 
 #define PANELTOOLBAR_PRIORITY 10
@@ -539,7 +544,7 @@ IPTR panelToolBar__Init()
     Enqueue(&iconwindow_Extensions, (struct Node *)&panelToolBar__Extension);
 
     D(bug("[IconWindow] %s: Added Extension '%s' @ %p to list @ %p\n", __PRETTY_FUNCTION__, panelToolBar__Extension.iwe_Node.ln_Name, &panelToolBar__Extension.iwe_Node, &iconwindow_Extensions));
-    
+
     return TRUE;
 }
 
