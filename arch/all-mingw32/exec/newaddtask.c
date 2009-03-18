@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a task.
@@ -23,9 +23,6 @@
 #   define DEBUG 1
 #endif
 #include <aros/debug.h>
-
-/* if #define fills the unused stack with 0xE1 */
-#define STACKSNOOP
 
 void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 
@@ -156,17 +153,17 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
     }
     D(bug("[exec] NewAddTask: SPLower: 0x%08lX SPUpper: 0x%08lX SP: 0x%08lX\n", task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg));
 
-#ifdef STACKSNOOP
+#if AROS_STACK_DEBUG
     {
         UBYTE *startfill, *endfill;
-        
-    #if AROS_STACK_GROWS_DOWNWARDS      
+
+#if AROS_STACK_GROWS_DOWNWARDS
         startfill = (UBYTE *)task->tc_SPLower;
         endfill   = ((UBYTE *)task->tc_SPReg) - 16;
-    #else
+#else
         startfill = ((UBYTE *)task->tc_SPReg) + 16;
         endfill   = ((UBYTE *)task->tc_SPUpper) - 1; /* FIXME: -1 correct ?? */
-    #endif
+#endif
 
         while(startfill <= endfill)
         {

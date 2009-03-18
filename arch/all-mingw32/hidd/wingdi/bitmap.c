@@ -77,6 +77,7 @@ VOID GDIBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     GDICALL(SetPixel, data->dc, msg->x, msg->y, msg->pixel);
     REFRESH(msg->x, msg->y, msg->x+1, msg->y+1)
     Permit();
+    CHECK_STACK
 }
 
 /****************************************************************************************/
@@ -90,6 +91,7 @@ HIDDT_Pixel GDIBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o, struct pH
     Forbid();
     pixel = GDICALL(GetPixel, data->dc, msg->x, msg->y);
     Permit();
+    CHECK_STACK
 
     return pixel;
 }
@@ -143,6 +145,7 @@ VOID GDIBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 
     D(bug("[GDI] hidd.bitmap.gdibitmap::FillRect(0x%p, %d,%d,%d,%d)\n", o, msg->minX, msg->minY, msg->maxX, msg->maxY));
     FillRect(cl, data, msg->gc, msg->minX, msg->minY, msg->maxX, msg->maxY);
+    CHECK_STACK
 }
 
 /****************************************************************************************/
@@ -156,7 +159,8 @@ ULONG GDIBM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_B
        have to emulate all functions using them. However it's necessary to overload as many
        methods as possible because GetPixel()/PutPixel() are REALLY slow.
        Here we implement DrawPixel() as filling 1x1 rectangle */
-    FillRect(cl, data, msg->gc, msg->x, msg->y, msg->x, msg->y);    
+    FillRect(cl, data, msg->gc, msg->x, msg->y, msg->x, msg->y);
+    CHECK_STACK
     return 0;    
 }
 /****************************************************************************************/
@@ -212,6 +216,7 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     	Permit();
         FreeMem(buf, bufsize);
     }
+    CHECK_STACK
 }
 
 /****************************************************************************************/
@@ -224,6 +229,7 @@ VOID GDIBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o, struct pHidd_
     	    	  msg->pixels, msg->x, msg->y, msg->width, msg->height));
 	
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    CHECK_STACK
 }
 
 VOID GDIBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
@@ -232,6 +238,7 @@ VOID GDIBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o, struct pHidd_
     	    	  msg->pixels, msg->x, msg->y, msg->width, msg->height));
 	
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    CHECK_STACK
 }
 
 /****************************************************************************************/
@@ -301,6 +308,7 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 			      msg->width, msg->height, NULL);	
     	FreeMem(buf, bufsize);
     }
+    CHECK_STACK
 }
 
 /****************************************************************************************/
@@ -390,6 +398,7 @@ VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
        opaque mode. Probably it will be even faster than this two-op version. */
     REFRESH(msg->destX, msg->destY, msg->destX + msg->width, msg->destY + msg->height);
     Permit();
+    CHECK_STACK
 }
 
 /****************************************************************************************/
@@ -517,6 +526,7 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	data->dc = my_dc;
 	data->bitmap = my_bitmap;
 	data->dc_bitmap = orig_bitmap;
+	CHECK_STACK
     	ReturnPtr("GDIGfx.BitMap::New()", OOP_Object *, o);
     } /* if (object allocated by superclass) */
 dispose_bitmap:    
@@ -550,7 +560,8 @@ VOID GDIBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     Permit();
     
     OOP_DoSuperMethod(cl, o, msg);
-    
+
+    CHECK_STACK    
     ReturnVoid("GDIGfx.BitMap::Dispose");
 }
 
@@ -580,7 +591,8 @@ VOID GDIBM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
         GDICALL(DeleteObject, br);
     }
     REFRESH(0, 0, width , height)
-    Permit();    
+    Permit();
+    CHECK_STACK
 }
 
 /****************************************************************************************/

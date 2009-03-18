@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Debugging macros.
@@ -332,6 +332,28 @@
 #   define ReturnSpecial(name,type,val,fmt) return val
 #   define ReturnBool(name,val)             return val
 #endif /* DEBUG */
+
+#undef CHECK_STACK
+#if AROS_STACK_DEBUG
+/*
+   I don't want to care about word length here because ULONG is a part of IPTR and
+   ULONG test will do here on 64-bit machines too.
+   
+   TODO: This doesn't work for 'Reversed' stack (growing upwards). If someone will ever
+   work on such an architecture (SPARC ???) he'll have to fix it.
+*/
+#define CHECK_STACK							\
+{									\
+    struct Task *me = FindTask(NULL);					\
+									\
+    ULONG *stktop = me->tc_SPLower;					\
+    									\
+    if (*stktop != 0xE1E1E1E1)						\
+        bug("STACK OVERFLOW in %s, line %d\n", __FILE__, __LINE__);	\
+}
+#else
+#define CHECK_STACK
+#endif
 
 #ifndef AROS_DEBUG_H
 #define AROS_DEBUG_H
