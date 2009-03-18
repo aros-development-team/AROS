@@ -10,32 +10,32 @@
 #include <libraries/mui.h>
 
 /*** Identifier Base ********************************************************/
-#define MUIB_IconWindowIconDrawerList                  (TAG_USER | 0x10000200)
-#define MUIB_IconWindowIconVolumeList                  (TAG_USER | 0x10000300)
+#define MUIB_IconWindowDrawerList                  (TAG_USER | 0x10000200)
+#define MUIB_IconWindowVolumeList                  (TAG_USER | 0x10000300)
 #define MUIB_IconWindowIconNetworkBrowserList          (TAG_USER | 0x10000A00)
 
-#define MUIA_IconWindowIconVolumeList_ShowNetwork      (TAG_USER | 0x10000310)
-#define MUIA_IconWindowIconVolumeList_ShowUserFiles    (TAG_USER | 0x10000311)
+#define MUIA_IconWindowVolumeList_ShowNetwork      (TAG_USER | 0x10000310)
+#define MUIA_IconWindowVolumeList_ShowUserFiles    (TAG_USER | 0x10000311)
 
 /*** Variables **************************************************************/
-extern struct MUI_CustomClass *IconWindowIconDrawerList_CLASS;
-extern struct MUI_CustomClass *IconWindowIconVolumeList_CLASS;
+extern struct MUI_CustomClass *IconWindowDrawerList_CLASS;
+extern struct MUI_CustomClass *IconWindowVolumeList_CLASS;
 extern struct MUI_CustomClass *IconWindowIconNetworkBrowserList_CLASS;
-	
+
 /*** Macros *****************************************************************/
 #ifdef __AROS__
-#define IconWindowIconDrawerListObject BOOPSIOBJMACRO_START(IconWindowIconDrawerList_CLASS->mcc_Class)
-#define IconWindowIconVolumeListObject BOOPSIOBJMACRO_START(IconWindowIconVolumeList_CLASS->mcc_Class)
+#define IconWindowDrawerListObject BOOPSIOBJMACRO_START(IconWindowDrawerList_CLASS->mcc_Class)
+#define IconWindowVolumeListObject BOOPSIOBJMACRO_START(IconWindowVolumeList_CLASS->mcc_Class)
 #define IconWindowIconNetworkBrowserListObject BOOPSIOBJMACRO_START(IconWindowIconNetworkBrowserList_CLASS->mcc_Class)
 #else
-#define IconWindowIconDrawerListObject NewObject(IconWindowIconDrawerList_CLASS->mcc_Class, NULL
-#define IconWindowIconVolumeListObject NewObject(IconWindowIconVolumeList_CLASS->mcc_Class, NULL
+#define IconWindowDrawerListObject NewObject(IconWindowDrawerList_CLASS->mcc_Class, NULL
+#define IconWindowVolumeListObject NewObject(IconWindowVolumeList_CLASS->mcc_Class, NULL
 #define IconWindowIconNetworkBrowserListObject NewObject(IconWindowIconNetworkBrowserList_CLASS->mcc_Class, NULL
 #endif
 
 /* this macro is based on the ZUNE_CUSTOMCLASS_10 macros from zune/customclasses.h
 and temporarily placed here */
-#define ICONWINDOWICONDRAWERLIST_CUSTOMCLASS(name, funcnamebase, base, parent_name, parent_class,   \
+#define ICONWINDOWICONDRAWERLIST_CUSTOMCLASS(name, base, parent_name, parent_class,   \
                            m1, m1_msg_type,                          \
                            m2, m2_msg_type,                          \
                            m3, m3_msg_type,                          \
@@ -43,15 +43,15 @@ and temporarily placed here */
                            m5, m5_msg_type,                          \
                            m6, m6_msg_type)                        \
     __ZUNE_CUSTOMCLASS_START(name)                                   \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m1, m1, m1_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m2, m2, m2_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m3, m3, m3_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m4, m4, m4_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m5, m5, m5_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m6, m6, m6_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);    \
     __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
 
-#define ICONWINDOWICONVOLUMELIST_CUSTOMCLASS(name, funcnamebase, base, parent_name, parent_class,   \
+#define ICONWINDOWICONVOLUMELIST_CUSTOMCLASS(name, base, parent_name, parent_class,   \
                            m1, m1_msg_type,                          \
                            m2, m2_msg_type,                          \
                            m3, m3_msg_type,                          \
@@ -61,17 +61,17 @@ and temporarily placed here */
                            m7, m7_msg_type,                          \
                            m8, m8_msg_type)                          \
     __ZUNE_CUSTOMCLASS_START(name)                                   \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m1, m1, m1_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m2, m2, m2_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m3, m3, m3_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m4, m4, m4_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m5, m5, m5_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m6, m6, m6_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m7, m7, m7_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m8, m8, m8_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);    \
     __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
 
-#define ICONWINDOWICONNETWORKBROWSERLIST_CUSTOMCLASS(name, funcnamebase, base, parent_name, parent_class,   \
+#define ICONWINDOWICONNETWORKBROWSERLIST_CUSTOMCLASS(name, base, parent_name, parent_class,   \
                            m1, m1_msg_type,                          \
                            m2, m2_msg_type,                          \
                            m3, m3_msg_type,                          \
@@ -81,14 +81,14 @@ and temporarily placed here */
                            m7, m7_msg_type,                          \
                            m8, m8_msg_type)                          \
     __ZUNE_CUSTOMCLASS_START(name)                                   \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m1, m1, m1_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m2, m2, m2_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m3, m3, m3_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m4, m4, m4_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m5, m5, m5_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m6, m6, m6_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m7, m7, m7_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m8, m8, m8_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);    \
     __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
 
 #endif /* _ICONWINDOWICONLIST_H_ */

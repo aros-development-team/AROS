@@ -3,6 +3,8 @@
   $Id$
 */
 
+#if (0)
+
 #include "portable_macros.h"
 
 #ifdef __AROS__
@@ -97,63 +99,6 @@ struct IconWindowIconList_DATA
 
     IPTR                        iwcd_ViewPrefs_ID;
     Object                      *iwcd_ViewPrefs_NotificationObject;
-};
-
-struct IconWindowIconDrawerList_DATA
-{
-    Object                      *iwcd_IconWindow;
-    struct RastPort             *iwcd_RastPort;
-    struct MUI_EventHandlerNode iwcd_EventHandlerNode;
-#ifdef __AROS__
-    struct Hook                 iwcd_ProcessIconListPrefs_hook;
-#else
-    struct Hook                 *iwcd_ProcessIconListPrefs_hook;
-#endif
-
-    IPTR                        iwcd_ViewPrefs_ID;
-    Object                      *iwcd_ViewPrefs_NotificationObject;
-    struct NotifyRequest        iwdcd_DrawerNotifyRequest;
-};
-
-struct IconWindowIconVolumeList_DATA
-{
-    Object                      *iwcd_IconWindow;
-    struct RastPort             *iwcd_RastPort;
-    struct MUI_EventHandlerNode iwcd_EventHandlerNode;
-#ifdef __AROS__
-    struct Hook                 iwcd_ProcessIconListPrefs_hook;
-#else
-    struct Hook                 *iwcd_ProcessIconListPrefs_hook;
-#endif
-
-    IPTR                        iwcd_ViewPrefs_ID;
-    Object                      *iwcd_ViewPrefs_NotificationObject;
-#ifdef __AROS__
-    struct Hook                 iwvcd_UpdateNetworkPrefs_hook;
-#else
-    struct Hook                 *iwvcd_UpdateNetworkPrefs_hook;
-#endif
-
-    IPTR                        iwvcd_ShowNetworkBrowser;
-    IPTR                        iwvcd_ShowUserFolder;
-    char                        *iwvcd_UserFolderPath;
-};
-
-struct IconWindowIconNetworkBrowserList_DATA
-{
-    Object                      *iwcd_IconWindow;
-    struct RastPort             *iwcd_RastPort;
-    struct MUI_EventHandlerNode iwcd_EventHandlerNode;
-#ifdef __AROS__
-    struct Hook                 iwcd_ProcessIconListPrefs_hook;
-#else
-    struct Hook                 *iwcd_ProcessIconListPrefs_hook;
-#endif
-
-    IPTR                        iwcd_ViewPrefs_ID;
-    Object                      *iwcd_ViewPrefs_NotificationObject;
-    struct Hook                 iwnbcd_UpdateNetworkPrefs_hook;
-    struct List                 iwnbcd_NetworkClasses;
 };
 
 static char __icwc_intern_TxtBuff[TXTBUFF_LEN];
@@ -1277,79 +1222,4 @@ IPTR IconWindowIconList__MUIM_IconList_Update
 }
 ///
 /*** Setup ******************************************************************/
-#ifdef __AROS__
-ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
-(
-    IconWindowIconDrawerList, IconWindowIconList, NULL, MUIC_IconDrawerList, NULL,
-    OM_NEW,                        struct opSet *,
-    OM_SET,                        struct opSet *,
-    OM_GET,                        struct opGet *,
-    MUIM_Setup,                    Msg,
-    MUIM_Cleanup,                  Msg,
-    MUIM_DrawBackground,           Msg
-);
-
-ICONWINDOWICONVOLUMELIST_CUSTOMCLASS
-(
-    IconWindowIconVolumeList, IconWindowIconList, NULL, MUIC_IconVolumeList, NULL,
-    OM_NEW,                        struct opSet *,
-    OM_SET,                        struct opSet *,
-    OM_GET,                        struct opGet *,
-    MUIM_Setup,                    Msg,
-    MUIM_Cleanup,                  Msg,
-    MUIM_DrawBackground,           Msg,
-    MUIM_HandleEvent,              Msg,
-    MUIM_IconList_Update,          struct MUIP_IconList_Update *
-);
-
-ICONWINDOWICONNETWORKBROWSERLIST_CUSTOMCLASS
-(
-    IconWindowIconNetworkBrowserList, IconWindowIconList, NULL, MUIC_IconList, NULL,
-    OM_NEW,                        struct opSet *,
-    OM_SET,                        struct opSet *,
-    OM_GET,                        struct opGet *,
-    MUIM_Setup,                    Msg,
-    MUIM_Cleanup,                  Msg,
-    MUIM_DrawBackground,           Msg,
-    MUIM_HandleEvent,              Msg,
-    MUIM_IconList_Update,          struct MUIP_IconList_Update *
-);
-
-#else
-ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
-(
-    IconWindowIconDrawerList, IconWindowIconList, NULL,  NULL, IconDrawerList_Class,
-    OM_NEW,                        struct opSet *,
-    OM_SET,                        struct opSet *,
-    OM_GET,                        struct opGet *,
-    MUIM_Setup,                    Msg,
-    MUIM_Cleanup,                  Msg,
-    MUIM_DrawBackground,           Msg
-);
-
-ICONWINDOWICONVOLUMELIST_CUSTOMCLASS
-(
-    IconWindowIconVolumeList, IconWindowIconList, NULL,  NULL, IconVolumeList_Class,
-    OM_NEW,                        struct opSet *,
-    OM_SET,                        struct opSet *,
-    OM_GET,                        struct opGet *,
-    MUIM_Setup,                    Msg,
-    MUIM_Cleanup,                  Msg,
-    MUIM_DrawBackground,           Msg,
-    MUIM_HandleEvent,              Msg,
-    MUIM_IconList_Update,          struct MUIP_IconList_Update *
-);
-
-ICONWINDOWICONNETWORKBROWSERLIST_CUSTOMCLASS
-(
-    IconWindowIconNetworkBrowserList, IconWindowIconList, NULL, NULL, IconList_Class,
-    OM_NEW,                        struct opSet *,
-    OM_SET,                        struct opSet *,
-    OM_GET,                        struct opGet *,
-    MUIM_Setup,                    Msg,
-    MUIM_Cleanup,                  Msg,
-    MUIM_DrawBackground,           Msg,
-    MUIM_HandleEvent,              Msg,
-    MUIM_IconList_Update,          struct MUIP_IconList_Update *
-);
 #endif

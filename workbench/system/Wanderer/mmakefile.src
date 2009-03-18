@@ -15,6 +15,8 @@ FILES := main \
     panel_toolbar \
     panel_statusbar \
     iconwindow_iconlist \
+    iconwindow_drawerlist \
+    iconwindow_volumelist \
     iconwindowbackfill \
     wandererprefsinternal
 
