@@ -1244,7 +1244,7 @@ $(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
 
 ## Dependency fine-tuning
 ##
-BD_DEPS       := $(addprefix %(objdir), $(addsuffix .o,%(files)))
+BD_DEPS       := $(addprefix %(objdir)/, $(addsuffix .d,%(files)))
 %include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj" deps=$(BD_DEPS)
 
 $(BD_OBJS) $(BD_DEPS) $(BD_REFS) : | %(objdir)
