@@ -130,8 +130,8 @@ const UBYTE MSG_MEM_M[] = "MB";
 const UBYTE MSG_MEM_K[] = "KB";
 const UBYTE MSG_MEM_B[] = "Bytes";
 
-///fmtlarge()
-static void fmtlarge(UBYTE *buf, ULONG num)
+///FmtSizeToString()
+static void FmtSizeToString(UBYTE *buf, ULONG num)
 {
   UQUAD d;
   UBYTE *ch;
@@ -264,7 +264,7 @@ D(bug("[IW.statusbar] %s: '%s' FIB Size = %d bytes\n", __PRETTY_FUNCTION__, icon
         int previous = 0;
         if (files  > 0)
         {
-            fmtlarge(size_str, size);
+            FmtSizeToString(size_str, size);
             sprintf(status_str, " %s in %d files", size_str, files);
             previous = strlen(status_str);
         }
