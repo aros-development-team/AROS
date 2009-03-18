@@ -66,7 +66,7 @@
 #include "wanderer.h"
 #include "wandererprefs.h"
 #include "iconwindow.h"
-#include "iconwindowcontents.h"
+#include "iconwindow_iconlist.h"
 #include "iconwindowbackfill.h"
 #include "Classes/iconlistview.h"
 #include "Classes/iconlist_attributes.h"

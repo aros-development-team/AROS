@@ -5,7 +5,18 @@ include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -I $(SRCDIR)/$(CURDIR)/Classes
 
-FILES := main locale support filesystems wanderer wandererprefs iconwindow panel_toolbar panel_statusbar iconwindowcontents iconwindowbackfill wandererprefsinternal
+FILES := main \
+    locale \
+    support \
+    filesystems \
+    wanderer \
+    wandererprefs \
+    iconwindow \
+    panel_toolbar \
+    panel_statusbar \
+    iconwindow_iconlist \
+    iconwindowbackfill \
+    wandererprefsinternal
 
 #MM- workbench-system : workbench-system-wanderer
 #MM- workbench-system-wanderer : \
