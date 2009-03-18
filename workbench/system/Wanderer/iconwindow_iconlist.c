@@ -60,7 +60,7 @@
 #include "wanderer.h"
 #include "wandererprefs.h"
 #include "iconwindow.h"
-#include "iconwindowcontents.h"
+#include "iconwindow_iconlist.h"
 
 
 #ifndef __AROS__
@@ -672,14 +672,12 @@ IPTR IconWindowIconList__OM_SET(Class *CLASS, Object *self, struct opSet *messag
                 D(bug("[IconWindowIconList] %s: MUIA_Background\n", __PRETTY_FUNCTION__));
                 break;
             }
-
         case MUIA_IconWindow_Window:
             {
                 D(bug("[IconWindowIconList] %s: MUIA_IconWindow_Window @ %p\n", __PRETTY_FUNCTION__, tag->ti_Data));
                 data->iwcd_IconWindow = (Object *)tag->ti_Data;
                 break;
             }
-
         case MUIA_IconList_BufferRastport:
             {
                 D(bug("[IconWindowIconList] %s: MUIA_IconList_BufferRastport @ %p\n", __PRETTY_FUNCTION__, tag->ti_Data));
@@ -716,7 +714,7 @@ IPTR IconWindowIconList__MUIM_Setup
 )
 {
     SETUP_INST_DATA;
-
+  
     Object *prefs = NULL;
 
     if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
@@ -857,7 +855,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Setup: Background Notificat
             MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_LabelText_BorderHeight
           );
     }
-
+  
     if ((BOOL)XGET(_win(self), MUIA_IconWindow_IsRoot))
     {
         if (prefs)
@@ -923,7 +921,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: FAILED to set
     }
 
     D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: Setup complete!\n"));
-
+  
     return TRUE;
 }
 ///

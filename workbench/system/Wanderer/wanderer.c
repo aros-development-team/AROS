@@ -70,7 +70,7 @@
 
 #include "iconwindow.h"
 #include "iconwindow_attributes.h"
-#include "iconwindowcontents.h"
+#include "iconwindow_iconlist.h"
 #include "wandererprefs.h"
 #include "wandererprefsintern.h"
 #include "filesystems.h"

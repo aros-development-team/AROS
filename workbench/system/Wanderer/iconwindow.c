@@ -68,7 +68,7 @@
 
 #include "iconwindow.h"
 #include "iconwindow_attributes.h"
-#include "iconwindowcontents.h"
+#include "iconwindow_iconlist.h"
 #include "iconwindowbackfill.h"
 
 #ifndef __AROS__
