@@ -409,18 +409,20 @@ int main(void)
         return retval;
 #endif
 
-D(bug("[Wanderer.EXE] Wanderer Initialising .. \n"));
-
-    OpenWorkbenchObject("Wanderer:Tools/ExecuteStartup", 0, 0);
+    D(bug("[Wanderer] %s: Wanderer Initialising .. \n", __PRETTY_FUNCTION__));
     if ((_WandererIntern_AppObj = NewObject(Wanderer_CLASS->mcc_Class, NULL, TAG_DONE)) != NULL)
     {
-D(bug("[Wanderer.EXE] Handing control over to Zune .. \n"));
+        D(bug("[Wanderer] %s: Launching WBStartup items .. \n", __PRETTY_FUNCTION__));
+        OpenWorkbenchObject("Wanderer:Tools/ExecuteStartup", 0, 0);
+
+        D(bug("[Wanderer] %s: Handing control over to Zune .. \n", __PRETTY_FUNCTION__));
         retval = DoMethod(_WandererIntern_AppObj, MUIM_Application_Execute);
-D(bug("[Wanderer.EXE] Returned from Zune's control .. \n"));
+
+        D(bug("[Wanderer] %s: Returned from Zune's control .. \n", __PRETTY_FUNCTION__));
         MUI_DisposeObject(_WandererIntern_AppObj);
     }
 
-D(bug("[Wanderer.EXE] Exiting .. \n"));
+    D(bug("[Wanderer] %s: Exiting .. \n", __PRETTY_FUNCTION__));
 
 #ifndef __AROS__
     deInitLibs();
