@@ -3085,6 +3085,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         if (message->icon->ie_TxtBuf_TIME) FreePooled(data->icld_Pool, message->icon->ie_TxtBuf_TIME, LEN_DATSTRING);
         if (message->icon->ie_TxtBuf_DATE) FreePooled(data->icld_Pool, message->icon->ie_TxtBuf_DATE, LEN_DATSTRING);
         if (message->icon->ie_DiskObj) FreeDiskObject(message->icon->ie_DiskObj);
+        if (message->icon->ie_FileInfoBlock) FreeMem(message->icon->ie_FileInfoBlock, sizeof(struct FileInfoBlock));
         if (message->icon->ie_IconListEntry.label) FreePooled(data->icld_Pool, message->icon->ie_IconListEntry.label, strlen(message->icon->ie_IconListEntry.label)+1);
         if (message->icon->ie_IconNode.ln_Name) FreePooled(data->icld_Pool, message->icon->ie_IconNode.ln_Name, strlen(message->icon->ie_IconNode.ln_Name)+1);
         FreePooled(data->icld_Pool, message->icon, sizeof(struct IconEntry));
@@ -3256,16 +3257,16 @@ D(bug("[IconList] %s: Failed to Allocate Entry label string Storage!\n", __PRETT
         entry->ie_IconListEntry.type = ST_USERDIR;
     }
 
-	/* Override type if specified during createntry */
-	if (message->type != 0)
-	{
-		entry->ie_IconListEntry.type = message->type;
+    /* Override type if specified during createntry */
+    if (message->type != 0)
+    {
+        entry->ie_IconListEntry.type = message->type;
 D(bug("[IconList] %s: Overide Entry Type. New Type = %x\n", __PRETTY_FUNCTION__, entry->ie_IconListEntry.type));
-	}
-	else
-	{
+    }
+    else
+    {
 D(bug("[IconList] %s: Entry Type = %x\n", __PRETTY_FUNCTION__, entry->ie_IconListEntry.type));
-	}
+    }
 
     strcpy(entry->ie_IconNode.ln_Name, message->filename);
     strcpy(entry->ie_IconListEntry.label, message->label);
