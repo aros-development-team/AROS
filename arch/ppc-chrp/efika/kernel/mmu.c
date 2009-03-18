@@ -260,10 +260,17 @@ void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void 
 			D(bug("[KRN] Crash at byte %d in module %s\n", offset, mod));
 
 		D(bug("[KRN] SPLower=%08x SPUpper=%08x\n", t->tc_SPLower, t->tc_SPUpper));
+		D(bug("[KRN] Stack usage: %d bytes (%d %%)\n", t->tc_SPUpper - ctx->gpr[1],
+				100 * ((uintptr_t)t->tc_SPUpper - ctx->gpr[1]) / ((uintptr_t)t->tc_SPUpper - (uintptr_t)t->tc_SPLower)));
 
 		if (ctx->gpr[1] >= t->tc_SPLower && ctx->gpr[1] < t->tc_SPUpper)
 			D(bug("[KRN] Stack in bounds\n"));
+		else
+			D(bug("[KRN] Stack exceeded the allowed size!\n"));
 	}
+	if (exception == 3)
+		D(bug("[KRN] Attempt to %s address %08x.\n", ctx->dsisr & 0x02000000 ? "write to":"read from", ctx->dar));
+
 	D(bug("[KRN] SRR0=%08x, SRR1=%08x\n",ctx->srr0, ctx->srr1));
 	D(bug("[KRN] CTR=%08x LR=%08x XER=%08x CCR=%08x\n", ctx->ctr, ctx->lr, ctx->xer, ctx->ccr));
 	D(bug("[KRN] DAR=%08x DSISR=%08x\n", ctx->dar, ctx->dsisr));
