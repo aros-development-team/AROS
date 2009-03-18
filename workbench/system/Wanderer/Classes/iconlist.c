@@ -3209,44 +3209,47 @@ D(bug("[IconList] %s: Failed to Allocate Entry label string Storage!\n", __PRETT
     /*file info block*/
     if(message->fib != NULL)
     {
-        entry->ie_FileInfoBlock = message->fib;
-
-        if (entry->ie_FileInfoBlock->fib_DirEntryType > 0)
+        if ((entry->ie_FileInfoBlock = AllocMem(sizeof(struct FileInfoBlock), MEMF_CLEAR)) != NULL)
         {
-            strcpy(entry->ie_TxtBuf_SIZE, "Drawer");
+            CopyMem(message->fib, entry->ie_FileInfoBlock, sizeof(struct FileInfoBlock));
+
+            if (entry->ie_FileInfoBlock->fib_DirEntryType > 0)
+            {
+                strcpy(entry->ie_TxtBuf_SIZE, "Drawer");
+            }
+            else
+            {
+                FmtSizeToString(entry->ie_TxtBuf_SIZE, entry->ie_FileInfoBlock->fib_Size);
+            }
+
+            dt.dat_Stamp    = entry->ie_FileInfoBlock->fib_Date;
+            dt.dat_Format   = FORMAT_DEF;
+            dt.dat_Flags    = 0;
+            dt.dat_StrDay   = NULL;
+            dt.dat_StrDate  = entry->ie_TxtBuf_DATE;
+            dt.dat_StrTime  = entry->ie_TxtBuf_TIME;
+
+            DateToStr(&dt);
+            DateStamp(&now);
+
+            /*if modified today show time, otherwise just show date*/
+            if (now.ds_Days == entry->ie_FileInfoBlock->fib_Date.ds_Days)
+                entry->ie_Flags |= ICONENTRY_FLAG_TODAY;
+            else
+                entry->ie_Flags &= ~ICONENTRY_FLAG_TODAY;
+
+            sp = entry->ie_TxtBuf_PROT;
+            *sp++ = (entry->ie_FileInfoBlock->fib_Protection & FIBF_SCRIPT)  ? 's' : '-';
+            *sp++ = (entry->ie_FileInfoBlock->fib_Protection & FIBF_PURE)    ? 'p' : '-';
+            *sp++ = (entry->ie_FileInfoBlock->fib_Protection & FIBF_ARCHIVE) ? 'a' : '-';
+            *sp++ = (entry->ie_FileInfoBlock->fib_Protection & FIBF_READ)    ? '-' : 'r';
+            *sp++ = (entry->ie_FileInfoBlock->fib_Protection & FIBF_WRITE)   ? '-' : 'w';
+            *sp++ = (entry->ie_FileInfoBlock->fib_Protection & FIBF_EXECUTE) ? '-' : 'e';
+            *sp++ = (entry->ie_FileInfoBlock->fib_Protection & FIBF_DELETE)  ? '-' : 'd';
+            *sp++ = '\0';
+        
+            entry->ie_IconListEntry.type = entry->ie_FileInfoBlock->fib_DirEntryType;
         }
-        else
-        {
-            FmtSizeToString(entry->ie_TxtBuf_SIZE, entry->ie_FileInfoBlock->fib_Size);
-        }
-
-        dt.dat_Stamp    = entry->ie_FileInfoBlock->fib_Date;
-        dt.dat_Format   = FORMAT_DEF;
-        dt.dat_Flags    = 0;
-        dt.dat_StrDay   = NULL;
-        dt.dat_StrDate  = entry->ie_TxtBuf_DATE;
-        dt.dat_StrTime  = entry->ie_TxtBuf_TIME;
-
-        DateToStr(&dt);
-        DateStamp(&now);
-
-        /*if modified today show time, otherwise just show date*/
-        if (now.ds_Days == entry->ie_FileInfoBlock->fib_Date.ds_Days)
-            entry->ie_Flags |= ICONENTRY_FLAG_TODAY;
-        else
-            entry->ie_Flags &= ~ICONENTRY_FLAG_TODAY;
-
-        sp = entry->ie_TxtBuf_PROT;
-        *sp++ = (entry->ie_FileInfoBlock->fib_Protection & FIBF_SCRIPT)  ? 's' : '-';
-        *sp++ = (entry->ie_FileInfoBlock->fib_Protection & FIBF_PURE)    ? 'p' : '-';
-        *sp++ = (entry->ie_FileInfoBlock->fib_Protection & FIBF_ARCHIVE) ? 'a' : '-';
-        *sp++ = (entry->ie_FileInfoBlock->fib_Protection & FIBF_READ)    ? '-' : 'r';
-        *sp++ = (entry->ie_FileInfoBlock->fib_Protection & FIBF_WRITE)   ? '-' : 'w';
-        *sp++ = (entry->ie_FileInfoBlock->fib_Protection & FIBF_EXECUTE) ? '-' : 'e';
-        *sp++ = (entry->ie_FileInfoBlock->fib_Protection & FIBF_DELETE)  ? '-' : 'd';
-        *sp++ = '\0';
-    
-        entry->ie_IconListEntry.type = entry->ie_FileInfoBlock->fib_DirEntryType;
     }
     else
     {
