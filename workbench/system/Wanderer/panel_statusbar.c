@@ -261,8 +261,24 @@ D(bug("[IW.statusbar] %s: '%s' FIB Size = %d bytes\n", __PRETTY_FUNCTION__, icon
                 }
             }
         }
-        fmtlarge(size_str, size);
-        sprintf(status_str, "%s in %d files, %d drawers (%d hidden)", size_str, files, dirs, hidden);
+        int previous = 0;
+        if (files  > 0)
+        {
+            fmtlarge(size_str, size);
+            sprintf(status_str, " %s in %d files", size_str, files);
+            previous = strlen(status_str);
+        }
+        if (dirs > 0)
+        {
+            sprintf(status_str + previous, "%s%d drawers", (previous > 0) ? ", " : " " , dirs);
+            previous = strlen(status_str);
+        }
+        if (hidden > 0)
+        {
+            sprintf(status_str + previous, " (%d hidden)", hidden);
+            previous = strlen(status_str);
+        }
+
         SET(panelStatusBarPrivate->iwp_StatusBar_StatusTextObj, MUIA_Text_Contents, (IPTR)status_str);
     }
 
