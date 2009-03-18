@@ -3129,9 +3129,9 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
                 {NM_ITEM,       NM_BARLABEL },
                 {NM_ITEM,       _(MSG_MEN_VIEW) },
                     {NM_SUB,    _(MSG_MEN_ICVIEW),      NULL                    , CHECKIT|CHECKED                       , ~((1 << 0)|(1 << 3)), (APTR) MEN_WINDOW_VIEW_ICON },
-                    {NM_SUB,    _(MSG_MEN_DCVIEW),      NULL                    , CHECKIT                               , ~((1 << 1)|(1 << 3)), (APTR) MEN_WINDOW_VIEW_DETAIL },
+                    {NM_SUB,    _(MSG_MEN_DCVIEW),      NULL                    , CHECKIT|NM_ITEMDISABLED               , ~((1 << 1)|(1 << 3)), (APTR) MEN_WINDOW_VIEW_DETAIL },
                     {NM_SUB,    NM_BARLABEL },
-                    {NM_SUB,    _(MSG_MEN_ALLFIL),      NULL                    , _NewWandIntMenu__OPTION_SHOWALL       , 0, (APTR) MEN_WINDOW_VIEW_ALL },
+                    {NM_SUB,    _(MSG_MEN_ALLFIL),      NULL                    , _NewWandIntMenu__OPTION_SHOWALL|NM_ITEMDISABLED, 0, (APTR) MEN_WINDOW_VIEW_ALL },
                 {NM_ITEM,       _(MSG_MEN_SORTIC) },
                     {NM_SUB,    _(MSG_MEN_CLNUP),       _(MSG_MEN_SC_CLNUP)     , 0                                     , 0, (APTR) MEN_WINDOW_SORT_NOW },
                     {NM_SUB,    "Enable Icon Sorting",  NULL                    , CHECKIT|MENUTOGGLE|CHECKED|NM_ITEMDISABLED, 0, (APTR) MEN_WINDOW_SORT_ENABLE },
@@ -3143,10 +3143,10 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
                     {NM_SUB,    NM_BARLABEL },
                     {NM_SUB,    _(MSG_MEN_REVERSE),     NULL                    , CHECKIT|MENUTOGGLE                    , 0, (APTR) MEN_WINDOW_SORT_REVERSE },
                     {NM_SUB,    _(MSG_MEN_DRWFRST),     NULL                    , CHECKIT|MENUTOGGLE|NM_ITEMDISABLED    , 0, (APTR) MEN_WINDOW_SORT_TOPDRAWERS },
-                    {NM_SUB,    "Group Icons",          NULL                    , CHECKIT|MENUTOGGLE|CHECKED|NM_ITEMDISABLED, 0, (APTR) MEN_WINDOW_SORT_GROUP },
+                    {NM_SUB,    "Group Icons",          NULL                    , CHECKIT|MENUTOGGLE|NM_ITEMDISABLED    , 0, (APTR) MEN_WINDOW_SORT_GROUP },
             {NM_TITLE,          _(MSG_MEN_ICON),        NULL                    , 0 },
                 {NM_ITEM,       _(MSG_MEN_OPEN),        _(MSG_MEN_SC_OPEN)      , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_OPEN },
-                {NM_ITEM,       "Close"                 ,"C" },
+                {NM_ITEM,       "Close"                 ,"C"                    , NM_ITEMDISABLED },
                 {NM_ITEM,       _(MSG_MEN_RENAME),      _(MSG_MEN_SC_RENAME)    , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_RENAME },
                 {NM_ITEM,       _(MSG_MEN_INFO),        _(MSG_MEN_SC_INFO)      , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_INFORMATION },
                 {NM_ITEM,       _(MSG_SNAPSHOT),        "S"                     , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_SNAPSHOT },
@@ -3157,7 +3157,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
                 {NM_ITEM,       _(MSG_MEN_DELETE),      NULL                    , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_DELETE },
                 {NM_ITEM,       _(MSG_MEN_FORMAT),      NULL                    , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_FORMAT },
                 {NM_ITEM,       _(MSG_EMPTY_TRASH),     NULL                    , NM_ITEMDISABLED },
-            {NM_TITLE,          _(MSG_MEN_TOOLS),       NULL                    , 0 },
+            {NM_TITLE,          _(MSG_MEN_TOOLS),       NULL                    , NM_MENUDISABLED },
             {NM_END}
         };
         _NewWandIntMenu__menustrip = MUI_MakeObject(MUIO_MenustripNM, nm, (IPTR) NULL);
@@ -3192,7 +3192,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
                 {NM_ITEM,       NM_BARLABEL },
                 {NM_ITEM,       _(MSG_MEN_VIEW)},
                     {NM_SUB,    _(MSG_MEN_ICVIEW),      NULL                    , CHECKIT|CHECKED                       ,~((1 << 0)|(1 << 3)), (APTR) MEN_WINDOW_VIEW_ICON },
-                    {NM_SUB,    _(MSG_MEN_DCVIEW),      NULL                    , CHECKIT                               ,~((1 << 1)|(1 << 3)), (APTR) MEN_WINDOW_VIEW_DETAIL },
+                    {NM_SUB,    _(MSG_MEN_DCVIEW),      NULL                    , CHECKIT|NM_ITEMDISABLED               ,~((1 << 1)|(1 << 3)), (APTR) MEN_WINDOW_VIEW_DETAIL },
                     {NM_SUB,    NM_BARLABEL },
                     {NM_SUB,    _(MSG_MEN_ALLFIL),      NULL                    , _NewWandIntMenu__OPTION_SHOWALL       , 0, (APTR) MEN_WINDOW_VIEW_ALL },
                 {NM_ITEM,       _(MSG_MEN_SORTIC)},
@@ -3209,7 +3209,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
                     {NM_SUB,    "Group Icons",          NULL                    , CHECKIT|MENUTOGGLE|NM_ITEMDISABLED    , 0, (APTR) MEN_WINDOW_SORT_GROUP },
             {NM_TITLE,          _(MSG_MEN_ICON),        NULL                    , 0 },
                 {NM_ITEM,       _(MSG_MEN_OPEN),        _(MSG_MEN_SC_OPEN)      , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_OPEN },
-                {NM_ITEM,       "Close",                "C" },
+                {NM_ITEM,       "Close",                "C"                     , NM_ITEMDISABLED },
                 {NM_ITEM,       _(MSG_MEN_RENAME),      _(MSG_MEN_SC_RENAME)    , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_RENAME },
                 {NM_ITEM,       _(MSG_MEN_INFO),        _(MSG_MEN_SC_INFO)      , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_INFORMATION },
                 {NM_ITEM,       _(MSG_SNAPSHOT),        "S"                     , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_SNAPSHOT },
@@ -3220,7 +3220,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
                 {NM_ITEM,       _(MSG_MEN_DELETE),      NULL                    , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_DELETE },
                 {NM_ITEM,       _(MSG_MEN_FORMAT),      NULL                    , NM_ITEMDISABLED },
                 {NM_ITEM,       _(MSG_EMPTY_TRASH),     NULL                    , NM_ITEMDISABLED },
-            {NM_TITLE,          _(MSG_MEN_TOOLS),       NULL                    , 0 },
+            {NM_TITLE,          _(MSG_MEN_TOOLS),       NULL                    , NM_MENUDISABLED },
             {NM_END}
         };
         _NewWandIntMenu__menustrip = MUI_MakeObject(MUIO_MenustripNM, nm, (IPTR) NULL);
