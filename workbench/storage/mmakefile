@@ -1,0 +1,10 @@
+include $(TOP)/config/make.cfg
+
+#MM- workbench-storage: workbench-storage-dosdrivers
+
+#MM workbench-storage-dosdrivers
+workbench-storage-dosdrivers :
+	@if [ -d $(SRCDIR)/$(CURDIR)/DOSDrivers ] ; then \
+	    $(MKDIR) $(AROSDIR)/Storage/DOSDrivers ; \
+	    $(CP) $(SRCDIR)/$(CURDIR)/DOSDrivers/* $(AROSDIR)/Storage/DOSDrivers ; \
+	fi

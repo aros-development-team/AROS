@@ -21,8 +21,6 @@ Assign IMAGES:  SYS:System/Images DEFER
 ;Assign PRINTERS: DEVS:Printers
 Assign WANDERER: SYS:System/Wanderer DEFER
 
-Mount >NIL: DEVS:DOSDrivers/~(#?.info)
-
 If EXISTS SYS:Classes/USB
     Assign USBCLASSES: SYS:Classes/USB
 EndIf
@@ -30,6 +28,8 @@ EndIf
 If EXISTS SYS:DiskImages
     Assign FDSK: SYS:DiskImages
 EndIf
+
+Mount >NIL: DEVS:DOSDrivers/~(#?.info)
 
 Touch PIPEFS:systempipe
 Assign PIPE:    PIPEFS:systempipe
