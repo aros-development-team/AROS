@@ -29,7 +29,7 @@ copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
 delete	$PACKAGE/Include
 delete	$PACKAGE/lib
 
-ziparc  $ARCHIVE $PACKAGE
+archive $ARCHIVE $PACKAGE
 
 cd      $ROOT
 resetl
