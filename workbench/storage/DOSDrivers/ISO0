@@ -1,0 +1,12 @@
+/* An example of mounting ISO image via fdsk.device */
+
+FileSystem	= cdrom.handler
+Device		= fdsk.device
+Unit		= 0
+BlockSize	= 2048
+Surfaces	= 1
+BlocksPerTrack	= 0 /* Geometry settings do not matter for CDVDFS */
+LowCyl		= 0
+HighCyl		= 0
+Reserved	= 0
+Activate	= 1

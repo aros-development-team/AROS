@@ -18,6 +18,7 @@ include $(TOP)/config/make.cfg
 #MM	    workbench-locale \
 #MM	    workbench-fonts \
 #MM	    workbench-system \
+#MM	    workbench-storage \
 #MM	    workbench-utilities \
 #MM	    workbench-tools \
 #MM	    workbench-prefs \
