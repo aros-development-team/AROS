@@ -63,7 +63,9 @@ VOID initVMWareSVGAFIFO(struct HWData *data)
         fifomin =4;
     
     fifo[SVGA_FIFO_MIN] = fifomin * sizeof(ULONG);
-    fifo[SVGA_FIFO_MAX] = data->mmiosize;
+
+    /* reduce size of FIFO queue to prevent VMWare from failing */
+    fifo[SVGA_FIFO_MAX] = (data->mmiosize > 65536) ? 65536 : data->mmiosize; 
     fifo[SVGA_FIFO_NEXT_CMD] = fifomin * sizeof(ULONG);
     fifo[SVGA_FIFO_STOP] = fifomin * sizeof(ULONG);
 
@@ -112,6 +114,14 @@ BOOL initVMWareSVGAHW(struct HWData *data, OOP_Object *device)
     initVMWareSVGAFIFO(data);
 
     data->capabilities = vmwareReadReg(data, SVGA_REG_CAPABILITIES);
+
+    if (data->capabilities & SVGA_CAP_8BIT_EMULATION)
+    {
+        data->bitsperpixel = vmwareReadReg(data, SVGA_REG_HOST_BITS_PER_PIXEL);
+        vmwareWriteReg(data,SVGA_REG_BITS_PER_PIXEL, data->bitsperpixel);
+    }
+    data->bitsperpixel = vmwareReadReg(data, SVGA_REG_BITS_PER_PIXEL);
+
     data->depth = vmwareReadReg(data, SVGA_REG_DEPTH);
     data->maxwidth = vmwareReadReg(data, SVGA_REG_MAX_WIDTH);
     data->maxheight = vmwareReadReg(data, SVGA_REG_MAX_HEIGHT);
@@ -124,14 +134,6 @@ BOOL initVMWareSVGAHW(struct HWData *data, OOP_Object *device)
         data->bytesperpixel = 4;
     else if (data->depth>8)
         data->bytesperpixel = 2;
-
-    if (data->capabilities & SVGA_CAP_8BIT_EMULATION)
-    {
-        data->bitsperpixel = vmwareReadReg(data, SVGA_REG_HOST_BITS_PER_PIXEL);
-        vmwareWriteReg(data,SVGA_REG_BITS_PER_PIXEL, data->bitsperpixel);
-    }
-    else
-        data->bitsperpixel = vmwareReadReg(data, SVGA_REG_BITS_PER_PIXEL);
 
     if (data->capabilities & SVGA_CAP_MULTIMON)
     {
