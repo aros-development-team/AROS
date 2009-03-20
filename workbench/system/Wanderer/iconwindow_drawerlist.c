@@ -78,7 +78,10 @@
 
 extern struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active;
 
-#define BG_DRAWFLAG   0xf00dd00f
+#define WIWDLVERS       1
+#define WIWDLREV        0
+
+#define BG_DRAWFLAG     0xf00dd00f
 
 /*** Instance Data **********************************************************/
 
@@ -475,11 +478,19 @@ IPTR IconWindowDrawerList__OM_SET(Class *CLASS, Object *self, struct opSet *mess
 IPTR IconWindowDrawerList__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 {
     //SETUP_INST_DATA;
-    //IPTR *store = message->opg_Storage;
+    IPTR *store = message->opg_Storage;
     IPTR  rv    = TRUE;
 
     switch (message->opg_AttrID)
     {
+    case MUIA_Version:
+        *store = (IPTR)WIWDLVERS;
+        break;
+
+    case MUIA_Revision:
+        *store = (IPTR)WIWDLREV;
+        break;
+
     default:
         rv = DoSuperMethodA(CLASS, self, (Msg) message);
     }

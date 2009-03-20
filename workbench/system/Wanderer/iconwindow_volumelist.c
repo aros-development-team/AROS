@@ -80,7 +80,10 @@
 
 extern struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active;
 
-#define BG_DRAWFLAG   0xf00dd00f
+#define WIWVLVERS       1
+#define WIWVLREV        0
+
+#define BG_DRAWFLAG     0xf00dd00f
 
 /*** Instance Data **********************************************************/
 
@@ -474,6 +477,7 @@ HOOKPROTO(IconWindowVolumeList__HookFunc_UpdateNetworkPrefsFunc, void, APTR *obj
 MakeStaticHook(Hook_UpdateNetworkPrefsFunc,IconWindowVolumeList__HookFunc_UpdateNetworkPrefsFunc);
 #endif
 
+#warning "TODO: Reimplement ParseBackdrop by overriding the iconlist CreateEntry method"
 #define BDRPLINELEN_MAX 1024
 BOOL IconWindowVolumeList__Func_ParseBackdrop(Class *CLASS, Object *self, char *bdrp_dir)
 {
@@ -635,11 +639,19 @@ IPTR IconWindowVolumeList__OM_SET(Class *CLASS, Object *self, struct opSet *mess
 IPTR IconWindowVolumeList__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 {
     //SETUP_INST_DATA;
-    //IPTR *store = message->opg_Storage;
+    IPTR *store = message->opg_Storage;
     IPTR  rv    = TRUE;
 
     switch (message->opg_AttrID)
     {
+    case MUIA_Version:
+        *store = (IPTR)WIWVLVERS;
+        break;
+
+    case MUIA_Revision:
+        *store = (IPTR)WIWVLREV;
+        break;
+
     default:
         rv = DoSuperMethodA(CLASS, self, (Msg) message);
     }
@@ -1057,25 +1069,6 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
         D(bug("[Wanderer:VolumeList] %s: Causing parent to update\n", __PRETTY_FUNCTION__));
         retVal = DoSuperMethodA(CLASS, self, (Msg) message);
 
-        D(bug("[Wanderer:VolumeList] %s: Checking for '.backdrop' files\n", __PRETTY_FUNCTION__));
-        do
-        {
-            DoMethod(self, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Visible, (IPTR)&icon_entry);
-            if (
-                ((IPTR)icon_entry != MUIV_IconList_NextIcon_End) &&
-                ((icon_entry->type == ST_ROOT) && !(icon_entry->flags & ICONENTRY_VOL_OFFLINE))
-              )
-            {
-                D(bug("[Wanderer:VolumeList] %s: checking entry '%s'\n", __PRETTY_FUNCTION__, icon_entry->label));
-                if (IconWindowVolumeList__Func_ParseBackdrop(CLASS, self, icon_entry->label))
-                    sort_list = TRUE;
-            }
-            else
-            {
-                break;
-            }
-        } while (TRUE);
-
         D(bug("[Wanderer:VolumeList] %s: Check if we should show NetworkBrowser Icon ..\n", __PRETTY_FUNCTION__));
 
         GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
@@ -1173,32 +1166,92 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
 
     return retVal;
 }
+
+
+IPTR IconWindowVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_CreateEntry *message)
+{
+    struct IconEntry  		*this_Icon = NULL;
+    struct VolumeIcon_Private   *volPrivate = NULL;
+
+    D(bug("[Wanderer:VolumeList]: %s()\n", __PRETTY_FUNCTION__));
+
+    this_Icon = DoSuperMethodA(CLASS, obj, (Msg) message);
+
+    if (this_Icon)
+    {
+        D(bug("[Wanderer:VolumeList] %s: IconEntry Allocated @ %p\n", __PRETTY_FUNCTION__, this_Icon));
+
+        volPrivate = this_Icon->ie_IconListEntry.udata;
+
+        if ((this_Icon->ie_IconListEntry.type == ST_ROOT) && (volPrivate && !(volPrivate->vip_FLags & ICONENTRY_VOL_OFFLINE)))
+        {
+            D(bug("[Wanderer:VolumeList] %s: Checking '%s' for .backdrop' file\n", __PRETTY_FUNCTION__, this_Icon->ie_IconListEntry.label));
+            IconWindowVolumeList__Func_ParseBackdrop(CLASS, obj, this_Icon->ie_IconListEntry.label);
+        }
+    }
+    return this_Icon;
+}
+
+IPTR IconWindowVolumeList__MUIM_IconList_UpdateEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_UpdateEntry *message)
+{
+    struct IconEntry  		*this_Icon = NULL;
+    struct VolumeIcon_Private   *volPrivate = NULL;
+
+    D(bug("[Wanderer:VolumeList]: %s()\n", __PRETTY_FUNCTION__));
+
+    volPrivate = message->icon->ie_IconListEntry.udata;
+
+    this_Icon = DoSuperMethodA(CLASS, obj, (Msg) message);
+
+    return this_Icon;
+}
+
+IPTR IconWindowVolumeList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_DestroyEntry *message)
+{
+    struct VolumeIcon_Private   *volPrivate = NULL;
+    IPTR                        rv = NULL;
+
+    D(bug("[Wanderer:VolumeList]: %s()\n", __PRETTY_FUNCTION__));
+
+    volPrivate = message->icon->ie_IconListEntry.udata;
+
+    rv = DoSuperMethodA(CLASS, obj, (Msg) message);
+    
+    return rv;
+}
+
 ///
 /*** Setup ******************************************************************/
 #ifdef __AROS__
 ICONWINDOWICONVOLUMELIST_CUSTOMCLASS
 (
     IconWindowVolumeList, NULL, MUIC_IconVolumeList, NULL,
-    OM_NEW,                        struct opSet *,
-    OM_SET,                        struct opSet *,
-    OM_GET,                        struct opGet *,
-    MUIM_Setup,                    Msg,
-    MUIM_Cleanup,                  Msg,
-    MUIM_DrawBackground,           Msg,
-    MUIM_HandleEvent,              Msg,
-    MUIM_IconList_Update,          struct MUIP_IconList_Update *
+    OM_NEW,                     struct opSet *,
+    OM_SET,                     struct opSet *,
+    OM_GET,                     struct opGet *,
+    MUIM_Setup,                 Msg,
+    MUIM_Cleanup,               Msg,
+    MUIM_DrawBackground,        Msg,
+    MUIM_HandleEvent,           Msg,
+    MUIM_IconList_Update,       struct MUIP_IconList_Update *,
+    MUIM_IconList_CreateEntry,  struct MUIP_IconList_CreateEntry *,
+    MUIM_IconList_UpdateEntry,  struct MUIP_IconList_UpdateEntry *,
+    MUIM_IconList_DestroyEntry, struct MUIP_IconList_DestroyEntry *
 );
 #else
 ICONWINDOWICONVOLUMELIST_CUSTOMCLASS
 (
     IconWindowVolumeList, NULL,  NULL, IconVolumeList_Class,
-    OM_NEW,                        struct opSet *,
-    OM_SET,                        struct opSet *,
-    OM_GET,                        struct opGet *,
-    MUIM_Setup,                    Msg,
-    MUIM_Cleanup,                  Msg,
-    MUIM_DrawBackground,           Msg,
-    MUIM_HandleEvent,              Msg,
-    MUIM_IconList_Update,          struct MUIP_IconList_Update *
+    OM_NEW,                     struct opSet *,
+    OM_SET,                     struct opSet *,
+    OM_GET,                     struct opGet *,
+    MUIM_Setup,                 Msg,
+    MUIM_Cleanup,               Msg,
+    MUIM_DrawBackground,        Msg,
+    MUIM_HandleEvent,           Msg,
+    MUIM_IconList_Update,       struct MUIP_IconList_Update *,
+    MUIM_IconList_CreateEntry,  struct MUIP_IconList_CreateEntry *,
+    MUIM_IconList_UpdateEntry,  struct MUIP_IconList_UpdateEntry *,
+    MUIM_IconList_DestroyEntry, struct MUIP_IconList_DestroyEntry *
 );
 #endif
