@@ -14,9 +14,10 @@
 
 #define D(x)
 #define DKBD(x)
+#define DWIN(x)
 
 static DWORD thread_id;
-static WPARAM window_active;
+static BOOL window_active;
 static DWORD last_key;
 
 __declspec(dllexport) struct MouseData GDI_MouseData;
@@ -38,25 +39,23 @@ LRESULT CALLBACK key_callback(int code, WPARAM wp, KBDLLHOOKSTRUCT *lp)
 {
     DWORD key;
 
-    if (code == HC_ACTION) {
-    	if (window_active != WA_INACTIVE) {
-    	    wp &= 0xFFFFFFFB; /* This masks out difference between WM_SYSKEY* and WM_KEY* */
-    	    key = (lp->scanCode & 0xFF) | ((lp->flags & LLKHF_EXTENDED) << 8);
-    	    /* Here we get raw keypresses, including autorepeats. We have to sort out autorepeats
-    	       in some smart way. */
-    	    switch(wp) {
-	    case WM_KEYDOWN:
-	        if (key == last_key)
-	            return 1;
-	    	last_key = key;
-	    	break;
-	    case WM_KEYUP:
-	        if (key == last_key)
-	            last_key = 0;
-	    }
-    	    SendKbdIRQ(wp, key);
-            return 1;
-        }
+    if ((code == HC_ACTION) && window_active) {
+    	wp &= 0xFFFFFFFB; /* This masks out difference between WM_SYSKEY* and WM_KEY* */
+    	key = (lp->scanCode & 0xFF) | ((lp->flags & LLKHF_EXTENDED) << 8);
+    	/* Here we get raw keypresses, including autorepeats. We have to sort out autorepeats
+    	   in some smart way. */
+    	switch(wp) {
+	case WM_KEYDOWN:
+	    if (key == last_key)
+	        return 1;
+	    last_key = key;
+	    break;
+	case WM_KEYUP:
+	    if (key == last_key)
+	        last_key = 0;
+	}
+    	SendKbdIRQ(wp, key);
+        return 1;
     }
     return CallNextHookEx(NULL, code, wp, lp);
 }
@@ -104,10 +103,19 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
         SendKbdIRQ(msg & 0xFFFFFFFB, (lp >> 16) & 0x000001FF);
         return 0;
     case WM_ACTIVATE:
-        window_active = wp & 0x0000FFFF;
-    default:
-        return DefWindowProc(win, msg, wp, lp);
+        DWIN(printf("[GDI] WM_ACTIVATE, wParam is 0x%08lX\n", wp));
+        /* In some cases Windows can activate an iconified window (for example if we minimize it
+           by clicking its button on the taskbar). We process deactivation messages regardless of
+           minimized state, but we handle activation only when it's done on a non-minimized window.
+           This behavior was discovered by trial and error, i hope it's really ok now. */
+    	if ((wp & 0x0000FFFF) != WA_INACTIVE) {
+            if (!(wp & 0xFFFF0000))
+                window_active = TRUE;
+        } else
+            window_active = FALSE;
+        break;
     }
+    return DefWindowProc(win, msg, wp, lp);
 }
 
 /****************************************************************************************/
@@ -174,7 +182,7 @@ DWORD WINAPI gdithread_entry(ULONG *p)
             	    } else {
             	        if (gdata->fbwin) {
             	            DestroyWindow(gdata->fbwin);
-            	            window_active = WA_INACTIVE;
+            	            window_active = FALSE;
             	            gdata->fbwin = NULL;
             	        }
             	    }
@@ -198,7 +206,7 @@ ULONG __declspec(dllexport) GDI_Init(ULONG *p)
 {
     HANDLE th;
     
-    window_active = WA_INACTIVE;
+    window_active = FALSE;
     *p = 0;
     last_key = 0;
     th = CreateThread(NULL, 0, gdithread_entry, p, 0, &thread_id);
