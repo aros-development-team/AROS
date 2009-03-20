@@ -56,6 +56,8 @@ void name ## _Deinitialize(void)                                      \
 ADD2INIT(name ## _Initialize,   100);                                 \
 ADD2EXIT(name ## _Deinitialize, 100);                                 \
 
+#if !defined(ZCC_QUIET)
+
 #define __ZUNE_CUSTOMCLASS_METHOD(mname, mid, m_msg_type)        \
     case mid:                                                    \
                                                                  \
@@ -63,6 +65,14 @@ ADD2EXIT(name ## _Deinitialize, 100);                                 \
           "("__AROS_STR(m_msg_type)")\n"));                      \
                                                                  \
         return (IPTR) mname(__class, __self, (m_msg_type)__msg)  \
+
+#else
+
+#define __ZUNE_CUSTOMCLASS_METHOD(mname, mid, m_msg_type)        \
+    case mid:                                                    \
+        return (IPTR) mname(__class, __self, (m_msg_type)__msg)  \
+
+#endif
 
 /******************************************************************/
 
