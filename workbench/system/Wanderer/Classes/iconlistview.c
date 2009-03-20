@@ -316,13 +316,36 @@ IPTR IconListview__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
-      case MUIA_Background:
-D(bug("[IconListview] %s: MUIA_Background!\n", __PRETTY_FUNCTION__));
-        break;
-    }
+        case MUIA_Background:
+            D(bug("[IconListview] %s: MUIA_Background!\n", __PRETTY_FUNCTION__));
+            break;
+        }
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
+}
+///
+
+
+///OM_GET()
+/**************************************************************************
+OM_GET
+**************************************************************************/
+IPTR IconListview__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *message)
+{
+#define STORE *(message->opg_Storage)
+
+    D(bug("[IconListview]: %s()\n", __PRETTY_FUNCTION__));
+
+    switch (message->opg_AttrID)
+    {
+#warning "TODO: Get the version/revision from our config.."
+        case MUIA_Version:                              STORE = (IPTR)1; return 1;
+        case MUIA_Revision:                             STORE = (IPTR)3; return 1;
+    }
+
+    return DoSuperMethodA(CLASS, obj, (Msg) message);
+#undef STORE
 }
 ///
 
@@ -362,14 +385,11 @@ BOOPSI_DISPATCHER(IPTR,IconListview_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-        case OM_NEW: 
-            return IconListview__OM_NEW(cl, obj, (struct opSet *) msg);
-        case OM_DISPOSE: 
-            return IconListview__OM_DISPOSE(cl, obj, msg);
-        case MUIM_Show: 
-            return IconListview__MUIM_Show(cl, obj, (struct MUIP_Show*)msg);
-    case OM_SET:
-      return IconListview__OM_SET(cl, obj, (struct opSet *) msg);
+        case OM_NEW:            return IconListview__OM_NEW(cl, obj, (struct opSet *) msg);
+        case OM_DISPOSE:        return IconListview__OM_DISPOSE(cl, obj, msg);
+        case MUIM_Show:         return IconListview__MUIM_Show(cl, obj, (struct MUIP_Show*)msg);
+        case OM_SET:            return IconListview__OM_SET(cl, obj, (struct opGet *) msg);
+        case OM_GET:            return IconListview__OM_GET(cl, obj, (struct opSet *) msg);
     }
     return DoSuperMethodA(cl, obj, msg);
 }

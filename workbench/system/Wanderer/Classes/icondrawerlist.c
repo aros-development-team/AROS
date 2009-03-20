@@ -339,10 +339,12 @@ D(bug("[IconDrawerList]: %s()\n", __PRETTY_FUNCTION__));
     switch (message->opg_AttrID)
     {
         case MUIA_IconDrawerList_Drawer: STORE = (IPTR)data->drawer; return 1;
+#warning "TODO: Get the version/revision from our config.."
+        case MUIA_Version:                              STORE = (IPTR)1; return 1;
+        case MUIA_Revision:                             STORE = (IPTR)3; return 1;
     }
 
-    if (DoSuperMethodA(CLASS, obj, (Msg) message)) return 1;
-    return 0;
+    return DoSuperMethodA(CLASS, obj, (Msg) message);
 #undef STORE
 }
 ///
