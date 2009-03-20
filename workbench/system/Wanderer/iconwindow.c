@@ -90,6 +90,9 @@
 struct MUI_CustomClass *IconWindowDetailDrawerList_CLASS;
 #endif
 
+#define WIWVERS       1
+#define WIWREV        0
+
 /*** Private Global Data *********************************************************/
 
 static struct List                      iconwindow_BackFillNodes;
@@ -1030,6 +1033,14 @@ IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 
     case MUIA_IconWindow_BackgroundAttrib:
         *store = (IPTR)data->iwd_ViewSettings_Attrib;
+        break;
+
+    case MUIA_Version:
+        *store = (IPTR)WIWVERS;
+        break;
+
+    case MUIA_Revision:
+        *store = (IPTR)WIWREV;
         break;
 
     default:
