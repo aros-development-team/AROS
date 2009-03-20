@@ -85,6 +85,7 @@ int core_ACPITableMADTFamParse(int, unsigned long, int, struct acpi_madt_entry_h
 int core_ACPITableHeaderEarly(int, struct acpi_table_header **);
 /** CPU Functions **/
 IPTR core_APICProbe(struct KernBootPrivate *);
+UBYTE core_APICGetTotal();
 UBYTE core_APICGetNumber();
 void core_SetupIDT(struct KernBootPrivate *);
 void core_SetupGDT(struct KernBootPrivate *);

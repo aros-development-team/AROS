@@ -366,10 +366,7 @@ int kernel_cstart(struct TagItem *msg, void *entry)
 
 //    else
     {
-        /* A temporary solution - the code for smp is not ready yet... */
-#warning "TODO: launch idle task ..."
-        rkprintf("[Kernel] kernel_cstart[%d]: Going into endless loop...\n", _APICID);
-        while(1) asm volatile("hlt");
+        return exec_main((IPTR)-1, entry);
     }
 
     return NULL;    
@@ -381,6 +378,7 @@ asm("\ndelay:\t.short   0x00eb\n\tretq");
 
 static uint64_t __attribute__((used, section(".data"), aligned(16))) tmp_stack[128];
 static const uint64_t *tmp_stack_end __attribute__((used, section(".text"))) = &tmp_stack[120];
+
 static uint64_t stack[STACK_SIZE] __attribute__((used));
 static uint64_t stack_panic[STACK_SIZE] __attribute__((used));
 static uint64_t stack_super[STACK_SIZE] __attribute__((used));

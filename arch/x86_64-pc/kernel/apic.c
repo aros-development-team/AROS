@@ -427,3 +427,9 @@ UBYTE core_APICGetNumber()
     }
     return -1;
 }
+
+UBYTE core_APICGetTotal()
+{
+    struct KernelBase *KernelBase = TLS_GET(KernelBase);
+    return KernelBase->kb_APIC_Count;
+}

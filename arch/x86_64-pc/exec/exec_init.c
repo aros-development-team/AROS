@@ -106,7 +106,8 @@ char tab[512];
 #endif
 #define rkprintf(x...) scr_RawPutChars(tab, snprintf(tab, 510, x))
 
-ULONG   negsize = LIB_VECTSIZE;             /* size of vector table */
+static ULONG   negsize = LIB_VECTSIZE;             /* size of vector table */
+static UBYTE   apicready = 0;
 
 void _aros_not_implemented(char *string) {}
 
@@ -228,484 +229,509 @@ int exec_main(struct TagItem *msg, void *entry)
     struct ExecBase *SysBase;
     int i;
     struct vbe_mode *mode;
-    uintptr_t addr_lower = (uintptr_t)(krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
+    uintptr_t addr_lower;
 
-    if ((mode = (struct vbe_mode *)krnGetTagData(KRN_VBEModeInfo, 0, msg)))
+    if (msg != (IPTR)-1)
     {
-        vesa_init(mode->x_resolution, mode->y_resolution, 
-            mode->bits_per_pixel, (void*)mode->phys_base);
-    }
+        /* Launched on BSP */
+        addr_lower = (uintptr_t)(krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
 
-    clr();
-    rkprintf("[exec] AROS64 - The AROS Research OS, 64-bit version\n[exec] Compiled %s\n", __DATE__);
-
-    /* Prepare the exec base */
-
-    void  **fp      = Exec_FuncTable; //LIBFUNCTABLE;  /* pointer to a function in the table */
-
-    rkprintf("[exec] Preparing the ExecBase...\n");
-
-    /* Calculate the size of the vector table */
-    while (*fp++ != (APTR) -1) negsize += LIB_VECTSIZE;
-
-    if (addr_lower != 0)
-    {
-        addr_lower = ((addr_lower - (negsize + sizeof(struct ExecBase))) & ~PAGE_MASK);
-        SysBase = (struct ExecBase *)(addr_lower + negsize);
-        krnSetTagData(KRN_MEMLower, ((addr_lower - 1)/1024), msg);
-        addr_lower = (krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
-    }
-    else
-    {
-        /* Warn that theres no lowmem pages to load execbase into? */
-        SysBase = (struct ExecBase *)(0x1000 + negsize);
-    }
-
-    rkprintf("[exec] Clearing ExecBase [SysBase = %012p]\n", SysBase);
-
-    /* How about clearing most of ExecBase structure? */
-    bzero(&SysBase->IntVects[0], sizeof(struct ExecBase) - offsetof(struct ExecBase, IntVects[0]));
-
-    SysBase->KickMemPtr = NULL;
-    SysBase->KickTagPtr = NULL;
-    SysBase->KickCheckSum = NULL;
-
-    /* How about clearing most of ExecBase structure? */
-    bzero(&SysBase->IntVects[0], sizeof(struct ExecBase) - offsetof(struct ExecBase, IntVects[0]));
-
-    /*
-     * Now everything is prepared to store ExecBase at the location 4UL and set
-     * it complement in ExecBase structure
-     */
-
-    rkprintf("[exec] Initializing library...\n");
-
-    //*(struct ExecBase **)4 = SysBase;
-    SysBase->ChkBase = ~(ULONG)SysBase;
-    
-    /* Store sysbase in TLS */
-    TLS_SET(SysBase, SysBase);
-    
-    /* Set up system stack */
-    //    tss->ssp = (extmem) ? extmem : locmem;  /* Either in FAST or in CHIP */
-//    SysBase->SysStkUpper = (APTR)stack_end;
-//    SysBase->SysStkLower = (APTR)&stack[0]; /* 64KB of system stack */
-
-    /* Store memory configuration */
-    SysBase->MaxLocMem = (IPTR)0; //locmem;
-    SysBase->MaxExtMem = (APTR)0; //extmem;
-
-    /*
-     * Initialize exec lists. This is done through information table which consist
-     * of offset from begining of ExecBase and type of the list.
-     */
-    NEWLIST(&SysBase->MemList);
-    SysBase->MemList.lh_Type = NT_MEMORY;
-    NEWLIST(&SysBase->ResourceList);
-    SysBase->ResourceList.lh_Type = NT_RESOURCE;
-    NEWLIST(&SysBase->DeviceList);
-    SysBase->DeviceList.lh_Type = NT_DEVICE;
-    NEWLIST(&SysBase->LibList);
-    SysBase->LibList.lh_Type = NT_LIBRARY;
-    NEWLIST(&SysBase->PortList);
-    SysBase->PortList.lh_Type = NT_MSGPORT;
-    NEWLIST(&SysBase->TaskReady);
-    SysBase->TaskReady.lh_Type = NT_TASK;
-    NEWLIST(&SysBase->TaskWait);
-    SysBase->TaskWait.lh_Type = NT_TASK;
-    NEWLIST(&SysBase->IntrList);
-    SysBase->IntrList.lh_Type = NT_INTERRUPT;
-    NEWLIST(&SysBase->SemaphoreList);
-    SysBase->SemaphoreList.lh_Type = NT_SIGNALSEM;
-    NEWLIST(&SysBase->ex_MemHandlers);
-
-    for (i=0; i<5; i++)
-    {
-        NEWLIST(&SysBase->SoftInts[i].sh_List);
-        SysBase->SoftInts[i].sh_List.lh_Type = NT_SOFTINT;
-    }
-
-    /*
-     * Exec.library initializer. Prepares exec.library for future use. All
-     * lists have to be initialized, some values from ROM are copied.
-     */
-
-    SysBase->TaskTrapCode = NULL; //exec_DefaultTrap;
-    SysBase->TaskExceptCode = NULL; //exec_DefaultTrap;
-    SysBase->TaskExitCode = exec_DefaultTaskExit;
-    SysBase->TaskSigAlloc = 0x0000ffff;
-    SysBase->TaskTrapAlloc = 0x8000;
-
-    /* Prepare values for execBase (like name, type, pri and other) */
-
-    SysBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;
-    SysBase->LibNode.lib_Node.ln_Pri = 0;
-    SysBase->LibNode.lib_Node.ln_Name = (char *)exec_name;
-    SysBase->LibNode.lib_Flags = LIBF_CHANGED | LIBF_SUMUSED;
-    SysBase->LibNode.lib_PosSize = sizeof(struct ExecBase);
-    SysBase->LibNode.lib_OpenCnt = 1;
-    SysBase->LibNode.lib_IdString = (char *)exec_idstring;
-    SysBase->LibNode.lib_Version = exec_Version;
-    SysBase->LibNode.lib_Revision = exec_Revision;
-
-    SysBase->Quantum = 4;
-    SysBase->VBlankFrequency = 50;
-    SysBase->PowerSupplyFrequency = 1;
-
-    /* Build the jumptable */
-    SysBase->LibNode.lib_NegSize =
-        Exec_MakeFunctions(SysBase, Exec_FuncTable, NULL, SysBase);
-
-    SumLibrary((struct Library *)SysBase);
-
-    rkprintf("[exec] Adding memory ..\n");
-    struct mb_mmap *mmap;
-    uint32_t len = krnGetTagData(KRN_MMAPLength, 0, msg);
-
-    if (len)
-    {
-        rkprintf("[exec] Registering MMAP regions (MMAP Length = %d)\n", len);
-        mmap = (struct mb_mmap *)(krnGetTagData(KRN_MMAPAddress, 0, msg));
-
-        while(len >= sizeof(struct mb_mmap))
+        if ((mode = (struct vbe_mode *)krnGetTagData(KRN_VBEModeInfo, 0, msg)))
         {
-            if (mmap->type == MMAP_TYPE_RAM)
-            {
-                uintptr_t addr = (mmap->addr_low | ((intptr_t)mmap->addr_high << 32));
-                uintptr_t size = (mmap->len_low | ((intptr_t)mmap->len_high << 32));
-                uintptr_t tmp;
-
-#warning TODO: Add proper handling of the memory above 4GB!
-                if ((addr_lower != 0)  &&
-                    ((addr_lower >= addr) && ((addr_lower <= (addr+size) ))))
-                {
-                    rkprintf("[exec]   Fixup entry for lowpages [size %012p -> ", size);
-                    size = addr_lower - addr;
-                    rkprintf("%012p]\n", size);
-                }
-
-                rkprintf("[exec]   %012p - %012p\n", addr, addr+size-1);
-
-                if (addr < 0x01000000 && (addr+size) <= 0x01000000)
-                {
-                    exec_InsertMemory(msg, addr, addr+size-1);
-                }
-                else if (addr < 0x01000000 && (addr+size) > 0x01000000)
-                {
-                    exec_InsertMemory(msg, addr, 0x00ffffff);
-                    exec_InsertMemory(msg, 0x01000000, addr + size - 1);
-                }
-                else
-                {
-                    exec_InsertMemory(msg, addr, addr+size-1);
-                }
-            }
-
-            len -= mmap->size+4;
-            mmap = (struct mb_mmap *)(mmap->size + (IPTR)mmap+4);
-        }
-    }
-    else
-    {
-        rkprintf("[exec] Registering mem_lower/mem_upper Memory Region\n");
-
-        uintptr_t chip_start, chip_end, fast_start, fast_end, tmp;
-
-        uintptr_t addr_upper = krnGetTagData(KRN_MEMUpper, 0, msg);
-
-        if (addr_lower > 0)
-        {
-            chip_start = 0X2000;
-            chip_end = (addr_lower * 1024) - 1;
-
-                    if (chip_start < chip_end)
-            {
-                rkprintf("[exec]   Registering Lower Mem Range (%012p - %012p)\n", chip_start, chip_end);
-                exec_InsertMemory(msg, chip_start, chip_end);
-            }
+            vesa_init(mode->x_resolution, mode->y_resolution, 
+                mode->bits_per_pixel, (void*)mode->phys_base);
         }
 
-        if (addr_upper > 0)
+        clr();
+        rkprintf("[exec] AROS64 - The AROS Research OS, 64-bit version\n[exec] Compiled %s\n", __DATE__);
+
+        /* Prepare the exec base */
+
+        void  **fp      = Exec_FuncTable; //LIBFUNCTABLE;  /* pointer to a function in the table */
+
+        rkprintf("[exec] Preparing the ExecBase...\n");
+
+        /* Calculate the size of the vector table */
+        while (*fp++ != (APTR) -1) negsize += LIB_VECTSIZE;
+
+        if (addr_lower != 0)
         {
-            fast_start = 0x0000100000;
-            fast_end = (addr_upper * 1024) + (fast_start - 1);
-
-                    if (fast_start < fast_end)
-            {
-                if (fast_end > 0x01000000)
-                {
-                    rkprintf("[exec]   Registering Upper Chip Mem Range (%012p - %012p)\n", fast_start, 0x00ffffff);
-                    exec_InsertMemory(msg, fast_start, 0x00ffffff);
-                    rkprintf("[exec]   Registering Upper Fast Mem Range (%012p - %012p)\n", 0x01000000, fast_end);
-                    exec_InsertMemory(msg, 0x01000000, fast_end);
-                    
-                }
-                else
-                {
-                    rkprintf("[exec]   Registering Upper Mem Range (%012p - %012p)\n", fast_start, fast_end);
-                    exec_InsertMemory(msg, fast_start, fast_end);
-                }
-            }
-        }
-    }
-
-    rkprintf("[exec] MemLists (hopefully!) prepaired\n");
-
-    SumLibrary((struct Library *)SysBase);
-
-    rkprintf("[exec] SumLibrary on SysBase finished\n");
-
-    Enqueue(&SysBase->LibList,&SysBase->LibNode.lib_Node);
-
-    rkprintf("[exec] SysBase Enqueued in Exec Liblist\n");
-
-    if ((SysBase->DebugAROSBase = PrepareAROSSupportBase()) == NULL)
-    {
-        rkprintf("[exec] PrepareAROSSupportBase returns NULL!!!\n");
-    }
-
-    rkprintf("[exec] ExecBase=%012p\n", SysBase);
-
-    for (i=0; i<16; i++)
-    {
-        if( (1<<i) & (INTF_PORTS|INTF_COPER|INTF_VERTB|INTF_EXTER|INTF_SETCLR))
-        {
-            struct Interrupt *is;
-            struct SoftIntList *sil;
-            is = AllocMem
-            (
-                sizeof(struct Interrupt) + sizeof(struct SoftIntList),
-                MEMF_CLEAR | MEMF_PUBLIC
-            );
-            if( is == NULL )
-            {
-                rkprintf("[exec] ERROR: Cannot install Interrupt Servers!\n");
-            }
-            sil = (struct SoftIntList *)((struct Interrupt *)is + 1);
-
-            is->is_Code = &IntServer;
-            is->is_Data = sil;
-            NEWLIST((struct List *)sil);
-            SetIntVector(i,is);
+            addr_lower = ((addr_lower - (negsize + sizeof(struct ExecBase))) & ~PAGE_MASK);
+            SysBase = (struct ExecBase *)(addr_lower + negsize);
+            krnSetTagData(KRN_MEMLower, ((addr_lower - 1)/1024), msg);
+            addr_lower = (krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
         }
         else
         {
-            struct Interrupt *is;
-            switch (i)
+            /* Warn that theres no lowmem pages to load execbase into? */
+            SysBase = (struct ExecBase *)(0x1000 + negsize);
+        }
+
+        rkprintf("[exec] Clearing ExecBase [SysBase = %012p]\n", SysBase);
+
+        /* How about clearing most of ExecBase structure? */
+        bzero(&SysBase->IntVects[0], sizeof(struct ExecBase) - offsetof(struct ExecBase, IntVects[0]));
+
+        SysBase->KickMemPtr = NULL;
+        SysBase->KickTagPtr = NULL;
+        SysBase->KickCheckSum = NULL;
+
+        /* How about clearing most of ExecBase structure? */
+        bzero(&SysBase->IntVects[0], sizeof(struct ExecBase) - offsetof(struct ExecBase, IntVects[0]));
+
+        /*
+         * Now everything is prepared to store ExecBase at the location 4UL and set
+         * it complement in ExecBase structure
+         */
+
+        rkprintf("[exec] Initializing library...\n");
+
+        //*(struct ExecBase **)4 = SysBase;
+        SysBase->ChkBase = ~(ULONG)SysBase;
+        
+        /* Store sysbase in TLS */
+        TLS_SET(SysBase, SysBase);
+        
+        /* Set up system stack */
+        //    tss->ssp = (extmem) ? extmem : locmem;  /* Either in FAST or in CHIP */
+    //    SysBase->SysStkUpper = (APTR)stack_end;
+    //    SysBase->SysStkLower = (APTR)&stack[0]; /* 64KB of system stack */
+
+        /* Store memory configuration */
+        SysBase->MaxLocMem = (IPTR)0; //locmem;
+        SysBase->MaxExtMem = (APTR)0; //extmem;
+
+        /*
+         * Initialize exec lists. This is done through information table which consist
+         * of offset from begining of ExecBase and type of the list.
+         */
+        NEWLIST(&SysBase->MemList);
+        SysBase->MemList.lh_Type = NT_MEMORY;
+        NEWLIST(&SysBase->ResourceList);
+        SysBase->ResourceList.lh_Type = NT_RESOURCE;
+        NEWLIST(&SysBase->DeviceList);
+        SysBase->DeviceList.lh_Type = NT_DEVICE;
+        NEWLIST(&SysBase->LibList);
+        SysBase->LibList.lh_Type = NT_LIBRARY;
+        NEWLIST(&SysBase->PortList);
+        SysBase->PortList.lh_Type = NT_MSGPORT;
+        NEWLIST(&SysBase->TaskReady);
+        SysBase->TaskReady.lh_Type = NT_TASK;
+        NEWLIST(&SysBase->TaskWait);
+        SysBase->TaskWait.lh_Type = NT_TASK;
+        NEWLIST(&SysBase->IntrList);
+        SysBase->IntrList.lh_Type = NT_INTERRUPT;
+        NEWLIST(&SysBase->SemaphoreList);
+        SysBase->SemaphoreList.lh_Type = NT_SIGNALSEM;
+        NEWLIST(&SysBase->ex_MemHandlers);
+
+        for (i=0; i<5; i++)
+        {
+            NEWLIST(&SysBase->SoftInts[i].sh_List);
+            SysBase->SoftInts[i].sh_List.lh_Type = NT_SOFTINT;
+        }
+
+        /*
+         * Exec.library initializer. Prepares exec.library for future use. All
+         * lists have to be initialized, some values from ROM are copied.
+         */
+
+        SysBase->TaskTrapCode = NULL; //exec_DefaultTrap;
+        SysBase->TaskExceptCode = NULL; //exec_DefaultTrap;
+        SysBase->TaskExitCode = exec_DefaultTaskExit;
+        SysBase->TaskSigAlloc = 0x0000ffff;
+        SysBase->TaskTrapAlloc = 0x8000;
+
+        /* Prepare values for execBase (like name, type, pri and other) */
+
+        SysBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;
+        SysBase->LibNode.lib_Node.ln_Pri = 0;
+        SysBase->LibNode.lib_Node.ln_Name = (char *)exec_name;
+        SysBase->LibNode.lib_Flags = LIBF_CHANGED | LIBF_SUMUSED;
+        SysBase->LibNode.lib_PosSize = sizeof(struct ExecBase);
+        SysBase->LibNode.lib_OpenCnt = 1;
+        SysBase->LibNode.lib_IdString = (char *)exec_idstring;
+        SysBase->LibNode.lib_Version = exec_Version;
+        SysBase->LibNode.lib_Revision = exec_Revision;
+
+        SysBase->Quantum = 4;
+        SysBase->VBlankFrequency = 50;
+        SysBase->PowerSupplyFrequency = 1;
+
+        /* Build the jumptable */
+        SysBase->LibNode.lib_NegSize =
+            Exec_MakeFunctions(SysBase, Exec_FuncTable, NULL, SysBase);
+
+        SumLibrary((struct Library *)SysBase);
+
+        rkprintf("[exec] Adding memory ..\n");
+        struct mb_mmap *mmap;
+        uint32_t len = krnGetTagData(KRN_MMAPLength, 0, msg);
+
+        if (len)
+        {
+            rkprintf("[exec] Registering MMAP regions (MMAP Length = %d)\n", len);
+            mmap = (struct mb_mmap *)(krnGetTagData(KRN_MMAPAddress, 0, msg));
+
+            while(len >= sizeof(struct mb_mmap))
             {
-                case INTB_SOFTINT :
-                    is = AllocMem
-                    (
-                        sizeof(struct Interrupt),
-                        MEMF_CLEAR | MEMF_PUBLIC
-                    );
-                    if (is == NULL)
+                if (mmap->type == MMAP_TYPE_RAM)
+                {
+                    uintptr_t addr = (mmap->addr_low | ((intptr_t)mmap->addr_high << 32));
+                    uintptr_t size = (mmap->len_low | ((intptr_t)mmap->len_high << 32));
+                    uintptr_t tmp;
+
+    #warning TODO: Add proper handling of the memory above 4GB!
+                    if ((addr_lower != 0)  &&
+                        ((addr_lower >= addr) && ((addr_lower <= (addr+size) ))))
                     {
-                        rkprintf("[exec] Error: Cannot install Interrupt Servers!\n");
-                        // Alert(AT_DeadEnd | AN_IntrMem);
+                        rkprintf("[exec]   Fixup entry for lowpages [size %012p -> ", size);
+                        size = addr_lower - addr;
+                        rkprintf("%012p]\n", size);
                     }
-                    is->is_Node.ln_Type = NT_SOFTINT;   //INTERRUPT;
-                    is->is_Node.ln_Pri = 0;
-                    is->is_Node.ln_Name = "SW Interrupt Dispatcher";
-                    is->is_Data = NULL;
-                    is->is_Code = (void *)SoftIntDispatch;
-                    SetIntVector(i,is);
+
+                    rkprintf("[exec]   %012p - %012p\n", addr, addr+size-1);
+
+                    if (addr < 0x01000000 && (addr+size) <= 0x01000000)
+                    {
+                        exec_InsertMemory(msg, addr, addr+size-1);
+                    }
+                    else if (addr < 0x01000000 && (addr+size) > 0x01000000)
+                    {
+                        exec_InsertMemory(msg, addr, 0x00ffffff);
+                        exec_InsertMemory(msg, 0x01000000, addr + size - 1);
+                    }
+                    else
+                    {
+                        exec_InsertMemory(msg, addr, addr+size-1);
+                    }
+                }
+
+                len -= mmap->size+4;
+                mmap = (struct mb_mmap *)(mmap->size + (IPTR)mmap+4);
+            }
+        }
+        else
+        {
+            rkprintf("[exec] Registering mem_lower/mem_upper Memory Region\n");
+
+            uintptr_t chip_start, chip_end, fast_start, fast_end, tmp;
+
+            uintptr_t addr_upper = krnGetTagData(KRN_MEMUpper, 0, msg);
+
+            if (addr_lower > 0)
+            {
+                chip_start = 0X2000;
+                chip_end = (addr_lower * 1024) - 1;
+
+                        if (chip_start < chip_end)
+                {
+                    rkprintf("[exec]   Registering Lower Mem Range (%012p - %012p)\n", chip_start, chip_end);
+                    exec_InsertMemory(msg, chip_start, chip_end);
+                }
+            }
+
+            if (addr_upper > 0)
+            {
+                fast_start = 0x0000100000;
+                fast_end = (addr_upper * 1024) + (fast_start - 1);
+
+                        if (fast_start < fast_end)
+                {
+                    if (fast_end > 0x01000000)
+                    {
+                        rkprintf("[exec]   Registering Upper Chip Mem Range (%012p - %012p)\n", fast_start, 0x00ffffff);
+                        exec_InsertMemory(msg, fast_start, 0x00ffffff);
+                        rkprintf("[exec]   Registering Upper Fast Mem Range (%012p - %012p)\n", 0x01000000, fast_end);
+                        exec_InsertMemory(msg, 0x01000000, fast_end);
+                        
+                    }
+                    else
+                    {
+                        rkprintf("[exec]   Registering Upper Mem Range (%012p - %012p)\n", fast_start, fast_end);
+                        exec_InsertMemory(msg, fast_start, fast_end);
+                    }
+                }
+            }
+        }
+
+        rkprintf("[exec] MemLists (hopefully!) prepaired\n");
+
+        SumLibrary((struct Library *)SysBase);
+
+        rkprintf("[exec] SumLibrary on SysBase finished\n");
+
+        Enqueue(&SysBase->LibList,&SysBase->LibNode.lib_Node);
+
+        rkprintf("[exec] SysBase Enqueued in Exec Liblist\n");
+
+        if ((SysBase->DebugAROSBase = PrepareAROSSupportBase()) == NULL)
+        {
+            rkprintf("[exec] PrepareAROSSupportBase returns NULL!!!\n");
+        }
+
+        rkprintf("[exec] ExecBase=%012p\n", SysBase);
+
+        for (i=0; i<16; i++)
+        {
+            if( (1<<i) & (INTF_PORTS|INTF_COPER|INTF_VERTB|INTF_EXTER|INTF_SETCLR))
+            {
+                struct Interrupt *is;
+                struct SoftIntList *sil;
+                is = AllocMem
+                (
+                    sizeof(struct Interrupt) + sizeof(struct SoftIntList),
+                    MEMF_CLEAR | MEMF_PUBLIC
+                );
+                if( is == NULL )
+                {
+                    rkprintf("[exec] ERROR: Cannot install Interrupt Servers!\n");
+                }
+                sil = (struct SoftIntList *)((struct Interrupt *)is + 1);
+
+                is->is_Code = &IntServer;
+                is->is_Data = sil;
+                NEWLIST((struct List *)sil);
+                SetIntVector(i,is);
+            }
+            else
+            {
+                struct Interrupt *is;
+                switch (i)
+                {
+                    case INTB_SOFTINT :
+                        is = AllocMem
+                        (
+                            sizeof(struct Interrupt),
+                            MEMF_CLEAR | MEMF_PUBLIC
+                        );
+                        if (is == NULL)
+                        {
+                            rkprintf("[exec] Error: Cannot install Interrupt Servers!\n");
+                            // Alert(AT_DeadEnd | AN_IntrMem);
+                        }
+                        is->is_Node.ln_Type = NT_SOFTINT;   //INTERRUPT;
+                        is->is_Node.ln_Pri = 0;
+                        is->is_Node.ln_Name = "SW Interrupt Dispatcher";
+                        is->is_Data = NULL;
+                        is->is_Code = (void *)SoftIntDispatch;
+                        SetIntVector(i,is);
+                        break;
+                }
+            }
+        }
+
+        /* Enable interrupts and set int disable level to -1 */
+        asm("sti");
+        SysBase->TDNestCnt = -1;
+        SysBase->IDNestCnt = -1;
+
+        /* Now it's time to calculate exec checksum. It will be used
+         * in future to distinguish whether we'd had proper execBase
+         * before restart */
+        {
+            UWORD sum=0, *ptr = &SysBase->SoftVer;
+            int i=((IPTR)&SysBase->IntVects[0] - (IPTR)&SysBase->SoftVer) / 2,
+                j;
+
+            /* Calculate sum for every static part from SoftVer to ChkSum */
+            for (j=0;j < i;j++)
+            {
+                sum+=*(ptr++);
+            }
+
+            SysBase->ChkSum = ~sum;
+        }
+
+        rkprintf("[exec] Registering Special Regions in MemList\n");
+
+        struct MemHeader *mh;
+
+        if ((mh = AllocMem(sizeof(struct MemHeader) + sizeof(struct MemChunk), MEMF_CLEAR)) != NULL)
+        {
+            mh->mh_Node.ln_Type=NT_MEMORY;
+            mh->mh_Node.ln_Pri = -10;
+            mh->mh_Node.ln_Name = exec_sysbasename;
+            mh->mh_Attributes = (MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA);
+            mh->mh_First = mh + sizeof(struct MemHeader);
+            mh->mh_First->mc_Next = NULL;
+            mh->mh_First->mc_Bytes =  (negsize + sizeof(struct ExecBase));
+            mh->mh_Lower = (struct MemChunk *)(SysBase - negsize);
+            mh->mh_Upper = (APTR)((UBYTE *)mh->mh_Lower + mh->mh_First->mc_Bytes);
+            mh->mh_Free = 0; /* All used! */
+
+            Forbid();
+                Enqueue(&SysBase->MemList,&mh->mh_Node);
+            Permit();
+        }
+
+        if ((mh = AllocMem(sizeof(struct MemHeader) + sizeof(struct MemChunk), MEMF_CLEAR)) != NULL)
+        {
+            uintptr_t kernLow = krnGetTagData(KRN_KernelLowest, 0, msg);
+            uintptr_t kernHigh = krnGetTagData(KRN_KernelHighest, 0, msg);
+
+            mh->mh_Node.ln_Type=NT_MEMORY;
+            mh->mh_Node.ln_Pri = -10;
+            mh->mh_Node.ln_Name = exec_kernalname;
+            mh->mh_Attributes = (MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
+            mh->mh_First = mh + sizeof(struct MemHeader);
+            mh->mh_First->mc_Next = NULL;
+            mh->mh_First->mc_Bytes =  kernHigh - kernLow + 1;
+            mh->mh_Lower = kernLow;
+            mh->mh_Upper = kernHigh;
+            mh->mh_Free = 0; /* All used! */
+
+            Forbid();
+                Enqueue(&SysBase->MemList,&mh->mh_Node);
+            Permit();
+        }
+
+        rkprintf("[exec] Creating the very first task...\n");
+
+        /* Create boot task.  Sigh, we actually create a Process sized Task,
+            since DOS needs to call things which think it has a Process and
+            we don't want to overwrite memory with something strange do we?
+
+            We do this until at least we can boot dos more cleanly.
+        */
+        {
+            struct Task    *t;
+            struct MemList *ml;
+
+            ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
+            t  = (struct Task *)   AllocMem(sizeof(struct Process), MEMF_PUBLIC|MEMF_CLEAR);
+
+            if( !ml || !t )
+            {
+                rkprintf("[exec] ERROR: Cannot create Boot Task!\n");
+            }
+            ml->ml_NumEntries = 1;
+            ml->ml_ME[0].me_Addr = t;
+            ml->ml_ME[0].me_Length = sizeof(struct Process);
+
+            NEWLIST(&t->tc_MemEntry);
+            NEWLIST(&((struct Process *)t)->pr_MsgPort.mp_MsgList);
+
+            /* It's the boot process that RunCommand()s the boot shell, so we
+               must have this list initialized */
+            NEWLIST((struct List *)&((struct Process *)t)->pr_LocalVars);
+
+            AddHead(&t->tc_MemEntry,&ml->ml_Node);
+
+            t->tc_Node.ln_Name = exec_name;
+            t->tc_Node.ln_Pri = 0;
+            t->tc_Node.ln_Type = NT_TASK;
+            t->tc_State = TS_RUN;
+            t->tc_SigAlloc = 0xFFFF;
+            t->tc_SPLower = 0;          /* This is the system's stack */
+            t->tc_SPUpper = (APTR)~0UL;
+            t->tc_Flags |= TF_ETASK;
+
+            if (t->tc_Flags & TF_ETASK)
+            {
+                t->tc_UnionETask.tc_ETask = AllocVec
+                (
+                    sizeof(struct IntETask), 
+                    MEMF_ANY|MEMF_CLEAR
+                );
+
+                if (!t->tc_UnionETask.tc_ETask)
+                {
+                    rkprintf("[exec] Not enough memory for first task\n");
+                }
+
+                /* Initialise the ETask data. */
+                InitETask(t, t->tc_UnionETask.tc_ETask);
+
+                GetIntETask(t)->iet_Context = AllocTaskMem(t
+                    , SIZEOF_ALL_REGISTERS
+                    , MEMF_PUBLIC|MEMF_CLEAR
+                );
+
+                if (!GetIntETask(t)->iet_Context)
+                {
+                    rkprintf("[exec] Not enough memory for first task\n");
+                }
+            }
+
+            SysBase->ThisTask = t;
+        }
+
+        rkprintf("[exec] Done. SysBase->ThisTask = 0x%012p\n[exec] Leaving supervisor mode\n", SysBase->ThisTask);
+
+        asm volatile (
+                "mov %[user_ds],%%ds\n\t"    // Load DS and ES
+                "mov %[user_ds],%%es\n\t"
+                "mov %%rsp,%%r12\n\t"
+                "pushq %[ds]\n\t"      // SS
+                "pushq %%r12\n\t"            // rSP        
+                "pushq $0x3002\n\t"         // rFLANGS
+                "pushq %[cs]\n\t"      // CS
+                "pushq $1f\n\t iretq\n 1:"
+                ::[user_ds]"r"(USER_DS),[ds]"i"(USER_DS),[cs]"i"(USER_CS):"r12");
+        rkprintf("[exec] Done?! Still here?\n");
+
+        SysBase->TDNestCnt++;
+
+        Permit();
+
+        BOOL                 _debug = FALSE;
+        struct TagItem *tag = krnFindTagItem(KRN_CmdLine, msg);
+        if (tag)
+        {
+            STRPTR cmd;
+            ULONG temp;
+            cmd = stpblk(tag->ti_Data);
+            while(cmd[0])
+            {
+                /* Split the command line */
+                temp = strcspn(cmd," ");
+                if (strncmp(cmd, "DEBUG", 5)==0)
+                {
+                    _debug = TRUE;
+                    SetFunction(&SysBase->LibNode, -84*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawIOInit, Exec));
+                    SetFunction(&SysBase->LibNode, -86*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawPutChar, Exec));
                     break;
+                }
+                cmd = stpblk(cmd+temp);
             }
         }
-    }
 
-    /* Enable interrupts and set int disable level to -1 */
-    asm("sti");
-    SysBase->TDNestCnt = -1;
-    SysBase->IDNestCnt = -1;
+        /* Scan for valid RomTags */
+        SysBase->ResModules = exec_RomTagScanner(msg);
+        apicready = 1;
 
-    /* Now it's time to calculate exec checksum. It will be used
-     * in future to distinguish whether we'd had proper execBase
-     * before restart */
-    {
-        UWORD sum=0, *ptr = &SysBase->SoftVer;
-        int i=((IPTR)&SysBase->IntVects[0] - (IPTR)&SysBase->SoftVer) / 2,
-            j;
-
-        /* Calculate sum for every static part from SoftVer to ChkSum */
-        for (j=0;j < i;j++)
+        rkprintf("[exec] InitCode(RTF_SINGLETASK)\n");
+        if (!(_debug))
         {
-            sum+=*(ptr++);
+            rkprintf("\3");
         }
+        InitCode(RTF_SINGLETASK, 0);
 
-        SysBase->ChkSum = ~sum;
-    }
-
-    rkprintf("[exec] Registering Special Regions in MemList\n");
-
-    struct MemHeader *mh;
-
-    if ((mh = AllocMem(sizeof(struct MemHeader) + sizeof(struct MemChunk), MEMF_CLEAR)) != NULL)
-    {
-        mh->mh_Node.ln_Type=NT_MEMORY;
-        mh->mh_Node.ln_Pri = -10;
-        mh->mh_Node.ln_Name = exec_sysbasename;
-        mh->mh_Attributes = (MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA);
-        mh->mh_First = mh + sizeof(struct MemHeader);
-        mh->mh_First->mc_Next = NULL;
-        mh->mh_First->mc_Bytes =  (negsize + sizeof(struct ExecBase));
-        mh->mh_Lower = (struct MemChunk *)(SysBase - negsize);
-        mh->mh_Upper = (APTR)((UBYTE *)mh->mh_Lower + mh->mh_First->mc_Bytes);
-        mh->mh_Free = 0; /* All used! */
-
-        Forbid();
-            Enqueue(&SysBase->MemList,&mh->mh_Node);
-        Permit();
-    }
-
-    if ((mh = AllocMem(sizeof(struct MemHeader) + sizeof(struct MemChunk), MEMF_CLEAR)) != NULL)
-    {
-        uintptr_t kernLow = krnGetTagData(KRN_KernelLowest, 0, msg);
-        uintptr_t kernHigh = krnGetTagData(KRN_KernelHighest, 0, msg);
-
-        mh->mh_Node.ln_Type=NT_MEMORY;
-        mh->mh_Node.ln_Pri = -10;
-        mh->mh_Node.ln_Name = exec_kernalname;
-        mh->mh_Attributes = (MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
-        mh->mh_First = mh + sizeof(struct MemHeader);
-        mh->mh_First->mc_Next = NULL;
-        mh->mh_First->mc_Bytes =  kernHigh - kernLow + 1;
-        mh->mh_Lower = kernLow;
-        mh->mh_Upper = kernHigh;
-        mh->mh_Free = 0; /* All used! */
-
-        Forbid();
-            Enqueue(&SysBase->MemList,&mh->mh_Node);
-        Permit();
-    }
-
-    rkprintf("[exec] Creating the very first task...\n");
-
-    /* Create boot task.  Sigh, we actually create a Process sized Task,
-        since DOS needs to call things which think it has a Process and
-        we don't want to overwrite memory with something strange do we?
-
-        We do this until at least we can boot dos more cleanly.
-    */
-    {
-        struct Task    *t;
-        struct MemList *ml;
-
-        ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
-        t  = (struct Task *)   AllocMem(sizeof(struct Process), MEMF_PUBLIC|MEMF_CLEAR);
-
-        if( !ml || !t )
+        UBYTE apictotal;
+        if ((apictotal = core_APICGetTotal()) > 1)
         {
-            rkprintf("[exec] ERROR: Cannot create Boot Task!\n");
-        }
-        ml->ml_NumEntries = 1;
-        ml->ml_ME[0].me_Addr = t;
-        ml->ml_ME[0].me_Length = sizeof(struct Process);
-
-        NEWLIST(&t->tc_MemEntry);
-        NEWLIST(&((struct Process *)t)->pr_MsgPort.mp_MsgList);
-
-        /* It's the boot process that RunCommand()s the boot shell, so we
-           must have this list initialized */
-        NEWLIST((struct List *)&((struct Process *)t)->pr_LocalVars);
-
-        AddHead(&t->tc_MemEntry,&ml->ml_Node);
-
-        t->tc_Node.ln_Name = exec_name;
-        t->tc_Node.ln_Pri = 0;
-        t->tc_Node.ln_Type = NT_TASK;
-        t->tc_State = TS_RUN;
-        t->tc_SigAlloc = 0xFFFF;
-        t->tc_SPLower = 0;          /* This is the system's stack */
-        t->tc_SPUpper = (APTR)~0UL;
-        t->tc_Flags |= TF_ETASK;
-
-        if (t->tc_Flags & TF_ETASK)
-        {
-            t->tc_UnionETask.tc_ETask = AllocVec
-            (
-        	sizeof(struct IntETask), 
-        	MEMF_ANY|MEMF_CLEAR
-            );
-
-            if (!t->tc_UnionETask.tc_ETask)
+            rkprintf("[exec] Waiting for %d APICs to initialise ..\n", apictotal-1);
+            while (apicready < apictotal)
             {
-                rkprintf("[exec] Not enough memory for first task\n");
-            }
-
-            /* Initialise the ETask data. */
-            InitETask(t, t->tc_UnionETask.tc_ETask);
-
-            GetIntETask(t)->iet_Context = AllocTaskMem(t
-                , SIZEOF_ALL_REGISTERS
-                , MEMF_PUBLIC|MEMF_CLEAR
-            );
-
-            if (!GetIntETask(t)->iet_Context)
-            {
-                rkprintf("[exec] Not enough memory for first task\n");
+                rkprintf("[exec] %d of %d APICs Ready ..\n", apicready, apictotal);
             }
         }
 
-        SysBase->ThisTask = t;
+        rkprintf("[exec] InitCode(RTF_COLDSTART)\n");
+        InitCode(RTF_COLDSTART, 0);
+
+        rkprintf("[exec] ERROR: System Boot Failed? Halting ...\n");
+        while(1) asm volatile("hlt");
     }
-    
-    rkprintf("[exec] Done. SysBase->ThisTask = 0x%012p\n[exec] Leaving supervisor mode\n", SysBase->ThisTask);
-    
-    asm volatile (
-            "mov %[user_ds],%%ds\n\t"    // Load DS and ES
-            "mov %[user_ds],%%es\n\t"
-            "mov %%rsp,%%r12\n\t"
-            "pushq %[ds]\n\t"      // SS
-            "pushq %%r12\n\t"            // rSP        
-            "pushq $0x3002\n\t"         // rFLANGS
-            "pushq %[cs]\n\t"      // CS
-            "pushq $1f\n\t iretq\n 1:"
-            ::[user_ds]"r"(USER_DS),[ds]"i"(USER_DS),[cs]"i"(USER_CS):"r12");
-    rkprintf("[exec] Done?! Still here?\n");
-
-    SysBase->TDNestCnt++;
-
-    Permit();
-
-    BOOL                 _debug = FALSE;
-    struct TagItem *tag = krnFindTagItem(KRN_CmdLine, msg);
-    if (tag)
+    else
     {
-        STRPTR cmd;
-        ULONG temp;
-        cmd = stpblk(tag->ti_Data);
-        while(cmd[0])
-        {
-            /* Split the command line */
-            temp = strcspn(cmd," ");
-            if (strncmp(cmd, "DEBUG", 5)==0)
-            {
-                _debug = TRUE;
-                SetFunction(&SysBase->LibNode, -84*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawIOInit, Exec));
-                SetFunction(&SysBase->LibNode, -86*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawPutChar, Exec));
-                break;
-            }
-            cmd = stpblk(cmd+temp);
-        }
-    }
-
-    /* Scan for valid RomTags */
-    SysBase->ResModules = exec_RomTagScanner(msg);
-
-    rkprintf("[exec] InitCode(RTF_SINGLETASK)\n");
-    if (!(_debug))
-    {
-        rkprintf("\3");
-    }
-    InitCode(RTF_SINGLETASK, 0);
-
-    rkprintf("[exec] InitCode(RTF_COLDSTART)\n");
-    InitCode(RTF_COLDSTART, 0);
-
-    rkprintf("[exec] I should never get here...\n");
-    while(1) asm volatile("nop");
+        /* Launched on AP */
+        UBYTE _APICNO = core_APICGetNumber();
+        apicready += 1;
+        rkprintf("[exec] exec_main[%d]: APIC No. %d Going IDLE (Halting)...\n", _APICNO, _APICNO);
+        while(1) asm volatile("hlt");
+    }        
     return 0;
 }
 
