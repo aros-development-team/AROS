@@ -11,6 +11,6 @@ USER_CFLAGS := -I$(SRCDIR)/rom/exec
 
 %build_prog mmake=workbench-system-ftmanager \
     progname=FTManager targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="freetype2shared mui amiga arosc codesets"
+    files=$(FILES) uselibs="freetype2shared mui amiga arosc"
 
 %common

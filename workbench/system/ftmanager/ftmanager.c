@@ -97,6 +97,7 @@
 
 /***********************************************************************/
 
+struct Library *CodesetsBase;
 Object *app;
 FT_Library ftlibrary;
 BPTR destdir;
@@ -2092,6 +2093,7 @@ void Cleanup(void)
 	if (codesetsupported)
 		CodesetsFreeA(codesetsupported, NULL);
 	FreeVec(codesetentries);
+	CloseLibrary(CodesetsBase);
 
 	UnLock(destdir);
 }
@@ -2099,6 +2101,10 @@ void Cleanup(void)
 int Init(void)
 {
 	FT_Error error;
+
+	CodesetsBase = OpenLibrary("codesets.library", 0);
+	if (!CodesetsBase)
+	    return 0;
 
 	error = FT_Init_FreeType(&ftlibrary);
 	if (error != 0)
