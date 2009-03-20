@@ -225,29 +225,32 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate)
             ((struct GenericAPIC *)__KernBootPrivate->kbp_APIC_Drivers[__KernBootPrivate->kbp_APIC_DriverID])->getid,
                     AROS_UFCA(IPTR, _APICBase, A0));
 
-    rkprintf("[Kernel] core_SetupIDT[%d] Setting all interrupt handlers to default value\n", _APICID);
-
-    for (i=0; i < 256; i++)
+    if (_APICID == __KernBootPrivate->kbp_APIC_BSPID)
     {
-        if (interrupt[i])
-            off = (uintptr_t)interrupt[i];
-        else if (i == 0x80)
-            off = (uintptr_t)&IRQ0x80_intr;
-        else if (i == 0xfe)
-            off = (uintptr_t)&IRQ0xfe_intr;
-        else
-            off = (uintptr_t)&core_DefaultIRETQ;
+        rkprintf("[Kernel] core_SetupIDT[%d] Setting all interrupt handlers to default value\n", _APICID);
 
-        IGATES[i].offset_low = off & 0xffff;
-        IGATES[i].offset_mid = (off >> 16) & 0xffff;
-        IGATES[i].offset_high = (off >> 32) & 0xffffffff;
-        IGATES[i].type = 0x0e;
-        IGATES[i].dpl = 3;
-        IGATES[i].p = 1;
-        IGATES[i].selector = KERNEL_CS;
-        IGATES[i].ist = 0;
+        for (i=0; i < 256; i++)
+        {
+            if (interrupt[i])
+                off = (uintptr_t)interrupt[i];
+            else if (i == 0x80)
+                off = (uintptr_t)&IRQ0x80_intr;
+            else if (i == 0xfe)
+                off = (uintptr_t)&IRQ0xfe_intr;
+            else
+                off = (uintptr_t)&core_DefaultIRETQ;
+
+            IGATES[i].offset_low = off & 0xffff;
+            IGATES[i].offset_mid = (off >> 16) & 0xffff;
+            IGATES[i].offset_high = (off >> 32) & 0xffffffff;
+            IGATES[i].type = 0x0e;
+            IGATES[i].dpl = 3;
+            IGATES[i].p = 1;
+            IGATES[i].selector = KERNEL_CS;
+            IGATES[i].ist = 0;
+        }
     }
-
+    rkprintf("[Kernel] core_SetupIDT[%d] Registering interrupt handlers ..\n", _APICID);
     asm volatile ("lidt %0"::"m"(IDT_sel));
 }
 
@@ -343,6 +346,16 @@ void core_IRQHandle(regs_t regs)
     {
         rkprintf("[Kernel] INT3 debug fault!\n");
 
+        if (t)
+        {
+            rkprintf("[Kernel]  %s %p '%s'\n",
+                     t->tc_Node.ln_Type == NT_TASK?"task":"process", t, t->tc_Node.ln_Name);
+            rkprintf("[Kernel]  SPLower=%016lx SPUpper=%016lx\n", t->tc_SPLower, t->tc_SPUpper);
+            
+            if (((uint64_t *)regs.return_rsp < t->tc_SPLower)||((uint64_t *)regs.return_rsp > t->tc_SPUpper))
+                rkprintf("[Kernel] Stack out of Bounds!\n");
+        }
+
         rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
                  regs.return_ss, regs.return_rsp, regs.return_rflags, 
                  regs.return_cs, regs.return_rip, regs.error_code);
@@ -351,7 +364,9 @@ void core_IRQHandle(regs_t regs)
         rkprintf("[Kernel]  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
         rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
         rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
-        
+        rkprintf("[Kernel]  *rsp=%016lx\n", *(uint64_t *)regs.return_rsp);
+
+
         rkprintf("[Kenrel] Stack:\n");
         int i;
         uint64_t *ptr = (void*)regs.return_rsp;
@@ -368,6 +383,10 @@ void core_IRQHandle(regs_t regs)
         {
             rkprintf("[Kernel]  %s %p '%s'\n",
                      t->tc_Node.ln_Type == NT_TASK?"task":"process", t, t->tc_Node.ln_Name);
+            rkprintf("[Kernel]  SPLower=%016lx SPUpper=%016lx\n", t->tc_SPLower, t->tc_SPUpper);
+            
+            if (((uint64_t *)regs.return_rsp < t->tc_SPLower)||((uint64_t *)regs.return_rsp > t->tc_SPUpper))
+                rkprintf("[Kernel] Stack out of Bounds!\n");
         }
         
         rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
@@ -398,6 +417,10 @@ void core_IRQHandle(regs_t regs)
         {
             rkprintf("[Kernel]  %s %p '%s'\n",
                      t->tc_Node.ln_Type == NT_TASK?"task":"process", t, t->tc_Node.ln_Name);
+            rkprintf("[Kernel]  SPLower=%016lx SPUpper=%016lx\n", t->tc_SPLower, t->tc_SPUpper);
+            
+            if (((uint64_t *)regs.return_rsp < t->tc_SPLower)||((uint64_t *)regs.return_rsp > t->tc_SPUpper))
+                rkprintf("[Kernel] Stack out of Bounds!\n");
         }
         
         rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
@@ -418,6 +441,10 @@ void core_IRQHandle(regs_t regs)
         {
             rkprintf("[Kernel]  %s %p '%s'\n",
                      t->tc_Node.ln_Type == NT_TASK?"task":"process", t, t->tc_Node.ln_Name);
+            rkprintf("[Kernel]  SPLower=%016lx SPUpper=%016lx\n", t->tc_SPLower, t->tc_SPUpper);
+            
+            if (((uint64_t *)regs.return_rsp < t->tc_SPLower)||((uint64_t *)regs.return_rsp > t->tc_SPUpper))
+                rkprintf("[Kernel] Stack out of Bounds!\n");
         }
         
         rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
@@ -429,6 +456,8 @@ void core_IRQHandle(regs_t regs)
         rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
         rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
         rkprintf("[Kernel]  *rsp=%016lx\n", *(uint64_t *)regs.return_rsp);
+
+        
         die = 1;
     }
     else if (regs.irq_number == 0x0e)        /* Page fault */
@@ -581,6 +610,10 @@ void core_IRQHandle(regs_t regs)
             {
                 rkprintf("[Kernel]  %s %p '%s'\n",
                          t->tc_Node.ln_Type == NT_TASK?"task":"process", t, t->tc_Node.ln_Name);
+                rkprintf("[Kernel]  SPLower=%016lx SPUpper=%016lx\n", t->tc_SPLower, t->tc_SPUpper);
+                
+                if (((uint64_t *)regs.return_rsp < t->tc_SPLower)||((uint64_t *)regs.return_rsp > t->tc_SPUpper))
+                    rkprintf("[Kernel] Stack out of Bounds!\n");
             }
 
             rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
