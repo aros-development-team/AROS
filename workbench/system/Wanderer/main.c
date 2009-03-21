@@ -409,6 +409,14 @@ int main(void)
         return retval;
 #endif
 
+    D(
+        struct Task *me = (struct Task *)FindTask(NULL);
+
+        bug("[Wanderer] %s: This Task @ %p \n", __PRETTY_FUNCTION__, me);
+        bug("[Wanderer] %s: SPLower @ %p \n", __PRETTY_FUNCTION__, me->tc_SPLower);
+        bug("[Wanderer] %s: SPUpper @ %p \n", __PRETTY_FUNCTION__, me->tc_SPUpper);
+    )
+
     D(bug("[Wanderer] %s: Wanderer Initialising .. \n", __PRETTY_FUNCTION__));
     if ((_WandererIntern_AppObj = NewObject(Wanderer_CLASS->mcc_Class, NULL, TAG_DONE)) != NULL)
     {

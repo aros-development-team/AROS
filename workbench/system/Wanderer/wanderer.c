@@ -2,6 +2,9 @@
     Copyright  2004-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define ZCC_QUIET
+
 #include "portable_macros.h"
 
 #ifdef __AROS__
@@ -103,7 +106,6 @@
 #define KeyButton(name,key) TextObject, ButtonFrame, MUIA_Font, MUIV_Font_Button, MUIA_Text_Contents, (IPTR)(name), MUIA_Text_PreParse, "\33c", MUIA_Text_HiChar, (IPTR)(key), MUIA_ControlChar, key, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Background, MUII_ButtonBack, TAG_DONE)
 
 extern IPTR             InitWandererPrefs(void);
-static VOID             DoAllMenuNotifies(Object *wanderer, Object *strip, STRPTR path);
 Object                  *FindMenuitem(Object* strip, int id);
 Object                  *Wanderer__Func_CreateWandererIntuitionMenu(BOOL isRoot, BOOL useBackdrop);
 void                    wanderer_menufunc_window_update(void);
@@ -2323,8 +2325,8 @@ VOID DoMenuNotify(Object* strip, int id, IPTR trigattrib, void *function, void *
 }
 ///
 
-///DoAllMenuNotifies()
-VOID DoAllMenuNotifies(Object *wanderer, Object *strip, STRPTR path)
+///SetMenuDefaultNotifies()
+VOID SetMenuDefaultNotifies(Object *wanderer, Object *strip, STRPTR path)
 {
     Object *item;
 
@@ -3455,7 +3457,7 @@ D(bug("[Wanderer] %s: setup notifications\n", __PRETTY_FUNCTION__));
 #endif
 D(bug("[Wanderer] %s: execute all notifies\n", __PRETTY_FUNCTION__));
         /* If "Execute Command" entry is clicked open the execute window */
-        DoAllMenuNotifies(self, _NewWandDrawerMenu__menustrip, drw);        
+        SetMenuDefaultNotifies(self, _NewWandDrawerMenu__menustrip, drw);        
 
 D(bug("[Wanderer] %s: add window to app\n", __PRETTY_FUNCTION__));
         /* Add the window to the application */

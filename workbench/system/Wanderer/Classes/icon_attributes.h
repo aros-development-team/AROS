@@ -77,9 +77,10 @@
 
 
 /* For Icons of type ST_ROOT */
-#define ICONENTRY_VOL_OFFLINE	     (1<<1)		/* Volume is Offline               */
-#define ICONENTRY_VOL_READONLY	     (1<<2)		/* Media is Read-Only           */
-#define ICONENTRY_VOL_REMOVABLE	     (1<<3)		/* Media is Removable          */
+#define ICONENTRY_VOL_DISABLED	     (1<<0)		/* Media is Read-Only           */
+#define ICONENTRY_VOL_READONLY	     (1<<1)		/* Media is Read-Only           */
+#define ICONENTRY_VOL_OFFLINE	     (1<<2)		/* Volume is Offline            */
+#define ICONENTRY_VOL_REMOVABLE	     (1<<3)		/* Media is Removable           */
 
 /* Default Icon label rendering settings */
 // Max no of characters to display on a single line
