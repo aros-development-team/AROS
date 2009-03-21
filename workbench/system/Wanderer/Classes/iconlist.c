@@ -109,7 +109,7 @@ $Id$
 
 extern struct Library   *MUIMasterBase;
 
-static struct Hook             __iconlist_UpdateLabels_hook;
+static struct Hook      __iconlist_UpdateLabels_hook;
 
 // N.B: We Handle frame/background rendering so make sure icon.library doesnt do it ..
 struct TagItem          __iconList_DrawIconStateTags[] = {
@@ -162,24 +162,24 @@ for                                                        \
 
 static void RastPortSetAlpha(struct RastPort *arport, ULONG ax, ULONG ay, ULONG width, ULONG height, UBYTE val, UBYTE alphamode)
 {
-	ULONG x, y;
-	ULONG alphaval, pixelval;
+    ULONG       x, y;
+    ULONG       alphaval, pixelval;
 
-	for (y = 0; y < height; y++)
-	{
-		for (x = 0; x < width; x++)
-		{
-			if ((pixelval = ReadRGBPixel(arport, x, y)))
-			{
+    for (y = 0; y < height; y++)
+    {
+        for (x = 0; x < width; x++)
+        {
+            if ((pixelval = ReadRGBPixel(arport, x, y)))
+            {
                 if (alphamode == RPALPHARADIAL){
                     //Set the alpha value based on distance from ax,ay
                 } else {
                     alphaval = val;
                 }
-				WriteRGBPixel(arport, x, y, ((pixelval & 0xffffff)|(alphaval << 24)));
-			}
-		}
-	}
+                WriteRGBPixel(arport, x, y, ((pixelval & 0xffffff)|(alphaval << 24)));
+            }
+        }
+    }
 }
 
 ///RectAndRect()
@@ -208,7 +208,7 @@ static struct IconEntry *Node_NextVisible(struct IconEntry *current_Node)
 ///Node_FirstVisible()
 static struct IconEntry *Node_FirstVisible(struct List *icon_list)
 {
-    struct IconEntry *current_Node = (struct IconEntry *)GetHead(icon_list);
+    struct IconEntry    *current_Node = (struct IconEntry *)GetHead(icon_list);
 
     if ((current_Node != NULL) && !(current_Node->ie_Flags & ICONENTRY_FLAG_VISIBLE))
         current_Node = Node_NextVisible(current_Node);
@@ -232,7 +232,7 @@ static struct IconEntry *Node_PreviousVisible(struct IconEntry *current_Node)
 ///Node_LastVisible()
 static struct IconEntry *Node_LastVisible(struct List *icon_list)
 {
-    struct IconEntry *current_Node = (struct IconEntry *)GetTail(icon_list);
+    struct IconEntry    *current_Node = (struct IconEntry *)GetTail(icon_list);
 
     if ((current_Node != NULL) && !(current_Node->ie_Flags & ICONENTRY_FLAG_VISIBLE))
         current_Node = Node_PreviousVisible(current_Node);
@@ -240,7 +240,6 @@ static struct IconEntry *Node_LastVisible(struct List *icon_list)
     return current_Node;
 }
 ///
-
 
 const UBYTE MSG_MEM_G[] = "GB";
 const UBYTE MSG_MEM_M[] = "MB";
@@ -250,64 +249,64 @@ const UBYTE MSG_MEM_B[] = "Bytes";
 ///FmtSizeToString()
 static void FmtSizeToString(UBYTE *buf, ULONG num)
 {
-  UQUAD d;
-  UBYTE *ch;
-  struct
-  {
-    IPTR val;
-    IPTR  dec;
-  } array =
-  {
-    num,
-    0
-  };
+    UQUAD       d;
+    UBYTE       *ch;
+    struct
+    {
+        IPTR    val;
+        IPTR    dec;
+    } array =
+    {
+        num,
+        0
+    };
 
-  if (num >= 1073741824)
-  {
-    //Gigabytes
-    array.val = num >> 30;
-    d = ((UQUAD)num * 10 + 536870912) / 1073741824;
-    array.dec = d % 10;
-    ch = MSG_MEM_G;
-  }
-  else if (num >= 1048576)
-  {
-    //Megabytes
-    array.val = num >> 20;
-    d = ((UQUAD)num * 10 + 524288) / 1048576;
-    array.dec = d % 10;
-    ch = MSG_MEM_M;
-  }
-  else if (num >= 1024)
-  {
-    //Kilobytes
-    array.val = num >> 10;
-    d = (num * 10 + 512) / 1024;
-    array.dec = d % 10;
-    ch = MSG_MEM_K;
-  }
-  else
-  {
-    //Bytes
-    array.val = num;
-    array.dec = 0;
-    d = 0;
-    ch = MSG_MEM_B;
-  }
+    if (num >= 1073741824)
+    {
+        //Gigabytes
+        array.val = num >> 30;
+        d = ((UQUAD)num * 10 + 536870912) / 1073741824;
+        array.dec = d % 10;
+        ch = MSG_MEM_G;
+    }
+    else if (num >= 1048576)
+    {
+        //Megabytes
+        array.val = num >> 20;
+        d = ((UQUAD)num * 10 + 524288) / 1048576;
+        array.dec = d % 10;
+        ch = MSG_MEM_M;
+    }
+    else if (num >= 1024)
+    {
+        //Kilobytes
+        array.val = num >> 10;
+        d = (num * 10 + 512) / 1024;
+        array.dec = d % 10;
+        ch = MSG_MEM_K;
+    }
+    else
+    {
+        //Bytes
+        array.val = num;
+        array.dec = 0;
+        d = 0;
+        ch = MSG_MEM_B;
+    }
 
-  if (!array.dec && (d > array.val * 10))
-  {
-    array.val++;
-  }
+    if (!array.dec && (d > array.val * 10))
+    {
+        array.val++;
+    }
 
-  RawDoFmt(array.dec ? "%lu.%lu" : "%lu", &array, NULL, buf);
+    RawDoFmt(array.dec ? "%lu.%lu" : "%lu", &array, NULL, buf);
 
-  while (*buf)
-  {
-    buf++;
-  }
+    while (*buf)
+    {
+        buf++;
+    }
 
-  sprintf(buf, " %s", ch);
+    sprintf(buf, " %s", ch);
 }
 ///
 
@@ -315,13 +314,13 @@ static void FmtSizeToString(UBYTE *buf, ULONG num)
 // get positive lasso coords
 static void GetAbsoluteLassoRect(struct IconList_DATA *data, struct Rectangle *LassoRectangle)
 {
-    WORD minx = data->icld_LassoRectangle.MinX;
-    WORD miny = data->icld_LassoRectangle.MinY;
-    WORD maxx = data->icld_LassoRectangle.MaxX;
-    WORD maxy = data->icld_LassoRectangle.MaxY;
+    WORD        minx = data->icld_LassoRectangle.MinX;
+    WORD        miny = data->icld_LassoRectangle.MinY;
+    WORD        maxx = data->icld_LassoRectangle.MaxX;
+    WORD        maxy = data->icld_LassoRectangle.MaxY;
 
 #if defined(DEBUG_ILC_LASSO) && defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     if (minx > maxx)
@@ -350,10 +349,10 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 ///IconList_InvertPixelRect()
 static void IconList_InvertPixelRect(struct RastPort *rp, WORD minx, WORD miny, WORD maxx, WORD maxy, struct Rectangle *clip)
 {
-    struct Rectangle r, clipped_r;
+    struct Rectangle    r, clipped_r;
     
 #if defined(DEBUG_ILC_RENDERING) && defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     if (maxx < minx)
@@ -389,11 +388,11 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 // Simple lasso drawing by inverting area outlines
 static void IconList_InvertLassoOutlines(Object *obj, struct Rectangle *rect)
 {
-    struct Rectangle lasso;
-    struct Rectangle clip;
+    struct Rectangle    lasso;
+    struct Rectangle    clip;
     
 #if defined(DEBUG_ILC_LASSO) && defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     /* get abolute iconlist coords */
@@ -422,13 +421,13 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 static void IconList_GetIconImageRectangle(Object *obj, struct IconList_DATA *data, struct IconEntry *icon, struct Rectangle *rect)
 {
 #if defined(DEBUG_ILC_ICONPOSITIONING) && defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s(icon @ %p)\n", __PRETTY_FUNCTION__, icon));
+    D(bug("[IconList]: %s(icon @ %p)\n", __PRETTY_FUNCTION__, icon));
 #endif
 
     /* Get basic width/height */    
     GetIconRectangleA(NULL, icon->ie_DiskObj, NULL, rect, NULL);
 #if defined(DEBUG_ILC_ICONPOSITIONING)
-D(bug("[IconList] %s: MinX %d, MinY %d      MaxX %d, MaxY %d\n", __PRETTY_FUNCTION__, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY));
+    D(bug("[IconList] %s: MinX %d, MinY %d      MaxX %d, MaxY %d\n", __PRETTY_FUNCTION__, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY));
 #endif
     icon->ie_IconWidth  = (rect->MaxX - rect->MinX) + 1;
     icon->ie_IconHeight = (rect->MaxY - rect->MinY) + 1;
@@ -441,11 +440,11 @@ D(bug("[IconList] %s: MinX %d, MinY %d      MaxX %d, MaxY %d\n", __PRETTY_FUNCTI
 ///IconList_GetIconLabelRectangle()
 static void IconList_GetIconLabelRectangle(Object *obj, struct IconList_DATA *data, struct IconEntry *icon, struct Rectangle *rect)
 {
-    ULONG      outline_offset = 0;
-    ULONG      textwidth = 0;
+    ULONG       outline_offset = 0;
+    ULONG       textwidth = 0;
 
 #if defined(DEBUG_ILC_ICONPOSITIONING) && defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     switch ( data->icld__Option_LabelTextMode )
@@ -528,12 +527,12 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 ///IconList_GetIconAreaRectangle()
 static void IconList_GetIconAreaRectangle(Object *obj, struct IconList_DATA *data, struct IconEntry *icon, struct Rectangle *rect)
 {
-    struct Rectangle labelrect;
-    ULONG iconlabel_Width;
-    ULONG iconlabel_Height;
+    struct Rectangle    labelrect;
+    ULONG               iconlabel_Width;
+    ULONG               iconlabel_Height;
 
 #if defined(DEBUG_ILC_ICONPOSITIONING) && defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     /* Get icon box width including text width */
@@ -575,18 +574,18 @@ Draw the icon at its position
 ///IconList__MUIM_IconList_DrawEntry()
 IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_DrawEntry *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 
-    BOOL outside = FALSE;
+    BOOL                        outside = FALSE;
 
-    struct Rectangle iconrect;
-    struct Rectangle objrect;
+    struct Rectangle            iconrect;
+    struct Rectangle            objrect;
 
-    LONG offsetx,offsety;
+    LONG                        offsetx,offsety;
 
-    ULONG objX, objY, objW, objH;
-    LONG iconX, iconY;
-    ULONG iconW, iconH;
+    ULONG                       objX, objY, objW, objH;
+    LONG                        iconX, iconY;
+    ULONG                       iconW, iconH;
 
     if (data->icld_BufferRastPort == data->icld_DisplayRastPort)
     {
@@ -601,7 +600,7 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
     objH = _mbottom(obj) - _mtop(obj) + 1;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList]: %s(message->icon = 0x%p)\n", __PRETTY_FUNCTION__, message->icon));
+    D(bug("[IconList]: %s(message->icon = 0x%p)\n", __PRETTY_FUNCTION__, message->icon));
 #endif
 
     if ((!(message->icon->ie_Flags & ICONENTRY_FLAG_VISIBLE)) ||
@@ -609,16 +608,16 @@ D(bug("[IconList]: %s(message->icon = 0x%p)\n", __PRETTY_FUNCTION__, message->ic
         (!(message->icon->ie_DiskObj)))
     {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
+        D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
 #endif
         return FALSE;
     }
-    
+
     /* Get the dimensions and affected area of message->icon */
     IconList_GetIconImageRectangle(obj, data, message->icon, &iconrect);
     iconW = iconrect.MaxX - iconrect.MinX + 1;
     iconH = iconrect.MaxY - iconrect.MinY + 1;
-    
+
     /* Add the relative position offset of the message->icon */
     offsetx = objX - data->icld_ViewX + message->icon->ie_IconX;
     /* Centre our image with our text */
@@ -645,7 +644,7 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
     if (!RectAndRect(&iconrect, &objrect))
     {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s: Icon '%s' image outside of visible area .. skipping\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label));
+        D(bug("[IconList] %s: Icon '%s' image outside of visible area .. skipping\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label));
 #endif
         return FALSE;
     }
@@ -662,18 +661,20 @@ D(bug("[IconList] %s: Icon '%s' image outside of visible area .. skipping\n", __
     {
         if (data->update_rect1)
         {
-            if ((outside == TRUE) && RectAndRect(&iconrect, data->update_rect2)) outside = FALSE;
+            if ((outside == TRUE) && RectAndRect(&iconrect, data->update_rect2))
+                outside = FALSE;
         }
         else
         {
-            if (!RectAndRect(&iconrect, data->update_rect2)) outside = TRUE;
+            if (!RectAndRect(&iconrect, data->update_rect2))
+                outside = TRUE;
         }
     }
 
     if (outside == TRUE)
     {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s: Icon '%s' image outside of update area .. skipping\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label));
+        D(bug("[IconList] %s: Icon '%s' image outside of update area .. skipping\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label));
 #endif
         return FALSE;
     }
@@ -691,26 +692,26 @@ D(bug("[IconList] %s: Icon '%s' image outside of update area .. skipping\n", __P
          ))
     {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s: DrawIconState('%s') .. %d, %d\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label, iconX, iconY));
+        D(bug("[IconList] %s: DrawIconState('%s') .. %d, %d\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label, iconX, iconY));
 #endif
         DrawIconStateA
-            (
-                data->icld_BufferRastPort, message->icon->ie_DiskObj, NULL,
-                iconX, 
-                iconY, 
-                (message->icon->ie_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
-                __iconList_DrawIconStateTags
-            );
+          (
+            data->icld_BufferRastPort, message->icon->ie_DiskObj, NULL,
+            iconX, 
+            iconY, 
+            (message->icon->ie_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
+            __iconList_DrawIconStateTags
+          );
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s: DrawIconState Done\n", __PRETTY_FUNCTION__));
+        D(bug("[IconList] %s: DrawIconState Done\n", __PRETTY_FUNCTION__));
 #endif
     }
+#if defined(DEBUG_ILC_ICONRENDERING)
     else
     {
-#if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s: DrawIconState('%s') NEEDS CLIPPED!\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label));
-#endif
+        D(bug("[IconList] %s: DrawIconState('%s') NEEDS CLIPPED!\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label));
     }
+#endif
 
     return TRUE;
 }
@@ -719,21 +720,21 @@ D(bug("[IconList] %s: DrawIconState('%s') NEEDS CLIPPED!\n", __PRETTY_FUNCTION__
 ///IconList__LabelFunc_SplitLabel()
 void IconList__LabelFunc_SplitLabel(Object *obj, struct IconList_DATA *data, struct IconEntry *icon)
 {
-    ULONG   	labelSplit_MaxLabelLineLength = data->icld__Option_LabelTextMaxLen;
+    ULONG       labelSplit_MaxLabelLineLength = data->icld__Option_LabelTextMaxLen;
     ULONG       labelSplit_LabelLength = strlen(icon->ie_IconListEntry.label);
     ULONG       txwidth;
 //    ULONG       labelSplit_FontY = data->icld_IconLabelFont->tf_YSize;
-     int        labelSplit_CharsDone,   labelSplit_CharsSplit;
-    ULONG 		labelSplit_CurSplitWidth;
+    int         labelSplit_CharsDone,   labelSplit_CharsSplit;
+    ULONG       labelSplit_CurSplitWidth;
 
-	if ((data->icld__Option_TrimVolumeNames) && 
-		((icon->ie_IconListEntry.type == ST_ROOT) && (icon->ie_IconListEntry.label[labelSplit_LabelLength - 1] == ':')))
-		labelSplit_LabelLength--;
+    if ((data->icld__Option_TrimVolumeNames) && 
+         ((icon->ie_IconListEntry.type == ST_ROOT) && (icon->ie_IconListEntry.label[labelSplit_LabelLength - 1] == ':')))
+        labelSplit_LabelLength--;
 
     if (labelSplit_MaxLabelLineLength >= labelSplit_LabelLength)
     {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList]: %s: Label'%s' doesnt need split (onyl %d chars)\n", __PRETTY_FUNCTION__, icon->ie_IconListEntry.label, labelSplit_LabelLength));
+        D(bug("[IconList]: %s: Label'%s' doesnt need split (onyl %d chars)\n", __PRETTY_FUNCTION__, icon->ie_IconListEntry.label, labelSplit_LabelLength));
 #endif
         return;
     }
@@ -741,22 +742,22 @@ D(bug("[IconList]: %s: Label'%s' doesnt need split (onyl %d chars)\n", __PRETTY_
     SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
     txwidth = TextLength(data->icld_BufferRastPort, icon->ie_IconListEntry.label, labelSplit_MaxLabelLineLength);
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList]: %s: txwidth = %d\n", __PRETTY_FUNCTION__, txwidth));
+    D(bug("[IconList]: %s: txwidth = %d\n", __PRETTY_FUNCTION__, txwidth));
 #endif
     icon->ie_TxtBuf_DisplayedLabel = AllocVecPooled(data->icld_Pool, 256);
     memset(icon->ie_TxtBuf_DisplayedLabel, 0, 256);
     icon->ie_SplitParts = 0;
-    
+
     labelSplit_CharsDone = 0;
     labelSplit_CharsSplit = 0;
 
     while (labelSplit_CharsDone < labelSplit_LabelLength)
     {
-        ULONG labelSplit_CurSplitLength = labelSplit_LabelLength - labelSplit_CharsDone;
-        IPTR  labelSplit_SplitStart = (IPTR)(icon->ie_IconListEntry.label + labelSplit_CharsDone);
-        int   tmp_checkoffs = 0;
-        IPTR  labelSplit_RemainingCharsAfterSplit;
-        IPTR  labelSplit_CurSplitDest;
+        ULONG   labelSplit_CurSplitLength = labelSplit_LabelLength - labelSplit_CharsDone;
+        IPTR    labelSplit_SplitStart = (IPTR)(icon->ie_IconListEntry.label + labelSplit_CharsDone);
+        int     tmp_checkoffs = 0;
+        IPTR    labelSplit_RemainingCharsAfterSplit;
+        IPTR    labelSplit_CurSplitDest;
 
         while (*(char *)(labelSplit_SplitStart) == ' ')
         {
@@ -769,11 +770,11 @@ D(bug("[IconList]: %s: txwidth = %d\n", __PRETTY_FUNCTION__, txwidth));
         while(TextLength(data->icld_BufferRastPort, (char *)labelSplit_SplitStart, labelSplit_CurSplitLength) < txwidth) labelSplit_CurSplitLength++;
         while(TextLength(data->icld_BufferRastPort, (char *)labelSplit_SplitStart, labelSplit_CurSplitLength) > txwidth) labelSplit_CurSplitLength--;
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList]: %s: labelSplit_CurSplitLength = %d\n", __PRETTY_FUNCTION__, labelSplit_CurSplitLength));
+        D(bug("[IconList]: %s: labelSplit_CurSplitLength = %d\n", __PRETTY_FUNCTION__, labelSplit_CurSplitLength));
 #endif
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-            D(bug("[IconList]: %s: Attempting to find neat split ", __PRETTY_FUNCTION__));
+        D(bug("[IconList]: %s: Attempting to find neat split ", __PRETTY_FUNCTION__));
 #endif
         while(tmp_checkoffs < (labelSplit_CurSplitLength - ILC_ICONLABEL_SHORTEST))
         {
@@ -785,14 +786,14 @@ D(bug("[IconList]: %s: labelSplit_CurSplitLength = %d\n", __PRETTY_FUNCTION__, l
             if ((labelSplit_CurSplitLength - tmp_checkoffs) > ILC_ICONLABEL_SHORTEST)
             {
 #if defined(DEBUG_ILC_ICONRENDERING)
-            D(bug("<"));
+                D(bug("<"));
 #endif
                 if ((*(char *)(labelSplit_SplitStart + labelSplit_CurSplitLength - tmp_checkoffs) == ' ') ||
                     (*(char *)(labelSplit_SplitStart + labelSplit_CurSplitLength - tmp_checkoffs) == '.') ||
                     (*(char *)(labelSplit_SplitStart + labelSplit_CurSplitLength - tmp_checkoffs) == '-'))
                 {
 #if defined(DEBUG_ILC_ICONRENDERING)
-            D(bug("!"));
+                    D(bug("!"));
 #endif
                     labelSplit_CurSplitLength = labelSplit_CurSplitLength - tmp_checkoffs;
                     labelSplit_RemainingCharsAfterSplit = labelSplit_RemainingCharsAfterSplit - tmp_checkoffs;
@@ -804,25 +805,25 @@ D(bug("[IconList]: %s: labelSplit_CurSplitLength = %d\n", __PRETTY_FUNCTION__, l
             if ((labelSplit_RemainingCharsAfterSplit - tmp_checkoffs) < 0)
             {
 #if defined(DEBUG_ILC_ICONRENDERING)
-            D(bug("="));
+                D(bug("="));
 #endif
-                    labelSplit_CurSplitLength = labelSplit_CurSplitLength + tmp_checkoffs;
-                    labelSplit_RemainingCharsAfterSplit = labelSplit_RemainingCharsAfterSplit + tmp_checkoffs;
-                    tmp_checkoffs = 0;
-                    break;
+                labelSplit_CurSplitLength = labelSplit_CurSplitLength + tmp_checkoffs;
+                labelSplit_RemainingCharsAfterSplit = labelSplit_RemainingCharsAfterSplit + tmp_checkoffs;
+                tmp_checkoffs = 0;
+                break;
             }
 
             if ((labelSplit_RemainingCharsAfterSplit - tmp_checkoffs) >= ILC_ICONLABEL_SHORTEST)
             {
 #if defined(DEBUG_ILC_ICONRENDERING)
-            D(bug(">"));
+                D(bug(">"));
 #endif
                 if ((*(char *)(labelSplit_SplitStart + labelSplit_CurSplitLength + tmp_checkoffs) == ' ') ||
                     (*(char *)(labelSplit_SplitStart + labelSplit_CurSplitLength + tmp_checkoffs) == '.') ||
                     (*(char *)(labelSplit_SplitStart + labelSplit_CurSplitLength + tmp_checkoffs) == '-'))
                 {
 #if defined(DEBUG_ILC_ICONRENDERING)
-            D(bug("!"));
+                    D(bug("!"));
 #endif
                     labelSplit_CurSplitLength = labelSplit_CurSplitLength + tmp_checkoffs;
                     labelSplit_RemainingCharsAfterSplit = labelSplit_RemainingCharsAfterSplit + tmp_checkoffs;
@@ -849,16 +850,16 @@ D(bug("[IconList]: %s: labelSplit_CurSplitLength = %d\n", __PRETTY_FUNCTION__, l
         if ((labelSplit_CharsDone + labelSplit_CurSplitLength) > labelSplit_LabelLength) labelSplit_CurSplitLength = labelSplit_LabelLength - labelSplit_CharsDone;
 
         labelSplit_CurSplitDest = (IPTR)(icon->ie_TxtBuf_DisplayedLabel + labelSplit_CharsSplit + icon->ie_SplitParts);
-        
+
         strncpy((char *)labelSplit_CurSplitDest, (char *)labelSplit_SplitStart, labelSplit_CurSplitLength);
-        
+
         labelSplit_CurSplitWidth = TextLength(data->icld_BufferRastPort, (char *)labelSplit_CurSplitDest, labelSplit_CurSplitLength);
-        
+
         icon->ie_SplitParts = icon->ie_SplitParts + 1;
-        
+
         labelSplit_CharsDone = labelSplit_CharsDone + labelSplit_CurSplitLength;
         labelSplit_CharsSplit = labelSplit_CharsSplit + labelSplit_CurSplitLength;
-        
+
         if (labelSplit_CurSplitWidth > icon->ie_TxtBuf_DisplayedLabelWidth) icon->ie_TxtBuf_DisplayedLabelWidth = labelSplit_CurSplitWidth;
     }
     if ((icon->ie_SplitParts <= 1) && icon->ie_TxtBuf_DisplayedLabel)
@@ -875,7 +876,7 @@ D(bug("[IconList]: %s: labelSplit_CurSplitLength = %d\n", __PRETTY_FUNCTION__, l
 IPTR IconList__LabelFunc_CreateLabel(Object *obj, struct IconList_DATA *data, struct IconEntry *icon)
 {
 #if defined(DEBUG_ILC_ICONRENDERING) && defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s('%s')\n", __PRETTY_FUNCTION__, icon->ie_IconListEntry.label));
+    D(bug("[IconList]: %s('%s')\n", __PRETTY_FUNCTION__, icon->ie_IconListEntry.label));
 #endif
     if (icon->ie_TxtBuf_DisplayedLabel)
     {
@@ -883,27 +884,27 @@ D(bug("[IconList]: %s('%s')\n", __PRETTY_FUNCTION__, icon->ie_IconListEntry.labe
         icon->ie_TxtBuf_DisplayedLabel = NULL;
         icon->ie_SplitParts = 0;
     }
-    
+
     if (data->icld__Option_LabelTextMultiLine > 1)
     {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList]: %s: Attempting to split label ..\n", __PRETTY_FUNCTION__));
+        D(bug("[IconList]: %s: Attempting to split label ..\n", __PRETTY_FUNCTION__));
 #endif
         IconList__LabelFunc_SplitLabel(obj, data, icon);
     }
-    
+
     if (icon->ie_TxtBuf_DisplayedLabel == NULL)
     { 
         ULONG ie_LabelLength = strlen(icon->ie_IconListEntry.label);
         icon->ie_SplitParts = 1;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList]: %s: Building unsplit label (len = %d) ..\n", __PRETTY_FUNCTION__, ie_LabelLength));
+        D(bug("[IconList]: %s: Building unsplit label (len = %d) ..\n", __PRETTY_FUNCTION__, ie_LabelLength));
 #endif
 
-		if ((data->icld__Option_TrimVolumeNames) && 
-			((icon->ie_IconListEntry.type == ST_ROOT) && (icon->ie_IconListEntry.label[ie_LabelLength - 1] == ':')))
-			ie_LabelLength--;
+        if ((data->icld__Option_TrimVolumeNames) && 
+             ((icon->ie_IconListEntry.type == ST_ROOT) && (icon->ie_IconListEntry.label[ie_LabelLength - 1] == ':')))
+            ie_LabelLength--;
 
         if(ie_LabelLength > data->icld__Option_LabelTextMaxLen)
         {
@@ -936,21 +937,20 @@ D(bug("[IconList]: %s: Building unsplit label (len = %d) ..\n", __PRETTY_FUNCTIO
 
 ///IconList__HookFunc_UpdateLabelsFunc()
 AROS_UFH3(
-  void, IconList__HookFunc_UpdateLabelsFunc,
-  AROS_UFHA(struct Hook *,    hook,   A0),
-  AROS_UFHA(APTR *,           obj,    A2),
-  AROS_UFHA(APTR,             param,  A1)
+    void, IconList__HookFunc_UpdateLabelsFunc,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(APTR *,           obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
 )
 {
-  AROS_USERFUNC_INIT
-  
-  /* Get our private data */
-  Class *CLASS = *( Class **)param;
+    AROS_USERFUNC_INIT
 
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
+    /* Get our private data */
+    Class                       *CLASS = *( Class **)param;
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 
 #if defined(DEBUG_ILC_LASSO) && defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     if (((data->icld__Option_LabelTextMaxLen != data->icld__Option_LastLabelTextMaxLen) &&
@@ -971,28 +971,28 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     data->icld__Option_LastLabelTextMaxLen = data->icld__Option_LabelTextMaxLen;
     data->icld__Option_LastLabelTextMultiLine = data->icld__Option_LabelTextMultiLine;
 
-  AROS_USERFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 ///
 
 ///IconList__MUIM_IconList_DrawEntryLabel()
 IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, struct MUIP_IconList_DrawEntry *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 
-    STRPTR          buf = NULL;
-    BOOL outside = FALSE;
+    STRPTR                      buf = NULL;
+    BOOL                        outside = FALSE;
 
-    struct Rectangle  iconlabelrect;
-    struct Rectangle  objrect;
+    struct Rectangle            iconlabelrect;
+    struct Rectangle            objrect;
 
-    ULONG               txtbox_width = 0;
-    LONG        tx,ty,offsetx,offsety;
-    LONG        txwidth; // txheight;
+    ULONG                       txtbox_width = 0;
+    LONG                        tx,ty,offsetx,offsety;
+    LONG                        txwidth; // txheight;
 
-    ULONG objX, objY, objW, objH;
-    LONG labelX, labelY;
-    ULONG labelW, labelH;
+    ULONG                       objX, objY, objW, objH;
+    LONG                        labelX, labelY;
+    ULONG                       labelW, labelH;
 
     if (data->icld_BufferRastPort == data->icld_DisplayRastPort)
     {
@@ -1010,7 +1010,7 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
     ULONG curlabel_TotalLines, curlabel_CurrentLine, offset_y;
 
 #if defined(DEBUG_ILC_ICONRENDERING) && defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s(message->icon = 0x%p), '%s'\n", __PRETTY_FUNCTION__, message->icon, message->icon->ie_IconListEntry.label));
+    D(bug("[IconList]: %s(message->icon = 0x%p), '%s'\n", __PRETTY_FUNCTION__, message->icon, message->icon->ie_IconListEntry.label));
 #endif
 
     if ((!(message->icon->ie_Flags & ICONENTRY_FLAG_VISIBLE)) ||
@@ -1018,7 +1018,7 @@ D(bug("[IconList]: %s(message->icon = 0x%p), '%s'\n", __PRETTY_FUNCTION__, messa
         (!(message->icon->ie_DiskObj)))
     {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
+        D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
 #endif
         return FALSE;
     }
@@ -1038,7 +1038,7 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
     if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
         (message->icon->ie_AreaWidth < data->icld_IconAreaLargestWidth))
         offsetx += ((data->icld_IconAreaLargestWidth - message->icon->ie_AreaWidth)/2);
-    
+
     iconlabelrect.MinX += offsetx;
     iconlabelrect.MaxX += offsetx;
 
@@ -1063,7 +1063,7 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
     if (!RectAndRect(&iconlabelrect, &objrect))
     {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s: Icon '%s' label outside of visible area .. skipping\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label));
+        (bug("[IconList] %s: Icon '%s' label outside of visible area .. skipping\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label));
 #endif
         return FALSE;
     }
@@ -1073,31 +1073,35 @@ D(bug("[IconList] %s: Icon '%s' label outside of visible area .. skipping\n", __
        in any of this rectangles need to be drawn      */
     if (data->update_rect1)
     {
-        if (!RectAndRect(&iconlabelrect, data->update_rect1)) outside = TRUE;
+        if (!RectAndRect(&iconlabelrect, data->update_rect1))
+            outside = TRUE;
     }
 
     if (data->update_rect2)
     {
         if (data->update_rect1)
         {
-            if ((outside == TRUE) && RectAndRect(&iconlabelrect, data->update_rect2)) outside = FALSE;
+            if ((outside == TRUE) && RectAndRect(&iconlabelrect, data->update_rect2))
+                outside = FALSE;
         }
         else
         {
-            if (!RectAndRect(&iconlabelrect, data->update_rect2)) outside = TRUE;
+            if (!RectAndRect(&iconlabelrect, data->update_rect2))
+                outside = TRUE;
         }
     }
 
     if (outside == TRUE)
     {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s: Icon '%s' label outside of update area .. skipping\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label));
+        D(bug("[IconList] %s: Icon '%s' label outside of update area .. skipping\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label));
 #endif
         return FALSE;
     }
-    
-    if (message->drawmode == ICONENTRY_DRAWMODE_NONE) return TRUE;
-    
+
+    if (message->drawmode == ICONENTRY_DRAWMODE_NONE)
+        return TRUE;
+
     SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[MPEN_TEXT], 0, JAM1);
 
     iconlabelrect.MinX = (iconlabelrect.MinX - objX) + data->icld_DrawOffsetX;
@@ -1117,11 +1121,11 @@ D(bug("[IconList] %s: Icon '%s' label outside of update area .. skipping\n", __P
          ))
     {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s: Drawing Label '%s' .. %d, %d\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label, labelX, labelY));
+        D(bug("[IconList] %s: Drawing Label '%s' .. %d, %d\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label, labelX, labelY));
 #endif
         if (message->icon->ie_IconListEntry.label && message->icon->ie_TxtBuf_DisplayedLabel)
         {
-      char *curlabel_StrPtr;
+            char *curlabel_StrPtr;
 
             if ((message->icon->ie_Flags & ICONENTRY_FLAG_FOCUS) && ((BOOL)XGET(_win(obj), MUIA_Window_Activate)))
             {
@@ -1151,7 +1155,7 @@ D(bug("[IconList] %s: Drawing Label '%s' .. %d, %d\n", __PRETTY_FUNCTION__, mess
             SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
 
             curlabel_TotalLines = message->icon->ie_SplitParts;
-                  curlabel_CurrentLine = 0;
+            curlabel_CurrentLine = 0;
 
             if (curlabel_TotalLines == 0)
                 curlabel_TotalLines = 1;
@@ -1165,15 +1169,15 @@ D(bug("[IconList] %s: Drawing Label '%s' .. %d, %d\n", __PRETTY_FUNCTION__, mess
                 curlabel_TotalLines = 1;
 
             curlabel_StrPtr = message->icon->ie_TxtBuf_DisplayedLabel;
-            
+
             ty = labelY - 1;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->icld_IconLabelFont->tf_YSize, data->icld_IconLabelFont->tf_Baseline));
+            D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->icld_IconLabelFont->tf_YSize, data->icld_IconLabelFont->tf_Baseline));
 #endif
             for (curlabel_CurrentLine = 0; curlabel_CurrentLine < curlabel_TotalLines; curlabel_CurrentLine++)
             {
-          ULONG ie_LabelLength;
+                ULONG ie_LabelLength;
 
                 if (curlabel_CurrentLine > 0) curlabel_StrPtr = curlabel_StrPtr + strlen(curlabel_StrPtr) + 1;
                 if ((curlabel_CurrentLine >= (curlabel_TotalLines -1)) && (curlabel_TotalLines < message->icon->ie_SplitParts))
@@ -1187,10 +1191,11 @@ D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->ic
                         strncpy(curlabel_StrPtr, tmpLine, tmpLen - 3);
                         strcat(curlabel_StrPtr , " ..");
                     }
-                    else return FALSE;
+                    else
+                        return FALSE;
                     
                 }
-                
+
                 ie_LabelLength = strlen(curlabel_StrPtr);
                 offset_y = 0;
 
@@ -1214,10 +1219,9 @@ D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->ic
                         Move(data->icld_BufferRastPort, tx, ty); 
                         Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
                         break;
-                        
+
                     default:
                         // Outline mode:
-                        
                         SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
 
                         SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
@@ -1229,11 +1233,11 @@ D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->ic
                         Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
                         Move(data->icld_BufferRastPort, tx, ty - 1);
                         Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
-                        
+
                         SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
                         Move(data->icld_BufferRastPort, tx , ty ); 
                         Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
-                        
+
                         SetSoftStyle(data->icld_BufferRastPort, FS_NORMAL, AskSoftStyle(data->icld_BufferRastPort));
                         offset_y = 2;
                         break;
@@ -1290,12 +1294,12 @@ D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->ic
                             SetAPen(data->icld_BufferRastPort, data->icld_InfoPen);
                             Move(data->icld_BufferRastPort, tx, ty); Text(data->icld_BufferRastPort, buf, ie_LabelLength);
                             break;
-                            
+
                         default:
                             // Outline mode..
                             SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
                             SetAPen(data->icld_BufferRastPort, data->icld_InfoShadowPen);
-                            
+
                             Move(data->icld_BufferRastPort, tx + 1, ty ); 
                             Text(data->icld_BufferRastPort, buf, ie_LabelLength);
                             Move(data->icld_BufferRastPort, tx - 1, ty );  
@@ -1304,12 +1308,12 @@ D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->ic
                             Text(data->icld_BufferRastPort, buf, ie_LabelLength);
                             Move(data->icld_BufferRastPort, tx, ty + 1 );  
                             Text(data->icld_BufferRastPort, buf, ie_LabelLength);
-                            
+
                             SetAPen(data->icld_BufferRastPort, data->icld_InfoPen);
-                            
+
                             Move(data->icld_BufferRastPort, tx, ty );
                             Text(data->icld_BufferRastPort, buf, ie_LabelLength);
-                            
+
                             SetSoftStyle(data->icld_BufferRastPort, FS_NORMAL, AskSoftStyle(data->icld_BufferRastPort));
                             break;
                     }
@@ -1317,7 +1321,7 @@ D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->ic
             }
         }
     }
-    
+
     return TRUE;
 }
 ///
@@ -1327,19 +1331,16 @@ D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->ic
 ///IconList__MUIM_IconList_RethinkDimensions()
 IPTR IconList__MUIM_IconList_RethinkDimensions(struct IClass *CLASS, Object *obj, struct MUIP_IconList_RethinkDimensions *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 
-    struct IconEntry  *icon = NULL;
-    LONG              maxx = 0,
-                      maxy = 0;
-    struct Rectangle icon_rect;
+    struct IconEntry            *icon = NULL;
+    LONG                        maxx = 0,
+                                maxy = 0;
+    struct Rectangle            icon_rect;
 
 #if defined(DEBUG_ILC_ICONPOSITIONING) && defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
-
-#warning "TODO: Handle MADF_SETUP"
-//  if (!(_flags(obj) & MADF_SETUP)) return FALSE;
 
     if (message->singleicon != NULL)
     {
@@ -1347,10 +1348,11 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         maxx = data->icld_AreaWidth - 1,
         maxy = data->icld_AreaHeight - 1;
 #if defined(DEBUG_ILC_ICONPOSITIONING)
-D(bug("[IconList] %s: SingleIcon - maxx = %d, maxy = %d\n", __PRETTY_FUNCTION__, maxx, maxy));
+        D(bug("[IconList] %s: SingleIcon - maxx = %d, maxy = %d\n", __PRETTY_FUNCTION__, maxx, maxy));
 #endif
     }
-    else icon = (struct IconEntry *)GetHead(&data->icld_IconList);
+    else
+        icon = (struct IconEntry *)GetHead(&data->icld_IconList);
 
     while (icon != NULL)
     {
@@ -1372,7 +1374,8 @@ D(bug("[IconList] %s: SingleIcon - maxx = %d, maxy = %d\n", __PRETTY_FUNCTION__,
             if (icon_rect.MaxY > maxy) maxy = icon_rect.MaxY;
         }
 
-        if (message->singleicon) break;
+        if (message->singleicon)
+            break;
 
         icon = (struct IconEntry *)GetSucc(&icon->ie_IconNode);
     }
@@ -1391,110 +1394,30 @@ D(bug("[IconList] %s: SingleIcon - maxx = %d, maxy = %d\n", __PRETTY_FUNCTION__,
 
     return TRUE;
 }
-///
-/**************************************************************************
-Checks weather we can place an icon with the given dimesions at the
-suggested positions.
-
-atx and aty are absolute positions
-**************************************************************************/
-/*
-///IconList_CouldPlaceIcon()
-static int IconList_CouldPlaceIcon(Object *obj, struct IconList_DATA *data, struct IconEntry *toplace, int atx, int aty)
-{
-    struct IconEntry *icon;
-    struct Rectangle toplace_rect;
-
-    IconList_GetIconAreaRectangle(obj, toplace, &toplace_rect);
-    toplace_rect.MinX += atx;
-    toplace_rect.MaxX += atx;
-    toplace_rect.MinY += aty;
-    toplace_rect.MaxY += aty;
-
-    icon = GetHead(&data->icld_IconList);
-    while (icon)
-    {
-        if (icon->ie_DiskObj && icon->ie_IconX != NO_ICON_POSITION && icon->ie_IconY != NO_ICON_POSITION)
-        {
-            struct Rectangle icon_rect;
-            IconList_GetIconAreaRectangle(obj, icon, &icon_rect);
-            icon_rect.MinX += icon->ie_IconX;
-            icon_rect.MaxX += icon->ie_IconX;
-            icon_rect.MinY += icon->ie_IconY;
-            icon_rect.MaxY += icon->ie_IconY;
-
-            if (RectAndRect(&icon_rect, &toplace_rect))
-            return FALSE; *//* There is already an icon on this place *//*
-        }
-        icon = GetSucc(icon);
-    }
-    return 1;
-}
-///
-*/
-
-/**************************************************************************
-Place the icon at atx and aty.
-
-atx and aty are absolute positions
-**************************************************************************/
-/*
-///IconList_PlaceIcon
-static void IconList_PlaceIcon(Object *obj, struct IconList_DATA *data, struct IconEntry *toplace, int atx, int aty)
-{
-#if 0
-    struct Rectangle toplace_rect;
-
-    IconList_GetIconAreaRectangle(obj, toplace, &toplace_rect);
-    toplace_rect.MinX += atx + data->icld_ViewX;
-    toplace_rect.MaxX += atx + data->icld_ViewX;
-    toplace_rect.MinY += aty + data->icld_ViewY;
-    toplace_rect.MaxY += aty + data->icld_ViewY;
-#endif
-    toplace->x = atx;
-    toplace->y = aty;
-#if 0
-    *//* update our view *//*
-    if (toplace_rect.MaxX - data->icld_ViewX > data->icld_AreaWidth)
-    {
-        data->icld_AreaWidth = toplace_rect.MaxX - data->icld_ViewX;
-        SET(obj, MUIA_IconList_Width, data->icld_AreaWidth);
-    }
-
-    if (toplace_rect.MaxY - data->icld_ViewY > data->icld_AreaHeight)
-    {
-        data->icld_AreaHeight = toplace_rect.MaxY - data->icld_ViewY;
-        SET(obj, MUIA_IconList_Height, data->icld_AreaHeight);
-    }
-#endif
-}
-///
-*/
 
 ///IconList__MUIM_IconList_PositionIcons()
 /**************************************************************************
 MUIM_PositionIcons - Place icons with NO_ICON_POSITION coords somewhere
 **************************************************************************/
-
 IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, struct MUIP_IconList_PositionIcons *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
-    struct IconEntry    *icon = NULL, *pass_first = NULL;
-    
-    int left = data->icld__Option_IconHorizontalSpacing;
-    int top = data->icld__Option_IconVerticalSpacing;
-    int cur_x = left;
-    int cur_y = top;
-    int gridx = 0;
-    int gridy = 0;
-    int maxw = 0;        // Widest & Talest icon in a column or row.
-    int maxh = 0;
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    struct IconEntry            *icon = NULL, *pass_first = NULL;
 
-    BOOL  next;
-    struct Rectangle iconrect;
+    int                         left = data->icld__Option_IconHorizontalSpacing;
+    int                         top = data->icld__Option_IconVerticalSpacing;
+    int                         cur_x = left;
+    int                         cur_y = top;
+    int                         gridx = 0;
+    int                         gridy = 0;
+    int                         maxw = 0;        // Widest & Talest icon in a column or row.
+    int                         maxh = 0;
+
+    BOOL                        next;
+    struct Rectangle            iconrect;
 
 #if defined(DEBUG_ILC_ICONPOSITIONING) && defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     // Now go to the actual positioning
@@ -1562,7 +1485,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
                 if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
                 {
                     cur_y += gridy;
-        
+
                     if ((cur_y >= data->icld_ViewHeight) ||
                         ((data->icld__Option_IconListMode == ICON_LISTMODE_ROUGH) && ((cur_y + icon->ie_AreaHeight - data->icld__Option_IconBorderOverlap) >= data->icld_ViewHeight)) ||
                         ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) && ((cur_y + data->icld_IconAreaLargestHeight - data->icld__Option_IconBorderOverlap) >= data->icld_ViewHeight)))
@@ -1576,7 +1499,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
                 else
                 {
                     cur_x += gridx;
-            
+
                     if ((cur_x >= data->icld_ViewWidth) ||
                         ((data->icld__Option_IconListMode == ICON_LISTMODE_ROUGH) && ((cur_x + icon->ie_AreaWidth - data->icld__Option_IconBorderOverlap) >= data->icld_ViewWidth)) ||
                         ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) && ((cur_x + data->icld_IconAreaLargestWidth - data->icld__Option_IconBorderOverlap) >= data->icld_ViewWidth)))
@@ -1599,68 +1522,18 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 }
 ///
 
-/*
-///IconList_FixNoPositionIcons
-static void IconList_FixNoPositionIcons(Object *obj, struct IconList_DATA *data)
-{
-struct IconEntry *icon;
-int cur_x = data->icld_ViewX + 36;
-int cur_y = data->icld_ViewY + 4;
-
-icon = GetHead(&data->icld_IconList);
-while (icon)
-{
-if (icon->ie_DiskObj && icon->ie_IconX == NO_ICON_POSITION && icon->ie_IconY == NO_ICON_POSITION)
-{
-int loops = 0;
-int cur_x_save = cur_x;
-int cur_y_save = cur_y;
-struct Rectangle icon_rect;
-
-IconList_GetIconAreaRectangle(obj, icon, &icon_rect);
-icon_rect.MinX += cur_x - icon->ie_IconWidth/2 + data->icld_ViewX;
-if (icon_rect.MinX < 0)
-cur_x -= icon_rect.MinX;
-
-while (!IconList_CouldPlaceIcon(obj, data, icon, cur_x - icon->ie_IconWidth/2, cur_y) && loops < 5000)
-{
-cur_y++;
-
-if (cur_y + icon->ie_IconHeight > data->icld_ViewX + data->icld_ViewHeight) *//* on both sides -1 *//*
-{
-    cur_x += 72;
-    cur_y = data->icld_ViewY + 4;
-}
-}
-
-IconList_PlaceIcon(obj, data, icon, cur_x - icon->ie_IconWidth/2, cur_y);
-
-if (icon_rect.MinX < 0)
-{
-    cur_x = cur_x_save;
-    cur_y = cur_y_save;
-}
-}
-icon = GetSucc(icon);
-}
-
-DoMethod(obj, MUIM_IconList_RethinkDimensions, NULL);
-}
-///
-*/
-
 ///OM_NEW()
 /**************************************************************************
 OM_NEW
 **************************************************************************/
 IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
 {
-    struct IconList_DATA  *data = NULL;
-    struct TextFont      *icl_WindowFont = NULL;
-//    struct RastPort      *icl_RastPort = NULL;
+    struct IconList_DATA        *data = NULL;
+    struct TextFont             *icl_WindowFont = NULL;
+//    struct RastPort             *icl_RastPort = NULL;
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     icl_WindowFont = (struct TextFont *) GetTagData(MUIA_Font, (IPTR) NULL, message->ops_AttrList);
@@ -1683,7 +1556,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     }
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList] %s: SELF = 0x%p, muiRenderInfo = 0x%p\n", __PRETTY_FUNCTION__, obj, muiRenderInfo(obj)));
+    D(bug("[IconList] %s: SELF = 0x%p, muiRenderInfo = 0x%p\n", __PRETTY_FUNCTION__, obj, muiRenderInfo(obj)));
 #endif
     NewList((struct List*)&data->icld_IconList);
     NewList((struct List*)&data->icld_SelectionList);
@@ -1705,7 +1578,7 @@ D(bug("[IconList] %s: SELF = 0x%p, muiRenderInfo = 0x%p\n", __PRETTY_FUNCTION__,
     data->icld__Option_LastLabelTextMaxLen = data->icld__Option_LabelTextMaxLen;
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList] %s: MaxLineLen : %ld\n", __PRETTY_FUNCTION__, data->icld__Option_LabelTextMaxLen));
+    D(bug("[IconList] %s: MaxLineLen : %ld\n", __PRETTY_FUNCTION__, data->icld__Option_LabelTextMaxLen));
 #endif
     data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     data->ehn.ehn_Priority = 0;
@@ -1717,23 +1590,23 @@ D(bug("[IconList] %s: MaxLineLen : %ld\n", __PRETTY_FUNCTION__, data->icld__Opti
     data->icld_DisplayFlags = ICONLIST_DISP_SHOWINFO;
 
     __iconlist_UpdateLabels_hook.h_Entry = (HOOKFUNC)IconList__HookFunc_UpdateLabelsFunc;
-    
+
     DoMethod
-    (
+      (
         obj, MUIM_Notify, MUIA_IconList_LabelText_MaxLineLen, MUIV_EveryTime,
         (IPTR)obj, 3, 
         MUIM_CallHook, &__iconlist_UpdateLabels_hook, (IPTR)CLASS
-    );
+      );
 
     DoMethod
-    (
+      (
         obj, MUIM_Notify, MUIA_IconList_LabelText_MultiLine, MUIV_EveryTime,
         (IPTR)obj, 3, 
         MUIM_CallHook, &__iconlist_UpdateLabels_hook, (IPTR)CLASS
-    );
+      );
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList] obj = %ld\n", obj));
+    D(bug("[IconList] obj = %ld\n", obj));
 #endif
     return (IPTR)obj;
 }
@@ -1745,20 +1618,21 @@ OM_DISPOSE
 **************************************************************************/
 IPTR IconList__OM_DISPOSE(struct IClass *CLASS, Object *obj, Msg message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
-    struct IconEntry    *node = NULL;
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    struct IconEntry            *node = NULL;
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
-    
+
 #if defined(__AROS__)
     ForeachNode(&data->icld_IconList, node)
 #else
     Foreach_Node(&data->icld_IconList, node);
 #endif
     {
-        if (node->ie_DiskObj) FreeDiskObject(node->ie_DiskObj);
+        if (node->ie_DiskObj)
+            FreeDiskObject(node->ie_DiskObj);
     }
 
     if (data->icld_Pool) DeletePool(data->icld_Pool);
@@ -1774,17 +1648,17 @@ OM_SET
 **************************************************************************/
 IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
-    struct TagItem    *tag = NULL,
-                        *tags = NULL;
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    struct TagItem              *tag = NULL,
+                                *tags = NULL;
 
-    WORD             oldleft = data->icld_ViewX,
-                         oldtop = data->icld_ViewY;
-                         //oldwidth = data->icld_ViewWidth,
-                         //oldheight = data->icld_ViewHeight;
+    WORD                        oldleft = data->icld_ViewX,
+                                oldtop = data->icld_ViewY;
+                                //oldwidth = data->icld_ViewWidth,
+                                //oldheight = data->icld_ViewHeight;
 
 #if defined(DEBUG_ILC_FUNCS) && defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     /* parse initial taglist */
@@ -1794,15 +1668,15 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         {
             case MUIA_Virtgroup_Left:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_Virtgroup_Left %ld\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_Virtgroup_Left %ld\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 if (data->icld_ViewX != tag->ti_Data)
                     data->icld_ViewX = tag->ti_Data;
                 break;
-    
+
             case MUIA_Virtgroup_Top:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_Virtgroup_Top %ld\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_Virtgroup_Top %ld\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 if (data->icld_ViewY != tag->ti_Data)
                     data->icld_ViewY = tag->ti_Data;
@@ -1810,7 +1684,7 @@ D(bug("[IconList] %s: MUIA_Virtgroup_Top %ld\n", __PRETTY_FUNCTION__, tag->ti_Da
 
             case MUIA_IconList_Rastport:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconList_Rastport 0x%p\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_IconList_Rastport 0x%p\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld_DisplayRastPort = (struct RastPort*)tag->ti_Data;
                 data->icld_DrawOffsetX = _mleft(obj);
@@ -1824,29 +1698,29 @@ D(bug("[IconList] %s: MUIA_IconList_Rastport 0x%p\n", __PRETTY_FUNCTION__, tag->
 
             case MUIA_IconList_BufferRastport:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconList_BufferRastport 0x%p\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_IconList_BufferRastport 0x%p\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld_BufferRastPort = (struct RastPort*)tag->ti_Data;
                 break;
 
             case MUIA_Font:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_Font 0x%p\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_Font 0x%p\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld_IconLabelFont = (struct TextFont*)tag->ti_Data;
                 break;
 
             case MUIA_IconList_LabelInfoText_Font:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconList_LabelInfoText_Font 0x%p\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_IconList_LabelInfoText_Font 0x%p\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld_IconInfoFont = (struct TextFont*)tag->ti_Data;
                 break;
-            
+
             case MUIA_IconList_DisplayFlags:
                 {
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconList_DisplayFlags %08x\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                    D(bug("[IconList] %s: MUIA_IconList_DisplayFlags %08x\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                     data->icld_DisplayFlags = (ULONG)tag->ti_Data;
 
@@ -1856,7 +1730,7 @@ D(bug("[IconList] %s: MUIA_IconList_DisplayFlags %08x\n", __PRETTY_FUNCTION__, t
                         ULONG tmp_RastDepth;
 
 #if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s: MUIA_IconList_DisplayFlags & ICONLIST_DISP_BUFFERED\n", __PRETTY_FUNCTION__));
+                        D(bug("[IconList] %s: MUIA_IconList_DisplayFlags & ICONLIST_DISP_BUFFERED\n", __PRETTY_FUNCTION__));
 #endif
                         if ((data->icld_BufferRastPort) && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
                         {
@@ -1872,20 +1746,20 @@ D(bug("[IconList] %s: MUIA_IconList_DisplayFlags & ICONLIST_DISP_BUFFERED\n", __
                                             BMF_CLEAR,
                                             data->icld_DisplayRastPort->BitMap))!=NULL)
                         {
-                          if ((data->icld_BufferRastPort = CreateRastPort())!=NULL)
-                          {
-                            data->icld_BufferRastPort->BitMap = tmp_BuffBitMap;
-                            SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
-                            data->icld_DrawOffsetX = 0;
-                            data->icld_DrawOffsetY = 0;
-                          }
-                          else
-                          {
-                            FreeBitMap(tmp_BuffBitMap);
-                            data->icld_BufferRastPort = data->icld_DisplayRastPort;
-                            data->icld_DrawOffsetX = _mleft(obj);
-                            data->icld_DrawOffsetY = _mtop(obj);
-                          }
+                            if ((data->icld_BufferRastPort = CreateRastPort())!=NULL)
+                            {
+                                data->icld_BufferRastPort->BitMap = tmp_BuffBitMap;
+                                SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
+                                data->icld_DrawOffsetX = 0;
+                                data->icld_DrawOffsetY = 0;
+                            }
+                            else
+                            {
+                                FreeBitMap(tmp_BuffBitMap);
+                                data->icld_BufferRastPort = data->icld_DisplayRastPort;
+                                data->icld_DrawOffsetX = _mleft(obj);
+                                data->icld_DrawOffsetY = _mtop(obj);
+                            }
                         }
                     }
                     else
@@ -1906,28 +1780,28 @@ D(bug("[IconList] %s: MUIA_IconList_DisplayFlags & ICONLIST_DISP_BUFFERED\n", __
 
             case MUIA_IconList_SortFlags:
 #if defined(DEBUG_ILC_ATTRIBS)
-bug("[IconList] %s: MUIA_IconList_SortFlags %08x\n", __PRETTY_FUNCTION__, tag->ti_Data);
+                D(bug("[IconList] %s: MUIA_IconList_SortFlags %08x\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld_SortFlags = (ULONG)tag->ti_Data;
                 break;
-                
+
             case MUIA_IconList_IconListMode:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconList_IconListMode %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_IconList_IconListMode %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld__Option_IconListMode = (UBYTE)tag->ti_Data;
                 break;
-            
+
             case MUIA_IconList_LabelText_Mode:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconList_LabelText_Mode %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_IconList_LabelText_Mode %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld__Option_LabelTextMode = (UBYTE)tag->ti_Data;
                 break;
-            
+
             case MUIA_IconList_LabelText_MaxLineLen:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconList_LabelText_MaxLineLen %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_IconList_LabelText_MaxLineLen %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 if (tag->ti_Data >= ILC_ICONLABEL_SHORTEST)
                 {
@@ -1938,10 +1812,10 @@ D(bug("[IconList] %s: MUIA_IconList_LabelText_MaxLineLen %d\n", __PRETTY_FUNCTIO
                     data->icld__Option_LabelTextMaxLen = ILC_ICONLABEL_MAXLINELEN_DEFAULT;
                 }
                 break;
-            
+
             case MUIA_IconList_LabelText_MultiLine:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconList_LabelText_MultiLine %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_IconList_LabelText_MultiLine %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld__Option_LabelTextMultiLine = (ULONG)tag->ti_Data;
                 if (data->icld__Option_LabelTextMultiLine == 0)data->icld__Option_LabelTextMultiLine = 1;
@@ -1949,56 +1823,56 @@ D(bug("[IconList] %s: MUIA_IconList_LabelText_MultiLine %d\n", __PRETTY_FUNCTION
 
             case MUIA_IconList_LabelText_MultiLineOnFocus:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconList_LabelText_MultiLineOnFocus %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_IconList_LabelText_MultiLineOnFocus %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld__Option_LabelTextMultiLineOnFocus = (BOOL)tag->ti_Data;
                 break;
 
             case MUIA_IconList_Icon_HorizontalSpacing:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconList_Icon_HorizontalSpacing %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_IconList_Icon_HorizontalSpacing %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld__Option_IconHorizontalSpacing = (UBYTE)tag->ti_Data;
                 break;
 
             case MUIA_IconList_Icon_VerticalSpacing:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconList_Icon_VerticalSpacing %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_IconList_Icon_VerticalSpacing %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld__Option_IconVerticalSpacing = (UBYTE)tag->ti_Data;
                 break;
 
             case MUIA_IconList_Icon_ImageSpacing:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconList_Icon_ImageSpacing %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_IconList_Icon_ImageSpacing %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld__Option_IconImageSpacing = (UBYTE)tag->ti_Data;
                 break;
 
             case MUIA_IconList_LabelText_HorizontalPadding:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconList_LabelText_HorizontalPadding %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_IconList_LabelText_HorizontalPadding %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld__Option_LabelTextHorizontalPadding = (UBYTE)tag->ti_Data;
                 break;
 
             case MUIA_IconList_LabelText_VerticalPadding:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconList_LabelText_VerticalPadding %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_IconList_LabelText_VerticalPadding %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld__Option_LabelTextVerticalPadding = (UBYTE)tag->ti_Data;
                 break;
 
             case MUIA_IconList_LabelText_BorderWidth:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconList_LabelText_BorderWidth %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_IconList_LabelText_BorderWidth %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld__Option_LabelTextBorderWidth = (UBYTE)tag->ti_Data;
                 break;
 
             case MUIA_IconList_LabelText_BorderHeight:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconList_LabelText_BorderHeight %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                D(bug("[IconList] %s: MUIA_IconList_LabelText_BorderHeight %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld__Option_LabelTextBorderHeight = (UBYTE)tag->ti_Data;
                 break;
@@ -2022,14 +1896,14 @@ D(bug("[IconList] %s: MUIA_IconList_LabelText_BorderHeight %d\n", __PRETTY_FUNCT
             /* Settings defined by the view class */
             case MUIA_IconListview_FixedBackground:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconListview_FixedBackground\n", __PRETTY_FUNCTION__));
+                D(bug("[IconList] %s: MUIA_IconListview_FixedBackground\n", __PRETTY_FUNCTION__));
 #endif
                 data->icld__Option_IconListFixedBackground = (BOOL)tag->ti_Data;
                 break;
 
             case MUIA_IconListview_ScaledBackground:
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s: MUIA_IconListview_ScaledBackground\n", __PRETTY_FUNCTION__));
+                D(bug("[IconList] %s: MUIA_IconListview_ScaledBackground\n", __PRETTY_FUNCTION__));
 #endif
                 data->icld__Option_IconListScaledBackground = (BOOL)tag->ti_Data;
                 break;
@@ -2037,14 +1911,14 @@ D(bug("[IconList] %s: MUIA_IconListview_ScaledBackground\n", __PRETTY_FUNCTION__
             /* We listen for MUIA_Background and set default values for known types */
             case MUIA_Background:
 #if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s: MUIA_Background\n", __PRETTY_FUNCTION__));
+                D(bug("[IconList] %s: MUIA_Background\n", __PRETTY_FUNCTION__));
 #endif
                 {
                     char *bgmode_string = (char *)tag->ti_Data;
                     BYTE this_mode = bgmode_string[0] - 48;
 
 #if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
-    D(bug("[IconList] %s: MUIA_Background | MUI BG Mode = %d\n", __PRETTY_FUNCTION__, this_mode));
+                    D(bug("[IconList] %s: MUIA_Background | MUI BG Mode = %d\n", __PRETTY_FUNCTION__, this_mode));
 #endif
                     switch (this_mode)
                     {
@@ -2078,7 +1952,7 @@ D(bug("[IconList] %s: MUIA_Background\n", __PRETTY_FUNCTION__));
     }
 
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s(), out of switch\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList] %s(), out of switch\n", __PRETTY_FUNCTION__));
 #endif
     if ((oldleft != data->icld_ViewX) || (oldtop != data->icld_ViewY))
     {
@@ -2086,13 +1960,13 @@ D(bug("[IconList] %s(), out of switch\n", __PRETTY_FUNCTION__));
         data->update_scrolldx = data->icld_ViewX - oldleft;
         data->update_scrolldy = data->icld_ViewY - oldtop;
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s(), call MUI_Redraw()\n", __PRETTY_FUNCTION__));
+        D(bug("[IconList] %s(), call MUI_Redraw()\n", __PRETTY_FUNCTION__));
 #endif
         MUI_Redraw(obj, MADF_DRAWUPDATE);
     }
 
 #if defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList] %s(), call DoSuperMethodA()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList] %s(), call DoSuperMethodA()\n", __PRETTY_FUNCTION__));
 #endif
     return DoSuperMethodA(CLASS, obj, (Msg)message);
 }
@@ -2105,11 +1979,11 @@ OM_GET
 IPTR IconList__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *message)
 {
     /* small macro to simplify return value storage */
-#define STORE *(message->opg_Storage)
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
+#define STORE                   *(message->opg_Storage)
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 
 #if defined(DEBUG_ILC_FUNCS) && defined(DEBUG_ILC_ATTRIBS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     switch (message->opg_AttrID)
@@ -2152,11 +2026,11 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         /* Settings defined by the view class */
         case MUIA_IconListview_FixedBackground:         STORE = (IPTR)data->icld__Option_IconListFixedBackground; return 1;
         case MUIA_IconListview_ScaledBackground:        STORE = (IPTR)data->icld__Option_IconListScaledBackground; return 1;
-            
+
         /* ICON obj Changes */
         case MUIA_Virtgroup_Left:                       STORE = (IPTR)data->icld_ViewX; return 1;
         case MUIA_Virtgroup_Top:                        STORE = (IPTR)data->icld_ViewY; return 1;
-        case MUIA_Group_ChildList:                      STORE = (IPTR)&data->icld_IconList; return 1; /* Get our list object */
+        case MUIA_Family_List:                          STORE = (IPTR)&(data->icld_IconList); return 1; /* Get our list object */
 
 #warning "TODO: Get the version/revision from our config.."
         case MUIA_Version:                              STORE = (IPTR)1; return 1;
@@ -2168,23 +2042,75 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 }
 ///
 
-IPTR IconList__OM_ADDMEMBER(struct IClass *CLASS, Object *obj, APTR message)
+IPTR IconList__MUIM_Family_AddHead(struct IClass *CLASS, Object *obj, struct MUIP_Family_AddHead *message)
 {
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
+
+    if (message->obj)
+    {
+#warning "TODO: Use the correct _OBJECT() code when we switch to icon.mui"
+//	AddHead(&(data->icld_IconList), (struct Node *)_OBJECT(message->obj));
+	AddHead(&(data->icld_IconList), (struct Node *)message->obj);
+	return TRUE;
+    }
+    else
+	return FALSE;
+}
+
+IPTR IconList__MUIM_Family_AddTail(struct IClass *CLASS, Object *obj, struct MUIP_Family_AddTail *message)
+{
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+#if defined(DEBUG_ILC_FUNCS)
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
+
+    if (message->obj)
+    {
+#warning "TODO: Use the correct _OBJECT() code when we switch to icon.mui"
+//	AddTail(&(data->icld_IconList), (struct Node *)_OBJECT(message->obj));
+	AddTail(&(data->icld_IconList), (struct Node *)message->obj);
+	return TRUE;
+    }
+    else
+	return FALSE;
 
     return (IPTR)NULL;
 }
-
-IPTR IconList__OM_REMMEMBER(struct IClass *CLASS, Object *obj, APTR message)
+#if !defined(WANDERER_BUILTIN_ICONLIST)
+IPTR IconList__OM_ADDMEMBER(struct IClass *CLASS, Object *obj, struct MUIP_Family_AddTail *message)
 {
-#if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    return IconList__MUIM_Family_AddTail(CLASS, obj, message);
+}
 #endif
+
+IPTR IconList__MUIM_Family_Remove(struct IClass *CLASS, Object *obj, struct MUIP_Family_Remove *message)
+{
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+#if defined(DEBUG_ILC_FUNCS)
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
+
+    if (message->obj)
+    {
+#warning "TODO: Use the correct _OBJECT() code when we switch to icon.mui"
+//	Remove((struct Node *)_OBJECT(message->obj));
+	Remove((struct Node *)message->obj);
+	return TRUE;
+    }
+    else
+	return FALSE;
 
     return (IPTR)NULL;
 }
+#if !defined(WANDERER_BUILTIN_ICONLIST)
+IPTR IconList__OM_REMMEMBER(struct IClass *CLASS, Object *obj, struct MUIP_Family_Remove *message)
+{
+    return IconList__MUIM_Family_Remove(CLASS, obj, message);
+}
+#endif
 
 ///MUIM_Setup()
 /**************************************************************************
@@ -2192,12 +2118,12 @@ MUIM_Setup
 **************************************************************************/
 IPTR IconList__MUIM_Setup(struct IClass *CLASS, Object *obj, struct MUIP_Setup *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
-    struct IconEntry    *node = NULL;
-    IPTR                 geticon_error = 0;
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    struct IconEntry            *node = NULL;
+    IPTR                        geticon_error = 0;
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     if (!DoSuperMethodA(CLASS, obj, (Msg) message)) return (IPTR)NULL;
@@ -2211,7 +2137,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     if (data->icld_IconLabelFont == NULL)   data->icld_IconLabelFont = _font(obj);
     if (data->icld_IconInfoFont == NULL)    data->icld_IconInfoFont = data->icld_IconLabelFont;
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s: Use Font @ 0x%p, RastPort @ 0x%p\n", __PRETTY_FUNCTION__, data->icld_IconLabelFont, data->icld_BufferRastPort ));
+    D(bug("[IconList] %s: Use Font @ 0x%p, RastPort @ 0x%p\n", __PRETTY_FUNCTION__, data->icld_IconLabelFont, data->icld_BufferRastPort ));
 #endif
 
     /* Set our base options .. */
@@ -2243,7 +2169,7 @@ D(bug("[IconList] %s: Use Font @ 0x%p, RastPort @ 0x%p\n", __PRETTY_FUNCTION__, 
         {
             IPTR iconlistScreen = _screen(obj);
 #if defined(DEBUG_ILC_ICONRENDERING)
-bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistScreen);
+            D(bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistScreen));
 #endif
             if (!(node->ie_DiskObj = GetIconTags(node->ie_IconNode.ln_Name,
                                                 (iconlistScreen) ? ICONGETA_Screen : TAG_IGNORE, iconlistScreen,
@@ -2254,7 +2180,7 @@ bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistScr
                                                 TAG_DONE)))
             {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s: Failed to obtain Icon '%s's diskobj! (error code = 0x%p)\n", __PRETTY_FUNCTION__, node->ie_IconNode.ln_Name, geticon_error));
+                D(bug("[IconList] %s: Failed to obtain Icon '%s's diskobj! (error code = 0x%p)\n", __PRETTY_FUNCTION__, node->ie_IconNode.ln_Name, geticon_error));
 #endif
                 /*  We should probably remove this node if the icon cant be obtained ? */
             }
@@ -2270,10 +2196,10 @@ MUIM_Show
 **************************************************************************/
 IPTR IconList__MUIM_Show(struct IClass *CLASS, Object *obj, struct MUIP_Show *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
-    LONG                newleft,
-                        newtop;
-    IPTR                rc;
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    LONG                        newleft,
+                                newtop;
+    IPTR                        rc;
 
 #if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
@@ -2281,15 +2207,18 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
     if ((rc = DoSuperMethodA(CLASS, obj, (Msg)message)))
     {
-
         newleft = data->icld_ViewX;
         newtop = data->icld_ViewY;
 
-        if (newleft + _mwidth(obj) > data->icld_AreaWidth) newleft = data->icld_AreaWidth - _mwidth(obj);
-        if (newleft < 0) newleft = 0;
+        if (newleft + _mwidth(obj) > data->icld_AreaWidth)
+            newleft = data->icld_AreaWidth - _mwidth(obj);
+        if (newleft < 0)
+            newleft = 0;
 
-        if (newtop + _mheight(obj) > data->icld_AreaHeight) newtop = data->icld_AreaHeight - _mheight(obj);
-        if (newtop < 0) newtop = 0;
+        if (newtop + _mheight(obj) > data->icld_AreaHeight)
+            newtop = data->icld_AreaHeight - _mheight(obj);
+        if (newtop < 0)
+            newtop = 0;
 
         if ((newleft != data->icld_ViewX) || (newtop != data->icld_ViewY))
         {    
@@ -2305,12 +2234,12 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
             {
                 data->icld_DisplayRastPort = CloneRastPort(_rp(obj));
             }
+#if defined(DEBUG_ILC_ICONRENDERING)
             else
             {
-#if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] IconList__MUIM_Show: ERROR - NULL RastPort!\n"));
-#endif
+                D(bug("[IconList] IconList__MUIM_Show: ERROR - NULL RastPort!\n"));
             }
+#endif
         }
 
         if (data->icld_DisplayFlags & ICONLIST_DISP_BUFFERED)
@@ -2323,19 +2252,19 @@ D(bug("[IconList] IconList__MUIM_Show: ERROR - NULL RastPort!\n"));
                                 BMF_CLEAR,
                                 data->icld_DisplayRastPort->BitMap))!=NULL)
             {
-              if ((data->icld_BufferRastPort = CreateRastPort())!=NULL)
-              {
-                data->icld_BufferRastPort->BitMap = tmp_BuffBitMap;
-                data->icld_DrawOffsetX = 0;
-                data->icld_DrawOffsetY = 0;
-              }
-              else
-              {
-                FreeBitMap(tmp_BuffBitMap);
-                data->icld_BufferRastPort = data->icld_DisplayRastPort;
-                data->icld_DrawOffsetX = _mleft(obj);
-                data->icld_DrawOffsetY = _mtop(obj);
-              }
+                if ((data->icld_BufferRastPort = CreateRastPort())!=NULL)
+                {
+                    data->icld_BufferRastPort->BitMap = tmp_BuffBitMap;
+                    data->icld_DrawOffsetX = 0;
+                    data->icld_DrawOffsetY = 0;
+                }
+                else
+                {
+                    FreeBitMap(tmp_BuffBitMap);
+                    data->icld_BufferRastPort = data->icld_DisplayRastPort;
+                    data->icld_DrawOffsetX = _mleft(obj);
+                    data->icld_DrawOffsetY = _mtop(obj);
+                }
             }
         }
         else
@@ -2347,7 +2276,7 @@ D(bug("[IconList] IconList__MUIM_Show: ERROR - NULL RastPort!\n"));
         if (data->icld_IconLabelFont == NULL)       data->icld_IconLabelFont = _font(obj);
         if (data->icld_IconInfoFont == NULL)        data->icld_IconInfoFont = data->icld_IconLabelFont;
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] IconList__MUIM_Show: Use Font @ 0x%p, RastPort @ 0x%p\n", data->icld_IconLabelFont, data->icld_BufferRastPort ));
+        D(bug("[IconList] IconList__MUIM_Show: Use Font @ 0x%p, RastPort @ 0x%p\n", data->icld_IconLabelFont, data->icld_BufferRastPort ));
 #endif
 
         if ((data->icld_BufferRastPort) && (data->icld_IconLabelFont))
@@ -2363,8 +2292,8 @@ MUIM_Hide
 **************************************************************************/
 IPTR IconList__MUIM_Hide(struct IClass *CLASS, Object *obj, struct MUIP_Hide *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
-    IPTR                rc;
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    IPTR                        rc;
 
 #if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
@@ -2379,7 +2308,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         }
 
         data->icld_BufferRastPort = NULL;
-        
+
         if (data->icld_DisplayRastPort)
             FreeRastPort(data->icld_DisplayRastPort);
 
@@ -2395,11 +2324,11 @@ MUIM_Cleanup
 **************************************************************************/
 IPTR IconList__MUIM_Cleanup(struct IClass *CLASS, Object *obj, struct MUIP_Cleanup *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
-    struct IconEntry    *node = NULL;
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    struct IconEntry            *node = NULL;
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
 #if defined(__AROS__)
@@ -2427,10 +2356,10 @@ MUIM_AskMinMax
 **************************************************************************/
 IPTR IconList__MUIM_AskMinMax(struct IClass *CLASS, Object *obj, struct MUIP_AskMinMax *message)
 {
-    ULONG rc = DoSuperMethodA(CLASS, obj, (Msg) message);
+    ULONG       rc = DoSuperMethodA(CLASS, obj, (Msg) message);
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     message->MinMaxInfo->MinWidth  += 96;
@@ -2452,11 +2381,11 @@ MUIM_Layout
 **************************************************************************/
 IPTR IconList__MUIM_Layout(struct IClass *CLASS, Object *obj,struct MUIP_Layout *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
-    ULONG rc;
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    ULONG                       rc;
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     rc = DoSuperMethodA(CLASS, obj, (Msg)message);
@@ -2475,24 +2404,24 @@ MUIM_Draw - draw the IconList
 IPTR DrawCount;
 IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *message)
 {   
-    struct IconList_DATA    *data = INST_DATA(CLASS, obj);
-    struct IconEntry       *icon = NULL;
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    struct IconEntry            *icon = NULL;
 
-    APTR                   clip;
+    APTR                        clip;
 
-    ULONG                  update_oldwidth = 0,
-                           update_oldheight = 0;
+    ULONG                       update_oldwidth = 0,
+                                update_oldheight = 0;
 
-    LONG                  clear_xoffset = 0,
-                           clear_yoffset = 0;
+    LONG                        clear_xoffset = 0,
+                                clear_yoffset = 0;
 
-    IPTR          draw_id = DrawCount++;
+    IPTR                        draw_id = DrawCount++;
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s(obj @ 0x%p)\n", __PRETTY_FUNCTION__, obj));
+    D(bug("[IconList]: %s(obj @ 0x%p)\n", __PRETTY_FUNCTION__, obj));
 #endif
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s: id %d\n", __PRETTY_FUNCTION__, draw_id));
+    D(bug("[IconList] %s: id %d\n", __PRETTY_FUNCTION__, draw_id));
 #endif
 
     DoSuperMethodA(CLASS, obj, (Msg)message);
@@ -2537,7 +2466,7 @@ D(bug("[IconList] %s: id %d\n", __PRETTY_FUNCTION__, draw_id));
             struct Rectangle rect;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: UPDATE_SINGLEICON (icon @ 0x%p)\n", __PRETTY_FUNCTION__, draw_id, data->update_icon));
+            D(bug("[IconList] %s#%d: UPDATE_SINGLEICON (icon @ 0x%p)\n", __PRETTY_FUNCTION__, draw_id, data->update_icon));
 #endif
 
             IconList_GetIconAreaRectangle(obj, data, data->update_icon, &rect);
@@ -2565,7 +2494,7 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEICON (icon @ 0x%p)\n", __PRETTY_FUNCTION__
             clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: UPDATE_SINGLEICON: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__, draw_id));
+            D(bug("[IconList] %s#%d: UPDATE_SINGLEICON: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__, draw_id));
 #endif
             DoMethod(obj, MUIM_DrawBackground, 
                 rect.MinX, rect.MinY,
@@ -2626,7 +2555,7 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEICON: Calling MUIM_DrawBackground (A)\n", 
             if (data->icld_DisplayRastPort != data->icld_BufferRastPort)
             {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: UPDATE_SINGLEICON Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
+                D(bug("[IconList] %s#%d: UPDATE_SINGLEICON Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
 #endif 
                 BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
                           rect.MinX - _mleft(obj), rect.MinY - _mtop(obj),
@@ -2641,13 +2570,13 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEICON Blitting to front rastport..\n", __PR
         }
         else if (data->icld_UpdateMode == UPDATE_SCROLL)
         {
-            struct Region     *region = NULL;
-            struct Rectangle  xrect,
+            struct Region       *region = NULL;
+            struct Rectangle    xrect,
                                 yrect;
-            BOOL            scroll_caused_damage;
+            BOOL                scroll_caused_damage;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: UPDATE_SCROLL.\n", __PRETTY_FUNCTION__, draw_id));
+            D(bug("[IconList] %s#%d: UPDATE_SCROLL.\n", __PRETTY_FUNCTION__, draw_id));
 #endif 
 
             if (!data->icld__Option_IconListFixedBackground)
@@ -2660,7 +2589,7 @@ D(bug("[IconList] %s#%d: UPDATE_SCROLL.\n", __PRETTY_FUNCTION__, draw_id));
                     (abs(data->update_scrolldy) >= _mheight(obj)))
                 {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: UPDATE_SCROLL: Moved outside current view -> Causing Redraw .. MADF_DRAWOBJECT\n", __PRETTY_FUNCTION__, draw_id));
+                    D(bug("[IconList] %s#%d: UPDATE_SCROLL: Moved outside current view -> Causing Redraw .. MADF_DRAWOBJECT\n", __PRETTY_FUNCTION__, draw_id));
 #endif 
                     MUI_Redraw(obj, MADF_DRAWOBJECT);
                     goto draw_done;
@@ -2669,7 +2598,7 @@ D(bug("[IconList] %s#%d: UPDATE_SCROLL: Moved outside current view -> Causing Re
                 if (!(region = NewRegion()))
                 {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: UPDATE_SCROLL: Couldnt Alloc Region -> Causing Redraw ...MADF_DRAWOBJECT\n", __PRETTY_FUNCTION__, draw_id));
+                    D(bug("[IconList] %s#%d: UPDATE_SCROLL: Couldnt Alloc Region -> Causing Redraw ...MADF_DRAWOBJECT\n", __PRETTY_FUNCTION__, draw_id));
 #endif
                     MUI_Redraw(obj, MADF_DRAWOBJECT);
                     goto draw_done;
@@ -2722,7 +2651,7 @@ D(bug("[IconList] %s#%d: UPDATE_SCROLL: Couldnt Alloc Region -> Causing Redraw .
                 }
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: UPDATE_SCROLL: Scrolling Raster..\n", __PRETTY_FUNCTION__, draw_id));
+                D(bug("[IconList] %s#%d: UPDATE_SCROLL: Scrolling Raster..\n", __PRETTY_FUNCTION__, draw_id));
 #endif
                 if (data->icld_DisplayRastPort == data->icld_BufferRastPort)
                 {
@@ -2751,7 +2680,7 @@ D(bug("[IconList] %s#%d: UPDATE_SCROLL: Scrolling Raster..\n", __PRETTY_FUNCTION
             }
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: UPDATE_SCROLL: Causing Redraw -> MADF_DRAWOBJECT..\n", __PRETTY_FUNCTION__, draw_id));
+            D(bug("[IconList] %s#%d: UPDATE_SCROLL: Causing Redraw -> MADF_DRAWOBJECT..\n", __PRETTY_FUNCTION__, draw_id));
 #endif
             MUI_Redraw(obj, MADF_DRAWOBJECT);
 
@@ -2760,7 +2689,7 @@ D(bug("[IconList] %s#%d: UPDATE_SCROLL: Causing Redraw -> MADF_DRAWOBJECT..\n", 
             if (!data->icld__Option_IconListFixedBackground)
             {
                 MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
-        
+
                 if (scroll_caused_damage)
                 {
                     if (MUI_BeginRefresh(muiRenderInfo(obj), 0))
@@ -2775,7 +2704,7 @@ D(bug("[IconList] %s#%d: UPDATE_SCROLL: Causing Redraw -> MADF_DRAWOBJECT..\n", 
                         GET(_win(obj),MUIA_Window_RootObject, &o);
                         MUI_Redraw(o, MADF_DRAWOBJECT);
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: UPDATE_SCROLL: Causing Redraw -> MADF_DRAWOBJECT..\n", __PRETTY_FUNCTION__, draw_id));
+                        D(bug("[IconList] %s#%d: UPDATE_SCROLL: Causing Redraw -> MADF_DRAWOBJECT..\n", __PRETTY_FUNCTION__, draw_id));
 #endif
                         MUI_EndRefresh(muiRenderInfo(obj), 0);
                     }
@@ -2784,7 +2713,7 @@ D(bug("[IconList] %s#%d: UPDATE_SCROLL: Causing Redraw -> MADF_DRAWOBJECT..\n", 
             if (data->icld_DisplayRastPort != data->icld_BufferRastPort)
             {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: UPDATE_SCROLL: Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
+                D(bug("[IconList] %s#%d: UPDATE_SCROLL: Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
 #endif 
                 BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
                           0, 0,
@@ -2804,7 +2733,7 @@ D(bug("[IconList] %s#%d: UPDATE_SCROLL: Blitting to front rastport..\n", __PRETT
                                 diffh = 0;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
+            D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
 #endif 
 
             if ((data->icld_BufferRastPort) && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
@@ -2812,7 +2741,7 @@ D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
                 //Free up the buffers rastport and bitmap so we can replace them ..
                 struct Bitmap *bitmap_Old = (struct Bitmap *)data->icld_BufferRastPort->BitMap;
                 struct Bitmap *bitmap_New;
-    
+
                 ULONG tmp_RastDepth;
 
                 data->icld_BufferRastPort->BitMap = NULL;
@@ -2842,7 +2771,7 @@ D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
                         data->icld_DrawOffsetY = _mtop(obj);
                     }
                 }
-                
+
                 if (bitmap_Old != (struct Bitmap *)data->icld_BufferRastPort->BitMap)
                     FreeBitMap((struct BitMap *)bitmap_Old);
             }
@@ -2854,7 +2783,7 @@ D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
                 if (!(region = NewRegion()))
                 {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: UPDATE_RESIZE: Causing Redraw -> MADF_DRAWOBJECT..\n", __PRETTY_FUNCTION__, draw_id));
+                    D(bug("[IconList] %s#%d: UPDATE_RESIZE: Causing Redraw -> MADF_DRAWOBJECT..\n", __PRETTY_FUNCTION__, draw_id));
 #endif
                     MUI_Redraw(obj, MADF_DRAWOBJECT);
                     goto draw_done;
@@ -2900,7 +2829,7 @@ D(bug("[IconList] %s#%d: UPDATE_RESIZE: Causing Redraw -> MADF_DRAWOBJECT..\n", 
             }
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: UPDATE_RESIZE: Causing Redraw -> MADF_DRAWOBJECT..\n", __PRETTY_FUNCTION__, draw_id));
+            D(bug("[IconList] %s#%d: UPDATE_RESIZE: Causing Redraw -> MADF_DRAWOBJECT..\n", __PRETTY_FUNCTION__, draw_id));
 #endif
             MUI_Redraw(obj, MADF_DRAWOBJECT);
 
@@ -2922,7 +2851,7 @@ D(bug("[IconList] %s#%d: UPDATE_RESIZE: Causing Redraw -> MADF_DRAWOBJECT..\n", 
         struct Rectangle viewrect;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: MADF_DRAWOBJECT\n", __PRETTY_FUNCTION__, draw_id));
+        D(bug("[IconList] %s#%d: MADF_DRAWOBJECT\n", __PRETTY_FUNCTION__, draw_id));
 #endif
 
         clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
@@ -2933,7 +2862,7 @@ D(bug("[IconList] %s#%d: MADF_DRAWOBJECT\n", __PRETTY_FUNCTION__, draw_id));
         viewrect.MaxY = _mtop(obj) + _mheight(obj);
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: MADF_DRAWOBJECT: Calling MUIM_DrawBackground (B)\n", __PRETTY_FUNCTION__, draw_id));
+        D(bug("[IconList] %s#%d: MADF_DRAWOBJECT: Calling MUIM_DrawBackground (B)\n", __PRETTY_FUNCTION__, draw_id));
 #endif
         DoMethod(
             obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj),
@@ -2969,14 +2898,14 @@ D(bug("[IconList] %s#%d: MADF_DRAWOBJECT: Calling MUIM_DrawBackground (B)\n", __
         if (data->icld_DisplayRastPort != data->icld_BufferRastPort)
         {
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: MADF_DRAWOBJECT: Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
-#endif 
-      BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
-            0, 0,
-            data->icld_DisplayRastPort,
-            _mleft(obj), _mtop(obj),
-            _mwidth(obj), _mheight(obj),
-            0xC0);
+            D(bug("[IconList] %s#%d: MADF_DRAWOBJECT: Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
+#endif
+            BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
+                0, 0,
+                data->icld_DisplayRastPort,
+                _mleft(obj), _mtop(obj),
+                _mwidth(obj), _mheight(obj),
+                0xC0);
         }
 
         MUI_RemoveClipping(muiRenderInfo(obj), clip);
@@ -2984,9 +2913,10 @@ D(bug("[IconList] %s#%d: MADF_DRAWOBJECT: Blitting to front rastport..\n", __PRE
     data->icld_UpdateMode = 0;
 
 draw_done:;
-    
-    D(bug("[IconList] %s: Draw finished for id %d\n", __PRETTY_FUNCTION__, draw_id));
 
+#if defined(DEBUG_ILC_ICONRENDERING)
+    D(bug("[IconList] %s: Draw finished for id %d\n", __PRETTY_FUNCTION__, draw_id));
+#endif 
     return 0;
 }
 ///
@@ -2998,10 +2928,10 @@ Implemented by subclasses
 **************************************************************************/
 IPTR IconList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Update *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     data->icld_FocusIcon = NULL;
@@ -3017,11 +2947,11 @@ MUIM_IconList_Clear
 **************************************************************************/
 IPTR IconList__MUIM_IconList_Clear(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Clear *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
-    struct IconEntry    *node = NULL;
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    struct IconEntry            *node = NULL;
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     while ((node = (struct IconEntry*)RemTail((struct List*)&data->icld_IconList)))
@@ -3031,24 +2961,25 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
     data->icld_SelectionLastClicked = NULL;
     data->icld_FocusIcon = NULL;
-    
+
     data->icld_ViewX = data->icld_ViewY = data->icld_AreaWidth = data->icld_AreaHeight = 0;
 
-D(bug("[IconList]: %s: call SetSuperAttrs()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s: call SetSuperAttrs()\n", __PRETTY_FUNCTION__));
     SetSuperAttrs(CLASS, obj, MUIA_Virtgroup_Left, data->icld_ViewX,
                   MUIA_Virtgroup_Top, data->icld_ViewY,
             TAG_DONE);
-D(bug("[IconList]: %s: call SetAttrs()\n", __PRETTY_FUNCTION__));
+
+    D(bug("[IconList]: %s: call SetAttrs()\n", __PRETTY_FUNCTION__));
     SetAttrs(obj, MUIA_Virtgroup_Left, data->icld_ViewX,
                   MUIA_Virtgroup_Top, data->icld_ViewY,
             TAG_DONE);
 
-D(bug("[IconList]: %s: Set MUIA_IconList_Width and MUIA_IconList_Height\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s: Set MUIA_IconList_Width and MUIA_IconList_Height\n", __PRETTY_FUNCTION__));
     SetAttrs(obj, MUIA_IconList_Width, data->icld_AreaWidth,
         MUIA_IconList_Height, data->icld_AreaHeight,
         TAG_DONE);
 
-D(bug("[IconList]: %s: call MUI_Redraw()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s: call MUI_Redraw()\n", __PRETTY_FUNCTION__));
     MUI_Redraw(obj,MADF_DRAWOBJECT);
     return 1;
 }
@@ -3057,10 +2988,10 @@ D(bug("[IconList]: %s: call MUI_Redraw()\n", __PRETTY_FUNCTION__));
 ///IconList__MUIM_IconList_DestroyEntry()
 IPTR IconList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_DestroyEntry *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     if (message->icon)
@@ -3136,14 +3067,14 @@ IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, stru
     IPTR                        geticon_error = 0;
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     /*disk object (icon)*/
     if (message->icon_dob == NULL)
     {
         IPTR iconlistScreen = _screen(obj);
-D(bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistScreen));
+        D(bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistScreen));
 
         dob = GetIconTags
         (
@@ -3158,7 +3089,7 @@ D(bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistS
         
         if (dob == NULL)
         {
-D(bug("[IconList] %s: Fatal: Couldnt get DiskObject! (error code = 0x%p)\n", __PRETTY_FUNCTION__, geticon_error));
+            D(bug("[IconList] %s: Fatal: Couldnt get DiskObject! (error code = 0x%p)\n", __PRETTY_FUNCTION__, geticon_error));
 
             return (IPTR)NULL;
         }
@@ -3168,11 +3099,11 @@ D(bug("[IconList] %s: Fatal: Couldnt get DiskObject! (error code = 0x%p)\n", __P
         dob = message->icon_dob;
     }
 
-D(bug("[IconList] %s: DiskObject @ 0x%p\n", __PRETTY_FUNCTION__, dob));
+    D(bug("[IconList] %s: DiskObject @ 0x%p\n", __PRETTY_FUNCTION__, dob));
 
     if ((entry = AllocPooled(data->icld_Pool, sizeof(struct IconEntry))) == NULL)
     {
-D(bug("[IconList] %s: Failed to Allocate Entry Storage!\n", __PRETTY_FUNCTION__));
+        D(bug("[IconList] %s: Failed to Allocate Entry Storage!\n", __PRETTY_FUNCTION__));
         FreeDiskObject(dob);
         return (IPTR)NULL;
     }
@@ -3181,10 +3112,10 @@ D(bug("[IconList] %s: Failed to Allocate Entry Storage!\n", __PRETTY_FUNCTION__)
     entry->ie_IconListEntry.ile_IconEntry = entry;
 
     /* Allocate Text Buffers */
-    
+
     if ((entry->ie_TxtBuf_DATE = AllocPooled(data->icld_Pool, LEN_DATSTRING)) == NULL)
     {
-D(bug("[IconList] %s: Failed to Allocate Entry DATE Storage!\n", __PRETTY_FUNCTION__));
+        D(bug("[IconList] %s: Failed to Allocate Entry DATE Storage!\n", __PRETTY_FUNCTION__));
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
         return (IPTR)NULL;
     }
@@ -3192,7 +3123,7 @@ D(bug("[IconList] %s: Failed to Allocate Entry DATE Storage!\n", __PRETTY_FUNCTI
 
     if ((entry->ie_TxtBuf_TIME = AllocPooled(data->icld_Pool, LEN_DATSTRING)) == NULL)
     {
-D(bug("[IconList] %s: Failed to Allocate Entry TIME string Storage!\n", __PRETTY_FUNCTION__));
+        D(bug("[IconList] %s: Failed to Allocate Entry TIME string Storage!\n", __PRETTY_FUNCTION__));
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
         return (IPTR)NULL;
     }
@@ -3200,7 +3131,7 @@ D(bug("[IconList] %s: Failed to Allocate Entry TIME string Storage!\n", __PRETTY
 
     if ((entry->ie_TxtBuf_SIZE = AllocPooled(data->icld_Pool, 30)) == NULL)
     {
-D(bug("[IconList] %s: Failed to Allocate Entry SIZE string Storage!\n", __PRETTY_FUNCTION__));
+        D(bug("[IconList] %s: Failed to Allocate Entry SIZE string Storage!\n", __PRETTY_FUNCTION__));
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
         return (IPTR)NULL;
     }
@@ -3208,16 +3139,16 @@ D(bug("[IconList] %s: Failed to Allocate Entry SIZE string Storage!\n", __PRETTY
 
     if ((entry->ie_TxtBuf_PROT = AllocPooled(data->icld_Pool, 8)) == NULL)
     {
-D(bug("[IconList] %s: Failed to Allocate Entry PROT Flag string Storage!\n", __PRETTY_FUNCTION__));
+        D(bug("[IconList] %s: Failed to Allocate Entry PROT Flag string Storage!\n", __PRETTY_FUNCTION__));
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
         return (IPTR)NULL;
     }
     memset(entry->ie_TxtBuf_PROT, 0, 8);
-    
+
     /*alloc filename*/
     if ((entry->ie_IconNode.ln_Name = AllocPooled(data->icld_Pool, strlen(message->filename) + 1)) == NULL)
     {
-D(bug("[IconList] %s: Failed to Allocate Entry filename string Storage!\n", __PRETTY_FUNCTION__));
+        D(bug("[IconList] %s: Failed to Allocate Entry filename string Storage!\n", __PRETTY_FUNCTION__));
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
         return (IPTR)NULL;
     }
@@ -3225,7 +3156,7 @@ D(bug("[IconList] %s: Failed to Allocate Entry filename string Storage!\n", __PR
     /*alloc icon label*/
     if ((entry->ie_IconListEntry.label = AllocPooled(data->icld_Pool, strlen(message->label) + 1)) == NULL)
     {
-D(bug("[IconList] %s: Failed to Allocate Entry label string Storage!\n", __PRETTY_FUNCTION__));
+        D(bug("[IconList] %s: Failed to Allocate Entry label string Storage!\n", __PRETTY_FUNCTION__));
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
         return (IPTR)NULL;
     }
@@ -3271,7 +3202,7 @@ D(bug("[IconList] %s: Failed to Allocate Entry label string Storage!\n", __PRETT
             *sp++ = (entry->ie_FileInfoBlock->fib_Protection & FIBF_EXECUTE) ? '-' : 'e';
             *sp++ = (entry->ie_FileInfoBlock->fib_Protection & FIBF_DELETE)  ? '-' : 'd';
             *sp++ = '\0';
-        
+
             entry->ie_IconListEntry.type = entry->ie_FileInfoBlock->fib_DirEntryType;
         }
     }
@@ -3284,11 +3215,11 @@ D(bug("[IconList] %s: Failed to Allocate Entry label string Storage!\n", __PRETT
     if (message->type != 0)
     {
         entry->ie_IconListEntry.type = message->type;
-D(bug("[IconList] %s: Overide Entry Type. New Type = %x\n", __PRETTY_FUNCTION__, entry->ie_IconListEntry.type));
+        D(bug("[IconList] %s: Overide Entry Type. New Type = %x\n", __PRETTY_FUNCTION__, entry->ie_IconListEntry.type));
     }
     else
     {
-D(bug("[IconList] %s: Entry Type = %x\n", __PRETTY_FUNCTION__, entry->ie_IconListEntry.type));
+        D(bug("[IconList] %s: Entry Type = %x\n", __PRETTY_FUNCTION__, entry->ie_IconListEntry.type));
     }
 
     strcpy(entry->ie_IconNode.ln_Name, message->filename);
@@ -3302,8 +3233,6 @@ D(bug("[IconList] %s: Entry Type = %x\n", __PRETTY_FUNCTION__, entry->ie_IconLis
 
         /* Use a geticonrectangle routine that gets textwidth! */
         IconList_GetIconAreaRectangle(obj, data, entry, &rect);
-
-        AddTail((struct List*)&data->icld_IconList, (struct Node*)&entry->ie_IconNode);
 
         return (IPTR)entry;
     }
@@ -3330,9 +3259,9 @@ IPTR IconList__MUIM_IconList_UpdateEntry(struct IClass *CLASS, Object *obj, stru
 
     IPTR                        geticon_error = 0;
 
-//#if defined(DEBUG_ILC_FUNCS)
-bug("[IconList]: %s()\n", __PRETTY_FUNCTION__);
-//#endif
+#if defined(DEBUG_ILC_FUNCS)
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
 
     /* Update disk object (icon)*/
 /*    if (message->icon_dob == NULL)
@@ -3350,7 +3279,7 @@ D(bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistS
             ICONA_ErrorCode,                   &geticon_error,
             TAG_DONE
         );
-        
+
         if (dob == NULL)
         {
 D(bug("[IconList] %s: Fatal: Couldnt get DiskObject! (error code = 0x%p)\n", __PRETTY_FUNCTION__, geticon_error));
@@ -3373,7 +3302,7 @@ D(bug("[IconList] %s: DiskObject @ 0x%p\n", __PRETTY_FUNCTION__, dob));
         FreePooled(data->icld_Pool, message->icon->ie_IconNode.ln_Name, strlen(message->icon->ie_IconNode.ln_Name) + 1);
         if ((message->icon->ie_IconNode.ln_Name = AllocPooled(data->icld_Pool, strlen(message->filename) + 1)) == NULL)
         {
-bug("[IconList] %s: Failed to Allocate Entry filename string Storage!\n", __PRETTY_FUNCTION__);
+            D(bug("[IconList] %s: Failed to Allocate Entry filename string Storage!\n", __PRETTY_FUNCTION__));
             DoMethod(obj, MUIM_IconList_DestroyEntry, message->icon);
             return (IPTR)NULL;
         }
@@ -3387,14 +3316,14 @@ bug("[IconList] %s: Failed to Allocate Entry filename string Storage!\n", __PRET
         FreePooled(data->icld_Pool, message->icon->ie_IconListEntry.label, strlen(message->icon->ie_IconListEntry.label) + 1);
         if ((message->icon->ie_IconListEntry.label = AllocPooled(data->icld_Pool, strlen(message->label) + 1)) == NULL)
         {
-bug("[IconList] %s: Failed to Allocate Entry label string Storage!\n", __PRETTY_FUNCTION__);
+            D(bug("[IconList] %s: Failed to Allocate Entry label string Storage!\n", __PRETTY_FUNCTION__));
             DoMethod(obj, MUIM_IconList_DestroyEntry, message->icon);
             return (IPTR)NULL;
         }
         strcpy(message->icon->ie_IconListEntry.label, message->label);
         if (IconList__LabelFunc_CreateLabel(obj, data, message->icon) == (IPTR)NULL)
         {
-bug("[IconList] %s: Failed to create label\n", __PRETTY_FUNCTION__);
+            D(bug("[IconList] %s: Failed to create label\n", __PRETTY_FUNCTION__));
             DoMethod(obj, MUIM_IconList_DestroyEntry, message->icon);
             return (IPTR)NULL;
         }
@@ -3466,11 +3395,11 @@ bug("[IconList] %s: Failed to create label\n", __PRETTY_FUNCTION__);
     {
         message->icon->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
         message->icon->ie_IconListEntry.type = message->type;
-D(bug("[IconList] %s: Overide Entry Type. New Type = %x\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.type));
+        D(bug("[IconList] %s: Overide Entry Type. New Type = %x\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.type));
     }
     else
     {
-D(bug("[IconList] %s: Entry Type = %x\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.type));
+        D(bug("[IconList] %s: Entry Type = %x\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.type));
     }
 
     IconList_GetIconAreaRectangle(obj, data, message->icon, &rect);
@@ -3482,10 +3411,10 @@ D(bug("[IconList] %s: Entry Type = %x\n", __PRETTY_FUNCTION__, message->icon->ie
 ///DoWheelMove()
 static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG wheely, UWORD qual)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 
-    LONG    newleft = data->icld_ViewX,
-            newtop = data->icld_ViewY;
+    LONG                        newleft = data->icld_ViewX,
+                                newtop = data->icld_ViewY;
 
     /* Use horizontal scrolling if any of the following cases are true ...
 
@@ -3518,11 +3447,15 @@ static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG whe
         newtop += wheely * 30;
     }
 
-    if (newleft + _mwidth(obj) > data->icld_AreaWidth) newleft = data->icld_AreaWidth - _mwidth(obj);
-    if (newleft < 0) newleft = 0;
+    if (newleft + _mwidth(obj) > data->icld_AreaWidth)
+        newleft = data->icld_AreaWidth - _mwidth(obj);
+    if (newleft < 0)
+        newleft = 0;
 
-    if (newtop + _mheight(obj) > data->icld_AreaHeight) newtop = data->icld_AreaHeight - _mheight(obj);
-    if (newtop < 0) newtop = 0;
+    if (newtop + _mheight(obj) > data->icld_AreaHeight)
+        newtop = data->icld_AreaHeight - _mheight(obj);
+    if (newtop < 0)
+        newtop = 0;
 
     if ((newleft != data->icld_ViewX) || (newtop != data->icld_ViewY))
     {
@@ -3539,10 +3472,10 @@ MUIM_HandleEvent
 **************************************************************************/
 IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_HandleEvent *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     if (message->imsg)
@@ -3552,13 +3485,13 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
         LONG wheelx = 0;
         LONG wheely = 0;
-    
+
         switch (message->imsg->Class)
         {
             case IDCMP_RAWKEY:
                 {
 #if defined(DEBUG_ILC_EVENTS)
-bug("[IconList] %s: IDCMP_RAWKEY\n", __PRETTY_FUNCTION__);
+                    D(bug("[IconList] %s: IDCMP_RAWKEY\n", __PRETTY_FUNCTION__));
 #endif
                     BOOL rawkey_handled = FALSE;
 
@@ -3588,7 +3521,7 @@ bug("[IconList] %s: IDCMP_RAWKEY\n", __PRETTY_FUNCTION__);
                     if (rawkey_handled)
                     {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: Processing mouse wheel event\n", __PRETTY_FUNCTION__));
+                        D(bug("[IconList] %s: Processing mouse wheel event\n", __PRETTY_FUNCTION__));
 #endif
                         if (_isinobject(message->imsg->MouseX, message->imsg->MouseY) &&
                             (wheelx || wheely))
@@ -3604,7 +3537,7 @@ D(bug("[IconList] %s: Processing mouse wheel event\n", __PRETTY_FUNCTION__));
                         IPTR              x_diff = 0;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: Processing key up event\n", __PRETTY_FUNCTION__));
+                        D(bug("[IconList] %s: Processing key up event\n", __PRETTY_FUNCTION__));
 #endif
 
                         switch(message->imsg->Code)
@@ -3613,7 +3546,7 @@ D(bug("[IconList] %s: Processing key up event\n", __PRETTY_FUNCTION__));
                                 rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RAWKEY_RETURN\n", __PRETTY_FUNCTION__));
+                                D(bug("[IconList] %s: RAWKEY_RETURN\n", __PRETTY_FUNCTION__));
 #endif
 
                                 if (data->icld_FocusIcon) active_entry = data->icld_FocusIcon;
@@ -3640,7 +3573,7 @@ D(bug("[IconList] %s: RAWKEY_RETURN\n", __PRETTY_FUNCTION__));
                                 rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RAWKEY_SPACE\n", __PRETTY_FUNCTION__));
+                                D(bug("[IconList] %s: RAWKEY_SPACE\n", __PRETTY_FUNCTION__));
 #endif
 
                                 if (data->icld_FocusIcon) active_entry = data->icld_FocusIcon;
@@ -3649,7 +3582,7 @@ D(bug("[IconList] %s: RAWKEY_SPACE\n", __PRETTY_FUNCTION__));
                                 if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionLastClicked)||(data->icld_SelectionLastClicked != active_entry)))
                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: SPACE: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
+                                    D(bug("[IconList] %s: SPACE: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
 #endif
                                     DoMethod(obj, MUIM_IconList_UnselectAll);
                                 }
@@ -3680,7 +3613,7 @@ D(bug("[IconList] %s: SPACE: Clearing selected icons ..\n", __PRETTY_FUNCTION__)
                                 rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RAWKEY_PAGEUP\n", __PRETTY_FUNCTION__));
+                                D(bug("[IconList] %s: RAWKEY_PAGEUP\n", __PRETTY_FUNCTION__));
 #endif
 
                                 if (data->icld_AreaHeight > data->icld_ViewHeight)
@@ -3700,7 +3633,7 @@ D(bug("[IconList] %s: RAWKEY_PAGEUP\n", __PRETTY_FUNCTION__));
                                 rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RAWKEY_PAGEDOWN\n", __PRETTY_FUNCTION__));
+                                D(bug("[IconList] %s: RAWKEY_PAGEDOWN\n", __PRETTY_FUNCTION__));
 #endif
 
                                 if (data->icld_AreaHeight > data->icld_ViewHeight)
@@ -3720,14 +3653,14 @@ D(bug("[IconList] %s: RAWKEY_PAGEDOWN\n", __PRETTY_FUNCTION__));
                                 rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RAWKEY_UP\n", __PRETTY_FUNCTION__));
+                                D(bug("[IconList] %s: RAWKEY_UP\n", __PRETTY_FUNCTION__));
 #endif
 
                                 if (data->icld_FocusIcon)
                                 {
                                     start_entry = data->icld_FocusIcon;
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: Clearing existing focused icon @ 0x%p\n", __PRETTY_FUNCTION__, start_entry));
+                                    D(bug("[IconList] %s: UP: Clearing existing focused icon @ 0x%p\n", __PRETTY_FUNCTION__, start_entry));
 #endif
 
                                     start_entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
@@ -3738,7 +3671,7 @@ D(bug("[IconList] %s: UP: Clearing existing focused icon @ 0x%p\n", __PRETTY_FUN
                                     start_X = start_entry->ie_IconX;
                                     start_Y = start_entry->ie_IconY;
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: start_icon @ 0x%p '%s' - start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_entry, start_entry->ie_IconListEntry.label, start_X, start_Y));
+                                    D(bug("[IconList] %s: UP: start_icon @ 0x%p '%s' - start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_entry, start_entry->ie_IconListEntry.label, start_X, start_Y));
 #endif
                                     if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
                                     {
@@ -3746,7 +3679,7 @@ D(bug("[IconList] %s: UP: start_icon @ 0x%p '%s' - start_X %d, start_Y %d\n", __
                                         {
                                             start_X = start_X - ((data->icld_IconAreaLargestWidth - start_entry->ie_AreaWidth)/2);
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: adjusted start_X for grid = %d\n", __PRETTY_FUNCTION__, start_X));
+                                            D(bug("[IconList] %s: UP: adjusted start_X for grid = %d\n", __PRETTY_FUNCTION__, start_X));
 #endif
                                         }
                                     }
@@ -3755,7 +3688,7 @@ D(bug("[IconList] %s: UP: adjusted start_X for grid = %d\n", __PRETTY_FUNCTION__
                                     {
                                         //Check if we are at the edge of the icon area ..
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: active_entry @ 0x%p '%s' , X %d, Y %d\n", __PRETTY_FUNCTION__, active_entry, active_entry->ie_IconListEntry.label, active_entry->ie_IconX, active_entry->ie_IconY));
+                                        D(bug("[IconList] %s: UP: active_entry @ 0x%p '%s' , X %d, Y %d\n", __PRETTY_FUNCTION__, active_entry, active_entry->ie_IconListEntry.label, active_entry->ie_IconX, active_entry->ie_IconY));
 #endif
                                         active_Y = active_entry->ie_IconY;
 
@@ -3763,7 +3696,7 @@ D(bug("[IconList] %s: UP: active_entry @ 0x%p '%s' , X %d, Y %d\n", __PRETTY_FUN
                                         {
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: active_entry is on our row (not at the edge)\n", __PRETTY_FUNCTION__));
+                                            D(bug("[IconList] %s: UP: active_entry is on our row (not at the edge)\n", __PRETTY_FUNCTION__));
 #endif
                                             entry_next = active_entry;
                                             next_X = entry_next->ie_IconX;
@@ -3775,20 +3708,20 @@ D(bug("[IconList] %s: UP: active_entry is on our row (not at the edge)\n", __PRE
                                         }
                                     }
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: using start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
+                                    D(bug("[IconList] %s: UP: using start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
 #endif
                                 }
 
                                 if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionLastClicked)&&(data->icld_SelectionLastClicked != active_entry)))
                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
+                                    D(bug("[IconList] %s: UP: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
 #endif
                                     DoMethod(obj, MUIM_IconList_UnselectAll);
                                 }
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, active_entry, entry_next));
+                                D(bug("[IconList] %s: UP: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, active_entry, entry_next));
 #endif
                                 if (!(active_entry))
                                 {
@@ -3806,7 +3739,7 @@ D(bug("[IconList] %s: UP: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, ac
                                 while (active_entry != NULL)
                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, active_entry));
+                                    D(bug("[IconList] %s: UP: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                     if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
                                     {
@@ -3825,7 +3758,7 @@ D(bug("[IconList] %s: UP: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, active
                                                 x_diff = ((data->icld_IconAreaLargestWidth - active_entry->ie_AreaWidth)/2);
                                         }
                                         active_Y = active_entry->ie_IconY;
-                                        
+
                                         if (start_entry)
                                         {
                                             if (entry_next)
@@ -3836,14 +3769,14 @@ D(bug("[IconList] %s: UP: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, active
                                                     ((active_X - x_diff) <= (start_X + start_entry->ie_AreaWidth + (x_diff*2)))))
                                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: (A) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+                                                    D(bug("[IconList] %s: UP: (A) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                                     break;
                                                 }
                                                 else if (active_entry == (struct IconEntry *)GetHead(&data->icld_IconList))
                                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: (A) reached list start .. restarting from the end ..\n", __PRETTY_FUNCTION__));
+                                                    D(bug("[IconList] %s: UP: (A) reached list start .. restarting from the end ..\n", __PRETTY_FUNCTION__));
 #endif
                                                     start_X = next_X;
 
@@ -3863,7 +3796,7 @@ D(bug("[IconList] %s: UP: (A) reached list start .. restarting from the end ..\n
                                                     }
                                                     start_Y = 0;
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: (A) startx = %d, start_Y = %d, next_X = %d, entry_next @ 0x%p\n", __PRETTY_FUNCTION__, start_X, start_Y, next_X, entry_next));
+                                                    D(bug("[IconList] %s: UP: (A) startx = %d, start_Y = %d, next_X = %d, entry_next @ 0x%p\n", __PRETTY_FUNCTION__, start_X, start_Y, next_X, entry_next));
 #endif
                                                     active_entry = Node_LastVisible(&data->icld_IconList);
                                                 }
@@ -3875,7 +3808,7 @@ D(bug("[IconList] %s: UP: (A) startx = %d, start_Y = %d, next_X = %d, entry_next
                                                     ((active_X + x_diff) < (start_X + start_entry->ie_AreaWidth + x_diff)))
                                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+                                                    D(bug("[IconList] %s: UP: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                                     break;
                                                 }
@@ -3886,7 +3819,7 @@ D(bug("[IconList] %s: UP: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active
                                             if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
                                             {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+                                                D(bug("[IconList] %s: UP: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                                 break;
                                             }
@@ -3898,12 +3831,12 @@ D(bug("[IconList] %s: UP: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active
                                 if (!(active_entry))
                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: UP: No Next UP Node - Getting Last visible icon ..\n", __PRETTY_FUNCTION__));
+                                    D(bug("[IconList] %s: UP: No Next UP Node - Getting Last visible icon ..\n", __PRETTY_FUNCTION__));
 #endif
                                     /* We didnt find a "next UP" icon so just use the last visible */
                                     active_entry = Node_LastVisible(&data->icld_IconList);
                                 }
-                                
+
                                 if (active_entry)
                                 {
                                     if (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
@@ -3913,7 +3846,6 @@ D(bug("[IconList] %s: UP: No Next UP Node - Getting Last visible icon ..\n", __P
                                         data->update_icon = active_entry;
                                         MUI_Redraw(obj, MADF_DRAWUPDATE);
                                     }
-                                    
                                 }
                                 data->icld_FocusIcon = active_entry;
                                 break;
@@ -3922,13 +3854,13 @@ D(bug("[IconList] %s: UP: No Next UP Node - Getting Last visible icon ..\n", __P
                                 rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RAWKEY_DOWN\n", __PRETTY_FUNCTION__));
+                                D(bug("[IconList] %s: RAWKEY_DOWN\n", __PRETTY_FUNCTION__));
 #endif
                                 if (data->icld_FocusIcon)
                                 {
                                     start_entry = data->icld_FocusIcon;
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: Clearing existing focused icon @ 0x%p\n", __PRETTY_FUNCTION__, start_entry));
+                                    D(bug("[IconList] %s: DOWN: Clearing existing focused icon @ 0x%p\n", __PRETTY_FUNCTION__, start_entry));
 #endif
 
                                     start_entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
@@ -3939,7 +3871,7 @@ D(bug("[IconList] %s: DOWN: Clearing existing focused icon @ 0x%p\n", __PRETTY_F
                                     start_X = start_entry->ie_IconX;
                                     start_Y = start_entry->ie_IconY;
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: start_icon @ 0x%p '%s' - start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_entry, start_entry->ie_IconListEntry.label, start_X, start_Y));
+                                    D(bug("[IconList] %s: DOWN: start_icon @ 0x%p '%s' - start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_entry, start_entry->ie_IconListEntry.label, start_X, start_Y));
 #endif
                                     if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
                                     {
@@ -3947,7 +3879,7 @@ D(bug("[IconList] %s: DOWN: start_icon @ 0x%p '%s' - start_X %d, start_Y %d\n", 
                                         {
                                             start_X = start_X - ((data->icld_IconAreaLargestWidth - start_entry->ie_AreaWidth)/2);
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: adjusted start_X for grid = %d\n", __PRETTY_FUNCTION__, start_X));
+                                            D(bug("[IconList] %s: DOWN: adjusted start_X for grid = %d\n", __PRETTY_FUNCTION__, start_X));
 #endif
                                         }
                                     }
@@ -3956,7 +3888,7 @@ D(bug("[IconList] %s: DOWN: adjusted start_X for grid = %d\n", __PRETTY_FUNCTION
                                         (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
                                     {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: active_entry @ 0x%p '%s' , X %d, Y %d\n", __PRETTY_FUNCTION__, active_entry, active_entry->ie_IconListEntry.label, active_entry->ie_IconX, active_entry->ie_IconY));
+                                        D(bug("[IconList] %s: DOWN: active_entry @ 0x%p '%s' , X %d, Y %d\n", __PRETTY_FUNCTION__, active_entry, active_entry->ie_IconListEntry.label, active_entry->ie_IconX, active_entry->ie_IconY));
 #endif
                                         active_Y = active_entry->ie_IconY;
 
@@ -3964,7 +3896,7 @@ D(bug("[IconList] %s: DOWN: active_entry @ 0x%p '%s' , X %d, Y %d\n", __PRETTY_F
                                         {
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: active_entry is on our row (not at the edge)\n", __PRETTY_FUNCTION__));
+                                            D(bug("[IconList] %s: DOWN: active_entry is on our row (not at the edge)\n", __PRETTY_FUNCTION__));
 #endif
                                             entry_next = active_entry;
                                             next_X = entry_next->ie_IconX;
@@ -3976,20 +3908,20 @@ D(bug("[IconList] %s: DOWN: active_entry is on our row (not at the edge)\n", __P
                                         }
                                     }
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: using start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
+                                    D(bug("[IconList] %s: DOWN: using start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
 #endif
                                 }
 
                                 if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionLastClicked)&&(data->icld_SelectionLastClicked != active_entry)))
                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
+                                    D(bug("[IconList] %s: DOWN: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
 #endif
                                     DoMethod(obj, MUIM_IconList_UnselectAll);
                                 }
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, active_entry, entry_next));
+                                D(bug("[IconList] %s: DOWN: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, active_entry, entry_next));
 #endif
                                 if (!(active_entry))
                                 {
@@ -4007,7 +3939,7 @@ D(bug("[IconList] %s: DOWN: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, 
                                 while (active_entry != NULL)
                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, active_entry));
+                                    D(bug("[IconList] %s: DOWN: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                     if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
                                     {
@@ -4035,14 +3967,14 @@ D(bug("[IconList] %s: DOWN: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, acti
                                                     ((active_X - x_diff) <= (start_X + start_entry->ie_AreaWidth + (x_diff*2)))))
                                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: (A) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+                                                    D(bug("[IconList] %s: DOWN: (A) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                                     break;
                                                 }
                                                 else if (active_entry == (struct IconEntry *)GetTail(&data->icld_IconList))
                                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: (A) reached list end .. starting at the beginng ..\n", __PRETTY_FUNCTION__));
+                                                    D(bug("[IconList] %s: DOWN: (A) reached list end .. starting at the beginng ..\n", __PRETTY_FUNCTION__));
 #endif
                                                     start_X = entry_next->ie_IconX;
                                                     if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
@@ -4067,7 +3999,7 @@ D(bug("[IconList] %s: DOWN: (A) reached list end .. starting at the beginng ..\n
                                                     }
                                                     start_Y = 0;
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: (A) startx = %d, start_Y = %d, next_X = %d, entry_next @ 0x%p\n", __PRETTY_FUNCTION__, start_X, start_Y, next_X, entry_next));
+                                                    D(bug("[IconList] %s: DOWN: (A) startx = %d, start_Y = %d, next_X = %d, entry_next @ 0x%p\n", __PRETTY_FUNCTION__, start_X, start_Y, next_X, entry_next));
 #endif
                                                     active_entry = Node_FirstVisible(&data->icld_IconList);
                                                 }
@@ -4079,7 +4011,7 @@ D(bug("[IconList] %s: DOWN: (A) startx = %d, start_Y = %d, next_X = %d, entry_ne
                                                     (active_X > start_X - 1))
                                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+                                                    D(bug("[IconList] %s: DOWN: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                                     break;
                                                 }
@@ -4090,7 +4022,7 @@ D(bug("[IconList] %s: DOWN: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, acti
                                             if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
                                             {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+                                                D(bug("[IconList] %s: DOWN: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                                 break;
                                             }
@@ -4102,12 +4034,12 @@ D(bug("[IconList] %s: DOWN: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, acti
                                 if (!(active_entry))
                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: DOWN: No Next DOWN Node - Getting first visable icon ..\n", __PRETTY_FUNCTION__));
+                                    D(bug("[IconList] %s: DOWN: No Next DOWN Node - Getting first visable icon ..\n", __PRETTY_FUNCTION__));
 #endif
                                     /* We didnt find a "next DOWN" icon so just use the first visible */
                                     active_entry =  Node_FirstVisible(&data->icld_IconList);
                                 }
-                                
+
                                 if (active_entry)
                                 {
                                     if (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
@@ -4117,7 +4049,6 @@ D(bug("[IconList] %s: DOWN: No Next DOWN Node - Getting first visable icon ..\n"
                                         data->update_icon = active_entry;
                                         MUI_Redraw(obj, MADF_DRAWUPDATE);
                                     }
-                                    
                                 }
                                 data->icld_FocusIcon = active_entry;
                                 break;
@@ -4126,13 +4057,13 @@ D(bug("[IconList] %s: DOWN: No Next DOWN Node - Getting first visable icon ..\n"
                                 rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RAWKEY_LEFT\n", __PRETTY_FUNCTION__));
+                                D(bug("[IconList] %s: RAWKEY_LEFT\n", __PRETTY_FUNCTION__));
 #endif
                                 if (data->icld_FocusIcon)
                                 {
                                     start_entry = data->icld_FocusIcon;
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: Clearing existing focused icon @ 0x%p\n", __PRETTY_FUNCTION__, start_entry));
+                                    D(bug("[IconList] %s: LEFT: Clearing existing focused icon @ 0x%p\n", __PRETTY_FUNCTION__, start_entry));
 #endif
 
                                     start_entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
@@ -4149,14 +4080,14 @@ D(bug("[IconList] %s: LEFT: Clearing existing focused icon @ 0x%p\n", __PRETTY_F
                                     start_Y = start_entry->ie_IconY;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
+                                    D(bug("[IconList] %s: LEFT: start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
 #endif
 
                                     if (!(active_entry = Node_NextVisible(start_entry)) && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
                                     {
                                         active_entry = (struct IconEntry *)GetHead(&data->icld_IconList);
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: Start at the beginning (Active @ 0x%p) using icon X + Width\n", __PRETTY_FUNCTION__, active_entry));
+                                        D(bug("[IconList] %s: LEFT: Start at the beginning (Active @ 0x%p) using icon X + Width\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                         start_X = start_X + start_entry->ie_AreaWidth;
                                         if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
@@ -4171,12 +4102,12 @@ D(bug("[IconList] %s: LEFT: Start at the beginning (Active @ 0x%p) using icon X 
                                     else if (active_entry && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
                                     {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: Active @ 0x%p, X %d\n", __PRETTY_FUNCTION__, active_entry, active_entry->ie_IconX));
+                                        D(bug("[IconList] %s: LEFT: Active @ 0x%p, X %d\n", __PRETTY_FUNCTION__, active_entry, active_entry->ie_IconX));
 #endif
                                         if ((entry_next = Node_NextVisible(start_entry)))
                                         {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: Next @ 0x%p, X %d\n", __PRETTY_FUNCTION__, entry_next, entry_next->ie_IconX));
+                                            D(bug("[IconList] %s: LEFT: Next @ 0x%p, X %d\n", __PRETTY_FUNCTION__, entry_next, entry_next->ie_IconX));
 #endif
 
                                             if (entry_next->ie_IconX < start_X)
@@ -4193,20 +4124,20 @@ D(bug("[IconList] %s: LEFT: Next @ 0x%p, X %d\n", __PRETTY_FUNCTION__, entry_nex
                                         }
                                     }
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: using start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
+                                    D(bug("[IconList] %s: LEFT: using start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
 #endif
                                 }
 
                                 if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionLastClicked)&&(data->icld_SelectionLastClicked != active_entry)))
                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
+                                    D(bug("[IconList] %s: LEFT: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
 #endif
                                     DoMethod(obj, MUIM_IconList_UnselectAll);
                                 }
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, active_entry, entry_next));
+                                D(bug("[IconList] %s: LEFT: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, active_entry, entry_next));
 #endif
 
                                 if (!(active_entry))
@@ -4217,7 +4148,7 @@ D(bug("[IconList] %s: LEFT: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, 
                                 while (active_entry != NULL)
                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, active_entry));
+                                    D(bug("[IconList] %s: LEFT: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                     if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
                                     {
@@ -4234,7 +4165,7 @@ D(bug("[IconList] %s: LEFT: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, acti
                                                 active_entry_X = active_entry_X - ((data->icld_IconAreaLargestWidth - active_entry->ie_AreaWidth)/2);
                                         }
                                         active_entry_Y = active_entry->ie_IconY;
-                                        
+
                                         if (start_entry)
                                         {
                                             if (entry_next)
@@ -4245,14 +4176,14 @@ D(bug("[IconList] %s: LEFT: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, acti
                                                     (active_entry_X < next_X)))
                                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: (A) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+                                                    D(bug("[IconList] %s: LEFT: (A) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                                     break;
                                                 }
                                                 else if (active_entry == (struct IconEntry *)GetTail(&data->icld_IconList))
                                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: (A) reached list end .. starting at the beginng ..\n", __PRETTY_FUNCTION__));
+                                                    D(bug("[IconList] %s: LEFT: (A) reached list end .. starting at the beginng ..\n", __PRETTY_FUNCTION__));
 #endif
                                                     start_X = entry_next->ie_IconX;
                                                     if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
@@ -4277,7 +4208,7 @@ D(bug("[IconList] %s: LEFT: (A) reached list end .. starting at the beginng ..\n
                                                     }
                                                     start_Y = 0;
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: (A) startx = %d, start_Y = %d, next_X = %d, entry_next @ 0x%p\n", __PRETTY_FUNCTION__, start_X, start_Y, next_X, entry_next));
+                                                    D(bug("[IconList] %s: LEFT: (A) startx = %d, start_Y = %d, next_X = %d, entry_next @ 0x%p\n", __PRETTY_FUNCTION__, start_X, start_Y, next_X, entry_next));
 #endif
                                                     active_entry = (struct IconEntry *)GetHead(&data->icld_IconList);
                                                 }
@@ -4289,7 +4220,7 @@ D(bug("[IconList] %s: LEFT: (A) startx = %d, start_Y = %d, next_X = %d, entry_ne
                                                     (active_entry_X > start_X - 1))
                                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+                                                    D(bug("[IconList] %s: LEFT: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                                     break;
                                                 }
@@ -4300,7 +4231,7 @@ D(bug("[IconList] %s: LEFT: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, acti
                                             if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
                                             {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+                                                D(bug("[IconList] %s: LEFT: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                                 break;
                                             }
@@ -4312,7 +4243,7 @@ D(bug("[IconList] %s: LEFT: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, acti
                                 if (!(active_entry))
                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: LEFT: No Next LEFT Node - Getting first visable icon ..\n", __PRETTY_FUNCTION__));
+                                    D(bug("[IconList] %s: LEFT: No Next LEFT Node - Getting first visable icon ..\n", __PRETTY_FUNCTION__));
 #endif
                                     /* We didnt find a "next LEFT" icon so just use the last visible */
                                     active_entry =  (struct IconEntry *)GetHead(&data->icld_IconList);
@@ -4321,7 +4252,7 @@ D(bug("[IconList] %s: LEFT: No Next LEFT Node - Getting first visable icon ..\n"
                                         active_entry = (struct IconEntry *)GetSucc(&active_entry->ie_IconNode);
                                     }
                                 }
-                                
+
                                 if (active_entry)
                                 {
                                     if (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
@@ -4331,7 +4262,6 @@ D(bug("[IconList] %s: LEFT: No Next LEFT Node - Getting first visable icon ..\n"
                                         data->update_icon = active_entry;
                                         MUI_Redraw(obj, MADF_DRAWUPDATE);
                                     }
-                                    
                                 }
                                 data->icld_FocusIcon = active_entry;
                                 break;
@@ -4340,14 +4270,14 @@ D(bug("[IconList] %s: LEFT: No Next LEFT Node - Getting first visable icon ..\n"
                                 rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RAWKEY_RIGHT\n", __PRETTY_FUNCTION__));
+                                D(bug("[IconList] %s: RAWKEY_RIGHT\n", __PRETTY_FUNCTION__));
 #endif
 
                                 if (data->icld_FocusIcon)
                                 {
                                     start_entry = data->icld_FocusIcon;
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: Clearing existing focused icon @ 0x%p\n", __PRETTY_FUNCTION__, start_entry));
+                                    D(bug("[IconList] %s: RIGHT: Clearing existing focused icon @ 0x%p\n", __PRETTY_FUNCTION__, start_entry));
 #endif
                                     start_entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
                                     data->icld_UpdateMode = UPDATE_SINGLEICON;
@@ -4363,13 +4293,13 @@ D(bug("[IconList] %s: RIGHT: Clearing existing focused icon @ 0x%p\n", __PRETTY_
                                     start_Y = start_entry->ie_IconY;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
+                                    D(bug("[IconList] %s: RIGHT: start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
 #endif
                                     if (!(active_entry = Node_NextVisible(start_entry)) && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
                                     {
                                         active_entry = (struct IconEntry *)GetHead(&data->icld_IconList);
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: Start at the beginning (Active @ 0x%p) using icon X + Width\n", __PRETTY_FUNCTION__, active_entry));
+                                        D(bug("[IconList] %s: RIGHT: Start at the beginning (Active @ 0x%p) using icon X + Width\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                         start_X = 0;
                                         start_Y = start_Y + start_entry->ie_AreaHeight;
@@ -4378,12 +4308,12 @@ D(bug("[IconList] %s: RIGHT: Start at the beginning (Active @ 0x%p) using icon X
                                     else if (active_entry && (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL))
                                     {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: Active @ 0x%p, X %d\n", __PRETTY_FUNCTION__, active_entry, active_entry->ie_IconX));
+                                        D(bug("[IconList] %s: RIGHT: Active @ 0x%p, X %d\n", __PRETTY_FUNCTION__, active_entry, active_entry->ie_IconX));
 #endif
                                         if ((entry_next = Node_NextVisible(start_entry)))
                                         {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: Next @ 0x%p, X %d\n", __PRETTY_FUNCTION__, entry_next, entry_next->ie_IconX));
+                                            D(bug("[IconList] %s: RIGHT: Next @ 0x%p, X %d\n", __PRETTY_FUNCTION__, entry_next, entry_next->ie_IconX));
 #endif
 
                                             if (entry_next->ie_IconY < start_Y)
@@ -4393,20 +4323,20 @@ D(bug("[IconList] %s: RIGHT: Next @ 0x%p, X %d\n", __PRETTY_FUNCTION__, entry_ne
                                         }
                                     }
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: using start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
+                                    D(bug("[IconList] %s: RIGHT: using start_X %d, start_Y %d\n", __PRETTY_FUNCTION__, start_X, start_Y));
 #endif
                                 }
 
                                 if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionLastClicked)&&(data->icld_SelectionLastClicked != active_entry)))
                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
+                                    D(bug("[IconList] %s: RIGHT: Clearing selected icons ..\n", __PRETTY_FUNCTION__));
 #endif
                                     DoMethod(obj, MUIM_IconList_UnselectAll);
                                 }
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, active_entry, entry_next));
+                                D(bug("[IconList] %s: RIGHT: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__, active_entry, entry_next));
 #endif
 
                                 if (!(active_entry))
@@ -4417,7 +4347,7 @@ D(bug("[IconList] %s: RIGHT: active = 0x%p, next = 0x%p\n", __PRETTY_FUNCTION__,
                                 while (active_entry != NULL)
                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, active_entry));
+                                    D(bug("[IconList] %s: RIGHT: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                     if (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL))
                                     {
@@ -4434,7 +4364,7 @@ D(bug("[IconList] %s: RIGHT: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, act
                                                 active_entry_X = active_entry_X - ((data->icld_IconAreaLargestWidth - active_entry->ie_AreaWidth)/2);
                                         }
                                         active_entry_Y = active_entry->ie_IconY;
-                                        
+
                                         if (start_entry)
                                         {
                                             if (entry_next)
@@ -4445,14 +4375,14 @@ D(bug("[IconList] %s: RIGHT: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, act
                                                     (active_entry_Y < next_Y)))
                                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: (A) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+                                                    D(bug("[IconList] %s: RIGHT: (A) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                                     break;
                                                 }
                                                 else if (active_entry == (struct IconEntry *)GetTail(&data->icld_IconList))
                                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: (A) reached list end .. starting at the beginng ..\n", __PRETTY_FUNCTION__));
+                                                    D(bug("[IconList] %s: RIGHT: (A) reached list end .. starting at the beginng ..\n", __PRETTY_FUNCTION__));
 #endif
                                                     start_Y = entry_next->ie_IconY;
 
@@ -4467,7 +4397,7 @@ D(bug("[IconList] %s: RIGHT: (A) reached list end .. starting at the beginng ..\
                                                     }
                                                     start_Y = 0;
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: (A) startx = %d, start_Y = %d, next_X = %d, entry_next @ 0x%p\n", __PRETTY_FUNCTION__, start_X, start_Y, next_X, entry_next));
+                                                    D(bug("[IconList] %s: RIGHT: (A) startx = %d, start_Y = %d, next_X = %d, entry_next @ 0x%p\n", __PRETTY_FUNCTION__, start_X, start_Y, next_X, entry_next));
 #endif
                                                     active_entry = (struct IconEntry *)GetHead(&data->icld_IconList);
                                                 }
@@ -4479,7 +4409,7 @@ D(bug("[IconList] %s: RIGHT: (A) startx = %d, start_Y = %d, next_X = %d, entry_n
                                                     (active_entry_Y > start_Y - 1))
                                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+                                                    D(bug("[IconList] %s: RIGHT: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                                     break;
                                                 }
@@ -4490,7 +4420,7 @@ D(bug("[IconList] %s: RIGHT: (B) entry 0x%p matches\n", __PRETTY_FUNCTION__, act
                                             if (active_entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
                                             {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
+                                                D(bug("[IconList] %s: RIGHT: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, active_entry));
 #endif
                                                 break;
                                             }
@@ -4502,7 +4432,7 @@ D(bug("[IconList] %s: RIGHT: (C) entry 0x%p matches\n", __PRETTY_FUNCTION__, act
                                 if (!(active_entry))
                                 {
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RIGHT: No Next RIGHT Node - Getting first visable icon ..\n", __PRETTY_FUNCTION__));
+                                    D(bug("[IconList] %s: RIGHT: No Next RIGHT Node - Getting first visable icon ..\n", __PRETTY_FUNCTION__));
 #endif
                                     /* We didnt find a "next RIGHT" icon so just use the first visible */
                                     active_entry =  (struct IconEntry *)GetHead(&data->icld_IconList);
@@ -4511,7 +4441,7 @@ D(bug("[IconList] %s: RIGHT: No Next RIGHT Node - Getting first visable icon ..\
                                         active_entry = (struct IconEntry *)GetSucc(&active_entry->ie_IconNode);
                                     }
                                 }
-                                
+
                                 if (active_entry)
                                 {
                                     if (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
@@ -4521,7 +4451,6 @@ D(bug("[IconList] %s: RIGHT: No Next RIGHT Node - Getting first visable icon ..\
                                         data->update_icon = active_entry;
                                         MUI_Redraw(obj, MADF_DRAWUPDATE);
                                     }
-                                    
                                 }
                                 data->icld_FocusIcon = active_entry;
                                 break;
@@ -4530,7 +4459,7 @@ D(bug("[IconList] %s: RIGHT: No Next RIGHT Node - Getting first visable icon ..\
                                 rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RAWKEY_HOME\n", __PRETTY_FUNCTION__));
+                                D(bug("[IconList] %s: RAWKEY_HOME\n", __PRETTY_FUNCTION__));
 #endif
 
                                 if (data->icld_FocusIcon)
@@ -4557,7 +4486,7 @@ D(bug("[IconList] %s: RAWKEY_HOME\n", __PRETTY_FUNCTION__));
                                 rawkey_handled = TRUE;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] %s: RAWKEY_END\n", __PRETTY_FUNCTION__));
+                                D(bug("[IconList] %s: RAWKEY_END\n", __PRETTY_FUNCTION__));
 #endif
 
                                 if (data->icld_FocusIcon)
@@ -4569,7 +4498,7 @@ D(bug("[IconList] %s: RAWKEY_END\n", __PRETTY_FUNCTION__));
                                 }
 
                                 active_entry = Node_LastVisible(&data->icld_IconList);
-                                
+
                                 if ((active_entry) && (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS)))
                                 {
                                     active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
@@ -4587,7 +4516,7 @@ D(bug("[IconList] %s: RAWKEY_END\n", __PRETTY_FUNCTION__));
     
             case IDCMP_MOUSEBUTTONS:
 #if defined(DEBUG_ILC_EVENTS)
-bug("[IconList] %s: IDCMP_MOUSEBUTTONS\n", __PRETTY_FUNCTION__);
+                D(bug("[IconList] %s: IDCMP_MOUSEBUTTONS\n", __PRETTY_FUNCTION__));
 #endif
                 if (message->imsg->Code == SELECTDOWN)
                 {
@@ -4630,7 +4559,7 @@ bug("[IconList] %s: IDCMP_MOUSEBUTTONS\n", __PRETTY_FUNCTION__);
                                 {
                                     new_selected = node;
 #if defined(DEBUG_ILC_EVENTS)
-D(bug("[IconList] %s: Icon '%s' clicked on ..\n", __PRETTY_FUNCTION__, node->ie_IconListEntry.label));
+                                    D(bug("[IconList] %s: Icon '%s' clicked on ..\n", __PRETTY_FUNCTION__, node->ie_IconListEntry.label));
 #endif
                                 }
 
@@ -4657,7 +4586,7 @@ D(bug("[IconList] %s: Icon '%s' clicked on ..\n", __PRETTY_FUNCTION__, node->ie_
                                     data->update_icon = node;
                                     MUI_Redraw(obj, MADF_DRAWUPDATE);
 #if defined(DEBUG_ILC_EVENTS)
-D(bug("[IconList] %s: Rendered icon '%s'\n", __PRETTY_FUNCTION__, node->ie_IconListEntry.label));
+                                    D(bug("[IconList] %s: Rendered icon '%s'\n", __PRETTY_FUNCTION__, node->ie_IconListEntry.label));
 #endif
                                 }
                             }
@@ -4668,7 +4597,7 @@ D(bug("[IconList] %s: Rendered icon '%s'\n", __PRETTY_FUNCTION__, node->ie_IconL
                         if ((DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros)) && (data->icld_SelectionLastClicked == new_selected))
                         {
 #if defined(DEBUG_ILC_EVENTS)
-D(bug("[IconList] %s: Icon double-clicked\n", __PRETTY_FUNCTION__));
+                            D(bug("[IconList] %s: Icon double-clicked\n", __PRETTY_FUNCTION__));
 #endif
                             icon_doubleclicked = TRUE;
                         }
@@ -4677,7 +4606,7 @@ D(bug("[IconList] %s: Icon double-clicked\n", __PRETTY_FUNCTION__));
                         {
                             struct Window * thisWindow = NULL;
 #if defined(DEBUG_ILC_EVENTS) && defined(DEBUG_ILC_LASSO)
-D(bug("[IconList] %s: Starting Lasso\n", __PRETTY_FUNCTION__));
+                            D(bug("[IconList] %s: Starting Lasso\n", __PRETTY_FUNCTION__));
 #endif
                             /* No icon clicked on ... Start Lasso-selection */
                             data->icld_LassoActive = TRUE;
@@ -4739,7 +4668,7 @@ D(bug("[IconList] %s: Starting Lasso\n", __PRETTY_FUNCTION__));
                                 data->update_icon = update_icon;
                                 MUI_Redraw(obj, MADF_DRAWUPDATE);
 #if defined(DEBUG_ILC_EVENTS)
-D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__, update_icon->ie_IconListEntry.label));
+                                D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__, update_icon->ie_IconListEntry.label));
 #endif
                             }
                         }                       
@@ -4806,7 +4735,7 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
                         if (data->icld_LassoActive == TRUE)
                         {
 #if defined(DEBUG_ILC_EVENTS) && defined(DEBUG_ILC_LASSO)
-D(bug("[IconList] %s: Removing Lasso\n", __PRETTY_FUNCTION__));
+                            D(bug("[IconList] %s: Removing Lasso\n", __PRETTY_FUNCTION__));
 #endif
                             // End Lasso-selection
                             struct Rectangle    old_lasso;
@@ -4865,7 +4794,7 @@ D(bug("[IconList] %s: Removing Lasso\n", __PRETTY_FUNCTION__));
             case IDCMP_INTUITICKS:
                 {
 #if defined(DEBUG_ILC_EVENTS)
-D(bug("[IconList] %s: IDCMP_INTUITICKS (%d, %d)\n", __PRETTY_FUNCTION__, mx, my));
+                    D(bug("[IconList] %s: IDCMP_INTUITICKS (%d, %d)\n", __PRETTY_FUNCTION__, mx, my));
 #endif
                     if ((data->icld_LassoActive == FALSE)||(!(data->mouse_pressed & LEFT_BUTTON)))
                     {
@@ -4878,7 +4807,7 @@ D(bug("[IconList] %s: IDCMP_INTUITICKS (%d, %d)\n", __PRETTY_FUNCTION__, mx, my)
 
             case IDCMP_MOUSEMOVE:
 #if defined(DEBUG_ILC_EVENTS)
-D(bug("[IconList] %s: IDCMP_MOUSEMOVE\n", __PRETTY_FUNCTION__));
+                D(bug("[IconList] %s: IDCMP_MOUSEMOVE\n", __PRETTY_FUNCTION__));
 #endif
                 if (data->mouse_pressed & LEFT_BUTTON)
                 {
@@ -4902,7 +4831,7 @@ D(bug("[IconList] %s: IDCMP_MOUSEMOVE\n", __PRETTY_FUNCTION__));
                     else if (data->icld_LassoActive == TRUE)
                     {
 #if defined(DEBUG_ILC_EVENTS) && defined(DEBUG_ILC_LASSO)
-D(bug("[IconList] %s: Update Lasso\n", __PRETTY_FUNCTION__));
+                        D(bug("[IconList] %s: Update Lasso\n", __PRETTY_FUNCTION__));
 #endif
                         //Lasso active ..
                         struct Rectangle    new_lasso,
@@ -5057,77 +4986,77 @@ MUIM_IconList_NextIcon
 **************************************************************************/
 IPTR IconList__MUIM_IconList_NextIcon(struct IClass *CLASS, Object *obj, struct MUIP_IconList_NextIcon *message)
 {
-    struct IconList_DATA    *data = INST_DATA(CLASS, obj);
-    struct IconEntry       *node = NULL;
-    struct IconList_Entry  *ent = NULL;
-    IPTR                    node_successor = (IPTR)NULL;
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    struct IconEntry            *node = NULL;
+    struct IconList_Entry       *ent = NULL;
+    IPTR                        node_successor = (IPTR)NULL;
 
     if (message->entry == NULL) return (IPTR)NULL;
     ent = *message->entry;
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     if ((IPTR)ent == (IPTR)MUIV_IconList_NextIcon_Start)
     {
-D(bug("[IconList] %s: Finding First Entry ..\n", __PRETTY_FUNCTION__));
-		if (message->nextflag == MUIV_IconList_NextIcon_Selected)
-		{
-			node = (struct IconEntry *)GetHead(&data->icld_SelectionList);
-			if (node != NULL)
-			{
-				node = (struct IconEntry *)((IPTR)node - ((IPTR)&node->ie_SelectionNode - (IPTR)node));
-			}
-		}
-		else if (message->nextflag == MUIV_IconList_NextIcon_Visible)
-		{
-			node = (struct IconEntry *)GetHead(&data->icld_IconList);
-			while (node != NULL)
-			{
-				if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-					break;
+        D(bug("[IconList] %s: Finding First Entry ..\n", __PRETTY_FUNCTION__));
+        if (message->nextflag == MUIV_IconList_NextIcon_Selected)
+        {
+            node = (struct IconEntry *)GetHead(&data->icld_SelectionList);
+            if (node != NULL)
+            {
+                node = (struct IconEntry *)((IPTR)node - ((IPTR)&node->ie_SelectionNode - (IPTR)node));
+            }
+        }
+        else if (message->nextflag == MUIV_IconList_NextIcon_Visible)
+        {
+            node = (struct IconEntry *)GetHead(&data->icld_IconList);
+            while (node != NULL)
+            {
+                if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+                    break;
 
-				node = (struct IconEntry *)GetSucc(&node->ie_IconNode);
-			}
-		}
+                node = (struct IconEntry *)GetSucc(&node->ie_IconNode);
+            }
+        }
     }
     else if ((IPTR)ent != (IPTR)MUIV_IconList_NextIcon_End)
     {
-		node = (struct IconEntry *)((IPTR)ent - ((IPTR)&node->ie_IconListEntry - (IPTR)node));
-		if (message->nextflag == MUIV_IconList_NextIcon_Selected)
-		{
-			node_successor = (IPTR)GetSucc(&node->ie_SelectionNode);
-			if (node_successor != (IPTR)NULL)
-				node = (struct IconEntry *)((IPTR)node_successor - ((IPTR)&node->ie_SelectionNode - (IPTR)node));
-			else
-			{
-D(bug("[IconList] %s: GetSucc() == NULL\n", __PRETTY_FUNCTION__));
-				node = NULL;
-			}
-		}
-		else if (message->nextflag == MUIV_IconList_NextIcon_Visible)
-		{
-			node = (struct IconEntry *)GetSucc(&node->ie_IconNode);
-			while (node != NULL)
-			{
-				if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-					break;
+        node = (struct IconEntry *)((IPTR)ent - ((IPTR)&node->ie_IconListEntry - (IPTR)node));
+        if (message->nextflag == MUIV_IconList_NextIcon_Selected)
+        {
+            node_successor = (IPTR)GetSucc(&node->ie_SelectionNode);
+            if (node_successor != (IPTR)NULL)
+                node = (struct IconEntry *)((IPTR)node_successor - ((IPTR)&node->ie_SelectionNode - (IPTR)node));
+            else
+            {
+                D(bug("[IconList] %s: GetSucc() == NULL\n", __PRETTY_FUNCTION__));
+                node = NULL;
+            }
+        }
+        else if (message->nextflag == MUIV_IconList_NextIcon_Visible)
+        {
+            node = (struct IconEntry *)GetSucc(&node->ie_IconNode);
+            while (node != NULL)
+            {
+                if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+                    break;
 
-				node = (struct IconEntry *)GetSucc(&node->ie_IconNode);
-			}
-		}
+                node = (struct IconEntry *)GetSucc(&node->ie_IconNode);
+            }
+        }
     }
 
     if (node == NULL)
     {
-D(bug("[IconList] %s: Returning MUIV_IconList_NextIcon_End\n", __PRETTY_FUNCTION__));
+        D(bug("[IconList] %s: Returning MUIV_IconList_NextIcon_End\n", __PRETTY_FUNCTION__));
 
         *message->entry = (struct IconList_Entry *)MUIV_IconList_NextIcon_End;
     }
     else
     {
-D(bug("[IconList] %s: Returning entry for '%s'\n", __PRETTY_FUNCTION__, node->ie_IconListEntry.label));
+        D(bug("[IconList] %s: Returning entry for '%s'\n", __PRETTY_FUNCTION__, node->ie_IconListEntry.label));
 
         *message->entry = &node->ie_IconListEntry;
     }
@@ -5142,8 +5071,8 @@ MUIM_IconList_GetIconPrivate
 **************************************************************************/
 IPTR IconList__MUIM_IconList_GetIconPrivate(struct IClass *CLASS, Object *obj, struct MUIP_IconList_GetIconPrivate *message)
 {
-//    struct IconList_DATA    *data = INST_DATA(CLASS, obj);
-    struct IconEntry       *node = NULL;
+//    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    struct IconEntry            *node = NULL;
 
     if (message->entry == NULL) return (IPTR)NULL;
 
@@ -5158,16 +5087,17 @@ MUIM_CreateDragImage
 **************************************************************************/
 IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MUIP_CreateDragImage *message)
 {
-    struct IconList_DATA     *data = INST_DATA(CLASS, obj);
-    struct MUI_DragImage    *img = NULL;
-    LONG                    first_x = -1,
-                            first_y = -1;
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    struct MUI_DragImage        *img = NULL;
+    LONG                        first_x = -1,
+                                first_y = -1;
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    (bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
-    if (!(data->icld_SelectionLastClicked)) DoSuperMethodA(CLASS, obj, (Msg)message);
+    if (!(data->icld_SelectionLastClicked))
+        DoSuperMethodA(CLASS, obj, (Msg)message);
 
     if ((img = (struct MUI_DragImage *)AllocVec(sizeof(struct MUIP_CreateDragImage), MEMF_CLEAR)))
     {
@@ -5175,7 +5105,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         struct IconEntry *entry = NULL;
 
         LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap, BMA_DEPTH);
-    
+
 #if defined(CREATE_FULL_DRAGIMAGE)
 #if defined(__AROS__)
         ForeachNode(&data->icld_SelectionList, node)
@@ -5238,7 +5168,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
             RastPortSetAlpha(&temprp, data->click_x, data->click_y, img->width, img->height, 0x80, RPALPHAFLAT);
             DeinitRastPort(&temprp);
         }
-    
+
         img->touchx = message->touchx;
         img->touchy = message->touchy;
         img->flags = 0;
@@ -5256,10 +5186,10 @@ MUIM_DeleteDragImage
 **************************************************************************/
 IPTR IconList__MUIM_DeleteDragImage(struct IClass *CLASS, Object *obj, struct MUIP_DeleteDragImage *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     if (!(data->icld_SelectionLastClicked)) return DoSuperMethodA(CLASS,obj,(Msg)message);
@@ -5281,7 +5211,7 @@ MUIM_DragQuery
 IPTR IconList__MUIM_DragQuery(struct IClass *CLASS, Object *obj, struct MUIP_DragQuery *message)
 {
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
     if (message->obj == obj)
         return MUIV_DragQuery_Accept;
@@ -5289,7 +5219,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     {
         BOOL           is_iconlist = FALSE;
         struct IClass  *msg_cl = OCLASS(message->obj);
-    
+
         while (msg_cl)
         {
             if (msg_cl == CLASS)
@@ -5313,10 +5243,10 @@ MUIM_DragDrop
 **************************************************************************/
 IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_DragDrop *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     struct IconList_Entry *entry    = (IPTR)MUIV_IconList_NextIcon_Start;
@@ -5488,7 +5418,6 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
                         if (path)
                         {
-#warning "TODO: Get full path for source icons .. "
                             fulllen = strlen(path) + strlen(entry->ile_IconEntry->ie_IconNode.ln_Name) + 2;
                             sourceEntry->dropse_Node.ln_Name = AllocVec(fulllen, MEMF_CLEAR);
                             strcpy(sourceEntry->dropse_Node.ln_Name, path);
@@ -5557,12 +5486,12 @@ MUIM_UnselectAll
 **************************************************************************/
 IPTR IconList__MUIM_IconList_UnselectAll(struct IClass *CLASS, Object *obj, Msg message)
 {
-    struct IconList_DATA 	*data = INST_DATA(CLASS, obj);
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
     struct Node         	*node = NULL, *next_node = NULL;
-	BOOL					changed = FALSE;
+    BOOL                        changed = FALSE;
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     data->icld_SelectionLastClicked = NULL;
@@ -5600,9 +5529,9 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         }
     }
 
-	if (changed)
-		SET(obj, MUIA_IconList_SelectionChanged, TRUE);
-	
+    if (changed)
+        SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+
     return 1;
 }
 ///
@@ -5615,10 +5544,10 @@ IPTR IconList__MUIM_IconList_SelectAll(struct IClass *CLASS, Object *obj, Msg me
 {
     struct IconList_DATA 	*data = INST_DATA(CLASS, obj);
     struct IconEntry    	*node = NULL;
-	BOOL					changed = FALSE;
+    BOOL                        changed = FALSE;
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     node = (struct IconEntry *)GetHead(&data->icld_IconList);
@@ -5677,20 +5606,20 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 ///IconList__MUIM_IconList_CoordsSort()
 IPTR IconList__MUIM_IconList_CoordsSort(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Sort *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 
-    struct IconEntry    *entry = NULL,
-                        *test_icon = NULL;
+    struct IconEntry            *entry = NULL,
+                                *test_icon = NULL;
 
-    struct List         list_VisibleIcons;
-    struct List         list_HiddenIcons;
+    struct List                 list_VisibleIcons;
+    struct List                 list_HiddenIcons;
 
     /*
         perform a quick sort of the iconlist based on icon coords
         this method DOESNT cause any visual output.
     */
 #if defined(DEBUG_ILC_FUNCS) && defined(DEBUG_ILC_ICONSORTING)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     NewList((struct List*)&list_VisibleIcons);
@@ -5736,7 +5665,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
             AddTail((struct List*)&data->icld_IconList, (struct Node *)&entry->ie_IconNode);
     }
 #if defined(DEBUG_ILC_ICONSORTING)
-D(bug("[IconList] %s: Done\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList] %s: Done\n", __PRETTY_FUNCTION__));
 #endif
 
     while ((entry = (struct IconEntry *)RemTail((struct List*)&list_HiddenIcons)))
@@ -5751,7 +5680,7 @@ D(bug("[IconList] %s: Done\n", __PRETTY_FUNCTION__));
     Foreach_Node(&data->icld_IconList, entry);
 #endif
     {
-D(bug("[IconList] %s: %d   %d   '%s'\n", __PRETTY_FUNCTION__, entry->ie_IconX, entry->ie_IconY, entry->ie_IconListEntry.label));
+        D(bug("[IconList] %s: %d   %d   '%s'\n", __PRETTY_FUNCTION__, entry->ie_IconX, entry->ie_IconY, entry->ie_IconListEntry.label));
     }
 #endif
 
@@ -5765,19 +5694,20 @@ MUIM_Sort - sortsort
 **************************************************************************/
 IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Sort *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
-    struct IconEntry    *entry = NULL,
-                        *icon1 = NULL,
-                        *icon2 = NULL;
-    struct List         list_VisibleIcons,
-                        list_SortedIcons,
-                        list_HiddenIcons;
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    struct IconEntry            *entry = NULL,
+                                *icon1 = NULL,
+                                *icon2 = NULL;
 
-    BOOL                sortme, enqueue = FALSE;
-    int                 i, visible_count = 0;
+    struct List                 list_VisibleIcons,
+                                list_SortedIcons,
+                                list_HiddenIcons;
+
+    BOOL                        sortme, enqueue = FALSE;
+    int                         i, visible_count = 0;
 
 #if defined(DEBUG_ILC_FUNCS) && defined(DEBUG_ILC_ICONSORTING)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     /* Reset incase view options have changed .. */
@@ -5789,7 +5719,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     if ((data->icld_SortFlags & ICONLIST_SORT_MASK) != 0)
     {
 #if defined(DEBUG_ILC_ICONSORTING)
-D(bug("[IconList] %s: Sorting (Flags %x)\n", __PRETTY_FUNCTION__, (data->icld_SortFlags & ICONLIST_SORT_MASK)));
+        D(bug("[IconList] %s: Sorting (Flags %x)\n", __PRETTY_FUNCTION__, (data->icld_SortFlags & ICONLIST_SORT_MASK)));
 #endif
         NewList((struct List*)&list_VisibleIcons);
         NewList((struct List*)&list_SortedIcons);
@@ -5874,7 +5804,7 @@ D(bug("[IconList] %s: Sorting (Flags %x)\n", __PRETTY_FUNCTION__, (data->icld_So
 
             if (visible_count > 1)
             {
-    //D(bug(" - %s %s %s %i\n",entry->ie_IconListEntry.label,entry->ie_TxtBuf_DATE,entry->ie_TxtBuf_TIME,entry->ie_FileInfoBlock->fib_Size));
+//                D(bug(" - %s %s %s %i\n",entry->ie_IconListEntry.label,entry->ie_TxtBuf_DATE,entry->ie_TxtBuf_TIME,entry->ie_FileInfoBlock->fib_Size));
 
                 while (icon1)
                 {
@@ -5903,7 +5833,7 @@ D(bug("[IconList] %s: Sorting (Flags %x)\n", __PRETTY_FUNCTION__, (data->icld_So
                                     (entry->ie_IconListEntry.type == ST_USERDIR) &&
                                     (icon1->ie_IconListEntry.type != ST_USERDIR))
                                 {
-    //D(bug("force %s\n",entry->ie_IconListEntry.label));
+//                                    D(bug("force %s\n",entry->ie_IconListEntry.label));
                                     break;
                                 }
                             }
@@ -5940,7 +5870,7 @@ D(bug("[IconList] %s: Sorting (Flags %x)\n", __PRETTY_FUNCTION__, (data->icld_So
                                 /* Sort by Name .. */
                                 i = Stricmp(entry->ie_IconListEntry.label, icon1->ie_IconListEntry.label);
                                 if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK)
-                                        enqueue = TRUE;
+                                    enqueue = TRUE;
                             }
                             else
                             {
@@ -5982,7 +5912,7 @@ D(bug("[IconList] %s: Sorting (Flags %x)\n", __PRETTY_FUNCTION__, (data->icld_So
     else
     {
 #if defined(DEBUG_ILC_ICONSORTING)
-D(bug("[IconList] %s: Coord Sorting\n", __PRETTY_FUNCTION__));
+        D(bug("[IconList] %s: Coord Sorting\n", __PRETTY_FUNCTION__));
 #endif
         DoMethod(obj, MUIM_IconList_CoordsSort);
     }
@@ -6015,11 +5945,11 @@ MUI. Maybe Zune should fix this bug somewhen.
 **************************************************************************/
 IPTR IconList__MUIM_DragReport(struct IClass *CLASS, Object *obj, struct MUIP_DragReport *message)
 {
-    struct Window   *wnd = _window(obj);
-    struct Layer    *l = NULL;
+    struct Window       *wnd = _window(obj);
+    struct Layer        *l = NULL;
 
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     l = WhichLayer(&wnd->WScreen->LayerInfo, wnd->LeftEdge + message->x, wnd->TopEdge + message->y);
@@ -6037,9 +5967,9 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 IPTR IconList__MUIM_UnknownDropDestination(struct IClass *CLASS, Object *obj, struct MUIP_UnknownDropDestination *message)
 {
 #if defined(DEBUG_ILC_FUNCS)
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
-D(bug("[IconList] %s: icons dropped on custom window \n", __PRETTY_FUNCTION__));
+    D(bug("[IconList] %s: icons dropped on custom window \n", __PRETTY_FUNCTION__));
 
     SET(obj, MUIA_IconList_AppWindowDrop, (IPTR)message); /* Now notify */
 
@@ -6053,9 +5983,9 @@ D(bug("[IconList] %s: icons dropped on custom window \n", __PRETTY_FUNCTION__));
 **************************************************************************/
 IPTR IconList__MUIM_IconList_MakeIconVisible(struct IClass *CLASS, Object *obj, struct MUIP_IconList_MakeIconVisible *message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
-    BOOL viewmoved = FALSE;
-    struct Rectangle iconrect, viewrect;
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    BOOL                        viewmoved = FALSE;
+    struct Rectangle            iconrect, viewrect;
 
 #if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
@@ -6100,7 +6030,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     return 1;
 }
 
-#if WANDERER_BUILTIN_ICONLIST
+#if defined(WANDERER_BUILTIN_ICONLIST)
 BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
 {
 #if defined(__AROS__)
@@ -6116,11 +6046,14 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
         case OM_DISPOSE:                        return IconList__OM_DISPOSE(CLASS, obj, message);
         case OM_SET:                            return IconList__OM_SET(CLASS, obj, (struct opSet *)message);
         case OM_GET:                            return IconList__OM_GET(CLASS, obj, (struct opGet *)message);
-        case OM_ADDMEMBER:                      return IconList__OM_ADDMEMBER(CLASS, obj, (APTR)message);
-        case OM_REMMEMBER:                      return IconList__OM_REMMEMBER(CLASS, obj, (APTR)message);
+       	case OM_ADDMEMBER:
+        case MUIM_Family_AddTail:               return IconList__MUIM_Family_AddTail(CLASS, obj, (APTR)message);
+        case MUIM_Family_AddHead:               return IconList__MUIM_Family_AddHead(CLASS, obj, (APTR)message);
+	case OM_REMMEMBER:
+        case MUIM_Family_Remove:                return IconList__MUIM_Family_Remove(CLASS, obj, (APTR)message);
 
         case MUIM_Setup:                        return IconList__MUIM_Setup(CLASS, obj, (struct MUIP_Setup *)message);
-        
+
         case MUIM_Show:                         return IconList__MUIM_Show(CLASS,obj, (struct MUIP_Show *)message);
         case MUIM_Hide:                         return IconList__MUIM_Hide(CLASS,obj, (struct MUIP_Hide *)message);
         case MUIM_Cleanup:                      return IconList__MUIM_Cleanup(CLASS, obj, (struct MUIP_Cleanup *)message);
@@ -6174,6 +6107,6 @@ const struct __MUIBuiltinClass _MUI_IconList_desc = {
 #if !defined(__AROS__)
 struct MUI_CustomClass  *initIconListClass(void)
 {
-  return (struct MUI_CustomClass *) MUI_CreateCustomClass(NULL, MUIC_Area, NULL, sizeof(struct IconList_DATA), ENTRY(IconList_Dispatcher));
+    return (struct MUI_CustomClass *) MUI_CreateCustomClass(NULL, MUIC_Area, NULL, sizeof(struct IconList_DATA), ENTRY(IconList_Dispatcher));
 }
 #endif

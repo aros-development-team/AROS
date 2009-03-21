@@ -234,7 +234,7 @@ HOOKPROTO(panelStatusBar__HookFunc_UpdateStatusFunc, void, APTR *obj, APTR param
         int files = 0, dirs = 0, hidden = 0;
         ULONG size = 0;
 
-        GET(data->iwd_IconListObj, MUIA_Group_ChildList, &iconList);
+        GET(data->iwd_IconListObj, MUIA_Family_List, &iconList);
         if (iconList)
         {
             ForeachNode(iconList, icon)

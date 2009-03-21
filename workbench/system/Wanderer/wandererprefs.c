@@ -2,6 +2,9 @@
   Copyright  2004-2009, The AROS Development Team. All rights reserved.
   $Id$
 */
+
+#define ZCC_QUIET
+
 #include "portable_macros.h"
 #ifdef __AROS__
 #define DEBUG 0

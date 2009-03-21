@@ -3,6 +3,8 @@
   $Id$
 */
 
+#define ZCC_QUIET
+
 #include "portable_macros.h"
 
 #ifdef __AROS__
@@ -477,7 +479,6 @@ HOOKPROTO(IconWindowVolumeList__HookFunc_UpdateNetworkPrefsFunc, void, APTR *obj
 MakeStaticHook(Hook_UpdateNetworkPrefsFunc,IconWindowVolumeList__HookFunc_UpdateNetworkPrefsFunc);
 #endif
 
-#warning "TODO: Reimplement ParseBackdrop by overriding the iconlist CreateEntry method"
 #define BDRPLINELEN_MAX 1024
 BOOL IconWindowVolumeList__Func_ParseBackdrop(Class *CLASS, Object *self, char *bdrp_dir)
 {
@@ -488,6 +489,8 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Class *CLASS, Object *self, char *
 
     if ((bdrp_dir == NULL) || (bdrp_dir[strlen(bdrp_dir) - 1] != ':'))
         return retVal;
+
+    D(bug("[Wanderer:VolumeList] %s: Checking '%s' for .backdrop file .. \n", __PRETTY_FUNCTION__, bdrp_dir));
 
     if ((bdrp_file = AllocVec(strlen(bdrp_dir) + 9 + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
     {
@@ -1183,9 +1186,8 @@ IPTR IconWindowVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Objec
 
         volPrivate = this_Icon->ie_IconListEntry.udata;
 
-        if ((this_Icon->ie_IconListEntry.type == ST_ROOT) && (volPrivate && !(volPrivate->vip_FLags & ICONENTRY_VOL_OFFLINE)))
+        if ((this_Icon->ie_IconListEntry.type == ST_ROOT) && (volPrivate && ((volPrivate->vip_FLags & (ICONENTRY_VOL_OFFLINE|ICONENTRY_VOL_DISABLED)) == 0)))
         {
-            D(bug("[Wanderer:VolumeList] %s: Checking '%s' for .backdrop' file\n", __PRETTY_FUNCTION__, this_Icon->ie_IconListEntry.label));
             IconWindowVolumeList__Func_ParseBackdrop(CLASS, obj, this_Icon->ie_IconListEntry.label);
         }
     }

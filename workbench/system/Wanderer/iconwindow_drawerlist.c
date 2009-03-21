@@ -3,6 +3,8 @@
   $Id$
 */
 
+#define ZCC_QUIET
+
 #include "portable_macros.h"
 
 #ifdef __AROS__
