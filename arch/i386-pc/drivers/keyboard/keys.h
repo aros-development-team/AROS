@@ -2,7 +2,7 @@
 #define KEYS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PC keymap.
@@ -135,4 +135,4 @@
 /* Reset Key! */
 #define K_ResetRequest	0x7f7f
 
-#endif KEYS_H
+#endif /* KEYS_H */
