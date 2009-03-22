@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <setjmp.h>
 #include <errno.h>
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -22,6 +23,7 @@
 #include "__arosc_privdata.h"
 #include "__open.h"
 #include "__vfork.h"
+#include "__exec.h"
 
 #define DEBUG 0
 
@@ -39,7 +41,6 @@ LONG launcher()
     struct Task *this = FindTask(NULL);
     struct vfork_data *udata = this->tc_UserData;
     BYTE child_signal;
-    LONG ret = 0;
     struct Library *aroscbase = NULL;
 
     GetIntETask(this)->iet_startup = GetETask(this)->et_Result2 = AllocVec(sizeof(struct aros_startup), MEMF_ANY | MEMF_CLEAR);
@@ -64,83 +65,100 @@ LONG launcher()
 	Signal(udata->parent, 1 << udata->parent_signal);
 	return -1;	
     }
-
+    
     udata->cpriv = __get_arosc_privdata();
-    __get_arosc_privdata()->acpd_parent_does_upath = udata->ppriv->acpd_doupath;
-    __get_arosc_privdata()->acpd_flags |= KEEP_OLD_ACPD | DO_NOT_CLONE_ENV_VARS;
+    udata->cpriv->acpd_parent_does_upath = udata->ppriv->acpd_doupath;
+    udata->cpriv->acpd_flags |= DO_NOT_CLONE_ENV_VARS;
 
-    /* Setup complete, signal parent */
-    D(bug("launcher: Signaling parent that we finished setup\n"));
-    Signal(udata->parent, 1 << udata->parent_signal);
-
-    D(bug("launcher: Child waiting for execve or exit\n"));
-    Wait(1 << udata->child_signal);
-
-    if(udata->child_executed)
+    if(setjmp(__aros_startup_jmp_buf) == 0)
     {
-	D(bug("launcher: child executed\n"));
-	BPTR seglist = udata->exec_seglist;
-	char *taskname = udata->exec_taskname;
-	char *arguments = udata->exec_arguments;
-	ULONG stacksize = udata->exec_stacksize;
+        /* Setup complete, signal parent */
+        D(bug("launcher: Signaling parent that we finished setup\n"));
+        Signal(udata->parent, 1 << udata->parent_signal);
 
-	fdesc *in, *out, *err;
+        D(bug("launcher: Child waiting for exec or exit\n"));
+        Wait(1 << udata->child_signal);
 
-	in = __fd_array[STDIN_FILENO];
-	if(in) 
-	    SelectInput(in->fcb->fh);
+        if(udata->child_executed)
+        {
+            APTR exec_id;
+            BPTR dir;
+            
+            D(bug("launcher: child executed\n"));
+            
+            /* Set current dir to parent's current dir */
+            dir = DupLock(((struct Process *)udata->parent)->pr_CurrentDir);
+            UnLock(CurrentDir(dir));
+            /* Don't mind updating aroscbase->acb_startup_cd_changed as we will
+               exit from process after __exec_do has finished */
+            
+            exec_id = udata->exec_id = __exec_prepare(
+                udata->exec_filename,
+                udata->exec_searchpath,
+                udata->exec_argv,
+                udata->exec_envp
+            );
+            
+            udata->child_errno = errno;
+            
+            D(bug("launcher: informing parent that we have run __exec_prepare\n"));
+            /* Inform parent that we have run __exec_prepare */
+            Signal(udata->parent, 1 << udata->parent_signal);
+            
+            /* Wait 'till __exec_do() is called on parent process */
+            D(bug("launcher: Waiting parent to get the result\n"));
+            Wait(1 << udata->child_signal);
 
-	out = __fd_array[STDOUT_FILENO];
-	if(out) 
-	    SelectOutput(out->fcb->fh);
+            D(bug("launcher: informing parent that we won't use udata anymore\n"));
+            /* Inform parent that we won't use udata anymore */
+            Signal(udata->parent, 1 << udata->parent_signal);
 
-	err = __fd_array[STDERR_FILENO];
-	if(err)
-	    SelectError(err->fcb->fh);
-
-	D(bug("launcher: informing parent that we won't use udata anymore\n"));
-	/* Inform parent that we won't use udata anymore */
-	Signal(udata->parent, 1 << udata->parent_signal);
-	
-	D(bug("launcher: executing command\n"));
-	/* Run executed command */
-	ret = exec_command(
-	    seglist, 
-	    taskname, 
-	    arguments, 
-	    stacksize
-	);
-	
-	D(bug("launcher: freeing taskname and arguments\n"));
-	UnLoadSeg(seglist);
-	FreeVec(taskname);
-	FreeVec(arguments);
-	__aros_startup_error = ret;
-	D(bug("launcher: exec_command returned %d\n", ret));
+            if (exec_id)
+            {
+                D(bug("launcher: executing command\n"));
+                __exec_do(exec_id);
+                
+                assert(0); /* Should not be reached */
+            }
+            else
+            {
+                D(bug("launcher: exit because execve returned with an error\n"));
+                _exit(0);
+            }
+        }
+        else
+        {
+            D(bug("launcher: informing parent that we won't use udata anymore\n"));
+            /* Inform parent that we won't use udata anymore */
+            Signal(udata->parent, 1 << udata->parent_signal);
+        }
     }
     else
     {
-	D(bug("launcher: informing parent that we won't use udata anymore\n"));
-	/* Inform parent that we won't use udata anymore */
-	Signal(udata->parent, 1 << udata->parent_signal);	
+        D(bug("launcher: freeing child_signal\n"));
+        FreeSignal(child_signal);
+        CloseLibrary(aroscbase);
     }
-    D(bug("launcher: freeing child_signal\n"));
-    FreeSignal(child_signal);
-    CloseLibrary(aroscbase);
+    
     return 0;
 }
 
 void FreeAndJump(struct vfork_data *udata)
 {
+    D(bug("FreeAndJump(udata = %p)\n", udata));
     jmp_buf env;
     ULONG child_id = udata->child_id;
+    D(bug("FreeAndJump: Child ID=%d\n", child_id));
     bcopy(&udata->vfork_jump, env, sizeof(jmp_buf));
     D(bug("FreeAndJump: Restoring old vfork_data: %p\n", udata->prev));
     __get_arosc_privdata()->acpd_vfork_data = udata->prev;
-    __get_arosc_privdata()->acpd_flags = udata->old_acpd_flags;
+    if(udata->prev == NULL)
+        __get_arosc_privdata()->acpd_flags &= ~PRETEND_CHILD;
     D(bug("FreeAndJump: freeing udata\n"));
     FreeMem(udata, sizeof(struct vfork_data));
-    longjmp(env, child_id);
+    D(bug("FreeAndJump: Jumping to jmp_buf %p\n", &env));
+    D(bug("FreeAndJump: ip: %p, stack: %p\n", env->retaddr, env->regs[_JMPLEN - 1]));
+    vfork_longjmp(env, child_id);
 }
 
 pid_t __vfork(jmp_buf env)
@@ -169,28 +187,17 @@ pid_t __vfork(jmp_buf env)
     };
 
     udata->parent = this;
+    
+    struct arosc_privdata *ppriv = __get_arosc_privdata();
+    udata->ppriv = ppriv;
+    
     /* Store parent's vfork_data to restore it later */
-    udata->old_acpd_flags = __get_arosc_privdata()->acpd_flags;
     udata->prev = __get_arosc_privdata()->acpd_vfork_data;
     D(bug("__vfork: Saved old parent's vfork_data: %p\n", udata->prev));
-    udata->ppriv = __get_arosc_privdata();
                                         
     D(bug("__vfork: backuping startup buffer\n"));
     /* Backup startup buffer */
     CopyMem(&__aros_startup_jmp_buf, &udata->startup_jmp_buf, sizeof(jmp_buf));
-
-    D(bug("__vfork: backuping current directory\n"));
-    udata->parent_curdir = CurrentDir(NULL);
-
-    CurrentDir(DupLock(udata->parent_curdir));
-    
-    D(bug("__vfork: backuping descriptor table\n"));
-    /* Backup parent fd descriptor table */
-    struct arosc_privdata *ppriv = GetIntETask(this)->iet_acpd;
-
-    udata->parent_acpd_fd_mempool = ppriv->acpd_fd_mempool;
-    udata->parent_acpd_numslots = ppriv->acpd_numslots;
-    udata->parent_acpd_fd_array = ppriv->acpd_fd_array;
 
     D(bug("__vfork: Allocating parent signal\n"));
     /* Allocate signal for child->parent communication */
@@ -231,7 +238,6 @@ pid_t __vfork(jmp_buf env)
     if(setjmp(__aros_startup_jmp_buf))
     {
 	D(bug("__vfork: child exited\n or executed\n"));
-	__get_arosc_privdata()->acpd_flags &= ~PRETEND_CHILD;
 
 	if(!GETUDATA->child_executed)
 	{
@@ -248,9 +254,6 @@ pid_t __vfork(jmp_buf env)
 	D(bug("__vfork: fflushing\n"));
 	fflush(NULL);
 
-	D(bug("__vfork: Restoring current directory\n"));
-	UnLock(CurrentDir(GETUDATA->parent_curdir));
-
 	D(bug("__vfork: restoring old fd_array\n"));
 	/* Restore parent's old fd_array */
 	((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_fd_mempool = GETUDATA->parent_acpd_fd_mempool;
@@ -264,10 +267,19 @@ pid_t __vfork(jmp_buf env)
 	D(bug("__vfork: freeing parent signal\n"));
 	FreeSignal(GETUDATA->parent_signal);
 
+        errno = GETUDATA->child_errno;
+        
 	FreeAndJump(GETUDATA);
-	return (pid_t) 1; /* not reached */
+	assert(0); /* not reached */
+        return (pid_t) 1;
     }
 
+    /* Remember parent fd descriptor table */
+    udata->parent_acpd_fd_mempool = ppriv->acpd_fd_mempool;
+    udata->parent_acpd_numslots = ppriv->acpd_numslots;
+    udata->parent_acpd_fd_array = ppriv->acpd_fd_array;
+    
+    /* Pretend to be running as the child created by vfork */
     ppriv->acpd_vfork_data = udata;
     ppriv->acpd_flags |= PRETEND_CHILD;
     ppriv->acpd_fd_mempool = udata->cpriv->acpd_fd_mempool;
@@ -277,5 +289,6 @@ pid_t __vfork(jmp_buf env)
     D(bug("__vfork: Jumping to jmp_buf %p\n", &udata->vfork_jump));
     D(bug("__vfork: ip: %p, stack: %p\n", udata->vfork_jump[0].retaddr, udata->vfork_jump[0].regs[_JMPLEN - 1]));
     vfork_longjmp(udata->vfork_jump, 0);
-    return (pid_t) 0; /* not reached */
+    assert(0); /* not reached */
+    return (pid_t) 0;
 }

@@ -54,11 +54,11 @@ struct vfork_data
     int child_errno;
     BYTE child_signal;
 
-    ULONG exec_stacksize;
-    BPTR exec_seglist;
-    char *exec_arguments;
-    char *exec_taskname;
-    LONG exec_returncode;
+    const char *exec_filename;
+    int exec_searchpath;
+    char *const *exec_argv;
+    char *const *exec_envp;
+    APTR exec_id;
 };
 
 #endif /* __VFORK_H */
