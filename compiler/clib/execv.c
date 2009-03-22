@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function execv().
@@ -10,7 +10,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <assert.h>
 #include <stdlib.h>
+
+#include "__exec.h"
 
 /*****************************************************************************
 
@@ -48,5 +51,12 @@
 
 ******************************************************************************/
 {
-    return execve(path, argv, environ);
+    APTR id = __exec_prepare(path, 0, argv, environ);
+    if (!id)
+        return -1;
+    
+    __exec_do(id);
+    
+    assert(0); /* Should not be reached */
+    return -1;
 } /* execv() */

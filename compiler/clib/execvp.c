@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function execvp().
@@ -10,7 +10,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <assert.h>
 #include <stdlib.h>
+
+#include "__exec.h"
 
 /*****************************************************************************
 
@@ -49,78 +52,13 @@
 
 ******************************************************************************/
 {
-    char *path = NULL, *path_item, *path_ptr;
-    char default_path[] = ":/bin:/usr/bin";
-    char *full_path;
-    int saved_errno;
-    int i;
+    APTR id = __exec_prepare(file, 1, argv, environ);
+    if(!id)
+        return -1;
     
-    if(index(file, '/') || index(file, ':'))
-    {
-	/* file argument is a path, don't search */
-	return execve(file, argv, environ);
-    }
+    __exec_do(id);
     
-    /* argument is a file, search for this file in PATH variable entries */
-    char *name = "PATH";
-    if(environ)
-    {
-	for(i = 0; environ[i]; i++)
-	{
-	    if(strncmp(environ[i], name, strlen(name)) == 0)
-	    {
-		path = &environ[i][strlen(name)+1];
-		break;
-	    }
-	}
-    }
-  
-    if(!path)
-	path = getenv("PATH");
-    
-    if(!path)
-	path = default_path;
-    else
-	path = strdup(path);
-    
-    path_ptr = path;
-    
-    while((path_item = strsep(&path_ptr, ",:"))) 
-    {
-	if(path_item[0] == '\0')
-	    path_item = ".";
-	
-	if((full_path = malloc(strlen(path_item) + strlen(file) + 2)))
-	{
-	    full_path[0] = '\0';
-	    strcat(full_path, path_item);
-	    strcat(full_path, "/");
-	    strcat(full_path, file);
-	    
-	    /* try executing execve with this path */
-	    if(execve(full_path, argv, environ) == 0)
-	    {
-		free(full_path);
-		return 0;
-	    }
-	    else
-		if(errno == EACCES)
-		    saved_errno = EACCES;
-	    free(full_path);
-	}
-	else
-	{
-	    saved_errno = ENOMEM;
-	    goto error;
-	}
-    }
-
-    /* set ENOENT error if there were errors other than EACCES */
-    if(saved_errno != EACCES)
-	saved_errno = ENOENT;
-
-error:
-    errno = saved_errno;
+    assert(0);
     return -1;
 } /* execvp() */
 

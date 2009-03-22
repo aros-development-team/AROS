@@ -149,6 +149,7 @@ SHARED	:= \
         execv \
         execve \
         execvp \
+        __exec \
 	exit \
         _exit \
     fchdir \
