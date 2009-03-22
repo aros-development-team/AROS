@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PS/2 mouse driver.
@@ -133,15 +133,18 @@ int kbd_read_data(void)
     return retval;
 }
 
-void kbd_clear_input(void)
+int kbd_clear_input(void)
 {
-    int maxread = 100;
+    int maxread = 100, code, lastcode = KBD_NO_DATA;
 
     do
     {
-        if (kbd_read_data() == KBD_NO_DATA)
+        if ((code = kbd_read_data()) == KBD_NO_DATA)
             break;
+        lastcode = code;
     } while (--maxread);
+
+    return lastcode;
 }
 
 int kbd_wait_for_input(void)

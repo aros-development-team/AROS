@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The main keyboard class.
@@ -42,6 +42,7 @@
 /* Predefinitions */
 
 void kbd_keyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
+void kbd_process_key(struct kbd_data *, UBYTE);
 
 void kbd_updateleds();
 int  kbd_reset(void);
@@ -52,9 +53,8 @@ void aux_write_ack(int val);
 void kbd_write_output_w(int data);
 void kbd_write_command_w(int data);
 void mouse_usleep(ULONG);
-void kbd_clear_input(void);
+int kbd_clear_input(void);
 int  kbd_wait_for_input(void);
-int  kbd_read_data(void);
 
 /****************************************************************************************/
 
@@ -146,6 +146,7 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             /* Install keyboard interrupt */
 
             HIDDT_IRQ_Handler   *irq;
+            int last_code;
 
             XSD(cl)->irq = irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
 
@@ -160,10 +161,15 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             irq->h_Code         = kbd_keyint;
             irq->h_Data         = (APTR)data;
             Disable();
-	    kbd_clear_input();
+	    last_code = kbd_clear_input();
 	    kbd_reset();		/* Reset the keyboard */
             kbd_updateleds(0);
             Enable();
+
+            /* Report last key received before keyboard was reset, so that
+             * keyboard.device knows about any key currently held down */
+            if (last_code > 0)
+                kbd_process_key(data, (UBYTE)last_code);
 
             HIDD_IRQ_AddHandler(XSD(cl)->irqhidd, irq, vHidd_IRQ_Keyboard);
             ObtainSemaphore(&XSD(cl)->sema);
@@ -265,8 +271,6 @@ ADD2EXPUNGELIB(PCKbd_ExpungeAttrs, 0)
 #define FLAG_RMETA	0x00000400
 #define FLAG_DEL    	0x00000800
 
-#warning Old place of kbd_reset
-
 /****************************************************************************************/
 
 void kbd_updateleds(ULONG kbd_keystate)
@@ -290,13 +294,8 @@ void kbd_updateleds(ULONG kbd_keystate)
 void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
     struct kbd_data *data = (struct kbd_data *)irq->h_Data;
-    ULONG   	    kbd_keystate = data->kbd_keystate;
     UBYTE   	    keycode;        /* Recent Keycode get */
-    UBYTE   	    downkeycode;
-    UBYTE   	    releaseflag;
     UBYTE   	    info = 0;       /* Data from info reg */
-    UWORD   	    event;          /* Event sent to handleevent method */
-    WORD    	    amigacode;
     WORD    	    work = 10000;
 
     D(bug("ki: {\n")); 
@@ -320,24 +319,47 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	    continue;
 	}
 
+        kbd_process_key(data, keycode);
+    } /* for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--) */
+
+    if (!work)
+    {
+        D(bug("kbd.hidd: controller jammed (0x%02X).\n", info));
+    }
+    
+    //return 0;	/* Enable processing other intServers */
+
+    D(bug("ki: }\n"));
+
+    return;
+}
+
+void kbd_process_key(struct kbd_data *data, UBYTE keycode)
+{
+    ULONG   	    kbd_keystate = data->kbd_keystate;
+    UBYTE   	    downkeycode;
+    UBYTE   	    releaseflag;
+    UWORD   	    event;          /* Event sent to handleevent method */
+    WORD    	    amigacode;
+
     	if ((keycode == KBD_REPLY_ACK) || (keycode == KBD_REPLY_RESEND))
 	{
 	    /* Ignore these */
-	    continue;
+	    return;
 	}
 	
 	if ((keycode == 0xE0) || (keycode == 0xE1))
 	{
 	    /* Extended keycodes: E0 gets followed by one code, E1 by two */
 	    data->prev_keycode = keycode;
-	    continue;
+	    return;
 	}
 	
 	if ((keycode == 0x00) || (keycode == 0xFF))
 	{
 	    /* 00 is error. FF is sent by some keyboards -> ignore it. */
 	    data->prev_keycode = 0;
-	    continue;
+	    return;
 	}
 
 	amigacode = NOKEY;
@@ -363,9 +385,9 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	    	/* Check Pause key: 0xE1 0x1D 0x45   0xE1 0x9D 0xC5 */
 	    	if ((data->prev_keycode == 0xE1) && (downkeycode == 0x1D))
 		{
-		    /* lets remember, that we still need third key */
+		    /* let's remember, that we still need third key */
 		    data->prev_keycode = 0x1234;
-		    continue;
+		    return;
 		}
 		else if ((data->prev_keycode == 0x1234) && (downkeycode == 0x45))
 		{
@@ -377,7 +399,7 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 		{
 		    /* Unknown */
 		    data->prev_keycode = 0;
-		    continue;
+		    return;
 		}
 		
 	    } /* if (data->prev_keycode == 0xE0) else ... */
@@ -501,7 +523,7 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
             ColdReboot();
 #endif
 
-    	if (amigacode == NOKEY) continue;
+    	if (amigacode == NOKEY) return;
 
     	if (amigacode == data->prev_amigacode)
 	{
@@ -509,7 +531,7 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	    ** Must be a repeated key. Ignore it, because we have our
 	    ** own kbd repeating in input.device
 	    */	    
-	    continue;
+	    return;
 	}
 
 	data->prev_amigacode = amigacode;
@@ -518,17 +540,6 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 
         /* Pass the code to handler */
         data->kbd_callback(data->callbackdata, amigacode);
-
-    } /* for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--) */
-
-    if (!work)
-    {
-        D(bug("kbd.hidd: controller jammed (0x%02X).\n", info));
-    }
-    
-    //return 0;	/* Enable processing other intServers */
-
-    D(bug("ki: }\n"));
 
     return;
 }
@@ -590,7 +601,7 @@ int kbd_reset(void)
 
     if (kbd_wait_for_input() != KBD_REPLY_POR)
         return FALSE;
-   
+
     do
     {
         kbd_write_output_w(KBD_OUTCMD_DISABLE);
@@ -607,7 +618,7 @@ int kbd_reset(void)
     kbd_write_command_w(KBD_CTRLCMD_WRITE_MODE);  /* Write mode */
 
 #if 0
-    kbd_write_output_w( KBD_MODE_KCC 	| // set paramters: scan code to pc conversion, 
+    kbd_write_output_w( KBD_MODE_KCC 	| // set parameters: scan code to pc conversion, 
     		            KBD_MODE_KBD_INT 	| //                enable mouse and keyboard,
 		     KBD_MODE_DISABLE_MOUSE | //                enable IRQ 1 & 12.
 		     KBD_MODE_SYS);
