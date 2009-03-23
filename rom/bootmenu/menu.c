@@ -220,44 +220,53 @@ static void msgLoop(struct BootMenuBase_intern *BootMenuBase, struct Window *win
         ReplyMsg(&msg->ExecMessage);
 }
 
+static UWORD pens[] = {~0};
+
+struct NewScreen ns =
+{
+    0, 0, 640, 256, 4, /* left, top, width, height, depth */
+    0, 1,              /* DetailPen, BlockPen */
+    HIRES,             /* ViewModes */
+    CUSTOMSCREEN,      /* Type */
+    NULL,              /* Font */
+    NULL,              /* DefaultTitle */
+    NULL,              /* Gadgets */
+    NULL,              /* CustomBitMap */
+};
+
 static BOOL initScreen(struct BootMenuBase_intern *BootMenuBase, struct BootConfig *bcfg)
 {
-    UWORD pens[] = {~0};
-    struct TagItem scrtags[] =
-    {
-        {SA_Width,       640},
-        {SA_Height,      256},
-        {SA_Depth,         4},
-        {SA_Pens, (IPTR)pens},
-        {TAG_DONE,       0UL}
-    };
-
     struct Gadget *first = NULL;
     BOOL res = FALSE;
 
     D(bug("[BootMenu] initScreen()\n"));
 
-    if ((BootMenuBase->bm_Screen = OpenScreenTagList(NULL, scrtags)) != NULL)
+    if ((BootMenuBase->bm_Screen = OpenScreen(&ns)) != NULL)
     {
         D(bug("[BootMenu] initScreen: Screen opened @ %p\n", BootMenuBase->bm_Screen));
         if ((first = createGadgets(BootMenuBase)) != NULL)
         {
-            D(bug("[BootMenu] initScreen: Gadgets created @ %p\n", first));
-            struct TagItem wintags[] =
+            struct NewWindow nw =
             {
-                {WA_Left,               0},
-                {WA_Top,                0},
-                {WA_Width,              BootMenuBase->bm_Screen->Width},
-                {WA_Height,             BootMenuBase->bm_Screen->Height},
-                {WA_CustomScreen,       (IPTR)BootMenuBase->bm_Screen},
-                {WA_Gadgets,            (IPTR)first},
-                {WA_IDCMP,              (IPTR)(IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_VANILLAKEY | IDCMP_GADGETUP | IDCMP_GADGETDOWN)},
-                {WA_Borderless,         TRUE},
-                {WA_RMBTrap,            TRUE},
-                {TAG_DONE,              0UL}
+                0, 0,                            /* Left, Top */
+                BootMenuBase->bm_Screen->Width,  /* Width, Height */
+                BootMenuBase->bm_Screen->Height,
+                0, 1,                            /* DetailPen, BlockPen */
+                IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_VANILLAKEY | IDCMP_GADGETUP | IDCMP_GADGETDOWN, /* IDCMPFlags */
+                WFLG_SMART_REFRESH | WFLG_BORDERLESS, /* Flags */
+                first,       	                 /* FirstGadget */
+                NULL,       	                 /* CheckMark */
+                NULL,       	                 /* Title */
+                BootMenuBase->bm_Screen,       	 /* Screen */
+                NULL,                          	 /* BitMap */
+                0, 0,                   	 /* MinWidth, MinHeight */
+                0, 0,                         	 /* MaxWidth, MaxHeight */
+                CUSTOMSCREEN,                    /* Type */
             };
 
-            if ((BootMenuBase->bm_Window = OpenWindowTagList(NULL, wintags)) != NULL)
+            D(bug("[BootMenu] initScreen: Gadgets created @ %p\n", first));
+
+            if ((BootMenuBase->bm_Window = OpenWindow(&nw)) != NULL)
             {
                 D(bug("[BootMenu] initScreen: Window opened @ %p\n", BootMenuBase->bm_Window));
                 D(bug("[BootMenu] initScreen: Window RastPort @ %p\n", BootMenuBase->bm_Window->RPort));
