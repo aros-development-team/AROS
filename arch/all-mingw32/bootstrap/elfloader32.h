@@ -37,18 +37,6 @@
 #define ELF32_R_TYPE(val)       ((val) & 0xff)
 #define ELF32_R_INFO(sym, type) (((sym) << 8) + ((type) & 0xff))
 
-#if 0
-typedef char BYTE;
-typedef unsigned char UBYTE;
-typedef short WORD;
-typedef unsigned short UWORD;
-typedef int LONG;
-typedef unsigned int ULONG;
-typedef long long QUAD;
-typedef unsigned long long UQUAD;
-typedef void* APTR;
-#endif
-
 struct elfheader
 {
   unsigned char ident[16];
@@ -106,9 +94,9 @@ struct relo
   unsigned int info;     /* Type of the relocation */
 };
 
-void load_elf_file(void *, unsigned long long);
+int load_elf_file(void *, ULONG_PTR);
 void *kernel_lowest();
 void *kernel_highest();
-void set_base_address(void *ptr, void *tracker, void ** sysbaseaddr);
+void set_base_address(void *tracker, void ** sysbaseaddr);
 
 #endif /*ELFLOADER_H_*/
