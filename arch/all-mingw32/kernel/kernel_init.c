@@ -32,10 +32,6 @@ struct KernelInterface KernelIFace;
 APTR KernelBase = NULL;
 /* static char cmdLine[200]; TODO */
 
-/* So we can examine the memory */
-static struct MemHeaderExt mhe;
-static struct MemHeader *mh = &mhe.mhe_MemHeader;
-
 #undef kprintf
 #undef rkprintf
 #undef vkprintf
@@ -168,6 +164,7 @@ int __startup startup(struct TagItem *msg)
   void *hostlib;
   char *errstr;
   unsigned long badsyms;
+  struct MemHeader *mh;
 
   BootMsg = msg;
   
@@ -193,16 +190,16 @@ int __startup startup(struct TagItem *msg)
   mykprintf("[Kernel] preparing first mem header\n");
 
   /* Prepare the first mem header and hand it to PrepareExecBase to take SysBase live */
+  mh = memory;
   mh->mh_Node.ln_Type  = NT_MEMORY;
   mh->mh_Node.ln_Name = "chip memory";
   mh->mh_Node.ln_Pri = -5;
   mh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA | MEMF_KICK;
-  mh->mh_First = (struct MemChunk *)
-          (((IPTR)memory + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1));
+  mh->mh_First = memory + MEMHEADER_TOTAL;
   mh->mh_First->mc_Next = NULL;
-  mh->mh_First->mc_Bytes = memsize;
+  mh->mh_First->mc_Bytes = memsize - MEMHEADER_TOTAL;
   mh->mh_Lower = memory;
-  mh->mh_Upper = memory + MEMCHUNK_TOTAL + mh->mh_First->mc_Bytes;
+  mh->mh_Upper = memory + memsize;
   mh->mh_Free = mh->mh_First->mc_Bytes;
 
   mykprintf("[Kernel] calling PrepareExecBase@%p mh_First=%p\n",PrepareExecBase,mh->mh_First);
