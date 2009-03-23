@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <strings.h>
 
-#define D(X) X
+#define D(X)
 #define DREL(x)
 
 #define kprintf printf

@@ -22,7 +22,7 @@ typedef unsigned char UBYTE;
 #include "shutdown.h"
 #include "../kernel/hostinterface.h"
 
-#define D(x) x
+#define D(x)
 
 static unsigned char __bss_track[32768];
 struct TagItem km[64];
