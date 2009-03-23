@@ -22,7 +22,7 @@ typedef unsigned char UBYTE;
 #include "shutdown.h"
 #include "../kernel/hostinterface.h"
 
-#define D(x)
+#define D(x) x
 
 static unsigned char __bss_track[32768];
 struct TagItem km[64];
@@ -63,6 +63,7 @@ int main(int argc, char ** argv)
   unsigned int memSize = 64;
   char *kernel = "boot\\aros-mingw32";
   char *KernelArgs = NULL;
+  void *base;
 
   GetCurrentDirectory(MAX_PATH, bootstrapdir);
   bootstrapname = argv[0];
@@ -135,17 +136,37 @@ int main(int argc, char ** argv)
   if (!stat("..\\AROS.boot", &st)) {
       chdir("..");
   }
-  
+
+  //load elf-kernel and fill in the bootinfo
+  void * file = fopen(kernel, "rb");
+
+  if (!file)
+  {
+  	printf("[Bootstrap] unable to open kernel \"%s\"\n", kernel);
+  	return -1;
+  }
+  set_base_address(__bss_track, &SysBase);
+  i = load_elf_file(file,0);
+  fclose(file);
+  if (!i) {
+      printf("[Bootstrap] Failed to load kernel \"%s\"\n", kernel);
+      return -1;
+  }
   D(printf("[Bootstrap] allocating working mem: %iMb\n",memSize));
 
-  void * memory = malloc((memSize << 20));
+  size_t memlen = memSize << 20;
+  void * memory = malloc(memlen);
+
+  if (!memory) {
+      printf("[Bootstrap] Failed to allocate RAM!\n");
+      return -1;
+  }
+  D(printf("[Bootstrap] RAM memory allocated: %p-%p (%lu bytes)\n", memory, memory + memlen, memlen));
+  
+  kernel_entry_fun_t kernel_entry_fun = kernel_lowest();
 
   //fill in kernel message related to allocated ram regions
   struct TagItem *tag = km;
-
-  tag->ti_Tag = KRN_KernelBss;
-  tag->ti_Data = (unsigned long)__bss_track;
-  tag++;
 
 /* FIXME: These tags should point to a memory map in PC BIOS format, not to memory itself.
    This is a temporary solution because hosted kernel should translate all AllocMem() requests
@@ -156,37 +177,19 @@ int main(int argc, char ** argv)
   tag++;
   
   tag->ti_Tag = KRN_MMAPLength;
-  tag->ti_Data = (unsigned long)(memSize << 20);
+  tag->ti_Data = memlen;
   tag++;
 
-  //load elf-kernel and fill in the bootinfo
-  void * file = fopen(kernel, "rb");
-  size_t ksize=0;
-  if (file)
-  {
-	  fseek(file,0,SEEK_END);
-    ksize = ftell(file);
-    ksize += BASE_ALIGNMENT - ksize % BASE_ALIGNMENT;
-	  printf("[Bootstrap] opened \"%s\"(%p) size:%p\n", kernel, file, ksize);
-	  fseek(file,0,SEEK_SET);
-  } else {
-  	printf("[Bootstrap] unable to open kernel \"%s\"\n", kernel);
-  	return -1;
-  }
-  unsigned int bufsize = 10*ksize;
-  void * buf = malloc(bufsize);
-  void * base = buf + ksize;
-  printf("[Bootstrap] memory allocated: %p-%p kernelBase: %p\n",buf,buf+bufsize,base);
-  set_base_address(base, __bss_track, &SysBase);
-  load_elf_file(file,0);
-  kernel_entry_fun_t kernel_entry_fun = (kernel_entry_fun_t)base;
-
   tag->ti_Tag = KRN_KernelLowest;
-  tag->ti_Data = (unsigned long)kernel_lowest();
+  tag->ti_Data = kernel_entry_fun;
   tag++;
     
   tag->ti_Tag = KRN_KernelHighest;
-  tag->ti_Data = (unsigned long)kernel_highest();
+  tag->ti_Data = kernel_highest();
+  tag++;
+
+  tag->ti_Tag = KRN_KernelBss;
+  tag->ti_Data = (unsigned long)__bss_track;
   tag++;
 
   tag->ti_Tag = KRN_CmdLine;
