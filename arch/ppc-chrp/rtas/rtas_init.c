@@ -5,13 +5,6 @@
  *      Author: misc
  */
 
-/*
- * bestcomm_init.c
- *
- *  Created on: Mar 15, 2009
- *      Author: misc
- */
-
 #define DEBUG 1
 
 #include <asm/mpc5200b.h>
