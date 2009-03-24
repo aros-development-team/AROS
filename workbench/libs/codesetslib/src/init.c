@@ -2,7 +2,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2007 by codesets.library Open Source Team
+ Copyright (C) 2005-2009 by codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -49,18 +49,19 @@ extern struct Library *__UtilityBase;
 extern struct UtilityIFace*  __IUtility;
 #endif
 
-#elif defined(__AROS__)
-struct DosLibrary *DOSBase = NULL;
-struct UtilityBase *UtilityBase = NULL;
 #else
 struct DosLibrary *DOSBase = NULL;
-struct Library *UtilityBase = NULL;
 #if defined(__MORPHOS__)
 struct Library *LocaleBase = NULL;
 #else
 struct LocaleBase *LocaleBase = NULL;
 #endif
+#ifdef __AROS__
+struct UtilityBase *UtilityBase = NULL;
+#else
+struct Library *UtilityBase = NULL;
 struct Library *__UtilityBase = NULL; // required by clib2 & libnix
+#endif
 #endif
 
 /****************************************************************************/

@@ -2,7 +2,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2007 by codesets.library Open Source Team
+ Copyright (C) 2005-2009 by codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -23,12 +23,7 @@
 #ifndef _LIB_PROTOS_H
 #define _LIB_PROTOS_H
 
-#ifdef __AROS__
-#define __CODESETS_NOLIBBASE__
-#include <proto/codesets.h>
-#else /* __AROS__ */
 #include "SDI_lib.h"
-#endif /* __AROS__ */
 
 /* init.c */
 ULONG freeBase(struct LibraryHeader* lib);
@@ -54,17 +49,16 @@ APTR reallocVecPooled(APTR pool, APTR mem, ULONG oldSize, ULONG newSize);
 APTR allocArbitrateVecPooled(ULONG size);
 void freeArbitrateVecPooled(APTR mem);
 APTR reallocArbitrateVecPooled(APTR mem, ULONG oldSize, ULONG newSize);
+ULONG utf16_strlen(UTF16 *ptr);
+ULONG utf32_strlen(UTF32 *ptr);
 
 /* base64.c */
-#ifndef __AROS__
 LIBPROTO(CodesetsEncodeB64A, ULONG, REG(a0, struct TagItem *attrs));
 LIBPROTOVA(CodesetsEncodeB64,ULONG, ...);
 LIBPROTO(CodesetsDecodeB64A, ULONG, REG(a0, struct TagItem *attrs));
 LIBPROTOVA(CodesetsDecodeB64,ULONG, ...);
-#endif /* __AROS__ */
 
 /* convertUTF.c */
-#ifndef __AROS__
 LIBPROTO(CodesetsConvertUTF32toUTF16, ULONG, REG(a0, const UTF32 **sourceStart), REG(a1, const UTF32 *sourceEnd), REG(a2, UTF16 **targetStart), REG(a3, UTF16 *targetEnd), REG(d0, ULONG flags));
 LIBPROTO(CodesetsConvertUTF16toUTF32, ULONG, REG(a0, const UTF16 **sourceStart), REG(a1, const UTF16 *sourceEnd), REG(a2, UTF32 **targetStart), REG(a3, UTF32 *targetEnd), REG(d0, ULONG flags));
 LIBPROTO(CodesetsConvertUTF16toUTF8,  ULONG, REG(a0, const UTF16 **sourceStart), REG(a1, const UTF16 *sourceEnd) , REG(a2, UTF8 **targetStart), REG(a3, UTF8 *targetEnd), REG(d0, ULONG flags));
@@ -73,14 +67,12 @@ LIBPROTO(CodesetsIsLegalUTF8Sequence, BOOL, REG(a0, const UTF8 *source), REG(a1,
 LIBPROTO(CodesetsConvertUTF8toUTF16,  ULONG, REG(a0, const UTF8 **sourceStart), REG(a1, const UTF8 *sourceEnd), REG(a2, UTF16 **targetStart), REG(a3, UTF16 *targetEnd), REG(d0, ULONG flags));
 LIBPROTO(CodesetsConvertUTF32toUTF8,  ULONG, REG(a0, const UTF32 **sourceStart), REG(a1, const UTF32 *sourceEnd), REG(a2, UTF8 **targetStart), REG(a3, UTF8 *targetEnd), REG(d0, ULONG flags));
 LIBPROTO(CodesetsConvertUTF8toUTF32,  ULONG, REG(a0, const UTF8 **sourceStart), REG(a1, const UTF8 *sourceEnd), REG(a2, UTF32 **targetStart), REG(a3, UTF32 *targetEnd), REG(d0, ULONG flags));
-#endif /* __AROS__ */
 
 /* codesets.c */
 BOOL codesetsInit(struct codesetList *csList);
 void codesetsCleanup(struct codesetList *csList);
 struct codeset *codesetsFind(struct codesetList *csList, const char *name);
 
-#ifndef __AROS__
 LIBPROTO(CodesetsSupportedA,  STRPTR *, REG(a0, struct TagItem *attrs));
 LIBPROTOVA(CodesetsSupported, STRPTR *, ...);
 LIBPROTO(CodesetsFreeA,       void, REG(a0, APTR obj), REG(a1, struct TagItem *attrs));
@@ -111,6 +103,5 @@ LIBPROTO(CodesetsListAddA, BOOL, REG(a0, struct codesetList *csList), REG(a1, st
 LIBPROTOVA(CodesetsListAdd, BOOL, REG(a0, struct codesetList *csList), ...);
 LIBPROTO(CodesetsListRemoveA, BOOL, REG(a0, struct TagItem *attrs));
 LIBPROTOVA(CodesetsListRemove, BOOL, ...);
-#endif /* __AROS__ */
 
 #endif /* _LIB_PROTOS_H */
