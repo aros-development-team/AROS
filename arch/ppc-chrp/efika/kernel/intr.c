@@ -594,7 +594,7 @@ static void __attribute__((used)) __exception_template()
 "__tmpl_start:					\n"
 "		mtsprg1 %%r3          	\n"   /* save %r3 */
 "       mfcr %%r3               \n"   /* copy CR to %r3 */
-"       mtsprg2 %%r3            \n"   /* save %r3 */
+"       mtsprg3 %%r3            \n"   /* save %r3 */
 
 "       mfmsr %%r3              \n"
 "		ori %%r3,%%r3,%2        \n"	  /* Enable address translation for data */
@@ -621,7 +621,7 @@ static void __attribute__((used)) __exception_template()
 "		stw %%r4, %[gpr4](%%r3) \n"   /* because the exception vector is 256 bytes long */
 "		stw %%r0, %[gpr3](%%r3) \n"   /* and shouldn't be used to anything else than */
 "		stw %%r5, %[gpr5](%%r3) \n"   /* exception handler anyway ;) */
-"		mfsprg2 %%r2            \n"
+"		mfsprg3 %%r2            \n"
 "		mfsrr0 %%r0             \n"
 "		mfsrr1 %%r1             \n"
 "__addr_hi:	lis %%r5, 0xdeadbeef@ha\n"		/* Load the address of an generic handler */
