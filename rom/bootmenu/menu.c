@@ -1,3 +1,11 @@
+/*
+   Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+   $Id$
+
+   Desc: Main bootmenu code
+   Lang: english
+*/
+
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -31,7 +39,7 @@ static BOOL init_gfx(STRPTR gfxclassname, struct BootMenuBase *BootMenuBase)
     D(bug("[BootMenu] init_gfx(hiddbase='%s')\n", gfxclassname));
 
     /*  Call private gfx.library call to init the HIDD.
-            Gfx library is responsable for closing the HIDD
+            Gfx library is responsible for closing the HIDD
             library (although it will probably not be neccesary).
     */
 
@@ -331,9 +339,9 @@ static BOOL buttonsPressed(struct BootMenuBase *BootMenuBase, struct DefaultHidd
                     D(
                         int i;
                         bug("[BootMenu] buttonsPressed: Matrix : ");
-                        for (i = 0; i < sizeof(matrix); i ++)
+                        for (i = 0; i < ioStd(io)->io_Actual; i ++)
                         {
-                                bug("%2x ", matrix[i]);
+                                bug("%02x ", matrix[i]);
                         }
                         bug("\n");
                     );
@@ -387,13 +395,16 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
                     }
                 }
 
-                if (!kbd->hiddname[0]) {
+                if (!kbd->hiddname[0])
+                {
                     D(bug("[BootMenu] bootmenu_Init: This system uses no keyboard HIDD\n"));
                     bmi_RetVal = (int)TRUE;
-                } else if (OpenLibrary(kbd->libname, 0) != NULL) {
+                }
+                else if (OpenLibrary(kbd->libname, 0) != NULL)
+                {
                     if (init_device(kbd->hiddname, "keyboard.device", LIBBASE))
                     {
-                            bmi_RetVal = (int)TRUE;
+                        bmi_RetVal = (int)TRUE;
                     }
                 }
             }
