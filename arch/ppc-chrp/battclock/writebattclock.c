@@ -7,7 +7,7 @@
 */
 #include "battclock_intern.h"
 
-int rtas_call(const char *method, int nargs, int nret, void *output, ...);
+static int rtas_call(const char *method, int nargs, int nret, void *output, ...);
 
 /*****************************************************************************
 
@@ -68,7 +68,7 @@ int rtas_call(const char *method, int nargs, int nret, void *output, ...);
     AROS_LIBFUNC_EXIT
 } /* WriteBattClock */
 
-int rtas_call(const char *method, int nargs, int nret, void *output, ...)
+static int rtas_call(const char *method, int nargs, int nret, void *output, ...)
 {
 	va_list args;
 	void *RTASBase = OpenResource("rtas.resource");
