@@ -63,7 +63,7 @@ static int rtas_call(const char *method, int nargs, int nret, void *output, ...)
 
     Amiga2Date(time, &date);
 
-    rtas_call("set-time-of-day", 7, 1, NULL, date.year, date.month, date.mday, date.hour, date.min, date.sec);
+    rtas_call("set-time-of-day", 7, 1, NULL, (ULONG)date.year, (ULONG)date.month, (ULONG)date.mday, (ULONG)date.hour, (ULONG)date.min, (ULONG)date.sec, 0);
 
     AROS_LIBFUNC_EXIT
 } /* WriteBattClock */
