@@ -1,0 +1,9 @@
+# $Id: mmakefile.src 22626 2004-12-27 16:17:54Z verhaegs $
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS 	:= -I$(TOP)/rom/battclock
+%build_archspecific \
+  mainmmake=kernel-battclock maindir=rom/battclock arch=chrp-ppc \
+  files="readbattclock writebattclock" modulename=battclock
+
+#MM- kernel-battclock-chrp-ppc : kernel-battclock-includes
