@@ -2,7 +2,7 @@
 #
 # codesets.library - Amiga shared library for handling different codesets
 # Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
-# Copyright (C) 2005-2008 by codesets.library Open Source Team
+# Copyright (C) 2005-2009 by codesets.library Open Source Team
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -96,9 +96,12 @@ RM      = delete force
 RMDIR   = delete force all
 MKDIR   = makedir
 CHMOD   = protect FLAGS=rwed
+CP	= copy
 CC      = gcc
 STRIP   = strip
 OBJDUMP = objdump
+AR      = ar
+RANLIB  = ranlib
 
 # path definitions
 CDUP  = /
@@ -115,6 +118,7 @@ ifneq ($(HOST), MorphOS)
   RMDIR   = rm -rf
   MKDIR   = mkdir -p
   CHMOD   = chmod 755
+  CP	  = cp -f
 
   CDUP  = ../
   CDTHIS= ./
@@ -140,21 +144,15 @@ BINDIR   = bin_$(OS)
 VPATH    = $(OBJDIR)
 
 # target definition
-TARGET = $(BINDIR)/b64d \
-         $(BINDIR)/b64e \
-         $(BINDIR)/UTF8ToStrHook \
-         $(BINDIR)/DetectCodeset \
-	 $(BINDIR)/demo1 \
-	 $(BINDIR)/Convert \
-	 $(BINDIR)/autoopen
+TARGET   = $(BINDIR)/libcodesets.a
 
 # Common compiler/linker flags
 WARN     = -W -Wall -Wwrite-strings -Wpointer-arith -Wsign-compare
 OPTFLAGS = -O3 -fomit-frame-pointer -funroll-loops
 DEBUG    = -DDEBUG -O0
 DEBUGSYM = -gstabs
-CFLAGS   = -I. -I../include -I../../include $(CPU) $(WARN) $(OPTFLAGS) $(DEBUG) $(DEBUGSYM) $(USER_CFLAGS)
-LDFLAGS  = $(CPU) $(DEBUGSYM)
+CFLAGS   = -I. -I../include $(CPU) $(WARN) $(OPTFLAGS) $(DEBUG) $(DEBUGSYM) $(USER_CFLAGS)
+LDFLAGS  = $(CPU) $(DEBUGSYM) -nostartfiles
 LDLIBS   =
 
 # different options per target OS
@@ -168,6 +166,8 @@ ifeq ($(OS), os4)
     CC      = ppc-amigaos-gcc
     STRIP   = ppc-amigaos-strip
     OBJDUMP = ppc-amigaos-objdump
+    AR      = ppc-amigaos-ar
+    RANLIB  = ppc-amigaos-ranlib
   endif
 
   # Compiler/Linker flags
@@ -190,14 +190,15 @@ ifeq ($(OS), os3)
     CC      = m68k-amigaos-gcc
     STRIP   = m68k-amigaos-strip
     OBJDUMP = m68k-amigaos-objdump
+    AR      = m68k-amigaos-ar
+    RANLIB  = m68k-amigaos-ranlib
   endif
 
   # Compiler/Linker flags
   CPU	    = -m68020-60 -msoft-float
   CFLAGS  += -noixemul
   LDFLAGS += -noixemul
-  LDLIBS  += -ldebug -lmui
-  NOINLINE = -DNO_INLINE_STDARG
+  LDLIBS  += -ldebug
 
 else
 ifeq ($(OS), mos)
@@ -210,14 +211,15 @@ ifeq ($(OS), mos)
     CC      = ppc-morphos-gcc
     STRIP   = ppc-morphos-strip
     OBJDUMP = ppc-morphos-objdump
+    AR      = ppc-morphos-ar
+    RANLIB  = ppc-morphos-ranlib
   endif
 
   # Compiler/Linker flags
   CPU     = -mcpu=powerpc
-  CFLAGS  += -noixemul -DUSE_INLINE_STDARG
+  CFLAGS  += -noixemul
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug
-  NOINLINE = -DNO_PPCINLINE_STDARG
 
 else
 ifeq ($(OS), aros)
@@ -233,10 +235,12 @@ ifeq ($(OS), aros)
     CC      = $(TARGET_CPU)-aros-gcc
     STRIP   = $(TARGET_CPU)-aros-strip
     OBJDUMP = $(TARGET_CPU)-aros-objdump
+    AR      = $(TARGET_CPU)-aros-ar
+    RANLIB  = $(TARGET_CPU)-aros-ranlib
   endif
 
   # Compiler/Linker flags
-  LDLIBS  += -lmui
+  LDLIBS += -lrom
 
 endif
 endif
@@ -246,6 +250,8 @@ endif
 ###########################################################################
 # Here starts all stuff that is common for all target platforms and
 # hosts.
+
+OBJS = autoinit.o
 
 # main target
 .PHONY: all
@@ -262,60 +268,25 @@ $(BINDIR):
 	@$(MKDIR) $(BINDIR)
 
 # for compiling single .c files
-$(OBJDIR)/%.o: %.c
+%.o: %.c
 	@echo "  CC $<"
-	@$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $(OBJDIR)/$@
 
 # for linking the target
-$(BINDIR)/b64d: $(OBJDIR)/b64d.o
-	@echo "  LD $@"
-	@$(CC) $(LDFLAGS) -o $@.debug $< $(LDLIBS)
-	@$(STRIP) --preserve-dates -R.comment -R.sdata2 -S -o $@ $@.debug
-	@$(CHMOD) $@
+$(TARGET): $(OBJS)
+	@echo "  AR $@"
+	@$(AR) -r $@ $(addprefix $(OBJDIR)/,$(OBJS))
+	@$(RANLIB) $@
 
-$(BINDIR)/b64e: $(OBJDIR)/b64e.o
-	@echo "  LD $@"
-	@$(CC) $(LDFLAGS) -o $@.debug $< $(LDLIBS)
-	@$(STRIP) --preserve-dates -R.comment -R.sdata2 -S -o $@ $@.debug
-	@$(CHMOD) $@
-
-$(BINDIR)/UTF8ToStrHook: $(OBJDIR)/UTF8ToStrHook.o
-	@echo "  LD $@"
-	@$(CC) $(LDFLAGS) -o $@.debug $< $(LDLIBS)
-	@$(STRIP) --preserve-dates -R.comment -R.sdata2 -S -o $@ $@.debug
-	@$(CHMOD) $@
-
-$(BINDIR)/DetectCodeset: $(OBJDIR)/DetectCodeset.o
-	@echo "  LD $@"
-	@$(CC) $(LDFLAGS) -o $@.debug $< $(LDLIBS)
-	@$(STRIP) --preserve-dates -R.comment -R.sdata2 -S -o $@ $@.debug
-
-$(BINDIR)/demo1: demo1.c vastubs.c
-	@echo "  CC demo1.c"
-	@$(CC) $(CFLAGS) $(NOINLINE) -c demo1.c -o $(OBJDIR)/demo1.o
-	@echo "  CC vastubs.c"
-	@$(CC) $(CFLAGS) $(NOINLINE) -c vastubs.c -o $(OBJDIR)/vastubs.o
-	@echo "  LD $@"
-	@$(CC) $(LDFLAGS) -o $@.debug $(OBJDIR)/demo1.o $(OBJDIR)/vastubs.o $(LDLIBS)
-	@$(STRIP) --preserve-dates -R.comment -R.sdata2 -S -o $@ $@.debug
-	@$(CHMOD) $@
-
-$(BINDIR)/Convert: $(OBJDIR)/Convert.o
-	@echo "  LD $@"
-	@$(CC) $(LDFLAGS) -o $@.debug $< $(LDLIBS)
-	@$(STRIP) --preserve-dates -R.comment -R.sdata2 -S -o $@ $@.debug
-	@$(CHMOD) $@
-
-$(BINDIR)/autoopen: $(OBJDIR)/autoopen.o
-	@echo "  LD $@"
-	@$(CC) $(LDFLAGS) -o $@.debug $< -L $(LDLIBS) -lcodesets
-	@$(STRIP) --preserve-dates -R.comment -R.sdata2 -S -o $@ $@.debug
-	@$(CHMOD) $@
+# for creating a .dump file
+.PHONY: dump
+dump:
+	-$(OBJDUMP) --section-headers --all-headers --reloc --disassemble-all $(TARGET).debug > $(TARGET).dump
 
 # cleanup target
 .PHONY: clean
 clean:
-	-$(RM) $(TARGET) $(OBJDIR)/*.o
+	-$(RM) $(TARGET) $(TARGET).debug $(TARGET).map $(addprefix $(OBJDIR)/,$(OBJS)) $(M68KSTUBS)
 
 # clean all including .obj directory
 .PHONY: cleanall
@@ -326,3 +297,19 @@ cleanall: clean
 .PHONY: distclean
 distclean: cleanall
 	-$(RMDIR) $(BINDIR)
+
+## DEPENDENCY GENERATION ##############
+
+Makefile.dep: ;
+	@echo "WARNING: Makefile.dep missing. Please run 'make depend'"
+
+.PHONY: depend
+depend:
+	@echo "  MK Makefile.dep"
+	@echo "# AUTOGENERATED! DO NOT EDIT!!!" >Makefile.dep
+	@$(CC) -MM $(CFLAGS) $(patsubst %.o,%.c, $(OBJS)) >>Makefile.dep
+	@echo "# AUTOGENERATED! DO NOT EDIT!!!" >>Makefile.dep
+
+## DEPENDENCY INCLUDE #################
+
+-include Makefile.dep

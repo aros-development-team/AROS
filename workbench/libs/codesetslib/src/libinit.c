@@ -2,7 +2,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2007 by codesets.library Open Source Team
+ Copyright (C) 2005-2009 by codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,9 @@
 /****************************************************************************/
 
 #if !defined(__MORPHOS__)
+#ifndef __AROS__
 #define MIN_STACKSIZE 65536
+#endif
 
 // stack cookie for shell v45+
 static const char USED_VAR stack_size[] = "$STACK:" STR(MIN_STACKSIZE) "\n";
@@ -122,9 +124,9 @@ static LONG                   LIBFUNC LibNull   (void);
 
 #else
 
-static struct LibraryHeader * LIBFUNC LibInit    (REG(a0, BPTR Segment), REG(d0, struct LibraryHeader *lh), REG(a6, struct ExecBase *sb));
+static struct LibraryHeader * LIBFUNC LibInit    (REG(d0, struct LibraryHeader *lh), REG(a0, BPTR Segment), REG(a6, struct ExecBase *sb));
 static BPTR                   LIBFUNC LibExpunge (REG(a6, struct LibraryHeader *base));
-static struct LibraryHeader * LIBFUNC LibOpen    (REG(a6, struct LibraryHeader *base));
+static struct LibraryHeader * LIBFUNC LibOpen    (REG(d0, ULONG version UNUSED), REG(a6, struct LibraryHeader *base));
 static BPTR                   LIBFUNC LibClose   (REG(a6, struct LibraryHeader *base));
 static LONG                   LIBFUNC LibNull    (void);
 
@@ -339,9 +341,9 @@ const USED_VAR ULONG __abox__ = 1;
 
 /* generic StackSwap() function which calls function() surrounded by
    StackSwap() calls */
-extern ULONG stackswap_call(struct StackSwapStruct *stack,
+/*extern REGARGS ULONG stackswap_call(struct StackSwapStruct *stack,
                             ULONG (*function)(struct LibraryHeader *),
-                            struct LibraryHeader *arg);
+                            struct LibraryHeader *arg);*/
 
 #if defined(__mc68000__)
 asm(".text                    \n\
@@ -365,8 +367,21 @@ asm(".text                    \n\
       movel d2,d0             \n\
       moveml sp@+,#0x440c     \n\
       rts");
-#elif !defined(__MORPHOS__)
+#elif defined(__MORPHOS__)
 ULONG stackswap_call(struct StackSwapStruct *stack,
+                     ULONG (*function)(struct LibraryHeader *),
+                     struct LibraryHeader *arg)
+{
+   struct PPCStackSwapArgs swapargs;
+
+   swapargs.Args[0] = (ULONG)arg;
+   return NewPPCStackSwap(stack, function, &swapargs);
+}
+#else
+/* FIXME: This does not work because it can't work. 'arg' variable is also on stack.
+          On AmigaOS v4 it ocassionally works because function's parameters are placed
+          in registers on PPC */
+ULONG REGARGS stackswap_call(struct StackSwapStruct *stack,
                      ULONG (*function)(struct LibraryHeader *),
                      struct LibraryHeader *arg)
 {
@@ -406,21 +421,12 @@ static BOOL callLibFunction(ULONG (*function)(struct LibraryHeader *), struct Li
     {
       if((stack->stk_Lower = AllocVec(MIN_STACKSIZE, MEMF_PUBLIC)) != NULL)
       {
-        #if defined(__MORPHOS__)
-        struct PPCStackSwapArgs swapargs;
-        #endif
-
         // perform the StackSwap
         stack->stk_Upper = (ULONG)stack->stk_Lower + MIN_STACKSIZE;
         stack->stk_Pointer = (APTR)stack->stk_Upper;
 
         // call routine but with embedding it into a [NewPPC]StackSwap()
-        #if defined(__MORPHOS__)
-        swapargs.Args[0] = (ULONG)arg;
-        success = NewPPCStackSwap(stack, function, &swapargs);
-        #else
         success = stackswap_call(stack, function, arg);
-        #endif
 
         FreeVec(stack->stk_Lower);
       }
@@ -446,7 +452,7 @@ static struct LibraryHeader * LibInit(struct LibraryHeader *base, BPTR librarySe
 static struct LibraryHeader * LibInit(struct LibraryHeader *base, BPTR librarySegment, struct ExecBase *sb)
 {
 #else
-static struct LibraryHeader * LIBFUNC LibInit(REG(a0, BPTR librarySegment), REG(d0, struct LibraryHeader *base), REG(a6, struct ExecBase *sb))
+static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base), REG(a0, BPTR librarySegment), REG(a6, struct ExecBase *sb))
 {
 #endif
 
@@ -610,7 +616,7 @@ static struct LibraryHeader *LibOpen(void)
 {
   struct LibraryHeader *base = (struct LibraryHeader*)REG_A6;
 #else
-static struct LibraryHeader * LIBFUNC LibOpen(REG(a6, struct LibraryHeader *base))
+static struct LibraryHeader * LIBFUNC LibOpen(REG(d0, ULONG version UNUSED), REG(a6, struct LibraryHeader *base))
 {
 #endif
   struct LibraryHeader *res = base;

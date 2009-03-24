@@ -348,7 +348,7 @@
 									\
     ULONG *stktop = me->tc_SPLower;					\
     									\
-    if (*stktop != 0xE1E1E1E1)						\
+    if (stktop && (*stktop != 0xE1E1E1E1))				\
         bug("STACK OVERFLOW in %s, line %d\n", __FILE__, __LINE__);	\
 }
 #else

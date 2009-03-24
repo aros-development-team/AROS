@@ -2,7 +2,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2007 by codesets.library Open Source Team
+ Copyright (C) 2005-2009 by codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -123,3 +123,21 @@ reallocArbitrateVecPooled(APTR mem, ULONG oldSize, ULONG newSize)
 }
 
 /****************************************************************************/
+
+ULONG utf16_strlen(UTF16 *ptr)
+{
+  ULONG l;
+
+  for (l=0; ptr[l]; l++);
+  return l<<1;
+}
+
+/****************************************************************************/
+
+ULONG utf32_strlen(UTF32 *ptr)
+{
+  ULONG l;
+
+  for (l=0; ptr[l]; l++);
+  return l<<2;
+}

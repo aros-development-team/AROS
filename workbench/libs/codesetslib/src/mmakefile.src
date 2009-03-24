@@ -5,7 +5,7 @@
 include $(TOP)/config/make.cfg
 
 FILES := \
-    libinit-aros \
+    libinit \
     init \
     utils \
     base64 \
@@ -14,25 +14,13 @@ FILES := \
     codepages \
     debug
 
-#MM- workbench-libs-codesets : workbench-libs-codesets-lib
+USER_CFLAGS = -I. -I../include
 
-#MM- workbench-libs-codesets-lib : linklibs
+#MM workbench-libs-codesets : workbench-libs-codesets-includes linklibs
 
-#MM workbench-libs-codesets-lib-includes : \
-#MM     kernel-exec-includes \
-#MM     kernel-dos-includes \
-#MM     kernel-utility-includes \
-#MM     includes-copy
-
-%build_module mmake=workbench-libs-codesets-lib \
+%build_module_simple mmake=workbench-libs-codesets \
     modname=codesets modtype=library \
     files=$(FILES) \
     uselibs="amiga rom"
-
-#MM workbench-libs-codesets-clean : workbench-libs-codesets-lib-clean
-
-#MM
-workbench-libs-codesets-clean :
-	$(RM) $(GENDIR)/workbench/libs/codesets-extern
 
 %common

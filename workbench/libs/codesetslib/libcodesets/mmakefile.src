@@ -1,0 +1,26 @@
+include $(TOP)/config/make.cfg
+
+#MM- linklibs : linklibs-codesets
+
+CODESETS_LIB := $(AROS_LIB)/libcodesets.a
+
+#MM- linklibs-codesets: includes linklibs-codesets-quick
+#MM linklibs-codesets-quick : linklibs-codesets-setup 
+
+#MM
+linklibs-codesets-quick : $(CODESETS_LIB)
+
+FILES = autoinit
+
+OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+
+$(CODESETS_LIB) : $(OBJS)
+	%mklib_q from=$^
+
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+#MM
+linklibs-codesets-setup :
+	%mkdirs_q $(OBJDIR)
+	%mkdirs_q $(AROS_LIB)

@@ -2,7 +2,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2008 by codesets.library Open Source Team
+ Copyright (C) 2005-2009 by codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -43,9 +43,7 @@
 #include "convertUTF.h"
 #include "codepages.h"
 
-#ifndef __AROS__
 #include "SDI_stdarg.h"
-#endif /* __AROS__ */
 
 #include "debug.h"
 
@@ -932,8 +930,8 @@ codesetsInit(struct codesetList *csList)
 
   NewList((struct List *)&CodesetsBase->codesets);
 
-  // to make the list of the supported codesets complete we also add a
-  // fake 'UTF-8' only so that our users can query for that codeset as well.
+  // to make the list of the supported codesets complete we also add fake
+  // 'UTF-8' , 'UTF-16' and 'UTF-32' only so that our users can query for those codesets as well.
   if((codeset = allocVecPooled(CodesetsBase->pool, sizeof(struct codeset))) == NULL)
     goto end;
 
@@ -943,6 +941,26 @@ codesetsInit(struct codesetList *csList)
   codeset->read_only        = 0;
   AddTail((struct List *)csList, (struct Node *)&codeset->node);
   CodesetsBase->utf8Codeset = codeset;
+
+  if((codeset = allocVecPooled(CodesetsBase->pool, sizeof(struct codeset))) == NULL)
+    goto end;
+
+  codeset->name             = mystrdup("UTF-16");
+  codeset->alt_name         = mystrdup("UTF16");
+  codeset->characterization = mystrdup("16-bit Unicode");
+  codeset->read_only        = 0;
+  AddTail((struct List *)csList, (struct Node *)&codeset->node);
+  CodesetsBase->utf16Codeset = codeset;
+
+  if((codeset = allocVecPooled(CodesetsBase->pool, sizeof(struct codeset))) == NULL)
+    goto end;
+
+  codeset->name             = mystrdup("UTF-32");
+  codeset->alt_name         = mystrdup("UTF32");
+  codeset->characterization = mystrdup("32-bit Unicode");
+  codeset->read_only        = 0;
+  AddTail((struct List *)csList, (struct Node *)&codeset->node);
+  CodesetsBase->utf32Codeset = codeset;
 
   // on AmigaOS4 we can use diskfont.library to inquire charset information as
   // it comes with a quite rich implementation of different charsets.
@@ -1690,18 +1708,9 @@ codesetsFindBest(struct TagItem *attrs, ULONG csFamily, STRPTR text, int text_le
 /**************************************************************************/
 
 /// CodesetsSupportedA()
-#ifdef __AROS__
-AROS_LH1(STRPTR *, CodesetsSupportedA,
-    AROS_LHA(struct TagItem *, attrs, A0),
-    struct LibraryHeader *, library, 15, Codesets
-)
-{
-    AROS_LIBFUNC_INIT
-#else
 STRPTR *LIBFUNC
 CodesetsSupportedA(REG(a0, UNUSED struct TagItem * attrs))
 {
-#endif
   STRPTR *array = NULL;
   struct TagItem *tstate = attrs;
   struct TagItem *tag;
@@ -1758,101 +1767,28 @@ CodesetsSupportedA(REG(a0, UNUSED struct TagItem * attrs))
 
   RETURN(array);
   return array;
-#ifdef __AROS__
-    AROS_LIBFUNC_EXIT
-#endif
 }
-
-#ifndef __AROS__
-LIBSTUB(CodesetsSupportedA, STRPTR*, REG(a0, struct TagItem *attrs))
-{
-  #ifdef __MORPHOS__
-  return CodesetsSupportedA((struct TagItem *)REG_A0);
-  #else
-  return CodesetsSupportedA(attrs);
-  #endif
-}
-#endif
-
-#ifdef __amigaos4__
-LIBSTUBVA(CodesetsSupported, STRPTR*, ...)
-{
-  STRPTR* res;
-  VA_LIST args;
-
-  VA_START(args, self);
-  res = CodesetsSupportedA(VA_ARG(args, struct TagItem *));
-  VA_END(args);
-
-  return res;
-}
-#endif
 
 ///
 /// CodesetsFreeA()
-#ifdef __AROS__
-AROS_LH2(void, CodesetsFreeA,
-    AROS_LHA(APTR, obj, A0),
-    AROS_LHA(struct TagItem *, attrs, A1),
-    struct LibraryHeader *, library, 14, Codesets
-)
-{
-    AROS_LIBFUNC_INIT
-#else
 void LIBFUNC
 CodesetsFreeA(REG(a0, APTR obj),
               REG(a1, UNUSED struct TagItem *attrs))
 {
-#endif
   ENTER();
 
   if(obj)
     freeArbitrateVecPooled(obj);
 
   LEAVE();
-#ifdef __AROS__
-    AROS_LIBFUNC_EXIT
-#endif
 }
-
-#ifndef __AROS__
-LIBSTUB(CodesetsFreeA, void, REG(a0, APTR obj), REG(a1, struct TagItem *attrs))
-{
-  #ifdef __MORPHOS__
-  return CodesetsFreeA((APTR)REG_A0,(struct TagItem *)REG_A1);
-  #else
-  return CodesetsFreeA(obj, attrs);
-  #endif
-}
-#endif
-
-#ifdef __amigaos4__
-LIBSTUBVA(CodesetsFree, void, REG(a0, APTR obj), ...)
-{
-  VA_LIST args;
-
-  VA_START(args, obj);
-  CodesetsFreeA(obj, VA_ARG(args, struct TagItem *));
-  VA_END(args);
-}
-#endif
 
 ///
 /// CodesetsSetDefaultA()
-#ifdef __AROS__
-AROS_LH2(struct codeset *, CodesetsSetDefaultA,
-    AROS_LHA(STRPTR, name, A0),
-    AROS_LHA(struct TagItem *, attrs, A1),
-    struct LibraryHeader *, library, 13, Codesets
-)
-{
-    AROS_LIBFUNC_INIT
-#else
 struct codeset *LIBFUNC
 CodesetsSetDefaultA(REG(a0, STRPTR name),
                     REG(a1, struct TagItem *attrs))
 {
-#endif
   struct codeset *codeset;
 
   ENTER();
@@ -1872,51 +1808,13 @@ CodesetsSetDefaultA(REG(a0, STRPTR name),
 
   RETURN(codeset);
   return codeset;
-#ifdef __AROS__
-    AROS_LIBFUNC_EXIT
-#endif
 }
-
-#ifndef __AROS__
-LIBSTUB(CodesetsSetDefaultA, struct codeset *, REG(a0, STRPTR name), REG(a1, struct TagItem *attrs))
-{
-  #ifdef __MORPHOS__
-  return CodesetsSetDefaultA((STRPTR)REG_A0,(struct TagItem *)REG_A1);
-  #else
-  return CodesetsSetDefaultA(name, attrs);
-  #endif
-}
-#endif
-
-#ifdef __amigaos4__
-LIBSTUBVA(CodesetsSetDefault, struct codeset *, REG(a0, STRPTR name), ...)
-{
-  struct codeset *cs;
-  VA_LIST args;
-
-  VA_START(args, name);
-  cs = CodesetsSetDefaultA(name, VA_ARG(args, struct TagItem *));
-  VA_END(args);
-
-  return cs;
-}
-#endif
 
 ///
 /// CodesetsFindA()
-#ifdef __AROS__
-AROS_LH2(struct codeset *, CodesetsFindA,
-    AROS_LHA(STRPTR, name, A0),
-    AROS_LHA(struct TagItem *, attrs, A1),
-    struct LibraryHeader *, library, 16, Codesets
-)
-{
-    AROS_LIBFUNC_INIT
-#else
 struct codeset *LIBFUNC
 CodesetsFindA(REG(a0, STRPTR name), REG(a1, struct TagItem *attrs))
 {
-#endif
   struct codeset *codeset = NULL;
 
   ENTER();
@@ -1959,49 +1857,13 @@ CodesetsFindA(REG(a0, STRPTR name), REG(a1, struct TagItem *attrs))
 
   RETURN(codeset);
   return codeset;
-#ifdef __AROS__
-    AROS_LIBFUNC_EXIT
-#endif
 }
 
-#ifndef __AROS__
-LIBSTUB(CodesetsFindA, struct codeset *, REG(a0, STRPTR name), REG(a1, struct TagItem *attrs))
-{
-  #ifdef __MORPHOS__
-  return CodesetsFindA((STRPTR)REG_A0,(struct TagItem *)REG_A1);
-  #else
-  return CodesetsFindA(name, attrs);
-  #endif
-}
-#endif
-
-#ifdef __amigaos4__
-LIBSTUBVA(CodesetsFind, struct codeset *, REG(a0, STRPTR name), ...)
-{
-  struct codeset *cs;
-  VA_LIST args;
-
-  VA_START(args, name);
-  cs = CodesetsFindA(name, VA_ARG(args, struct TagItem *));
-  VA_END(args);
-
-  return cs;
-}
-#endif
 ///
 /// CodesetsFindBestA()
-#ifdef __AROS__
-AROS_LH1(struct codeset *, CodesetsFindBestA,
-    AROS_LHA(struct TagItem *, attrs, A0),
-    struct LibraryHeader *, library, 17, Codesets
-)
-{
-    AROS_LIBFUNC_INIT
-#else
 struct codeset *LIBFUNC
 CodesetsFindBestA(REG(a0, struct TagItem *attrs))
 {
-#endif
   struct codeset *codeset = NULL;
 
   ENTER();
@@ -2035,51 +1897,15 @@ CodesetsFindBestA(REG(a0, struct TagItem *attrs))
 
   RETURN(codeset);
   return codeset;
-#ifdef __AROS__
-    AROS_LIBFUNC_EXIT
-#endif
 }
 
-#ifndef __AROS__
-LIBSTUB(CodesetsFindBestA, struct codeset *, REG(a0, struct TagItem *attrs))
-{
-  #ifdef __MORPHOS__
-  return CodesetsFindBestA((struct TagItem *)REG_A0);
-  #else
-  return CodesetsFindBestA(attrs);
-  #endif
-}
-#endif
-
-#ifdef __amigaos4__
-LIBSTUBVA(CodesetsFindBest, struct codeset *, ...)
-{
-  struct codeset *cs;
-  VA_LIST args;
-
-  VA_START(args, self);
-  cs = CodesetsFindBestA(VA_ARG(args, struct TagItem *));
-  VA_END(args);
-
-  return cs;
-}
-#endif
 ///
 /// CodesetsUTF8Len()
 // Returns the number of characters a utf8 string has. This is not
 // identically with the size of memory is required to hold the string.
-#ifdef __AROS__
-AROS_LH1(ULONG, CodesetsUTF8Len,
-    AROS_LHA(const UTF8 *, str, A0),
-    struct LibraryHeader *, library, 18, Codesets
-)
-{
-    AROS_LIBFUNC_INIT
-#else
 ULONG LIBFUNC
 CodesetsUTF8Len(REG(a0, UTF8 *str))
 {
-#endif
   int           len;
   unsigned char c;
 
@@ -2098,109 +1924,90 @@ CodesetsUTF8Len(REG(a0, UTF8 *str))
 
   RETURN((ULONG)len);
   return (ULONG)len;
-#ifdef __AROS__
-    AROS_LIBFUNC_EXIT
-#endif
 }
-
-#ifndef __AROS__
-LIBSTUB(CodesetsUTF8Len, ULONG, REG(a0, UTF8* str))
-{
-  #ifdef __MORPHOS__
-  return CodesetsUTF8Len((UTF8 *)REG_A0);
-  #else
-  return CodesetsUTF8Len(str);
-  #endif
-}
-#endif
 
 ///
 /// CodesetsStrLenA()
-#ifdef __AROS__
-AROS_LH2(ULONG, CodesetsStrLenA,
-    AROS_LHA(STRPTR, str, A0),
-    AROS_LHA(struct TagItem *, attrs, A1),
-    struct LibraryHeader *, library, 23, Codesets
-)
-{
-    AROS_LIBFUNC_INIT
-#else
 ULONG LIBFUNC
 CodesetsStrLenA(REG(a0, STRPTR str),
                 REG(a1, struct TagItem *attrs))
 {
-#endif
-  struct codeset *codeset;
-  int            len, res;
-  STRPTR         src;
-  UBYTE          c;
+  ULONG res = 0;
 
   ENTER();
 
-  if(!str)
-    return 0;
+  if(str != NULL)
+  {
+    struct codeset *codeset;
+    int            len;
+    STRPTR         src;
+    int            utf;
 
-  if(!(codeset = (struct codeset *)GetTagData(CSA_SourceCodeset, 0, attrs)))
-    codeset = defaultCodeset(TRUE);
+    if((codeset = (struct codeset *)GetTagData(CSA_SourceCodeset, 0, attrs)) == NULL)
+      codeset = defaultCodeset(TRUE);
+    if(codeset == CodesetsBase->utf32Codeset)
+    {
+      utf = 32;
+      len = utf32_strlen((UTF32 *)str);
+    }
+    else if(codeset == CodesetsBase->utf16Codeset)
+    {
+      utf = 16;
+      len = utf16_strlen((UTF16 *)str);
+    }
+    else
+    {
+      utf = 0;
+      len = strlen(str);
+    }
 
-  len = GetTagData(CSA_SourceLen, strlen(str), attrs);
+    len = GetTagData(CSA_SourceLen, len, attrs);
 
-  src = str;
-  res = 0;
+    src = str;
 
-  while(((c = *src++) && (len--)))
-    res += codeset->table[c].utf8[0];
+    if(utf != 0)
+    {
+      void *srcend = src + len;
+      UTF8 *dstlen = NULL;
 
-  RETURN((ULONG)res);
-  return (ULONG)res;
-#ifdef __AROS__
-    AROS_LIBFUNC_EXIT
-#endif
-}
+      switch(utf)
+      {
+        case 32:
+          CodesetsConvertUTF32toUTF8((const UTF32 **)&src, srcend, &dstlen, NULL, 0);
+          break;
+        case 16:
+          CodesetsConvertUTF16toUTF8((const UTF16 **)&src, srcend, &dstlen, NULL, 0);
+          break;
+      }
+      res	= (ULONG)dstlen;
+    }
+    else
+    {
+      UBYTE c;
 
-#ifndef __AROS__
-LIBSTUB(CodesetsStrLenA, ULONG, REG(a0, STRPTR str),
-                                REG(a1, struct TagItem *attrs))
-{
-  #ifdef __MORPHOS__
-  return CodesetsStrLenA((STRPTR)REG_A0,(struct TagItem *)REG_A1);
-  #else
-  return CodesetsStrLenA(str, attrs);
-  #endif
-}
-#endif
+      res = 0;
 
-#ifdef __amigaos4__
-LIBSTUBVA(CodesetsStrLen, ULONG, REG(a0, STRPTR str), ...)
-{
-  ULONG res;
-  VA_LIST args;
+      while((c = *src++) != '\0' && len != 0)
+      {
+        res += codeset->table[c].utf8[0];
+        len--;
+      }
+    }
+  }
 
-  VA_START(args, str);
-  res = CodesetsStrLenA(str, VA_ARG(args, struct TagItem *));
-  VA_END(args);
-
+  RETURN(res);
   return res;
 }
-#endif
+
 ///
 /// CodesetsUTF8ToStrA()
 // Converts an UTF8 string to a given charset. Return the number of bytes
 // written to dest excluding the NULL byte (which is always ensured by this
 // function; it means a NULL str will produce "" as dest; anyway you should
 // check NULL str to not waste your time!).
-#ifdef __AROS__
-AROS_LH1(STRPTR, CodesetsUTF8ToStrA,
-    AROS_LHA(struct TagItem *, attrs, A0),
-    struct LibraryHeader *, library, 19, Codesets
-)
-{
-    AROS_LIBFUNC_INIT
-#else
 STRPTR LIBFUNC
 CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
 {
-#endif
   UTF8 *src;
   ULONG srcLen;
   ULONG *destLenPtr;
@@ -2218,7 +2025,7 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
     struct Hook *mapForeignCharsHook;
     char buf[256];
     STRPTR destIter = NULL;
-    STRPTR b = NULL;
+    char *b = NULL;
     ULONG destLen = 0;
     int i = 0;
     unsigned char *s = src;
@@ -2228,6 +2035,8 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
     BOOL mapForeignChars;
     APTR pool = NULL;
     struct SignalSemaphore *sem = NULL;
+    int utf;
+    ULONG char_size;
 
     // get some more optional attributes
     destHook = (struct Hook *)GetTagData(CSA_DestHook, (ULONG)NULL, attrs);
@@ -2235,6 +2044,25 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
     numConvErrorsPtr = (int *)GetTagData(CSA_ErrPtr, (ULONG)NULL, attrs);
     mapForeignChars = (BOOL)GetTagData(CSA_MapForeignChars, FALSE, attrs);
     mapForeignCharsHook = (struct Hook *)GetTagData(CSA_MapForeignCharsHook, (ULONG)NULL, attrs);
+
+    // get the destination codeset pointer
+    if((codeset = (struct codeset *)GetTagData(CSA_DestCodeset, (ULONG)NULL, attrs)) == NULL)
+      codeset = defaultCodeset(TRUE);
+    if(codeset == CodesetsBase->utf32Codeset)
+    {
+      utf = 32;
+      char_size = 4;
+    }
+    else if(codeset == CodesetsBase->utf16Codeset)
+    {
+      utf = 16;
+      char_size = 2;
+    }
+    else
+    {
+      utf = 0;
+      char_size = 1;
+    }
 
     // first we make sure we allocate enough memory
     // for our destination buffer
@@ -2257,12 +2085,30 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
         ULONG len = 0;
 
         // calculate the destLen
-        while(s < e)
+        if(utf)
         {
-          unsigned char c = *s++;
+          void *dstlen = NULL;
 
-          len++;
-          s += trailingBytesForUTF8[c];
+          switch(utf)
+          {
+            case 32:
+              CodesetsConvertUTF8toUTF32((const UTF8 **)&s, e, (UTF32 **)&dstlen, NULL, 0);
+              break;
+            case 16:
+      	      CodesetsConvertUTF8toUTF16((const UTF8 **)&s, e, (UTF16 **)&dstlen, NULL, 0);
+              break;
+          }
+      	  len = (ULONG)dstlen;
+      	}
+      	else
+      	{
+      	  while(s < e)
+      	  {
+      	    unsigned char c = *s++;
+
+      	    len++;
+      	    s += trailingBytesForUTF8[c];
+      	  }
         }
 
         if(dest == NULL || (destLen < len+1))
@@ -2273,15 +2119,15 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
               ObtainSemaphore(sem);
 
             // allocate the destination buffer
-            dest = allocVecPooled(pool, len+1);
+            dest = allocVecPooled(pool, len+char_size);
 
             if(sem != NULL)
               ReleaseSemaphore(sem);
           }
           else
-            dest = allocArbitrateVecPooled(len+1);
+            dest = allocArbitrateVecPooled(len+char_size);
 
-          destLen = len+1;
+          destLen = len+char_size;
         }
 
         if(dest == NULL)
@@ -2294,202 +2140,250 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
       destIter = dest;
     }
 
-    // get the destination codeset pointer
-    if((codeset = (struct codeset *)GetTagData(CSA_DestCodeset, (ULONG)NULL, attrs)) == NULL)
-      codeset = defaultCodeset(TRUE);
-
     // now we convert the src string to the
     // destination buffer.
-    for(s=src;;n++)
+    s = src;
+    if (utf)
     {
-      if(destHook == NULL && n >= destLen-1)
-        break;
+      void *dstend;
 
-      // convert until we reach the end of the
-      // source buffer.
-      if(s < e)
+      if(destHook != NULL)
       {
-        unsigned char c = *s;
-        unsigned char d = '?';
-        const char *repstr = NULL;
-        int replen = 0;
+        ULONG r;
 
-        // check if the char is a >7bit char
-        if(c > 127)
+        dstend = b + destLen - char_size;
+        do
         {
-          struct single_convert *f;
-          int lenAdd = trailingBytesForUTF8[c];
-          int lenStr = lenAdd+1;
-          unsigned char *src = s;
-
-          do
+          switch(utf)
           {
-            // start each iteration with "no replacement found yet"
-            repstr = NULL;
-            replen = 0;
-
-            // search in the UTF8 conversion table of the current charset if
-            // we have a replacement character for the char sequence starting at s
-            BIN_SEARCH(codeset->table_sorted, 0, 255, strncmp((char *)src, (char *)codeset->table_sorted[m].utf8+1, lenStr), f);
-
-            if(f != NULL)
-            {
-              d = f->code;
-              replen = -1;
-
+            case 32:
+              r = CodesetsConvertUTF8toUTF32((const UTF8 **)&s, e, (UTF32 **)&b, dstend, 0);
               break;
-            }
-            else
-            {
-              // the analysed char sequence (s) is not convertable to a
-              // single visible char replacement, so we normally have to put
-              // a ? sign as a "unknown char" sign at the very position.
-              //
-              // For convienence we, however, allow users to replace these
-              // UTF8 characters with char sequences that "looklike" the
-              // original char.
-              if(mapForeignChars == TRUE)
-                replen = mapUTF8toASCII(&repstr, src, lenStr);
-
-              // call the hook only, if the internal table yielded no suitable
-              // replacement
-              if(replen == 0 && mapForeignCharsHook != NULL)
-              {
-                struct replaceMsg rmsg;
-
-                rmsg.dst = (char **)&repstr;
-                rmsg.src = src;
-                rmsg.srclen = lenStr;
-                replen = CallHookPkt(mapForeignCharsHook, &rmsg, NULL);
-              }
-
-              if(replen < 0)
-              {
-                D(DBF_UTF, "got UTF8 replacement (%ld)", replen);
-
-                // stay in the loop as long as one replacement function delivers
-                // further UTF8 replacement sequences
-                src = (unsigned char *)repstr;
-              }
-              else if(replen == 0)
-              {
-                D(DBF_UTF, "found no ASCII replacement for UTF8 string (%ld)", replen);
-                repstr = NULL;
-              }
-              else
-                D(DBF_UTF, "got replacement string '%s' (%ld)", repstr ? repstr : "<null>", replen);
-            }
+            case 16:
+              r = CodesetsConvertUTF8toUTF16((const UTF8 **)&s, e, (UTF16 **)&b, dstend, 0);
+              break;
           }
-          while(replen < 0);
+          b[0] = 0;
+          if(char_size > 1)
+            b[1] = 0;
+          if(r != CSR_TargetExhausted)
+            msg.state = CSV_End;
+          msg.len = b-buf;
+          CallHookPkt(destHook,&msg,buf);
 
-          if(repstr == NULL || replen == 0)
-          {
-            if(replen >= 0)
-            {
-              d = '?';
-              numConvErrors++;
-            }
-          }
-
-          s += lenAdd;
+          b  = buf;
+          n += msg.len;
         }
-        else
-          d = c;
-
-        if(destHook != NULL)
-        {
-          if(replen > 1)
-          {
-            while(replen > 0)
-            {
-              *b++ = *repstr;
-              repstr++;
-              i++;
-              replen--;
-
-              if(i%(destLen-1)==0)
-              {
-                *b = '\0';
-                msg.len = i;
-                CallHookPkt(destHook, &msg, buf);
-
-                b  = buf;
-                *b = '\0';
-                i  = 0;
-              }
-            }
-          }
-          else
-          {
-            *b++ = replen > 0 ? *repstr : d;
-            i++;
-          }
-
-          if(i%(destLen-1)==0)
-          {
-            *b = '\0';
-            msg.len = i;
-            CallHookPkt(destHook, &msg, buf);
-
-            b  = buf;
-            *b = '\0';
-            i  = 0;
-          }
-        }
-        else
-        {
-          if(replen > 1)
-          {
-            ULONG destPos = destIter-dest;
-
-            if(pool != NULL)
-            {
-              if(sem != NULL)
-                ObtainSemaphore(sem);
-
-              // allocate the destination buffer
-              dest = reallocVecPooled(pool, dest, destLen, destLen+replen-1);
-
-              if(sem != NULL)
-                ReleaseSemaphore(sem);
-            }
-            else
-              dest = reallocArbitrateVecPooled(dest, destLen, destLen+replen-1);
-
-            if(dest == NULL)
-            {
-              RETURN(NULL);
-              return NULL;
-            }
-
-            destIter = dest+destPos;
-            memcpy(destIter, repstr, replen);
-
-            // adjust our loop pointer and destination length
-            destIter += replen;
-            destLen += replen-1;
-          }
-          else if(replen == 1)
-            *destIter++ = *repstr;
-          else
-            *destIter++ = d;
-        }
-
-        s++;
+        while(r == CSR_TargetExhausted);
       }
       else
-        break;
-    }
-
-    if(destHook != NULL)
-    {
-      msg.state = CSV_End;
-      msg.len   = i;
-      *b        = '\0';
-      CallHookPkt(destHook,&msg,buf);
+      {
+        dstend = destIter + destLen - char_size;
+        switch(utf)
+        {
+          case 32:
+            CodesetsConvertUTF8toUTF32((const UTF8 **)&s, e, (UTF32 **)&destIter, dstend, 0);
+            break;
+          case 16:
+            CodesetsConvertUTF8toUTF16((const UTF8 **)&s, e, (UTF16 **)&destIter, dstend, 0);
+            break;
+        }
+        n = destIter-dest;
+      }
     }
     else
-      *destIter = '\0';
+    {
+      for(;;n++)
+      {
+        if(destHook == NULL && n >= destLen-1)
+          break;
+
+        // convert until we reach the end of the
+        // source buffer.
+        if(s < e)
+        {
+          unsigned char c = *s;
+          unsigned char d = '?';
+          const char *repstr = NULL;
+          int replen = 0;
+
+          // check if the char is a >7bit char
+          if(c > 127)
+          {
+            struct single_convert *f;
+            int lenAdd = trailingBytesForUTF8[c];
+            int lenStr = lenAdd+1;
+            unsigned char *src = s;
+
+            do
+            {
+              // start each iteration with "no replacement found yet"
+              repstr = NULL;
+              replen = 0;
+
+              // search in the UTF8 conversion table of the current charset if
+              // we have a replacement character for the char sequence starting at s
+              BIN_SEARCH(codeset->table_sorted, 0, 255, strncmp((char *)src, (char *)codeset->table_sorted[m].utf8+1, lenStr), f);
+
+              if(f != NULL)
+              {
+                d = f->code;
+                replen = -1;
+
+                break;
+              }
+              else
+              {
+                // the analysed char sequence (s) is not convertable to a
+                // single visible char replacement, so we normally have to put
+                // a ? sign as a "unknown char" sign at the very position.
+                //
+                // For convienence we, however, allow users to replace these
+                // UTF8 characters with char sequences that "looklike" the
+                // original char.
+                if(mapForeignChars == TRUE)
+                  replen = mapUTF8toASCII(&repstr, src, lenStr);
+
+                // call the hook only, if the internal table yielded no suitable
+                // replacement
+                if(replen == 0 && mapForeignCharsHook != NULL)
+                {
+                  struct replaceMsg rmsg;
+
+                  rmsg.dst = (char **)&repstr;
+                  rmsg.src = src;
+                  rmsg.srclen = lenStr;
+                  replen = CallHookPkt(mapForeignCharsHook, &rmsg, NULL);
+                }
+
+                if(replen < 0)
+                {
+                  D(DBF_UTF, "got UTF8 replacement (%ld)", replen);
+
+                  // stay in the loop as long as one replacement function delivers
+                  // further UTF8 replacement sequences
+                  src = (unsigned char *)repstr;
+                }
+                else if(replen == 0)
+                {
+                  D(DBF_UTF, "found no ASCII replacement for UTF8 string (%ld)", replen);
+                  repstr = NULL;
+                }
+                else
+                  D(DBF_UTF, "got replacement string '%s' (%ld)", repstr ? repstr : "<null>", replen);
+              }
+            }
+            while(replen < 0);
+
+            if(repstr == NULL || replen == 0)
+            {
+              if(replen >= 0)
+              {
+                d = '?';
+                numConvErrors++;
+              }
+            }
+
+            s += lenAdd;
+          }
+          else
+            d = c;
+
+          if(destHook != NULL)
+          {
+            if(replen > 1)
+            {
+              while(replen > 0)
+              {
+                *b++ = *repstr;
+                repstr++;
+                i++;
+                replen--;
+
+                if(i%(destLen-1)==0)
+                {
+                  *b = '\0';
+                  msg.len = i;
+                  CallHookPkt(destHook, &msg, buf);
+
+                  b  = buf;
+                  *b = '\0';
+                  i  = 0;
+                }
+              }
+            }
+            else
+            {
+              *b++ = replen > 0 ? *repstr : d;
+              i++;
+            }
+
+            if(i%(destLen-1)==0)
+            {
+              *b = '\0';
+              msg.len = i;
+              CallHookPkt(destHook, &msg, buf);
+
+              b  = buf;
+              *b = '\0';
+              i  = 0;
+            }
+          }
+          else
+          {
+            if(replen > 1)
+            {
+              ULONG destPos = destIter-dest;
+
+              if(pool != NULL)
+              {
+                if(sem != NULL)
+                  ObtainSemaphore(sem);
+
+                // allocate the destination buffer
+                dest = reallocVecPooled(pool, dest, destLen, destLen+replen-1);
+
+                if(sem != NULL)
+                  ReleaseSemaphore(sem);
+              }
+              else
+                dest = reallocArbitrateVecPooled(dest, destLen, destLen+replen-1);
+
+              if(dest == NULL)
+              {
+                RETURN(NULL);
+                return NULL;
+              }
+
+              destIter = dest+destPos;
+              memcpy(destIter, repstr, replen);
+
+              // adjust our loop pointer and destination length
+              destIter += replen;
+              destLen += replen-1;
+            }
+            else if(replen == 1)
+              *destIter++ = *repstr;
+            else
+              *destIter++ = d;
+          }
+
+          s++;
+        }
+        else
+          break;
+      }
+
+      if(destHook != NULL)
+      {
+        msg.state = CSV_End;
+        msg.len   = i;
+        *b        = '\0';
+        CallHookPkt(destHook,&msg,buf);
+      }
+      else
+        *destIter = '\0';
+    }
 
     // let us write the number of conversion errors
     // to the proper variable pointer, if wanted
@@ -2504,79 +2398,67 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
 
   RETURN(dest);
   return dest;
-
-#ifdef __AROS__
-    AROS_LIBFUNC_EXIT
-#endif
 }
-
-#ifndef __AROS__
-LIBSTUB(CodesetsUTF8ToStrA, STRPTR, REG(a0, struct TagItem *attrs))
-{
-  #ifdef __MORPHOS__
-  return CodesetsUTF8ToStrA((struct TagItem *)REG_A0);
-  #else
-  return CodesetsUTF8ToStrA(attrs);
-  #endif
-}
-#endif
-
-#ifdef __amigaos4__
-LIBSTUBVA(CodesetsUTF8ToStr, STRPTR, ...)
-{
-  STRPTR res;
-  VA_LIST args;
-
-  VA_START(args, self);
-  res = CodesetsUTF8ToStrA(VA_ARG(args, struct TagItem *));
-  VA_END(args);
-
-  return res;
-}
-#endif
 
 ///
 /// CodesetsUTF8CreateA()
 // Converts a string and a charset to an UTF8. Returns the UTF8.
 // If a destination hook is supplied always return 0.
 // If from is NULL, it returns NULL and doesn't call the hook.
-#ifdef __AROS__
-AROS_LH1(UTF8 *, CodesetsUTF8CreateA,
-    AROS_LHA(struct TagItem *, attrs, A0),
-    struct LibraryHeader *, library, 20, Codesets
-)
-{
-    AROS_LIBFUNC_INIT
-#else
 UTF8 *LIBFUNC
 CodesetsUTF8CreateA(REG(a0, struct TagItem *attrs))
 {
-#endif
   UTF8   *from;
   UTF8   *dest;
+  struct codeset *codeset;
   ULONG  fromLen, *destLenPtr;
   ULONG  n;
+  int    utf;
 
   ENTER();
 
   dest = NULL;
   n    = 0;
 
+  if((codeset = (struct codeset *)GetTagData(CSA_SourceCodeset, 0, attrs)) == NULL)
+    codeset = defaultCodeset(TRUE);
+  if(codeset == CodesetsBase->utf32Codeset)
+    utf = 32;
+  else if(codeset == CodesetsBase->utf16Codeset)
+    utf = 16;
+  else
+    utf = 0;
+
   from = (UTF8*)GetTagData(CSA_Source, 0, attrs);
-  fromLen = GetTagData(CSA_SourceLen, from != NULL ? strlen((char *)from) : 0, attrs);
+  if(from)
+  {
+    switch(utf)
+    {
+      case 32:
+        fromLen = utf32_strlen((UTF32 *)from);
+        break;
+
+      case 16:
+        fromLen = utf16_strlen((UTF16 *)from);
+        break;
+
+      default:
+        fromLen = strlen((char *)from);
+        break;
+    }
+  }
+  else
+    fromLen = 0;
+  fromLen = GetTagData(CSA_SourceLen, fromLen, attrs);
 
   if(from != NULL && fromLen != 0)
   {
     struct convertMsg       msg;
-    struct codeset *codeset;
     struct Hook    *hook;
     ULONG          destLen;
     int            i = 0;
     UBYTE          buf[256];
     UBYTE          *src, *destPtr = NULL, *b = NULL, c;
-
-    if((codeset = (struct codeset *)GetTagData(CSA_SourceCodeset, 0, attrs)) == NULL)
-      codeset = defaultCodeset(TRUE);
 
     hook    = (struct Hook *)GetTagData(CSA_DestHook, 0, attrs);
     destLen = GetTagData(CSA_DestLen,0,attrs);
@@ -2595,14 +2477,38 @@ CodesetsUTF8CreateA(REG(a0, struct TagItem *attrs))
       if((dest = (UTF8*)GetTagData(CSA_Dest, 0, attrs)) != NULL ||
         GetTagData(CSA_AllocIfNeeded,TRUE,attrs))
       {
-        ULONG len, flen;
+        ULONG len;
 
-        flen = fromLen;
-        len  = 0;
         src  = from;
 
-        while(((c = *src++) && (flen--)))
-          len += codeset->table[c].utf8[0];
+        if(utf != 0)
+        {
+          void *srcend = src + fromLen;
+          UTF8 *dstlen = NULL;
+
+          switch(utf)
+          {
+            case 32:
+              CodesetsConvertUTF32toUTF8((const UTF32 **)&src, srcend, &dstlen, NULL, 0);
+              break;
+            case 16:
+      	      CodesetsConvertUTF16toUTF8((const UTF16 **)&src, srcend, &dstlen, NULL, 0);
+              break;
+          }
+      	  len = (ULONG)dstlen;
+        }
+        else
+        {
+          ULONG flen = fromLen;
+
+          len = 0;
+          while((c = *src++) != '\0' && flen != 0)
+          {
+            len += codeset->table[c].utf8[0];
+            flen--;
+          }
+        }
+        D(DBF_UTF, "Calculated output UTF-8 buffer length: %lu\n", len);
 
         if(dest == NULL || (destLen<len+1))
         {
@@ -2636,50 +2542,101 @@ CodesetsUTF8CreateA(REG(a0, struct TagItem *attrs))
       destPtr = (UBYTE*)dest;
     }
 
-    for(src = from; fromLen && (c = *src); src++, fromLen--)
+    src = from;
+    if(utf)
     {
-      UTF8* utf8_seq;
+      void *srcend = src + fromLen;
+      UTF8 *dstend;
 
-      for(utf8_seq = &codeset->table[c].utf8[1]; (c = *utf8_seq); utf8_seq++)
+      if(hook != NULL)
       {
-        if(hook != NULL)
-        {
-          *b++ = c;
-          i++;
+        ULONG r;
 
-          if(i%(destLen-1)==0)
+        dstend = b + destLen - 1;
+        do
+        {
+          switch(utf)
           {
-            *b = 0;
-            msg.len = i;
-            CallHookPkt(hook,&msg,buf);
-
-            b  = buf;
-            *b = 0;
-            i  = 0;
+            case 32:
+              r = CodesetsConvertUTF32toUTF8((const UTF32 **)&src, srcend, &b, dstend, 0);
+              break;
+            case 16:
+              r = CodesetsConvertUTF16toUTF8((const UTF16 **)&src, srcend, &b, dstend, 0);
+              break;
           }
-        }
-        else
-        {
-          if(n>=destLen)
-            break;
+          *b = 0;
+          if(r != CSR_TargetExhausted)
+            msg.state = CSV_End;
+          msg.len = b-buf;
+          CallHookPkt(hook,&msg,buf);
 
-          *destPtr++ = c;
+          b  = buf;
+          n += msg.len;
         }
-
-        n++;
+        while(r == CSR_TargetExhausted);
       }
-    }
-
-    if(hook != NULL)
-    {
-      msg.state = CSV_End;
-      msg.len   = i;
-      *b = 0;
-      CallHookPkt(hook,&msg,buf);
+      else
+      {
+        dstend = destPtr + destLen;
+        switch(utf)
+        {
+          case 32:
+            CodesetsConvertUTF32toUTF8((const UTF32 **)&src, srcend, &destPtr, dstend, 0);
+            break;
+          case 16:
+            CodesetsConvertUTF16toUTF8((const UTF16 **)&src, srcend, &destPtr, dstend, 0);
+            break;
+        }
+        n = destPtr-dest;
+      }
     }
     else
     {
-      *destPtr = 0;
+      for(; fromLen && (c = *src); src++, fromLen--)
+      {
+        UTF8* utf8_seq;
+
+        for(utf8_seq = &codeset->table[c].utf8[1]; (c = *utf8_seq); utf8_seq++)
+        {
+          if(hook != NULL)
+          {
+            *b++ = c;
+            i++;
+
+            if(i%(destLen-1)==0)
+            {
+              *b = 0;
+              msg.len = i;
+              CallHookPkt(hook,&msg,buf);
+
+              b  = buf;
+              *b = 0;
+              i  = 0;
+            }
+          }
+          else
+          {
+            if(n>=destLen)
+              break;
+
+            *destPtr++ = c;
+          }
+
+          n++;
+        }
+      }
+
+      if(hook != NULL)
+      {
+        msg.state = CSV_End;
+        msg.len   = i;
+        *b = 0;
+        CallHookPkt(hook,&msg,buf);
+      }
+      else
+      {
+        *destPtr = 0;
+      }
     }
   }
 
@@ -2688,35 +2645,7 @@ CodesetsUTF8CreateA(REG(a0, struct TagItem *attrs))
 
   RETURN(dest);
   return dest;
-#ifdef __AROS__
-    AROS_LIBFUNC_EXIT
-#endif
 }
-
-#ifndef __AROS__
-LIBSTUB(CodesetsUTF8CreateA, UTF8*, REG(a0, struct TagItem *attrs))
-{
-  #ifdef __MORPHOS__
-  return CodesetsUTF8CreateA((struct TagItem *)REG_A0);
-  #else
-  return CodesetsUTF8CreateA(attrs);
-  #endif
-}
-#endif
-
-#ifdef __amigaos4__
-LIBSTUBVA(CodesetsUTF8Create, UTF8*, ...)
-{
-  UTF8 *res;
-  VA_LIST args;
-
-  VA_START(args, self);
-  res = CodesetsUTF8CreateA(VA_ARG(args, struct TagItem *));
-  VA_END(args);
-
-  return res;
-}
-#endif
 
 ///
 /// CodesetsIsValidUTF8()
@@ -2724,18 +2653,9 @@ LIBSTUBVA(CodesetsUTF8Create, UTF8*, ...)
      ((c) >= 160 && ((c) & ~0x3ff) != 0xd800 && \
       (c) != 0xfeff && (c) != 0xfffe && (c) != 0xffff)
 
-#ifdef __AROS__
-AROS_LH1(BOOL, CodesetsIsValidUTF8,
-    AROS_LHA(STRPTR, s, A0),
-    struct LibraryHeader *, library, 24, Codesets
-)
-{
-    AROS_LIBFUNC_INIT
-#else
 BOOL LIBFUNC
 CodesetsIsValidUTF8(REG(a0, STRPTR s))
 {
-#endif
   STRPTR t = s;
   int n;
 
@@ -2752,38 +2672,16 @@ CodesetsIsValidUTF8(REG(a0, STRPTR s))
 
   RETURN(TRUE);
   return TRUE;
-#ifdef __AROS__
-    AROS_LIBFUNC_EXIT
-#endif
 }
-
-#ifndef __AROS__
-LIBSTUB(CodesetsIsValidUTF8, BOOL, REG(a0, STRPTR s))
-{
-  #ifdef __MORPHOS__
-  return CodesetsIsValidUTF8((STRPTR)REG_A0);
-  #else
-  return CodesetsIsValidUTF8(s);
-  #endif
-}
-#endif
 
 ///
 /// CodesetsConvertStrA()
 // Converts a given string from one source Codeset to a given destination
 // codeset and returns the convert string
-#ifdef __AROS__
-AROS_LH1(STRPTR, CodesetsConvertStrA,
-    AROS_LHA(struct TagItem *, attrs, A0),
-    struct LibraryHeader *, library, 26, Codesets
-)
-{
-    AROS_LIBFUNC_INIT
-#else
 STRPTR LIBFUNC
 CodesetsConvertStrA(REG(a0, struct TagItem *attrs))
 {
-#endif
+  struct codeset *srcCodeset;
   STRPTR srcStr = NULL;
   STRPTR dstStr = NULL;
   ULONG srcLen = 0;
@@ -2794,16 +2692,27 @@ CodesetsConvertStrA(REG(a0, struct TagItem *attrs))
   // get the ptr to the src string we want to convert
   // from the source codeset to the dest codeset.
   srcStr = (STRPTR)GetTagData(CSA_Source, (ULONG)NULL, attrs);
-  srcLen = GetTagData(CSA_SourceLen, srcStr != NULL ? strlen(srcStr) : 0, attrs);
+
+  // get the pointer to the codeset in which the src string is encoded
+  if((srcCodeset = (struct codeset *)GetTagData(CSA_SourceCodeset, (ULONG)NULL, attrs)) == NULL)
+    srcCodeset = defaultCodeset(TRUE);
+
+  if (srcStr != NULL)
+  {
+    if (srcCodeset == CodesetsBase->utf32Codeset)
+      srcLen = utf32_strlen((UTF32 *)srcStr);
+    else if (srcCodeset == CodesetsBase->utf16Codeset)
+      srcLen = utf16_strlen((UTF16 *)srcStr);
+    else
+      srcLen = strlen(srcStr);
+  }
+  else
+    srcLen = 0;
+  srcLen = GetTagData(CSA_SourceLen, srcLen, attrs);
 
   if(srcStr != NULL && srcLen > 0)
   {
-    struct codeset *srcCodeset;
     struct codeset *dstCodeset;
-
-    // get the pointer to the codeset in which the src string is encoded
-    if((srcCodeset = (struct codeset *)GetTagData(CSA_SourceCodeset, (ULONG)NULL, attrs)) == NULL)
-      srcCodeset = defaultCodeset(TRUE);
 
     // get the pointer to the codeset in which the dst string should be encoded
     if((dstCodeset = (struct codeset *)GetTagData(CSA_DestCodeset, (ULONG)NULL, attrs)) == NULL)
@@ -2907,54 +2816,15 @@ CodesetsConvertStrA(REG(a0, struct TagItem *attrs))
 
   RETURN(dstStr);
   return dstStr;
-#ifdef __AROS__
-    AROS_LIBFUNC_EXIT
-#endif
 }
-
-#ifndef __AROS__
-LIBSTUB(CodesetsConvertStrA, STRPTR, REG(a0, struct TagItem *attrs))
-{
-  #ifdef __MORPHOS__
-  return CodesetsConvertStrA((struct TagItem *)REG_A0);
-  #else
-  return CodesetsConvertStrA(attrs);
-  #endif
-}
-#endif
-
-#ifdef __amigaos4__
-LIBSTUBVA(CodesetsConvertStr, STRPTR, ...)
-{
-  STRPTR res;
-  VA_LIST args;
-
-  VA_START(args, self);
-  res = CodesetsConvertStrA(VA_ARG(args, struct TagItem *));
-  VA_END(args);
-
-  return res;
-}
-#endif
 
 ///
 /// CodesetsFreeVecPooledA()
-#ifdef __AROS__
-AROS_LH3(void, CodesetsFreeVecPooledA,
-    AROS_LHA(APTR, pool, A0),
-    AROS_LHA(APTR, mem, A1),
-    AROS_LHA(struct TagItem *, attrs, A2),
-    struct LibraryHeader *, library, 25, Codesets
-)
-{
-    AROS_LIBFUNC_INIT
-#else
 void LIBFUNC
 CodesetsFreeVecPooledA(REG(a0, APTR pool),
                        REG(a1, APTR mem),
                        REG(a2, struct TagItem *attrs))
 {
-#endif
   ENTER();
 
   if(pool && mem)
@@ -2971,49 +2841,13 @@ CodesetsFreeVecPooledA(REG(a0, APTR pool),
   }
 
   LEAVE();
-#ifdef __AROS__
-    AROS_LIBFUNC_EXIT
-#endif
 }
 
-#ifndef __AROS__
-LIBSTUB(CodesetsFreeVecPooledA, void, REG(a0, APTR pool),
-                                      REG(a1, APTR mem),
-                                      REG(a2, struct TagItem *attrs))
-{
-  #ifdef __MORPHOS__
-  return CodesetsFreeVecPooledA((APTR)REG_A0,(APTR)REG_A1,(struct TagItem *)REG_A2);
-  #else
-  return CodesetsFreeVecPooledA(pool, mem, attrs);
-  #endif
-}
-#endif
-
-#ifdef __amigaos4__
-LIBSTUBVA(CodesetsFreeVecPooled, void, REG(a0, APTR pool),
-                                       REG(a1, APTR mem), ...)
-{
-  VA_LIST args;
-
-  VA_START(args, mem);
-  CodesetsFreeVecPooledA(pool, mem, VA_ARG(args, struct TagItem *));
-  VA_END(args);
-}
-#endif
 ///
 /// CodesetsListCreateA()
-#ifdef __AROS__
-AROS_LH1(struct codesetList *, CodesetsListCreateA,
-    AROS_LHA(struct TagItem *, attrs, A0),
-    struct LibraryHeader *, library, 27, Codesets
-)
-{
-    AROS_LIBFUNC_INIT
-#else
 struct codesetList *LIBFUNC
 CodesetsListCreateA(REG(a0, struct TagItem *attrs))
 {
-#endif
   struct codesetList *csList = NULL;
 
   ENTER();
@@ -3074,50 +2908,13 @@ CodesetsListCreateA(REG(a0, struct TagItem *attrs))
 
   RETURN(csList);
   return csList;
-#ifdef __AROS__
-    AROS_LIBFUNC_EXIT
-#endif
 }
-
-#ifndef __AROS__
-LIBSTUB(CodesetsListCreateA, struct codesetList *, REG(a0, struct TagItem *attrs))
-{
-  #ifdef __MORPHOS__
-  return CodesetsListCreateA((struct TagItem *)REG_A0);
-  #else
-  return CodesetsListCreateA(attrs);
-  #endif
-}
-#endif
-
-#ifdef __amigaos4__
-LIBSTUBVA(CodesetsListCreate, struct codesetList *, ...)
-{
-  struct codesetList *res;
-  VA_LIST args;
-
-  VA_START(args, self);
-  res = CodesetsListCreateA(VA_ARG(args, struct TagItem *));
-  VA_END(args);
-
-  return res;
-}
-#endif
 
 ///
 /// CodesetsListDeleteA()
-#ifdef __AROS__
-AROS_LH1(BOOL, CodesetsListDeleteA,
-    AROS_LHA(struct TagItem *, attrs, A0),
-    struct LibraryHeader *, library, 28, Codesets
-)
-{
-    AROS_LIBFUNC_INIT
-#else
 BOOL LIBFUNC
 CodesetsListDeleteA(REG(a0, struct TagItem *attrs))
 {
-#endif
   BOOL result = FALSE;
   ENTER();
 
@@ -3162,52 +2959,14 @@ CodesetsListDeleteA(REG(a0, struct TagItem *attrs))
 
   RETURN(result);
   return result;
-#ifdef __AROS__
-    AROS_LIBFUNC_EXIT
-#endif
 }
-
-#ifndef __AROS__
-LIBSTUB(CodesetsListDeleteA, BOOL, REG(a0, struct TagItem *attrs))
-{
-  #ifdef __MORPHOS__
-  return CodesetsListDeleteA((struct TagItem *)REG_A0);
-  #else
-  return CodesetsListDeleteA(attrs);
-  #endif
-}
-#endif
-
-#ifdef __amigaos4__
-LIBSTUBVA(CodesetsListDelete, BOOL, ...)
-{
-  BOOL result;
-  VA_LIST args;
-
-  VA_START(args, self);
-  result = CodesetsListDeleteA(VA_ARG(args, struct TagItem *));
-  VA_END(args);
-
-  return result;
-}
-#endif
 
 ///
 /// CodesetsListAddA()
-#ifdef __AROS__
-AROS_LH2(BOOL, CodesetsListAddA,
-    AROS_LHA(struct codesetList *, csList, A0),
-    AROS_LHA(struct TagItem *, attrs, A1),
-    struct LibraryHeader *, library, 29, Codesets
-)
-{
-    AROS_LIBFUNC_INIT
-#else
 BOOL LIBFUNC
 CodesetsListAddA(REG(a0, struct codesetList *csList),
                  REG(a1, struct TagItem *attrs))
 {
-#endif
   BOOL result = FALSE;
   ENTER();
 
@@ -3254,50 +3013,13 @@ CodesetsListAddA(REG(a0, struct codesetList *csList),
 
   RETURN(result);
   return result;
-#ifdef __AROS__
-    AROS_LIBFUNC_EXIT
-#endif
 }
-
-#ifndef __AROS__
-LIBSTUB(CodesetsListAddA, BOOL, REG(a0, struct codesetList *csList), REG(a1, struct TagItem *attrs))
-{
-  #ifdef __MORPHOS__
-  return CodesetsListAddA((struct codesetList *)REG_A0, (struct TagItem *)REG_A1);
-  #else
-  return CodesetsListAddA(csList, attrs);
-  #endif
-}
-#endif
-
-#ifdef __amigaos4__
-LIBSTUBVA(CodesetsListAdd, BOOL, struct codesetList *csList, ...)
-{
-  BOOL result;
-  VA_LIST args;
-
-  VA_START(args, csList);
-  result = CodesetsListAddA(csList, VA_ARG(args, struct TagItem *));
-  VA_END(args);
-
-  return result;
-}
-#endif
 
 ///
 /// CodesetsListRemoveA()
-#ifdef __AROS__
-AROS_LH1(BOOL, CodesetsListRemoveA,
-    AROS_LHA(struct TagItem *, attrs, A0),
-    struct LibraryHeader *, library, 30, Codesets
-)
-{
-    AROS_LIBFUNC_INIT
-#else
 BOOL LIBFUNC
 CodesetsListRemoveA(REG(a0, struct TagItem *attrs))
 {
-#endif
   BOOL result = FALSE;
   ENTER();
 
@@ -3360,35 +3082,7 @@ CodesetsListRemoveA(REG(a0, struct TagItem *attrs))
 
   RETURN(result);
   return result;
-#ifdef __AROS__
-    AROS_LIBFUNC_EXIT
-#endif
 }
-
-#ifndef __AROS__
-LIBSTUB(CodesetsListRemoveA, BOOL, REG(a0, struct TagItem *attrs))
-{
-  #ifdef __MORPHOS__
-  return CodesetsListRemoveA((struct TagItem *)REG_A0);
-  #else
-  return CodesetsListRemoveA(attrs);
-  #endif
-}
-#endif
-
-#ifdef __amigaos4__
-LIBSTUBVA(CodesetsListRemove, BOOL, ...)
-{
-  BOOL result;
-  VA_LIST args;
-
-  VA_START(args, self);
-  result = CodesetsListRemoveA(VA_ARG(args, struct TagItem *));
-  VA_END(args);
-
-  return result;
-}
-#endif
 
 ///
 

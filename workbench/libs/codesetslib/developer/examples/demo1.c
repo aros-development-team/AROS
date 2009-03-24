@@ -2,7 +2,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2007 by codesets.library Open Source Team
+ Copyright (C) 2005-2009 by codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -31,6 +31,8 @@
 #undef USE_INLINE_STDARG
 #endif
 #endif
+#define INTUITION_NO_INLINE_STDARG
+#define MUIMASTER_NO_INLINE_STDARG
 
 #include <clib/alib_protos.h>
 
@@ -78,7 +80,11 @@ long __stack = 8192;
 
 struct Library *MUIMasterBase = NULL;
 struct Library *CodesetsBase = NULL;
+#ifdef __AROS__
+struct UtilityBase *UtilityBase = NULL;
+#else
 struct Library *UtilityBase = NULL;
+#endif
 
 #if defined(__amigaos4__)
 struct MUIMasterIFace *IMUIMaster = NULL;
@@ -138,6 +144,9 @@ struct MUIP_Editor_Load
 /// DoSuperNew
 //  Calls parent NEW method within a subclass
 #if !defined(__MORPHOS__)
+#ifdef __AROS__
+#define DoSuperNew(cl, obj, ...) DoSuperNewTags(cl, obj, NULL, __VA_ARGS__)
+#else
 Object * STDARGS VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
 {
   Object *rc;
@@ -149,6 +158,7 @@ Object * STDARGS VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
 
   return rc;
 }
+#endif
 #endif
 ///
 
@@ -823,16 +833,16 @@ main(UNUSED int argc,char **argv)
                GETINTERFACE(IMUIMaster, MUIMasterBase))
             {
                 /* Create classes */
-                if ((appClass = MUI_CreateCustomClass(NULL, 		MUIC_Application, NULL, sizeof(struct appData), appDispatcher)) &&
-                    (popupCodesetsClass = MUI_CreateCustomClass(NULL, MUIC_Popobject, NULL, 0,popupDispatcher)) &&
-                    (editorClass = MUI_CreateCustomClass(NULL, MUIC_TextEditor, NULL, sizeof(struct editorData), editorDispatcher)))
+		if ((appClass = MUI_CreateCustomClass(NULL, 		MUIC_Application, NULL, sizeof(struct appData), ENTRY(appDispatcher))) &&
+		    (popupCodesetsClass = MUI_CreateCustomClass(NULL, MUIC_Popobject, NULL, 0, ENTRY(popupDispatcher))) &&
+		    (editorClass = MUI_CreateCustomClass(NULL, MUIC_TextEditor, NULL, sizeof(struct editorData), ENTRY(editorDispatcher))))
                 {
                     Object *app;
 
                     /* Create application */
                     if((app = appObject, End))
                     {
-                        /* Here we go */
+                       /* Here we go */
                         ULONG sigs = 0;
 
                         while (DoMethod(app,MUIM_Application_NewInput,&sigs) != (ULONG)MUIV_Application_ReturnID_Quit)

@@ -2,7 +2,7 @@
 #
 # codesets.library - Amiga shared library for handling different codesets
 # Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
-# Copyright (C) 2005-2008 by codesets.library Open Source Team
+# Copyright (C) 2005-2009 by codesets.library Open Source Team
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -96,6 +96,7 @@ RM      = delete force
 RMDIR   = delete force all
 MKDIR   = makedir
 CHMOD   = protect FLAGS=rwed
+CP      = copy
 CC      = gcc
 STRIP   = strip
 OBJDUMP = objdump
@@ -111,10 +112,11 @@ ifneq ($(HOST), MorphOS)
 
   # when we end up here this is either a unix or Aros host
   # so lets use unix kind of commands
-  RM      = rm -f
-  RMDIR   = rm -rf
-  MKDIR   = mkdir -p
-  CHMOD   = chmod 755
+  RM    = rm -f
+  RMDIR = rm -rf
+  MKDIR = mkdir -p
+  CHMOD = chmod 755
+  CP    = cp -f
 
   CDUP  = ../
   CDTHIS= ./
@@ -147,7 +149,7 @@ WARN     = -W -Wall -Wwrite-strings -Wpointer-arith -Wsign-compare
 OPTFLAGS = -O3 -fomit-frame-pointer -funroll-loops
 DEBUG    = -DDEBUG -O0
 DEBUGSYM = -gstabs
-CFLAGS   = -I. -I../include $(CPU) $(WARN) $(OPTFLAGS) $(DEBUG) $(DEBUGSYM)
+CFLAGS   = -I. -I../include $(CPU) $(WARN) $(OPTFLAGS) $(DEBUG) $(DEBUGSYM) $(USER_CFLAGS)
 LDFLAGS  = $(CPU) $(DEBUGSYM) -nostartfiles
 LDLIBS   =
 
@@ -174,6 +176,7 @@ ifeq ($(OS), os4)
   LDFLAGS  += -mcrt=$(CRT)
 
   # additional object files required
+  OBJS = stubs-amigaos4.o
   M68KSTUBS = $(OBJDIR)/codesets_68k.o
 
 else
@@ -214,6 +217,8 @@ ifeq ($(OS), mos)
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug
 
+  OBJS = stubs-morphos.o
+
 else
 ifeq ($(OS), aros)
 
@@ -221,14 +226,17 @@ ifeq ($(OS), aros)
   # AROS
 
   # Compiler/link/strip commands
-  ifneq ($(HOST), Aros)
-    CC      = i686-aros-gcc
-    STRIP   = i686-aros-strip
-    OBJDUMP = i686-aros-objdump
+  ifeq ($(TARGET_CPU),)
+    TARGET_CPU = i386
+  endif
+  ifneq ($(HOST), aros)
+    CC      = $(TARGET_CPU)-aros-gcc
+    STRIP   = $(TARGET_CPU)-aros-strip
+    OBJDUMP = $(TARGET_CPU)-aros-objdump
   endif
 
   # Compiler/Linker flags
-  CPU =
+  LDLIBS += -lrom
 
 endif
 endif
@@ -273,6 +281,7 @@ $(TARGET): $(M68KSTUBS) $(OBJS)
 	@$(CC) $(LDFLAGS) -o $@.debug $(addprefix $(OBJDIR)/,$(OBJS)) $(M68KSTUBS) $(LDLIBS) -Wl,--cref,-M,-Map=$@.map
 	@echo "  LD $@"
 	@$(STRIP) --preserve-dates -R.comment -R.sdata2 -S -o $@ $@.debug
+	@$(CHMOD) $@
 
 # for creating a .dump file
 .PHONY: dump
@@ -293,6 +302,11 @@ cleanall: clean
 .PHONY: distclean
 distclean: cleanall
 	-$(RMDIR) $(BINDIR)
+
+#install the newly built library to LIBS:
+.PHONY: install
+install: all
+	-$(CP) $(TARGET) LIBS:
 
 ## SPECIAL COMPILE RULES ##############
 

@@ -55,11 +55,15 @@
   #include <clib/codesets_protos.h>
  #endif /* CLIB_CODESETS_PROTOS_H */
  #if defined(__GNUC__)
-  #ifndef __PPC__
-   #include <inline/codesets.h>
+  #ifdef __AROS__
+   #include <defines/codesets.h>
   #else
-   #include <ppcinline/codesets.h>
-  #endif /* __PPC__ */
+   #ifndef __PPC__
+    #include <inline/codesets.h>
+   #else
+    #include <ppcinline/codesets.h>
+   #endif /* __PPC__ */
+  #endif /* __AROS__ */
  #elif defined(__VBCC__)
   #ifndef __PPC__
    #include <inline/codesets_protos.h>

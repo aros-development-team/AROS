@@ -48,11 +48,15 @@ extern struct Library * MUIMasterBase;
   #include <clib/muimaster_protos.h>
  #endif /* CLIB_MUIMASTER_PROTOS_H */
  #if defined(__GNUC__)
-  #ifndef __PPC__
-   #include <inline/muimaster.h>
+  #ifdef __AROS__
+   #include <defines/muimaster.h>
   #else
-   #include <ppcinline/muimaster.h>
-  #endif /* __PPC__ */
+   #ifndef __PPC__
+    #include <inline/muimaster.h>
+   #else
+    #include <ppcinline/muimaster.h>
+   #endif /* __PPC__ */
+  #endif /* __AROS__ */
  #elif defined(__VBCC__)
   #ifndef __PPC__
    #include <inline/muimaster_protos.h>

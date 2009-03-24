@@ -34,6 +34,8 @@ struct LibraryHeader
   struct codesetList      codesets;       // list with all internal codesets.
   struct codeset          *systemCodeset; // ptr to the system's default codeset
   struct codeset          *utf8Codeset;   // ptr to the fake utf8 codeset
+  struct codeset	        *utf16Codeset;  // ptr to the fake utf16 codeset
+  struct codeset          *utf32Codeset;
 };
 
 /***************************************************************************/
