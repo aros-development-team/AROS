@@ -120,16 +120,18 @@ AROS_LH5(int32_t, RTASCall,
 			register intptr_t base asm ("r5") = RTASBase->rtas_base;
 			register intptr_t entry asm ("r6") = RTASBase->rtas_entry;
 
-			asm volatile("li %%r3,%0; sc"::"i"(9 /*SC_RTAS*/),"r"(args),"r"(base),"r"(entry):"memory");
+			asm volatile("li %%r3,%0; sc"::"i"(9 /*SC_RTAS*/),"r"(args),"r"(base),"r"(entry):"memory","r3");
 		}
 
-		if (nrets)
+		if (nrets > 1 && output)
 		{
-			for (i=0; i < nrets; i++)
+			for (i=0; i < nrets-1; i++)
 				output[i] = RTASBase->rtas_args.rets[i+1];
 		}
 
-		retval = RTASBase->rtas_args.rets[0];
+		retval = nrets > 0 ? RTASBase->rtas_args.rets[0] : 0;
+
+		D(bug("[RTAS] The call returned %d\n", retval));
 
 		Enable();
 	}
