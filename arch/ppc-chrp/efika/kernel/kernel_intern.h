@@ -127,6 +127,7 @@ void core_Schedule(regs_t *regs) __attribute__((noreturn));
 void core_Dispatch(regs_t *regs) __attribute__((noreturn));
 void core_ExitInterrupt(regs_t *regs) __attribute__((noreturn));
 void core_Cause(struct ExecBase *SysBase);
+int32_t core_Rtas(intptr_t rtas_args, intptr_t rtas_base, intptr_t rtas_entry);
 void intr_init();
 void mmu_init(char *mmu_dir, uint32_t mmu_size);
 void ictl_init(void *);

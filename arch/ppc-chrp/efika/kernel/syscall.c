@@ -71,6 +71,10 @@ void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, v
             core_Schedule(ctx);
             break;
 
+        case SC_RTAS:
+        	ctx->gpr[3] = core_Rtas(ctx->gpr[4], ctx->gpr[5], ctx->gpr[6]);
+        	break;
+
         case SC_INVALIDATED:
         {
             char *start = (char*)((IPTR)ctx->gpr[4] & 0xffffffe0);
@@ -111,4 +115,51 @@ void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, v
     	core_ExitInterrupt(ctx);
     else
     	core_LeaveInterrupt(ctx);
+}
+
+static void __attribute__((used)) __rtas_entry_template()
+{
+	asm volatile(".globl core_Rtas; .type core_Rtas,@function\n"
+"core_Rtas:		stwu %r1, -64(%r1)\n"	/* Create proper stack frame */
+"				mflr %r0\n"				/* Store the link pointer */
+"				stw	 %r0,68(%r1)\n"
+"				stw  %r1,8(%r1)\n"		/* Store the stack pointer for virtual space */
+"				stw	 %r3,12(%r1)\n"		/* Store the rtas call structure */
+"				stw	 %r4,16(%r1)\n"		/* Store the rtas base */
+"				stw  %r5,20(%r1)\n"		/* Store the entry address */
+"				mfmsr %r0\n"
+"				stw	 %r0,24(%r1)\n"
+"				lis  %r0,virt2phys@ha\n"	/* VirtualToPhysical function */
+"				ori  %r0, %r0, virt2phys@l\n"
+"				mtctr %r0\n"
+"				stw	 %r0,28(%r1)\n"
+"				lis  %r3,1f@ha\n"		/* Get the return point from rtas */
+"				ori  %r3, %r3, 1f@l\n"
+"				bctrl \n"
+"				stw  %r3,32(%r1)\n"
+"				mr	 %r3, %r1\n"		/* Convert the stack to physical address */
+"				lwz	 %r0,28(%r1)\n"
+"				mtctr %r0\n"
+"				bctrl \n"
+"				mtsprg2 %r3\n"			/* And store it in sprg2 */
+"				lwz	 %r3,12(%r1)\n"
+"				lwz	 %r4,16(%r1)\n"
+"				lwz	 %r0,20(%r1)\n"
+"				mtsrr0 %r0\n"
+"				lwz	 %r0,32(%r1)\n"
+"				mtlr %r0\n"
+"				lwz	 %r0,24(%r1)\n"
+"				rlwinm	%r0,%r0,0,28,25\n"
+"				mtsrr1 %r0\n"
+"				sync; isync;\n"
+"				rfi\n"
+"1:\n"
+"				mfsprg2 %r5\n"			/* We're back. Get the stack frame */
+"				lwz	 %r4,24(%r5)\n"		/* Old msr */
+"				mtsrr1 %r4\n"
+"				lwz	 %r4,68(%r5)\n"		/* Old link pointer */
+"				mtsrr0 %r4\n"
+"				addi %r1, %r1, 64\n"
+"				sync; isync; rfi\n"
+	);
 }

@@ -10,6 +10,7 @@
 #define SC_SUPERSTATE   0x006
 #define SC_ISSUPERSTATE 0x007
 #define SC_INVALIDATED  0x008
+#define SC_RTAS			0x009
 #define SC_REBOOT		 0x100
 
 #endif /*SYSCALL_H_*/

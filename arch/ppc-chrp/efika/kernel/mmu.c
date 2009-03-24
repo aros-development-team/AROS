@@ -455,29 +455,35 @@ AROS_LH2(int, KrnUnmapGlobal,
 	AROS_LIBFUNC_EXIT
 }
 
+uintptr_t virt2phys(uintptr_t virt)
+{
+	uintptr_t phys = 0xffffffff;
+	pte_t *pte = find_pte(virt);
+
+	if (pte)
+	{
+		phys = pte->rpn & ~0xfff;
+		phys |= virt & 0xfff;
+	}
+
+	return phys;
+}
+
 AROS_LH1(void *, KrnVirtualToPhysical,
 		AROS_LHA(void *, virtual, A0),
 		struct KernelBase *, KernelBase, 0, Kernel)
 {
 	AROS_LIBFUNC_INIT
 
-	pte_t *pte;
 	uintptr_t virt = (uintptr_t)virtual;
-	uintptr_t phys = 0xffffffff;
+	uintptr_t phys;
 	uint32_t msr = goSuper();
 
-	pte = find_pte(virt);
-
-	if (pte)
-		phys = pte->rpn & ~0xfff;
+	phys = virt2phys(virt);
 
 	goUser(msr);
 
-	/* If the page has been found, add the offset taken from virtual address. */
-	if (phys != 0xffffffff)
-	{
-		phys |= virt & 0xfff;
-	}
+
 
 	return (void*)phys;
 
