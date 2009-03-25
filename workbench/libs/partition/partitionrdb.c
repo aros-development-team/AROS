@@ -65,7 +65,21 @@ LONG PartitionRDBCheckPartitionTable
 UBYTE i;
 UBYTE space[root->de.de_SizeBlock<<2];
 struct RigidDiskBlock *rdb = (struct RigidDiskBlock *)space;
+struct PartitionType type;
+struct TagItem tags[] = {{PT_TYPE, (IPTR)&type}, {TAG_DONE, 0}};
 
+    if (root->root != NULL)
+    {
+        GetPartitionAttrs(root, tags);
+        if (
+            root->root->table->type != PHPTT_MBR &&
+            root->root->table->type != PHPTT_EBR ||
+            type.id[0] != 0x30
+            )
+        {
+            return 0;
+        }              
+    }
     for (i=0;i<RDB_LOCATION_LIMIT; i++)
     {
         if (readBlock(PartitionBase, root, i, rdb) != 0)
