@@ -15,10 +15,13 @@
 #include <proto/exec.h>
 
 #define _XOPEN_SOURCE 600L
+#include <sys/param.h>
+#include <sys/stat.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <termios.h>
+#include <unistd.h>
 
 #include "../../../rom/exec/memory.h"
 
@@ -151,6 +154,7 @@ char *join_string(int argc, char **argv)
 }
 
 extern char _start, _end;
+char bootstrapdir[PATH_MAX];
 char *BootLoader_Name = "FreeBSD";
 char *Kernel_Args = NULL;
 char **Kernel_ArgV;
@@ -170,6 +174,8 @@ int main(int argc, char **argv)
     int psize = 0;
     int i = 0, x;
     BOOL mapSysBase = FALSE;
+
+    getcwd(bootstrapdir, PATH_MAX);
 
     while (i < argc)
     {
@@ -215,6 +221,8 @@ int main(int argc, char **argv)
 	Kernel_Args = join_string(argc - i, &argv[i]);
     Kernel_ArgV = argv;
 
+    if (!stat("../AROS.boot", &st))
+        chdir("..");
     /*
     First up, set up the memory.
 

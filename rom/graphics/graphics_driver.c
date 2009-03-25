@@ -472,28 +472,40 @@ void driver_expunge (struct GfxBase * GfxBase)
     /* Try to free some other stuff */
     cleanup_cursor(GfxBase);
 
-    if (SDD(GfxBase)->framebuffer)
+    if (SDD(GfxBase)->framebuffer) {
 	OOP_DisposeObject(SDD(GfxBase)->framebuffer);
+	SDD(GfxBase)->framebuffer = NULL;
+    }
 
 #if 0
     if (SDD(GfxBase)->activescreen_inited)
 	cleanup_activescreen_stuff(GfxBase);
 #endif
-    if (SDD(GfxBase)->dispinfo_db)
+    if (SDD(GfxBase)->dispinfo_db) {
 	destroy_dispinfo_db(SDD(GfxBase)->dispinfo_db, GfxBase);
+	SDD(GfxBase)->dispinfo_db = NULL;
+    }
 
-    if ( SDD(GfxBase)->planarbm_cache )
+    if ( SDD(GfxBase)->planarbm_cache ) {
 	delete_object_cache( SDD(GfxBase)->planarbm_cache, GfxBase );
+	SDD(GfxBase)->planarbm_cache = NULL;
+    }
 
-    if ( SDD(GfxBase)->gc_cache )
+    if ( SDD(GfxBase)->gc_cache ) {
 	delete_object_cache( SDD(GfxBase)->gc_cache, GfxBase );
+	SDD(GfxBase)->gc_cache = NULL;
+    }
 
-    if ( SDD(GfxBase)->fakegfx_inited )
+    if ( SDD(GfxBase)->fakegfx_inited ) {
 	cleanup_fakegfxhidd( &SDD(GfxBase)->fakegfx_staticdata, GfxBase);
+	SDD(GfxBase)->fakegfx_inited = FALSE;
+    }
 
-    if ( SDD(GfxBase)->gfxhidd_orig )
+    if ( SDD(GfxBase)->gfxhidd_orig ) {
 	OOP_DisposeObject( SDD(GfxBase)->gfxhidd_orig );
-	     
+	SDD(GfxBase)->gfxhidd_orig = NULL;
+    }
+     
     return;
 }
 
@@ -637,6 +649,9 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
     	{ TAG_DONE, 0UL },
     };
     EnterFunc(bug("driver_LateGfxInit(gfxhiddname=%s)\n", gfxhiddname));
+
+    driver_expunge(GfxBase);
+    D(bug("[GFX] Cleanup complete\n"));
 
     /* Create a new GfxHidd object */
 
