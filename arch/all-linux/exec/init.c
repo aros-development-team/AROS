@@ -34,6 +34,8 @@
 #include <string.h>
 #define __USE_MISC /* for MAP_ANON */
 #include <sys/mman.h>
+#include <sys/param.h>
+#include <sys/stat.h>
 #include <sys/termios.h>
 #include <sys/utsname.h>
 
@@ -332,6 +334,7 @@ char *join_string(int argc, char **argv)
 */
 
 extern char _start, _end;
+char bootstrapdir[PATH_MAX];
 char *BootLoader_Name = NULL;
 char *Kernel_Args = NULL;
 char **Kernel_ArgV;
@@ -341,11 +344,14 @@ int main(int argc, char **argv)
     struct ExecBase *SysBase;
     int psize = 0;
     int i = 1, x;
+    struct stat st;
     struct utsname sysinfo;
     char *nameparts[4];
     int ticrate = 100;
     BOOL mapSysBase   = FALSE;
     BOOL _use_hostmem = FALSE;
+
+    getcwd(bootstrapdir, PATH_MAX);
 
     while (i < argc)
     {
@@ -423,7 +429,9 @@ int main(int argc, char **argv)
     BootLoader_Name = join_string(4, nameparts);
     Kernel_ArgV = argv;
 
-    /*
+    if (!stat("../AROS.boot", &st))
+        chdir("..");
+   /*
     First up, set up the memory.
 
     If your memory starts at 0 (I think Linux does, FreeBSD doesn't),

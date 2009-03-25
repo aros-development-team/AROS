@@ -13,6 +13,8 @@
 #include <signal.h>
 #include <unistd.h>
 
+/* These variables come from bootstrap */
+extern char bootstrapdir[];
 extern char **Kernel_ArgV;
 
 /*****************************************************************************
@@ -66,6 +68,7 @@ extern char **Kernel_ArgV;
 	/* SIGARLM during execvp() aborts the whole thing.
            In order to avoid it we Disable() */
 	Disable();
+	chdir(bootstrapdir);
 	execvp(Kernel_ArgV[0], Kernel_ArgV);
 	Enable();
     }
