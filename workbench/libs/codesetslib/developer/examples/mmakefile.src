@@ -12,7 +12,7 @@ FILES  := b64d b64e DetectCodeset UTF8ToStrHook demo1 Convert autoopen
 
 EXEDIR := $(AROS_TESTS)/Codesetslib
 
-USER_CFLAGS = -I../include -I../../include
+USER_CFLAGS = -I$(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../../include
 
 %build_progs mmake=workbench-libs-codesets-test \
     files=$(FILES) targetdir=$(EXEDIR) \

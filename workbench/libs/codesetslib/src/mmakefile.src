@@ -14,7 +14,7 @@ FILES := \
     codepages \
     debug
 
-USER_CFLAGS = -I. -I../include
+USER_CFLAGS = -I. -I$(SRCDIR)/$(CURDIR)/../include
 
 #MM workbench-libs-codesets : workbench-libs-codesets-includes linklibs
 
