@@ -285,12 +285,12 @@ STATIC CONST CONST_APTR LibVectors[] =
   (CONST_APTR)-1
 };
 
-STATIC CONST ULONG LibInitTab[] =
+STATIC CONST IPTR LibInitTab[] =
 {
   sizeof(struct LibraryHeader),
-  (ULONG)LibVectors,
-  (ULONG)NULL,
-  (ULONG)LibInit
+  (IPTR)LibVectors,
+  (IPTR)NULL,
+  (IPTR)LibInit
 };
 
 #endif
