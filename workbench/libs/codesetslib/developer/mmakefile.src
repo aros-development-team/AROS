@@ -1,9 +1,10 @@
 include $(TOP)/config/make.cfg
 
+#MM- includes-copy: workbench-libs-codesets-includes
+
 #MM workbench-libs-codesets-includes : \
 #MM     kernel-exec-includes \
 #MM     kernel-dos-includes \
-#MM     kernel-utility-includes \
-#MM     includes-copy
+#MM     kernel-utility-includes
 
 %copy_dir_recursive mmake=workbench-libs-codesets-includes src=$(SRCDIR)/$(CURDIR)/include dst=$(AROS_INCLUDES)/

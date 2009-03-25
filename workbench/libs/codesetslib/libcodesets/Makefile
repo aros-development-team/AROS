@@ -251,7 +251,7 @@ endif
 # Here starts all stuff that is common for all target platforms and
 # hosts.
 
-OBJS = autoinit.o
+OBJS = autoinit.o libversion.o
 
 # main target
 .PHONY: all

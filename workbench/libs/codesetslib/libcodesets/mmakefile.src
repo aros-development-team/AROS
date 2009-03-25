@@ -10,7 +10,7 @@ CODESETS_LIB := $(AROS_LIB)/libcodesets.a
 #MM
 linklibs-codesets-quick : $(CODESETS_LIB)
 
-FILES = autoinit
+FILES := autoinit
 
 OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 
