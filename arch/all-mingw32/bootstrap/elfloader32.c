@@ -37,7 +37,7 @@ void *kernel_lowest()
 
 void *kernel_highest()
 {
-    return ptr_ro;
+    return ptr_ro - 1;
 }
 
 void set_base_address(void *tracker, void ** sysbaseaddr)

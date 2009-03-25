@@ -170,8 +170,8 @@ int __startup startup(struct TagItem *msg)
   
   void * klo = (void*)krnGetTagData(KRN_KernelLowest, 0, msg);
   void * khi = (void*)krnGetTagData(KRN_KernelHighest, 0, msg);
-  void * memory = (void*)krnGetTagData(KRN_MMAPAddress, 0, msg); /* FIXME: These tags are used in non-conforming way */
-  unsigned int memsize = krnGetTagData(KRN_MMAPLength, 0, msg);
+  void * memory = (void*)krnGetTagData(KRN_MEMLower, 0, msg);
+  void * memupper = krnGetTagData(KRN_MEMUpper, 0, msg);
   HostIFace = (struct HostInterface *)krnGetTagData(KRN_HostInterface, 0, msg);
 
   hostlib = HostIFace->HostLib_Open("Libs\\Host\\kernel.dll", &errstr);
@@ -197,9 +197,9 @@ int __startup startup(struct TagItem *msg)
   mh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA | MEMF_KICK;
   mh->mh_First = memory + MEMHEADER_TOTAL;
   mh->mh_First->mc_Next = NULL;
-  mh->mh_First->mc_Bytes = memsize - MEMHEADER_TOTAL;
+  mh->mh_First->mc_Bytes = memupper - memory + 1 - MEMHEADER_TOTAL;
   mh->mh_Lower = memory;
-  mh->mh_Upper = memory + memsize;
+  mh->mh_Upper = memupper;
   mh->mh_Free = mh->mh_First->mc_Bytes;
 
   mykprintf("[Kernel] calling PrepareExecBase@%p mh_First=%p\n",PrepareExecBase,mh->mh_First);

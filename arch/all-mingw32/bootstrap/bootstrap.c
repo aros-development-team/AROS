@@ -27,12 +27,11 @@ typedef unsigned char UBYTE;
 static unsigned char __bss_track[32768];
 struct TagItem km[64];
 char bootstrapdir[MAX_PATH];
+char SystemVersion[256];
 char *bootstrapname;
 char *cmdline;
 
 typedef int (*kernel_entry_fun_t)(struct TagItem *);
-
-#define BASE_ALIGNMENT 16
 
 /*
  * Some helpful functions that link us to the underlying host OS.
@@ -58,12 +57,11 @@ int main(int argc, char ** argv)
   struct TagItem *t;
   int x;
   struct stat st;
-  char _use_hostmem = 0;
   int i = 1;
   unsigned int memSize = 64;
   char *kernel = "boot\\aros-mingw32";
   char *KernelArgs = NULL;
-  void *base;
+  OSVERSIONINFO winver;
 
   GetCurrentDirectory(MAX_PATH, bootstrapdir);
   bootstrapname = argv[0];
@@ -86,8 +84,6 @@ int main(int argc, char ** argv)
             " --help             same as '-h'\n"
             " --memsize <size>   same as '-m <size>'\n"
             " --kernel <file>    same as '-k'\n"
-            " --hostmem          Let AROS use the host operating system's facilities to\n"
-            "                    manage memory.\n"
             "\n"
             "Please report bugs to the AROS development team. http://www.aros.org/\n",
             argv[0]
@@ -111,11 +107,6 @@ int main(int argc, char ** argv)
         kernel = argv[++i];
         i++;
       }
-      else if (!strcmp(argv[i], "--hostmem"))
-      {
-        _use_hostmem = 1;
-        i++;
-      }
       else
         break;
   }
@@ -132,6 +123,10 @@ int main(int argc, char ** argv)
       }
   }
   D(printf("[Bootstrap] Kernel arguments: %s\n", KernelArgs));
+  winver.dwOSVersionInfoSize = sizeof(winver);
+  GetVersionEx(&winver);
+  sprintf(SystemVersion, "Windows %lu.%lu build %lu %s", winver.dwMajorVersion, winver.dwMinorVersion, winver.dwBuildNumber, winver.szCSDVersion);
+  D(printf("[Bootstrap] OS version: %s\n", SystemVersion));
   
   if (!stat("..\\AROS.boot", &st)) {
       chdir("..");
@@ -165,19 +160,15 @@ int main(int argc, char ** argv)
   
   kernel_entry_fun_t kernel_entry_fun = kernel_lowest();
 
-  //fill in kernel message related to allocated ram regions
+  //fill in kernel message
   struct TagItem *tag = km;
 
-/* FIXME: These tags should point to a memory map in PC BIOS format, not to memory itself.
-   This is a temporary solution because hosted kernel should translate all AllocMem() requests
-   to host's allocation requests. In future a full-featured memory map will be implemented in order
-   to support loadable modules. */
-  tag->ti_Tag = KRN_MMAPAddress;
+  tag->ti_Tag = KRN_MEMLower;
   tag->ti_Data = (unsigned long)memory;
   tag++;
   
-  tag->ti_Tag = KRN_MMAPLength;
-  tag->ti_Data = memlen;
+  tag->ti_Tag = KRN_MEMUpper;
+  tag->ti_Data = memory + memlen - 1;
   tag++;
 
   tag->ti_Tag = KRN_KernelLowest;
@@ -190,6 +181,10 @@ int main(int argc, char ** argv)
 
   tag->ti_Tag = KRN_KernelBss;
   tag->ti_Data = (unsigned long)__bss_track;
+  tag++;
+
+  tag->ti_Tag = KRN_BootLoader;
+  tag->ti_Data = SystemVersion;
   tag++;
 
   tag->ti_Tag = KRN_CmdLine;
