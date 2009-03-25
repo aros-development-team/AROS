@@ -47,6 +47,8 @@
     
     switch (infoType)
     {
+        case BL_LoaderName:
+            return BootLoaderBase->LdrName;
 	case BL_Args:
 	    if (BootLoaderBase->Flags & BL_FLAGS_CMDLINE)
 	        return &(BootLoaderBase->Args);
