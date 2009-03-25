@@ -10,6 +10,17 @@
 
 #define _XOPEN_SOURCE 600L /* for posix_memalign */
 
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#define __USE_MISC /* for MAP_ANON */
+#include <sys/mman.h>
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <sys/termios.h>
+#include <sys/utsname.h>
+
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/memheaderext.h>
@@ -27,17 +38,6 @@
 #else
 #define SWAP(x) x
 #endif
-
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <string.h>
-#define __USE_MISC /* for MAP_ANON */
-#include <sys/mman.h>
-#include <sys/param.h>
-#include <sys/stat.h>
-#include <sys/termios.h>
-#include <sys/utsname.h>
 
 #include "../../../rom/exec/memory.h"   /* From $(TOP)/rom/exec */
 
