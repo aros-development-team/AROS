@@ -1,4 +1,4 @@
-## version $VER: zune.catalog 1.6 (4.12.2007)
+## version $VER: Zune.catalog 1.7 (26.3.2009)
 ## language czech
 ## codeset 0
 ;
@@ -34,7 +34,7 @@ Grafické symboly
 ; Image Buttons
 ;
 MSG_ADJUST_FRAME
-Adjust Frame??
+Upravit rámeèek
 ; Adjust Frame
 ;
 MSG_CHECKMARKS
@@ -89,11 +89,11 @@ Vzhled tlaèítka
 ; Cycle Gadget Design
 ;
 MSG_CYCLE
-Cycle??
+Cyklovací tlaèítko
 ; Cycle
 ;
 MSG_POPUP_MENU_CONTROL
-Zpùsob fungování
+Funkce
 ; Popup Menu Control
 ;
 MSG_POSITION
@@ -172,11 +172,11 @@ Svislá:
 ; Vertical:
 ;
 MSG_REGISTER
-Register??
+Registr
 ; Register
 ;
 MSG_DEFAULT_SIZE_TRUNCATE_TITLES
-Default size truncate titles:??
+Zkracovat text v záhlaví:
 ; Default size truncate titles:
 ;
 MSG_NORMAL
@@ -188,11 +188,11 @@ Virtuální
 ; Virtual
 ;
 MSG_FRAMED
-V rámeèku
+Rámeèek
 ; Framed
 ;
 MSG_PAGE
-Page??
+Stránka
 ; Page
 ;
 ;=============================
@@ -203,7 +203,7 @@ Pomocí Shift
 ; shifted
 ;
 MSG_ALWAYS
-always??
+Standardnì
 ; always
 ;
 MSG_LINEAR
@@ -215,19 +215,19 @@ Kombinované
 ; mixed
 ;
 MSG_CONTROL
-Control??
+Funkce
 ; Control
 ;
 MSG_MULTI
-Multi:??
+Více polo¾ek:
 ; Multi:
 ;
 MSG_REFRESH
-Refresh:??
+Pøekreslení:
 ; Refresh:
 ;
 MSG_SMOOTH
-Smooth:??
+Plynulost:
 ; Smooth:
 ;
 MSG_FONTS
@@ -251,11 +251,11 @@ Vzhled
 ; Design
 ;
 MSG_INPUT_LISTS
-Input \nLists:??
+K zadání\núdajù:
 ; Input \nLists:
 ;
 MSG_READONLY_LISTS
-Readonly \nLists:??
+K výpisu\núdajù:
 ; Readonly \nLists:
 ;
 MSG_CURSOR
@@ -294,11 +294,11 @@ always ghosted??
 ; always ghosted
 ;
 MSG_SHOW_FRAMES
-show frames??
+Zobrazit rámeèky
 ; show frames
 ;
 MSG_SHOW_OBJECTS
-show objects??
+Zobrazit objekty
 ; show objects
 ;
 MSG_KL_PRESS
@@ -366,7 +366,7 @@ Pøedch. objekt:
 ; Prev. gadget:
 ;
 MSG_KL_GADGET_OFF
-Gadget off:??
+Deaktivace:
 ; Gadget off:
 ;
 MSG_KL_CLOSE_WINDOW
@@ -386,7 +386,7 @@ Nápovìda:
 ; Help:
 ;
 MSG_KL_POPUP
-Popup:??
+Výbìr objektu:
 ; Popup:
 ;
 MSG_DRAG_DROP
@@ -402,7 +402,7 @@ Støední tlaèítko:
 ; Middle Button:
 ;
 MSG_AUTOSTART
-Autostart:??
+Autom. aktivovat:
 ; Autostart:
 ;
 MSG_PIXEL
@@ -438,11 +438,11 @@ Barva aktivního objektu:
 ; Color of active object:
 ;
 MSG_NEWLOOK
-newlook??
+Typ Newlook
 ; newlook
 ;
 MSG_CUSTOM
-custom??
+Vlastní
 ; custom
 ;
 MSG_ARROWS
@@ -450,35 +450,35 @@ MSG_ARROWS
 ; Arrows
 ;
 MSG_UP
-up??
+Nahoru
 ; up
 ;
 MSG_ARROW_UP
-Arrow up??
+©ipka nahoru
 ; Arrow up
 ;
 MSG_ARROW_DOWN
-Arrow down??
+©ipka dolù
 ; Arrow down
 ;
 MSG_DOWN
-down??
+Dolù
 ; down
 ;
 MSG_LEFT
-left??
+Vlevo
 ; left
 ;
 MSG_ARROW_LEFT
-Arrow left??
+©ipka vlevo
 ; Arrow left
 ;
 MSG_ARROW_RIGHT
-Arrow right??
+©ipka vpravo
 ; Arrow right
 ;
 MSG_RIGHT
-right??
+Vpravo
 ; right
 ;
 MSG_BAR
@@ -532,7 +532,7 @@ Ukazatel prùbìhu
 ; Progress Indicator
 ;
 MSG_DEVICE_IMAGES
-Symbol zaøízení
+Symboly zaøízení
 ; Device Images
 ;
 MSG_DRAWER
@@ -564,7 +564,7 @@ Pøiøazení
 ; Assign
 ;
 MSG_TAPE_IMAGES
-Pøehrávaè
+Symboly pro pøehrávaè
 ; Tape Images
 ;
 MSG_TAPE_PLAY
@@ -572,7 +572,7 @@ Pøehrát
 ; Tape play
 ;
 MSG_TAPE_PLAYBACK
-Tape playback??
+Pøehrát pozpátku
 ; Tape playback
 ;
 MSG_TAPE_PAUSE
@@ -588,11 +588,11 @@ Nahrávat
 ; Tape record
 ;
 MSG_TAPE_UP
-Tape up??
+Vysunout médium
 ; Tape up
 ;
 MSG_TAPE_DOWN
-Tape down??
+Vlo¾it médium
 ; Tape down
 ;
 ;=============================
@@ -607,7 +607,7 @@ Speciální symboly
 ; Special Popup Buttons
 ;
 MSG_POPUP
-Popup??
+Výbìr objektu
 ; Popup
 ;
 MSG_DEFAULT
@@ -773,11 +773,11 @@ Q
 ; Q
 ;
 MSG_FRAME_CLIPBOARD
-Frame Clipboard??
+Výbìr rámeèku
 ; Frame Clipboard
 ;
 MSG_IMAGE_CLIPBOARD
-Image Clipboard??
+Výbìr obrázku
 ; Image Clipboard
 ;
 MSG_GAD_TEST
@@ -809,15 +809,15 @@ Tlaèítka
 ; Buttons
 ;
 MSG_DSC_CYCLES
-Cycles??
+Cyklovací
 ; Cycles
 ;
 MSG_DSC_SLIDERS
-Posuvníky
+©oupátka
 ; Sliders
 ;
 MSG_DSC_SCROLLBARS
-Scrollbars??
+Posuvníky
 ; Scrollbars
 ;
 MSG_DSC_LISTVIEWS
@@ -851,6 +851,6 @@ Definice barvy
 ; framesp.c
 ;----------
 MSG_CUSTOMFRAMES
-Customframes??
+Speciální rámeèky
 ; Customframes
 ;
