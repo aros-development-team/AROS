@@ -99,9 +99,15 @@
     if (dlist->dol_Task != NULL) {
         for (scan = dl; scan != NULL; scan = scan->dol_Next)
             if (scan->dol_Task == dlist->dol_Task && scan->dol_Type == DLT_DEVICE) {
-                dlist->dol_Ext.dol_AROS.dol_DevName = AROS_BSTR_ADDR(dlist->dol_Name);
-                dlist->dol_Ext.dol_AROS.dol_Device = scan->dol_Ext.dol_AROS.dol_Device;
-                dlist->dol_Ext.dol_AROS.dol_Unit = scan->dol_Ext.dol_AROS.dol_Unit;
+                /* Do patching only if found DeviceNode belongs to packet.handler. Otherwise do not touch anything.
+                   This lets filesystems with own IOFS wrappers to set up dol_Task field on their own. This can be
+                   used for example to enable utilities to pass packets directly to the filesystem without the need
+                   to interact with wrapper. This will be used by SFS - Pavel Fedin <sonic.amiga@gmail.com> */
+                if (!strcmp(scan->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name, "packet.handler")) {
+                    dlist->dol_Ext.dol_AROS.dol_DevName = AROS_BSTR_ADDR(dlist->dol_Name);
+                    dlist->dol_Ext.dol_AROS.dol_Device = scan->dol_Ext.dol_AROS.dol_Device;
+                    dlist->dol_Ext.dol_AROS.dol_Unit = scan->dol_Ext.dol_AROS.dol_Unit;
+                }
                 break;
             }
     }
