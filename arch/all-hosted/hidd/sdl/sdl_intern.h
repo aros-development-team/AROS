@@ -88,6 +88,8 @@ LIBBASETYPE {
 
     struct SignalSemaphore  lock;
 
+    APTR                    sdl_handle;
+
     OOP_Class               *gfxclass;
     OOP_Class               *bmclass;
     OOP_Class               *mouseclass;

@@ -77,3 +77,13 @@ AROS_LH3(void *, HostLib_GetPointer,
 
     AROS_LIBFUNC_EXIT
 }
+
+/* In libdl error strings are static, there's no need to free them */
+AROS_LH1(void, HostLib_FreeErrorStr,
+    	 AROS_LHA(char *, error, A0),
+    	 struct HostLibBase *, HostLibBase, 4, HostLib)
+{
+    AROS_LIBFUNC_INIT
+
+    AROS_LIBFUNC_EXIT
+}
