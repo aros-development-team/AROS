@@ -15,7 +15,12 @@
 #include "etask.h"
 
 /* Put a value of type SP_TYPE on the stack or get it off the stack. */
-#define _PUSH(sp,val)       (*--sp = (SP_TYPE)(val))
+#define _PUSH(sp,val)                           \
+    do {                                        \
+        SP_TYPE **stackp = (sp);                \
+        --*stackp;                              \
+        **stackp = (SP_TYPE)(val);              \
+    } while (0)
 #define _POP(sp)            (*sp++)
 
 typedef struct sigcontext sigcontext_t;
@@ -65,14 +70,16 @@ struct AROS_cpu_context
             acc_f4;
     }
         acc_u;
-	
-	int eflags;
+
+    int eflags;
+    struct AROS_cpu_context *sc;
 };
 
+#undef SIZEOF_ALL_REGISTERS
 #define SIZEOF_ALL_REGISTERS	(sizeof(struct AROS_cpu_context))
 #define GetCpuContext(task)	((struct AROS_cpu_context *)\
 				(GetIntETask(task)->iet_Context))
-#define GetSP(task)		(*(SP_TYPE **)(&task->tc_SPReg))
+#define GetSP(task)		((SP_TYPE **)(&task->tc_SPReg))
 
 #define GLOBAL_SIGNAL_INIT \
 	static void sighandler (int sig, sigcontext_t * sc); \
@@ -205,6 +212,12 @@ struct AROS_cpu_context
 
 #endif
 
+#define SETUP_EXCEPTION(sc,arg)                                     \
+    do {                                                            \
+        _PUSH(GetSP(SysBase->ThisTask), arg);                       \
+        _PUSH(GetSP(SysBase->ThisTask), arg);                       \
+    } while (0)
+
 #define PREPARE_INITIAL_FRAME(sp,startpc)                           \
     do {                                                            \
         GetCpuContext(task)->regs[7] = 0;                           \
@@ -219,7 +232,8 @@ struct AROS_cpu_context
 #define SAVEREGS(task,sc)                                           \
     do {                                                            \
         struct AROS_cpu_context *cc = GetCpuContext(task);          \
-        GetSP(task) = (SP_TYPE *)SP(sc);                            \
+        SP_TYPE **sp = GetSP(task);                                 \
+        *sp = (SP_TYPE *)SP(sc);                                    \
         if (HAS_FPU(sc))                                            \
             SAVE_FPU(cc,sc);                                        \
         SAVE_CPU(cc,sc);                                            \
@@ -230,37 +244,40 @@ struct AROS_cpu_context
 #define RESTOREREGS(task,sc)                                        \
     do {                                                            \
         struct AROS_cpu_context *cc = GetCpuContext(task);          \
+        SP_TYPE **sp;                                               \
 	RESTORE_ERRNO(cc);                                          \
 	RESTORE_CPU(cc,sc);                                         \
         if (HAS_FPU(sc))                                            \
             RESTORE_FPU(cc,sc);                                     \
-	SP(sc) = (SP_TYPE *)GetSP(task);                            \
-    sc->sc_efl = (sc->sc_efl & ~PSL_USERCHANGE) | cc->eflags;   \
-	} while (0)
+        sp = GetSP(task);                                           \
+        SP(sc) = (typeof(SP(sc))) *sp;                              \
+        sc->sc_efl = (sc->sc_efl & ~PSL_USERCHANGE) | cc->eflags;   \
+    } while (0)
 
-#define PRINT_SC(sc) \
-	printf ("    SP=%08lx  FP=%08lx  PC=%08lx  FPU=%s\n" \
-		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
-		"    R4=%08lx  R5=%08lx  R6=%08lx\n" \
-	    , SP(sc), FP(sc), PC(sc) \
-	    , HAS_FPU(sc) ? "yes" : "no" \
-	    , R0(sc), R1(sc), R2(sc), R3(sc) \
-	    , R4(sc), R5(sc), R6(sc) \
+#define PRINT_SC(sc)                                                \
+	printf ("    SP=%08lx  FP=%08lx  PC=%08lx  FPU=%s\n"        \
+		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n"      \
+		"    R4=%08lx  R5=%08lx  R6=%08lx\n"                \
+	    , SP(sc), FP(sc), PC(sc)                                \
+	    , HAS_FPU(sc) ? "yes" : "no"                            \
+	    , R0(sc), R1(sc), R2(sc), R3(sc)                        \
+	    , R4(sc), R5(sc), R6(sc)                                \
 	)
 
-#define PRINT_CPUCONTEXT(task) \
-	printf ("    SP=%08lx  FP=%08lx  PC=%08lx\n" \
-		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
-		"    R4=%08lx  R5=%08lx  R6=%08lx\n" \
-	    , (ULONG)(GetSP(task)) \
-	    , GetCpuContext(task)->fp, GetCpuContext(task)->pc, \
-	    , GetCpuContext(task)->regs[0] \
-	    , GetCpuContext(task)->regs[1] \
-	    , GetCpuContext(task)->regs[2] \
-	    , GetCpuContext(task)->regs[3] \
-	    , GetCpuContext(task)->regs[4] \
-	    , GetCpuContext(task)->regs[5] \
-	    , GetCpuContext(task)->regs[6] \
+#define PRINT_CPUCONTEXT(task)                                      \
+	printf ("    SP=%08lx  FP=%08lx  PC=%08lx\n"                \
+		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n"      \
+		"    R4=%08lx  R5=%08lx  R6=%08lx\n"                \
+	    , (ULONG)(*GetSP(task))                                 \
+	    , GetCpuContext(task)->fp,                              \
+            , GetCpuContext(task)->pc,                              \
+	    , GetCpuContext(task)->regs[0]                          \
+	    , GetCpuContext(task)->regs[1]                          \
+	    , GetCpuContext(task)->regs[2]                          \
+	    , GetCpuContext(task)->regs[3]                          \
+	    , GetCpuContext(task)->regs[4]                          \
+	    , GetCpuContext(task)->regs[5]                          \
+	    , GetCpuContext(task)->regs[6]                          \
 	)
 
 #endif /* _SIGCORE_H */
