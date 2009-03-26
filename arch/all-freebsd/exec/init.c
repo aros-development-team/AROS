@@ -13,6 +13,7 @@
 #include <exec/execbase.h>
 
 #include <proto/exec.h>
+#include <aros/debug.h>
 
 #define _XOPEN_SOURCE 600L
 #include <sys/param.h>
@@ -32,6 +33,7 @@ extern const struct Resident
     Exec_resident,
     Utility_ROMTag,
     Aros_ROMTag,
+    Bootloader_ROMTag,
     OOP_ROMTag,
     HIDDCl_ROMTag,
     UXIO_ROMTag,
@@ -174,6 +176,7 @@ int main(int argc, char **argv)
     int psize = 0;
     int i = 0, x;
     BOOL mapSysBase = FALSE;
+    struct stat st;
 
     getcwd(bootstrapdir, PATH_MAX);
 
