@@ -72,6 +72,8 @@
   #define CPU "m68000"
 #elif defined(__i386__)
   #define CPU "i386"
+#elif defined(__x86_64__)
+  #define CPU "x86_64"
 #else
   #warning "Unsupported CPU model - check CPU define"
   #define CPU "???"
