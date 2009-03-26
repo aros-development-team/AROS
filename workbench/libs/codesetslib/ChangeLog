@@ -5,6 +5,46 @@ codesets.library - Library for handling different codesets
 $Id$
 $URL$
 
+2009-03-25  Jens Langner <Jens.Langner@light-speed.de>
+
+  * libinit.c: introduced a small fix to get the file compiled with the fixed
+    SDI headers again.
+  * include: fixed the SDI headers.
+  * Makefile: adapted makefile to directly specify the target CPU for the AROS
+    build. If you now want to compile AROS you have to explicitly set
+    "OS=aros-i386" or "OS=aros-ppc", for example.
+  * version.h: added x86_64 CPU type to allow compilation of codesets.library
+    for x86_64 AROS target.
+  * libinit.c: added RTF_EXTENDED and library revision number for the AROS
+    build.
+
+2009-03-24  Pavel Fedin <sonic.amiga@gmail.com>
+
+  * codesets.c, convertUTF.c, util.c, lib_protos.h : implemented complete UTF32
+    support
+  * libcodesets: added portable autoinit code
+  * developer/examples/autoopen.c: added autoopen test
+
+2009-03-23  Thore Böckelmann <tboeckel@gmx.de>
+
+  * developer/examples/Convert.c: added the usual information header.
+  * developer/examples/Convert.c: made the demo program compilable for OS4.
+  * codesets.c: fixed various warnings about wrong types. Also removed all TAB
+    characters I have spotted. Please note that we are using space characters
+    only for indentation.
+
+2009-03-21  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: minor adaptions
+  * include: updated the SDI headers to their latest versions and incorporated
+    the latest changes from Pavel.
+
+2009-03-20  Pavel Fedin <sonic.amiga@gmail.com>
+
+  * misc: many fixes in various places, code merge, got rid of many #ifdef's. AROS
+    version can be built or cross-built outside of AROS build system. Fixed "demo1"
+    program to work under MorphOS
+
 2009-01-28  Thore Böckelmann <tboeckel@gmx.de>
 
   * developer/examples/demo1.c: replaced use of the custom class Textinput.mcc

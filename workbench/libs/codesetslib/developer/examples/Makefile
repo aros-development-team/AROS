@@ -145,8 +145,7 @@ TARGET = $(BINDIR)/b64d \
          $(BINDIR)/UTF8ToStrHook \
          $(BINDIR)/DetectCodeset \
 	 $(BINDIR)/demo1 \
-	 $(BINDIR)/Convert \
-	 $(BINDIR)/autoopen
+	 $(BINDIR)/Convert
 
 # Common compiler/linker flags
 WARN     = -W -Wall -Wwrite-strings -Wpointer-arith -Wsign-compare
@@ -303,12 +302,6 @@ $(BINDIR)/demo1: demo1.c vastubs.c
 $(BINDIR)/Convert: $(OBJDIR)/Convert.o
 	@echo "  LD $@"
 	@$(CC) $(LDFLAGS) -o $@.debug $< $(LDLIBS)
-	@$(STRIP) --preserve-dates -R.comment -R.sdata2 -S -o $@ $@.debug
-	@$(CHMOD) $@
-
-$(BINDIR)/autoopen: $(OBJDIR)/autoopen.o
-	@echo "  LD $@"
-	@$(CC) $(LDFLAGS) -o $@.debug $< -L $(LDLIBS) -lcodesets
 	@$(STRIP) --preserve-dates -R.comment -R.sdata2 -S -o $@ $@.debug
 	@$(CHMOD) $@
 

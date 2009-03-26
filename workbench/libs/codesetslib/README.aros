@@ -10,9 +10,7 @@ the original Sourceforge project.
 TODO
 ----
 * Tests (endianness etc.)
-* Adopt SDI macros to AROS and remove AROS compatibility macros
 * Use stackswap code from libint.c for AROS
-* Merge libinit-aros.c into libinit.c
 
 LEGAL
 -----

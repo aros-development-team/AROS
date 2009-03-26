@@ -4,7 +4,7 @@
 /* Includeheader
 
         Name:           SDI_lib.h
-        Versionstring:  $VER: SDI_lib.h 1.8 (28.02.2006)
+        Versionstring:  $VER: SDI_lib.h 1.9 (15.03.2009)
         Author:         Jens Langner
         Distribution:   PD
         Project page:   http://www.sf.net/projects/sditools/
@@ -33,6 +33,7 @@
                   it required a fundamental rework of the macros. (Jens Langner)
  1.8   28.02.06 : removed "##" in front of the OS3 __VARARGS__ usage as they
                   causing errors on GCC >= 3.x.
+ 1.9   15.03.09 : fixed some missing function prototype in LIBPROTOVA()
 
 */
 
@@ -133,6 +134,7 @@
       LIBFUNC ret libstub_##name(struct Interface *self UNUSED,       \
       ## __VA_ARGS__)
     #define LIBPROTOVA(name, ret, ...)                                \
+      /*LIBFUNC ret VARARGS68K name(__VA_ARGS__);*/                       \
       LIBFUNC ret VARARGS68K                                          \
       libstub_##name(struct Interface *self UNUSED, ## __VA_ARGS__)
     #define LIBSTUB(name, ret, ...)                                   \

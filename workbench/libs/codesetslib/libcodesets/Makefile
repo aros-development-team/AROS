@@ -239,6 +239,8 @@ ifeq ($(OS), aros)
     RANLIB  = $(TARGET_CPU)-aros-ranlib
   endif
 
+  OBJS = autoinit-aros.o
+
   # Compiler/Linker flags
   LDLIBS += -lrom
 
@@ -251,7 +253,8 @@ endif
 # Here starts all stuff that is common for all target platforms and
 # hosts.
 
-OBJS = autoinit.o libversion.o
+# TODO: add stubs
+# OBJS +=
 
 # main target
 .PHONY: all

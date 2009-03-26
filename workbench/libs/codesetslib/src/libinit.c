@@ -126,7 +126,7 @@ static LONG                   LIBFUNC LibNull   (void);
 
 static struct LibraryHeader * LIBFUNC LibInit    (REG(d0, struct LibraryHeader *lh), REG(a0, BPTR Segment), REG(a6, struct ExecBase *sb));
 static BPTR                   LIBFUNC LibExpunge (REG(a6, struct LibraryHeader *base));
-static struct LibraryHeader * LIBFUNC LibOpen    (REG(d0, ULONG version UNUSED), REG(a6, struct LibraryHeader *base));
+static struct LibraryHeader * LIBFUNC LibOpen    (REG(d0, ULONG version), REG(a6, struct LibraryHeader *base));
 static BPTR                   LIBFUNC LibClose   (REG(a6, struct LibraryHeader *base));
 static LONG                   LIBFUNC LibNull    (void);
 
@@ -306,6 +306,8 @@ static const USED_VAR struct Resident ROMTag =
   RTF_AUTOINIT|RTF_NATIVE,      // The Library should be set up according to the given table.
   #elif defined(__MORPHOS__)
   RTF_AUTOINIT|RTF_PPC,
+  #elif defined(__AROS__)
+  RTF_AUTOINIT|RTF_EXTENDED,
   #else
   RTF_AUTOINIT,
   #endif
@@ -319,7 +321,7 @@ static const USED_VAR struct Resident ROMTag =
   #else
   (APTR)LibInitTab,
   #endif
-  #if defined(__MORPHOS__)
+  #if defined(__MORPHOS__) || defined(__AROS__)
   LIB_REVISION,
   0
   #endif
@@ -616,7 +618,7 @@ static struct LibraryHeader *LibOpen(void)
 {
   struct LibraryHeader *base = (struct LibraryHeader*)REG_A6;
 #else
-static struct LibraryHeader * LIBFUNC LibOpen(REG(d0, ULONG version UNUSED), REG(a6, struct LibraryHeader *base))
+static struct LibraryHeader * LIBFUNC LibOpen(REG(d0, UNUSED ULONG version), REG(a6, struct LibraryHeader *base))
 {
 #endif
   struct LibraryHeader *res = base;
