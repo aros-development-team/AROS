@@ -52,7 +52,7 @@ VOID sdl_event_task(struct Task *creator, ULONG sync, LIBBASETYPEPTR LIBBASE) {
     tick_int.is_Node.ln_Name = "SDL event tick";
     tick_int.is_Node.ln_Pri  = 0;
     tick_int.is_Node.ln_Type = NT_INTERRUPT;
-    AddIntServer(INTB_TIMERTICK, &tick_int);
+    AddIntServer(INTB_VERTB, &tick_int);
 
     D(bug("[sdl] event loop task running, signalling creator\n"));
 
