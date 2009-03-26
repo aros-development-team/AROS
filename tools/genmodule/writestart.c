@@ -602,7 +602,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 		"    vecsize = %u*LIB_VECTSIZE;\n"
 		"    if (vecsize > 0)\n"
 		"        vecsize = ((vecsize-1)/sizeof(IPTR) + 1)*sizeof(IPTR);\n"
-		"    mem = AllocMem(vecsize+sizeof(LIBBASETYPE), MEMF_PUBLIC);\n"
+		"    mem = AllocMem(vecsize+sizeof(LIBBASETYPE), MEMF_PUBLIC|MEMF_CLEAR);\n"
 		"    if (mem == NULL)\n"
 		"         return NULL;\n"
 		"    lh = (LIBBASETYPEPTR)(mem + vecsize);\n"
