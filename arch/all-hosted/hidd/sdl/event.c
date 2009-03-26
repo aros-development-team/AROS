@@ -40,7 +40,7 @@ AROS_UFH4(ULONG, tick_handler,
 }
 
 
-VOID sdl_event_task(struct Task *creator, BYTE sync, LIBBASETYPEPTR LIBBASE) {
+VOID sdl_event_task(struct Task *creator, ULONG sync, LIBBASETYPEPTR LIBBASE) {
     struct Interrupt tick_int;
     SDL_Event e[MAX_EVENTS];
     int nevents, i;
@@ -56,7 +56,7 @@ VOID sdl_event_task(struct Task *creator, BYTE sync, LIBBASETYPEPTR LIBBASE) {
 
     D(bug("[sdl] event loop task running, signalling creator\n"));
 
-    Signal(creator, 1 << sync);
+    Signal(creator, sync);
 
     D(bug("[sdl] entering loop\n"));
 
@@ -100,7 +100,7 @@ VOID sdl_event_task(struct Task *creator, BYTE sync, LIBBASETYPEPTR LIBBASE) {
 static int sdl_event_init(LIBBASETYPEPTR LIBBASE) {
     struct Task *task;
     APTR stack;
-    BYTE sync;
+    ULONG sync;
 
     D(bug("[sdl] creating event loop task\n"));
 
@@ -130,7 +130,8 @@ static int sdl_event_init(LIBBASETYPEPTR LIBBASE) {
     task->tc_SPReg = (UBYTE *) task->tc_SPLower + SP_OFFSET;
 #endif
 
-    sync = SIGBREAKF_CTRL_C;
+    sync = SIGF_BLIT;
+    SetSignal(0, sync);
 
     if (NewAddTask(task, sdl_event_task, NULL, TAGLIST(TASKTAG_ARG1, FindTask(NULL),
                                                        TASKTAG_ARG2, sync,
@@ -143,7 +144,7 @@ static int sdl_event_init(LIBBASETYPEPTR LIBBASE) {
 
     D(bug("[sdl] task created, waiting for it to start up\n"));
 
-    Wait(1 << sync);
+    Wait(sync);
 
     D(bug("[sdl] event loop task up and running\n"));
 

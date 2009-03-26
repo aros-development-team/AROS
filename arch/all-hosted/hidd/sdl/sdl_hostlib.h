@@ -1,6 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (c) 2007 Robert Norris. All rights reserved.
+ * Copyright (c) 2007-2009 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -16,17 +17,6 @@
 #include <exec/semaphores.h>
 
 struct sdl_funcs {
-    size_t (*SDL_strlcpy) (char *dst, const char *src, size_t maxlen);
-    size_t (*SDL_strlcat) (char *dst, const char *src, size_t maxlen);
-    char * (*SDL_strrev) (char *string);
-    char * (*SDL_strupr) (char *string);
-    char * (*SDL_strlwr) (char *string);
-    char * (*SDL_ltoa) (long value, char *string, int radix);
-    char * (*SDL_ultoa) (unsigned long value, char *string, int radix);
-    char* (*SDL_lltoa) (Sint64 value, char *string, int radix);
-    char* (*SDL_ulltoa) (Uint64 value, char *string, int radix);
-    size_t (*SDL_iconv) (iconv_t cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft);
-    char * (*SDL_iconv_string) (const char *tocode, const char *fromcode, char *inbuf, size_t inbytesleft);
     void (*SDL_SetError) (const char *fmt, ...);
     char * (*SDL_GetError) (void);
     void (*SDL_ClearError) (void);
@@ -220,20 +210,19 @@ struct sdl_funcs {
 extern struct sdl_funcs sdl_funcs;
 
 #define SDL_SOFILE "libSDL.so"
-
-extern struct SignalSemaphore sdl_lock;
+#define SDL_DLLFILE "SDL.dll"
 
 #define S(name, ...) \
     ({ \
-        ObtainSemaphore(&sdl_lock); \
+        Forbid(); \
         typeof (sdl_funcs.name) __sdlret = sdl_funcs.name(__VA_ARGS__); \
-        ReleaseSemaphore(&sdl_lock); \
+        Permit(); \
         __sdlret; \
     })
 
 #define SV(name, ...) \
     do { \
-        ObtainSemaphore(&sdl_lock); \
+        Forbid(); \
         sdl_funcs.name(__VA_ARGS__); \
-        ReleaseSemaphore(&sdl_lock); \
+        Permit(); \
     } while (0)

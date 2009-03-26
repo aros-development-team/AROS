@@ -4,5 +4,5 @@ FILES := sdl_hostlib sdl_init event keymap gfxclass bmclass mouseclass kbdclass
 
 %build_module mmake=kernel-hidd-sdl \
   modname=sdl modtype=hidd \
-  files=$(FILES) cflags="$(SDL_CFLAGS) $(HOST_CFLAGS) -I$(GENINCDIR) -D__AROS__" \
-  compiler=host uselibs="oop hiddgraphicsstubs utility"
+  files=$(FILES) cflags="$(SDL_CFLAGS)" \
+  uselibs="oop hiddgraphicsstubs utility"

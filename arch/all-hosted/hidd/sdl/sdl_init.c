@@ -1,6 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (c) 2007 Robert Norris. All rights reserved.
+ * Copyright (c) 2007-2009 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -12,7 +13,7 @@
 #include <proto/hostlib.h>
 #include <proto/exec.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include "sdl_intern.h"
@@ -59,7 +60,8 @@ static int sdl_hidd_init(LIBBASETYPEPTR LIBBASE) {
 static int sdl_hidd_expunge(LIBBASETYPEPTR LIBBASE) {
     D(bug("[sdl] hidd expunge\n"));
 
-    SV(SDL_Quit);
+    if (LIBBASE->sdl_handle)
+        SV(SDL_Quit);
 
     return TRUE;
 }

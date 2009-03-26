@@ -1,16 +1,19 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (c) 2007 Robert Norris. All rights reserved.
+ * Copyright (c) 2007-2009 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
  */
 
+#include <aros/bootloader.h>
 #include <aros/symbolsets.h>
 
 #include <exec/types.h>
 #include <exec/semaphores.h>
 
+#include <proto/bootloader.h>
 #include <proto/exec.h>
 #include <proto/hostlib.h>
 
@@ -18,25 +21,12 @@
 
 #include "sdl_intern.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
-
-void *sdl_handle = NULL;
 
 struct sdl_funcs sdl_funcs;
 
 static const char *sdl_func_names[] = {
-    "SDL_strlcpy",
-    "SDL_strlcat",
-    "SDL_strrev",
-    "SDL_strupr",
-    "SDL_strlwr",
-    "SDL_ltoa",
-    "SDL_ultoa",
-    "SDL_lltoa",
-    "SDL_ulltoa",
-    "SDL_iconv",
-    "SDL_iconv_string",
     "SDL_SetError",
     "SDL_GetError",
     "SDL_ClearError",
@@ -225,30 +215,28 @@ static const char *sdl_func_names[] = {
     "SDL_QuitSubSystem",
     "SDL_WasInit",
     "SDL_Quit",
+    NULL
 };
-
-#define SDL_NUM_FUNCS (199)
 
 APTR HostLibBase;
 
-struct SignalSemaphore sdl_lock;
-
-static void *sdl_hostlib_load_so(const char *sofile, const char **names, int nfuncs, void **funcptr) {
+static void *sdl_hostlib_load_so(const char *sofile, const char **names, void **funcptr) {
     void *handle;
     char *err;
     int i;
 
-    D(bug("[sdl] loading %d functions from %s\n", nfuncs, sofile));
+    D(bug("[sdl] loading functions from %s\n", sofile));
 
     if ((handle = HostLib_Open(sofile, &err)) == NULL) {
         kprintf("[sdl] couldn't open '%s': %s\n", sofile, err);
         return NULL;
     }
 
-    for (i = 0; i < nfuncs; i++) {
+    for (i = 0; names[i]; i++) {
         funcptr[i] = HostLib_GetPointer(handle, names[i], &err);
         if (err != NULL) {
-            kprintf("[sdl] couldn't get symbol '%s' from '%s': %s\n");
+            kprintf("[sdl] couldn't get symbol '%s' from '%s': %s\n", names[i], sofile, err);
+            HostLib_FreeErrorStr(err);
             HostLib_Close(handle, NULL);
             return NULL;
         }
@@ -259,17 +247,30 @@ static void *sdl_hostlib_load_so(const char *sofile, const char **names, int nfu
     return handle;
 }
 
-static int sdl_hostlib_init(LIBBASETYPEPTR LIBBASE) {
-    D(bug("[sdl] hostlib init\n"));
+static int sdl_hostlib_init(LIBBASETYPEPTR LIBBASE)
+{
+    STRPTR LibraryFile = SDL_SOFILE;
+    APTR BootLoaderBase;
+    STRPTR BootLoaderName;
 
-    InitSemaphore(&sdl_lock);
+    D(bug("[sdl] hostlib init\n"));
 
     if ((HostLibBase = OpenResource("hostlib.resource")) == NULL) {
         kprintf("[sdl] couldn't open hostlib.resource\n");
         return FALSE;
     }
+    
+    BootLoaderBase = OpenResource("bootloader.resource");
+    if (BootLoaderBase) {
+        BootLoaderName = GetBootInfo(BL_LoaderName);
+        if (BootLoaderName) {
+            D(bug("[sdl] Host operating system: %s\n", BootLoaderName));
+            if (!strncasecmp(BootLoaderName, "Windows", 7))
+                LibraryFile = SDL_DLLFILE;
+        }
+    }
 
-    if ((sdl_handle = sdl_hostlib_load_so(SDL_SOFILE, sdl_func_names, SDL_NUM_FUNCS, (void **) &sdl_funcs)) == NULL)
+    if ((LIBBASE->sdl_handle = sdl_hostlib_load_so(LibraryFile, sdl_func_names, (void **) &sdl_funcs)) == NULL)
         return FALSE;
 
     return TRUE;
@@ -278,8 +279,8 @@ static int sdl_hostlib_init(LIBBASETYPEPTR LIBBASE) {
 static int sdl_hostlib_expunge(LIBBASETYPEPTR LIBBASE) {
     D(bug("[sdl] hostlib expunge\n"));
 
-    if (sdl_handle != NULL)
-        HostLib_Close(sdl_handle, NULL);
+    if (LIBBASE->sdl_handle != NULL)
+        HostLib_Close(LIBBASE->sdl_handle, NULL);
 
     return TRUE;
 }
