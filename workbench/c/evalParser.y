@@ -17,11 +17,55 @@
 char *text;
 
 extern int yylval;
-extern void yyerror(char *s);
+static void yyerror(char *s);
+static int intPow(int x, int y);
+static int yylex();
 
 int g_result;
 
-int yylex()
+%}
+
+%token NUM
+%left 'l' 'r'
+%left 'e'
+%left '|'
+%left 'x'
+%left '&'
+%left '-' '+'
+%left '*' '/' '%'
+%left NEG '~'
+%right '^'
+
+
+%%
+
+val: expr
+{
+    g_result = $1;
+}
+;
+
+expr: NUM                  { $$ = $1;         }
+    | expr 'l' expr        { $$ = $1 << $3;   }
+    | expr 'r' expr        { $$ = $1 >> $3;   }
+    | expr 'e' expr        { $$ = ($1 & $3) | (~$1 & ~$3); }
+    | expr '|' expr        { $$ = $1 | $3;    }
+    | expr 'x' expr        { $$ = $1 ^ $3;    }
+    | expr '&' expr        { $$ = $1 & $3;    }
+    | expr '+' expr        { $$ = $1 + $3;    }
+    | expr '-' expr        { $$ = $1 - $3;    }
+    | expr '*' expr        { $$ = $1 * $3;    }
+    | expr '/' expr        { $$ = $1 / $3;    }
+    | expr '%' expr        { $$ = $1 % $3;    }
+    | '-' expr  %prec NEG  { $$ = -$2;        }
+    | '~' expr             { $$ = ~$2;        }
+    | expr '^' expr        { $$ = intPow($1, $3); }
+    | '(' expr ')'         { $$ = $2;         }
+;
+
+%%
+
+static int yylex()
 {
     int c;
     
@@ -183,7 +227,7 @@ int yylex()
 }
  
  
-int intPow(int x, int y)
+static int intPow(int x, int y)
 {
     int result = 1;
 
@@ -197,52 +241,11 @@ int intPow(int x, int y)
 }
 
 
-void yyerror(char *s)
+static void yyerror(char *s)
 {
     printf("%s\n", s);
 }
-	 
 
-%}
-     
-%token NUM
-%left 'l' 'r'
-%left 'e'
-%left '|'
-%left 'x'
-%left '&'
-%left '-' '+'
-%left '*' '/' '%'
-%left NEG '~'
-%right '^' 
-     
-%%
-
-val: expr
-{
-    g_result = $1;
-}
-;
-
-expr: NUM                  { $$ = $1;         }
-    | expr 'l' expr        { $$ = $1 << $3;   }
-    | expr 'r' expr        { $$ = $1 >> $3;   }
-    | expr 'e' expr        { $$ = ($1 & $3) | (~$1 & ~$3); }
-    | expr '|' expr        { $$ = $1 | $3;    }
-    | expr 'x' expr        { $$ = $1 ^ $3;    }
-    | expr '&' expr        { $$ = $1 & $3;    }
-    | expr '+' expr        { $$ = $1 + $3;    }
-    | expr '-' expr        { $$ = $1 - $3;    }
-    | expr '*' expr        { $$ = $1 * $3;    }
-    | expr '/' expr        { $$ = $1 / $3;    }
-    | expr '%' expr        { $$ = $1 % $3;    }
-    | '-' expr  %prec NEG  { $$ = -$2;        }
-    | '~' expr             { $$ = ~$2;        }
-    | expr '^' expr        { $$ = intPow($1, $3); }
-    | '(' expr ')'         { $$ = $2;         }
-;
-
-%%
 
 #if 0
 
