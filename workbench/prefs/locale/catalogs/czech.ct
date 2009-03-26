@@ -1,4 +1,4 @@
-## version $VER: locale.catalog 1.1 (23.11.2007)
+## version $VER: Locale.catalog 1.2 (26.3.2009)
 ## language czech
 ## codeset 0
 ;
@@ -88,15 +88,15 @@ OK
 ; Ok
 ;
 MSG_GAD_AVAIL_LANGUAGES
-Pøehled jazykù k dispozici
+Pøehled jazykù
 ; Available Languages
 ;
 MSG_GAD_PREF_LANGUAGES
-Vybrané jazyky dle priority
+Vybrané jazyky
 ; Preferred Languages
 ;
 MSG_GAD_CLEAR_LANGUAGES
-Vymazat vybrané
+Výchozí stav
 ; Clear Languages
 ;
 MSG_GAD_SAVE
@@ -112,7 +112,7 @@ Zru¹it
 ; Cancel
 ;
 MSG_GAD_TAB_LANGUAGE
-Jazyk
+Jazyky
 ; Language
 ;
 MSG_GAD_TAB_COUNTRY

@@ -1,6 +1,6 @@
-## version $VER: ScreenGrabber.catalog 1.2 (7.12.2007)
+## version $VER: ScreenGrabber.catalog 1.3 (26.3.2009)
 ## language czech
-## codeset 5
+## codeset 0
 ;
 ;
 MSG_WINDOW_TITLE
@@ -8,7 +8,7 @@ ScreenGrabber
 ; ScreenGrabber
 ;
 MSG_REFRESH
-Aktualizovat seznam
+Aktualizovat
 ; Refresh list
 ;
 MSG_SCREEN_INFO
@@ -44,15 +44,15 @@ Mo¾nosti ukládání
 ; Save options
 ;
 MSG_SAVE_FILE
-Ulo¾it snímek
+Ulo¾it do souboru
 ; Save file
 ;
 MSG_SCREENSHOT
-Snímek obrazovky
+Poøídit snímek
 ; Screenshot
 ;
 MSG_SCREEN_PARM
-%d × %d, barevná hloubka: %d
+%d x %d / %d
 ; %d x %d, depth=%d
 ;
 MSG_OVERWRITE
@@ -72,7 +72,7 @@ Ano|Ne
 ; YES|NO
 ;
 MSG_ERR_DATATYPE
-Nelze vytvoøit objekt datatype!
+Nelze vytvoøit po¾adovaný objekt!
 ; Can't create datatype object!
 ;
 MSG_NORAM
