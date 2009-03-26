@@ -104,8 +104,13 @@ extern struct x11_func x11_func;
 extern void *libc_handle;
 extern struct libc_func libc_func;
 
-#define X11_SOFILE  "libX11.so.6"
-#define LIBC_SOFILE "libc.so.6"
+#if defined __FreeBSD__
+#   define X11_SOFILE   "libX11.so"
+#   define LIBC_SOFILE  "libc.so"
+#else
+#   define X11_SOFILE  "libX11.so.6"
+#   define LIBC_SOFILE "libc.so.6"
+#endif
 
 #define XCALL(func,...) (x11_func.func(__VA_ARGS__))
 #define CCALL(func,...) (libc_func.func(__VA_ARGS__))
