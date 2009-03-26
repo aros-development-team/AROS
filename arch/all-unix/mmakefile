@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 #MM- kernel-unix : \
 #MM     kernel-unixio-kobj kernel-hostlib-kobj        \
 #MM     graphics-$(GFXSYSTEM)			      \
-#MM     $(X11_HIDD_TARGET) $(SDL_HIDD_TARGET)         \
+#MM     $(X11_HIDD_TARGET)		              \
 #MM     intuition-$(GFXSYSTEM)                        \
 #MM     kernel-fs-emul-kobj                           \
 #MM     contrib-amberram-kobj                         \
