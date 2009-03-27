@@ -100,10 +100,10 @@ STRPTR GetString(struct LocaleInfo *li, LONG stringNum)
 
   while (*l != stringNum)
   {
-    w = (UWORD *)((ULONG)l + 4);
-    l = (LONG *)((ULONG)l + (LONG)*w + 6);
+    w = (UWORD *)((IPTR)l + 4);
+    l = (LONG *)((IPTR)l + (LONG)*w + 6);
   }
-  builtIn = (STRPTR)((ULONG)l + 6);
+  builtIn = (STRPTR)((IPTR)l + 6);
 
 #define XLocaleBase LocaleBase
 #define LocaleBase li->li_LocaleBase
