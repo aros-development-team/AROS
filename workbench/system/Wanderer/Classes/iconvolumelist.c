@@ -191,6 +191,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 		    }
 		}
 	    }
+            D(bug("[IconVolumeList] Finished registering volumes\n"));
 	    UnLockDosList(LDF_VOLUMES|LDF_READ);
 
 	    dl = LockDosList(LDF_DEVICES|LDF_READ);
@@ -203,22 +204,17 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 		UBYTE             		*dosname = (UBYTE*)AROS_BSTR_ADDR(dl->dol_Name);
 		LONG   				len = AROS_BSTR_strlen(dl->dol_Name);
 
-                D(bug("[IconVolumeList] %s: Checking Device '%s' @ %p (Device '%s' @ 0x%p, Unit @ 0x%p) Type: %d\n", __PRETTY_FUNCTION__, dosname, dl, dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name, dl->dol_Ext.dol_AROS.dol_Device, __DL_UNIT, dl->dol_Type));
+                D(bug("[IconVolumeList] %s: Checking Device '%s' @ %p (Device ", __PRETTY_FUNCTION__, dosname, dl));
+                D(if (dl->dol_Ext.dol_AROS.dol_Device) bug("'%s' ", dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name));
+                D(bug("@ 0x%p, Unit @ 0x%p) Type: %d\n", dl->dol_Ext.dol_AROS.dol_Device, __DL_UNIT, dl->dol_Type));
 #if defined(__AROS__)
-		if ((dl->dol_Task == NULL) && (dl->dol_Ext.dol_AROS.dol_Device != NULL))
-		{
-                    D(bug("[IconVolumeList] %s: '%s' : IOFS Device\n", __PRETTY_FUNCTION__, dosname));
-		}
-		else
-#endif
+		if (dl->dol_Ext.dol_AROS.dol_Device == NULL)
+#else
 		if (dl->dol_Task == NULL)
+#endif
 		{
-                    D(bug("[IconVolumeList] %s: '%s' : dol_Task == NULL!\n", __PRETTY_FUNCTION__, dosname));
-		    continue;
-		}
-		else
-		{
-                    D(bug("[IconVolumeList] %s: '%s' : Packet Device\n", __PRETTY_FUNCTION__, dosname));
+                    D(bug("[IconVolumeList] %s: '%s' : handler inactive!\n", __PRETTY_FUNCTION__, dosname));
+                    continue;
 		}
 
 		if ((nd_nambuf = AllocPooled(newdvl->dvl_Pool, len + 2)) != NULL)
