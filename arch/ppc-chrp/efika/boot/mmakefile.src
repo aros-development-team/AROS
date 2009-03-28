@@ -12,6 +12,7 @@ include $(TOP)/config/make.cfg
 #MM kernel-package-chrp-ppc-efika: \
 #MM	linklibs-clib \
 #MM	kernel-bootloader-chrp-ppc-efika \
+#MM kernel-bestcomm-chrp-ppc-efika \
 #MM	kernel-expansion \
 #MM	kernel-utility \
 #MM kernel-openfirmware \
@@ -50,10 +51,10 @@ include $(TOP)/config/make.cfg
 #MM contrib-amberram \
 #MM	workbench-hidd-graphics
 
-PKG_GEN_LIBS 	:= aros mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench boot dos
-PKG_GEN_RSRC 	:= misc dosboot
+PKG_GEN_LIBS 	:= aros partition expansion utility oop graphics layers intuition keymap workbench boot dos
+PKG_GEN_RSRC 	:= dosboot bestcomm
 PKG_GEN_DEVS 	:= input gameport keyboard console
-PKG_GEN_HANDLERS:= con nil amberram packet cdrom
+PKG_GEN_HANDLERS:= con nil amberram cdrom
 PKG_GEN_HIDDS	:= graphics hiddclass i2c pci
 
 PKG_EFI_LIBS 	:= 
