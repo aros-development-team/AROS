@@ -151,7 +151,13 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
 
                 scr = GetPrivScreen(window->WScreen);
                 if (window->ScreenTitle)
+		{
                     scr->Screen.Title = window->ScreenTitle;
+		}
+		else
+		{
+		    scr->Screen.Title = scr->Screen.DefaultTitle;
+		}
             }
 
             /* now set the ActiveScreen! */
