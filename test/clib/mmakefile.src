@@ -31,7 +31,9 @@ FILES := \
 	strtoul \
 	strtoull \
 	snprintf \
-	setjmp
+	setjmp \
+        system \
+        execl
 
 EXEDIR := $(AROS_TESTS)/clib
 
