@@ -188,6 +188,8 @@ static int system_sh(const char *string)
     pid_t pid = vfork();
     int status;
 
+    D(bug("system_sh(%s)\n", string));
+    
     if(pid > 0)
     {
 	if(waitpid(pid, &status, 0) == -1)
@@ -211,6 +213,8 @@ static int system_no_sh(const char *string)
     char *args, *cmd;
     BPTR seg;
     int ret;
+
+    D(bug("system_no_sh(%s)\n", string));
 
     cmd = strdup(string);
     args = cmd;
