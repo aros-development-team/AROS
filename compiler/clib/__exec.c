@@ -41,7 +41,6 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
 {
     struct arosc_privdata *privdata = __get_arosc_privdata();
     char *filename2 = NULL, *filenamefree = NULL;
-    APTR id = NULL;
     int argssize = 1024;
 
     /* Sanity check */
@@ -140,7 +139,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     {
     	if(FGetC(fh) == '#' && FGetC(fh) == '!')
     	{
-            char firstline[128], *linebuf, *inter, *interargs;
+           char firstline[128], *linebuf, *inter, *interargs = NULL;
             
             /* It is a script, let's read the first line */
             if(FGets(fh, (STRPTR)firstline, sizeof(firstline) - 1))
@@ -163,23 +162,32 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
                             /* Interpreter arguments are here */
                             interargs = linebuf;   		    		
                     }
-                }
 
-                /* Add interpeter args and the script name to command line args */
-                char *args[] = {interargs, filename2, NULL};
-                privdata->acpd_exec_args = appendargs(
-                    privdata->acpd_exec_args, &argssize, args
-                );
-                if (!privdata->acpd_exec_args)
-                {
-                    errno = ENOMEM;
-                    goto error;
-                }
+                    /* Add interpeter args and the script name to command line args */
+                    char *args[] = {NULL, NULL, NULL};
+                    if (interargs)
+                    {
+                        args[0] = interargs;
+                        args[1] = filename2;
+                    }
+                    else
+                    {
+                        args[0] = filename2;
+                    }
+                    privdata->acpd_exec_args = appendargs(
+                        privdata->acpd_exec_args, &argssize, args
+                    );
+                    if (!privdata->acpd_exec_args)
+                    {
+                        errno = ENOMEM;
+                        goto error;
+                    }
 
-                /* Set file to execute as the script interpreter */
-                if (filenamefree)
-                    free(filenamefree);
-                filenamefree = filename2 = strdup(inter);
+                    /* Set file to execute as the script interpreter */
+                    if (filenamefree)
+                        free(filenamefree);
+                    filenamefree = filename2 = strdup(inter);
+                }
             }
         }
     	Close(fh);
@@ -310,6 +318,15 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     if(err)
         privdata->acpd_exec_olderr = SelectError(err->fcb->fh);
 
+    /* Clean up data */
+    if (privdata->acpd_exec_tmparray);
+    {
+        free((void *)privdata->acpd_exec_tmparray);
+        privdata->acpd_exec_tmparray = NULL;
+    }
+    if (filenamefree)
+        free(filenamefree);
+
     /* Generate new privdata for the exec */
     assert(!(privdata->acpd_flags & KEEP_OLD_ACPD));
     privdata->acpd_flags |= CREATE_NEW_ACPD;
@@ -327,13 +344,11 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     newprivdata->acpd_parent_does_upath = privdata->acpd_doupath;
 
     /* Everything OK */
-    id = (APTR)privdata;
-    goto out;
+    return (APTR)privdata;
 
 error:
     __exec_cleanup(privdata);
     
-out:
     if (privdata->acpd_exec_tmparray);
     {
         free((void *)privdata->acpd_exec_tmparray);
@@ -342,7 +357,7 @@ out:
     if (filenamefree)
         free(filenamefree);
     
-    return id;
+    return (APTR)NULL;
 }
 
 
@@ -404,7 +419,7 @@ char *const *__exec_valist2array(const char *arg1, va_list list)
     if (arg1 == NULL)
         return no_arg;
     
-    for (argit = va_arg(list, char *);
+    for (argit = va_arg(list, char *), argc = 1;
          argit != NULL;
          argit = va_arg(list, char *)
     )
@@ -412,17 +427,21 @@ char *const *__exec_valist2array(const char *arg1, va_list list)
     
     if (!(privdata->acpd_exec_tmparray = malloc((argc+1)*(sizeof(char *)))))
     {
+        D(bug("__exec_valist2array: Memory allocation failed\n"));
         va_end(list2);
         return NULL;
     }
     
     privdata->acpd_exec_tmparray[0] = (char *)arg1;
     for (argit = va_arg(list2, char *), i = 1;
-         argit != NULL;
+         i <= argc; /* i == argc will copy the NULL pointer */
          argit = va_arg(list2, char *), i++
     )
+    {
+        D(bug("arg %d: %x\n", i, argit));
         privdata->acpd_exec_tmparray[i] = argit;
-
+    }
+   
     va_end(list2);
     
     return privdata->acpd_exec_tmparray;
