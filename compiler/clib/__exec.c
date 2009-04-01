@@ -43,6 +43,9 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     char *filename2 = NULL, *filenamefree = NULL;
     int argssize = 1024;
 
+    D(bug("Entering __exec_prepare(\"%s\", %d, %x, %x)\n",
+          filename, searchpath, argv, envp
+    ));
     /* Sanity check */
     if (filename == NULL || filename[0] == '\0' || argv == NULL)
     {
@@ -55,7 +58,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         struct vfork_data *udata = privdata->acpd_vfork_data;
             
         udata->exec_filename = filename;
-        udata->exec_searchpath = 0;
+        udata->exec_searchpath = searchpath;
         udata->exec_argv = argv;
         udata->exec_envp = envp;
             
@@ -90,6 +93,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     {
         int i;
         char *path = NULL, *path_ptr, *path_item;
+        BPTR lock;
         
         if (environ)
         {
@@ -108,12 +112,17 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         
         path = strdup(path ? path : ":/bin:/usr/bin");
 
-        path_ptr = path;
-        while((path_item = strsep(&path_ptr, ",:"))) 
+        for(path_ptr = path, lock = (BPTR)NULL, path_item = strsep(&path_ptr, ",:");
+            lock == (BPTR)NULL && path_item != NULL;
+            path_item = strsep(&path_ptr, ",:")
+        ) 
         {
+            if(filenamefree)
+                free(filenamefree);
+            
             if(path_item[0] == '\0')
                 path_item = ".";
-            
+
             filenamefree = filename2 = malloc(strlen(path_item) + strlen(filename) + 2);
             if(filename2)
             {
@@ -121,12 +130,21 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
                 strcat(filename2, path_item);
                 strcat(filename2, "/");
                 strcat(filename2, filename);
+                lock = Lock(__path_u2a(filename2), SHARED_LOCK);
+                D(bug("__exec_prepare: Lock(\"%s\") == %x\n", filename2, (APTR)lock));
             }
             else
             {
                 errno = ENOMEM;
                 goto error;
             }
+        }
+        if(lock != (BPTR)NULL)
+            UnLock(lock);
+        else
+        {
+            errno = ENOENT;
+            goto error;
         }
     }
     else

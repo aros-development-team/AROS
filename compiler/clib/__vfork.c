@@ -91,6 +91,10 @@ LONG launcher()
             UnLock(CurrentDir(dir));
             /* Don't mind updating aroscbase->acb_startup_cd_changed as we will
                exit from process after __exec_do has finished */
+
+            /* Filenames passed from parent obey parent's __doupath */
+            __doupath = udata->cpriv->acpd_parent_does_upath;
+            D(bug("launcher: __doupath == %d for __exec_prepare()\n", __doupath));
             
             exec_id = udata->exec_id = __exec_prepare(
                 udata->exec_filename,
@@ -100,6 +104,9 @@ LONG launcher()
             );
             
             udata->child_errno = errno;
+
+            /* Clear __doupath again, command will set it if wanted */
+            __doupath = 0;
             
             D(bug("launcher: informing parent that we have run __exec_prepare\n"));
             /* Inform parent that we have run __exec_prepare */
