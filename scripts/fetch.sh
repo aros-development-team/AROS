@@ -41,7 +41,7 @@ fetch_gnu()
     $ret
 }
 
-sf_mirrors="http://downloads.sourceforge.net http://aleron.dl.sourceforge.net http://voxel.dl.sourceforge.net http://heanet.dl.sourceforge.net http://avh.dl.sourceforge.net http://umn.dl.sourceforge.net http://unc.dl.sourceforge.net http://puzzle.dl.sourceforge.net http://mesh.dl.sourceforge.net"
+sf_mirrors="http://download.sourceforge.net http://aleron.dl.sourceforge.net http://voxel.dl.sourceforge.net http://heanet.dl.sourceforge.net http://avh.dl.sourceforge.net http://umn.dl.sourceforge.net http://unc.dl.sourceforge.net http://puzzle.dl.sourceforge.net http://mesh.dl.sourceforge.net"
 
 fetch_sf()
 {
