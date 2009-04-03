@@ -158,6 +158,15 @@ Delete...
 MSG_MEN_TOOLS  (//)
 Tools
 ;
+MSG_MEN_ICONSORTING (//)
+Enable Icon Sorting
+;
+MSG_MEN_GROUPICONS (//)
+Group Icons
+;
+MSG_MEN_ICONSCLOSE (//)
+Close
+;
 MSG_REALLYQUIT (//)
 Do you really want to quit Wanderer?
 ;
