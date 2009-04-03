@@ -215,6 +215,18 @@ MSG_MEN_TOOLS
 Hilfsmittel
 ; Tools
 ;
+MSG_MEN_ICONSORTING (//)
+Piktogramme sortieren
+; Enable Icon Sorting
+;
+MSG_MEN_GROUPICONS (//)
+Piktogramme gruppieren
+; Group Icons
+;
+MSG_MEN_ICONSCLOSE (//)
+Schließen
+; Close
+;
 MSG_REALLYQUIT
 Möchten Sie Wanderer wirklich beenden?
 ; Do you really want to quit Wanderer?
