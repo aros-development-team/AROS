@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 /******************************************************************************
@@ -15,17 +15,20 @@
 
     LOCATION
 
-        SYS:C
+        C:
 
     FUNCTION
 
-        Installs the GRUB bootloader to the bootblock of the specified disk.
+        Installs the GRUB 2 bootloader to the boot block of the specified
+        disk or partition.
 
     INPUTS
 
-        DEVICE --  Device name (eg. ata.device)
+        DEVICE --  Device name (e.g. ata.device)
         UNIT  --  Unit number
-        PN  --  Partition number (advice: the first AROS FFS partition)
+        PN  --  Specifies a partition number. If specified, GRUB is installed
+            to this partition's boot block. Otherwise, GRUB is installed to
+            the disk's boot block.
         GRUB -- Path to GRUB directory.
         FORCELBA --  Force use of LBA mode.
 
@@ -35,7 +38,7 @@
 	
     EXAMPLE
 
-        install-pc device ata.device unit 0 PN 1 grub dh0:boot/grub
+        Install-grub2-i386-pc device ata.device unit 0 grub dh0:boot/grub
 
     BUGS
 
@@ -720,7 +723,10 @@ BOOL writeBootIMG(STRPTR bootimgpath, struct Volume * bootimgvol, struct Volume 
 		        UWORD *boot_drive_check =
 		            (UWORD *) (boot_img + GRUB_BOOT_MACHINE_DRIVE_CHECK);
 
-		        *boot_drive = 0xFF;
+                if (unit == bootimgvol->unitnum)
+                    *boot_drive = 0xFF;
+                else
+                    *boot_drive = unit | BIOS_HDISK_FLAG;
 		        *root_drive = 0xFF;
 		        *boot_drive_check = 0x9090;
 
