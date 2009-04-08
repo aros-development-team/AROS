@@ -1,91 +1,101 @@
 #include	<exec/lists.h>
 #include	<exec/nodes.h>
 
-static const char* KMsgWelcome =
-MUIX_L " " MUIX_B"\nWelcome to the AROS Research OS\n"
-"installer.\n\n" MUIX_N
-"This program allows you to install\n"
-"the " MUIX_B "pre-alpha" MUIX_N " version of AROS\n"
-"on to your computer's hard drive.\n\n"
-"Since it is still in pre-alpha state, performance\n"
-"may be sluggish - and stability isn't guaranteed\n\n";
+static const char KMsgWelcome[] =
+MUIX_B"\nWelcome to the AROS Research OS installer.\n\n" MUIX_N
+"This program allows you to install AROS\n"
+"on your computer's hard drive.\n\n"
+"Please be aware that the stability of this software\n"
+"cannot be guaranteed.\n"
+"It is possible that " MUIX_B "loss of data" MUIX_N " may occur\n"
+"on any drive in your system, including those\n"
+"used by other operating systems.\n";
 
-static const char* KMsgInstallOptions =
+static const char KMsgInstallOptions[] =
 "\nPlease choose your installation options.\n\n";
 
-static const char* KMsgDestOptions =
+static const char KMsgDestOptions[] =
 "\nPlease choose where to install AROS.\n\n"
 "If you are unsure, then use the defaults";
 
-static const char* KMsgDestVolume =
+static const char KMsgDestVolume[] =
 "Destination Partition";
 
-static const char* KMsgWorkVolume =
+static const char KMsgWorkVolume[] =
 "Work Partition";
 
-static const char* KMsgBeginWithPartition =
+static const char KMsgBeginWithPartition[] =
 "OK, we are ready to begin.\n\n"
-"Since you've selected to format the partition,\n"
+"Since you've chosen to format at least one partition,\n"
 "you will no longer be able to undo changes\n"
 "after this point.\n\n"
-"You are being " MUIX_B "warned" MUIX_N ", this is pre-alpha software.\n\n"
 "Select Proceed to begin installation.";
 
-static const char* KMsgBeginWithoutPartition =
+static const char KMsgBeginWithoutPartition[] =
 "OK, we are ready to begin...\n\n"
 "We have collected enough information\n"
 "to begin installation on this computer.\n\n"
-"You are being " MUIX_B "warned" MUIX_N ", this is pre-alpha software.\n"
-"\n Press Proceed to begin installation...";
+"\nSelect Proceed to begin installation.";
 
-static const char* KMsgPartitionOptions =
+static const char KMsgPartitionOptions[] =
 "We will now create AROS partitions on your hard drive\n\n"
 "Please select how you would like to proceed...\n";
 
-static const char* KMsgDestPartition =
+static const char KMsgDestPartition[] =
 "System Partition (DH0)";
 
-static const char* KMsgWorkPartition =
+static const char KMsgWorkPartition[] =
 "Work Partition (DH1)";
 
-static const char* KMsgGrubOptions =
+static const char KMsgPartitionTooBig[] =
+"The partition sizes you have requested are too large.\n"
+"The maximum size of an SFS partition is %ld GB (%ld MB),\n"
+"while the maximum size of an FFS partition is %ld GB (%ld MB).\n"
+"Please reduce the size of the affected partitions.\n";
+
+static const char KMsgGrubOptions[] =
 "AROS uses the GRUB bootloader.\n\n"
-"The Installer will install it to the first\n"
-"drive on your system, and configure it\n"
-"to boot AROS.\n";
+"In most cases, GRUB's bootblock should\n"
+"be installed on the first drive in your system.\n"
+"If the Installer detects a Microsoft Windows installation,\n"
+"it will be included as a choice in GRUB's boot menu.\n";
 
-static const char* KMsgGrubDrive =
-"Drive GRUB will install on:";
+static const char KMsgGrubDrive[] =
+"Drive to install GRUB's bootblock on:";
 
-static const char* KMsgGrubGOptions =
+static const char KMsgGrubGOptions[] =
 MUIX_B "GRUB Settings" MUIX_N;
 
-static const char* KMsgGrubGrub =
+static const char KMsgGrubGrub[] =
 "Path to GRUB files:";
 
-static const char* KMsgPartitioning =
-"Partition your drives...\n\n";
+static const char KMsgNoGrubDevice[] =
+"Please enter the device name and unit number for\n"
+"the drive GRUB's bootblock should be installed on.\n";
 
-static const char* KMsgInstall =
+static const char KMsgPartitioning[] =
+"Partitioning your drives...\n\n";
+
+static const char KMsgInstall[] =
 "Copying files to the hard disk.\n\n"
 "This may take some time...\n";
 
-static const char* KMsgBootLoader =
+static const char KMsgBootLoader[] =
 "Copying the GRUB bootloader to your\n"
 "hard drive, and installing...\n";
 
-static const char* KMsgPostInstall =
+static const char KMsgPostInstall[] =
 "Running the external post-install\n"
 "script. Please wait.\n";
 
-static const char* KMsgDoneReboot =
+static const char KMsgDoneReboot[] =
 "AROS partitions have now been created!\n"
 "To continue installation, you must\n"
 "reboot AROS, and re-run\n"
 "this installer application\n\n"
 "Select Proceed to finish\n";
 
-static const char* KMsgDone =
+static const char KMsgDone[] =
 "Congratulations, you now have AROS installed!\n\n"
 "To boot AROS from the hard drive,\n"
 "remove the installation media and\n"
@@ -93,11 +103,11 @@ static const char* KMsgDone =
 "power switch or reset button.\n\n"
 "Select Proceed to finish\n";
 
-static const char* KMsgCancelOK =
+static const char KMsgCancelOK[] =
 "Are you sure you wish to cancel\n"
 "this installation?\n";
 
-static const char* KMsgCancelDanger =
+static const char KMsgCancelDanger[] =
 "Irreversible changes have been made\n"
 "to your system.\n\n"
 "Cancelling now may leave your PC in an\n"
@@ -105,20 +115,20 @@ static const char* KMsgCancelDanger =
 "Are you sure you wish to cancel\n"
 "this installation?\n";
 
-static const char* KMsgProceed =
+static const char KMsgProceed[] =
 "_Proceed";
 
-static const char * KMsgNotAllFilesCopied =
+static const char KMsgNotAllFilesCopied[] =
 "Not all files in '%s'\n"
 "were copied.\n"
 "Should the instalation continue?\n";
 
-static const char * KMsgPartitioningFailed =
+static const char KMsgPartitioningFailed[] =
 "Partitioning of disk failed. InstallAROS\n"
 "will now quit.";
 
 #if GRUB == 1
-static const char* KMsgGRUBNonFFSWarning =
+static const char KMsgGRUBNonFFSWarning[] =
 "You have selected a filesystem different\n"
 "than FFS-Intl for the DH0 partition. Since\n"
 "this distribution of AROS is compiled  with\n"
@@ -131,12 +141,12 @@ static const char* KMsgGRUBNonFFSWarning =
 
 /*
 
-static const char* KMsgLanguage =
+static const char KMsgLanguage[] =
 "The system prefs for your language settings\n"
 "will now launch\n\n"
 "Choose the settings that are relevant to you\n";
 
-static const char* KMsgNoDrives =
+static const char KMsgNoDrives[] =
 "It appears you do not have a hard\n"
 "drive installed in your PC.\n\n"
 "Installation of AROS can only be performed on to\n"

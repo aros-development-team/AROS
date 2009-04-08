@@ -55,6 +55,9 @@
 #define kDstPartName 		"AROS"
 #define kDstWorkName 		"Work"
 
+#define MAX_FFS_SIZE (4L * 1024)
+#define MAX_SFS_SIZE (124L * 1024)
+
 #define INSTALLER_TMP_PATH      "T:Installer"
 #define INSTALLAROS_TMP_PATH    "T:Installer/InstallAROS"
 
@@ -133,7 +136,7 @@ char						*dest_Path=NULL;		/* DOS DEVICE NAME of part used to store "aros" */
 char						*work_Path=NULL;		/* DOS DEVICE NAME of part used to store "work" */
 TEXT						*extras_path = NULL;	/* DOS DEVICE NAME of part used to store extras */
 
-char				*boot_Device="ata.device";
+char				*boot_Device;
 ULONG				boot_Unit = 0;
 
 Object* 			check_copytowork = NULL;
@@ -144,6 +147,8 @@ Object* 			check_formatsys = NULL;
 Object* 			check_formatwork = NULL;
 Object*             cycle_fstypesys = NULL;
 Object*             cycle_fstypework = NULL;
+Object*             cycle_sysunits = NULL;
+Object*             cycle_workunits = NULL;
 
 Object* 			dest_volume = NULL;
 Object* 			work_volume = NULL;
@@ -158,8 +163,13 @@ Object* 			check_creatework = NULL;
 Object* 			sys_size = NULL;
 Object* 			work_size = NULL;
 
+Object* 			grub_device = NULL;
+Object* 			grub_unit = NULL;
+
 Object *reboot_group = NULL;
 
+static struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path);
+static LONG GetPartitionSize(BOOL get_work);
 static LONG FindWindowsPartition(STRPTR device, LONG unit);
 LONG CopyDirArray(Class *CLASS, Object *self, CONST_STRPTR sourcePath, CONST_STRPTR destinationPath, 
                         CONST_STRPTR directories[]);
@@ -291,7 +301,7 @@ IPTR Install__OM_NEW
 	{
 		lock = 0;
 		NEWLIST((struct List *)&data->instc_undorecord);
-D(bug("[INSTALLER.i] Prepaired UNDO list @ %p\n", &data->instc_undorecord));
+D(bug("[INSTALLER.i] Prepared UNDO list @ %p\n", &data->instc_undorecord));
 
 		if ((lock = Lock(INSTALLER_TMP_PATH, ACCESS_READ))!=NULL)
 		{
@@ -504,6 +514,44 @@ IPTR Install__MUIM_FindDrives
 	return (IPTR)result;
 }
 
+static struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path)
+{
+    struct DosList *dl;
+    struct DeviceNode *dn;
+    TEXT dname[32];
+    UBYTE i;
+
+    D(bug("[install] getDiskFSSM('%s')\n", path));
+
+    for (i = 0; (path[i]) && (path[i] != ':'); i++)
+        dname[i] = path[i];
+    if (path[i] == ':')
+    {
+        dname[i] = 0;
+        dl = LockDosList(LDF_READ);
+        if (dl)
+        {
+            dn = (struct DeviceNode *) FindDosEntry(dl, dname, LDF_DEVICES);
+            UnLockDosList(LDF_READ);
+            if (dn)
+            {
+                if (IsFileSystem(dname))
+                {
+                    return (struct FileSysStartupMsg *) BADDR(dn->dn_Startup);
+                }
+                else
+                    printf("device '%s' doesn't contain a file system\n",
+                           dname);
+            }
+            else
+                PrintFault(ERROR_OBJECT_NOT_FOUND, dname);
+        }
+    }
+    else
+        printf("'%s' doesn't contain a device name\n", path);
+    return 0;
+}
+
 void w2strcpy(STRPTR name, UWORD *wstr, ULONG len)
 {
 	while (len)
@@ -641,6 +689,7 @@ IPTR Install__MUIM_IC_NextStep
 					char						*tmp_kernel=NULL;
 					struct	IOStdReq			*ioreq=NULL;
 					struct	MsgPort 			*mp=NULL;
+                    struct FileSysStartupMsg *fssm;
 
 					data->instc_options_grub->bootinfo = TRUE;
 
@@ -649,6 +698,25 @@ IPTR Install__MUIM_IC_NextStep
 					tmp_grub =AllocVec( 100, MEMF_CLEAR | MEMF_PUBLIC );
 					tmp_kernel =AllocVec( 100, MEMF_CLEAR | MEMF_PUBLIC );
 
+                    GET(dest_volume, MUIA_String_Contents, &option);
+					sprintf(tmp_grub ,"%s:boot/grub", (CONST_STRPTR)option);
+
+                    /* Guess the best disk to install GRUB's bootblock to */
+                    boot_Unit = 0;
+                    fssm = getDiskFSSM(tmp_grub);
+                    if (fssm != NULL)
+                    {
+                        boot_Device = fssm->fssm_Device;
+                        if (strcmp(fssm->fssm_Device, "ata.device") != 0)
+                            boot_Unit = fssm->fssm_Unit;
+                    }
+                    else
+                        boot_Device = "";
+
+                    SET(grub_device, MUIA_String_Contents, (IPTR)boot_Device);
+                    SET(grub_unit, MUIA_String_Integer, boot_Unit);
+
+#if 0
 					mp = CreateMsgPort();
 					if (mp)
 					{
@@ -669,9 +737,8 @@ IPTR Install__MUIM_IC_NextStep
 					}
 					else sprintf(tmp_device ,"Unknown Drive [%s unit %d]",boot_Device,boot_Unit);
 
-					sprintf(tmp_grub ,"%s:boot/grub",dest_Path);
-
 					SET(data->instc_options_grub->gopt_drive, MUIA_Text_Contents, tmp_device);
+#endif
 					SET(data->instc_options_grub->gopt_grub, MUIA_Text_Contents, tmp_grub);
 				}
 
@@ -680,6 +747,16 @@ IPTR Install__MUIM_IC_NextStep
 				data->instc_stage_prev = EInstallOptionsStage;
 				break;
 			}
+            else if (strlen(XGET(grub_device, MUIA_String_Contents)) == 0)
+            {
+                /* Go back if user hasn't entered a device name for GRUB */
+                MUI_RequestA(data->installer, data->window, 0, "Error",
+                    "OK", KMsgNoGrubDevice, NULL);
+			    data->instc_stage_next = EInstallMessageStage;
+				next_stage =  EGrubOptionsStage;
+				data->instc_stage_prev = EInstallOptionsStage;
+                return 0;
+            }
 		}
 
 		if (XGET(check_formatsys, MUIA_Selected)
@@ -693,20 +770,43 @@ IPTR Install__MUIM_IC_NextStep
 
 	case EPartitioningStage:
         get(data->instc_options_main->opt_partmethod,MUIA_Radio_Active,&option);
-#if GRUB == 1 
-        /* Warn user about partitiong DH0: to non FFS-Intl filesystem on GRUB */
         if ((int)option == 0 || (int)option == 1)
         {
-            IPTR fstype = (IPTR)NULL;
-            get(cycle_fstypesys, MUIA_Cycle_Active, &fstype);
-            if ((int)fstype != 0)
+            LONG syssize = 0, worksize = 0;
+            IPTR systype, worktype;
+
+            /* Let user try again if either partition size is too big.
+               Note that C:Partition will ensure that automatically sized
+               partitions are within size limits */
+            syssize = GetPartitionSize(FALSE);
+            worksize = GetPartitionSize(TRUE);
+
+            get(cycle_fstypesys, MUIA_Cycle_Active, &systype);
+            get(cycle_fstypework, MUIA_Cycle_Active, &worktype);
+
+            if (syssize > (systype ? MAX_SFS_SIZE : MAX_FFS_SIZE) ||
+                worksize > (worktype ? MAX_SFS_SIZE : MAX_FFS_SIZE))
+            {
+                TEXT msg[sizeof(KMsgPartitionTooBig) + 40];
+                sprintf(msg, KMsgPartitionTooBig,
+                    MAX_SFS_SIZE / 1024, MAX_SFS_SIZE,
+                    MAX_FFS_SIZE / 1024, MAX_FFS_SIZE);
+                    MUI_RequestA(data->installer, data->window, 0, "Error",
+                        "OK", msg, NULL);
+                return 0;
+            }
+
+#if GRUB == 1
+            /* Warn user about partitiong DH0: to non FFS-Intl filesystem
+               on GRUB */
+            if ((int)systype != 0)
             {
                 if(MUI_RequestA(data->installer, data->window, 0, "Warning", 
                     "Continue Partitioning|*Cancel Partitioning", KMsgGRUBNonFFSWarning, NULL) != 1)
                     return 0;
             }
-        }
 #endif
+        }
 		data->disable_back = TRUE;
 
 		SET(data->page,MUIA_Group_ActivePage, EPartitioningStage);
@@ -850,11 +950,12 @@ IPTR Install__MUIM_IC_PrevStep
 	case EGrubOptionsStage:
 		SET(data->page,MUIA_Group_ActivePage, EDestOptionsStage);
 		data->instc_options_main->bootloaded = FALSE;
+		data->instc_options_grub->bootinfo = FALSE;
 		data->instc_stage_next = EInstallMessageStage;
 		data->instc_stage_prev = EInstallOptionsStage;
 		break;
 
-        case EInstallMessageStage:
+    case EInstallMessageStage:
 
 		/* Back is disabled from here on... */
 
@@ -1053,6 +1154,35 @@ IPTR Install__MUIM_DispatchInstallProcedure
 
 /** End - NEW!! this is part of the "class" change ;) **/
 
+static LONG GetPartitionSize(BOOL get_work)
+{
+    LONG size = -1;
+    IPTR tmp;
+
+    if (!get_work)
+    {
+        if ((BOOL)XGET(check_sizesys, MUIA_Selected))
+        {
+            GET(sys_size, MUIA_String_Integer, &tmp);
+            size = (LONG)tmp;
+            if (XGET(cycle_sysunits, MUIA_Cycle_Active) == 1)
+                size *= 1024;
+        }
+    }
+    else
+    {
+        if ((BOOL)XGET(check_sizework, MUIA_Selected))
+        {
+            GET(work_size, MUIA_String_Integer, &tmp);
+            size = (LONG)tmp;
+            if (XGET(cycle_workunits, MUIA_Cycle_Active) == 1)
+                size *= 1024;
+        }
+    }
+
+    return size;
+}
+
 IPTR Install__MUIM_Partition
 (
 	Class *CLASS, Object *self, Msg message 
@@ -1077,7 +1207,7 @@ IPTR Install__MUIM_Partition
 		GET(check_sizesys, MUIA_Selected, &option);
 		if (option)
 		{
-			GET(sys_size, MUIA_String_Integer, &tmp);
+			tmp = GetPartitionSize(FALSE);
 			sprintf(tmparg, " SYSSIZE=%ld", tmp);
 			strcat(tmpcmd, tmparg);
 		}
@@ -1088,7 +1218,6 @@ IPTR Install__MUIM_Partition
             strcat(tmpcmd, " SYSTYPE=SFS");
         else
             strcat(tmpcmd, " SYSTYPE=FFSIntl");
-    
 
 		/* Specify Work size */
 		GET(check_creatework, MUIA_Selected, &option);
@@ -1097,7 +1226,7 @@ IPTR Install__MUIM_Partition
 			GET(check_sizework, MUIA_Selected, &option);
 			if (option)
 			{
-				GET(work_size, MUIA_String_Integer, &tmp);
+				tmp = GetPartitionSize(TRUE);
 				sprintf(tmparg, " WORKSIZE=%ld", tmp);
 				strcat(tmpcmd, tmparg);
 			}
@@ -1691,7 +1820,13 @@ localecopydone:
         sprintf(destinationPath, "%s:", dest_Path);
         CopyDirArray(CLASS, self, source_Path, destinationPath, core_dirs);
 
-        /* Make Env-Archive Writeable .. */
+        /* Copy AROS.boot file */
+        sprintf(tmp, "%s", source_Path);
+        sprintf(destinationPath, "%s:" AROS_BOOT_FILE, dest_Path);
+        AddPart(tmp, AROS_BOOT_FILE, 100);
+        DoMethod(self, MUIM_IC_CopyFile, tmp, destinationPath);
+
+        /* Make Env-Archive Writeable */
         sprintf(tmp,"Protect ADD FLAGS=W ALL QUIET %s:Prefs/Env-Archive", dest_Path);
         D(bug("[INSTALLER] Changing Protection on Env Files (command='%s')\n", tmp));
         success = (BOOL)Execute(tmp, NULL, NULL);
@@ -1716,7 +1851,6 @@ localecopydone:
 
         /* Explicitly disable undo. Some users might not have RAM for backup */
         data->instc_copt_undoenabled = FALSE;
-
 
         /* Copying Extras */
         D(bug("[INSTALLER] Copying Extras to '%s'...\n", extras_path));
@@ -1801,13 +1935,6 @@ localecopydone:
 		TEXT srcPath[srcLen];
 		TEXT dstPath[dstLen];
 
-        /* Copy AROS.boot file */
-        sprintf(srcPath, "%s", source_Path);
-        sprintf(dstPath, "%s:", dest_Path);
-        AddPart(srcPath, AROS_BOOT_FILE, srcLen);
-        AddPart(dstPath, AROS_BOOT_FILE, dstLen);
-        DoMethod(self, MUIM_IC_CopyFile, srcPath, dstPath);
-        
 		/* Copy kernel files */
         sprintf(srcPath, "%s", source_Path);
 		sprintf(dstPath, "%s:", dest_Path);
@@ -1824,6 +1951,11 @@ localecopydone:
 		AddPart(srcPath, GRUB_PATH, srcLen);
 		AddPart(dstPath, GRUB_PATH, dstLen);
         /* Warning: do not modify srcPath or dstPath beyond this point */
+
+		/* Get drive chosen to install GRUB bootblock to */
+		GET(grub_device, MUIA_String_Contents, &option);
+		strcpy(boot_Device, (STRPTR)option);
+		boot_Unit = XGET(grub_unit, MUIA_String_Integer);
 
 #if GRUB == 2
         DoMethod(self, MUIM_IC_CopyFiles, srcPath, dstPath, "#?.mod", FALSE);
@@ -1892,8 +2024,8 @@ localecopydone:
 		}
 
 		sprintf(tmp,
-			"C:Install-grub2-i386-pc DEVICE %s UNIT %d "
-			"GRUB %s",
+			"C:Install-grub2-i386-pc DEVICE \"%s\" UNIT %d "
+			"GRUB \"%s\"",
 			boot_Device, boot_Unit, dstPath);
 
 #elif GRUB == 1
@@ -1932,9 +2064,9 @@ localecopydone:
 		}
 
 		sprintf(tmp,
-			"C:install-i386-pc DEVICE %s UNIT %d "
-			"GRUB %s FORCELBA",
-			boot_Device, boot_Unit, dest_Path, dstPath);
+			"C:install-i386-pc DEVICE \"%s\" UNIT %d "
+			"GRUB \"%s\" FORCELBA",
+			boot_Device, boot_Unit, dstPath);
 
 #else
 #error bootloader not supported
@@ -2099,7 +2231,7 @@ LONG CopyDirArray(Class *CLASS, Object *self, CONST_STRPTR sourcePath, CONST_STR
         AddPart(srcDirs, directories[dir_count], newSrcLen);
         AddPart(dstDirs, directories[dir_count + 1], newDstLen);
 
-        SET(data->actioncurrent, MUIA_Text_Contents, srcDirs);
+        SET(data->actioncurrent, MUIA_Text_Contents, strchr(srcDirs, ':') + 1);
 
         /* OK Now copy the contents */
         DoMethod(self, MUIM_IC_CopyFiles, srcDirs, dstDirs, "#?", TRUE);
@@ -2296,7 +2428,7 @@ BOOL BackUpFile(CONST_STRPTR filepath, CONST_STRPTR backuppath, struct InstallC_
         FreeVec(tmp);
         return FALSE;
     }
-    *pathpart = '\0' /* 'cut' string at end of path */
+    *pathpart = '\0'; /* 'cut' string at end of path */
 
     D(bug("[INSTALLER.CF] Backup '%s' @ '%s'\n", undorecord->undo_dst, undorecord->undo_src));
 
@@ -2359,11 +2491,9 @@ IPTR Install__MUIM_IC_CopyFile
     ULONG filescopied = 0;
 	BPTR 					from=NULL,
 							to=NULL;
-							
-
 
     /* Display copied file name */
-	SET(data->actioncurrent, MUIA_Text_Contents, message->srcFile);
+    SET(data->actioncurrent, MUIA_Text_Contents, strchr(message->srcFile, ':') + 1);
 
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
 
@@ -2562,7 +2692,8 @@ IPTR Install__MUIM_Reboot
 
 	IPTR                    option = FALSE;
 
-	GET(data->instc_options_main->opt_reboot, MUIA_Selected, &option);        // Make sure the user wants to reboot
+	/* Make sure the user wants to reboot */
+	GET(data->instc_options_main->opt_reboot, MUIA_Selected, &option);
 	if (option && (data->inst_success == MUIV_Inst_InProgress))
 	{
 		D(bug("[INSTALLER] Cold rebooting...\n"));
@@ -2757,10 +2888,20 @@ int main(int argc,char *argv[])
 #endif
     cycle_fstypework = CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, TRUE, MUIA_Cycle_Active, 1, End;
 
+	static char *opt_sizeunits[] =
+	{
+		"MB",
+		"GB",
+		NULL
+	};
+
+    cycle_sysunits = CycleObject, MUIA_Cycle_Entries, opt_sizeunits, MUIA_Disabled, TRUE, MUIA_Cycle_Active, 1, End;
+    cycle_workunits = CycleObject, MUIA_Cycle_Entries, opt_sizeunits, MUIA_Disabled, TRUE, MUIA_Cycle_Active, 1, End;
+
     static char *opt_grub2mode[] =
     {
         "Text",
-        "Gfx",
+        "Graphics",
         NULL
     };
 
@@ -2819,9 +2960,9 @@ int main(int argc,char *argv[])
 
 	Object *app = ApplicationObject,
 		MUIA_Application_Title,       (IPTR) "AROS Installer",
-		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 0.6 (19.11.2008)",
-		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2008, The AROS Development Team. All rights reserved.",
-		MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson & Nic Andrews",
+		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.1 (7.4.2009)",
+		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2009, The AROS Development Team. All rights reserved.",
+		MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
 		MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
 		MUIA_Application_Base,        (IPTR) "INSTALLER",
 
@@ -2878,23 +3019,21 @@ int main(int argc,char *argv[])
 										Child, (IPTR) HVSpace,
 
 										Child, (IPTR) ColGroup(5),
-											Child, (IPTR) ColGroup(2),
-												Child, (IPTR) LLabel("Device:"),
-												Child, (IPTR) (dest_device =
-													StringObject,
-													MUIA_String_Contents, (IPTR) "ata.device",
-													MUIA_String_Reject, " \"\'*",
-													MUIA_HorizWeight, 200,
-													End),
-												Child, (IPTR) HVSpace,
-												Child, (IPTR) LLabel("Unit:"),
-												Child, (IPTR) (dest_unit =
-													StringObject,
-													MUIA_String_Integer, 0,
-													MUIA_String_Accept, "0123456789",
-													MUIA_HorizWeight, 20,
-													End),
-											End,
+											Child, (IPTR) LLabel("Device:"),
+											Child, (IPTR) (dest_device =
+												StringObject,
+												MUIA_String_Contents, (IPTR) "ata.device",
+												MUIA_String_Reject, " \"\'*",
+												MUIA_HorizWeight, 200,
+												End),
+											Child, (IPTR) HVSpace,
+											Child, (IPTR) LLabel("Unit:"),
+											Child, (IPTR) (dest_unit =
+												StringObject,
+												MUIA_String_Integer, 0,
+												MUIA_String_Accept, "0123456789",
+												MUIA_HorizWeight, 20,
+												End),
 										End,
 
 										Child, (IPTR) HVSpace,
@@ -2917,7 +3056,7 @@ int main(int argc,char *argv[])
 												MUIA_String_Accept, "0123456789",
 												MUIA_String_Integer, 0,
 												MUIA_Disabled, TRUE, End),
-											Child, (IPTR) LLabel("MB"),
+											Child, (IPTR) cycle_sysunits,
 											Child, (IPTR) check_sizesys,
 											Child, (IPTR) LLabel("Specify Size"),
 										End,
@@ -2936,7 +3075,7 @@ int main(int argc,char *argv[])
 												MUIA_String_Accept, "0123456789",
 												MUIA_String_Integer, 0,
 												MUIA_Disabled, TRUE, End),
-											Child, (IPTR) LLabel("MB"),
+											Child, (IPTR) cycle_workunits,
 											Child, (IPTR) check_sizework,
 											Child, (IPTR) LLabel("Specify Size"),
 										End,
@@ -2959,12 +3098,6 @@ int main(int argc,char *argv[])
 											Child, (IPTR) check_bootloader,
 											Child, (IPTR) LLabel("Install Bootloader"),
 										End,
-                                        Child, (IPTR) ColGroup(4),
-                                            Child, (IPTR) HVSpace,
-                                            Child, (IPTR) HVSpace,
-                                            Child, (IPTR) cycle_grub2mode,
-                                            Child, (IPTR) LLabel("Bootloader Menu Mode"),
-                                        End,
 										Child, (IPTR) HVSpace,
 									End,
 								End,
@@ -2992,7 +3125,7 @@ int main(int argc,char *argv[])
 											Child, (IPTR) check_work,
 											Child, (IPTR) LLabel("Use 'Work' Partition"),
 											Child, (IPTR) check_copytowork,
-											Child, (IPTR) LLabel("Copy Extras and Developer Files to Work"),
+											Child, (IPTR) LLabel("Use 'Work' Partition for Extras and Developer Files"),
 										End,
 										Child, (IPTR) HVSpace,
 
@@ -3025,11 +3158,36 @@ int main(int argc,char *argv[])
 										Child, (IPTR) LLabel(KMsgGrubGOptions),
 										Child, (IPTR) LLabel(KMsgGrubDrive),
 										Child, (IPTR) HVSpace,
+
+										Child, (IPTR) ColGroup(5),
+											Child, (IPTR) HVSpace,
+											Child, (IPTR) LLabel("Device:"),
+											Child, (IPTR) (grub_device =
+												StringObject,
+												MUIA_String_Reject, " \"\'*",
+												MUIA_HorizWeight, 200,
+												End),
+											Child, (IPTR) HVSpace,
+											Child, (IPTR) LLabel("Unit:"),
+											Child, (IPTR) (grub_unit =
+												StringObject,
+												MUIA_String_Integer, 0,
+												MUIA_String_Accept, "0123456789",
+												MUIA_HorizWeight, 20,
+												End),
+										End,
+
 										Child, (IPTR) (grub_drive = TextObject, MUIA_Text_PreParse, (IPTR) "" MUIX_C, MUIA_Text_Contents, (IPTR)" ",End),
 										Child, (IPTR) HVSpace,
 										Child, (IPTR) LLabel(KMsgGrubGrub),
 										Child, (IPTR) HVSpace,
 										Child, (IPTR) (grub_grub = TextObject, MUIA_Text_PreParse, (IPTR) "" MUIX_C, MUIA_Text_Contents, (IPTR)" ",End),
+										Child, (IPTR) HVSpace,
+                                        Child, (IPTR) ColGroup(4),
+                                            Child, (IPTR) LLabel("Menu Mode:"),
+                                            Child, (IPTR) cycle_grub2mode,
+                                            Child, (IPTR) HVSpace,
+                                        End,
 										Child, (IPTR) HVSpace,
 									End,
 								End,
@@ -3117,6 +3275,9 @@ int main(int argc,char *argv[])
 	DoMethod(radio_part, MUIM_Notify, (IPTR) MUIA_Radio_Active, 2,
 		(IPTR) check_sizesys, 3, MUIM_Set,
 		MUIA_Disabled, TRUE);
+    DoMethod(radio_part, MUIM_Notify, (IPTR) MUIA_Radio_Active, 2,
+        (IPTR) check_sizesys, 3, MUIM_Set,
+        MUIA_Selected, FALSE);
 
     /* Notifications on change of enable status of 'entry size of sys volume' */
 	DoMethod(check_sizesys, MUIM_Notify, MUIA_Disabled, MUIV_EveryTime,
@@ -3137,9 +3298,11 @@ int main(int argc,char *argv[])
 		(IPTR) sys_size, 3, MUIM_Set,
 		MUIA_Disabled, MUIV_NotTriggerValue);
 	DoMethod(check_sizesys, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) cycle_sysunits, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_NotTriggerValue);
+	DoMethod(check_sizesys, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
 		(IPTR) check_creatework, 3, MUIM_Set,
 		MUIA_Selected, FALSE);
-
 
     /* Notifications on change of selected status of 'create work volume' */
 	DoMethod(check_creatework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
@@ -3152,8 +3315,12 @@ int main(int argc,char *argv[])
 		(IPTR) check_sizework, 3, MUIM_Set,
 		MUIA_Selected, FALSE);
 
+    /* Notifications on change of selected status of 'enter size of work volume' */
 	DoMethod(check_sizework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
 		(IPTR) work_size, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_NotTriggerValue);
+	DoMethod(check_sizework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) cycle_workunits, 3, MUIM_Set,
 		MUIA_Disabled, MUIV_NotTriggerValue);
 
 #if 0	/* Notification doesn't seem to work on String gadgets */
