@@ -107,6 +107,17 @@
 
 #define MB (1024LL * 1024LL)
 #define MIN_SIZE 50 /* Minimum disk space allowed in MBs */
+#define MAX_FFS_SIZE (4L * 1024)
+#define MAX_SFS_SIZE (124L * 1024)
+#define MAX_SIZE(A) (((A) == &sfs0) ? MAX_SFS_SIZE : MAX_FFS_SIZE)
+
+static const struct PartitionType dos3 = { "DOS\3", 4 };
+#if AROS_BIG_ENDIAN
+static const struct PartitionType sfs0 = { "SFS\0", 4 };
+#else
+/* atm, SFS is BE on AROS */
+static const struct PartitionType sfs0 = { "SFS\0", 4 };
+#endif
 
 
 /*** Prototypes *************************************************************/
@@ -128,6 +139,7 @@ int main(void)
         *root = NULL, *partition, *extPartition = NULL, *parent = NULL;
     TEXT choice = 'N';
     CONST_STRPTR device;
+    const struct PartitionType *sysType, *workType;
     LONG error = 0, sysSize = 0, workSize = 0, sysHighCyl, rootLowBlock = 1,
         rootHighBlock = 0, extLowBlock = 1, extHighBlock = 0, lowBlock,
         highBlock, lowCyl, highCyl, rootBlocks, extBlocks, reqHighCyl, unit,
@@ -177,6 +189,19 @@ int main(void)
 
     if (error == 0)
     {
+        /* Get DOSType for each partition */
+        if (ARG(SYSTYPE) == (IPTR)NULL ||
+            Stricmp((CONST_STRPTR)ARG(SYSTYPE), "SFS") != 0)
+            sysType = &dos3;
+        else
+            sysType = &sfs0;
+
+        if (ARG(WORKTYPE) == (IPTR)NULL ||
+            Stricmp((CONST_STRPTR)ARG(WORKTYPE), "FFSIntl") != 0)
+            workType = &sfs0;
+        else
+            workType = &dos3;
+
         device = (CONST_STRPTR) ARG(DEVICE);
         unit   = *(LONG *)ARG(UNIT);
         if (ARG(SYSSIZE) != (IPTR)NULL)
@@ -314,11 +339,26 @@ int main(void)
             highBlock = rootHighBlock;
         }
 
-        /* Decide geometry for RDB virtual disk */
+        /* Convert block range to cylinders */
         lowCyl = ((LONG)lowBlock - 1)
             / (LONG)(parent->de.de_Surfaces * parent->de.de_BlocksPerTrack) + 1;
         highCyl = (highBlock + 1)
             / (parent->de.de_Surfaces * parent->de.de_BlocksPerTrack) - 1;
+
+        /* Ensure neither partition is too large for its filesystem */
+        if ((sysSize == 0 &&
+            highCyl - lowCyl + 1 >
+            MBsToCylinders(MAX_SIZE(sysType), &parent->de)) ||
+            sysSize > MAX_SIZE(sysType))
+            sysSize = MAX_SIZE(sysType);
+        if ((ARG(MAXWORK) &&
+            (highCyl - lowCyl  + 1)
+            - MBsToCylinders(sysSize, &parent->de) + 1 >
+            MBsToCylinders(MAX_SIZE(workType), &parent->de)) ||
+            workSize > MAX_SIZE(workType))
+            workSize = MAX_SIZE(workType);
+
+        /* Decide geometry for RDB virtual disk */
         reqHighCyl = lowCyl + MBsToCylinders(sysSize, &parent->de)
             + MBsToCylinders(workSize, &parent->de);
         if (sysSize != 0 && (workSize != 0 || !ARG(MAXWORK))
@@ -354,24 +394,13 @@ int main(void)
 
     if (error == 0)
     {
-	static const struct PartitionType dos3 = { "DOS\3", 4 };
-#if AROS_BIG_ENDIAN
-	static const struct PartitionType sfs0 = { "SFS\0", 4 };
-#else
-	/* atm, SFS is BE on AROS */
-	static const struct PartitionType sfs0 = { "SFS\0", 4 };
-#endif
-
         sysHighCyl = MBsToCylinders(sysSize, &diskPart->de);
 
         /* Create partitions in the RDB table */
 
         /* Create DH0 partition (defaults to FFSIntl) */
-        if (ARG(SYSTYPE) == (IPTR)NULL || Stricmp((CONST_STRPTR)ARG(SYSTYPE), "SFS") != 0) 
-            sysPart = CreateRDBPartition(diskPart, 0, sysHighCyl, "DH0", TRUE, &dos3);
-        else
-            sysPart = CreateRDBPartition(diskPart, 0, sysHighCyl, "DH0", TRUE, &sfs0);
-
+        sysPart = CreateRDBPartition(diskPart, 0, sysHighCyl, "DH0", TRUE,
+            sysType);
         if (sysPart == NULL)
             error = ERROR_UNKNOWN;
 
@@ -379,11 +408,8 @@ int main(void)
             && sysHighCyl < diskPart->de.de_HighCyl - diskPart->de.de_LowCyl)
         {
             /* Create DH1 partition (defaults to SFS) */
-            if (ARG(WORKTYPE) == (IPTR)NULL || Stricmp((CONST_STRPTR)ARG(WORKTYPE), "FFSIntl") != 0)
-                workPart = CreateRDBPartition(diskPart, sysHighCyl + 1, 0, "DH1", FALSE, &sfs0);
-            else
-                workPart = CreateRDBPartition(diskPart, sysHighCyl + 1, 0, "DH1", FALSE, &dos3);
-
+            workPart = CreateRDBPartition(diskPart, sysHighCyl + 1, 0,
+                "DH1", FALSE, workType);
             if (workPart == NULL)
                 error = ERROR_UNKNOWN;
         }
@@ -625,6 +651,8 @@ static struct PartitionHandle *CreateRDBPartition
     return partition;
 }
 
+/* Convert a size in megabytes into a cylinder count. The figure returned
+   is rounded down to avoid breaching maximum filesystem sizes. */
 static ULONG MBsToCylinders(ULONG size, struct DosEnvec *de)
 {
     UQUAD bytes;
@@ -633,8 +661,8 @@ static ULONG MBsToCylinders(ULONG size, struct DosEnvec *de)
     if (size != 0)
     {
         bytes = size * MB;
-        cyls = (bytes - 1) / (UQUAD)(de->de_SizeBlock * sizeof(ULONG))
-            / de->de_BlocksPerTrack / de->de_Surfaces + 1;
+        cyls = bytes / (UQUAD)(de->de_SizeBlock * sizeof(ULONG))
+            / de->de_BlocksPerTrack / de->de_Surfaces;
     }
     return cyls;
 }
