@@ -85,12 +85,13 @@ Assign EXISTS Extras: >NIL:
 If WARN
     If Exists $EXTRASPATH
         Assign Extras: $EXTRASPATH
+    Else
+        Assign Extras: SYS:Extras >NIL:
+        If WARN
+            Assign Extras: NIL: >NIL:
+        EndIf
     EndIf
 Endif
-Assign EXISTS Extras: >NIL:
-If WARN
-    Assign Extras: SYS:Extras >NIL:
-EndIf
 
 Assign EXISTS Development: >NIL:
 If WARN
