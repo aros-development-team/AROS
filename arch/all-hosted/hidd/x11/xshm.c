@@ -132,6 +132,9 @@ void *init_shared_mem(Display *display)
 	     *	since the inode number isn't likely to change all that
 	     *	often.
 	     */
+    	#if 1
+	    key = IPC_PRIVATE;
+	#else
 	    key = CCALL(ftok, "./C", 'A');
 	    if(key == -1)
 	    {
@@ -142,7 +145,7 @@ void *init_shared_mem(Display *display)
 	    {
 		kprintf("Using shared memory key %d\n", key);
 	    }
-
+    	#endif
 	    memset(shminfo, 0, sizeof (*shminfo));
 		
 	    /* Allocate shared memory */
