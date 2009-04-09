@@ -248,8 +248,9 @@ static int strlenlf(const char *str)
     int len = 0;
     while ((c = *str))
     {
-    if (c=='\n') break;
-    len++;
+        if (c=='\n') break;
+        len++;
+        str++;
     }
     return len;
 }
