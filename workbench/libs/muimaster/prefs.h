@@ -113,6 +113,17 @@ struct ZunePrefsNew
     CONST_STRPTR imagespecs[MUII_Count];
     struct MUI_FrameSpec_intern frames[MUIV_Frame_Count];
 
+    /* System */
+    CONST_STRPTR publicscreen_name;
+    BOOL     publicscreen_pop_to_front;
+    CONST_STRPTR iconification_hotkey;
+    BOOL     iconification_show_icon;
+    BOOL     iconification_show_menu;
+    BOOL     iconification_on_startup;
+    BOOL     interfaces_enable_arexx;
+    WORD     bubblehelp_first_delay;
+    WORD     bubblehelp_next_delay;
+    
     /* Groups */
     GroupTitlePosition group_title_position;
     GroupTitleColor    group_title_color;

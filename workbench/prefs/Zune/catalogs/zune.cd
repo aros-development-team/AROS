@@ -601,6 +601,9 @@ _Use
 MSG_GAD_CANCEL (//)
 _Cancel
 ;
+MSG_DSC_SYSTEM (//)
+System
+;
 MSG_DSC_WINDOWS (//)
 Windows
 ;
@@ -645,4 +648,52 @@ Adjust Pen
 ;----------
 MSG_CUSTOMFRAMES (//)
 Customframes
+;
+;=============================
+; systemp.c
+;----------
+MSG_PUBLIC_SCREEN (//)
+Public Screen
+;
+MSG_NAME (//)
+Name:
+;
+MSG_CALL_INSPECTOR (//)
+Call Inspector
+;
+MSG_POP_TO_FRONT (//)
+Pop to front:
+;
+MSG_ICONIFICATION (//)
+Iconification
+;
+MSG_HOTKEY (//)
+Hotkey:
+;
+MSG_SHOW (//)
+Show:
+;
+MSG_ICON (//)
+Icon
+;
+MSG_MENU (//)
+Menu
+;
+MSG_ON_STARTUP (//)
+On Startup:
+;
+MSG_INTERFACES (//)
+Interfaces
+;
+MSG_AREXX (//)
+ARexx:
+;
+MSG_BUBBLE_HELP (//)
+Bubble Help
+;
+MSG_FIRST_BUBBLE (//)
+First Bubble:
+;
+MSG_NEXT_BUBBLE (//)
+Next Bubble:
 ;
