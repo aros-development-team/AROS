@@ -5,7 +5,8 @@
 include $(TOP)/config/make.cfg
 
 FILES  := zune zunestuff windowp buttonsp groupsp cyclesp slidersp \
-scrollbarsp listviewsp stringsp specialp navigationp framesp locale
+scrollbarsp listviewsp stringsp specialp navigationp framesp locale \
+systemp
 
 EXEDIR := $(AROS_PREFS)
 

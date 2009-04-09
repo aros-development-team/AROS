@@ -22,6 +22,7 @@
 #include <proto/iffparse.h>
 #include <proto/muimaster.h>
 
+#include "systemp.h"
 #include "buttonsp.h"
 #include "groupsp.h"
 #include "windowp.h"
@@ -170,7 +171,7 @@ struct page_entry
 struct page_entry main_page_entries[MAX_PAGE_ENTRIES + 1] =
 {
 /*      {"Info",NULL,NULL,NULL}, */
-/*      {"System",NULL,NULL,NULL}, */
+    { "",   NULL, NULL, &_MUIP_System_desc     },
     { "",   NULL, NULL, &_MUIP_Windows_desc    },
     { "",   NULL, NULL, &_MUIP_Groups_desc     },
     { "",   NULL, NULL, &_MUIP_Buttons_desc    },
@@ -434,17 +435,18 @@ int init_gui(void)
     STRPTR wintitle;
     char titlebuf[255];
     
-    main_page_entries[ 0].name = (char *)_(MSG_DSC_WINDOWS);
-    main_page_entries[ 1].name = (char *)_(MSG_DSC_GROUPS);
-    main_page_entries[ 2].name = (char *)_(MSG_DSC_BUTTONS);
-    main_page_entries[ 3].name = (char *)_(MSG_DSC_CYCLES);
-    main_page_entries[ 4].name = (char *)_(MSG_DSC_SLIDERS);
-    main_page_entries[ 5].name = (char *)_(MSG_DSC_SCROLLBARS);
-    main_page_entries[ 6].name = (char *)_(MSG_DSC_LISTVIEWS);
-    main_page_entries[ 7].name = (char *)_(MSG_DSC_STRINGS);
-    main_page_entries[ 8].name = (char *)_(MSG_DSC_NAVIGATION);
-    main_page_entries[ 9].name = (char *)_(MSG_DSC_SPECIAL);
-    main_page_entries[10].name = (char *)_(MSG_DSC_FRAMES);
+    main_page_entries[ 0].name = (char *)_(MSG_DSC_SYSTEM);
+    main_page_entries[ 1].name = (char *)_(MSG_DSC_WINDOWS);
+    main_page_entries[ 2].name = (char *)_(MSG_DSC_GROUPS);
+    main_page_entries[ 3].name = (char *)_(MSG_DSC_BUTTONS);
+    main_page_entries[ 4].name = (char *)_(MSG_DSC_CYCLES);
+    main_page_entries[ 5].name = (char *)_(MSG_DSC_SLIDERS);
+    main_page_entries[ 6].name = (char *)_(MSG_DSC_SCROLLBARS);
+    main_page_entries[ 7].name = (char *)_(MSG_DSC_LISTVIEWS);
+    main_page_entries[ 8].name = (char *)_(MSG_DSC_STRINGS);
+    main_page_entries[ 9].name = (char *)_(MSG_DSC_NAVIGATION);
+    main_page_entries[10].name = (char *)_(MSG_DSC_SPECIAL);
+    main_page_entries[11].name = (char *)_(MSG_DSC_FRAMES);
 
     static struct Hook page_display_hook;
 

@@ -166,6 +166,15 @@
 #define MUICFG_CustomFrame_15           0x60e
 #define MUICFG_CustomFrame_16           0x60f
 
+#define MUICFG_PublicScreen_PopToFront  0x700
+#define MUICFG_Iconification_Hotkey     0x701
+#define MUICFG_Iconification_ShowIcon   0x702
+#define MUICFG_Iconification_ShowMenu   0x703
+#define MUICFG_Iconification_OnStartup  0x704
+#define MUICFG_Interfaces_EnableARexx   0x705
+#define MUICFG_BubbleHelp_FirstDelay    0x706
+#define MUICFG_BubbleHelp_NextDelay     0x707
+
 #define MUIM_Configdata_GetWindowPos    (MUIB_Configdata | 0x0000002A)
 #define MUIM_Configdata_SetWindowPos    (MUIB_Configdata | 0x0000002B)
 

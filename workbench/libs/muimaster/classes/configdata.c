@@ -214,6 +214,13 @@ const static struct def_ulval DefULValues[] =
     { MUICFG_Screen_Mode_ID,       -1 },
     { MUICFG_Screen_Width,         0 },
     { MUICFG_Screen_Height,        0 },
+    { MUICFG_PublicScreen_PopToFront, TRUE },
+    { MUICFG_Iconification_ShowIcon,  TRUE },
+    { MUICFG_Iconification_ShowMenu,  FALSE },
+    { MUICFG_Iconification_OnStartup, FALSE },
+    { MUICFG_Interfaces_EnableARexx,  TRUE },
+    { MUICFG_BubbleHelp_FirstDelay,   30 },
+    { MUICFG_BubbleHelp_NextDelay,    10 },
     { 0, 0 },
 };
 
@@ -269,6 +276,8 @@ const static struct def_strval DefStrValues[] =
     { MUICFG_Keyboard_Popup,            "control p" },
     { MUICFG_Drag_LMBModifier,          "control" },
     { MUICFG_Drag_MMBModifier,          "" },
+    { MUICFG_PublicScreen,              "" },
+    { MUICFG_Iconification_Hotkey,      "" },
     { 0, 0 },
 };
 
@@ -348,6 +357,18 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     init_framespecs(obj, data);
 
+    /*---------- system stuff ----------*/
+    
+    data->prefs.publicscreen_name = GetConfigString(obj, MUICFG_PublicScreen);
+    data->prefs.publicscreen_pop_to_front = GetConfigULong(obj, MUICFG_PublicScreen_PopToFront);
+    data->prefs.iconification_hotkey = GetConfigString(obj, MUICFG_Iconification_Hotkey);
+    data->prefs.iconification_show_icon = GetConfigULong(obj, MUICFG_Iconification_ShowIcon);
+    data->prefs.iconification_show_menu = GetConfigULong(obj, MUICFG_Iconification_ShowMenu);
+    data->prefs.iconification_on_startup = GetConfigULong(obj, MUICFG_Iconification_OnStartup);
+    data->prefs.interfaces_enable_arexx =  GetConfigULong(obj, MUICFG_Interfaces_EnableARexx);
+    data->prefs.bubblehelp_first_delay =  GetConfigULong(obj, MUICFG_BubbleHelp_FirstDelay);
+    data->prefs.bubblehelp_next_delay = GetConfigULong(obj, MUICFG_BubbleHelp_NextDelay);
+    
     /*---------- window stuff ----------*/
 
     data->prefs.window_inner_left = GetConfigULong(obj, MUICFG_Window_Spacing_Left);
