@@ -12,7 +12,7 @@ EXEDIR      := $(AROS_C)
 
 %build_prog mmake=workbench-c-unpack \
     progname=Unpack targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="bz2 amiga arosc" \
+    files=$(FILES) uselibs="bz2_nostdio amiga arosc" \
     usestartup=no
 
 %common

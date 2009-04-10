@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003, 2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -40,14 +40,33 @@ LONG PKG_Read( APTR pkg, APTR buffer, LONG length )
 
 /** High-level functions ****************************************************/
 
-UBYTE /* version */ PKG_ReadHeader( APTR pkg )
+LONG /* version */ PKG_ReadHeader( APTR pkg )
 {
     UBYTE data[4] = { 0, 0, 0, 0 };
-    /*LONG  actual  = */ PKG_Read( pkg, data, 4 );
+    LONG  version;
+
+    if ( PKG_Read( pkg, data, 4 ) != 4 )
+    {
+        Printf("E:read header\n");
+        return -1;
+    }
+
+    version = data[3];
+    if ( data[0] != 'P' || data[1] != 'K' || data[2] != 'G' )
+    {
+        Printf("E:invalid header\n");
+        return -1;
+    }
+
+    if ( version > 0 )
+    {
+        /* though unused at the moment we still have to read package size */
+        LONG packageSize;
+        PKG_Read( pkg, &packageSize, sizeof( packageSize ) );
+        //packageSize = AROS_BE2LONG(packageSize);
+    }
     
-    /* FIXME: error handling? naaaah... :S */
-    
-    return data[3];
+    return version;
 }
 
 LONG /* error */ PKG_ExtractFile( APTR pkg )
@@ -70,7 +89,7 @@ LONG /* error */ PKG_ExtractFile( APTR pkg )
     rc = PKG_Read( pkg, path, pathLength + 1 );
     if( rc == -1 || rc == 0) { result = -1; goto cleanup; }
  
-    /* Read the data lendth */
+    /* Read the data length */
     rc = PKG_Read( pkg, &dataLength, sizeof( dataLength ) );
     dataLength = AROS_BE2LONG(dataLength);
     
@@ -125,9 +144,9 @@ cleanup:
 
 LONG /* error */ PKG_ExtractEverything( APTR pkg )
 {
-    LONG result;
-    
-    PKG_ReadHeader( pkg );
+    LONG result = PKG_ReadHeader( pkg );
+    if ( result < 0 )
+        return result;
     
     result = PKG_ExtractFile( pkg );
     while( result != -1 && result != 0 )
