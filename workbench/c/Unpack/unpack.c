@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003, 2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -34,7 +34,8 @@
     NOTES
 
         This command is not a tool like lha, lzx or unzip. 
-        The .pkg files are not compressed.
+        The .pkg files may be created with the python program
+        in tools/package/pkg and compressed with bzip2 afterwards.
 
 	
     EXAMPLE
@@ -72,7 +73,7 @@ struct GfxBase *GfxBase;
 
 AROS_SH2
 (
-    Unpack, 1.0,
+    Unpack, 1.1,
     AROS_SHA( STRPTR, , FILE, /A, NULL ),
     AROS_SHA( STRPTR, , TO,   /A, NULL )
 )

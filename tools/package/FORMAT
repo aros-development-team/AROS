@@ -1,21 +1,20 @@
 Pseudo-BNF
 ----------
 
-package    = header, file*
+package     = header, file*
 
-file       = pathLength, path, dataLength, data
+file        = pathLength, path, dataLength, data
 
-header     = 'P', 'K', 'G', version
-version    = UBYTE      # Must be 0
+header      = 'P', 'K', 'G', version, packageSize
+version     = UBYTE      # Must be 1
+packageSize = LONG
 
-pathLength = LONG
-path       = BYTE[pathLength] 
-dataLength = LONG
-data       = BYTE[dataLength] 
+pathLength  = LONG
+path        = BYTE[pathLength+1] # trailing '\0'
+dataLength  = LONG
+data        = BYTE[dataLength] 
 
 Example
 -------
 
-"PKG", 0, 3L, "foo", 8L, "barbarba"
-
-Note: No NULL bytes after strings!
+"PKG", 1, 28L, 3L, "foo", 0, 8L, "barbarba"
