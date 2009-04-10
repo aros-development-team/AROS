@@ -1648,32 +1648,35 @@ static LONG read_softlink(struct emulbase *emulbase,
 	    }
 	    else
 	    {
-                STRPTR source = FilePart(ln);
-
                 /* All ok, add terminating nil */
                 buffer[targetlen] = '\0';
 
-                /* strip file part of link */
-                *source = '\0';
-                if (strlen(ln) + targetlen >= *size)
+                if (strchr(buffer, ':') == NULL)
                 {
-                    /* Buffer was too small */
-                    *size = -2;
-                }
-                else
-                {
-                    char* target;
-                    /* copy buffer to create resolved link path in it */
-                    ret = makefilename(emulbase, &target, buffer, "");
-                    if (!ret)
+                    STRPTR source = FilePart(ln);
+
+                    /* strip file part of link */
+                    *source = '\0';
+                    if (strlen(ln) + targetlen >= *size)
                     {
-                        strcpy(buffer, ln);
-                        strcat(buffer, target);
-                        *size = strlen(buffer);
-                        emul_free(emulbase, target);
+                        /* Buffer was too small */
+                        *size = -2;
                     }
                     else
-                        ret = ERROR_NO_FREE_STORE;
+                    {
+                        char* target;
+                        /* copy buffer to create resolved link path in it */
+                        ret = makefilename(emulbase, &target, buffer, "");
+                        if (!ret)
+                        {
+                            strcpy(buffer, ln);
+                            strcat(buffer, target);
+                            *size = strlen(buffer);
+                            emul_free(emulbase, target);
+                        }
+                        else
+                            ret = ERROR_NO_FREE_STORE;
+                    }
                 }
             }
 	}
