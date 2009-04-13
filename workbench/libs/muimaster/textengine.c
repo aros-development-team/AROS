@@ -499,6 +499,7 @@ void zune_text_get_bounds (ZText *text, Object *obj)
         struct MUI_MinMax MinMax;
 
         DoMethod(chunk_node->obj, MUIM_AskMinMax, (IPTR)&MinMax);
+        __area_finish_minmax(chunk_node->obj, &MinMax);
         chunk_node->cwidth = MinMax.DefWidth;
         chunk_node->cheight = MinMax.DefHeight;
         line_node->lheight = MAX(line_node->lheight, chunk_node->cheight);
