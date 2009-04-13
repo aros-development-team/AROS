@@ -282,7 +282,7 @@ IPTR Pendisplay__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
     }
     else
     {
-	SetABPenDrMd(_rp(obj), MUIPEN(data->pen), 0,JAM1);
+	SetABPenDrMd(_rp(obj), MUIPEN(color), 0,JAM1);
     }
     
     RectFill(_rp(obj), _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj));
