@@ -1,0 +1,7 @@
+# Copyright © 2009, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+%build_catalogs mmake=workbench-prefs-psi-catalogs \
+                name=PSI subdir=System/Prefs
