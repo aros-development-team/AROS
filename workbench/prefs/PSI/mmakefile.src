@@ -1,0 +1,18 @@
+#   $Id$
+#
+#   Makefile for Public Screen Inspector
+
+include $(TOP)/config/make.cfg
+
+FILES := psi
+
+EXEDIR := $(AROSDIR)/Prefs
+
+#MM- workbench-prefs : workbench-prefs-psi
+#MM workbench-prefs-psi : includes linklibs workbench-prefs-psi-catalogs
+
+%build_prog mmake=workbench-prefs-psi \
+    progname="PSI" targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="amiga mui muiscreen"
+
+%common
