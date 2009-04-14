@@ -1,0 +1,23 @@
+# Copyright © 2009, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := muiscreen_init
+
+FUNCS := allocpubscreendesc \
+    freepubscreendesc \
+    openpubscreen \
+    closepubscreen \
+    openpubfile \
+    closepubfile \
+    readpubfile \
+    writepubfile \
+    addinfoclient \
+    reminfoclient
+        
+%build_module mmake=workbench-libs-muiscreen \
+    modname=muiscreen modtype=library \
+    files="$(FILES) $(FUNCS)"
+
+%common
