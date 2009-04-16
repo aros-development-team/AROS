@@ -183,8 +183,22 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
         dp->dp_Arg3 = (SIPTR)MKBADDR(dn);
         dp->dp_Port = reply_port;
 
-        /* set up device and unit in device node so handler can add volume
-         * node during start-up */
+        /* A handler can add volumes during startup, so we have to be fully functional before it
+           replies the startup packet */
+
+        /* setup a handler function and port for replies */
+        mount->reply_int.is_Code = packet_reply;
+        mount->reply_int.is_Data = mount;
+
+        NEWLIST(&(mount->reply_port.mp_MsgList));
+        mount->reply_port.mp_Flags = PA_SOFTINT;
+        mount->reply_port.mp_SigTask = &(mount->reply_int);
+
+        /* setup the root "handle" */
+        mount->root_handle.mount = mount;
+        mount->root_handle.is_lock = TRUE;
+
+        /* set up device and unit in device node */
         dn->dn_Ext.dn_AROS.dn_Device = iofs->IOFS.io_Device;
         dn->dn_Ext.dn_AROS.dn_Unit = (struct Unit *) &(mount->root_handle);
         D(bug("[packet] sending startup packet\n"));
@@ -206,24 +220,13 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
             /* hook the process up to the device node */
             dn->dn_Task = &(mount->process->pr_MsgPort);
 
-            /* setup a handler function and port for replies */
-            mount->reply_int.is_Code = packet_reply;
-            mount->reply_int.is_Data = mount;
-
-            NEWLIST(&(mount->reply_port.mp_MsgList));
-            mount->reply_port.mp_Flags = PA_SOFTINT;
-            mount->reply_port.mp_SigTask = &(mount->reply_int);
 
             /* remember this mount */
             Disable();
             AddTail((struct List *) &(pb->mounts), (struct Node *) mount);
             Enable();
 
-            /* setup the root "handle" to hand back to the caller */
-            mount->root_handle.mount = mount;
-            mount->root_handle.is_lock = TRUE;
             iofs->IOFS.io_Unit = (struct Unit *) &(mount->root_handle);
-
             iofs->IOFS.io_Error = 0;
 
             D(bug("[packet] handler %s for mount %s now online\n", mount->handler_name, mount->mount_point));
