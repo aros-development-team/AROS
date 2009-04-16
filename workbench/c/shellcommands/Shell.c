@@ -1822,8 +1822,10 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
     else
     {
 	/* Implicit cd? */
-	if(!(rd->haveInRD || rd->haveOutRD || rd->haveAppRD) && (IoErr() == ERROR_OBJECT_WRONG_TYPE || IoErr() == ERROR_OBJECT_NOT_FOUND))
-	{
+        /* SFS returns ERROR_INVALID_COMPONENT_NAME if you try to open "" */
+	if(!(rd->haveInRD || rd->haveOutRD || rd->haveAppRD) &&
+           (IoErr() == ERROR_OBJECT_WRONG_TYPE || IoErr() == ERROR_OBJECT_NOT_FOUND || IoErr() == ERROR_INVALID_COMPONENT_NAME))
+        {
 	    BPTR lock = Lock(command, SHARED_LOCK);
 
 	    if(lock != NULL)
