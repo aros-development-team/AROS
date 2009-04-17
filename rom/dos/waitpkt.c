@@ -1,12 +1,12 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: English
 */
 
-#define  DEBUG 1
+#define  DEBUG 0
 #include <aros/debug.h>
 
 #include "dos_intern.h"
@@ -69,7 +69,7 @@
 struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 				   struct DosLibrary *DOSBase)
 {
-    struct Message   *msg;
+    struct Message   *msg = NULL;
     struct DosPacket *packet;
     struct Process   *me = (struct Process *)FindTask(NULL);
     struct IOFileSys *iofs;
@@ -77,24 +77,35 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
     if (__is_process(me))
     {
 	/* Call the packet wait function if the user has one installed.
-	   Unfortunately, the user gets something completely different than
+	   Unfortunately, in case of IOFS the user gets something completely different than
 	   a packet, but we cannot do anything about that... */
-#if 0
-	if (me->pr_PktWait != NULL)
+	if (me->pr_PktWait)
 	{
-	    me->pr_PktWait();
-        }
-#endif
-    }	
-
-    /* Make sure we have a packet -- we may be woken up even if there is
-       not a packet for us as SIGF_DOS may be used and we may have another
-       message port that waits for packets, too. */
-    while ((msg = GetMsg(msgPort)) == NULL)
-    {
-	Wait(1 << msgPort->mp_SigBit);
+	    msg = AROS_UFC3(struct Message *, me->pr_PktWait,
+		AROS_UFCA(APTR, me->pr_PktWait, A0),
+		AROS_UFCA(struct MsgPort *, msgPort, A1),
+		AROS_UFCA(struct ExecBase *, SysBase, A6));
+	}
     }
 
+    if (!msg) {
+        /* Make sure we have a packet -- we may be woken up even if there is
+           not a packet for us as SIGF_DOS may be used and we may have another
+           message port that waits for packets, too. */
+        while ((msg = GetMsg(msgPort)) == NULL)
+        {
+	    Wait(1 << msgPort->mp_SigBit);
+        }
+    }
+
+    /* If ln_Name is filled in, this means we are talking to a real packet-style handler and we got back
+       a real packet. */
+    if (msg->mn_Node.ln_Name) {
+        D(bug("[DOS] WaitPkt(): got DOS packet 0x%p in message 0x%p\n", msg->mn_Node.ln_Name, msg));
+        return (struct DosPacket *)msg->mn_Node.ln_Name;
+    }
+
+    D(bug("[DOS] WaitPkt(): got IOFS IORequest 0x%p\n", msg));
     iofs = (struct IOFileSys *)msg;
     packet = iofs->io_PacketEmulation;
     
@@ -143,7 +154,7 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
     case FSA_READ:
     case FSA_WRITE:
 	packet->dp_Res1 = (IPTR)iofs->io_Union.io_READ_WRITE.io_Length;
-	kprintf("Packet (%p) length = %u", packet, packet->dp_Res1);
+	D(kprintf("Packet (%p) length = %u", packet, packet->dp_Res1));
 	packet->dp_Res2 = iofs->io_DosError;
 	break;
 
