@@ -72,6 +72,8 @@ CONST_STRPTR StripVolume(CONST_STRPTR name);
 LONG DoIOFS(struct IOFileSys *iofs, struct DevProc *dvp, CONST_STRPTR name,
     struct DosLibrary *DOSBase);
 
+void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport, struct DosLibrary *DOSBase);
+
 struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 				   struct DosLibrary *DOSBase);
 

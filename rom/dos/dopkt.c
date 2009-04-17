@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -8,7 +8,7 @@
 #ifdef DEBUG
 #undef DEBUG
 #endif
-#define  DEBUG 1
+#define  DEBUG 0
 #include <aros/debug.h>
 #include "dos_intern.h"
 
@@ -67,7 +67,6 @@
     struct DosPacket *dp = (struct DosPacket *)AllocDosObject(DOS_STDPKT,
 							      NULL);
     struct MsgPort   *replyPort;
-    struct IOFileSys *iofs = NULL;
     
     BOOL i_am_process = TRUE;
     
@@ -106,8 +105,7 @@
     
     internal_WaitPkt(replyPort, DOSBase);
     
-    SetIoErr(iofs->io_DosError);
-
+    SetIoErr(dp->dp_Res2);
     res = dp->dp_Res1;
     
     if (FALSE == i_am_process)
