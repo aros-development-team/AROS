@@ -114,7 +114,8 @@ static const int __revision = 1;
 
 static const struct MUI_FrameSpec_intern *get_intframe(
     Object *obj,
-    struct MUI_AreaData *data);
+    struct MUI_AreaData *data,
+    struct MUI_FrameSpec_intern *tempstore);
 static void set_inner_sizes (Object *obj, struct MUI_AreaData *data);
 static void set_title_sizes (Object *obj, struct MUI_AreaData *data);
 
@@ -848,8 +849,9 @@ static IPTR Area__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_Ask
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     const struct ZuneFrameGfx *zframe;
     const struct MUI_FrameSpec_intern *frame;
-
-    frame = get_intframe(obj, data);
+    struct MUI_FrameSpec_intern tempframe;
+    
+    frame = get_intframe(obj, data, &tempframe);
     zframe = zune_zframe_get(obj, frame);
 
     area_update_msizes(obj, data, frame, zframe);
@@ -1221,16 +1223,16 @@ static IPTR Area__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *ms
     {
     /* on selected state, will get the opposite frame */
     const struct MUI_FrameSpec_intern *frame;
+    struct MUI_FrameSpec_intern tempframe;
     int state;
 
-    frame = get_intframe(obj, data);
+    frame = get_intframe(obj, data, &tempframe);
     state = frame->state;
     if ((data->mad_Flags & MADF_SELECTED) && (data->mad_Flags & MADF_SHOWSELSTATE))
         state ^= 1;
 
     zframe = zune_zframe_get_with_state(
-    obj,
-        &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame], state);
+    obj, frame, state);
     /* update innersizes as there are frames which have different inner spacings in selected state */
     area_update_msizes(obj, data, frame, zframe);
     }
@@ -1309,7 +1311,7 @@ static IPTR Area__MUIM_DrawBackground(struct IClass *cl, Object *obj, struct MUI
 
     const struct ZuneFrameGfx *zframe;
     const struct MUI_FrameSpec_intern *frame;
-
+    struct MUI_FrameSpec_intern tempframe;
 
     if (!bg)
     {
@@ -1323,13 +1325,13 @@ static IPTR Area__MUIM_DrawBackground(struct IClass *cl, Object *obj, struct MUI
             msg->width, msg->height, msg->xoffset, msg->yoffset, msg->flags);
 
     }
-    frame = get_intframe(obj, data);
+    frame = get_intframe(obj, data, &tempframe);
 
     int xstate = frame->state;
     if ((data->mad_Flags & MADF_SELECTED) && (data->mad_Flags & MADF_SHOWSELSTATE))
         xstate ^= 1;
 
-    zframe = zune_zframe_get_with_state(obj, &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame], xstate);
+    zframe = zune_zframe_get_with_state(obj, frame, xstate);
 
     if (zframe->customframe == NULL)
     {
@@ -1418,16 +1420,36 @@ static void cleanup_control_char (struct MUI_AreaData *data, Object *obj)
 }
 
 static const struct MUI_FrameSpec_intern *get_intframe(
-    Object *obj, struct MUI_AreaData *data)
+    Object *obj, struct MUI_AreaData *data, struct MUI_FrameSpec_intern *tempstore)
 {
-    return &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
+    if (data->mad_Frame > 100)
+    {
+        /* Frame is spec in string format. Store it in tempstore and return a pointer
+	   to it. The caller should have such a temp variable on the stack. Don't want
+	   to add it to MUI_AreaData as that will increase mem usage of every object. */
+	
+	if (zune_frame_spec_to_intern((CONST_STRPTR)data->mad_Frame, tempstore))
+	{
+            return tempstore;
+	}
+	else
+	{
+	    return &muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_None];
+	}	
+    }
+    else
+    {
+        /* Frame is MUIV_Frame_<something> */
+        return &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
+    }
 }
 
 static void set_inner_sizes (Object *obj, struct MUI_AreaData *data)
 {
     const struct MUI_FrameSpec_intern *frame;
-
-    frame = get_intframe(obj, data);
+    struct MUI_FrameSpec_intern tempframe;
+    
+    frame = get_intframe(obj, data, &tempframe);
     // Use frame inner spacing when not hardcoded
     if (!(data->mad_Flags & MADF_INNERLEFT))
     data->mad_InnerLeft = frame->innerLeft;
@@ -1446,8 +1468,9 @@ static void set_title_sizes (Object *obj, struct MUI_AreaData *data)
     {
     const struct ZuneFrameGfx *zframe;
     const struct MUI_FrameSpec_intern *frame;
-
-    frame = get_intframe(obj, data);
+    struct MUI_FrameSpec_intern tempframe;
+    
+    frame = get_intframe(obj, data, &tempframe);
     zframe = zune_zframe_get(obj, frame);
 
     _font(obj) = zune_font_get(obj, MUIV_Font_Title);
@@ -1478,7 +1501,8 @@ static IPTR Area__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     const struct ZuneFrameGfx *zframe;
     const struct MUI_FrameSpec_intern *frame;
-
+    struct MUI_FrameSpec_intern tempframe;
+    
     muiRenderInfo(obj) = msg->RenderInfo;
 
     if (data->mad_Frame)
@@ -1496,7 +1520,7 @@ static IPTR Area__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *
     set_inner_sizes(obj, data);
     set_title_sizes(obj, data);
 
-    frame = get_intframe(obj, data);
+    frame = get_intframe(obj, data, &tempframe);
     zframe = zune_zframe_get(obj, frame);
 
     area_update_msizes(obj, data, frame, zframe);
@@ -2273,10 +2297,11 @@ static IPTR Area__MUIM_UpdateInnerSizes(struct IClass *cl, Object *obj, struct M
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     const struct ZuneFrameGfx *zframe;
     const struct MUI_FrameSpec_intern *frame;
-
+    struct MUI_FrameSpec_intern tempframe;
+    
     if (_flags(obj) & MADF_SETUP)
     {
-    frame = get_intframe(obj, data);
+    frame = get_intframe(obj, data, &tempframe);
     zframe = zune_zframe_get(obj, frame);
         area_update_msizes(obj, data, frame, zframe);
     }
