@@ -1,0 +1,7 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 20865 2004-02-10 19:06:05Z chodorowski $
+
+include $(TOP)/config/make.cfg
+
+%build_catalogs mmake=workbench-prefs-font-catalogs \
+                name=Font subdir=System/Prefs
