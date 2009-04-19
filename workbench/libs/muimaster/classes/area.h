@@ -198,7 +198,7 @@ struct MUI_AreaData
     BYTE               mad_InnerRight;
     BYTE               mad_InnerBottom;
 // offset 94
-    BYTE               mad_Frame;          /* frame setting -- private */
+    BYTE               mad_FrameOBSOLETE;          /* frame setting -- private */
 // offset 95
     BYTE               mad_InputMode;      /* how to react to events */
 // offset 96
@@ -208,7 +208,7 @@ struct MUI_AreaData
     BYTE               mad_TitleHeightAbove; /* height above frame */
 // 100
 // ?
-
+    IPTR               mad_Frame;
     WORD               mad_HardHeight;     /* if harcoded dim (see flags)  */
     WORD               mad_HardWidth;      /* if harcoded dim (see flags)  */
     CONST_STRPTR       mad_HardWidthTxt;
