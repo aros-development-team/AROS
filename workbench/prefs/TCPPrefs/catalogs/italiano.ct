@@ -1,0 +1,73 @@
+## version $VER: fontprefs.catalog 1.0 (27.9.2001)
+## language italiano
+## codeset 0
+;
+;
+MSG_ERROR_CANT_CREATE_APPLICATION
+*** Impossibile creare l'oggetto applicazione.
+; Can't create application object.
+;
+MSG_CANT_CREATE_REQ
+Impossibile aprire la finestra di dialogo dei file!
+; Can't open create filerequester!
+;
+MSG_CANT_OPEN_STREAM
+Impossibile aprire il flusso IFF!
+; Can't open IFF stream!
+;
+MSG_CANT_WRITE_PREFFILE
+Impossibile salvare le preferenze!
+; Can't write preferences!
+;
+MSG_CANT_READ_PREFFILE
+Impossibile leggere le preferenze!
+; Can't read preferences!
+;
+MSG_CANT_ALLOCATE_IFFPTR
+Impossibile allocare il gestore IFF!
+; Can't allocate IFF handle!
+;
+MSG_CANT_ALLOCATE_MEM
+Impossibile allocare memoria per l'applicazione (%s) !
+; Can't allocate application memory (%s)!
+;
+MSG_NAME
+Preferenze sui font
+; Font Preferences
+;
+MSG_MENU_PREFERENCES
+*** Preferenze
+; Preferences
+;
+MSG_MENU_PREFERENCES_IMPORT
+I\0*** Importa...
+; I\0Import...
+;
+MSG_MENU_PREFERENCES_EXPORT
+E\0*** Esporta...
+; E\0Export...
+;
+MSG_ASL_OPEN_TITLE
+Carica le preferenze
+; Load Font Preferences
+;
+MSG_ASL_SAVE_TITLE
+Salva le preferenze
+; Save Font Preferences
+;
+MSG_OK
+Ok
+; Ok
+;
+MSG_ICONS
+*** Icone:
+; Icons:
+;
+MSG_SYSTEM
+Sistema:
+; System:
+;
+MSG_SCREEN
+Schermo:
+; Screen:
+;
