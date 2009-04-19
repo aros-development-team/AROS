@@ -5,6 +5,7 @@
 
 #include <graphics/gfx.h>
 #include <graphics/view.h>
+#include <dos/dos.h>
 #include <clib/alib_protos.h>
 #include <libraries/asl.h>
 #include <libraries/mui.h>
@@ -13,6 +14,7 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+#include <proto/dos.h>
 #include <zune/customclasses.h>
 
 #ifdef __AROS__
@@ -67,7 +69,27 @@ struct MUI_SystemPData
     Object *arexx_checkmark;
     Object *first_bubble_slider;
     Object *next_bubble_slider;
+    struct Hook psiHook;
 };
+
+static IPTR ExecuteScreenInspectorFunc(struct Hook *hook, Object *caller, void *data)
+{
+    struct TagItem tags[] =
+    {
+	{ SYS_Asynch,   TRUE            },
+	{ SYS_Input,    0               },
+	{ SYS_Output,   0               },
+	{ NP_StackSize, AROS_STACKSIZE  },
+	{ TAG_DONE                      }
+    };
+    
+    if (SystemTagList("sys:prefs/psi", tags) == -1)
+    {
+	return (IPTR) FALSE;
+    }
+    
+    return (IPTR) TRUE;
+}
 
 static IPTR SystemP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -155,12 +177,20 @@ static IPTR SystemP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (!obj) return FALSE;
     
+    d.psiHook.h_Entry = HookEntry;
+    d.psiHook.h_SubEntry = (HOOKFUNC) ExecuteScreenInspectorFunc;
+    
     data = INST_DATA(cl, obj);
     *data = d;
 
     DoMethod(
 	d.first_bubble_slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
 	d.next_bubble_slider, (IPTR) 3, MUIM_Set, MUIA_Disabled, MUIV_NotTriggerValue
+    );
+    
+    DoMethod(
+	d.call_psi_button, MUIM_Notify, MUIA_Pressed, FALSE,
+	obj, (IPTR) 2, MUIM_CallHook, &data->psiHook
     );
     
     return (IPTR)obj;
