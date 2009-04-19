@@ -36,10 +36,10 @@ int main(void)
 	ReadTCPPrefs();
 
 	application = ApplicationObject,
-	MUIA_Application_Title,  "Proba",
+	MUIA_Application_Title,  "AROS TCP Prefs",
 	MUIA_Application_Version, (IPTR)VERSION,
-	MUIA_Application_Description,  "Opis",
-	MUIA_Application_Base, (IPTR)"FONTPREF",
+	MUIA_Application_Description,  "TCPIP prefs for AROS",
+	MUIA_Application_Base, (IPTR)"TCPIPREF",
 	SubWindow, (IPTR)(window = SystemPrefsWindowObject,
 			  MUIA_Window_ID, MAKE_ID('F', 'W', 'I', 'N'),
 			  WindowContents, (IPTR)FPEditorObject,
