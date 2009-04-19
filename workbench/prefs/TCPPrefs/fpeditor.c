@@ -34,11 +34,10 @@
 #include <proto/alib.h>
 #include <utility/hooks.h>
 
-/*** Moje *******************************************************************/
 static const char *titles[] = { "IP Config", "Computer Name", NULL };
 static const char *DHCPCycle[] = { "Manual", "Get address from DHCP", NULL };
 static struct Hook DHCPHook;
-// wróciæ z tym do lokalnego obszaru, albo na dowrót - zlikwidow¹æ GET i NNSET...
+// this can probably be moved back to FPEditor__OM_NEW
 Object *interfString, *IPString, *maskString, *gateString, *DNSString[2], *hostString, *domainString, *DHCPState;
 /*** Instance Data **********************************************************/
 #define FP_COUNT (7)  /* Number of entries in fped_FontPrefs array */
@@ -86,15 +85,6 @@ void FlipDHCP()
 
 void BumpTCP()
 {
-	/*
-	struct Task *tcp_task;
-	if ((tcp_task = FindTask("bsdsocket.library")) != NULL)
-	{
-		//printf("DEBUG: Zabijam AROSTCP\n");
-		Signal(tcp_task, SIGBREAKF_CTRL_C);
-		// uruchomiæ jeszcze raz
-	} 
-	*/
 	// execute s:arostcpd stop
 	// execute s:arostcpd start
 }
@@ -119,48 +109,26 @@ static ULONG DHCPNotify(struct Hook *hook, Object *object, IPTR *params)
 BOOL Gadgets2FontPrefs(struct FPEditor_DATA *data)
 
 {
-	//printf("DEBUG: W gadgets2fontprefs przed setup...\n");
-
 	STRPTR str = NULL;
 	LONG lng = 0;
 
-	//printf("DEBUG: interfejs\n",str);
 	GET(data->fped_interfString, MUIA_String_Contents, &str);
 	SetInterf(str);
-
-	//printf("DEBUG: IP\n",str);
 	GET(data->fped_IPString, MUIA_String_Contents, &str);
 	SetIP(str);
-
-	//printf("DEBUG: Mask\n",str);
 	GET(data->fped_maskString, MUIA_String_Contents, &str);
 	SetMask(str);
-
-	//printf("DEBUG: Gate\n",str);
 	GET(data->fped_gateString, MUIA_String_Contents, &str);
 	SetGate(str);
-
-	//printf("DEBUG: DNS0\n",str);
 	GET(data->fped_DNSString[0], MUIA_String_Contents, &str);
 	SetDNS(0, str);
-
-	//printf("DEBUG: DNS1\n",str);
 	GET(data->fped_DNSString[1], MUIA_String_Contents, &str);
 	SetDNS(1, str);
-
-	//printf("DEBUG: host get\n",str);
 	GET(data->fped_hostString, MUIA_String_Contents, &str);
-	//printf("DEBUG: host set\n",str);
 	SetHost(str);
-
-	//printf("DEBUG: get domain\n",str);
 	GET(data->fped_domainString, MUIA_String_Contents, &str);
-	//printf("DEBUG: set domain\n",str);
 	SetDomain(str);
-
-	//printf("DEBUG: DHCP\n",str);
 	GET(data->fped_DHCPState, MUIA_Cycle_Active, &lng);
-	//printf("DEBUG: w gadget2fontprefs: Muia cycle: %ld\n",lng);
 	SetDHCP(lng);
 
 	return TRUE;
@@ -178,13 +146,10 @@ BOOL FontPrefs2Gadgets
 	NNSET(data->fped_IPString, MUIA_String_Contents, (IPTR)GetIP());
 	NNSET(data->fped_maskString, MUIA_String_Contents, (IPTR)GetMask());
 	NNSET(data->fped_gateString, MUIA_String_Contents, (IPTR)GetGate());
-
 	NNSET(data->fped_DNSString[0], MUIA_String_Contents, (IPTR)GetDNS(0));
 	NNSET(data->fped_DNSString[1], MUIA_String_Contents, (IPTR)GetDNS(1));
 	NNSET(data->fped_hostString, MUIA_String_Contents, (IPTR)GetHost());
 	NNSET(data->fped_domainString, MUIA_String_Contents, (IPTR)GetDomain());
-
-	//printf("DEBUG: ustawiam fped_DHCPState na %d\n",GetDHCP());
 	NNSET(data->fped_DHCPState, MUIA_Cycle_Active, (IPTR)GetDHCP());
 	NNSET(data->fped_Self,MUIA_PrefsEditor_Changed,TRUE);
 	FlipDHCP();
@@ -199,8 +164,6 @@ Object *FPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
     DHCPHook.h_Entry = HookEntry;
     DHCPHook.h_SubEntry = (HOOKFUNC)DHCPNotify;
-	
-	long xxx=666;
 	
 	self = (Object *)DoSuperNewTags
 	(
@@ -298,7 +261,6 @@ Object *FPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 		DoMethod
 		(
 			DHCPState, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            //(IPTR)self, 3, MUIM_CallHook, (IPTR)&DHCPHook, (IPTR)&self
             (IPTR)self, 4, MUIM_CallHook, (IPTR)&DHCPHook, (IPTR)self, (IPTR)CLASS
 
 		);
@@ -313,7 +275,6 @@ IPTR FPEditor__MUIM_PrefsEditor_Save
 	Class *CLASS, Object *self, Msg message
 )
 {
-	//printf("DEBUG: Jestem w Save\n");
 	if (DoMethod(self, MUIM_PrefsEditor_Use)) return WriteTCPPrefs("ENVARC:AROSTCP/db");
 
 	return FALSE;
@@ -348,7 +309,6 @@ IPTR FPEditor__MUIM_PrefsEditor_ImportFH
 	struct FPEditor_DATA *data = INST_DATA(CLASS, self);
 	BOOL success = TRUE;
 
-	//printf("DEBUG: Jestem w ImportFH\n");
 	FontPrefs2Gadgets(data);
 
 	return success;
@@ -366,9 +326,7 @@ IPTR FPEditor__MUIM_PrefsEditor_ExportFH
 	BOOL success = TRUE;
 	LONG error   = 0;
 
-	//printf("DEBUG: Jestem w ExportFH\n");
 	FontPrefs2Gadgets(data);
-	//Gadgets2FontPrefs(data);
 
 	return success;
 }

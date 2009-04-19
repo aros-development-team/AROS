@@ -2,9 +2,9 @@
 
 static TCPPrefs prefs;
 
-extern "C" int WriteTCPPrefs(char* dokad)
+extern "C" int WriteTCPPrefs(char* DestDir)
 {
-	return prefs.writePrefs(dokad);
+	return prefs.writePrefs(DestDir);
 }
 
 extern "C" void ReadTCPPrefs()
@@ -93,11 +93,9 @@ extern "C"      void SetInterf(char* w)
 extern "C"      void SetHost(char* w)
 {
 	strlcpy(prefs.host, w,999);
-	//printf("gotowe");
 }
 
 extern "C"      void SetDomain(char* w)
 {
 	strlcpy(prefs.domain, w,999);
-	//printf("gotowe");
 }

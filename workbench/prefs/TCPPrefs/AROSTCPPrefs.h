@@ -13,9 +13,9 @@ FILE *tokenizedFile;
 bool newline;
 bool fend;
 
-void openTokenFile(char * nazwa)
+void openTokenFile(char * FileName)
 {
-	tokenizedFile = fopen(nazwa, "r");
+	tokenizedFile = fopen(FileName, "r");
 	token = NULL;
 	newline = true;
 	if (!tokenizedFile)
@@ -94,10 +94,10 @@ TCPPrefs()
 
 void readPrefs()
 {
-	char *nazwa;
+	char *FileName;
 	char *temp;
-	bool koment = false;
-	bool nowalinia;
+	bool comment = false;
+	//bool NewLine;
 	char *tstring;
 
 	temp = new char[30];
@@ -110,10 +110,10 @@ void readPrefs()
 	}else
 		strcpy(config, "ENV:AROSTCP/db");
 
-	nazwa = new char[strlen(config) + 20];
+	FileName = new char[strlen(config) + 20];
 
-	sprintf(nazwa, "%s/general.config", config);
-	tok.openTokenFile(nazwa);
+	sprintf(FileName, "%s/general.config", config);
+	tok.openTokenFile(FileName);
 	while (!tok.fend) {
 		if (tok.newline) { // read tokens from the beginning of line
 			if (tok.token) {
@@ -130,16 +130,16 @@ void readPrefs()
 	}
 	tok.closeTokenFile();
 
-	sprintf(nazwa, "%s/interfaces", config);
-	tok.openTokenFile(nazwa);
+	sprintf(FileName, "%s/interfaces", config);
+	tok.openTokenFile(FileName);
 	// reads only first uncommented interface
 	while (!tok.fend) {
 		tok.getNextToken(" \n");
 		if (tok.token) {
-			if (tok.newline) koment = false;
-			if (strncmp(tok.token, "#", 1) == 0) koment = true;
+			if (tok.newline) comment = false;
+			if (strncmp(tok.token, "#", 1) == 0) comment = true;
 
-			if (!koment) {
+			if (!comment) {
 				if (strncmp(tok.token, "DEV=", 4) == 0) {
 					tstring = strchr(tok.token, '=');
 					strlcpy(interf, tstring + 1,4095);
@@ -157,8 +157,8 @@ void readPrefs()
 	}
 	tok.closeTokenFile();
 
-	sprintf(nazwa, "%s/netdb-myhost", config);
-	tok.openTokenFile(nazwa);
+	sprintf(FileName, "%s/netdb-myhost", config);
+	tok.openTokenFile(FileName);
 	int dnsc = 0;
 	while (!tok.fend) {
 		tok.getNextToken(" \n");
@@ -173,8 +173,8 @@ void readPrefs()
 	}
 	tok.closeTokenFile();
 
-	sprintf(nazwa, "%s/static-routes", config);
-	tok.openTokenFile(nazwa);
+	sprintf(FileName, "%s/static-routes", config);
+	tok.openTokenFile(FileName);
 	while (!tok.fend) {
 		tok.getNextToken(" \n");
 		if (tok.token) {
@@ -189,8 +189,8 @@ void readPrefs()
 	}
 	tok.closeTokenFile();
 
-	sprintf(nazwa, "%s/DHCP", config);
-	tok.openTokenFile(nazwa);
+	sprintf(FileName, "%s/DHCP", config);
+	tok.openTokenFile(FileName);
 	while (!tok.fend) {
 		tok.getNextToken(" \n");
 		if (tok.token) {
@@ -207,75 +207,75 @@ void readPrefs()
 	}
 	tok.closeTokenFile();
 
-	delete nazwa;
+	delete FileName;
 	delete temp;
 }
 
 int writePrefs(char* dokad)
 {
-	FILE *Plik;
-	char *nazwa;
+	FILE *ConfFile;
+	char *FileName;
 
-	nazwa = new char[strlen(dokad) + 20];
+	FileName = new char[strlen(dokad) + 20];
 
-	Plik = fopen("ENV:AROSTCP/Config", "w");
-	if (!Plik) return 0;
-	fprintf(Plik, "ENV:AROSTCP/db");
-	fclose(Plik);
+	ConfFile = fopen("ENV:AROSTCP/Config", "w");
+	if (!ConfFile) return 0;
+	fprintf(ConfFile, "ENV:AROSTCP/db");
+	fclose(ConfFile);
 
-	Plik = fopen("ENVARC:AROSTCP/Config", "w");
-	if (Plik) {
-		fprintf(Plik, "ENV:AROSTCP/db");
-		fclose(Plik);
+	ConfFile = fopen("ENVARC:AROSTCP/Config", "w");
+	if (ConfFile) {
+		fprintf(ConfFile, "ENV:AROSTCP/db");
+		fclose(ConfFile);
 	};
 	
-	sprintf(nazwa, "%s/DHCP", dokad);
-	Plik = fopen(nazwa, "w");
-	if (!Plik) return 0;
-	fprintf(Plik, "%s\n", (DHCP) ? "True" : "False");
-	fclose(Plik);
+	sprintf(FileName, "%s/DHCP", dokad);
+	ConfFile = fopen(FileName, "w");
+	if (!ConfFile) return 0;
+	fprintf(ConfFile, "%s\n", (DHCP) ? "True" : "False");
+	fclose(ConfFile);
 
-	sprintf(nazwa, "%s/general.config", dokad);
-	Plik = fopen(nazwa, "w");
-	if (!Plik) return 0;
-	fprintf(Plik, "USELOOPBACK=YES\n");
-	fprintf(Plik, "DEBUGSANA=NO\n");
-	fprintf(Plik, "USENS=SECOND\n");
-	fprintf(Plik, "GATEWAY=NO\n");
-	fprintf(Plik, "HOSTNAME=%s.%s\n", host, domain);
-	fprintf(Plik, "LOG FILTERFILE=5\n");
-	fprintf(Plik, "GUI PANEL=MUI\n");
-	fprintf(Plik, "OPENGUI=YES\n");
-	fclose(Plik);
+	sprintf(FileName, "%s/general.config", dokad);
+	ConfFile = fopen(FileName, "w");
+	if (!ConfFile) return 0;
+	fprintf(ConfFile, "USELOOPBACK=YES\n");
+	fprintf(ConfFile, "DEBUGSANA=NO\n");
+	fprintf(ConfFile, "USENS=SECOND\n");
+	fprintf(ConfFile, "GATEWAY=NO\n");
+	fprintf(ConfFile, "HOSTNAME=%s.%s\n", host, domain);
+	fprintf(ConfFile, "LOG FILTERFILE=5\n");
+	fprintf(ConfFile, "GUI PANEL=MUI\n");
+	fprintf(ConfFile, "OPENGUI=YES\n");
+	fclose(ConfFile);
 
-	sprintf(nazwa, "%s/interfaces", dokad);
-	Plik = fopen(nazwa, "w");
-	if (!Plik) return 0;
-	fprintf(Plik,"eth0 DEV=%s UNIT=0 NOTRACKING IP=%s NETMASK=%s UP\n",interf,IP,mask);
+	sprintf(FileName, "%s/interfaces", dokad);
+	ConfFile = fopen(FileName, "w");
+	if (!ConfFile) return 0;
+	fprintf(ConfFile,"eth0 DEV=%s UNIT=0 NOTRACKING IP=%s NETMASK=%s UP\n",interf,IP,mask);
 
-	fclose(Plik);
+	fclose(ConfFile);
 
-	sprintf(nazwa, "%s/netdb-myhost", dokad);
-	Plik = fopen(nazwa, "w");
-	if (!Plik) return 0;
-	fprintf(Plik, "HOST %s %s.%s %s\n", IP, host, domain, host);
-	fprintf(Plik, "HOST %s gateway\n", gate);
-	fprintf(Plik, "; Domain names\n");
+	sprintf(FileName, "%s/netdb-myhost", dokad);
+	ConfFile = fopen(FileName, "w");
+	if (!ConfFile) return 0;
+	fprintf(ConfFile, "HOST %s %s.%s %s\n", IP, host, domain, host);
+	fprintf(ConfFile, "HOST %s gateway\n", gate);
+	fprintf(ConfFile, "; Domain names\n");
 	// DOMAIN dupa.com.pl
-	//fprintf(Plik,"DOMAIN %d.%d.%d. %s\n",IP[0]&mask[0],IP[1]&mask[1],IP[2]&mask[2],domain);
-	//fprintf(Plik,"DOMAIN %d.%d.%d.%d %s\n",IP[0]&mask[0],IP[1]&mask[1],IP[2]&mask[2],IP[3]&mask[3],domain);
-	fprintf(Plik, "; Name servers\n");
-	fprintf(Plik, "NAMESERVER %s\n", DNS[0]);
-	fprintf(Plik, "NAMESERVER %s\n", DNS[1]);
-	fclose(Plik);
+	//fprintf(ConfFile,"DOMAIN %d.%d.%d. %s\n",IP[0]&mask[0],IP[1]&mask[1],IP[2]&mask[2],domain);
+	//fprintf(ConfFile,"DOMAIN %d.%d.%d.%d %s\n",IP[0]&mask[0],IP[1]&mask[1],IP[2]&mask[2],IP[3]&mask[3],domain);
+	fprintf(ConfFile, "; Name servers\n");
+	fprintf(ConfFile, "NAMESERVER %s\n", DNS[0]);
+	fprintf(ConfFile, "NAMESERVER %s\n", DNS[1]);
+	fclose(ConfFile);
 
-	sprintf(nazwa, "%s/static-routes", dokad);
-	Plik = fopen(nazwa, "w");
-	if (!Plik) return 0;
-	fprintf(Plik, "DEFAULT GATEWAY %s\n", gate);
-	fclose(Plik);
+	sprintf(FileName, "%s/static-routes", dokad);
+	ConfFile = fopen(FileName, "w");
+	if (!ConfFile) return 0;
+	fprintf(ConfFile, "DEFAULT GATEWAY %s\n", gate);
+	fclose(ConfFile);
 
-	delete nazwa;
+	delete FileName;
 	return 1;
 }
 
@@ -284,7 +284,7 @@ int writePrefs(char* dokad)
 }
 #else
 void ReadTCPPrefs();
-int WriteTCPPrefs(char* dokad);
+int WriteTCPPrefs(char* DestDir);
 
 char* GetIP();
 char* GetMask();
