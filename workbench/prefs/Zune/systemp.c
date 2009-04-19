@@ -9,11 +9,13 @@
 #include <clib/alib_protos.h>
 #include <libraries/asl.h>
 #include <libraries/mui.h>
+#include <libraries/muiscreen.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+#include <proto/muiscreen.h>
 #include <proto/dos.h>
 #include <zune/customclasses.h>
 
@@ -53,6 +55,134 @@ IPTR BubbleSlider__MUIM_Numeric_Stringify(struct IClass *cl, Object * obj, struc
 ZUNE_CUSTOMCLASS_1(
     BubbleSlider, NULL, MUIC_Slider, NULL,
     MUIM_Numeric_Stringify, struct MUIP_Numeric_Stringify*
+)
+
+/* Utility class for choosing public screen */
+
+#define PSD_NAME_DEFAULT "«Default»"
+
+struct PopPublicScreen_DATA
+{
+    struct Hook strobj_hook;
+    struct Hook objstr_hook;
+    Object  	*list;
+};
+
+LONG PopPublicScreenStrObjFunc(struct Hook *hook, Object *popup, Object *str)
+{
+    struct PopPublicScreen_DATA   *data = (struct PopPublicScreen_DATA *)hook->h_Data;
+    struct List     	    *pubscrlist;
+    struct PubScreenNode    *pubscrnode;
+    STRPTR  	    	     strtext, listentry;
+    LONG    	    	     index;
+    struct MUI_PubScreenDesc *desc;
+    APTR pfh;
+    
+    set(data->list,MUIA_List_Quiet,TRUE);
+
+    DoMethod(data->list, MUIM_List_Clear);
+    DoMethod(data->list, MUIM_List_InsertSingle, PSD_NAME_DEFAULT, MUIV_List_Insert_Bottom);
+    DoMethod(data->list, MUIM_List_InsertSingle, PSD_NAME_FRONTMOST, MUIV_List_Insert_Bottom);
+
+    if (pfh = MUIS_OpenPubFile(PSD_FILENAME_USE, MODE_OLDFILE))
+    {
+	while (desc = MUIS_ReadPubFile(pfh))
+	{
+	    DoMethod(data->list, MUIM_List_InsertSingle, desc->Name, MUIV_List_Insert_Bottom);
+	}
+	MUIS_ClosePubFile(pfh);
+    }
+
+    pubscrlist = LockPubScreenList();
+    ForeachNode(pubscrlist, pubscrnode)
+    {
+	DoMethod(data->list, MUIM_List_InsertSingle, (IPTR)pubscrnode->psn_Node.ln_Name, MUIV_List_Insert_Bottom);	    
+    }	
+    UnlockPubScreenList();
+
+    set(data->list,MUIA_List_Quiet,FALSE);
+
+    get(str, MUIA_String_Contents, &strtext);
+    
+    for(index = 0; ; index++)
+    {
+    	DoMethod(data->list, MUIM_List_GetEntry, index, (IPTR)&listentry);
+	
+	if (!listentry)
+	{
+	    set(data->list, MUIA_List_Active, strtext[0] ? MUIV_List_Active_Off : 0);
+	    break;
+	}
+	
+	if (stricmp(strtext, listentry) == 0)
+	{
+	    set(data->list, MUIA_List_Active, index);
+	    break;
+	}
+    }
+    
+    return TRUE;
+}
+
+void PopPublicScreenObjStrFunc(struct Hook *hook, Object *popup, Object *str)
+{
+    STRPTR listentry;
+    
+    DoMethod(popup, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, (IPTR)&listentry);
+
+    if (listentry)
+    {
+	if (strcmp(listentry, PSD_NAME_DEFAULT) == 0)
+	    set(str, MUIA_String_Contents, "");
+	else
+    	    set(str, MUIA_String_Contents, listentry);
+    }  
+}
+
+IPTR PopPublicScreen__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    Object *lv, *list;
+    
+    obj = (Object *)DoSuperNewTags
+    (
+        cl, obj, NULL,
+	MUIA_Popobject_Object, (IPTR)(lv = (Object *)ListviewObject,
+	    MUIA_Listview_List, (IPTR)(list = (Object *)ListObject,
+        	InputListFrame,
+	    	End),
+	    End),
+        TAG_MORE, (IPTR) msg->ops_AttrList
+    );
+    
+    if (obj)
+    {
+    	struct PopPublicScreen_DATA *data = INST_DATA(cl, obj);
+	
+	data->list = list;
+	
+	data->strobj_hook.h_Entry = HookEntry;
+	data->strobj_hook.h_SubEntry = (HOOKFUNC)PopPublicScreenStrObjFunc;
+	data->strobj_hook.h_Data = data;
+	
+	data->objstr_hook.h_Entry = HookEntry;
+	data->objstr_hook.h_SubEntry = (HOOKFUNC)PopPublicScreenObjStrFunc;
+	data->objstr_hook.h_Data = data;
+	
+	SetAttrs(obj, MUIA_Popobject_StrObjHook, (IPTR)&data->strobj_hook,
+	    	      MUIA_Popobject_ObjStrHook, (IPTR)&data->objstr_hook,
+		      TAG_DONE);
+		     
+		
+	DoMethod(lv, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE,
+	    	 (IPTR)obj, 2, MUIM_Popstring_Close, TRUE); 
+    }
+    
+    return (IPTR)obj;
+}
+
+ZUNE_CUSTOMCLASS_1(
+    PopPublicScreen, NULL, MUIC_Popobject, NULL,
+    OM_NEW, struct opSet*
 )
 
 /* Preferences System tab class */
@@ -109,10 +239,10 @@ static IPTR SystemP_New(struct IClass *cl, Object *obj, struct opSet *msg)
             Child, (IPTR) VSpace(0),
             Child, (IPTR) ColGroup(2),
                 Child, (IPTR) Label1(_(MSG_NAME)),
-                Child, PopscreenObject, 
+                Child, NewObject(PopPublicScreen_CLASS->mcc_Class, NULL, 
         	    MUIA_Popstring_String, (IPTR) (d.screen_name_string = StringObject, MUIA_Frame, MUIV_Frame_String, End),
         	    MUIA_Popstring_Button, PopButton(MUII_PopUp),
-                    End,
+                    TAG_END),
                 Child, HSpace(0),
                 Child, (IPTR) (d.call_psi_button = SimpleButton(_(MSG_CALL_INSPECTOR))),
                 Child, (IPTR) Label1(_(MSG_POP_TO_FRONT)),
