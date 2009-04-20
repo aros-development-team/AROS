@@ -197,7 +197,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
     UBYTE checksum;
     UBYTE order;
 
-    D(bug("[fat] setting name for entry index %ld to '", short_de->index,);
+    D(bug("[fat] setting name for entry index %ld to '", short_de->index);
       RawPutChars(name, len); bug("'\n"));
 
     nlong = NumLongNameEntries(name, len);
