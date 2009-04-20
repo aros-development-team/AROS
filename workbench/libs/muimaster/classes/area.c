@@ -834,6 +834,10 @@ static IPTR Area__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         case MUIA_ContextMenu:
             STORE = (IPTR)data->mad_ContextMenu;
             return TRUE;
+
+        case MUIA_Frame:
+            STORE = (IPTR)data->mad_Frame;
+            return TRUE;
     }
 
     return(DoSuperMethodA(cl, obj, (Msg) msg));
