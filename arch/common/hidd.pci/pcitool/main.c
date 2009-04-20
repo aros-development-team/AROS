@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team.
+    Copyright © 2003-2009, The AROS Development Team.
     $Id$
 */
 
@@ -26,7 +26,7 @@
 #include "support.h"
 
 #define APPNAME "PCITool"
-#define VERSION "pcitool 0.1 (23.01.04)"
+#define VERSION "PCITool 0.2 (20.4.2009)"
 
 static const char version[] = "$VER: " VERSION "\n";
 
@@ -253,10 +253,6 @@ AROS_UFH3(void, select_function,
 	snprintf(buf, 79, "0x%02x", val);
 	set(SubClass, MUIA_Text_Contents, buf);
 
-	OOP_GetAttr(obj, aHidd_PCIDevice_Sub, (APTR)&val);
-	snprintf(buf, 79, "0x%02x", val);
-	set(SubClass, MUIA_Text_Contents, buf);
- 	
 	OOP_GetAttr(obj, aHidd_PCIDevice_IRQLine, (APTR)&val);
 	OOP_GetAttr(obj, aHidd_PCIDevice_INTLine, (APTR)&val2);
 	if (val)
