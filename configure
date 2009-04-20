@@ -11897,6 +11897,8 @@ fi
         *)                 x11_hidd="auto" ;;
     esac
 
+    ENABLE_X11=0
+
         if test "x-$x11_hidd" != "x-no" ; then
 
                 { $as_echo "$as_me:$LINENO: checking for X" >&5
@@ -12162,7 +12164,6 @@ fi
 $as_echo "$as_me: error: X11 libs/headers not found, cannot build X11 hidd as requested" >&2;}
    { (exit 1); exit 1; }; }
             fi
-	    ENABLE_X11=0
 
         else
                         x11_hidd_target=kernel-x11gfx-kobj
@@ -13912,8 +13913,7 @@ $debug ||
 if test -n "$CONFIG_FILES"; then
 
 
-ac_cr='
-'
+ac_cr=''
 ac_cs_awk_cr=`$AWK 'BEGIN { print "a\rb" }' </dev/null 2>/dev/null`
 if test "$ac_cs_awk_cr" = "a${ac_cr}b"; then
   ac_cs_awk_cr='\\r'

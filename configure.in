@@ -1450,6 +1450,8 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
         *)                 x11_hidd="auto" ;;
     esac
 
+    ENABLE_X11=0
+
     dnl they want it
     if test "x-$x11_hidd" != "x-no" ; then
 
@@ -1474,7 +1476,6 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
                 dnl and they explicitly asked for it, bail out
                 AC_MSG_ERROR([X11 libs/headers not found, cannot build X11 hidd as requested])
             fi
-	    ENABLE_X11=0
         
         else
             dnl found it, setup the metatarget
