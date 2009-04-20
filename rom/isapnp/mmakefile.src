@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 FILES := controller devices init pnp pnp_iterators pnp_structs end
 
 USER_CFLAGS := -fomit-frame-pointer -fstrict-aliasing -Os \
-	       -W -Wall -Wstrict-prototypes -Wno-unused
+	       -W -Wall -Wstrict-prototypes -Wno-unused -I$(GENDIR)/$(CURDIR)
 
 %build_module_simple mmake=kernel-isapnp \
     modname=isapnp modtype=resource \
@@ -12,13 +12,13 @@ USER_CFLAGS := -fomit-frame-pointer -fstrict-aliasing -Os \
 # FIXME: %build_module_simple macro doesn't track dependencies.
 #        This definitely needs to be fixed. Until this we'll use
 #        this manual dependency
-$(OBJDIR)/init.o: version.h
+$(OBJDIR)/init.o: $(GENDIR)/$(CURDIR)/version.h
 
-version.h:	version.rev version.date
+$(GENDIR)/$(CURDIR)/version.h:	version.rev version.date
 	@echo Creating $@
-	@ver=`cat version.ver` \
-	 rev=`cat version.rev` \
-	 date=`cat version.date` && \
+	@ver=`cat $(SRCDIR)/$(CURDIR)/version.ver` \
+	 rev=`cat $(SRCDIR)/$(CURDIR)/version.rev` \
+	 date=`cat $(SRCDIR)/$(CURDIR)/version.date` && \
 	 echo "#define VERSION $$ver" > $@ && \
 	 echo "#define REVISION $$rev" >> $@ && \
 	 echo "#define VERS \"$$ver.$$rev ($$date)\"" >> $@
