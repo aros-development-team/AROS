@@ -11,6 +11,8 @@
 #include "SDL_platform.h"
 #include "SDL_config.h"
 #undef HAVE_CTYPE_H
+#undef HAVE_ICONV_H
+#undef HAVE_ICONV
 #include "SDL.h"
 #undef timeval
 
