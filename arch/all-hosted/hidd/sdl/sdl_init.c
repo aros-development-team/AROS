@@ -13,7 +13,7 @@
 #include <proto/hostlib.h>
 #include <proto/exec.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "sdl_intern.h"
@@ -42,9 +42,9 @@ static int sdl_hidd_init(LIBBASETYPEPTR LIBBASE) {
     /* start sdl. we don't catch any signals with a debug build as it plays
      * havoc with the debugger */
 #if DEBUG
-    ret = S(SDL_Init, SDL_INIT_EVERYTHING | SDL_INIT_NOPARACHUTE);
+    ret = S(SDL_Init, SDL_INIT_VIDEO | SDL_INIT_NOPARACHUTE);
 #else
-    ret = S(SDL_Init, SDL_INIT_EVERYTHING);
+    ret = S(SDL_Init, SDL_INIT_VIDEO);
 #endif
 
     if (ret != 0) {
