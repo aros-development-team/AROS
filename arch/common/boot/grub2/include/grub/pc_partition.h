@@ -209,7 +209,7 @@ grub_pc_partition_is_bsd (int type)
 static inline int
 grub_pc_partition_is_rdb(int type)
 {
-  return (type == 0x30);
+  return (type == 0x30 || type == 0x76);
 }
 
 #endif /* ! GRUB_PC_PARTITION_HEADER */
