@@ -1,12 +1,12 @@
 /*
-    Copyright Â© 2009, The AROS Development Team. All rights reserved
-    $Id: timer.c
+    Copyright © 2009, The AROS Development Team. All rights reserved
+    $Id$
 
     Desc:
     Lang: English
 */
 /*
- * CHANGELOG:
+ * PARTIAL CHANGELOG:
  * DATE        NAME                ENTRY
  * ----------  ------------------  -------------------------------------------------------------------
  * 2005-03-06  T. Wiszkowski       few corrections (thanks, Georg)

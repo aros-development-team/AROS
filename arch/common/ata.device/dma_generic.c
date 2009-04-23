@@ -1,12 +1,12 @@
 /*
-    Copyright © 2004-2008, The AROS Development Team. All rights reserved
+    Copyright © 2004-2009, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
     Lang: English
 */
 /*
- * CHANGELOG:
+ * PARTIAL CHANGELOG:
  * DATE        NAME                ENTRY
  * ----------  ------------------  -------------------------------------------------------------------
  * 2008-01-25  T. Wiszkowski       Rebuilt, rearranged and partially fixed 60% of the code here
@@ -141,8 +141,7 @@ BOOL dma_SetupPRDSize(struct ata_Unit *unit, APTR buffer, ULONG size, BOOL read)
     CacheClearE(unit->au_Bus->ab_PRD, items * sizeof(struct PRDEntry), CACRF_ClearD);
     
     ata_outl((ULONG)unit->au_Bus->ab_PRD, dma_PRD, unit->au_DMAPort);
-    ata_out(ata_in(dma_Status, unit->au_DMAPort) | DMAF_Error | DMAF_Interrupt, dma_Status, unit->au_DMAPort);
-    
+
     if (read)
         ata_out(DMA_WRITE, dma_Command, unit->au_DMAPort); /* inverse logic */
     else
@@ -170,21 +169,12 @@ VOID dma_Cleanup(APTR addr, ULONG len, BOOL read)
 VOID dma_StartDMA(struct ata_Unit *unit)
 {
     D(bug("[ATA%02ld] dma_StartDMA()\n", unit->au_UnitNum));
-    ata_in(dma_Command, unit->au_DMAPort);
-    ata_in(dma_Status, unit->au_DMAPort);
     ata_out(ata_in(dma_Command, unit->au_DMAPort) | DMA_START, dma_Command, unit->au_DMAPort);
-    ata_in(dma_Command, unit->au_DMAPort);
-    ata_in(dma_Status, unit->au_DMAPort);
 }
 
 VOID dma_StopDMA(struct ata_Unit *unit)
 {
     D(bug("[ATA%02ld] dma_StopDMA()\n", unit->au_UnitNum));
-    ata_in(dma_Command, unit->au_DMAPort);
-    ata_in(dma_Status, unit->au_DMAPort);
     ata_out(ata_in(dma_Command, unit->au_DMAPort) & ~DMA_START, dma_Command, unit->au_DMAPort);
-    ata_in(dma_Command, unit->au_DMAPort);
-    ata_in(dma_Status, unit->au_DMAPort);
-    ata_out(ata_in(dma_Status, unit->au_DMAPort) | DMAF_Error | DMAF_Interrupt, dma_Status, unit->au_DMAPort);
 }
 

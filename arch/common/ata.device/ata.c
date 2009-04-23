@@ -6,7 +6,7 @@
     Lang: English
 */
 /*
- * CHANGELOG:
+ * PARTIAL CHANGELOG:
  * DATE        NAME                ENTRY
  * ----------  ------------------  -------------------------------------------------------------------
  * 2008-01-25  T. Wiszkowski       Rebuilt, rearranged and partially fixed 60% of the code here
@@ -827,7 +827,7 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
      * Prepare message ports and timer.device's request
      */
     myport      = CreateMsgPort();
-	timer		= ata_OpenTimer();
+    timer = ata_OpenTimer();
     bus         = (struct ata_Bus*)LIBBASE->ata_Buses.mlh_Head;
 
     /*
@@ -886,9 +886,6 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
 
     D(bug("[ATA++] Starting sweep medium presence detection\n"));
 
-//    if (count)
-    if (1)
-    {
         /*
          * Endless loop
          */
@@ -922,17 +919,8 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
             /*
              * And then hide and wait for 1 second
              */
-			ata_WaitTO(timer, 1, 0, 0);
+            ata_WaitTO(timer, 1, 0, 0);
         }
-    }
-    else
-    {
-        /*
-         * Well, when there are no ATAPI devices, daemon is useless. Say goodbye and quit then
-         */
-        D(bug("[%s] Deamon useless (no ATAPI devices in system). Bye\n",FindTask(NULL)->tc_Node.ln_Name));
-		ata_CloseTimer(timer);
-    }
 }
 
 static void TaskCode(struct ata_Bus *, struct Task*, struct SignalSemaphore*);
@@ -977,8 +965,7 @@ int ata_InitBusTask(struct ata_Bus *bus, struct SignalSemaphore *ready)
         bus->ab_MsgPort->mp_SigTask      = t;
         bus->ab_MsgPort->mp_Node.ln_Name = "ATA[PI] Subsystem";
 
-
-        /* Tell the System, which memory regions are to be freed upon a task completion */
+        /* Tell the System which memory regions are to be freed upon a task completion */
         ml->ml_NumEntries = 3;
         ml->ml_ME[0].me_Addr = t;
         ml->ml_ME[0].me_Length = sizeof(struct Task);
@@ -1024,7 +1011,7 @@ static int CreateInterrupt(struct ata_Bus *bus)
             struct pHidd_IRQ_AddHandler __msg__ = {
                 mID:            OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler),
                 handlerinfo:    bus->ab_IntHandler,
-                id:             bus->ab_Irq,
+                id:             bus->ab_IRQ,
             }, *msg = &__msg__;
 
             if (OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg))
