@@ -886,41 +886,41 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
 
     D(bug("[ATA++] Starting sweep medium presence detection\n"));
 
+    /*
+     * Endless loop
+     */
+    for (b=0;;++b)
+    {
         /*
-         * Endless loop
+         * call separate IORequest for every ATAPI device
+         * we're calling HD_SCSICMD+1 command here -- anything like test unit ready?
          */
-        for (b=0;;++b)
+        if (0 == (b & 3))
         {
-            /*
-             * call separate IORequest for every ATAPI device
-             * we're calling HD_SCSICMD+1 command here -- anything like test unit ready?
-             */
-            if (0 == (b & 3))
-            {
-                D(bug("[ATA++] Detecting media presence\n"));
-                for (d=0; d < count; d++)
-                    DoIO((struct IORequest *)ios[d]);
-            }
+            D(bug("[ATA++] Detecting media presence\n"));
+            for (d=0; d < count; d++)
+                DoIO((struct IORequest *)ios[d]);
+        }
 
-            /*
-             * check / trigger all buses waiting for an irq
-             */
-            ForeachNode(&LIBBASE->ata_Buses, bus)
+        /*
+         * check / trigger all buses waiting for an irq
+         */
+        ForeachNode(&LIBBASE->ata_Buses, bus)
+        {
+            if (bus->ab_Timeout >= 0)
             {
-                if (bus->ab_Timeout >= 0)
+                if (0 > (--bus->ab_Timeout))
                 {
-                    if (0 > (--bus->ab_Timeout))
-                    {
-                        Signal(bus->ab_Task, SIGBREAKF_CTRL_C);
-                    }
+                    Signal(bus->ab_Task, SIGBREAKF_CTRL_C);
                 }
             }
-
-            /*
-             * And then hide and wait for 1 second
-             */
-            ata_WaitTO(timer, 1, 0, 0);
         }
+
+        /*
+         * And then hide and wait for 1 second
+         */
+        ata_WaitTO(timer, 1, 0, 0);
+    }
 }
 
 static void TaskCode(struct ata_Bus *, struct Task*, struct SignalSemaphore*);
