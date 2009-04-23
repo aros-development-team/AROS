@@ -9,7 +9,7 @@ Desc: ata.device main private include file
 Lang: English
 */
 /*
- * CHANGELOG:
+ * PARTIAL CHANGELOG:
  * DATE        NAME                ENTRY
  * ----------  ------------------  -------------------------------------------------------------------
  * 2008-01-25  T. Wiszkowski       Rebuilt, rearranged and partially fixed 60% of the code here
@@ -132,13 +132,12 @@ struct ata_Bus
    struct ataBase          *ab_Base;   /* device self */
    ULONG                   ab_Port;    /* IO port used */
    ULONG                   ab_Alt;     /* alternate io port */
-   UBYTE                   ab_Irq;     /* IRQ used */
+   UBYTE                   ab_IRQ;     /* IRQ number used */
    UBYTE                   ab_Dev[2];  /* Master/Slave type, see below */
    UBYTE                   ab_Flags;   /* Bus flags similar to unit flags */
    BYTE                    ab_SleepySignal; /* Signal used to wake the task up, when it's waiting */
    /* for data requests/DMA */
    UBYTE                   ab_BusNum;  /* bus id - used to calculate device id */
-   BOOL                    ab_IRQ;     /* set if IRQ is enabled */
    LONG                    ab_Timeout; /* in seconds; please note that resolution is low (1sec) */
 
    struct ata_Unit         *ab_Units[MAX_BUSUNITS];    /* Units on the bus */
@@ -191,7 +190,7 @@ struct DriveIdent {
    UWORD       pad6[2];                // 57-58
    UWORD       id_RWMultipleTrans;     // 59
    ULONG       id_LBASectors;          // 60-61
-   UWORD       pad7;                   // 62
+   UWORD       id_DMADir;              // 62
    UWORD       id_MWDMASupport;        // 63
    UWORD       id_PIOSupport;          // 64
    UWORD       id_MWDMA_MinCycleTime;  // 65
@@ -211,8 +210,8 @@ struct DriveIdent {
    UWORD       id_Commands6;           // 87
    UWORD       id_UDMASupport;         // 88
    UWORD       id_SecurityEraseTime;   // 89
-   UWORD       id_EnchSecurityEraseTime; // 90
-   UWORD       id_CurrentAdvowerMode;  // 91
+   UWORD       id_ESecurityEraseTime;  // 90
+   UWORD       id_CurrentAdvPowerMode; // 91
    UWORD       id_MasterPwdRevision;   // 92
    UWORD       id_HWResetResult;       // 93
    UWORD       id_AcousticManagement;  // 94
@@ -330,18 +329,10 @@ typedef enum
    AB_XFER_PIO2,
    AB_XFER_PIO3,
    AB_XFER_PIO4,
-   AB_XFER_PIO5,
-   AB_XFER_PIO6,
-   AB_XFER_PIO7,
 
    AB_XFER_MDMA0,
    AB_XFER_MDMA1,
    AB_XFER_MDMA2,
-   AB_XFER_MDMA3,
-   AB_XFER_MDMA4,
-   AB_XFER_MDMA5,
-   AB_XFER_MDMA6,
-   AB_XFER_MDMA7,
 
    AB_XFER_UDMA0,
    AB_XFER_UDMA1,
@@ -350,7 +341,6 @@ typedef enum
    AB_XFER_UDMA4,
    AB_XFER_UDMA5,
    AB_XFER_UDMA6,
-   AB_XFER_UDMA7,
 
    AB_XFER_48BIT,
    AB_XFER_RWMULTI,
@@ -373,10 +363,12 @@ typedef enum
 #define AB_DiscPresent          30     /* disc now in drive */
 #define AB_DiscChanged          29     /* disc changed */
 #define AB_Removable            28     /* media removable */
+#define AB_80Wire               27     /* has an 80-wire cable */
 
 #define AF_DiscPresent          (1 << AB_DiscPresent)
 #define AF_DiscChanged          (1 << AB_DiscChanged)
 #define AF_Removable            (1 << AB_Removable)
+#define AF_80Wire               (1 << AB_80Wire)
 
 /* ATA/ATAPI registers */
 #define ata_Error           1
@@ -497,7 +489,6 @@ ULONG ata_Identify(struct ata_Unit*);
 
 ULONG atapi_DirectSCSI(struct ata_Unit*, struct SCSICmd *);
 ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen);
-void ata_EnableIRQ(struct ata_Bus *bus, BOOL enable);
 
 int ata_InitBusTask(struct ata_Bus *, struct SignalSemaphore*);
 int ata_InitDaemonTask(struct ataBase *);

@@ -1,12 +1,12 @@
 /*
-    Copyright Â© 2009, The AROS Development Team. All rights reserved
-    $Id: aoeui
+    Copyright © 2009, The AROS Development Team. All rights reserved
+    $Id$
 
     Desc:
     Lang: English
 */
 /*
- * CHANGELOG:
+ * PARTIAL CHANGELOG:
  * DATE        NAME                ENTRY
  * ----------  ------------------  -------------------------------------------------------------------
  * 2005-03-05  T. Wiszkowski       created file; initial benchmarked nanowait and timer-based micro/sec wait
@@ -53,7 +53,7 @@ ULONG ata_WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro, ULONG sigs);
  * result
  *   none
  * note
- *   rounds up ns to nearest multiply of 100
+ *   rounds up ns to nearest multiple of 100
  */
 void ata_WaitNano(ULONG ns);
 
