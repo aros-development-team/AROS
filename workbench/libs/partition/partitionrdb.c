@@ -74,7 +74,7 @@ struct TagItem tags[] = {{PT_TYPE, (IPTR)&type}, {TAG_DONE, 0}};
         if (
             root->root->table->type != PHPTT_MBR &&
             root->root->table->type != PHPTT_EBR ||
-            type.id[0] != 0x30
+            type.id[0] != 0x30 && type.id[0] != 0x76
             )
         {
             return 0;
