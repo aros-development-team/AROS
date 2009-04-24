@@ -122,7 +122,7 @@ static LONG getVendorIndex(UWORD vendorID)
 	if (vid == vendorID)
 	    return vendor_index[(upper + lower) / 2].offset;
 	if (vendorID > vid)
-	    lower = (upper + lower) / 2;
+	    lower = (upper + lower) / 2 + 1;
 	else
 	    upper = (upper + lower) / 2;
     }
