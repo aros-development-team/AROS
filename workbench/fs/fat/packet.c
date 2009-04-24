@@ -54,7 +54,7 @@ void ProcessPackets(void) {
                     break;
 
                 if ((err = OpLockFile(fl, &path[1], path[0], access, &lock)) == 0)
-                    res = MKBADDR(lock);
+                    res = (LONG)MKBADDR(lock);
 
                 break;
             }
@@ -84,7 +84,7 @@ void ProcessPackets(void) {
                     break;
 
                 if ((err = OpCopyLock(fl, &lock)) == 0)
-                    res = MKBADDR(lock);
+                    res = (LONG)MKBADDR(lock);
 
                 break;
             }
@@ -101,7 +101,7 @@ void ProcessPackets(void) {
                     break;
  
                 if ((err = OpLockParent(fl, &lock)) == 0)
-                    res = MKBADDR(lock);
+                    res = (LONG)MKBADDR(lock);
 
                 break;
             }
@@ -211,7 +211,7 @@ void ProcessPackets(void) {
                 if ((err = OpOpenFile(fl, &path[1], path[0], pkt->dp_Type, &lock)) != 0)
                     break;
 
-                fh->fh_Arg1 = MKBADDR(lock);
+                fh->fh_Arg1 = (LONG)MKBADDR(lock);
                 fh->fh_Port = DOSFALSE;
 
                 res = DOSTRUE;
@@ -360,7 +360,7 @@ void ProcessPackets(void) {
                 D(bug("[fat] CURRENT_VOLUME: lock 0x%08x\n",
                       pkt->dp_Arg1));
 
-                res = (fl) ? fl->fl_Volume : ((glob->sb != NULL) ? MKBADDR(glob->sb->doslist) : NULL);
+                res = (LONG)((fl) ? fl->fl_Volume : ((glob->sb != NULL) ? MKBADDR(glob->sb->doslist) : NULL));
                 break;
             }
 
@@ -576,7 +576,7 @@ void ProcessPackets(void) {
                     break;
 
                 if ((err = OpCreateDir(fl, &name[1], name[0], &new)) == 0)
-                    res = MKBADDR(new);
+                    res = (LONG)MKBADDR(new);
 
                 break;
             }
