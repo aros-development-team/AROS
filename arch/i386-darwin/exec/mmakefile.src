@@ -17,7 +17,7 @@ $(GENINCDIR)/sigcore.h : sigcore.h
 	$(CP) $^ $@
 
 USER_INCLUDES := -I$(GENINCDIR)
-USER_CFLAGS := -I$(TOP)/rom/exec
+USER_CFLAGS := -I$(SRCDIR)/rom/exec
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=darwin-i386 \
