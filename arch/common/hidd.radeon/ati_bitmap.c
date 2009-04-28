@@ -1172,14 +1172,8 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImageLUT)
 {
     atiBitMap *bm = OOP_INST_DATA(cl, o);
 
-//    bug("[ATI] PutImageLUT(%d, %d, %d, %d, %d, %p)\n", msg->x, msg->y, msg->width, msg->height, msg->modulo, msg->pixels);
-
     LOCK_BITMAP
 
-
-
-//    IPTR VideoData = bm->framebuffer;
-//
     if (bm->fbgfx)
     {
 
@@ -1296,66 +1290,6 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImageLUT)
 #endif
 
 		UNLOCK_HW
-
-//       VideoData += (IPTR)sd->Card.FrameBuffer;
-//
-//        if (sd->Card.Busy)
-//        {
-//            LOCK_HW
-//#warning TODO: NVSync(sd)
-//            RADEONWaitForIdleMMIO(sd);
-//            UNLOCK_HW
-//        }
-//    }
-//
-//    switch(bm->bpp)
-//    {
-//        case 2:
-//            {
-//            struct pHidd_BitMap_CopyLUTMemBox16 __m = {
-//                    sd->mid_CopyLUTMemBox16,
-//                    msg->pixels,
-//                    0,
-//                    0,
-//                    (APTR)VideoData,
-//                    msg->x,
-//                    msg->y,
-//                    msg->width,
-//                    msg->height,
-//                    msg->modulo,
-//                    bm->pitch,
-//                    msg->pixlut
-//            }, *m = &__m;
-//
-//            OOP_DoMethod(o, (OOP_Msg)m);
-//            }
-//            break;
-//
-//        case 4:
-//            {
-//            struct pHidd_BitMap_CopyLUTMemBox32 __m = {
-//                    sd->mid_CopyLUTMemBox32,
-//                    msg->pixels,
-//                    0,
-//                    0,
-//                    (APTR)VideoData,
-//                    msg->x,
-//                    msg->y,
-//                    msg->width,
-//                    msg->height,
-//                    msg->modulo,
-//                    bm->pitch,
-//                    msg->pixlut
-//            }, *m = &__m;
-//
-//            OOP_DoMethod(o, (OOP_Msg)m);
-//            }
-//            break;
-//
-//        default:
-//            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-//            break;
-//
     }
     else
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -1363,6 +1297,286 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImageLUT)
     UNLOCK_BITMAP
 }
 
+static inline int do_alpha(int a, int v)
+{
+	int tmp = a*v;
+	return ((tmp << 8) + tmp + 32768) >> 16;
+}
+
+VOID METHOD(ATIOffBM, Hidd_BitMap, PutAlphaImage)
+    __attribute__((alias(METHOD_NAME_S(ATIOnBM, Hidd_BitMap, PutAlphaImage))));
+
+VOID METHOD(ATIOnBM, Hidd_BitMap, PutAlphaImage)
+{
+    atiBitMap *bm = OOP_INST_DATA(cl, o);
+    BOOL done = FALSE;
+
+    LOCK_BITMAP
+
+    IPTR VideoData = bm->framebuffer;
+
+    /* Try to PutAlphaImage with 2D engine first */
+    if (bm->fbgfx)
+    {
+    	ULONG x_add = (msg->modulo - msg->width * 4) >> 2;
+    	UWORD height = msg->height;
+    	UWORD bw = msg->width;
+        ULONG *pixarray = msg->pixels;
+        ULONG y = msg->y;
+        ULONG x;
+
+D(bug("ATI: PutAlphaImage(%d, %d, %d:%d)\n", msg->x, msg->y, msg->width, msg->height));
+
+		/* We're not going to use the 2D engine now. Therefore, flush the chip */
+        if (sd->Card.Busy)
+        {
+            LOCK_HW
+            RADEONWaitForIdleMMIO(sd);
+            UNLOCK_HW
+        }
+
+        /*
+         * Treat each depth case separately
+         */
+        if (bm->bpp == 4)
+        {
+        	while(height--)
+        	{
+        		ULONG *xbuf = bm->addresses[y];
+        		xbuf += msg->x;
+
+        		for (x=0; x < bw; x++)
+        		{
+        			ULONG       destpix;
+        			ULONG       srcpix;
+        			LONG        src_red, src_green, src_blue, src_alpha;
+        			LONG        dst_red, dst_green, dst_blue;
+
+					/* Read RGBA pixel from input array */
+        			srcpix = *pixarray++;
+#if AROS_BIG_ENDIAN
+        			src_red   = (srcpix & 0x00FF0000) >> 16;
+        			src_green = (srcpix & 0x0000FF00) >> 8;
+        			src_blue  = (srcpix & 0x000000FF);
+        			src_alpha = (srcpix & 0xFF000000) >> 24;
+#else
+        			src_red   = (srcpix & 0x0000FF00) >> 8;
+        			src_green = (srcpix & 0x00FF0000) >> 16;
+        			src_blue  = (srcpix & 0xFF000000) >> 24;
+        			src_alpha = (srcpix & 0x000000FF);
+#endif
+
+        			/*
+        			 * If alpha=0, do not change the destination pixel at all.
+        			 * This saves us unnecessary reads and writes to VRAM.
+        			 */
+					if (src_alpha != 0)
+					{
+						/*
+						 * Full opacity. Do not read the destination pixel, as
+						 * it's value does not matter anyway.
+						 */
+						if (src_alpha == 0xff)
+						{
+							dst_red = src_red;
+							dst_green = src_green;
+							dst_blue = src_blue;
+						}
+						else
+						{
+							/*
+							 * Alpha blending with source and destination pixels.
+							 * Get destination.
+							 */
+							destpix = xbuf[x];
+
+//					#if AROS_BIG_ENDIAN
+//							dst_red   = (destpix & 0x0000FF00) >> 8;
+//							dst_green = (destpix & 0x00FF0000) >> 16;
+//							dst_blue  = (destpix & 0xFF000000) >> 24;
+//					#else
+							dst_red   = (destpix & 0x00FF0000) >> 16;
+							dst_green = (destpix & 0x0000FF00) >> 8;
+							dst_blue  = (destpix & 0x000000FF);
+//					#endif
+
+							dst_red   += do_alpha(src_alpha, src_red - dst_red);
+							dst_green += do_alpha(src_alpha, src_green - dst_green);
+							dst_blue  += do_alpha(src_alpha, src_blue - dst_blue);
+
+						}
+
+//					#if AROS_BIG_ENDIAN
+//                    destpix = (dst_blue << 24) + (dst_green << 16) + (dst_red << 8);
+//                #else
+						destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
+//                #endif
+
+						/* Store the new pixel */
+						xbuf[x] = destpix;
+					}
+        		}
+
+        		y++;
+        		pixarray += x_add;
+        	}
+        }
+        /* 2bpp cases... */
+        else if (bm->bpp == 2)
+        {
+        	if (bm->depth == 16)
+        	{
+				while(height--)
+				{
+					UWORD *xbuf = bm->addresses[y];
+					xbuf += msg->x;
+
+					for (x=0; x < bw; x++)
+					{
+						UWORD       destpix;
+						ULONG       srcpix;
+						LONG        src_red, src_green, src_blue, src_alpha;
+						LONG        dst_red, dst_green, dst_blue;
+
+						srcpix = *pixarray++;
+#if AROS_BIG_ENDIAN
+						src_red   = (srcpix & 0x00FF0000) >> 16;
+						src_green = (srcpix & 0x0000FF00) >> 8;
+						src_blue  = (srcpix & 0x000000FF);
+						src_alpha = (srcpix & 0xFF000000) >> 24;
+#else
+						src_red   = (srcpix & 0x0000FF00) >> 8;
+						src_green = (srcpix & 0x00FF0000) >> 16;
+						src_blue  = (srcpix & 0xFF000000) >> 24;
+						src_alpha = (srcpix & 0x000000FF);
+#endif
+
+						/*
+						 * If alpha=0, do not change the destination pixel at all.
+						 * This saves us unnecessary reads and writes to VRAM.
+						 */
+						if (src_alpha != 0)
+						{
+							/*
+							 * Full opacity. Do not read the destination pixel, as
+							 * it's value does not matter anyway.
+							 */
+							if (src_alpha == 0xff)
+							{
+								dst_red = src_red;
+								dst_green = src_green;
+								dst_blue = src_blue;
+							}
+							else
+							{
+								/*
+								 * Alpha blending with source and destination pixels.
+								 * Get destination.
+								 */
+
+								destpix = xbuf[x];
+
+								dst_red   = (destpix & 0x0000F800) >> 8;
+								dst_green = (destpix & 0x000007e0) >> 3;
+								dst_blue  = (destpix & 0x0000001f) << 3;
+
+								dst_red   += do_alpha(src_alpha, src_red - dst_red);
+								dst_green += do_alpha(src_alpha, src_green - dst_green);
+								dst_blue  += do_alpha(src_alpha, src_blue - dst_blue);
+							}
+
+							destpix = (((dst_red << 8) & 0xf800) | ((dst_green << 3) & 0x07e0) | ((dst_blue >> 3) & 0x001f));
+
+							xbuf[x] = destpix;
+						}
+					}
+
+					y++;
+					pixarray += x_add;
+				}
+        	}
+        	else if (bm->depth == 15)
+        	{
+        		while(height--)
+        		{
+					UWORD *xbuf = bm->addresses[y];
+					xbuf += msg->x;
+
+					for (x=0; x < bw; x++)
+					{
+						UWORD       destpix;
+						ULONG       srcpix;
+						LONG        src_red, src_green, src_blue, src_alpha;
+						LONG        dst_red, dst_green, dst_blue;
+
+						srcpix = *pixarray++;
+#if AROS_BIG_ENDIAN
+						src_red   = (srcpix & 0x00FF0000) >> 16;
+						src_green = (srcpix & 0x0000FF00) >> 8;
+						src_blue  = (srcpix & 0x000000FF);
+						src_alpha = (srcpix & 0xFF000000) >> 24;
+#else
+						src_red   = (srcpix & 0x0000FF00) >> 8;
+						src_green = (srcpix & 0x00FF0000) >> 16;
+						src_blue  = (srcpix & 0xFF000000) >> 24;
+						src_alpha = (srcpix & 0x000000FF);
+#endif
+						/*
+						 * If alpha=0, do not change the destination pixel at all.
+						 * This saves us unnecessary reads and writes to VRAM.
+						 */
+						if (src_alpha != 0)
+						{
+							/*
+							 * Full opacity. Do not read the destination pixel, as
+							 * it's value does not matter anyway.
+							 */
+							if (src_alpha == 0xff)
+							{
+								dst_red = src_red;
+								dst_green = src_green;
+								dst_blue = src_blue;
+							}
+							else
+							{
+								/*
+								 * Alpha blending with source and destination pixels.
+								 * Get destination.
+								 */
+
+								destpix = xbuf[x];
+
+								dst_red   = (destpix & 0x00007c00) >> 7;
+								dst_green = (destpix & 0x000003e0) >> 2;
+								dst_blue  = (destpix & 0x0000001f) << 3;
+
+								dst_red   += do_alpha(src_alpha, src_red - dst_red);
+								dst_green += do_alpha(src_alpha, src_green - dst_green);
+								dst_blue  += do_alpha(src_alpha, src_blue - dst_blue);
+
+								destpix = (ULONG)(((dst_red << 7) & 0x7c00) | ((dst_green << 2) & 0x03e0) | ((dst_blue >> 3) & 0x001f));
+							}
+
+							xbuf[x] = destpix;
+						}
+					}
+
+					y++;
+					pixarray += x_add;
+        		}
+        	}
+        	else
+            	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+        }
+        else
+        	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    }
+    else
+    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    UNLOCK_BITMAP
+}
 
 VOID METHOD(ATIOffBM, Hidd_BitMap, PutImage)
     __attribute__((alias(METHOD_NAME_S(ATIOnBM, Hidd_BitMap, PutImage))));
@@ -1659,9 +1873,6 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImage)
 
     if (!done)
     {
-//    	bug("[ATI] PutImage x=%d y=%d w=%d h=%d bpp=%d fmt=%d\n", msg->x, msg->y, msg->width, msg->height, bm->bpp, msg->pixFmt);
-
-
     	if (bm->fbgfx)
         {
 			VideoData += (IPTR)sd->Card.FrameBuffer;
