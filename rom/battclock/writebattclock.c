@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: WriteBattClock()
@@ -21,11 +21,11 @@
 	APTR *, BattClockBase, 3, Battclock)
 
 /*  FUNCTION
-	Set the systems battery backed up clock to the time specified. The
+	Set the system's battery backed up clock to the time specified. The
 	value should be the number of seconds since 00:00:00 on 1.1.1978.
 
     INPUTS
-	time    -   The number of seconds elapsed since 00:00:00 1.1.1978
+	time - The number of seconds elapsed since 00:00:00 1.1.1978
 
     RESULT
 	The clock will be set.
@@ -42,10 +42,6 @@
 	ReadBattClock, ResetBattClock
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    battclock_lib.fd and clib/battclock_protos.h
 
 *****************************************************************************/
 {

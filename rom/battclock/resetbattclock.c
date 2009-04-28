@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ResetBattClock()
@@ -21,7 +21,7 @@
 	APTR, BattClockBase, 1, Battclock)
 
 /*  FUNCTION
-	Reset the system battery backed up clock. This will reset the clock
+	Reset the system battery-backed-up clock. This will reset the clock
 	back to 0 seconds (or midnight, 1st Jan 1978).
 
     INPUTS
@@ -43,15 +43,11 @@
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    battclock_lib.fd and clib/battclock_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    return;
+    WriteBattClock(0);
 
     AROS_LIBFUNC_EXIT
 } /* ResetBattClock */
