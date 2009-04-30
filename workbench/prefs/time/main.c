@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -200,6 +200,19 @@ static void CloseTimerDev(void)
     if (TimerMP)
     {
     	DeleteMsgPort(TimerMP);
+    }
+}
+
+/*********************************************************************************************/
+
+static void OpenBattClockRes(void)
+{
+    BattClockBase = OpenResource("battclock.resource");
+
+    if (!BattClockBase)
+    {
+    	sprintf(s, MSG(MSG_CANT_OPEN_LIB), "battclock.resource", 0);
+	Cleanup(s);
     }
 }
 
@@ -750,8 +763,10 @@ static void HandleAll(void)
 		clockdata.year  = cal_date.year;
 		clockdata.wday  = cal_date.wday;
 
-	    	UsePrefs();
-		
+                if (returnid == RETURNID_SAVE)
+                    SavePrefs();
+                else
+                    UsePrefs();
 	    }
 	    break;
 	    
@@ -766,6 +781,7 @@ int main(void)
     InitMenus();
     OpenLibs();
     OpenTimerDev();
+    OpenBattClockRes();
     GetArguments();
     InitPrefs((args[ARG_USE] ? TRUE : FALSE), (args[ARG_SAVE] ? TRUE : FALSE));
     GetVisual();
