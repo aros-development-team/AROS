@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -51,6 +51,12 @@ BOOL UsePrefs(void)
 
 BOOL SavePrefs(void)
 {
+    ULONG secs;
+
+    secs = Date2Amiga(&clockdata);
+    WriteBattClock(secs);
+    UsePrefs();
+
     return TRUE;
 }
 

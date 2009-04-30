@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -121,6 +121,10 @@
 
 #ifndef PROTO_TIMER_H
 #include <proto/timer.h>
+#endif
+
+#ifndef PROTO_BATTCLOCK_H
+#include <proto/battclock.h>
 #endif
 
 #ifndef PROTO_MUIMASTER_H

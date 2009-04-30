@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -23,6 +23,7 @@ VAR struct Library              *LocaleBase;
 
 VAR struct Library  	    	*MUIMasterBase;
 VAR struct Device	    	*TimerBase;
+VAR APTR			BattClockBase;
 VAR struct MUI_CustomClass  	*calendarmcc;
 VAR struct MUI_CustomClass  	*clockmcc;
 VAR struct MsgPort  	    	*TimerMP;
