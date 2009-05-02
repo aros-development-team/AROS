@@ -401,6 +401,28 @@ DEFINE_main(name)                                              \
 #define __SH_HELP(name, help) stringify(name) ": " help "\n"
 #define __SHA_HELP(type, abbr, name, modf, def, help) help
 
+#define AROS_SH12H(name, version, help, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) \
+        __AROS_SH12(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3) __SHA_HELP(a4) __SHA_HELP(a5) __SHA_HELP(a6) __SHA_HELP(a7) __SHA_HELP(a8) __SHA_HELP(a9) __SHA_HELP(a10) __SHA_HELP(a11) __SHA_HELP(a12), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7), __AROS_SHA(a8), __AROS_SHA(a9), __AROS_SHA(a10), __AROS_SHA(a11), __AROS_SHA(a12))
+#define AROS_SH11H(name, version, help, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) \
+        __AROS_SH11(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3) __SHA_HELP(a4) __SHA_HELP(a5) __SHA_HELP(a6) __SHA_HELP(a7) __SHA_HELP(a8) __SHA_HELP(a9) __SHA_HELP(a10) __SHA_HELP(a11), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7), __AROS_SHA(a8), __AROS_SHA(a9), __AROS_SHA(a10), __AROS_SHA(a11))
+#define AROS_SH10H(name, version, help, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) \
+        __AROS_SH10(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3) __SHA_HELP(a4) __SHA_HELP(a5) __SHA_HELP(a6) __SHA_HELP(a7) __SHA_HELP(a8) __SHA_HELP(a9) __SHA_HELP(a10), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7), __AROS_SHA(a8), __AROS_SHA(a9), __AROS_SHA(a10))
+#define AROS_SH9H(name, version, help, a1, a2, a3, a4, a5, a6, a7, a8, a9) \
+        __AROS_SH9(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3) __SHA_HELP(a4) __SHA_HELP(a5) __SHA_HELP(a6) __SHA_HELP(a7) __SHA_HELP(a8) __SHA_HELP(a9), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7), __AROS_SHA(a8), __AROS_SHA(a9))
+#define AROS_SH8H(name, version, help, a1, a2, a3, a4, a5, a6, a7, a8) \
+        __AROS_SH8(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3) __SHA_HELP(a4) __SHA_HELP(a5) __SHA_HELP(a6) __SHA_HELP(a7) __SHA_HELP(a8), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7), __AROS_SHA(a8))
+#define AROS_SH7H(name, version, help, a1, a2, a3, a4, a5, a6, a7) \
+        __AROS_SH7(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3) __SHA_HELP(a4) __SHA_HELP(a5) __SHA_HELP(a6) __SHA_HELP(a7), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7))
+#define AROS_SH6H(name, version, help, a1, a2, a3, a4, a5, a6) \
+        __AROS_SH6(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3) __SHA_HELP(a4) __SHA_HELP(a5) __SHA_HELP(a6), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6))
+#define AROS_SH5H(name, version, help, a1, a2, a3, a4, a5) \
+        __AROS_SH5(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3) __SHA_HELP(a4) __SHA_HELP(a5), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5))
+#define AROS_SH4H(name, version, help, a1, a2, a3, a4) \
+        __AROS_SH4(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3) __SHA_HELP(a4), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4))
+#define AROS_SH3H(name, version, help, a1, a2, a3) \
+        __AROS_SH3(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3))
+#define AROS_SH2H(name, version, help, a1, a2) \
+        __AROS_SH2(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2), __AROS_SHA(a1), __AROS_SHA(a2))
 #define AROS_SH1H(name, version, help, a1) \
         __AROS_SH1(name, version, __SH_HELP(name, help) __SHA_HELP(a1),  __AROS_SHA(a1))
 #define AROS_SH0H(name, version, help) \
