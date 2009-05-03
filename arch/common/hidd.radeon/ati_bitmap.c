@@ -494,29 +494,52 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawLine)
         if (GC_DOCLIP(gc))
         {
             bm->dp_gui_master_cntl_clip |= RADEON_GMC_DST_CLIPPING;
-            UWORD x1,y1,x2,y2;
+            WORD x1,y1,x2,y2;
             x1 = GC_CLIPX1(gc);
             y1 = GC_CLIPY1(gc);
             x2 = GC_CLIPX2(gc) + 1;
             y2 = GC_CLIPY2(gc) + 1;
 
-            RADEONWaitForFifo(sd, 2);
-            OUTREG(RADEON_SC_TOP_LEFT,        (y1 << 16) | x1);
-            OUTREG(RADEON_SC_BOTTOM_RIGHT,    (y2 << 16) | x2);
+            if (x1 < 0)
+            {
+            	x1 = (-x1) & 0x3fff;
+            	x1 |= RADEON_SC_SIGN_MASK_LO;
+            }
+            if (x2 < 0)
+            {
+            	x2 = (-x2) & 0x3fff;
+            	x2 |= RADEON_SC_SIGN_MASK_LO;
+            }
+            if (y1 < 0)
+            {
+            	y1 = (-y1) & 0x3fff;
+            	y1 |= RADEON_SC_SIGN_MASK_LO;
+            }
+            if (y2 < 0)
+            {
+            	y2 = (-y2) & 0x3fff;
+            	y2 |= RADEON_SC_SIGN_MASK_LO;
+            }
+
+            RADEONWaitForFifo(sd, 5);
+            OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+            OUTREG(RADEON_SC_TOP_LEFT,        (y1 << 16) | (UWORD)x1);
+            OUTREG(RADEON_SC_BOTTOM_RIGHT,    (y2 << 16) | (UWORD)x2);
         }
-
-        RADEONWaitForFifo(sd, 3);
-
-        OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+        else
+        {
+            RADEONWaitForFifo(sd, 3);
+            OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+        }
         OUTREG(RADEON_DP_BRUSH_FRGD_CLR,  GC_FG(gc));
         OUTREG(RADEON_DP_WRITE_MASK,      ~0);
 
-        RADEONWaitForFifo(sd, 4);
+        RADEONWaitForFifo(sd, 2);
 
-        OUTREG(RADEON_DST_LINE_START, (msg->y1 << 16) | msg->x1);
-        OUTREG(RADEON_DST_LINE_END,   (msg->y2 << 16) | msg->x2);
-        OUTREG(RADEON_DST_LINE_START, (msg->y2 << 16) | msg->x2);
-        OUTREG(RADEON_DST_LINE_END,   ((msg->y2+1) << 16) | (msg->x2+1));
+        OUTREG(RADEON_DST_LINE_START, (msg->y1 << 16) | (UWORD)msg->x1);
+        OUTREG(RADEON_DST_LINE_END,   (msg->y2 << 16) | (UWORD)msg->x2);
+//        OUTREG(RADEON_DST_LINE_START, (msg->y2 << 16) | msg->x2);
+//        OUTREG(RADEON_DST_LINE_END,   ((msg->y2+1) << 16) | (msg->x2+1));
 
         UNLOCK_HW
     }
@@ -575,14 +598,37 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawRect)
             x2 = GC_CLIPX2(gc) + 1;
             y2 = GC_CLIPY2(gc) + 1;
 
-            RADEONWaitForFifo(sd, 2);
-            OUTREG(RADEON_SC_TOP_LEFT,        (y1 << 16) | x1);
-            OUTREG(RADEON_SC_BOTTOM_RIGHT,    (y2 << 16) | x2);
+            if (x1 < 0)
+            {
+            	x1 = (-x1) & 0x3fff;
+            	x1 |= RADEON_SC_SIGN_MASK_LO;
+            }
+            if (x2 < 0)
+            {
+            	x2 = (-x2) & 0x3fff;
+            	x2 |= RADEON_SC_SIGN_MASK_LO;
+            }
+            if (y1 < 0)
+            {
+            	y1 = (-y1) & 0x3fff;
+            	y1 |= RADEON_SC_SIGN_MASK_LO;
+            }
+            if (y2 < 0)
+            {
+            	y2 = (-y2) & 0x3fff;
+            	y2 |= RADEON_SC_SIGN_MASK_LO;
+            }
+
+            RADEONWaitForFifo(sd, 5);
+            OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+            OUTREG(RADEON_SC_TOP_LEFT,        (y1 << 16) | (UWORD)x1);
+            OUTREG(RADEON_SC_BOTTOM_RIGHT,    (y2 << 16) | (UWORD)x2);
         }
-
-        RADEONWaitForFifo(sd, 3);
-
-        OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+        else
+        {
+        	RADEONWaitForFifo(sd, 3);
+        	OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+        }
         OUTREG(RADEON_DP_BRUSH_FRGD_CLR,  GC_FG(gc));
         OUTREG(RADEON_DP_WRITE_MASK,      ~0);
 
@@ -654,22 +700,45 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawPolygon)
             x2 = GC_CLIPX2(gc) + 1;
             y2 = GC_CLIPY2(gc) + 1;
 
-            RADEONWaitForFifo(sd, 2);
-            OUTREG(RADEON_SC_TOP_LEFT,        (y1 << 16) | x1);
-            OUTREG(RADEON_SC_BOTTOM_RIGHT,    (y2 << 16) | x2);
+            if (x1 < 0)
+            {
+            	x1 = (-x1) & 0x3fff;
+            	x1 |= RADEON_SC_SIGN_MASK_LO;
+            }
+            if (x2 < 0)
+            {
+            	x2 = (-x2) & 0x3fff;
+            	x2 |= RADEON_SC_SIGN_MASK_LO;
+            }
+            if (y1 < 0)
+            {
+            	y1 = (-y1) & 0x3fff;
+            	y1 |= RADEON_SC_SIGN_MASK_LO;
+            }
+            if (y2 < 0)
+            {
+            	y2 = (-y2) & 0x3fff;
+            	y2 |= RADEON_SC_SIGN_MASK_LO;
+            }
+
+            RADEONWaitForFifo(sd, 5);
+            OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+            OUTREG(RADEON_SC_TOP_LEFT,        (y1 << 16) | (UWORD)x1);
+            OUTREG(RADEON_SC_BOTTOM_RIGHT,    (y2 << 16) | (UWORD)x2);
         }
-
-        RADEONWaitForFifo(sd, 3);
-
-        OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+        else
+        {
+            RADEONWaitForFifo(sd, 3);
+            OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+        }
         OUTREG(RADEON_DP_BRUSH_FRGD_CLR,  GC_FG(gc));
         OUTREG(RADEON_DP_WRITE_MASK,      ~0);
 
         for (i = 2; i < (2 * msg->n); i+=2)
         {
             RADEONWaitForFifo(sd, 2);
-            OUTREG(RADEON_DST_LINE_START, (msg->coords[i-1] << 16) | msg->coords[i-2]);
-            OUTREG(RADEON_DST_LINE_END,   (msg->coords[i+1] << 16) | msg->coords[i]);
+            OUTREG(RADEON_DST_LINE_START, (msg->coords[i-1] << 16) | (UWORD)msg->coords[i-2]);
+            OUTREG(RADEON_DST_LINE_END,   (msg->coords[i+1] << 16) | (UWORD)msg->coords[i]);
         }
 
         UNLOCK_HW
@@ -1067,11 +1136,11 @@ void METHOD(ATIOnBM, Hidd_BitMap, BlitColorExpansion)
             OUTREG(RADEON_DP_SRC_BKGD_CLR,  bg);
         }
 
-        OUTREG(RADEON_SC_TOP_LEFT,        (y << 16) | x);
-		OUTREG(RADEON_SC_BOTTOM_RIGHT,    ((y+h) << 16) | (x+w));
+        OUTREG(RADEON_SC_TOP_LEFT,        (y << 16) | (UWORD)x);
+		OUTREG(RADEON_SC_BOTTOM_RIGHT,    ((y+h) << 16) | (UWORD)(x+w));
 
-        OUTREG(RADEON_DST_X_Y,          ((x - skipleft) << 16) | y);
-        OUTREG(RADEON_DST_WIDTH_HEIGHT, (bw << 16) | h);
+        OUTREG(RADEON_DST_X_Y,          ((x - skipleft) << 16) | (UWORD)y);
+        OUTREG(RADEON_DST_WIDTH_HEIGHT, (bw << 16) | (UWORD)h);
 
     	ULONG *ptr = (ULONG*)planar->planes[0];
     	ptr += ((msg->srcY * planar->bytesperrow) >> 2) + (msg->srcX >> 5);
@@ -1205,11 +1274,11 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImageLUT)
 		RADEONWaitForFifo(sd, 5);
 		OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
 
-		OUTREG(RADEON_SC_TOP_LEFT,        (msg->y << 16) | msg->x);
-		OUTREG(RADEON_SC_BOTTOM_RIGHT,    ((msg->y+msg->height) << 16) | (msg->x+msg->width));
+		OUTREG(RADEON_SC_TOP_LEFT,        (msg->y << 16) | (UWORD)msg->x);
+		OUTREG(RADEON_SC_BOTTOM_RIGHT,    ((msg->y+msg->height) << 16) | (UWORD)(msg->x+msg->width));
 
-		OUTREG(RADEON_DST_X_Y,          ((msg->x) << 16) | msg->y);
-		OUTREG(RADEON_DST_WIDTH_HEIGHT, (bw << 16) | msg->height);
+		OUTREG(RADEON_DST_X_Y,          ((msg->x) << 16) | (UWORD)msg->y);
+		OUTREG(RADEON_DST_WIDTH_HEIGHT, (bw << 16) | (UWORD)msg->height);
 
 		if (bm->bpp == 4)
 		{
@@ -1624,11 +1693,11 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImage)
 			RADEONWaitForFifo(sd, 5);
 			OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
 
-			OUTREG(RADEON_SC_TOP_LEFT,        (msg->y << 16) | msg->x);
-			OUTREG(RADEON_SC_BOTTOM_RIGHT,    ((msg->y+msg->height) << 16) | (msg->x+msg->width));
+			OUTREG(RADEON_SC_TOP_LEFT,        (msg->y << 16) | (UWORD)msg->x);
+			OUTREG(RADEON_SC_BOTTOM_RIGHT,    ((msg->y+msg->height) << 16) | (UWORD)(msg->x+msg->width));
 
-			OUTREG(RADEON_DST_X_Y,          ((msg->x) << 16) | msg->y);
-			OUTREG(RADEON_DST_WIDTH_HEIGHT, (bw << 16) | msg->height);
+			OUTREG(RADEON_DST_X_Y,          ((msg->x) << 16) | (UWORD)msg->y);
+			OUTREG(RADEON_DST_WIDTH_HEIGHT, (bw << 16) | (UWORD)msg->height);
 
 			switch (msg->pixFmt)
 			{
@@ -2193,6 +2262,8 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutTemplate)
 {
     atiBitMap *bm = OOP_INST_DATA(cl, o);
 
+    D(bug("[ATI] NO-ACCEL: BitMap::PutTemplate\n"));
+
     LOCK_BITMAP
 
     IPTR VideoData = bm->framebuffer;
@@ -2285,6 +2356,8 @@ VOID METHOD(ATIOffBM, Hidd_BitMap, PutPattern)
 VOID METHOD(ATIOnBM, Hidd_BitMap, PutPattern)
 {
     atiBitMap *bm = OOP_INST_DATA(cl, o);
+
+    D(bug("[ATI] NO-ACCEL: BitMap::PutPattern\n"));
 
     LOCK_BITMAP
 
