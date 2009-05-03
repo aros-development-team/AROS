@@ -21,7 +21,7 @@ typedef struct regs {
 
 typedef struct fpuregs {
     double      fpr[32];
-    uint32_t    fpscr;
+    uint64_t    fpscr;
 } fpuregs_t;
 
 typedef struct context {
