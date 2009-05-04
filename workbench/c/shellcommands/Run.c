@@ -184,8 +184,11 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
 	    Close(cis);
 	    Close(cos);
 	    Close(ces);
-	    Close(tmpfile);
-	    DeleteFile(tmpname);
+            if (tmpfile)
+	    {
+	        Close(tmpfile);
+	        DeleteFile(tmpname);
+            }
 
 	    return RETURN_FAIL;
         }
