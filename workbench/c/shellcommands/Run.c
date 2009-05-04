@@ -14,7 +14,7 @@
 
     SYNOPSIS
 
-        COMMAND/F
+        EXECUTE/S,QUIET/S,COMMAND/F
 
     LOCATION
 
@@ -26,6 +26,10 @@
         That means it doesn't take over the parent shell.
 
     INPUTS
+
+        EXECUTE  --  allows a script to be executed in the background
+
+        QUIET    --  avoids printing of the background CLI's number 
 
         COMMAND  --  the program to run together with its arguments
 
@@ -57,11 +61,18 @@
 #include <dos/dostags.h>
 #include <proto/dos.h>
 #include <utility/tagitem.h>
+#include <proto/alib.h>
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 #include <aros/shcommands.h>
 
-AROS_SH1(Run, 41.2,
-AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
+AROS_SH3H(Run, 41.3,                "Start a program as a background process",
+AROS_SHAH(BOOL  , ,EXECUTE,/S,FALSE,"Allows a script to be run in background"),
+AROS_SHAH(BOOL  , ,QUIET  ,/S,FALSE,"\tDon't print the background CLI's number"),
+AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (arguments\n"
+                                    "\t\t\t\tallowed)") )
 {
     AROS_SHCOMMAND_INIT
 
@@ -105,21 +116,41 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
 	}
     }
 
+    struct DateStamp  ds;
+    BYTE              tmpname[256];
+    BPTR              tmpfile      = NULL;
+    int               count        = 0;
+
+    if ( (SHArg(EXECUTE)) && (SHArg(COMMAND)) )
     {
-        struct TagItem tags[] =
+        DateStamp(&ds);
+        do
         {
-	    { SYS_Input,      (IPTR)cis     },
-	    { SYS_Output,     (IPTR)cos     },
-	    { SYS_Error,      (IPTR)ces     },
-	    { SYS_Background, TRUE          },
-	    { SYS_Asynch,     TRUE          },
-	    { SYS_CliNumPtr,  (IPTR)&CliNum },
-	    { SYS_UserShell,  TRUE          },
-	    { TAG_DONE,       0             }
-        };
+            count++;
+            __sprintf(tmpname, "T:Tmp%lu%lu%lu%lu%d",
+                      ((struct Process *)FindTask(NULL))->pr_TaskNum,
+                      ds.ds_Days, ds.ds_Minute, ds.ds_Tick, count);
+            tmpfile = Open(tmpname, MODE_NEWFILE);
+        } while (tmpfile == NULL && IoErr() == ERROR_OBJECT_IN_USE);
 
+        if (tmpfile)
+        {
+            if ( (0 != FPuts(tmpfile, "Execute "))     ||
+                 (0 != FPuts(tmpfile, SHArg(COMMAND))) ||
+                 (0 != FPuts(tmpfile, "\nEndShell\n"))    )
+            {
+                PrintFault(IoErr(), "Run");
+	        Close(cis);
+	        Close(cos);
+	        Close(ces);
+	        Close(tmpfile);
+		DeleteFile(tmpname);
 
-        if (SystemTagList(SHArg(COMMAND), tags) == -1)
+		return RETURN_FAIL;
+            }
+            Seek(tmpfile, 0, OFFSET_BEGINNING);
+        }
+        else
         {
 	    PrintFault(IoErr(), "Run");
 	    Close(cis);
@@ -131,10 +162,46 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
     }
 
     {
+        struct TagItem tags[] =
+        {
+	    { SYS_ScriptInput, (IPTR)tmpfile },
+	    { SYS_Input,       (IPTR)cis     },
+	    { SYS_Output,      (IPTR)cos     },
+	    { SYS_Error,       (IPTR)ces     },
+	    { SYS_Background,  TRUE          },
+	    { SYS_Asynch,      TRUE          },
+	    { SYS_CliNumPtr,   (IPTR)&CliNum },
+	    { SYS_UserShell,   TRUE          },
+	    { TAG_DONE,        0             }
+        };
+
+        if ( SystemTagList((SHArg(EXECUTE) && SHArg(COMMAND)) ?
+                           (CONST_STRPTR) ""                  :
+                           (CONST_STRPTR) SHArg(COMMAND)       ,
+                           tags                                ) == -1 )
+        {
+	    PrintFault(IoErr(), "Run");
+	    Close(cis);
+	    Close(cos);
+	    Close(ces);
+	    Close(tmpfile);
+	    DeleteFile(tmpname);
+
+	    return RETURN_FAIL;
+        }
+    }
+
+    if ( !(SHArg(QUIET)) )
+    {
         IPTR data[1] = { (IPTR)CliNum };
         VPrintf("[CLI %ld]\n", data);
     }
-
+#if DEBUG
+#else
+    if ( SHArg(EXECUTE) && SHArg(COMMAND) )
+        while( (0 == DeleteFile(tmpname)) && (count++ < 10) )
+            Delay(10);
+#endif
     return RETURN_OK;
 
     AROS_SHCOMMAND_EXIT
