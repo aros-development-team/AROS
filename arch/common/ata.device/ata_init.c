@@ -310,8 +310,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                 IOSize,
                 AltSize,
                 SubClass,
-                Interface,
-                ATAIOConfig;
+                Interface;
 
     BOOL	_usablebus = FALSE;
 
@@ -319,15 +318,6 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
      * the PCI Attr Base
      */
     OOP_AttrBase HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-
-    /*
-     * message to get 80-wire cable report
-     */
-    struct pHidd_PCIDevice_ReadConfigLong ataioconfigmsg =
-    {
-        OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong),
-        0x54,
-    };
 
     /*
      * enumerator params
@@ -350,8 +340,6 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
 
     if (a->ATABase->ata_NoDMA || !(Interface & 0x80))
 	DMABase = 0;
-
-    ATAIOConfig = OOP_DoMethod(Device, (OOP_Msg)&ataioconfigmsg);
 
     /*
      * we can have up to two buses assigned to this device
@@ -419,8 +407,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
 		if (DMABase != 0)
 		    probedbus->atapb_DMABase = DMABase + (x << 3);
 		probedbus->atapb_a = a;
-		probedbus->atapb_Has80Wire =
-                    (ATAIOConfig & (0x30 << (x << 1))) || SubClass != 0x1;
+		probedbus->atapb_Has80Wire = TRUE;
 
 		if (isLegacy)
 		{
