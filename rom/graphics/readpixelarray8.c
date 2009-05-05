@@ -110,7 +110,7 @@ static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
     rr.MaxX = xstop;
     rr.MaxY = ystop;
     
-    pixread = do_render_func(rp, NULL, &rr, rp8_render, &rp8rd, FALSE, GfxBase);
+    pixread = do_render_func(rp, NULL, &rr, rp8_render, &rp8rd, FALSE, FALSE, GfxBase);
 	
     RELEASE_DRIVERDATA(rp, GfxBase);
     

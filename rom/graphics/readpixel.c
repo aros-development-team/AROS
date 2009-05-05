@@ -89,7 +89,7 @@ static LONG pix_read_lut8(APTR prlr_data, OOP_Object *bm, OOP_Object *gc,
 	
     prlrd.pen = -1;
 
-    ret = do_pixel_func(rp, x, y, pix_read_lut8, &prlrd, GfxBase);
+    ret = do_pixel_func(rp, x, y, pix_read_lut8, &prlrd, FALSE, GfxBase);
     
     RELEASE_DRIVERDATA(rp, GfxBase);
     

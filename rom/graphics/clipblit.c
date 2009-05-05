@@ -354,7 +354,7 @@ void internal_ClipBlit(struct RastPort * srcRP,
     rect.MaxX = xSrc + xSize - 1;
     rect.MaxY = ySrc + ySize - 1;
 
-    do_render_func(srcRP, NULL, &rect, clipblit_render, &data, TRUE, GfxBase);
+    do_render_func(srcRP, NULL, &rect, clipblit_render, &data, TRUE, TRUE, GfxBase);
 }
 
 #else

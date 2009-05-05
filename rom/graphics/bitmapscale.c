@@ -185,6 +185,7 @@ VOID HIDD_BM_BitMapScale(OOP_Object *, OOP_Object *, OOP_Object *, struct BitSca
     		, bitScaleArgs
 		, tmp_gc
     	    );
+            HIDD_BM_UpdateRect(dstbm_obj, bitScaleArgs->bsa_DestX, bitScaleArgs->bsa_DestY, bitScaleArgs->bsa_DestWidth, bitScaleArgs->bsa_DestHeight);
     	    
 	    cbtags[0].ti_Data = old_drmd;
 	    OOP_SetAttrs(tmp_gc, cbtags);

@@ -131,7 +131,7 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
     src.x = xSrc;
     src.y = ySrc;
 
-    do_render_func(destRP, &src, &rr, bitmap_render, &brd, TRUE, GfxBase);
+    do_render_func(destRP, &src, &rr, bitmap_render, &brd, TRUE, TRUE, GfxBase);
 
     RELEASE_HIDD_BM(brd.srcbm_obj, srcBitMap);
 

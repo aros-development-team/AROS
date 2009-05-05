@@ -70,6 +70,7 @@ ULONG do_render_func(struct RastPort *rp
 	, struct Rectangle *rr
 	, ULONG (*render_func)(APTR, LONG, LONG, OOP_Object *, OOP_Object *, LONG, LONG, LONG, LONG, struct GfxBase *)
 	, APTR funcdata
+        , BOOL do_update
 	, BOOL get_special_info
 	, struct GfxBase *GfxBase)
 {
@@ -133,6 +134,10 @@ ULONG do_render_func(struct RastPort *rp
 		, torender.MaxX, torender.MaxY
 		, GfxBase
 	);
+        if (do_update)
+        {
+            HIDD_BM_UpdateRect(bm_obj, torender.MinX, torender.MinY, torender.MaxX - torender.MinX + 1, torender.MaxY - torender.MinY + 1);
+        }
 
 	RELEASE_HIDD_BM(bm_obj, bm);
 
@@ -203,6 +208,10 @@ ULONG do_render_func(struct RastPort *rp
 				, intersect.MaxY
 				, GfxBase
 			    );
+                            if (do_update)
+                            {
+                                HIDD_BM_UpdateRect(bm_obj, intersect.MinX, intersect.MinY, intersect.MaxX - intersect.MinX + 1, intersect.MaxY - intersect.MinY + 1);
+                            }
 			    
 			    RELEASE_HIDD_BM(bm_obj, bm);
 			}
@@ -240,6 +249,13 @@ ULONG do_render_func(struct RastPort *rp
 					, intersect.MaxY - CR->bounds.MinY
 					, GfxBase
 		    		);
+                                if (do_update)
+                                {
+                                    HIDD_BM_UpdateRect(bm_obj, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX),
+                                                               intersect.MinY - CR->bounds.MinY,
+                                                               intersect.MaxX - intersect.MinX + 1,
+                                                               intersect.MaxY - intersect.MinY + 1);
+                                }
 				
 				RELEASE_HIDD_BM(bm_obj, CR->BitMap);
 			    }
@@ -267,6 +283,7 @@ ULONG do_pixel_func(struct RastPort *rp
 	, LONG x, LONG y
 	, LONG (*render_func)(APTR, OOP_Object *, OOP_Object *, LONG, LONG, struct GfxBase *)
 	, APTR funcdata
+        , BOOL do_update
 	, struct GfxBase *GfxBase)
 {
     struct BitMap   	*bm = rp->BitMap;
@@ -304,6 +321,10 @@ ULONG do_pixel_func(struct RastPort *rp
 	
     	/* This is a screen */
 	retval = render_func(funcdata, bm_obj, gc, x, y, GfxBase);
+        if (do_update)
+        {
+            HIDD_BM_UpdateRect(bm_obj, x, y, 1, 1);
+        }
 	
 	RELEASE_HIDD_BM(bm_obj, bm);
 	
@@ -344,6 +365,10 @@ ULONG do_pixel_func(struct RastPort *rp
 				, absx, absy
 				, GfxBase
 			    );
+                            if (do_update)
+                            {
+                                HIDD_BM_UpdateRect(bm_obj, x, y, 1, 1);
+                            }
 			    
 			    RELEASE_HIDD_BM(bm_obj, bm);
 			}
@@ -372,6 +397,10 @@ ULONG do_pixel_func(struct RastPort *rp
 					, absy - CR->bounds.MinY
 					, GfxBase
 				); 
+                                if (do_update)
+                                {
+                                    HIDD_BM_UpdateRect(bm_obj, absx - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX), absy - CR->bounds.MinY, 1, 1);
+                                }
 				
 				RELEASE_HIDD_BM(bm_obj, CR->BitMap);
 			    }
@@ -414,7 +443,7 @@ static ULONG fillrect_render(APTR funcdata, LONG srcx, LONG srcy,
 /****************************************************************************************/
 
 LONG fillrect_pendrmd(struct RastPort *rp, LONG x1, LONG y1, LONG x2, LONG y2,
-    	    	      HIDDT_Pixel pix, HIDDT_DrawMode drmd, struct GfxBase *GfxBase)
+    	    	      HIDDT_Pixel pix, HIDDT_DrawMode drmd, BOOL do_update, struct GfxBase *GfxBase)
 {   
     LONG    	    	pixwritten = 0;
     
@@ -446,7 +475,7 @@ LONG fillrect_pendrmd(struct RastPort *rp, LONG x1, LONG y1, LONG x2, LONG y2,
     rr.MaxX = x2;
     rr.MaxY = y2;
     
-    pixwritten = do_render_func(rp, NULL, &rr, fillrect_render, NULL, FALSE, GfxBase);
+    pixwritten = do_render_func(rp, NULL, &rr, fillrect_render, NULL, do_update, FALSE, GfxBase);
     
     /* Restore old GC values */
     gc_tags[0].ti_Data = (IPTR)old_drmd;
@@ -680,7 +709,7 @@ static ULONG wp8_render(APTR wp8r_data, LONG srcx, LONG srcy, OOP_Object *dstbm_
 
 LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
     	    	    LONG xstart, LONG ystart, LONG xstop, LONG ystop,
-		    HIDDT_PixelLUT *pixlut, struct GfxBase *GfxBase)
+		    HIDDT_PixelLUT *pixlut, BOOL do_update, struct GfxBase *GfxBase)
 {
 	
     LONG pixwritten = 0;
@@ -715,7 +744,7 @@ LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
     rr.MaxX = xstop;
     rr.MaxY = ystop;
     
-    pixwritten = do_render_func(rp, NULL, &rr, wp8_render, &wp8rd, FALSE, GfxBase);
+    pixwritten = do_render_func(rp, NULL, &rr, wp8_render, &wp8rd, do_update, FALSE, GfxBase);
     
     /* Reset to preserved drawmode */
     gc_tags[0].ti_Data = old_drmd;
@@ -766,7 +795,7 @@ static ULONG wtp8_render(APTR wtp8r_data, LONG srcx, LONG srcy, OOP_Object *dstb
 LONG write_transp_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
     	    	    	   LONG xstart, LONG ystart, LONG xstop, LONG ystop,
 		    	   HIDDT_PixelLUT *pixlut, UBYTE transparent,
-			   struct GfxBase *GfxBase)
+			   BOOL do_update, struct GfxBase *GfxBase)
 {
 	
     LONG pixwritten = 0;
@@ -802,7 +831,7 @@ LONG write_transp_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
     rr.MaxX = xstop;
     rr.MaxY = ystop;
     
-    pixwritten = do_render_func(rp, NULL, &rr, wtp8_render, &wtp8rd, FALSE, GfxBase);
+    pixwritten = do_render_func(rp, NULL, &rr, wtp8_render, &wtp8rd, do_update, FALSE, GfxBase);
     
     /* Reset to preserved drawmode */
     gc_tags[0].ti_Data = old_drmd;

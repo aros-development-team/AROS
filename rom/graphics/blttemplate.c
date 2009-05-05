@@ -99,7 +99,7 @@ struct bt_render_data
     rr.MaxX = xDest + xSize  - 1;
     rr.MaxY = yDest + ySize - 1;
     
-    do_render_func(destRP, NULL, &rr, blttemplate_render, &btrd, FALSE, GfxBase);
+    do_render_func(destRP, NULL, &rr, blttemplate_render, &btrd, TRUE, FALSE, GfxBase);
 	
     RELEASE_DRIVERDATA(destRP, GfxBase);
     

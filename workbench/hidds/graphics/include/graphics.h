@@ -526,6 +526,8 @@ enum
     
     moHidd_BitMap_PrivateSet,
     moHidd_BitMap_SetRGBConversionFunction,
+
+    moHidd_BitMap_UpdateRect,
     
     num_Hidd_BitMap_Methods
 };
@@ -1288,6 +1290,13 @@ struct pHidd_BitMap_SetRGBConversionFunction
     HIDDT_RGBConversionFunction	    	function;
 };
 
+struct pHidd_BitMap_UpdateRect
+{
+    OOP_MethodID    mID;
+    WORD            x, y;
+    WORD            width, height;
+};
+
 /**** Graphics context definitions ********************************************/
     /* Methods for a graphics context */
     
@@ -1778,6 +1787,8 @@ HIDDT_RGBConversionFunction HIDD_BM_SetRGBConversionFunction(OOP_Object *o,
     	    	    	    	HIDDT_StdPixFmt srcPixFmt,
 				HIDDT_StdPixFmt dstPixFmt,
 				HIDDT_RGBConversionFunction function);
+
+VOID HIDD_BM_UpdateRect(OOP_Object *obj, WORD x, WORD y, WORD width, WORD height);
 				
 /*******************************************************/
 /**  PROTECTED DATA 

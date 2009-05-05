@@ -3537,6 +3537,13 @@ HIDDT_RGBConversionFunction BM__Hidd_BitMap__SetRGBConversionFunction(OOP_Class 
 
 /****************************************************************************************/
 
+VOID BM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg) {
+    /* baseclass version does nothing */
+    return;
+}
+
+/****************************************************************************************/
+
 /* private ! */
 
 /****************************************************************************************/
