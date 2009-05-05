@@ -1279,11 +1279,13 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
         type = 0;
     }
 
+#if 0 // We can't set drive modes unless we also set the controller's timing registers
     acb.sectors = type;
     if (0 != ata_exec_cmd(unit, &acb))
     {
         DINIT(bug("[ATA%02ld] common_SetXferMode: ERROR: Failed to apply new xfer mode.\n", unit->au_UnitNum));
     }
+#endif
 
     if (unit->au_DMAPort)
     {
@@ -1324,7 +1326,9 @@ static void common_SetBestXferMode(struct ata_Unit* unit)
     int iter;
     int max = AB_XFER_UDMA6;
 
-    if (unit->au_DMAPort == 0)
+    if (unit->au_DMAPort == 0
+        || !(unit->au_Drive->id_MWDMASupport & 0x0700)
+        && !(unit->au_Drive->id_UDMASupport & 0x7f00))
     {
         /*
          * make sure you reduce scan search to pio here!
@@ -1335,9 +1339,9 @@ static void common_SetBestXferMode(struct ata_Unit* unit)
     }
     else if (!(unit->au_Flags & AF_80Wire))
     {
-        bug("[ATA%02ld] common_SetBestXferMode: "
+        DINIT(bug("[ATA%02ld] common_SetBestXferMode: "
             "An 80-wire cable has not been detected for this drive. "
-            "Disabling modes above UDMA2.\n", unit->au_UnitNum);
+            "Disabling modes above UDMA2.\n", unit->au_UnitNum));
         max = AB_XFER_UDMA2;
     }
 
