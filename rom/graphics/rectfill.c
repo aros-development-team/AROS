@@ -96,7 +96,7 @@
     		drmd = vHidd_GC_DrawMode_Copy;
 	    }
 
-	    fillrect_pendrmd(rp, xMin, yMin, xMax, yMax, pix, drmd, GfxBase);
+	    fillrect_pendrmd(rp, xMin, yMin, xMax, yMax, pix, drmd, TRUE, GfxBase);
 
     	    RELEASE_DRIVERDATA(rp, GfxBase);
 	}

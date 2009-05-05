@@ -69,7 +69,7 @@
     pixval = BM_PIXEL(bm, pen);
      
     fillrect_pendrmd(rp, 0, 0, width  - 1, height - 1, pixval,
-    	    	     vHidd_GC_DrawMode_Copy, GfxBase);
+    	    	     vHidd_GC_DrawMode_Copy, TRUE, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* SetRast */

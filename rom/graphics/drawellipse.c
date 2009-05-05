@@ -95,6 +95,7 @@
 		    , xCenter, yCenter
 		    , a, b
 	    );
+            HIDD_BM_UpdateRect(bm_obj, xCenter - a, yCenter - b, a + a, b + b);
 
 	    RELEASE_HIDD_BM(bm_obj, bm);
 	}
@@ -169,6 +170,7 @@
 				, a
 				, b
 			    );
+                            HIDD_BM_UpdateRect(bm_obj, xCenter + xrel - a, yCenter + yrel - b, a + a, b + b);
 			    
     	    	    	    RELEASE_HIDD_BM(bm_obj, bm);			    
     	    	    	}
@@ -216,6 +218,9 @@
 					, a
 					, b
 				);
+                                HIDD_BM_UpdateRect(bm_obj, bm_rel_minx - (layer_rel_x - xCenter) + ALIGN_OFFSET(CR->bounds.MinX) - a,
+                                                           bm_rel_miny - (layer_rel_y - yCenter) - b,
+                                                           a + a, b + b);
 
     	    	    	    	RELEASE_HIDD_BM(bm_obj, CR->BitMap);
 			    }

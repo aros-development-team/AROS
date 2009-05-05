@@ -152,7 +152,7 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     src.x = xSrc;
     src.y = ySrc;
 
-    do_render_func(destRP, &src, &rr, bltmask_render, &brd, TRUE, GfxBase);
+    do_render_func(destRP, &src, &rr, bltmask_render, &brd, TRUE, TRUE, GfxBase);
 
     RELEASE_HIDD_BM(brd.srcbm_obj, srcBitMap);
 

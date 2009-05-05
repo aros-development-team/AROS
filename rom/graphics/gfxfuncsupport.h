@@ -174,14 +174,14 @@ OOP_Object *get_planarbm_object(struct BitMap *bitmap, struct GfxBase *GfxBase);
 
 ULONG do_render_func(struct RastPort *rp, Point *src, struct Rectangle *rr,
 	    	     ULONG (*render_func)(APTR, LONG, LONG, OOP_Object *, OOP_Object *, LONG, LONG, LONG, LONG, struct GfxBase *),
-		     APTR funcdata, BOOL get_special_info, struct GfxBase *GfxBase);
+		     APTR funcdata, BOOL do_update, BOOL get_special_info, struct GfxBase *GfxBase);
 
 ULONG do_pixel_func(struct RastPort *rp, LONG x, LONG y,
     	    	    LONG (*render_func)(APTR, OOP_Object *, OOP_Object *, LONG, LONG, struct GfxBase *),
-		    APTR funcdata, struct GfxBase *GfxBase);
+		    APTR funcdata, BOOL do_update, struct GfxBase *GfxBase);
 
 LONG fillrect_pendrmd(struct RastPort *tp, LONG x1, LONG y1, LONG x2, LONG y2,
-    	    	      HIDDT_Pixel pix, HIDDT_DrawMode drmd, struct GfxBase *GfxBase);
+    	    	      HIDDT_Pixel pix, HIDDT_DrawMode drmd, BOOL do_update, struct GfxBase *GfxBase);
 
 BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, LONG xSrc, LONG ySrc,
 	    	   struct BitMap *dstBitMap, OOP_Object *dstbm_obj, LONG xDest, LONG yDest,
@@ -190,12 +190,12 @@ BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, LONG xSrc, L
 
 LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
     	    	    LONG xstart, LONG ystart, LONG xstop, LONG ystop,
-		    HIDDT_PixelLUT *pixlut, struct GfxBase *GfxBase);
+		    HIDDT_PixelLUT *pixlut, BOOL do_update, struct GfxBase *GfxBase);
 
 LONG write_transp_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
     	    	    	   LONG xstart, LONG ystart, LONG xstop, LONG ystop,
 		    	   HIDDT_PixelLUT *pixlut, UBYTE transparent,
-			   struct GfxBase *GfxBase);
+			   BOOL do_update, struct GfxBase *GfxBase);
 
 void amiga2hidd_fast(APTR src_info, OOP_Object *hidd_gc, LONG x_src , LONG y_src,
     	    	     struct BitMap *hidd_bm, LONG x_dest, LONG y_dest,

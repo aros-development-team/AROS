@@ -87,6 +87,7 @@
 	, xstart, ystart
 	, xstop, ystop
 	, &pixlut
+        , TRUE
 	, GfxBase);
 
     ReturnInt("WritePixelArray8", LONG, pixwritten);

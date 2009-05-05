@@ -80,7 +80,7 @@ static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
 	return  -1L;
 	
     prd.pixel = BM_PIXEL(rp->BitMap, (UBYTE)rp->FgPen);
-    retval = do_pixel_func(rp, x, y, pix_write, &prd, GfxBase);
+    retval = do_pixel_func(rp, x, y, pix_write, &prd, TRUE, GfxBase);
     
     RELEASE_DRIVERDATA(rp, GfxBase);
     

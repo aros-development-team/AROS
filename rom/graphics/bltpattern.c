@@ -107,7 +107,7 @@ struct bp_render_data
 	rr.MaxX = xMax;
 	rr.MaxY = yMax;
 
-	do_render_func(rp, NULL, &rr, bltpattern_render, &bprd, FALSE, GfxBase);
+	do_render_func(rp, NULL, &rr, bltpattern_render, &bprd, TRUE, FALSE, GfxBase);
 
 	RELEASE_DRIVERDATA(rp, GfxBase);
 

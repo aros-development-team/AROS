@@ -206,6 +206,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 			    , minterm
 			    , tmp_gc
 			    , GfxBase);
+                    HIDD_BM_UpdateRect(dstbm_obj, xDest, yDest, xSize, ySize);
 
 	    	    RELEASE_HIDD_BM(dstbm_obj, destBitMap);
 		}

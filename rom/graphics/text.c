@@ -738,7 +738,7 @@ void ColorFontBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
 				  rp->cp_y - rp->TxBaseline,
 				  rp->cp_x + te.te_Extent.MinX + raswidth - 1,
 				  rp->cp_y - rp->TxBaseline + rasheight - 1,
-				  &pixlut, 0, GfxBase);
+				  &pixlut, 0, TRUE, GfxBase);
 	    
 	}
 				  

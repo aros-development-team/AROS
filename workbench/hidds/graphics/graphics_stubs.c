@@ -1851,6 +1851,23 @@ HIDDT_RGBConversionFunction HIDD_BM_SetRGBConversionFunction(OOP_Object *obj, HI
     return (HIDDT_RGBConversionFunction) OOP_DoMethod(obj, (OOP_Msg) msg);    
 }
 
+VOID HIDD_BM_UpdateRect(OOP_Object *obj, WORD x, WORD y, WORD width, WORD height)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_UpdateRect p, *msg = &p;
+
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UpdateRect);
+    
+    p.mID = mid;
+    p.x = x;
+    p.y = y;
+    p.width = width;
+    p.height = height;
+    
+    OOP_DoMethod(obj, (OOP_Msg) msg);    
+}
+
+
 /********* GC *****************************************/
 VOID HIDD_GC_SetClipRect(OOP_Object *obj, LONG x1, LONG y1, LONG x2, LONG y2)
 {

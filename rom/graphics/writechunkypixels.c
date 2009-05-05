@@ -86,6 +86,7 @@
 	, xstart, ystart
 	, xstop, ystop
 	, &pixlut
+        , TRUE
 	, GfxBase);
 
     AROS_LIBFUNC_EXIT

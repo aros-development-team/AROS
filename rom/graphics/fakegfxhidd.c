@@ -1274,6 +1274,7 @@ static OOP_Class *init_fakefbclass(struct class_static_data *csd)
 	{(IPTR (*)())fakefb_fwd			, moHidd_BitMap_ObtainDirectAccess  },
 	{(IPTR (*)())fakefb_fwd			, moHidd_BitMap_ReleaseDirectAccess },
 	{(IPTR (*)())fakefb_fwd			, moHidd_BitMap_SetRGBConversionFunction },
+	{(IPTR (*)())fakefb_fwd			, moHidd_BitMap_UpdateRect          },
 
 	/* PRIVATE METHODS */	
 #if 0
@@ -1455,6 +1456,8 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, struct class_static_da
 	}
 	
     #endif
+        
+        HIDD_BM_UpdateRect(data->framebuffer, data->curs_x, data->curs_y, width, height);
     
     }
     else
@@ -1472,6 +1475,8 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, struct class_static_da
 	    	, width, height
 	    	, data->gc
 	    );
+
+            HIDD_BM_UpdateRect(data->framebuffer, data->curs_x, data->curs_y, width, height);
 	}
     }
     return;
