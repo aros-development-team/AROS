@@ -55,12 +55,6 @@ static int sdl_bmclass_expunge(LIBBASETYPEPTR LIBBASE) {
 ADD2INITLIB(sdl_bmclass_init , 0)
 ADD2EXPUNGELIB(sdl_bmclass_expunge, 0)
 
-#define UPDATE(bmdata, x, y, w, h)                                                 \
-    do {                                                                           \
-        if (bmdata->is_onscreen)                                                   \
-            SV(SDL_UpdateRect, bmdata->surface, x, y, w, h);                       \
-    } while(0)
-
 #define LOCK(s)                     \
     do {                            \
         if (SDL_MUSTLOCK(s))        \
@@ -313,8 +307,6 @@ VOID SDLBitMap__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o, struct pHidd
     }
 
     UNLOCK(bmdata->surface);
-
-    UPDATE(bmdata, msg->x, msg->y, 1, 1);
 }
 
 HIDDT_Pixel SDLBitMap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg) {
@@ -352,6 +344,16 @@ HIDDT_Pixel SDLBitMap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o, struc
     //D(bug("[sdl] returning pixel 0x%08x\n", c));
     
     return (HIDDT_Pixel) c;
+}
+
+VOID SDLBitMap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg) {
+    struct bmdata *bmdata = OOP_INST_DATA(cl, o);
+
+    D(bug("[sdl] SDLBitMap::UpdateRect\n"));
+    D(bug("[sdl] Updating region (%d,%d) [%d,%d]\n", msg->x, msg->y, msg->width, msg->height));
+
+    if (bmdata->is_onscreen)
+        SV(SDL_UpdateRect, bmdata->surface, msg->x, msg->y, msg->width, msg->height);
 }
 
 VOID SDLBitMap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg) {
@@ -418,8 +420,6 @@ VOID SDLBitMap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd
     S(SDL_BlitSurface, s, &srect, bmdata->surface, &drect);
 
     SV(SDL_FreeSurface, s);
-
-    UPDATE(bmdata, msg->x, msg->y, msg->width, msg->height);
 }
 
 VOID SDLBitMap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg) {
@@ -529,8 +529,6 @@ VOID SDLBitMap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd
             break;
         
     }
-
-    UPDATE(bmdata, rect.x, rect.y, rect.w, rect.h);
 }
 
 VOID SDLBitMap__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg) {
@@ -544,8 +542,6 @@ VOID SDLBitMap__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
     D(bug("[sdl] filling surface 0x%08x with colour 0x%08x\n", bmdata->surface, c));
 
     S(SDL_FillRect, bmdata->surface, NULL, c);
-
-    UPDATE(bmdata, 0, 0, 0, 0);
 }
 
 VOID SDLBitMap__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg) {
@@ -673,8 +669,6 @@ VOID SDLBitMap__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o, st
     UNLOCK(bmdata->surface);
 
     FreeMem(srcline, msg->width * sizeof(ULONG));
-
-    UPDATE(bmdata, msg->destX, msg->destY, msg->width, msg->height);
 }
 
 VOID SDLBitMap__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutAlphaImage *msg) {
@@ -703,8 +697,6 @@ VOID SDLBitMap__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o, struct 
     S(SDL_BlitSurface, s, &srect, bmdata->surface, &drect);
 
     SV(SDL_FreeSurface, s);
-
-    UPDATE(bmdata, drect.x, drect.y, srect.w, srect.h);
 }
 
 VOID SDLBitMap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg) {
@@ -734,7 +726,4 @@ VOID SDLBitMap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pH
     }
 
     UNLOCK(bmdata->surface);
-        SV(SDL_UnlockSurface, bmdata->surface);
-
-    UPDATE(bmdata, msg->x, msg->y, msg->width, msg->height);
 }
