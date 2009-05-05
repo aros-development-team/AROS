@@ -1095,6 +1095,9 @@ void METHOD(ATIOnBM, Hidd_BitMap, BlitColorExpansion)
     	ULONG                   skipleft = msg->srcX - (msg->srcX & ~31);
     	ULONG                   mask = ~0 << bm->depth;
 
+	if (bm->depth == 32)
+	    mask = 0xff000000;
+
     	cemd = GC_COLEXP(msg->gc);
     	bg   = GC_BG(msg->gc) | mask;
     	fg   = GC_FG(msg->gc) | mask;
