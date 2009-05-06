@@ -768,6 +768,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutPixel)
         }
     }
 
+
     switch (bm->bpp)
     {
         case 1:
@@ -794,8 +795,8 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawPixel)
 	OOP_Object *gc = msg->gc;
 
     HIDDT_Pixel     	    	    src, dest, val;
-	HIDDT_DrawMode  	    	    mode;
-	HIDDT_Pixel     	    	    writeMask;
+    HIDDT_DrawMode  	    	    mode;
+    HIDDT_Pixel     	    	    writeMask;
 
     src       = GC_FG(gc);
     mode      = GC_DRMD(gc);
@@ -1119,7 +1120,7 @@ void METHOD(ATIOnBM, Hidd_BitMap, BlitColorExpansion)
                                      | RADEON_DP_SRC_SOURCE_HOST_DATA
                                      | RADEON_GMC_DST_CLIPPING
                                      | RADEON_GMC_BYTE_MSB_TO_LSB
-                                     | RADEON_ROP[vHidd_GC_DrawMode_Copy].rop);
+                                     | RADEON_ROP[GC_DRMD(msg->gc)].rop);
 
         if (cemd & vHidd_GC_ColExp_Transparent)
         {
