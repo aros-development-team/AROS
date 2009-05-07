@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd. Connects to the X server and receives events.
@@ -173,7 +173,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 
 #else
     
-    unixio = (HIDD)New_UnixIO(OOPBase);
+    unixio = (HIDD)New_UnixIO(OOPBase, SysBase);
     if (unixio)
     {
     	unixio_port = CreateMsgPort();
@@ -224,8 +224,8 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 	if (dounixio)
 	{
 	    ret = Hidd_UnixIO_AsyncIO(unixio,
-	     	    	    	       ConnectionNumber(xsd->display),
-				       unixio_port, vHidd_UnixIO_Read);
+	     	    	    	       ConnectionNumber(xsd->display),  vHidd_UnixIO_Terminal,
+				       unixio_port, vHidd_UnixIO_Read, SysBase);
 	
 	    if (ret)
 	    {
