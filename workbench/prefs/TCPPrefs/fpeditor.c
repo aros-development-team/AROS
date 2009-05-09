@@ -1,6 +1,6 @@
 /*
-    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
-    $Id: fpeditor.c 21816 2004-06-25 12:35:29Z chodorowski $
+    Copyright © 2009, The AROS Development Team. All rights reserved.
+    $Id$
  */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -29,7 +29,7 @@
 #include "misc.h"
 #include "locale.h"
 #include "fpeditor.h"
-#include "AROSTCPPrefs.h"
+#include "prefsdata.h"
 
 #include <proto/alib.h>
 #include <utility/hooks.h>
@@ -169,7 +169,7 @@ Object *FPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 	(
 		CLASS, self, NULL,
 
-		MUIA_PrefsEditor_Name,        "Proba",
+		MUIA_PrefsEditor_Name,        "AROS TCP/IP Preferences",
 		MUIA_PrefsEditor_Path, (IPTR)"AROSTCP/arostcp.prefs",
 
 

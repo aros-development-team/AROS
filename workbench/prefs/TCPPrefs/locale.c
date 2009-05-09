@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
-    $Id: locale.c 21129 2004-02-28 18:58:12Z chodorowski $
+    Copyright © 2009, The AROS Development Team. All rights reserved.
+    $Id$
  */
 
 #include <exec/types.h>

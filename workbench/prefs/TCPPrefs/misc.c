@@ -1,6 +1,6 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
-    $Id: misc.c 17839 2003-06-02 21:57:54Z chodorowski $
+    Copyright © 2009, The AROS Development Team. All rights reserved.
+    $Id$
  */
 
 #include <exec/types.h>

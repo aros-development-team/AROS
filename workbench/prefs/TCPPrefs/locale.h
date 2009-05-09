@@ -2,8 +2,8 @@
 #define _LOCALE_H_
 
 /*
-    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
-    $Id: locale.h 21050 2004-02-23 12:38:53Z chodorowski $
+    Copyright © 2009, The AROS Development Team. All rights reserved.
+    $Id$
  */
 
 #include <exec/types.h>
