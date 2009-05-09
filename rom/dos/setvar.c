@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -100,7 +100,7 @@
     AROS_LIBFUNC_INIT
 
     /* valid input? */
-    if(name && buffer && size)
+    if(name && buffer)
     {
 	/* Local variable is default. */
 	if((flags & GVF_GLOBAL_ONLY) == 0)
@@ -174,11 +174,11 @@
 		}
 	    }
 
-	    /* -1 as size means: buffer contains a null-terminated string*/
+	    /* -1 as size means: buffer contains a null-terminated string */
 	    if (-1 == size)
 	    {
 	        /* Do NOT add 1 byte to account for the NUL char, AmigaOS(R) doesn't
-		   do it that way.  */
+		   do it that way. */
 		lv->lv_Len = strlen(buffer);
 	    }
 	    else
@@ -186,16 +186,13 @@
 		lv->lv_Len = size;
 	    }
 	    
-	    /* now get some memory for the value*/
+	    /* now get some memory for the value */
 	    lv->lv_Value = AllocMem(lv->lv_Len, MEMF_PUBLIC);
 	    
-	    if (lv->lv_Value)
-	    {
-		CopyMem(buffer, lv->lv_Value, lv->lv_Len);
+            CopyMem(buffer, lv->lv_Value, lv->lv_Len);
 
-		if (flags & GVF_LOCAL_ONLY)
-		    return DOSTRUE;
-	    } /* memory for actual value */
+            if (flags & GVF_LOCAL_ONLY)
+                return DOSTRUE;
 	} /* set a local variable */
 	
 	/* Ok, try and set a global variable. */
