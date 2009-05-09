@@ -147,6 +147,16 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     lock = Lock((char *)pathname, SHARED_LOCK);
     if (!lock)
     {
+        if (IoErr() == ERROR_OBJECT_WRONG_TYPE)
+        {
+            /*
+               Needed for sfs file system which reports this error number on a
+               Lock aaa/bbb/ccc with bbb being a file instead of a directory.
+            */
+            errno = ENOTDIR;
+            goto err;
+        }
+
         if
         (
             (IoErr() != ERROR_OBJECT_NOT_FOUND) ||
