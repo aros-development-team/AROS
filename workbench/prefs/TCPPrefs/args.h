@@ -2,8 +2,8 @@
 #define _ARGS_H_
 
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
-    $Id: args.h 21130 2004-02-28 22:50:12Z chodorowski $
+    Copyright © 2009, The AROS Development Team. All rights reserved.
+    $Id$
  */
 
 #include <exec/types.h>

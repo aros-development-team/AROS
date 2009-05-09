@@ -1,6 +1,6 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
-    $Id: args.c 21130 2004-02-28 22:50:12Z chodorowski $
+    Copyright © 2009, The AROS Development Team. All rights reserved.
+    $Id$
  */
 
 #include <dos/rdargs.h>

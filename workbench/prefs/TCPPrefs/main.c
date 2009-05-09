@@ -1,6 +1,6 @@
 /*
-    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
-    $Id: main.c 24810 2006-09-16 10:11:22Z olivieradam $
+    Copyright © 2009, The AROS Development Team. All rights reserved.
+    $Id$
  */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -13,7 +13,7 @@
 #include "locale.h"
 #include "args.h"
 #include "fpeditor.h"
-#include "AROSTCPPrefs.h"
+#include "prefsdata.h"
 
 #define VERSION "$VER: Fonts 0.1 (x) ©AROS Dev Team"
 
@@ -33,6 +33,7 @@ int main(void)
 		FreeArguments();
 	}
 
+    SetDefaultValues();
 	ReadTCPPrefs();
 
 	application = ApplicationObject,
