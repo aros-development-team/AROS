@@ -80,7 +80,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         }
         
         D(bug("__exec_prepare: Exiting from forked __exec_prepare id=%x, errno=%d\n",
-              udata->exec_id, errno
+              udata->exec_id, udata->child_errno
         ));
         
         return udata->exec_id;
