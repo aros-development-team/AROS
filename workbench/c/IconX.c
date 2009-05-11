@@ -1,5 +1,5 @@
 /*
-    Copyright © 2006-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: IconX WB script starter
@@ -63,11 +63,13 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/icon.h>
+#include <proto/alib.h>
 
 #include <workbench/startup.h>
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 /* some default values */
 #define DEFWINDOW "con:0/50//80/IconX/Auto"
@@ -75,7 +77,7 @@
 #define DEFWAIT   (2 * 50) // two seconds
 #define DEFUSHELL (TRUE)
 
-const TEXT version[] = "\0$VER: IconX 41.1 (8.12.2007)";
+const TEXT version[] = "\0$VER: IconX 41.2 (11.05.2009)";
 int __forceerrorrequester = 1;
 static TEXT errbuffer[255];
 
@@ -91,22 +93,134 @@ void displayMsg(LONG code)
     }
 }
 
+STRPTR AllocateNameFromLock(BPTR lock)
+{
+    ULONG  length = 512;
+    STRPTR buffer = NULL;
+    BOOL   done   = FALSE;
+    
+    while (!done)
+    {
+        if (buffer != NULL) FreeVec(buffer);
+        
+        buffer = AllocVec(length, MEMF_ANY);
+        if (buffer != NULL)
+        {
+            if (NameFromLock(lock, buffer, length))
+            {
+                done = TRUE;
+                break;
+            }
+            else
+            {
+                if (IoErr() == ERROR_LINE_TOO_LONG)
+                {
+                    length += 512;
+                    continue;
+                }
+                else
+                {
+                    break;
+                }                
+            }
+        }
+        else
+        {
+            SetIoErr(ERROR_NO_FREE_STORE);
+            break;
+        }
+    }
+    
+    if (done)
+    {
+        return buffer;
+    }
+    else
+    {
+        if (buffer != NULL) FreeVec(buffer);
+        return NULL;
+    }
+}
+
+
+
+STRPTR BuildCommandLine(struct WBStartup *startup)
+{
+    const struct WBStartup *wbsstate = startup;
+    STRPTR                  buffer   = NULL;
+    ULONG                   length   = 2 /* NULL + '\n' */ + strlen("C:Run QUIET EXECUTE");
+    int i;
+
+    /*-- Calculate length of resulting string ------------------------------*/
+    for (i = 1 ; i < wbsstate->sm_NumArgs ; i++)
+    {
+        BPTR lock = Lock((STRPTR) wbsstate->sm_ArgList[i].wa_Name, ACCESS_READ);
+        if (lock != NULL)
+        {
+            BPTR cd   = CurrentDir(lock);
+            STRPTR path = AllocateNameFromLock(lock);
+            if (path != NULL)
+            {
+                length += 3 /* space + 2 '"' */ + strlen(path);
+                FreeVec(path);
+            }
+            UnLock(lock);
+            CurrentDir(cd);
+        }
+    }
+
+    /*-- Allocate space for command line string ----------------------------*/
+    buffer = AllocVec(length, MEMF_ANY);
+    D(bug("[IconX] buffer length: %d\n", length));
+
+    if (buffer != NULL)
+    {
+        /*-- Build command line --------------------------------------------*/
+        buffer[0] = '\0';
+        strcat(buffer, "C:Run QUIET EXECUTE");
+
+        for (i = 1 ; i < wbsstate->sm_NumArgs ; i++)
+        {
+            BPTR lock = Lock((STRPTR) wbsstate->sm_ArgList[i].wa_Name, ACCESS_READ);
+            if (lock != NULL)
+            {
+                BPTR cd   = CurrentDir(lock);
+                STRPTR path = AllocateNameFromLock(lock);
+                if (path != NULL)
+                {
+                    strcat(buffer, " \"");
+                    strcat(buffer, path);
+                    strcat(buffer, "\"");
+                    FreeVec(path);
+                }
+                UnLock(lock);
+                CurrentDir(cd);
+            }
+        }
+        strcat(buffer, "\n");
+    }
+    else
+    {
+        SetIoErr(ERROR_NO_FREE_STORE);
+    }
+
+    return buffer;
+}
+
 
 int main(int argc, char **argv)
 {
-    LONG rc = RETURN_FAIL;
-    STRPTR filename;
-    BPTR oldlock = (BPTR)-1;
-    BPTR dirlock = (BPTR)-1;
-    struct DiskObject *dobj = NULL;
-
-    STRPTR ixWindow = DEFWINDOW;
-    LONG ixWait = 0;
-    LONG ixStack = DEFSTACK;
-    BOOL ixUShell = DEFUSHELL;
-
-    BPTR from = NULL;
-    BPTR window = NULL;
+    LONG               rc            =       RETURN_FAIL;
+    STRPTR             filename,
+                       commandLine   =       NULL,
+                       ixWindow      =       DEFWINDOW;
+    LONG               ixWait        =       0,
+                       ixStack       =       DEFSTACK;
+    BOOL               ixUShell      =       DEFUSHELL;
+    BPTR               oldlock       = (BPTR)-1,
+                       dirlock       = (BPTR)-1,
+                       window        =       NULL;
+    struct DiskObject *dobj          =       NULL;
 
     D(bug("IconX argc %d\n", argc));
 
@@ -117,11 +231,13 @@ int main(int argc, char **argv)
     }
 
     struct WBStartup *startup = (struct WBStartup *) argv;
-    if (startup->sm_NumArgs != 2)
+    if (startup->sm_NumArgs < 2)
     {
 	displayMsg(ERROR_REQUIRED_ARG_MISSING);
 	goto exit;
     }
+    
+    D(bug("[IconX] startup->sm_NumArgs: %d\n", startup->sm_NumArgs));
 
     dirlock  = startup->sm_ArgList[1].wa_Lock;
     filename = startup->sm_ArgList[1].wa_Name;
@@ -180,12 +296,14 @@ int main(int argc, char **argv)
     
     D(bug("wait %d stack %d usershell %d window %s\n", ixWait, ixStack, ixUShell, ixWindow));
 
-    from = Open(filename, MODE_OLDFILE);
-    if (from == NULL)
+    D(bug("Building command line\n"));
+    commandLine = BuildCommandLine(startup);
+    if (commandLine == NULL)
     {
 	displayMsg(IoErr());
 	goto exit;
     }
+    D(bug("[IconX] commandLine: '%s'\n", commandLine));
 
     window  = Open(ixWindow, MODE_OLDFILE);
     if (window == NULL)
@@ -196,6 +314,7 @@ int main(int argc, char **argv)
 
     if (window)
     {
+	D(bug("[IconX] window ok\n"));
 	struct TagItem tags[] =
 	{
 	    { SYS_Asynch,      FALSE        },
@@ -203,13 +322,12 @@ int main(int argc, char **argv)
 	    { SYS_Input,       (IPTR)window },
 	    { SYS_Output,      (IPTR)NULL   },
 	    { SYS_Error,       (IPTR)NULL   },
-	    { SYS_ScriptInput, (IPTR)from   },
 	    { SYS_UserShell,   ixUShell     },
 	    { NP_StackSize,    ixStack      },
 	    { TAG_DONE,        0            }
 	};
 
-	rc = SystemTagList("", tags);
+	rc = SystemTagList(commandLine, tags);
 	if (rc == -1)
 	{
 	    displayMsg(IoErr());

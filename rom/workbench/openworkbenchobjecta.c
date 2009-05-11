@@ -228,13 +228,17 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
 
                         D(bug("[WBLIB] OpenWorkbenchObjectA: stack size: %d Bytes\n", stacksize));
 
-                        struct TagItem tags[] =
+                        struct TagItem tags2[] =
                         {
-                            { NP_StackSize, stacksize                   },
-                            { WBOPENA_ArgLock, (IPTR) parent            },
-                            { WBOPENA_ArgName, (IPTR) FilePart(name)    },
-                            { TAG_DONE, (IPTR)NULL                      }
+                            { NP_StackSize    ,        stacksize      },
+                            { WBOPENA_ArgLock , (IPTR) parent         },
+                            { WBOPENA_ArgName , (IPTR) FilePart(name) },
+                            { TAG_MORE        , (IPTR) tags           },
+                            { TAG_DONE        ,        0              }
                         };
+
+                        if (tags == NULL)
+                            tags2[3].ti_Tag = TAG_IGNORE;
                         
                         if (FindToolType(icon->do_ToolTypes, "CLI") == NULL)
                         {
@@ -247,7 +251,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                             {
                                 success = WB_LaunchProgram
                                 (
-                                    parent2, FilePart(icon->do_DefaultTool), tags
+                                    parent2, FilePart(icon->do_DefaultTool), tags2
                                 );
                             }
                             UnLock(parent2);
