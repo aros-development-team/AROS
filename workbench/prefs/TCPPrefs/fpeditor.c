@@ -34,8 +34,8 @@
 #include <proto/alib.h>
 #include <utility/hooks.h>
 
-static const char *titles[] = { "IP Config", "Computer Name", NULL };
-static const char *DHCPCycle[] = { "Manual", "Get address from DHCP", NULL };
+static CONST_STRPTR NetworkTabs[] = { NULL, NULL, NULL };
+static CONST_STRPTR DHCPCycle[] = { NULL, NULL, NULL };
 static struct Hook DHCPHook;
 // this can probably be moved back to FPEditor__OM_NEW
 Object *interfString, *IPString, *maskString, *gateString, *DNSString[2], *hostString, *domainString, *DHCPState;
@@ -62,8 +62,6 @@ struct FPEditor_DATA {
 
 void FlipDHCP()
 {
-	//printf("DEBUG: Jestem w DHCFlip\n");
-
 	LONG lng = 0;
 
 	GetAttr(MUIA_Cycle_Active, DHCPState, &lng);
@@ -164,36 +162,42 @@ Object *FPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
     DHCPHook.h_Entry = HookEntry;
     DHCPHook.h_SubEntry = (HOOKFUNC)DHCPNotify;
+
+    DHCPCycle[0] = _(MSG_IP_MODE_MANUAL);
+    DHCPCycle[1] = _(MSG_IP_MODE_DHCP);
+
+    NetworkTabs[0] = _(MSG_TAB_IP_CONFIGURATION);
+    NetworkTabs[1] = _(MSG_TAB_COMPUTER_NAME);
 	
 	self = (Object *)DoSuperNewTags
 	(
 		CLASS, self, NULL,
 
-		MUIA_PrefsEditor_Name,        "AROS TCP/IP Preferences",
+		MUIA_PrefsEditor_Name, __(MSG_NAME),
 		MUIA_PrefsEditor_Path, (IPTR)"AROSTCP/arostcp.prefs",
 
 
-		Child, RegisterGroup(titles),
+		Child, RegisterGroup((IPTR)NetworkTabs),
 
 			Child, (IPTR)ColGroup(2),
-				Child, (IPTR)Label2("Interface"),Child, (IPTR)PopaslObject,
+				Child, (IPTR)Label2(__(MSG_DEVICE)),Child, (IPTR)PopaslObject,
 					MUIA_Popasl_Type,              ASL_FileRequest,
 					ASLFO_MaxHeight,               100,
-					MUIA_Popstring_String,  (IPTR)(interfString = StringObject, TextFrame, MUIA_Background, MUII_TextBack, End),
+					MUIA_Popstring_String,  (IPTR)(interfString = (Object *)StringObject, TextFrame, MUIA_Background, MUII_TextBack, End),
 					MUIA_Popstring_Button,  (IPTR)PopButton(MUII_PopUp),
 				End,
 
-				Child, (IPTR)Label2("IP Configuration"), Child, (IPTR)(DHCPState = CycleObject, MUIA_Cycle_Entries, DHCPCycle, End),
-				Child, (IPTR)Label2("IP"), Child, (IPTR)(IPString = StringObject, TextFrame, MUIA_String_Accept, "0123456789.", End),
-				Child, (IPTR)Label2("Mask"),Child, (IPTR)(maskString = StringObject, TextFrame, MUIA_String_Accept, "0123456789.", End),
-				Child, (IPTR)Label2("Gate"),Child, (IPTR)(gateString = StringObject, TextFrame, MUIA_String_Accept, "0123456789.", End),
-				Child, (IPTR)Label2("DNS 1"),Child, (IPTR)(DNSString[0] = StringObject, TextFrame, MUIA_String_Accept, "0123456789.", End),
-				Child, (IPTR)Label2("DNS 2"),Child, (IPTR)(DNSString[1] = StringObject, TextFrame, MUIA_String_Accept, "0123456789.", End),
+				Child, (IPTR)Label2(__(MSG_IP_MODE)), Child, (IPTR)(DHCPState = (Object *)CycleObject, MUIA_Cycle_Entries, (IPTR)DHCPCycle, End),
+				Child, (IPTR)Label2(__(MSG_IP)), Child, (IPTR)(IPString = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789.", End),
+				Child, (IPTR)Label2(__(MSG_MASK)),Child, (IPTR)(maskString = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789.", End),
+				Child, (IPTR)Label2(__(MSG_GATE)),Child, (IPTR)(gateString = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789.", End),
+				Child, (IPTR)Label2(__(MSG_DNS1)),Child, (IPTR)(DNSString[0] = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789.", End),
+				Child, (IPTR)Label2(__(MSG_DNS2)),Child, (IPTR)(DNSString[1] = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789.", End),
 			End,
 
 			Child, (IPTR)ColGroup(2),
-				Child, (IPTR)Label2("Name"), Child, (IPTR)(hostString = StringObject, TextFrame, MUIA_String_Accept, "0123456789abcdefghijklmnopqrstuvwxyz-", End),
-				Child, (IPTR)Label2("Domain"), Child, (IPTR)(domainString = StringObject, TextFrame, MUIA_String_Accept, "0123456789abcdefghijklmnopqrstuvwxyz-.", End),
+				Child, (IPTR)Label2(__(MSG_HOST_NAME)), Child, (IPTR)(hostString = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789abcdefghijklmnopqrstuvwxyz-", End),
+				Child, (IPTR)Label2(__(MSG_DOMAIN_NAME)), Child, (IPTR)(domainString = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789abcdefghijklmnopqrstuvwxyz-.", End),
 			End,
 
 		End, // register

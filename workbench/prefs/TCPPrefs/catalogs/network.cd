@@ -1,0 +1,45 @@
+MSG_NAME (//)
+Network Preferences
+;
+MSG_DESCRIPTION (//)
+TCP/IP Network preferences
+;
+MSG_DEVICE (//)
+Device
+;
+MSG_IP_MODE (//)
+IP Mode
+;
+MSG_IP (//)
+IP
+;
+MSG_MASK (//)
+Mask
+;
+MSG_GATE (//)
+Gate
+;
+MSG_DNS1 (//)
+Primary DNS
+;
+MSG_DNS2 (//)
+Secondary DNS
+;
+MSG_HOST_NAME (//)
+Host Name
+;
+MSG_DOMAIN_NAME (//)
+Domain Name
+;
+MSG_IP_MODE_MANUAL (//)
+Manual
+;
+MSG_IP_MODE_DHCP (//)
+Get address from DHCP
+;
+MSG_TAB_IP_CONFIGURATION (//)
+IP Configuration
+;
+MSG_TAB_COMPUTER_NAME (//)
+Computer Name
+;

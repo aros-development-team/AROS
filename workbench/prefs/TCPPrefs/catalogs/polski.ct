@@ -1,0 +1,63 @@
+## version $VER: networkprefs.catalog 1.0 (11.05.09)
+## codeset 0
+## language polski
+MSG_NAME
+Preferencje Sieci
+;Network Preferences
+;
+MSG_DESCRIPTION
+Ustawienia protoko³u TCP/IP
+;TCP/IP Network preferences
+;
+MSG_DEVICE
+Urz±dzenie
+;Device
+;
+MSG_IP_MODE
+Tryb IP
+;IP Mode
+;
+MSG_IP
+IP
+;IP
+;
+MSG_MASK
+Maska sieci
+;Mask
+;
+MSG_GATE
+Brama
+;Gate
+;
+MSG_DNS1
+G³ówny DNS
+;Primary DNS
+;
+MSG_DNS2
+Pomocniczy DNS
+;Secondary DNS
+;
+MSG_HOST_NAME
+Nazwa hosta
+;Host Name
+;
+MSG_DOMAIN_NAME
+Nazwa domeny
+;Domain Name
+;
+MSG_IP_MODE_MANUAL
+Rêczny
+;Manual
+;
+MSG_IP_MODE_DHCP
+Pobierz adres z DCHP
+;Get address from DHCP
+;
+MSG_TAB_IP_CONFIGURATION
+Konfiguracja IP
+;IP Configuration
+;
+MSG_TAB_COMPUTER_NAME
+Nazwa komputera
+;Computer Name
+;
