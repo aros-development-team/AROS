@@ -12,10 +12,10 @@
 
 #include "locale.h"
 #include "args.h"
-#include "fpeditor.h"
+#include "netpeditor.h"
 #include "prefsdata.h"
 
-#define VERSION "$VER: Fonts 0.1 (x) ©AROS Dev Team"
+#define VERSION "$VER: Network 0.5 (11.05.2009) AROS Dev Team"
 
 int main(void)
 {
@@ -36,14 +36,14 @@ int main(void)
     SetDefaultValues();
 	ReadTCPPrefs();
 
-	application = ApplicationObject,
+	application = (Object *)ApplicationObject,
 	MUIA_Application_Title,  __(MSG_NAME),
 	MUIA_Application_Version, (IPTR)VERSION,
 	MUIA_Application_Description,  __(MSG_DESCRIPTION),
 	MUIA_Application_Base, (IPTR)"NETPREF",
-	SubWindow, (IPTR)(window = SystemPrefsWindowObject,
+	SubWindow, (IPTR)(window = (Object *)SystemPrefsWindowObject,
 			  MUIA_Window_ID, MAKE_ID('N', 'E', 'T', 'P'),
-			  WindowContents, (IPTR)FPEditorObject,
+			  WindowContents, (IPTR)NetPEditorObject,
 			  End,
 			  End),
 	End;

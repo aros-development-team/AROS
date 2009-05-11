@@ -10,12 +10,14 @@
 #include <libraries/mui.h>
 
 /*** Identifier base ********************************************************/
-#define MUIB_FPEditor                  (TAG_USER | 0x10000000)
+#define MUIB_NetPEditor                  (TAG_USER | 0x10000000)
 
 /*** Variables **************************************************************/
-extern struct MUI_CustomClass *FPEditor_CLASS;
+extern struct MUI_CustomClass *NetPEditor_CLASS;
 
 /*** Macros *****************************************************************/
-#define FPEditorObject BOOPSIOBJMACRO_START(FPEditor_CLASS->mcc_Class)
+#define NetPEditorObject BOOPSIOBJMACRO_START(NetPEditor_CLASS->mcc_Class)
+
+#define MUIM_NetPEditor_IPModeChanged   (MUIB_NetPEditor | 0x00000001)
 
 #endif /* _FWPEDITOR_H_ */

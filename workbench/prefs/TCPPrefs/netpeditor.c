@@ -12,7 +12,6 @@
 #include <libraries/asl.h>
 #include <libraries/mui.h>
 #include <prefs/prefhdr.h>
-#include <prefs/font.h>
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
 
@@ -28,7 +27,7 @@
 
 #include "misc.h"
 #include "locale.h"
-#include "fpeditor.h"
+#include "netpeditor.h"
 #include "prefsdata.h"
 
 #include <proto/alib.h>
@@ -36,50 +35,18 @@
 
 static CONST_STRPTR NetworkTabs[] = { NULL, NULL, NULL };
 static CONST_STRPTR DHCPCycle[] = { NULL, NULL, NULL };
-static struct Hook DHCPHook;
-// this can probably be moved back to FPEditor__OM_NEW
-Object *interfString, *IPString, *maskString, *gateString, *DNSString[2], *hostString, *domainString, *DHCPState;
+
 /*** Instance Data **********************************************************/
-#define FP_COUNT (7)  /* Number of entries in fped_FontPrefs array */
-
-struct FPEditor_DATA {
-	struct FontPrefs fped_FontPrefs[FP_COUNT];
-	Object           *fped_interfString,
-	*fped_IPString,
-	*fped_maskString,
-	*fped_gateString,
-	*fped_DNSString[2],
-	*fped_hostString,
-	*fped_domainString,
-	*fped_DHCPState,
-	*fped_Self;
-
+struct NetPEditor_DATA {
+	Object           *netped_interfString,
+	*netped_IPString,
+	*netped_maskString,
+	*netped_gateString,
+	*netped_DNSString[2],
+	*netped_hostString,
+	*netped_domainString,
+	*netped_DHCPState;
 };
-
-/*** Macros *****************************************************************/
-//#define FP(i) (&(data->fped_FontPrefs[(i)]))
-
-
-void FlipDHCP()
-{
-	LONG lng = 0;
-
-	GetAttr(MUIA_Cycle_Active, DHCPState, &lng);
-
-	if (lng==1) {
-		set(IPString, MUIA_Disabled, TRUE);
-		set(gateString, MUIA_Disabled, TRUE);
-		set(DNSString[0], MUIA_Disabled, TRUE);
-		set(DNSString[1], MUIA_Disabled, TRUE);
-		set(maskString, MUIA_Disabled, TRUE);
-	} else {
-		set(IPString, MUIA_Disabled, FALSE);
-		set(gateString, MUIA_Disabled, FALSE);
-		set(DNSString[0], MUIA_Disabled, FALSE);
-		set(DNSString[1], MUIA_Disabled, FALSE);
-		set(maskString, MUIA_Disabled, FALSE);
-	}	
-}
 
 void BumpTCP()
 {
@@ -87,81 +54,56 @@ void BumpTCP()
 	// execute s:arostcpd start
 }
 
-static ULONG DHCPNotify(struct Hook *hook, Object *object, IPTR *params)
-{
-	Object *self;
-	Class *CLASS;
-
-	self = (Object *)params[0];
-	CLASS = (Class *)params[1];
-
-	struct FPEditor_DATA *data = INST_DATA(CLASS, *self);
-		
-	SET(self, MUIA_PrefsEditor_Changed, TRUE);
-
-	FlipDHCP();
-
-    return 1;
-}
-
-BOOL Gadgets2FontPrefs(struct FPEditor_DATA *data)
+BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
 
 {
 	STRPTR str = NULL;
 	LONG lng = 0;
 
-	GET(data->fped_interfString, MUIA_String_Contents, &str);
+	GET(data->netped_interfString, MUIA_String_Contents, &str);
 	SetInterf(str);
-	GET(data->fped_IPString, MUIA_String_Contents, &str);
+	GET(data->netped_IPString, MUIA_String_Contents, &str);
 	SetIP(str);
-	GET(data->fped_maskString, MUIA_String_Contents, &str);
+	GET(data->netped_maskString, MUIA_String_Contents, &str);
 	SetMask(str);
-	GET(data->fped_gateString, MUIA_String_Contents, &str);
+	GET(data->netped_gateString, MUIA_String_Contents, &str);
 	SetGate(str);
-	GET(data->fped_DNSString[0], MUIA_String_Contents, &str);
+	GET(data->netped_DNSString[0], MUIA_String_Contents, &str);
 	SetDNS(0, str);
-	GET(data->fped_DNSString[1], MUIA_String_Contents, &str);
+	GET(data->netped_DNSString[1], MUIA_String_Contents, &str);
 	SetDNS(1, str);
-	GET(data->fped_hostString, MUIA_String_Contents, &str);
+	GET(data->netped_hostString, MUIA_String_Contents, &str);
 	SetHost(str);
-	GET(data->fped_domainString, MUIA_String_Contents, &str);
+	GET(data->netped_domainString, MUIA_String_Contents, &str);
 	SetDomain(str);
-	GET(data->fped_DHCPState, MUIA_Cycle_Active, &lng);
+	GET(data->netped_DHCPState, MUIA_Cycle_Active, &lng);
 	SetDHCP(lng);
 
 	return TRUE;
 }
 
-BOOL FontPrefs2Gadgets
+BOOL NetworkPrefs2Gadgets
 (
-	struct FPEditor_DATA *data
+	struct NetPEditor_DATA *data
 )
 {
-	TEXT buffer[1000];
-
-	// FIXME: error checking
-	NNSET(data->fped_interfString, MUIA_String_Contents, (IPTR)GetInterf());
-	NNSET(data->fped_IPString, MUIA_String_Contents, (IPTR)GetIP());
-	NNSET(data->fped_maskString, MUIA_String_Contents, (IPTR)GetMask());
-	NNSET(data->fped_gateString, MUIA_String_Contents, (IPTR)GetGate());
-	NNSET(data->fped_DNSString[0], MUIA_String_Contents, (IPTR)GetDNS(0));
-	NNSET(data->fped_DNSString[1], MUIA_String_Contents, (IPTR)GetDNS(1));
-	NNSET(data->fped_hostString, MUIA_String_Contents, (IPTR)GetHost());
-	NNSET(data->fped_domainString, MUIA_String_Contents, (IPTR)GetDomain());
-	NNSET(data->fped_DHCPState, MUIA_Cycle_Active, (IPTR)GetDHCP());
-	NNSET(data->fped_Self,MUIA_PrefsEditor_Changed,TRUE);
-	FlipDHCP();
+	NNSET(data->netped_interfString, MUIA_String_Contents, (IPTR)GetInterf());
+	NNSET(data->netped_IPString, MUIA_String_Contents, (IPTR)GetIP());
+	NNSET(data->netped_maskString, MUIA_String_Contents, (IPTR)GetMask());
+	NNSET(data->netped_gateString, MUIA_String_Contents, (IPTR)GetGate());
+	NNSET(data->netped_DNSString[0], MUIA_String_Contents, (IPTR)GetDNS(0));
+	NNSET(data->netped_DNSString[1], MUIA_String_Contents, (IPTR)GetDNS(1));
+	NNSET(data->netped_hostString, MUIA_String_Contents, (IPTR)GetHost());
+	NNSET(data->netped_domainString, MUIA_String_Contents, (IPTR)GetDomain());
+	NNSET(data->netped_DHCPState, MUIA_Cycle_Active, (IPTR)GetDHCP());
 	
 	return TRUE;
 }
 
 /*** Methods ****************************************************************/
-Object *FPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
+Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-	//Object *interfString, *IPString, *maskString, *gateString, *DNSString[2], *hostString, *domainString, *DHCPState;
-
-    DHCPHook.h_Entry = HookEntry;
-    DHCPHook.h_SubEntry = (HOOKFUNC)DHCPNotify;
+	Object *interfString, *IPString, *maskString, *gateString, *DNSString[2], *hostString, *domainString, *DHCPState;
 
     DHCPCycle[0] = _(MSG_IP_MODE_MANUAL);
     DHCPCycle[1] = _(MSG_IP_MODE_DHCP);
@@ -207,18 +149,17 @@ Object *FPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
 	
 	if (self != NULL) {
-		struct FPEditor_DATA *data = INST_DATA(CLASS, self);
-		data->fped_interfString  = interfString;
-		data->fped_IPString = IPString;
-		data->fped_maskString = maskString;
-		data->fped_gateString = gateString;
+		struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+		data->netped_interfString  = interfString;
+		data->netped_IPString = IPString;
+		data->netped_maskString = maskString;
+		data->netped_gateString = gateString;
 
-		data->fped_DNSString[0] = DNSString[0];
-		data->fped_DNSString[1] = DNSString[1];
-		data->fped_hostString = hostString;
-		data->fped_domainString = domainString;
-		data->fped_DHCPState = DHCPState;
-		data->fped_Self = self;
+		data->netped_DNSString[0] = DNSString[0];
+		data->netped_DNSString[1] = DNSString[1];
+		data->netped_hostString = hostString;
+		data->netped_domainString = domainString;
+		data->netped_DHCPState = DHCPState;
 		
 		/*-- Setup notifications -------------------------------------------*/
 		DoMethod
@@ -265,7 +206,7 @@ Object *FPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 		DoMethod
 		(
 			DHCPState, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR)self, 4, MUIM_CallHook, (IPTR)&DHCPHook, (IPTR)self, (IPTR)CLASS
+            (IPTR)self, 1, MUIM_NetPEditor_IPModeChanged 
 
 		);
 	}
@@ -273,8 +214,7 @@ Object *FPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 	return self;
 }
 
-
-IPTR FPEditor__MUIM_PrefsEditor_Save
+IPTR NetPEditor__MUIM_PrefsEditor_Save
 (
 	Class *CLASS, Object *self, Msg message
 )
@@ -284,13 +224,13 @@ IPTR FPEditor__MUIM_PrefsEditor_Save
 	return FALSE;
 }
 
-IPTR FPEditor__MUIM_PrefsEditor_Use
+IPTR NetPEditor__MUIM_PrefsEditor_Use
 (
 	Class *CLASS, Object *self, Msg message
 )
 {
-	struct FPEditor_DATA *data = INST_DATA(CLASS, self);
-	Gadgets2FontPrefs(data);
+	struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+	Gadgets2NetworkPrefs(data);
 
 	if (WriteTCPPrefs("ENV:AROSTCP/db")) {
 
@@ -304,46 +244,80 @@ IPTR FPEditor__MUIM_PrefsEditor_Use
 	return FALSE;
 }
 
-IPTR FPEditor__MUIM_PrefsEditor_ImportFH
+IPTR NetPEditor__MUIM_PrefsEditor_ImportFH
 (
 	Class *CLASS, Object *self,
 	struct MUIP_PrefsEditor_ImportFH *message
 )
 {
-	struct FPEditor_DATA *data = INST_DATA(CLASS, self);
+	struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 	BOOL success = TRUE;
 
-	FontPrefs2Gadgets(data);
+	NetworkPrefs2Gadgets(data);
+
+    DoMethod(self, MUIM_NetPEditor_IPModeChanged);
 
 	return success;
 }
 
-IPTR FPEditor__MUIM_PrefsEditor_ExportFH
+IPTR NetPEditor__MUIM_PrefsEditor_ExportFH
 (
 	Class *CLASS, Object *self,
 	struct MUIP_PrefsEditor_ExportFH *message
 )
 {
-	struct FPEditor_DATA *data = INST_DATA(CLASS, self);
-	struct PrefHeader header;
-	struct IFFHandle *handle;
+	struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 	BOOL success = TRUE;
-	LONG error   = 0;
 
-	FontPrefs2Gadgets(data);
+	NetworkPrefs2Gadgets(data);
+
+    DoMethod(self, MUIM_NetPEditor_IPModeChanged);
 
 	return success;
 }
 
+IPTR NetPEditor__MUIM_NetPEditor_IPModeChanged
+(
+	Class *CLASS, Object *self,
+	Msg message
+)
+{
+	struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 
+    IPTR lng = 0;
+
+    GetAttr(MUIA_Cycle_Active, data->netped_DHCPState, &lng);
+
+    if (lng==1) 
+    {
+        set(data->netped_IPString, MUIA_Disabled, TRUE);
+        set(data->netped_gateString, MUIA_Disabled, TRUE);
+        set(data->netped_DNSString[0], MUIA_Disabled, TRUE);
+        set(data->netped_DNSString[1], MUIA_Disabled, TRUE);
+        set(data->netped_maskString, MUIA_Disabled, TRUE);
+    } 
+    else 
+    {
+        set(data->netped_IPString, MUIA_Disabled, FALSE);
+        set(data->netped_gateString, MUIA_Disabled, FALSE);
+        set(data->netped_DNSString[0], MUIA_Disabled, FALSE);
+        set(data->netped_DNSString[1], MUIA_Disabled, FALSE);
+        set(data->netped_maskString, MUIA_Disabled, FALSE);
+    }	
+
+	SET(self, MUIA_PrefsEditor_Changed, TRUE);
+
+    return TRUE;
+}
 
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_5
+ZUNE_CUSTOMCLASS_6
 (
-	FPEditor, NULL, MUIC_PrefsEditor, NULL,
+	NetPEditor, NULL, MUIC_PrefsEditor, NULL,
 	OM_NEW,                    struct opSet *,
 	MUIM_PrefsEditor_ImportFH, struct MUIP_PrefsEditor_ImportFH *,
 	MUIM_PrefsEditor_ExportFH, struct MUIP_PrefsEditor_ExportFH *,
-	MUIM_PrefsEditor_Save,     struct MUIP_PrefsEditor_Save *,
-	MUIM_PrefsEditor_Use,      struct MUIP_PrefsEditor_Use *
+	MUIM_PrefsEditor_Save,     Msg,
+	MUIM_PrefsEditor_Use,      Msg,
+    MUIM_NetPEditor_IPModeChanged, Msg
 );
