@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main args fpeditor prefsdata
+FILES 	    := main args fpeditor prefsdata locale misc
 EXEDIR      := $(AROSDIR)/Prefs
 
 #MM- workbench-prefs : workbench-prefs-network

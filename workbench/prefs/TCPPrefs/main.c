@@ -21,7 +21,7 @@ int main(void)
 {
 	Object *application,  *window;
 
-	//Locale_Initialize();
+	Locale_Initialize();
 
 	if (ReadArguments()) {
 		/* FIXME: handle arguments... */
@@ -37,12 +37,12 @@ int main(void)
 	ReadTCPPrefs();
 
 	application = ApplicationObject,
-	MUIA_Application_Title,  "AROS TCP Prefs",
+	MUIA_Application_Title,  __(MSG_NAME),
 	MUIA_Application_Version, (IPTR)VERSION,
-	MUIA_Application_Description,  "TCPIP prefs for AROS",
-	MUIA_Application_Base, (IPTR)"TCPIPREF",
+	MUIA_Application_Description,  __(MSG_DESCRIPTION),
+	MUIA_Application_Base, (IPTR)"NETPREF",
 	SubWindow, (IPTR)(window = SystemPrefsWindowObject,
-			  MUIA_Window_ID, MAKE_ID('F', 'W', 'I', 'N'),
+			  MUIA_Window_ID, MAKE_ID('N', 'E', 'T', 'P'),
 			  WindowContents, (IPTR)FPEditorObject,
 			  End,
 			  End),
@@ -56,7 +56,7 @@ int main(void)
 		MUI_DisposeObject(application);
 	}
 
-	//Locale_Deinitialize();
+	Locale_Deinitialize();
 
 	return 0;
 }
