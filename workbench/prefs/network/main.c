@@ -34,7 +34,7 @@ int main(void)
 	}
 
     SetDefaultValues();
-	ReadTCPPrefs();
+	ReadNetworkPrefs();
 
 	application = (Object *)ApplicationObject,
 	MUIA_Application_Title,  __(MSG_NAME),

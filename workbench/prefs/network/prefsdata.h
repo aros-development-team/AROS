@@ -12,32 +12,31 @@ struct TCPPrefs
     TEXT gate[64];
     TEXT DNS[2][64];
     BOOL DHCP;
-    TEXT interf[4096];
-    TEXT host[1000];
-    TEXT domain[1000];
-    TEXT config[8192]; 
+    TEXT device[512];
+    TEXT host[512];
+    TEXT domain[512];
 };
 
 void SetDefaultValues();
-void ReadTCPPrefs();
-int WriteTCPPrefs(STRPTR DestDir);
+void ReadNetworkPrefs();
+BOOL SaveNetworkPrefs();
+BOOL UseNetworkPrefs();
+
 
 STRPTR GetIP();
 STRPTR GetMask();
 STRPTR GetGate();
 STRPTR GetDNS(LONG m);
 BOOL GetDHCP();
-STRPTR GetInterf();
+STRPTR GetDevice();
 STRPTR GetHost();
 STRPTR GetDomain();
-STRPTR GetConfig();
 
 void SetIP(STRPTR w);
 void SetMask(STRPTR w);
 void SetGate(STRPTR w);
 void SetDNS(LONG m, STRPTR w);
 void SetDHCP(BOOL w);
-void SetInterf(STRPTR w);
+void SetDevice(STRPTR w);
 void SetHost(STRPTR w);
 void SetDomain(STRPTR w);
-void SetConfig(STRPTR w);
