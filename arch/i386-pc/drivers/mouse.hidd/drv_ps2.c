@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PS/2 mouse driver.
@@ -118,7 +118,7 @@ struct mouse_data *data = OOP_INST_DATA(cl, o);
 
 /****************************************************************************************/
 
-#define AUX_RECONNECT           170
+#define AUX_RECONNECT           0xAA
 #define AUX_ACK                 0xFA
 
 #define aux_write(val)				\
@@ -179,6 +179,7 @@ int kbd_detect_aux()
 
     } while (--loops);
 
+    D(bug("PS/2 Auxilliary port %sdetected\n", retval ? "" : "not "));
     return retval;
 }
 
@@ -277,15 +278,18 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	    continue;
 	}
 
-    #if 1
-	if (mousecode == AUX_RECONNECT)
-	{
-            data->u.ps2.mouse_collected_bytes = 0;
+        /* Check for a late reset response. This could also be a valid first
+         * byte of a mouse packet if there's a Y overflow while the right
+         * button is held down, but it's unlikely */
 
+	if (mousecode == AUX_RECONNECT
+            && data->u.ps2.mouse_collected_bytes == 0)
+	{
 	    /* Ping mouse */
     	    aux_write(KBD_OUTCMD_ENABLE);
+	    data->u.ps2.expected_mouse_acks++;
+            continue;
  	}
-    #endif
 
     	/* Mouse Packet Byte */
 
@@ -318,17 +322,15 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
          * Let's see whether these data can be right...
          *
          * D7 D6 D5 D4 D3 D2 D1 D0
-         * YV XV YS X2  1  M  R  L
-         * X7 .  .  .  .  .  .  X1   (X, signed)
-         * Y7 .  .  .  .  .  .  Y1   (Y, signed)
+         * YV XV YS XS  1  M  R  L
+         * X7 .  .  .  .  .  .  X1   (X)
+         * Y7 .  .  .  .  .  .  Y1   (Y)
          *
-         * YV,XV : over flow in x/y direction
-         * XS,YS : represents sign of X and Y
-         * X,Y   : displacement in x and y direction.
-         * X and Y are signed, XS, YS are there to double check the
-         * sign and correctnes of the collected data (?).
+         * XV,YV : overflow in x/y direction
+         * XS,YS : most significant bit of X and Y: represents sign
+         * X,Y   : displacement in x and y direction (8 least significant bits).
          *
-         * http://www.hut.fi/~then/mytexts/mouse.htm
+         * X, XS, Y and YS make up two 9-bit two's complement fields.
          */
 
     #if 0
@@ -396,11 +398,11 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	}
     #endif
 
-    } /* for(; ((info = kbd_read_statues()) & KBD_STATUS_OBF) && work; work--) */
+    } /* for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--) */
 
     if (!work)
     {
-        D(bug("kbd.hidd: controller jammed (0x%02X).\n", info));
+        D(bug("mouse.hidd: controller jammed (0x%02X).\n", info));
     }
 
 }
@@ -423,11 +425,14 @@ int mouse_ps2reset(struct mouse_data *data)
 
     kbd_write_command_w(KBD_CTRLCMD_MOUSE_ENABLE);
 
+    /*
+     * Check for a mouse port.
+     */
     if (!kbd_detect_aux())
 	return 0;
 
     /*
-     * Unfortunatley on my computer these commands cause
+     * Unfortunately on my computer these commands cause
      * the mouse not to work at all if they are issued
      * in a different order. So please keep it that way.
      * - Stefan
@@ -439,6 +444,9 @@ int mouse_ps2reset(struct mouse_data *data)
      */
     kbd_write_cmd(AUX_INTS_OFF);
     kbd_write_command_w(KBD_CTRLCMD_KBD_DISABLE);
+
+    /* Reset mouse */
+    aux_write(KBD_OUTCMD_RESET);
 
     data->u.ps2.mouse_protocol = PS2_PROTOCOL_STANDARD;
     data->u.ps2.mouse_packetsize = 3;
@@ -460,7 +468,7 @@ int mouse_ps2reset(struct mouse_data *data)
     aux_write(2);
     aux_write(KBD_OUTCMD_SET_SCALE11);
 
-    /* Enable Aux device */
+    /* Enable Aux device (and re-enable keyboard) */
 
     kbd_write_command_w(KBD_CTRLCMD_KBD_ENABLE);
     aux_write(KBD_OUTCMD_ENABLE);
@@ -469,7 +477,7 @@ int mouse_ps2reset(struct mouse_data *data)
     /*
      * According to the specs there is an external
      * latch that holds the level-sensitive interrupt
-     * request until the CPU readsport 0x60.
+     * request until the CPU reads port 0x60.
      * If this is not read then the mouse does not
      * work on my computer.- Stefan
      */

@@ -112,7 +112,7 @@ OOP_Object * PCMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
         /* Search for mouse installed. As USB is the fastest to test, do it
         first, if not found search for PS/2 mouse. If failure then check every
-        COM port in the system - the las chance to see... */
+        COM port in the system - the last chance to see... */
 
 	data->type = MDT_USB;
         if (!test_mouse_usb(cl, o))
