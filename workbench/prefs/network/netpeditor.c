@@ -38,7 +38,7 @@ static CONST_STRPTR DHCPCycle[] = { NULL, NULL, NULL };
 
 /*** Instance Data **********************************************************/
 struct NetPEditor_DATA {
-	Object           *netped_interfString,
+	Object           *netped_deviceString,
 	*netped_IPString,
 	*netped_maskString,
 	*netped_gateString,
@@ -48,20 +48,14 @@ struct NetPEditor_DATA {
 	*netped_DHCPState;
 };
 
-void BumpTCP()
-{
-	// execute s:arostcpd stop
-	// execute s:arostcpd start
-}
-
 BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
 
 {
 	STRPTR str = NULL;
 	LONG lng = 0;
 
-	GET(data->netped_interfString, MUIA_String_Contents, &str);
-	SetInterf(str);
+	GET(data->netped_deviceString, MUIA_String_Contents, &str);
+	SetDevice(str);
 	GET(data->netped_IPString, MUIA_String_Contents, &str);
 	SetIP(str);
 	GET(data->netped_maskString, MUIA_String_Contents, &str);
@@ -87,7 +81,7 @@ BOOL NetworkPrefs2Gadgets
 	struct NetPEditor_DATA *data
 )
 {
-	NNSET(data->netped_interfString, MUIA_String_Contents, (IPTR)GetInterf());
+	NNSET(data->netped_deviceString, MUIA_String_Contents, (IPTR)GetDevice());
 	NNSET(data->netped_IPString, MUIA_String_Contents, (IPTR)GetIP());
 	NNSET(data->netped_maskString, MUIA_String_Contents, (IPTR)GetMask());
 	NNSET(data->netped_gateString, MUIA_String_Contents, (IPTR)GetGate());
@@ -103,7 +97,7 @@ BOOL NetworkPrefs2Gadgets
 /*** Methods ****************************************************************/
 Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-	Object *interfString, *IPString, *maskString, *gateString, *DNSString[2], *hostString, *domainString, *DHCPState;
+	Object *deviceString, *IPString, *maskString, *gateString, *DNSString[2], *hostString, *domainString, *DHCPState;
 
     DHCPCycle[0] = _(MSG_IP_MODE_MANUAL);
     DHCPCycle[1] = _(MSG_IP_MODE_DHCP);
@@ -125,7 +119,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 				Child, (IPTR)Label2(__(MSG_DEVICE)),Child, (IPTR)PopaslObject,
 					MUIA_Popasl_Type,              ASL_FileRequest,
 					ASLFO_MaxHeight,               100,
-					MUIA_Popstring_String,  (IPTR)(interfString = (Object *)StringObject, TextFrame, MUIA_Background, MUII_TextBack, End),
+					MUIA_Popstring_String,  (IPTR)(deviceString = (Object *)StringObject, TextFrame, MUIA_Background, MUII_TextBack, End),
 					MUIA_Popstring_Button,  (IPTR)PopButton(MUII_PopUp),
 				End,
 
@@ -150,7 +144,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 	
 	if (self != NULL) {
 		struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
-		data->netped_interfString  = interfString;
+		data->netped_deviceString  = deviceString;
 		data->netped_IPString = IPString;
 		data->netped_maskString = maskString;
 		data->netped_gateString = gateString;
@@ -164,7 +158,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 		/*-- Setup notifications -------------------------------------------*/
 		DoMethod
 		(
-			interfString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+			deviceString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
 			(IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
 		);
 		DoMethod
@@ -219,7 +213,16 @@ IPTR NetPEditor__MUIM_PrefsEditor_Save
 	Class *CLASS, Object *self, Msg message
 )
 {
-	if (DoMethod(self, MUIM_PrefsEditor_Use)) return WriteTCPPrefs("ENVARC:AROSTCP/db");
+	struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+	Gadgets2NetworkPrefs(data);
+
+    if (SaveNetworkPrefs())
+    {
+		SET(self, MUIA_PrefsEditor_Changed, FALSE);
+		SET(self, MUIA_PrefsEditor_Testing, FALSE);
+        return TRUE;
+    }
 
 	return FALSE;
 }
@@ -230,17 +233,16 @@ IPTR NetPEditor__MUIM_PrefsEditor_Use
 )
 {
 	struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
 	Gadgets2NetworkPrefs(data);
 
-	if (WriteTCPPrefs("ENV:AROSTCP/db")) {
-
+    if (UseNetworkPrefs())
+    {
 		SET(self, MUIA_PrefsEditor_Changed, FALSE);
 		SET(self, MUIA_PrefsEditor_Testing, FALSE);
+        return TRUE;
+    }
 
-		BumpTCP();
-		return TRUE;
-	}
-	
 	return FALSE;
 }
 

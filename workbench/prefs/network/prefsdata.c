@@ -3,11 +3,17 @@
     $Id$
  */
 
+#include <proto/dos.h>
+#include <proto/exec.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include "prefsdata.h"
 
+#define PREFS_PATH_ENV          "ENV:AROSTCP"
+#define PREFS_PATH_ENV_DB       PREFS_PATH_ENV"/db"
+#define PREFS_PATH_ENVARC       "ENVARC:AROSTCP"
+#define PREFS_PATH_ENVARC_DB    PREFS_PATH_ENVARC"/db"
 
 static struct TCPPrefs prefs;
 
@@ -73,38 +79,127 @@ void SetDefaultValues()
 	SetGate("192.168.0.1");
 	SetDNS(0, "192.168.0.1");
 	SetDNS(1, "192.168.0.1");
-	SetInterf("DEVS:networks/pcnet32.device");
+	SetDevice("DEVS:networks/pcnet32.device");
 	SetHost("arosbox");
 	SetDomain("arosnet");
 	SetDHCP(FALSE);
-	SetConfig("ENV:AROSTCP/db");
 }
 
-LONG WriteTCPPrefs(STRPTR  DestDir)
+BPTR RecursiveCreateDir(CONST_STRPTR dirpath)
+{
+    /* Will create directory even if top level directory does not exist */
+    
+    BPTR lock = NULL;
+    ULONG lastdirseparator = 0;
+    ULONG dirpathlen = strlen(dirpath);
+    STRPTR tmpdirpath = AllocVec(dirpathlen + 2, MEMF_CLEAR | MEMF_PUBLIC);
+
+    CopyMem(dirpath, tmpdirpath, dirpathlen);
+
+    /* Recurvice directory creation */
+    while(TRUE)
+    {
+        if (lastdirseparator >= dirpathlen) break;
+
+        for (; lastdirseparator < dirpathlen; lastdirseparator++)
+            if (tmpdirpath[lastdirseparator] == '/') break;
+
+        tmpdirpath[lastdirseparator] = '\0'; /* cut */
+
+        /* Unlock any lock from previous interation. Last iteration lock will be returned. */
+        if (lock != NULL)
+        {
+            UnLock(lock);
+            lock = NULL;
+        }
+
+        /* Check if directory exists */
+        lock = Lock(tmpdirpath, SHARED_LOCK);
+        if (lock == NULL)
+        {
+            lock = CreateDir(tmpdirpath);
+            if (lock == NULL)
+                break; /* Error with creation */
+        }
+    
+        tmpdirpath[lastdirseparator] = '/'; /* restore */
+        lastdirseparator++;
+    }
+    
+    FreeVec(tmpdirpath);
+    return lock;
+}
+
+BOOL WriteConfigPath()
+{
+    BPTR dirlock = NULL;
+    FILE * configfile = NULL;
+
+    /* Create necessary directories */
+    dirlock = RecursiveCreateDir(PREFS_PATH_ENV);
+    if (dirlock)
+    {
+        UnLock(dirlock);
+        dirlock = NULL;
+    }
+    else
+    {
+        return FALSE;
+    }
+
+    dirlock = RecursiveCreateDir(PREFS_PATH_ENVARC);
+    if (dirlock)
+    {
+        UnLock(dirlock);
+        dirlock = NULL;
+    }
+    else
+    {
+        return FALSE;
+    }
+    
+    /* Write configuration files */
+    configfile = fopen(PREFS_PATH_ENV"/Config", "w");
+    if (!configfile) return FALSE;
+    fprintf(configfile, PREFS_PATH_ENV_DB);
+    fclose(configfile);
+
+    configfile = fopen(PREFS_PATH_ENVARC"/Config", "w");
+    if (!configfile) return FALSE;
+    fprintf(configfile, PREFS_PATH_ENV_DB);
+    fclose(configfile);
+    
+    return TRUE;
+}
+
+BOOL WriteNetworkPrefs(CONST_STRPTR  DestDir)
 {
     FILE *ConfFile;
     TEXT FileName[strlen(DestDir) + 20];
+    BPTR dirlock = NULL;
 
-    ConfFile = fopen("ENV:AROSTCP/Config", "w");
-    if (!ConfFile) return 0;
-    fprintf(ConfFile, "ENV:AROSTCP/db");
-    fclose(ConfFile);
+    /* Create necessary directories */
+    dirlock = RecursiveCreateDir(DestDir);
+    if (dirlock)
+    {
+        UnLock(dirlock);
+        dirlock = NULL;
+    }
+    else
+    {
+        return FALSE;
+    }
 
-    ConfFile = fopen("ENVARC:AROSTCP/Config", "w");
-    if (ConfFile) {
-	    fprintf(ConfFile, "ENV:AROSTCP/db");
-	    fclose(ConfFile);
-    };
-
+    /* Write configuration files */
     sprintf(FileName, "%s/DHCP", DestDir);
     ConfFile = fopen(FileName, "w");
-    if (!ConfFile) return 0;
+    if (!ConfFile) return FALSE;
     fprintf(ConfFile, "%s\n", (GetDHCP()) ? "True" : "False");
     fclose(ConfFile);
 
     sprintf(FileName, "%s/general.config", DestDir);
     ConfFile = fopen(FileName, "w");
-    if (!ConfFile) return 0;
+    if (!ConfFile) return FALSE;
     fprintf(ConfFile, "USELOOPBACK=YES\n");
     fprintf(ConfFile, "DEBUGSANA=NO\n");
     fprintf(ConfFile, "USENS=SECOND\n");
@@ -117,8 +212,8 @@ LONG WriteTCPPrefs(STRPTR  DestDir)
 
     sprintf(FileName, "%s/interfaces", DestDir);
     ConfFile = fopen(FileName, "w");
-    if (!ConfFile) return 0;
-    fprintf(ConfFile,"eth0 DEV=%s UNIT=0 NOTRACKING IP=%s NETMASK=%s UP\n", GetInterf(), GetIP(), GetMask());
+    if (!ConfFile) return FALSE;
+    fprintf(ConfFile,"eth0 DEV=%s UNIT=0 NOTRACKING IP=%s NETMASK=%s UP\n", GetDevice(), GetIP(), GetMask());
 
     fclose(ConfFile);
 
@@ -135,33 +230,40 @@ LONG WriteTCPPrefs(STRPTR  DestDir)
 
     sprintf(FileName, "%s/static-routes", DestDir);
     ConfFile = fopen(FileName, "w");
-    if (!ConfFile) return 0;
+    if (!ConfFile) return FALSE;
     fprintf(ConfFile, "DEFAULT GATEWAY %s\n", GetGate());
     fclose(ConfFile);
 
-    return 1;
+    return TRUE;
 }
 
-void ReadTCPPrefs()
+BOOL SaveNetworkPrefs()
+{
+    // TODO: restart AROSTCP
+    if (!WriteConfigPath()) return FALSE;
+    if (!WriteNetworkPrefs(PREFS_PATH_ENVARC_DB)) return FALSE;
+    if (!WriteNetworkPrefs(PREFS_PATH_ENV_DB)) return FALSE;
+    return TRUE;
+}
+
+BOOL UseNetworkPrefs()
+{
+    // TODO: restart AROSTCP
+    if (!WriteConfigPath()) return FALSE;
+    if (!WriteNetworkPrefs(PREFS_PATH_ENV_DB)) return FALSE;
+    return TRUE;
+}
+
+void ReadNetworkPrefs()
 {
     STRPTR FileName;
-    TEXT temp[30];
     BOOL comment = FALSE;
     STRPTR tstring;
     struct Tokenizer tok;
 
-    strcpy(temp, "ENV:AROSTCP/Config");
-    OpenTokenFile(&tok, temp);
-    if (tok.tokenizedFile) {
-	    GetNextToken(&tok, " \n");
-        SetConfig(tok.token);
-	    CloseTokenFile(&tok);
-    }else
-	    SetConfig("ENV:AROSTCP/db");
+    FileName = malloc(strlen(PREFS_PATH_ENV_DB) + 20);
 
-    FileName = malloc(strlen(GetConfig()) + 20);
-
-    sprintf(FileName, "%s/general.config", GetConfig());
+    sprintf(FileName, "%s/general.config", PREFS_PATH_ENV_DB);
     OpenTokenFile(&tok, FileName);
     while (!tok.fend) {
 	    if (tok.newline) { // read tokens from the beginning of line
@@ -179,7 +281,7 @@ void ReadTCPPrefs()
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/interfaces", GetConfig());
+    sprintf(FileName, "%s/interfaces", PREFS_PATH_ENV_DB);
     OpenTokenFile(&tok, FileName);
     // reads only first uncommented interface
     while (!tok.fend) {
@@ -191,7 +293,7 @@ void ReadTCPPrefs()
 		    if (!comment) {
 			    if (strncmp(tok.token, "DEV=", 4) == 0) {
 				    tstring = strchr(tok.token, '=');
-                    SetInterf(tstring + 1);
+                    SetDevice(tstring + 1);
 			    }
 			    if (strncmp(tok.token, "IP=", 3) == 0) {
 				    tstring = strchr(tok.token, '=');
@@ -206,7 +308,7 @@ void ReadTCPPrefs()
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/netdb-myhost", GetConfig());
+    sprintf(FileName, "%s/netdb-myhost", PREFS_PATH_ENV_DB);
     OpenTokenFile(&tok, FileName);
     int dnsc = 0;
     while (!tok.fend) {
@@ -222,7 +324,7 @@ void ReadTCPPrefs()
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/static-routes", GetConfig());
+    sprintf(FileName, "%s/static-routes", PREFS_PATH_ENV_DB);
     OpenTokenFile(&tok, FileName);
     while (!tok.fend) {
 	    GetNextToken(&tok, " \n");
@@ -238,7 +340,7 @@ void ReadTCPPrefs()
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/DHCP", GetConfig());
+    sprintf(FileName, "%s/DHCP", PREFS_PATH_ENV_DB);
     OpenTokenFile(&tok, FileName);
     while (!tok.fend) {
 	    GetNextToken(&tok, " \n");
@@ -284,9 +386,9 @@ BOOL GetDHCP()
 	return prefs.DHCP;
 }
 
-STRPTR GetInterf()
+STRPTR GetDevice()
 {
-	return prefs.interf;
+	return prefs.device;
 }
 
 STRPTR GetHost()
@@ -297,11 +399,6 @@ STRPTR GetHost()
 STRPTR GetDomain()
 {
 	return prefs.domain;
-}
-
-STRPTR GetConfig()
-{
-	return prefs.config;
 }
 
 void SetIP(STRPTR w)
@@ -329,23 +426,18 @@ void SetDHCP(BOOL w)
 	prefs.DHCP = w;
 }
 
-void SetInterf(STRPTR w)
+void SetDevice(STRPTR w)
 {
-	strlcpy(prefs.interf, w,4095);
+	strlcpy(prefs.device, w,511);
 }
 
 void SetHost(STRPTR w)
 {
-	strlcpy(prefs.host, w,999);
+	strlcpy(prefs.host, w,511);
 }
 
 void SetDomain(STRPTR w)
 {
-	strlcpy(prefs.domain, w,999);
-}
-
-void SetConfig(STRPTR w)
-{
-	strlcpy(prefs.config, w,8191);
+	strlcpy(prefs.domain, w,511);
 }
 
