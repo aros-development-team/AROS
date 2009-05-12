@@ -175,7 +175,7 @@ void *PCIEfika__Hidd_PCIDriver__AllocPCIMem(OOP_Class *cl, OOP_Object *o,
 
     if (memory)
     {
-    	KrnSetProtection(memory, msg->Size, MAP_CacheInhibit | MAP_Guarded | MAP_Readable | MAP_Writable);
+    	KrnSetProtection(memory, msg->Size, MAP_CacheInhibit | MAP_Readable | MAP_Writable);
     }
 
     return memory;
