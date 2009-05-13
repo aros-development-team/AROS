@@ -93,6 +93,7 @@ COMMONTESTFILES := \
     runcommand \
     aroscprivdata \
     childwait \
+    patchrgbconv \
     childstatus
 
 HOSTEDTESTFILES :=  \
