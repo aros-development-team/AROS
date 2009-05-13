@@ -9,6 +9,8 @@
 #include "kbd.h"
 #define TIMER_RPROK 3599597124UL
 
+int kbd_wait_for_input(void);
+
 static ULONG usec2tick(ULONG usec)
 {
     ULONG ret;
@@ -58,8 +60,12 @@ unsigned char handle_kbd_event(void)
 	}
     }
     return status;
-}															
+}
 
+/*
+ * Wait until we can write to a peripheral again. Any input that comes in
+ * while we're waiting is discarded.
+ */
 void kb_wait(void)
 {
     ULONG timeout = 1000; /* 1 sec should be enough */
@@ -89,7 +95,7 @@ void aux_write_ack(int val)
     kbd_write_command(KBD_CTRLCMD_WRITE_MOUSE);
     kb_wait();
     kbd_write_output(val);
-    kb_wait();
+    kbd_wait_for_input();
 }
 
 void aux_write_noack(int val)
@@ -136,12 +142,15 @@ int kbd_read_data(void)
 int kbd_clear_input(void)
 {
     int maxread = 100, code, lastcode = KBD_NO_DATA;
+    UBYTE status;
 
     do
     {
+        status = kbd_read_status();
         if ((code = kbd_read_data()) == KBD_NO_DATA)
             break;
-        lastcode = code;
+        if (!(status & KBD_STATUS_MOUSE_OBF))
+            lastcode = code;
     } while (--maxread);
 
     return lastcode;
