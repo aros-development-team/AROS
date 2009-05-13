@@ -52,6 +52,7 @@ void kb_wait(void);
 void kbd_write_cmd(int cmd);
 void aux_write_ack(int val);
 void aux_write_noack(int val);
+int kbd_wait_for_input(void);
 void kbd_write_command_w(int data);
 
 /****************************************************************************************/
@@ -118,22 +119,14 @@ struct mouse_data *data = OOP_INST_DATA(cl, o);
 
 /****************************************************************************************/
 
-#define AUX_RECONNECT           0xAA
-#define AUX_ACK                 0xFA
-
-#define aux_write(val)				\
-    ({	data->u.ps2.expected_mouse_acks++;	\
-        aux_write_ack(val);			\
-	})
-
-/****************************************************************************************/
-
 void getps2Event(struct getps2data *, struct pHidd_Mouse_Event *);
 
 void getps2State(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_Event *event) {
 struct mouse_data *data = OOP_INST_DATA(cl, o);
 UBYTE ack;
 
+#if 0
+/* The following doesn't seem to do anything useful */
 	aux_write(KBD_OUTCMD_DISABLE);
 	/* switch to remote mode */
 	aux_write(KBD_OUTCMD_SET_REMOTE_MODE);
@@ -142,9 +135,10 @@ UBYTE ack;
 	aux_write(KBD_OUTCMD_READ_DATA);
 	while (data->u.ps2.expected_mouse_acks>=ack)
 		mouse_usleep(1000);
-	/* switch back to sream mode */
+	/* switch back to stream mode */
 	aux_write(KBD_OUTCMD_SET_STREAM_MODE);
 	aux_write(KBD_OUTCMD_ENABLE);
+#endif
 }
 
 /****************************************************************************************/
@@ -270,26 +264,6 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
             /* Ignore errors and messages for keyboard -> eat status/error byte */
 	    continue;
 	}
-
-	if ((mousecode == AUX_ACK) && (data->u.ps2.expected_mouse_acks))
-	{
-	    D(bug("  Got a mouse ACK!\n"));
-	    data->u.ps2.expected_mouse_acks--;
-	    continue;
-	}
-
-        /* Check for a late reset response. This could also be a valid first
-         * byte of a mouse packet if there's a Y overflow while the right
-         * button is held down, but it's unlikely */
-
-	if (mousecode == AUX_RECONNECT
-            && data->u.ps2.mouse_collected_bytes == 0)
-	{
-	    /* Ping mouse */
-    	    aux_write(KBD_OUTCMD_ENABLE);
-	    data->u.ps2.expected_mouse_acks++;
-            continue;
- 	}
 
     	/* Mouse Packet Byte */
 
@@ -446,7 +420,9 @@ int mouse_ps2reset(struct mouse_data *data)
     kbd_write_command_w(KBD_CTRLCMD_KBD_DISABLE);
 
     /* Reset mouse */
-    aux_write(KBD_OUTCMD_RESET);
+    aux_write_ack(KBD_OUTCMD_RESET);
+    kbd_wait_for_input();    /* Test result (0xAA) */
+    kbd_wait_for_input();    /* Mouse type */
 
     data->u.ps2.mouse_protocol = PS2_PROTOCOL_STANDARD;
     data->u.ps2.mouse_packetsize = 3;
@@ -462,16 +438,16 @@ int mouse_ps2reset(struct mouse_data *data)
     /*
      * Now the commands themselves.
      */
-    aux_write(KBD_OUTCMD_SET_RATE);
-    aux_write(100);
-    aux_write(KBD_OUTCMD_SET_RES);
-    aux_write(2);
-    aux_write(KBD_OUTCMD_SET_SCALE11);
+    aux_write_ack(KBD_OUTCMD_SET_RATE);
+    aux_write_ack(100);
+    aux_write_ack(KBD_OUTCMD_SET_RES);
+    aux_write_ack(2);
+    aux_write_ack(KBD_OUTCMD_SET_SCALE11);
 
     /* Enable Aux device (and re-enable keyboard) */
 
     kbd_write_command_w(KBD_CTRLCMD_KBD_ENABLE);
-    aux_write(KBD_OUTCMD_ENABLE);
+    aux_write_ack(KBD_OUTCMD_ENABLE);
     kbd_write_cmd(AUX_INTS_ON);
 
     /*
