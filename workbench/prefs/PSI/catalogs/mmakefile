@@ -1,0 +1,42 @@
+# Copyright © 2009, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 31115 2009-04-14 21:58:05Z sszymczy $
+
+include $(TOP)/config/make.cfg
+
+
+BD_SRCS := $(addsuffix .ct, $(basename $(call WILDCARD, *.ct)))
+BD_OBJS := $(addsuffix /System/Prefs/PSI.catalog, $(addprefix $(AROS_CATALOGS)/, $(basename $(call WILDCARD, *.ct))))
+BD_DIRS := $(addsuffix /System/Prefs, $(addprefix $(AROS_CATALOGS)/, $(basename $(call WILDCARD, *.ct))))
+
+#MM
+workbench-prefs-psi-catalogs : $(BD_OBJS) ../strings.h
+
+$(BD_OBJS) : | $(BD_DIRS)
+GLOB_MKDIRS += $(BD_DIRS)
+
+$(AROS_CATALOGS)/%/System/Prefs/PSI.catalog : %.ct $(basename $(call WILDCARD, *.cd)).cd
+	@$(ECHO) "Creating PSI catalog for language $*."
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/$(basename $(call WILDCARD, *.cd)).cd $< CATALOG=$(AROS_CATALOGS)/$*/System/Prefs/PSI.catalog || [ $$? -lt 10 ]
+
+ifneq (../strings.h,)
+../strings.h : $(basename $(call WILDCARD, *.cd)).cd
+	@$(ECHO) "Creating PSI catalog source file ../strings.h"
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/$(basename $(call WILDCARD, *.cd)).cd ../strings.h=$(TOOLDIR)/C_h_orig.sd
+endif
+
+workbench-prefs-psi-catalogs-clean : FILES := $(BD_OJS) ../strings.h
+#MM
+workbench-prefs-psi-catalogs-clean ::
+	$(RM) $(FILES)
+
+.PHONY: workbench-prefs-psi-catalogs workbench-prefs-psi-catalogs-clean
+
+
+# Delete generated makefiles
+#MM
+clean ::
+	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
+
+include $(SRCDIR)/config/make.tail
+
+BDID := $(BDTARGETID)
