@@ -2350,9 +2350,11 @@ void wanderer_menufunc_wanderer_shutdown(void)
 	ShutdownA(SD_ACTION_POWEROFF);
 	break;
     case 2:
+        ShowImminentReset();
 	ShutdownA(SD_ACTION_COLDREBOOT);
 	break;
     case 3:
+        ShowImminentReset();
 	ColdReboot();
     }
     MUI_RequestA(_WandererIntern_AppObj, NULL, 0, _(MSG_SHUTDOWN_TITLE), _(MSG_OK), _(MSG_ACTION_NOT_SUPPORTED), NULL);
