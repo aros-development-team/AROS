@@ -10,10 +10,11 @@
 #include <stdio.h>
 #include "prefsdata.h"
 
-#define PREFS_PATH_ENV          "ENV:AROSTCP"
-#define PREFS_PATH_ENV_DB       PREFS_PATH_ENV"/db"
-#define PREFS_PATH_ENVARC       "ENVARC:AROSTCP"
-#define PREFS_PATH_ENVARC_DB    PREFS_PATH_ENVARC"/db"
+#define PREFS_PATH_ENV              "ENV:AROSTCP"
+#define PREFS_PATH_ENV_DB           PREFS_PATH_ENV"/db"
+#define PREFS_PATH_ENVARC           "ENVARC:AROSTCP"
+#define PREFS_PATH_ENVARC_DB        PREFS_PATH_ENVARC"/db"
+#define AROSTCP_PACKAGE_VARIABLE    "SYS/Packages/AROSTCP"
 
 static struct TCPPrefs prefs;
 
@@ -85,7 +86,8 @@ void SetDefaultValues()
 	SetDHCP(FALSE);
 }
 
-BPTR RecursiveCreateDir(CONST_STRPTR dirpath)
+/* Returns TRUE if directory has been created or already existed */
+BOOL RecursiveCreateDir(CONST_STRPTR dirpath)
 {
     /* Will create directory even if top level directory does not exist */
     
@@ -127,36 +129,24 @@ BPTR RecursiveCreateDir(CONST_STRPTR dirpath)
     }
     
     FreeVec(tmpdirpath);
-    return lock;
+    
+    if (lock == NULL)
+        return FALSE;
+    else
+    {
+        UnLock(lock);
+        lock = NULL;
+        return TRUE;
+    }
 }
 
-BOOL WriteConfigPath()
+BOOL WriteConfigVariable()
 {
-    BPTR dirlock = NULL;
     FILE * configfile = NULL;
 
     /* Create necessary directories */
-    dirlock = RecursiveCreateDir(PREFS_PATH_ENV);
-    if (dirlock)
-    {
-        UnLock(dirlock);
-        dirlock = NULL;
-    }
-    else
-    {
-        return FALSE;
-    }
-
-    dirlock = RecursiveCreateDir(PREFS_PATH_ENVARC);
-    if (dirlock)
-    {
-        UnLock(dirlock);
-        dirlock = NULL;
-    }
-    else
-    {
-        return FALSE;
-    }
+    if(!RecursiveCreateDir(PREFS_PATH_ENV)) return FALSE;
+    if(!RecursiveCreateDir(PREFS_PATH_ENVARC)) return FALSE;
     
     /* Write configuration files */
     configfile = fopen(PREFS_PATH_ENV"/Config", "w");
@@ -176,19 +166,9 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  DestDir)
 {
     FILE *ConfFile;
     TEXT FileName[strlen(DestDir) + 20];
-    BPTR dirlock = NULL;
 
     /* Create necessary directories */
-    dirlock = RecursiveCreateDir(DestDir);
-    if (dirlock)
-    {
-        UnLock(dirlock);
-        dirlock = NULL;
-    }
-    else
-    {
-        return FALSE;
-    }
+    if(!RecursiveCreateDir(DestDir)) return FALSE;
 
     /* Write configuration files */
     sprintf(FileName, "%s/DHCP", DestDir);
@@ -237,11 +217,102 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  DestDir)
     return TRUE;
 }
 
+#define BUFSIZE 2048
+BOOL CopyFile(CONST_STRPTR srcfile, CONST_STRPTR dstfile)
+{   
+    BPTR from = NULL, to = NULL;
+    TEXT buffer[BUFSIZE];
+
+    if((from = Open(srcfile, MODE_OLDFILE)))
+    {
+        if((to = Open(dstfile, MODE_NEWFILE)))
+        {
+            LONG	s=0;
+
+            do
+            {
+	            if ((s = Read(from, buffer, BUFSIZE)) == -1)
+	            {
+		            Close(to);
+		            Close(from);
+                    return FALSE;
+	            }
+
+	            if (Write(to, buffer, s) == -1)
+	            {
+		            Close(to);
+		            Close(from);
+                    return FALSE;
+	            }
+            } while (s == BUFSIZE);
+            
+            Close(to);
+            Close(from);
+            return TRUE;
+        }
+
+        Close(from);
+    }
+
+    return FALSE;
+}
+
+CONST_STRPTR GetDefaultStackLocation()
+{
+    /* Use static variable so that it is initialized only once (and can be returned) */
+    static TEXT path [1024] = {0};
+    
+    /* Load path if needed */
+    if (path[0] == '\0')
+    {
+        GetVar(AROSTCP_PACKAGE_VARIABLE, path, 1024, LV_VAR);
+    }
+
+    return path;
+}
+
+/* 
+   This is not a general use function!
+   It assumes that dstdir targets AAA/db directory and the destination
+   directory exists
+ */
+BOOL CopyFileFromDefaultStackLocation(CONST_STRPTR filename, CONST_STRPTR dstdir)
+{
+    /* Build paths */
+    CONST_STRPTR srcdir = GetDefaultStackLocation();
+    TEXT srcfile[strlen(srcdir) + 4 + strlen(filename) + 1];
+    TEXT dstfile[strlen(dstdir) + strlen(filename) + 1];
+
+    sprintf(srcfile, "%s/db/%s", srcdir, filename);
+    sprintf(dstfile, "%s/%s", dstdir, filename);
+
+    return CopyFile(srcfile, dstfile);
+}
+
+/* Copies files not created by prefs but needed to start stack */
+BOOL CopyDefaultConfiguration(CONST_STRPTR destdir)
+{
+    /* Create necessary directories */
+    if (!RecursiveCreateDir(destdir)) return FALSE;
+    
+    /* Copy files */
+    if (!CopyFileFromDefaultStackLocation("hosts", destdir)) return FALSE;
+    if (!CopyFileFromDefaultStackLocation("inet.access", destdir)) return FALSE;
+    if (!CopyFileFromDefaultStackLocation("netdb", destdir)) return FALSE;
+    if (!CopyFileFromDefaultStackLocation("networks", destdir)) return FALSE;
+    if (!CopyFileFromDefaultStackLocation("protocols", destdir)) return FALSE;
+    if (!CopyFileFromDefaultStackLocation("services", destdir)) return FALSE;
+
+    return TRUE;
+}
+
 BOOL SaveNetworkPrefs()
 {
     // TODO: restart AROSTCP
-    if (!WriteConfigPath()) return FALSE;
+    if (!WriteConfigVariable()) return FALSE;
+    if (!CopyDefaultConfiguration(PREFS_PATH_ENVARC_DB)) return FALSE;
     if (!WriteNetworkPrefs(PREFS_PATH_ENVARC_DB)) return FALSE;
+    if (!CopyDefaultConfiguration(PREFS_PATH_ENV_DB)) return FALSE;
     if (!WriteNetworkPrefs(PREFS_PATH_ENV_DB)) return FALSE;
     return TRUE;
 }
@@ -249,7 +320,8 @@ BOOL SaveNetworkPrefs()
 BOOL UseNetworkPrefs()
 {
     // TODO: restart AROSTCP
-    if (!WriteConfigPath()) return FALSE;
+    if (!WriteConfigVariable()) return FALSE;
+    if (!CopyDefaultConfiguration(PREFS_PATH_ENV_DB)) return FALSE;
     if (!WriteNetworkPrefs(PREFS_PATH_ENV_DB)) return FALSE;
     return TRUE;
 }
