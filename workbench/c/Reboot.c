@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2008, The AROS Development Team. All rights reserved.
+    Copyright  1995-2009, The AROS Development Team. All rights reserved.
     $Id$
  
     Desc: Reboot CLI command
@@ -18,7 +18,7 @@
 
     LOCATION
 
-        Sys:C
+        C:
 
     FUNCTION
 
@@ -46,6 +46,7 @@
 #include <exec/tasks.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/graphics.h>
 
 int __nocommandline;
 
@@ -63,6 +64,7 @@ int main()
     }
     FreeArgs(rda);
 
+    ShowImminentReset();
     if (cold)
         ShutdownA(SD_ACTION_COLDREBOOT);
     else
