@@ -31,6 +31,7 @@ extern OOP_AttrBase HiddPCIDeviceAttrBase;
 
 BOOL initVesaGfxHW(struct HWData *);
 void DACLoad(struct HWData *, unsigned char, int);
+void ClearBuffer(const struct HWData *data);
 
 #if BUFFERED_VRAM
 
