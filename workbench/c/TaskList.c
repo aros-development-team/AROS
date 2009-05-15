@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -19,7 +19,7 @@
 /* Dirty hack! Is there a better way? */
 #include "../../rom/exec/etask.h"
 
-const TEXT version[] = "$VER: tasklist 41.1 (14.3.1997)\n";
+const TEXT version[] = "$VER: tasklist 41.2 (15.5.2009)\n";
 
 ULONG eclock;
 
@@ -138,7 +138,7 @@ int main(void)
         tasks=buffer;
         if(fillbuffer(&tasks,size))
         {
-            FPuts(Output(),"address\t\ttype\tpri\tstate\tcpu time\t\tstack\tused\tname\n");
+            FPuts(Output(),"Address\t\tType\tPri\tState\tCPU Time\tStack\tUsed\tName\n");
             for(tasks2=buffer;tasks2<tasks;tasks2++)
             {
             	ULONG time;
