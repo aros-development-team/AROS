@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for Vesa.
@@ -153,7 +153,7 @@ VOID PCVesa__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
 	switch (idx)
 	{
-	    /* Our only gettable attribute is wether we support HW cursor or not.
+	    /* Our only gettable attribute is whether we support HW cursor or not.
 	     * We do not have any such support, since we are a simple VESA fb driver */
 	    case aoHidd_Gfx_SupportsHWCursor:
 		*msg->storage = (IPTR)FALSE;
@@ -328,9 +328,7 @@ VOID PCVesa__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Co
 
 VOID PCVesa__Hidd_Gfx__ShowImminentReset(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    memset(XSD(cl)->data.framebuffer,
-    	   0,
-	   XSD(cl)->data.height * XSD(cl)->data.bytesperline);
+    ClearBuffer(&(XSD(cl)->data));
 }
 
 

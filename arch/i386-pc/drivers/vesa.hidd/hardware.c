@@ -101,8 +101,10 @@ BOOL initVesaGfxHW(struct HWData *data)
 		    data->DAC[col*3+i] = cursorPalette[i];
 		DACLoad(data, col, 3);
 	    }
-	    D(bug("[Vesa] HwInit: Clearing framebuffer at 0x%08x size %d KB\n",data->framebuffer, vi->FrameBufferSize));
-	    memset(data->framebuffer, 0, vi->FrameBufferSize * 1024);
+	    D(bug("[Vesa] HwInit: Clearing %d kB of framebuffer at 0x%08x"
+		" size %d kB\n", data->height * data->bytesperline >> 10,
+		data->framebuffer, vi->FrameBufferSize));
+            ClearBuffer(data);
 	    D(bug("[Vesa] HwInit: Linear framebuffer at 0x%08x\n",data->framebuffer));
 	    D(bug("[Vesa] HwInit: Screenmode %dx%dx%d\n",data->width,data->height,data->depth));
 	    D(bug("[Vesa] HwInit: Masks R %08x<<%2d G %08x<<%2d B %08x<<%2d\n",
@@ -250,4 +252,18 @@ void DACLoad(struct HWData *restore, unsigned char first, int num)
     {
 	outb(restore->DAC[n++], 0x3C9);
     }
+}
+
+/*
+** ClearBuffer --
+**      clear the screen buffer
+*/
+void ClearBuffer(const struct HWData *data)
+{
+    IPTR *p, *limit;
+
+    p = (IPTR *)data->framebuffer;
+    limit = (IPTR *)((IPTR)p + data->height * data->bytesperline);
+    while (p < limit)
+        *p++ = 0;
 }
