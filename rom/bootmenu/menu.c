@@ -40,7 +40,7 @@ static BOOL init_gfx(STRPTR gfxclassname, struct BootMenuBase *BootMenuBase)
 
     /*  Call private gfx.library call to init the HIDD.
             Gfx library is responsible for closing the HIDD
-            library (although it will probably not be neccesary).
+            library (although it will probably not be necessary).
     */
 
     D(bug("[BootMenu] init_gfx: calling private LateGfxInit() ..\n"));
@@ -304,6 +304,7 @@ static BOOL initScreen(struct BootMenuBase_intern *BootMenuBase, struct BootConf
             Alert(AT_DeadEnd | AN_BadGadget);
 
         CloseScreen(BootMenuBase->bm_Screen);
+        ShowImminentReset();
     }
     else
         Alert(AT_DeadEnd | AN_OpenScreen);
