@@ -582,7 +582,14 @@ int rcGuiMain(void)
 	strcat(szDosDevice, ":");
 	strcpy(szVolumeName, entry->volumeName);
 	strcpy(szCapacityInfo, entry->capacityInfo);
-	FreeMem(entry, sizeof(struct SFormatEntry));	    
+	FreeMem(entry, sizeof(struct SFormatEntry));
+
+        D(Printf("Object name selected via SelectDevice: %s\n", szDosDevice));
+        /* it's a device */
+        if( !bSetSzDosDeviceFromSz(szDosDevice) ) {
+            D(Printf("Bad device name from SelectDevice: %s\n", szDosDevice));
+            goto cleanup;
+        }
     }
     
 #ifdef AROS_FAKE_LOCK
