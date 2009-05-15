@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -61,10 +61,10 @@ LONG DoIOFS(struct IOFileSys *iofs, struct DevProc *dvp, CONST_STRPTR name,
 
     DosDoIO((struct IORequest *)iofs);
 
-    SetIoErr(iofs->io_DosError);
-
     if (freedvp)
         FreeDeviceProc(dvp);
+
+    SetIoErr(iofs->io_DosError);
 
     return iofs->io_DosError;
 }
