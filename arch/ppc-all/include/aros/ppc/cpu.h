@@ -1,7 +1,7 @@
 #ifndef AROS_PPC_CPU_H
 #define AROS_PPC_CPU_H
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -27,7 +27,7 @@
 /*
  * PowerPC note:
  * Some (or maybe even all) PowerPC machines expect the stack to be aligned on 16-byte boundary.
- * This is the reason number one for AROS_WORSTALIGN=16. The second reason is, the 440 CPU will 
+ * This is the reason number one for AROS_WORSTALIGN=16. The second reason is, the 440 CPU will
  * generate an alignment exception if floating point data *crosses* the 16-byte boundary.
  */
 
@@ -162,12 +162,11 @@ struct JumpVec
 #define ALIASCODE                              \
         "EMITALIAS(%s, %s)\n"
 /*
-   We want to activate the execstubs and preserve all registers
-   when calling obtainsemaphore, obtainsemaphoreshared, releasesemaphore,
-   getcc, permit, forbid, enable, disable
+   No, we do not want to preserve the all registers in case of Semaphore and
+   multitasking handling functions. It made sence on m68k native target. On all
+   other targets the standard ABI rules the AROS world anyway...
 */
 #undef UseExecstubs
-#define UseExecstubs 1
 
 /* For debugging only: Pass errnos from the emulated OS. dos/Fault() will
    recognise them */
