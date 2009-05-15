@@ -17,11 +17,10 @@ include $(TOP)/config/make.cfg
 #MM- workbench-fs : \
 #MM    workbench-fs-pipefs \
 #MM    workbench-fs-xpipe \
-#MM    workbench-fs-fdsk \
 #MM    workbench-fs-zero
 #MM- workbench-fs-quick : \
 #MM    workbench-fs-pipefs-quick \
-#MM    workbench-fs-fdsk-quick \
+#MM    workbench-fs-xpipe-quick \
 #MM    workbench-fs-zero-quick
 
 # DISABLED: rootfs.handler
