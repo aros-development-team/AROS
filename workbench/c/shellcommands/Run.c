@@ -27,11 +27,13 @@
 
     INPUTS
 
-        EXECUTE  --  allows a script to be executed in the background
+        EXECUTE   --  allows a script to be executed in the background
 
-        QUIET    --  avoids printing of the background CLI's number 
+        QUIET     --  avoids printing of the background CLI's number 
 
-        COMMAND  --  the program to run together with its arguments
+        COMMAND   --  the program/script to run
+
+        ARGUMENTS --  the arguments to send to the program/script
 
     RESULT
 
@@ -63,16 +65,16 @@
 #include <utility/tagitem.h>
 #include <proto/alib.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <aros/shcommands.h>
 
-AROS_SH3H(Run, 41.3,                "Start a program as a background process",
-AROS_SHAH(BOOL  , ,EXECUTE,/S,FALSE,"Allows a script to be run in background"),
-AROS_SHAH(BOOL  , ,QUIET  ,/S,FALSE,"\tDon't print the background CLI's number"),
-AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (arguments\n"
-                                    "\t\t\t\tallowed)") )
+AROS_SH4H(Run, 41.3,                  "Start a program as a background process",
+AROS_SHAH(BOOL  , ,EXECUTE  ,/S,FALSE,"Allows a script to be run in background"),
+AROS_SHAH(BOOL  , ,QUIET    ,/S,FALSE,"\tDon't print the background CLI's number"),
+AROS_SHAH(STRPTR, ,COMMAND  ,/A,NULL ,"The program/script to run"),
+AROS_SHAH(STRPTR, ,ARGUMENTS,/F,NULL ,"Optional arguments for the program/script") )
 {
     AROS_SHCOMMAND_INIT
 
@@ -135,9 +137,11 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
 
         if (tmpfile)
         {
-            if ( (0 != FPuts(tmpfile, "Execute "))     ||
-                 (0 != FPuts(tmpfile, SHArg(COMMAND))) ||
-                 (0 != FPuts(tmpfile, "\nEndShell\n"))    )
+            if ( (0 != FPuts(tmpfile, "Execute \""))     ||
+                 (0 != FPuts(tmpfile, SHArg(COMMAND)))   ||
+                 (0 != FPuts(tmpfile, "\" "))            ||
+                 (0 != FPuts(tmpfile, SHArg(ARGUMENTS))) ||
+                 (0 != FPuts(tmpfile, "\nEndShell\n"))     )
             {
                 PrintFault(IoErr(), "Run");
 	        Close(cis);
