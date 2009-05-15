@@ -137,3 +137,31 @@ FAT:
 	DOSType	       = 0x46415400
 	Activate       = 1
 #
+
+/* Entry for SFS image */
+
+SFS:
+        FileSystem     = sfs.handler
+        Device         = fdsk.device
+        Unit           = 0
+        LowCyl         = 0
+        HighCyl        = 0
+        Surfaces       = 1
+        BlocksPerTrack = 1
+        DOSType        = 0x53465300
+        Activate       = 1
+#
+
+/* Entry for ISO image */
+
+CD0:
+        FileSystem     = cdrom.handler
+        Device         = fdsk.device
+        Unit           = 0
+        LowCyl         = 0
+        HighCyl        = 0
+        Surfaces       = 1
+        BlocksPerTrack = 1
+        DOSType        = 0x41434400
+        Activate       = 1
+#
