@@ -15,6 +15,7 @@ struct TCPPrefs
     TEXT device[512];
     TEXT host[512];
     TEXT domain[512];
+    BOOL autostart;
 };
 
 void SetDefaultValues();
@@ -31,6 +32,7 @@ BOOL GetDHCP();
 STRPTR GetDevice();
 STRPTR GetHost();
 STRPTR GetDomain();
+BOOL GetAutostart();
 
 void SetIP(STRPTR w);
 void SetMask(STRPTR w);
@@ -40,3 +42,4 @@ void SetDHCP(BOOL w);
 void SetDevice(STRPTR w);
 void SetHost(STRPTR w);
 void SetDomain(STRPTR w);
+void SetAutostart(BOOL w);
