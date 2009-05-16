@@ -36,7 +36,7 @@ endif
 	    prefix="$(TOOLDIR)"
 
 %fetch_and_build mmake=host-build-tools-hostmpfr package=mpfr version=$(HOSTMPFRVERSION) compiler=host \
-	    package_repo="http://www.mpfr.org/mpfr-$(HOSTMFPRVERSION)" patch=no \
+	    package_repo="http://www.mpfr.org/mpfr-$(HOSTMPFRVERSION)" patch=no \
 	    prefix="$(TOOLDIR)" extraoptions="--with-gmp=$(TOOLDIR)"
 
 %fetch_and_build mmake=host-build-tools-hostarosbinutils package=binutils version=$(HOSTAROSBINUTILSVERSION) compiler=host \
