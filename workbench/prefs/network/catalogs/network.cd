@@ -43,3 +43,6 @@ IP Configuration
 MSG_TAB_COMPUTER_NAME (//)
 Computer Name
 ;
+MSG_AUTOSTART_STACK (//)
+Autostart
+;

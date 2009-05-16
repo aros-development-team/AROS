@@ -11,9 +11,7 @@
 #include "prefsdata.h"
 
 #define PREFS_PATH_ENV              "ENV:AROSTCP"
-#define PREFS_PATH_ENV_DB           PREFS_PATH_ENV"/db"
 #define PREFS_PATH_ENVARC           "ENVARC:AROSTCP"
-#define PREFS_PATH_ENVARC_DB        PREFS_PATH_ENVARC"/db"
 #define AROSTCP_PACKAGE_VARIABLE    "SYS/Packages/AROSTCP"
 
 static struct TCPPrefs prefs;
@@ -84,6 +82,7 @@ void SetDefaultValues()
 	SetHost("arosbox");
 	SetDomain("arosnet");
 	SetDHCP(FALSE);
+    SetAutostart(FALSE);
 }
 
 /* Returns TRUE if directory has been created or already existed */
@@ -140,7 +139,7 @@ BOOL RecursiveCreateDir(CONST_STRPTR dirpath)
     }
 }
 
-BOOL WriteConfigVariable()
+BOOL WriteConfigVariables()
 {
     FILE * configfile = NULL;
 
@@ -149,35 +148,46 @@ BOOL WriteConfigVariable()
     if(!RecursiveCreateDir(PREFS_PATH_ENVARC)) return FALSE;
     
     /* Write configuration files */
+
+    /* Config */
     configfile = fopen(PREFS_PATH_ENV"/Config", "w");
     if (!configfile) return FALSE;
-    fprintf(configfile, PREFS_PATH_ENV_DB);
+    fprintf(configfile, "%s/db", PREFS_PATH_ENV);
     fclose(configfile);
 
     configfile = fopen(PREFS_PATH_ENVARC"/Config", "w");
     if (!configfile) return FALSE;
-    fprintf(configfile, PREFS_PATH_ENV_DB);
+    fprintf(configfile, "%s/db", PREFS_PATH_ENV);
     fclose(configfile);
-    
+
     return TRUE;
 }
 
 BOOL WriteNetworkPrefs(CONST_STRPTR  DestDir)
 {
     FILE *ConfFile;
-    TEXT FileName[strlen(DestDir) + 20];
+    TEXT FileName[strlen(DestDir) + 4 + 20];
+    TEXT destdbdir[strlen(DestDir) + 3 + 1];
+    sprintf(destdbdir, "%s/db", DestDir);
 
     /* Create necessary directories */
     if(!RecursiveCreateDir(DestDir)) return FALSE;
+    if(!RecursiveCreateDir(destdbdir)) return FALSE;
 
     /* Write configuration files */
-    sprintf(FileName, "%s/DHCP", DestDir);
+    sprintf(FileName, "%s/AutoRun", DestDir);
     ConfFile = fopen(FileName, "w");
     if (!ConfFile) return FALSE;
-    fprintf(ConfFile, "%s\n", (GetDHCP()) ? "True" : "False");
+    fprintf(ConfFile, "%s", (GetAutostart()) ? "True" : "False");
     fclose(ConfFile);
 
-    sprintf(FileName, "%s/general.config", DestDir);
+    sprintf(FileName, "%s/db/DHCP", DestDir);
+    ConfFile = fopen(FileName, "w");
+    if (!ConfFile) return FALSE;
+    fprintf(ConfFile, "%s", (GetDHCP()) ? "True" : "False");
+    fclose(ConfFile);
+
+    sprintf(FileName, "%s/db/general.config", DestDir);
     ConfFile = fopen(FileName, "w");
     if (!ConfFile) return FALSE;
     fprintf(ConfFile, "USELOOPBACK=YES\n");
@@ -190,14 +200,14 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  DestDir)
     fprintf(ConfFile, "OPENGUI=YES\n");
     fclose(ConfFile);
 
-    sprintf(FileName, "%s/interfaces", DestDir);
+    sprintf(FileName, "%s/db/interfaces", DestDir);
     ConfFile = fopen(FileName, "w");
     if (!ConfFile) return FALSE;
     fprintf(ConfFile,"eth0 DEV=%s UNIT=0 NOTRACKING IP=%s NETMASK=%s UP\n", GetDevice(), GetIP(), GetMask());
 
     fclose(ConfFile);
 
-    sprintf(FileName, "%s/netdb-myhost", DestDir);
+    sprintf(FileName, "%s/db/netdb-myhost", DestDir);
     ConfFile = fopen(FileName, "w");
     if (!ConfFile) return 0;
     fprintf(ConfFile, "HOST %s %s.%s %s\n", GetIP(), GetHost(), GetDomain(), GetHost());
@@ -208,7 +218,7 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  DestDir)
     fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(1));
     fclose(ConfFile);
 
-    sprintf(FileName, "%s/static-routes", DestDir);
+    sprintf(FileName, "%s/db/static-routes", DestDir);
     ConfFile = fopen(FileName, "w");
     if (!ConfFile) return FALSE;
     fprintf(ConfFile, "DEFAULT GATEWAY %s\n", GetGate());
@@ -271,20 +281,16 @@ CONST_STRPTR GetDefaultStackLocation()
     return path;
 }
 
-/* 
-   This is not a general use function!
-   It assumes that dstdir targets AAA/db directory and the destination
-   directory exists
- */
+/* This is not a general use function! It assumes destinations directory exists */
 BOOL CopyFileFromDefaultStackLocation(CONST_STRPTR filename, CONST_STRPTR dstdir)
 {
     /* Build paths */
     CONST_STRPTR srcdir = GetDefaultStackLocation();
     TEXT srcfile[strlen(srcdir) + 4 + strlen(filename) + 1];
-    TEXT dstfile[strlen(dstdir) + strlen(filename) + 1];
+    TEXT dstfile[strlen(dstdir) + 4 + strlen(filename) + 1];
 
     sprintf(srcfile, "%s/db/%s", srcdir, filename);
-    sprintf(dstfile, "%s/%s", dstdir, filename);
+    sprintf(dstfile, "%s/db/%s", dstdir, filename);
 
     return CopyFile(srcfile, dstfile);
 }
@@ -292,8 +298,12 @@ BOOL CopyFileFromDefaultStackLocation(CONST_STRPTR filename, CONST_STRPTR dstdir
 /* Copies files not created by prefs but needed to start stack */
 BOOL CopyDefaultConfiguration(CONST_STRPTR destdir)
 {
+    TEXT destdbdir[strlen(destdir) + 3 + 1];
+    sprintf(destdbdir, "%s/db", destdir);
+
     /* Create necessary directories */
     if (!RecursiveCreateDir(destdir)) return FALSE;
+    if (!RecursiveCreateDir(destdbdir)) return FALSE;
     
     /* Copy files */
     if (!CopyFileFromDefaultStackLocation("hosts", destdir)) return FALSE;
@@ -309,33 +319,31 @@ BOOL CopyDefaultConfiguration(CONST_STRPTR destdir)
 BOOL SaveNetworkPrefs()
 {
     // TODO: restart AROSTCP
-    if (!WriteConfigVariable()) return FALSE;
-    if (!CopyDefaultConfiguration(PREFS_PATH_ENVARC_DB)) return FALSE;
-    if (!WriteNetworkPrefs(PREFS_PATH_ENVARC_DB)) return FALSE;
-    if (!CopyDefaultConfiguration(PREFS_PATH_ENV_DB)) return FALSE;
-    if (!WriteNetworkPrefs(PREFS_PATH_ENV_DB)) return FALSE;
+    if (!WriteConfigVariables()) return FALSE;
+    if (!CopyDefaultConfiguration(PREFS_PATH_ENVARC)) return FALSE;
+    if (!WriteNetworkPrefs(PREFS_PATH_ENVARC)) return FALSE;
+    if (!CopyDefaultConfiguration(PREFS_PATH_ENV)) return FALSE;
+    if (!WriteNetworkPrefs(PREFS_PATH_ENV)) return FALSE;
     return TRUE;
 }
 
 BOOL UseNetworkPrefs()
 {
     // TODO: restart AROSTCP
-    if (!WriteConfigVariable()) return FALSE;
-    if (!CopyDefaultConfiguration(PREFS_PATH_ENV_DB)) return FALSE;
-    if (!WriteNetworkPrefs(PREFS_PATH_ENV_DB)) return FALSE;
+    if (!WriteConfigVariables()) return FALSE;
+    if (!CopyDefaultConfiguration(PREFS_PATH_ENV)) return FALSE;
+    if (!WriteNetworkPrefs(PREFS_PATH_ENV)) return FALSE;
     return TRUE;
 }
 
 void ReadNetworkPrefs()
 {
-    STRPTR FileName;
+    TEXT FileName[strlen(PREFS_PATH_ENV) + 4 + 20];
     BOOL comment = FALSE;
     STRPTR tstring;
     struct Tokenizer tok;
 
-    FileName = malloc(strlen(PREFS_PATH_ENV_DB) + 20);
-
-    sprintf(FileName, "%s/general.config", PREFS_PATH_ENV_DB);
+    sprintf(FileName, "%s/db/general.config", PREFS_PATH_ENV);
     OpenTokenFile(&tok, FileName);
     while (!tok.fend) {
 	    if (tok.newline) { // read tokens from the beginning of line
@@ -353,7 +361,7 @@ void ReadNetworkPrefs()
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/interfaces", PREFS_PATH_ENV_DB);
+    sprintf(FileName, "%s/db/interfaces", PREFS_PATH_ENV);
     OpenTokenFile(&tok, FileName);
     // reads only first uncommented interface
     while (!tok.fend) {
@@ -380,7 +388,7 @@ void ReadNetworkPrefs()
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/netdb-myhost", PREFS_PATH_ENV_DB);
+    sprintf(FileName, "%s/db/netdb-myhost", PREFS_PATH_ENV);
     OpenTokenFile(&tok, FileName);
     int dnsc = 0;
     while (!tok.fend) {
@@ -396,7 +404,7 @@ void ReadNetworkPrefs()
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/static-routes", PREFS_PATH_ENV_DB);
+    sprintf(FileName, "%s/db/static-routes", PREFS_PATH_ENV);
     OpenTokenFile(&tok, FileName);
     while (!tok.fend) {
 	    GetNextToken(&tok, " \n");
@@ -412,7 +420,28 @@ void ReadNetworkPrefs()
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/DHCP", PREFS_PATH_ENV_DB);
+    sprintf(FileName, "%s/Autorun", PREFS_PATH_ENV);
+    OpenTokenFile(&tok, FileName);
+    while (!tok.fend) 
+    {
+        GetNextToken(&tok, " \n");
+        if (tok.token) 
+        {
+            if (strncmp(tok.token, "True", 4) == 0) 
+            {
+                SetAutostart(TRUE);
+                break;
+            }
+            else 
+            {
+                SetAutostart(FALSE);
+                break;
+            }
+        }
+    }
+    CloseTokenFile(&tok);
+
+    sprintf(FileName, "%s/db/DHCP", PREFS_PATH_ENV);
     OpenTokenFile(&tok, FileName);
     while (!tok.fend) {
 	    GetNextToken(&tok, " \n");
@@ -429,8 +458,6 @@ void ReadNetworkPrefs()
 	    }
     }
     CloseTokenFile(&tok);
-
-    free(FileName);
 }
 
 STRPTR GetIP()
@@ -473,6 +500,11 @@ STRPTR GetDomain()
 	return prefs.domain;
 }
 
+BOOL GetAutostart()
+{
+    return prefs.autostart;
+}
+
 void SetIP(STRPTR w)
 {
 	strlcpy(prefs.IP, w,63);
@@ -511,5 +543,9 @@ void SetHost(STRPTR w)
 void SetDomain(STRPTR w)
 {
 	strlcpy(prefs.domain, w,511);
+}
+void SetAutostart(BOOL w)
+{
+    prefs.autostart = w;
 }
 

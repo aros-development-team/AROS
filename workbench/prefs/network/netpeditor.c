@@ -38,21 +38,22 @@ static CONST_STRPTR DHCPCycle[] = { NULL, NULL, NULL };
 
 /*** Instance Data **********************************************************/
 struct NetPEditor_DATA {
-	Object           *netped_deviceString,
-	*netped_IPString,
-	*netped_maskString,
-	*netped_gateString,
-	*netped_DNSString[2],
-	*netped_hostString,
-	*netped_domainString,
-	*netped_DHCPState;
+    Object  *netped_deviceString,
+            *netped_IPString,
+            *netped_maskString,
+            *netped_gateString,
+            *netped_DNSString[2],
+            *netped_hostString,
+            *netped_domainString,
+            *netped_DHCPState,
+            *netped_Autostart;
 };
 
 BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
 
 {
 	STRPTR str = NULL;
-	LONG lng = 0;
+	IPTR lng = 0;
 
 	GET(data->netped_deviceString, MUIA_String_Contents, &str);
 	SetDevice(str);
@@ -72,6 +73,8 @@ BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
 	SetDomain(str);
 	GET(data->netped_DHCPState, MUIA_Cycle_Active, &lng);
 	SetDHCP(lng);
+    GET(data->netped_Autostart, MUIA_Selected, &lng);
+    SetAutostart(lng);
 
 	return TRUE;
 }
@@ -90,6 +93,7 @@ BOOL NetworkPrefs2Gadgets
 	NNSET(data->netped_hostString, MUIA_String_Contents, (IPTR)GetHost());
 	NNSET(data->netped_domainString, MUIA_String_Contents, (IPTR)GetDomain());
 	NNSET(data->netped_DHCPState, MUIA_Cycle_Active, (IPTR)GetDHCP());
+    NNSET(data->netped_Autostart, MUIA_Selected, (IPTR)GetAutostart());
 	
 	return TRUE;
 }
@@ -97,7 +101,8 @@ BOOL NetworkPrefs2Gadgets
 /*** Methods ****************************************************************/
 Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-	Object *deviceString, *IPString, *maskString, *gateString, *DNSString[2], *hostString, *domainString, *DHCPState;
+    Object  *deviceString, *IPString, *maskString, *gateString, 
+            *DNSString[2], *hostString, *domainString, *DHCPState, *autostart;
 
     DHCPCycle[0] = _(MSG_IP_MODE_MANUAL);
     DHCPCycle[1] = _(MSG_IP_MODE_DHCP);
@@ -114,7 +119,6 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
 
 		Child, RegisterGroup((IPTR)NetworkTabs),
-
 			Child, (IPTR)ColGroup(2),
 				Child, (IPTR)Label2(__(MSG_DEVICE)),Child, (IPTR)PopaslObject,
 					MUIA_Popasl_Type,              ASL_FileRequest,
@@ -129,6 +133,10 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 				Child, (IPTR)Label2(__(MSG_GATE)),Child, (IPTR)(gateString = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789.", End),
 				Child, (IPTR)Label2(__(MSG_DNS1)),Child, (IPTR)(DNSString[0] = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789.", End),
 				Child, (IPTR)Label2(__(MSG_DNS2)),Child, (IPTR)(DNSString[1] = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789.", End),
+				Child, (IPTR)Label2(__(MSG_AUTOSTART_STACK)),Child, (IPTR)(autostart = (Object *)ImageObject, ImageButtonFrame, 
+                    MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
+            		MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, 
+                End),
 			End,
 
 			Child, (IPTR)ColGroup(2),
@@ -148,12 +156,12 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 		data->netped_IPString = IPString;
 		data->netped_maskString = maskString;
 		data->netped_gateString = gateString;
-
 		data->netped_DNSString[0] = DNSString[0];
 		data->netped_DNSString[1] = DNSString[1];
 		data->netped_hostString = hostString;
 		data->netped_domainString = domainString;
 		data->netped_DHCPState = DHCPState;
+        data->netped_Autostart = autostart;
 		
 		/*-- Setup notifications -------------------------------------------*/
 		DoMethod
@@ -195,6 +203,11 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 		DoMethod
 		(
 			domainString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+			(IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+		);
+		DoMethod
+		(
+			autostart, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
 			(IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
 		);
 		DoMethod
