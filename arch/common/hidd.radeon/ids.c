@@ -82,6 +82,7 @@ const struct ATIDevice support[] = {
     { 0x1002, 0x3154, RV380,    RADEONInit,    FALSE },
     { 0x1002, 0x5B60, RV370,    RADEONInit,    FALSE },
     { 0x1002, 0x5B62, RV370,    RADEONInit,    FALSE },
+    { 0x1002, 0x5B63, RV370,    RADEONInit,    FALSE },
     { 0x1002, 0x5B64, RV370,    RADEONInit,    FALSE },
     { 0x1002, 0x5B65, RV370,    RADEONInit,    FALSE },
     { 0x1002, 0x5460, RV370,    RADEONInit,    FALSE },
