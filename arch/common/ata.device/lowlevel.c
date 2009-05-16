@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2009, The AROS Development Team. All rights reserved
+    Copyright ï¿½ 2004-2009, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -1516,8 +1516,8 @@ ULONG atapi_Identify(struct ata_Unit* unit)
     SWAP_LE_WORD(unit->au_Drive->id_Commands6);
     SWAP_LE_WORD(unit->au_Drive->id_UDMASupport);
     SWAP_LE_WORD(unit->au_Drive->id_SecurityEraseTime);
-    SWAP_LE_WORD(unit->au_Drive->id_EnchSecurityEraseTime);
-    SWAP_LE_WORD(unit->au_Drive->id_CurrentAdvowerMode);
+    SWAP_LE_WORD(unit->au_Drive->id_ESecurityEraseTime);
+    SWAP_LE_WORD(unit->au_Drive->id_CurrentAdvPowerMode);
     SWAP_LE_WORD(unit->au_Drive->id_MasterPwdRevision);
     SWAP_LE_WORD(unit->au_Drive->id_HWResetResult);
     SWAP_LE_WORD(unit->au_Drive->id_AcousticManagement);
@@ -1656,8 +1656,8 @@ ULONG ata_Identify(struct ata_Unit* unit)
     SWAP_LE_WORD(unit->au_Drive->id_Commands6);
     SWAP_LE_WORD(unit->au_Drive->id_UDMASupport);
     SWAP_LE_WORD(unit->au_Drive->id_SecurityEraseTime);
-    SWAP_LE_WORD(unit->au_Drive->id_EnchSecurityEraseTime);
-    SWAP_LE_WORD(unit->au_Drive->id_CurrentAdvowerMode);
+    SWAP_LE_WORD(unit->au_Drive->id_ESecurityEraseTime);
+    SWAP_LE_WORD(unit->au_Drive->id_CurrentAdvPowerMode);
     SWAP_LE_WORD(unit->au_Drive->id_MasterPwdRevision);
     SWAP_LE_WORD(unit->au_Drive->id_HWResetResult);
     SWAP_LE_WORD(unit->au_Drive->id_AcousticManagement);
