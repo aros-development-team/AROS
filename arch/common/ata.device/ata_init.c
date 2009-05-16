@@ -102,12 +102,13 @@ struct ata_LegacyBus
     UBYTE			atalb_BusID;
 };
 
-#define ATABUSNODEPRI_PROBED		0
+#define ATABUSNODEPRI_PROBED		50
 #define ATABUSNODEPRI_PROBEDLEGACY	100
-#define ATABUSNODEPRI_LEGACY		50
+#define ATABUSNODEPRI_LEGACY		0
 
 #define RANGESIZE0 8
 #define RANGESIZE1 4
+#define DMASIZE 16
 
 /* static list of io/irqs that we can handle */
 static struct ata__legacybus 
@@ -304,6 +305,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
     IPTR	ProductID,
 		VendorID,
 		DMABase,
+		DMASize,
                 INTLine,
                 IOBase,
                 IOAlt,
@@ -335,6 +337,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
     OOP_GetAttr(Device, aHidd_PCIDevice_VendorID,           &VendorID);
     OOP_GetAttr(Device, aHidd_PCIDevice_ProductID,          &ProductID);
     OOP_GetAttr(Device, aHidd_PCIDevice_Base4,              &DMABase);
+    OOP_GetAttr(Device, aHidd_PCIDevice_Size4,              &DMASize);
     OOP_GetAttr(Device, aHidd_PCIDevice_SubClass,           &SubClass);
     OOP_GetAttr(Device, aHidd_PCIDevice_Interface,          &Interface);
 
@@ -395,7 +398,8 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
         }
 
         if (IOBase != (IPTR)NULL && IOSize == RANGESIZE0
-            && AltSize == RANGESIZE1)
+            && AltSize == RANGESIZE1
+            && (DMASize = DMASIZE || DMABase == NULL || SubClass == 1))
 	{
 	    struct ata_ProbedBus *probedbus;
 	    D(bug("[ATA  ] ata_PCIEnumerator_h: Adding Bus %d - IRQ %d, IO: %x:%x, DMA: %x\n", x, INTLine, IOBase, IOAlt, DMABase));
