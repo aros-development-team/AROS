@@ -190,7 +190,7 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
     ab->ab_Base         = atabase;
     ab->ab_Port         = IOBase;
     ab->ab_Alt          = IOAlt;
-    ab->ab_Irq          = INTLine;
+    ab->ab_IRQ          = INTLine;
     ab->ab_Dev[0]       = DEV_NONE;
     ab->ab_Dev[1]       = DEV_NONE;
     ab->ab_Flags        = 0;
