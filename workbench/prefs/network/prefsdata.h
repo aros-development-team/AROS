@@ -5,6 +5,10 @@
 
 #include <exec/types.h>
 
+#define PREFS_PATH_ENV              "ENV:AROSTCP"
+#define PREFS_PATH_ENVARC           "ENVARC:AROSTCP"
+#define AROSTCP_PACKAGE_VARIABLE    "SYS/Packages/AROSTCP"
+
 struct TCPPrefs
 {
     TEXT IP[64];
@@ -18,8 +22,7 @@ struct TCPPrefs
     BOOL autostart;
 };
 
-void SetDefaultValues();
-void ReadNetworkPrefs();
+void InitNetworkPrefs(CONST_STRPTR directory, BOOL use, BOOL save);
 BOOL SaveNetworkPrefs();
 BOOL UseNetworkPrefs();
 
