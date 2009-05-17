@@ -1,10 +1,13 @@
-; $VER: AROSTCP-startnet 1.0 (01/08/06)
+; $VER: AROSTCP-startnet 1.1 (17/05/09)
 ; AROSTCP-startnet (c) The AROS Dev Team.
 ;
 Run <NIL: >NIL: AROSTCP
 WaitForPort AROSTCP
 If NOT Warn
   ; echo "Stack online"
+  If $AROSTCP/DHCP eq "True"
+    Run <NIL: >NIL: dhclient -d
+  EndIf
 Else
   ; echo "Wait for Stack Failed"
 EndIf

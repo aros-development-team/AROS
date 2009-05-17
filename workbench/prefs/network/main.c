@@ -15,7 +15,7 @@
 #include "netpeditor.h"
 #include "prefsdata.h"
 
-#define VERSION "$VER: Network 0.5 (11.05.2009) AROS Dev Team"
+#define VERSION "$VER: Network 0.9 (17.05.2009) AROS Dev Team"
 
 int main(void)
 {
@@ -23,40 +23,40 @@ int main(void)
 
 	Locale_Initialize();
 
-	if (ReadArguments()) {
-		/* FIXME: handle arguments... */
+    ReadArguments();
 
-		// FROM - import prefs from this file at start
-		// USE  - 'use' the loaded prefs immediately, don't open window.
-		// SAVE - 'save' the lodaed prefs immediately, don't open window.
+    InitNetworkPrefs(
+        (ARG(FROM) != (IPTR)NULL ? (STRPTR)ARG(FROM) : (STRPTR)PREFS_PATH_ENV), 
+        (ARG(USE) ? TRUE : FALSE), 
+        (ARG(SAVE) ? TRUE : FALSE));
 
-		FreeArguments();
-	}
+    /* Show application unless SAVE or USE parameters were used */  
+    if (!((BOOL)ARG(SAVE)) && !((BOOL)ARG(USE)))
+    {
+        application = (Object *)ApplicationObject,
+        MUIA_Application_Title,  __(MSG_NAME),
+        MUIA_Application_Version, (IPTR)VERSION,
+        MUIA_Application_Description,  __(MSG_DESCRIPTION),
+        MUIA_Application_Base, (IPTR)"NETPREF",
+        SubWindow, (IPTR)(window = (Object *)SystemPrefsWindowObject,
+            MUIA_Window_ID, MAKE_ID('N', 'E', 'T', 'P'),
+            WindowContents, (IPTR)NetPEditorObject,
+            End,
+            End),
+        End;
 
-    SetDefaultValues();
-	ReadNetworkPrefs();
+        if (application != NULL) {
+            SET(window, MUIA_Window_Open, TRUE);
+            DoMethod(application, MUIM_Application_Execute);
+            SET(window, MUIA_Window_Open, FALSE);
 
-	application = (Object *)ApplicationObject,
-	MUIA_Application_Title,  __(MSG_NAME),
-	MUIA_Application_Version, (IPTR)VERSION,
-	MUIA_Application_Description,  __(MSG_DESCRIPTION),
-	MUIA_Application_Base, (IPTR)"NETPREF",
-	SubWindow, (IPTR)(window = (Object *)SystemPrefsWindowObject,
-			  MUIA_Window_ID, MAKE_ID('N', 'E', 'T', 'P'),
-			  WindowContents, (IPTR)NetPEditorObject,
-			  End,
-			  End),
-	End;
+            MUI_DisposeObject(application);
+        }
+    }
 
-	if (application != NULL) {
-		SET(window, MUIA_Window_Open, TRUE);
-		DoMethod(application, MUIM_Application_Execute);
-		SET(window, MUIA_Window_Open, FALSE);
+    FreeArguments();
 
-		MUI_DisposeObject(application);
-	}
-
-	Locale_Deinitialize();
+    Locale_Deinitialize();
 
 	return 0;
 }

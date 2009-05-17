@@ -10,10 +10,6 @@
 #include <stdio.h>
 #include "prefsdata.h"
 
-#define PREFS_PATH_ENV              "ENV:AROSTCP"
-#define PREFS_PATH_ENVARC           "ENVARC:AROSTCP"
-#define AROSTCP_PACKAGE_VARIABLE    "SYS/Packages/AROSTCP"
-
 static struct TCPPrefs prefs;
 
 struct Tokenizer
@@ -71,7 +67,7 @@ void GetNextToken(struct Tokenizer * tok, STRPTR tk)
 	}
 }
 
-void SetDefaultValues()
+void SetDefaultNetworkPrefsValues()
 {
 	SetIP("192.168.0.188");
 	SetMask("255.255.255.0");
@@ -181,7 +177,7 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  DestDir)
     fprintf(ConfFile, "%s", (GetAutostart()) ? "True" : "False");
     fclose(ConfFile);
 
-    sprintf(FileName, "%s/db/DHCP", DestDir);
+    sprintf(FileName, "%s/DHCP", DestDir);
     ConfFile = fopen(FileName, "w");
     if (!ConfFile) return FALSE;
     fprintf(ConfFile, "%s", (GetDHCP()) ? "True" : "False");
@@ -272,7 +268,7 @@ CONST_STRPTR GetDefaultStackLocation()
     /* Use static variable so that it is initialized only once (and can be returned) */
     static TEXT path [1024] = {0};
     
-    /* Load path if needed */
+    /* Load path if needed - this will happen only once */
     if (path[0] == '\0')
     {
         GetVar(AROSTCP_PACKAGE_VARIABLE, path, 1024, LV_VAR);
@@ -282,15 +278,24 @@ CONST_STRPTR GetDefaultStackLocation()
 }
 
 /* This is not a general use function! It assumes destinations directory exists */
-BOOL CopyFileFromDefaultStackLocation(CONST_STRPTR filename, CONST_STRPTR dstdir)
+BOOL AddFileFromDefaultStackLocation(CONST_STRPTR filename, CONST_STRPTR dstdir)
 {
     /* Build paths */
     CONST_STRPTR srcdir = GetDefaultStackLocation();
     TEXT srcfile[strlen(srcdir) + 4 + strlen(filename) + 1];
     TEXT dstfile[strlen(dstdir) + 4 + strlen(filename) + 1];
+    BPTR dstlock = NULL;
 
     sprintf(srcfile, "%s/db/%s", srcdir, filename);
     sprintf(dstfile, "%s/db/%s", dstdir, filename);
+
+    /* Check if the destination file already exists. If yes, do not copy */
+    dstlock = Lock(dstfile, SHARED_LOCK);
+    if (dstlock != NULL)
+    {
+        UnLock(dstlock);
+        return TRUE;
+    }
 
     return CopyFile(srcfile, dstfile);
 }
@@ -306,12 +311,12 @@ BOOL CopyDefaultConfiguration(CONST_STRPTR destdir)
     if (!RecursiveCreateDir(destdbdir)) return FALSE;
     
     /* Copy files */
-    if (!CopyFileFromDefaultStackLocation("hosts", destdir)) return FALSE;
-    if (!CopyFileFromDefaultStackLocation("inet.access", destdir)) return FALSE;
-    if (!CopyFileFromDefaultStackLocation("netdb", destdir)) return FALSE;
-    if (!CopyFileFromDefaultStackLocation("networks", destdir)) return FALSE;
-    if (!CopyFileFromDefaultStackLocation("protocols", destdir)) return FALSE;
-    if (!CopyFileFromDefaultStackLocation("services", destdir)) return FALSE;
+    if (!AddFileFromDefaultStackLocation("hosts", destdir)) return FALSE;
+    if (!AddFileFromDefaultStackLocation("inet.access", destdir)) return FALSE;
+    if (!AddFileFromDefaultStackLocation("netdb", destdir)) return FALSE;
+    if (!AddFileFromDefaultStackLocation("networks", destdir)) return FALSE;
+    if (!AddFileFromDefaultStackLocation("protocols", destdir)) return FALSE;
+    if (!AddFileFromDefaultStackLocation("services", destdir)) return FALSE;
 
     return TRUE;
 }
@@ -336,14 +341,17 @@ BOOL UseNetworkPrefs()
     return TRUE;
 }
 
-void ReadNetworkPrefs()
+/* Directory points to top of config, so to AAA/AROSTCP not to AAA/AROSTCP/db */
+void ReadNetworkPrefs(CONST_STRPTR directory)
 {
-    TEXT FileName[strlen(PREFS_PATH_ENV) + 4 + 20];
+    TEXT FileName[strlen(directory) + 4 + 20];
     BOOL comment = FALSE;
     STRPTR tstring;
     struct Tokenizer tok;
 
-    sprintf(FileName, "%s/db/general.config", PREFS_PATH_ENV);
+    /* This function will not fail. It will load as much data as possible. Rest will be defaul values */
+
+    sprintf(FileName, "%s/db/general.config", directory);
     OpenTokenFile(&tok, FileName);
     while (!tok.fend) {
 	    if (tok.newline) { // read tokens from the beginning of line
@@ -361,7 +369,7 @@ void ReadNetworkPrefs()
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/db/interfaces", PREFS_PATH_ENV);
+    sprintf(FileName, "%s/db/interfaces", directory);
     OpenTokenFile(&tok, FileName);
     // reads only first uncommented interface
     while (!tok.fend) {
@@ -388,7 +396,7 @@ void ReadNetworkPrefs()
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/db/netdb-myhost", PREFS_PATH_ENV);
+    sprintf(FileName, "%s/db/netdb-myhost", directory);
     OpenTokenFile(&tok, FileName);
     int dnsc = 0;
     while (!tok.fend) {
@@ -404,7 +412,7 @@ void ReadNetworkPrefs()
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/db/static-routes", PREFS_PATH_ENV);
+    sprintf(FileName, "%s/db/static-routes", directory);
     OpenTokenFile(&tok, FileName);
     while (!tok.fend) {
 	    GetNextToken(&tok, " \n");
@@ -420,7 +428,7 @@ void ReadNetworkPrefs()
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/Autorun", PREFS_PATH_ENV);
+    sprintf(FileName, "%s/Autorun", directory);
     OpenTokenFile(&tok, FileName);
     while (!tok.fend) 
     {
@@ -441,7 +449,7 @@ void ReadNetworkPrefs()
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/db/DHCP", PREFS_PATH_ENV);
+    sprintf(FileName, "%s/DHCP", directory);
     OpenTokenFile(&tok, FileName);
     while (!tok.fend) {
 	    GetNextToken(&tok, " \n");
@@ -459,6 +467,26 @@ void ReadNetworkPrefs()
     }
     CloseTokenFile(&tok);
 }
+
+void InitNetworkPrefs(CONST_STRPTR directory, BOOL use, BOOL save)
+{
+    SetDefaultNetworkPrefsValues();
+
+    ReadNetworkPrefs(directory);
+    
+    if (save)
+    {
+        SaveNetworkPrefs();
+        return; /* save equals to use */
+    }    
+    
+    if (use)
+    {
+        UseNetworkPrefs();
+    }
+}
+
+/* Getters */
 
 STRPTR GetIP()
 {
@@ -509,6 +537,8 @@ void SetIP(STRPTR w)
 {
 	strlcpy(prefs.IP, w,63);
 }
+
+/* Setters */
 
 void SetMask(STRPTR  w)
 {
