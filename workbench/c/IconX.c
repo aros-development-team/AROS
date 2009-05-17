@@ -148,7 +148,15 @@ STRPTR BuildCommandLine(struct WBStartup *startup)
 {
     const struct WBStartup *wbsstate = startup;
     STRPTR                  buffer   = NULL;
-    ULONG                   length   = 2 /* NULL + '\n' */ + strlen("C:Run QUIET EXECUTE");
+    /* 
+       As C:Run seems to "eat" the quotes around the first argument it gets,
+       let's feed it with quotes around an empty argument: it will be "eaten"
+       and the real first argument that C:Execute will get will then be
+       surrounded with quotes, which is needed when its path or name contains
+       spaces. Of course it would be better to find and fix the real bug
+       where it stands (probably dos.library/ReadArgs()).
+    */
+    ULONG                   length   = 2 /* NULL + '\n' */ + strlen("C:Run QUIET EXECUTE \"\"");
     int i;
 
     /*-- Calculate length of resulting string ------------------------------*/
@@ -177,7 +185,8 @@ STRPTR BuildCommandLine(struct WBStartup *startup)
     {
         /*-- Build command line --------------------------------------------*/
         buffer[0] = '\0';
-        strcat(buffer, "C:Run QUIET EXECUTE");
+	/* Please read the long comment about C:Run and quotes above */
+        strcat(buffer, "C:Run QUIET EXECUTE \"\"");
 
         for (i = 1 ; i < wbsstate->sm_NumArgs ; i++)
         {
