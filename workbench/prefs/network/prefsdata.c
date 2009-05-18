@@ -177,12 +177,6 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  DestDir)
     fprintf(ConfFile, "%s", (GetAutostart()) ? "True" : "False");
     fclose(ConfFile);
 
-    sprintf(FileName, "%s/DHCP", DestDir);
-    ConfFile = fopen(FileName, "w");
-    if (!ConfFile) return FALSE;
-    fprintf(ConfFile, "%s", (GetDHCP()) ? "True" : "False");
-    fclose(ConfFile);
-
     sprintf(FileName, "%s/db/general.config", DestDir);
     ConfFile = fopen(FileName, "w");
     if (!ConfFile) return FALSE;
@@ -199,7 +193,8 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  DestDir)
     sprintf(FileName, "%s/db/interfaces", DestDir);
     ConfFile = fopen(FileName, "w");
     if (!ConfFile) return FALSE;
-    fprintf(ConfFile,"eth0 DEV=%s UNIT=0 NOTRACKING IP=%s NETMASK=%s UP\n", GetDevice(), GetIP(), GetMask());
+    fprintf(ConfFile,"eth0 DEV=%s UNIT=0 NOTRACKING IP=%s NETMASK=%s UP\n", GetDevice(), 
+        (GetDHCP() ? (CONST_STRPTR)"DHCP" : GetIP()), GetMask());
 
     fclose(ConfFile);
 
@@ -385,7 +380,16 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
 			    }
 			    if (strncmp(tok.token, "IP=", 3) == 0) {
 				    tstring = strchr(tok.token, '=');
-                    SetIP(tstring + 1);
+                    if (strncmp(tstring + 1, "DHCP", 4) == 0)
+                    {
+                        SetDHCP(TRUE);
+                        SetIP("192.168.0.188");
+                    }
+                    else
+                    {
+                        SetIP(tstring + 1);
+                        SetDHCP(FALSE);
+                    }
 			    }
 			    if (strncmp(tok.token, "NETMASK=", 8) == 0) {
 				    tstring = strchr(tok.token, '=');
@@ -446,24 +450,6 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
                 break;
             }
         }
-    }
-    CloseTokenFile(&tok);
-
-    sprintf(FileName, "%s/DHCP", directory);
-    OpenTokenFile(&tok, FileName);
-    while (!tok.fend) {
-	    GetNextToken(&tok, " \n");
-	    if (tok.token) {
-		    if (strncmp(tok.token, "True", 4) == 0) {
-			    SetDHCP(TRUE);
-			    break;
-		    }
-		    else {
-                SetDHCP(FALSE);
-			    break;
-
-		    }
-	    }
     }
     CloseTokenFile(&tok);
 }
