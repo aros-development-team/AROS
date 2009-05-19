@@ -1158,7 +1158,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
     if (unit->au_Identify(unit) != 0)
     {
         FreePooled(bus->ab_Base->ata_MemPool, unit->au_Drive, sizeof(struct DriveIdent));
-        unit->au_Drive = 0;
+        unit->au_Drive = NULL;
         return FALSE;
     }
 
@@ -1460,7 +1460,7 @@ void common_DetectXferModes(struct ata_Unit* unit)
 #define SWAP_LE_LONG(x) (x) = AROS_LE2LONG((x))
 #define SWAP_LE_QUAD(x) (x) = AROS_LE2LONG((x)>>32) | AROS_LE2LONG((x) & 0xffffffff) << 32
 
-ULONG atapi_Identify(struct ata_Unit* unit)
+BYTE atapi_Identify(struct ata_Unit* unit)
 {
     ata_CommandBlock acb =
     {
@@ -1536,6 +1536,17 @@ ULONG atapi_Identify(struct ata_Unit* unit)
     SWAP_LE_QUAD(unit->au_Drive->id_LBA48Sectors);
 #endif
 
+    /*
+     * Some SATA controllers in legacy mode emulate a non-existent ATAPI
+     * device so well that we have to wait until we get an empty identify
+     * structure to find out that the drive isn't real
+     */
+    if ((unit->au_Drive->id_General & 0x8000) == 0)
+    {
+        bug("[ATA%02ld] atapi_Identify: Identify data is invalid."
+            " Disabling drive.\n", unit->au_UnitNum);
+        return IOERR_OPENFAIL;
+    }
 
     DUMP(dump(unit->au_Drive, sizeof(struct DriveIdent)));
 
@@ -1602,7 +1613,7 @@ ULONG atapi_Identify(struct ata_Unit* unit)
     return 0;
 }
 
-ULONG ata_Identify(struct ata_Unit* unit)
+BYTE ata_Identify(struct ata_Unit* unit)
 {
     ata_CommandBlock acb =
     {

@@ -295,7 +295,7 @@ struct ata_Unit
    ULONG               (*au_Write64)(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
    ULONG               (*au_Eject)(struct ata_Unit *);
    ULONG               (*au_DirectSCSI)(struct ata_Unit *, struct SCSICmd*);
-   ULONG               (*au_Identify)(struct ata_Unit *);
+   BYTE                (*au_Identify)(struct ata_Unit *);
 
    VOID                (*au_ins)(APTR, UWORD, ULONG);
    VOID                (*au_outs)(APTR, UWORD, ULONG);
@@ -484,8 +484,8 @@ void ata_InitBus(struct ata_Bus *);
 int atapi_SendPacket(struct ata_Unit *, APTR, APTR, LONG, BOOL*, BOOL);
 int atapi_TestUnitOK(struct ata_Unit *);
 
-ULONG atapi_Identify(struct ata_Unit*);
-ULONG ata_Identify(struct ata_Unit*);
+BYTE atapi_Identify(struct ata_Unit*);
+BYTE ata_Identify(struct ata_Unit*);
 
 ULONG atapi_DirectSCSI(struct ata_Unit*, struct SCSICmd *);
 ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen);
