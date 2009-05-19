@@ -1872,7 +1872,7 @@ setup ::
 %end
 
 #----------------------------------------------------------------------------------
-# Copy a diretory recursively to another place, preserving the original 
+# Copy a directory recursively to another place, preserving the original 
 # hierarchical structure
 #
 # src: the source directory whose content will be copied
@@ -2410,4 +2410,162 @@ GNU_REPOSITORY := gnu://
    extraoptions="%(extraoptions)"
     
 %end
+
+
+#------------------------------------------------------------------------------
+# NOTE: The following are all part of platon42's build changes, please don't use
+# or change anything below this line until you know what you are doing.
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Build a module skeleton
+# This is a stripped-down version of build_module, it only creates include files,
+# but no actual object. This is used when for plugins or classes with the same
+# API, but no actual implementation here.
+%define build_module_skeleton mmake=/A modname=/A modtype=/A modsuffix= \
+  conffile= \
+  objdir=$(OBJDIR) prefix=$(AROSDIR) \
+  reffile=$(BD_DEFREFFILE)
+
+# Define metamake targets and their dependencies
+#MM- includes-all : %(mmake)-includes
+#MM %(mmake) : %(mmake)-includes core-linklibs
+#MM %(mmake)-kobj : %(mmake)-includes core-linklibs
+#MM %(mmake)-linklib : %(mmake)-includes
+#MM %(mmake)-quick : %(mmake)-includes-quick
+#MM %(mmake)-includes : %(mmake)-makefile %(mmake)-includes-dirs \
+#MM     includes-generate-deps
+#MM %(mmake)-includes-quick
+#MM %(mmake)-includes-dirs
+#MM %(mmake)-makefile
+#MM %(mmake)-funclist
+#MM %(mmake)-clean
+
+# All MetaMake targets defined by this macro
+BD_ALLTARGETS := %(mmake) %(mmake)-quick %(mmake)-includes \
+    %(mmake)-includes-quick %(mmake)-includes-dirs %(mmake)-clean \
+    %(mmake)-kobj %(mmake)-funclist
+
+.PHONY : $(BD_ALLTARGETS) %(mmake)-makefile
+
+ifeq (%(modname),)
+$(error using %build_module_skeleton: modname may not be empty)
+endif
+ifeq (%(modtype),)
+$(error using %build_module_skeleton: $(MODTYPE) has to be defined with the type of the module)
+endif
+
+# Default values for variables and arguments
+BD_DEFLINKLIBNAME := %(modname)
+BD_DEFREFFILE := %(objdir)/%(modname)_ALL.ref
+BD_DEFDFLAGS := %(cflags)
+OBJDIR ?= $(GENDIR)/$(CURDIR)
+
+## Create genmodule include Makefile for the module
+##
+%(mmake)-makefile : %(objdir)/Makefile.%(modname)
+
+%rule_genmodule_makefile \
+    modname=%(modname) modtype=%(modtype) \
+    modsuffix=%(modsuffix) targetdir=%(objdir) \
+    conffile=%(conffile)
+
+%(objdir)/Makefile.%(modname) : | %(objdir)
+
+GLOB_MKDIRS += %(objdir)
+
+# Do not parse these statements if metatarget is not appropriate
+ifneq ($(filter $(TARGET),$(BD_ALLTARGETS)),)
+
+include %(objdir)/Makefile.%(modname)
+
+BD_DEFMODDIR := $(%(modname)_MODDIR)
+
+
+## include files generation
+##
+BD_INCDIR    := %(prefix)/$(AROS_DIR_INCLUDE)
+BD_LIBDEFSINC := %(objdir)/include/%(modname)_libdefs.h
+BD_DEFLIBDEFSINC := %(objdir)/include/%(modname)_deflibdefs.h
+
+%(mmake)-includes-quick : %(mmake)-includes
+%(mmake)-includes : $(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) \
+    $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES)) \
+    $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC)
+
+ifneq ($(%(modname)_INCLUDES),)
+%rule_genmodule_includes modname=%(modname) modtype=%(modtype) \
+		      	 modsuffix=%(modsuffix) targetdir=%(objdir)/include \
+		      	 conffile=%(conffile) reffile=%(reffile)
+
+%rule_copy_diff_multi \
+    files=$(%(modname)_INCLUDES) srcdir=%(objdir)/include targetdir=$(GENINCDIR) \
+    stampfile=%(objdir)/%(modname)_geninc
+
+%rule_copy_diff_multi \
+    files=$(%(modname)_INCLUDES) srcdir=%(objdir)/include targetdir=$(BD_INCDIR) \
+    stampfile=%(objdir)/%(modname)_incs
+
+%rule_genmodule_dummy modname=%(modname) modtype=%(modtype) \
+		      modsuffix=%(modsuffix) \
+		      targetdir=%(objdir)/dummyinc conffile=%(conffile)
+
+BD_INCDIRS := $(filter-out ./,$(sort $(dir $(%(modname)_INCLUDES))))
+
+TMP%(modname)_INCDIRS := \
+    %(objdir)/include $(addprefix %(objdir)/include/,$(BD_INCDIRS)) \
+    $(GENINCDIR) $(addprefix $(GENINCDIR)/,$(BD_INCDIRS)) \
+    $(BD_INCDIR) $(addprefix $(BD_INCDIR)/,$(BD_INCDIRS))
+%rule_makedirs dirs=$(TMP%(modname)_INCDIRS) setuptarget=%(mmake)-includes-dirs
+
+$(addprefix %(objdir)/dummyinc/,$(%(modname)_INCLUDES)) : | %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
+GLOB_MKDIRS += %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
+
+endif
+
+%rule_genmodule_genlibdefs modname=%(modname) modtype=%(modtype) \
+		 	   modsuffix=%(modsuffix) targetdir=%(objdir)/include \
+		 	   conffile=%(conffile)
+
+$(BD_DEFLIBDEFSINC) : FILENAME := $(BD_LIBDEFSINC)
+$(BD_DEFLIBDEFSINC) :
+	@$(ECHO) "generating $@"
+	@$(ECHO) "#define LC_LIBDEFS_FILE \"$(FILENAME)\"" >$@
+
+$(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) : | %(objdir)/include
+GLOB_MKDIRS += %(objdir)/include
+
+## Generation of the funclist file
+##
+%(mmake)-funclist : %(modname).funclist
+
+%rule_genmodule_funclist \
+    modname=%(modname) modtype=%(modtype) modsuffix=%(modsuffix) \
+    conffile=%(conffile) reffile=%(reffile)
+
+
+## Extra genmodule src files generation
+## 
+%rule_genmodule_files modname=%(modname) modtype=%(modtype) \
+		      modsuffix=%(modsuffix) targetdir=%(objdir) \
+		      conffile=%(conffile) reffile=%(reffile)
+
+BD_TOCLEAN := $(BD_OBJS) $(BD_DEPS) %(reffile) \
+    $(BD_REFS) $(BD_MODULE) $(BD_LINKLIB) $(BD_KOBJ) \
+    %(objdir)/Makefile.%(modname) \
+    $(addprefix %(objdir)/include/,$(%(modname)_INCLUDES)) \
+    $(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) \
+    $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES)) \
+    %(objdir)/%(modname)_geninc %(objdir)/%(modname)_incs \
+    $(addsuffix .c,$(BD_LINKLIBFILES)) $(BD_LINKLIBOBJS) $(BD_LIBDEFSINC) \
+    $(BD_DEFLIBDEFSINC)
+%(mmake)-clean : FILES := $(BD_TOCLEAN)
+%(mmake)-clean ::
+	@$(ECHO) "Cleaning up for module %(modname)"
+	@$(RM) $(FILES)
+
+endif # $(TARGET) in $(BD_ALLTARGETS)
+%end
+#------------------------------------------------------------------------------
 
