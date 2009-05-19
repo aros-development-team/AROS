@@ -356,8 +356,12 @@ ULONG *__UL_Close(struct SocketBase *libPtr)
 #if defined(__AROS__)
 D(bug("[AROSTCP](amiga_api.c) __UL_Close: Closing proc 0x%lx base 0x%lx\n", libPtr->thisTask, libPtr));
 #endif
-  __log(LOG_DEBUG, "Closing proc 0x%lx base 0x%lx\n", 
-      libPtr->thisTask, libPtr);
+    /* Do not call __log here. If NETTRACE is calling CloseLibrary
+       __log will call back on NETTRACE which will cause hang in close
+      procedure. This was affecting normal and debug build because 
+      DEBUG is always defined in conf.h */
+    /*__log(LOG_DEBUG, "Closing proc 0x%lx base 0x%lx\n", 
+      libPtr->thisTask, libPtr);*/
 #endif
 
   /*
