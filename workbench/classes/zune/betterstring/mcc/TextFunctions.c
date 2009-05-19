@@ -19,7 +19,6 @@
  $Id$
 
 ***************************************************************************/
-
 #include <graphics/text.h>
 
 #include "SDI_compiler.h"
@@ -76,7 +75,7 @@ long MyTextFit(struct TextFont *font, char *text, long length, long width, UNUSE
 
       while((stringlength < width) && (--length) > 0)
       {
-        current = *text++;
+        current = *text; text += direction;
         stringlength += *(spacing+current) + *(kerning+current);
       }
 
@@ -90,6 +89,8 @@ long MyTextFit(struct TextFont *font, char *text, long length, long width, UNUSE
         res = length;
     }
   }
+
+  if (res < 0) res = 0;
 
   return res;
 }
