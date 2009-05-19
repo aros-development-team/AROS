@@ -1066,13 +1066,20 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSema
 
     for (iter=0; iter<MAX_BUSUNITS; ++iter)
     {
+       unit = bus->ab_Units[iter];
        if (ata_setup_unit(bus, iter))
        {
-          unit = bus->ab_Units[iter];
           if (unit->au_XferModes & AF_XFER_PACKET)
              ata_RegisterVolume(0, 0, unit);
           else
              ata_RegisterVolume(0, unit->au_Cylinders - 1, unit);
+       }
+       else
+       {
+           /* Destroy unit that couldn't be initialised */
+           FreePooled(bus->ab_Base->ata_MemPool, unit, sizeof(struct ata_Unit));
+           bus->ab_Units[iter] = NULL;
+           bus->ab_Dev[iter] = DEV_NONE;
        }
     }
 
