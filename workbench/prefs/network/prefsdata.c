@@ -135,49 +135,32 @@ BOOL RecursiveCreateDir(CONST_STRPTR dirpath)
     }
 }
 
-BOOL WriteConfigVariables()
-{
-    FILE * configfile = NULL;
-
-    /* Create necessary directories */
-    if(!RecursiveCreateDir(PREFS_PATH_ENV)) return FALSE;
-    if(!RecursiveCreateDir(PREFS_PATH_ENVARC)) return FALSE;
-    
-    /* Write configuration files */
-
-    /* Config */
-    configfile = fopen(PREFS_PATH_ENV"/Config", "w");
-    if (!configfile) return FALSE;
-    fprintf(configfile, "%s/db", PREFS_PATH_ENV);
-    fclose(configfile);
-
-    configfile = fopen(PREFS_PATH_ENVARC"/Config", "w");
-    if (!configfile) return FALSE;
-    fprintf(configfile, "%s/db", PREFS_PATH_ENV);
-    fclose(configfile);
-
-    return TRUE;
-}
-
-BOOL WriteNetworkPrefs(CONST_STRPTR  DestDir)
+BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
 {
     FILE *ConfFile;
-    TEXT FileName[strlen(DestDir) + 4 + 20];
-    TEXT destdbdir[strlen(DestDir) + 3 + 1];
-    sprintf(destdbdir, "%s/db", DestDir);
+    TEXT FileName[strlen(destdir) + 4 + 20];
+    TEXT destdbdir[strlen(destdir) + 3 + 1];
+    sprintf(destdbdir, "%s/db", destdir);
 
     /* Create necessary directories */
-    if(!RecursiveCreateDir(DestDir)) return FALSE;
+    if(!RecursiveCreateDir(destdir)) return FALSE;
     if(!RecursiveCreateDir(destdbdir)) return FALSE;
 
-    /* Write configuration files */
-    sprintf(FileName, "%s/AutoRun", DestDir);
+    /* Write variables */
+    sprintf(FileName, "%s/Config", destdir);
+    ConfFile = fopen(FileName, "w");
+    if (!ConfFile) return FALSE;
+    fprintf(ConfFile, "%s/db", PREFS_PATH_ENV);
+    fclose(ConfFile);
+
+    sprintf(FileName, "%s/AutoRun", destdir);
     ConfFile = fopen(FileName, "w");
     if (!ConfFile) return FALSE;
     fprintf(ConfFile, "%s", (GetAutostart()) ? "True" : "False");
     fclose(ConfFile);
 
-    sprintf(FileName, "%s/db/general.config", DestDir);
+    /* Write configuration files */
+    sprintf(FileName, "%s/db/general.config", destdir);
     ConfFile = fopen(FileName, "w");
     if (!ConfFile) return FALSE;
     fprintf(ConfFile, "USELOOPBACK=YES\n");
@@ -190,7 +173,7 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  DestDir)
     fprintf(ConfFile, "OPENGUI=YES\n");
     fclose(ConfFile);
 
-    sprintf(FileName, "%s/db/interfaces", DestDir);
+    sprintf(FileName, "%s/db/interfaces", destdir);
     ConfFile = fopen(FileName, "w");
     if (!ConfFile) return FALSE;
     fprintf(ConfFile,"eth0 DEV=%s UNIT=0 NOTRACKING IP=%s NETMASK=%s UP\n", GetDevice(), 
@@ -198,7 +181,7 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  DestDir)
 
     fclose(ConfFile);
 
-    sprintf(FileName, "%s/db/netdb-myhost", DestDir);
+    sprintf(FileName, "%s/db/netdb-myhost", destdir);
     ConfFile = fopen(FileName, "w");
     if (!ConfFile) return 0;
     fprintf(ConfFile, "HOST %s %s.%s %s\n", GetIP(), GetHost(), GetDomain(), GetHost());
@@ -209,7 +192,7 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  DestDir)
     fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(1));
     fclose(ConfFile);
 
-    sprintf(FileName, "%s/db/static-routes", DestDir);
+    sprintf(FileName, "%s/db/static-routes", destdir);
     ConfFile = fopen(FileName, "w");
     if (!ConfFile) return FALSE;
     fprintf(ConfFile, "DEFAULT GATEWAY %s\n", GetGate());
@@ -272,6 +255,17 @@ CONST_STRPTR GetDefaultStackLocation()
     return path;
 }
 
+BOOL RestartStack()
+{
+    /* TODO: Implement
+        - stopnet
+        - open bsdsocket.library (should not open)
+        - startnet
+        - open bsdsocket.library (should open)
+    */
+    return TRUE;
+}
+
 /* This is not a general use function! It assumes destinations directory exists */
 BOOL AddFileFromDefaultStackLocation(CONST_STRPTR filename, CONST_STRPTR dstdir)
 {
@@ -316,24 +310,19 @@ BOOL CopyDefaultConfiguration(CONST_STRPTR destdir)
     return TRUE;
 }
 
-BOOL SaveNetworkPrefs()
+enum ErrorCode SaveNetworkPrefs()
 {
-    // TODO: restart AROSTCP
-    if (!WriteConfigVariables()) return FALSE;
-    if (!CopyDefaultConfiguration(PREFS_PATH_ENVARC)) return FALSE;
-    if (!WriteNetworkPrefs(PREFS_PATH_ENVARC)) return FALSE;
-    if (!CopyDefaultConfiguration(PREFS_PATH_ENV)) return FALSE;
-    if (!WriteNetworkPrefs(PREFS_PATH_ENV)) return FALSE;
-    return TRUE;
+    if (!CopyDefaultConfiguration(PREFS_PATH_ENVARC)) return NOT_COPIED_FILES_ENVARC;
+    if (!WriteNetworkPrefs(PREFS_PATH_ENVARC)) return NOT_SAVED_PREFS_ENVARC;
+    return UseNetworkPrefs();
 }
 
-BOOL UseNetworkPrefs()
+enum ErrorCode UseNetworkPrefs()
 {
-    // TODO: restart AROSTCP
-    if (!WriteConfigVariables()) return FALSE;
-    if (!CopyDefaultConfiguration(PREFS_PATH_ENV)) return FALSE;
-    if (!WriteNetworkPrefs(PREFS_PATH_ENV)) return FALSE;
-    return TRUE;
+    if (!CopyDefaultConfiguration(PREFS_PATH_ENV)) return NOT_COPIED_FILES_ENV;
+    if (!WriteNetworkPrefs(PREFS_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
+    if (!RestartStack()) return NOT_RESTARTED_STACK;
+    return ALL_OK;
 }
 
 /* Directory points to top of config, so to AAA/AROSTCP not to AAA/AROSTCP/db */

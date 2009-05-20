@@ -46,3 +46,21 @@ Computer Name
 MSG_AUTOSTART_STACK (//)
 Autostart
 ;
+MSG_ERR_UNKNOWN_ERROR (//)
+Unknown error
+;
+MSG_ERR_NOT_RESTARTED_STACK (//)
+Failed to restart network stack
+;
+MSG_BUTTON_OK (//)
+Ok
+;
+MSG_ERROR_TITLE (//)
+Error
+;
+MSG_ERR_NOT_SAVED_PREFS (//)
+Network preferences not saved to %s
+;
+MSG_ERR_NOT_COPIED_FILES (//)
+Additional files not copied to %s
+;
