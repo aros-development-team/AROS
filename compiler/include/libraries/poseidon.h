@@ -445,7 +445,7 @@ struct PsdEventNote
 {
     struct Message      pen_Msg;          /* Intertask communication message */
 };
-´
+
 struct PsdErrorMsg
 {
     struct Node         pem_Node;         /* Node linkage */
