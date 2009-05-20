@@ -292,6 +292,9 @@ isc_result_t omapi_one_dispatch (omapi_object_t *wo,
 	count = select (max + 1, &r, &w, &x, t ? &to : (struct timeval *)0);
 #ifdef HAVE_CHKABORT
 	__chkabort();
+#else
+	if (Errno() == EINTR)
+		exit(0);
 #endif
 
 	/* Get the current time... */
