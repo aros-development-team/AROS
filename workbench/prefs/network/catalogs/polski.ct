@@ -63,4 +63,29 @@ Nazwa komputera
 ;
 MSG_AUTOSTART_STACK
 Automatyczne uruchomienie
+;Autostart
+;
+MSG_ERR_UNKNOWN_ERROR
+Nieznany b³±d
+;Unknown error
+;
+MSG_ERR_NOT_RESTARTED_STACK
+Urumienie sieci nie powiod³o siê
+;Failed to restart network stack
+;
+MSG_BUTTON_OK
+Ok
+;Ok
+;
+MSG_ERROR_TITLE
+B³±d
+;Error
+;
+MSG_ERR_NOT_SAVED_PREFS
+Zapis ustawieñ do %s nie powiód³ siê
+;Network preferences not saved to %s
+;
+MSG_ERR_NOT_COPIED_FILES
+Kopiowanie dodatkowych plików do %s nie powiod³o siê
+;Additional files not copied to %s
 ;

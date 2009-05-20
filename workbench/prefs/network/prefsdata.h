@@ -9,6 +9,17 @@
 #define PREFS_PATH_ENVARC           "ENVARC:AROSTCP"
 #define AROSTCP_PACKAGE_VARIABLE    "SYS/Packages/AROSTCP"
 
+enum ErrorCode
+{
+    ALL_OK,
+    UNKNOWN_ERROR,
+    NOT_SAVED_PREFS_ENV,
+    NOT_SAVED_PREFS_ENVARC,
+    NOT_COPIED_FILES_ENV,
+    NOT_COPIED_FILES_ENVARC,
+    NOT_RESTARTED_STACK
+};
+
 struct TCPPrefs
 {
     TEXT IP[64];
@@ -23,8 +34,8 @@ struct TCPPrefs
 };
 
 void InitNetworkPrefs(CONST_STRPTR directory, BOOL use, BOOL save);
-BOOL SaveNetworkPrefs();
-BOOL UseNetworkPrefs();
+enum ErrorCode SaveNetworkPrefs();
+enum ErrorCode UseNetworkPrefs();
 
 
 STRPTR GetIP();

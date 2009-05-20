@@ -98,6 +98,30 @@ BOOL NetworkPrefs2Gadgets
 	return TRUE;
 }
 
+void DisplayErrorMessage(Object * obj, enum ErrorCode errorcode)
+{
+    CONST_STRPTR errormessage = NULL;
+    CONST_STRPTR additionaldata = NULL;
+    Object * app = NULL;
+    Object * wnd = NULL;
+
+    GET(obj, MUIA_ApplicationObject, &app);
+    GET(obj, MUIA_Window_Window, &wnd);
+
+    switch(errorcode)
+    {
+    case(UNKNOWN_ERROR): errormessage = _(MSG_ERR_UNKNOWN_ERROR); break;
+    case(NOT_RESTARTED_STACK): errormessage = _(MSG_ERR_NOT_RESTARTED_STACK); break;
+    case(NOT_SAVED_PREFS_ENV): errormessage = _(MSG_ERR_NOT_SAVED_PREFS); additionaldata = PREFS_PATH_ENV; break;
+    case(NOT_SAVED_PREFS_ENVARC): errormessage = _(MSG_ERR_NOT_SAVED_PREFS); additionaldata = PREFS_PATH_ENVARC; break;
+    case(NOT_COPIED_FILES_ENV): errormessage = _(MSG_ERR_NOT_COPIED_FILES); additionaldata = PREFS_PATH_ENV; break;
+    case(NOT_COPIED_FILES_ENVARC): errormessage = _(MSG_ERR_NOT_COPIED_FILES); additionaldata = PREFS_PATH_ENVARC; break;
+    case(ALL_OK): return;
+    }
+
+    MUI_Request(app, wnd, 0, _(MSG_ERROR_TITLE), _(MSG_BUTTON_OK), errormessage, additionaldata);
+}
+
 /*** Methods ****************************************************************/
 Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
@@ -228,15 +252,18 @@ IPTR NetPEditor__MUIM_PrefsEditor_Save
 )
 {
 	struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    enum ErrorCode errorcode = UNKNOWN_ERROR;
 
 	Gadgets2NetworkPrefs(data);
 
-    if (SaveNetworkPrefs())
+    if ((errorcode = SaveNetworkPrefs()) == ALL_OK)
     {
 		SET(self, MUIA_PrefsEditor_Changed, FALSE);
 		SET(self, MUIA_PrefsEditor_Testing, FALSE);
         return TRUE;
     }
+
+    DisplayErrorMessage(self, errorcode);
 
 	return FALSE;
 }
@@ -247,15 +274,18 @@ IPTR NetPEditor__MUIM_PrefsEditor_Use
 )
 {
 	struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    enum ErrorCode errorcode = UNKNOWN_ERROR;
 
 	Gadgets2NetworkPrefs(data);
 
-    if (UseNetworkPrefs())
+    if ((errorcode = UseNetworkPrefs()) == ALL_OK)
     {
 		SET(self, MUIA_PrefsEditor_Changed, FALSE);
 		SET(self, MUIA_PrefsEditor_Testing, FALSE);
         return TRUE;
     }
+
+    DisplayErrorMessage(self, errorcode);
 
 	return FALSE;
 }
