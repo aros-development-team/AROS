@@ -1,6 +1,14 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+ifneq ($(AROS_TARGET_VARIANT),)
+#MM- kernel-exec-$(ARCH)-$(CPU) : \
+#MM     kernel-exec-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)-includes \
+#MM     kernel-kernel-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)-includes \
+#MM     kernel-rtas-$(ARCH)-$(CPU) \
+#MM     includes-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)
+endif
+
 CFILES          := \
         exec_init cause disable enable preparecontext rawputchar initcode alert coldreboot \
         findresident newaddtask permit prepareexecbase remtask reschedule setexcept settaskpri \
@@ -10,7 +18,7 @@ CFILES          := \
 AFILES		:= \
 	stackswap 
 
-#MM kernel-exec-chrp-ppc : kernel-kernel-ppc-includes kernel-exec-includes
+#MM kernel-exec-chrp-ppc : kernel-kernel-ppc-includes kernel-exec-includes 
 
 USER_CFLAGS     := -I$(SRCDIR)/rom/exec -Os
 USER_AFLAGS     := -I$(SRCDIR)/rom/exec -I$(GENINCDIR) -Os
