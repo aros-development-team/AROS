@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 # boot time. Things such as the system boot strap, the bootmenu and syscheck
 # modules would go in here.
 
-#MM- kernel-boot : includes linklibs
+#MM- kernel-boot : includes linklibs kernel-bootloader-includes
 
 %build_module_simple mmake=kernel-boot \
   modname=boot modtype=library \
