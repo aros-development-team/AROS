@@ -89,3 +89,10 @@ MSG_ERR_NOT_COPIED_FILES
 Kopiowanie dodatkowych plików do %s nie powiod³o siê
 ;Additional files not copied to %s
 ;
+MSG_INFO_TITLE
+Informacja
+;
+MSG_PREFS_SAVED_RESTART
+Ustawienia zapisane do %s.\nUruchom ponownie system aby ich u¿yæ.
+;Preferences have been saved to %s.\nRestart AROS for them to take effect.
+;

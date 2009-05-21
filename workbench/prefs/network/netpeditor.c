@@ -265,6 +265,21 @@ IPTR NetPEditor__MUIM_PrefsEditor_Save
 
     DisplayErrorMessage(self, errorcode);
 
+    /* Prefs saved to disk, but stack not restarted. Inform about restart will 'apply' changes */
+    if (errorcode == NOT_RESTARTED_STACK)
+    {
+        Object * app = NULL;
+        Object * wnd = NULL;
+
+        GET(self, MUIA_ApplicationObject, &app);
+        GET(self, MUIA_Window_Window, &wnd);
+
+        MUI_Request(app, wnd, 0, _(MSG_INFO_TITLE), _(MSG_BUTTON_OK), 
+            _(MSG_PREFS_SAVED_RESTART), PREFS_PATH_ENVARC);
+
+        return TRUE;
+    }
+
 	return FALSE;
 }
 
