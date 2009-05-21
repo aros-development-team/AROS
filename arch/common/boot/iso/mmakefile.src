@@ -1,6 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+ifeq ($(AROS_TARGET_VARIANT),)
 #MM- bootiso : bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 #MM- bootiso-quick : bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
-
+else
+#MM- bootiso : bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT)
+#MM- bootiso-quick : bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT)-quick
+endif
