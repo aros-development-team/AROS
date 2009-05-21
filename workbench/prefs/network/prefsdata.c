@@ -135,33 +135,57 @@ BOOL RecursiveCreateDir(CONST_STRPTR dirpath)
     }
 }
 
+/* Puts part 1 into empy buffer */
+VOID CombinePath1P(STRPTR dstbuffer, ULONG dstbufferlen, CONST_STRPTR part1)
+{
+    dstbuffer[0] = '\0'; /* Make sure buffer is treated as empty */
+    AddPart(dstbuffer, part1, dstbufferlen);
+}
+
+/* Combines part1 with part2 into an empty buffer */
+VOID CombinePath2P(STRPTR dstbuffer, ULONG dstbufferlen, CONST_STRPTR part1, CONST_STRPTR part2)
+{
+    CombinePath1P(dstbuffer, dstbufferlen, part1);
+    AddPart(dstbuffer, part2, dstbufferlen);
+}
+
+/* Combines part1 with part2 with part3 into an empty buffer */
+VOID CombinePath3P(STRPTR dstbuffer, ULONG dstbufferlen, CONST_STRPTR part1, CONST_STRPTR part2, CONST_STRPTR part3)
+{
+    CombinePath2P(dstbuffer, dstbufferlen, part1, part2);
+    AddPart(dstbuffer, part3, dstbufferlen);
+}
+
 BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
 {
     FILE *ConfFile;
-    TEXT FileName[strlen(destdir) + 4 + 20];
-    TEXT destdbdir[strlen(destdir) + 3 + 1];
-    sprintf(destdbdir, "%s/db", destdir);
+    ULONG filenamelen = strlen(destdir) + 4 + 20;
+    TEXT filename[filenamelen];
+    ULONG destdbdirlen = strlen(destdir) + 3 + 1;
+    TEXT destdbdir[destdbdirlen];
+    
+    CombinePath2P(destdbdir, destdbdirlen, destdir, "db");
 
     /* Create necessary directories */
     if(!RecursiveCreateDir(destdir)) return FALSE;
     if(!RecursiveCreateDir(destdbdir)) return FALSE;
 
     /* Write variables */
-    sprintf(FileName, "%s/Config", destdir);
-    ConfFile = fopen(FileName, "w");
+    CombinePath2P(filename, filenamelen, destdir, "Config");
+    ConfFile = fopen(filename, "w");
     if (!ConfFile) return FALSE;
     fprintf(ConfFile, "%s/db", PREFS_PATH_ENV);
     fclose(ConfFile);
 
-    sprintf(FileName, "%s/AutoRun", destdir);
-    ConfFile = fopen(FileName, "w");
+    CombinePath2P(filename, filenamelen, destdir, "AutoRun");
+    ConfFile = fopen(filename, "w");
     if (!ConfFile) return FALSE;
     fprintf(ConfFile, "%s", (GetAutostart()) ? "True" : "False");
     fclose(ConfFile);
 
     /* Write configuration files */
-    sprintf(FileName, "%s/db/general.config", destdir);
-    ConfFile = fopen(FileName, "w");
+    CombinePath2P(filename, filenamelen, destdbdir, "general.config");
+    ConfFile = fopen(filename, "w");
     if (!ConfFile) return FALSE;
     fprintf(ConfFile, "USELOOPBACK=YES\n");
     fprintf(ConfFile, "DEBUGSANA=NO\n");
@@ -173,17 +197,17 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     fprintf(ConfFile, "OPENGUI=YES\n");
     fclose(ConfFile);
 
-    sprintf(FileName, "%s/db/interfaces", destdir);
-    ConfFile = fopen(FileName, "w");
+    CombinePath2P(filename, filenamelen, destdbdir, "interfaces");
+    ConfFile = fopen(filename, "w");
     if (!ConfFile) return FALSE;
     fprintf(ConfFile,"eth0 DEV=%s UNIT=0 NOTRACKING IP=%s NETMASK=%s UP\n", GetDevice(), 
         (GetDHCP() ? (CONST_STRPTR)"DHCP" : GetIP()), GetMask());
 
     fclose(ConfFile);
 
-    sprintf(FileName, "%s/db/netdb-myhost", destdir);
-    ConfFile = fopen(FileName, "w");
-    if (!ConfFile) return 0;
+    CombinePath2P(filename, filenamelen, destdbdir, "netdb-myhost");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
     fprintf(ConfFile, "HOST %s %s.%s %s\n", GetIP(), GetHost(), GetDomain(), GetHost());
     fprintf(ConfFile, "HOST %s gateway\n", GetGate());
     fprintf(ConfFile, "; Domain names\n");
@@ -192,8 +216,8 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(1));
     fclose(ConfFile);
 
-    sprintf(FileName, "%s/db/static-routes", destdir);
-    ConfFile = fopen(FileName, "w");
+    CombinePath2P(filename, filenamelen, destdbdir, "static-routes");
+    ConfFile = fopen(filename, "w");
     if (!ConfFile) return FALSE;
     fprintf(ConfFile, "DEFAULT GATEWAY %s\n", GetGate());
     fclose(ConfFile);
@@ -255,14 +279,71 @@ CONST_STRPTR GetDefaultStackLocation()
     return path;
 }
 
+BOOL IsStackRunning()
+{
+    struct Library * socketlib = NULL;
+
+    if ((socketlib = OpenLibrary("bsdsocket.library", 0L)) != NULL)
+    {
+        CloseLibrary(socketlib);
+        return TRUE;
+    }
+    
+    return FALSE;
+}
+
 BOOL RestartStack()
 {
-    /* TODO: Implement
-        - stopnet
-        - open bsdsocket.library (should not open)
-        - startnet
-        - open bsdsocket.library (should open)
-    */
+    ULONG trycount = 0;
+
+
+    /* Shutdown */
+    if (IsStackRunning())
+    {
+        struct Task * arostcptask = FindTask("bsdsocket.library");
+        if (arostcptask != NULL)
+            Signal(arostcptask, SIGBREAKF_CTRL_C);
+    }
+
+    /* Check if shutdown successfull */
+    trycount = 0;
+    while(IsStackRunning())
+    {
+        if (trycount > 4) return FALSE;
+        Delay(50);
+        trycount++;
+    }
+
+    /* Startup */
+    {
+        CONST_STRPTR srcdir = GetDefaultStackLocation();
+        ULONG arostcppathlen = strlen(srcdir) + 3 + 20;
+        TEXT arostcppath[arostcppathlen];
+        struct TagItem tags[] =
+        {
+            { SYS_Input,        (IPTR)NULL          },
+            { SYS_Output,       (IPTR)NULL          },
+            { SYS_Error,        (IPTR)NULL          },
+            { SYS_Asynch,       (IPTR)TRUE          },
+            { TAG_DONE,         0                   }
+        };
+
+        CombinePath3P(arostcppath, arostcppathlen, srcdir, "C", "AROSTCP");
+
+        SystemTagList(arostcppath, tags);
+    }
+
+    
+    /* Check if startup successfull */
+    trycount = 0;
+    while(!IsStackRunning())
+    {
+        if (trycount > 9) return FALSE;
+        Delay(50);
+        trycount++;
+    }
+
+    /* All ok */
     return TRUE;
 }
 
@@ -271,12 +352,14 @@ BOOL AddFileFromDefaultStackLocation(CONST_STRPTR filename, CONST_STRPTR dstdir)
 {
     /* Build paths */
     CONST_STRPTR srcdir = GetDefaultStackLocation();
-    TEXT srcfile[strlen(srcdir) + 4 + strlen(filename) + 1];
-    TEXT dstfile[strlen(dstdir) + 4 + strlen(filename) + 1];
+    ULONG srcfilelen = strlen(srcdir) + 4 + strlen(filename) + 1;
+    TEXT srcfile[srcfilelen];
+    ULONG dstfilelen = strlen(dstdir) + 4 + strlen(filename) + 1;
+    TEXT dstfile[dstfilelen];
     BPTR dstlock = NULL;
 
-    sprintf(srcfile, "%s/db/%s", srcdir, filename);
-    sprintf(dstfile, "%s/db/%s", dstdir, filename);
+    CombinePath3P(srcfile, srcfilelen, srcdir, "db", filename);
+    CombinePath3P(dstfile, dstfilelen, dstdir, "db", filename);
 
     /* Check if the destination file already exists. If yes, do not copy */
     dstlock = Lock(dstfile, SHARED_LOCK);
@@ -292,8 +375,9 @@ BOOL AddFileFromDefaultStackLocation(CONST_STRPTR filename, CONST_STRPTR dstdir)
 /* Copies files not created by prefs but needed to start stack */
 BOOL CopyDefaultConfiguration(CONST_STRPTR destdir)
 {
-    TEXT destdbdir[strlen(destdir) + 3 + 1];
-    sprintf(destdbdir, "%s/db", destdir);
+    ULONG destdbdirlen = strlen(destdir) + 3 + 1;
+    TEXT destdbdir[destdbdirlen];
+    CombinePath2P(destdbdir, destdbdirlen, destdir, "db");
 
     /* Create necessary directories */
     if (!RecursiveCreateDir(destdir)) return FALSE;
@@ -328,15 +412,16 @@ enum ErrorCode UseNetworkPrefs()
 /* Directory points to top of config, so to AAA/AROSTCP not to AAA/AROSTCP/db */
 void ReadNetworkPrefs(CONST_STRPTR directory)
 {
-    TEXT FileName[strlen(directory) + 4 + 20];
+    ULONG filenamelen = strlen(directory) + 4 + 20;
+    TEXT filename[filenamelen];
     BOOL comment = FALSE;
     STRPTR tstring;
     struct Tokenizer tok;
 
     /* This function will not fail. It will load as much data as possible. Rest will be defaul values */
 
-    sprintf(FileName, "%s/db/general.config", directory);
-    OpenTokenFile(&tok, FileName);
+    CombinePath3P(filename, filenamelen, directory, "db", "general.config"); 
+    OpenTokenFile(&tok, filename);
     while (!tok.fend) {
 	    if (tok.newline) { // read tokens from the beginning of line
 		    if (tok.token) {
@@ -353,9 +438,9 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/db/interfaces", directory);
-    OpenTokenFile(&tok, FileName);
-    // reads only first uncommented interface
+    CombinePath3P(filename, filenamelen, directory, "db", "interfaces"); 
+    OpenTokenFile(&tok, filename);
+    /* Reads only first uncommented interface */
     while (!tok.fend) {
 	    GetNextToken(&tok, " \n");
 	    if (tok.token) {
@@ -389,8 +474,8 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/db/netdb-myhost", directory);
-    OpenTokenFile(&tok, FileName);
+    CombinePath3P(filename, filenamelen, directory, "db", "netdb-myhost"); 
+    OpenTokenFile(&tok, filename);
     int dnsc = 0;
     while (!tok.fend) {
 	    GetNextToken(&tok, " \n");
@@ -405,8 +490,8 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/db/static-routes", directory);
-    OpenTokenFile(&tok, FileName);
+    CombinePath3P(filename, filenamelen, directory, "db", "static-routes"); 
+    OpenTokenFile(&tok, filename);
     while (!tok.fend) {
 	    GetNextToken(&tok, " \n");
 	    if (tok.token) {
@@ -421,8 +506,8 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
     }
     CloseTokenFile(&tok);
 
-    sprintf(FileName, "%s/Autorun", directory);
-    OpenTokenFile(&tok, FileName);
+    CombinePath2P(filename, filenamelen, directory, "Autorun"); 
+    OpenTokenFile(&tok, filename);
     while (!tok.fend) 
     {
         GetNextToken(&tok, " \n");
