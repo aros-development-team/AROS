@@ -10,6 +10,7 @@ machine :
 	$(HOST_CC) -I$(TOP)/compiler/include -I$(TOP)/compiler/arossupport/include -I$(AROS_INCLUDES) -o machine machine.c
 	./machine
 
+ifeq ($(AROS_TARGET_VARIANT),)
 #MM- AROS : kernel
 #MM- kernel : kernel-link-$(ARCH)-$(CPU)
 #MM- kernel-link-$(ARCH)-$(CPU) : kernel-objs
@@ -20,6 +21,18 @@ machine :
 #MM- workbench : workbench-$(ARCH)-$(CPU)
 #MM- demos : includes linklibs
 #MM- contrib : includes linklibs
+else
+#MM- AROS : kernel
+#MM- kernel : kernel-link-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)
+#MM- kernel-link-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) : kernel-objs
+#MM- kernel-objs : kernel-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)
+#MM- kernel-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) : linklibs
+
+#MM- AROS : workbench demos contrib
+#MM- workbench : workbench-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)
+#MM- demos : includes linklibs
+#MM- contrib : includes linklibs
+endif
 
 #MM- core-linklibs: \
 #MM      kernel-expansion-linklib \
