@@ -1,6 +1,8 @@
 # $Id: mmakefile.src 29731 2008-10-12 18:05:43Z schulz $
 include $(TOP)/config/make.cfg
 
+#MM kernel-rtas-chrp-ppc: kernel-openfirmware includes
+
 %build_module mmake=kernel-rtas-chrp-ppc 	\
   modname=rtas modtype=resource		\
   files="rtas_init" uselibs="rom"
