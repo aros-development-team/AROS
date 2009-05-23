@@ -137,13 +137,15 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 	    NewList((struct List*)&newdvl->dvl_List);
 	    newdvl->dvl_Pool = pool;
 
-	    dl = LockDosList(LDF_VOLUMES|LDF_READ);
+            /* work around to only start scanning dos list after all */
+            /* shared locks are gone, eg. in rom/dos/getdeviceproc.c RunHandler */
+	    dl = LockDosList(LDF_VOLUMES|LDF_WRITE);
 	    while(( dl = NextDosEntry(dl, LDF_VOLUMES)))
 	    {
 		STRPTR vn_VolName;
 
 		UBYTE *dosname = (UBYTE*)AROS_BSTR_ADDR(dl->dol_Name);
-		LONG len = AROS_BSTR_strlen(dl->dol_Name);				
+		LONG len = AROS_BSTR_strlen(dl->dol_Name);
 
 		if ((vn_VolName = (STRPTR)AllocPooled(newdvl->dvl_Pool, len + 2)))
 		{
@@ -192,7 +194,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 		}
 	    }
             D(bug("[IconVolumeList] Finished registering volumes\n"));
-	    UnLockDosList(LDF_VOLUMES|LDF_READ);
+	    UnLockDosList(LDF_VOLUMES|LDF_WRITE);
 
 	    dl = LockDosList(LDF_DEVICES|LDF_READ);
 	    while(( dl = NextDosEntry(dl, LDF_DEVICES)))
