@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS := AutoPoint Blanker ClickToFront Exchange FKey NoCapsLock Opaque DepthMenu
+ICONS := AltKeyQ AutoPoint Blanker ClickToFront DepthMenu Exchange FKey NoCapsLock Opaque  
 
 #MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-tools-commodities-clean
 #MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-tools-commodities
