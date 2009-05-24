@@ -67,7 +67,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/Tools/Commodities.catalog"
-#define CATALOG_VERSION  2
+#define CATALOG_VERSION  3
 
 
 /***************************************************************************/

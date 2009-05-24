@@ -2,7 +2,7 @@
 ## language hungarian
 ## codeset 0
 ;
-; FIXME: This file requires updating. When done, bump revision to 2
+; FIXME: This file requires updating. When done, bump version to 3
 ;
 MSG_CANT_OPEN_LIB
 Nem lehet a %s V%ld -t megnyitni!\n

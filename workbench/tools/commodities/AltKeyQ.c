@@ -2,7 +2,7 @@
     Copyright © 2009, The AROS Development Team. All rights reserved.
     $Id$
 
-    AltKeyQ -- Enter characters by their ANSII number.
+    AltKeyQ -- Enter characters by their ANSI number.
 */
 
 /******************************************************************************
@@ -35,6 +35,8 @@
 
     EXAMPLE
 
+        <Alt> 1 2 0 inserts 'x' into the input stream.
+
     BUGS
 
     SEE ALSO
@@ -45,9 +47,10 @@
 
 ******************************************************************************/
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
+#include <aros/symbolsets.h>
 #include <devices/rawkeycodes.h>
 
 #include <proto/exec.h>
@@ -95,6 +98,12 @@ static struct Catalog *catalog;
 static struct Task *mainTask;
 static ULONG sendSigBit = -1;
 
+#define CATCOMP_ARRAY
+#include "strings.h"
+
+#define CATALOG_NAME     "System/Tools/Commodities.catalog"
+#define CATALOG_VERSION  3
+
 /************************************************************************************/
 
 static void collectKeysFunc(CxMsg *msg, CxObj *co);
@@ -102,13 +111,11 @@ static void handleCx(struct AKQState *as);
 static void freeResources(struct AKQState *as);
 static BOOL initiate(int argc, char **argv, struct AKQState *as);
 static void showSimpleMessage(CONST_STRPTR msgString);
-//static VOID Locale_Deinitialize(VOID);
-//static BOOL Locale_Initialize(VOID);
-//static CONST_STRPTR _(ULONG id);
+static VOID Locale_Deinitialize(VOID);
+static BOOL Locale_Initialize(VOID);
+static CONST_STRPTR _(ULONG id);
 
 /************************************************************************************/
-
-#if 0
 
 static CONST_STRPTR _(ULONG id)
 {
@@ -145,8 +152,6 @@ static VOID Locale_Deinitialize(VOID)
     if(LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
 }
 
-#endif
-
 /************************************************************************************/
 
 static void showSimpleMessage(CONST_STRPTR msgString)
@@ -155,9 +160,9 @@ static void showSimpleMessage(CONST_STRPTR msgString)
 
     easyStruct.es_StructSize	= sizeof(easyStruct);
     easyStruct.es_Flags		= 0;
-    easyStruct.es_Title		= "AltKeyQ"; //_(MSG_AUTOPOINT_CXNAME);
+    easyStruct.es_Title		= _(MSG_ALTKEYQ_CXNAME);
     easyStruct.es_TextFormat	= msgString;
-    easyStruct.es_GadgetFormat	= "OK"; //_(MSG_OK);		
+    easyStruct.es_GadgetFormat	= _(MSG_OK);		
 
     if (IntuitionBase != NULL && !Cli() )
     {
@@ -202,18 +207,15 @@ static BOOL initiate(int argc, char **argv, struct AKQState *as)
         ArgArrayDone();
     }
 
-    //nb.nb_Name = _(MSG_AUTOPOINT_CXNAME);
-    //nb.nb_Title = _(MSG_AUTOPOINT_CXTITLE);
-    //nb.nb_Descr = _(MSG_AUTOPOINT_CXDESCR);
-    nb.nb_Name = "AltKeyQ";
-    nb.nb_Title = "AltKeyQ_Title";
-    nb.nb_Descr = "AltKeyQ_Desc";
+    nb.nb_Name = _(MSG_ALTKEYQ_CXNAME);
+    nb.nb_Title = _(MSG_ALTKEYQ_CXTITLE);
+    nb.nb_Descr = _(MSG_ALTKEYQ_CXDESCR);
 
     as->akq_msgPort = CreateMsgPort();
 
     if (as->akq_msgPort == NULL)
     {
-        showSimpleMessage("Can't create messageport"); //_(MSG_CANT_CREATE_MSGPORT));
+        showSimpleMessage(_(MSG_CANT_CREATE_MSGPORT));
         return FALSE;
     }
 
@@ -230,7 +232,7 @@ static BOOL initiate(int argc, char **argv, struct AKQState *as)
 
     if (customObj == NULL)
     {
-        showSimpleMessage("Can't create custom"); //_(MSG_CANT_CREATE_CUSTOM));
+        showSimpleMessage(_(MSG_CANT_CREATE_CUSTOM));
         return FALSE;
     }
 
@@ -239,7 +241,7 @@ static BOOL initiate(int argc, char **argv, struct AKQState *as)
     sendSigBit = AllocSignal(-1);
     if (sendSigBit == -1)
     {
-        showSimpleMessage("Can't allocate signal");
+        showSimpleMessage(_(MSG_CANT_ALLOCATE_SIGNAL));
         return FALSE;
     }
     mainTask = FindTask(NULL);
@@ -279,7 +281,9 @@ static void freeResources(struct AKQState *as)
 
 static void collectKeysFunc(CxMsg *msg, CxObj *co)
 {
+    /* Scancodes of numeric pad */
     static TEXT keys[]= "\x0f\x1d\x1e\x1f\x2d\x2e\x2f\x3d\x3e\x3f";
+
     static BOOL collflag;
     static ULONG value;
     TEXT *s;
@@ -300,7 +304,9 @@ static void collectKeysFunc(CxMsg *msg, CxObj *co)
                     Signal(mainTask, 1 << sendSigBit);
                 }
                 else
+                {
                     D(bug("Value too large\n"));
+                }
 
                 goto setinactive;
             }
@@ -347,7 +353,9 @@ static void handleCx(struct AKQState *as)
                 FreeIEvents(ie);
             }
             else
+            {
                 D(bug("No event added\n"));
+            }
         }
 
         if (signals & (1 << nb.nb_Port->mp_SigBit))
@@ -413,3 +421,9 @@ int main(int argc, char **argv)
 
     return error;
 }
+
+/************************************************************************************/
+
+ADD2INIT(Locale_Initialize,   90);
+ADD2EXIT(Locale_Deinitialize, 90);
+

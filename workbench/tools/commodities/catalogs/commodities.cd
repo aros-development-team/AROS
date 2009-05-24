@@ -29,6 +29,9 @@ Can't allocate application memory!\n
 MSG_CANT_CREATE_MSGPORT (//)
 Can't create message port!\n
 ;
+MSG_CANT_ALLOCATE_SIGNAL (//)
+Can't allocate signal!\n
+;
 MSG_CANT_CREATE_BROKER (//)
 Can't create CxBroker object!\n
 ;
@@ -233,3 +236,15 @@ DepthMenu:
 MSG_DEPTHMENU_CXDESCR (//39)
 Popup menu for depth gadgets
 ;
+;
+; ===============================================
+; AltKeyQ
+;
+MSG_ALTKEYQ_CXNAME (//23)
+AltKeyQ
+;
+MSG_ALTKEYQ_CXTITLE (//39)
+Character input by number
+;
+MSG_ALTKEYQ_CXDESCR (//39)
+MS-DOS Style Alt key usage

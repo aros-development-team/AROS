@@ -78,7 +78,7 @@
 #else
 #define CATALOG_NAME     "System/Tools/Exchange.catalog"
 #endif
-#define CATALOG_VERSION  2
+#define CATALOG_VERSION  3
 
 TEXT version[] = "$VER: Exchange 1.1 (08.01.2009)";
 
