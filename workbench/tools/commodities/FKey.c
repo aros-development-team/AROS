@@ -36,6 +36,9 @@
 #define CATCOMP_ARRAY
 #include "strings.h"
 
+#define CATALOG_NAME     "System/Tools/Commodities.catalog"
+#define CATALOG_VERSION  3
+
 #include <aros/debug.h>
 
 /*********************************************************************************************/
@@ -1307,7 +1310,7 @@ static void HandleAll(void)
 int main(int argc, char **argv)
 {
     GetArguments(argc, argv);
-    InitLocale("System/Tools/Commodities.catalog", 2);
+    InitLocale(CATALOG_NAME, CATALOG_VERSION);
     InitCX();
     InitMenus();
     MakeGUI();

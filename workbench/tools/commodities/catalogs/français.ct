@@ -2,6 +2,7 @@
 ## language français
 ## codeset 0
 ;
+; FIXME: This file requires updating. When done, bump version to 3
 ;
 MSG_CANT_OPEN_LIB
 Impossible d'ouvrir %s V%ld !\n

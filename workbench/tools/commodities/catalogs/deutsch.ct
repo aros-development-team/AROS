@@ -1,4 +1,4 @@
-## version $VER: Commodities.catalog 2.0 (29.04.2006)
+## version $VER: Commodities.catalog 3.0 (24.05.2009)
 ## language deutsch
 ## codeset 0
 ;
@@ -42,6 +42,10 @@ Kann Speicher nicht allozieren\n
 MSG_CANT_CREATE_MSGPORT
 Kann MessagePort nicht erzeugen!\n
 ; Can't create message port!\n
+;
+MSG_CANT_ALLOCATE_SIGNAL
+Kann Signal nicht allozieren!\n
+; Can't allocate signal!\n
 ;
 MSG_CANT_CREATE_BROKER
 Kann CxBroker-Objekt nicht erzeugen!\n
@@ -291,3 +295,33 @@ MSG_NOCAPSLOCK_CXDESCR
 Deaktiviert CAPS LOCK Taste
 ; Renders the CAPS LOCK key ineffective
 ;
+; ===============================================
+; DepthMenu
+;
+MSG_DEPTHMENU_CXNAME
+DepthMenu
+; DepthMenu
+;
+MSG_DEPTHMENU_CXTITLE
+DepthMenu:
+; DepthMenu:
+;
+MSG_DEPTHMENU_CXDESCR
+Popup-Menü für Tiefengadgets
+; Popup menu for depth gadgets
+;
+;
+; ===============================================
+; AltKeyQ
+;
+MSG_ALTKEYQ_CXNAME
+AltKeyQ
+; AltKeyQ
+;
+MSG_ALTKEYQ_CXTITLE
+Zeicheneingabe per Nummer
+; Character input by number
+;
+MSG_ALTKEYQ_CXDESCR
+Alt-Tasten-Gebrauch wie unter MS-DOS
+; MS-DOS Style Alt key usage

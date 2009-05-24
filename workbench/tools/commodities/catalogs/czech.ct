@@ -2,6 +2,7 @@
 ## language czech
 ## codeset 5
 ;
+; FIXME: This file requires updating. When done, bump version to 3
 ;
 MSG_CANT_OPEN_LIB
 Nelze otevøít knihovnu %s V%ld!\n

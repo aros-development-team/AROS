@@ -2,7 +2,7 @@
 ## language suomi
 ## codeset 0
 ;
-; FIXME: This file requires updating. When done, bump revision to 2
+; FIXME: This file requires updating. When done, bump version to 3
 ;
 MSG_CANT_OPEN_LIB
 En voi avata %s v%ld!\n
