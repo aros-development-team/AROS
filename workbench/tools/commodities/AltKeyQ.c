@@ -39,6 +39,9 @@
 
     BUGS
 
+        You can only enter characters which are defined
+        in the keymap of your keyboard.
+
     SEE ALSO
 
     INTERNALS
@@ -237,7 +240,6 @@ static BOOL initiate(int argc, char **argv, struct AKQState *as)
     }
 
     AttachCxObj(as->akq_broker, customObj);
-    CxObjError(customObj);
     sendSigBit = AllocSignal(-1);
     if (sendSigBit == -1)
     {
