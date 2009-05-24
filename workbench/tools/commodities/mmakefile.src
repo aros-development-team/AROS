@@ -12,7 +12,8 @@ FILES	:= \
     Exchange \
     FKey \
     NoCapsLock \
-    Opaque
+    Opaque \
+	AltKeyQ
 
 USER_CFLAGS := -I$(SRCDIR)/workbench/libs/commodities
 
