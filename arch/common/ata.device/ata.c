@@ -1077,7 +1077,7 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSema
        else
        {
            /* Destroy unit that couldn't be initialised */
-           FreePooled(bus->ab_Base->ata_MemPool, unit, sizeof(struct ata_Unit));
+           FreeVecPooled(bus->ab_Base->ata_MemPool, unit);
            bus->ab_Units[iter] = NULL;
            bus->ab_Dev[iter] = DEV_NONE;
        }
