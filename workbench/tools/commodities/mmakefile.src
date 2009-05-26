@@ -13,7 +13,8 @@ FILES	:= \
     FKey \
     NoCapsLock \
     Opaque \
-	AltKeyQ
+    AltKeyQ \
+    ASCIITable
 
 USER_CFLAGS := -I$(SRCDIR)/workbench/libs/commodities
 
