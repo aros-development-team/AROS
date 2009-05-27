@@ -33,8 +33,6 @@
 
     NOTES
 
-        TODO: icon
-
     EXAMPLE
 
     BUGS
@@ -134,6 +132,7 @@ struct ASCIITable_DATA
     Object *key_button[192];
     TEXT buffer[MAXLEN + 1];
     struct IOClipReq *clip_req;
+    TEXT shorthelp[20][192];
 };
 
 /*** CBOpen *****************************************************************/
@@ -233,7 +232,7 @@ static BOOL CBWriteLong(struct IOClipReq *ior, LONG *ldata)
 }
 
 /*** MakeButton *************************************************************/
-static Object *MakeButton(int code)
+static Object *MakeButton(LONG code)
 {
     char buffer[2] = {0};
     buffer[0] = code;
@@ -245,7 +244,7 @@ static Object *MakeButton(int code)
         MUIA_Text_PreParse, (IPTR)"\33c",
         MUIA_InputMode    , MUIV_InputMode_RelVerify,
         MUIA_Background   , MUII_ButtonBack,
-        MUIA_CycleChain,    TRUE,
+        MUIA_CycleChain   , TRUE,
     End;
     return btn;
 }
@@ -318,6 +317,8 @@ IPTR ASCIITable__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         for (i = 0 ; i < 192 ; i++)
         {
             code = (i < 96) ? i + 32 : i + 64;
+            sprintf(data->shorthelp[i], "%c\n%d\n0x%x", code, code, code);
+            set((Object *)key_group_tags[i].ti_Data, MUIA_ShortHelp, data->shorthelp[i]);
             DoMethod
             (
                 (Object *)key_group_tags[i].ti_Data, MUIM_Notify, MUIA_Pressed, FALSE,
