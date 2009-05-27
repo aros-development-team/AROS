@@ -248,10 +248,8 @@
 #define GCA_PopupWinToFront  (GCA_Dummy + 0x31)
 #define GCA_InsertionSound   (GCA_Dummy + 0x40)
 #define GCA_RemovalSound     (GCA_Dummy + 0x41)
-#define GCA_HWKludge         (GCA_Dummy + 0x50)
 #define GCA_AutoDisableLP    (GCA_Dummy + 0x60)
 #define GCA_AutoDisableDead  (GCA_Dummy + 0x61)
-#define GCA_AutoCheckUpdate  (GCA_Dummy + 0x62)
 #define GCA_AutoRestartDead  (GCA_Dummy + 0x63)
 #define GCA_PowerSaving      (GCA_Dummy + 0x64)
 #define GCA_ForceSuspend     (GCA_Dummy + 0x65)
@@ -399,11 +397,11 @@ struct PsdGlobalCfg
     ULONG pgc_PopupCloseDelay;            /* Delay in seconds before closing */
     BOOL  pgc_PopupActivateWin;           /* Activate window on opening */
     BOOL  pgc_PopupWinToFront;            /* Pop window to front on content change */
-    BOOL  pgc_HWKludge;                   /* HW Compatibility Kludge */
+    BOOL  pgc_Dummy1;                     /* (obsolete) */
     BOOL  pgc_AutoDisableLP;              /* Automatically disable on LowPower */
     BOOL  pgc_AutoDisableDead;            /* Automatically disable on Dead */
-    BOOL  pgc_AutoCheckUpdate;            /* Check for updates on start */
-    ULONG pgc_RandomID;                   /* Unique, randomly assigned ID */
+    BOOL  pgc_Dummy2;                     /* (obsolete) */
+    ULONG pgc_Dummy3;                     /* (obsolete) */
     BOOL  pgc_AutoRestartDead;            /* Automatically restart on Dead */
     ULONG pgc_PrefsVersion;               /* Reference version of prefs saved */
     BOOL  pgc_PowerSaving;                /* Enable power saving features */
