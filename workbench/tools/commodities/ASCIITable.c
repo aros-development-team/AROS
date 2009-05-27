@@ -132,7 +132,7 @@ struct ASCIITable_DATA
     Object *key_button[192];
     TEXT buffer[MAXLEN + 1];
     struct IOClipReq *clip_req;
-    TEXT shorthelp[20][192];
+    TEXT shorthelp[192][20];
 };
 
 /*** CBOpen *****************************************************************/
