@@ -11,6 +11,10 @@ MSG_CANT_OPEN_INPUTDEVICE
 Kann 'input.device' nicht öffnen
 ; Can't open 'input.device'
 ;
+MSG_CANT_OPEN_CLIPDEVICE
+Kann 'clipboard.device' nicht öffnen
+; Can't open 'clipboard.device'
+;
 MSG_CANT_LOCK_SCR
 Kann public Screen nicht locken!\n
 ; Can't lock public screen!\n
@@ -310,7 +314,6 @@ MSG_DEPTHMENU_CXDESCR
 Popup-Menü für Tiefengadgets
 ; Popup menu for depth gadgets
 ;
-;
 ; ===============================================
 ; AltKeyQ
 ;
@@ -325,3 +328,31 @@ Zeicheneingabe per Nummer
 MSG_ALTKEYQ_CXDESCR
 Alt-Tasten-Gebrauch wie unter MS-DOS
 ; MS-DOS Style Alt key usage
+;
+; ===============================================
+; ASCIITable
+;
+MSG_ASCIITABLE_CXNAME
+ASCIITable
+; ASCIITable
+;
+MSG_ASCIITABLE_CXTITLE
+ASCIITable:
+; ASCIITable:
+;
+MSG_ASCIITABLE_CXDESCR
+Zeichen über GUI eingeben
+; Select keys from a GUI
+;
+MSG_ASCIITABLE_WINTITLE
+ASCIITable: Tastenbefehl = <%s>
+; ASCIITable: Hot Key = <%s>
+;
+MSG_ASCIITABLE_GAD_COPY
+Kopieren
+; Copy
+;
+MSG_ASCIITABLE_GAD_CLEAR
+Löschen
+; Clear
+;

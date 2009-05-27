@@ -5,6 +5,9 @@ Can't open %s V%ld!\n
 MSG_CANT_OPEN_INPUTDEVICE (//)
 Can't open 'input.device'
 ;
+MSG_CANT_OPEN_CLIPDEVICE (//)
+Can't open 'clipboard.device'
+;
 MSG_CANT_LOCK_SCR (//)
 Can't lock public screen!\n
 ;
@@ -236,7 +239,6 @@ DepthMenu:
 MSG_DEPTHMENU_CXDESCR (//39)
 Popup menu for depth gadgets
 ;
-;
 ; ===============================================
 ; AltKeyQ
 ;
@@ -248,3 +250,25 @@ Character input by number
 ;
 MSG_ALTKEYQ_CXDESCR (//39)
 MS-DOS Style Alt key usage
+;
+; ===============================================
+; ASCIITable
+;
+MSG_ASCIITABLE_CXNAME (//23)
+ASCIITable
+;
+MSG_ASCIITABLE_CXTITLE (//39)
+ASCIITable:
+;
+MSG_ASCIITABLE_CXDESCR (//39)
+Select keys from a GUI
+;
+MSG_ASCIITABLE_WINTITLE (//)
+ASCIITable: Hot Key = <%s>
+;
+MSG_ASCIITABLE_GAD_COPY (//)
+Copy
+;
+MSG_ASCIITABLE_GAD_CLEAR (//)
+Clear
+;

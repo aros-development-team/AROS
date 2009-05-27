@@ -9,7 +9,7 @@
 
     NAME
 
-        Exchange
+        ASCIITable
 
     SYNOPSIS
 
@@ -25,15 +25,15 @@
 
     INPUTS
 
-        CX_PRIORITY  --  Priority of the Exchange broker
+        CX_PRIORITY  --  Priority of the ASCIITable broker
         CX_POPUP     --  Appear at startup
-        CX_POPKEY    --  Hotkey combination for Exchange
+        CX_POPKEY    --  Hotkey combination for ASCIITable
 
     RESULT
 
     NOTES
 
-        TODO: copy to clipboard, localisation, icon
+        TODO: icon
 
     EXAMPLE
 
@@ -58,6 +58,7 @@
 #include <libraries/iffparse.h>
 #include <libraries/mui.h>
 #include <zune/customclasses.h>
+#include <devices/clipboard.h>
 
 #include <proto/muimaster.h>
 #include <proto/locale.h>
@@ -109,10 +110,14 @@ static void MakeGUI(void);
 static void showSimpleMessage(CONST_STRPTR msgString);
 static CONST_STRPTR _(ULONG id);
 
+static struct IOClipReq *CBOpen(ULONG unit);
+static void CBClose(struct IOClipReq *ior);
+static BOOL CBWriteFTXT(struct IOClipReq *ior, CONST_STRPTR string);
+static BOOL CBWriteLong(struct IOClipReq *ior, LONG *ldata);
 
 /*** ASCIITable class *******************************************************/
 
-#define MAXLEN (30)
+#define MAXLEN (60)
 
 #define ASCIITableObject BOOPSIOBJMACRO_START(ASCIITable_CLASS->mcc_Class)
 
@@ -128,8 +133,104 @@ struct ASCIITable_DATA
     Object *ascii_string;
     Object *key_button[192];
     TEXT buffer[MAXLEN + 1];
+    struct IOClipReq *clip_req;
 };
 
+/*** CBOpen *****************************************************************/
+static struct IOClipReq *CBOpen(ULONG unit)
+{
+    struct MsgPort *mp;
+    struct IORequest *ior;
+
+    if ((mp = CreatePort(0, 0)))
+    {
+        if ((ior = (struct IORequest *)CreateExtIO(mp, sizeof(struct IOClipReq))))
+        {
+            if (!(OpenDevice("clipboard.device", unit, ior, 0)))
+            {
+                return (struct IOClipReq *)ior;
+            }
+            DeleteExtIO(ior);
+        }
+        DeletePort(mp);
+    }
+    return NULL;
+}
+
+/*** CBCLose ****************************************************************/
+static void CBClose(struct IOClipReq *ior)
+{
+    if (ior)
+    {
+        struct MsgPort *mp = ior->io_Message.mn_ReplyPort;
+
+        CloseDevice((struct IORequest *)ior);
+        DeleteExtIO((struct IORequest *)ior);
+        DeletePort(mp);
+    }
+}
+
+/*** CBWriteFTXT ************************************************************/
+static BOOL CBWriteFTXT(struct IOClipReq *ior, CONST_STRPTR string)
+{
+    LONG length, slen, temp;
+    BOOL odd;
+
+    if (!ior || !string)
+        return FALSE;
+
+    slen = strlen(string);
+    odd = (slen & 1);
+
+    length = (odd) ? slen+1 : slen;
+
+    ior->io_Offset = 0;
+    ior->io_Error  = 0;
+    ior->io_ClipID = 0;
+
+    CBWriteLong(ior, (LONG *) "FORM");
+    length += 12;
+
+    temp = AROS_LONG2BE(length);
+    CBWriteLong(ior, &temp);
+    CBWriteLong(ior, (LONG *) "FTXT");
+    CBWriteLong(ior, (LONG *) "CHRS");
+    temp = AROS_LONG2BE(slen);
+    CBWriteLong(ior, &temp);
+
+    ior->io_Data    = (STRPTR)string;
+    ior->io_Length  = slen;
+    ior->io_Command = CMD_WRITE;
+    DoIO((struct IORequest *)ior);
+
+    if (odd)
+    {
+        ior->io_Data   = (APTR)"";
+        ior->io_Length = 1;
+        DoIO((struct IORequest *)ior);
+    }
+
+    ior->io_Command=CMD_UPDATE;
+    DoIO ((struct IORequest *)ior);
+
+    return ior->io_Error ? FALSE : TRUE;
+}
+
+/*** WriteLong **************************************************************/
+static BOOL CBWriteLong(struct IOClipReq *ior, LONG *ldata)
+{
+    ior->io_Data    = (APTR)ldata;
+    ior->io_Length  = 4;
+    ior->io_Command = CMD_WRITE;
+    DoIO( (struct IORequest *) ior);
+
+    if (ior->io_Actual == 4)
+    {
+        return ior->io_Error ? FALSE : TRUE;
+    }
+
+    return FALSE;
+}
 
 /*** MakeButton *************************************************************/
 static Object *MakeButton(int code)
@@ -137,11 +238,11 @@ static Object *MakeButton(int code)
     char buffer[2] = {0};
     buffer[0] = code;
 
-    Object *btn = TextObject,
+    Object *btn = (Object *)TextObject,
         ButtonFrame,
         MUIA_Font, MUIV_Font_Button,
-        MUIA_Text_Contents, buffer,
-        MUIA_Text_PreParse, "\33c",
+        MUIA_Text_Contents, (IPTR)buffer,
+        MUIA_Text_PreParse, (IPTR)"\33c",
         MUIA_InputMode    , MUIV_InputMode_RelVerify,
         MUIA_Background   , MUII_ButtonBack,
         MUIA_CycleChain,    TRUE,
@@ -160,12 +261,12 @@ IPTR ASCIITable__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     for (code = 32 , i = 0 ; code < 128 ; code++ , i++)
     {
         key_group_tags[i].ti_Tag = Child;
-        key_group_tags[i].ti_Data = MakeButton(code);
+        key_group_tags[i].ti_Data = (IPTR)MakeButton(code);
     }
     for (code = 160 ; code < 256 ; code++, i++)
     {
         key_group_tags[i].ti_Tag = Child;
-        key_group_tags[i].ti_Data = MakeButton(code);
+        key_group_tags[i].ti_Data = (IPTR)MakeButton(code);
     }
     key_group_tags[i].ti_Tag = MUIA_Group_Columns;
     key_group_tags[i].ti_Data = 16;
@@ -180,19 +281,18 @@ IPTR ASCIITable__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             MUIA_Rectangle_HBar, TRUE,
             MUIA_FixHeight,      2,
         End),
-        Child, ascii_string = StringObject,
+        Child, (IPTR)(ascii_string = (Object *)StringObject,
             StringFrame,
             MUIA_String_MaxLen, MAXLEN,
-        End,
-        Child, (IPTR) HGroup,
+        End),
+        Child, (IPTR) (HGroup,
             MUIA_Weight,         0,
             MUIA_Group_SameSize, TRUE,
             
-            Child, (IPTR) (copy_button    = SimpleButton("Copy")),
-            Child, (IPTR) (clear_button   = SimpleButton("Clear")),
-        End,
+            Child, (IPTR) (copy_button    = SimpleButton(_(MSG_ASCIITABLE_GAD_COPY))),
+            Child, (IPTR) (clear_button   = SimpleButton(_(MSG_ASCIITABLE_GAD_CLEAR))),
+        End),
         TAG_DONE
-
     );
 
     if (self != NULL)
@@ -220,20 +320,35 @@ IPTR ASCIITable__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             code = (i < 96) ? i + 32 : i + 64;
             DoMethod
             (
-                key_group_tags[i].ti_Data, MUIM_Notify, MUIA_Pressed, FALSE,
+                (Object *)key_group_tags[i].ti_Data, MUIM_Notify, MUIA_Pressed, FALSE,
                 (IPTR) self, 2, MUIM_ASCIITable_Insert, code
             );
+        }
+        data->clip_req = CBOpen(0);
+        if (!data->clip_req)
+        {
+            showSimpleMessage(_(MSG_CANT_OPEN_CLIPDEVICE));
         }
     }
 
     return (IPTR) self;
 }
 
+/*** OM_DISPOSE *************************************************************/
+IPTR ASCIITable__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
+{
+    struct ASCIITable_DATA *data = INST_DATA(CLASS, self);
+
+    CBClose(data->clip_req);
+    
+    return DoSuperMethodA(CLASS, self, message);
+}
+
 /*** MUIM_ASCIITable_Copy ***************************************************/
 IPTR ASCIITable__MUIM_ASCIITable_Copy(Class *CLASS, Object *self, Msg msg)
 {
     struct ASCIITable_DATA *data = INST_DATA(CLASS, self);
-    bug("Copy method\n");
+    CBWriteFTXT(data->clip_req, (CONST_STRPTR)XGET(data->ascii_string, MUIA_String_Contents));
     return TRUE;
 }
 
@@ -241,7 +356,6 @@ IPTR ASCIITable__MUIM_ASCIITable_Copy(Class *CLASS, Object *self, Msg msg)
 IPTR ASCIITable__MUIM_ASCIITable_Clear(Class *CLASS, Object *self, Msg msg)
 {
     struct ASCIITable_DATA *data = INST_DATA(CLASS, self);
-    bug("Clear method\n");
     data->buffer[0] = '\0';
     set(data->ascii_string, MUIA_String_Contents, "");
     return TRUE;
@@ -252,8 +366,8 @@ IPTR ASCIITable__MUIM_ASCIITable_Insert(Class *CLASS, Object *self, struct MUIP_
 {
     struct ASCIITable_DATA *data = INST_DATA(CLASS, self);
     LONG len;
-    bug("insert code %d\n", msg->code);
-    strcpy(data->buffer, XGET(data->ascii_string, MUIA_String_Contents));
+    D(bug("insert code %d\n", msg->code));
+    strcpy(data->buffer, (CONST_STRPTR)XGET(data->ascii_string, MUIA_String_Contents));
     len = strlen(data->buffer);
     if (len < MAXLEN)
     {
@@ -265,13 +379,14 @@ IPTR ASCIITable__MUIM_ASCIITable_Insert(Class *CLASS, Object *self, struct MUIP_
 }
 
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_4
+ZUNE_CUSTOMCLASS_5
 (
     ASCIITable, NULL, MUIC_Group, NULL,
     OM_NEW,                   struct opSet *,
+    OM_DISPOSE,               Msg,
     MUIM_ASCIITable_Copy,     Msg,
     MUIM_ASCIITable_Clear,    Msg,
-    MUIM_ASCIITable_Insert,   Msg
+    MUIM_ASCIITable_Insert,   struct MUIP_ASCIITable_Insert *
 );
 
 
@@ -293,8 +408,7 @@ static CONST_STRPTR _(ULONG id)
 
 #define __(id) ((IPTR) _(id))   /* Get a message, as an IPTR */
 
-/*********************************************************************************************/
-
+/*** Locale_Initialize ******************************************************/
 static int Locale_Initialize(VOID)
 {
     if (LocaleBase != NULL)
@@ -311,15 +425,13 @@ static int Locale_Initialize(VOID)
     return TRUE;
 }
 
-/*********************************************************************************************/
-
+/*** Locale_Deinitialize ****************************************************/
 static VOID Locale_Deinitialize(VOID)
 {
     if (LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
 }
 
-/*********************************************************************************************/
-
+/*** GetArguments ***********************************************************/
 static void GetArguments(int argc, char **argv)
 {
     static struct RDArgs *myargs;
@@ -358,8 +470,7 @@ static void GetArguments(int argc, char **argv)
     D(bug("ASCIITable Arguments pri %d popkey %s popup %d\n", cx_pri, cx_popkey, cx_popup));
 }
 
-/*********************************************************************************************/
-
+/****************************************************************************/
 static struct NewMenu nm[] =
 {
     {NM_TITLE, (STRPTR)MSG_MEN_PROJECT         },
@@ -370,8 +481,7 @@ static struct NewMenu nm[] =
     {NM_END                                    }
 };
 
-/*********************************************************************************************/
-
+/*** InitMenus **************************************************************/
 static void InitMenus(void)
 {
     struct NewMenu *actnm = nm;
@@ -397,15 +507,14 @@ static void InitMenus(void)
     } /* for(actnm = nm; nm->nm_Type != NM_END; nm++) */
 }
 
-/*********************************************************************************************/
-
+/*** showSimpleMessage ******************************************************/
 static void showSimpleMessage(CONST_STRPTR msgString)
 {
     struct EasyStruct easyStruct;
 
     easyStruct.es_StructSize	= sizeof(easyStruct);
     easyStruct.es_Flags		= 0;
-    easyStruct.es_Title		= _(MSG_EXCHANGE_CXNAME);
+    easyStruct.es_Title		= _(MSG_ASCIITABLE_CXNAME);
     easyStruct.es_TextFormat	= msgString;
     easyStruct.es_GadgetFormat	= _(MSG_OK);		
 
@@ -419,8 +528,7 @@ static void showSimpleMessage(CONST_STRPTR msgString)
     }
 }
 
-/*********************************************************************************************/
-
+/*** broker_func ************************************************************/
 AROS_UFH3(void, broker_func,
     AROS_UFHA(struct Hook *, h,      A0),
     AROS_UFHA(Object *     , object, A2),
@@ -428,7 +536,7 @@ AROS_UFH3(void, broker_func,
 {
     AROS_USERFUNC_INIT
 
-    D(bug("Exchange: Broker hook called\n"));
+    D(bug("ASCIITable: Broker hook called\n"));
     if (CxMsgType(msg) == CXM_COMMAND)
     {
         if (CxMsgID(msg) == CXCMD_APPEAR)
@@ -440,8 +548,7 @@ AROS_UFH3(void, broker_func,
     AROS_USERFUNC_EXIT
 }
 
-/*********************************************************************************************/
-
+/*** MakeGUI ****************************************************************/
 static void MakeGUI(void)
 {
     Object *menu;
@@ -452,14 +559,14 @@ static void MakeGUI(void)
 
     broker_hook.h_Entry = (HOOKFUNC)broker_func;
     
-    snprintf(wintitle, sizeof(wintitle), _(MSG_EXCHANGE_WINTITLE), cx_popkey);
+    snprintf(wintitle, sizeof(wintitle), _(MSG_ASCIITABLE_WINTITLE), cx_popkey);
     
     app = (Object *)ApplicationObject,
-        MUIA_Application_Title, __(MSG_EXCHANGE_CXNAME),
+        MUIA_Application_Title, __(MSG_ASCIITABLE_CXNAME),
         MUIA_Application_Version, (IPTR)version,
         MUIA_Application_Copyright, (IPTR)"Copyright  © 2009, The AROS Development TEAM",
         MUIA_Application_Author, (IPTR)"The AROS Development Team",
-        MUIA_Application_Description, __(MSG_EXCHANGE_CXDESCR),
+        MUIA_Application_Description, __(MSG_ASCIITABLE_CXDESCR),
         MUIA_Application_BrokerPri, cx_pri,
         MUIA_Application_BrokerHook, (IPTR)&broker_hook,
         MUIA_Application_Base, (IPTR)"ASCIITABLE",
@@ -517,8 +624,7 @@ static void MakeGUI(void)
         (IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
 }
 
-/*********************************************************************************************/
-
+/*** HandleAll **************************************************************/
 static void HandleAll(void)
 {
     ULONG sigs = 0;
@@ -543,8 +649,7 @@ static void HandleAll(void)
     }
 }
 
-/*********************************************************************************************/
-
+/*** Cleanup ****************************************************************/
 static void Cleanup(CONST_STRPTR txt)
 {
     MUI_DisposeObject(app);
@@ -557,8 +662,7 @@ static void Cleanup(CONST_STRPTR txt)
     exit(RETURN_OK);
 }
 
-/*********************************************************************************************/
-
+/*** main *******************************************************************/
 int main(int argc, char **argv)
 {
     D(bug("ASCIITable started\n"));
@@ -570,7 +674,6 @@ int main(int argc, char **argv)
     return RETURN_OK;
 }
 
-/*********************************************************************************************/
-
+/****************************************************************************/
 ADD2INIT(Locale_Initialize,   90);
 ADD2EXIT(Locale_Deinitialize, 90);
