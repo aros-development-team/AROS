@@ -341,9 +341,6 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
     OOP_GetAttr(Device, aHidd_PCIDevice_SubClass,           &SubClass);
     OOP_GetAttr(Device, aHidd_PCIDevice_Interface,          &Interface);
 
-    if (a->ATABase->ata_NoDMA || !(Interface & 0x80))
-	DMABase = 0;
-
     /*
      * we can have up to two buses assigned to this device
      */
