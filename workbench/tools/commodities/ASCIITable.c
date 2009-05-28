@@ -13,7 +13,7 @@
 
     SYNOPSIS
 
-        CX_PRIORITY/K/N,CX_POPUP/K/S,CX_POPKEY/K
+        CX_PRIORITY/N/K,CX_POPKEY/K,CX_POPUP/S
 
     LOCATION
 
@@ -26,8 +26,8 @@
     INPUTS
 
         CX_PRIORITY  --  Priority of the ASCIITable broker
-        CX_POPUP     --  Appear at startup
         CX_POPKEY    --  Hotkey combination for ASCIITable
+        CX_POPUP     --  Appear at startup
 
     RESULT
 
