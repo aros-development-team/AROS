@@ -284,28 +284,44 @@ void ata_IRQSignalTask(struct ata_Bus *bus)
 void ata_HandleIRQ(struct ata_Bus *bus)
 {
     struct ata_Unit *unit = ata_GetSelectedUnit(bus);
-    UBYTE status = ata_ReadStatus(bus);
+    UBYTE status = ata_ReadAltStatus(bus);
+    UBYTE dma_status;
+    BOOL for_us;
 
     /*
      * don't waste your time on checking other devices.
      * pass irq ONLY if task is expecting one;
      */
-    if ((unit != NULL) && (0 != bus->ab_HandleIRQ)
-        && ((status & ATAF_BUSY) == 0))
+    if ((unit != NULL) && (0 != bus->ab_HandleIRQ))
     {
+        /*
+         * The DMA status register indicates all interrupt types, not
+         * just DMA interrupts. However, if there's no DMA port, we have
+         * to rely on the busy flag, which is incompatible with IRQ sharing.
+         */
+        if (unit->au_DMAPort != 0)
+            for_us =
+                (ata_in(dma_Status, unit->au_DMAPort) & DMAF_Interrupt) != 0;
+        else
+            for_us = (status & ATAF_BUSY) == 0;
+    }
+
+    if (for_us)
+    {
+        /*
+         * Acknowledge interrupt (note that the DMA interrupt bit should be
+         * cleared for all interrupt types)
+         */
+        if (unit->au_DMAPort != 0)
+            ata_out(ata_in(dma_Status, unit->au_DMAPort) |
+                DMAF_Error | DMAF_Interrupt, dma_Status, unit->au_DMAPort);
+        status = ata_ReadStatus(bus);
+
         /*
          * ok, we have a routine to handle any form of transmission etc.
          */
         DIRQ(bug("[ATA  ] IRQ: Calling dedicated handler... \n"));
         bus->ab_HandleIRQ(unit, status);
-
-        /*
-         * Acknowledge DMA interrupt bit (some controllers require this for
-         * all interrupt types)
-         */
-        if (unit->au_DMAPort != 0)
-            ata_out(ata_in(dma_Status, unit->au_DMAPort) |
-                DMAF_Error | DMAF_Interrupt, dma_Status, unit->au_DMAPort);
 
         return;
     }
@@ -406,11 +422,7 @@ void ata_IRQDMAReadWrite(struct ata_Unit *au, UBYTE status)
     UBYTE stat = ata_in(dma_Status, au->au_DMAPort);
     DIRQ(bug("[ATA%02ld] IRQ: IO status %02lx, DMA status %02lx\n", au->au_UnitNum, status, stat));
 
-    if (0 == (stat & DMAF_Interrupt))
-    {
-        bug("[ATA  ] IRQ: Fake IRQ.\n");
-    }
-    else if ((status & ATAF_ERROR) || (stat & DMAF_Error))
+    if ((status & ATAF_ERROR) || (stat & DMAF_Error))
     {
         /* This is turned on in order to help Phantom - Pavel Fedin <sonic_amiga@rambler.ru> */
         bug("[ATA%02ld] IRQ: IO status %02lx, DMA status %02lx\n", au->au_UnitNum, status, stat);
@@ -535,7 +547,8 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
          * wait for either IRQ or TIMEOUT (unless device seems to be a
          * phantom SATAPI drive, in which case we fake a timeout)
          */
-        DIRQ(bug("[ATA%02ld] Waiting (Current status: %02lx)...\n", status));
+        DIRQ(bug("[ATA%02ld] Waiting (Current status: %02lx)...\n",
+            unit->au_UnitNum, status));
         if (status != 0)
             step = Wait(sigs);
         else
@@ -1259,7 +1272,6 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
     {
         DINIT(bug("[ATA%02ld] common_SetXferMode: ERROR: Failed to apply new xfer mode.\n", unit->au_UnitNum));
     }
-#endif
 
     if (unit->au_DMAPort)
     {
@@ -1288,6 +1300,7 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
             dma = FALSE;
         }
     }
+#endif
 
     if (dma)
         unit->au_XferModes |= AF_XFER_DMA;
@@ -1300,7 +1313,7 @@ static void common_SetBestXferMode(struct ata_Unit* unit)
     int iter;
     int max = AB_XFER_UDMA6;
 
-    if (unit->au_DMAPort == 0
+    if (unit->au_Bus->ab_Base->ata_NoDMA || unit->au_DMAPort == 0
         || !(unit->au_Drive->id_MWDMASupport & 0x0700)
         && !(unit->au_Drive->id_UDMASupport & 0x7f00))
     {
@@ -1308,7 +1321,8 @@ static void common_SetBestXferMode(struct ata_Unit* unit)
          * make sure you reduce scan search to pio here!
          * otherwise this and above function will fall into infinite loop
          */
-        DINIT(bug("[ATA%02ld] common_SetBestXferMode: This controller does not own DMA port\n", unit->au_UnitNum));
+        DINIT(bug("[ATA%02ld] common_SetBestXferMode: DMA is disabled for"
+            " this drive.\n", unit->au_UnitNum));
         max = AB_XFER_PIO4;
     }
     else if (!(unit->au_Flags & AF_80Wire))
