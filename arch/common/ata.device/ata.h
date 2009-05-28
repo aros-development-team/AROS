@@ -58,6 +58,7 @@ Lang: English
 #define MAX_BUSUNITS		2
 #define STACK_SIZE		16384
 #define TASK_PRI		10
+#define TIMEOUT			30
 
 /*
    Don't blame me for information redundance here!

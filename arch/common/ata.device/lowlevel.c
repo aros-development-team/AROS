@@ -511,7 +511,6 @@ void ata_IRQPIOWriteAtapi(struct ata_Unit *unit, UBYTE status)
 
 /*
  * wait for timeout or drive ready
- * polling-in-a-loop, but it should be safe to remove this already
  */
 BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
 {
@@ -520,13 +519,6 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
     ULONG step = 0;
     BOOL res = TRUE;
 
-    sigs |= (irq ? (1 << unit->au_Bus->ab_SleepySignal) : 0);
-
-    /*
-     * clear up all old signals
-     */
-    SetSignal(0, sigs);
-
     /*
      * set up bus timeout
      */
@@ -534,63 +526,41 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
     unit->au_Bus->ab_Timeout = tout;
     Enable();
 
-    /*
-     * this loop may experience one of two scenarios
-     * 1) we get a valid irq and the drive wanted to let us know that it's ready
-     * 2) we get an invalid irq due to some collisions. We may still want to go ahead and get some extra irq breaks
-     *    this would reduce system load a little
-     */
+    sigs |= (irq ? (1 << unit->au_Bus->ab_SleepySignal) : 0);
+    status = ata_in(ata_AltStatus, unit->au_Bus->ab_Alt);
 
-    do
+    if (irq)
     {
         /*
-         * delay the check - this was found needed for some hardware
+         * wait for either IRQ or TIMEOUT (unless device seems to be a
+         * phantom SATAPI drive, in which case we fake a timeout)
          */
-
-        ata_WaitNano(400);
-        //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
-
-        /*
-         * let's check if the drive is already good
-         */
-        status = ata_in(ata_AltStatus, unit->au_Bus->ab_Alt); //ata_in(ata_Status, unit->au_Bus->ab_Port);
-        if (0 == (status & (ATAF_DATAREQ | ATAF_BUSY)))
-            break;
-
-        /*
-         * so we're stuck in a loop?
-         */
-        DIRQ(bug("[ATA%02ld] Waiting (Current status: %02lx)...\n", unit->au_UnitNum, status));
-
-        /*
-         * if IRQ wait is requested then allow either timeout or irq;
-         * then clear irq flag so we don't keep receiving more of these (especially when system suffers collisions)
-         */
-        if (irq)
-        {
-            /*
-             * wait for either IRQ or TIMEOUT
-             */
+        DIRQ(bug("[ATA%02ld] Waiting (Current status: %02lx)...\n", status));
+        if (status != 0)
             step = Wait(sigs);
-
-            /*
-             * now if we did reach timeout, then there's no point in going ahead.
-             */
-            if (SIGBREAKF_CTRL_C & step)
-            {
-                bug("[ATA%02ld] Timeout while waiting for device to complete operation\n", unit->au_UnitNum);
-
-                res = FALSE;
-            }
-
-            /*
-             * if we get as far as this, there's no more signals to expect
-             * but we still want the status
-             */
-            status = ata_in(ata_Status, unit->au_Bus->ab_Port);
-            break;
-        }
         else
+            step = SIGBREAKF_CTRL_C;
+
+        /*
+         * now if we did reach timeout, then there's no point in going ahead.
+         */
+        if (SIGBREAKF_CTRL_C & step)
+        {
+            bug("[ATA%02ld] Timeout while waiting for device to complete"
+                " operation\n", unit->au_UnitNum);
+            res = FALSE;
+
+            /*
+             * do nothing if the interrupt eventually arrives
+             */
+            Disable();
+            ata_IRQSetHandler(unit, NULL, NULL, 0, 0);
+            Enable();
+        }
+    }
+    else
+    {
+        while (status & ATAF_BUSY)
         {
             ++step;
 
@@ -604,26 +574,22 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
                  */
                 if (SetSignal(0, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
                 {
-                    DIRQ(bug("[ATA%02ld] Device still busy after timeout. Aborting\n", unit->au_UnitNum));
+                    DIRQ(bug("[ATA%02ld] Device still busy after timeout."
+                        " Aborting\n", unit->au_UnitNum));
                     res = FALSE;
                     break;
                 }
 
                 /*
-                 * no timeout just yet, but it's not a good idea to keep spinning like that.
-                 * let's give the system some time.
+                 * no timeout just yet, but it's not a good idea to keep
+                 * spinning like that. let's give the system some time.
                  */
                 ata_WaitNano(400);
-                //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
-                // TODO: Put some delay here!
             }
-        }
-    } while(status & ATAF_BUSY);
 
-    /*
-     * be nice to frustrated developer
-     */
-    DIRQ(bug("[ATA%02ld] WaitBusy status: %lx / %ld\n", unit->au_UnitNum, status, res));
+            status = ata_in(ata_AltStatus, unit->au_Bus->ab_Alt);
+        }
+    }
 
     /*
      * clear up all our expectations
@@ -633,9 +599,16 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
     Enable();
 
     /*
-     * clear any interrupt (may be neccessary if we were polling, for example)
+     * get final status and clear any interrupt (may be neccessary if we
+     * were polling, for example)
      */
-    ata_in(ata_Status, unit->au_Bus->ab_Port);
+    status = ata_in(ata_Status, unit->au_Bus->ab_Port);
+
+    /*
+     * be nice to frustrated developer
+     */
+    DIRQ(bug("[ATA%02ld] WaitBusy status: %lx / %ld\n", unit->au_UnitNum,
+        status, res));
 
     /*
      * release old junk
@@ -790,7 +763,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
      * block upon request.
      */
     if (block->method == CM_PIOWrite) {
-	if (FALSE == ata_WaitBusyTO(au, 30, FALSE, &status)) {
+	if (FALSE == ata_WaitBusyTO(au, TIMEOUT, FALSE, &status)) {
 	    D(bug("[ATA%02ld] ata_exec_cmd: PIOWrite - no response from device\n", au->au_UnitNum));
 	    return IOERR_UNITBUSY;
 	}
@@ -808,7 +781,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
     /*
      * wait for drive to complete what it has to do
      */
-    if (FALSE == ata_WaitBusyTO(au, 30, TRUE, NULL))
+    if (FALSE == ata_WaitBusyTO(au, TIMEOUT, TRUE, NULL))
     {
         bug("[ATA%02ld] ata_exec_cmd: Device is late - no response\n", au->au_UnitNum);
         err = IOERR_UNITBUSY;
@@ -919,7 +892,8 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
     ata_WaitNano(400);
     //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
 
-    ata_WaitBusyTO(unit, 30, (unit->au_Drive->id_General & 0x60) == 0x20, NULL);
+    ata_WaitBusyTO(unit, TIMEOUT, (unit->au_Drive->id_General & 0x60) == 0x20,
+        NULL);
     if (0 == (ata_ReadStatus(unit->au_Bus) & ATAF_DATAREQ))
         return HFERR_BadStatus;
 
@@ -951,7 +925,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
      * Wait for command to complete. Note that two interrupts will occur
      * before we wake up if this is a PIO data transfer
      */
-    if (ata_WaitTO(unit->au_Bus->ab_Timer, 30, 0,
+    if (ata_WaitTO(unit->au_Bus->ab_Timer, TIMEOUT, 0,
         1 << unit->au_Bus->ab_SleepySignal) == 0)
     {
         DATAPI(bug("[DSCSI] Command timed out.\n"));
