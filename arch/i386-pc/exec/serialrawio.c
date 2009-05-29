@@ -44,7 +44,7 @@
 #define SER_2FUNCTION      0x02
 #define SER_LINE_CONTROL   0x03
 #define SER_MODEM_CONTROL  0x04
-#define SER_LINE_STATUS		0x05
+#define SER_LINE_STATUS    0x05
 #define SER_MODEM_STATUS   0x06
 #define SER_SCRATCH        0x07
 
@@ -58,14 +58,10 @@
 
 #define SER_MAXBAUD 115200L
 
-#if AROS_SERIAL_DEBUG == 1
-UWORD __serial_rawio_port = 0x3F8;
-#else
 #if AROS_SERIAL_DEBUG == 2
 UWORD __serial_rawio_port = 0x2F8;
 #else
-UWORD __serial_rawio_port = 0;
-#endif
+UWORD __serial_rawio_port = 0x3F8;
 #endif
 
 int ser_UARTType (short);

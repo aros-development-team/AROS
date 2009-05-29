@@ -142,6 +142,9 @@ extern struct Library * PrepareAROSSupportBase (void);
 extern ULONG SoftIntDispatch();
 extern void Exec_SerialRawIOInit();
 extern void Exec_SerialRawPutChar(UBYTE chr);
+extern UWORD __serial_rawio_port;
+extern void Exec_MemoryRawIOInit();
+extern void Exec_MemoryRawPutChar(UBYTE chr);
 
 extern void Exec_Switch_FPU();
 extern void Exec_PrepareContext_FPU();
@@ -228,11 +231,11 @@ const char exec_core[] __text       = "Native/CORE v2.0.1";
 const char exec_name[] __text       = "exec.library";
 
 /* Now ID string as it will be used in a minute in resident structure. */
-const char exec_idstring[] __text   = "$VER: exec 41.11 (16.12.2000)\r\n";
+const char exec_idstring[] __text = VERSION_STRING;
 
 /* We would need also version and revision fields placed somewhere here. */
-const short exec_Version __text     = 41;
-const short exec_Revision __text    = 11;
+const short exec_Version __text     = VERSION_NUMBER;
+const short exec_Revision __text    = REVISION_NUMBER;
 
 /*
  * The RomTag structure. It has to be placed inside .text block as there will
@@ -245,7 +248,7 @@ const struct Resident Exec_resident __text=
     &Exec_resident,         /* Points to Resident itself */
     &LIBEND,                /* Where could we find next Resident? */
     0,                      /* There are no flags!! */
-    41,                     /* Version */
+    VERSION_NUMBER,         /* Version */
     NT_LIBRARY,             /* Type */
     126,                    /* Very high startup priority. */
     (char *)exec_name,      /* Pointer to name string */
@@ -1071,13 +1074,26 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 
     ExecBase->TDNestCnt++;
     Permit();
-#if (AROS_SERIAL_DEBUG >0)
-    SetFunction(&ExecBase->LibNode, -84*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawIOInit, Exec));
-    SetFunction(&ExecBase->LibNode, -86*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawPutChar, Exec));
-    RawIOInit();
-#endif
 
-    
+    /* Enable type of debug output chosen by user */
+    if (strstr(arosmb->cmdline, "debug=serial"))
+    {
+        SetFunction(&ExecBase->LibNode, -84 * LIB_VECTSIZE,
+            AROS_SLIB_ENTRY(SerialRawIOInit, Exec));
+        SetFunction(&ExecBase->LibNode, -86 * LIB_VECTSIZE,
+            AROS_SLIB_ENTRY(SerialRawPutChar, Exec));
+        if (strstr(arosmb->cmdline, "debug=serial2"))
+            __serial_rawio_port = 0x2f8;
+    }
+    else if (strstr(arosmb->cmdline, "debug=memory"))
+    {
+        SetFunction(&ExecBase->LibNode, -84 * LIB_VECTSIZE,
+            AROS_SLIB_ENTRY(MemoryRawIOInit, Exec));
+        SetFunction(&ExecBase->LibNode, -86 * LIB_VECTSIZE,
+            AROS_SLIB_ENTRY(MemoryRawPutChar, Exec));
+    }
+    RawIOInit();
+
     /* Scan for valid RomTags */
     ExecBase->ResModules = exec_RomTagScanner();
 
