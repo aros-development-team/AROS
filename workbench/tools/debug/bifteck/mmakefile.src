@@ -1,0 +1,14 @@
+#   $Id$
+#
+#   Makefile for Bifteck.
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench : workbench-tools
+#MM workbench-tools : includes linklibs
+
+%build_prog mmake=workbench-tools \
+    progname=Bifteck targetdir=$(AROSDIR)/Tools/Debug \
+    files=Bifteck uselibs="amiga arosc"
+
+%common
