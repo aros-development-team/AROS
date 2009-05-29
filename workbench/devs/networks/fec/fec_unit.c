@@ -169,6 +169,41 @@ AROS_UFH3(void, FEC_UnitProcess,
 
     Signal(parent, SIGF_SINGLE);
 
+
+	FEC_HW_Init(unit);
+	FEC_Reset_Stats(unit);
+
+
+
+    int phy = 0;
+
+    for (phy=0; phy < 32; phy++)
+    {
+    	int stat = FEC_MDIO_Read(unit, phy, 1);
+    	if (stat != -1)
+    	{
+    		if (stat != 0xffff && stat != 0x0000)
+    		{
+    			int advert = FEC_MDIO_Read(unit, phy, 4);
+    			D(bug("[FEC] MII transceiver %d status %4.4x advertising %4.4x\n",
+    					phy, stat, advert));
+    			int aa;
+    			int ab;
+
+				D(bug("[FEC] Phy register dump:\n"));
+    			for (aa=0; aa < 8; aa++)
+    			{
+    				D(bug("[FEC]    "));
+    				for (ab=0; ab < 4; ab++)
+    				{
+    					D(bug("%04x ", FEC_MDIO_Read(unit, phy, 4*aa+ab)));
+    				}
+    				D(bug("\n"));
+    			}
+    		}
+    	}
+    }
+
     do
     {
         uint32_t sigset = 1 << iport->mp_SigBit |
@@ -203,6 +238,7 @@ int FEC_CreateUnit(struct FECBase *FECBase, fec_t *regs)
 {
 	int retval = 0;
 	struct FECUnit *unit = NULL;
+	void *OpenFirmwareBase = NULL;
 
 	D(bug("[FEC] Creating FEC Unit\n"));
 
@@ -216,46 +252,69 @@ int FEC_CreateUnit(struct FECBase *FECBase, fec_t *regs)
 
 		unit->feu_regs = regs;
 
-		InitSemaphore(&unit->feu_Lock);
+		OpenFirmwareBase = OpenResource("openfirmware.resource");
 
-		NEWLIST(&unit->feu_Openers);
-		NEWLIST(&unit->feu_MulticastRanges);
-		NEWLIST(&unit->feu_TypeTrackers);
+		if (OpenFirmwareBase)
+		{
+			void *key = OF_OpenKey("/builtin");
+			void *prop = OF_FindProperty(key, "bus-frequency");
 
-		unit->feu_FECBase = FECBase;
+			uint32_t bus_frequency = 0;
 
-        for (i=0; i < REQUEST_QUEUE_COUNT; i++)
-        {
-            struct MsgPort *port = AllocPooled(FECBase->feb_Pool, sizeof(struct MsgPort));
-            unit->feu_RequestPorts[i] = port;
+			if (prop)
+			{
+				bus_frequency = *(uint32_t *)OF_GetPropValue(prop);
+			}
 
-            if (port)
-            {
-                NEWLIST(&port->mp_MsgList);
-                port->mp_Flags = PA_IGNORE;
-                port->mp_SigTask = &unit->feu_TXInt;
-            }
-        }
-        unit->feu_RequestPorts[WRITE_QUEUE]->mp_Flags = PA_SOFTINT;
+			D(bug("[FEC] Bus frequency %d MHz\n", bus_frequency / 1000000));
 
-        /* Create the unit's process */
+			unit->feu_phy_speed = (((bus_frequency + 2500000) / 5000000)) << 1;
 
-        /* Unit's process pointer will temporarly contain the parent */
-        unit->feu_Process = FindTask(NULL);
-        CreateNewProcTags(
-                         NP_Entry, (IPTR)FEC_UnitProcess,
-                         NP_Name, "FEC Process",
-                         NP_Priority, 0,
-                         NP_UserData, (IPTR)unit,
-                         NP_StackSize, 40960,
-                         TAG_DONE);
+			D(bug("[FEC] MII speed %d\n", unit->feu_phy_speed));
 
-        /* Wait for synchronisation signal */
-        Wait(SIGF_SINGLE);
+			InitSemaphore(&unit->feu_Lock);
 
-        D(bug("[FEC] Unit up and running\n"));
+			NEWLIST(&unit->feu_Openers);
+			NEWLIST(&unit->feu_MulticastRanges);
+			NEWLIST(&unit->feu_TypeTrackers);
 
-		retval = 1;
+			unit->feu_FECBase = FECBase;
+
+	        for (i=0; i < REQUEST_QUEUE_COUNT; i++)
+	        {
+	            struct MsgPort *port = AllocPooled(FECBase->feb_Pool, sizeof(struct MsgPort));
+	            unit->feu_RequestPorts[i] = port;
+
+	            if (port)
+	            {
+	                NEWLIST(&port->mp_MsgList);
+	                port->mp_Flags = PA_IGNORE;
+	                port->mp_SigTask = &unit->feu_TXInt;
+	            }
+	        }
+	        unit->feu_RequestPorts[WRITE_QUEUE]->mp_Flags = PA_SOFTINT;
+
+	        /* Create the unit's process */
+
+	        /* Unit's process pointer will temporarly contain the parent */
+	        unit->feu_Process = (struct Process *)FindTask(NULL);
+	        CreateNewProcTags(
+	                         NP_Entry, (IPTR)FEC_UnitProcess,
+	                         NP_Name, "FEC Process",
+	                         NP_Priority, 0,
+	                         NP_UserData, (IPTR)unit,
+	                         NP_StackSize, 40960,
+	                         TAG_DONE);
+
+	        /* Wait for synchronisation signal */
+	        Wait(SIGF_SINGLE);
+
+	        D(bug("[FEC] Unit up and running\n"));
+
+	        FECBase->feb_Unit = unit;
+
+			retval = 1;
+		}
 	}
 
 	return retval;

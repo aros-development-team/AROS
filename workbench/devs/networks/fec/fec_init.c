@@ -13,6 +13,8 @@
 #include <exec/memory.h>
 #include <exec/io.h>
 #include <exec/errors.h>
+#include <exec/devices.h>
+#include <exec/ports.h>
 
 #include <utility/tagitem.h>
 
@@ -148,7 +150,8 @@ static int FEC_Open(struct FECBase *FECBase, struct IOSana2Req* req, ULONG unitn
     }
     else
     {
-        unit = req->ios2_Req.io_Unit = FECBase->feb_Unit;
+        unit = FECBase->feb_Unit;
+        req->ios2_Req.io_Unit = &unit->feu_Unit;
     }
 
     /* Handle device sharing */
@@ -205,7 +208,7 @@ static int FEC_Open(struct FECBase *FECBase, struct IOSana2Req* req, ULONG unitn
 
 static int FEC_Close(struct FECBase *FECBase, struct IOSana2Req* req)
 {
-    struct FECUnit *unit = req->ios2_Req.io_Unit;
+    struct FECUnit *unit = (struct FECUnit *)req->ios2_Req.io_Unit;
     struct Opener *opener;
 
     if (unit)
