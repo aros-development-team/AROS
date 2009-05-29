@@ -268,6 +268,9 @@ typedef struct {
 #define FEC_MII_DATA_RA_SHIFT           0x12            /* MII reg addr bits */
 #define FEC_MII_DATA_PA_SHIFT           0x17            /* MII PHY addr bits */
 
+#define FEC_PHYADDR_NONE				-1
+#define FEC_PHYADDR_7WIRE				-2
+
 #define FEC_PADDR2_TYPE                 0x8808
 
 #define FEC_OP_PAUSE_OPCODE             0x00010000
@@ -377,6 +380,7 @@ struct FECBase {
 #define RXTX_ALLOC_BUFSIZE  (ETH_MAXPACKETSIZE + 26)
 
 struct FECUnit {
+	struct Unit				feu_Unit;
 	struct SignalSemaphore	feu_Lock;
 	struct MinList      	feu_Openers;
 	struct MinList      	feu_MulticastRanges;
@@ -389,7 +393,9 @@ struct FECUnit {
 	struct Interrupt    	feu_RXInt;
 	struct Interrupt    	feu_TXEndInt;
 
-	volatile fec_t			*feu_regs;
+	fec_t					*feu_regs;
+
+	uint32_t				feu_phy_speed;
 
     uint8_t             	feu_DevAddr[ETH_ADDRESSSIZE];
     uint8_t             	feu_OrgAddr[ETH_ADDRESSSIZE];
@@ -414,5 +420,11 @@ struct FECUnit {
 
 int FEC_CreateUnit(struct FECBase *FECBase, fec_t *regs);
 void handle_request(struct FECBase *FECBase, struct IOSana2Req *request);
+void FEC_UDelay(struct FECUnit *unit, uint32_t usec);
+int FEC_MDIO_Read(struct FECUnit *unit, int32_t phy_id, int32_t reg);
+int FEC_MDIO_Write(struct FECUnit *unit, int32_t phy_id, int32_t reg, uint16_t data);
+void FEC_HW_Init(struct FECUnit *unit);
+void FEC_PHY_Init(struct FECUnit *unit);
+void FEC_Reset_Stats(struct FECUnit *unit);
 
 #endif /* FEC_H_ */
