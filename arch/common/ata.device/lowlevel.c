@@ -286,7 +286,7 @@ void ata_HandleIRQ(struct ata_Bus *bus)
     struct ata_Unit *unit = ata_GetSelectedUnit(bus);
     UBYTE status = ata_ReadAltStatus(bus);
     UBYTE dma_status;
-    BOOL for_us;
+    BOOL for_us = FALSE;
 
     /*
      * don't waste your time on checking other devices.
