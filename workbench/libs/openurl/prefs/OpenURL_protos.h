@@ -1,17 +1,32 @@
-/*
-**  OpenURL - MUI preferences for openurl.library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-**
-**  Ported to OS4 by Alexandre Balaban <alexandre@balaban.name>
-**
-*/
+/***************************************************************************
 
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
+
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
+
+#include "SDI_compiler.h"
+
+#ifdef __MORPHOS__
+APTR DoSuperNew( struct IClass *cl, APTR obj, ... );
+#elif defined(__AROS__)
+IPTR DoSuperNew(struct IClass *cl, Object *obj, IPTR tag1, ...);
+#else
+Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...);
+#endif
 
 /* loc.c */
 void initStrings ( void );
@@ -19,28 +34,12 @@ void uninitStrings( void );
 STRPTR getString ( ULONG id );
 void localizeStrings ( STRPTR *s );
 void localizeNewMenu ( struct NewMenu *nm );
-ULONG getKeyChar ( UBYTE *string , ULONG id );
+ULONG getKeyChar (STRPTR string , ULONG id);
 
 /* utils.c */
-#ifdef __MORPHOS__
-#define msprintf(to, fmt, ...) ({ ULONG _tags[] = { __VA_ARGS__ }; RawDoFmt(fmt, _tags, (void (*)(void)) 0, to); })
-int msnprintf ( STRPTR buf , int size , STRPTR fmt , ... ) __attribute((varargs68k));
-#elif defined(__amigaos4__)
-int stccpy(char *dst, const char *src, int m);
+#if defined(__amigaos4__)
 void SetAmiUpdateENVVariable( CONST_STRPTR varname );
-ULONG DoSuperNew ( struct IClass *cl , Object *obj , ... ) VARARGS68K;
-void msprintf ( STRPTR to , STRPTR fmt , ... ) VARARGS68K;
-int msnprintf ( STRPTR buf , int size , STRPTR fmt , ... ) VARARGS68K;
-#elif defined(__AROS__)
-ULONG DoSuperNew ( struct IClass *cl , Object *obj , ULONG tag1, ... );
-#define msprintf __sprintf
-int msnprintf ( STRPTR buf , int size , STRPTR fmt , ... );
-#else
-ULONG STDARGS DoSuperNew ( struct IClass *cl , Object *obj , ... );
-void STDARGS msprintf ( STRPTR to , STRPTR fmt , ... );
-int STDARGS msnprintf ( STRPTR buf , int size , STRPTR fmt , ... );
 #endif
-ULONG xget ( Object *obj , ULONG attribute );
 Object *olabel ( ULONG id );
 Object *ollabel ( ULONG id );
 Object *ollabel1 ( ULONG id );
@@ -54,61 +53,44 @@ Object *ocheckmark ( ULONG key , ULONG help );
 Object *opopbutton ( ULONG img , ULONG help );
 Object *ostring ( ULONG maxlen , ULONG key , ULONG help );
 Object *opopport ( ULONG maxLen , ULONG key , ULONG help );
-Object *opopph ( STRPTR *syms , STRPTR *names , ULONG maxLen , ULONG key , ULONG asl , ULONG help );
+Object *opopph ( CONST_STRPTR *syms , STRPTR *names , ULONG maxLen , ULONG key , ULONG asl , ULONG help );
 ULONG openWindow ( Object *app , Object *win );
 ULONG delEntry ( Object *obj , APTR entry );
+void STDARGS msprintf ( STRPTR to , STRPTR fmt , ... ) VARARGS68K;
+int STDARGS msnprintf ( STRPTR buf , int size , STRPTR fmt , ... ) VARARGS68K;
 
 /* ftpeditwin.c */
-ULONG initFTPEditWinClass ( void );
+BOOL initFTPEditWinClass ( void );
 void disposeFTPEditWinClass ( void );
 
 /* mailereditwin.c */
-ULONG initMailerEditWinClass ( void );
+BOOL initMailerEditWinClass ( void );
 void disposeMailerEditWinClass ( void );
 
 /* browsereditwin.c */
-ULONG initBrowserEditWinClass ( void );
+BOOL initBrowserEditWinClass ( void );
 void disposeBrowserEditWinClass ( void );
 
 /* applist.c */
-ULONG initAppListClass ( void );
+BOOL initAppListClass ( void );
 void disposeAppListClass ( void );
 
 /* win.c */
-ULONG initWinClass ( void );
+BOOL initWinClass ( void );
 void disposeWinClass ( void );
 
 /* about.c */
-ULONG initAboutClass ( void );
+BOOL initAboutClass ( void );
 void disposeAboutClass ( void );
 
 /* app.c */
-ULONG initAppClass ( void );
+BOOL initAppClass ( void );
 void disposeAppClass ( void );
 
 /* popport.c */
-ULONG initPopportClass ( void );
+BOOL initPopportClass ( void );
 void disposePopportClass ( void );
 
 /* popph.c */
-ULONG initPopphClass ( void );
+BOOL initPopphClass ( void );
 void disposePopphClass ( void );
-
-/* prefs.c */
-ULONG initPensClass ( void );
-void disposePensClass ( void );
-
-/* about.c */
-ULONG initAboutClass ( void );
-void disposeAboutClass ( void );
-
-#ifdef __MORPHOS__
-/* stubs.c */
-#undef NewObject
-#undef MUI_NewObject
-#undef DoSuperNew
-APTR NewObject ( struct IClass *classPtr , UBYTE *classID , ...) __attribute((varargs68k));
-APTR MUI_NewObject ( UBYTE *classID , ...) __attribute((varargs68k));
-APTR DoSuperNew ( struct IClass *cl , Object *obj , ...) __attribute((varargs68k));
-#endif
-

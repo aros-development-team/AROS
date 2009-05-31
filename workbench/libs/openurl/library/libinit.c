@@ -1,426 +1,669 @@
-/*
-**  openurl.library - universal URL display and browser
-**  launcher library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-**
-**  Ported to OS4 by Alexandre Balaban <alexandre@balaban.name>
-*/
+/***************************************************************************
 
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
+
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
 
 #include "lib.h"
-#include "openurl.library_rev.h"
+#include "version.h"
 
-/****************************************************************************/
-
-UBYTE                  lib_name[] = PRG;
-UBYTE                  lib_ver[] = VSTRING;
-UBYTE                  lib_fullName[] = PRGNAME;
-ULONG                  lib_version = VERSION;
-ULONG                  lib_revision = REVISION;
-
-struct ExecBase        *SysBase = NULL;
-struct DosLibrary      *DOSBase = NULL;
-struct Library         *UtilityBase = NULL;
-struct Library         *IFFParseBase = NULL;
-struct RxsLib          *RexxSysBase = NULL;
-
-struct SignalSemaphore lib_sem = {0};
-struct SignalSemaphore lib_prefsSem = {0};
-struct SignalSemaphore lib_memSem = {0};
-
-APTR                   lib_pool = NULL;
-struct URL_Prefs       *lib_prefs = NULL;
-
-struct Library         *lib_base = NULL;
-ULONG                  lib_segList = (ULONG)NULL;
-ULONG                  lib_use = 0;
-ULONG                  lib_flags = 0;
-
-/****************************************************************************/
-
-#ifdef __MORPHOS__
 #include <exec/resident.h>
-
-static struct Library *initLib ( struct Library *base , BPTR segList , struct ExecBase *sys );
-static struct Library *openLib ( void );
-static ULONG expungeLib ( void );
-static ULONG closeLib ( void );
-static ULONG nil (void );
-static ULONG first(void) __attribute((unused));
-
-/****************************************************************************/
-
-static ULONG
-first(void)
-{
-    return -1;
-}
-
-/****************************************************************************/
-
-static const APTR funcTable[] =
-{
-    (APTR)FUNCARRAY_BEGIN,
-    (APTR)FUNCARRAY_32BIT_NATIVE,
-    (APTR)openLib,
-    (APTR)closeLib,
-    (APTR)expungeLib,
-    (APTR)nil,
-
-    (APTR)LIB_URL_OpenA,
-    (APTR)LIB_URL_OldGetPrefs,
-    (APTR)LIB_URL_OldFreePrefs,
-    (APTR)LIB_URL_OldSetPrefs,
-    (APTR)LIB_URL_OldGetDefaultPrefs,
-    (APTR)LIB_URL_OldLaunchPrefsApp,
-    (APTR)0xffffffff,
-
-    (APTR)FUNCARRAY_32BIT_D0D1A0A1SR_NATIVE,
-    (APTR)dispatch,
-    (APTR)0xffffffff,
-
-    (APTR)FUNCARRAY_32BIT_NATIVE,
-    (APTR)LIB_URL_GetPrefsA,
-    (APTR)LIB_URL_FreePrefsA,
-    (APTR)LIB_URL_SetPrefsA,
-    (APTR)LIB_URL_LaunchPrefsAppA,
-    (APTR)LIB_URL_GetAttr,
-    (APTR)0xffffffff,
-
-    (APTR)FUNCARRAY_END
-};
-
-static const ULONG initTable[] =
-{
-    sizeof(struct Library),
-    (ULONG)funcTable,
-    NULL,
-    (ULONG)initLib
-};
-
-const struct Resident romTag =
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&romTag,
-    (struct Resident *)&romTag+1,
-    RTF_AUTOINIT|RTF_PPC|RTF_EXTENDED,
-    VERSION,
-    NT_LIBRARY,
-    0,
-    (UBYTE *)lib_name,
-    (UBYTE *)lib_ver,
-    (APTR)initTable,
-    REVISION,
-    NULL
-};
-
-const ULONG __abox__ = 1;
-
-#elif defined(__amigaos4__)
 #include <proto/exec.h>
-/* amigaos4 *****************************************************************/
 
-struct ExecIFace       *IExec = NULL;
-struct DOSIFace        *IDOS = NULL;
-struct UtilityIFace    *IUtility = NULL;
-struct IFFParseIFace   *IIFFParse = NULL;
-struct RexxSysIFace    *IRexxSys = NULL;
+#include "macros.h"
+#include "debug.h"
 
-/* amigaos4 *****************************************************************/
+/****************************************************************************/
 
-struct Library * SAVEDS ASM initLib (REG(a0,ULONG segList), REG(a6,struct ExecBase *sys), REG(d0, struct Library *base));
-//uint32 libObtain (struct LibraryManagerInterface *Self);
-//uint32 libRelease (struct LibraryManagerInterface *Self);
-struct Library * SAVEDS ASM openLib (REG(a6,struct Library *base));
-ULONG SAVEDS ASM closeLib(REG(a6,struct Library *base));
-ULONG SAVEDS ASM expungeLib (REG(a6,struct Library *base));
-
-struct Library * mgr_Init (struct Library *base, BPTR segList, struct ExecIFace *ISys);
-uint32 mgr_Obtain (struct LibraryManagerInterface *Self);
-uint32 mgr_Release (struct LibraryManagerInterface *Self);
-struct Library * mgr_Open (struct LibraryManagerInterface *Self, uint32 version);
-APTR mgr_Close (struct LibraryManagerInterface *Self);
-APTR mgr_Expunge (struct LibraryManagerInterface *Self);
-
-uint32 VARARGS68K OS4_URL_Obtain( struct OpenURLIFace *Self );
-uint32 VARARGS68K OS4_URL_Release( struct OpenURLIFace *Self );
-
-/* amigaos4 *****************************************************************/
-
-static BOOL bAlreadyHasSemaphore = FALSE;
-
-/* amigaos4 *****************************************************************/
-
-static APTR lib_manager_vectors[] = {
-	mgr_Obtain,
-	mgr_Release,
-	NULL,
-	NULL,
-	mgr_Open,
-	mgr_Close,
-	mgr_Expunge,
-	NULL,
-	(APTR)-1,
-};
-
-static struct TagItem lib_managerTags[] = {
-	{ MIT_Name,		(uint32)"__library"			},
-	{ MIT_VectorTable,	(uint32)lib_manager_vectors	},
-	{ MIT_Version,		1						},
-	{ TAG_END,		0						}
-};
-
-void *main_vectors[] = {
-	(void *) OS4_URL_Obtain,
-	(void *) OS4_URL_Release,
-	(void *) NULL,
-	(void *) NULL,
-    (void *) OS4_URL_OpenA,
-	(void *) OS4_URL_Open,
-    (void *) OS4_URL_OldGetPrefs,
-    (void *) OS4_URL_OldFreePrefs,
-    (void *) OS4_URL_OldSetPrefs,
-    (void *) OS4_URL_OldGetDefaultPrefs,
-    (void *) OS4_URL_OldLaunchPrefsApp,
-    (void *) OS4_dispatch,
-    (void *) OS4_URL_GetPrefsA,
-    (void *) OS4_URL_GetPrefs,
-    (void *) OS4_URL_FreePrefsA,
-    (void *) OS4_URL_FreePrefs,
-    (void *) OS4_URL_SetPrefsA,
-    (void *) OS4_URL_SetPrefs,
-    (void *) OS4_URL_LaunchPrefsAppA,
-    (void *) OS4_URL_LaunchPrefsApp,
-    (void *) OS4_URL_GetAttr,
-    (void *) -1
-};
-
-static struct TagItem lib_mainTags[] = {
-	{ MIT_Name,		    (uint32)"main"			},
-	{ MIT_VectorTable,	(uint32)main_vectors	},
-	{ MIT_Version,		1						},
-	{ TAG_END,		    0						}
-};
-
-static APTR libInterfaces[] = {
-	lib_managerTags,
-	lib_mainTags,
-	NULL
-};
-
-extern uint32 VecTable68K[];
-
-static struct TagItem libCreateTags[] = {
-	{ CLT_DataSize,		(uint32)sizeof(struct Library)	},
-	{ CLT_InitFunc,		(uint32)mgr_Init					 },
-	{ CLT_Interfaces,	(uint32)libInterfaces			},
-    { CLT_Vector68K,    (uint32)VecTable68K			    },
-	{ TAG_END,			0								}
-};
-
-#ifdef __GNUC__
-static struct Resident __attribute__((used)) romTag = {
-#else
-static struct Resident romTag = {
+#if !defined(__MORPHOS__)
+#ifndef __AROS__
+#define MIN_STACKSIZE 65536
 #endif
-	RTC_MATCHWORD,				// rt_MatchWord
-	&romTag,					// rt_MatchTag
-	&romTag+1,					// rt_EndSkip
-	RTF_NATIVE | RTF_AUTOINIT,	// rt_Flags
-	VERSION,					// rt_Version
-	NT_LIBRARY,					// rt_Type
-	0,							// rt_Pri
-	lib_name,					// rt_Name
-	lib_ver,					// rt_IdString
-	libCreateTags				// rt_Init
-};
+
+// stack cookie for shell v45+
+static const char USED_VAR stack_size[] = "$STACK:" STR(MIN_STACKSIZE) "\n";
+#endif
+
+/****************************************************************************/
+
+#if defined(__amigaos4__)
+struct Library *SysBase = NULL;
+struct ExecIFace* IExec = NULL;
+#if defined(__NEWLIB__)
+struct Library *NewlibBase = NULL;
+struct NewlibIFace* INewlib = NULL;
+#endif
+#else
+struct ExecBase *SysBase = NULL;
+#endif
+
+struct LibraryHeader *OpenURLBase = NULL;
+
+static const char UserLibName[] = "openurl.library";
+static const char UserLibID[]   = "$VER: openurl.library " LIB_REV_STRING " [" SYSTEMSHORT "/" CPU "] (" LIB_DATE ") " LIB_COPYRIGHT;
+
+/****************************************************************************/
+
+#define libvector LFUNC_FAS(URL_OpenA)                    \
+                  LFUNC_VA_(URL_Open)                     \
+                  LFUNC_FA_(URL_OldGetPrefs)              \
+                  LFUNC_FA_(URL_OldFreePrefs)             \
+                  LFUNC_FA_(URL_OldSetPrefs)              \
+                  LFUNC_FA_(URL_OldGetDefaultPrefs)       \
+                  LFUNC_FA_(URL_OldLaunchPrefsApp)        \
+                  LFUNC_FA_(dispatch)                     \
+                  LFUNC_FA_(URL_GetPrefsA)                \
+                  LFUNC_VA_(URL_GetPrefs)                 \
+                  LFUNC_FA_(URL_FreePrefsA)               \
+                  LFUNC_VA_(URL_FreePrefs)                \
+                  LFUNC_FA_(URL_SetPrefsA)                \
+                  LFUNC_VA_(URL_SetPrefs)                 \
+                  LFUNC_FA_(URL_LaunchPrefsAppA)          \
+                  LFUNC_VA_(URL_LaunchPrefsApp)           \
+                  LFUNC_FA_(URL_GetAttr)
+
+/****************************************************************************/
+
+#if defined(__amigaos4__)
+
+static struct LibraryHeader * LIBFUNC LibInit    (struct LibraryHeader *base, BPTR librarySegment, struct ExecIFace *pIExec);
+static BPTR                   LIBFUNC LibExpunge (struct LibraryManagerInterface *Self);
+static struct LibraryHeader * LIBFUNC LibOpen    (struct LibraryManagerInterface *Self, ULONG version);
+static BPTR                   LIBFUNC LibClose   (struct LibraryManagerInterface *Self);
+//static LONG                   LIBFUNC LibNull    (void);
+
+#elif defined(__MORPHOS__)
+
+static struct LibraryHeader * LIBFUNC LibInit   (struct LibraryHeader *base, BPTR librarySegment, struct ExecBase *sb);
+static BPTR                   LIBFUNC LibExpunge(void);
+static struct LibraryHeader * LIBFUNC LibOpen   (void);
+static BPTR                   LIBFUNC LibClose  (void);
+static LONG                   LIBFUNC LibNull   (void);
+
+#else
+
+static struct LibraryHeader * LIBFUNC LibInit    (REG(d0, struct LibraryHeader *lh), REG(a0, BPTR Segment), REG(a6, struct ExecBase *sb));
+static BPTR                   LIBFUNC LibExpunge (REG(a6, struct LibraryHeader *base));
+static struct LibraryHeader * LIBFUNC LibOpen    (REG(d0, ULONG version), REG(a6, struct LibraryHeader *base));
+static BPTR                   LIBFUNC LibClose   (REG(a6, struct LibraryHeader *base));
+static LONG                   LIBFUNC LibNull    (void);
 
 #endif
 
 /****************************************************************************/
+
 /*
-#ifdef __MORPHOS__
-static struct Library *initLib(struct Library *base,BPTR segList,struct ExecBase *sys)
-#elif defined(__amigaos4__)
-struct Library * initLib(struct Library *base, BPTR segList, struct ExecIFace *ISys)
-#else
-struct Library *SAVEDS ASM initLib(REG(a0,ULONG segList),REG(a6,struct ExecBase *sys),REG(d0, struct Library *base))
-#endif
-{
+ * The system (and compiler) rely on a symbol named _start which marks
+ * the beginning of execution of an ELF file. To prevent others from
+ * executing this library, and to keep the compiler/linker happy, we
+ * define an empty _start symbol here.
+ *
+ * On the classic system (pre-AmigaOS4) this was usually done by
+ * moveq #0,d0
+ * rts
+ *
+ */
+
 #if defined(__amigaos4__)
-	base->lib_Node.ln_Type = NT_LIBRARY;
-	base->lib_Node.ln_Pri = 0;
-	base->lib_Node.ln_Name = lib_name;
-	base->lib_Flags = LIBF_SUMUSED|LIBF_CHANGED;
-	base->lib_Version = lib_version;
-	base->lib_Revision = lib_revision;
-	base->lib_IdString = lib_ver;
-
-	IExec = ISys;
-	//IExec->Obtain();
-	SysBase = (struct ExecBase*)ISys->Data.LibBase;
+int _start(void)
 #else
-    SysBase = sys;
-#endif
-
-    InitSemaphore(&lib_sem);
-    InitSemaphore(&lib_prefsSem);
-    InitSemaphore(&lib_memSem);
-
-    lib_segList = segList;
-
-    return lib_base = base;
-}
-*/
-#ifdef __MORPHOS__
-static struct Library *initLib(struct Library *base,BPTR segList,struct ExecBase *sys)
-#else
-struct Library * SAVEDS ASM initLib (REG(a0,ULONG segList), REG(a6,struct ExecBase *sys), REG(d0, struct Library *base))
+int Main(void)
 #endif
 {
-    SysBase     = sys;
-
-    InitSemaphore(&lib_sem);
-    InitSemaphore(&lib_prefsSem);
-    InitSemaphore(&lib_memSem);
-
-    lib_segList = segList;
-
-    return lib_base = base;
+  return RETURN_FAIL;
 }
+
+#if !defined(__amigaos4__)
+static LONG LIBFUNC LibNull(VOID)
+{
+  return(0);
+}
+#endif
 
 /****************************************************************************/
 
-#ifdef __MORPHOS__
-static struct Library *openLib(void)
+#if defined(__amigaos4__)
+/* ------------------- OS4 Manager Interface ------------------------ */
+STATIC uint32 _manager_Obtain(struct LibraryManagerInterface *Self)
 {
-    struct Library *base = (struct Library *)REG_A6;
-#else
-struct Library * SAVEDS ASM openLib(REG(a6,struct Library *base))
+	uint32 res;
+	__asm__ __volatile__(
+	"1:	lwarx	%0,0,%1\n"
+	"addic	%0,%0,1\n"
+	"stwcx.	%0,0,%1\n"
+	"bne-	1b"
+	: "=&r" (res)
+	: "r" (&Self->Data.RefCount)
+	: "cc", "memory");
+
+	return res;
+}
+
+STATIC uint32 _manager_Release(struct LibraryManagerInterface *Self)
 {
+	uint32 res;
+	__asm__ __volatile__(
+	"1:	lwarx	%0,0,%1\n"
+	"addic	%0,%0,-1\n"
+	"stwcx.	%0,0,%1\n"
+	"bne-	1b"
+	: "=&r" (res)
+	: "r" (&Self->Data.RefCount)
+	: "cc", "memory");
+
+	return res;
+}
+
+STATIC CONST CONST_APTR lib_manager_vectors[] =
+{
+  (CONST_APTR)_manager_Obtain,
+  (CONST_APTR)_manager_Release,
+  (CONST_APTR)NULL,
+  (CONST_APTR)NULL,
+  (CONST_APTR)LibOpen,
+  (CONST_APTR)LibClose,
+  (CONST_APTR)LibExpunge,
+  (CONST_APTR)NULL,
+  (CONST_APTR)-1
+};
+
+STATIC CONST struct TagItem lib_managerTags[] =
+{
+  { MIT_Name,         (Tag)"__library" },
+  { MIT_VectorTable,  (Tag)lib_manager_vectors },
+  { MIT_Version,      1 },
+  { TAG_DONE,         0 }
+};
+
+/* ------------------- Library Interface(s) ------------------------ */
+
+ULONG LibObtain(UNUSED struct Interface *Self)
+{
+  return 0;
+}
+
+ULONG LibRelease(UNUSED struct Interface *Self)
+{
+  return 0;
+}
+
+STATIC CONST CONST_APTR main_vectors[] =
+{
+  (CONST_APTR)LibObtain,
+  (CONST_APTR)LibRelease,
+  (CONST_APTR)NULL,
+  (CONST_APTR)NULL,
+  (CONST_APTR)libvector,
+  (CONST_APTR)-1
+};
+
+STATIC CONST struct TagItem mainTags[] =
+{
+  { MIT_Name,         (Tag)"main" },
+  { MIT_VectorTable,  (Tag)main_vectors },
+  { MIT_Version,      1 },
+  { TAG_DONE,         0 }
+};
+
+STATIC CONST CONST_APTR libInterfaces[] =
+{
+  (CONST_APTR)lib_managerTags,
+  (CONST_APTR)mainTags,
+  (CONST_APTR)NULL
+};
+
+// Our libraries always have to carry a 68k jump table with it, so
+// lets define it here as extern, as we are going to link it to
+// our binary here.
+#ifndef NO_VECTABLE68K
+extern CONST APTR VecTable68K[];
 #endif
 
-    struct Library *res;
+STATIC CONST struct TagItem libCreateTags[] =
+{
+  { CLT_DataSize,   sizeof(struct LibraryHeader) },
+  { CLT_InitFunc,   (Tag)LibInit },
+  { CLT_Interfaces, (Tag)libInterfaces },
+  #ifndef NO_VECTABLE68K
+  { CLT_Vector68K,  (Tag)VecTable68K },
+  #endif
+  { TAG_DONE,       0 }
+};
 
-    ObtainSemaphore(&lib_sem);
+#else
 
-    base->lib_OpenCnt++;
-    base->lib_Flags &= ~LIBF_DELEXP;
+STATIC CONST CONST_APTR LibVectors[] =
+{
+  #ifdef __MORPHOS__
+  (CONST_APTR)FUNCARRAY_32BIT_NATIVE,
+  #endif
+  (CONST_APTR)LibOpen,
+  (CONST_APTR)LibClose,
+  (CONST_APTR)LibExpunge,
+  (CONST_APTR)LibNull,
+  (CONST_APTR)libvector,
+  (CONST_APTR)-1
+};
 
-    if (!(lib_flags & BASEFLG_Init) && !initBase())
+STATIC CONST IPTR LibInitTab[] =
+{
+  sizeof(struct LibraryHeader),
+  (IPTR)LibVectors,
+  (IPTR)NULL,
+  (IPTR)LibInit
+};
+
+#endif
+
+/****************************************************************************/
+
+static const USED_VAR struct Resident ROMTag =
+{
+  RTC_MATCHWORD,
+  (struct Resident *)&ROMTag,
+  (struct Resident *)(&ROMTag + 1),
+  #if defined(__amigaos4__)
+  RTF_AUTOINIT|RTF_NATIVE,      // The Library should be set up according to the given table.
+  #elif defined(__MORPHOS__)
+  RTF_AUTOINIT|RTF_EXTENDED|RTF_PPC,
+  #elif defined(__AROS__)
+  RTF_AUTOINIT|RTF_EXTENDED,
+  #else
+  RTF_AUTOINIT,
+  #endif
+  LIB_VERSION,
+  NT_LIBRARY,
+  0,
+  (char *)UserLibName,
+  (char *)UserLibID+6,          // +6 to skip '$VER: '
+  #if defined(__amigaos4__)
+  (APTR)libCreateTags           // This table is for initializing the Library.
+  #else
+  (APTR)LibInitTab,
+  #endif
+  #if defined(__MORPHOS__) || defined(__AROS__)
+  LIB_REVISION,
+  0
+  #endif
+};
+
+#if defined(__MORPHOS__)
+/*
+ * To tell the loader that this is a new emulppc elf and not
+ * one for the ppc.library.
+ * ** IMPORTANT **
+ */
+const USED_VAR ULONG __abox__ = 1;
+
+#endif /* __MORPHOS */
+
+/****************************************************************************/
+
+#if defined(MIN_STACKSIZE) && !defined(__amigaos4__)
+
+/* generic StackSwap() function which calls function() surrounded by
+   StackSwap() calls */
+
+#if defined(__mc68000__)
+ULONG stackswap_call(struct StackSwapStruct *stack,
+                     ULONG (*function)(struct LibraryHeader *),
+                     struct LibraryHeader *arg);
+
+asm(".text                    \n\
+     .even                    \n\
+     .globl _stackswap_call   \n\
+   _stackswap_call:           \n\
+      moveml #0x3022,sp@-     \n\
+      movel sp@(20),d3        \n\
+      movel sp@(24),a2        \n\
+      movel sp@(28),d2        \n\
+      movel _SysBase,a6       \n\
+      movel d3,a0             \n\
+      jsr a6@(-732:W)         \n\
+      movel d2,sp@-           \n\
+      jbsr a2@                \n\
+      movel d0,d2             \n\
+      addql #4,sp             \n\
+      movel _SysBase,a6       \n\
+      movel d3,a0             \n\
+      jsr a6@(-732:W)         \n\
+      movel d2,d0             \n\
+      moveml sp@+,#0x440c     \n\
+      rts");
+#elif defined(__MORPHOS__)
+ULONG stackswap_call(struct StackSwapStruct *stack,
+                     ULONG (*function)(struct LibraryHeader *),
+                     struct LibraryHeader *arg)
+{
+   struct PPCStackSwapArgs swapargs;
+
+   swapargs.Args[0] = (ULONG)arg;
+
+   return NewPPCStackSwap(stack, function, &swapargs);
+}
+#else
+/* FIXME: This does not work because it can't work. 'arg' variable is also on stack.
+          On AmigaOS v4 it ocassionally works because function's parameters are placed
+          in registers on PPC */
+ULONG REGARGS stackswap_call(struct StackSwapStruct *stack,
+                             ULONG (*function)(struct LibraryHeader *),
+                             struct LibraryHeader *arg)
+{
+   register ULONG result;
+
+   StackSwap(stack);
+   result = function(arg);
+   StackSwap(stack);
+
+   return result;
+}
+#endif
+
+static BOOL callLibFunction(ULONG (*function)(struct LibraryHeader *), struct LibraryHeader *arg)
+{
+  BOOL success = FALSE;
+  struct Task *tc;
+  ULONG stacksize;
+
+  // retrieve the task structure for the
+  // current task
+  tc = FindTask(NULL);
+
+  #if defined(__MORPHOS__)
+  // In MorphOS we have two stacks. One for PPC code and another for 68k code.
+  // We are only interested in the PPC stack.
+  NewGetTaskAttrsA(tc, &stacksize, sizeof(ULONG), TASKINFOTYPE_STACKSIZE, NULL);
+  #else
+  // on all other systems we query via SPUpper-SPLower calculation
+  stacksize = (ULONG)tc->tc_SPUpper - (ULONG)tc->tc_SPLower;
+  #endif
+
+  // Swap stacks only if current stack is insufficient
+  if(stacksize < MIN_STACKSIZE)
+  {
+    struct StackSwapStruct *stack;
+
+    if((stack = AllocVec(sizeof(*stack), MEMF_PUBLIC)) != NULL)
     {
-        base->lib_OpenCnt--;
-        res = NULL;
+      if((stack->stk_Lower = AllocVec(MIN_STACKSIZE, MEMF_PUBLIC)) != NULL)
+      {
+        // perform the StackSwap
+        stack->stk_Upper = (ULONG)stack->stk_Lower + MIN_STACKSIZE;
+        stack->stk_Pointer = (APTR)stack->stk_Upper;
+
+        // call routine but with embedding it into a [NewPPC]StackSwap()
+        success = stackswap_call(stack, function, arg);
+
+        FreeVec(stack->stk_Lower);
+      }
+      FreeVec(stack);
     }
-    else res = base;
+  }
+  else
+    success = function(arg);
 
-    ReleaseSemaphore(&lib_sem);
-
-    return res;
+  return success;
 }
+
+#endif // !__amigaos4__
 
 /****************************************************************************/
 
-#ifdef __MORPHOS__
-static ULONG expungeLib(void)
-{
-    struct Library *base = (struct Library *)REG_A6;
-#else
-ULONG SAVEDS ASM expungeLib(REG(a6,struct Library *base))
-{
-#endif
-
-    ULONG res;
-
 #if defined(__amigaos4__)
-	// prevents a deadlock if called from closeLib
-	 if( !bAlreadyHasSemaphore )
+static struct LibraryHeader * LibInit(struct LibraryHeader *base, BPTR librarySegment, struct ExecIFace *pIExec)
+{
+  struct ExecBase *sb = (struct ExecBase *)pIExec->Data.LibBase;
+  IExec = pIExec;
+#elif defined(__MORPHOS__)
+static struct LibraryHeader * LibInit(struct LibraryHeader *base, BPTR librarySegment, struct ExecBase *sb)
+{
+#else
+static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base), REG(a0, BPTR librarySegment), REG(a6, struct ExecBase *sb))
+{
 #endif
-    ObtainSemaphore(&lib_sem);
 
-	 if (!base->lib_OpenCnt && !lib_use)
+  SysBase = (APTR)sb;
+
+  // make sure that this is really a 68020+ machine if optimized for 020+
+  #if _M68060 || _M68040 || _M68030 || _M68020 || __mc68020 || __mc68030 || __mc68040 || __mc68060
+  if(isFlagClear(SysBase->AttnFlags, AFF_68020))
+    return(NULL);
+  #endif
+
+  #if defined(__amigaos4__) && defined(__NEWLIB__)
+  if((NewlibBase = OpenLibrary("newlib.library", 3)) &&
+     GETINTERFACE(INewlib, NewlibBase))
+  #endif
+  {
+    BOOL success = FALSE;
+
+    D(DBF_STARTUP, "LibInit()");
+
+    // cleanup the library header structure beginning with the
+    // library base.
+    base->libBase.lib_Node.ln_Type = NT_LIBRARY;
+    base->libBase.lib_Node.ln_Pri  = 0;
+    base->libBase.lib_Node.ln_Name = (char *)UserLibName;
+    base->libBase.lib_Flags        = LIBF_CHANGED | LIBF_SUMUSED;
+    base->libBase.lib_Version      = LIB_VERSION;
+    base->libBase.lib_Revision     = LIB_REVISION;
+    base->libBase.lib_IdString     = (char *)(UserLibID+6);
+
+    InitSemaphore(&base->libSem);
+    InitSemaphore(&base->poolSem);
+    InitSemaphore(&base->prefsSem);
+
+    base->sysBase = (APTR)SysBase;
+    base->pool = NULL;
+    base->prefs = NULL;
+    base->flags = 0;
+    base->rexx_use = 0;
+
+    // protect access to initBase()
+    ObtainSemaphore(&base->libSem);
+
+    // set the OpenURLBase
+    OpenURLBase = base;
+
+    // If we are not running on AmigaOS4 (no stackswap required) we go and
+    // do an explicit StackSwap() in case the user wants to make sure we
+    // have enough stack for his user functions
+    #if defined(MIN_STACKSIZE) && !defined(__amigaos4__)
+    success = callLibFunction(initBase, base);
+    #else
+    success = initBase(base);
+    #endif
+
+    // unprotect initBase()
+    ReleaseSemaphore(&base->libSem);
+
+    // check if everything worked out fine
+    if(success == TRUE)
     {
-        Remove((struct Node *)base);
+      // everything was successfully so lets
+      // set the initialized value and contiue
+      // with the class open phase
+      base->segList = librarySegment;
 
-#if defined(__amigaos4__)
-		  DeleteLibrary(base);
-		  //IExec->Release();
-#else
-        FreeMem((UBYTE *)base-base->lib_NegSize,base->lib_NegSize+base->lib_PosSize);
-#endif
-
-        res = lib_segList;
+      // return the library base as success
+      return base;
     }
     else
+      OpenURLBase = NULL;
+
+    #if defined(__amigaos4__) && defined(__NEWLIB__)
+    if(NewlibBase)
     {
-        base->lib_Flags |= LIBF_DELEXP;
-        res = (ULONG)NULL;
+      DROPINTERFACE(INewlib);
+      CloseLibrary(NewlibBase);
+      NewlibBase = NULL;
     }
+    #endif
+  }
+
+  return NULL;
+}
+
+/****************************************************************************/
+
+#ifndef __amigaos4__
+#define DeleteLibrary(LIB) \
+  FreeMem((STRPTR)(LIB)-(LIB)->lib_NegSize, (ULONG)((LIB)->lib_NegSize+(LIB)->lib_PosSize))
+#endif
 
 #if defined(__amigaos4__)
-	// prevents a deadlock if called from closeLib
-	 if( !bAlreadyHasSemaphore )
-#endif
-    ReleaseSemaphore(&lib_sem);
-
-    return res;
-}
-
-/****************************************************************************/
-
-#ifdef __MORPHOS__
-static ULONG closeLib(void)
+static BPTR LibExpunge(struct LibraryManagerInterface *Self)
 {
-    struct Library *base = (struct Library *)REG_A6;
+  struct ExecIFace *IExec = (struct ExecIFace *)(*(struct ExecBase **)4)->MainInterface;
+  struct LibraryHeader *base = (struct LibraryHeader *)Self->Data.LibBase;
+#elif defined(__MORPHOS__)
+static BPTR LibExpunge(void)
+{
+  struct LibraryHeader *base = (struct LibraryHeader*)REG_A6;
 #else
-ULONG SAVEDS ASM closeLib(REG(a6,struct Library *base))
+static BPTR LIBFUNC LibExpunge(REG(a6, struct LibraryHeader *base))
 {
 #endif
+  BPTR rc;
 
-    ULONG res = (ULONG)NULL;
+  D(DBF_STARTUP, "LibExpunge(): %ld", base->libBase.lib_OpenCnt);
 
-    ObtainSemaphore(&lib_sem);
+  // in case our open counter is still > 0, we have
+  // to set the late expunge flag and return immediately
+  if(base->libBase.lib_OpenCnt > 0)
+  {
+    SET_FLAG(base->libBase.lib_Flags, LIBF_DELEXP);
+    rc = 0;
+  }
+  else
+  {
+    // make sure to restore the SysBase
+    SysBase = (APTR)base->sysBase;
 
-	 base->lib_OpenCnt--;
+    // remove the library base from exec's lib list in advance
+    Remove((struct Node *)base);
 
-	 if (!base->lib_OpenCnt && !lib_use)
+    // free all our private data and stuff.
+    ObtainSemaphore(&base->libSem);
+
+    // make sure we have enough stack here
+    #if defined(MIN_STACKSIZE) && !defined(__amigaos4__)
+    callLibFunction(freeBase, base);
+    #else
+    freeBase(base);
+    #endif
+
+    // unprotect
+    ReleaseSemaphore(&base->libSem);
+
+    #if defined(__amigaos4__) && defined(__NEWLIB__)
+    if(NewlibBase)
     {
-        freeBase();
-
-        if (base->lib_Flags & LIBF_DELEXP)
-        {
-#if defined(__amigaos4__)
-			bAlreadyHasSemaphore = TRUE;
-			res = (ULONG)expungeLib( base );
-			bAlreadyHasSemaphore = FALSE;
-#else
-            Remove((struct Node *)base);
-            FreeMem((UBYTE *)base-base->lib_NegSize,base->lib_NegSize+base->lib_PosSize);
-
-            res = lib_segList;
-#endif
-        }
+      DROPINTERFACE(INewlib);
+      CloseLibrary(NewlibBase);
+      NewlibBase = NULL;
     }
+    #endif
 
-    ReleaseSemaphore(&lib_sem);
+    // make sure the system deletes the library as well.
+    rc = base->segList;
+    DeleteLibrary(&base->libBase);
+  }
 
-    return res;
+  return rc;
 }
 
 /****************************************************************************/
 
-#ifdef __MORPHOS__
-static ULONG nil(void)
+#if defined(__amigaos4__)
+static struct LibraryHeader *LibOpen(struct LibraryManagerInterface *Self, ULONG version UNUSED)
 {
-    return 0;
-}
+  struct LibraryHeader *base = (struct LibraryHeader *)Self->Data.LibBase;
+#elif defined(__MORPHOS__)
+static struct LibraryHeader *LibOpen(void)
+{
+  struct LibraryHeader *base = (struct LibraryHeader*)REG_A6;
+#else
+static struct LibraryHeader * LIBFUNC LibOpen(REG(d0, UNUSED ULONG version), REG(a6, struct LibraryHeader *base))
+{
 #endif
+  struct LibraryHeader *res = base;
+
+  D(DBF_STARTUP, "LibOpen(): %ld", base->libBase.lib_OpenCnt);
+
+  // LibOpen(), LibClose() and LibExpunge() are called while the system is in
+  // Forbid() state. That means that these functions should be quick and should
+  // not break this Forbid()!! Therefore the open counter should be increased
+  // as the very first instruction during LibOpen(), because a ClassOpen()
+  // which breaks a Forbid() and another task calling LibExpunge() will cause
+  // to expunge this library while it is not yet fully initialized. A crash
+  // is unavoidable then. Even the semaphore does not guarantee 100% protection
+  // against such a race condition, because waiting for the semaphore to be
+  // obtained will effectively break the Forbid()!
+
+  // increase the open counter ahead of anything else
+  base->libBase.lib_OpenCnt++;
+
+  // delete the late expunge flag
+  CLEAR_FLAG(base->libBase.lib_Flags, LIBF_DELEXP);
+
+  return res;
+}
 
 /****************************************************************************/
 
+#if defined(__amigaos4__)
+static BPTR LibClose(struct LibraryManagerInterface *Self)
+{
+  struct LibraryHeader *base = (struct LibraryHeader *)Self->Data.LibBase;
+#elif defined(__MORPHOS__)
+static BPTR LibClose(void)
+{
+  struct LibraryHeader *base = (struct LibraryHeader *)REG_A6;
+#else
+static BPTR LIBFUNC LibClose(REG(a6, struct LibraryHeader *base))
+{
+#endif
+  BPTR rc = 0;
+
+  D(DBF_STARTUP, "LibClose(): %ld", base->libBase.lib_OpenCnt);
+
+  // decrease the open counter
+  base->libBase.lib_OpenCnt--;
+
+  // in case the opern counter is <= 0 we can
+  // make sure that we free everything
+  if(base->libBase.lib_OpenCnt <= 0)
+  {
+    // in case the late expunge flag is set we go and
+    // expunge the library base right now
+    if(isFlagSet(base->libBase.lib_Flags, LIBF_DELEXP))
+    {
+      #if defined(__amigaos4__)
+      rc = LibExpunge(Self);
+      #elif defined(__MORPHOS__)
+      rc = LibExpunge();
+      #else
+      rc = LibExpunge(base);
+      #endif
+    }
+  }
+
+  return rc;
+}
+
+/****************************************************************************/

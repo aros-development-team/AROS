@@ -1,35 +1,43 @@
-/*
-**  OpenURL - MUI preferences for openurl.library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-**
-**  Ported to OS4 by Alexandre Balaban <alexandre@balaban.name>
-**
-**  Handle the all thing
-*/
+/***************************************************************************
 
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
 
-#include "OpenURL.h"
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
+
+#include "openurl.h"
+
 #define CATCOMP_NUMBERS
-#include "loc.h"
-#include "OpenURL_rev.h"
-#include "libraries/openurl.h"
+#include "locale.h"
+#include "version.h"
+
+#include <libraries/openurl.h>
+
+#include "SDI_hook.h"
+
+#include "debug.h"
 
 /**************************************************************************/
 
 struct data
 {
-    Object            *win;
-    Object            *pens;
-    Object            *about;
-    Object            *aboutMUI;
+  Object            *win;
+  Object            *about;
 
-    struct DiskObject *icon;
+  struct DiskObject *icon;
 };
 
 /**************************************************************************/
@@ -51,11 +59,9 @@ static struct NewMenu menu[] =
         MITEM(MSG_Menu_Save),
         MITEM(MSG_Menu_Use),
         MBAR,
-        MITEM(MSG_Menu_LastSaveds),
+        MITEM(MSG_Menu_LastSaved),
         MITEM(MSG_Menu_Restore),
         MITEM(MSG_Menu_Defaults),
-        MBAR,
-        MITEM(MSG_Menu_Pens),
         MBAR,
         MITEM(MSG_Menu_MUI),
 
@@ -66,35 +72,31 @@ static struct NewMenu menu[] =
 ** Used classes
 */
 
-static STRPTR usedClasses[] =
+static CONST_STRPTR usedClasses[] =
 {
-    "Textinput.mcc",
     "Urltext.mcc",
-
     NULL
 };
 
 /*
 ** Here we go
 */
-static ULONG
-mNew(struct IClass *cl,Object *obj,struct opSet *msg)
+static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    Object *strip, *win, *pens;
+    Object *strip, *win;
 
-    if (obj = (Object *)DoSuperNew(cl,obj,
-            MUIA_Application_Title,       PRG,
-            MUIA_Application_Version,     "$VER: "PRGNAME,
+    if((obj = (Object *)DoSuperNew(cl,obj,
+            MUIA_Application_Title,       "OpenURL-Prefs",
+            MUIA_Application_Version,     "$VER: OpenURL-Prefs " LIB_REV_STRING " [" SYSTEMSHORT "/" CPU "] (" LIB_DATE ") " LIB_COPYRIGHT,
             MUIA_Application_Author,      APPAUTHOR,
             MUIA_Application_Copyright,   getString(MSG_App_Copyright),
             MUIA_Application_Description, getString(MSG_App_Description),
             MUIA_Application_HelpFile,    APPHELP,
             MUIA_Application_Base,        APPBASENAME,
-            MUIA_Application_Menustrip,   strip = MUI_MakeObject(MUIO_MenustripNM,(ULONG)menu,MUIO_MenustripNM_CommandKeyCheck),
+            MUIA_Application_Menustrip,   strip = MUI_MakeObject(MUIO_MenustripNM,(IPTR)menu,MUIO_MenustripNM_CommandKeyCheck),
             MUIA_Application_UsedClasses, usedClasses,
             MUIA_Application_Window,      win = winObject, End,
-            MUIA_Application_Window,      pens = pensObject, End,
-            TAG_MORE,msg->ops_AttrList))
+            TAG_MORE,msg->ops_AttrList)) != NULL)
     {
         struct data *data = INST_DATA(cl,obj);
 
@@ -103,43 +105,30 @@ mNew(struct IClass *cl,Object *obj,struct opSet *msg)
         */
 
         data->win  = win;
-        data->pens = pens;
 
-        if (data->icon = GetDiskObject("PROGDIR:OpenURL"))
+        if((data->icon = GetDiskObject((STRPTR)"PROGDIR:OpenURL")) != NULL)
             superset(cl,obj,MUIA_Application_DiskObject,data->icon);
-
-        /*
-        ** Pens window
-        */
-
-        DoMethod(pens,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,MUIV_Notify_Self,3,MUIM_Set,MUIA_Window_Open,FALSE);
 
         /* Menus */
 
-        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_About),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)obj,1,MUIM_App_About);
-        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_AboutMUI),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)obj,2,MUIM_Application_AboutMUI,(ULONG)win);
-        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Hide),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)obj,3,MUIM_Set,MUIA_Application_Iconified,TRUE);
-        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Quit),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)obj,2,MUIM_Application_ReturnID,MUIV_Application_ReturnID_Quit);
+        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_About),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)obj,1,MUIM_App_About);
+        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_AboutMUI),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)MUIV_Notify_Application,2,MUIM_Application_AboutMUI,(IPTR)win);
+        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Hide),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)obj,3,MUIM_Set,MUIA_Application_Iconified,TRUE);
+        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Quit),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)obj,2,MUIM_Application_ReturnID,MUIV_Application_ReturnID_Quit);
 
-        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Save),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)win,2,MUIM_Win_StorePrefs,MUIV_Win_StorePrefs_Save);
-        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Use),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)win,2,MUIM_Win_StorePrefs,MUIV_Win_StorePrefs_Use);
-        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_LastSaveds),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)obj,2,MUIM_App_GetPrefs,MUIV_App_GetPrefs_LastSaveds);
-        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Restore),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)obj,2,MUIM_App_GetPrefs,MUIV_App_GetPrefs_Restore);
-        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Defaults),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)obj,2,MUIM_App_GetPrefs,MUIV_App_GetPrefs_Defaults);
-        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_MUI),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)obj,2,MUIM_Application_OpenConfigWindow,0);
-        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Pens),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)pens,3,MUIM_Set,MUIA_Window_Open,TRUE);
+        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Save),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)win,2,MUIM_Win_StorePrefs,MUIV_Win_StorePrefs_Save);
+        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Use),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)win,2,MUIM_Win_StorePrefs,MUIV_Win_StorePrefs_Use);
+        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_LastSaved),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)obj,2,MUIM_App_GetPrefs,MUIV_App_GetPrefs_LastSaveds);
+        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Restore),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)obj,2,MUIM_App_GetPrefs,MUIV_App_GetPrefs_Restore);
+        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Defaults),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)obj,2,MUIM_App_GetPrefs,MUIV_App_GetPrefs_Defaults);
+        DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_MUI),MUIM_Notify,MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)obj,2,MUIM_Application_OpenConfigWindow,0);
 
         /* Menus help */
         DoSuperMethod(cl,obj,MUIM_Notify,MUIA_Application_MenuHelp,MUIV_EveryTime,MUIV_Notify_Self,
-            5,MUIM_Application_ShowHelp,(ULONG)win,(ULONG)APPHELP,(ULONG)"MENUS",0);
+            5,MUIM_Application_ShowHelp,(IPTR)win,(IPTR)APPHELP,(IPTR)"MENUS",0);
 
         /*
-        ** Setup default lamps pens
-        */
-        DoMethod(pens,MUIM_Pens_Change);
-
-        /*
-        ** Load list formats and pens prefs
+        ** Load list formats
         */
         DoSuperMethod(cl,obj,MUIM_Application_Load,(ULONG)MUIV_Application_Load_ENV);
 
@@ -154,23 +143,22 @@ mNew(struct IClass *cl,Object *obj,struct opSet *msg)
         }
     }
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 /***********************************************************************/
 
-static ULONG
-mDispose(struct IClass *cl,Object *obj,Msg msg)
+static IPTR mDispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct data       *data = INST_DATA(cl,obj);
     struct DiskObject *icon = data->icon;
-    ULONG             res;
+    IPTR              res;
 
     /*
     ** Because of users hate an app that saves on disc
-    ** at any exit, we check if something changed
+    ** at any exit, we check if you must save something
     */
-    if (DoMethod(data->win,MUIM_App_CheckSave) || DoMethod(data->pens,MUIM_App_CheckSave))
+    if (DoMethod(data->win,MUIM_App_CheckSave))
     {
         DoSuperMethod(cl,obj,MUIM_Application_Save,(ULONG)MUIV_Application_Save_ENV);
         DoSuperMethod(cl,obj,MUIM_Application_Save,(ULONG)MUIV_Application_Save_ENVARC);
@@ -184,45 +172,25 @@ mDispose(struct IClass *cl,Object *obj,Msg msg)
 }
 
 /***********************************************************************/
-/*
-** We just care of pens
-*/
 
-static ULONG
-mSets(struct IClass *cl,Object *obj,struct opSet *msg)
-{
-    struct MUI_PenSpec **specs;
-
-    if (specs = (struct MUI_PenSpec **)GetTagData(MUIA_App_Pens,(ULONG)NULL,msg->ops_AttrList))
-    {
-        struct data *data = INST_DATA(cl,obj);
-
-        set(data->win,MUIA_App_Pens,specs);
-    }
-
-    return DoSuperMethodA(cl,obj,(Msg)msg);
-}
-
-/***********************************************************************/
-
-static Object *
-findWinObjByAttr(Object *app,ULONG attr,ULONG val)
+static Object *findWinObjByAttr(Object *app, ULONG attr, IPTR val)
 {
     struct List *winlist;
     Object      *obj;
-    APTR        state;
+    Object      *state;
 
     /* return the window object which supports OM_GET on attr, and
        whose value of attr == val */
 
-    get(app,MUIA_Application_WindowList,&winlist);
-    state = winlist->lh_Head;
+    winlist = (struct List *)xget(app,MUIA_Application_WindowList);
+    state = (Object *)winlist->lh_Head;
 
-    while(obj = NextObject(&state))
+    while((obj = NextObject(&state)) != NULL)
     {
-        ULONG value;
+        IPTR value;
 
-        if (get(obj,attr,&value) && (value==val)) break;
+        if((value = xget(obj,attr)) != 0 && (value == val))
+          break;
     }
 
     return obj;
@@ -230,8 +198,7 @@ findWinObjByAttr(Object *app,ULONG attr,ULONG val)
 
 /**************************************************************************/
 
-static ULONG
-mOpenWin(struct IClass *cl,Object *obj,struct MUIP_App_OpenWin *msg)
+static IPTR mOpenWin(UNUSED struct IClass *cl, Object *obj, struct MUIP_App_OpenWin *msg)
 {
     Object *win = findWinObjByAttr(obj,msg->IDAttr,msg->IDVal);
 
@@ -243,7 +210,7 @@ mOpenWin(struct IClass *cl,Object *obj,struct MUIP_App_OpenWin *msg)
                         msg->IDAttr, msg->IDVal,
                         TAG_MORE,    &msg->InitAttrs);
 
-        if (win) DoMethod(obj,OM_ADDMEMBER,(ULONG)win);
+        if (win) DoMethod(obj,OM_ADDMEMBER,(IPTR)win);
 
         set(obj,MUIA_Application_Sleep,FALSE);
     }
@@ -253,8 +220,7 @@ mOpenWin(struct IClass *cl,Object *obj,struct MUIP_App_OpenWin *msg)
 
 /**************************************************************************/
 
-static ULONG
-mCloseWin(struct IClass *cl,Object *obj,struct MUIP_App_CloseWin *msg)
+static IPTR mCloseWin(struct IClass *cl, Object *obj, struct MUIP_App_CloseWin *msg)
 {
     struct data *data = INST_DATA(cl,obj);
     Object      *win = findWinObjByAttr(obj,msg->IDAttr,msg->IDVal);
@@ -262,10 +228,10 @@ mCloseWin(struct IClass *cl,Object *obj,struct MUIP_App_CloseWin *msg)
     if (win)
     {
         set(win,MUIA_Window_Open,FALSE);
-        DoMethod(obj,OM_REMMEMBER,(ULONG)win);
+        DoMethod(obj,OM_REMMEMBER,(IPTR)win);
         MUI_DisposeObject(win);
 
-        if (((struct URL_Node *)msg->IDVal)->Flags & UNF_NEW)
+        if (isFlagSet(((struct URL_Node *)msg->IDVal)->Flags, UNF_NEW))
             DoMethod(data->win,MUIM_Win_Delete,msg->IDVal);
     }
 
@@ -274,10 +240,9 @@ mCloseWin(struct IClass *cl,Object *obj,struct MUIP_App_CloseWin *msg)
 
 /**************************************************************************/
 
-static ULONG
-mOpenConfigWindow(struct IClass *cl,Object *obj,Msg msg)
+static IPTR mOpenConfigWindow(struct IClass *cl, Object *obj, Msg msg)
 {
-    ULONG res;
+    IPTR res;
 
     set(obj,MUIA_Application_Sleep,TRUE);
     res = DoSuperMethodA(cl,obj,(Msg)msg);
@@ -288,71 +253,42 @@ mOpenConfigWindow(struct IClass *cl,Object *obj,Msg msg)
 
 /***********************************************************************/
 
-static ULONG
-mDisposeWin(struct IClass *cl,Object *obj,struct MUIP_App_DisposeWin *msg)
+static IPTR mDisposeWin(struct IClass *cl, Object *obj, struct MUIP_App_DisposeWin *msg)
 {
     struct data *data = INST_DATA(cl,obj);
     Object      *win = msg->win;
 
     set(win,MUIA_Window_Open,FALSE);
-    DoSuperMethod(cl,obj,OM_REMMEMBER,(ULONG)win);
+    DoSuperMethod(cl,obj,OM_REMMEMBER,(IPTR)win);
     MUI_DisposeObject(win);
 
-    if (win==data->about) data->about = NULL;
-    else if (win==data->aboutMUI) data->aboutMUI = NULL;
+    if(win==data->about)
+      data->about = NULL;
 
     return 0;
 }
 
 /***********************************************************************/
 
-static ULONG
-mAboutMUI(struct IClass *cl,Object *obj, Msg msg)
+static IPTR mAbout(struct IClass *cl, Object *obj, UNUSED Msg msg)
 {
     struct data *data = INST_DATA(cl,obj);
 
     superset(cl,obj,MUIA_Application_Sleep,TRUE);
 
-    if (!data->aboutMUI)
+    if(data->about == NULL)
     {
-        if (data->aboutMUI = AboutmuiObject,
-                MUIA_HelpNode,             "MUI",
-                MUIA_Aboutmui_Application, obj,
-                MUIA_Window_RefWindow,     data->win,
-            End)
-            DoMethod(data->aboutMUI,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,(ULONG)obj,5,
-                MUIM_Application_PushMethod,(ULONG)obj,2,MUIM_App_DisposeWin,(ULONG)data->aboutMUI);
-    }
-
-    openWindow(obj,data->aboutMUI);
-
-    superset(cl,obj,MUIA_Application_Sleep,FALSE);
-
-    return 0;
-}
-
-/***********************************************************************/
-
-static ULONG
-mAbout(struct IClass *cl,Object *obj,Msg msg)
-{
-    struct data *data = INST_DATA(cl,obj);
-
-    superset(cl,obj,MUIA_Application_Sleep,TRUE);
-
-    if (!data->about)
-    {
-        if (g_aboutClass || initAboutClass())
+        if(g_aboutClass != NULL || initAboutClass() == TRUE)
         {
-            if (data->about = aboutObject,
+            if((data->about = aboutObject,
                     MUIA_Aboutmui_Application, obj,
                     MUIA_Window_RefWindow,     data->win,
-                End)
+                End) != NULL)
             {
-                DoSuperMethod(cl,obj,OM_ADDMEMBER,(ULONG)data->about);
-                DoMethod(data->about,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,(ULONG)obj,5,
-                    MUIM_Application_PushMethod,(ULONG)obj,2,MUIM_App_DisposeWin,(ULONG)data->about);
-    	    }
+                DoSuperMethod(cl,obj,OM_ADDMEMBER,(IPTR)data->about);
+                DoMethod(data->about,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,(IPTR)obj,5,
+                    MUIM_Application_PushMethod,(IPTR)obj,2,MUIM_App_DisposeWin,(IPTR)data->about);
+            }
         }
     }
 
@@ -365,45 +301,46 @@ mAbout(struct IClass *cl,Object *obj,Msg msg)
 
 /***********************************************************************/
 
-static void
-closeAllWindows(Object *app)
+static void closeAllWindows(Object *app)
 {
-    ULONG loop;
+  BOOL loop;
 
-    do
+  ENTER();
+
+  do
+  {
+    struct List *list;
+    Object *mstate;
+    Object *win;
+
+    loop = FALSE;
+
+    list = (struct List *)xget(app, MUIA_Application_WindowList);
+    mstate = (Object *)list->lh_Head;
+
+    while((win = NextObject(&mstate)) != NULL)
     {
-        struct List *list;
-        Object      *mstate;
-        Object      *win;
+      ULONG ok = FALSE;
 
-        loop = FALSE;
-
-        get(app,MUIA_Application_WindowList,&list);
-        mstate = (Object *)list->lh_Head;
-
-        while (win = NextObject(&mstate))
-        {
-            ULONG ok = FALSE;
-
-            get(win,MUIA_App_IsSubWin,&ok);
-            if (ok)
-            {
-                set(win,MUIA_Window_Open,FALSE);
-                DoMethod(app,OM_REMMEMBER,(ULONG)win);
-                MUI_DisposeObject(win);
-                loop = TRUE;
-                break;
-            }
-        }
-
+      ok = xget(win, MUIA_App_IsSubWin);
+      if(ok)
+      {
+        set(win, MUIA_Window_Open, FALSE);
+        DoMethod(app, OM_REMMEMBER, (IPTR)win);
+        MUI_DisposeObject(win);
+        loop = TRUE;
+        break;
+      }
     }
-    while (loop);
+  }
+  while(loop == TRUE);
+
+  LEAVE();
 }
 
 /***********************************************************************/
 
-static ULONG
-mGetPrefs(struct IClass *cl,Object *obj,struct MUIP_App_GetPrefs *msg)
+static IPTR mGetPrefs(struct IClass *cl, Object *obj, struct MUIP_App_GetPrefs *msg)
 {
     struct data *data = INST_DATA(cl,obj);
 
@@ -419,17 +356,13 @@ mGetPrefs(struct IClass *cl,Object *obj,struct MUIP_App_GetPrefs *msg)
 
 /***********************************************************************/
 
-M_DISP(dispatcher)
+SDISPATCHER(dispatcher)
 {
-    M_DISPSTART
-
     switch (msg->MethodID)
     {
         case OM_NEW:                            return mNew(cl,obj,(APTR)msg);
         case OM_DISPOSE:                        return mDispose(cl,obj,(APTR)msg);
-        case OM_SET:                            return mSets(cl,obj,(APTR)msg);
 
-        case MUIM_Application_AboutMUI:         return mAboutMUI(cl,obj,(APTR)msg);
         case MUIM_Application_OpenConfigWindow: return mOpenConfigWindow(cl,obj,(APTR)msg);
 
         case MUIM_App_OpenWin:                  return mOpenWin(cl,obj,(APTR)msg);
@@ -442,29 +375,30 @@ M_DISP(dispatcher)
     }
 }
 
-M_DISPEND(dispatcher)
-
 /**************************************************************************/
 
-ULONG
-initAppClass(void)
+BOOL initAppClass(void)
 {
-    if (g_appClass = MUI_CreateCustomClass(NULL,MUIC_Application,NULL,sizeof(struct data),DISP(dispatcher)))
+    BOOL success = FALSE;
+
+    ENTER();
+
+    if((g_appClass = MUI_CreateCustomClass(NULL, MUIC_Application, NULL, sizeof(struct data), ENTRY(dispatcher))) != NULL)
     {
         localizeNewMenu(menu);
-
-        return TRUE;
+        success = TRUE;
     }
 
-    return FALSE;
+    RETURN(success);
+    return success;
 }
 
 /**************************************************************************/
 
-void
-disposeAppClass(void)
+void disposeAppClass(void)
 {
-    if (g_appClass) MUI_DeleteCustomClass(g_appClass);
+    if(g_appClass != NULL)
+        MUI_DeleteCustomClass(g_appClass);
 }
 
 /**************************************************************************/

@@ -1,21 +1,37 @@
-/*
-**  openurl.library - universal URL display and browser
-**  launcher library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-**
-**  Ported to OS4 by Alexandre Balaban <alexandre@balaban.name>
-*/
+/***************************************************************************
 
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
+
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
 
 #include "lib.h"
+
+#include <proto/dos.h>
+#include <proto/exec.h>
+#include <proto/utility.h>
+
+#include <stdio.h>
+
+#if !defined(__amigaos4__)
 #include <dos/dostags.h>
 #include <exec/execbase.h>
+#endif
+
+#include "debug.h"
 
 /**************************************************************************/
 
@@ -25,8 +41,8 @@
 
 struct placeHolder
 {
-    UBYTE ph_Char;
-    UBYTE *ph_String;
+    TEXT ph_Char;
+    STRPTR ph_String;
 };
 
 #define PH_COUNT_BROWSER    2
@@ -35,11 +51,12 @@ struct placeHolder
 
 /**************************************************************************/
 
-static UBYTE *
-expandPlaceHolders(UBYTE *template,struct placeHolder *ph,int num)
+static STRPTR expandPlaceHolders(STRPTR template, struct placeHolder *ph, int num)
 {
-    UBYTE *p, *res;
-    int   i, length = 0;
+    STRPTR p, res = NULL;
+    int i, length = 0;
+
+    ENTER();
 
     for (p = template; *p; p++)
     {
@@ -52,189 +69,244 @@ expandPlaceHolders(UBYTE *template,struct placeHolder *ph,int num)
         length++;
     }
 
-    if (!(res = allocVecPooled(length+1)))
-        return NULL;
-
-    for (p = res; *template; template++)
+    if ((res = allocArbitrateVecPooled(length+1)) != NULL)
     {
-        for (i = 0; i<num; i++)
-            if ((*template=='%') && (*(template+1)== ph[i].ph_Char))
-                break;
-
-        if (i<num)
+        for (p = res; *template; template++)
         {
-            strcpy(p,ph[i].ph_String);
-            p += strlen(ph[i].ph_String);
-            template++;
-            continue;
+            for (i = 0; i<num; i++)
+                if ((*template=='%') && (*(template+1)== ph[i].ph_Char))
+                    break;
+
+            if (i<num)
+            {
+                strcpy(p,ph[i].ph_String);
+                p += strlen(ph[i].ph_String);
+                template++;
+                continue;
+            }
+
+            *p++ = *template;
         }
 
-        *p++ = *template;
+        *p = '\0';
     }
 
-    *p = '\0';
-
+    RETURN(res);
     return res;
 }
 
 /**************************************************************************/
 
-static ULONG
-writeToFile(UBYTE *fileName,UBYTE *str)
+static BOOL writeToFile(STRPTR fileName, STRPTR str)
 {
-    BPTR  fh;
-    ULONG res = FALSE;
-    LONG  len = strlen(str);
+    BOOL res = FALSE;
+    BPTR fh;
 
-    if ((fh = Open(fileName,MODE_NEWFILE)))
+    ENTER();
+
+    if((fh = Open(fileName, MODE_NEWFILE)))
     {
-        if (Write(fh,str,len)==len)
+        LONG len = strlen(str);
+
+        if(Write(fh, str, len)==len)
             res = TRUE;
 
         Close(fh);
     }
 
+    RETURN(res);
     return res;
 }
 
 /**************************************************************************/
 
-static UBYTE *
-findRexxPort(struct List *list,UBYTE *name)
+static STRPTR findRexxPort(struct List *list,STRPTR name)
 {
+    STRPTR portName = NULL;
     struct Node *n;
-    ULONG       len;
+    ULONG len;
+
+    ENTER();
 
     /* find a rexx port, allowing a .<number> extension */
 
     len = strlen(name);
 
-    for (n = list->lh_Head; n->ln_Succ; n = n->ln_Succ)
+    for(n = list->lh_Head; n->ln_Succ; n = n->ln_Succ)
     {
-        if (n->ln_Name && !strncmp(n->ln_Name,name,len) &&
-            (n->ln_Name[len]=='\0' || (n->ln_Name[len]=='.' && isdigits(&n->ln_Name[len+1]))))
+        if(n->ln_Name != NULL && strncmp(n->ln_Name, name, len) == 0 &&
+            (n->ln_Name[len] == '\0' || (n->ln_Name[len] == '.' && isdigits(&n->ln_Name[len+1]))))
         {
-            return n->ln_Name;
+            portName = n->ln_Name;
+            break;
         }
     }
 
-    return NULL;
+    RETURN(portName);
+    return portName;
 }
 
 /**************************************************************************/
 
-static UBYTE *
-waitForRexxPort(UBYTE *port)
+static STRPTR waitForRexxPort(STRPTR port)
 {
+    STRPTR name = NULL;
     int i;
 
     /* (busy) wait for the port to appear */
 
-    for (i = 0; i<FINDPORT_NUM; i++)
+    for(i = 0; i<FINDPORT_NUM; i++)
     {
-        UBYTE *rxport;
+        STRPTR rxport;
 
         Forbid();
-        rxport = findRexxPort(&SysBase->PortList,port);
+        rxport = findRexxPort(&((struct ExecBase *)SysBase)->PortList, port);
         Permit();
 
-        if (rxport) return(rxport);
+        if(rxport != NULL)
+        {
+          name = rxport;
+          break;
+        }
 
-        if (SetSignal(0,0) & SIGBREAKF_CTRL_C)
-            return NULL;
+        if(SetSignal(0, 0) & SIGBREAKF_CTRL_C)
+        {
+          name = NULL;
+          break;
+        }
 
         Delay(FINDPORT_DTIME);
     }
 
-    return NULL;
+    RETURN(name);
+    return name;
 }
 
 /**************************************************************************/
 
-static ULONG
-sendRexxMsg(UBYTE *rxport,UBYTE *rxcmd)
+static BOOL sendRexxMsg(STRPTR rxport, STRPTR rxcmd)
 {
-    ULONG res = FALSE;
-    int   sig;
+  BOOL res = FALSE;
+  struct Process *proc;
 
-    if ((sig = AllocSignal(-1))>=0)
+  ENTER();
+
+  #if defined(__MORPHOS__)
+  proc = CreateNewProcTags(NP_Entry,        handler,
+                           NP_CodeType,     CODETYPE_PPC,
+                           NP_PPCStackSize, 8192,
+                           NP_StackSize,    4196,
+                           NP_Name,         "OpenURL - Handler",
+                           NP_CopyVars,     FALSE,
+                           NP_Input,        NULL,
+                           NP_CloseInput,   FALSE,
+                           NP_Output,       NULL,
+                           NP_CloseOutput,  FALSE,
+                           NP_Error,        NULL,
+                           NP_CloseError,   FALSE,
+                           TAG_DONE);
+  #else
+  proc = CreateNewProcTags(NP_Entry,        handler,
+                           NP_StackSize,    4196,
+                           NP_Name,         "OpenURL - Handler",
+                           NP_CopyVars,     FALSE,
+                           NP_Input,        NULL,
+                           NP_CloseInput,   FALSE,
+                           NP_Output,       NULL,
+                           NP_CloseOutput,  FALSE,
+                           NP_Error,        NULL,
+                           NP_CloseError,   FALSE,
+                           TAG_DONE);
+  #endif
+
+  if(proc != NULL)
+  {
+    struct MsgPort *port;
+
+    #if defined(__amigaos4__)
+    port = AllocSysObjectTags(ASOT_PORT, TAG_DONE);
+    #else
+    port = CreateMsgPort();
+    #endif
+
+    if(port != NULL)
     {
-        struct Process *proc;
-        struct TagItem attrs[] = {NP_Entry,        (IPTR)handler,
-                                  #ifdef __MORPHOS__
-                                  NP_CodeType,     CODETYPE_PPC,
-                                  NP_PPCStackSize, 8192,
-                                  #endif
-                                  NP_StackSize,    4196,
-                                  NP_Name,         (IPTR)"OpenURL - Handler",
-                                  NP_CopyVars,     FALSE,
-											 NP_Input,        (IPTR)NULL,
-                                  NP_CloseInput,   FALSE,
-											 NP_Output,       (IPTR)NULL,
-                                  NP_CloseOutput,  FALSE,
-											 NP_Error,        (IPTR)NULL,
-                                  NP_CloseError,   FALSE,
-                                  TAG_DONE};
+      struct startMsg *smsg;
 
-        if ((proc = CreateNewProcTagList(attrs)))
-        {
-            struct MsgPort  port;
-            struct startMsg smsg;
+      #if defined(__amigaos4__)
+      smsg = AllocSysObjectTags(ASOT_MESSAGE, ASOMSG_Size, sizeof(*smsg),
+                                              ASOMSG_ReplyPort, port,
+                                              TAG_DONE);
+      #else
+      smsg = allocArbitrateVecPooled(sizeof(*smsg));
+      #endif
 
-            Forbid();
-            lib_use++;
-            Permit();
+      if(smsg != NULL)
+      {
+        #if !defined(__amigaos4__)
+        INITMESSAGE(smsg, port, sizeof(*smsg));
+        #endif
 
-            INITPORT(&port,sig);
+        smsg->port = rxport;
+        smsg->cmd = rxcmd;
 
-            memset(&smsg,0,sizeof(smsg));
-            INITMESSAGE(&smsg,&port,sizeof(smsg));
-            smsg.port = rxport;
-            smsg.cmd  = rxcmd;
+        ObtainSemaphore(&OpenURLBase->libSem);
+        OpenURLBase->rexx_use++;
+        ReleaseSemaphore(&OpenURLBase->libSem);
 
-            PutMsg(&proc->pr_MsgPort,(struct Message *)&smsg);
-            WaitPort(&port);
-            GetMsg(&port);
+        PutMsg(&proc->pr_MsgPort, (struct Message *)smsg);
+        WaitPort(port);
+        GetMsg(port);
 
-            res = smsg.res;
-        }
+        res = smsg->res;
 
-        FreeSignal(sig);
+        #if defined(__amigaos4__)
+        FreeSysObject(ASOT_MESSAGE, smsg);
+        #else
+        freeArbitrateVecPooled(smsg);
+        #endif
+      }
+
+      #if defined(__amigaos4__)
+      FreeSysObject(ASOT_PORT, port);
+      #else
+      DeleteMsgPort(port);
+      #endif
     }
+  }
 
-    return res;
+  RETURN(res);
+  return res;
 }
 
 /****************************************************************************/
 
-ULONG
-sendToBrowser(UBYTE *URL,
-              struct List *portlist,
-              ULONG show,
-              ULONG toFront,
-              ULONG newWindow,
-              ULONG launch,
-              UBYTE *pubScreenName)
+BOOL sendToBrowser(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScreenName)
 {
-    ULONG                  res = FALSE;
-    UBYTE                  *cmd = NULL;
-    struct placeHolder     ph[PH_COUNT_BROWSER];
+    BOOL res = FALSE;
+    STRPTR cmd = NULL;
+    struct placeHolder ph[PH_COUNT_BROWSER];
     struct URL_BrowserNode *bn;
+
+    ENTER();
 
     /* set up the placeholder mapping */
 
     ph[0].ph_Char = 'u'; ph[0].ph_String = URL;
-    ph[1].ph_Char = 'p'; ph[1].ph_String = pubScreenName ? pubScreenName : (UBYTE *)"Workbench";
+    ph[1].ph_Char = 'p'; ph[1].ph_String = pubScreenName ? pubScreenName : (STRPTR)"Workbench";
 
     /* try to find one of the browsers in the list */
 
-    for (bn = (struct URL_BrowserNode *)lib_prefs->up_BrowserList.mlh_Head;
+    for (bn = (struct URL_BrowserNode *)OpenURLBase->prefs->up_BrowserList.mlh_Head;
          bn->ubn_Node.mln_Succ;
          bn = (struct URL_BrowserNode *)bn->ubn_Node.mln_Succ)
     {
-        UBYTE *port;
+        STRPTR port;
 
-        if (bn->ubn_Flags & UNF_DISABLED) continue;
+        if(isFlagSet(bn->ubn_Flags, UNF_DISABLED))
+            continue;
+        if(bn->ubn_Path[0] == '\0')
+            continue;
 
         port = findRexxPort(portlist,bn->ubn_Port);
 
@@ -242,22 +314,22 @@ sendToBrowser(UBYTE *URL,
         {
             /* send uniconify msg */
 
-            if (show && *bn->ubn_ShowCmd)
+            if (isFlagSet(flags, SENDTOF_SHOW) && *bn->ubn_ShowCmd)
                 sendRexxMsg(port,bn->ubn_ShowCmd);
 
             /* send screentofront command */
 
-            if (toFront && *bn->ubn_ToFrontCmd)
+            if (isFlagSet(flags, SENDTOF_TOFRONT) && *bn->ubn_ToFrontCmd)
                 sendRexxMsg(port,bn->ubn_ToFrontCmd);
 
             /* try sending openurl msg */
 
-            if (!(cmd = expandPlaceHolders(newWindow ? bn->ubn_OpenURLWCmd : bn->ubn_OpenURLCmd,ph,PH_COUNT_BROWSER)))
+            if (!(cmd = expandPlaceHolders(isFlagSet(flags, SENDTOF_NEWWINDOW) ? bn->ubn_OpenURLWCmd : bn->ubn_OpenURLCmd,ph,PH_COUNT_BROWSER)))
                 goto done;
 
             if (!(res = sendRexxMsg(port,cmd)))
             {
-                freeVecPooled(cmd);
+                freeArbitrateVecPooled(cmd);
                 cmd = NULL;
             }
             else goto done;
@@ -266,19 +338,23 @@ sendToBrowser(UBYTE *URL,
 
     /* no running browser, launch a new one */
 
-    if (!launch) goto done;
+    if (isFlagClear(flags, SENDTOF_LAUNCH))
+        goto done;
 
-    for (bn = (struct URL_BrowserNode *)lib_prefs->up_BrowserList.mlh_Head;
+    for (bn = (struct URL_BrowserNode *)OpenURLBase->prefs->up_BrowserList.mlh_Head;
          bn->ubn_Node.mln_Succ;
          bn = (struct URL_BrowserNode *)bn->ubn_Node.mln_Succ)
     {
         ULONG  startOnly;
-        UBYTE  *filePart, c = '\0';
+        STRPTR filePart;
+        TEXT   c = '\0';
         BPTR   lock;
         LONG   error;
 
-        if (bn->ubn_Flags & UNF_DISABLED) continue;
-        if (!*bn->ubn_Path) continue;
+        if(isFlagSet(bn->ubn_Flags, UNF_DISABLED))
+            continue;
+        if(bn->ubn_Path[0] == '\0')
+            continue;
 
         /* compose commandline */
 
@@ -305,10 +381,11 @@ sendToBrowser(UBYTE *URL,
         error = SystemTags(cmd,SYS_Asynch,    TRUE,
                                SYS_Input,     Open("NIL:",MODE_NEWFILE),
                                SYS_Output,    NULL,
+                               SYS_Error,     NULL,
                                lock ? NP_CurrentDir : TAG_IGNORE, lock,
                                TAG_DONE);
 
-        freeVecPooled(cmd);
+        freeArbitrateVecPooled(cmd);
         cmd = NULL;
 
         if (error)
@@ -319,7 +396,7 @@ sendToBrowser(UBYTE *URL,
 
         if (!startOnly)
         {
-            UBYTE *rxport;
+            STRPTR rxport;
 
             /* send urlopen command */
 
@@ -341,41 +418,39 @@ sendToBrowser(UBYTE *URL,
     }
 
 done:
-    if (cmd) freeVecPooled(cmd);
+    if(cmd)
+      freeArbitrateVecPooled(cmd);
 
+    RETURN(res);
     return res;
 }
 
 /**************************************************************************/
 
-ULONG
-sendToFTP(UBYTE *URL,
-          struct List *portlist,
-          ULONG show,
-          ULONG toFront,
-          ULONG newWindow,
-          ULONG launch,
-          UBYTE *pubScreenName)
+BOOL sendToFTP(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScreenName)
 {
-    ULONG              res = FALSE;
-    UBYTE              *cmd = NULL;
+    BOOL res = FALSE;
+    STRPTR cmd = NULL;
     struct placeHolder ph[PH_COUNT_FTP];
     struct URL_FTPNode *fn;
+
+    ENTER();
 
     /* set up the placeholder mapping */
 
     ph[0].ph_Char = 'u'; /*ph[0].ph_String = URL;*/
-    ph[1].ph_Char = 'p'; ph[1].ph_String = pubScreenName ? pubScreenName : (UBYTE *)"Workbench";
+    ph[1].ph_Char = 'p'; ph[1].ph_String = pubScreenName ? pubScreenName : (STRPTR)"Workbench";
 
     /* try to find one of the ftp client in the list */
 
-    for (fn = (struct URL_FTPNode *)lib_prefs->up_FTPList.mlh_Head;
+    for (fn = (struct URL_FTPNode *)OpenURLBase->prefs->up_FTPList.mlh_Head;
          fn->ufn_Node.mln_Succ;
          fn = (struct URL_FTPNode *)fn->ufn_Node.mln_Succ)
     {
-        UBYTE *port;
+        STRPTR port;
 
-    if (fn->ufn_Flags & UNF_DISABLED) continue;
+        if(isFlagSet(fn->ufn_Flags, UNF_DISABLED))
+            continue;
 
         port = findRexxPort(portlist,fn->ufn_Port);
 
@@ -383,26 +458,27 @@ sendToFTP(UBYTE *URL,
         {
             /* send uniconify msg */
 
-            if (show && *fn->ufn_ShowCmd)
+            if (isFlagSet(flags, SENDTOF_SHOW) && *fn->ufn_ShowCmd)
                 sendRexxMsg(port,fn->ufn_ShowCmd);
 
             /* send screentofront command */
 
-            if (toFront && *fn->ufn_ToFrontCmd)
+            if (isFlagSet(flags, SENDTOF_TOFRONT) && *fn->ufn_ToFrontCmd)
                 sendRexxMsg(port,fn->ufn_ToFrontCmd);
 
             /* try sending openurl msg */
 
-            if (fn->ufn_Flags & UFNF_REMOVEFTP && !Strnicmp(URL,"ftp://",6))
-            ph[0].ph_String = URL+6;
-            else ph[0].ph_String = URL+6;
+            if(isFlagSet(fn->ufn_Flags, UFNF_REMOVEFTP) && !Strnicmp(URL,"ftp://",6))
+                ph[0].ph_String = URL+6;
+            else
+                ph[0].ph_String = URL+6;
 
-            if (!(cmd = expandPlaceHolders(newWindow ? fn->ufn_OpenURLWCmd : fn->ufn_OpenURLCmd,ph,PH_COUNT_FTP)))
+            if (!(cmd = expandPlaceHolders(isFlagSet(flags, SENDTOF_NEWWINDOW) ? fn->ufn_OpenURLWCmd : fn->ufn_OpenURLCmd,ph,PH_COUNT_FTP)))
                 goto done;
 
             if (!(res = sendRexxMsg(port,cmd)))
             {
-                freeVecPooled(cmd);
+                freeArbitrateVecPooled(cmd);
                 cmd = NULL;
             }
             else goto done;
@@ -411,19 +487,23 @@ sendToFTP(UBYTE *URL,
 
     /* no running ftp client, launch a new one */
 
-    if (!launch) goto done;
+    if (isFlagClear(flags, SENDTOF_LAUNCH))
+        goto done;
 
-    for (fn = (struct URL_FTPNode *)lib_prefs->up_FTPList.mlh_Head;
+    for (fn = (struct URL_FTPNode *)OpenURLBase->prefs->up_FTPList.mlh_Head;
          fn->ufn_Node.mln_Succ;
          fn = (struct URL_FTPNode *)fn->ufn_Node.mln_Succ)
     {
         ULONG  startOnly;
-        UBYTE  *filePart, c = '\0';
+        STRPTR filePart;
+        TEXT   c = '\0';
         BPTR   lock;
         LONG   error;
 
-    if (fn->ufn_Flags & UNF_DISABLED) continue;
-        if (!*fn->ufn_Path) continue;
+        if(isFlagSet(fn->ufn_Flags, UNF_DISABLED))
+            continue;
+        if(fn->ufn_Path[0] == '\0')
+            continue;
 
         /* compose commandline */
 
@@ -432,9 +512,10 @@ sendToFTP(UBYTE *URL,
         else
             startOnly = FALSE;
 
-    if (fn->ufn_Flags & UFNF_REMOVEFTP && !Strnicmp(URL,"ftp://",6))
+        if(isFlagSet(fn->ufn_Flags, UFNF_REMOVEFTP) && !Strnicmp(URL,"ftp://",6))
             ph[0].ph_String = URL+6;
-        else ph[0].ph_String = URL+6;
+        else
+            ph[0].ph_String = URL+6;
 
         if (!(cmd = expandPlaceHolders(fn->ufn_Path,ph,PH_COUNT_FTP)))
             goto done;
@@ -456,10 +537,11 @@ sendToFTP(UBYTE *URL,
         error = SystemTags(cmd,SYS_Asynch,    TRUE,
                                SYS_Input,     Open("NIL:",MODE_NEWFILE),
                                SYS_Output,    NULL,
+                               SYS_Error,     NULL,
                                lock ? NP_CurrentDir : TAG_IGNORE, lock,
                                TAG_DONE);
 
-        freeVecPooled(cmd);
+        freeArbitrateVecPooled(cmd);
         cmd = NULL;
 
         if (error)
@@ -470,7 +552,7 @@ sendToFTP(UBYTE *URL,
 
         if (!startOnly)
         {
-            UBYTE *rxport;
+            STRPTR rxport;
 
             /* send urlopen command */
 
@@ -492,7 +574,10 @@ sendToFTP(UBYTE *URL,
     }
 
 done:
-    if (cmd) freeVecPooled(cmd);
+    if(cmd)
+      freeArbitrateVecPooled(cmd);
+
+    RETURN(res);
     return res;
 }
 
@@ -500,24 +585,21 @@ done:
 
 static WORD trans[256];
 
-ULONG
-sendToMailer(UBYTE *URL,
-             struct List *portlist,
-             ULONG show,
-             ULONG toFront,
-             ULONG launch,
-             UBYTE *pubScreenName)
+BOOL sendToMailer(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScreenName)
 {
     struct placeHolder    ph[PH_COUNT_MAILER];
     struct URL_MailerNode *mn;
-    UBYTE                 *start, *end, *data, *address = NULL, *subject = NULL, *body = NULL,
-                          *cmd = NULL, **tag, fileName[32];
-    ULONG                 res = FALSE, written = FALSE;
+    STRPTR                start, end, data, address = NULL, subject = NULL, body = NULL,
+                          cmd = NULL, *tag;
+    TEXT                  fileName[32];
+    BOOL                  res = FALSE, written = FALSE;
     UWORD                 offset, len;
 
+    ENTER();
+
     /* setup trans */
-    ObtainSemaphore(&lib_sem);
-    if (!(lib_flags & BASEFLG_Trans))
+    ObtainSemaphore(&OpenURLBase->libSem);
+    if(isFlagClear(OpenURLBase->flags, BASEFLG_Trans))
     {
         for (len = 0; len<256; len++) trans[len] = -1;
 
@@ -538,9 +620,9 @@ sendToMailer(UBYTE *URL,
         trans['E'] = trans['e'] = 14;
         trans['F'] = trans['f'] = 15;
 
-        lib_flags |= BASEFLG_Trans;
+        SET_FLAG(OpenURLBase->flags, BASEFLG_Trans);
     }
-    ReleaseSemaphore(&lib_sem);
+    ReleaseSemaphore(&OpenURLBase->libSem);
 
     /* parse the URL "mailto:user@host.domain?subject=Subject&body=Body" */
 
@@ -580,7 +662,8 @@ sendToMailer(UBYTE *URL,
             if (end) len=end-data;
             else len=strlen(data);
 
-            if (!(*tag = allocVecPooled(len+1))) goto done;
+            if(!(*tag = allocArbitrateVecPooled(len+1)))
+              goto done;
 
             strncpy(*tag,data,len);
             *((*tag)+len)='\0';
@@ -589,9 +672,9 @@ sendToMailer(UBYTE *URL,
             data=*tag;
             while (data)
             {
-                if ((data=strchr(data,'%')) && (trans[data[1]]!=-1) && (trans[data[2]]!=-1))
+                if ((data=strchr(data,'%')) && (trans[(int)data[1]]!=-1) && (trans[(int)data[2]]!=-1))
                 {
-                    *data=(trans[data[1]]<<4)|trans[data[2]];
+                    *data=(trans[(int)data[1]]<<4)|trans[(int)data[2]];
                     data++;
                     memmove(data,data+2,strlen(data+2)+1);
                 }
@@ -601,31 +684,33 @@ sendToMailer(UBYTE *URL,
         start = end;
     }
 
-    if (body) msprintf(fileName,"T:OpenURL-MailBody.%08lx",(IPTR)FindTask(NULL));
+    if(body)
+      snprintf(fileName, sizeof(fileName), "T:OpenURL-MailBody.%016lx", (IPTR)FindTask(NULL));
     else
     {
-        written = TRUE;
-        strcpy(fileName,"NIL:");
+      written = TRUE;
+      strlcpy(fileName, "NIL:", sizeof(fileName));
     }
 
     /* set up the placeholder mapping */
 
-    ph[0].ph_Char = 'a'; ph[0].ph_String = address ? address : (UBYTE *)"";
-    ph[1].ph_Char = 's'; ph[1].ph_String = subject ? subject : (UBYTE *)"";//URL;
-    ph[2].ph_Char = 'b'; ph[2].ph_String = body ? body : (UBYTE *)"";
+    ph[0].ph_Char = 'a'; ph[0].ph_String = address ? address : (STRPTR)"";
+    ph[1].ph_Char = 's'; ph[1].ph_String = subject ? subject : (STRPTR)"";//URL;
+    ph[2].ph_Char = 'b'; ph[2].ph_String = body ? body : (STRPTR)"";
     ph[3].ph_Char = 'f'; ph[3].ph_String = fileName;
     ph[4].ph_Char = 'u'; ph[4].ph_String = URL;
-    ph[5].ph_Char = 'p'; ph[5].ph_String = pubScreenName ? pubScreenName : (UBYTE *)"Workbench";
+    ph[5].ph_Char = 'p'; ph[5].ph_String = pubScreenName ? pubScreenName : (STRPTR)"Workbench";
 
     /* try to find one of the mailers in the list */
 
-    for (mn = (struct URL_MailerNode *)lib_prefs->up_MailerList.mlh_Head;
+    for (mn = (struct URL_MailerNode *)OpenURLBase->prefs->up_MailerList.mlh_Head;
          mn->umn_Node.mln_Succ;
          mn = (struct URL_MailerNode *)mn->umn_Node.mln_Succ)
     {
-        UBYTE *rxport;
+        STRPTR rxport;
 
-    if (mn->umn_Flags & UNF_DISABLED) continue;
+        if(isFlagSet(mn->umn_Flags, UNF_DISABLED))
+            continue;
 
         rxport = findRexxPort(portlist,mn->umn_Port);
 
@@ -633,12 +718,12 @@ sendToMailer(UBYTE *URL,
         {
             /* send uniconify msg */
 
-            if (show && *mn->umn_ShowCmd)
+            if (isFlagSet(flags, SENDTOF_SHOW) && *mn->umn_ShowCmd)
                 sendRexxMsg(rxport,mn->umn_ShowCmd);
 
             /* send screentofront command */
 
-            if (toFront && *mn->umn_ToFrontCmd)
+            if (isFlagSet(flags, SENDTOF_TOFRONT) && *mn->umn_ToFrontCmd)
                 sendRexxMsg(rxport,mn->umn_ToFrontCmd);
 
             /* write to temp file */
@@ -676,7 +761,7 @@ sendToMailer(UBYTE *URL,
                 if (!(res = sendRexxMsg(rxport,start)))
                 {
                     /* send failed, try next mailer */
-                    freeVecPooled(cmd);
+                    freeArbitrateVecPooled(cmd);
                     start = cmd = NULL;
                 }
                 else start=end;
@@ -688,19 +773,23 @@ sendToMailer(UBYTE *URL,
 
     /* no running ftp client, launch a new one */
 
-    if (!launch) goto done;
+    if (isFlagClear(flags, SENDTOF_LAUNCH))
+        goto done;
 
-    for (mn = (struct URL_MailerNode *)lib_prefs->up_MailerList.mlh_Head;
+    for (mn = (struct URL_MailerNode *)OpenURLBase->prefs->up_MailerList.mlh_Head;
          mn->umn_Node.mln_Succ;
          mn = (struct URL_MailerNode *)mn->umn_Node.mln_Succ)
     {
         ULONG  startOnly;
-        UBYTE  *filePart, c = '\0';
+        STRPTR filePart;
+        TEXT   c = '\0';
         BPTR   lock;
         LONG   error;
 
-    if (mn->umn_Flags & UNF_DISABLED) continue;
-        if (!*mn->umn_Path) continue;
+        if(isFlagSet(mn->umn_Flags, UNF_DISABLED))
+            continue;
+        if(mn->umn_Path[0] == '\0')
+            continue;
 
         /* compose commandline */
 
@@ -732,10 +821,11 @@ sendToMailer(UBYTE *URL,
         error = SystemTags(cmd,SYS_Asynch,    TRUE,
                                SYS_Input,     Open("NIL:", MODE_NEWFILE),
                                SYS_Output,    NULL,
+                               SYS_Error,     NULL,
                                lock ? NP_CurrentDir : TAG_IGNORE, lock,
                                TAG_DONE);
 
-        freeVecPooled(cmd);
+        freeArbitrateVecPooled(cmd);
         cmd = NULL;
 
         if (error)
@@ -746,7 +836,7 @@ sendToMailer(UBYTE *URL,
 
         if (!startOnly)
         {
-            UBYTE *rxport;
+            STRPTR rxport;
 
             /* send write mail command */
 
@@ -783,7 +873,7 @@ sendToMailer(UBYTE *URL,
                     if (!(res = sendRexxMsg(rxport,start)))
                     {
                         /* send failed, try next mailer */
-                        freeVecPooled(cmd);
+                        freeArbitrateVecPooled(cmd);
                         start = cmd = NULL;
                     }
                     else start=end;
@@ -799,130 +889,172 @@ sendToMailer(UBYTE *URL,
     }
 
 done:
-    if (cmd)     freeVecPooled(cmd);
-    if (body)    freeVecPooled(body);
-    if (subject) freeVecPooled(subject);
-    if (address) freeVecPooled(address);
+    if (cmd)     freeArbitrateVecPooled(cmd);
+    if (body)    freeArbitrateVecPooled(body);
+    if (subject) freeArbitrateVecPooled(subject);
+    if (address) freeArbitrateVecPooled(address);
 
+    RETURN(res);
     return res;
 }
 
 /**************************************************************************/
 
-ULONG
-copyList(struct List *dst,struct List *src,ULONG size)
+BOOL copyList(struct List *dst, struct List *src, ULONG size)
 {
+    BOOL success = TRUE;
     struct Node *n, *new;
+
+    ENTER();
 
     /* copy src list into dst, and return success */
 
-    for (n = src->lh_Head; n->ln_Succ; n = n->ln_Succ)
+    for(n = src->lh_Head; n->ln_Succ; n = n->ln_Succ)
     {
-        if (!(new = allocPooled(size)))
+        if((new = allocArbitrateVecPooled(size)) == NULL)
         {
-            freeList(dst,size);
-            return FALSE;
+            freeList(dst);
+            success = FALSE;
+            break;
         }
 
         CopyMem(n,new,size);
         AddTail(dst,new);
     }
 
-    return TRUE;
+    RETURN(success);
+    return success;
 }
 
 /**************************************************************************/
 
-void
-freeList(struct List *list,ULONG size)
+void freeList(struct List *list)
 {
-    struct Node *n;
+  struct Node *n;
 
-    while ((n = RemHead(list))) freePooled(n,size);
+  ENTER();
+
+  while((n = RemHead(list)) != NULL)
+    freeArbitrateVecPooled(n);
+
+  LEAVE();
 }
 
 /**************************************************************************/
 
-ULONG
-isdigits(UBYTE *str)
+BOOL isdigits(STRPTR str)
 {
-    for (;;)
+  BOOL result = FALSE;
+
+  ENTER();
+
+  for(;;)
+  {
+    if(*str == '\0')
     {
-        if (!*str) return(TRUE);
-        else if (!isdigit(*str)) return(FALSE);
-
-        str++;
+      result = TRUE;
+      break;
     }
+    else if(!isdigit(*str))
+      break;
+
+    str++;
+  }
+
+  RETURN(result);
+  return result;
 }
 
-/**************************************************************************/
-
-#if !defined(__MORPHOS__) && !defined(__amigaos4__) && !defined(__AROS__)
-static UWORD fmtfunc[] = { 0x16c0, 0x4e75 };
-void STDARGS
-msprintf(UBYTE *buf,UBYTE *fmt,...)
+#if !defined(HAVE_ALLOCVECPOOLED)
+APTR allocVecPooled(APTR pool, ULONG size)
 {
-    RawDoFmt(fmt,&fmt+1,(APTR)fmtfunc,buf);
-}
-#elif defined(__amigaos4__)
-#include <stdarg.h>
-void VARARGS68K
-msprintf(UBYTE *buf,UBYTE *fmt,...)
-{
-    va_list va;
-    va_startlinear(va,fmt);
-    RawDoFmt(fmt, va_getlinearva(va,CONST APTR), (void (*)(void)) 0, buf);
-    va_end(va);
-}
+  ULONG *mem;
 
+  ENTER();
+
+  size += sizeof(ULONG);
+  if((mem = AllocPooled(pool, size)))
+    *mem++ = size;
+
+  RETURN(mem);
+  return mem;
+}
 #endif
 
-/**************************************************************************/
+/****************************************************************************/
 
-APTR
-allocPooled(ULONG size)
+#if !defined(HAVE_FREEVECPOOLED)
+void freeVecPooled(APTR pool,APTR mem)
 {
-    ULONG *mem;
+  ENTER();
 
-    ObtainSemaphore(&lib_memSem);
-    mem = AllocPooled(lib_pool,size);
-    ReleaseSemaphore(&lib_memSem);
+  FreePooled(pool,(LONG *)mem - 1,*((LONG *)mem - 1));
 
-    return mem;
+  LEAVE();
+}
+#endif
+
+/****************************************************************************/
+
+APTR reallocVecPooled(APTR pool, APTR mem, ULONG oldSize, ULONG newSize)
+{
+  ULONG *newMem;
+
+  ENTER();
+
+  if((newMem = allocVecPooled(pool, newSize)) != NULL)
+  {
+    memcpy(newMem, mem, (oldSize < newSize) ? oldSize : newSize);
+
+    freeVecPooled(pool, mem);
+  }
+
+  RETURN(newMem);
+  return newMem;
 }
 
 /****************************************************************************/
 
-void
-freePooled(APTR mem,ULONG size)
+APTR allocArbitrateVecPooled(ULONG size)
 {
-    ObtainSemaphore(&lib_memSem);
-    FreePooled(lib_pool,mem,size);
-    ReleaseSemaphore(&lib_memSem);
+  ULONG *mem;
+
+  ENTER();
+
+  ObtainSemaphore(&OpenURLBase->poolSem);
+  mem = allocVecPooled(OpenURLBase->pool, size);
+  ReleaseSemaphore(&OpenURLBase->poolSem);
+
+  RETURN(mem);
+  return mem;
 }
 
 /****************************************************************************/
 
-APTR
-allocVecPooled(ULONG size)
+void freeArbitrateVecPooled(APTR mem)
 {
-    ULONG *mem;
+  ENTER();
 
-    ObtainSemaphore(&lib_memSem);
-    if ((mem = AllocPooled(lib_pool,size = size+sizeof(ULONG)))) *mem++ = size;
-    ReleaseSemaphore(&lib_memSem);
+  ObtainSemaphore(&OpenURLBase->poolSem);
+  freeVecPooled(OpenURLBase->pool, mem);
+  ReleaseSemaphore(&OpenURLBase->poolSem);
 
-    return mem;
+  LEAVE();
 }
 
 /****************************************************************************/
 
-void
-freeVecPooled(APTR mem)
+APTR reallocArbitrateVecPooled(APTR mem, ULONG oldSize, ULONG newSize)
 {
-    ObtainSemaphore(&lib_memSem);
-    FreePooled(lib_pool,(ULONG *)mem-1,*((ULONG *)mem-1));
-    ReleaseSemaphore(&lib_memSem);
+  ENTER();
+
+  ObtainSemaphore(&OpenURLBase->poolSem);
+  mem = reallocVecPooled(OpenURLBase->pool, mem, oldSize, newSize);
+  ReleaseSemaphore(&OpenURLBase->poolSem);
+
+  RETURN(mem);
+  return mem;
 }
 
 /****************************************************************************/
+

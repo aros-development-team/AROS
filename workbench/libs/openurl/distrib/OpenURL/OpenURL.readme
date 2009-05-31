@@ -1,13 +1,63 @@
 Short:    OpenURL - Get that URL!
-Uploader: OpenURL Team
-Author:   OpenURL Team on sourceforge
-Type:     com/www
+Author:   openurl.library Open Source Team
+Uploader: Jens Langner <Jens.Langner@light-speed.de>
+Version:  7.5
+Type:     comm/www
+Requires: AmigaOS 3.0+, MorphOS or AROS
+Replaces: comm/www/openurl.lha  comm/www/OpenURL-OS4.lha  comm/www/OpenURLMOS.lha comm/www/OpenURL44.lha 
+Architecture: ppc-amigaos >= 4.0.0; m68k-amigaos >= 3.0; ppc-morphos >= 1.4.2; i386-aros; ppc-aros; x86_64-aros
 
-This library was created to make it easier for application
-programmers to include clickable URLs in their applications,
-about windows, etc. Current solutions to this problem typically
-are to launch an ARexx script or just support a few webbrowsers,
-with no room for configuration. This leads to countless
-reinventions of the wheel (how many SendURLToBrowser.rexx scripts
-do you have on your harddisk?).
+Introduction
+~~~~~~~~~~~~
+Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+Copyright (C) 2005-2009 by openurl.library Open Source Team
 
+This library was created to make it easier for application programmers to
+include clickable URLs in their applications, about windows, etc.
+Current solutions to this problem typically are to launch an ARexx script
+or just support a few webbrowsers, with no room for configuration. This
+leads to countless reinventions of the wheel (how many SendURLToBrowser.rexx
+scripts do you have on your harddisk?).
+
+This library solves the problem by giving application programmers a very
+simple API to handle (one function) and the user gets configurability with
+the included preferences program.
+
+OpenURL was originally developed by Troels Walsted Hansen, et al. Since 2005
+it is developed by an independent open source developer group. It is released
+as a public domain software.
+
+OpenURL is available for OS3, OS4, MorphOS and AROS.
+
+The OpenURL project is hosted on SourceForge. Its project name is "openurllib".
+
+To report bugs use the bug tracker at
+
+http://www.sf.net/projects/openurllib/
+
+Manual Installation
+~~~~~~~~~~~~~~~~~~~
+1) Extract the archive to a temporary directory.
+
+   > cd RAM:
+   > lha x OpenURL.lha
+
+2) Go to the "Binaries/<OS>" directory where <OS> is the directory
+   matching the operating system you want to install OpenURL for:
+
+   > cd OpenURL/Binaries/AmigaOS4
+
+3) copy all files found in that <OS> directory to their respective
+   directory.
+
+   > copy ALL #? SYS:
+
+4) reboot and enjoy the new version ;)
+
+The detailed change log can be found in the ChangeLog file.
+
+         __
+        / /
+   __  / /   Only Amiga makes it possible...
+   \ \/ /
+    \__/

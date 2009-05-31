@@ -1,22 +1,32 @@
-/*
-**  OpenURL - MUI preferences for openurl.library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-**
-**  Ported to OS4 by Alexandre Balaban <alexandre@balaban.name>
-**
-**  Pop public ports object
-*/
+/***************************************************************************
 
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
 
-#include "OpenURL.h"
-#include "libraries/openurl.h"
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
+
+#include "openurl.h"
+
+#include <libraries/openurl.h>
 #include <exec/execbase.h>
+
+#include "SDI_hook.h"
+#include "macros.h"
+
+#include "debug.h"
 
 /**************************************************************************/
 /*
@@ -24,56 +34,105 @@
 */
 
 static struct MUI_CustomClass *listClass = NULL;
-#ifdef __AROS__
-#define listObject BOOPSIOBJMACRO_START(listClass->mcc_Class)
-#else
 #define listObject NewObject(listClass->mcc_Class,NULL
-#endif
 
-static ULONG
-mListNew(struct IClass *cl,Object *obj,struct opSet *msg)
+static IPTR mListNew(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    return (ULONG)DoSuperNew(cl,obj,
+    return (IPTR)DoSuperNew(cl,obj,
       MUIA_Frame,              MUIV_Frame_InputList,
       MUIA_Background,         MUII_ListBack,
       MUIA_List_AutoVisible,   TRUE,
       MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
       MUIA_List_DestructHook,  MUIV_List_DestructHook_String,
-      TAG_MORE,(ULONG)msg->ops_AttrList);
+      TAG_MORE,(IPTR)msg->ops_AttrList);
 }
 
 /**************************************************************************/
 
-static ULONG
-mListSetup(struct IClass *cl,Object *obj,Msg msg)
+static IPTR mListSetup(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct Node *mstate;
+  IPTR success = FALSE;
 
-    if (!DoSuperMethodA(cl,obj,msg)) return FALSE;
+  ENTER();
 
-    DoSuperMethod(cl,obj,MUIM_List_Clear);
+  if(DoSuperMethodA(cl, obj, msg))
+  {
+    struct List *portList;
+    struct PortNode
+    {
+    	struct Node node;
+    	STRPTR name;
+    };
 
-    Forbid();
+    DoSuperMethod(cl, obj, MUIM_List_Clear);
 
-    for (mstate = SysBase->PortList.lh_Head; mstate->ln_Succ; mstate = mstate->ln_Succ)
-#ifdef __AROS__
-        // Zune Listclass doesn't support Insert_Sorted
-        DoSuperMethod(cl,obj,MUIM_List_InsertSingle,(ULONG)mstate->ln_Name,MUIV_List_Insert_Bottom);
-#else
-        DoSuperMethod(cl,obj,MUIM_List_InsertSingle,(ULONG)mstate->ln_Name,MUIV_List_Insert_Sorted);
-#endif
+    #if defined(__amigaos4__)
+    portList = AllocSysObjectTags(ASOT_LIST, TAG_DONE);
+    #else
+    portList = AllocVec(sizeof(*portList), MEMF_ANY);
+    #endif
 
-    Permit();
+    if(portList != NULL)
+    {
+      struct Node *mstate;
+      struct PortNode *portNode;
 
-    return TRUE;
+      #if !defined(__amigaos4__)
+      NewList(portList);
+      #endif
+
+      Forbid();
+
+      for(mstate = SysBase->PortList.lh_Head; mstate->ln_Succ; mstate = mstate->ln_Succ)
+      {
+        // don't distinguish between OS4 and other systems here, because AllocSysObject()
+        // might do things which break the surrounding Forbid(), which AllocVec() is
+        // guaranteed *NOT* to do.
+        if((portNode = AllocVec(sizeof(*portNode), MEMF_CLEAR)) != NULL)
+        {
+          if((portNode->name = AllocVec(strlen(mstate->ln_Name)+1, MEMF_ANY)) != NULL)
+          {
+            strcpy(portNode->name, mstate->ln_Name);
+            AddTail(portList, &portNode->node);
+          }
+          else
+            FreeVec(portNode);
+        }
+      }
+
+      Permit();
+
+      // now that the port names have been copied we can insert them into the list
+      while((portNode = (struct PortNode *)RemHead(portList)) != NULL)
+      {
+        DoSuperMethod(cl, obj, MUIM_List_InsertSingle, portNode->name, MUIV_List_Insert_Sorted);
+
+        // free the complete node, the name was already copied during MUIM_List_InsertSingle
+        // due to the given construct hook
+        FreeVec(portNode->name);
+        FreeVec(portNode);
+      }
+
+      #if defined(__amigaos4__)
+      FreeSysObject(ASOT_LIST, portList);
+      #else
+      FreeVec(portList);
+      #endif
+    }
+
+    // signal success, even if copying the list failed for some reason
+    // but the MUIM_Setup invocation of the super class succeeded.
+    success = TRUE;
+  }
+
+  RETURN(success);
+  return success;
 }
 
 /**************************************************************************/
 
-M_DISP(listDispatcher)
+SDISPATCHER(listDispatcher)
 {
-    M_DISPSTART
-
     switch (msg->MethodID)
     {
         case OM_NEW:     return mListNew(cl,obj,(APTR)msg);
@@ -84,79 +143,45 @@ M_DISP(listDispatcher)
     }
 }
 
-M_DISPEND(listDispatcher)
-
 /**************************************************************************/
 
-static ULONG
-initListClass(void)
+static BOOL initListClass(void)
 {
-    return (ULONG)(listClass = MUI_CreateCustomClass(NULL,MUIC_List,NULL,0,DISP(listDispatcher)));
+    BOOL success = FALSE;
+
+    ENTER();
+
+    if((listClass = MUI_CreateCustomClass(NULL, MUIC_List, NULL, 0, ENTRY(listDispatcher))) != NULL)
+        success = TRUE;
+
+    RETURN(success);
+    return success;
 }
 
 /**************************************************************************/
 
-static void
-disposeListClass(void)
+static void disposeListClass(void)
 {
-    if (listClass) MUI_DeleteCustomClass(listClass);
+    ENTER();
+
+    if(listClass != NULL)
+       MUI_DeleteCustomClass(listClass);
+
+    LEAVE();
 }
 
 /**************************************************************************/
 
-#ifdef __MORPHOS__
-static void
-windowFun(void)
+HOOKPROTONH(windowFun, void, Object *pop, Object *win)
 {
-    //struct Hook *hook = (struct Hook *)REG_A0;
-    Object      *pop = (Object *)REG_A2;
-    Object      *win = (Object *)REG_A1;
-#elif defined(__AROS__)
-AROS_UFH3S(void, windowFun,
-AROS_UFHA(struct Hook *, hook, A0),
-AROS_UFHA(Object *     , pop , A2),
-AROS_UFHA(Object *     , win , A1))
-{
-    AROS_USERFUNC_INIT
-#else
-static void SAVEDS ASM
-windowFun(REG(a0,struct Hook *hook),REG(a2,Object *pop),REG(a1,Object *win))
-{
-#endif
-    set(win,MUIA_Window_DefaultObject,pop);
-#ifdef __AROS__
-    AROS_USERFUNC_EXIT
-#endif
+  set(win,MUIA_Window_DefaultObject,pop);
 }
-
-#ifdef __MORPHOS__
-static struct EmulLibEntry windowTrap = {TRAP_LIB,0,(void (*)(void))windowFun};
-static struct Hook windowHook = {0,0,(HOOKFUNC)&windowTrap};
-#else
-static struct Hook windowHook = {0,0,(HOOKFUNC)&windowFun};
-#endif
+MakeStaticHook(windowHook, windowFun);
 
 /***********************************************************************/
 
-#ifdef __MORPHOS__
-static ULONG
-openFun(void)
+HOOKPROTONH(openFun, ULONG, Object *list, Object *str)
 {
-    //struct Hook *hook = (struct Hook *)REG_A0;
-    Object      *list = (Object *)REG_A2;
-    Object      *str = (Object *)REG_A1;
-#elif defined(__AROS__)
-AROS_UFH3S(ULONG, openFun,
-AROS_UFHA(struct Hook *, hook, A0),
-AROS_UFHA(Object *     , list, A2),
-AROS_UFHA(Object *     , str , A1))
-{
-    AROS_USERFUNC_INIT
-#else
-static ULONG SAVEDS ASM
-openFun(REG(a0,struct Hook *hook),REG(a2,Object *list),REG(a1,Object *str))
-{
-#endif
     STRPTR s, x;
     int   i;
 
@@ -164,7 +189,7 @@ openFun(REG(a0,struct Hook *hook),REG(a2,Object *list),REG(a1,Object *str))
 
     for (i = 0; ;i++)
     {
-        DoMethod(list,MUIM_List_GetEntry,i,(ULONG)&x);
+        DoMethod(list,MUIM_List_GetEntry,i,(IPTR)&x);
         if (!x)
         {
             set(list,MUIA_List_Active,MUIV_List_Active_Off);
@@ -179,41 +204,16 @@ openFun(REG(a0,struct Hook *hook),REG(a2,Object *list),REG(a1,Object *str))
     }
 
     return TRUE;
-#ifdef __AROS__
-    AROS_USERFUNC_EXIT
-#endif
 }
-
-#ifdef __MORPHOS__
-static struct EmulLibEntry openTrap = {TRAP_LIB,0,(void (*)(void))openFun};
-static struct Hook openHook = {0,0,(HOOKFUNC)&openTrap};
-#else
-static struct Hook openHook = {0,0,(HOOKFUNC)&openFun};
-#endif
+MakeStaticHook(openHook, openFun);
 
 /***********************************************************************/
 
-#ifdef __MORPHOS__
-static void closeFun(void)
+HOOKPROTONH(closeFun, void, Object *list, Object *str)
 {
-    //struct Hook *hook = (struct Hook *)REG_A0;
-    Object      *list = (Object *)REG_A2;
-    Object      *str = (Object *)REG_A1;
-#elif defined(__AROS__)
-AROS_UFH3S(void, closeFun,
-AROS_UFHA(struct Hook *, hook, A0),
-AROS_UFHA(Object *     , list, A2),
-AROS_UFHA(Object *     , str , A1))
-{
-    AROS_USERFUNC_INIT
-#else
-static void SAVEDS ASM
-closeFun(REG(a0,struct Hook *hook),REG(a2,Object *list),REG(a1,Object *str))
-{
-#endif
     STRPTR port;
 
-    DoMethod(list,MUIM_List_GetEntry,MUIV_List_GetEntry_Active,(ULONG)&port);
+    DoMethod(list,MUIM_List_GetEntry,MUIV_List_GetEntry_Active,(IPTR)&port);
     if (port)
     {
         TEXT buf[PORT_LEN], *dot, *digit;
@@ -233,33 +233,23 @@ closeFun(REG(a0,struct Hook *hook),REG(a2,Object *list),REG(a1,Object *str))
 
                 if (dot)
                 {
-                    stccpy(buf,port,dot-port);
+                    strlcpy(buf, port, dot-port);
                     port = buf;
                 }
         }
     }
 
     set(str,MUIA_String_Contents,port);
-#ifdef __AROS__
-    AROS_USERFUNC_EXIT
-#endif
 }
-
-#ifdef __MORPHOS__
-static struct EmulLibEntry closeTrap = {TRAP_LIB,0,(void (*)(void))closeFun};
-static struct Hook closeHook = {0,0,(HOOKFUNC)&closeTrap};
-#else
-static struct Hook closeHook = {0,0,(HOOKFUNC)&closeFun};
-#endif
+MakeStaticHook(closeHook, closeFun);
 
 /***********************************************************************/
 
-static ULONG
-mNew(struct IClass *cl,Object *obj,struct opSet *msg)
+static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     Object *lv;
 
-    if (obj = (Object *)DoSuperNew(cl,obj,
+    if((obj = (Object *)DoSuperNew(cl,obj,
 
             MUIA_Popstring_String, ostring(GetTagData(MUIA_Popport_Len,64,msg->ops_AttrList),GetTagData(MUIA_Popport_Key,0,msg->ops_AttrList),0),
             MUIA_Popstring_Button, opopbutton(MUII_PopUp,0),
@@ -271,20 +261,18 @@ mNew(struct IClass *cl,Object *obj,struct opSet *msg)
             MUIA_Popobject_StrObjHook, &openHook,
             MUIA_Popobject_ObjStrHook, &closeHook,
 
-            TAG_MORE,(ULONG)msg->ops_AttrList))
+            TAG_MORE,(IPTR)msg->ops_AttrList)) != NULL)
     {
-        DoMethod(lv,MUIM_Notify,MUIA_Listview_DoubleClick,TRUE,(ULONG)obj,2,MUIM_Popstring_Close,TRUE);
+        DoMethod(lv,MUIM_Notify,MUIA_Listview_DoubleClick,TRUE,(IPTR)obj,2,MUIM_Popstring_Close,TRUE);
     }
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 /***********************************************************************/
 
-M_DISP(dispatcher)
+SDISPATCHER(dispatcher)
 {
-    M_DISPSTART
-
     switch (msg->MethodID)
     {
         case OM_NEW: return mNew(cl,obj,(APTR)msg);
@@ -292,31 +280,37 @@ M_DISP(dispatcher)
     }
 }
 
-M_DISPEND(dispatcher)
-
 /***********************************************************************/
 
-ULONG
-initPopportClass(void)
+BOOL initPopportClass(void)
 {
-    if (initListClass())
-    {
-        if (g_popportClass = MUI_CreateCustomClass(NULL,MUIC_Popobject,NULL,0,DISP(dispatcher)))
-            return TRUE;
+    BOOL success = FALSE;
 
-        disposeListClass();
+    ENTER();
+
+    if(initListClass() == TRUE)
+    {
+        if((g_popportClass = MUI_CreateCustomClass(NULL, MUIC_Popobject, NULL, 0, ENTRY(dispatcher))) != NULL)
+            success = TRUE;
+        else
+            disposeListClass();
     }
 
-    return FALSE;
+    RETURN(success);
+    return success;
 }
 
 /**************************************************************************/
 
-void
-disposePopportClass(void)
+void disposePopportClass(void)
 {
+    ENTER();
+
     disposeListClass();
-    if (g_popportClass) MUI_DeleteCustomClass(g_popportClass);
+    if(g_popportClass != NULL)
+        MUI_DeleteCustomClass(g_popportClass);
+
+    LEAVE();
 }
 
 /**************************************************************************/

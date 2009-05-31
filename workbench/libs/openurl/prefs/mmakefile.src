@@ -4,42 +4,36 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- workbench-libs-openurl : workbench-libs-openurl-prefs
-
 #MM workbench-libs-openurl-prefs : includes linklibs \
-#MM   workbench-libs-openurl-lib
+#MM workbench-libs-openurl-lib workbench-libs-openurl-catalogs \
+#MM workbench-libs-openurl-prefs-icon
+
 
 EXE := OpenURL
 EXEDIR := $(AROS_PREFS)
 
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include/aros
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
 
-USER_CFLAGS := -Wall \
-	  -Wno-missing-braces \
-	  -Wno-parentheses \
-          -Wno-switch \
-          -Wstrict-prototypes \
-	  -Werror-implicit-function-declaration \
-          -Wpointer-arith
+USER_CFLAGS := -DNO_INLINE_STDARG
 
 FILES := \
-    OpenURL \
-    loc \
-    stubs \
-    popport \
-    popph \
-    ftpeditwin \
-    mailereditwin \
-    browsereditwin \
-    applist \
-    win \
-    pens \
-    about \
-    app \
-    utils
+        OpenURL \
+        locale \
+        utils \
+        popport \
+        popph \
+        ftpeditwin \
+        mailereditwin \
+        browsereditwin \
+        applist \
+        win \
+        about \
+        app \
+        vastubs \
+        debug
 
 %build_prog mmake=workbench-libs-openurl-prefs \
     progname=$(EXE) files=$(FILES) \
-    targetdir=$(EXEDIR) uselibs="amiga openurl mui"
+    targetdir=$(EXEDIR) uselibs="amiga mui"
 
 %common

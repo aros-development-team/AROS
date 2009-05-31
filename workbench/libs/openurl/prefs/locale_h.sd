@@ -1,0 +1,78 @@
+##stringtype C
+##shortstrings
+/***************************************************************************
+
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
+
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id: locale_h.sd 87 2009-05-19 14:25:34Z thboeckel $
+
+***************************************************************************/
+
+/*
+** This file was created automatically by flexcat.
+** It is written to be compatible with catcomp,
+** so you choose, but... Do NOT edit by hand!
+**/
+
+#ifndef _LOC_H
+#define _LOC_H
+
+#ifndef EXEC_TYPES_H
+#include <exec/types.h>
+#endif
+
+#ifdef CATCOMP_ARRAY
+#undef CATCOMP_NUMBERS
+#undef CATCOMP_STRINGS
+#define CATCOMP_NUMBERS
+#define CATCOMP_STRINGS
+#endif
+
+/****************************************************************************/
+
+#ifdef CATCOMP_NUMBERS
+
+#define %i %d
+
+#endif /* CATCOMP_NUMBERS */
+
+/****************************************************************************/
+
+#ifdef CATCOMP_STRINGS
+
+#define %i_STR %s
+
+#endif /* CATCOMP_STRINGS */
+
+/****************************************************************************/
+
+#ifdef CATCOMP_ARRAY
+
+struct CatCompArrayType
+{
+    ULONG  cca_ID;
+    STRPTR cca_Str;
+};
+
+static const struct CatCompArrayType CatCompArray[] =
+{
+    {%i,(STRPTR)%i_STR},
+};
+
+#endif /* CATCOMP_ARRAY */
+
+/****************************************************************************/
+
+#endif /* _LOC_H */

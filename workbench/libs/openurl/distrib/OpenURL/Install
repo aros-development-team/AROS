@@ -16,19 +16,19 @@
     (dest "Libs:")
 )
 
-; Copy OpenURL preferences program
+; Copy Open URL preferences program
 
 (copyfiles
 	(prompt "Installing the preference program")
 	(help @copyfiles-help)
-	(source "Prefs/OpenURL")
+	(source "Prefs/Open URL")
 	(dest "SYS:Prefs")
 )
 
 (copyfiles
 	(prompt "Installing the preference program")
 	(help @copyfiles-help)
-	(source "Prefs/OpenURL.info")
+	(source "Prefs/Open URL.info")
 	(dest "SYS:Prefs")
 	(infos)
 	(noposition)
@@ -57,11 +57,6 @@
 	(confirm)
 )
 
-; Set environment variable
-
-(run "Echo SYS:Prefs/OpenURL >ENV:OpenURL_Prefs_Path")
-(run "Echo SYS:Prefs/OpenURL >ENVARC:OpenURL_Prefs_Path")
-
 ; Flush
 
 (message "Before proceeding, you must quit all programs using openurl.library, so that the old version can be flushed from memory.")
@@ -80,7 +75,7 @@
 		1
 	)
 
-	(run "SYS:Prefs/OpenURL")
+	(run "SYS:Prefs/Open URL")
 )
 
 ; Exit

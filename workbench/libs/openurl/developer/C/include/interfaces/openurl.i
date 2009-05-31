@@ -1,8 +1,18 @@
 #ifndef OPENURL_INTERFACE_DEF_H
 #define OPENURL_INTERFACE_DEF_H
 /*
-** This file is machine generated from idltool
-** Do not edit
+**  $VER: openurl.i 7.3 (28.12.2007)
+**
+**  This file defines interface ASM structure for OS4.
+**
+**  Written by Troels Walsted Hansen <troels@thule.no>
+**  Placed in the public domain.
+**
+**  Versions 3.1 to 7.1 were developed by:
+**  - Alfonso Ranieri <alforan@tin.it>
+**  - Stefan Kost <ensonic@sonicpulse.de>
+**
+**  Copyright (C) 2006-2007 OpenURL Team
 */ 
 
 #include <exec/types.i>

@@ -1,23 +1,29 @@
-/*
-**  OpenURL - MUI preferences for openurl.library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-**
-**  Ported to OS4 by Alexandre Balaban <alexandre@balaban.name>
-**
-*/
+/***************************************************************************
 
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
 
-#include "OpenURL.h"
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
 
-#if defined(__amigaos4__)
-#include <stdarg.h>
-#endif
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
+
+#include "openurl.h"
+
+#include "SDI_stdarg.h"
+#include "macros.h"
+
+#include "debug.h"
 
 /**************************************************************************/
 
@@ -26,33 +32,30 @@
 
 /***********************************************************************/
 
-#if !defined(__MORPHOS__) && !defined(__amigaos4__)
-ULONG STDARGS
-DoSuperNew(struct IClass *cl,Object *obj,ULONG tag1,...)
+// DoSuperNew()
+// Calls parent NEW method within a subclass
+#ifdef __MORPHOS__
+
+#elif defined(__AROS__)
+IPTR DoSuperNew(struct IClass *cl, Object *obj, IPTR tag1, ...)
 {
-    return DoSuperMethod(cl,obj,OM_NEW,&tag1,NULL);
+  AROS_SLOWSTACKTAGS_PRE(tag1)
+  retval = DoSuperMethod(cl, obj, OM_NEW, AROS_SLOWSTACKTAGS_ARG(tag1));
+  AROS_SLOWSTACKTAGS_POST
+}
+#else
+Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
+{
+  Object *rc;
+  VA_LIST args;
+
+  VA_START(args, obj);
+  rc = (Object *)DoSuperMethod(cl, obj, OM_NEW, VA_ARG(args, ULONG), NULL);
+  VA_END(args);
+
+  return rc;
 }
 #endif
-
-/**************************************************************************/
-
-#ifdef __amigaos4__
-int stccpy(char *dst, const char *src, int m)
-{
-    char c;
-    int  j = m;
-
-    while((c = *src++) != '\0')
-    {
-        if (--j > 0)
-            *dst++ = c;
-        else
-            break;
-    }
-    *dst = '\0';
-    return m - j;
-}
-#endif /* __amigaos4__ */
 
 /**************************************************************************/
 
@@ -107,72 +110,54 @@ void SetAmiUpdateENVVariable( CONST_STRPTR varname )
 #endif /* __amigaos4__ */
 
 /**************************************************************************/
-ULONG
-xget(Object *obj,ULONG attribute)
-{
-    ULONG x;
 
-    get(obj,attribute,&x);
-
-    return x;
-}
-
-/**************************************************************************/
-
-Object *
-olabel(ULONG id)
+Object *olabel(ULONG id)
 {
     return Label((ULONG)getString(id));
 }
 
 /****************************************************************************/
 
-Object *
-ollabel(ULONG id)
+Object *ollabel(ULONG id)
 {
     return LLabel((ULONG)getString(id));
 }
 
 /****************************************************************************/
 
-Object *
-ollabel1(ULONG id)
+Object *ollabel1(ULONG id)
 {
     return LLabel1((ULONG)getString(id));
 }
 
 /****************************************************************************/
 
-Object *
-olabel1(ULONG id)
+Object *olabel1(ULONG id)
 {
     return Label1((ULONG)getString(id));
 }
 
 /***********************************************************************/
 
-Object *
-olabel2(ULONG id)
+Object *olabel2(ULONG id)
 {
     return Label2((ULONG)getString(id));
 }
 
 /****************************************************************************/
 
-Object *
-oflabel(ULONG text)
+Object *oflabel(ULONG text)
 {
     return FreeLabel((ULONG)getString(text));
 }
 
 /****************************************************************************/
 
-Object *
-obutton(ULONG text,ULONG help)
+Object *obutton(ULONG text, ULONG help)
 {
     Object *obj;
 
-    if (obj = MUI_MakeObject(MUIO_Button,(ULONG)getString(text)))
+    if((obj = MUI_MakeObject(MUIO_Button, (ULONG)getString(text))) != NULL)
         SetAttrs(obj,MUIA_CycleChain,TRUE,_HELP(help),TAG_DONE);
 
     return obj;
@@ -180,8 +165,7 @@ obutton(ULONG text,ULONG help)
 
 /***********************************************************************/
 
-Object *
-oibutton(ULONG spec,ULONG help)
+Object *oibutton(ULONG spec, ULONG help)
 {
     if (spec==IBT_Up) spec = (ULONG)"\33I[6:38]";
     else if (spec==IBT_Down) spec = (ULONG)"\33I[6:39]";
@@ -202,8 +186,7 @@ oibutton(ULONG spec,ULONG help)
 
 /****************************************************************************/
 
-Object *
-otbutton(ULONG label,ULONG help)
+Object *otbutton(ULONG label, ULONG help)
 {
     return TextObject,
         _KEY(label),
@@ -221,12 +204,11 @@ otbutton(ULONG label,ULONG help)
 
 /****************************************************************************/
 
-Object *
-ocheckmark(ULONG key,ULONG help)
+Object *ocheckmark(ULONG key, ULONG help)
 {
     Object *obj;
 
-    if (obj = MUI_MakeObject(MUIO_Checkmark,(ULONG)getString(key)))
+    if((obj = MUI_MakeObject(MUIO_Checkmark, (ULONG)getString(key))) != NULL)
         SetAttrs(obj,MUIA_CycleChain,TRUE,_HELP(help),TAG_DONE);
 
     return obj;
@@ -234,12 +216,11 @@ ocheckmark(ULONG key,ULONG help)
 
 /****************************************************************************/
 
-Object *
-opopbutton(ULONG img,ULONG help)
+Object *opopbutton(ULONG img, ULONG help)
 {
     Object *obj;
 
-    if (obj = MUI_MakeObject(MUIO_PopButton,img))
+    if((obj = MUI_MakeObject(MUIO_PopButton, img)) != NULL)
         SetAttrs(obj,MUIA_CycleChain,TRUE,_HELP(help),TAG_DONE);
 
     return obj;
@@ -247,8 +228,7 @@ opopbutton(ULONG img,ULONG help)
 
 /****************************************************************************/
 
-Object *
-ostring(ULONG maxlen,ULONG key,ULONG help)
+Object *ostring(ULONG maxlen, ULONG key, ULONG help)
 {
     return StringObject,
         _KEY(key),
@@ -262,8 +242,7 @@ ostring(ULONG maxlen,ULONG key,ULONG help)
 
 /***********************************************************************/
 
-Object *
-opopport(ULONG maxLen,ULONG key,ULONG help)
+Object *opopport(ULONG maxLen, ULONG key, ULONG help)
 {
     return popportObject,
         _HELP(help),
@@ -274,8 +253,7 @@ opopport(ULONG maxLen,ULONG key,ULONG help)
 
 /***********************************************************************/
 
-Object *
-opopph(STRPTR *syms,STRPTR *names,ULONG maxLen,ULONG key,ULONG asl,ULONG help)
+Object *opopph(CONST_STRPTR *syms, STRPTR *names, ULONG maxLen, ULONG key, ULONG asl, ULONG help)
 {
     return popphObject,
         _HELP(help),
@@ -289,16 +267,16 @@ opopph(STRPTR *syms,STRPTR *names,ULONG maxLen,ULONG key,ULONG asl,ULONG help)
 
 /***********************************************************************/
 
-ULONG
-openWindow(Object *app,Object *win)
+ULONG openWindow(Object *app, Object *win)
 {
     ULONG v;
 
     if (win)
     {
         set(win,MUIA_Window_Open,TRUE);
-        get(win,MUIA_Window_Open,&v);
-        if (!v) get(app,MUIA_Application_Iconified,&v);
+        v = xget(win, MUIA_Window_Open);
+        if (!v)
+          v = xget(app, MUIA_Application_Iconified);
     }
     else v = FALSE;
 
@@ -309,108 +287,9 @@ openWindow(Object *app,Object *win)
 
 /***********************************************************************/
 
-#if !defined(__MORPHOS__) && !defined(__AROS__)
-static ULONG fmtfunc = 0x16C04E75;
-
-void STDARGS
-msprintf(STRPTR to, STRPTR fmt,...)
+ULONG delEntry(Object *obj, APTR entry)
 {
-    #if defined(__amigaos4__)
-    va_list       va;
-    va_startlinear(va,fmt);
-    RawDoFmt(fmt,va_getlinearva(va,CONST APTR),(APTR)&fmtfunc,to);
-    va_end(va);
-    #else
-    RawDoFmt(fmt,&fmt+1,(APTR)&fmtfunc,to);
-    #endif
-}
-#endif
-
-/**************************************************************************/
-
-struct stream
-{
-    STRPTR  buf;
-    int     size;
-    int     counter;
-    int     stop;
-};
-
-#ifdef __MORPHOS__
-static void
-msnprintfStuff(void)
-{
-    register struct stream *s = (struct stream *)REG_A3;
-    register UBYTE         c  = (TEXT)REG_D0;
-#elif defined(__AROS__)
-AROS_UFH2S(void, msnprintfStuff,
-AROS_UFHA(TEXT           , c, D0),
-AROS_UFHA(struct stream *, s, A3))
-{
-    AROS_USERFUNC_INIT
-#else
-static void SAVEDS ASM
-msnprintfStuff(REG(d0,TEXT c),REG(a3,struct stream *s))
-{
-#endif
-    if (!s->stop)
-    {
-        if (++s->counter>=s->size)
-        {
-            *(s->buf) = 0;
-            s->stop   = 1;
-        }
-        else *(s->buf++) = c;
-    }
-#ifdef __AROS__
-    AROS_USERFUNC_EXIT
-#endif
-}
-
-#ifdef __MORPHOS__
-static struct EmulLibEntry msnprintfStuffTrap = {TRAP_LIB,0,(void *)&msnprintfStuff};
-#endif
-
-
-int
-#if !defined( __MORPHOS__ )
-STDARGS
-#endif
-msnprintf(STRPTR buf,int size, STRPTR fmt,...)
-{
-    struct stream s;
-    #ifdef __MORPHOS__
-    va_list       va;
-    va_start(va,fmt);
-    #elif defined(__amigaos4__)
-    va_list       va;
-    va_startlinear(va,fmt);
-    #endif
-
-    s.buf     = buf;
-    s.size    = size;
-    s.counter = 0;
-    s.stop    = 0;
-
-    #ifdef __MORPHOS__
-    RawDoFmt(fmt,va->overflow_arg_area,(APTR)&msnprintfStuffTrap,&s);
-    va_end(va);
-    #elif defined(__amigaos4__)
-    RawDoFmt(fmt,va_getlinearva(va,CONST APTR),(APTR)msnprintfStuff,&s);
-    va_end(va);
-    #else
-    RawDoFmt(fmt,&fmt+1,(APTR)msnprintfStuff,&s);
-    #endif
-
-    return s.counter-1;
-}
-
-/**************************************************************************/
-
-ULONG
-delEntry(Object *obj,APTR entry)
-{
-    APTR e;
+    APTR e = NULL;
     int  i;
 
     for (i = 0; ;i++)

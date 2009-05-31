@@ -1,3 +1,22 @@
+OpenURL 7.3
+
+- OpenURL prefs program now renamed as "Open URL" to prevent
+  confusion with C:OpenURL when both are in the path
+- Fixed a bug in OpenURL's prefs program that lead to crash when used
+  with languages other than english
+- Fixed a bug in OpenURL's prefs program that inserted garbage in file
+  requesters (thanks TetiSoft for pointing the bug and giving the fix)
+- Now pref program supports english, french, german, italian and swedish
+- Fixed a bug in argument handling of commandline (thanks Jeff Gilpin)
+- Fixed a bug in argument reading in commandline that lead to not executing
+  the command and returning an error
+- Added support for AmiUpdate
+- Fixed some warnings
+
+OpenURL 7.2-b
+
+- repackaging
+
 OpenURL 7.2
 
 - OpenURL is now open source and further developped by the

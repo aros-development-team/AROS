@@ -1,95 +1,122 @@
-/*
-**  OpenURL-Handler - Asynch ARexx handler for openurl.library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-*/
+/***************************************************************************
 
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
+
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
 
 #include "lib.h"
+#include "debug.h"
 
 /***********************************************************************/
 
-static ULONG
-sendRexxMsg(struct MsgPort *reply,UBYTE *rxport,UBYTE *rxcmd)
+static BOOL localSendRexxMsg(struct MsgPort *reply, STRPTR rxport, STRPTR rxcmd)
 {
-    struct RexxMsg *rxmsg;
+  BOOL success = FALSE;
+  struct RexxMsg *rxmsg;
 
-    if ((rxmsg = CreateRexxMsg(reply,NULL,NULL)))
-    {
-        rxmsg->rm_Action = RXCOMM|RXFF_STRING|RXFF_NOIO;
+  ENTER();
 
-        if ((rxmsg->rm_Args[0] = CreateArgstring(rxcmd,strlen(rxcmd))))
-        {
-            struct MsgPort *port;
+  if((rxmsg = CreateRexxMsg(reply, NULL, NULL)) != NULL)
+  {
+    rxmsg->rm_Action = RXCOMM|RXFF_STRING|RXFF_NOIO;
 
-            Forbid();
+     if((rxmsg->rm_Args[0] = (APTR)CreateArgstring(rxcmd,strlen(rxcmd))) != 0)
+     {
+       struct MsgPort *port;
 
-            if ((port = FindPort(rxport)))
-            {
-                PutMsg(port,(struct Message *)rxmsg);
-                Permit();
+       Forbid();
 
-                return TRUE;
-            }
+       if((port = FindPort(rxport)) != NULL)
+       {
+         PutMsg(port, (struct Message *)rxmsg);
 
-            Permit();
+         success = TRUE;
+       }
 
-            DeleteArgstring(rxmsg->rm_Args[0]);
-        }
+       Permit();
 
-        DeleteRexxMsg(rxmsg);
-    }
+       if(success == FALSE)
+         DeleteArgstring((APTR)rxmsg->rm_Args[0]);
+     }
 
-    return FALSE;
+     if(success == FALSE)
+       DeleteRexxMsg(rxmsg);
+  }
+
+  RETURN(success);
+  return success;
 }
 
 /**************************************************************************/
 
-#ifdef __MORPHOS__
-void handler(void)
-#else
 void SAVEDS handler(void)
-#endif
 {
-    struct MsgPort   port;
-    struct Process   *me = (struct Process *)FindTask(NULL);
-    struct startMsg  *smsg;
-    ULONG            res;
-    int              sig;
+  struct Process *me = (struct Process *)FindTask(NULL);
+  struct startMsg *smsg;
+  struct MsgPort *port;
+  BOOL res = FALSE;
 
-    WaitPort(&me->pr_MsgPort);
-    smsg = (struct startMsg *)GetMsg(&me->pr_MsgPort);
+  ENTER();
 
-    if ((sig = AllocSignal(-1))>=0)
-    {
-        INITPORT(&port,sig);
-    res = sendRexxMsg(&port,smsg->port,smsg->cmd);
-    }
-    else res = FALSE;
+  WaitPort(&me->pr_MsgPort);
+  smsg = (struct startMsg *)GetMsg(&me->pr_MsgPort);
 
-    smsg->res = res;
-    ReplyMsg((struct Message *)smsg);
+  #if defined(__amigaos4__)
+  port = AllocSysObject(ASOT_PORT, TAG_DONE);
+  #else
+  port = CreateMsgPort();
+  #endif
 
-    if (res)
-    {
-        struct RexxMsg *rxmsg;
+  if(port != NULL)
+    res = localSendRexxMsg(port, smsg->port, smsg->cmd);
 
-        WaitPort(&port);
-    rxmsg = (struct RexxMsg *)GetMsg(&port);
+  smsg->res = res;
+  ReplyMsg((struct Message *)smsg);
 
-        DeleteArgstring(rxmsg->rm_Args[0]);
-        DeleteRexxMsg(rxmsg);
-    }
+  if(res == TRUE)
+  {
+    struct RexxMsg *rxmsg;
 
-    if (sig>=0) FreeSignal(sig);
+    WaitPort(port);
+    rxmsg = (struct RexxMsg *)GetMsg(port);
 
-    Forbid();
-    lib_use--;
+    DeleteArgstring((APTR)rxmsg->rm_Args[0]);
+    DeleteRexxMsg(rxmsg);
+  }
+
+  if(port != NULL)
+  {
+    #if defined(__amigaos4__)
+    FreeSysObject(ASOT_PORT, port);
+    #else
+    DeleteMsgPort(port);
+    #endif
+  }
+
+  ObtainSemaphore(&OpenURLBase->libSem);
+  OpenURLBase->rexx_use--;
+  ReleaseSemaphore(&OpenURLBase->libSem);
+
+  #if !defined(__amigaos4__)
+  // all systems except OS4 should leave this function in forbidden state
+  Forbid();
+  #endif
+
+  LEAVE();
 }
 
 /**************************************************************************/

@@ -1,23 +1,34 @@
-/*
-**  OpenURL - MUI preferences for openurl.library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-**
-**  Ported to OS4 by Alexandre Balaban <alexandre@balaban.name>
-**
-**  Edit FTP client window
-*/
+/***************************************************************************
 
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
 
-#include "OpenURL.h"
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
+
+#include "openurl.h"
+
 #define CATCOMP_NUMBERS
-#include "loc.h"
-#include "libraries/openurl.h"
+#include "locale.h"
+
+#include <libraries/openurl.h>
+
+#include "SDI_hook.h"
+#include "macros.h"
+
+#include "debug.h"
 
 /**************************************************************************/
 
@@ -50,7 +61,7 @@ enum
 
 /**************************************************************************/
 
-static STRPTR syms[] =
+static CONST_STRPTR syms[] =
 {
     "%u",
     "%p",
@@ -64,8 +75,7 @@ static STRPTR names[] =
     NULL
 };
 
-static ULONG
-mNew(struct IClass *cl,Object *obj,struct opSet *msg)
+static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct data        temp;
     struct URL_FTPNode *fn;
@@ -73,14 +83,14 @@ mNew(struct IClass *cl,Object *obj,struct opSet *msg)
 
     memset(&temp,0,sizeof(temp));
 
-    temp.FTPList = (Object *)GetTagData(MUIA_FTPEditWin_ListObj,(ULONG)NULL,attrs);
+    temp.FTPList = (Object *)GetTagData(MUIA_FTPEditWin_ListObj,(IPTR)NULL,attrs);
     if (!temp.FTPList) return 0;
 
-    fn = temp.fn  = (struct URL_FTPNode *)GetTagData(MUIA_FTPEditWin_FTP,(ULONG)NULL,attrs);
+    fn = temp.fn  = (struct URL_FTPNode *)GetTagData(MUIA_FTPEditWin_FTP,(IPTR)NULL,attrs);
     if (!fn) return 0;
 
 
-    if (obj = (Object *)DoSuperNew(cl,obj,
+    if((obj = (Object *)DoSuperNew(cl,obj,
         MUIA_HelpNode,             "FWIN",
         MUIA_Window_ID,            MAKE_ID('E','D','B','R'),
         MUIA_Window_Title,         getString(MSG_FTP_WinTitle),
@@ -128,35 +138,34 @@ mNew(struct IClass *cl,Object *obj,struct opSet *msg)
                 Child, temp.cancel = obutton(MSG_Edit_Cancel,MSG_Edit_Cancel_Help),
             End,
         End,
-        TAG_MORE, attrs))
+        TAG_MORE, attrs)) != NULL)
     {
         struct data *data = INST_DATA(cl,obj);
 
         CopyMem(&temp,data,sizeof(*data));
 
-        set(data->name,MUIA_String_Contents,fn->ufn_Name);
-        set(data->path,MUIA_String_Contents,fn->ufn_Path);
-        set(data->port,MUIA_String_Contents,fn->ufn_Port);
-        set(data->removeScheme,MUIA_Selected,fn->ufn_Flags & UFNF_REMOVEFTP);
-        set(data->show,MUIA_String_Contents,fn->ufn_ShowCmd);
-        set(data->toFront,MUIA_String_Contents,fn->ufn_ToFrontCmd);
-        set(data->openURL,MUIA_String_Contents,fn->ufn_OpenURLCmd);
-        set(data->openURLNW,MUIA_String_Contents,fn->ufn_OpenURLWCmd);
+        set(data->name, MUIA_String_Contents, fn->ufn_Name);
+        set(data->path, MUIA_String_Contents, fn->ufn_Path);
+        set(data->port, MUIA_String_Contents, fn->ufn_Port);
+        set(data->removeScheme, MUIA_Selected, isFlagSet(fn->ufn_Flags, UFNF_REMOVEFTP));
+        set(data->show, MUIA_String_Contents, fn->ufn_ShowCmd);
+        set(data->toFront, MUIA_String_Contents, fn->ufn_ToFrontCmd);
+        set(data->openURL, MUIA_String_Contents, fn->ufn_OpenURLCmd);
+        set(data->openURLNW, MUIA_String_Contents, fn->ufn_OpenURLWCmd);
     }
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 /**************************************************************************/
 
-static ULONG
-mGet(struct IClass *cl,Object *obj,struct opGet *msg)
+static IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct data *data = INST_DATA(cl,obj);
 
     switch (msg->opg_AttrID)
     {
-        case MUIA_FTPEditWin_FTP: *msg->opg_Storage = (ULONG)data->fn; return TRUE;
+        case MUIA_FTPEditWin_FTP: *msg->opg_Storage = (IPTR)data->fn; return TRUE;
         case MUIA_App_IsSubWin:   *msg->opg_Storage = TRUE; return TRUE;
         default: return DoSuperMethodA(cl,obj,(Msg)msg);
     }
@@ -164,57 +173,65 @@ mGet(struct IClass *cl,Object *obj,struct opGet *msg)
 
 /**************************************************************************/
 
-static ULONG
-mWindow_Setup(struct IClass *cl,Object *obj,struct MUIP_Window_Setup *msg)
+static IPTR mWindow_Setup(struct IClass *cl, Object *obj, struct MUIP_Window_Setup *msg)
 {
-    struct data *data = INST_DATA(cl,obj);
+  IPTR result = FALSE;
 
-    if (!DoSuperMethodA(cl,obj,(Msg)msg)) return FALSE;
+  ENTER();
 
-    if (!(data->flags & FLG_Notifies))
+  if(DoSuperMethodA(cl, obj, (Msg)msg))
+  {
+    struct data *data = INST_DATA(cl, obj);
+
+    if(isFlagClear(data->flags, FLG_Notifies))
     {
-        DoMethod(data->use,MUIM_Notify,MUIA_Pressed,FALSE,(ULONG)obj,1,MUIM_FTPEditWin_Use);
-        DoMethod(data->cancel,MUIM_Notify,MUIA_Pressed,FALSE,(ULONG)obj,3,MUIM_Set,MUIA_Window_CloseRequest,TRUE);
+      DoMethod(data->use, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)obj, 1, MUIM_FTPEditWin_Use);
+      DoMethod(data->cancel, MUIM_Notify, MUIA_Pressed, FALSE,(IPTR)obj, 3, MUIM_Set, MUIA_Window_CloseRequest, TRUE);
 
-        DoMethod(obj,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,(ULONG)_app(obj),6,MUIM_Application_PushMethod,
-            (ULONG)_app(obj),3,MUIM_App_CloseWin,MUIA_FTPEditWin_FTP,(ULONG)data->fn);
+      DoMethod(obj, MUIM_Notify, MUIA_Window_CloseRequest,TRUE, (IPTR)_app(obj), 6, MUIM_Application_PushMethod,
+          (IPTR)_app(obj), 3, MUIM_App_CloseWin, MUIA_FTPEditWin_FTP, (IPTR)data->fn);
 
-        data->flags |= FLG_Notifies;
+      SET_FLAG(data->flags, FLG_Notifies);
+
+      result = TRUE;
     }
+  }
 
-    return TRUE;
+  RETURN(result);
+  return result;
 }
 
 /**************************************************************************/
 
-static ULONG
-mUse(struct IClass *cl,Object *obj,Msg msg)
+static IPTR mUse(struct IClass *cl, Object *obj, UNUSED Msg msg)
 {
     struct data        *data = INST_DATA(cl,obj);
     struct URL_FTPNode *fn = data->fn;
     LONG               i, visible, first;
 
-    fn->ufn_Flags &= ~UNF_NEW;
+    CLEAR_FLAG(fn->ufn_Flags, UNF_NEW);
 
-    strcpy((STRPTR)fn->ufn_Name,(STRPTR)xget(data->name,MUIA_String_Contents));
-    strcpy((STRPTR)fn->ufn_Path,(STRPTR)xget(data->path,MUIA_String_Contents));
-    strcpy((STRPTR)fn->ufn_Port,(STRPTR)xget(data->port,MUIA_String_Contents));
-    if (xget(data->removeScheme,MUIA_Selected)) fn->ufn_Flags |= UFNF_REMOVEFTP;
-    else fn->ufn_Flags &= ~UFNF_REMOVEFTP;
+    strlcpy(fn->ufn_Name, (STRPTR)xget(data->name,MUIA_String_Contents), sizeof(fn->ufn_Name));
+    strlcpy(fn->ufn_Path, (STRPTR)xget(data->path,MUIA_String_Contents), sizeof(fn->ufn_Path));
+    strlcpy(fn->ufn_Port, (STRPTR)xget(data->port,MUIA_String_Contents), sizeof(fn->ufn_Port));
+    if (xget(data->removeScheme,MUIA_Selected))
+      SET_FLAG(fn->ufn_Flags, UFNF_REMOVEFTP);
+    else
+      CLEAR_FLAG(fn->ufn_Flags, UFNF_REMOVEFTP);
 
-    strcpy((STRPTR)fn->ufn_ShowCmd,(STRPTR)xget(data->show,MUIA_String_Contents));
-    strcpy((STRPTR)fn->ufn_ToFrontCmd,(STRPTR)xget(data->toFront,MUIA_String_Contents));
-    strcpy((STRPTR)fn->ufn_OpenURLCmd,(STRPTR)xget(data->openURL,MUIA_String_Contents));
-    strcpy((STRPTR)fn->ufn_OpenURLWCmd,(STRPTR)xget(data->openURLNW,MUIA_String_Contents));
+    strlcpy(fn->ufn_ShowCmd, (STRPTR)xget(data->show,MUIA_String_Contents), sizeof(fn->ufn_ShowCmd));
+    strlcpy(fn->ufn_ToFrontCmd, (STRPTR)xget(data->toFront,MUIA_String_Contents), sizeof(fn->ufn_ToFrontCmd));
+    strlcpy(fn->ufn_OpenURLCmd, (STRPTR)xget(data->openURL,MUIA_String_Contents), sizeof(fn->ufn_OpenURLCmd));
+    strlcpy(fn->ufn_OpenURLWCmd, (STRPTR)xget(data->openURLNW,MUIA_String_Contents), sizeof(fn->ufn_OpenURLWCmd));
 
-    get(data->FTPList,MUIA_List_Visible,&visible);
+    visible = xget(data->FTPList, MUIA_List_Visible);
     if (visible!=-1)
     {
-        get(data->FTPList,MUIA_List_First,&first);
+        first = xget(data->FTPList, MUIA_List_First);
 
         for (i = first; i < (first + visible); i++)
         {
-            DoMethod(data->FTPList,MUIM_List_GetEntry,i,(ULONG)&fn);
+            DoMethod(data->FTPList,MUIM_List_GetEntry,i,(IPTR)&fn);
             if (!fn) break;
 
             if (fn==data->fn)
@@ -232,10 +249,8 @@ mUse(struct IClass *cl,Object *obj,Msg msg)
 
 /**************************************************************************/
 
-M_DISP(dispatcher)
+SDISPATCHER(dispatcher)
 {
-    M_DISPSTART
-
     switch (msg->MethodID)
     {
         case OM_NEW:                 return mNew(cl,obj,(APTR)msg);
@@ -249,29 +264,32 @@ M_DISP(dispatcher)
     }
 }
 
-M_DISPEND(dispatcher)
-
 /**************************************************************************/
 
-ULONG
-initFTPEditWinClass(void)
+BOOL initFTPEditWinClass(void)
 {
-    if (g_FTPEditWinClass = MUI_CreateCustomClass(NULL,MUIC_Window,NULL,sizeof(struct data),DISP(dispatcher)))
+    BOOL success = FALSE;
+
+    if((g_FTPEditWinClass = MUI_CreateCustomClass(NULL, MUIC_Window, NULL, sizeof(struct data), ENTRY(dispatcher))) != NULL)
     {
         localizeStrings(names);
-
-        return TRUE;
+        success = TRUE;
     }
 
-    return FALSE;
+    RETURN(success);
+    return success;
 }
 
 /**************************************************************************/
 
-void
-disposeFTPEditWinClass(void)
+void disposeFTPEditWinClass(void)
 {
-    if (g_FTPEditWinClass) MUI_DeleteCustomClass(g_FTPEditWinClass);
+    ENTER();
+
+    if(g_FTPEditWinClass != NULL)
+        MUI_DeleteCustomClass(g_FTPEditWinClass);
+
+    LEAVE();
 }
 
 /**************************************************************************/

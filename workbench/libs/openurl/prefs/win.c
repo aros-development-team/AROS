@@ -1,23 +1,42 @@
-/*
-**  OpenURL - MUI preferences for openurl.library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-**
-**  Ported to OS4 by Alexandre Balaban <alexandre@balaban.name>
-**
-**  Main window
-*/
+/***************************************************************************
 
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
 
-#include "OpenURL.h"
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
+
+#if defined(__AROS__) && defined(NO_INLINE_STDARG)
+#undef NO_INLINE_STDARG
+#include <proto/openurl.h>
+#define NO_INLINE_STDARG
+#endif
+
+#include "openurl.h"
+
 #define CATCOMP_NUMBERS
-#include "loc.h"
-#include "libraries/openurl.h"
+#include "locale.h"
+
+#include <proto/openurl.h>
+
+#include <libraries/openurl.h>
+
+#include "SDI_hook.h"
+#include "macros.h"
+
+#include "debug.h"
 
 /**************************************************************************/
 
@@ -69,14 +88,13 @@ static STRPTR tabs[] =
     NULL
 };
 
-static ULONG
-mNew(struct IClass *cl,Object *obj,struct opSet *msg)
+static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct data temp;
 
     memset(&temp,0,sizeof(temp));
 
-    if (obj = (Object *)DoSuperNew(cl,obj,
+    if((obj = (Object *)DoSuperNew(cl,obj,
         MUIA_HelpNode,           "WIN",
         MUIA_Window_ID,          MAKE_ID('M', 'W', 'I', 'N'),
         MUIA_Window_Title,       getString(MSG_Win_WinTitle),
@@ -147,25 +165,25 @@ mNew(struct IClass *cl,Object *obj,struct opSet *msg)
             /* Buttons */
             Child, HGroup,
                 Child, temp.save = obutton(MSG_Win_Save,MSG_Win_Save_Help),
-                Child, wspace(10),
+                Child, wspace(16),
                 Child, temp.use = obutton(MSG_Win_Use,MSG_Win_Use_Help),
-                Child, wspace(10),
+                Child, wspace(16),
                 Child, temp.apply = obutton(MSG_Win_Apply,MSG_Win_Apply_Help),
-                Child, wspace(10),
+                Child, wspace(16),
                 Child, temp.cancel = obutton(MSG_Win_Cancel,MSG_Win_Cancel_Help),
             End,
 
         End,
-        TAG_MORE, msg->ops_AttrList))
+        TAG_MORE, msg->ops_AttrList)) != NULL)
     {
         struct data *data = INST_DATA(cl,obj);
 
         /* init instance data */
         CopyMem(&temp,data,sizeof(*data));
 
-        get(data->browsers,MUIA_AppList_ListObj,&data->browserList);
-        get(data->mailers,MUIA_AppList_ListObj,&data->mailerList);
-        get(data->FTPs,MUIA_AppList_ListObj,&data->FTPList);
+        data->browserList = (Object *)xget(data->browsers, MUIA_AppList_ListObj);
+        data->mailerList = (Object *)xget(data->mailers, MUIA_AppList_ListObj);
+        data->FTPList = (Object *)xget(data->FTPs, MUIA_AppList_ListObj);
 
         /* buttons */
         set(obj,MUIA_Window_DefaultObject,data->browserList);
@@ -175,41 +193,18 @@ mNew(struct IClass *cl,Object *obj,struct opSet *msg)
             MUIM_Application_ReturnID,MUIV_Application_ReturnID_Quit);
 
         /* buttons notifies */
-        DoMethod(data->save,MUIM_Notify,MUIA_Pressed,FALSE,(ULONG)obj,2,MUIM_Win_StorePrefs,MUIV_Win_StorePrefs_Save);
-        DoMethod(data->use,MUIM_Notify,MUIA_Pressed,FALSE,(ULONG)obj,2,MUIM_Win_StorePrefs,MUIV_Win_StorePrefs_Use);
-        DoMethod(data->apply,MUIM_Notify,MUIA_Pressed,FALSE,(ULONG)obj,2,MUIM_Win_StorePrefs,MUIV_Win_StorePrefs_Apply);
+        DoMethod(data->save,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)obj,2,MUIM_Win_StorePrefs,MUIV_Win_StorePrefs_Save);
+        DoMethod(data->use,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)obj,2,MUIM_Win_StorePrefs,MUIV_Win_StorePrefs_Use);
+        DoMethod(data->apply,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)obj,2,MUIM_Win_StorePrefs,MUIV_Win_StorePrefs_Apply);
         DoMethod(data->cancel,MUIM_Notify,MUIA_Pressed,FALSE,MUIV_Notify_Application,2,MUIM_Application_ReturnID,MUIV_Application_ReturnID_Quit);
     }
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 /**************************************************************************/
 
-static ULONG
-mSets(struct IClass *cl,Object *obj,struct opSet *msg)
-{
-    struct MUI_PenSpec **specs;
-
-    if (specs = (struct MUI_PenSpec **)GetTagData(MUIA_App_Pens,0L,msg->ops_AttrList))
-    {
-        struct data *data = INST_DATA(cl,obj);
-
-        //Printf("PrefsWin [%s] [%s] [%s]\n",specs[0],specs[1],specs[2]);
-
-        set(data->browserList,MUIA_App_Pens,specs);
-        set(data->mailerList,MUIA_App_Pens,specs);
-        set(data->FTPList,MUIA_App_Pens,specs);
-    }
-
-    return DoSuperMethodA(cl,obj,(Msg)msg);
-}
-
-/***********************************************************************/
-
-
-static ULONG
-mGetPrefs(struct IClass *cl,Object *obj,struct MUIP_Win_GetPrefs *msg)
+static IPTR mGetPrefs(struct IClass *cl,Object *obj, struct MUIP_Win_GetPrefs *msg)
 {
     struct data            *data = INST_DATA(cl,obj);
     struct URL_Prefs       *p;
@@ -253,7 +248,7 @@ mGetPrefs(struct IClass *cl,Object *obj,struct MUIP_Win_GetPrefs *msg)
          bn->ubn_Node.mln_Succ;
          bn = (struct URL_BrowserNode *)bn->ubn_Node.mln_Succ)
     {
-        DoMethod(data->browserList,MUIM_List_InsertSingle,(ULONG)bn,MUIV_List_Insert_Bottom);
+        DoMethod(data->browserList,MUIM_List_InsertSingle,(IPTR)bn,MUIV_List_Insert_Bottom);
     }
 
     set(data->browserList,MUIA_List_Quiet,FALSE);
@@ -266,7 +261,7 @@ mGetPrefs(struct IClass *cl,Object *obj,struct MUIP_Win_GetPrefs *msg)
          mn->umn_Node.mln_Succ;
          mn = (struct URL_MailerNode *)mn->umn_Node.mln_Succ)
     {
-        DoMethod(data->mailerList,MUIM_List_InsertSingle,(ULONG)mn,MUIV_List_Insert_Bottom);
+        DoMethod(data->mailerList,MUIM_List_InsertSingle,(IPTR)mn,MUIV_List_Insert_Bottom);
     }
 
     set(data->mailerList,MUIA_List_Quiet,FALSE);
@@ -279,26 +274,26 @@ mGetPrefs(struct IClass *cl,Object *obj,struct MUIP_Win_GetPrefs *msg)
          fn->ufn_Node.mln_Succ;
          fn = (struct URL_FTPNode *)fn->ufn_Node.mln_Succ)
     {
-        DoMethod(data->FTPList,MUIM_List_InsertSingle,(ULONG)fn,MUIV_List_Insert_Bottom);
+        DoMethod(data->FTPList,MUIM_List_InsertSingle,(IPTR)fn,MUIV_List_Insert_Bottom);
     }
 
     set(data->FTPList,MUIA_List_Quiet,FALSE);
 
     /* Miscellaneous */
-    set(data->prepend,MUIA_Selected,p->up_Flags & UPF_PREPENDHTTP);
-    set(data->mailto,MUIA_Selected,p->up_Flags & UPF_DOMAILTO);
-    set(data->useFTP,MUIA_Selected,p->up_Flags & UPF_DOFTP);
+    set(data->prepend, MUIA_Selected, isFlagSet(p->up_Flags, UPF_PREPENDHTTP));
+    set(data->mailto, MUIA_Selected, isFlagSet(p->up_Flags, UPF_DOMAILTO));
+    set(data->useFTP, MUIA_Selected, isFlagSet(p->up_Flags, UPF_DOFTP));
 
-    set(data->show,MUIA_Selected,p->up_DefShow);
-    set(data->toFront,MUIA_Selected,p->up_DefBringToFront);
-    set(data->newWin,MUIA_Selected,p->up_DefNewWindow);
-    set(data->launch,MUIA_Selected,p->up_DefLaunch);
+    set(data->show, MUIA_Selected, p->up_DefShow);
+    set(data->toFront, MUIA_Selected, p->up_DefBringToFront);
+    set(data->newWin, MUIA_Selected, p->up_DefNewWindow);
+    set(data->launch, MUIA_Selected, p->up_DefLaunch);
 
     /* Activate the first entry */
     DoSuperMethod(cl,obj,MUIM_MultiSet,MUIA_List_Active,MUIV_List_Active_Top,
-        (ULONG)data->browserList,
-        (ULONG)data->mailerList,
-        (ULONG)data->FTPList,
+        (IPTR)data->browserList,
+        (IPTR)data->mailerList,
+        (IPTR)data->FTPList,
         NULL);
 
     URL_FreePrefsA(p,NULL);
@@ -308,8 +303,7 @@ mGetPrefs(struct IClass *cl,Object *obj,struct MUIP_Win_GetPrefs *msg)
 
 /**************************************************************************/
 
-static ULONG
-mStorePrefs(struct IClass *cl,Object *obj,struct MUIP_Win_StorePrefs *msg)
+static IPTR mStorePrefs(struct IClass *cl, Object *obj, struct MUIP_Win_StorePrefs *msg)
 {
     struct data *data = INST_DATA(cl,obj);
     struct URL_Prefs     up;
@@ -328,10 +322,10 @@ mStorePrefs(struct IClass *cl,Object *obj,struct MUIP_Win_StorePrefs *msg)
     {
         struct URL_BrowserNode *bn;
 
-        DoMethod(data->browserList,MUIM_List_GetEntry,i,(ULONG)&bn);
+        DoMethod(data->browserList,MUIM_List_GetEntry,i,(IPTR)&bn);
         if (!bn) break;
 
-        if (!(bn->ubn_Flags & UNF_NEW))
+        if(isFlagClear(bn->ubn_Flags, UNF_NEW))
             AddTail((struct List *)&up.up_BrowserList,(struct Node *)bn);
     }
 
@@ -339,10 +333,10 @@ mStorePrefs(struct IClass *cl,Object *obj,struct MUIP_Win_StorePrefs *msg)
     {
         struct URL_MailerNode *mn;
 
-        DoMethod(data->mailerList,MUIM_List_GetEntry,i,(ULONG)&mn);
+        DoMethod(data->mailerList,MUIM_List_GetEntry,i,(IPTR)&mn);
         if (!mn) break;
 
-        if (!(mn->umn_Flags & UNF_NEW))
+        if(isFlagClear(mn->umn_Flags, UNF_NEW))
             AddTail((struct List *)&up.up_MailerList,(struct Node *)mn);
     }
 
@@ -351,22 +345,28 @@ mStorePrefs(struct IClass *cl,Object *obj,struct MUIP_Win_StorePrefs *msg)
     {
         struct URL_FTPNode *fn;
 
-        DoMethod(data->FTPList,MUIM_List_GetEntry,i,(ULONG)&fn);
+        DoMethod(data->FTPList,MUIM_List_GetEntry,i,(IPTR)&fn);
         if (!fn) break;
 
-        if (!(fn->ufn_Flags & UNF_NEW))
+        if(isFlagClear(fn->ufn_Flags, UNF_NEW))
             AddTail((struct List *)&up.up_FTPList,(struct Node *)fn);
     }
 
     /* Miscellaneous */
-    if (xget(data->prepend,MUIA_Selected)) up.up_Flags |= UPF_PREPENDHTTP;
-    else up.up_Flags &= ~UPF_PREPENDHTTP;
+    if (xget(data->prepend,MUIA_Selected))
+        SET_FLAG(up.up_Flags, UPF_PREPENDHTTP);
+    else
+        CLEAR_FLAG(up.up_Flags, UPF_PREPENDHTTP);
 
-    if (xget(data->mailto,MUIA_Selected)) up.up_Flags |= UPF_DOMAILTO;
-    else up.up_Flags &= ~UPF_DOMAILTO;
+    if (xget(data->mailto,MUIA_Selected))
+        SET_FLAG(up.up_Flags, UPF_DOMAILTO);
+    else
+        CLEAR_FLAG(up.up_Flags, UPF_DOMAILTO);
 
-    if (xget(data->useFTP,MUIA_Selected)) up.up_Flags |= UPF_DOFTP;
-    else up.up_Flags &= ~UPF_DOFTP;
+    if (xget(data->useFTP,MUIA_Selected))
+        SET_FLAG(up.up_Flags, UPF_DOFTP);
+    else
+        CLEAR_FLAG(up.up_Flags, UPF_DOFTP);
 
     up.up_DefShow         = (ULONG)xget(data->show,MUIA_Selected);
     up.up_DefBringToFront = (ULONG)xget(data->toFront,MUIA_Selected);
@@ -388,8 +388,7 @@ mStorePrefs(struct IClass *cl,Object *obj,struct MUIP_Win_StorePrefs *msg)
 
 /**************************************************************************/
 
-static ULONG
-mDelete(struct IClass *cl,Object *obj,struct MUIP_Win_Delete *msg)
+static IPTR mDelete(struct IClass *cl, Object *obj, struct MUIP_Win_Delete *msg)
 {
     struct data *data = INST_DATA(cl,obj);
 
@@ -402,26 +401,22 @@ mDelete(struct IClass *cl,Object *obj,struct MUIP_Win_Delete *msg)
 
 /**************************************************************************/
 
-static ULONG
-mCheckSave(struct IClass *cl,Object *obj,Msg msg)
+static IPTR mCheckSave(struct IClass *cl, Object *obj, UNUSED Msg msg)
 {
     struct data *data = INST_DATA(cl,obj);
 
-    return (ULONG)(DoMethod(data->browsers,MUIM_App_CheckSave) ||
-           		   DoMethod(data->mailers,MUIM_App_CheckSave)  ||
-           		   DoMethod(data->FTPs,MUIM_App_CheckSave));
+    return (IPTR)(DoMethod(data->browsers,MUIM_App_CheckSave) ||
+                   DoMethod(data->mailers,MUIM_App_CheckSave)  ||
+                   DoMethod(data->FTPs,MUIM_App_CheckSave));
 }
 
 /**************************************************************************/
 
-M_DISP(dispatcher)
+SDISPATCHER(dispatcher)
 {
-    M_DISPSTART
-
     switch (msg->MethodID)
     {
         case OM_NEW:              return mNew(cl,obj,(APTR)msg);
-        case OM_SET:              return mSets(cl,obj,(APTR)msg);
 
         case MUIM_Win_GetPrefs:   return mGetPrefs(cl,obj,(APTR)msg);
         case MUIM_Win_StorePrefs: return mStorePrefs(cl,obj,(APTR)msg);
@@ -433,29 +428,34 @@ M_DISP(dispatcher)
     }
 }
 
-M_DISPEND(dispatcher)
-
 /**************************************************************************/
 
-ULONG
-initWinClass(void)
+BOOL initWinClass(void)
 {
-    if (g_winClass = MUI_CreateCustomClass(NULL,MUIC_Window,NULL,sizeof(struct data),DISP(dispatcher)))
+    BOOL success = FALSE;
+
+    ENTER();
+
+    if((g_winClass = MUI_CreateCustomClass(NULL, MUIC_Window, NULL, sizeof(struct data), ENTRY(dispatcher))) != NULL)
     {
         localizeStrings(tabs);
-
-        return TRUE;
+        success = TRUE;
     }
 
-    return FALSE;
+    RETURN(success);
+    return success;
 }
 
 /**************************************************************************/
 
-void
-disposeWinClass(void)
+void disposeWinClass(void)
 {
-    if (g_winClass) MUI_DeleteCustomClass(g_winClass);
+    ENTER();
+
+    if(g_winClass != NULL)
+        MUI_DeleteCustomClass(g_winClass);
+
+    LEAVE();
 }
 
 /**************************************************************************/

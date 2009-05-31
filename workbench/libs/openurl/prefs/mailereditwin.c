@@ -1,23 +1,34 @@
-/*
-**  OpenURL - MUI preferences for openurl.library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-**
-**  Ported to OS4 by Alexandre Balaban <alexandre@balaban.name>
-**
-**  Edit mailer window
-*/
+/***************************************************************************
 
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
 
-#include "OpenURL.h"
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
+
+#include "openurl.h"
+
 #define CATCOMP_NUMBERS
-#include "loc.h"
-#include "libraries/openurl.h"
+#include "locale.h"
+
+#include <libraries/openurl.h>
+
+#include "SDI_hook.h"
+#include "macros.h"
+
+#include "debug.h"
 
 /**************************************************************************/
 
@@ -48,7 +59,7 @@ enum
 
 /**************************************************************************/
 
-static STRPTR syms[] =
+static CONST_STRPTR syms[] =
 {
     "%a",
     "%s",
@@ -71,8 +82,7 @@ static STRPTR names[] =
 };
 
 
-static ULONG
-mNew(struct IClass *cl,Object *obj,struct opSet *msg)
+static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct data            temp;
     struct URL_MailerNode  *mn;
@@ -80,13 +90,13 @@ mNew(struct IClass *cl,Object *obj,struct opSet *msg)
 
     memset(&temp,0,sizeof(temp));
 
-    temp.mailerList = (Object *)GetTagData(MUIA_MailerEditWin_ListObj,(ULONG)NULL,attrs);
+    temp.mailerList = (Object *)GetTagData(MUIA_MailerEditWin_ListObj,(IPTR)NULL,attrs);
     if (!temp.mailerList) return 0;
 
-    mn = temp.mn  = (struct URL_MailerNode *)GetTagData(MUIA_MailerEditWin_Mailer,(ULONG)NULL,attrs);
+    mn = temp.mn  = (struct URL_MailerNode *)GetTagData(MUIA_MailerEditWin_Mailer,(IPTR)NULL,attrs);
     if (!mn) return 0;
 
-    if (obj = (Object *)DoSuperNew(cl,obj,
+    if((obj = (Object *)DoSuperNew(cl,obj,
         MUIA_HelpNode,             "MWIN",
         MUIA_Window_ID,            MAKE_ID('E', 'D', 'M', 'L'),
         MUIA_Window_Title,         getString(MSG_Mailer_WinTitle),
@@ -126,7 +136,7 @@ mNew(struct IClass *cl,Object *obj,struct opSet *msg)
                 Child, temp.cancel = obutton(MSG_Edit_Cancel,MSG_Edit_Cancel_Help),
             End,
         End,
-        TAG_MORE, attrs))
+        TAG_MORE, attrs)) != NULL)
     {
         struct data *data = INST_DATA(cl,obj);
 
@@ -140,19 +150,18 @@ mNew(struct IClass *cl,Object *obj,struct opSet *msg)
         set(data->write,MUIA_String_Contents,mn->umn_WriteMailCmd);
     }
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 /**************************************************************************/
 
-static ULONG
-mGet(struct IClass *cl,Object *obj,struct opGet *msg)
+static IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct data *data = INST_DATA(cl,obj);
 
     switch (msg->opg_AttrID)
     {
-        case MUIA_MailerEditWin_Mailer: *msg->opg_Storage = (ULONG)data->mn; return TRUE;
+        case MUIA_MailerEditWin_Mailer: *msg->opg_Storage = (IPTR)data->mn; return TRUE;
         case MUIA_App_IsSubWin:         *msg->opg_Storage = TRUE; return TRUE;
         default: return DoSuperMethodA(cl,obj,(Msg)msg);
     }
@@ -160,54 +169,60 @@ mGet(struct IClass *cl,Object *obj,struct opGet *msg)
 
 /**************************************************************************/
 
-static ULONG
-mWindow_Setup(struct IClass *cl,Object *obj,struct MUIP_Window_Setup *msg)
+static IPTR mWindow_Setup(struct IClass *cl, Object *obj, struct MUIP_Window_Setup *msg)
 {
-    struct data *data = INST_DATA(cl,obj);
+  IPTR result = FALSE;
 
-    if (!DoSuperMethodA(cl,obj,(Msg)msg)) return FALSE;
+  ENTER();
 
-    if (!(data->flags & FLG_Notifies))
+  if(DoSuperMethodA(cl, obj, (Msg)msg))
+  {
+    struct data *data = INST_DATA(cl, obj);
+
+    if(isFlagClear(data->flags, FLG_Notifies))
     {
-        DoMethod(data->use,MUIM_Notify,MUIA_Pressed,FALSE,(ULONG)obj,1,MUIM_MailerEditWin_Use);
-        DoMethod(data->cancel,MUIM_Notify,MUIA_Pressed,FALSE,(ULONG)obj,3,MUIM_Set,MUIA_Window_CloseRequest,TRUE);
+      DoMethod(data->use, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)obj, 1, MUIM_MailerEditWin_Use);
+      DoMethod(data->cancel, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)obj, 3, MUIM_Set, MUIA_Window_CloseRequest, TRUE);
 
-        DoMethod(obj,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,(ULONG)_app(obj),6,MUIM_Application_PushMethod,
-            (ULONG)_app(obj),3,MUIM_App_CloseWin,MUIA_MailerEditWin_Mailer,(ULONG)data->mn);
+      DoMethod(obj, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)_app(obj), 6, MUIM_Application_PushMethod,
+          (IPTR)_app(obj), 3, MUIM_App_CloseWin, MUIA_MailerEditWin_Mailer, (IPTR)data->mn);
 
-        data->flags |= FLG_Notifies;
+      SET_FLAG(data->flags, FLG_Notifies);
+
+      result = TRUE;
     }
+  }
 
-    return TRUE;
+  RETURN(result);
+  return result;
 }
 
 /**************************************************************************/
 
-static ULONG
-mUse(struct IClass *cl,Object *obj,Msg msg)
+static IPTR mUse(struct IClass *cl, Object *obj, UNUSED Msg msg)
 {
     struct data           *data = INST_DATA(cl,obj);
     struct URL_MailerNode *mn = data->mn;
     LONG                  i, visible, first;
 
-    mn->umn_Flags &= ~UNF_NEW;
+    CLEAR_FLAG(mn->umn_Flags, UNF_NEW);
 
-    strcpy((STRPTR)mn->umn_Name,(STRPTR)xget(data->name,MUIA_String_Contents));
-    strcpy((STRPTR)mn->umn_Path,(STRPTR)xget(data->path,MUIA_String_Contents));
-    strcpy((STRPTR)mn->umn_Port,(STRPTR)xget(data->port,MUIA_String_Contents));
+    strlcpy(mn->umn_Name, (STRPTR)xget(data->name,MUIA_String_Contents), sizeof(mn->umn_Name));
+    strlcpy(mn->umn_Path, (STRPTR)xget(data->path,MUIA_String_Contents), sizeof(mn->umn_Path));
+    strlcpy(mn->umn_Port, (STRPTR)xget(data->port,MUIA_String_Contents), sizeof(mn->umn_Port));
 
-    strcpy((STRPTR)mn->umn_ShowCmd,(STRPTR)xget(data->show,MUIA_String_Contents));
-    strcpy((STRPTR)mn->umn_ToFrontCmd,(STRPTR)xget(data->toFront,MUIA_String_Contents));
-    strcpy((STRPTR)mn->umn_WriteMailCmd,(STRPTR)xget(data->write,MUIA_String_Contents));
+    strlcpy(mn->umn_ShowCmd, (STRPTR)xget(data->show,MUIA_String_Contents), sizeof(mn->umn_ShowCmd));
+    strlcpy(mn->umn_ToFrontCmd, (STRPTR)xget(data->toFront,MUIA_String_Contents), sizeof(mn->umn_ToFrontCmd));
+    strlcpy(mn->umn_WriteMailCmd, (STRPTR)xget(data->write,MUIA_String_Contents), sizeof(mn->umn_WriteMailCmd));
 
-    get(data->mailerList,MUIA_List_Visible,&visible);
+    visible = xget(data->mailerList, MUIA_List_Visible);
     if (visible != -1)
     {
-        get(data->mailerList,MUIA_List_First,&first);
+        first = xget(data->mailerList, MUIA_List_First);
 
         for (i = first; i<(first + visible); i++)
         {
-            DoMethod(data->mailerList,MUIM_List_GetEntry,i,(ULONG)&mn);
+            DoMethod(data->mailerList,MUIM_List_GetEntry,i,(IPTR)&mn);
             if (!mn) break;
 
             if (mn==data->mn)
@@ -225,10 +240,8 @@ mUse(struct IClass *cl,Object *obj,Msg msg)
 
 /**************************************************************************/
 
-M_DISP(dispatcher)
+SDISPATCHER(dispatcher)
 {
-    M_DISPSTART
-
     switch (msg->MethodID)
     {
         case OM_NEW:                 return mNew(cl,obj,(APTR)msg);
@@ -241,29 +254,34 @@ M_DISP(dispatcher)
     }
 }
 
-M_DISPEND(dispatcher)
-
 /**************************************************************************/
 
-ULONG
-initMailerEditWinClass(void)
+BOOL initMailerEditWinClass(void)
 {
-    if (g_mailerEditWinClass = MUI_CreateCustomClass(NULL,MUIC_Window,NULL,sizeof(struct data),DISP(dispatcher)))
+    BOOL success = FALSE;
+
+    ENTER();
+
+    if((g_mailerEditWinClass = MUI_CreateCustomClass(NULL, MUIC_Window, NULL, sizeof(struct data), ENTRY(dispatcher))) != NULL)
     {
         localizeStrings(names);
-
-        return TRUE;
+        success = TRUE;
     }
 
-    return FALSE;
+    RETURN(success);
+    return success;
 }
 
 /**************************************************************************/
 
-void
-disposeMailerEditWinClass(void)
+void disposeMailerEditWinClass(void)
 {
-    if (g_mailerEditWinClass) MUI_DeleteCustomClass(g_mailerEditWinClass);
+    ENTER();
+
+    if(g_mailerEditWinClass != NULL)
+        MUI_DeleteCustomClass(g_mailerEditWinClass);
+
+    LEAVE();
 }
 
 /**************************************************************************/
