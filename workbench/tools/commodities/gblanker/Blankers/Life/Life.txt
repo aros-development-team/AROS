@@ -1,0 +1,11 @@
+Life Blanker
+
+by Michael D. Bayne
+
+This is my favorite. I worked very hard
+on making this as fast as possible while
+remaining 100%% system friendly. The code
+is very interesting. The techniques for
+doing a minimal number of calculations
+were taken in part from Tom Rokicki's
+Life program.

@@ -1,0 +1,6 @@
+5
+SLIDER "_Move Delay" m 0 10 1
+DELIM
+SLIDER "_Game Delay" g 0 10 2
+DELIM
+DISPLAY 0

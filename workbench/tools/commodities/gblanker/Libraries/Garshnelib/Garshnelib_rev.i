@@ -1,0 +1,14 @@
+VERSION		EQU	39
+REVISION	EQU	2
+DATE	MACRO
+		dc.b	'11.12.94'
+	ENDM
+VERS	MACRO
+		dc.b	'Garshnelib 39.2'
+	ENDM
+VSTRING	MACRO
+		dc.b	'Garshnelib 39.2 (11.12.94)',13,10,0
+	ENDM
+VERSTAG	MACRO
+		dc.b	0,'$VER: Garshnelib 39.2 (11.12.94)',0
+	ENDM

@@ -1,0 +1,6 @@
+5
+SLIDER _Forkiness f 1 20 6
+DELIM
+SLIDER F_requency r 1 15 4
+DELIM
+DISPLAY 0

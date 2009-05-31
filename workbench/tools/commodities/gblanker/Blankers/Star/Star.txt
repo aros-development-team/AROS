@@ -1,0 +1,6 @@
+Star Blanker
+
+by Alexander Kneer and Michael D. Bayne
+
+This module draws a nice starfield that
+flies toward you.

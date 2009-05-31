@@ -1,0 +1,13 @@
+TicTacToe Blanker
+
+by Michael D. Bayne
+
+This module plays tic tac toe against itself
+for your viewing pleasure. If you set all the
+delays to zero, it looks quite remniscient of
+the Tic Tac Toe playing computer in the movie
+War Games.
+
+I still have to make it draw O's by stroking
+out a circle instead of just drawing the whole
+thing at once.

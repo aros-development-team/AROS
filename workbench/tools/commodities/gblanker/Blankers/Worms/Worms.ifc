@@ -1,0 +1,9 @@
+8
+SLIDER _Worms w 1 50 20
+DELIM
+SLIDER _Length l 2 25 15
+DELIM
+CYCLE Cl_one o 2 "Top Screen" "Default Public" 0
+DELIM
+SLIDER "_Fade %" f 0 99 0
+DELIM

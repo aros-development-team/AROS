@@ -1,0 +1,8 @@
+7
+SLIDER _Number n 1 25 16
+DELIM
+SLIDER _Power  p 1 10 5
+DELIM
+SLIDER _Radius r 4 10 6
+DELIM
+DISPLAY 2

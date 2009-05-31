@@ -1,0 +1,10 @@
+Goats and Herders Blanker
+
+by Steve Akers
+
+This module is a simulation of Goat
+herders and Goats running around a
+field. The herders plant grass and the
+goats eat the grass. This blanker shows
+interesting behavior and is fun to
+watch.

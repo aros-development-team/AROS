@@ -1,0 +1,12 @@
+Plasma Blanker
+
+by Alexander Kneer and Michael D. Bayne
+
+This module was originally adapted from
+the SuperDark module by Alex and then
+heavily modified by myself. It draws a
+nice color cycling plasma onto the
+screen.
+
+(I know, Copper Plasma is cooler, but
+it's also VERY system infriendly).

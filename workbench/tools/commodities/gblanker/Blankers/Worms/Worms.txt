@@ -1,0 +1,7 @@
+Worms Blanker
+
+by Michael D. Bayne
+
+This blanker draws little worms that run
+around your screen eating everything
+that they pass over. 

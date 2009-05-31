@@ -1,0 +1,10 @@
+Flying Toasters Blanker
+
+by Gernot Reisinger and Michael D. Bayne
+
+Alex originally ported this from Gernot's
+version and then I rewrote it to speed
+things up a bit and added the color
+Toasters. I can't imagine having a
+screen blanker without flying toasters.
+It's simply a necessity.

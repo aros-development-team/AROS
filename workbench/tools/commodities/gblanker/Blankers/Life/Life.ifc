@@ -1,0 +1,8 @@
+7
+SLIDER De_lay		l	0 120   0
+DELIM
+SLIDER _Generations	g	5 999 150
+DELIM
+SLIDER De_nsity		n	1  99  16
+DELIM
+DISPLAY 4

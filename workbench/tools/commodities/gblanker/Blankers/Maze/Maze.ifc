@@ -1,0 +1,9 @@
+7
+SLIDER "C_ell Size"	e 3 25 7
+DELIM
+SLIDER "So_lve Delay"   l 0 15 3
+DELIM
+CYCLE "C_olor Scheme"	o 5 "Copper Walls" "Copper Trail" "Multicolored Trail"
+							"MC Trail and Copper Walls" "Two Colors" 1
+DELIM
+DISPLAY 2

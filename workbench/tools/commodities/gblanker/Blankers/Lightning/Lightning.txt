@@ -1,0 +1,9 @@
+Lightning Blanker
+by Raymond Penners
+
+To contact me write to:
+Internet: raymondp@stack.urc.tue.nl
+AmigaNET: 39:157/101.15
+NLA: 14:105/201.15
+
+Draws lightning on your screen.

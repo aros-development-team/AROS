@@ -1,0 +1,6 @@
+Text Blanker
+
+by Michael D. Bayne
+
+This blanker just moves a line of text
+around the screen.

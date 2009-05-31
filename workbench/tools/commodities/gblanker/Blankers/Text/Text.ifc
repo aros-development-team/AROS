@@ -1,0 +1,10 @@
+9
+STRING St_ring r Every good boy deserves fudge.
+DELIM
+FONT topaz.font 11
+DELIM
+CYCLE C_olors o 4 Cycle Random White Copper 0
+DELIM
+SLIDER De_lay l 0 120 60
+DELIM
+DISPLAY 1

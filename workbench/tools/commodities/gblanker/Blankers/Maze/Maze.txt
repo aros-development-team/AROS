@@ -1,0 +1,16 @@
+Maze Blanker
+
+by Michael D. Bayne
+
+This is a real nifty blanker that draws a
+random maze on the screen and then finds a
+solution for it. Be sure to check out the
+different color modes (Copper Walls, Copper
+Trail, Multicolored Trail, etc.) The copper
+stuff looks cool, but also try the multi-
+colored trail with at least a 32 color
+screen. It spreads the color palette over
+the trail so that the solution goes exactly
+once through the spectrum (a nifty trick
+that is more clear if you look at how the
+maze is constructed).

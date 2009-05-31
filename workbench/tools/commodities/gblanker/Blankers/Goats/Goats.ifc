@@ -1,0 +1,12 @@
+11
+SLIDER De_lay l 0 120 0
+DELIM
+SLIDER _Herders h 10 300 40
+DELIM
+SLIDER _Goats g 5 300 60
+DELIM
+SLIDER _Reproduction r 1 20 2
+DELIM
+CYCLE Scr_een e 2 "New Screen" "Top Screen" 0
+DELIM
+DISPLAY 0
