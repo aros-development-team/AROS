@@ -1,7 +1,13 @@
+#ifdef __AROS__
+#include "muiaros.h"
+#else
+
 /***************************************************************************
 **
 ** MUI - MagicUserInterface
-** (c) 1993-2003 Stefan Stuntz
+** (c) 1993-2006 Stefan Stuntz
+**
+** $VER 20.1 (06.12.2006)
 **
 ** Main Header File
 **
@@ -106,7 +112,6 @@
 #ifndef LIBRARIES_MUI_H
 #define LIBRARIES_MUI_H
 
-
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
 #endif
@@ -123,11 +128,17 @@
 #include <intuition/screens.h>
 #endif
 
-#ifdef __MORPHOS__
-#include <emul/emulinterface.h>
+#ifndef PROTO_INTUITION_H
+#include <proto/intuition.h>
 #endif
 
-
+#if defined(__PPC__)
+  #if defined(__GNUC__)
+    #pragma pack(2)
+  #elif defined(__VBCC__)
+    #pragma amiga-align
+  #endif
+#endif
 
 
 /***************************************************************************
@@ -141,15 +152,13 @@
 /*
 ** !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ** Warning, some of the macros in this header file work only with
-** uptodate versions of muimaster.library. If you recompile your programs,
+** up2date versions of muimaster.library. If you recompile your programs,
 ** be sure to open muimaster.library with MUIMASTER_VMIN as version number.
 ** !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 */
 
 
-/* include obsolete identifiers for backward compatibility */
 #define MUI_OBSOLETE
-
 
 
 /*************************************************************************
@@ -166,8 +175,94 @@
 
 struct MUI_PenSpec
 {
-	char buf[32];
+    char buf[32];
 };
+
+
+
+/*************************************************************************
+** Public Screen Stuff
+*************************************************************************/
+
+/*
+** NOTE: This stuff is only included to allow compilation of the supplied
+**       public screen manager for educational purposes. Everything
+**       here is subject to change without notice and I guarantee to
+**       do that just for fun!
+**       More info can be found in the screen manager source file.
+*/
+
+#define PSD_INITIAL_NAME   "(unnamed)"
+#define PSD_INITIAL_TITLE  "MUI Public Screen"
+#define PSD_ID_MPUB        MAKE_ID('M','P','U','B')
+
+#define PSD_NAME_FRONTMOST "«Frontmost»"
+
+#define PSD_FILENAME_SAVE "envarc:mui/PublicScreens.iff"
+#define PSD_FILENAME_USE  "env:mui/PublicScreens.iff"
+
+#define PSD_MAXLEN_NAME         32
+#define PSD_MAXLEN_TITLE       128
+#define PSD_MAXLEN_FONT         48
+#define PSD_MAXLEN_BACKGROUND  256
+#define PSD_NUMCOLS              8
+#define PSD_MAXSYSPENS          20
+#define PSD_NUMSYSPENS          12
+#define PSD_MAXMUIPENS          10
+#define PSD_NUMMUIPENS  MPEN_COUNT
+
+struct MUI_RGBcolor
+{
+    ULONG red;
+    ULONG green;
+    ULONG blue;
+};
+
+struct MUI_PubScreenDesc
+{
+    LONG  Version;
+
+    char  Name[PSD_MAXLEN_NAME];
+    char  Title[PSD_MAXLEN_TITLE];
+    char  Font[PSD_MAXLEN_FONT];
+    char  Background[PSD_MAXLEN_BACKGROUND];
+
+    ULONG DisplayID;
+
+    UWORD DisplayWidth;
+    UWORD DisplayHeight;
+
+    UBYTE DisplayDepth;
+    UBYTE OverscanType;
+    UBYTE AutoScroll;
+    UBYTE NoDrag;
+    UBYTE Exclusive;
+    UBYTE Interleaved;
+    UBYTE SysDefault;
+    UBYTE Behind;
+    UBYTE AutoClose;
+    UBYTE CloseGadget;
+    UBYTE DummyWasForeign;
+
+    BYTE SystemPens[PSD_MAXSYSPENS];
+    UBYTE psd_Reserved[1+7*4-PSD_MAXSYSPENS];
+
+    struct MUI_RGBcolor Palette[PSD_NUMCOLS];
+    struct MUI_RGBcolor rsvd[PSD_MAXSYSPENS-PSD_NUMCOLS];
+
+    struct MUI_PenSpec rsvd2[PSD_MAXMUIPENS];
+
+    LONG Changed;
+    APTR UserData;
+};
+
+struct MUIS_InfoClient
+{
+    struct MinNode node;
+    struct Task *task;
+    ULONG sigbit;
+};
+
 
 /***************************************************************************
 ** Object Types for MUI_MakeObject()
@@ -210,11 +305,11 @@ struct MUI_PenSpec
 
 struct MUI_Command
 {
-	char        *mc_Name;
-	char        *mc_Template;
-	LONG         mc_Parameters;
-	struct Hook *mc_Hook;
-	LONG         mc_Reserved[5];
+    char        *mc_Name;
+    char        *mc_Template;
+    LONG         mc_Parameters;
+    struct Hook *mc_Hook;
+    LONG         mc_Reserved[5];
 };
 
 #define MC_TEMPLATE_ID ((STRPTR)~0)
@@ -286,9 +381,7 @@ struct MUI_Command
 #define MUII_PageBack       40
 #define MUII_ReadListBack   41
 #define MUII_PopFont        42
-#define MUII_ImageButtonBack   43
-#define MUII_ImageSelectedBack 44
-#define MUII_Count             45
+#define MUII_Count          43
 
 #define MUII_BACKGROUND     128    /* These are direct color    */
 #define MUII_SHADOW         129    /* combinations and are not  */
@@ -310,9 +403,6 @@ struct MUI_Command
 #define MUII_MARKBACKGROUND 145
 #define MUII_BARBLOCK       146
 #define MUII_BARDETAIL      147
-#define MUII_LASTPAT        147
-
-
 
 /***************************************************************************
 ** Special values for some methods
@@ -385,7 +475,6 @@ struct MUI_Command
 #define MUIV_DragReport_Lock     2
 #define MUIV_DragReport_Refresh  3
 
-
 #define MUIV_CreateBubble_DontHidePointer (1<<0)
 
 #define MUIV_Application_OCW_ScreenPage (1<<1) /* show just the screen page of the config window */
@@ -420,14 +509,61 @@ struct MUI_Command
 
 struct MUI_Palette_Entry
 {
-	LONG  mpe_ID;
-	ULONG mpe_Red;
-	ULONG mpe_Green;
-	ULONG mpe_Blue;
-	LONG  mpe_Group;
+    LONG  mpe_ID;
+    ULONG mpe_Red;
+    ULONG mpe_Green;
+    ULONG mpe_Blue;
+    LONG  mpe_Group;
 };
 
 #define MUIV_Palette_Entry_End -1
+
+
+/* Popmenu class item spec and definitions */
+
+struct MUIP_Popmenu_Item
+{
+    ULONG       pi_Type;
+    STRPTR      pi_Key;
+    STRPTR      pi_Text;
+    ULONG       pi_Flags;
+    struct      MUIP_Popmenu_Item *pi_SubMenu;
+    APTR        pi_UserData;
+    ULONG       pi_MXField;
+};
+
+/* values for pi_Type */
+
+#define PIT_END             0
+#define PIT_TITLE           1
+#define PIT_TEXT            2
+#define PIT_IMAGE           3
+#define PIT_SEPARATOR       4
+#define PIT_SUBTITLE        5
+#define PIT_IGNORE          6
+
+
+/* values for pi_Flags */
+
+#define PIB_TOGGLE          0
+#define PIB_RADIO           1
+#define PIB_DISABLED        2
+#define PIB_SELECTED        3
+#define PIB_RELATIVEMX      4
+#define PIB_READONLY        5
+#define PIB_PRESSED         6   /* Kind of private... */
+#define PIB_CREATESUBMENU   7
+#define PIB_MULTICOLUMNS    8
+
+#define PIF_TOGGLE          (1<<PIB_TOGGLE)
+#define PIF_RADIO           (1<<PIB_RADIO)
+#define PIF_DISABLED        (1<<PIB_DISABLED)
+#define PIF_SELECTED        (1<<PIB_SELECTED)
+#define PIF_RELATIVEMX      (1<<PIB_RELATIVEMX)
+#define PIF_READONLY        (1<<PIB_READONLY)
+#define PIF_PRESSED         (1<<PIB_PRESSED)
+#define PIF_CREATESUBMENU   (1<<PIB_CREATESUBMENU)
+#define PIF_MULTICOLUMNS    (1<<PIB_MULTICOLUMNS)
 
 
 /*****************************/
@@ -436,21 +572,21 @@ struct MUI_Palette_Entry
 
 struct MUI_InputHandlerNode
 {
-	struct MinNode ihn_Node;
-	Object        *ihn_Object;
+    struct MinNode ihn_Node;
+    Object        *ihn_Object;
 
-	union
-	{
-		ULONG ihn_sigs;
-		struct
-		{
-			UWORD ihn_millis;
-			UWORD ihn_current;
-		} ihn_timer;
-	} ihn_stuff;
+    union
+    {
+        ULONG ihn_sigs;
+        struct
+        {
+            UWORD ihn_millis;
+            UWORD ihn_current;
+        } ihn_timer;
+    } ihn_stuff;
 
-	ULONG          ihn_Flags; /* see below */
-	ULONG          ihn_Method;
+    ULONG          ihn_Flags; /* see below */
+    ULONG          ihn_Method;
 };
 
 #define ihn_Signals ihn_stuff.ihn_sigs
@@ -461,9 +597,7 @@ struct MUI_InputHandlerNode
 #define MUIIHNF_TIMER           (1<<0) /* set ihn_Millis to number of 1/1000 sec ticks you want to be triggered */
 #define MUIIHNF_TIMER_SCALE10   (1<<1) /* ihn_Millis is in 1/100 seconds instead */
 #define MUIIHNF_TIMER_SCALE100  (1<<2) /* ihn_Millis is in 1/10 seconds instead */
-									   /* setting both SCALE10|SCALE100 makes ihn_Millis 1/1 seconds */
-
-
+                                       /* setting both SCALE10|SCALE100 makes ihn_Millis 1/1 seconds */
 
 /************************/
 /* Window Event Handler */
@@ -471,13 +605,13 @@ struct MUI_InputHandlerNode
 
 struct MUI_EventHandlerNode
 {
-	struct MinNode ehn_Node;
-	BYTE           ehn_Reserved; /* don't touch! */
-	BYTE           ehn_Priority; /* event handlers are inserted according to their priority. */
-	UWORD          ehn_Flags;    /* certain flags, see below for definitions. */
-	Object        *ehn_Object;   /* object which should receive MUIM_HandleEvent. */
-	struct IClass *ehn_Class;    /* if !=NULL, MUIM_HandleEvent is invoked on exactly this class with CoerceMethod(). */
-	ULONG          ehn_Events;   /* one or more IDCMP flags this handler should react on. */
+    struct MinNode ehn_Node;
+    BYTE           ehn_Reserved; /* don't touch! */
+    BYTE           ehn_Priority; /* event handlers are inserted according to their priority. */
+    UWORD          ehn_Flags;    /* certain flags, see below for definitions. */
+    Object        *ehn_Object;   /* object which should receive MUIM_HandleEvent. */
+    struct IClass *ehn_Class;    /* if !=NULL, MUIM_HandleEvent is invoked on exactly this class with CoerceMethod(). */
+    ULONG          ehn_Events;   /* one or more IDCMP flags this handler should react on. */
 };
 
 /* flags for ehn_Flags */
@@ -485,20 +619,20 @@ struct MUI_EventHandlerNode
 #define MUI_EHF_ALWAYSKEYS  (1<<0)  /* not for public use */
 
 #define MUI_EHF_GUIMODE     (1<<1)  /* set this if you dont want your handler to be called */
-									/* when your object is disabled or invisible */
+                                    /* when your object is disabled or invisible */
 
 #define MUI_EHF_ISACTIVEGRP (1<<12) /* not for public use */
 
 #define MUI_EHF_ISACTIVE    (1<<13) /* this flag is maintained by MUI and READ-ONLY: */
-									/* set when ehn_Object is a window's active or default object. */
+                                    /* set when ehn_Object is a window's active or default object. */
 
 #define MUI_EHF_ISCALLING   (1<<14) /* not for public use */
 
 #define MUI_EHF_ISENABLED   (1<<15) /* this flag is maintained by MUI and READ-ONLY: */
-									/* it is set when the handler is added (after MUIM_Window_AddEventHandler) */
-									/* and cleared when the handler is removed (after MUIM_Window_RemEventHandler). */
-									/* you may not change the state of this flag yourself, but you may read it */
-									/* to find out whether your handler is currently added to a window or not. */
+                                    /* it is set when the handler is added (after MUIM_Window_AddEventHandler) */
+                                    /* and cleared when the handler is removed (after MUIM_Window_RemEventHandler). */
+                                    /* you may not change the state of this flag yourself, but you may read it */
+                                    /* to find out whether your handler is currently added to a window or not. */
 
 
 /* other values reserved for future use */
@@ -513,19 +647,19 @@ struct MUI_EventHandlerNode
 
 struct MUI_List_TestPos_Result
 {
-	LONG  entry;   /* number of entry, -1 if mouse not over valid entry */
-	WORD  column;  /* numer of column, -1 if no valid column */
-	UWORD flags;   /* see below */
-	WORD  xoffset; /* x offset of mouse click relative to column start */
-	WORD  yoffset; /* y offset of mouse click from center of line
-					  (negative values mean click was above center,
-					   positive values mean click was below center) */
+    LONG  entry;   /* number of entry, -1 if mouse not over valid entry */
+    WORD  column;  /* numer of column, -1 if no valid column */
+    UWORD flags;   /* see below */
+    WORD  xoffset; /* x offset of mouse click relative to column start */
+    WORD  yoffset; /* y offset of mouse click from center of line
+                      (negative values mean click was above center,
+                       positive values mean click was below center) */
 };
 
-#define MUI_LPR_ABOVE    (1<<0)
-#define MUI_LPR_BELOW    (1<<1)
-#define MUI_LPR_LEFT     (1<<2)
-#define MUI_LPR_RIGHT    (1<<3)
+#define MUI_LPR_ABOVE  (1<<0)
+#define MUI_LPR_BELOW  (1<<1)
+#define MUI_LPR_LEFT   (1<<2)
+#define MUI_LPR_RIGHT  (1<<3)
 
 
 /***************************************************************************
@@ -724,19 +858,19 @@ struct MUI_List_TestPos_Result
 ***************************************************************************/
 
 #define String(contents,maxlen)\
-	StringObject,\
-		StringFrame,\
-		MUIA_String_MaxLen  , maxlen,\
-		MUIA_String_Contents, contents,\
-		End
+    StringObject,\
+        StringFrame,\
+        MUIA_String_MaxLen  , maxlen,\
+        MUIA_String_Contents, contents,\
+        End
 
 #define KeyString(contents,maxlen,controlchar)\
-	StringObject,\
-		StringFrame,\
-		MUIA_ControlChar    , controlchar,\
-		MUIA_String_MaxLen  , maxlen,\
-		MUIA_String_Contents, contents,\
-		End
+    StringObject,\
+        StringFrame,\
+        MUIA_ControlChar    , controlchar,\
+        MUIA_String_MaxLen  , maxlen,\
+        MUIA_String_Contents, contents,\
+        End
 
 #endif
 
@@ -754,27 +888,27 @@ struct MUI_List_TestPos_Result
 ***************************************************************************/
 
 #define CheckMark(selected)\
-	ImageObject,\
-		ImageButtonFrame,\
-		MUIA_InputMode        , MUIV_InputMode_Toggle,\
-		MUIA_Image_Spec       , MUII_CheckMark,\
-		MUIA_Image_FreeVert   , TRUE,\
-		MUIA_Selected         , selected,\
-		MUIA_Background       , MUII_ButtonBack,\
-		MUIA_ShowSelState     , FALSE,\
-		End
+    ImageObject,\
+        ImageButtonFrame,\
+        MUIA_InputMode        , MUIV_InputMode_Toggle,\
+        MUIA_Image_Spec       , MUII_CheckMark,\
+        MUIA_Image_FreeVert   , TRUE,\
+        MUIA_Selected         , selected,\
+        MUIA_Background       , MUII_ButtonBack,\
+        MUIA_ShowSelState     , FALSE,\
+        End
 
 #define KeyCheckMark(selected,control)\
-	ImageObject,\
-		ImageButtonFrame,\
-		MUIA_InputMode        , MUIV_InputMode_Toggle,\
-		MUIA_Image_Spec       , MUII_CheckMark,\
-		MUIA_Image_FreeVert   , TRUE,\
-		MUIA_Selected         , selected,\
-		MUIA_Background       , MUII_ButtonBack,\
-		MUIA_ShowSelState     , FALSE,\
-		MUIA_ControlChar      , control,\
-		End
+    ImageObject,\
+        ImageButtonFrame,\
+        MUIA_InputMode        , MUIV_InputMode_Toggle,\
+        MUIA_Image_Spec       , MUII_CheckMark,\
+        MUIA_Image_FreeVert   , TRUE,\
+        MUIA_Selected         , selected,\
+        MUIA_Background       , MUII_ButtonBack,\
+        MUIA_ShowSelState     , FALSE,\
+        MUIA_ControlChar      , control,\
+        End
 
 #endif
 
@@ -789,21 +923,21 @@ struct MUI_List_TestPos_Result
 **
 ***************************************************************************/
 
-#define SimpleButton(label) MUI_MakeObject(MUIO_Button,(unsigned long)label)
+#define SimpleButton(label) MUI_MakeObject(MUIO_Button, (ULONG)(label))
 
 #ifdef MUI_OBSOLETE
 
 #define KeyButton(name,key)\
-	TextObject,\
-		ButtonFrame,\
-		MUIA_Font, MUIV_Font_Button,\
-		MUIA_Text_Contents, name,\
-		MUIA_Text_PreParse, "\33c",\
-		MUIA_Text_HiChar  , key,\
-		MUIA_ControlChar  , key,\
-		MUIA_InputMode    , MUIV_InputMode_RelVerify,\
-		MUIA_Background   , MUII_ButtonBack,\
-		End
+    TextObject,\
+        ButtonFrame,\
+        MUIA_Font, MUIV_Font_Button,\
+        MUIA_Text_Contents, name,\
+        MUIA_Text_PreParse, "\33c",\
+        MUIA_Text_HiChar  , key,\
+        MUIA_ControlChar  , key,\
+        MUIA_InputMode    , MUIV_InputMode_RelVerify,\
+        MUIA_Background   , MUII_ButtonBack,\
+        End
 
 #endif
 
@@ -830,17 +964,17 @@ struct MUI_List_TestPos_Result
 ***************************************************************************/
 
 #define Radio(name,array)\
-	RadioObject,\
-		GroupFrameT(name),\
-		MUIA_Radio_Entries,array,\
-		End
+    RadioObject,\
+        GroupFrameT(name),\
+        MUIA_Radio_Entries,array,\
+        End
 
 #define KeyRadio(name,array,key)\
-	RadioObject,\
-		GroupFrameT(name),\
-		MUIA_Radio_Entries,array,\
-		MUIA_ControlChar, key,\
-		End
+    RadioObject,\
+        GroupFrameT(name),\
+        MUIA_Radio_Entries,array,\
+        MUIA_ControlChar, key,\
+        End
 
 
 
@@ -853,19 +987,19 @@ struct MUI_List_TestPos_Result
 
 
 #define Slider(min,max,level)\
-	SliderObject,\
-		MUIA_Numeric_Min  , min,\
-		MUIA_Numeric_Max  , max,\
-		MUIA_Numeric_Value, level,\
-		End
+    SliderObject,\
+        MUIA_Numeric_Min  , min,\
+        MUIA_Numeric_Max  , max,\
+        MUIA_Numeric_Value, level,\
+        End
 
 #define KeySlider(min,max,level,key)\
-	SliderObject,\
-		MUIA_Numeric_Min  , min,\
-		MUIA_Numeric_Max  , max,\
-		MUIA_Numeric_Value, level,\
-		MUIA_ControlChar , key,\
-		End
+    SliderObject,\
+        MUIA_Numeric_Min  , min,\
+        MUIA_Numeric_Max  , max,\
+        MUIA_Numeric_Value, level,\
+        MUIA_ControlChar , key,\
+        End
 
 #endif
 
@@ -877,7 +1011,7 @@ struct MUI_List_TestPos_Result
 **
 ***************************************************************************/
 
-#define PopButton(img) MUI_MakeObject(MUIO_PopButton,(unsigned long)img)
+#define PopButton(img) MUI_MakeObject(MUIO_PopButton, (ULONG)(img))
 
 
 
@@ -920,45 +1054,45 @@ struct MUI_List_TestPos_Result
 **
 ***************************************************************************/
 
-#define Label(label)   MUI_MakeObject(MUIO_Label,(unsigned long)label,0)
-#define Label1(label)  MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_SingleFrame)
-#define Label2(label)  MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_DoubleFrame)
-#define LLabel(label)  MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_LeftAligned)
-#define LLabel1(label) MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_LeftAligned|MUIO_Label_SingleFrame)
-#define LLabel2(label) MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_LeftAligned|MUIO_Label_DoubleFrame)
-#define CLabel(label)  MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_Centered)
-#define CLabel1(label) MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_Centered|MUIO_Label_SingleFrame)
-#define CLabel2(label) MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_Centered|MUIO_Label_DoubleFrame)
+#define Label(label)   MUI_MakeObject(MUIO_Label, (ULONG)(label), 0)
+#define Label1(label)  MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_SingleFrame)
+#define Label2(label)  MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_DoubleFrame)
+#define LLabel(label)  MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_LeftAligned)
+#define LLabel1(label) MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_LeftAligned|MUIO_Label_SingleFrame)
+#define LLabel2(label) MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_LeftAligned|MUIO_Label_DoubleFrame)
+#define CLabel(label)  MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_Centered)
+#define CLabel1(label) MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_Centered|MUIO_Label_SingleFrame)
+#define CLabel2(label) MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_Centered|MUIO_Label_DoubleFrame)
 
-#define FreeLabel(label)   MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert)
-#define FreeLabel1(label)  MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|MUIO_Label_SingleFrame)
-#define FreeLabel2(label)  MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|MUIO_Label_DoubleFrame)
-#define FreeLLabel(label)  MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|MUIO_Label_LeftAligned)
-#define FreeLLabel1(label) MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|MUIO_Label_LeftAligned|MUIO_Label_SingleFrame)
-#define FreeLLabel2(label) MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|MUIO_Label_LeftAligned|MUIO_Label_DoubleFrame)
-#define FreeCLabel(label)  MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|MUIO_Label_Centered)
-#define FreeCLabel1(label) MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|MUIO_Label_Centered|MUIO_Label_SingleFrame)
-#define FreeCLabel2(label) MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|MUIO_Label_Centered|MUIO_Label_DoubleFrame)
+#define FreeLabel(label)   MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert)
+#define FreeLabel1(label)  MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|MUIO_Label_SingleFrame)
+#define FreeLabel2(label)  MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|MUIO_Label_DoubleFrame)
+#define FreeLLabel(label)  MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|MUIO_Label_LeftAligned)
+#define FreeLLabel1(label) MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|MUIO_Label_LeftAligned|MUIO_Label_SingleFrame)
+#define FreeLLabel2(label) MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|MUIO_Label_LeftAligned|MUIO_Label_DoubleFrame)
+#define FreeCLabel(label)  MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|MUIO_Label_Centered)
+#define FreeCLabel1(label) MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|MUIO_Label_Centered|MUIO_Label_SingleFrame)
+#define FreeCLabel2(label) MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|MUIO_Label_Centered|MUIO_Label_DoubleFrame)
 
-#define KeyLabel(label,key)   MUI_MakeObject(MUIO_Label,(unsigned long)label,key)
-#define KeyLabel1(label,key)  MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_SingleFrame|(key))
-#define KeyLabel2(label,key)  MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_DoubleFrame|(key))
-#define KeyLLabel(label,key)  MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_LeftAligned|(key))
-#define KeyLLabel1(label,key) MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_LeftAligned|MUIO_Label_SingleFrame|(key))
-#define KeyLLabel2(label,key) MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_LeftAligned|MUIO_Label_DoubleFrame|(key))
-#define KeyCLabel(label,key)  MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_Centered|(key))
-#define KeyCLabel1(label,key) MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_Centered|MUIO_Label_SingleFrame|(key))
-#define KeyCLabel2(label,key) MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_Centered|MUIO_Label_DoubleFrame|(key))
+#define KeyLabel(label,key)   MUI_MakeObject(MUIO_Label, (ULONG)(label), (key))
+#define KeyLabel1(label,key)  MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_SingleFrame|(key))
+#define KeyLabel2(label,key)  MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_DoubleFrame|(key))
+#define KeyLLabel(label,key)  MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_LeftAligned|(key))
+#define KeyLLabel1(label,key) MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_LeftAligned|MUIO_Label_SingleFrame|(key))
+#define KeyLLabel2(label,key) MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_LeftAligned|MUIO_Label_DoubleFrame|(key))
+#define KeyCLabel(label,key)  MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_Centered|(key))
+#define KeyCLabel1(label,key) MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_Centered|MUIO_Label_SingleFrame|(key))
+#define KeyCLabel2(label,key) MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_Centered|MUIO_Label_DoubleFrame|(key))
 
-#define FreeKeyLabel(label,key)   MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|(key))
-#define FreeKeyLabel1(label,key)  MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|MUIO_Label_SingleFrame|(key))
-#define FreeKeyLabel2(label,key)  MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|MUIO_Label_DoubleFrame|(key))
-#define FreeKeyLLabel(label,key)  MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|MUIO_Label_LeftAligned|(key))
-#define FreeKeyLLabel1(label,key) MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|MUIO_Label_LeftAligned|MUIO_Label_SingleFrame|(key))
-#define FreeKeyLLabel2(label,key) MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|MUIO_Label_LeftAligned|MUIO_Label_DoubleFrame|(key))
-#define FreeKeyCLabel(label,key)  MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|MUIO_Label_Centered|(key))
-#define FreeKeyCLabel1(label,key) MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|MUIO_Label_Centered|MUIO_Label_SingleFrame|(key))
-#define FreeKeyCLabel2(label,key) MUI_MakeObject(MUIO_Label,(unsigned long)label,MUIO_Label_FreeVert|MUIO_Label_Centered|MUIO_Label_DoubleFrame|(key))
+#define FreeKeyLabel(label,key)   MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|(key))
+#define FreeKeyLabel1(label,key)  MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|MUIO_Label_SingleFrame|(key))
+#define FreeKeyLabel2(label,key)  MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|MUIO_Label_DoubleFrame|(key))
+#define FreeKeyLLabel(label,key)  MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|MUIO_Label_LeftAligned|(key))
+#define FreeKeyLLabel1(label,key) MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|MUIO_Label_LeftAligned|MUIO_Label_SingleFrame|(key))
+#define FreeKeyLLabel2(label,key) MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|MUIO_Label_LeftAligned|MUIO_Label_DoubleFrame|(key))
+#define FreeKeyCLabel(label,key)  MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|MUIO_Label_Centered|(key))
+#define FreeKeyCLabel1(label,key) MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|MUIO_Label_Centered|MUIO_Label_SingleFrame|(key))
+#define FreeKeyCLabel2(label,key) MUI_MakeObject(MUIO_Label, (ULONG)(label), MUIO_Label_FreeVert|MUIO_Label_Centered|MUIO_Label_DoubleFrame|(key))
 
 
 
@@ -985,17 +1119,18 @@ struct MUI_List_TestPos_Result
 
 #ifndef __cplusplus
 
-#define get(obj,attr,store) GetAttr(attr,obj,(ULONG *)store)
-#define set(obj,attr,value) SetAttrs(obj,attr,value,TAG_DONE)
-#define nnset(obj,attr,value) SetAttrs(obj,MUIA_NoNotify,TRUE,attr,value,TAG_DONE)
+#define get(obj,attr,store)   GetAttr((attr), (obj), (ULONG *)(void *)(store))
+#define set(obj,attr,value)   SetAttrs((obj), (attr), (value), TAG_DONE)
+#define nnset(obj,attr,value) SetAttrs((obj), MUIA_NoNotify, TRUE, (attr), (value), TAG_DONE)
 
-#define setmutex(obj,n)     set(obj,MUIA_Radio_Active,n)
-#define setcycle(obj,n)     set(obj,MUIA_Cycle_Active,n)
-#define setstring(obj,s)    set(obj,MUIA_String_Contents,s)
-#define setcheckmark(obj,b) set(obj,MUIA_Selected,b)
-#define setslider(obj,l)    set(obj,MUIA_Numeric_Value,l)
+#define setmutex(obj,n)     set((obj), MUIA_Radio_Active, (n))
+#define setcycle(obj,n)     set((obj), MUIA_Cycle_Active, (n))
+#define setstring(obj,s)    set((obj), MUIA_String_Contents, (s))
+#define setcheckmark(obj,b) set((obj), MUIA_Selected, (b))
+#define setslider(obj,l)    set((obj), MUIA_Numeric_Value, (l))
 
 #endif
+
 
 #endif /* MUI_NOSHORTCUTS */
 
@@ -1018,31 +1153,31 @@ struct MUI_List_TestPos_Result
 ***************************************************************************/
 
 #define MUIM_BoopsiQuery 0x80427157 /* this is send to the boopsi and */
-									/* must be used as return value   */
+                                    /* must be used as return value   */
 
 struct MUI_BoopsiQuery              /* parameter structure */
 {
-	ULONG mbq_MethodID;              /* always MUIM_BoopsiQuery */
+    ULONG mbq_MethodID;              /* always MUIM_BoopsiQuery */
 
-	struct Screen *mbq_Screen;       /* obsolete, use mbq_RenderInfo */
-	ULONG mbq_Flags;                 /* read only, see below */
+    struct Screen *mbq_Screen;       /* obsolete, use mbq_RenderInfo */
+    ULONG mbq_Flags;                 /* read only, see below */
 
-	LONG mbq_MinWidth ;              /* write only, fill in min width  */
-	LONG mbq_MinHeight;              /* write only, fill in min height */
-	LONG mbq_MaxWidth ;              /* write only, fill in max width  */
-	LONG mbq_MaxHeight;              /* write only, fill in max height */
-	LONG mbq_DefWidth ;              /* write only, fill in def width  */
-	LONG mbq_DefHeight;              /* write only, fill in def height */
+    LONG mbq_MinWidth ;              /* write only, fill in min width  */
+    LONG mbq_MinHeight;              /* write only, fill in min height */
+    LONG mbq_MaxWidth ;              /* write only, fill in max width  */
+    LONG mbq_MaxHeight;              /* write only, fill in max height */
+    LONG mbq_DefWidth ;              /* write only, fill in def width  */
+    LONG mbq_DefHeight;              /* write only, fill in def height */
 
-	struct MUI_RenderInfo *mbq_RenderInfo;  /* read only, display context */
+    struct MUI_RenderInfo *mbq_RenderInfo;  /* read only, display context */
 
-	/* may grow in future ... */
+    /* may grow in future ... */
 };
 
 #define MUIP_BoopsiQuery MUI_BoopsiQuery  /* old structure name */
 
 #define MBQF_HORIZ (1<<0)           /* object used in a horizontal */
-									/* context (else vertical)     */
+                                    /* context (else vertical)     */
 
 #define MBQ_MUI_MAXMAX (10000)          /* use this for unlimited MaxWidth/Height */
 
@@ -1201,7 +1336,6 @@ extern char MUIC_Menuitem[];
 #endif
 
 /* Methods */
-
 
 /* Attributes */
 
@@ -1378,6 +1512,7 @@ struct  MUIP_Window_ToFront                 { ULONG MethodID; };
 #define MUIA_Window_AltWidth                0x804260f4 /* V4  i.g LONG              */
 #define MUIA_Window_AppWindow               0x804280cf /* V5  i.. BOOL              */
 #define MUIA_Window_Backdrop                0x8042c0bb /* V4  i.. BOOL              */
+#define MUIA_Window_BackfillHook            0x80428863 /* V20 i.. struct Hook *     */
 #define MUIA_Window_Borderless              0x80429b79 /* V4  i.. BOOL              */
 #define MUIA_Window_CloseGadget             0x8042a110 /* V4  i.. BOOL              */
 #define MUIA_Window_CloseRequest            0x8042e86e /* V4  ..g BOOL              */
@@ -1479,7 +1614,6 @@ extern char MUIC_Aboutmui[];
 
 /* Methods */
 
-
 /* Attributes */
 
 #define MUIA_Aboutmui_Application           0x80422523 /* V11 i.. Object *          */
@@ -1499,6 +1633,7 @@ extern char MUIC_Area[];
 /* Methods */
 
 #define MUIM_AskMinMax                      0x80423874 /* Custom Class */ /* V4  */
+#define MUIM_CheckShortHelp                 0x80423c79 /* V20 */
 #define MUIM_Cleanup                        0x8042d985 /* Custom Class */ /* V4  */
 #define MUIM_ContextMenuBuild               0x80429d2e /* V11 */
 #define MUIM_ContextMenuChoice              0x80420f0e /* V11 */
@@ -1520,6 +1655,7 @@ extern char MUIC_Area[];
 #define MUIM_Setup                          0x80428354 /* Custom Class */ /* V4  */
 #define MUIM_Show                           0x8042cc84 /* Custom Class */ /* V4  */
 struct  MUIP_AskMinMax                      { ULONG MethodID; struct MUI_MinMax *MinMaxInfo; }; /* Custom Class */
+struct  MUIP_CheckShortHelp                 { ULONG MethodID; STRPTR help; LONG mx; LONG my; };
 struct  MUIP_Cleanup                        { ULONG MethodID; }; /* Custom Class */
 struct  MUIP_ContextMenuBuild               { ULONG MethodID; LONG mx; LONG my; };
 struct  MUIP_ContextMenuChoice              { ULONG MethodID; Object *item; };
@@ -1550,7 +1686,6 @@ struct  MUIP_Show                           { ULONG MethodID; struct LongRect *c
 #define MUIA_ControlChar                    0x8042120b /* V4  isg char              */
 #define MUIA_CycleChain                     0x80421ce7 /* V11 isg LONG              */
 #define MUIA_Disabled                       0x80423661 /* V4  isg BOOL              */
-#define MUIA_DoubleBuffer                   0x8042a9c7 /* V20 isg BOOL              */
 #define MUIA_Draggable                      0x80420b6e /* V11 isg BOOL              */
 #define MUIA_Dropable                       0x8042fbce /* V11 isg BOOL              */
 #ifdef MUI_OBSOLETE
@@ -1639,9 +1774,6 @@ extern char MUIC_Dtpic[];
 #endif
 
 /* Attributes */
-
-#define MUIA_Dtpic_Name                     0x80423d72 /* V18 i.. STRPTR            */
-
 
 
 /****************************************************************************/
@@ -1782,7 +1914,7 @@ extern char MUIC_Text[];
 #define MUIA_Text_PreParse                  0x8042566d /* V4  isg STRPTR            */
 #define MUIA_Text_SetMax                    0x80424d0a /* V4  i.. BOOL              */
 #define MUIA_Text_SetMin                    0x80424e10 /* V4  i.. BOOL              */
-#define MUIA_Text_SetVMax                   0x80420d8b /* V11 is. BOOL              */
+#define MUIA_Text_SetVMax                   0x80420d8b /* V11 i.. BOOL              */
 
 
 
@@ -1910,6 +2042,9 @@ extern char MUIC_Gauge[];
 
 #define MUIA_Gauge_Current                  0x8042f0dd /* V4  isg LONG              */
 #define MUIA_Gauge_Divide                   0x8042d8df /* V4  isg ULONG             */
+#define MUIA_Gauge_EmptyImage               0x8042357f /* V20 isg STRPTR            */
+#define MUIA_Gauge_FullFrame                0x8042881b /* V20 isg STRPTR            */
+#define MUIA_Gauge_FullImage                0x8042e14a /* V20 isg STRPTR            */
 #define MUIA_Gauge_Horiz                    0x804232dd /* V4  i.. BOOL              */
 #define MUIA_Gauge_InfoRate                 0x804253c8 /* V4  isg LONG              */
 #define MUIA_Gauge_InfoText                 0x8042bf15 /* V7  isg STRPTR            */
@@ -1966,12 +2101,8 @@ extern char MUIC_List[];
 /* Methods */
 
 #define MUIM_List_Clear                     0x8042ad89 /* V4  */
-#define MUIM_List_Compare                   0x80421b68 /* V20 */
-#define MUIM_List_Construct                 0x8042d662 /* V20 */
 #define MUIM_List_CreateImage               0x80429804 /* V11 */
 #define MUIM_List_DeleteImage               0x80420f58 /* V11 */
-#define MUIM_List_Destruct                  0x80427d51 /* V20 */
-#define MUIM_List_Display                   0x80425377 /* V20 */
 #define MUIM_List_Exchange                  0x8042468c /* V4  */
 #define MUIM_List_GetEntry                  0x804280ec /* V4  */
 #define MUIM_List_Insert                    0x80426c87 /* V4  */
@@ -1985,12 +2116,8 @@ extern char MUIC_List[];
 #define MUIM_List_Sort                      0x80422275 /* V4  */
 #define MUIM_List_TestPos                   0x80425f48 /* V11 */
 struct  MUIP_List_Clear                     { ULONG MethodID; };
-struct  MUIP_List_Compare                   { ULONG MethodID; APTR entry1; APTR entry2; };
-struct  MUIP_List_Construct                 { ULONG MethodID; APTR entry; APTR pool; };
 struct  MUIP_List_CreateImage               { ULONG MethodID; Object *obj; ULONG flags; };
 struct  MUIP_List_DeleteImage               { ULONG MethodID; APTR listimg; };
-struct  MUIP_List_Destruct                  { ULONG MethodID; APTR entry; APTR pool; };
-struct  MUIP_List_Display                   { ULONG MethodID; APTR entry; STRPTR *array; };
 struct  MUIP_List_Exchange                  { ULONG MethodID; LONG pos1; LONG pos2; };
 struct  MUIP_List_GetEntry                  { ULONG MethodID; LONG pos; APTR *entry; };
 struct  MUIP_List_Insert                    { ULONG MethodID; APTR *entries; LONG count; LONG pos; };
@@ -2116,7 +2243,6 @@ struct  MUIP_Dirlist_ReRead                 { ULONG MethodID; };
 #define MUIA_Dirlist_AcceptPattern          0x8042760a /* V4  is. STRPTR            */
 #define MUIA_Dirlist_Directory              0x8042ea41 /* V4  isg STRPTR            */
 #define MUIA_Dirlist_DrawersOnly            0x8042b379 /* V4  is. BOOL              */
-#define MUIA_Dirlist_ExAllType              0x8042cd7c /* V20 i.g ULONG             */
 #define MUIA_Dirlist_FilesOnly              0x8042896a /* V4  is. BOOL              */
 #define MUIA_Dirlist_FilterDrawers          0x80424ad2 /* V4  is. BOOL              */
 #define MUIA_Dirlist_FilterHook             0x8042ae19 /* V4  is. struct Hook *     */
@@ -2246,6 +2372,7 @@ extern char MUIC_Slider[];
 #ifdef MUI_OBSOLETE
 #define MUIA_Slider_Reverse                 0x8042f2a0 /* V4  isg BOOL              */
 #endif /* MUI_OBSOLETE */
+#define MUIA_Slider_Size                    0x8042b69d /* V20 isg BOOL              */
 
 
 
@@ -2520,8 +2647,6 @@ extern char MUIC_Settings[];
 /* Attributes */
 
 
-
-
 /****************************************************************************/
 /** Frameadjust                                                            **/
 /****************************************************************************/
@@ -2552,9 +2677,7 @@ extern char MUIC_Imageadjust[];
 
 /* Methods */
 
-
 /* Attributes */
-
 
 #define MUIV_Imageadjust_Type_All 0
 #define MUIV_Imageadjust_Type_Image 1
@@ -2573,7 +2696,6 @@ extern char MUIC_Virtgroup[];
 #endif
 
 /* Methods */
-
 
 /* Attributes */
 
@@ -2596,7 +2718,6 @@ extern char MUIC_Scrollgroup[];
 #endif
 
 /* Methods */
-
 
 /* Attributes */
 
@@ -2627,7 +2748,6 @@ extern char MUIC_Scrollbar[];
 #define MUIV_Scrollbar_Type_Bottom 1
 #define MUIV_Scrollbar_Type_Top 2
 #define MUIV_Scrollbar_Type_Sym 3
-#define MUIV_Scrollbar_Type_None 4
 
 
 /****************************************************************************/
@@ -2712,7 +2832,6 @@ extern char MUIC_Coloradjust[];
 
 /* Methods */
 
-
 /* Attributes */
 
 #define MUIA_Coloradjust_Blue               0x8042b8a3 /* V4  isg ULONG             */
@@ -2781,7 +2900,6 @@ extern char MUIC_Pubscreenadjust[];
 /* Methods */
 
 
-
 /****************************************************************************/
 /** Pubscreenpanel                                                         **/
 /****************************************************************************/
@@ -2794,11 +2912,7 @@ extern char MUIC_Pubscreenpanel[];
 
 /* Methods */
 
-
 /* Attributes */
-
-
-
 
 /****************************************************************************/
 /** Pubscreenlist                                                          **/
@@ -2812,12 +2926,10 @@ extern char MUIC_Pubscreenlist[];
 
 /* Methods */
 
-
 /* Attributes */
 
 #define MUIA_Pubscreenlist_Selection        0x8042fe58 /* V20 ..g STRPTR            */
 #define MUIA_Pubscreenlist_String           0x80422ce2 /* V20 .s. Object *          */
-#define MUIA_Pubscreenlist_Type             0x80423201 /* V20 ..g ULONG             */
 
 
 
@@ -2870,8 +2982,6 @@ extern char MUIC_Popscreen[];
 #endif
 
 /* Attributes */
-
-
 
 
 /****************************************************************************/
@@ -2929,8 +3039,6 @@ extern char MUIC_Applist[];
 
 /* Methods */
 
-
-
 /****************************************************************************/
 /** Cclist                                                                 **/
 /****************************************************************************/
@@ -2942,8 +3050,6 @@ extern char MUIC_Cclist[];
 #endif
 
 /* Methods */
-
-
 
 /****************************************************************************/
 /** Dataspace                                                              **/
@@ -2990,11 +3096,7 @@ extern char MUIC_Configdata[];
 
 /* Methods */
 
-
 /* Attributes */
-
-
-
 
 /****************************************************************************/
 /** Rootgrp                                                                **/
@@ -3005,39 +3107,6 @@ extern char MUIC_Rootgrp[];
 #else
 #define MUIC_Rootgrp "Rootgrp.mui"
 #endif
-
-
-/****************************************************************************/
-/** Audiocontrols                                                          **/
-/****************************************************************************/
-
-#ifdef _DCC
-extern char MUIC_Audiocontrols[];
-#else
-#define MUIC_Audiocontrols "Audiocontrols.mui"
-#endif
-
-/* Methods */
-
-
-/* Attributes */
-
-
-
-
-/****************************************************************************/
-/** Audiomixer                                                             **/
-/****************************************************************************/
-
-#ifdef _DCC
-extern char MUIC_Audiomixer[];
-#else
-#define MUIC_Audiomixer "Audiomixer.mui"
-#endif
-
-/* Attributes */
-
-
 
 
 /****************************************************************************/
@@ -3052,9 +3121,7 @@ extern char MUIC_Popmenu[];
 
 /* Methods */
 
-
 /* Attributes */
-
 
 #define MUIV_Popmenu_Active_First -3
 #define MUIV_Popmenu_Active_Last -2
@@ -3074,74 +3141,6 @@ extern char MUIC_Popmenu[];
 #define MUIV_Popmenu_Type_Cycle 2
 #define MUIV_Popmenu_Type_Popup 3
 #define MUIV_Popmenu_Type_Other 255
-
-
-/****************************************************************************/
-/** Panel                                                                  **/
-/****************************************************************************/
-
-#ifdef _DCC
-extern char MUIC_Panel[];
-#else
-#define MUIC_Panel "Panel.mui"
-#endif
-
-/* Methods */
-
-
-/* Attributes */
-
-
-
-
-/****************************************************************************/
-/** Filepanel                                                              **/
-/****************************************************************************/
-
-#ifdef _DCC
-extern char MUIC_Filepanel[];
-#else
-#define MUIC_Filepanel "Filepanel.mui"
-#endif
-
-/* Methods */
-
-
-/* Attributes */
-
-
-
-
-/****************************************************************************/
-/** Fontpanel                                                              **/
-/****************************************************************************/
-
-#ifdef _DCC
-extern char MUIC_Fontpanel[];
-#else
-#define MUIC_Fontpanel "Fontpanel.mui"
-#endif
-
-/* Methods */
-
-
-
-/****************************************************************************/
-/** Screenmodepanel                                                        **/
-/****************************************************************************/
-
-#ifdef _DCC
-extern char MUIC_Screenmodepanel[];
-#else
-#define MUIC_Screenmodepanel "Screenmodepanel.mui"
-#endif
-
-/* Methods */
-
-
-/* Attributes */
-
-
 
 
 /*****************************************/
@@ -3174,7 +3173,7 @@ extern char MUIC_Screenmodepanel[];
 
 struct MUI_GlobalInfo
 {
-   ULONG priv0;
+	ULONG priv0;
 	Object *mgi_ApplicationObject;
 
 	/* ... private data follows ... */
@@ -3188,10 +3187,10 @@ struct MUI_NotifyData
 	struct MUI_GlobalInfo *mnd_GlobalInfo;
 	ULONG                  mnd_UserData;
 	ULONG                  mnd_ObjectID; 
-   ULONG priv1;
-   ULONG priv2;
-   ULONG priv3;
-   ULONG priv4;
+	ULONG priv1;
+  ULONG priv2;
+  ULONG priv3;
+  ULONG priv4;
 };
 
 
@@ -3222,8 +3221,8 @@ struct MUI_LayoutMsg
 	{
 		LONG Width;
 		LONG Height;
-   ULONG priv5;
-   ULONG priv6;
+		ULONG priv5;
+		ULONG priv6;
 	} lm_Layout;   /* size (and result) for MUILM_LAYOUT                       */
 };
 
@@ -3238,7 +3237,7 @@ struct MUI_LayoutMsg
 struct MUI_AreaData
 {
 	struct MUI_RenderInfo *mad_RenderInfo;     /* RenderInfo for this object */
-   ULONG priv7;
+	ULONG priv7;
 	struct TextFont       *mad_Font;           /* Font */
 	struct MUI_MinMax      mad_MinMax;         /* min/max/default sizes */
 	struct IBox            mad_Box;            /* position and dimension */
@@ -3248,9 +3247,6 @@ struct MUI_AreaData
 	BYTE                   mad_subheight;      /* frame & innerspacing add. height */
 	ULONG                  mad_Flags;          /* see definitions below */
 
-	UBYTE foo[36];
-	ULONG mad_Flags2;
-
 	/* ... private data follows ... */
 };
 
@@ -3258,9 +3254,6 @@ struct MUI_AreaData
 
 #define MADF_DRAWOBJECT        (1<< 0) /* completely redraw yourself */
 #define MADF_DRAWUPDATE        (1<< 1) /* only update yourself */
-
-
-
 
 /* MUI's draw pens */
 
@@ -3295,11 +3288,7 @@ struct MUI_RenderInfo
 	ULONG            mri_Flags;         /* valid between MUIM_Setup/MUIM_Cleanup */
 
 	/* ... private data follows ... */
-
-	/* so don't touch it :) */
-	struct MUI_ScreenInfo *mri_ScreenInfo;
 };
-
 
 /*
 ** If mri_Flags & MUIMRI_RECTFILL, RectFill() is quicker
@@ -3332,7 +3321,6 @@ struct MUI_RenderInfo
 ** old-style planar display.
 */
 #define MUIMRI_PLANAR (1<<4)
-
 
 
 /* the following macros can be used to get pointers to an objects
@@ -3450,8 +3438,6 @@ enum
 
 #endif
 
-
-
 /* MUI_CustomClass returned by MUI_CreateCustomClass() */
 
 struct MUI_CustomClass
@@ -3470,5 +3456,14 @@ struct MUI_CustomClass
 };
 
 
+#if defined(__PPC__)
+  #if defined(__GNUC__)
+    #pragma pack()
+  #elif defined(__VBCC__)
+    #pragma default-align
+  #endif
+#endif
 
 #endif /* MUI_H */
+
+#endif /* !__AROS__ */

@@ -1,119 +1,179 @@
-/*
-**  openurl.library - universal URL display and browser
-**  launcher library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-**
-**  Ported to OS4 by Alexandre Balaban <alexandre@balaban.name>
-*/
+/***************************************************************************
 
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
+
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
 
 #include "lib.h"
-#include <dos/dostags.h>
+
+#include "debug.h"
+
+#if defined(__amigaos4__)
+struct Library *DOSBase = NULL;
+struct Library *UtilityBase = NULL;
+struct Library *RexxSysBase = NULL;
+struct Library *IFFParseBase = NULL;
+
+struct DOSIFace*      IDOS = NULL;
+struct UtilityIFace*  IUtility = NULL;
+struct RexxSysIFace*  IRexxSys = NULL;
+struct IFFParseIFace* IIFFParse = NULL;
+
+#if !defined(__NEWLIB__)
+extern struct Library *__UtilityBase;
+extern struct UtilityIFace*  __IUtility;
+#endif
+
+#else
+struct DosLibrary *DOSBase = NULL;
+#if defined(__AROS__)
+struct UtilityBase *UtilityBase = NULL;
+#else
+struct Library *UtilityBase = NULL;
+struct Library *__UtilityBase = NULL; // required by clib2 & libnix
+#endif
+#if defined(__MORPHOS__)
+struct Library *RexxSysBase = NULL;
+#else
+struct RxsLib *RexxSysBase = NULL;
+#endif
+struct Library *IFFParseBase = NULL;
+#endif
 
 /***********************************************************************/
 
-void
-freeBase(void)
+ULONG
+freeBase(struct LibraryHeader *lib)
 {
-    if (lib_prefs)
-    {
-        URL_FreePrefsA(lib_prefs,NULL);
-        lib_prefs = NULL;
-    }
+  ENTER();
 
-#if defined(__amigaos4__)
-    if( IRexxSys )
-    {
-        DropInterface( (struct Interface*)IRexxSys );
-        IRexxSys = NULL;
-    }
+  D(DBF_STARTUP, "freeing all resources of openurl.library");
 
-    if (IIFFParse)
-    {
-        DropInterface( (struct Interface*)IIFFParse );
-        IIFFParse = NULL;
-    }
+  if(lib->prefs != NULL)
+  {
+    URL_FreePrefsA(lib->prefs,NULL);
+    lib->prefs = NULL;
+  }
 
-    if( IUtility )
-    {
-        DropInterface( (struct Interface*)IUtility );
-        IUtility = NULL;
-    }
-#endif
+  if(RexxSysBase)
+  {
+    DROPINTERFACE(IRexxSys);
+    CloseLibrary((struct Library *)RexxSysBase);
+    RexxSysBase = NULL;
+  }
 
-    if (RexxSysBase)
-    {
-        CloseLibrary((struct Library *)RexxSysBase);
-        RexxSysBase = NULL;
-    }
+  if(IFFParseBase)
+  {
+    DROPINTERFACE(IIFFParse);
+    CloseLibrary(IFFParseBase);
+    IFFParseBase = NULL;
+  }
 
-    if (IFFParseBase)
-    {
-        CloseLibrary(IFFParseBase);
-        IFFParseBase = NULL;
-    }
+  // delete our private memory pool
+  if(lib->pool != NULL)
+  {
+    #if defined(__amigaos4__)
+    FreeSysObject(ASOT_MEMPOOL, lib->pool);
+    #else
+    DeletePool(lib->pool);
+    #endif
+    lib->pool = NULL;
+  }
 
-    if (UtilityBase)
-    {
-        CloseLibrary((struct Library*)UtilityBase);
-        UtilityBase = NULL;
-    }
+  if(UtilityBase)
+  {
+    DROPINTERFACE(IUtility);
+    CloseLibrary((struct Library *)UtilityBase);
+    UtilityBase = NULL;
+  }
 
-#if defined(__amigaos4__)
-    if( IDOS )
-    {
-        DropInterface( (struct Interface*)IDOS );
-        IDOS = NULL;
-    }
-#endif
+  if(DOSBase)
+  {
+    DROPINTERFACE(IDOS);
+    CloseLibrary((struct Library *)DOSBase);
+    DOSBase = NULL;
+  }
 
-    if (DOSBase)
-    {
-        CloseLibrary((struct Library *)DOSBase);
-        DOSBase = NULL;
-    }
+  CLEAR_FLAG(lib->flags, BASEFLG_Init);
 
-    if (lib_pool)
-    {
-        DeletePool(lib_pool);
-        lib_pool = NULL;
-    }
-
-    lib_flags &= ~BASEFLG_Init;
+  RETURN(TRUE);
+  return TRUE;
 }
 
 /***********************************************************************/
 
 ULONG
-initBase(void)
+initBase(struct LibraryHeader *lib)
 {
-    if ((lib_pool = CreatePool(MEMF_PUBLIC|MEMF_CLEAR,16384,8192)) &&
-        (DOSBase = (struct DosLibrary *)OpenLibrary("dos.library",36)) &&
-        (UtilityBase = (struct UtilityBase*)OpenLibrary("utility.library",36)) &&
-        (IFFParseBase = OpenLibrary("iffparse.library",36)) &&
-        (RexxSysBase = (struct RxsLib *)OpenLibrary("rexxsyslib.library",33)) &&
-#if defined(__amigaos4__)
-		  (IDOS = (struct DOSIFace *) GetInterface( (struct Library*)DOSBase, "main", 1L, NULL )) &&
-        (IUtility = (struct UtilityIFace *) GetInterface( UtilityBase, "main", 1L, NULL)) &&
-        (IIFFParse = (struct IFFParseIFace *) GetInterface( IFFParseBase, "main", 1L, NULL)) &&
-        (IRexxSys = (struct RexxSysIFace *) GetInterface( (struct Library*)RexxSysBase, "main", 1L, NULL)) &&
-#endif
-        (lib_prefs = loadPrefsNotFail()))
+  ENTER();
+
+  if((DOSBase = (APTR)OpenLibrary("dos.library", 37)) &&
+     GETINTERFACE(IDOS, DOSBase))
+  {
+    if((UtilityBase = (APTR)OpenLibrary("utility.library", 37)) &&
+       GETINTERFACE(IUtility, UtilityBase))
     {
-        lib_flags |= BASEFLG_Init;
+      // we have to please the internal utilitybase
+      // pointers of libnix and clib2
+      #if !defined(__NEWLIB__) && !defined(__AROS__)
+        __UtilityBase = (APTR)UtilityBase;
+        #if defined(__amigaos4__)
+        __IUtility = IUtility;
+        #endif
+      #endif
 
-        return TRUE;
+      // setup the debugging stuff
+      #if defined(DEBUG)
+      SetupDebug();
+      #endif
+
+      if((IFFParseBase = OpenLibrary("iffparse.library", 37)) &&
+         GETINTERFACE(IIFFParse, IFFParseBase))
+      if((RexxSysBase = (APTR)OpenLibrary("rexxsyslib.library", 37)) &&
+         GETINTERFACE(IRexxSys, RexxSysBase))
+      {
+        #if defined(__amigaos4__)
+        lib->pool = AllocSysObjectTags(ASOT_MEMPOOL, ASOPOOL_MFlags,    MEMF_SHARED,
+                                                     ASOPOOL_Puddle,    4096,
+                                                     ASOPOOL_Threshold, 512,
+                                                     TAG_DONE);
+        #else
+        lib->pool = CreatePool(MEMF_ANY, 4096, 512);
+        #endif
+        if(lib->pool != NULL)
+        {
+          lib->prefs = loadPrefsNotFail();
+
+          if(lib->prefs != NULL)
+          {
+            SET_FLAG(lib->flags, BASEFLG_Init);
+
+            RETURN(TRUE);
+            return TRUE;
+          }
+        }
+      }
     }
+  }
 
-    freeBase();
+  freeBase(lib);
 
-    return FALSE;
+  RETURN(FALSE);
+  return FALSE;
 }
 
 /***********************************************************************/

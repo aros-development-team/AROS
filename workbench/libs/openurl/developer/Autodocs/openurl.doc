@@ -25,15 +25,15 @@ openurl.library/URL_SetPrefsA
 
       If you want to program your own preferences program, read
       this documentation and study the included source to the MUI
-      preference program. If you have any questions, contact me.
+      preference program. If you have any questions, contact us
+      via our website on SourceForge.net at
+      http://sourceforge.net/projects/openurllib.
 
-      Troels Walsted Hansen
-      troels@thule.no
-      Ultima Thule Software
+      OpenURL was originally developped, up to version 3.0, by
+      Troels Walsted Hansen of Ultima Thule Software.
+      Troels put OpenURL in the public domain.
 
-      Troels put OpenURL in the pubblic domain.
-
-      Since version 3.1, OpenURL is developed by:
+      From version 3.1 to 7.1, OpenURL was developed by:
       - Alfonso Ranieri <alforan@tin.it>
       - Stefan Kost <ensonic@sonicpulse.de>
 

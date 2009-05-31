@@ -1,0 +1,20 @@
+#   $Id$
+#
+#   Makefile for the OpenURL command of openurl.library
+
+include $(TOP)/config/make.cfg
+
+#MM workbench-libs-openurl-cmd : includes linklibs workbench-libs-openurl-lib
+
+EXE    := OpenURL
+EXEDIR := $(AROS_C)
+FILES  := OpenURL SmartReadArgs debug
+
+USER_INCLUDES := -I../include
+USER_CFLAGS := -DNO_INLINE_STDARG
+
+%build_prog mmake=workbench-libs-openurl-cmd \
+    progname=$(EXE) files=$(FILES) \
+    targetdir=$(EXEDIR) uselibs="amiga arosc"
+
+%common

@@ -1,23 +1,25 @@
 #ifndef PRAGMAS_OPENURL_PRAGMAS_H
 #define PRAGMAS_OPENURL_PRAGMAS_H
 
-/*
-**  $VER: openurl_pragmas.h 7.1 (1.12.2005)
-**  Includes Release 7.2
-**
-**  Direct ROM interface (pragma) definitions.
-**
-**  openurl.library - universal URL display and browser
-**  launcher library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-**
-*/
+/***************************************************************************
+
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
+
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
 
 #ifndef CLIB_OPENURL_PROTOS_H
 #include <clib/openurl_protos.h>

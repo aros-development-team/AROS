@@ -1,21 +1,25 @@
-/*
-**  openurl.library - universal URL display and browser
-**  launcher library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-**
-**  Ported to OS4 by Alexandre Balaban <alexandre@balaban.name>
-*/
+/***************************************************************************
 
-#ifndef __AROS__
-#define __NOLIBBASE__
-#define __USE_SYSBASE
-#endif
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
+
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
+
+#ifndef _LIB_H
+#define _LIB_H
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -25,7 +29,8 @@
 #include <proto/rexxsyslib.h>
 
 #include <clib/alib_protos.h>
-#ifndef __AROS__
+
+#if !defined(__AROS__)
 #include <clib/debug_protos.h>
 #endif
 
@@ -36,7 +41,6 @@
 #include <ctype.h>
 
 #include "base.h"
-
 #include <macros.h>
 
 /**************************************************************************/
@@ -52,17 +56,16 @@
 #define DEF_DefLaunch       TRUE
 
 // ABA, TO BE ABLE TO COMPILE, DON'T KNOW WHY, SEEMS SOMETHING MESSED IN OPENURL.H
-#define URL_GetPrefs_Default URL_GetPrefs_Mode
+//#define URL_GetPrefs_Default URL_GetPrefs_Mode
 
 /**************************************************************************/
 
 struct startMsg
 {
     struct Message link;
-    UBYTE          *port;
-    UBYTE          *cmd;
-    ULONG          res;
-    ULONG          flags;
+    STRPTR port;
+    STRPTR cmd;
+    BOOL res;
 };
 
 /**************************************************************************/
@@ -81,3 +84,4 @@ enum
 
 /**************************************************************************/
 
+#endif /* _LIB_H */

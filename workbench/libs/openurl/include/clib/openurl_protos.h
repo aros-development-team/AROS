@@ -1,22 +1,25 @@
 #ifndef CLIB_OPENURL_PROTOS_H
 #define CLIB_OPENURL_PROTOS_H
 
-/*
-**  $VER: openurl_protos.h 7.2 (1.12.2005)
-**
-**  C prototypes. For use with 32 bit integers only.
-**
-**  openurl.library - universal URL display and browser
-**  launcher library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-**
-*/
+/***************************************************************************
+
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
+
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
 
 #ifndef LIBRARIES_OPENURL_H
 # include <libraries/openurl.h>
@@ -48,12 +51,12 @@ ULONG URL_LaunchPrefsAppA(struct TagItem *);
 /* Information */
 ULONG URL_GetAttr(ULONG attr,ULONG *storage);
 
-#if defined(_DCC) || defined(__SASC) || defined (__STORM__)
-ULONG URL_Open(STRPTR, ...);
-struct URL_Prefs *URL_GetPrefs(...);
-void URL_FreePrefs(struct URL_Prefs *,...);
-ULONG URL_SetPrefs(struct URL_Prefs *,...);
-ULONG URL_LaunchPrefsApp(...);
+#if defined(_DCC) || defined(__SASC) || defined (__STORM__) || defined(__GNUC__)
+ULONG URL_Open(STRPTR, Tag tag1, ...);
+struct URL_Prefs *URL_GetPrefs(Tag tag1, ...);
+void URL_FreePrefs(struct URL_Prefs *, Tag tag1, ...);
+ULONG URL_SetPrefs(struct URL_Prefs *, Tag tag1, ...);
+ULONG URL_LaunchPrefsApp(Tag tag1, ...);
 #endif
 
 #ifdef __cplusplus

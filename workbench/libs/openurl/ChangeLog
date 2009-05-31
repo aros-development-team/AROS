@@ -1,0 +1,138 @@
+---------------------------
+openurl.library - ChangeLog
+---------------------------
+
+$Id: ChangeLog 112 2009-05-30 22:12:10Z abalabanb $
+$URL: https://openurllib.svn.sourceforge.net/svnroot/openurllib/trunk/ChangeLog $
+
+2009-05-24  Alexandre Balaban <alexandre@balaban.fr>
+
+  * raPrefs/misc: made node edition and save/use/apply of prefs functionnal
+
+#### v7.5 RELEASE ##############################################################
+
+2009-05-30  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.5 release preparations
+
+2009-05-28  Jens Langner <Jens.Langner@light-speed.de>
+
+  * prefs/app.c: removed the not required AboutMUI method as calling
+    MUIM_Application_AboutMUI should really be enough. This should also solve
+    the previously existing problems with the AROS compiles.
+  * library/applist.c: instead of always returning 0 in mListCheckSave() for
+    AROS we now check if the returned pointer of xget(MUIA_List_Format) is
+    NULL or not and thus perform the string compare operation or not. This
+    should also catch the case where AROS is failing for the MUIA_List_Format
+    get operation.
+
+2009-05-28  Matthias Rustler <mrustler@gmx.de>
+
+  * German catalog sync'd with "FlexCat .. newctfile ..." and updated.
+  * Build German catalog with AROS metamakefile.
+  * Copying of icon with AROS metamakefiles
+  * Metamakefiles cleaned up
+  * Overloading of MUIM_Application_AboutMUI disabled on AROS
+    because it crashes when closing the about window.
+  * Remaining warnings under AROS removed
+
+2009-05-27  Matthias Rustler <mrustler@gmx.de>
+
+  * AROS metamakefiles added
+  * applist.c: fix for a segfault on AROS because MUIA_List_Format
+    isn't get-able in Zune.
+  * 64-bit fixes (IPTR, STACKED, UL)
+
+2009-05-26  Jens Langner <Jens.Langner@light-speed.de>
+
+  * include: updated the mui includes to use "muiaros.h" instead of "mui.h"
+    for an AROS compile. Otherwise the binaries won't work, I am afraid.
+    In addition a little cleanup in the include directory has been performed.
+  
+2009-05-25  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: fixed all remaining compiler warnings when compiling for AROS.
+
+2009-05-24  Alexandre Balaban <alexandre@balaban.fr>
+
+  * locale/french.ct: updated to latest catalog changes
+
+2009-05-24  Jens Langner <Jens.Langner@light-speed.de>
+
+  * prefs: slightly updated the About window to match the latest changes and
+    to output the correct version string of the preference application.
+  * library/prefs.c: added some default settings for OWB, NetSurf, AmiFTP,
+    AmiTradeCenter and pftp. If users reset to the default settings of OpenURL
+    they should receive a more complete and working set of settings now.
+
+2009-05-20  Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/api.c: using/applying the prefs always failed due to a missing
+    assignment.
+  * prefs/*.c: replaced all handcrafted flag checks by macro calls.
+  * prefs/popport.c: replaced the clumsy port scanning by a hopefully bullet
+    proof version. This new version does not break any Forbid() while scanning
+    the public port list.
+  * library/utils.c, library/handler.c: replaced the handcrafted message and
+    port creation by proper allocations to get rid of the stack based stuff.
+    Also shrunk the asynchronous startup message to what is really needed.
+
+2009-05-19  Jens Langner <Jens.Langner@light-speed.de>
+
+  * raPrefs: updated the build system of the OS4 reaction preferences to match
+    that of our other sub projects. Now the Reaction preferences should work
+    as expected on OS4.
+  * cmd: updated the sources to be compile/linkable for AROS.
+  * include/macros.h: updated to be the global header file for the macro
+    definitions of all our subprojects.
+  * prefs, misc: now the preference application also properly compiles and
+    links for AROS. If it works have to be seen. But it looks quite promising.
+  * prefs: fixed MOS compilation by updating the ppcinline header files
+  * prefs: converted the build system of the MUI preferences application to
+    use the generic Makefile we use with every application. Also converted
+    everything to use the SDI headers. OS4 compilation seems to work fine and
+    the app seems also to work properly. However, further testing and
+    especially work into getting it compiled/linked for OS3 and MOS have to
+    be done.
+
+2009-05-19  Thore Böckelmann <tboeckel@gmx.de>
+
+  * raPrefs/locale.c: fixed possible crash upon program termination.
+  * raPrefs: fixed all warnings.
+  * Cmd: converted the build system to the usual standard. The commandline tool
+    now builds for at least OS3, OS4 and MOS.
+  * prefs/OpenURL.c: added debugging initialization.
+  * prefs: fixed all remaining issues with the OS3 build. Now the preferences
+    program compiles perfectly for OS3 and OS4.
+  * prefs: replaced all stccpy() calls by strlcpy().
+  * prefs/*.c fixed tons of warnings. At least the OS4 build is done without a
+    single warning.
+  * library/*.c: replaced all handcrafted flag checks by macro calls.
+  * library/api.c, library/utils.c: replace the separate BOOL parameters by a
+    combined flags variable.
+
+2009-05-18  Thore Böckelmann <tboeckel@gmx.de>
+
+  * prefs/popport.c: added a comment about the unsafe Forbid() situation while
+    adding items to an MUI list. Just to make sure this is not forgotten.
+  * library/handler.c, library/utils.c: replaced the Forbid()/Permit() pair to
+    protect access
+    to the rexx_use var by usage of the library base semaphore.
+  * misc: replaced almost all strcpy() calls by strlcpy(). Also removed the
+    custom msnprintf() function as they are longer used.
+  * library/api.c: lots of code clean up to make things more readable.
+  * misc: replaced several ULONG results by proper BOOL types.
+  * misc: added the usual ENTER()/LEAVE()/RETURN() macro calls to all functions.
+
+2009-05-18  Jens Langner <Jens.Langner@light-speed.de>
+
+  * library: completely reworked the build system of openurl.library. Now the SDI
+    headers are used and a generic libinit.c. All this has been transferred
+    from the codesets.library project and should make future improvements more
+    easy. Please note, however, that the library needs a lot of testing now
+    until we consider a new official release. So please go and see if it works
+    with all kind of platforms and applications you have.
+
+2009-05-11  Thore Böckelmann <tboeckel@gmx.de>
+
+  * misc: lots of type changes to make the source compilable for OS4.

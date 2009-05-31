@@ -1,0 +1,15 @@
+#   $Id$
+#
+#   Makefile for OpenURL
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-libs-openurl : workbench-libs-openurl-prefs workbench-libs-openurl-cmd
+
+#MM
+workbench-libs-openurl-prefs-icon : $(AROS_PREFS)/OpenURL.info
+
+$(AROS_PREFS)/OpenURL.info : $(SRCDIR)/$(CURDIR)/distrib/OpenURL/OpenURL.info
+		$(CP) $< $@ 
+
+%common

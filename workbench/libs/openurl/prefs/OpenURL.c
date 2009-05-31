@@ -1,41 +1,53 @@
-/*
-**  OpenURL - MUI preferences for openurl.library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-**
-**  Ported to OS4 by Alexandre Balaban <alexandre@balaban.name>
-**
-**  Main
-*/
+/***************************************************************************
 
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
 
-#include "OpenURL.h"
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
+
+#include <stdio.h>
+
+#include "openurl.h"
+
 #define CATCOMP_NUMBERS
-#include "loc.h"
+#include "locale.h"
+
 #include <graphics/gfxbase.h>
 
 #include <libraries/openurl.h>
 
+#include "macros.h"
+
+#include "debug.h"
+
 /**************************************************************************/
 
-LONG                   __stack = 32000; /* I think this is OK in every env */
+LONG                   __stack = 32000; /* I think this is OK for every env */
 
 struct IntuitionBase   *IntuitionBase = NULL;
 struct GfxBase         *GfxBase = NULL;
 struct Library         *MUIMasterBase = NULL;
-#ifdef __AROS__
-struct UtilityBase     *UtilityBase = NULL;
-#else
 struct Library         *UtilityBase = NULL;
-#endif
 struct Library         *IconBase = NULL;
 struct Library         *OpenURLBase = NULL;
+#if !defined(__MORPHOS__)
 struct LocaleBase      *LocaleBase = NULL;
+#else
+struct Library         *LocaleBase = NULL;
+#endif
 
 #if defined(__amigaos4__)
 struct IntuitionIFace  *IIntuition = NULL;
@@ -45,10 +57,9 @@ struct UtilityIFace    *IUtility = NULL;
 struct IconIFace       *IIcon = NULL;
 struct OpenURLIFace    *IOpenURL = NULL;
 struct LocaleIFace     *ILocale = NULL;
-#endif
+#endif /* __amigaos4__ */
 
 struct MUI_CustomClass *g_appClass = NULL;
-struct MUI_CustomClass *g_pensClass = NULL;
 struct MUI_CustomClass *g_aboutClass = NULL;
 struct MUI_CustomClass *g_winClass = NULL;
 struct MUI_CustomClass *g_appListClass = NULL;
@@ -60,41 +71,53 @@ struct MUI_CustomClass *g_popphClass = NULL;
 
 APTR                   g_pool = NULL;
 struct Catalog         *g_cat = NULL;
-//ULONG                  g_MUI4 = FALSE;
+BOOL                   g_MUI4 = FALSE;
 
 /**************************************************************************/
 
-static ULONG
-openStuff(ULONG *arg0,ULONG *arg1)
+static ULONG openStuff(ULONG *arg0, ULONG *arg1)
 {
     *arg1 = 0;
 
-    if (!(MUIMasterBase = OpenLibrary("muimaster.library",19)) || (MUIMasterBase->lib_Version<19))
+    if((MUIMasterBase = OpenLibrary("muimaster.library",19)) == NULL ||
+       !GETINTERFACE(IMUIMaster, MUIMasterBase))
     {
         *arg0 = 19;
         return MSG_Err_NoMUI;
     }
-#if defined(__amigaos4__)
-    if (!(IMUIMaster = (struct MUIMasterIFace *)GetInterface( MUIMasterBase, "main", 1L, NULL))) return MSG_Err_NoMUI;
-#endif
-    if (!(g_pool = CreatePool(MEMF_PUBLIC|MEMF_CLEAR,8192,4196))) return MSG_Err_NoMem;
+
+    if(MUIMasterBase->lib_Version < 20)
+      g_MUI4 = FALSE;
+    else if (MUIMasterBase->lib_Version==20)
+      g_MUI4 = MUIMasterBase->lib_Revision>5341;
+	else
+	  g_MUI4 = TRUE;
+
+    if(!(g_pool = CreatePool(MEMF_PUBLIC|MEMF_CLEAR,8192,4196)))
+      return MSG_Err_NoMem;
 
     *arg0 = 37;
 
-    if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",37))) return MSG_Err_NoIntuition;
-    if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",37))) return MSG_Err_NoGfx;
-    if (!(UtilityBase = OpenLibrary("utility.library",37))) return MSG_Err_NoUtility;
-    if (!(IconBase = OpenLibrary("icon.library",37))) return MSG_Err_NoIcon;
+    if((IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",37)) == NULL ||
+       !GETINTERFACE(IIntuition, IntuitionBase))
+       return MSG_Err_NoIntuition;
 
-#if defined(__amigaos4__)
-    if (!(IIntuition = (struct IntuitionIFace *)GetInterface( (struct Library*)IntuitionBase, "main", 1L, NULL))) return MSG_Err_NoIntuition;
-    if (!(IGraphics = (struct GraphicsIFace *)GetInterface( (struct Library*)GfxBase, "main", 1L, NULL))) return MSG_Err_NoGfx;
-    if (!(IUtility = (struct UtilityIFace *)GetInterface( UtilityBase, "main", 1L, NULL))) return MSG_Err_NoUtility;
-    if (!(IIcon = (struct IconIFace *)GetInterface( IconBase, "main", 1L, NULL))) return MSG_Err_NoIcon;
-#endif
+    if((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",37)) == NULL ||
+       !GETINTERFACE(IGraphics, GfxBase))
+       return MSG_Err_NoGfx;
 
-    if (!(OpenURLBase = OpenLibrary(OPENURLNAME,6)) /*||
-        ((OpenURLBase->lib_Version==OPENURLREV) && (OpenURLBase->lib_Revision<OPENURLREV))*/)
+    if((UtilityBase = OpenLibrary("utility.library",37)) == NULL ||
+       !GETINTERFACE(IUtility, UtilityBase))
+       return MSG_Err_NoUtility;
+
+    if((IconBase = OpenLibrary("icon.library",37)) == NULL ||
+       !GETINTERFACE(IIcon, IconBase))
+       return MSG_Err_NoIcon;
+
+    if((OpenURLBase = OpenLibrary(OPENURLNAME,OPENURLVER)) == NULL||
+       !GETINTERFACE(IOpenURL, OpenURLBase) ||
+       ((OpenURLBase->lib_Version==7) && (OpenURLBase->lib_Revision<1)))
+        //((OpenURLBase->lib_Version==OPENURLREV) && (OpenURLBase->lib_Revision<OPENURLREV)))
     {
         *arg0 = OPENURLVER;
         *arg1 = OPENURLREV;
@@ -102,105 +125,95 @@ openStuff(ULONG *arg0,ULONG *arg1)
         return MSG_Err_NoOpenURL;
     }
 
-#if defined(__amigaos4__)
-    if (!(IOpenURL = (struct OpenURLIFace *)GetInterface( OpenURLBase, "main", 1L, NULL)))
-    {
-        *arg0 = OPENURLVER;
-        *arg1 = OPENURLREV;
-
-        return MSG_Err_NoOpenURL;
-    }
-
+    #if defined(__amigaos4__)
     // setup the AmiUpdate variable
-    SetAmiUpdateENVVariable( "Open URL" );
-#endif
+    SetAmiUpdateENVVariable( "OpenURL" );
+    #endif /* __amigaos4__ */
 
     return 0;
 }
 
 /**************************************************************************/
 
-static void
-closeStuff(void)
+static void closeStuff(void)
 {
     if (LocaleBase)
     {
         uninitStrings();
 
-        if (g_cat) CloseCatalog(g_cat);
+        if(g_cat)
+          CloseCatalog(g_cat);
 
-        #if defined(__amigaos4__)
-        if (ILocale)
-        {
-            DropInterface((struct Interface*)ILocale);
-            ILocale = NULL;
-        }
-        #endif
-
+        DROPINTERFACE(ILocale);
         CloseLibrary((struct Library *)LocaleBase);
         LocaleBase = NULL;
     }
 
-#if defined(__amigaos4__)
-    if (IMUIMaster)
+    if(OpenURLBase)
     {
-        DropInterface((struct Interface*)IMUIMaster);
-        IMUIMaster = NULL;
+      DROPINTERFACE(IOpenURL);
+      CloseLibrary(OpenURLBase);
+      OpenURLBase = NULL;
     }
-    if (IIntuition)
-    {
-        DropInterface((struct Interface*)IIntuition);
-        IIntuition = NULL;
-    }
-    if (IUtility)
-    {
-        DropInterface((struct Interface*)IUtility);
-        IUtility = NULL;
-    }
-    if (IIcon)
-    {
-        DropInterface((struct Interface*)IIcon);
-        IIcon = NULL;
-    }
-    if (IOpenURL)
-    {
-        DropInterface((struct Interface*)IOpenURL);
-        IOpenURL = NULL;
-    }
-#endif
 
-    if (OpenURLBase)   CloseLibrary(OpenURLBase);
-    if (IconBase)      CloseLibrary(IconBase);
-    if (UtilityBase)   CloseLibrary(UtilityBase);
-    if (GfxBase)       CloseLibrary((struct Library *)GfxBase);
-    if (IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
-    if (MUIMasterBase) CloseLibrary(MUIMasterBase);
+    if(IconBase)
+    {
+      DROPINTERFACE(IIcon);
+      CloseLibrary(IconBase);
+      IconBase = NULL;
+    }
 
-    if (g_pool) DeletePool(g_pool);
+    if(UtilityBase)
+    {
+      DROPINTERFACE(IUtility);
+      CloseLibrary(UtilityBase);
+      UtilityBase = NULL;
+    }
+
+    if(GfxBase)
+    {
+      DROPINTERFACE(IGraphics);
+      CloseLibrary((struct Library *)GfxBase);
+      GfxBase = NULL;
+    }
+
+    if(IntuitionBase)
+    {
+      DROPINTERFACE(IIntuition);
+      CloseLibrary((struct Library *)IntuitionBase);
+      IntuitionBase = NULL;
+    }
+
+    if(MUIMasterBase)
+    {
+      DROPINTERFACE(IMUIMaster);
+      CloseLibrary(MUIMasterBase);
+      MUIMasterBase = NULL;
+    }
+
+    if(g_pool)
+      DeletePool(g_pool);
 }
 
 /**************************************************************************/
 
-static ULONG
-createClasses(void)
+static ULONG createClasses(void)
 {
-    if (!initPopphClass())          return MSG_Err_PopphClass;
-    if (!initPopportClass())        return MSG_Err_PopupPortClass;
-    if (!initFTPEditWinClass())     return MSG_Err_NoFTPEditWinClass;
-    if (!initMailerEditWinClass())  return MSG_Err_NoMailerEditWinClass;
-    if (!initBrowserEditWinClass()) return MSG_Err_NoBrowserEditWinClass;
-    if (!initAppListClass())        return MSG_Err_NoAppListClass;
-    if (!initPensClass())           return MSG_Err_NoPensClass;
-    if (!initWinClass())            return MSG_Err_NoWinClass;
-    if (!initAppClass())            return MSG_Err_NoAppClass;
+    if (initPopphClass() == FALSE)          return MSG_Err_PopphClass;
+    if (initPopportClass() == FALSE)        return MSG_Err_PopupPortClass;
+    if (initFTPEditWinClass() == FALSE)     return MSG_Err_NoFTPEditWinClass;
+    if (initMailerEditWinClass() == FALSE)  return MSG_Err_NoMailerEditWinClass;
+    if (initBrowserEditWinClass() == FALSE) return MSG_Err_NoBrowserEditWinClass;
+    if (initAppListClass() == FALSE)        return MSG_Err_NoAppListClass;
+    if (initWinClass() == FALSE)            return MSG_Err_NoWinClass;
+    if (initAppClass() == FALSE)            return MSG_Err_NoAppClass;
 
     return 0;
 }
 
 /**************************************************************************/
 
-static void
-disposeClasses(void)
+static void disposeClasses(void)
 {
     if (g_popphClass)          disposePopphClass();
     if (g_popportClass)        disposePopportClass();
@@ -209,23 +222,21 @@ disposeClasses(void)
     if (g_browserEditWinClass) disposeBrowserEditWinClass();
     if (g_appListClass)        disposeAppListClass();
     if (g_winClass)            disposeWinClass();
-    if (g_pensClass)           disposePensClass();
     if (g_aboutClass)          disposeAboutClass();
     if (g_appClass)            disposeAppClass();
 }
 
 /**************************************************************************/
 
-#ifdef __MORPHOS__
-int
-realMain(int argc,char **argv)
-#else
-int
-main(int argc,char **argv)
-#endif
+int main(void)
 {
-    ULONG error, arg0, arg1;
+    ULONG error, arg0=0, arg1=0;
     int   res = RETURN_FAIL;
+
+    // setup the debugging stuff
+    #if defined(DEBUG)
+    SetupDebug();
+    #endif
 
     initStrings();
 
@@ -235,11 +246,11 @@ main(int argc,char **argv)
         {
             Object *app;
 
-            if (app = appObject, End)
+            if((app = appObject, End) != NULL)
             {
                 ULONG signals;
 
-                for (signals = 0; DoMethod(app,MUIM_Application_NewInput,(ULONG)&signals)!=MUIV_Application_ReturnID_Quit; )
+                for (signals = 0; (LONG)DoMethod(app,MUIM_Application_NewInput,(ULONG)&signals) != (LONG)MUIV_Application_ReturnID_Quit; )
                     if (signals && ((signals = Wait(signals | SIGBREAKF_CTRL_C)) & SIGBREAKF_CTRL_C)) break;
 
                 MUI_DisposeObject(app);
@@ -256,7 +267,7 @@ main(int argc,char **argv)
     {
         TEXT buf[256];
 
-        msnprintf(buf,sizeof(buf),getString(error),arg0,arg1);
+        snprintf(buf, sizeof(buf), getString(error), arg0, arg1);
 
         if (MUIMasterBase)
         {
@@ -269,7 +280,7 @@ main(int argc,char **argv)
 
             if (app) MUI_DisposeObject(app);
         }
-        else Printf("%s\n",(ULONG)buf);
+        else printf("%s\n", buf);
     }
 
     closeStuff();
@@ -278,43 +289,3 @@ main(int argc,char **argv)
 }
 
 /**************************************************************************/
-
-#ifdef __MORPHOS__
-#define MIN68KSTACKSIZE 16000
-
-int
-main(int argc,char **argv)
-{
-    struct Task *me = FindTask(NULL);
-    ULONG       size;
-
-    if (!NewGetTaskAttrsA(me,&size,sizeof(size),TASKINFOTYPE_STACKSIZE_M68K,NULL))
-    return RETURN_ERROR;
-
-    if (size<MIN68KSTACKSIZE)
-    {
-        struct StackSwapStruct *sss;
-
-        if (sss = AllocMem(sizeof(*sss)+MIN68KSTACKSIZE,MEMF_PUBLIC))
-        {
-            int res;
-
-            sss->stk_Lower   = sss+1;
-            sss->stk_Upper   = (ULONG)(((UBYTE *)(sss + 1))+MIN68KSTACKSIZE);
-            sss->stk_Pointer = (APTR)sss->stk_Upper;
-            StackSwap(sss);
-            res = realMain(argc,argv);
-            StackSwap(sss);
-            FreeMem(sss,sizeof(*sss)+MIN68KSTACKSIZE);
-
-            return res;
-        }
-    }
-
-    return realMain(argc,argv);
-}
-
-#endif
-
-/***********************************************************************/
-

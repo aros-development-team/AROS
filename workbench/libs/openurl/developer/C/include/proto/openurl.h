@@ -1,24 +1,25 @@
 #ifndef PROTO_OPENURL_H
 #define PROTO_OPENURL_H
 
-/*
-**  $VER: openurl.h 7.2 (1.12.2005)
-**  Includes Release 7.2
-**
-**  SAS `C' style prototype/pragma header file combo
-**
-**  openurl.library - universal URL display and browser
-**  launcher library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-**  - Alexandre Balaban <alexandre@balaban.name>
-**
-*/
+/***************************************************************************
+
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
+
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
 
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
@@ -61,11 +62,15 @@ OpenURLBase;
   #include <clib/openurl_protos.h>
  #endif /* CLIB_OPENURL_PROTOS_H */
  #if defined(__GNUC__)
-  #ifndef __PPC__
-#include <inline/openurl.h>
+  #ifdef __AROS__
+   #include <defines/openurl.h>
   #else
-   #include <ppcinline/openurl.h>
-  #endif /* __PPC__ */
+   #ifndef __PPC__
+    #include <inline/openurl.h>
+   #else
+    #include <ppcinline/openurl.h>
+   #endif /* __PPC__ */
+  #endif /* __AROS__ */
  #elif defined(__VBCC__)
   #ifndef __PPC__
    #include <inline/openurl_protos.h>
@@ -78,4 +83,3 @@ OpenURLBase;
 /****************************************************************************/
 
 #endif /* PROTO_OPENURL_H */
-

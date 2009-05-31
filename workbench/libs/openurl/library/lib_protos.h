@@ -1,112 +1,98 @@
-/*
-**  openurl.library - universal URL display and browser
-**  launcher library
-**
-**  Written by Troels Walsted Hansen <troels@thule.no>
-**  Placed in the public domain.
-**
-**  Developed by:
-**  - Alfonso Ranieri <alforan@tin.it>
-**  - Stefan Kost <ensonic@sonicpulse.de>
-**
-**  Ported to OS4 by Alexandre Balaban <alexandre@balaban.name>
-*/
+/***************************************************************************
 
+ openurl.library - universal URL display and browser launcher library
+ Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
+ Copyright (C) 2005-2009 by openurl.library Open Source Team
+
+ This library is free software; it has been placed in the public domain
+ and you can freely redistribute it and/or modify it. Please note, however,
+ that some components may be under the LGPL or GPL license.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ openurl.library project: http://sourceforge.net/projects/openurllib/
+
+ $Id$
+
+***************************************************************************/
+
+#include "SDI_lib.h"
 
 /* init.c */
-void freeBase ( void );
-ULONG initBase ( void );
-
-/* api.c */
-#ifdef __AROS__
-#include <proto/openurl.h>
-#else /* __AROS__ */
-ULONG LIBCALL URL_OpenA ( REG (a0 ,UBYTE *URL ), REG (a1 ,struct TagItem *attrs ));
-struct URL_Prefs *LIBCALL URL_GetPrefsA ( REG (a0 ,struct TagItem *attrs ));
-struct URL_Prefs *LIBCALL URL_OldGetPrefs ( void );
-void LIBCALL URL_FreePrefsA ( REG (a0 ,struct URL_Prefs *p ), REG (a1 ,struct TagItem *attrs ));
-void LIBCALL URL_OldFreePrefs ( REG (a0 ,struct URL_Prefs *p ));
-ULONG LIBCALL URL_SetPrefsA ( REG (a0 ,struct URL_Prefs *p ), REG (a1 ,struct TagItem *attrs ));
-ULONG LIBCALL URL_OldSetPrefs ( REG (a0 ,struct URL_Prefs *p ), REG (d0 ,ULONG save ));
-struct URL_Prefs *LIBCALL URL_OldGetDefaultPrefs ( void );
-ULONG LIBCALL URL_LaunchPrefsAppA ( REG (a0 ,struct TagItem *attrs ));
-ULONG LIBCALL URL_OldLaunchPrefsApp ( void );
-ULONG LIBCALL URL_GetAttr ( REG (d0 ,ULONG attr ), REG (a0 ,ULONG *storage ));
-#ifdef __MORPHOS__
-LONG dispatch ( void );
-#else
-LONG LIBCALL dispatch ( REG (a0 , struct RexxMsg *msg ) , REG (a1 , UBYTE **resPtr ));
-#endif
-#endif /* __AROS__ */
-
-#ifdef __MORPHOS__
-/* morphos.c */
-ULONG LIB_URL_OpenA ( void );
-struct URL_Prefs *LIB_URL_GetPrefsA ( void );
-struct URL_Prefs *LIB_URL_OldGetPrefs ( void );
-void LIB_URL_FreePrefsA ( void );
-void LIB_URL_OldFreePrefs ( void );
-ULONG LIB_URL_SetPrefsA ( void );
-ULONG LIB_URL_OldSetPrefs ( void );
-struct URL_Prefs *LIB_URL_OldGetDefaultPrefs ( void );
-ULONG LIB_URL_LaunchPrefsAppA ( void );
-ULONG LIB_URL_OldLaunchPrefsApp ( void );
-ULONG LIB_URL_GetAttr ( void );
-#elif defined(__amigaos4__)
-#include <interfaces/openurl.h>
-ULONG              VARARGS68K OS4_URL_OpenA ( struct OpenURLIFace * Self, STRPTR url, struct TagItem *attrs );
-ULONG              VARARGS68K OS4_URL_Open ( struct OpenURLIFace * Self, STRPTR url, ... );
-struct URL_Prefs * VARARGS68K OS4_URL_GetPrefsA ( struct OpenURLIFace * Self, struct TagItem *attrs );
-struct URL_Prefs * VARARGS68K OS4_URL_GetPrefs ( struct OpenURLIFace * Self, ... );
-struct URL_Prefs * VARARGS68K OS4_URL_OldGetPrefs ( struct OpenURLIFace * Self );
-void               VARARGS68K OS4_URL_FreePrefsA ( struct OpenURLIFace * Self, struct URL_Prefs *up, struct TagItem *attrs );
-void               VARARGS68K OS4_URL_FreePrefs ( struct OpenURLIFace * Self, struct URL_Prefs *up, ... );
-void               VARARGS68K OS4_URL_OldFreePrefs ( struct OpenURLIFace * Self, struct URL_Prefs *up );
-ULONG              VARARGS68K OS4_URL_SetPrefsA ( struct OpenURLIFace * Self, struct URL_Prefs *p, struct TagItem *attrs );
-ULONG              VARARGS68K OS4_URL_SetPrefs ( struct OpenURLIFace * Self, struct URL_Prefs *p, ... );
-ULONG              VARARGS68K OS4_URL_OldSetPrefs ( struct OpenURLIFace * Self, struct URL_Prefs *p , ULONG permanent );
-struct URL_Prefs * VARARGS68K OS4_URL_OldGetDefaultPrefs ( struct OpenURLIFace * Self );
-ULONG              VARARGS68K OS4_URL_LaunchPrefsAppA ( struct OpenURLIFace * Self, struct TagItem *attrs );
-ULONG              VARARGS68K OS4_URL_LaunchPrefsApp ( struct OpenURLIFace * Self, ... );
-ULONG              VARARGS68K OS4_URL_OldLaunchPrefsApp ( struct OpenURLIFace * Self );
-ULONG              VARARGS68K OS4_URL_GetAttr ( struct OpenURLIFace * Self, ULONG attr , ULONG *storage );
-LONG               VARARGS68K OS4_dispatch ( struct OpenURLIFace * Self, struct RexxMsg *msg, UBYTE **resPtr );
-
-#endif
-
-/* handler.c */
-#if defined(__MORPHOS__) || defined(__AROS__)
-void handler ( void );
-#else
-void SAVEDS handler ( void );
-#endif
-
-/* prefs.c */
-struct URL_Prefs *copyPrefs ( struct URL_Prefs *old );
-void initPrefs ( struct URL_Prefs *p );
-void setDefaultPrefs ( struct URL_Prefs *up );
-ULONG savePrefs ( UBYTE *filename , struct URL_Prefs *up );
-ULONG loadPrefs ( struct URL_Prefs *p , ULONG mode );
-struct URL_Prefs *loadPrefsNotFail ( void );
+ULONG freeBase(struct LibraryHeader* lib);
+ULONG initBase(struct LibraryHeader* lib);
 
 /* utils.c */
-ULONG sendToBrowser ( UBYTE *URL , struct List *portlist , ULONG show , ULONG toFront , ULONG newWindow , ULONG launch , UBYTE *pubScreenName );
-ULONG sendToFTP ( UBYTE *URL , struct List *portlist , ULONG show , ULONG toFront , ULONG newWindow , ULONG launch , UBYTE *pubScreenName );
-ULONG sendToMailer ( UBYTE *URL , struct List *portlist , ULONG show , ULONG toFront , ULONG launch , UBYTE *pubScreenName );
-ULONG copyList ( struct List *dst , struct List *src , ULONG size );
-void freeList ( struct List *list , ULONG size );
-ULONG isdigits ( UBYTE *str );
-APTR allocPooled ( ULONG size );
-void freePooled ( APTR mem , ULONG size );
-APTR allocVecPooled ( ULONG size );
-void freeVecPooled ( APTR mem );
-#ifdef __MORPHOS__
-#define msprintf(to, fmt, ...) ({ ULONG _tags[] = { __VA_ARGS__ }; RawDoFmt(fmt, _tags, (void (*)(void)) 0, to); })
-#elif defined(__amigaos4__)
-void VARARGS68K msprintf ( UBYTE *to , UBYTE *fmt , ...);
-#elif defined(__AROS__)
-#define msprintf __sprintf
-#else
-void STDARGS msprintf ( UBYTE *to , UBYTE *fmt , ...);
+#if defined(__amigaos4__) || defined(__MORPHOS__)
+  #define HAVE_ALLOCVECPOOLED 1
+  #define HAVE_FREEVECPOOLED  1
 #endif
 
+#if defined(HAVE_ALLOCVECPOOLED)
+#define allocVecPooled(pool,size) AllocVecPooled(pool,size)
+#else
+APTR allocVecPooled(APTR pool, ULONG size);
+#endif
+#if defined(HAVE_FREEVECPOOLED)
+#define freeVecPooled(pool,mem)   FreeVecPooled(pool,mem)
+#else
+void freeVecPooled(APTR pool, APTR mem);
+#endif
+APTR reallocVecPooled(APTR pool, APTR mem, ULONG oldSize, ULONG newSize);
+APTR allocArbitrateVecPooled(ULONG size);
+void freeArbitrateVecPooled(APTR mem);
+BOOL sendToBrowser(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScreenName);
+BOOL sendToFTP(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScreenName);
+BOOL sendToMailer(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScreenName);
+BOOL copyList(struct List *dst, struct List *src, ULONG size);
+void freeList(struct List *list);
+BOOL isdigits(STRPTR str);
+
+#define SENDTOB_SHOW                   0
+#define SENDTOF_SHOW                   (1<<SENDTOB_SHOW)
+#define SENDTOB_TOFRONT                1
+#define SENDTOF_TOFRONT                (1<<SENDTOB_TOFRONT)
+#define SENDTOB_NEWWINDOW              2
+#define SENDTOF_NEWWINDOW              (1<<SENDTOB_NEWWINDOW)
+#define SENDTOB_LAUNCH                 3
+#define SENDTOF_LAUNCH                 (1<<SENDTOB_LAUNCH)
+
+/* api.c */
+LIBPROTO(URL_OpenA, ULONG, REG(a0, STRPTR url), REG(a1, struct TagItem *attrs));
+LIBPROTOVA(URL_Open, ULONG, REG(a0, STRPTR url), ...);
+LIBPROTO(URL_OldGetPrefs, struct URL_Prefs *);
+LIBPROTO(URL_OldFreePrefs, void, REG(a0, struct URL_Prefs *up));
+LIBPROTO(URL_OldSetPrefs, ULONG, REG(a0, struct URL_Prefs *p), REG(d0, ULONG permanent));
+LIBPROTO(URL_OldGetDefaultPrefs, struct URL_Prefs *);
+LIBPROTO(URL_OldLaunchPrefsApp, ULONG);
+LIBPROTO(dispatch, LONG, REG(a0, struct RexxMsg *msg), REG(a1, STRPTR *resPtr));
+LIBPROTO(URL_GetPrefsA, struct URL_Prefs *, REG(a0, struct TagItem *attrs));
+#if defined(__amigaos4__)
+LIBPROTOVA(URL_GetPrefs, struct URL_Prefs *, ...);
+#else
+LIBFUNC struct URL_Prefs * STDARGS VARARGS68K URL_GetPrefs(Tag tag1, ...);
+#endif
+LIBPROTO(URL_FreePrefsA, void, REG(a0, struct URL_Prefs *up), REG(a1, struct TagItem *attrs));
+LIBPROTOVA(URL_FreePrefs, void, REG(a0, struct URL_Prefs *up), ...);
+LIBPROTO(URL_SetPrefsA, ULONG, REG(a0, struct URL_Prefs *p), REG(a1, struct TagItem *attrs));
+LIBPROTOVA(URL_SetPrefs, ULONG, REG(a0, struct URL_Prefs *p), ...);
+LIBPROTO(URL_LaunchPrefsAppA, ULONG, REG(a0, struct TagItem *attrs));
+#if defined(__amigaos4__)
+LIBPROTOVA(URL_LaunchPrefsApp, ULONG, ...);
+#else
+LIBFUNC ULONG STDARGS VARARGS68K URL_LaunchPrefsApp(Tag tag1, ...);
+#endif
+LIBPROTO(URL_GetAttr, ULONG, REG(d0, ULONG attr), REG(a0, ULONG *storage));
+
+/* handler.c */
+void SAVEDS handler(void);
+
+/* prefs.c */
+struct URL_Prefs *copyPrefs(struct URL_Prefs *old);
+void initPrefs(struct URL_Prefs *p);
+void setDefaultPrefs(struct URL_Prefs *up);
+BOOL savePrefs(CONST_STRPTR filename, struct URL_Prefs *up);
+BOOL loadPrefs(struct URL_Prefs *p, ULONG mode);
+struct URL_Prefs *loadPrefsNotFail(void);

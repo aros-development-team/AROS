@@ -17,8 +17,12 @@
 #include <libraries/mui.h>
 #endif
 
-#if defined(__GNUC__)
-# pragma pack(2)
+#ifdef __GNUC__
+   #ifdef __PPC__
+    #pragma pack(2)
+   #endif
+#elif defined(__VBCC__)
+   #pragma amiga-align
 #endif
 
 /***********************************************************************/
@@ -126,8 +130,12 @@ struct MUIP_Urltext_Copy
 
 /****************************************************************************/
 
-#if defined(__GNUC__)
-# pragma pack()
+#ifdef __GNUC__
+   #ifdef __PPC__
+    #pragma pack()
+   #endif
+#elif defined(__VBCC__)
+   #pragma default-align
 #endif
 
 #endif /* URLTEXT_MCC_H */
