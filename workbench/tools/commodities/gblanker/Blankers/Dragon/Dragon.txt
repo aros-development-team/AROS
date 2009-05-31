@@ -1,0 +1,8 @@
+Dragon Blanker
+
+by Alexander Kneer and Michael D. Bayne
+
+Alex ported this on from SuperDark and
+then I added a little color just for fun.
+Essentially, it just draws a nifty little
+iterated fractal on the screen.

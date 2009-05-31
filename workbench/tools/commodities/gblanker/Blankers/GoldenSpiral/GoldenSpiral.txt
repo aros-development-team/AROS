@@ -1,0 +1,11 @@
+Golden Spiral Blanker
+
+by Michael D. Bayne
+
+This module isn't really done. It's based on
+the Mathematical Recreations in the December '94
+issue of Scientific American. It makes for a
+neat effect (note the forward and reverse spirals)
+but I'm not sure if there's much I can do to make
+it cooler. So if you don't like it, there's always
+the "Toggle" button.

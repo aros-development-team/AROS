@@ -1,0 +1,13 @@
+12
+SLIDER _Horiz. h 2 14 7
+DELIM
+SLIDER _Vert.  v 2 10 5
+DELIM
+SLIDER _Divisions d 2 10 5
+DELIM
+SLIDER De_lay l 0 20 5
+DELIM
+CYCLE Sc_reen r 2 "Top Screen" "Default Public" 0
+DELIM
+SLIDER "_Fade %" f 0 99 10
+DELIM

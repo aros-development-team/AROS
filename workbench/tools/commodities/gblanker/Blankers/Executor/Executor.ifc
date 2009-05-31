@@ -1,0 +1,5 @@
+4
+STRING "St_artup"	a BIN:FJpeg DELAY=5 FOREVER IMAGES:#?/#?.jpg
+DELIM
+STRING "_Kill"		k BIN:Kill SYS:Utilities/FJpeg
+DELIM

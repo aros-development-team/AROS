@@ -1,0 +1,8 @@
+Fractal Blanker
+
+by Olaf Seibert and Alexander Kneer
+
+This blanker is taken from the FracBlank
+screen blanker and was ported by Alex.
+It draws interesting fractals onto the
+screen.

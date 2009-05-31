@@ -1,0 +1,6 @@
+Fade Blanker
+
+by Michael D. Bayne
+
+This blanker fades the top screen.
+Simple stuff.

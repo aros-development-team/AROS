@@ -1,0 +1,13 @@
+Rain Blanker
+
+by Michael D. Bayne
+
+This module rains on your screen. It draws drops
+hitting the screen.
+
+Consequently, this was the easiest blanker I have
+written to date. It took me 10 minutes from the
+time I made a copy of the shell code until I had
+what you see here. If only all of them could be
+so simple (I bet I've spent over 100 hours
+messing with the Life blanker for example).

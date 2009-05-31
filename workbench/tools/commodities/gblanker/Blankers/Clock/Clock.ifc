@@ -1,0 +1,10 @@
+9
+CYCLE "T_ime Format"	i	2 "12 Hour" "24 Hour" 1
+CYCLE "S_econds"		e	2 "Hr:Mn" "Hr:Mn:Sc" 1
+DELIM
+FONT topaz.font 11
+DELIM
+CYCLE "C_olor"			o	4 Cycle Random White Copper 0
+SLIDER De_lay			l	0 120 60
+DELIM
+DISPLAY 0

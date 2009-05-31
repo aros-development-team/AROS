@@ -1,0 +1,9 @@
+8
+CYCLE Sc_reen r 2 "Top Screen" "Default Public" 0
+DELIM
+SLIDER "_Fade %" f 10 99 45
+DELIM
+SLIDER S_pots p 1 8 4
+DELIM
+SLIDER Sp_eed e 2 10 4
+DELIM

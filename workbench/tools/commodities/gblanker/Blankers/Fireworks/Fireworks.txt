@@ -1,0 +1,13 @@
+Fireworks Blanker
+
+by Michael D. Bayne
+
+Alex ported the SuperDark fireworks
+module a while back, and I got really
+annoyed with the way it was written so
+I rewrote this one from scratch and
+included some neat stuff: Like, if you
+have only four colors it will throw a
+copper list up for color 3, so some of
+the fireworks will change colors as they
+descend.

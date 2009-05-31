@@ -1,0 +1,14 @@
+13
+CYCLE	"S_peed"		p 7 Slooow Sloow Slow Normal Fast Faast Faaast 6
+CYCLE	"C_olor"		o 2 Normal Cycle 1
+CYCLE	"_Aim"			a 2 Normal "Aim Wasp" 1
+DELIM
+SLIDER	"No. _Bees"		b 1 500 50
+DELIM
+SLIDER	"No. _Wasps"	w 1 10 4
+DELIM
+SLIDER	"B_ee Accel"	e 1 15 6
+DELIM
+SLIDER	"Wasp Acce_l"	l 1 15 4
+DELIM
+DISPLAY 0

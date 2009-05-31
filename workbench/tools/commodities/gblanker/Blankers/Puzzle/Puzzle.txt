@@ -1,0 +1,6 @@
+Puzzle Blanker
+
+by Michael D. Bayne
+
+This module divides the top screen up
+into squares and shuffles them around.

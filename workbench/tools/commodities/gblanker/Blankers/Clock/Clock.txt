@@ -1,0 +1,9 @@
+Clock Blanker
+
+by Michael D. Bayne
+
+This blanker scrolls a clock around the
+screen in the font of your choice with
+some options to hopefully make the
+clock look reasonable in whatever country
+you live in.

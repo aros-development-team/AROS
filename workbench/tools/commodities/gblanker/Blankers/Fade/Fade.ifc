@@ -1,0 +1,7 @@
+6
+SLIDER	_Delay		d 0 59 15
+DELIM
+SLIDER	_Percent	p 10 100 75
+DELIM
+CYCLE	C_lone		l 2 "Top Screen" "Default Public" 0
+DELIM

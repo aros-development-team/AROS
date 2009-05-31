@@ -1,0 +1,8 @@
+7
+CYCLE "_Limiting Dimension" l 2 Width Height 0
+DELIM
+SLIDER "Extend _Palette" p 0 4 2
+DELIM
+CYCLE "S_ize" i 5 "Whole screen" "Big" "Medium" "Small" "Tiny" 2
+DELIM
+DISPLAY 4

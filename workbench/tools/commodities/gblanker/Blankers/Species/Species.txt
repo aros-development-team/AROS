@@ -1,0 +1,10 @@
+Species Blanker
+
+by Michael D. Bayne
+
+This is an interesting cellular automaton I read
+about. Essentially, the screen is filled randomly
+with 15 different "Species". Each iteration, if
+any species is neighbored by species+1 it changes
+to species+1. The interesting stuff starts to happen
+if you let it go for a bunch of iterations.

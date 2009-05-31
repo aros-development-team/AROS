@@ -1,0 +1,10 @@
+Interference Blanker
+
+by Alexander Kneer and Michael D. Bayne
+
+Again, Alex originally ported this
+blanker from SuperDark and I modified it
+quite a bit. It draws neat concentric
+circle patterns on the screen and color-
+cycles in the meanwhile. It makes for a
+nice effect.

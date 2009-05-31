@@ -1,0 +1,6 @@
+5
+SLIDER _Objects o 1 10 3
+DELIM
+SLIDER S_peed   p 1 10 6
+DELIM
+DISPLAY 0

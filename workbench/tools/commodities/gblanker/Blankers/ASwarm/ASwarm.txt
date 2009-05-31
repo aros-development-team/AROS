@@ -1,0 +1,12 @@
+ASwarm Blanker
+
+by Alexander Kneer and Michael D. Bayne
+
+Alex ported this from SuperDark who had
+ported it from whomever wrote ASwarm
+originally which was a port from the X11
+screen lock program. I then optimized it
+a bit to give you what you have here: a
+blanker that draws wasps and bees on the
+screen where the wasps run around and
+the bees chase the wasps.

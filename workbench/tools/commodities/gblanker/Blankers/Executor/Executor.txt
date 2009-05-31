@@ -1,0 +1,18 @@
+Executor Blanker
+
+by Michael D. Bayne
+
+This is a very versatile blanker. You simply
+enter a command to run to start the blanker in
+"Startup" and one to make that program exit in
+"Kill" and the possibilities are endless.
+
+One that I use:
+Startup = SYS:Utilities/FJpeg FOREVER DELAY=5 SYS:Media/Visual/Images/#?/#?.jpg
+Kill = SYS:Bin/Kill SYS:Utilities/FJpeg
+
+Another good option:
+Startup = SYS:Rexxc/RX Startup.rexx
+Kill = SYS:Rexxc/RX Kill.rexx
+
+And put whatever you want in the rexx scripts.

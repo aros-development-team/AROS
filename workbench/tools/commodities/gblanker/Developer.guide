@@ -1,0 +1,63 @@
+@database "Developer.guide" -*- text -*-
+@master "ReadMe"
+@author Michael D. Bayne
+
+@width 80
+@wordwrap
+
+@$VER: Developer.guide 38.8 (31.12.94)
+@Remark AmigaGuide database for Garshneblanker
+
+@Node Main "Garshneblanker Devloper's Guide"
+
+Ok. Since I don't want to have to keep writing blankers for ever, I'll give
+a bit of a tutorial on how to write blankers.
+
+There are three parts to a Garshneblanker blanker.
+
+1) An executable that opens a message port and conforms to a particular
+protocol (which is all taken care of for you in some startup code that all
+the blankers share).
+
+2) An interface description file that describes what sort of preferences
+items you have. This is pretty straight forward and I'll explain it in a
+bit.
+
+3) And a little text file that describes it all and can be popped up when
+the user clicks the "Info" button.
+
+The explanations will be in a few sections:
+
+@{" Setting everything up so you can compile.   " Link Setup}
+@{" Writing the program that blanks the screen. " Link ActualCode}
+@{" Writing the preferences file to go with it. " Link IfcFile}
+@{" Reaping fame and fortune.                   " Link FameFortune}
+
+@EndNode
+
+@Node Setup "Setting everything up so you can compile"
+
+You'll need to get the source distribution. The way I have my source tree
+set up is like so:
+
+SYS:Hack/Projects/
+	All my development stuff on subdirectories of which are:
+	GBlanker/
+		The executable distribution.
+	GSource/
+		The source distribution.
+
+So you'll probably want to extract both of those somewhere to make
+development easier.
+
+Then the modules are located like so:
+
+	GSource/
+		Blankers/
+			ASwarm/
+			Dragon/
+			etc...
+
+So you can make a directory in GSource/Blankers/
+
+@EndNode
