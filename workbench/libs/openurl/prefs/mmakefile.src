@@ -5,9 +5,13 @@
 include $(TOP)/config/make.cfg
 
 #MM workbench-libs-openurl-prefs : includes linklibs \
-#MM workbench-libs-openurl-lib workbench-libs-openurl-catalogs \
+#MM workbench-libs-openurl-lib \
+#MM workbench-libs-openurl-catalogs \
+#MM workbench-libs-openurl-prefs-setup \
 #MM workbench-libs-openurl-prefs-icon
 
+#MM
+workbench-libs-openurl-prefs-setup : locale.h 
 
 EXE := OpenURL
 EXEDIR := $(AROS_PREFS)
@@ -35,5 +39,8 @@ FILES := \
 %build_prog mmake=workbench-libs-openurl-prefs \
     progname=$(EXE) files=$(FILES) \
     targetdir=$(EXEDIR) uselibs="amiga mui"
+
+locale.h: $(SRCDIR)/$(CURDIR)/../locale/OpenURL.cd $(SRCDIR)/$(CURDIR)/locale_h.sd
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/../locale/OpenURL.cd locale.h=$(SRCDIR)/$(CURDIR)/locale_h.sd
 
 %common
