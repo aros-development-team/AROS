@@ -7,24 +7,31 @@ include $(TOP)/config/make.cfg
 #MM- workbench-libs-openurl-prefs : workbench-libs-openurl-catalogs
 
 #MM
-workbench-libs-openurl-catalogs : \
+workbench-libs-openurl-catalogs : ../prefs/locale.h\
     $(AROS_CATALOGS)/deutsch/OpenURL.catalog \
-    $(AROS_CATALOGS)/français/OpenURL.catalog \
+    $(AROS_CATALOGS)/français/OpenURL.catalog
 	
 # Catalogs which aren't uptodate:
 #$(TARGETDIR)/svenska/OpenURL.catalog
 #$(TARGETDIR)/italiano/OpenURL.catalog
 
+../prefs/locale.h: $(SRCDIR)/$(CURDIR)/OpenURL.cd $(SRCDIR)/$(CURDIR)/../prefs/locale_h.sd
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd locale.h=$(SRCDIR)/$(CURDIR)/../prefs/locale_h.sd
+
 $(AROS_CATALOGS)/deutsch/OpenURL.catalog  : german.ct
+	@$(MKDIR) $(AROS_CATALOGS)/deutsch
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
 
 $(AROS_CATALOGS)/italiano/OpenURL.catalog : italian.ct
+	@$(MKDIR) $(AROS_CATALOGS)/italiano
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
 
 $(AROS_CATALOGS)/svenska/OpenURL.catalog  : swedisch.ct
+	@$(MKDIR) $(AROS_CATALOGS)/svenska
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
 
 $(AROS_CATALOGS)/français/OpenURL.catalog  : french.ct
+	@$(MKDIR) $(AROS_CATALOGS)/français
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
 
 %common
