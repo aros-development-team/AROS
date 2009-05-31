@@ -218,14 +218,6 @@ struct UsbStdStrDesc
 /* Wireless WUSB protocols */
 #define BLUETOOTH_PROTO_HWA   0x01 /* Host Wire Adapter Control */
 
-//#include "usb_hub.h"
-//#include "usb_hid.h"
-//#include "usb_massstorage.h"
-//#include "usb_printer.h"
-//#include "usb_cdc.h"
-//#include "usb_dfu.h"
-//#include "usb_audio.h"
-
 #if defined(__GNUC__)
 # pragma pack()
 #endif

@@ -231,7 +231,8 @@ enum libtype
   t_gadget	= 5,
   t_image	= 6,
   t_class	= 7,
-  t_datatype	= 8
+  t_datatype	= 8,
+  t_usbclass    = 9
 };
 
 enum liboption
@@ -377,6 +378,8 @@ struct libconf * lc = calloc (1, sizeof (struct libconf));
           lc->type = t_class;
         else if( strcmp(words[1],"datatype")==0 )
           lc->type = t_datatype;
+        else if( strcmp(words[1],"usbclass")==0 )
+          lc->type = t_usbclass;
       }
       else if( strcmp(words[0],"options")==0 || strcmp(words[0],"option")==0 )
       {
@@ -570,6 +573,11 @@ int i;
     fprintf( fd, "#define NAME_STRING      \"%s.datatype\"\n", lc->libname );
     fprintf( fd, "#define NT_TYPE          NT_LIBRARY\n" );
   }
+  else if (lc->type == t_usbclass)
+  {
+    fprintf( fd, "#define NAME_STRING      \"%s.class\"\n", lc->libname );
+    fprintf( fd, "#define NT_TYPE          NT_LIBRARY\n" );
+  }
 
   if (lc->option & o_rom)
       lc->option |= o_noexpunge;
@@ -693,7 +701,7 @@ int has_arch = 1;
   if(!(lc=parse_libconf(NULL)))
     return(-1);
 
-  if (lc->type == t_hidd || lc->type == t_gadget || lc->type == t_class)
+  if (lc->type == t_hidd || lc->type == t_gadget || lc->type == t_class || lc->type == t_usbclass)
     has_arch = 0;
 
   if(has_arch)
