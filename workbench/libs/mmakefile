@@ -35,7 +35,8 @@
 #MM     workbench-libs-freetype-complete \
 #MM     workbench-libs-codesets \
 #MM 	workbench-libs-thread \
-#MM     workbench-libs-muiscreen
+#MM     workbench-libs-muiscreen \
+#MM     workbench-libs-openurl
 
 #MM- includes-generate : \
 #MM     workbench-libs-amigaguide-includes \
@@ -67,4 +68,5 @@
 #MM     workbench-libs-coolimages-includes \
 #MM     workbench-libs-codesets-lib-includes \
 #MM 	workbench-libs-thread-includes \
-#MM     workbench-libs-muiscreen-includes
+#MM     workbench-libs-muiscreen-includes \
+#MM     workbench-libs-openurl-includes
