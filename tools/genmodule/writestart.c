@@ -504,6 +504,7 @@ static void writeresident(FILE *out, struct config *cfg)
     case MCP:
     case GADGET:
     case DATATYPE:
+    case USBCLASS:
     case HIDD:
 	fprintf(out, "    NT_LIBRARY,\n");
 	break;

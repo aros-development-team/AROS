@@ -200,6 +200,16 @@ struct config *initconfig(int argc, char **argv)
 	cfg->modtype = DATATYPE;
 	cfg->moddir = "Classes/Datatypes";
     }
+    else if (strcmp(argv[optind+2], "usbclass")==0)
+    {
+	cfg->modtype = USBCLASS;
+	cfg->moddir = "Classes/USB";
+    if(!hassuffix)
+    {
+        cfg->suffix = "class";
+        hassuffix = 1;
+    }
+    }
     else if (strcmp(argv[optind+2], "hidd")==0)
     {
 	cfg->modtype = HIDD;
@@ -303,6 +313,7 @@ static void readconfig(struct config *cfg)
     case LIBRARY:
     case DEVICE:
     case RESOURCE:
+    case USBCLASS:
 	break;
 	
     case MCC:
@@ -323,6 +334,7 @@ static void readconfig(struct config *cfg)
     switch (cfg->modtype)
     {
     case LIBRARY:
+    case USBCLASS:
         cfg->firstlvo = 5;
 	break;
     case DEVICE:
@@ -476,6 +488,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
             {
             case LIBRARY:
             case RESOURCE:
+            case USBCLASS:
                 cfg->options |= OPTION_INCLUDES;
                 break;
                 
@@ -523,6 +536,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
             switch (cfg->modtype)
             {
             case LIBRARY:
+            case USBCLASS:
                 cfg->options |= OPTION_AUTOINIT;
                 break;
                 
@@ -913,6 +927,8 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		    cl->classtype = GADGET;
 		else if (strcmp(s, "datatype")==0)
 		    cl->classtype = DATATYPE;
+		else if (strcmp(s, "usbclass")==0)
+		    cl->classtype = USBCLASS;
 		else if (strcmp(s, "class")==0)
 		    cl->classtype = CLASS;
 		else if (strcmp(s, "hidd")==0)
@@ -1015,6 +1031,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    case MCC:
 	    case GADGET:
 	    case DATATYPE:
+	    case USBCLASS:
 	    case HIDD:
 		cfg->libbasetypeptrextern = "struct Library *";
 		break;
@@ -1066,7 +1083,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    {
 		char s[256] = "";
 	
-		if (cl->classtype == GADGET || cl->classtype == IMAGE || cl->classtype == CLASS)
+		if (cl->classtype == GADGET || cl->classtype == IMAGE || cl->classtype == CLASS || cl->classtype == USBCLASS)
 		{
 		    sprintf(s, "\"%sclass\"", inclass ? cl->basename : cfg->modulename);
 		}

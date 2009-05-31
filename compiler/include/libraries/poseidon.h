@@ -14,7 +14,7 @@
 |__| (_) \/__/ (______/  |_(___) )_)|_(___/ . \/__/(__/ (__/ .:.:|      ||
                  _____
                 |" __ \  Poseidon -- The divine USB stack for Amiga computers
-                | (__) ) Version: 4.3 (19.05.09)
+                | (__) ) Version: 4.3 (30.05.09)
                 |  __ (  Designed and written by
                 |"(__) )   Chris Hodges <chrisly@platon42.de>
                 |_____/  Copyright ©2002-2009 Chris Hodges. All rights reserved.
@@ -340,7 +340,15 @@
 
 /* Configuration stuff */
 
-#define IFFFORM_PSDCFG     MAKE_ID('P','S','D','C')
+#if AROS_BIG_ENDIAN
+/* while Poseidon writes a correct big endian IFF structure on both big and little endian
+ * the contents are *not* endian agnostic. Therefore we will avoid loading prefs of
+ * different endianess by defining the outmost form ID endian specific. Also notice that
+ * compatibility of the config files with 68k and MorphOS versions is not given. */
+#define IFFFORM_PSDCFG     MAKE_ID('P','S','B','C')
+#else
+#define IFFFORM_PSDCFG     MAKE_ID('P','S','L','C')
+#endif
 #define IFFFORM_STACKCFG   MAKE_ID('S','T','K','C')
 #define IFFFORM_DEVICECFG  MAKE_ID('D','E','V','C')
 #define IFFFORM_CLASSCFG   MAKE_ID('C','L','S','C')
