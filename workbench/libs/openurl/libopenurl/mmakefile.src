@@ -1,0 +1,26 @@
+include $(TOP)/config/make.cfg
+
+#MM- linklibs : linklibs-openurl
+
+OPENURL_LIB := $(AROS_LIB)/libopenurl.a
+
+#MM- linklibs-openurl: includes linklibs-openurl-quick
+#MM linklibs-openurl-quick : linklibs-openurl-setup 
+
+#MM
+linklibs-openurl-quick : $(OPENURL_LIB)
+
+FILES = autoinit-aros
+
+OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+
+$(OPENURL_LIB) : $(OBJS)
+	%mklib_q from=$^
+
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+#MM
+linklibs-openurl-setup :
+	%mkdirs_q $(OBJDIR)
+	%mkdirs_q $(AROS_LIB)
