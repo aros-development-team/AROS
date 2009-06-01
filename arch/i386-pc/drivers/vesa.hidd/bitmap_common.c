@@ -42,14 +42,20 @@ VOID MNAME_BM(PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPix
     	case 1:
 	    *(UBYTE *)mem = pixel;
     	#if defined(OnBitmap) && defined(BUFFERED_VRAM)
-	    *(UBYTE *)mem2 = pixel;
+	    if (data->data->use_updaterect == FALSE)
+	    {
+	    	*(UBYTE *)mem2 = pixel;
+	    }
     	#endif
 	    break;
 	   
 	case 2:
 	    *(UWORD *)mem = pixel;
     	#if defined(OnBitmap) && defined(BUFFERED_VRAM)
-	    *(UWORD *)mem2 = pixel;
+	    if (data->data->use_updaterect == FALSE)
+	    {
+	    	*(UWORD *)mem2 = pixel;
+	    }
 	#endif
 	    break;
 	    
@@ -64,23 +70,29 @@ VOID MNAME_BM(PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPix
 	    *(UBYTE *)(mem + 2) = pixel >> 16;
 	#endif
 
-    	#if defined(OnBitmap) && defined(BUFFERED_VRAM)
-	#if AROS_BIG_ENDIAN
-	    *(UBYTE *)(mem2) = pixel >> 16;
-	    *(UBYTE *)(mem2 + 1) = pixel >> 8;
-	    *(UBYTE *)(mem2 + 2) = pixel;
-	#else
-	    *(UBYTE *)(mem2) = pixel;
-	    *(UBYTE *)(mem2 + 1) = pixel >> 8;
-	    *(UBYTE *)(mem2 + 2) = pixel >> 16;
-	#endif
-	#endif
+        #if defined(OnBitmap) && defined(BUFFERED_VRAM)
+    	    if (data->data->use_updaterect == FALSE)
+	    {
+	    #if AROS_BIG_ENDIAN
+		*(UBYTE *)(mem2) = pixel >> 16;
+		*(UBYTE *)(mem2 + 1) = pixel >> 8;
+		*(UBYTE *)(mem2 + 2) = pixel;
+	    #else
+		*(UBYTE *)(mem2) = pixel;
+		*(UBYTE *)(mem2 + 1) = pixel >> 8;
+		*(UBYTE *)(mem2 + 2) = pixel >> 16;
+	    #endif
+	    }
+        #endif
  	    break;
 	    
 	case 4:
 	    *(ULONG *)mem = pixel;
 	#if defined(OnBitmap) && defined(BUFFERED_VRAM)
-	    *(ULONG *)mem2 = pixel;	    
+	    if (data->data->use_updaterect == FALSE)
+	    {
+	    	*(ULONG *)mem2 = pixel;
+	    }
     	#endif
 	    break;
     }
