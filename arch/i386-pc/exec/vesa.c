@@ -16,6 +16,8 @@ asm (".long modeinfo");
 short getControllerInfo(void)
 {
     short retval;
+
+    *(ULONG *)controllerinfo.signature = *(ULONG *)"VBE2";
     asm volatile("call go16 \n\t.code16 \n\t"
                 "movw $0x4f00, %%ax\n\t"
                 "int $0x10\n\t"
@@ -85,12 +87,11 @@ short paletteWidth(long req, unsigned char* width)
     return retval;
 }
 
-short findMode(int x, int y, int d)
+short findMode(int x, int y, int d, BOOL prioritise_depth)
 {
-    unsigned long match, bestmatch = ABS(640*480 - x*y);
-    unsigned long matchd, bestmatchd = 15 >= d ? 15 - d : (d - 15) * 2;
-    unsigned short bestmode = 0x110;
-    unsigned short mode_attrs;
+    unsigned long match, bestmatch, matchd, bestmatchd;
+    unsigned short bestmode = 0xffff, mode_attrs;
+    int bestd;
 
     if (getControllerInfo() == 0x4f)
     {
@@ -113,6 +114,9 @@ short findMode(int x, int y, int d)
 	    if ((modeinfo.memory_model == 4) && (modeinfo.mode_attributes & 0x20))
 		continue;
 
+            /* Return immediately if an exactly matching mode is found
+             * (otherwise we could potentially return a mode with the right
+             * area but different dimensions) */
             if (modeinfo.x_resolution == x &&
                 modeinfo.y_resolution == y &&
                 modeinfo.bits_per_pixel == d)
@@ -120,11 +124,33 @@ short findMode(int x, int y, int d)
 
             match = ABS(modeinfo.x_resolution*modeinfo.y_resolution - x*y);
             matchd = modeinfo.bits_per_pixel >= d ? modeinfo.bits_per_pixel-d: (d-modeinfo.bits_per_pixel)*2;
-            if (match < bestmatch || (match == bestmatch && matchd < bestmatchd))
+
+            if (prioritise_depth)
             {
-                bestmode = modes[i];
-                bestmatch = match;
-                bestmatchd = matchd;
+                /* Check if current mode is the best so far at the desired
+                 * depth, or has a higher depth than previously found */
+                if (bestmode == 0xffff || match < bestmatch
+                    && modeinfo.bits_per_pixel == bestd
+                    || bestd < d && modeinfo.bits_per_pixel > bestd
+                    && modeinfo.bits_per_pixel <= d)
+                {
+                    bestmode = modes[i];
+                    bestmatch = match;
+                    bestd = modeinfo.bits_per_pixel;
+                }
+            }
+            else
+            {
+                /* Check if current mode either has the closest resolution
+                 * so far to that requested, or is equally close as the
+                 * previous best but has closer colour depth */
+                if (bestmode == 0xffff || match < bestmatch
+                    || match == bestmatch && matchd < bestmatchd)
+                {
+                    bestmode = modes[i];
+                    bestmatch = match;
+                    bestmatchd = matchd;
+                }
             }
         }
     }
