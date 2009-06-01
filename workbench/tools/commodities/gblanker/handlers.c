@@ -24,7 +24,6 @@ ULONG UsagePercent( VOID )
 	
     Idle = (( struct ExecBase * )SysBase )->IdleCount - OldIdle;
     Disp = (( struct ExecBase * )SysBase )->DispCount - OldDisp;
-	
     return Disp * 100 / ( Idle + Disp );
 }
 

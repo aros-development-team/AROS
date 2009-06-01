@@ -9,7 +9,7 @@ USER_CFLAGS := -Wno-parentheses
 FILES := Garshnelib
 
 %build_module mmake=workbench-tools-commodities-gblanker-lib modname=Garshnelib modtype=library \
-  files=$(FILES) uselibs=
+  files=$(FILES) uselibs=mathffp
 
 %copy_includes mmake=workbench-tools-commodities-gblanker-includes \
   includes=Garshnelib.h path=libraries

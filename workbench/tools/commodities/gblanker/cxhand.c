@@ -6,6 +6,8 @@
  *  and disclaimer information.
  */
 
+#include <aros/debug.h>
+
 #include <exec/memory.h>
 #include <libraries/commodities.h>
 #include <devices/inputevent.h>
@@ -202,5 +204,6 @@ LONG CheckCX( VOID )
     ServerBroker = GarshneBroker( 0L, 0L, &cxError );
     DeleteCxObj( ServerBroker );
 
+    bug("CheckCX error %d\n", cxError);
     return ( cxError == CBERR_OK ) ? OK : QUIT;
 }

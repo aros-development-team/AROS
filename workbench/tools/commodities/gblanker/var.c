@@ -14,14 +14,9 @@
 
 LONG GetVar37( STRPTR Name, STRPTR Buffer, LONG Size, ULONG Flags )
 {
-	struct Library *SysBase = *( struct Library ** )4L;
-	struct Library *DOSBase;
 	LONG RetVal;
 
-	if(!( DOSBase = OpenLibrary( "dos.library", 37L )))
-		return -1;
-	
-	if( SysBase->lib_Version < 39 )
+	if( ((struct Library *)SysBase)->lib_Version < 39 )
 	{
 		BYTE VarFileName[108];
 		BPTR VarFile;
@@ -58,23 +53,15 @@ LONG GetVar37( STRPTR Name, STRPTR Buffer, LONG Size, ULONG Flags )
 	else
 		RetVal = GetVar( Name, Buffer, Size, Flags );
 
-	CloseLibrary( DOSBase );
-	
 	return RetVal;
 }
 
 LONG SetVar37( STRPTR Name, STRPTR Buffer, LONG Size, ULONG Flags )
 {
-	struct Library *SysBase = *( struct Library ** )4L;
-	struct Library *DOSBase;
-	
-	if(!( DOSBase = OpenLibrary( "dos.library", 37L )))
-		return FALSE;
-	
 	if( !SetVar( Name, Buffer, Size, Flags ))
 		return FALSE;
 	
-	if( SysBase->lib_Version < 39 )
+	if( ((struct Library *)SysBase)->lib_Version < 39 )
 	{
 		if( Flags & GVF_SAVE_VAR )
 		{
@@ -100,8 +87,6 @@ LONG SetVar37( STRPTR Name, STRPTR Buffer, LONG Size, ULONG Flags )
 				return FALSE;
 		}
 	}
-
-	CloseLibrary( DOSBase );
 
 	return TRUE;
 }

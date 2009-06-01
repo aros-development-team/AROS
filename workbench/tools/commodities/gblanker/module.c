@@ -74,10 +74,7 @@ VOID ExecSubProc( STRPTR Command, STRPTR Extension )
 VOID PingFunc( VOID )
 {
     struct MsgPort *ClientPort, *ReplyPort;
-	struct Library *SysBase;
     BlankMsg PingMsg;
-
-	SysBase = *( struct Library ** )4L;
 
 	if( ReplyPort = CreateMsgPort())
 	{
@@ -238,8 +235,7 @@ struct List *LoadBlankerEntries( STRPTR Path )
                 if(( Blk->fib_FileName )&&
                    ( FileIsModule( Path, Blk->fib_FileName )))
                 {
-                    if( New = NewBlankerEntry( Path, Blk->fib_FileName,
-											  Blk->fib_Comment ))
+                    if( New = NewBlankerEntry( Path, Blk->fib_FileName, Blk->fib_Comment ))
                     {
                         New->be_Node.ln_Pri = 128 - ( New->be_Name[0] - 'a' );
                         Enqueue( Entries, ( struct Node * )New );

@@ -109,12 +109,6 @@ LONG Blank( PrefObject *Prefs )
 	LONG ScrToFrontCnt=0, c1 = 0, c2 = 14, c3 = 28, delay, fonty, RetVal = OK;
 	LONG x, y, Wid, Hei, len, nlen, numc, base, count = 0, dx = -1, dy = -1;
 	
-	DiskfontBase = OpenLibrary( "diskfont.library", 37 );
-	UtilityBase = OpenLibrary( "utility.library", 37 );
-
-	if( !DiskfontBase || !UtilityBase )
-		goto JAIL;
-
 	delay = Prefs[DELAY].po_Level;
 	
 	Prefs[FONT].po_Attr.ta_Name = Prefs[FONT].po_Name;
@@ -241,10 +235,5 @@ LONG Blank( PrefObject *Prefs )
 		CloseFont( font );
 	
  JAIL:
-	if( UtilityBase )
-		CloseLibrary( UtilityBase );
-	if( DiskfontBase )
-		CloseLibrary( DiskfontBase );
-
 	return RetVal;
 }

@@ -53,99 +53,78 @@ int main( void )
 	
 	if( Proc->pr_CLI )
 	{
-		STRPTR Str = BADDR((( struct CommandLineInterface * )
+		STRPTR Str = AROS_BSTR_ADDR((( struct CommandLineInterface * )
 							BADDR( Proc->pr_CLI ))->cli_CommandName );
-		CopyMem( Str + 1, PrefsPath, *Str );
+		CopyMem( Str, PrefsPath, *Str );
 		PrefsPath[*Str] = '\0';
 		strcat( PrefsPath, ".prefs" );
 	}
 	
-	IntuitionBase = OpenLibrary( "intuition.library", 37L );
-	GfxBase = OpenLibrary( GRAPHICSNAME, 37L );
-	GarshnelibBase = OpenLibrary( "Garshnelib.library", 37L );
-	
-	if( IntuitionBase && GfxBase && GarshnelibBase )
-	{
-		ClientPort = CreateMsgPort();
-		TimerPort = CreateMsgPort();
-		
-		if( ClientPort && TimerPort )
-		{
-			TimeOutIO = ( struct timerequest * )
-				CreateExtIO( TimerPort, sizeof( struct timerequest ));
-			
-			if( TimeOutIO && !OpenDevice( "timer.device", UNIT_VBLANK,
-										 ( struct IORequest * )TimeOutIO, 0L ))
-			{
-				ClientPort->mp_Node.ln_Name = PortName;
-				ClientPort->mp_Node.ln_Pri = 0L;
-				AddPort( ClientPort );
-				CurPrefs = LoadPrefs( PrefsPath );
-				
-				CurrentTime( &InitSecs, &InitMicros );
-				RangeSeed = InitSecs + InitMicros;
-				
-				Blank( CurPrefs );
+        ClientPort = CreateMsgPort();
+        TimerPort = CreateMsgPort();
+        
+        if( ClientPort && TimerPort )
+        {
+                TimeOutIO = ( struct timerequest * )
+                        CreateExtIO( TimerPort, sizeof( struct timerequest ));
+                
+                if( TimeOutIO && !OpenDevice( "timer.device", UNIT_VBLANK,
+                                                                         ( struct IORequest * )TimeOutIO, 0L ))
+                {
+                        ClientPort->mp_Node.ln_Name = PortName;
+                        ClientPort->mp_Node.ln_Pri = 0L;
+                        AddPort( ClientPort );
+                        CurPrefs = LoadPrefs( PrefsPath );
+                        
+                        CurrentTime( &InitSecs, &InitMicros );
+                        RangeSeed = InitSecs + InitMicros;
+                        
+                        Blank( CurPrefs );
 
-				while( FreeMsg = ( BlankMsg * )GetMsg( ClientPort ))
-				{
-					if( FreeMsg->bm_Type & BF_REPLY )
-						FreeVec( FreeMsg );
-					else
-					{
-						FreeMsg->bm_Type |= BF_REPLY;
-						ReplyMsg(( struct Message * )FreeMsg );
-					}
-				}
-				
-				if( CurPrefs )
-					FreeVec( CurPrefs );
-			
-				if( !PortRemoved )
-					RemPort( ClientPort );
-			}
-			
-			if( TimeOutIO )
-			{
-				if( TimeOutIO->tr_node.io_Device )
-					CloseDevice(( struct IORequest * )TimeOutIO );
-				DeleteExtIO(( struct IORequest * )TimeOutIO );
-			}
-		}
-		else
-		{
-			Complain( "ClientPort or TimerPort failed to open." );
-			ReturnVal = 2;
-		}
+                        while( FreeMsg = ( BlankMsg * )GetMsg( ClientPort ))
+                        {
+                                if( FreeMsg->bm_Type & BF_REPLY )
+                                        FreeVec( FreeMsg );
+                                else
+                                {
+                                        FreeMsg->bm_Type |= BF_REPLY;
+                                        ReplyMsg(( struct Message * )FreeMsg );
+                                }
+                        }
+                        
+                        if( CurPrefs )
+                                FreeVec( CurPrefs );
+                
+                        if( !PortRemoved )
+                                RemPort( ClientPort );
+                }
+                
+                if( TimeOutIO )
+                {
+                        if( TimeOutIO->tr_node.io_Device )
+                                CloseDevice(( struct IORequest * )TimeOutIO );
+                        DeleteExtIO(( struct IORequest * )TimeOutIO );
+                }
+        }
+        else
+        {
+                Complain( "ClientPort or TimerPort failed to open." );
+                ReturnVal = 2;
+        }
 
-		if( ClientPort )
-		{
-			BlankMsg *TmpMsg;
-			while( TmpMsg = ( BlankMsg * )GetMsg( ClientPort ))
-			{
-				TmpMsg->bm_Flags |= BF_REPLY;
-				ReplyMsg(( struct Message * )TmpMsg );
-			}
-			DeleteMsgPort( ClientPort );
-		}
+        if( ClientPort )
+        {
+                BlankMsg *TmpMsg;
+                while( TmpMsg = ( BlankMsg * )GetMsg( ClientPort ))
+                {
+                        TmpMsg->bm_Flags |= BF_REPLY;
+                        ReplyMsg(( struct Message * )TmpMsg );
+                }
+                DeleteMsgPort( ClientPort );
+        }
 
-		if( TimerPort )
-			DeleteMsgPort( TimerPort );
-	}
-	else
-	{
-		Complain( "A library failed to open." );
-		ReturnVal = 1;
-	}
-	
-	if( GarshnelibBase )
-		CloseLibrary( GarshnelibBase );
-	
-	if( GfxBase )
-		CloseLibrary( GfxBase );
-	
-	if( IntuitionBase )
-		CloseLibrary( IntuitionBase );
+        if( TimerPort )
+                DeleteMsgPort( TimerPort );
 	
 	return ReturnVal;
 }

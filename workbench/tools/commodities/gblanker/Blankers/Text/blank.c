@@ -118,7 +118,6 @@ LONG Blank( PrefObject *Prefs )
 	LONG Wid, Hei, dx = -1, dy = -1, count = 0, MaxWid, Lns;
 	LONG i, c1 = 0, c2 = 14, c3 = 28, RetVal = OK;
 	mPoint new, old, size, min, max;
-	struct Library *DiskfontBase;
 	struct TextFont *font;
 	struct Screen *TextScr;
 	struct RastPort *Rast;
@@ -126,9 +125,6 @@ LONG Blank( PrefObject *Prefs )
 	struct Window *Wnd;
 	Line *Lines = 0L;
 
-	if(!( DiskfontBase = OpenLibrary( "diskfont.library", 37 )))
-		return FAILED;
-	
 	Prefs[FONT].po_Attr.ta_Name = Prefs[FONT].po_Name;
 	font = OpenDiskFont( &Prefs[FONT].po_Attr );
 	if( !font )
@@ -235,7 +231,5 @@ LONG Blank( PrefObject *Prefs )
 	if( font )
 		CloseFont( font );
 
-	CloseLibrary( DiskfontBase );
-	
 	return RetVal;
 }

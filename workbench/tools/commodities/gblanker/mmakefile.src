@@ -9,12 +9,32 @@ TARGETDIR  := $(AROS_TOOLS)/Commodities/GBlanker
 USER_CFLAGS := -Wno-parentheses
 USER_INCLUDES :=
 
-#MM- workbench-tools-commodities-gblanker : workbench-tools-commodities-gblanker-mui
+#MM- workbench-tools-commodities-gblanker : \
+#MM workbench-tools-commodities-gblanker-mui \
+#MM workbench-tools-commodities-gblanker-prip \
+#MM workbench-tools-commodities-gblanker-info
+
 
 #MM workbench-tools-commodities-gblanker-mui : includes linklibs
+#MM workbench-tools-commodities-gblanker-prip : includes linklibs
 
 %build_prog mmake=workbench-tools-commodities-gblanker-mui \
     progname=Garshneblanker targetdir=$(TARGETDIR) \
     files=$(FILES) uselibs="mui arossupport amiga arosc m"
 
+
+TARGETDIR  := $(AROS_TOOLS)/Commodities/GBlanker/Blankers
+FILES := parse MUI/PrefInterp
+
+%build_prog mmake=workbench-tools-commodities-gblanker-prip \
+    progname=PrefInterp targetdir=$(TARGETDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc m Garshnelib"
+
+
+TARGETDIR  := $(AROS_TOOLS)/Commodities/GBlanker/Blankers
+FILES := ShowInfo
+
+%build_prog mmake=workbench-tools-commodities-gblanker-info \
+    progname=ShowInfo targetdir=$(TARGETDIR) \
+    files=$(FILES) uselibs="arossupport amiga arosc"
 %common
