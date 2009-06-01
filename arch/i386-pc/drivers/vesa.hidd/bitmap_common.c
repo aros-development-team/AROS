@@ -953,3 +953,20 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
 
     return TRUE;
 }
+
+#if defined(OnBitmap) && defined(BUFFERED_VRAM)
+
+BOOL MNAME_BM(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+    struct HWData *hwdata = &XSD(cl)->data;
+    
+    if (hwdata->use_updaterect)
+    {
+        LOCK_FRAMEBUFFER(XSD(cl));    
+        vesaDoRefreshArea(data, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1);    
+        UNLOCK_FRAMEBUFFER(XSD(cl));    	
+    }  
+}
+
+#endif

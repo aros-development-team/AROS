@@ -46,6 +46,24 @@ BOOL initVesaGfxHW(struct HWData *data)
 
     if ((BootLoaderBase = OpenResource("bootloader.resource")))
     {
+    	struct List *list;
+    	struct Node *node;
+
+	if ((list = (struct List *)GetBootInfo(BL_Args)))
+	{
+            ForeachNode(list, node)
+            {
+                if (strncmp(node->ln_Name, "vesagfx=", 8) == 0)
+                {
+		    if (strstr(node->ln_Name, "updaterect"))
+		    {
+		    	data->use_updaterect = TRUE;
+		    }
+		}
+		
+	    }	    
+	}
+
 	D(bug("[Vesa] Init: Bootloader.resource opened\n"));
 	if ((vi = (struct VesaInfo *)GetBootInfo(BL_Video)))
 	{
@@ -115,6 +133,7 @@ BOOL initVesaGfxHW(struct HWData *data)
 	    D(bug("[vesa] HwInit: BytesPerPixel %d\n", data->bytesperpixel));
 	    return TRUE;
 	}
+	
     }
 
     bug("[Vesa] HwInit: No Vesa information from the bootloader. Failing\n");
@@ -123,7 +142,7 @@ BOOL initVesaGfxHW(struct HWData *data)
 
 
 #if BUFFERED_VRAM
-void vesaRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2)
+void vesaDoRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2)
 {
     UBYTE *src, *dst;
     ULONG srcmod, dstmod;
@@ -156,6 +175,15 @@ void vesaRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2
     }
     
 }
+
+void vesaRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2)
+{
+    if (data->data->use_updaterect == FALSE)
+    {
+    	vesaDoRefreshArea(data, x1, y1, x2, y2);
+    }
+}
+
 #endif
 
 AROS_UFH3(void, Enumerator,

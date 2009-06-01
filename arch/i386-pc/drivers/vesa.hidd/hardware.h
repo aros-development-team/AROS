@@ -25,6 +25,7 @@ struct HWData
     ULONG	bytesperline;
     UBYTE	palettewidth;
     UBYTE	DAC[768];
+    BOOL    	use_updaterect;
 };
 
 extern OOP_AttrBase HiddPCIDeviceAttrBase;
@@ -38,6 +39,7 @@ void ClearBuffer(const struct HWData *data);
 struct BitmapData;
 
 void vesaRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2);
+void vesaDoRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2);
 #endif
 
 #endif
