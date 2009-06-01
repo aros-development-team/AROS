@@ -4,8 +4,6 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- workbench-libs-openurl-prefs : workbench-libs-openurl-catalogs
-
 #MM
 workbench-libs-openurl-catalogs : \
     $(AROS_CATALOGS)/deutsch/OpenURL.catalog \
