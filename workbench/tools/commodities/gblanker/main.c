@@ -6,6 +6,9 @@
  *  and disclaimer information.
  */
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <exec/memory.h>
 #include <dos/dos.h>
 #include <devices/timer.h>
@@ -36,6 +39,7 @@ int main( void )
     
     if( RetVal = AllocResources())
     {
+        bug("AllocResourced failed\n");
         FreeResources( RetVal );
         return RETURN_FAIL;
     }
@@ -48,6 +52,7 @@ int main( void )
 
     if( SetupCX() == QUIT )
     {
+        bug("SetupCX failed\n");
         FreeResources( 0 );
         return RETURN_WARN;
     }
@@ -72,7 +77,7 @@ int main( void )
         if( Sigs & SIGBREAKF_CTRL_D )
             RetVal = HandleMouseCheck();
                         
-		if( Sigs & ISigs())
+        if( Sigs & ISigs())
             RetVal = HandleInterface();
 
         switch( RetVal )
@@ -179,24 +184,42 @@ LONG AllocResources( VOID )
         strcpy( ProgName, "PROGDIR:Garshneblanker" );
 
     if( OpenLibraries() == 1L )
+    {
+        bug("OpenLibraries failed\n");
         return 6L;
+    }
 
+#if 0
+    // FIXME disabled because it returns error.
     if( CheckCX() == QUIT )
+    {
+        bug("CheckCX failed\n");
         return 6L;
+    }
+#endif
 
     ServerPort = CreatePort( "GarshneServer", 0 );
     TimerPort = CreatePort( 0L, 0 );
     if( !ServerPort || !TimerPort )
+    {
+        bug("ServerPort %p or TimerPort %p wrong\n", ServerPort, TimerPort);
         return 5L;
+    }
 
     TimeOutIO = ( struct timerequest * )
         CreateExtIO( TimerPort, sizeof( struct timerequest ));
     if( !TimeOutIO )
+    {
+        bug("CreateExtIO for TimerPort failed\n");
         return 4L;
+    }
 
     if( OpenDevice( "timer.device", UNIT_VBLANK,
                    ( struct IORequest * )TimeOutIO, 0L ))
+    {
+        bug("OpenDevice(timer.device...) failed\n");
         return 3L;
+    }
 
     return 0L;
 }

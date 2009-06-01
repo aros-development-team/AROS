@@ -17,9 +17,9 @@ extern struct WBStartup *WBenchMsg;
 
 Object *BlankersLvw, *PrefsBtn, *InfoBtn, *ToggleBtn, *HideBtn;
 Object *SettingsBtn, *QuitBtn, *BlankWnd, *BlankApp;
-struct Library *MUIMasterBase = 0L;
 ULONG MUI_Sigs = 0L;
 BYTE Title[128];
+LONG Interface = FALSE;
 
 STRPTR SettingsFmt = "BLANKKEY=%s\nPOPKEY=%s\nTIMEOUT=%ld\nREPLACE=%s\n"
     "RANDTIMEOUT=%ld\nBLANKCORNER=%s\nDONTCORNER=%s";
@@ -80,11 +80,9 @@ ULONG ISigs( VOID )
 
 LONG OpenInterface( VOID )
 {
-    if( MUIMasterBase )
+    if( Interface )
         return OK;
-
-    if(!( MUIMasterBase = OpenLibrary( MUIMASTER_NAME, MUIMASTER_VMIN )))
-        return QUIT;
+    Interface = OK;
 
     strcpy( Title, "Garshneblanker ( PopKey=" );
     strcat( Title, Prefs->bp_PopKey );
@@ -179,9 +177,6 @@ LONG OpenInterface( VOID )
         return HandleInterface();
     }
 
-    if( MUIMasterBase )
-        CloseLibrary( MUIMasterBase );
-
     return QUIT;
 }
 
@@ -194,17 +189,12 @@ VOID CloseInterface( VOID )
     MUI_Sigs = 0L;
     DisposeObject( BlankApp );
     BlankApp = 0L;
-    CloseLibrary( MUIMasterBase );
-    MUIMasterBase = 0L;
 }
 
 LONG HandleInterface( VOID )
 {
     BlankerEntry *Entry;
     LONG Rand, RetVal = OK;
-
-    if( !MUIMasterBase )
-        return OK;
 
     do
 	{
@@ -219,21 +209,15 @@ LONG HandleInterface( VOID )
 		case ID_SET:
 			if( WBenchMsg )
 			{
-				struct Library *WorkbenchBase;
-				
-				if( WorkbenchBase = OpenLibrary( "workbench.library", 39L ))
-				{
-					struct Screen *PubScr;
-					
-					if( PubScr = LockPubScreen( 0L ))
-					{
-						WBInfo( WBenchMsg->sm_ArgList->wa_Lock,
-							   WBenchMsg->sm_ArgList->wa_Name, PubScr );
-						UnlockPubScreen( 0L, PubScr );
-						RetVal = RESTART;
-					}
-					CloseLibrary( WorkbenchBase );
-				}
+                                struct Screen *PubScr;
+                                
+                                if( PubScr = LockPubScreen( 0L ))
+                                {
+                                        WBInfo( WBenchMsg->sm_ArgList->wa_Lock,
+                                                   WBenchMsg->sm_ArgList->wa_Name, PubScr );
+                                        UnlockPubScreen( 0L, PubScr );
+                                        RetVal = RESTART;
+                                }
 			}
 			break;
 		case ID_TOGGLE:

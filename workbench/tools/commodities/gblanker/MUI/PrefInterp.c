@@ -1,3 +1,7 @@
+#define MUI_OBSOLETE
+
+#include <aros/debug.h>
+
 #include <exec/memory.h>
 #include <libraries/mui.h>
 
@@ -7,7 +11,7 @@
 #include <proto/muimaster.h>
 #include <proto/asl.h>
 
-#include "../Libraries/Garshnelib/Garshnelib_protos.h"
+#include <proto/Garshnelib.h>
 
 #include <clib/alib_protos.h>
 
@@ -18,12 +22,8 @@
 #include "../protos/parse.h"
 #include "../defs.h"
 
-#define MAKE_ID(a,b,c,d)\
-((ULONG)(a)<<24|(ULONG)(b)<<16|(ULONG)(c)<<8|(ULONG)(d))
 #define SIG_REPLY ( 1L << ReplyPort->mp_SigBit )
 
-struct IntuitionBase *IntuitionBase;
-struct Library *MUIMasterBase, *GarshnelibBase;
 Object *ModuleApp, *ModuleWnd, **Objects;
 struct MsgPort *ReplyPort = 0L;
 ULONG ModuleSigs = 0L;
@@ -68,12 +68,8 @@ STRPTR Ununderscore( STRPTR String )
 
 VOID FontRequest( struct Window *Wnd, struct TextAttr *Attr )
 {
-    struct Library *AslBase = OpenLibrary( "asl.library", 37L );
     struct FontRequester *fReq;
 
-    if( !AslBase )
-        return;
-    
     fReq = MUI_AllocAslRequestTags( ASL_FontRequest,
 							   ASL_FontName, Attr->ta_Name,
 							   ASL_FontHeight, Attr->ta_YSize,
@@ -91,8 +87,6 @@ VOID FontRequest( struct Window *Wnd, struct TextAttr *Attr )
         }
         MUI_FreeAslRequest( fReq );
     }
-	
-    CloseLibrary( AslBase );
 }   
 
 VOID SendMessageToPort( LONG Type, STRPTR PortName )
@@ -112,7 +106,7 @@ VOID SendMessageToPort( LONG Type, STRPTR PortName )
     }
 }
 
-LONG main( LONG argc, STRPTR argv[] )
+LONG main( LONG argc, char **argv )
 {
     Object *VertGroup, *SaveBtn, *TestBtn, *CancelBtn, *DisplayBtn, *CtrlGrp;
     Object *NameInf, *SizeInf;
@@ -124,24 +118,28 @@ LONG main( LONG argc, STRPTR argv[] )
     Object **Indics;
 
     if( argc != 2 )
+    {
+        bug("Argument missing\n");
         return RETURN_WARN;
+    }
     
     if( FindPort( "GarshnePrefs" ))
+    {
+        bug("Port GarshnePrefs already exists\n");
         return RETURN_WARN;
+    }
 
-    IntuitionBase = ( struct IntuitionBase * )
-		OpenLibrary( "intuition.library", 37 );
-    MUIMasterBase = OpenLibrary( MUIMASTER_NAME, MUIMASTER_VMIN );
-    GarshnelibBase = OpenLibrary( "Garshnelib.library", 37 );
-
-    if( !IntuitionBase || !MUIMasterBase || !GarshnelibBase )
-        goto JAIL;
-    
     if(!( Memory = CreatePool( MEMF_CLEAR, 1024, 512 )))
+    {
+        bug("CreatePool failed\n");
         goto JAIL;
+    }
 
     if(!( ReplyPort = CreatePort( "GarshnePrefs", 0L )))
+    {
+        bug("CreatePort for ReplyPort failed\n");
         goto JAIL;
+    }
 
     strcpy( DescripName, argv[1] );
     strcat( DescripName, ".ifc" );
@@ -150,7 +148,10 @@ LONG main( LONG argc, STRPTR argv[] )
     strcat( PrefsName, ".prefs" );
     
     if(!( Descrip = Open( DescripName, MODE_OLDFILE )))
+    {
+        bug("Open failed\n");
         goto JAIL;
+    }
 
     NumGadgets = ScanDigit( Descrip );
 
@@ -161,7 +162,10 @@ LONG main( LONG argc, STRPTR argv[] )
     KeyStrs = AllocPooled( Memory, sizeof( STRPTR ) * ( NumGadgets + 1 ));
     
     if( !Objects || !Indics || !Prefs || !Types || !KeyStrs )
+    {
+        bug("AllocPooled failed\n");
         goto PREJAIL;
+    }
 
     AppName = FilePart( argv[1] );
 
@@ -441,18 +445,18 @@ LONG main( LONG argc, STRPTR argv[] )
                 {
                 case GAD_CYCLE:
                     GetAttr( MUIA_Cycle_Active, Objects[ID],
-                        ( ULONG * )&Prefs[ID].po_Active );
+                        ( IPTR * )&Prefs[ID].po_Active );
                     break;
                 case GAD_SLIDER:
                     GetAttr( MUIA_Slider_Level, Objects[ID],
-                        ( ULONG * )&Prefs[ID].po_Level );
+                        ( IPTR * )&Prefs[ID].po_Level );
                     break;
                 case GAD_STRING:
                 {
                     STRPTR TmpPtr;
 
                     GetAttr( MUIA_String_Contents, Objects[ID],
-                            ( ULONG * )&TmpPtr );
+                            ( IPTR * )&TmpPtr );
                     strcpy( Prefs[ID].po_Value, TmpPtr );
                     break;
                 }
@@ -460,7 +464,7 @@ LONG main( LONG argc, STRPTR argv[] )
 				{
                     struct Window *Wnd;
 
-                    GetAttr( MUIA_Window_Window, ModuleWnd, ( ULONG * )&Wnd );
+                    GetAttr( MUIA_Window_Window, ModuleWnd, ( IPTR * )&Wnd );
                     if( Wnd )
 						FontRequest( Wnd, &Prefs[ID].po_Attr );
                     SetAttrs( NameInf, MUIA_Text_Contents, Prefs[ID].po_Name,
@@ -473,7 +477,7 @@ LONG main( LONG argc, STRPTR argv[] )
                 {
                     struct Window *Wnd;
 
-                    GetAttr( MUIA_Window_Window, ModuleWnd, ( ULONG * )&Wnd );
+                    GetAttr( MUIA_Window_Window, ModuleWnd, ( IPTR * )&Wnd );
                     if( Wnd )
                         ScreenModeRequest( Wnd, &Prefs[ID].po_ModeID,
                             Prefs[ID].po_Depth ? &Prefs[ID].po_Depth : 0L );
@@ -527,12 +531,6 @@ LONG main( LONG argc, STRPTR argv[] )
         DeletePort( ReplyPort );
     if( Memory )
         DeletePool( Memory );
-    if( GarshnelibBase )
-        CloseLibrary( GarshnelibBase );
-    if( MUIMasterBase )
-        CloseLibrary( MUIMasterBase );
-    if( IntuitionBase )
-        CloseLibrary(( struct Library * )IntuitionBase );
 
     return RETURN_OK;
 }
