@@ -142,7 +142,6 @@ extern struct Library * PrepareAROSSupportBase (void);
 extern ULONG SoftIntDispatch();
 extern void Exec_SerialRawIOInit();
 extern void Exec_SerialRawPutChar(UBYTE chr);
-extern UWORD __serial_rawio_port;
 extern void Exec_MemoryRawIOInit();
 extern void Exec_MemoryRawPutChar(UBYTE chr);
 
@@ -1082,8 +1081,6 @@ void exec_cinit(unsigned long magic, unsigned long addr)
             AROS_SLIB_ENTRY(SerialRawIOInit, Exec));
         SetFunction(&ExecBase->LibNode, -86 * LIB_VECTSIZE,
             AROS_SLIB_ENTRY(SerialRawPutChar, Exec));
-        if (strstr(arosmb->cmdline, "debug=serial2"))
-            __serial_rawio_port = 0x2f8;
     }
     else if (strstr(arosmb->cmdline, "debug=memory"))
     {
@@ -1441,6 +1438,7 @@ unsigned char setupVesa(struct multiboot *mbinfo)
     char *vesa = strstr(str, "vesa=");
     short r;
     unsigned char palwidth = 0;
+    BOOL prioritise_depth = FALSE;
 
     if (vesa)
     {
@@ -1450,27 +1448,29 @@ unsigned char setupVesa(struct multiboot *mbinfo)
         void *vesa_start = &_binary_vesa_start;
         vesa+=5;
 
-        while (*vesa && *vesa != ',' && *vesa != 'x' && *vesa != ' ')
+        while (*vesa >= '0' && *vesa <= '9')
+            x = x * 10 + *vesa++ - '0';
+        if (*vesa++ == 'x')
         {
-            x = x*10 + *vesa++ - '0';
+            while (*vesa >= '0' && *vesa <= '9')
+                y = y * 10 + *vesa++ - '0';
+            if (*vesa++ == 'x')
+            {
+                while (*vesa >= '0' && *vesa <= '9')
+                    d = d * 10 + *vesa++ - '0';
+            }
+            else
+                d = 32;
         }
-        vesa++;
-        while (*vesa && *vesa != ',' && *vesa != 'x' && *vesa != ' ')
-        {
-            y = y*10 + *vesa++ - '0';
-        }
-        vesa++;
-        while (*vesa && *vesa != ',' && *vesa != 'x' && *vesa != ' ')
-        {
-            d = d*10 + *vesa++ - '0';
-        }
-        
+        else
+            d = x, x = 10000, y = 10000, prioritise_depth = TRUE;
+
         rkprintf("[VESA] module (@ %p) size=%d\n", &_binary_vesa_start, &_binary_vesa_size);
         memcpy((void *)0x1000, vesa_start, vesa_size);
         rkprintf("[VESA] Module installed\n");
 
-        rkprintf("[VESA] BestModeMatch for %dx%dx%d = ",x,y,d);        
-        mode = findMode(x,y,d);
+        rkprintf("[VESA] BestModeMatch for %dx%dx%d = ", x, y, d);
+        mode = findMode(x, y, d, prioritise_depth);
 
         getModeInfo(mode);
 
