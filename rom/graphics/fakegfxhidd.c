@@ -60,7 +60,7 @@ struct gfx_data
 
 /******************************************************************************/
 
-static VOID draw_cursor(struct gfx_data *data, BOOL draw, struct class_static_data *csd);
+static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struct class_static_data *csd);
 static VOID rethink_cursor(struct gfx_data *data, struct class_static_data *csd);
 static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data, struct class_static_data *csd);
 
@@ -408,7 +408,7 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
     if (NULL == shape)
     {
     	/* Erase the old cursor */
-	draw_cursor(data, FALSE, CSD(cl));
+	draw_cursor(data, FALSE, TRUE, CSD(cl));
 	data->curs_on = FALSE;
 	data->curs_bm = NULL;
 	data->curs_x	 = data->curs_y		= 0;
@@ -481,7 +481,7 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	if (data->curs_on)
 	{
 	    /* Erase the old cursor */
-	    draw_cursor(data, FALSE, CSD(cl));
+	    draw_cursor(data, FALSE, TRUE, CSD(cl));
 	    
 	    /* Now that we have disposed the old image using the old
 	       backup bm, we can install the new backup bm before
@@ -500,7 +500,7 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 
 	    rethink_cursor(data, CSD(cl));
 	    
-	    draw_cursor(data, TRUE, CSD(cl));
+	    draw_cursor(data, TRUE, TRUE, CSD(cl));
 	    
 	}
 	else
@@ -533,7 +533,7 @@ static BOOL gfx_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetC
 LFB_QUICK(data);    
     /* erase the old cursor */
     if (data->curs_on)
-    	draw_cursor(data, FALSE, CSD(cl));
+    	draw_cursor(data, FALSE, TRUE, CSD(cl));
 	
     data->curs_x = msg->x;
     data->curs_y = msg->y;
@@ -541,7 +541,7 @@ LFB_QUICK(data);
     data->curs_maxy = data->curs_y + data->curs_height - 1;
     
     if (data->curs_on)
-    	draw_cursor(data, TRUE, CSD(cl));
+    	draw_cursor(data, TRUE, TRUE, CSD(cl));
 UFB_QUICK(data);	
     return TRUE;
 }
@@ -559,7 +559,7 @@ LFB_QUICK(data);
     	if (!data->curs_on)
 	{
 	    data->curs_on = TRUE;
-	    draw_cursor(data, TRUE, CSD(cl));
+	    draw_cursor(data, TRUE, TRUE, CSD(cl));
 	}
     }
     else
@@ -567,7 +567,7 @@ LFB_QUICK(data);
     	if (data->curs_on)
 	{
 	    data->curs_on = FALSE;
-	    draw_cursor(data, FALSE, CSD(cl));
+	    draw_cursor(data, FALSE, TRUE, CSD(cl));
 	}
     }
     
@@ -622,14 +622,14 @@ LFB(data);
     
     if (inside)
     {
-    	draw_cursor(data, FALSE, CSD(cl));
+    	draw_cursor(data, FALSE, FALSE, CSD(cl));
     }
     msg = &p;
     
     retval = OOP_DoMethod(data->gfxhidd, (OOP_Msg)msg);
     
     if (inside)
-    	draw_cursor(data, TRUE, CSD(cl));
+    	draw_cursor(data, TRUE, FALSE, CSD(cl));
 UFB(data);
 	
     return retval;
@@ -643,7 +643,7 @@ static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     data = OOP_INST_DATA(cl, o);
 
 LFB(data);   
-    draw_cursor(data, FALSE, CSD(cl));
+    draw_cursor(data, FALSE, TRUE, CSD(cl));
     
     ret = (OOP_Object *)OOP_DoMethod(data->gfxhidd, msg);
     if (NULL != ret)
@@ -652,7 +652,7 @@ LFB(data);
     	ret = data->fakefb;
     }
     rethink_cursor(data, CSD(cl));
-    draw_cursor(data, TRUE, CSD(cl));
+    draw_cursor(data, TRUE, TRUE, CSD(cl));
     
 UFB(data);    
     
@@ -675,10 +675,10 @@ struct fakefb_data
 
 #define FGH(data) ((struct gfx_data *)data->fakegfxhidd)
 #define REMOVE_CURSOR(data)	\
-	draw_cursor(FGH(data), FALSE, CSD(cl))
+	draw_cursor(FGH(data), FALSE, FALSE, CSD(cl))
 
 #define RENDER_CURSOR(data)	\
-	draw_cursor(FGH(data), TRUE, CSD(cl))
+	draw_cursor(FGH(data), TRUE, FALSE, CSD(cl))
 	
 	
 #define BITMAP_METHOD_INIT	\
@@ -1366,7 +1366,7 @@ static VOID rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
     
 }
 
-static VOID draw_cursor(struct gfx_data *data, BOOL draw, struct class_static_data *csd)
+static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struct class_static_data *csd)
 {
     IPTR width, height;
     IPTR fb_width, fb_height;
@@ -1457,7 +1457,7 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, struct class_static_da
 	
     #endif
         
-        HIDD_BM_UpdateRect(data->framebuffer, data->curs_x, data->curs_y, width, height);
+        if (updaterect) HIDD_BM_UpdateRect(data->framebuffer, data->curs_x, data->curs_y, width, height);
     
     }
     else
@@ -1476,7 +1476,7 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, struct class_static_da
 	    	, data->gc
 	    );
 
-            HIDD_BM_UpdateRect(data->framebuffer, data->curs_x, data->curs_y, width, height);
+            if (updaterect) HIDD_BM_UpdateRect(data->framebuffer, data->curs_x, data->curs_y, width, height);
 	}
     }
     return;
