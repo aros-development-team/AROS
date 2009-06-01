@@ -2,7 +2,6 @@
 #define MAIN_H
 
 #include <workbench/startup.h>
-#include <sys/commwben.h>
 
 extern LONG Blanking, BlankAfterInit;
 

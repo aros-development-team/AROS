@@ -7,8 +7,7 @@
 #include <proto/muimaster.h>
 #include <proto/asl.h>
 
-#include "/Libraries/Garshnelib/Garshnelib_protos.h"
-#include "/Libraries/Garshnelib/Garshnelib_pragmas.h"
+#include "../Libraries/Garshnelib/Garshnelib_protos.h"
 
 #include <clib/alib_protos.h>
 
@@ -16,8 +15,8 @@
 
 #include "PrefInterp_rev.h"
 #include "PrefInterp.h"
-#include "/protos/parse.h"
-#include "/defs.h"
+#include "../protos/parse.h"
+#include "../defs.h"
 
 #define MAKE_ID(a,b,c,d)\
 ((ULONG)(a)<<24|(ULONG)(b)<<16|(ULONG)(c)<<8|(ULONG)(d))

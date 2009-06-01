@@ -15,14 +15,16 @@
 
 LONG PortRemoved = FALSE, Blanking = FALSE, *ServerBlanking = 0L;
 ULONG InitSecs, InitMicros, CheckCPU = FALSE, CheckCPUDisabled = FALSE;
-struct Library *IntuitionBase, *GarshnelibBase, *GfxBase;
+struct Library *GarshnelibBase;
+struct GfxBase *GfxBase;
+struct IntuitionBase *IntuitionBase;
 BYTE PortName[] = "GarshneClient";
 struct MsgPort *ClientPort, *TimerPort;
 struct timerequest *TimeOutIO;
 PrefObject *CurPrefs;
 BYTE PrefsPath[128];
 
-extern __far LONG RangeSeed;
+extern LONG RangeSeed;
 
 PrefObject *LoadPrefs( STRPTR Path )
 {

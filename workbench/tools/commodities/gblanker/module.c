@@ -71,7 +71,7 @@ VOID ExecSubProc( STRPTR Command, STRPTR Extension )
 
 #define SIG_DELAY ( 1L << DelayPort->mp_SigBit )
 
-VOID __saveds PingFunc( VOID )
+VOID PingFunc( VOID )
 {
     struct MsgPort *ClientPort, *ReplyPort;
 	struct Library *SysBase;

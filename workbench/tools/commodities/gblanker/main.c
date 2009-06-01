@@ -15,7 +15,7 @@
 #include "libraries.h"
 #include "protos/protos.h"
 
-__far extern LONG RangeSeed;
+extern LONG RangeSeed;
 STATIC const UBYTE VersTag[] = VERSTAG;
 
 LONG Blanking = FALSE, BlankAfterInit = FALSE;
@@ -26,6 +26,7 @@ struct Task *ServerTask, *PingTask = 0L;
 BlankerPrefs *Prefs;
 BYTE ProgName[108];
 LONG RetVal;
+struct WBStartup *WBenchMsg;
 
 int main( void )
 {

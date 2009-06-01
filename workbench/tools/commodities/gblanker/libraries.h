@@ -5,7 +5,7 @@
 #include <graphics/gfxbase.h>
 
 extern struct Library *Libraries[];
-extern struct Library *SysBase;
+extern struct ExecBase *SysBase;
 
 #define DOSBase         ( Libraries[0] )
 #define IntuitionBase   (( struct IntuitionBase * )Libraries[1] )

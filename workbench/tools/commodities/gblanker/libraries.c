@@ -13,7 +13,7 @@
 
 #define NUM_LIBS 7
 
-extern struct Library *SysBase;
+extern struct ExecBase *SysBase;
 struct Library *Libraries[NUM_LIBS];
 
 STRPTR LibNames[] = {

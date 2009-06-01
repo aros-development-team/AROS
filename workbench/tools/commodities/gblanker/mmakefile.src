@@ -1,0 +1,20 @@
+# Copyright © 2009, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES   := main prefs module cxhand libraries handlers var MUI/interface
+
+TARGETDIR  := $(AROS_TOOLS)/Commodities/GBlanker
+USER_CFLAGS := -Wno-parentheses
+USER_INCLUDES :=
+
+#MM- workbench-tools-commodities-gblanker : workbench-tools-commodities-gblanker-mui
+
+#MM workbench-tools-commodities-gblanker-mui : includes linklibs
+
+%build_prog mmake=workbench-tools-commodities-gblanker-mui \
+    progname=Garshneblanker targetdir=$(TARGETDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc m"
+
+%common

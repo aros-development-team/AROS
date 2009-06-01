@@ -7,7 +7,7 @@
  */
 
 #include <exec/memory.h>
-#include "/includes.h"
+#include "../includes.h"
 #include <stdlib.h>
 
 #define MAX_SPEED 6L

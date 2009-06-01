@@ -19,7 +19,8 @@ struct MsgPort *CxPort;
 CxObj *ServerBroker;
 LONG timeCount = 0;
 
-VOID __interrupt __saveds CxBFunc( CxMsg *CxMessage, CxObj *CxObject )
+// FIXME __interrupt
+VOID CxBFunc( CxMsg *CxMessage, CxObj *CxObject )
 {
     struct InputEvent *Event = ( struct InputEvent * )CxMsgData( CxMessage );
     

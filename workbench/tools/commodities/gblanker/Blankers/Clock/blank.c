@@ -10,14 +10,11 @@
 #include <utility/date.h>
 #include <hardware/custom.h>
 
-#include <clib/utility_protos.h>
-#include <pragmas/utility_pragmas.h>
-#include <clib/diskfont_protos.h>
-#include <pragmas/diskfont_pragmas.h>
+#include <proto/utility.h>
 
 #include <string.h>
 
-#include "/includes.h"
+#include "../includes.h"
 
 extern __far struct Custom custom;
 
