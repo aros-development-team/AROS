@@ -9,9 +9,8 @@
 #include <exec/memory.h>
 #include <hardware/custom.h>
 #include <string.h>
-#include <clib/diskfont_protos.h>
-#include <pragmas/diskfont_pragmas.h>
-#include "/includes.h"
+#include <proto/diskfont.h>
+#include "../includes.h"
 
 #define RAND( base, offset ) (( LONG )( RangeRand( base ) + offset ))
 

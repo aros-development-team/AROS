@@ -1,9 +1,13 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 
-extern struct Library *GarshnelibBase, *SysBase, *DOSBase, *GfxBase, *IntuitionBase;
+extern struct Library *GarshnelibBase;
+extern struct ExecBase *SysBase;
+extern struct DosLibrary *DOSBase;
+extern struct GfxBase *GfxBase;
+extern struct IntuitionBase *IntuitionBase;
 
 LONG MessageServer( LONG );
 LONG HandleSignal( LONG );

@@ -1,0 +1,28 @@
+# Copyright © 2009, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES   := ../main blank
+
+EXE := ASwarm
+TARGETDIR  := $(AROS_TOOLS)/Commodities/GBlanker/Blankers
+USER_CFLAGS := -Wno-parentheses
+USER_INCLUDES :=
+
+#MM- workbench-tools-commodities-gblanker : workbench-tools-commodities-gblanker-aswarm
+
+#MM workbench-tools-commodities-gblanker-aswarm : includes linklibs \
+#MM workbench-tools-commodities-gblanker-mui \
+#MM workbench-tools-commodities-gblanker-aswarm-cpy
+
+%build_prog mmake=workbench-tools-commodities-gblanker-aswarm \
+    progname=$(EXE) targetdir=$(TARGETDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc m Garshnelib"
+
+FILES := $(EXE).ifc $(EXE).txt
+#MM
+workbench-tools-commodities-gblanker-aswarm-cpy :
+%copy_files_q files=$(FILES) src=. dst=$(TARGETDIR) maketarget=workbench-tools-commodities-gblanker-aswarm-cpy
+
+%common

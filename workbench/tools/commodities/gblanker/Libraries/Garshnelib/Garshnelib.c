@@ -11,30 +11,29 @@
 #include <graphics/videocontrol.h>
 #include <intuition/intuitionbase.h>
 
-#include <clib/exec_protos.h>
-#include <clib/dos_protos.h>
-#include <clib/graphics_protos.h>
-#include <clib/intuition_protos.h>
-#include <clib/asl_protos.h>
-#include <clib/mathffp_protos.h>
-#include <clib/alib_protos.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/graphics.h>
+#include <proto/intuition.h>
+#include <proto/asl.h>
+#include <proto/mathffp.h>
+#include <proto/alib.h>
 
-#include <pragmas/exec_pragmas.h>
-#include <pragmas/dos_pragmas.h>
-#include <pragmas/graphics_pragmas.h>
-#include <pragmas/intuition_pragmas.h>
-#include <pragmas/asl_pragmas.h>
-#include <pragmas/mathffp_pragmas.h>
-
-#include "Garshnelib_protos.h"
+#include "Garshnelib.h"
 #include "Garshnelib_rev.h"
-#include "//defs.h"
+#include "../../defs.h"
 
-STATIC const UBYTE VersTag[] = VERSTAG;
+const UBYTE VersTag[] = VERSTAG;
 
-VOID SASM ScreenModeRequest( AREG(0) struct Window *Wnd,
-							AREG(1) LONG *Mode, AREG(2) LONG *Depth )
+AROS_LH3(VOID, ScreenModeRequest, 
+	AROS_LHA(struct Window *, Wnd, A0),
+	AROS_LHA(LONG *, Mode, A1),
+	AROS_LHA(LONG *, Depth, A2),
+	struct Library *, library, 5, Garshnelib
+)
 {
+	AROS_LIBFUNC_INIT
+
 	struct AslBase *AslBase;
 	
 	if( AslBase = ( struct AslBase * )OpenLibrary( AslName, 38L ))
@@ -68,6 +67,8 @@ VOID SASM ScreenModeRequest( AREG(0) struct Window *Wnd,
 		}
 		CloseLibrary(( struct Library * )AslBase );
 	}
+
+	AROS_LIBFUNC_EXIT
 }
 
 #define NUMCOLORS 45
@@ -79,10 +80,17 @@ LONG spectrum[] = {
 	0x0609, 0x0708, 0x0807, 0x0906, 0x0A05, 0x0B04,	0x0C03, 0x0D02, 0x0E01
 	};
 
-VOID SASM setCopperList( DREG(0) LONG Hei, DREG(1) LONG Col,
-						AREG(0) struct ViewPort *VPort,
-						AREG(1) struct Custom *Custom )
+AROS_LH4(VOID, setCopperList, 
+	AROS_LHA(LONG, Hei, D0),
+	AROS_LHA(LONG, Col, D1),
+	AROS_LHA(struct ViewPort *, VPort, A0),
+	AROS_LHA(struct Custom *, Custom, A1),
+	struct Library *, library, 6, Garshnelib
+)
 {
+	AROS_LIBFUNC_INIT
+
+#if 0
 	struct Library *GfxBase, *IntuitionBase;
 	struct UCopList *uCopList;
 
@@ -115,10 +123,19 @@ VOID SASM setCopperList( DREG(0) LONG Hei, DREG(1) LONG Col,
 	
 	if( IntuitionBase )
 		CloseLibrary( IntuitionBase );
+
+#endif
+	AROS_LIBFUNC_EXIT
 }
 
-VOID SASM clearCopperList( AREG(0) struct ViewPort *VPort )
+AROS_LH1(VOID, clearCopperList, 
+	AROS_LHA(struct ViewPort *, VPort, A0),
+	struct Library *, library, 16, Garshnelib
+)
 {
+	AROS_LIBFUNC_INIT
+
+#if 0
 	struct Library *GfxBase;
 	
 	if( GfxBase = OpenLibrary( "graphics.library", 37L ))
@@ -133,10 +150,17 @@ VOID SASM clearCopperList( AREG(0) struct ViewPort *VPort )
 		Permit();
 		FreeVec( uCopList );
 	}
+
+#endif
+	AROS_LIBFUNC_EXIT
 }
 
-LONG SASM getTopScreenMode( VOID )
+AROS_LH0(LONG, getTopScreenMode, 
+	struct Library *, library, 7, Garshnelib
+)
 {
+	AROS_LIBFUNC_INIT
+
 	struct IntuitionBase *IntuitionBase;
 	struct Library *GfxBase;
 	struct Screen *pubScr;
@@ -162,10 +186,16 @@ LONG SASM getTopScreenMode( VOID )
 		CloseLibrary(( struct Library * )IntuitionBase );
 	
 	return scrMode;
+
+	AROS_LIBFUNC_EXIT
 }
 
-LONG SASM getTopScreenDepth( VOID )
+AROS_LH0(LONG, getTopScreenDepth, 
+	struct Library *, library, 8, Garshnelib
+)
 {
+	AROS_LIBFUNC_INIT
+
 	struct IntuitionBase *IntuitionBase;
 	LONG Dep = 0;
 	
@@ -189,11 +219,18 @@ LONG SASM getTopScreenDepth( VOID )
 	}
 	
 	return Dep;
+
+	AROS_LIBFUNC_EXIT
 }
 
-struct Screen *SASM cloneTopScreen( DREG(0) LONG MoreColors,
-								   DREG(1) LONG GetPublic )
+AROS_LH2(struct Screen *, cloneTopScreen, 
+	AROS_LHA(LONG, MoreColors, D0),
+	AROS_LHA(LONG, GetPublic, D1),
+	struct Library *, library, 9, Garshnelib
+)
 {
+	AROS_LIBFUNC_INIT
+
 	LONG sMod, sDep, i, Wid, Hei, offx, offy;
 	struct IntuitionBase *IntuitionBase;
 	struct Screen *Scr, *nScr = 0L;
@@ -270,10 +307,17 @@ struct Screen *SASM cloneTopScreen( DREG(0) LONG MoreColors,
 		CloseLibrary(( struct Library * )IntuitionBase );
 	
 	return nScr;
+
+	AROS_LIBFUNC_EXIT
 }
 
-ULONG *SASM GetColorTable( AREG(0) struct Screen *Screen )
+AROS_LH1(ULONG *, GetColorTable, 
+	AROS_LHA(struct Screen *, Screen, A0),
+	struct Library *, library, 10, Garshnelib
+)
 {
+	AROS_LIBFUNC_INIT
+
 	struct Library *GfxBase;
 	ULONG *ColorTable = 0L;
 
@@ -293,10 +337,17 @@ ULONG *SASM GetColorTable( AREG(0) struct Screen *Screen )
 	}
 
 	return ColorTable;
+
+	AROS_LIBFUNC_EXIT
 }
 
-LONG SASM AvgBitsPerGun( DREG(0) LONG ModeID )
+AROS_LH1(LONG, AvgBitsPerGun, 
+	AROS_LHA(LONG, ModeID, D0),
+	struct Library *, library, 11, Garshnelib
+)
 {
+	AROS_LIBFUNC_INIT
+
 	struct Library *GfxBase;
 	LONG BPG = 8;
 
@@ -312,11 +363,20 @@ LONG SASM AvgBitsPerGun( DREG(0) LONG ModeID )
 	}
 
 	return BPG;
+
+	AROS_LIBFUNC_EXIT
 }
 
-VOID SASM FadeAndLoadTable( AREG(0) struct Screen *Screen, DREG(0) LONG BPG,
-						   AREG(1) ULONG *ColorTable, DREG(1) LONG SavePlanes )
+AROS_LH4(VOID, FadeAndLoadTable, 
+	AROS_LHA(struct Screen *, Screen, A0),
+	AROS_LHA(LONG, BPG, D0),
+	AROS_LHA(ULONG *, ColorTable, A1),
+	AROS_LHA(LONG, SavePlanes, D1),
+	struct Library *, library, 12, Garshnelib
+)
 {
+	AROS_LIBFUNC_INIT
+
 	struct Library *IntuitionBase, *GfxBase;
 	
 	if( !ColorTable )
@@ -346,10 +406,17 @@ VOID SASM FadeAndLoadTable( AREG(0) struct Screen *Screen, DREG(0) LONG BPG,
 	
 	if( IntuitionBase )
 		CloseLibrary( IntuitionBase );
+
+	AROS_LIBFUNC_EXIT
 }
 
-struct Window *SASM BlankMousePointer( AREG(0) struct Screen *Scr )
+AROS_LH1(struct Window *, BlankMousePointer, 
+	AROS_LHA(struct Screen *, Scr, A0),
+	struct Library *, library, 13, Garshnelib
+)
 {
+	AROS_LIBFUNC_INIT
+
 	struct Library *IntuitionBase, *GfxBase;
 	struct Window *Wnd;
 	ULONG oldmodes;
@@ -384,10 +451,17 @@ struct Window *SASM BlankMousePointer( AREG(0) struct Screen *Scr )
 		CloseLibrary( IntuitionBase );
 
 	return Wnd;
+
+	AROS_LIBFUNC_EXIT
 }
 
-VOID SASM UnblankMousePointer( AREG(0) struct Window *Wnd )
+AROS_LH1(VOID, UnblankMousePointer, 
+	AROS_LHA(struct Window *, Wnd, A0),
+	struct Library *, library, 14, Garshnelib
+)
 {
+	AROS_LIBFUNC_INIT
+
 	struct Library *IntuitionBase;
 	
 	if( IntuitionBase = OpenLibrary( "intuition.library", 39L ))
@@ -403,7 +477,10 @@ VOID SASM UnblankMousePointer( AREG(0) struct Window *Wnd )
 		}
 		CloseLibrary( IntuitionBase );
 	}
+
+	AROS_LIBFUNC_EXIT
 }
+
 
 Triplet *AllocTable( LONG Colors, LONG Dep, LONG Offset )
 {
@@ -476,10 +553,16 @@ Triplet *AllocTable( LONG Colors, LONG Dep, LONG Offset )
 	return Table;
 }
 
-Triplet *SASM RainbowPalette( AREG(0) struct Screen *Screen,
-							 AREG(1) Triplet *Table, DREG(0) LONG Offset,
-							 DREG(1) LONG EP )
+AROS_LH4(Triplet *, RainbowPalette, 
+	AROS_LHA(struct Screen *, Screen, A0),
+	AROS_LHA(Triplet *, Table, A1),
+	AROS_LHA(LONG, Offset, D0),
+	AROS_LHA(LONG, EP, D1),
+	struct Library *, library, 15, Garshnelib
+)
 {
+	AROS_LIBFUNC_INIT
+
 	struct Library *IntuitionBase, *GfxBase;
 	static LONG ColorPos = 0L;
 	
@@ -534,4 +617,6 @@ Triplet *SASM RainbowPalette( AREG(0) struct Screen *Screen,
 	}
 	
 	return Table;
+
+	AROS_LIBFUNC_EXIT
 }

@@ -1,0 +1,17 @@
+# Copyright © 2009, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM workbench-tools-commodities-gblanker-lib : includes linklibs workbench-tools-commodities-gblanker-includes
+
+USER_CFLAGS := -Wno-parentheses
+FILES := Garshnelib
+
+%build_module mmake=workbench-tools-commodities-gblanker-lib modname=Garshnelib modtype=library \
+  files=$(FILES) uselibs=
+
+%copy_includes mmake=workbench-tools-commodities-gblanker-includes \
+  includes=Garshnelib.h path=libraries
+
+%common

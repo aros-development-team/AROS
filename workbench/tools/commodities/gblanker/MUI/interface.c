@@ -1,21 +1,19 @@
+#define MUI_OBSOLETE
+
 #include <exec/memory.h>
 #include <dos/dostags.h>
 #include <libraries/mui.h>
 #include <string.h>
 
-#include <clib/muimaster_protos.h>
-#include <pragmas/muimaster_pragmas.h>
-
-#include <clib/wb_protos.h>
-#include <pragmas/wb_pragmas.h>
+#include <proto/muimaster.h>
+#include <proto/workbench.h>
 
 #include "interface.h"
-#include "/includes.h"
-#include "/libraries.h"
-#include "/protos/protos.h"
+#include "includes.h"
+#include "libraries.h"
+#include "protos/protos.h"
 
-#define MAKE_ID(a,b,c,d)\
-((ULONG)(a)<<24|(ULONG)(b)<<16|(ULONG)(c)<<8|(ULONG)(d))
+extern struct WBStartup *WBenchMsg;
 
 Object *BlankersLvw, *PrefsBtn, *InfoBtn, *ToggleBtn, *HideBtn;
 Object *SettingsBtn, *QuitBtn, *BlankWnd, *BlankApp;
@@ -26,22 +24,36 @@ BYTE Title[128];
 STRPTR SettingsFmt = "BLANKKEY=%s\nPOPKEY=%s\nTIMEOUT=%ld\nREPLACE=%s\n"
     "RANDTIMEOUT=%ld\nBLANKCORNER=%s\nDONTCORNER=%s";
 
-__saveds __asm APTR EntryConsFunc( register __a0 struct Hook *Hook,
-    register __a1 BlankerEntry *Entry )
+
+AROS_UFH3(APTR, EntryConsFunc,
+AROS_UFHA(struct Hook *, h, A0),
+AROS_UFHA(Object *, dummy, A2),
+AROS_UFHA(BlankerEntry *, Entry, A1))
 {
+    AROS_USERFUNC_INIT
     return Entry;
+    AROS_USERFUNC_EXIT
 }
 struct Hook EntryConsHook = {{ 0L, 0L }, ( APTR )EntryConsFunc, 0L, 0L };
 
-__saveds __asm VOID EntryDestFunc( register __a0 struct Hook *Hook,
-    register __a1 BlankerEntry *Entry )
+
+AROS_UFH3(VOID, EntryDestFunc,
+AROS_UFHA(struct Hook *, h, A0),
+AROS_UFHA(Object *, object, A2),
+AROS_UFHA(BlankerEntry *, Entry, A1))
 {
+    AROS_USERFUNC_INIT
+    AROS_USERFUNC_EXIT
 }
 struct Hook EntryDestHook = {{ 0L, 0L }, ( APTR )EntryDestFunc, 0L, 0L };
 
-__saveds __asm LONG EntryDispFunc( register __a0 struct Hook *Hook,
-    register __a1 BlankerEntry *Entry, register __a2 BYTE **Array )
+AROS_UFH3(LONG, EntryDispFunc,
+AROS_UFHA(struct Hook *, h, A0),
+AROS_UFHA(BYTE **, Array, A2),
+AROS_UFHA(BlankerEntry *, Entry, A1))
 {
+    AROS_USERFUNC_INIT
+
     static BYTE Buffer[64];
 
     if( Entry->be_Disabled )
@@ -56,8 +68,10 @@ __saveds __asm LONG EntryDispFunc( register __a0 struct Hook *Hook,
     *Array = Buffer;
 
     return 0L;
+    AROS_USERFUNC_EXIT
 }
 struct Hook EntryDispHook = {{ 0L, 0L }, ( APTR )EntryDispFunc, 0L, 0L };
+
 
 ULONG ISigs( VOID )
 {
