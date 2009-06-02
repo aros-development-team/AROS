@@ -17,7 +17,7 @@ extern short (*getControllerInfo)(void);
 extern short (*getModeInfo)(long mode);
 extern short (*setVbeMode)(long mode);
 extern short (*paletteWidth)(long req, unsigned char *width);
-extern short (*findMode)(int x, int y, int d);
+extern short (*findMode)(int x, int y, int d, BOOL prioritise_depth);
 extern struct vbe_controller *controllerinfo;
 extern struct vbe_mode       *modeinfo;
 
@@ -37,7 +37,7 @@ extern short getControllerInfo(void);
 extern short getModeInfo(long mode);
 extern short setVbeMode(long mode);
 extern short paletteWidth(long req, unsigned char *width);
-extern short findMode(int x, int y, int d);
+extern short findMode(int x, int y, int d, BOOL prioritise_depth);
 extern struct vbe_controller controllerinfo;
 extern struct vbe_mode       modeinfo;
 
