@@ -13,6 +13,7 @@
 
 #include <exec/memory.h>
 
+#include <devices/timer.h>
 #include <devices/sana2.h>
 #include <devices/sana2specialstats.h>
 
@@ -24,7 +25,11 @@
 
 #include "fec.h"
 
-
+static int FEC_void(struct FECUnit *unit)
+{
+	D(bug("[FEC] DUMB FUNCITON CALLED\n"));
+	return 0;
+}
 
 static struct AddressRange *FindMulticastRange(struct FECBase *FECBase, struct FECUnit *unit,
    ULONG lower_bound_left, UWORD lower_bound_right, ULONG upper_bound_left, UWORD upper_bound_right)
@@ -127,6 +132,66 @@ BOOL RemMulticastRange(struct FECBase *FECBase, struct FECUnit *unit, const UBYT
     return range != NULL;
 }
 
+static int FEC_Start(struct FECUnit *unit)
+{
+	uint16_t reg;
+
+	D(bug("[FEC] Start\n"));
+
+    FEC_HW_Init(unit);
+	FEC_Reset_Stats(unit);
+
+    unit->feu_phy_id = FEC_PHY_Find(unit);
+
+    /* Detect link status and speed */
+    FEC_PHY_Reset(unit);
+    FEC_PHY_Setup_Autonegotiation(unit);
+
+    FEC_UDelay(unit, 1000);
+
+    reg = FEC_MDIO_Read(unit, unit->feu_phy_id, PHY_BMSR);
+
+    /*
+     * Wait if PHY is capable of autonegotiation and autonegotiation is not complete
+     */
+    if ((reg & PHY_BMSR_AUTN_ABLE) && !(reg & PHY_BMSR_AUTN_COMP))
+    {
+    	D(bug("[FEC] Waiting for PHY auto negotiation to complete"));
+    	int i = 0;
+    	while (!(reg & PHY_BMSR_AUTN_COMP))
+    	{
+    		/*
+    		 * Timeout reached ?
+    		 */
+    		if (i > 10000)
+    		{
+    			D(bug(" TIMEOUT !\n"));
+    			break;
+    		}
+
+    		if ((i++ % 100) == 0)
+    		{
+    			D(bug("."));
+    		}
+    		FEC_UDelay(unit, 1000);  /* 1 ms */
+    		reg = FEC_MDIO_Read(unit, unit->feu_phy_id, PHY_BMSR);
+    	}
+    	D(bug(" done\n"));
+    	FEC_UDelay(unit, 500000);        /* another 500 ms (results in faster booting) */
+    }
+
+	unit->feu_speed = FEC_PHY_Speed(unit);
+	unit->feu_duplex = FEC_PHY_Duplex(unit);
+	unit->feu_link = FEC_PHY_Link(unit);
+
+	D(bug("[FEC] Link %s\n", unit->feu_link ? "up" : "down"));
+	D(bug("[FEC] Speed %d, %s duplex\n", unit->feu_speed, unit->feu_duplex == HALF ? "half":"full"));
+
+	unit->feu_Flags |= IFF_UP;
+
+	return 1;
+}
+
 /* Unit process */
 static
 AROS_UFH3(void, FEC_UnitProcess,
@@ -137,9 +202,11 @@ AROS_UFH3(void, FEC_UnitProcess,
     AROS_USERFUNC_INIT
 
     struct MsgPort *iport;
+    struct MsgPort *tport;
+    struct timerequest *timer;
+
     struct FECUnit *unit = (struct FECUnit *)(FindTask(NULL)->tc_UserData);
     struct Process *parent = unit->feu_Process;
-    uint32_t rcvd;
 
     unit->feu_Process = (struct Process *)FindTask(NULL);
 
@@ -150,7 +217,13 @@ AROS_UFH3(void, FEC_UnitProcess,
     unit->feu_OpenCount = 0;
     unit->feu_RangeCount = 0;
 
+    /* Input port for incoming requests */
     iport = CreateMsgPort();
+
+    /* Timer request and corresponding port will be used to periodically test the link status of PHY */
+    tport = CreateMsgPort();
+    timer = (struct timerequest *)CreateIORequest(tport, sizeof(struct timerequest));
+    OpenDevice("timer.device", UNIT_VBLANK, &timer->tr_node, 0);
 
     unit->feu_InputPort = iport;
 
@@ -167,69 +240,104 @@ AROS_UFH3(void, FEC_UnitProcess,
 
     /* Start the unit now... */
 
-    Signal(parent, SIGF_SINGLE);
+	FEC_Start(unit);
+
+    Signal(&parent->pr_Task, SIGF_SINGLE);
 
 
-	FEC_HW_Init(unit);
-	FEC_Reset_Stats(unit);
+    /* Come back in one second ;) */
+    timer->tr_node.io_Command = TR_ADDREQUEST;
+    timer->tr_time.tv_secs = 1;
+    timer->tr_time.tv_micro = 0;
+    SendIO(&timer->tr_node);
 
-
-
-    int phy = 0;
-
-    for (phy=0; phy < 32; phy++)
+    /* Main loop. */
     {
-    	int stat = FEC_MDIO_Read(unit, phy, 1);
-    	if (stat != -1)
-    	{
-    		if (stat != 0xffff && stat != 0x0000)
-    		{
-    			int advert = FEC_MDIO_Read(unit, phy, 4);
-    			D(bug("[FEC] MII transceiver %d status %4.4x advertising %4.4x\n",
-    					phy, stat, advert));
-    			int aa;
-    			int ab;
+    	uint32_t rcvd;
+    	const uint32_t sigset =
+							1 << iport->mp_SigBit |
+							1 << tport->mp_SigBit |
+							SIGBREAKF_CTRL_C;
 
-				D(bug("[FEC] Phy register dump:\n"));
-    			for (aa=0; aa < 8; aa++)
-    			{
-    				D(bug("[FEC]    "));
-    				for (ab=0; ab < 4; ab++)
-    				{
-    					D(bug("%04x ", FEC_MDIO_Read(unit, phy, 4*aa+ab)));
-    				}
-    				D(bug("\n"));
-    			}
-    		}
-    	}
+    	do
+        {
+            rcvd = Wait(sigset);
+
+            if (rcvd & SIGBREAKF_CTRL_C)
+            {
+                D(bug("[FEC] CTRL_C signal. Bye now ;) \n"));
+
+                /* Abort potentially pending timer request */
+                if (!CheckIO(&timer->tr_node))
+                	AbortIO(&timer->tr_node);
+                WaitIO(&timer->tr_node);
+                SetSignal(0, 1 << timer->tr_node.io_Message.mn_ReplyPort->mp_SigBit);
+            }
+            else if (rcvd & (1 << tport->mp_SigBit))
+            {
+            	/* timer request. Check the PHY link state */
+            	int link = FEC_PHY_Link(unit);
+            	int duplex = FEC_PHY_Duplex(unit);
+            	int speed = FEC_PHY_Speed(unit);
+
+            	if ((link != unit->feu_link) || (duplex != unit->feu_duplex) || (speed != unit->feu_speed))
+            	{
+
+
+            		/*
+            		 * If link status is unchanged (how come!??), stop the unit. It will be
+            		 * restarted few lines below.
+            		 */
+            		if (unit->feu_link == link)
+            		{
+            			D(bug("[FEC] LINK CHANGED\n"));
+            			unit->stop(unit);
+            		}
+            		else
+            			D(bug("[FEC] LINK %s\n", link ? "UP":"DOWN"));
+
+
+            		unit->feu_link = link;
+            		unit->feu_speed = speed;
+            		unit->feu_duplex = duplex;
+
+            		if (!link)
+            			unit->stop(unit);
+            		else
+            			unit->start(unit);
+            	}
+
+            	/* Empty the reply port */
+            	while (GetMsg(timer->tr_node.io_Message.mn_ReplyPort));
+
+                /* Come back in one second ;) */
+                timer->tr_node.io_Command = TR_ADDREQUEST;
+                timer->tr_time.tv_secs = 1;
+                timer->tr_time.tv_micro = 0;
+                SendIO(&timer->tr_node);
+            }
+            else if (rcvd & (1 << iport->mp_SigBit))
+            {
+            	struct IOSana2Req *io;
+
+            	/* Handle incoming transactions */
+            	while ((io = (struct IOSana2Req *)GetMsg(iport))!= NULL);
+            	{
+            		D(bug("[FEC] Handle incoming transaction.\n"));
+            		ObtainSemaphore(&unit->feu_Lock);
+            		handle_request(unit->feu_FECBase, io);
+            	}
+            }
+
+
+        } while((rcvd & SIGBREAKF_CTRL_C) == 0);
     }
 
-    do
-    {
-        uint32_t sigset = 1 << iport->mp_SigBit |
-                          SIGBREAKF_CTRL_C;
-
-        rcvd = Wait(sigset);
-
-        if (rcvd & SIGBREAKF_CTRL_C)
-        {
-            D(bug("[FEC] CTRL_C signal. Bye now ;) \n"));
-        }
-        else if (rcvd & (1 << iport->mp_SigBit))
-        {
-        	struct IOSana2Req *io;
-
-        	/* Handle incoming transactions */
-        	while ((io = (struct IOSana2Req *)GetMsg(iport))!= NULL);
-        	{
-        		D(bug("[FEC] Handle incomming transaction.\n"));
-        		ObtainSemaphore(&unit->feu_Lock);
-        		handle_request(unit->feu_FECBase, io);
-        	}
-        }
-
-
-    } while((rcvd & SIGBREAKF_CTRL_C) == 0);
+    CloseDevice(&unit->feu_TimerRequest.tr_node);
+    CloseDevice(&timer->tr_node);
+    DeleteIORequest(&timer->tr_node);
+    DeleteMsgPort(tport);
+    DeleteMsgPort(iport);
 
     AROS_USERFUNC_EXIT
 }
@@ -294,6 +402,9 @@ int FEC_CreateUnit(struct FECBase *FECBase, fec_t *regs)
 	        }
 	        unit->feu_RequestPorts[WRITE_QUEUE]->mp_Flags = PA_SOFTINT;
 
+	        unit->start = FEC_Start;
+	        unit->stop = FEC_void;
+
 	        /* Create the unit's process */
 
 	        /* Unit's process pointer will temporarly contain the parent */
@@ -301,7 +412,7 @@ int FEC_CreateUnit(struct FECBase *FECBase, fec_t *regs)
 	        CreateNewProcTags(
 	                         NP_Entry, (IPTR)FEC_UnitProcess,
 	                         NP_Name, "FEC Process",
-	                         NP_Priority, 0,
+	                         NP_Priority, 5,
 	                         NP_UserData, (IPTR)unit,
 	                         NP_StackSize, 40960,
 	                         TAG_DONE);

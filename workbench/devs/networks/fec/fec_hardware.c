@@ -79,6 +79,135 @@ void FEC_PHY_Init(struct FECUnit *unit)
 	outl_be(unit->feu_phy_speed, &unit->feu_regs->mii_speed);
 }
 
+int8_t FEC_PHY_Find(struct FECUnit *unit)
+{
+	int8_t phy = 0;
+	int8_t result = -1;
+
+	for (phy=0; phy < 32; phy++)
+	{
+		int stat = FEC_MDIO_Read(unit, phy, 1);
+		if (stat != -1)
+		{
+			if (stat != 0xffff && stat != 0x0000)
+			{
+				int advert = FEC_MDIO_Read(unit, phy, 4);
+				D(bug("[FEC] MII transceiver %d status %4.4x advertising %4.4x\n",
+						phy, stat, advert));
+
+				result = phy;
+
+				break;
+			}
+		}
+	}
+
+	return result;
+}
+
+int FEC_PHY_Link(struct FECUnit *unit)
+{
+	uint16_t reg;
+
+	FEC_MDIO_Read(unit, unit->feu_phy_id, PHY_BMSR);
+	reg = FEC_MDIO_Read(unit, unit->feu_phy_id, PHY_BMSR);
+
+	if (reg & PHY_BMSR_LS)
+		return 1;
+	else
+		return 0;
+}
+
+/*
+ * FEC_PHY_Reset - Try to reset the PHY. Returns 0 on failure.
+ */
+int FEC_PHY_Reset(struct FECUnit *unit)
+{
+	uint16_t reg;
+	uint32_t loop_cnt;
+
+	/* set the reset signal. It should go away automaticaly within 0.5 seconds */
+	reg = FEC_MDIO_Read(unit, unit->feu_phy_id, PHY_BMCR) | PHY_BMCR_RESET;
+	FEC_MDIO_Write(unit, unit->feu_phy_id, PHY_BMCR, reg);
+
+	loop_cnt = 0;
+
+	/* Wait until either BMCR_RESET goes away or the timeout (0.5s) occurs */
+	while((reg & PHY_BMCR_RESET) && loop_cnt++ < 1000)
+	{
+		reg = FEC_MDIO_Read(unit, unit->feu_phy_id, PHY_BMCR);
+		FEC_UDelay(unit, 500);
+	}
+
+	if (reg & PHY_BMCR_RESET)
+	{
+		D(bug("[FEC] PHY Reset timed out\n"));
+		return 0;
+	}
+	else
+		return 1;
+}
+
+/* Get the PHY link speed */
+int FEC_PHY_Speed(struct FECUnit *unit)
+{
+	uint16_t bmcr, anlpar;
+
+	bmcr = FEC_MDIO_Read(unit, unit->feu_phy_id, PHY_BMCR);
+
+	/* Check if auto negotiation is enabled */
+	if (bmcr & PHY_BMCR_AUTON)
+	{
+		/* Get the autonegotiation result */
+		anlpar = FEC_MDIO_Read(unit, unit->feu_phy_id, PHY_ANLPAR);
+
+		return (anlpar & PHY_ANLPAR_100) ? _100BASET : _10BASET;
+	}
+	else
+		return (bmcr & PHY_BMCR_100MB) ? _100BASET : _10BASET;
+}
+
+/* Check duplex */
+int FEC_PHY_Duplex(struct FECUnit *unit)
+{
+	uint16_t bmcr, anlpar;
+
+	bmcr = FEC_MDIO_Read(unit, unit->feu_phy_id, PHY_BMCR);
+
+	/* Is autonegotiation enabled? */
+	if (bmcr & PHY_BMCR_AUTON)
+	{
+		anlpar = FEC_MDIO_Read(unit, unit->feu_phy_id, PHY_ANLPAR);
+
+		return (anlpar & (PHY_ANLPAR_10FD | PHY_ANLPAR_TXFD)) ? FULL : HALF;
+	}
+
+	return (bmcr & PHY_BMCR_DPLX) ? FULL : HALF;
+}
+
+
+/* Initiate autonegotiaition */
+void FEC_PHY_Setup_Autonegotiation(struct FECUnit *unit)
+{
+	uint16_t bmcr;
+	uint16_t adv;
+
+	adv = FEC_MDIO_Read(unit, unit->feu_phy_id, PHY_ANAR);
+	adv |= (PHY_ANLPAR_ACK | PHY_ANLPAR_RF | PHY_ANLPAR_T4 |
+            PHY_ANLPAR_TXFD | PHY_ANLPAR_TX | PHY_ANLPAR_10FD |
+            PHY_ANLPAR_10);
+	FEC_MDIO_Write(unit, unit->feu_phy_id, PHY_ANAR, adv);
+
+	adv = FEC_MDIO_Read(unit, unit->feu_phy_id, PHY_1000BTCR);
+	adv |= 0x0300;
+	FEC_MDIO_Write(unit, unit->feu_phy_id, PHY_1000BTCR, adv);
+
+	/* Start/restart negotiation */
+	bmcr = FEC_MDIO_Read(unit, unit->feu_phy_id, PHY_BMCR);
+	bmcr |= (PHY_BMCR_AUTON | PHY_BMCR_RST_NEG);
+	FEC_MDIO_Write(unit, unit->feu_phy_id, PHY_BMCR, bmcr);
+}
+
 void FEC_HW_Init(struct FECUnit *unit)
 {
 	int i;
