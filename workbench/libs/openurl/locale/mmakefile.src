@@ -21,7 +21,7 @@ $(AROS_CATALOGS)/italiano/OpenURL.catalog : italian.ct
 	@$(MKDIR) $(AROS_CATALOGS)/italiano
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
 
-$(AROS_CATALOGS)/svenska/OpenURL.catalog  : swedisch.ct
+$(AROS_CATALOGS)/svenska/OpenURL.catalog  : swedish.ct
 	@$(MKDIR) $(AROS_CATALOGS)/svenska
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
 
