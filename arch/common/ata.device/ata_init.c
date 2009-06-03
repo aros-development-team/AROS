@@ -396,7 +396,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
 
         if (IOBase != (IPTR)NULL && IOSize == RANGESIZE0
             && AltSize == RANGESIZE1
-            && (DMASize = DMASIZE || DMABase == NULL || SubClass == 1))
+            && (DMASize >= DMASIZE || DMABase == NULL || SubClass == 1))
 	{
 	    struct ata_ProbedBus *probedbus;
 	    D(bug("[ATA  ] ata_PCIEnumerator_h: Adding Bus %d - IRQ %d, IO: %x:%x, DMA: %x\n", x, INTLine, IOBase, IOAlt, DMABase));
