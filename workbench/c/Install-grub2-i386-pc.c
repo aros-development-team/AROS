@@ -100,6 +100,7 @@ struct Volume
     ULONG writecmd;
     ULONG startblock;
     ULONG countblock;
+    CONST_STRPTR device;
     ULONG unitnum;
     UWORD SizeBlock;
     UBYTE flags;
@@ -118,6 +119,8 @@ struct BlockNode
     UWORD count;
     UWORD seg_adr;
 };
+
+const TEXT version[] = "$VER: Install-grub2-i386-pc 41.2 (3.6.2009)";
 
 CONST_STRPTR CORE_IMG_FILE_NAME = "core.img";
 
@@ -259,6 +262,7 @@ struct Volume *initVolume(CONST_STRPTR device, ULONG unit, ULONG flags,
 			    volume->flags |= VF_IS_RDB;	/* just assume we have RDB */
 			volume->readcmd = CMD_READ;
 			volume->writecmd = CMD_WRITE;
+			volume->device = device;
 			volume->unitnum = unit;
             volume->dos_id = 0;
 			fillGeometry(volume, de);
@@ -696,6 +700,26 @@ struct Volume *getBBVolume(CONST_STRPTR device, ULONG unit, LONG * partnum)
     return NULL;
 }
 
+/* Convert a unit number into a drive number as understood by GRUB */
+UWORD getDriveNumber(CONST_STRPTR device, ULONG unit)
+{
+    struct PartitionHandle *ph;
+    ULONG i;
+    UWORD hd_count = 0;
+
+    for (i = 0; i < unit; i++)
+    {
+        ph = OpenRootPartition(device, i);
+        if (ph != NULL)
+        {
+            hd_count++;
+            CloseRootPartition(ph);
+        }
+    }
+
+    return hd_count;
+}
+
 BOOL writeBootIMG(STRPTR bootimgpath, struct Volume * bootimgvol, struct Volume * coreimgvol, 
                 ULONG block /* first block of core.img file */, ULONG unit)
 {
@@ -726,7 +750,8 @@ BOOL writeBootIMG(STRPTR bootimgpath, struct Volume * bootimgvol, struct Volume 
                 if (unit == bootimgvol->unitnum)
                     *boot_drive = 0xFF;
                 else
-                    *boot_drive = unit | BIOS_HDISK_FLAG;
+                    *boot_drive = getDriveNumber(coreimgvol->device, unit)
+                        | BIOS_HDISK_FLAG;
 		        *root_drive = 0xFF;
 		        *boot_drive_check = 0x9090;
 
