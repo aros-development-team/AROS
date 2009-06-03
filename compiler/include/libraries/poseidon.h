@@ -405,11 +405,8 @@ struct PsdGlobalCfg
     ULONG pgc_PopupCloseDelay;            /* Delay in seconds before closing */
     BOOL  pgc_PopupActivateWin;           /* Activate window on opening */
     BOOL  pgc_PopupWinToFront;            /* Pop window to front on content change */
-    BOOL  pgc_Dummy1;                     /* (obsolete) */
     BOOL  pgc_AutoDisableLP;              /* Automatically disable on LowPower */
     BOOL  pgc_AutoDisableDead;            /* Automatically disable on Dead */
-    BOOL  pgc_Dummy2;                     /* (obsolete) */
-    ULONG pgc_Dummy3;                     /* (obsolete) */
     BOOL  pgc_AutoRestartDead;            /* Automatically restart on Dead */
     ULONG pgc_PrefsVersion;               /* Reference version of prefs saved */
     BOOL  pgc_PowerSaving;                /* Enable power saving features */
