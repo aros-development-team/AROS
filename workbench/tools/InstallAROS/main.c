@@ -707,8 +707,7 @@ IPTR Install__MUIM_IC_NextStep
                     if (fssm != NULL)
                     {
                         boot_Device = fssm->fssm_Device;
-                        if (strcmp(fssm->fssm_Device, "ata.device") != 0)
-                            boot_Unit = fssm->fssm_Unit;
+                        boot_Unit = fssm->fssm_Unit;
                     }
                     else
                         boot_Device = "";
@@ -2960,7 +2959,7 @@ int main(int argc,char *argv[])
 
 	Object *app = ApplicationObject,
 		MUIA_Application_Title,       (IPTR) "AROS Installer",
-		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.1 (7.4.2009)",
+		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.2 (4.6.2009)",
 		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2009, The AROS Development Team. All rights reserved.",
 		MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
 		MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
