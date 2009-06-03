@@ -7,8 +7,8 @@ include $(TOP)/config/make.cfg
 
 grub-pc-i386: $(BINDIR)/boot/grub/menu.lst $(BINDIR)/boot/grub/menu.lst.DH0
 
-$(BINDIR)/boot/grub/menu.lst:
+$(BINDIR)/boot/grub/menu.lst: menu.lst
 		$(CP) menu.lst $(BINDIR)/boot/grub/
 
-$(BINDIR)/boot/grub/menu.lst.DH0:
+$(BINDIR)/boot/grub/menu.lst.DH0: menu.lst.DH0
 		$(CP) menu.lst.DH0 $(BINDIR)/boot/grub/
