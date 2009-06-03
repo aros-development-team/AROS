@@ -26,4 +26,4 @@ title AROS (true colour VESA graphics: 1280x1024)
     kernel /boot/aros-pc-i386.gz vesa=1280x1024 ATA=32bit floppy=disabled
 
 title AROS (safe mode)
-    kernel /boot/aros-pc-i386.gz ATA=nodma floppy=disabled
+    kernel /boot/aros-pc-i386.gz ATA=nodma debug=memory floppy=disabled
