@@ -52,28 +52,6 @@ struct IOUsbHWReq
     APTR                iouh_DriverPrivate2; /* private data for internal driver use */
 };
 
-
-struct IOUsbHWReqObsolete
-{
-    struct IORequest iouh_Req;
-    UWORD iouh_Flags;          /* Transfer flags */
-    UWORD iouh_State;          /* USB State Flags */
-    UWORD iouh_Dir;            /* Direction of transfer */
-    UWORD iouh_DevAddr;        /* USB Device Address (0-127) */
-    UWORD iouh_Endpoint;       /* USB Device Endpoint (0-15) */
-    UWORD iouh_MaxPktSize;     /* Maximum packet size for multiple packet transfers */
-    ULONG iouh_Actual;         /* Actual bytes transferred */
-    ULONG iouh_Length;         /* Size of buffer */
-    APTR  iouh_Data;           /* Pointer to in/out buffer */
-    UWORD iouh_Interval;       /* Interrupt Interval */
-    ULONG iouh_NakTimeout;     /* Timeout in ms before request will be retired */
-    struct UsbSetupData iouh_SetupData; /* Setup fields for ctrl transfers */
-    APTR  iouh_UserData;       /* private data, may not be touched by hardware driver,
-                                  do not make assumptions about its contents */
-    UWORD iouh_ExtError;       /* Extended error code */
-};
-
-
 /* Realtime ISO transfer structure as given in iouh_Data */
 struct IOUsbHWRTIso
 {
