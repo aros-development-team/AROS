@@ -136,7 +136,7 @@ char						*dest_Path=NULL;		/* DOS DEVICE NAME of part used to store "aros" */
 char						*work_Path=NULL;		/* DOS DEVICE NAME of part used to store "work" */
 TEXT						*extras_path = NULL;	/* DOS DEVICE NAME of part used to store extras */
 
-char				*boot_Device;
+char				*boot_Device = "ata.device";
 ULONG				boot_Unit = 0;
 
 Object* 			check_copytowork = NULL;
@@ -168,6 +168,7 @@ Object* 			grub_unit = NULL;
 
 Object *reboot_group = NULL;
 
+ULONG GuessFirstHD(CONST_STRPTR device);
 static struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path);
 static LONG GetPartitionSize(BOOL get_work);
 static LONG FindWindowsPartition(STRPTR device, LONG unit);
@@ -238,6 +239,7 @@ IPTR Install__OM_NEW
 	data->disable_back  		= FALSE;
 
 	data->instc_cflag_driveset     		= (BOOL)DoMethod(self, MUIM_FindDrives);
+    boot_Unit = GuessFirstHD(boot_Device);
 
 	DoMethod(data->proceed, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_IC_NextStep);
 	DoMethod(data->back, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_IC_PrevStep);
@@ -365,6 +367,29 @@ ULONG AskRetry(Class *CLASS, Object *self, CONST_STRPTR message, CONST_STRPTR fi
     FreeVec(finaloptions);
 
     return result - 1;
+}
+
+/* Return the unit number of the drive that's likely to be the first in the
+ * system, or zero if none found */
+ULONG GuessFirstHD(CONST_STRPTR device)
+{
+    struct PartitionHandle *ph;
+    ULONG i;
+    BOOL found = FALSE;
+
+    for (i = 0; i < 8 && !found; i++)
+    {
+        ph = OpenRootPartition(device, i);
+        if (ph != NULL)
+        {
+            found = TRUE;
+            CloseRootPartition(ph);
+        }
+    }
+    if (!found)
+        i = 1;
+
+    return i - 1;
 }
 
 /* Return TRUE if we suspect a floppy disk */
@@ -626,9 +651,9 @@ IPTR Install__MUIM_IC_NextStep
 
 	case EPartitionOptionsStage:
 		if(data->instc_cflag_driveset)
-		{
 			SET(data->instc_options_main->opt_partmethod, MUIA_Radio_Active, 2);
-		}
+        else
+			SET(dest_unit, MUIA_String_Integer, boot_Unit);
 		data->instc_stage_next = EPartitioningStage;
 		next_stage = EPartitionOptionsStage;
 		break;
@@ -702,12 +727,12 @@ IPTR Install__MUIM_IC_NextStep
 					sprintf(tmp_grub ,"%s:boot/grub", (CONST_STRPTR)option);
 
                     /* Guess the best disk to install GRUB's bootblock to */
-                    boot_Unit = 0;
                     fssm = getDiskFSSM(tmp_grub);
                     if (fssm != NULL)
                     {
                         boot_Device = fssm->fssm_Device;
-                        boot_Unit = fssm->fssm_Unit;
+                        if (strcmp(fssm->fssm_Device, "ata.device") != 0)
+                            boot_Unit = fssm->fssm_Unit;
                     }
                     else
                         boot_Device = "";
@@ -2959,7 +2984,7 @@ int main(int argc,char *argv[])
 
 	Object *app = ApplicationObject,
 		MUIA_Application_Title,       (IPTR) "AROS Installer",
-		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.2 (4.6.2009)",
+		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.3 (5.6.2009)",
 		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2009, The AROS Development Team. All rights reserved.",
 		MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
 		MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
@@ -3021,7 +3046,7 @@ int main(int argc,char *argv[])
 											Child, (IPTR) LLabel("Device:"),
 											Child, (IPTR) (dest_device =
 												StringObject,
-												MUIA_String_Contents, (IPTR) "ata.device",
+												MUIA_String_Contents, (IPTR) boot_Device,
 												MUIA_String_Reject, " \"\'*",
 												MUIA_HorizWeight, 200,
 												End),
