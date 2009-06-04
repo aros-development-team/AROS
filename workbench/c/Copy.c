@@ -1,5 +1,5 @@
 /*
-    Copyright © 2001-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Copy CLI command
@@ -24,7 +24,7 @@
 
     LOCATION
 
-        Sys:C
+        C:
 
     FUNCTION
 
@@ -1706,7 +1706,6 @@ void DoWork(STRPTR name, struct CopyData *cd)
             if (!NameFromLock(cd->CurDest, cd->DestName, FILEPATH_SIZE))
             {
                 cd->RetVal2 = RETURN_FAIL;
-                UnLock(lock);
 
 #if DEBUG
                 Printf("DoWork(NameFromLock RetVal %ld)\n", cd->RetVal);
