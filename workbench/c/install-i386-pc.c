@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 /******************************************************************************
@@ -87,6 +87,7 @@ struct Volume {
    ULONG writecmd;
    ULONG startblock;
    ULONG countblock;
+   CONST_STRPTR device;
    ULONG unitnum;
    UWORD SizeBlock;
    UBYTE flags;
@@ -102,6 +103,8 @@ struct BlockNode {
 	UWORD count;
 	UWORD seg_adr;
 };
+
+const TEXT version[] = "$VER: Install-i386-pc 41.2 (4.6.2009)";
 
 char *template =
 	"DEVICE/A,"
@@ -245,6 +248,7 @@ D(bug("[install-i386] initVolume(%s:%d)\n", device, unit));
 							volume->flags |= VF_IS_RDB; /* just assume we have RDB */
 						volume->readcmd = CMD_READ;
 						volume->writecmd = CMD_WRITE;
+						volume->device = device;
 						volume->unitnum = unit;
 						fillGeometry(volume, de);
 						nsdCheck(volume);
@@ -777,6 +781,26 @@ D(bug("[install-i386] copyRootPath()\n"));
 		*dst = 0;
 }
 
+/* Convert a unit number into a drive number as understood by GRUB */
+UWORD getDriveNumber(CONST_STRPTR device, ULONG unit)
+{
+    struct PartitionHandle *ph;
+    ULONG i;
+    UWORD hd_count = 0;
+
+    for (i = 0; i < unit; i++)
+    {
+        ph = OpenRootPartition(device, i);
+        if (ph != NULL)
+        {
+            hd_count++;
+            CloseRootPartition(ph);
+        }
+    }
+
+    return hd_count;
+}
+
 UBYTE *memstr(UBYTE *mem, UBYTE *str, LONG len) {
 UBYTE *next;
 UBYTE *search;
@@ -948,7 +972,8 @@ D(bug("[install-i386] writeStage1: Copying MBR Partitions to %x\n", (char *)volu
 						(MBR_PARTEND - MBR_PARTSTART)
 					);
 				// store the drive num stage2 is stored on
-				((char *)volume->blockbuffer)[GRUB_BOOT_DRIVE] = unit + BIOS_HDISK_FLAG;
+				((char *)volume->blockbuffer)[GRUB_BOOT_DRIVE] =
+                    getDriveNumber(volume->device, unit) | BIOS_HDISK_FLAG;
 				// Store the stage 2 pointer ..
 				ULONG * stage2_sector_start = (ULONG *)((char *)volume->blockbuffer + GRUB_STAGE2_SECTOR);
 D(bug("[install-i386] writeStage1: writing stage2 pointer @ %x\n", stage2_sector_start));
