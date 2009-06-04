@@ -711,6 +711,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
 
         case CT_LBA48:
             DATA(bug("[ATA%02ld] ata_exec_cmd: Command uses 48bit LBA addressing (NEW)\n", au->au_UnitNum));
+            ata_out(0x40 | au->au_DevMask, ata_DevHead, port);
             ata_out(block->blk >> 40, ata_LBAHigh, port);
             ata_out(block->blk >> 32, ata_LBAMid, port);
             ata_out(block->blk >> 24, ata_LBALow, port);
@@ -1685,7 +1686,6 @@ BYTE ata_Identify(struct ata_Unit* unit)
     unit->au_Eject          = ata_Eject;
     unit->au_XferModes      = 0;
     unit->au_Flags         |= AF_DiscPresent | AF_DiscChanged;
-    unit->au_DevType        = DG_DIRECT_ACCESS;
 
     ata_strcpy(unit->au_Drive->id_Model, unit->au_Model, 40);
     ata_strcpy(unit->au_Drive->id_SerialNumber, unit->au_SerialNumber, 20);
