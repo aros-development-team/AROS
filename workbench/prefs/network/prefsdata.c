@@ -21,6 +21,9 @@ struct Tokenizer
     BOOL fend;
 };
 
+/* List of devices that require NOTRACKING option */
+static STRPTR notrackingdevices[] = {"prm-rtl8029.device", NULL};
+
 void OpenTokenFile(struct Tokenizer * tok, STRPTR FileName)
 {
 	tok->tokenizedFile = fopen(FileName, "r");
@@ -135,6 +138,26 @@ BOOL RecursiveCreateDir(CONST_STRPTR dirpath)
     }
 }
 
+/* Returns TRUE if selected device needs to use NOTRACKING option */
+BOOL GetNoTracking()
+{
+    STRPTR devicename = NULL;
+    LONG pos = 0;
+    TEXT devicepath[strlen(GetDevice()) + 1];
+    strcpy(devicepath, GetDevice());
+    strupr(devicepath);
+
+    while ((devicename = notrackingdevices[pos++]) != NULL)
+    {
+        /* Comparison is done on upper case string so it is case insensitive */
+        strupr(devicename);
+        if (strstr(devicepath, devicename) != NULL)
+            return TRUE;
+    }
+    
+    return FALSE;
+}
+
 /* Puts part 1 into empy buffer */
 VOID CombinePath1P(STRPTR dstbuffer, ULONG dstbufferlen, CONST_STRPTR part1)
 {
@@ -200,8 +223,10 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     CombinePath2P(filename, filenamelen, destdbdir, "interfaces");
     ConfFile = fopen(filename, "w");
     if (!ConfFile) return FALSE;
-    fprintf(ConfFile,"eth0 DEV=%s UNIT=0 NOTRACKING IP=%s NETMASK=%s UP\n", GetDevice(), 
-        (GetDHCP() ? (CONST_STRPTR)"DHCP" : GetIP()), GetMask());
+    fprintf(ConfFile,"eth0 DEV=%s UNIT=0 %s IP=%s NETMASK=%s UP\n", GetDevice(),
+        (GetNoTracking() ? (CONST_STRPTR)"NOTRACKING" : (CONST_STRPTR)""),
+        (GetDHCP() ? (CONST_STRPTR)"DHCP" : GetIP()), 
+        GetMask());
 
     fclose(ConfFile);
 
@@ -295,7 +320,6 @@ BOOL IsStackRunning()
 BOOL RestartStack()
 {
     ULONG trycount = 0;
-
 
     /* Shutdown */
     if (IsStackRunning())
