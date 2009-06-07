@@ -5,10 +5,7 @@
     Return the current time in seconds.
 */
 
-#include <dos/dos.h>
-#include <proto/dos.h>
-
-long __gmtoffset;
+#include <sys/time.h>
 
 /*****************************************************************************
 
@@ -53,25 +50,8 @@ long __gmtoffset;
 
 ******************************************************************************/
 {
-    struct DateStamp t;
-    time_t	     tt;
-
-    DateStamp (&t); /* Get timestamp */
-
-    /*
-	2922 is the number of days between 1.1.1970 and 1.1.1978 (2 leap
-		years and 6 normal). The former number is the start value
-		for time(), the latter the start time for the AmigaOS
-		time functions.
-	1440 is the number of minutes per day
-	60 is the number of seconds per minute
-    */
-    tt = ((t.ds_Days + 2922) * 1440 + t.ds_Minute + __gmtoffset) * 60
-	+ t.ds_Tick / TICKS_PER_SECOND;
-
-    if (tloc != NULL)
-	*tloc = tt;
-
-    return tt;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec;
 } /* time */
 
