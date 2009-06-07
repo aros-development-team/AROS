@@ -5,7 +5,7 @@
     Convert a time into a string, reentrant.
 */
 
-extern long __gmtoffset;
+#include "__time.h"
 
 /*****************************************************************************
 

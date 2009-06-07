@@ -69,6 +69,7 @@ struct arosc_privdata
     struct timerequest  acpd_timereq;
     struct MsgPort      acpd_timeport;
     struct Device      *acpd_TimerBase;
+    LONG                gmtoffset;
 
     /* __arosc_usedata  */
     APTR  acpd_process_returnaddr;
@@ -156,6 +157,7 @@ struct arosc_privdata
 #define __apathbuf                            (__get_arosc_privdata()->acpd_apathbuf)
 #define __doupath                             (__get_arosc_privdata()->acpd_doupath)
 #define __flocks_list                         (__get_arosc_privdata()->acpd_file_locks)
+#define __gmtoffset                           (__get_arosc_privdata()->gmtoffset)
 
 #define __aros_startup          ((struct aros_startup *)GetIntETask(FindTask(NULL))->iet_startup)
 #define __aros_startup_jmp_buf  (__aros_startup->as_startup_jmp_buf)
