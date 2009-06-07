@@ -10,15 +10,15 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/timer.h>
+#include <proto/locale.h>
 #include <exec/types.h>
 #include <devices/timer.h>
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
+#include <libraries/locale.h>
 
 
 #include "__time.h"
-
-long __gmtoffset;
 
 /*****************************************************************************
 
@@ -134,6 +134,15 @@ static int __init_timerbase(void)
     __timereq.tr_node.io_Message.mn_Node.ln_Name    = NULL;
     __timereq.tr_node.io_Message.mn_ReplyPort       = &__timeport;
     __timereq.tr_node.io_Message.mn_Length          = sizeof (__timereq);
+
+    struct Locale *locale = OpenLocale(NULL);
+    if (locale)
+    {
+        __gmtoffset = locale->loc_GMTOffset;
+        CloseLocale(locale);
+    }
+    else
+        __gmtoffset = 0;
 
     if
     (

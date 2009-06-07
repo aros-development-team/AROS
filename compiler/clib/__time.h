@@ -13,8 +13,8 @@
 	time functions.
 */
 
-#define OFFSET_FROM_1970 2922*24*60*60
+#include "__arosc_privdata.h"
 
-extern long __gmtoffset;
+#define OFFSET_FROM_1970 2922*24*60*60
 
 #endif /* !___TIME_H */
