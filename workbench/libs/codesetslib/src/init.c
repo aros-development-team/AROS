@@ -109,7 +109,7 @@ freeBase(struct LibraryHeader *lib)
   if(UtilityBase)
   {
     DROPINTERFACE(IUtility);
-    CloseLibrary(UtilityBase);
+    CloseLibrary((struct Library *)UtilityBase);
     UtilityBase = NULL;
   }
 
@@ -344,7 +344,7 @@ initBase(struct LibraryHeader *lib)
   if((DOSBase = (APTR)OpenLibrary("dos.library", 37)) &&
      GETINTERFACE(IDOS, DOSBase))
   {
-    if((UtilityBase = OpenLibrary("utility.library", 37)) &&
+    if((UtilityBase = (APTR)OpenLibrary("utility.library", 37)) &&
        GETINTERFACE(IUtility, UtilityBase))
     {
       // we have to please the internal utilitybase

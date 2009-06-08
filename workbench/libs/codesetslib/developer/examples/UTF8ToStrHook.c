@@ -54,7 +54,7 @@ struct CodesetsIFace* ICodesets = NULL;
 
 HOOKPROTONH(destFunc, ULONG, struct convertMsg* msg, STRPTR buf)
 {
-    printf("[%3ld] [%s]\n",msg->len,buf);
+    printf("[%3d] [%s]\n",msg->len,buf);
 
     if(msg->state == CSV_End)
       printf("\n");
@@ -81,9 +81,9 @@ int main(int argc,char **argv)
         // sequences.
         if(CodesetsIsValidUTF8(str))
         {
-          CodesetsUTF8ToStr(CSA_Source,   str,
+          CodesetsUTF8ToStr(CSA_Source,   (Tag)str,
                             CSA_DestLen,  32,
-                            CSA_DestHook, &destHook,
+                            CSA_DestHook, (Tag)&destHook,
                             TAG_DONE);
         }
         else

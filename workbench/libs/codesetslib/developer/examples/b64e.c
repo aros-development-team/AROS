@@ -53,10 +53,10 @@ int main(int argc,char **argv)
         {
             ULONG r;
 
-            r = CodesetsEncodeB64(CSA_B64SourceFile, argv[1],
-                                  CSA_B64DestFile,   argv[2],
+            r = CodesetsEncodeB64(CSA_B64SourceFile, (Tag)argv[1],
+                                  CSA_B64DestFile,   (Tag)argv[2],
                                   TAG_DONE);
-            printf("Res %ld\n",r);
+            printf("Res %d\n",r);
 
             DROPINTERFACE(ICodesets);
             CloseLibrary(CodesetsBase);
