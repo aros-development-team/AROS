@@ -47,7 +47,7 @@ struct CodesetsIFace* ICodesets = NULL;
 #define DROPINTERFACE(iface)
 #endif
 
-int main(int argc,char **argv)
+int main(void)
 {
   int res;
 
@@ -57,41 +57,41 @@ int main(int argc,char **argv)
     ULONG errNum = 0;
     struct codeset *cs;
 
-    if((cs = CodesetsFindBest(CSA_Source, ISO8859_1_STR,
-                              CSA_ErrPtr, &errNum,
+    if((cs = CodesetsFindBest(CSA_Source, (Tag)ISO8859_1_STR,
+                              CSA_ErrPtr, (Tag)&errNum,
                               TAG_DONE)))
     {
-      printf("Identified ISO8859_1_STR as %s with %ld of %d errors\n", cs->name, errNum, strlen(ISO8859_1_STR));
+      printf("Identified ISO8859_1_STR as %s with %d of %d errors\n", cs->name, errNum, strlen(ISO8859_1_STR));
     }
     else
       printf("couldn't identify ISO8859_1_STR!\n");
 
-    if((cs = CodesetsFindBest(CSA_Source, CP1251_STR,
-                              CSA_ErrPtr, &errNum,
+    if((cs = CodesetsFindBest(CSA_Source, (Tag)CP1251_STR,
+                              CSA_ErrPtr, (Tag)&errNum,
                               CSA_CodesetFamily, CSV_CodesetFamily_Cyrillic,
                               TAG_DONE)))
     {
-      printf("Identified CP1251_STR as %s with %ld of %d errors\n", cs->name, errNum, strlen(CP1251_STR));
+      printf("Identified CP1251_STR as %s with %d of %d errors\n", cs->name, errNum, strlen(CP1251_STR));
     }
     else
       printf("couldn't identify CP1251_STR!\n");
 
-    if((cs = CodesetsFindBest(CSA_Source, ASCII_STR,
-                              CSA_ErrPtr, &errNum,
+    if((cs = CodesetsFindBest(CSA_Source, (Tag)ASCII_STR,
+                              CSA_ErrPtr, (Tag)&errNum,
                               CSA_CodesetFamily, CSV_CodesetFamily_Cyrillic,
                               TAG_DONE)))
     {
-      printf("Identified ASCII_STR as %s with %ld of %d errors\n", cs->name, errNum, strlen(ASCII_STR));
+      printf("Identified ASCII_STR as %s with %d of %d errors\n", cs->name, errNum, strlen(ASCII_STR));
     }
     else
       printf("couldn't identify ASCII_STR!\n");
 
-    if((cs = CodesetsFindBest(CSA_Source, KOI8R_STR,
-                              CSA_ErrPtr, &errNum,
+    if((cs = CodesetsFindBest(CSA_Source, (Tag)KOI8R_STR,
+                              CSA_ErrPtr, (Tag)&errNum,
                               CSA_CodesetFamily, CSV_CodesetFamily_Cyrillic,
                               TAG_DONE)))
     {
-      printf("Identified KOI8R_STR as %s with %ld of %d errors\n", cs->name, errNum, strlen(KOI8R_STR));
+      printf("Identified KOI8R_STR as %s with %d of %d errors\n", cs->name, errNum, strlen(KOI8R_STR));
     }
     else
       printf("couldn't identify KOI8R_STR!\n");

@@ -10,6 +10,77 @@ $URL$
     to the lib (de)init functions. Use AROS macros for the definition of those
     functions so that the passing is always done in the right way.
     
+2009-06-07  Matthias Rustler <mrustler@gmx.de>
+
+  * Makefiles for examples and linkerlib fixed.
+  * Bugfix in demo1.c. (variable codesets defined outside application
+    to ensure that it exists when it's used)
+
+2009-06-02  Matthias Rustler <mrustler@gmx.de>
+
+  * Some warnings removed
+  * Use standard MUIM_Application_AboutMUI because custom method
+    crashes under AROS
+
+2009-06-02  Jens Langner <Jens.Langner@light-speed.de>
+
+  * lib_protos.h: fixed the compilation for OS3, MOS and AROS because of
+    incompatible function prototypes for the library functions with a variable
+    argument list.
+
+2009-05-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/SDI_lib.h: updated to the latest version.
+
+2009-05-02 Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * libinit.c: RTF_EXTENDED was not set for the MorphOS build making revision
+    number ineffective.
+
+2009-04-30 Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/SDI_lib.h: updated to the latest version.
+
+2009-04-17  Jens Langner <Jens.Langner@light-speed.de>
+
+  * include/defines/codesets.h: regenerated the AROS codesets.h includes by
+    using the very latest sfdc 1.4 tool. That should hopefully fix all existing
+    issues with using codesets.lib for an AROS project.
+
+2009-04-06  Jens Langner <Jens.Langner@light-speed.de>
+
+  * include/defines/codesets.h: fixed the codesets AROS defines.h include by
+    shifting the function offsets by one to match the offsets using in the 68k
+    build.
+
+2009-04-01  Thore Böckelmann <tboeckel@gmx.de>
+
+  * libinit.c: fixed broken stackswap_call() prototype for the assembler
+    version.
+
+2009-04-01  Jens Langner <Jens.Langner@light-speed.de>
+
+  * include/defines/codesets.h: updated the AROS codesets.h file to the one
+    that is distributed with AROS.
+
+2009-03-30  Thore Böckelmann <tboeckel@gmx.de>
+
+  * codesets.c: the UTF8 compare function now uses a proper prototype to be used
+    with qsort().
+  * codesets.c: in case the default codeset could not be created two libraries
+    were left open in the MOS build.
+
+2009-03-27  Thore Böckelmann <tboeckel@gmx.de>
+
+  * libinit.c: reenabled the prototype for the stackswap_call() function to
+    avoid warnings about implicitly declared functions.
+  * codesets.c: fixed some warnings about uninitialized variables.
+
+2009-03-26  Jens Langner <Jens.Langner@light-speed.de>
+
+  * include: updated SDI headers to very latest versions.
+
+<<<< 124449794572929
 2009-03-25  Jens Langner <Jens.Langner@light-speed.de>
 
   * libinit.c: introduced a small fix to get the file compiled with the fixed

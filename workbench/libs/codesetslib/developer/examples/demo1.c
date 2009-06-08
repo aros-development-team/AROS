@@ -110,7 +110,6 @@ struct MUI_CustomClass *appClass, *popupCodesetsClass, *editorClass;
 /* App methods */
 #define MUIM_App_DisposeWin     (TAG_USER+2)
 #define MUIM_App_About          (TAG_USER+3)
-#define MUIM_App_AboutMUI       (TAG_USER+4)
 
 struct MUIP_App_DisposeWin
 {
@@ -184,7 +183,7 @@ HOOKPROTONH(popupOpenFun, ULONG, Object *list, Object *str)
     STRPTR s, x;
     int i;
 
-    get(str, MUIA_Text_Contents, (ULONG)&s);
+    get(str, MUIA_Text_Contents, (IPTR *)&s);
 
     if(s != NULL)
     {
@@ -424,12 +423,12 @@ meditorLoad(struct IClass *cl,Object *obj,struct MUIP_Editor_Load *msg)
                                     STRPTR                  cname;
 
                                     /* Get used codeset */
-                                    get(data->codesetsObj, MUIA_Text_Contents, (ULONG)&cname);
+                                    get(data->codesetsObj, MUIA_Text_Contents, (IPTR *)&cname);
                                     codeset = CodesetsFindA(cname,NULL);
 
                                     /* Convert */
-                                    str = CodesetsUTF8ToStr(CSA_Source,        buf,
-                                                            CSA_SourceCodeset, codeset,
+                                    str = CodesetsUTF8ToStr(CSA_Source,        (Tag)buf,
+                                                            CSA_SourceCodeset, (Tag)codeset,
                                                             TAG_DONE);
                                     if (str)
                                     {
@@ -481,13 +480,13 @@ meditorSave(struct IClass *cl, Object *obj, UNUSED Msg msg)
         ULONG                   dlen;
 
         /* Get current user codeset */
-        get(data->codesetsObj, MUIA_Text_Contents, (ULONG)&cname);
+        get(data->codesetsObj, MUIA_Text_Contents, (IPTR *)&cname);
         codeset = CodesetsFindA(cname,NULL);
 
         /* Convert text as utf8 */
-        if((utf8 = CodesetsUTF8Create(CSA_Source,         text,
-                                      CSA_SourceCodeset,  codeset,
-                                      CSA_DestLenPtr,     &dlen,
+        if((utf8 = CodesetsUTF8Create(CSA_Source,         (Tag)text,
+                                      CSA_SourceCodeset,  (Tag)codeset,
+                                      CSA_DestLenPtr,     (Tag)&dlen,
                                       TAG_DONE)))
         {
             /* Save converted text to a file */
@@ -587,6 +586,8 @@ mappNew(struct IClass *cl,Object *obj,struct opSet *msg)
 {
     Object *strip, *win, *codesets = NULL, *editor, *sb, *loadPlain, *loadUTF8, *save, *cancel;
 
+    codesets = popupCodesetObject, End;
+
     if((obj = (Object *)DoSuperNew(cl,obj,
                 MUIA_Application_Title,        "Codesets Demo1",
                 MUIA_Application_Version,      "$VER: CodesetsDemo1 1.0 (10.11.2004)",
@@ -603,7 +604,7 @@ mappNew(struct IClass *cl,Object *obj,struct opSet *msg)
 
                         Child, HGroup,
                             Child, Label2("Charset"),
-                            Child, codesets = popupCodesetObject, End,
+                            Child, codesets,
                         End,
 
                         Child, HGroup,
@@ -630,7 +631,6 @@ mappNew(struct IClass *cl,Object *obj,struct opSet *msg)
                 TAG_MORE,msg->ops_AttrList)))
     {
         struct appData *data = INST_DATA(cl,obj);
-
         data->win = win;
 
         set(editor,MUIA_TextEditor_Slider,sb);
@@ -653,7 +653,7 @@ mappNew(struct IClass *cl,Object *obj,struct opSet *msg)
             MUIA_Menuitem_Trigger,MUIV_EveryTime,obj,1,MUIM_App_About);
 
         DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MABOUTMUI),MUIM_Notify,
-            MUIA_Menuitem_Trigger,MUIV_EveryTime,obj,1,MUIM_App_AboutMUI);
+            MUIA_Menuitem_Trigger,MUIV_EveryTime,obj,1,MUIM_Application_AboutMUI);
 
         DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MQUIT),MUIM_Notify,
             MUIA_Menuitem_Trigger,MUIV_EveryTime,obj,2,MUIM_Application_ReturnID,
@@ -745,37 +745,6 @@ mappAbout(struct IClass *cl,Object *obj,UNUSED Msg msg)
 
 /***********************************************************************/
 /*
-** App about mui method
-*/
-
-static ULONG
-mappAboutMUI(struct IClass *cl,Object *obj, UNUSED Msg msg)
-{
-    struct appData *data = INST_DATA(cl,obj);
-
-    SetSuperAttrs(cl,obj,MUIA_Application_Sleep,TRUE,TAG_DONE);
-
-    if (!data->aboutMUI)
-    {
-        if((data->aboutMUI = AboutmuiObject,
-                MUIA_Aboutmui_Application, obj,
-                MUIA_Window_RefWindow,     data->win,
-            End))
-        {
-            DoMethod(data->aboutMUI,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,obj,5,
-                MUIM_Application_PushMethod,obj,2,MUIM_App_DisposeWin,data->aboutMUI);
-        }
-    }
-
-    set(data->aboutMUI,MUIA_Window_Open,TRUE);
-
-    SetSuperAttrs(cl,obj,MUIA_Application_Sleep,FALSE,TAG_DONE);
-
-    return 0;
-}
-
-/***********************************************************************/
-/*
 ** App MUI settings method
 */
 
@@ -803,7 +772,6 @@ DISPATCHERPROTO(appDispatcher)
         case OM_NEW:                            return mappNew(cl,obj,(APTR)msg);
         case MUIM_App_DisposeWin:               return mappDisposeWin(cl,obj,(APTR)msg);
         case MUIM_App_About:                    return mappAbout(cl,obj,(APTR)msg);
-        case MUIM_App_AboutMUI:                 return mappAboutMUI(cl,obj,(APTR)msg);
         case MUIM_Application_OpenConfigWindow: return mappOpenMUIConfigWindow(cl,obj,(APTR)msg);
         default:                                return DoSuperMethodA(cl,obj,msg);
     }
@@ -897,7 +865,7 @@ main(UNUSED int argc,char **argv)
         }
 
         DROPINTERFACE(IUtility);
-        CloseLibrary(UtilityBase);
+        CloseLibrary((struct Library *)UtilityBase);
       }
 
       DROPINTERFACE(IIntuition);

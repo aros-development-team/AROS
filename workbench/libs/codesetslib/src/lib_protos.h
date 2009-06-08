@@ -54,9 +54,18 @@ ULONG utf32_strlen(UTF32 *ptr);
 
 /* base64.c */
 LIBPROTO(CodesetsEncodeB64A, ULONG, REG(a0, struct TagItem *attrs));
-LIBPROTOVA(CodesetsEncodeB64,ULONG, ...);
+#if defined(__amigaos4__)
+LIBPROTOVA(CodesetsEncodeB64, ULONG, ...);
+#else
+LIBPROTOVA(CodesetsEncodeB64, ULONG, REG(a0, Tag tag1), ...);
+#endif
 LIBPROTO(CodesetsDecodeB64A, ULONG, REG(a0, struct TagItem *attrs));
-LIBPROTOVA(CodesetsDecodeB64,ULONG, ...);
+#if defined(__amigaos4__)
+LIBPROTOVA(CodesetsDecodeB64, ULONG, ...);
+#else
+LIBPROTOVA(CodesetsDecodeB64, ULONG, REG(a0, Tag tag1), ...);
+#endif
+
 
 /* convertUTF.c */
 LIBPROTO(CodesetsConvertUTF32toUTF16, ULONG, REG(a0, const UTF32 **sourceStart), REG(a1, const UTF32 *sourceEnd), REG(a2, UTF16 **targetStart), REG(a3, UTF16 *targetEnd), REG(d0, ULONG flags));
@@ -74,7 +83,11 @@ void codesetsCleanup(struct codesetList *csList);
 struct codeset *codesetsFind(struct codesetList *csList, const char *name);
 
 LIBPROTO(CodesetsSupportedA,  STRPTR *, REG(a0, struct TagItem *attrs));
+#if defined(__amigaos4__)
 LIBPROTOVA(CodesetsSupported, STRPTR *, ...);
+#else
+LIBPROTOVA(CodesetsSupported, STRPTR *, REG(a0, Tag tag1), ...);
+#endif
 LIBPROTO(CodesetsFreeA,       void, REG(a0, APTR obj), REG(a1, struct TagItem *attrs));
 LIBPROTOVA(CodesetsFree,      void, REG(a0, APTR obj), ...);
 LIBPROTO(CodesetsSetDefaultA, struct codeset *, REG(a0, STRPTR name), REG(a1, struct TagItem *attrs));
@@ -82,26 +95,54 @@ LIBPROTOVA(CodesetsSetDefault,struct codeset *, REG(a0, STRPTR name), ...);
 LIBPROTO(CodesetsFindA,       struct codeset *, REG(a0, STRPTR name), REG(a1, struct TagItem *attrs));
 LIBPROTOVA(CodesetsFind,      struct codeset *, REG(a0, STRPTR name), ...);
 LIBPROTO(CodesetsFindBestA,   struct codeset *, REG(a0, struct TagItem *attrs));
+#if defined(__amigaos4__)
 LIBPROTOVA(CodesetsFindBest,  struct codeset *, ...);
+#else
+LIBPROTOVA(CodesetsFindBest,  struct codeset *, REG(a0, Tag tag1), ...);
+#endif
 LIBPROTO(CodesetsStrLenA,     ULONG, REG(a0, STRPTR str), REG(a1, struct TagItem *attrs));
 LIBPROTOVA(CodesetsStrLen,    ULONG, REG(a0, STRPTR str), ...);
 LIBPROTO(CodesetsConvertStrA, STRPTR, REG(a0, struct TagItem *attrs));
-LIBPROTOVA(CodesetsConvertStr,STRPTR, ...);
+#if defined(__amigaos4__)
+LIBPROTOVA(CodesetsConvertStr, STRPTR, ...);
+#else
+LIBPROTOVA(CodesetsConvertStr, STRPTR, REG(a0, Tag tag1), ...);
+#endif
 LIBPROTO(CodesetsUTF8ToStrA,  STRPTR, REG(a0, struct TagItem *attrs));
+#if defined(__amigaos4__)
 LIBPROTOVA(CodesetsUTF8ToStr, STRPTR, ...);
+#else
+LIBPROTOVA(CodesetsUTF8ToStr, STRPTR, REG(a0, Tag tag1), ...);
+#endif
 LIBPROTO(CodesetsUTF8CreateA, UTF8 *, REG(a0, struct TagItem *attrs));
+#if defined(__amigaos4__)
 LIBPROTOVA(CodesetsUTF8Create,UTF8 *, ...);
+#else
+LIBPROTOVA(CodesetsUTF8Create,UTF8 *, REG(a0, Tag tag1), ...);
+#endif
 LIBPROTO(CodesetsFreeVecPooledA, void, REG(a0, APTR pool), REG(a1, APTR mem), REG(a2, struct TagItem *attrs));
 LIBPROTOVA(CodesetsFreeVecPooled,void, REG(a0, APTR pool), REG(a1, APTR mem), ...);
 LIBPROTO(CodesetsIsValidUTF8,BOOL, REG(a0, STRPTR s));
 LIBPROTO(CodesetsUTF8Len,    ULONG, REG(a0, UTF8 *str));
 LIBPROTO(CodesetsListCreateA, struct codesetList *, REG(a0, struct TagItem *attrs));
+#if defined(__amigaos4__)
 LIBPROTOVA(CodesetsListCreate, struct codesetList *, ...);
+#else
+LIBPROTOVA(CodesetsListCreate, struct codesetList *, REG(a0, Tag tag1), ...);
+#endif
 LIBPROTO(CodesetsListDeleteA, BOOL, REG(a0, struct TagItem *attrs));
+#if defined(__amigaos4__)
 LIBPROTOVA(CodesetsListDelete, BOOL, ...);
+#else
+LIBPROTOVA(CodesetsListDelete, BOOL, REG(a0, Tag tag1), ...);
+#endif
 LIBPROTO(CodesetsListAddA, BOOL, REG(a0, struct codesetList *csList), REG(a1, struct TagItem *attrs));
 LIBPROTOVA(CodesetsListAdd, BOOL, REG(a0, struct codesetList *csList), ...);
 LIBPROTO(CodesetsListRemoveA, BOOL, REG(a0, struct TagItem *attrs));
+#if defined(__amigaos4__)
 LIBPROTOVA(CodesetsListRemove, BOOL, ...);
+#else
+LIBPROTOVA(CodesetsListRemove, BOOL, REG(a0, Tag tag1), ...);
+#endif
 
 #endif /* _LIB_PROTOS_H */
