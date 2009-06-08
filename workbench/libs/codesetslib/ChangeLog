@@ -5,6 +5,11 @@ codesets.library - Library for handling different codesets
 $Id$
 $URL$
 
+2009-06-08  Staf Verhaegen <staf.verhaegen@skynet.be>
+  * libinit.c: On AROS library base is not necessarily passed on the stack
+    to the lib (de)init functions. Use AROS macros for the definition of those
+    functions so that the passing is always done in the right way.
+    
 2009-03-25  Jens Langner <Jens.Langner@light-speed.de>
 
   * libinit.c: introduced a small fix to get the file compiled with the fixed
