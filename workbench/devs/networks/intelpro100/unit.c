@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2005 Neil Cafferkey
+Copyright (C) 2001-2009 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -282,17 +282,20 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
       unit->status_int.is_Data = unit;
 
       rx_int_function = RXInt;
-      unit->rx_int.is_Node.ln_Name = (TEXT *)device_name;
+      unit->rx_int.is_Node.ln_Name =
+         base->device.dd_Library.lib_Node.ln_Name;
       unit->rx_int.is_Node.ln_Pri = 16;
       unit->rx_int.is_Code = rx_int_function;
       unit->rx_int.is_Data = unit;
 
       tx_int_function = TXInt;
-      unit->tx_int.is_Node.ln_Name = (TEXT *)device_name;
+      unit->tx_int.is_Node.ln_Name =
+         base->device.dd_Library.lib_Node.ln_Name;
       unit->tx_int.is_Code = tx_int_function;
       unit->tx_int.is_Data = unit;
 
-      unit->tx_end_int.is_Node.ln_Name = (TEXT *)device_name;
+      unit->tx_end_int.is_Node.ln_Name =
+         base->device.dd_Library.lib_Node.ln_Name;
       unit->tx_end_int.is_Code = TXEndInt;
       unit->tx_end_int.is_Data = unit;
 
@@ -324,7 +327,8 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
 
       task->tc_Node.ln_Type = NT_TASK;
       task->tc_Node.ln_Pri = TASK_PRIORITY;
-      task->tc_Node.ln_Name = (APTR)device_name;
+      task->tc_Node.ln_Name =
+         base->device.dd_Library.lib_Node.ln_Name;
       task->tc_SPUpper = stack + STACK_SIZE;
       task->tc_SPLower = stack;
       task->tc_SPReg = stack + STACK_SIZE;
@@ -1045,9 +1049,9 @@ static BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
       if((ints & PROINTF_RXDONE) != 0)
          Cause(&unit->rx_int);
 
-      /* Acknowledge all interrupts */
+      /* Acknowledge interrupts */
 
-      unit->ByteOut(unit->card, PROREG_INTSTATUS, 0xff);
+      unit->ByteOut(unit->card, PROREG_INTSTATUS, ints);
    }
 
    return FALSE;
@@ -2182,7 +2186,7 @@ static VOID WriteMII(struct DevUnit *unit, UWORD phy_no, UWORD reg_no,
 
 
 
-/****i* prism2.device/BusyMicroDelay ***************************************
+/****i* intelpro100.device/BusyMicroDelay **********************************
 *
 *   NAME
 *	BusyMilliDelay - Busy-wait for specified number of microseconds.

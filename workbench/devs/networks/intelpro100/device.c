@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2005 Neil Cafferkey
+Copyright (C) 2000-2009 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -54,9 +54,6 @@ static VOID DevAbortIO(REG(a1, struct IOSana2Req *request),
 static VOID DeleteDevice(struct DevBase *base);
 static struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base);
 
-/* extern const APTR vectors[]; */
-extern const APTR init_table[];
-
 
 /* Return an error immediately if someone tries to run the device */
 
@@ -73,21 +70,6 @@ static const TEXT utility_name[] = UTILITYNAME;
 static const TEXT prometheus_name[] = "prometheus.library";
 static const TEXT powerpci_name[] = "powerpci.library";
 static const TEXT timer_name[] = TIMERNAME;
-
-
-const struct Resident rom_tag =
-{
-   RTC_MATCHWORD,
-   (struct Resident *)&rom_tag,
-   (APTR)(&rom_tag + 1),
-   RTF_AUTOINIT,
-   VERSION,
-   NT_DEVICE,
-   0,
-   (STRPTR)device_name,
-   (STRPTR)version_string,
-   (APTR)init_table
-};
 
 
 static const APTR vectors[] =
@@ -130,12 +112,27 @@ init_data =
 #endif
 
 
-const APTR init_table[] =
+static const APTR init_table[] =
 {
    (APTR)sizeof(struct DevBase),
    (APTR)vectors,
    (APTR)&init_data,
    (APTR)DevInit
+};
+
+
+const struct Resident rom_tag =
+{
+   RTC_MATCHWORD,
+   (struct Resident *)&rom_tag,
+   (APTR)(&rom_tag + 1),
+   RTF_AUTOINIT,
+   VERSION,
+   NT_DEVICE,
+   0,
+   (STRPTR)device_name,
+   (STRPTR)version_string,
+   (APTR)init_table
 };
 
 

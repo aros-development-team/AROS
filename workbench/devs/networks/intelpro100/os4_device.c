@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2005 Neil Cafferkey
+Copyright (C) 2000-2009 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -59,10 +59,6 @@ static ULONG OS4Int(struct ExceptionContext ex_context,
    struct ExecBase *sys_base, APTR *int_data);
 
 
-extern const APTR vectors[];
-extern const struct TagItem init_tags[];
-
-
 /* Return an error immediately if someone tries to run the device */
 
 LONG Main()
@@ -77,21 +73,6 @@ static const TEXT manager_name[] = "__device";
 static const TEXT utility_name[] = UTILITYNAME;
 static const TEXT expansion_name[] = EXPANSIONNAME;
 static const TEXT timer_name[] = TIMERNAME;
-
-
-const struct Resident rom_tag =
-{
-   RTC_MATCHWORD,
-   (struct Resident *)&rom_tag,
-   (APTR)(&rom_tag + 1),
-   RTF_AUTOINIT | RTF_NATIVE,
-   VERSION,
-   NT_DEVICE,
-   0,
-   (STRPTR)device_name,
-   (STRPTR)version_string,
-   (APTR)init_tags
-};
 
 
 static const APTR manager_vectors[] =
@@ -132,6 +113,21 @@ static const struct TagItem init_tags[] =
    {CLT_InitFunc, (UPINT)DevInit},
    {CLT_Interfaces, (UPINT)interfaces},
    {TAG_END, 0}
+};
+
+
+const struct Resident rom_tag =
+{
+   RTC_MATCHWORD,
+   (struct Resident *)&rom_tag,
+   (APTR)(&rom_tag + 1),
+   RTF_AUTOINIT | RTF_NATIVE,
+   VERSION,
+   NT_DEVICE,
+   0,
+   (STRPTR)device_name,
+   (STRPTR)version_string,
+   (APTR)init_tags
 };
 
 
