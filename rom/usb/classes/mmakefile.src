@@ -1,0 +1,12 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+#MM rom-usb-usbclass-includes : \
+#MM     rom-usb-poseidon-includes \
+#MM     includes-copy
+#MM- rom-usb-usbclass : linklibs
+
+%build_module_skeleton mmake=rom-usb-usbclass \
+    modname=usbclass modtype=library
+
+%common

@@ -1,0 +1,11 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    pci_aros dev uhwcmd debug
+
+%build_module mmake=rom-usb-pciusb \
+    modname=pciusb modtype=device \
+    files="$(FILES)" \
+    uselibs="amiga rom oop hiddstubs"
+
+%common

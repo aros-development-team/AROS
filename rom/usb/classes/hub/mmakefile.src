@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    hub.class debug
+
+#MM- rom-usb-classes-hub : rom-usb-usbclass rom-usb-poseidon
+
+%build_module mmake=rom-usb-classes-hub \
+    modname=hub modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="amiga rom"
+
+%common

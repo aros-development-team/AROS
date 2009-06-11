@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    bootmouse.class debug
+
+#MM- rom-usb-classes-bootmouse : rom-usb-usbclass rom-usb-poseidon
+
+%build_module mmake=rom-usb-classes-bootmouse \
+    modname=bootmouse modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="amiga rom mui"
+
+%common

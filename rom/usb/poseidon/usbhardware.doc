@@ -1,0 +1,674 @@
+TABLE OF CONTENTS
+
+usbhardware.device/--background--
+usbhardware.device/CMD_FLUSH
+usbhardware.device/CMD_RESET
+usbhardware.device/UHCMD_BULKXFER    
+usbhardware.device/UHCMD_CONTROLXFER 
+usbhardware.device/UHCMD_INTXFER     
+usbhardware.device/UHCMD_ISOXFER     
+usbhardware.device/UHCMD_QUERYDEVICE
+usbhardware.device/UHCMD_USBOPER     
+usbhardware.device/UHCMD_USBRESET    
+usbhardware.device/UHCMD_USBRESUME   
+usbhardware.device/UHCMD_USBSUSPEND  
+
+
+usbhardware.device/--background--           usbhardware.device/--background--
+
+   PURPOSE
+       A usbhardware.device provides an API to various hardware
+       implementations of USB host controllers. According to the USB specs,
+       it may be referenced best as the host controller driver (HDC).
+
+       This hardware API is used by the Poseidon USB protocol stack to
+       'talk' to the USB hardware.
+
+       This document is dated to 14-Feb-07 09:26:22.
+
+   OVERVIEW
+       The abstraction level is that of the transaction layer: the device
+       must be able to send a series of packets to the USB and receive
+       and reassemble multiple packets from the USB.
+
+       USB protocol error recovery is done inside the device (NAK handling,
+       retrial on error) without explicit interaction from the caller.
+
+       The device must support the four transfer types interrupt, control,
+       bulk and isochroneous, it must be able to handle lowspeed devices
+       aswell as fullspeed devices.
+
+       Also, USB constraints on the bus bandwidth allocation should be
+       be followed.
+
+   ROOT HUB
+       The root hub must appear after a bus reset as default device on the
+       bus with address 0. It should have the ability to be configured like
+       any external hub. If your hardware does not provide a standard USB
+       hub device, you will have to emulate the root hub functionality. See
+       the USB specifications (chapter 11) for details.
+
+       You must at least support the following standard descriptors:
+       Device Descriptor, Configuration Descriptor, Interface Descriptor,
+       Endpoint Descriptor, and Hub Descriptor. Other supported standard
+       requests and hub class requests must include ClearHubFeature,
+       ClearPortFeature, GetHubDescriptor, GetHubStatus, GetPortStatus,
+       SetHubFeature, and SetPortFeature.
+
+       The hub requires to have an interrupt endpoint that returns the
+       status on a change of the port features. If the hardware allows more
+       efficient status check, interrupt requests to this endpoint can also
+       be queued and emulated of course.
+
+       For USB 2.0, the root hub might not get the UHFF_HIGHSPEED bit set
+       for the first transactions. Normally, this should not be a problem,
+       but cater for this (see below).
+
+   DATA SEQUENCE TOGGLES
+       Your driver has to check for correct DATA0/1 PID schemes as
+       specified in the USB specs. You have to keep track of the outgoing
+       toggle bits. Toggles are reset for an endpoint if a
+       ClearFeature(Endpoint_Halt) is successfully sent.
+       If SetAddress is sent, you must clear all toggle bits for all 16
+       possible endpoints of the target device.
+
+       Please be sure to get this right and TEST it. This must be working
+       for both BULK and INTERRUPT transfers. Control transfers keep track
+       of their toggle bits within the transfer.
+
+   QUEUEING
+       Multiple requests to the very same endpoint of a device must be
+       queued in order (instead of being executed in parallel). This means
+       you have to keep track of the currently scheduled IORequests for
+       each endpoint.
+
+   NAK TIMEOUT
+       It is essential to implement the NAK TIMEOUT feature for BULK,
+       INTERRUPT and even for CONTROL transfers. Without this, several
+       higher level class drivers will appear to hang until the device is
+       removed in certain error cases. On successfully received packets,
+       the NAK TIMEOUT timer needs to be reset.
+
+   USB 2.0
+       With the emerge of USB 2.0, Poseidon has added support for this by
+       extending the IORequest structure slightly with V3.x. New flags
+       include UHFF_HIGHSPEED (which has been there since the beginning)
+       and UHFF_SPLITTRANS. Poseidon V3.6 also adds UHFF_MULTI_1,
+       UHFF_MULTI_2 and UHFF_MULTI_3 and fixes some bugs.
+
+       The new fields iouh_SplitHubAddr and iouh_SplitHubPort are filled
+       for USB 2.0 lowspeed and fullspeed split transactions. Note that
+       these fields are wrong for versions before V3.6 in the case you
+       have USB devices after a USB 1.1 hub after an USB 2.0 hub.
+
+       If your root hub is USB 2.0, Poseidon will not know this until it
+       reads a USB 2.0 version number from the device descriptor. Hence,
+       it will not use UHFF_HIGHSPEED during enumeration of the root hub.
+       However, this is not a problem because the root hub can assume
+       highspeed transactions unless the UHFF_SPLITTRANS bit is set for
+       downstream low- and fullspeed USB 1.1 devices.
+
+       The iouh_Interval field will use units of ms for USB 1.1 or units
+       of µFrames for highspeed transfers. It will not store x for 2^x,
+       but the real value 2^x.
+
+   NOTES
+       The device should support multiple units whenever more than one
+       host controller of the supported type may be mounted. It is
+       recommended that units are opened on an exclusive basis.
+
+       All fields except the iouh_Actual, io_Error, iouh_State and
+       iouh_ExtError fields shall not be modified by the device driver.
+
+       With the V2 driver structures available in Poseidon V3.x and higher,
+       iouh_DriverPrivate1 and iouh_DriverPrivate2 are for your drivers
+       private use and can store anything you like.
+
+       Data should be transferred via DMA on hardware implementations where
+       this is possible. Please take care of alignments and data field
+       lengths. While it normally should be the case that iouh_Data is
+       aligned on an even address, for bulk transfers maybe even on
+       a longword address, this is not guaranteed. Also, the length may
+       be of any odd value. Do not trash data behind the buffer.
+
+       Be sure that the driver is able to send 0-bytes packets and
+       transfers accordingly. For OUT transfers, respect the
+       UHFF_NOSHORTPKT flag whenever the size of the transfer is a multiple
+       of iouh_MaxPktSize.
+
+       Also notice, that iouh_MaxPktSize does not have to be a power of
+       two for interrupt or iso endpoints for your arithmetics.
+
+
+usbhardware.device/CMD_FLUSH                     usbhardware.device/CMD_FLUSH
+
+   NAME
+        CMD_FLUSH -- cancel all pending transfer requests
+
+   FUNCTION
+        CMD_FLUSH aborts all UHCMD_CONTROLXFER, UHCMD_ISOXFER, UHCMD_INTXFER
+        and UHCMD_BULKXFER requests in progress or queued.
+
+   INPUTS
+        mn_ReplyPort - pointer to message port that receives I/O request
+                       if the quick flag (IOF_QUICK) is clear
+        io_Device    - pointer to device node, must be set by (or copied from
+                       I/O block set by) OpenDevice function
+        io_Unit      - pointer to unit node to flush, set by OpenDevice
+        io_Command   - command number for CMD_FLUSH
+        io_Flags     - flags, must be cleared if not use:
+                       IOF_QUICK - (CLEAR) reply I/O request
+
+   OUTPUTS
+        none
+
+
+usbhardware.device/CMD_RESET                     usbhardware.device/CMD_RESET
+
+   NAME
+        CMD_RESET -- reset the hardware to a predefined state
+
+   FUNCTION
+        CMD_RESET performs a hardware reset cycle. The hardware then is in a
+        predefined state. This will also cause a reset on the USB and the
+        bus going into operational state after about 50ms.
+
+   INPUTS
+        mn_ReplyPort - pointer to message port that receives I/O request
+                       if the quick flag (IOF_QUICK) is clear
+        io_Device    - pointer to device node, must be set by (or copied from
+                       I/O block set by) OpenDevice() function
+        io_Unit      - pointer to unit node to reset, set by OpenDevice()
+        io_Command   - command number for CMD_RESET
+        io_Flags     - flags, must be cleared if not use:
+                       IOF_QUICK - (CLEAR) reply I/O request
+
+   OUTPUTS
+        io_Error     - either 0, if everything went okay or
+                       UHIOERR_HOSTERROR, if bus was not in operational state
+                       after the bus reset.
+   SEE ALSO
+        UHCMD_USBRESET
+
+
+usbhardware.device/UHCMD_BULKXFER           usbhardware.device/UHCMD_BULKXFER
+
+   NAME
+        UHCMD_BULKXFER -- start a bulk transfer to or from the bus
+
+   FUNCTION
+        Starts a bulk transfer with the amount of data specified. The
+        direction of the transfer (host to device or device to host) is
+        determined by the setting in the iouh_Dir field.
+
+        The data itself is split into packets of iouh_MaxPktSize length.
+        For IN-transactions, iouh_Data holds a pointer to the buffer to be
+        filled, for OUT-transactions, iouh_Data is a pointer to the data
+        to send to the device.
+
+        In case of an error, the transfer will be retried up to three times.
+
+   INPUTS
+        mn_ReplyPort - pointer to message port that receives I/O request
+                       if the quick flag (IOF_QUICK) is clear
+        io_Device    - pointer to device node, must be set by (or copied from
+                       I/O block set by) OpenDevice() function
+        io_Unit      - pointer to unit node to use, set by OpenDevice()
+        io_Command   - command number for UHCMD_CONTROLXFER
+        io_Flags     - flags, must be cleared if not use:
+                       IOF_QUICK - (CLEAR) reply I/O request
+
+        iouh_Flags        - UHFF_LOWSPEED for low speed devices.
+                            UHFF_HIGHSPEED for high speed USB2.0 devices.
+                            full speed devices will be assumed otherwise.
+                            UHFF_SPLITTRANS for low or fullspeed devices
+                            behind a USB 2.0 hub. iouh_SplitHubAddr and
+                            iouh_SplitHubPort are set accordingly.
+                            UHFF_MULTI_1, UHFF_MULTI_2, UHFF_MULTI_3
+                            indicating the number of transactions per µFrame
+                            for highspeed transfers.
+                            UHFF_NOSHORTPKT will not send terminating short
+                            packets (if the transfer length is a multiple
+                            of iouh_MaxPktSize). This allows you to create
+                            a continous bulk stream with multiple requests.
+                            UHFF_NAKTIMEOUT will enable the NAK timeout
+                            feature (see below).
+                            If UHFF_ALLOWRUNTPKTS is set, the request will
+                            not return UHIOERR_RUNTPACKET in any case. You
+                            should check iouh_Actual for the amount of data
+                            transferred.
+        iouh_Dir          - either UHDIR_IN for device to host transfers
+                            or UHDIR_OUT for host to device transfers.
+        iouh_DevAddr      - device address from 0 to 127.
+        iouh_Endpoint     - endpoint number from 0 to 15.
+        iouh_MaxPktSize   - maximum size of a packet for this endpoint.
+        iouh_Data         - pointer to a buffer to transport the data.
+        iouh_Length       - number of bytes to transfer.
+        iouh_SplitHubAddr - for split transactions only: the hub device
+                            address from 0 to 127.
+        iouh_SplitHubPort - for split transactions only: the hub port number
+                            the USB 1.1 device is connected to from 0 to 255.
+        iouh_NakTimeout   - if UHFF_NAKTIMEOUT is enabled, this specifies
+                            the time in milliseconds until the request will
+                            be retired with UHIOERR_NAKTIMEOUT due to the
+                            endpoint constantly denying the request with
+                            NAKs. This can be used to avoid hangs on broken
+                            USB unit 1000 (1 second) is a reasonable value.
+
+
+   OUTPUTS
+        iouh_Actual  - actual bytes transferred.
+        io_Error     - if something went wrong, you will find a non-null
+                       value here, indicating the error.
+
+   SEE ALSO
+        UHCMD_CONTROLXFER, UHCMD_INTXFER, UHCMD_ISOXFER
+
+
+usbhardware.device/UHCMD_CONTROLXFER     usbhardware.device/UHCMD_CONTROLXFER
+
+   NAME
+        UHCMD_CONTROLXFER -- start a control transfer to or from the bus
+
+   FUNCTION
+        Starts a control transfer, containing a Setup phase, optional
+        Data phases (in or out) and the final Status phase.
+
+        The setup stage contains of a 8 byte packet, with the USB standard
+        fields bmRequestType, bRequest, wIndex, wValue and wLength.
+
+        If iouh_Length is greater than zero, a data phase is initiated and
+        the data is split into packets smaller or equal of iouh_MaxPktSize.
+
+        The direction of the transfer (buffer to device or device to buffer)
+        is determined by the most significant bit of the bmRequestType field
+        in the setup packet.
+
+        Finally, in the status stage the host controller will send a zero
+        bytes data packet to terminate the control transfer.
+
+        In case of an error, the transfer will be retried up to three times.
+
+   INPUTS
+        mn_ReplyPort - pointer to message port that receives I/O request
+                       if the quick flag (IOF_QUICK) is clear
+        io_Device    - pointer to device node, must be set by (or copied from
+                       I/O block set by) OpenDevice() function
+        io_Unit      - pointer to unit node to use, set by OpenDevice()
+        io_Command   - command number for UHCMD_CONTROLXFER
+        io_Flags     - flags, must be cleared if not use:
+                       IOF_QUICK - (CLEAR) reply I/O request
+
+        iouh_Flags        - UHFF_LOWSPEED for low speed devices.
+                            UHFF_HIGHSPEED for high speed USB2.0 devices.
+                            full speed devices will be assumed otherwise.
+                            UHFF_SPLITTRANS for low or fullspeed devices
+                            behind a USB 2.0 hub. iouh_SplitHubAddr and
+                            iouh_SplitHubPort are set accordingly.
+                            UHFF_MULTI_1, UHFF_MULTI_2, UHFF_MULTI_3
+                            indicating the number of transactions per µFrame
+                            for highspeed transfers.
+                            UHFF_NAKTIMEOUT will enable the NAK timeout
+                            feature (see below).
+                            If UHFF_ALLOWRUNTPKTS is set, the request will
+                            not return UHIOERR_RUNTPACKET in any case. You
+                            should check iouh_Actual for the amount of data
+                            transferred.
+        iouh_DevAddr      - device address from 0 to 127.
+        iouh_Endpoint     - endpoint number from 0 to 15.
+        iouh_MaxPktSize   - maximum size of a packet for this endpoint.
+        iouh_Data         - pointer to a buffer to transport the data.
+        iouh_Length       - number of bytes to transfer.
+        iouh_SetupData    - contents of the eight bytes setup packet.
+                            The first bit in the bmRequestType field will
+                            determine the direction (1=in, 0=out).
+        iouh_SplitHubAddr - for split transactions only: the hub device
+                            address from 0 to 127.
+        iouh_SplitHubPort - for split transactions only: the hub port number
+                            the USB 1.1 device is connected to from 0 to 255.
+        iouh_NakTimeout   - if UHFF_NAKTIMEOUT is enabled, this specifies
+                            the time in milliseconds until the request will
+                            be retired with UHIOERR_NAKTIMEOUT due to the
+                            endpoint constantly denying the request with
+                            NAKs. This can be used to avoid hangs on broken
+                            USB unit 1000 (1 second) is a reasonable value.
+
+   OUTPUTS
+        iouh_Actual  - actual bytes transferred during the data phase
+                       (excluding the 8 bytes from the setup phase).
+        io_Error     - if something went wrong, you will find a non-null
+                       value here, indicating the error.
+
+   SEE ALSO
+        UHCMD_BULKXFER, UHCMD_INTXFER, UHCMD_ISOXFER
+
+
+usbhardware.device/UHCMD_INTXFER           usbhardware.device/UHCMD_BULKXFER
+
+   NAME
+        UHCMD_INTXFER -- installs an interrupt transfer to or from the bus
+
+   FUNCTION
+        Installs an interrupt transfer. If no data is to be sent or the
+        target endpoint does not accept the packet, it will retry to
+        send the packets with the given time interval in iouh_Interval
+        until it succeeds.
+
+        The direction of the transfer (host to device or device to host) is
+        determined by the setting in the iouh_Dir field.
+
+        The data itself is split into packets of iouh_MaxPktSize length,
+        although in normal cases you will not request packets larger than
+        iouh_MaxPktSize.
+
+        For IN-transactions, iouh_Data holds a pointer to the buffer to be
+        filled, for OUT-transactions, iouh_Data is a pointer to the data
+        to send to the device.
+
+        In case of an error, the transfer will be retried up to three times.
+        This does not include the reception of NAK pakets, which does not
+        decrement the retry count.
+
+   NOTE
+        An Interrupt transfer request will only return if the device actually
+        sends the data or if an error occurs. If you do DoIO(), you might get
+        blocked out, so better do asynchroneous calls like SendIO().
+
+   INPUTS
+        mn_ReplyPort - pointer to message port that receives I/O request
+                       if the quick flag (IOF_QUICK) is clear
+        io_Device    - pointer to device node, must be set by (or copied from
+                       I/O block set by) OpenDevice() function
+        io_Unit      - pointer to unit node to use, set by OpenDevice()
+        io_Command   - command number for UHCMD_CONTROLXFER
+        io_Flags     - flags, must be cleared if not use:
+                       IOF_QUICK - (CLEAR) reply I/O request
+
+        iouh_Flags        - UHFF_LOWSPEED for low speed devices.
+                            UHFF_HIGHSPEED for high speed USB2.0 devices.
+                            full speed devices will be assumed otherwise.
+                            UHFF_SPLITTRANS for low or fullspeed devices
+                            behind a USB 2.0 hub. iouh_SplitHubAddr and
+                            iouh_SplitHubPort are set accordingly.
+                            UHFF_MULTI_1, UHFF_MULTI_2, UHFF_MULTI_3
+                            indicating the number of transactions per µFrame
+                            for highspeed transfers.
+                            UHFF_NOSHORTPKT will not send terminating short
+                            packets (if the transfer length is a multiple
+                            of iouh_MaxPktSize). Might not be sensible on
+                            interrupt transfers.
+                            UHFF_NAKTIMEOUT will enable the NAK timeout
+                            feature (see below).
+                            If UHFF_ALLOWRUNTPKTS is set, the request will
+                            not return UHIOERR_RUNTPACKET in any case. You
+                            should check iouh_Actual for the amount of data
+                            transferred.
+        iouh_Dir          - either UHDIR_IN for device to host transfers
+                            or UHDIR_OUT for host to device transfers.
+        iouh_DevAddr      - device address from 0 to 127.
+        iouh_Endpoint     - endpoint number from 0 to 15.
+        iouh_MaxPktSize   - maximum size of a packet for this endpoint.
+        iouh_Data         - pointer to a buffer to transport the data.
+        iouh_Length       - number of bytes to transfer.
+        iouh_Interval     - interval in milliseconds for the request to be
+                            retried in case of a NAK. For highspeed, this
+                            value is in number of µFrames (units of
+                            125µsecs).
+        iouh_SplitHubAddr - for split transactions only: the hub device
+                            address from 0 to 127.
+        iouh_SplitHubPort - for split transactions only: the hub port number
+                            the USB 1.1 device is connected to from 0 to 255.
+        iouh_NakTimeout   - if UHFF_NAKTIMEOUT is enabled, this specifies
+                            the time in milliseconds until the request will
+                            be retired with UHIOERR_NAKTIMEOUT due to the
+                            endpoint constantly denying the request with
+                            NAKs. This can be used to avoid hangs on broken
+                            USB unit 1000 (1 second) is a reasonable value.
+
+   OUTPUTS
+        iouh_Actual  - actual bytes transferred.
+        io_Error     - if something went wrong, you will find a non-null
+                       value here, indicating the error.
+
+   SEE ALSO
+        UHCMD_CONTROLXFER, UHCMD_BULKXFER, UHCMD_ISOXFER
+
+
+usbhardware.device/UHCMD_ISOXFER             usbhardware.device/UHCMD_ISOXFER
+
+   NAME
+        UHCMD_ISOXFER -- start an isochronous transfer to or from the bus
+
+   FUNCTION
+        Starts an isochronous transfer with the amount of data specified.
+        The direction of the transfer (host to device or device to host) is
+        determined by the setting in the iouh_Dir field.
+
+        The data itself is split into packets of iouh_MaxPktSize length.
+        For IN-transactions, iouh_Data holds a pointer to the buffer to be
+        filled, for OUT-transactions, iouh_Data is a pointer to the data
+        to send to the device.
+
+        Isochronous transfer are normally used for large, time-critical
+        data which does not need to be transferred reliably.
+
+        In case of an error, the transfer will NOT be retried at all and
+        io_Error will contain the error number.
+
+   INPUTS
+        mn_ReplyPort - pointer to message port that receives I/O request
+                       if the quick flag (IOF_QUICK) is clear
+        io_Device    - pointer to device node, must be set by (or copied from
+                       I/O block set by) OpenDevice() function
+        io_Unit      - pointer to unit node to use, set by OpenDevice()
+        io_Command   - command number for UHCMD_CONTROLXFER
+        io_Flags     - flags, must be cleared if not use:
+                       IOF_QUICK - (CLEAR) reply I/O request
+
+        iouh_Flags        - UHFF_LOWSPEED for low speed devices.
+                            UHFF_HIGHSPEED for high speed USB2.0 devices.
+                            full speed devices will be assumed otherwise.
+                            UHFF_SPLITTRANS for low or fullspeed devices
+                            behind a USB 2.0 hub. iouh_SplitHubAddr and
+                            iouh_SplitHubPort are set accordingly.
+                            UHFF_MULTI_1, UHFF_MULTI_2, UHFF_MULTI_3
+                            indicating the number of transactions per µFrame
+                            for highspeed transfers.
+                            UHFF_NOSHORTPKT will not send terminating short
+                            packets (if the transfer length is a multiple
+                            of iouh_MaxPktSize). This allows you to create
+                            a continous bulk stream with multiple requests.
+                            If UHFF_ALLOWRUNTPKTS is set, the request will
+                            not return UHIOERR_RUNTPACKET in any case. You
+                            should check iouh_Actual for the amount of data
+                            transferred.
+        iouh_Dir          - either UHDIR_IN for device to host transfers
+                            or UHDIR_OUT for host to device transfers.
+        iouh_DevAddr      - device address from 0 to 127.
+        iouh_Endpoint     - endpoint number from 0 to 15.
+        iouh_MaxPktSize   - maximum size of a packet for this endpoint.
+        iouh_Data         - pointer to a buffer to transport the data.
+        iouh_Length       - number of bytes to transfer.
+        iouh_SplitHubAddr - for split transactions only: the hub device
+                            address from 0 to 127.
+        iouh_SplitHubPort - for split transactions only: the hub port number
+                            the USB 1.1 device is connected to from 0 to 255.
+        iouh_NakTimeout   - if UHFF_NAKTIMEOUT is enabled, this specifies
+                            the time in milliseconds until the request will
+                            be retired with UHIOERR_NAKTIMEOUT due to the
+                            endpoint constantly denying the request with
+                            NAKs. This can be used to avoid hangs on broken
+                            USB unit 1000 (1 second) is a reasonable value.
+
+   OUTPUTS
+        iouh_Actual  - actual bytes transferred.
+        io_Error     - if something went wrong, you will find a non-null
+                       value here, indicating the error.
+
+   SEE ALSO
+        UHCMD_CONTROLXFER, UHCMD_BULKXFER, UHCMD_INTXFER
+
+
+usbhardware.device/UHCMD_QUERYDEVICE     usbhardware.device/UHCMD_QUERYDEVICE
+
+   NAME
+        UHCMD_QUERYDEVICE -- get hardware information
+
+   FUNCTION
+        Can be used to acquire information about the hardware and its
+        driver. The command uses a TagList as parameter in iouh_Data.
+
+        Each taglist entry holds a pointer to a longword (ULONG *), as
+        usually, and the corresponding data is also written as an ULONG.
+
+   TAGS
+        Currently defined tags include:
+
+        UHA_State (UWORD) - Returns a bitmap of the current USB state.
+                            See UHS flags in devices/usbhardware.h.
+        UHA_Manufacturer (STRPTR) - Manufactuerer string.
+        UHA_ProductName (STRPTR) - Product string.
+        UHA_Version (UWORD) - Version number.
+        UHA_Revision (UWORD) - Revision of device.
+        UHA_Description (STRPTR) - String describing features of device.
+        UHA_Copyright (STRPTR) - Copyright message.
+        UHA_DriverVersion (UWORD) - BCD encoded version number of the
+                                    IORequest structure. Currently, only
+                                    0x100 and 0x200 are valid.
+
+   INPUTS
+        mn_ReplyPort - pointer to message port that receives I/O request
+                       if the quick flag (IOF_QUICK) is clear
+        io_Device    - pointer to device node, must be set by (or copied from
+                       I/O block set by) OpenDevice() function
+        io_Unit      - pointer to unit node to use, set by OpenDevice()
+        io_Command   - command number for UHCMD_QUERYDEVICE
+        io_Flags     - flags, must be cleared if not use:
+                       IOF_QUICK - (CLEAR) reply I/O request
+        iouh_Data    - pointer to a TagList to fill
+
+   OUTPUTS
+        iouh_Actual  - number of tags filled.
+        iouh_State   - current status, if UHA_State was included. Will
+                       not be changed otherwise.
+
+   SEE ALSO
+        devices/usbhardware.h
+
+
+usbhardware.device/UHCMD_USBOPER             usbhardware.device/UHCMD_USBOPER
+
+   NAME
+        UHCMD_USBOPER -- ask USB into operational mode
+
+   FUNCTION
+        This command try to get the USB operational, whatever mode it
+        previously might have been.
+
+   INPUTS
+        mn_ReplyPort - pointer to message port that receives I/O request
+                       if the quick flag (IOF_QUICK) is clear
+        io_Device    - pointer to device node, must be set by (or copied from
+                       I/O block set by) OpenDevice() function
+        io_Unit      - pointer to unit node to use, set by OpenDevice()
+        io_Command   - command number for UHCMD_USBOPER
+        io_Flags     - flags, must be cleared if not use:
+                       IOF_QUICK - (CLEAR) reply I/O request
+
+   OUTPUTS
+        iouh_State   - current status of bus.
+        io_Error     - either 0, if everything went okay or
+                       UHIOERR_HOSTERROR, if bus was not in operational state
+                       after this command.
+
+   SEE ALSO
+        UHCMD_USBSUSPEND, UHCMD_USBRESUME, UHCMD_USBRESET
+
+
+usbhardware.device/UHCMD_USBRESET           usbhardware.device/UHCMD_USBRESET
+
+   NAME
+        UHCMD_USBRESET -- reset USB
+
+   FUNCTION
+        This command will reset the USB. After about 50ms the USB will
+        automatically go into operational mode.
+
+   INPUTS
+        mn_ReplyPort - pointer to message port that receives I/O request
+                       if the quick flag (IOF_QUICK) is clear
+        io_Device    - pointer to device node, must be set by (or copied from
+                       I/O block set by) OpenDevice() function
+        io_Unit      - pointer to unit node to use, set by OpenDevice()
+        io_Command   - command number for UHCMD_USBRESET
+        io_Flags     - flags, must be cleared if not use:
+                       IOF_QUICK - (CLEAR) reply I/O request
+
+   OUTPUTS
+        iouh_State   - current status of bus.
+        io_Error     - either 0, if everything went okay or
+                       UHIOERR_HOSTERROR, if bus was not in operational state
+                       after the bus reset.
+
+   SEE ALSO
+        CMD_RESET, UHCMD_USBRESUME, UHCMD_USBSUSPEND, UHCMD_USBOPER
+
+
+usbhardware.device/UHCMD_USBRESUME         usbhardware.device/UHCMD_USBRESUME
+
+   NAME
+        UHCMD_USBRESUME -- go from suspend into operational mode
+
+   FUNCTION
+        This command will wake the bus from suspend mode. The SOF
+        generation will restart right after, enabling the bus again.
+
+   INPUTS
+        mn_ReplyPort - pointer to message port that receives I/O request
+                       if the quick flag (IOF_QUICK) is clear
+        io_Device    - pointer to device node, must be set by (or copied from
+                       I/O block set by) OpenDevice() function
+        io_Unit      - pointer to unit node to use, set by OpenDevice()
+        io_Command   - command number for UHCMD_USBRESUME
+        io_Flags     - flags, must be cleared if not use:
+                       IOF_QUICK - (CLEAR) reply I/O request
+
+   OUTPUTS
+        iouh_State   - current status of bus.
+        io_Error     - either 0, if everything went okay or
+                       UHIOERR_HOSTERROR, if bus was not in operational state
+                       after the resume command.
+
+   SEE ALSO
+        UHCMD_USBSUSPEND, UHCMD_USBOPER, UHCMD_USBRESET
+
+
+usbhardware.device/UHCMD_USBSUSPEND       usbhardware.device/UHCMD_USBSUSPEND
+
+   NAME
+        UHCMD_USBSUSPEND -- change bus into suspend mode
+
+   FUNCTION
+        UHCMD_USBSUSPEND will ask the USB to go into suspend mode. SOF
+        generation will be stopped.
+
+   INPUTS
+        mn_ReplyPort - pointer to message port that receives I/O request
+                       if the quick flag (IOF_QUICK) is clear
+        io_Device    - pointer to device node, must be set by (or copied from
+                       I/O block set by) OpenDevice() function
+        io_Unit      - pointer to unit node to use, set by OpenDevice()
+        io_Command   - command number for UHCMD_USBSUSPEND
+        io_Flags     - flags, must be cleared if not use:
+                       IOF_QUICK - (CLEAR) reply I/O request
+
+   OUTPUTS
+        iouh_State   - current status of bus.
+        io_Error     - either 0, if everything went okay or
+                       UHIOERR_HOSTERROR, if bus could not be suspended.
+
+   SEE ALSO
+        UHCMD_USBRESUME, UHCMD_USBRESET, UHCMD_USBOPER
+
+
+
