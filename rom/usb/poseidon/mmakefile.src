@@ -1,0 +1,31 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    poseidon.library popo.gui numtostr debug
+
+FUNCS := \
+
+SHELLFILES := PsdDevLister PsdErrorlog AddUSBClasses AddUSBHardware PsdStackLoader
+
+#MM rom-usb-poseidon-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-utility-includes \
+#MM     rom-usb-usbclass-includes \
+#MM     includes-copy
+#MM- rom-usb-poseidon : linklibs
+
+#MM- rom-usb-shelltools : rom-usb-poseidon
+
+%build_module mmake=rom-usb-poseidon \
+    modname=poseidon modtype=library \
+    files="$(FUNCS) $(FILES)" \
+    uselibs="amiga rom mui"
+
+
+%build_progs mmake=rom-usb-shelltools \
+    files=$(SHELLFILES) targetdir=$(AROS_C) \
+    uselibs="arossupport amiga arosc m"
+
+
+%common

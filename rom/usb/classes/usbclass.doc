@@ -1,0 +1,607 @@
+TABLE OF CONTENTS
+
+usbclass/--background--
+usbclass/usbAttemptDeviceBinding
+usbclass/usbAttemptInterfaceBinding
+usbclass/usbDoMethod
+usbclass/usbForceDeviceBinding
+usbclass/usbForceInterfaceBinding
+usbclass/usbGetAttrs
+usbclass/usbReleaseDeviceBinding
+usbclass/usbReleaseInterfaceBinding
+usbclass/usbSetAttrs
+
+
+usbclass/--background--                               usbclass/--background--
+
+   PURPOSE
+        USB classes in the sense of the Poseidon stack environment, are
+        libraries that provide functionality for USB devices. They interface
+        to the poseidon.library via its function vectors and are called
+        whenever a new device is found.
+
+        This document is dated to 11-May-03 19:24:05.
+
+   OVERVIEW
+        Each class will be offered the interface or device descriptor of every
+        device not yet having a binding. If the class 'knows' the type of the
+        device and is able to communicate with it, it tells back the Poseidon
+        stack that it wants to use it. There are two types of bindings: device
+        bindings, that take over control of the whole device, and interface
+        bindings, that only use the endpoints of a particular interface,
+        sharing the (compound) device with other classes that bind to other
+        interfaces.
+
+        Bindings are exclusive. No class can bind to an interface already
+        claimed by someone else. Also, no device binding will be allowed, if
+        there are interface bindings to that device and vice versa. A class
+        normally only needs to implement either interface or device bindings.
+
+        A class may only claim bindings it is SURE to understand. Otherwise
+        another class will not be able to add its functionality.
+
+        There is an option for the user to force a binding to a device or
+        interface. This makes sense, if it is a vendor specific driver and
+        likely to by supported by some yet unknown device which a similar
+        chipset. Support for forced bindings is optional -- a class driver
+        may still refuse to bind to the device or interface, if it is not
+        compatible.
+
+        The device or interface structure, as well as any other structures of
+        the Poseidon stack are private, except for they all contain a Node
+        structure for linking. Do NOT assume any data layout as it might
+        change. To get or set attributes, use the psdGetAttrs() and
+        psdSetAttrs() function of the poseidon.library.
+
+        A class driver should spawn a subtask for each instance of the
+        functionality added. For example, as there can be as many mice on the
+        USB as the users connects, there will be multiple instances of the
+        bootmouse.class tasks running.
+
+        Whenever the device gets removed, the poseidon.library will ask you
+        to remove your binding to it and you will properly behave and release
+        the binding. Note that your library does not need to free all your
+        resources on this operation. This allows you suspend your
+        functionality and return it, when the device gets plugged in again.
+        For example, the printer.class keeps the information about every
+        printer connected and maps it back to the same unit number whenever it
+        is reconnected. The data is only freed on the expunge of the class.
+
+        Classes communicate with the USB devices via pipes. Have a look at the
+        poseidon.library AutoDocs.
+
+        It is a preferred method only to open the poseidon.library when
+        required (i.e. inside the attempt/release binding vectors, or inside
+        the subtask). This allows the stack to expunge itself when it is no
+        longer needed, taking down the class libraries aswell.
+
+        With some newer releases of Poseidon, some functionality has been
+        added. This includes the usbSetAttrs() and usbGetAttrs() function,
+        aswell as the usbDoMethod() call. These allow some querying of classes
+        and their state as well as easier extension without breaking
+        compatibility with newer versions of the main library.
+
+        All class drivers can have their own global configuration and/or
+        interface or device preferences. It is recommended that if such prefs
+        exist, a nice GUI should be available to the end user. If interface
+        or device prefs exist, the ability to change default prefs for these
+        should be available through the global configuration. Common prefs
+        handling is supported by the poseidon.library.
+
+        Class drivers should be stored in SYS:Classes/USB.
+
+   WARNING
+        The class library interface is PRELIMINARY! It WILL be expanded and
+        more features WILL be added. If you write your class libraries, be
+        sure to use version 1. Newer versions of poseidon then will probably
+        ask for version 2 or higher class library versions, if the interface
+        is not compatible anymore (or more functions are required).
+
+        If you have good ideas on expanding the API, please let me know.
+
+
+usbclass/usbAttemptDeviceBinding             usbclass/usbAttemptDeviceBinding
+
+   NAME
+        usbAttemptDeviceBinding -- establish device binding if possible
+
+   SYNOPSIS
+        udb = usbAttemptDeviceBinding(pd);
+        D0                            A0
+
+        APTR usbAttemptDeviceBinding(APTR);
+
+   FUNCTION
+        The class gets a device structure from the Poseidon stack. It may
+        then examine it further (using psdGetAttrs()) to decide, if it wants
+        to use it. In this case, this function returns the pointer to a
+        private context structure which will not be touched by Poseidon, but
+        used for the usbReleaseDeviceBinding() call whenever the stack
+        wants go get rid of the instance.
+
+        You can go down the device, traverse its configurations, interfaces
+        and endpoints by hand. Just read out the structure data using
+        psdGetAttrs().
+
+   NOTE
+        When establishing a device binding, you are allowed to do anything
+        you like with the device, including switching configurations and
+        changing to alternative settings on the interfaces.
+
+        However, if it is possible for that kind of device to have multiple
+        interfaces of which you will not use, but some other class could,
+        do not use device bindings, but interface bindings.
+
+   INPUTS
+        pd - pointer to a Poseidon device structure (private).
+
+   RESULT
+        udb - private pointer of the binding context or NULL, if no binding
+              could be established.
+
+   SEE ALSO
+        usbReleaseDeviceBinding(), usbForceDeviceBinding()
+
+
+usbclass/usbAttemptInterfaceBinding       usbclass/usbAttemptInterfaceBinding
+
+   NAME
+        usbAttemptInterfaceBinding -- establish interface binding if possible
+
+   SYNOPSIS
+        uifb = usbAttemptInterfaceBinding(pif);
+        D0                                A0
+
+        APTR usbAttemptInterfaceBinding(APTR);
+
+   FUNCTION
+        The class gets an interface structure from the Poseidon stack. It may
+        then examine it further (using psdGetAttrs()) to decide, if it wants
+        to use it. In this case, this function returns the pointer to a
+        private context structure which will not be touched by Poseidon, but
+        used for the usbReleaseInterfaceBinding() call whenever the stack
+        wants go get rid of the instance.
+
+        Note that all structures have uplinking data, i.e. you can climb up
+        to the device structure via the interface IFA_Config and then
+        CA_Device tag to get the ProductID and other information available.
+
+   NOTE
+        When establishing an interface binding, you are allowed to check for
+        alternate settings. If you decide to use some other setting, use
+        the psdSetAltInterface() call.
+
+        You may not change the configuration number using
+        psdSetDeviceConfig() as you only own the given interface and not the
+        whole device.
+
+   INPUTS
+        pif - pointer to a Poseidon interface structure (private).
+
+   RESULT
+        uifb - private pointer of the binding context or NULL, if no binding
+               could be established.
+
+   SEE ALSO
+        usbReleaseInterfaceBinding(), usbForceInterfaceBinding()
+
+
+usbclass/usbDoMethod                                     usbclass/usbDoMethod
+
+   NAME
+        usbDoMethodA -- perform a class function
+        usbDoMethod -- varargs stub for usbDoMethodA
+
+   SYNOPSIS
+        result = usbDoMethodA(methodid, methodddata);
+        D0                    D0        A1
+
+        LONG usbDoMethodA(ULONG, APTR);
+
+        result = usbDoMethod(methodid, ...);
+
+        LONG usbDoMethod(ULONG, ...);
+
+   FUNCTION
+        Similar to the DoMethod() function of amiga.lib. Performs a class
+        function and returns its results.
+
+   METHODS
+        UCM_AttemptInterfaceBinding
+
+            APTR uifb = usbDoMethod(UCM_AttemptInterfaceBinding, APTR pif);
+
+            Does the same as the old vector usbAttemptInterfaceBinding().
+            For compatibility, both should be implemented. The first and only
+            parameter contains the interface pointer. The result is the
+            private binding pointer or NULL, if no binding could be
+            established.
+
+        UCM_ForceInterfaceBinding
+
+            APTR uifb = usbDoMethod(UCM_ForceInterfaceBinding, APTR pif);
+
+            Does the same as the old vector usbForceInterfaceBinding().
+            For compatibility, both should be implemented. The first and only
+            parameter contains the interface pointer. The result is the
+            private binding pointer or NULL, if no binding could be
+            established.
+
+        UCM_ReleaseInterfaceBinding
+
+            void usbDoMethod(UCM_ReleaseInterfaceBinding, APTR uifb);
+
+            Does the same as the old vector usbReleaseInterfaceBinding().
+            For compatibility, both should be implemented. The first and only
+            parameter contains the private binding pointer returned by
+            UCM_AttemptInterfaceBinding or UCM_ForceInterfaceBinding.
+
+        UCM_AttemptDeviceBinding
+
+            APTR udb = usbDoMethod(UCM_AttemptDeviceBinding, APTR pd);
+
+            Does the same as the old vector usbAttemptDeviceBinding().
+            For compatibility, both should be implemented. The first and only
+            parameter contains the device pointer. The result is the class
+            private pointer to the device binding or NULL, if no binding could
+            be established.
+
+        UCM_ForceDeviceBinding
+
+            APTR udb = usbDoMethod(UCM_ForceDeviceBinding, APTR pd);
+
+            Does the same as the old vector usbForceDeviceBinding().
+            For compatibility, both should be implemented. The first and only
+            parameter contains the device pointer. The result is the class
+            private pointer to the device binding or NULL, if no binding could
+            be established.
+
+        UCM_ReleaseDeviceBinding
+
+            void usbDoMethod(UCM_ReleaseDeviceBinding, APTR udb);
+
+            Does the same as the old vector usbReleaseDeviceBinding().
+            For compatibility, both should be implemented. The first and only
+            parameter contains the private binding pointer returned by
+            UCM_AttemptDeviceBinding or UCM_ForceDeviceBinding.
+
+        UCM_OpenCfgWindow
+
+            BOOL good = usbDoMethod(UCM_OpenCfgWindow);
+
+            If the class has a global configuration GUI, it should be opened
+            by a call to UCM_OpenCfgWindow. There are no parameters.
+
+            If your class does not provide a global GUI, return FALSE.
+            Otherwise, return TRUE.
+
+            Take care that the GUI window has to be started asynchroneously
+            and may not block. Also, ensure that your window does not get
+            opened twice, if it is already open. Please be so nice and allow
+            the window to be closed at any time -- either by the user or
+            by UCM_CloseCfgWindow. If your global prefs relies on existing
+            bindings, make sure that it copes with them going away at any
+            time (through the known release calls).
+
+            It is recommended that you inject the prefs to the main Poseidon
+            prefs structure at the closure of the window.
+
+        UCM_CloseCfgWindow          
+
+            void usbDoMethod(UCM_CloseCfgWindow);
+
+            This method requests the GUI to be closed. The class may or may
+            not obey to this.
+
+        UCM_OpenBindingCfgWindow    
+
+            BOOL good = usbDoMethod(UCM_OpenBindingCfgWindow, APTR ub);
+
+            If the class has a binding configuration GUI, it should be opened
+            by a call to UCM_OpenBindingCfgWindow. The parameter specifies,
+            which binding should be used and is a the private pointer to the
+            binding structure the class uses itself. This may either be a
+            device or interface binding structure.
+
+            If your class does not provide a binding configuration GUI,
+            return FALSE. Otherwise, return TRUE.
+
+            Take care that the GUI window has to be started asynchroneously
+            and may not block. Also, ensure that your window does not get
+            opened twice, if it is already open. Please be so nice and allow
+            the window to be closed at any time -- either by the user or
+            by UCM_CloseBindingCfgWindow. If there are default settings and
+            no binding config has been generated yet, it should initially use
+            the default settings for the binding prefs. Make sure that the
+            prefs task copes the binding going away at any time (through the
+            known release calls).
+
+            Please remember that multiple windows for seperate binding prefs
+            should be supported.
+
+        UCM_CloseBindingCfgWindow
+
+            void usbDoMethod(UCM_CloseBindingCfgWindow);
+
+            This method requests the GUI window for the binding settings to
+            be closed. The class may or may not obey to this.
+
+   NOTE
+        The list of methods may grow in future.
+
+   INPUTS
+        methodid - numeric method id a specific in libraries/usbclass.h
+        methoddata - the message packet to send according to the method id
+
+   RESULT
+        result - result of the method called.
+
+   SEE ALSO
+        usbGetAttrs(), usbSetAttrs()
+
+
+usbclass/usbForceDeviceBinding                 usbclass/usbForceDeviceBinding
+
+   NAME
+        usbForceDeviceBinding -- force device binding if possible
+
+   SYNOPSIS
+        udb = usbForceDeviceBinding(pd);
+        D0                          A0
+
+        APTR usbForceDeviceBinding(APTR);
+
+   FUNCTION
+        This call is very similar to usbAttemptDeviceBinding(), except that it
+        should do a best attempt to build up a binding, even if it does not
+        know, if the device is compatible or supported. This allows expert
+        users to try to get devices to work that normally would not bind
+        automatically, because the class does not know about it.
+
+        Still, even usbForceDeviceBinding() may fail, e.g. if the device does
+        not meet the requirements (interfaces, endpoints) or does not respond
+        properly to the expected protocol.
+
+        See usbAttemptDeviceBinding() for details.
+
+   NOTE
+        It is recommended that usbAttemptDeviceBinding() only does some
+        pre-checking and then calls usbForceDeviceBinding() internally.
+
+   INPUTS
+        pd - pointer to a Poseidon device structure (private).
+
+   RESULT
+        udb - private pointer of the binding context or NULL, if no binding
+              could be established.
+
+   SEE ALSO
+        usbAttemptDeviceBinding(), usbReleaseDeviceBinding()
+
+
+usbclass/usbForceInterfaceBinding           usbclass/usbForceInterfaceBinding
+
+   NAME
+        usbForceInterfaceBinding -- force interface binding if possible
+
+   SYNOPSIS
+        uifb = usbForceInterfaceBinding(pif);
+        D0                              A0
+
+        APTR usbForceInterfaceBinding(APTR);
+
+   FUNCTION
+        This call is very similar to usbAttemptInterfaceBinding(), except that
+        it should do a best attempt to build up a binding, even if it does not
+        know, if the device is compatible or supported. This allows expert
+        users to try to get interfaces to work that normally would not bind
+        automatically, because the class does not know about it.
+
+        Still, even usbForceInterfaceBinding() may fail, e.g. if the device
+        does not meet the requirements (e.g. endpoints) or does not respond
+        properly to the expected protocol.
+
+        See usbAttemptInterfaceBinding() for details.
+
+   NOTE
+        It is recommended that usbAttemptInterfaceBinding() only does some
+        pre-checking and then calls usbForceInterfaceBinding() internally.
+
+   INPUTS
+        pif - pointer to a Poseidon interface structure (private).
+
+   RESULT
+        uifb - private pointer of the binding context or NULL, if no binding
+               could be established.
+
+   SEE ALSO
+        usbAttemptInterfaceBinding(), usbReleaseInterfaceBinding()
+
+
+usbclass/usbGetAttrs                                     usbclass/usbGetAttrs
+
+   NAME
+        usbGetAttrsA -- get information from an internal class structure
+        usbGetAttrs -- varargs stub for usbGetAttrsA()
+
+   SYNOPSIS
+        num = usbGetAttrsA(type, usbstruct, taglist);
+        D0                 D0    A0         A1
+
+        LONG usbGetAttrsA(ULONG, APTR, struct TagList *);
+
+        num = usbGetAttrs(type, usbstruct, tag1, ...);
+
+        LONG usbGetAttrs(ULONG, APTR, Tag, ...);
+
+   FUNCTION
+        Acquires attribute information from an internal class structure,
+        according to the attributes chosen in the tag list. For each entry in
+        the tag list, ti_Tag identifies the attribute and ti_Data is a pointer
+        to the long variable where you wish the result to be stored.
+
+        There are currently a number of thee different system structures which
+        can be accessed in this way. To avoid adding multiple functions with
+        the same semantics, usbGetAttrs() requires the type of the structure
+        passed.
+
+   INPUTS
+        type - describes the type of the structure passed.
+               See libraries/usbclass.h for details.
+        usbstruct - pointer to the system structure on which information
+                    should be gathered. Can be NULL only for UGA_CLASS.
+        taglist - pointer to TagItem list, terminated by TAG_END.
+
+   TAGS
+        All tags are read-only, except stated otherwise.
+
+        UGA_CLASS: (read-only)
+        UCCA_Priority (LONG) - Priority for the class scan. Valid inputs are
+            between -128 and 127. The higher the priority, the earlier the
+            class gets to attempt a binding. This is important if different
+            classes lock to the same interfaces or devices, but have varying
+            degree of functionality and availability (e.g. hid.class versus
+            bootmouse.class or bootkeyboard.class).
+        UCCA_Description (STRPTR) - String to display in Trident, describing
+            the basic features and intention of the class.
+        UCCA_HasClassCfgGUI (BOOL) - Returns TRUE, if the class has a global
+            prefs window, or FALSE otherwise.
+        UCCA_HasBindingCfgGUI (BOOL) - Returns TRUE, if the class implements
+            a GUI for seperate bindings. If it does not have this feature,
+            it retuns FALSE.
+        UCCA_AfterDOSRestart (BOOL) - Returns TRUE, if the class needs to
+            be restarted (i.e. all bindings closed and reopened), after DOS
+            has been available. This only applies to classes that are
+            available while booting and don't need the dos.library, but would
+            benefit from its existance later on.
+
+        UCBA_BINDING:
+        no tags yet defined
+
+        UCFA_CONFIG:
+        no tags yet defined
+
+   RESULT
+        num - number of tags actually read or -1, if the request was not
+              supported somehow.
+
+   SEE ALSO
+        psdSetAttrs(), psdNumToStr()
+
+
+usbclass/usbReleaseDeviceBinding   usbclass/usbReleaseDeviceBinding
+
+   NAME
+        usbReleaseDeviceBinding -- release a previously bound device
+
+   SYNOPSIS
+        usbReleaseDeviceBinding(udb);
+                                A0
+
+        void usbReleaseDeviceBinding(APTR);
+
+   FUNCTION
+        If this function is called, Poseidon wants to release an established
+        device binding. The class MUST release the device and stop all further
+        transactions to it. After you've returned from this call, the whole
+        device you were talking to might be gone.
+
+   WARNING
+        Read the last sentence: Everything you ever owned of the device, is
+        not available anymore after you have returned from that call. Do NOT
+        attempt to read out structures you might have got before. Do NOT
+        try to send pipe transfers anymore.
+
+        Normally, this call terminates the subtask created and frees the
+        context allocated for the instance. This call should not take too
+        long to terminate, especially, it MAY NOT WAIT for certain
+        application level action (like closing of a device in use).
+
+   INPUTS
+        udb - private pointer of the binding context.
+
+   SEE ALSO
+        usbAttemptDeviceBinding()
+
+
+usbclass/usbReleaseInterfaceBinding       usbclass/usbReleaseInterfaceBinding
+
+   NAME
+        usbReleaseInterfaceBinding -- release a previously bound interface
+
+   SYNOPSIS
+        usbReleaseInterfaceBinding(uifb);
+                                   A0
+
+        void usbReleaseInterfaceBinding(APTR);
+
+   FUNCTION
+        If this function is called, Poseidon wants to release an established
+        binding. The class MUST release the interface and stop all further
+        transactions to it. After you've returned from this call, the
+        interface and possibly the whole device you were talking to might be
+        gone.
+
+   WARNING
+        Read the last sentence: Everything you ever owned of the device, is
+        not available anymore after you have returned from that call. Do NOT
+        attempt to read out structures you might have got before. Do NOT
+        try to send pipe transfers anymore.
+
+        Normally, this call terminates the subtask created and frees the
+        context allocated for the instance. This call should not take too
+        long to terminate, especially, it MAY NOT WAIT for certain
+        application level action (like closing of a device in use).
+
+   INPUTS
+        uifb - private pointer of the binding context.
+
+   SEE ALSO
+        usbAttemptInterfaceBinding()
+
+
+usbclass/usbSetAttrs                                     usbclass/usbSetAttrs
+
+   NAME
+        usbSetAttrsA -- change fields of an internal class structure
+        usbSetAttrs -- varargs stub for usbSetAttrsA()
+
+   SYNOPSIS
+        num = usbSetAttrsA(type, usbstruct, taglist);
+        D0                 D0    A0         A1
+
+        LONG usbSetAttrsA(ULONG, APTR, struct TagList *);
+
+        num = usbSetAttrs(type, usbstruct, tag1, ...);
+
+        LONG usbSetAttrs(ULONG, APTR, Tag, ...);
+
+   FUNCTION
+        Changes the fields allowed to be written of an internal class
+        structure according to the attributes chosen in the tag list. For
+        each entry in the tag list, ti_Tag identifies the attribute and
+        ti_Data is the long data you wish to change the value to.
+
+        There are currently a number of three different system structures
+        which can be accessed in this way. To avoid adding multiple functions
+        with the same semantics, usbSetAttrs() requires the type of the
+        structure passed.
+
+   INPUTS
+        type - describes the type of the structure passed.
+               See libraries/usbclass.h for details.
+        usbstruct - pointer to the system structure on which information
+                    should be changed. Can be NULL only for UGA_CLASS.
+        taglist - pointer to TagItem list, terminated by TAG_END.
+
+   TAGS
+        See usbGetAttrs() for the tags which can be changed.
+
+   RESULT
+        num - number of tags actually read or -1, if the request was not
+              supported somehow.
+
+   SEE ALSO
+        usbGetAttrs()
+
+

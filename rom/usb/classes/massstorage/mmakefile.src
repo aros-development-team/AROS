@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    massstorage.class dev debug
+
+#MM- rom-usb-classes-massstorage : rom-usb-usbclass rom-usb-poseidon
+
+%build_module mmake=rom-usb-classes-massstorage \
+    modname=massstorage modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="amiga rom mui"
+
+%common

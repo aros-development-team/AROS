@@ -1,0 +1,2425 @@
+TABLE OF CONTENTS
+
+poseidon.library/--background--
+poseidon.library/psdAbortPipe
+poseidon.library/psdAddClass
+poseidon.library/psdAddErrorMsg
+poseidon.library/psdAddHardware
+poseidon.library/psdAllocDevice
+poseidon.library/psdAllocPipe
+poseidon.library/psdAllocVec
+poseidon.library/psdClaimAppBinding
+poseidon.library/psdClassScan
+poseidon.library/psdCopyStr
+poseidon.library/psdDelayMS
+poseidon.library/psdDoPipe
+poseidon.library/psdEnumerateDevice
+poseidon.library/psdEnumerateHardware
+poseidon.library/psdFindDevice
+poseidon.library/psdFreeDevice
+poseidon.library/psdFreePipe
+poseidon.library/psdFreeVec
+poseidon.library/psdGetAttrs
+poseidon.library/psdGetNextDevice
+poseidon.library/psdGetPipeActual
+poseidon.library/psdGetPipeError
+poseidon.library/psdGetStringDescriptor
+poseidon.library/psdLockReadDevice
+poseidon.library/psdLockReadPBase
+poseidon.library/psdLockWriteDevice
+poseidon.library/psdLockWritePBase
+poseidon.library/psdNumToStr
+poseidon.library/psdPipeSetup
+poseidon.library/psdReleaseAppBinding
+poseidon.library/psdRemClass
+poseidon.library/psdRemErrorMsg
+poseidon.library/psdRemHardware
+poseidon.library/psdSafeRawDoFmt
+poseidon.library/psdSendPipe
+poseidon.library/psdSetAltInterface
+poseidon.library/psdSetAttrs
+poseidon.library/psdSetDeviceConfig
+poseidon.library/psdSpawnSubTask
+poseidon.library/psdUnlockDevice
+poseidon.library/psdUnlockPBase
+poseidon.library/psdWaitPipe
+
+Need to be added:
+psdAddEventHandler
+psdRemEventHandler
+psdSendEvent
+
+psdReleaseDevBinding
+psdReleaseIfBinding
+
+psdReadCfg
+psdWriteCfg
+psdFindCfgForm
+psdNextCfgForm
+psdRemCfgForm
+
+psdAddCfgEntry
+psdRemCfgChunk
+psdGetCfgChunk
+psdParseCfg
+psdUnbindAll
+
+psdSetClsCfg
+psdGetClsCfg
+psdSetUsbDevCfg
+psdGetUsbDevCfg
+
+psdFindInterface
+psdFindEndpoint
+psdCopyStrFmt
+psdSetForcedBinding
+psdGetForcedBinding
+
+psdCheckPipe
+
+/* V3 */
+
+psdOpenStreamA
+psdCloseStream
+psdStreamRead
+psdStreamWrite
+psdStreamFlush
+psdGetStreamError
+
+psdCalculatePower
+psdLoadCfgFromDisk
+psdSaveCfgToDisk
+
+
+poseidon.library/psdReadCfg                       poseidon.library/psdReadCfg
+
+   NAME
+        psdReadCfg -- read in a given form into an existing IFF context
+
+   SYNOPSIS
+        success = psdReadCfg(pic, form);
+        D0                   A0   A1
+
+        BOOL psdReadCfg(APTR, APTR);
+
+   FUNCTION
+        Stores the given IFF form in the internal prefs structure at the
+        given Poseidon IFF context.
+
+        The data given in the form must be of the same type (same ID) as the
+        IFF context, otherwise this function will fail.
+
+        It will replace the previous contents of the form completely with
+        the new one.
+
+        The pic parameter points to an internal Poseidon IFF context
+        structure. If pic is set to NULL, the root context is used.
+
+        This function is considered to be semi-private, use with care.
+
+   INPUTS
+        pic - pointer to a Poseidon IFF context structure or NULL for the
+              root context. This structure is private.
+        form - pointer to a valid IFF FORM. May not be NULL.
+
+   RESULT
+        success - TRUE, if everything went okay, or FALSE, if there was
+                  something wrong with the form.
+
+   SEE ALSO
+        psdWriteCfg(), psdFindCfgForm(), psdRemCfgForm(), psdAddCfgEntry()
+
+
+poseidon.library/psdWriteCfg                     poseidon.library/psdWriteCfg
+
+   NAME
+        psdWriteCfg -- convert an IFF context into a serialized IFF form
+
+   SYNOPSIS
+        form = psdWriteCfg(pic);
+        D0                 A0
+
+        APTR psdWriteCfg(APTR);
+
+   FUNCTION
+        psdWriteCfg() takes the given Poseidon IFF context and generates a
+        serialized IFF form out of it. The returned pointer is a buffer to
+        the IFF form data of the contexted given (including all subforms and
+        chunks).
+
+        If the context is NULL, a complete configuration memory dump is
+        created, starting from the root context. The returned pointer then
+        contains the complete Poseidon prefs data.
+
+        The buffer is allocated automatically and has to be freed using the
+        psdFreeVec() call after it is no longer required.
+
+        The size of the buffer can be calculated by adding 8 to the second
+        longword (as it's a normal IFF structure).
+
+        To read out a single chunk instead, use the psdGetCfgChunk()
+        function.
+
+   INPUTS
+        pic - pointer to a Poseidon IFF context structure or NULL for the
+              root context. This structure is private.
+
+   RESULT
+        form - pointer to the IFF FORM generated from the context or NULL,
+               if the function failed (e.g. out of memory).
+
+   SEE ALSO
+        psdReadCfg(), psdFindCfgForm(), psdRemCfgForm(), psdAddCfgEntry(),
+        psdGetCfgChunk()
+
+
+poseidon.library/psdFindCfgForm               poseidon.library/psdFindCfgForm
+
+   NAME
+        psdFindCfgForm -- search for a specific config form
+
+   SYNOPSIS
+        subpic = psdFindCfgForm(pic, formid);
+        D0                      A0   D0
+
+        APTR psdFindCfgForm(APTR, ULONG);
+
+   FUNCTION
+        This function searches the internal configuration space given by the
+        Poseidon IFF context for a certain IFF FORM as given by the form ID.
+
+        The result is a pointer to Poseidon IFF context representing the
+        form found, or NULL, if no such IFF FORM could be discovered.
+
+        As there may be any number of IFF forms with the same ID, the
+        function psdNextCfgForm() can be used obtain any further forms with
+        the same ID.
+
+   INPUTS
+        pic - pointer to a Poseidon IFF context structure or NULL for the
+              root context. This structure is private.
+        formid - longword containing the ID of the form to search.
+
+   RESULT
+        subpic - pointer to the first Poseidon IFF context structure found,
+                 or NULL, if no such form was found.
+
+   SEE ALSO
+        psdNextCfgForm(), psdRemCfgForm(), psdGetCfgChunk()
+
+
+poseidon.library/psdNextCfgForm               poseidon.library/psdNextCfgForm
+
+   NAME
+        psdNextCfgForm -- continue search for a specific config form
+
+   SYNOPSIS
+        nextpic = psdNextCfgForm(pic);
+        D0                       A0
+
+        APTR psdNextCfgForm(APTR);
+
+   FUNCTION
+        psdNextCfgForm() searches for addition IFF FORMs within the same
+        parent Poseidon IFF context.
+
+        The parameter pic given to psdNextCfgForm() should be the one
+        returned by psdFindCfgForm(). There is no need to supply the form ID
+        anymore, because the context already contains this.
+
+        If another IFF form with the same ID is found, the Poseidon IFF
+        context pointer for it will be returned. Otherwise, nextpic will
+        contain NULL.
+
+   INPUTS
+        pic - pointer to a Poseidon IFF context structure.
+
+   RESULT
+        nextpic - pointer to the next Poseidon IFF context structure found,
+                 or NULL, if no additional form could be retrieved.
+
+   SEE ALSO
+        psdNextCfgForm(), psdRemCfgForm(), psdGetCfgChunk()
+
+
+poseidon.library/psdRemCfgForm                 poseidon.library/psdRemCfgForm
+
+   NAME
+        psdRemCfgForm -- remove a configuration form
+
+   SYNOPSIS
+        psdRemCfgForm(pic);
+                      A0
+
+        VOID psdRemCfgForm(APTR);
+
+   FUNCTION
+        Removes the given Poseidon IFF context, including all its chunks and
+        subforms.
+
+        To remove single chunks, use the psdRemCfgChunk() instead.
+
+   INPUTS
+        pic - pointer to a Poseidon IFF context structure, or NULL for the
+              root context (for normal applications, DO NOT USE the NULL
+              pointer).
+
+   SEE ALSO
+        psdFindCfgForm(), psdNextCfgForm(), psdRemCfgChunk()
+
+
+poseidon.library/psdAddCfgEntry               poseidon.library/psdAddCfgEntry
+
+   NAME
+        psdAddCfgEntry -- add a chunk or a whole form to an IFF context
+
+   SYNOPSIS
+        subpic = psdAddCfgEntry(pic, form);
+        D0                      A0   A1
+
+        APTR psdAddCfgEntry(APTR, APTR);
+
+   FUNCTION
+        Using this function you can add an IFF chunk or a complete FORM to
+        the given Poseidon IFF context.
+
+        If the form parameter points to an IFF form buffer (NOT context), the
+        function performs the following:
+            - Adds the given form to the context. If such an form already
+              existed, it will still be added behind the existing one.
+            - Returns a pointer to the newly created Poseidon IFF context.
+
+        If the form parameter points to an IFF chunk only, psdAddCfgEntry
+        does the following:
+            - If no chunk with the same ID exists, it adds it to the given
+              context. Otherwise, the existing chunk will be replaced by the
+              new one.
+            - Returns the previously given context pointer.
+
+        subpic is set to NULL, if an error occurred during adding (e.g.
+        corrupt IFF FORM).
+
+   INPUTS
+        pic - pointer to a Poseidon IFF context structure or NULL for the
+              root context. This structure is private.
+        form - a pointer to a buffer containing the IFF FORM or chunk data.
+
+   RESULT
+        subpic - pointer to the Poseidon IFF context structure (see above)
+                 or NULL, if the form or chunk could not be added.
+
+   SEE ALSO
+        psdAddCfgForm(), psdRemCfgForm(), psdGetCfgChunk(), psdRemCfgChunk()
+
+
+poseidon.library/psdRemCfgChunk               poseidon.library/psdRemCfgChunk
+
+   NAME
+        psdRemCfgChunk -- remove a chunk for a given context
+
+   SYNOPSIS
+        success = psdRemCfgChunk(pic, chunkid);
+        D0                       A0   D0
+
+        BOOL psdRemCfgChunk(APTR, ULONG);
+
+   FUNCTION
+        psdRemCfgChunk() tries to remove a chunk from the given Poseidon IFF
+        context, which has the ID stored in parameter chunkid.
+
+        If no chunk with that ID existed, it will return FALSE, otherwise the
+        return value will be TRUE to show the success of the removal.
+
+        A special case is implemented by using a special chunkid of 0. This
+        will completely empty out the IFF context, by deleting every chunk
+        and form. This is not quite the same as psdRemCfgForm(), as it will
+        not delete the context itself.
+
+   INPUTS
+        pic - pointer to a Poseidon IFF context structure or NULL for the
+              root context. This structure is private.
+        chunkid - the longword containing the ID of the chunk to remove,
+                  or 0, to remove all chunks AND subforms.
+
+   RESULT
+        success - TRUE, if the chunk was found and removed, FALSE otherwise.
+
+   SEE ALSO
+        psdAddCfgForm(), psdRemCfgForm(), psdGetCfgChunk()
+
+
+poseidon.library/psdGetCfgChunk               poseidon.library/psdGetCfgChunk
+
+   NAME
+        psdGetCfgChunk -- convert an IFF context into a serialized IFF form
+
+   SYNOPSIS
+        chunk = psdGetCfgChunk(pic, chunkid);
+        D0                     A0   D0
+
+        APTR psdGetCfgChunk(APTR, ULONG);
+
+   FUNCTION
+        psdGetCfgChunk() searches and returns the chunk with the given ID
+        in chunkid inside the Poseidon IFF context pic. The returned pointer
+        is a buffer to the IFF chunk data.
+
+        If the context is NULL, the root context is used.
+
+        The buffer is allocated automatically and has to be freed using the
+        psdFreeVec() call after it is no longer required.
+
+        The size of the buffer can be calculated by adding 8 to the second
+        longword (as it's a normal IFF structure). The actual data stored in
+        the chunk starts at the third longword (offset 8).
+
+        To obtain a serialized version of an IFF context instead of a single
+        chunk, use the psdWriteCfg() function.
+
+   INPUTS
+        pic - pointer to a Poseidon IFF context structure or NULL for the
+              root context. This structure is private.
+        chunkid - IFF id of the chunk to search.
+
+   RESULT
+        chunk - pointer to the IFF chunk generated from the context or NULL,
+                if the function failed (e.g. out of memory).
+
+   SEE ALSO
+        psdWriteCfg(), psdFindCfgForm(), psdRemCfgForm(), psdAddCfgEntry(),
+        psdGetCfgChunk()
+
+
+poseidon.library/psdSetClsCfg                   poseidon.library/psdSetClsCfg
+
+   NAME
+        psdSetClsCfg -- store the class configuration in the prefs
+
+   SYNOPSIS
+        success = psdSetClsCfg(owner, form);
+        D0                     A0     A1
+
+        BOOL psdSetClsCfg(STRPTR, APTR);
+
+   FUNCTION
+        Stores the class configuration IFF form in the internal prefs
+        structure. This is normally USB device independent preference
+        information, or the default settings for a class.
+
+        The owner parameter is usually the name of the class (but not limited
+        to it). The form parameter has to be a pointer to a valid IFF-FORM
+        with FORM-ID IFFFORM_CLASSDATA (see poseidon.h).
+
+        If the form pointer is NULL, an existing configuration form will be
+        deleted. In any other case, any previously existing data will be
+        overwritten by the given form.
+
+        After successfully calling psdSetClsCfg(), psdGetClsCfg() will return
+        a pointer to the IFF structure for you to parse (or return as a
+        whole). This can be used to incrementally add/replace chunks or whole
+        forms to the existing prefs container using the psdAddCfgEntry() or
+        psdReadCfg() functions.
+
+        psdSetClsCfg() does not store the config to disk. User interaction is
+        normally required for this (Trident, PoPo, or a call to
+        psdSaveCfgToDisk()).
+
+   INPUTS
+        owner - unique name string of the owner, usually the class name.
+        form - pointer to a valid IFF CLASSDATA FORM. If a NULL pointer is
+               given, a minimal config form will be created and previous data
+               will be overwritten.
+
+   RESULT
+        success - TRUE, if everything went okay, or FALSE, if there was
+                  something wrong with the form.
+
+   SEE ALSO
+        psdGetClsCfg(), psdSetUsbDevCfg(), psdGetUsbDevCfg(), psdAddCfgEntry()
+
+
+poseidon.library/psdGetClsCfg                   poseidon.library/psdGetClsCfg
+
+   NAME
+        psdGetClsCfg -- obtain the class configuration from the prefs
+
+   SYNOPSIS
+        pic = psdGetClsCfg(owner);
+        D0                 A0
+
+        APTR psdGetClsCfg(STRPTR);
+
+   FUNCTION
+        This call tries to obtain the previously stored class configuration
+        data. Class prefs can be saved in the internal configuration system
+        using the psdSetClsCfg() function.
+
+        The owner parameter usually corresponds to the name of the class.
+
+        If no configuration has been stored yet, a NULL pointer will be
+        returned. If there is at least a minimal configuration structure,
+        a pointer to this internal IFF context will be returned (this is not
+        a pointer to a FORM memory region!). This minimal configuration can
+        be generated using psdSetClsCfg(owner, NULL);
+
+   INPUTS
+        owner - unique name string of the owner, usually the class name.
+
+   RESULT
+        pic - pointer to a Poseidon IFF context structure. This structure is
+              private. Use the Poseidon configuration management functions to
+              access the data behind it.
+
+   SEE ALSO
+        psdSetClsCfg(), psdSetUsbDevCfg(), psdGetUsbDevCfg(),
+        psdAddCfgEntry(), psdGetCfgChunk(), psdFindCfgForm(), psdWriteCfg()
+
+
+poseidon.library/psdSetUsbDevCfg             poseidon.library/psdSetUsbDevCfg
+
+   NAME
+        psdSetUsbDevCfg -- store usb device specific settings in the prefs
+
+   SYNOPSIS
+        success = psdSetUsbDevCfg(owner, devid, ifid, form);
+        D0                        A0     A2     A3    A1
+
+        BOOL psdSetUsbDevCfg(STRPTR, STRPTR, STRPTR, APTR);
+
+   FUNCTION
+        Stores the USB device specific configuration IFF form in the internal
+        prefs structure. This is normally device or interface specific
+        information, stored indivdually for each device attached.
+
+        The usage is very similar to the psdSetClsCfg() function, hence only
+        the additional parameter devid and ifid are explained here.
+
+        The devid parameter normally contains the DA_IDString identification
+        string as returned by psdGetAttrs(), which is unique to every USB
+        device connected to the stack. devid may NOT be NULL.
+
+        If the class is bound to USB devices as a whole, and not to particular
+        interfaces, it can usually leave the ifid parameter to NULL.
+        Otherwise, ifid should point to the string returned by psdGetAttrs()
+        on the specific interface using IFA_IDString tag.
+
+        The owner parameter is usually the name of the class (but not limited
+        to it). The form data must have ID IFFFORM_DEVCLSDATA, if the ifid is
+        NULL or IFFFORM_IFCLSDATA, if ifid is not NULL. Otherwise, the call
+        to this function will fail.
+
+        If the form pointer is NULL, an existing configuration form will be
+        deleted. In any other case, any previously existing data will be
+        overwritten by the given form.
+
+        After successfully calling psdSetUsbDevCfg(), psdGetUsbDevCfg() will
+        return a pointer to the IFF structure for you to parse (or return as
+        a whole). This can be used to incrementally add/replace chunks or
+        whole forms to the existing prefs container using the
+        psdAddCfgEntry() or psdReadCfg() functions.
+
+        psdSetUsbDevCfg() does not store the config to disk. User interaction
+        is normally required for this (Trident, PoPo, or a call to
+        psdSaveCfgToDisk()).
+
+   INPUTS
+        owner - unique name string of the owner, usually the class name.
+        devid - pointer to unique device ID string
+        ifid - pointer to unique interface ID string or NULL, if config is
+               to be stored for the whole device.
+        form - pointer to a valid IFF FORM. If a NULL pointer is given, a
+               minimal config form will be created and previous data will be
+               overwritten.
+
+   RESULT
+        success - TRUE, if everything went okay, or FALSE, if there was
+                  something wrong with the form.
+
+   SEE ALSO
+        psdSetClsCfg(), psdGetClsCfg(), psdGetUsbDevCfg(), psdAddCfgEntry()
+
+
+poseidon.library/psdGetUsbDevCfg             poseidon.library/psdGetUsbDevCfg
+
+   NAME
+        psdGetUsbDevCfg -- obtain the device specific settings from the prefs
+
+   SYNOPSIS
+        pic = psdGetUsbDevCfg(owner, devid, ifid);
+        D0                    A0     A2     A3
+
+        APTR psdGetUsbDevCfg(STRPTR, STRPTR, STRPTR);
+
+   FUNCTION
+        This call tries to obtain the previously stored USB device specific
+        configuration data. This kind of prefs can be saved in the internal
+        configuration system using the psdSetUsbDevCfg() function.
+
+        This call is very similar to psdGetClsCfg(), except for the devid and
+        ifid parameters, which are explained in detail for psdSetUsbDevCfg().
+
+        The owner parameter usually corresponds to the name of the class.
+
+        If no configuration has been stored yet, a NULL pointer will be
+        returned. If there is at least a minimal configuration structure,
+        a pointer to this internal IFF context will be returned (this is not
+        a pointer to a FORM memory region!). This minimal configuration can
+        be generated using psdSetClsCfg(owner, NULL);
+
+   INPUTS
+        owner - unique name string of the owner, usually the class name.
+        devid - pointer to unique device ID string
+        ifid - pointer to unique interface ID string or NULL, if config is
+               to be obtained for the whole device.
+
+   RESULT
+        pic - pointer to a Poseidon IFF context structure. This structure is
+              private. Use the Poseidon configuration management functions to
+              access the data behind it.
+
+   SEE ALSO
+        psdGetClsCfg(), psdSetClsCfg(), psdGetUsbDevCfg(), psdAddCfgEntry(),
+        psdGetCfgChunk(), psdFindCfgForm(), psdWriteCfg()
+
+
+
+poseidon.library/--background--               poseidon.library/--background--
+
+   PURPOSE
+        Poseidon is an USB protocol stack for the Amiga. It serves as a
+        manager and interface between the USB host controller drivers
+        (usbhardware.device) and the class drivers.
+
+        This document is dated 28-Mar-02 19:53:03
+
+   OVERVIEW
+        Poseidon itself is a library. It has no own tasks except for the
+        tasks spawned for each hardware device mounted. The library functions
+        are fully re-entrant and all important structures are protected (or
+        can be protected), when access is to be shared.
+
+        Poseidon uses the following levels of abstraction:
+
+        PsdHardware   - The usb hardware interface the devices are physically
+        (phw)           connected to. There is no limit to the amount and
+                        type of host controller hardware that can be added to
+                        the stack.
+                        A PsdHardware can have up to 127 PsdDevices.
+
+        PsdDevice     - A device mounted to a PsdHardware. Normally, this is
+        (pd)            at least the root hub.
+
+                        A device can have multiple configurations, and a
+                        maximum of one Device<->Class binding.
+
+        PsdConfig     - One or multiple configurations that the usb device
+        (pc)            supports. USB allows only one configuration to be
+                        active at a time. Each configuration must have at
+                        least one interface.
+
+        PsdInterface  - Description of the interfaces, the device supports in
+        (pif)           the chosen configuration. Each interface can have
+                        0 to 15 endpoints (endpoint 0 is always available).
+
+                        Each interface can have an Interface<->Class binding,
+                        if no Device<->Class binding already exists.
+
+        PsdEndpoint   - An endpoint defines the destination port for a
+        (pep)           transfer pipe. Endpoint 0, the default control
+                        endpoint, is not explicitly defined.
+
+        PsdPipe       - A data transfer control pipe. You can allocate as
+        (pp)            many pipes to an endpoint as you like, but each pipe
+                        may be used for only one transfer at a time.
+
+        PsdUsbClass   - An usb class driver. There is hopefully no limitation
+        (puc)           to what a class driver wants to do with an interface
+                        or an device.
+
+        PsdAppBinding - An application binding node. Whenever using a class
+        (pab)           driver is not appropriate, application programmers
+                        can use the AppBinding interface to claim an USB
+                        device.
+
+        PsdErrorMsg   - Supportive structure for postponing an error message.
+        (pem)
+
+        As all these structures are private (except for the information that
+        they all have a Node structure for linking) and subject to change,
+        the information can only be read (and in some cases written aswell)
+        by a call to psdGetAttrs() (and changed using psdSetAttrs()) which
+        use TagLists. This ensures future compatibilty with all extensions
+        and changes made.
+
+        Class drivers are libraries aswell. Whenever a new device is detected
+        by the stack, all classes will be asked whether they want to
+        establish an interface or even the whole binding (that is, if they
+        know the interface protocol and therefore can add its features to the
+        system). In case they want to establish a binding, they normally
+        spawn a subtask with an instance of this binding.
+
+        Device<->Class bindings allow full control over a device, all its
+        configurations and interfaces whereas Interface<->Class bindings are
+        limited to the interface they work on. They may, however, change the
+        interfaces' alternative setting.
+
+        To support application programs, which need to talk to certain USB
+        devices with a vendor specific protocol, and which don't want to
+        through writing a class driver for just one protocol, there is also
+        the possibility to establish application bindings. This allows normal
+        programs to bypass the class interface to claim device bindings. Note
+        that his is not the preferred way to add functionality and should be
+        avoided, if you also could go through the class library interface
+        aswell.
+
+   FILES
+        The poseidon.library itself resides in LIBS:, the USB hardware
+        devices should be in DEVS:USBHardware, and all class drivers should
+        be stored in SYS:Classes/USB.
+
+   BUGS
+        The stack is not finished yet. Some features never have been tested.
+        There will be a lot of bugs hiding in all places. An event handler
+        (mainly for the use by the GUI) is going to be added, aswell as some
+        configuration and GUI hooks for the classes.
+
+        This version is meant to be a working frame for developers to test
+        and add their hardware or for application programmers to add class
+        drivers. Be sure that some things WILL change, be sure to keep
+        contact to me, Chris Hodges <chrisly@platon42.de>.
+
+        Also, bug reports, errors, feature requests are welcome and REQUIRED
+        for Poseidon to be a good product.
+
+
+poseidon.library/psdAbortPipe                   poseidon.library/psdAbortPipe
+
+   NAME
+        psdAbortPipe -- attempt to abort a pipe transaction
+
+   SYNOPSIS
+        psdAbortPipe(pp);
+                     A1
+
+        void psdAbortPipe(APTR);
+
+   FUNCTION
+        Asks the hardware to abort the pipe request. The hardware may or may
+        not grant this and will return the request to you earlier than it
+        might have done. The ioerror code normally will be IOERR_ABORTED in
+        this case.
+
+   NOTE
+        psdAbortPipe() does not Remove() the request from your message reply
+        port or even wait for it to complete. After psdAbortPipe() you must
+        normally wait for the reply message before actually reusing or
+        freeing the pipe using psdWaitPipe().
+
+        If a request is already completed, no action will be taken.
+
+   INPUTS
+        pp - pointer to pipe to abort.
+
+   SEE ALSO
+        psdSendPipe(), psdWaitPipe(), psdGetPipeError(), psdGetPipeActual()
+
+
+poseidon.library/psdAddClass                     poseidon.library/psdAddClass
+
+   NAME
+        psdAddClass -- add an usb class library to the stack
+
+   SYNOPSIS
+        puc = psdAddClass(name, version);
+        D0                A1    D0
+
+        APTR psdAddClass(STRPTR, ULONG);
+
+   FUNCTION
+
+        psdAddClass() tries to open and add an usb class driver to the stack.
+        Be sure only to add libraries to the stack which are really Poseidon
+        compatible usb classes, else a crash is very probable.
+
+        The opening the library succeeds, the class will be added to the
+        class list.
+
+        Usually class libraries will be stored in SYS:Classes/USB.
+
+   INPUTS
+        name - (file)name of the class to add.
+        version - version of library to request.
+
+   RESULT
+        puc - pointer to the library base, or NULL if opening failed.
+
+   SEE ALSO
+        psdRemClass(), psdClassScan()
+
+
+poseidon.library/psdAddErrorMsg               poseidon.library/psdAddErrorMsg
+
+   NAME
+        psdAddErrorMsgA -- add an error or information message for the user
+        psdAddErrorMsg -- varargs stub for psdAddErrorMsgA
+
+   SYNOPSIS
+        pem = psdAddErrorMsgA(level, origin, fmtstr, fmtdata);
+        D0                    D0     A0      A1      A2
+
+        APTR psdAddErrorMsgA(UWORD, STRPTR, STRPTR, APTR);
+
+        pem = psdAddErrorMsg(level, origin, fmtstr, ...);
+
+        APTR psdAddErrorMsg(UWORD, STRPTR, STRPTR, ...);
+
+   FUNCTION
+        Adds an error message for the user. This message will can be read in
+        the GUI or other logging tools. There are four different levels of
+        severity.
+
+   NOTE
+        psdAddErrorMsg() uses a Forbid()/Permit() arbitration. The strings
+        can safely be of any length, but will be truncated at 256 characters.
+
+   INPUTS
+        level - error level, either RETURN_OK (0) for information messages,
+                RETURN_WARN (5) for warnings, RETURN_ERROR (10) for error
+                messages and RETURN_FAIL (20) for fatal failure alerts.
+        origin - string of the module caused the error.
+        fmtstr - formatted string like in printf() or RawDoFmt()
+        fmtdata - format parameters
+
+   RESULT
+        pem - pointer to an error message structure (private) or NULL on
+              failure.
+
+   SEE ALSO
+        psdRemErrorMsg(), psdSafeRawDoFmt(), RawDoFmt()
+
+
+poseidon.library/psdAddHardware               poseidon.library/psdAddHardware
+
+   NAME
+        psdAddHardware -- open and link a new usb hardware into the stack
+
+   SYNOPSIS
+        phw = psdAddHardware(devname, unit);
+        D0                   A0       D0
+
+        APTR psdAddHardware(STRPTR, ULONG);
+
+   FUNCTION
+        psdAddHardware() is used for the stack manager to add a new hardware
+        device to the Poseidon USB stack. The hardware is initialized, but no
+        devices attached to the root hub are enumerated. To do this, just
+        call psdEnumerateHardware().
+
+        As a result a pointer to the internal hardware structure is returned.
+        The data of this structure is private! Do not touch!
+
+        Moreover, the hardware is linked to the list of known hardware
+        devices and will be closed on the expunge of the library.
+
+        This function returns NULL, if the hardware device could not be
+        opened or some other error occured. The user will find the reason in
+        the list of error messages.
+
+   INPUTS
+        devname - pointer to usb hardware device name string
+        unit - unit number of usb hardware device
+
+   RESULT
+        phw - internal hardware pointer. Do not touch (except for node
+              traversal).
+
+   SEE ALSO
+        psdRemHardware(), psdEnumerateHardware()
+
+
+poseidon.library/psdAllocDevice               poseidon.library/psdAllocDevice
+
+   NAME
+        psdAllocDevice -- allocate a device structure
+
+   SYNOPSIS
+        pd = psdAllocDevice(phw);
+        D0                  A0
+
+        APTR psdAllocDevice(APTR);
+
+   FUNCTION
+        Creates a fresh device structure to be filled by the stack during
+        enumeration.
+
+        The device will be linked into stack device list. psdLockWritePBase()
+        will be called to ensure that the list is protected from other tasks
+        during that phase.
+
+        The hub class is probably the only class that will use this call and
+        then psdEnumerateDevice() to fill in the data.
+
+   INPUTS
+        phw - pointer to a hardware structure.
+
+   RESULT
+        pd - pointer to a device structure (private),
+             or NULL if the allocation failed.
+
+   SEE ALSO
+        psdFreeDevice(), psdEnumerateDevice()
+
+
+poseidon.library/psdAllocPipe                   poseidon.library/psdAllocPipe
+
+   NAME
+        psdAllocPipe -- allocate a pipe for transfer requests
+
+   SYNOPSIS
+        pp = psdAllocPipe(pd, mp, ep);
+        D0                A0  A1  A2
+
+        APTR psdAllocPipe(APTR, struct MsgPort *, APTR);
+
+   FUNCTION
+        psdAllocPipe() is the main function to establish a transport pipe to
+        a device endpoint.
+
+        After you have allocated a pipe, you can start sending or receiving
+        packets using psdDoPipe() or psdSendPipe(). If you do not need a pipe
+        anymore, use psdFreePipe() to get rid of it.
+
+        Pipes allocated with this function are automatically assigned to the
+        given endpoint. If you want to establish a pipe to the default
+        control pipe, use an NULL pointer for ep. The settings of the pipe
+        will be read from the endpoint configuration. Additional flags like
+        PPA_NakTimeout can be changed using psdSetAttrs().
+
+        Note that there is no limit to the amount of pipes you can allocate
+        for an endpoint. This can be used to create asynchronous double
+        buffered transfers.
+
+   INPUTS
+        pd - pointer to the device structure you want to allocate the pipe
+             at.
+        mp - pointer to a MsgPort that is used for sending the pipe messages.
+             Must not be NULL.
+        ep - pointer to an endpoint structure or NULL if you want to use the
+             default endpoint.
+
+   RESULT
+        pp - pipe structure allocated or NULL if something failed.
+
+   SEE ALSO
+        psdFreePipe(), psdDoPipe(), psdSendPipe()
+
+
+poseidon.library/psdAllocVec                     poseidon.library/psdAllocVec
+
+   NAME
+        psdAllocVec -- allocate memory for Poseidon system structures.
+
+   SYNOPSIS
+        memptr = psdAllocVec(size);
+        D0                   D0
+
+        APTR psdAllocVec(ULONG);
+
+   FUNCTION
+        Allocates memory from the internal memory pool for Poseidon system
+        structures. The memory is of MEMF_PUBLIC|MEMF_CLEAR type. The memory
+        will be freed automatically on exit of Poseidon (or if linked to a
+        system structure, when the structure gets freed), so be sure that
+        this memory will not be needed somewhere else. Especially this memory
+        is NOT for internal use in your task! Use your own calls to the exec
+        memory functions instead.
+
+        Memory allocated by this function MUST be freed using psdFreeVec() or
+        linked to a system structure that is known to free this memory on
+        removal.
+
+   INPUTS
+        size - size in number of bytes for the to be allocated memory block.
+
+   RESULT
+        memptr - pointer to the requested memory block or NULL on failure.
+
+   SEE ALSO
+        psdFreeVec()
+
+
+poseidon.library/psdClaimAppBinding       poseidon.library/psdClaimAppBinding
+
+   NAME
+        psdClaimAppBindingA -- try to establish a binding to an usb device
+        psdClaimAppBinding -- varargs stub for psdClaimAppBinding()
+
+   SYNOPSIS
+        pab = psdClaimAppBindingA(taglist);
+        D0                        A1
+
+        APTR psdClaimAppBindingA(struct TagList *);
+
+        pab = psdClaimAppBinding(tag1, ...);              
+
+        APTR psdClaimAppBinding(Tag, ...);
+
+   FUNCTION
+        This function tries to claim a device binding to a given device.
+        psdClaimAppBinding() is normally only used by applications, which
+        want to bypass the class modell for the bindings.
+
+        The call will return a pointer to an internal AppBinding structure.
+        This chunk of data will be available only as long as the binding
+        exists. As soon as the device is unplugged, the structure will be
+        deallocated. To provide a simple notification mechanism, you MUST
+        pass a Hook structure using the TagList, which will be called just
+        BEFORE the structure gets freed. Normally your function should then
+        abort all running pipe transfers of your main program and shut down
+        further access to the device.
+
+        As this abortion operation sometimes may be difficult to control with
+        the asynchronous hook call, the device structure will not be freed to
+        avoid crashes, IF AND ONLY IF there are still some pipes allocated
+        for this device. However, all further transactions will be denied
+        with an IOERR_ABORTED error code. A call to psdFreePipe(), closing
+        the last pipe will finally free the device data. Even if the device
+        is plugged in again, it will not be re-enabled (as there is no
+        reliable operation to return the device to its previous state and
+        ensure, that this is really the same one unplugged earlier).
+
+        If you wish to terminate the binding yourself, just call
+        psdReleaseAppBinding() with the AppBinding context yourself. Be SURE
+        that the application binding still exists. This will also call your
+        hook.
+
+        The whole acquiration process should be protected with
+        psdLockReadPBase() and psdUnlockPBase().
+
+   NOTE
+        You may not use devices directly, without adding an application
+        binding with psdClaimAppBinding(). This will provide you with a good
+        mechanism to find out if the device you are using gets unplugged and
+        will also ensure exclusive usage.
+
+   INPUTS
+        taglist - pointer to TagItem list, terminated by TAG_END.
+
+   TAGS
+        ABA_ReleaseHook (struct Hook *) - pointer to a function hook that
+            will be called if the binding must be terminated (e.g. when the
+            device has been unplugged). After this call the application
+            binding structure will be gone. The device will also be freed, if
+            there are no open pipes anymore. This hook also will be called
+            from psdReleaseAppBinding(). THIS TAG IS MANDATORY!
+        ABA_Device (APTR) - pointer to the device that should be bound.
+            THIS TAG IS MANDATORY!
+        ABA_UserData (ULONG) - pointer to auxillary data for your private
+            use.
+
+   RESULT
+        pab - pointer to the internal AppBinding structure, if the binding
+              could be established, or NULL, if it failed. This pointer is
+              also available via the DA_Binding field of the device.
+
+   SEE ALSO
+        psdReleaseAppBinding(), psdLockReadPBase(), psdUnlockPBase(),
+        psdFindDevice()
+
+
+poseidon.library/psdClassScan                   poseidon.library/psdClassScan
+
+   NAME
+        psdClassScan -- bind devices and interface to available classes
+
+   SYNOPSIS
+        psdClassScan();
+
+        void psdClassScan();
+
+   FUNCTION
+        Traverses all devices currently available in the stack and tries to
+        establish bindings between those devices and its interfaces with usb
+        class drivers available, each at a time.
+
+   SEE ALSO
+        psdAddClass(), psdRemClass()
+
+
+poseidon.library/psdCopyStr                       poseidon.library/psdCopyStr
+
+   NAME
+        psdCopyStr -- allocate memory for and copy a given string
+
+   SYNOPSIS
+        newstrptr = psdCopyStr(strptr);
+        D0                     A0
+
+        STRPTR psdCopyStr(STRPTR);
+
+   FUNCTION
+        psdCopyStr() takes a NULL-terminated string and copies its contents
+        to a newly allocated buffer. The pointer to this buffer is returned
+        as result.
+
+        The memory will be allocated from the internal memory pool and must
+        be freed using psdFreeVec(). DO NOT allocate memory this way if
+        you're not going to free the memory while you've got the
+        poseidon.library open. This memory CAN and WILL go away whenever the
+        library is expunged.
+
+        This function returns NULL, if something went wrong.
+
+   INPUTS
+        strptr - pointer to the string to be copied.
+
+   RESULT
+        newstrptr - pointer to the copied string buffer or NULL on
+                    failure.
+
+   SEE ALSO
+        psdFreeVec()
+
+
+poseidon.library/psdDelayMS                       poseidon.library/psdDelayMS
+
+   NAME
+        psdDelayMS -- wait for a given amount of milliseconds
+
+   SYNOPSIS
+        psdDelayMS(milli);
+                   D0
+
+        void psdDelayMS(ULONG);
+
+   FUNCTION
+        Delays the execution of the current task by the given amount of
+        milliseconds. The call is guaranteed to wait at least that amount of
+        milliseconds, but as usually in a multitasking environment, the call
+        could also take longer to return.
+
+   INPUTS
+        milli - number of milliseconds to wait.
+
+
+poseidon.library/psdDoPipe                         poseidon.library/psdDoPipe
+
+   NAME
+        psdDoPipe -- synchronous transfer to endpoint
+
+   SYNOPSIS
+        ioerr = psdDoPipe(pp, data, length);
+        D0                A1  A0    D0
+
+        LONG psdDoPipe(APTR, APTR, ULONG);
+
+   FUNCTION
+        Start a transfer to an endpoint. Waits until the request is done and
+        then returns zero, if everything went okay, or an error code
+        otherwise. See devices/usbhardware.h for a list of errors.
+
+   NOTE
+        The direction of the transfer is determined by the type of the
+        endpoint for bulk, interrupt and isochronous transfers. For control
+        transfers, however, this is given by the URTF_IN/URTF_OUT flags in
+        the bmRequestType field of the setup packet, which can be set by
+        psdPipeSetup(). For control transfers without data phase, using a
+        NULL pointer for data and zero for the length is permitted. Also,
+        the wLength field of the setup packet is filled automatically with
+        the correct length of your data transfer request.
+
+        Note well that this call will hang until the request is answered. In
+        the case of interrupt transfers, this may never happen at all. Use
+        psdSendPipe() for those cases or enable the NAK timeout feature using
+        psdSetAttrs().
+
+        psdDoPipe() is just a call to psdSendPipe() followed by a
+        psdWaitPipe().
+
+   INPUTS
+        pp - pointer to pipe structure to send the request to.
+        data - pointer to the data buffer to send or receive.
+        length - number of bytes to transfer
+
+   RESULT
+        ioerr - zero, if everthing went okay, else the IO error code.
+
+   SEE ALSO
+        psdPipeSetup(), psdSendPipe(), psdAbortPipe(), psdWaitPipe()
+
+
+poseidon.library/psdEnumerateDevice       poseidon.library/psdEnumerateDevice
+
+   NAME
+        psdEnumerateDevice -- start the enumeration process for a new device
+
+   SYNOPSIS
+        pd = psdEnumerateDevice(pp);
+        D0                      A1
+
+        APTR psdEnumerateDevice(APTR);
+
+   FUNCTION
+        This function is used to enumerate a device that is still on the bus
+        without having a valid address and still unconfigured. It will be
+        called by the psdEnumerateHardware() function (for the root hub) and
+        the hub class for devices connected downstream.
+
+        psdLockWriteDevice() will be called to ensure that the device is
+        protected from other tasks during that phase.
+
+   INPUTS
+        pp - pointer to a default control pipe, allocated with psdAllocPipe()
+             on the freshly created device using psdAllocDevice()
+
+   RESULT
+        pd - pointer to the device structure (private), or NULL if the
+             enumeration failed.
+
+   SEE ALSO
+        psdAllocDevice(), psdFreeDevice(), psdEnumerateHardware(),
+        psdAllocPipe()
+
+
+poseidon.library/psdEnumerateHardware   poseidon.library/psdEnumerateHardware
+
+   NAME
+        psdEnumerateHardware -- start enumeration of the root hub
+
+   SYNOPSIS
+        pd = psdEnumerateHardware(phw);
+        D0                        A0
+
+        APTR psdEnumerateHardware(APTR);
+
+   FUNCTION
+        After the hardware has been allocated, the root device of the
+        hardware (normally the root hub) must be enumerated using
+        psdEnumerateHardware(). It adds the initial device to the device list
+        if it configures correctly.
+
+        The next step then is just to call psdClassScan() which will do the
+        rest.
+
+   INPUTS
+        phw - pointer to a previously allocated hardware.
+
+   RESULT
+        pd - pointer to the root device, or NULL if configuration
+             failed.
+
+   SEE ALSO
+        psdAllocHardware(), psdFreeHardware(), psdClassScan()
+
+
+poseidon.library/psdFindDevice                 poseidon.library/psdFindDevice
+
+   NAME
+        psdFindDeviceA -- find a specific device in the device list
+        psdFindDevice -- varargs stub for psdFindDeviceA()
+
+   SYNOPSIS
+        pd = psdFindDeviceA(oldpd, taglist);
+        D0                  A0      A1
+
+        APTR psdFindDeviceA(APTR, struct TagList *);
+
+        pd = psdFindDevice(oldpd, tag1, ...);
+
+        APTR psdFindDevice(APTR, Tag, ...);
+
+   FUNCTION
+        Just like psdGetNextDevice(), psdFindDevice() is used to traverse the
+        list of all devices available to stack. The only difference is, that
+        you can give certain attributes that the device has to match ALL tags
+        to be returned by this function. The search will also cross all
+        mounted hardware devices.
+
+        psdFindDevice() needs to be protected with a pair of
+        psdLockReadPBase() and psdUnlockPBase() during traversal.
+
+   NOTE
+        You may not use devices directly, without adding an application
+        binding with psdClaimAppBinding(). This will provide you with a good
+        mechanism to find out if the device you are using gets unplugged and
+        will also ensure exclusive usage.
+
+   INPUTS
+        oldpd - NULL for the first device or pointer to the last device
+                found.
+        taglist - pointer to TagItem list, terminated by TAG_END. Every given
+                  tag must match to return the device.
+
+   TAGS
+        Not all available tags are supported. Here's a list of what seemed
+        sensible to add:
+
+        DA_Class (UWORD) - Class code to match. Note that most devices
+            use interface class codes instead of device class codes.
+        DA_SubClass (UWORD) - Subclass code to match.
+        DA_Protocol (UWORD) - Protocol code to match.
+        DA_VendorID (UWORD) - Vendor ID number. This is a 
+        DA_ProductID (UWORD) - Vendor specific product ID. Only valid, if
+            DA_HasDevDesc is TRUE.
+        DA_Version (UWORD) - BCD number of device/product version. Only
+            valid, if DA_HasDevDesc is TRUE.
+        DA_Manufacturer (STRPTR) - pointer to a manufacturer string. If no
+            manufacturer string could be read from the device, Poseidon
+            will generate a string out of the vendor ID. Be sure to handle
+            a NULL pointer. Only valid, if DA_HasDevDesc is TRUE.
+        DA_ProductName (STRPTR) - pointer to the product name. If no product
+            name could be read from the device, Poseidon will generate one
+            out of the class, the vendor and the product ID. Be sure to
+            handle a NULL pointer. Only valid, if DA_HasDevDesc is TRUE.
+        DA_Binding (APTR) - normally used with an NULL pointer to ensure the
+            device has no binding already.
+
+   RESULT
+        pd - pointer to the device found in the list, or NULL if there was no
+             device matching the criteria.
+
+   SEE ALSO
+        psdLockReadPBase(), psdUnlockPBase(), psdGetNextDevice(),
+        psdClaimAppBinding(), psdReleaseAppBinding()
+
+
+poseidon.library/psdFreeDevice                 poseidon.library/psdFreeDevice
+
+   NAME
+        psdFreeDevice -- deallocate a device and free all bindings
+
+   SYNOPSIS
+        psdFreeDevice(pd);
+                      A0
+
+        void psdFreeDevice(APTR);
+
+   FUNCTION
+        Removes and deallocates the given device from the system. All
+        previously allocated configuration structures and class bindings will
+        be freed aswell. The pointer becomes invalid right after.
+
+        psdFreeDevice() will use the semaphore protection of
+        psdLockWritePBase().
+
+   INPUTS
+        pd - pointer to a device structure.
+
+   SEE ALSO
+        psdAllocDevice()
+
+
+poseidon.library/psdFreePipe                     poseidon.library/psdFreePipe
+
+   NAME
+        psdFreePipe -- free a previously allocated pipe
+
+   SYNOPSIS
+        psdFreePipe(pp);
+                    A1
+
+        void psdFreePipe(APTR);
+
+   FUNCTION
+        Deallocate a pipe created with psdAllocPipe() before. The pp pointer
+        becomes invalid right after this call.
+
+        Be sure that there is no request pending for this pipe. If you ever
+        done asynchronous IO, you should call psdAbortPipe() and
+        psdWaitPipe() before psdFreePipe() to be on the safe side.
+
+   INPUTS
+        pp - pointer to pipe structure to deallocate.
+
+   SEE ALSO
+        psdAllocPipe(), psdSendPipe(), psdAbortPipe(), psdWaitPipe()
+
+
+poseidon.library/psdFreeVec                       poseidon.library/psdFreeVec
+
+   NAME
+        psdFreeVec -- free memory allocated by psdAllocVec()
+
+   SYNOPSIS
+        psdFreeVec(memptr);
+                   A1
+
+        void psdFreeVec(APTR);
+
+   FUNCTION
+        Frees the memory allocated by psdAllocVec(). Do not pass any other
+        pointer to this function. Be sure that the given vector is not linked
+        to any internal structure or memory might be freed twice.
+
+   INPUTS
+        memptr - pointer to the memory block allocated using psdAllocVec()
+                 or NULL.
+
+   SEE ALSO
+        psdAllocVec()
+
+
+poseidon.library/psdGetAttrs                     poseidon.library/psdGetAttrs
+
+   NAME
+        psdGetAttrsA -- get information from an internal stack structure
+        psdGetAttrs -- varargs stub for psdGetAttrsA()
+
+   SYNOPSIS
+        num = psdGetAttrsA(type, psdstruct, taglist);
+        D0                 D0    A0         A1
+
+        LONG psdGetAttrsA(ULONG, APTR, struct TagList *);
+
+        num = psdGetAttrs(type, psdstruct, tag1, ...);
+
+        LONG psdGetAttrs(ULONG, APTR, Tag, ...);
+
+   FUNCTION
+        Acquires attribute information from an internal stack structure,
+        according to the attributes chosen in the tag list. For each entry in
+        the tag list, ti_Tag identifies the attribute and ti_Data is a
+        pointer to the long variable where you wish the result to be stored.
+
+        There are currently a number of ten different system structures which
+        can be accessed in this way. To avoid adding multiple functions with
+        the same semantics, psdGetAttrs() requires the type of the structure
+        passed.
+
+   INPUTS
+        type - describes the type of the structure passed.
+               See libraries/poseidon.h for details.
+        psdstruct - pointer to the system structure on which information
+                    should be gathered. Can be NULL only for PGA_STACK.
+        taglist - pointer to TagItem list, terminated by TAG_END.
+
+   TAGS
+        All tags are read-only, except stated otherwise.
+
+        PGA_STACK: (read-only)
+        PA_HardwareList (struct List *) - pointer to the list of hardware in
+            the system.
+        PA_ClassList (struct List *) - pointer to the list of classes.
+        PA_ErrorMsgList (struct List *) - pointer to the list of error
+            messages, that have been encountered so far. The entries in this
+            list are only valid inside a Forbid()/Permit() clause.
+
+        PGA_ERRORMSG: (read-only)
+        EMA_Level (UWORD) - level indicating the severeness of an error.
+            Normally corresponds to RETURN_OK, RETURN_WARN, RETURN_ERROR, and
+            RETURN_FAIL of dos/dos.h.
+        EMA_Origin (STRPTR) - points to the name of the module that caused
+            the error.
+        EMA_Msg (STRPTR) - a pointer to the error message itself.
+
+        PGA_USBCLASS: (read-only)
+        UCA_ClassBase (struct Library *) - base pointer of the class library.
+            You should consider opening the library using OpenLibrary() and
+            UCA_ClassName, instead of using UCA_ClassBase directly.
+        UCA_ClassName (STRPTR) - pointer to the name string of the class.
+        UCA_UseCount (UWORD) - number of bindings active with this class.
+
+        PGA_HARDWARE: (read-only)
+        HA_DeviceName (STRPTR) - pointer to the name string of the device
+            driver, opened by OpenDevice().
+        HA_DeviceUnit (ULONG) - unit number of the hardware device.
+        HA_ProductName (STRPTR) - product name of the usb hardware board.
+
+        PGA_DEVICE: (partially read/write)
+        DA_Address (UWORD) - device address on the usb bus. Only valid, if
+            DA_HasAddress is TRUE.
+        DA_NumConfigs (UWORD) - number of configs available for this device.
+            Only valid, if DA_HasDevDesc is TRUE.
+        DA_CurrConfig (UWORD) - id number of active configuration.
+        DA_HubDevice (APTR) - pointer to the hub device the device is
+            connected to or NULL for the root hub. May be changed, but is
+            only sensible of doing so by the hub class.
+        DA_UsbVersion (UWORD) - BCD number with the version of usb spec this
+            device follows. Only valid, if DA_HasDevDesc is TRUE.
+        DA_Class (UWORD) - Class code of the device. Note that most devices
+            use interface class codes instead of device class codes. Only
+            valid, if DA_HasDevDesc is TRUE.
+        DA_SubClass (UWORD) - Subclass code. Only valid, if DA_HasDevDesc is
+            TRUE.
+        DA_Protocol (UWORD) - Protocol code. Only valid, if DA_HasDevDesc is
+            TRUE.
+        DA_VendorID (UWORD) - Vendor ID number. Can be converted into a
+            string using PsdNumToStr(). Only valid, if DA_HasDevDesc is TRUE.
+        DA_ProductID (UWORD) - Vendor specific product ID. Only valid, if
+            DA_HasDevDesc is TRUE.
+        DA_Version (UWORD) - BCD number of device/product version. Only
+            valid, if DA_HasDevDesc is TRUE.
+        DA_Manufacturer (STRPTR) - pointer to a manufacturer string. If no
+            manufacturer string could be read from the device, Poseidon will
+            generate a string out of the vendor ID. Be sure to handle a NULL
+            pointer. Only valid, if DA_HasDevDesc is TRUE.
+        DA_ProductName (STRPTR) - pointer to the product name. If no product
+            name could be read from the device, Poseidon will generate one
+            out of the class, the vendor and the product ID. Be sure to
+            handle a NULL pointer. Only valid, if DA_HasDevDesc is TRUE.
+        DA_Hardware (APTR) - uplinking pointer to the hardware structure the
+            device is running on.
+        DA_LangIDArray (UWORD *) - pointer to a null terminated array of
+            languages the devices understands. If no such information could
+            be acquired, this will be a NULL pointer. The LangIDs can be
+            converted into readable strings using a call to psdNumToStr().
+        DA_CurrLangID (UWORD) - ID of the language the device is using
+            currently. The stack will try to set a sensible value here
+            during enumeration. This value can also be modified, but will
+            only effect future calls to PsdGetStringDescriptor(), not prior
+            ones.
+        DA_Binding (APTR) - pointer to class private binding structure which
+            currently has a binding to the device or NULL, if no class
+            claimed it. If DA_HasAppBinding is TRUE, this is a pointer to the
+            AppBinding structure.
+        DA_BindingClass (struct Library *) - class currently having a device
+            binding. Only valid if DA_Binding is not NULL AND
+            DA_HasAppBinding is FALSE.
+        DA_IsLowspeed (BOOL) - Determines if the device is a lowspeed or full
+            speed device. Can be set, but this will probably ever used by the
+            hub class.
+        DA_IsConnected (BOOL) - is TRUE, if the device is still mounted to
+            the USB or FALSE, if it has been disconnected. This is normally
+            the first thing to check whenever your pipe requests come back
+            with UHIOERR_TIMEOUT. Hence, avoid transfers to unconnected
+            devices.
+        DA_HasAddress (BOOL) - is TRUE, if the device has been assigned an
+            address. Normally, no devices with DA_HasAddress set to FALSE
+            will remain in the system.
+        DA_HasDevDesc (BOOL) - TRUE, if the stack was able to read out the
+            device descriptor. this will yield information like product ID,
+            device class etc.. FALSE, if something went wrong.
+        DA_IsConfigured (BOOL) - yields TRUE, if there is an configuration to
+            work with. This means that you can look at the list of
+            configurations and may also expect interface and endpoint
+            descriptors. If something went wrong during the config probing
+            process, this returns FALSE.
+        DA_HasAppBinding (BOOL) - yields TRUE, if there is an application
+            binding.
+        DA_ConfigList (struct List *) - pointer to the list of
+            configurations available for this device.
+
+        PGA_CONFIG: (read-only)
+        CA_ConfigNum (UWORD) - returns the internal number of the config
+            given. Can be used to set the config with psdSetDeviceConfig().
+        CA_ConfigName (STRPTR) - gives back a name for the config. If no
+            specific name could be read out from the device, Poseidon
+            will generate a default string.
+        CA_MaxPower (UWORD) - returns the maximum power in mA the device
+            will use in this configuration.
+        CA_NumInterfaces (UWORD) - holds the number of interfaces available
+            in this configuration.
+        CA_Device (APTR) - uplinking pointer to the device the config is
+            attached to.
+        CA_InterfaceList (struct List *) - pointer to the list of interfaces
+            available for the config.
+        CA_Attrs (UWORD) - attributes for this config (see USB specs).
+        CA_SelfPowered (BOOL) - if the device is self-powered in this config,
+            this flag will return TRUE. On FALSE, device is in bus-powered
+            mode.
+        CA_RemoteWakeup (BOOL) - in the case the device supports the remote
+            wakeup feature, this field will be TRUE.
+
+        PGA_INTERFACE: (read-only)
+        IFA_InterfaceNum (UWORD) - returns the interface number.
+        IFA_AlternateNum (UWORD) - if the interface has alternative settings,
+            this will be its number, otherwise just zero.
+        IFA_InterfaceName (STRPTR) - pointer to a string describing the
+            interface. Poseidon will generate a default string if no specific
+            name could be read from the device.
+        IFA_Class (UWORD) - class code of the interface. See devices/usb.h
+            for the list of known classes. psdNumToStr() may be used to
+            convert this number into human readable form.
+        IFA_SubClass (UWORD) - class dependant subclass code. Some subclasses
+            are defined in devices/usb.h.
+        IFA_Protocol (UWORD) - class specific protocol code.
+        IFA_NumEndpoints (UWORD) - number of endpoints available for this
+            interface, excluding the default control endpoint 0.
+        IFA_Binding (APTR) - pointer to a private binding structure, if the
+            interface has been claimed by a class or NULL, if no binding
+            exists.
+        IFA_BindingClass (struct Library *) - library pointer of the class
+            having a binding to this interface. Only valid if IFA_Binding is
+            not NULL.
+        IFA_Config (APTR) - uplinking pointer to the config the interface is
+            attached to.
+        IFA_EndpointList (struct List *) - pointer to the list of endpoints
+            available for this interface.
+        IFA_AlternateIfList (struct List *) - pointer to the list of
+            alternate settings available. The entries in this list are normal
+            interface structures except for the IFA_Binding and
+            IFA_BindingClass are not valid in the alternative setting. To
+            make this setting the active one, use psdSetAltInterface().
+
+        PGA_ENDPOINT: (read-only)
+        EA_EndpointNum (UWORD) - number of the endpoint.
+        EA_TransferType (UWORD) - transfer type, either USEAF_CONTROL,
+            USEAF_ISOCHRONOUS, USEAF_BULK or USAEF_INTERRUPT
+            (see devices/usb.h).
+        EA_MaxPktSize (UWORD) - returns the MaxPktSize for this endpoint.
+        EA_Interval (UWORD) - for interrupt endpoints, this field will
+            contain the interval in milliseconds before the request should be
+            retried.
+        EA_Interface (APTR) - uplinking pointer to the interface the endpoint
+            is attached to.
+        EA_IsIn (BOOL) - returns TRUE for IN (device to host) endpoints or
+            FALSE for OUT (host to device) endpoints.
+
+        PGA_PIPE: (partially read/write)
+        PPA_Endpoint (APTR) - pointer to the endpoint the pipe is associated
+            with or NULL for default endpoint 0. Can be set by the user.
+        PPA_EndpointNum (UWORD) - number of target endpoint. This field can
+            be written for special 'hacking' purpose.
+        PPA_DeviceAddress (UWORD) - device address of the usb device. Can be
+            changed, but consider this hacking, that might disturb other
+            devices on the bus.
+        PPA_Error (BYTE) - returns the error code for the last transfer. See
+            devices/usbhardware.h for the list of possible errors. This error
+            code can also be converted to readable format using a call to
+            psdNumToStr().
+        PPA_Actual (ULONG) - number of bytes actually transferred during last
+            pipe transfer.
+        PPA_MaxPktSize (UWORD) - returns the number of bytes allowed for one
+            packet. Can be changed (for good reasons only).
+        PPA_IORequest (struct UsbHWIOReq *) - pointer to the IO request used
+            by the pipe. Note that you will probably never wish to read or
+            change fields in this IORequest yourself. Use the tags instead.
+        PPA_NakTimeout (BOOL) - if set to TRUE, the pipe will be retired
+            after the time given with PPA_NakTimeoutTime, when the device
+            constantly replies with NAKs. This could be the case if no data
+            is available at the endpoint, or the usb device is broken in some
+            kind. Default is FALSE, which means that the pipe will never be
+            retired due to NAKs. Can be both read and written.
+        PPA_NakTimeoutTime (ULONG) - time to wait in milliseconds until the
+            request is retired due to NAK timeout (see above). This field can
+            and should be written, if PPA_NakTimeout is set to TRUE.
+        PPA_NoShortPackets (BOOL) - if set to TRUE, no short package (packet
+            with size shorter than MaxPktSize) will be generated on OUT
+            transfers, if this bit is set. This allows you to generate a
+            constant stream of data with multiple requests. To be effective,
+            the transfer size must be a multiple of MaxPktSize.
+        PPA_AllowRuntPackets (BOOL) - allow packets that are smaller than the
+            number of bytes specified without returning UHIOERR_RUNTPACKET.
+            You will have to read the PPA_Actual field (or use
+            psdGetPipeActual()) to get the actual amount of data transferred.
+
+        PGA_APPBINDING: (read/write)
+        ABA_ReleaseHook (struct Hook *) - pointer to a function hook that
+            will be called if the binding must be terminated (e.g. when the
+            device has been unplugged). After this call the application
+            binding structure will be gone (see psdClaimAppBinding() for more
+            details). The device will also be freed, if there are no open
+            pipes anymore. This hook also will be called from
+            psdReleaseAppBinding().
+        ABA_Device (APTR) - pointer to the device that is bound with this
+            binding. Do not change this while running.
+        ABA_UserData (ULONG) - pointer to auxillary data for your private
+            use.
+
+   RESULT
+        num - number of tags actually read or -1, if the request was not
+              supported somehow.
+
+   SEE ALSO
+        psdSetAttrs(), psdNumToStr()
+
+
+poseidon.library/psdGetNextDevice           poseidon.library/psdGetNextDevice
+
+   NAME
+        psdGetNextDevice -- traverse the device list
+
+   SYNOPSIS
+        pd = psdGetNextDevice(oldpd);
+        D0                    A0
+
+        APTR psdGetNextDevice(APTR);
+
+   FUNCTION
+        psdGetNextDevice() is used to traverse the list of all devices
+        available to stack. It will also cross all mounted hardware devices.
+
+        psdGetNextDevice() needs to be protected with a pair of
+        psdLockReadPBase() and psdUnlockPBase() during traversal.
+
+   INPUTS
+        oldpd - NULL for the first device, or pointer to the last device.
+
+   RESULT
+        pd - pointer to the next device in the list, or NULL if there was no
+             further device.
+
+   SEE ALSO
+        psdLockReadPBase(), psdUnlockPBase(), psdFindDevice()
+
+
+poseidon.library/psdGetPipeActual           poseidon.library/psdGetPipeActual
+
+   NAME
+        psdGetPipeActual -- get amount of bytes transferred with a pipe
+
+   SYNOPSIS
+        length = psdGetPipeActual(pp);
+        D0                        A1
+
+        ULONG psdGetPipeActual(APTR);
+
+   FUNCTION
+        psdGetPipeActual() is used to determine the amount of data
+        transferred during the last pipe transfer. This will be neccessary if
+        you allowed the reception of runt packets enabled with the
+        PPA_ALLOWRUNTPACKETS tag.
+
+   NOTE
+        You can also use psdGetAttrs() to read the actual length.
+
+   INPUTS
+        pp - pointer to pipe structure to send the request to.
+
+   RESULT
+        length - number of bytes transferred during last pipe transaction.
+
+   SEE ALSO
+        psdGetPipeError(), psdSendPipe(), psdAbortPipe(), psdGetAttrs()
+
+
+poseidon.library/psdGetPipeError             poseidon.library/psdGetPipeError
+
+   NAME
+        psdGetPipeError -- get last IO error from a pipe
+
+   SYNOPSIS
+        ioerr = psdGetPipeError(pp);
+        D0                      A1
+
+        LONG psdGetPipeError(APTR);
+
+   FUNCTION
+        Returns the IO error of the last transfer with the given pipe.
+        Whenever you are using asynchronous pipe transfers, you will have to
+        read the error code yourself from the pipe.
+
+   NOTE
+        You can also use psdGetAttrs() to read the error code.
+
+        Error codes can be converted into human readable strings using the
+        psdNumToStr() function.
+
+   INPUTS
+        pp - pointer to pipe structure to send the request to.
+
+   RESULT
+        ioerr - zero, if everthing went okay, else the IO error code.
+
+   SEE ALSO
+        psdGetPipeActual(), psdSendPipe(), psdAbortPipe(), psdGetAttrs()
+
+
+poseidon.library/psdGetStringDescriptor seidon.library/psdGetStringDescriptor
+
+   NAME
+        psdGetStringDescriptor -- try to get a device string descriptor
+
+   SYNOPSIS
+        str = psdGetStringDescriptor(pp, idx);
+        D0                           A1  D0
+
+        STRPTR psdAddClass(APTR, UWORD);
+
+   FUNCTION
+        Tries to read out a device string descriptor with the given index.
+        Automatically does the unicode to ascii conversion and allocates
+        enough memory to hold the final string.
+
+        On the first invocation on a device, it also tries to acquire the
+        array of supported languages and sets the current language to a
+        reasonable value.
+
+        The returned string buffer should be freed using psdFreeVec(), if it
+        is not linked to some stack internal structure.
+
+   INPUTS
+        pp - pointer to the default control pipe of a device.
+        idx - index number of the string to fetch.
+
+   RESULT
+        str - pointer to a newly created buffer with the string fetched,
+              or NULL if something failed.
+
+   SEE ALSO
+        psdFreeVec()
+
+
+poseidon.library/psdLockReadDevice         poseidon.library/psdLockReadDevice
+
+   NAME
+        psdLockReadDevice -- lock device for reading
+
+   SYNOPSIS
+        psdLockReadDevice(pd);
+                          A0
+
+        void psdLockReadDevice(APTR);
+
+   FUNCTION
+        This function locks the access to the internal device structures for
+        reading. This can be used to ensure the data and pointers remain
+        valid during querying with GetAttrs().
+
+        psdLockReadDevice() calls nest.
+
+        Be sure to unlock the device after the use or you will hang the stack
+        very quickly.
+
+        Normal classes will probably not need to use this call, so it is
+        considered to be at least semi-private.
+
+   WARNING
+        Be sure NOT to have locked the base for reading if you want to lock
+        the base for writing later. THIS WILL CAUSE A DEADLOCK! It is
+        possible to lock the base for reading AFTER having claimed a writing
+        lock, but not the other way round!
+
+   SEE ALSO
+        psdUnlockPBase(), psdLockWritePBase(), psdGetNextDevice()
+
+
+poseidon.library/psdLockReadPBase           poseidon.library/psdLockReadPBase
+
+   NAME
+        psdLockReadPBase -- lock access to internal data structures
+
+   SYNOPSIS
+        psdLockReadPBase();
+
+        void psdLockReadPBase(void);
+
+   FUNCTION
+        This function locks the access to internal data structures for
+        reading. This especially includes traversal of lists, like classes,
+        devices, and hardware (which could change at any time otherwise).
+
+        psdLockReadPBase() calls nest.
+
+        Be sure to unlock the base after the use or you will hang the stack
+        very quickly. Try to keep the locking stage as short as possible.
+
+        Normal classes will probably not need to use this call, so it is
+        considered to be at least semi-private.
+
+   WARNING
+        Be sure NOT to have locked the base for reading if you want to lock
+        the base for writing later. THIS WILL CAUSE A DEADLOCK! It is
+        possible to lock the base for reading AFTER having claimed a writing
+        lock, but not the other way round!
+
+   SEE ALSO
+        psdUnlockPBase(), psdLockWritePBase(), psdGetNextDevice()
+
+
+poseidon.library/psdLockWriteDevice       poseidon.library/psdLockWriteDevice
+
+   NAME
+        psdLockWriteDevice -- lock access for changing device structures
+
+   SYNOPSIS
+        psdLockWriteDevice(pd);
+                           A0
+
+        void psdLockWriteDevice(APTR);
+
+   FUNCTION
+        This function locks the access to a device structure for writing.
+        This will only be neccessary if you change some linkages and
+        structures inside the device, which you will probably never do.
+
+        Note that for some poseidon calls like psdEnumerateDevice(), the
+        locking and unlocking is done automatically. Refer to the docs for
+        that call.
+
+        psdLockWriteDevice() calls nest.
+
+        Be sure to unlock the base after the use or you will hang the stack
+        very quickly.
+
+        Normal classes will probably not need to use this call, so it is
+        considered to be at least semi-private.
+
+   WARNING
+        Be sure NOT to have locked the device for reading if you want to lock
+        the device for writing later. THIS WILL CAUSE A DEADLOCK! It is
+        possible to lock it for reading AFTER having claimed a writing lock,
+        but not the other way round!
+
+   SEE ALSO
+        psdUnlockDevice(), psdLockReadDevice(), psdEnumerateDevice()
+
+
+poseidon.library/psdLockWritePBase         poseidon.library/psdLockWritePBase
+
+   NAME
+        psdLockWritePBase -- lock access for changing structures
+
+   SYNOPSIS
+        psdLockWritePBase();
+
+        void psdLockWritePBase(void);
+
+   FUNCTION
+        This function locks the access to internal data structures for your
+        exclusive manipulation. The base must be locked whenever you are
+        going to add or remove internal nodes, link or unlike system
+        components.
+
+        Note that for some poseidon calls like psdAllocDevice(), the locking
+        and unlocking is done automatically. Refer to the docs for that call.
+
+        psdLockWritePBase() calls nest.
+
+        Be sure to unlock the base after the use or you will hang the stack
+        very quickly.
+
+        Normal classes will probably not need to use this call, so it is
+        considered to be at least semi-private.
+
+   WARNING
+        Be sure NOT to have locked the base for reading if you want to lock
+        the base for writing later. THIS WILL CAUSE A DEADLOCK! It is
+        possible to lock the base for reading AFTER having claimed a writing
+        lock, but not the other way round!
+
+   SEE ALSO
+        psdUnlockPBase(), psdLockReadPBase(), psdGetNextDevice()
+
+
+poseidon.library/psdNumToStr                     poseidon.library/psdNumToStr
+
+   NAME
+        psdNumToStr -- convert a value of certain meaning into a string
+
+   SYNOPSIS
+        str = psdNumToStr(type, idx, defstr);
+        D0                D0    D1   A0
+
+        STRPTR psdNumToStr(UWORD, LONG, STRPTR);
+
+   FUNCTION
+        psdNumToStr() is a support function which will convert IDs and other
+        codes of known type into a readable string.
+
+   NOTE
+        This function adds about 36 KB to the library :)
+
+   INPUTS
+        type - code/value type. Currently this is one of these:
+               NTS_IOERR - for io error codes
+               NTS_LANGID - for USB language IDs
+               NTS_TRANSTYPE - for transfer types
+               NTS_VENDORID - for the USB vendor IDs
+               NTS_CLASSCODE - for known class codes.
+        idx - ID, number or code to convert.
+        defstr - if no string is found in the database, this string will
+                 be returned instead.
+
+   RESULT
+        str - pointer to the string corresponding to the code or defstr, if
+              the code is unknown.
+
+
+poseidon.library/psdPipeSetup                   poseidon.library/psdPipeSetup
+
+   NAME
+        psdPipeSetup -- set request data for control pipes
+
+   SYNOPSIS
+        psdPipeSetup(pp, rt, rq, val, idx);
+                     A1  D0  D1  D2   D3
+
+        void psdPipeSetup(APTR, UWORD, UWORD, UWORD, UWORD);
+
+   FUNCTION
+        This function is used to configure a control pipe request. It sets
+        the bmRequestType, bRequest, wValue and wIndex fields of the
+        eight-byte setup packet (see devices/usb.h for more information). It
+        also does the required big-endian to little-endian conversions on the
+        wValue and wIndex fields.
+
+        The wLength field is set automatically on psdDoPipe() or
+        psdSendPipe().
+
+   INPUTS
+        pp - pointer to the control pipe allocated using psdAllocPipe()
+        rt - bmRequestType field. This is a bitmap with the following flags:
+             URTF_OUT - direction of the transfer is set to from host to
+                 device (OUT). Normally, this is also used for control
+                 transfers without data phase.
+             URTF_IN - data is going to be read in (device to host) during
+                 the data phase.
+             URTF_STANDARD - this is a standard usb request.
+             URTF_CLASS - this is a class specific request.
+             URTF_VENDOR - this is a vendor specific request.
+             URTF_DEVICE - the request is aimed at the whole device.
+             URTF_INTERFACE - the request is targeted at an interface. For
+                 standard usb requests, the interface number is given in the
+                 wIndex field.
+             URTF_ENDPOINT - the request is targeted at an endpoint. For
+                 standard usb requests, the endpoint number is given in the
+                 wIndex field or'ed with URTF_IN, if the endpoint is an IN
+                 endpoint.
+             URTF_OTHER - the request goes somewhere else.
+        rq - request number for bRequest. See devices/usb.h for some standard
+             requests.
+        val - wValue in big-endian format. This is request specific.
+        idx - wIndex in big-endian format. Also request specific.
+
+   SEE ALSO
+        psdDoPipe(), psdSendPipe()
+
+
+poseidon.library/psdReleaseAppBinding   poseidon.library/psdReleaseAppBinding
+
+   NAME
+        psdReleaseAppBinding -- release an application binding again
+
+   SYNOPSIS
+        psdReleaseAppBinding(pab);
+                             A0
+
+        void psdReleaseAppBinding(APTR);
+
+   FUNCTION
+        If you want to terminate using a device, you must release the binding
+        previously acquired by psdClaimAppBinding(). This is done with a
+        corresponding call to psdReleaseAppBinding(). The function will call
+        the your Hook function to allow you take the correct actions to avoid
+        further calls to the device, as psdReleaseAppBinding() might also be
+        called by the stack itself, when the device gets unplugged.
+
+        The hook will be called via utility.library/CallHookPkt() with the
+        hook structure itself in A0, the AppBinding as object in A2 and
+        the contents of the ABA_UserData field as message in A1.
+
+        As this abortion operation sometimes may be difficult to control with
+        the asynchronous hook call, the device structure will not be freed to
+        avoid crashes, IF AND ONLY IF there are still some pipes allocated
+        for this device. However, all further transactions will be denied
+        with an IOERR_ABORTED error code. A call to psdFreePipe(), closing
+        the last pipe will finally free the device data. Even if the device
+        is plugged in again, it will not be re-enabled (as there is no
+        reliable operation to return the device to its previous state and
+        ensure, that this is really the same one unplugged earlier).
+
+        This function will free the AppBinding context, rendering further
+        accesses to the pab pointer invalid.
+
+   INPUTS
+        pab - pointer to the internal AppBinding structure returned by
+              psdClaimAppBinding() or psdGetAttrs() with the DA_Binding tag.
+              Using a NULL pointer is okay, and will just do nothing.
+
+   SEE ALSO
+        psdClaimAppBinding(), psdFindDevice()
+
+
+poseidon.library/psdRemClass                     poseidon.library/psdRemClass
+
+   NAME
+        psdRemClass -- remove an usb class library from the stack
+
+   SYNOPSIS
+        psdRemClass(puc);
+                    A1
+
+        void psdRemClass(struct Library *);
+
+   FUNCTION
+        psdRemClass() removes an class library from the stack. The puc
+        pointer will become invalid right after.
+
+   NOTE
+        If any bindings to interfaces or devices still exist, this call will
+        try to remove all these bindings. If it does not succeed for
+        impossible reasons, this call will go into Wait(0L) state.
+
+   INPUTS
+        puc - pointer to previously opened usb class.
+
+   SEE ALSO
+        psdAddClass(), psdClassScan()
+
+
+poseidon.library/psdRemHardware               poseidon.library/psdRemHardware
+
+   NAME
+        psdRemHardware -- close down an usb hardware
+
+   SYNOPSIS
+        psdRemHardware(phw);
+                       A0
+
+        void psdRemHardware(APTR);
+
+   FUNCTION
+        This function may be used to close down a previously allocated USB
+        hardware using psdAllocHardware(). As all devices connected to the
+        hardware will be closed down aswell, none of these devices may still
+        have bindings. These bindings will be terminated aswell. For this
+        reason, this call might take some time to complete.
+
+        Normally, there is no use calling this function except for the stack
+        manager (GUI) or the library expunge function.
+
+        The phw hardware pointer becomes invalid right after.
+
+   INPUTS
+        phw - internal usb hardware pointer.
+
+   SEE ALSO
+        psdRemHardware(), psdEnumerateHardware()
+
+
+poseidon.library/psdRemErrorMsg               poseidon.library/psdRemErrorMsg
+
+   NAME
+        psdRemErrorMsg -- free an error message
+
+   SYNOPSIS
+        psdRemErrorMsg(pem);
+                       A0
+
+        void psdRemErrorMsg(APTR);
+
+   FUNCTION
+        Remove an error message from the list. This is a function which you
+        probably will never use. Note that the pem pointer gets invalid right
+        after this call.
+
+        A pointer to the list of error messages can be acquired using
+        psdGetAttrs(), but is only valid inside a Forbid()/Permit() clause.
+
+   INPUTS
+        pen - pointer to error message to deallocate.
+
+   SEE ALSO
+        psdAddErrorMsg()
+
+
+poseidon.library/psdSafeRawDoFmt             poseidon.library/psdSafeRawDoFmt
+
+   NAME
+        psdSafeRawDoFmtA -- add an error or information message for the user
+        psdSafeRawDoFmt -- varargs stub for psdSafeRawDoFmtA
+
+   SYNOPSIS
+        psdSafeRawDoFmtA(buf, len, fmtstr, fmtdata);
+                         A0   D0   A1      A2
+
+        void psdSafeRawDoFmtA(STRPTR, ULONG, STRPTR, APTR);
+
+        psdSafeRawDoFmt(buf, len, fmtstr, ...);
+
+        APTR psdSafeRawDoFmt(STRPTR, ULONG, STRPTR, ...);
+
+   FUNCTION
+        Just like sprintf(), but avoid buffer overruns by truncating the
+        string to the maximum buffer size.
+
+   INPUTS
+        buf - pointer to a buffer to store the formatted string in.
+        len - size of this buffer.
+        fmtstr - formatted string like in printf() or RawDoFmt()
+        fmtdata - format parameters
+
+   SEE ALSO
+        RawDoFmt()
+
+
+poseidon.library/psdSendPipe                     poseidon.library/psdSendPipe
+
+   NAME
+        psdSendPipe -- initiate asynchronous pipe transfer
+
+   SYNOPSIS
+        psdSendPipe(pp, data, length);
+                    A1  A0    D0
+
+        void psdSendPipe(APTR, APTR, ULONG);
+
+   FUNCTION
+        Asynchronously start a transfer to an endpoint. Immediately returns
+        from this call without waiting for it to terminate. You will get back
+        the pipe request at the message port you gave when allocating the
+        pipe when it is ready, triggering the MsgPort signal for you when it
+        arrives.
+
+        You can also use psdWaitPipe() to wait for the arrival of the
+        message.
+
+        It is illegal to reuse a pipe request while it is still pending! The
+        contents of the pipe may not be altered during this phase. The
+        restrictions are somewhat similar to the IORequests send by the exec
+        function SendIO().
+
+        If you don't want to wait for the termination of a transfer, you can
+        TRY to abort it using psdAbortPipe(), but you have still to wait for
+        it to arrive.
+
+        To get the error message, you can use the psdGetPipeError() function.
+
+   NOTE
+        The direction of the transfer is determined by the type of the
+        endpoint for bulk, interrupt and isochronous transfers. For control
+        transfers, however, this is given by the URTF_IN/URTF_OUT flags in
+        the bmRequestType field of the setup packet, which can be set by
+        psdPipeSetup(). For control transfers without data phase, using a
+        NULL pointer for data and zero for the length is permitted. Also, the
+        wLength field of the setup packet is filled automatically with the
+        correct length of your data transfer request.
+
+   INPUTS
+        pp - pointer to pipe structure to send the request to.
+        data - pointer to the data buffer to send or receive.
+        length - number of bytes to transfer
+
+   SEE ALSO
+        psdPipeSetup(), psdDoPipe(), psdAbortPipe(), psdWaitPipe(),
+        psdGetPipeError(), psdGetPipeActual()
+
+
+poseidon.library/psdSetAltInterface       poseidon.library/psdSetAltInterface
+
+   NAME
+        psdSetAltInterface -- change an interface to an alternate setting
+
+   SYNOPSIS
+        success = psdSetAltInterface(pp, pif);
+        D0                           A1  A0
+
+        BOOL psdSetAltInterface(APTR, APTR);
+
+   FUNCTION
+
+        USB devices support to have alternate settings for an interface.
+        Whenever such alternate settings exist, you may want to switch
+        between them. psdSetAltInterface() changes the interface to its
+        alternate setting. These interfaces are not stored directly in the
+        list of interfaces but in a sublist for the active one. See
+        psdGetAttrs() for the IFA_AlterateIfList tag.
+
+        This function does some internal magic for the given alternative
+        interface to become the active one.
+
+        If the given interface is already active, this operation will do
+        nothing.
+
+   NOTE
+        Bindings will be moved alltogether. Note that pointers to the
+        previously active interface will become obsolete for the
+        IFA_Binding and IFA_BindingClass calls.
+
+   INPUTS
+        pp - pointer to the default control pipe of a device.
+        pif - pointer to the alternate interface setting to become active.
+
+   RESULT
+        success - TRUE, if the modification was successful or FALSE, if the
+                  interface could not be changed.
+
+   SEE ALSO
+        psdGetAttrs()
+
+
+poseidon.library/psdSetAttrs                     poseidon.library/psdSetAttrs
+
+   NAME
+        psdSetAttrsA -- change fields of an internal stack structure
+        psdSetAttrs -- varargs stub for psdSetAttrsA()
+
+   SYNOPSIS
+        num = psdSetAttrsA(type, psdstruct, taglist);
+        D0                 D0    A0         A1
+
+        LONG psdSetAttrsA(ULONG, APTR, struct TagList *);
+
+        num = psdSetAttrs(type, psdstruct, tag1, ...);
+
+        LONG psdSetAttrs(ULONG, APTR, Tag, ...);
+
+   FUNCTION
+        Changes the fields allowed to be written of an internal stack
+        structure according to the attributes chosen in the tag list. For
+        each entry in the tag list, ti_Tag identifies the attribute and
+        ti_Data is the long data you wish to change the value to.
+
+        There are currently a number of ten different system structures
+        which can be accessed in this way. To avoid adding multiple functions
+        with the same semantics, psdSetAttrs() requires the type of the
+        structure passed.
+
+   INPUTS
+        type - describes the type of the structure passed.
+               See libraries/poseidon.h for details.
+        psdstruct - pointer to the system structure on which information
+                    should be changed. Can be NULL only for PGA_STACK.
+        taglist - pointer to TagItem list, terminated by TAG_END.
+
+   TAGS
+        See psdGetAttrs() for the tags which can be changed.
+
+   RESULT
+        num - number of tags actually read or -1, if the request was not
+              supported somehow.
+
+   SEE ALSO
+        psdGetAttrs()
+
+
+poseidon.library/psdSetDeviceConfig       poseidon.library/psdSetDeviceConfig
+
+   NAME
+        psdSetDeviceConfig -- change the config of a device
+
+   SYNOPSIS
+        success = psdSetDeviceConfig(pp, cfgnum);
+        D0                           A1  D0
+
+        BOOL psdSetDeviceConfig(APTR, UWORD);
+
+   FUNCTION
+        Changes the configuration of the device to a new one. As only a few
+        devices support multiple configurations, and the stack automatically
+        handles this case, you will probably never call this function.
+
+        Classes which want to call psdSetDeviceConfig() must have a device
+        binding. An interface binding is not enough and might conflict with
+        other classes having bindings to interfaces.
+
+   INPUTS
+        pp - pointer to the default control pipe of a device.
+        cfgnum - configuration number as given in the configuration
+                 descriptor.
+
+   RESULT
+        success - TRUE, if the change was successful or FALSE, if the config
+                  could not be altered.
+
+   SEE ALSO
+        psdGetAttrs()
+
+
+poseidon.library/psdSpawnSubTask             poseidon.library/psdSpawnSubTask
+
+   NAME
+        psdSpawnSubTask -- launch a subtask
+
+   SYNOPSIS
+        task = psdSpawnSubTask(name, initpc, userdata);
+        D0                     A0    A1      A2
+
+        struct Task * psdSpawnSubTask(STRPTR, APTR, APTR);
+
+   FUNCTION
+        Simple function to lauch a subtask. The name will be copied and
+        automatically freed at the termination of the task, as will the 8KB
+        of stack allocated.
+
+        The task will use a default priority of 5.
+
+   NOTE
+        If these parameters don't suit you, just write your own code. Note
+        that this really creates a Task and not a DOS Process.
+
+   INPUTS
+        name - name of the task
+        initpc - inital program counter to start the program at.
+        userdata - some data that will be entered in the tc_UserData field.
+
+   RESULT
+        task - pointer to a task structure or NULL, if the task creation
+               failed. Note that the task pointer will become invalid as soon
+               as the tasks terminates. It's recommended that you do not use
+               it as a structure pointer, but a success indicator.
+
+   BUGS
+        Should really use taglists.
+
+
+poseidon.library/psdUnlockDevice             poseidon.library/psdUnlockDevice
+
+   NAME
+        psdUnlockDevice -- unlock access to a device
+
+   SYNOPSIS
+        psdUnlockDevice(pd);
+                        A0
+
+        void psdUnlockDevice(APTR);
+
+   FUNCTION
+        After psdLockReadDevice() or psdLockWriteDevice() had been called to
+        lock the a device, psdUnlockDevice() must be used to unlock it again.
+
+        Be sure to unlock the device after the use or you will hang the stack
+        very quickly.
+
+   SEE ALSO
+        psdLockReadDevice(), psdLockWriteDevice()
+
+
+poseidon.library/psdUnlockPBase               poseidon.library/psdUnlockPBase
+
+   NAME
+        psdUnlockPBase -- unlock access to internal data structures
+
+   SYNOPSIS
+        psdUnlockPBase();
+
+        void psdUnlockPBase(void);
+
+   FUNCTION
+        After psdLockReadPBase() or psdLockWritePBase() had been called to
+        lock the base, psdUnlockPBase() must be used to unlock the base
+        again.
+
+        Be sure to unlock the base after the use or you will hang the stack
+        very quickly.
+
+   SEE ALSO
+        psdLockReadPBase(), psdLockWritePBase(), psdGetNextDevice()
+
+
+poseidon.library/psdWaitPipe                     poseidon.library/psdWaitPipe
+
+   NAME
+        psdWaitPipe -- wait for the completion of a pipe transfer
+
+   SYNOPSIS
+        ioerr = psdWaitPipe(pp);
+        D0                  A1
+
+        LONG psdWaitPipe(APTR);
+
+   FUNCTION
+
+        After you have started a pipe or aborted a pipe, you might want to
+        wait for it to complete or terminate. psdWaitPipe() does this for
+        you: it waits for the pipe message to arrive, removes it from the
+        reply port queue and returns the IO error code.
+
+   NOTE
+        If you don't want to wait for the termination of a transfer, you can
+        TRY to abort it using psdAbortPipe(), but you have still to wait for
+        it to arrive.
+
+   INPUTS
+        pp - pointer to pending pipe to wait for.
+
+   RESULT
+        ioerr - zero, if everthing went okay, else the IO error code.
+
+   SEE ALSO
+        psdPipeSetup(), psdDoPipe(), psdAbortPipe(), psdWaitPipe(),
+        psdGetPipeError(), psdGetPipeActual()
+
+
+
