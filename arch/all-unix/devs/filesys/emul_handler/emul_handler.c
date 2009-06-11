@@ -1448,6 +1448,15 @@ static LONG examine_all(struct emulbase *emulbase,
     LONG error;
     off_t dummy; /* not anything is done with this value but passed to examine */
 
+    if (DOSBase == NULL)
+        /* for MatchPatternNoCase */
+        DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 41);
+
+    if (DOSBase == NULL)
+    {
+        return ERROR_OBJECT_NOT_FOUND;
+    }
+
     eac->eac_Entries = 0;
     if(fh->type!=FHD_DIRECTORY)
 	return ERROR_OBJECT_WRONG_TYPE;
