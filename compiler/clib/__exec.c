@@ -79,6 +79,12 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
             Signal(udata->child, 1 << udata->child_signal);
         }
         
+        if (privdata->acpd_exec_tmparray);
+        {
+            free((void *)privdata->acpd_exec_tmparray);
+            privdata->acpd_exec_tmparray = NULL;
+        }
+
         D(bug("__exec_prepare: Exiting from forked __exec_prepare id=%x, errno=%d\n",
               udata->exec_id, udata->child_errno
         ));
@@ -337,11 +343,6 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         privdata->acpd_exec_olderr = SelectError(err->fcb->fh);
 
     /* Clean up data */
-    if (privdata->acpd_exec_tmparray);
-    {
-        free((void *)privdata->acpd_exec_tmparray);
-        privdata->acpd_exec_tmparray = NULL;
-    }
     if (filenamefree)
         free(filenamefree);
 
@@ -367,11 +368,6 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
 error:
     __exec_cleanup(privdata);
     
-    if (privdata->acpd_exec_tmparray);
-    {
-        free((void *)privdata->acpd_exec_tmparray);
-        privdata->acpd_exec_tmparray = NULL;
-    }
     if (filenamefree)
         free(filenamefree);
     
