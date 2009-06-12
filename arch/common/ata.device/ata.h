@@ -2,7 +2,7 @@
 #define _ATA_H
 
 /*
-   Copyright © 2004-2008, The AROS Development Team. All rights reserved
+   Copyright © 2004-2009, The AROS Development Team. All rights reserved
    $Id$
 
 Desc: ata.device main private include file
@@ -288,15 +288,16 @@ struct ata_Unit
       Here are stored pointers to functions responsible for handling this
       device. They are set during device initialization and point to most
       effective functions for this particular unit. Read/Write may be done
-      in PIO mode reading single sectors, using PIO with multiword or DMA.
+      in PIO mode reading single sectors, using multisector PIO, or
+      multiword DMA.
       */
-   ULONG               (*au_Read32)(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
-   ULONG               (*au_Write32)(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
-   ULONG               (*au_Read64)(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
-   ULONG               (*au_Write64)(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
-   ULONG               (*au_Eject)(struct ata_Unit *);
-   ULONG               (*au_DirectSCSI)(struct ata_Unit *, struct SCSICmd*);
-   BYTE                (*au_Identify)(struct ata_Unit *);
+   BYTE        (*au_Read32)(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
+   BYTE        (*au_Write32)(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
+   BYTE        (*au_Read64)(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
+   BYTE        (*au_Write64)(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
+   BYTE        (*au_Eject)(struct ata_Unit *);
+   BYTE        (*au_DirectSCSI)(struct ata_Unit *, struct SCSICmd*);
+   BYTE        (*au_Identify)(struct ata_Unit *);
 
    VOID                (*au_ins)(APTR, UWORD, ULONG);
    VOID                (*au_outs)(APTR, UWORD, ULONG);
@@ -482,13 +483,13 @@ void ata_outl(ULONG val, UWORD offset, IPTR port);
 void ata_ResetBus(struct ata_Bus *);
 void ata_InitBus(struct ata_Bus *);
 
-int atapi_SendPacket(struct ata_Unit *, APTR, APTR, LONG, BOOL*, BOOL);
+BYTE atapi_SendPacket(struct ata_Unit *, APTR, APTR, LONG, BOOL*, BOOL);
 int atapi_TestUnitOK(struct ata_Unit *);
 
 BYTE atapi_Identify(struct ata_Unit*);
 BYTE ata_Identify(struct ata_Unit*);
 
-ULONG atapi_DirectSCSI(struct ata_Unit*, struct SCSICmd *);
+BYTE atapi_DirectSCSI(struct ata_Unit*, struct SCSICmd *);
 ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen);
 
 int ata_InitBusTask(struct ata_Bus *, struct SignalSemaphore*);

@@ -63,8 +63,9 @@
 #define DEBUG 0
 // use #define xxx(a) D(a) to enable particular sections.
 #define DIRQ(a) D(a)
-#define DIRQ_MORE(a) D(a)
-#define DUMP(a)
+#define DIRQ_MORE(a)
+#define DUMP(a) D(a)
+#define DUMP_MORE(a)
 #define DATA(a) D(a)
 #define DATAPI(a) D(a)
 #define DINIT(a) D(a)
@@ -92,26 +93,26 @@
     Besides some of this functions could conflict with old ide.device or any other
     device.
 */
-static ULONG ata_ReadSector32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
-static ULONG ata_ReadSector64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
-static ULONG ata_ReadMultiple32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
-static ULONG ata_ReadMultiple64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
-static ULONG ata_ReadDMA32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
-static ULONG ata_ReadDMA64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
-static ULONG ata_WriteSector32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
-static ULONG ata_WriteSector64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
-static ULONG ata_WriteMultiple32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
-static ULONG ata_WriteMultiple64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
-static ULONG ata_WriteDMA32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
-static ULONG ata_WriteDMA64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
-static ULONG ata_Eject(struct ata_Unit *);
+static BYTE ata_ReadSector32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
+static BYTE ata_ReadSector64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
+static BYTE ata_ReadMultiple32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
+static BYTE ata_ReadMultiple64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
+static BYTE ata_ReadDMA32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
+static BYTE ata_ReadDMA64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
+static BYTE ata_WriteSector32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
+static BYTE ata_WriteSector64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
+static BYTE ata_WriteMultiple32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
+static BYTE ata_WriteMultiple64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
+static BYTE ata_WriteDMA32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
+static BYTE ata_WriteDMA64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
+static BYTE ata_Eject(struct ata_Unit *);
 static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout);
 
-static ULONG atapi_EndCmd(struct ata_Unit *unit);
+static BYTE atapi_EndCmd(struct ata_Unit *unit);
 
-static ULONG atapi_Read(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
-static ULONG atapi_Write(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
-static ULONG atapi_Eject(struct ata_Unit *);
+static BYTE atapi_Read(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
+static BYTE atapi_Write(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
+static BYTE atapi_Eject(struct ata_Unit *);
 
 static void common_SetBestXferMode(struct ata_Unit* unit);
 
@@ -171,8 +172,9 @@ extern VOID ata_outsl(APTR address, UWORD port, ULONG count);
 
 static void dump(APTR mem, ULONG len)
 {
-    register int i,j;
-    for (j=0; j<(len+15)>>4; ++j)
+    register int i, j = 0;
+
+    DUMP_MORE(for (j=0; j<(len+15)>>4; ++j))
     {
         bug("[ATA  ] %06lx: ", j<<4);
 
@@ -200,45 +202,47 @@ static void ata_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
     register int i = size;
 
     while (size--)
-    {
-        str2[size^1] = str1[size];
-    }
+        str2[size ^ 1] = str1[size];
 
-    while (i--)
-    {
-        if (str2[i] <= ' ')
-            str2[i] = 0;
-    }
+    while (i > 0 && str2[--i] <= ' ')
+        str2[i] = '\0';
 }
-
 
 /*
  * a STUB function for commands not supported by this particular device
  */
-static ULONG ata_STUB(struct ata_Unit *au)
+static BYTE ata_STUB(struct ata_Unit *au)
 {
     bug("[ATA%02ld] CALLED STUB FUNCTION (GENERIC). THIS OPERATION IS NOT "
         "SUPPORTED BY DEVICE\n", au->au_UnitNum);
     return CDERR_NOCMD;
 }
 
-static ULONG ata_STUB_IO32(struct ata_Unit *au, ULONG blk, ULONG len, APTR buf, ULONG* act)
+static BYTE ata_STUB_IO32(struct ata_Unit *au, ULONG blk, ULONG len,
+    APTR buf, ULONG* act)
 {
     bug("[ATA%02ld] CALLED STUB FUNCTION (IO32). THIS OPERATION IS NOT "
         "SUPPORTED BY DEVICE\n", au->au_UnitNum);
     return CDERR_NOCMD;
 }
 
-static ULONG ata_STUB_IO64(struct ata_Unit *au, UQUAD blk, ULONG len, APTR buf, ULONG* act)
+static BYTE ata_STUB_IO64(struct ata_Unit *au, UQUAD blk, ULONG len,
+    APTR buf, ULONG* act)
 {
     bug("[ATA%02ld] CALLED STUB FUNCTION -- IO ACCESS TO BLOCK %08lx:%08lx, LENGTH %08lx. THIS OPERATION IS NOT SUPPORTED BY DEVICE\n", au->au_UnitNum, (blk >> 32), (blk & 0xffffffff), len);
     return CDERR_NOCMD;
 }
 
-static ULONG ata_STUB_SCSI(struct ata_Unit *au, struct SCSICmd* cmd)
+static BYTE ata_STUB_SCSI(struct ata_Unit *au, struct SCSICmd* cmd)
 {
     bug("[ATA%02ld] CALLED STUB FUNCTION. THIS OPERATION IS NOT SUPPORTED BY DEVICE\n", au->au_UnitNum);
     return CDERR_NOCMD;
+}
+
+inline struct ata_Unit* ata_GetSelectedUnit(struct ata_Bus* bus)
+{
+    register int id = (ata_in(ata_DevHead, bus->ab_Port) & 0x10) >> 4;
+    return bus->ab_Units[id];
 }
 
 inline BOOL ata_SelectUnit(struct ata_Unit* unit)
@@ -253,12 +257,6 @@ inline BOOL ata_SelectUnit(struct ata_Unit* unit)
     while (0 != (ATAF_BUSY & ata_ReadStatus(unit->au_Bus)));
 
     return TRUE;
-}
-
-inline struct ata_Unit* ata_GetSelectedUnit(struct ata_Bus* bus)
-{
-    register int id = (ata_in(ata_DevHead, bus->ab_Port) & 0x10) >> 4;
-    return bus->ab_Units[id];
 }
 
 UBYTE ata_ReadStatus(struct ata_Bus *bus)
@@ -285,7 +283,6 @@ void ata_HandleIRQ(struct ata_Bus *bus)
 {
     struct ata_Unit *unit = ata_GetSelectedUnit(bus);
     UBYTE status = ata_ReadAltStatus(bus);
-    UBYTE dma_status;
     BOOL for_us = FALSE;
 
     /*
@@ -644,10 +641,10 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
  * depends if anyone believes that the change for 50 lines
  * would make slow ATA transfers any faster
  */
-static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
+static BYTE ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
 {
     ULONG port = au->au_Bus->ab_Port;
-    ULONG err = 0;
+    BYTE err = 0;
     APTR mem = block->buffer;
     UBYTE status;
 
@@ -826,7 +823,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
 /*
  * atapi packet iface
  */
-int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen, BOOL *dma, BOOL write)
+BYTE atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen, BOOL *dma, BOOL write)
 {
     *dma = *dma && (unit->au_XferModes & AF_XFER_DMA) ? TRUE : FALSE;
     LONG err = 0;
@@ -902,6 +899,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
      * after command is dispatched, we are obliged to give 400ns for the unit to parse command and set status
      */
     DATAPI(bug("[ATAPI] Issuing ATA_PACKET command.\n"));
+    ata_IRQSetHandler(unit, &ata_IRQNoData, 0, 0, 0);
     ata_out(ATA_PACKET, atapi_Command, port);
     ata_WaitNano(400);
     //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
@@ -958,12 +956,12 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
     return err;
 }
 
-ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
+BYTE atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
 {
     APTR buffer = cmd->scsi_Data;
     ULONG length = cmd->scsi_Length;
     BOOL read = FALSE;
-    UBYTE err = 0;
+    BYTE err = 0;
     BOOL dma = FALSE;
 
     cmd->scsi_Actual = 0;
@@ -1012,9 +1010,9 @@ ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
  * chops the large transfers into set of smaller transfers
  * specifically useful when requested transfer size is >256 sectors for 28bit commands
  */
-static ULONG ata_exec_blk(struct ata_Unit *unit, ata_CommandBlock *blk)
+static BYTE ata_exec_blk(struct ata_Unit *unit, ata_CommandBlock *blk)
 {
-    ULONG err=0;
+    BYTE err = 0;
     ULONG part;
     ULONG max=256;
     ULONG count=blk->sectors;
@@ -1682,7 +1680,6 @@ BYTE ata_Identify(struct ata_Unit* unit)
     unit->au_DevType        = DG_DIRECT_ACCESS;
     unit->au_Read32         = ata_ReadSector32;
     unit->au_Write32        = ata_WriteSector32;
-    unit->au_DirectSCSI     = atapi_DirectSCSI;
     unit->au_Eject          = ata_Eject;
     unit->au_XferModes      = 0;
     unit->au_Flags         |= AF_DiscPresent | AF_DiscChanged;
@@ -1763,11 +1760,11 @@ BYTE ata_Identify(struct ata_Unit* unit)
     return 0;
 }
 
-
 /*
  * ata read32 commands
  */
-static ULONG ata_ReadSector32(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
+static BYTE ata_ReadSector32(struct ata_Unit *unit, ULONG block,
+    ULONG count, APTR buffer, ULONG *act)
 {
     ata_CommandBlock acb =
     {
@@ -1783,7 +1780,7 @@ static ULONG ata_ReadSector32(struct ata_Unit *unit, ULONG block, ULONG count, A
         CM_PIORead,
         CT_LBA28
     };
-    register ULONG err;
+    BYTE err;
 
     D(bug("[ATA%02ld] ata_ReadSector32()\n", unit->au_UnitNum));
 
@@ -1795,7 +1792,8 @@ static ULONG ata_ReadSector32(struct ata_Unit *unit, ULONG block, ULONG count, A
     return 0;
 }
 
-static ULONG ata_ReadMultiple32(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
+static BYTE ata_ReadMultiple32(struct ata_Unit *unit, ULONG block,
+    ULONG count, APTR buffer, ULONG *act)
 {
     ata_CommandBlock acb =
     {
@@ -1811,7 +1809,7 @@ static ULONG ata_ReadMultiple32(struct ata_Unit *unit, ULONG block, ULONG count,
         CM_PIORead,
         CT_LBA28
     };
-    register ULONG err;
+    BYTE err;
 
     D(bug("[ATA%02ld] ata_ReadMultiple32()\n", unit->au_UnitNum));
 
@@ -1823,9 +1821,10 @@ static ULONG ata_ReadMultiple32(struct ata_Unit *unit, ULONG block, ULONG count,
     return 0;
 }
 
-static ULONG ata_ReadDMA32(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
+static BYTE ata_ReadDMA32(struct ata_Unit *unit, ULONG block,
+    ULONG count, APTR buffer, ULONG *act)
 {
-    register ULONG err;
+    BYTE err;
     ata_CommandBlock acb =
     {
         ATA_READ_DMA,
@@ -1851,11 +1850,11 @@ static ULONG ata_ReadDMA32(struct ata_Unit *unit, ULONG block, ULONG count, APTR
     return 0;
 }
 
-
 /*
  * ata read64 commands
  */
-static ULONG ata_ReadSector64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR buffer, ULONG *act)
+static BYTE ata_ReadSector64(struct ata_Unit *unit, UQUAD block,
+    ULONG count, APTR buffer, ULONG *act)
 {
     ata_CommandBlock acb =
     {
@@ -1871,7 +1870,7 @@ static ULONG ata_ReadSector64(struct ata_Unit *unit, UQUAD block, ULONG count, A
         CM_PIORead,
         CT_LBA48
     };
-    register ULONG err = 0;
+    BYTE err = 0;
 
     D(bug("[ATA%02ld] ata_ReadSector64()\n", unit->au_UnitNum));
 
@@ -1883,7 +1882,8 @@ static ULONG ata_ReadSector64(struct ata_Unit *unit, UQUAD block, ULONG count, A
     return 0;
 }
 
-static ULONG ata_ReadMultiple64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR buffer, ULONG *act)
+static BYTE ata_ReadMultiple64(struct ata_Unit *unit, UQUAD block,
+    ULONG count, APTR buffer, ULONG *act)
 {
     ata_CommandBlock acb =
     {
@@ -1899,7 +1899,7 @@ static ULONG ata_ReadMultiple64(struct ata_Unit *unit, UQUAD block, ULONG count,
         CM_PIORead,
         CT_LBA48
     };
-    register ULONG err;
+    BYTE err;
 
     D(bug("[ATA%02ld] ata_ReadMultiple64()\n", unit->au_UnitNum));
 
@@ -1911,7 +1911,8 @@ static ULONG ata_ReadMultiple64(struct ata_Unit *unit, UQUAD block, ULONG count,
     return 0;
 }
 
-static ULONG ata_ReadDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR buffer, ULONG *act)
+static BYTE ata_ReadDMA64(struct ata_Unit *unit, UQUAD block,
+    ULONG count, APTR buffer, ULONG *act)
 {
     ata_CommandBlock acb =
     {
@@ -1927,7 +1928,7 @@ static ULONG ata_ReadDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR
         CM_DMARead,
         CT_LBA48
     };
-    register ULONG err;
+    BYTE err;
 
     D(bug("[ATA%02ld] ata_ReadDMA64()\n", unit->au_UnitNum));
 
@@ -1939,11 +1940,11 @@ static ULONG ata_ReadDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR
     return 0;
 }
 
-
 /*
  * ata write32 commands
  */
-static ULONG ata_WriteSector32(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
+static BYTE ata_WriteSector32(struct ata_Unit *unit, ULONG block,
+    ULONG count, APTR buffer, ULONG *act)
 {
     ata_CommandBlock acb =
     {
@@ -1959,7 +1960,7 @@ static ULONG ata_WriteSector32(struct ata_Unit *unit, ULONG block, ULONG count, 
         CM_PIOWrite,
         CT_LBA28
     };
-    register ULONG err;
+    BYTE err;
 
     D(bug("[ATA%02ld] ata_WriteSector32()\n", unit->au_UnitNum));
 
@@ -1971,7 +1972,8 @@ static ULONG ata_WriteSector32(struct ata_Unit *unit, ULONG block, ULONG count, 
     return 0;
 }
 
-static ULONG ata_WriteMultiple32(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
+static BYTE ata_WriteMultiple32(struct ata_Unit *unit, ULONG block,
+    ULONG count, APTR buffer, ULONG *act)
 {
     ata_CommandBlock acb =
     {
@@ -1987,7 +1989,7 @@ static ULONG ata_WriteMultiple32(struct ata_Unit *unit, ULONG block, ULONG count
         CM_PIOWrite,
         CT_LBA28
     };
-    register ULONG err;
+    BYTE err;
 
     D(bug("[ATA%02ld] ata_WriteMultiple32()\n", unit->au_UnitNum));
 
@@ -1999,7 +2001,8 @@ static ULONG ata_WriteMultiple32(struct ata_Unit *unit, ULONG block, ULONG count
     return 0;
 }
 
-static ULONG ata_WriteDMA32(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
+static BYTE ata_WriteDMA32(struct ata_Unit *unit, ULONG block,
+    ULONG count, APTR buffer, ULONG *act)
 {
     ata_CommandBlock acb =
     {
@@ -2015,7 +2018,7 @@ static ULONG ata_WriteDMA32(struct ata_Unit *unit, ULONG block, ULONG count, APT
         CM_DMAWrite,
         CT_LBA28
     };
-    register ULONG err;
+    BYTE err;
 
     D(bug("[ATA%02ld] ata_WriteDMA32()\n", unit->au_UnitNum));
 
@@ -2027,11 +2030,11 @@ static ULONG ata_WriteDMA32(struct ata_Unit *unit, ULONG block, ULONG count, APT
     return 0;
 }
 
-
 /*
  * ata write64 commands
  */
-static ULONG ata_WriteSector64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR buffer, ULONG *act)
+static BYTE ata_WriteSector64(struct ata_Unit *unit, UQUAD block,
+    ULONG count, APTR buffer, ULONG *act)
 {
     ata_CommandBlock acb =
     {
@@ -2047,7 +2050,7 @@ static ULONG ata_WriteSector64(struct ata_Unit *unit, UQUAD block, ULONG count, 
         CM_PIOWrite,
         CT_LBA48
     };
-    register ULONG err;
+    BYTE err;
 
     D(bug("[ATA%02ld] ata_WriteSector64()\n", unit->au_UnitNum));
 
@@ -2059,7 +2062,8 @@ static ULONG ata_WriteSector64(struct ata_Unit *unit, UQUAD block, ULONG count, 
     return 0;
 }
 
-static ULONG ata_WriteMultiple64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR buffer, ULONG *act)
+static BYTE ata_WriteMultiple64(struct ata_Unit *unit, UQUAD block,
+    ULONG count, APTR buffer, ULONG *act)
 {
     ata_CommandBlock acb =
     {
@@ -2075,7 +2079,7 @@ static ULONG ata_WriteMultiple64(struct ata_Unit *unit, UQUAD block, ULONG count
         CM_PIOWrite,
         CT_LBA48
     };
-    register ULONG err;
+    BYTE err;
 
     D(bug("[ATA%02ld] ata_WriteMultiple64()\n", unit->au_UnitNum));
 
@@ -2087,7 +2091,8 @@ static ULONG ata_WriteMultiple64(struct ata_Unit *unit, UQUAD block, ULONG count
     return 0;
 }
 
-static ULONG ata_WriteDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR buffer, ULONG *act)
+static BYTE ata_WriteDMA64(struct ata_Unit *unit, UQUAD block,
+    ULONG count, APTR buffer, ULONG *act)
 {
     ata_CommandBlock acb =
     {
@@ -2103,7 +2108,7 @@ static ULONG ata_WriteDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APT
         CM_DMAWrite,
         CT_LBA48
     };
-    register ULONG err;
+    BYTE err;
 
     D(bug("[ATA%02ld] ata_WriteDMA64()\n", unit->au_UnitNum));
 
@@ -2118,7 +2123,7 @@ static ULONG ata_WriteDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APT
 /*
  * ata miscellaneous commands
  */
-static ULONG ata_Eject(struct ata_Unit *unit)
+static BYTE ata_Eject(struct ata_Unit *unit)
 {
     ata_CommandBlock acb =
     {
@@ -2194,7 +2199,8 @@ int atapi_TestUnitOK(struct ata_Unit *unit)
     return sense[2];
 }
 
-static ULONG atapi_Read(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
+static BYTE atapi_Read(struct ata_Unit *unit, ULONG block, ULONG count,
+    APTR buffer, ULONG *act)
 {
     UBYTE cmd[] = {
        SCSI_READ10, 0, block>>24, block>>16, block>>8, block, 0, count>>8, count, 0
@@ -2214,7 +2220,8 @@ static ULONG atapi_Read(struct ata_Unit *unit, ULONG block, ULONG count, APTR bu
     return unit->au_DirectSCSI(unit, &sc);
 }
 
-static ULONG atapi_Write(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
+static BYTE atapi_Write(struct ata_Unit *unit, ULONG block, ULONG count,
+    APTR buffer, ULONG *act)
 {
     UBYTE cmd[] = {
        SCSI_WRITE10, 0, block>>24, block>>16, block>>8, block, 0, count>>8, count, 0
@@ -2234,7 +2241,7 @@ static ULONG atapi_Write(struct ata_Unit *unit, ULONG block, ULONG count, APTR b
     return unit->au_DirectSCSI(unit, &sc);
 }
 
-static ULONG atapi_Eject(struct ata_Unit *unit)
+static BYTE atapi_Eject(struct ata_Unit *unit)
 {
     struct atapi_StartStop cmd = {
         command: SCSI_STARTSTOP,
@@ -2297,9 +2304,10 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
     /* Check basic signature. All live devices should provide it */
     tmp1 = ata_in(ata_Count, port);
     tmp2 = ata_in(ata_LBALow, port);
-    DINIT(bug("[ATA  ] ata_ReadSignature: Checking Count / LBA against expected values (%d:%d)\n", tmp1, tmp2));
+    DINIT(bug("[ATA  ] ata_ReadSignature: Checking Count / LBA (%d:%d) against expected values\n", tmp1, tmp2));
 
-    DINIT(bug("[ATA  ] ata_ReadSignature: Status %08lx Device %08lx\n", ata_in(ata_Status, port), ata_in(ata_DevHead, port)));
+    DINIT(bug("[ATA  ] ata_ReadSignature: Status %02lx Device %02lx\n",
+        ata_in(ata_Status, port), ata_in(ata_DevHead, port)));
 
     if ((tmp1 == 0x01) && (tmp2 == 0x01))
     {
@@ -2372,7 +2380,6 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
 
 void ata_ResetBus(struct ata_Bus *bus)
 {
-
     ULONG alt = bus->ab_Alt;
     ULONG port = bus->ab_Port;
     ULONG TimeOut;
@@ -2394,7 +2401,7 @@ void ata_ResetBus(struct ata_Bus *bus)
         D(bug("[ATA%02ld] ata_ResetBus: Wait for Device to clear BSY\n", ((bus->ab_BusNum << 1 ) + 0)));
         TimeOut = 1000;     /* Timeout 1s (1ms x 1000) */
         while ( 1 ) {
-            if( (ata_ReadStatus(bus) & ATAF_BUSY) == 0 )
+            if ((ata_ReadStatus(bus) & ATAF_BUSY) == 0)
                 break;
             ata_WaitTO(bus->ab_Timer, 0, 1000, 0);
             if (!(--TimeOut)) {
@@ -2430,7 +2437,7 @@ void ata_ResetBus(struct ata_Bus *bus)
             D(bug("[ATA%02ld] ata_ResetBus: Wait for Device to clear BSY\n", ((bus->ab_BusNum << 1 ) + 1)));
             TimeOut = 1000;     /* Timeout 1s (1ms x 1000) */
             while ( 1 ) {
-                if( (ata_ReadStatus(bus) & ATAF_BUSY) == 0 )
+                if ((ata_ReadStatus(bus) & ATAF_BUSY) == 0)
                     break;
                 ata_WaitTO(bus->ab_Timer, 0, 1000, 0);
                 if (!(--TimeOut)) {
@@ -2531,7 +2538,7 @@ static const ULONG ErrorMap[] = {
     CDERR_NotSpecified,
 };
 
-static ULONG atapi_EndCmd(struct ata_Unit *unit)
+static BYTE atapi_EndCmd(struct ata_Unit *unit)
 {
     UBYTE status;
 
@@ -2545,7 +2552,8 @@ static ULONG atapi_EndCmd(struct ata_Unit *unit)
 
     status = ata_in(atapi_Status, unit->au_Bus->ab_Port);
 
-    DATAPI(bug("[ATAPI] atapi_EndCmd: Command complete. Status: %lx\n", unit->au_UnitNum, status));
+    DATAPI(bug("[ATA%02ld] atapi_EndCmd: Command complete. Status: %lx\n",
+        unit->au_UnitNum, status));
 
     if (!(status & ATAPIF_CHECK))
     {
