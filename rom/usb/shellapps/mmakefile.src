@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES := DRadioTool PencamTool PowManTool RocketTool SonixcamTool UPSTool
+
+#MM- rom-usb-shellapps : rom-usb-poseidon
+
+%build_progs mmake=rom-usb-shellapps \
+    files=$(FILES) targetdir=$(AROS_C) \
+    uselibs="arossupport amiga arosc m"
+
+
+%common
