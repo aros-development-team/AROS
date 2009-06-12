@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function access().
@@ -66,6 +66,12 @@
     if (!path) /* safety check */
     {
     	errno = EFAULT;
+        return -1;
+    }
+
+    if (!strlen(path)) /* empty path */
+    {
+        errno = ENOENT;
         return -1;
     }
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -79,6 +79,13 @@
 {
     int res = 0;
     BPTR lock;
+
+    /* check for empty path before potential conversion from "." to "" */
+    if (path && *path == '\0')
+    {
+        errno = ENOENT;
+        return -1;
+    }
 
     path = __path_u2a(path);
     if (path == NULL)
