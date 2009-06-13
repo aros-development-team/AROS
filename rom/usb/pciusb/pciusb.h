@@ -99,6 +99,7 @@ struct PCIController
     struct PCIUnit       *hc_Unit;           /* Uplink */
 
     OOP_Object           *hc_PCIDeviceObject;
+    OOP_Object           *hc_PCIDriverObject;
     ULONG                 hc_DevID;
     UWORD                 hc_FunctionNum;
     UWORD                 hc_HCIType;

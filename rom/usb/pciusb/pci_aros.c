@@ -50,14 +50,14 @@ AROS_UFH3(void, pciEnumerator,
     IPTR bus;
     IPTR intline;
     ULONG devid;
-    
+
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Interface, &hcitype);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Bus, &bus);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Dev, &dev);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &intline);
 
     devid = (bus<<16)|dev;
-    
+
     if((hcitype == HCITYPE_UHCI) || (hcitype == HCITYPE_OHCI) || (hcitype == HCITYPE_EHCI))
     {
         KPRINTF(10, ("Found PCI device 0x%lx of type %ld\n", devid, hcitype));
@@ -70,6 +70,7 @@ AROS_UFH3(void, pciEnumerator,
             hc->hc_HCIType = hcitype;
             hc->hc_PCIDeviceObject = pciDevice;
             hc->hc_PCIIntLine = intline;
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, &hc->hc_PCIDriverObject);
             NewList(&hc->hc_CtrlXFerQueue);
             NewList(&hc->hc_IntXFerQueue);
             NewList(&hc->hc_IsoXFerQueue);
@@ -80,42 +81,7 @@ AROS_UFH3(void, pciEnumerator,
             AddTail(&hd->hd_TempHCIList, &hc->hc_Node);
         }
     }
-#if 0
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base4, &LIBBASE->sd.iobase[counter]);
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&LIBBASE->sd.uhciPCIDriver[counter]);
-    LIBBASE->sd.uhciDevice[counter] = pciDevice;
 
-    D(bug("[UHCI]   Device %d @ %08x with IO @ %08x\n", counter, pciDevice, LIBBASE->sd.iobase[counter]));
-
-    struct pHidd_PCIDevice_WriteConfigWord wcw = {
-            OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord), PCI_LEGSUP, 0x8f00
-    };
-    
-    D(bug("[UHCI]   Performing full reset. Hopefull legacy USB will do it'S handoff at this time.\n"));
-    OOP_DoMethod(pciDevice, &wcw.mID);
-    
-    outw(UHCI_CMD_HCRESET, LIBBASE->sd.iobase[counter] + UHCI_CMD);
-    struct timerequest *tr = USBCreateTimer();
-    USBDelay(tr, 10);
-    USBDeleteTimer(tr);
-    if (inw(LIBBASE->sd.iobase[counter] + UHCI_CMD) & UHCI_CMD_HCRESET)
-        D(bug("[UHCI]   Wrrr. Reset not yet completed\n"));
-    
-    outw(0, LIBBASE->sd.iobase[counter] + UHCI_INTR);  
-    outw(0, LIBBASE->sd.iobase[counter] + UHCI_CMD);
-    
-    
-    D({
-        struct pHidd_PCIDevice_ReadConfigWord __msg = {
-                OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord), 0xc0
-        }, *msg = &__msg;
-
-        bug("[UHCI]    0xc0: %04x\n", OOP_DoMethod(pciDevice, msg));
-    });
-
-    LIBBASE->sd.num_devices = ++counter;
-#endif
-    
     AROS_USERFUNC_EXIT
 }
 
@@ -127,30 +93,28 @@ BOOL pciInit(struct PCIDevice *hd)
     struct PCIController *nexthc;
     struct PCIUnit *hu;
     ULONG unitno = 0;
-    struct List hcilist;
     UWORD ohcicnt;
     UWORD uhcicnt;
- 
+
     KPRINTF(10, ("*** pciInit(%08lx) ***\n", hd));
     NewList(&hd->hd_TempHCIList);
-    
+
     if(!(hd->hd_IRQHidd = OOP_NewObject(NULL, (STRPTR) CLID_Hidd_IRQ, NULL)))
     {
         KPRINTF(20, ("Unable to create IRQHidd object!\n"));
         return FALSE;
     }
-    
+
     if((hd->hd_PCIHidd = OOP_NewObject(NULL, (STRPTR) CLID_Hidd_PCI, NULL)))
     {
-        struct TagItem tags[] = 
+        struct TagItem tags[] =
         {
             { tHidd_PCI_Class,      (PCI_CLASS_SERIAL_USB>>8) & 0xff },
             { tHidd_PCI_SubClass,   (PCI_CLASS_SERIAL_USB & 0xff) },
-            //{ tHidd_PCI_Interface,  PCI_INTERFACE_UHCI },
             { TAG_DONE, 0UL }
         };
 
-        struct OOP_ABDescr attrbases[] = 
+        struct OOP_ABDescr attrbases[] =
         {
             { (STRPTR) IID_Hidd,            &hd->hd_HiddAB },
             { (STRPTR) IID_Hidd_PCIDevice,  &hd->hd_HiddPCIDeviceAB },
@@ -160,7 +124,7 @@ BOOL pciInit(struct PCIDevice *hd)
             { NULL, NULL }
         };
 
-        struct Hook findHook = 
+        struct Hook findHook =
         {
              h_Entry:        (IPTR (*)()) pciEnumerator,
              h_Data:         hd,
@@ -176,7 +140,7 @@ BOOL pciInit(struct PCIDevice *hd)
         OOP_DisposeObject(hd->hd_IRQHidd);
         return FALSE;
     }
-    
+
     while(hd->hd_TempHCIList.lh_Head->ln_Succ)
     {
         hu = AllocPooled(hd->hd_MemPool, sizeof(struct PCIUnit));
@@ -187,14 +151,14 @@ BOOL pciInit(struct PCIDevice *hd)
         }
         hu->hu_Device = hd;
         hu->hu_UnitNo = unitno;
-        hu->hu_DevID = ((struct PCIController *) hcilist.lh_Head)->hc_DevID;
+        hu->hu_DevID = ((struct PCIController *) hd->hd_TempHCIList.lh_Head)->hc_DevID;
 
         NewList(&hu->hu_Controllers);
         NewList(&hu->hu_RHIOQueue);
         ohcicnt = 0;
         uhcicnt = 0;
         // find all belonging host controllers
-        hc = (struct PCIController *) hcilist.lh_Head;
+        hc = (struct PCIController *) hd->hd_TempHCIList.lh_Head;
         while((nexthc = (struct PCIController *) hc->hc_Node.ln_Succ))
         {
             if(hc->hc_DevID == hu->hu_DevID)
@@ -229,7 +193,7 @@ UBYTE PCIXReadConfigByte(struct PCIController *hc, UBYTE offset)
 
     msg.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
     msg.reg = offset;
-    
+
     return OOP_DoMethod(hc->hc_PCIDeviceObject, (OOP_Msg) &msg);
 }
 /* \\\ */
@@ -242,7 +206,7 @@ void PCIXWriteConfigByte(struct PCIController *hc, ULONG offset, UBYTE value)
     msg.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
     msg.reg = offset;
     msg.val = value;
-    
+
     OOP_DoMethod(hc->hc_PCIDeviceObject, (OOP_Msg) &msg);
 }
 /* \\\ */
@@ -275,7 +239,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
             { aHidd_PCIDevice_isMaster, TRUE },
             { TAG_DONE, 0UL },
     };
-     
+
     KPRINTF(10, ("*** pciAllocUnit(%08lx) ***\n", hu));
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
@@ -293,7 +257,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
-    
+
     if(allocgood)
     {
         // allocate necessary memory
@@ -322,7 +286,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     hc->hc_PCIMemSize = sizeof(ULONG) * UHCI_FRAMELIST_SIZE + UHCI_FRAMELIST_ALIGNMENT + 1;
                     hc->hc_PCIMemSize += sizeof(struct UhciQH) * UHCI_QH_POOLSIZE;
                     hc->hc_PCIMemSize += sizeof(struct UhciTD) * UHCI_TD_POOLSIZE;
-                    memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDeviceObject, hc->hc_PCIMemSize);
+                    memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
                     if(!memptr)
                     {
                         allocgood = FALSE;
@@ -528,7 +492,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     hc->hc_PCIMemSize = OHCI_HCCA_SIZE + OHCI_HCCA_ALIGNMENT + 1;
                     hc->hc_PCIMemSize += sizeof(struct OhciED) * OHCI_ED_POOLSIZE;
                     hc->hc_PCIMemSize += sizeof(struct OhciTD) * OHCI_TD_POOLSIZE;
-                    memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDeviceObject, hc->hc_PCIMemSize);
+                    memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
                     if(!memptr)
                     {
                         allocgood = FALSE;
@@ -648,7 +612,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     }
 
                     // time to initialize hardware...
-                    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base4, (IPTR *) &hc->hc_RegBase);
+                    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *) &hc->hc_RegBase);
                     hc->hc_RegBase = (APTR) (((IPTR) hc->hc_RegBase) & (~0xf));
                     KPRINTF(10, ("RegBase = 0x%08lx\n", hc->hc_RegBase));
                     OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMem); // no busmaster yet
@@ -684,7 +648,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     } else {
                         KPRINTF(20, ("Reset finished after %ld ticks\n", 100-cnt));
                     }
-                    
+
                     OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateBusmaster); // enable busmaster
                     SYNC;
                     EIEIO;
@@ -743,7 +707,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, OCLF_PERIODICENABLE|OCLF_CTRLENABLE|OCLF_BULKENABLE|OCLF_USBOPER);
         			SYNC;
 		        	EIEIO;
-                    
+
                     KPRINTF(20, ("HW Init done\n"));
                     break;
                 }
@@ -771,7 +735,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     hc->hc_PCIMemSize = sizeof(ULONG) * EHCI_FRAMELIST_SIZE + EHCI_FRAMELIST_ALIGNMENT + 1;
                     hc->hc_PCIMemSize += sizeof(struct EhciQH) * EHCI_QH_POOLSIZE;
                     hc->hc_PCIMemSize += sizeof(struct EhciTD) * EHCI_TD_POOLSIZE;
-                    memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDeviceObject, hc->hc_PCIMemSize);
+                    memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
                     if(!memptr)
                     {
                         allocgood = FALSE;
@@ -876,7 +840,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     CONSTWRITEMEM32_LE(&etd->etd_CtrlStatus, 0);
 
                     // time to initialize hardware...
-                    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base4, (IPTR *) &pciregbase);
+                    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *) &pciregbase);
                     pciregbase = (APTR) (((IPTR) pciregbase) & (~0xf));
                     OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMem); // no busmaster yet
                     SYNC;
@@ -993,7 +957,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         }
         return FALSE;
     }
-    
+
     // find all belonging host controllers
     usb11ports = 0;
     usb20ports = 0;
@@ -1084,7 +1048,7 @@ void pciFreeUnit(struct PCIUnit *hu)
 {
     struct PCIDevice *hd = hu->hu_Device;
     struct PCIController *hc;
-   
+
     struct TagItem pciDeactivate[] =
     {
             { aHidd_PCIDevice_isIO,     FALSE },
@@ -1199,7 +1163,7 @@ void pciFreeUnit(struct PCIUnit *hu)
 
         if(hc->hc_PCIMem)
         {
-            HIDD_PCIDriver_FreePCIMem(hc->hc_PCIDeviceObject, hc->hc_PCIMem);
+            HIDD_PCIDriver_FreePCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMem);
             hc->hc_PCIMem = NULL;
         }
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
@@ -1251,7 +1215,7 @@ void pciExpunge(struct PCIDevice *hd)
     }
     if(hd->hd_PCIHidd)
     {
-        struct OOP_ABDescr attrbases[] = 
+        struct OOP_ABDescr attrbases[] =
         {
             { (STRPTR) IID_Hidd,            &hd->hd_HiddAB },
             { (STRPTR) IID_Hidd_PCIDevice,  &hd->hd_HiddPCIDeviceAB },
