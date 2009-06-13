@@ -522,7 +522,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                         slen++;
                                     }
                                     source = RHStrings[(val & 0xff)-1];
-                                    *mptr++ = (slen<<9)|UDT_STRING;
+                                    *mptr++ = AROS_WORD2BE((slen<<9)|UDT_STRING);
                                     while(ioreq->iouh_Actual+1 < len)
                                     {
                                         *mptr++ = AROS_WORD2LE(*source);
@@ -3939,7 +3939,7 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     struct PCIUnit *unit = hc->hc_Unit;
     ULONG intr = 0;
     ULONG donehead = READMEM32_LE(&hc->hc_OhciHCCA->oha_DoneHead);
-    
+
     if(donehead)
     {
         intr = OISF_DONEHEAD;
@@ -5206,7 +5206,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
           AROS_UFHA(struct PCIUnit *,  unit, A1))
 {
     AROS_USERFUNC_INIT
-    
+
     struct PCIDevice *base = unit->hu_Device;
     struct PCIController *hc;
     struct IOUsbHWReq *ioreq;
@@ -5404,7 +5404,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
     /* Update frame counter */
     unit->hu_NakTimeoutReq.tr_time.tv_micro = 150*1000;
     SendIO((APTR) &unit->hu_NakTimeoutReq);
-    
+
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
