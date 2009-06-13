@@ -79,12 +79,6 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
             Signal(udata->child, 1 << udata->child_signal);
         }
         
-        if (privdata->acpd_exec_tmparray);
-        {
-            free((void *)privdata->acpd_exec_tmparray);
-            privdata->acpd_exec_tmparray = NULL;
-        }
-
         D(bug("__exec_prepare: Exiting from forked __exec_prepare id=%x, errno=%d\n",
               udata->exec_id, udata->child_errno
         ));
@@ -459,6 +453,17 @@ char *const *__exec_valist2array(const char *arg1, va_list list)
     va_end(list2);
     
     return privdata->acpd_exec_tmparray;
+}
+
+
+void __exec_cleanup_array()
+{
+    struct arosc_privdata *privdata = __get_arosc_privdata();
+    if (privdata->acpd_exec_tmparray)
+    {
+        free((void *)privdata->acpd_exec_tmparray);
+        privdata->acpd_exec_tmparray = NULL;
+    }
 }
 
 

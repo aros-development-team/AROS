@@ -62,6 +62,7 @@
     va_end(args);
 
     APTR id = __exec_prepare(path, 0, argv, environ);
+    __exec_cleanup_array();
     if (!id)
         return -1;
 
