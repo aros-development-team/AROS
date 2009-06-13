@@ -21,6 +21,7 @@ FILES := \
 	strptime \
 	fchmod \
 	vfork \
+	vfork_execl \
 	wait \
 	waitpid \
 	lseek \
