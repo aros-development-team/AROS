@@ -73,7 +73,7 @@
 #define CATALOG_NAME     "System/Tools/Commodities.catalog"
 #define CATALOG_VERSION  3
 
-TEXT version[] = "$VER: ASCIITable 1.0 (27.05.2009)";
+TEXT version[] = "$VER: ASCIITable 1.1 (14.06.2009)";
 
 #define ARG_TEMPLATE "CX_PRIORITY/N/K,CX_POPKEY/K,CX_POPUP/S"
 #define DEF_POPKEY "ctrl alt a"
@@ -129,7 +129,6 @@ struct ASCIITable_DATA
     Object *copy_button;
     Object *clear_button;
     Object *ascii_string;
-    Object *key_button[192];
     TEXT buffer[MAXLEN + 1];
     struct IOClipReq *clip_req;
     TEXT shorthelp[192][20];
@@ -291,7 +290,7 @@ IPTR ASCIITable__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             Child, (IPTR) (copy_button    = SimpleButton(_(MSG_ASCIITABLE_GAD_COPY))),
             Child, (IPTR) (clear_button   = SimpleButton(_(MSG_ASCIITABLE_GAD_CLEAR))),
         End),
-        TAG_DONE
+        TAG_MORE, message->ops_AttrList
     );
 
     if (self != NULL)
