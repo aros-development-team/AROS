@@ -278,7 +278,7 @@ IPTR Scrollgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    Child, (IPTR) (button = (Object *)ScrollbuttonObject, End),
         End),
 	
-        TAG_DONE
+        TAG_MORE, msg->ops_AttrList
     );
 
     if (!obj)
