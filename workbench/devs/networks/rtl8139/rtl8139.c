@@ -130,6 +130,7 @@ static int read_eeprom(long base, int location, int addr_len)
 
   // Terminate EEPROM access
   BYTEOUT(rtlprom_addr, ~EE_CS);
+  eeprom_delay(rtlprom_addr);
   return retval;
 }
 
@@ -327,6 +328,7 @@ static void rtl8139nic_initialize(struct net_device *unit)
 	config1 = BYTEIN(base + RTLr_Config1);
 	if (unit->rtl8139u_rtl_chipcapabilities & RTLc_HAS_MII_XCVR)
 	{
+		// 8129
 		BYTEOUT(base + RTLr_Config1, config1 & ~0x03);
 	}
 RTLD(bug("[%s] Chipset brought out of low power mode.\n", unit->rtl8139u_name))
@@ -369,6 +371,7 @@ RTLD(bug("[%s] MAC Address %02x:%02x:%02x:%02x:%02x:%02x\n", unit->rtl8139u_name
 	BYTEOUT(base + RTLr_Cfg9346, 0xc0);
 	if (unit->rtl8139u_rtl_chipcapabilities & RTLc_HAS_MII_XCVR)
 	{
+		// 8129
 		BYTEOUT(base + RTLr_Config1, 0x03);
 	}
 	BYTEOUT(base + RTLr_HltClk, 'H'); //Disable the chips clock ('R' enables)
@@ -379,16 +382,20 @@ static void rtl8139nic_drain_tx(struct net_device *unit)
 {
 	struct fe_priv *np = get_pcnpriv(unit);
 	int i;
-	for (i = 0; i < NUM_TX_DESC; i++) {
+
+//	for (i = 0; i < NUM_TX_DESC; i++)
+//	{
 #warning "TODO: rtl8139nic_drain_tx does nothing atm."
-	}
+//	}
 }
 
 static void rtl8139nic_drain_rx(struct net_device *unit)
 {
 	struct fe_priv *np = get_pcnpriv(unit);
 	int i;
-//	for (i = 0; i < RX_RING_SIZE; i++) {
+
+//	for (i = 0; i < RX_RING_SIZE; i++)
+//	{
 #warning "TODO: rtl8139nic_drain_rx does nothing atm."
 //	}
 }
@@ -495,25 +502,29 @@ static int rtl8139nic_open(struct net_device *unit)
 
 	ret = request_irq(unit);
 	if (ret)
-		goto out_drain;
-
-	do
 	{
-		np->rx_buf_len = 8192 << rx_buf_len_idx;
-		
-		np->rx_buffer = HIDD_PCIDriver_AllocPCIMem(
-						unit->rtl8139u_PCIDriver,
-						(np->rx_buf_len + 16 + (TX_BUF_SIZE * NUM_TX_DESC)));
+		goto out_drain;
+	}
 
-		if (np->rx_buffer != NULL)
-		{
-			np->tx_buffer = (struct eth_frame *) (np->rx_buffer + np->rx_buf_len + 16);
-		}
-	} while (np->rx_buffer == NULL && (--rx_buf_len_idx >= 0));
+	np->rx_buf_len = 8192 << rx_buf_len_idx;
+		
+	np->rx_buffer = HIDD_PCIDriver_AllocPCIMem(
+						unit->rtl8139u_PCIDriver,
+						(np->rx_buf_len + 16 + (TX_BUF_SIZE * NUM_TX_DESC))
+					);
+
+	if (np->rx_buffer != NULL)
+	{
+		np->tx_buffer = HIDD_PCIDriver_AllocPCIMem(
+							unit->rtl8139u_PCIDriver,
+							(np->rx_buf_len + 16 + (TX_BUF_SIZE * NUM_TX_DESC))
+						);
+	}
 
 	if ((np->rx_buffer != NULL) && (np->tx_buffer != NULL))
 	{
-RTLD(bug("[%s] rtl8139nic_open: Allocated IO Buffers [ %d x Tx @ %x] [ Rx @ %x, %d bytes]\n",unit->rtl8139u_name,
+RTLD(bug("[%s] rtl8139nic_open: Allocated IO Buffers [ %d x Tx @ %x] [ Rx @ %x, %d bytes]\n",
+                        unit->rtl8139u_name,
 						NUM_TX_DESC, np->tx_buffer,
 						np->rx_buffer,  np->rx_buf_len))
    
@@ -526,13 +537,18 @@ RTLD(bug("[%s] rtl8139nic_open: Allocated IO Buffers [ %d x Tx @ %x] [ Rx @ %x, 
 		}
 RTLD(bug("[%s] rtl8139nic_open: TX Buffers initialised\n",unit->rtl8139u_name))
 
+		// Early Tx threshold: 256 bytes
 		np->tx_flag = (TX_FIFO_THRESH << 11) & 0x003f0000;
 		np->rx_config = (RX_FIFO_THRESH << 13) | (rx_buf_len_idx << 11) | (RX_DMA_BURST << 8);
 		
-		BYTEOUT(base + RTLr_ChipCmd, CmdReset);
+		BYTEOUT(base + RTLr_ChipCmd,  (BYTEIN(base + RTLr_ChipCmd) & CmdClear) | CmdReset);
+		udelay(100);
 		for (i = 1000; i > 0; i--)
 		{
-			if ((BYTEIN(base + RTLr_ChipCmd) & CmdReset) ==0) break;
+			if ((BYTEIN(base + RTLr_ChipCmd) & CmdReset) == 0)
+			{
+				break;
+			}
 		}
 RTLD(bug("[%s] rtl8139nic_open: NIC Reset\n",unit->rtl8139u_name))
 
@@ -541,10 +557,12 @@ RTLD(bug("[%s] rtl8139nic_open: copied MAC address\n",unit->rtl8139u_name))
 
 		np->rx_current = 0;
 
+		// Unlock
 		BYTEOUT(base + RTLr_Cfg9346, 0xc0);
 
 		//Enable Tx/Rx so we can set the config(s)
-		BYTEOUT(base + RTLr_ChipCmd, CmdRxEnb | CmdTxEnb);
+		BYTEOUT(base + RTLr_ChipCmd, (BYTEIN(base + RTLr_ChipCmd) & CmdClear) |
+									 CmdRxEnb | CmdTxEnb);
 		LONGOUT(base + RTLr_RxConfig, np->rx_config);
 		LONGOUT(base + RTLr_TxConfig, TX_DMA_BURST << 8);
 
@@ -578,19 +596,34 @@ RTLD(bug("[%s] rtl8139nic_open: Setting %s%s-duplex based on auto-neg partner ab
 
 		if (unit->rtl8139u_rtl_chipcapabilities & RTLc_HAS_MII_XCVR)
 		{
+			// 8129
 			BYTEOUT(base + RTLr_Config1, np->full_duplex ? 0x60 : 0x20);
 		}
+		// Lock
 		BYTEOUT(base + RTLr_Cfg9346, 0x00);
+		udelay(10);
 		LONGOUT(base + RTLr_RxBuf, np->rx_buffer);
 
 		//Start the chips Tx/Rx processes
 		LONGOUT(base + RTLr_RxMissed, 0);
 
 		rtl8139nic_set_rxmode(unit);
-		BYTEOUT(base + RTLr_ChipCmd, CmdRxEnb | CmdTxEnb);
 
-		//Enable all known interrupts by setting the interrupt mask ..
-		WORDOUT(base + RTLr_IntrMask, PCIErr | PCSTimeout | RxUnderrun | RxOverflow | RxFIFOOver | TxErr | TxOK | RxErr | RxOK);
+		WORDOUT(base + RTLr_MultiIntr, WORDIN(RTLr_MultiIntr) & MultiIntrClear);
+
+		BYTEOUT(base + RTLr_ChipCmd, (BYTEIN(base + RTLr_ChipCmd) & CmdClear) |
+		                             CmdRxEnb | CmdTxEnb);
+
+		// Enable all known interrupts by setting the interrupt mask ..
+		WORDOUT(base + RTLr_IntrMask, PCIErr |
+									  PCSTimeout |
+									  RxUnderrun |
+									  RxOverflow |
+									  RxFIFOOver |
+									  TxErr |
+									  TxOK |
+									  RxErr |
+									  RxOK);
 		
 	   unit->rtl8139u_flags |= IFF_UP;
 	   ReportEvents(LIBBASE, unit, S2EVENT_ONLINE);

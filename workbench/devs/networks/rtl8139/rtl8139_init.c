@@ -86,14 +86,14 @@ D(bug("[rtl8139] PCI_Enumerator(PCI Device Obj @ %p)\n", pciDevice));
 		if ((DeviceID == 0x8139) && (RevisionID >= 0x20))
 		{
 			CardCapabilities =   RTLc_HAS_CHIP_XCVR | RTLc_HAS_LNK_CHNG | RTLc_HAS_DESC;
-			CardName = "RealTek RTL8139C";
-			CardChipName = "RTL8139C";
+			CardName = "RealTek RTL8139D";
+			CardChipName = "RTL8139D";
 		}
 		else
 		{
 			CardCapabilities =   RTLc_HAS_CHIP_XCVR | RTLc_HAS_LNK_CHNG;
-			CardName = "RealTek RTL8139";
-			CardChipName = "RTL8139";
+			CardName = "RealTek RTL8139C";
+			CardChipName = "RTL8139C";
 		}
 	}
 	else if ((VendorID == 0x1113) && (DeviceID == 0x1211))
@@ -117,12 +117,12 @@ D(bug("[rtl8139] PCI_Enumerator(PCI Device Obj @ %p)\n", pciDevice));
 		CardName = "LevelOne FPC-0106Tx";
 		CardChipName = "RTL8139";
 	}
-	else if ((VendorID == 0x018a) && (DeviceID == 0x0106))
+	else if ((VendorID == 0x021b) && (DeviceID == 0x8139))
 	{
 		FoundCompatNIC = TRUE;
 		CardCapabilities = RTLc_HAS_CHIP_XCVR | RTLc_HAS_LNK_CHNG;
 		CardName = "Compaq HNE-300";
-		CardChipName = "RTL8139c";
+		CardChipName = "RTL8139";
 	}
 
 	if (FoundCompatNIC)
@@ -174,7 +174,8 @@ D(bug("[rtl8139] Init()\n"));
         {
             D(bug("[rtl8139] Init: PCI Subsystem HIDD object @ %p\n", LIBBASE->rtl8139b_PCI));
 
-            struct Hook FindHook = {
+            struct Hook FindHook =
+            {
                 h_Entry:    (IPTR (*)())PCI_Enumerator,
                 h_Data:     LIBBASE,
             };
@@ -188,7 +189,7 @@ D(bug("[rtl8139] Init()\n"));
             {
                 return TRUE;
             }
-	}
+		}
     }
     return FALSE;
 }
@@ -208,22 +209,28 @@ D(bug("[rtl8139] Expunge()\n"));
     }
 
     if (LIBBASE->rtl8139b_PCIDeviceAttrBase != 0)
+    {
         OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
+	}
 
     LIBBASE->rtl8139b_PCIDeviceAttrBase = 0;
 
     if (LIBBASE->rtl8139b_PCI != NULL)
+    {
         OOP_DisposeObject(LIBBASE->rtl8139b_PCI);
+	}
 
     return TRUE;
 }
 
-static const ULONG rx_tags[] = {
+static const ULONG rx_tags[] =
+{
 	S2_CopyToBuff,
 	S2_CopyToBuff16
 };
 
-static const ULONG tx_tags[] = {
+static const ULONG tx_tags[] =
+{
 	S2_CopyFromBuff,
 	S2_CopyFromBuff16,
 	S2_CopyFromBuff32
@@ -248,7 +255,9 @@ static int GM_UNIQUENAME(Open)
         ForeachNode(&LIBBASE->rtl8139b_Units, unit_current)
         {
             if (unit_current->rtl8139u_UnitNum == unitnum)
+            {
                 unit = unit_current;
+			}
         }
     }
 
@@ -264,35 +273,49 @@ RTLD(bug("[rtl8139] OpenDevice: Unit %d @ %p\n", unitnum, unit));
 
 		/* Check request size */
 		if (req->ios2_Req.io_Message.mn_Length < sizeof(struct IOSana2Req))
+		{
 			error = IOERR_OPENFAIL;
+		}
 
 		/* Get the requested unit */
 		if (error == 0)
+		{
 			req->ios2_Req.io_Unit = (APTR)unit;
+		}
 
 		/* Handle device sharing */
 		if (error == 0)
 		{
 			if (unit->rtl8139u_open_count != 0 && ((unit->rtl8139u_flags & IFF_SHARED) == 0 ||
 				(flags & SANA2OPF_MINE) != 0))
+			{
 				error = IOERR_UNITBUSY;
+			}
 			else
+			{
 				unit->rtl8139u_open_count++;
+			}
 		}
 
 		if (error == 0)
 		{
 			if ((flags & SANA2OPF_MINE) == 0)
+			{
 				unit->rtl8139u_flags |= IFF_SHARED;
+			}
 			else if ((flags & SANA2OPF_PROM) != 0)
+			{
 				unit->rtl8139u_flags |= IFF_PROMISC;
+			}
 
 			/* Set up buffer-management structure and get hooks */
 			opener = AllocVec(sizeof(struct Opener), MEMF_PUBLIC | MEMF_CLEAR);
 			req->ios2_BufferManagement = (APTR)opener;
 
 			if(opener == NULL)
+			{
 				error = IOERR_OPENFAIL;
+			}
 		}
 
 		if (error == 0)
@@ -302,9 +325,13 @@ RTLD(bug("[rtl8139] OpenDevice: Unit %d @ %p\n", unitnum, unit));
 			NEWLIST((APTR)&opener->initial_stats);
 
 			for (i = 0; i < 2; i++)
+			{
 				opener->rx_function = (APTR)GetTagData(rx_tags[i], (IPTR)opener->rx_function, tags);
+			}
 			for (i = 0; i < 3; i++)
+			{
 				opener->tx_function = (APTR)GetTagData(tx_tags[i], (IPTR)opener->tx_function, tags);
+			}
 
 			opener->filter_hook = (APTR)GetTagData(S2_PacketFilter, 0, tags);
 

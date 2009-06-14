@@ -256,7 +256,9 @@ RTLD(bug("[%s] RTL8139_RX_Process: copy packet for opener ..\n", unit->rtl8139u_
 					}
 
 					if(accepted)
+					{
 						is_orphan = FALSE;
+					}
 
 					opener = (APTR)opener->node.mln_Succ;
 				}
@@ -337,38 +339,49 @@ AROS_UFH3(void, RTL8139_TX_IntF,
 
 			opener = (APTR)request->ios2_BufferManagement;
 
-			if (np->tx_pbuf[nr] == NULL)
-			{
+			//if (np->tx_pbuf[nr] == NULL)
+//			{
 				np->tx_pbuf[nr] = np->tx_buf[nr];
 				if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
 				{
 					packet_size += ETH_PACKET_DATA;
-					CopyMem(request->ios2_DstAddr, &((struct eth_frame *)np->tx_buf[nr])->eth_packet_dest, ETH_ADDRESSSIZE);
-					CopyMem(unit->rtl8139u_dev_addr, &((struct eth_frame *)np->tx_buf[nr])->eth_packet_source, ETH_ADDRESSSIZE);
+					CopyMem(request->ios2_DstAddr,
+							&((struct eth_frame *) np->tx_buf[nr])->eth_packet_dest,
+							ETH_ADDRESSSIZE);
+					CopyMem(unit->rtl8139u_dev_addr,
+							&((struct eth_frame *) np->tx_buf[nr])->eth_packet_source,
+							ETH_ADDRESSSIZE);
 					((struct eth_frame *)np->tx_buf[nr])->eth_packet_type = AROS_WORD2BE(request->ios2_PacketType);
 
-					buffer = &((struct eth_frame *)np->tx_buf[nr])->eth_packet_data;
+					buffer = &((struct eth_frame *) np->tx_buf[nr])->eth_packet_data;
 				}
 				else
+				{
 					buffer = np->tx_buf[nr];
+				}
 
 				if (packet_size < TX_BUF_SIZE)
+				{
 					memset(buffer, 0, TX_BUF_SIZE - packet_size);
+				}
 
 				if (!opener->tx_function(buffer, request->ios2_Data, data_size))
 				{
 					error = S2ERR_NO_RESOURCES;
 					wire_error = S2WERR_BUFF_ERROR;
 					ReportEvents(LIBBASE, unit,
-					 S2EVENT_ERROR | S2EVENT_SOFTWARE | S2EVENT_BUFF
-					 | S2EVENT_TX);
+								 S2EVENT_ERROR | S2EVENT_SOFTWARE | S2EVENT_BUFF |
+								 S2EVENT_TX);
 				}
 
 				/* Now the packet is already in TX buffer, update flags for NIC */
 				if (error == 0)
 				{
+					Disable();
 RTLD(bug("[%s] RTL8139_TX_IntF: packet %d  @ %p [type = %d] queued for transmission.", unit->rtl8139u_name, nr, np->tx_buf[nr], AROS_BE2WORD(((struct eth_frame *)np->tx_buf[nr])->eth_packet_type)))
 
+
+#ifdef DEBUG
 					RTLD( int j;
 						for (j=0; j<64; j++) {
 							if ((j%16) == 0)
@@ -376,10 +389,15 @@ RTLD(bug("[%s] RTL8139_TX_IntF: packet %d  @ %p [type = %d] queued for transmiss
 							bug(" %02x", ((unsigned char*)np->tx_buf[nr])[j]);
 						}
 						bug("\n");)
+#endif
+
+					Enable();
 
 					/* Set the ring details for the packet .. */
 					LONGOUT(base + RTLr_TxAddr0 + (nr << 2), np->tx_buf[nr]);
-					LONGOUT(base + RTLr_TxStatus0 + (nr << 2), np->tx_flag | (packet_size >= ETH_ZLEN ? packet_size : ETH_ZLEN));
+					LONGOUT(base + RTLr_TxStatus0 + (nr << 2), np->tx_flag |
+															   (packet_size >= ETH_ZLEN ?
+															    packet_size : ETH_ZLEN));
 				}
 
 				/* Reply packet */
@@ -402,27 +420,31 @@ RTLD(bug("[%s] RTL8139_TX_IntF: packet %d  @ %p [type = %d] queued for transmiss
 					}
 				}
 				try_count = 0;
-			}
+			//}
 			np->tx_current++;
-			try_count++;
+//			try_count++;
 
 			/* 
 			* If we've just run out of free space on the TX queue, stop
 			* it and give up pushing further frames */
-			if ( (try_count + 1) >= NUM_TX_DESC)
-			{
-RTLD(bug("[%s] output queue full!. Stopping [count = %d, NUM_TX_DESC = %d\n", unit->rtl8139u_name, try_count, NUM_TX_DESC))
-				netif_stop_queue(unit);
-				proceed = FALSE;
-			}            
+//			if ( (try_count + 1) >= NUM_TX_DESC)
+//			{
+//RTLD(bug("[%s] output queue full!. Stopping [count = %d, NUM_TX_DESC = %d\n", unit->rtl8139u_name, try_count, NUM_TX_DESC))
+//				netif_stop_queue(unit);
+//				proceed = FALSE;
+//			}            
 		} /* while */
 	}
 
-	/* Was there success? Enable incomming of new packets */    
+	/* Was there success? Enable incoming of new packets */    
 	if(proceed)
+	{
 		unit->rtl8139u_request_ports[WRITE_QUEUE]->mp_Flags = PA_SOFTINT;
+	}
 	else
+	{
 		unit->rtl8139u_request_ports[WRITE_QUEUE]->mp_Flags = PA_IGNORE;
+	}
 
 	AROS_USERFUNC_EXIT
 }
@@ -476,16 +498,22 @@ RTLD(bug("[%s] RTL8139_IntHandlerF()!!!!!!!\n", unit->rtl8139u_name))
 		{
 			CSCRval = WORDIN(base + RTLr_CSCR);
 			link_changed = (CSCRval & CSCR_LinkChangeBit);
+
 RTLD(bug("[%s] RTL8139_IntHandlerF: Link Change : %d\n", unit->rtl8139u_name, link_changed))
 #warning "TODO: Disable/Enable interface on link change"
+
 			if (CSCRval & CSCR_LinkOKBit) {
+
 RTLD(bug("[%s] RTL8139_IntHandlerF: Link Change : Link UP\n", unit->rtl8139u_name))
+
 				BYTEOUT(base + RTLr_ChipCmd, CmdTxEnb);
 				rtl8139nic_set_rxmode(unit); // Reset the multicast list
 				BYTEOUT(base + RTLr_ChipCmd, CmdRxEnb | CmdTxEnb);
 				unit->rtl8139u_flags |= IFF_UP;
 			} else {
+
 RTLD(bug("[%s] RTL8139_IntHandlerF: Link Change : Link DOWN\n", unit->rtl8139u_name))
+
 				unit->rtl8139u_flags &= ~IFF_UP;
 			}
 		}
@@ -498,7 +526,7 @@ RTLD(bug("[%s] RTL8139_IntHandlerF: No work to process..\n", unit->rtl8139u_name
 			break;
 		}
 		
-		if (status & (RxOK | RxErr | RxUnderrun | RxOverflow | RxFIFOOver)) // Chipset has Recieved packet(s)
+		if (status & (RxOK | RxErr | RxUnderrun | RxOverflow | RxFIFOOver)) // Chipset has Received packet(s)
 		{
 RTLD(bug("[%s] RTL8139_IntHandlerF: Packet Reception Attempt detected!\n", unit->rtl8139u_name))
 			RTL8139_RX_Process(unit);
@@ -508,60 +536,57 @@ RTLD(bug("[%s] RTL8139_IntHandlerF: Packet Reception Attempt detected!\n", unit-
 		{
 RTLD(bug("[%s] RTL8139_IntHandlerF: Packet Transmition Attempt detected!\n", unit->rtl8139u_name))
 			unsigned int dirty_tx = np->tx_dirty;
-			unsigned int tx_cur = 0;
 
-			while (tx_cur < NUM_TX_DESC)
+			while (np->tx_current - dirty_tx > 0)
 			{
 				BOOL transmit_error = FALSE;
+				int entry = dirty_tx % NUM_TX_DESC;
 
-				if (np->tx_pbuf[tx_cur] != NULL)
-				{
-					ULONG txstatus = LONGIN(base + RTLr_TxStatus0 + (tx_cur << 2));
+//				if (np->tx_pbuf[entry] != NULL)
+//				{
+					ULONG txstatus = LONGIN(base + RTLr_TxStatus0 + (entry << 2));
 
-					if ((txstatus & TxStatOK) | (txstatus & TxUnderrun) | (txstatus & TxAborted)) 
+					// Still transmitting
+					if (!(txstatus & (TxStatOK | TxUnderrun | TxAborted))) break;
+
+					// N.B: TxCarrierLost is always asserted at 100mbps.
+					if (txstatus & (TxOutOfWindow | TxAborted))
 					{
-						// N.B: TxCarrierLost is always asserted at 100mbps.
-						if (txstatus & (TxOutOfWindow | TxAborted))
+RTLD(bug("[%s] RTL8139_IntHandlerF: Packet %d Transmition Error! Tx status %8.8x\n", unit->rtl8139u_name, entry, txstatus))
+						
+						if (txstatus & TxAborted)
 						{
-RTLD(bug("[%s] RTL8139_IntHandlerF: Packet %d Transmition Error! Tx status %8.8x\n", unit->rtl8139u_name, tx_cur, txstatus))
-							if (txstatus & TxAborted)
-							{
-								LONGOUT(base + RTLr_TxConfig, TX_DMA_BURST << 8);
-							}
-							transmit_error = TRUE;
+							LONGOUT(base + RTLr_TxConfig, TX_DMA_BURST << 8);
 						}
-						else
-						{
-							if (txstatus & TxUnderrun)
-							{
-RTLD(bug("[%s] RTL8139_IntHandlerF: Packet %d Transmition Underrun Error! Adjusting flags\n", unit->rtl8139u_name, tx_cur))
-								if (np->tx_flag < 0x00300000)
-									np->tx_flag += 0x00020000;
-								transmit_error = TRUE;
-							}
-							else
-							{
-RTLD(bug("[%s] RTL8139_IntHandlerF: Packet %d Sent Successfully\n", unit->rtl8139u_name, tx_cur))
-							}
-						}
-						np->tx_pbuf[tx_cur] = NULL;
-						if (transmit_error)
-							dirty_tx++;
+						transmit_error = TRUE;
 					}
 					else
 					{
-RTLD(bug("[%s] RTL8139_IntHandlerF: Packet %d  still in transmission\n", unit->rtl8139u_name, tx_cur))
+						if (txstatus & TxUnderrun)
+						{
+RTLD(bug("[%s] RTL8139_IntHandlerF: Packet %d Transmition Underrun Error! Adjusting flags\n", unit->rtl8139u_name, entry))
+								
+							if (np->tx_flag < 0x00300000)
+							{
+								np->tx_flag += 0x00020000;
+							}
+							transmit_error = TRUE;
+						}
 					}
-				}
-				tx_cur++;
+					np->tx_pbuf[entry] = NULL;
+					dirty_tx++;
+//				}
 			}
 			np->tx_dirty = dirty_tx;
 		}
 
-		if (status & (PCIErr | PCSTimeout)) // Chipset has Reported an ERROR
+		if (status & (PCIErr | PCSTimeout | TxUnderrun | RxOverflow | RxFIFOOver | TxErr | RxErr)) // Chipset has Reported an ERROR
 		{
 RTLD(bug("[%s] RTL8139_IntHandlerF: ERROR Detected\n", unit->rtl8139u_name))
-			if (status == 0xffff)	break; // Missing Chip!
+			if (status == 0xffff)
+			{
+				break; // Missing Chip!
+			}
 		}
 
 		if (--interrupt_work < 0)
@@ -1154,4 +1179,3 @@ BOOL RemMulticastRange(LIBBASETYPEPTR LIBBASE, struct RTL8139Unit *unit, const U
 	}
 	return range != NULL;
 }
-
