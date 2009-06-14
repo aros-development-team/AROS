@@ -53,6 +53,7 @@
 #include <proto/exec.h>
 
 #include LC_LIBDEFS_FILE
+#define LIBBASETYPEPTR struct RTL8139Base *
 
 #define net_device RTL8139Unit
 
@@ -64,20 +65,21 @@
 
 // Maximum size of the in-memory receive ring (smaller if no memory)
 #define RX_BUF_LEN_IDX  2     // 0=8K, 1=16K, 2=32K, 3=64K
-#define RX_FIFO_THRESH  4    // Rx buffer level before first PCI xfer
-#define RX_DMA_BURST    4   // Maximum PCI burst, '4' is 256 bytes
+#define RX_FIFO_THRESH  6    // Rx buffer level before first PCI xfer
+#define RX_DMA_BURST    6   // Maximum PCI burst, '4' is 256 bytes
 
 // Size of the Tx bounce buffers -- must be at least (mtu+14+4)
 #define TX_BUF_SIZE 1536
 #define NUM_TX_DESC 4         // Number of Tx descriptor registers
 #define TX_FIFO_THRESH 256  // In bytes, rounded down to 32 byte units
-#define TX_DMA_BURST    4   // Calculate as 16 << val
+#define TX_DMA_BURST    6   // Calculate as 16 << val
 
 /** Device Driver Structures **/
 
 extern struct Library *OOPBase;
 
-struct RTL8139Base {
+struct RTL8139Base
+{
     struct Device       rtl8139b_Device;
 
     OOP_Object          *rtl8139b_PCI;
@@ -96,7 +98,8 @@ struct RTL8139Startup
     struct RTL8139Unit       *rtl8139sm_Unit;
 };
 
-enum {
+enum
+{
 	WRITE_QUEUE,
 	ADOPT_QUEUE,
 	EVENT_QUEUE,
@@ -253,7 +256,8 @@ struct RTL8139Unit {
 void handle_request(LIBBASETYPEPTR, struct IOSana2Req *);
 
 /* Media selection options. */
-enum {
+enum
+{
 		IF_PORT_UNKNOWN = 0,
 		IF_PORT_10BASE2,
 		IF_PORT_10BASET,
@@ -310,7 +314,8 @@ static inline int test_and_clear_bit(int nr, volatile unsigned long *addr)
 
 static inline void netif_schedule(struct RTL8139Unit *dev)
 {
-	if (!test_bit(__LINK_STATE_XOFF, &dev->rtl8139u_state)) {
+	if (!test_bit(__LINK_STATE_XOFF, &dev->rtl8139u_state))
+	{
 		Cause(&dev->rtl8139u_tx_int);
 	}
 }
@@ -323,7 +328,8 @@ static inline void netif_start_queue(struct RTL8139Unit *dev)
 
 static inline void netif_wake_queue(struct RTL8139Unit *dev)
 {
-	if (test_and_clear_bit(__LINK_STATE_XOFF, &dev->rtl8139u_state)) {
+	if (test_and_clear_bit(__LINK_STATE_XOFF, &dev->rtl8139u_state))
+	{
 		Cause(&dev->rtl8139u_tx_int);
 	}
 }
@@ -352,17 +358,20 @@ extern void __netdev_watchdog_up(struct RTL8139Unit *dev);
 
 static inline void netif_carrier_on(struct RTL8139Unit *dev)
 {
-	if (test_and_clear_bit(__LINK_STATE_NOCARRIER, &dev->rtl8139u_state)) {
+	if (test_and_clear_bit(__LINK_STATE_NOCARRIER, &dev->rtl8139u_state))
+	{
 //                linkwatch_fire_event(dev);
 	}
-	if (netif_running(dev)) {
+	if (netif_running(dev))
+	{
 //                __netdev_watchdog_up(dev);
 	}
 }
 
 static inline void netif_carrier_off(struct RTL8139Unit *dev)
 {
-	if (!test_and_set_bit(__LINK_STATE_NOCARRIER, &dev->rtl8139u_state)) {
+	if (!test_and_set_bit(__LINK_STATE_NOCARRIER, &dev->rtl8139u_state))
+	{
 //                linkwatch_fire_event(dev);
 	}
 }
@@ -511,7 +520,13 @@ enum rtl_registers
   RTLr_MAC0             = 0x00,       // Ethernet hardware address
   RTLr_MAR0             = 0x08,       // Multicast filter
   RTLr_TxStatus0        = 0x10,       // Transmit status (Four 32bit registers)
+  RTLr_TxStatus1		= 0x14,
+  RTLr_TxStatus2		= 0x18,
+  RTLr_TxStatus3		= 0x1C,
   RTLr_TxAddr0          = 0x20,       // Tx descriptors (also four 32bit)
+  RTLr_TxAddr1			= 0x24,
+  RTLr_TxAddr2			= 0x28,
+  RTLr_TxAddr3			= 0x2c,
   RTLr_RxBuf            = 0x30, 
   RTLr_RxEarlyCnt       = 0x34, 
   RTLr_RxEarlyStatus    = 0x36,
@@ -527,24 +542,34 @@ enum rtl_registers
   RTLr_Cfg9346          = 0x50, 
   RTLr_Config0          = 0x51, 
   RTLr_Config1          = 0x52,
-  RTLr_FlashReg         = 0x54, 
-  RTLr_GPPinData        = 0x58, 
-  RTLr_GPPinDir         = 0x59, 
-  RTLr_MII_SMI          = 0x5A, 
-  RTLr_HltClk           = 0x5B,
-  RTLr_MultiIntr        = 0x5C, 
-  RTLr_TxSummary        = 0x60,
-  RTLr_MII_BMCR         = 0x62, 
-  RTLr_MII_BMSR         = 0x64, 
-  RTLr_NWayAdvert       = 0x66, 
-  RTLr_NWayLPAR         = 0x68,
-  RTLr_NWayExpansion    = 0x6A,
+  RTLr_FlashReg         = 0x54, 	   // Timer Interrupt Register ?
+  RTLr_GPPinData        = 0x58, 	   // Media status register ?
+  RTLr_GPPinDir         = 0x59, 	   // Configuration register 3
+  RTLr_MII_SMI          = 0x5A, 	   // Configuration register 4
+  RTLr_HltClk           = 0x5B,		   // Reserved
+  RTLr_MultiIntr        = 0x5C,
+  RTLr_RERID			= 0x5E,
+  RTLr_TxSummary        = 0x60,		   // Transmit status of all descriptors
+  RTLr_MII_BMCR         = 0x62, 	   // Basic mode control register
+  RTLr_MII_BMSR         = 0x64, 	   // Basic mode status register
+  RTLr_NWayAdvert       = 0x66, 	   // Auto negociation expansion register
+  RTLr_NWayLPAR         = 0x68,		   // Auto negociation link partner register
+  RTLr_NWayExpansion    = 0x6A,		   // Auto negociation expansion register
+  RTLr_DIS				= 0x6C,		   // Disconnect counter
+  RTLr_FCSC				= 0x6E,		   // False carrier sense counter
   
   // Undocumented registers, but required for proper operation
-  RTLr_FIFOTMS          = 0x70,        // FIFO Control and test
+  RTLr_FIFOTMS          = 0x70,        // FIFO Control and test (N-way tezt register)
   RTLr_CSCR             = 0x74,        // Chip Status and Configuration Register
-  RTLr_PARA78           = 0x78, 
-  RTLr_PARA7c           = 0x7c,        // Magic transceiver parameter register
+  RTLr_PARA78           = 0x78, 	   // PHY parameter 1
+  RTLr_PARA7c           = 0x7c,        // Magic transceiver parameter register (Twister parameter)
+};
+
+enum rtl_chipclearbitmasks
+{
+  MultiIntrClear = 0xf000,
+  CmdClear  = 0xe2,
+  ConfigClear = (1 << 7) | (1 << 6) | (1 << 3) | (1 << 2) | (1 << 1)
 };
 
 enum rtl_chipcmdbits 
