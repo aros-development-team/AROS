@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -28,103 +28,131 @@
 
 #include "private.h"
 #include "BetterString_mcp.h"
-
-#ifndef __AROS__
 #include "muiextra.h"
-#else
-#define MUIM_Mccprefs_RegisterGadget  0x80424828 // V20
-#endif
 
-struct PrefsExchangeData { ULONG ObjIndex, Tag, CfgItem, Length; STRPTR DefValue; };
+#include "Debug.h"
+
+struct PrefsExchangeData
+{
+  const ULONG ObjIndex;
+  const ULONG Tag;
+  const ULONG CfgItem;
+  const ULONG Type;      // 0 = string, 1 = integer
+  const ULONG Length;
+  const APTR  DefValue;
+};
 
 static struct PrefsExchangeData PrefsInfo[] =
 {
-	{ ActiveBack,		MUIA_Imagedisplay_Spec,	MUICFG_BetterString_ActiveBack,		64, "2:m1"		},
-	{ ActiveText,		MUIA_Pendisplay_Spec,	  MUICFG_BetterString_ActiveText,		32, "m5"			},
-	{ InactiveBack,	MUIA_Imagedisplay_Spec,	MUICFG_BetterString_InactiveBack,	64, "2:m2"		},
-	{ InactiveText,	MUIA_Pendisplay_Spec,	  MUICFG_BetterString_InactiveText,	32, "m5"			},
-	{ Cursor,			  MUIA_Pendisplay_Spec,	  MUICFG_BetterString_Cursor,			  32, "m0"			},
-	{ MarkedBack,		MUIA_Pendisplay_Spec,	  MUICFG_BetterString_MarkedBack,		32, "m6"			},
-	{ MarkedText,		MUIA_Pendisplay_Spec,	  MUICFG_BetterString_MarkedText,		32, "m5"			},
-	{ Font,				  MUIA_String_Contents,	  MUICFG_BetterString_Font,				  0,  ""			  },
-	{ Frame,				MUIA_Framedisplay_Spec, MUICFG_BetterString_Frame,				32, "302211"	}
+  { ActiveBack,     MUIA_Imagedisplay_Spec,  MUICFG_BetterString_ActiveBack,     0, 64,           (APTR)"2:m1"    },
+  { ActiveText,     MUIA_Pendisplay_Spec,    MUICFG_BetterString_ActiveText,     0, 32,           (APTR)"m5"      },
+  { InactiveBack,   MUIA_Imagedisplay_Spec,  MUICFG_BetterString_InactiveBack,   0, 64,           (APTR)"2:m2"    },
+  { InactiveText,   MUIA_Pendisplay_Spec,    MUICFG_BetterString_InactiveText,   0, 32,           (APTR)"m4"      },
+  { Cursor,         MUIA_Pendisplay_Spec,    MUICFG_BetterString_Cursor,         0, 32,           (APTR)"m0"      },
+  { MarkedBack,     MUIA_Pendisplay_Spec,    MUICFG_BetterString_MarkedBack,     0, 32,           (APTR)"m6"      },
+  { MarkedText,     MUIA_Pendisplay_Spec,    MUICFG_BetterString_MarkedText,     0, 32,           (APTR)"m5"      },
+  { Font,           MUIA_String_Contents,    MUICFG_BetterString_Font,           0,  0,           (APTR)""        },
+  { Frame,          MUIA_Framedisplay_Spec,  MUICFG_BetterString_Frame,          0, 32,           (APTR)"302211"  },
+  { SelectOnActive, MUIA_Selected,           MUICFG_BetterString_SelectOnActive, 1, sizeof(LONG), (APTR)0         },
+  { SelectPointer,  MUIA_Selected,           MUICFG_BetterString_SelectPointer,  1, sizeof(LONG), (APTR)1         }
 };
 
-DISPATCHERPROTO(_DispatcherP)
+DISPATCHER(_DispatcherP)
 {
-    	DISPATCHER_INIT
-	
-	struct InstData_MCP *data = (struct InstData_MCP *)INST_DATA(cl, obj);
-	ULONG result = 0;
-	switch(msg->MethodID)
-	{
-		case OM_NEW:
-		{
-			if((obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg)))
-			{
-				struct InstData_MCP *data = (struct InstData_MCP *)INST_DATA(cl, obj);
+  struct InstData_MCP *data = (struct InstData_MCP *)INST_DATA(cl, obj);
+  ULONG result = 0;
 
-				Object *prefsobject;
-				if((prefsobject = CreatePrefsGroup(data)))
-				{
-					ULONG i;
+  ENTER();
+
+  switch(msg->MethodID)
+  {
+    case OM_NEW:
+    {
+      if((obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg)))
+      {
+        struct InstData_MCP *data = (struct InstData_MCP *)INST_DATA(cl, obj);
+
+        Object *prefsobject;
+        if((prefsobject = CreatePrefsGroup(data)))
+        {
+          ULONG i;
 
           DoMethod(obj, OM_ADDMEMBER, prefsobject);
 
-					/* This is MUI 3.9 stuff: Each registered object will get a context-menu, like normal pref-items */
-					for(i=0; i < NumberOfObject; i++)
-						DoMethod(obj, MUIM_Mccprefs_RegisterGadget, data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].CfgItem, 0L, NULL);
+          // This is MUI 3.9 stuff: Each registered object will get a context-menu, like normal pref-items
+          if(MUIMasterBase->lib_Version >= 20)
+          {
+            for(i=0; i < NumberOfObject; i++)
+              DoMethod(obj, MUIM_Mccprefs_RegisterGadget, data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].CfgItem, 0L, NULL);
+          }
 
-					result = (ULONG)obj;
-				}
-				else
-				{
-					CoerceMethod(cl, obj, OM_DISPOSE);
-				}
-			}
-		}
-		break;
+          result = (ULONG)obj;
+        }
+        else
+          CoerceMethod(cl, obj, OM_DISPOSE);
+      }
+    }
+    break;
 
-		case MUIM_Settingsgroup_ConfigToGadgets:
-		{
-			ULONG i;
+    case MUIM_Settingsgroup_ConfigToGadgets:
+    {
+      ULONG i;
       Object *configdata = ((struct MUIP_Settingsgroup_ConfigToGadgets *)msg)->configdata;
-			
+
       for(i=0; i < NumberOfObject; i++)
-			{
-				STRPTR cfg_val = (STRPTR)DoMethod(configdata, MUIM_Dataspace_Find, PrefsInfo[i].CfgItem);
-				set(data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].Tag, cfg_val ? cfg_val : PrefsInfo[i].DefValue);
-			}
-		}
-		break;
+      {
+        APTR cfg_val;
 
-		case MUIM_Settingsgroup_GadgetsToConfig:
-		{
-			ULONG i;
+        cfg_val = (APTR)DoMethod(configdata, MUIM_Dataspace_Find, PrefsInfo[i].CfgItem);
+
+        if(PrefsInfo[i].Type == 0)
+        {
+          W(DBF_STARTUP, "0 MUIM_Dataspace_Find[%ld]: %08lx : %lx / %lx", i, PrefsInfo[i].CfgItem, cfg_val, cfg_val ? cfg_val : PrefsInfo[i].DefValue);
+
+          set(data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].Tag, cfg_val ? cfg_val : PrefsInfo[i].DefValue);
+        }
+        else
+        {
+          W(DBF_STARTUP, "1 MUIM_Dataspace_Find[%ld]: %08lx : %lx / %lx", i, PrefsInfo[i].CfgItem, cfg_val, cfg_val ? *(ULONG *)cfg_val : (ULONG)PrefsInfo[i].DefValue);
+
+          set(data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].Tag, cfg_val ? *(ULONG *)cfg_val : (ULONG)PrefsInfo[i].DefValue);
+        }
+      }
+    }
+    break;
+
+    case MUIM_Settingsgroup_GadgetsToConfig:
+    {
+      ULONG i;
       Object *configdata = ((struct MUIP_Settingsgroup_ConfigToGadgets *)msg)->configdata;
 
-			for(i=0; i < NumberOfObject; i++)
-			{
-				STRPTR cfg_val;
-				ULONG len;
+      for(i=0; i < NumberOfObject; i++)
+      {
+        LONG cfg_val;
+        ULONG len;
 
-#ifdef __AROS__
-        get(data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].Tag, &cfg_val);
-#else
-        get(data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].Tag, (ULONG)&cfg_val);
-#endif
-				len = PrefsInfo[i].Length;
-				
-        DoMethod(configdata, MUIM_Dataspace_Add, cfg_val, len ? len : strlen(cfg_val)+1, PrefsInfo[i].CfgItem);
-			}
-		}
-		break;
+        cfg_val = xget(data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].Tag);
+        len = PrefsInfo[i].Length;
 
-		default:
-			result = DoSuperMethodA(cl, obj, msg);
-		break;
-	}
-	return result;
-	
-	DISPATCHER_EXIT
+        if(PrefsInfo[i].Type == 0)
+        {
+          W(DBF_STARTUP, "0 MUIM_Dataspace_Add[%ld]: %08lx : %lx", i, PrefsInfo[i].CfgItem, cfg_val);
+          DoMethod(configdata, MUIM_Dataspace_Add, cfg_val, len > 0 ? len : strlen((char *)cfg_val)+1, PrefsInfo[i].CfgItem);
+        }
+        else
+        {
+          W(DBF_STARTUP, "1 MUIM_Dataspace_Add[%ld]: %08lx : %lx / %lx", i, PrefsInfo[i].CfgItem, &cfg_val, cfg_val);
+          DoMethod(configdata, MUIM_Dataspace_Add, &cfg_val, len, PrefsInfo[i].CfgItem);
+        }
+      }
+    }
+    break;
+
+    default:
+      result = DoSuperMethodA(cl, obj, msg);
+    break;
+  }
+
+  RETURN(result);
+  return result;
 }

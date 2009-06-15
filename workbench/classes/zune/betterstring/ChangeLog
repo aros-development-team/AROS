@@ -2,9 +2,585 @@
 MUI BetterString MCC class - ChangeLog
 --------------------------------------
 
-$Id: ChangeLog,v 1.1 2005/04/21 20:52:04 damato Exp $
-$Source: /cvsroot/bstring-mcc/ChangeLog,v $
+$Id: ChangeLog 185 2009-06-07 17:50:57Z marust $
+$URL: https://bstring-mcc.svn.sourceforge.net/svnroot/bstring-mcc/trunk/ChangeLog $
+
+2009-06-07 Matthias Rustler <mrustler@gmx.de>
+
+  * AROS metamakefiles added.
+  * Some 64-bit fixes.
+  * BetterString-Test.c: foul language removed.
+  * Re-added some fixes from previous AROS port.
+
+2009-06-03 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: added dependeny files to our build system and fixed another bunch of
+    AROS related compiler warnings/issues.
+
+2009-06-02 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: fixed several compiler warning when compiling for AROS and updated
+    the SDI headers accordingly.
+
+2009-05-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/SDI_lib.h: updated to the latest version.
+
+2009-05-02 Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * include/mccinit.c: RTF_EXTENDED was not set for the MorphOS build making
+    revision number ineffective.
+
+2009-04-30 Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/SDI_lib.h: updated to the latest version.
+
+2009-04-20 Pär Boberg <pbobbenb@spray.se>
+
+  * mcp/locale/swedish.ct: updated according to changes.
+
+2009-04-17 Jens Langner <Jens.Langner@light-speed.de>
+
+  * defines/mccclass.h: updated AROS defines header after regeneration with
+    sfdc 1.4.
+
+2009-04-01 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mccinit.c: fixed broken stackswap_call() prototype for the assembler
+    version.
+
+2009-03-29 Jens Langner <Jens.Langner@light-speed.de>
+
+  * version.h: renamed the rev.h file to version.h in each subdirectory and
+    updated it with a more flexible version, system and cpu identification
+    model.
+
+2009-03-27 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: fixed the linker options to have everything properly linkable with
+    the latest AROS SDK.
+  * misc: first preparation for a direct AROS cross-compiler compilation.
+
+2009-03-27 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/FileNameCompl.c: changed to unsafe BSTR conversion to something more
+    bullet proof. A BSTR is not guaranteed to be NUL-terminated, which the
+    former implementation falsely assumed.
+
+2009-02-01 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Dispatcher.c, mcc/HandleInput.c: if the SelectOnActive feature was
+    active and the object was activated either by the programmers request (i.e.
+    by setting MUIA_Window_ActiveObject) the object will now correctly select
+    the complete string, instead of doing this right after the first keypress.
+    This should fix bug #2504286.
+
+#### v11.16 RELEASE ###########################################################
+
+2009-01-11 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 11.16 release preparations
+  * mcc/HandleInput.c, mcc/Disptacher.c: fixed the newly introduced SelectOnActive
+    functionality by selecting all text only if the object has been gone
+    active freshly and the user released the mouse button without any text
+    manually selected. This should make the behaviour of a BetterString object
+    more consistent to what a string object is supposed to do with the
+    SelectOnActive feature enabled.
+
+2008-12-31 Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * mcc/HandleInput: when pasting text clear only the tail of the buffer.
+  * mcc/AllocBitMap.c: Also MorphOS build is now using AllocBitMap()/FreeBitMap()
+    only. For maximum performance VMEM bitmap is used. WaitBlit() is now called
+    only for OS3 (CGX and P96 synchronise blitters automatically).
+
+2008-12-22 Thore Böckelmann <tboeckel@gmx.de>
+
+  * vastubs.c: added missing stub function for the OS3 build.
+
+2008-12-21 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/AllocBitMap.c: replaced the OS3 specific part (and the deprecated
+    AllocMem and AllocVec calls) by simplified code.
+
+2008-12-20 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/Pointer.c: added support for displaying a selection pointer similar to
+    what TextEditor.mcc or NList.mcc displays to a user in case the mouse is
+    over a BetterString object. Per default the selection pointer is turned on
+    but can be globally disabled via a new user definable setting in the mcp.
+    There might be still some glitches. So before we can release a new version
+    we ought to run some details tests with the selection pointer enabled and
+    disabled.
+  * mcc,mcp: added a new preference setting to allow a betterstring object to
+    automatically select all text in case it will get the active object of a
+    window either via a TAB cycle or via mouse activation. In addition, a new
+    MUIA_BetterString_SelectOnActive attribute has been added to allow a
+    developer to override the user settings for specific cases. However, this
+    new functionality is turned off per default as a string gadget in AmigaOS
+    usually does not show this behaviour.
+
+2008-12-17 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Dispatcher.c: replaced the deprecated pool function calls by new ones
+    for the the OS4 build.
+
+2008-11-04  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * mcc/HandleInput.c: paste from clipboard now also reads CSET chunk and
+    converts UTF-8 text to a local 8bit charset. Charset conversion is
+    supported in MorphOS 2 only but could be made available to other platforms
+    by using codesets.library respectively.
+
+2008-09-22 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/HandleInput.c: replaced the strcpy() call by a memcpy() call, because
+    the former appended a NUL character and hence caused the contents to be
+    "visibly" overwritten by a pasted string. This fixes bug #2121909.
+
+#### v11.15 RELEASE ###########################################################
+
+2008-06-19 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 11.15 release preparations
+
+2008-06-15 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/HandleInput.c: slightly improved the ReadChunkBytes() handling with
+    iffparse library. Now the return value is checked correctly and the buffer
+    is cleared before placing the bytes from clipboard there. In addition, the
+    LF and CR stripping is removed again as this was not the root of bug #1992568
+    and LF and CR should be able to be placed in the string object as well.
+  * mcc/HandleInput.c: fixed a bug where the keyboard shortcuts didn't work for
+    a normal object due to a wrong flag check.
+  * locale/italian.ct: updated italian catalog
+
+2008-06-14  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/HandleInput.c, mcc/library.c: replaced the handcrafted clipboard access
+    by usage of iffparse.library. Before only the first FTXT chunk was examined,
+    which resulted in partial pastes from TextEditor.mcc only in case there were
+    multiple lines in the clipboards. LF's and CR's will be replaced by spaces
+    and hence multiple lines will be concatenated to one single line. Hopefully
+    this fixes bug #1992568.
+
+2008-03-19  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/GetSetAttrs.c: made MUIA_String_AdvanceOnCR OM_GET'able.
+
+2008-03-17  Thore Böckelmann <tboeckel@gmx.de>
+
+  * #?/vastubs.c, #?/Makefile: added vararg stubs for OS3 to be able to link
+    against clib2 which misses these stubs.
+
+2008-03-04  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Makefile: removed accidently included extrasrc.o dependency.
+  * #?/Makefile: removed -lm from the linker libs as nothing needs floating
+    point math. Also added dump as target.
+
+2008-02-25  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/GetSetAttrs.c: minor optimizations
+  * mcc/HandleInput.c: fixed a bug introduced by the recent flag checks by
+    macros which caused the text to be immediately marked as block.
+
+2008-02-19  Thore Böckelmann <tboeckel@gmx.de>
+
+  * Debug.h: replaced all abort() usages in our ASSERT() macros with the
+    respective calls to assert(). This should prevent the MorphOS compile
+    from not linking and be a bit more intuitiv.
+
+2008-02-17  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/GetSetAttrs.c: if an empty or NULL string is set as new content the
+    selection start index will now be adapted to prevent false markings.
+
+2008-02-07  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/hotkeystring/HandleInput.c: fixed a signedness warning.
+  * #?.c: replaced all "value & flag" style bit checks and manipulations by
+    isFlagSet() and setFlag() style macros. This should make the source a lot
+    more readable and less error prone to wrong checks.
+
+2008-02-02 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mccinit.c: updated to latest version available which fixes some
+    MorphOS specific compiler warnings.
+
+2008-01-24  Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcc/FileNameCompl.c, mcc/HandleInput.c, mcc/PrintString.c,
+     mcc/Dispatcher.c: added some STYLEGUIDE stuff.
+
+2008-01-04 Vit Sindlar <sindlarv at centrum dot cz>
+
+   * mcp/locale/czech.ct: updated Czech catalog translation
+
+2008-01-03  Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcp/locale/#?.ct: changed all .ct file names to english names instead of
+     translated ones.
+
+2007-12-19  Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcc/FileNameCompl.c: ParsePatternNoCase() was called with a too small buffer
+     which could have caused trashed memory. This most probably fixes bug
+     #1824388.
+
+#### v11.14 RELEASE ###########################################################
+
+2007-12-18 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcp/mcc: a few v11.14 release preparations.
+
+2007-12-13  Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcp/misc: replaced the old BitmapObject by a BodyChunkObject and added a
+     IFF-ILBM image with proper transparent color. This should fix the broken
+     display on the prefs image on some old machines.
+
+2007-12-03 Vit Sindlar <sindlarv at centrum dot cz>
+
+   * mcp/locale/czech.ct: added Czech catalog translation
+
+2007-11-05 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcp/Dispatcher.c, mcc/InitConfig.c: changed the default inactive text color
+     to use the shadow pen instead of the text pen. This should a default inactive
+     betterstring object a slightly better look.
+
+2007-11-05  Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcc/private.h, mcc/hotkeystring/private.h: added missing rawkey definitions
+     for OS3.
+   * misc: changed all TABs back to two spaces.
+
+2007-11-03 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcp/CreatePrefsGroup.c: added a copyright crawling object to the bottom
+     of the mcp to match the Look&Feel to our other classes.
+
+2007-11-02 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/HandleInput.c: the HOME and END key on PC keyboards will now be
+    processed and move the cursor to the start/end of the string. This should
+    fulfill feature request #1822105.
+  * mcp/CreatePrefsGroup.c: the Crawling object will now always carry a grey
+    background which should not interfere with any scrolling operation
+    anymore.
+
+#### v11.13 RELEASE ###########################################################
+
+2007-09-28 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/HandleInput.c: introduced new MUIV_BetterString_DoAction_Delete action
+    and changed the ClearSelected method to use that new action instead of
+    calling DeleteBlock() itself. This in fact should also fix issues where upon
+    a ClearSelected call the display of the gadget wasn't properly refreshed.
+
+2007-09-01  Pär Boberg <pbobbenb@spray.se>
+
+  * mcp/locale/svenska.ct: updated according to changes.
+
+2007-08-31 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcp/locale/italian.ct: updated italian translation kindly provided by
+    Samir Hawamdeh.
+
+2007-08-30 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/HandleInput.c: fixed bug where upon some copy&paste operations via
+    DoAction, an eventually marked block in the string wasn't properly
+    disabled with the action.
+
+2007-08-29  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale/deutsch.ct: updated german translations according to the lastest
+    changes.
+  * mcp/CreatePrefsGroup.c, mcp/locale/BetterString_mcp.cd: all the help strings
+    are now translatable.
+
+#### v11.12 RELEASE ###########################################################
+
+2007-08-26 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/hotkeystring: adapted documentation and minor tweaks to the sources of
+    HotkeyString.mcc.
+  * mcc/BetterString_mcc.h: converted all MUIV_BetterString_DoAction_#? values
+    to a named enum rather than simple defines.
+
+2007-08-18 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc: added new MUIM_BetterString_DoAction method which allows to manually
+    perform certain actions like Copy/Cut/Paste,... which are normally just
+    executed with the default shortcuts. This way the gadget can completly
+    controlled remotely.
+  * mcc: added new MUIA_BetterString_NoShortcuts attribute that allows to
+    disable the default shortcuts like Amiga+C, Amiga+V, etc. for applications
+    interested in performing those operations manually.
+  * include/mccinit.c: updated to latest 1.10 version
+
+#### v11.11 RELEASE ###########################################################
+
+2007-07-25  Thore Böckelmann <tboeckel@gmx.de>
+
+  * #?/library.c: now really uses the 3 parameter version of GETINTERFACE()
+    defined in mccinit.c instead of the old obsolete version in mcc_common.h.
+    The user definable functions (i.e. ClassInit()) must be declared before
+    the inclusion of mccinit.c.
+  * include/mccinit.c: updated to latest 1.8 version which really uses the
+    GETINTERFACE() macro with 3 parameters.
+
+2007-07-25 Jens Langner <Jens.Langner@light-speed.de>
+
+  * include/mccinit.c: updated to latest 1.7 version
+
+2007-07-24  Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/mccinit.c: updated to latest 1.6 version which fixes an unbalanced
+    if statement.
+
+2007-07-23 Jens Langner <Jens.Langner@light-speed.de>
+
+  * include/mccinit.c: updated to latest 1.5 version which should take care
+    of stack issues.
+
+2007-07-05 Jens Langner <Jens.Langner@light-speed.de>
+
+  * include/mccinit.c: updated to latest 1.4 version and adapted all our
+    library.c files to make use out of the new stack enforcing mechanisms.
+
+2007-06-13  Thore Böckelmann <tboeckel@gmx.de>
+
+  * #?/Debug.c: unified the _DPRINTF() functions for all platforms.
+
+2007-06-10 Jens Langner <Jens.Langner@light-speed.de>
+
+  * #?/Makefile: minor update/optimization on Makefiles.
+  * include/mccinit.c: updated to latest 1.1 version which should fix possible
+    stack issues during the LibInit() phase. Custom libraries will now be opened
+    during the LibOpen() phase instead while maintaining an own mutual exclusive
+    locking variable.
+
+2007-06-09 Jens Langner <Jens.Langner@light-speed.de>
+
+  * include/mccinit.c, mcc/library.c, mcp/library.c: replaced the old obsolete
+    mccheader.c by the new mccinit.c which should come with a much more clear
+    interface and documentation on how to use it for a basis of a MUI custom
+    class. This should significantly reduce the possibility of race conditions
+    in the mcc/library init code.
+
+2007-05-29  Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/mccheader.c: reworked the LibOpen() and LibClose() functions to
+    increment/decrement the lib_Open counter before obtaining the semaphore to
+    prevent a possible race condition with LibExpunge().
+
+#### v11.10 RELEASE ###########################################################
+
+2007-05-19  Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcp/locale/italian.ct: added italian catalog translation kindly provided
+    by Samir Hawamdeh.
+
+2007-05-18  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/PrintString.c: the inactive text is now displayed with the standard
+    shadow color.
+  * mcc/misc: added new attribute MUIA_BetterString_InactiveContents. The
+    supplied string will be shown if no other text is available and the object
+    is inactive.
+
+2007-04-16  Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcp/locale/dansk.ct: added new danish catalog translation kindly
+    provided by Niels Bache.
+
+2007-03-23  Thore Böckelmann <tboeckel@gmx.de>
+
+  * #?/Debug.c: fixed wrong final output of debug classes and flags.
+
+2007-03-11 Thore Böckelmann <tboeckel@gmx.de>
+
+  * #?/Debug.c: disabling a debug flag was not possible due to a check for the
+    '!' at a wrong index.
+
+2007-03-08  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: fixed bug #1676749 where all BetterString classes did check for
+    a minimum version of keymap.library of v38 whereas the OS 3.0 version
+    is normally v37.2. This prevented the use of BetterString on OS 3.0
+    machines.
+
+2007-03-07  Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcp/locale/russian.ct: added russian catalog translation kindly provided
+    by Vlad Vinogradov.
+
+#### v11.9 RELEASE ############################################################
+
+2007-03-06  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: fixed several compiler warnings
+  * misc: replaced all single-target makefiles with general "Makefile"
+    that automatically identifies the build target via uname.
+
+2007-03-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * all makefiles: all makefiles were still accessing the no longer existing
+    directory "includes" instead of "include".
+
+2007-01-02  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: updated all copyright notices to 2007.
+  * mcp/locale/french.ct: added french catalog translation kindly provided
+    by Philippe Bovier.
+
+2006-11-28  Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcp/locale/svenska.ct: added swedish catalog translation kindly provided
+    by Pär Boberg.
+
+2006-10-06  Jens Langner <Jens.Langner@light-speed.de>
+
+  * includes/SDI_#?, misc: updated to latest versions and updated our sources
+    accordingly.
+
+2006-09-30 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/hotkeystring/HandleInput.c: fixed bug #1568031 where a wrong index
+    calculation which shifted all F-keys and cursor keys by one, making all
+    inputs wrong.
+  * mcc/Debug.c, mcp/Debug.c, mcc/hotkeystring/Debug.c: corrected several
+    wrong class names in the debug output.
+
+#### v11.8 RELEASE ############################################################
+
+2006-08-20  Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/HandleInput.c: fixed bug #1218170 where on "MUIA_String_Secret"
+    enabled objects the doubleclicking marking of text should not select
+    single words.
+  * mcc/HandleInput.c: on double-clicked into a betterstring gadget, text
+    passages will only be marked if the user really always clicked on the
+    very same position in the string. Otherwise marking will be removed.
+  * mcc/InitConfig.c: fixed a bug in the font name parsing/loading routines
+    which didn't work as expected and could crash a machine under certain
+    situations.
+  * misc: replaced all bufferoverflow prone functions like sprintf() against
+    safe functions.
+  * mcc/Dispatcher.c: if a BetterString gadget moves into 'Inactive' state,
+    eventually selected content will be automatically unselected as it is done
+    with the default MUI string class.
+  * misc: switched all OS4 builds to compile against newlib.library.
+  * misc: updated 'mccheader.c' include file from latest TextEditor.mcc
+    sources and also applied the new Debug.c,h interface to all our subprojects.
+  * mcc/hotkeystring/HandleInput.c: fixed the OS4 build to use the new media
+    key definitions instead.
+
+2005-07-30  Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/hotkeystring/HandleInput.c: changed the rawkey based wheelmouse name to
+    carry a "nm_" prefix so that it refers to newmouse based wheelmouse events
+    and doesn't conflict with the new wheelmouse events in AmigaOS4.
+
+#### v11.7 RELEASE ############################################################
+
+2005-07-07  Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/library.c: added missing USEDCLASSESP define so that MUI knowns
+    which mcp class belongs to the mcc.
+
+2005-07-07  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * mcc/hotkeystring/HandleInput.c: changed CONST CONST_STRPTR back to
+    const char *, as requested.
+
+2005-07-04  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * mcc/hotkeystring/HandleInput.c: made small changes only to create
+    (possibly) smaller code.
+
+2005-07-03  Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/GetSetAttrs.c: fixed a minor bug in the MUIA_String_Integer set
+    method which prevented it from correctly converting the supplied
+    integer into a string and therefore left the method defective.
+
+2005-07-02  Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/hotkeystring/HandleInput.c: added missing <proto/intuition.h>
+    include statements which prevent compilation with OS4 SDK (missing
+    SetAttrs)
+
+2005-06-30  Gunther Nikl <gni@gecko.de>
+
+  * mcc/HandleInput.c (ConvertKey): fix signedness bug.
+  * mcc/hotkeystring/HandleInput.c (ConvertKey): Likewise.
+
+2005-06-24  Gunther Nikl <gni@gecko.de>
+
+  * mcc/AllocBitMap.c: Free allocated bitmap on failure in non-V39 case.
+    Move version check into USE_OS3 #define.
+    (MUIG_AllocBitMap): Improved friend handling.
+  * mcc/AllocFunctions.c: Minor changes.
+
+2005-06-16  Gunther Nikl <gni@gecko.de>
+
+  * mcc/HandleInput.c: Fix OS3 MySPrintf for GCC 3.4.x or newer (has to
+    use stdarg.h macros!). Small cleanup (eg. STRPTR -> char*).
+
+2005-06-15  Gunther Nikl <gni@gecko.de>
+
+  * mcc/hotkeystring/Makefile.os3: Added $(CPU) to $LDFLAGS. Added INCDIR=
+    setting and used it where appropriate.
+  * mcc/hotkeystring/HotkeyString-Test.c Added libraries/iffparse.h for
+    MAKE_ID define. Includes cleanup.
+  * mcc/hotkeystring/private.h: Replaced proto/mui.h with libraries/mui.h.
+  * mcc/hotkeystring/HandleInput.c: Replaced STRPTR and friends with char*
+    (thats what standard functions use!). Include and code cleanup.
+
+2005-06-14  Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/hotkeystring: replaced the fixed values for the special OS4/MOS keys
+    by a more general set of RAWKEY_ defines already common on both platforms
+  * mcc/hotkeystring: fixed a whole bunch of compiler warnings
+  * mcc: fixed a bunch of compiler warnings
+
+2005-06-13  Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/TextFunctions.c: replace our own MyTextLength/MyTextFit with the
+    standard OS TextLength/TextFit functions as they work exactly the same
+    and are hopefully less buggy.
+
+2005-05-25  Jens Langner <Jens.Langner@light-speed.de>
+
+  * library.c: added missing USE_UTILITYBASE define which may have caused
+    problems on OS3 machines.
+
+2005-05-19  Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/TextFunctions.c: adapted sources to the already fixed function
+    equivalents used in TextEditor.mcc.
+
+2005-05-03  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * mcc/hotkeystring/HandleInput.c: Added missing key codes for MorphOS
+    and AmigaOS4 (may contain wrong codes).
+  * mcc/hotkeystring/HandleInput.c: Added media keys.
+  * mcc/hotkeystring/Dispatcher.c (OM_SET):
+    Added MUIA_HotkeyString_IX tag. Takes struct InputXpression as data
+    and sets a gadget contents accordingly.
+  * misc: Restored spaces to ChangeLog.
+
+2005-05-03  Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/HandleInput.c: fixed an uninitialized variable by integrating
+    the proposed patch of bug 1193352 from Georg Steger.
+  * misc: integrated minor patches kindly provided by Gunther Nikl
+    and modified sources to properly compile with gcc versions < 3.
 
 2005-04-21  Jens Langner <Jens.Langner@light-speed.de>
 
-    * initial LGPL release published at sf.net
+  * initial LGPL release published at sf.net

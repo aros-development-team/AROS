@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2007 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 
  BetterString class Support Site:  http://www.sf.net/projects/bstring-mcc/
 
- $Id: AUTHORS,v 1.1 2005/04/21 20:52:04 damato Exp $
+ $Id: AUTHORS 159 2009-01-11 17:06:49Z damato $
 
 ***************************************************************************/
 
@@ -24,8 +24,8 @@ BetterString.mcc is an Open Source development effort with the code base and
 design provided by the following people:
 
 Allan Odgaard      <duff2@users.sourceforge.net>
+Ilkka Lehtoranta   <ilkleht@isoveli.org>
 Jens Langner       <damato@users.sourceforge.net>
+Thore Böckelmann   <tboeckel@gmx.de>
 
 The development of BetterString.mcc is hosted by SourceForge http://www.sf.net/
-
-

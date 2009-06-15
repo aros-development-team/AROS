@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -21,6 +21,7 @@
 ***************************************************************************/
 
 #include <proto/exec.h>
+#include <proto/intuition.h>
 
 /******************************************************************************/
 /*                                                                            */
@@ -31,7 +32,7 @@
 /******************************************************************************/
 
 #include "private.h"
-#include "rev.h"
+#include "version.h"
 
 #define VERSION       LIB_VERSION
 #define REVISION      LIB_REVISION
@@ -41,39 +42,77 @@
 
 #define INSTDATA      InstData
 
-#define UserLibID     "$VER: BetterString.mcc " LIB_REV_STRING CPU " (" LIB_DATE ") " LIB_COPYRIGHT
+#define USERLIBID     CLASS " " LIB_REV_STRING " [" SYSTEMSHORT "/" CPU "] (" LIB_DATE ") " LIB_COPYRIGHT
 #define MASTERVERSION 19
 
-#define ClassInit
-#define ClassExit
+#define USEDCLASSESP  used_classesP
+static const char *used_classesP[] = { "BetterString.mcp", NULL };
+
+#define CLASSINIT
+#define CLASSEXPUNGE
+#define MIN_STACKSIZE 8192
 
 struct Library *DiskfontBase = NULL;
 struct Library *KeymapBase = NULL;
+struct Library *LayersBase = NULL;
 struct Library *LocaleBase = NULL;
+struct Library *IFFParseBase = NULL;
 
 #if defined(__amigaos4__)
 struct DiskfontIFace *IDiskfont = NULL;
 struct KeymapIFace *IKeymap = NULL;
+struct LayersIFace *ILayers = NULL;
 struct LocaleIFace *ILocale = NULL;
+struct IFFParseIFace *IIFFParse = NULL;
 #endif
 
-BOOL ClassInitFunc(UNUSED struct Library *base)
+/******************************************************************************/
+/* define the functions used by the startup code ahead of including mccinit.c */
+/******************************************************************************/
+static BOOL ClassInit(UNUSED struct Library *base);
+static VOID ClassExpunge(UNUSED struct Library *base);
+
+/******************************************************************************/
+/* include the lib startup code for the mcc/mcp  (and muimaster inlines)      */
+/******************************************************************************/
+#include "mccinit.c"
+
+/******************************************************************************/
+/* define all implementations of our user functions                           */
+/******************************************************************************/
+static BOOL ClassInit(UNUSED struct Library *base)
 {
   if((LocaleBase = OpenLibrary("locale.library", 38)) &&
-     GETINTERFACE(ILocale, LocaleBase))
+     GETINTERFACE(ILocale, struct LocaleIFace *, LocaleBase))
   {
-    if((KeymapBase = OpenLibrary("keymap.library", 38)) &&
-       GETINTERFACE(IKeymap, KeymapBase))
+    if((LayersBase = OpenLibrary("layers.library", 36)) &&
+       GETINTERFACE(ILayers, struct LayersIFace *, LayersBase))
     {
-      if((DiskfontBase = OpenLibrary("diskfont.library", 38)) &&
-         GETINTERFACE(IDiskfont, DiskfontBase))
+      if((KeymapBase = OpenLibrary("keymap.library", 37)) &&
+         GETINTERFACE(IKeymap, struct KeymapIFace *, KeymapBase))
       {
-        return(TRUE);
+        if((DiskfontBase = OpenLibrary("diskfont.library", 38)) &&
+           GETINTERFACE(IDiskfont, struct DiskfontIFace *, DiskfontBase))
+        {
+          if((IFFParseBase = OpenLibrary("iffparse.library", 36)) &&
+             GETINTERFACE(IIFFParse, struct IFFParseIFace *, IFFParseBase))
+          {
+            return(TRUE);
+          }
+
+          DROPINTERFACE(IDiskfont);
+          CloseLibrary(DiskfontBase);
+          DiskfontBase = NULL;
+        }
+
+        DROPINTERFACE(IKeymap);
+        CloseLibrary(KeymapBase);
+        KeymapBase  = NULL;
       }
 
-      DROPINTERFACE(IKeymap);
-      CloseLibrary(KeymapBase);
-      KeymapBase  = NULL;
+      DROPINTERFACE(ILayers);
+      CloseLibrary(LayersBase);
+      LayersBase  = NULL;
     }
 
     DROPINTERFACE(ILocale);
@@ -85,8 +124,15 @@ BOOL ClassInitFunc(UNUSED struct Library *base)
 }
 
 
-VOID ClassExitFunc(UNUSED struct Library *base)
+static VOID ClassExpunge(UNUSED struct Library *base)
 {
+  if(IFFParseBase)
+  {
+    DROPINTERFACE(IIFFParse);
+    CloseLibrary(IFFParseBase);
+    IFFParseBase = NULL;
+  }
+
   if(DiskfontBase)
   {
     DROPINTERFACE(IDiskfont);
@@ -101,6 +147,13 @@ VOID ClassExitFunc(UNUSED struct Library *base)
     KeymapBase = NULL;
   }
 
+  if(LayersBase)
+  {
+    DROPINTERFACE(ILayers);
+    CloseLibrary(LayersBase);
+    LayersBase = NULL;
+  }
+
   if(LocaleBase)
   {
     DROPINTERFACE(ILocale);
@@ -109,10 +162,3 @@ VOID ClassExitFunc(UNUSED struct Library *base)
   }
 }
 
-/******************************************************************************/
-/*                                                                            */
-/* include the lib startup code for the mcc/mcp  (and muimaster inlines)      */
-/*                                                                            */
-/******************************************************************************/
-
-#include "mccheader.c"

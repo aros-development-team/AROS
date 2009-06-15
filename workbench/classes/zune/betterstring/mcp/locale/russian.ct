@@ -1,0 +1,49 @@
+## version $VER: BetterString_mcp.catalog 2.0 (06.03.2007) (Amiga-1251)
+## language russian
+## codeset 2104
+## chunk AUTH Translated by ATO-RUS: Vlad Vinogradov <vinnny@aport.ru>
+;-----------------------------------------------------------------------------
+;
+; CATALOG TRANSLATION REVISION HISTORY
+;
+; 2.0 (06.03.2007) <vvinogradov>
+; - first build (BetterString.mcc v11.9)
+;
+;-----------------------------------------------------------------------------
+;
+MSG_Label_Active
+Активно:
+; Active:
+;
+MSG_Label_Background
+Фон
+; Background
+;
+MSG_Label_Cursor
+Курсор:
+; Cursor:
+;
+MSG_Label_Fonts
+Шрифт:
+; Font:
+;
+MSG_Label_Frame
+Рамка:
+; Frame:
+;
+MSG_Label_Inactive
+Неактивно:
+; Inactive:
+;
+MSG_Label_Marked
+Выделено:
+; Marked:
+;
+MSG_Label_Text
+Текст
+; Text
+;
+MSG_String_TestString
+Здесь можно тестировать настройки BetterString!
+; Test the power of BetterString here!
+;
