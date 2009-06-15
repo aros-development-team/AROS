@@ -142,7 +142,7 @@ DISPATCHER(TextEditor_Dispatcher)
       struct MUIP_DragDrop *drop_msg = (struct MUIP_DragDrop *)msg;
       ULONG active = 0;
 
-      if(GetAttr(MUIA_List_Active, drop_msg->obj, &active))
+      if(GetAttr(MUIA_List_Active, drop_msg->obj, (IPTR *)&active))
         DoMethod(obj, MUIM_TextEditor_InsertText, StdEntries[active]);
     }
     break;
@@ -264,7 +264,7 @@ int main(VOID)
 {
   struct RDArgs *args;
   Object *slider;
-  LONG argarray[6] = { 0,0,0,0,0,0 };
+  IPTR argarray[6] = { 0,0,0,0,0,0 };
 
   if((args = ReadArgs("Filename/F,EMail/S,MIME/S,MIMEQuoted/S,SkipHeader/S,Fixed/S", argarray, NULL)))
   {

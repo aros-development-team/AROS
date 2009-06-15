@@ -1,0 +1,22 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-classes-zune-texteditor-demo : includes linklibs \
+#MM workbench-classes-zune-texteditor \
+#MM workbench-classes-zune-texteditor-rexx
+
+FILES := TextEditor-Demo vastubs
+TARGETDIR := $(AROS_TESTS)/Zune/TextEditor
+
+USER_CFLAGS := -DNO_INLINE_STDARG
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
+
+%build_prog mmake=workbench-classes-zune-texteditor-demo progname=TextEditor-Demo \
+    files=$(FILES) targetdir=$(TARGETDIR) \
+    uselibs="amiga mui"
+
+#MM workbench-classes-zune-texteditor-rexx
+%copy_dir_recursive mmake=workbench-classes-zune-texteditor-rexx src=rexx \
+    dst=$(AROS_TESTS)/Zune/TextEditor/rexx
+
+%common
