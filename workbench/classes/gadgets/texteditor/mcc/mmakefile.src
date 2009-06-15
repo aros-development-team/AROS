@@ -4,43 +4,47 @@ include $(TOP)/config/make.cfg
 #MM workbench-classes-zune-texteditor-class : includes linklibs \
 #MM     workbench-libs-rexxsyslib
 
-USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../../../zune/betterstring/includes -I$(SRCDIR)/$(CURDIR)/../mcp -I$(SRCDIR)/$(CURDIR)/..
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../mcp
+USER_CFLAGS := -DNO_INLINE_STDARG
 
-FILES := AllocBitMap \
-	 AllocFunctions \
-	 BlockOperators \
-	 CaseConversion \
-	 ColorOperators \
-	 Debug \
-	 Dispatcher \
-	 EditorStuff \
-	 ExportHook \
-	 ExportText \
-	 GetSetAttrs \
-	 HandleARexx \
-	 HandleInput \
-	 ImportHook \
-	 ImportText \
-	 InitConfig \
-	 Keybindings \
-	 Methods \
-	 MixedFunctions \
-	 Navigation \
-	 PrintLineWithStyles \
-	 Search \
-	 SpellChecker \
-	 StyleOperators \
-	 UndoFunctions
-	 
-%build_module mmake=workbench-classes-zune-texteditor-class \
+FILES := library \
+        AllocBitMap \
+        AllocFunctions \
+        BlockOperators \
+        CaseConversion \
+        ColorOperators \
+        Dispatcher \
+        EditorStuff \
+        ExportHook \
+        ExportBlock \
+        ExportText \
+        GetSetAttrs \
+        HandleARexx \
+        HandleInput \
+        InitConfig \
+        ImportHook \
+        ImportText \
+        Keybindings \
+        Methods \
+        MixedFunctions \
+        Navigation \
+        Pointer \
+        PrintLineWithStyles \
+        Search \
+        SpellChecker \
+        StyleOperators \
+        UndoFunctions \
+        Debug \
+        vastubs
+
+%build_module_simple mmake=workbench-classes-zune-texteditor-class \
   modname=TextEditor modtype=mcc \
-  files=$(FILES) conffile=texteditor.conf \
-  uselibs="rexxsyslib amiga mui rom m"
+  files=$(FILES) uselibs="rexxsyslib amiga mui rom m"
 
 
 #MM includes-copy
 
-INCLUDE_FILES := TextEditor_mcc.h
-%copy_includes path=mui
+INCLUDE_FILES := ../include/mui/TextEditor_mcc.h
+%copy_includes path=mui dir=../include/mui
 
 %common

@@ -11,9 +11,9 @@
 #include <Proto/Intuition.h>
 #include <Proto/RexxSysLib.h>
 
-#include <mui/InfoText_mcc.h>
-#include <mui/TextEditor_mcc.h>
-#include <mui/Toolbar_mcc.h>
+#include <MUI/InfoText_mcc.h>
+#include <MUI/TextEditor_mcc.h>
+#include <MUI/Toolbar_mcc.h>
 
 	struct	Library	*MUIMasterBase;
 	Object	*app, *window, *editorgad, *StatusLine;

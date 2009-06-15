@@ -1,12 +1,12 @@
 @DataBase TextEditor.guide
-@$VER: TextEditor.Guide 15.17 (07.12.2005)
+@$VER: TextEditor.Guide 15.28 (04.01.2009)
 
 @Node Main "TextEditor - AmigaGuide(R) documentation"
 
 Welcome to the @{b}TextEditor @{ub}AmigaGuide(R) documentation.
 
-TextEditor is (C) 1997-2000 by Allan Odgaard,
-(C) 2005 by the TextEditor.mcc Open Source team
+(C) 2005-2009 by the TextEditor.mcc Open Source team
+(C) 1997-2000 by Allan Odgaard
 
 
 @{b}@{uu}Table of contents @{uu}@{ub}
@@ -339,6 +339,164 @@ History
 list of changes since 15.9)
 
 Quick summary:
+
+15.28 (04.01.2009)
+
+- the GOTOLINE and GOTOCOLUMN return the final line/column number intstead of the boolean
+  value TRUE. This allows to immediately check the cursor movement.
+- pasting UTF8 encoded text via MorphOS is possible now and will be converted to ASCII
+  immediately.
+- several minor bugfixes.
+
+15.27 (22.06.2008)
+
+- fixed OS3 build where soem floating point math was always present and may have caused
+  to crash on non-FPU machines.
+- the wheel scrolling routines now respect the absolute values of WheelX/WheelY under
+  AmigaOS4. This should make wheel acceleration finally work.
+- fixed a bug in the custom pointer setup which left "phantom cursors" under certain
+  circumstances.
+- minor bug fixes.
+
+15.26 (08.02.2008)
+
+- fixed a bug where cutting text on an empty first line ended up in an endless
+  loop or in a always marked first line.
+- fixed a potential memory leak in the undo/redo functionality.
+- reworked undo/redo functionality to be a bit more robust in future.
+- fixed a cosmetic bug when using small cursors (graphical traces left).
+- a doubleclick hook is now also aware of key qualifiers.
+
+15.25 (20.12.2007)
+
+- selection pointer will now only be shown if the gadget is in the frontmost window.
+- fixed some problems with the preferences image display.
+- fixed possible crashing issue with the way the selection pointer was created.
+- added czech catalog translation.
+- fixed some graphical scrolling issues.
+- added crawling object to the preference pane.
+- fixed cursor position notification issues.
+
+15.24 (14.10.2007)
+
+- fixed a bug where upon using the backspace key at the very top might have corrupted
+  the display in case it concatenated two lines.
+- fixed a bug where pressing return/enter on the last active line might have ended
+  up in not seeing TE.mcc scrolling down to keep the cursor in the display.
+- fixed a bug in the 32bit pointer management where the fakeBitmap was now
+  replaced against a fallback Bitmap. This should fix issues on gfx hardware which
+  couldn't handle softsprites on OS4.
+- fixed a bug in the MCP GUI display where some checkboxs were layouted incorrectly.
+- fixed a bug where a TE.mcc object ate all key events regardless if it is the
+  active object in a window or not.
+
+15.23 (03.10.2007)
+
+- new MUIA_TextEditor_ActiveObjectOnClick attributes which allows to automatically
+  set a texteditor object as the active object of a window in case the user clicks
+  into it regardless of the ReadOnly status.
+- new "inactive color" selection where the user will be able to select a color for
+  displaying selected text in an inactive color in case the texteditor object is set
+  inactive. The color will default to the halfshadow pen of MUI which should fit to
+  the other default colors.
+- added missing documentation about the function of the MUIA_TextEditor_KeyUpFocus
+  attribute.
+- the previously added inactive cursor mode is now fully user configurable. This
+  means that a user can now explicitly enable/disable the inactive cursor.
+- key releases of known shortcuts (like cursor up/down) were not handled correctly
+  and caused MUI to trigger the same action a second time. That caused double
+  scrolling. Now key releases of the short-cuts will be "eaten" as well. This fixes
+  bug #1784873.
+- fixed bug where an initial MUIA_Disabled state for a texteditor object in OM_NEW
+  didn't automatically end up in having an added slider set disabled as well.
+- the text will now always be rendered right from the top rather than layouting it
+  vertically centered throughout the available space. This should fix the common
+  vertical text floating when resizing a window which is redrawn with every resize
+  operation.
+- when the mouse pointer is now over an active TextEditor object, a specialized
+  mouse pointer image for selection of text will be shown instead of the default
+  system mouse pointer image.
+- fixed bug #1779587 where in SoftWrap mode, the MergeLines() function didn't take
+  correctly respect of the fact that by merging lines upon pressing "backspace",
+  the amount of visual lines may perfectly increase and therefore ended up in a
+  distorted text display. Now the ScrollUp/ScrollDown operations are done right
+  before redrawing the content of the merge lines.
+- a read-only editor with a marked search result could not be scrolled by keyboard
+  anymore if that would scroll the marked text out of the visible area.
+
+15.22 (29.07.2007)
+
+- when a texteditor gadget is being set to inactive state the cursor will now be
+  explicitly shown in an inactive manner (just outlined) rather than completly
+  hided. This should make it more easier to identify the position where the cursor
+  resists in inactive state.
+- the word wrapping mode can now be explicitly set by an application by specifying
+  MUIA_TextEditor_WrapMode. While the normal hard wrapping is still the default,
+  the new softwrap mode should be used with new/revised applications.
+- the number of UndoLevels can now be set via an application by specifying
+  MUIA_TextEditor_UndoLevels. A value of zero disables the undo/redo completly.
+- added dansk/russian translation.
+- fixed certain issueß with library initialization
+
+15.21 (07.03.2007)
+
+- updated certian catalog translations.
+- fixed incorrect iterations through the default keybindings structures.
+- fixed a crash bug where the "GETCURSOR" arexx command ended up in an illegal
+  memory access.
+- the .mcp will now check if the correct HotkeyString.mcc class could be found
+  and raise a warning requester instead.
+- the "Snoop" button the preferences is now a toggle button instead.
+- fixed wrong indexing of the key action popup object.
+- all default keybindings which previously contained explicit RSHIFT/LSHIFT
+  definitions now contain plain SHIFT ones.
+
+15.20 (25.02.2007)
+
+- added new MUIM_TextEditor_QueryKeyAction method to query a texteditor object
+  for a specified key action and receive the corresponding key binding.
+- MUIM_TextEditor_MarkText will now allow to also select all available text as well
+  as unselecting all text.
+- added new 'SELECTALL' and 'SELECTNONE' arexx command names.
+- added new 'SelectAll' and 'SelectNone' key actions and associated them with the
+  RCOMMAND+A and RCOMMAND+RSHIFT+A hotkeys.
+- enhanced the word wrapping mechanism to wrap a line exactly at where the wrap
+  border was specified and not at the cursor position.
+- fixed the key storage for "shift up" event where always converted to "shift right"
+- fixed invalid memory access to the instance data during OM_NEW. This have
+  been the cause for possible crashes during initialization of a TextEditor object.
+- fixed memory trashing during the paste operating which cause have ended up in
+  a crash.
+
+15.19 (12.11.2006)
+
+- fixed certain SpellChecker related issues.
+- fixed certain crash conditions on properly initialized TextEditor objects.
+- added new 'MUIM_TextEditor_ExportBlock' method which will export only the currently
+  marked text instead of the whole text like it's ExportText variant.
+- added new 'MUIV_TextEditor_ExportHook_NoStyle' ExportHook type which will export
+  all text, but strip all ESC style sequences.
+- all formerly handcrafted IFF writing functions are now being directly handled by
+  iffparse.library. This simplifies the clipboard handling and should automatically
+  fix several clipboard related issues. (e.g. pasting from PageStream)
+- fixed partly broken ARexx support.
+
+15.18 (18.08.2006)
+
+- all non buffer overflow safe functions where replaced by safe variants which
+  should improve the stability of TextEditor.mcc a bit.
+- fixed various problems with the Undo/Redo facility previsouly causing text
+  corruption.
+- TextEditor-Demo should not crash anymore and is provided in native OS4/MorphOS
+  versions as well.
+- MUIV_TextEditor_Insert_Top/MUIV_TextEditor_Insert_Bottom should work as expected
+  now.
+- querying MUIA_Font on a TextEditor object should now always return the currently
+  active font.
+- fixed search path cloning on MorphOS systems.
+- the AmigaOS4 version is now compiled/linked against newlib instead of clib2.
+- adapted MEDIA key definitions to latest OS4 SDK changes.
+- fixed certain problems with the library and mcc init code.
 
 15.17 (07.12.2005)
 
@@ -680,7 +838,7 @@ Modula-2:   Sönke Tesch (soenke.tesch@elmshorn.netsurf.de)
 
 MUI - Magic User Interface
 
-(C) 1992-2005 by Stefan Stuntz
+(C) 1992-2009 by Stefan Stuntz
 
 
 MUI is a system to generate and maintain graphical user interfaces. With the

@@ -1,6 +1,6 @@
 ;
 ; TextEditor_mcp.cd - TextEditor MUI custom prefs catalog description file
-; $Id: TextEditor_mcp.cd,v 1.1 2005/03/30 23:44:36 tactica Exp $
+; $Id: TextEditor_mcp.cd 438 2008-01-03 06:09:44Z thboeckel $
 ;
 #version 2
 #language english
@@ -15,16 +15,17 @@ If enabled, then the editor will lookup the word,\n\
 and only show suggestions if the word is misspelled.
 ;
 HelpBubble_Smooth (2//)
-This will enable pixel smooth scrolling.
+This enables pixel smooth scrolling.
 ;
 HelpBubble_TypeNSpell (3//)
 Enable this to let the editor\n\
 lookup the words while you type them.
 ;
 HelpBubble_UndoLevel (4//)
-Each undo eats 10 bytes of memory.\n\
-Cut and Copy takes a little more,\n\
-depends on the block size!
+Each undo level eats up 10 bytes of memory.\n\
+Cut and copy will take a little more,\n\
+depending on the size of the block you\n\
+are cutting or copying.
 ;
 MSG_Button_DefaultKeys (5//)
 Default _keys
@@ -60,7 +61,7 @@ MSG_Execution_CLI (15//)
 CLI
 ;
 MSG_Function_BOL (16//)
-Begin Of Line
+Beginning of line
 ;
 MSG_Function_Backspace (17//)
 Backspace
@@ -93,7 +94,7 @@ MSG_Function_Down (26//)
 Down
 ;
 MSG_Function_EOL (27//)
-End Of Line
+End of line
 ;
 MSG_Function_Left (28//)
 Left
@@ -102,31 +103,31 @@ MSG_Function_NextGadget (29//)
 Next gadget
 ;
 MSG_Function_NxtPage (30//)
-Next Page
+Next page
 ;
 MSG_Function_NxtPara (31//)
-Next Paragraph
+Next paragraph
 ;
 MSG_Function_NxtSent (32//)
-Next Sentence
+Next sentence
 ;
 MSG_Function_NxtWord (33//)
-Next Word
+Next word
 ;
 MSG_Function_Paste (34//)
 Paste
 ;
 MSG_Function_PrvPage (35//)
-Prev Page
+Prev page
 ;
 MSG_Function_PrvPara (36//)
-Prev Paragraph
+Prev paragraph
 ;
 MSG_Function_PrvSent (37//)
-Prev Sentence
+Prev sentence
 ;
 MSG_Function_PrvWord (38//)
-Prev Word
+Prev word
 ;
 MSG_Function_Redo (39//)
 Redo
@@ -170,17 +171,15 @@ Separator
 MSG_HelpTxt_SpellChecker (52//)
  \33u Intro \33n\n\
 \n\
-The TextEditor gadget offers you easy integration of external spell checkers, \
-this allows you to have both type'n'spell and also normal word-guessing.\n\
+The TextEditor gadget allows for easy integration of external spell checkers, \
+making it possible to have both type'n'spell and also normal word guessing.\n\
 \n\
  \33u Lookup command \33n\n\
 \n\
 For the type'n'spell you'll have to set the lookup command to a script that \
 will lookup the word and set the environment variable \"Found\" to either 0 \
-(for not found) or 1 (for a match).\n\
-I have chosen this behavior because it is the default for AlphaSpell.\n\
-You write %s where you want the word.\n\
-If you use AlphaSpell, then you can write:\n\
+(for not found) or 1 (for a match). This matches the default behaviour of AlphaSpell.\n\n\
+You write %s where you want the word. If you use AlphaSpell, then you can use:\n\n\
 \33bARexx:\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n\
 \n\
 You \33bmust\33n remember the quotes, this will let ARexx execute it \
@@ -188,12 +187,12 @@ as a command instead of a script.\n\
 \n\
  \33u Suggest command \33n\n\
 \n\
-If you press HELP over a word, then the editor will launch this command, \
+If you press <HELP> over a word, then the editor will launch this command, \
 again with %s substituted with the current word.\n\
-Your script should produce a file in T: named \"Matches\". This file are \
-then read by the gadget, and the contents are shown in a popup-listview, \
-from where you can choose a word which will replace the misspelled one.\n\
-Again, AlphaSpell users can write:\n\
+Your script should produce a file in T: named \"Matches\". This file is \
+then read by the gadget, and the contents are listed in a popup listview, \
+from where you can choose a word which will replace the misspelled one. \
+Again, AlphaSpell users can use:\n\n\
 \33bARexx:\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n\
 \n\
 If you use the methods described above, then you must start AlphaSpell \
@@ -218,7 +217,7 @@ MSG_Label_BlkQual (57//)
 Block qualifier
 ;
 MSG_Label_Cursor (58//)
-Cursor
+Normal
 ;
 MSG_Label_Fixed (59//)
 Fixed
@@ -359,7 +358,7 @@ MSG_PopWinTitle_Cursor (104//)
 Select cursor color
 ;
 MSG_PopWinTitle_Frame (105//)
-Select frame
+Adjust frame
 ;
 MSG_PopWinTitle_Highlight (106//)
 Select highlight color
@@ -395,26 +394,164 @@ MSG_SliderText_TabSize (116//)
 %ld spaces
 ;
 MSG_Function_GotoBookmark1 (117//)
-Goto Bookmark 1
+Goto bookmark 1
 ;
 MSG_Function_GotoBookmark2 (118//)
-Goto Bookmark 2
+Goto bookmark 2
 ;
 MSG_Function_GotoBookmark3 (119//)
-Goto Bookmark 3
+Goto bookmark 3
 ;
 MSG_Function_SetBookmark1 (120//)
-Set Bookmark 1
+Set bookmark 1
 ;
 MSG_Function_SetBookmark2 (121//)
-Set Bookmark 2
+Set bookmark 2
 ;
 MSG_Function_SetBookmark3 (122//)
-Set Bookmark 3
+Set bookmark 3
 ;
 MSG_Button_Snoop (123//)
 Snoop
 ;
 MSG_Function_DelLine (124//)
 Delete line
+;
+MSG_Function_SelectAll (125//)
+Select all
+;
+MSG_Function_SelectNone (126//)
+Select none
+;
+MSG_WarnConfigVersion_Title (127//)
+TextEditor.mcp warning
+;
+MSG_WarnConfigVersion (128//)
+Your currently saved keybindings setup is incompatible\n\
+with the version of TextEditor.mcc you have installed.\n\
+\n\
+It is suggested that you reset the current keybindings\n\
+to their defaults and edit them manually afterwards.
+;
+MSG_ResetAbort (129//)
+Reset|Abort
+;
+MSG_WarnHotkeyString_Title (130//)
+TextEditor.mcp warning
+;
+MSG_WarnHotkeyString (131//)
+TextEditor.mcp couldn't open the minimum required\n\
+version of the HotkeyString.mcc custom class and\n\
+therefore failed during initialization.\n\
+\n\
+Please make sure you have the latest Hotkeystring.mcc\n\
+class from http://www.sf.net/projects/bstring-mcc/\n\
+installed and try again.
+;
+MSG_Ok (132//)
+Ok
+;
+MSG_Label_InactiveCursor (133//)
+Inactive cursor
+;
+MSG_HELP_InactiveCursor (134//)
+If enabled, a custom cursor will be used\n\
+whenever the editor doesn't have the focus.
+;
+MSG_Label_SelectPointer (135//)
+Selection pointer
+;
+MSG_HELP_SelectPointer (136//)
+If enabled, a custom selection pointer will appear\n\
+when the mouse pointer is above the texteditor gadget.
+;
+MSG_Label_InactiveColor (137//)
+Inactive
+;
+MSG_PopWinTitle_InactiveColor (138//)
+Select inactive color
+;
+MSG_HELP_TABSIZE (139//)
+How many spaces hitting the <TAB> key will jump.
+;
+MSG_HELP_DESIGN_FRAME (140//)
+This is a button to adjust a frame.\n\
+Click it to open an adjust window or\n\
+use the drag&drop facilities to copy\n\
+from or to another frame adjust button.
+;
+MSG_HELP_DESIGN_BACKGROUND (141//)
+This is a button to adjust a background\n\
+color or pattern. Click it to open an\n\
+adjust window or use the drag&drop facilities\n\
+to copy from or to another background adjust button.
+;
+MSG_HELP_DESIGN_TEXT (142//)
+This is the color used to print the text.
+;
+MSG_HELP_DESIGN_HIGHLIGHT (143//)
+This is the color used to\n\
+print highlighted text.
+;
+MSG_HELP_SEPARATOR_SHINE (144//)
+This is the color used to\n\
+print separator bars.
+;
+MSG_HELP_SEPARATOR_SHADOW (145//)
+This is the color used to print\n\
+separator bars in shadow mode.
+;
+MSG_HELP_FONTS_NORMAL (146//)
+Default font to be used by the editor.
+;
+MSG_HELP_FONTS_FIXED (147//)
+Default font to be used by the editor\n\
+whenever a fixed width font is requested.
+;
+MSG_HELP_CURSOR_NORMAL (148//)
+Default color to be used for the cursor.
+;
+MSG_HELP_CURSOR_SELECTED (149//)
+Color to use to print\n\
+selected text.
+;
+MSG_HELP_CURSOR_INACTIVE (150//)
+Color to use to print selected text\n\
+when the editor doesn't have the focus.
+;
+MSG_HELP_CURSOR_WIDTH (151//)
+This is the width the cursor should have.
+;
+MSG_HELP_CURSOR_BLINKSPEED (152//)
+You may want the cursor to blink to make\n\
+it easier to find. Select 'Off' to disable\n\
+this feature.
+;
+MSG_HELP_BUTTON_DEFAULTKEYS (153//)
+Restore all keybindings\n\
+to the built-in defaults.
+;
+MSG_HELP_BUTTON_SNOOP (154//)
+Use this field to set a keybinding for this action.\n\
+You can either edit the string gadget directly or press\n\
+the 'Snoop' button to make the gadget monitor keypresses\n\
+until you press it again to confirm.
+;
+MSG_HELP_BUTTON_INSERT (155//)
+Add a new keybinding to the list.
+;
+MSG_HELP_BUTTON_DELETE (156//)
+Delete this keybinding from the list.
+;
+MSG_HELP_SPELLCHECKER_LOOKUP_CMD (157//)
+Specify here the lookup command you want to use, or\n\
+leave this empty to disable the type'n'spell feature.
+;
+MSG_HELP_SPELLCHECKER_SUGGEST_CMD (158//)
+Specify here the command that will be used\n\
+to suggest an alternate word. As explained above,\n\
+usually you should specify a script here.
+;
+MSG_UNDO_SLIDER_FORMAT (159//)
+%ld (± 5)
 ;

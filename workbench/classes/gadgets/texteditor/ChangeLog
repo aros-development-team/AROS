@@ -2,8 +2,1028 @@
 MUI TextEditor MCC class - ChangeLog
 ------------------------------------
 
-$Id: ChangeLog,v 1.89 2006/01/17 22:31:23 damato Exp $
-$Source: /cvsroot/texteditor-mcc/ChangeLog,v $
+$Id: ChangeLog 519 2009-06-11 12:22:40Z damato $
+$URL: https://texteditor-mcc.svn.sourceforge.net/svnroot/texteditor-mcc/trunk/ChangeLog $
+
+2009-06-11 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/SetBlock.c, mcc/ExportBlock.c: fixed the SetBlock logic to check each
+    flag after another instead of allowing only one flag. This is exactly what
+    the autodoc for SetBlock suggests. In addition, several things have been
+    cleaned up to better match our general code layout.
+
+2009-06-11 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/ExportBlock.c, mcc/SetBlock.c: replaced some hand crafted flag checks by
+    our isFlag#?() macros.
+  * mcc/Makefile, include/mui/TextEditor_mcc.h: fixed completely broken Makefile
+    and include file. Gianfranco, please make sure to check in working files
+    without any unfixed conflicts!
+
+2009-06-11 Gianfranco Gignina <sh1nkur0@libero.it>
+
+  * Implemented MUIM_TextEditor_SetBlock and modified MUIM_TextEditor_ExportBlock
+    to get block giving to it coordinates, see autodoc for more details.
+
+2009-06-08 Matthias Rustler <mrustler@gmx.de>
+
+  * AROS metamakefiles added
+  * Re-added some fixes from previous AROS port
+  * Some 64-bit fixes.
+
+2009-06-06 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: revised the whole build system again to be somewhat more useable for
+    AROS compiles. Now everything should compile/link fine for all AROS
+    targets as well.
+
+2009-06-02 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/EditorStuff.c: added missing variable initialization.
+
+2009-06-01 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/EditorStuff.c: added safety check before pasting new characters into a
+    line to prevent potential buffer overruns. Hopefully this fixes the still
+    happening random crashes on OS4.
+  * mcc/MixedFunctions.c, mcc/PrintWithStyle: the font soft style is reset after
+    each operation to avoid unwanted behaviour.
+
+2009-05-11 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: converted all tabs to spaces
+  * version.h: fixed the identification of a PowerPC processor as the AROS
+    compiler for ppc does not set __PPC__.
+
+2009-05-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/SDI_lib.h: updated to the latest version.
+
+2009-05-02 Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * include/mccinit.c: RTF_EXTENDED was not set for the MorphOS build making
+    revision number ineffective.
+
+2009-04-30  Thore Böckelmann <tboeckel@gmx.de>
+
+  * updated the SDI headers to their latest fixed versions.
+
+2009-04-18 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/C_c.sd: added missing SDI_compiler.h include to make IPTR type known.
+
+2009-04-17 Jens Langner <Jens.Langner@light-speed.de>
+
+  * include/defines/mccclass.h: updated the mccclass.h defines header with the
+    one generated with the latest sfdc 1.4 version.
+  * mcp/C_c.sd: replaced a (ULONG) cast by the more portable (IPTR) cast.
+
+2009-04-01 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mccinit.c: fixed broken stackswap_call() prototype for the assembler
+    version.
+  * UndoFunctions.c: fixed some compiler warnings about "void * used in arth-
+    metics"
+
+2009-04-01 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: adapted the whole environment to make TextEditor.mcc directly
+    compileable for AROS. Now it is possible to compile TextEditor.mcc with
+    an AROS cross-compiler for i386,ppc and x86_64.
+
+#### v15.28 RELEASE ############################################################
+
+2009-01-04 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final v15.28 release preparations
+
+2008-12-29 Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * mcc/AllocBitMap.c: Also MorphOS build is now using AllocBitMap()/FreeBitMap()
+    only. For maximum performance VMEM bitmap is used. WaitBlit() is now called
+    only for OS3 (CGX and P96 synchronise blitters automatically).
+
+2008-12-21 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/AllocBitMap.c: replaced the OS3 specific part (and the deprecated
+    AllocMem and AllocVec calls) by simplified code.
+
+2008-12-17 Jens Langner <Jens.Langner@light-speed.de>
+
+  * Makefile: removed the printf usage with the ANSI codes and replaced them
+    by the more intuitive CC/LD echo output.
+
+2008-12-17  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/ExportHook.c: added some missing NULL pointer checks.
+  * mcc/SpellChecker.c: replaced the obsolete CreateMsgPortl() and
+    DeleteMsgPort() calls with AllocSysObject() and FreeSysObject() call for the
+    OS4 build.
+  * mcc/Dispatcher.c: replaced the obsolete CreatePool() and DeletePool() calls
+    with AllocSysObject() and FreeSysObject() call for the OS4 build. Also
+    restored the old MEMF_ANY memory flags for the other platforms. For OS4
+    MEMF_SHARED will be used as before.
+
+2008-12-08  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Dispatcher.c: added MEMF_CLEAR to the pool's memory flags to make sure
+    that every allocation is cleared, as it seems the most prominent crashes are
+    caused by unrestricted string accesses (i.e. by strlen() operating after the
+    trailing NUL byte).
+
+2008-12-05  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/EditorStuff.c: slightly reworked the obscure width calculation in the
+    UpdateChange() function and added a missing LEAVE() macro call.
+  * mcc/EditorStuff.c: added the usual ENTER()/RETURN() macros the the UTF8
+    conversion function.
+
+2008-11-11  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * mcc/EditorStuff.c: when pasting UTF-8 try non-recursive compatibility
+    decomposition if equivalent mapping is not found from current keymap.
+
+2008-11-04  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * mcc/EditorStuff.c: paste from clipboard now also reads CSET chunk and
+    converts UTF-8 text to a local 8bit charset. Charset conversion is
+    supported in MorphOS 2 only but could be made available to other platforms
+    by using codesets.library respectively.
+
+2008-08-12  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/HandleARexx.c: the GOTOLINE and GOTOCOLUMN commands now return the final
+    line/column number instead of the boolean value TRUE. This makes it possible
+    to immediately check if the cursor movement has been done correctly. This
+    fixes bug #2045395. Note: Don't forget to FreeVec() the returned string as
+    stated in the Autodocs!!!!!
+
+2008-07-20  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * mcc/HandleInput.c, mcc/Pointer.c, mcc/private.h: simplified handling of
+    custom pointers for MorphOS 2 making code look nicer. Window (layer)
+    visibility check is also disabled when running under MorphOS2 (Intuition
+    takes care of it automatically).
+
+2008-07-17  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/MixedFunctions.c, mcc/PrintLineWithStyles.c: removed the kerning check
+    for proportional fonts upon setting the cursor to a new position. This
+    caused no clipping and hence some additional pixels left of the line's first
+    character when changing that character to be underlined and then setting the
+    cursor somewhere else. Now clipping will be enabled for all proportional
+    fonts regardless of any kerning information. This fixes bug #1896999.
+    Additonally setting any style (bold, italic, underlined) is now done with
+    help of AskSoftStyle() in case a certain font for example cannot be underlined.
+
+#### v15.27 RELEASE ############################################################
+
+2008-06-22 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final v15.27 release preparations
+
+2008-06-21 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/HandleInput.c: slightly reverted the last change to achieve a flicker
+    free custom select pointer as otherwise a user might end up with the
+    standard mouse pointer under some circumstances.
+
+2008-06-20 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/HandleInput.c: fixed the mouse pointer flickering which was present when
+    moving the mouse throughout a TE.mcc object.
+  * mcc/MixedFunctions.c: fixed a potential NUL pointer access which might have
+    caused some crashes.
+
+2008-03-17  Thore Böckelmann <tboeckel@gmx.de>
+
+  * #?/vastubs.c, #?/Makefile: added vararg stubs for OS3 to be able to link
+    against clib2 which misses these stubs.
+
+2008-03-06 Pär Boberg <pbobbenb@spray.se>
+
+   * mcp/locale/swedish.ct: Updated according to changes.
+
+2008-03-04  Thore Böckelmann <tboeckel@gmx.de>
+
+  * #?/Makefile: removed -lm from the linker libs as nothing needs floating
+    point math. Also added dump as target.
+
+2008-02-25 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/HandleInput.c: changed the AmigaOS4 WheelX/WheelY scroll wheel
+    interpretation to respect the wheel acceleration factor rather than always
+    scrolling the same distance. This should increase the scroll wheel speed in
+    case the wheel is used more quickly and the wheel acceleration factor is
+    properly configured in the SYS:Prefs/Input configuration.
+
+2008-02-19  Thore Böckelmann <tboeckel@gmx.de>
+
+  * Debug.h: replaced all abort() usages in our ASSERT() macros with the
+    respective calls to assert(). This should prevent the MorphOS compile
+    from not linking and be a bit more intuitiv.
+
+2008-02-18  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/ExportBlock.c: make use of the new flag macros.
+  * mcc/TextEditor-Test.c: fixed a typo.
+  * mcc/Debug.c: the flag macros are now local to Debug.c as in our other
+    classes.
+  * mcc/MixedFunctions.c, mcc/Dispatcher.c, mcc/GetSetAttrs.c, mcc/private.h:
+    hopefully fixed the "phantom cursor" bug. The inactive cursor was not erased
+    properly in all cased leaving visible phantom cursors behind. Now TE.mcc
+    remembers the current state of the cursor (active, inactive, off) to perform
+    the correct state changes.
+
+#### v15.26 RELEASE ############################################################
+
+2008-02-04 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/BlockOperators.c: fixed a bug in the CutBlock2() function where using
+    the RemoveChars() function on an empty top line caused a selected area to
+    remain selected, even after the cut operation. This should completely fix
+    bug #1884875 reported on the YAM bugtracker.
+  * mcc/UndoFunctions.c: fixed a potential source for a memory leak where in case
+    some redo operations where still left and the undo buffer was reset via a
+    new char, the memory of the former paste operations was not properly freed.
+  * mcc/UndoFunctions.c: reworked the whole undo handling to not use any hackish
+    address flagging via 0xff to mark the end of an undo buffer. That whole
+    process was kinda strange. Now the whole undo level handling should be not
+    only more safe, but also more transparent.
+
+2008-02-04  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/BlockOperators.c: adapted two parameters of CutBlock() to reflect their
+    true boolean nature.
+  * mcc/EditorStuff.c: replaced OptimizedPrint() by a non-recursive function.
+  * mcc/MixedFunctions.c: fixed a possible endless loop. This partly fixes bug
+    #1884875 of YAM.
+  * mcc/UndoFunctions.c: added some "default: break;" statements to please GCC.
+
+2008-02-02 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/misc: minor modification to use uppercase letters for the EventType
+    enumeration we use for our Undo operation handling.
+  * mccinit.c: updated to latest version available which fixes some
+    MorphOS specific compiler warnings.
+
+2008-01-20 Jens Langner <Jens.Langner@light-speed.de>
+
+   * MixedFunctions.c: fixed bug #1825864 where upon using a non-antialiased font
+     together with a small cursor caused the inactive cursor to leave graphical
+     traces when reactivating a texteditor object.
+   * Dispatcher.c: we catch the result values of the GoActive/GoInactive methods
+     of the MUIC_Area supercall and forward it accordingly. Not that this might
+     fix something, but well, it seems to be more correct :)
+
+2008-01-04  Vit Sindlar <sindlarv at centrum dot cz>
+
+   * mcp/locale/czech.ct: updated Czech catalog translation.
+
+2008-01-04  Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcp/rev.h: fixed broken date string.
+   * include/mui/TextEditor_mcc.h: added version requirement to the new
+     qualifier in struct ClickMessage.
+   * mcc/HandleInput.c: the qualifiers being pressed during a double click are
+     now also passed to the DoubleClickHook.
+
+2008-01-03  Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcp/locale/#?.ct: changed all .ct file names to english names instead of
+     translated ones.
+   * mcp/CreatePrefsGroup.c, mcp/Preference.c, mcp/locale/TextEditor_mcp.cd:
+     the undo slide format string is now localizable to avoid character set
+     issues because of the plus/minus sign. Also changed the "(R)" sign to a
+     "(C)" string, which is in fact more correct.
+
+#### v15.25 RELEASE ############################################################
+
+2007-12-20 Jens Langner <Jens.Langner@light-speed.de>
+
+   * misc: final release preparations.
+
+2007-12-14  Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcc/ImportHook.c: fixed some indentations.
+   * mcc/HandleInput.c: the select pointer will now only be shown if the mouse
+     pointer is over the object AND over the object's window. If the window is
+     partly covered by another window the normal pointer will be shown. This
+     fixes bug #1850317.
+
+2007-12-13  Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcc/PrintWithStyles.c: fixed some indentations.
+   * mcp/misc: replaced the old BitmapObject by a BodyChunkObject and added a
+     IFF-ILBM image with proper transparent color. This should fix the broken
+     display on the prefs image on some old machines.
+
+2007-12-12  Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcc/HandleInput.c, mcc/Methods.c: fixed some indentations and comparisons.
+   * mcc/Dispatcher.c, mcc/Pointer.c: the select pointer will now be set and
+     hidden in the Show/Hide methods. Hiding it in the Cleanup method is for-
+     bidden, because the necessary window is not existing anymore then. This
+     fixes bug #1849264.
+
+2007-12-02  Vit Sindlar <sindlarv at centrum dot cz>
+
+   * mcp/locale/czech.ct: added czech mcp catalog translation
+
+2007-11-22  Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcc/MixedFunctions.c: changed the return code of some functions to BOOL to
+     reflect the true nature of the return code.
+   * mcc/EditorStuff.c: added one more scroll command after inserting a single
+     character. This should finally fix bug #1812179.
+
+2007-11-11 Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+   * mcc/Pointer.c: use system pointers on MorphOS if possible.
+
+2007-11-03 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcp/CreatePrefsGroup.c: added a copyright crawling object to the bottom
+     of the mcp to match the Look&Feel to our other classes.
+
+2007-11-03 Pär Boberg <pbobbenb@spray.se>
+
+   * mcp/locale/svenska.ct: Updated according to changes.
+
+2007-11-02  Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcp/CreatePrefsGroup.c: added all missing buttons to the cycle chain.
+
+2007-10-29  Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcp/locale/TextEditor_mcp.cd: fixed some small typos.
+   * mcp/locale/deutsch.ct: Updated according to the latest changes.
+
+2007-10-28  Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcp/CreatePrefsGroup.c: corrected some bubble help attributes, as these
+     were placed completely wrong (for the sorrounding group instead of the
+     intended object).
+
+2007-10-27 David Rey <tactica@users.sourceforge.net>
+
+   * mcp/locale/TextEditor_mcp.cd, mcp/CreatePrefsGroup.c: added the missing
+     help bubbles to almost everything that was missing them, also reworded
+     a few strings.
+
+2007-10-25 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcp/locale/russian.ct: update russian catalog translation kindly provided
+     by Michael Malyshev.
+   * mcc/HandleArexx.c: when firing an arexx command which did change the cursor
+     position, the cursor change was also not propagated to other MUI objects via
+     the common CursorX/Y attributes.
+   * mcc/HandleInput.c, Methods.c, Dispatcher.c: fixed bug #1819513 where TE.mcc
+     didn't propagate a cursor change in all cases via a notify through the
+     MUIA_TextEditor_CusorX/Y attributes.
+
+#### v15.24 RELEASE ############################################################
+
+2007-10-14 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/HandleInput.c: fixed a bug in the Backspace key handling where upcon
+     concatenating two lines via the backspace key the display may have ended up
+     mixed up in case they were concatenated at the visual top of the editor
+     gadget.
+   * mcc/HandleInput.c: fixed bug #1812179 where pressing return/enter on the
+     visible last line didn't end up in the display being scrolled according to
+     the vertical cursor change.
+
+2007-10-11  Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcc/Pointer.c: the combinated bitplane is now also declared as constant
+     data instead of "calculating" it.
+   * mcc/Pointer.c: for OS4 the normal bitmap data are now used for the fall-
+     back pointer in case the graphic card cannot handle 32bit hardware sprites
+     as pointer.
+
+2007-10-07 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcp/CreatePrefsGroup.c: the inactive cursor checkbox will not automatically
+     adjust its size automatically to the current height of the window. This
+     should prevent the checkbox image to end up in a wide clumsy image being
+     shown.
+
+2007-10-04 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/HandleInput.c: fixed bug where a texteditor object didn't ate all
+     rawkey events regardless of the fact that it might be the active object
+     and in read-only mode.
+
+#### v15.23 RELEASE ############################################################
+
+2007-10-03 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/MixedFunctions.c: changed the inactive cursor to always have a width
+     of the actual character it resists on. This should be more intuitive and
+     obvious.
+   * mcp/Makefile: modified makefile to use LOCALE as a variable for the
+     locale directory.
+
+2007-09-23 Pär Boberg <pbobbenb@spray.se>
+
+   * mcp/locale/svenska.ct: Updated according to changes.
+
+2007-09-12 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc: implemented new MUIA_TextEditor_ActiveObjectOnClick attributes which
+    allows to automatically set a texteditor object as the active object of
+    a window in case the user clicks into it regardless of the ReadOnly status.
+    However, per default this will be set to FALSE in case ReadOnly is turned
+    on. In addition, in inactive state a selection will now be drawn in the
+    new inactive color rather than always with the marked color. This should
+    make it more obvious if the object has the keyboard focus. Last, but not
+    least by clicking into a texteditor object with the CTRL key pressed will
+    not clear the selection in case the object is currently inactive.
+  * mcp: added new "inactive color" selection where the user will be able to
+    select a color for displaying selected text in an inactive color in case
+    the texteditor object is set inactive. The color will default to the
+    halfshadow pen of MUI which should fit to the other default colors.
+
+2007-09-09 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/Pointer.c: fixed an issue where in case some other gadget/process
+    set the window pointer to something else we might have ended up with the
+    wrong or no custom pointer at all.
+
+2007-09-02 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/HandleInput.c: an invisible cursor was not automatically made visible
+    on certain key events (e.g. Return/Tab, etc). Now a cursor should always
+    be made visible as soon as a relevant input key is pressed and right before
+    any scroll action might take place.
+  * mcc/HandleInput.c: as soon as a key is pressed and the cursor is outside
+    the currently visible area, the text is immediately scrolled down/up now
+    rather than waiting for the user to release the key. This should be a bit
+    more intuitive to what a user might expect to happen.
+  * mcc/GetSetAttrs.c, mcc/PrintLineWithStyles.c: The cursor will now scroll
+    with the text rather than kept at the very same position relately to the
+    window. This should be more intuitive and what a normal user would expect.
+    So as soon as the user wants to enter text and the cursor is not visible
+    texteditor.mcc will scroll down/up so that it will become visible as
+    expected.
+  * doc/TextEditor.doc: added missing documentation about the function of the
+    MUIA_TextEditor_KeyUpFocus attribute.
+
+2007-09-01 Pär Boberg <pbobbenb@spray.se>
+
+   * mcp/locale/svenska.ct: Updated according to changes.
+
+2007-08-31  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/HandleInput.c: key releases of known shortcuts (like cursor up/down)
+    were not handled correctly and caused MUI to trigger the same action a
+    second time. That caused double scrolling. Now key releases of the short-
+    cuts will be "eaten" as well. This fixes bug #1784873.
+
+2007-08-31 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/GetSetAttrs.c: fixed bug where an initial MUIA_Disabled state for a
+    texteditor object in OM_NEW didn't automatically end up in having an added
+    slider set disabled as well.
+  * mcc/HandleInput.c: an instant scroll operation wasn't possible anymore if
+    the texteditor object was currently active because the IDCMP_MOUSEMOVE catch
+    operations blocked it.
+  * mcc/Pointer.c: tuned the 32bit pointer image a bit to look better on
+    both, bright and dark background colors while still maintaining the
+    general look&feel of the new pointer.
+
+2007-08-30 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/Pointer.c: the 32bit pointer setup seems to require to have a fake
+    bitmap setup passed to the pointer class or otherwise the pointer might
+    not be generated properly.
+  * mcc/Pointer.c: on OS4 we generally prefer to use the 32bit pointer image
+    data and don't do any color identification or use the select pointer
+    bitmap at all. However, we still need to get the 32bit select pointer
+    ready as we still have just an example image up&running, but it is nice
+    to be able to freely define a 32bit pointer on OS4.
+
+2007-08-29  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Pointer.c: just in case the 32bit pointer cannot be created the old
+    bitmap is also passed in again.
+  * mcc/Pointer.c: with OS4 a 32bit ARGB pointer will now be used. Currently
+    the image is just 2bit and very simple, but just to get the idea...
+
+2007-08-29 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/PrintLineWithStyles.c, mcc/Dispatcher.c: the text will now always be
+    rendered right from the top rather than layouting it vertically centered
+    throughout the available space. This should fix the common vertical text
+    floating when resizing a window which is redrawn with every resize operation.
+  * mcc/Dispatcher.c: when the gadgeted will be hided via a MUIM_Hide call we go
+    and hide the selection pointer as well. This should make the selection pointer
+    disappear as soon as a texteditor gadget is in a register group and gets
+    hided as soon as the group is switched.
+
+2007-08-28 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc: propaged the new mcp option to enable/disable the selection pointer to
+    our corresponding mcc routines. Now a user can disable the selection pointer
+    in case he finds it annoying/unnecessary. But per default it will be enabled.
+  * mcp: implemented a new settings option to be able to enable/disable the new
+    selection pointer.
+
+2007-08-27  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Pointer.c: when setting up the pointer image the colors matching white
+    and black best are now calculated instead of guessed. This way the pointer
+    will have the most correct colors regardless of the user defined palette.
+
+2007-08-27 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/Pointer.c, misc: the pointer object will now be create/destroyed in the
+    Setup/Cleanup methods of the class rather than before any show/hide operation
+    of the pointer. This should also fix problems where the mouse pointer isn't
+    hided/restored when the texteditor is cleaned up by MUI.
+  * mcc: when the mouse pointer is now over an active TextEditor object, a
+    specialized mouse pointer image for selection of text will be shown
+    instead of the default system mouse pointer image. Currently it can not be
+    disabled via the mcp, but this should be the case until the final release
+    of a new stable version. In addition, not all situations like Hide/Show
+    are catched to disable/enable the mouse pointer image.
+
+2007-08-26 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/EditorStuff.c: fixed bug #1779587 where in SoftWrap mode, the MergeLines()
+    function didn't take correctly respect of the fact that by merging lines
+    upon pressing "backspace", the amount of visual lines may perfectly increase
+    and therefore ended up in a distorted text display. Now the ScrollUp/ScrollDown
+    operations are done right before redrawing the content of the merge lines.
+
+2007-08-25 Pär Boberg <pbobbenb@spray.se>
+
+   * mcp/locale/svenska.ct: Updated according to changes.
+
+2007-08-22 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/mcp: on request, the inactive cursor introduced in 15.22 can now be
+    explicitly disabled in the preference program to get back the old behaviour.
+    However, it will still be enabled per default to make use of it at all.
+
+2007-08-13  Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/mccinit.c: updated to 1.10 version which fixes a wrong memory
+    access to the StackSwap structure if this is placed on the stack.
+
+2007-08-10  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/HandleInput.c: a read-only editor with a marked search result could not
+    be scrolled by keyboard anymore if that would scroll the marked text out of
+    the visible area. I am not sure if this change has any impact on other
+    functions, so please test.
+
+2007-08-09 Jens Langner <Jens.Langner@light-speed.de>
+
+  * include/mccinit.c: updated to 1.9 version which includes fixes for the
+    stack swapping calls on MorphOS kindly provided by Ilkka Lehtoranta.
+
+#### v15.22 RELEASE ############################################################
+
+2007-07-25  Thore Böckelmann <tboeckel@gmx.de>
+
+  * #?/library.c: now really uses the 3 parameter version of GETINTERFACE()
+    defined in mccinit.c instead of the old obsolete version in mcc_common.h.
+    The user definable functions (i.e. ClassInit()) must be declared before
+    the inclusion of mccinit.c.
+  * include/mccinit.c: updated to latest 1.8 version which really uses the
+    GETINTERFACE() macro with 3 parameters.
+
+2007-07-25 Jens Langner <Jens.Langner@light-speed.de>
+
+  * PrintLineWithStyles.c: replaced 0xc0 minterm by "(ABC|ABNC)" which in
+    fact will do the very same, but is more descriptive.
+  * include/mccinit.c: updated to latest 1.7 version
+  * misc: adapted MEMF_#? allocation flags to use MEMF_SHARED whereever
+    appropriate.
+
+2007-07-24  Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/mccinit.c: updated to latest 1.6 version which fixes an unbalanced
+    if statement.
+
+2007-07-24 Jens Langner <Jens.Langner@light-speed.de>
+
+  * PrintLineWithStyles.c: the inactive cursor wasn't drawn when the window in
+    which the gadgets resists was being resized. Now the inactive cursor
+    should always be layouted.
+  * HandleInput.c: when resetting the previous cursor position we make sure
+    the gadget is flagged as activated or otherwise a reactivated gadget might
+    not reset the cursor sign properly and end up in multiple inactive cursor
+    signs being shown.
+
+2007-07-22 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: added new MUIA_TextEditor_WrapMode attribute which can now be set to
+    either NoWrap, SoftWrap or HardWrap to set the wanted word wrapping mode. Whereas
+    HardWrap is the default as in previous versions, SoftWrap should be considered
+    the new setting that should be used in new and revised applications as it allows
+    to set the number of characters at which the texteditor will soft wrap word, but
+    keep them logically together. This allows to easily concatenate lines by just
+    e.g. removing characters again. NoWrap, in contrast, will completly disable word
+    wrapping and will require a user to enlarge the gadget himself to fit the text as
+    currently TextEditor.mcc can't scroll horizontal.
+  * MixedFunctions.c: when the gadgets is in inactive/unactivated state, the cursor
+    will be drawn by just its outline to make it easier to identify where it last
+    resisted when the gadget is being activated again.
+
+2007-07-18 Jens Langner <Jens.Langner@light-speed.de>
+
+  * include/mccinit.c: updated to latest 1.4 version which uses a new inline
+    assembler version for those platforms where a StackSwap() is required (e.g.
+    MorphOS/AmigaOS3).
+
+2007-07-04  Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/mccinit.c: put the StackSwapStruct structure on the stack to avoid
+    crashes.
+
+2007-07-04 Jens Langner <Jens.Langner@light-speed.de>
+
+  * include/mccinit.c: updated to latest 1.3 version which introduces a stackswap
+    mechanism for OS3/MorphOS systems so that they may not run out of stack when
+    running through the various library initialization routines.
+
+2007-07-01 Jens Langner <Jens.Langner@light-speed.de>
+
+  * include/mccinit.c: updated to latest 1.2 version which fixes some library
+    manager initialization issues.
+
+2007-06-25  Thore Böckelmann <tboeckel@gmx.de>
+
+  * misc: the number of undo levels can now be set by the application. A value
+    of zero means that undo/redo is completely disabled. It is also possible to
+    disable undo/redo globally by setting the level to zero. This fulfils
+    feature request #1479534.
+
+2007-06-20  Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale/french.ct: updated the french translation which kindly has been
+    provided by Alexandre Balaban.
+
+2007-06-18 Jens Langner <Jens.Langner@light-speed.de>
+
+  * EditorStuff.c, MixedFunctions.c, Navigation.c, private.h: as the LineCharsWidth()
+    function can now return 0 all usage situations have to make sure that they can
+    handle a zero return value. This should e.g. fix an endless loop situation when
+    tripleclicking on a line.
+
+2007-06-13  Thore Böckelmann <tboeckel@gmx.de>
+
+  * #?/Debug.c: unified the _DPRINTF() functions for all platforms.
+
+2007-06-10 Jens Langner <Jens.Langner@light-speed.de>
+
+  * #?/Makefile: minor update/optimization on Makefiles.
+  * include/mccinit.c: updated to latest 1.1 version which should fix possible
+    stack issues during the LibInit() phase. Custom libraries will now be opened
+    during the LibOpen() phase instead while maintaining an own mutual exclusive
+    locking variable.
+
+2007-06-09 Jens Langner <Jens.Langner@light-speed.de>
+
+  * include/mccinit.c, mcc/library.c, mcp/library.c: replaced the old obsolete
+    mccheader.c by the new mccinit.c which should come with a much more clear
+    interface and documentation on how to use it for a basis of a MUI custom
+    class. This should significantly reduce the possibility of race conditions
+    in the mcc/library init code.
+
+2007-05-29  Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/mccheader.c: reworked the LibOpen() and LibClose() functions to
+    increment/decrement the lib_Open counter before obtaining the semaphore to
+    prevent a possible race condition with LibExpunge().
+
+2007-05-18 Jens Langner <Jens.Langner@light-speed.de>
+
+   * MixedFunctions.c: minor twirks to the LineCharsWidth() function to catch
+     a possible issue when calculating the string length.
+
+2007-04-16 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcp/locale/dansk.ct: added new danish translation kindly provided by
+     Niels Bache.
+
+2007-03-23  Thore Böckelmann <tboeckel@gmx.de>
+
+   * #?/Debug.c: fixed wrong final output of debug classes and flags.
+
+2007-03-11 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcp/locale/russian.ct: applied patch to russian catalog description
+     updates, kindly provided by Vinny Vinogradov.
+
+2007-03-11 Thore Böckelmann <tboeckel@gmx.de>
+
+   * #?/Debug.c: disabling a debug flag was not possible due to a check for the
+     '!' at a wrong index.
+
+2007-03-10 Pär Boberg <pbobbenb@spray.se>
+
+   * mcp/locale/svenska.ct: Updated according to changes.
+
+#### v15.21 RELEASE ############################################################
+
+2007-03-07 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcp/KeyStorage.c, mcp/CreatePrefsGroup.c: fixed bug #1669685 where due to
+     an incorrect iteration through the keybindings structure, TextEditor.mcp
+     crashed on OS3/m68k setups.
+   * mcc: replaced all get() uses with the more save xget().
+   * mcc/HandleArexx.c: the HandleArexx() function was returning a 'BOOL'
+     which wasn't entirely correct as it might also return a string on commands
+     like 'GETCURSOR'. In that case it might have happend that the result
+     variable was truncated and caused and unexpected crash.
+   * mcp/Makefile: added 'catalogs' target to Makefile so that catalogs can
+     be generated on-the-fly more easily.
+
+2007-03-02 Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcp/locale/deutsch.ct: updated the german translation according to the
+     latest changes.
+   * mcp/CreatePrefsGroup.c: the version check for Hotkeystring.mcc didn't
+     handle future versions correctly (i.e. 13.0). A too old object is also
+     disposed before the creation fails to let the user install a new version
+     without the need to reboot.
+
+2007-03-01 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcp/CreatePrefsGroup.c: added a check if the required Hotkeystring.mcc
+     class could be found and if it is the minimum required version we need.
+   * mcp/CreatePrefsGroup.c: replaced compile time _ASSERT() with our new
+     runtime ASSERT() in Debug.c,h.
+
+2007-02-28 Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcp/locale/deutsch.ct: fixed wrong warning text.
+   * mcp/locale/deutsch.ct: added updated german translation. I hope this one
+     is a little bit better than the old one.
+   * mcp/CreatePrefsGroup.c: the Snoop button is no longer deactivated auto-
+     matically but must be deactivated manually. Before it was not really
+     possible to enter combinations of qualifiers and keys, because as soon as
+     a qualifier was pressed the snopping was deactivated.
+
+2007-02-27 Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcp/KeyStorage.c: hotkey parsing doesn't use loops anymore to prevent un-
+     predictable side effects. Also added some safety check before accessing
+     the KEY argument to prevent possible NULL pointer accesses.
+   * doc/MCC_TextEditor.doc: the new MUIM_TextEditor_QueryKeyAction method was
+     missing in the table of contents and was not properly sorted in the range
+     of all methods.
+
+2007-02-26 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/Keybindings.c: updated the default keybinding in the MCC according
+     to the recent changes in the MCP (RSHIFT->SHIFT change).
+   * mcp/CreatePrefsGroup.c: fixed bug in the Popobject popup hooks which
+     contained a wrong indexing and therefore did select the wrong item in the
+     poplist of the keybindings.
+
+2007-02-26 Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcp/Keybindings.c: changed all occurences of IEQUALIFIER_RSHIFT to
+     IEQUALIFIER_SHIFT as it unnecessary to force the user to use a specific
+     shift key.
+
+#### v15.20 RELEASE ############################################################
+
+2007-02-25 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/HandleArexx.c: added new "SELECTALL"and "SELECTNONE" Arexx commands
+     to be able to also perform the same actions via the ARexx interface.
+   * mcc: introduced a new MUIM_TextEditor_QueryKeyAction method that allows
+     to retrieve the key code and qualifier information for a specified action.
+     Please note, that this method normally returns the direct RAWKEY value
+     and that for a vanilla key identification an offset of 500 is added.
+   * mcc/Methods.c: modified MUIM_TextEditor_MarkText method to allow to select
+     ALL and NO text of the texteditor according to the new SelectAll and
+     SelectNone actions.
+   * mcc/HandleInput.c: the 'SelectAll' and 'SelectNone' key actions should
+     work now as expected.
+   * mcc/mcp: synced the internals how the default keybindings are managed and
+     exported the key action value to the _mcc.h file. This should allow to
+     provide a method in future to query the keybinding of a keyaction for
+     third party applications. In addition, "Select All" and "Select None" was
+     added to allow for keybindings of selecting all/no text with a RCOMMAND+A
+     hotkey.
+   * mcc/HandleInput.c: changed the automatic word wrapping mechanism to find
+     the wrap position around the user-specified WrapBorder value instead of
+     always word wrapping at the cursor position only. This should make the word
+     wrapping behaviour more consistent.
+
+2007-02-18 Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcp/KeyStorage.c: key combinations like "shift up" were always converted
+     to "shift right" because of a wrong index calculation.
+
+2007-01-29 Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcc/Dispatcher.c: the OM_NEW method must be handled before the instance
+     data are retrieved, because nobody can predict what INST_DATA() will return
+     if it is invoked on a not yet created object. This can explain the random
+     crashes on OS4 when TextEditor.mcc tried to access unallocated memory.
+
+2007-01-28 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcp: renamed the GetStr() locale translation function to the much shorter
+     tr() naming and adapted all files to it.
+
+2007-01-27 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcp: fixed several non-critical compiler warnings.
+   * Makefile: removed all target specific (os4,os3,mos) makefiles and replaced
+     them with a single 'Makefile' for all our sub-projects. This new makefile
+     includes methods to automatically identify the HOST and TARGET opererating
+     system and compiles the sources for the found target OS. In addition, that
+     Makefile can be used to also compile for all supported targets via
+     'make OS=XXX' where XXX is the abbreviation for the operating system.
+
+2007-01-02 Jens Langner <Jens.Langner@light-speed.de>
+
+   * misc: updated all copyright notices to 2007.
+   * mcp/locale/french.ct: added french mcp catalog translation kindly
+     provided by Philippe Bovier.
+
+2006-12-02 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/private.h: minor code restructuring to prepare for a larger debug
+     session so that we finally can hunt down that "crashes on YAM startup" with
+     TextEditor.mcc involved.
+
+2006-11-27 Thore Böckelmann <tboeckel@gmx.de>
+
+   * mcc/EditorStuff.c: when pasting a clip which contained some colors or
+     styles we trashed memory because the allocation was always 2 bytes too
+     small. This happend because TextEditor.mcc terminates the color and style
+     arrays with special values which are not included in its own clipboard
+     files and hence their length isn't contained in the IFF header length.
+   * Debug.c: added correct copyright header and fixed some typos
+
+#### v15.19 RELEASE ############################################################
+
+2006-11-12 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/BlockOperators.c: fixed a bug where not the whole ExportMessage
+     structure was cleared and caused the Undo/Redo functionality to end up
+     broken.
+   * mcc/ExportBlock.c: fixed a minor issue with the new ExportBlock functionality
+     where unmarked text wasn't exported correctly due to an old marking structure.
+
+2006-10-17 Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+   * mcc/EditorStuff.c: Fixed Wipeout hit in PasteClip() where NULL termination
+     could accidentally trash innocent memory.
+   * mcc/BlockOperators.c: Removed MorphOS workaround and adjusted code to work
+     on all flavours.
+
+2006-10-13 Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+   * mcc/BlockOperators.c: Added workaround to serious bug in iffparse.library
+     supplied with MorphOS. Library barfs when the same chunk is pushed again.
+     While this bug is fixed in V51 version of iffparse.library we must settle
+     for this solution for now. In order to keep MorphOS specific code short
+     style and color information is not stored.
+
+2006-10-11 Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+   * mcc/Debug.c: added a dummy abort() function to fix non-OS4 debug builds.
+
+2006-10-08 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/SpellChecker.c: fixed bug #1545493 where the spellchecker routines
+     didn't correctly supply the whole word under the cursor and always stripped
+     one char at the end. That rendered the spellchecker functionality kinda
+     useless.
+   * mcc/MixedFunctions.c: fixed bug #1385277 where on a fresh object where
+     the MUIM_Setup method never was used, the LineCharsWidth() function
+     caused a crash if the InsertText method was used.
+   * mcp/Makefile.os4, mcc/Makefile.os4: modified to always keep function
+     symbols in the binary, even in release mode.
+   * mcc/ExportBlock.c, misc: implemented new MUIM_TextEditor_ExportBlock
+     method which will export only the currently marked text instead of the
+     whole text like it's ExportText variant. Implemented an additional
+     MUIF_TextEditor_ExportBlock_FullLines flag symbol which will export all
+     complete lines where marked text was found on.
+   * mcp: adapted build to new public header file in 'includes' directory.
+
+2006-10-07 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/TextEditor_mcc.h: removed and merge content into a public header
+     file located in the 'includes' directory instead.
+   * mcc/ExportHook.c: added new MUIV_TextEditor_ExportHook_NoStyle which will
+     export all text, but strip all ESC sequences.
+
+2006-10-06 Jens Langner <Jens.Langner@light-speed.de>
+
+   * includes/SDI_hook.h, misc: updated to latest version and adapted our whole
+     Dispatcher functions accordingly.
+   * mcc/classact: removed unrequired subdir.
+
+2006-10-03 Thore Böckelmann <tboeckel@gmx.de>
+
+   * misc: removed all that ClassAct stuff, as TextEditor.mcc is an MUI class
+     only now.
+
+2006-10-03 Thore Böckelmann <tboeckel@gmx.de>
+
+   * Debug.c: added new 'clipboard' debug class.
+   * mcc/EditorStuff.c: fixed bug #1462840 by replacing the handcrafted IFF
+     parsing routine by calls to iffparse.library. Pasting clips from
+     PageStream did not work, becasue PGS embeds FORM-FTXT chunks in CAT-CLIP
+     files. The old functions just recognized simple FORM-FTXT files.
+   * mcc/BlockOperators.c: replaced all handcrafted IFF writing functions by
+     calls to iffparse.library. This makes it much easier to extend clip
+     handling. The complete handcrafted access to clipboard.device is gone now.
+   * mcc/SpellChecker.c: FindPort() was called without being surrounded by
+     Forbid() and Permit().
+   * mcc/TextEditor-Test.c, mcc/library.c: added necessary definitions of
+     IFFParseBase and IIFFParse to make use of iffparse.library
+   * Makefile.os4: removed "-pipe" from all CFLAGS definitions, because the OS4
+     native GCC doesn't seem to handle this correctly.
+
+2006-09-27 Jens Langner <Jens.Langner@light-speed.de>
+
+   * HandleARexx.c: fixed a recently introduced bug where the Arexx support was
+     somewhat broken.
+   * Debug.c: added new 'arexx' debug class.
+
+2006-09-25 Jens Langner <Jens.Langner@light-speed.de>
+
+   * misc: general minor cleanup of certain areas. added -Wwrite-strings to all
+     GCC makefiles. That should make sure we don't accidently write into const
+     strings.
+
+#### v15.18 RELEASE ############################################################
+
+2006-08-18 Jens Langner <Jens.Langner@light-speed.de>
+
+   * misc: final 15.18 release preparations.
+   * all: replaced all non bufferoverflow safe functions like sprintf() with
+     bufferoverflow safe variants. This should hopefully increase the stability
+     of TextEditor.mcc once more.
+
+2006-08-15 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/ExportHook.c: fixed bug #1493239 and #1376640 where the ExportHook()
+     functionality didn't correctly NUL-terminate the exported strings and
+     therefore caused problems with the Undo/Redo functionality.
+
+2006-08-14 Jens Langner <Jens.Langner@light-speed.de>
+
+   * demo/TextEditor-Demo.c: added Makefiles for all 3 major targets and
+     fixed all still existing compiler warnings and problems when compiling
+     the demonstration program.
+
+2006-07-07 Mathias Parnaudeau <mathias.p@wanadoo.fr>
+
+   * demo/TextEditor-Demo.c : After deep changes it now compiles and runs
+     with vbcc, GCC and SAS/C (tested on MorphOS and OS4) [bug #1376518].
+   * mcc/Dispatcher.c : Added the support of MUIV_TextEditor_InsertText_Top
+     and MUIV_TextEditor_InsertText_Bottom [bug #1416562].
+
+2006-06-12 Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+   * mcc/GetSetAttrs.c: MUIA_Font now returns the text editor font always
+     (patch by Mathias Parnaudedau).
+
+2006-06-01 Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+   * mcc/SpellChecker.c: fall back to manual search path duplication if
+     WorkbenchControl() call fails. MorphOS is shipped with workbench.library
+     having version number greater than 44 but search path routines were not
+     implemented until V50.16. Disabled WBCTRLA_FreeSearchPath for MOS because
+     it does nothing in the most MOS installs.
+
+2006-04-13 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcp/KeyStorage.c: adapted MEDIA key definition to latest OS4 SDK.
+   * Makefile.mos: moved the .comment section strip definition to its more apprpriate
+     section (the top-level programs definition is just for overriding the command
+     name by the user).
+   * Makefile.os4: switched to newlib compilation/linkage per default and removed
+     the unecessary -ldebug link definition.
+   * Debug.c: replaced the KPutFmt() use by direct calls to OS4 exec debug functions
+     were appropriate.
+   * mccheader.c: added support for OS4/newlib use and slightly reintroduced
+     some of the parts previously stripped by Gunther. We really should prefer
+     code readability instead of minimizing passages.
+
+2006-04-10 Gunther Nikl <gni@gecko.de>
+
+   * include/mccheader.c: Fix ROMTag for non-OS4 systems.
+   * mcc/Makefile.mos, mcp/Makefile.mos: remove comment section.
+
+2006-04-05 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mccheader.c: slightly reworked the library init/expunge/open/close
+     interface to make the library handling a bit more robust.
 
 2006-01-17 Jens Langner <Jens.Langner@light-speed.de>
 
@@ -131,7 +1151,7 @@ $Source: /cvsroot/texteditor-mcc/ChangeLog,v $
 
     * mcc/library.c: added missing USEDCLASSESP define so that MUI knowns
       which mcp class belongs to the mcc.
-		
+
 2005-07-05 Jens Langner <Jens.Langner@light-speed.de>
 
     * mcc/MixedFunctions.c: fixed another possible signedness problem which
@@ -224,7 +1244,7 @@ $Source: /cvsroot/texteditor-mcc/ChangeLog,v $
       mcc/StyleOperators.c: Cleanup #include statements.
     * mcc/SpellChecker.c: Fixed WorkbenchControl() replacement for GCC 3.4.x
       and newer (has to use stdarg.h macros!)
-      (CloneSearchPath, FreeSearchPath): Delete >=44 check since thats what     
+      (CloneSearchPath, FreeSearchPath): Delete >=44 check since thats what
       OpenLibrary() requests.
       (SendRexx, SendCLI): Use LONG as return type.
       (LookupWord, SuggestWord): Update to match SendRexx and SendCLI.
@@ -350,7 +1370,7 @@ $Source: /cvsroot/texteditor-mcc/ChangeLog,v $
       latest changes done in the nlist.mcc project.
     * includes/mccclass_68k: replaced the assembler based OS4/68k stub by an
       easier manageable C-based variant.
-	 
+
 2005-04-10  Ilkka Lehtoranta <ilkleht@isoveli.org>
 
     * mcc/library.c: Request rexxsyslib.library V36 (KS 3.1) instead of V38.
@@ -402,7 +1422,7 @@ $Source: /cvsroot/texteditor-mcc/ChangeLog,v $
       hook.
 
 2005-04-06  Jens Langner <Jens.Langner@light-speed.de>
- 
+
     * mcc: fixed OS3 build as well and removed all remaining compiler
       warnings.
     * mcc/Dispatcher.c: fixed recently broken OS4 build due to latest
@@ -415,12 +1435,12 @@ $Source: /cvsroot/texteditor-mcc/ChangeLog,v $
 2005-04-06  Sebastian Bauer <mail@sebastianbauer.info>
 
     * mcc/ImportHook.c: Changed behaviour of FindEOL() not to return NULL
-      if the text only consits of a 0 byte. This fixed bug #1177619. 
+      if the text only consits of a 0 byte. This fixed bug #1177619.
 
 2005-04-05  Sebastian Bauer <mail@sebastianbauer.info>
 
     * mcc: Clipboard handling for copy/paste was totaly broken (don't
-      confuse clipboard.device with console.device ;) ). Now only one 
+      confuse clipboard.device with console.device ;) ). Now only one
       pointer is used within the instance data for the clipboard io
       request.
     * mcc: Reimplemented Workbench path search support when starting shell
@@ -448,7 +1468,7 @@ $Source: /cvsroot/texteditor-mcc/ChangeLog,v $
 
 2005-03-31  Sebastian Bauer <mail@sebastianbauer.info>
 
-    * mcc: Fixed buffer overflow which happened if the font name was 
+    * mcc: Fixed buffer overflow which happened if the font name was
       longer than 27 chars.
     * all: Enforce amiga align for the keybinding structure because
       this is exported to the settings file and has to be compatible

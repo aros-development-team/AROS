@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -25,7 +25,6 @@
 #include <proto/intuition.h>
 #include <proto/locale.h>
 
-#include "TextEditor_mcc.h"
 #include "private.h"
 
 struct pos_info pos;
@@ -54,30 +53,33 @@ static ULONG CursorOffset(struct InstData *data)
 {
   struct line_node *line = data->actualline;
   STRPTR text = line->line.Contents+data->CPos_X;
-  ULONG res;
-  LONG offset = data->pixel_x-FlowSpace(line->line.Flow, text, data);
-  struct TextExtent tExtend;
+  ULONG res=0;
   ULONG lineCharsWidth;
 
   ENTER();
 
-  if(offset < 1)
-    offset = 1;
-
   // call TextFit() to find out how many chars would fit.
-  lineCharsWidth = LineCharsWidth(text, data);
-  res = TextFit(&data->tmprp, text, lineCharsWidth, &tExtend, NULL, 1, offset, data->font->tf_YSize);
-
-  // in case of a hard-wrapped line we have to deal with
-  // the possibility that the user tries to
-  // select the last char in a line which should normally by a white space
-  // due to soft-wrapping. So in this case we have to lower res by one so
-  // that it is not possible to select that last white space. However, for
-  // a hard wrapped line it still have to be possible to select that last char.
-  if(lineCharsWidth-res == 0 &&
-     text[lineCharsWidth-1] <= ' ')
+  if((lineCharsWidth = LineCharsWidth(text, data)) > 0)
   {
-    res--;
+    struct TextExtent tExtend;
+    LONG offset = data->pixel_x-FlowSpace(line->line.Flow, text, data);
+
+    if(offset < 1)
+      offset = 1;
+
+    res = TextFit(&data->tmprp, text, lineCharsWidth, &tExtend, NULL, 1, offset, data->font->tf_YSize);
+
+    // in case of a hard-wrapped line we have to deal with
+    // the possibility that the user tries to
+    // select the last char in a line which should normally by a white space
+    // due to soft-wrapping. So in this case we have to lower res by one so
+    // that it is not possible to select that last white space. However, for
+    // a hard wrapped line it still have to be possible to select that last char.
+    if(lineCharsWidth-res == 0 &&
+       text[lineCharsWidth-1] <= ' ')
+    {
+      res--;
+    }
   }
 
   RETURN(res);
@@ -383,8 +385,13 @@ void  GoEndOfLine (struct InstData *data)
 
   if(data->shown)
   {
+    LONG c;
     OffsetToLines(data->CPos_X, data->actualline, &pos, data);
-    data->CPos_X = pos.bytes + LineCharsWidth(data->actualline->line.Contents+pos.bytes, data) - 1;
+
+    if((c = LineCharsWidth(data->actualline->line.Contents+pos.bytes, data)) > 0)
+      data->CPos_X = pos.bytes + c - 1;
+    else
+      data->CPos_X = pos.bytes;
   }
 
   LEAVE();
@@ -602,11 +609,7 @@ void  NextLine (struct InstData *data)
 void PosFromCursor(WORD MouseX, WORD MouseY, struct InstData *data)
 {
   struct pos_info pos;
-#ifdef ClassAct
-  LONG limit = 0;
-#else
   LONG limit = data->ypos;
-#endif
 
   ENTER();
 
@@ -618,19 +621,11 @@ void PosFromCursor(WORD MouseX, WORD MouseY, struct InstData *data)
   if(MouseY >= limit)
     MouseY = limit-1;
 
-#ifndef ClassAct
   GetLine(((MouseY - data->ypos)/data->height) + data->visual_y, &pos, data);
-#else
-  GetLine((MouseY/data->height) + data->visual_y, &pos, data);
-#endif
 
   data->actualline = pos.line;
 
-#ifdef ClassAct
-  data->pixel_x = MouseX-data->BevelHoriz-2;
-#else
   data->pixel_x = MouseX-data->xpos+1;
-#endif
 
   if(data->pixel_x < 1)
     data->pixel_x = 1;

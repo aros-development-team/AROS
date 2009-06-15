@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -22,68 +22,7 @@
 
 #include <proto/intuition.h>
 
-#include "TextEditor_mcc.h"
 #include "private.h"
-
-#ifdef ClassAct
-VOID NotifySet (Object *, struct GadgetInfo *, ULONG, ULONG);
-
-void  CA_UpdateStyles (struct GadgetInfo *GInfo, struct InstData *data)
-{
-  UWORD style;
-
-  if(Enabled(data))
-  {
-      struct marking newblock;
-
-    NiceBlock(&data->blockinfo, &newblock);
-    style = GetStyle(data->blockinfo.stopx - ((data->blockinfo.stopx && newblock.startx == data->blockinfo.startx && newblock.startline == data->blockinfo.startline) ? 1 : 0), data->blockinfo.stopline);
-  }
-  else
-  {
-    style = GetStyle(data->CPos_X, data->actualline);
-  }
-
-  if(style != data->style)
-  {
-      UWORD oldstyle = data->style;
-
-    data->style = style;
-
-    if(style & BOLD)
-    {
-      if(!(oldstyle & BOLD))
-        NotifySet(data->object, GInfo, MUIA_TextEditor_StyleBold, TRUE);
-    }
-    else
-    {
-      if(oldstyle & BOLD)
-        NotifySet(data->object, GInfo, MUIA_TextEditor_StyleBold, FALSE);
-    }
-    if(style & ITALIC)
-    {
-      if(!(oldstyle & ITALIC))
-        NotifySet(data->object, GInfo, MUIA_TextEditor_StyleItalic, TRUE);
-    }
-    else
-    {
-      if(oldstyle & ITALIC)
-        NotifySet(data->object, GInfo, MUIA_TextEditor_StyleItalic, FALSE);
-    }
-    if(style & UNDERLINE)
-    {
-      if(!(oldstyle & UNDERLINE))
-        NotifySet(data->object, GInfo, MUIA_TextEditor_StyleUnderline, TRUE);
-    }
-    else
-    {
-      if(oldstyle & UNDERLINE)
-        NotifySet(data->object, GInfo, MUIA_TextEditor_StyleUnderline, FALSE);
-    }
-  }
-}
-
-#else
 
 void  UpdateStyles (struct InstData *data)
 {
@@ -143,8 +82,6 @@ void  UpdateStyles (struct InstData *data)
 
   LEAVE();
 }
-
-#endif
 
 LONG  GetStyle (LONG x, struct line_node *line)
 {

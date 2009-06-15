@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -23,23 +23,18 @@
 #ifndef TEXTEDITOR_MCP_PRIV_H
 #define TEXTEDITOR_MCP_PRIV_H
 
+#include <mui/TextEditor_mcc.h>
+
 #include "TextEditor_mcp.h"
 
 #include <mcc_common.h>
 
 #include "Debug.h"
 
-#define PREFSIMAGEOBJECT \
-  BitmapObject,\
-    MUIA_Bitmap_Bitmap,       (UBYTE *)&image_bitmap,\
-    MUIA_Bitmap_Height,       IMAGE_HEIGHT,\
-    MUIA_Bitmap_Precision,    0,\
-    MUIA_Bitmap_SourceColors, (ULONG *)image_palette,\
-    MUIA_Bitmap_Transparent,  0,\
-    MUIA_Bitmap_Width,        IMAGE_WIDTH,\
-    MUIA_FixHeight,           IMAGE_HEIGHT,\
-    MUIA_FixWidth,            IMAGE_WIDTH,\
-  End
+// if something in our configuration setup (keybindings, etc)
+// has changed we can increase the config version so that TextEditor
+// will popup a warning about and obsolete configuration.
+#define CONFIG_VERSION 4
 
 #define MCPMAXRAWBUF 64
 
@@ -111,19 +106,6 @@
 
 #endif
 
-enum
-{
-  mUp, mDown, mLeft, mRight, mPreviousPage, mNextPage,
-  mStartOfLine, mEndOfLine, mTop, mBottom, mPreviousWord,
-  mNextWord, mPreviousLine, mNextLine, mPreviousSentence,
-  mNextSentence, kSuggestWord, kBackspace, kDelete, kReturn,
-  kTab, kCut, kCopy, kPaste, kUndo, kRedo,
-  kDelBOL, kDelEOL, kDelBOW, kDelEOW,
-  kNextGadget, kGotoBookmark1, kGotoBookmark2, kGotoBookmark3,
-  kSetBookmark1, kSetBookmark2, kSetBookmark3, kDelLine,
-  mKey_LAST
-};
-
 struct InstData_MCP
 {
   Object *editpopup;
@@ -141,6 +123,7 @@ struct InstData_MCP
   Object *highlightcolor;
   Object *cursorcolor;
   Object *markedcolor;
+  Object *inactiveColor;
   Object *blockqual;
   Object *smooth;
   Object *tabsize;
@@ -157,11 +140,13 @@ struct InstData_MCP
   Object *separatorshine;
   Object *separatorshadow;
   Object *CfgObj;
+  Object *inactiveCursor;
+  Object *selectPointer;
 
-  char *gTitles[5];
-  char *functions[39];
-  char *execution[3];
-  char *cycleentries[5];
+  const char *gTitles[5];
+  const char *functions[41];
+  const char *execution[3];
+  const char *cycleentries[5];
 
   struct Catalog *catalog;
 };
@@ -189,24 +174,34 @@ extern struct MUI_CustomClass *widthslider_mcc;
 extern struct MUI_CustomClass *speedslider_mcc;
 extern struct MUI_CustomClass *text_mcc;
 
-extern const struct te_key *keybindings[];
+extern const struct te_key default_keybindings[];
 
 Object *CreatePrefsGroup(struct InstData_MCP *data);
 void ImportKeys(void *, struct InstData_MCP *data);
 void ExportKeys(void *, struct InstData_MCP *);
 void AddKeyBinding (STRPTR keystring, UWORD action, struct KeyAction *storage);
 void ConvertKeyString (STRPTR keystring, UWORD action, struct KeyAction *storage);
-void KeyToString(STRPTR buffer, struct KeyAction *ka);
-char *FunctionName(UWORD func);
-#ifndef __AROS__
+void KeyToString(STRPTR buffer, ULONG buffer_len, struct KeyAction *ka);
+const char *FunctionName(UWORD func);
 BOOL CreateSubClasses(void);
 void DeleteSubClasses(void);
-#endif
 
 // main class methods
 ULONG New(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct opSet *msg));
 ULONG Dispose(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, Msg msg));
 ULONG GadgetsToConfig(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct MUIP_Settingsgroup_GadgetsToConfig *msg));
 ULONG ConfigToGadgets(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct MUIP_Settingsgroup_ConfigToGadgets *msg));
+
+/// xget()
+//  Gets an attribute value from a MUI object
+ULONG xget(Object *obj, const IPTR attr);
+#if defined(__GNUC__)
+  // please note that we do not evaluate the return value of GetAttr()
+  // as some attributes (e.g. MUIA_Selected) always return FALSE, even
+  // when they are supported by the object. But setting b=0 right before
+  // the GetAttr() should catch the case when attr doesn't exist at all
+  #define xget(OBJ, ATTR) ({IPTR b=0; GetAttr(ATTR, OBJ, &b); b;})
+#endif
+///
 
 #endif /* MUI_NLISTVIEWS_priv_MCP_H */

@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -23,10 +23,8 @@
 #include <string.h>
 
 #include <clib/alib_protos.h>
-#include <proto/intuition.h>
 #include <proto/utility.h>
 
-#include "TextEditor_mcc.h"
 #include "private.h"
 
 VOID SimpleMarkText (UWORD startx, struct line_node *startline, UWORD stopx, struct line_node *stopline, struct InstData *data)
@@ -149,11 +147,7 @@ ULONG OM_Replace (Object *obj, struct MUIP_TextEditor_Replace *msg, struct InstD
   if(Enabled(data))
   {
     Key_Clear(data);
-#ifdef ClassAct
-    DoMethod(obj, MUIM_TextEditor_InsertText, msg->GInfo, msg->NewString, MUIV_TextEditor_InsertText_Cursor);
-#else
     DoMethod(obj, MUIM_TextEditor_InsertText, msg->NewString, MUIV_TextEditor_InsertText_Cursor);
-#endif
     res = TRUE;
   }
 

@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -67,19 +67,23 @@ int main(void)
   if((UtilityBase = OpenLibrary("utility.library", 38)) &&
     GETINTERFACE(IUtility, UtilityBase))
   {
-    if((IntuitionBase = OpenLibrary("intuition.library", 38)) &&
+    if((IntuitionBase = (APTR)OpenLibrary("intuition.library", 38)) &&
       GETINTERFACE(IIntuition, IntuitionBase))
     {
-      if((LocaleBase = OpenLibrary("locale.library", 38)) &&
+      if((LocaleBase = (APTR)OpenLibrary("locale.library", 38)) &&
         GETINTERFACE(ILocale, LocaleBase))
       {
         OpenCat();
 
-        if((MUIMasterBase = OpenLibrary("muimaster.library", MUIMASTER_VMIN)) &&
+        #if defined(DEBUG)
+        SetupDebug();
+        #endif
+
+        if((MUIMasterBase = OpenLibrary(MUIMASTER_NAME, MUIMASTER_VMIN)) &&
            GETINTERFACE(IMUIMaster, MUIMasterBase))
         {
           Object *app = NULL;
-          Object *window;
+          Object *window = NULL;
           struct MUI_CustomClass *mcc = NULL;
 
           if(CreateSubClasses())
@@ -90,7 +94,7 @@ int main(void)
             app = MUI_NewObject("Application.mui",
                 MUIA_Application_Author,    "Allan Odgaard",
                 MUIA_Application_Base,      "TextEditor-Prefs",
-                MUIA_Application_Copyright, "®1997 Allan Odgaard",
+                MUIA_Application_Copyright, "(C)1997 Allan Odgaard",
                 MUIA_Application_Description, "Preference for TextEditor.mcc",
                 MUIA_Application_Title,     "TextEditor-Prefs",
                 MUIA_Application_Version,   "$VER: TextEditor-Prefs V1.0 (18-Feb-97)",
@@ -117,11 +121,11 @@ int main(void)
 
           if(app)
           {
-              unsigned long sigs;
+            unsigned long sigs;
 
             DoMethod(window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
             set(window, MUIA_Window_Open, TRUE);
-            while((LONG)DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
+            while((LONG)DoMethod(app, MUIM_Application_NewInput, &sigs) != (LONG)MUIV_Application_ReturnID_Quit)
             {
               if(sigs)
               {
@@ -146,11 +150,11 @@ int main(void)
         CloseCat();
 
         DROPINTERFACE(ILocale);
-        CloseLibrary(LocaleBase);
+        CloseLibrary((struct Library *)LocaleBase);
       }
 
       DROPINTERFACE(IIntuition);
-      CloseLibrary(IntuitionBase);
+      CloseLibrary((struct Library *)IntuitionBase);
     }
 
     DROPINTERFACE(IUtility);

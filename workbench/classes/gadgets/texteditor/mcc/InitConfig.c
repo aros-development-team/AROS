@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -33,11 +33,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#include "TextEditor_mcc.h"
 #include "TextEditor_mcp.h"
 #include "private.h"
-
-extern struct keybindings keys[];
 
 struct TextFont *GetFont(UNUSED struct InstData *data, void *obj, long attr)
 {
@@ -46,6 +43,7 @@ struct TextFont *GetFont(UNUSED struct InstData *data, void *obj, long attr)
   char *size_ptr;
   struct TextFont *f;
   struct TextAttr myfont;
+  int fontname_len;
 
   ENTER();
 
@@ -61,7 +59,8 @@ struct TextFont *GetFont(UNUSED struct InstData *data, void *obj, long attr)
     return NULL;
   }
 
-  if(!(fontname = AllocVec(strlen(setting)+6, MEMF_ANY|MEMF_CLEAR)))
+  fontname_len = strlen(setting)+6;
+  if(!(fontname = AllocVec(fontname_len, MEMF_SHARED|MEMF_CLEAR)))
   {
     RETURN(NULL);
     return NULL;
@@ -74,14 +73,14 @@ struct TextFont *GetFont(UNUSED struct InstData *data, void *obj, long attr)
   myfont.ta_Style = FS_NORMAL;
   myfont.ta_Flags = 0;
 
-  strcpy(fontname,setting);
+  strlcpy(fontname, setting, fontname_len);
   size_ptr = strchr(fontname,'/');
   if (size_ptr)
   {
     LONG size;
 
     StrToLong(size_ptr + 1, &size);
-    strncpy(size_ptr, ".font", 6);
+    strlcpy(size_ptr, ".font", fontname_len-(size_ptr-fontname));
     myfont.ta_YSize = size;
   }
 
@@ -103,16 +102,17 @@ void SetCol (struct InstData *data, void *obj, long item, ULONG *storage, long b
     *storage = MUI_ObtainPen(muiRenderInfo(obj), spec, 0L);
     data->allocatedpens |= 1<<bit;
   }
+  else
+    W(DBF_STARTUP, "couldn't get config item: 0x%08lx", item);
 
   LEAVE();
 }
 
-BOOL iswarned = FALSE;
-
 void InitConfig(Object *obj, struct InstData *data)
 {
-  long  setting;
+  ULONG setting = 0;
   UWORD *muipens = _pens(obj);
+  BOOL loadDefaultKeys = FALSE;
 
   ENTER();
 
@@ -124,7 +124,8 @@ void InitConfig(Object *obj, struct InstData *data)
   data->cursortextcolor   = *(muipens+MPEN_TEXT);
   data->markedcolor       = *(muipens+MPEN_FILL);
   data->separatorshine    = *(muipens+MPEN_HALFSHINE);
-  data->separatorshadow = *(muipens+MPEN_HALFSHADOW);
+  data->separatorshadow   = *(muipens+MPEN_HALFSHADOW);
+  data->inactivecolor     = *(muipens+MPEN_HALFSHADOW);
 
   SetCol(data, obj, MUICFG_TextEditor_TextColor, &data->textcolor, 0);
   SetCol(data, obj, MUICFG_TextEditor_CursorColor, &data->cursorcolor, 1);
@@ -133,34 +134,35 @@ void InitConfig(Object *obj, struct InstData *data)
   SetCol(data, obj, MUICFG_TextEditor_MarkedColor, &data->markedcolor, 4);
   SetCol(data, obj, MUICFG_TextEditor_SeparatorShine, &data->separatorshine, 5);
   SetCol(data, obj, MUICFG_TextEditor_SeparatorShadow, &data->separatorshadow, 6);
+  SetCol(data, obj, MUICFG_TextEditor_InactiveColor, &data->inactivecolor, 7);
 
   if(!(data->flags & FLG_OwnBkgn))
   {
-      LONG background = MUII_BACKGROUND;
+    LONG background = MUII_BACKGROUND;
 
     data->backgroundcolor = 0;
     data->fastbackground = TRUE;
-    if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_Background, &setting))
+
+    if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_Background, &setting) && setting != 0)
     {
-      if(*(char *)setting == '2' && *((char *)setting+1) == ':' )
+      char *bg_setting = (char *)setting;
+
+      if(bg_setting[0] == '2' && bg_setting[1] == ':' )
       {
-          struct MUI_PenSpec *spec = (struct MUI_PenSpec *)(char *)(setting+2);
+        struct MUI_PenSpec *spec = (struct MUI_PenSpec *)(bg_setting+2);
 
         data->backgroundcolor = MUI_ObtainPen(muiRenderInfo(obj), spec, 0L);
         data->allocatedpens |= 1<<5;
       }
-      else
-      {
-        if(*(char *)setting != '\0')
-        {
-          data->fastbackground = FALSE;
-        }
-      }
+      else if(bg_setting[0] != '\0')
+        data->fastbackground = FALSE;
+
       background = setting;
     }
     set(obj, MUIA_Background, background);
   }
-  else  data->fastbackground = FALSE;
+  else
+    data->fastbackground = FALSE;
 
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_TabSize, &setting))
   {
@@ -275,7 +277,7 @@ void InitConfig(Object *obj, struct InstData *data)
   UpdateStyles(data);
 
   {
-      long  lort = TRUE;
+    long lort = TRUE;
 
     setting = (long)&lort;
     DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_Smooth, &setting);
@@ -285,30 +287,45 @@ void InitConfig(Object *obj, struct InstData *data)
     }
   }
 
+  if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_SelectPointer, &setting))
   {
-      long undolevel = 500;
+    data->selectPointer = *(long *)setting;
+  }
+  else
+    data->selectPointer = TRUE;
 
-    if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_UndoSize, &setting))
-    {
-      undolevel = *(long *)setting;
-      if(undolevel < 20)
-        undolevel = 20;
-    }
-    undolevel += 5;
+  if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_InactiveCursor, &setting))
+  {
+    data->inactiveCursor = *(long *)setting;
+  }
+  else
+    data->inactiveCursor = TRUE;
 
-    if(data->undosize != (undolevel*sizeof(struct UserAction))+1)
+  {
+    ULONG undolevel;
+
+    // get the saved undo size only if it was not yet set by the application
+    if(data->userUndoSize == FALSE)
     {
-      if((data->undobuffer = MyAllocPooled(data->mypool, (undolevel*sizeof(struct UserAction))+1)))
+      undolevel = 500;
+
+      if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_UndoSize, &setting))
       {
-        data->undopointer = data->undobuffer;
-        *(short *)data->undopointer = 0xff;
-        data->undosize = (undolevel*sizeof(struct UserAction))+1;
+        undolevel = *(long *)setting;
+
+        // constrain the number of undo levels only if undo is enabled
+        if(undolevel != 0 && undolevel < 20)
+          undolevel = 20;
       }
-      else
-      {
-        data->undosize = 0;
-      }
+
+      // add 5 levels only if undo is enabled at all
+      if(undolevel != 0)
+        undolevel += 5;
     }
+    else
+      undolevel = data->undolevel;
+
+    ResizeUndoBuffer(data, undolevel);
   }
 
   data->LookupSpawn = 0;
@@ -320,64 +337,74 @@ void InitConfig(Object *obj, struct InstData *data)
   }
 
   data->SuggestSpawn = 1;
-  data->SuggestCmd  = "\"Open('f', 'T:Matches', 'W');WriteLn('f', '%s');Close('f')";
+  data->SuggestCmd  = "\"Open('f', 'T:Matches', 'W');WriteLn('f', '%s');Close('f')\"";
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_SuggestCmd, &setting))
   {
     data->SuggestSpawn = (short) *(ULONG *)setting;
     data->SuggestCmd = (char *)setting+4;
   }
 
-  if(!iswarned && DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_ConfigVersion, &setting))
+  if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_ConfigVersion, &setting))
   {
-    iswarned = TRUE;
-    if(*(ULONG *)setting < 2)
-      MUI_Request(_app(obj), NULL, 0L, "TextEditor.mcc", "Continue", "\33cThe keybindings page has been updated\nsince your last visit to MUIPrefs.", 0);
+    if(*(ULONG *)setting != CONFIG_VERSION)
+    {
+      if(MUI_Request(_app(obj), NULL, 0L, "TextEditor.mcc Warning", "Ok|Abort",
+                                          "Your current keybindings setup of TextEditor.mcc\n"
+                                          "was found to be incompatible with this version of\n"
+                                          "TextEditor.mcc.\n"
+                                          "\n"
+                                          "The keybindings of this object will be temporarly\n"
+                                          "set to the default. Please visit the MUI preferences\n"
+                                          "of TextEditor.mcc to permanently update the keybindings.") == 1)
+      {
+        loadDefaultKeys = TRUE;
+      }
+    }
   }
 
   {
-      struct keybindings *userkeys;
-      ULONG  c = 0;
+    struct te_key *userkeys;
+    ULONG count = 0;
+    ULONG size;
 
-    if(!DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_Keybindings, &setting))
+    setting = 0;
+    if(loadDefaultKeys || !DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_Keybindings, &setting) || setting == 0)
+      userkeys = (struct te_key *)default_keybindings;
+    else
+      userkeys = (struct te_key *)setting;
+
+    while((WORD)userkeys[count].code != -1)
+      count++;
+
+    // now we calculate the memory size
+    size = (count+1)*sizeof(struct te_key);
+
+    if((data->RawkeyBindings = MyAllocPooled(data->mypool, size)))
     {
-      setting = (long)keys;
-    }
-    userkeys = (struct keybindings *)setting;
+      ULONG i;
+      struct te_key *mykeys = data->RawkeyBindings;
 
-    while(userkeys->keydata.code != (UWORD)-1)
-    {
-      userkeys++;
-      c++;
-    }
+      memcpy(mykeys, userkeys, size);
 
-    if((data->RawkeyBindings = MyAllocPooled(data->mypool, (c+2)*sizeof(struct te_key))))
-    {
-      unsigned long count;
-      struct keybindings *mykeys = data->RawkeyBindings;
-
-      CopyMem((APTR)setting, data->RawkeyBindings, c*sizeof(struct te_key));
-      (mykeys+c)->keydata.code = (UWORD)-1;
-
-      for(count = 0;count != c;count++)
+      for(i=0; i < count && (WORD)mykeys[i].code != -1; i++)
       {
-        if((mykeys+count)->keydata.code >= 500)
+        struct te_key *curKey = &mykeys[i];
+
+        D(DBF_STARTUP, "checking curKey[%d]: %08lx", i, curKey);
+
+        if(curKey->code >= 500)
         {
           char RAW[4];
-          char code = (mykeys+count)->keydata.code-500;
+          char code = curKey->code-500;
 
           MapANSI(&code, 1, RAW, 1, NULL);
 
-          (mykeys+count)->keydata.code = RAW[0];
-          (mykeys+count)->keydata.qual |= RAW[1];
+          curKey->code = RAW[0];
+          curKey->qual |= RAW[1];
 
-/*          if((mykeys+count)->keydata.qual & IEQUALIFIER_NUMERICPAD)
+          if(RAW[0] == 67 && !(curKey->qual & IEQUALIFIER_NUMERICPAD))
           {
-            printf("0x%lx, %d (*)\n", (mykeys+count)->keydata.qual, (mykeys+count)->keydata.code);
-          }
-*/
-          if(RAW[0] == 67 && !((mykeys+count)->keydata.qual & IEQUALIFIER_NUMERICPAD))
-          {
-            (mykeys+count)->keydata.code = 68;
+            curKey->code = 68;
           }
         }
       }
@@ -410,6 +437,8 @@ void  FreeConfig  (struct InstData *data, struct MUI_RenderInfo *mri)
     MUI_ReleasePen(mri, data->separatorshine);
   if(data->allocatedpens & 128)
     MUI_ReleasePen(mri, data->separatorshadow);
+  if(data->allocatedpens & 256)
+    MUI_ReleasePen(mri, data->inactivecolor);
 
   if(data->normalfont)
     CloseFont(data->normalfont);

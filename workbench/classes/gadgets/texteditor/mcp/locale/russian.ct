@@ -1,4 +1,4 @@
-## version $VER: TextEditor_mcp.catalog 2.4 (17.01.2006) © Michael Malyshev (Amiga-1251)
+## version $VER: TextEditor_mcp.catalog 2.6 (07.10.2007) © Michael Malyshev (Amiga-1251)
 ## language russian
 ## codeset 2104
 ## chunk AUTH Translated by <Michael_Malyshev@mail.ru> (Amiga-1251)
@@ -16,6 +16,12 @@
 ;
 ; 2.4 (17.01.2006) <mmalyshev>
 ; - public release
+;
+; 2.5 (11.03.2007) <vvinogradov>
+; - add new string from TextEditor.mcc v15.21
+;
+; 2.6 (07.10.2007) <vvinogradov>
+; - add new string from TextEditor.mcc v15.23
 ;
 ;-----------------------------------------------------------------------------
 ;
@@ -600,4 +606,84 @@ MSG_Button_Snoop
 MSG_Function_DelLine
 Удалить строку
 ; Delete line
+;
+MSG_Function_SelectAll
+Выделить всё
+; Select All
+;
+MSG_Function_SelectNone
+Снять выделение
+; Select None
+;
+MSG_WarnConfigVersion_Title
+TextEditor.mcp Внимание
+; TextEditor.mcp Warning
+;
+MSG_WarnConfigVersion
+Ваша текущая сохранённая настройка горячих клавиш\n\
+несовместима с установленной версией TextEditor.mcc.\n\
+\n\
+Вы можете сбросить настройку в исходное значение\n\
+и изменить потом горячие клавиши вручную.
+; Your currently saved keybindings setup is incompatible\n\
+; with the version of TextEditor.mcc you have installed.\n\
+; \n\
+; It is suggested that you reset the current keybindings\n\
+; to their defaults and edit them manually afterwards.
+;
+MSG_ResetAbort
+Сбросить|Отмена
+; Reset|Abort
+;
+MSG_WarnHotkeyString_Title
+TextEditor.mcp Внимание
+; TextEditor.mcp Warning
+;
+MSG_WarnHotkeyString
+TextEditor.mcp не может открыть минимально требуюмую\n\
+версию MUI-класса HotkeyString.mcc, что вызвало\n\
+ошибку во время инициализации.\n\
+\n\
+Пожалуйста, скачайте свежую версию Hotkeystring.mcc\n\
+с сайта http://www.sf.net/projects/bstring-mcc/,\n\
+установите её и попробуйте снова.
+; TextEditor.mcp couldn't open the minimum required\n\
+; version of the HotkeyString.mcc custom class and\n\
+; therefore failed during initialization.\n\
+; \n\
+; Please make sure you have the latest Hotkeystring.mcc\n\
+; class from http://www.sf.net/projects/bstring-mcc/\n\
+; installed and try again.
+;
+MSG_Ok
+Далее
+; Ok
+;
+MSG_Label_InactiveCursor
+Неактивный курсор
+; Inactive Cursor
+;
+MSG_HELP_InactiveCursor
+Показывать специальный курсор, когда поле редактирования\n\
+текста находится к неактивном состоянии.
+; If enabled, shows a special cursor in case the texteditor\n\
+; gadget is in inactive state.
+;
+MSG_Label_SelectPointer
+Смена курсора
+; Selection Pointer
+;
+MSG_HELP_SelectPointer
+Подменять курсор на специальный, когда он\n\
+находится над полем редактирования текста.
+; If enabled, a specialized selection pointer will be shown\n\
+; when the mouse pointer is above the texteditor gadget.
+;
+MSG_Label_InactiveColor
+Неактивный
+; Inactive
+;
+MSG_PopWinTitle_InactiveColor
+Выбор цвета для неактивного выделенного текста
+; Select inactive color
 ;

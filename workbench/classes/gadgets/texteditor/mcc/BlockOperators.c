@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -20,6 +20,8 @@
 
 ***************************************************************************/
 
+#include <string.h>
+
 #include <exec/io.h>
 #include <devices/clipboard.h>
 #include <libraries/iffparse.h>
@@ -27,22 +29,9 @@
 #include <clib/alib_protos.h>
 #include <proto/utility.h>
 #include <proto/exec.h>
+#include <proto/iffparse.h>
 
-#include "TextEditor_mcc.h"
 #include "private.h"
-
-#ifdef __AROS__
-#include <aros/macros.h>
-#define LONG2BE(x) AROS_LONG2BE(x)
-#define BE2LONG(x) AROS_BE2LONG(x)
-#define WORD2BE(x) AROS_WORD2BE(x)
-#define BE2WORD(x) AROS_BE2WORD(x)
-#else
-#define LONG2BE(x) x
-#define BE2LONG(x) x
-#define WORD2BE(x) x
-#define BE2WORD(x) x
-#endif
 
 VOID RedrawArea(UWORD startx, struct line_node *startline, UWORD stopx, struct line_node *stopline, struct InstData *data)
 {
@@ -56,7 +45,7 @@ VOID RedrawArea(UWORD startx, struct line_node *startline, UWORD stopx, struct l
 
   if(stopx >= stopline->line.Length)
     stopx = stopline->line.Length-1;
-  
+
   OffsetToLines(stopx, stopline, &pos2, data);
 
   if((line_nr1 += pos1.lines-1) < 0)
@@ -71,7 +60,7 @@ VOID RedrawArea(UWORD startx, struct line_node *startline, UWORD stopx, struct l
   LEAVE();
 }
 
-char *GetBlock (struct marking *block, struct InstData *data)
+char *GetBlock(struct marking *block, struct InstData *data)
 {
   LONG    startx, stopx;
   struct  line_node *startline, *stopline, *act;
@@ -88,6 +77,10 @@ char *GetBlock (struct marking *block, struct InstData *data)
   data->CPos_X = startx;
   data->actualline = startline;
 
+  // clear the export message
+  memset(&emsg, 0, sizeof(struct ExportMessage));
+
+  // fill it afterwards
   emsg.UserData = NULL;
   emsg.ExportWrap = 0;
   emsg.Last = FALSE;
@@ -135,7 +128,7 @@ char *GetBlock (struct marking *block, struct InstData *data)
     emsg.Colors = NULL;
     if(emsg.Contents)
     {
-      CopyMem(startline->line.Contents + startx, emsg.Contents, startline->line.Length - startx);
+      memcpy(emsg.Contents, startline->line.Contents + startx, startline->line.Length - startx);
       emsg.Length = startline->line.Length - startx;
       emsg.Flow = startline->line.Flow;
       emsg.Separator = startline->line.Separator;
@@ -199,7 +192,7 @@ char *GetBlock (struct marking *block, struct InstData *data)
     emsg.Colors = NULL;
     if(emsg.Contents)
     {
-      CopyMem(stopline->line.Contents, emsg.Contents, stopx);
+      memcpy(emsg.Contents, stopline->line.Contents, stopx);
       emsg.Length = stopx;
       emsg.Flow = stopline->line.Flow;
       emsg.Separator = stopline->line.Separator;
@@ -269,7 +262,7 @@ char *GetBlock (struct marking *block, struct InstData *data)
     emsg.Colors = NULL;
     if(emsg.Contents)
     {
-      CopyMem(startline->line.Contents+startx, emsg.Contents, stopx-startx);
+      memcpy(emsg.Contents, startline->line.Contents+startx, stopx-startx);
       emsg.Length = stopx-startx;
       emsg.Flow = startline->line.Flow;
       emsg.Separator = startline->line.Separator;
@@ -287,7 +280,7 @@ char *GetBlock (struct marking *block, struct InstData *data)
   return(text);
 }
 
-void NiceBlock (struct marking *realblock, struct marking *newblock)
+void NiceBlock(struct marking *realblock, struct marking *newblock)
 {
   LONG  startx = realblock->startx, stopx = realblock->stopx;
   struct line_node *startline = realblock->startline;
@@ -299,7 +292,7 @@ void NiceBlock (struct marking *realblock, struct marking *newblock)
   {
     if(startx > stopx)
     {
-        LONG  c_x = startx;
+      LONG c_x = startx;
 
       startx = stopx;
       stopx = c_x;
@@ -307,8 +300,8 @@ void NiceBlock (struct marking *realblock, struct marking *newblock)
   }
   else
   {
-      struct  line_node *c_startline = startline,
-                    *c_stopline = stopline;
+    struct  line_node *c_startline = startline,
+                      *c_stopline = stopline;
 
     while((c_startline != stopline) && (c_stopline != startline))
     {
@@ -320,7 +313,7 @@ void NiceBlock (struct marking *realblock, struct marking *newblock)
 
     if(c_stopline == startline)
     {
-        LONG  c_x = startx;
+      LONG  c_x = startx;
 
       startx = stopx;
       stopx = c_x;
@@ -338,113 +331,118 @@ void NiceBlock (struct marking *realblock, struct marking *newblock)
   LEAVE();
 }
 
-BOOL InitClipboard (struct InstData *data)
+BOOL InitClipboard(struct InstData *data, ULONG flags)
 {
+  struct IFFHandle *iff;
+
   ENTER();
 
-  if((data->clipport = CreateMsgPort()))
+  if((iff = AllocIFF()) != NULL)
   {
-    if((data->clipboard = (struct IOClipReq*)CreateIORequest(data->clipport, sizeof(struct IOClipReq))))
+    SHOWVALUE(DBF_CLIPBOARD, iff);
+    if((iff->iff_Stream = (ULONG)OpenClipboard(0)) != 0)
     {
-      if(!OpenDevice("clipboard.device", 0, (struct IORequest*)data->clipboard, 0))
+      SHOWVALUE(DBF_CLIPBOARD, iff->iff_Stream);
+      InitIFFasClip(iff);
+
+      if(OpenIFF(iff, flags) == 0)
       {
+        data->iff = iff;
+
+        SHOWVALUE(DBF_CLIPBOARD, flags);
+
         RETURN(TRUE);
         return TRUE;
       }
 
-      CloseDevice((struct IORequest*)data->clipboard);
+      CloseClipboard((struct ClipboardHandle *)iff->iff_Stream);
     }
-    DeleteIORequest((struct IORequest*)data->clipboard);
+
+    FreeIFF(iff);
   }
-  DeleteMsgPort(data->clipport);
 
   RETURN(FALSE);
   return(FALSE);
 }
 
-void EndClipSession (struct InstData *data)
+void EndClipSession(struct InstData *data)
 {
-  ULONG clipheader[] = { LONG2BE(MAKE_ID('F','O','R','M')), 0, LONG2BE(MAKE_ID('F','T','X','T'))};
-
   ENTER();
 
-  clipheader[1] = LONG2BE(data->clipboard->io_Offset-8);
-  data->clipboard->io_Offset    = 0;
-  data->clipboard->io_Data    = (STRPTR)clipheader;
-  data->clipboard->io_Length    = sizeof(clipheader);
-  DoIO((struct IORequest*)data->clipboard);
+  if(data->iff != NULL)
+  {
+    CloseIFF(data->iff);
 
-  data->clipboard->io_Command = CMD_UPDATE;
-  DoIO((struct IORequest*)data->clipboard);
+    CloseClipboard((struct ClipboardHandle *)data->iff->iff_Stream);
 
-  CloseDevice((struct IORequest*)data->clipboard);
-  DeleteIORequest((struct IORequest*)data->clipboard);
-  DeleteMsgPort(data->clipport);
+    FreeIFF(data->iff);
+    data->iff = NULL;
+  }
 
   LEAVE();
 }
 
-void ClipInfo (struct line_node *line, struct InstData *data)
+void ClipInfo(struct line_node *line, struct InstData *data)
 {
-  ULONG  highlightheader[]  = { LONG2BE(MAKE_ID('H','I','G','H')), LONG2BE(2)};
-  ULONG  separatorheader[]  = { LONG2BE(MAKE_ID('S','B','A','R')), LONG2BE(2)};
-  ULONG  flowheader[]    = { LONG2BE(MAKE_ID('F','L','O','W')), LONG2BE(2)};
+  LONG error;
 
   ENTER();
 
   if(line->line.Flow != MUIV_TextEditor_Flow_Left)
   {
-    data->clipboard->io_Data    = (STRPTR)flowheader;
-    data->clipboard->io_Length    = sizeof(flowheader);
-    DoIO((struct IORequest*)data->clipboard);
-    data->clipboard->io_Data    = (STRPTR)&line->line.Flow;
-    data->clipboard->io_Length    = BE2LONG(flowheader[1]);
-    DoIO((struct IORequest*)data->clipboard);
+    D(DBF_CLIPBOARD, "writing FLOW");
+    error = PushChunk(data->iff, 0, ID_FLOW, IFFSIZE_UNKNOWN);
+    SHOWVALUE(DBF_CLIPBOARD, error);
+    error = WriteChunkBytes(data->iff, &line->line.Flow, 2);
+    SHOWVALUE(DBF_CLIPBOARD, error);
+    error = PopChunk(data->iff);
+    SHOWVALUE(DBF_CLIPBOARD, error);
   }
 
   if(line->line.Separator)
   {
-    data->clipboard->io_Data    = (STRPTR)separatorheader;
-    data->clipboard->io_Length    = sizeof(separatorheader);
-    DoIO((struct IORequest*)data->clipboard);
-    data->clipboard->io_Data    = (STRPTR)&line->line.Separator;
-    data->clipboard->io_Length    = BE2LONG(separatorheader[1]);
-    DoIO((struct IORequest*)data->clipboard);
+    D(DBF_CLIPBOARD, "writing SBAR");
+    error = PushChunk(data->iff, 0, ID_SBAR, IFFSIZE_UNKNOWN);
+    SHOWVALUE(DBF_CLIPBOARD, error);
+    error = WriteChunkBytes(data->iff, &line->line.Separator, 2);
+    SHOWVALUE(DBF_CLIPBOARD, error);
+    error = PopChunk(data->iff);
+    SHOWVALUE(DBF_CLIPBOARD, error);
   }
 
   if(line->line.Color)
   {
-    data->clipboard->io_Data    = (STRPTR)highlightheader;
-    data->clipboard->io_Length    = sizeof(highlightheader);
-    DoIO((struct IORequest*)data->clipboard);
-    data->clipboard->io_Data    = (STRPTR)&line->line.Color;
-    data->clipboard->io_Length    = BE2LONG(highlightheader[1]);
-    DoIO((struct IORequest*)data->clipboard);
+    D(DBF_CLIPBOARD, "writing HIGH");
+    error = PushChunk(data->iff, 0, ID_HIGH, IFFSIZE_UNKNOWN);
+    SHOWVALUE(DBF_CLIPBOARD, error);
+    error = WriteChunkBytes(data->iff, &line->line.Color, 2);
+    SHOWVALUE(DBF_CLIPBOARD, error);
+    error = PopChunk(data->iff);
+    SHOWVALUE(DBF_CLIPBOARD, error);
   }
 
   LEAVE();
 }
 
-void ClipChars (LONG x, struct line_node *line, LONG length, struct InstData *data)
+void ClipChars(LONG x, struct line_node *line, LONG length, struct InstData *data)
 {
-  long  colorheader[]   = { LONG2BE(MAKE_ID('C','O','L','S')), 0};
-  long  styleheader[]   = { LONG2BE(MAKE_ID('S','T','Y','L')), 0};
-  long  textheader[]    = { LONG2BE(MAKE_ID('C','H','R','S')), 0};
   UWORD style[2] = {1, GetStyle(x-1, line)};
   UWORD color[2] = {1, 0};
-  ULONG t_offset;
   UWORD *colors = line->line.Colors;
+  LONG error;
 
   ENTER();
+
+  D(DBF_CLIPBOARD, "ClipChars()");
 
   ClipInfo(line, data);
 
   if(colors)
   {
-    data->clipboard->io_Offset    += sizeof(colorheader);
-    t_offset = data->clipboard->io_Offset;
-    data->clipboard->io_Data    = (STRPTR)color;
-    data->clipboard->io_Length    = 4;
+    D(DBF_CLIPBOARD, "writing COLS");
+    error = PushChunk(data->iff, 0, ID_COLS, IFFSIZE_UNKNOWN);
+    SHOWVALUE(DBF_CLIPBOARD, error);
+
     while((*colors <= x) && (*colors != 0xffff))
     {
       color[1] = *(colors+1);
@@ -453,7 +451,8 @@ void ClipChars (LONG x, struct line_node *line, LONG length, struct InstData *da
 
     if(color[1] != 0 && *colors-x != 1)
     {
-      DoIO((struct IORequest*)data->clipboard);
+      error = WriteChunkBytes(data->iff, color, 4);
+      SHOWVALUE(DBF_CLIPBOARD, error);
     }
 
     if(*colors != 0xffff)
@@ -462,51 +461,47 @@ void ClipChars (LONG x, struct line_node *line, LONG length, struct InstData *da
       {
         color[0] = *colors++ - x;
         color[1] = *colors++;
-        DoIO((struct IORequest*)data->clipboard);
+
+        error = WriteChunkBytes(data->iff, color, 4);
+        SHOWVALUE(DBF_CLIPBOARD, error);
       }
     }
 
-    colorheader[1] = LONG2BE(data->clipboard->io_Offset - t_offset);
-    data->clipboard->io_Offset    = t_offset - sizeof(colorheader);
-    if(colorheader[1])
-    {
-      data->clipboard->io_Data    = (STRPTR)colorheader;
-      data->clipboard->io_Length    = sizeof(colorheader);
-      DoIO((struct IORequest*)data->clipboard);
-      data->clipboard->io_Offset    += BE2LONG(colorheader[1]);
-    }
+    error = PopChunk(data->iff);
+    SHOWVALUE(DBF_CLIPBOARD, error);
   }
 
-/* --- Styles --- */
-  data->clipboard->io_Offset    += sizeof(styleheader);
-  t_offset = data->clipboard->io_Offset;
+  D(DBF_CLIPBOARD, "writing STYL");
+  error = PushChunk(data->iff, 0, ID_STYL, IFFSIZE_UNKNOWN);
+  SHOWVALUE(DBF_CLIPBOARD, error);
 
-  data->clipboard->io_Data    = (STRPTR)style;
-  data->clipboard->io_Length    = 4;
   if(style[1] != 0)
   {
-      unsigned short t_style = style[1];
+    unsigned short t_style = style[1];
 
     if(t_style & BOLD)
     {
       style[1] = BOLD;
-      DoIO((struct IORequest*)data->clipboard);
+      error = WriteChunkBytes(data->iff, style, 4);
+      SHOWVALUE(DBF_CLIPBOARD, error);
     }
     if(t_style & ITALIC)
     {
       style[1] = ITALIC;
-      DoIO((struct IORequest*)data->clipboard);
+      error = WriteChunkBytes(data->iff, style, 4);
+      SHOWVALUE(DBF_CLIPBOARD, error);
     }
     if(t_style & UNDERLINE)
     {
       style[1] = UNDERLINE;
-      DoIO((struct IORequest*)data->clipboard);
+      error = WriteChunkBytes(data->iff, style, 4);
+      SHOWVALUE(DBF_CLIPBOARD, error);
     }
   }
 
   if(line->line.Styles)
   {
-      unsigned short *styles = line->line.Styles;
+    unsigned short *styles = line->line.Styles;
 
     while((*styles <= x) && (*styles != EOS))
       styles += 2;
@@ -517,203 +512,158 @@ void ClipChars (LONG x, struct line_node *line, LONG length, struct InstData *da
       {
         style[0] = *styles++ - x;
         style[1] = *styles++;
-        DoIO((struct IORequest*)data->clipboard);
+        error = WriteChunkBytes(data->iff, style, 4);
+        SHOWVALUE(DBF_CLIPBOARD, error);
       }
+
       style[0] = length+1;
       style[1] = GetStyle(x+length-1, line);
       if(style[1] != 0)
       {
-          unsigned short t_style = style[1];
+        unsigned short t_style = style[1];
 
         if(t_style & BOLD)
         {
           style[1] = ~BOLD;
-          DoIO((struct IORequest*)data->clipboard);
+          error = WriteChunkBytes(data->iff, style, 4);
+          SHOWVALUE(DBF_CLIPBOARD, error);
         }
         if(t_style & ITALIC)
         {
           style[1] = ~ITALIC;
-          DoIO((struct IORequest*)data->clipboard);
+          error = WriteChunkBytes(data->iff, style, 4);
+          SHOWVALUE(DBF_CLIPBOARD, error);
         }
         if(t_style & UNDERLINE)
         {
           style[1] = ~UNDERLINE;
-          DoIO((struct IORequest*)data->clipboard);
+          error = WriteChunkBytes(data->iff, style, 4);
+          SHOWVALUE(DBF_CLIPBOARD, error);
         }
       }
     }
   }
 
-  styleheader[1] = LONG2BE(data->clipboard->io_Offset - t_offset);
-  data->clipboard->io_Offset    = t_offset - sizeof(styleheader);
-  data->clipboard->io_Data    = (STRPTR)styleheader;
-  data->clipboard->io_Length    = sizeof(styleheader);
-  DoIO((struct IORequest*)data->clipboard);
-  data->clipboard->io_Offset    += BE2LONG(styleheader[1]);
+  error = PopChunk(data->iff);
+  SHOWVALUE(DBF_CLIPBOARD, error);
 
-  textheader[1] = LONG2BE(length);
-  data->clipboard->io_Data    = (STRPTR)textheader;
-  data->clipboard->io_Length    = sizeof(textheader);
-  DoIO((struct IORequest*)data->clipboard);
-  data->clipboard->io_Data    = line->line.Contents+x;
-  data->clipboard->io_Length    = length;
-  DoIO((struct IORequest*)data->clipboard);
-
-  data->clipboard->io_Offset += data->clipboard->io_Offset & 1;
+  D(DBF_CLIPBOARD, "writing CHRS");
+  error = PushChunk(data->iff, 0, ID_CHRS, IFFSIZE_UNKNOWN);
+  SHOWVALUE(DBF_CLIPBOARD, error);
+  error = WriteChunkBytes(data->iff, line->line.Contents + x, length);
+  SHOWVALUE(DBF_CLIPBOARD, error);
+  error = PopChunk(data->iff);
+  SHOWVALUE(DBF_CLIPBOARD, error);
 
   LEAVE();
 }
 
-void ClipLine (struct line_node *line, struct InstData *data)
+void ClipLine(struct line_node *line, struct InstData *data)
 {
-  long  colorheader[] = { LONG2BE(MAKE_ID('C','O','L','S')), 0};
-  long  styleheader[] = { LONG2BE(MAKE_ID('S','T','Y','L')), 0};
-  long  textheader[]  = { LONG2BE(MAKE_ID('C','H','R','S')), 0};
   UWORD *styles = line->line.Styles;
   UWORD *colors = line->line.Colors;
+  LONG error;
 
   ENTER();
+
+  D(DBF_CLIPBOARD, "ClipLine()");
 
   ClipInfo(line, data);
 
   if(colors)
   {
+    D(DBF_CLIPBOARD, "writing COLS");
+    error = PushChunk(data->iff, 0, ID_COLS, IFFSIZE_UNKNOWN);
+    SHOWVALUE(DBF_CLIPBOARD, error);
+
     while(*colors != 0xffff)
     {
       colors += 2;
-      colorheader[1] += 4;
     }
-    colorheader[1] = LONG2BE(colorheader[1]);
-    
-    data->clipboard->io_Data    = (STRPTR)colorheader;
-    data->clipboard->io_Length    = sizeof(colorheader);
-    DoIO((struct IORequest*)data->clipboard);
-    data->clipboard->io_Data    = (STRPTR)line->line.Colors;
-    data->clipboard->io_Length    = BE2LONG(colorheader[1]);
-    DoIO((struct IORequest*)data->clipboard);
+
+    error = WriteChunkBytes(data->iff, line->line.Colors, colors - line->line.Colors);
+    SHOWVALUE(DBF_CLIPBOARD, error);
+    error = PopChunk(data->iff);
+    SHOWVALUE(DBF_CLIPBOARD, error);
   }
 
   if(styles)
   {
+    D(DBF_CLIPBOARD, "writing STYL");
+    error = PushChunk(data->iff, 0, ID_STYL, IFFSIZE_UNKNOWN);
+    SHOWVALUE(DBF_CLIPBOARD, error);
+
     while(*styles != EOS)
     {
       styles += 2;
-      styleheader[1] += 4;
     }
+
+    error = WriteChunkBytes(data->iff, line->line.Styles, styles - line->line.Styles);
+    SHOWVALUE(DBF_CLIPBOARD, error);
+    error = PopChunk(data->iff);
+    SHOWVALUE(DBF_CLIPBOARD, error);
   }
-  styleheader[1] = LONG2BE(styleheader[1]);
-  
-  data->clipboard->io_Data    = (STRPTR)styleheader;
-  data->clipboard->io_Length    = sizeof(styleheader);
-  DoIO((struct IORequest*)data->clipboard);
-  data->clipboard->io_Data    = (STRPTR)line->line.Styles;
-  data->clipboard->io_Length    = BE2LONG(styleheader[1]);
-  DoIO((struct IORequest*)data->clipboard);
 
-  textheader[1] = LONG2BE(line->line.Length);
-  data->clipboard->io_Data    = (STRPTR)textheader;
-  data->clipboard->io_Length    = sizeof(textheader);
-  DoIO((struct IORequest*)data->clipboard);
-  data->clipboard->io_Data    = (STRPTR)line->line.Contents;
-  data->clipboard->io_Length    = BE2LONG(textheader[1]);
-  DoIO((struct IORequest*)data->clipboard);
-
-  data->clipboard->io_Offset += data->clipboard->io_Offset & 1;
+  D(DBF_CLIPBOARD, "writing CHRS");
+  error = PushChunk(data->iff, 0, ID_CHRS, IFFSIZE_UNKNOWN);
+  SHOWVALUE(DBF_CLIPBOARD, error);
+  error = WriteChunkBytes(data->iff, line->line.Contents, line->line.Length);
+  SHOWVALUE(DBF_CLIPBOARD, error);
+  error = PopChunk(data->iff);
+  SHOWVALUE(DBF_CLIPBOARD, error);
 
   LEAVE();
 }
 
-LONG CutBlock (struct InstData *data, long Clipboard, long NoCut, BOOL update)
+LONG CutBlock(struct InstData *data, BOOL Clipboard, BOOL NoCut, BOOL update)
 {
   struct  marking newblock;
+  LONG result;
 
   ENTER();
 
+  //D(DBF_STARTUP, "CutBlock: %ld %ld %ld", Clipboard, NoCut, update);
+
   NiceBlock(&data->blockinfo, &newblock);
   if(!NoCut)
-    AddToUndoBuffer(deleteblock, (char *)&newblock, data);
+    AddToUndoBuffer(ET_DELETEBLOCK, (char *)&newblock, data);
 
-  LEAVE();
-  return(CutBlock2(data, Clipboard, NoCut, &newblock, update));
+  result = CutBlock2(data, Clipboard, NoCut, &newblock, update);
+
+  RETURN(result);
+  return(result);
 }
 
-#ifdef ClassAct
-
-struct CutArgs
+LONG CutBlock2(struct InstData *data, BOOL Clipboard, BOOL NoCut, struct marking *newblock, BOOL update)
 {
-  struct InstData *data;
-  long Clipboard, NoCut;
-  struct marking *newblock;
-  BOOL update;
-
-  WORD sigbit;
-  struct Task *task;
-  LONG res;
-};
-
-VOID CutBlockProcess (REG(a0) STRPTR arguments);
-
-LONG CutBlock2 (struct InstData *data, long Clipboard, long NoCut, struct marking *newblock, BOOL update)
-{
-  struct CutArgs args = { data, Clipboard, NoCut, newblock, update, AllocSignal(-1), FindTask(NULL) };
-  if(args.sigbit != -1)
-  {
-    UBYTE str_args[10];
-    sprintf(str_args, "%lx", &args);
-
-    ReleaseGIRPort(data->rport);
-    ReleaseSemaphore(&data->semaphore);
-    if(CreateNewProcTags(NP_Entry, CutBlockProcess, NP_Name, "Texteditor slave", NP_StackSize, 2*4096, NP_Arguments, str_args, TAG_DONE))
-      Wait(1 << args.sigbit);
-    FreeSignal(args.sigbit);
-    ObtainSemaphore(&data->semaphore);
-    data->rport = ObtainGIRPort(data->GInfo);
-  }
-  return args.res;
-}
-
-VOID CutBlockProcess (REG(a0) STRPTR arguments)
-{
-  struct CutArgs *args;
-  if(sscanf(arguments, "%x", &args))
-  {
-    struct InstData *data = args->data;
-    long Clipboard = args->Clipboard, NoCut = args->NoCut;
-    struct marking *newblock = args->newblock;
-    BOOL update = args->update;
-#else
-LONG CutBlock2 (struct InstData *data, long Clipboard, long NoCut, struct marking *newblock, BOOL update)
-{
-#endif
-  LONG  tvisual_y;
+  LONG  tvisual_y, error;
   LONG  startx, stopx;
   LONG  res = 0;
   struct  line_node *startline, *stopline;
 
   ENTER();
 
-#ifdef ClassAct
-  ObtainSemaphore(&data->semaphore);
-  data->rport = ObtainGIRPort(data->GInfo);
-#endif
-
   startx    = newblock->startx;
   stopx     = newblock->stopx;
   startline = newblock->startline;
   stopline  = newblock->stopline;
 
+  //D(DBF_STARTUP, "CutBlock2: %ld-%ld %lx-%lx %ld %ld", startx, stopx, startline, stopline, Clipboard, NoCut);
+
   if(startline != stopline)
   {
-      struct  line_node *c_startline = startline->next;
+    struct line_node *c_startline = startline->next;
 
     data->update = FALSE;
-    if(Clipboard)
+
+    if(Clipboard == TRUE)
     {
-      if(InitClipboard(data))
+      if(InitClipboard(data, IFFF_WRITE))
       {
-        data->clipboard->io_ClipID    = 0;
-        data->clipboard->io_Command = CMD_WRITE;
-        data->clipboard->io_Offset    = 12;
+        D(DBF_CLIPBOARD, "writing FORM");
+        error = PushChunk(data->iff, ID_FTXT, ID_FORM, IFFSIZE_UNKNOWN);
+        SHOWVALUE(DBF_CLIPBOARD, error);
+
         ClipChars(startx, startline, startline->line.Length-startx, data);
       }
       else
@@ -724,44 +674,49 @@ LONG CutBlock2 (struct InstData *data, long Clipboard, long NoCut, struct markin
 
     while(c_startline != stopline)
     {
-      if(Clipboard)
+      if(Clipboard == TRUE)
       {
         ClipLine(c_startline, data);
       }
 
-      if(!NoCut)
+      if(NoCut == FALSE)
       {
-          struct  line_node *cc_startline = c_startline;
+        struct line_node *cc_startline = c_startline;
 
         MyFreePooled(data->mypool, c_startline->line.Contents);
-        if(c_startline->line.Styles)
+        if(c_startline->line.Styles != NULL)
           MyFreePooled(data->mypool, c_startline->line.Styles);
         data->totallines -= c_startline->visual;
         c_startline = c_startline->next;
 
+        //D(DBF_STARTUP, "FreeLine %08lx", cc_startline);
+
         FreeLine(cc_startline, data);
       }
-      else  c_startline = c_startline->next;
+      else
+        c_startline = c_startline->next;
     }
 
-    if(Clipboard)
+    if(Clipboard == TRUE)
     {
-      if(stopx)
+      if(stopx != 0)
         ClipChars(0, stopline, stopx, data);
 
       EndClipSession(data);
     }
 
-    if(!NoCut)
+    if(NoCut == FALSE)
     {
       startline->next = stopline;
       stopline->previous = startline;
 
-      RemoveChars(startx, startline, startline->line.Length-startx-1, data);
-      if(stopx)
-      {
+      //D(DBF_STARTUP, "RemoveChars: %ld %ld %08lx %ld", startx, stopx, startline, startline->line.Length);
+
+      if(startline->line.Length-startx-1 > 0)
+        RemoveChars(startx, startline, startline->line.Length-startx-1, data);
+
+      if(stopx != 0)
         RemoveChars(0, stopline, stopx, data);
-      }
 
       data->CPos_X = startx;
       data->actualline = startline;
@@ -770,28 +725,30 @@ LONG CutBlock2 (struct InstData *data, long Clipboard, long NoCut, struct markin
   }
   else
   {
-    if(Clipboard)
+    if(Clipboard == TRUE)
     {
-      if(InitClipboard(data))
+      if(InitClipboard(data, IFFF_WRITE))
       {
-        data->clipboard->io_ClipID    = 0;
-        data->clipboard->io_Command = CMD_WRITE;
-        data->clipboard->io_Offset    = 12;
+        D(DBF_CLIPBOARD, "writing FORM");
+        error = PushChunk(data->iff, ID_FTXT, ID_FORM, IFFSIZE_UNKNOWN);
+        SHOWVALUE(DBF_CLIPBOARD, error);
+
         ClipChars(startx, startline, stopx-startx, data);
         EndClipSession(data);
       }
-      if(update && NoCut)
+
+      if(update == TRUE && NoCut == TRUE)
       {
         MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
           goto end;
       }
     }
 
-    if(!NoCut)
+    if(NoCut == FALSE)
     {
       data->CPos_X = startx;
       RemoveChars(startx, startline, stopx-startx, data);
-      if(update)
+      if(update == TRUE)
         goto end;
     }
   }
@@ -799,28 +756,22 @@ LONG CutBlock2 (struct InstData *data, long Clipboard, long NoCut, struct markin
   tvisual_y = LineToVisual(startline, data)-1;
   if(tvisual_y < 0 || tvisual_y > data->maxlines)
   {
+    //D(DBF_STARTUP, "ScrollIntoDisplay");
     ScrollIntoDisplay(data);
     tvisual_y = 0;
   }
 
-  if(update)
+  if(update == TRUE)
   {
+    //D(DBF_STARTUP, "DumpText! %ld %ld %ld", data->visual_y, tvisual_y, data->maxlines);
     data->update = TRUE;
     DumpText(data->visual_y+tvisual_y, tvisual_y, data->maxlines, TRUE, data);
   }
   res = tvisual_y;
 
 end:
-#ifdef ClassAct
-    args->res = res;
-    Forbid();
-    ReleaseGIRPort(data->rport);
-    ReleaseSemaphore(&data->semaphore);
-    Signal(args->task, 1 << args->sigbit);
-  }
-#else
 
   RETURN(res);
   return res;
-#endif
 }
+

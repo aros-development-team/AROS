@@ -10,20 +10,22 @@ include $(TOP)/config/make.cfg
 
 #MM- clean :  texteditor-mcp-clean
 
-USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../../../zune/betterstring/includes -I$(SRCDIR)/$(CURDIR)/../mcc -I$(SRCDIR)/$(CURDIR)/..
+USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../mcc
+USER_CFLAGS := -DNO_INLINE_STDARG
 
-FILES := locale \
+FILES := library \
+     locale \
 	 CreatePrefsGroup \
 	 Dispatcher \
 	 Keybindings \
 	 KeyStorage \
 	 ObjectCreator \
-	 Debug
+	 Debug \
+	 vastubs
 	 
-%build_module mmake=workbench-classes-zune-texteditor-mcp \
+%build_module_simple mmake=workbench-classes-zune-texteditor-mcp \
   modname=TextEditor modtype=mcp \
-  files=$(FILES) conffile=texteditor.conf \
-  uselibs="amiga mui rom m"
+  files=$(FILES) uselibs="amiga mui rom m"
 
 
 #MM includes-copy
@@ -31,16 +33,58 @@ FILES := locale \
 INCLUDE_FILES := TextEditor_mcp.h
 %copy_includes path=mui
 
-#MM workbench-classes-zune-texteditor-mcp-locale :
-workbench-classes-zune-texteditor-mcp-locale : $(TOP)/$(CURDIR)/locale.c $(TOP)/$(CURDIR)/locale.h
 
-$(TOP)/$(CURDIR)/locale.h : $(TOP)/$(CURDIR)/locale.c
-$(TOP)/$(CURDIR)/locale.c : $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $(SRCDIR)/$(CURDIR)/C_h.sd $(SRCDIR)/$(CURDIR)/C_c.sd
-	@$(ECHO) "Generating locale file $@..."
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd locale.h=$(SRCDIR)/$(CURDIR)/C_h.sd locale.c=$(SRCDIR)/$(CURDIR)/C_c.sd
+
+TARGETDIR := $(AROS_CATALOGS)
+
+# FIXME: doesn't work outside source tree
+# LOCALE_H := $(TOP)/$(CURDIR)/locale.h
+# LOCALE_C := $(TOP)/$(CURDIR)/locale.c
+LOCALE_H := $(SRCDIR)/$(CURDIR)/locale.h
+LOCALE_C := $(SRCDIR)/$(CURDIR)/locale.c
+
+#MM
+workbench-classes-zune-texteditor-mcp-locale : $(LOCALE_C) $(LOCALE_H) \
+    $(TARGETDIR)/deutsch/TextEditor_mcp.catalog \
+    $(TARGETDIR)/czech/TextEditor_mcp.catalog \
+    $(TARGETDIR)/svenska/TextEditor_mcp.catalog \
+    $(TARGETDIR)/français/TextEditor_mcp.catalog \
+    $(TARGETDIR)/dansk/TextEditor_mcp.catalog \
+    $(TARGETDIR)/russian/TextEditor_mcp.catalog
+
+$(LOCALE_H): locale/TextEditor_mcp.cd C_h.sd
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $(LOCALE_H)=$(SRCDIR)/$(CURDIR)/C_h.sd
+
+$(LOCALE_C): locale/TextEditor_mcp.cd C_c.sd
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $(LOCALE_C)=$(SRCDIR)/$(CURDIR)/C_c.sd
+
+$(TARGETDIR)/deutsch/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/german.ct
+	@$(MKDIR) $(TARGETDIR)/deutsch
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/czech/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/czech.ct
+	@$(MKDIR) $(TARGETDIR)/czech
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/français/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/french.ct
+	@$(MKDIR) $(TARGETDIR)/français
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/svenska/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/swedish.ct
+	@$(MKDIR) $(TARGETDIR)/svenska
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/dansk/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/danish.ct
+	@$(MKDIR) $(TARGETDIR)/dansk
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/russian/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/russian.ct
+	@$(MKDIR) $(TARGETDIR)/russian
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
+
 
 #MM
 texteditor-mcp-clean :
-	-$(RM) $(TOP)/$(CURDIR)/locale.h $(TOP)/$(CURDIR)/locale.c
+	-$(RM) $(LOCALE_H) $(LOCALE_C)
 
 %common
