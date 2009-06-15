@@ -70,7 +70,7 @@ AROS_UFH3(void, pciEnumerator,
             hc->hc_HCIType = hcitype;
             hc->hc_PCIDeviceObject = pciDevice;
             hc->hc_PCIIntLine = intline;
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, &hc->hc_PCIDriverObject);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (IPTR) &hc->hc_PCIDriverObject);
             NewList(&hc->hc_CtrlXFerQueue);
             NewList(&hc->hc_IntXFerQueue);
             NewList(&hc->hc_IsoXFerQueue);
@@ -223,7 +223,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     ULONG cnt;
     BOOL complexrouting = FALSE;
     ULONG portroute = 0;
-   
+
     struct TagItem pciActivateMem[] =
     {
             { aHidd_PCIDevice_isIO,     TRUE },
@@ -1226,7 +1226,7 @@ void pciExpunge(struct PCIDevice *hd)
         };
 
         OOP_ReleaseAttrBases(attrbases);
-    
+
         OOP_DisposeObject(hd->hd_PCIHidd);
     }
     if(hd->hd_IRQHidd)
@@ -1240,6 +1240,6 @@ void pciExpunge(struct PCIDevice *hd)
 APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr)
 {
     //struct PCIDevice *hd = hc->hc_Device;
-    return(HIDD_PCIDriver_CPUtoPCI(hc->hc_PCIDeviceObject, virtaddr));
+    return(HIDD_PCIDriver_CPUtoPCI(hc->hc_PCIDriverObject, virtaddr));
 }
 /* \\\ */
