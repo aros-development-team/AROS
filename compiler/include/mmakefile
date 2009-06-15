@@ -5,6 +5,7 @@ INCSUBDIRS :=	aros \
 		aros/preprocessor \
 		aros/preprocessor/facilities \
 		aros/preprocessor/variadic \
+        bluetooth \
 	        c++ \
 		c++/exec \
 		clib \
@@ -22,6 +23,7 @@ INCSUBDIRS :=	aros \
 		hardware/pic \
 		hidd \
 		intuition \
+        irda \
 		libraries \
 		midi \
 		pragmas \
