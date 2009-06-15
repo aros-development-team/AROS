@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -22,10 +22,9 @@
 
 #include <graphics/text.h>
 #include <clib/alib_protos.h>
-#include <proto/intuition.h>
 #include <proto/graphics.h>
+#include <proto/intuition.h>
 
-#include "TextEditor_mcc.h"
 #include "private.h"
 
 ULONG convert(ULONG style)
@@ -44,11 +43,7 @@ ULONG convert(ULONG style)
 
 ULONG ConvertPen (UWORD color, BOOL highlight, struct InstData *data)
 {
-#ifdef ClassAct
-  return(color ? (data->colormap ? data->colormap[color-1] : color) : (highlight ? data->highlightcolor : data->textcolor));
-#else
   return(color ? (ULONG)(data->colormap ? (ULONG)data->colormap[color-1] : (ULONG)((color <= 8) ? _pens(data->object)[color-1] : color-9)) : (ULONG)(highlight ? (ULONG)data->highlightcolor : (ULONG)data->textcolor));
-#endif
 }
 
 VOID DrawSeparator (struct RastPort *rp, WORD X, WORD Y, WORD Width, WORD Height, struct InstData *data)
@@ -57,13 +52,6 @@ VOID DrawSeparator (struct RastPort *rp, WORD X, WORD Y, WORD Width, WORD Height
 
   if(Width > 3*Height)
   {
-/*    SetAPen(rp, data->separatorshadow);
-    RectFill(rp, X, Y, X+Width-1-Height, Y+Height-1);
-    RectFill(rp, X, Y+Height, X+Height-1, Y+(2*Height)-1);
-    SetAPen(rp, data->separatorshine);
-    RectFill(rp, X+Height, Y+Height, X+Width-1, Y+(2*Height)-1);
-    RectFill(rp, X+Width-Height, Y, X+Width-1, Y+Height-1);
-*/
     SetAPen(rp, data->separatorshadow);
     RectFill(rp, X, Y, X+Width-2, Y);
     RectFill(rp, X, Y, X, Y+Height);
@@ -71,13 +59,7 @@ VOID DrawSeparator (struct RastPort *rp, WORD X, WORD Y, WORD Width, WORD Height
     SetAPen(rp, data->separatorshine);
     RectFill(rp, X+1, Y+Height, X+Width-1, Y+Height);
     RectFill(rp, X+Width-1, Y, X+Width-1, Y+Height);
-
-/*    if(Height == 2)
-    {
-      SetAPen(rp, data->markedcolor);
-      RectFill(rp, X+1, Y+1, X+Width-2, Y+(2*Height)-2);
-    }
-*/  }
+  }
 
   LEAVE();
 }
@@ -92,11 +74,8 @@ LONG PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, 
 
   length  = LineCharsWidth(text+x, data);
 
-  if(!doublebuffer)
-  {
-    doublebuffer = FALSE;
+  if(doublebuffer == FALSE)
     rp = &data->copyrp;
-  }
 
   if((line_nr > 0) && (data->update) && !(data->flags & FLG_Quiet) && data->rport != NULL && data->shown == TRUE)
   {
@@ -112,7 +91,7 @@ LONG PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, 
     if(line->line.Color && x == 0 && line->line.Length == 1)
       line->line.Color = FALSE;
 
-    if(!doublebuffer)
+    if(doublebuffer == FALSE)
     {
       starty = data->ypos+(data->height * (line_nr-1));
       xoffset = data->xpos;
@@ -166,12 +145,9 @@ LONG PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, 
     }
 
     {
-      UWORD blockstart = 0, blockwidth = 0;
-#ifndef ClassAct
+      UWORD blockstart = 0;
+      UWORD blockwidth = 0;
       struct RastPort *old = muiRenderInfo(data->object)->mri_RastPort;
-#else
-      struct RastPort *old = data->rport;
-#endif
 
       if(startx < x+c_length && stopx > x)
       {
@@ -185,7 +161,7 @@ LONG PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, 
       else if(!(data->flags & (FLG_ReadOnly | FLG_Ghosted)) &&
               line == data->actualline && data->CPos_X >= x &&
               data->CPos_X < x+c_length && !Enabled(data) &&
-              !data->scrollaction && (data->flags & FLG_Active))
+              (data->flags & FLG_Active || data->inactiveCursor == TRUE))
       {
         cursor = TRUE;
         blockstart = TextLength(&data->tmprp, text+x, data->CPos_X-x);
@@ -199,17 +175,29 @@ LONG PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, 
       }
 
       SetDrMd(rp, JAM1);
-#ifndef ClassAct
       muiRenderInfo(data->object)->mri_RastPort = rp;
-#else
-      data->rport = rp;
-#endif
 
       // clear the background first
-      DoMethod(data->object, MUIM_DrawBackground, xoffset, starty, flow+blockstart, data->height, (data->flags & FLG_InVGrp) ? 0 : data->xpos, (data->flags & FLG_InVGrp) ? data->height*(data->visual_y+line_nr-2) : data->realypos+data->height * (data->visual_y+line_nr-2));
+      DoMethod(data->object, MUIM_DrawBackground, xoffset, starty,
+                                                  flow+blockstart, data->height,
+                                                  (data->flags & FLG_InVGrp) ? 0 : data->xpos,
+                                                  (data->flags & FLG_InVGrp) ? data->height*(data->visual_y+line_nr-2) : data->realypos+data->height * (data->visual_y+line_nr-2),
+                                                  0);
 
       if(blockwidth)
       {
+        ULONG color;
+
+        // in case the gadget is in inactive state we use a different background
+        // color for our selected area
+        if((data->flags & FLG_Active) == 0 && (data->flags & FLG_Activated) == 0 &&
+           (data->flags & FLG_ActiveOnClick) != 0)
+        {
+          color = data->inactivecolor;
+        }
+        else
+          color = data->markedcolor;
+
         // if selectmode == 2 then a whole line should be drawn as being marked, so
         // we have to start at xoffset instead of xoffset+flow+blockstart.
         // Please note that the second part of the following "empiric" evaluation should
@@ -221,13 +209,24 @@ LONG PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, 
            (flow && data->selectmode != 1 && startx-x == 0 && cursor == FALSE &&
             ((data->blockinfo.startline != data->blockinfo.stopline) || x > 0)))
         {
-          SetAPen(rp, data->markedcolor);
+          SetAPen(rp, color);
           RectFill(rp, xoffset, starty, xoffset+flow+blockwidth-1, starty+data->height-1);
         }
         else
         {
-          SetAPen(rp, cursor ? data->cursorcolor : data->markedcolor);
+          SetAPen(rp, cursor ? data->cursorcolor : color);
           RectFill(rp, xoffset+flow+blockstart, starty, xoffset+flow+blockstart+blockwidth-1, starty+data->height-1);
+
+          // if the gadget is in inactive state we just draw a skeleton cursor instead
+          if(cursor == TRUE &&
+             (data->flags & FLG_Active) == 0 && (data->flags & FLG_Activated) == 0)
+          {
+            DoMethod(data->object, MUIM_DrawBackground, xoffset+flow+blockstart+1, starty+1,
+                                                        blockwidth-2, data->height-2,
+                                                        (data->flags & FLG_InVGrp) ? 0 : data->xpos,
+                                                        (data->flags & FLG_InVGrp) ? data->height*(data->visual_y+line_nr-2) : data->realypos+data->height * (data->visual_y+line_nr-2),
+                                                        0);
+          }
         }
       }
 
@@ -254,17 +253,11 @@ LONG PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, 
 
         DoMethod(data->object, MUIM_DrawBackground, x_start, y_start, x_width, y_width, x_ptrn, y_ptrn);
       }
-#ifndef ClassAct
       muiRenderInfo(data->object)->mri_RastPort = old;
-#else
-      data->rport = old;
-#endif
     }
 
-    if(!doublebuffer)
-    {
+    if(doublebuffer == FALSE)
       AddClipping(data);
-    }
 
     SetAPen(rp, (line->line.Color ? data->highlightcolor : data->textcolor));
 
@@ -272,7 +265,7 @@ LONG PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, 
     {
       LONG p_length = c_length;
 
-      SetSoftStyle(rp, convert(GetStyle(x, line)), ~0);
+      SetSoftStyle(rp, convert(GetStyle(x, line)), AskSoftStyle(rp));
       if(styles)
       {
         while(*styles-1 <= x)
@@ -326,6 +319,7 @@ LONG PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, 
       x += p_length;
       c_length -= p_length;
     }
+    SetSoftStyle(rp, FS_NORMAL, AskSoftStyle(rp));
 
     if(line->line.Separator)
     {
@@ -362,14 +356,14 @@ LONG PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, 
 
     if(data->flags & FLG_Ghosted)
     {
-        UWORD *oldPattern = rp->AreaPtrn;
-        UBYTE oldSize = rp->AreaPtSz;
-        UWORD newPattern[] = {0x1111, 0x4444};
+      UWORD *oldPattern = (UWORD *)rp->AreaPtrn;
+      UBYTE oldSize = rp->AreaPtSz;
+      UWORD newPattern[] = {0x1111, 0x4444};
 
-      if(doublebuffer)
+      if(doublebuffer == TRUE)
       {
-          ULONG ptrn1 = 0x11111111;
-          ULONG ptrn2 = 0x44444444;
+        ULONG ptrn1 = 0x11111111;
+        ULONG ptrn2 = 0x44444444;
 
         ptrn1 = ptrn1>>((data->xpos-xoffset)%16);
         ptrn2 = ptrn2>>((data->xpos-xoffset)%16);
@@ -395,11 +389,7 @@ LONG PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, 
       }
 
       SetDrMd(rp, JAM1);
-#ifndef ClassAct
       SetAPen(rp, *(_pens(data->object)+MPEN_SHADOW));
-#else
-      SetAPen(rp, data->separatorshadow);
-#endif
       rp->AreaPtrn = newPattern;
       rp->AreaPtSz = 1;
       RectFill(rp, xoffset, starty, xoffset+data->innerwidth-1, starty+data->height-1);
@@ -407,15 +397,13 @@ LONG PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, 
       rp->AreaPtSz = oldSize;
     }
 
-    if(!doublebuffer)
-    {
+    if(doublebuffer == FALSE)
       RemoveClipping(data);
-    }
     else
     {
       if(line_nr == 1)
       {
-        BltBitMapRastPort(rp->BitMap, xoffset, data->realypos-data->ypos, data->rport, data->xpos, data->realypos+(data->height * (line_nr-1)), data->innerwidth, data->height-(data->realypos-data->ypos), 0xc0);
+        BltBitMapRastPort(rp->BitMap, xoffset, data->realypos-data->ypos, data->rport, data->xpos, data->realypos+(data->height * (line_nr-1)), data->innerwidth, data->height-(data->realypos-data->ypos), (ABC|ABNC));
       }
       else
       {
@@ -423,12 +411,12 @@ LONG PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, 
         {
           if(data->realypos != data->ypos)
           {
-            BltBitMapRastPort(rp->BitMap, xoffset, 0, data->rport, data->xpos, data->ypos+(data->height * (line_nr-1)), data->innerwidth, data->realypos-data->ypos, 0xc0);
+            BltBitMapRastPort(rp->BitMap, xoffset, 0, data->rport, data->xpos, data->ypos+(data->height * (line_nr-1)), data->innerwidth, data->realypos-data->ypos, (ABC|ABNC));
           }
         }
         else
         {
-          BltBitMapRastPort(rp->BitMap, xoffset, 0, data->rport, data->xpos, data->ypos+(data->height * (line_nr-1)), data->innerwidth, data->height, 0xc0);
+          BltBitMapRastPort(rp->BitMap, xoffset, 0, data->rport, data->xpos, data->ypos+(data->height * (line_nr-1)), data->innerwidth, data->height, (ABC|ABNC));
         }
       }
     }

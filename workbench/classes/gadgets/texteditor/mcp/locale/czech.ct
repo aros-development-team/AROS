@@ -1,6 +1,6 @@
-## version $VER: TextEditor_mcp.catalog 2.4 (30.11.2007)
+## version $VER: TextEditor_mcp.catalog 2.8 (4.1.2008)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 ;
 ; TextEditor_mcp.cd - TextEditor MUI custom prefs catalog description file
@@ -11,8 +11,8 @@
 ;
 ;
 HelpBubble_BlockQual
-Nastavení klávesy, jejím¾ souèasným stisknutím zároveò\n\
-s kurzorovými klávesami oznaèíte text.
+Nastavení klávesy, jejím¾ souèasným stisknutím\n\
+zároveò s kurzorovými klávesami oznaèíte text.
 ; Move the cursor key and hold down the qualifier\n\
 ; that you set here to mark text.
 ;
@@ -23,8 +23,8 @@ text, a pokud nalezne chybu, zobrazí návrh na opravu.
 ; and only show suggestions if the word is misspelled.
 ;
 HelpBubble_Smooth
-Tímto zapnete plynulé bodové rolování.
-; This will enable pixel smooth scrolling.
+Tímto zapnete plynulé posouvání textového pole.
+; This enables pixel smooth scrolling.
 ;
 HelpBubble_TypeNSpell
 Tímto zapnete kontrolu slov ji¾ bìhem psaní\n\
@@ -36,20 +36,21 @@ HelpBubble_UndoLevel
 Jeden krok zpìt vy¾aduje 10 bajtù pamìti. Funkce\n\
 pro práci se schránkou vy¾adují o nìco více; závisí\n\
 na velikosti bloku.
-; Each undo eats 10 bytes of memory.\n\
-; Cut and Copy takes a little more,\n\
-; depends on the block size!
+; Each undo level eats up 10 bytes of memory.\n\
+; Cut and copy will take a little more,\n\
+; depending on the size of the block you\n\
+; are cutting or copying.
 ;
 MSG_Button_DefaultKeys
 Výchozí _klávesy
 ; Default _keys
 ;
 MSG_Button_Delete
-_Smazat
+Odeb_rat
 ; _Delete
 ;
 MSG_Button_Insert
-Vlo¾_it
+Pøid_at
 ; _Insert
 ;
 MSG_ConfigMenu_CheckWord
@@ -86,7 +87,7 @@ CLI
 ;
 MSG_Function_BOL
 Zaèátek øádku
-; Begin Of Line
+; Beginning of line
 ;
 MSG_Function_Backspace
 Backspace
@@ -130,7 +131,7 @@ Dolù
 ;
 MSG_Function_EOL
 Konec øádku
-; End Of Line
+; End of line
 ;
 MSG_Function_Left
 Doleva
@@ -142,19 +143,19 @@ Dal¹í tlaèítko
 ;
 MSG_Function_NxtPage
 Dal¹í strana
-; Next Page
+; Next page
 ;
 MSG_Function_NxtPara
 Dal¹í odstavec
-; Next Paragraph
+; Next paragraph
 ;
 MSG_Function_NxtSent
 Dal¹í vìta
-; Next Sentence
+; Next sentence
 ;
 MSG_Function_NxtWord
 Dal¹í slovo
-; Next Word
+; Next word
 ;
 MSG_Function_Paste
 Vlo¾it
@@ -162,22 +163,22 @@ Vlo¾it
 ;
 MSG_Function_PrvPage
 Pøedchozí strana
-; Prev Page
+; Prev page
 ;
 MSG_Function_PrvPara
 Pøedchozí odstavec
-; Prev Paragraph
+; Prev paragraph
 ;
 MSG_Function_PrvSent
 Pøedchozí vìta
-; Prev Sentence
+; Prev sentence
 ;
 MSG_Function_PrvWord
 Pøedchozí slovo
-; Prev Word
+; Prev word
 ;
 MSG_Function_Redo
-Znovu
+Odvolat zpìt
 ; Redo
 ;
 MSG_Function_Return
@@ -189,11 +190,11 @@ Doprava
 ; Right
 ;
 MSG_Function_SuggestSpelling
-Nabídka kontroly
+Návrh na opravu slova
 ; Suggest spelling
 ;
 MSG_Function_Tab
-Tabelátor
+Tabulátor
 ; Tab
 ;
 MSG_Function_Top
@@ -201,7 +202,7 @@ Na zaèátek
 ; Top
 ;
 MSG_Function_Undo
-Zpìt
+Vrátit zpìt
 ; Undo
 ;
 MSG_Function_Up
@@ -209,71 +210,69 @@ Nahoru
 ; Up
 ;
 MSG_GroupTitle_Control
-Ovládání
+Základní funkce
 ; Control
 ;
 MSG_GroupTitle_Cursor
-Kurzor
+Barvy kurzoru a textu
 ; Cursor
 ;
 MSG_GroupTitle_Design
-Vzhled
+Vzhled textového pole
 ; Design
 ;
 MSG_GroupTitle_Fonts
-Písma
+Písma pro text
 ; Fonts
 ;
 MSG_GroupTitle_Separator
-Oddìlovaè
+Dìlicí linka
 ; Separator
 ;
 MSG_HelpTxt_SpellChecker
+\n\
  \33u Struèný popis \33n\n\
 \n\
-Prvek TextEditor vám umo¾ní jednoduchou integraci externí kontroly, která \
-dovoluje kontrolu jak právì psaných slov, tak i døíve napsaných slov.\n\
+Prvek TextEditor lze snadno provázat s externími programy pro kontrolu \
+pravopisu. Nabízí mo¾nost sledování správnosti textu pøi psaní a zároveò i \
+návrhy na opravu napsaných slov.\n\
 \n\
- \33u Pøíkaz pro kontrolu \33n\n\
+ \33u Kontrola textu pøi psaní \33n\n\
 \n\
-Pro kontrolu psaných slov mù¾ete jako pøíkaz pro kontrolu pou¾ít dávku, \
-která zkontroluje slovo a nastaví promìnnou prostøedí "Found" na 0 \
-(pro nenalezeno) nebo 1 (pro nalezeno).\n\
-Zvolil jsem tento zpùsob, jeliko¾ je standardní pro AlphaSpell.\n\
-Napi¹te %s na místì, kde má být slovo.\n\
-Pokud pou¾ijete AlphaSpell, pak mù¾ete napsat:\n\
+Nejprve je nutné nainstalovat nìkterý z programù pro kontrolu pravopisu a poté \
+zadat odpovídající pøíkaz do pole 'Kontrola pøi psaní'. Je tøeba, aby daný \
+pøíkaz nebo skript po detekci slova nastavil promìnnou prostøedí "Found" na 0 \
+(nenalezeno ve slovníku) nebo 1 (nalezeno). Tento zpùsob pou¾ívá program \
+AlphaSpell. Namísto slova napi¹te promìnnou %s. Pokud tedy pou¾ijete \
+AlphaSpell, bude pøíkaz vypadat následovnì:\n\n\
 \33bARexx:\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Czech.ald\"\n\
 \n\
-Zde \33bnesmíte\33n zapomenout uvozovky, které jsou nezbytné pro odli¹ení \
-arexxové dávky od pøíkazu.\n\
+Pozn.: \33bNezapomeòte\33n na uvozovky! Bez nich to nebude fungovat.\n\
 \n\
- \33u Pøíkaz pro návrh opravy \33n\n\
+ \33u Návrh na opravu napsaných slov \33n\n\
 \n\
-Pokud stisknete klávesu HELP v blízkosti urèitého slova, editor spustí tento \
-pøíkaz a opìt nahradí slovo øetìzcem %s.\n\
-Daná dávka vytvoøí soubor v T: nazvaný \"Matches\". Tento soubor poté naète \
-prvek TextEditor a zobrazí jeho obsah v rolovacím tlaèítku, ze kterého si \
-vyberete slovo, kterým nahradíte pùvodní chybné slovo.\n\
-U¾ivateli programu AlphaSpell staèí napsat:\n\
+Umístìte kurzor na nìkteré ze slov v textu, stisknìte klávesu HELP (nebo \
+jinou, kterou jste si nadefinovali) a editor spustí pøíkaz definovaný v poli \
+'Návrh opravy slova' s vybraným slovem uvedeným namísto parametru %s. V rámci \
+tohoto procesu se vytvoøí soubor nazvaný \"Matches\" v adresáøi T:. Tento \
+soubor poté naète prvek TextEditor a zobrazí jeho obsah v rolovacím seznamu, \
+ze kterého si vyberete po¾adované slovo. V pøípadì programu AlphaSpell staèí \
+napsat:\n\n\
 \33bARexx:\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Czech.ald\"\n\
 \n\
-Pokud pou¾ijete vý¹e uvedenou metodu, pak musíte program AlphaSpell spustit \
-s parametrem \"ARexx\".\n\
-V pøípadì, ¾e zvolíte kontrolu pøi psaní slov, doporuèujeme umístit slovník \
-do pamìti RAM.
+Pozn.: Vyberete-li si z nabízených mo¾ností kontrolu textu pøi psaní, doporuèujeme \
+zkopírovat slovník do pamìti. Vhodný je napø. \"Ram Disk:\" nebo podobný disk.
 ;  \33u Intro \33n\n\
 ; \n\
-; The TextEditor gadget offers you easy integration of external spell checkers, \
-; this allows you to have both type'n'spell and also normal word-guessing.\n\
+; The TextEditor gadget allows for easy integration of external spell checkers, \
+; making it possible to have both type'n'spell and also normal word guessing.\n\
 ; \n\
 ;  \33u Lookup command \33n\n\
 ; \n\
 ; For the type'n'spell you'll have to set the lookup command to a script that \
 ; will lookup the word and set the environment variable \"Found\" to either 0 \
-; (for not found) or 1 (for a match).\n\
-; I have chosen this behavior because it is the default for AlphaSpell.\n\
-; You write %s where you want the word.\n\
-; If you use AlphaSpell, then you can write:\n\
+; (for not found) or 1 (for a match). This matches the default behaviour of AlphaSpell.\n\n\
+; You write %s where you want the word. If you use AlphaSpell, then you can use:\n\n\
 ; \33bARexx:\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n\
 ; \n\
 ; You \33bmust\33n remember the quotes, this will let ARexx execute it \
@@ -281,12 +280,12 @@ do pamìti RAM.
 ; \n\
 ;  \33u Suggest command \33n\n\
 ; \n\
-; If you press HELP over a word, then the editor will launch this command, \
+; If you press <HELP> over a word, then the editor will launch this command, \
 ; again with %s substituted with the current word.\n\
-; Your script should produce a file in T: named \"Matches\". This file are \
-; then read by the gadget, and the contents are shown in a popup-listview, \
-; from where you can choose a word which will replace the misspelled one.\n\
-; Again, AlphaSpell users can write:\n\
+; Your script should produce a file in T: named \"Matches\". This file is \
+; then read by the gadget, and the contents are listed in a popup listview, \
+; from where you can choose a word which will replace the misspelled one. \
+; Again, AlphaSpell users can use:\n\n\
 ; \33bARexx:\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n\
 ; \n\
 ; If you use the methods described above, then you must start AlphaSpell \
@@ -312,12 +311,12 @@ Rychlost blikání
 ; Blinkspeed
 ;
 MSG_Label_BlkQual
-Oznaèení bloku
+Oznaèení bloku textu
 ; Block qualifier
 ;
 MSG_Label_Cursor
-Kurzor
-; Cursor
+Normální
+; Normal
 ;
 MSG_Label_Fixed
 Fixní
@@ -332,11 +331,11 @@ Zvýraznìní
 ; Highlight
 ;
 MSG_Label_LookupCmd
-Pøíkaz pro kontrolu
+Kontrola pøi psaní
 ; Lookup command
 ;
 MSG_Label_LookupWords
-Kontrola slova pøed návrhem?
+Kontrolovat slova pøed návrhem
 ; Lookup word before suggesting?
 ;
 MSG_Label_Normal
@@ -348,27 +347,27 @@ Vybraný
 ; Selected
 ;
 MSG_Label_SeparatorShadow
-Tmavý
+Tmavá\nhrana
 ; Shadow
 ;
 MSG_Label_SeparatorShine
-Svìtlý
+Svìtlá\nhrana
 ; Shine
 ;
 MSG_Label_Smooth
-Plynulé
+Plynule posouvat text
 ; Smooth
 ;
 MSG_Label_SpellNType
-Kontrola pøi psaní?
+Kontrolovat pøímo pøi psaní
 ; Spell check as you type?
 ;
 MSG_Label_SuggestCmd
-Pøíkaz pro návrh opravy
+Návrh opravy slova
 ; Suggest command
 ;
 MSG_Label_TabSize
-Tabelátor
+Velikost tabulátoru
 ; Tab size
 ;
 MSG_Label_Text
@@ -412,7 +411,7 @@ Vyplòovací
 ; Fill
 ;
 MSG_MenuItem_Halfshadow
-Polostínová
+Polotmavá
 ; Halfshadow
 ;
 MSG_MenuItem_Halfshine
@@ -448,7 +447,7 @@ Vpravo
 ; Right
 ;
 MSG_MenuItem_Shadow
-Stínová
+Tmavá
 ; Shadow
 ;
 MSG_MenuItem_Shine
@@ -484,15 +483,15 @@ Klávesy
 ; Keybindings
 ;
 MSG_Page_Sample
-Pøíklad
+Ukázka
 ; Sample
 ;
 MSG_Page_Settings
-Prostøedí
+Mo¾nosti
 ; Settings
 ;
 MSG_Page_SpellChecker
-Kontrola textu
+Kontrola pravopisu
 ; Spell checker
 ;
 MSG_PopWinTitle_Background
@@ -504,23 +503,23 @@ Vyberte barvu kurzoru
 ; Select cursor color
 ;
 MSG_PopWinTitle_Frame
-Vyberte rámeèek
-; Select frame
+Vyberte druh rámeèku pro textové pole
+; Adjust frame
 ;
 MSG_PopWinTitle_Highlight
-Vyberte barvu zvýraznìní
+Vyberte barvu pro zvýraznìný text
 ; Select highlight color
 ;
 MSG_PopWinTitle_Selected
-Vyberte barvu bloku
+Vyberte barvu pro vybraný blok textu
 ; Select block color
 ;
 MSG_PopWinTitle_SeparatorShadow
-Vyberte barvu tmavých oddìlovaèù
+Vyberte tmavou barvu dìlicí linky
 ; Select separators shadow color
 ;
 MSG_PopWinTitle_SeparatorShine
-Vyberte barvu svìtlých oddìlovaèù
+Vyberte svìtlou barvu dìlicí linky
 ; Select separators shine color
 ;
 MSG_PopWinTitle_Text
@@ -528,7 +527,7 @@ Vyberte barvu textu
 ; Select text color
 ;
 MSG_SliderText_MaxWidth
-Jako znak
+Podle znaku
 ; Same as char
 ;
 MSG_SliderText_MinSpeed
@@ -536,7 +535,7 @@ MSG_SliderText_MinSpeed
 ; Off
 ;
 MSG_SliderText_MinWidth
-1 pix.
+1 b.
 ; 1 pixel
 ;
 MSG_SliderText_StdSpeed
@@ -544,36 +543,36 @@ MSG_SliderText_StdSpeed
 ; \33r%ld ms
 ;
 MSG_SliderText_StdWidth
-%ld pix.
+%ld b.
 ; %ld pixels
 ;
 MSG_SliderText_TabSize
-%ld mezer
+%ld mez.
 ; %ld spaces
 ;
 MSG_Function_GotoBookmark1
 Pøejít na zálo¾ku è.1
-; Goto Bookmark 1
+; Goto bookmark 1
 ;
 MSG_Function_GotoBookmark2
 Pøejít na zálo¾ku è.2
-; Goto Bookmark 2
+; Goto bookmark 2
 ;
 MSG_Function_GotoBookmark3
 Pøejít na zálo¾ku è.3
-; Goto Bookmark 3
+; Goto bookmark 3
 ;
 MSG_Function_SetBookmark1
 Vytvoøit zálo¾ku è.1
-; Set Bookmark 1
+; Set bookmark 1
 ;
 MSG_Function_SetBookmark2
 Vytvoøit zálo¾ku è.2
-; Set Bookmark 2
+; Set bookmark 2
 ;
 MSG_Function_SetBookmark3
 Vytvoøit zálo¾ku è.3
-; Set Bookmark 3
+; Set bookmark 3
 ;
 MSG_Button_Snoop
 Zachytit
@@ -582,4 +581,195 @@ Zachytit
 MSG_Function_DelLine
 Smazat øádek
 ; Delete line
+;
+MSG_Function_SelectAll
+Vybrat v¹e
+; Select all
+;
+MSG_Function_SelectNone
+Zru¹it výbìr
+; Select none
+;
+MSG_WarnConfigVersion_Title
+TextEditor.mcp :: Upozornìní
+; TextEditor.mcp warning
+;
+MSG_WarnConfigVersion
+Ulo¾ená konfigurace klávesnice není kompatibilní\n\
+s nainstalovanou verzí prvku TextEditor.mcc.\n\
+\n\
+Doporuèujeme vám obnovit výchozí stav konfigurace\n\
+a následnì doplnit pøedchozí úpravy.
+; Your currently saved keybindings setup is incompatible\n\
+; with the version of TextEditor.mcc you have installed.\n\
+; \n\
+; It is suggested that you reset the current keybindings\n\
+; to their defaults and edit them manually afterwards.
+;
+MSG_ResetAbort
+Resetovat|Pøeru¹it
+; Reset|Abort
+;
+MSG_WarnHotkeyString_Title
+TextEditor.mcp :: Upozornìní
+; TextEditor.mcp warning
+;
+MSG_WarnHotkeyString
+TextEditor.mcp vy¾aduje prvek HotkeyString.mcc, který\n\
+je buï zastaralý nebo úplnì chybí.\n\
+\n\
+Pøejdìte prosím na http://www.sf.net/projects/bstring-mcc/,\n\
+stáhnìte aktuální verzi tohoto programu, nainstalujte\n\
+ho a po¾adovaný programu spus»te znovu.
+; TextEditor.mcp couldn't open the minimum required\n\
+; version of the HotkeyString.mcc custom class and\n\
+; therefore failed during initialization.\n\
+; \n\
+; Please make sure you have the latest Hotkeystring.mcc\n\
+; class from http://www.sf.net/projects/bstring-mcc/\n\
+; installed and try again.
+;
+MSG_Ok
+OK
+; Ok
+;
+MSG_Label_InactiveCursor
+Neaktivní kurzor
+; Inactive cursor
+;
+MSG_HELP_InactiveCursor
+Tímto zapnete zobrazení speciálního druhu kurzoru\n\
+v pøípadì, ¾e textové pole není aktivní.
+; If enabled, a custom cursor will be used\n\
+; whenever the editor doesn't have the focus.
+;
+MSG_Label_SelectPointer
+Zmìnit ¹ipku na kurzor
+; Selection pointer
+;
+MSG_HELP_SelectPointer
+Tímto zapnete automatickou zmìnu vzhledu ¹ipky my¹i\n\
+na kurzor po pøesunutí na textové pole.
+; If enabled, a custom selection pointer will appear\n\
+; when the mouse pointer is above the texteditor gadget.
+;
+MSG_Label_InactiveColor
+Neaktivní
+; Inactive
+;
+MSG_PopWinTitle_InactiveColor
+Vyberte barvu neaktivního kurzoru
+; Select inactive color
+;
+MSG_HELP_TABSIZE
+Definuje poèet mezer vlo¾ených do textu po stisknutí\n\
+klávesy TAB.
+; How many spaces hitting the <TAB> key will jump.
+;
+MSG_HELP_DESIGN_FRAME
+Definuje vzhled rámeèku textového pole.
+; This is a button to adjust a frame.\n\
+; Click it to open an adjust window or\n\
+; use the drag&drop facilities to copy\n\
+; from or to another frame adjust button.
+;
+MSG_HELP_DESIGN_BACKGROUND
+Definuje barvu nebo obrázek pozadí textu.
+; This is a button to adjust a background\n\
+; color or pattern. Click it to open an\n\
+; adjust window or use the drag&drop facilities\n\
+; to copy from or to another background adjust button.
+;
+MSG_HELP_DESIGN_TEXT
+Definuje barvu standardního textu.
+; This is the color used to print the text.
+;
+MSG_HELP_DESIGN_HIGHLIGHT
+Definuje barvu zvýraznìného textu.
+; This is the color used to\n\
+; print highlighted text.
+;
+MSG_HELP_SEPARATOR_SHINE
+Definuje svìtlou slo¾ku dìlicí linky.
+; This is the color used to\n\
+; print separator bars.
+;
+MSG_HELP_SEPARATOR_SHADOW
+Definuje tmavou slo¾ku dìlicí linky.
+; This is the color used to print\n\
+; separator bars in shadow mode.
+;
+MSG_HELP_FONTS_NORMAL
+Definuje výchozí písmo pro text.
+; Default font to be used by the editor.
+;
+MSG_HELP_FONTS_FIXED
+Definuje výchozí fixní písmo pro text.
+; Default font to be used by the editor\n\
+; whenever a fixed width font is requested.
+;
+MSG_HELP_CURSOR_NORMAL
+Definuje výchozí barvu kurzoru.
+; Default color to be used for the cursor.
+;
+MSG_HELP_CURSOR_SELECTED
+Definuje barvu pro vybraný text.
+; Color to use to print\n\
+; selected text.
+;
+MSG_HELP_CURSOR_INACTIVE
+Definuje barvu pro vybraný, ale neaktivní text.
+; Color to use to print selected text\n\
+; when the editor doesn't have the focus.
+;
+MSG_HELP_CURSOR_WIDTH
+Definuje ¹íøku kurzoru.
+; This is the width the cursor should have.
+;
+MSG_HELP_CURSOR_BLINKSPEED
+Definuje zda a jak rychle má kurzor blikat.
+; You may want the cursor to blink to make\n\
+; it easier to find. Select 'Off' to disable\n\
+; this feature.
+;
+MSG_HELP_BUTTON_DEFAULTKEYS
+Umo¾ní obnovit výchozí klávesové zkratky.
+; Restore all keybindings\n\
+; to the built-in defaults.
+;
+MSG_HELP_BUTTON_SNOOP
+Do tohoto pole buï pøímo zadejte po¾adovanou\n\
+klávesovou zkratku anebo vyu¾ijte tlaèítko\n\
+'Zachytit' a nechte si potøebné údaje doplnit\n\
+automaticky. Postup je snadný:\n\
+Levým tlaèítkem my¹i kliknìte na tlaèítko Zachytit,\n\
+zmáèknìte potøebnou kombinaci kláves a volbu\n\
+potvrïte druhým kliknutím.
+; Use this field to set a keybinding for this action.\n\
+; You can either edit the string gadget directly or press\n\
+; the 'Snoop' button to make the gadget monitor keypresses\n\
+; until you press it again to confirm.
+;
+MSG_HELP_BUTTON_INSERT
+Umo¾ní pøidat novou klávesovou zkratku.
+; Add a new keybinding to the list.
+;
+MSG_HELP_BUTTON_DELETE
+Umo¾ní odstranit vybranou klávesovou zkratku.
+; Delete this keybinding from the list.
+;
+MSG_HELP_SPELLCHECKER_LOOKUP_CMD
+Definuje pøíkaz pro kontrolu textu pøímo bìhem psaní.
+; Specify here the lookup command you want to use, or\n\
+; leave this empty to disable the type'n'spell feature.
+;
+MSG_HELP_SPELLCHECKER_SUGGEST_CMD
+Definuje pøíkaz pro návrh variant napsaného slova.
+; Specify here the command that will be used\n\
+; to suggest an alternate word. As explained above,\n\
+; usually you should specify a script here.
+;
+MSG_UNDO_SLIDER_FORMAT
+%ld (+/- 5)
+; %ld (± 5)
 ;

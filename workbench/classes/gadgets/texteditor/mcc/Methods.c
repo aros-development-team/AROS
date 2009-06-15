@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -25,8 +25,10 @@
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 
-#include "TextEditor_mcc.h"
 #include "private.h"
+
+#include "TextEditor_mcp.h"
+
 
 ULONG FlowSpace(UWORD, STRPTR, struct InstData *);
 
@@ -52,6 +54,38 @@ ULONG OM_BlockInfo(struct MUIP_TextEditor_BlockInfo *msg, struct InstData *data)
   return(result);
 }
 
+
+ULONG OM_QueryKeyAction(UNUSED struct IClass *cl, Object *obj, struct MUIP_TextEditor_QueryKeyAction *msg)
+{
+  struct te_key *userkeys;
+  struct te_key *foundKey = NULL;
+  ULONG setting = 0;
+  int i;
+
+  ENTER();
+
+  // now we try to retrieve the currently active
+  // key bindings, or we take the default ones
+  if(!DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_Keybindings, &setting) || setting == 0)
+    userkeys = (struct te_key *)default_keybindings;
+  else
+    userkeys = (struct te_key *)setting;
+
+  for(i=0; (WORD)userkeys[i].code != -1; i++)
+  {
+    struct te_key *curKey = &userkeys[i];
+
+    if(curKey->act == msg->keyAction)
+    {
+      foundKey = curKey;
+      break;
+    }
+  }
+
+  RETURN((ULONG)foundKey);
+  return (ULONG)foundKey;
+}
+
 ULONG OM_MarkText (struct MUIP_TextEditor_MarkText *msg, struct InstData *data)
 {
   ENTER();
@@ -66,16 +100,40 @@ ULONG OM_MarkText (struct MUIP_TextEditor_MarkText *msg, struct InstData *data)
     SetCursor(data->CPos_X, data->actualline, FALSE, data);
   }
 
-  data->blockinfo.startline = LineNode(msg->start_crsr_y+1, data);
-  data->blockinfo.startx = (data->blockinfo.startline->line.Length > msg->start_crsr_x) ? msg->start_crsr_x : data->blockinfo.startline->line.Length-1;
-  data->blockinfo.stopline = LineNode(msg->stop_crsr_y+1, data);
-  data->blockinfo.stopx = (data->blockinfo.stopline->line.Length > msg->stop_crsr_x) ? msg->stop_crsr_x : data->blockinfo.stopline->line.Length-1;
-  data->blockinfo.enabled = TRUE;
+  // check if anything at all should be marked or not
+  if((LONG)msg->start_crsr_y != MUIV_TextEditor_MarkText_None)
+  {
+    // check if only the specified area should be marked/selected
+    if((LONG)msg->stop_crsr_y != MUIV_TextEditor_MarkText_All)
+    {
+      data->blockinfo.startline = LineNode(msg->start_crsr_y+1, data);
+      data->blockinfo.startx = (data->blockinfo.startline->line.Length > msg->start_crsr_x) ? msg->start_crsr_x : data->blockinfo.startline->line.Length-1;
+      data->blockinfo.stopline = LineNode(msg->stop_crsr_y+1, data);
+      data->blockinfo.stopx = (data->blockinfo.stopline->line.Length > msg->stop_crsr_x) ? msg->stop_crsr_x : data->blockinfo.stopline->line.Length-1;
+      data->blockinfo.enabled = TRUE;
 
-  data->actualline = data->blockinfo.stopline;
-  data->CPos_X = data->blockinfo.stopx;
-  ScrollIntoDisplay(data);
-  MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
+      data->actualline = data->blockinfo.stopline;
+      data->CPos_X = data->blockinfo.stopx;
+      ScrollIntoDisplay(data);
+    }
+    else
+    {
+      // the user selected to mark all available text
+      struct line_node *actual = data->firstline;
+
+      data->blockinfo.startline = actual;
+      data->blockinfo.startx = 0;
+
+      while(actual->next)
+        actual = actual->next;
+
+      data->blockinfo.stopline = actual;
+      data->blockinfo.stopx = data->blockinfo.stopline->line.Length-1;
+      data->blockinfo.enabled = TRUE;
+    }
+
+    MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
+  }
 
   RETURN(TRUE);
   return(TRUE);
@@ -86,12 +144,12 @@ ULONG ClearText (struct InstData *data)
   struct line_node *newcontents;
 
   ENTER();
-  
+
   if((newcontents = AllocLine(data)))
   {
     if(Init_LineNode(newcontents, NULL, "\n", data))
     {
-      if(data->undosize)
+      if(data->undosize != 0)
       {
         struct  marking newblock;
 
@@ -106,7 +164,7 @@ ULONG ClearText (struct InstData *data)
 
         data->CPos_X = 0;
         data->actualline = data->firstline;
-        AddToUndoBuffer(deleteblock, (char *)&newblock, data);
+        AddToUndoBuffer(ET_DELETEBLOCK, (char *)&newblock, data);
       }
       FreeTextMem(data->firstline, data);
       data->firstline = newcontents;
@@ -145,8 +203,10 @@ ULONG ToggleCursor (struct InstData *data)
   return(TRUE);
 }
 
-ULONG InputTrigger(UNUSED struct IClass *cl, struct InstData *data)
+ULONG InputTrigger(struct IClass *cl, Object *obj)
 {
+  struct InstData *data = INST_DATA(cl, obj);
+
   ENTER();
 
   if(data->smooth_wait == 1 && data->scrollaction)
@@ -176,18 +236,15 @@ ULONG InputTrigger(UNUSED struct IClass *cl, struct InstData *data)
     }
   }
 
-#ifndef ClassAct
   if(data->mousemove)
   {
-      LONG  MouseX = muiRenderInfo(data->object)->mri_Window->MouseX,
-          MouseY = muiRenderInfo(data->object)->mri_Window->MouseY;
-      LONG  oldCPos_X = data->CPos_X;
-      struct line_node *oldactualline = data->actualline;
-      BOOL  Scroll = TRUE;
+    LONG MouseX = muiRenderInfo(data->object)->mri_Window->MouseX;
+    LONG MouseY = muiRenderInfo(data->object)->mri_Window->MouseY;
+    LONG oldCPos_X = data->CPos_X;
+    struct line_node *oldactualline = data->actualline;
+    BOOL Scroll = TRUE;
 
-    ULONG active;
-    get(_win(data->object), MUIA_Window_Activate, &active);
-    if(!active)
+    if(xget(_win(data->object), MUIA_Window_Activate) == FALSE)
     {
       data->mousemove = FALSE;
       RejectInput(data);
@@ -198,7 +255,7 @@ ULONG InputTrigger(UNUSED struct IClass *cl, struct InstData *data)
 
     if(MouseY < data->ypos)
     {
-        LONG diff = data->ypos - MouseY;
+      LONG diff = data->ypos - MouseY;
 
       if(diff > 30)
         GoUp(data);
@@ -211,15 +268,16 @@ ULONG InputTrigger(UNUSED struct IClass *cl, struct InstData *data)
     }
     else
     {
-        LONG limit = data->ypos;
+      LONG limit = data->ypos;
 
       if(data->maxlines < (data->totallines-data->visual_y+1))
-          limit += (data->maxlines * data->height);
-      else  limit += (data->totallines-data->visual_y+1)*data->height;
+        limit += (data->maxlines * data->height);
+      else
+        limit += (data->totallines-data->visual_y+1)*data->height;
 
       if(MouseY >= limit)
       {
-          LONG diff = MouseY - limit;
+        LONG diff = MouseY - limit;
 
         if(diff > 30)
           GoDown(data);
@@ -227,6 +285,7 @@ ULONG InputTrigger(UNUSED struct IClass *cl, struct InstData *data)
           GoDown(data);
         if(diff > 10)
           GoDown(data);
+
         GoDown(data);
       }
       else
@@ -269,7 +328,7 @@ ULONG InputTrigger(UNUSED struct IClass *cl, struct InstData *data)
 
         OffsetToLines(data->CPos_X, data->actualline, &pos, data);
         flow = FlowSpace(data->actualline->line.Flow, data->actualline->line.Contents+pos.bytes, data);
-        
+
         if(MouseX <= (LONG)(data->xpos+flow+TextLength(&data->tmprp, data->actualline->line.Contents+pos.bytes, pos.extra-pos.bytes-1)))
         {
           if(data->selectmode == 1)
@@ -324,9 +383,19 @@ ULONG InputTrigger(UNUSED struct IClass *cl, struct InstData *data)
     {
       ScrollIntoDisplay(data);
       PosFromCursor(MouseX, MouseY, data);
+
+      // make sure to notify others that the cursor has changed and so on.
+      data->NoNotify = TRUE;
+
+      if(data->CPos_X != oldCPos_X)
+        set(obj, MUIA_TextEditor_CursorX, data->CPos_X);
+
+      if(data->actualline != oldactualline)
+        set(obj, MUIA_TextEditor_CursorY, LineNr(data->actualline, data)-1);
+
+      data->NoNotify = FALSE;
     }
   }
-#endif
 
   RETURN(TRUE);
   return(TRUE);
@@ -347,14 +416,16 @@ ULONG InsertText (struct InstData *data, STRPTR text, BOOL movecursor)
     long  newline = FALSE;
     struct line_node *startline = line;
 
-    line->visual    = VisualHeight(line, data);
+    line->visual = VisualHeight(line, data);
     data->totallines += line->visual;
+
     while(line->next)
     {
       line = line->next;
-      line->visual    = VisualHeight(line, data);
+      line->visual = VisualHeight(line, data);
       data->totallines += line->visual;
     }
+
     if(*(line->line.Contents+line->line.Length) == '\n')
       newline = TRUE;
 
@@ -393,7 +464,7 @@ ULONG InsertText (struct InstData *data, STRPTR text, BOOL movecursor)
   }
 
   {
-      LONG tvisual_y;
+    LONG tvisual_y;
 
     ScrollIntoDisplay(data);
 

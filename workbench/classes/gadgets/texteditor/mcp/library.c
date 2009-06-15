@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -23,6 +23,7 @@
 #include <libraries/mui.h>
 #include <proto/muimaster.h>
 #include <proto/exec.h>
+#include <proto/intuition.h>
 
 /******************************************************************************/
 /*                                                                            */
@@ -33,7 +34,7 @@
 /******************************************************************************/
 
 #include "private.h"
-#include "rev.h"
+#include "version.h"
 
 #define VERSION       LIB_VERSION
 #define REVISION      LIB_REVISION
@@ -43,11 +44,12 @@
 
 #define INSTDATAP     InstData_MCP
 
-#define UserLibID     "$VER: TextEditor.mcp " LIB_REV_STRING CPU " (" LIB_DATE ") " LIB_COPYRIGHT
+#define USERLIBID     CLASS " " LIB_REV_STRING CPU " (" LIB_DATE ") " LIB_COPYRIGHT
 #define MASTERVERSION 19
 
-#define ClassInit
-#define ClassExit
+#define CLASSINIT
+#define CLASSEXPUNGE
+#define MIN_STACKSIZE 8192
 
 #include "locale.h"
 
@@ -61,10 +63,40 @@ struct LocaleBase *LocaleBase = NULL;
 struct LocaleIFace *ILocale = NULL;
 #endif
 
-BOOL ClassInitFunc(UNUSED struct Library *base)
+/******************************************************************************/
+/* define the functions used by the startup code ahead of including mccinit.c */
+/******************************************************************************/
+static BOOL ClassInit(UNUSED struct Library *base);
+static VOID ClassExpunge(UNUSED struct Library *base);
+
+/******************************************************************************/
+/* include the lib startup code for the mcc/mcp  (and muimaster inlines)      */
+/******************************************************************************/
+#define USE_IMAGE_COLORS
+#define USE_IMAGE_BODY
+#define PREFSIMAGEOBJECT \
+  BodychunkObject,\
+    MUIA_FixWidth,              IMAGE_WIDTH,\
+    MUIA_FixHeight,             IMAGE_HEIGHT,\
+    MUIA_Bitmap_Width,          IMAGE_WIDTH ,\
+    MUIA_Bitmap_Height,         IMAGE_HEIGHT,\
+    MUIA_Bodychunk_Depth,       IMAGE_DEPTH,\
+    MUIA_Bodychunk_Body,        (UBYTE *)image_body,\
+    MUIA_Bodychunk_Compression, IMAGE_COMPRESSION,\
+    MUIA_Bodychunk_Masking,     IMAGE_MASKING,\
+    MUIA_Bitmap_SourceColors,   (ULONG *)image_colors,\
+    MUIA_Bitmap_Transparent,    0,\
+  End
+#include "icon.bh"
+#include "mccinit.c"
+
+/******************************************************************************/
+/* define all implementations of our user functions                           */
+/******************************************************************************/
+static BOOL ClassInit(UNUSED struct Library *base)
 {
   if((LocaleBase = (APTR)OpenLibrary("locale.library", 38)) &&
-     GETINTERFACE(ILocale, LocaleBase))
+     GETINTERFACE(ILocale, struct LocaleIFace *, LocaleBase))
   {
     // open the TextEditor.mcp catalog
     OpenCat();
@@ -82,7 +114,7 @@ BOOL ClassInitFunc(UNUSED struct Library *base)
 }
 
 
-VOID ClassExitFunc(UNUSED struct Library *base)
+static VOID ClassExpunge(UNUSED struct Library *base)
 {
   DeleteSubClasses();
 
@@ -96,14 +128,3 @@ VOID ClassExitFunc(UNUSED struct Library *base)
   }
 }
 
-
-/******************************************************************************/
-/*                                                                            */
-/* include the lib startup code for the mcc/mcp  (and muimaster inlines)      */
-/*                                                                            */
-/******************************************************************************/
-
-#include "icon.bh"
-
-#define USE_UTILITYBASE
-#include "mccheader.c"

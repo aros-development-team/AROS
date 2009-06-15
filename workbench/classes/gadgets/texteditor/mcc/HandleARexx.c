@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <dos/rdargs.h>
 #include <exec/memory.h>
@@ -29,17 +30,13 @@
 #include <proto/utility.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/intuition.h>
 
-#include "TextEditor_mcc.h"
 #include "private.h"
-
-//#define get(obj,attr,store) GetAttr(attr,obj,(ULONG *)store)
 
 struct RexxCommand
 {
-  STRPTR Command;
-  STRPTR Template;
+  const char *Command;
+  const char *Template;
 };
 
 static const struct RexxCommand Commands[] =
@@ -70,6 +67,8 @@ static const struct RexxCommand Commands[] =
   { "KILLLINE",     NULL },
   { "TOUPPER",      NULL },
   { "TOLOWER",      NULL },
+  { "SELECTALL",    NULL },
+  { "SELECTNONE",   NULL },
   { NULL,           NULL }
 };
 
@@ -78,25 +77,11 @@ enum
   CLEAR = 0, CUT, COPY, PASTE, ERASE, GOTOLINE, GOTOCOLUMN, CURSOR,
   LINE, COLUMN, NEXT, PREVIOUS, POSITION, SETBOOKMARK, GOTOBOOKMARK,
   InsTEXT, UNDO, REDO, GETLINE, GETCURSOR, MARK, DELETE, BACKSPACE,
-  KILLLINE, TOUPPER, TOLOWER
+  KILLLINE, TOUPPER, TOLOWER, SELECTALL, SELECTNONE
 };
 #define MaxArgs 8
 
-STRPTR StringCompare (STRPTR str1, STRPTR str2)
-{
-  ENTER();
-
-  while(*str1 && *str2)
-  {
-    if(ToUpper(*str1++) != *str2++)
-      return(FALSE);
-  }
-
-  LEAVE();
-  return((*str2 == '\0') ? str1 : FALSE);
-}
-
-ULONG CallFunction (UWORD function, LONG *args, STRPTR txtargs, struct InstData *data)
+static ULONG CallFunction(UWORD function, IPTR *args, const char *txtargs, struct InstData *data)
 {
   struct line_node *oldactualline = data->actualline;
   UWORD oldCPos_X = data->CPos_X;
@@ -104,6 +89,8 @@ ULONG CallFunction (UWORD function, LONG *args, STRPTR txtargs, struct InstData 
   LONG new_y = data->visual_y-1;
 
   ENTER();
+
+  SHOWVALUE(DBF_REXX, function);
 
   if(data->flags & FLG_ReadOnly)
   {
@@ -166,12 +153,33 @@ ULONG CallFunction (UWORD function, LONG *args, STRPTR txtargs, struct InstData 
 
       case GOTOLINE:
         if(*args)
-          set(data->object, MUIA_TextEditor_CursorY, *(ULONG *)*args);
+        {
+          STRPTR buffer;
+
+          if((buffer = AllocVec(16, MEMF_SHARED)))
+          {
+            set(data->object, MUIA_TextEditor_CursorY, *(ULONG *)*args);
+
+            // return the current line number, this may differ from the input value!
+            snprintf(buffer, 16, "%ld", xget(data->object, MUIA_TextEditor_CursorY));
+            result = (ULONG)buffer;
+          }
+        }
         break;
 
       case GOTOCOLUMN:
         if(*args)
-          set(data->object, MUIA_TextEditor_CursorX, *(ULONG *)*args);
+        {
+          STRPTR buffer;
+
+          if((buffer = AllocVec(16, MEMF_SHARED)))
+          {
+            set(data->object, MUIA_TextEditor_CursorX, *(ULONG *)*args);
+            // return the current column number, this may differ from the input value!
+            snprintf(buffer, 16, "%ld", xget(data->object, MUIA_TextEditor_CursorX));
+            result = (ULONG)buffer;
+          }
+        }
         break;
 
       case CURSOR:
@@ -190,9 +198,9 @@ ULONG CallFunction (UWORD function, LONG *args, STRPTR txtargs, struct InstData 
       case LINE:
         if(*args)
         {
-            LONG line;
+          LONG line;
 
-          get(data->object, MUIA_TextEditor_CursorY, &line);
+          line = xget(data->object, MUIA_TextEditor_CursorY);
           line += *(LONG *)*args;
           set(data->object, MUIA_TextEditor_CursorY, (line < 0) ? 0 : line);
         }
@@ -201,9 +209,9 @@ ULONG CallFunction (UWORD function, LONG *args, STRPTR txtargs, struct InstData 
       case COLUMN:
         if(*args)
         {
-            LONG column;
+          LONG column;
 
-          get(data->object, MUIA_TextEditor_CursorX, &column);
+          column = xget(data->object, MUIA_TextEditor_CursorX);
           column += *(LONG *)*args;
           set(data->object, MUIA_TextEditor_CursorX, (column < 0) ? 0 : column);
         }
@@ -271,12 +279,14 @@ ULONG CallFunction (UWORD function, LONG *args, STRPTR txtargs, struct InstData 
 
       case GETLINE:
       {
-          STRPTR buffer;
+        STRPTR buffer;
 
-        if((buffer = AllocVec(data->actualline->line.Length+1, MEMF_ANY)))
+        if((buffer = AllocVec(data->actualline->line.Length+1, MEMF_SHARED)))
         {
-          CopyMem(data->actualline->line.Contents, buffer, data->actualline->line.Length);
+          memcpy(buffer, data->actualline->line.Contents, data->actualline->line.Length);
+
           buffer[data->actualline->line.Length] = '\0';
+
           result = (ULONG)buffer;
         }
         break;
@@ -284,16 +294,19 @@ ULONG CallFunction (UWORD function, LONG *args, STRPTR txtargs, struct InstData 
 
       case GETCURSOR:
       {
-          STRPTR buffer = AllocVec(6, MEMF_ANY);
-          LONG   pos = 0;
+        STRPTR buffer;
 
-        if(buffer)
+        if((buffer = AllocVec(16, MEMF_SHARED)))
         {
-          if(*args)
-              get(data->object, MUIA_TextEditor_CursorY, &pos);
-          else  get(data->object, MUIA_TextEditor_CursorX, &pos);
+          LONG pos = 0;
 
-          sprintf(buffer, "%ld", pos);
+          if(*args)
+            pos = xget(data->object, MUIA_TextEditor_CursorY);
+          else
+            pos = xget(data->object, MUIA_TextEditor_CursorX);
+
+          snprintf(buffer, 16, "%d", (int)pos);
+
           result = (ULONG)buffer;
         }
         break;
@@ -344,6 +357,30 @@ ULONG CallFunction (UWORD function, LONG *args, STRPTR txtargs, struct InstData 
       case TOLOWER:
         Key_ToLower(data);
         break;
+
+      case SELECTALL:
+      {
+        struct line_node *actual = data->firstline;
+
+        data->blockinfo.startline = actual;
+        data->blockinfo.startx = 0;
+
+        while(actual->next)
+          actual = actual->next;
+
+        data->blockinfo.stopline = actual;
+        data->blockinfo.stopx = data->blockinfo.stopline->line.Length-1;
+        data->blockinfo.enabled = TRUE;
+        MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
+      }
+      break;
+
+      case SELECTNONE:
+      {
+        data->blockinfo.enabled = FALSE;
+        MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
+      }
+      break;
     }
 
     if(data->CPos_X != oldCPos_X || oldactualline != data->actualline)
@@ -376,6 +413,17 @@ ULONG CallFunction (UWORD function, LONG *args, STRPTR txtargs, struct InstData 
 
       if(data->flags & FLG_Active && function <= GOTOBOOKMARK && function >= GOTOLINE)
         SetCursor(data->CPos_X, data->actualline, TRUE, data);
+
+      // make sure to notify others that the cursor has changed and so on.
+      data->NoNotify = TRUE;
+
+      if(data->CPos_X != oldCPos_X)
+        set(data->object, MUIA_TextEditor_CursorX, data->CPos_X);
+
+      if(data->actualline != oldactualline)
+        set(data->object, MUIA_TextEditor_CursorY, LineNr(data->actualline, data)-1);
+
+      data->NoNotify = FALSE;
     }
   }
 
@@ -383,34 +431,49 @@ ULONG CallFunction (UWORD function, LONG *args, STRPTR txtargs, struct InstData 
   return(result);
 }
 
-ULONG HandleARexx (struct InstData *data, STRPTR command)
+ULONG HandleARexx(struct InstData *data, STRPTR command)
 {
-  struct RDArgs *myrdargs   = NULL;
-  struct RDArgs *ra_result  = NULL;
-  STRPTR cmd;
-  STRPTR txtargs = "";
-  UWORD  function;
-  ULONG  result = FALSE;
+  ULONG result = 0;
 
   ENTER();
 
-  if(data->shown)
+  if(data->shown && command && command[0] != '\0')
   {
-    for(function = 0; (cmd = Commands[function].Command); function++)
+    const char *txtargs = "";
+    const char *cmd;
+    int function;
+
+    SHOWSTRING(DBF_REXX, command);
+
+    for(function=0; (cmd = Commands[function].Command); function++)
     {
-      if((txtargs = StringCompare(command, cmd)))
+      int cmdlen = strlen(cmd);
+
+      if(strnicmp(command, cmd, cmdlen) == 0 &&
+         (command[cmdlen] == ' ' || command[cmdlen] == '\0'))
       {
-        if(*txtargs == ' ' || *txtargs == '\0')
-          break;
+        txtargs = &command[cmdlen];
+        break;
       }
     }
 
+    SHOWVALUE(DBF_REXX, function);
+    SHOWSTRING(DBF_REXX, txtargs);
+
     if(Commands[function].Command && (*txtargs == '\0' || Commands[function].Template))
     {
-      LONG Args[MaxArgs] = { };
+      IPTR Args[MaxArgs];
 
-      if(*txtargs++ && function != InsTEXT)
+      memset(Args, 0, sizeof(Args));
+
+      // skip leading spaces
+      while(isspace(*txtargs))
+        txtargs++;
+
+      if(*txtargs != '\0' && function != InsTEXT)
       {
+        struct RDArgs *myrdargs = NULL;
+
         if((myrdargs = AllocDosObject(DOS_RDARGS, NULL)))
         {
           ULONG length = strlen(txtargs);
@@ -418,17 +481,21 @@ ULONG HandleARexx (struct InstData *data, STRPTR command)
 
           if((buffer = MyAllocPooled(data->mypool, length+2)))
           {
-            CopyMem(txtargs, buffer, length);
+            struct RDArgs *ra_result = NULL;
+
+            memcpy(buffer, txtargs, length);
             buffer[length] = '\n';
             buffer[length+1] = '\0';
+
             myrdargs->RDA_Source.CS_Buffer = buffer;
             myrdargs->RDA_Source.CS_Length = length+1;
             myrdargs->RDA_Source.CS_CurChr = 0;
             myrdargs->RDA_Flags |= RDAF_NOPROMPT;
 
-            if((ra_result = ReadArgs(Commands[function].Template, Args, myrdargs)))
+            if((ra_result = ReadArgs(Commands[function].Template, (LONG *)Args, myrdargs)))
             {
               result = CallFunction(function, Args, NULL, data);
+
               FreeArgs(ra_result);
             }
             MyFreePooled(data->mypool, buffer);
@@ -437,9 +504,7 @@ ULONG HandleARexx (struct InstData *data, STRPTR command)
         }
       }
       else
-      {
-        result = CallFunction(function, Args, txtargs, data);
-      }
+        result = CallFunction(function, Args, (char *)txtargs, data);
     }
   }
 

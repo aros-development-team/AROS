@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -22,25 +22,28 @@
 
 #include <libraries/mui.h>
 #include <intuition/classes.h>
+
+#if !defined(__amigaos4__)
 #include <clib/alib_protos.h>
+#endif
+#include <clib/macros.h>
+
 #include <proto/muimaster.h>
 #include <proto/intuition.h>
 #include <proto/keymap.h>
 #include <proto/locale.h>
 #include <proto/utility.h>
+#include <proto/layers.h>
 
-#include "TextEditor_mcc.h"
+#include <stdlib.h>
+
 #include "private.h"
 
-#ifdef __AROS__
-#include "../includes/newmouse.h"
-#elif !defined(__amigaos4__)
+#if !defined(__amigaos4__)
 #include "newmouse.h"
 #endif
 
-extern struct keybindings keys[];
-
-static LONG ReactOnRawKey(UBYTE key, ULONG qualifier, struct IntuiMessage *imsg, struct InstData *data);
+static BOOL ReactOnRawKey(struct IntuiMessage *imsg, struct InstData *data);
 
 static ULONG RAWToANSI(struct IntuiMessage *imsg)
 {
@@ -64,7 +67,7 @@ static ULONG RAWToANSI(struct IntuiMessage *imsg)
   return(code);
 }
 
-ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
   struct InstData *data = INST_DATA(cl, obj);
   BOOL wasActivated;
@@ -90,8 +93,8 @@ ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
     Object *defaultobj;
     struct IntuiMessage *imsg = msg->imsg;
 
-    get(_win(obj), MUIA_Window_ActiveObject, &activeobj);
-    get(_win(obj), MUIA_Window_DefaultObject, &defaultobj);
+    activeobj = (Object *)xget(_win(obj), MUIA_Window_ActiveObject);
+    defaultobj = (Object *)xget(_win(obj), MUIA_Window_DefaultObject);
 
     if(data->CtrlChar && activeobj != obj && defaultobj != obj && RAWToANSI(imsg) == data->CtrlChar)
     {
@@ -101,6 +104,45 @@ ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
       return(MUI_EventHandlerRC_Eat);
     }
 
+    // we check if this is a mousemove input message and if
+    // so we check whether the mouse is currently over our
+    // texteditor object or not.
+    if(imsg->Class == IDCMP_MOUSEMOVE)
+    {
+      BOOL isOverObject = FALSE;
+
+      if(_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
+      {
+        #if defined(__MORPHOS__)
+        if (IS_MORPHOS2)
+          isOverObject = TRUE;
+        #endif
+
+        if (isOverObject == FALSE)
+        {
+          struct Layer_Info *li = &(_screen(obj)->LayerInfo);
+          struct Layer *layer;
+
+          // get the layer that belongs to the current mouse coordinates
+          LockLayerInfo(li);
+          layer = WhichLayer(li, _window(obj)->LeftEdge + msg->imsg->MouseX, _window(obj)->TopEdge + msg->imsg->MouseY);
+          UnlockLayerInfo(li);
+ 
+          // if the mouse is currently over the object and over the object's
+          // window we go and change the pointer to show the selection pointer
+          if(layer != NULL && layer->Window == _window(obj))
+            isOverObject = TRUE;
+        }
+      }
+
+      if(isOverObject == TRUE)
+        ShowSelectPointer(obj, data);
+      else
+        HideSelectPointer(obj, data);
+
+      D(DBF_INPUT, "IDCMP_MOUSEMOVE");
+    }
+    else
     #if defined(__amigaos4__)
     if((imsg->Class == IDCMP_MOUSEBUTTONS) || (activeobj == obj) ||
        (data->flags & FLG_ReadOnly && defaultobj == obj && !activeobj) ||
@@ -126,6 +168,8 @@ ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
       {
         case IDCMP_RAWKEY:
         {
+          D(DBF_INPUT, "HandleInput rawkey code=%02x qual=%04x", imsg->Code, imsg->Qualifier);
+
           if(data->ypos != data->realypos ||
              (wasActivated && imsg->Code == 66)) // ignore TAB key if the gadget was activated recently
           {
@@ -144,9 +188,8 @@ ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
             if(imsg->Code == NM_WHEEL_UP   || imsg->Code == NM_WHEEL_LEFT ||
                imsg->Code == NM_WHEEL_DOWN || imsg->Code == NM_WHEEL_RIGHT)
             {
-              LONG visible;
+              LONG visible = xget(obj, MUIA_TextEditor_Prop_Visible);
 
-              get(obj, MUIA_TextEditor_Prop_Visible, &visible);
               if(visible > 0)
               {
                 // we scroll about 1/6 of the displayed text by default
@@ -170,10 +213,17 @@ ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
           #endif
 
           // if not we check wheter we have to react on that particular RAWKEY event
-          if(ReactOnRawKey(imsg->Code, imsg->Qualifier, imsg, data) == 0)
+          if(ReactOnRawKey(imsg, data) == FALSE)
           {
+            D(DBF_INPUT, "not reacted");
             RETURN(0);
             return(0);
+          }
+          else
+          {
+            D(DBF_INPUT, "reacted");
+            RETURN(MUI_EventHandlerRC_Eat);
+            return(MUI_EventHandlerRC_Eat);
           }
         }
         break;
@@ -184,23 +234,25 @@ ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
           if(data->slider &&
              _isinwholeobject(obj, imsg->MouseX, imsg->MouseY))
           {
-            LONG visible;
+            LONG visible = xget(obj, MUIA_TextEditor_Prop_Visible);
 
-            get(obj, MUIA_TextEditor_Prop_Visible, &visible);
             if(visible > 0)
             {
-          		struct IntuiWheelData *iwd = (struct IntuiWheelData *)imsg->IAddress;
+              struct IntuiWheelData *iwd = (struct IntuiWheelData *)imsg->IAddress;
 
               // we scroll about 1/6 of the displayed text by default
               LONG delta = (visible + 3) / 6;
 
               // make sure that we scroll at least 1 line
-              if(delta < 1) delta = 1;
+              if(delta < 1)
+                delta = 1;
 
-          		if(iwd->WheelY < 0 || iwd->WheelX < 0)
-                DoMethod(data->slider, MUIM_Prop_Decrease, delta);
-	            else if(iwd->WheelY > 0 || iwd->WheelX > 0)
-                DoMethod(data->slider, MUIM_Prop_Increase, delta);
+              D(DBF_INPUT, "WheelX: %ld WheelY: %ld", iwd->WheelX, iwd->WheelY);
+
+              if(iwd->WheelY < 0 || iwd->WheelX < 0)
+                DoMethod(data->slider, MUIM_Prop_Decrease, delta * abs(MIN(iwd->WheelX, iwd->WheelY)));
+              else if(iwd->WheelY > 0 || iwd->WheelX > 0)
+                DoMethod(data->slider, MUIM_Prop_Increase, delta * abs(MAX(iwd->WheelX, iwd->WheelY)));
             }
 
             RETURN(MUI_EventHandlerRC_Eat);
@@ -213,23 +265,6 @@ ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
         break;
         #endif
 
-/*
-        case IDCMP_INACTIVEWINDOW:
-        {
-          if(data->mousemove)
-          {
-            data->mousemove = FALSE;
-            RejectInput(data);
-          }
-        }
-        break;
-*/
-/*
-        case IDCMP_MOUSEMOVE:
-          if(data->mousemove && !data->smooth_wait)
-            InputTrigger(cl, data);
-          break;
-*/
         case IDCMP_MOUSEBUTTONS:
         {
           if(data->ypos != data->realypos)
@@ -248,6 +283,7 @@ ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
           }
           else
           {
+            // user has pressed the left mousebutton
             if(imsg->Code == IECODE_LBUTTON)
             {
               struct MUI_AreaData *ad = muiAreaData(obj);
@@ -257,121 +293,134 @@ ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                  (imsg->MouseY >= data->ypos) &&
                  (imsg->MouseY <  data->ypos+(data->maxlines * data->height))))
               {
-                UWORD last_x = data->CPos_X;
-                struct line_node *lastline = data->actualline;
-
-                RequestInput(data);
-                data->mousemove = TRUE;
-                SetCursor(data->CPos_X, data->actualline, FALSE, data);
-                PosFromCursor(imsg->MouseX, imsg->MouseY, data);
-
-                if(imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+                if((data->flags & FLG_Active) == 0 && (data->flags & FLG_Activated) == 0 &&
+                   (data->flags & FLG_ActiveOnClick) != 0 && Enabled(data) && (imsg->Qualifier & IEQUALIFIER_CONTROL))
                 {
-                  data->selectmode  = 0;
+                  // in case the user hold the control key while pressing in an
+                  // inactive object we go and just activate it and let the MUIM_GoActive
+                  // function refresh the selected area.
+                  set(_win(obj), MUIA_Window_ActiveObject, obj);
                 }
-
-                if(!(data->blockinfo.enabled && (imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))))
+                else
                 {
-                  // if we already have an enabled block we have to disable it
-                  // and clear the marking area with MarkText()
-                  if(Enabled(data))
-                  {
-                    data->blockinfo.enabled = FALSE;
-                    MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
-                  }
+                  UWORD last_x = data->CPos_X;
+                  struct line_node *lastline = data->actualline;
 
-                  data->blockinfo.enabled = TRUE;
-                  data->blockinfo.startline = data->actualline;
-                  data->blockinfo.startx = data->CPos_X;
-                  if(last_x == data->CPos_X && lastline == data->actualline && DoubleClick(data->StartSecs, data->StartMicros, imsg->Seconds, imsg->Micros))
+                  RequestInput(data);
+                  data->mousemove = TRUE;
+
+                  data->flags |= FLG_Activated;
+                  SetCursor(data->CPos_X, data->actualline, FALSE, data);
+                  PosFromCursor(imsg->MouseX, imsg->MouseY, data);
+
+                  if(imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+                    data->selectmode  = 0;
+
+                  if(!(data->blockinfo.enabled && (imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))))
                   {
-                    if((data->DoubleClickHook && !CallHook(data->DoubleClickHook, (Object *)data->object, data->actualline->line.Contents, data->CPos_X)) || (!data->DoubleClickHook))
+                    // if we already have an enabled block we have to disable it
+                    // and clear the marking area with MarkText()
+                    if(Enabled(data))
                     {
-                      if(!CheckSep(data->actualline->line.Contents[data->CPos_X], data))
+                      data->blockinfo.enabled = FALSE;
+                      MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
+                    }
+
+                    data->blockinfo.enabled = TRUE;
+                    data->blockinfo.startline = data->actualline;
+                    data->blockinfo.startx = data->CPos_X;
+
+                    if(last_x == data->CPos_X && lastline == data->actualline && DoubleClick(data->StartSecs, data->StartMicros, imsg->Seconds, imsg->Micros))
+                    {
+                      if((data->DoubleClickHook && !CallHook(data->DoubleClickHook, (Object *)data->object, data->actualline->line.Contents, data->CPos_X, imsg->Qualifier)) || (!data->DoubleClickHook))
                       {
-                        if(data->selectmode > 0)
+                        if(!CheckSep(data->actualline->line.Contents[data->CPos_X], data))
                         {
-                          GoStartOfLine(data);
-                          data->blockinfo.startx = data->CPos_X;
-                          GoEndOfLine(data);
+                          if(data->selectmode > 0)
+                          {
+                            GoStartOfLine(data);
+                            data->blockinfo.startx = data->CPos_X;
+                            GoEndOfLine(data);
 
-                          // set selectmode to 2 so that PrintLine() knows that the user has tripleclicked
-                          // on a line, it will afterwards automatically set to 3 anyway.
-                          data->selectmode = 2;
+                            // set selectmode to 2 so that PrintLine() knows that the user has tripleclicked
+                            // on a line, it will afterwards automatically set to 3 anyway.
+                            data->selectmode = 2;
 
-                          // reset the time values
-                          data->StartSecs = 0;
-                          data->StartMicros = 0;
-                        }
-                        else
-                        {
-                          int x = data->CPos_X;
-
-                          while(x > 0 && !CheckSep(*(data->actualline->line.Contents+x-1), data))
-                            x--;
-
-                          data->blockinfo.startx = x;
-                          data->selectmode  = 1;
-                          data->StartSecs = imsg->Seconds;
-                          data->StartMicros = imsg->Micros;
-                        }
-                      }
-                      else
-                      {
-                        // if the user clicked somewhere where we didn't find any separator
-                        // we have to check wheter this is already a tripleclick or still a doubleclick
-                        // because we ensure that on a tripleclick ALWAYS the whole line is marked
-                        // regardless if the user clicked on a actual word that can be separated or not.
-                        if(data->selectmode == 1)
-                        {
-                          GoStartOfLine(data);
-                          data->blockinfo.startx = data->CPos_X;
-                          GoEndOfLine(data);
-
-                          // set selectmode to 2 so that PrintLine() knows that the user has tripleclicked
-                          // on a line, it will afterwards automatically set to 3 anyway.
-                          data->selectmode = 2;
-
-                          // reset the time values
-                          data->StartSecs = 0;
-                          data->StartMicros = 0;
-                        }
-                        else
-                        {
-                          if(data->selectmode == 0)
-                            data->selectmode = 1;
+                            // reset the time values
+                            data->StartSecs = 0;
+                            data->StartMicros = 0;
+                          }
                           else
                           {
-                            data->blockinfo.enabled = FALSE;
-                            data->selectmode = 0;
-                          }
+                            int x = data->CPos_X;
 
-                          data->StartSecs = imsg->Seconds;
-                          data->StartMicros = imsg->Micros;
+                            while(x > 0 && !CheckSep(*(data->actualline->line.Contents+x-1), data))
+                              x--;
+
+                            data->blockinfo.startx = x;
+                            data->selectmode  = 1;
+                            data->StartSecs = imsg->Seconds;
+                            data->StartMicros = imsg->Micros;
+                          }
+                        }
+                        else
+                        {
+                          // if the user clicked somewhere where we didn't find any separator
+                          // we have to check wheter this is already a tripleclick or still a doubleclick
+                          // because we ensure that on a tripleclick ALWAYS the whole line is marked
+                          // regardless if the user clicked on a actual word that can be separated or not.
+                          if(data->selectmode == 1)
+                          {
+                            GoStartOfLine(data);
+                            data->blockinfo.startx = data->CPos_X;
+                            GoEndOfLine(data);
+
+                            // set selectmode to 2 so that PrintLine() knows that the user has tripleclicked
+                            // on a line, it will afterwards automatically set to 3 anyway.
+                            data->selectmode = 2;
+
+                            // reset the time values
+                            data->StartSecs = 0;
+                            data->StartMicros = 0;
+                          }
+                          else
+                          {
+                            if(data->selectmode == 0)
+                              data->selectmode = 1;
+                            else
+                            {
+                              data->blockinfo.enabled = FALSE;
+                              data->selectmode = 0;
+                            }
+
+                            data->StartSecs = imsg->Seconds;
+                            data->StartMicros = imsg->Micros;
+                          }
                         }
                       }
+                    }
+                    else
+                    {
+                      data->blockinfo.enabled = FALSE;
+                      data->selectmode  = 0;
+                      data->StartSecs = imsg->Seconds;
+                      data->StartMicros = imsg->Micros;
                     }
                   }
                   else
                   {
-                    data->blockinfo.enabled = FALSE;
-                    data->selectmode  = 0;
-                    data->StartSecs = imsg->Seconds;
-                    data->StartMicros = imsg->Micros;
+                    if(data->blockinfo.stopline != data->actualline || data->blockinfo.stopx != data->CPos_X)
+                      MarkText(data->blockinfo.stopx, data->blockinfo.stopline, data->CPos_X, data->actualline, data);
                   }
-                }
-                else
-                {
-                  if(data->blockinfo.stopline != data->actualline || data->blockinfo.stopx != data->CPos_X)
-                    MarkText(data->blockinfo.stopx, data->blockinfo.stopline, data->CPos_X, data->actualline, data);
-                }
 
-                data->blockinfo.stopline = data->actualline;
-                data->blockinfo.stopx = data->CPos_X;
+                  data->blockinfo.stopline = data->actualline;
+                  data->blockinfo.stopx = data->CPos_X;
 
-                SetCursor(data->CPos_X, data->actualline, TRUE, data);
-                if(!(data->flags & FLG_ReadOnly))
-                  set(_win(obj), MUIA_Window_ActiveObject, obj);
+                  SetCursor(data->CPos_X, data->actualline, TRUE, data);
+
+                  if((data->flags & FLG_ActiveOnClick) != 0)
+                    set(_win(obj), MUIA_Window_ActiveObject, obj);
+                }
               }
               else
               {
@@ -398,17 +447,10 @@ ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
       RETURN(MUI_EventHandlerRC_Eat);
       return(MUI_EventHandlerRC_Eat);
     }
-    else
-    {
-      RETURN(0);
-      return(0);
-    }
   }
-  else
-  {
-    RETURN(0);
-    return(0);
-  }
+
+  RETURN(0);
+  return(0);
 }
 
 static VOID DoBlock(BOOL clipboard, BOOL erase, struct InstData *data)
@@ -527,28 +569,28 @@ void Key_Cut(struct InstData *data)
 {
   ENTER();
 
+  ScrollIntoDisplay(data);
   EraseBlock(TRUE, data);
 
   LEAVE();
 }
 
-void Key_Copy (struct InstData *data)
+void Key_Copy(struct InstData *data)
 {
   ENTER();
 
   if(Enabled(data))
   {
+    ScrollIntoDisplay(data);
     DoBlock(TRUE, FALSE, data);
   }
   else
-  {
     DoMethod(data->object, MUIM_TextEditor_HandleError, Error_NoAreaMarked);
-  }
 
   LEAVE();
 }
 
-void Key_Paste (struct InstData *data)
+void Key_Paste(struct InstData *data)
 {
   BOOL update;
   struct marking block;
@@ -557,6 +599,8 @@ void Key_Paste (struct InstData *data)
 
   if(Enabled(data))
     Key_Clear(data);
+  else
+    ScrollIntoDisplay(data);
 
   block.startline = data->actualline;
   block.startx = data->CPos_X;
@@ -567,19 +611,21 @@ void Key_Paste (struct InstData *data)
   {
     block.stopline = data->actualline;
     block.stopx = data->CPos_X;
-    AddToUndoBuffer(pasteblock, (char *)&block, data);
+    AddToUndoBuffer(ET_PASTEBLOCK, (char *)&block, data);
     data->pixel_x = 0;
   }
 
   LEAVE();
 }
 
-void Key_Tab (struct InstData *data)
+void Key_Tab(struct InstData *data)
 {
   ENTER();
 
   if(Enabled(data))
     Key_Clear(data);
+  else
+    ScrollIntoDisplay(data);
 
   {
     struct marking block =
@@ -591,10 +637,8 @@ void Key_Tab (struct InstData *data)
       data->CPos_X+data->TabSize
     };
 
-#ifndef ClassAct
     CheckWord(data);
-#endif
-    AddToUndoBuffer(pasteblock, (char *)&block, data);
+    AddToUndoBuffer(ET_PASTEBLOCK, (char *)&block, data);
     data->CPos_X += data->TabSize;
     PasteChars(data->CPos_X-data->TabSize, data->actualline, data->TabSize, "            ", NULL, data);
   }
@@ -602,35 +646,36 @@ void Key_Tab (struct InstData *data)
   LEAVE();
 }
 
-void Key_Return (struct InstData *data)
+void Key_Return(struct InstData *data)
 {
   ENTER();
 
   if(Enabled(data))
     Key_Clear(data);
+  else
+    ScrollIntoDisplay(data);
 
-#ifndef ClassAct
   CheckWord(data);
-#endif
-  AddToUndoBuffer(splitline, NULL, data);
+  AddToUndoBuffer(ET_SPLITLINE, NULL, data);
   SplitLine(data->CPos_X, data->actualline, TRUE, NULL, data);
+
+  // make sure the cursor is visible
+  ScrollIntoDisplay(data);
 
   LEAVE();
 }
 
-void Key_Backspace (struct InstData *data)
+void Key_Backspace(struct InstData *data)
 {
   ENTER();
 
   if(Enabled(data))
-  {
     Key_Clear(data);
-  }
   else
   {
     if(data->CPos_X > 0)
     {
-      AddToUndoBuffer(backspacechar, data->actualline->line.Contents+--data->CPos_X, data);
+      AddToUndoBuffer(ET_BACKSPACECHAR, data->actualline->line.Contents+--data->CPos_X, data);
       RemoveChars(data->CPos_X, data->actualline, 1, data);
     }
     else
@@ -639,10 +684,13 @@ void Key_Backspace (struct InstData *data)
       {
         data->actualline = data->actualline->previous;
         data->CPos_X = data->actualline->line.Length-1;
-        AddToUndoBuffer(backspacemerge, NULL, data);
+        AddToUndoBuffer(ET_BACKSPACEMERGE, NULL, data);
+        ScrollIntoDisplay(data);
         MergeLines(data->actualline, data);
       }
     }
+
+    ScrollIntoDisplay(data);
   }
 
   LEAVE();
@@ -653,21 +701,21 @@ void Key_Delete (struct InstData *data)
   ENTER();
 
   if(Enabled(data))
-  {
     Key_Clear(data);
-  }
   else
   {
+    ScrollIntoDisplay(data);
+
     if(data->actualline->line.Length > (ULONG)(data->CPos_X+1))
     {
-      AddToUndoBuffer(deletechar, data->actualline->line.Contents+data->CPos_X, data);
+      AddToUndoBuffer(ET_DELETECHAR, data->actualline->line.Contents+data->CPos_X, data);
       RemoveChars(data->CPos_X, data->actualline, 1, data);
     }
     else
     {
       if(data->actualline->next)
       {
-        AddToUndoBuffer(mergelines, NULL, data);
+        AddToUndoBuffer(ET_MERGELINES, NULL, data);
         MergeLines(data->actualline, data);
       }
     }
@@ -704,7 +752,7 @@ void cutcopypasteerase (UBYTE key, ULONG qualifier, struct InstData *data)
       {
         block.stopline = data->actualline;
         block.stopx = data->CPos_X;
-        AddToUndoBuffer(pasteblock, (char *)&block, data);
+        AddToUndoBuffer(ET_PASTEBLOCK, (char *)&block, data);
         if(t_updatefrom < updatefrom)
           updatefrom = t_updatefrom;
       }
@@ -732,30 +780,54 @@ void Key_Normal(UBYTE key, struct InstData *data)
   ENTER();
 
   if(Enabled(data))
-  {
     Key_Clear(data);
-  }
+  else
+    ScrollIntoDisplay(data);
 
-#ifndef ClassAct
-  if((!IsAlpha(data->mylocale, key)) && key != '-')
+  // check if the user wants to do a direct spell checking while
+  // writing some text.
+  if(data->TypeAndSpell && (!IsAlpha(data->mylocale, key)) && key != '-')
     CheckWord(data);
-#endif
 
-  AddToUndoBuffer(pastechar, NULL, data);
+  // add the pastechar to the undobuffer and paste the current
+  // key immediatly.
+  AddToUndoBuffer(ET_PASTECHAR, NULL, data);
   PasteChars(data->CPos_X++, data->actualline, 1, (char *)&key, NULL, data);
-  if(data->WrapBorder && (data->CPos_X > data->WrapBorder) && (key != ' '))
-  {
-    ULONG xpos = data->CPos_X;
 
-    while(--xpos && *(data->actualline->line.Contents+xpos) != ' ');
-    if(xpos)
+  // check if the user selected the texteditor to do an automatic hard word
+  // wrapping during writing text and if so we go and perform the hard word
+  // wrapping at the correct border.
+  if(data->WrapMode == MUIV_TextEditor_WrapMode_HardWrap &&
+     data->WrapBorder > 0 && (data->CPos_X > data->WrapBorder) && (key != ' '))
+  {
+    ULONG xpos = data->WrapBorder+1;
+    D(DBF_INPUT, "must wrap");
+
+
+    // now we make sure to wrap *exactly* at the WrapBorder the user
+    // specified instead of wrapping right where we are.
+    while(xpos > 0 && *(data->actualline->line.Contents+xpos) != ' ')
+      xpos--;
+
+    // if we reached the end we go and find a wrap position after
+    // the wrap border
+    if(xpos == 0)
     {
-        ULONG length = data->CPos_X-xpos;
+      xpos = data->WrapBorder;
+      while(xpos < data->CPos_X && *(data->actualline->line.Contents+xpos) != ' ')
+        xpos++;
+    }
+
+    D(DBF_INPUT, "xpos=%ld cposx=%ld", xpos, data->CPos_X);
+    // now we do the line split operation at the xpos we found
+    if(xpos != 0 && xpos < data->CPos_X)
+    {
+      ULONG length = data->CPos_X-xpos;
 
       data->CPos_X = xpos;
-      AddToUndoBuffer(splitline, NULL, data);
+      AddToUndoBuffer(ET_SPLITLINE, NULL, data);
       SplitLine(data->CPos_X, data->actualline, TRUE, NULL, data);
-      AddToUndoBuffer(deletechar, data->actualline->line.Contents+data->CPos_X, data);
+      AddToUndoBuffer(ET_DELETECHAR, data->actualline->line.Contents+data->CPos_X, data);
       data->CPos_X = length-1;
       RemoveChars(0, data->actualline, 1, data);
     }
@@ -767,11 +839,10 @@ void Key_Normal(UBYTE key, struct InstData *data)
 /*----------------*
  * Convert Rawkey *
  *----------------*/
-static LONG ConvertKey(UBYTE key, ULONG qualifier, struct IntuiMessage *imsg, struct InstData *data)
+static BOOL ConvertKey(struct IntuiMessage *imsg, struct InstData *data)
 {
-  LONG result = TRUE;
+  BOOL result = FALSE;
   UBYTE code = 0;
-#ifndef ClassAct
   struct InputEvent event;
 
   ENTER();
@@ -779,46 +850,36 @@ static LONG ConvertKey(UBYTE key, ULONG qualifier, struct IntuiMessage *imsg, st
   event.ie_NextEvent    = NULL;
   event.ie_Class        = IECLASS_RAWKEY;
   event.ie_SubClass     = 0;
-  event.ie_Code         = key;
-  event.ie_Qualifier    = qualifier;
+  event.ie_Code         = imsg->Code;
+  event.ie_Qualifier    = imsg->Qualifier;
   event.ie_EventAddress = (APTR *) *((ULONG *)imsg->IAddress);
 
   if(MapRawKey(&event, (STRPTR)&code, 1, NULL) > 0)
-#else
-  ENTER();
-
-  // XXX: why shall imsg be an InputEvent!?
-  if(MapRawKey((struct InputEvent *)imsg, (STRPTR)&code, 1, NULL) > 0)
-#endif
   {
     SHOWVALUE(DBF_INPUT, code);
 
 #ifdef FILTER_NONPRINTABLE
-    if((code < 32) || ((code > 126) && (code < 160)))
+    if((code >= 32 && code <= 126) || code >= 160)
 #else
-    if(code < 32)
+    if(code >= 32)
 #endif
     {
-      result = FALSE;
-    }
-    else
-    {
       data->pixel_x = 0;
+
+      // now we perform the key action
       Key_Normal(code, data);
+
+      result = TRUE;
     }
   }
-  else  result = FALSE;
 
   RETURN(result);
   return(result);
 }
 
-/*  data->pixel_x = 0;
-  return(MUI_EventHandlerRC_Eat);
-*/
-
 static BOOL MatchQual(ULONG input, ULONG match, UWORD action, struct InstData *data)
 {
+  BOOL result = FALSE;
   ENTER();
 
   if((match & IEQUALIFIER_SHIFT) && (input & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
@@ -837,78 +898,130 @@ static BOOL MatchQual(ULONG input, ULONG match, UWORD action, struct InstData *d
     input &= ~(IEQUALIFIER_LCOMMAND | IEQUALIFIER_RCOMMAND);
   }
 
-  LEAVE();
-  return(input == match || (((input & ~data->blockqual) == match) && action < kSuggestWord));
+  result = (input == match);
+
+  if(result == FALSE && ((input & ~data->blockqual) == match))
+  {
+    if(action == MUIV_TextEditor_KeyAction_Up           ||
+       action == MUIV_TextEditor_KeyAction_Down         ||
+       action == MUIV_TextEditor_KeyAction_Left         ||
+       action == MUIV_TextEditor_KeyAction_Right        ||
+       action == MUIV_TextEditor_KeyAction_PageUp       ||
+       action == MUIV_TextEditor_KeyAction_PageDown     ||
+       action == MUIV_TextEditor_KeyAction_StartOfLine  ||
+       action == MUIV_TextEditor_KeyAction_EndOfLine    ||
+       action == MUIV_TextEditor_KeyAction_Top          ||
+       action == MUIV_TextEditor_KeyAction_Bottom       ||
+       action == MUIV_TextEditor_KeyAction_PrevWord     ||
+       action == MUIV_TextEditor_KeyAction_NextWord     ||
+       action == MUIV_TextEditor_KeyAction_PrevLine     ||
+       action == MUIV_TextEditor_KeyAction_NextLine     ||
+       action == MUIV_TextEditor_KeyAction_PrevSentence ||
+       action == MUIV_TextEditor_KeyAction_NextSentence)
+    {
+      result = TRUE;
+    }
+  }
+
+  RETURN(result);
+  return result;
 }
 
 
 /*---------------------------------*
  * Function to handle a cursormove *
  *---------------------------------*/
-static LONG FindKey (UBYTE key, ULONG qualifier, struct InstData *data)
+static LONG FindKey(UBYTE key, ULONG qualifier, struct InstData *data)
 {
-  struct keybindings *t_keys = data->RawkeyBindings;
-  BOOL speed = FALSE;
+  struct te_key *t_keys = data->RawkeyBindings;
+  int i;
+  UBYTE pressKey = key & ~IECODE_UP_PREFIX;
+  UBYTE releaseKey = key | IECODE_UP_PREFIX;
 
   ENTER();
 
-  if(t_keys == 0)
-    t_keys = keys;
-
-#ifdef FAST_SCROLL
-  if(qualifier & IEQUALIFIER_REPEAT)
-  {
-    static ULONG  repeatcount = 0;
-
-    if(repeatcount == 20)
-        speed = TRUE;
-    else  repeatcount++;
-  }
-  else  repeatcount = 0;
-#endif
+  if(t_keys == NULL)
+    t_keys = (struct te_key *)default_keybindings;
 
   qualifier &= ~(IEQUALIFIER_RELATIVEMOUSE | IEQUALIFIER_REPEAT | IEQUALIFIER_CAPSLOCK);
-  while(t_keys->keydata.code != (unsigned short)-1)
+  for(i=0; (WORD)t_keys[i].code != -1; i++)
   {
-    if((key == t_keys->keydata.code) && MatchQual(qualifier, t_keys->keydata.qual, t_keys->keydata.act, data))
+    struct te_key *curKey = &t_keys[i];
+
+    if(curKey->code == pressKey && MatchQual(qualifier, curKey->qual, curKey->act, data))
     {
+      if(key == releaseKey)
+      {
+        // We have been called for a known shortcut, but this was a release action.
+        // This will also be "eaten" to avoid double input
+        RETURN(5);
+        return 5;
+      }
+
       if(data->flags & FLG_ReadOnly)
       {
-          LONG new_y = data->visual_y-1;
+        LONG new_y = data->visual_y-1;
 
-        switch(t_keys->keydata.act)
+        switch(curKey->act)
         {
-          case mTop:
+          case MUIV_TextEditor_KeyAction_Top:
             new_y = 0;
             break;
-          case mPreviousPage:
+
+          case MUIV_TextEditor_KeyAction_PageUp:
             new_y -= data->maxlines;
             break;
-          case mUp:
+
+          case MUIV_TextEditor_KeyAction_Up:
             new_y -= 1;
-            if(speed)
-              new_y -= 1;
             break;
-          case mBottom:
+
+          case MUIV_TextEditor_KeyAction_Bottom:
             new_y = data->totallines-data->maxlines;
             break;
-          case mNextPage:
+
+          case MUIV_TextEditor_KeyAction_PageDown:
             new_y += data->maxlines;
             break;
-          case mDown:
+
+          case MUIV_TextEditor_KeyAction_Down:
             new_y += 1;
-            if(speed)
-              new_y += 1;
             break;
-          case kCopy:
+
+          case MUIV_TextEditor_KeyAction_Copy:
             Key_Copy(data);
             break;
-#ifndef ClassAct
-          case kNextGadget:
+
+          case MUIV_TextEditor_KeyAction_NextGadget:
             set(_win(data->object), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Next);
             break;
-#endif
+
+          case MUIV_TextEditor_KeyAction_SelectAll:
+          {
+            struct line_node *actual = data->firstline;
+
+            data->blockinfo.startline = actual;
+            data->blockinfo.startx = 0;
+
+            while(actual->next)
+              actual = actual->next;
+
+            data->blockinfo.stopline = actual;
+            data->blockinfo.stopx = data->blockinfo.stopline->line.Length-1;
+            data->blockinfo.enabled = TRUE;
+            MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
+          }
+          break;
+
+          case MUIV_TextEditor_KeyAction_SelectNone:
+          {
+            data->blockinfo.enabled = FALSE;
+            MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
+          }
+          break;
+
         }
+
         if(new_y != data->visual_y-1)
         {
           if(new_y > data->totallines-data->maxlines)
@@ -923,252 +1036,281 @@ static LONG FindKey (UBYTE key, ULONG qualifier, struct InstData *data)
       }
       else
       {
-        switch(t_keys->keydata.act)
+        D(DBF_INPUT, "curKey->act: %ld", curKey->act);
+
+        switch(curKey->act)
         {
-          case mTop:
+          case MUIV_TextEditor_KeyAction_Top:
             GoTop(data);
             RETURN(TRUE);
             return(TRUE);
-          case mPreviousLine:
+
+          case MUIV_TextEditor_KeyAction_PrevLine:
             GoPreviousLine(data);
             RETURN(TRUE);
             return(TRUE);
-          case mPreviousPage:
+
+          case MUIV_TextEditor_KeyAction_PageUp:
             GoPreviousPage(data);
             RETURN(FALSE);
             return(FALSE);
-          case mUp:
+
+          case MUIV_TextEditor_KeyAction_Up:
             GoUp(data);
-            if(speed)
-              GoUp(data);
             RETURN(FALSE);
             return(FALSE);
-          case mBottom:
+
+          case MUIV_TextEditor_KeyAction_Bottom:
             GoBottom(data);
             RETURN(TRUE);
             return(TRUE);
-          case mNextLine:
+
+          case MUIV_TextEditor_KeyAction_NextLine:
             GoNextLine(data);
             RETURN(TRUE);
             return(TRUE);
-          case mNextPage:
+
+          case MUIV_TextEditor_KeyAction_PageDown:
             GoNextPage(data);
             RETURN(FALSE);
             return(FALSE);
-          case mDown:
+
+          case MUIV_TextEditor_KeyAction_Down:
             GoDown(data);
-            if(speed)
-              GoDown(data);
             RETURN(FALSE);
             return(FALSE);
-          case mNextWord:
+
+          case MUIV_TextEditor_KeyAction_NextWord:
             GoNextWord(data);
             RETURN(TRUE);
             return(TRUE);
-          case mNextSentence:
+
+          case MUIV_TextEditor_KeyAction_NextSentence:
             GoNextSentence(data);
             RETURN(TRUE);
             return(TRUE);
-          case mEndOfLine:
+
+          case MUIV_TextEditor_KeyAction_EndOfLine:
             GoEndOfLine(data);
             RETURN(TRUE);
             return(TRUE);
-          case mRight:
+
+          case MUIV_TextEditor_KeyAction_Right:
             GoRight(data);
-            if(speed)
-              GoRight(data);
             RETURN(TRUE);
             return(TRUE);
-          case mPreviousWord:
+
+          case MUIV_TextEditor_KeyAction_PrevWord:
             GoPreviousWord(data);
             RETURN(TRUE);
             return(TRUE);
-          case mPreviousSentence:
+
+          case MUIV_TextEditor_KeyAction_PrevSentence:
             GoPreviousSentence(data);
             RETURN(TRUE);
             return(TRUE);
-          case mStartOfLine:
+
+          case MUIV_TextEditor_KeyAction_StartOfLine:
             GoStartOfLine(data);
             RETURN(TRUE);
             return(TRUE);
-          case mLeft:
+
+          case MUIV_TextEditor_KeyAction_Left:
             GoLeft(data);
-            if(speed)
-              GoLeft(data);
             RETURN(TRUE);
             return(TRUE);
-          case kSuggestWord:
-#ifndef ClassAct
+
+          case MUIV_TextEditor_KeyAction_SuggestWord:
             SuggestWord(data);
-#endif
             break;
-          case kBackspace:
+
+          case MUIV_TextEditor_KeyAction_Backspace:
             Key_Backspace(data);
             break;
-          case kDelete:
+
+          case MUIV_TextEditor_KeyAction_Delete:
             Key_Delete(data);
             break;
-          case kReturn:
+
+          case MUIV_TextEditor_KeyAction_Return:
             Key_Return(data);
             break;
-          case kTab:
+
+          case MUIV_TextEditor_KeyAction_Tab:
             Key_Tab(data);
             break;
-          case kUndo:
+
+          case MUIV_TextEditor_KeyAction_Undo:
             Undo(data);
             break;
-          case kRedo:
+
+          case MUIV_TextEditor_KeyAction_Redo:
             Redo(data);
             break;
-          case kCut:
+
+          case MUIV_TextEditor_KeyAction_Cut:
             Key_Cut(data);
             break;
-          case kCopy:
+
+          case MUIV_TextEditor_KeyAction_Copy:
             Key_Copy(data);
             break;
-          case kPaste:
+
+          case MUIV_TextEditor_KeyAction_Paste:
             Key_Paste(data);
             break;
-          case kDelEOL:
+
+          case MUIV_TextEditor_KeyAction_DelEOL:
             Key_DelSomething(Del_EOL, data);
             break;
-          case kDelBOL:
+
+          case MUIV_TextEditor_KeyAction_DelBOL:
             Key_DelSomething(Del_BOL, data);
             break;
-          case kDelEOW:
+
+          case MUIV_TextEditor_KeyAction_DelEOW:
             Key_DelSomething(Del_EOW, data);
             break;
-          case kDelBOW:
+
+          case MUIV_TextEditor_KeyAction_DelBOW:
             Key_DelSomething(Del_BOW, data);
             break;
-          case kDelLine:
+
+          case MUIV_TextEditor_KeyAction_DelLine:
             Key_DelLine(data);
             break;
-          case kNextGadget:
-#ifndef ClassAct
+
+          case MUIV_TextEditor_KeyAction_NextGadget:
             set(_win(data->object), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Next);
-#endif
             break;
-          case kGotoBookmark1:
+
+          case MUIV_TextEditor_KeyAction_GotoBookmark1:
             GotoBookmark(0, data);
             RETURN(TRUE);
             return(TRUE);
-          case kGotoBookmark2:
+
+          case MUIV_TextEditor_KeyAction_GotoBookmark2:
             GotoBookmark(1, data);
             RETURN(TRUE);
             return(TRUE);
-          case kGotoBookmark3:
+
+          case MUIV_TextEditor_KeyAction_GotoBookmark3:
             GotoBookmark(2, data);
             RETURN(TRUE);
             return(TRUE);
-          case kSetBookmark1:
+
+          case MUIV_TextEditor_KeyAction_SetBookmark1:
             SetBookmark(0, data);
             break;
-          case kSetBookmark2:
+
+          case MUIV_TextEditor_KeyAction_SetBookmark2:
             SetBookmark(1, data);
             break;
-          case kSetBookmark3:
+
+          case MUIV_TextEditor_KeyAction_SetBookmark3:
             SetBookmark(2, data);
             break;
+
+          case MUIV_TextEditor_KeyAction_SelectAll:
+          {
+            struct line_node *actual = data->firstline;
+
+            data->blockinfo.startline = actual;
+            data->blockinfo.startx = 0;
+
+            while(actual->next)
+              actual = actual->next;
+
+            data->blockinfo.stopline = actual;
+            data->blockinfo.stopx = data->blockinfo.stopline->line.Length-1;
+            data->blockinfo.enabled = TRUE;
+            MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
+          }
+          break;
+
+          case MUIV_TextEditor_KeyAction_SelectNone:
+          {
+            data->blockinfo.enabled = FALSE;
+            MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
+          }
+          break;
         }
 
         RETURN(3);
         return(3);
       }
+      break;
     }
-    t_keys++;
   }
 
   RETURN(2);
   return(2);
 }
 
-static LONG ReactOnRawKey(UBYTE key, ULONG qualifier, struct IntuiMessage *imsg, struct InstData *data)
+static BOOL ReactOnRawKey(struct IntuiMessage *imsg, struct InstData *data)
 {
   struct line_node *oldactualline = data->actualline;
   UWORD oldCPos_X = data->CPos_X;
-  LONG result = TRUE;
+  BOOL result = TRUE;
+  LONG dummy;
 
   ENTER();
 
-  if(key <= IECODE_KEY_CODE_LAST)
+  dummy = FindKey(imsg->Code, imsg->Qualifier, data);
+
+  D(DBF_INPUT, "FindKey: %ld", dummy);
+  if(dummy == 1 || dummy == 0)
   {
-    LONG dummy = FindKey(key, qualifier, data);
     if(dummy == 1)
-    {
       data->pixel_x = 0;
-    }
 
-    if(dummy == 1 || dummy == 0)
+    if((data->CPos_X != oldCPos_X || oldactualline != data->actualline) || (!(imsg->Qualifier & data->blockqual) && data->blockinfo.enabled))
     {
-      if((data->CPos_X != oldCPos_X || oldactualline != data->actualline) || (!(qualifier & data->blockqual) && data->blockinfo.enabled))
+      SetCursor(oldCPos_X, oldactualline, FALSE, data);
+
+      if(!(data->flags & FLG_ReadOnly))
       {
-        SetCursor(oldCPos_X, oldactualline, FALSE, data);
-
-        if(!(data->flags & FLG_ReadOnly))
+        if(imsg->Qualifier & data->blockqual)
         {
-          if(qualifier & data->blockqual)
+          data->blockinfo.stopline = data->actualline;
+          data->blockinfo.stopx = data->CPos_X;
+          if(!data->blockinfo.enabled)
           {
-            data->blockinfo.stopline = data->actualline;
-            data->blockinfo.stopx = data->CPos_X;
-            if(!data->blockinfo.enabled)
-            {
-              data->blockinfo.enabled = TRUE;
-              data->blockinfo.startline = oldactualline;
-              data->blockinfo.startx = oldCPos_X;
-            }
-
-            MarkText(oldCPos_X, oldactualline, data->CPos_X, data->actualline, data);
-          }
-          else
-          {
-            data->flags &= ~FLG_ARexxMark;
-            if(data->blockinfo.enabled)
-            {
-              data->blockinfo.enabled = FALSE;
-              MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
-            }
+            data->blockinfo.enabled = TRUE;
+            data->blockinfo.startline = oldactualline;
+            data->blockinfo.startx = oldCPos_X;
           }
 
-          ScrollIntoDisplay(data);
-          SetCursor(data->CPos_X, data->actualline, TRUE, data);
+          MarkText(oldCPos_X, oldactualline, data->CPos_X, data->actualline, data);
         }
-      }
-    }
-    else
-    {
-      if(dummy == 3)
-      {
-        data->pixel_x = 0;
-      }
-      else
-      {
-        if(((dummy != 4 && ((data->flags & FLG_ReadOnly) || (qualifier & IEQUALIFIER_RCOMMAND))) || !ConvertKey(key, qualifier, imsg, data)))
-        {
-          result = FALSE;
-        }
-
-        if(dummy == 4)
-        {
-          result = TRUE;
-        }
-/*
         else
         {
-          if(((data->flags & FLG_ReadOnly || qualifier & IEQUALIFIER_RCOMMAND) || !ConvertKey(key, qualifier, imsg, data)))
-            result = FALSE;
+          data->flags &= ~FLG_ARexxMark;
+          if(data->blockinfo.enabled)
+          {
+            data->blockinfo.enabled = FALSE;
+            MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
+          }
         }
-*/
+
+        ScrollIntoDisplay(data);
+        SetCursor(data->CPos_X, data->actualline, TRUE, data);
       }
+      else
+        ScrollIntoDisplay(data);
     }
   }
-  else
+  else if(dummy == 2)
   {
-    result = FALSE;
+    // we execute the ConvertKey() action which in fact will
+    // perform the actual key press reaction
+    if((data->flags & FLG_ReadOnly) == 0 && (imsg->Qualifier & IEQUALIFIER_RCOMMAND) == 0)
+      ConvertKey(imsg, data);
+    else
+      result = FALSE;
   }
-
-  if(result)
-    ScrollIntoDisplay(data);
+  else if(dummy == 3)
+    data->pixel_x = 0;
 
   RETURN(result);
   return(result);
@@ -1191,11 +1333,14 @@ void ScrollIntoDisplay(struct InstData *data)
     {
       data->visual_y += diff-data->maxlines;
       ScrollUp(0, diff-data->maxlines, data);
+      D(DBF_INPUT,"scrollup: %ld", diff-data->maxlines);
     }
+
     if(diff < 1)
     {
       data->visual_y += diff-1;
       ScrollDown(0, (-diff)+1, data);
+      D(DBF_INPUT,"scrolldown: %ld", -diff+1);
     }
   }
 

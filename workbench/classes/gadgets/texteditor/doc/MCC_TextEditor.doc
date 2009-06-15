@@ -1,6 +1,7 @@
 TABLE OF CONTENTS
 
 TextEditor.mcc/TextEditor.mcc
+TextEditor.mcc/MUIA_TextEditor_ActiveObjectOnClick
 TextEditor.mcc/MUIA_TextEditor_AreaMarked
 TextEditor.mcc/MUIA_TextEditor_AutoClip
 TextEditor.mcc/MUIA_TextEditor_ColorMap
@@ -19,6 +20,7 @@ TextEditor.mcc/MUIA_TextEditor_ImportHook
 TextEditor.mcc/MUIA_TextEditor_ImportWrap
 TextEditor.mcc/MUIA_TextEditor_InsertMode         (not yet implemented...)
 TextEditor.mcc/MUIA_TextEditor_InVirtualGroup
+TextEditor.mcc/MUIA_TextEditor_KeyUpFocus
 TextEditor.mcc/MUIA_TextEditor_Pen
 TextEditor.mcc/MUIA_TextEditor_Prop_DeltaFactor
 TextEditor.mcc/MUIA_TextEditor_Prop_Entries
@@ -35,11 +37,14 @@ TextEditor.mcc/MUIA_TextEditor_StyleItalic
 TextEditor.mcc/MUIA_TextEditor_StyleUnderline
 TextEditor.mcc/MUIA_TextEditor_TypeAndSpell
 TextEditor.mcc/MUIA_TextEditor_UndoAvailable
+TextEditor.mcc/MUIA_TextEditor_UndoLevels
 TextEditor.mcc/MUIA_TextEditor_WrapBorder
+TextEditor.mcc/MUIA_TextEditor_WrapMode
 TextEditor.mcc/MUIM_TextEditor_ARexxCmd
 TextEditor.mcc/MUIM_TextEditor_BlockInfo
 TextEditor.mcc/MUIM_TextEditor_ClearText
-TextEditor.mcc/MUIM_TextEditor_ExportBlock        (not yet implemented...)
+TextEditor.mcc/MUIM_TextEditor_SetBlock
+TextEditor.mcc/MUIM_TextEditor_ExportBlock
 TextEditor.mcc/MUIM_TextEditor_ExportText
 TextEditor.mcc/MUIM_TextEditor_HandleError
 TextEditor.mcc/MUIM_TextEditor_InsertText
@@ -47,16 +52,56 @@ TextEditor.mcc/MUIM_TextEditor_MacroBegin         (not yet implemented...)
 TextEditor.mcc/MUIM_TextEditor_MacroEnd           (not yet implemented...)
 TextEditor.mcc/MUIM_TextEditor_MacroExecute       (not yet implemented...)
 TextEditor.mcc/MUIM_TextEditor_MarkText
+TextEditor.mcc/MUIM_TextEditor_QueryKeyAction
 TextEditor.mcc/MUIM_TextEditor_Replace
 TextEditor.mcc/MUIM_TextEditor_Search
 TextEditor.mcc/TextEditor.mcc
 
-TextEditor.mcc is a multiline string gadget which holds most of the functions
-of a normal text editor.
+    *******************************************************************
+    Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+    $Id: MCC_TextEditor.doc 515 2009-06-11 10:16:20Z shinkuro $
 
-The gadget was originally written in 1997, and is Copyright (C) 1997-2000
-by Allan Odgaard.  As of version 15.10, released in April 2005, the gadget
-is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
+    TextEditor.mcc is a multiline string gadget which holds most of the
+    functions of a normal text editor including some special function-
+    ality for importing/exporting text from/to special formats.
+
+    The gadget was originally written in 1997 by Allan Odgaard. As of
+    version 15.10, released in April 2005, the gadget is maintained by
+    the TextEditor.mcc Open Source team.
+
+    It is released and distributed under the terms of the GNU Lesser
+    General Public License (LGPL) and available free of charge.
+
+    Please visit http://www.sf.net/projects/texteditor-mcc/ for
+    the very latest version and information regarding TextEditor.mcc.
+    *******************************************************************
+
+TextEditor.mcc/MUIA_TextEditor_ActiveObjectOnClick
+
+    NAME
+        MUIA_TextEditor_ActiveObjectOnClick -- [ISG], BOOL
+
+    FUNCTION
+        This tag allows to set/get whether the texteditor object is
+        automatically set the MUIA_Window_ActiveObject object of the
+        window in case the user performs a mouse action (click/select)
+        in the texteditor. As a consequence, the texteditor will then
+        get the full keyboard focus and will eventually signal it's
+        active status by highlighting a marked area with the active
+        color rather than using the inactive marked color in inactive
+        state.
+
+    NOTE
+        Please note that depending on the MUIA_TextEditor_ReadOnly
+        setting, this attribute has different default values. In case
+        the texteditor is set to ReadOnly while initialized (OM_NEW)
+        this attribute will be set to FALSE as a default. In contrast,
+        when the object is in full write mode it will be set to TRUE
+        instead. However, during operation or in OM_NEW this behaviour
+        can be overrided by setting this attribute to another value.
+
+    SEE ALSO
+        MUIA_TextEditor_ReadOnly
 
 TextEditor.mcc/MUIA_TextEditor_AreaMarked
 
@@ -191,7 +236,8 @@ is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
         can set this to anything you like, e.g. a filehandle.
 
     SEE ALSO
-        MUIA_TextEditor_ImportHook, MUIM_TextEditor_InsertText
+        MUIA_TextEditor_ImportHook
+        MUIM_TextEditor_InsertText
 
 TextEditor.mcc/MUIA_TextEditor_CursorPosition
 
@@ -262,12 +308,17 @@ is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
         will point to the hook itself.  Your hook should return TRUE if it
         wants to stop the editor from blocking.
 
+        From V15.26 on the ClickMessage also contains the qualifiers being
+        pressed during the double click. Please note that SHIFT is not possible
+        as a custom qualifier, because SHIFT + mouse click is already handled
+        internally. However, all other qualifiers are of course possible.
+
     EXAMPLE
         /* This hook will test if the user double clicked an HTTP address */
 
         BOOL URLHookCode (register __a1 struct ClickMessage *clickmsg)
         {
-              UWORD pos = clickmsg->ClickPosition;
+           UWORD pos = clickmsg->ClickPosition;
 
            while(pos && *(clickmsg->LineContents+pos-1) != ' ' && *(clickmsg->LineContents+pos-1) != '<')
            {
@@ -291,19 +342,47 @@ is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
         MUIA_TextEditor_ExportHook -- [IS.], struct Hook *
 
     SPECIAL INPUTS
-        MUIV_TextEditor_ExportHook_EMail
         MUIV_TextEditor_ExportHook_Plain (default)
+        MUIV_TextEditor_ExportHook_EMail
+        MUIV_TextEditor_ExportHook_NoStyle
 
     FUNCTION
-        The EMail export hook will convert a bold word to *bold*, italic
-        words to /italic/ and underlined words to _underline_.
-        It also export separators such as <sb> and <tsb>.
+        Depending on the inputs a different exporthook will be fired as soon
+        as MUIM_TextEditor_ExportText is used. The default is to export the
+        currently showed data as is. That means, that all text, including the
+        escape sequences for showing soft styles will be exported.
+
+          MUIV_TextEditor_ExportHook_Plain
+            Export all text as displayed, including ESC (\033) sequences
+
+          MUIV_TextEditor_ExportHook_EMail
+            Export all text, but convert the soft-style escape sequences into
+            the pseudo-standard text sequences like:
+
+              *bold*      : for bold text
+              /italic/    : for italic text
+              _underline_ : for underlined text
+              #colored#   : for colored/highlighted text
+              <tsb>       : for a thick separator bar
+              <sb>        : for a thin separator bar
+
+          MUIV_TextEditor_ExportHook_NoStyle
+            Export all text like the 'Plain' variant, but strip off all style
+            relevant ESC (\033) sequences. Also converts the escape sequences
+            for the thick and thin separator bar into <tsb> and <sb> like the
+            'EMail' hook.
 
         See MUIA_TextEditor_ImportHook for more information.
 
+    NOTE
+        Even if this MUIA value seems to allow that you may specify your own
+        private export hook implementation, this is currently NOT supported
+        and should be considered highly experimental.
+
     SEE ALSO
-        MUIA_TextEditor_ExportWrap, MUIA_TextEditor_ImportHook
+        MUIA_TextEditor_ExportWrap
         MUIM_TextEditor_ExportText
+        MUIA_TextEditor_ImportHook
 
 TextEditor.mcc/MUIA_TextEditor_ExportWrap
 
@@ -311,11 +390,20 @@ is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
         MUIA_TextEditor_ExportWrap -- [ISG], ULONG
 
     FUNCTION
-        This attribute allows the built-in export hooks to perform wordwrap.
+        This attribute allows the built-in export hooks to perform hard
+        word wrapping while exporting text.
+
         Zero means no wrap (default value).
 
+    NOTE
+        Please note that MUIA_TextEditor_WrapMode doesn't have any effect
+        on the way the export function works. That means, setting
+        ExportWrap will always end up in hard word wrapping.
+
     SEE ALSO
-        MUIA_TextEditor_ExportHook, MUIA_TextEditor_WrapBorder
+        MUIA_TextEditor_ExportHook
+        MUIA_TextEditor_WrapBorder
+        MUIA_TextEditor_WrapMode
 
 TextEditor.mcc/MUIA_TextEditor_FixedFont
 
@@ -374,12 +462,12 @@ is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
         MUIA_TextEditor_ImportHook -- [IS.], struct Hook *
 
     SPECIAL INPUTS
+        MUIV_TextEditor_ImportHook_Plain (default)
         MUIV_TextEditor_ImportHook_EMail
         MUIV_TextEditor_ImportHook_MIME
         MUIV_TextEditor_ImportHook_MIMEQuoted
-        MUIV_TextEditor_ImportHook_Plain (default)
 
-    FUNCTION                                                
+    FUNCTION
         Since this gadget allows different text styles, you can supply an
         import hook to parse the text correctly.
 
@@ -424,7 +512,6 @@ is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
         to MPEN_FILL.  To override it, just supply a colormap with entry 6
         set to whatever color you would like.
 
-
         MUIV_TextEditor_ImportHook_MIMEQuoted:
 
         Like the MIME import hook, but each line gets quoted and highlighted.
@@ -434,14 +521,24 @@ is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
 
         Like the MIME import hook, but it doesn't convert quoted printables.
 
+        Note, that the last three hooks also evaluate the escape sequences
+        described for the MUIV_TextEditor_ImportHook_Plain type. While it
+        never was documented there are some programs insisting on this
+        side effect of an old implementation. Hence starting with version
+        51.13 this behaviour had to be official supported.
+
 
         You can of course create your own import hook - there is an external
         file which describes the procedure.
 
-      *** PLEASE DON'T CREATE YOUR OWN HOOKS WHILE THE GADGET IS STILL BETA ***
+    NOTE
+        Even if this MUIA value seems to allow that you may specify your own
+        private import hook implementation, this is currently NOT supported
+        and should be considered highly experimental.
 
     SEE ALSO
-        MUIA_TextEditor_ColorMap, MUIA_TextEditor_ExportHook
+        MUIA_TextEditor_ColorMap,
+        MUIA_TextEditor_ExportHook
         MUIA_TextEditor_ImportWrap
 
     EXAMPLE
@@ -475,12 +572,21 @@ is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
         MUIA_TextEditor_ImportWrap -- [ISG], ULONG
 
     FUNCTION
-        This is here to allow the built-in import hooks to perform wordwrap.
-        The built-in hooks accept a value between 4 and 1024.  Defaults to
-        1023.
+        This attribute allows the built-in import hooks to perform automatic
+        word wrapping when importing text.
+
+        The built-in hooks accept a value between 4 and 1024.
+        Default is 1023.
+
+    NOTE
+        Please note that MUIA_TextEditor_WrapMode doesn't have any effect
+        on the way the import function works. That means, setting
+        ImportWrap will always end up in hard word wrapping.
 
     SEE ALSO
-        MUIA_TextEditor_ImportHook, MUIA_TextEditor_WrapBorder
+        MUIA_TextEditor_ImportHook
+        MUIA_TextEditor_WrapBorder
+        MUIA_TextEditor_WrapMode
 
 TextEditor.mcc/MUIA_TextEditor_InsertMode
 
@@ -499,6 +605,16 @@ is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
         Set this to TRUE when the gadget is inside a virtual group.
         The reason is cosmetical - the pattern will be relative to the
         gadget instead of the window, since the gadget can be "moved" around.
+
+TextEditor.mcc/MUIA_TextEditor_KeyUpFocus
+
+    NAME
+        MUIA_TextEditor_KeyUpFocus -- [ISG], Object *
+
+    FUNCTION
+        Allows to specify a specific object that will be set as the new
+        window's default object in case the user pressed the UP cursor key and
+        the texteditor was already at the very first line.
 
 TextEditor.mcc/MUIA_TextEditor_Pen
 
@@ -569,7 +685,7 @@ is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
         DoMethod(editor, MUIM_Notify,
                   MUIA_TextEditor_Prop_First, MUIV_EveryTime,
                   slider, 3, MUIM_Set, MUIA_Prop_First, MUIV_TriggerValue);
-        
+
         DoMethod(slider, MUIM_Notify,
                   MUIA_Prop_First, MUIV_EveryTime,
                   editor, 3, MUIM_Set, MUIA_TextEditor_Prop_First, MUIV_TriggerValue);
@@ -620,16 +736,28 @@ is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
 
     FUNCTION
         Setting this tag to TRUE will make the text read-only.
-        This is very similar to the FloatText.mui, except that
-        this gadget offers blocking.
+        This is very similar to what FloatText.mui provides, except
+        that this gadget offers blocking.
 
-        In read-only mode
-         - there will be no cursor (only a normal TAB frame),
-         - TAB will activate the next gadget (instead of alt-TAB),
-         - the frame will be set to a ReadListFrame (may change),
-         - there is no ARexx support, except "Copy".
+        In read-only mode:
+          - there will be no cursor (only a normal TAB frame),
+          - TAB will activate the next gadget (instead of alt-TAB),
+          - the frame will be set to a ReadListFrame (may change),
+          - there is no ARexx support, except "Copy".
 
-        The MUIA_TextEditor_StyleXXX tags are still usable.
+        However, the MUIA_TextEditor_StyleXXX tags are still
+        usable. In addition, due to backward compatibility when
+        setting the ReadOnly tag to TRUE via OM_SET,
+        MUIA_TextEditor_ActiveObjectOnClick will be set to FALSE.
+        This will prevent the object from getting the active object
+        of the window in case a user presses a mouse button in front
+        of a readonly texteditor object.
+
+    SEE ALSO
+        MUIA_TextEditor_StyleBold
+        MUIA_TextEditor_StyleItalic
+        MUIA_TextEditor_StyleUnderline
+        MUIA_TextEditor_ActiveObjectOnClick
 
 TextEditor.mcc/MUIA_TextEditor_RedoAvailable
 
@@ -785,20 +913,96 @@ is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
     SEE ALSO
         MUIA_TextEditor_RedoAvailable
 
+TextEditor.mcc/MUIA_TextEditor_UndoLevels
+
+    NAME
+        MUIA_TextEditor_UndoLevels -- [ISG], ULONG
+
+    FUNCTION
+        Using this tag an application is able to override the global undo level
+        setting. A value of zero will disable undo/redo completely. Upon OM_GET
+        the current number of undo levels will be returned.
+
+    SEE ALSO
+        MUIA_TextEditor_UndoAvailable
+        MUIA_TextEditor_RedoAvailable
+
 TextEditor.mcc/MUIA_TextEditor_WrapBorder
 
     NAME
         MUIA_TextEditor_WrapBorder -- [ISG], ULONG
 
     FUNCTION
-        The gadget will insert a line break in front of the current word
-        if the cursor goes beyond the column given here.
+        This attribute allows to define the number of characters in texteditor
+        at which text should be wrapped to the next line (i.e. 'autowrap').
 
-        Please remember that the gadget does real time wordwrap, which is
-        much better! This tag is only for special cases!!!
+        However, the way wrapping is done depends on the actual 'WrapMode'
+        that was specified by MUIA_TextEditor_WrapMode.
+
+        Per default the WrapBorder is set to 0 which in fact disables the
+        wrapping and depending on the set WrapMode, wrapping will either be
+        completly ignored or wrapping will be done at the window limits,
+        which is the default.
 
     SEE ALSO
-        MUIA_TextEditor_ExportWrap, MUIA_TextEditor_ImportWrap
+        MUIA_TextEditro_WrapMode
+        MUIA_TextEditor_ExportWrap
+        MUIA_TextEditor_ImportWrap
+
+TextEditor.mcc/MUIA_TextEditor_WrapMode
+
+    NAME
+        MUIA_TextEditor_WrapMode -- [ISG], ULONG
+
+    FUNCTION
+        With this attribute, the way text wrapping is performed can be directly
+        controlled if MUIA_TextEditor_WrapBorder was set > 0. There are two
+        major ways of how wrapping can be performed. 'soft wrapping' and
+        'hard wrapping'. Whereas soft wrapping refers to the process where lines
+        will just be graphically wrapped to the next line, but are still be
+        considered a single line. Hard wrapping in turn immediately inserts a
+        newline character as soon as the cursor passed the specified amount of
+        characters in one line and therefore seperate them in a 'hard' direct
+        way.
+
+    INPUTS
+        One of the following values:
+
+          MUIV_TextEditor_WrapMode_NoWrap
+            Wrapping is completly disabled, setting WrapBorder > 0 will
+            have no effect. That means, the window will have to be resizes
+            by the user to e.g. see or edit all text.
+
+          MUIV_TextEditor_WrapMode_SoftWrap
+            Enables soft wrapping of lines if WrapBorder > 0. That means,
+            lines are being wrapped at the specified border in a way that
+            they are still logically one line. This allows to e.g. dynamically
+            reconcatenate lines. This should be considered the new preferred
+            setting for new/revised applications. If WrapBorder == 0, soft
+            wrapping will be performed at the current window limits.
+
+          MUIV_TextEditor_WrapMode_HardWrap (default)
+            Enables hard wrapping of lines if WrapBorder > 0. That means,
+            lines are being wrapped at the specified border by directly
+            inserting newline characters as soon as the cursor passes the
+            specified border. While this mode is the default, due to
+            historical reasons, it doesn't allow to directly reconcatenate
+            lines if the user e.g. removes characters. If WrapBorder == 0,
+            soft wrapping will be performed at the current window limits.
+
+    NOTE
+        Due to historical reasons the default is to hard wrap a line if the
+        WrapBorder attribute is set > 0 and WrapMode is kept untouched.
+        However, for new applications, soft wrapping should be considered the
+        preferred setting as this mode is more intuitive and allows users of
+        texteditor to directly concatenate lines if they e.g. remove
+        characters while they are writing.
+
+    SEE ALSO
+        MUIA_TextEditro_WrapBorder
+        MUIA_TextEditor_ExportWrap
+        MUIA_TextEditor_ImportWrap
+
 
 TextEditor.mcc/MUIM_TextEditor_ARexxCmd
 
@@ -850,6 +1054,8 @@ is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
            KILLLINE
            TOUPPER
            TOLOWER
+           SELECTALL
+           SELECTNONE
 
     RESULT
         The method will return FALSE if it couldn't use the command.
@@ -899,16 +1105,109 @@ is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
         MUIM_TextEditor_ExportBlock
 
     SYNOPSIS
-        DoMethod(obj, MUIM_TextEditor_ExportBlock);
+        DoMethod(obj, MUIM_TextEditor_ExportBlock, ULONG flags);
+
+        DoMethod(obj, MUIM_TextEditor_ExportBlock, 
+                    MUIF_TextEditor_ExportBlock_TakeBlock, 
+                    ULONG startx, ULONG starty, 
+                    ULONG stopx, ULONG stopy);
 
     FUNCTION
-        Not yet implemented...
+        This method exports portions of the current text via the active
+        export hook and returns it in an AllocVec() allocated string.
+        Depending on the supplied flags the method acts a bit different
+        in what text it should export and which it should skip:
+
+          Default (no flags):
+            Exports the currently marked text. If no text is marked, it
+            will return an empty, but allocated string.
+            (see MUIM_TextEditor_BlockInfo)
+
+          MUIF_TextEditor_ExportBlock_FullLines:
+            All complete lines with marked text will be exported, including
+            non-marked characters as well. If no text is marked, then the
+            line where the current cursor is on will be exported.
+
+          MUIF_TextEditor_ExportBlock_TakeBlock:
+            Passing this flag the method will accept 4 ULONG coordinates, 
+            startx, starty, stopx, stopy. Passing after this flag these 
+            coordinates permitts to retrieve a block of text without it is 
+            currently marked. useful to analize a block without user sees a 
+            similar behaviour marking a block.
 
     RESULT
-        
+        Depends on the export hook.  The built-in hooks will return
+        a pointer to a NUL-terminated buffer containing all the text.
+        You must free this buffer with FreeVec() when you are done using it.
+        Returns a NULL pointer if something went wrong.
 
     SEE ALSO
-        MUIM_TextEditor_InsertText, MUIM_TextEditor_ExportText
+        MUIA_TextEditor_ExportHook
+        MUIM_TextEditor_InsertText
+        MUIM_TextEditor_ExportText
+
+ TextEditor.mcc/MUIM_TextEditor_SetBlock
+
+    NAME
+        MUIM_TextEditor_SetBlock (v15.29)
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_TextEditor_SetBlock,
+                      ULONG startx, ULONG starty,
+                      ULONG stopx, ULONG stopy,
+                      ULONG operation, ULONG value);
+
+    FUNCTION
+        This method performs a specific operation on a text block that
+        is defined by four coordinates (startx,starty,stopx,stopy)
+        (see MUIM_TextEditor_BlockInfo). The types of operations that
+        can be performed are supplied via a flag variable 'operation'
+        and an optional value for all operations can be supplied via
+        'value'.
+
+        Possible flags for the 'operation' variable are:
+
+          MUIF_TextEditor_SetBlock_Color:
+            The text block will be assigned a text color in accordance
+            to the supplied color number in parameter 'value'.
+            (see MUIA_TextEditor_ColorMap and MUIA_TextEditor_Pen).
+
+          MUIF_TextEditor_SetBlock_StyleBold:
+            Depending on the content of the 'value' (TRUE/FALSE) the
+            selected text block will get the bold style added or
+            removed.
+
+          MUIF_TextEditor_SetBlock_StyleItalic:
+            Depending on the content of 'value' (TRUE/FALSE) the
+            selected text block will get the italic style added or
+            removed.
+
+          MUIF_TextEditor_SetBlock_StyleUnderline:
+            Depending on the content of 'value' (TRUE/FALSE) the
+            selected text block will get the underline style added or
+            removed.
+
+          MUIF_TextEditor_SetBlock_Flow:
+            Depending on the content of 'value' the selected text block
+            will change it's alignment.
+            (see MUIA_TextEditor_Flow for possible values)
+
+    RESULT
+        TRUE if operation succeeded, FALSE if it failed.
+
+    NOTE
+        When combining multiple operations via flags, care have to be
+        taken for the content of 'value'. E.g. it is not possible to
+        have bold style added and italic style removed because of the
+        global usage of the 'value' parameter. So for mutual exclusive
+        operations you will have to call this method multiple times.
+
+    SEE ALSO
+        MUIA_TextEditor_ExportBlock
+        MUIM_TextEditor_BlockInfo
+        MUIA_TextEditor_ColorMap
+        MUIA_TextEditor_Pen
+        MUIA_TextEditor_Flow
 
 TextEditor.mcc/MUIM_TextEditor_ExportText
 
@@ -923,11 +1222,14 @@ is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
 
     RESULT
         Depends on the export hook.  The built-in hooks will return
-        a pointer to a NULL terminated buffer containing all the text.
+        a pointer to a NUL-terminated buffer containing all the text.
         You must free this buffer with FreeVec() when you are done using it.
+        Returns a NULL pointer if something went wrong.
 
     SEE ALSO
-        MUIM_TextEditor_InsertText, MUIM_TextEditor_ExportBlock
+        MUIA_TextEditor_ExportHook
+        MUIM_TextEditor_InsertText
+        MUIM_TextEditor_ExportBlock
 
 TextEditor.mcc/MUIM_TextEditor_HandleError
 
@@ -1041,13 +1343,54 @@ is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
         MUIM_TextEditor_MarkText
 
     SYNOPSIS
-        DoMethod(obj, MUIM_TextEditor_MarkText, ULONG start_x, ULONG start_y, ULONG stop_x, ULONG stop_y);
+        DoMethod(obj, MUIM_TextEditor_MarkText, ULONG start_x,
+                                                ULONG start_y,
+                                                ULONG stop_x,
+                                                ULONG stop_y);
 
     FUNCTION
-        This method will mark the given area.
+        This method will mark (select) the given area specified by the
+        start_x/stop_x,start_y/stop_y rectangular.
+
+    NOTE
+        - If start_y is set to MUIV_TextEditor_MarkText_None,
+          then all previously marked text will be unmarked (Select None)
+
+        - If stop_y is set to MUIV_TextEditor_MarkText_All,
+          then all available text will be marked. (Select All)
 
     RESULT
         Not defined.
+
+TextEditor.mcc/MUIM_TextEditor_QueryKeyAction
+
+    NAME
+        MUIM_TextEditor_QueryKeyAction
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_TextEditor_QueryKeyAction, ULONG keyAction);
+
+    FUNCTION
+        Searches through the internal key binding list of the texteditor
+        object and returns the first found keybinding that satisfies the
+        specified keyAction code.
+
+    INPUT
+        ULONG keyAction
+          The action code (one of MUIV_TextEditor_KeyAction_#?) for which
+          we search in the internal key bindings list.
+
+    RESULT
+        A pointer to a struct MUIP_TextEditor_KeyBinding which should NOT
+        be modified and is for read-only purposes only.
+
+    NOTE
+        The 'code' member of the MUIP_TextEditor_KeyBinding structure
+        is normally a direct RAWKEY value. However, to identify vanilla
+        keys, an offset is added. This means that if the returned code
+        value > 500, then the specified code is actually a vanilla key
+        code and you have to substract 500 from the actual value to get
+        the ASCII code of the character.
 
 TextEditor.mcc/MUIM_TextEditor_Replace
 

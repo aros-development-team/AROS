@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -24,43 +24,48 @@
 
 #include <proto/utility.h>
 
-#include "TextEditor_mcc.h"
 #include "private.h"
 
-void *ExportText(struct line_node *node, struct Hook *exportHook, LONG wraplen)
+void *ExportText(UNUSED struct MUIP_TextEditor_ExportText *msg, struct InstData *data)
 {
-	struct ExportMessage emsg;
-	void *user_data = NULL;
+  struct line_node *node = data->firstline;
+  struct Hook *exportHook = data->ExportHook;
+  ULONG wraplen = data->ExportWrap;
+  struct ExportMessage emsg;
+  void *user_data = NULL;
 
-	ENTER();
+  ENTER();
 
-	memset(&emsg,0,sizeof(emsg));
+  // clear the export message
+  memset(&emsg, 0, sizeof(struct ExportMessage));
 
-	while (node)
-	{
-		struct line_node *next_node = node->next;
+  while(node)
+  {
+    struct line_node *next_node = node->next;
 
-		emsg.UserData = user_data;
-		emsg.Contents = node->line.Contents;
-		emsg.Length = node->line.Length;
-		emsg.Styles = node->line.Styles;
-		emsg.Colors = node->line.Colors;
-		emsg.Highlight = node->line.Color;
-		emsg.Flow = node->line.Flow;
-		emsg.Separator = node->line.Separator;
-		emsg.ExportWrap = wraplen;
-		emsg.Last = !next_node;
+    emsg.UserData = user_data;
+    emsg.Contents = node->line.Contents;
+    emsg.Length = node->line.Length;
+    emsg.Styles = node->line.Styles;
+    emsg.Colors = node->line.Colors;
+    emsg.Highlight = node->line.Color;
+    emsg.Flow = node->line.Flow;
+    emsg.Separator = node->line.Separator;
+    emsg.ExportWrap = wraplen;
+    emsg.Last = !next_node;
 
-		// to make sure that for the last line we don't export the additional,
-		// artificial newline '\n' we reduce the passed length value by one.
-		if(next_node == NULL && emsg.Contents[node->line.Length-1] == '\n')
-		  emsg.Length--;
+    // to make sure that for the last line we don't export the additional,
+    // artificial newline '\n' we reduce the passed length value by one.
+    if(next_node == NULL && emsg.Contents[node->line.Length-1] == '\n')
+      emsg.Length--;
 
-		user_data = (void*)CallHookPkt(exportHook, NULL, &emsg);
+    // call the ExportHook and exit immediately if it returns NULL
+    if((user_data = (void*)CallHookPkt(exportHook, NULL, &emsg)) == NULL)
+      break;
 
-		node = next_node;
-	}
+    node = next_node;
+  }
 
-	RETURN(user_data);
-	return user_data;
+  RETURN(user_data);
+  return user_data;
 }

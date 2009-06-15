@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -21,6 +21,7 @@
 ***************************************************************************/
 
 #include <proto/exec.h>
+#include <proto/intuition.h>
 
 /******************************************************************************/
 /*                                                                            */
@@ -31,7 +32,7 @@
 /******************************************************************************/
 
 #include "private.h"
-#include "rev.h"
+#include "version.h"
 
 #define VERSION       LIB_VERSION
 #define REVISION      LIB_REVISION
@@ -41,20 +42,22 @@
 
 #define INSTDATA      InstData
 
-#define UserLibID     "$VER: TextEditor.mcc " LIB_REV_STRING CPU " (" LIB_DATE ") " LIB_COPYRIGHT
+#define USERLIBID     CLASS " " LIB_REV_STRING " [" SYSTEMSHORT "/" CPU "] (" LIB_DATE ") " LIB_COPYRIGHT
 #define MASTERVERSION 19
 
 #define USEDCLASSESP  used_classesP
-static const STRPTR used_classesP[] = { "TextEditor.mcp", NULL };
+static const char * const used_classesP[] = { "TextEditor.mcp", NULL };
 
-#define ClassInit
-#define ClassExit
+#define CLASSINIT
+#define CLASSEXPUNGE
+#define MIN_STACKSIZE 8192
 
 struct Library *DiskfontBase = NULL;
 struct Library *KeymapBase = NULL;
 struct Library *LayersBase = NULL;
 struct Library *LocaleBase = NULL;
 struct Library *RexxSysBase = NULL;
+struct Library *IFFParseBase = NULL;
 struct Library *WorkbenchBase = NULL;
 
 #if defined(__amigaos4__)
@@ -63,40 +66,63 @@ struct KeymapIFace *IKeymap = NULL;
 struct LayersIFace *ILayers = NULL;
 struct LocaleIFace *ILocale = NULL;
 struct RexxSysIFace *IRexxSys = NULL;
+struct IFFParseIFace *IIFFParse = NULL;
 struct Interface *IWorkbench = NULL;
 #endif
 
-BOOL ClassInitFunc(UNUSED struct Library *base)
+/******************************************************************************/
+/* define the functions used by the startup code ahead of including mccinit.c */
+/******************************************************************************/
+static BOOL ClassInit(UNUSED struct Library *base);
+static VOID ClassExpunge(UNUSED struct Library *base);
+
+/******************************************************************************/
+/* include the lib startup code for the mcc/mcp  (and muimaster inlines)      */
+/******************************************************************************/
+#include "mccinit.c"
+
+/******************************************************************************/
+/* define all implementations of our user functions                           */
+/******************************************************************************/
+static BOOL ClassInit(UNUSED struct Library *base)
 {
   ENTER();
 
   if((LocaleBase = OpenLibrary("locale.library", 38)) &&
-     GETINTERFACE(ILocale, LocaleBase))
+     GETINTERFACE(ILocale, struct LocaleIFace *, LocaleBase))
   {
     if((LayersBase = OpenLibrary("layers.library", 36)) &&
-       GETINTERFACE(ILayers, LayersBase))
+       GETINTERFACE(ILayers, struct LayersIFace *, LayersBase))
     {
       if((KeymapBase = OpenLibrary("keymap.library", 36)) &&
-         GETINTERFACE(IKeymap, KeymapBase))
+         GETINTERFACE(IKeymap, struct KeymapIFace *, KeymapBase))
       {
         if((RexxSysBase = OpenLibrary("rexxsyslib.library", 36)) &&
-           GETINTERFACE(IRexxSys, RexxSysBase))
+           GETINTERFACE(IRexxSys, struct RexxSysIFace *, RexxSysBase))
         {
           if((DiskfontBase = OpenLibrary("diskfont.library", 36)) &&
-             GETINTERFACE(IDiskfont, DiskfontBase))
+             GETINTERFACE(IDiskfont, struct DiskfontIFace *, DiskfontBase))
           {
-            /* workbench.library is optional */
-            if ((WorkbenchBase = OpenLibrary("workbench.library", 44)))
+            if((IFFParseBase = OpenLibrary("iffparse.library", 36)) &&
+               GETINTERFACE(IIFFParse, struct IFFParseIFace *, IFFParseBase))
             {
-              if (!(GETINTERFACE(IWorkbench, WorkbenchBase)))
+              /* workbench.library is optional */
+              if ((WorkbenchBase = OpenLibrary("workbench.library", 44)))
               {
-                CloseLibrary(WorkbenchBase);
-                WorkbenchBase = NULL;
+                if (!(GETINTERFACE(IWorkbench, struct Interface *, WorkbenchBase)))
+                {
+                  CloseLibrary(WorkbenchBase);
+                  WorkbenchBase = NULL;
+                }
               }
+
+              RETURN(TRUE);
+              return(TRUE);
             }
 
-            RETURN(TRUE);
-            return(TRUE);
+            DROPINTERFACE(IIFFParse);
+            CloseLibrary(IFFParseBase);
+            IFFParseBase = NULL;
           }
 
           DROPINTERFACE(IRexxSys);
@@ -124,7 +150,7 @@ BOOL ClassInitFunc(UNUSED struct Library *base)
 }
 
 
-VOID ClassExitFunc(UNUSED struct Library *base)
+static VOID ClassExpunge(UNUSED struct Library *base)
 {
   ENTER();
 
@@ -133,6 +159,13 @@ VOID ClassExitFunc(UNUSED struct Library *base)
     DROPINTERFACE(IWorkbench);
     CloseLibrary(WorkbenchBase);
     WorkbenchBase = NULL;
+  }
+
+  if(IFFParseBase)
+  {
+    DROPINTERFACE(IIFFParse);
+    CloseLibrary(IFFParseBase);
+    IFFParseBase = NULL;
   }
 
   if(DiskfontBase)
@@ -172,12 +205,3 @@ VOID ClassExitFunc(UNUSED struct Library *base)
 
   LEAVE();
 }
-
-/******************************************************************************/
-/*                                                                            */
-/* include the lib startup code for the mcc/mcp  (and muimaster inlines)      */
-/*                                                                            */
-/******************************************************************************/
-
-#define USE_UTILITYBASE
-#include "mccheader.c"

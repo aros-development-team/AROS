@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -20,14 +20,16 @@
 
 ***************************************************************************/
 
+#include <string.h>
+
 #include <clib/alib_protos.h>
+
 #include <proto/exec.h>
 #include <proto/intuition.h>
 
-#include "TextEditor_mcc.h"
 #include "private.h"
 
-unsigned short LineNr (struct line_node *line, struct InstData *data)
+unsigned short LineNr(struct line_node *line, struct InstData *data)
 {
   unsigned short result = 1;
   struct line_node *actual = data->firstline;
@@ -44,7 +46,7 @@ unsigned short LineNr (struct line_node *line, struct InstData *data)
   return(result);
 }
 
-struct line_node *LineNode (unsigned short linenr, struct InstData *data)
+struct line_node *LineNode(unsigned short linenr, struct InstData *data)
 {
   struct line_node *actual = data->firstline;
 
@@ -59,17 +61,18 @@ struct line_node *LineNode (unsigned short linenr, struct InstData *data)
   return(actual);
 }
 
-long Undo (struct InstData *data)
+long Undo(struct InstData *data)
 {
   ENTER();
 
-  if(data->undosize && data->undobuffer != data->undopointer)
+  D(DBF_UNDO, "undolevel: %ld undocur: %ld undofill: %ld", data->undolevel, data->undocur, data->undofill);
+
+  // check if there is something in the undo
+  // buffer available
+  if(data->undolevel > 0 && data->undocur > 0)
   {
     struct UserAction *buffer;
     BOOL  crsr_move = TRUE;
-
-    if(*(short *)data->undopointer == 0xff)
-      set(data->object, MUIA_TextEditor_RedoAvailable, TRUE);
 
     if(Enabled(data))
     {
@@ -77,7 +80,15 @@ long Undo (struct InstData *data)
       MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
     }
 
-    data->undopointer -= sizeof(struct UserAction);
+    // as the redo operation automatically
+    // becomes available when undo is used we just
+    // check here if we didn't yet set RedoAvailable
+    // as we only want to set it once
+    if(data->undocur == data->undofill)
+      set(data->object, MUIA_TextEditor_RedoAvailable, TRUE);
+
+    data->undopointer = (APTR)((char *)data->undopointer - sizeof(struct UserAction));
+    data->undocur--;
     buffer = (struct UserAction *)data->undopointer;
 
 //    if(data->actualline != LineNode(buffer->y, data) || data->CPos_X != buffer->x)
@@ -89,72 +100,104 @@ long Undo (struct InstData *data)
 
     switch(buffer->type)
     {
-      case pastechar:
+      case ET_PASTECHAR:
+      {
         buffer->del.character = *(data->actualline->line.Contents+data->CPos_X);
         buffer->del.style = GetStyle(data->CPos_X, data->actualline);
         buffer->del.flow = data->actualline->line.Flow;
         buffer->del.separator = data->actualline->line.Separator;
         RemoveChars(data->CPos_X, data->actualline, 1, data);
-        break;
-      case backspacechar:
-        PasteChars(data->CPos_X++, data->actualline, 1, (char *)&buffer->del.character, buffer, data);
-        break;
-      case deletechar:
-        PasteChars(data->CPos_X, data->actualline, 1, (char *)&buffer->del.character, buffer, data);
-        break;
-      case splitline:
-        MergeLines(data->actualline, data);
-        break;
-      case mergelines:
-        SplitLine(data->CPos_X, data->actualline, FALSE, buffer, data);
-        break;
-      case backspacemerge:
-        SplitLine(data->CPos_X, data->actualline, TRUE, buffer, data);
-        break;
-      case pasteblock:
-        {
-            struct marking block =
-            {
-              TRUE,
-              LineNode(buffer->y, data),
-              buffer->x,
-              LineNode(buffer->blk.y, data),
-              buffer->blk.x
-            };
-            char  *clip = GetBlock(&block, data);
+      }
+      break;
 
-          CutBlock2(data, FALSE, FALSE, &block, TRUE);
-          buffer->clip = (unsigned char *)clip;
-        }
-        break;
-      case deleteblock_nomove:
-          crsr_move = FALSE;
-      case deleteblock:
+      case ET_BACKSPACECHAR:
       {
-          struct Hook *oldhook = data->ImportHook;
-          char *clip = (char *)buffer->clip;
+        PasteChars(data->CPos_X++, data->actualline, 1, (char *)&buffer->del.character, buffer, data);
+      }
+      break;
 
-          data->ImportHook = &ImPlainHook;
-          InsertText(data, clip, crsr_move);
-          data->ImportHook = oldhook;
-          MyFreePooled(data->mypool, clip);
+      case ET_DELETECHAR:
+      {
+        PasteChars(data->CPos_X, data->actualline, 1, (char *)&buffer->del.character, buffer, data);
+      }
+      break;
 
-          buffer->blk.x = data->CPos_X;
-          buffer->blk.y = LineNr(data->actualline, data);
-          if(!crsr_move)
-          {
-            data->CPos_X = buffer->x;
-            data->actualline = LineNode(buffer->y, data);
-          }
+      case ET_SPLITLINE:
+      {
+        MergeLines(data->actualline, data);
+      }
+      break;
+
+      case ET_MERGELINES:
+      {
+        SplitLine(data->CPos_X, data->actualline, FALSE, buffer, data);
+      }
+      break;
+
+      case ET_BACKSPACEMERGE:
+      {
+        SplitLine(data->CPos_X, data->actualline, TRUE, buffer, data);
+      }
+      break;
+
+      case ET_PASTEBLOCK:
+      {
+        struct marking block =
+        {
+          TRUE,
+          LineNode(buffer->y, data),
+          buffer->x,
+          LineNode(buffer->blk.y, data),
+          buffer->blk.x
+        };
+        char *clip = GetBlock(&block, data);
+
+        CutBlock2(data, FALSE, FALSE, &block, TRUE);
+        buffer->clip = (unsigned char *)clip;
+      }
+      break;
+
+      case ET_DELETEBLOCK_NOMOVE:
+        crsr_move = FALSE;
+      // continue
+
+      case ET_DELETEBLOCK:
+      {
+        struct Hook *oldhook = data->ImportHook;
+        char *clip = (char *)buffer->clip;
+
+        data->ImportHook = &ImPlainHook;
+        InsertText(data, clip, crsr_move);
+        data->ImportHook = oldhook;
+        MyFreePooled(data->mypool, clip);
+
+        buffer->blk.x = data->CPos_X;
+        buffer->blk.y = LineNr(data->actualline, data);
+
+        if(!crsr_move)
+        {
+          data->CPos_X = buffer->x;
+          data->actualline = LineNode(buffer->y, data);
         }
-        break;
+      }
+      break;
+
+      default:
+        // nothing to do
+      break;
     }
+
     ScrollIntoDisplay(data);
+
     if(data->flags & FLG_Active)
       SetCursor(data->CPos_X, data->actualline, TRUE, data);
-    if(data->undobuffer == data->undopointer)
+
+    // if there are no further undo levels we
+    // have to set UndoAvailable to FALSE
+    if(data->undocur == 0)
     {
       set(data->object, MUIA_TextEditor_UndoAvailable, FALSE);
+
       if(!(data->flags & FLG_UndoLost))
         data->HasChanged = FALSE;
     }
@@ -171,16 +214,16 @@ long Undo (struct InstData *data)
   }
 }
 
-long Redo (struct InstData *data)
+long Redo(struct InstData *data)
 {
   ENTER();
 
-  if(data->undosize && *(short *)data->undopointer != 0xff)
-  {
-      struct UserAction *buffer = (struct UserAction *)data->undopointer;
+  D(DBF_UNDO, "undolevel: %ld undocur: %ld undofill: %ld", data->undolevel, data->undocur, data->undofill);
 
-    if(data->undopointer == data->undobuffer)
-      set(data->object, MUIA_TextEditor_UndoAvailable, TRUE);
+  // check if there something to redo at all
+  if(data->undofill > 0 && data->undocur < data->undofill)
+  {
+    struct UserAction *buffer = (struct UserAction *)data->undopointer;
 
     if(Enabled(data))
     {
@@ -188,32 +231,44 @@ long Redo (struct InstData *data)
       MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
     }
 
-    data->undopointer += sizeof(struct UserAction);
+    // in case undocur is equal zero then we have to
+    // set the undoavailable attribute to true to signal
+    // others that undo is available
+    if(data->undocur == 0)
+      set(data->object, MUIA_TextEditor_UndoAvailable, TRUE);
+
+    data->undopointer = (APTR)((char *)data->undopointer + sizeof(struct UserAction));
+    data->undocur++;
+
 //    if(data->actualline != LineNode(buffer->y, data) || data->CPos_X != buffer->x)
-      SetCursor(data->CPos_X, data->actualline, FALSE, data);
+    SetCursor(data->CPos_X, data->actualline, FALSE, data);
     data->CPos_X = buffer->x;
     data->actualline = LineNode(buffer->y, data);
     ScrollIntoDisplay(data);
 
     switch(buffer->type)
     {
-      case pastechar:
+      case ET_PASTECHAR:
         PasteChars(data->CPos_X++, data->actualline, 1, (char *)&buffer->del.character, buffer, data);
         break;
-      case backspacechar:
-      case deletechar:
+
+      case ET_BACKSPACECHAR:
+      case ET_DELETECHAR:
         RemoveChars(data->CPos_X, data->actualline, 1, data);
         break;
-      case splitline:
+
+      case ET_SPLITLINE:
         SplitLine(data->CPos_X, data->actualline, TRUE, NULL, data);
         break;
-      case mergelines:
-      case backspacemerge:
+
+      case ET_MERGELINES:
+      case ET_BACKSPACEMERGE:
         MergeLines(data->actualline, data);
         break;
-      case pasteblock:
-        {
-            struct Hook *oldhook = data->ImportHook;
+
+      case ET_PASTEBLOCK:
+      {
+          struct Hook *oldhook = data->ImportHook;
 
           data->ImportHook = &ImPlainHook;
           InsertText(data, (char *)buffer->clip, TRUE);
@@ -222,11 +277,12 @@ long Redo (struct InstData *data)
 
           buffer->blk.x = data->CPos_X;
           buffer->blk.y = LineNr(data->actualline, data);
-        }
-        break;
-      case deleteblock_nomove:
-      case deleteblock:
-        {
+      }
+      break;
+
+      case ET_DELETEBLOCK_NOMOVE:
+      case ET_DELETEBLOCK:
+      {
             struct marking block =
             {
               TRUE,
@@ -239,13 +295,22 @@ long Redo (struct InstData *data)
 
           CutBlock2(data, FALSE, FALSE, &block, TRUE);
           buffer->clip = (unsigned char *)clip;
-        }
-        break;
+      }
+      break;
+
+      default:
+        // nothing to do
+      break;
     }
+
     ScrollIntoDisplay(data);
+
     if(data->flags & FLG_Active)
       SetCursor(data->CPos_X, data->actualline, TRUE, data);
-    if(*(short *)data->undopointer == 0xff)
+
+    // if undocur == undofill this signals that we
+    // don't have any things to redo anymore.
+    if(data->undocur == data->undofill)
       set(data->object, MUIA_TextEditor_RedoAvailable, FALSE);
 
     RETURN(TRUE);
@@ -260,132 +325,231 @@ long Redo (struct InstData *data)
   }
 }
 
-void ResetUndoBuffer(struct InstData *data)
+long AddToUndoBuffer(enum EventType eventtype, char *eventdata, struct InstData *data)
 {
   ENTER();
 
-  if(data->undosize)
-  {
-    struct UserAction *buffer = (struct UserAction *)data->undobuffer;
+  D(DBF_UNDO, "undolevel: %ld undocur: %ld undofill: %ld", data->undolevel, data->undocur, data->undofill);
 
-    while(buffer != data->undopointer)
-    {
-      if(buffer->type == deleteblock)
-      {
-        MyFreePooled(data->mypool, buffer->clip);
-      }
-      
-      buffer++;
-    }
-    
-    while(buffer->type != 0xff)
-    {
-      if(buffer->type == pasteblock)
-      {
-        MyFreePooled(data->mypool, buffer->clip);
-      }
-      
-      buffer++;
-    }
-    
-    data->undopointer = data->undobuffer;
-    *(short *)data->undopointer = 0xff;
-  }
-
-  LEAVE();
-}
-
-long AddToUndoBuffer (long eventtype, char *eventdata, struct InstData *data)
-{
-  ENTER();
-
-  if(data->undosize)
+  if(data->undolevel > 0)
   {
     struct UserAction *buffer;
 
-    if((char *)data->undobuffer+data->undosize <= (char *)data->undopointer+sizeof(struct UserAction)+1)
+    // check if there is still enough space in our undo buffer
+    // and if not we clean it up a bit (10 entries)
+    if(data->undofill+1 > data->undolevel)
     {
-      LONG    c;
-      struct  UserAction *t_buffer;
-      char    *t_undobuffer = (char *)data->undobuffer;
+      ULONG c;
+      char *t_undobuffer = (char *)data->undobuffer;
 
-      for(c = 1; c <= 10; c++)
+      // cleanup at most the first 10 entries in our undobuffer
+      for(c=0; c < 10 && data->undofill > 0; c++)
       {
-        t_buffer = (struct UserAction *)t_undobuffer;
-        if(t_buffer->type == deleteblock)
+        struct UserAction *t_buffer = (struct UserAction *)t_undobuffer;
+
+        if(t_buffer->type == ET_DELETEBLOCK)
           MyFreePooled(data->mypool, t_buffer->clip);
 
         t_undobuffer += sizeof(struct UserAction);
+
+        data->undocur--;
+        data->undofill--;
       }
-      CopyMem(t_undobuffer, data->undobuffer, data->undosize-(t_undobuffer-(char *)data->undobuffer));
-      
-      data->undopointer -= t_undobuffer-(char *)data->undobuffer;
-      
+
+      D(DBF_UNDO, "undobuffer was filled up, cleaned up the first %ld entries", c+1);
+
+      if(data->undofill > 0)
+      {
+        // copy everything from t_undobuffer to our start of the
+        // undobuffer and set the undopointer accordingly.
+        memcpy(data->undobuffer, t_undobuffer, data->undosize-(t_undobuffer-(char *)data->undobuffer));
+        data->undopointer = (APTR)(t_undobuffer - (char *)data->undopointer);
+      }
+
+      // signal the user that something in the
+      // undo buffer was lost.
       data->flags |= FLG_UndoLost;
     }
+
     buffer = data->undopointer;
-    if(*(short *)data->undopointer != 0xff)
+
+    // as we are about to set something new for an undo
+    // operation we have to signal that redo operation
+    // is cleared now.
+    if(data->undocur < data->undofill)
+    {
+      char *t_undobuffer = (char *)data->undopointer;
+
+      D(DBF_UNDO, "cleaning up %ld dropped undo nodes", data->undofill-data->undocur);
+
+      // we have to first cleanup each buffer of the ET_PASTEBLOCK
+      // event or otherwise we lost some memory.
+      while(data->undofill > data->undocur)
+      {
+        struct UserAction *t_buffer = (struct UserAction *)t_undobuffer;
+
+        if(t_buffer->type == ET_PASTEBLOCK)
+        {
+          D(DBF_UNDO, "cleaning uf paste buffer of user action %08lx", t_buffer);
+          MyFreePooled(data->mypool, t_buffer->clip);
+        }
+
+        t_undobuffer += sizeof(struct UserAction);
+        data->undofill--;
+      }
+
       set(data->object, MUIA_TextEditor_RedoAvailable, FALSE);
-    if(data->undopointer == data->undobuffer)
+    }
+
+    // if undocur is zero we have to send the undoavailable
+    // signal
+    if(data->undocur == 0)
       set(data->object, MUIA_TextEditor_UndoAvailable, TRUE);
-    
-    data->undopointer += sizeof(struct UserAction);
-    
-    *(short *)data->undopointer = 0xff;
+
+    data->undopointer = (APTR)((char *)data->undopointer + sizeof(struct UserAction));
+    data->undocur++;
+    data->undofill = data->undocur;
+
     buffer->x  = data->CPos_X;
     buffer->y  = LineNr(data->actualline, data);
-
     buffer->type = eventtype;
+
     switch(eventtype)
     {
-      case backspacemerge:
-      case mergelines:
+      case ET_BACKSPACEMERGE:
+      case ET_MERGELINES:
+      {
         buffer->del.style = data->actualline->next->line.Color;
         buffer->del.flow = data->actualline->next->line.Flow;
         buffer->del.separator = data->actualline->next->line.Separator;
-        break;
-      case deletechar:
-      case backspacechar:
+      }
+      break;
+
+      case ET_DELETECHAR:
+      case ET_BACKSPACECHAR:
+      {
         buffer->del.character = *eventdata;
         buffer->del.style = GetStyle(data->CPos_X, data->actualline);
         buffer->del.flow = data->actualline->line.Flow;
         buffer->del.separator = data->actualline->line.Separator;
-        break;
-      case pasteblock:
-        {
-            struct marking *block = (struct marking *)eventdata;
+      }
+      break;
 
-          buffer->x  = block->startx;
-          buffer->y  = LineNr(block->startline, data);
-          buffer->blk.x = block->stopx;
-          buffer->blk.y = LineNr(block->stopline, data);
-          break;
-        }
-      case deleteblock:
-        {
-          char *text;
-          struct marking *block = (struct marking *)eventdata;
+      case ET_PASTEBLOCK:
+      {
+        struct marking *block = (struct marking *)eventdata;
 
-          if((text = GetBlock((struct marking *)eventdata, data)))
-          {
-            buffer->x = block->startx;
-            buffer->y = LineNr(block->startline, data);
-            buffer->clip = (unsigned char *)text;
-            if(data->flags & FLG_FreezeCrsr)
-            {
-              buffer->type = deleteblock_nomove;
-            }
-          }
-          else
-          {
-            ResetUndoBuffer(data);
-            DoMethod(data->object, MUIM_TextEditor_HandleError, Error_NotEnoughUndoMem);
-          }
+        buffer->x  = block->startx;
+        buffer->y  = LineNr(block->startline, data);
+        buffer->blk.x = block->stopx;
+        buffer->blk.y = LineNr(block->stopline, data);
+      }
+      break;
+
+      case ET_DELETEBLOCK:
+      {
+        char *text;
+        struct marking *block = (struct marking *)eventdata;
+
+        if((text = GetBlock((struct marking *)eventdata, data)))
+        {
+          buffer->x = block->startx;
+          buffer->y = LineNr(block->startline, data);
+          buffer->clip = (unsigned char *)text;
+
+          if(data->flags & FLG_FreezeCrsr)
+            buffer->type = ET_DELETEBLOCK_NOMOVE;
         }
-        break;
+        else
+        {
+          ResetUndoBuffer(data);
+          DoMethod(data->object, MUIM_TextEditor_HandleError, Error_NotEnoughUndoMem);
+        }
+      }
+      break;
+
+      default:
+        // nothing to do
+      break;
     }
   }
 
   RETURN(TRUE);
   return(TRUE);
+}
+
+void ResetUndoBuffer(struct InstData *data)
+{
+  ENTER();
+
+  if(data->undosize != 0)
+  {
+    struct UserAction *buffer = (struct UserAction *)data->undobuffer;
+
+    while(data->undocur > 0)
+    {
+      if(buffer->type == ET_DELETEBLOCK)
+        MyFreePooled(data->mypool, buffer->clip);
+
+      buffer++;
+      data->undocur--;
+      data->undofill--;
+    }
+
+    while(data->undofill > 0)
+    {
+      if(buffer->type == ET_PASTEBLOCK)
+        MyFreePooled(data->mypool, buffer->clip);
+
+      buffer++;
+      data->undofill--;
+    }
+
+    data->undopointer = data->undobuffer;
+
+    ASSERT(data->undocur == 0);
+    ASSERT(data->undofill == 0);
+  }
+
+  LEAVE();
+}
+
+void ResizeUndoBuffer(struct InstData *data, ULONG level)
+{
+  ENTER();
+
+  if(data->undolevel != level)
+  {
+    D(DBF_UNDO, "resizing undo buffer for %ld undo levels", level);
+
+    if(data->undobuffer != NULL)
+    {
+      ResetUndoBuffer(data);
+      MyFreePooled(data->mypool, data->undobuffer);
+    }
+
+    data->undobuffer = NULL;
+    data->undopointer = NULL;
+    data->undosize = 0;
+    data->undofill = 0;
+    data->undocur = 0;
+    data->undolevel = level;
+
+    if(level > 0)
+    {
+      ULONG newSize;
+
+      // calculate number of bytes from number of undo levels
+      newSize = (level * sizeof(struct UserAction));
+
+      // allocate a new undo buffer
+      if((data->undobuffer = MyAllocPooled(data->mypool, newSize)) != NULL)
+      {
+        data->undopointer = data->undobuffer;
+        data->undosize = newSize;
+      }
+    }
+  }
+
+  LEAVE();
 }

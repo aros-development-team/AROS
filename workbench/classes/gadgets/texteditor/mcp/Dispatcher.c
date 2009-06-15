@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -36,10 +36,8 @@
 #include "SDI_hook.h"
 
 // the main mcp dispatcher
-DISPATCHERPROTO(_DispatcherP)
+DISPATCHER(_DispatcherP)
 {
-  DISPATCHER_INIT
-  
   switch(msg->MethodID)
   {
     case OM_NEW:                              return(New(cl, obj, (APTR)msg));
@@ -49,14 +47,10 @@ DISPATCHERPROTO(_DispatcherP)
   }
 
   return(DoSuperMethodA(cl, obj, msg));
-  
-  DISPATCHER_EXIT
 }
 
-DISPATCHERPROTO(Text_Dispatcher)
+DISPATCHER(Text_Dispatcher)
 {
-  DISPATCHER_INIT
-  
   switch(msg->MethodID)
   {
     case OM_SET:
@@ -71,60 +65,49 @@ DISPATCHERPROTO(Text_Dispatcher)
   }
   
   return(DoSuperMethodA(cl, obj, msg));
-  
-  DISPATCHER_EXIT
 }
 
-DISPATCHERPROTO(WidthSlider_Dispatcher)
+DISPATCHER(WidthSlider_Dispatcher)
 {
-  DISPATCHER_INIT
-  
   if(msg->MethodID == MUIM_Numeric_Stringify)
   {
     struct MUIP_Numeric_Stringify *smsg = (struct MUIP_Numeric_Stringify *)msg;
 
     if(smsg->value == 1)
-      return (ULONG)GetStr(MSG_SliderText_MinWidth);
+      return (ULONG)tr(MSG_SliderText_MinWidth);
 
     if(smsg->value == 6)
-      return (ULONG)GetStr(MSG_SliderText_MaxWidth);
+      return (ULONG)tr(MSG_SliderText_MaxWidth);
   }
 
   return(DoSuperMethodA(cl, obj, msg));
-  
-  DISPATCHER_EXIT
 }
 
-DISPATCHERPROTO(SpeedSlider_Dispatcher)
+DISPATCHER(SpeedSlider_Dispatcher)
 {
-  DISPATCHER_INIT
-  
   if(msg->MethodID == MUIM_Numeric_Stringify)
   {
     struct MUIP_Numeric_Stringify *smsg = (struct MUIP_Numeric_Stringify *)msg;
 
     if(smsg->value == 0)
-      return (ULONG)GetStr(MSG_SliderText_MinSpeed);
+      return (ULONG)tr(MSG_SliderText_MinSpeed);
     else
     {
       static char buf[20];
 
-      sprintf(buf, "%ld ms", smsg->value*25);
+      snprintf(buf, sizeof(buf), "%d ms", (int)smsg->value*25);
 
       return (ULONG)buf;
     }
   }
 
   return(DoSuperMethodA(cl, obj, msg));
-  
-  DISPATCHER_EXIT
 }
 
 struct MUI_CustomClass *widthslider_mcc = NULL;
 struct MUI_CustomClass *speedslider_mcc = NULL;
 struct MUI_CustomClass *text_mcc = NULL;
 
-#ifndef __AROS__
 BOOL CreateSubClasses(void)
 {
   if((widthslider_mcc = MUI_CreateCustomClass(NULL, "Slider.mui", NULL, 0, ENTRY(WidthSlider_Dispatcher))))
@@ -162,4 +145,3 @@ void DeleteSubClasses(void)
   }
 }
 
-#endif
