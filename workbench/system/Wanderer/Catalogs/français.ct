@@ -1,19 +1,19 @@
-## version $VER: wanderer.catalog 1.0 (21.02.2004)
+## version $VER: wanderer.catalog 1.1 (15.06.2009)
 ## language français
 ## codeset 0
 ;
 MSG_TITLE
 Wanderer
-; Wanderer
+;
 MSG_DESCRIPTION
 Gestionnaire de fichiers
-; File Manager
+;
 MSG_SCREENTITLE
 Wanderer %s mémoire graphique, %s autre mémoire
-;Wanderer %s graphics mem %s other mem
+;
 MSG_MEM_B
 o
-; B
+;
 MSG_MEM_K
 K
 ;
@@ -39,7 +39,7 @@ MSG_MEN_SC_EXECUTE
 E
 ;
 MSG_MEN_SHELL
-Shell...
+Ligne de commande...
 ;
 MSG_MEN_SC_SHELL
 W
@@ -66,7 +66,7 @@ MSG_MEN_SC_NEWDRAW
 N
 ;
 MSG_MEN_OPENPAR
-Ouvrir Parent
+Ouvrir parent
 ;
 MSG_MEN_CLOSE
 Fermer
@@ -84,13 +84,13 @@ MSG_MEN_SC_CONTENTS
 A
 ;
 MSG_MEN_CLRSEL
-Aucune selection
+Aucune sélection
 ;
 MSG_MEN_SC_CLRSEL
 Z
 ;
 MSG_MEN_SNAPSHT
-Snapshot
+Figer
 ;
 MSG_MEN_ALL
 Tout
@@ -99,7 +99,7 @@ MSG_MEN_VIEW
 Vue
 ;
 MSG_MEN_ICVIEW
-Vue des icônes
+Vue par icônes
 ;
 MSG_MEN_DCVIEW
 Vue détaillée
@@ -108,10 +108,10 @@ MSG_MEN_ALLFIL
 Tous les fichiers
 ;
 MSG_MEN_SORTIC
-Trié
+Trier
 ;
 MSG_MEN_CLNUP
-Nettoyé
+Nettoyer
 ;
 MSG_MEN_SC_CLNUP
 U
@@ -126,7 +126,7 @@ MSG_MEN_BYSIZE
 Par taille
 ;
 MSG_MEN_REVERSE
-Inverse
+Inverser
 ;
 MSG_MEN_DRWFRST
 Dossiers en premier
@@ -140,15 +140,190 @@ Ouvrir
 MSG_MEN_SC_OPEN
 O
 ;
+MSG_MEN_RENAME
+Renommer...
+;
+MSG_MEN_SC_RENAME
+R
+;
 MSG_MEN_INFO
-Information
+Information...
 ;
 MSG_MEN_SC_INFO
 I
 ;
 MSG_MEN_DELETE
-Effacer
+Effacer...
 ;
 MSG_MEN_TOOLS
 Outils
+;
+MSG_MEN_ICONSORTING
+Par icônes
+;
+MSG_MEN_GROUPICONS
+Par groupes d'icônes
+;
+MSG_MEN_ICONSCLOSE
+Fermer
+;
+MSG_REALLYQUIT
+Désirez-vous réellement quitter Wanderer ?
+;
+MSG_YESNO
+*Oui|Non
+;
+MSG_DUMMY
+DUMMY
+; DUMMY
+; DUMMY :)
+MSG_USERSCREENTITLE
+Wanderer %s mémoire graphique, %s autre mémoire
+;
+MSG_MEN_FORMAT
+Formatter le disque...
+;
+MSG_MEN_SHUTDOWN
+Eteindre...
+;
+MSG_SHUTDOWN_TITLE
+Eteindre le système...
+;
+MSG_SHUTDOWN_BODY
+Que désirez-vous faire ?
+;
+MSG_SHUTDOWN_BUTTONS
+Eteindre l'ordinateur|Redémarrer l'ordinateur|Redémarrer AROS|*Annuler
+;
+MSG_ACTION_NOT_SUPPORTED
+L'option sélectionnée n'est pas disponible sur votre système.
+;
+MSG_OK
+*Valider
+;
+MSG_EMPTY_TRASH
+Vider la corbeille
+;
+MSG_PUT_AWAY
+Mettre à l'écart
+;
+MSG_LEAVE_OUT
+Exclure
+;
+MSG_UNSNAPSHOT 
+Défiger
+;
+MSG_SNAPSHOT
+Figer
+;
+MSG_REQU_DELETE
+Effacer le fichier...
+;
+MSG_REQU_DELETE_YESNO
+_Oui|Oui à _tout|_Non|Non à to_ut
+;
+MSG_REQU_DELETE_DRAWER_S
+Réellement effacer le répertoire
+;
+MSG_REQU_DELETE_DRAWER_E
+?
+;
+MSG_REQU_DELETE_FILE_S
+Réellement effacer le fichier
+;
+MSG_REQU_DELETE_FILE_M
+situé dans
+;
+MSG_REQU_DELETE_FILE_E
+?
+;
+MSG_REQU_OVERWRITE
+Ecraser le fichier...
+;
+MSG_REQU_OVERWRITE_E
+?
+;
+MSG_REQU_OVERWRITE_YESNO
+_Ecraser|_Tout écraser|_Non|Non à to_ut
+;
+MSG_REQU_OVERWRITE_SKIPABORT
+_Passer|_Annuler
+;
+MSG_REQU_PROTECTION
+Protection du fichier
+;
+MSG_REQU_PROTECTION_UNPROTECT
+_Déprotéger|_Tout déprotéger|_Non|Non à to_ut
+;
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_S
+Souhaitez-vous déprotéger ce répertoire
+;
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
+?
+;
+MSG_NOFILEACCESS_S
+Fichier inaccessible
+;
+MSG_NOFILEACCESS_M
+situé dans
+;
+MSG_NOFILEACCESS_E
+ 
+;
+MSG_NODRAWERACCESS_S
+Répertoire non disponible
+;
+MSG_NODRAWERACCESS_E
+ 
+;
+MSG_REQU_FILEUNPROTECT_S
+Souhaitez-vous déprotéger ce fichier
+;
+MSG_REQU_FILEUNPROTECT_M
+situé dans
+;
+MSG_REQU_FILEUNPROTECT_E
+?
+;
+MSG_WANDERER_FILEACCESS
+Accès fichier Wanderer
+;
+MSG_WANDERER_FILEACCESS_PROCESSING
+En cours...
+;
+MSG_WANDERER_FILEACCESS_STOP
+Stopper
+;
+MSG_WANDERER_FILEACCESS_MOVEFROM
+Déplacer de
+;
+MSG_WANDERER_FILEACCESS_MOVETO
+Déplacer vers
+;
+MSG_WANDERER_FILEACCESS_COPYFROM
+Copier de
+;
+MSG_WANDERER_FILEACCESS_COPYTO
+Copier vers
+;
+MSG_WANDERER_FILEACCESS_FILE 
+Fichier
+;
+MSG_WANDERER_FILEACCESS_TRAFFIC
+Taux de transfert
+;
+MSG_WANDERER_FILEACCESS_DELETEFROM
+Effacer d'un répertoire
+;
+MSG_WANDERER_FILEACCESS_FILETODELETE
+Fichier à effacer
+;
+MSG_WANDERER_FILEACCESS_NOOFFILES
+Fichiers traités:
+;
+MSG_WANDERER_FILEACCESS_ACTUAL
+Taille de ce fichier:
+;
+MSG_WANDERER_FILEACCESS_TOTAL
+Taille globale:
 ;
