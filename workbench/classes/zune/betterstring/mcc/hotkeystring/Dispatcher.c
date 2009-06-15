@@ -29,140 +29,155 @@
 #include "HotkeyString_mcc.h"
 
 #include "private.h"
-#include "rev.h"
+#include "version.h"
 
-ULONG	Setup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
+IPTR Setup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
 {
-	struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
-	ULONG result;
+  struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
+  IPTR result;
 
-	if((result = DoSuperMethodA(cl, obj, (Msg)rinfo)))
-	{
-		data->EventNode.ehn_Priority	= 1;
-		data->EventNode.ehn_Flags		= 0;
-		data->EventNode.ehn_Object		= obj;
-		data->EventNode.ehn_Class  	= cl;
-		data->EventNode.ehn_Events		= IDCMP_RAWKEY;
-		DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->EventNode);
-	}
-	return result;
+  if((result = DoSuperMethodA(cl, obj, (Msg)rinfo)))
+  {
+    data->EventNode.ehn_Priority  = 1;
+    data->EventNode.ehn_Flags    = 0;
+    data->EventNode.ehn_Object    = obj;
+    data->EventNode.ehn_Class    = cl;
+    data->EventNode.ehn_Events    = IDCMP_RAWKEY;
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->EventNode);
+  }
+  return result;
 }
 
-ULONG Cleanup (struct IClass *cl, Object *obj, Msg msg)
+IPTR Cleanup (struct IClass *cl, Object *obj, Msg msg)
 {
-	struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
+  struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
 
-	DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->EventNode);
-	return DoSuperMethodA(cl, obj, msg);
+  DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->EventNode);
+  return DoSuperMethodA(cl, obj, msg);
 }
 
 VOID Set (struct IClass *cl, Object *obj, struct opSet *msg)
 {
-	struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
-	struct TagItem *tag;
-	
-  if((tag = FindTagItem(MUIA_HotkeyString_Snoop, msg->ops_AttrList)))
-	{
-		if(tag->ti_Data)
-				data->Flags |=  FLG_Snoop;
-		else	data->Flags &= ~FLG_Snoop;
-
-		if(data->Flags & FLG_Active)
-			set(_win(obj), MUIA_Window_DisableKeys, (data->Flags & FLG_Snoop) ? 0xffffff : 0);
-	}
-}
-
-extern char _VERSION, _REVISION;
-
-ULONG Get (struct IClass *cl, Object *obj, struct opGet *msg)
-{
-	ULONG ti_Data;
-
-	switch(msg->opg_AttrID)
-	{
-		case MUIA_Version:
-			ti_Data = LIB_VERSION;
-		break;
-
-		case MUIA_Revision:
-			ti_Data = LIB_REVISION;
-		break;
-
-		default:
-			return DoSuperMethodA(cl, obj, (Msg)msg);
-		break;
-	}
-	*msg->opg_Storage = ti_Data;
-	return TRUE;
-}
-
-DISPATCHERPROTO(_Dispatcher)
-{
-  DISPATCHER_INIT
-  
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
-	ULONG	result = 0;
+  struct TagItem *tag;
 
-	switch(msg->MethodID)
-	{
-		case OM_NEW:
-		{
-			if((obj = (Object *)(result = DoSuperMethodA(cl, obj, msg))))
-			{
-				struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
-				data->Flags |= FLG_Snoop;
-				Set(cl, obj, (struct opSet *)msg);
-			}
-		}
-		break;
+  if((tag = FindTagItem(MUIA_HotkeyString_Snoop, msg->ops_AttrList)))
+  {
+    if(tag->ti_Data)
+      setFlag(data->Flags, FLG_Snoop);
+    else
+      clearFlag(data->Flags, FLG_Snoop);
 
-		case MUIM_Setup:
-			result = Setup(cl, obj, (struct MUI_RenderInfo *)msg);
-		break;
+    if(isFlagSet(data->Flags, FLG_Active))
+      set(_win(obj), MUIA_Window_DisableKeys, isFlagSet(data->Flags, FLG_Snoop) ? 0xffffff : 0);
+  }
 
-		case OM_SET:
-			Set(cl, obj, (struct opSet *)msg);
-			result = DoSuperMethodA(cl, obj, msg);
-		break;
+  if((tag = FindTagItem(MUIA_HotkeyString_IX, msg->ops_AttrList)))
+  {
+    struct InputXpression  *ix  = (struct InputXpression *)tag->ti_Data;
+    struct IntuiMessage    imsg;
 
-		case OM_GET:
-			result = Get(cl, obj, (struct opGet *)msg);
-		break;
+    if (ix && ix->ix_Class == IECLASS_RAWKEY)
+    {
+      struct MUIP_HandleEvent msg = { 0, &imsg, MUIKEY_NONE };
 
-		case MUIM_HandleEvent:
-		{
-			struct MUIP_HandleEvent *hmsg = (struct MUIP_HandleEvent *)msg;
-			if(((data->Flags & (FLG_Active | FLG_Snoop)) == (FLG_Active | FLG_Snoop)) && hmsg->imsg)
-				result = HandleInput(cl, obj, hmsg);
-		}
-		break;
+      imsg.Class    = IECLASS_RAWKEY;
+      imsg.Code    = ix->ix_Code;
+      imsg.Qualifier  = ix->ix_Qualifier;
 
-		case MUIM_GoActive:
-		{
-			data->Flags |= FLG_Active;
-			if(data->Flags & FLG_Snoop)
-				set(_win(obj), MUIA_Window_DisableKeys, 0xffffffff);
-			result = DoSuperMethodA(cl, obj, msg);
-		}
-		break;
+      HandleInput(cl, obj, &msg);
+    }
+  }
+}
 
-		case MUIM_GoInactive:
-		{
-			data->Flags &= ~FLG_Active;
-			if(data->Flags & FLG_Snoop)
-				set(_win(obj), MUIA_Window_DisableKeys, 0);
-			result = DoSuperMethodA(cl, obj, msg);
-		}
-		break;
+IPTR Get (struct IClass *cl, Object *obj, struct opGet *msg)
+{
+  IPTR ti_Data;
 
-		case MUIM_Cleanup:
-			result = Cleanup(cl, obj, msg);
-		break;
+  switch(msg->opg_AttrID)
+  {
+    case MUIA_Version:
+      ti_Data = LIB_VERSION;
+    break;
 
-		default:
-			result = DoSuperMethodA(cl, obj, msg);
-		break;
-	}
-	return result;
-	DISPATCHER_EXIT
+    case MUIA_Revision:
+      ti_Data = LIB_REVISION;
+    break;
+
+    default:
+      return DoSuperMethodA(cl, obj, (Msg)msg);
+    break;
+  }
+  *msg->opg_Storage = ti_Data;
+  return TRUE;
+}
+
+DISPATCHER(_Dispatcher)
+{
+  struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
+  IPTR  result = 0;
+
+  switch(msg->MethodID)
+  {
+    case OM_NEW:
+    {
+      if((obj = (Object *)(result = DoSuperMethodA(cl, obj, msg))))
+      {
+        struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
+
+        setFlag(data->Flags, FLG_Snoop);
+        Set(cl, obj, (struct opSet *)msg);
+      }
+    }
+    break;
+
+    case MUIM_Setup:
+      result = Setup(cl, obj, (struct MUI_RenderInfo *)msg);
+    break;
+
+    case OM_SET:
+      Set(cl, obj, (struct opSet *)msg);
+      result = DoSuperMethodA(cl, obj, msg);
+    break;
+
+    case OM_GET:
+      result = Get(cl, obj, (struct opGet *)msg);
+    break;
+
+    case MUIM_HandleEvent:
+    {
+      struct MUIP_HandleEvent *hmsg = (struct MUIP_HandleEvent *)msg;
+
+      if(isFlagSet(data->Flags, FLG_Active) && isFlagSet(data->Flags, FLG_Snoop) && hmsg->imsg)
+        result = HandleInput(cl, obj, hmsg);
+    }
+    break;
+
+    case MUIM_GoActive:
+    {
+      setFlag(data->Flags, FLG_Active);
+      if(isFlagSet(data->Flags, FLG_Snoop))
+        set(_win(obj), MUIA_Window_DisableKeys, 0xffffffff);
+      result = DoSuperMethodA(cl, obj, msg);
+    }
+    break;
+
+    case MUIM_GoInactive:
+    {
+      clearFlag(data->Flags, FLG_Active);
+      if(isFlagSet(data->Flags, FLG_Snoop))
+        set(_win(obj), MUIA_Window_DisableKeys, 0);
+      result = DoSuperMethodA(cl, obj, msg);
+    }
+    break;
+
+    case MUIM_Cleanup:
+      result = Cleanup(cl, obj, msg);
+    break;
+
+    default:
+      result = DoSuperMethodA(cl, obj, msg);
+    break;
+  }
+  return result;
 }

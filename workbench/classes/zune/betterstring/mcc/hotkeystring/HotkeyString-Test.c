@@ -20,12 +20,13 @@
 
 ***************************************************************************/
 
-#include <exec/tasks.h>
 #include <libraries/mui.h>
-#include <proto/exec.h>
+#include <libraries/iffparse.h>
+#include <clib/alib_protos.h>
 #include <proto/intuition.h>
-#include <proto/iffparse.h>
 #include <proto/muimaster.h>
+#include <proto/exec.h>
+#include <proto/utility.h>
 
 #include "HotkeyString_mcc.h"
 #include "private.h"
@@ -43,7 +44,11 @@ struct Library *KeymapBase = NULL;
 #else
 struct IntuitionBase *IntuitionBase = NULL;
 struct Library *MUIMasterBase = NULL;
+#if defined(__AROS__)
+struct UtilityBase *UtilityBase = NULL;
+#else
 struct Library *UtilityBase = NULL;
+#endif
 struct Library *KeymapBase = NULL;
 #endif
 
@@ -64,100 +69,100 @@ int main(void)
 {
   if((IntuitionBase = (APTR)OpenLibrary("intuition.library", 38)) &&
     GETINTERFACE(IIntuition, IntuitionBase))
-  if((KeymapBase = OpenLibrary("keymap.library", 38)) &&
+  if((KeymapBase = OpenLibrary("keymap.library", 37)) &&
     GETINTERFACE(IKeymap, KeymapBase))
-  if((UtilityBase = OpenLibrary("utility.library", 38)) &&
+  if((UtilityBase = (APTR)OpenLibrary("utility.library", 38)) &&
     GETINTERFACE(IUtility, UtilityBase))
-	if((MUIMasterBase = OpenLibrary("muimaster.library", MUIMASTER_VMIN)) &&
+  if((MUIMasterBase = OpenLibrary("muimaster.library", MUIMASTER_VMIN)) &&
     GETINTERFACE(IMUIMaster, MUIMasterBase))
-	{
-		struct	MUI_CustomClass	*mcc;
-		Object	*app, *window, *bstring, *button;
-		STRPTR	classes[] = {"BetterString.mcc", NULL};
+  {
+    struct  MUI_CustomClass  *mcc;
+    Object  *app, *window, *bstring, *button;
+    const char *classes[] = {"BetterString.mcc", NULL};
 
-		mcc = MUI_CreateCustomClass(NULL, "BetterString.mcc", NULL, sizeof(struct InstData), ENTRY(_Dispatcher));
-		app =	ApplicationObject,
-					MUIA_Application_Author,		"Allan Odgaard",
-					MUIA_Application_Base,			"HotkeyString-Demo",
-					MUIA_Application_Copyright,	"®1997 Allan Odgaard",
-					MUIA_Application_Description,	"HotkeyString.mcc demonstration program",
-					MUIA_Application_Title,			"HotkeyString-Demo",
-					MUIA_Application_Version,		"$VER: HotkeyString-Demo V1.0 (3-Sep-97)",
-					MUIA_Application_UsedClasses, classes,
+    mcc = MUI_CreateCustomClass(NULL, "BetterString.mcc", NULL, sizeof(struct InstData), ENTRY(_Dispatcher));
+    app =  ApplicationObject,
+          MUIA_Application_Author,    "Allan Odgaard",
+          MUIA_Application_Base,      "HotkeyString-Demo",
+          MUIA_Application_Copyright,  "®1997 Allan Odgaard",
+          MUIA_Application_Description,  "HotkeyString.mcc demonstration program",
+          MUIA_Application_Title,      "HotkeyString-Demo",
+          MUIA_Application_Version,    "$VER: HotkeyString-Demo V1.0 (3-Sep-97)",
+          MUIA_Application_UsedClasses, classes,
 
-					MUIA_Application_Window, window = WindowObject,
-						MUIA_Window_Title,		"HotkeyString-Demo",
-						MUIA_Window_ID,		    MAKE_ID('M','A','I','N'),
-						MUIA_Window_RootObject, VGroup,
-							Child, TextObject,
-								MUIA_Font, MUIV_Font_Tiny,
-								MUIA_Text_Contents, "\33cHotkeyString.mcc",
-								End,
+          MUIA_Application_Window, window = WindowObject,
+            MUIA_Window_Title,    "HotkeyString-Demo",
+            MUIA_Window_ID,        MAKE_ID('M','A','I','N'),
+            MUIA_Window_RootObject, VGroup,
+              Child, TextObject,
+                MUIA_Font, MUIV_Font_Tiny,
+                MUIA_Text_Contents, "\33cHotkeyString.mcc",
+                End,
 
-							Child, HGroup,
-								Child, bstring = ((Object *)NewObject(mcc->mcc_Class, NULL,
-									StringFrame,
-									MUIA_CycleChain, TRUE,
-									MUIA_String_AdvanceOnCR, TRUE,
-									MUIA_HotkeyString_Snoop, FALSE,
-									End),
-								Child, button = TextObject, ButtonFrame,
-									MUIA_CycleChain, TRUE,
-									MUIA_Background, MUII_ButtonBack,
-									MUIA_Text_Contents, "Sample",
-									MUIA_Text_SetMax, TRUE,
-									MUIA_InputMode, MUIV_InputMode_Toggle,
-									End,
-								End,
+              Child, HGroup,
+                Child, bstring = ((Object *)NewObject(mcc->mcc_Class, NULL,
+                  StringFrame,
+                  MUIA_CycleChain, TRUE,
+                  MUIA_String_AdvanceOnCR, TRUE,
+                  MUIA_HotkeyString_Snoop, FALSE,
+                  End),
+                Child, button = TextObject, ButtonFrame,
+                  MUIA_CycleChain, TRUE,
+                  MUIA_Background, MUII_ButtonBack,
+                  MUIA_Text_Contents, "Sample",
+                  MUIA_Text_SetMax, TRUE,
+                  MUIA_InputMode, MUIV_InputMode_Toggle,
+                  End,
+                End,
 
-							Child, TextObject,
-								MUIA_Font, MUIV_Font_Tiny,
-								MUIA_Text_Contents, "\33cConstant snoop",
-								End,
-							Child, NewObject(mcc->mcc_Class, NULL,
-								StringFrame,
-								MUIA_CycleChain, TRUE,
-								End,
+              Child, TextObject,
+                MUIA_Font, MUIV_Font_Tiny,
+                MUIA_Text_Contents, "\33cConstant snoop",
+                End,
+              Child, NewObject(mcc->mcc_Class, NULL,
+                StringFrame,
+                MUIA_CycleChain, TRUE,
+                End,
 
-							End,
-						End,
-					End;
+              End,
+            End,
+          End;
 
-		if(app)
-		{
-				ULONG sigs;
+    if(app)
+    {
+        ULONG sigs;
 
-			DoMethod(window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, MUIV_Notify_Application, 3, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-			DoMethod(button, MUIM_Notify, MUIA_Selected, TRUE, MUIV_Notify_Window, 3, MUIM_Set, MUIA_Window_ActiveObject, bstring);
-			DoMethod(button, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, bstring, 3, MUIM_Set, MUIA_HotkeyString_Snoop, MUIV_TriggerValue);
-			DoMethod(bstring, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime, button, 3, MUIM_Set, MUIA_Selected, FALSE);
+      DoMethod(window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, MUIV_Notify_Application, 3, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+      DoMethod(button, MUIM_Notify, MUIA_Selected, TRUE, MUIV_Notify_Window, 3, MUIM_Set, MUIA_Window_ActiveObject, bstring);
+      DoMethod(button, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, bstring, 3, MUIM_Set, MUIA_HotkeyString_Snoop, MUIV_TriggerValue);
+      DoMethod(bstring, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime, button, 3, MUIM_Set, MUIA_Selected, FALSE);
 
-			set(window, MUIA_Window_ActiveObject, bstring);
-			set(window, MUIA_Window_Open, TRUE);
-			
-      while((LONG)DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
-			{
-				if(sigs)
-				{
-					sigs = Wait(sigs | SIGBREAKF_CTRL_C);
-					if(sigs & SIGBREAKF_CTRL_C)
-						break;
-				}
-			}
+      set(window, MUIA_Window_ActiveObject, bstring);
+      set(window, MUIA_Window_Open, TRUE);
 
-			MUI_DisposeObject(app);
-			if(mcc)
-				MUI_DeleteCustomClass(mcc);
-		}
+      while((LONG)DoMethod(app, MUIM_Application_NewInput, &sigs) != (LONG)MUIV_Application_ReturnID_Quit)
+      {
+        if(sigs)
+        {
+          sigs = Wait(sigs | SIGBREAKF_CTRL_C);
+          if(sigs & SIGBREAKF_CTRL_C)
+            break;
+        }
+      }
+
+      MUI_DisposeObject(app);
+      if(mcc)
+        MUI_DeleteCustomClass(mcc);
+    }
 
     DROPINTERFACE(IMUIMaster);
-		CloseLibrary(MUIMasterBase);
-	}
+    CloseLibrary(MUIMasterBase);
+  }
 
   if(UtilityBase)
   {
     DROPINTERFACE(IUtility);
-    CloseLibrary(UtilityBase);
+    CloseLibrary((struct Library *)UtilityBase);
   }
 
   if(KeymapBase)

@@ -4,7 +4,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2007 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -18,7 +18,7 @@
 
  BetterString class Support Site:  http://www.sf.net/projects/bstring-mcc/
 
- $Id: C_h.sd,v 1.1 2005/04/21 20:52:04 damato Exp $
+ $Id: C_h.sd 59 2007-03-06 00:08:55Z damato $
 
 ***************************************************************************/
 
@@ -32,8 +32,8 @@
 
 #define MSG_Space ((APTR)1)
 
-extern char *GetStr(APTR);
-extern char *GetStripStr(APTR);
+extern const char *GetStr(APTR);
+extern const char *GetStripStr(APTR);
 extern void OpenCat(void);
 extern void CloseCat(void);
 

@@ -3,15 +3,28 @@ include $(TOP)/config/make.cfg
 
 #MM workbench-classes-zune-hotkeystring-class : includes linklibs
 
-USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../../includes
+#MM workbench-classes-zune-hotkeystring-test : \
+#MM workbench-classes-zune-hotkeystring-class includes linklibs
 
-FILES := Dispatcher \
-	 HandleInput
+USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../../include -I$(SRCDIR)/$(CURDIR)/..
+USER_CFLAGS := -DNO_INLINE_STDARG
+
+FILES := Dispatcher HandleInput Debug vastubs
 	 
-%build_module mmake=workbench-classes-zune-hotkeystring-class \
+%build_module_simple mmake=workbench-classes-zune-hotkeystring-class \
   modname=HotkeyString modtype=mcc \
-  files=$(FILES) conffile=hotkeystring.conf \
-  uselibs="amiga mui rom m"
+  files="library $(FILES)" uselibs="amiga mui rom m"
+
+
+
+USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../../include -I$(SRCDIR)/$(CURDIR)/..
+USER_CFLAGS := -DNO_INLINE_STDARG
+
+%build_prog mmake=workbench-classes-zune-hotkeystring-test \
+    progname=HotkeyString-Test files="HotkeyString-Test $(FILES)" \
+    targetdir=$(AROS_TESTS)/Zune \
+    uselibs="amiga mui"
+
 
 
 #MM includes-copy

@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -24,21 +24,9 @@
 #define BETTERSTRING_MCP_PRIV_H
 
 #include "BetterString_mcp.h"
+#include "Debug.h"
 
 #include <mcc_common.h>
-#include <mcc_debug.h>
-
-#define PREFSIMAGEOBJECT \
-  BitmapObject,\
-    MUIA_Bitmap_Bitmap,       (UBYTE *)&image_bitmap,\
-    MUIA_Bitmap_Height,       IMAGE_HEIGHT,\
-    MUIA_Bitmap_Precision,    0,\
-    MUIA_Bitmap_SourceColors, (ULONG *)image_palette,\
-    MUIA_Bitmap_Transparent,  0,\
-    MUIA_Bitmap_Width,        IMAGE_WIDTH,\
-    MUIA_FixHeight,           IMAGE_HEIGHT,\
-    MUIA_FixWidth,            IMAGE_WIDTH,\
-  End
 
 #define MCPMAXRAWBUF 64
 
@@ -48,24 +36,38 @@
 
 enum
 {
-	ActiveBack = 0,
-	ActiveText,
-	InactiveBack,
-	InactiveText,
-	Cursor,
-	MarkedBack,
-	MarkedText,
-	Font,
-	Frame,
+  ActiveBack = 0,
+  ActiveText,
+  InactiveBack,
+  InactiveText,
+  Cursor,
+  MarkedBack,
+  MarkedText,
+  Font,
+  Frame,
+  SelectOnActive,
+  SelectPointer,
 
-	NumberOfObject
+  NumberOfObject
 };
 
 struct InstData_MCP
 {
-	Object *Objects[NumberOfObject];
+  Object *Objects[NumberOfObject];
 };
 
 Object *CreatePrefsGroup(struct InstData_MCP *data);
+
+/// xget()
+//  Gets an attribute value from a MUI object
+IPTR xget(Object *obj, const IPTR attr);
+#if defined(__GNUC__)
+  // please note that we do not evaluate the return value of GetAttr()
+  // as some attributes (e.g. MUIA_Selected) always return FALSE, even
+  // when they are supported by the object. But setting b=0 right before
+  // the GetAttr() should catch the case when attr doesn't exist at all
+  #define xget(OBJ, ATTR) ({IPTR b=0; GetAttr(ATTR, OBJ, &b); b;})
+#endif
+///
 
 #endif /* BETTERSTRING_MCP_PRIV_H */

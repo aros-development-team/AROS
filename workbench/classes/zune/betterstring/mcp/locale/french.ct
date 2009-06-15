@@ -1,0 +1,49 @@
+## chunk AUTH pferrucci@free.fr
+## version $VER: Betterstring_mcp.ct 2.0 (27.12.06)
+## language français
+## codeset 0
+;
+;
+; BetterString_mcp.cd - BetterString MUI custom prefs catalog description file
+; $Id$
+;
+;#version 2
+;#language english
+;
+;
+MSG_Label_Active
+Actif :
+; Active:
+;
+MSG_Label_Background
+Arrière-plan
+; Background
+;
+MSG_Label_Cursor
+Curseur :
+; Cursor:
+;
+MSG_Label_Fonts
+Police :
+; Font:
+;
+MSG_Label_Frame
+Cadre :
+; Frame:
+;
+MSG_Label_Inactive
+Inactif :
+; Inactive:
+;
+MSG_Label_Marked
+Marqué :
+; Marked:
+;
+MSG_Label_Text
+Texte
+; Text
+;
+MSG_String_TestString
+Tester ici la puissance de Betterstring !
+; Test the power of BetterString here!
+;

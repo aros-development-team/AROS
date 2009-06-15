@@ -3,22 +3,40 @@ include $(TOP)/config/make.cfg
 
 #MM workbench-classes-zune-betterstring-class : includes linklibs
 
-USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../includes -I$(SRCDIR)/$(CURDIR)/../mcp -I$(SRCDIR)/$(CURDIR)/..
+#MM workbench-classes-zune-betterstring-test : \
+#MM workbench-classes-zune-betterstring-class includes linklibs
 
-FILES := AllocBitMap \
-	 AllocFunctions \
-	 Dispatcher \
-	 FileNameCompl \
-	 GetSetAttrs \
-	 HandleInput \
-	 InitConfig \
-	 PrintString \
-	 TextFunctions
-	 
-%build_module mmake=workbench-classes-zune-betterstring-class \
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../mcp
+
+USER_CFLAGS := -DNO_INLINE_STDARG
+
+FILES := \
+        AllocBitMap \
+        AllocFunctions \
+        Dispatcher \
+        FileNameCompl \
+        GetSetAttrs \
+        HandleInput \
+        InitConfig \
+        Pointer \
+        PrintString \
+        Debug \
+        vastubs
+
+%build_module_simple mmake=workbench-classes-zune-betterstring-class \
   modname=BetterString modtype=mcc \
-  files=$(FILES) conffile=betterstring.conf \
-  uselibs="amiga mui rom m"
+  files="library $(FILES)" uselibs="amiga mui rom m"
+
+
+
+USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../include
+USER_CFLAGS := -DNO_INLINE_STDARG
+
+%build_prog mmake=workbench-classes-zune-betterstring-test \
+    progname=BetterString-Test files="BetterString-Test $(FILES)" \
+    targetdir=$(AROS_TESTS)/Zune \
+    uselibs="amiga mui"
+
 
 
 #MM includes-copy

@@ -21,6 +21,7 @@
 ***************************************************************************/
 
 #include <proto/exec.h>
+#include <proto/intuition.h>
 
 /******************************************************************************/
 /*                                                                            */
@@ -31,7 +32,7 @@
 /******************************************************************************/
 
 #include "private.h"
-#include "rev.h"
+#include "version.h"
 
 #define VERSION       LIB_VERSION
 #define REVISION      LIB_REVISION
@@ -41,11 +42,12 @@
 
 #define INSTDATA      InstData
 
-#define UserLibID     "$VER: HotkeyString.mcc " LIB_REV_STRING CPU " (" LIB_DATE ") " LIB_COPYRIGHT
+#define USERLIBID     CLASS " " LIB_REV_STRING " [" SYSTEMSHORT "/" CPU "] (" LIB_DATE ") " LIB_COPYRIGHT
 #define MASTERVERSION 19
 
-#define ClassInit
-#define ClassExit
+#define CLASSINIT
+#define CLASSEXPUNGE
+#define MIN_STACKSIZE 8192
 
 struct Library *KeymapBase = NULL;
 
@@ -53,10 +55,25 @@ struct Library *KeymapBase = NULL;
 struct KeymapIFace *IKeymap = NULL;
 #endif
 
-BOOL ClassInitFunc(UNUSED struct Library *base)
+/******************************************************************************/
+/* define the functions used by the startup code ahead of including mccinit.c */
+/******************************************************************************/
+static BOOL ClassInit(UNUSED struct Library *base);
+static VOID ClassExpunge(UNUSED struct Library *base);
+
+/******************************************************************************/
+/* include the lib startup code for the mcc/mcp  (and muimaster inlines)      */
+/******************************************************************************/
+#include "mccinit.c"
+
+/******************************************************************************/
+/* define all implementations of our user functions                           */
+/******************************************************************************/
+
+static BOOL ClassInit(UNUSED struct Library *base)
 {
-  if((KeymapBase = OpenLibrary("keymap.library", 38)) &&
-     GETINTERFACE(IKeymap, KeymapBase))
+  if((KeymapBase = OpenLibrary("keymap.library", 37)) &&
+     GETINTERFACE(IKeymap, struct KeymapIFace *, KeymapBase))
   {
     return(TRUE);
   }
@@ -65,7 +82,7 @@ BOOL ClassInitFunc(UNUSED struct Library *base)
 }
 
 
-VOID ClassExitFunc(UNUSED struct Library *base)
+static VOID ClassExpunge(UNUSED struct Library *base)
 {
   if(KeymapBase)
   {
@@ -75,10 +92,3 @@ VOID ClassExitFunc(UNUSED struct Library *base)
   }
 }
 
-/******************************************************************************/
-/*                                                                            */
-/* include the lib startup code for the mcc/mcp  (and muimaster inlines)      */
-/*                                                                            */
-/******************************************************************************/
-
-#include "mccheader.c"

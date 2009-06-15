@@ -1,23 +1,39 @@
 TABLE OF CONTENTS
 
 HotkeyString.mcc/HotkeyString.mcc
+HotkeyString.mcc/MUIA_HotkeyString_IX
 HotkeyString.mcc/MUIA_HotkeyString_Snoop
 HotkeyString.mcc/HotkeyString.mcc
 
-HotkeyString.mcc is a subclass of BetterString.mcc, it overloads the input
-method, and converts inputevents to the alphabetical representation. This is
-useful when you allow the user to customize keybindings.
+    *******************************************************************
+    Copyright (C) 2005-2007 by BetterString.mcc Open Source Team
+    $Id: MCC_HotkeyString.doc 99 2007-08-25 22:45:41Z damato $
 
-For feedback write to: Allan Odgaard
-                       Dagmarsgade 36
-                       DK-2200 Copenhagen
-                email: Duff@DIKU.DK
-                  url: http://www.DIKU.dk/students/duff/
- Todo
-¯¯¯¯¯¯
-   MUIA_HotkeyString_IX   - Set an InputXpression as string contents
-   MUIA_HotkeyString_Mode - Tell the class wether or not to display standalone
-                            qualifiers, only qualifiers etc.
+    HotkeyString.mcc is a subclass of BetterString.mcc, it overloads
+    the input method, and converts inputevents to the alphabetical
+    representation. This is useful when you allow the user to customize
+    keybindings.
+
+    The gadget was originally written in 1997 by Allan Odgaard. As of
+    version released in July 2005, the gadget is maintained by
+    the BetterString.mcc Open Source team.
+
+    It is released and distributed under the terms of the GNU Lesser
+    General Public License (LGPL) and available free of charge.
+
+    Please visit http://www.sf.net/projects/bstring-mcc/ for
+    the very latest version and information regarding HotkeyString.mcc
+    *******************************************************************
+
+HotkeyString.mcc/MUIA_HotkeyString_IX
+
+    NAME
+        MUIA_HotkeyString_IX -- [IS.], struct InputXpression *
+
+    FUNCTION
+        Allows to specify a pointer to a standard "struct InputXpression"
+        and sets the contents of the string gadget accordingly to the passed
+        input expression.
 
 HotkeyString.mcc/MUIA_HotkeyString_Snoop
 

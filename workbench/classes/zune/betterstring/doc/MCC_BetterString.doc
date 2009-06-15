@@ -2,37 +2,43 @@ TABLE OF CONTENTS
 
 BetterString.mcc/BetterString.mcc
 BetterString.mcc/MUIA_BetterString_Columns
+BetterString.mcc/MUIA_BetterString_InactiveContents
+BetterString.mcc/MUIA_BetterString_KeyUpFocus
+BetterString.mcc/MUIA_BetterString_KeyDownFocus
 BetterString.mcc/MUIA_BetterString_NoInput
+BetterString.mcc/MUIA_BetterString_NoShortcuts
+BetterString.mcc/MUIA_BetterString_SelectOnActive
 BetterString.mcc/MUIA_BetterString_SelectSize
 BetterString.mcc/MUIA_BetterString_StayActive
 BetterString.mcc/MUIM_BetterString_ClearSelected
+BetterString.mcc/MUIM_BetterString_DoAction
 BetterString.mcc/MUIM_BetterString_FileNameStart
 BetterString.mcc/MUIM_BetterString_Insert
 BetterString.mcc/BetterString.mcc
 
-BetterString is a stringgadget replacement. It is created for MUI, so using it
-should eliminate the problems with the original BOOPSI stringclass.
-The class offers the user to do number arithmetic, like increase, decrease and
-bin<->hex conversion. It has filename completion, ability to mark, cut, copy
-and paste text - Both via mouse and keyboard. The length of the contents
-buffer will dynamically be expanded to hold all of what the user type (unless
-a maximum length is given)
+    *******************************************************************
+    Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+    $Id: MCC_BetterString.doc 163 2009-02-01 13:07:52Z thboeckel $
 
-BetterString is released as POLYMORPH-WARE, which means that you need to pay
-or give me, whatever you want your users to pay or give you.
+    BetterString is a stringgadget replacement. It is created for MUI,
+    so using it should eliminate the problems with the original BOOPSI
+    stringclass. The class offers the user to do number arithmetic, like
+    increase, decrease and bin<->hex conversion. It has filename
+    completion, ability to mark, cut, copy and paste text - Both via
+    mouse and keyboard. The length of the contents buffer will
+    dynamically be expanded to hold all of what the user type (unless
+    a maximum length is given)
 
-This autodoc only describes what is new, compared to the original "String.mui".
-All tags and methods of the old String.mui is supported, except edit hooks.
+    The gadget was originally written in 1997 by Allan Odgaard. As of
+    version 11.7, released in July 2005, the gadget is maintained by
+    the BetterString.mcc Open Source team.
 
-For feedback write to: Allan Odgaard
-                       Dagmarsgade 36
-                       DK-2200 Copenhagen
-                email: Duff@DIKU.DK
-                  url: http://www.DIKU.dk/students/duff/
- Todo
-¯¯¯¯¯¯
-   The class can be set to remember what has been previously typed, and allows
-   the user to go back and forth in the history buffer.
+    It is released and distributed under the terms of the GNU Lesser
+    General Public License (LGPL) and available free of charge.
+
+    Please visit http://www.sf.net/projects/bstring-mcc/ for
+    the very latest version and information regarding BetterString.mcc
+    *******************************************************************
 
 BetterString.mcc/MUIA_BetterString_Columns
 
@@ -41,7 +47,41 @@ For feedback write to: Allan Odgaard
 
     FUNCTION
         Set the width of the stringgadget (in characters)
-        This tag is probably only useful for webbrowsers.
+
+BetterString.mcc/MUIA_BetterString_InactiveContents
+
+    NAME
+        MUIA_BetterString_InactiveContents -- [ISG], STRPTR
+
+    FUNCTION
+        Set the text which will be displayed if no other text is to be displayed
+        and the string gadget is inactive. The text will be shown in an italic
+        style. The supplied text will NOT be copied by BetterString.mcc!! Upon
+        OM_GET the returned pointer is READ-ONLY!!
+
+BetterString.mcc/MUIA_BetterString_KeyUpFocus
+
+    NAME
+        MUIA_BetterString_KeyUpFocus -- [ISG], Object *
+
+    FUNCTION
+        Allows to specify a specific object that will be set as the new
+        window's default object in case the user pressed the UP cursor key.
+
+    SEE ALSO
+        MUIA_BetterString_KeyDownFocus
+
+BetterString.mcc/MUIA_BetterString_KeyDownFocus
+
+    NAME
+        MUIA_BetterString_KeyDownFocus -- [ISG], Object *
+
+    FUNCTION
+        Allows to specify a specific object that will be set as the new
+        window's default object in case the user pressed the DOWN cursor key.
+
+    SEE ALSO
+        MUIA_BetterString_KeyUpFocus
 
 BetterString.mcc/MUIA_BetterString_NoInput
 
@@ -50,6 +90,79 @@ For feedback write to: Allan Odgaard
 
     FUNCTION
         Effectively turns the gadget into read-only mode.
+
+BetterString.mcc/MUIA_BetterString_NoShortcuts
+
+    NAME
+        MUIA_BetterString_NoShortcuts -- [ISG], BOOL
+
+    FUNCTION
+        Per default a BetterString object comes with certain enabled
+        shortcuts for operations like copy & paste. By setting this
+        attribute to FALSE, a developer can define that these default
+        shortcuts should not be enabled.
+
+    NOTE
+        The default shorcuts which can be disabled by this attribute
+        are:
+
+        Amiga + c   = Copy, either what is selected or the complete string.
+        Amiga + x   = Cut, either what is selected or the complete string.
+        Amiga + v   = Paste from clipboard.
+        Amiga + z   = Undo until the last deletion (only one level)
+        Amiga + Z   = Redo the last undo.
+        Amiga + q   = Revert to original string, press it again to go back
+                      to the modified string.
+        Amiga + g   = Toggle case on current character.
+        Amiga + G   = Toggle case from cursor to start of next word.
+        Amiga + i   = Increase the nearest number.
+        Amiga + d   = Decrease the nearest number.
+        Amiga + #   = Convert current hexadecimal number to decimal.
+        Amiga + $   = Convert nearest number to hexadecimal.
+        Amiga + Tab = Complete the current volume, assign or paths name.
+                      You can step thru the various matches by pressing
+                      Amiga+Tab again. Use Amiga+Shift+Tab to go backwards.
+
+        In addition, there are shortcuts which will always be available,
+        no matter if this attribute is set to TRUE or FALSE:
+
+        Ctrl + left      = Navigate to start of line.
+        Ctrl + right     = Navigate to end of line.
+        Alt  + left      = Navigate to start of next word.
+        Alt  + right     = Navigate to start of current or previous word.
+        Ctrl + Delete    = Delete to start of line.
+        Ctrl + Backspace = Delete to end of line.
+        Alt  + Delete    = Delete to start of next word.
+        Alt  + Backspace = Delete to start of current or previous word.
+        Delete           = Delete the marked block, or current character.
+        Backspace        = Delete the marked block, or the character to
+                           the left.
+
+    SEE ALSO
+        MUIM_BetterString_DoAction
+
+BetterString.mcc/MUIA_BetterString_SelectOnActive
+
+    NAME
+        MUIA_BetterString_SelectOnActive -- [ISG], BOOL
+
+    FUNCTION
+        Allows to override the default settings for the preference setting
+        to directly select all text in case a BetterString object will be
+        the new active object of a window (via Tab-key switching or via
+        using the mouse to make the object active.
+
+    NOTE
+        If this attribute is not explicitly set on object creation or later,
+        the default setting a user has configured is used. This attribute
+        should only be manually set if you are *absolutely* sure you require
+        it. Please don't force a user to use this type of functionality and
+        let him choose himself. However, there might be rare cases where 
+        setting this attribute might be required and thus the reason for it
+        to be there.
+
+    SEE ALSO
+
 
 BetterString.mcc/MUIA_BetterString_SelectSize
 
@@ -82,10 +195,99 @@ For feedback write to: Allan Odgaard
         DoMethod(obj, MUIM_BetterString_ClearSelected);
 
     FUNCTION
-        Clear all marked text, if any!
+        Clears all currently marked text. This method is in fact doing
+        the very same like the MUIV_BetterString_DoAction_Delete action of
+        MUIM_BetterString_DoAction.
 
     RESULT
         NONE
+
+    SEE ALSO
+        MUIM_BetterString_DoAction
+
+BetterString.mcc/MUIM_BetterString_DoAction
+
+    NAME
+        MUIM_BetterString_DoAction
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_BetterString_DoAction, ULONG action);
+
+    FUNCTION
+        Allows to manually perform actions like copy, paste, etc. on a
+        BetterString object. This can be used in case you want to trigger an
+        action from your application with other shortcuts or if you want to
+        perform some batched processing on a BetterString object.
+
+        The allowed actions are:
+
+          MUIV_BetterString_DoAction_Cut
+            Cut out the currently selected text and put it into the
+            clipboard
+
+          MUIV_BetterString_DoAction_Copy
+            Copy the currently selected text into the clipboard and
+            deselect it accordingly.
+
+          MUIV_BetterString_DoAction_Paste
+            Paste text from the clipboard at the current cursor position
+
+          MUIV_BetterString_DoAction_Delete
+            Deletes the currently selected content in the gadget
+
+          MUIV_BetterString_DoAction_SelectAll
+            Select all available text in the string gadget
+
+          MUIV_BetterString_DoAction_SelectNone
+            Select no text at all
+
+          MUIV_BetterString_DoAction_Undo
+            Perform an undo operation and reset the text to what
+            was present at the last change.
+
+          MUIV_BetterString_DoAction_Redo
+            After having performed an undo operation
+
+          MUIV_BetterString_DoAction_Revert
+            Revert to original string, calling it again will revert
+            to the modified string again.
+
+          MUIV_BetterString_DoAction_ToggleCase
+            Toggle case on current character.
+
+          MUIV_BetterString_DoAction_ToggleCaseWord
+            Toggle case from cursor to start of next word.
+
+          MUIV_BetterString_DoAction_IncreaseNum
+            Increase the nearest number.
+
+          MUIV_BetterString_DoAction_DecreaseNum
+            Decrease the nearest number.
+
+          MUIV_BetterString_DoAction_HexToDec
+            Convert current hexadecimal number to decimal.
+
+          MUIV_BetterString_DoAction_DecToHex
+            Convert nearest number to hexadecimal.
+
+          MUIV_BetterString_DoAction_NextFileComp
+            Set the string gadget to the next file completion result
+
+          MUIV_BetterString_DoAction_PrevFileComp
+            Set the string gadget to the previous file completion result
+
+    NOTE
+        This functionality may become especially usefull in case you
+        want to have your own shortcuts in your application. In that case
+        you may disable the default shortcuts via MUIA_BetterString_NoShortcuts
+        and call the DoAction method accordingly.
+
+    RESULT
+        Returns TRUE if the action/request succeeded, or FALSE if the
+        action couldn't be executed or an error occurred.
+
+    SEE ALSO
+        MUIA_BetterString_NoShortcuts
 
 BetterString.mcc/MUIM_BetterString_FileNameStart
 
@@ -122,10 +324,9 @@ For feedback write to: Allan Odgaard
         This will insert the given text.
         The position of the inserted text can either be a real position, or:
 
+          MUIV_BetterString_Insert_StartOfString
+          MUIV_BetterString_Insert_EndOfString
           MUIV_BetterString_Insert_BufferPos
-          MUIV_BetterString_Insert_StartOfLine
-          MUIV_BetterString_Insert_EndOfLine
-
 
         If there isn't enough room to fit the complete string, then it will be
         truncated, and the user will get a DisplayBeep().

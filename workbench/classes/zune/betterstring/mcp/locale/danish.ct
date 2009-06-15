@@ -1,0 +1,40 @@
+## version $VER: BetterString_mcp.catalog 2.1 (15.4.2007)
+## codeset 0
+## language dansk
+;
+MSG_Label_Active
+Aktiv:
+; Active:
+;
+MSG_Label_Background
+Baggrund
+; Background
+;
+MSG_Label_Cursor
+Markør:
+; Cursor:
+;
+MSG_Label_Fonts
+Skriftsnit:
+; Font:
+;
+MSG_Label_Frame
+Ramme:
+; Frame:
+;
+MSG_Label_Inactive
+Inaktiv:
+; Inactive:
+;
+MSG_Label_Marked
+Markeret:
+; Marked:
+;
+MSG_Label_Text
+Tekst
+; Text
+;
+MSG_String_TestString
+Her kan du prøve BetterStrings mange muligheder.
+; Test the power of BetterString here!
+;
