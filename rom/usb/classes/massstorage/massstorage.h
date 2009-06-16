@@ -160,7 +160,6 @@ struct NepClassMS
     struct MsgPort     *ncm_DevMsgPort;   /* Message Port for IOParReq */
     UWORD               ncm_UnitProdID;   /* ProductID of unit */
     UWORD               ncm_UnitVendorID; /* VendorID of unit */
-    UWORD               ncm_UnitCfgNum;   /* Config of unit */
     UWORD               ncm_UnitIfNum;    /* Interface number */
     UWORD               ncm_UnitLUN;      /* LUN */
     UWORD               ncm_MaxLUN;       /* Number of LUNs */

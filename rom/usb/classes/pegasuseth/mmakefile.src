@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    pegasus.class dev debug
+
+#MM- rom-usb-classes-pegasus : rom-usb-usbclass rom-usb-poseidon
+
+%build_module mmake=rom-usb-classes-pegasus \
+    modname=pegasus modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="amiga rom mui"
+
+%common

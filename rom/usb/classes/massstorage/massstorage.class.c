@@ -30,8 +30,8 @@ static int libInit(LIBBASETYPEPTR nh)
     struct ClsUnitCfg *cuc = NULL;
     struct NepClassMS *ncm;
     struct NepMSBase *ret = NULL;
-    KPRINTF(10, ("libInit nh: 0x%08lx SysBase: 0x%08lx\n",
-                 nh, SysBase));
+    
+    KPRINTF(10, ("libInit nh: 0x%08lx SysBase: 0x%08lx\n", nh, SysBase));
 
 #define	UtilityBase nh->nh_UtilityBase
     nh->nh_UtilityBase = OpenLibrary("utility.library", 39);
@@ -121,9 +121,7 @@ static int libExpunge(LIBBASETYPEPTR nh)
     {
         KPRINTF(1, ("libExpunge: closelibrary utilitybase 0x%08lx\n",
                     UtilityBase));
-        CloseLibrary((struct Library *) UtilityBase);
-        KPRINTF(5, ("libExpunge: removing library node 0x%08lx\n",
-                    &nh->nh_Library.lib_Node));
+
         Remove(&nh->nh_Library.lib_Node);
         ncm = (struct NepClassMS *) nh->nh_Units.lh_Head;
         while(ncm->ncm_Unit.unit_MsgPort.mp_Node.ln_Succ)
@@ -168,9 +166,9 @@ ADD2EXPUNGELIB(libExpunge, 0)
 struct NepClassMS * usbAttemptInterfaceBinding(struct NepMSBase *nh, struct PsdInterface *pif)
 {
     struct Library *ps;
-    ULONG ifclass;
-    ULONG subclass;
-    ULONG proto;
+    IPTR ifclass;
+    IPTR subclass;
+    IPTR proto;
 
     KPRINTF(1, ("nepMSAttemptInterfaceBinding(%08lx)\n", pif));
     if((ps = OpenLibrary("poseidon.library", 4)))
@@ -214,13 +212,12 @@ struct NepClassMS * usbForceInterfaceBinding(struct NepMSBase *nh, struct PsdInt
     struct ClsDevCfg *cdc;
     struct ClsUnitCfg *cuc;
     STRPTR devname;
-    ULONG ifclass;
-    ULONG subclass;
-    ULONG proto;
-    ULONG ifnum;
-    ULONG cfgnum;
-    ULONG prodid;
-    ULONG vendid;
+    IPTR ifclass;
+    IPTR subclass;
+    IPTR proto;
+    IPTR ifnum;
+    IPTR prodid;
+    IPTR vendid;
     ULONG unitno;
     STRPTR devidstr;
     STRPTR ifidstr;
@@ -250,7 +247,6 @@ struct NepClassMS * usbForceInterfaceBinding(struct NepMSBase *nh, struct PsdInt
                     TAG_DONE);
         psdGetAttrs(PGA_CONFIG, pc,
                     CA_Device, &pd,
-                    CA_ConfigNum, &cfgnum,
                     TAG_END);
         psdGetAttrs(PGA_DEVICE, pd,
                     DA_ProductID, &prodid,
@@ -379,7 +375,6 @@ struct NepClassMS * usbForceInterfaceBinding(struct NepMSBase *nh, struct PsdInt
             ncm->ncm_Config = pc;
             ncm->ncm_UnitLUN = lunnum;
             ncm->ncm_UnitIfNum = ifnum;
-            ncm->ncm_UnitCfgNum = cfgnum;
             ncm->ncm_UnitProdID = prodid;
             ncm->ncm_UnitVendorID = vendid;
             ncm->ncm_TPType = proto;
@@ -704,7 +699,7 @@ AROS_LH3(LONG, usbGetAttrsA,
         case UGA_CLASS:
              if((ti = FindTagItem(UCCA_Priority, tags)))
              {
-                 *((IPTR *) ti->ti_Data) = 0;
+                 *((SIPTR *) ti->ti_Data) = 0;
                  count++;
              }
              if((ti = FindTagItem(UCCA_Description, tags)))
@@ -882,14 +877,14 @@ BOOL nLoadClassConfig(struct NepMSBase *nh)
     pic = psdGetClsCfg(libname);
     if(pic)
     {
-        cdc = psdGetCfgChunk(pic, ncm->ncm_CDC->cdc_ChunkID);
+        cdc = psdGetCfgChunk(pic, AROS_LONG2BE(ncm->ncm_CDC->cdc_ChunkID));
         if(cdc)
         {
             CopyMem(((UBYTE *) cdc) + 8, ((UBYTE *) ncm->ncm_CDC) + 8, min(AROS_LONG2BE(cdc->cdc_Length), AROS_LONG2BE(ncm->ncm_CDC->cdc_Length)));
             psdFreeVec(cdc);
             ncm->ncm_UsingDefaultCfg = FALSE;
         }
-        cuc = psdGetCfgChunk(pic, ncm->ncm_CUC->cuc_ChunkID);
+        cuc = psdGetCfgChunk(pic, AROS_LONG2BE(ncm->ncm_CUC->cuc_ChunkID));
         if(cuc)
         {
             CopyMem(((UBYTE *) cuc) + 8, ((UBYTE *) ncm->ncm_CUC) + 8, min(AROS_LONG2BE(cuc->cuc_Length), AROS_LONG2BE(ncm->ncm_CUC->cuc_Length)));
@@ -933,14 +928,14 @@ BOOL nLoadBindingConfig(struct NepClassMS *ncm)
     pic = psdGetUsbDevCfg(libname, ncm->ncm_DevIDString, ncm->ncm_IfIDString);
     if(pic)
     {
-        cdc = psdGetCfgChunk(pic, ncm->ncm_CDC->cdc_ChunkID);
+        cdc = psdGetCfgChunk(pic, AROS_LONG2BE(ncm->ncm_CDC->cdc_ChunkID));
         if(cdc)
         {
             CopyMem(((UBYTE *) cdc) + 8, ((UBYTE *) ncm->ncm_CDC) + 8, min(AROS_LONG2BE(cdc->cdc_Length), AROS_LONG2BE(ncm->ncm_CDC->cdc_Length)));
             psdFreeVec(cdc);
             ncm->ncm_UsingDefaultCfg = FALSE;
         }
-        cuc = psdGetCfgChunk(pic, ncm->ncm_CUC->cuc_ChunkID);
+        cuc = psdGetCfgChunk(pic, AROS_LONG2BE(ncm->ncm_CUC->cuc_ChunkID));
         if(cuc)
         {
             CopyMem(((UBYTE *) cuc) + 8, ((UBYTE *) ncm->ncm_CUC) + 8, min(AROS_LONG2BE(cuc->cuc_Length), AROS_LONG2BE(ncm->ncm_CUC->cuc_Length)));
@@ -1090,12 +1085,9 @@ AROS_UFH0(void, nMSTask)
     AROS_USERFUNC_INIT
 
     struct NepClassMS *ncm;
-
     ULONG sigmask;
     ULONG sigs;
     LONG ioerr;
-    struct PsdConfig *pc;
-    ULONG confignum;
     UWORD cnt;
 
     struct IOStdReq *ioreq;
@@ -1136,8 +1128,6 @@ AROS_UFH0(void, nMSTask)
                            (ncm->ncm_CDC->cdc_PatchFlags & PFF_CLEAR_EP) ? " ClearEP" : "",
                            (ncm->ncm_CDC->cdc_PatchFlags & PFF_DEBUG) ? " Debug" : "");
         }
-        psdGetAttrs(PGA_INTERFACE, ncm->ncm_Interface, IFA_Config, &pc, TAG_END);
-        psdGetAttrs(PGA_CONFIG, pc, CA_ConfigNum, &confignum, TAG_END);
 
         if(ncm->ncm_CDC->cdc_StartupDelay)
         {
@@ -1383,7 +1373,7 @@ struct NepClassMS * nAllocMS(void)
 {
     struct Task *thistask;
     struct NepClassMS *ncm;
-    ULONG epnum;
+    IPTR epnum;
 
     thistask = FindTask(NULL);
     ncm = thistask->tc_UserData;

@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    cdcacm.class dev debug
+
+#MM- rom-usb-classes-cdcacm : rom-usb-usbclass rom-usb-poseidon
+
+%build_module mmake=rom-usb-classes-cdcacm \
+    modname=cdcacm modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="amiga rom mui"
+
+%common

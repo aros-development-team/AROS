@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    serialcp210x.class dev debug
+
+#MM- rom-usb-classes-serialcp210x : rom-usb-usbclass rom-usb-poseidon
+
+%build_module mmake=rom-usb-classes-serialcp210x \
+    modname=serialcp210x modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="amiga rom mui"
+
+%common

@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    ptp.class numtostr debug
+
+#MM- rom-usb-classes-ptp : rom-usb-usbclass rom-usb-poseidon
+
+%build_module mmake=rom-usb-classes-ptp \
+    modname=ptp modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="amiga rom mui"
+
+%common

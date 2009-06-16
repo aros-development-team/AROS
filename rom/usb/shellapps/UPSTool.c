@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
         PutStr("Wrong arguments!\n");
         return(RETURN_FAIL);
     }
-    ps = OpenLibrary("poseidon.library", 3);
+    ps = OpenLibrary("poseidon.library", 4);
     if(!ps)
     {
         FreeArgs(ArgsHook);

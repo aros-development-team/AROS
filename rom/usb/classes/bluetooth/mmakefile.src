@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    bluetooth.class dev debug
+
+#MM- rom-usb-classes-bluetooth : rom-usb-usbclass rom-usb-poseidon
+
+%build_module mmake=rom-usb-classes-bluetooth \
+    modname=bluetooth modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="amiga rom mui"
+
+%common

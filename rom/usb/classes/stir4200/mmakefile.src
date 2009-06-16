@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    stir4200.class dev debug
+
+#MM- rom-usb-classes-stir4200 : rom-usb-usbclass rom-usb-poseidon
+
+%build_module mmake=rom-usb-classes-stir4200 \
+    modname=stir4200 modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="amiga rom mui"
+
+%common

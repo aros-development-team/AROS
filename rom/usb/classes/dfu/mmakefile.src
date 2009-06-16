@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    dfu.class debug
+
+#MM- rom-usb-classes-dfu : rom-usb-usbclass rom-usb-poseidon
+
+%build_module mmake=rom-usb-classes-dfu \
+    modname=dfu modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="amiga rom mui"
+
+%common

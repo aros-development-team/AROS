@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    simplemidi.class debug
+
+#MM- rom-usb-classes-simplemidi : rom-usb-usbclass rom-usb-poseidon
+
+%build_module mmake=rom-usb-classes-simplemidi \
+    modname=simplemidi modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="amiga rom mui"
+
+%common

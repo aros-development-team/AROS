@@ -45,18 +45,14 @@ static int libOpen(LIBBASETYPEPTR nh)
 {
     KPRINTF(10, ("libOpen nh: 0x%08lx\n", nh));
     nLoadClassConfig(nh);
-
     return TRUE;
 }
 
 static int libExpunge(LIBBASETYPEPTR nh)
 {
     KPRINTF(10, ("libExpunge nh: 0x%08lx SysBase: 0x%08lx\n", nh, SysBase));
-
     CloseLibrary(UtilityBase);
-    nh->nh_UtilityBase = NULL;
     FreeVec(nh->nh_DummyNCH.nch_CDC);
-
     return TRUE;
 }
 
@@ -75,17 +71,17 @@ ADD2EXPUNGELIB(libExpunge, 0)
 struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif)
 {
     struct Library *ps;
-    ULONG ifclass;
-    ULONG subclass;
-    ULONG proto;
+    IPTR ifclass;
+    IPTR subclass;
+    IPTR proto;
 
     KPRINTF(1, ("nepHidAttemptInterfaceBinding(%08lx)\n", pif));
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
         psdGetAttrs(PGA_INTERFACE, pif,
-                    IFA_Class, (ULONG) &ifclass,
-                    IFA_SubClass, (ULONG) &subclass,
-                    IFA_Protocol, (ULONG) &proto,
+                    IFA_Class, &ifclass,
+                    IFA_SubClass, &subclass,
+                    IFA_Protocol, &proto,
                     TAG_DONE);
         CloseLibrary(ps);
 
@@ -212,9 +208,9 @@ void usbReleaseInterfaceBinding(struct NepHidBase *nh, struct NepClassHid *nch)
             Wait(1L<<nch->nch_ReadySignal);
         }
         //FreeSignal(nch->nch_ReadySignal);
-        psdGetAttrs(PGA_INTERFACE, nch->nch_Interface, IFA_Config, (ULONG) &pc, TAG_END);
-        psdGetAttrs(PGA_CONFIG, pc, CA_Device, (ULONG) &pd, TAG_END);
-        psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, (ULONG) &devname, TAG_END);
+        psdGetAttrs(PGA_INTERFACE, nch->nch_Interface, IFA_Config, &pc, TAG_END);
+        psdGetAttrs(PGA_CONFIG, pc, CA_Device, &pd, TAG_END);
+        psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
         psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                        "A cat ate my mouse '%s'!",
                        devname);
@@ -246,7 +242,7 @@ AROS_LH3(LONG, usbGetAttrsA,
         case UGA_CLASS:
              if((ti = FindTagItem(UCCA_Priority, tags)))
              {
-                 *((IPTR *) ti->ti_Data) = -100;
+                 *((SIPTR *) ti->ti_Data) = -100;
                  count++;
              }
              if((ti = FindTagItem(UCCA_Description, tags)))
@@ -379,7 +375,7 @@ BOOL nLoadClassConfig(struct NepHidBase *nh)
     pic = psdGetClsCfg(libname);
     if(pic)
     {
-        cdc = psdGetCfgChunk(pic, nch->nch_CDC->cdc_ChunkID);
+        cdc = psdGetCfgChunk(pic, AROS_LONG2BE(nch->nch_CDC->cdc_ChunkID));
         if(cdc)
         {
             CopyMem(((UBYTE *) cdc) + 8, ((UBYTE *) nch->nch_CDC) + 8, min(AROS_LONG2BE(cdc->cdc_Length), AROS_LONG2BE(nch->nch_CDC->cdc_Length)));
@@ -420,7 +416,7 @@ BOOL nLoadBindingConfig(struct NepClassHid *nch)
     pic = psdGetUsbDevCfg(libname, nch->nch_DevIDString, nch->nch_IfIDString);
     if(pic)
     {
-        cdc = psdGetCfgChunk(pic, nch->nch_CDC->cdc_ChunkID);
+        cdc = psdGetCfgChunk(pic, AROS_LONG2BE(nch->nch_CDC->cdc_ChunkID));
         if(cdc)
         {
             CopyMem(((UBYTE *) cdc) + 8, ((UBYTE *) nch->nch_CDC) + 8, min(AROS_LONG2BE(cdc->cdc_Length), AROS_LONG2BE(nch->nch_CDC->cdc_Length)));
@@ -668,7 +664,7 @@ struct NepClassHid * nAllocHid(void)
             break;
         }
         psdGetAttrs(PGA_ENDPOINT, nch->nch_EP1,
-                    EA_MaxPktSize, (ULONG) &nch->nch_EP1PktSize,
+                    EA_MaxPktSize, &nch->nch_EP1PktSize,
                     TAG_END);
         if((nch->nch_InpMsgPort = CreateMsgPort()))
         {

@@ -22,6 +22,13 @@
 #include <proto/utility.h>
 #include <proto/exec.h>
 
+// FIXME due to the data structures defined in uhcichip.h, ohcichip.h and ehcichip.h,
+// and their alignments, the use of 64 bit pointers will break these alignments.
+// Moreover, to correctly support 64 bit, the PCI card needs to be 64 bit capable.
+// otherwise the data needs to be copied from and to 32 bit space. Such mechanisms
+// are currently not implemented in pciusb.device at all.
+#warning "pciusb.device currently will NOT work under 64 bit! Don't try this!"
+
 #define NewList NEWLIST
 
 #undef HiddPCIDeviceAttrBase
@@ -70,7 +77,7 @@ AROS_UFH3(void, pciEnumerator,
             hc->hc_HCIType = hcitype;
             hc->hc_PCIDeviceObject = pciDevice;
             hc->hc_PCIIntLine = intline;
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (IPTR) &hc->hc_PCIDriverObject);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (IPTR *) &hc->hc_PCIDriverObject);
             NewList(&hc->hc_CtrlXFerQueue);
             NewList(&hc->hc_IntXFerQueue);
             NewList(&hc->hc_IsoXFerQueue);

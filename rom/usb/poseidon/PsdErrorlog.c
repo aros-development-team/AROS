@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     if(!(ArgsHook = ReadArgs(template, ArgsArray, NULL)))
         fail("Wrong arguments!\n");
 
-    if((ps = OpenLibrary("poseidon.library", 3)))
+    if((ps = OpenLibrary("poseidon.library", 4)))
     {
         DateStamp(&currdate);
         if(ArgsArray[ARGS_NOFLUSH])

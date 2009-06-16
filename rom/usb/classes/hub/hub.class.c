@@ -36,10 +36,8 @@ static int libInit(LIBBASETYPEPTR nh)
 static int libExpunge(LIBBASETYPEPTR nh)
 {
     KPRINTF(10, ("libExpunge nh: 0x%08lx SysBase: 0x%08lx\n", nh, SysBase));
-
     CloseLibrary(UtilityBase);
     nh->nh_UtilityBase = NULL;
-
     return TRUE;
 }
 
@@ -95,7 +93,6 @@ struct NepClassHub * usbForceDeviceBinding(struct NepHubBase * nh, struct PsdDev
         if((nch = psdAllocVec(sizeof(struct NepClassHub))))
         {
             nch->nch_HubBase = nh;
-            nch->nch_SysBase = SysBase;
             nch->nch_Device = pd;
             psdSafeRawDoFmt(buf, 64, "hub.class<%08lx>", nch);
             nch->nch_ReadySignal = SIGB_SINGLE;
@@ -113,7 +110,7 @@ struct NepClassHub * usbForceDeviceBinding(struct NepHubBase * nh, struct PsdDev
                                    devname);
 
                     Forbid();
-                    AddTail(&nh->nh_Bindings, nch);
+                    AddTail(&nh->nh_Bindings, &nch->nch_Node);
                     Permit();
                     CloseLibrary(ps);
                     return(nch);
@@ -158,7 +155,7 @@ void usbReleaseDeviceBinding(struct NepHubBase *nh, struct NepClassHub *nch)
                        "Time to get rid of '%s'!",
                        devname);
         Forbid();
-        Remove(nch);
+        Remove(&nch->nch_Node);
         Permit();
 
         psdFreeVec(nch);
@@ -185,7 +182,7 @@ AROS_LH3(LONG, usbGetAttrsA,
         case UGA_CLASS:
              if((ti = FindTagItem(UCCA_Priority, tags)))
              {
-                 *((IPTR *) ti->ti_Data) = 0;
+                 *((SIPTR *) ti->ti_Data) = 0;
                  count++;
              }
              if((ti = FindTagItem(UCCA_Description, tags)))
@@ -260,10 +257,10 @@ AROS_LH2(IPTR, usbDoMethodA,
     switch(methodid)
     {
         case UCM_AttemptDeviceBinding:
-            return(usbAttemptDeviceBinding(nh, (struct PsdDevice *) methoddata[0]));
+            return((IPTR) usbAttemptDeviceBinding(nh, (struct PsdDevice *) methoddata[0]));
 
         case UCM_ForceDeviceBinding:
-            return(usbForceDeviceBinding(nh, (struct PsdDevice *) methoddata[0]));
+            return((IPTR) usbForceDeviceBinding(nh, (struct PsdDevice *) methoddata[0]));
 
         case UCM_ReleaseDeviceBinding:
             usbReleaseDeviceBinding(nh, (struct NepClassHub *) methoddata[0]);
@@ -332,7 +329,7 @@ AROS_LH2(IPTR, usbDoMethodA,
             struct NepHubMsg nhm;
             struct Library *ps;
             nch = (struct NepClassHub *) methoddata[0];
-            nhm.nhm_Result = NULL;
+            nhm.nhm_Result = (IPTR) NULL;
             nhm.nhm_MethodID = methodid;
             nhm.nhm_Params = methoddata;
             if((ps = OpenLibrary("poseidon.library", 4)))
@@ -441,7 +438,7 @@ AROS_UFH0(void, nHubTask)
             {
                 nHandleHubMethod(nch, nhm);
 
-                ReplyMsg(nhm);
+                ReplyMsg((struct Message *) nhm);
             }
             if(nch->nch_DisablePort)
             {
