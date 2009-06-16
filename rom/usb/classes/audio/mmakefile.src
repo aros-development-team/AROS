@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    usbaudio.class numtostr debug
+
+#MM- rom-usb-classes-usbaudio : rom-usb-usbclass rom-usb-poseidon contrib-AHI
+
+%build_module mmake=rom-usb-classes-usbaudio \
+    modname=usbaudio modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="amiga rom mui"
+
+%common

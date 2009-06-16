@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    printer.class dev debug
+
+#MM- rom-usb-classes-printer : rom-usb-usbclass rom-usb-poseidon
+
+%build_module mmake=rom-usb-classes-printer \
+    modname=printer modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="amiga rom mui"
+
+%common

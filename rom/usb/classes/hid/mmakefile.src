@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    hid.class hid.gui hidctrl.gui numtostr debug
+
+#MM- rom-usb-classes-hid : rom-usb-usbclass rom-usb-poseidon
+
+%build_module mmake=rom-usb-classes-hid \
+    modname=hid modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="amiga rom mui"
+
+%common

@@ -10,10 +10,6 @@
 
 #include "common.h"
 
-#include <devices/usb_massstorage.h>
-
-#include "massstorage.h"
-
 #include <libraries/expansion.h>
 #include <libraries/configregs.h>
 #include <libraries/configvars.h>
@@ -27,14 +23,15 @@
 #include <resources/filesysres.h>
 
 #include <devices/usb.h>
-#include <devices/usb_massstorage.h>
 #include <devices/usbhardware.h>
+#include <devices/usb_massstorage.h>
 #include <libraries/usbclass.h>
 
 #include <string.h>
 #include <stddef.h>
 #include <stdio.h>
 
+#include "massstorage.h"
 #include "dev.h"
 
 #ifndef TD_READ64

@@ -12,12 +12,12 @@ AROS_UFH3(DEVBASETYPEPTR, devInit,
 {
     AROS_USERFUNC_INIT
 
-    /*KPRINTF(10, ("devInit base: 0x%08lx seglist: 0x%08lx SysBase: 0x%08lx\n",
-                 base, seglist, SysBase));*/
+    KPRINTF(10, ("devInit base: 0x%08lx seglist: 0x%08lx SysBase: 0x%08lx\n",
+                 base, seglist, SysBase));
 
     base->np_Library.lib_Node.ln_Type = NT_DEVICE;
     base->np_Library.lib_Node.ln_Name = DEVNAME;
-    base->np_Library.lib_Flags        = LIBF_SUMUSED | LIBF_CHANGED;
+    base->np_Library.lib_Flags        = LIBF_SUMUSED|LIBF_CHANGED;
     base->np_Library.lib_Version      = VERSION_NUMBER;
     base->np_Library.lib_Revision     = REVISION_NUMBER;
     base->np_Library.lib_IdString     = VERSION_STRING;
@@ -34,7 +34,7 @@ AROS_LH3(DEVBASETYPEPTR, devOpen,
          AROS_LHA(struct IORequest *, ioreq, A1),
          AROS_LHA(ULONG, unitnum, D0),
          AROS_LHA(ULONG, flags, D1),
-         DEVBASETYPEPTR, base, 1, dev);
+         DEVBASETYPEPTR, base, 1, dev)
 {
     AROS_LIBFUNC_INIT
     
@@ -66,8 +66,7 @@ AROS_LH3(DEVBASETYPEPTR, devOpen,
 
         ioreq->io_Error = IOERR_BADLENGTH;
     } else {
-
-        /* Default to open failure.  */
+        /* Default to open failure. */
         ioreq->io_Error = IOERR_OPENFAIL;
 
         ioreq->io_Unit = NULL;
@@ -90,9 +89,7 @@ AROS_LH3(DEVBASETYPEPTR, devOpen,
             ioreq->io_Error = IOERR_OPENFAIL;
             KPRINTF(20, ("devOpen: could not open unit!\n"));
         } else {
-
-            /* Opended ok!
-            */
+            /* Opended ok! */
             ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
             ioreq->io_Error                   = 0;
             ioreq->io_Unit->unit_OpenCnt++;
@@ -113,7 +110,7 @@ AROS_LH3(DEVBASETYPEPTR, devOpen,
 
 AROS_LH1(BPTR, devClose,
          AROS_LHA(struct IORequest *, ioreq, A1),
-         DEVBASETYPEPTR, base, 2, dev);
+         DEVBASETYPEPTR, base, 2, dev)
 {
     AROS_LIBFUNC_INIT
     
@@ -148,7 +145,7 @@ AROS_LH1(BPTR, devClose,
 
 AROS_LH1(BPTR, devExpunge,
          AROS_LHA(DEVBASETYPEPTR, extralh, D0),
-         DEVBASETYPEPTR, base, 3, dev);
+         DEVBASETYPEPTR, base, 3, dev)
 {
     AROS_LIBFUNC_INIT
     
@@ -199,7 +196,7 @@ AROS_LH0(DEVBASETYPEPTR, devReserved,
 
 AROS_LH1(void, devBeginIO,
          AROS_LHA(struct IOStdReq *, ioreq, A1),
-         DEVBASETYPEPTR, base, 5, dev);
+         DEVBASETYPEPTR, base, 5, dev)
 {
     AROS_LIBFUNC_INIT
     

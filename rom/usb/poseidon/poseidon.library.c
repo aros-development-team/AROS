@@ -6200,7 +6200,7 @@ AROS_LH2(BOOL, psdSaveCfgToDisk,
 
     if(!filename)
     {
-        saved &= psdSaveCfgToDisk("ENVARC:Sys/poseidon.prefs", FALSE);
+        saved = psdSaveCfgToDisk("ENVARC:Sys/poseidon.prefs", FALSE);
         saved &= psdSaveCfgToDisk("ENV:Sys/poseidon.prefs", FALSE);
         return(saved);
     }
@@ -6214,18 +6214,18 @@ AROS_LH2(BOOL, psdSaveCfgToDisk,
     buf = (ULONG *) psdWriteCfg(NULL);
     if(buf)
     {
-            /* Write file */
-            filehandle = Open(filename, MODE_NEWFILE);
-            if(filehandle)
-            {
-                Write(filehandle, buf, (AROS_LONG2BE(buf[1])+9) & ~1UL);
-                Close(filehandle);
-                saved = TRUE;
-            } else {
-                psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
-                               "Failed to write config to '%s'!",
-                               filename);
-            }
+        /* Write file */
+        filehandle = Open(filename, MODE_NEWFILE);
+        if(filehandle)
+        {
+            Write(filehandle, buf, (AROS_LONG2BE(buf[1])+9) & ~1UL);
+            Close(filehandle);
+            saved = TRUE;
+        } else {
+            psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                           "Failed to write config to '%s'!",
+                           filename);
+        }
         psdFreeVec(buf);
     }
     pUnlockSem(ps, &ps->ps_ConfigLock);
@@ -8600,7 +8600,7 @@ AROS_UFH0(void, pDeviceTask)
     STRPTR devname;
     ULONG cnt;
 
-    if(!(ps = (LIBBASETYPEPTR ) OpenLibrary("poseidon.library", 3)))
+    if(!(ps = (LIBBASETYPEPTR) OpenLibrary("poseidon.library", 4)))
     {
         Alert(AG_OpenLib);
         return;

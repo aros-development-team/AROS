@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src  $
+include $(TOP)/config/make.cfg
+
+FILES :=    asixeth.class dev debug
+
+#MM- rom-usb-classes-asixeth : rom-usb-usbclass rom-usb-poseidon
+
+%build_module mmake=rom-usb-classes-asixeth \
+    modname=asixeth modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="amiga rom mui"
+
+%common

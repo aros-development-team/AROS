@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
             return(RETURN_ERROR);
         }
     }
-    ps = OpenLibrary("poseidon.library", 3);
+    ps = OpenLibrary("poseidon.library", 4);
     if(!ps)
     {
         FreeArgs(ArgsHook);

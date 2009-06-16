@@ -6,6 +6,61 @@ include $(TOP)/config/make.cfg
 #MM     includes-copy
 #MM- rom-usb-usbclass : linklibs
 
+#MM rom-usb-classes : \
+#MM     rom-usb-classes-asixeth \
+#MM     rom-usb-classes-usbaudio \
+#MM     rom-usb-classes-bluetooth \
+#MM     rom-usb-classes-bootkeyboard \
+#MM     rom-usb-classes-bootmouse \
+#MM     rom-usb-classes-camdusbmidi \
+#MM     rom-usb-classes-cdcacm \
+#MM     rom-usb-classes-dm9601eth \
+#MM     rom-usb-classes-dfu \
+#MM     rom-usb-classes-egalaxtouch \
+#MM     rom-usb-classes-ethwrap \
+#MM     rom-usb-classes-hid \
+#MM     rom-usb-classes-hub \
+#MM     rom-usb-classes-massstorage \
+#MM     rom-usb-classes-moschipeth \
+#MM     rom-usb-classes-palmpda \
+#MM     rom-usb-classes-pegasus \
+#MM     rom-usb-classes-printer \
+#MM     rom-usb-classes-ptp \
+#MM     rom-usb-classes-rawwrap \
+#MM     rom-usb-classes-serialcp210x \
+#MM     rom-usb-classes-serialpl2303 \
+#MM     rom-usb-classes-simplemidi \
+#MM     rom-usb-classes-stir4200 
+
+#MM rom-usb-classes-clean : \
+#MM     rom-usb-classes-asixeth-clean \
+#MM     rom-usb-classes-usbaudio-clean \
+#MM     rom-usb-classes-bluetooth-clean \
+#MM     rom-usb-classes-bootkeyboard-clean \
+#MM     rom-usb-classes-bootmouse-clean \
+#MM     rom-usb-classes-camdusbmidi-clean \
+#MM     rom-usb-classes-cdcacm-clean \
+#MM     rom-usb-classes-dm9601eth-clean \
+#MM     rom-usb-classes-dfu-clean \
+#MM     rom-usb-classes-egalaxtouch-clean \
+#MM     rom-usb-classes-ethwrap-clean \
+#MM     rom-usb-classes-hid-clean \
+#MM     rom-usb-classes-hub-clean \
+#MM     rom-usb-classes-massstorage-clean \
+#MM     rom-usb-classes-moschipeth-clean \
+#MM     rom-usb-classes-palmpda-clean \
+#MM     rom-usb-classes-pegasus-clean \
+#MM     rom-usb-classes-printer-clean \
+#MM     rom-usb-classes-ptp-clean \
+#MM     rom-usb-classes-rawwrap-clean \
+#MM     rom-usb-classes-serialcp210x-clean \
+#MM     rom-usb-classes-serialpl2303-clean \
+#MM     rom-usb-classes-simplemidi-clean \
+#MM     rom-usb-classes-stir4200-clean 
+
+.PHONY: rom-usb-classes
+.PHONY: rom-usb-classes-clean
+
 %build_module_skeleton mmake=rom-usb-usbclass \
     modname=usbclass modtype=library
 
