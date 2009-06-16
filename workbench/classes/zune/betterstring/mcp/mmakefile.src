@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 #MM					    workbench-classes-zune-betterstring-class \
 #MM					    workbench-classes-zune-betterstring-mcp-locale
 
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../mcc -I$(TOP)/$(CURDIR)
+USER_INCLUDES := -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../mcc
 USER_CFLAGS := -DNO_INLINE_STDARG
 
 FILES := library \
@@ -29,11 +29,8 @@ INCLUDE_FILES := BetterString_mcp.h
 
 TARGETDIR := $(AROS_CATALOGS)
 
-# FIXME: doesn't work outside source tree
-# LOCALE_H := $(TOP)/$(CURDIR)/locale.h
-# LOCALE_C := $(TOP)/$(CURDIR)/locale.c
-LOCALE_H := $(SRCDIR)/$(CURDIR)/locale.h
-LOCALE_C := $(SRCDIR)/$(CURDIR)/locale.c
+LOCALE_H := locale.h
+LOCALE_C := locale.c
 
 #MM
 workbench-classes-zune-betterstring-mcp-locale : $(LOCALE_C) $(LOCALE_H) \
