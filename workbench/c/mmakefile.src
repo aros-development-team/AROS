@@ -63,7 +63,8 @@ FILES := \
 PURE_FILES := \
     Assign \
     Copy \
-    Dir
+    Dir \
+	RequestString
 #   ISApnp
 
 USER_CFLAGS     := -I$(SRCDIR)/rom/dos
