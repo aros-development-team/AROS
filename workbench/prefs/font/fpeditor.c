@@ -234,7 +234,7 @@ Object *FPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         CLASS, self, NULL,
         
         MUIA_PrefsEditor_Name,        __(MSG_NAME),
-        MUIA_PrefsEditor_Path, (IPTR) "SYS/Font.prefs",
+        MUIA_PrefsEditor_Path, (IPTR) "SYS/font.prefs",
         
         Child, (IPTR) ColGroup(2),
             Child, (IPTR) Label2(_(MSG_ICONS)),
