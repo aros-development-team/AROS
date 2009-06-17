@@ -9,7 +9,7 @@
  *
  * Use it as you wish for any and all nice things you can think of.
  *
- * $Id*
+ * $Id$
  *
  */
 
@@ -31,26 +31,29 @@
         C:
  
     FUNCTION
- 
+
+        Shows a requester with a string gadget for user input.
+
     INPUTS
  
-        STRING     --
-        TEXT       --
-        TITLE      --
-        NOGADS     --
-        WIDTH      --
-        SAFE       --
-        PERSIST    --
-        ENCRYPT    --
-        COMPARE    --
-        PUBSCREEN  --
+        STRING     -- Initial content of string gadget.
+        TEXT       -- Label string.
+        TITLE      -- Title string of requester. This also adds dragbar, closegadget
+                      and a depthgadget.
+        NOGADS     -- Suppress gadgets when TITLE argument is given.
+        WIDTH      -- Minimal width as number of characters.
+        SAFE       -- Hide user input with "*".
+        PERSIST    -- Intuition is blocked until requester is quitted.
+        ENCRYPT    -- Encrypt result before returning. Requires that one of these
+                      environment variables is set: USER, USERNAME or LOGIN.
+        COMPARE    -- If the input string is not equal to the argument
+                      of COMPARE return WARN.
+        PUBSCREEN  -- Open requester on given pubscreen.
 
     RESULT
  
     NOTES
         TODO: improve layout
-              write documentation
-              remove or implement "encrypt"
 
     EXAMPLE
  
@@ -102,6 +105,8 @@ AROS_UFP3(ULONG, HookFunc,
 
 #define  MINWIDTH    8     /* Minimum width of gadget in characters */
 
+const char version[] = "\0$VER: RequestString 39.5 (16.06.2009)";
+
 AROS_UFH3(__startup static int, RequestString,
 	  AROS_UFHA(char *, argstr, A0),
 	  AROS_UFHA(ULONG, argsize, D0),
@@ -132,8 +137,6 @@ AROS_UFH3(__startup static int, RequestString,
     long                    TXPos = 0, TYPos = 0;
 
     LONG                    Ret = 20;
-
-    const char *v="$VER: RequestString 39.5 (16.06.2009)";
 
     struct TagItem WindowTags[] =
     {
@@ -174,7 +177,7 @@ AROS_UFH3(__startup static int, RequestString,
                                 if (ArgList[WIDTH] != 0)
                                     GWidth = *((LONG *)ArgList[WIDTH]);
                                 if (GWidth < 8)
-                                    GWidth=8;
+                                    GWidth = 8;
 
                                 GHeight = GHeight * Scr->RastPort.TxHeight + 6;
                                 WHeight = GHeight + 8;
@@ -183,10 +186,10 @@ AROS_UFH3(__startup static int, RequestString,
                                 {
                                     GWidth = GWidth * Scr->RastPort.TxWidth + 4;
                                     WWidth = GWidth + 20;
-                                    if (WWidth>Scr->Width)
+                                    if (WWidth > Scr->Width)
                                         GWidth = (Scr->Width - 20) / (Scr->RastPort.TxWidth) - 1;
                                 }
-                                 while (WWidth>Scr->Width);
+                                 while (WWidth > Scr->Width);
 
                                 /* Forbid()/Permit() around this following poking in GfxBase? */
 
@@ -204,7 +207,7 @@ AROS_UFH3(__startup static int, RequestString,
                                  */
                                 if (ArgList[TITLE] != 0)
                                 {
-                                    WindowTags[6].ti_Data=TRUE;
+                                    WindowTags[6].ti_Data = TRUE;
                                     if (ArgList[NOGADS] == 0)
                                     {
                                         WindowTags[7].ti_Data = TRUE;
@@ -222,7 +225,7 @@ AROS_UFH3(__startup static int, RequestString,
 
                                 /* Initialize the Hook if we are using a safe stringgadget.
                                  * SGHook.d_Data points to storage space for the string which
-                                 * will be returned. Memory sould be cleared.
+                                 * will be returned. Memory should be cleared.
                                  */
 
                                 if (ArgList[SAFE] != 0)
@@ -234,12 +237,10 @@ AROS_UFH3(__startup static int, RequestString,
                                     {
                                         int i = -1;
                                         strcpy((char *)SGHook.h_Data, (char *)ArgList[STRING]);
-                                        while (((char *)ArgList[STRING])[++i]!=0)
-                                            ((char *)ArgList[STRING])[i]='*';
+                                        while (((char *)ArgList[STRING])[++i] != 0)
+                                            ((char *)ArgList[STRING])[i] = '*';
                                     }
                                 }
-
-                                /* Here goes nothing... */
 
                                 if
                                 (
@@ -281,11 +282,8 @@ AROS_UFH3(__startup static int, RequestString,
                                         do
                                         {
                                             WaitPort(Win->UserPort);
-
-                                            EIMess=(struct ExtIntuiMessage *)GT_GetIMsg(Win->UserPort);
-
+                                            EIMess = (struct ExtIntuiMessage *)GT_GetIMsg(Win->UserPort);
                                             MsgClass=EIMess->eim_IntuiMessage.Class;
-
                                             GT_ReplyIMsg((struct IntuiMessage *)EIMess);
 
                                             switch(MsgClass)
@@ -328,14 +326,12 @@ AROS_UFH3(__startup static int, RequestString,
 
                                         if (ArgList[ENCRYPT] != 0)
                                         {
-                                        #if 0
                                             if (GetVar("USER", UName, 47, 0) == -1)
                                                 if (GetVar("USERNAME", UName, 47, 0) == -1)
                                                     if (GetVar("LOGIN", UName, 47, 0) == -1)
                                                         UName[0] = 0;
-                                            ACrypt(CBuffer, ReturnText, UName);  // FIXME
+                                            ACrypt(CBuffer, ReturnText, UName);
                                             ReturnText = CBuffer;
-                                        #endif
                                         }
 
                                         Printf("\"%s\"\n", ReturnText);
@@ -353,10 +349,9 @@ AROS_UFH3(__startup static int, RequestString,
                                 }
                             }
                         }
-                        /* LockPubScreen failure only warrants a 10 if user defined a screen */
                     }
-                    else if(ArgList[PUBSCREEN] != 0)
-                        Ret=10;
+                    else if (ArgList[PUBSCREEN] != 0)
+                        Ret = 10;  // FIXME: should we fallback to default pubscreen?
 
                     /* Clean up. */
                     if (SGHook.h_Data != NULL)
@@ -430,7 +425,7 @@ AROS_UFH3(ULONG, HookFunc,
                 i0 = Obj->StringInfo->BufferPos;
                 Obj->WorkBuffer[i0] = '*';
                 i1 = strlen(Tmp) + 1;
-                while (i1--!=i0)
+                while (i1-- != i0)
                     Tmp[i1 + 1] = Tmp[i1];
                 Tmp[i0] = Obj->Code;
                 break;
