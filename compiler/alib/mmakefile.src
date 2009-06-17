@@ -5,6 +5,7 @@
 include $(TOP)/config/make.cfg
 
 FILES	:= \
+    acrypt \
     addamigaguidehost \
     addappicon \
     addappmenuitem \
