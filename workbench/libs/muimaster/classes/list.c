@@ -2143,6 +2143,59 @@ IPTR List__MUIM_Sort(struct IClass *cl, Object *obj, struct MUIP_List_Sort *msg)
 }
 
 /**************************************************************************
+ MUIM_List_Move
+**************************************************************************/
+IPTR List__MUIM_Move(struct IClass *cl, Object *obj, struct MUIP_List_Move *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+
+    LONG from, to; 
+    int i;
+
+    switch (msg->from)
+    {
+	case MUIV_List_Move_Top:    from = 0;                     break;
+	case MUIV_List_Move_Active: from = data->entries_active;  break;
+	case MUIV_List_Move_Bottom: from = data->entries_num - 1; break;
+        default:                    from = msg->from;
+    }
+
+    switch (msg->to)
+    {
+	case MUIV_List_Move_Top:      to = 0;                     break;
+	case MUIV_List_Move_Active:   to = data->entries_active;  break;
+	case MUIV_List_Move_Bottom:   to = data->entries_num - 1; break;
+	case MUIV_List_Move_Next:     to = from + 1;              break;
+	case MUIV_List_Move_Previous: to = from - 1;              break;
+	default:                      to = msg->to;
+    }
+
+    if(from > data->entries_num - 1 || from < 0 || to > data->entries_num - 1 || 
+	    to < 0 || from == to)
+	return (IPTR) FALSE;
+    
+    if(from < to)
+    {
+	struct ListEntry *backup = data->entries[from];
+	for(i = from; i < to; i++)
+	    data->entries[i] = data->entries[i + 1];
+	data->entries[to] = backup;
+    }
+    else
+    {
+	struct ListEntry *backup = data->entries[from];
+	for(i = from; i > to; i--)
+	    data->entries[i] = data->entries[i - 1];
+	data->entries[to] = backup;
+    }
+    
+    data->update = 1;
+    MUI_Redraw(obj,MADF_DRAWUPDATE);
+
+    return TRUE;
+}
+
+/**************************************************************************
  Dispatcher
 **************************************************************************/
 BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
@@ -2179,6 +2232,7 @@ BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
 	case MUIM_List_CreateImage:        return List__MUIM_CreateImage(cl,obj,(APTR)msg);
 	case MUIM_List_DeleteImage:        return List__MUIM_DeleteImage(cl,obj,(APTR)msg);
 	case MUIM_List_Jump:               return List__MUIM_Jump(cl,obj,(APTR)msg);
+	case MUIM_List_Move:               return List__MUIM_Move(cl,obj,(struct MUIP_List_Move *)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);
