@@ -110,7 +110,7 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
     if(task->tc_SigAlloc==0)
 	task->tc_SigAlloc=SysBase->TaskSigAlloc;
 
-    /* Currently only used for segmentation violation */
+    /* Use default exception handler if unset by caller */
     if(task->tc_TrapCode==NULL)
 	task->tc_TrapCode=SysBase->TaskTrapCode;
 
@@ -119,7 +119,7 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 	
 #if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
     /*
-	If you can't to store the registers on the signal stack, you
+	If you can't store the registers on the signal stack, you
 	must set this flag.
     */
     task->tc_Flags |= TF_ETASK;
@@ -148,23 +148,14 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
     /* Get new stackpointer. */
     /* sp=task->tc_SPReg; */
     if (task->tc_SPReg==NULL)
-#if AROS_STACK_GROWS_DOWNWARDS
 	task->tc_SPReg = (UBYTE *)(task->tc_SPUpper) - SP_OFFSET;
-#else
-	task->tc_SPReg = (UBYTE *)(task->tc_SPLower) - SP_OFFSET;
-#endif
 
 #if AROS_STACK_DEBUG
     {
         UBYTE *startfill, *endfill;
 	
-    #if AROS_STACK_GROWS_DOWNWARDS	
 	startfill = (UBYTE *)task->tc_SPLower;
 	endfill   = ((UBYTE *)task->tc_SPReg) - 16;
-    #else
-        startfill = ((UBYTE *)task->tc_SPReg) + 16;
-	endfill   = ((UBYTE *)task->tc_SPUpper) - 1; /* FIXME: -1 correct ?? */
-    #endif
 
         while(startfill <= endfill)
 	{

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -96,25 +96,35 @@ void set_system_gate(unsigned int n, void *addr)
 	_set_gate(idt_base+n,14,3,addr);
 }
 
-void do_TRAP(struct pt_regs regs)
+void printException(struct pt_regs regs)
+{
+    kprintf("*** trap: eip = %x eflags = %04x  ds = %x sp ~= %x\n",
+        regs.eip, regs.eflags, regs.xds, &regs.esp);
+}
+
+void handleException(ULONG exceptionNo)
 {
     ULONG alert;
+    struct Task *task;
+    VOID (*trapHandler)(ULONG);
 
-    kprintf("*** trap: eip = %x eflags = %x  ds = %x sp ~= %x\n",
-    	    regs.eip, regs.eflags, regs.xds, &regs);
+    // Determine alert number
+    switch (exceptionNo)
+    {
+    case 0:
+        alert = ACPU_DivZero;
+        break;
+    case 6:
+        alert = ACPU_InstErr;
+        break;
+    default:
+        alert = AT_DeadEnd | 0x100 | exceptionNo;
+    }
 
-	switch (regs.orig_eax)
-	{
-	case 0:
-		alert = ACPU_DivZero;
-		break;
-	case 6:
-		alert = ACPU_InstErr;
-		break;
-	default:
-		alert = AT_DeadEnd | 0x100 | regs.orig_eax;
-	}
-	Alert(alert);
+    // Call task's trap handler
+    task = FindTask(NULL);
+    trapHandler = task->tc_TrapCode;
+    trapHandler(alert);
 }
 
 void Init_Traps(void) {

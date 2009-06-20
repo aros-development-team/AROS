@@ -9,13 +9,26 @@
 #define TRAP_NAME2(nr) nr##_trap(void)
 #define TRAP_NAME(nr) TRAP_NAME2(TRAP##nr)
 
-#define BUILD_COMMON_TRAP()                  \
-__asm__(                                    \
-        "\n"__ALIGN_STR"\n"                 \
-        "common_trap:\n\t"             \
-        SAVE_REGS                           \
-        "call "SYMBOL_NAME_STR(do_TRAP)"\n\t"\
-        RESTORE_REGS                      \
+#    define _stringify(x) #x
+#    define stringify(x) _stringify(x)
+
+#define BUILD_COMMON_TRAP() \
+__asm__( \
+        "\n"__ALIGN_STR"\n" \
+        "common_trap:\n\t" \
+        SAVE_REGS \
+        "call "SYMBOL_NAME_STR(printException)"\n\t" \
+        RESTORE_REGS \
+        "popl %eax\n\t" \
+        "movl 12(%esp),%esp\n\t"  /* Get and use user stack */ \
+        "pushl %eax\n\t"   /* Exception number */ \
+        "pushl $0\n\t"     /* "Return address" */ \
+        "movl %esp,%ebx\n\t"   /* Hold the esp value before pushing! */ \
+        "pushl $" stringify(USER_DS) "\n\t"    /* User SS */ \
+        "pushl %ebx\n\t"       /* Stack frame */ \
+        "pushl $0x3002\n\t"     /* IOPL:3 */ \
+        "pushl $" stringify(USER_CS) "\n\t" \
+        "pushl $" SYMBOL_NAME_STR(handleException) "\n\t" \
         "iret\n");
 
 #define BUILD_TRAP(nr)                       \
