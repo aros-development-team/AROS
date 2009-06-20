@@ -286,7 +286,7 @@ void irqSetup()
 #if 0
     asm("rep\n\tstosb"
         :
-        :"eax"(0),          /* FIll with 0 */
+        :"eax"(0),          /* Fill with 0 */
          "D"(&irq_desc),    /* irq_desc table */
          "ecx"(512/4));
 #else

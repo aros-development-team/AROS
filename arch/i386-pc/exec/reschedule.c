@@ -27,7 +27,7 @@ void Exec_Permit_Supervisor();
 	struct ExecBase *, SysBase, 8, Exec)
 
 /*  FUNCTION
-	Reschedule will place the task into one of Execs internal task
+	Reschedule will place the task into one of Exec's internal task
 	lists. Which list it is placed in will depend upon whether the
 	task is ready to run, or whether it is waiting for an external
 	event to awaken it.
@@ -37,7 +37,7 @@ void Exec_Permit_Supervisor();
 	need to implement.
 
 	You should not do any costly calculations since you will be
-	running in interupt mode.
+	running in interrupt mode.
 
     INPUTS
 	task    -   The task to insert into the list.
@@ -67,7 +67,7 @@ void Exec_Permit_Supervisor();
 
     UBYTE flag = SysBase->AttnResched;	    	/* Save state of scheduling attention */
     
-    AROS_ATOMIC_OR(SysBase->AttnResched, 0x80);/* Set scheduling attention */
+    AROS_ATOMIC_OR(SysBase->AttnResched, 0x80); /* Set scheduling attention */
     
     if (SysBase->TDNestCnt < 0)		    	/* If task switching enabled */
     {

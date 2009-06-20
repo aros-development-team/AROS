@@ -50,7 +50,7 @@
 	m68k (native)               Runs the process in supervisor mode.
 				    The process must end with an RTE
 				    instruction. It should save any
-				    registers which is uses.
+				    registers which it uses.
 	m68k (under emulation)
 
     EXAMPLE
@@ -67,7 +67,7 @@
 	you don't think it makes any sense. But it could be quite useful
 	to make it run something under different protection levels.
 
-	You should trust that the programmer know what they are doing :-)
+	You should trust that the programmer knows what he is doing :-)
 
     HISTORY
 

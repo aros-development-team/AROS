@@ -369,7 +369,7 @@ exec_ProcessFlags:
                     movl    tc_Launch(%ecx),%eax
                     call    *%eax
 1:
-                    ret     /* HANDLE TASK FALGS!!!! */
+                    ret     /* HANDLE TASK FLAGS!!!! */
 
 Exec_Restore_Gene:  movl    %esp,%edi
                     movl    tc_ETask(%ecx),%esi
