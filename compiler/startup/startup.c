@@ -82,6 +82,8 @@ AROS_UFH3(static LONG, __startup_entry,
     
     SysBase = sysbase;
 
+    D(bug("Entering __startup_entry(\"%s\", %d, %x)\n", argstr, argsize, SysBase));
+
     /*
         No one program will be able to do anything useful without the dos.library,
         so we open it here instead of using the automatic opening system
@@ -157,6 +159,8 @@ AROS_UFH3(static LONG, __startup_entry,
         Close(win);
     }
     CloseLibrary((struct Library *)DOSBase);
+
+    D(bug("Leaving __startup_entry\n"));
 
     return __aros_startup.as_startup_error;
 

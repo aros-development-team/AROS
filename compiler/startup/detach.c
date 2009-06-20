@@ -28,12 +28,14 @@
 	result in your program being detached from the shell before the main()
 	function is reached.
 */
+#define DEBUG 0
 
 #include <aros/config.h>
 #include <dos/dos.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <aros/asmcall.h>
+#include <aros/debug.h>
 #include <aros/symbolsets.h>
 
 int             __detached_manages_detach;
@@ -66,6 +68,8 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     struct Process              *newproc;
     BPTR                         mysegment = NULL;
     STRPTR                       detached_name;
+
+    D(bug("Entering __detach_entry(\"%s\", %d, %x)\n", argstr, argsize, SysBase));
 
     DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39);
     if (!DOSBase) return RETURN_FAIL;
@@ -131,6 +135,8 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
         Forbid();
 	Signal(&newproc->pr_Task, SIGF_SINGLE);
     }
+
+    D(bug("Leaving __detach_entry\n"));
     
     return __detached_return_value;
     
@@ -150,6 +156,8 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     
     LONG retval;
       
+    D(bug("Entering __detach_trampoline(\"%s\", %d, %x)\n", argstr, argsize, SysBase));
+
     /* The program has two options: either take care of telling the detacher
        process when exactly to go away, via the Detach() function, or let this
        startup code take care of it. If __detached_manages_detach is TRUE, then
@@ -176,6 +184,8 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
       case we need to tell the detacher to go away.  */
     __Detach(retval);
     
+    D(bug("Leaving __detach_trampoline\n"));
+
     return 0;	  
     
     AROS_USERFUNC_EXIT
@@ -183,6 +193,8 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 
 void __Detach(LONG retval)
 {
+    D(bug("Entering __Detach(%d)\n", retval));
+
     if (__detacher_process != NULL)
     {
         __detached_return_value = retval;
@@ -196,4 +208,6 @@ void __Detach(LONG retval)
 	Wait(SIGF_SINGLE);
 	__detacher_process = NULL;
     }
+
+    D(bug("Leaving __Detach\n"));
 }
