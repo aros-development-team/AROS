@@ -24,32 +24,39 @@
 
 THIS_PROGRAM_HANDLES_SYMBOLSETS
 
-/* Don't define symbols before the entry point. */
-extern struct ExecBase  *SysBase;
-extern struct WBStartup *WBenchMsg;
+/* pass these values to the command line handling function */
+char *__argstr;
+ULONG __argsize;
+
+/* the command line handling functions will pass these values back to us */
+char **__argv;
+int  __argc;
+
+struct ExecBase *SysBase;
+struct DosLibrary *DOSBase;
+struct WBStartup *WBenchMsg;
+
 extern int main(int argc, char ** argv);
 int (*__main_function_ptr)(int argc, char ** argv) __attribute__((__weak__)) = main;
 
-DECLARESET(INIT);
-DECLARESET(EXIT);
-DECLARESET(CTORS);
-DECLARESET(DTORS);
-DECLARESET(PROGRAM_ENTRIES);
 
-/*
-    This won't work for normal AmigaOS because you can't expect SysBase to be
-    in A6. The correct way is to use *(struct ExecBase **)4 and because GCC
-    emits strings for a certain function _before_ the code the program will
-    crash immediately because the first element in the code won't be valid
-    assembler code.
+DEFINESET(CTORS);
+DEFINESET(DTORS);
+DEFINESET(INIT);
+DEFINESET(EXIT);
+DEFINESET(PROGRAM_ENTRIES);
+
+/* if the programmer hasn't defined a symbol with the name __nocommandline
+   then the code to handle the commandline will be included from the autoinit.lib
 */
+extern int __nocommandline;
+asm(".set __importcommandline, __nocommandline");
 
-extern char *__argstr;
-extern ULONG __argsize;
-extern char **__argv;
-extern int  __argc;
+/* programmers can define the __stdiowin for opening the win that will be used for
+   IO to the standard file descriptors.
+   If none is provided a default value will be used
+*/
 extern char __stdiowin[];
-extern struct DosLibrary *DOSBase;
 
 static struct aros_startup __aros_startup;
 
@@ -156,29 +163,6 @@ AROS_UFH3(static LONG, __startup_entry,
     AROS_USERFUNC_EXIT
 } /* entry */
 
-/* if the programmer hasn't defined a symbol with the name __nocommandline
-   then the code to handle the commandline will be included from the autoinit.lib
-*/
-extern int __nocommandline;
-asm(".set __importcommandline, __nocommandline");
-
-/* pass these values to the command line handling function */
-char *__argstr;
-ULONG __argsize;
-
-/* the command line handling functions will pass these values back to us */
-char **__argv;
-int  __argc;
-
-struct ExecBase *SysBase;
-struct DosLibrary *DOSBase;
-struct WBStartup *WBenchMsg;
-
-DEFINESET(CTORS);
-DEFINESET(DTORS);
-DEFINESET(INIT);
-DEFINESET(EXIT);
-DEFINESET(PROGRAM_ENTRIES);
 ADD2SET(__startup_entry, program_entries, 0);
 
 

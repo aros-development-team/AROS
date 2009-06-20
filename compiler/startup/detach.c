@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Common startup code
@@ -36,23 +36,13 @@
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE & defined __mc68000__)
-asm
-(
-    ".text\n"
-    "\n"
-    "move.l      4.w,a6\n"
-    "bra         _detach_entry\n"
-);
-#endif
-
 int             __detached_manages_detach;
 int             __detacher_go_away;
 STRPTR          __detached_name;
 LONG            __detached_return_value;
 struct Process *__detacher_process;
 
-DECLARESET(PROGRAM_ENTRIES);
+DEFINESET(PROGRAM_ENTRIES);
 
 AROS_UFP3(static LONG, __detach_entry,
 AROS_UFHA(char *,argstr,A0),
@@ -147,7 +137,6 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     AROS_USERFUNC_EXIT
 }
 
-DEFINESET(PROGRAM_ENTRIES);
 ADD2SET(__detach_entry, program_entries, 0);
 
 void __Detach(LONG retval);
