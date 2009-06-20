@@ -15,14 +15,15 @@ struct pt_regs {
     UWORD xes;
     UWORD pad1;
     UWORD xds;
+    UWORD pad2;
     ULONG edx;
     ULONG ecx;
     ULONG eax;
     ULONG orig_eax;
     ULONG eip;
     UWORD xcs;
-    UWORD pad2;
-    UWORD eflags;
+    UWORD pad3;
+    ULONG eflags;
     ULONG esp;
     UWORD xss;
 };
