@@ -376,7 +376,7 @@ CodesetsConvertUTF16toUTF8(REG(a0, const UTF16 ** sourceStart),
     {
       if(target > targetEnd)
       {
-	source = oldSource; /* Back up source pointer! */
+        source = oldSource; /* Back up source pointer! */
         target -= bytesToWrite;
         result = CSR_TargetExhausted;
 
@@ -384,21 +384,21 @@ CodesetsConvertUTF16toUTF8(REG(a0, const UTF16 ** sourceStart),
       }
       switch(bytesToWrite)
       {
-	/* note: everything falls through. */
+        /* note: everything falls through. */
         case 4:
-	  *--target = (UTF8) ((ch | byteMark) & byteMask);
-	  ch >>= 6;
+          *--target = (UTF8) ((ch | byteMark) & byteMask);
+          ch >>= 6;
 
         case 3:
-	  *--target = (UTF8) ((ch | byteMark) & byteMask);
-	  ch >>= 6;
+          *--target = (UTF8) ((ch | byteMark) & byteMask);
+          ch >>= 6;
 
         case 2:
-	  *--target = (UTF8) ((ch | byteMark) & byteMask);
-	  ch >>= 6;
+          *--target = (UTF8) ((ch | byteMark) & byteMask);
+          ch >>= 6;
 
         case 1:
-	  *--target = (UTF8) (ch | firstByteMark[bytesToWrite]);
+          *--target = (UTF8) (ch | firstByteMark[bytesToWrite]);
       }
 
       target += bytesToWrite;
@@ -427,7 +427,7 @@ CodesetsConvertUTF16toUTF8(REG(a0, const UTF16 ** sourceStart),
 
 BOOL LIBFUNC
 CodesetsIsLegalUTF8(REG(a0, const UTF8 * source),
-		                REG(d0, ULONG length))
+                   REG(d0, ULONG length))
 {
   UTF8 a;
   const UTF8 *srcptr = source + length;
@@ -638,10 +638,10 @@ CodesetsConvertUTF8toUTF16(REG(a0, const UTF8 ** sourceStart),
           break;
         }
         else
-	        ch = UNI_REPLACEMENT_CHAR;
+          ch = UNI_REPLACEMENT_CHAR;
       }
       if(start)
-	      *target = (UTF16) ch; /* normal case */
+        *target = (UTF16) ch; /* normal case */
       target++;
     }
     else if(ch > UNI_MAX_UTF16)
@@ -654,7 +654,7 @@ CodesetsConvertUTF8toUTF16(REG(a0, const UTF8 ** sourceStart),
         break;          /* Bail out; shouldn't continue */
       }
       if(start)
-	      *target = UNI_REPLACEMENT_CHAR;
+        *target = UNI_REPLACEMENT_CHAR;
       target++;
     }
     else
@@ -664,10 +664,10 @@ CodesetsConvertUTF8toUTF16(REG(a0, const UTF8 ** sourceStart),
       {
         if(target + 1 >= targetEnd)
         {
-	        source -= (extraBytesToRead + 1);   /* Back up source pointer! */
-	        result = CSR_TargetExhausted;
+          source -= (extraBytesToRead + 1);   /* Back up source pointer! */
+          result = CSR_TargetExhausted;
 
-	        break;
+          break;
         }
 
         ch -= halfBase;

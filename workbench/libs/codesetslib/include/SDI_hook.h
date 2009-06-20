@@ -4,7 +4,7 @@
 /* Includeheader
 
         Name:           SDI_hook.h
-        Versionstring:  $VER: SDI_hook.h 1.19 (25.03.2009)
+        Versionstring:  $VER: SDI_hook.h 1.21 (19.05.2009)
         Author:         SDI & Jens Langner
         Distribution:   PD
         Project page:   http://www.sf.net/projects/sditools/
@@ -47,6 +47,8 @@
  1.18  20.03.09 : modified macros to be somewhat more compatible for an AROS
                   usage (Pavel Fedin)
  1.19  25.03.09 : fixed the DISPATCHERPROTO() macros for x86_64 AROS.
+ 1.20  26.03.09 : fixed m68k define checks.
+ 1.21  19.05.09 : added SDISPATCHER() to generate a static dispatcher.
 */
 
 /*
@@ -109,7 +111,7 @@
 ** The ENTRY macro, which also gets the function name as argument.
 */
 
-#if defined(__M68000__)
+#if defined(_M68000) || defined(__M68000) || defined(__mc68000)
   #define HOOKPROTO(name, ret, obj, param) static SAVEDS ASM ret             \
     name(REG(a0, struct Hook *hook), REG(a2, obj), REG(a1, param))
   #define HOOKPROTONO(name, ret, param) static SAVEDS ASM ret                \
@@ -176,6 +178,14 @@
     const struct SDI_EmulLibEntry Gate_##name = {SDI_TRAP_LIB, 0,            \
     (APTR) Trampoline_##name};                                               \
     ULONG name(struct IClass * cl, Object * obj, Msg msg)
+  #define SDISPATCHER(name)                                                  \
+    struct IClass;                                                           \
+    static ULONG name(struct IClass * cl, Object * obj, Msg msg);            \
+    static ULONG Trampoline_##name(void) {return name((struct IClass *)      \
+    REG_A0, (Object *) REG_A2, (Msg) REG_A1);}                               \
+    static const struct SDI_EmulLibEntry Gate_##name = {SDI_TRAP_LIB, 0,     \
+    (APTR) Trampoline_##name};                                               \
+    static ULONG name(struct IClass * cl, Object * obj, Msg msg)
   #define ENTRY(func) (APTR)&Gate_##func
 
 #else /* !__MORPHOS__ */
@@ -189,6 +199,7 @@
   #define DISPATCHERPROTO(name) SAVEDS ASM IPTR name(REG(a0,                 \
     struct IClass * cl), REG(a2, Object * obj), REG(a1, Msg msg))
   #define DISPATCHER(name) DISPATCHERPROTO(name)
+  #define SDISPATCHER(name) static DISPATCHERPROTO(name)
 
 #endif
 

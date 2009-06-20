@@ -144,7 +144,7 @@ LIBSTUB(CodesetsConvertUTF16toUTF8, ULONG, REG(a0, const UTF16 ** sourceStart),
 
 
 LIBSTUB(CodesetsIsLegalUTF8, BOOL, REG(a0, const UTF8 * source),
-                		                REG(d0, ULONG length))
+                                   REG(d0, ULONG length))
 {
   return CodesetsIsLegalUTF8((const UTF8 *)REG_A0,(ULONG)REG_D0);
 }

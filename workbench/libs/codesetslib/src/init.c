@@ -183,7 +183,7 @@ getSystemCodeset(struct LibraryHeader *lib)
   #ifdef __amigaos4__
   {
     LONG default_charset = GetDiskFontCtrl(DFCTRL_CHARSET);
-		char *charset = (char *)ObtainCharsetInfo(DFCS_NUMBER, default_charset, DFCS_MIMENAME);
+    char *charset = (char *)ObtainCharsetInfo(DFCS_NUMBER, default_charset, DFCS_MIMENAME);
 
     foundCodeset = codesetsFind(&lib->codesets, charset);
 

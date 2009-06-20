@@ -71,7 +71,7 @@
 #elif defined(_M68000) || defined(__M68000) || defined(__mc68000)
   #define CPU "m68000"
 #elif defined(__i386__)
-  #define CPU "i386"
+  #define CPU "x86"
 #elif defined(__x86_64__)
   #define CPU "x86_64"
 #else

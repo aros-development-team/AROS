@@ -132,10 +132,10 @@ openIn(STRPTR name, int64 *size)
     if(EXD_IS_FILE(exd))
     {
       if((file = Open(name, MODE_OLDFILE)))
-      	*size = exd->FileSize;
+        *size = exd->FileSize;
     }
 
-  	FreeDosObject(DOS_EXAMINEDATA, exd);
+    FreeDosObject(DOS_EXAMINEDATA, exd);
   }
 
   RETURN(file);
@@ -155,12 +155,12 @@ openIn(STRPTR name, ULONG * size)
   {
     if(!ExamineFH(file,&fib))
     {
-  	   Close(file);
+      Close(file);
       file = 0;
     }
     else
     {
-    	*size = fib.fib_Size;
+      *size = fib.fib_Size;
     }
   }
 
@@ -182,16 +182,16 @@ openIn(STRPTR name, ULONG * size)
     {
       if(!ExamineFH(file,fib))
       {
-    	  Close(file);
+        Close(file);
         file = 0;
       }
-	    else
+      else
       {
-      	*size = fib->fib_Size;
+        *size = fib->fib_Size;
       }
-  	}
+    }
 
-  	FreeDosObject(DOS_FIB,fib);
+    FreeDosObject(DOS_FIB,fib);
   }
   else
     file = 0;
@@ -643,7 +643,7 @@ CodesetsDecodeB64A(REG(a0, struct TagItem *attrs))
   /* decode */
   for(;;)
   {
-    UBYTE 	     a[4], b[4], o[3];
+    UBYTE a[4], b[4], o[3];
     int i;
 
     for(i = 0; i<4; i++)

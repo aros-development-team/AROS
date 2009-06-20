@@ -34,6 +34,11 @@
  1.8   28.02.06 : removed "##" in front of the OS3 __VARARGS__ usage as they
                   causing errors on GCC >= 3.x.
  1.9   15.03.09 : fixed some missing function prototype in LIBPROTOVA()
+ 1.10  30.04.09 : added approriate LIBPROTOVA() definition for OS3 and MorphOS
+                  to at least make the functions known. The same pattern as for
+                  LIBSTUBVA() will be used now (Thore Böckelmann)
+ 1.11  04.05.09 : reverted the faulty LIBPROTOVA() definition to its previous
+                  version (Thore Böckelmann)
 
 */
 
@@ -134,7 +139,7 @@
       LIBFUNC ret libstub_##name(struct Interface *self UNUSED,       \
       ## __VA_ARGS__)
     #define LIBPROTOVA(name, ret, ...)                                \
-      /*LIBFUNC ret VARARGS68K name(__VA_ARGS__);*/                       \
+      /*LIBFUNC ret VARARGS68K name(__VA_ARGS__);*/                   \
       LIBFUNC ret VARARGS68K                                          \
       libstub_##name(struct Interface *self UNUSED, ## __VA_ARGS__)
     #define LIBSTUB(name, ret, ...)                                   \
@@ -158,7 +163,8 @@
     #define LIBPROTO(name, ret, ...)                                  \
       LIBFUNC ret name(__VA_ARGS__);                                  \
       LIBFUNC ret libstub_##name(void)
-    #define LIBPROTOVA(name, ret, ...)
+    #define LIBPROTOVA(name, ret, ...)                                \
+      LIBFUNC ret VARARGS68K name(__VA_ARGS__);
     #define LIBSTUB(name, ret, ...)                                   \
       LIBFUNC ret name(__VA_ARGS__);                                  \
       LIBFUNC ret libstub_##name(void)
@@ -177,12 +183,13 @@
     (__GNUC__ == 2 && __GNUC_MINOR__ >= 95))
     #define LIBPROTO(name, ret, ...)                                  \
       LIBFUNC ret name(__VA_ARGS__)
-    #define LIBPROTOVA(name, ret, ...)
+    #define LIBPROTOVA(name, ret, ...)                                \
+      LIBFUNC ret STDARGS VARARGS68K name(__VA_ARGS__);
     #define LIBSTUB(name, ret, ...)                                   \
       LIBFUNC ret name(__VA_ARGS__);                                  \
       LIBFUNC ret libstub_##name(__VA_ARGS__)
     #define LIBSTUBVA(name, ret, ...)                                 \
-      LIBFUNC UNUSED ret STDARGS libstub_##name(__VA_ARGS__)
+      LIBFUNC UNUSED ret STDARGS VARARGS68K libstub_##name(__VA_ARGS__)
   #endif
   #define LFUNC_FAS(name) name
   #define LFUNC_VAS(name)

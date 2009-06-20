@@ -681,8 +681,11 @@ defaultCodeset(BOOL useSemaphore)
 /// codesetsCmpUnicode()
 // The compare function
 static int
-codesetsCmpUnicode(struct single_convert *arg1,struct single_convert *arg2)
+codesetsCmpUnicode(const void *a1, const void *a2)
 {
+  struct single_convert *arg1 = (struct single_convert *)a1;
+  struct single_convert *arg2 = (struct single_convert *)a2;
+
   return strcmp((char*)&arg1->utf8[1], (char*)&arg2->utf8[1]);
 }
 ///
@@ -789,7 +792,7 @@ codesetsReadTable(struct codesetList *csList, STRPTR name)
         }
 
         memcpy(codeset->table_sorted, codeset->table, sizeof(codeset->table));
-        qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), (int (*)(const void *arg1,const void *arg2))codesetsCmpUnicode);
+        qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), codesetsCmpUnicode);
         AddTail((struct List *)csList, (struct Node *)&codeset->node);
 
         res = TRUE;
@@ -928,7 +931,7 @@ codesetsInit(struct codesetList *csList)
 
   ObtainSemaphore(&CodesetsBase->poolSem);
 
-  NewList((struct List *)&CodesetsBase->codesets);
+  NewList((struct List *)csList);
 
   // to make the list of the supported codesets complete we also add fake
   // 'UTF-8' , 'UTF-16' and 'UTF-32' only so that our users can query for those codesets as well.
@@ -1006,7 +1009,7 @@ codesetsInit(struct codesetList *csList)
       }
 
       memcpy(codeset->table_sorted,codeset->table,sizeof(codeset->table));
-      qsort(codeset->table_sorted,256,sizeof(codeset->table[0]),(int (*)(const void *arg1, const void *arg2))codesetsCmpUnicode);
+      qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), codesetsCmpUnicode);
 
       AddTail((struct List *)csList, (struct Node *)&codeset->node);
     }
@@ -1018,6 +1021,7 @@ codesetsInit(struct codesetList *csList)
   {
     struct Library *KeymapBase;
     struct Library *LocaleBase;
+    BOOL success = FALSE;
 
     if((KeymapBase = OpenLibrary("keymap.library", 51)) != NULL)
     {
@@ -1033,29 +1037,34 @@ codesetsInit(struct codesetList *csList)
           if((codeset = allocVecPooled(CodesetsBase->pool, sizeof(struct codeset))) != NULL)
           {
              codeset->name             = mystrdup(name);
-             codeset->alt_name 	       = NULL;
+             codeset->alt_name         = NULL;
              codeset->characterization = mystrdup(name);  // No more information available
              codeset->read_only        = 0;
 
              for(i=0; i<256; i++)
              {
-               UTF8  *dest_ptr = &codeset->table[i].utf8[1];
+               UTF8 *dest_ptr = &codeset->table[i].utf8[1];
                LONG rc;
 
                codeset->table[i].code = i;
                codeset->table[i].ucs4 = src = ToUCS4(i, keymap);
-               rc = ConvertUCS4ToUTF8((CONST_WSTRPTR)&src, dest_ptr, 1);
-               dest_ptr[rc] = 0;
+
+               // here we use UTF8_Encode() instead of ConvertUCS4ToUTF8() because
+               // of an internal bug in MorphOS 2.2.
+               rc = UTF8_Encode(src, dest_ptr);
+               rc = rc > 0 ? rc : 1;
+
+               dest_ptr[rc] = '\0';
                codeset->table[i].utf8[0] = rc;
              }
 
              memcpy(codeset->table_sorted,codeset->table,sizeof(codeset->table));
-            qsort(codeset->table_sorted,256,sizeof(codeset->table[0]),(int (*)(const void *arg1, const void *arg2))codesetsCmpUnicode);
+             qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), codesetsCmpUnicode);
 
              AddTail((struct List *)csList, (struct Node *)&codeset->node);
+
+             success = TRUE;
           }
-          else
-            goto end;
         }
 
         CloseLibrary(LocaleBase);
@@ -1063,6 +1072,9 @@ codesetsInit(struct codesetList *csList)
 
       CloseLibrary(KeymapBase);
     }
+
+    if(success == FALSE)
+      goto end;
   }
   #endif
 
@@ -1094,7 +1106,7 @@ codesetsInit(struct codesetList *csList)
       UTF8  *dest_ptr = &codeset->table[i].utf8[1];
 
       if(i==164)
-        src = 0x20AC; /* the EURO sign */
+        src = 0x20AC; // the EURO sign
       else
         src = i;
 
@@ -1105,7 +1117,8 @@ codesetsInit(struct codesetList *csList)
       codeset->table[i].utf8[0] = (ULONG)dest_ptr-(ULONG)&codeset->table[i].utf8[1];
     }
     memcpy(codeset->table_sorted,codeset->table,sizeof(codeset->table));
-    qsort(codeset->table_sorted,256,sizeof(codeset->table[0]),(int (*)(const void *arg1, const void *arg2))codesetsCmpUnicode);
+    qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), codesetsCmpUnicode);
+
     AddTail((struct List *)csList, (struct Node *)&codeset->node);
   }
 
@@ -1133,7 +1146,8 @@ codesetsInit(struct codesetList *csList)
       codeset->table[i].utf8[0] = (ULONG)dest_ptr-(ULONG)&codeset->table[i].utf8[1];
     }
     memcpy(codeset->table_sorted,codeset->table,sizeof(codeset->table));
-    qsort(codeset->table_sorted,256,sizeof(codeset->table[0]),(int (*)(const void *arg1,const void *arg2))codesetsCmpUnicode);
+    qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), codesetsCmpUnicode);
+
     AddTail((struct List *)csList, (struct Node *)&codeset->node);
   }
 
@@ -1164,7 +1178,8 @@ codesetsInit(struct codesetList *csList)
       codeset->table[i].utf8[0] = (ULONG)dest_ptr-(ULONG)&codeset->table[i].utf8[1];
     }
     memcpy(codeset->table_sorted, codeset->table, sizeof(codeset->table));
-    qsort(codeset->table_sorted,256,sizeof(codeset->table[0]),(int (*)(const void *arg1,const void *arg2))codesetsCmpUnicode);
+    qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), codesetsCmpUnicode);
+
     AddTail((struct List *)csList, (struct Node *)&codeset->node);
   }
 
@@ -1195,7 +1210,8 @@ codesetsInit(struct codesetList *csList)
       codeset->table[i].utf8[0] = (ULONG)dest_ptr-(ULONG)&codeset->table[i].utf8[1];
     }
     memcpy(codeset->table_sorted,codeset->table,sizeof(codeset->table));
-    qsort(codeset->table_sorted,256,sizeof(codeset->table[0]),(int (*)(const void *arg1,const void *arg2))codesetsCmpUnicode);
+    qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), codesetsCmpUnicode);
+
     AddTail((struct List *)csList, (struct Node *)&codeset->node);
   }
 
@@ -1226,7 +1242,8 @@ codesetsInit(struct codesetList *csList)
       codeset->table[i].utf8[0] = (ULONG)dest_ptr-(ULONG)&codeset->table[i].utf8[1];
     }
     memcpy(codeset->table_sorted,codeset->table,sizeof(codeset->table));
-    qsort(codeset->table_sorted,256,sizeof(codeset->table[0]),(int (*)(const void *arg1, const void *arg2))codesetsCmpUnicode);
+    qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), codesetsCmpUnicode);
+
     AddTail((struct List *)csList, (struct Node *)&codeset->node);
   }
 
@@ -1257,7 +1274,8 @@ codesetsInit(struct codesetList *csList)
       codeset->table[i].utf8[0] = (ULONG)dest_ptr-(ULONG)&codeset->table[i].utf8[1];
     }
     memcpy(codeset->table_sorted,codeset->table,sizeof(codeset->table));
-    qsort(codeset->table_sorted,256,sizeof(codeset->table[0]),(int (*)(const void *arg1,const void *arg2))codesetsCmpUnicode);
+    qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), codesetsCmpUnicode);
+
     AddTail((struct List *)csList, (struct Node *)&codeset->node);
   }
 
@@ -1288,7 +1306,8 @@ codesetsInit(struct codesetList *csList)
       codeset->table[i].utf8[0] = (ULONG)dest_ptr-(ULONG)&codeset->table[i].utf8[1];
     }
     memcpy(codeset->table_sorted,codeset->table,sizeof(codeset->table));
-    qsort(codeset->table_sorted,256,sizeof(codeset->table[0]),(int (*)(const void *arg1,const void *arg2))codesetsCmpUnicode);
+    qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), codesetsCmpUnicode);
+
     AddTail((struct List *)csList, (struct Node *)&codeset->node);
   }
 
@@ -1319,7 +1338,8 @@ codesetsInit(struct codesetList *csList)
       codeset->table[i].utf8[0] = (ULONG)dest_ptr-(ULONG)&codeset->table[i].utf8[1];
     }
     memcpy(codeset->table_sorted,codeset->table,sizeof (codeset->table));
-    qsort(codeset->table_sorted,256,sizeof(codeset->table[0]),(int (*)(const void *arg1,const void *arg2))codesetsCmpUnicode);
+    qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), codesetsCmpUnicode);
+
     AddTail((struct List *)csList, (struct Node *)&codeset->node);
   }
 
@@ -1350,7 +1370,8 @@ codesetsInit(struct codesetList *csList)
       codeset->table[i].utf8[0] = (ULONG)dest_ptr - (ULONG)&codeset->table[i].utf8[1];
     }
     memcpy(codeset->table_sorted, codeset->table, sizeof(codeset->table));
-    qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), (int (*)(const void *arg1, const void *arg2))codesetsCmpUnicode);
+    qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), codesetsCmpUnicode);
+
     AddTail((struct List *)csList, (struct Node *)&codeset->node);
   }
 
@@ -1381,7 +1402,8 @@ codesetsInit(struct codesetList *csList)
       codeset->table[i].utf8[0] = (ULONG)dest_ptr-(ULONG)&codeset->table[i].utf8[1];
     }
     memcpy(codeset->table_sorted,codeset->table,sizeof(codeset->table));
-    qsort(codeset->table_sorted,256,sizeof(codeset->table[0]),(int (*)(const void *arg1,const void *arg2))codesetsCmpUnicode);
+    qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), codesetsCmpUnicode);
+
     AddTail((struct List *)csList, (struct Node *)&codeset->node);
   }
 
@@ -1412,7 +1434,8 @@ codesetsInit(struct codesetList *csList)
       codeset->table[i].utf8[0] = (ULONG)dest_ptr-(ULONG)&codeset->table[i].utf8[1];
     }
     memcpy(codeset->table_sorted,codeset->table,sizeof(codeset->table));
-    qsort(codeset->table_sorted,256,sizeof(codeset->table[0]),(int (*)(const void *arg1,const void *arg2))codesetsCmpUnicode);
+    qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), codesetsCmpUnicode);
+
     AddTail((struct List *)csList, (struct Node *)&codeset->node);
   }
 
@@ -1443,7 +1466,8 @@ codesetsInit(struct codesetList *csList)
       codeset->table[i].utf8[0] = (char*)dest_ptr - (char*)&codeset->table[i].utf8[1];
     }
     memcpy(codeset->table_sorted,codeset->table,sizeof(codeset->table));
-    qsort(codeset->table_sorted,256,sizeof(codeset->table[0]),(int (*)(const void *arg1, const void *arg2))codesetsCmpUnicode);
+    qsort(codeset->table_sorted, 256, sizeof(codeset->table[0]), codesetsCmpUnicode);
+
     AddTail((struct List *)csList, (struct Node *)&codeset->node);
   }
 
@@ -1979,7 +2003,7 @@ CodesetsStrLenA(REG(a0, STRPTR str),
           CodesetsConvertUTF16toUTF8((const UTF16 **)&src, srcend, &dstlen, NULL, 0);
           break;
       }
-      res	= (ULONG)dstlen;
+      res = (ULONG)dstlen;
     }
     else
     {
@@ -2095,20 +2119,20 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
               CodesetsConvertUTF8toUTF32((const UTF8 **)&s, e, (UTF32 **)&dstlen, NULL, 0);
               break;
             case 16:
-      	      CodesetsConvertUTF8toUTF16((const UTF8 **)&s, e, (UTF16 **)&dstlen, NULL, 0);
+              CodesetsConvertUTF8toUTF16((const UTF8 **)&s, e, (UTF16 **)&dstlen, NULL, 0);
               break;
           }
-      	  len = (ULONG)dstlen;
-      	}
-      	else
-      	{
-      	  while(s < e)
-      	  {
-      	    unsigned char c = *s++;
+          len = (ULONG)dstlen;
+        }
+        else
+        {
+          while(s < e)
+          {
+            unsigned char c = *s++;
 
-      	    len++;
-      	    s += trailingBytesForUTF8[c];
-      	  }
+            len++;
+            s += trailingBytesForUTF8[c];
+          }
         }
 
         if(dest == NULL || (destLen < len+1))
@@ -2149,7 +2173,7 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
 
       if(destHook != NULL)
       {
-        ULONG r;
+        ULONG r = CSR_TargetExhausted;
 
         dstend = b + destLen - char_size;
         do
@@ -2492,10 +2516,10 @@ CodesetsUTF8CreateA(REG(a0, struct TagItem *attrs))
               CodesetsConvertUTF32toUTF8((const UTF32 **)&src, srcend, &dstlen, NULL, 0);
               break;
             case 16:
-      	      CodesetsConvertUTF16toUTF8((const UTF16 **)&src, srcend, &dstlen, NULL, 0);
+              CodesetsConvertUTF16toUTF8((const UTF16 **)&src, srcend, &dstlen, NULL, 0);
               break;
           }
-      	  len = (ULONG)dstlen;
+          len = (ULONG)dstlen;
         }
         else
         {
@@ -2550,7 +2574,7 @@ CodesetsUTF8CreateA(REG(a0, struct TagItem *attrs))
 
       if(hook != NULL)
       {
-        ULONG r;
+        ULONG r = CSR_TargetExhausted;
 
         dstend = b + destLen - 1;
         do

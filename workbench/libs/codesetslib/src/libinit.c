@@ -221,8 +221,8 @@ STATIC uint32 _manager_Release(struct LibraryManagerInterface *Self)
 
 STATIC CONST CONST_APTR lib_manager_vectors[] =
 {
-	(CONST_APTR)_manager_Obtain,
-	(CONST_APTR)_manager_Release,
+  (CONST_APTR)_manager_Obtain,
+  (CONST_APTR)_manager_Release,
   (CONST_APTR)NULL,
   (CONST_APTR)NULL,
   (CONST_APTR)LibOpen,
@@ -264,17 +264,17 @@ STATIC CONST CONST_APTR main_vectors[] =
 
 STATIC CONST struct TagItem mainTags[] =
 {
-	{ MIT_Name,         (Tag)"main" },
-	{ MIT_VectorTable,	(Tag)main_vectors	},
-	{ MIT_Version,      1 },
-	{ TAG_DONE,         0	}
+  { MIT_Name,         (Tag)"main" },
+  { MIT_VectorTable,  (Tag)main_vectors },
+  { MIT_Version,      1 },
+  { TAG_DONE,         0 }
 };
 
 STATIC CONST CONST_APTR libInterfaces[] =
 {
-	(CONST_APTR)lib_managerTags,
-	(CONST_APTR)mainTags,
-	(CONST_APTR)NULL
+  (CONST_APTR)lib_managerTags,
+  (CONST_APTR)mainTags,
+  (CONST_APTR)NULL
 };
 
 // Our libraries always have to carry a 68k jump table with it, so
@@ -330,7 +330,7 @@ static const USED_VAR struct Resident ROMTag =
   #if defined(__amigaos4__)
   RTF_AUTOINIT|RTF_NATIVE,      // The Library should be set up according to the given table.
   #elif defined(__MORPHOS__)
-  RTF_AUTOINIT|RTF_PPC,
+  RTF_AUTOINIT|RTF_EXTENDED|RTF_PPC,
   #elif defined(__AROS__)
   RTF_AUTOINIT|RTF_EXTENDED,
   #else
@@ -368,11 +368,12 @@ const USED_VAR ULONG __abox__ = 1;
 
 /* generic StackSwap() function which calls function() surrounded by
    StackSwap() calls */
-/*extern REGARGS ULONG stackswap_call(struct StackSwapStruct *stack,
-                            ULONG (*function)(struct LibraryHeader *),
-                            struct LibraryHeader *arg);*/
 
 #if defined(__mc68000__)
+ULONG stackswap_call(struct StackSwapStruct *stack,
+                     ULONG (*function)(struct LibraryHeader *),
+                     struct LibraryHeader *arg);
+
 asm(".text                    \n\
      .even                    \n\
      .globl _stackswap_call   \n\
@@ -402,6 +403,7 @@ ULONG stackswap_call(struct StackSwapStruct *stack,
    struct PPCStackSwapArgs swapargs;
 
    swapargs.Args[0] = (ULONG)arg;
+
    return NewPPCStackSwap(stack, function, &swapargs);
 }
 #else
@@ -409,13 +411,15 @@ ULONG stackswap_call(struct StackSwapStruct *stack,
           On AmigaOS v4 it ocassionally works because function's parameters are placed
           in registers on PPC */
 ULONG REGARGS stackswap_call(struct StackSwapStruct *stack,
-                     ULONG (*function)(struct LibraryHeader *),
-                     struct LibraryHeader *arg)
+                             ULONG (*function)(struct LibraryHeader *),
+                             struct LibraryHeader *arg)
 {
    register ULONG result;
+
    StackSwap(stack);
    result = function(arg);
    StackSwap(stack);
+
    return result;
 }
 #endif
@@ -568,7 +572,7 @@ static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
     #endif
   }
 
-  return(NULL);
+  return NULL;
 #ifdef __AROS__
     AROS_USERFUNC_EXIT
 #endif
@@ -589,11 +593,11 @@ static BPTR LibExpunge(struct LibraryManagerInterface *Self)
 #elif defined(__MORPHOS__)
 static BPTR LibExpunge(void)
 {
-	struct LibraryHeader *base = (struct LibraryHeader*)REG_A6;
+  struct LibraryHeader *base = (struct LibraryHeader*)REG_A6;
 #elif defined(__AROS__)
 static AROS_LH1(BPTR, LibExpunge,
-         AROS_LHA(UNUSED struct LibraryHeader *, __extrabase, D0),
-         struct LibraryHeader *, base, 3, Codesets
+		AROS_LHA(UNUSED struct LibraryHeader *, __extrabase, D0),
+		struct LibraryHeader *, base, 3, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -709,7 +713,7 @@ static BPTR LibClose(struct LibraryManagerInterface *Self)
 #elif defined(__MORPHOS__)
 static BPTR LibClose(void)
 {
-	struct LibraryHeader *base = (struct LibraryHeader *)REG_A6;
+  struct LibraryHeader *base = (struct LibraryHeader *)REG_A6;
 #elif defined(__AROS__)
 static AROS_LH0(BPTR, LibClose,
                 struct LibraryHeader *, base, 2, Codesets
@@ -747,8 +751,6 @@ static BPTR LIBFUNC LibClose(REG(a6, struct LibraryHeader *base))
       #else
       rc = LibExpunge(base);
       #endif
-
-      return rc;
     }
   }
 
