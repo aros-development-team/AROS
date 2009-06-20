@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Early bootup section
@@ -373,7 +373,7 @@ void exec_DummyInt();
 asm("\nexec_DummyInt:   iret");
 
 /*
- * RO copy of GlobalDescriptorTable. It's easyier to copy this table than
+ * RO copy of GlobalDescriptorTable. It's easier to copy this table than
  * to generate completely new one
  */
 const struct {UWORD l1, l2, l3, l4;}
@@ -601,7 +601,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
         while (*fp++ != (VOID *) -1) negsize += LIB_VECTSIZE;
 
         ExecBase = (struct ExecBase *) 0x00002000; /* Got ExecBase at the lowest possible addr */
-        ExecBase += negsize;   /* Substract lowest vector so jumpable would fit */
+        ExecBase += negsize;   /* Substract lowest vector so jump table would fit */
 
         /* Check whether we have some FAST memory,
          * If not, then use calculated ExecBase */
@@ -1124,10 +1124,11 @@ asm("\ndelay:\t.short   0x00eb\n\tret");
 
 /* Exec default trap routine */
 asm("\nexec_DefaultTrap:\n\t"
+    "popl   %eax\n\t"
+    "popl   %eax\n\t"
     "pushl  4\n\t"
-    "pushl  $0\n\t"
-    "pushl  $0\n\t"
-    "jmp    Exec_Alert");
+    "pushl  %eax\n\t"
+    "call    Exec_Alert");
 
 #warning "TODO: We should use info from BIOS here."
 int exec_RamCheck_dma(struct arosmb *arosmb)
@@ -1267,7 +1268,7 @@ int exec_check_base()
                     /*
                      * Really last thing. Check MaxLocMem and MaxExtMem fields
                      * in ExecBase. First cannot be grater than 16MB and smaller
-                     * than 2MB, second, if is not zero then has to be grater
+                     * than 2MB, second, if is not zero then has to be greater
                      * than 16MB
                      */
 
