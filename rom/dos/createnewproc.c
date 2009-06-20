@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new process
@@ -15,8 +15,11 @@
 #define __DOS_NOLIBBASE__
 #include <proto/dos.h>
 #include <utility/tagitem.h>
+#include <intuition/intuition.h>
 #include <aros/symbolsets.h>
 #include <proto/utility.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
 #include "dos_intern.h"
 #include LC_LIBDEFS_FILE
 #include <string.h>
@@ -31,6 +34,9 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 
 void internal_ChildWait(struct Task *task, struct DosLibrary * DOSBase);
 void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
+
+static VOID TrapHandler(ULONG alertNum);
+static LONG AskSuspend(const TEXT *taskName, ULONG alertNum);
 
 #include <aros/debug.h>
 
@@ -348,6 +354,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     process->pr_Task.tc_Node.ln_Type = NT_PROCESS;
     process->pr_Task.tc_Node.ln_Name = name;
     process->pr_Task.tc_Node.ln_Pri = defaults[11].ti_Data;
+    process->pr_Task.tc_TrapCode = TrapHandler;
     process->pr_Task.tc_SPLower = stack;
     process->pr_Task.tc_SPUpper = stack + defaults[9].ti_Data;
 
@@ -728,3 +735,46 @@ static void KillCurrentProcess(void)
     
     CloseLibrary((struct Library * )DOSBase);
 }
+
+static VOID TrapHandler(ULONG alertNum)
+{
+    struct Task *task = FindTask(NULL);
+
+    if (AskSuspend(task->tc_Node.ln_Name, alertNum) == 1)
+    {
+        Wait(0);
+    }
+    else
+    {
+        ShowImminentReset();
+        ShutdownA(SD_ACTION_COLDREBOOT);
+    }
+}
+
+static LONG AskSuspend(const TEXT *taskName, ULONG alertNum)
+{
+    struct EasyStruct es =
+    {
+        sizeof (struct EasyStruct),
+        0,
+        "Software Failure",
+        "%s\nProgram failed (error #%08lx).\n"
+            "Wait for disk activity to finish.",
+        "Suspend|Reboot"
+    };
+    CONST_APTR args[] = {taskName, (CONST_APTR)alertNum, NULL};
+    LONG choice = 0;
+
+    es.es_TextFormat = "%s\nProgram failed (error #%08lx).\n"
+        "Wait for disk activity to finish.";
+    if (IntuitionBase != NULL)
+    {
+        if (IntuitionBase->FirstScreen != NULL)
+        {
+            choice = EasyRequestArgs(NULL, &es, NULL, args);
+        }
+    }
+
+    return choice;
+}  
+
