@@ -875,10 +875,11 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
     success = TRUE;
     if( msg->gpl_Initial | !pd->Layouted )   /* we need to do it just once at startup or after scaling */
     {
+        FreeDest( pd );
 	if( pd->Remap )
 	{
 	    /* determine destination screen depth */
-	    if( !pd->DestScreen )
+	    if( !pd->DestScreen && msg->gpl_GInfo )
 	    {
 		pd->DestScreen = msg->gpl_GInfo->gi_Screen;
 	    }

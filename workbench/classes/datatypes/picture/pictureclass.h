@@ -68,4 +68,5 @@ struct Picture_Data
 
     LONG		  ClickX;
     LONG		  ClickY;
+    struct Screen         *RemapScreen;
 };
