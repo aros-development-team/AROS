@@ -391,14 +391,15 @@ void FreeDest( struct Picture_Data *pd )
 {
     int i;
 
-    if( pd->NumAlloc )
+    if( pd->NumAlloc && pd->RemapScreen)
     {
 	D(bug("picture.datatype/FreeDest: Freeing %ld pens\n", (long)pd->NumAlloc));
 	for(i=0; i<pd->NumAlloc; i++)
 	{
-	    ReleasePen( pd->DestScreen->ViewPort.ColorMap, pd->ColTable[i] );
+	    ReleasePen( pd->RemapScreen->ViewPort.ColorMap, pd->ColTable[i] );
 	}
 	pd->NumAlloc=0;
+        pd->RemapScreen = NULL;
     }
     
     if( pd->MaskPlane )
@@ -991,6 +992,11 @@ static void RemapPens( struct Picture_Data *pd, int NumColors, int DestNumColors
 {
     int i, j, index;
     int pen;
+
+    /*
+     * Remember screen so that we can undo remapping.
+    */
+    pd->RemapScreen = pd->DestScreen;
 
     /*
      *  Obtain pens for DestColRegs (GRegs)
