@@ -21,7 +21,9 @@ linklibs-startup: $(OBJS)
 $(LIBDIR)/%.o : $(GENDIR)/$(CURDIR)/%.o
 	@$(CP) $< $@
 
-USER_CFLAGS := -I $(SRCDIR)/rom/exec
+$(warning FIXME: .aros.startup section if compiling with optimization)
+$(warning        -O0 could be removed then)
+USER_CFLAGS := -I $(SRCDIR)/rom/exec -O0
 %rule_compile basename=% targetdir=$(GENDIR)/$(CURDIR)
 
 #MM linklibs-startup-setup
