@@ -1,5 +1,5 @@
 #ifdef __AROS__
-#include "muiaros.h"
+#include "libraries/muiaros.h"
 #else
 
 /***************************************************************************
