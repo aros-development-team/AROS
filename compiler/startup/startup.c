@@ -62,7 +62,7 @@ static void __startup_entries_init(void);
 struct aros_startup __aros_startup;
 
 /* Guarantee that __startup_entry is placed at the beginning of the binary */
-AROS_UFP3(static LONG, __startup_entry,
+AROS_UFP3(LONG, __startup_entry,
     AROS_UFHA(char *,argstr,A0),
     AROS_UFHA(ULONG,argsize,D0),
     AROS_UFHA(struct ExecBase *,sysbase,A6)
@@ -70,7 +70,7 @@ AROS_UFP3(static LONG, __startup_entry,
 
 #warning TODO: reset and initialize the FPU
 #warning TODO: resident startup
-AROS_UFH3(static LONG, __startup_entry,
+AROS_UFH3(LONG, __startup_entry,
     AROS_UFHA(char *,argstr,A0),
     AROS_UFHA(ULONG,argsize,D0),
     AROS_UFHA(struct ExecBase *,sysbase,A6)
