@@ -129,14 +129,14 @@ ULONG ClipStreamHandler
 		/* Read past end of clip if we are in read mode */
 		req->io_Command = CMD_READ;
 		req->io_Data    = NULL;
-		req->io_Length  =  CLIPSCANBUFSIZE;
+		req->io_Length  = CLIPSCANBUFSIZE;
 
 		/* Read until there is not more left */
 		do
                 {
                     DoIO((struct IORequest*)req);
 		}
-		while (req->io_Actual==req->io_Length);
+		while (req->io_Actual != 0);
 
 	    }
 
