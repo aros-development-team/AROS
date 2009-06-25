@@ -1,0 +1,435 @@
+## version $VER: PSI.catalog 1.0 (25.06.09)
+## codeset 0
+## language russian
+MSG_MENU_PROJECT
+Проект
+;Project
+MSG_MENU_PROJECT_OPEN
+Открыть...
+;Open...
+MSG_MENU_PROJECT_APPEND
+Добавить...
+;Append...
+MSG_MENU_PROJECT_SAVEAS
+Сохранить как...
+;Save As...
+MSG_MENU_PROJECT_ABOUT
+О проекте...
+;About...
+MSG_MENU_PROJECT_QUIT
+Выход
+;Quit
+MSG_MENU_EDIT
+Правка
+;Edit
+MSG_MENU_EDIT_LASTSAVED
+Последнее сохранение
+;Last Saved
+MSG_MENU_EDIT_RESTORE
+Восстановть
+;Restore
+MSG_MENU_SETTINGS
+Настройки
+;Settings
+MSG_MENU_SETTINGS_MUI
+Настройки MUI...
+;MUI...
+MSG_MENU_COLORS
+Цвета
+;Colors
+MSG_MENU_COLORS_PRESETS
+Цветовые шаблоны
+;Presets
+MSG_MENU_COLORS_PRESETS_2COL
+Монохромные
+;Monochrome Settings
+MSG_MENU_COLORS_PRESETS_4COL
+4х-цветные
+;4-Color Settings
+MSG_MENU_COLORS_PRESETS_8COL
+Настройки MagicWB
+;MagicWB Settings
+MSG_BUTTON_OK
+_OK
+;
+MSG_BUTTON_CANCEL
+Cancel
+;
+MSG_BUTTON_SAVE
+Save
+;
+MSG_BUTTON_USE
+Use
+;
+MSG_BUTTON_NEW
+_New
+;
+MSG_BUTTON_COPY
+_Copy
+;
+MSG_BUTTON_DELETE
+_Delete
+;
+MSG_BUTTON_EDIT
+_Edit...
+;
+MSG_BUTTON_OPEN
+_Open
+;
+MSG_BUTTON_CLOSE
+_Close
+;
+MSG_BUTTON_JUMP
+_Jump
+;
+MSG_BUTTON_KILL
+Kill
+;
+MSG_TITLE_PUBSCREENWINDOW
+Edit Screen:
+;
+MSG_TITLE_SAVE
+Save PublicScreen File
+;
+MSG_TITLE_OPEN
+Load PublicScreen File
+;
+MSG_TITLE_APPEND
+Append PublicScreen File
+;
+MSG_LIST_SCREENNAME
+Name
+;
+MSG_LIST_SCREENMODE
+Display Mode
+;
+MSG_LIST_UNKNOWNMODE
+(unknown)
+;
+MSG_LIST_FOREIGNSCREEN
+(foreign)
+;
+MSG_LABEL_PUBLICNAME
+Public _Name:
+;
+MSG_LABEL_SCREENTITLE
+Screen _Title:
+;
+MSG_LABEL_DISPLAYMODE
+_Display Mode:
+;
+MSG_LABEL_DEFAULTFONT
+Default _Font:
+;
+MSG_LABEL_BACKGROUND
+_Background:
+;
+MSG_LABEL_PUBLICFLAGS
+Flags:
+;
+MSG_LABEL_AUTOSCROLL
+_Autoscroll
+;
+MSG_LABEL_NODRAG
+No D_rag
+;
+MSG_LABEL_EXCLUSIVE
+_Exclusive
+;
+MSG_LABEL_INTERLEAVED
+_Interleaved
+;
+MSG_LABEL_OPENBEHIND
+Open Be_hind
+;
+MSG_LABEL_SYSTEMDEFAULT
+S_ystem Default
+;
+MSG_LABEL_AUTOCLOSE
+Auto Close
+;
+MSG_LABEL_CLOSEGADGET
+Close Gadget
+;
+MSG_LABEL_OVERSCAN
+O_verscan:
+;
+MSG_LABEL_SIZE
+_Size:
+;
+MSG_LABEL_CROSS
+_x
+;
+MSG_LABEL_DEPTH
+_Depth:
+;
+MSG_LABEL_VISIBLE
+Visible:
+;
+MSG_LABEL_MINIMUM
+Minimum:
+;
+MSG_LABEL_MAXIMUM
+Maximum:
+;
+MSG_LABEL_BITSPERGUN
+Bits/Gun:
+;
+MSG_LABEL_SCANRATE
+Scanrate:
+;
+MSG_LABEL_SCANLINE
+Scanline:
+;
+MSG_CLI_SCREENOPENED
+Screen opened (0).\n
+;
+MSG_CLI_SCREENOPENFAILED
+Failed to open screen (5).\n
+;
+MSG_CLI_SCREENCLOSED
+Screen closed (0).\n
+;
+MSG_CLI_SCREENCLOSEFAILED
+Failed to close screen (5).\n
+;
+MSG_CLI_SYNTAXERROR
+Syntax Error in command line (10).\n
+;
+MSG_CLI_SCREENNOTFOUND
+Screen not found (5).\n
+;
+MSG_CLI_OUTOFMEMORY
+Out of memory (20).\n
+;
+MSG_CLI_NOAPPLICATION
+Failed to create application (20).\n
+;
+MSG_CLI_NOMUIMASTER
+Failed to open muimaster.library V11 (20).\n
+;
+MSG_ABOUT_NUMBEROFSCREENS
+Number of screens:
+;
+MSG_TEXT_UNKNOWNMODE
+Unknown Display Mode
+;
+MSG_TEXT_FOREIGNSCREEN
+Foreign public screen
+;
+MSG_PALETTE_TITLE
+Palette
+;
+MSG_PALETTE_FIRST
+First 4 colors
+;
+MSG_PALETTE_LAST
+Last 4 colors
+;
+MSG_SYSPENS_TITLE
+System Pens
+;
+MSG_SYSPEN_DETAIL
+Detail
+;
+MSG_SYSPEN_BLOCK
+Block
+;
+MSG_SYSPEN_TEXT
+Text
+;
+MSG_SYSPEN_SHINE
+Shine
+;
+MSG_SYSPEN_SHADOW
+Shadow
+;
+MSG_SYSPEN_FILL
+Fill
+;
+MSG_SYSPEN_FILLTEXT
+Filltext
+;
+MSG_SYSPEN_BACKGROUND
+Background
+;
+MSG_SYSPEN_HIGHLIGHT
+Highlight
+;
+MSG_SYSPEN_BARDETAIL
+Bardetail
+;
+MSG_SYSPEN_BARBLOCK
+Barblock
+;
+MSG_SYSPEN_BARTRIM
+Bartrim
+;
+MSG_PALPRES_TITLE
+Color Presets
+;
+MSG_PALPRES_STANDARD
+0\0Standard
+;
+MSG_PALPRES_TINT
+1\0Tint
+;
+MSG_PALPRES_PHARAO
+2\0Pharao
+;
+MSG_PALPRES_SUNSET
+3\0Sunset
+;
+MSG_PALPRES_OCEAN
+4\0Ocean
+;
+MSG_PALPRES_STEEL
+5\0Steel
+;
+MSG_PALPRES_CHOCOLATE
+6\0Chocolate
+;
+MSG_PALPRES_PEWTER
+7\0Pewter
+;
+MSG_PALPRES_WINE
+8\0Wine
+;
+MSG_PALPRES_MAGICWB
+9\0MagicWB
+;
+MSG_PALPRES_CLONEWB
+Clone WB
+;
+MSG_OVERSCAN_TEXT
+Text
+;
+MSG_OVERSCAN_GRAPHICS
+Graphics
+;
+MSG_OVERSCAN_EXTREME
+Extreme
+;
+MSG_OVERSCAN_MAXIMUM
+Maximum
+;
+MSG_EDITPAGE_ATTRIBUTES
+Attributes
+;
+MSG_EDITPAGE_DISPLAY
+Display
+;
+MSG_EDITPAGE_COLORS
+Colors
+;
+MSG_HELP_WHEEL
+Adjust color for\ngroup of pens.
+;
+MSG_HELP_INFO
+Information about\nmode & size.
+;
+MSG_HELP_NAME
+Name of Public Screen.\nWildcards allowed for\nforeign screens.
+;
+MSG_HELP_TITLE
+Text that appears in\nthe screen's title bar.
+;
+MSG_HELP_FONT
+Default font\nfor the screen.
+;
+MSG_HELP_BACKGROUND
+Datatype picture used\nas background pattern.
+;
+MSG_HELP_AUTOSCROLL
+The screen scrolls when\nthe mouse hits its borders.
+;
+MSG_HELP_NODRAG
+The screen\nis undraggable.
+;
+MSG_HELP_EXCLUSIVE
+The screen cannot share\nits display with others.
+;
+MSG_HELP_INTERLEAVED
+The screen's bitmap is allocated\nin interleaved mode.
+;
+MSG_HELP_BEHIND
+The screen opens behind\nall other screens.
+;
+MSG_HELP_SYSTEMDEFAULT
+The screen becomes the\nsystem's default screen.
+;
+MSG_HELP_AUTOCLOSE
+The screen closes when\nthe last window is closed.
+;
+MSG_HELP_CLOSEGADGET
+The screen gets\na close gadget.
+;
+MSG_HELP_MODELIST
+List of available\ndisplay modes.
+;
+MSG_HELP_MODEINFO
+Information about the\ncurrent display mode.
+;
+MSG_HELP_OVERSCAN
+Overscan size adjustment.
+;
+MSG_HELP_WIDTH
+Width of screen,\nmeasured in pixels.
+;
+MSG_HELP_HEIGHT
+Height of screen,\nmeasured in pixels.
+;
+MSG_HELP_DEPTH
+Depth of screen,\nmeasured in planes.
+;
+MSG_HELP_PENLIST
+System pens, draggable\nto different color pot.
+;
+MSG_HELP_COLORFIELD
+Current color, click\non field to change it.
+;
+MSG_HELP_KILLCOLOR
+Remove this color\nfrom the group.
+;
+MSG_HELP_NEWCOLOR
+Add a new color\nto the group.
+;
+MSG_HELP_EDITOK
+Exit and remember\nchanges for this screen.
+;
+MSG_HELP_EDITCANCEL
+Exit and \33bdiscard\33n\nchanges for this screen.
+;
+MSG_HELP_SCREENLIST
+List of defined\npublic screens.
+;
+MSG_HELP_NEWSCREEN
+Create a new\npublic screen.
+;
+MSG_HELP_COPYSCREEN
+Create a copy\nof current screen.
+;
+MSG_HELP_DELETESCREEN
+Delete current\npublic screen.
+;
+MSG_HELP_EDITSCREEN
+Edit current\npublic screen.
+;
+MSG_HELP_OPENSCREEN
+Open current\npublic screen.
+;
+MSG_HELP_CLOSESCREEN
+Close current\npublic screen.
+;
+MSG_HELP_JUMPSCREEN
+Jump to current\npublic screen.
+;
+MSG_HELP_SAVE
+Exit and save\nchanges to disk.
+;
+MSG_HELP_USE
+Exit and save changes\nfor current session.
+;
+MSG_HELP_CANCEL
+Exit and\n\33bdiscard\33n changes.
+;

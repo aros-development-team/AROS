@@ -1,4 +1,4 @@
-## version $VER: Commodities.catalog 2.1 (24.11.2008)
+## version $VER: Commodities.catalog 2.2 (25.06.2009)
 ## language russian
 ## codeset 0
 ;
@@ -306,4 +306,39 @@ MSG_DEPTHMENU_CXTITLE
 MSG_DEPTHMENU_CXDESCR
 Всплывающий (по RMB) список открытых окон для быстрого переключения
 ; Popup menu for depth gadgets
+;
+;
+; ===============================================
+; AltKeyQ
+;
+MSG_ALTKEYQ_CXNAME
+AltKeyQ
+;AltKeyQ
+MSG_ALTKEYQ_CXTITLE
+Ввод символов по номеру
+;Character input by number
+MSG_ALTKEYQ_CXDESCR
+Использование клавиши ALT в стиле MS-DOS для ввода символов
+;MS-DOS Style Alt key usage
+; ===============================================
+; ASCIITable
+;
+MSG_ASCIITABLE_CXNAME
+ASCIITable
+;
+MSG_ASCIITABLE_CXTITLE
+ASCIITable:
+;
+MSG_ASCIITABLE_CXDESCR
+Выбор символов из таблицы
+;Select keys from a GUI
+MSG_ASCIITABLE_WINTITLE
+ASCIITable: Вызов = <%s>
+;ASCIITable: Hot Key = <%s>
+MSG_ASCIITABLE_GAD_COPY
+Копировать
+;Copy
+MSG_ASCIITABLE_GAD_CLEAR
+Очистить
+;Clear
 ;

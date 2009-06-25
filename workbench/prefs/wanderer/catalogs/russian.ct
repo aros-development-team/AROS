@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 1.1 (30.07.2007)
+## version $VER: wanderer.catalog 1.2 (25.06.2009)
 ## language russian
 ## codeset 0
 ;
@@ -37,10 +37,10 @@ MSG_TOOLBAR
 Инструментарий
 ;
 MSG_CLASSIC
-Классический
+Обычный
 ;
 MSG_ENHANCED
-Улучшенный
+Расширенный
 ;
 MSG_NAVIGATION
 Навигация
@@ -73,7 +73,7 @@ MSG_ICONTEXTMODE
 Вид текста иконок
 ;
 MSG_ICONTEXTMODE_OUTLINE
-Обведенный
+С обводкой
 ;
 MSG_ICONTEXTMODE_PLAIN
 Простой
@@ -82,7 +82,7 @@ MSG_ICONTEXTLENGTH
 Макс. длина текста иконок
 ;
 MSG_DOUBLEBUFFERED
-double buffering
+Двойная буферизация
 ;
 MSG_MISC
 Прочее

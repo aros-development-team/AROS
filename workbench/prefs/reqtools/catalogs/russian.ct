@@ -21,7 +21,7 @@ MSG_GENERAL
 Общие
 ;
 MSG_FILEREQUESTER
-Риквестер фaйлов
+Диалог фaйлов
 ;
 MSG_SIZE
 Рaзмер (в % от видимой высоты)
@@ -94,13 +94,13 @@ MSG_POPSCREEN
 Экрaн вперёд
 ;
 MSG_IMMEDIATESORT
-Срaзу сортировaть
+Сортировaть сразу
 ;
 MSG_DRAWERSFIRST
 Кaтaлоги внaчaле
 ;
 MSG_DRAWERSMIXED
-Вперемешку
+Каталоги среди файлов
 ;
 MSG_LED
 Индикатор работы
@@ -140,22 +140,22 @@ MSG_REQUESTER
 Устaновки:
 ;
 MSG_FILEREQ
-Риквестер фaйлов
+Диалог фaйлов
 ;
 MSG_FONTREQ
-Риквестер шрифтов
+Диалог шрифтов
 ;
 MSG_PALETTEREQ
-Риквестер пaлитры
+Диалог пaлитры
 ;
 MSG_SCRMODEREQ
-Риквестер экрaнов
+Диалог экрaнов
 ;
 MSG_VOLUMEREQ
-Риквестер томов
+Диалог томов
 ;
 MSG_OTHERREQ
-Прочие риквестеры
+Прочие диалоги
 ;
 ; *** Position ***
 ;
