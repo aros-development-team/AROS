@@ -1,0 +1,75 @@
+## version $VER: networkprefs.catalog 1.0 (25.06.09)
+## codeset 0
+## language russian
+MSG_NAME
+Настройки сети
+;Network Preferences
+MSG_DESCRIPTION
+Настройки протокола TCP/IP
+;TCP/IP Network preferences
+MSG_DEVICE
+Устройство
+;Device
+MSG_IP_MODE
+Режим IP
+;IP Mode
+MSG_IP
+IP
+;
+MSG_MASK
+Маска
+;Mask
+MSG_GATE
+Шлюз
+;Gate
+MSG_DNS1
+Первичный DNS
+;Primary DNS
+MSG_DNS2
+Вторичный DNS
+;Secondary DNS
+MSG_HOST_NAME
+Имя узла
+;Host Name
+MSG_DOMAIN_NAME
+Домен
+;Domain Name
+MSG_IP_MODE_MANUAL
+Вручную
+;Manual
+MSG_IP_MODE_DHCP
+Получить дрес автоматически
+;Get address from DHCP
+MSG_TAB_IP_CONFIGURATION
+Настройка IP
+;IP Configuration
+MSG_TAB_COMPUTER_NAME
+Имя компьютера
+;Computer Name
+MSG_AUTOSTART_STACK
+Запускать при загрузке
+;Autostart
+MSG_ERR_UNKNOWN_ERROR
+Неизвестная ошибка
+;Unknown error
+MSG_ERR_NOT_RESTARTED_STACK
+Не удалось перезапустить сетевой стэк
+;Failed to restart network stack
+MSG_BUTTON_OK
+Ok
+;
+MSG_ERROR_TITLE
+Ошибка
+;Error
+MSG_ERR_NOT_SAVED_PREFS
+Настройки сети НЕ БЫЛИ сохранены в %s
+;Network preferences not saved to %s
+MSG_ERR_NOT_COPIED_FILES
+Дополнительные файлы НЕ СКОПИРОВАНЫ в %s
+;Additional files not copied to %s
+MSG_INFO_TITLE
+Сведения
+;Information
+MSG_PREFS_SAVED_RESTART
+Настройки сохранены в %s.\n. Нужен перезапуск AROS для принятия изменений.
+;Preferences have been saved to %s.\nRestart AROS for them to take effect.
