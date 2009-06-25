@@ -1,5 +1,5 @@
 /*
-    Copyright © 1998-2008, The AROS Development Team. All rights reserved. 
+    Copyright © 1998-2009, The AROS Development Team. All rights reserved. 
     $Id$
 
     Clipboard device.
@@ -627,8 +627,24 @@ static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 
     if (!ioClip(ioreq)->io_Data)
     {
-	ioClip(ioreq)->io_Offset += ioClip(ioreq)->io_Length;
-	ioClip(ioreq)->io_Actual = ioClip(ioreq)->io_Length;
+	/*
+	 * according to the autodocs, io_Offset is incremented by io_Actual 
+	 * as if io_Length bytes had been read.
+	 */
+	if(ioClip(ioreq)->io_Offset + ioClip(ioreq)->io_Length > CBUn->cu_clipSize) 
+	{
+	    /* Cannot read more bytes as there are in the clipboard.
+	     * On amigaOS, this can be used to get the current size of the
+	     * clipboard content.
+	     */
+	    ioClip(ioreq)->io_Actual = CBUn->cu_clipSize - ioClip(ioreq)->io_Offset;
+	    D(bug("clipboard.device/readCb: reached end of clipboard data\n"));
+	}
+	else
+	{
+	    /* we pretend to read the requested length */
+	    ioClip(ioreq)->io_Actual = ioClip(ioreq)->io_Length;
+	}
     }
     else
     {
@@ -675,16 +691,21 @@ static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 	    	  ioClip(ioreq)->io_Data));
 	}
 	
-	ioClip(ioreq)->io_Offset += ioClip(ioreq)->io_Actual;
+    }
 
-	if (ioClip(ioreq)->io_Actual == 0)
-	{
-	    Close(CBUn->cu_clipFile);
-	    CBUn->cu_clipFile = 0;
-	    D(bug("clipboard.device/readCb: io_Actual=0. Calling ReleaseSemaphore [me=%08lx]\n", FindTask(NULL)));
-	    ReleaseSemaphore(&CBUn->cu_UnitLock);
-	    ioClip(ioreq)->io_ClipID = -1;
-	}
+    ioClip(ioreq)->io_Offset += ioClip(ioreq)->io_Actual;
+
+    /*
+     * I am not sure, if a Close is the right thing to do, even if io_Data was NULL.
+     * But it should not harm either.
+     */
+    if (ioClip(ioreq)->io_Actual == 0)
+    {
+	Close(CBUn->cu_clipFile);
+	CBUn->cu_clipFile = 0;
+	D(bug("clipboard.device/readCb: io_Actual=0. Calling ReleaseSemaphore [me=%08lx]\n", FindTask(NULL)));
+	ReleaseSemaphore(&CBUn->cu_UnitLock);
+	ioClip(ioreq)->io_ClipID = -1;
     }
 }
 
