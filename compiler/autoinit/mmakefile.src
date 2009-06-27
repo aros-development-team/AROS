@@ -29,18 +29,21 @@ LIBBASEFILES := \
 
 # libraries_nolibs must come BEFORE libraries
 LIBHANDLINGFILES := \
-	__stdiowin \
-	__showerror \
 	functions \
-	commandline \
 	libraries_nolibs \
-	libraries
+	libraries \
+
+STARTUPFILES := \
+	__showerror \
+	commandline \
+	__stdiowin \
+        stdiowin
 
 MISCFILES := \
 	detach \
 	initkernelbases
 
-FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES) $(MISCFILES)
+FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES) $(STARTUPFILES) $(MISCFILES)
 
 #MM- linklibs-core : linklibs-autoinit
 #MM- linklibs: linklibs-autoinit

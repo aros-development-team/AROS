@@ -9,6 +9,8 @@ extern char *__argstr;
 extern ULONG __argsize;
 extern char **__argv;
 extern int argc;
+struct WBStartup;
+extern struct WBStartup *WBenchMsg;
 
 struct aros_startup
 {
