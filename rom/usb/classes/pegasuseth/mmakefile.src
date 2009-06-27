@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    pegasus.class dev debug
 
-#MM- rom-usb-classes-pegasus : rom-usb-usbclass rom-usb-poseidon
+#MM- kernel-usb-classes-pegasus : kernel-usb-usbclass kernel-usb-poseidon
 
-%build_module mmake=rom-usb-classes-pegasus \
+%build_module mmake=kernel-usb-classes-pegasus \
     modname=pegasus modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="amiga rom mui"

@@ -7,23 +7,23 @@ FUNCS := \
 
 SHELLFILES := PsdDevLister PsdErrorlog AddUSBClasses AddUSBHardware PsdStackLoader
 
-#MM rom-usb-poseidon-includes : \
+#MM kernel-usb-poseidon-includes : \
 #MM     kernel-exec-includes \
 #MM     kernel-dos-includes \
 #MM     kernel-utility-includes \
-#MM     rom-usb-usbclass-includes \
+#MM     kernel-usb-usbclass-includes \
 #MM     includes-copy
-#MM- rom-usb-poseidon : linklibs
+#MM- kernel-usb-poseidon : linklibs
 
-#MM- rom-usb-shelltools : rom-usb-poseidon
+#MM- kernel-usb-shelltools : kernel-usb-poseidon
 
-%build_module mmake=rom-usb-poseidon \
+%build_module mmake=kernel-usb-poseidon \
     modname=poseidon modtype=library \
     files="$(FUNCS) $(FILES)" \
     uselibs="amiga rom mui"
 
 
-%build_progs mmake=rom-usb-shelltools \
+%build_progs mmake=kernel-usb-shelltools \
     files=$(SHELLFILES) targetdir=$(AROS_C) \
     uselibs="arossupport amiga arosc m"
 

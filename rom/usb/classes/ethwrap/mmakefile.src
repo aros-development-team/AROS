@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    ethwrap.class dev debug
 
-#MM- rom-usb-classes-ethwrap : rom-usb-usbclass rom-usb-poseidon
+#MM- kernel-usb-classes-ethwrap : kernel-usb-usbclass kernel-usb-poseidon
 
-%build_module mmake=rom-usb-classes-ethwrap \
+%build_module mmake=kernel-usb-classes-ethwrap \
     modname=ethwrap modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="amiga rom mui"

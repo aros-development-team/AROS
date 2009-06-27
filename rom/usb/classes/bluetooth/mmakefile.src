@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    bluetooth.class dev debug
 
-#MM- rom-usb-classes-bluetooth : rom-usb-usbclass rom-usb-poseidon
+#MM- kernel-usb-classes-bluetooth : kernel-usb-usbclass kernel-usb-poseidon
 
-%build_module mmake=rom-usb-classes-bluetooth \
+%build_module mmake=kernel-usb-classes-bluetooth \
     modname=bluetooth modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="amiga rom mui"

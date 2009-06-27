@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    Trident ActionClass CfgListClass DevWinClass IconListClass debug
 
-#MM- rom-usb-trident : rom-usb-poseidon linklibs
+#MM- kernel-usb-trident : kernel-usb-poseidon linklibs
 
-%build_prog progname="Trident" mmake=rom-usb-trident \
+%build_prog progname="Trident" mmake=kernel-usb-trident \
     files=$(FILES) targetdir=$(AROS_PREFS) \
     uselibs="arossupport amiga mui arosc m"
 

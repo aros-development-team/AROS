@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    asixeth.class dev debug
 
-#MM- rom-usb-classes-asixeth : rom-usb-usbclass rom-usb-poseidon
+#MM- kernel-usb-classes-asixeth : kernel-usb-usbclass kernel-usb-poseidon
 
-%build_module mmake=rom-usb-classes-asixeth \
+%build_module mmake=kernel-usb-classes-asixeth \
     modname=asixeth modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="amiga rom mui"

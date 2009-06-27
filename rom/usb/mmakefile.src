@@ -1,22 +1,33 @@
 #   $Id: mmakefile.src  $
 include $(TOP)/config/make.cfg
 
-#MM- rom-usb : \
-#MM      rom-usb-poseidon \
-#MM      rom-usb-shelltools \
-#MM      rom-usb-classes \
-#MM      rom-usb-shellapps \
-#MM      rom-usb-pciusb
+#MM- kernel-usb : \
+#MM      kernel-usb-poseidon \
+#MM      kernel-usb-shelltools \
+#MM      kernel-usb-classes \
+#MM      kernel-usb-shellapps \
+#MM      kernel-usb-pciusb
 
-#MM- rom-usb-clean : \
-#MM      rom-usb-poseidon-clean \
-#MM      rom-usb-shelltools-clean \
-#MM      rom-usb-classes-clean \
-#MM      rom-usb-shellapps-clean \
-#MM      rom-usb-pciusb-clean \
-#MM      rom-usb-usbclass-clean
+#MM- kernel-usb-kobj : \
+#MM      kernel-usb-poseidon-kobj \
+#MM      kernel-usb-classes-kobj \
+#MM      kernel-usb-pciusb-kobj
 
-.PHONY: rom-usb
-.PHONY: rom-usb-clean
+#MM- kernel-usb-clean : \
+#MM      kernel-usb-poseidon-clean \
+#MM      kernel-usb-shelltools-clean \
+#MM      kernel-usb-classes-clean \
+#MM      kernel-usb-shellapps-clean \
+#MM      kernel-usb-pciusb-clean \
+#MM      kernel-usb-usbclass-clean
+
+#MM- kernel-usb-includes : \
+#MM      kernel-usb-poseidon-includes \
+#MM      kernel-usb-usbclass-includes
+
+.PHONY: kernel-usb
+.PHONY: kernel-usb-kobj
+.PHONY: kernel-usb-includes
+.PHONY: kernel-usb-clean
 
 %common

@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    ptp.class numtostr debug
 
-#MM- rom-usb-classes-ptp : rom-usb-usbclass rom-usb-poseidon
+#MM- kernel-usb-classes-ptp : kernel-usb-usbclass kernel-usb-poseidon
 
-%build_module mmake=rom-usb-classes-ptp \
+%build_module mmake=kernel-usb-classes-ptp \
     modname=ptp modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="amiga rom mui"

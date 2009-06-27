@@ -20,7 +20,8 @@
 #MM	    kernel-oop-kobj \
 #MM	    kernel-layers-kobj \
 #MM	    kernel-workbench-kobj \
-#MM	    kernel-cgfx-kobj
+#MM	    kernel-cgfx-kobj \
+#MM         kernel-usb-kobj
 
 #MM- includes-generate : \
 #MM      kernel-exec-includes \
@@ -39,4 +40,5 @@
 #MM      kernel-cgfx-includes \
 #MM      kernel-timer-includes \
 #MM      kernel-oop-includes \
-#MM      kernel-battclock-includes
+#MM      kernel-battclock-includes \
+#MM      kernel-usb-includes

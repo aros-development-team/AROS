@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    bootmouse.class debug
 
-#MM- rom-usb-classes-bootmouse : rom-usb-usbclass rom-usb-poseidon
+#MM- kernel-usb-classes-bootmouse : kernel-usb-usbclass kernel-usb-poseidon
 
-%build_module mmake=rom-usb-classes-bootmouse \
+%build_module mmake=kernel-usb-classes-bootmouse \
     modname=bootmouse modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="amiga rom mui"

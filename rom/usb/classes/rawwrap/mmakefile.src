@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    rawwrap.class dev debug
 
-#MM- rom-usb-classes-rawwrap : rom-usb-usbclass rom-usb-poseidon
+#MM- kernel-usb-classes-rawwrap : kernel-usb-usbclass kernel-usb-poseidon
 
-%build_module mmake=rom-usb-classes-rawwrap \
+%build_module mmake=kernel-usb-classes-rawwrap \
     modname=rawwrap modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="amiga rom mui"
