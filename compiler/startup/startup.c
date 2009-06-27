@@ -51,11 +51,11 @@ DEFINESET(PROGRAM_ENTRIES);
 extern int __nocommandline;
 asm(".set __importcommandline, __nocommandline");
 
-/* programmers can define the __stdiowin for opening the win that will be used for
-   IO to the standard file descriptors.
-   If none is provided a default value will be used
+/* if the programmer hasn't defined a symbol with the name __nostdiowin
+   then the code to open a window for stdio will be included from the autoinit.lib
 */
-extern char __stdiowin[];
+extern int __nostdiowin;
+asm(".set __importstdiowin, __nostdiowin");
 
 static void __startup_entries_init(void);
 
@@ -132,16 +132,6 @@ static void __startup_fromwb(void)
         __argc = 0;
 
 	D(bug("[startup] Started from Workbench\n"));
-        if(__stdiowin[0]) {
-            D(bug("[startup] Opening console window: %s\n", __stdiowin));
-            win = Open(__stdiowin, MODE_OLDFILE);
-            if (win) {
-                D(bug("[startup] Success!\n"));
-		old_in = SelectInput(win);
-		old_out = SelectOutput(win);
-		old_err = SelectError(win);
-	    }
-	}
     }
 
     __startup_entries_next();
@@ -151,13 +141,6 @@ static void __startup_fromwb(void)
     {
         Forbid(); /* make sure we're not UnLoadseg()ed before we're really done */
         ReplyMsg((struct Message *) WBenchMsg);
-    }
-
-    if (win) {
-        SelectInput(old_in);
-        SelectOutput(old_out);
-        SelectError(old_err);
-        Close(win);
     }
 
     D(bug("Leaving __startup_fromwb\n"));
