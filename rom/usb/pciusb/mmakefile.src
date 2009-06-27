@@ -3,9 +3,18 @@ include $(TOP)/config/make.cfg
 
 FILES :=    pci_aros dev uhwcmd debug
 
-%build_module mmake=rom-usb-pciusb \
+WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware 
+
+#MM
+kernel-usb-pciusb-directories ::
+    %mkdirs_q $(WBUSBHARDWAREDIRS)
+
+#MM- kernel-usb-pciusb : kernel-usb-pciusb-directories 
+
+%build_module mmake=kernel-usb-pciusb \
     modname=pciusb modtype=device \
+    moduledir=Devs/USBHardware \
     files="$(FILES)" \
-    uselibs="amiga rom oop hiddstubs"
+    uselibs="rom oop hiddstubs"
 
 %common

@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    moschipeth.class dev debug
 
-#MM- rom-usb-classes-moschipeth : rom-usb-usbclass rom-usb-poseidon
+#MM- kernel-usb-classes-moschipeth : kernel-usb-usbclass kernel-usb-poseidon
 
-%build_module mmake=rom-usb-classes-moschipeth \
+%build_module mmake=kernel-usb-classes-moschipeth \
     modname=moschipeth modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="amiga rom mui"

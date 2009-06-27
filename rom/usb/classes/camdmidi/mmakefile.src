@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    camdusbmidi.class debug
 
-#MM- rom-usb-classes-camdusbmidi : rom-usb-usbclass rom-usb-poseidon
+#MM- kernel-usb-classes-camdusbmidi : kernel-usb-usbclass kernel-usb-poseidon
 
-%build_module mmake=rom-usb-classes-camdusbmidi \
+%build_module mmake=kernel-usb-classes-camdusbmidi \
     modname=camdusbmidi modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="amiga rom mui"

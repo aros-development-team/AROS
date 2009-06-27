@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    dfu.class debug
 
-#MM- rom-usb-classes-dfu : rom-usb-usbclass rom-usb-poseidon
+#MM- kernel-usb-classes-dfu : kernel-usb-usbclass kernel-usb-poseidon
 
-%build_module mmake=rom-usb-classes-dfu \
+%build_module mmake=kernel-usb-classes-dfu \
     modname=dfu modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="amiga rom mui"

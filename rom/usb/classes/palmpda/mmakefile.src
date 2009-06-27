@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    palmpda.class dev debug
 
-#MM- rom-usb-classes-palmpda : rom-usb-usbclass rom-usb-poseidon
+#MM- kernel-usb-classes-palmpda : kernel-usb-usbclass kernel-usb-poseidon
 
-%build_module mmake=rom-usb-classes-palmpda \
+%build_module mmake=kernel-usb-classes-palmpda \
     modname=palmpda modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="amiga rom mui"

@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    dm9601eth.class dev debug
 
-#MM- rom-usb-classes-dm9601eth : rom-usb-usbclass rom-usb-poseidon
+#MM- kernel-usb-classes-dm9601eth : kernel-usb-usbclass kernel-usb-poseidon
 
-%build_module mmake=rom-usb-classes-dm9601eth \
+%build_module mmake=kernel-usb-classes-dm9601eth \
     modname=dm9601eth modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="amiga rom mui"

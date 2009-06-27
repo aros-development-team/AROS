@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    usbaudio.class numtostr debug
 
-#MM- rom-usb-classes-usbaudio : rom-usb-usbclass rom-usb-poseidon contrib-AHI
+#MM- kernel-usb-classes-usbaudio : kernel-usb-usbclass kernel-usb-poseidon contrib-AHI
 
-%build_module mmake=rom-usb-classes-usbaudio \
+%build_module mmake=kernel-usb-classes-usbaudio \
     modname=usbaudio modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="amiga rom mui"

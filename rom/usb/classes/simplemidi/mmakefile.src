@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    simplemidi.class debug
 
-#MM- rom-usb-classes-simplemidi : rom-usb-usbclass rom-usb-poseidon
+#MM- kernel-usb-classes-simplemidi : kernel-usb-usbclass kernel-usb-poseidon
 
-%build_module mmake=rom-usb-classes-simplemidi \
+%build_module mmake=kernel-usb-classes-simplemidi \
     modname=simplemidi modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="amiga rom mui"

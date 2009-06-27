@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    egalaxtouch.class debug
 
-#MM- rom-usb-classes-egalaxtouch : rom-usb-usbclass rom-usb-poseidon
+#MM- kernel-usb-classes-egalaxtouch : kernel-usb-usbclass kernel-usb-poseidon
 
-%build_module mmake=rom-usb-classes-egalaxtouch \
+%build_module mmake=kernel-usb-classes-egalaxtouch \
     modname=egalaxtouch modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="amiga rom mui"

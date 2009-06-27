@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    bootkeyboard.class debug
 
-#MM- rom-usb-classes-bootkeyboard : rom-usb-usbclass rom-usb-poseidon
+#MM- kernel-usb-classes-bootkeyboard : kernel-usb-usbclass kernel-usb-poseidon
 
-%build_module mmake=rom-usb-classes-bootkeyboard \
+%build_module mmake=kernel-usb-classes-bootkeyboard \
     modname=bootkeyboard modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="amiga rom mui"
