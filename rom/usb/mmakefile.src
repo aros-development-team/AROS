@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 #MM      kernel-usb-shelltools \
 #MM      kernel-usb-classes \
 #MM      kernel-usb-shellapps \
+#MM      kernel-usb-trident \
 #MM      kernel-usb-pciusb
 
 #MM- kernel-usb-kobj : \
@@ -18,6 +19,7 @@ include $(TOP)/config/make.cfg
 #MM      kernel-usb-shelltools-clean \
 #MM      kernel-usb-classes-clean \
 #MM      kernel-usb-shellapps-clean \
+#MM      kernel-usb-trident-clean \
 #MM      kernel-usb-pciusb-clean \
 #MM      kernel-usb-usbclass-clean
 
