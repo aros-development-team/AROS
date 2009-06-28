@@ -13,11 +13,12 @@
 #include <proto/dos.h>
 
 #define ARGS_NOFLUSH  0
-#define ARGS_NOTS     1
-#define ARGS_SIZEOF   2
+#define ARGS_DEBUG    1
+#define ARGS_NOTS     2
+#define ARGS_SIZEOF   3
 
-static const char *template = "NOFLUSH/S,NOTIMESTAMPS=NOTS/S";
-static const char *version = "$VER: PsdErrorlog 4.0 (03.06.09) by Chris Hodges <chrisly@platon42.de>";
+static const char *template = "NOFLUSH/S,DEBUG/S,NOTIMESTAMPS=NOTS/S";
+static const char *version = "$VER: PsdErrorlog 4.0 (28.06.09) by Chris Hodges <chrisly@platon42.de>";
 static IPTR ArgsArray[ARGS_SIZEOF];
 static struct RDArgs *ArgsHook = NULL;
 
@@ -57,11 +58,16 @@ int main(int argc, char *argv[])
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
         DateStamp(&currdate);
-        if(ArgsArray[ARGS_NOFLUSH])
+        if(ArgsArray[ARGS_DEBUG])
         {
-            psdLockReadPBase();
+            psdDebugSemaphores();
         } else {
-            psdLockWritePBase();
+            if(ArgsArray[ARGS_NOFLUSH])
+            {
+                psdLockReadPBase();
+            } else {
+                psdLockWritePBase();
+            }
         }
         psdGetAttrs(PGA_STACK, NULL, PA_ErrorMsgList, &errmsgs, TAG_END);
         pem = errmsgs->lh_Head;
@@ -105,7 +111,10 @@ int main(int argc, char *argv[])
             }
             Permit();
         }
-        psdUnlockPBase();
+        if(!ArgsArray[ARGS_DEBUG])
+        {
+            psdUnlockPBase();
+        }
         CloseLibrary(ps);
     } else {
         errmsg = "Unable to open poseidon.library\n";

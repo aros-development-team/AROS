@@ -312,9 +312,7 @@ AROS_LH1(APTR, psdAllocVec,
             upos++;
         }
 #endif
-        //*pmem++ = MAKE_ID('H','U','R','Z');
         *pmem++ = size;
-        //*((ULONG *) (((UBYTE *) pmem) + size)) = MAKE_ID('N','A','R','F');
         ps->ps_MemAllocated += size;
         return((APTR) pmem);
     }
@@ -335,7 +333,6 @@ AROS_LH1(void, psdFreeVec,
     if(pmem)
     {
         size = ((ULONG *) pmem)[-1];
-        //((ULONG *) pmem)[-2] = 0;
         ps->ps_MemAllocated -= size;
 
 #ifdef MEMDEBUG
@@ -350,9 +347,43 @@ AROS_LH1(void, psdFreeVec,
 
 /* *** PBase *** */
 
+/* /// "pDebugSemaInfo()" */
+void pDebugSemaInfo(LIBBASETYPEPTR ps, struct PsdSemaInfo *psi)
+{
+    struct PsdReadLock *prl;
+    psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                   "Semaphore %08lx %s (Excl/SharedLockCount %ld/%ld) (Owner: %s):",
+                   psi->psi_LockSem,
+                   psi->psi_LockSem->pls_Node.ln_Name,
+                   psi->psi_LockSem->pls_ExclLockCount,
+                   psi->psi_LockSem->pls_SharedLockCount,
+                   psi->psi_LockSem->pls_Owner ? psi->psi_LockSem->pls_Owner->tc_Node.ln_Name : "None");
+
+    prl = (struct PsdReadLock *) psi->psi_LockSem->pls_WaitQueue.lh_Head;
+    while(prl->prl_Node.ln_Succ)
+    {
+        psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                           "  Waiting Task: %08lx (%s) %s",
+                           prl->prl_Task, prl->prl_Task->tc_Node.ln_Name,
+                           prl->prl_IsExcl ? "Excl" : "Shared");
+        prl = (struct PsdReadLock *) prl->prl_Node.ln_Succ;
+    }
+    prl = (struct PsdReadLock *) psi->psi_LockSem->pls_ReadLocks.lh_Head;
+    while(prl->prl_Node.ln_Succ)
+    {
+        psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                       "  Readlock Task: %08lx (%s), Count %ld",
+                       prl->prl_Task, prl->prl_Task->tc_Node.ln_Name,
+                       prl->prl_Count);
+        prl = (struct PsdReadLock *) prl->prl_Node.ln_Succ;
+    }
+}
+/* \\\ */
+
 /* /// "pInitSem()" */
 void pInitSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls, STRPTR name)
 {
+    struct PsdSemaInfo *psi = NULL;
     NewList(&pls->pls_WaitQueue);
     NewList(&pls->pls_ReadLocks);
     pls->pls_Node.ln_Name = name;
@@ -361,13 +392,44 @@ void pInitSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls, STRPTR name)
     pls->pls_ExclLockCount = 0;
     pls->pls_SharedLockCount = 0;
     pls->pls_Dead = FALSE;
+
+    Forbid();
+    psi = (struct PsdSemaInfo *) AllocPooled(ps->ps_SemaMemPool, sizeof(struct PsdSemaInfo));
+    if(!psi)
+    {
+        Permit();
+        return;
+    }
+    psi->psi_LockSem = pls;
+    AddTail(&ps->ps_DeadlockDebug, &psi->psi_Node);
+    Permit();
 }
 /* \\\ */
 
 /* /// "pDeleteSem()" */
 void pDeleteSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
 {
-     // nothing to do here
+    struct PsdSemaInfo *psi;
+    Forbid();
+    pls->pls_Dead = TRUE;
+    psi = (struct PsdSemaInfo *) ps->ps_DeadlockDebug.lh_Head;
+    while(psi->psi_Node.ln_Succ)
+    {
+        if(psi->psi_LockSem == pls)
+        {
+            if(pls->pls_SharedLockCount + pls->pls_ExclLockCount)
+            {
+                psdAddErrorMsg0(RETURN_ERROR, (STRPTR) libname, "Semaphore still locked when attempting to delete it!\n");
+                pDebugSemaInfo(ps, psi);
+            } else {
+                Remove(&psi->psi_Node);
+                FreePooled(ps->ps_SemaMemPool, psi, sizeof(struct PsdSemaInfo));
+            }
+            break;
+        }
+        psi = (struct PsdSemaInfo *) psi->psi_Node.ln_Succ;
+    }
+    Permit();
 }
 /* \\\ */
 
@@ -380,7 +442,7 @@ void pLockSemExcl(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
     waitprl.prl_Task = thistask;
     waitprl.prl_IsExcl = TRUE;
 
-    Forbid(); // ObtainSemaphore(&ps->ps_SemaLock);
+    Forbid();
     do
     {
         // it's already mine!!
@@ -407,15 +469,13 @@ void pLockSemExcl(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
         AddHead(&pls->pls_WaitQueue, &waitprl.prl_Node);
         thistask->tc_SigRecvd &= ~SIGF_SINGLE;
 
-        //ReleaseSemaphore(&ps->ps_SemaLock);
         Wait(SIGF_SINGLE);
-        //ObtainSemaphore(&ps->ps_SemaLock);
 
         Remove(&waitprl.prl_Node);
     } while(TRUE);
     pls->pls_Owner = thistask;
     pls->pls_ExclLockCount++;
-    Permit(); //ReleaseSemaphore(&ps->ps_SemaLock);
+    Permit();
 }
 /* \\\ */
 
@@ -425,13 +485,13 @@ void pLockSemShared(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
     struct PsdReadLock *prl;
     struct Task *thistask = FindTask(NULL);
 
-    Forbid(); //ObtainSemaphore(&ps->ps_SemaLock);
+    Forbid();
     // is this already locked exclusively by me?
     if(thistask == pls->pls_Owner)
     {
         // yes? then just increase exclusive lock count
         pls->pls_ExclLockCount++;
-        Permit(); //ReleaseSemaphore(&ps->ps_SemaLock);
+        Permit();
         return;
     }
 
@@ -443,7 +503,7 @@ void pLockSemShared(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
         {
             KPRINTF(1, ("Increasing ReadLock (%08lx) count to %ld\n", thistask, prl->prl_Count));
             prl->prl_Count++;
-            Permit(); // ReleaseSemaphore(&ps->ps_SemaLock);
+            Permit();
             return;
         }
         prl = (struct PsdReadLock *) prl->prl_Node.ln_Succ;
@@ -454,7 +514,7 @@ void pLockSemShared(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
     {
         KPRINTF(20, ("No mem for shared lock! context (%08lx) on %08lx\n", thistask, pls));
         // try exclusive lock as fallback (needs no memory)
-        Permit(); // ReleaseSemaphore(&ps->ps_SemaLock);
+        Permit();
         pLockSemExcl(ps, pls);
         return;
     }
@@ -470,9 +530,7 @@ void pLockSemShared(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
         AddTail(&pls->pls_WaitQueue, &prl->prl_Node);
         thistask->tc_SigRecvd &= ~SIGF_SINGLE;
 
-        //ReleaseSemaphore(&ps->ps_SemaLock);
         Wait(SIGF_SINGLE);
-        //ObtainSemaphore(&ps->ps_SemaLock);
 
         Remove(&prl->prl_Node);
     }
@@ -489,7 +547,7 @@ void pLockSemShared(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
         prl->prl_Count++;
         pls->pls_SharedLockCount++;
     }
-    Permit(); //ReleaseSemaphore(&ps->ps_SemaLock);
+    Permit();
     return;
 }
 /* \\\ */
@@ -501,13 +559,14 @@ void pUnlockSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
     struct Task *thistask = FindTask(NULL);
     BOOL gotit = FALSE;
 
-    Forbid(); //ObtainSemaphore(&ps->ps_SemaLock);
+    Forbid();
     if(pls->pls_Owner)
     {
         // exclusively locked, this means unlocking task must be owner
         if(pls->pls_Owner != thistask)
         {
-            Permit(); //ReleaseSemaphore(&ps->ps_SemaLock);
+            Permit();
+            psdDebugSemaphores();
             psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
                            "Attempt to unlock exclusive semaphore %08lx not owned by task %s!",
                            pls, thistask->tc_Node.ln_Name);
@@ -517,7 +576,7 @@ void pUnlockSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
         if(--pls->pls_ExclLockCount)
         {
             // still locked
-            Permit(); //ReleaseSemaphore(&ps->ps_SemaLock);
+            Permit();
             return;
         }
         pls->pls_Owner = NULL;
@@ -525,7 +584,8 @@ void pUnlockSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
     } else {
         if(!pls->pls_SharedLockCount)
         {
-            Permit(); //ReleaseSemaphore(&ps->ps_SemaLock);
+            Permit();
+            psdDebugSemaphores();
             psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
                            "Attempt to unlock (free) semaphore %08lx once too often by task %s!",
                            pls, thistask->tc_Node.ln_Name);
@@ -540,7 +600,7 @@ void pUnlockSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
                 if(--prl->prl_Count)
                 {
                     // can't be the last lock, so just reduce count and return
-                    Permit(); //ReleaseSemaphore(&ps->ps_SemaLock);
+                    Permit();
                     return;
                 }
                 // remove read lock, it's no longer needed
@@ -556,7 +616,8 @@ void pUnlockSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
         }
         if(!gotit)
         {
-            Permit(); //ReleaseSemaphore(&ps->ps_SemaLock);
+            Permit();
+            psdDebugSemaphores();
             psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
                            "Attempt to unlock (shared) semaphore %08lx once too often by task %s!",
                            pls, thistask->tc_Node.ln_Name);
@@ -575,7 +636,31 @@ void pUnlockSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
         Signal(prl->prl_Task, SIGF_SINGLE);
         prl = (struct PsdReadLock *) prl->prl_Node.ln_Succ;
     }
-    Permit(); //ReleaseSemaphore(&ps->ps_SemaLock);
+    Permit();
+}
+/* \\\ */
+
+/* /// "psdDebugSemaphores()" */
+AROS_LH0(void, psdDebugSemaphores,
+         LIBBASETYPEPTR, ps, 81, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct Task *thistask = FindTask(NULL);
+    struct PsdSemaInfo *psi;
+
+    psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                   "Debug Semaphores (%08lx)", thistask);
+
+    Forbid();
+    // search for context
+    psi = (struct PsdSemaInfo *) ps->ps_DeadlockDebug.lh_Head;
+    while(psi->psi_Node.ln_Succ)
+    {
+        pDebugSemaInfo(ps, psi);
+        psi = (struct PsdSemaInfo *) psi->psi_Node.ln_Succ;
+    }
+    Permit();
+    AROS_LIBFUNC_EXIT
 }
 /* \\\ */
 
