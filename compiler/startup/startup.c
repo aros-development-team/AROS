@@ -9,7 +9,6 @@
 #define DEBUG 0
 
 #include <aros/config.h>
-#include <setjmp.h>
 #include <dos/dos.h>
 #include <exec/memory.h>
 #include <workbench/startup.h>
@@ -34,15 +33,10 @@ int  __argc;
 
 struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
-struct WBStartup *WBenchMsg;
 
 extern int main(int argc, char ** argv);
 int (*__main_function_ptr)(int argc, char ** argv) __attribute__((__weak__)) = main;
 
-DEFINESET(CTORS);
-DEFINESET(DTORS);
-DEFINESET(INIT);
-DEFINESET(EXIT);
 DEFINESET(PROGRAM_ENTRIES);
 
 /* if the programmer hasn't defined a symbol with the name __nocommandline
@@ -56,6 +50,20 @@ asm(".set __importcommandline, __nocommandline");
 */
 extern int __nostdiowin;
 asm(".set __importstdiowin, __nostdiowin");
+
+/* if the programmer hasn't defined a symbol with the name __nowbsupport
+   then the code to handle support for programs started from WB will be included from
+   the autoinit.lib
+*/
+extern int __nowbsupport;
+asm(".set __importnowbsupport, __nowbsupport");
+
+/* if the programmer hasn't defined a symbol with the name __noinitexitsets
+   then the code to handle support for calling the INIT, EXIT symbolset functions
+   and the autoopening of libraries is called from the autoinit.lib
+*/
+extern int __noinitexitsets;
+asm(".set __importnoinitexitsets, __noinitexitsets");
 
 static void __startup_entries_init(void);
 
@@ -111,66 +119,16 @@ AROS_UFH3(LONG, __startup_entry,
 } /* entry */
 
 
-static void __startup_fromwb(void)
+static void __startup_setjmp(void)
 {
-    struct Process *myproc;
-    BPTR win = NULL;
-    BPTR old_in, old_out, old_err;
+    D(bug("Entering __startup_setjmp\n"));
 
-    D(bug("Entering __startup_fromwb()\n"));
-
-    myproc = (struct Process *)FindTask(NULL);
-
-    /* Do we have a CLI structure? */
-    if (!myproc->pr_CLI)
+    if (setjmp(__aros_startup.as_startup_jmp_buf) == 0)
     {
-	/* Workbench startup. Get WBenchMsg and pass it to main() */
-
-	WaitPort(&myproc->pr_MsgPort);
-	WBenchMsg = (struct WBStartup *)GetMsg(&myproc->pr_MsgPort);
-	__argv = (char **) WBenchMsg;
-        __argc = 0;
-
-	D(bug("[startup] Started from Workbench\n"));
+        __startup_entries_next();
     }
 
-    __startup_entries_next();
-
-    /* Reply startup message to Workbench */
-    if (WBenchMsg)
-    {
-        Forbid(); /* make sure we're not UnLoadseg()ed before we're really done */
-        ReplyMsg((struct Message *) WBenchMsg);
-    }
-
-    D(bug("Leaving __startup_fromwb\n"));
-}
-
-
-static void __startup_initexit(void)
-{
-    D(bug("Entering __startup_initexit\n"));
-
-    if (set_open_libraries())
-    {
-        if
-	(
-	    setjmp(__aros_startup.as_startup_jmp_buf) == 0 &&
-            set_call_funcs(SETNAME(INIT), 1, 1)
-	)
-	{
-            /* ctors/dtors get called in inverse order than init funcs */
-            set_call_funcs(SETNAME(CTORS), -1, 0);
-
-            __startup_entries_next();
-
-            set_call_funcs(SETNAME(DTORS), 1, 0);
-        }
-        set_call_funcs(SETNAME(EXIT), -1, 0);
-    }
-    set_close_libraries();
-    
-    D(bug("Leaving __startup_initexit\n"));
+    D(bug("Leaving __startup_setjmp\n"));
 }
 
 
@@ -185,8 +143,7 @@ static void __startup_main(void)
     D(bug("Leaving __startup_main\n"));
 }
 
-ADD2SET(__startup_fromwb, program_entries, -50);
-ADD2SET(__startup_initexit, program_entries, 126);
+ADD2SET(__startup_setjmp, program_entries, -10);
 ADD2SET(__startup_main, program_entries, 127);
 
 
