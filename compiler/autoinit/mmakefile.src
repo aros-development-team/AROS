@@ -37,7 +37,9 @@ STARTUPFILES := \
 	__showerror \
 	commandline \
 	__stdiowin \
-        stdiowin
+        stdiowin \
+        fromwb \
+        initexitsets
 
 MISCFILES := \
 	detach \
