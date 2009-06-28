@@ -3951,8 +3951,12 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         KPRINTF(5, ("New Donehead %08lx for old %08lx\n", donehead, hc->hc_OhciDoneQueue));
         if(hc->hc_OhciDoneQueue)
         {
-            struct OhciTD *donetd = (struct OhciTD *) (hc->hc_OhciDoneQueue - hc->hc_PCIVirtualAdjust - 16);
-            WRITEMEM32_LE(donetd->otd_NextTD, donehead);
+            struct OhciTD *donetd = (struct OhciTD *) (donehead - hc->hc_PCIVirtualAdjust - 16);
+            while(donetd->otd_NextTD)
+            {
+				donetd = (struct OhciTD *) (donetd->otd_NextTD - hc->hc_PCIVirtualAdjust - 16);
+			}
+            WRITEMEM32_LE(&donetd->otd_NextTD, hc->hc_OhciDoneQueue);
         }
         hc->hc_OhciDoneQueue = donehead;
         CONSTWRITEMEM32_LE(&hc->hc_OhciHCCA->oha_DoneHead, 0);
