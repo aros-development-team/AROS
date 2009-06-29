@@ -67,7 +67,7 @@
    will not work. Best example: 68k binaries, if we should ever
    have some kind of 68k emu */
    
-#define NEW_DRIVERDATA_CODE 	0
+#define NEW_DRIVERDATA_CODE 	1
 
 #if NEW_DRIVERDATA_CODE
 #define OBTAIN_DRIVERDATA(rp,libbase)   ObtainDriverData(rp, libbase)
