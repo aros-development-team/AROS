@@ -56,6 +56,7 @@ OOP_Object *GC__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
         data->fg        = 1;        /* foreground color                        */
         data->bg        = 0;        /* background color                        */
         data->drMode    = vHidd_GC_DrawMode_Copy;    /* drawmode               */
+        data->colExp    = vHidd_GC_ColExp_Opaque;    /* color expansion mode   */
         data->font      = NULL;     /* current fonts                           */
         data->colMask   = ~0;       /* ColorMask prevents some color bits from changing*/
         data->linePat   = ~0;       /* LinePattern                             */
