@@ -3781,6 +3781,7 @@ IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreenBar *ms
     struct TextExtent       te;
     struct RastPort        *rp = msg->sdp_RPort;
     struct Screen          *scr = msg->sdp_Screen;
+    UWORD                  *pens = msg->sdp_Dri->dri_Pens;
     LONG                    left, right, titlelen = 0;
     BOOL                    hastitle = TRUE;
 
@@ -3808,6 +3809,7 @@ IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreenBar *ms
 
         if (!sd->truecolor || ((data->outline == FALSE) && (data->shadow == FALSE)))
         {
+	    SetAPen(rp, pens[BARDETAILPEN]);
             Move(rp, tx, ty);
             Text(rp, scr->Title, titlelen);
         }
