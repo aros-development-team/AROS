@@ -1986,7 +1986,7 @@ void uhwCheckSpecialCtrlTransfers(struct PCIController *hc, struct IOUsbHWReq *i
     {
         /* Set Address -> clear all endpoints */
         ULONG epnum;
-        ULONG adr = ioreq->iouh_SetupData.wValue>>3;
+        ULONG adr = AROS_WORD2LE(ioreq->iouh_SetupData.wValue)>>3;
         KPRINTF(10, ("Resetting toggle bits for device address %ld\n", adr>>5));
         for(epnum = 0; epnum < 31; epnum++)
         {
