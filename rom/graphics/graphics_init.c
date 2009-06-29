@@ -69,7 +69,7 @@ static int GfxInit(struct GfxBase *LIBBASE)
 #endif
 
     InitSemaphore( &PrivGBase(GfxBase)->driverdatasem );
-    if (!(PrivGBase(GfxBase)->driverdatapool = CreatePool(MEMF_PUBLIC | MEMF_SEM_PROTECTED,
+    if (!(PrivGBase(GfxBase)->driverdatapool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED,
     	    	    	    	    	    	          1024,
     	    	    	    	    	    	          1024)))
     {
