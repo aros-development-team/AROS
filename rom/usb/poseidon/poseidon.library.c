@@ -27,7 +27,7 @@
  *----------------------------------------------------------------------------
  *                   By Chris Hodges <chrisly@platon42.de>
  */
- 
+
 #include "debug.h"
 
 #include "poseidon.library.h"
@@ -69,9 +69,9 @@ static int libInit(LIBBASETYPEPTR ps)
 
     ps->ps_StackInit = FALSE;
     ps->ps_UtilityBase = (struct UtilityBase *) OpenLibrary("utility.library", 39);
-    
+
 #define UtilityBase ps->ps_UtilityBase
-    
+
     if(UtilityBase)
     {
         NewList(&ps->ps_Hardware);
@@ -785,7 +785,7 @@ AROS_LH2(ULONG, psdBorrowLocksWait,
                         pbl->pbl_LockSem = pls;
                         pbl->pbl_ExclLockCount = pls->pls_ExclLockCount;
                         AddTail(&reclaims, &pbl->pbl_Node);
- 
+
                         // unlock exclusive lock
                         pls->pls_ExclLockCount = 0;
                         pls->pls_Owner = NULL;
@@ -3132,7 +3132,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                            "SET_ADDRESS failed: %s (%ld)",
                            psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
             KPRINTF(15, ("SET_ADDRESS failed %ld!\n", ioerr));
-            
+
         }
         pp->pp_IOReq.iouh_Flags = oldflags;
         pp->pp_IOReq.iouh_NakTimeout = oldnaktimeout;
@@ -3281,7 +3281,7 @@ AROS_LH1(BOOL, psdSuspendBindings,
                         {
                             if(!force)
                             {
- 
+
                                 psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
                                                "%s does not support suspending.",
                                                puc->puc_Node.ln_Name);
@@ -6575,10 +6575,10 @@ AROS_LH2(APTR, psdGetCfgChunk,
     chnk = pFindCfgChunk(ps, pic, chnkid);
     if(chnk)
     {
-        res = psdAllocVec(AROS_LONG2BE(chnk[1]+8));
+        res = psdAllocVec(AROS_LONG2BE(chnk[1])+8);
         if(res)
         {
-            memcpy(res, chnk, AROS_LONG2BE((size_t) chnk[1]+8));
+            memcpy(res, chnk, AROS_LONG2BE(chnk[1])+8);
         }
     }
     pUnlockSem(ps, &ps->ps_ConfigLock);
@@ -7814,7 +7814,7 @@ STRPTR pGetStringChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chunk
     STRPTR str;
     if((chunk = pFindCfgChunk(ps, pic, chunkid)))
     {
-        if((str = (STRPTR) psdAllocVec(AROS_LONG2BE(chunk[1] + 1))))
+        if((str = (STRPTR) psdAllocVec(AROS_LONG2BE(chunk[1]) + 1)))
         {
             memcpy(str, &chunk[2], (size_t) AROS_LONG2BE(chunk[1]));
             return(str);
