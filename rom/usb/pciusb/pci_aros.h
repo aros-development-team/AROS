@@ -11,8 +11,14 @@
  */
 
 // hmmm, these were PPC specific barriers
+
+#ifndef SYNC
 #define SYNC
+#endif
+
+#ifndef EIEIO
 #define EIEIO
+#endif
 
 #if 1
 
