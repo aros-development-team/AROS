@@ -41,7 +41,7 @@ AROS_LH3(DEVBASETYPEPTR, devOpen,
     struct NepClassMS *ncm;
 
     KPRINTF(10, ("devOpen ioreq: 0x%08lx unit: %ld flags: 0x%08lx base: 0x%08lx\n",
-                 ioreq, unit, flags, base));
+                 ioreq, unitnum, flags, base));
 
     if(!base->np_UtilityBase)
     {
