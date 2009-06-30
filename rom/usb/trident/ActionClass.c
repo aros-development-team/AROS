@@ -1318,7 +1318,7 @@ STRPTR GetStringChunk(ULONG *form, ULONG chnkid, STRPTR defstr)
     STRPTR str = NULL;
     if((chunkptr = FindCfgChunk(form, chnkid)))
     {
-        if((str = (STRPTR) psdAllocVec(chunkptr[1] + 1)))
+        if((str = (STRPTR) psdAllocVec(AROS_LONG2BE(chunkptr[1]) + 1)))
         {
             memcpy(str, &chunkptr[2], (size_t) AROS_LONG2BE(chunkptr[1]));
             return(str);
