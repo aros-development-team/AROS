@@ -341,6 +341,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                         uqh++;
                     } while(--cnt);
                     uqh->uqh_Succ = NULL;
+                    WRITEMEM32_LE(&uqh->uqh_Self, (ULONG) (&uqh->uqh_Link) + hc->hc_PCIVirtualAdjust + UHCI_QHSELECT);
                     memptr += sizeof(struct UhciQH) * UHCI_QH_POOLSIZE;
 
                     // build up TD pool
@@ -354,6 +355,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                         utd++;
                     } while(--cnt);
                     utd->utd_Succ = NULL;
+                    WRITEMEM32_LE(&utd->utd_Self, (ULONG) (&utd->utd_Link) + hc->hc_PCIVirtualAdjust + UHCI_TDSELECT);
                     memptr += sizeof(struct UhciTD) * UHCI_TD_POOLSIZE;
 
                     // terminating QH
@@ -547,6 +549,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                         oed++;
                     } while(--cnt);
                     oed->oed_Succ = NULL;
+                    WRITEMEM32_LE(&oed->oed_Self, (ULONG) (&oed->oed_EPCaps) + hc->hc_PCIVirtualAdjust);
                     memptr += sizeof(struct OhciED) * OHCI_ED_POOLSIZE;
 
                     // build up TD pool
@@ -560,6 +563,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                         otd++;
                     } while(--cnt);
                     otd->otd_Succ = NULL;
+                    WRITEMEM32_LE(&otd->otd_Self, (ULONG) (&otd->otd_Ctrl) + hc->hc_PCIVirtualAdjust);
                     memptr += sizeof(struct OhciTD) * OHCI_TD_POOLSIZE;
 
                     // terminating ED
@@ -792,6 +796,9 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                         eqh++;
                     } while(--cnt);
                     eqh->eqh_Succ = NULL;
+                    WRITEMEM32_LE(&eqh->eqh_Self, (ULONG) (&eqh->eqh_NextQH) + hc->hc_PCIVirtualAdjust + EHCI_QUEUEHEAD);
+                    CONSTWRITEMEM32_LE(&eqh->eqh_NextTD, EHCI_TERMINATE);
+                    CONSTWRITEMEM32_LE(&eqh->eqh_AltNextTD, EHCI_TERMINATE);
                     memptr += sizeof(struct EhciQH) * EHCI_QH_POOLSIZE;
 
                     // build up TD pool
@@ -805,6 +812,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                         etd++;
                     } while(--cnt);
                     etd->etd_Succ = NULL;
+                    WRITEMEM32_LE(&etd->etd_Self, (ULONG) (&etd->etd_NextTD) + hc->hc_PCIVirtualAdjust);
                     memptr += sizeof(struct EhciTD) * EHCI_TD_POOLSIZE;
 
                     // empty async queue head
@@ -1006,8 +1014,8 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         else if(hc->hc_HCIType == HCITYPE_UHCI)
         {
             uhcicnt++;
-        } 
-        else if(hc->hc_HCIType == HCITYPE_OHCI) 
+        }
+        else if(hc->hc_HCIType == HCITYPE_OHCI)
         {
             ohcicnt++;
         }

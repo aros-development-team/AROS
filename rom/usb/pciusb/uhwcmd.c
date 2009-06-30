@@ -2755,7 +2755,7 @@ void uhciScheduleIntTDs(struct PCIController *hc)
             }
             if(predutd)
             {
-                WRITEMEM32_LE(&predutd->utd_Link, READMEM32_LE(utd->utd_Self)|UHCI_DFS);
+                WRITEMEM32_LE(&predutd->utd_Link, READMEM32_LE(&utd->utd_Self)|UHCI_DFS);
                 predutd->utd_Succ = (struct UhciXX *) utd;
                 //utd->utd_Pred = (struct UhciXX *) predutd;
             } else {
@@ -2906,7 +2906,7 @@ void uhciScheduleBulkTDs(struct PCIController *hc)
             forcezero = FALSE;
             if(predutd)
             {
-                WRITEMEM32_LE(&predutd->utd_Link, READMEM32_LE(utd->utd_Self)|UHCI_DFS);
+                WRITEMEM32_LE(&predutd->utd_Link, READMEM32_LE(&utd->utd_Self)|UHCI_DFS);
                 predutd->utd_Succ = (struct UhciXX *) utd;
                 //utd->utd_Pred = (struct UhciXX *) predutd;
             } else {
@@ -3428,8 +3428,8 @@ void ohciHandleFinishedTDs(struct PCIController *hc)
                 AddTail(&hc->hc_TDQueue, &ioreq->iouh_Req.io_Message.mn_Node);
 
                 // keep toggle bit
-                ctrlstatus = READMEM32_LE(oed->oed_HeadPtr) & OEHF_DATA1;
-                WRITEMEM32_LE(&oed->oed_HeadPtr, READMEM32_LE(oed->oed_FirstTD->otd_Self)|ctrlstatus);
+                ctrlstatus = READMEM32_LE(&oed->oed_HeadPtr) & OEHF_DATA1;
+                WRITEMEM32_LE(&oed->oed_HeadPtr, READMEM32_LE(&oed->oed_FirstTD->otd_Self)|ctrlstatus);
 
                 oldenables = READREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS);
                 oldenables |= OCSF_BULKENABLE;
@@ -3724,7 +3724,7 @@ void ohciScheduleIntTDs(struct PCIController *hc)
                 predotd->otd_Succ = otd;
                 predotd->otd_NextTD = otd->otd_Self;
             } else {
-                WRITEMEM32_LE(&oed->oed_HeadPtr, READMEM32_LE(otd->otd_Self)|(unit->hu_DevDataToggle[devadrep] ? OEHF_DATA1 : 0));
+                WRITEMEM32_LE(&oed->oed_HeadPtr, READMEM32_LE(&otd->otd_Self)|(unit->hu_DevDataToggle[devadrep] ? OEHF_DATA1 : 0));
                 oed->oed_FirstTD = otd;
             }
             len = ioreq->iouh_Length - actual;
@@ -3883,7 +3883,7 @@ void ohciScheduleBulkTDs(struct PCIController *hc)
                 predotd->otd_Succ = otd;
                 predotd->otd_NextTD = otd->otd_Self;
             } else {
-                WRITEMEM32_LE(&oed->oed_HeadPtr, READMEM32_LE(otd->otd_Self)|(unit->hu_DevDataToggle[devadrep] ? OEHF_DATA1 : 0));
+                WRITEMEM32_LE(&oed->oed_HeadPtr, READMEM32_LE(&otd->otd_Self)|(unit->hu_DevDataToggle[devadrep] ? OEHF_DATA1 : 0));
                 oed->oed_FirstTD = otd;
             }
             len = ioreq->iouh_Length - actual;
