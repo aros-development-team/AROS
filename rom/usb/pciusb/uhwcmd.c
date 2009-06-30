@@ -18,7 +18,7 @@ const struct UsbStdIfDesc  RHIfDesc  = { 9, UDT_INTERFACE, 0, 0, 1, HUB_CLASSCOD
 const struct UsbStdEPDesc  RHEPDesc  = { 7, UDT_ENDPOINT, URTF_IN|1, USEAF_INTERRUPT, AROS_WORD2LE(1), 255 };
 const struct UsbHubDesc    RHHubDesc = { 9, UDT_HUB, 0, AROS_WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP), 0, 1, 1, 0 };
 
-const CONST_STRPTR RHStrings[] = { "Chris Hodges", "PCI Root Hub", "Standard Config", "Hub interface" };
+const CONST_STRPTR RHStrings[] = { "Chris Hodges", "PCI Root Hub Unit x", "Standard Config", "Hub interface" };
 
 /* /// "SureCause()" */
 void SureCause(struct PCIDevice *base, struct Interrupt *interrupt)
@@ -73,6 +73,15 @@ void uhwDelayMS(ULONG milli, struct PCIUnit *unit, struct PCIDevice *base)
 {
     unit->hu_TimerReq->tr_time.tv_secs  = 0;
     unit->hu_TimerReq->tr_time.tv_micro = milli * 1000;
+    DoIO((struct IORequest *) unit->hu_TimerReq);
+}
+/* \\\ */
+
+/* /// "uhwDelayMicro()" */
+void uhwDelayMicro(ULONG micro, struct PCIUnit *unit, struct PCIDevice *base)
+{
+    unit->hu_TimerReq->tr_time.tv_secs  = 0;
+    unit->hu_TimerReq->tr_time.tv_micro = micro;
     DoIO((struct IORequest *) unit->hu_TimerReq);
 }
 /* \\\ */
@@ -381,7 +390,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
     }
     if((tag = FindTagItem(UHA_ProductName, taglist)))
     {
-        *((STRPTR *) tag->ti_Data) = "PCI UHCI/OHCI/EHCI USB Host Controller";
+        *((STRPTR *) tag->ti_Data) = unit->hu_ProductName;
         count++;
     }
     if((tag = FindTagItem(UHA_Description, taglist)))
@@ -525,7 +534,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     *mptr++ = AROS_WORD2BE((slen<<9)|UDT_STRING);
                                     while(ioreq->iouh_Actual+1 < len)
                                     {
-                                        *mptr++ = AROS_WORD2LE(*source);
+                                        // special hack for unit number in root hub string
+                                        if(((val & 0xff) == 2) && (source[1] == 0))
+                                        {
+                                            *mptr++ = AROS_WORD2LE('0' + unit->hu_UnitNo);
+                                        } else {
+                                            *mptr++ = AROS_WORD2LE(*source);
+                                        }
                                         source++;
                                         ioreq->iouh_Actual += 2;
                                         if(!(*source))
@@ -619,16 +634,16 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     uhwDelayMS(75, unit, base);
                                     newval = READREG16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                     KPRINTF(10, ("Reset=%s\n", newval & UHPF_PORTRESET ? "GOOD" : "BAD!"));
+                                    // like windows does it
                                     newval &= ~UHPF_PORTRESET;
                                     WRITEREG16_LE(hc->hc_RegBase, portreg, newval);
-                                    uhwDelayMS(5, unit, base);
+                                    uhwDelayMicro(50, unit, base);
                                     newval = READREG16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
                                     KPRINTF(10, ("Reset=%s\n", newval & UHPF_PORTRESET ? "BAD!" : "GOOD"));
-                                    newval &= ~UHPF_PORTRESET;
+                                    newval &= ~(UHPF_PORTSUSPEND|UHPF_PORTRESET);
                                     newval |= UHPF_PORTENABLE;
                                     WRITEREG16_LE(hc->hc_RegBase, portreg, newval);
                                     hc->hc_PortChangeMap[hciport] |= UPSF_PORT_RESET|UPSF_PORT_ENABLE; // manually fake reset change
-                                    uhwDelayMS(10, unit, base);
 
                                     cnt = 100;
                                     do
@@ -694,6 +709,15 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                 /* case UFS_PORT_OVER_CURRENT: not possible */
                                 case UFS_PORT_RESET:
                                     KPRINTF(10, ("Resetting Port (%s)\n", oldval & OHPF_PORTRESET ? "already" : "ok"));
+                                    // make sure we have at least 50ms of reset time here, as required for a root hub port
+                                    WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
+                                    uhwDelayMS(10, unit, base);
+                                    WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
+                                    uhwDelayMS(10, unit, base);
+                                    WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
+                                    uhwDelayMS(10, unit, base);
+                                    WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
+                                    uhwDelayMS(10, unit, base);
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
                                     // make enumeration possible
                                     unit->hu_DevControllers[0] = hc;
@@ -748,7 +772,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     newval &= ~(EHPF_PORTSUSPEND|EHPF_PORTENABLE);
                                     newval |= EHPF_PORTRESET;
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
-                                    uhwDelayMS(75, unit, base);
+                                    uhwDelayMS(50, unit, base);
                                     newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND|EHPF_PORTENABLE);
                                     KPRINTF(10, ("Reset=%s\n", newval & EHPF_PORTRESET ? "GOOD" : "BAD!"));
                                     newval &= ~EHPF_PORTRESET;
@@ -1875,7 +1899,7 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
                     }
                     break;
 
-               case HCITYPE_OHCI:
+                case HCITYPE_OHCI:
                     cmpioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
                     while(((struct Node *) cmpioreq)->ln_Succ)
                     {
@@ -2169,20 +2193,24 @@ void uhciCheckPortStatusChange(struct PCIController *hc)
 /* /// "uhciHandleFinishedTDs()" */
 void uhciHandleFinishedTDs(struct PCIController *hc)
 {
+    struct PCIDevice *base = hc->hc_Device;
     struct PCIUnit *unit = hc->hc_Unit;
     struct IOUsbHWReq *ioreq;
     struct IOUsbHWReq *nextioreq;
     struct UhciQH *uqh;
     struct UhciTD *utd;
+    struct UhciTD *nextutd;
     UWORD devadrep;
     ULONG len;
     ULONG linkelem;
     UWORD inspect;
     BOOL shortpkt;
     ULONG ctrlstatus;
+    ULONG nextctrlstatus;
     ULONG token = 0;
     ULONG actual;
     BOOL updatetree = FALSE;
+    BOOL fixsetupterm = FALSE;
 
     KPRINTF(1, ("Checking for work done...\n"));
     ioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
@@ -2202,7 +2230,37 @@ void uhciHandleFinishedTDs(struct PCIController *hc)
             } else {
                 utd = (struct UhciTD *) ((linkelem & UHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16); // struct UhciTD starts 16 bytes before physical TD
                 ctrlstatus = READMEM32_LE(&utd->utd_CtrlStatus);
-                if(!(ctrlstatus & UTCF_ACTIVE))
+                nextutd = (struct UhciTD *)utd->utd_Succ;
+                if(!(ctrlstatus & UTCF_ACTIVE) && nextutd)
+                {
+                    /* OK, it's not active. Does it look like it's done? Code copied from below.
+                       If not done, check the next TD too. */
+                    if(ctrlstatus & (UTSF_BABBLE|UTSF_STALLED|UTSF_CRCTIMEOUT|UTSF_DATABUFFERERR|UTSF_BITSTUFFERR))
+                    {
+                        nextutd = 0;
+                    }
+                    else
+                    {
+                        token = READMEM32_LE(&utd->utd_Token);
+                        len = (ctrlstatus & UTSM_ACTUALLENGTH) >> UTSS_ACTUALLENGTH;
+                        if((len != (token & UTTM_TRANSLENGTH) >> UTTS_TRANSLENGTH))
+                        {
+                           nextutd = 0;
+                        }
+                    }
+                    if(nextutd)
+                    {
+                        nextctrlstatus = READMEM32_LE(&nextutd->utd_CtrlStatus);
+                    }
+                }
+                /* Now, did the element link pointer change while we fetched the status for the pointed at TD?
+                   If so, disregard the gathered information and assume still active. */
+                if(READMEM32_LE(&uqh->uqh_Element) != linkelem)
+                {
+                    /* Oh well, probably still active */
+                    KPRINTF(1, ("Link Element changed, still active.\n"));
+                }
+                else if(!(ctrlstatus & UTCF_ACTIVE) && (nextutd == 0 || !(nextctrlstatus & UTCF_ACTIVE)))
                 {
                     KPRINTF(1, ("CtrlStatus inactive %08lx\n", ctrlstatus));
                     inspect = 1;
@@ -2213,6 +2271,7 @@ void uhciHandleFinishedTDs(struct PCIController *hc)
                     inspect = 1;
                 }
             }
+            fixsetupterm = FALSE;
             if(inspect)
             {
                 shortpkt = FALSE;
@@ -2303,6 +2362,12 @@ void uhciHandleFinishedTDs(struct PCIController *hc)
                         if((token & UTTM_PID)>>UTTS_PID != PID_SETUP) // don't count setup packet
                         {
                             actual += len;
+                            // due to the VIA babble bug workaround, actually more bytes can
+                            // be received than requested, limit the actual value to the upper limit
+                            if(actual > uqh->uqh_Actual)
+                            {
+                                actual = uqh->uqh_Actual;
+                            }
                         }
                         if(shortpkt)
                         {
@@ -2325,6 +2390,11 @@ void uhciHandleFinishedTDs(struct PCIController *hc)
                     KPRINTF(10, ("all %ld bytes transferred\n", uqh->uqh_Actual));
                     ioreq->iouh_Actual += uqh->uqh_Actual;
                 }
+                // due to the short packet, the terminal of a setup packet has not been sent. Please do so.
+                if(shortpkt && (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER))
+                {
+                    fixsetupterm = TRUE;
+                }
                 // this is actually no short packet but result of the VIA babble fix
                 if(shortpkt && (ioreq->iouh_Actual == ioreq->iouh_Length))
                 {
@@ -2344,7 +2414,7 @@ void uhciHandleFinishedTDs(struct PCIController *hc)
                         // use next data toggle bit based on last successful transaction
                         unit->hu_DevDataToggle[devadrep] = (token & UTTF_DATA1) ? FALSE : TRUE;
                     }
-                    if(!shortpkt && (ioreq->iouh_Actual < ioreq->iouh_Length))
+                    if((!shortpkt && (ioreq->iouh_Actual < ioreq->iouh_Length)) || fixsetupterm)
                     {
                         // fragmented, do some more work
                         switch(ioreq->iouh_Req.io_Command)
@@ -2479,7 +2549,7 @@ void uhciScheduleCtrlTDs(struct PCIController *hc)
         token |= (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? PID_IN : PID_OUT;
         predutd = setuputd;
         actual = ioreq->iouh_Actual;
-        if(ioreq->iouh_Length)
+        if(ioreq->iouh_Length - actual)
         {
             ctrlstatus |= UTCF_SHORTPACKET;
             if(cont)
@@ -2546,6 +2616,16 @@ void uhciScheduleCtrlTDs(struct PCIController *hc)
                 // set toggle for next batch
                 unit->hu_DevDataToggle[devadrep] = (token & UTTF_DATA1) ? FALSE : TRUE;
             }
+        } else {
+            if(cont)
+            {
+                // free Setup packet, assign termination as first packet (no data)
+                KPRINTF(1, ("Freeing setup (term only)\n"));
+                uqh->uqh_FirstTD = (struct UhciTD *) termutd;
+                uqh->uqh_Element = termutd->utd_Self; // start of queue after setup packet
+                uhciFreeTD(hc, setuputd);
+                predutd = NULL;
+            }
         }
         uqh->uqh_Actual = actual - ioreq->iouh_Actual;
         ctrlstatus |= UTCF_READYINTEN;
@@ -2556,8 +2636,11 @@ void uhciScheduleCtrlTDs(struct PCIController *hc)
             token |= UTTF_DATA1;
             token ^= (PID_IN^PID_OUT)<<UTTS_PID;
 
-            predutd->utd_Link = termutd->utd_Self;
-            predutd->utd_Succ = (struct UhciXX *) termutd;
+            if(predutd)
+            {
+                predutd->utd_Link = termutd->utd_Self;
+                predutd->utd_Succ = (struct UhciXX *) termutd;
+            }
             //termutd->utd_Pred = (struct UhciXX *) predutd;
             WRITEMEM32_LE(&termutd->utd_CtrlStatus, ctrlstatus);
             WRITEMEM32_LE(&termutd->utd_Token, token|(0x7ff<<UTTS_TRANSLENGTH));
@@ -2727,7 +2810,7 @@ void uhciScheduleIntTDs(struct PCIController *hc)
             do
             {
                 intuqh = hc->hc_UhciIntQH[cnt++];
-            } while(ioreq->iouh_Interval > (1<<cnt));
+            } while(ioreq->iouh_Interval >= (1<<cnt));
             KPRINTF(1, ("Scheduled at level %ld\n", cnt));
         }
 
@@ -3173,7 +3256,7 @@ void ohciHandleFinishedTDs(struct PCIController *hc)
         if(otd->otd_BufferPtr)
         {
             // FIXME this will blow up if physical memory is ever going to be discontinuous
-            len = READMEM32_LE(&otd->otd_BufferEnd) - READMEM32_LE(&otd->otd_BufferPtr) + 1;
+            len = READMEM32_LE(&otd->otd_BufferPtr) - (READMEM32_LE(&otd->otd_BufferEnd) + 1 - otd->otd_Length);
         } else {
             len = otd->otd_Length;
         }
@@ -3278,7 +3361,7 @@ void ohciHandleFinishedTDs(struct PCIController *hc)
             break;
         }
         KPRINTF(1, ("NextTD=%08lx\n", otd->otd_NextTD));
-        otd = (struct OhciTD *) (READMEM32_LE(&otd->otd_NextTD) - hc->hc_PCIVirtualAdjust - 16);
+        otd = (struct OhciTD *) ((READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16);
         KPRINTF(1, ("NextOTD = %08lx\n", otd));
     } while(TRUE);
 
@@ -3693,7 +3776,7 @@ void ohciScheduleIntTDs(struct PCIController *hc)
             do
             {
                 intoed = hc->hc_OhciIntED[cnt++];
-            } while(ioreq->iouh_Interval > (1<<cnt));
+            } while(ioreq->iouh_Interval >= (1<<cnt));
         }
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
@@ -4275,12 +4358,15 @@ void ehciHandleFinishedTDs(struct PCIController *hc)
                         {
                             if((ctrlstatus & ETCM_ERRORLIMIT)>>ETCS_ERRORLIMIT)
                             {
-                                KPRINTF(20, ("STALLED!\n"));
+                                KPRINTF(20, ("other kind of STALLED!\n"));
                                 ioreq->iouh_Req.io_Error = UHIOERR_STALL;
                             } else {
                                 KPRINTF(20, ("TIMEOUT!\n"));
                                 ioreq->iouh_Req.io_Error = UHIOERR_TIMEOUT;
                             }
+                        } else {
+                            KPRINTF(20, ("STALLED!\n"));
+                            ioreq->iouh_Req.io_Error = UHIOERR_STALL;
                         }
                         inspect = 0;
                         break;
@@ -4753,7 +4839,7 @@ void ehciScheduleIntTDs(struct PCIController *hc)
                 do
                 {
                     inteqh = hc->hc_EhciIntQH[cnt++];
-                } while(ioreq->iouh_Interval > (1<<cnt));
+                } while(ioreq->iouh_Interval >= (1<<cnt));
             }
         } else {
             epcaps |= EQEF_HIGHSPEED;
@@ -4796,7 +4882,7 @@ void ehciScheduleIntTDs(struct PCIController *hc)
                 do
                 {
                     inteqh = hc->hc_EhciIntQH[cnt++];
-                } while(ioreq->iouh_Interval > (1<<cnt));
+                } while(ioreq->iouh_Interval >= (1<<cnt));
             }
         }
         WRITEMEM32_LE(&eqh->eqh_EPCaps, epcaps);

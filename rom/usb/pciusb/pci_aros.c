@@ -104,6 +104,12 @@ BOOL pciInit(struct PCIDevice *hd)
     UWORD uhcicnt;
 
     KPRINTF(10, ("*** pciInit(%08lx) ***\n", hd));
+    if(sizeof(IPTR) > 4)
+    {
+        KPRINTF(100, ("I said the pciusb.device is not 64bit compatible right now. Go away!\n"));
+        return FALSE;
+    }
+
     NewList(&hd->hd_TempHCIList);
 
     if(!(hd->hd_IRQHidd = OOP_NewObject(NULL, (STRPTR) CLID_Hidd_IRQ, NULL)))
@@ -218,6 +224,14 @@ void PCIXWriteConfigByte(struct PCIController *hc, ULONG offset, UBYTE value)
 }
 /* \\\ */
 
+/* /// "pciStrcat()" */
+void pciStrcat(STRPTR d, STRPTR s)
+{
+    while(*d) d++;
+    while((*d++ = *s++));
+}
+/* \\\ */
+
 /* /// "pciAllocUnit()" */
 BOOL pciAllocUnit(struct PCIUnit *hu)
 {
@@ -230,6 +244,10 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     ULONG cnt;
     BOOL complexrouting = FALSE;
     ULONG portroute = 0;
+    ULONG ohcicnt = 0;
+    ULONG uhcicnt = 0;
+    ULONG ehcicnt = 0;
+    STRPTR prodname;
 
     struct TagItem pciActivateMem[] =
     {
@@ -251,7 +269,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
     {
-#if 0
+#if 0 // FIXME this needs to be replaced by something AROS supports
         PCIXObtainBoard(hc->hc_BoardObject);
         hc->hc_BoardAllocated = PCIXSetBoardAttr(hc->hc_BoardObject, PCIXTAG_OWNER, (ULONG) hd->hd_Library.lib_Node.ln_Name);
         allocgood &= hc->hc_BoardAllocated;
@@ -691,9 +709,9 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     hc->hc_PCIIntHandler.h_Data = hc;
                     HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
 
-                    hc->hc_PCIIntEnMask = OISF_SCHEDOVERRUN|OISF_DONEHEAD|OISF_RESUMEDTX|OISF_HOSTERROR|OISF_FRAMECOUNTOVER|OISF_HUBCHANGE;
+                    hc->hc_PCIIntEnMask = OISF_DONEHEAD|OISF_RESUMEDTX|OISF_HOSTERROR|OISF_FRAMECOUNTOVER|OISF_HUBCHANGE;
 
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_INTEN, OISF_SCHEDOVERRUN|OISF_DONEHEAD|OISF_RESUMEDTX|OISF_HOSTERROR|OISF_FRAMECOUNTOVER|OISF_HUBCHANGE|OISF_MASTERENABLE);
+                    WRITEREG32_LE(hc->hc_RegBase, OHCI_INTEN, hc->hc_PCIIntEnMask|OISF_MASTERENABLE);
 
                     CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, OCLF_PERIODICENABLE|OCLF_CTRLENABLE|OCLF_BULKENABLE|OCLF_USBRESET);
         			SYNC;
@@ -973,6 +991,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     {
         if(hc->hc_HCIType == HCITYPE_EHCI)
         {
+            ehcicnt++;
             if(usb20ports)
             {
                 KPRINTF(200, ("WARNING: Two EHCI controllers per Board?!?\n"));
@@ -983,6 +1002,14 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                 hu->hu_PortMap20[cnt] = hc;
                 hc->hc_PortNum20[cnt] = cnt;
             }
+        }
+        else if(hc->hc_HCIType == HCITYPE_UHCI)
+        {
+            uhcicnt++;
+        } 
+        else if(hc->hc_HCIType == HCITYPE_OHCI) 
+        {
+            ohcicnt++;
         }
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
@@ -1043,6 +1070,26 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         hc->hc_Online = TRUE;
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
+
+    // create product name of device
+    prodname = hu->hu_ProductName;
+    *prodname = 0;
+    pciStrcat(prodname, "PCI ");
+    if(ohcicnt+uhcicnt > 1)
+    {
+        prodname[4] = ohcicnt+uhcicnt+'0';
+        prodname[5] = 'x';
+        prodname[6] = 0;
+    }
+    pciStrcat(prodname, ohcicnt ? "OHCI" : "UHCI");
+    if(ehcicnt)
+    {
+        pciStrcat(prodname, "+EHCI USB 2.0");
+    } else {
+        pciStrcat(prodname, " USB 1.1");
+    }
+    pciStrcat(prodname, " Host Controller (");
+    pciStrcat(prodname, ohcicnt ? "NEC)" : "VIA, Intel, ALI, etc.)");
 
     KPRINTF(10, ("Unit allocated!\n", hd));
 

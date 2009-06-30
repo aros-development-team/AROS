@@ -82,6 +82,7 @@ struct PCIUnit
     UBYTE                 hu_PortNum11[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 1.1 companion controller port */
     UBYTE                 hu_EhciOwned[MAX_ROOT_PORTS]; /* TRUE, if currently owned by EHCI */
 
+    UBYTE                 hu_ProductName[80]; /* for Query device */
     struct PCIController *hu_DevControllers[128]; /* maps from Device address to controller */
     struct IOUsbHWReq    *hu_DevBusyReq[128*16*2]; /* pointer to io assigned to the Endpoint */
     ULONG                 hu_NakTimeoutFrame[128*16*2]; /* Nak Timeout framenumber */
