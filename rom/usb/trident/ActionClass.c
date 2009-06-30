@@ -74,7 +74,6 @@ static STRPTR popupnewdevicestrings[] =
 /* \\\ */
 
 /* /// "Some lyrics" */
-#ifndef __MPREFS__
 static char *aimeelyrics[] =
 {
     // 0
@@ -473,7 +472,6 @@ static char *aimeelyrics[] =
     "\33r(Fiona Apple)  "
 
 };
-#endif
 
 char poseidonshorthelp[] =
 {
@@ -1174,7 +1172,7 @@ void CreateErrorList(struct ActionData *data)
     struct List *lst;
     struct ErrListEntry *elnode;
     IPTR level;
-    
+
     set(data->errlistobj, MUIA_List_Quiet, TRUE);
     DoMethod(data->errlistobj, MUIM_List_Clear);
     FreeErrorList(data);
@@ -1908,7 +1906,7 @@ void EventHandler(struct ActionData *data)
                 STRPTR devname;
                 IPTR unit;
                 STRPTR prodname;
-                
+
                 psdLockReadPBase();
                 psdGetAttrs(PGA_STACK, NULL, PA_HardwareList, &lst, TAG_END);
                 phw = lst->lh_Head;
@@ -2279,14 +2277,14 @@ void UpdateConfigToGUI(struct ActionData *data)
             if(psdMatchStringChunk(subpic, IFFCHNK_NAME, hlnode->devname))
             {
                 ULONG *unitchk = psdGetCfgChunk(subpic, IFFCHNK_UNIT);
-                if(unitchk && unitchk[2] == hlnode->unit)
+                if(unitchk && (unitchk[2] == hlnode->unit))
                 {
                     psdFreeVec(unitchk);
                     break;
                 }
                 psdFreeVec(unitchk);
             }
-            
+
             hlnode = (struct HWListEntry *) hlnode->node.ln_Succ;
         }
         if(!hlnode->node.ln_Succ)
@@ -2573,7 +2571,7 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                             "To add an entry, use the 'New' gadget at the bottom.\n"
                             "You need to manually set an hardware controller online\n"
                             "the first time you add the device.",
-            MUIA_Listview_List, data->hwlistobj = 
+            MUIA_Listview_List, data->hwlistobj =
     NewObject(IconListClass->mcc_Class, 0, InputListFrame, MUIA_List_MinLineHeight, 16, MUIA_List_Format, "BAR,BAR,BAR,", MUIA_List_Title, TRUE, MUIA_List_DisplayHook, &data->HardwareDisplayHook, TAG_END),
             End,
         Child, data->hwdevgrpobj = HGroup,
@@ -2636,7 +2634,7 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
         Child, Label("\33c\33bUSB Devices in the system"),
         Child, ListviewObject,
             MUIA_CycleChain, 1,
-            MUIA_Listview_List, data->devlistobj = 
+            MUIA_Listview_List, data->devlistobj =
     NewObject(IconListClass->mcc_Class, 0, MUIA_ShortHelp, "This is the list of USB devices (functions)\ncurrently in the system. It also shows the\ncurrently existing device or interface bindings.", InputListFrame, MUIA_List_MinLineHeight, 16, MUIA_List_Format, "BAR,BAR,BAR,BAR,", MUIA_List_Title, TRUE, MUIA_List_DisplayHook, &data->DeviceDisplayHook, TAG_END),
             End,
         Child, ColGroup(4),
@@ -2746,17 +2744,17 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                     MUIA_Numeric_Max, 127,
                     MUIA_Numeric_Value, subtaskpri,
                     End,
-                    Child, Label("Boot delay:"), 
-                    Child, data->cfgbootdelayobj = SliderObject, SliderFrame, 
-                        MUIA_ShortHelp, "If reset resident, this value defines,\n" 
-                                        "how long Poseidon should wait for USB\n" 
-                                        "devices to settle, allowing to boot from\n" 
-                                        "slow devices such as an USB CD drive.\n", 
-                        MUIA_CycleChain, 1, 
-                        MUIA_Numeric_Min, 0, 
-                        MUIA_Numeric_Max, 15, 
-                        MUIA_Numeric_Value, bootdelay, 
-                        MUIA_Numeric_Format, "%ld sec.", 
+                    Child, Label("Boot delay:"),
+                    Child, data->cfgbootdelayobj = SliderObject, SliderFrame,
+                        MUIA_ShortHelp, "If reset resident, this value defines,\n"
+                                        "how long Poseidon should wait for USB\n"
+                                        "devices to settle, allowing to boot from\n"
+                                        "slow devices such as an USB CD drive.\n",
+                        MUIA_CycleChain, 1,
+                        MUIA_Numeric_Min, 0,
+                        MUIA_Numeric_Max, 15,
+                        MUIA_Numeric_Value, bootdelay,
+                        MUIA_Numeric_Format, "%ld sec.",
                         End,
                 End,
             Child, ColGroup(2),
@@ -3064,7 +3062,7 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                             "You can use this panel to delete or export prefs.\n\n"
                             "Use drag & drop to copy or replace preferences.\n",
             MUIA_Listview_DragType, MUIV_Listview_DragType_Immediate,
-            MUIA_Listview_List, 
+            MUIA_Listview_List,
     NewObject(CfgListClass->mcc_Class, 0, InputListFrame, MUIA_List_Format, "BAR,BAR,BAR,", MUIA_List_Title, TRUE, MUIA_List_DisplayHook, &data->PrefsDisplayHook, MUIA_List_ShowDropMarks, TRUE, MUIA_List_AutoVisible, TRUE, TAG_END),
             End,
         Child, HGroup,
@@ -3084,38 +3082,38 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
 
     data->mainobj = VGroup,
         Child, HGroup,
-            Child, ListviewObject, 
-                MUIA_CycleChain, 1, 
-                MUIA_ShowMe, !registermode, 
-                MUIA_Listview_MultiSelect, MUIV_Listview_MultiSelect_None, 
+            Child, ListviewObject,
+                MUIA_CycleChain, 1,
+                MUIA_ShowMe, !registermode,
+                MUIA_Listview_MultiSelect, MUIV_Listview_MultiSelect_None,
                 MUIA_Listview_List, data->cfgpagelv =
     NewObject(IconListClass->mcc_Class, 0, InputListFrame, MUIA_List_MinLineHeight, 16, MUIA_List_SourceArray, mainpanels, MUIA_List_AdjustWidth, TRUE, MUIA_List_Active, 0, MUIA_List_DisplayHook, &data->IconDisplayHook, TAG_END),
                 End,
             Child, VGroup,
                 /*ReadListFrame,*/
 				/*MUIA_Background, MUII_GroupBack,*/
-                Child, data->cfgpagegrp = (registermode ? 
-                    (RegisterGroup(mainpanels), 
-                    MUIA_CycleChain, 1, 
-                    MUIA_Register_Frame, TRUE, 
-                    Child, data->cfgcntobj[0], 
-                    Child, data->cfgcntobj[1], 
-                    Child, data->cfgcntobj[2], 
-                    Child, data->cfgcntobj[3], 
-                    Child, data->cfgcntobj[4], 
-                    Child, data->cfgcntobj[5], 
-                    Child, data->cfgcntobj[6], 
-                    End) : 
-                    (VGroup, 
-                    MUIA_Group_PageMode, TRUE, 
-                    MUIA_Group_ActivePage, MUIV_Group_ActivePage_First, 
-                    Child, data->cfgcntobj[0], 
-                    Child, data->cfgcntobj[1], 
-                    Child, data->cfgcntobj[2], 
-                    Child, data->cfgcntobj[3], 
-                    Child, data->cfgcntobj[4], 
-                    Child, data->cfgcntobj[5], 
-                    Child, data->cfgcntobj[6], 
+                Child, data->cfgpagegrp = (registermode ?
+                    (RegisterGroup(mainpanels),
+                    MUIA_CycleChain, 1,
+                    MUIA_Register_Frame, TRUE,
+                    Child, data->cfgcntobj[0],
+                    Child, data->cfgcntobj[1],
+                    Child, data->cfgcntobj[2],
+                    Child, data->cfgcntobj[3],
+                    Child, data->cfgcntobj[4],
+                    Child, data->cfgcntobj[5],
+                    Child, data->cfgcntobj[6],
+                    End) :
+                    (VGroup,
+                    MUIA_Group_PageMode, TRUE,
+                    MUIA_Group_ActivePage, MUIV_Group_ActivePage_First,
+                    Child, data->cfgcntobj[0],
+                    Child, data->cfgcntobj[1],
+                    Child, data->cfgcntobj[2],
+                    Child, data->cfgcntobj[3],
+                    Child, data->cfgcntobj[4],
+                    Child, data->cfgcntobj[5],
+                    Child, data->cfgcntobj[6],
                     End)),
                 End,
             End,
@@ -4562,7 +4560,7 @@ IPTR Action_Cfg_Changed(struct IClass *cl, Object *obj, Msg msg)
     get(data->cfgpowersavingobj, MUIA_Selected, &powersaving);
     get(data->cfgforcesuspendobj, MUIA_Selected, &forcesuspend);
     get(data->cfgsuspendtimeoutobj, MUIA_Numeric_Value, &suspendtimeout);
-    
+
     if(autorestartdead && autodisabledead)
     {
         autodisabledead = FALSE;
