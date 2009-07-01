@@ -198,6 +198,7 @@ int main(int argc, char *argv[])
                 {
                     Printf("Skipping '%s' (use SHOWROOT to list)\n", devidstr);
                     PutStr("---------------------------------------------------------------------------\n");
+    	            psdUnlockDevice(pd);
                     continue;
                 }
             }
