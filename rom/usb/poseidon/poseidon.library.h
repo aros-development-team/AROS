@@ -8,7 +8,7 @@
  *                   By Chris Hodges <chrisly@platon42.de>
  */
 
-#define RELEASEVERSION 0x20090611
+#define RELEASEVERSION 0x20090701
 
 #include LC_LIBDEFS_FILE
 
