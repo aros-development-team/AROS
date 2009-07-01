@@ -53,6 +53,11 @@ static int system_no_sh(const char *string);
 
 ******************************************************************************/
 {
+#if 0
+    // Disabled because code like system("dir:c") doesn't work with the Bash.
+    // It might be necessary to check for -nix compile option if some
+    // applications really need a Bash.
+
     BPTR lock;
     APTR old_proc_window;
     struct Process *me;
@@ -78,6 +83,9 @@ static int system_no_sh(const char *string);
     {
 	return system_no_sh(string);
     }
+#else
+    return system_no_sh(string);
+#endif
 } /* system */
 
 
