@@ -768,7 +768,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                 case UFS_PORT_RESET:
                                     KPRINTF(10, ("Resetting Port (%s)\n", newval & EHPF_PORTRESET ? "already" : "ok"));
 
-                                    // this is an ugly blocking workaround to the inability of UHCI to clear reset automatically
+                                    // this is an ugly blocking workaround to the inability of EHCI to clear reset automatically
                                     newval &= ~(EHPF_PORTSUSPEND|EHPF_PORTENABLE);
                                     newval |= EHPF_PORTRESET;
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
@@ -1152,12 +1152,12 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                         {
                             UWORD portreg = hciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
                             UWORD oldval = READREG16_LE(hc->hc_RegBase, portreg);
-                            *mptr = UPSF_PORT_POWER;
-                            if(oldval & UHPF_PORTCONNECTED) *mptr |= UPSF_PORT_CONNECTION;
-                            if(oldval & UHPF_PORTENABLE) *mptr |= UPSF_PORT_ENABLE;
-                            if(oldval & UHPF_LOWSPEED) *mptr |= UPSF_PORT_LOW_SPEED;
-                            if(oldval & UHPF_PORTRESET) *mptr |= UPSF_PORT_RESET;
-                            if(oldval & UHPF_PORTSUSPEND) *mptr |= UPSF_PORT_SUSPEND;
+                            *mptr = AROS_WORD2LE(UPSF_PORT_POWER);
+                            if(oldval & UHPF_PORTCONNECTED) *mptr |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
+                            if(oldval & UHPF_PORTENABLE) *mptr |= AROS_WORD2LE(UPSF_PORT_ENABLE);
+                            if(oldval & UHPF_LOWSPEED) *mptr |= AROS_WORD2LE(UPSF_PORT_LOW_SPEED);
+                            if(oldval & UHPF_PORTRESET) *mptr |= AROS_WORD2LE(UPSF_PORT_RESET);
+                            if(oldval & UHPF_PORTSUSPEND) *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
 
                             KPRINTF(5, ("UHCI Port %ld is %s\n", idx, oldval & UHPF_LOWSPEED ? "LOWSPEED" : "FULLSPEED"));
                             KPRINTF(5, ("UHCI Port %ld Status %08lx\n", idx, *mptr));
@@ -1175,7 +1175,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             {
                                 hc->hc_PortChangeMap[hciport] |= UPSF_PORT_SUSPEND|UPSF_PORT_ENABLE;
                             }
-                            *mptr = hc->hc_PortChangeMap[hciport];
+                            *mptr = AROS_WORD2LE(hc->hc_PortChangeMap[hciport]);
                             WRITEREG16_LE(hc->hc_RegBase, portreg, oldval);
                             KPRINTF(5, ("UHCI Port %ld Change %08lx\n", idx, *mptr));
                             return(0);
@@ -1187,13 +1187,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg);
 
                             *mptr = 0;
-                            if(oldval & OHPF_PORTPOWER) *mptr |= UPSF_PORT_POWER;
-                            if(oldval & OHPF_OVERCURRENT) *mptr |= UPSF_PORT_OVER_CURRENT;
-                            if(oldval & OHPF_PORTCONNECTED) *mptr |= UPSF_PORT_CONNECTION;
-                            if(oldval & OHPF_PORTENABLE) *mptr |= UPSF_PORT_ENABLE;
-                            if(oldval & OHPF_LOWSPEED) *mptr |= UPSF_PORT_LOW_SPEED;
-                            if(oldval & OHPF_PORTRESET) *mptr |= UPSF_PORT_RESET;
-                            if(oldval & OHPF_PORTSUSPEND) *mptr |= UPSF_PORT_SUSPEND;
+                            if(oldval & OHPF_PORTPOWER) *mptr |= AROS_WORD2LE(UPSF_PORT_POWER);
+                            if(oldval & OHPF_OVERCURRENT) *mptr |= AROS_WORD2LE(UPSF_PORT_OVER_CURRENT);
+                            if(oldval & OHPF_PORTCONNECTED) *mptr |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
+                            if(oldval & OHPF_PORTENABLE) *mptr |= AROS_WORD2LE(UPSF_PORT_ENABLE);
+                            if(oldval & OHPF_LOWSPEED) *mptr |= AROS_WORD2LE(UPSF_PORT_LOW_SPEED);
+                            if(oldval & OHPF_PORTRESET) *mptr |= AROS_WORD2LE(UPSF_PORT_RESET);
+                            if(oldval & OHPF_PORTSUSPEND) *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
 
                             KPRINTF(5, ("OHCI Port %ld (glob. %ld) is %s\n", hciport, idx, oldval & OHPF_LOWSPEED ? "LOWSPEED" : "FULLSPEED"));
                             KPRINTF(5, ("OHCI Port %ld Status %08lx (%08lx)\n", idx, *mptr, oldval));
@@ -1219,7 +1219,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             {
                                 hc->hc_PortChangeMap[hciport] |= UPSF_PORT_SUSPEND;
                             }
-                            *mptr = hc->hc_PortChangeMap[hciport];
+                            *mptr = AROS_WORD2LE(hc->hc_PortChangeMap[hciport]);
                             KPRINTF(5, ("OHCI Port %ld Change %08lx\n", idx, *mptr));
                             return(0);
                         }
@@ -1230,20 +1230,20 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg);
 
                             *mptr = 0;
-                            if(oldval & EHPF_PORTCONNECTED) *mptr |= UPSF_PORT_CONNECTION;
-                            if(oldval & EHPF_PORTENABLE) *mptr |= UPSF_PORT_ENABLE|UPSF_PORT_HIGH_SPEED;
+                            if(oldval & EHPF_PORTCONNECTED) *mptr |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
+                            if(oldval & EHPF_PORTENABLE) *mptr |= AROS_WORD2LE(UPSF_PORT_ENABLE|UPSF_PORT_HIGH_SPEED);
                             if((oldval & (EHPF_LINESTATUS_DM|EHPF_PORTCONNECTED|EHPF_PORTENABLE)) ==
                                (EHPF_LINESTATUS_DM|EHPF_PORTCONNECTED))
                             {
                                 KPRINTF(10, ("EHCI Port %ld is LOWSPEED\n", idx));
                                 // we need to detect low speed devices prior to reset
-                                *mptr |= UPSF_PORT_LOW_SPEED;
+                                *mptr |= AROS_WORD2LE(UPSF_PORT_LOW_SPEED);
                             }
 
-                            if(oldval & EHPF_PORTRESET) *mptr |= UPSF_PORT_RESET;
-                            if(oldval & EHPF_PORTSUSPEND) *mptr |= UPSF_PORT_SUSPEND;
-                            if(oldval & EHPF_PORTPOWER) *mptr |= UPSF_PORT_POWER;
-                            if(oldval & EHPM_PORTINDICATOR) *mptr |= UPSF_PORT_INDICATOR;
+                            if(oldval & EHPF_PORTRESET) *mptr |= AROS_WORD2LE(UPSF_PORT_RESET);
+                            if(oldval & EHPF_PORTSUSPEND) *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
+                            if(oldval & EHPF_PORTPOWER) *mptr |= AROS_WORD2LE(UPSF_PORT_POWER);
+                            if(oldval & EHPM_PORTINDICATOR) *mptr |= AROS_WORD2LE(UPSF_PORT_INDICATOR);
 
                             KPRINTF(5, ("EHCI Port %ld Status %08lx\n", idx, *mptr));
 
@@ -1264,7 +1264,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             {
                                 hc->hc_PortChangeMap[hciport] |= UPSF_PORT_OVER_CURRENT;
                             }
-                            *mptr = hc->hc_PortChangeMap[hciport];
+                            *mptr = AROS_WORD2LE(hc->hc_PortChangeMap[hciport]);
                             WRITEREG32_LE(hc->hc_RegBase, portreg, oldval);
                             KPRINTF(5, ("EHCI Port %ld Change %08lx\n", idx, *mptr));
                             return(0);
@@ -1318,7 +1318,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                 {
                                     if(hc->hc_HCIType == HCITYPE_OHCI)
                                     {
-                                        ULONG localpwgood = READREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA & OHAM_POWERGOOD) >> OHAS_POWERGOOD;
+                                        ULONG localpwgood = (READREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA) & OHAM_POWERGOOD) >> OHAS_POWERGOOD;
                                         if(localpwgood > powergood)
                                         {
                                             powergood = localpwgood;
