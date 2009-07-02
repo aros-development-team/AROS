@@ -9,6 +9,13 @@
 
 #include <aros/debug.h>
 
+// DEBUG 0 should equal undefined DEBUG
+#ifdef DEBUG
+#if DEBUG == 0
+#undef DEBUG
+#endif
+#endif
+
 #ifdef DEBUG
 #define XPRINTF(l, x) do { if ((l) >= DB_LEVEL) \
      { bug("%s:%s/%lu: ", __FILE__, __FUNCTION__, __LINE__); bug x;} } while (0)

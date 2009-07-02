@@ -16,11 +16,7 @@
 #define SYNC
 #endif
 
-#ifndef EIEIO
-#define EIEIO
-#endif
-
-#if 1
+#include <aros/io.h>
 
 #define READMEM16_LE(rb)                 AROS_WORD2LE(*((UWORD *) (rb)))
 #define READMEM32_LE(rb)                 AROS_LONG2LE(*((ULONG *) (rb)))
@@ -35,22 +31,8 @@
 #define READREG16_LE(rb, offset)         AROS_WORD2LE(*((volatile UWORD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
 #define READREG32_LE(rb, offset)         AROS_LONG2LE(*((volatile ULONG *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
 
-#else
-
-#define READMEM16_LE(rb) inw(rb)
-#define READMEM32_LE(rb) inl(rb)
-
-#define WRITEMEM32_LE(adr, value) outl(value, adr)
-#define CONSTWRITEMEM32_LE(adr, value) outl(value, adr)
-
-#define CONSTWRITEREG16_LE(rb, offset, value) outw(value, (((UBYTE *) (rb)) + ((ULONG) (offset))))
-#define CONSTWRITEREG32_LE(rb, offset, value) outl(value, (((UBYTE *) (rb)) + ((ULONG) (offset))))
-#define WRITEREG16_LE(rb, offset, value) outw(value, (((UBYTE *) (rb)) + ((ULONG) (offset))))
-#define WRITEREG32_LE(rb, offset, value) outl(value, (((UBYTE *) (rb)) + ((ULONG) (offset))))
-
-#define READREG16_LE(rb, offset) inw(((UBYTE *) (rb)) + ((ULONG) (offset))))
-#define READREG32_LE(rb, offset) inl((((UBYTE *) (rb)) + ((ULONG) (offset))))
-
-#endif
+#define READIO16_LE(rb, offset)          AROS_WORD2LE(WORDIN((((UBYTE *) (rb)) + ((ULONG) (offset)))))
+#define WRITEIO16_LE(rb, offset, value)  WORDOUT((((UBYTE *) (rb)) + ((ULONG) (offset))), AROS_WORD2LE(value))
+#define WRITEIO32_LE(rb, offset, value)  LONGOUT((((UBYTE *) (rb)) + ((ULONG) (offset))), AROS_WORD2LE(value))
 
 #endif // PCI_AROS_H

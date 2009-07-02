@@ -33,9 +33,11 @@ void SureCause(struct PCIDevice *base, struct Interrupt *interrupt)
         do
         {
             interrupt->is_Node.ln_Type = NT_SOFTINT;
+            Forbid(); // make sure code is not interrupted by other tasks
             Enable();
             (*((void (*)(struct Interrupt *)) (interrupt->is_Code)))(interrupt->is_Data);
             Disable();
+            Permit();
         } while(interrupt->is_Node.ln_Type != NT_SOFTINT);
         interrupt->is_Node.ln_Type = NT_INTERRUPT;
     }
@@ -154,7 +156,7 @@ struct Unit * Open_Unit(struct IOUsbHWReq *ioreq,
 
         if(pciAllocUnit(unit)) // hardware self test
         {
-
+            unit->hu_UnitAllocated = TRUE;
             unit->hu_NakTimeoutInt.is_Node.ln_Type = NT_INTERRUPT;
             unit->hu_NakTimeoutInt.is_Node.ln_Name = "PCI NakTimeout";
             unit->hu_NakTimeoutInt.is_Node.ln_Pri  = -16;
@@ -606,7 +608,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                         case HCITYPE_UHCI:
                         {
                             UWORD portreg = hciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
-                            ULONG oldval = READREG16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE); // these are clear-on-write!
+                            ULONG oldval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE); // these are clear-on-write!
                             ULONG newval = oldval;
                             switch(val)
                             {
@@ -630,26 +632,26 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     // this is an ugly blocking workaround to the inability of UHCI to clear reset automatically
                                     newval &= ~(UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                     newval |= UHPF_PORTRESET;
-                                    WRITEREG16_LE(hc->hc_RegBase, portreg, newval);
-                                    uhwDelayMS(75, unit, base);
-                                    newval = READREG16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
+                                    WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
+                                    uhwDelayMS(50, unit, base);
+                                    newval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                     KPRINTF(10, ("Reset=%s\n", newval & UHPF_PORTRESET ? "GOOD" : "BAD!"));
                                     // like windows does it
                                     newval &= ~UHPF_PORTRESET;
-                                    WRITEREG16_LE(hc->hc_RegBase, portreg, newval);
+                                    WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
                                     uhwDelayMicro(50, unit, base);
-                                    newval = READREG16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
+                                    newval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
                                     KPRINTF(10, ("Reset=%s\n", newval & UHPF_PORTRESET ? "BAD!" : "GOOD"));
                                     newval &= ~(UHPF_PORTSUSPEND|UHPF_PORTRESET);
                                     newval |= UHPF_PORTENABLE;
-                                    WRITEREG16_LE(hc->hc_RegBase, portreg, newval);
+                                    WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
                                     hc->hc_PortChangeMap[hciport] |= UPSF_PORT_RESET|UPSF_PORT_ENABLE; // manually fake reset change
 
                                     cnt = 100;
                                     do
                                     {
                                         uhwDelayMS(1, unit, base);
-                                        newval = READREG16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE);
+                                        newval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE);
                                     } while(--cnt && (!(newval & UHPF_PORTENABLE)));
                                     if(cnt)
                                     {
@@ -679,7 +681,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             if(cmdgood)
                             {
                                 KPRINTF(5, ("Port %ld SET_FEATURE %04lx->%04lx\n", idx, oldval, newval));
-                                WRITEREG16_LE(hc->hc_RegBase, portreg, newval);
+                                WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
                                 return(0);
                             }
                             break;
@@ -798,7 +800,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                                 UWORD uhciportreg = uhcihciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
                                                 ULONG uhcinewval;
 
-                                                uhcinewval = READREG16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
+                                                uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
                                                 KPRINTF(10, ("UHCI Reset=%s\n", uhcinewval & UHPF_PORTRESET ? "BAD!" : "GOOD"));
                                                 if((uhcinewval & UHPF_PORTRESET))//|| (newval & EHPF_LINESTATUS_DM))
                                                 {
@@ -806,26 +808,26 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                                     KPRINTF(20, ("Uhm, UHCI reset was bad!\n"));
                                                     uhcinewval &= ~(UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                                     uhcinewval |= UHPF_PORTRESET;
-                                                    WRITEREG16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
+                                                    WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
                                                     uhwDelayMS(75, unit, base);
-                                                    uhcinewval = READREG16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
+                                                    uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                                     KPRINTF(10, ("ReReset=%s\n", uhcinewval & UHPF_PORTRESET ? "GOOD" : "BAD!"));
                                                     uhcinewval &= ~UHPF_PORTRESET;
-                                                    WRITEREG16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
+                                                    WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
                                                     uhwDelayMS(5, unit, base);
-                                                    uhcinewval = READREG16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
+                                                    uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
                                                     KPRINTF(10, ("ReReset=%s\n", uhcinewval & UHPF_PORTRESET ? "STILL BAD!" : "GOOD"));
                                                 }
                                                 uhcinewval &= ~UHPF_PORTRESET;
                                                 uhcinewval |= UHPF_PORTENABLE;
-                                                WRITEREG16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
+                                                WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
                                                 chc->hc_PortChangeMap[uhcihciport] |= UPSF_PORT_RESET|UPSF_PORT_ENABLE; // manually fake reset change
                                                 uhwDelayMS(5, unit, base);
                                                 cnt = 100;
                                                 do
                                                 {
                                                     uhwDelayMS(1, unit, base);
-                                                    uhcinewval = READREG16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE);
+                                                    uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE);
                                                 } while(--cnt && (!(uhcinewval & UHPF_PORTENABLE)));
                                                 if(cnt)
                                                 {
@@ -920,7 +922,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                         case HCITYPE_UHCI:
                         {
                             UWORD portreg = hciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
-                            ULONG oldval = READREG16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE); // these are clear-on-write!
+                            ULONG oldval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE); // these are clear-on-write!
                             ULONG newval = oldval;
                             switch(val)
                             {
@@ -974,7 +976,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             if(cmdgood)
                             {
                                 KPRINTF(5, ("Port %ld CLEAR_FEATURE %04lx->%04lx\n", idx, oldval, newval));
-                                WRITEREG16_LE(hc->hc_RegBase, portreg, newval);
+                                WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
                                 if(hc->hc_PortChangeMap[hciport])
                                 {
                                     unit->hu_RootPortChanges |= 1UL<<idx;
@@ -1151,7 +1153,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                         case HCITYPE_UHCI:
                         {
                             UWORD portreg = hciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
-                            UWORD oldval = READREG16_LE(hc->hc_RegBase, portreg);
+                            UWORD oldval = READIO16_LE(hc->hc_RegBase, portreg);
                             *mptr = AROS_WORD2LE(UPSF_PORT_POWER);
                             if(oldval & UHPF_PORTCONNECTED) *mptr |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
                             if(oldval & UHPF_PORTENABLE) *mptr |= AROS_WORD2LE(UPSF_PORT_ENABLE);
@@ -1176,7 +1178,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                 hc->hc_PortChangeMap[hciport] |= UPSF_PORT_SUSPEND|UPSF_PORT_ENABLE;
                             }
                             *mptr = AROS_WORD2LE(hc->hc_PortChangeMap[hciport]);
-                            WRITEREG16_LE(hc->hc_RegBase, portreg, oldval);
+                            WRITEIO16_LE(hc->hc_RegBase, portreg, oldval);
                             KPRINTF(5, ("UHCI Port %ld Change %08lx\n", idx, *mptr));
                             return(0);
                         }
@@ -2045,11 +2047,10 @@ void uhciFreeQContext(struct PCIController *hc, struct UhciQH *uqh)
     // unlink from schedule
     uqh->uqh_Pred->uxx_Link = uqh->uqh_Succ->uxx_Self;
     SYNC;
-    EIEIO;
+
     uqh->uqh_Succ->uxx_Pred = uqh->uqh_Pred;
     uqh->uqh_Pred->uxx_Succ = uqh->uqh_Succ;
     SYNC;
-    EIEIO;
 
     nextutd = uqh->uqh_FirstTD;
     while(nextutd)
@@ -2153,7 +2154,7 @@ void uhciCheckPortStatusChange(struct PCIController *hc)
         if(!unit->hu_EhciOwned[idx])
         {
             portreg = hciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
-            oldval = READREG16_LE(hc->hc_RegBase, portreg);
+            oldval = READIO16_LE(hc->hc_RegBase, portreg);
             if(oldval & UHPF_ENABLECHANGE)
             {
                 KPRINTF(10, ("Port %ld (%ld) Enable changed\n", idx, hciport));
@@ -2184,7 +2185,7 @@ void uhciCheckPortStatusChange(struct PCIController *hc)
                 /*KPRINTF(10, ("Port %ld (%ld) contributes %04lx to portmap %04lx\n",
                              idx, hciport, hc->hc_PortChangeMap[hciport], unit->hu_RootPortChanges));*/
             }
-            WRITEREG16_LE(hc->hc_RegBase, portreg, oldval);
+            WRITEIO16_LE(hc->hc_RegBase, portreg, oldval);
         }
     }
 }
@@ -2193,7 +2194,6 @@ void uhciCheckPortStatusChange(struct PCIController *hc)
 /* /// "uhciHandleFinishedTDs()" */
 void uhciHandleFinishedTDs(struct PCIController *hc)
 {
-    struct PCIDevice *base = hc->hc_Device;
     struct PCIUnit *unit = hc->hc_Unit;
     struct IOUsbHWReq *ioreq;
     struct IOUsbHWReq *nextioreq;
@@ -2289,7 +2289,7 @@ void uhciHandleFinishedTDs(struct PCIController *hc)
                             {
                                 KPRINTF(200, ("HOST CONTROLLER IS DEAD!!!\n"));
                                 ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-                                CONSTWRITEREG16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET|UHCF_MAXPACKET64|UHCF_CONFIGURE|UHCF_RUNSTOP);
+                                WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET|UHCF_MAXPACKET64|UHCF_CONFIGURE|UHCF_RUNSTOP);
                                 inspect = 0;
                                 break;
                             }
@@ -2305,17 +2305,15 @@ void uhciHandleFinishedTDs(struct PCIController *hc)
                                 ioreq->iouh_Req.io_Error = UHIOERR_OVERFLOW;
 #if 0
                                 // VIA chipset seems to die on babble!?!
-                                KPRINTF(10, ("HW Regs USBCMD=%04lx\n", READREG16_LE(hc->hc_RegBase, UHCI_USBCMD)));
-                                CONSTWRITEREG16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_MAXPACKET64|UHCF_CONFIGURE|UHCF_RUNSTOP);
+                                KPRINTF(10, ("HW Regs USBCMD=%04lx\n", READIO16_LE(hc->hc_RegBase, UHCI_USBCMD)));
+                                WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_MAXPACKET64|UHCF_CONFIGURE|UHCF_RUNSTOP);
                                 SYNC;
-                                EIEIO;
 #endif
                                 //retry
                                 //ctrlstatus &= ~(UTSF_BABBLE|UTSF_STALLED|UTSF_CRCTIMEOUT|UTSF_DATABUFFERERR|UTSF_BITSTUFFERR|UTSF_NAK);
                                 ctrlstatus |= UTCF_ACTIVE;
                                 WRITEMEM32_LE(&utd->utd_CtrlStatus, ctrlstatus);
                                 SYNC;
-                                EIEIO;
                                 inspect = 3;
                                 break;
                             }
@@ -2672,13 +2670,12 @@ void uhciScheduleCtrlTDs(struct PCIController *hc)
         uqh->uqh_Succ = hc->hc_UhciCtrlQH->uqh_Succ;
         uqh->uqh_Link = uqh->uqh_Succ->uxx_Self;
         SYNC;
-        EIEIO;
+
         uqh->uqh_Pred = (struct UhciXX *) hc->hc_UhciCtrlQH;
         uqh->uqh_Succ->uxx_Pred = (struct UhciXX *) uqh;
         hc->hc_UhciCtrlQH->uqh_Succ = (struct UhciXX *) uqh;
         hc->hc_UhciCtrlQH->uqh_Link = uqh->uqh_Self;
         SYNC;
-        EIEIO;
         Enable();
 
         ioreq = (struct IOUsbHWReq *) hc->hc_CtrlXFerQueue.lh_Head;
@@ -2828,13 +2825,12 @@ void uhciScheduleIntTDs(struct PCIController *hc)
         uqh->uqh_Succ = intuqh->uqh_Succ;
         uqh->uqh_Link = uqh->uqh_Succ->uxx_Self;
         SYNC;
-        EIEIO;
+
         uqh->uqh_Pred = (struct UhciXX *) intuqh;
         uqh->uqh_Succ->uxx_Pred = (struct UhciXX *) uqh;
         intuqh->uqh_Succ = (struct UhciXX *) uqh;
         intuqh->uqh_Link = uqh->uqh_Self;
         SYNC;
-        EIEIO;
         Enable();
 
         uhciUpdateIntTree(hc);
@@ -2971,13 +2967,12 @@ void uhciScheduleBulkTDs(struct PCIController *hc)
         uqh->uqh_Succ = hc->hc_UhciBulkQH->uqh_Succ;
         uqh->uqh_Link = uqh->uqh_Succ->uxx_Self;
         SYNC;
-        EIEIO;
+
         uqh->uqh_Pred = (struct UhciXX *) hc->hc_UhciBulkQH;
         uqh->uqh_Succ->uxx_Pred = (struct UhciXX *) uqh;
         hc->hc_UhciBulkQH->uqh_Succ = (struct UhciXX *) uqh;
         hc->hc_UhciBulkQH->uqh_Link = uqh->uqh_Self;
         SYNC;
-        EIEIO;
         Enable();
 
         ioreq = (struct IOUsbHWReq *) hc->hc_BulkXFerQueue.lh_Head;
@@ -2988,7 +2983,7 @@ void uhciScheduleBulkTDs(struct PCIController *hc)
 /* /// "uhciCompleteInt()" */
 void uhciCompleteInt(struct PCIController *hc)
 {
-    ULONG framecnt = READREG16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT);
+    ULONG framecnt = READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT);
 
     KPRINTF(1, ("CompleteInt!\n"));
     if(framecnt < (hc->hc_FrameCounter & 0xffff))
@@ -2997,8 +2992,10 @@ void uhciCompleteInt(struct PCIController *hc)
         hc->hc_FrameCounter++;
         hc->hc_FrameCounter += framecnt;
         KPRINTF(10, ("Frame Counter Rollover %ld\n", hc->hc_FrameCounter));
+    } else {
+        hc->hc_FrameCounter = (hc->hc_FrameCounter & 0xffff0000)|framecnt;
     }
-
+    
     /* **************** PROCESS DONE TRANSFERS **************** */
 
     uhciCheckPortStatusChange(hc);
@@ -3033,16 +3030,16 @@ void uhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     UWORD intr;
 
     //KPRINTF(10, ("pciUhciInt()\n"));
-    intr = READREG16_LE(hc->hc_RegBase, UHCI_USBSTATUS);
+    intr = READIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS);
     if(intr & (UHSF_USBINT|UHSF_USBERRORINT|UHSF_RESUMEDTX|UHSF_HCSYSERROR|UHSF_HCPROCERROR|UHSF_HCHALTED))
     {
-        WRITEREG16_LE(hc->hc_RegBase, UHCI_USBSTATUS, intr);
+        WRITEIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS, intr);
         KPRINTF(1, ("INT=%04lx\n", intr));
         if(intr & (UHSF_HCSYSERROR|UHSF_HCPROCERROR|UHSF_HCHALTED))
         {
             KPRINTF(200, ("Host ERROR!\n"));
-            CONSTWRITEREG16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET|UHCF_GLOBALRESET|UHCF_MAXPACKET64|UHCF_CONFIGURE);
-            //CONSTWRITEREG16_LE(hc->hc_RegBase, UHCI_USBINTEN, 0);
+            WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET|UHCF_GLOBALRESET|UHCF_MAXPACKET64|UHCF_CONFIGURE);
+            //WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, 0);
         }
         if(!hc->hc_Online)
         {
@@ -3124,7 +3121,6 @@ void ohciFreeEDContext(struct PCIController *hc, struct OhciED *oed)
     oed->oed_Pred->oed_Succ = oed->oed_Succ;
     oed->oed_Pred->oed_NextED = oed->oed_Succ->oed_Self;
     SYNC
-    EIEIO;
 
 #if 0
     // need to make sure that the endpoint is no longer
@@ -3435,7 +3431,6 @@ void ohciHandleFinishedTDs(struct PCIController *hc)
                 oldenables |= OCSF_BULKENABLE;
                 WRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, oldenables);
                 SYNC;
-                EIEIO;
                 Enable();
             } else {
                 // disable ED
@@ -3633,7 +3628,6 @@ void ohciScheduleCtrlTDs(struct PCIController *hc)
         oed->oed_Pred->oed_NextED = oed->oed_Self;
         oed->oed_Succ->oed_Pred = oed;
         SYNC;
-        EIEIO;
 
         KPRINTF(5, ("ED: EPCaps=%08lx, HeadPtr=%08lx, TailPtr=%08lx, NextED=%08lx\n",
                      READMEM32_LE(&oed->oed_EPCaps),
@@ -3649,7 +3643,6 @@ void ohciScheduleCtrlTDs(struct PCIController *hc)
         oldenables |= OCSF_CTRLENABLE;
         WRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, oldenables);
         SYNC;
-        EIEIO;
         Enable();
 
         ioreq = (struct IOUsbHWReq *) hc->hc_CtrlXFerQueue.lh_Head;
@@ -3797,7 +3790,6 @@ void ohciScheduleIntTDs(struct PCIController *hc)
         intoed->oed_NextED = oed->oed_Self;
         oed->oed_Succ->oed_Pred = oed;
         SYNC;
-        EIEIO;
 
         KPRINTF(5, ("ED: EPCaps=%08lx, HeadPtr=%08lx, TailPtr=%08lx, NextED=%08lx\n",
                      READMEM32_LE(&oed->oed_EPCaps),
@@ -3947,7 +3939,6 @@ void ohciScheduleBulkTDs(struct PCIController *hc)
         oed->oed_Pred->oed_NextED = oed->oed_Self;
         oed->oed_Succ->oed_Pred = oed;
         SYNC;
-        EIEIO;
 
         KPRINTF(10, ("Activating BULK at %ld\n", READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT)));
 
@@ -3965,7 +3956,6 @@ void ohciScheduleBulkTDs(struct PCIController *hc)
         oldenables |= OCSF_BULKENABLE;
         WRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, oldenables);
         SYNC;
-        EIEIO;
         Enable();
         ioreq = (struct IOUsbHWReq *) hc->hc_BulkXFerQueue.lh_Head;
     }
@@ -4126,11 +4116,10 @@ void ehciFreeAsyncContext(struct PCIController *hc, struct EhciQH *eqh)
     // unlink from schedule
     eqh->eqh_Pred->eqh_NextQH = eqh->eqh_Succ->eqh_Self;
     SYNC;
-    EIEIO;
+    
     eqh->eqh_Succ->eqh_Pred = eqh->eqh_Pred;
     eqh->eqh_Pred->eqh_Succ = eqh->eqh_Succ;
     SYNC;
-    EIEIO;
 
     // need to wait until an async schedule rollover before freeing these
     Disable();
@@ -4152,11 +4141,10 @@ void ehciFreePeriodicContext(struct PCIController *hc, struct EhciQH *eqh)
     // unlink from schedule
     eqh->eqh_Pred->eqh_NextQH = eqh->eqh_Succ->eqh_Self;
     SYNC;
-    EIEIO;
+
     eqh->eqh_Succ->eqh_Pred = eqh->eqh_Pred;
     eqh->eqh_Pred->eqh_Succ = eqh->eqh_Succ;
     SYNC;
-    EIEIO;
 
     Disable(); // avoid race condition with interrupt
     nextetd = eqh->eqh_FirstTD;
@@ -4295,7 +4283,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc)
         {
             KPRINTF(1, ("Examining IOReq=%08lx with EQH=%08lx\n", ioreq, eqh));
             SYNC;
-            EIEIO;
+
             epctrlstatus = READMEM32_LE(&eqh->eqh_CtrlStatus);
             nexttd = READMEM32_LE(&eqh->eqh_NextTD);
             devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
@@ -4452,11 +4440,9 @@ void ehciHandleFinishedTDs(struct PCIController *hc)
                     CONSTWRITEMEM32_LE(&predetd->etd_NextTD, EHCI_TERMINATE);
                     CONSTWRITEMEM32_LE(&predetd->etd_AltNextTD, EHCI_TERMINATE);
                     SYNC;
-                    EIEIO;
                     etd = eqh->eqh_FirstTD;
                     eqh->eqh_NextTD = etd->etd_Self;
                     SYNC;
-                    EIEIO;
                     unit->hu_NakTimeoutFrame[devadrep] = (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout<<3) : 0;
                 } else {
                     unit->hu_DevBusyReq[devadrep] = NULL;
@@ -4765,13 +4751,12 @@ void ehciScheduleCtrlTDs(struct PCIController *hc)
         eqh->eqh_Succ = hc->hc_EhciAsyncQH->eqh_Succ;
         eqh->eqh_NextQH = eqh->eqh_Succ->eqh_Self;
         SYNC;
-        EIEIO;
+
         eqh->eqh_Pred = hc->hc_EhciAsyncQH;
         eqh->eqh_Succ->eqh_Pred = eqh;
         hc->hc_EhciAsyncQH->eqh_Succ = eqh;
         hc->hc_EhciAsyncQH->eqh_NextQH = eqh->eqh_Self;
         SYNC;
-        EIEIO;
         Enable();
 
         ioreq = (struct IOUsbHWReq *) hc->hc_CtrlXFerQueue.lh_Head;
@@ -4971,13 +4956,12 @@ void ehciScheduleIntTDs(struct PCIController *hc)
         eqh->eqh_Succ = inteqh->eqh_Succ;
         eqh->eqh_NextQH = eqh->eqh_Succ->eqh_Self;
         SYNC;
-        EIEIO;
+        
         eqh->eqh_Pred = inteqh;
         eqh->eqh_Succ->eqh_Pred = eqh;
         inteqh->eqh_Succ = eqh;
         inteqh->eqh_NextQH = eqh->eqh_Self;
         SYNC;
-        EIEIO;
         Enable();
 
         ehciUpdateIntTree(hc);
@@ -5145,13 +5129,12 @@ void ehciScheduleBulkTDs(struct PCIController *hc)
         eqh->eqh_Succ = hc->hc_EhciAsyncQH->eqh_Succ;
         eqh->eqh_NextQH = eqh->eqh_Succ->eqh_Self;
         SYNC;
-        EIEIO;
+
         eqh->eqh_Pred = hc->hc_EhciAsyncQH;
         eqh->eqh_Succ->eqh_Pred = eqh;
         hc->hc_EhciAsyncQH->eqh_Succ = eqh;
         hc->hc_EhciAsyncQH->eqh_NextQH = eqh->eqh_Self;
         SYNC;
-        EIEIO;
         Enable();
 
         ioreq = (struct IOUsbHWReq *) hc->hc_BulkXFerQueue.lh_Head;
@@ -5309,7 +5292,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
     ULONG linkelem;
     ULONG ctrlstatus;
 
-    //KPRINTF(10, ("NakTimeoutInt()\n"));
+    KPRINTF(1, ("NakTimeoutInt()\n"));
 
     // check for port status change for UHCI and frame rollovers and NAK Timeouts
     hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
@@ -5324,12 +5307,14 @@ AROS_UFH1(void, uhwNakTimeoutInt,
         {
             case HCITYPE_UHCI:
             {
-                ULONG framecnt = READREG16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT);
-
+                ULONG framecnt = READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT);
+                KPRINTF(1, ("Frame Counter %ld, USBCMD/STS=%04lx/%04lx\n", hc->hc_FrameCounter, READIO16_LE(hc->hc_RegBase, UHCI_USBCMD), READIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS)));
                 if(framecnt < (hc->hc_FrameCounter & 0xffff))
                 {
                     hc->hc_FrameCounter = (hc->hc_FrameCounter|0xffff) + 1 + framecnt;
                     KPRINTF(10, ("Frame Counter Rollover %ld\n", hc->hc_FrameCounter));
+                } else {
+                    hc->hc_FrameCounter = (hc->hc_FrameCounter & 0xffff0000)|framecnt;
                 }
                 framecnt = hc->hc_FrameCounter;
 
