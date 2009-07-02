@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 1.0 (14.02.2004)
+## version $VER: wanderer.catalog 1.0 (02.07.2009)
 ## language français
 ## codeset 0
 ;
@@ -83,4 +83,25 @@ Détourage
 ;
 MSG_ICONTEXTMODE_PLAIN
 Plein
+;
+MSG_ICONTEXTLENGTH
+Longueur maximale des textes d'icônes
+;
+MSG_DOUBLEBUFFERED
+mémoire écran double
+;
+MSG_MISC
+divers
+;
+MSG_BUBBLESCREENTITLE
+%pc = Mémoire graphique libre\n\
+%pf = Autre mémoire libre\n\
+%pt = Mémoire libre totale\n\
+%PC = Mémoire graphique\n\
+%PF = Autre mémoire\n\
+%PT = Mémoire totale\n\
+%os = Version d'AROS\n\
+%wb = Version de Wanderer\n\
+%ov = Version exacte d'AROS\n\
+%wv = Version exacte de workbench.library
 ;

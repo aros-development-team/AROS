@@ -126,6 +126,7 @@ NETWORKING:
     Michal Schulz
     Nick Andrews (Kalamatee)
     Alain Greppin
+    Franck Charlet
 
 C link library and POSIX layer:
     Aaron Digulla
@@ -169,6 +170,7 @@ Translation:
     Ariel H. Gómez
     João Ralha
     Christoph Hahn
+    Franck Charlet
 
 Artistry:
     Eric W. Schwartz
