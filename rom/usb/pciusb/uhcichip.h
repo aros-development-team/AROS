@@ -45,6 +45,7 @@
 #define UHCI_SOFMOD         0x00c /* Start Of Frame Modify (upper byte?) (r/w) */
 #define UHCI_PORT1STSCTRL   0x010 /* Port 1 Status/Control (r/wc) */
 #define UHCI_PORT2STSCTRL   0x012 /* Port 2 Status/Control (r/wc) */
+#define UHCI_USBLEGSUP      0x0c0 /* legacy support */
 
 struct UHCIRegs
 {
@@ -54,7 +55,7 @@ struct UHCIRegs
     volatile UWORD uhr_FrameCount;     /* Frame Number (r/w) */
     volatile APTR  uhr_FrameListAddr;  /* Framelist Base Address (LONGWORD!) (r/w) */
     volatile UBYTE uhr_SOFMod;         /* Start Of Frame Modify (upper byte?) (r/w) */
-    volatile UBYTE uhr_Reserved0;      
+    volatile UBYTE uhr_Reserved0;
     volatile UWORD uhr_Reserved1;
     volatile UWORD uhr_PortStsCtrl[2]; /* Port 1/2 Status/Control (r/wc) */
 };

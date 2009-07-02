@@ -43,10 +43,12 @@
 #define EHCB_64BITS          0    /* Use 64 Bit pointers and structures */
 #define EHCB_PROGFRAMELIST   1    /* Programmable Frame list size */
 #define EHCB_ASYNCSCHEDPARK  2    /* Park feature for highspeed QH supported */
+#define EHCS_EXTCAPOFFSET    8    /* Offset to extended capabilities registers */
 
 #define EHCF_64BITS         (1UL<<EHCB_64BITS)
 #define EHCF_PROGFRAMELIST  (1UL<<EHCB_PROGFRAMELIST)
 #define EHCF_ASYNCSCHEDPARK (1UL<<EHCB_ASYNCSCHEDPARK)
+#define EHCM_EXTCAPOFFSET   (((1UL<<8)-1)<<EHCS_EXTCAPOFFSET)
 
 /* Operational Registers */
 #define EHCI_USBCMD         0x000 /* USB Command (r/w) */
@@ -154,6 +156,17 @@
 #define EHPF_PORTIND_OFF    (0UL<<EHPS_PORTINDICATOR)
 #define EHPF_PORTIND_AMBER  (1UL<<EHPS_PORTINDICATOR)
 #define EHPF_PORTIND_GREEN  (2UL<<EHPS_PORTINDICATOR)
+
+/* Legacy support register */
+#define EHLS_CAP_ID          0
+#define EHLB_BIOS_OWNER     16
+#define EHLB_OS_OWNER       24
+
+#define EHLM_CAP_ID         (((1UL<<8)-1)<<EHLS_CAP_ID)
+#define EHLF_BIOS_OWNER     (1UL<<EHLB_BIOS_OWNER)
+#define EHLF_OS_OWNER       (1UL<<EHLB_OS_OWNER)
+
+/* Legacy support control / status */
 
 /* data structures */
 
