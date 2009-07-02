@@ -1,4 +1,4 @@
-## version $VER: icontrolprefs.catalog 1.1 (18.02.2006)
+## version $VER: icontrolprefs.catalog 1.1 (02.07.2009)
 ## codeset 0
 ## language français
 ;
@@ -23,11 +23,11 @@ Projet
 ;
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Ouvrir
+O\0Ouvrir ...
 ;
 ;
 MSG_MEN_PROJECT_SAVEAS
-A\0Sauver sous...
+A\0Sauver sous ...
 ;
 ;
 MSG_MEN_PROJECT_QUIT

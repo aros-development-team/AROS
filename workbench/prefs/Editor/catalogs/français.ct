@@ -1,4 +1,4 @@
-##version $VER: JanoPrefs.catalog 1.0 (1.10.2000).
+##version $VER: JanoPrefs.catalog 1.0 (02.07.2009).
 ##codeset 0
 ##language français
 ;
@@ -23,19 +23,19 @@ MSG_TITLEWIN
 Paramétrage général
 ;
 MSG_TAB
-Tabulation:
+Tabulations :
 ;
 MSG_SEPARATORS
-Séparateurs:
+Séparateurs :
 ;
 MSG_TXTFONT
-Police texte:
+Police texte :
 ;
 MSG_SCRFONT
-Police d'écran:
+Police d'écran :
 ;
 MSG_PUBSCREEN
-Mode d'écran:
+Mode d'écran :
 ;
 MSG_BACKDROP
 Arrière plan
@@ -62,7 +62,7 @@ MSG_USEDEF
 Par défaut
 ;
 MSG_CHOOSEIT
-Choisir...
+Choisir ...
 ;
 MSG_CLONEPARENT
 Cloner parent

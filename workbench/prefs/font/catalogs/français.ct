@@ -1,4 +1,4 @@
-## version $VER: fontprefs.catalog 1.0 (27.9.2001)
+## version $VER: fontprefs.catalog 1.0 (02.07.2009)
 ## language français
 ## codeset 0
 ;
@@ -68,14 +68,14 @@ Icônes :
 ; Icons:
 ;
 MSG_SYSTEM
-Système:
+Système :
 ; System:
 ;
 MSG_SCREEN
-Écran:
+Écran :
 ; Screen:
 ;
 MSG_DESCRIPTION
-Préférences des Fontes
+Préférences des fontes
 ; Fonts preferences
 ;

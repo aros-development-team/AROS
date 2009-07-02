@@ -1,4 +1,4 @@
-## version $VER: Zune.catalog 0.1 (22.02.2006)
+## version $VER: Zune.catalog 0.2 (02.07.2009)
 ## language français
 ## codeset 0
 ;
@@ -30,13 +30,12 @@ MSG_ADJUST_FRAME
 Ajuster le cadre
 ;
 MSG_CHECKMARKS
-Coches
+Encoches
 ;
 MSG_LOOK_COLON
 Aspect :
 ;
 MSG_CHECKMARK
-Coche
 ;
 MSG_RADIO_BUTTONS
 Boutons radio
@@ -84,7 +83,7 @@ MSG_SPEED
 Vitesse :
 ;
 MSG_POPUP_MENU_DESIGN
-Design
+Apparence
 ;
 MSG_FRAME
 Cadre
@@ -93,7 +92,7 @@ MSG_ADJUST_BACKGROUND
 Ajuster le fond
 ;
 MSG_BACKGROUND
-Fond
+Arrière plan
 ;
 MSG_RECESSED_ENTRIES
 Encastré :
@@ -189,7 +188,7 @@ MSG_LEADING
 En tête
 ;
 MSG_DESIGN
-Design
+Apparence
 ;
 MSG_INPUT_LISTS
 Listes \nactives :
@@ -315,7 +314,7 @@ MSG_BALANCING_GROUPS
 Groupes balancés
 ;
 MSG_EXAMPLE
-Example :
+Exemple :
 ;
 MSG_TRY_WITH
 Essayer avec
@@ -333,10 +332,10 @@ MSG_COLOR_ACTIVE_OBJ
 Couleur de l'objet actif :
 ;
 MSG_NEWLOOK
-newlook
+nouvelle apparence
 ;
 MSG_CUSTOM
-custom
+personnalisé
 ;
 MSG_ARROWS
 Flêches
@@ -369,7 +368,7 @@ MSG_BAR
 Barre
 ;
 MSG_GADGET_TYPE
-Design :
+Type du gadget :
 ;
 MSG_SCROLLER
 Ascenseur
@@ -384,10 +383,10 @@ Arrangement
 ; slidersp.c
 ;-----------
 MSG_CONTAINER_DESIGN
-Conteneur
+Apparence du conteneur
 ;
 MSG_KNOB_DESIGN
-Poignée
+Apparence de la Poignée
 ;
 MSG_EXAMPLE_SLIDERS
 Exemple
@@ -405,7 +404,7 @@ MSG_PROGRESS_INDICATOR
 Barre de progression
 ;
 MSG_DEVICE_IMAGES
-Périphériques
+Images du périphérique
 ;
 MSG_DRAWER
 Répertoire
@@ -429,7 +428,7 @@ MSG_ASSIGN
 Assign
 ;
 MSG_TAPE_IMAGES
-Lecteur
+Apparence lecteur de bandes
 ;
 MSG_TAPE_PLAY
 lire
@@ -477,16 +476,16 @@ MSG_POPUP_DRAWER
 Popup répertoire
 ;
 MSG_INACTIVE_STRING_COLORS
-Inactif
+Couleurs inactives
 ;
 MSG_TEXT
 Texte
 ;
 MSG_ACTIVE_STRING_COLORS
-Actif
+Couleurs actives
 ;
 MSG_MARKED_STRING_COLORS
-Sélection
+Couleurs sélectionnées
 ;
 MSG_EXAMPLE_STRING_GADGET
 Exemple de gadget texte
@@ -504,13 +503,13 @@ MSG_SAVE_ON_EXIT
 sauver
 ;
 MSG_SMART
-smart
+intelligent
 ;
 MSG_SIMPLE
 simple
 ;
 MSG_WITHOUT_CLEAR
-conserver
+sans effacer
 ;
 MSG_WITH_CLEAR
 effacer
@@ -552,7 +551,7 @@ MSG_WINTITLE1
 Zune - Préférences générales
 ;
 MSG_WINTITLE2
-Zune - Prefs pour : %s
+Zune - Préférences pour : %s
 ;
 MSG_MEN_PROJECT
 Projet
@@ -585,13 +584,13 @@ MSG_MEN_QUIT_SC
 Q
 ;
 MSG_FRAME_CLIPBOARD
-Cadre Clipboard
+Cadre presse-papier
 ;
 MSG_IMAGE_CLIPBOARD
-Clipboard image
+Image presse-papier 
 ;
 MSG_GAD_TEST
-_Test
+_Tester
 ;
 MSG_GAD_SAVE
 _Sauver
@@ -601,6 +600,9 @@ _Utiliser
 ;
 MSG_GAD_CANCEL
 _Annuler
+;
+MSG_DSC_SYSTEM
+Système
 ;
 MSG_DSC_WINDOWS
 Fenêtres
@@ -632,9 +634,66 @@ Navigation
 MSG_DSC_SPECIAL
 Spécial
 ;
+MSG_DSC_FRAMES
+Cadres
+;
 ;=============================
 ; zunestuff.c
 ;------------
 MSG_ADJUST_PEN
-Crayon
+Ajuster le crayon
+;
+;=============================
+; framesp.c
+;----------
+MSG_CUSTOMFRAMES
+Cadres personnalisés
+;
+;=============================
+; systemp.c
+;----------
+MSG_PUBLIC_SCREEN
+Ecran public
+;
+MSG_NAME
+Nom :
+;
+MSG_CALL_INSPECTOR
+Inspecteur d'appel
+;
+MSG_POP_TO_FRONT
+Placer à l'avant plan :
+;
+MSG_ICONIFICATION
+Iconifier
+;
+MSG_HOTKEY
+Raccourci :
+;
+MSG_SHOW
+Afficher :
+;
+MSG_ICON
+Icône
+;
+MSG_MENU
+Menu
+;
+MSG_ON_STARTUP
+Au démarrage:
+;
+MSG_INTERFACES
+Interfaces
+;
+MSG_AREXX
+ARexx:
+;
+MSG_BUBBLE_HELP
+Bulle d'aide
+;
+MSG_FIRST_BUBBLE
+Première bulle :
+;
+MSG_NEXT_BUBBLE
+Bulle suivante :
 ;

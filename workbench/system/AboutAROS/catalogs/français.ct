@@ -1,4 +1,4 @@
-## version $VER: AboutAROS.catalog 1.0 (12.8.2003)
+## version $VER: AboutAROS.catalog 1.0 (02.07.2009)
 ## language français
 ## codeset 0
 ;
@@ -68,7 +68,7 @@ Evangelisme
 ; Evangelism
 ;
 MSG_SECTION_HIDD
-HIDD subsystem
+Modèle HIDD
 ; HIDD subsystem
 ;
 MSG_SECTION_INTUITION
@@ -88,7 +88,7 @@ Workbench
 ; Workbench
 ;
 MSG_SECTION_TOOLS
-Tools
+Outils
 ; Tools
 ;
 MSG_SECTION_PREFERENCES
@@ -104,7 +104,7 @@ Zune
 ; Zune
 ;
 MSG_SECTION_KERNEL
-Kernel
+Noyau
 ; Kernel
 ;
 MSG_SECTION_DOS
@@ -112,11 +112,11 @@ DOS
 ; DOS
 ;
 MSG_SECTION_NETWORK
-Networking Components
+Composants Réseau
 ; Networking Components
 ;
 MSG_SECTION_LIBC_POSIX
-C link library et couche POSIX
+Bibliothèque C et couche POSIX
 ; C link library and POSIX layer
 ;
 MSG_SECTION_DOCUMENTATION
@@ -136,7 +136,7 @@ Site Web
 ; Website
 ;
 MSG_SECTION_DATATYPES
-
+Modules de types de données
 ; Datatypes
 ;
 ; ***NEW***

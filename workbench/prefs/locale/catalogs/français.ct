@@ -1,4 +1,4 @@
-## version $VER: localeprefs.catalog 1.0 (23.02.2001)
+## version $VER: localeprefs.catalog 1.0 (02.07.2008)
 ## codeset 0
 ## language français
 ;
@@ -21,7 +21,7 @@ MSG_CANT_CREATE_MENUS
 Impossible de créer les Menus !
 ;
 MSG_CANT_CREATE_WIN
-Impossible d'ouvrir une fenêtre !
+Impossible d'ouvrir la fenêtre !
 ;
 MSG_WINTITLE
 Préférences de langage (Locale)
@@ -99,5 +99,5 @@ MSG_TIMEZONE_HOURS
 Fuseau horaire : %ld Heures de GMT
 ;
 MSG_TIMEZONE_HOURSMINS
-Fuseau horaire : %ld Heures %ld Minutes auf GMT
+Fuseau horaire : %ld Heures %ld Minutes de GMT
 ;

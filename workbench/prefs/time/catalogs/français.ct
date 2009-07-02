@@ -1,4 +1,4 @@
-## version $VER: timeprefs.catalog 1.0 (19.02.2004)
+## version $VER: timeprefs.catalog 1.0 (02.07.2009)
 ## codeset 0
 ## language français
 ;
@@ -12,7 +12,7 @@ Impossible de créer l'application !
 ;Can't create application object!
 ;
 MSG_WINTITLE
-Préférences du temps
+Préférences de l'horloge
 ;Time Preferences
 ;
 MSG_MEN_PROJECT

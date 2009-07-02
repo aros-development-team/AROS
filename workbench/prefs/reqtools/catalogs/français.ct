@@ -1,7 +1,7 @@
 ;
 ; by Georges 'Melkor' Goncalves
 ;
-## version $VER: ReqToolsPrefs.catalog 38.4 (11.12.95)
+## version $VER: ReqToolsPrefs.catalog 38.283 (02.07.2009)
 ## codeset 0
 ## language français
 ;
@@ -46,7 +46,7 @@ Annuler
 ; Abort
 ;
 MSG_OK
-Okay
+Valider
 ;  Ok
 ;
 ; * 2.7 *
@@ -96,7 +96,7 @@ Options
 ; Options
 ;
 MSG_OPTIONS_CREATEICONS
-I\0Créer icônes ?
+I\0Créer des icônes ?
 ; I\0Create Icons?
 ;
 MSG_POPSCREEN
@@ -136,21 +136,21 @@ Roue colorée
 ; * 2.7 *
 ;
 MSG_WHEEL_NONE
-No color wheel
+Pas de roue colorée
 ; No color wheel
 ;
 MSG_WHEEL_SIMPLE
-Simple color wheel
+Roue colorée simple
 ; Simple color wheel
 ;
 MSG_WHEEL_FANCY
-Fancy color wheel
+Roue colorée complète
 ; Fancy color wheel
 ;
 ; * 2.8 *
 ;
 MSG_MMB_PARENT
-MMB gives parent
+MMB retourne le répertoire parent
 ; MMB gives parent
 ;
 MSG_REQUESTER
@@ -162,7 +162,7 @@ Requête de fichiers
 ; File Requester
 ;
 MSG_FONTREQ
-Requête de police
+Requête de fonte
 ; Font Requester
 ;
 MSG_PALETTEREQ
@@ -186,15 +186,15 @@ Position :
 ; Position:
 ;
 MSG_POINTER
-Pointeur souris
+Pointeur de la souris
 ; Mouse pointer
 ;
 MSG_CENTERWIN
-Centre de la fenêtre
+Centre dans la fenêtre
 ; Center in window
 ;
 MSG_CENTERSCR
-Centre de l'écran
+Centre à l'écran
 ; Center on screen
 ;
 MSG_TOPLEFTWIN
@@ -265,7 +265,7 @@ Impossible d'ouvrir la fenêtre !
 ; Couldn't open window!
 ;
 MSG_ERROR_ACCESSING_FILE
-Erreur en accédant au fichier\n%s,\n%s
+Impossible d'accéder au fichier\n%s,\n%s
 ; Error accessing file\n%s,\n%s
 ;
 MSG_READ_ERROR
@@ -279,16 +279,16 @@ Erreur en sauvant les préférences !
 ; * 2.7 *
 ;
 MSG_ERROR_ARGS
-Argument error
+Erreur dans l'argument
 ; Argument error
 ;
 MSG_ERROR_LIBRARY
-Couldn't open %s\n\
-version %ld or higher!
+Impossible d'ouvrir %s\n\
+version %ld ou ultérieur !
 ; Couldn't open %s\n\
 ; version %ld or higher!
 ;
 MSG_ERROR_MENUS
-Couldn't create menus!
+Impossible de créer les menus !
 ; Couldn't create menus!
 ;
