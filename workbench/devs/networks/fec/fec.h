@@ -486,6 +486,8 @@ struct FECBase {
 #define PHY_EXSR_1000TF         0x2000
 #define PHY_EXSR_1000TH         0x1000
 
+#define STAT_COUNT 3
+
 struct FECUnit {
 	struct Unit				feu_Unit;
 	struct SignalSemaphore	feu_Lock;
@@ -499,6 +501,9 @@ struct FECUnit {
 	struct Interrupt    	feu_TXInt;
 	struct Interrupt    	feu_RXInt;
 	struct Interrupt    	feu_TXEndInt;
+
+	struct Sana2DeviceStats	feu_Stats;
+	uint32_t            	feu_SpecialStats[STAT_COUNT];
 
 	fec_t					*feu_regs;
 
@@ -529,6 +534,9 @@ struct FECUnit {
 };
 
 
+BOOL AddMulticastRange(struct FECBase *FECBase, struct FECUnit *unit, const UBYTE *lower_bound, const UBYTE *upper_bound);
+BOOL RemMulticastRange(struct FECBase *FECBase, struct FECUnit *unit, const UBYTE *lower_bound, const UBYTE *upper_bound);
+struct TypeStats *FindTypeStats(struct FECBase *FECBase, struct FECUnit *unit, struct MinList *list, ULONG packet_type);
 int FEC_CreateUnit(struct FECBase *FECBase, fec_t *regs);
 void handle_request(struct FECBase *FECBase, struct IOSana2Req *request);
 void FEC_UDelay(struct FECUnit *unit, uint32_t usec);

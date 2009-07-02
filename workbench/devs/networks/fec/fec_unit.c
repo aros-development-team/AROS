@@ -132,6 +132,29 @@ BOOL RemMulticastRange(struct FECBase *FECBase, struct FECUnit *unit, const UBYT
     return range != NULL;
 }
 
+struct TypeStats *FindTypeStats(struct FECBase *FECBase, struct FECUnit *unit,
+                    struct MinList *list, ULONG packet_type)
+{
+    struct TypeStats *stats, *tail;
+    BOOL found = FALSE;
+
+    stats = (APTR)list->mlh_Head;
+    tail = (APTR)&list->mlh_Tail;
+
+    while(stats != tail && !found)
+    {
+        if(stats->packet_type == packet_type)
+            found = TRUE;
+        else
+            stats = (APTR)stats->node.mln_Succ;
+    }
+
+    if(!found)
+        stats = NULL;
+
+    return stats;
+}
+
 static int FEC_Start(struct FECUnit *unit)
 {
 	uint16_t reg;
