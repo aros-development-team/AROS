@@ -2826,7 +2826,7 @@ void uhciScheduleIntTDs(struct PCIController *hc)
 
         // looks good to me, now enqueue this entry (just behind the right IntQH)
         uqh->uqh_Succ = intuqh->uqh_Succ;
-        uqh->uqh_Link = intuqh->uqh_Self;
+        uqh->uqh_Link = uqh->uqh_Succ->uxx_Self;
         SYNC;
         EIEIO;
         uqh->uqh_Pred = (struct UhciXX *) intuqh;
@@ -5491,7 +5491,6 @@ AROS_UFH1(void, uhwNakTimeoutInt,
 
     uhwCheckRootHubChanges(unit);
 
-    /* Update frame counter */
     unit->hu_NakTimeoutReq.tr_time.tv_micro = 150*1000;
     SendIO((APTR) &unit->hu_NakTimeoutReq);
 
