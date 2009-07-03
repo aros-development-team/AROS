@@ -6036,7 +6036,7 @@ AROS_LH1(void, psdHubReleaseIfBinding,
             if(puc)
             {
                 pif->pif_ClsBinding = NULL;
-                usbDoMethod(UCM_AttemptInterfaceBinding, binding);
+                usbDoMethod(UCM_ReleaseInterfaceBinding, binding);
                 puc->puc_UseCnt--;
             }
             psdSendEvent(EHMB_REMBINDING, pd, NULL);
