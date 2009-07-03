@@ -634,7 +634,7 @@ APTR TransferImage(struct NepClassPencam *nch, struct PCImageHeader *pcih)
     ioerr = psdDoPipe(nch->nch_BulkPipe, rawbuf, 64);
     if(!ioerr)
     {
-        if(((ULONG *) rawbuf)[0] == 0xed15ed15)
+        if(((ULONG *) rawbuf)[0] == AROS_LONG2BE(0xed15ed15))
         {
             /* Junk packet at the beginning! */
             ioerr = psdDoPipe(nch->nch_BulkPipe, rawbuf, pcih->pcih_ImgSize);
@@ -695,12 +695,19 @@ APTR GetPicture(struct NepClassPencam *nch, ULONG picnum, struct PCImageHeader *
                psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
         return(NULL);
     }
-
+    
     psdPipeSetup(pp, URTF_OUT|URTF_VENDOR|URTF_DEVICE,
                  CMDID_UPLOAD_IMAGE, picnum, 0);
     ioerr = psdDoPipe(pp, pcih, sizeof(struct PCImageHeader));
     if(!ioerr)
     {
+        /* endianess conversion */
+        pcih->pcih_ImgSize = AROS_BE2LONG(pcih->pcih_ImgSize);
+        pcih->pcih_ImgWidth = AROS_BE2WORD(pcih->pcih_ImgWidth);
+        pcih->pcih_ImgHeight = AROS_BE2WORD(pcih->pcih_ImgHeight);
+        pcih->pcih_FineExp = AROS_BE2WORD(pcih->pcih_FineExp);
+        pcih->pcih_CoarseExp = AROS_BE2WORD(pcih->pcih_CoarseExp);
+
         return(TransferImage(nch, pcih));
     } else {
         Printf("UPLOAD_IMAGE failed: %s (%ld)\n",
@@ -724,6 +731,14 @@ APTR GetVideoSnap(struct NepClassPencam *nch, struct PCImageHeader *pcih)
                psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
         return(NULL);
     }
+
+    /* endianess conversion */
+    pcih->pcih_ImgSize = AROS_BE2LONG(pcih->pcih_ImgSize);
+    pcih->pcih_ImgWidth = AROS_BE2WORD(pcih->pcih_ImgWidth);
+    pcih->pcih_ImgHeight = AROS_BE2WORD(pcih->pcih_ImgHeight);
+    pcih->pcih_FineExp = AROS_BE2WORD(pcih->pcih_FineExp);
+    pcih->pcih_CoarseExp = AROS_BE2WORD(pcih->pcih_CoarseExp);
+
     return(TransferImage(nch, pcih));
 }
 
