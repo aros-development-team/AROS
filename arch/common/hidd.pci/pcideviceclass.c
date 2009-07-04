@@ -261,6 +261,11 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 		dev->bus, dev->dev, dev->sub,
 		dev->VendorID, dev->ProductID,
 		dev->strClass, dev->strSubClass, dev->strInterface));
+        // print out a warning to the user in case the interrupt line is not assigned by BIOS
+        if(dev->INTLine == 255)
+        {
+            bug("[PCIDevice] WARNING: Interrupt line is not assigned! Device may freeze or malfunction at use!\n");
+        }
     
 	    /* Read two first base addresses */
 	    for (i = 0; i < 2; i++)
