@@ -10,13 +10,20 @@
 
 #define NewList NEWLIST
 
-/* Root hub data */
-const struct UsbStdDevDesc RHDevDesc = { sizeof(struct UsbStdDevDesc), UDT_DEVICE, AROS_WORD2LE(0x0110), HUB_CLASSCODE, 0, 0, 8, AROS_WORD2LE(0x0000), AROS_WORD2LE(0x0000), AROS_WORD2LE(0x0100), 1, 2, 0, 1 };
+/* we cannot use AROS_WORD2LE in struct initializer */
+#if AROS_BIG_ENDIAN
+#define WORD2LE(w) (UWORD)(((w) >> 8) & 0x00FF) | (((w) << 8) & 0xFF00)
+#else
+#define WORD2LE(w) (w)
+#endif
 
-const struct UsbStdCfgDesc RHCfgDesc = { 9, UDT_CONFIGURATION, AROS_WORD2LE(9+9+7), 1, 1, 3, USCAF_ONE|USCAF_SELF_POWERED, 0 };
+/* Root hub data */
+const struct UsbStdDevDesc RHDevDesc = { sizeof(struct UsbStdDevDesc), UDT_DEVICE, WORD2LE(0x0110), HUB_CLASSCODE, 0, 0, 8, WORD2LE(0x0000), WORD2LE(0x0000), WORD2LE(0x0100), 1, 2, 0, 1 };
+
+const struct UsbStdCfgDesc RHCfgDesc = { 9, UDT_CONFIGURATION, WORD2LE(9+9+7), 1, 1, 3, USCAF_ONE|USCAF_SELF_POWERED, 0 };
 const struct UsbStdIfDesc  RHIfDesc  = { 9, UDT_INTERFACE, 0, 0, 1, HUB_CLASSCODE, 0, 0, 4 };
-const struct UsbStdEPDesc  RHEPDesc  = { 7, UDT_ENDPOINT, URTF_IN|1, USEAF_INTERRUPT, AROS_WORD2LE(1), 255 };
-const struct UsbHubDesc    RHHubDesc = { 9, UDT_HUB, 0, AROS_WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP), 0, 1, 1, 0 };
+const struct UsbStdEPDesc  RHEPDesc  = { 7, UDT_ENDPOINT, URTF_IN|1, USEAF_INTERRUPT, WORD2LE(1), 255 };
+const struct UsbHubDesc    RHHubDesc = { 9, UDT_HUB, 0, WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP), 0, 1, 1, 0 };
 
 const CONST_STRPTR RHStrings[] = { "Chris Hodges", "PCI Root Hub Unit x", "Standard Config", "Hub interface" };
 
