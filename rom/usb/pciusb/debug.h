@@ -1,9 +1,9 @@
 #ifndef __DEBUG_H__
 #define __DEBUG_H__
 
-#define DB_LEVEL 5
+#define DB_LEVEL 200
 
-//#define DEBUG 1
+#define DEBUG 1
 
 #include <aros/debug.h>
 

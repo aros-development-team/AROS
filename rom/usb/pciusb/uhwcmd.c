@@ -633,7 +633,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     newval &= ~(UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                     newval |= UHPF_PORTRESET;
                                     WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
-                                    uhwDelayMS(50, unit, base);
+                                    uhwDelayMS(75, unit, base);
                                     newval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                     KPRINTF(10, ("Reset=%s\n", newval & UHPF_PORTRESET ? "GOOD" : "BAD!"));
                                     // like windows does it
@@ -2723,7 +2723,7 @@ void uhciScheduleIntTDs(struct PCIController *hc)
 
         uqh->uqh_IOReq = ioreq;
 
-        ctrlstatus = UTCF_ACTIVE|UTCF_1ERRORLIMIT;
+        ctrlstatus = UTCF_ACTIVE|UTCF_1ERRORLIMIT|UTCF_SHORTPACKET;
         if(ioreq->iouh_Flags & UHFF_LOWSPEED)
         {
             KPRINTF(5, ("*** LOW SPEED ***\n"));
@@ -2733,7 +2733,6 @@ void uhciScheduleIntTDs(struct PCIController *hc)
         token |= (ioreq->iouh_Dir == UHDIR_IN) ? PID_IN : PID_OUT;
         predutd = NULL;
         actual = ioreq->iouh_Actual;
-        ctrlstatus |= UTCF_SHORTPACKET;
         phyaddr = (ULONG) pciGetPhysical(hc, &(((UBYTE *) ioreq->iouh_Data)[ioreq->iouh_Actual]));
         if(unit->hu_DevDataToggle[devadrep])
         {
@@ -2880,12 +2879,11 @@ void uhciScheduleBulkTDs(struct PCIController *hc)
         uqh->uqh_IOReq = ioreq;
 
         // fill setup td
-        ctrlstatus = UTCF_ACTIVE|UTCF_1ERRORLIMIT;
+        ctrlstatus = UTCF_ACTIVE|UTCF_1ERRORLIMIT|UTCF_SHORTPACKET;
         token = (ioreq->iouh_DevAddr<<UTTS_DEVADDR)|(ioreq->iouh_Endpoint<<UTTS_ENDPOINT);
         token |= (ioreq->iouh_Dir == UHDIR_IN) ? PID_IN : PID_OUT;
         predutd = NULL;
         actual = ioreq->iouh_Actual;
-        ctrlstatus |= UTCF_SHORTPACKET;
         phyaddr = (ULONG) pciGetPhysical(hc, &(((UBYTE *) ioreq->iouh_Data)[ioreq->iouh_Actual]));
         if(unit->hu_DevDataToggle[devadrep])
         {
@@ -3034,7 +3032,7 @@ void uhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     if(intr & (UHSF_USBINT|UHSF_USBERRORINT|UHSF_RESUMEDTX|UHSF_HCSYSERROR|UHSF_HCPROCERROR|UHSF_HCHALTED))
     {
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS, intr);
-        KPRINTF(1, ("INT=%04lx\n", intr));
+        //KPRINTF(1, ("INT=%04lx\n", intr));
         if(intr & (UHSF_HCSYSERROR|UHSF_HCPROCERROR|UHSF_HCHALTED))
         {
             KPRINTF(200, ("Host ERROR!\n"));
@@ -4039,7 +4037,7 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     if(intr & hc->hc_PCIIntEnMask)
     {
         WRITEREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS, intr);
-        KPRINTF(1, ("INT=%02lx\n", intr));
+        //KPRINTF(1, ("INT=%02lx\n", intr));
         if(intr & OISF_HOSTERROR)
         {
             KPRINTF(200, ("Host ERROR!\n"));
@@ -5206,12 +5204,12 @@ void ehciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     struct PCIUnit *unit = hc->hc_Unit;
     ULONG intr;
 
-    KPRINTF(1, ("pciEhciInt()\n"));
+    //KPRINTF(1, ("pciEhciInt()\n"));
     intr = READREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS);
     if(intr & hc->hc_PCIIntEnMask)
     {
         WRITEREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS, intr);
-        KPRINTF(1, ("INT=%04lx\n", intr));
+        //KPRINTF(1, ("INT=%04lx\n", intr));
         if(!hc->hc_Online)
         {
             return;
