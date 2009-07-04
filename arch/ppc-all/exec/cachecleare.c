@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CacheClearE() - Clear the caches with extended control.
@@ -73,39 +73,36 @@
 {
     AROS_LIBFUNC_INIT
 
-#if defined(FLUSH_CACHES)
+    char *start = (char*)((IPTR)address & 0xffffffe0);
+    char *end = (char*)(((IPTR)address + length + 31) & 0xffffffe0);
+    char *ptr;
+    
+    /* Flush data caches and mark cacke lines invalid */
+    if (caches & CACRF_ClearD)
     {
-	ULONG blocks;
-
-	// cache block alignment
-	ULONG align = (ULONG) address & ~(CACHE_BLOCK_SIZE - 1);
-	
-	// round up
-	length = length + CACHE_BLOCK_SIZE - 1;
-	blocks = length / CACHE_BLOCK_SIZE;
-	if (caches & CACRF_ClearD)
-	{
-	    ULONG i;
-	    for (i = 0; i < blocks; i++)
-		DATA_CACHE_BST(align + i * CACHE_BLOCK_SIZE);
-	    
-	    SYNC;
-	}
-
-	if (caches & CACRF_ClearI)
-	{
-	    ULONG i;
-	    for (i = 0; i < blocks; i++)
-		INSTR_CACHE_BINV(align + i * CACHE_BLOCK_SIZE);
-	    
-	    // SYNC for G4
-	    SYNC;
-	    ISYNC;
-	}
+        for (ptr = start; ptr < end; ptr +=32)
+        {
+            asm volatile("dcbf 0,%0"::"r"(ptr));
+        }
+        asm volatile("sync");
     }
-#else
-    aros_print_not_implemented("CacheClearE");
-#endif /* defined(FLUSH_CACHES) */
+
+    if (caches & CACRF_InvalidateD)
+    {
+        register APTR addr asm ("r4") = address;
+        register ULONG len asm ("r5") = length;
+        asm volatile("li %%r3,%0; sc"::"i"(8 /*SC_INVALIDATED*/),"r"(addr),"r"(len):"memory","r3");
+    }
+    
+    if (caches & CACRF_ClearI) /* Clear ICache with DCache together */
+    {
+        for (ptr = start; ptr < end; ptr +=32)
+        {
+            asm volatile("icbi 0,%0"::"r"(ptr));
+        }
+    
+        asm volatile("sync; isync; ");
+    }
 
     AROS_LIBFUNC_EXIT
 } /* CacheClearE */

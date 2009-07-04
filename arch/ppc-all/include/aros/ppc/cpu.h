@@ -56,24 +56,6 @@
 
 register unsigned char* AROS_GET_SP asm("%sp");
 
-#define FLUSH_CACHES 1
-#define CACHE_BLOCK_SIZE 32
-
-#define DATA_CACHE_BST(x)	\
-    __asm__ __volatile__ (	\
-    "dcbst 0,%0 \n\t"		\
-    :				\
-    : "r"(x))
-
-#define INSTR_CACHE_BINV(x)	\
-    __asm__ __volatile__ (	\
-    "icbi 0,%0 \n\t"		\
-    :				\
-    : "r"(x))
-
-#define SYNC  __asm__ __volatile__ ("sync" )
-#define ISYNC __asm__ __volatile__ ("isync")
-
 /*
      An offset value sometimes added to
      or subtracted from the stack limits.
