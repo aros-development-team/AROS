@@ -169,10 +169,10 @@ AROS_LH0(LONG, NewRawMayGetChar,
     struct ExecBase *, SysBase, 85, Exec)
 {
     AROS_LIBFUNC_INIT
-    
+
     /* We always return sort of a confirmation. */
     return('y');
-    
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -283,7 +283,7 @@ StoreFIFOChar(struct SashimiResource * sr,UBYTE c)
 AROS_LH1(void, NewRawPutChar,
     AROS_LHA(UBYTE, c, D0),
     struct ExecBase *, SysBase, 86, Exec)
-{    
+{
     AROS_LIBFUNC_INIT
 
     /* Do not store NUL bytes. */
@@ -346,6 +346,10 @@ RemovePatches(VOID)
     res = SetFunction(&SysBase->LibNode,LVORawPutChar,OldRawPutChar);
     if(res != AROS_SLIB_ENTRY(NewRawPutChar,Exec))
         SetFunction(&SysBase->LibNode,LVORawPutChar,res);
+
+    /* make sure IO is re-inited
+     */
+    RawIOInit();
 
     Enable();
 }
@@ -806,22 +810,22 @@ main(int argc,char **argv)
                     else
                     {
                         ULONG bufferSize;
-    
+
                         /* The default buffer size is 32K. */
                         bufferSize = 32 * 1024;
-    
+
                         /* Check for a specific buffer size (power of two). */
                         if(ShellArguments.BufferK != NULL)
                             bufferSize = 1024 * (*ShellArguments.BufferK);
-    
+
                         /* Check for a specific buffer size. */
                         if(ShellArguments.BufferSize != NULL)
                             bufferSize = (ULONG)(*ShellArguments.BufferSize);
-    
+
                         /* Don't make the buffer too small. */
                         if(bufferSize < 4096)
                             bufferSize = 4096;
-    
+
                         /* Add the resource to the public list. Note that
                          * the patches are not installed yet.
                          */
@@ -1126,7 +1130,7 @@ main(int argc,char **argv)
 
                             WaitIO((struct IORequest *)timeRequest);
                         }
- 
+
                         /* Check if we should and could save the circular buffer. */
                         if(ShellArguments.AskSave && GetCharsInFIFO(sr) > 0)
                         {
