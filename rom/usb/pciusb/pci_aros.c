@@ -65,9 +65,15 @@ AROS_UFH3(void, pciEnumerator,
 
     devid = (bus<<16)|dev;
 
-    if((hcitype == HCITYPE_UHCI) || (hcitype == HCITYPE_OHCI) || (hcitype == HCITYPE_EHCI))
+    if(intline == 255)
     {
-        KPRINTF(10, ("Found PCI device 0x%lx of type %ld\n", devid, hcitype));
+        // we can't work without the correct interrupt line
+        // BIOS needs plug & play os option disabled. Alternatively AROS must support APIC reconfiguration
+        KPRINTF(200, ("ERROR: PCI card has no interrupt line assigned by BIOS, disable Plug & Play OS!\n"));
+    }
+    else if((hcitype == HCITYPE_UHCI) || (hcitype == HCITYPE_OHCI) || (hcitype == HCITYPE_EHCI))
+    {
+        KPRINTF(10, ("Found PCI device 0x%lx of type %ld, Intline=%ld\n", devid, hcitype, intline));
 
         hc = AllocPooled(hd->hd_MemPool, sizeof(struct PCIController));
         if(hc)
@@ -106,7 +112,7 @@ BOOL pciInit(struct PCIDevice *hd)
     KPRINTF(10, ("*** pciInit(%08lx) ***\n", hd));
     if(sizeof(IPTR) > 4)
     {
-        KPRINTF(100, ("I said the pciusb.device is not 64bit compatible right now. Go away!\n"));
+        KPRINTF(200, ("I said the pciusb.device is not 64bit compatible right now. Go away!\n"));
         return FALSE;
     }
 
@@ -302,24 +308,25 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
     struct TagItem pciActivateMem[] =
     {
-            { aHidd_PCIDevice_isIO,     TRUE },
             { aHidd_PCIDevice_isMEM,    TRUE },
             { TAG_DONE, 0UL },
     };
 
-    struct TagItem pciActivateMemNoBusmaster[] =
+    struct TagItem pciActivateIO[] =
     {
             { aHidd_PCIDevice_isIO,     TRUE },
-            { aHidd_PCIDevice_isMEM,    TRUE },
+            { TAG_DONE, 0UL },
+    };
+
+    struct TagItem pciDeactivateBusmaster[] =
+    {
             { aHidd_PCIDevice_isMaster, FALSE },
             { TAG_DONE, 0UL },
     };
 
-    
+
     struct TagItem pciActivateBusmaster[] =
     {
-            { aHidd_PCIDevice_isIO,     TRUE },
-            { aHidd_PCIDevice_isMEM,    TRUE },
             { aHidd_PCIDevice_isMaster, TRUE },
             { TAG_DONE, 0UL },
     };
@@ -492,8 +499,8 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base4, (IPTR *) &hc->hc_RegBase);
                     hc->hc_RegBase = (APTR) (((IPTR) hc->hc_RegBase) & (~0xf));
                     KPRINTF(10, ("RegBase = 0x%08lx\n", hc->hc_RegBase));
-                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMem);
-                    
+                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateIO);
+
                     // disable BIOS legacy support
                     KPRINTF(10, ("Turning off BIOS legacy support (old value=%04lx)\n", PCIXReadConfigWord(hc, UHCI_USBLEGSUP)));
                     PCIXWriteConfigWord(hc, UHCI_USBLEGSUP, 0x8f00);
@@ -502,7 +509,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_GLOBALRESET);
                     uhwDelayMS(15, hu, hd);
 
-                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMemNoBusmaster); // no busmaster yet
+                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivateBusmaster); // no busmaster yet
 
                     WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET);
                     cnt = 100;
@@ -547,7 +554,6 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     WRITEIO32_LE(hc->hc_RegBase, UHCI_FRAMELISTADDR, (ULONG) pciGetPhysical(hc, hc->hc_UhciFrameList));
 
                     WRITEIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS, UHIF_TIMEOUTCRC|UHIF_INTONCOMPLETE|UHIF_SHORTPACKET);
-                    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, UHIF_TIMEOUTCRC|UHIF_INTONCOMPLETE|UHIF_SHORTPACKET);
 
                     // add interrupt
                     hc->hc_PCIIntHandler.h_Node.ln_Name = "UHCI PCI (pciusb.device)";
@@ -556,11 +562,13 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     hc->hc_PCIIntHandler.h_Data = hc;
                     HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
 
+                    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, UHIF_TIMEOUTCRC|UHIF_INTONCOMPLETE|UHIF_SHORTPACKET);
+
                     // clear all port bits (both ports)
                     WRITEIO32_LE(hc->hc_RegBase, UHCI_PORT1STSCTRL, 0);
 
                     // enable PIRQ
-                    KPRINTF(10, ("Enabling PIRQ (old value=%04lx)\n", PCIXReadConfigWord(hc, UHCI_USBLEGSUP)));          
+                    KPRINTF(10, ("Enabling PIRQ (old value=%04lx)\n", PCIXReadConfigWord(hc, UHCI_USBLEGSUP)));
                     PCIXWriteConfigWord(hc, UHCI_USBLEGSUP, 0x2000);
 
                     WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_MAXPACKET64|UHCF_CONFIGURE|UHCF_RUNSTOP);
@@ -719,7 +727,8 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *) &hc->hc_RegBase);
                     hc->hc_RegBase = (APTR) (((IPTR) hc->hc_RegBase) & (~0xf));
                     KPRINTF(10, ("RegBase = 0x%08lx\n", hc->hc_RegBase));
-                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMemNoBusmaster); // no busmaster yet
+                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivateBusmaster); // no busmaster yet
+                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMem); // enable memory
 
                     hubdesca = READREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA);
                     hc->hc_NumPorts = (hubdesca & OHAM_NUMPORTS)>>OHAS_NUMPORTS;
@@ -752,7 +761,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     }
 
                     OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateBusmaster); // enable busmaster
-                    
+
                     CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT, 0);
                     CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_PERIODICSTART, 10800); // 10% of 12000
                     frameival = READREG32_LE(hc->hc_RegBase, OHCI_FRAMEINTERVAL);
@@ -946,7 +955,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     // time to initialize hardware...
                     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *) &pciregbase);
                     pciregbase = (APTR) (((IPTR) pciregbase) & (~0xf));
-                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMem); 
+                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMem); // activate memory
 
                     extcapoffset = (READREG32_LE(pciregbase, EHCI_HCCPARAMS) & EHCM_EXTCAPOFFSET)>>EHCS_EXTCAPOFFSET;
 
@@ -987,7 +996,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                         extcapoffset = (legsup & EHCM_EXTCAPOFFSET)>>EHCS_EXTCAPOFFSET;
                     }
 
-                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMemNoBusmaster); // no busmaster yet
+                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivateBusmaster); // no busmaster yet
 
                     // we use the operational registers as RegBase.
                     hc->hc_RegBase = (APTR) ((ULONG) pciregbase + READREG16_LE(pciregbase, EHCI_CAPLENGTH));
@@ -1052,8 +1061,6 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     WRITEREG32_LE(hc->hc_RegBase, EHCI_ASYNCADDR, AROS_LONG2LE(hc->hc_EhciAsyncQH->eqh_Self));
 
                     CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS, EHSF_ALL_INTS);
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBINTEN, EHSF_ALL_INTS);
-                    hc->hc_PCIIntEnMask = EHSF_ALL_INTS;
 
                     // add interrupt
                     hc->hc_PCIIntHandler.h_Node.ln_Name = "EHCI PCI (pciusb.device)";
@@ -1061,6 +1068,10 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     hc->hc_PCIIntHandler.h_Code = ehciIntCode;
                     hc->hc_PCIIntHandler.h_Data = hc;
                     HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
+
+                    hc->hc_PCIIntEnMask = EHSF_ALL_INTS;
+                    WRITEREG32_LE(hc->hc_RegBase, EHCI_USBINTEN, hc->hc_PCIIntEnMask);
+
 
                     CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_CONFIGFLAG, EHCF_CONFIGURED);
                     hc->hc_EhciUsbCmd |= EHUF_RUNSTOP|EHUF_PERIODICENABLE|EHUF_ASYNCENABLE;
@@ -1296,12 +1307,15 @@ void pciFreeUnit(struct PCIUnit *hu)
 
                 //KPRINTF(20, ("Reset done UHCI %08lx\n", hc));
                 uhwDelayMS(10, hu, hd);
+
                 KPRINTF(20, ("Resetting UHCI %08lx\n", hc));
-                WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET|UHCF_GLOBALRESET);
+                WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET);
                 SYNC;
 
                 uhwDelayMS(50, hu, hd);
-
+                WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
+                SYNC;
+                
                 KPRINTF(20, ("Shutting down UHCI done.\n"));
                 break;
 
@@ -1319,7 +1333,7 @@ void pciFreeUnit(struct PCIUnit *hu)
                 CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, 0);
                 CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, 0);
                 SYNC;
-            
+
                 //KPRINTF(20, ("Reset done UHCI %08lx\n", hc));
                 uhwDelayMS(10, hu, hd);
                 KPRINTF(20, ("Resetting OHCI %08lx\n", hc));
