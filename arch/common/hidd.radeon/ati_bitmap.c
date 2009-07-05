@@ -371,7 +371,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, Clear)
         RADEONWaitForFifo(sd, 2);
 
         OUTREG(RADEON_DST_Y_X,          0);
-        OUTREG(RADEON_DST_WIDTH_HEIGHT, (bm->width << 16) | bm->height);
+        OUTREG(RADEON_DST_WIDTH_HEIGHT, (bm->width << 16) | (UWORD)bm->height);
 
         UNLOCK_HW
     }
@@ -439,8 +439,8 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, FillRect)
 
         RADEONWaitForFifo(sd, 2);
 
-        OUTREG(RADEON_DST_Y_X,          (msg->dr.minY << 16) | msg->dr.minX);
-        OUTREG(RADEON_DST_WIDTH_HEIGHT, ((msg->dr.maxX - msg->dr.minX + 1) << 16) | (msg->dr.maxY - msg->dr.minY + 1));
+        OUTREG(RADEON_DST_Y_X,          (msg->dr.minY << 16) | (UWORD)msg->dr.minX);
+        OUTREG(RADEON_DST_WIDTH_HEIGHT, ((msg->dr.maxX - msg->dr.minX + 1) << 16) | (UWORD)(msg->dr.maxY - msg->dr.minY + 1));
 
         UNLOCK_HW
     }
