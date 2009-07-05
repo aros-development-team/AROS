@@ -1,0 +1,153 @@
+## version $VER: XX.catalog XX.XX ($TODAY)
+## language X
+## codeset 0
+;
+;
+MSG_ERROR_CANT_CREATE_APPLICATION
+Impossible de créer l'objet application.
+; Can't create application object.
+;
+MSG_CANT_CREATE_REQ
+Impossible d'ouvrir le requêteur de création de fichier ! 
+; Can't open create filerequester!
+;
+MSG_CANT_CREATE_CONTEXT
+Impossible de créer le context pour Gadtools !
+; Can't create context for Gadtools!
+;
+MSG_CANT_OPEN_STREAM
+Impossible d'ouvrir le flux IFF !
+; Can't open IFF stream!
+;
+MSG_CANT_WRITE_PREFFILE
+Impossible d'écrire les préférences ! 
+; Can't write preferences!
+;
+MSG_CANT_READ_PREFFILE
+Impossible de lire les préférences !
+; Can't read preferences!
+;
+MSG_CANT_ALLOCATE_IFFPTR
+Impossible d'allouer le descripteur IFF !
+; Can't allocate IFF handle!
+;
+MSG_CANT_ALLOCATE_MEM
+Impossible d'allouer la mémoire pour l'applications (%s) !
+; Can't allocate application memory (%s)!
+;
+MSG_NAME
+Préférences d'entrées clavier & souris
+; Input Preferences
+;
+MSG_MENU_PREFERENCES
+Préférences
+; Preferences
+;
+MSG_MENU_PREFERENCES_IMPORT
+I\0 Import...
+; I\0Import...
+;
+MSG_MENU_PREFERENCES_EXPORT
+E\0 Export...
+; E\0Export...
+;
+MSG_ASL_OPEN_TITLE
+Charger les préférences d'entrées
+; Load Input Preferences
+;
+MSG_ASL_SAVE_TITLE
+Sauver les préférences d'entrées
+; Save Input Preferences
+;
+MSG_OK
+Ok
+; Ok
+;
+MSG_DESCRIPTION
+Préférences d'entrées clavier et souris
+; Input preferences
+;
+MSG_GAD_TAB_MOUSE
+Souris
+; Mouse
+;
+MSG_GAD_TAB_KEYBOARD
+Clavier
+; Keyboard
+;
+MSG_GAD_MOUSE_SPEED
+Vitesse de la souris
+; Mouse Speed
+;
+MSG_GAD_MOUSE_ACCELERATED
+Accélération
+; Accelerated
+;
+MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY
+Délai du double clic
+; Double-Click Delay
+;
+MSG_GAD_KEY_REPEAT_DELAY
+Délai de répétition du clavier
+; Key Repeat Delay
+;
+MSG_GAD_KEY_REPEAT_RATE
+Vitesse de répétition du clavier
+; Key Repeat Rate
+;
+MSG_GAD_KEY_TEST
+Test
+; Test
+;
+MSG_GAD_KEY_TYPE
+Type
+; Type
+;
+MSG_TIME_FORMAT
+%d.%02d s
+; %d.%02d s
+;
+MSG_GAD_MOUSE_BUTTON_MAPPING
+Assignation des boutons
+; Button mapping
+;
+MSG_GAD_MOUSE_MAPPING_SELECT
+Action
+; Select
+;
+MSG_GAD_MOUSE_MAPPING_MENU
+Menu
+; Menu
+;
+MSG_GAD_MOUSE_MAPPING_THIRD
+Troisième
+; Third
+;
+MSG_GAD_MOUSE_DOUBLECLICK_DELAY
+Délai du double clic
+; Double-Click Delay
+;
+MSG_GAD_MOUSE_SPEED_SLOW
+Lent
+; Slow
+;
+MSG_GAD_MOUSE_SPEED_NORMAL
+Normal
+; Normal
+;
+MSG_GAD_MOUSE_SPEED_FAST
+Rapide
+; Fast
+;
+MSG_GAD_MOUSE_LEFT
+Bouton gauche
+; Left Button
+;
+MSG_GAD_MOUSE_MIDDLE
+Bouton milieu
+; Middle Button
+;
+MSG_GAD_MOUSE_RIGHT
+Bouton droit
+; Right Button
+;
