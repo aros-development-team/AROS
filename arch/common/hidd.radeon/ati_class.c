@@ -265,7 +265,7 @@ void METHOD(ATI, Hidd_Gfx, CopyBox)
 
             if (bm_src->pitch_offset == bm_dst->pitch_offset)
             {
-                xdir = xb - xa;
+                xdir = xa - xb;
                 ydir = ya - yb;
 
                 if (xdir < 0) xa += w - 1, xb += w - 1;
@@ -297,9 +297,9 @@ void METHOD(ATI, Hidd_Gfx, CopyBox)
                   ((xdir >= 0 ? RADEON_DST_X_LEFT_TO_RIGHT : 0) |
                    (ydir >= 0 ? RADEON_DST_Y_TOP_TO_BOTTOM : 0)));
 
-            OUTREG(RADEON_SRC_Y_X,          (ya << 16) | xa);
-            OUTREG(RADEON_DST_Y_X,          (yb << 16) | xb);
-            OUTREG(RADEON_DST_HEIGHT_WIDTH, (h  << 16) | w);
+            OUTREG(RADEON_SRC_Y_X,          (ya << 16) | (UWORD)xa);
+            OUTREG(RADEON_DST_Y_X,          (yb << 16) | (UWORD)xb);
+            OUTREG(RADEON_DST_HEIGHT_WIDTH, (h  << 16) | (UWORD)w);
 
             UNLOCK_HW
 
