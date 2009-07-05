@@ -1,329 +1,449 @@
-## version $VER: wanderer.catalog 1.1 (15.06.2009)
-## language français
+## version $VER: XX.catalog XX.XX ($TODAY)
+## language X
 ## codeset 0
+;
 ;
 MSG_TITLE
 Wanderer
+;Wanderer
 ;
 MSG_DESCRIPTION
-Gestionnaire de fichiers
+Gestionnaire de fichier
+; File manager
 ;
 MSG_SCREENTITLE
-Wanderer %s mémoire graphique, %s autre mémoire
+Wanderer %s mémoire graphique %s autre mémoire
+; Wanderer %s graphics mem %s other mem
 ;
 MSG_MEM_B
 o
+; B
 ;
 MSG_MEM_K
 K
+; K
 ;
 MSG_MEM_M
 M
+; M
 ;
 MSG_MEM_G
 G
+; G
 ;
 MSG_MEN_WANDERER
 Wanderer
+; Wanderer
 ;
 MSG_MEN_BACKDROP
 Fond d'écran
+; Backdrop
 ;
 MSG_MEN_SC_BACKDROP
 B
+; B
 ;
 MSG_MEN_EXECUTE
 Exécuter...
+; Execute...
 ;
 MSG_MEN_SC_EXECUTE
 E
+; E
 ;
 MSG_MEN_SHELL
-Ligne de commande...
+Shell
+; Shell
 ;
 MSG_MEN_SC_SHELL
 W
+; W
 ;
 MSG_MEN_GUISET
-Préférences Zune...
+Réglages de l'interface graphique
+; GUI settings...
 ;
 MSG_MEN_ABOUT
-À propos...
+A propos...
+; About...
 ;
 MSG_MEN_QUIT
 Quitter...
+; Quit...
 ;
 MSG_MEN_SC_QUIT
 Q
+; Q
 ;
 MSG_MEN_WINDOW
 Fenêtre
+; Window
 ;
 MSG_MEN_NEWDRAW
 Nouveau dossier...
+; New drawer...
 ;
 MSG_MEN_SC_NEWDRAW
 N
+; N
 ;
 MSG_MEN_OPENPAR
-Ouvrir parent
+Ouvrir dossier parent
+; Open parent
 ;
 MSG_MEN_CLOSE
 Fermer
+; Close
 ;
 MSG_MEN_SC_CLOSE
 K
+; K
 ;
 MSG_MEN_UPDATE
 Rafraîchir
+; Update
 ;
 MSG_MEN_CONTENTS
 Tout sélectionner
+; Select contents
 ;
 MSG_MEN_SC_CONTENTS
 A
+; A
 ;
 MSG_MEN_CLRSEL
-Aucune sélection
+Ne rien sélectionner
+; Clear selection
 ;
 MSG_MEN_SC_CLRSEL
 Z
+; Z
 ;
 MSG_MEN_SNAPSHT
 Figer
+; Snapshot
 ;
 MSG_MEN_ALL
 Tout
+; All
 ;
 MSG_MEN_VIEW
-Vue
+Fenêtre
+; View
 ;
 MSG_MEN_ICVIEW
-Vue par icônes
+Vue des icônes
+; Icon view
 ;
 MSG_MEN_DCVIEW
 Vue détaillée
+; Detail view
 ;
 MSG_MEN_ALLFIL
 Tous les fichiers
+; All files
 ;
 MSG_MEN_SORTIC
 Trier
+; Sort
 ;
 MSG_MEN_CLNUP
 Nettoyer
+; Clean up
 ;
 MSG_MEN_SC_CLNUP
 U
+; U
 ;
 MSG_MEN_BYNAME
 Par nom
+; By name
 ;
 MSG_MEN_BYDATE
 Par date
+; By date
 ;
 MSG_MEN_BYSIZE
 Par taille
+; By size
+;
+MSG_MEN_BYTYPE
+Par type
+; By type
 ;
 MSG_MEN_REVERSE
-Inverser
+Inverse
+; Reverse
 ;
 MSG_MEN_DRWFRST
 Dossiers en premier
+; Drawers first
 ;
 MSG_MEN_ICON
 Icône
+; Icon
 ;
 MSG_MEN_OPEN
 Ouvrir
+; Open
 ;
 MSG_MEN_SC_OPEN
 O
+; O
 ;
 MSG_MEN_RENAME
 Renommer...
+; Rename...
 ;
 MSG_MEN_SC_RENAME
 R
+; R
 ;
 MSG_MEN_INFO
 Information...
+; Information...
 ;
 MSG_MEN_SC_INFO
 I
+; I
 ;
 MSG_MEN_DELETE
 Effacer...
+; Delete...
 ;
 MSG_MEN_TOOLS
 Outils
+; Tools
 ;
 MSG_MEN_ICONSORTING
-Par icônes
+Activer le tri des icônes
+; Enable Icon Sorting
 ;
 MSG_MEN_GROUPICONS
-Par groupes d'icônes
+Groupe d'icônes
+; Group Icons
 ;
 MSG_MEN_ICONSCLOSE
 Fermer
+; Close
 ;
 MSG_REALLYQUIT
-Désirez-vous réellement quitter Wanderer ?
+Voulez vous réellement quitter Wanderer ?
+; Do you really want to quit Wanderer?
 ;
 MSG_YESNO
 *Oui|Non
+; *Yes|No
 ;
 MSG_DUMMY
 DUMMY
 ; DUMMY
 ; DUMMY :)
 MSG_USERSCREENTITLE
-Wanderer %s mémoire graphique, %s autre mémoire
+
+; Wanderer %pc graphics mem %pf other mem
 ;
 MSG_MEN_FORMAT
-Formatter le disque...
+Formater un disque...
+; Format disk...
 ;
 MSG_MEN_SHUTDOWN
 Eteindre...
+; Shut down...
 ;
 MSG_SHUTDOWN_TITLE
-Eteindre le système...
+Arrêt du système
+; System shutdown
 ;
 MSG_SHUTDOWN_BODY
-Que désirez-vous faire ?
+Que voulez vous faire ? 
+; What would you like to do?
 ;
 MSG_SHUTDOWN_BUTTONS
-Eteindre l'ordinateur|Redémarrer l'ordinateur|Redémarrer AROS|*Annuler
+Eteindre|Redémarrer l'ordinateur|Redémarrer AROS|*Annuler
+; Power off|Restart computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED
-L'option sélectionnée n'est pas disponible sur votre système.
+L'action n'est pas supportée par votre système.
+; The selected action is not supported by your system.
 ;
 MSG_OK
-*Valider
+*Ok
+; *OK
 ;
 MSG_EMPTY_TRASH
 Vider la corbeille
+; Empty trash
 ;
 MSG_PUT_AWAY
-Mettre à l'écart
+Ranger
+; Put away
 ;
 MSG_LEAVE_OUT
-Exclure
+Sortir
+; Leave out
 ;
-MSG_UNSNAPSHOT 
+MSG_UNSNAPSHOT
 Défiger
+; Unsnapshot
 ;
 MSG_SNAPSHOT
 Figer
+; Snapshot
 ;
 MSG_REQU_DELETE
-Effacer le fichier...
+Suppression du fichier...
+; Delete file...
 ;
 MSG_REQU_DELETE_YESNO
-_Oui|Oui à _tout|_Non|Non à to_ut
+_Oui|Oui à tou_s|_Non|Non à _tous
+; _Yes|Yes to _all|_No|No _to all
 ;
 MSG_REQU_DELETE_DRAWER_S
-Réellement effacer le répertoire
+Voulez vous réellement supprimer le dossier
+; Really delete drawer
 ;
 MSG_REQU_DELETE_DRAWER_E
 ?
+; ?
 ;
 MSG_REQU_DELETE_FILE_S
-Réellement effacer le fichier
+Voulez vous réellement supprimer le fichier
+; Really delete file
 ;
 MSG_REQU_DELETE_FILE_M
-situé dans
+situé
+; located in
 ;
 MSG_REQU_DELETE_FILE_E
 ?
+; ?
 ;
 MSG_REQU_OVERWRITE
-Ecraser le fichier...
+Remplacer le fichier...
+; Overwrite file...
+;
+MSG_REQU_OVERWRITE_S
+Voulez vous réellement remplacer le fichier
+; Really overwrite file
+;
+MSG_REQU_OVERWRITE_M
+situé
+; located in
 ;
 MSG_REQU_OVERWRITE_E
 ?
+; ?
 ;
 MSG_REQU_OVERWRITE_YESNO
-_Ecraser|_Tout écraser|_Non|Non à to_ut
+_Remplacer|Remplacer _tout|_Non|Non à tou_s
+; _Overwrite|Overwrite _all|_No|No _to all
 ;
 MSG_REQU_OVERWRITE_SKIPABORT
-_Passer|_Annuler
+_Passer|_Arrêter
+; _Skip|_Abort
 ;
 MSG_REQU_PROTECTION
 Protection du fichier
+; File Protection
 ;
 MSG_REQU_PROTECTION_UNPROTECT
-_Déprotéger|_Tout déprotéger|_Non|Non à to_ut
+_Déprotéger|Déprotéger _tous|_Non|_Non à tou_s
+; _Unprotect|Unprotect _All|_No|No _to ALL
 ;
 MSG_REQU_PROTECTION_UNPROTECTDRAWER_S
-Souhaitez-vous déprotéger ce répertoire
+Voulez vous déprotéger le dossier
+; Do you wish to unprotect drawer
 ;
 MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
 ?
+; ?
 ;
 MSG_NOFILEACCESS_S
-Fichier inaccessible
+Impossible d'accèder au fichier
+; Can't access file
 ;
 MSG_NOFILEACCESS_M
-situé dans
+situé
+; located in
 ;
 MSG_NOFILEACCESS_E
- 
+
+;  
 ;
 MSG_NODRAWERACCESS_S
-Répertoire non disponible
+Impossible d'accéder au dossier
+; Can't access drawer
 ;
 MSG_NODRAWERACCESS_E
- 
+
+;  
 ;
 MSG_REQU_FILEUNPROTECT_S
-Souhaitez-vous déprotéger ce fichier
+Voulez vous déprotéger le fichier
+; Do you wish to unprotect file
 ;
 MSG_REQU_FILEUNPROTECT_M
-situé dans
+situé
+; located in
 ;
 MSG_REQU_FILEUNPROTECT_E
 ?
+; ?
 ;
 MSG_WANDERER_FILEACCESS
-Accès fichier Wanderer
+Accès au fichier Wanderer
+; Wanderer file access
 ;
 MSG_WANDERER_FILEACCESS_PROCESSING
-En cours...
+En activité fichier...
+; Processing...
 ;
 MSG_WANDERER_FILEACCESS_STOP
-Stopper
+Arrêt
+; Stop
 ;
 MSG_WANDERER_FILEACCESS_MOVEFROM
 Déplacer de
+; Move from
 ;
 MSG_WANDERER_FILEACCESS_MOVETO
 Déplacer vers
+; Move to
 ;
 MSG_WANDERER_FILEACCESS_COPYFROM
 Copier de
+; Copy from
 ;
 MSG_WANDERER_FILEACCESS_COPYTO
 Copier vers
+; Copy to
 ;
-MSG_WANDERER_FILEACCESS_FILE 
+MSG_WANDERER_FILEACCESS_FILE
 Fichier
+; File
 ;
 MSG_WANDERER_FILEACCESS_TRAFFIC
-Taux de transfert
+Vitesse de transfert
+; Data transfer rate
 ;
 MSG_WANDERER_FILEACCESS_DELETEFROM
-Effacer d'un répertoire
+Supprimer du dossier
+; Delete from drawer
 ;
 MSG_WANDERER_FILEACCESS_FILETODELETE
-Fichier à effacer
+Fichier à supprimer
+; File to delete
 ;
 MSG_WANDERER_FILEACCESS_NOOFFILES
-Fichiers traités:
+Fichiers traités :
+; Processed files:
 ;
 MSG_WANDERER_FILEACCESS_ACTUAL
-Taille de ce fichier:
+Taille du fichier courant :
+; Size of current file:
 ;
 MSG_WANDERER_FILEACCESS_TOTAL
-Taille globale:
+Taille totale :
+; Overall size:
 ;
