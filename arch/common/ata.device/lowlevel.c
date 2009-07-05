@@ -1120,12 +1120,9 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
          */
         case DEV_SATAPI:
         case DEV_ATAPI:
-            unit->au_Identify       = atapi_Identify;
-            break;
-
         case DEV_SATA:
         case DEV_ATA:
-            unit->au_Identify       = ata_Identify;
+            unit->au_Identify = ata_Identify;
             break;
 
         default:
@@ -1447,164 +1444,12 @@ void common_DetectXferModes(struct ata_Unit* unit)
 #define SWAP_LE_LONG(x) (x) = AROS_LE2LONG((x))
 #define SWAP_LE_QUAD(x) (x) = AROS_LE2LONG((x)>>32) | AROS_LE2LONG((x) & 0xffffffff) << 32
 
-BYTE atapi_Identify(struct ata_Unit* unit)
-{
-    ata_CommandBlock acb =
-    {
-        ATA_IDENTIFY_ATAPI,
-        0,
-        1,
-        0,
-        0,
-        0,
-        unit->au_Drive,
-        sizeof(struct DriveIdent),
-        0,
-        CM_PIORead,
-        CT_NoBlock
-    };
-
-    ata_SelectUnit(unit);
-
-    if (ata_exec_cmd(unit, &acb))
-    {
-        return IOERR_OPENFAIL;
-    }
-
-#if (AROS_BIG_ENDIAN != 0)
-    SWAP_LE_WORD(unit->au_Drive->id_General);
-    SWAP_LE_WORD(unit->au_Drive->id_OldCylinders);
-    SWAP_LE_WORD(unit->au_Drive->id_SpecificConfig);
-    SWAP_LE_WORD(unit->au_Drive->id_OldHeads);
-    SWAP_LE_WORD(unit->au_Drive->id_OldSectors);
-    SWAP_LE_WORD(unit->au_Drive->id_RWMultipleSize);
-    SWAP_LE_WORD(unit->au_Drive->id_Capabilities);
-    SWAP_LE_WORD(unit->au_Drive->id_OldCaps);
-    SWAP_LE_WORD(unit->au_Drive->id_OldPIO);
-    SWAP_LE_WORD(unit->au_Drive->id_ConfigAvailable);
-    SWAP_LE_WORD(unit->au_Drive->id_OldLCylinders);
-    SWAP_LE_WORD(unit->au_Drive->id_OldLHeads);
-    SWAP_LE_WORD(unit->au_Drive->id_OldLSectors);
-    SWAP_LE_WORD(unit->au_Drive->id_RWMultipleTrans);
-    SWAP_LE_WORD(unit->au_Drive->id_MWDMASupport);
-    SWAP_LE_WORD(unit->au_Drive->id_PIOSupport);
-    SWAP_LE_WORD(unit->au_Drive->id_MWDMA_MinCycleTime);
-    SWAP_LE_WORD(unit->au_Drive->id_MWDMA_DefCycleTime);
-    SWAP_LE_WORD(unit->au_Drive->id_PIO_MinCycleTime);
-    SWAP_LE_WORD(unit->au_Drive->id_PIO_MinCycleTImeIORDY);
-    SWAP_LE_WORD(unit->au_Drive->id_QueueDepth);
-    SWAP_LE_WORD(unit->au_Drive->id_ATAVersion);
-    SWAP_LE_WORD(unit->au_Drive->id_ATARevision);
-    SWAP_LE_WORD(unit->au_Drive->id_Commands1);
-    SWAP_LE_WORD(unit->au_Drive->id_Commands2);
-    SWAP_LE_WORD(unit->au_Drive->id_Commands3);
-    SWAP_LE_WORD(unit->au_Drive->id_Commands4);
-    SWAP_LE_WORD(unit->au_Drive->id_Commands5);
-    SWAP_LE_WORD(unit->au_Drive->id_Commands6);
-    SWAP_LE_WORD(unit->au_Drive->id_UDMASupport);
-    SWAP_LE_WORD(unit->au_Drive->id_SecurityEraseTime);
-    SWAP_LE_WORD(unit->au_Drive->id_ESecurityEraseTime);
-    SWAP_LE_WORD(unit->au_Drive->id_CurrentAdvPowerMode);
-    SWAP_LE_WORD(unit->au_Drive->id_MasterPwdRevision);
-    SWAP_LE_WORD(unit->au_Drive->id_HWResetResult);
-    SWAP_LE_WORD(unit->au_Drive->id_AcousticManagement);
-    SWAP_LE_WORD(unit->au_Drive->id_StreamMinimunReqSize);
-    SWAP_LE_WORD(unit->au_Drive->id_StreamingTimeDMA);
-    SWAP_LE_WORD(unit->au_Drive->id_StreamingLatency);
-    SWAP_LE_WORD(unit->au_Drive->id_StreamingTimePIO);
-    SWAP_LE_WORD(unit->au_Drive->id_PhysSectorSize);
-    SWAP_LE_WORD(unit->au_Drive->id_RemMediaStatusNotificationFeatures);
-    SWAP_LE_WORD(unit->au_Drive->id_SecurityStatus);
-
-    SWAP_LE_LONG(unit->au_Drive->id_WordsPerLogicalSector);
-    SWAP_LE_LONG(unit->au_Drive->id_LBASectors);
-    SWAP_LE_LONG(unit->au_Drive->id_StreamingGranularity);
-
-    SWAP_LE_QUAD(unit->au_Drive->id_LBA48Sectors);
-#endif
-
-    /*
-     * Some SATA controllers in legacy mode emulate a non-existent ATAPI
-     * device so well that we have to wait until we get an empty identify
-     * structure to find out that the drive isn't real
-     */
-    if ((unit->au_Drive->id_General & 0x8000) == 0)
-    {
-        bug("[ATA%02ld] atapi_Identify: Identify data is invalid."
-            " Disabling drive.\n", unit->au_UnitNum);
-        return IOERR_OPENFAIL;
-    }
-
-    DUMP(dump(unit->au_Drive, sizeof(struct DriveIdent)));
-
-    unit->au_SectorShift    = 11;
-    unit->au_Read32         = atapi_Read;
-    unit->au_Write32        = atapi_Write;
-    unit->au_DirectSCSI     = atapi_DirectSCSI;
-    unit->au_Eject          = atapi_Eject;
-    unit->au_Flags          |= AF_DiscChanged;
-    unit->au_DevType        = (unit->au_Drive->id_General >>8) & 0x1f;
-    unit->au_XferModes      = AF_XFER_PACKET;
-
-    ata_strcpy(unit->au_Drive->id_Model, unit->au_Model, 40);
-    ata_strcpy(unit->au_Drive->id_SerialNumber, unit->au_SerialNumber, 20);
-    ata_strcpy(unit->au_Drive->id_FirmwareRev, unit->au_FirmwareRev, 8);
-
-    bug("[ATA%02ld] atapi_Identify: Unit info: %s / %s / %s\n", unit->au_UnitNum, unit->au_Model, unit->au_SerialNumber, unit->au_FirmwareRev);
-    common_DetectXferModes(unit);
-    common_SetBestXferMode(unit);
-
-    if (unit->au_Drive->id_General & 0x80)
-    {
-        DINIT(bug("[ATA%02ld] Device is removable.\n", unit->au_UnitNum));
-        unit->au_Flags |= AF_Removable;
-    }
-
-    unit->au_Capacity   = unit->au_Drive->id_LBASectors;
-    unit->au_Capacity48 = unit->au_Drive->id_LBA48Sectors;
-    bug("[ATA%02ld] atapi_Identify: Unit info: %07lx 28bit / %04lx:%08lx 48bit addressable blocks\n", unit->au_UnitNum, unit->au_Capacity, (ULONG)(unit->au_Capacity48 >> 32), (ULONG)(unit->au_Capacity48 & 0xfffffffful));
-
-    /*
-     * ok, this is not very original, but quite compatible :P
-     */
-    switch (unit->au_DevType)
-    {
-        case DG_CDROM:
-        case DG_WORM:
-        case DG_OPTICAL_DISK:
-            unit->au_SectorShift    = 11;
-            unit->au_Heads          = 1;
-            unit->au_Sectors        = 75;
-            unit->au_Cylinders      = 4440;
-            break;
-
-        case DG_DIRECT_ACCESS:
-            unit->au_SectorShift = 9;
-            if (!strcmp("LS-120", &unit->au_Model[0]))
-            {
-                unit->au_Heads      = 2;
-                unit->au_Sectors    = 18;
-                unit->au_Cylinders  = 6848;
-            }
-            else if (!strcmp("ZIP 100 ", &unit->au_Model[8]))
-            {
-                unit->au_Heads      = 1;
-                unit->au_Sectors    = 64;
-                unit->au_Cylinders  = 3072;
-            }
-            break;
-    }
-
-    atapi_TestUnitOK(unit);
-
-    return 0;
-}
-
 BYTE ata_Identify(struct ata_Unit* unit)
 {
+    BOOL atapi = unit->au_Bus->ab_Dev[unit->au_UnitNum & 1] & 0x80;
     ata_CommandBlock acb =
     {
-        ATA_IDENTIFY_DEVICE,
+        atapi ? ATA_IDENTIFY_ATAPI : ATA_IDENTIFY_DEVICE,
         0,
         1,
         0,
@@ -1618,8 +1463,28 @@ BYTE ata_Identify(struct ata_Unit* unit)
     };
 
     if (ata_exec_cmd(unit, &acb))
-    {
         return IOERR_OPENFAIL;
+
+    /*
+     * If every second word is zero with 32-bit reads, switch to 16-bit
+     * accesses for this drive and try again
+     */
+    if (unit->au_Bus->ab_Base->ata_32bit)
+    {
+        UWORD n = 0, *p, *limit;
+
+        for (p = unit->au_Drive, limit = p + 256; p < limit; p++)
+            n |= *++p;
+
+        if (n == 0)
+        {
+            DINIT(bug("[ATA%02ld] Identify data was invalid with 32-bit reads."
+                " Switching to 16-bit mode.\n", unit->au_UnitNum));
+            unit->au_ins = ata_insw;
+            unit->au_outs = ata_outsw;
+            if (ata_exec_cmd(unit, &acb))
+                return IOERR_OPENFAIL;
+        }
     }
 
 #if (AROS_BIG_ENDIAN != 0)
@@ -1676,13 +1541,27 @@ BYTE ata_Identify(struct ata_Unit* unit)
 
     DUMP(dump(unit->au_Drive, sizeof(struct DriveIdent)));
 
-    unit->au_SectorShift    = 9;
-    unit->au_DevType        = DG_DIRECT_ACCESS;
-    unit->au_Read32         = ata_ReadSector32;
-    unit->au_Write32        = ata_WriteSector32;
-    unit->au_Eject          = ata_Eject;
-    unit->au_XferModes      = 0;
-    unit->au_Flags         |= AF_DiscPresent | AF_DiscChanged;
+    if (atapi)
+    {
+        unit->au_SectorShift    = 11;
+        unit->au_Read32         = atapi_Read;
+        unit->au_Write32        = atapi_Write;
+        unit->au_DirectSCSI     = atapi_DirectSCSI;
+        unit->au_Eject          = atapi_Eject;
+        unit->au_Flags          |= AF_DiscChanged;
+        unit->au_DevType        = (unit->au_Drive->id_General >>8) & 0x1f;
+        unit->au_XferModes      = AF_XFER_PACKET;
+    }
+    else
+    {
+        unit->au_SectorShift    = 9;
+        unit->au_DevType        = DG_DIRECT_ACCESS;
+        unit->au_Read32         = ata_ReadSector32;
+        unit->au_Write32        = ata_WriteSector32;
+        unit->au_Eject          = ata_Eject;
+        unit->au_XferModes      = 0;
+        unit->au_Flags         |= AF_DiscPresent | AF_DiscChanged;
+    }
 
     ata_strcpy(unit->au_Drive->id_Model, unit->au_Model, 40);
     ata_strcpy(unit->au_Drive->id_SerialNumber, unit->au_SerialNumber, 20);
@@ -1702,61 +1581,101 @@ BYTE ata_Identify(struct ata_Unit* unit)
     unit->au_Capacity48 = unit->au_Drive->id_LBA48Sectors;
     bug("[ATA%02ld] ata_Identify: Unit info: %07lx 28bit / %04lx:%08lx 48bit addressable blocks\n", unit->au_UnitNum, unit->au_Capacity, (ULONG)(unit->au_Capacity48 >> 32), (ULONG)(unit->au_Capacity48 & 0xfffffffful));
 
-    /*
-       For drive capacities > 8.3GB assume maximal possible layout.
-       It really doesn't matter here, as BIOS will not handle them in
-       CHS way anyway :)
-       i guess this just solves that weirdo div-by-zero crash, if nothing else...
-       */
-    if ((unit->au_Drive->id_LBA48Sectors > (63 * 255 * 1024)) ||
-        (unit->au_Drive->id_LBASectors > (63 * 255 * 1024)))
+    if (atapi)
     {
-        ULONG div = 1;
         /*
-         * TODO: this shouldn't be casted down here.
+         * ok, this is not very original, but quite compatible :P
          */
-        ULONG sec = unit->au_Capacity48;
-
-        if (sec < unit->au_Capacity48)
-            sec = ~0ul;
-
-        if (sec < unit->au_Capacity)
-            sec = unit->au_Capacity;
-
-        unit->au_Sectors    = 63;
-        sec /= 63;
-        /*
-         * keep dividing by 2
-         */
-        do
+        switch (unit->au_DevType)
         {
-            if (((sec >> 1) << 1) != sec)
+            case DG_CDROM:
+            case DG_WORM:
+            case DG_OPTICAL_DISK:
+                unit->au_SectorShift    = 11;
+                unit->au_Heads          = 1;
+                unit->au_Sectors        = 75;
+                unit->au_Cylinders      = 4440;
                 break;
-            if ((div << 1) > 255)
-                break;
-            div <<= 1;
-            sec >>= 1;
-        } while (1);
 
-        do
-        {
-            if (((sec / 3) * 3) != sec)
+            case DG_DIRECT_ACCESS:
+                unit->au_SectorShift = 9;
+                if (!strcmp("LS-120", &unit->au_Model[0]))
+                {
+                    unit->au_Heads      = 2;
+                    unit->au_Sectors    = 18;
+                    unit->au_Cylinders  = 6848;
+                }
+                else if (!strcmp("ZIP 100 ", &unit->au_Model[8]))
+                {
+                    unit->au_Heads      = 1;
+                    unit->au_Sectors    = 64;
+                    unit->au_Cylinders  = 3072;
+                }
                 break;
-            if ((div * 3) > 255)
-                break;
-            div *= 3;
-            sec /= 3;
-        } while (1);
+        }
 
-        unit->au_Cylinders  = sec;
-        unit->au_Heads      = div;
+        atapi_TestUnitOK(unit);
     }
     else
     {
-        unit->au_Cylinders  = unit->au_Drive->id_OldLCylinders;
-        unit->au_Heads      = unit->au_Drive->id_OldLHeads;
-        unit->au_Sectors    = unit->au_Drive->id_OldLSectors;
+        /*
+           For drive capacities > 8.3GB assume maximal possible layout.
+           It really doesn't matter here, as BIOS will not handle them in
+           CHS way anyway :)
+           i guess this just solves that weirdo div-by-zero crash, if nothing
+           else...
+           */
+        if ((unit->au_Drive->id_LBA48Sectors > (63 * 255 * 1024)) ||
+            (unit->au_Drive->id_LBASectors > (63 * 255 * 1024)))
+        {
+            ULONG div = 1;
+            /*
+             * TODO: this shouldn't be casted down here.
+             */
+            ULONG sec = unit->au_Capacity48;
+
+            if (sec < unit->au_Capacity48)
+                sec = ~0ul;
+
+            if (sec < unit->au_Capacity)
+                sec = unit->au_Capacity;
+
+            unit->au_Sectors = 63;
+            sec /= 63;
+            /*
+             * keep dividing by 2
+             */
+            do
+            {
+                if (((sec >> 1) << 1) != sec)
+                    break;
+                if ((div << 1) > 255)
+                    break;
+                div <<= 1;
+                sec >>= 1;
+            } while (1);
+
+            do
+            {
+                if (((sec / 3) * 3) != sec)
+                    break;
+                if ((div * 3) > 255)
+                    break;
+                div *= 3;
+                sec /= 3;
+            } while (1);
+
+            unit->au_Cylinders  = sec;
+            unit->au_Heads      = div;
+        }
+        else
+        {
+            unit->au_Cylinders  = unit->au_Drive->id_OldLCylinders;
+            unit->au_Heads      = unit->au_Drive->id_OldLHeads;
+            unit->au_Sectors    = unit->au_Drive->id_OldLSectors;
+        }
     }
+
     return 0;
 }
 
@@ -2460,6 +2379,7 @@ void ata_InitBus(struct ata_Bus *bus)
 {
     ULONG port = bus->ab_Port;
     UBYTE tmp1, tmp2;
+    UWORD i;
 
     /*
      * initialize timer for the sake of scanning
@@ -2471,45 +2391,29 @@ void ata_InitBus(struct ata_Bus *bus)
     bus->ab_Dev[0] = DEV_NONE;
     bus->ab_Dev[1] = DEV_NONE;
 
-    /* Select device 0 and disable IRQs */
-    ata_out(0xa0, ata_DevHead, port);
-    ata_WaitTO(bus->ab_Timer, 0, 100, 0);
-    ata_out(0x2, ata_AltControl, bus->ab_Alt);
+    for (i = 0; i < MAX_BUSUNITS; i++)
+    {
+        /* Select device and disable IRQs */
+        ata_out(0xa0 | (i << 4), ata_DevHead, port);
+        ata_WaitTO(bus->ab_Timer, 0, 100, 0);
+        ata_out(0x2, ata_AltControl, bus->ab_Alt);
 
-    /* Write some pattern to registers */
-    ata_out(0x55, ata_Count, port);
-    ata_out(0xaa, ata_LBALow, port);
-    ata_out(0xaa, ata_Count, port);
-    ata_out(0x55, ata_LBALow, port);
-    ata_out(0x55, ata_Count, port);
-    ata_out(0xaa, ata_LBALow, port);
+        /* Write some pattern to registers */
+        ata_out(0x55, ata_LBAMid, port);
+        ata_out(0xaa, ata_LBAHigh, port);
+        ata_out(0xaa, ata_LBAMid, port);
+        ata_out(0x55, ata_LBAHigh, port);
+        ata_out(0x55, ata_LBAMid, port);
+        ata_out(0xaa, ata_LBAHigh, port);
 
-    tmp1 = ata_in(ata_Count, port);
-    tmp2 = ata_in(ata_LBALow, port);
+        tmp1 = ata_in(ata_LBAMid, port);
+        tmp2 = ata_in(ata_LBAHigh, port);
 
-    if ((tmp1 == 0x55) && (tmp2 == 0xaa))
-        bus->ab_Dev[0] = DEV_UNKNOWN;
-    D(bug("[ATA%02ld] ata_InitBus: Device type = %x\n", (bus->ab_BusNum << 1 ) + 0, bus->ab_Dev[0]));
-
-    /* Select device 1 and disable IRQs */
-    ata_out(0xb0, ata_DevHead, port);
-    ata_WaitTO(bus->ab_Timer, 0, 100, 0);
-    ata_out(0x2, ata_AltControl, bus->ab_Alt);
-
-    /* Write some pattern to registers */
-    ata_out(0x55, ata_Count, port);
-    ata_out(0xaa, ata_LBALow, port);
-    ata_out(0xaa, ata_Count, port);
-    ata_out(0x55, ata_LBALow, port);
-    ata_out(0x55, ata_Count, port);
-    ata_out(0xaa, ata_LBALow, port);
-
-    tmp1 = ata_in(ata_Count, port);
-    tmp2 = ata_in(ata_LBALow, port);
-
-    if ((tmp1 == 0x55) && (tmp2 == 0xaa))
-        bus->ab_Dev[1] = DEV_UNKNOWN;
-    D(bug("[ATA%02ld] ata_InitBus: Device type = %x\n", (bus->ab_BusNum << 1 ) + 1, bus->ab_Dev[1]));
+        if ((tmp1 == 0x55) && (tmp2 == 0xaa))
+            bus->ab_Dev[i] = DEV_UNKNOWN;
+        D(bug("[ATA%02ld] ata_InitBus: Device type = %x\n",
+            (bus->ab_BusNum << 1 ) + i, bus->ab_Dev[i]));
+    }
 
     ata_ResetBus(bus);
     ata_CloseTimer(bus->ab_Timer);
