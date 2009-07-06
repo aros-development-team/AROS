@@ -18,8 +18,8 @@
  
     NAME
  
-        RequesString [STRING] [TEXT] [TITLE] [NOGADS] [WIDTH] [SAFE] [PERSIST]
-                     [ENCRYPT] [COMPARE] [PUBSCREEN]
+        RequestString [STRING] [TEXT] [TITLE] [NOGADS] [WIDTH] [SAFE] [PERSIST]
+                      [ENCRYPT] [COMPARE] [PUBSCREEN]
  
     SYNOPSIS
  
@@ -105,20 +105,10 @@ AROS_UFP3(ULONG, HookFunc,
 
 #define  MINWIDTH    8     /* Minimum width of gadget in characters */
 
-const char version[] = "\0$VER: RequestString 39.5 (16.06.2009)";
+const char version[] = "\0$VER: RequestString 39.5 (06.07.2009)";
 
-AROS_UFH3(__startup static int, RequestString,
-	  AROS_UFHA(char *, argstr, A0),
-	  AROS_UFHA(ULONG, argsize, D0),
-	  AROS_UFHA(struct ExecBase *, sBase, A6))
+int main(void)
 {
-    AROS_USERFUNC_INIT
-
-    struct DosLibrary       *DOSBase = NULL;
-    struct Library          *GadToolsBase = NULL;
-    struct IntuitionBase    *IntuitionBase = NULL;
-    struct GfxBase          *GfxBase = NULL;
-
     IPTR                    ArgList[NArgs];
     ULONG                   MsgClass = 0;
     APTR                    VisInfo = NULL;
@@ -133,8 +123,10 @@ AROS_UFH3(__startup static int, RequestString,
     char                    *ReturnText = NULL;
 
     int                     WWidth = 0, WHeight = 0;
-    int                     GWidth = 32, GHeight = 1;
+    int                     GWidth = 32, GHeight = 0;
     long                    TXPos = 0, TYPos = 0;
+    int                     TLength = 0;
+    int                     TWidth = 0, THeight = 0;
 
     LONG                    Ret = 20;
 
@@ -157,227 +149,231 @@ AROS_UFH3(__startup static int, RequestString,
 
     struct NewGadget StringGad = {10, 5, 80, 15, NULL, NULL, 0, 0, NULL, NULL};
 
-    if ((DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 39)) != NULL)
+    memset(ArgList, 0, sizeof(ArgList)); /* Clear the ArgList array */
+
+    if ((Args = ReadArgs(TEMPLATE, ArgList, NULL)) != NULL)
     {
-        if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 39)) != NULL)
+        if ((Scr = LockPubScreen((UBYTE *)ArgList[PUBSCREEN])) != NULL)
         {
-            if ((IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 39)) != NULL)
+            if ((VisInfo = GetVisualInfo(Scr, NULL)) != NULL)
             {
-                if ((GadToolsBase = OpenLibrary("gadtools.library", 39)) != NULL)
+                if ((Gad = CreateContext(&GList)) != NULL)
                 {
-                    memset(ArgList, 0, sizeof(ArgList)); /* Clear the ArgList array */
+                    if (ArgList[WIDTH] != 0)
+                        GWidth = *((LONG *)ArgList[WIDTH]);
+                    if (GWidth < MINWIDTH)
+                        GWidth = MINWIDTH;
 
-                    Args = ReadArgs(TEMPLATE, ArgList, NULL);  /* How do we check for failure? */
-                    if ((Scr = LockPubScreen((UBYTE *)ArgList[PUBSCREEN])) != NULL)
+                    GHeight = Scr->RastPort.TxHeight + 6;
+                    WHeight = GHeight + Scr->WBorTop + Scr->WBorBottom + 8;
+
+                    GWidth = GWidth * Scr->RastPort.TxWidth;
+
+                    /* Forbid()/Permit() around this following poking in GfxBase? */
+                    FontExtent(GfxBase->DefaultFont, &TExtent);
+
+                    if (ArgList[TEXT] != 0)
                     {
-                        if ((VisInfo=GetVisualInfo(Scr, NULL)) != NULL)
+                        TLength = strlen((char *)ArgList[TEXT]);
+                        TWidth = TExtent.te_Width * TLength;
+                        THeight = TExtent.te_Height;
+                        WHeight += THeight;
+                    }
+
+                    if (GWidth > TWidth)
+                    {
+                        WWidth = GWidth + Scr->WBorLeft + Scr->WBorRight + 6;
+                    }
+                    else
+                    {
+                        WWidth = TWidth + Scr->WBorLeft + Scr->WBorRight + 6;
+                    }
+
+                    if (WWidth > Scr->Width)
+                    {
+                        WWidth = Scr->Width;
+                        if (GWidth + Scr->WBorLeft + Scr->WBorRight > WWidth)
                         {
-                            if ((Gad = CreateContext(&GList)) != NULL)
-                            {
-                                if (ArgList[WIDTH] != 0)
-                                    GWidth = *((LONG *)ArgList[WIDTH]);
-                                if (GWidth < 8)
-                                    GWidth = 8;
-
-                                GHeight = GHeight * Scr->RastPort.TxHeight + 6;
-                                WHeight = GHeight + 8;
-
-                                do 
-                                {
-                                    GWidth = GWidth * Scr->RastPort.TxWidth + 4;
-                                    WWidth = GWidth + 20;
-                                    if (WWidth > Scr->Width)
-                                        GWidth = (Scr->Width - 20) / (Scr->RastPort.TxWidth) - 1;
-                                }
-                                 while (WWidth > Scr->Width);
-
-                                /* Forbid()/Permit() around this following poking in GfxBase? */
-
-                                FontExtent(GfxBase->DefaultFont, &TExtent);
-
-                                if (ArgList[TEXT] != 0)
-                                {
-                                    WHeight += (TExtent.te_Height);
-                                    if ((TExtent.te_Width * strlen((char *)ArgList[TEXT]) + 20) > WWidth)
-                                        WWidth = (TExtent.te_Width * strlen((char *)ArgList[TEXT]) + 20);
-                                }
-
-                                /* If the window has a title, it will also have a dragbar, closegadget
-                                 * and a depthgadget.
-                                 */
-                                if (ArgList[TITLE] != 0)
-                                {
-                                    WindowTags[6].ti_Data = TRUE;
-                                    if (ArgList[NOGADS] == 0)
-                                    {
-                                        WindowTags[7].ti_Data = TRUE;
-                                        WindowTags[8].ti_Data = TRUE;
-                                    }
-                                    WindowTags[9].ti_Data = ArgList[TITLE];
-                                    WHeight += Scr->RastPort.TxHeight; /* Should be Win->BorderTop, see also note below. */
-                                }
-
-                                StringGad.ng_VisualInfo = VisInfo;
-                                StringGad.ng_Width = GWidth;
-                                StringGad.ng_Height = GHeight;
-                                StringGad.ng_TopEdge = WHeight - (GHeight + 4); /* The '4' should be replaces by Win->BorderTop but how? The window is not yet opened. */
-                                StringGad.ng_LeftEdge = (WWidth - GWidth) >> 1;
-
-                                /* Initialize the Hook if we are using a safe stringgadget.
-                                 * SGHook.d_Data points to storage space for the string which
-                                 * will be returned. Memory should be cleared.
-                                 */
-
-                                if (ArgList[SAFE] != 0)
-                                {
-                                    SGHook.h_Entry = (HOOKFUNC)HookFunc;
-                                    /* SGHook.h_SubEntry=NULL; */
-                                    SGHook.h_Data = AllocVec(98, MEMF_ANY | MEMF_CLEAR); /* Should be made dynamic if possible */
-                                    if (ArgList[STRING] != 0)
-                                    {
-                                        int i = -1;
-                                        strcpy((char *)SGHook.h_Data, (char *)ArgList[STRING]);
-                                        while (((char *)ArgList[STRING])[++i] != 0)
-                                            ((char *)ArgList[STRING])[i] = '*';
-                                    }
-                                }
-
-                                if
-                                (
-                                    (
-                                        Gad = CreateGadget
-                                        (
-                                            STRING_KIND,
-                                            Gad, &StringGad,
-                                            GTST_EditHook, (ArgList[SAFE] == 0) ? NULL : &SGHook, GTST_String, ArgList[STRING],
-                                            TAG_END
-                                        )
-                                    ) != NULL
-                                )
-                                {
-                                    /* Screen Gadget */
-                                    WindowTags[0].ti_Data = (IPTR)Scr;
-                                    WindowTags[1].ti_Data = (IPTR)GList;
-                                    /* Width & Height */
-                                    WindowTags[4].ti_Data = WWidth;
-                                    WindowTags[5].ti_Data = WHeight;
-                                    /* X & Y Pos */
-                                    WindowTags[2].ti_Data = (Scr->Width-WWidth) >> 1;
-                                    WindowTags[3].ti_Data = (Scr->Height-WHeight) >> 1;
-
-                                    if ((Win = OpenWindowTagList(NULL, WindowTags)) != NULL)
-                                    {
-                                        /* Is there some (un)informative text in the window? */
-
-                                        if (ArgList[TEXT] != 0)
-                                        {
-                                            /* Colour should rather be selected with thougt to the background of the window, fix this. */
-                                            SetAPen(Win->RPort, 1);
-                                            TXPos = (WWidth - TextLength(Win->RPort, (char *)ArgList[TEXT], strlen((char *)ArgList[TEXT]))) >> 1;
-                                            TYPos = GfxBase->DefaultFont->tf_Baseline + Win->BorderTop + 1;
-                                            Move(Win->RPort, TXPos, TYPos);
-                                            Text(Win->RPort, (char *)ArgList[TEXT], strlen((char *)ArgList[TEXT]));
-                                        }
-
-                                        do
-                                        {
-                                            WaitPort(Win->UserPort);
-                                            EIMess = (struct ExtIntuiMessage *)GT_GetIMsg(Win->UserPort);
-                                            MsgClass=EIMess->eim_IntuiMessage.Class;
-                                            GT_ReplyIMsg((struct IntuiMessage *)EIMess);
-
-                                            switch(MsgClass)
-                                            {
-                                                case  IDCMP_ACTIVEWINDOW   :
-                                                    ActivateGadget(Gad, Win, NULL);
-                                                    break;
-
-                                                case  IDCMP_INACTIVEWINDOW :
-                                                    if (ArgList[PERSIST])
-                                                    {
-                                                        ScreenToFront(Win->WScreen);
-                                                        WindowToFront(Win);
-                                                        ActivateWindow(Win);
-                                                    }
-                                                    break;
-
-                                                case  IDCMP_REFRESHWINDOW  :
-                                                    GT_BeginRefresh(Win);
-                                                    if (ArgList[TEXT] != 0)
-                                                    {
-                                                        Move(Win->RPort, TXPos, TYPos);
-                                                        Text(Win->RPort, (char *)ArgList[TEXT], strlen((char *)ArgList[TEXT]));
-                                                    }
-                                                    GT_EndRefresh(Win,TRUE);
-                                                    break;
-
-                                            }
-                                        }
-                                        while ((MsgClass != IDCMP_GADGETUP) && (MsgClass != IDCMP_CLOSEWINDOW));
-
-                                        GT_GetGadgetAttrs(Gad, Win, NULL, GTST_String, &ReturnText, TAG_END);
-
-                                        if (ArgList[SAFE] != 0)
-                                            ReturnText = (char *)SGHook.h_Data;
-
-                                        /* Try to find out who the user is if we are to encrypt the output.   */
-                                        /* I really don't know how to acquire the username, but this might    */
-                                        /* be a good guess of how to do it.                                   */
-
-                                        if (ArgList[ENCRYPT] != 0)
-                                        {
-                                            if (GetVar("USER", UName, 47, 0) == -1)
-                                                if (GetVar("USERNAME", UName, 47, 0) == -1)
-                                                    if (GetVar("LOGIN", UName, 47, 0) == -1)
-                                                        UName[0] = 0;
-                                            ACrypt(CBuffer, ReturnText, UName);
-                                            ReturnText = CBuffer;
-                                        }
-
-                                        Printf("\"%s\"\n", ReturnText);
-
-                                        /* Here follows the COMPARE parameter. If the input string is not equal
-                                         * to the argument of COMPARE we return WARN.
-                                         */
-
-                                        if (ArgList[COMPARE] != 0)
-                                            Ret = (strcmp(ReturnText, (char *)ArgList[COMPARE])) ? RETURN_WARN : 0;
-                                        else
-                                            Ret = 0;
-
-                                    }
-                                }
-                            }
+                            GWidth = WWidth - Scr->WBorLeft - Scr->WBorRight;
+                        }
+                        if (TWidth + Scr->WBorLeft + Scr->WBorRight > WWidth)
+                        {
+                            TWidth = WWidth - Scr->WBorLeft - Scr->WBorRight;
                         }
                     }
-                    else if (ArgList[PUBSCREEN] != 0)
-                        Ret = 10;  // FIXME: should we fallback to default pubscreen?
 
-                    /* Clean up. */
-                    if (SGHook.h_Data != NULL)
-                        FreeVec(SGHook.h_Data);
-                    if (Args)
-                        FreeArgs(Args);
-                    if (Win)
-                        CloseWindow(Win);
-                    if (GList)
-                        FreeGadgets(GList);
-                    if (VisInfo)
-                        FreeVisualInfo(VisInfo);
-                    if (Scr)
-                        UnlockPubScreen(NULL,Scr);
+                    /* If the window has a title, it will also have a dragbar, closegadget
+                     * and a depthgadget.
+                     */
+                    if (ArgList[TITLE] != 0)
+                    {
+                        WindowTags[6].ti_Data = TRUE;
+                        if (ArgList[NOGADS] == 0)
+                        {
+                            WindowTags[7].ti_Data = TRUE;
+                            WindowTags[8].ti_Data = TRUE;
+                        }
+                        WindowTags[9].ti_Data = ArgList[TITLE];
+                        WHeight += Scr->BarHeight;
+                    }
 
-                    CloseLibrary(GadToolsBase);
+                    StringGad.ng_VisualInfo = VisInfo;
+                    StringGad.ng_Width = GWidth;
+                    StringGad.ng_Height = GHeight;
+                    StringGad.ng_TopEdge = WHeight - GHeight - Scr->WBorBottom - 3;
+                    StringGad.ng_LeftEdge = (WWidth - GWidth) / 2;
+
+                    /* Initialize the Hook if we are using a safe stringgadget.
+                     * SGHook.d_Data points to storage space for the string which
+                     * will be returned. Memory should be cleared.
+                     */
+
+                    if (ArgList[SAFE] != 0)
+                    {
+                        SGHook.h_Entry = (HOOKFUNC)HookFunc;
+                        /* SGHook.h_SubEntry=NULL; */
+                        SGHook.h_Data = AllocVec(98, MEMF_ANY | MEMF_CLEAR); /* Should be made dynamic if possible */
+                        if (ArgList[STRING] != 0)
+                        {
+                            int i = -1;
+                            strcpy((char *)SGHook.h_Data, (char *)ArgList[STRING]);
+                            while (((char *)ArgList[STRING])[++i] != 0)
+                                ((char *)ArgList[STRING])[i] = '*';
+                        }
+                    }
+
+                    if
+                    (
+                        (
+                            Gad = CreateGadget
+                            (
+                                STRING_KIND,
+                                Gad, &StringGad,
+                                GTST_EditHook, (ArgList[SAFE] == 0) ? NULL : &SGHook,
+                                GTST_String, ArgList[STRING],
+                                TAG_END
+                            )
+                        ) != NULL
+                    )
+                    {
+                        /* Screen Gadget */
+                        WindowTags[0].ti_Data = (IPTR)Scr;
+                        WindowTags[1].ti_Data = (IPTR)GList;
+                        /* Width & Height */
+                        WindowTags[4].ti_Data = WWidth;
+                        WindowTags[5].ti_Data = WHeight;
+                        /* X & Y Pos */
+                        WindowTags[2].ti_Data = (Scr->Width-WWidth) >> 1;
+                        WindowTags[3].ti_Data = (Scr->Height-WHeight) >> 1;
+
+                        if ((Win = OpenWindowTagList(NULL, WindowTags)) != NULL)
+                        {
+                            /* Is there some (un)informative text in the window? */
+
+                            if (ArgList[TEXT] != 0)
+                            {
+                                /* Colour should rather be selected with thougt to the background of the window, fix this. */
+                                SetAPen(Win->RPort, 1);
+                                TXPos = (WWidth - TWidth) / 2;
+                                TYPos = GfxBase->DefaultFont->tf_Baseline + Win->BorderTop + 1;
+                                Move(Win->RPort, TXPos, TYPos);
+                                Text(Win->RPort, (char *)ArgList[TEXT], TLength);
+                            }
+
+                            do
+                            {
+                                WaitPort(Win->UserPort);
+                                EIMess = (struct ExtIntuiMessage *)GT_GetIMsg(Win->UserPort);
+                                MsgClass=EIMess->eim_IntuiMessage.Class;
+                                GT_ReplyIMsg((struct IntuiMessage *)EIMess);
+
+                                switch(MsgClass)
+                                {
+                                    case  IDCMP_ACTIVEWINDOW   :
+                                        ActivateGadget(Gad, Win, NULL);
+                                        break;
+
+                                    case  IDCMP_INACTIVEWINDOW :
+                                        if (ArgList[PERSIST])
+                                        {
+                                            ScreenToFront(Win->WScreen);
+                                            WindowToFront(Win);
+                                            ActivateWindow(Win);
+                                        }
+                                        break;
+
+                                    case  IDCMP_REFRESHWINDOW  :
+                                        GT_BeginRefresh(Win);
+                                        if (ArgList[TEXT] != 0)
+                                        {
+                                            Move(Win->RPort, TXPos, TYPos);
+                                            Text(Win->RPort, (char *)ArgList[TEXT], TLength);
+                                        }
+                                        GT_EndRefresh(Win,TRUE);
+                                        break;
+
+                                }
+                            }
+                            while ((MsgClass != IDCMP_GADGETUP) && (MsgClass != IDCMP_CLOSEWINDOW));
+
+                            GT_GetGadgetAttrs(Gad, Win, NULL, GTST_String, &ReturnText, TAG_END);
+
+                            if (ArgList[SAFE] != 0)
+                                ReturnText = (char *)SGHook.h_Data;
+
+                            /* Try to find out who the user is if we are to encrypt the output.   */
+                            /* I really don't know how to acquire the username, but this might    */
+                            /* be a good guess of how to do it.                                   */
+
+                            if (ArgList[ENCRYPT] != 0)
+                            {
+                                if (GetVar("USER", UName, 47, 0) == -1)
+                                    if (GetVar("USERNAME", UName, 47, 0) == -1)
+                                        if (GetVar("LOGIN", UName, 47, 0) == -1)
+                                            UName[0] = 0;
+                                ACrypt(CBuffer, ReturnText, UName);
+                                ReturnText = CBuffer;
+                            }
+
+                            Printf("\"%s\"\n", ReturnText);
+
+                            /* Here follows the COMPARE parameter. If the input string is not equal
+                             * to the argument of COMPARE we return WARN.
+                             */
+
+                            if (ArgList[COMPARE] != 0)
+                                Ret = (strcmp(ReturnText, (char *)ArgList[COMPARE])) ? RETURN_WARN : 0;
+                            else
+                                Ret = 0;
+
+                        }
+                    }
                 }
-                CloseLibrary((struct Library *)IntuitionBase);
             }
-            CloseLibrary((struct Library *)GfxBase);
         }
-        CloseLibrary((struct Library *)DOSBase);
+        else if (ArgList[PUBSCREEN] != 0)
+            Ret = 10;
     }
-    return Ret;
+    else
+    {
+        PrintFault(IoErr(), "RequestString");
+    }
 
-    AROS_USERFUNC_EXIT
+    /* Clean up. */
+    if (SGHook.h_Data != NULL)
+        FreeVec(SGHook.h_Data);
+    if (Args)
+        FreeArgs(Args);
+    if (Win)
+        CloseWindow(Win);
+    if (GList)
+        FreeGadgets(GList);
+    if (VisInfo)
+        FreeVisualInfo(VisInfo);
+    if (Scr)
+        UnlockPubScreen(NULL, Scr);
+
+    return Ret;
 }
 
 
