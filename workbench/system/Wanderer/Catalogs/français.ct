@@ -1,11 +1,11 @@
 ## version $VER: XX.catalog XX.XX ($TODAY)
-## language X
+## language x
 ## codeset 0
 ;
 ;
 MSG_TITLE
 Wanderer
-;Wanderer
+; Wanderer
 ;
 MSG_DESCRIPTION
 Gestionnaire de fichier

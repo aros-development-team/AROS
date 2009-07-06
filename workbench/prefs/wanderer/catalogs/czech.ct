@@ -99,6 +99,12 @@ MSG_ICONTEXTMODE_PLAIN
 Standardní
 ; Plain
 ;
+MSG_ICONTEXTMODE_SHADOW
+
+; Drop shadow
+;
+; ***NEW***
+;
 MSG_ICONTEXTLENGTH
 Max. délka názvu
 ; Max icon textlength
@@ -132,4 +138,178 @@ MSG_BUBBLESCREENTITLE
 ; %wb = Wanderer version\n\
 ; %ov = Exact AROS version\n\
 ; %wv = Exact workbench.library version
+;
+MSG_TILEMODE
+
+; Tile mode :
+;
+MSG_XOFFSET
+
+; X Offset :
+;
+MSG_YOFFSET
+
+; Y Offset :
+;
+MSG_ICONLABELFONT
+
+; Icon Label Font...
+;
+; ***NEW***
+;
+MSG_ICONINFOFONT
+
+; Icon Info Font...
+;
+; ***NEW***
+;
+MSG_HORIZSPACINGICON
+
+; Horizontal spacing between icons
+;
+; ***NEW***
+;
+MSG_VERTSPACINGICON
+
+; Vertical spacing between icons
+;
+; ***NEW***
+;
+MSG_PADDINGICONIMAGELABEL
+
+; Padding between Icon Image and Label
+;
+; ***NEW***
+;
+MSG_HORIZPADDINGLABELTEXT
+
+; Horizontal Padding between Label Frame and Text
+;
+; ***NEW***
+;
+MSG_VERTPADDINGLABELTEXT
+
+; Vertical Padding between Label Frame and Text
+;
+; ***NEW***
+;
+MSG_FRAMEWIDTH
+
+; Label Frame Width
+;
+; ***NEW***
+;
+MSG_FRAMEHEIGHT
+
+; Label Frame Height
+;
+; ***NEW***
+;
+MSG_TILED
+
+; Tiled
+;
+; ***NEW***
+;
+MSG_SCALED
+
+; Scaled
+;
+; ***NEW***
+;
+MSG_FLOATING
+
+; Floating
+;
+; ***NEW***
+;
+MSG_FIXED
+
+; Fixed
+;
+; ***NEW***
+;
+MSG_LABELLINELENGTH
+
+; Max. Label line length...
+;
+; ***NEW***
+;
+MSG_USEMULTILINELABELS
+
+; Use MultiLine Labels
+;
+; ***NEW***
+;
+MSG_SHOWFOCUSEDICON
+
+; Only show for Focus(ed) Icon
+;
+; ***NEW***
+;
+MSG_NDISPLAYLINES
+
+; No. of lines to display...
+;
+; ***NEW***
+;
+MSG_TILEMODEOPTIONS
+
+; Tile Mode Options...
+;
+; ***NEW***
+;
+MSG_SCALEMODEOPTIONS
+
+; Scale Mode Options...
+;
+; ***NEW***
+;
+MSG_ADVANCEDOPTIONS
+
+; Advanced Options...
+;
+; ***NEW***
+;
+MSG_BACKGROUNDOPTIONS
+
+; Background Options...
+;
+; ***NEW***
+;
+MSG_DRAWMODE
+
+; Draw mode :
+;
+; ***NEW***
+;
+MSG_USERFILEONWB
+
+; User Files Folder on Workbench
+;
+; ***NEW***
+;
+MSG_NETWORKONWB
+
+; Network Browser on Workbench
+;
+; ***NEW***
+;
+MSG_VIEWSETTINGS
+
+; View Settings
+;
+; ***NEW***
+;
+MSG_WANDERERSCREENTITLE
+
+; Wanderer ScreenTitle
+;
+; ***NEW***
+;
+MSG_ADVANCED
+
+; Advanced
+;
+; ***NEW***
 ;

@@ -4,12 +4,12 @@
 ;
 ;
 MSG_NAME
-Wanderer Prefs
+Préférences de Wanderer
+; Wanderer Prefs
 ;
 MSG_DESCRIPTION
 Préférences du Wanderer
-;
-;Wanderer preferences
+; Wanderer preferences
 ;
 MSG_BACKGROUNDS
 Fonds
@@ -33,65 +33,89 @@ Choisr un fond pour les répertoires
 ;
 MSG_GENERAL
 Général
+; General
 ;
 MSG_APPEARANCE
 Apparence
+; Appearance
 ;
 MSG_TOOLBAR
 Barre d'outils
+; Toolbar
 ;
 MSG_CLASSIC
 Classique
+; Classic
 ;
 MSG_ENHANCED
 Améliorée
-; ("Méthode de Navigation Améliorée")
+; Enhanced
+;
 MSG_NAVIGATION
 Navigation
+; Navigation
 ;
 MSG_METHOD
 Méthode
-;Method
+; Method
 ;
 MSG_OBJECTS
 Objets
-;Objects
+; Objects
 ;
 MSG_PREVIEW
-Ébauche
+Prévisualisation
+; Preview
 ;
 MSG_TOOLBAR_ENABLED
 Barre d'outils
+; Toolbar Enabled
 ;
 MSG_ICONSPREFS
 Icônes
+; Icons look and feel
 ;
 MSG_ICONLISTMODE
 Liste d'Icônes
+; Icon listmode
 ;
 MSG_ICONLISTMODE_PLAIN
 Liste complète
+; List icons plainly
 ;
 MSG_ICONLISTMODE_GRID
 Grille
+; List icons by grid
 ;
 MSG_ICONTEXTMODE
 Mode de texte
+; Icons text drawmode
 ;
 MSG_ICONTEXTMODE_OUTLINE
 Détourage
+; Outline
 ;
 MSG_ICONTEXTMODE_PLAIN
 Plein
+; Plain
+;
+MSG_ICONTEXTMODE_SHADOW
+Ombre
+; Drop shadow
+;
+; ***NEW***
 ;
 MSG_ICONTEXTLENGTH
 Longueur maximale des textes d'icônes
+; Max icon textlength
 ;
 MSG_DOUBLEBUFFERED
-mémoire écran double
+Mémoire écran double
+; double buffering
 ;
 MSG_MISC
-divers
+Divers
+; misc
 ;
 MSG_BUBBLESCREENTITLE
 %pc = Mémoire graphique libre\n\
@@ -104,4 +128,170 @@ MSG_BUBBLESCREENTITLE
 %wb = Version de Wanderer\n\
 %ov = Version exacte d'AROS\n\
 %wv = Version exacte de workbench.library
+; %pc = Chip Ram free\n\
+; %pf = Fast Ram free\n\
+; %pt = Total Ram free\n\
+; %PC = Chip Ram\n\
+; %PF = Fast Ram\n\
+; %PT = Total Ram\n\
+; %os = AROS version\n\
+; %wb = Wanderer version\n\
+; %ov = Exact AROS version\n\
+; %wv = Exact workbench.library version
+;
+MSG_TILEMODE
+Grille d'icône
+; Tile mode :
+;
+MSG_XOFFSET
+Décalage X :
+; X Offset :
+;
+MSG_YOFFSET
+Décalage Y :
+; Y Offset :
+;
+MSG_ICONLABELFONT
+Police des icones...
+; Icon Label Font...
+;
+MSG_ICONINFOFONT
+Police d'information des icones...
+; Icon Info Font...
+;
+MSG_HORIZSPACINGICON
+Espacement horizontal entre les icones
+; Horizontal spacing between icons
+;
+MSG_VERTSPACINGICON
+Espacement vertical entre les icones
+; Vertical spacing between icons
+;
+MSG_PADDINGICONIMAGELABEL
+Espace entre l'image de l'icone et le titre
+; Padding between Icon Image and Label
+;
+MSG_HORIZPADDINGLABELTEXT
+Espacement horizontal entre le cadre du titre et le titre
+; Horizontal Padding between Label Frame and Text
+;
+MSG_VERTPADDINGLABELTEXT
+Espacement vertical entre le cadre du titre et le titre
+; Vertical Padding between Label Frame and Text
+;
+MSG_FRAMEWIDTH
+Largeur du cadre du titre
+; Label Frame Width
+;
+MSG_FRAMEHEIGHT
+Hauteur du cadre du titre
+; Label Frame Height
+;
+MSG_TILED
+Mosaique
+; Tiled
+;
+; ***NEW***
+;
+MSG_SCALED
+A l'échelle
+; Scaled
+;
+; ***NEW***
+;
+MSG_FLOATING
+Flottant
+; Floating
+;
+; ***NEW***
+;
+MSG_FIXED
+Fixe
+; Fixed
+;
+; ***NEW***
+;
+MSG_LABELLINELENGTH
+Longueur maximale d'une ligne
+; Max. Label line length...
+;
+; ***NEW***
+;
+MSG_USEMULTILINELABELS
+Utiliser les titres multilignes
+; Use MultiLine Labels
+;
+; ***NEW***
+;
+MSG_SHOWFOCUSEDICON
+Ne montrer que l'icone active
+; Only show for Focus(ed) Icon
+;
+; ***NEW***
+;
+MSG_NDISPLAYLINES
+Nombre de lignes à afficher
+; No. of lines to display...
+;
+; ***NEW***
+;
+MSG_TILEMODEOPTIONS
+Options de grille
+; Tile Mode Options...
+;
+; ***NEW***
+;
+MSG_SCALEMODEOPTIONS
+Options de mise à l'échelle...
+; Scale Mode Options...
+;
+; ***NEW***
+;
+MSG_ADVANCEDOPTIONS
+Options avancées
+; Advanced Options...
+;
+; ***NEW***
+;
+MSG_BACKGROUNDOPTIONS
+Options de fond
+; Background Options...
+;
+; ***NEW***
+;
+MSG_DRAWMODE
+Mode de dessin
+; Draw mode :
+;
+; ***NEW***
+;
+MSG_USERFILEONWB
+Fichier utilisateur sur le Workbench
+; User Files Folder on Workbench
+;
+; ***NEW***
+;
+MSG_NETWORKONWB
+Navigateur de réseau sur le Workbench
+; Network Browser on Workbench
+;
+; ***NEW***
+;
+MSG_VIEWSETTINGS
+Réglages des vues
+; View Settings
+;
+; ***NEW***
+;
+MSG_WANDERERSCREENTITLE
+Titre de l'écran Wanderer
+; Wanderer ScreenTitle
+;
+; ***NEW***
+;
+MSG_ADVANCED
+Réglages avancés
+; Advanced
+;
+; ***NEW***
 ;
