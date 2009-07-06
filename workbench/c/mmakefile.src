@@ -40,6 +40,7 @@ FILES := \
     Rename \
     RequestChoice \
     RequestFile \
+    RequestString \
     ResList \
     Search \
     SetClock \
@@ -63,8 +64,7 @@ FILES := \
 PURE_FILES := \
     Assign \
     Copy \
-    Dir \
-	RequestString
+    Dir
 #   ISApnp
 
 USER_CFLAGS     := -I$(SRCDIR)/rom/dos
