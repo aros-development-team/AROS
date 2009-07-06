@@ -98,7 +98,7 @@ void set_system_gate(unsigned int n, void *addr)
 
 void printException(struct pt_regs regs)
 {
-    kprintf("*** trap: eip = %x eflags = %04x  ds = %x sp ~= %x\n",
+    kprintf("*** trap: eip = %x eflags = %x  ds = %x sp ~= %x\n",
         regs.eip, regs.eflags, regs.xds, &regs.esp);
 }
 
