@@ -30,7 +30,7 @@ static int libInit(LIBBASETYPEPTR nh)
     struct ClsUnitCfg *cuc = NULL;
     struct NepClassMS *ncm;
     struct NepMSBase *ret = NULL;
-    
+
     KPRINTF(10, ("libInit nh: 0x%08lx SysBase: 0x%08lx\n", nh, SysBase));
 
 #define	UtilityBase nh->nh_UtilityBase
@@ -847,7 +847,7 @@ BOOL nLoadClassConfig(struct NepMSBase *nh)
     cdc->cdc_Length = AROS_LONG2BE(sizeof(struct ClsDevCfg)-8);
     cdc->cdc_NakTimeout = 50;
     cdc->cdc_PatchFlags = PFF_MODE_XLATE|PFF_NO_RESET|PFF_FIX_INQ36|PFF_SIMPLE_SCSI;
-    cdc->cdc_FATDosType = 0x46415401;
+    cdc->cdc_FATDosType = 0x46415400;
     cdc->cdc_StartupDelay = 0;
     cdc->cdc_MaxTransfer = 5;
     strcpy(cdc->cdc_FATFSName, "fat.handler");
@@ -3180,7 +3180,7 @@ LONG nScsiDirect(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
                 {
                     // fake geometry request
                     psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "Simple SCSI: Faking Mode Page 0x03 (Format Device)");
-                    
+
                     data[0] = 5+22; // length
                     data += 4;
                     data[0] = 0x03; // mode page
@@ -4176,7 +4176,7 @@ LONG nScsiDirectCBI(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
 
                 KPRINTF(2, ("data phase %ld bytes...\n", datalen));
                 pp = (scsicmd->scsi_Flags & SCSIF_READ) ? ncm->ncm_EPInPipe : ncm->ncm_EPOutPipe;
-                
+
                 if(ncm->ncm_TPType == MS_PROTO_CBI)
                 {
                     /* okay, this is a major pain in the arse.
@@ -4210,7 +4210,7 @@ LONG nScsiDirectCBI(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
                     } else {
                         ioerr = psdGetPipeError(pp);
                     }
-                    
+
                 } else {
                     ioerr = psdDoPipe(pp, scsicmd->scsi_Data, datalen);
                 }
@@ -4462,7 +4462,7 @@ BOOL nStoreConfig(struct NepClassMS *ncm)
 
 /* /// "BSTR Macros" */
 #define b2cstr(bstr, cstr) { ULONG i; for (i = 0; i < bstr[0]; i++) cstr[i] = bstr[i + 1]; cstr[i] = 0x00; }
-#define i2a(x) ((((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >> 8) | (((x) & 0x0000ff00) << 8) | (((x) & 0x000000ff) << 24))
+
 #define c2bstr(cstr, bstr)\
     do\
     {\
@@ -4470,7 +4470,7 @@ BOOL nStoreConfig(struct NepClassMS *ncm)
         UBYTE c;\
         STRPTR cp = (STRPTR) (cstr);\
         STRPTR bp = (STRPTR) (bstr);\
-        while(c = cp[i])\
+        while((c = cp[i]))\
         {\
             bp[++i] = c;\
         }\
@@ -4860,7 +4860,44 @@ BOOL nOpenDOS(struct NepMSBase *nh)
 /* /// "nUnmountPartition()" */
 void nUnmountPartition(struct NepClassMS *ncm)
 {
-    // FIXME AROS devs, you need to add the actual mounting code
+    struct NepMSBase *nh = ncm->ncm_ClsBase;
+    struct DosList *list;
+    struct DeviceNode *node;
+    struct DeviceNode *oldnode = NULL;
+    char partname[32];
+    UBYTE *bstr;
+
+    if(!nOpenDOS(nh))
+    {
+        return;
+    }
+    while((node = FindMatchingDevice(ncm, NULL)))
+    {
+        if(oldnode == node)
+        {
+            break;
+        }
+        bstr = (UBYTE *) BADDR(node->dn_Name);
+        b2cstr(bstr, partname);
+        psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                       "Unmounting partition %s...",
+                       partname);
+        DoPkt(node->dn_Task, ACTION_INHIBIT, TRUE, 0, 0, 0, 0);
+        DoPkt(node->dn_Task, ACTION_DIE, 0, 0, 0, 0, 0);
+        if((list = LockDosList(LDF_DEVICES | LDF_WRITE)))
+        {
+            list = FindDosEntry(list, partname, LDF_DEVICES);
+            if(list)
+            {
+                RemDosEntry(list);
+            }
+            UnLockDosList(LDF_DEVICES | LDF_WRITE);
+        }
+        /*psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                       "Unmounting %s done.",
+                       partname);*/
+        oldnode = node;
+    }
 }
 /* \\\ */
 
@@ -4995,17 +5032,1092 @@ LONG nGetWriteProtect(struct NepClassMS *ncm)
 }
 /* \\\ */
 
-/* /// "ProcessRDB()" */
-void ProcessRDB(struct NepClassMS *ncm)
+/* /// "SearchHardBlock()" */
+APTR SearchHardBlock(struct NepClassMS *ncm,
+                     struct IOStdReq *ioreq,
+                     ULONG id,
+                     ULONG start)
 {
-    // FIXME AROS devs, you need to add the actual mounting code
+    struct NepMSBase *nh = ncm->ncm_ClsBase;
+    ULONG curBlock;
+
+    if(!nh->nh_OneBlock || (nh->nh_OneBlockSize < ncm->ncm_BlockSize))
+    {
+        psdFreeVec(nh->nh_OneBlock);
+        if(!(nh->nh_OneBlock = psdAllocVec(ncm->ncm_BlockSize)))
+        {
+            return(NULL);
+        }
+        nh->nh_OneBlockSize = ncm->ncm_BlockSize;
+    }
+
+    curBlock = start;
+    do
+    {
+        ioreq->io_Command = TD_READ64;
+        ioreq->io_Data = nh->nh_OneBlock;
+        ioreq->io_Length = ncm->ncm_BlockSize;
+        ioreq->io_Offset = curBlock<<ncm->ncm_BlockShift;
+        ioreq->io_Actual = curBlock>>(32-ncm->ncm_BlockShift);
+
+        if(!nIOCmdTunnel(ncm, ioreq))
+        {
+            curBlock++;
+            if((*(ULONG *) nh->nh_OneBlock) == id)
+            {
+                return(nh->nh_OneBlock);
+            }
+        } else {
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "Error searching hardblock in block %ld.", curBlock);
+            return(NULL);
+        }
+    } while(curBlock <= RDB_LOCATION_LIMIT);
+    return(NULL);
+}
+/* \\\ */
+
+/* /// "ReadRDSK()" */
+BOOL ReadRDSK(struct NepClassMS *ncm,
+              struct IOStdReq *ioreq,
+              struct RigidDiskBlock *rdb)
+{
+    APTR blkaddr = SearchHardBlock(ncm, ioreq, IDNAME_RIGIDDISK, 0);
+    if(blkaddr)
+    {
+        CopyMemQuick(blkaddr, rdb, sizeof(struct RigidDiskBlock));
+        // endianess conversion
+        rdb->rdb_ID = AROS_BE2LONG(rdb->rdb_ID);
+        rdb->rdb_SummedLongs = AROS_BE2LONG(rdb->rdb_SummedLongs);
+        rdb->rdb_ChkSum = AROS_BE2LONG(rdb->rdb_ChkSum);
+        rdb->rdb_HostID = AROS_BE2LONG(rdb->rdb_HostID);
+        rdb->rdb_BlockBytes = AROS_BE2LONG(rdb->rdb_BlockBytes);
+        rdb->rdb_PartitionList = AROS_BE2LONG(rdb->rdb_PartitionList);
+        rdb->rdb_FileSysHeaderList = AROS_BE2LONG(rdb->rdb_FileSysHeaderList);
+        rdb->rdb_DriveInit = AROS_BE2LONG(rdb->rdb_DriveInit);
+        rdb->rdb_Cylinders = AROS_BE2LONG(rdb->rdb_Cylinders);
+        rdb->rdb_Sectors = AROS_BE2LONG(rdb->rdb_Sectors);
+        rdb->rdb_Heads = AROS_BE2LONG(rdb->rdb_Heads);
+        rdb->rdb_Interleave = AROS_BE2LONG(rdb->rdb_Interleave);
+        rdb->rdb_Park = AROS_BE2LONG(rdb->rdb_Park);
+        rdb->rdb_WritePreComp = AROS_BE2LONG(rdb->rdb_WritePreComp);
+        rdb->rdb_ReducedWrite = AROS_BE2LONG(rdb->rdb_ReducedWrite);
+        rdb->rdb_StepRate = AROS_BE2LONG(rdb->rdb_StepRate);
+        rdb->rdb_RDBBlocksLo = AROS_BE2LONG(rdb->rdb_RDBBlocksLo);
+        rdb->rdb_RDBBlocksHi = AROS_BE2LONG(rdb->rdb_RDBBlocksHi);
+        rdb->rdb_LoCylinder = AROS_BE2LONG(rdb->rdb_LoCylinder);
+        rdb->rdb_HiCylinder = AROS_BE2LONG(rdb->rdb_HiCylinder);
+        rdb->rdb_CylBlocks = AROS_BE2LONG(rdb->rdb_CylBlocks);
+        rdb->rdb_AutoParkSeconds = AROS_BE2LONG(rdb->rdb_AutoParkSeconds);
+        rdb->rdb_HighRDSKBlock = AROS_BE2LONG(rdb->rdb_HighRDSKBlock);
+        return(TRUE);
+    }
+    return(FALSE);
+}
+/* \\\ */
+
+/* /// "ReadPART()" */
+BOOL ReadPART(struct NepClassMS *ncm,
+              struct IOStdReq *ioreq,
+              struct PartitionBlock *part,
+              ULONG which)
+{
+    APTR blkaddr = SearchHardBlock(ncm, ioreq, IDNAME_PARTITION, which);
+    if(blkaddr)
+    {
+        UWORD cnt;
+        CopyMemQuick(blkaddr, part, sizeof(struct PartitionBlock));
+        // endianess conversion
+        part->pb_ID = AROS_BE2LONG(part->pb_ID);
+        part->pb_SummedLongs = AROS_BE2LONG(part->pb_SummedLongs);
+        part->pb_ChkSum = AROS_BE2LONG(part->pb_ChkSum);
+        part->pb_HostID = AROS_BE2LONG(part->pb_HostID);
+        part->pb_Next = AROS_BE2LONG(part->pb_Next);
+        part->pb_Flags = AROS_BE2LONG(part->pb_Flags);
+        part->pb_DevFlags = AROS_BE2LONG(part->pb_DevFlags);
+        for(cnt = 0; cnt < 20; cnt++)
+        {
+            part->pb_Environment[cnt] = AROS_BE2LONG(part->pb_Environment[cnt]);
+        }
+        return(TRUE);
+    }
+    return(FALSE);
+}
+/* \\\ */
+
+/* /// "ReadFSHD()" */
+BOOL ReadFSHD(struct NepClassMS *ncm,
+              struct IOStdReq *ioreq,
+              struct FileSysHeaderBlock *fshd,
+              ULONG which)
+{
+    APTR blkaddr = SearchHardBlock(ncm, ioreq, IDNAME_FILESYSHEADER, which);
+    if(blkaddr)
+    {
+        CopyMemQuick(blkaddr, fshd, sizeof(struct FileSysHeaderBlock));
+        // endianess conversion
+        fshd->fhb_ID = AROS_BE2LONG(fshd->fhb_ID);
+        fshd->fhb_SummedLongs = AROS_BE2LONG(fshd->fhb_SummedLongs);
+        fshd->fhb_ChkSum = AROS_BE2LONG(fshd->fhb_ChkSum);
+        fshd->fhb_HostID = AROS_BE2LONG(fshd->fhb_HostID);
+        fshd->fhb_Next = AROS_BE2LONG(fshd->fhb_Next);
+        fshd->fhb_Flags = AROS_BE2LONG(fshd->fhb_Flags);
+        fshd->fhb_DosType = AROS_BE2LONG(fshd->fhb_DosType);
+        fshd->fhb_Version = AROS_BE2LONG(fshd->fhb_Version);
+        fshd->fhb_PatchFlags = AROS_BE2LONG(fshd->fhb_PatchFlags);
+        fshd->fhb_Type = AROS_BE2LONG(fshd->fhb_Type);
+        fshd->fhb_Task = AROS_BE2LONG(fshd->fhb_Task);
+        fshd->fhb_Lock = AROS_BE2LONG(fshd->fhb_Lock);
+        fshd->fhb_Handler = AROS_BE2LONG(fshd->fhb_Handler);
+        fshd->fhb_StackSize = AROS_BE2LONG(fshd->fhb_StackSize);
+        fshd->fhb_Priority = AROS_BE2LONG(fshd->fhb_Priority);
+        fshd->fhb_Startup = AROS_BE2LONG(fshd->fhb_Startup);
+        fshd->fhb_SegListBlocks = AROS_BE2LONG(fshd->fhb_SegListBlocks);
+        fshd->fhb_GlobalVec = AROS_BE2LONG(fshd->fhb_GlobalVec);
+        return(TRUE);
+    }
+    return(FALSE);
+}
+/* \\\ */
+
+/* /// "ReadLSEG()" */
+struct LoadSegBlock * ReadLSEG(struct NepClassMS *ncm,
+              struct IOStdReq *ioreq,
+              ULONG which)
+{
+    return((struct LoadSegBlock *) SearchHardBlock(ncm, ioreq, IDNAME_LOADSEG, which));
+}
+/* \\\ */
+
+/* /// "FindFileSystem()" */
+struct FileSysEntry * FindFileSystem(struct NepClassMS *ncm, ULONG dosType)
+{
+    struct FileSysResource *fsr;
+    struct FileSysEntry *fse;
+
+    KPRINTF(10, ("looking up %08lx fs\n", dosType));
+    if((fsr = (struct FileSysResource *) OpenResource(FSRNAME)))
+    {
+        Forbid();
+        fse = (struct FileSysEntry *) fsr->fsr_FileSysEntries.lh_Head;
+        while(fse->fse_Node.ln_Succ)
+        {
+            if(fse->fse_DosType == dosType)
+            {
+                Permit();
+                return(fse);
+            }
+            fse = (struct FileSysEntry *) fse->fse_Node.ln_Succ;
+        }
+        Permit();
+    }
+
+    return(NULL);
+}
+/* \\\ */
+
+/* /// "BuildFileSystem()" */
+ULONG BuildFileSystem(struct NepClassMS *ncm,
+                      UBYTE *fsBuffer,
+                      BOOL readAndCopy)
+{
+    struct NepMSBase *nh = ncm->ncm_ClsBase;
+    struct RigidDisk *rdsk = &nh->nh_RDsk;
+    ULONG result = 0;
+    ULONG nextLSEG;
+    ULONG add;
+    struct LoadSegBlock *lseg;
+
+    nextLSEG = rdsk->rdsk_FSHD.fhb_SegListBlocks;
+
+    do
+    {
+        if((lseg = ReadLSEG(ncm, &nh->nh_IOReq, nextLSEG)))
+        {
+            add = (AROS_BE2LONG(lseg->lsb_SummedLongs) - 5) * sizeof(ULONG);
+            if(readAndCopy)
+            {
+                CopyMem(lseg->lsb_LoadData, fsBuffer, add);
+                fsBuffer += add;
+            }
+            result += add;
+            nextLSEG = lseg->lsb_Next;
+        } else {
+            result = 0;
+            break;
+        }
+    } while(nextLSEG != NIL_PTR);
+    return(result);
+}
+/* \\\ */
+
+/* /// "LoadFileSystem()" */
+BPTR LoadFileSystem(struct NepClassMS *ncm, ULONG dosType, struct FileSysEntry *fse)
+{
+    struct NepMSBase *nh = ncm->ncm_ClsBase;
+    struct RigidDisk *rdsk = &nh->nh_RDsk;
+    ULONG nextFSHD;
+    BPTR fh, seg = NULL;
+    ULONG fsLength;
+    UBYTE *fsBuffer;
+    UBYTE fsFile[32];
+    BOOL ok;
+
+    if(rdsk->rdsk_RDB.rdb_FileSysHeaderList != NIL_PTR)
+    {
+        nextFSHD = rdsk->rdsk_RDB.rdb_FileSysHeaderList;
+        do
+        {
+            if(ReadFSHD(ncm, &nh->nh_IOReq, &rdsk->rdsk_FSHD, nextFSHD))
+            {
+                nextFSHD = rdsk->rdsk_FSHD.fhb_Next;
+            } else {
+                break;
+            }
+            KPRINTF(10, ("Found 0x%08lx FS in FSHD...\n", rdsk->rdsk_FSHD.fhb_ID));
+        } while((rdsk->rdsk_FSHD.fhb_DosType != dosType) && (nextFSHD != NIL_PTR));
+
+        if(rdsk->rdsk_FSHD.fhb_DosType == dosType)
+        {
+            psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Found filesystem %s in RDB!",
+                           nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName);
+            KPRINTF(10, ("found matching fs in FSHD, trying to load from LSEG blocks\n"));
+
+            CopyMem(&rdsk->rdsk_FSHD.fhb_DosType, &fse->fse_DosType, sizeof(struct FileSysEntry) - sizeof(struct Node));
+
+            if(rdsk->rdsk_FSHD.fhb_SegListBlocks > 0)
+            {
+                fsLength = BuildFileSystem(ncm, NULL, FALSE);
+
+                if(fsLength > 0)
+                {
+                    if((fsBuffer = psdAllocVec(fsLength)))
+                    {
+                        BuildFileSystem(ncm, fsBuffer, TRUE);
+
+                        if(nOpenDOS(nh))
+                        {
+                            psdSafeRawDoFmt(fsFile, 32, "T:UMSD_%08lx.fs", dosType);
+                            if((fh = Open(fsFile, MODE_NEWFILE)))
+                            {
+                                ok = (Write(fh, fsBuffer, fsLength) == fsLength);
+                                Close(fh);
+                                if(ok)
+                                {
+                                    seg = LoadSeg(fsFile);
+                                }
+                            }
+                            DeleteFile(fsFile);
+                        } else {
+                            KPRINTF(10, ("No DOS available, trying own load seg stuff\n"));
+                            // FIXME this code is unavailable and doesn't make sense for AROS as it doesn't use DOS_HUNK format
+                            //seg = CreateSegment(ncm, (const ULONG *) fsBuffer);
+                        }
+                        psdFreeVec(fsBuffer);
+                    }
+                }
+            }
+        }
+    }
+
+    if(!seg)
+    {
+        if(nOpenDOS(nh))
+        {
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "Loading filesystem %s from RDB failed. Trying DOS...",
+                           nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName);
+            KPRINTF(10, ("loading fs from LSEG blocks failed, trying fs file %s mentioned in FSHD\n", (char *) nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName));
+            //seg = LoadSeg(rdsk->rdsk_FSHD.fhb_FileSysName);
+            seg = LoadSeg((char *) nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName);
+            if(seg)
+            {
+                psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Loaded filesystem %s via DOS!",
+                               nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName);
+            } else {
+                psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname, "Loading filesystem %s via DOS failed!",
+                               nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName);
+            }
+        } else {
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "Loading filesystem %s from RDB failed.",
+                           nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName);
+        }
+    }
+    if(seg)
+    {
+        fse->fse_SegList = seg;
+    }
+    return(seg);
+}
+/* \\\ */
+
+/* /// "MatchPartition()" */
+BOOL MatchPartition(struct NepClassMS *ncm,
+                    struct DosEnvec *envec1,
+                    struct FileSysStartupMsg *fssm)
+{
+    BOOL result = FALSE;
+    UBYTE *bstr;
+    UBYTE device[256];
+    struct DosEnvec *envec2;
+
+    if(fssm)
+    {
+        envec2 = (struct DosEnvec *) BADDR(fssm->fssm_Environ);
+
+        if(envec2)
+        {
+            bstr = (UBYTE *) BADDR(fssm->fssm_Device);
+            b2cstr(bstr, device);
+
+            if(envec1)
+            {
+                if((envec1->de_DosType & 0xffffff00) == 0x46415400)
+                {
+                    result = ((ncm->ncm_UnitNo == fssm->fssm_Unit) &&
+                              (strcmp(DEVNAME, device) == 0) &&
+                              (envec1->de_DosType        == envec2->de_DosType));
+                } else {
+                    result = ((ncm->ncm_UnitNo == fssm->fssm_Unit) &&
+                              (strcmp(DEVNAME, device) == 0) &&
+                              (envec1->de_SizeBlock      == envec2->de_SizeBlock) &&
+                              (envec1->de_Surfaces       == envec2->de_Surfaces) &&
+                              (envec1->de_SectorPerBlock == envec2->de_SectorPerBlock) &&
+                              (envec1->de_BlocksPerTrack == envec2->de_BlocksPerTrack) &&
+                              (envec1->de_Reserved       == envec2->de_Reserved) &&
+                              (envec1->de_PreAlloc       == envec2->de_PreAlloc) &&
+                              (envec1->de_Interleave     == envec2->de_Interleave) &&
+                              (envec1->de_LowCyl         == envec2->de_LowCyl) &&
+                              (envec1->de_HighCyl        == envec2->de_HighCyl) &&
+                              (envec1->de_DosType        == envec2->de_DosType));
+                }
+            } else {
+                result = (ncm->ncm_UnitNo == fssm->fssm_Unit) &&
+                          (strcmp(DEVNAME, device) == 0);
+            }
+        }
+    }
+    return(result);
+}
+/* \\\ */
+
+/* /// "FindDeviceNode()" */
+struct DeviceNode * FindDeviceNode(struct NepClassMS *ncm, STRPTR device)
+{
+    struct NepMSBase *nh = ncm->ncm_ClsBase;
+    struct DosList *list;
+    struct DeviceNode *node = NULL;
+
+    if(!nOpenDOS(nh))
+    {
+        return(NULL);
+    }
+
+    if((list = LockDosList(LDF_DEVICES | LDF_READ)))
+    {
+        node = (struct DeviceNode *) FindDosEntry(list, device, LDF_DEVICES);
+        UnLockDosList(LDF_DEVICES | LDF_READ);
+    }
+    return(node);
+}
+/* \\\ */
+
+/* /// "CheckVolumesOrAssignsMatch()" */
+BOOL CheckVolumesOrAssignsMatch(struct NepClassMS *ncm, STRPTR device)
+{
+    struct NepMSBase *nh = ncm->ncm_ClsBase;
+    struct DosList *list;
+    BOOL found = FALSE;
+
+    if(!nOpenDOS(nh))
+    {
+        return(FALSE);
+    }
+
+    if((list = LockDosList(LDF_ALL | LDF_READ)))
+    {
+        if(FindDosEntry(list, device, LDF_ALL))
+        {
+            found = TRUE;
+        }
+        UnLockDosList(LDF_ALL | LDF_READ);
+    }
+    return(found);
+}
+/* \\\ */
+
+/* /// "FindMatchingDevice()" */
+struct DeviceNode * FindMatchingDevice(struct NepClassMS *ncm, struct DosEnvec *envec)
+{
+    struct NepMSBase *nh = ncm->ncm_ClsBase;
+    struct DosList *list;
+    struct DeviceNode *node = NULL;
+    struct FileSysStartupMsg *fssm;
+
+    if(!nOpenDOS(nh))
+    {
+        return(NULL);
+    }
+
+    if((list = LockDosList(LDF_DEVICES | LDF_READ)))
+    {
+        while((list = NextDosEntry(list, LDF_DEVICES | LDF_READ)))
+        {
+            fssm = NULL;
+
+            if((!(((ULONG) list->dol_misc.dol_handler.dol_Startup) >> 30)) &&
+               TypeOfMem(BADDR(list->dol_misc.dol_handler.dol_Startup)))
+            {
+                fssm = BADDR(list->dol_misc.dol_handler.dol_Startup);
+            }
+
+            if(fssm > (struct FileSysStartupMsg *) 0x1000)
+            {
+                if((*((UBYTE *) fssm)) == 0)
+                {
+                    struct DosEnvec *de = BADDR(fssm->fssm_Environ);
+                    STRPTR devname = BADDR(fssm->fssm_Device);
+
+                    if((!((ULONG) de >> 30)) && TypeOfMem(de) &&
+                       (!((ULONG) devname >> 30)) && TypeOfMem(devname) &&
+                       (de->de_TableSize > 0) && (de->de_TableSize < 32))
+                    {
+                        if(MatchPartition(ncm, envec, fssm))
+                        {
+                            node = (struct DeviceNode *) list;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        UnLockDosList(LDF_DEVICES | LDF_READ);
+    }
+    return(node);
+}
+/* \\\ */
+
+/* FIXME that bootcode is probably irrelevant to AROS */
+ULONG bootcode[8] =  { 0x43FA0010, 0x4EAEFFA0, 0x22407200, 0x4EAEFF9A,
+                       0x4E75646F, 0x732E6C69, 0x62726172, 0x79000000 };
+
+/* /// "MountPartition()" */
+BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
+{
+    struct NepMSBase *nh = ncm->ncm_ClsBase;
+    struct RigidDisk *rdsk = &nh->nh_RDsk;
+    IPTR *params;
+    struct DeviceNode *node;
+    struct FileSysEntry *fse;
+    struct FileSysEntry patch;
+    BPTR segList = NULL;
+    BOOL fsFound = FALSE;
+    BOOL result = FALSE;
+    STRPTR devname = DEVNAME;
+
+    if((fse = FindFileSystem(ncm, rdsk->rdsk_PART.pb_Environment[DE_DOSTYPE])))
+    {
+        KPRINTF(10, ("fs found in filesys resource\n"));
+        psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Found FS in filesystem.resource!");
+
+        CopyMem(fse, &patch, sizeof(struct FileSysEntry));
+        fsFound = TRUE;
+    } else {
+        memset(&patch, 0x00, sizeof(struct FileSysEntry));
+        patch.fse_DosType = rdsk->rdsk_PART.pb_Environment[DE_DOSTYPE];
+
+        if((segList = LoadFileSystem(ncm, rdsk->rdsk_PART.pb_Environment[DE_DOSTYPE], &patch)))
+        {
+            KPRINTF(10, ("fs loaded from RDB\n"));
+
+            patch.fse_PatchFlags = 0x0080|0x0010;
+            patch.fse_SegList = segList;
+            patch.fse_StackSize = 16384;
+            //if(((patch.fse_DosType & 0xffffff00) == 0x46415400) || (patch.fse_DosType == 0x4d534800))
+            {
+                KPRINTF(10, ("setting up certain fs values for MS-DOS fs\n"));
+                // Stack, SegList, Pri und GlobVec eintragen
+                patch.fse_PatchFlags |= 0x0020|0x0100;
+                patch.fse_Priority = 10;
+                patch.fse_GlobalVec = (APTR) 0xffffffff;
+            }
+
+            fsFound = TRUE;
+        }
+    }
+
+    if(!fsFound)
+    {
+        STRPTR handler = (STRPTR) nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName;
+        psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Experimental AROS patch to load %s", handler);
+        patch.fse_Handler = MKBADDR(AllocVec(AROS_BSTR_MEMSIZE4LEN(strlen(handler)), MEMF_PUBLIC | MEMF_CLEAR));
+        if(patch.fse_Handler)
+        {
+            UWORD i = 0;
+            while(handler[i])
+            {
+                AROS_BSTR_putchar(patch.fse_Handler, i, handler[i]);
+                i++;
+            }
+            AROS_BSTR_setstrlen(patch.fse_Handler, i);
+            patch.fse_PatchFlags |= 0x0008;
+            fsFound = TRUE;
+        }
+    }
+
+    if(fsFound)
+    {
+        if((params = psdAllocVec(sizeof(struct DosEnvec) + 4 * sizeof(IPTR))))
+        {
+            params[0] = (IPTR) dosDevice;
+            params[1] = (IPTR) DEVNAME;
+            params[2] = ncm->ncm_UnitNo;
+            params[3] = 0x00; // Flags für OpenDevice
+            CopyMem(rdsk->rdsk_PART.pb_Environment, &params[4], sizeof(struct DosEnvec));
+
+            if((node = MakeDosNode(params)))
+            {
+                struct ConfigDev *cd = NULL;
+                struct DiagArea *da = NULL;
+                BOOL installboot;
+                KPRINTF(10, ("MakeDosNode() succeeded, patchflags %04lx\n", patch.fse_PatchFlags));
+                node->dn_StackSize = 16384;
+
+                /*node->dn_Priority = 5;*/
+                if(patch.fse_PatchFlags & 0x0001) node->dn_Type = patch.fse_Type;
+                if(patch.fse_PatchFlags & 0x0002) node->dn_Task = (struct MsgPort *) patch.fse_Task;
+                if(patch.fse_PatchFlags & 0x0004) node->dn_Lock = patch.fse_Lock;
+                if(patch.fse_PatchFlags & 0x0008) node->dn_Handler = patch.fse_Handler;
+                if(patch.fse_PatchFlags & 0x0010) node->dn_StackSize = patch.fse_StackSize;
+                if(patch.fse_PatchFlags & 0x0020) node->dn_Priority = patch.fse_Priority;
+                if(patch.fse_PatchFlags & 0x0040) node->dn_Startup = patch.fse_Startup;
+                if(patch.fse_PatchFlags & 0x0080) node->dn_SegList = patch.fse_SegList;
+                if(patch.fse_PatchFlags & 0x0100) node->dn_GlobalVec = patch.fse_GlobalVec;
+
+                KPRINTF(10, ("dn_Next      = %08lx\n"
+                             "dn_Type      = %08lx\n"
+                             "dn_Task      = %08lx\n"
+                             "dn_Lock      = %08lx\n"
+                             "dn_Handler   = %08lx\n"
+                             "dn_StackSize = %08ld\n"
+                             "dn_Priority  = %08ld\n"
+                             "dn_Startup   = %08lx\n"
+                             "dn_SegList   = %08lx\n"
+                             "dn_GlobalVec = %08lx\n"
+                             "dn_Name      = %08lx\n",
+                             node->dn_Next,
+                             node->dn_Type,
+                             node->dn_Task,
+                             node->dn_Lock,
+                             node->dn_Handler,
+                             node->dn_StackSize,
+                             node->dn_Priority,
+                             node->dn_Startup,
+                             node->dn_SegList,
+                             node->dn_GlobalVec,
+                             node->dn_Name));
+
+                installboot = ncm->ncm_CUC->cuc_BootRDB;
+                if((nh->nh_RemovableTask->tc_Node.ln_Type == NT_PROCESS) ||
+                   (!(nh->nh_RDsk.rdsk_PART.pb_Flags & PBFF_BOOTABLE)))
+                {
+                    installboot = FALSE;
+                }
+                if(installboot)
+                {
+                    // avoid sys partition being unmounted (actually it should better check at
+                    // unmounting, but I can't think of a clever way yet to retrieve the SYS:
+                    // device
+                    ncm->ncm_CUC->cuc_AutoUnmount = FALSE;
+                    nStoreConfig(ncm);
+
+                    cd = AllocVec(sizeof(struct ConfigDev), MEMF_PUBLIC|MEMF_CLEAR);
+                    da = AllocVec(sizeof(struct DiagArea)+8*4, MEMF_PUBLIC|MEMF_CLEAR);
+                    if(cd && da)
+                    {
+                        cd->cd_Rom.er_Type = ERTF_DIAGVALID;
+                        *((struct DiagArea **) (&cd->cd_Rom.er_Reserved0c)) = da;
+                        da->da_Config = DAC_CONFIGTIME;
+                        da->da_BootPoint = sizeof(struct DiagArea);
+                        CopyMemQuick(bootcode, ((UBYTE *) da) + sizeof(struct DiagArea), 8*4);
+                    }
+                }
+
+                if(AddBootNode(nh->nh_RDsk.rdsk_PART.pb_Environment[DE_BOOTPRI], ADNF_STARTPROC, node, cd))
+                {
+                    KPRINTF(10, ("AddBootNode() succeeded\n"));
+                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                                   "Mounted %s unit %ld as %s:",
+                                   devname, ncm->ncm_UnitNo, dosDevice);
+
+                    result = TRUE;
+                } else {
+                    KPRINTF(10, ("AddBootNode() failed\n"));
+                    /* There is a memory leak here! No way to deallocate the node created by
+                       MakeDosNode()! */
+                }
+            }
+            psdFreeVec(params);
+        }
+
+        if(!result)
+        {
+            if(nOpenDOS(nh))
+            {
+                UnLoadSeg(segList);
+            }
+        }
+    } else {
+        psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                       "Couldn't find/load filesystem for %s unit %ld as %s:",
+                       devname, ncm->ncm_UnitNo, dosDevice);
+        KPRINTF(10, ("fs %08lx not found\n", rdsk->rdsk_PART.pb_Environment[DE_DOSTYPE]));
+    }
+
+    return(result);
+}
+/* \\\ */
+
+/* /// "CheckPartition()" */
+void CheckPartition(struct NepClassMS *ncm)
+{
+    struct NepMSBase *nh = ncm->ncm_ClsBase;
+    struct RigidDisk *rdsk = &nh->nh_RDsk;
+    struct DosEnvec *envec;
+    UBYTE dosDevice[32], temp[32];
+    ULONG spareNum;
+    struct DeviceNode *node;
+    BOOL done = FALSE, doMount = TRUE, success = FALSE;
+    STRPTR devname = DEVNAME;
+    BOOL bump;
+    ULONG slen;
+
+    envec = (struct DosEnvec *) rdsk->rdsk_PART.pb_Environment;
+    if((node = FindMatchingDevice(ncm, envec)))
+    {
+        KPRINTF(10, ("found suitable device entry, no need to mount anything new\n"));
+
+        psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                       "Matching partition for %s unit %ld already found. No remount required.",
+                       devname, ncm->ncm_UnitNo);
+        doMount = FALSE;
+        success = TRUE;
+    } else {
+        spareNum = 0;
+
+        b2cstr(rdsk->rdsk_PART.pb_DriveName, dosDevice);
+
+        KPRINTF(10, ("trying to mount partition \"%s\"\n", dosDevice));
+
+        /*if(envec->de_TableSize >= DE_DOSTYPE) SHOWVALUE(envec->de_DosType);*/
+        do
+        {
+            bump = FALSE;
+            if((node = FindDeviceNode(ncm, dosDevice)))
+            {
+                KPRINTF(10, ("%s is already mounted, comparing fssm\n", dosDevice));
+
+                if(MatchPartition(ncm, envec, BADDR(node->dn_Startup)))
+                {
+                    KPRINTF(10, ("fssm match, no need to mount\n"));
+
+                    doMount = FALSE;
+                    done = TRUE;
+                } else {
+                    bump = TRUE;
+                }
+            } else {
+                if(CheckVolumesOrAssignsMatch(ncm, dosDevice))
+                {
+                    bump = TRUE;
+                } else {
+                    done = TRUE;
+                }
+            }
+            if(bump)
+            {
+                slen = strlen(dosDevice);
+                if((slen > 0) && (dosDevice[slen-1] >= '0') && (dosDevice[slen-1] <= '9'))
+                {
+                    if(dosDevice[slen-1] == '9')
+                    {
+                        if((slen > 1) && (dosDevice[slen-2] >= '0') && (dosDevice[slen-2] <= '8'))
+                        {
+                            dosDevice[slen-2]++;
+                            dosDevice[slen-1] = '0';
+                        } else {
+                            if(slen < 30)
+                            {
+                                dosDevice[slen-1] = '1';
+                                dosDevice[slen] = '0';
+                                dosDevice[slen+1] = 0;
+                            } else {
+                                break;
+                            }
+                        }
+                    } else {
+                        dosDevice[slen-1]++;
+                    }
+                } else {
+                    b2cstr(rdsk->rdsk_PART.pb_DriveName, temp);
+                    psdSafeRawDoFmt(dosDevice, 32, "%s.%ld", temp, spareNum);
+                }
+                KPRINTF(10, ("fssm don't match, trying as %s\n", dosDevice));
+                spareNum++;
+            }
+        } while(!done && (spareNum < 16));
+    }
+
+    if(done && doMount)
+    {
+        KPRINTF(10, ("mounting %s\n", dosDevice));
+
+        success = MountPartition(ncm, dosDevice);
+    }
+}
+/* \\\ */
+
+/* /// "CheckFATPartType()" */
+BOOL CheckFATPartType(struct PartitionEntry *pe)
+{
+    BOOL result;
+
+    result = (BOOL)(pe->pe_Type == 0x01 ||  // DOS 12bit FAT
+                    pe->pe_Type == 0x04 ||  // DOS 16bit FAT <32M
+                    pe->pe_Type == 0x06 ||  // DOS 16bit FAT >=32M
+                    pe->pe_Type == 0x08 ||  // Commodore DOS 16bit FAT >=32M
+                    pe->pe_Type == 0x0b ||  // Win95 FAT32
+                    pe->pe_Type == 0x0c ||  // Win95 FAT32 LBA
+                    pe->pe_Type == 0x0e ||  // Win95 FAT16 LBA
+                    pe->pe_Type == 0x11 ||  // Logical FAT
+                    pe->pe_Type == 0x24 ||  // NEC Logical FAT
+                    pe->pe_Type == 0x86 ||  // Legacy Fault Tolerant FAT
+                    pe->pe_Type == 0x88 ||  // Legacy Fault Tolerant FAT
+                    pe->pe_Type == 0x8b ||  // Legacy Fault Tolerant FAT
+                    pe->pe_Type == 0x8c);   // Legacy Fault Tolerant FAT
+    return(result);
+}
+/* \\\ */
+
+/* /// "CheckNTFSPartType()" */
+BOOL CheckNTFSPartType(struct PartitionEntry *pe)
+{
+    BOOL result;
+
+    result = (BOOL)(pe->pe_Type == 0x07 ||  // NTFS
+                    pe->pe_Type == 0x87);   // Legacy Fault Tolerant NTFS
+    return(result);
+}
+/* \\\ */
+
+/* /// "CheckExtPartType()" */
+BOOL CheckExtPartType(struct PartitionEntry *pe)
+{
+    BOOL result;
+
+    result = (BOOL)(pe->pe_Type == 0x05 ||  // DOS 3.3 extended partition
+                    pe->pe_Type == 0x0f);   // WIN95: Extended partition, LBA-mapped
+    return(result);
+}
+/* \\\ */
+
+/* /// "IsFATSuperBlock()" */
+BOOL IsFATSuperBlock(struct FATSuperBlock *fsb)
+{
+    BOOL result;
+    result = (BOOL)(strncmp(fsb->fsb_Vendor, "MSDOS", 5) == 0 ||
+                    strncmp(fsb->fsb_Vendor, "MSWIN", 5) == 0 ||
+                    strncmp(fsb->fsb_FileSystem, "FAT12", 5) == 0 ||
+                    strncmp(fsb->fsb_FileSystem, "FAT16", 5) == 0 ||
+                    strncmp(fsb->fsb_FileSystem2, "FAT32", 5) == 0);
+
+    return(result);
 }
 /* \\\ */
 
 /* /// "CheckFATPartition()" */
 void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
 {
-    // FIXME AROS devs, you need to add the actual mounting code
+    struct NepMSBase *nh = ncm->ncm_ClsBase;
+    struct MasterBootRecord *mbr;
+    struct FATSuperBlock *fsb;
+    struct DosEnvec *envec;
+    ULONG part;
+    struct IOStdReq *stdIO = &nh->nh_IOReq;
+    struct DriveGeometry *tddg = &ncm->ncm_Geometry;
+    BOOL isfat = FALSE;
+    BOOL isntfs = FALSE;
+
+    mbr = (struct MasterBootRecord *) psdAllocVec(ncm->ncm_BlockSize<<1);
+    if(!mbr)
+    {
+        return;
+    }
+    fsb = (struct FATSuperBlock *) (((UBYTE *) mbr) + ncm->ncm_BlockSize);
+    stdIO->io_Command = TD_READ64;
+    stdIO->io_Offset = startblock<<ncm->ncm_BlockShift;
+    stdIO->io_Actual = startblock>>(32-ncm->ncm_BlockShift);
+    stdIO->io_Length = ncm->ncm_BlockSize;
+    stdIO->io_Data = mbr;
+    if(!nIOCmdTunnel(ncm, stdIO))
+    {
+        for(part = 0; part < 4; part++)
+        {
+            // WARNING: Arithmetic will break with partitions beyond 2048 GB offset.
+            mbr->mbr_Partition[part].pe_StartLBA = startblock + AROS_LONG2LE(mbr->mbr_Partition[part].pe_StartLBA);
+            mbr->mbr_Partition[part].pe_SectorCount = AROS_LONG2LE(mbr->mbr_Partition[part].pe_SectorCount);
+            if(CheckExtPartType(&mbr->mbr_Partition[part]))
+            {
+                // recurse
+                if(mbr->mbr_Partition[part].pe_StartLBA != startblock)
+                {
+                    // avoid direct infinite loops
+                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                                   "Reading extended partition info in block %ld.", mbr->mbr_Partition[part].pe_StartLBA);
+                    CheckFATPartition(ncm, startblock + mbr->mbr_Partition[part].pe_StartLBA);
+                }
+            }
+            else if(CheckFATPartType(&mbr->mbr_Partition[part]))
+            {
+                KPRINTF(5, ("examining partition %ld, start LBA: %ld, sector count: %ld\n",
+                            part, mbr->mbr_Partition[part].pe_StartLBA, mbr->mbr_Partition[part].pe_SectorCount));
+                psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Partition %d is (probably) FAT formatted!", part);
+
+                /*if(mbr->mbr_Partition[part].pe_Flags & PE_FLAGF_ACTIVE)
+                {*/
+                    KPRINTF(5, ("partition is active\n"));
+                    stdIO->io_Command = TD_READ64;
+                    stdIO->io_Offset = mbr->mbr_Partition[part].pe_StartLBA<<ncm->ncm_BlockShift;
+                    stdIO->io_Actual = mbr->mbr_Partition[part].pe_StartLBA>>(32-ncm->ncm_BlockShift);
+                    stdIO->io_Length = ncm->ncm_BlockSize;
+                    stdIO->io_Data = fsb;
+
+                    if(!nIOCmdTunnel(ncm, stdIO))
+                    {
+                        //dumpmem(fsb, 512);
+                        if(IsFATSuperBlock(fsb))
+                        {
+                            isfat = TRUE;
+
+                            nh->nh_RDsk.rdsk_PART.pb_DevFlags = 0;
+
+                            if(*(ncm->ncm_CUC->cuc_FATDOSName))
+                            {
+                                c2bstr(ncm->ncm_CUC->cuc_FATDOSName, nh->nh_RDsk.rdsk_PART.pb_DriveName);
+                            } else {
+                                c2bstr("UMSD", nh->nh_RDsk.rdsk_PART.pb_DriveName);
+                            }
+
+                            envec = (struct DosEnvec *) nh->nh_RDsk.rdsk_PART.pb_Environment;
+                            memset(envec, 0x00, sizeof(struct DosEnvec));
+
+                            envec->de_TableSize = DE_BOOTBLOCKS;
+                            envec->de_SizeBlock = ncm->ncm_BlockSize>>2;
+                            envec->de_Surfaces = 1;
+                            envec->de_SectorPerBlock = 1;
+                            envec->de_Reserved = 1;
+                            envec->de_NumBuffers = ncm->ncm_CUC->cuc_FATBuffers;
+                            envec->de_BufMemType = MEMF_PUBLIC;
+                            envec->de_MaxTransfer = (1UL<<(ncm->ncm_CDC->cdc_MaxTransfer+16))-1;
+                            envec->de_Mask = 0xffffffff;
+                            envec->de_BootPri = 0;
+                            envec->de_Baud = 1200;
+                            if(*ncm->ncm_CDC->cdc_FATControl)
+                            {
+                                UBYTE * bptr =  ncm->ncm_FATControlBSTR;
+                                bptr = (UBYTE *) ((((IPTR) bptr) + 3) & (~3));
+                                c2bstr(ncm->ncm_CDC->cdc_FATControl, bptr);
+                                envec->de_Control = (IPTR) MKBADDR(bptr);
+                            } else {
+                                envec->de_Control = 0;
+                            }
+                            envec->de_BootBlocks = 0;
+
+                            // we have no FSHD and LSEG blocks
+                            nh->nh_RDsk.rdsk_RDB.rdb_FileSysHeaderList = NIL_PTR;
+                            nh->nh_RDsk.rdsk_FSHD.fhb_SegListBlocks = 0;
+
+                            KPRINTF(5, ("building FAT95 style environment\n"));
+
+                            envec->de_BlocksPerTrack = (fsb->fsb_SectorsPerTrack[1]<<8) + fsb->fsb_SectorsPerTrack[0];
+                            envec->de_Interleave = 0;
+                            envec->de_DosType = ncm->ncm_CDC->cdc_FATDosType; //0x46415401; // FAT1
+
+#if 0 // this was FAT95 specific
+                            if((ncm->ncm_CDC->cdc_FATDosType & 0xffffff00) == 0x46415400)
+                            {
+                                envec->de_LowCyl = 0;
+                                envec->de_HighCyl = 0xffffffff;
+                                if(ncm->ncm_CUC->cuc_MountAllFAT)
+                                {
+                                    envec->de_DosType = 0x46415401+part ; //0x46415401; // FAT1
+                                }
+                            } else
+#endif
+                            {
+                                envec->de_LowCyl = mbr->mbr_Partition[part].pe_StartLBA / envec->de_BlocksPerTrack;
+                                envec->de_HighCyl = (mbr->mbr_Partition[part].pe_StartLBA + mbr->mbr_Partition[part].pe_SectorCount) / envec->de_BlocksPerTrack - 1;
+                            }
+
+                            strncpy((char *) nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName, ncm->ncm_CDC->cdc_FATFSName, 84);
+                            CheckPartition(ncm);
+                        } else {
+                            KPRINTF(10, ("doesn't seem to be a FAT formatted disk\n"));
+                            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                                           "Partition %ld doesn't seem to be (correctly) FAT formatted.", part);
+                        }
+                    } else {
+                        KPRINTF(10, ("failed to read FATSuperBlock\n"));
+                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                                       "Failed to read FATSuperBlock.");
+                    }
+                /*} else {
+                    KPRINTF(10, ("partition not active!\n"));
+                }*/
+            }
+            else if(CheckNTFSPartType(&mbr->mbr_Partition[part]))
+            {
+                isntfs = TRUE;
+                psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Partition %ld is NTFS formatted!", part);
+                KPRINTF(5, ("examining partition %ld, start LBA: %ld, sector count: %ld\n",
+                            part, mbr->mbr_Partition[part].pe_StartLBA, mbr->mbr_Partition[part].pe_SectorCount));
+
+                nh->nh_RDsk.rdsk_PART.pb_DevFlags = 0;
+
+                if(*(ncm->ncm_CUC->cuc_FATDOSName))
+                {
+                    c2bstr(ncm->ncm_CUC->cuc_FATDOSName, nh->nh_RDsk.rdsk_PART.pb_DriveName);
+                } else {
+                    c2bstr("UMSD", nh->nh_RDsk.rdsk_PART.pb_DriveName);
+                }
+
+                envec = (struct DosEnvec *) nh->nh_RDsk.rdsk_PART.pb_Environment;
+                memset(envec, 0x00, sizeof(struct DosEnvec));
+
+                envec->de_TableSize = DE_BOOTBLOCKS;
+                envec->de_SizeBlock = ncm->ncm_BlockSize>>2;
+                envec->de_Surfaces = 1;
+                envec->de_SectorPerBlock = 1;
+                envec->de_Reserved = 1;
+                envec->de_NumBuffers = (ncm->ncm_CUC->cuc_FATBuffers+31)>>5; // use 1/32 buffers from FAT settings.
+                envec->de_BufMemType = MEMF_PUBLIC;
+                envec->de_MaxTransfer = (1UL<<(ncm->ncm_CDC->cdc_MaxTransfer+16))-1;
+                envec->de_Mask = 0xffffffff;
+                envec->de_BootPri = 0;
+                envec->de_Baud = 1200;
+                if(*ncm->ncm_CDC->cdc_NTFSControl)
+                {
+                    UBYTE *bptr = ncm->ncm_FATControlBSTR;
+                    bptr = (UBYTE *) ((((IPTR) bptr) + 3) & (~3));
+                    c2bstr(ncm->ncm_CDC->cdc_NTFSControl, bptr);
+                    envec->de_Control = (IPTR) MKBADDR(bptr);
+                } else {
+                    envec->de_Control = 0;
+                }
+                envec->de_BootBlocks = 0;
+
+                // we have no FSHD and LSEG blocks
+                nh->nh_RDsk.rdsk_RDB.rdb_FileSysHeaderList = NIL_PTR;
+                nh->nh_RDsk.rdsk_FSHD.fhb_SegListBlocks = 0;
+
+                KPRINTF(5, ("building NTFS style environment\n"));
+
+                envec->de_BlocksPerTrack = 1;
+                envec->de_Interleave = 0;
+                envec->de_DosType = ncm->ncm_CDC->cdc_NTFSDosType;
+                envec->de_LowCyl = mbr->mbr_Partition[part].pe_StartLBA / envec->de_BlocksPerTrack;
+                envec->de_HighCyl = (mbr->mbr_Partition[part].pe_StartLBA + mbr->mbr_Partition[part].pe_SectorCount) / envec->de_BlocksPerTrack - 1;
+
+                strncpy((char *) nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName, ncm->ncm_CDC->cdc_NTFSName, 84);
+                CheckPartition(ncm);
+            } else {
+                KPRINTF(10, ("unsuitable partition type\n"));
+                /*psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                               "Unsuitable FAT partition type.");*/
+            }
+        }
+        /* do floppy check */
+        if(IsFATSuperBlock((struct FATSuperBlock *) mbr))
+        {
+            psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Media is FAT formatted!");
+            isfat = TRUE;
+            nh->nh_RDsk.rdsk_PART.pb_DevFlags = 0;
+
+            if(*(ncm->ncm_CUC->cuc_FATDOSName))
+            {
+                c2bstr(ncm->ncm_CUC->cuc_FATDOSName, nh->nh_RDsk.rdsk_PART.pb_DriveName);
+            } else {
+                c2bstr("UF0", nh->nh_RDsk.rdsk_PART.pb_DriveName);
+            }
+
+            envec = (struct DosEnvec *) nh->nh_RDsk.rdsk_PART.pb_Environment;
+            memset(envec, 0x00, sizeof(struct DosEnvec));
+            stdIO->io_Command = TD_GETGEOMETRY;
+            stdIO->io_Data = tddg;
+            stdIO->io_Length = sizeof(*tddg);
+
+            if(nIOCmdTunnel(ncm, stdIO))
+            {
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "Couldn't read drive geometry, using floppy defaults");
+                envec->de_SizeBlock = ncm->ncm_BlockSize>>2;
+                envec->de_Surfaces = 2;
+                envec->de_BlocksPerTrack = 18;
+                envec->de_LowCyl = 0;
+                envec->de_HighCyl = 79;
+            } else {
+                envec->de_SizeBlock = ncm->ncm_BlockSize>>2;
+                envec->de_Surfaces = tddg->dg_Heads;
+                envec->de_BlocksPerTrack = tddg->dg_TrackSectors;
+                envec->de_LowCyl = 0;
+                envec->de_HighCyl = tddg->dg_Cylinders-1;
+            }
+            envec->de_TableSize = DE_BOOTBLOCKS;
+            envec->de_SectorPerBlock = 1;
+            envec->de_NumBuffers = ncm->ncm_CUC->cuc_FATBuffers;
+            envec->de_BufMemType = MEMF_PUBLIC;
+            envec->de_MaxTransfer = (1UL<<(ncm->ncm_CDC->cdc_MaxTransfer+16))-1;
+            envec->de_Mask = 0xffffffff;
+            envec->de_BootPri = 0;
+            envec->de_Baud = 1200;
+            if(*ncm->ncm_CDC->cdc_FATControl)
+            {
+                UBYTE *bptr = ncm->ncm_FATControlBSTR;
+                bptr = (UBYTE *) ((((IPTR) bptr) + 3) & (~3));
+                c2bstr(ncm->ncm_CDC->cdc_FATControl, bptr);
+                envec->de_Control = (IPTR) MKBADDR(bptr);
+            } else {
+                envec->de_Control = 0;
+            }
+            envec->de_BootBlocks = 0;
+            envec->de_Interleave = 0;
+            envec->de_DosType = ncm->ncm_CDC->cdc_FATDosType; //0x46415401; // FAT1
+            if((ncm->ncm_CDC->cdc_FATDosType & 0xffffff00) == 0x46415400)
+            {
+                /* tell FAT95 to use floppy detection */
+                envec->de_DosType = 0x46415400;
+            }
+
+            // we have no FSHD and LSEG blocks
+            nh->nh_RDsk.rdsk_RDB.rdb_FileSysHeaderList = NIL_PTR;
+            nh->nh_RDsk.rdsk_FSHD.fhb_SegListBlocks = 0;
+
+            KPRINTF(5, ("building FAT95 style environment\n"));
+
+            strncpy((char *) nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName, ncm->ncm_CDC->cdc_FATFSName, 84);
+            CheckPartition(ncm);
+        }
+        if(!(isfat || isntfs))
+        {
+            psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                           "Media does not seem to be FAT nor NTFS formatted.");
+        }
+    } else {
+        KPRINTF(10, ("failed to read MBR\n"));
+        if(ncm->ncm_CDC->cdc_PatchFlags & PFF_DEBUG)
+        {
+            psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                           "Failed to read MasterBootRecord for FAT/NTFS AutoMounting.");
+        }
+    }
+    psdFreeVec(mbr);
 }
 /* \\\ */
 
@@ -5031,8 +6143,7 @@ void CheckISO9660(struct NepClassMS *ncm)
         if((((ULONG *) blockbuf)[0] == AROS_LONG2BE(0x01434430)) && (((ULONG *) blockbuf)[1] == AROS_LONG2BE(0x30310100)))
         {
             psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Media is ISO9660.");
-            // FIXME AROS devs, you need to add the actual mounting code
-            //AutoMountCD(ncm);
+            AutoMountCD(ncm);
         }
     } else {
         KPRINTF(10, ("failed to read ISO sector\n"));
@@ -5043,6 +6154,93 @@ void CheckISO9660(struct NepClassMS *ncm)
         }
     }
     psdFreeVec(blockbuf);
+}
+/* \\\ */
+
+/* /// "ProcessRDB()" */
+void ProcessRDB(struct NepClassMS *ncm)
+{
+    struct NepMSBase *nh = ncm->ncm_ClsBase;
+    struct RigidDisk *rdsk = &nh->nh_RDsk;
+    ULONG nextPART;
+
+    if(ReadRDSK(ncm, &nh->nh_IOReq, &rdsk->rdsk_RDB))
+    {
+        nextPART = rdsk->rdsk_RDB.rdb_PartitionList;
+        while(nextPART != NIL_PTR)
+        {
+            if(ReadPART(ncm, &nh->nh_IOReq, &rdsk->rdsk_PART, nextPART))
+            {
+                CheckPartition(ncm);
+                if(nextPART == rdsk->rdsk_PART.pb_Next)
+                {
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                           "Your RDB is heavily corrupted! You need to fix this ASAP!");
+                    break;
+                }
+                nextPART = rdsk->rdsk_PART.pb_Next;
+            } else {
+                nextPART = NIL_PTR;
+            }
+        }
+    }
+}
+/* \\\ */
+
+/* /// "AutoMountCD()" */
+void AutoMountCD(struct NepClassMS *ncm)
+{
+    struct NepMSBase *nh = ncm->ncm_ClsBase;
+    struct DosEnvec *envec;
+
+    nh->nh_RDsk.rdsk_PART.pb_DevFlags = 0;
+
+    if(*(ncm->ncm_CUC->cuc_FATDOSName))
+    {
+        c2bstr(ncm->ncm_CUC->cuc_FATDOSName, nh->nh_RDsk.rdsk_PART.pb_DriveName);
+    } else {
+        c2bstr("UCD0", nh->nh_RDsk.rdsk_PART.pb_DriveName);
+    }
+
+    envec = (struct DosEnvec *) nh->nh_RDsk.rdsk_PART.pb_Environment;
+    memset(envec, 0x00, sizeof(struct DosEnvec));
+
+    envec->de_TableSize = DE_BOOTBLOCKS;
+    envec->de_SizeBlock = ncm->ncm_BlockSize>>2;
+    envec->de_Surfaces = 1;
+    envec->de_SectorPerBlock = 1;
+    envec->de_Reserved = 0xffffffff;
+    envec->de_NumBuffers = ncm->ncm_CUC->cuc_FATBuffers;
+    envec->de_BufMemType = MEMF_PUBLIC;
+    envec->de_MaxTransfer = (1UL<<(ncm->ncm_CDC->cdc_MaxTransfer+16))-1;
+    envec->de_Mask = 0xffffffff;
+    envec->de_BootPri = 0;
+    envec->de_Baud = 1200;
+    if(*ncm->ncm_CDC->cdc_CDControl)
+    {
+        UBYTE *bptr = ncm->ncm_FATControlBSTR;
+        bptr = (UBYTE *) ((((IPTR) bptr) + 3) & (~3));
+        c2bstr(ncm->ncm_CDC->cdc_CDControl, bptr);
+        envec->de_Control = (IPTR) MKBADDR(bptr);
+    } else {
+        envec->de_Control = 0;
+    }
+    envec->de_BootBlocks = 0;
+
+    // we have no FSHD and LSEG blocks
+    nh->nh_RDsk.rdsk_RDB.rdb_FileSysHeaderList = NIL_PTR;
+    nh->nh_RDsk.rdsk_FSHD.fhb_SegListBlocks = 0;
+
+    KPRINTF(5, ("building CDFS style environment\n"));
+
+    envec->de_BlocksPerTrack = 1;
+    envec->de_Interleave = 0;
+    envec->de_DosType = ncm->ncm_CDC->cdc_CDDosType;
+    envec->de_LowCyl = 0;
+    envec->de_HighCyl = 1;
+
+    strncpy((char *) nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName, ncm->ncm_CDC->cdc_CDFSName, 84);
+    CheckPartition(ncm);
 }
 /* \\\ */
 
@@ -5843,7 +7041,7 @@ AROS_UFH0(void, nGUITask)
                 }
 
                 case ID_ABOUT:
-                    MUI_RequestA(ncm->ncm_App, ncm->ncm_MainWindow, 0, NULL, "Blimey!", VERSION_STRING, NULL);
+                    MUI_RequestA(ncm->ncm_App, ncm->ncm_MainWindow, 0, NULL, "Blimey!", VERSION_STRING "\n\nCode for AutoMounting based\non work by Thore Böckelmann.", NULL);
                     break;
             }
             if(retid == MUIV_Application_ReturnID_Quit)
@@ -5862,7 +7060,7 @@ AROS_UFH0(void, nGUITask)
         set(ncm->ncm_MainWindow, MUIA_Window_Open, FALSE);
     }
     nGUITaskCleanup(ncm);
-    
+
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
@@ -6085,7 +7283,7 @@ AROS_UFH3(LONG, LUNListDisplayHook,
         *strarr = "\33l\33uID";
     }
     return(0);
-    
+
     AROS_USERFUNC_EXIT
 }
 /* \\\ */

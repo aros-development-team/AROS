@@ -56,7 +56,6 @@ struct ClsUnitCfg
     IPTR  cuc_AutoMountCD;
 };
 
-#if 0
 struct PartitionEntry
 {
     UBYTE pe_Flags;               /* Offset 0 */
@@ -101,20 +100,17 @@ struct FATSuperBlock
     UBYTE fsb_FileSystem2[8];            // 0052
     UBYTE fsb_BootCode[512 - 90];        // 005A
 };
-#endif
 
 #if defined(__GNUC__)
 # pragma pack()
 #endif
 
-#if 0
 struct RigidDisk
 {
     struct RigidDiskBlock rdsk_RDB;
     struct PartitionBlock rdsk_PART;
     struct FileSysHeaderBlock rdsk_FSHD;
 };
-#endif
 
 #define PFF_SINGLE_LUN     0x000001 /* allow access only to LUN 0 */
 #define PFF_MODE_XLATE     0x000002 /* translate 6 byte commands to 10 byte commands */
@@ -285,7 +281,7 @@ struct NepMSBase
     struct MsgPort     *nh_TimerMsgPort;  /* Port for timer.device */
     struct timerequest *nh_TimerIOReq;    /* Timer IO Request */
     BOOL                nh_RestartIt;     /* Restart removable task? */
-    //struct RigidDisk    nh_RDsk;          /* RigidDisk */
+    struct RigidDisk    nh_RDsk;          /* RigidDisk */
     UBYTE              *nh_OneBlock;      /* buffer for one block */
     ULONG               nh_OneBlockSize;  /* size of one block buffer */
 
