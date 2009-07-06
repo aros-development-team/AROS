@@ -1,110 +1,145 @@
 ## version $VER: serialprefs.catalog 1.1 (02.07.2009)
-## codeset 0
 ## language français
+## codeset 0
+;
 ;
 MSG_CANT_OPEN_LIB
 Impossible d'ouvrir %s V%ld !\n
+; Can't open %s V%ld!\n
 ;
 MSG_CANT_LOCK_SCR
 Impossible de verrouiller l'écran public !
+; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
 Impossible d'obtenir la structure DrawInfo !
+; Can't get DrawInfo!
 ;
 MSG_CANT_GET_VI
 Impossible d'obtenir la structure VisualInfo !
+; Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_GADGET
 Impossible de créer les gadgets !
+; Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
 Impossible de créer les menus !
+; Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
 Impossible de créer la fenêtre !
+; Can't create window!
 ;
 MSG_WINTITLE
 Préférences des ports séries
+; Serial Preferences
 ;
 MSG_MEN_PROJECT
 Projet
+; Project
 ;
 MSG_MEN_PROJECT_OPEN
 O\0Ouvrir ...
+; O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS
 A\0Sauver sous ...
+; A\0Save As...
 ;
 MSG_MEN_PROJECT_QUIT
 Q\0Quitter
+; Q\0Quit
 ;
 MSG_MEN_EDIT
 Modifier
+; Edit
 ;
 MSG_MEN_EDIT_DEFAULT
 D\0Configuration par défaut
+; D\0Reset to Defaults
 ;
 MSG_MEN_EDIT_LASTSAVED
 L\0Dernière sauvegarde
+; L\0Last Saved
 ;
 MSG_MEN_EDIT_RESTORE
 R\0Revenir à l'initial
+; R\0Restore
 ;
 MSG_MEN_SETTINGS
 Préférences
+; Settings
 ;
 MSG_MEN_SETTINGS_CREATEICONS
 I\0Créer des icônes ?
+; I\0Create Icons?
 ;
 MSG_ASL_OPEN_TITLE
 Charger les préférences
+; Load Serial Preferences
 ;
 MSG_ASL_SAVE_TITLE
 Sauver les préférences
+; Save Serial Preferences
 ;
 MSG_OK
 Ok
+; Ok
 ;
 MSG_GAD_SAVE
 Sauver
+; Save
 ;
 MSG_GAD_USE
 Utiliser
+; Use
 ;
 MSG_GAD_CANCEL
 Annuler
+; Cancel
 ;
 MSG_GAD_BAUDRATE
 Vitesse
+; Baudrate
 ;
 MSG_GAD_PARITY
 Parité
+; Parity
 ;
 MSG_GAD_STOPBITS
 Bits d'arrêt
+; Stop Bits
 ;
 MSG_GAD_DATABITS
 Bits de données
-;
+; Data Bits
 ;
 MSG_GAD_INPUTBUFFERSIZE
 Taille du tampon d'entrée
+; Input Buffer Size
 ;
 MSG_GAD_OUTPUTBUFFERSIZE
 Taille du tampon de sortie
+; Output Buffer Size
 ;
 MSG_PARITY_NONE
 Sans
+; None
 ;
 MSG_PARITY_EVEN
 Paire
+; Even
 ;
 MSG_PARITY_ODD
 Impaire
+; Odd
 ;
 MSG_PARITY_MARK
 Marquée
+; Mark
 ;
 MSG_PARITY_SPACE
 Espacée
+; Space
 ;
