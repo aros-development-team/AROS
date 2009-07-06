@@ -303,7 +303,7 @@ struct SFormatEntry* SelectDevice(void)
             MUIA_Window_Title, (IPTR)_(MSG_APPLICATION_TITLE),
             WindowContents, (IPTR)(VGroup,
 		Child, (IPTR)(TextObject,
-		    MUIA_Text_Contents, (IPTR)"Select Device To Format",
+		    MUIA_Text_Contents, (IPTR)_(MSG_SELECTDEVICE),
 		End),
 		Child, (IPTR)(list = (Object *)ListviewObject,
 		    MUIA_Listview_List, ListObject,

@@ -1,5 +1,5 @@
 ## version $VER: XX.catalog XX.XX ($TODAY)
-## language X
+## language x
 ## codeset 0
 ;
 MSG_OK
@@ -32,6 +32,12 @@ Initialisation du disque...\n
 ;
 ; ===========================================================
 ; gui.c
+;
+MSG_SELECTDEVICE
+Choisissez un périphérique\nà formater
+; Select Device To Format
+;
+; ***NEW***
 ;
 MSG_GUI_FORMATTING
 Formatage du disque...
@@ -215,7 +221,7 @@ L'ouverture du périphérique a retourné l'erreur %ld.
 ;
 MSG_ERROR_IDE
 Ce périphérique apparait être un disque IDE utilisant un vieux pilote IDE Commodore. Ce pilote peut tenter de réaliser des transferts long de données que certains disques IDE ne supportent pas. Pour éviter ce risque, vous devriez régler le maxtransfert à 0x10000.
-; This device appears to be on an IDE drive\ 
+; This device appears to be on an IDE drive\
 ;  using an old Commodore IDE driver.  This driver may\
 ;  attempt to perform long data transfers that some IDE\
 ;  drives do not carry out correctly.  To avoid the risk\
