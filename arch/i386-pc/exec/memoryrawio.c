@@ -40,6 +40,7 @@ static void LogTask();
 static struct LogData *data;
 static struct Task *task;
 static BOOL data_missed = FALSE;
+static struct LogBlock *next_block = NULL;
 
 
 /*****i***********************************************************************
@@ -204,29 +205,28 @@ static BOOL data_missed = FALSE;
 
     if (data->block_pos == data->block->length)
     {
-        if (AttemptSemaphore(&data->lock))
+        /* Move on to the next block if it exists */
+
+        Disable();
+        if ((new_block = next_block) != NULL)
+            next_block = NULL;
+        Enable();
+
+        if (new_block != NULL)
         {
-            /* Move on to the next block if it exists and no one else is
-             * accessing the list */
+            data->block = new_block;
+            data->block_pos = 0;
 
-            new_block = (struct LogBlock *)data->block->node.mln_Succ;
-            if (new_block->node.mln_Succ != NULL)
+            /* If data was missed, add a warning to the log */
+
+            if (data_missed)
             {
-                data->block = new_block;
-                data->block_pos = 0;
-
-                /* If data was missed, add a warning to the log */
-
-                if (data_missed)
-                {
-                    CopyMem(data_missed_msg,
-                        (UBYTE *)data->block + sizeof(struct LogBlock),
-                        strlen(data_missed_msg));
-                    data->block_pos += strlen(data_missed_msg);
-                    data_missed = FALSE;
-                }
+                CopyMem(data_missed_msg,
+                    (UBYTE *)data->block + sizeof(struct LogBlock),
+                    strlen(data_missed_msg));
+                data->block_pos += strlen(data_missed_msg);
+                data_missed = FALSE;
             }
-            ReleaseSemaphore(&data->lock);
 
             /* Ask for another new block, which will hopefully be allocated
              * by the time we need it */
@@ -262,6 +262,11 @@ static void LogTask()
         if (block != NULL)
         {
             block->length = BLOCK_SIZE - sizeof(struct LogBlock);
+
+            Disable();
+            next_block = block;
+            Enable();
+
             ObtainSemaphore(&data->lock);
             AddTail((struct List *)&data->buffers, (struct Node *)block);
             ReleaseSemaphore(&data->lock);
