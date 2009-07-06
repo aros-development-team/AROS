@@ -63,10 +63,12 @@ void __showerror(char *format, const IPTR *args)
         if (name)
             kprintf("%s: ", name);
 
-        if (args)
+        if (args) {
             vkprintf(format, args);
+            kprintf("\n");
+        }
         else
-            kprintf("%s", format);
+            kprintf("%s\n", format);
     }
 
     if (DOSBase != NULL)
