@@ -23,6 +23,9 @@ Initializing disk...\n
 ; ===========================================================
 ; gui.c
 ;
+MSG_SELECTDEVICE (//)
+Select Device To Format
+;
 MSG_GUI_FORMATTING (//)
 Formatting Disk...
 ;
