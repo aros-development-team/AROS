@@ -106,6 +106,8 @@
     struct DeviceNode *dn;
     struct FileSysStartupMsg *fssm;
     struct DosEnvec *de;
+    struct DosEnvec *newde;
+    ULONG  desize;
     STRPTR s1, s2 = 0;
     BSTR   bs1, bs2;
     int    strLen1, strLen2, sz1, sz2;
@@ -118,11 +120,19 @@
 
     /* This is the environment structure */
     de = (struct DosEnvec *)((IPTR *)parmPacket + 4);
-    
+    desize = sizeof(IPTR) * (de->de_TableSize + 1);
+    newde = AllocMem(desize, MEMF_CLEAR | MEMF_PUBLIC);
+    if(de == NULL)
+    {
+        return NULL;
+    }
+    CopyMemQuick(de, newde, desize);
+        
     dn = AllocMem(sizeof(struct DeviceNode), MEMF_CLEAR | MEMF_PUBLIC);
     
     if (dn == NULL)
     {
+	FreeMem(newde, desize);
 	return NULL;
     }
     
@@ -131,6 +141,7 @@
     
     if (fssm == NULL)
     {
+	FreeMem(newde, desize);
 	FreeMem(dn, sizeof(struct DeviceNode));
 	
 	return NULL;
@@ -159,6 +170,7 @@
     
     if (s1 == NULL)
     {
+	FreeMem(newde, desize);
 	FreeMem(dn, sizeof(struct DeviceNode));
 	FreeMem(fssm, sizeof(struct FileSysStartupMsg));
 	
@@ -187,7 +199,7 @@
     /* Strings are done, now the FileSysStartupMsg */
     fssm->fssm_Unit = ((IPTR *)parmPacket)[2];
     fssm->fssm_Device = bs2;
-    fssm->fssm_Environ = MKBADDR(de);
+    fssm->fssm_Environ = MKBADDR(newde);
     fssm->fssm_Flags = ((IPTR *)parmPacket)[3];
     
     /* FSSM is done, now the DeviceNode */

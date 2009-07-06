@@ -98,7 +98,7 @@
 	    
 	       DeviceProc() will see that dn_Device for this node is NULL
 	       and start up the handler. */
-	    DeviceProc((struct Device *)deviceNode);
+	    DeviceProc(AROS_BSTR_ADDR(deviceNode->dn_Handler));
 	}
 
 	CloseLibrary((struct Library *)DOSBase);
