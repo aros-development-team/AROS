@@ -1042,7 +1042,7 @@ AROS_UFH0(void, nHidTask)
         }
         nFreeHid(nch);
     }
-    
+
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
@@ -6476,7 +6476,7 @@ BOOL nLoadItem(struct NepClassHid *nch, struct PsdIFFContext *rppic, struct List
     newform[0] = AROS_LONG2BE(ID_FORM);
     newform[1] = AROS_LONG2BE(4);
     newform[2] = *buf;
-    itpic = psdFindCfgForm(rppic, newform[2]);
+    itpic = psdFindCfgForm(rppic, AROS_LONG2BE(newform[2]));
     if(!itpic)
     {
         return(FALSE);
@@ -6555,7 +6555,7 @@ struct PsdIFFContext * nSaveItem(struct NepClassHid *nch, struct PsdIFFContext *
     newform[0] = AROS_LONG2BE(ID_FORM);
     newform[1] = AROS_LONG2BE(4);
     newform[2] = *buf;
-    itpic = psdFindCfgForm(rppic, newform[2]);
+    itpic = psdFindCfgForm(rppic, AROS_LONG2BE(newform[2]));
     if(!itpic)
     {
         itpic = psdAddCfgEntry(rppic, newform);
@@ -6793,9 +6793,9 @@ AROS_LH2(ULONG, nSetJoyPortAttrsA,
         }
     }
     KPRINTF(40, ("And after %08lx\n", result));
-    
+
     return(result);
-    
+
     AROS_LIBFUNC_EXIT
 }
 /* \\\ */
@@ -6930,7 +6930,7 @@ AROS_UFH0(void, nDispatcherTask)
         Signal(nh->nh_ReadySigTask, 1L<<nh->nh_ReadySignal);
     }
     nh->nh_DispatcherTask = NULL;
-    
+
     AROS_USERFUNC_EXIT
 }
 /* \\\ */

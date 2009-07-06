@@ -139,7 +139,7 @@ ULONG nRevLookup(UWORD id, UWORD def, UWORD *field)
 AROS_UFH0(void, nGUITask)
 {
     AROS_USERFUNC_INIT
-    
+
     struct Task *thistask;
     struct NepHidBase *nh;
     struct NepClassHid *nch;
@@ -377,7 +377,7 @@ AROS_UFH0(void, nGUITask)
                         Child, VSpace(0),
                         Child, ColGroup(2), GroupFrameT(nch->nch_Interface ? "Device Settings" : "Default Device Settings"),
                             //Child, HSpace(0),
-                            Child, Label((ULONG) "Shell console window:"),
+                            Child, Label((IPTR) "Shell console window:"),
                             Child, nch->nch_ConWindowObj = StringObject,
                                 StringFrame,
                                 MUIA_CycleChain, 1,
@@ -385,7 +385,7 @@ AROS_UFH0(void, nGUITask)
                                 MUIA_String_Contents, nch->nch_CDC->cdc_ShellCon,
                                 MUIA_String_MaxLen, 127,
                                 End,
-                            Child, Label((ULONG) "Shell default stack:"),
+                            Child, Label((IPTR) "Shell default stack:"),
                             Child, nch->nch_ShellStackObj = StringObject,
                                 StringFrame,
                                 MUIA_CycleChain, 1,
@@ -393,7 +393,7 @@ AROS_UFH0(void, nGUITask)
                                 MUIA_String_Integer, nch->nch_CDC->cdc_ShellStack,
                                 MUIA_String_Accept, "0123456789",
                                 End,
-                            Child, Label((ULONG) "Enable keyboard reset:"),
+                            Child, Label((IPTR) "Enable keyboard reset:"),
                             Child, HGroup,
                                 Child, nch->nch_EnableKBResetObj = ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
@@ -405,7 +405,7 @@ AROS_UFH0(void, nGUITask)
                                     MUIA_ShowSelState, FALSE,
                                     End,
                                 Child, HSpace(0),
-                                Child, Label((ULONG) "Hijack ResetHandlers:"),
+                                Child, Label((IPTR) "Hijack ResetHandlers:"),
                                 Child, nch->nch_EnableRHObj = ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
@@ -416,7 +416,7 @@ AROS_UFH0(void, nGUITask)
                                     MUIA_ShowSelState, FALSE,
                                     End,
                                 End,
-                            Child, Label((ULONG) "Reset delay:"),
+                            Child, Label((IPTR) "Reset delay:"),
                             Child, nch->nch_ResetDelayObj = SliderObject, SliderFrame,
                                 MUIA_CycleChain, 1,
                                 MUIA_Numeric_Min, 0,
@@ -424,7 +424,7 @@ AROS_UFH0(void, nGUITask)
                                 MUIA_Numeric_Value, nch->nch_CDC->cdc_ResetDelay,
                                 MUIA_Numeric_Format, "%ldsec",
                                 End,
-                            Child, Label((ULONG) "Turbo mouse:"),
+                            Child, Label((IPTR) "Turbo mouse:"),
                             Child, HGroup,
                                 Child, nch->nch_TurboMouseObj = CycleObject,
                                     MUIA_CycleChain, 1,
@@ -436,7 +436,7 @@ AROS_UFH0(void, nGUITask)
                             End,
                         Child, VSpace(0),
                         Child, ColGroup(2), GroupFrameT("HID Output Control Window"),
-                            Child, Label((ULONG) "Open on startup:"),
+                            Child, Label((IPTR) "Open on startup:"),
                             Child, HGroup,
                                 Child, nch->nch_HIDCtrlAutoObj = ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
@@ -456,7 +456,7 @@ AROS_UFH0(void, nGUITask)
                                     MUIA_Text_Contents, "\33c Open now ",
                                     End,
                                 End,
-                            Child, Label((ULONG) "Window Title:"),
+                            Child, Label((IPTR) "Window Title:"),
                             Child, HGroup,
                                 Child, nch->nch_HIDCtrlTitleObj = StringObject,
                                     StringFrame,
@@ -465,7 +465,7 @@ AROS_UFH0(void, nGUITask)
                                     MUIA_String_Contents, nch->nch_CDC->cdc_HIDCtrlTitle,
                                     MUIA_String_MaxLen, 31,
                                     End,
-                                Child, Label((ULONG) "Rexx Port:"),
+                                Child, Label((IPTR) "Rexx Port:"),
                                 Child, nch->nch_HIDCtrlRexxObj = StringObject,
                                     StringFrame,
                                     MUIA_CycleChain, 1,
@@ -477,31 +477,31 @@ AROS_UFH0(void, nGUITask)
                             End,
                         Child, VSpace(0),
                         Child, ColGroup(4), GroupFrameT("LowLevel Library Joypad emulation"),
-                            Child, Label((ULONG) "Port 0:"),
+                            Child, Label((IPTR) "Port 0:"),
                             Child, nch->nch_LLPortModeObj[0] = CycleObject,
                                 MUIA_CycleChain, 1,
                                 MUIA_Cycle_Entries, LLPortStrings,
                                 MUIA_Cycle_Active, nch->nch_CDC->cdc_LLPortMode[0],
                                 End,
-                            Child, Label((ULONG) "Port 2:"),
+                            Child, Label((IPTR) "Port 2:"),
                             Child, nch->nch_LLPortModeObj[2] = CycleObject,
                                 MUIA_CycleChain, 1,
                                 MUIA_Cycle_Entries, LLPortStrings,
                                 MUIA_Cycle_Active, nch->nch_CDC->cdc_LLPortMode[2],
                                 End,
-                            Child, Label((ULONG) "Port 1:"),
+                            Child, Label((IPTR) "Port 1:"),
                             Child, nch->nch_LLPortModeObj[1] = CycleObject,
                                 MUIA_CycleChain, 1,
                                 MUIA_Cycle_Entries, LLPortStrings,
                                 MUIA_Cycle_Active, nch->nch_CDC->cdc_LLPortMode[1],
                                 End,
-                            Child, Label((ULONG) "Port 3:"),
+                            Child, Label((IPTR) "Port 3:"),
                             Child, nch->nch_LLPortModeObj[3] = CycleObject,
                                 MUIA_CycleChain, 1,
                                 MUIA_Cycle_Entries, LLPortStrings,
                                 MUIA_Cycle_Active, nch->nch_CDC->cdc_LLPortMode[3],
                                 End,
-                            Child, Label((ULONG) "Rumble Port:"),
+                            Child, Label((IPTR) "Rumble Port:"),
                             Child, nch->nch_LLRumblePortObj = CycleObject,
                                 MUIA_CycleChain, 1,
                                 MUIA_Cycle_Entries, LLRumbleStrings,
@@ -529,7 +529,7 @@ AROS_UFH0(void, nGUITask)
                                         End,
                                     Child, VGroup,
                                         Child, VSpace(0),
-                                        Child, Label((ULONG) "->"),
+                                        Child, Label((IPTR) "->"),
                                         Child, VSpace(0),
                                         End,
                                     Child, nch->nch_RawKeymapLVObj = ListviewObject,
@@ -560,7 +560,7 @@ AROS_UFH0(void, nGUITask)
                                         MUIA_Disabled, !nch->nch_Interface,
                                         MUIA_ShowSelState, FALSE,
                                         End,
-                                    Child, Label((ULONG) "Track incoming key events"),
+                                    Child, Label((IPTR) "Track incoming key events"),
                                     End,
                                 End,
                             End,
@@ -620,7 +620,7 @@ AROS_UFH0(void, nGUITask)
                                     //MUIA_Selected,
                                     MUIA_ShowSelState, FALSE,
                                     End,
-                                Child, Label((ULONG) "Track incoming events"),
+                                Child, Label((IPTR) "Track incoming events"),
                                 Child, HSpace(0),
                                 Child, nch->nch_ReportValuesObj = ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
@@ -631,7 +631,7 @@ AROS_UFH0(void, nGUITask)
                                     //MUIA_Selected,
                                     MUIA_ShowSelState, FALSE,
                                     End,
-                                Child, Label((ULONG) "Report current values"),
+                                Child, Label((IPTR) "Report current values"),
                                 Child, HSpace(0),
                                 Child, nch->nch_DisableActionsObj = ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
@@ -642,7 +642,7 @@ AROS_UFH0(void, nGUITask)
                                     //MUIA_Selected,
                                     MUIA_ShowSelState, FALSE,
                                     End,
-                                Child, Label((ULONG) "Disable all actions"),
+                                Child, Label((IPTR) "Disable all actions"),
                                 End,
                             Child, HGroup, GroupFrameT("Performed actions"),
                                 Child, VGroup,
@@ -698,7 +698,7 @@ AROS_UFH0(void, nGUITask)
                                             MUIA_Cycle_Entries, ActionTypeStrings,
                                             MUIA_Cycle_Active, 0,
                                             End,
-                                        Child, Label((ULONG) "Trigger:"),
+                                        Child, Label((IPTR) "Trigger:"),
                                         Child, nch->nch_ActionTriggerObj = CycleObject,
                                             MUIA_CycleChain, 1,
                                             MUIA_Cycle_Entries, ActionTriggerStrings,
@@ -706,7 +706,7 @@ AROS_UFH0(void, nGUITask)
                                             End,
                                         End,
                                     Child, HGroup,
-                                        Child, Label((ULONG) "Opts:"),
+                                        Child, Label((IPTR) "Opts:"),
                                         Child, nch->nch_ActionAbsToRelObj = TextObject, ButtonFrame,
                                             MUIA_Background, MUII_ButtonBack,
                                             MUIA_CycleChain, 1,
@@ -740,21 +740,21 @@ AROS_UFH0(void, nGUITask)
                                         End,
                                     Child, nch->nch_A_ClipGroupObj = HGroup, GroupFrameT("Clipping"),
                                         MUIA_ShowMe, FALSE,
-                                        Child, Label((ULONG) "Min:"),
+                                        Child, Label((IPTR) "Min:"),
                                         Child, nch->nch_A_ClipMinObj = SliderObject, SliderFrame,
                                             MUIA_CycleChain, 1,
                                             MUIA_Numeric_Min, 0,
                                             MUIA_Numeric_Max, 100,
                                             MUIA_Numeric_Format, "%ld%%",
                                             End,
-                                        Child, Label((ULONG) "Max:"),
+                                        Child, Label((IPTR) "Max:"),
                                         Child, nch->nch_A_ClipMaxObj = SliderObject, SliderFrame,
                                             MUIA_CycleChain, 1,
                                             MUIA_Numeric_Min, 0,
                                             MUIA_Numeric_Max, 100,
                                             MUIA_Numeric_Format, "%ld%%",
                                             End,
-                                        Child, Label((ULONG) "Stretch:"),
+                                        Child, Label((IPTR) "Stretch:"),
                                         Child, nch->nch_A_ClipStretchObj = ImageObject, ImageButtonFrame,
                                             MUIA_Background, MUII_ButtonBack,
                                             MUIA_CycleChain, 1,
@@ -767,7 +767,7 @@ AROS_UFH0(void, nGUITask)
                                         End,
                                     Child, nch->nch_A_ScaleGroupObj = HGroup, GroupFrameT("Scaling"),
                                         MUIA_ShowMe, FALSE,
-                                        Child, Label((ULONG) "Min:"),
+                                        Child, Label((IPTR) "Min:"),
                                         Child, nch->nch_A_ScaleMinObj = StringObject,
                                             StringFrame,
                                             MUIA_String_Accept, "0123456789-",
@@ -775,7 +775,7 @@ AROS_UFH0(void, nGUITask)
                                             MUIA_String_AdvanceOnCR, TRUE,
                                             MUIA_String_MaxLen, 10,
                                             End,
-                                        Child, Label((ULONG) "Max:"),
+                                        Child, Label((IPTR) "Max:"),
                                         Child, nch->nch_A_ScaleMaxObj = StringObject,
                                             StringFrame,
                                             MUIA_String_Accept, "0123456789-",
@@ -787,7 +787,7 @@ AROS_UFH0(void, nGUITask)
                                     Child, nch->nch_A_CCGroupObj = VGroup, GroupFrameT("Pre-condition code"),
                                         MUIA_ShowMe, FALSE,
                                         Child, HGroup,
-                                            Child, Label((ULONG) "If"),
+                                            Child, Label((IPTR) "If"),
                                             Child, nch->nch_A_CCVar1Obj = CycleObject,
                                                 MUIA_CycleChain, 1,
                                                 MUIA_Cycle_Entries, A_CCVariableStrings,
@@ -802,7 +802,7 @@ AROS_UFH0(void, nGUITask)
                                                 End,
                                             End,
                                         Child, HGroup,
-                                            Child, Label((ULONG) "Left constant:"),
+                                            Child, Label((IPTR) "Left constant:"),
                                             Child, nch->nch_A_CCConst1Obj = StringObject,
                                                 StringFrame,
                                                 MUIA_String_Accept, "0123456789-",
@@ -810,7 +810,7 @@ AROS_UFH0(void, nGUITask)
                                                 MUIA_String_AdvanceOnCR, TRUE,
                                                 MUIA_String_MaxLen, 10,
                                                 End,
-                                            Child, Label((ULONG) "Right constant:"),
+                                            Child, Label((IPTR) "Right constant:"),
                                             Child, nch->nch_A_CCConst2Obj = StringObject,
                                                 StringFrame,
                                                 MUIA_String_Accept, "0123456789-",
@@ -823,14 +823,14 @@ AROS_UFH0(void, nGUITask)
                                     Child, nch->nch_A_ValGroupObj = VGroup, GroupFrameT("Input value redirection"),
                                         MUIA_ShowMe, FALSE,
                                         Child, HGroup,
-                                            Child, Label((ULONG) "Take value for action from"),
+                                            Child, Label((IPTR) "Take value for action from"),
                                             Child, nch->nch_A_ValVarObj = CycleObject,
                                                 MUIA_CycleChain, 1,
                                                 MUIA_Cycle_Entries, A_CCVariableStrings,
                                                 End,
                                             End,
                                         Child, HGroup,
-                                            Child, Label((ULONG) "Constant:"),
+                                            Child, Label((IPTR) "Constant:"),
                                             Child, nch->nch_A_ValConstObj = StringObject,
                                                 StringFrame,
                                                 MUIA_String_Accept, "0123456789-",
@@ -847,7 +847,7 @@ AROS_UFH0(void, nGUITask)
                                             Child, VSpace(0),
                                             Child, HGroup,
                                                 Child, HSpace(0),
-                                                Child, Label((ULONG) "Does absolutely nothing."),
+                                                Child, Label((IPTR) "Does absolutely nothing."),
                                                 Child, HSpace(0),
                                                 End,
                                             Child, VSpace(0),
@@ -860,7 +860,7 @@ AROS_UFH0(void, nGUITask)
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Cycle_Entries, A_QualOpStrings,
                                                     End,
-                                                Child, Label((ULONG) "qualifier"),
+                                                Child, Label((IPTR) "qualifier"),
                                                 Child, nch->nch_A_KeyQualObj = CycleObject,
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Cycle_Entries, A_QualifierStrings,
@@ -873,14 +873,14 @@ AROS_UFH0(void, nGUITask)
                                             Child, VSpace(0),
                                             Child, HGroup,
                                                 Child, HSpace(0),
-                                                Child, Label((ULONG) "\33cMapping of USB keycodes\nto Amiga rawcodes"),
+                                                Child, Label((IPTR) "\33cMapping of USB keycodes\nto Amiga rawcodes"),
                                                 Child, HSpace(0),
                                                 End,
                                             Child, VSpace(0),
                                             End,
                                         Child, VGroup, GroupFrameT("Raw key"), /* HUA_RAWKEY */
                                             //Child, VSpace(0),
-                                            Child, Label((ULONG) "\33cSelect key to send"),
+                                            Child, Label((IPTR) "\33cSelect key to send"),
                                             Child, nch->nch_A_RawKeyObj = ListviewObject,
                                                 MUIA_Listview_Input, TRUE,
                                                 MUIA_Listview_MultiSelect, MUIV_Listview_MultiSelect_None,
@@ -901,7 +901,7 @@ AROS_UFH0(void, nGUITask)
                                                     //MUIA_Selected,
                                                     MUIA_ShowSelState, FALSE,
                                                     End,
-                                                Child, Label((ULONG) "Send keyup event instead of keydown"),
+                                                Child, Label((IPTR) "Send keyup event instead of keydown"),
                                                 Child, HSpace(0),
                                                 End,
                                             //Child, VSpace(0),
@@ -909,7 +909,7 @@ AROS_UFH0(void, nGUITask)
                                         Child, VGroup, GroupFrameT("Vanilla key"), /* HUA_VANILLA */
                                             Child, VSpace(0),
                                             Child, HGroup,
-                                                Child, Label((ULONG) "Key to send:"),
+                                                Child, Label((IPTR) "Key to send:"),
                                                 Child, nch->nch_A_VanillaStrObj = StringObject,
                                                     StringFrame,
                                                     MUIA_CycleChain, 1,
@@ -922,7 +922,7 @@ AROS_UFH0(void, nGUITask)
                                         Child, VGroup, GroupFrameT("Keystring"), /* HUA_KEYSTRING */
                                             Child, VSpace(0),
                                             Child, HGroup,
-                                                Child, Label((ULONG) "String to send:"),
+                                                Child, Label((IPTR) "String to send:"),
                                                 Child, nch->nch_A_KeyStringObj = StringObject,
                                                     StringFrame,
                                                     MUIA_CycleChain, 1,
@@ -936,7 +936,7 @@ AROS_UFH0(void, nGUITask)
                                             Child, VSpace(0),
                                             Child, HGroup,
                                                 Child, HSpace(0),
-                                                Child, Label((ULONG) "Move mouse"),
+                                                Child, Label((IPTR) "Move mouse"),
                                                 Child, nch->nch_A_MousePosOpObj = CycleObject,
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Cycle_Entries, A_MousePosOpStrings,
@@ -957,7 +957,7 @@ AROS_UFH0(void, nGUITask)
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Cycle_Entries, A_MouseButStrings,
                                                     End,
-                                                Child, Label((ULONG) "mouse button"),
+                                                Child, Label((IPTR) "mouse button"),
                                                 Child, HSpace(0),
                                                 End,
                                             Child, VSpace(0),
@@ -966,12 +966,12 @@ AROS_UFH0(void, nGUITask)
                                             Child, VSpace(0),
                                             Child, HGroup,
                                                 Child, HSpace(0),
-                                                Child, Label((ULONG) "Send"),
+                                                Child, Label((IPTR) "Send"),
                                                 Child, nch->nch_A_TabletAxisObj = CycleObject,
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Cycle_Entries, A_TabletAxisStrings,
                                                     End,
-                                                Child, Label((ULONG) "data"),
+                                                Child, Label((IPTR) "data"),
                                                 Child, HSpace(0),
                                                 End,
                                             Child, VSpace(0),
@@ -988,7 +988,7 @@ AROS_UFH0(void, nGUITask)
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Cycle_Entries, A_JoypadFeatStrings,
                                                     End,
-                                                Child, Label((ULONG) "on"),
+                                                Child, Label((IPTR) "on"),
                                                 Child, nch->nch_A_JoypadPortObj = CycleObject,
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Cycle_Entries, A_JoypadPortStrings,
@@ -1001,12 +1001,12 @@ AROS_UFH0(void, nGUITask)
                                             Child, VSpace(0),
                                             Child, HGroup,
                                                 Child, HSpace(0),
-                                                Child, Label((ULONG) "Set"),
+                                                Child, Label((IPTR) "Set"),
                                                 Child, nch->nch_A_APadFeatObj = CycleObject,
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Cycle_Entries, A_APadFeatStrings,
                                                     End,
-                                                Child, Label((ULONG) "of"),
+                                                Child, Label((IPTR) "of"),
                                                 Child, nch->nch_A_APadPortObj = CycleObject,
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Cycle_Entries, A_JoypadPortStrings,
@@ -1019,16 +1019,16 @@ AROS_UFH0(void, nGUITask)
                                             Child, VSpace(0),
                                             Child, HGroup,
                                                 Child, HSpace(0),
-                                                Child, Label((ULONG) "Send"),
+                                                Child, Label((IPTR) "Send"),
                                                 Child, nch->nch_A_WheelOpObj = CycleObject,
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Cycle_Entries, A_WheelOpStrings,
                                                     End,
-                                                Child, Label((ULONG) "event"),
+                                                Child, Label((IPTR) "event"),
                                                 Child, HSpace(0),
                                                 End,
                                             Child, HGroup,
-                                                Child, Label((ULONG) "Distance:"),
+                                                Child, Label((IPTR) "Distance:"),
                                                 Child, nch->nch_A_WheelDistObj = SliderObject, SliderFrame,
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Numeric_Min, 1,
@@ -1040,7 +1040,7 @@ AROS_UFH0(void, nGUITask)
                                         Child, VGroup, GroupFrameT("Sound playback"), /* HUA_SOUND */
                                             Child, VSpace(0),
                                             Child, ColGroup(2),
-                                                Child, Label((ULONG) "Soundfile:"),
+                                                Child, Label((IPTR) "Soundfile:"),
                                                 Child, PopaslObject,
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Popstring_String, nch->nch_A_SoundFileObj = StringObject,
@@ -1051,7 +1051,7 @@ AROS_UFH0(void, nGUITask)
                                                     MUIA_Popstring_Button, PopButton(MUII_PopFile),
                                                     ASLFR_TitleText, "Select sound file...",
                                                     End,
-                                                Child, Label((ULONG) "Volume:"),
+                                                Child, Label((IPTR) "Volume:"),
                                                 Child, nch->nch_A_SoundVolObj = SliderObject, SliderFrame,
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Numeric_Min, 0,
@@ -1063,7 +1063,7 @@ AROS_UFH0(void, nGUITask)
                                         Child, VGroup, GroupFrameT("Shell command execution"), /* HUA_SHELL */
                                             Child, VSpace(0),
                                             Child, ColGroup(2),
-                                                Child, Label((ULONG) "Command:"),
+                                                Child, Label((IPTR) "Command:"),
                                                 Child, PopaslObject,
                                                     MUIA_Popstring_String, nch->nch_A_ShellComObj = StringObject,
                                                         StringFrame,
@@ -1073,7 +1073,7 @@ AROS_UFH0(void, nGUITask)
                                                     MUIA_Popstring_Button, PopButton(MUII_PopFile),
                                                     ASLFR_TitleText, "Select an executable...",
                                                     End,
-                                                Child, Label((ULONG) "ASync:"),
+                                                Child, Label((IPTR) "ASync:"),
                                                 Child, HGroup,
                                                     Child, nch->nch_A_ShellAsyncObj = ImageObject, ImageButtonFrame,
                                                         MUIA_Background, MUII_ButtonBack,
@@ -1093,7 +1093,7 @@ AROS_UFH0(void, nGUITask)
                                             Child, VSpace(0),
                                             Child, HGroup,
                                                 Child, HSpace(0),
-                                                Child, Label((ULONG) "Sorry, not yet implemented."),
+                                                Child, Label((IPTR) "Sorry, not yet implemented."),
                                                 Child, HSpace(0),
                                                 End,
                                             Child, VSpace(0),
@@ -1112,7 +1112,7 @@ AROS_UFH0(void, nGUITask)
                                                 End,
                                             //Child, VSpace(0),
                                             Child, HGroup,
-                                                Child, Label((ULONG) "Array values:"),
+                                                Child, Label((IPTR) "Array values:"),
                                                 Child, nch->nch_A_OutArrayObj = StringObject,
                                                     StringFrame,
                                                     MUIA_CycleChain, 1,
@@ -1121,7 +1121,7 @@ AROS_UFH0(void, nGUITask)
                                                     End,
                                                 End,
                                             Child, HGroup,
-                                                Child, Label((ULONG) "Operation:"),
+                                                Child, Label((IPTR) "Operation:"),
                                                 Child, nch->nch_A_OutOpObj = CycleObject,
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Cycle_Entries, A_OutOpStrings,
@@ -1142,7 +1142,7 @@ AROS_UFH0(void, nGUITask)
                                                 End,
                                             //Child, VSpace(0),
                                             Child, HGroup,
-                                                Child, Label((ULONG) "Array values:"),
+                                                Child, Label((IPTR) "Array values:"),
                                                 Child, nch->nch_A_FeatArrayObj = StringObject,
                                                     StringFrame,
                                                     MUIA_CycleChain, 1,
@@ -1151,7 +1151,7 @@ AROS_UFH0(void, nGUITask)
                                                     End,
                                                 End,
                                             Child, HGroup,
-                                                Child, Label((ULONG) "Operation:"),
+                                                Child, Label((IPTR) "Operation:"),
                                                 Child, nch->nch_A_FeatOpObj = CycleObject,
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Cycle_Entries, A_OutOpStrings,
@@ -1162,7 +1162,7 @@ AROS_UFH0(void, nGUITask)
                                             Child, VSpace(0),
                                             Child, HGroup,
                                                 Child, HSpace(0),
-                                                Child, Label((ULONG) "Event:"),
+                                                Child, Label((IPTR) "Event:"),
                                                 Child, nch->nch_A_MiscOpObj = CycleObject,
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Cycle_Entries, A_MiscOpStrings,
@@ -1187,7 +1187,7 @@ AROS_UFH0(void, nGUITask)
                                             End,
                                         Child, VGroup, GroupFrameT("Extended Raw key"), /* HUA_EXTRAWKEY */
                                             //Child, VSpace(0),
-                                            Child, Label((ULONG) "\33cSelect key to send"),
+                                            Child, Label((IPTR) "\33cSelect key to send"),
                                             Child, nch->nch_A_ExtRawKeyObj = ListviewObject,
                                                 MUIA_Listview_Input, TRUE,
                                                 MUIA_Listview_MultiSelect, MUIV_Listview_MultiSelect_None,
@@ -1207,7 +1207,7 @@ AROS_UFH0(void, nGUITask)
                                                     MUIA_Image_FreeVert, TRUE,
                                                     MUIA_ShowSelState, FALSE,
                                                     End,
-                                                Child, Label((ULONG) "Send keyup event instead of keydown"),
+                                                Child, Label((IPTR) "Send keyup event instead of keydown"),
                                                 Child, HSpace(0),
                                                 End,
                                             //Child, VSpace(0),
@@ -1703,7 +1703,7 @@ AROS_UFH0(void, nGUITask)
         set(nch->nch_MainWindow, MUIA_Window_Open, FALSE);
     }
     nGUITaskCleanup(nch);
-    
+
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
@@ -1842,7 +1842,7 @@ AROS_UFH3(LONG, USBKeyListDisplayHook,
         *strarr = "\33l\33uHID Key name";
     }
     return(0);
-    
+
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
@@ -1854,7 +1854,7 @@ AROS_UFH3(LONG, ReportListDisplayHook,
           AROS_UFHA(struct NepHidCollection *, nhc, A1))
 {
     AROS_USERFUNC_INIT
-    
+
     struct NepClassHid *nch = (struct NepClassHid *) hook->h_Data;
 
     if(nhc)
@@ -1882,7 +1882,7 @@ AROS_UFH3(LONG, ReportListDisplayHook,
         *strarr = "\33l\33uName";
     }
     return(0);
-    
+
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
@@ -1894,7 +1894,7 @@ AROS_UFH3(LONG, ItemListDisplayHook,
           AROS_UFHA(struct NepHidGItem *, nhgi, A1))
 {
     AROS_USERFUNC_INIT
-    
+
     struct NepClassHid *nch = (struct NepClassHid *) hook->h_Data;
     struct NepHidItem *nhi;
     STRPTR buf;
@@ -1978,7 +1978,7 @@ AROS_UFH3(LONG, ItemListDisplayHook,
         *strarr = "\33l\33uType";
     }
     return(0);
-    
+
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
@@ -2283,7 +2283,7 @@ AROS_UFH3(LONG, ActionListDisplayHook,
         *strarr = "\33l\33uParams";
     }
     return(0);
-    
+
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
@@ -2385,7 +2385,7 @@ AROS_UFH3(IPTR, ActionDispatcher,
                             newform[2] = AROS_LONG2BE(MAKE_ID('R','P','T','0')+nhr->nhr_ReportID);
                         }
 
-                        rppic = psdFindCfgForm(pic, newform[2]);
+                        rppic = psdFindCfgForm(pic, AROS_LONG2BE(newform[2]));
                         if(!rppic)
                         {
                             rppic = psdAddCfgEntry(pic, newform);
@@ -3335,7 +3335,7 @@ AROS_UFH3(IPTR, ActionDispatcher,
             return(TRUE);
     }
     return(DoSuperMethodA(cl,obj,msg));
-    
+
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
