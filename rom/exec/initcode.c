@@ -62,7 +62,7 @@
              * inconvenient on architectures where code may be loaded above
              * 2GB. on these platforms we assume aligned pointers and use bit
              * 0 instead */
-#ifdef __mc680000__
+#ifdef __mc68000__
 	    if(*list & 0x80000000) list = (IPTR *)(*list & 0x7fffffff);
 #else
             if(*list & 0x1) list = (IPTR *)(*list & ~(IPTR)0x1);
