@@ -658,7 +658,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     do
                                     {
                                         uhwDelayMS(1, unit, base);
-                                        newval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE);
+                                        newval = READIO16_LE(hc->hc_RegBase, portreg);
                                     } while(--cnt && (!(newval & UHPF_PORTENABLE)));
                                     if(cnt)
                                     {
@@ -821,7 +821,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                                     KPRINTF(10, ("ReReset=%s\n", uhcinewval & UHPF_PORTRESET ? "GOOD" : "BAD!"));
                                                     uhcinewval &= ~UHPF_PORTRESET;
                                                     WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
-                                                    uhwDelayMS(5, unit, base);
+                                                    uhwDelayMicro(50, unit, base);
                                                     uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
                                                     KPRINTF(10, ("ReReset=%s\n", uhcinewval & UHPF_PORTRESET ? "STILL BAD!" : "GOOD"));
                                                 }
@@ -834,7 +834,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                                 do
                                                 {
                                                     uhwDelayMS(1, unit, base);
-                                                    uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE);
+                                                    uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg);
                                                 } while(--cnt && (!(uhcinewval & UHPF_PORTENABLE)));
                                                 if(cnt)
                                                 {
@@ -869,7 +869,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                         do
                                         {
                                             uhwDelayMS(1, unit, base);
-                                            newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE);
+                                            newval = READREG32_LE(hc->hc_RegBase, portreg);
                                         } while(--cnt && (!(newval & EHPF_PORTENABLE)));
                                         if(cnt)
                                         {
@@ -3000,7 +3000,7 @@ void uhciCompleteInt(struct PCIController *hc)
     } else {
         hc->hc_FrameCounter = (hc->hc_FrameCounter & 0xffff0000)|framecnt;
     }
-    
+
     /* **************** PROCESS DONE TRANSFERS **************** */
 
     uhciCheckPortStatusChange(hc);
@@ -4121,7 +4121,7 @@ void ehciFreeAsyncContext(struct PCIController *hc, struct EhciQH *eqh)
     // unlink from schedule
     eqh->eqh_Pred->eqh_NextQH = eqh->eqh_Succ->eqh_Self;
     SYNC;
-    
+
     eqh->eqh_Succ->eqh_Pred = eqh->eqh_Pred;
     eqh->eqh_Pred->eqh_Succ = eqh->eqh_Succ;
     SYNC;
@@ -4961,7 +4961,7 @@ void ehciScheduleIntTDs(struct PCIController *hc)
         eqh->eqh_Succ = inteqh->eqh_Succ;
         eqh->eqh_NextQH = eqh->eqh_Succ->eqh_Self;
         SYNC;
-        
+
         eqh->eqh_Pred = inteqh;
         eqh->eqh_Succ->eqh_Pred = eqh;
         inteqh->eqh_Succ = eqh;
@@ -5232,10 +5232,6 @@ void ehciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
             KPRINTF(1, ("AsyncAdvance\n"));
             hc->hc_AsyncAdvanced = TRUE;
         }
-        if(intr & (EHSF_TDDONE|EHSF_TDERROR|EHSF_ASYNCADVANCE))
-        {
-            SureCause(base, &hc->hc_CompleteInt);
-        }
         if(intr & EHSF_HOSTERROR)
         {
             KPRINTF(200, ("Host ERROR!\n"));
@@ -5275,6 +5271,10 @@ void ehciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
             }
             uhwCheckRootHubChanges(unit);
         }
+        if(intr & (EHSF_TDDONE|EHSF_TDERROR|EHSF_ASYNCADVANCE))
+        {
+            SureCause(base, &hc->hc_CompleteInt);
+        }
     }
 }
 /* \\\ */
@@ -5296,6 +5296,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
     UWORD cnt;
     ULONG linkelem;
     ULONG ctrlstatus;
+    BOOL causeint;
 
     KPRINTF(1, ("NakTimeoutInt()\n"));
 
@@ -5308,6 +5309,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
             hc = (struct PCIController *) hc->hc_Node.ln_Succ;
             continue;
         }
+        causeint = FALSE;
         switch(hc->hc_HCIType)
         {
             case HCITYPE_UHCI:
@@ -5342,7 +5344,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                                 {
                                     // give the thing the chance to exit gracefully
                                     KPRINTF(20, ("Terminated? NAK timeout %ld > %ld, IOReq=%08lx\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
-                                    SureCause(base, &hc->hc_CompleteInt);
+                                    causeint = TRUE;
                                 }
                             } else {
                                 utd = (struct UhciTD *) ((linkelem & UHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16); // struct UhciTD starts 16 before physical TD
@@ -5355,14 +5357,14 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                                         KPRINTF(20, ("NAK timeout %ld > %ld, IOReq=%08lx\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
                                         ctrlstatus &= ~UTCF_ACTIVE;
                                         WRITEMEM32_LE(&utd->utd_CtrlStatus, ctrlstatus);
-                                        SureCause(base, &hc->hc_CompleteInt);
+                                        causeint = TRUE;
                                     }
                                 } else {
                                     if(framecnt > unit->hu_NakTimeoutFrame[devadrep])
                                     {
                                         // give the thing the chance to exit gracefully
                                         KPRINTF(20, ("Terminated? NAK timeout %ld > %ld, IOReq=%08lx\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
-                                        SureCause(base, &hc->hc_CompleteInt);
+                                        causeint = TRUE;
                                     }
                                 }
                             }
@@ -5408,7 +5410,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                                 {
                                     // give the thing the chance to exit gracefully
                                     KPRINTF(20, ("Terminated? NAK timeout %ld > %ld, IOReq=%08lx\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
-                                    SureCause(base, &hc->hc_CompleteInt);
+                                    causeint = TRUE;
                                 } else {
                                     // give the thing the chance to exit gracefully
                                     KPRINTF(20, ("NAK timeout %ld > %ld, IOReq=%08lx\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq));
@@ -5428,7 +5430,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                     }
                     ioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ;
                 }
-                break;
+				break;
             }
 
             case HCITYPE_EHCI:
@@ -5458,14 +5460,14 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                                         ctrlstatus &= ~ETCF_ACTIVE;
                                         ctrlstatus |= ETSF_HALTED;
                                         WRITEMEM32_LE(&eqh->eqh_CtrlStatus, ctrlstatus);
-                                        SureCause(base, &hc->hc_CompleteInt);
+                                        causeint = TRUE;
                                     }
                                 } else {
                                     if(ctrlstatus & ETCF_READYINTEN)
                                     {
                                         KPRINTF(10, ("INT missed?!? Manually causing it! %08lx, IOReq=%08lx\n",
                                                      ctrlstatus, ioreq));
-                                        SureCause(base, &hc->hc_CompleteInt);
+                                        causeint = TRUE;
                                     }
                                 }
                             }
@@ -5476,6 +5478,11 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                 break;
             }
         }
+        if(causeint)
+		{
+            SureCause(base, &hc->hc_CompleteInt);
+        }
+
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
 
