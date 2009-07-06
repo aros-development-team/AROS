@@ -198,6 +198,9 @@ struct EhciTD
     ULONG           etd_AltNextTD;  /* LE PHYSICAL alternate pointer to next qTD on short packet */
     ULONG           etd_CtrlStatus; /* LE Control and Status word */
     ULONG           etd_BufferPtr[5]; /* LE Buffer Pointers */
+
+    ULONG           etd_ExtBufferPtr[5]; /* LE Buffer Pointers (upper 32 bit) */
+    ULONG           etd_Unused2[3];
 };
 
 struct EhciQH
@@ -224,7 +227,9 @@ struct EhciQH
     ULONG           eqh_CtrlStatus; /* LE Control and Status word */
     ULONG           eqh_BufferPtr[5]; /* LE Buffer Pointers */
 
-    ULONG           eqh_Unused[4];
+    ULONG           eqh_ExtBufferPtr[5]; /* LE Buffer Pointers (upper 32 bit) */
+
+    ULONG           eqh_Unused[7];
 };
 
 /* pointer defines */
