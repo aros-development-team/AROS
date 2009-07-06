@@ -71,6 +71,9 @@ Outline
 MSG_ICONTEXTMODE_PLAIN (//)
 Plain
 ;
+MSG_ICONTEXTMODE_SHADOW (//)
+Drop shadow
+;
 MSG_ICONTEXTLENGTH (//)
 Max icon textlength
 ;
@@ -91,4 +94,94 @@ MSG_BUBBLESCREENTITLE (//)
 %wb = Wanderer version\n\
 %ov = Exact AROS version\n\
 %wv = Exact workbench.library version
+;
+MSG_TILEMODE (//)
+Tile mode :
+;
+MSG_XOFFSET (//)
+X Offset :
+;
+MSG_YOFFSET (//)
+Y Offset :
+;
+MSG_ICONLABELFONT (//)
+Icon Label Font...
+;
+MSG_ICONINFOFONT (//)
+Icon Info Font...
+;
+MSG_HORIZSPACINGICON (//)
+Horizontal spacing between icons
+;
+MSG_VERTSPACINGICON (//)
+Vertical spacing between icons
+;
+MSG_PADDINGICONIMAGELABEL (//)
+Padding between Icon Image and Label
+;
+MSG_HORIZPADDINGLABELTEXT (//)
+Horizontal Padding between Label Frame and Text
+;
+MSG_VERTPADDINGLABELTEXT (//)
+Vertical Padding between Label Frame and Text
+;
+MSG_FRAMEWIDTH (//)
+Label Frame Width
+;
+MSG_FRAMEHEIGHT (//)
+Label Frame Height
+;
+MSG_TILED (//)
+Tiled
+;
+MSG_SCALED (//)
+Scaled
+;
+MSG_FLOATING (//)
+Floating
+;
+MSG_FIXED (//)
+Fixed
+;
+MSG_LABELLINELENGTH (//)
+Max. Label line length...
+;
+MSG_USEMULTILINELABELS (//)
+Use MultiLine Labels
+;
+MSG_SHOWFOCUSEDICON (//)
+Only show for Focus(ed) Icon
+;
+MSG_NDISPLAYLINES (//)
+No. of lines to display...
+;
+MSG_TILEMODEOPTIONS (//)
+Tile Mode Options...
+;
+MSG_SCALEMODEOPTIONS (//)
+Scale Mode Options...
+;
+MSG_ADVANCEDOPTIONS (//)
+Advanced Options...
+;
+MSG_BACKGROUNDOPTIONS (//)
+Background Options...
+;
+MSG_DRAWMODE (//)
+Draw mode :
+;
+MSG_USERFILEONWB (//)
+User Files Folder on Workbench
+;
+MSG_NETWORKONWB (//)
+Network Browser on Workbench
+;
+MSG_VIEWSETTINGS (//)
+View Settings
+;
+MSG_WANDERERSCREENTITLE (//)
+Wanderer ScreenTitle
+;
+MSG_ADVANCED (//)
+Advanced
 ;

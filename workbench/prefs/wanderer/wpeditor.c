@@ -1074,7 +1074,7 @@ D(bug("[WPEditor] WPEditor__NewViewSettingObjects('%s')\n", this_Name));
 			if (_viewSettings_Current->wpedbo_ImageSpecObject)
 			{
 				if (backfillsupport)
-					_viewSettings_Current->wpedbo_AdvancedOptionsObject = SimpleButton("Advanced");
+					_viewSettings_Current->wpedbo_AdvancedOptionsObject = SimpleButton(_(MSG_ADVANCED));
 
 				_viewSettings_Current->wpedbo_Hook_CheckImage.h_Entry = ( HOOKFUNC )WandererPrefs_Hook_CheckImageFunc;
 				AddTail(&_wpeditor_intern_ViewSettings, &_viewSettings_Current->wpedbo_Node);
@@ -1226,7 +1226,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
 #if defined(DEBUG_CHANGESCREENTITLE)
 	_WP_Navigation_HGrp2 = (Object *)HGroup,                   
-					MUIA_FrameTitle, (IPTR)"Wanderer ScreenTitle",
+					MUIA_FrameTitle, (IPTR)_(MSG_WANDERERSCREENTITLE),
 					MUIA_Group_SameSize, TRUE,
 					MUIA_Frame, MUIV_Frame_Group,
 				End;
@@ -1255,7 +1255,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 					MUIA_Scrollgroup_FreeVert, TRUE,
 					MUIA_Scrollgroup_Contents, 
 					(IPTR) (_WP_ViewSettings_VirtGrpObj = (Object *)VirtgroupObject,
-						MUIA_FrameTitle, (IPTR)"View Settings",
+						MUIA_FrameTitle, (IPTR)_(MSG_VIEWSETTINGS),
 						MUIA_Frame, MUIV_Frame_ReadList,
 						MUIA_Virtgroup_Input, FALSE,
 					End),
@@ -1327,14 +1327,14 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 	DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER,HVSpace);
 #if defined(DEBUG_NETWORKBROWSER)
 	_WP_NetworkBrowser_EnabledObj = MUI_MakeObject(MUIO_Checkmark, NULL);
-	DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,Label1("Network Browser on Workbench"));
+	DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,Label1(_(MSG_NETWORKONWB)));
 	DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,_WP_NetworkBrowser_EnabledObj);
 #else
 	DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
 	DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
 #endif
 #if defined(DEBUG_SHOWUSERFILES)
-	DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,Label1("User Files Folder on Workbench"));
+	DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,Label1(_(MSG_USERFILEONWB)));
 	DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,_WP_UserFiles_ShowFileFolderObj);
 #else
 	DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
@@ -1402,18 +1402,18 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 	/*Window-------------------------------------------------------------*/
 	_WP_AdvancedViewWindow = (Object *)WindowObject,
 					MUIA_Window_CloseGadget, FALSE,
-					MUIA_Window_Title, (IPTR)"Advanced Options ..",
+					MUIA_Window_Title, (IPTR)_(MSG_ADVANCEDOPTIONS),
 					WindowContents, (IPTR) (_WP_AdvancedViewWindowVGrp = (Object *)VGroup, End),
 				End;
 
 	/*Draw Mode Group----------------------------------------------------*/    	
 	_WP_AdvancedViewBackgroundGrpObj = (Object *)VGroup,
-					MUIA_FrameTitle, (IPTR)"Background Options ..",
+					MUIA_FrameTitle, (IPTR)_(MSG_BACKGROUNDOPTIONS),
 					MUIA_Frame, MUIV_Frame_Group,
 				End;
 
 	_WP_AdvancedViewRenderModeGrpObj = (Object *)HGroup,
-					Child, (IPTR) Label1("Draw Mode : "), End;
+					Child, (IPTR) Label1(_(MSG_DRAWMODE)), End;
 
 	/*AdvancedViewRenderMode cycle button------------------------*/
 	_WP_AdvancedViewRenderModeObj = HVSpace;
@@ -1428,7 +1428,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
 	_WP_AdvancedView_ScaleModeGrpObj = (Object *)GroupObject,
 					MUIA_Group_SameSize, FALSE,
-					MUIA_FrameTitle, (IPTR)"Scale Mode Options ..",
+					MUIA_FrameTitle, (IPTR)_(MSG_SCALEMODEOPTIONS),
 					MUIA_Frame, MUIV_Frame_Group,
 					Child, (IPTR)HVSpace,
 				End;
@@ -1440,7 +1440,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
 	_WP_AdvancedView_TileModeGrpObj = (Object *)GroupObject,	
 					MUIA_Group_SameSize, FALSE,
-					MUIA_FrameTitle, (IPTR)"Tile Mode Options ..",
+					MUIA_FrameTitle, (IPTR)_(MSG_TILEMODEOPTIONS),
 					MUIA_Frame, MUIV_Frame_Group,
 					MUIA_Group_Columns, 2,
 				End;
@@ -1469,7 +1469,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 	_wpeditor_intern_IconTextRenderModeIDs[WPD_ICONTEXTMODE_OUTLINE] = WPD_ICONTEXTMODE_OUTLINE;
 	_wpeditor_intern_IconTextRenderModeNames[WPD_ICONTEXTMODE_PLAIN] = (STRPTR)_(MSG_ICONTEXTMODE_PLAIN);
 	_wpeditor_intern_IconTextRenderModeIDs[WPD_ICONTEXTMODE_PLAIN] = WPD_ICONTEXTMODE_PLAIN;
-	_wpeditor_intern_IconTextRenderModeNames[ICON_TEXTMODE_DROPSHADOW] = (STRPTR)"Drop Shadow";
+	_wpeditor_intern_IconTextRenderModeNames[ICON_TEXTMODE_DROPSHADOW] = (STRPTR)_(MSG_ICONTEXTMODE_SHADOW);
 	_wpeditor_intern_IconTextRenderModeIDs[ICON_TEXTMODE_DROPSHADOW] = ICON_TEXTMODE_DROPSHADOW;
 
 	_WP_AdvancedView_Icon_TextModeObj = MUI_MakeObject(MUIO_Cycle, NULL, _wpeditor_intern_IconTextRenderModeNames);
@@ -1574,11 +1574,11 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 /*Add advanced view objects to AdvancedViewWindow object--------------------*/
 	DoMethod(_WP_AdvancedViewRenderModeGrpObj, OM_ADDMEMBER,_WP_AdvancedViewRenderModeObj);
 
-	DoMethod(_WP_AdvancedView_TileModeGrpObj, OM_ADDMEMBER, Label1("Tile Mode : "));
+	DoMethod(_WP_AdvancedView_TileModeGrpObj, OM_ADDMEMBER, Label1(_(MSG_TILEMODE)));
 	DoMethod(_WP_AdvancedView_TileModeGrpObj, OM_ADDMEMBER, _WP_AdvancedView_TileModeObjContainer);
-	DoMethod(_WP_AdvancedView_TileModeGrpObj, OM_ADDMEMBER, Label1("X Offset : "));
+	DoMethod(_WP_AdvancedView_TileModeGrpObj, OM_ADDMEMBER, Label1(_(MSG_XOFFSET)));
 	DoMethod(_WP_AdvancedView_TileModeGrpObj, OM_ADDMEMBER, _WP_AdvancedView_X_OffsetObj);
-	DoMethod(_WP_AdvancedView_TileModeGrpObj, OM_ADDMEMBER, Label1("Y Offset : "));
+	DoMethod(_WP_AdvancedView_TileModeGrpObj, OM_ADDMEMBER, Label1(_(MSG_YOFFSET)));
 	DoMethod(_WP_AdvancedView_TileModeGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Y_OffsetObj);
 
 	DoMethod(_WP_AdvancedView_RenderModePageObj, OM_ADDMEMBER, _WP_AdvancedView_ScaleModeGrpObj);
@@ -1598,9 +1598,9 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER,HVSpace);
 
 #warning "TODO: Replace with propper font selectors"
-	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1("Icon Label Font .."));	
+	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_ICONLABELFONT)));	
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_IconLabel_LabelFontObj);
-	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1("Icon Info Font .."));	
+	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_ICONINFOFONT)));	
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_IconLabel_InfoFontObj);
 
 #if !defined(DEBUG_PERVIEWFONTS)
@@ -1611,38 +1611,38 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER,HVSpace);
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER,HVSpace);
 	
-	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1("Max. Label line length .."));	
+	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_LABELLINELENGTH)));	
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_IconLabel_MaxLineLenObj);
 #if defined(DEBUG_MULTLINE)
-	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1("Use MultiLine Labels "));	
+	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_USEMULTILINELABELS)));	
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_IconLabel_TextMultiLineObj);
-	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1("Only show for Focus(ed) Icon "));	
+	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_SHOWFOCUSEDICON)));	
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_IconLabel_MultiLineonFocusObj);
-	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1("No. of lines to display .."));
+	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_NDISPLAYLINES)));
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_IconLabel_MultiLineNoObj);
 #endif
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER,HVSpace);
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER,HVSpace);
 
-	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1("Horizontal Spacing between Icons"));	
+	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_HORIZSPACINGICON)));	
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_HorSpacingObj);
 
-	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1("Vertical Spacing between Icons"));	
+	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_VERTSPACINGICON)));	
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_VertSpacingObj);
 
-	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1("Padding between Icon Image and Label"));	
+	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_PADDINGICONIMAGELABEL)));	
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_ImageSpacingObj);
 
-	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1("Horizontal Padding between Label Frame and Text"));	
+	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_HORIZPADDINGLABELTEXT)));	
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_IconLabel_HorPaddObj);
 
-	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1("Vertical Padding between Label Frame and Text"));	
+	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_VERTPADDINGLABELTEXT)));	
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_IconLabel_VertPaddObj);
 
-	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1("Label Frame Width"));	
+	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_FRAMEWIDTH)));	
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_IconLabel_BorderWidthObj);
 
-	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1("Label Frame Height"));	
+	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_FRAMEHEIGHT)));	
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_IconLabel_BorderHeightObj);
 
 	DoMethod(_WP_AdvancedViewBackgroundGrpObj, OM_ADDMEMBER,_WP_AdvancedViewRenderModeGrpObj);
@@ -1702,12 +1702,12 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Prefs Object (self) @ 0x%p\n", self));
 			advancedView_data->wpedabwd_Window_CancelObj	                  = _WP_AdvancedView_ButtonObj_Cancel;
 
 			NewList(&advancedView_data->wpedabwd_Window_AdvancedViewRenderModes);
-			EntryElementRegister(&advancedView_data->wpedabwd_Window_AdvancedViewRenderModes, IconWindowExt_ImageBackFill_RenderMode_Tiled, "Tiled");
-			EntryElementRegister(&advancedView_data->wpedabwd_Window_AdvancedViewRenderModes, IconWindowExt_ImageBackFill_RenderMode_Scale, "Scaled");
+			EntryElementRegister(&advancedView_data->wpedabwd_Window_AdvancedViewRenderModes, IconWindowExt_ImageBackFill_RenderMode_Tiled, _(MSG_TILED));
+			EntryElementRegister(&advancedView_data->wpedabwd_Window_AdvancedViewRenderModes, IconWindowExt_ImageBackFill_RenderMode_Scale, _(MSG_SCALED));
 
 			NewList(&advancedView_data->wpedabwd_Window_AdvancedViewTileModes);
-			EntryElementRegister(&advancedView_data->wpedabwd_Window_AdvancedViewTileModes, IconWindowExt_ImageBackFill_TileMode_Float, "Floating");
-			EntryElementRegister(&advancedView_data->wpedabwd_Window_AdvancedViewTileModes, IconWindowExt_ImageBackFill_TileMode_Fixed, "Fixed");
+			EntryElementRegister(&advancedView_data->wpedabwd_Window_AdvancedViewTileModes, IconWindowExt_ImageBackFill_TileMode_Float, _(MSG_FLOATING));
+			EntryElementRegister(&advancedView_data->wpedabwd_Window_AdvancedViewTileModes, IconWindowExt_ImageBackFill_TileMode_Fixed, _(MSG_FIXED));
 
 D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ 0x%p\n", advancedView_data->wpedabwd_Window_WindowObj));
 		}
