@@ -10,6 +10,7 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <aros/autoinit.h>
+#include <aros/debug.h>
 
 #include <stdarg.h>
 
@@ -56,6 +57,16 @@ void __showerror(char *format, const IPTR *args)
 	EasyRequestArgs(NULL, &es, NULL, args);
 
 	CloseLibrary((struct Library *)IntuitionBase);
+    }
+    else
+    {
+        if (name)
+            kprintf("%s: ", name);
+
+        if (args)
+            vkprintf(format, args);
+        else
+            kprintf("%s", format);
     }
 
     if (DOSBase != NULL)
