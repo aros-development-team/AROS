@@ -26,8 +26,6 @@
 
 #define VFORK_MAGIC 0x666
 
-#define GETUDATA ((struct vfork_data*) __get_arosc_privdata()->acpd_vfork_data)
-
 struct vfork_data
 {
     struct vfork_data *prev;
