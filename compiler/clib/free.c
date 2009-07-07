@@ -59,7 +59,7 @@
             free(((void **) mem)[-1]);
         else {
             size += AROS_ALIGN(sizeof(size_t));
-	    FreePooled (__startup_mempool, mem, size);
+	    FreePooled (__mempool, mem, size);
         }
     }
 

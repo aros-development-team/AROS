@@ -20,22 +20,18 @@ struct vfork_data
     struct Task *parent;
     jmp_buf startup_jmp_buf;
 
-    APTR old_UserData;
     ULONG child_id;
     BYTE parent_signal;
     APTR parent_acpd_fd_mempool;
     void *parent_acpd_fd_array;
     int parent_acpd_numslots;
-    int parent_startup_cd_changed;
-    BPTR parent_startup_cd_lock;
+    int parent_cd_changed;
+    BPTR parent_cd_lock;
     BPTR parent_curdir;
     struct arosc_privdata *ppriv;
-    int old_acpd_flags;
 
     struct Task *child;
-    struct aros_startup child_startup;
     struct arosc_privdata *cpriv;
-    struct Library *aroscbase;
     int child_executed;
     int child_errno;
     BYTE child_signal;

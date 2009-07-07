@@ -55,7 +55,7 @@
     UBYTE *mem = NULL;
 
     /* Allocate the memory */
-    mem = AllocPooled (__startup_mempool, size + AROS_ALIGN(sizeof(size_t)));
+    mem = AllocPooled (__mempool, size + AROS_ALIGN(sizeof(size_t)));
     if (mem)
     {
 	*((size_t *)mem) = size;
@@ -71,9 +71,9 @@
 
 int __init_memstuff(void)
 {
-    __startup_mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 65536L, 4096L);
+    __mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 65536L, 4096L);
 
-    if (!__startup_mempool)
+    if (!__mempool)
     {
 	return 0;
     }
@@ -84,9 +84,9 @@ int __init_memstuff(void)
 
 void __exit_memstuff(void)
 {
-    if (__startup_mempool)
+    if (__mempool)
     {
-	DeletePool(__startup_mempool);
+	DeletePool(__mempool);
     }
 }
 

@@ -73,14 +73,14 @@
 
     oldlock = CurrentDir( newlock );
     
-    if( __startup_cd_changed )
+    if( __cd_changed )
     {
     	UnLock( oldlock );
     }
     else
     {
-    	__startup_cd_changed = TRUE;
-	__startup_cd_lock    = oldlock;
+    	__cd_changed = TRUE;
+	__cd_lock    = oldlock;
     }    
     
     return 0;
@@ -93,16 +93,16 @@ error:
 
 int __init_chdir(void)
 {
-    __startup_cd_changed = FALSE;
+    __cd_changed = FALSE;
 
     return 1;
 }
 
 void __exit_chdir(void)
 {
-    if( __startup_cd_changed )
+    if( __cd_changed )
     {
-        BPTR lock = CurrentDir( __startup_cd_lock );
+        BPTR lock = CurrentDir( __cd_lock );
 
         UnLock( lock );
     }

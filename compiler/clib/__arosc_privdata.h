@@ -38,8 +38,8 @@ struct arosc_privdata
     struct arosc_privdata *acpd_oldprivdata;
 
     /* malloc.c */
-    APTR acpd_startup_mempool;
-    struct SignalSemaphore acpd_startup_memsem;
+    APTR acpd_mempool;
+    struct SignalSemaphore acpd_memsem;
 
     /* __env.c */
     struct __env_item *acpd_env_list;
@@ -48,7 +48,7 @@ struct arosc_privdata
     struct MinList acpd_stdio_files;
 
     /* clock.c */
-    struct DateStamp acpd_startup_datestamp;
+    struct DateStamp acpd_datestamp;
 
     /* __open.c */
     APTR acpd_fd_mempool;
@@ -62,8 +62,8 @@ struct arosc_privdata
     mode_t acpd_umask;
 
     /* Used by chdir() */
-    int  acpd_startup_cd_changed;
-    BPTR acpd_startup_cd_lock;
+    int  acpd_cd_changed;
+    BPTR acpd_cd_lock;
 
     /* gettimeofday */
     struct timerequest  acpd_timereq;
@@ -144,13 +144,13 @@ struct arosc_privdata
 #define __numslots                            (__get_arosc_privdata()->acpd_numslots)
 #define __fd_mempool                          (__get_arosc_privdata()->acpd_fd_mempool)
 #define __fd_array                            (__get_arosc_privdata()->acpd_fd_array)
-#define __startup_memsem                      (__get_arosc_privdata()->acpd_startup_memsem)
-#define __startup_mempool                     (__get_arosc_privdata()->acpd_startup_mempool)
-#define __startup_datestamp                   (__get_arosc_privdata()->acpd_startup_datestamp)
+#define __memsem                              (__get_arosc_privdata()->acpd_memsem)
+#define __mempool                             (__get_arosc_privdata()->acpd_mempool)
+#define __datestamp                           (__get_arosc_privdata()->acpd_datestamp)
 #define __atexit_list                         (__get_arosc_privdata()->acpd_atexit_list)
 #define __umask                               (__get_arosc_privdata()->acpd_umask)
-#define __startup_cd_changed                  (__get_arosc_privdata()->acpd_startup_cd_changed)
-#define __startup_cd_lock                     (__get_arosc_privdata()->acpd_startup_cd_lock)
+#define __cd_changed                          (__get_arosc_privdata()->acpd_cd_changed)
+#define __cd_lock                             (__get_arosc_privdata()->acpd_cd_lock)
 #define __timereq                             (__get_arosc_privdata()->acpd_timereq)
 #define __timeport                            (__get_arosc_privdata()->acpd_timeport)
 #define TimerBase                             (__get_arosc_privdata()->acpd_TimerBase)
