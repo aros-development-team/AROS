@@ -310,7 +310,7 @@ void exec_SetColors(char r, char g, char b)
  * specific
  */
 
-asm(".globl TSS\n\t"            /* Make this three global in case one would */
+asm(".globl TSS\n\t"            /* Make these three global in case one would */
     ".globl SSP\n\t"            /* decide to use them directly */    
     ".globl EIP\n\t"
     ".set   TSS, 0x00000040\n\t"    /* See Memory Map at the top of the file */
@@ -400,6 +400,8 @@ IDT_reg __text = {0x7ff, 0x100};
 const char exec_chipname[] __text = "Chip Memory";
 const char exec_fastname[] __text = "Fast Memory";
 
+struct arosmb *arosmb;
+
 /*
  * C/ASM mixed initialization routine. Here the real game begins...
  */
@@ -407,7 +409,6 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 {
     struct ExecBase *ExecBase;
     struct multiboot *mbinfo;
-    struct arosmb *arosmb;
 
     ULONG locmem, extmem;
 
@@ -1339,7 +1340,9 @@ ULONG **exec_RomTagScanner()
             res = (struct Resident *)ptr;
 
             /* Does rt_MatchTag point to Resident? */
-            if (res == res->rt_MatchTag)
+            if (res == res->rt_MatchTag
+                && !(strstr(arosmb->cmdline, "debug=serial") != NULL
+                && strcmp(res->rt_Name, "serial.hidd") == 0))
             {
                 /* Yes, it is Resident module */
                 struct rt_node  *node;
