@@ -26,6 +26,9 @@
 #ifndef _SIGNAL_H
 #define _SIGNAL_H
 #endif
+#ifndef __KERNEL_STRICT_NAMES
+#define __KERNEL_STRICT_NAMES
+#endif
 #include <bits/sigcontext.h>
 /* sigcontext_t is the type of the signals' context. Linux offers no way
    to get this context in a legal way, so I have to use tricks. */
