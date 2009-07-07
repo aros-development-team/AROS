@@ -30,6 +30,9 @@
 #include <aros/debug.h>
 #include <aros/startup.h>
 
+static void enter_pretendchild(struct arosc_privdata *ppriv, struct vfork_data *udata);
+static void leave_pretendchild(struct arosc_privdata *ppriv, struct vfork_data *udata);
+
 LONG launcher()
 {
     D(bug("launcher: Entered child launcher\n"));
@@ -146,24 +149,6 @@ LONG launcher()
     return 0;
 }
 
-void FreeAndJump(struct vfork_data *udata)
-{
-    D(bug("FreeAndJump(udata = %p)\n", udata));
-    jmp_buf env;
-    ULONG child_id = udata->child_id;
-    D(bug("FreeAndJump: Child ID=%d\n", child_id));
-    bcopy(&udata->vfork_jump, env, sizeof(jmp_buf));
-    D(bug("FreeAndJump: Restoring old vfork_data: %p\n", udata->prev));
-    __get_arosc_privdata()->acpd_vfork_data = udata->prev;
-    if(udata->prev == NULL)
-        __get_arosc_privdata()->acpd_flags &= ~PRETEND_CHILD;
-    D(bug("FreeAndJump: freeing udata\n"));
-    FreeMem(udata, sizeof(struct vfork_data));
-    D(bug("FreeAndJump: Jumping to jmp_buf %p\n", &env));
-    D(bug("FreeAndJump: ip: %p, stack: %p\n", env->retaddr, env->regs[_JMPLEN - 1]));
-    vfork_longjmp(env, child_id);
-}
-
 pid_t __vfork(jmp_buf env)
 {
     struct Task *this = FindTask(NULL);
@@ -242,56 +227,94 @@ pid_t __vfork(jmp_buf env)
     {
 	D(bug("__vfork: child exited\n or executed\n"));
 
-	if(!GETUDATA->child_executed)
+        /* Reinitialize variables as they may have been overwritten during setjmp */
+        ppriv = __get_arosc_privdata();
+        udata = ppriv->acpd_vfork_data;
+
+	if(!udata->child_executed)
 	{
 	    D(bug("__vfork: not executed\n"));
-	    ((struct aros_startup*) GetIntETask(GETUDATA->child)->iet_startup)->as_startup_error = __aros_startup_error;
+	    ((struct aros_startup*) GetIntETask(udata->child)->iet_startup)->as_startup_error = __aros_startup_error;
 	    D(bug("__vfork: Signaling child\n"));
-	    Signal(GETUDATA->child, 1 << GETUDATA->child_signal);
+	    Signal(udata->child, 1 << udata->child_signal);
 	}
 
 	D(bug("__vfork: Waiting for child to finish using udata\n"));
-	/* Wait for child to finish using GETUDATA */
-	Wait(1 << GETUDATA->parent_signal);
+	/* Wait for child to finish using udata */
+	Wait(1 << udata->parent_signal);
 
 	D(bug("__vfork: fflushing\n"));
 	fflush(NULL);
 
-	D(bug("__vfork: restoring old fd_array\n"));
-	/* Restore parent's old fd_array */
-	((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_fd_mempool = GETUDATA->parent_acpd_fd_mempool;
-	((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_numslots = GETUDATA->parent_acpd_numslots;
-	((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_fd_array =  GETUDATA->parent_acpd_fd_array;
-
 	D(bug("__vfork: restoring startup buffer\n"));
 	/* Restore parent startup buffer */
-	CopyMem(&GETUDATA->startup_jmp_buf, &__aros_startup_jmp_buf, sizeof(jmp_buf));
+	CopyMem(&udata->startup_jmp_buf, &__aros_startup_jmp_buf, sizeof(jmp_buf));
 
 	D(bug("__vfork: freeing parent signal\n"));
-	FreeSignal(GETUDATA->parent_signal);
+	FreeSignal(udata->parent_signal);
 
-        errno = GETUDATA->child_errno;
-        
-	FreeAndJump(GETUDATA);
+        errno = udata->child_errno;
+
+        D(bug("__vfork: Remembering jmp_buf\n"));
+        jmp_buf env;
+        bcopy(&udata->vfork_jump, env, sizeof(jmp_buf));
+
+        leave_pretendchild(ppriv, udata);
+
+        D(bug("__vfork: freeing udata\n"));
+        FreeMem(udata, sizeof(struct vfork_data));
+
+        D(bug("__vfork: Child(%d) jumping to jmp_buf %p\n", udata->child_id, &env));
+        D(bug("__vfork: ip: %p, stack: %p\n", env->retaddr, env->regs[_JMPLEN - 1]));
+        vfork_longjmp(env, udata->child_id);
 	assert(0); /* not reached */
         return (pid_t) 1;
     }
 
-    /* Remember parent fd descriptor table */
-    udata->parent_acpd_fd_mempool = ppriv->acpd_fd_mempool;
-    udata->parent_acpd_numslots = ppriv->acpd_numslots;
-    udata->parent_acpd_fd_array = ppriv->acpd_fd_array;
-    
-    /* Pretend to be running as the child created by vfork */
-    ppriv->acpd_vfork_data = udata;
-    ppriv->acpd_flags |= PRETEND_CHILD;
-    ppriv->acpd_fd_mempool = udata->cpriv->acpd_fd_mempool;
-    ppriv->acpd_numslots = udata->cpriv->acpd_numslots;
-    ppriv->acpd_fd_array = udata->cpriv->acpd_fd_array;
-    
+    enter_pretendchild(ppriv, udata);
+
     D(bug("__vfork: Jumping to jmp_buf %p\n", &udata->vfork_jump));
     D(bug("__vfork: ip: %p, stack: %p\n", udata->vfork_jump[0].retaddr, udata->vfork_jump[0].regs[_JMPLEN - 1]));
     vfork_longjmp(udata->vfork_jump, 0);
     assert(0); /* not reached */
     return (pid_t) 0;
 }
+
+
+static void enter_pretendchild(struct arosc_privdata *ppriv, struct vfork_data *udata)
+{
+    D(bug("enter_pretendchild(%x, %x): entered\n", ppriv, udata));
+
+    ppriv->acpd_vfork_data = udata;
+
+    /* Remember and switch fd descriptor table */
+    udata->parent_acpd_fd_mempool = ppriv->acpd_fd_mempool;
+    udata->parent_acpd_numslots = ppriv->acpd_numslots;
+    udata->parent_acpd_fd_array = ppriv->acpd_fd_array;
+    ppriv->acpd_fd_mempool = udata->cpriv->acpd_fd_mempool;
+    ppriv->acpd_numslots = udata->cpriv->acpd_numslots;
+    ppriv->acpd_fd_array = udata->cpriv->acpd_fd_array;
+    
+    /* Pretend to be running as the child created by vfork */
+    ppriv->acpd_flags |= PRETEND_CHILD;
+
+    D(bug("enter_pretendchild: leaving\n"));
+}
+
+static void leave_pretendchild(struct arosc_privdata *ppriv, struct vfork_data *udata)
+{
+    D(bug("leave_pretendchild(%x, %x): entered\n", ppriv, udata));
+
+    /* Restore parent's old fd_array */
+    ppriv->acpd_fd_mempool = udata->parent_acpd_fd_mempool;
+    ppriv->acpd_numslots = udata->parent_acpd_numslots;
+    ppriv->acpd_fd_array =  udata->parent_acpd_fd_array;
+
+    /* Switch to previous vfork_data */
+    ppriv->acpd_vfork_data = udata->prev;
+    if(udata->prev == NULL)
+        ppriv->acpd_flags &= ~PRETEND_CHILD;
+
+    D(bug("leave_pretendchild: leaving\n"));
+}
+
