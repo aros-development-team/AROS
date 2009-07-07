@@ -228,7 +228,6 @@ struct EhciQH
     ULONG           eqh_BufferPtr[5]; /* LE Buffer Pointers */
 
     ULONG           eqh_ExtBufferPtr[5]; /* LE Buffer Pointers (upper 32 bit) */
-
     ULONG           eqh_Unused[7];
 };
 

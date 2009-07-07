@@ -7,6 +7,7 @@
 
 #include <proto/utility.h>
 #include <proto/exec.h>
+#include <proto/timer.h>
 
 #define NewList NEWLIST
 
@@ -77,12 +78,32 @@ BOOL uhwOpenTimer(struct PCIUnit *unit, struct PCIDevice *base)
 }
 /* \\\ */
 
+#define TimerBase unit->hu_TimerReq->tr_node.io_Device
+
 /* /// "uhwDelayMS()" */
 void uhwDelayMS(ULONG milli, struct PCIUnit *unit, struct PCIDevice *base)
 {
+#if 0
+    struct timeval tv1;
+    struct timeval tv2;
+    
+    GetSysTime(&tv1);
     unit->hu_TimerReq->tr_time.tv_secs  = 0;
     unit->hu_TimerReq->tr_time.tv_micro = milli * 1000;
     DoIO((struct IORequest *) unit->hu_TimerReq);
+    GetSysTime(&tv2);
+    SubTime(&tv2, &tv1);
+    if(tv2.tv_micro < milli * 1000)
+    {
+        KPRINTF(200, ("actual delay %ld s/%ld uS, should be %ld ms\n", tv2.tv_secs, tv2.tv_micro, milli));
+    } else {
+        KPRINTF(10, ("delta=%ld\n", tv2.tv_micro - milli * 1000));
+    }
+#else
+    unit->hu_TimerReq->tr_time.tv_secs  = 0;
+    unit->hu_TimerReq->tr_time.tv_micro = milli * 1000;
+    DoIO((struct IORequest *) unit->hu_TimerReq);
+#endif
 }
 /* \\\ */
 
@@ -609,6 +630,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                         hc = chc;
                         hciport = unit->hu_PortNum11[idx - 1];
                     }
+                    KPRINTF(10, ("Set Feature %ld maps from glob. Port %ld to local Port %ld (%s)\n", val, idx, hciport, unit->hu_EhciOwned[idx - 1] ? "EHCI" : "U/OHCI"));
                     cmdgood = FALSE;
                     switch(hc->hc_HCIType)
                     {
@@ -640,7 +662,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     newval &= ~(UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                     newval |= UHPF_PORTRESET;
                                     WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
-                                    uhwDelayMS(75, unit, base);
+                                    uhwDelayMS(50, unit, base);
                                     newval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                     KPRINTF(10, ("Reset=%s\n", newval & UHPF_PORTRESET ? "GOOD" : "BAD!"));
                                     // like windows does it
@@ -816,7 +838,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                                     uhcinewval &= ~(UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                                     uhcinewval |= UHPF_PORTRESET;
                                                     WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
-                                                    uhwDelayMS(75, unit, base);
+                                                    uhwDelayMS(50, unit, base);
                                                     uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                                     KPRINTF(10, ("ReReset=%s\n", uhcinewval & UHPF_PORTRESET ? "GOOD" : "BAD!"));
                                                     uhcinewval &= ~UHPF_PORTRESET;
@@ -922,7 +944,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                         hc = unit->hu_PortMap11[idx - 1];
                         hciport = unit->hu_PortNum11[idx - 1];
                     }
-                    KPRINTF(10, ("Clear Feature %ld maps from glob. Port %ld to local Port %ld\n", val, idx, hciport));
+                    KPRINTF(10, ("Clear Feature %ld maps from glob. Port %ld to local Port %ld (%s)\n", val, idx, hciport, unit->hu_EhciOwned[idx - 1] ? "EHCI" : "U/OHCI"));
                     cmdgood = FALSE;
                     switch(hc->hc_HCIType)
                     {
@@ -2985,21 +3007,30 @@ void uhciScheduleBulkTDs(struct PCIController *hc)
 }
 /* \\\ */
 
-/* /// "uhciCompleteInt()" */
-void uhciCompleteInt(struct PCIController *hc)
+/* /// "uhciUpdateFrameCounter()" */
+void uhciUpdateFrameCounter(struct PCIController *hc)
 {
-    ULONG framecnt = READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT);
-
-    KPRINTF(1, ("CompleteInt!\n"));
+    UWORD framecnt;
+    Disable();
+    framecnt = READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT);
     if(framecnt < (hc->hc_FrameCounter & 0xffff))
     {
         hc->hc_FrameCounter |= 0xffff;
         hc->hc_FrameCounter++;
-        hc->hc_FrameCounter += framecnt;
+        hc->hc_FrameCounter |= framecnt;
         KPRINTF(10, ("Frame Counter Rollover %ld\n", hc->hc_FrameCounter));
     } else {
         hc->hc_FrameCounter = (hc->hc_FrameCounter & 0xffff0000)|framecnt;
     }
+    Enable();
+}
+/* \\\ */
+
+/* /// "uhciCompleteInt()" */
+void uhciCompleteInt(struct PCIController *hc)
+{
+    KPRINTF(1, ("CompleteInt!\n"));
+    uhciUpdateFrameCounter(hc);
 
     /* **************** PROCESS DONE TRANSFERS **************** */
 
@@ -3062,57 +3093,6 @@ void uhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
  *                    OHCI Specific Stuff                                 *
  * ---------------------------------------------------------------------- */
 
-/* /// "ohciDebugSchedule()" */
-void ohciDebugSchedule(struct PCIController *hc)
-{
-    ULONG ctrlhead;
-    ULONG hced;
-    ULONG epcaps;
-    ULONG headptr;
-    ULONG headptrbits;
-    ULONG tailptr;
-    ULONG nexted;
-    ULONG ctrl;
-    ULONG currptr;
-    ULONG nexttd;
-    ULONG buffend;
-    KPRINTF(10, ("*** Schedule debug!!! ***\n"));
-    ctrlhead = READREG32_LE(hc->hc_RegBase, OHCI_CTRL_HEAD_ED) - hc->hc_PCIVirtualAdjust;
-    KPRINTF(10, ("CtrlHead = %08lx, should be %08lx\n", ctrlhead, &hc->hc_OhciCtrlHeadED->oed_EPCaps));
-    hced = ctrlhead;
-    do
-    {
-        epcaps = READMEM32_LE(hced);
-        tailptr = READMEM32_LE(hced+4);
-        headptr = headptrbits = READMEM32_LE(hced+8);
-        headptr &= OHCI_PTRMASK;
-        nexted = READMEM32_LE(hced+12);
-        KPRINTF(10, ("ED %08lx: EPCaps=%08lx, HeadP=%08lx, TailP=%08lx, NextED=%08lx\n",
-                     hced, epcaps, headptrbits, tailptr, nexted));
-        if((!(epcaps & OECF_SKIP)) && (tailptr != headptr) && (!(headptrbits & OEHF_HALTED)))
-        {
-            while(tailptr != headptr)
-            {
-                headptr -= hc->hc_PCIVirtualAdjust;
-                ctrl = READMEM32_LE(headptr);
-                currptr = READMEM32_LE(headptr+4);
-                nexttd = READMEM32_LE(headptr+8);
-                buffend = READMEM32_LE(headptr+12);
-
-                KPRINTF(5, ("  TD %08lx: Ctrl=%08lx, CurrPtr=%08lx, NextTD=%08lx, BuffEnd=%08lx\n",
-                            headptr, ctrl, currptr, nexttd, buffend));
-                headptr = nexttd;
-            }
-        }
-        if(!nexted)
-        {
-            break;
-        }
-        hced = nexted - hc->hc_PCIVirtualAdjust;
-    } while(TRUE);
-}
-/* \\\ */
-
 /* /// "ohciFreeEDContext()" */
 void ohciFreeEDContext(struct PCIController *hc, struct OhciED *oed)
 {
@@ -3127,13 +3107,6 @@ void ohciFreeEDContext(struct PCIController *hc, struct OhciED *oed)
     oed->oed_Pred->oed_NextED = oed->oed_Succ->oed_Self;
     SYNC
 
-#if 0
-    // need to make sure that the endpoint is no longer
-    Disable();
-    oed->oed_Succ = hc->hc_OhciAsyncFreeED;
-    hc->hc_OhciAsyncFreeED = oed;
-    Enable();
-#else
     Disable();
     nextotd = oed->oed_FirstTD;
     while(nextotd)
@@ -3146,7 +3119,6 @@ void ohciFreeEDContext(struct PCIController *hc, struct OhciED *oed)
 
     ohciFreeED(hc, oed);
     Enable();
-#endif
 }
 /* \\\ */
 
@@ -3967,22 +3939,22 @@ void ohciScheduleBulkTDs(struct PCIController *hc)
 }
 /* \\\ */
 
+/* /// "ohciUpdateFrameCounter()" */
+void ohciUpdateFrameCounter(struct PCIController *hc)
+{
+    Disable();
+    hc->hc_FrameCounter = (hc->hc_FrameCounter & 0xffff0000)|(READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT) & 0xffff);
+    Enable();
+}
+/* \\\ */
+
 /* /// "ohciCompleteInt()" */
 void ohciCompleteInt(struct PCIController *hc)
 {
-    ULONG framecnt = READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT);
-
     KPRINTF(1, ("CompleteInt!\n"));
-    if(framecnt < (hc->hc_FrameCounter & 0xffff))
-    {
-        hc->hc_FrameCounter |= 0xffff;
-        hc->hc_FrameCounter++;
-        hc->hc_FrameCounter += framecnt;
-        KPRINTF(10, ("Frame Counter Rollover %ld\n", hc->hc_FrameCounter));
-    } else {
-        hc->hc_FrameCounter = (hc->hc_FrameCounter & 0xffff0000)|framecnt;
-    }
-
+    
+    ohciUpdateFrameCounter(hc);
+    
     /* **************** PROCESS DONE TRANSFERS **************** */
 
     if(hc->hc_OhciDoneQueue)
@@ -4059,10 +4031,9 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         }
         if(intr & OISF_FRAMECOUNTOVER)
         {
-            ULONG framecnt = READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT);
             hc->hc_FrameCounter |= 0x7fff;
             hc->hc_FrameCounter++;
-            hc->hc_FrameCounter |= framecnt;
+            hc->hc_FrameCounter |= READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT) & 0xffff;
             KPRINTF(10, ("Frame Counter Rollover %ld\n", hc->hc_FrameCounter));
         }
         if(intr & OISF_HUBCHANGE)
@@ -5147,13 +5118,20 @@ void ehciScheduleBulkTDs(struct PCIController *hc)
 }
 /* \\\ */
 
+/* /// "ehciUpdateFrameCounter()" */
+void ehciUpdateFrameCounter(struct PCIController *hc)
+{
+    Disable();
+    hc->hc_FrameCounter = (hc->hc_FrameCounter & 0xffffc000)|(READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT) & 0x3fff);
+    Enable();
+}
+/* \\\ */
+
 /* /// "ehciCompleteInt()" */
 void ehciCompleteInt(struct PCIController *hc)
 {
-    ULONG framecnt = READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT);
-
     KPRINTF(1, ("CompleteInt!\n"));
-    hc->hc_FrameCounter = (hc->hc_FrameCounter & 0xffffc000) + framecnt;
+    ehciUpdateFrameCounter(hc);
 
     /* **************** PROCESS DONE TRANSFERS **************** */
 
@@ -5223,8 +5201,9 @@ void ehciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         }
         if(intr & EHSF_FRAMECOUNTOVER)
         {
-            ULONG framecnt = READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT);
-            hc->hc_FrameCounter = (hc->hc_FrameCounter|0x3fff) + 1 + framecnt;
+            hc->hc_FrameCounter |= 0x3fff;
+            hc->hc_FrameCounter++;
+            hc->hc_FrameCounter |= READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT) & 0x3fff;
             KPRINTF(5, ("Frame Counter Rollover %ld\n", hc->hc_FrameCounter));
         }
         if(intr & EHSF_ASYNCADVANCE)
@@ -5314,15 +5293,8 @@ AROS_UFH1(void, uhwNakTimeoutInt,
         {
             case HCITYPE_UHCI:
             {
-                ULONG framecnt = READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT);
-                KPRINTF(1, ("Frame Counter %ld, USBCMD/STS=%04lx/%04lx\n", hc->hc_FrameCounter, READIO16_LE(hc->hc_RegBase, UHCI_USBCMD), READIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS)));
-                if(framecnt < (hc->hc_FrameCounter & 0xffff))
-                {
-                    hc->hc_FrameCounter = (hc->hc_FrameCounter|0xffff) + 1 + framecnt;
-                    KPRINTF(10, ("Frame Counter Rollover %ld\n", hc->hc_FrameCounter));
-                } else {
-                    hc->hc_FrameCounter = (hc->hc_FrameCounter & 0xffff0000)|framecnt;
-                }
+                ULONG framecnt;
+                uhciUpdateFrameCounter(hc);
                 framecnt = hc->hc_FrameCounter;
 
                 // NakTimeout
@@ -5379,8 +5351,9 @@ AROS_UFH1(void, uhwNakTimeoutInt,
 
             case HCITYPE_OHCI:
             {
-                ULONG framecnt = READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT);
-                framecnt = hc->hc_FrameCounter = (hc->hc_FrameCounter & 0xffff0000) + framecnt;
+                ULONG framecnt;
+                ohciUpdateFrameCounter(hc);
+                framecnt = hc->hc_FrameCounter;
                 // NakTimeout
                 ioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
                 while(((struct Node *) ioreq)->ln_Succ)
@@ -5405,7 +5378,6 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                             KPRINTF(1, ("Examining IOReq=%08lx with OED=%08lx HeadPtr=%08lx\n", ioreq, oed, ctrlstatus));
                             if(framecnt > unit->hu_NakTimeoutFrame[devadrep])
                             {
-                                //ohciDebugSchedule(hc);
                                 if(ctrlstatus & OEHF_HALTED)
                                 {
                                     // give the thing the chance to exit gracefully
@@ -5435,8 +5407,9 @@ AROS_UFH1(void, uhwNakTimeoutInt,
 
             case HCITYPE_EHCI:
             {
-                ULONG framecnt = READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT);
-                framecnt = hc->hc_FrameCounter = (hc->hc_FrameCounter & 0xffffc000) + framecnt;
+                ULONG framecnt;
+                ehciUpdateFrameCounter(hc);
+                framecnt = hc->hc_FrameCounter;
                 // NakTimeout
                 for(cnt = 0; cnt < 1; cnt++)
                 {

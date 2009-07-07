@@ -12,7 +12,8 @@ include $(TOP)/config/make.cfg
 #MM- kernel-usb-kobj : \
 #MM      kernel-usb-poseidon-kobj \
 #MM      kernel-usb-classes-kobj \
-#MM      kernel-usb-pciusb-kobj
+#MM      kernel-usb-pciusb-kobj \
+#MM      kernel-usb-usbromstartup-kobj 
 
 #MM- kernel-usb-clean : \
 #MM      kernel-usb-poseidon-clean \
@@ -21,7 +22,8 @@ include $(TOP)/config/make.cfg
 #MM      kernel-usb-shellapps-clean \
 #MM      kernel-usb-trident-clean \
 #MM      kernel-usb-pciusb-clean \
-#MM      kernel-usb-usbclass-clean
+#MM      kernel-usb-usbclass-clean \
+#MM      kernel-usb-usbromstartup-clean 
 
 #MM- kernel-usb-includes : \
 #MM      kernel-usb-poseidon-includes \
