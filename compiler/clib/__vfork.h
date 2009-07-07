@@ -61,4 +61,6 @@ struct vfork_data
     APTR exec_id;
 };
 
+void vfork_longjmp (jmp_buf env, int val);
+
 #endif /* __VFORK_H */

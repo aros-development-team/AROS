@@ -30,10 +30,6 @@
 #include <aros/debug.h>
 #include <aros/startup.h>
 
-BPTR DupFHFromfd(int fd, ULONG mode);
-void vfork_longjmp (jmp_buf env, int val);
-LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize);
-
 LONG launcher()
 {
     D(bug("launcher: Entered child launcher\n"));
