@@ -299,10 +299,10 @@ static void parent_enterpretendchild(struct vfork_data *udata)
     udata->ppriv->acpd_fd_array = udata->cpriv->acpd_fd_array;
 
     /* Remember and switch chdir fields */
-    udata->parent_startup_cd_changed = __startup_cd_changed;
-    udata->parent_startup_cd_lock = __startup_cd_lock;
-    __startup_cd_changed = udata->cpriv->acpd_startup_cd_changed;
-    __startup_cd_lock = udata->cpriv->acpd_startup_cd_lock;
+    udata->parent_cd_changed = __cd_changed;
+    udata->parent_cd_lock = __cd_lock;
+    __cd_changed = udata->cpriv->acpd_cd_changed;
+    __cd_lock = udata->cpriv->acpd_cd_lock;
     udata->parent_curdir = CurrentDir(((struct Process *)udata->child)->pr_CurrentDir);
     
     /* Pretend to be running as the child created by vfork */
@@ -316,8 +316,8 @@ static void child_takeover(struct vfork_data *udata)
     D(bug("child_takeover(%x): entered\n", udata));
             
     /* Set current dir to parent's current dir */
-    __startup_cd_changed = udata->ppriv->acpd_startup_cd_changed;
-    __startup_cd_lock = udata->ppriv->acpd_startup_cd_lock;
+    __cd_changed = udata->ppriv->acpd_cd_changed;
+    __cd_lock = udata->ppriv->acpd_cd_lock;
     CurrentDir(((struct Process *)udata->parent)->pr_CurrentDir);
 
     D(bug("child_takeover(): leaving\n"));
@@ -333,8 +333,8 @@ static void parent_leavepretendchild(struct vfork_data *udata)
     udata->ppriv->acpd_fd_array =  udata->parent_acpd_fd_array;
 
     /* Switch to currentdir from before vfork() call */
-    __startup_cd_changed = udata->parent_startup_cd_changed;
-    __startup_cd_lock = udata->parent_startup_cd_lock;
+    __cd_changed = udata->parent_cd_changed;
+    __cd_lock = udata->parent_cd_lock;
     CurrentDir(udata->parent_curdir);
 
     /* Switch to previous vfork_data */

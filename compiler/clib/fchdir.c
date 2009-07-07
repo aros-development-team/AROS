@@ -69,14 +69,14 @@
     }
     oldlock = CurrentDir( newlock ); 
 
-    if( __startup_cd_changed )
+    if( __cd_changed )
     {
     	UnLock( oldlock );
     }
     else
     {
-    	__startup_cd_changed = TRUE;
-	__startup_cd_lock    = oldlock;
+    	__cd_changed = TRUE;
+	__cd_lock    = oldlock;
     }       
     return 0;
 

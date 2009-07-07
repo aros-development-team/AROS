@@ -72,7 +72,7 @@
         return EINVAL;
 
     /* allocate enough space to satisfy the alignment and save some info */
-    mem = AllocPooled(__startup_mempool, size + alignment + AROS_ALIGN(sizeof(size_t)) + AROS_ALIGN(sizeof(void *)));
+    mem = AllocPooled(__mempool, size + alignment + AROS_ALIGN(sizeof(size_t)) + AROS_ALIGN(sizeof(void *)));
     if (mem == NULL)
         return ENOMEM;
 
