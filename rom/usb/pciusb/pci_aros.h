@@ -18,10 +18,10 @@
 
 #include <aros/io.h>
 
-#define READMEM16_LE(rb)                 AROS_WORD2LE(*((UWORD *) (rb)))
-#define READMEM32_LE(rb)                 AROS_LONG2LE(*((ULONG *) (rb)))
-#define	WRITEMEM32_LE(adr, value)	     *((ULONG *) (adr)) = AROS_LONG2LE(value)
-#define CONSTWRITEMEM32_LE(adr, value)   *((ULONG *) (adr)) = AROS_LONG2LE(value)
+#define READMEM16_LE(rb)                 AROS_WORD2LE(*((volatile UWORD *) (rb)))
+#define READMEM32_LE(rb)                 AROS_LONG2LE(*((volatile ULONG *) (rb)))
+#define	WRITEMEM32_LE(adr, value)	     *((volatile ULONG *) (adr)) = AROS_LONG2LE(value)
+#define CONSTWRITEMEM32_LE(adr, value)   *((volatile ULONG *) (adr)) = AROS_LONG2LE(value)
 
 #define CONSTWRITEREG16_LE(rb, offset, value) *((volatile UWORD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_WORD2LE(value)
 #define CONSTWRITEREG32_LE(rb, offset, value) *((volatile ULONG *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_LONG2LE(value)
