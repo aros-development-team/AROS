@@ -12,20 +12,6 @@
 #include <setjmp.h>
 #include <aros/startup.h>
 
-/* Define index of a stack register value in jmp_buf.regs */
-
-#if defined __i386__
-#   define STACK_INDEX (_JMPLEN-1)
-#elif defined __x86_64__
-#   define STACK_INDEX (_JMPLEN-1)
-#elif defined __powerpc__
-#   define STACK_INDEX 1
-#else
-#   error unsupported CPU type
-#endif
-
-#define VFORK_MAGIC 0x666
-
 struct vfork_data
 {
     struct vfork_data *prev;
