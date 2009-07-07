@@ -30,8 +30,16 @@
 #include <aros/debug.h>
 #include <aros/startup.h>
 
-static void enter_pretendchild(struct arosc_privdata *ppriv, struct vfork_data *udata);
-static void leave_pretendchild(struct arosc_privdata *ppriv, struct vfork_data *udata);
+/* The following functions are used to update the childs and parents privdata
+   for the parent pretending to be running as child and for the child to take over. It is called
+   in the following sequence:
+   parent_enterpretendchild() is called in vfork so the parent pretends to be running as child
+   child_takeover() is called by child if exec*() so it can continue from the parent state
+   parent_leavepretendchild() is called by parent to switch back to be running as parent
+*/
+static void parent_enterpretendchild(struct vfork_data *udata);
+static void child_takeover(struct vfork_data *udata);
+static void parent_leavepretendchild(struct vfork_data *udata);
 
 LONG launcher()
 {
@@ -81,15 +89,10 @@ LONG launcher()
         if(udata->child_executed)
         {
             APTR exec_id;
-            BPTR dir;
             
             D(bug("launcher: child executed\n"));
-            
-            /* Set current dir to parent's current dir */
-            dir = DupLock(((struct Process *)udata->parent)->pr_CurrentDir);
-            UnLock(CurrentDir(dir));
-            /* Don't mind updating aroscbase->acb_startup_cd_changed as we will
-               exit from process after __exec_do has finished */
+
+            child_takeover(udata);
 
             /* Filenames passed from parent obey parent's __doupath */
             __doupath = udata->cpriv->acpd_parent_does_upath;
@@ -259,7 +262,7 @@ pid_t __vfork(jmp_buf env)
         jmp_buf env;
         bcopy(&udata->vfork_jump, env, sizeof(jmp_buf));
 
-        leave_pretendchild(ppriv, udata);
+        parent_leavepretendchild(udata);
 
         D(bug("__vfork: freeing udata\n"));
         FreeMem(udata, sizeof(struct vfork_data));
@@ -271,7 +274,7 @@ pid_t __vfork(jmp_buf env)
         return (pid_t) 1;
     }
 
-    enter_pretendchild(ppriv, udata);
+    parent_enterpretendchild(udata);
 
     D(bug("__vfork: Jumping to jmp_buf %p\n", &udata->vfork_jump));
     D(bug("__vfork: ip: %p, stack: %p\n", udata->vfork_jump[0].retaddr, udata->vfork_jump[0].regs[_JMPLEN - 1]));
@@ -281,40 +284,55 @@ pid_t __vfork(jmp_buf env)
 }
 
 
-static void enter_pretendchild(struct arosc_privdata *ppriv, struct vfork_data *udata)
+static void parent_enterpretendchild(struct vfork_data *udata)
 {
-    D(bug("enter_pretendchild(%x, %x): entered\n", ppriv, udata));
+    D(bug("parent_enterpretendchild(%x): entered\n", udata));
 
-    ppriv->acpd_vfork_data = udata;
+    udata->ppriv->acpd_vfork_data = udata;
 
     /* Remember and switch fd descriptor table */
-    udata->parent_acpd_fd_mempool = ppriv->acpd_fd_mempool;
-    udata->parent_acpd_numslots = ppriv->acpd_numslots;
-    udata->parent_acpd_fd_array = ppriv->acpd_fd_array;
-    ppriv->acpd_fd_mempool = udata->cpriv->acpd_fd_mempool;
-    ppriv->acpd_numslots = udata->cpriv->acpd_numslots;
-    ppriv->acpd_fd_array = udata->cpriv->acpd_fd_array;
+    udata->parent_acpd_fd_mempool = udata->ppriv->acpd_fd_mempool;
+    udata->parent_acpd_numslots = udata->ppriv->acpd_numslots;
+    udata->parent_acpd_fd_array = udata->ppriv->acpd_fd_array;
+    udata->ppriv->acpd_fd_mempool = udata->cpriv->acpd_fd_mempool;
+    udata->ppriv->acpd_numslots = udata->cpriv->acpd_numslots;
+    udata->ppriv->acpd_fd_array = udata->cpriv->acpd_fd_array;
     
     /* Pretend to be running as the child created by vfork */
-    ppriv->acpd_flags |= PRETEND_CHILD;
+    udata->ppriv->acpd_flags |= PRETEND_CHILD;
 
-    D(bug("enter_pretendchild: leaving\n"));
+    D(bug("parent_enterpretendchild: leaving\n"));
 }
 
-static void leave_pretendchild(struct arosc_privdata *ppriv, struct vfork_data *udata)
+static void child_takeover(struct vfork_data *udata)
 {
-    D(bug("leave_pretendchild(%x, %x): entered\n", ppriv, udata));
+    BPTR dir;
+
+    D(bug("child_takeover(%x): entered\n", udata));
+            
+    /* Set current dir to parent's current dir */
+    dir = DupLock(((struct Process *)udata->parent)->pr_CurrentDir);
+    UnLock(CurrentDir(dir));
+    /* Don't mind updating aroscbase->acb_startup_cd_changed as we will
+       exit from process after __exec_do has finished */
+
+    D(bug("child_takeover(): leaving\n"));
+}
+
+static void parent_leavepretendchild(struct vfork_data *udata)
+{
+    D(bug("parent_leavepretendchild(%x): entered\n", ppriv, udata));
 
     /* Restore parent's old fd_array */
-    ppriv->acpd_fd_mempool = udata->parent_acpd_fd_mempool;
-    ppriv->acpd_numslots = udata->parent_acpd_numslots;
-    ppriv->acpd_fd_array =  udata->parent_acpd_fd_array;
+    udata->ppriv->acpd_fd_mempool = udata->parent_acpd_fd_mempool;
+    udata->ppriv->acpd_numslots = udata->parent_acpd_numslots;
+    udata->ppriv->acpd_fd_array =  udata->parent_acpd_fd_array;
 
     /* Switch to previous vfork_data */
-    ppriv->acpd_vfork_data = udata->prev;
+    udata->ppriv->acpd_vfork_data = udata->prev;
     if(udata->prev == NULL)
-        ppriv->acpd_flags &= ~PRETEND_CHILD;
+        udata->ppriv->acpd_flags &= ~PRETEND_CHILD;
 
-    D(bug("leave_pretendchild: leaving\n"));
+    D(bug("parent_leavepretendchild: leaving\n"));
 }
 
