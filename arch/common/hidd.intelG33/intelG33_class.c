@@ -27,7 +27,7 @@
 #include "intelG33_intern.h"
 #include "intelG33_regs.h"
 
-#define BASE(lib) ((struct IntelG33Base*)(lib))
+#define BASE(lib) ((struct intelg33base*)(lib))
 #define SD(cl) (&BASE(cl->UserData)->sd)
 #define sd ((struct staticdata*)SD(cl))
 
@@ -55,7 +55,7 @@
         { TAG_DONE, 0UL }}
 
 
-OOP_Object *METHOD(IntelG33, Root, New) {
+OOP_Object *METHOD(INTELG33, Root, New) {
     D(bug("[G33] Root New\n"));
 
 /* TODO: Calculate timings for allowed screen modes based on (E-)EDID information */
@@ -123,7 +123,7 @@ OOP_Object *METHOD(IntelG33, Root, New) {
   aoHidd_Gfx_SupportsHWCursor
 */
 
-void METHOD(IntelG33, Root, Get) {
+void METHOD(INTELG33, Root, Get) {
     D(bug("[G33] Root Get\n"));
 
     ULONG idx;
@@ -169,7 +169,7 @@ void METHOD(IntelG33, Root, Get) {
     return;
 }
 
-void METHOD(IntelG33, Root, Set) {
+void METHOD(INTELG33, Root, Set) {
     D(bug("[G33] Root Set\n"));
 
     ULONG idx;
@@ -210,7 +210,7 @@ void METHOD(IntelG33, Root, Set) {
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-OOP_Object *METHOD(IntelG33, Hidd_Gfx, NewBitMap) {
+OOP_Object *METHOD(INTELG33, Hidd_Gfx, NewBitMap) {
     D(bug("[G33] Hidd_Gfx NewBitMap\n"));
 
     BOOL displayable, framebuffer;

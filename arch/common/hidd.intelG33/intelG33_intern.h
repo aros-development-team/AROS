@@ -32,8 +32,8 @@
 #define HiddG33BitMapAttrBase (sd->G33BitMapAttrBase)
 #define __IHidd_PlanarBM      (sd->planarAttrBase)
 
-#define IID_Hidd_Gfx_IntelG33   "IntelG33"
-#define CLID_Hidd_Gfx_IntelG33  "IntelG33"
+#define IID_Hidd_Gfx_IntelG33   "IntelG33Driver"
+#define CLID_Hidd_Gfx_IntelG33  "IntelG33Driver"
 #define IID_Hidd_G33BitMap      "IntelG33Bitmap"
 
 /*
@@ -107,7 +107,7 @@ struct staticdata {
  
 };
 
-struct IntelG33Base {
+struct intelg33base {
     struct        Library LibNode;    
     struct        staticdata sd;
 };
