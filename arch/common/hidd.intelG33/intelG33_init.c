@@ -274,7 +274,7 @@ AROS_UFH3(void, Enumerator,
     AROS_USERFUNC_EXIT
 }
 
-static int IntelG33_Init(LIBBASETYPEPTR LIBBASE) {
+static int INTELG33_Init(LIBBASETYPEPTR LIBBASE) {
     D(bug("[G33] IntelG33 hidd init\n"));
 
     struct staticdata *sd = &LIBBASE->sd;
@@ -380,4 +380,4 @@ static int IntelG33_Init(LIBBASETYPEPTR LIBBASE) {
     return FALSE;
 }
 
-ADD2INITLIB(IntelG33_Init, 0)
+ADD2INITLIB(INTELG33_Init, 0)
