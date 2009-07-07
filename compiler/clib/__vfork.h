@@ -26,6 +26,8 @@ struct vfork_data
     APTR parent_acpd_fd_mempool;
     void *parent_acpd_fd_array;
     int parent_acpd_numslots;
+    int parent_startup_cd_changed;
+    BPTR parent_startup_cd_lock;
     BPTR parent_curdir;
     struct arosc_privdata *ppriv;
     int old_acpd_flags;

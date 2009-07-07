@@ -297,6 +297,13 @@ static void parent_enterpretendchild(struct vfork_data *udata)
     udata->ppriv->acpd_fd_mempool = udata->cpriv->acpd_fd_mempool;
     udata->ppriv->acpd_numslots = udata->cpriv->acpd_numslots;
     udata->ppriv->acpd_fd_array = udata->cpriv->acpd_fd_array;
+
+    /* Remember and switch chdir fields */
+    udata->parent_startup_cd_changed = __startup_cd_changed;
+    udata->parent_startup_cd_lock = __startup_cd_lock;
+    __startup_cd_changed = udata->cpriv->acpd_startup_cd_changed;
+    __startup_cd_lock = udata->cpriv->acpd_startup_cd_lock;
+    udata->parent_curdir = CurrentDir(((struct Process *)udata->child)->pr_CurrentDir);
     
     /* Pretend to be running as the child created by vfork */
     udata->ppriv->acpd_flags |= PRETEND_CHILD;
@@ -306,15 +313,12 @@ static void parent_enterpretendchild(struct vfork_data *udata)
 
 static void child_takeover(struct vfork_data *udata)
 {
-    BPTR dir;
-
     D(bug("child_takeover(%x): entered\n", udata));
             
     /* Set current dir to parent's current dir */
-    dir = DupLock(((struct Process *)udata->parent)->pr_CurrentDir);
-    UnLock(CurrentDir(dir));
-    /* Don't mind updating aroscbase->acb_startup_cd_changed as we will
-       exit from process after __exec_do has finished */
+    __startup_cd_changed = udata->ppriv->acpd_startup_cd_changed;
+    __startup_cd_lock = udata->ppriv->acpd_startup_cd_lock;
+    CurrentDir(((struct Process *)udata->parent)->pr_CurrentDir);
 
     D(bug("child_takeover(): leaving\n"));
 }
@@ -327,6 +331,11 @@ static void parent_leavepretendchild(struct vfork_data *udata)
     udata->ppriv->acpd_fd_mempool = udata->parent_acpd_fd_mempool;
     udata->ppriv->acpd_numslots = udata->parent_acpd_numslots;
     udata->ppriv->acpd_fd_array =  udata->parent_acpd_fd_array;
+
+    /* Switch to currentdir from before vfork() call */
+    __startup_cd_changed = udata->parent_startup_cd_changed;
+    __startup_cd_lock = udata->parent_startup_cd_lock;
+    CurrentDir(udata->parent_curdir);
 
     /* Switch to previous vfork_data */
     udata->ppriv->acpd_vfork_data = udata->prev;
