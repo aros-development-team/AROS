@@ -534,7 +534,7 @@ ULONG nCalcConfigCRC(struct NepClassHid *nch, struct Library *ps, struct PsdIFFC
     if(buf)
     {
         UWORD *ptr = (UWORD *) buf;
-        ULONG len = (buf[1] + 8)>>1;
+        ULONG len = (AROS_LONG2BE(buf[1]) + 8)>>1;
         crc = len;
         if(len)
         {
