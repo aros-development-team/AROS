@@ -201,6 +201,7 @@ static VOID AddPartitionVolume
 	    D(bug("[Boot] Partition name: %s bootable: %d\n", name, bootable));
 	    /* BHFormat complains if this bit is not set, and it's really wrong to have it unset. So we explicitly set it here.
 	       Pavel Fedin <sonic_amiga@rambler.ru> */
+            pp[4 + DE_TABLESIZE] = DE_BOOTBLOCKS;
 	    pp[4 + DE_BUFMEMTYPE] |= MEMF_PUBLIC;
         }
         else
