@@ -12,13 +12,7 @@ extern int __argc;
 struct WBStartup;
 extern struct WBStartup *WBenchMsg;
 
-struct aros_startup
-{
-    jmp_buf as_startup_jmp_buf;
-    LONG    as_startup_error;
-};
-
-extern struct aros_startup __aros_startup;
+extern LONG __startup_error;
 
 DECLARESET(PROGRAM_ENTRIES);
 void __startup_entries_next(void);

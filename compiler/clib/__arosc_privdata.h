@@ -136,6 +136,13 @@ struct arosc_privdata
 
 /* !acpd_flags */
 
+/* The data stored for arosc startup code */
+struct arosc_startup
+{
+    jmp_buf as_startup_jmp_buf;
+    LONG    as_startup_error;
+};
+
 #define __get_arosc_privdata() ((struct arosc_privdata *)__get_arosc_userdata())
 
 #define __oldprivdata                         (__get_arosc_privdata()->acpd_oldprivdata)
@@ -159,7 +166,7 @@ struct arosc_privdata
 #define __flocks_list                         (__get_arosc_privdata()->acpd_file_locks)
 #define __gmtoffset                           (__get_arosc_privdata()->acpd_gmtoffset)
 
-#define __aros_startup          ((struct aros_startup *)GetIntETask(FindTask(NULL))->iet_startup)
+#define __aros_startup          ((struct arosc_startup *)GetIntETask(FindTask(NULL))->iet_startup)
 #define __aros_startup_jmp_buf  (__aros_startup->as_startup_jmp_buf)
 #define __aros_startup_error    (__aros_startup->as_startup_error)
 

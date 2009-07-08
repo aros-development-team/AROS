@@ -19,25 +19,13 @@
 #include <aros/symbolsets.h>
 #include <aros/startup.h>
 
-#include "etask.h"
-
 THIS_PROGRAM_HANDLES_SYMBOLSETS
-
-/* pass these values to the command line handling function */
-char *__argstr;
-ULONG __argsize;
-
-/* the command line handling functions will pass these values back to us */
-char **__argv;
-int  __argc;
 
 struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 
 extern int main(int argc, char ** argv);
 int (*__main_function_ptr)(int argc, char ** argv) __attribute__((__weak__)) = main;
-
-DEFINESET(PROGRAM_ENTRIES);
 
 /* if the programmer hasn't defined a symbol with the name __nocommandline
    then the code to handle the commandline will be included from the autoinit.lib
@@ -67,8 +55,6 @@ asm(".set __importnoinitexitsets, __noinitexitsets");
 
 static void __startup_entries_init(void);
 
-struct aros_startup __aros_startup;
-
 /* Guarantee that __startup_entry is placed at the beginning of the binary */
 AROS_UFP3(LONG, __startup_entry,
     AROS_UFHA(char *,argstr,A0),
@@ -86,8 +72,6 @@ AROS_UFH3(LONG, __startup_entry,
 {
     AROS_USERFUNC_INIT
 
-    struct Process *myproc;
-    
     SysBase = sysbase;
 
     D(bug("Entering __startup_entry(\"%s\", %d, %x)\n", argstr, argsize, SysBase));
@@ -101,10 +85,7 @@ AROS_UFH3(LONG, __startup_entry,
 
     __argstr  = argstr;
     __argsize = argsize;
-
-    myproc = (struct Process *)FindTask(NULL);
-    GetIntETask(myproc)->iet_startup = &__aros_startup;
-    __aros_startup.as_startup_error = RETURN_FAIL;
+    __startup_error = RETURN_FAIL;
 
     __startup_entries_init();
     __startup_entries_next();
@@ -113,23 +94,10 @@ AROS_UFH3(LONG, __startup_entry,
 
     D(bug("Leaving __startup_entry\n"));
 
-    return __aros_startup.as_startup_error;
+    return __startup_error;
 
     AROS_USERFUNC_EXIT
 } /* entry */
-
-
-static void __startup_setjmp(void)
-{
-    D(bug("Entering __startup_setjmp\n"));
-
-    if (setjmp(__aros_startup.as_startup_jmp_buf) == 0)
-    {
-        __startup_entries_next();
-    }
-
-    D(bug("Leaving __startup_setjmp\n"));
-}
 
 
 static void __startup_main(void)
@@ -138,33 +106,12 @@ static void __startup_main(void)
 
     /* Invoke the main function. A weak symbol is used as function name so that
        it can be overridden (for *nix stuff, for instance).  */
-    __aros_startup.as_startup_error = (*__main_function_ptr) (__argc, __argv);
+    __startup_error = (*__main_function_ptr) (__argc, __argv);
 
     D(bug("Leaving __startup_main\n"));
 }
 
-ADD2SET(__startup_setjmp, program_entries, -10);
 ADD2SET(__startup_main, program_entries, 127);
-
-
-static int __startup_entry_pos;
-
-void __startup_entries_init(void)
-{
-    __startup_entry_pos = 1;
-}
-
-void __startup_entries_next(void)
-{
-    void (*entry_func)(void);
- 
-    entry_func = SETNAME(PROGRAM_ENTRIES)[__startup_entry_pos];
-    if (entry_func)
-    {
-        __startup_entry_pos++;
-        entry_func();
-    }
-}
 
 
 /*

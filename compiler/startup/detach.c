@@ -109,7 +109,7 @@ static void __startup_detach(void)
             Signal(&newproc->pr_Task, SIGF_SINGLE);
         }
 
-        __aros_startup.as_startup_error = __detached_return_value;
+        __startup_error = __detached_return_value;
     }
 
     D(bug("Leaving __startup_detach\n"));

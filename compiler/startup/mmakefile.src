@@ -21,7 +21,6 @@ linklibs-startup: $(OBJS)
 $(LIBDIR)/%.o : $(GENDIR)/$(CURDIR)/%.o
 	@$(CP) $< $@
 
-USER_CFLAGS := -I $(SRCDIR)/rom/exec
 %rule_compile basename=% targetdir=$(GENDIR)/$(CURDIR)
 
 #MM linklibs-startup-setup
