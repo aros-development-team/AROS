@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,6 +15,7 @@
 #include <errno.h>
 
 #include "etask.h"
+#include "__arosc_privdata.h"
 
 /*****************************************************************************
 
@@ -146,7 +147,7 @@
     {
         if(status && IntETask(et)->iet_startup)
         {
-            struct aros_startup *startup = IntETask(et)->iet_startup;
+            struct arosc_startup *startup = IntETask(et)->iet_startup;
             *status = startup->as_startup_error;
         }
         ret = et->et_UniqueID;

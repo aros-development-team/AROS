@@ -39,7 +39,9 @@ STARTUPFILES := \
 	__stdiowin \
         stdiowin \
         fromwb \
-        initexitsets
+        initexitsets \
+        startupvars \
+        programentries
 
 MISCFILES := \
 	detach \

@@ -50,7 +50,7 @@ LONG launcher()
     BYTE child_signal;
     struct Library *aroscbase = NULL;
 
-    GetIntETask(this)->iet_startup = GetETask(this)->et_Result2 = AllocVec(sizeof(struct aros_startup), MEMF_ANY | MEMF_CLEAR);
+    GetIntETask(this)->iet_startup = GetETask(this)->et_Result2 = AllocVec(sizeof(struct arosc_startup), MEMF_ANY | MEMF_CLEAR);
 
     /* Allocate signal for parent->child communication */
     child_signal = udata->child_signal = AllocSignal(-1);
@@ -237,7 +237,7 @@ pid_t __vfork(jmp_buf env)
 	if(!udata->child_executed)
 	{
 	    D(bug("__vfork: not executed\n"));
-	    ((struct aros_startup*) GetIntETask(udata->child)->iet_startup)->as_startup_error = __aros_startup_error;
+	    ((struct arosc_startup*) GetIntETask(udata->child)->iet_startup)->as_startup_error = __aros_startup_error;
 	    D(bug("__vfork: Signaling child\n"));
 	    Signal(udata->child, 1 << udata->child_signal);
 	}
