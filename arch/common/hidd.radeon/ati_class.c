@@ -278,6 +278,7 @@ void METHOD(ATI, Hidd_Gfx, CopyBox)
             UNLOCK_MULTI_BITMAP
 
             LOCK_HW
+            sd->Card.Busy = TRUE;
 
             RADEONWaitForFifo(sd, 2);
             OUTREG(RADEON_DST_PITCH_OFFSET, bm_dst->pitch_offset);
