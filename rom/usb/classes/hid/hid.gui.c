@@ -7,6 +7,14 @@
 
 #include "hid.class.h"
 
+#ifdef USE_NLIST
+#include <mui/NList_mcc.h>
+#include <mui/NListview_mcc.h>
+
+#define ListObject NListObject
+#define ListviewObject NListviewObject
+#endif
+
 extern const STRPTR libname;
 
 /* /// "Strings" */
@@ -1865,7 +1873,7 @@ AROS_UFH3(LONG, ReportListDisplayHook,
         } else {
             STRPTR srcptr;
             STRPTR tarptr;
-            *strarr = tarptr = nch->nch_TmpStrBuf;
+            *strarr = tarptr = nch->nch_TmpStrBufReport;
             srcptr = nhc->nhc_Name;
             while((*tarptr++ = *srcptr++));
             while((nhc = nhc->nhc_Parent))
@@ -1902,9 +1910,9 @@ AROS_UFH3(LONG, ItemListDisplayHook,
     if(nhgi)
     {
         nhi = nhgi->nhgi_Item;
-        psdSafeRawDoFmt(nch->nch_TmpStrBuf, 10, "%ld", nhi->nhi_LogicalMin);
-        psdSafeRawDoFmt(&nch->nch_TmpStrBuf[10], 10, "%ld", nhi->nhi_LogicalMax);
-        buf = &nch->nch_TmpStrBuf[30];
+        psdSafeRawDoFmt(nch->nch_TmpStrBufItem, 10, "%ld", nhi->nhi_LogicalMin);
+        psdSafeRawDoFmt(&nch->nch_TmpStrBufItem[10], 10, "%ld", nhi->nhi_LogicalMax);
+        buf = &nch->nch_TmpStrBufItem[30];
         flags = nhi->nhi_Flags;
         if(flags & RPF_MAIN_CONST)
         {
@@ -1929,8 +1937,8 @@ AROS_UFH3(LONG, ItemListDisplayHook,
         {
             strcpy(buf, "var. ");
             buf += 5;
-            psdSafeRawDoFmt(&nch->nch_TmpStrBuf[20], 10, "%ld", nhi->nhi_OldValue);
-            *strarr++ = &nch->nch_TmpStrBuf[20];
+            psdSafeRawDoFmt(&nch->nch_TmpStrBufItem[20], 10, "%ld", nhi->nhi_OldValue);
+            *strarr++ = &nch->nch_TmpStrBufItem[20];
         } else {
             strcpy(buf, "array ");
             buf += 6;
@@ -1967,9 +1975,9 @@ AROS_UFH3(LONG, ItemListDisplayHook,
         } else {
             strcpy(buf, "bitfield");
         }
-        *strarr++ = nch->nch_TmpStrBuf;
-        *strarr++ = &nch->nch_TmpStrBuf[10];
-        *strarr = &nch->nch_TmpStrBuf[30];
+        *strarr++ = nch->nch_TmpStrBufItem;
+        *strarr++ = &nch->nch_TmpStrBufItem[10];
+        *strarr = &nch->nch_TmpStrBufItem[30];
     } else {
         *strarr++ = "\33l\33uName";
         *strarr++ = "\33l\33uVal";
@@ -1977,6 +1985,7 @@ AROS_UFH3(LONG, ItemListDisplayHook,
         *strarr++ = "\33l\33uMax";
         *strarr = "\33l\33uType";
     }
+    
     return(0);
 
     AROS_USERFUNC_EXIT
@@ -2045,8 +2054,8 @@ AROS_UFH3(LONG, ActionListDisplayHook,
                         break;
                 }
 
-                psdSafeRawDoFmt(nch->nch_TmpStrBuf, 80, "%s %s", p1str, A_QualifierStrings[nha->nha_Qualifier]);
-                *strarr = nch->nch_TmpStrBuf;
+                psdSafeRawDoFmt(nch->nch_TmpStrBufAction, 80, "%s %s", p1str, A_QualifierStrings[nha->nha_Qualifier]);
+                *strarr = nch->nch_TmpStrBufAction;
                 break;
 
             case HUA_MOUSEPOS:
@@ -2110,7 +2119,7 @@ AROS_UFH3(LONG, ActionListDisplayHook,
                         p2str = "fifth mouse button";
                         break;
                 }
-                psdSafeRawDoFmt(*strarr = nch->nch_TmpStrBuf, 80, "%s %s", p1str, p2str);
+                psdSafeRawDoFmt(*strarr = nch->nch_TmpStrBufAction, 80, "%s %s", p1str, p2str);
                 break;
 
             case HUA_WHEEL:
@@ -2145,12 +2154,12 @@ AROS_UFH3(LONG, ActionListDisplayHook,
             case HUA_DIGJOY:
                 p1str = A_JoypadOpStrings[nRevLookup(nha->nha_JoypadOp, 0, A_JoypadOpVals)];
                 p2str = A_JoypadFeatStrings[nRevLookup(nha->nha_JoypadFeat, 0, A_JoypadFeatVals)];
-                psdSafeRawDoFmt(*strarr = nch->nch_TmpStrBuf, 80, "%s %s (port %ld)", p1str, p2str, (ULONG) nha->nha_JoypadPort);
+                psdSafeRawDoFmt(*strarr = nch->nch_TmpStrBufAction, 80, "%s %s (port %ld)", p1str, p2str, (ULONG) nha->nha_JoypadPort);
                 break;
 
             case HUA_ANALOGJOY:
                 p1str = A_APadFeatStrings[nRevLookup(nha->nha_APadFeat, 0, A_APadFeatVals)];
-                psdSafeRawDoFmt(*strarr = nch->nch_TmpStrBuf, 80, "Set %s (port %ld)", p1str, (ULONG) nha->nha_JoypadPort);
+                psdSafeRawDoFmt(*strarr = nch->nch_TmpStrBufAction, 80, "Set %s (port %ld)", p1str, (ULONG) nha->nha_JoypadPort);
                 break;
 
             case HUA_TABLET:
@@ -2182,7 +2191,7 @@ AROS_UFH3(LONG, ActionListDisplayHook,
                 break;
 
             case HUA_RAWKEY:
-                psdSafeRawDoFmt(*strarr = nch->nch_TmpStrBuf, 80, "%s %s",
+                psdSafeRawDoFmt(*strarr = nch->nch_TmpStrBufAction, 80, "%s %s",
                                 (nha->nha_RawKey & IECODE_UP_PREFIX) ? "keyup" : "keydown",
                                 nch->nch_RawKeyArray[nha->nha_RawKey & (~IECODE_UP_PREFIX)]);
                 break;
@@ -2227,7 +2236,7 @@ AROS_UFH3(LONG, ActionListDisplayHook,
                         p1str = nha->nha_OutArray;
                     }
                 }
-                psdSafeRawDoFmt(*strarr = nch->nch_TmpStrBuf, 80, "%s %s", p1str, p2str);
+                psdSafeRawDoFmt(*strarr = nch->nch_TmpStrBufAction, 80, "%s %s", p1str, p2str);
                 if(freeit)
                 {
                     psdFreeVec(p2str);
@@ -2252,7 +2261,7 @@ AROS_UFH3(LONG, ActionListDisplayHook,
                         p1str = nha->nha_OutArray;
                     }
                 }
-                psdSafeRawDoFmt(*strarr = nch->nch_TmpStrBuf, 80, "%s %s", p1str, p2str);
+                psdSafeRawDoFmt(*strarr = nch->nch_TmpStrBufAction, 80, "%s %s", p1str, p2str);
                 if(freeit)
                 {
                     psdFreeVec(p2str);
@@ -2267,11 +2276,11 @@ AROS_UFH3(LONG, ActionListDisplayHook,
             case HUA_VARIABLES:
                 p1str = A_TarVariableStrings[nRevLookup(nha->nha_TarVar, 0, A_TarVariableVals)];
                 p2str = A_TarVarOpStrings[nRevLookup(nha->nha_TarVarOp, 0, A_TarVarOpVals)];
-                psdSafeRawDoFmt(*strarr = nch->nch_TmpStrBuf, 80, "%s %s", p1str, p2str);
+                psdSafeRawDoFmt(*strarr = nch->nch_TmpStrBufAction, 80, "%s %s", p1str, p2str);
                 break;
 
             case HUA_EXTRAWKEY:
-                psdSafeRawDoFmt(*strarr = nch->nch_TmpStrBuf, 80, "%s %s",
+                psdSafeRawDoFmt(*strarr = nch->nch_TmpStrBufAction, 80, "%s %s",
                                 (nha->nha_RawKey & IECODE_UP_PREFIX) ? "keyup" : "keydown",
                                 nch->nch_ExtRawKeyArray[nha->nha_RawKey & (~IECODE_UP_PREFIX)]);
                 break;
@@ -2958,24 +2967,24 @@ AROS_UFH3(IPTR, ActionDispatcher,
                 nnset(nch->nch_A_ClipStretchObj, MUIA_Selected, nha->nha_ClipStretch);
 
                 nnset(nch->nch_ActionScaleEnableObj, MUIA_Selected, nha->nha_ScaleEnable);
-                psdSafeRawDoFmt(nch->nch_TmpStrBuf, 80, "%ld", nha->nha_ScaleMin);
-                nnset(nch->nch_A_ScaleMinObj, MUIA_String_Contents, nch->nch_TmpStrBuf);
-                psdSafeRawDoFmt(nch->nch_TmpStrBuf, 80, "%ld", nha->nha_ScaleMax);
-                nnset(nch->nch_A_ScaleMaxObj, MUIA_String_Contents, nch->nch_TmpStrBuf);
+                psdSafeRawDoFmt(nch->nch_TmpStrBuf0, 80, "%ld", nha->nha_ScaleMin);
+                nnset(nch->nch_A_ScaleMinObj, MUIA_String_Contents, nch->nch_TmpStrBuf0);
+                psdSafeRawDoFmt(nch->nch_TmpStrBuf0, 80, "%ld", nha->nha_ScaleMax);
+                nnset(nch->nch_A_ScaleMaxObj, MUIA_String_Contents, nch->nch_TmpStrBuf0);
 
                 nnset(nch->nch_ActionCCEnableObj, MUIA_Selected, nha->nha_CCEnable);
                 nnset(nch->nch_A_CCVar1Obj, MUIA_Cycle_Active, nRevLookup(nha->nha_CCVar1, 0, A_CCVariableVals));
                 nnset(nch->nch_A_CCCondObj, MUIA_Cycle_Active, nRevLookup(nha->nha_CCCond, 0, A_CCCondVals));
                 nnset(nch->nch_A_CCVar2Obj, MUIA_Cycle_Active, nRevLookup(nha->nha_CCVar2, 0, A_CCVariableVals));
-                psdSafeRawDoFmt(nch->nch_TmpStrBuf, 80, "%ld", nha->nha_CCConst1);
-                nnset(nch->nch_A_CCConst1Obj, MUIA_String_Contents, nch->nch_TmpStrBuf);
-                psdSafeRawDoFmt(nch->nch_TmpStrBuf, 80, "%ld", nha->nha_CCConst2);
-                nnset(nch->nch_A_CCConst2Obj, MUIA_String_Contents, nch->nch_TmpStrBuf);
+                psdSafeRawDoFmt(nch->nch_TmpStrBuf0, 80, "%ld", nha->nha_CCConst1);
+                nnset(nch->nch_A_CCConst1Obj, MUIA_String_Contents, nch->nch_TmpStrBuf0);
+                psdSafeRawDoFmt(nch->nch_TmpStrBuf0, 80, "%ld", nha->nha_CCConst2);
+                nnset(nch->nch_A_CCConst2Obj, MUIA_String_Contents, nch->nch_TmpStrBuf0);
 
                 nnset(nch->nch_ActionValEnableObj, MUIA_Selected, nha->nha_ValEnable);
                 nnset(nch->nch_A_ValVarObj, MUIA_Cycle_Active, nRevLookup(nha->nha_ValVar, 0, A_CCVariableVals));
-                psdSafeRawDoFmt(nch->nch_TmpStrBuf, 80, "%ld", nha->nha_ValConst);
-                nnset(nch->nch_A_ValConstObj, MUIA_String_Contents, nch->nch_TmpStrBuf);
+                psdSafeRawDoFmt(nch->nch_TmpStrBuf0, 80, "%ld", nha->nha_ValConst);
+                nnset(nch->nch_A_ValConstObj, MUIA_String_Contents, nch->nch_TmpStrBuf0);
 
                 nnset(nch->nch_A_ClipGroupObj, MUIA_ShowMe, nha->nha_ClipEnable);
                 nnset(nch->nch_A_ScaleGroupObj, MUIA_ShowMe, nha->nha_ScaleEnable);
