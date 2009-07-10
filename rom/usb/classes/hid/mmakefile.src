@@ -5,6 +5,8 @@ FILES :=    hid.class hid.gui hidctrl.gui numtostr debug
 
 #MM- kernel-usb-classes-hid : kernel-usb-usbclass kernel-usb-poseidon
 
+USER_CFLAGS := -DUSE_NLIST
+
 %build_module mmake=kernel-usb-classes-hid \
     modname=hid modtype=usbclass modsuffix="class" \
     files="$(FILES)" \

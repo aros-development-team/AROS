@@ -714,7 +714,10 @@ struct NepClassHid
     BOOL                nch_QuitGUI;
 
     struct KeymapCfg    nch_KeymapCfg;
-    char                nch_TmpStrBuf[128];
+    char                nch_TmpStrBuf0[128];
+    char                nch_TmpStrBufReport[128];
+    char                nch_TmpStrBufItem[128];
+    char                nch_TmpStrBufAction[128];
     struct HidUsageIDMap *nch_USBKeyArray[257]; /* Pointer to array of all USB Keymap strings */
     STRPTR              nch_RawKeyArray[129]; /* Pointer to array of all converted ANSI strings */
     STRPTR              nch_ExtRawKeyArray[129]; /* Pointer to array of all converted ANSI strings */
