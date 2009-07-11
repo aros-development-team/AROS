@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1166,13 +1166,18 @@ static void DoSearch(WORD kind)
     searchlen = strlen(searchtext);
     if (searchlen == 0) return;
 
+    line = search_startline;
+
+    if (kind == SEARCH_NEXT && line < num_lines - 1)
+	line++;
+    else if (kind == SEARCH_PREV && line > 0)
+	line--;
+
     if (kind == SEARCH_NEW)
     {
-	search_startline = 0;
+	line = 0;
 	kind = SEARCH_NEXT;
     }
-
-    line = search_startline;
 
     while(!done)
     {
@@ -1188,6 +1193,7 @@ static void DoSearch(WORD kind)
 	    ScrollTo(GAD_VERTSCROLL, line - visibley / 2, TRUE);
 
 	    found_line = line;
+	    search_startline = line;
 	    linearray[found_line].invert = TRUE;
 	    DrawTextLine(found_line - viewstarty, 0, TRUE);
 	}
@@ -1195,19 +1201,15 @@ static void DoSearch(WORD kind)
 	if (kind == SEARCH_NEXT)
 	{
 	    line++;
-	    if (line < num_lines)
+	    if (line >= num_lines)
 	    {
-		search_startline = line;
-	    } else {
 		done = TRUE;
 		DisplayBeep(NULL);
 	    }
 	} else {
 	    line--;
-	    if (line >= 0)
+	    if (line < 0)
 	    {
-		search_startline = line;
-	    } else {
 		done = TRUE;
 		DisplayBeep(NULL);
 	    }
@@ -1351,7 +1353,7 @@ static BOOL HandleWin(void)
 		{
 		    DoSearch(SEARCH_NEXT);
 		}
-		else if (strchr(MSG(MSG_SHORTCUT_NEXT), key))
+		else if (strchr(MSG(MSG_SHORTCUT_PREV), key))
 		{
 		    DoSearch(SEARCH_PREV);
 		}
