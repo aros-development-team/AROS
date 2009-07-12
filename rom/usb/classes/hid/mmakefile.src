@@ -3,7 +3,9 @@ include $(TOP)/config/make.cfg
 
 FILES :=    hid.class hid.gui hidctrl.gui numtostr debug
 
-#MM- kernel-usb-classes-hid : kernel-usb-usbclass kernel-usb-poseidon
+#MM- kernel-usb-classes-hid : kernel-usb-usbclass kernel-usb-poseidon \
+#MM				contrib-zune-classes-nlist-class \
+#MM				contrib-zune-classes-nlistview-class
 
 USER_CFLAGS := -DUSE_NLIST
 
