@@ -22,7 +22,13 @@ ULONG tick2usec(ULONG tick)
 ULONG usec2tick(ULONG usec)
 {
     ULONG ret;
-    asm volatile("movl $0,%%eax; divl %2":"=a"(ret):"d"(usec),"m"(TIMER_RPROK));
+
+//  gcc 4.3.1 with -O2: Following doesn't work properly, probably because it
+//                      doesn't tell about edx trashing.
+//
+//    asm volatile("movl $0,%%eax; divl %2":"=a"(ret):"d"(usec),"m"(TIMER_RPROK));
+//
+    asm volatile("movl $0,%%eax; divl %2":"=a"(ret),"+d"(usec):"m"(TIMER_RPROK));
     return ret;
 }
 
