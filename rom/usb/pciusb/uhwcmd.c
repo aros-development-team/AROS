@@ -849,6 +849,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                                 }
                                                 uhcinewval &= ~UHPF_PORTRESET;
                                                 uhcinewval |= UHPF_PORTENABLE;
+                                                uhwDelayMS(10, unit, base);
                                                 WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
                                                 chc->hc_PortChangeMap[uhcihciport] |= UPSF_PORT_RESET|UPSF_PORT_ENABLE; // manually fake reset change
                                                 uhwDelayMS(5, unit, base);

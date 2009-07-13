@@ -3,7 +3,7 @@
 
 #define DB_LEVEL 200
 
-#define DEBUG 1
+//#define DEBUG 1
 
 #include <aros/debug.h>
 
