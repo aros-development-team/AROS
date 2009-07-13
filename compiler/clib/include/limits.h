@@ -80,7 +80,7 @@
  */
 
 #if __POSIX_VISIBLE
-#define ARG_MAX                                 _POSIX_ARG_MAX
+#define ARG_MAX                                 40960
 #define CHILD_MAX                               _POSIX_CHILD_MAX
 #define LINK_MAX                                _POSIX_LINK_MAX
 #define MAX_CANON                               _POSIX_MAX_CANON

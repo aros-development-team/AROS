@@ -339,6 +339,7 @@ SHARED	:= \
 	strtoul \
 	strtoull \
 	strtoumax \
+	sysconf \
 	symlink \
 	system \
 	telldir \
