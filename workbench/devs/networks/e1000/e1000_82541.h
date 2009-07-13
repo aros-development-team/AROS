@@ -81,4 +81,6 @@
 #define IGP01E1000_MSE_CHANNEL_B                 0x0F00
 #define IGP01E1000_MSE_CHANNEL_A                 0xF000
 
+
+void e1000_init_script_state_82541(struct e1000_hw *hw, bool state);
 #endif

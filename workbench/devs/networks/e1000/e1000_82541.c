@@ -26,14 +26,16 @@
 
 *******************************************************************************/
 
-/* e1000_82541
- * e1000_82547
- * e1000_82541_rev_2
- * e1000_82547_rev_2
+/*
+ * 82541EI Gigabit Ethernet Controller
+ * 82541ER Gigabit Ethernet Controller
+ * 82541GI Gigabit Ethernet Controller
+ * 82541PI Gigabit Ethernet Controller
+ * 82547EI Gigabit Ethernet Controller
+ * 82547GI Gigabit Ethernet Controller
  */
 
 #include "e1000_api.h"
-#include "e1000_82541.h"
 
 static s32  e1000_init_phy_params_82541(struct e1000_hw *hw);
 static s32  e1000_init_nvm_params_82541(struct e1000_hw *hw);
@@ -69,18 +71,9 @@ static const u16 e1000_igp_cable_length_table[] =
                 (sizeof(e1000_igp_cable_length_table) / \
                  sizeof(e1000_igp_cable_length_table[0]))
 
-struct e1000_dev_spec_82541 {
-	e1000_dsp_config dsp_config;
-	e1000_ffe_config ffe_config;
-	u16 spd_default;
-	bool phy_init_script;
-};
-
 /**
  *  e1000_init_phy_params_82541 - Init PHY func ptrs.
  *  @hw: pointer to the HW structure
- *
- *  This is a function pointer entry point called by the api module.
  **/
 static s32 e1000_init_phy_params_82541(struct e1000_hw *hw)
 {
@@ -124,8 +117,6 @@ out:
 /**
  *  e1000_init_nvm_params_82541 - Init NVM func ptrs.
  *  @hw: pointer to the HW structure
- *
- *  This is a function pointer entry point called by the api module.
  **/
 static s32 e1000_init_nvm_params_82541(struct e1000_hw *hw)
 {
@@ -222,13 +213,10 @@ out:
 /**
  *  e1000_init_mac_params_82541 - Init MAC func ptrs.
  *  @hw: pointer to the HW structure
- *
- *  This is a function pointer entry point called by the api module.
  **/
 static s32 e1000_init_mac_params_82541(struct e1000_hw *hw)
 {
 	struct e1000_mac_info *mac = &hw->mac;
-	s32 ret_val;
 
 	DEBUGFUNC("e1000_init_mac_params_82541");
 
@@ -239,12 +227,14 @@ static s32 e1000_init_mac_params_82541(struct e1000_hw *hw)
 	/* Set rar entry count */
 	mac->rar_entry_count = E1000_RAR_ENTRIES;
 	/* Set if part includes ASF firmware */
-	mac->asf_firmware_present = TRUE;
+	mac->asf_firmware_present = true;
 
 	/* Function Pointers */
 
 	/* bus type/speed/width */
 	mac->ops.get_bus_info = e1000_get_bus_info_pci_generic;
+	/* function id */
+	mac->ops.set_lan_id = e1000_set_lan_id_single_port;
 	/* reset */
 	mac->ops.reset_hw = e1000_reset_hw_82541;
 	/* hw initialization */
@@ -265,6 +255,8 @@ static s32 e1000_init_mac_params_82541(struct e1000_hw *hw)
 	mac->ops.clear_vfta = e1000_clear_vfta_generic;
 	/* setting MTA */
 	mac->ops.mta_set = e1000_mta_set_generic;
+	/* ID LED init */
+	mac->ops.id_led_init = e1000_id_led_init_generic;
 	/* setup LED */
 	mac->ops.setup_led = e1000_setup_led_82541;
 	/* cleanup LED */
@@ -272,25 +264,17 @@ static s32 e1000_init_mac_params_82541(struct e1000_hw *hw)
 	/* turn on/off LED */
 	mac->ops.led_on = e1000_led_on_generic;
 	mac->ops.led_off = e1000_led_off_generic;
-	/* remove device */
-	mac->ops.remove_device = e1000_remove_device_generic;
 	/* clear hardware counters */
 	mac->ops.clear_hw_cntrs = e1000_clear_hw_cntrs_82541;
 
-	hw->dev_spec_size = sizeof(struct e1000_dev_spec_82541);
-
-	/* Device-specific structure allocation */
-	ret_val = e1000_alloc_zeroed_dev_spec_struct(hw, hw->dev_spec_size);
-
-	return ret_val;
+	return E1000_SUCCESS;
 }
 
 /**
  *  e1000_init_function_pointers_82541 - Init func ptrs.
  *  @hw: pointer to the HW structure
  *
- *  The only function explicitly called by the api module to initialize
- *  all function pointers and parameters.
+ *  Called to initialize all function pointers and parameters.
  **/
 void e1000_init_function_pointers_82541(struct e1000_hw *hw)
 {
@@ -305,8 +289,7 @@ void e1000_init_function_pointers_82541(struct e1000_hw *hw)
  *  e1000_reset_hw_82541 - Reset hardware
  *  @hw: pointer to the HW structure
  *
- *  This resets the hardware into a known state.  This is a
- *  function pointer entry point called by the api module.
+ *  This resets the hardware into a known state.
  **/
 static s32 e1000_reset_hw_82541(struct e1000_hw *hw)
 {
@@ -383,8 +366,7 @@ static s32 e1000_reset_hw_82541(struct e1000_hw *hw)
  *  e1000_init_hw_82541 - Initialize hardware
  *  @hw: pointer to the HW structure
  *
- *  This inits the hardware readying it for operation.  This is a
- *  function pointer entry point called by the api module.
+ *  This inits the hardware readying it for operation.
  **/
 static s32 e1000_init_hw_82541(struct e1000_hw *hw)
 {
@@ -395,7 +377,7 @@ static s32 e1000_init_hw_82541(struct e1000_hw *hw)
 	DEBUGFUNC("e1000_init_hw_82541");
 
 	/* Initialize identification LED */
-	ret_val = e1000_id_led_init_generic(hw);
+	ret_val = mac->ops.id_led_init(hw);
 	if (ret_val) {
 		DEBUGOUT("Error initializing identification LED\n");
 		/* This is not fatal and we should not stop init due to this */
@@ -447,7 +429,6 @@ static s32 e1000_init_hw_82541(struct e1000_hw *hw)
  * @duplex: pointer to duplex buffer
  *
  * Retrieve the current speed and duplex configuration.
- * This is a function pointer entry point called by the api module.
  **/
 static s32 e1000_get_link_up_info_82541(struct e1000_hw *hw, u16 *speed,
                                         u16 *duplex)
@@ -503,7 +484,6 @@ out:
  *  semaphore (if necessary) and read/set/write the device control reset
  *  bit in the PHY.  Wait the appropriate delay time for the device to
  *  reset and release the semaphore (if necessary).
- *  This is a function pointer entry point called by the api module.
  **/
 static s32 e1000_phy_hw_reset_82541(struct e1000_hw *hw)
 {
@@ -537,13 +517,12 @@ out:
  *  Calls the appropriate function to configure the link for auto-neg or forced
  *  speed and duplex.  Then we check for link, once link is established calls
  *  to configure collision distance and flow control are called.  If link is
- *  not established, we return -E1000_ERR_PHY (-2).  This is a function
- *  pointer entry point called by the api module.
+ *  not established, we return -E1000_ERR_PHY (-2).
  **/
 static s32 e1000_setup_copper_link_82541(struct e1000_hw *hw)
 {
 	struct e1000_phy_info *phy = &hw->phy;
-	struct e1000_dev_spec_82541 *dev_spec;
+	struct e1000_dev_spec_82541 *dev_spec = &hw->dev_spec._82541;
 	s32  ret_val;
 	u32 ctrl, ledctl;
 
@@ -554,9 +533,7 @@ static s32 e1000_setup_copper_link_82541(struct e1000_hw *hw)
 	ctrl &= ~(E1000_CTRL_FRCSPD | E1000_CTRL_FRCDPX);
 	E1000_WRITE_REG(hw, E1000_CTRL, ctrl);
 
-	hw->phy.reset_disable = FALSE;
-
-	dev_spec = (struct e1000_dev_spec_82541 *)hw->dev_spec;
+	hw->phy.reset_disable = false;
 
 	/* Earlier revs of the IGP phy require us to force MDI. */
 	if (hw->mac.type == e1000_82541 || hw->mac.type == e1000_82547) {
@@ -592,8 +569,7 @@ out:
  *  @hw: pointer to the HW structure
  *
  *  This checks the link condition of the adapter and stores the
- *  results in the hw->mac structure. This is a function pointer entry
- *  point called by the api module.
+ *  results in the hw->mac structure.
  **/
 static s32 e1000_check_for_link_82541(struct e1000_hw *hw)
 {
@@ -624,11 +600,11 @@ static s32 e1000_check_for_link_82541(struct e1000_hw *hw)
 		goto out;
 
 	if (!link) {
-		ret_val = e1000_config_dsp_after_link_change_82541(hw, FALSE);
+		ret_val = e1000_config_dsp_after_link_change_82541(hw, false);
 		goto out; /* No link detected */
 	}
 
-	mac->get_link_status = FALSE;
+	mac->get_link_status = false;
 
 	/*
 	 * Check if there was DownShift, must be checked
@@ -645,7 +621,7 @@ static s32 e1000_check_for_link_82541(struct e1000_hw *hw)
 		goto out;
 	}
 
-	ret_val = e1000_config_dsp_after_link_change_82541(hw, TRUE);
+	ret_val = e1000_config_dsp_after_link_change_82541(hw, true);
 
 	/*
 	 * Auto-Neg is enabled.  Auto Speed Detection takes care
@@ -679,13 +655,12 @@ out:
  *
  *  82541_rev_2 & 82547_rev_2 have the capability to configure the DSP when a
  *  gigabit link is achieved to improve link quality.
- *  This is a function pointer entry point called by the api module.
  **/
 static s32 e1000_config_dsp_after_link_change_82541(struct e1000_hw *hw,
                                                     bool link_up)
 {
 	struct e1000_phy_info *phy = &hw->phy;
-	struct e1000_dev_spec_82541 *dev_spec;
+	struct e1000_dev_spec_82541 *dev_spec = &hw->dev_spec._82541;
 	s32 ret_val;
 	u32 idle_errs = 0;
 	u16 phy_data, phy_saved_data, speed, duplex, i;
@@ -697,8 +672,6 @@ static s32 e1000_config_dsp_after_link_change_82541(struct e1000_hw *hw,
 	                                            IGP01E1000_PHY_AGC_PARAM_D};
 
 	DEBUGFUNC("e1000_config_dsp_after_link_change_82541");
-
-	dev_spec = (struct e1000_dev_spec_82541 *)hw->dev_spec;
 
 	if (link_up) {
 		ret_val = hw->mac.ops.get_link_up_info(hw, &speed, &duplex);
@@ -893,8 +866,7 @@ out:
  *  cable.  By reading the AGC registers, which represent the
  *  combination of coarse and fine gain value, the value can be put
  *  into a lookup table to obtain the approximate cable length
- *  for each channel.  This is a function pointer entry point called by the
- *  api module.
+ *  for each channel.
  **/
 static s32 e1000_get_cable_length_igp_82541(struct e1000_hw *hw)
 {
@@ -968,8 +940,7 @@ out:
  *  and enable Smartspeed.  LPLU and Smartspeed are mutually exclusive.  LPLU
  *  is used during Dx states where the power conservation is most important.
  *  During driver activity, SmartSpeed should be enabled so performance is
- *  maintained.  This is a function pointer entry point called by the
- *  api module.
+ *  maintained.
  **/
 static s32 e1000_set_d3_lplu_state_82541(struct e1000_hw *hw, bool active)
 {
@@ -1062,17 +1033,14 @@ out:
  *  @hw: pointer to the HW structure
  *
  *  This prepares the SW controllable LED for use and saves the current state
- *  of the LED so it can be later restored.  This is a function pointer entry
- *  point called by the api module.
+ *  of the LED so it can be later restored.
  **/
 static s32 e1000_setup_led_82541(struct e1000_hw *hw)
 {
-	struct e1000_dev_spec_82541 *dev_spec;
+	struct e1000_dev_spec_82541 *dev_spec = &hw->dev_spec._82541;
 	s32 ret_val;
 
 	DEBUGFUNC("e1000_setup_led_82541");
-
-	dev_spec = (struct e1000_dev_spec_82541 *)hw->dev_spec;
 
 	ret_val = hw->phy.ops.read_reg(hw,
 	                               IGP01E1000_GMII_FIFO,
@@ -1098,17 +1066,14 @@ out:
  *  @hw: pointer to the HW structure
  *
  *  Remove the current LED configuration and set the LED configuration
- *  to the default value, saved from the EEPROM.  This is a function pointer
- *  entry point called by the api module.
+ *  to the default value, saved from the EEPROM.
  **/
 static s32 e1000_cleanup_led_82541(struct e1000_hw *hw)
 {
-	struct e1000_dev_spec_82541 *dev_spec;
+	struct e1000_dev_spec_82541 *dev_spec = &hw->dev_spec._82541;
 	s32 ret_val;
 
 	DEBUGFUNC("e1000_cleanup_led_82541");
-
-	dev_spec = (struct e1000_dev_spec_82541 *)hw->dev_spec;
 
 	ret_val = hw->phy.ops.write_reg(hw,
 	                                IGP01E1000_GMII_FIFO,
@@ -1130,13 +1095,11 @@ out:
  **/
 static s32 e1000_phy_init_script_82541(struct e1000_hw *hw)
 {
-	struct e1000_dev_spec_82541 *dev_spec;
+	struct e1000_dev_spec_82541 *dev_spec = &hw->dev_spec._82541;
 	u32 ret_val;
 	u16 phy_saved_data;
 
 	DEBUGFUNC("e1000_phy_init_script_82541");
-
-	dev_spec = (struct e1000_dev_spec_82541 *)hw->dev_spec;
 
 	if (!dev_spec->phy_init_script) {
 		ret_val = E1000_SUCCESS;
@@ -1243,23 +1206,16 @@ out:
  *  @state: boolean value used to enable/disable PHY init script
  *
  *  Allows the driver to enable/disable the PHY init script, if the PHY is an
- *  IGP PHY.  This is a function pointer entry point called by the api module.
+ *  IGP PHY.
  **/
 void e1000_init_script_state_82541(struct e1000_hw *hw, bool state)
 {
-	struct e1000_dev_spec_82541 *dev_spec;
+	struct e1000_dev_spec_82541 *dev_spec = &hw->dev_spec._82541;
 
 	DEBUGFUNC("e1000_init_script_state_82541");
 
 	if (hw->phy.type != e1000_phy_igp) {
 		DEBUGOUT("Initialization script not necessary.\n");
-		goto out;
-	}
-
-	dev_spec = (struct e1000_dev_spec_82541 *)hw->dev_spec;
-
-	if (!dev_spec) {
-		DEBUGOUT("dev_spec pointer is set to NULL.\n");
 		goto out;
 	}
 
@@ -1293,33 +1249,31 @@ static void e1000_power_down_phy_copper_82541(struct e1000_hw *hw)
  **/
 static void e1000_clear_hw_cntrs_82541(struct e1000_hw *hw)
 {
-	volatile u32 temp;
-
 	DEBUGFUNC("e1000_clear_hw_cntrs_82541");
 
 	e1000_clear_hw_cntrs_base_generic(hw);
 
-	temp = E1000_READ_REG(hw, E1000_PRC64);
-	temp = E1000_READ_REG(hw, E1000_PRC127);
-	temp = E1000_READ_REG(hw, E1000_PRC255);
-	temp = E1000_READ_REG(hw, E1000_PRC511);
-	temp = E1000_READ_REG(hw, E1000_PRC1023);
-	temp = E1000_READ_REG(hw, E1000_PRC1522);
-	temp = E1000_READ_REG(hw, E1000_PTC64);
-	temp = E1000_READ_REG(hw, E1000_PTC127);
-	temp = E1000_READ_REG(hw, E1000_PTC255);
-	temp = E1000_READ_REG(hw, E1000_PTC511);
-	temp = E1000_READ_REG(hw, E1000_PTC1023);
-	temp = E1000_READ_REG(hw, E1000_PTC1522);
+	E1000_READ_REG(hw, E1000_PRC64);
+	E1000_READ_REG(hw, E1000_PRC127);
+	E1000_READ_REG(hw, E1000_PRC255);
+	E1000_READ_REG(hw, E1000_PRC511);
+	E1000_READ_REG(hw, E1000_PRC1023);
+	E1000_READ_REG(hw, E1000_PRC1522);
+	E1000_READ_REG(hw, E1000_PTC64);
+	E1000_READ_REG(hw, E1000_PTC127);
+	E1000_READ_REG(hw, E1000_PTC255);
+	E1000_READ_REG(hw, E1000_PTC511);
+	E1000_READ_REG(hw, E1000_PTC1023);
+	E1000_READ_REG(hw, E1000_PTC1522);
 
-	temp = E1000_READ_REG(hw, E1000_ALGNERRC);
-	temp = E1000_READ_REG(hw, E1000_RXERRC);
-	temp = E1000_READ_REG(hw, E1000_TNCRS);
-	temp = E1000_READ_REG(hw, E1000_CEXTERR);
-	temp = E1000_READ_REG(hw, E1000_TSCTC);
-	temp = E1000_READ_REG(hw, E1000_TSCTFC);
+	E1000_READ_REG(hw, E1000_ALGNERRC);
+	E1000_READ_REG(hw, E1000_RXERRC);
+	E1000_READ_REG(hw, E1000_TNCRS);
+	E1000_READ_REG(hw, E1000_CEXTERR);
+	E1000_READ_REG(hw, E1000_TSCTC);
+	E1000_READ_REG(hw, E1000_TSCTFC);
 
-	temp = E1000_READ_REG(hw, E1000_MGTPRC);
-	temp = E1000_READ_REG(hw, E1000_MGTPDC);
-	temp = E1000_READ_REG(hw, E1000_MGTPTC);
+	E1000_READ_REG(hw, E1000_MGTPRC);
+	E1000_READ_REG(hw, E1000_MGTPDC);
+	E1000_READ_REG(hw, E1000_MGTPTC);
 }

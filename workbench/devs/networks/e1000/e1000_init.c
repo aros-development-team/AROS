@@ -316,7 +316,7 @@ D(bug("[e1000] OpenDevice: Unit %d @ %p\n", unitnum, unit));
         {
 D(bug("[e1000] OpenDevice: Starting Unit %d\n", unitnum));
             ULONG rx_ring_count, tx_ring_count;
-            e1000_mac_type mac_type;
+            enum e1000_mac_type mac_type;
 
             mac_type = ((struct e1000_hw *)unit->e1ku_Private00)->mac.type;
 
@@ -325,7 +325,7 @@ D(bug("[e1000] OpenDevice: Starting Unit %d\n", unitnum));
                 ((struct e1000_hw *)unit->e1ku_Private00)->phy.autoneg_advertised = ADVERTISED_1000baseT_Full | ADVERTISED_FIBRE | ADVERTISED_Autoneg;
             else
                 ((struct e1000_hw *)unit->e1ku_Private00)->phy.autoneg_advertised = ADVERTISED_TP | ADVERTISED_Autoneg;
-            ((struct e1000_hw *)unit->e1ku_Private00)->fc.original_type = e1000_fc_default;
+            ((struct e1000_hw *)unit->e1ku_Private00)->fc.requested_mode = e1000_fc_default;
 
             rx_ring_count = max((ULONG)E1000_DEFAULT_RXD ,(ULONG)E1000_MIN_RXD);
             rx_ring_count = min(rx_ring_count,(ULONG)(mac_type < e1000_82544 ?

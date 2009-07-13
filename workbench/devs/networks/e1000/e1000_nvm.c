@@ -27,7 +27,8 @@
 *******************************************************************************/
 
 #include "e1000_api.h"
-#include "e1000_nvm.h"
+
+static void e1000_reload_nvm_generic(struct e1000_hw *hw);
 
 /**
  *  e1000_init_nvm_ops_generic - Initialize NVM function pointers
@@ -143,7 +144,8 @@ static void e1000_shift_out_eec_bits(struct e1000_hw *hw, u16 data, u16 count)
 	mask = 0x01 << (count - 1);
 	if (nvm->type == e1000_nvm_eeprom_microwire)
 		eecd &= ~E1000_EECD_DO;
-	else if (nvm->type == e1000_nvm_eeprom_spi)
+	else
+	if (nvm->type == e1000_nvm_eeprom_spi)
 		eecd |= E1000_EECD_DO;
 
 	do {
@@ -305,7 +307,8 @@ static void e1000_standby_nvm(struct e1000_hw *hw)
 		usec_delay(nvm->delay_usec);
 
 		e1000_lower_eec_clk(hw, &eecd);
-	} else if (nvm->type == e1000_nvm_eeprom_spi) {
+	} else
+	if (nvm->type == e1000_nvm_eeprom_spi) {
 		/* Toggle CS to flush commands */
 		eecd |= E1000_EECD_CS;
 		E1000_WRITE_REG(hw, E1000_EECD, eecd);
@@ -386,7 +389,8 @@ static s32 e1000_ready_nvm_eeprom(struct e1000_hw *hw)
 		/* Set CS */
 		eecd |= E1000_EECD_CS;
 		E1000_WRITE_REG(hw, E1000_EECD, eecd);
-	} else if (nvm->type == e1000_nvm_eeprom_spi) {
+	} else
+	if (nvm->type == e1000_nvm_eeprom_spi) {
 		/* Clear SK and CS */
 		eecd &= ~(E1000_EECD_CS | E1000_EECD_SK);
 		E1000_WRITE_REG(hw, E1000_EECD, eecd);
@@ -625,8 +629,6 @@ s32 e1000_write_nvm_spi(struct e1000_hw *hw, u16 offset, u16 words, u16 *data)
 	if (ret_val)
 		goto out;
 
-	msec_delay(10);
-
 	while (widx < words) {
 		u8 write_opcode = NVM_WRITE_OPCODE_SPI;
 
@@ -809,31 +811,23 @@ out:
  **/
 s32 e1000_read_mac_addr_generic(struct e1000_hw *hw)
 {
-	s32  ret_val = E1000_SUCCESS;
-	u16 offset, nvm_data, i;
+	u32 rar_high;
+	u32 rar_low;
+	u16 i;
 
-	DEBUGFUNC("e1000_read_mac_addr");
+	rar_high = E1000_READ_REG(hw, E1000_RAH(0));
+	rar_low = E1000_READ_REG(hw, E1000_RAL(0));
 
-	for (i = 0; i < ETH_ADDR_LEN; i += 2) {
-		offset = i >> 1;
-		ret_val = hw->nvm.ops.read(hw, offset, 1, &nvm_data);
-		if (ret_val) {
-			DEBUGOUT("NVM Read Error\n");
-			goto out;
-		}
-		hw->mac.perm_addr[i] = (u8)(nvm_data & 0xFF);
-		hw->mac.perm_addr[i+1] = (u8)(nvm_data >> 8);
-	}
+	for (i = 0; i < E1000_RAL_MAC_ADDR_LEN; i++)
+		hw->mac.perm_addr[i] = (u8)(rar_low >> (i*8));
 
-	/* Flip last bit of mac address if we're on second port */
-	if (hw->bus.func == E1000_FUNC_1)
-		hw->mac.perm_addr[5] ^= 1;
+	for (i = 0; i < E1000_RAH_MAC_ADDR_LEN; i++)
+		hw->mac.perm_addr[i+4] = (u8)(rar_high >> (i*8));
 
 	for (i = 0; i < ETH_ADDR_LEN; i++)
 		hw->mac.addr[i] = hw->mac.perm_addr[i];
 
-out:
-	return ret_val;
+	return E1000_SUCCESS;
 }
 
 /**
@@ -896,9 +890,8 @@ s32 e1000_update_nvm_checksum_generic(struct e1000_hw *hw)
 	}
 	checksum = (u16) NVM_SUM - checksum;
 	ret_val = hw->nvm.ops.write(hw, NVM_CHECKSUM_REG, 1, &checksum);
-	if (ret_val) {
+	if (ret_val)
 		DEBUGOUT("NVM Write Error while updating checksum.\n");
-	}
 
 out:
 	return ret_val;
@@ -911,7 +904,7 @@ out:
  *  Reloads the EEPROM by setting the "Reinitialize from EEPROM" bit in the
  *  extended control register.
  **/
-void e1000_reload_nvm_generic(struct e1000_hw *hw)
+static void e1000_reload_nvm_generic(struct e1000_hw *hw)
 {
 	u32 ctrl_ext;
 

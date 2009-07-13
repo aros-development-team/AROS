@@ -521,7 +521,7 @@ D(bug("[%s]: e1000func_reset()\n", unit->e1ku_name));
 
 	fc->pause_time = E1000_FC_PAUSE_TIME;
 	fc->send_xon = 1;
-	fc->type = fc->original_type;
+	fc->current_mode = fc->requested_mode;
 
 	/* Allow time for pending master requests to run */
 	e1000_reset_hw((struct e1000_hw *)unit->e1ku_Private00);
@@ -621,7 +621,7 @@ D(bug("[%s]: e1000func_set_multi()\n", unit->e1ku_name));
             i++;
         }
 
-        e1000_update_mc_addr_list((struct e1000_hw *)unit->e1ku_Private00, mta_list, i, 1, mac->rar_entry_count);
+        e1000_update_mc_addr_list((struct e1000_hw *)unit->e1ku_Private00, mta_list, i);
 
         FreeMem(mta_list, mc_count * ETH_ADDRESSSIZE);
     }
@@ -1303,29 +1303,11 @@ D(bug("[%s]: e1000_pci_set_mwi()\n", ((struct e1000Unit *)hw->back)->e1ku_name))
 #warning "TODO: How to SET Memory Write Invalidate on AROS!"
 }
 
-LONG  e1000_alloc_zeroed_dev_spec_struct(struct e1000_hw *hw, ULONG size)
-{
-D(bug("[%s]: e1000_alloc_zeroed_dev_spec_struct()\n", ((struct e1000Unit *)hw->back)->e1ku_name));
-
-    if ((hw->dev_spec = AllocMem(size, MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
-        return -E1000_ERR_CONFIG;
-
-    return E1000_SUCCESS;
-}
-
 LONG  e1000_read_pcie_cap_reg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 {
 D(bug("[%s]: e1000_read_pcie_cap_reg()\n", ((struct e1000Unit *)hw->back)->e1ku_name));
 #warning "TODO: How to READ PCI-Express Cap Register on AROS!"
     return 0;
-}
-
-void e1000_free_dev_spec_struct(struct e1000_hw *hw)
-{
-D(bug("[%s]: e1000_free_dev_spec_struct()\n", ((struct e1000Unit *)hw->back)->e1ku_name));
-
-    if (hw->dev_spec)
-        FreeMem(hw->dev_spec, hw->dev_spec_size);
 }
 
 void e1000_read_pci_cfg(struct e1000_hw *hw, ULONG reg, UWORD *value)

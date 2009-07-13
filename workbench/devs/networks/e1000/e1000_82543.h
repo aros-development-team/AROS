@@ -40,5 +40,12 @@
 /* If TBI_COMPAT_ENABLED, then this is the current state (on/off) */
 #define TBI_SBP_ENABLED    0x2 
                                 
+void e1000_tbi_adjust_stats_82543(struct e1000_hw *hw,
+                                  struct e1000_hw_stats *stats,
+                                  u32 frame_len, u8 *mac_addr,
+                                  u32 max_frame_size);
+void e1000_set_tbi_compatibility_82543(struct e1000_hw *hw,
+                                       bool state);
+bool e1000_tbi_sbp_enabled_82543(struct e1000_hw *hw);
 
 #endif
