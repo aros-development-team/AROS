@@ -180,6 +180,12 @@ typedef __useconds_t    useconds_t;
     XXX Arguments for sysconf()
 */
 
+enum
+{
+    _SC_ARG_MAX
+#define _SC_ARG_MAX                         _SC_ARG_MAX
+};
+
 #define STDIN_FILENO                        0
 #define STDOUT_FILENO                       1
 #define STDERR_FILENO                       2
@@ -225,7 +231,7 @@ int         setgid(gid_t gid);
 /* NOTIMPL pid_t       setsid(void); */
 int         setuid(uid_t uid);
 unsigned    sleep(unsigned);
-/* NOTIMPL long        sysconf(int name); */
+long        sysconf(int name);
 /* NOTIMPL pid_t       tcgetpgrp(int fd); */
 /* NOTIMPL int         tcsetpgrp(int fd, pid_t pgrp_id); */
 char        *ttyname(int fd);
