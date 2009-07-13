@@ -27,9 +27,6 @@
 *******************************************************************************/
 
 #include "e1000_api.h"
-#include "e1000_mac.h"
-#include "e1000_nvm.h"
-#include "e1000_phy.h"
 
 /**
  *  e1000_init_mac_params - Initialize MAC function pointers
@@ -108,6 +105,7 @@ s32 e1000_init_phy_params(struct e1000_hw *hw)
 out:
 	return ret_val;
 }
+
 
 /**
  *  e1000_set_mac_type - Sets MAC type
@@ -198,10 +196,10 @@ s32 e1000_set_mac_type(struct e1000_hw *hw)
 /**
  *  e1000_setup_init_funcs - Initializes function pointers
  *  @hw: pointer to the HW structure
- *  @init_device: TRUE will initialize the rest of the function pointers
- *                 getting the device ready for use.  FALSE will only set
+ *  @init_device: true will initialize the rest of the function pointers
+ *                 getting the device ready for use.  false will only set
  *                 MAC type and the function pointers for the other init
- *                 functions.  Passing FALSE will not generate any hardware
+ *                 functions.  Passing false will not generate any hardware
  *                 reads or writes.
  *
  *  This function must be called by a driver in order to use the rest
@@ -280,24 +278,10 @@ s32 e1000_setup_init_funcs(struct e1000_hw *hw, bool init_device)
 		ret_val = e1000_init_phy_params(hw);
 		if (ret_val)
 			goto out;
-
 	}
 
 out:
 	return ret_val;
-}
-
-/**
- *  e1000_remove_device - Free device specific structure
- *  @hw: pointer to the HW structure
- *
- *  If a device specific structure was allocated, this function will
- *  free it. This is a function pointer entry point called by drivers.
- **/
-void e1000_remove_device(struct e1000_hw *hw)
-{
-	if (hw->mac.ops.remove_device)
-		hw->mac.ops.remove_device(hw);
 }
 
 /**
@@ -326,7 +310,7 @@ s32 e1000_get_bus_info(struct e1000_hw *hw)
 void e1000_clear_vfta(struct e1000_hw *hw)
 {
 	if (hw->mac.ops.clear_vfta)
-		hw->mac.ops.clear_vfta (hw);
+		hw->mac.ops.clear_vfta(hw);
 }
 
 /**
@@ -349,26 +333,16 @@ void e1000_write_vfta(struct e1000_hw *hw, u32 offset, u32 value)
  *  @hw: pointer to the HW structure
  *  @mc_addr_list: array of multicast addresses to program
  *  @mc_addr_count: number of multicast addresses to program
- *  @rar_used_count: the first RAR register free to program
- *  @rar_count: total number of supported Receive Address Registers
  *
- *  Updates the Receive Address Registers and Multicast Table Array.
+ *  Updates the Multicast Table Array.
  *  The caller must have a packed mc_addr_list of multicast addresses.
- *  The parameter rar_count will usually be hw->mac.rar_entry_count
- *  unless there are workarounds that change this.  Currently no func pointer
- *  exists and all implementations are handled in the generic version of this
- *  function.
  **/
 void e1000_update_mc_addr_list(struct e1000_hw *hw, u8 *mc_addr_list,
-                               u32 mc_addr_count, u32 rar_used_count,
-                               u32 rar_count)
+                               u32 mc_addr_count)
 {
 	if (hw->mac.ops.update_mc_addr_list)
-		hw->mac.ops.update_mc_addr_list(hw,
-		                                mc_addr_list,
-		                                mc_addr_count,
-		                                rar_used_count,
-		                                rar_count);
+		hw->mac.ops.update_mc_addr_list(hw, mc_addr_list,
+		                                mc_addr_count);
 }
 
 /**
@@ -412,7 +386,7 @@ bool e1000_check_mng_mode(struct e1000_hw *hw)
 	if (hw->mac.ops.check_mng_mode)
 		return hw->mac.ops.check_mng_mode(hw);
 
-	return FALSE;
+	return false;
 }
 
 /**
@@ -535,6 +509,21 @@ s32 e1000_blink_led(struct e1000_hw *hw)
 {
 	if (hw->mac.ops.blink_led)
 		return hw->mac.ops.blink_led(hw);
+
+	return E1000_SUCCESS;
+}
+
+/**
+ *  e1000_id_led_init - store LED configurations in SW
+ *  @hw: pointer to the HW structure
+ *
+ *  Initializes the LED config in SW. This is a function pointer entry point
+ *  called by drivers.
+ **/
+s32 e1000_id_led_init(struct e1000_hw *hw)
+{
+	if (hw->mac.ops.id_led_init)
+		return hw->mac.ops.id_led_init(hw);
 
 	return E1000_SUCCESS;
 }
@@ -1081,22 +1070,6 @@ s32 e1000_write_nvm(struct e1000_hw *hw, u16 offset, u16 words, u16 *data)
 		return hw->nvm.ops.write(hw, offset, words, data);
 
 	return E1000_SUCCESS;
-}
-
-/**
- *  e1000_write_8bit_ctrl_reg - Writes 8bit Control register
- *  @hw: pointer to the HW structure
- *  @reg: 32bit register offset
- *  @offset: the register to write
- *  @data: the value to write.
- *
- *  Writes the PHY register at offset with the value in data.
- *  This is a function pointer entry point called by drivers.
- **/
-s32 e1000_write_8bit_ctrl_reg(struct e1000_hw *hw, u32 reg, u32 offset,
-                              u8 data)
-{
-	return e1000_write_8bit_ctrl_reg_generic(hw, reg, offset, data);
 }
 
 /**

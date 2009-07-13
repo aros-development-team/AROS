@@ -4,7 +4,7 @@ e1000.device
 see "COPYING" for license information
 This driver is incomplete/ experimental - use at your own risk!
 
-Based on the gpl Linux Intel gigabit NIC driver version 8.0.1
+Based on the gpl Linux Intel gigabit NIC driver version 8.0.13
 (http://sourceforge.net/projects/e1000) 
 
 supported NIC's:

@@ -41,7 +41,6 @@ s32  e1000_setup_init_funcs(struct e1000_hw *hw, bool init_device);
 s32  e1000_init_mac_params(struct e1000_hw *hw);
 s32  e1000_init_nvm_params(struct e1000_hw *hw);
 s32  e1000_init_phy_params(struct e1000_hw *hw);
-void e1000_remove_device(struct e1000_hw *hw);
 s32  e1000_get_bus_info(struct e1000_hw *hw);
 void e1000_clear_vfta(struct e1000_hw *hw);
 void e1000_write_vfta(struct e1000_hw *hw, u32 offset, u32 value);
@@ -58,22 +57,20 @@ void e1000_rar_set(struct e1000_hw *hw, u8 *addr, u32 index);
 void e1000_mta_set(struct e1000_hw *hw, u32 hash_value);
 u32  e1000_hash_mc_addr(struct e1000_hw *hw, u8 *mc_addr);
 void e1000_update_mc_addr_list(struct e1000_hw *hw,
-                               u8 *mc_addr_list, u32 mc_addr_count,
-                               u32 rar_used_count, u32 rar_count);
+                               u8 *mc_addr_list, u32 mc_addr_count);
 s32  e1000_setup_led(struct e1000_hw *hw);
 s32  e1000_cleanup_led(struct e1000_hw *hw);
 s32  e1000_check_reset_block(struct e1000_hw *hw);
 s32  e1000_blink_led(struct e1000_hw *hw);
 s32  e1000_led_on(struct e1000_hw *hw);
 s32  e1000_led_off(struct e1000_hw *hw);
+s32 e1000_id_led_init(struct e1000_hw *hw);
 void e1000_reset_adaptive(struct e1000_hw *hw);
 void e1000_update_adaptive(struct e1000_hw *hw);
 s32  e1000_get_cable_length(struct e1000_hw *hw);
 s32  e1000_validate_mdi_setting(struct e1000_hw *hw);
 s32  e1000_read_phy_reg(struct e1000_hw *hw, u32 offset, u16 *data);
 s32  e1000_write_phy_reg(struct e1000_hw *hw, u32 offset, u16 data);
-s32  e1000_write_8bit_ctrl_reg(struct e1000_hw *hw, u32 reg,
-                               u32 offset, u8 data);
 s32  e1000_get_phy_info(struct e1000_hw *hw);
 void e1000_release_phy(struct e1000_hw *hw);
 s32  e1000_acquire_phy(struct e1000_hw *hw);
@@ -95,7 +92,6 @@ s32  e1000_wait_autoneg(struct e1000_hw *hw);
 s32  e1000_set_d3_lplu_state(struct e1000_hw *hw, bool active);
 s32  e1000_set_d0_lplu_state(struct e1000_hw *hw, bool active);
 bool e1000_check_mng_mode(struct e1000_hw *hw);
-bool e1000_enable_mng_pass_thru(struct e1000_hw *hw);
 bool e1000_enable_tx_pkt_filtering(struct e1000_hw *hw);
 s32  e1000_mng_enable_host_if(struct e1000_hw *hw);
 s32  e1000_mng_host_if_write(struct e1000_hw *hw,
@@ -104,16 +100,7 @@ s32  e1000_mng_write_cmd_header(struct e1000_hw *hw,
                                 struct e1000_host_mng_command_header *hdr);
 s32  e1000_mng_write_dhcp_info(struct e1000_hw * hw,
                                     u8 *buffer, u16 length);
-void e1000_tbi_adjust_stats_82543(struct e1000_hw *hw,
-                                  struct e1000_hw_stats *stats,
-                                  u32 frame_len, u8 *mac_addr,
-                                  u32 max_frame_size);
-void e1000_set_tbi_compatibility_82543(struct e1000_hw *hw,
-                                       bool state);
-bool e1000_tbi_sbp_enabled_82543(struct e1000_hw *hw);
 u32  e1000_translate_register_82542(u32 reg);
-void e1000_init_script_state_82541(struct e1000_hw *hw, bool state);
-
 
 /*
  * TBI_ACCEPT macro definition:
@@ -134,11 +121,11 @@ void e1000_init_script_state_82541(struct e1000_hw *hw, bool state);
  * Typical use:
  *  ...
  *  if (TBI_ACCEPT) {
- *      accept_frame = TRUE;
+ *      accept_frame = true;
  *      e1000_tbi_adjust_stats(adapter, MacAddress);
  *      frame_length--;
  *  } else {
- *      accept_frame = FALSE;
+ *      accept_frame = false;
  *  }
  *  ...
  */

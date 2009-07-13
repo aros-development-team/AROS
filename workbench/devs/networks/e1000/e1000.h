@@ -52,6 +52,13 @@ typedef ULONG u32;
 typedef LONG s32;
 typedef UQUAD u64;
 
+typedef UQUAD __le64;
+typedef ULONG __le32;
+typedef UWORD __le16;
+
+#define false FALSE
+#define true TRUE
+
 #define __iomem volatile
 
 #define e1000_TASK_NAME	"%s.task"

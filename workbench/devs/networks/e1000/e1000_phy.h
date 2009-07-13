@@ -29,19 +29,6 @@
 #ifndef _E1000_PHY_H_
 #define _E1000_PHY_H_
 
-typedef enum {
-	e1000_ms_hw_default = 0,
-	e1000_ms_force_master,
-	e1000_ms_force_slave,
-	e1000_ms_auto
-} e1000_ms_type;
-
-typedef enum {
-	e1000_smart_speed_default = 0,
-	e1000_smart_speed_on,
-	e1000_smart_speed_off
-} e1000_smart_speed;
-
 void e1000_init_phy_ops_generic(struct e1000_hw *hw);
 s32  e1000_null_read_reg(struct e1000_hw *hw, u32 offset, u16 *data);
 void e1000_null_phy_generic(struct e1000_hw *hw);
@@ -80,7 +67,8 @@ s32  e1000_phy_reset_dsp(struct e1000_hw *hw);
 s32  e1000_phy_has_link_generic(struct e1000_hw *hw, u32 iterations,
                                 u32 usec_interval, bool *success);
 s32  e1000_phy_init_script_igp3(struct e1000_hw *hw);
-e1000_phy_type e1000_get_phy_type_from_id(u32 phy_id);
+enum e1000_phy_type e1000_get_phy_type_from_id(u32 phy_id);
+s32 e1000_determine_phy_address(struct e1000_hw *hw);
 void e1000_power_up_phy_copper(struct e1000_hw *hw);
 void e1000_power_down_phy_copper(struct e1000_hw *hw);
 s32 e1000_read_phy_reg_mdic(struct e1000_hw *hw, u32 offset, u16 *data);
@@ -100,7 +88,6 @@ s32 e1000_write_phy_reg_mdic(struct e1000_hw *hw, u32 offset, u16 data);
 #define BM_PHY_PAGE_SELECT                22   /* Page Select for BM */
 #define IGP_PAGE_SHIFT                    5
 #define PHY_REG_MASK                      0x1F
-
 
 #define IGP01E1000_PHY_PCS_INIT_REG       0x00B4
 #define IGP01E1000_PHY_POLARITY_MASK      0x0078

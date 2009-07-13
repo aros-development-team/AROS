@@ -26,12 +26,16 @@
 
 *******************************************************************************/
 
-/* e1000_82543
- * e1000_82544
+/*
+ * 82543GC Gigabit Ethernet Controller (Fiber)
+ * 82543GC Gigabit Ethernet Controller (Copper)
+ * 82544EI Gigabit Ethernet Controller (Copper)
+ * 82544EI Gigabit Ethernet Controller (Fiber)
+ * 82544GC Gigabit Ethernet Controller (Copper)
+ * 82544GC Gigabit Ethernet Controller (LOM)
  */
 
 #include "e1000_api.h"
-#include "e1000_82543.h"
 
 static s32  e1000_init_phy_params_82543(struct e1000_hw *hw);
 static s32  e1000_init_nvm_params_82543(struct e1000_hw *hw);
@@ -66,17 +70,9 @@ static void e1000_shift_out_mdi_bits_82543(struct e1000_hw *hw, u32 data,
 static bool e1000_tbi_compatibility_enabled_82543(struct e1000_hw *hw);
 static void e1000_set_tbi_sbp_82543(struct e1000_hw *hw, bool state);
 
-struct e1000_dev_spec_82543 {
-	u32  tbi_compatibility;
-	bool dma_fairness;
-	bool init_phy_disabled;
-};
-
 /**
  *  e1000_init_phy_params_82543 - Init PHY func ptrs.
  *  @hw: pointer to the HW structure
- *
- *  This is a function pointer entry point called by the api module.
  **/
 static s32 e1000_init_phy_params_82543(struct e1000_hw *hw)
 {
@@ -160,8 +156,6 @@ out:
 /**
  *  e1000_init_nvm_params_82543 - Init NVM func ptrs.
  *  @hw: pointer to the HW structure
- *
- *  This is a function pointer entry point called by the api module.
  **/
 static s32 e1000_init_nvm_params_82543(struct e1000_hw *hw)
 {
@@ -188,13 +182,10 @@ static s32 e1000_init_nvm_params_82543(struct e1000_hw *hw)
 /**
  *  e1000_init_mac_params_82543 - Init MAC func ptrs.
  *  @hw: pointer to the HW structure
- *
- *  This is a function pointer entry point called by the api module.
  **/
 static s32 e1000_init_mac_params_82543(struct e1000_hw *hw)
 {
 	struct e1000_mac_info *mac = &hw->mac;
-	s32 ret_val;
 
 	DEBUGFUNC("e1000_init_mac_params_82543");
 
@@ -218,6 +209,8 @@ static s32 e1000_init_mac_params_82543(struct e1000_hw *hw)
 
 	/* bus type/speed/width */
 	mac->ops.get_bus_info = e1000_get_bus_info_pci_generic;
+	/* function id */
+	mac->ops.set_lan_id = e1000_set_lan_id_multi_port_pci;
 	/* reset */
 	mac->ops.reset_hw = e1000_reset_hw_82543;
 	/* hw initialization */
@@ -250,33 +243,22 @@ static s32 e1000_init_mac_params_82543(struct e1000_hw *hw)
 	/* turn on/off LED */
 	mac->ops.led_on = e1000_led_on_82543;
 	mac->ops.led_off = e1000_led_off_82543;
-	/* remove device */
-	mac->ops.remove_device = e1000_remove_device_generic;
 	/* clear hardware counters */
 	mac->ops.clear_hw_cntrs = e1000_clear_hw_cntrs_82543;
-
-	hw->dev_spec_size = sizeof(struct e1000_dev_spec_82543);
-
-	/* Device-specific structure allocation */
-	ret_val = e1000_alloc_zeroed_dev_spec_struct(hw, hw->dev_spec_size);
-	if (ret_val)
-		goto out;
 
 	/* Set tbi compatibility */
 	if ((hw->mac.type != e1000_82543) ||
 	    (hw->phy.media_type == e1000_media_type_fiber))
-		e1000_set_tbi_compatibility_82543(hw, FALSE);
+		e1000_set_tbi_compatibility_82543(hw, false);
 
-out:
-	return ret_val;
+	return E1000_SUCCESS;
 }
 
 /**
  *  e1000_init_function_pointers_82543 - Init func ptrs.
  *  @hw: pointer to the HW structure
  *
- *  The only function explicitly called by the api module to initialize
- *  all function pointers and parameters.
+ *  Called to initialize all function pointers and parameters.
  **/
 void e1000_init_function_pointers_82543(struct e1000_hw *hw)
 {
@@ -296,8 +278,8 @@ void e1000_init_function_pointers_82543(struct e1000_hw *hw)
  **/
 static bool e1000_tbi_compatibility_enabled_82543(struct e1000_hw *hw)
 {
-	struct e1000_dev_spec_82543 *dev_spec;
-	bool state = FALSE;
+	struct e1000_dev_spec_82543 *dev_spec = &hw->dev_spec._82543;
+	bool state = false;
 
 	DEBUGFUNC("e1000_tbi_compatibility_enabled_82543");
 
@@ -306,15 +288,8 @@ static bool e1000_tbi_compatibility_enabled_82543(struct e1000_hw *hw)
 		goto out;
 	}
 
-	dev_spec = (struct e1000_dev_spec_82543 *)hw->dev_spec;
-
-	if (!dev_spec) {
-		DEBUGOUT("dev_spec pointer is set to NULL.\n");
-		goto out;
-	}
-
 	state = (dev_spec->tbi_compatibility & TBI_COMPAT_ENABLED)
-	        ? TRUE : FALSE;
+	        ? true : false;
 
 out:
 	return state;
@@ -329,19 +304,12 @@ out:
  **/
 void e1000_set_tbi_compatibility_82543(struct e1000_hw *hw, bool state)
 {
-	struct e1000_dev_spec_82543 *dev_spec;
+	struct e1000_dev_spec_82543 *dev_spec = &hw->dev_spec._82543;
 
 	DEBUGFUNC("e1000_set_tbi_compatibility_82543");
 
 	if (hw->mac.type != e1000_82543) {
 		DEBUGOUT("TBI compatibility workaround for 82543 only.\n");
-		goto out;
-	}
-
-	dev_spec = (struct e1000_dev_spec_82543 *)hw->dev_spec;
-
-	if (!dev_spec) {
-		DEBUGOUT("dev_spec pointer is set to NULL.\n");
 		goto out;
 	}
 
@@ -363,8 +331,8 @@ out:
  **/
 bool e1000_tbi_sbp_enabled_82543(struct e1000_hw *hw)
 {
-	struct e1000_dev_spec_82543 *dev_spec;
-	bool state = FALSE;
+	struct e1000_dev_spec_82543 *dev_spec = &hw->dev_spec._82543;
+	bool state = false;
 
 	DEBUGFUNC("e1000_tbi_sbp_enabled_82543");
 
@@ -373,15 +341,8 @@ bool e1000_tbi_sbp_enabled_82543(struct e1000_hw *hw)
 		goto out;
 	}
 
-	dev_spec = (struct e1000_dev_spec_82543 *)hw->dev_spec;
-
-	if (!dev_spec) {
-		DEBUGOUT("dev_spec pointer is set to NULL.\n");
-		goto out;
-	}
-
 	state = (dev_spec->tbi_compatibility & TBI_SBP_ENABLED)
-	        ? TRUE : FALSE;
+	        ? true : false;
 
 out:
 	return state;
@@ -396,11 +357,9 @@ out:
  **/
 static void e1000_set_tbi_sbp_82543(struct e1000_hw *hw, bool state)
 {
-	struct e1000_dev_spec_82543 *dev_spec;
+	struct e1000_dev_spec_82543 *dev_spec = &hw->dev_spec._82543;
 
 	DEBUGFUNC("e1000_set_tbi_sbp_82543");
-
-	dev_spec = (struct e1000_dev_spec_82543 *)hw->dev_spec;
 
 	if (state && e1000_tbi_compatibility_enabled_82543(hw))
 		dev_spec->tbi_compatibility |= TBI_SBP_ENABLED;
@@ -419,21 +378,13 @@ static void e1000_set_tbi_sbp_82543(struct e1000_hw *hw, bool state)
  **/
 static bool e1000_init_phy_disabled_82543(struct e1000_hw *hw)
 {
-	struct e1000_dev_spec_82543 *dev_spec;
+	struct e1000_dev_spec_82543 *dev_spec = &hw->dev_spec._82543;
 	bool ret_val;
 
 	DEBUGFUNC("e1000_init_phy_disabled_82543");
 
 	if (hw->mac.type != e1000_82543) {
-		ret_val = FALSE;
-		goto out;
-	}
-
-	dev_spec = (struct e1000_dev_spec_82543 *)hw->dev_spec;
-
-	if (!dev_spec) {
-		DEBUGOUT("dev_spec pointer is set to NULL.\n");
-		ret_val = FALSE;
+		ret_val = false;
 		goto out;
 	}
 
@@ -899,7 +850,7 @@ out:
  *  Sets the PHY_RESET_DIR bit in the extended device control register
  *  to put the PHY into a reset and waits for completion.  Once the reset
  *  has been accomplished, clear the PHY_RESET_DIR bit to take the PHY out
- *  of reset.  This is a function pointer entry point called by the api module.
+ *  of reset.
  **/
 static s32 e1000_phy_hw_reset_82543(struct e1000_hw *hw)
 {
@@ -939,8 +890,7 @@ static s32 e1000_phy_hw_reset_82543(struct e1000_hw *hw)
  *  e1000_reset_hw_82543 - Reset hardware
  *  @hw: pointer to the HW structure
  *
- *  This resets the hardware into a known state.  This is a
- *  function pointer entry point called by the api module.
+ *  This resets the hardware into a known state.
  **/
 static s32 e1000_reset_hw_82543(struct e1000_hw *hw)
 {
@@ -956,7 +906,7 @@ static s32 e1000_reset_hw_82543(struct e1000_hw *hw)
 	E1000_WRITE_REG(hw, E1000_TCTL, E1000_TCTL_PSP);
 	E1000_WRITE_FLUSH(hw);
 
-	e1000_set_tbi_sbp_82543(hw, FALSE);
+	e1000_set_tbi_sbp_82543(hw, false);
 
 	/*
 	 * Delay to allow any outstanding PCI transactions to complete before
@@ -1000,20 +950,12 @@ static s32 e1000_reset_hw_82543(struct e1000_hw *hw)
 static s32 e1000_init_hw_82543(struct e1000_hw *hw)
 {
 	struct e1000_mac_info *mac = &hw->mac;
-	struct e1000_dev_spec_82543 *dev_spec;
+	struct e1000_dev_spec_82543 *dev_spec = &hw->dev_spec._82543;
 	u32 ctrl;
 	s32 ret_val;
 	u16 i;
 
 	DEBUGFUNC("e1000_init_hw_82543");
-
-	dev_spec = (struct e1000_dev_spec_82543 *)hw->dev_spec;
-
-	if (!dev_spec) {
-		DEBUGOUT("dev_spec pointer is set to NULL.\n");
-		ret_val = -E1000_ERR_CONFIG;
-		goto out;
-	}
 
 	/* Disabling VLAN filtering */
 	E1000_WRITE_REG(hw, E1000_VET, 0);
@@ -1052,7 +994,6 @@ static s32 e1000_init_hw_82543(struct e1000_hw *hw)
 	 */
 	e1000_clear_hw_cntrs_82543(hw);
 
-out:
 	return ret_val;
 }
 
@@ -1131,7 +1072,7 @@ static s32 e1000_setup_copper_link_82543(struct e1000_hw *hw)
 		ret_val = hw->phy.ops.reset(hw);
 		if (ret_val)
 			goto out;
-		hw->phy.reset_disable = FALSE;
+		hw->phy.reset_disable = false;
 	} else {
 		ctrl &= ~(E1000_CTRL_FRCSPD | E1000_CTRL_FRCDPX);
 		E1000_WRITE_REG(hw, E1000_CTRL, ctrl);
@@ -1273,7 +1214,7 @@ static s32 e1000_check_for_copper_link_82543(struct e1000_hw *hw)
 	if (!link)
 		goto out; /* No link detected */
 
-	mac->get_link_status = FALSE;
+	mac->get_link_status = false;
 
 	e1000_check_downshift_generic(hw);
 
@@ -1356,7 +1297,7 @@ static s32 e1000_check_for_copper_link_82543(struct e1000_hw *hw)
 				 * If we previously were in the mode,
 				 * turn it off.
 				 */
-				e1000_set_tbi_sbp_82543(hw, FALSE);
+				e1000_set_tbi_sbp_82543(hw, false);
 				rctl = E1000_READ_REG(hw, E1000_RCTL);
 				rctl &= ~E1000_RCTL_SBP;
 				E1000_WRITE_REG(hw, E1000_RCTL, rctl);
@@ -1370,7 +1311,7 @@ static s32 e1000_check_for_copper_link_82543(struct e1000_hw *hw)
 			 * will look like CRC errors to to the hardware.
 			 */
 			if (!e1000_tbi_sbp_enabled_82543(hw)) {
-				e1000_set_tbi_sbp_82543(hw, TRUE);
+				e1000_set_tbi_sbp_82543(hw, true);
 				rctl = E1000_READ_REG(hw, E1000_RCTL);
 				rctl |= E1000_RCTL_SBP;
 				E1000_WRITE_REG(hw, E1000_RCTL, rctl);
@@ -1444,7 +1385,7 @@ static s32 e1000_check_for_fiber_link_82543(struct e1000_hw *hw)
 		E1000_WRITE_REG(hw, E1000_TXCW, mac->txcw);
 		E1000_WRITE_REG(hw, E1000_CTRL, (ctrl & ~E1000_CTRL_SLU));
 
-		mac->serdes_has_link = TRUE;
+		mac->serdes_has_link = true;
 	}
 
 out:
@@ -1572,8 +1513,7 @@ static void e1000_mta_set_82543(struct e1000_hw *hw, u32 hash_value)
  *  e1000_led_on_82543 - Turn on SW controllable LED
  *  @hw: pointer to the HW structure
  *
- *  Turns the SW defined LED on.  This is a function pointer entry point
- *  called by the api module.
+ *  Turns the SW defined LED on.
  **/
 static s32 e1000_led_on_82543(struct e1000_hw *hw)
 {
@@ -1600,8 +1540,7 @@ static s32 e1000_led_on_82543(struct e1000_hw *hw)
  *  e1000_led_off_82543 - Turn off SW controllable LED
  *  @hw: pointer to the HW structure
  *
- *  Turns the SW defined LED off.  This is a function pointer entry point
- *  called by the api module.
+ *  Turns the SW defined LED off.
  **/
 static s32 e1000_led_off_82543(struct e1000_hw *hw)
 {
@@ -1631,29 +1570,27 @@ static s32 e1000_led_off_82543(struct e1000_hw *hw)
  **/
 static void e1000_clear_hw_cntrs_82543(struct e1000_hw *hw)
 {
-	volatile u32 temp;
-
 	DEBUGFUNC("e1000_clear_hw_cntrs_82543");
 
 	e1000_clear_hw_cntrs_base_generic(hw);
 
-	temp = E1000_READ_REG(hw, E1000_PRC64);
-	temp = E1000_READ_REG(hw, E1000_PRC127);
-	temp = E1000_READ_REG(hw, E1000_PRC255);
-	temp = E1000_READ_REG(hw, E1000_PRC511);
-	temp = E1000_READ_REG(hw, E1000_PRC1023);
-	temp = E1000_READ_REG(hw, E1000_PRC1522);
-	temp = E1000_READ_REG(hw, E1000_PTC64);
-	temp = E1000_READ_REG(hw, E1000_PTC127);
-	temp = E1000_READ_REG(hw, E1000_PTC255);
-	temp = E1000_READ_REG(hw, E1000_PTC511);
-	temp = E1000_READ_REG(hw, E1000_PTC1023);
-	temp = E1000_READ_REG(hw, E1000_PTC1522);
+	E1000_READ_REG(hw, E1000_PRC64);
+	E1000_READ_REG(hw, E1000_PRC127);
+	E1000_READ_REG(hw, E1000_PRC255);
+	E1000_READ_REG(hw, E1000_PRC511);
+	E1000_READ_REG(hw, E1000_PRC1023);
+	E1000_READ_REG(hw, E1000_PRC1522);
+	E1000_READ_REG(hw, E1000_PTC64);
+	E1000_READ_REG(hw, E1000_PTC127);
+	E1000_READ_REG(hw, E1000_PTC255);
+	E1000_READ_REG(hw, E1000_PTC511);
+	E1000_READ_REG(hw, E1000_PTC1023);
+	E1000_READ_REG(hw, E1000_PTC1522);
 
-	temp = E1000_READ_REG(hw, E1000_ALGNERRC);
-	temp = E1000_READ_REG(hw, E1000_RXERRC);
-	temp = E1000_READ_REG(hw, E1000_TNCRS);
-	temp = E1000_READ_REG(hw, E1000_CEXTERR);
-	temp = E1000_READ_REG(hw, E1000_TSCTC);
-	temp = E1000_READ_REG(hw, E1000_TSCTFC);
+	E1000_READ_REG(hw, E1000_ALGNERRC);
+	E1000_READ_REG(hw, E1000_RXERRC);
+	E1000_READ_REG(hw, E1000_TNCRS);
+	E1000_READ_REG(hw, E1000_CEXTERR);
+	E1000_READ_REG(hw, E1000_TSCTC);
+	E1000_READ_REG(hw, E1000_TSCTFC);
 }
