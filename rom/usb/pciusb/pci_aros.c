@@ -16,8 +16,6 @@
 #include <hidd/pci.h>
 #include <hidd/irq.h>
 
-#include <usb/usb.h>
-
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <proto/exec.h>
@@ -1315,7 +1313,7 @@ void pciFreeUnit(struct PCIUnit *hu)
                 uhwDelayMS(50, hu, hd);
                 WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
                 SYNC;
-                
+
                 KPRINTF(20, ("Shutting down UHCI done.\n"));
                 break;
 
