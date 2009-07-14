@@ -1,7 +1,7 @@
 #ifndef _SYS__TYPES_H_
 #define _SYS__TYPES_H_
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -58,7 +58,6 @@ typedef __int32_t               __time_t;           /* XXX Limiting? */
 typedef int                     __timer_t;
 typedef __uint32_t              __uid_t;
 typedef __uint32_t              __useconds_t;
-typedef char *                  __va_list;
 
 /*
  * __wchar_t is defined unsigned for compatibility with locale.library's
