@@ -21,7 +21,7 @@
 #MM	    kernel-layers-kobj \
 #MM	    kernel-workbench-kobj \
 #MM	    kernel-cgfx-kobj \
-#MM         kernel-usb-kobj
+#MM         kernel-usb-kobj-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
 #MM- includes-generate : \
 #MM      kernel-exec-includes \
@@ -41,4 +41,4 @@
 #MM      kernel-timer-includes \
 #MM      kernel-oop-includes \
 #MM      kernel-battclock-includes \
-#MM      kernel-usb-includes
+#MM      kernel-usb-includes-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
