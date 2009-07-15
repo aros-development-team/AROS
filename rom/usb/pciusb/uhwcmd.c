@@ -820,6 +820,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                         unit->hu_EhciOwned[idx - 1] = FALSE;
                                         newval |= EHPF_NOTPORTOWNER;
                                         WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
+                                        uhwDelayMS(10, unit, base);
                                         // enable companion controller port
                                         switch(chc->hc_HCIType)
                                         {
@@ -849,7 +850,6 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                                 }
                                                 uhcinewval &= ~UHPF_PORTRESET;
                                                 uhcinewval |= UHPF_PORTENABLE;
-                                                uhwDelayMS(10, unit, base);
                                                 WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
                                                 chc->hc_PortChangeMap[uhcihciport] |= UPSF_PORT_RESET|UPSF_PORT_ENABLE; // manually fake reset change
                                                 uhwDelayMS(5, unit, base);

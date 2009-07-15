@@ -16,8 +16,6 @@
 #include <hidd/pci.h>
 #include <hidd/irq.h>
 
-#include <usb/usb.h>
-
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <proto/exec.h>
@@ -32,15 +30,15 @@
 #define NewList NEWLIST
 
 #undef HiddPCIDeviceAttrBase
-#undef HiddUSBDeviceAttrBase
-#undef HiddUSBHubAttrBase
-#undef HiddUSBDrvAttrBase
+//#undef HiddUSBDeviceAttrBase
+//#undef HiddUSBHubAttrBase
+//#undef HiddUSBDrvAttrBase
 #undef HiddAttrBase
 
 #define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)
-#define HiddUSBDeviceAttrBase (hd->hd_HiddUSBDeviceAB)
-#define HiddUSBHubAttrBase (hd->hd_HiddUSBHubAB)
-#define HiddUSBDrvAttrBase (hd->hd_HiddUSBDrvAB)
+//#define HiddUSBDeviceAttrBase (hd->hd_HiddUSBDeviceAB)
+//#define HiddUSBHubAttrBase (hd->hd_HiddUSBHubAB)
+//#define HiddUSBDrvAttrBase (hd->hd_HiddUSBDrvAB)
 #define HiddAttrBase (hd->hd_HiddAB)
 
 AROS_UFH3(void, pciEnumerator,
@@ -137,9 +135,9 @@ BOOL pciInit(struct PCIDevice *hd)
         {
             { (STRPTR) IID_Hidd,            &hd->hd_HiddAB },
             { (STRPTR) IID_Hidd_PCIDevice,  &hd->hd_HiddPCIDeviceAB },
-            { (STRPTR) IID_Hidd_USBDevice,  &hd->hd_HiddUSBDeviceAB },
-            { (STRPTR) IID_Hidd_USBHub,     &hd->hd_HiddUSBHubAB },
-            { (STRPTR) IID_Hidd_USBDrv,     &hd->hd_HiddUSBDrvAB },
+//            { (STRPTR) IID_Hidd_USBDevice,  &hd->hd_HiddUSBDeviceAB },
+//            { (STRPTR) IID_Hidd_USBHub,     &hd->hd_HiddUSBHubAB },
+//            { (STRPTR) IID_Hidd_USBDrv,     &hd->hd_HiddUSBDrvAB },
             { NULL, NULL }
         };
 
@@ -1403,9 +1401,9 @@ void pciExpunge(struct PCIDevice *hd)
         {
             { (STRPTR) IID_Hidd,            &hd->hd_HiddAB },
             { (STRPTR) IID_Hidd_PCIDevice,  &hd->hd_HiddPCIDeviceAB },
-            { (STRPTR) IID_Hidd_USBDevice,  &hd->hd_HiddUSBDeviceAB },
-            { (STRPTR) IID_Hidd_USBHub,     &hd->hd_HiddUSBHubAB },
-            { (STRPTR) IID_Hidd_USBDrv,     &hd->hd_HiddUSBDrvAB },
+//            { (STRPTR) IID_Hidd_USBDevice,  &hd->hd_HiddUSBDeviceAB },
+//            { (STRPTR) IID_Hidd_USBHub,     &hd->hd_HiddUSBHubAB },
+//            { (STRPTR) IID_Hidd_USBDrv,     &hd->hd_HiddUSBDrvAB },
             { NULL, NULL }
         };
 
