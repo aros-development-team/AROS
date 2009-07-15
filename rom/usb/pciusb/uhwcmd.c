@@ -23,7 +23,7 @@ const struct UsbStdDevDesc RHDevDesc = { sizeof(struct UsbStdDevDesc), UDT_DEVIC
 
 const struct UsbStdCfgDesc RHCfgDesc = { 9, UDT_CONFIGURATION, WORD2LE(9+9+7), 1, 1, 3, USCAF_ONE|USCAF_SELF_POWERED, 0 };
 const struct UsbStdIfDesc  RHIfDesc  = { 9, UDT_INTERFACE, 0, 0, 1, HUB_CLASSCODE, 0, 0, 4 };
-const struct UsbStdEPDesc  RHEPDesc  = { 7, UDT_ENDPOINT, URTF_IN|1, USEAF_INTERRUPT, WORD2LE(1), 255 };
+const struct UsbStdEPDesc  RHEPDesc  = { 7, UDT_ENDPOINT, URTF_IN|1, USEAF_INTERRUPT, WORD2LE(8), 255 };
 const struct UsbHubDesc    RHHubDesc = { 9, UDT_HUB, 0, WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP), 0, 1, 1, 0 };
 
 const CONST_STRPTR RHStrings[] = { "Chris Hodges", "PCI Root Hub Unit x", "Standard Config", "Hub interface" };
@@ -86,7 +86,7 @@ void uhwDelayMS(ULONG milli, struct PCIUnit *unit, struct PCIDevice *base)
 #if 0
     struct timeval tv1;
     struct timeval tv2;
-    
+
     GetSysTime(&tv1);
     unit->hu_TimerReq->tr_time.tv_secs  = 0;
     unit->hu_TimerReq->tr_time.tv_micro = milli * 1000;
@@ -3953,9 +3953,9 @@ void ohciUpdateFrameCounter(struct PCIController *hc)
 void ohciCompleteInt(struct PCIController *hc)
 {
     KPRINTF(1, ("CompleteInt!\n"));
-    
+
     ohciUpdateFrameCounter(hc);
-    
+
     /* **************** PROCESS DONE TRANSFERS **************** */
 
     if(hc->hc_OhciDoneQueue)

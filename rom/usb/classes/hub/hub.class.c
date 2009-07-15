@@ -375,7 +375,7 @@ AROS_LH2(IPTR, usbDoMethodA,
 AROS_UFH0(void, nHubTask)
 {
     AROS_USERFUNC_INIT
-    
+
     struct NepClassHub *nch;
     struct PsdPipe *pp;
     ULONG sigmask;
@@ -430,7 +430,7 @@ AROS_UFH0(void, nHubTask)
         {
             if(nch->nch_Running && (!nch->nch_IOStarted))
             {
-                psdSendPipe(nch->nch_EP1Pipe, nch->nch_PortChanges, 1);
+                psdSendPipe(nch->nch_EP1Pipe, nch->nch_PortChanges, (nch->nch_NumPorts+7)>>3);
                 nch->nch_IOStarted = TRUE;
             }
             sigs = Wait(sigmask);
@@ -515,6 +515,9 @@ AROS_UFH0(void, nHubTask)
                                     DA_IsConnected, FALSE,
                                     TAG_END);
                         nch->nch_PortChanges[0] = 0xff;
+                        nch->nch_PortChanges[1] = 0xff;
+                        nch->nch_PortChanges[2] = 0xff;
+                        nch->nch_PortChanges[3] = 0xff;
                         sigs |= SIGBREAKF_CTRL_C;
                     }
                     if((!ioerr) || (ioerr == UHIOERR_TIMEOUT))
@@ -567,7 +570,7 @@ AROS_UFH0(void, nHubTask)
                                     {
                                         psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
                                                        "Hub is no longer self-powered! Low power conditions may occur.");
- 
+
                                         if(pc && phw)
                                         {
                                             psdSetAttrs(PGA_CONFIG, pc, CA_SelfPowered, FALSE, TAG_END);
@@ -591,7 +594,7 @@ AROS_UFH0(void, nHubTask)
 
                         for(num = 1; num <= nch->nch_NumPorts; num++)
                         {
-                            if(nch->nch_PortChanges[0] & (1L<<num))
+                            if(nch->nch_PortChanges[num>>3] & (1L<<(num & 7)))
                             {
                                 psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_OTHER,
                                              USR_GET_STATUS, 0, (ULONG) num);
@@ -814,6 +817,9 @@ struct NepClassHub * nAllocHub(void)
                     psdSetAltInterface(nch->nch_EP0Pipe, nch->nch_Interface);
                     if((nch->nch_EP1Pipe = psdAllocPipe(nch->nch_Device, nch->nch_TaskMsgPort, nch->nch_EP1)))
                     {
+                        psdSetAttrs(PGA_PIPE, nch->nch_EP1Pipe,
+                                    PPA_AllowRuntPackets, TRUE,
+                                    TAG_END);
                         psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_DEVICE,
                                      USR_GET_DESCRIPTOR, UDT_HUB<<8, 0);
                         ioerr = psdDoPipe(nch->nch_EP0Pipe, &buf, 1);
@@ -963,7 +969,7 @@ void nFreeHub(struct NepClassHub *nch)
     STRPTR devname;
     IPTR isconnected;
     struct Message *msg;
-    
+
     KPRINTF(1, ("FreeHub\n"));
     psdGetAttrs(PGA_DEVICE, nch->nch_Device, DA_IsConnected, &isconnected, TAG_END);
     for(num = 1; num <= nch->nch_NumPorts; num++)
@@ -1336,7 +1342,7 @@ void nHandleHubMethod(struct NepClassHub *nch, struct NepHubMsg *nhm)
             if(!nch->nch_Running)
             {
                 psdWaitPipe(nch->nch_EP1Pipe);
-                psdSendPipe(nch->nch_EP1Pipe, nch->nch_PortChanges, 1);
+                psdSendPipe(nch->nch_EP1Pipe, nch->nch_PortChanges, (nch->nch_NumPorts+7)>>3);
                 nch->nch_Running = TRUE;
             }
             nhm->nhm_Result = TRUE;
