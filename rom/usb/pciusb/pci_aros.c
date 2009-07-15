@@ -16,6 +16,8 @@
 #include <hidd/pci.h>
 #include <hidd/irq.h>
 
+#include <usb/usb.h>
+
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <proto/exec.h>
