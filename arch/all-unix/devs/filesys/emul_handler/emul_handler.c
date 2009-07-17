@@ -1629,17 +1629,11 @@ static LONG read_softlink(struct emulbase *emulbase,
     if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
 
     /* don't mess with link itself */
-    ret = makefilename(emulbase, &ln, link, "");
-    if (ret)
+    if (!(ln = emul_malloc(emulbase, strlen(link) + 1)))
         return ERROR_NO_FREE_STORE;
 
-    /* this helps to fit resolved path into the buffer and strips trailing '/' */
-    if (!shrink(emulbase, ln))
-    {
-        emul_free(emulbase, ln);
-        return ERROR_OBJECT_NOT_FOUND;
-    }
-    
+    strcpy(ln, link);
+
     ret = makefilename(emulbase, &filename, fh->name, ln);
     if (!ret)
     {
@@ -1683,15 +1677,11 @@ static LONG read_softlink(struct emulbase *emulbase,
                             *size = strlen(buffer);
                             emul_free(emulbase, target);
                         }
-                        else
-                            ret = ERROR_NO_FREE_STORE;
                     }
                 }
             }
 	}
     }
-    else
-	ret = ERROR_NO_FREE_STORE;
 
     emul_free(emulbase, ln);
 

@@ -109,7 +109,7 @@
 	return -1;
     }
     else
-    res = __stat(lock, sb);
+        res = __stat(lock, sb);
 
     UnLock(lock);
 

@@ -68,7 +68,8 @@ int __stat(BPTR lock, struct stat *sb)
             
         if(NameFromLock(lock, buffer, buffersize))
             break;
-        else if(IoErr() == ERROR_OBJECT_IN_USE || ERROR_NOT_IMPLEMENTED)
+        else if(   IoErr() == ERROR_OBJECT_IN_USE
+                || IoErr() == ERROR_NOT_IMPLEMENTED)
         {
             /* We can't retrieve name because lock is an exclusive lock
                or Examine is not implemented in this handler */
@@ -83,7 +84,7 @@ int __stat(BPTR lock, struct stat *sb)
             return -1;
         }
         FreeVec(buffer);
-       buffersize *= 2;
+        buffersize *= 2;
     }
     while(TRUE);
 	    
