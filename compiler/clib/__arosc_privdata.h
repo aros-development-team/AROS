@@ -134,6 +134,10 @@ struct arosc_privdata
    child process to share ACPD with parent process */
 #define SHARE_ACPD_WITH_CHILD 16
 
+/* This flags remembers if the privdata was derived from parent through
+   KEEP_OLD_ACPD */
+#define ACPD_FROM_PARENT 32
+
 /* !acpd_flags */
 
 /* The data stored for arosc startup code */

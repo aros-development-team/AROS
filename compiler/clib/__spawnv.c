@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     spavnv() function, used to spawn new processes.
@@ -118,8 +118,12 @@
                 {
                     int status;
                     
+                    D(bug("__spawnv: waiting for child with waitpid\n", ret));
+
                     waitpid(pid, &status, 0);
                     
+                    D(bug("__spawnv: child exited\n", ret));
+
                     if (WIFEXITED(status))
                         return WEXITSTATUS(status);
                     else

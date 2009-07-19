@@ -138,6 +138,7 @@
 	(tid == 0 && exchildno == 0)
     ))
     {
+        D(bug("waitpid: no dead children\n"));
 	/* no dead children atm */
 	return 0;
     }
@@ -156,5 +157,7 @@
     else
         errno = ECHILD;
     
+    D(bug("waitpid: leaving (%d)\n", ret));
+
     return ret;
 }
