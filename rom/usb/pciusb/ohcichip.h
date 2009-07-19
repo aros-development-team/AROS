@@ -82,10 +82,12 @@
 #define OCSB_HCRESET         0    /* Host controller reset */
 #define OCSB_CTRLENABLE      1    /* Enable Control List processing */
 #define OCSB_BULKENABLE      2    /* Enable Bulk List processing */
+#define OCSB_OWNERCHANGEREQ  3    /* Request change of ownership for BIOS handover */
 
 #define OCSF_HCRESET        (1UL<<OCSB_HCRESET)
 #define OCSF_CTRLENABLE     (1UL<<OCSB_CTRLENABLE)
 #define OCSF_BULKENABLE     (1UL<<OCSB_BULKENABLE)
+#define OCSF_OWNERCHANGEREQ (1UL<<OCSB_OWNERCHANGEREQ)
 
 /* OHCI_INTSTATUS, OHCI_INTEN and OHCI_INTDIS defines */
 #define OISB_SCHEDOVERRUN    0    /* Schedule overrun */
@@ -95,6 +97,7 @@
 #define OISB_HOSTERROR       4    /* Unrecoverable error */
 #define OISB_FRAMECOUNTOVER  5    /* Frame counter overrun (15 bit) */
 #define OISB_HUBCHANGE       6    /* Root Hub status change */
+#define OISB_OWNERCHANGE    30    /* Ownership changed */
 #define OISB_MASTERENABLE   31    /* Master Interrupt enable (INTEN only) */
 
 #define OISF_SCHEDOVERRUN   (1UL<<OISB_SCHEDOVERRUN)
@@ -104,6 +107,7 @@
 #define OISF_HOSTERROR      (1UL<<OISB_HOSTERROR)
 #define OISF_FRAMECOUNTOVER (1UL<<OISB_FRAMECOUNTOVER)
 #define OISF_HUBCHANGE      (1UL<<OISB_HUBCHANGE)
+#define OISF_OWNERCHANGE    (1UL<<OISB_OWNERCHANGE)
 #define OISF_MASTERENABLE   (1UL<<OISB_MASTERENABLE)
 
 #define OISF_ALL_INTS       (OISF_SCHEDOVERRUN|OISF_DONEHEAD|OISF_SOF|OISF_RESUMEDTX|OISF_HOSTERROR|OISF_FRAMECOUNTOVER|OISF_HUBCHANGE|OISF_MASTERENABLE)
