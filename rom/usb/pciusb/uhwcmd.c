@@ -873,7 +873,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                             {
                                                 UWORD ohcihciport = unit->hu_PortNum11[idx - 1];
                                                 UWORD ohciportreg = OHCI_PORTSTATUS + (ohcihciport<<2);
-                                                ULONG ohcioldval = READREG32_LE(hc->hc_RegBase, portreg);
+                                                ULONG ohcioldval = READREG32_LE(chc->hc_RegBase, portreg);
                                                 KPRINTF(10, ("OHCI Resetting Port (%s)\n", ohcioldval & OHPF_PORTRESET ? "already" : "ok"));
                                                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTPOWER|OHPF_PORTRESET);
                                                 break;
