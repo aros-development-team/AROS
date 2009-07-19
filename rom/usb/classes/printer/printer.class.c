@@ -524,6 +524,7 @@ AROS_UFH0(void, nPrinterTask)
         }
         if(!ioerr)
         {
+			len = AROS_BE2WORD(len);
             if((tmpbuf = psdAllocVec((ULONG) len+1)))
             {
                 ioerr = psdDoPipe(ncp->ncp_EP0Pipe, tmpbuf, (ULONG) len);
@@ -699,7 +700,7 @@ AROS_UFH0(void, nPrinterTask)
                     }
                     Forbid();
                     ioreq = (struct IOExtPar *) ncp->ncp_ReadQueue.lh_Head;
-                } 
+                }
                 ioreq = (struct IOExtPar *) ncp->ncp_WriteQueue.lh_Head;
                 while(ioreq->IOPar.io_Message.mn_Node.ln_Succ)
                 {
@@ -760,7 +761,7 @@ AROS_UFH0(void, nPrinterTask)
         KPRINTF(20, ("Going down the river!\n"));
         nFreePrinter(ncp);
     }
-    
+
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
@@ -1100,7 +1101,7 @@ AROS_UFH0(void, nGUITask)
         set(nh->nh_MainWindow, MUIA_Window_Open, FALSE);
     }
     nGUITaskCleanup(nh);
-    
+
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
