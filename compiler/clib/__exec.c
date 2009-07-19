@@ -565,6 +565,7 @@ static char *appendargs(char *argptr, int *argssizeptr, char *const args[])
 
 static void __exec_cleanup(struct arosc_privdata *privdata)
 {
+    D(bug("__exec_cleanup: me(%x)\n", FindTask(NULL)));
 
     /* Delete old private data */
     if (privdata->acpd_exec_aroscbase)

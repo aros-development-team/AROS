@@ -214,7 +214,9 @@ int arosc_internalinit(void)
 
     privdata = oldprivdata = GetIntETask(me)->iet_acpd;
 
-    D(bug("\nEntering arosc_internalinit(): me->name = %s\n", me->pr_Task.tc_Node.ln_Name));
+    D(bug("\nEntering arosc_internalinit(): me(%x)->name = %s\n",
+          me, me->pr_Task.tc_Node.ln_Name
+    ));
     D(bug("arosc_internalinit(): oldprivdata = %p\n", oldprivdata));
 
     if (!oldprivdata)
@@ -250,7 +252,12 @@ int arosc_internalinit(void)
         }
         else if (oldprivdata->acpd_flags & KEEP_OLD_ACPD)
         {
+            /* Currently KEEP_OLD_ACPD should only be set just after opening a fresh
+               aroscbase and then running the child, arosc_internalexit() depends on this
+            */
+            assert(oldprivdata->acpd_usercount == 1);
             oldprivdata->acpd_flags &= ~KEEP_OLD_ACPD;
+            oldprivdata->acpd_flags |= ACPD_FROM_PARENT;
             oldprivdata->acpd_process_returnaddr = me->pr_ReturnAddr;
         }
         else
@@ -289,7 +296,9 @@ int arosc_internalexit(void)
 {
     struct arosc_privdata *privdata = GetIntETask(FindTask(NULL))->iet_acpd;
 
-    D(bug("arosc_internalexit(): --acpd_usercount\n"));
+    D(bug("\nEntering arosc_internalexit(): me(%x)->name = %s\n",
+          FindTask(NULL), FindTask(NULL)->tc_Node.ln_Name
+    ));
 
     if (!privdata)
     {
@@ -307,12 +316,25 @@ int arosc_internalexit(void)
         }
     }
 
-    #warning FIXME: privdata should NEVER be NULL here
+    D(bug("arosc_internalexit(): --acpd_usercount\n"));
+
     ASSERT_VALID_PTR(privdata);
-    if (privdata && --privdata->acpd_usercount == 0)
+    --privdata->acpd_usercount;
+
+    /* If ACPD_FROM_PARENT is set, the parent has done an OpenLibrary() and
+       will do a final CloseLibrary(); but the child should call the EXIT
+       functions when the last CloseLibrary is called there; otherwise
+       atexit functions will be called after client has finished
+    */
+    if (privdata->acpd_usercount ==
+           (privdata->acpd_flags & ACPD_FROM_PARENT) ? 1 : 0
+    )
     {
         set_call_funcs(SETNAME(EXIT), -1, 0);
+    }
 
+    if (privdata->acpd_usercount == 0)
+    {
         /*restore the old value */
         GetIntETask(FindTask(NULL))->iet_acpd = privdata->acpd_oldprivdata;
 
@@ -320,7 +342,10 @@ int arosc_internalexit(void)
         FreeMem(privdata, sizeof(*privdata));
     }
 
-    D(bug("Exiting arosc_internalexit(): me->name = %s\n\n", FindTask(NULL)->tc_Node.ln_Name));
+    D(bug("Exiting arosc_internalexit(): me(%x)->name = %s\n\n",
+          FindTask(NULL), FindTask(NULL)->tc_Node.ln_Name
+    ));
+
     return 0;
 }
 
