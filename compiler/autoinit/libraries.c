@@ -62,7 +62,10 @@ void set_close_libraries_list(const void *list[])
     ForeachElementInSet(SETNAME(LIBS), 1, pos, set)
     {
 	if (*set->baseptr)
+        {
 	    CloseLibrary(*set->baseptr);
+            *set->baseptr = NULL;
+        }
     }
 }
 
