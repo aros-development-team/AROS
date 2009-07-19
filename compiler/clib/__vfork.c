@@ -325,7 +325,7 @@ static void child_takeover(struct vfork_data *udata)
 
 static void parent_leavepretendchild(struct vfork_data *udata)
 {
-    D(bug("parent_leavepretendchild(%x): entered\n", ppriv, udata));
+    D(bug("parent_leavepretendchild(%x): entered\n", udata));
 
     /* Restore parent's old fd_array */
     udata->ppriv->acpd_fd_mempool = udata->parent_acpd_fd_mempool;
