@@ -589,6 +589,9 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     UBYTE *memptr;
                     ULONG bitcnt;
                     ULONG hubdesca;
+                    ULONG cmdstatus;
+                    ULONG control;
+                    ULONG timeout;
                     ULONG frameival;
 
                     hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
@@ -725,7 +728,6 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *) &hc->hc_RegBase);
                     hc->hc_RegBase = (APTR) (((IPTR) hc->hc_RegBase) & (~0xf));
                     KPRINTF(10, ("RegBase = 0x%08lx\n", hc->hc_RegBase));
-                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivateBusmaster); // no busmaster yet
                     OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMem); // enable memory
 
                     hubdesca = READREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA);
@@ -738,6 +740,35 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     KPRINTF(20, ("Powerswitching: %s %s\n",
                                  hubdesca & OHAF_NOPOWERSWITCH ? "available" : "always on",
                                  hubdesca & OHAF_INDIVIDUALPS ? "per port" : "global"));
+
+                    // disable BIOS legacy support
+                    control = READREG32_LE(hc->hc_RegBase, OHCI_CONTROL);
+                    if(control & OCLF_SMIINT)
+                    {
+                        KPRINTF(10, ("BIOS still has hands on OHCI, trying to get rid of it\n"));
+                        cmdstatus = READREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS);
+                        cmdstatus |= OCSF_OWNERCHANGEREQ;
+                        WRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, cmdstatus);
+                        timeout = 100;
+                        do
+                        {
+                            control = READREG32_LE(hc->hc_RegBase, OHCI_CONTROL);
+                            if(!(control & OCLF_SMIINT))
+                            {
+                                KPRINTF(10, ("BIOS gave up on OHCI. Pwned!\n"));
+                                break;
+                            }
+                            uhwDelayMS(10, hu, hd);
+                        } while(--timeout);
+                        if(!timeout)
+                        {
+                            KPRINTF(10, ("BIOS didn't release OHCI. Forcing and praying...\n"));
+                            control &= ~OCLF_SMIINT;
+                            WRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, control);
+                        }
+                    }
+
+                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivateBusmaster); // no busmaster yet
 
                     KPRINTF(10, ("Resetting OHCI HC\n"));
                     CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, OCSF_HCRESET);
