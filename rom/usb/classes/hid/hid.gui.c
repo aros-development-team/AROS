@@ -8,11 +8,12 @@
 #include "hid.class.h"
 
 #ifdef USE_NLIST
-#include <mui/NList_mcc.h>
-#include <mui/NListview_mcc.h>
 
-#define ListObject NListObject
-#define ListviewObject NListviewObject
+#undef ListObject
+#define ListObject MUIOBJMACRO_START("NList.mcc")
+
+#undef ListviewObject
+#define ListviewObject MUIOBJMACRO_START("NListview.mcc")
 #endif
 
 extern const STRPTR libname;
