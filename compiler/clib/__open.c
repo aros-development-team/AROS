@@ -336,7 +336,6 @@ int __register_init_fdarray(fdesc **__fdarray, int numslots)
     return 1;
 }
 
-
 #warning perhaps this has to be handled in a different way...
 int __init_stdfiles(void)
 {
@@ -412,8 +411,8 @@ static int __copy_fdarray(fdesc **__src_fd_array, int numslots)
             
             if((__fd_array[i] = __alloc_fdesc()) == NULL)
                 return 0;
-            
-            __fd_array[i]->fdflags = 0;
+
+            __fd_array[i]->fdflags = __src_fd_array[i]->fdflags;
             __fd_array[i]->fcb = __src_fd_array[i]->fcb;
             __fd_array[i]->fcb->opencount++;
         }
