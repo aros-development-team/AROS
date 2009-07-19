@@ -18,6 +18,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 
 #include "__arosc_privdata.h"
 #include "__exec.h"
@@ -33,6 +34,7 @@ static char *escape(const char *str);
 static char *appendarg(char *argptr, int *argptrsize, const char *arg);
 static char *appendargs(char *argptr, int *argptrsize, char *const args[]);
 static void __exec_cleanup(struct arosc_privdata *privdata);
+static void close_on_exec();
 
 /* Public functions */
 /********************/
@@ -380,6 +382,8 @@ void __exec_do(APTR id)
     if (__get_arosc_privdata()->acpd_flags & PRETEND_CHILD)
     {
         struct vfork_data *udata = __get_arosc_privdata()->acpd_vfork_data;
+
+        close_on_exec();
         
         /* Signal child that __exec_do is called */
         Signal(udata->child, 1 << udata->child_signal);
@@ -394,7 +398,7 @@ void __exec_do(APTR id)
     oldtaskname = self->tc_Node.ln_Name;
     self->tc_Node.ln_Name = privdata->acpd_exec_taskname;
     SetProgramName((STRPTR)privdata->acpd_exec_taskname);
-
+   
     returncode = RunCommand(
         privdata->acpd_exec_seglist,
         cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
@@ -559,7 +563,7 @@ static char *appendargs(char *argptr, int *argssizeptr, char *const args[])
     return argptr;
 }
 
-void __exec_cleanup(struct arosc_privdata *privdata)
+static void __exec_cleanup(struct arosc_privdata *privdata)
 {
 
     /* Delete old private data */
@@ -599,5 +603,22 @@ void __exec_cleanup(struct arosc_privdata *privdata)
     {
         free(privdata->acpd_exec_taskname);
         privdata->acpd_exec_taskname = NULL;
+    }
+}
+
+static void close_on_exec()
+{
+    int i;
+    for (i = __numslots - 1; i >= 0; i--)
+    {
+        if (__fd_array[i])
+        {
+            D(bug("close_on_exec: checking fd %d\n", i));
+            if (__fd_array[i]->fdflags & FD_CLOEXEC)
+            {
+                D(bug("close_on_exec: closing fd %d\n", i));
+                assert(close(i) == 0);
+            }
+        }
     }
 }
