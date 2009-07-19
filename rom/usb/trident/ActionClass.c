@@ -3918,10 +3918,9 @@ IPTR Action_SaveDeviceList(struct IClass *cl, Object *obj, Msg msg)
             AddPart(path, aslreq->fr_File, 256);
             if((fh = Open(path, MODE_NEWFILE)))
             {
-
-                if(SystemTags("UsbDevLister", SYS_Output, fh, TAG_END))
+                if(SystemTags("PsdDevLister", SYS_Output, fh, TAG_END))
                 {
-                    psdAddErrorMsg(RETURN_ERROR, "Trident", "Error executing UsbDevLister");
+                    psdAddErrorMsg(RETURN_ERROR, "Trident", "Error executing PsdDevLister");
                 } else {
                     psdAddErrorMsg(RETURN_OK, "Trident", "DevLister saved to %s.", path);
                 }
