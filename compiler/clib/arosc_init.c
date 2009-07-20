@@ -286,8 +286,12 @@ int arosc_internalinit(void)
         res = set_call_funcs(SETNAME(INIT), 1, 1);
     }
 
-    D(bug("arosc_internalinit(): acpd_usercount++\n"));
+    D(bug("arosc_internalinit(): acpd_usercount=%d\n", privdata->acpd_usercount));
     privdata->acpd_usercount++;
+
+    D(bug("Exiting arosc_internalexit(): me(%x)->name = %s, acpd_usercount = %d\n\n",
+          FindTask(NULL), FindTask(NULL)->tc_Node.ln_Name, privdata->acpd_usercount
+    ));
 
     return res;
 }
@@ -321,13 +325,15 @@ int arosc_internalexit(void)
     ASSERT_VALID_PTR(privdata);
     --privdata->acpd_usercount;
 
+    D(bug("arosc_internalexit(): acpd_usercount = %d\n", privdata->acpd_usercount));
+
     /* If ACPD_FROM_PARENT is set, the parent has done an OpenLibrary() and
        will do a final CloseLibrary(); but the child should call the EXIT
        functions when the last CloseLibrary is called there; otherwise
        atexit functions will be called after client has finished
     */
     if (privdata->acpd_usercount ==
-           (privdata->acpd_flags & ACPD_FROM_PARENT) ? 1 : 0
+           ((privdata->acpd_flags & ACPD_FROM_PARENT) ? 1 : 0)
     )
     {
         set_call_funcs(SETNAME(EXIT), -1, 0);
