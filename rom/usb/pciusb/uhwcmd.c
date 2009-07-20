@@ -817,8 +817,14 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                         // if not highspeed, release ownership
                                         KPRINTF(20, ("Transferring ownership to UHCI/OHCI port %ld\n", unit->hu_PortNum11[idx - 1]));
                                         KPRINTF(10, ("Device is %s\n", newval & EHPF_LINESTATUS_DM ? "LOWSPEED" : "FULLSPEED"));
-                                        unit->hu_EhciOwned[idx - 1] = FALSE;
                                         newval |= EHPF_NOTPORTOWNER;
+                                        if(!cnc)
+                                        {
+                                            KPRINTF(20, ("EHCI has no companion controller, can't transfer ownership!\n"));
+                                            WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
+                                            return(UHIOERR_HOSTERROR);
+                                        }
+                                        unit->hu_EhciOwned[idx - 1] = FALSE;
                                         WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
                                         uhwDelayMS(10, unit, base);
                                         // enable companion controller port
@@ -4005,8 +4011,8 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
             struct OhciTD *donetd = (struct OhciTD *) (donehead - hc->hc_PCIVirtualAdjust - 16);
             while(donetd->otd_NextTD)
             {
-				donetd = (struct OhciTD *) (donetd->otd_NextTD - hc->hc_PCIVirtualAdjust - 16);
-			}
+                donetd = (struct OhciTD *) (donetd->otd_NextTD - hc->hc_PCIVirtualAdjust - 16);
+            }
             WRITEMEM32_LE(&donetd->otd_NextTD, hc->hc_OhciDoneQueue);
         }
         hc->hc_OhciDoneQueue = donehead;
@@ -5403,7 +5409,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                     }
                     ioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ;
                 }
-				break;
+                break;
             }
 
             case HCITYPE_EHCI:
@@ -5453,7 +5459,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
             }
         }
         if(causeint)
-		{
+        {
             SureCause(base, &hc->hc_CompleteInt);
         }
 
