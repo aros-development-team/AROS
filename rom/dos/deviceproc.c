@@ -32,7 +32,7 @@
 	on which the lock is set).
 
     INPUTS
-	name - The name of the DOS device, without the ':'.
+	name - The name of the DOS device, INCLUDING the ':'.
 
     RESULT
 	Either a pointer to the Device structure, or NULL.
@@ -58,19 +58,9 @@
 
     struct MsgPort *res = NULL;
     struct DevProc *dvp;
-    char namebuffer[32];
-    char *tarptr = namebuffer;
-    ULONG len = 30;
-
-    /* append a colon to the name, GetDeviceProc() needs a full path,
-       while DeviceProc() has it without colon */
-    while((*tarptr++ = *name++) && (--len));
-    if(tarptr[-1] == 0) --tarptr;
-    *tarptr++ = ':';
-    *tarptr = 0;
 
     /* just use GetDeviceProc(), it knows everything useful anyway */
-    if ((dvp = GetDeviceProc(namebuffer, NULL)) == NULL)
+    if ((dvp = GetDeviceProc(name, NULL)) == NULL)
         return NULL;
 
     /* if GetDeviceProc() had to create the lock (ie non-binding assigns), we
