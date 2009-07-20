@@ -818,7 +818,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                         KPRINTF(20, ("Transferring ownership to UHCI/OHCI port %ld\n", unit->hu_PortNum11[idx - 1]));
                                         KPRINTF(10, ("Device is %s\n", newval & EHPF_LINESTATUS_DM ? "LOWSPEED" : "FULLSPEED"));
                                         newval |= EHPF_NOTPORTOWNER;
-                                        if(!cnc)
+                                        if(!chc)
                                         {
                                             KPRINTF(20, ("EHCI has no companion controller, can't transfer ownership!\n"));
                                             WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
