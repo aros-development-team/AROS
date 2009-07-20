@@ -17,7 +17,7 @@
     FORMAT
 
         Mount <Device> <From>
-		
+
     SYNOPSIS
 
         DEVICE/M, FROM/K
@@ -38,12 +38,12 @@
     RESULT
 
         Standard DOS error codes.
-	
+
     NOTES
-	
+
     EXAMPLE
 
-        Mount DEVS:FAT0    
+        Mount DEVS:FAT0
         (Mounts a FAT device defined in the DEVS:FAT0 file)
 
     BUGS
@@ -664,7 +664,7 @@ ULONG	Sign;
     {
       Value<<=4;
       num=*buf++;
-    
+
       if((num >= 0x30) && (num <= 0x39))
       {
         num-=0x30;
@@ -673,7 +673,7 @@ ULONG	Sign;
       else
       {
         num |= 0x20;
-    
+
         if((num >= 0x61) && (num <= 0x66))
         {
           num-=(0x61-10);
@@ -1360,7 +1360,7 @@ void preparefile(STRPTR buf, LONG size)
 
 	    continue;
 	}
-	
+
 	/* Skip strings */
 	if (*buf=='\"')
 	{
@@ -1517,7 +1517,7 @@ struct DeviceNode *MyMakeDosNode(char *DosName, IPTR *ParameterPkt, char *Startu
   char *MyString = NULL;
   ULONG Status = FALSE;
   DEBUG_MAKEDOSNODE(Printf("MakeDosNode: Pkt 0x%lx\n",(IPTR)ParameterPkt));
-  
+
   if (ParameterPkt)
   {
     DEBUG_MAKEDOSNODE(Printf("MakeDosNode: DosName <%s> DeviceName <%s> Unit ", DosName, ParameterPkt[EXECNAME_INDEX]));
@@ -1939,7 +1939,6 @@ LONG mount(IPTR	*params, STRPTR	name)
 		    if (Activate)
 		    {
 			DEBUG_MOUNT(Printf("Activating\n"));
-			strcat(name, ":");
 			DeviceProc(name);
 		    }
 		    error = 0;

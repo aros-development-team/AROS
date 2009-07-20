@@ -4,7 +4,7 @@
     (C) 2002-2005 Harry Sintonen
     (C) 2005-2007 Pavel Fedin
     $Id$
- 
+
     Desc: Assign CLI command
     Lang: English
 */
@@ -34,39 +34,39 @@
 #define	DEBUG_ASSIGN(x)
 
 /******************************************************************************
- 
- 
+
+
     NAME
- 
+
         Assign [(name):] [{(target)}] [LIST] [EXISTS] [DISMOUNT] [DEFER]
 	       [PATH] [ADD] [REMOVE] [VOLS] [DIRS] [DEVICES]
- 
+
     SYNOPSIS
- 
+
         NAME, TARGET/M, LIST/S, EXISTS/S, DISMOUNT/S, DEFER/S, PATH/S, ADD/S,
 	REMOVE/S, VOLS/S, DIRS/S, DEVICES/S
- 
+
     LOCATION
- 
+
         C:
- 
+
     FUNCTION
- 
+
         ASSIGN creates a reference to a file or directory. The reference
 	is a logical device name which makes it very convenient to specify
 	assigned objects using the reference instead of their paths.
- 
+
 	If the NAME and TARGET arguments are given, ASSIGN assigns the
 	given logical name to the specified target. If the NAME given is
 	already assigned to a file or directory the new target replaces the
 	previous target. A colon must be included after the NAME argument.
- 
+
 	If only the NAME argument is given, any assigns to that NAME are
 	removed. If no arguments whatsoever are given, all logical
 	assigns are listed.
- 
+
     INPUTS
- 
+
         NAME      --  the name that should be assigned to a file or directory
 	TARGET    --  one or more files or directories to assign the NAME to
 	LIST      --  list all assigns made
@@ -86,33 +86,33 @@
 	VOLS      --  show assigned volumes if in LIST mode
 	DIRS      --  show assigned directories if in LIST mode
 	DEVICES   --  show assigned devices if in LIST mode
- 
- 
+
+
     RESULT
- 
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
+
         The assign command has many switches. This together with the somewhat
 	messy handling of DosList:s by dos.library makes the operation rather
 	complicated.
- 
+
 	There are some fundamental building blocks that defines the semantics
 	of the Assign command.
- 
+
 	Only one of the switches ADD, REMOVE, PATH and DEFER may be specified.
- 
+
 	If EXISTS is specified, only the name parameter is important.
- 
+
 	The implementation is split up in two fundamental procedures.
- 
+
 	doAssign()     --  make [a number of] assigns
 	showAssigns()  --  show the available assigns
 	checkAssign()  --  check if a particular assign exists
@@ -475,6 +475,10 @@ int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, B
 	BOOL cancel = FALSE;
         BOOL success = TRUE;
 
+	colon = strchr(name, ':');
+
+	*colon = '\0';	      /* Remove trailing colon; name[] is changed! */
+
 	if (dismount)
 	{
 #ifdef __AROS__
@@ -498,10 +502,6 @@ int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, B
 		}
 #endif
 	}
-
-	colon = strchr(name, ':');
-
-	*colon = '\0';	      /* Remove trailing colon; name[] is changed! */
 
 	DEBUG_ASSIGN(Printf("doassign: name <%s>\n", name));
 
