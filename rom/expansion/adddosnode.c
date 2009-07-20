@@ -94,11 +94,22 @@
 	/* Have we been asked to start a filesystem, and there is none already */
 	if (flags & ADNF_STARTPROC)
 	{
+		STRPTR dosname = AROS_BSTR_ADDR(deviceNode->dn_Handler);
+		char namebuffer[32];
+		char *tarptr = namebuffer;
+		ULONG len = 30;
+
+    	/* append a colon to the name, DeviceProc() needs a full path */
+    	while((*tarptr++ = *dosname++) && (--len));
+    	if(tarptr[-1] == 0) --tarptr;
+    	*tarptr++ = ':';
+    	*tarptr = 0;
+
 	    /* Yes, better do so.
-	    
+
 	       DeviceProc() will see that dn_Device for this node is NULL
 	       and start up the handler. */
-	    DeviceProc(AROS_BSTR_ADDR(deviceNode->dn_Handler));
+	    DeviceProc(namebuffer);
 	}
 
 	CloseLibrary((struct Library *)DOSBase);
