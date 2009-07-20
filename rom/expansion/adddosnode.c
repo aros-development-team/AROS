@@ -94,7 +94,7 @@
 	/* Have we been asked to start a filesystem, and there is none already */
 	if (flags & ADNF_STARTPROC)
 	{
-		STRPTR dosname = AROS_BSTR_ADDR(deviceNode->dn_Handler);
+		STRPTR dosname = AROS_BSTR_ADDR(deviceNode->dn_Name);
 		char namebuffer[32];
 		char *tarptr = namebuffer;
 		ULONG len = 30;
