@@ -1,11 +1,13 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function malloc().
 */
 
 #include "__arosc_privdata.h"
+
+#define DEBUG 0
 
 #include <errno.h>
 #include <dos/dos.h>
@@ -71,7 +73,13 @@
 
 int __init_memstuff(void)
 {
+    D(bug("__init_memstuff: task(%x), privdata(%x)\n",
+          FindTask(NULL), __get_arosc_privdata()
+    ));
+
     __mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 65536L, 4096L);
+
+    D(bug("__init_memstuff: __mempool(%x)\n", __mempool));
 
     if (!__mempool)
     {
@@ -84,6 +92,10 @@ int __init_memstuff(void)
 
 void __exit_memstuff(void)
 {
+    D(bug("__exit_memstuff: task(%x), privdata(%x), __mempool(%x)\n",
+          FindTask(NULL), __get_arosc_privdata(), __mempool
+    ));
+
     if (__mempool)
     {
 	DeletePool(__mempool);
