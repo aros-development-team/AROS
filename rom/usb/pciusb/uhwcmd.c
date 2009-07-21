@@ -134,15 +134,6 @@ void uhwCloseTimer(struct PCIUnit *unit, struct PCIDevice *base)
 }
 /* \\\ */
 
-/* /// "uhwHWInit()" */
-void uhwHWInit(struct PCIController *hc)
-{
-    KPRINTF(1, ("Reset\n"));
-    //unit->hu_FrameCounter = 1;
-    //unit->hu_RootHubAddr = 0;
-}
-/* \\\ */
-
 /* /// "Open_Unit()" */
 struct Unit * Open_Unit(struct IOUsbHWReq *ioreq,
                         LONG unitnr,
@@ -253,7 +244,6 @@ WORD cmdReset(struct IOUsbHWReq *ioreq,
               struct PCIDevice *base)
 {
     KPRINTF(10, ("CMD_RESET ioreq: 0x%08lx\n", ioreq));
-    //uhwHWInit(unit);
 
     uhwDelayMS(1, unit, base);
     uhwGetUsbState(ioreq, unit, base);
@@ -824,9 +814,36 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                             WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
                                             return(UHIOERR_HOSTERROR);
                                         }
+                                        switch(chc->hc_HCIType)
+                                        {
+                                            case HCITYPE_UHCI:
+                                            {
+                                                UWORD uhcihciport = unit->hu_PortNum11[idx - 1];
+                                                UWORD uhciportreg = uhcihciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
+                                                ULONG uhcinewval;
+
+                                                uhcinewval = READREG16_LE(chc->hc_RegBase, uhciportreg);
+                                                KPRINTF(10, ("UHCI Port status before handover=%04lx\n", uhcinewval));
+                                                break;
+                                            }
+
+                                            case HCITYPE_OHCI:
+                                            {
+                                                UWORD ohcihciport = unit->hu_PortNum11[idx - 1];
+                                                UWORD ohciportreg = OHCI_PORTSTATUS + (ohcihciport<<2);
+                                                ULONG ohcioldval = READREG32_LE(chc->hc_RegBase, portreg);
+
+                                                KPRINTF(10, ("OHCI Port status before handover=%08lx\n", ohcioldval));
+                                                KPRINTF(10, ("Powering Port (%s)\n", ohcioldval & OHPF_PORTPOWER ? "already" : "ok"));
+                                                WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTPOWER);
+                                                uhwDelayMS(10, unit, base);
+                                                break;
+                                            }
+                                        }
+
                                         unit->hu_EhciOwned[idx - 1] = FALSE;
                                         WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
-                                        uhwDelayMS(10, unit, base);
+                                        uhwDelayMS(90, unit, base);
                                         // enable companion controller port
                                         switch(chc->hc_HCIType)
                                         {
@@ -879,18 +896,27 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                             {
                                                 UWORD ohcihciport = unit->hu_PortNum11[idx - 1];
                                                 UWORD ohciportreg = OHCI_PORTSTATUS + (ohcihciport<<2);
-                                                ULONG ohcioldval = READREG32_LE(chc->hc_RegBase, portreg);
+                                                ULONG ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
                                                 KPRINTF(10, ("OHCI Resetting Port (%s)\n", ohcioldval & OHPF_PORTRESET ? "already" : "ok"));
+                                                // make sure we have at least 50ms of reset time here, as required for a root hub port
                                                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTPOWER|OHPF_PORTRESET);
+                                                uhwDelayMS(10, unit, base);
+                                                WRITEREG32_LE(hc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
+                                                uhwDelayMS(10, unit, base);
+                                                WRITEREG32_LE(hc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
+                                                uhwDelayMS(10, unit, base);
+                                                WRITEREG32_LE(hc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
+                                                uhwDelayMS(10, unit, base);
+                                                WRITEREG32_LE(hc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
                                                 break;
                                             }
 
                                         }
                                         // make enumeration possible
                                         unit->hu_DevControllers[0] = chc;
+                                        return(0);
                                     } else {
                                         newval &= ~EHPF_PORTRESET;
-                                        newval |= EHPF_PORTENABLE;
                                         WRITEREG16_LE(hc->hc_RegBase, portreg, newval);
                                         hc->hc_PortChangeMap[hciport] |= UPSF_PORT_RESET; // manually fake reset change
                                         uhwDelayMS(10, unit, base);
@@ -1913,11 +1939,8 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
                 cmpioreq = (struct IOUsbHWReq *) cmpioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
             }
         }
-        if(foundit)
+        if(!foundit)
         {
-            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-            break;
-        } else {
             // IOReq is probably pending in some transfer structure
             devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
             switch(hc->hc_HCIType)
@@ -1979,11 +2002,11 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
                     }
                     break;
             }
-            if(foundit)
-            {
-                Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-                break;
-            }
+        }
+        if(foundit)
+        {
+            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+            break;
         }
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
@@ -3149,6 +3172,7 @@ inline struct OhciED * ohciAllocED(struct PCIController *hc)
 /* /// "ohciFreeED()" */
 inline void ohciFreeED(struct PCIController *hc, struct OhciED *oed)
 {
+    oed->oed_IOReq = NULL;
     oed->oed_Succ = hc->hc_OhciEDPool;
     hc->hc_OhciEDPool = oed;
 }
@@ -3174,6 +3198,7 @@ inline struct OhciTD * ohciAllocTD(struct PCIController *hc)
 /* /// "ohciFreeTD()" */
 inline void ohciFreeTD(struct PCIController *hc, struct OhciTD *otd)
 {
+    otd->otd_ED = NULL;
     otd->otd_Succ = hc->hc_OhciTDPool;
     hc->hc_OhciTDPool = otd;
 }
@@ -3232,6 +3257,12 @@ void ohciHandleFinishedTDs(struct PCIController *hc)
     do
     {
         oed = otd->otd_ED;
+        if(!oed)
+        {
+            KPRINTF(200, ("Came across a rogue TD that already has been freed!\n"));
+            otd = (struct OhciTD *) ((READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16);
+            continue;
+        }
         ctrlstatus = READMEM32_LE(&otd->otd_Ctrl);
         if(otd->otd_BufferPtr)
         {
@@ -3242,6 +3273,12 @@ void ohciHandleFinishedTDs(struct PCIController *hc)
         }
         ioreq = oed->oed_IOReq;
         KPRINTF(1, ("Examining TD %08lx for ED %08lx (IOReq=%08lx), Status %08lx, len=%ld\n", otd, oed, ioreq, ctrlstatus, len));
+        if(!ioreq)
+        {
+            KPRINTF(200, ("Came across a rogue IOReq that already has been replied!\n"));
+            otd = (struct OhciTD *) ((READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16);
+            continue;
+        }
         ioreq->iouh_Actual += len;
         retire = (ioreq->iouh_Actual == ioreq->iouh_Length);
         if((ctrlstatus & OTCM_DELAYINT) != OTCF_NOINT)

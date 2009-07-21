@@ -18,7 +18,7 @@ static int libInit(LIBBASETYPEPTR nh)
 
     nh->nh_UtilityBase = OpenLibrary("utility.library", 39);
 
-#define	UtilityBase	nh->nh_UtilityBase
+#define UtilityBase nh->nh_UtilityBase
 
     if(UtilityBase)
     {
@@ -742,6 +742,7 @@ struct NepClassHub * nAllocHub(void)
     struct Task *thistask;
     struct NepClassHub *nch;
     struct UsbHubStatus uhhs;
+    APTR parenthub;
     LONG ioerr;
     ULONG len;
     UWORD num;
@@ -766,7 +767,10 @@ struct NepClassHub * nAllocHub(void)
                     DA_IsHighspeed, &ishighspeed,
                     DA_ProductID, &prodid,
                     DA_VendorID, &vendid,
+                    DA_HubDevice, &parenthub,
                     TAG_END);
+
+        nch->nch_IsRootHub = (parenthub ? FALSE : TRUE);
         nch->nch_IsUSB20 = ishighspeed;
         // try to select multi TT interface first
         nch->nch_Interface = psdFindInterface(nch->nch_Device, NULL,
@@ -1164,6 +1168,11 @@ struct PsdDevice * nConfigurePort(struct NepClassHub *nch, UWORD port)
                         KPRINTF(1, ("PORT_RESET failed %ld.\n", ioerr));
                         break;
                     }
+                    if(nch->nch_IsRootHub)
+                    {
+                        // Root hubs need 50ms minimum delay
+                        psdDelayMS(50);
+                    }
                     for(delayretries = 0; delayretries < 500; delayretries += delaytime)
                     {
                         psdDelayMS(delaytime);
@@ -1241,14 +1250,25 @@ struct PsdDevice * nConfigurePort(struct NepClassHub *nch, UWORD port)
                                        "Strange port response, power-cycling port %ld",
                                        port);
                         psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
+                                     USR_CLEAR_FEATURE, UFS_PORT_ENABLE, (ULONG) port);
+                        ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0);
+                        if(ioerr)
+                        {
+                            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                                           "CLEAR_PORT_ENABLE for port %ld failed: %s (%ld)",
+                                           port, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                            KPRINTF(1, ("CLEAR_PORT_ENABLE for port %ld failed %ld!\n", port, ioerr));
+                        }
+                        psdDelayMS(50);
+                        psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
                                      USR_CLEAR_FEATURE, UFS_PORT_POWER, (ULONG) port);
                         ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0);
                         if(ioerr)
                         {
                             psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
-                                           "PORT_POWER for port %ld failed: %s (%ld)",
+                                           "CLEAR_PORT_POWER for port %ld failed: %s (%ld)",
                                            port, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-                            KPRINTF(1, ("PORT_POWER for port %ld failed %ld!\n", port, ioerr));
+                            KPRINTF(1, ("CLEAR_PORT_POWER for port %ld failed %ld!\n", port, ioerr));
                         }
                         psdDelayMS(50);
                         psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
@@ -1257,9 +1277,9 @@ struct PsdDevice * nConfigurePort(struct NepClassHub *nch, UWORD port)
                         if(ioerr)
                         {
                             psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
-                                           "PORT_POWER for port %ld failed: %s (%ld)",
+                                           "SET_PORT_POWER for port %ld failed: %s (%ld)",
                                            port, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-                            KPRINTF(1, ("PORT_POWER for port %ld failed %ld!\n", port, ioerr));
+                            KPRINTF(1, ("SET_PORT_POWER for port %ld failed %ld!\n", port, ioerr));
                         }
                         psdDelayMS((ULONG) nch->nch_PwrGoodTime + 15);
 

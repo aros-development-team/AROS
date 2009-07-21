@@ -1231,22 +1231,33 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     prodname = hu->hu_ProductName;
     *prodname = 0;
     pciStrcat(prodname, "PCI ");
-    if(ohcicnt+uhcicnt > 1)
+    if(ohcicnt + uhcicnt)
     {
-        prodname[4] = ohcicnt+uhcicnt+'0';
-        prodname[5] = 'x';
-        prodname[6] = 0;
-    }
-    pciStrcat(prodname, ohcicnt ? "OHCI" : "UHCI");
+        if(ohcicnt + uhcicnt > 1)
+        {
+            prodname[4] = ohcicnt + uhcicnt + '0';
+            prodname[5] = 'x';
+            prodname[6] = 0;
+        }
+        pciStrcat(prodname, ohcicnt ? "OHCI" : "UHCI");
+        if(ehcicnt)
+        {
+            pciStrcat(prodname, "+");
+		} else {
+			pciStrcat(prodname, " USB 1.1");
+		}
+	}
     if(ehcicnt)
     {
-        pciStrcat(prodname, "+EHCI USB 2.0");
-    } else {
-        pciStrcat(prodname, " USB 1.1");
+        pciStrcat(prodname, "EHCI USB 2.0");
     }
     pciStrcat(prodname, " Host Controller (");
-    pciStrcat(prodname, ohcicnt ? "NEC)" : "VIA, Intel, ALI, etc.)");
-
+    if(ohcicnt + uhcicnt)
+    {
+        pciStrcat(prodname, ohcicnt ? "NEC)" : "VIA, Intel, ALI, etc.)");
+    } else {
+		pciStrcat(prodname, "Emulated?)");
+	}
     KPRINTF(10, ("Unit allocated!\n", hd));
 
     return TRUE;
