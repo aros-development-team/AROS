@@ -1,4 +1,4 @@
-/* Very basic bootstrap for Poseidon in AROS kernel for enabling of USB booting and HID devices. 
+/* Very basic bootstrap for Poseidon in AROS kernel for enabling of USB booting and HID devices.
  * PsdStackloader should be started during startup-sequence nonetheless */
 
 #include <aros/symbolsets.h>
@@ -15,7 +15,11 @@ int usbromstartup_init(void)
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
         psdAddClass("hub.class", 0);
-        psdAddClass("hid.class", 0);
+        if(!(psdAddClass("hid.class", 0)))
+        {
+            psdAddClass("bootmouse.class", 0);
+            psdAddClass("bootkeyboard.class", 0);
+        }
         psdAddClass("massstorage.class", 0);
 
         /* now this finds all usb hardware pci cards */

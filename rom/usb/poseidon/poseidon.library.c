@@ -5098,7 +5098,7 @@ AROS_LH1(LONG, psdStopRTIso,
 /* *** Classes *** */
 
 /* /// "psdAddClass()" */
-AROS_LH2(struct PsdUsbClass *,psdAddClass,
+AROS_LH2(struct PsdUsbClass *, psdAddClass,
          AROS_LHA(STRPTR, name, A1),
          AROS_LHA(ULONG, vers, D0),
          LIBBASETYPEPTR, ps, 35, psd)

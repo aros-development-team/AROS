@@ -43,6 +43,7 @@ struct NepClassHub
     ULONG               nch_PowerCycle;   /* Bitmask of devices to powercycle */
     ULONG               nch_DisablePort;  /* Bitmask of devices to disable */
     BOOL                nch_ClassScan;    /* Flag to cause class scan */
+    BOOL                nch_IsRootHub;    /* Is this a Root Hub? */
     UBYTE               nch_PortChanges[4]; /* Buffer for port changes */
     struct PsdDevice  **nch_Downstream;   /* Pointer to array of down stream device pointers */
 };
