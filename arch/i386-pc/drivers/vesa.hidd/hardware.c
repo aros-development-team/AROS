@@ -7,7 +7,7 @@
 */
 
 
-#define DEBUG 1 /* no SysBase */
+#define DEBUG 0 /* no SysBase */
 #include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <aros/macros.h>
@@ -25,6 +25,7 @@
 #include "hardware.h"
 
 #include <string.h>
+
 
 #undef SysBase
 extern struct ExecBase *SysBase;
@@ -156,32 +157,41 @@ void vesaDoRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG 
     w = (x2 - x1) + 1;
     h = (y2 - y1) + 1;
     
-    srcmod = (data->bytesperline - w);
-    dstmod = (data->data->bytesperline - w);
+    srcmod = (data->bytesperline);
+    dstmod = (data->data->bytesperline);
+
    
     src = data->VideoData + y1 * data->bytesperline + x1;
     dst = data->data->framebuffer + y1 * data->data->bytesperline + x1;
     
-    for(y = 0; y < h; y++)
+    /*
+    ** common sense assumption: memcpy can't possibly be faster than CopyMem[Quick]
+    */
+    if ((srcmod != dstmod) || (srcmod != w))
     {
-    	for(x = 0; x < w / 4; x++)
+	for(y = 0; y < h; y++)
 	{
-	    *((ULONG *)dst) = *((ULONG *)src);
-	    dst += sizeof(ULONG);
-	    src += sizeof(ULONG);
+	    CopyMem(src, dst, w);
+	    src += srcmod;
+	    dst += dstmod;
 	}
-	src += srcmod;
-	dst += dstmod;
+    }
+    else
+    {
+	/* this is a plain total fast rulez copy */
+	CopyMem(src, dst, w*h);
     }
     
 }
 
 void vesaRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2)
 {
+    begin_meas("refreh area");
     if (data->data->use_updaterect == FALSE)
     {
     	vesaDoRefreshArea(data, x1, y1, x2, y2);
     }
+    end_meas;
 }
 
 #endif

@@ -8,7 +8,7 @@ CFILES		:= \
 	core traps screen serialrawio execfunctions prepareexecbase \
 	cachecleare cachepredma cachepostdma shutdowna memoryrawio
 
-AFILES		:= coldreboot corelow stackswap
+AFILES		:= coldreboot corelow stackswap copymem_SSE
 
 #MM kernel-exec-pc-i386 : kernel-exec-includes includes-asm_h-i386
 
