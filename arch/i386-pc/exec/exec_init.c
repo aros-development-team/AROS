@@ -63,9 +63,7 @@
 #include <aros/asmcall.h>
 #include <aros/config.h>
 
-#ifndef DEBUG
-#   define DEBUG    1
-#endif
+#define DEBUG    1
 
 #include <aros/debug.h>
 #include <aros/multiboot.h>
@@ -152,6 +150,7 @@ extern void Exec_Dispatch_FPU();
 extern void Exec_Switch_SSE();
 extern void Exec_PrepareContext_SSE();
 extern void Exec_Dispatch_SSE();
+extern void Exec_CopyMem_SSE();
 
 extern ULONG Exec_MakeFunctions(APTR, APTR, APTR, APTR);
 
@@ -1006,6 +1005,9 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 	        SetFunction(&ExecBase->LibNode, -6*LIB_VECTSIZE, AROS_SLIB_ENTRY(PrepareContext_SSE, Exec));
 	        SetFunction(&ExecBase->LibNode, -9*LIB_VECTSIZE, AROS_SLIB_ENTRY(Switch_SSE, Exec));
 	        SetFunction(&ExecBase->LibNode, -10*LIB_VECTSIZE, AROS_SLIB_ENTRY(Dispatch_SSE, Exec));
+	        SetFunction(&ExecBase->LibNode, -10*LIB_VECTSIZE, AROS_SLIB_ENTRY(Dispatch_SSE, Exec));
+		SetFunction(&ExecBase->LibNode, -104*LIB_VECTSIZE, AROS_SLIB_ENTRY(CopyMem_SSE, Exec));
+		SetFunction(&ExecBase->LibNode, -105*LIB_VECTSIZE, AROS_SLIB_ENTRY(CopyMem_SSE, Exec));
 		/* tell the CPU that we will support SSE */
 		wrcr(cr4, rdcr(cr4) | (3 << 9));
 		/* Clear the EM and MP flags of CR0 */
