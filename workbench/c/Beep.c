@@ -17,7 +17,7 @@
     SYNOPSIS
 
     LOCATION
-	Sys:C
+	C:
 
     FUNCTION
 	BEEP produces a beep via Intuition DisplayBeep(NULL).

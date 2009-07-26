@@ -11,7 +11,7 @@
 	(N/A)
 
     LOCATION
-	Sys:c
+	C:
 
     FUNCTION
            Shut down AROS and power off the machine.

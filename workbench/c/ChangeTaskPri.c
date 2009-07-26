@@ -18,7 +18,7 @@
 	PRI=PRIORITY/A/N,PROCESS/K/N
 
     LOCATION
-	Sys:c
+	C:
 
     FUNCTION
 	The ChangeTaskPri command is used to change the current run 
