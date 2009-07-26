@@ -18,7 +18,7 @@
 
     LOCATION
 
-        Workbench:C
+        C:
 
     FUNCTION
 

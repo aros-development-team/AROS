@@ -18,7 +18,7 @@
 	DRIVE/A,ON/S,OFF/S,PASSKEY
 
     LOCATION
-	Sys:c
+	C:
 
     FUNCTION
 	Lock will cause the specified device or partition to be made write-

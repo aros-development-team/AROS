@@ -18,7 +18,7 @@
 	NUMBERS/N/M
 
     LOCATION
-	INTERNAL
+	C:
 
     FUNCTION
 	Fault prints the message corresponding with the error number

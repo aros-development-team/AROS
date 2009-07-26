@@ -18,7 +18,7 @@
         PROCESS/N,PORT,NAME/K,ALL/S,C/S,D/S,E/S,F/S
 
     LOCATION
-        Sys:c
+        C:
 
     FUNCTION
         BREAK sends one or more signals to a CLI process.

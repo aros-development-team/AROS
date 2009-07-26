@@ -18,7 +18,7 @@
 
     LOCATION
 
-        Sys:c
+        C:
 
     FUNCTION
 
