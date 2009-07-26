@@ -186,12 +186,10 @@ void vesaDoRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG 
 
 void vesaRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2)
 {
-    begin_meas("refreh area");
     if (data->data->use_updaterect == FALSE)
     {
     	vesaDoRefreshArea(data, x1, y1, x2, y2);
     }
-    end_meas;
 }
 
 #endif
