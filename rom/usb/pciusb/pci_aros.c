@@ -738,7 +738,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                                  hc->hc_NumPorts));
 
                     KPRINTF(20, ("Powerswitching: %s %s\n",
-                                 hubdesca & OHAF_NOPOWERSWITCH ? "available" : "always on",
+                                 hubdesca & OHAF_NOPOWERSWITCH ? "Always on" : "Available",
                                  hubdesca & OHAF_INDIVIDUALPS ? "per port" : "global"));
 
                     // disable BIOS legacy support
@@ -828,18 +828,22 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, OCLF_PERIODICENABLE|OCLF_CTRLENABLE|OCLF_BULKENABLE|OCLF_USBRESET);
                     SYNC;
 
-                    if(!(hubdesca & OHAF_INDIVIDUALPS))
+                    // make sure the ports are on with chipset quirk workaround
+                    hubdesca = READREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA);
+                    WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA, hubdesca|OHAF_NOOVERCURRENT);
+                    WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBSTATUS, OHSF_POWERHUB);
+                    if((hubdesca & OHAF_NOPOWERSWITCH) || (!(hubdesca & OHAF_INDIVIDUALPS)))
                     {
                         KPRINTF(20, ("Individual power switching not available, turning on all ports!\n"));
                         WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCB, 0);
-                        WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBSTATUS, OHSF_POWERHUB);
                     } else {
                         KPRINTF(20, ("Enabling individual power switching\n"));
                         WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCB, ((2<<hc->hc_NumPorts)-2)<<OHBS_PORTPOWERCTRL);
-                        WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBSTATUS, OHSF_POWERHUB);
                     }
 
                     uhwDelayMS(50, hu, hd);
+                    WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA, hubdesca);
+
                     CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, OCLF_PERIODICENABLE|OCLF_CTRLENABLE|OCLF_BULKENABLE|OCLF_USBOPER);
                     SYNC;
 
