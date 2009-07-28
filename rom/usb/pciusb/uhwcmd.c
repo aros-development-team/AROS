@@ -1437,7 +1437,6 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq,
     if(unit->hu_RootPortChanges)
     {
         KPRINTF(1, ("Immediate Portchange map %04lx\n", unit->hu_RootPortChanges));
-
         if((unit->hu_RootHubPorts < 8) || (ioreq->iouh_Length == 1))
         {
             *((UBYTE *) ioreq->iouh_Data) = unit->hu_RootPortChanges;
@@ -2032,18 +2031,15 @@ void uhwCheckRootHubChanges(struct PCIUnit *unit)
         while(((struct Node *) ioreq)->ln_Succ)
         {
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-            if((ioreq->iouh_Length > 0) || (unit->hu_RootHubPorts < 8))
+            if((unit->hu_RootHubPorts < 8) || (ioreq->iouh_Length == 1))
             {
                 *((UBYTE *) ioreq->iouh_Data) = unit->hu_RootPortChanges;
                 ioreq->iouh_Actual = 1;
-            }
-            else if(ioreq->iouh_Length > 1)
-            {
+            } else {
                 ((UBYTE *) ioreq->iouh_Data)[0] = unit->hu_RootPortChanges;
                 ((UBYTE *) ioreq->iouh_Data)[1] = unit->hu_RootPortChanges>>8;
                 ioreq->iouh_Actual = 2;
             }
-
             ReplyMsg(&ioreq->iouh_Req.io_Message);
             ioreq = (struct IOUsbHWReq *) unit->hu_RHIOQueue.lh_Head;
         }
@@ -4071,8 +4067,16 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         }
         if(!hc->hc_Online)
         {
+            if(READREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS) & OISF_HUBCHANGE)
+            {
+                // if the driver is not online and the controller has a broken
+                // hub change interrupt, make sure we don't run into infinite
+                // interrupt by disabling the interrupt bit
+                WRITEREG32_LE(hc->hc_RegBase, OHCI_INTDIS, OISF_HUBCHANGE);
+            }
             return;
         }
+        WRITEREG32_LE(hc->hc_RegBase, OHCI_INTEN, OISF_HUBCHANGE);
         if(intr & OISF_FRAMECOUNTOVER)
         {
             hc->hc_FrameCounter |= 0x7fff;
@@ -4085,6 +4089,17 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
             UWORD hciport;
             ULONG oldval;
             UWORD portreg = OHCI_PORTSTATUS;
+            BOOL clearbits = FALSE;
+
+            if(READREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS) & OISF_HUBCHANGE)
+            {
+                // some OHCI implementations will keep the interrupt bit stuck until
+                // all port changes have been cleared, which is wrong according to the
+                // OHCI spec. As a workaround we will clear all change bits, which should
+                // be no problem as the port changes are reflected in the PortChangeMap
+                // array.
+                clearbits = TRUE;
+            }
             for(hciport = 0; hciport < hc->hc_NumPorts; hciport++, portreg += 4)
             {
                 oldval = READREG32_LE(hc->hc_RegBase, portreg);
@@ -4108,6 +4123,11 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
                 {
                     hc->hc_PortChangeMap[hciport] |= UPSF_PORT_SUSPEND;
                 }
+                if(clearbits)
+                {
+                    WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_CONNECTCHANGE|OHPF_ENABLECHANGE|OHPF_RESUMEDTX|OHPF_OVERCURRENTCHG|OHPF_RESETCHANGE);
+                }
+
                 KPRINTF(20, ("PCI Int Port %ld (glob %ld) Change %08lx\n", hciport, hc->hc_PortNum20[hciport] + 1, oldval));
                 if(hc->hc_PortChangeMap[hciport])
                 {
@@ -4115,6 +4135,12 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
                 }
             }
             uhwCheckRootHubChanges(unit);
+            if(clearbits)
+            {
+                // again try to get rid of any bits that may be causing the interrupt
+                WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBSTATUS, OHSF_OVERCURRENTCHG);
+                WRITEREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS, OISF_HUBCHANGE);
+            }
         }
         if(intr & OISF_DONEHEAD)
         {
