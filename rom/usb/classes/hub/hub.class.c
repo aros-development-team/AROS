@@ -430,7 +430,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubTask))
         {
             if(nch->nch_Running && (!nch->nch_IOStarted))
             {
-                psdSendPipe(nch->nch_EP1Pipe, nch->nch_PortChanges, (nch->nch_NumPorts+7)>>3);
+                psdSendPipe(nch->nch_EP1Pipe, nch->nch_PortChanges, (nch->nch_NumPorts+8)>>3);
                 nch->nch_IOStarted = TRUE;
             }
             sigs = Wait(sigmask);
@@ -1362,7 +1362,7 @@ void GM_UNIQUENAME(nHandleHubMethod)(struct NepClassHub *nch, struct NepHubMsg *
             if(!nch->nch_Running)
             {
                 psdWaitPipe(nch->nch_EP1Pipe);
-                psdSendPipe(nch->nch_EP1Pipe, nch->nch_PortChanges, (nch->nch_NumPorts+7)>>3);
+                psdSendPipe(nch->nch_EP1Pipe, nch->nch_PortChanges, (nch->nch_NumPorts+8)>>3);
                 nch->nch_Running = TRUE;
             }
             nhm->nhm_Result = TRUE;
