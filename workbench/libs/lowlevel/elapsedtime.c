@@ -23,7 +23,7 @@
       AROS_LHA(struct EClockVal *, context, A0),
 
 /*  LOCATION */
-      struct LowLevelBase *, LowLevelBase, 22, LowLevel)
+      struct LowLevelBase *, LowLevelBase, 17, LowLevel)
 
 /*  NAME
  

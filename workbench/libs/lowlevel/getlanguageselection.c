@@ -50,7 +50,7 @@ static char * langlist[] =
 /*  SYNOPSIS */ 
 
 /*  LOCATION */
-      struct LowLevelBase *, LowLevelBase, 11, LowLevel)
+      struct LowLevelBase *, LowLevelBase, 6, LowLevel)
 
 /*  NAME
  

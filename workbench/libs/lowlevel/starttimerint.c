@@ -23,7 +23,7 @@
       AROS_LHA(BOOL , continuous, D1),
 
 /*  LOCATION */
-      struct LowLevelBase *, LowLevelBase, 21, LowLevel)
+      struct LowLevelBase *, LowLevelBase, 16, LowLevel)
 
 /*  NAME
  
