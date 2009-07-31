@@ -652,7 +652,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     newval &= ~(UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                     newval |= UHPF_PORTRESET;
                                     WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
-                                    uhwDelayMS(50, unit, base);
+                                    uhwDelayMS(25, unit, base);
                                     newval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                     KPRINTF(10, ("Reset=%s\n", newval & UHPF_PORTRESET ? "GOOD" : "BAD!"));
                                     // like windows does it
