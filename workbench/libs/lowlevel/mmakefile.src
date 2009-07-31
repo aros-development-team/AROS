@@ -13,6 +13,7 @@ FUNCS	:= \
 	remkbint \
 	remtimerint \
 	remvblankint \
+	setjoyportattrsa \
 	starttimerint \
 	stoptimerint
 
