@@ -113,6 +113,9 @@ MSG_SIZE4 (//)
 MSG_SIZE8 (//)
 %s at 0x%08x (size 0x%08x)
 ;
+MSG_SAVETORAMDISK (//)
+Save Device Information to RAM Disk
+;
 MSG_UNUSED (//)
 --unused--
 ;
