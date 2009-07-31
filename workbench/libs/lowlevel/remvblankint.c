@@ -22,7 +22,7 @@
       AROS_LHA(APTR, intHandle, A1),
 
 /*  LOCATION */
-      struct LowLevelBase *, LowLevelBase, 24, LowLevel)
+      struct LowLevelBase *, LowLevelBase, 19, LowLevel)
 
 /*  FUNCTION
 

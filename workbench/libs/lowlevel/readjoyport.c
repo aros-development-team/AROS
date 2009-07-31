@@ -21,7 +21,7 @@
       AROS_LHA(ULONG, port, D0),
 
 /*  LOCATION */
-      struct LowLevelBase *, LowLevelBase, 10, LowLevel)
+      struct LowLevelBase *, LowLevelBase, 5, LowLevel)
 
 /*  NAME
  

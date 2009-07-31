@@ -22,7 +22,7 @@
       AROS_LHA(UBYTE		, arraySize	, D1),
 
 /*  LOCATION */
-      struct LowLevelBase *, LowLevelBase, 14, LowLevel)
+      struct LowLevelBase *, LowLevelBase, 9, LowLevel)
 
 /*  NAME
  
