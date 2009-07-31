@@ -89,17 +89,17 @@ static int libExpunge(LIBBASETYPEPTR nh)
     {
         APTR ourvec;
         Disable();
-        ourvec = SetFunction(nh->nh_LowLevelBase, -0x1e, nh->nh_LLOldReadJoyPort);
+        ourvec = SetFunction(nh->nh_LowLevelBase, -0x1e / 6 * LIB_VECTSIZE, nh->nh_LLOldReadJoyPort);
         if(ourvec != AROS_SLIB_ENTRY(nReadJoyPort, nep))
         {
-            SetFunction(nh->nh_LowLevelBase, -0x1e, ourvec);
+            SetFunction(nh->nh_LowLevelBase, -0x1e / 6 * LIB_VECTSIZE, ourvec);
             Enable();
             return(FALSE); /* we couldn't remove the patch! */
         }
-        ourvec = SetFunction(nh->nh_LowLevelBase, -0x84, nh->nh_LLOldSetJoyPortAttrsA);
+        ourvec = SetFunction(nh->nh_LowLevelBase, -0x84 / 6 * LIB_VECTSIZE, nh->nh_LLOldSetJoyPortAttrsA);
         if(ourvec != AROS_SLIB_ENTRY(nSetJoyPortAttrsA, nep))
         {
-            SetFunction(nh->nh_LowLevelBase, -0x84, ourvec);
+            SetFunction(nh->nh_LowLevelBase, -0x84 / 6 * LIB_VECTSIZE, ourvec);
             Enable();
             return(FALSE); /* we couldn't remove the patch! */
         }
@@ -450,8 +450,8 @@ void nInstallLLPatch(struct NepHidBase *nh)
         if((nh->nh_LowLevelBase = OpenLibrary("lowlevel.library", 40)))
         {
             Disable();
-            nh->nh_LLOldReadJoyPort = SetFunction(nh->nh_LowLevelBase, -0x1e, AROS_SLIB_ENTRY(nReadJoyPort, nep));
-            nh->nh_LLOldSetJoyPortAttrsA = SetFunction(nh->nh_LowLevelBase, -0x84, AROS_SLIB_ENTRY(nSetJoyPortAttrsA, nep));
+            nh->nh_LLOldReadJoyPort = SetFunction(nh->nh_LowLevelBase, -0x1e / 6 * LIB_VECTSIZE, AROS_SLIB_ENTRY(nReadJoyPort, nep));
+            nh->nh_LLOldSetJoyPortAttrsA = SetFunction(nh->nh_LowLevelBase, -0x84 / 6 * LIB_VECTSIZE, AROS_SLIB_ENTRY(nSetJoyPortAttrsA, nep));
             Enable();
         }
     }
