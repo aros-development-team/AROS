@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2009, The AROS Development Team.
+    Copyright (C) 2003-2009, The AROS Development Team.
     $Id$
 */
 
@@ -24,15 +24,18 @@
 #include <stdlib.h>
 #include "locale.h"
 #include "support.h"
+#include "saveinfo.h"
 
 #define APPNAME "PCITool"
 #define VERSION "PCITool 0.3 (13.5.2009)"
+#define IDB_SAVE 12
 
 static const char version[] = "$VER: " VERSION "\n";
 
 struct Library *OOPBase = NULL;
 struct Library *MUIMasterBase = NULL;
 struct UtilityBase *UtilityBase = NULL;
+struct PCIInfo SaveDeviceInfo;
 
 OOP_AttrBase __IHidd_PCIDev;
 OOP_AttrBase __IHidd_PCIDrv;
@@ -123,6 +126,7 @@ Object *_Class, *SubClass, *Interface, *IRQLine;
 Object *ROMBase, *ROMSize;
 Object *RangeList;
 Object *Status;
+Object *SaveInfo;
 
 struct Hook pci_hook;
 struct Hook display_hook;
@@ -205,53 +209,63 @@ AROS_UFH3(void, select_function,
 	OOP_GetAttr(obj, aHidd_PCIDevice_Driver, (APTR)&drv);
 	OOP_GetAttr(drv, aHidd_Name, (APTR)&str);
 	set(StrDriverName, MUIA_Text_Contents, str);
+	strcpy(SaveDeviceInfo.Driver_name, str); //Save Debug Info
 	OOP_GetAttr(drv, aHidd_HardwareName, (APTR)&str);
 	set(StrDriverHWName, MUIA_Text_Contents, str);
+	strcpy(SaveDeviceInfo.Hardware_info, str); //Save Debug Info
 	OOP_GetAttr(drv, aHidd_PCIDriver_DirectBus, (APTR)&val);
 	set(StrDriverDirect, MUIA_Text_Contents, (IPTR)((val)?_(MSG_YES):_(MSG_NO)));
-
+	strcpy(SaveDeviceInfo.Direct_bus, (IPTR)((val)?_(MSG_YES):_(MSG_NO))); //Save Debug Info
 	OOP_GetAttr(obj, aHidd_PCIDevice_ClassDesc, (APTR)&class);
 	OOP_GetAttr(obj, aHidd_PCIDevice_SubClassDesc, (APTR)&subclass);
 	OOP_GetAttr(obj, aHidd_PCIDevice_InterfaceDesc, (APTR)&interface);
 	snprintf(buf, 79, "%s %s %s", class, subclass, interface);
 	set(StrDescription, MUIA_Text_Contents, buf);
-	
+	strcpy(SaveDeviceInfo.Description, buf); //Save Debug Info
 	OOP_GetAttr(obj, aHidd_PCIDevice_VendorID, (APTR)&val);
 	snprintf(buf, 79, "0x%04x", val);
 	set(VendorID, MUIA_Text_Contents, buf);
+	strcpy(SaveDeviceInfo.VendorID, buf);
 	set(VendorName, MUIA_Text_Contents, pciids_GetVendorName(val, buf, 79));
 	vendor = val;
-
+	strcpy(SaveDeviceInfo.Vendor_name, pciids_GetVendorName(val, buf, 79)); //Save Debug Info
 	OOP_GetAttr(obj, aHidd_PCIDevice_ProductID, (APTR)&val);
 	snprintf(buf, 79, "0x%04x", val);
 	set(ProductID, MUIA_Text_Contents, buf);
+	strcpy(SaveDeviceInfo.ProductID, buf); //Save Debug Info
 	set(ProductName, MUIA_Text_Contents,
 	    pciids_GetDeviceName(vendor, val, buf, 79));
 	product = val;
-
+	strcpy(SaveDeviceInfo.Product_name, pciids_GetDeviceName(vendor, val, buf, 79)); 
+	
 	OOP_GetAttr(obj, aHidd_PCIDevice_SubsystemVendorID, (APTR)&val);
 	subvendor = val;
 	OOP_GetAttr(obj, aHidd_PCIDevice_SubsystemID, (APTR)&val);
 	subdevice = val;
 	set(SubsystemName, MUIA_Text_Contents,
 	    pciids_GetSubDeviceName(vendor, product, subvendor, subdevice,
-				    buf, 79));
-
+				    buf, 79));	
+	strcpy(SaveDeviceInfo.Subsystem, pciids_GetSubDeviceName(vendor, product, subvendor, subdevice, buf, 79));
+ 
 	OOP_GetAttr(obj, aHidd_PCIDevice_RevisionID, (APTR)&val);
 	snprintf(buf, 79, "0x%04x", val);
 	set(RevisionID, MUIA_Text_Contents, buf);
+	strcpy(SaveDeviceInfo.RevisionID, buf); //Save Debug Info
 
 	OOP_GetAttr(obj, aHidd_PCIDevice_Interface, (APTR)&val);
 	snprintf(buf, 79, "0x%02x", val);
 	set(Interface, MUIA_Text_Contents, buf);
+	strcpy(SaveDeviceInfo.Interface, buf); //Save Debug Info
 
 	OOP_GetAttr(obj, aHidd_PCIDevice_Class, (APTR)&val);
 	snprintf(buf, 79, "0x%02x", val);
 	set(_Class, MUIA_Text_Contents, buf);
+	strcpy(SaveDeviceInfo.Class, buf); //Save Debug Info
 
 	OOP_GetAttr(obj, aHidd_PCIDevice_SubClass, (APTR)&val);
 	snprintf(buf, 79, "0x%02x", val);
 	set(SubClass, MUIA_Text_Contents, buf);
+	strcpy(SaveDeviceInfo.Subclass, buf); //Save Debug Info
 
 	OOP_GetAttr(obj, aHidd_PCIDevice_IRQLine, (APTR)&val);
 	OOP_GetAttr(obj, aHidd_PCIDevice_INTLine, (APTR)&val2);
@@ -261,6 +275,7 @@ AROS_UFH3(void, select_function,
 	}
 	else snprintf(buf, 79, _(MSG_NA));
 	set(IRQLine, MUIA_Text_Contents, buf);
+	strcpy(SaveDeviceInfo.IRQ, buf); //Save Debug Info
 
 	OOP_GetAttr(obj, aHidd_PCIDevice_RomBase, (APTR)&val);
 	OOP_GetAttr(obj, aHidd_PCIDevice_RomSize, (APTR)&val2);
@@ -268,17 +283,21 @@ AROS_UFH3(void, select_function,
 	if (val2)
 	{
 	    set(ROMSize, MUIA_Text_Contents, buf);
+	    strcpy(SaveDeviceInfo.ROM_Size, buf); //Save Debug Info
 	    if (val)
 	    {
 		snprintf(buf, 79, "0x%08x", val);
 		set(ROMBase, MUIA_Text_Contents, buf);
+		strcpy(SaveDeviceInfo.ROM_Base, buf); //Save Debug Info
 	    }
 	    else set(ROMBase, MUIA_Text_Contents, _(MSG_UNUSED));
 	}
 	else
 	{
 	    set(ROMBase, MUIA_Text_Contents, _(MSG_NA));
+	    strcpy(SaveDeviceInfo.ROM_Base, _(MSG_NA));
 	    set(ROMSize, MUIA_Text_Contents, _(MSG_NA));
+	    strcpy(SaveDeviceInfo.ROM_Size, _(MSG_NA));
 	}
 
 	DoMethod(RangeList, MUIM_List_Clear);
@@ -378,8 +397,16 @@ AROS_UFH3(void, select_function,
 	    snprintf(ranges[5], 59, _(MSG_IO_RANGE),
 		val, val2);
 	    DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[5], MUIV_List_Insert_Bottom);
-
+	   
 	}
+	    /*Get the entry in ranges Rangelist Listview for Textfile output*/
+	    strcpy(SaveDeviceInfo.Rangelist_0, ranges[0]);
+	    strcpy(SaveDeviceInfo.Rangelist_1, ranges[1]);
+	    strcpy(SaveDeviceInfo.Rangelist_2, ranges[2]);
+	    strcpy(SaveDeviceInfo.Rangelist_3, ranges[3]);
+	    strcpy(SaveDeviceInfo.Rangelist_4, ranges[4]);
+	    strcpy(SaveDeviceInfo.Rangelist_5, ranges[5]);
+	    
     {
 		IPTR io, mem, master, snoop, is66;
 		OOP_GetAttr(obj, aHidd_PCIDevice_isIO, (APTR)&io);
@@ -395,6 +422,7 @@ AROS_UFH3(void, select_function,
 		    snoop ? _(MSG_YES):_(MSG_NO),
 		    is66 ? _(MSG_YES):_(MSG_NO));
 		set(Status, MUIA_Text_Contents, buf);
+                strcpy(SaveDeviceInfo.Status, buf);
     }
     }
 
@@ -408,7 +436,7 @@ BOOL GUIinit()
     app = ApplicationObject,
 	    MUIA_Application_Title,	    (IPTR)APPNAME,
 	    MUIA_Application_Version,	    (IPTR)VERSION,
-	    MUIA_Application_Copyright,	    (IPTR)"© 2004-2009, The AROS Development Team",
+	    MUIA_Application_Copyright,	    (IPTR)"ï¿½ 2004-2009, The AROS Development Team",
 	    MUIA_Application_Author,	    (IPTR)"Michal Schulz",
 	    MUIA_Application_Base,	    (IPTR)APPNAME,
 	    MUIA_Application_Description,   __(MSG_DESCRIPTION),
@@ -566,6 +594,9 @@ BOOL GUIinit()
 				MUIA_Text_SetMax, FALSE,
 			    End,
 			End,
+			/*Save the displayed info into a text file in RAM:*/
+			Child, SaveInfo = SimpleButton(_(MSG_SAVETORAMDISK) ),
+			
 		    End,
 		End, // WindowContents
 	    End, // MainWindow
@@ -574,6 +605,8 @@ BOOL GUIinit()
     if (app)
     {
         /* Quit application if the windowclosegadget or the esc key is pressed. */
+	      
+	
 	
 	DoMethod(MainWindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
 	         (IPTR)app, 2, 
@@ -591,12 +624,36 @@ BOOL GUIinit()
 void loop(void)
 {
     ULONG sigs = 0;
+    ULONG id;
+    BOOL running = TRUE;
 
-    while((LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs) != MUIV_Application_ReturnID_Quit)
+	DoMethod(SaveInfo, MUIM_Notify, MUIA_Pressed, FALSE,
+                 (IPTR)app, 2,
+                 MUIM_Application_ReturnID, (ULONG)IDB_SAVE);
+
+    while(running)
     {
+	 
+ 
+
+
+		//id = DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs);
+
+           
+                switch(DoMethod(app, MUIM_Application_NewInput, &sigs)) 
+                {
+                           case IDB_SAVE:
+			   /*Saves the Info of the Displayed Device to RamDisk*/	
+                           SaveToDisk(&SaveDeviceInfo);
+                           break;
+			   case MUIV_Application_ReturnID_Quit:
+				running = FALSE;
+			   break;
+		}
+
 	if (sigs)
 	{
-	    sigs = Wait(sigs);
+	    Wait(sigs | SIGBREAKF_CTRL_C);
 	}
     }
 } /* loop(void)*/

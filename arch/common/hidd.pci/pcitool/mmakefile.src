@@ -2,7 +2,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES = main pciids support locale
+FILES = main pciids support locale saveinfo
 
 EXEDIR = $(AROSDIR)/Tools
 

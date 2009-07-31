@@ -155,6 +155,9 @@ MSG_SIZE8
 %s%s bei 0x08x (Größe 0x%08x)
 ;%s%s at 0x%08x (size 0x%08x)
 ;
+MSG_SAVETORAMDISK (//)
+Speichere Geräte Informationen nach RAM Disk
+;
 MSG_UNUSED
 unbenutzt
 ;--unused--
