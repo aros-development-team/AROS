@@ -28,8 +28,8 @@
 
 #define APPNAME "PCITool"
 #define VERSION "PCITool 0.3 (13.5.2009)"
-#define IDB_SAVE 12
-
+#define IDB_SAVE 10001
+#define IDB_SAVEALL 10002
 static const char version[] = "$VER: " VERSION "\n";
 
 struct Library *OOPBase = NULL;
@@ -126,7 +126,7 @@ Object *_Class, *SubClass, *Interface, *IRQLine;
 Object *ROMBase, *ROMSize;
 Object *RangeList;
 Object *Status;
-Object *SaveInfo;
+Object *SaveInfo, *SaveAllInfo;
 
 struct Hook pci_hook;
 struct Hook display_hook;
@@ -596,7 +596,7 @@ BOOL GUIinit()
 			End,
 			/*Save the displayed info into a text file in RAM:*/
 			Child, SaveInfo = SimpleButton(_(MSG_SAVETORAMDISK) ),
-			
+			Child, SaveAllInfo = SimpleButton(_(MSG_SAVEALLTORAMDISK) ),		
 		    End,
 		End, // WindowContents
 	    End, // MainWindow
@@ -624,12 +624,19 @@ BOOL GUIinit()
 void loop(void)
 {
     ULONG sigs = 0;
-    ULONG id;
+    ULONG entries;
+    int i = 0;
     BOOL running = TRUE;
 
+	/*Save Device Information to text file in RAM Disk*/
 	DoMethod(SaveInfo, MUIM_Notify, MUIA_Pressed, FALSE,
                  (IPTR)app, 2,
                  MUIM_Application_ReturnID, (ULONG)IDB_SAVE);
+	/*Save All Devices Information to text file in RAM Disk*/
+	DoMethod(SaveAllInfo, MUIM_Notify, MUIA_Pressed, FALSE,
+                 (IPTR)app, 2,
+                 MUIM_Application_ReturnID, (ULONG)IDB_SAVEALL);
+
 
     while(running)
     {
@@ -642,13 +649,35 @@ void loop(void)
            
                 switch(DoMethod(app, MUIM_Application_NewInput, &sigs)) 
                 {
-                           case IDB_SAVE:
-			   /*Saves the Info of the Displayed Device to RamDisk*/	
-                           SaveToDisk(&SaveDeviceInfo);
-                           break;
-			   case MUIV_Application_ReturnID_Quit:
+                        case IDB_SAVE:
+				/*Saves the Info of the Displayed Device to RamDisk*/	
+                        	SaveToDisk(&SaveDeviceInfo);
+                        break;
+			   
+			case IDB_SAVEALL:
+			   	/*Saves All PCITool Info to RamDisk*/	
+                           	OpenPCIInfoFile();
+				entries = XGET(DriverList, MUIA_List_Entries);
+				set(DriverList, MUIA_List_Active, MUIV_List_Active_Top);
+				DoMethod(DriverList, MUIM_List_Redraw,MUIV_List_Redraw_All);
+				WriteToPCIInfoFile(&SaveDeviceInfo);
+				while( i < (entries - 1))
+				{
+					
+					i = i + 1;
+					set(DriverList, MUIA_List_Active, MUIV_List_Active_Down);
+					DoMethod(DriverList,MUIM_List_Redraw,MUIV_List_Redraw_All); 
+					WriteToPCIInfoFile(&SaveDeviceInfo);	
+							
+				}
+				ClosePCIInfoFile();				
+				i = 0;
+			
+                        break;
+			
+			case MUIV_Application_ReturnID_Quit:
 				running = FALSE;
-			   break;
+			break;
 		}
 
 	if (sigs)
