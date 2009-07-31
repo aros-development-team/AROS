@@ -6,12 +6,12 @@
 #ifndef SAVEINFO_H_
 #define SAVEINFO_H_
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <proto/dos.h>
 
 
+/*Memory for the PCI Information*/
 struct PCIInfo
 {
 char Driver_name[200];
@@ -40,7 +40,15 @@ char Rangelist_5[200];
 
 };
  
+/*Save only the displayed PCI Information to RAM Disk*/
 void SaveToDisk(struct PCIInfo *DeviceInfo);
+
+/*Just Open a new Textfile in RAM Disk. No writing yet*/
+BOOL OpenPCIInfoFile(void);
+/*Writes a set of PCI Information to the Opened file*/
+void ClosePCIInfoFile(void);
+/*Closes the file opened by OpenPCIInfoFile*/
+void WriteToPCIInfoFile(struct PCIInfo *DeviceInfo);
 
 BPTR DeviceInfoFile;
 

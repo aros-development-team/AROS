@@ -116,6 +116,9 @@ MSG_SIZE8 (//)
 MSG_SAVETORAMDISK (//)
 Save Device Information to RAM Disk
 ;
+MSG_SAVEALLTORAMDISK (//)
+Save complete PCI Information to RAM Disk
+;
 MSG_UNUSED (//)
 --unused--
 ;
