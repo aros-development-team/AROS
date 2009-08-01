@@ -15,7 +15,7 @@ copy    $SOURCE_AROS      $BUILD_BASE/AROS
 copy    $SOURCE_NECESSARY $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
-execute ./configure --target=$BUILDTARGET --enable-build-type=nightly --enable-target-variant=tiny --with-optimization="-Os -fno-defer-pop -mpreferred-stack-boundary=4" --with-theme=os3.1 --with-iconset=Mason
+execute ./configure --target=$BUILDTARGET --enable-build-type=nightly --enable-target-variant=tiny --with-optimization="-Os -fno-defer-pop -mpreferred-stack-boundary=4" --with-theme=os3.1 --with-iconset=Mason --with-bootloader=grub
 make
 make    bootdisk systemdisk
 
