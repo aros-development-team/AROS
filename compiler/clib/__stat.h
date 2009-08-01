@@ -2,7 +2,7 @@
 #define ___STAT_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: stat() internals - header file
@@ -14,6 +14,7 @@
 
 #include <dos/dos.h>
 
-int    __stat(BPTR lock, struct stat *sb);
+int __stat(BPTR lock, struct stat *sb);
+int __stat_from_path(const char *path, struct stat *sb);
 
 #endif

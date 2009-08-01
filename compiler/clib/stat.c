@@ -59,7 +59,7 @@
     BUGS
 
     SEE ALSO
-	fstat()
+	lstat(), fstat()
 
     INTERNALS
 	Value of st_ino field is computed as hash from the canonical path of
@@ -81,7 +81,7 @@
     BPTR lock;
 
     /* check for empty path before potential conversion from "." to "" */
-    if (path && *path == '\0')
+    if (__doupath && path && *path == '\0')
     {
         errno = ENOENT;
         return -1;
@@ -100,9 +100,8 @@
 	       info about it is to find it in the parent directory with the ExNext() function
             */
 
-	    /* return an error for now */
-	    errno = EACCES;
-	    return -1;
+            SetIoErr(0);
+            return __stat_from_path(path, sb);
         }
 
 	errno = IoErr2errno(IoErr());

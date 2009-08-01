@@ -83,11 +83,7 @@ struct stat
 __BEGIN_DECLS
 
 int stat(const char * restrict path, struct stat * restrict sb);
-/*
-    can this be implemented in AROS?
-   int lstat(const char * restrict path, struct stat * restrict sb);
-*/
-#define lstat stat
+int lstat(const char * restrict path, struct stat * restrict sb);
 int fstat(int fd, struct stat *sb);
 
 mode_t umask(mode_t numask);
