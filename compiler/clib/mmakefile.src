@@ -253,6 +253,7 @@ SHARED	:= \
         localtime_r \
 	lrand48 \
 	lseek \
+        lstat \
 	malloc \
 	mkdir \
 	mknod \
