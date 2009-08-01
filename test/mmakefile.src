@@ -94,7 +94,8 @@ COMMONTESTFILES := \
     aroscprivdata \
     childwait \
     patchrgbconv \
-    childstatus
+    childstatus \
+    joystick
 
 HOSTEDTESTFILES :=  \
     hostlib
