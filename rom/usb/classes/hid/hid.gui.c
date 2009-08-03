@@ -16,7 +16,7 @@
 #define ListviewObject MUIOBJMACRO_START("NListview.mcc")
 #endif
 
-extern const STRPTR libname;
+extern const STRPTR GM_UNIQUENAME(libname);
 
 /* /// "Strings" */
 static char *MainGUIPages[] = { "General", "Keyboard", "Action", NULL };
@@ -145,7 +145,7 @@ ULONG nRevLookup(UWORD id, UWORD def, UWORD *field)
 /* \\\ */
 
 /* /// "nGUITask()" */
-AROS_UFH0(void, nGUITask)
+AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
 {
     AROS_USERFUNC_INIT
 
@@ -178,34 +178,34 @@ AROS_UFH0(void, nGUITask)
     if(!(MUIMasterBase = OpenLibrary(MUIMASTER_NAME, MUIMASTER_VMIN)))
     {
         KPRINTF(10, ("Couldn't open muimaster.library.\n"));
-        nGUITaskCleanup(nch);
+        GM_UNIQUENAME(nGUITaskCleanup)(nch);
         return;
     }
 
     if(!(IntuitionBase = OpenLibrary("intuition.library", 39)))
     {
         KPRINTF(10, ("Couldn't open intuition.library.\n"));
-        nGUITaskCleanup(nch);
+        GM_UNIQUENAME(nGUITaskCleanup)(nch);
         return;
     }
     if(!(KeymapBase = OpenLibrary("keymap.library", 39)))
     {
         KPRINTF(10, ("Couldn't open keymap.library.\n"));
-        nGUITaskCleanup(nch);
+        GM_UNIQUENAME(nGUITaskCleanup)(nch);
         return;
     }
     if(!(ps = OpenLibrary("poseidon.library", 4)))
     {
         KPRINTF(10, ("Couldn't open poseidon.library.\n"));
-        nGUITaskCleanup(nch);
+        GM_UNIQUENAME(nGUITaskCleanup)(nch);
         return;
     }
 
-    nch->nch_ActionClass = MUI_CreateCustomClass(NULL, MUIC_Area  , NULL, sizeof(struct ActionData), ActionDispatcher);
+    nch->nch_ActionClass = MUI_CreateCustomClass(NULL, MUIC_Area  , NULL, sizeof(struct ActionData), GM_UNIQUENAME(ActionDispatcher));
     if(!nch->nch_ActionClass)
     {
         KPRINTF(10, ("Couldn't create ActionClass.\n"));
-        nGUITaskCleanup(nch);
+        GM_UNIQUENAME(nGUITaskCleanup)(nch);
         return;
     }
     for(count = 0; count < 128; count++)
@@ -282,13 +282,13 @@ AROS_UFH0(void, nGUITask)
     nch->nch_ItemListDisplayHook.h_Data = nch;
     nch->nch_ActionListDisplayHook.h_Data = nch;
 
-    nch->nch_USBKeyListDisplayHook.h_Entry = (APTR) USBKeyListDisplayHook;
-    nch->nch_ReportListDisplayHook.h_Entry = (APTR) ReportListDisplayHook;
-    nch->nch_ItemListDisplayHook.h_Entry = (APTR) ItemListDisplayHook;
-    nch->nch_ActionListDisplayHook.h_Entry = (APTR) ActionListDisplayHook;
+    nch->nch_USBKeyListDisplayHook.h_Entry = (APTR) GM_UNIQUENAME(USBKeyListDisplayHook);
+    nch->nch_ReportListDisplayHook.h_Entry = (APTR) GM_UNIQUENAME(ReportListDisplayHook);
+    nch->nch_ItemListDisplayHook.h_Entry = (APTR) GM_UNIQUENAME(ItemListDisplayHook);
+    nch->nch_ActionListDisplayHook.h_Entry = (APTR) GM_UNIQUENAME(ActionListDisplayHook);
 
     nch->nch_App = ApplicationObject,
-        MUIA_Application_Title      , libname,
+        MUIA_Application_Title      , GM_UNIQUENAME(libname),
         MUIA_Application_Version    , VERSION_STRING,
         MUIA_Application_Copyright  , "©2002-2009 Chris Hodges",
         MUIA_Application_Author     , "Chris Hodges <chrisly@platon42.de>",
@@ -374,8 +374,8 @@ AROS_UFH0(void, nGUITask)
 
         SubWindow, nch->nch_MainWindow = WindowObject,
             MUIA_Window_ID   , MAKE_ID('M','A','I','N'),
-            MUIA_Window_Title, libname,
-            MUIA_HelpNode, libname,
+            MUIA_Window_Title, GM_UNIQUENAME(libname),
+            MUIA_HelpNode, GM_UNIQUENAME(libname),
 
             WindowContents, VGroup,
                 Child, nch->nch_ActionObj = NewObject(nch->nch_ActionClass->mcc_Class, 0, MUIA_ShowMe, FALSE, TAG_END),
@@ -1258,7 +1258,7 @@ AROS_UFH0(void, nGUITask)
     if(!nch->nch_App)
     {
         KPRINTF(10, ("Couldn't create application\n"));
-        nGUITaskCleanup(nch);
+        GM_UNIQUENAME(nGUITaskCleanup)(nch);
         return;
     }
 
@@ -1595,7 +1595,7 @@ AROS_UFH0(void, nGUITask)
         get(nch->nch_MainWindow, MUIA_Window_Open, &isopen);
         if(!(isopen || iconify))
         {
-            nGUITaskCleanup(nch);
+            GM_UNIQUENAME(nGUITaskCleanup)(nch);
             return;
         }
         nch->nch_TrackingSignal = AllocSignal(-1);
@@ -1711,14 +1711,14 @@ AROS_UFH0(void, nGUITask)
         nch->nch_TrackingSignal = -1;
         set(nch->nch_MainWindow, MUIA_Window_Open, FALSE);
     }
-    nGUITaskCleanup(nch);
+    GM_UNIQUENAME(nGUITaskCleanup)(nch);
 
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
 
 /* /// "nGUITaskCleanup()" */
-void nGUITaskCleanup(struct NepClassHid *nch)
+void GM_UNIQUENAME(nGUITaskCleanup)(struct NepClassHid *nch)
 {
     UWORD count;
     struct NepHidGItem *nhgi;
@@ -1837,7 +1837,7 @@ void nFreeGItem(struct NepClassHid *nch, struct NepHidGItem *nhgi)
 /* \\\ */
 
 /* /// "USBKeyListDisplayHook()" */
-AROS_UFH3(LONG, USBKeyListDisplayHook,
+AROS_UFH3(LONG, GM_UNIQUENAME(USBKeyListDisplayHook),
           AROS_UFHA(struct Hook *, hook, A0),
           AROS_UFHA(char **, strarr, A2),
           AROS_UFHA(struct HidUsageIDMap *, hum, A1))
@@ -1857,7 +1857,7 @@ AROS_UFH3(LONG, USBKeyListDisplayHook,
 /* \\\ */
 
 /* /// "ReportListDisplayHook()" */
-AROS_UFH3(LONG, ReportListDisplayHook,
+AROS_UFH3(LONG, GM_UNIQUENAME(ReportListDisplayHook),
           AROS_UFHA(struct Hook *, hook, A0),
           AROS_UFHA(char **, strarr, A2),
           AROS_UFHA(struct NepHidCollection *, nhc, A1))
@@ -1897,7 +1897,7 @@ AROS_UFH3(LONG, ReportListDisplayHook,
 /* \\\ */
 
 /* /// "ItemListDisplayHook()" */
-AROS_UFH3(LONG, ItemListDisplayHook,
+AROS_UFH3(LONG, GM_UNIQUENAME(ItemListDisplayHook),
           AROS_UFHA(struct Hook *, hook, A0),
           AROS_UFHA(char **, strarr, A2),
           AROS_UFHA(struct NepHidGItem *, nhgi, A1))
@@ -1994,7 +1994,7 @@ AROS_UFH3(LONG, ItemListDisplayHook,
 /* \\\ */
 
 /* /// "ActionListDisplayHook()" */
-AROS_UFH3(LONG, ActionListDisplayHook,
+AROS_UFH3(LONG, GM_UNIQUENAME(ActionListDisplayHook),
           AROS_UFHA(struct Hook *, hook, A0),
           AROS_UFHA(char **, strarr, A2),
           AROS_UFHA(struct NepHidAction *, nha, A1))
@@ -2299,7 +2299,7 @@ AROS_UFH3(LONG, ActionListDisplayHook,
 /* \\\ */
 
 /* /// "ActionDispatcher()" */
-AROS_UFH3(IPTR, ActionDispatcher,
+AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
           AROS_UFHA(struct IClass *, cl, A0),
           AROS_UFHA(Object *, obj, A2),
           AROS_UFHA(Msg, msg, A1))
@@ -2347,11 +2347,11 @@ AROS_UFH3(IPTR, ActionDispatcher,
 
             if(msg->MethodID == MUIM_Action_DefaultConfig)
             {
-                pic = psdGetClsCfg(libname);
+                pic = psdGetClsCfg(GM_UNIQUENAME(libname));
                 if(!pic)
                 {
-                    psdSetClsCfg(libname, NULL);
-                    pic = psdGetClsCfg(libname);
+                    psdSetClsCfg(GM_UNIQUENAME(libname), NULL);
+                    pic = psdGetClsCfg(GM_UNIQUENAME(libname));
                 }
                 if(pic)
                 {
@@ -2362,11 +2362,11 @@ AROS_UFH3(IPTR, ActionDispatcher,
             }
             if(nch->nch_Interface)
             {
-                pic = psdGetUsbDevCfg(libname, nch->nch_DevIDString, nch->nch_IfIDString);
+                pic = psdGetUsbDevCfg(GM_UNIQUENAME(libname), nch->nch_DevIDString, nch->nch_IfIDString);
                 if(!pic)
                 {
-                    psdSetUsbDevCfg(libname, nch->nch_DevIDString, nch->nch_IfIDString, NULL);
-                    pic = psdGetUsbDevCfg(libname, nch->nch_DevIDString, nch->nch_IfIDString);
+                    psdSetUsbDevCfg(GM_UNIQUENAME(libname), nch->nch_DevIDString, nch->nch_IfIDString, NULL);
+                    pic = psdGetUsbDevCfg(GM_UNIQUENAME(libname), nch->nch_DevIDString, nch->nch_IfIDString);
                 }
                 if(pic)
                 {

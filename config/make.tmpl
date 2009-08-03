@@ -1235,7 +1235,7 @@ BD_KAUTOLIB := workbench dos cybergraphics intuition layers graphics oop utility
     expansion keymap
 BD_KBASE := WorkbenchBase DOSBase CyberGfxBase IntuitionBase LayersBase \
     GfxBase OOPBase UtilityBase ExpansionBase KeymapBase
-BD_KLIB := hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit
+BD_KLIB := hiddgraphicsstubs hiddstubs amiga arossupport rom mui arosm autoinit libinit
 BD_KOBJ_LIBS := $(filter-out $(BD_KLIB),%(uselibs)) $(BD_KAUTOLIB)
 $(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS)
 $(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_KBASE))
@@ -1493,7 +1493,7 @@ BD_KAUTOLIB := workbench dos cybergraphics intuition layers graphics oop utility
     expansion keymap
 BD_KBASE := WorkbenchBase DOSBase CyberGfxBase IntuitionBase LayersBase \
     GfxBase OOPBase UtilityBase ExpansionBase KeymapBase
-BD_KLIB := hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit
+BD_KLIB := hiddgraphicsstubs hiddstubs amiga arossupport rom mui arosm autoinit libinit
 BD_KOBJ_LIBS := $(filter-out $(BD_KLIB),%(uselibs)) $(BD_KAUTOLIB)
 $(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS)
 $(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_KBASE))

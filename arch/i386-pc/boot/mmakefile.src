@@ -35,13 +35,14 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #MM     workbench-hidd-graphics-kobj \
 ##MM     kernel-cpu-pc-i386-kobj \
 #MM	kernel-pc-i386-drivers \
-#MM     kernel-contrib-necessary-pc-i386
+#MM     kernel-contrib-necessary-pc-i386 \
+#MM     kernel-usb-pc-i386
 
 #MM- kernel-contrib-necessary-pc-i386 : contrib-necessary-pc-i386
 
 #MM- includes-pc-i386 : includes-common-i386 includes-copy-pc-i386 includes-copy
 
-USELIBS	:= hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit
+USELIBS	:= hiddgraphicsstubs hiddstubs amiga arossupport rom mui arosm autoinit libinit
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
@@ -51,6 +52,7 @@ KLIBS   := exec boot aros dos graphics utility intuition keymap \
 KDEVS   := timer input keyboard console gameport ata trackdisk
 KHNDLRS := con nil packet amberram cdrom afs sfs
 KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah pci pcipc
+KUSB    := poseidon_library.o hub_class.o hid_class.o massstorage_class.o pciusb_device.o usbromstartup_resource.o
 ##Disabled RSRC cpu isapnp
 ##Disabled HIDD vmwaregfx usbuhci
 
@@ -59,7 +61,8 @@ KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
          $(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
          $(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
          $(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) )) \
-         $(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) ))
+         $(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) )) \
+         $(addprefix $(KOBJSDIR)/,$(KUSB) )
 
 #MM
 kernel-setup-pc-i386 :

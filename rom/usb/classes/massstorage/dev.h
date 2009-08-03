@@ -7,7 +7,7 @@
 
 /* local protos */
 
-AROS_UFP3(DEVBASETYPEPTR, devInit,
+AROS_UFP3(DEVBASETYPEPTR, GM_UNIQUENAME(devInit),
           AROS_UFPA(DEVBASETYPEPTR, base, D0),
           AROS_UFPA(BPTR, seglist, A0),
           AROS_UFPA(struct ExecBase *, SysBase, A6));
@@ -16,26 +16,26 @@ AROS_LD3(DEVBASETYPEPTR, devOpen,
          AROS_LDA(struct IORequest *, ioreq, A1),
          AROS_LDA(ULONG, unitnum, D0),
          AROS_LDA(ULONG, flags, D1),
-         DEVBASETYPEPTR, base, 1, dev);
+         DEVBASETYPEPTR, base, 1, usbscsidev);
 
 AROS_LD1(BPTR, devClose,
          AROS_LDA(struct IORequest *, ioreq, A1),
-         DEVBASETYPEPTR, base, 2, dev);
+         DEVBASETYPEPTR, base, 2, usbscsidev);
 
 AROS_LD1(BPTR, devExpunge,
          AROS_LDA(DEVBASETYPEPTR, extralh, D0),
-         DEVBASETYPEPTR, base, 3, dev);
+         DEVBASETYPEPTR, base, 3, usbscsidev);
 
 AROS_LD0(DEVBASETYPEPTR, devReserved,
-         DEVBASETYPEPTR, base, 4, dev);
+         DEVBASETYPEPTR, base, 4, usbscsidev);
 
 AROS_LD1(void, devBeginIO,
          AROS_LDA(struct IOStdReq *, ioreq, A1),
-         DEVBASETYPEPTR, base, 5, dev);
+         DEVBASETYPEPTR, base, 5, usbscsidev);
 
 AROS_LD1(LONG, devAbortIO,
          AROS_LDA(struct IOStdReq *, ioreq, A1),
-         DEVBASETYPEPTR, base, 6, dev);
+         DEVBASETYPEPTR, base, 6, usbscsidev);
 
 /* Device stuff */
 
@@ -45,15 +45,9 @@ AROS_LD1(LONG, devAbortIO,
 /* Magic cookie, don't set error fields & don't reply the ioreq */
 #define RC_DONTREPLY  -1
 
-struct Unit *Open_Unit(struct IOStdReq *ioreq,
-                       LONG unitnr,
-                       struct NepMSDevBase *base);
-void Close_Unit(struct NepMSDevBase *base, struct NepClassMS *unit,
-                struct IOStdReq *ioreq);
+WORD GM_UNIQUENAME(cmdNSDeviceQuery)(struct IOStdReq *ioreq, struct NepClassMS *unit, struct NepMSDevBase *base);
 
-WORD cmdNSDeviceQuery(struct IOStdReq *ioreq, struct NepClassMS *unit, struct NepMSDevBase *base);
-
-void TermIO(struct IOStdReq *ioreq, struct NepMSDevBase *base);
+void GM_UNIQUENAME(TermIO)(struct IOStdReq *ioreq, struct NepMSDevBase *base);
 
 struct my_NSDeviceQueryResult
 {

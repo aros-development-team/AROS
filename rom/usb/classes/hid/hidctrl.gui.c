@@ -7,10 +7,10 @@
 
 #include "hid.class.h"
 
-extern const STRPTR libname;
+extern const STRPTR GM_UNIQUENAME(libname);
 
 /* /// "nHIDCtrlGUITask()" */
-AROS_UFH0(void, nHIDCtrlGUITask)
+AROS_UFH0(void, GM_UNIQUENAME(nHIDCtrlGUITask))
 {
     AROS_USERFUNC_INIT
     
@@ -36,30 +36,30 @@ AROS_UFH0(void, nHIDCtrlGUITask)
     if(!(MUIMasterBase = OpenLibrary(MUIMASTER_NAME, MUIMASTER_VMIN)))
     {
         KPRINTF(10, ("Couldn't open muimaster.library.\n"));
-        nHIDCtrlGUITaskCleanup(nch);
+        GM_UNIQUENAME(nHIDCtrlGUITaskCleanup)(nch);
         return;
     }
 
     if(!(IntuitionBase = OpenLibrary("intuition.library", 39)))
     {
         KPRINTF(10, ("Couldn't open intuition.library.\n"));
-        nHIDCtrlGUITaskCleanup(nch);
+        GM_UNIQUENAME(nHIDCtrlGUITaskCleanup)(nch);
         return;
     }
 
     if(!(ps = OpenLibrary("poseidon.library", 4)))
     {
         KPRINTF(10, ("Couldn't open poseidon.library.\n"));
-        nHIDCtrlGUITaskCleanup(nch);
+        GM_UNIQUENAME(nHIDCtrlGUITaskCleanup)(nch);
         return;
     }
 
-    nch->nch_HCActionClass = MUI_CreateCustomClass(NULL, MUIC_Area  , NULL, sizeof(struct ActionData), HCActionDispatcher);
+    nch->nch_HCActionClass = MUI_CreateCustomClass(NULL, MUIC_Area  , NULL, sizeof(struct ActionData), GM_UNIQUENAME(HCActionDispatcher));
 
     if(!nch->nch_HCActionClass)
     {
         KPRINTF(10, ("Couldn't create ActionClass.\n"));
-        nHIDCtrlGUITaskCleanup(nch);
+        GM_UNIQUENAME(nHIDCtrlGUITaskCleanup)(nch);
         return;
     }
     nch->nch_HCApp = ApplicationObject,
@@ -95,7 +95,7 @@ AROS_UFH0(void, nHIDCtrlGUITask)
         SubWindow, nch->nch_HCMainWindow = WindowObject,
             MUIA_Window_ID   , MAKE_ID('H','C','T','L'),
             MUIA_Window_Title, nch->nch_CDC->cdc_HIDCtrlTitle,
-            MUIA_HelpNode, libname,
+            MUIA_HelpNode, GM_UNIQUENAME(libname),
 
             WindowContents, VGroup,
                 Child, nch->nch_HCActionObj = NewObject(nch->nch_HCActionClass->mcc_Class, 0, MUIA_ShowMe, FALSE, TAG_END),
@@ -114,7 +114,7 @@ AROS_UFH0(void, nHIDCtrlGUITask)
     if(!nch->nch_HCApp)
     {
         KPRINTF(10, ("Couldn't create application\n"));
-        nHIDCtrlGUITaskCleanup(nch);
+        GM_UNIQUENAME(nHIDCtrlGUITaskCleanup)(nch);
         return;
     }
 
@@ -340,7 +340,7 @@ AROS_UFH0(void, nHIDCtrlGUITask)
             get(nch->nch_HCMainWindow, MUIA_Window_Open, &isopen);
             if(!(isopen || iconify))
             {
-                nHIDCtrlGUITaskCleanup(nch);
+                GM_UNIQUENAME(nHIDCtrlGUITaskCleanup)(nch);
                 return;
             }
         }
@@ -359,14 +359,14 @@ AROS_UFH0(void, nHIDCtrlGUITask)
         } while(retid != MUIV_Application_ReturnID_Quit);
         set(nch->nch_HCMainWindow, MUIA_Window_Open, FALSE);
     }
-    nHIDCtrlGUITaskCleanup(nch);
+    GM_UNIQUENAME(nHIDCtrlGUITaskCleanup)(nch);
     
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
 
 /* /// "nHIDCtrlGUITaskCleanup()" */
-void nHIDCtrlGUITaskCleanup(struct NepClassHid *nch)
+void GM_UNIQUENAME(nHIDCtrlGUITaskCleanup)(struct NepClassHid *nch)
 {
     struct NepHidGItem *nhgi;
     if(nch->nch_HCApp)
@@ -451,7 +451,7 @@ struct NepHidGItem * nAllocGHCItem(struct NepClassHid *nch, struct NepHidItem *n
 /* \\\ */
 
 /* /// "HCActionDispatcher()" */
-AROS_UFH3(IPTR, HCActionDispatcher,
+AROS_UFH3(IPTR, GM_UNIQUENAME(HCActionDispatcher),
           AROS_UFHA(struct IClass *, cl, A0),
           AROS_UFHA(Object *, obj, A2),
           AROS_UFHA(Msg, msg, A1))

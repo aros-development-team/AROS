@@ -55,14 +55,14 @@ extern const struct PsdUWStringMap usbvendorids[];
 extern struct ExecBase *SysBase;
 
 /* Static data */
-const char libname[]     = MOD_NAME_STRING;
+const char GM_UNIQUENAME(libname)[]     = MOD_NAME_STRING;
 
 #define UsbClsBase puc->puc_ClassBase
 #define DOSBase ps->ps_DosBase
 #define TimerBase ps->ps_TimerIOReq.tr_node.io_Device
 
 /* LibInit */
-static int libInit(LIBBASETYPEPTR ps)
+static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR ps)
 {
     KPRINTF(10, ("libInit ps: 0x%08lx SysBase: 0x%08lx\n",
                  ps, SysBase));
@@ -109,7 +109,7 @@ static int libInit(LIBBASETYPEPTR ps)
 }
 
 /* LibOpen */
-static int libOpen(LIBBASETYPEPTR ps)
+static int GM_UNIQUENAME(libOpen)(LIBBASETYPEPTR ps)
 {
     struct PsdIFFContext *pic;
 
@@ -171,14 +171,14 @@ static int libOpen(LIBBASETYPEPTR ps)
                     if(tmpstr)
                     {
                         tmpstr[strlen(tmpstr)-2] = 0;
-                        psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Welcome to %s (%08lx)!", tmpstr, ps->ps_ReleaseVersion);
+                        psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Welcome to %s (%08lx)!", tmpstr, ps->ps_ReleaseVersion);
                         psdFreeVec(tmpstr);
                     } else {
-                        psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Welcome to %s", VERSION_STRING);
+                        psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Welcome to %s", VERSION_STRING);
                     }
                 }
 
-                psdAddErrorMsg0(RETURN_OK, (STRPTR) libname, "This is the AROS port.");
+                psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "This is the AROS port.");
 
                 KPRINTF(10, ("libOpen: Ok\n"));
                 ps->ps_StackInit = TRUE;
@@ -200,7 +200,7 @@ static int libOpen(LIBBASETYPEPTR ps)
     return TRUE;
 }
 
-int libExpunge(LIBBASETYPEPTR ps)
+int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR ps)
 {
     struct PsdHardware *phw = (struct PsdHardware *) ps->ps_Hardware.lh_Head;
     struct PsdUsbClass *puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
@@ -275,9 +275,9 @@ int libExpunge(LIBBASETYPEPTR ps)
 }
 /* \\\ */
 
-ADD2INITLIB(libInit, 0)
-ADD2OPENLIB(libOpen, 0)
-ADD2EXPUNGELIB(libExpunge, 0);
+ADD2INITLIB(GM_UNIQUENAME(libInit), 0)
+ADD2OPENLIB(GM_UNIQUENAME(libOpen), 0)
+ADD2EXPUNGELIB(GM_UNIQUENAME(libExpunge), 0);
 
 /*
  * ***********************************************************************
@@ -351,7 +351,7 @@ AROS_LH1(void, psdFreeVec,
 void pDebugSemaInfo(LIBBASETYPEPTR ps, struct PsdSemaInfo *psi)
 {
     struct PsdReadLock *prl;
-    psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                    "Semaphore %08lx %s (Excl/SharedLockCount %ld/%ld) (Owner: %s):",
                    psi->psi_LockSem,
                    psi->psi_LockSem->pls_Node.ln_Name,
@@ -362,7 +362,7 @@ void pDebugSemaInfo(LIBBASETYPEPTR ps, struct PsdSemaInfo *psi)
     prl = (struct PsdReadLock *) psi->psi_LockSem->pls_WaitQueue.lh_Head;
     while(prl->prl_Node.ln_Succ)
     {
-        psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+        psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                            "  Waiting Task: %08lx (%s) %s",
                            prl->prl_Task, prl->prl_Task->tc_Node.ln_Name,
                            prl->prl_IsExcl ? "Excl" : "Shared");
@@ -371,7 +371,7 @@ void pDebugSemaInfo(LIBBASETYPEPTR ps, struct PsdSemaInfo *psi)
     prl = (struct PsdReadLock *) psi->psi_LockSem->pls_ReadLocks.lh_Head;
     while(prl->prl_Node.ln_Succ)
     {
-        psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+        psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                        "  Readlock Task: %08lx (%s), Count %ld",
                        prl->prl_Task, prl->prl_Task->tc_Node.ln_Name,
                        prl->prl_Count);
@@ -419,7 +419,7 @@ void pDeleteSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
         {
             if(pls->pls_SharedLockCount + pls->pls_ExclLockCount)
             {
-                psdAddErrorMsg0(RETURN_ERROR, (STRPTR) libname, "Semaphore still locked when attempting to delete it!\n");
+                psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Semaphore still locked when attempting to delete it!\n");
                 pDebugSemaInfo(ps, psi);
             } else {
                 Remove(&psi->psi_Node);
@@ -567,7 +567,7 @@ void pUnlockSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
         {
             Permit();
             psdDebugSemaphores();
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                            "Attempt to unlock exclusive semaphore %08lx not owned by task %s!",
                            pls, thistask->tc_Node.ln_Name);
             return;
@@ -586,7 +586,7 @@ void pUnlockSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
         {
             Permit();
             psdDebugSemaphores();
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                            "Attempt to unlock (free) semaphore %08lx once too often by task %s!",
                            pls, thistask->tc_Node.ln_Name);
             return;
@@ -618,7 +618,7 @@ void pUnlockSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
         {
             Permit();
             psdDebugSemaphores();
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                            "Attempt to unlock (shared) semaphore %08lx once too often by task %s!",
                            pls, thistask->tc_Node.ln_Name);
             return;
@@ -648,7 +648,7 @@ AROS_LH0(void, psdDebugSemaphores,
     struct Task *thistask = FindTask(NULL);
     struct PsdSemaInfo *psi;
 
-    psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                    "Debug Semaphores (%08lx)", thistask);
 
     Forbid();
@@ -2400,7 +2400,7 @@ AROS_LH2(STRPTR, psdGetStringDescriptor,
         if(ioerr == UHIOERR_OVERFLOW)
         {
             ioerr = 0;
-            psdAddErrorMsg0(RETURN_WARN, (STRPTR) libname, "Language array overflow.");
+            psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Language array overflow.");
         }
         if(ioerr)
         {
@@ -2423,7 +2423,7 @@ AROS_LH2(STRPTR, psdGetStringDescriptor,
                     len = 4;
                     *tmpbuf++ = 0;
                     *tmpbuf = AROS_WORD2LE(0x0409);
-                    /*psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                    /*psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                    "Language array descriptor too small (len %ld), using dummy.",
                                    len);*/
                     ioerr = 0;
@@ -2452,7 +2452,7 @@ AROS_LH2(STRPTR, psdGetStringDescriptor,
                         tmpptr++;
                     }
                 } else {
-                    psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                    "Reading language array descriptor (len %ld) failed: %s (%ld)",
                                    len, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
                     KPRINTF(15, ("Error reading lang array descriptor (%ld) failed %ld\n", len, ioerr));
@@ -2462,7 +2462,7 @@ AROS_LH2(STRPTR, psdGetStringDescriptor,
                 KPRINTF(20, ("No langid array memory!\n"));
             }
         } else {
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                            "Reading language array descriptor (len %ld) failed: %s (%ld)",
                            2, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
             KPRINTF(15, ("Error reading lang array descriptor (2) failed %ld\n", ioerr));
@@ -2480,7 +2480,7 @@ AROS_LH2(STRPTR, psdGetStringDescriptor,
     if(ioerr == UHIOERR_OVERFLOW)
     {
         ioerr = 0;
-        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "String %ld overflow.", idx);
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "String %ld overflow.", idx);
     }
     if(ioerr)
     {
@@ -2499,7 +2499,7 @@ AROS_LH2(STRPTR, psdGetStringDescriptor,
                 len = pp->pp_IOReq.iouh_Actual;
                 if(len > 3)
                 {
-                    psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                    "String descriptor %ld truncated to %ld, requested %ld",
                                    idx, len, buf[0]);
                     ioerr = 0;
@@ -2538,7 +2538,7 @@ AROS_LH2(STRPTR, psdGetStringDescriptor,
                     KPRINTF(20, ("No memory for string!\n"));
                 }
             } else {
-                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                "Reading string descriptor %ld (len %ld) failed: %s (%ld)",
                                idx, len, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
                 KPRINTF(15, ("Error reading string descriptor %ld (%ld) failed %ld\n",
@@ -2549,7 +2549,7 @@ AROS_LH2(STRPTR, psdGetStringDescriptor,
             return(psdCopyStr(""));
         }
     } else {
-        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                        "Reading string descriptor %ld (len %ld) failed: %s (%ld)",
                        idx, 2, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
         KPRINTF(15, ("Error reading string descriptor %ld (2) failed %ld\n", idx, ioerr));
@@ -2588,13 +2588,13 @@ AROS_LH2(BOOL, psdSetDeviceConfig,
             if(cfgnum != buf[0])
             {
                 pd->pd_CurrCfg = cfgnum;
-                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                "Broken: SetConfig/GetConfig mismatch (%ld != %ld) for %s!",
                                cfgnum, buf[0], pp->pp_Device->pd_ProductStr);
             }
             res = TRUE;
         } else {
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                            "GET_CONFIGURATION failed: %s (%ld)",
                            psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
             pd->pd_CurrCfg = cfgnum;
@@ -2605,7 +2605,7 @@ AROS_LH2(BOOL, psdSetDeviceConfig,
         res = TRUE;
 #endif
     } else {
-        psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                        "SET_CONFIGURATION failed: %s (%ld)",
                        psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
         KPRINTF(15, ("SET_CONFIGURATION failed %ld!\n", ioerr));
@@ -2626,7 +2626,7 @@ AROS_LH2(BOOL, psdSetDeviceConfig,
     Permit();
     if(!pd->pd_CurrentConfig)
     {
-        psdAddErrorMsg0(RETURN_ERROR, (STRPTR) libname, "No current configuration, huh?");
+        psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "No current configuration, huh?");
     } else {
         UWORD status = 0;
         // power saving stuff
@@ -2637,7 +2637,7 @@ AROS_LH2(BOOL, psdSetDeviceConfig,
             ioerr = psdDoPipe(pp, NULL, 0);
             if(ioerr)
             {
-                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                "SET_DEVICE_REMOTE_WAKEUP failed: %s (%ld)",
                                psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
                 KPRINTF(15, ("SET_DEVICE_REMOTE_WAKEUP failed %ld!\n", ioerr));
@@ -2648,17 +2648,17 @@ AROS_LH2(BOOL, psdSetDeviceConfig,
             {
                 if(status & U_GSF_REMOTE_WAKEUP)
                 {
-                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                    "Enabled remote wakeup feature for '%s'.",
                                    pd->pd_ProductStr);
                 } else {
                     pd->pd_CurrentConfig->pc_Attr &= ~USCAF_REMOTE_WAKEUP;
-                    psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                    "Remote wakeup feature for '%s' could not be enabled.",
                                    pd->pd_ProductStr);
                 }
             } else {
-                /*psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                /*psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                "GET_STATUS failed: %s (%ld)",
                                psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);*/
                 KPRINTF(15, ("GET_STATUS failed %ld!\n", ioerr));
@@ -2672,19 +2672,19 @@ AROS_LH2(BOOL, psdSetDeviceConfig,
             if((status & U_GSF_SELF_POWERED) && (!(pd->pd_CurrentConfig->pc_Attr & USCAF_SELF_POWERED)))
             {
                 pd->pd_CurrentConfig->pc_Attr |= USCAF_SELF_POWERED;
-                psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                "Device '%s' says it is currently self-powered. Fixing config.",
                                pd->pd_ProductStr);
             }
             else if((!(status & U_GSF_SELF_POWERED)) && (pd->pd_CurrentConfig->pc_Attr & USCAF_SELF_POWERED))
             {
                 pd->pd_CurrentConfig->pc_Attr &= ~USCAF_SELF_POWERED;
-                psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                "Device '%s' says it is currently bus-powered. Fixing config.",
                                pd->pd_ProductStr);
             }
         } else {
-            /*psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+            /*psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                            "GET_STATUS failed: %s (%ld)",
                            psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);*/
             KPRINTF(15, ("GET_STATUS failed %ld!\n", ioerr));
@@ -2759,7 +2759,7 @@ AROS_LH2(BOOL, psdSetAltInterface,
             if(altnum == buf[0])
             {
                 KPRINTF(1, ("resorting list..."));
-                /*psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                /*psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                "Changed to alt %ld",
                                altnum);*/
                 Forbid();
@@ -2791,18 +2791,18 @@ AROS_LH2(BOOL, psdSetAltInterface,
                 psdUnlockDevice(pd);
                 return(TRUE);
             } else {
-                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                "Attempt to change interface %ld to alt %ld remained at alt %ld.",
                                ifnum, altnum, buf[0]);
             }
         } else {
-            psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                            "GET_INTERFACE(%ld) failed: %s (%ld)",
                            ifnum, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
             KPRINTF(15, ("GET_INTERFACE failed %ld!\n", ioerr));
         }
     } else {
-        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                        "SET_INTERFACE(%ld)=%ld failed: %s (%ld)",
                        ifnum, altnum,
                        psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
@@ -2854,7 +2854,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
         ioerr = psdDoPipe(pp, dummybuf, 8);
         if(ioerr && (ioerr != UHIOERR_RUNTPACKET))
         {
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                            "GET_DESCRIPTOR (len %ld) failed: %s (%ld)",
                            8, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
             KPRINTF(15, ("GET_DESCRIPTOR (8) failed %ld!\n", ioerr));
@@ -2896,7 +2896,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                         pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = usdd.bMaxPacketSize0;
                         break;
                     default:
-                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                                        "Illegal MaxPktSize0=%ld for endpoint 0",
                                        (ULONG) usdd.bMaxPacketSize0);
                         KPRINTF(2, ("Illegal MaxPktSize0=%ld!\n", usdd.bMaxPacketSize0));
@@ -3103,7 +3103,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                             KPRINTF(15, ("SetDeviceConfig(1) failed\n"));
                         }*/
                     } else {
-                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                                        "Could not acquire device configuration for %s",
                                        pd->pd_ProductStr ? pd->pd_ProductStr : (STRPTR) "new device");
                         KPRINTF(15, ("GetDevConfig() failed\n"));
@@ -3116,19 +3116,19 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                     psdUnlockDevice(pd);
                     return(pd);
                 } else {
-                    psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                    psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                                    "GET_DESCRIPTOR (len %ld) failed: %s (%ld)",
                                    18, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
                     KPRINTF(15, ("GET_DESCRIPTOR (18) failed %ld!\n", ioerr));
                 }
             } else {
-                psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                                "GET_DESCRIPTOR (len %ld) failed: %s (%ld)",
                                8, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
                 KPRINTF(15, ("GET_DESCRIPTOR (8) failed %ld!\n", ioerr));
             }
         } else {
-            psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
                            "SET_ADDRESS failed: %s (%ld)",
                            psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
             KPRINTF(15, ("SET_ADDRESS failed %ld!\n", ioerr));
@@ -3137,10 +3137,10 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
         pp->pp_IOReq.iouh_Flags = oldflags;
         pp->pp_IOReq.iouh_NakTimeout = oldnaktimeout;
     } else {
-        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) libname, "This cannot happen! More than 127 devices on the bus???");
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "This cannot happen! More than 127 devices on the bus???");
         KPRINTF(20, ("out of addresses???\n"));
     }
-    psdAddErrorMsg0(RETURN_FAIL, (STRPTR) libname, "Device enumeration failed, sorry.");
+    psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Device enumeration failed, sorry.");
     psdUnlockDevice(pd);
     return(NULL);
     AROS_LIBFUNC_EXIT
@@ -3213,7 +3213,7 @@ AROS_LH1(BOOL, psdSuspendBindings,
                 if(!force)
                 {
                     // can't suspend application binding devices
-                    psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                    psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                                    "Cannot suspend with application binding on '%s'.",
                                    pd->pd_ProductStr);
                     return FALSE;
@@ -3230,7 +3230,7 @@ AROS_LH1(BOOL, psdSuspendBindings,
                     if(!res)
                     {
                         // didn't want to suspend
-                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                                        "Class '%s' failed to suspend device '%s'.",
                                        puc->puc_Node.ln_Name, pd->pd_ProductStr);
                         return FALSE;
@@ -3240,7 +3240,7 @@ AROS_LH1(BOOL, psdSuspendBindings,
                     {
                         if(!force)
                         {
-                            psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                                            "Class '%s' does not support suspending.",
                                            puc->puc_Node.ln_Name);
                             return FALSE;
@@ -3248,7 +3248,7 @@ AROS_LH1(BOOL, psdSuspendBindings,
                             psdReleaseDevBinding(pd);
                         }
                     } else {
-                        psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                        psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                        "Class '%s' does not support suspending, but has no active IO. Suspending anyway.",
                                        puc->puc_Node.ln_Name);
                     }
@@ -3271,7 +3271,7 @@ AROS_LH1(BOOL, psdSuspendBindings,
                         if(!res)
                         {
                             // didn't want to suspend
-                            psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                                            "%s failed to suspend device '%s'.",
                                            puc->puc_Node.ln_Name, pd->pd_ProductStr);
                             return FALSE;
@@ -3282,7 +3282,7 @@ AROS_LH1(BOOL, psdSuspendBindings,
                             if(!force)
                             {
 
-                                psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                                psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                                                "%s does not support suspending.",
                                                puc->puc_Node.ln_Name);
                                 return FALSE;
@@ -3290,7 +3290,7 @@ AROS_LH1(BOOL, psdSuspendBindings,
                                 psdReleaseIfBinding(pif);
                             }
                         } else {
-                            psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                            "%s does not support suspending, but has no active IO. Suspending anyway.",
                                            puc->puc_Node.ln_Name);
                         }
@@ -3329,7 +3329,7 @@ AROS_LH1(BOOL, psdSuspendDevice,
         {
             // suspend whole USB, using the HCI UHCMD_USBSUSPEND command
             // FIXME currently unsupported!
-            psdAddErrorMsg0(RETURN_ERROR, (STRPTR) libname, "Suspending of root hub currently not supported.");
+            psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Suspending of root hub currently not supported.");
             return FALSE;
         }
 
@@ -3348,7 +3348,7 @@ AROS_LH1(BOOL, psdSuspendDevice,
     }
     if(!res)
     {
-        psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                        "Suspending of device '%s' failed.",
                        pd->pd_ProductStr);
     }
@@ -3632,7 +3632,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
                 if(psdEnumerateDevice(pp))
                 {
                     KPRINTF(1, ("Enumeration finished!\n"));
-                    psdAddErrorMsg0(RETURN_OK, (STRPTR) libname, "Root hub has been enumerated.");
+                    psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Root hub has been enumerated.");
                     psdFreePipe(pp);
                     DeleteMsgPort(mp);
                     phw->phw_RootDevice = pd;
@@ -3648,7 +3648,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
         }
         DeleteMsgPort(mp);
     }
-    psdAddErrorMsg0(RETURN_FAIL, (STRPTR) libname, "Root hub enumeration failed. Blame your hardware driver programmer.");
+    psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Root hub enumeration failed. Blame your hardware driver programmer.");
     return(NULL);
     AROS_LIBFUNC_EXIT
 }
@@ -3682,13 +3682,13 @@ AROS_LH1(void, psdRemHardware,
             KPRINTF(20, ("Can't remove device, usecnt %ld\n", pd->pd_UseCnt));
             if(++cnt == 5)
             {
-                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                "Can't remove device '%s', there are still %ld pipes in use...",
                                pd->pd_ProductStr, pd->pd_UseCnt);
             }
             if(++cnt == 30)
             {
-                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                "Okay, going down with device '%s' anyway, maybe the driver crashed?",
                                pd->pd_ProductStr);
                 pd->pd_UseCnt = 0;
@@ -3718,7 +3718,7 @@ AROS_LH1(void, psdRemHardware,
     }
     //FreeSignal(phw->phw_ReadySignal);
     KPRINTF(1, ("FreeHardware(%08lx) freevec name\n", phw));
-    psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                    "Removed hardware %s/%ld. Bye bye!",
                    phw->phw_DevName, phw->phw_Unit);
     psdFreeVec(phw->phw_DevName);
@@ -3764,7 +3764,7 @@ AROS_LH2(struct PsdHardware *,psdAddHardware,
                 {
                     phw->phw_ReadySigTask = NULL;
                     //FreeSignal(phw->phw_ReadySignal);
-                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                    "New hardware %s/%ld added (%s).",
                                    phw->phw_DevName,
                                    phw->phw_Unit,
@@ -3843,7 +3843,7 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
     }
     if(pep && (pep->pep_TransType == USEAF_ISOCHRONOUS) && (!(pep->pep_Interface->pif_Config->pc_Device->pd_Hardware->phw_Capabilities & UHCF_ISO)))
     {
-        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) libname, "Your HW controller driver does not support iso transfers. Sorry.");
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Your HW controller driver does not support iso transfers. Sorry.");
         return(NULL);
     }
 
@@ -3895,7 +3895,7 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
             }
             if(!hubpd)
             {
-                psdAddErrorMsg0(RETURN_ERROR, (STRPTR) libname, "Internal error obtaining split transaction hub!");
+                psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Internal error obtaining split transaction hub!");
                 psdFreeVec(pp);
                 return(NULL);
             }
@@ -3919,7 +3919,7 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
                     pp->pp_IOReq.iouh_Req.io_Command = UHCMD_INTXFER;
                     break;
                 default:
-                    psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                    psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                                    "AllocPipe(): Illegal transfer type %ld",
                                    pep->pep_TransType);
                     KPRINTF(20, ("Illegal transfer type for endpoint!"));
@@ -3961,7 +3961,7 @@ AROS_LH1(void, psdFreePipe,
 
     if(pp->pp_Msg.mn_Node.ln_Type == NT_MESSAGE)
     {
-        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                        "Tried to free pipe on %s that was still pending!", pd->pd_ProductStr);
         psdAbortPipe(pp);
         psdWaitPipe(pp);
@@ -4159,7 +4159,7 @@ AROS_LH1(LONG, psdWaitPipe,
            if(pd->pd_DeadCount)
            {
                pd->pd_DeadCount >>= 1;
-               /*psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+               /*psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                               "Device %s starts recovering with %s (%ld)!",
                               pd->pd_ProductStr,
                               psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);*/
@@ -4174,7 +4174,7 @@ AROS_LH1(LONG, psdWaitPipe,
         if(!(pd->pd_Flags & PDFF_DEAD))
         {
             pd->pd_Flags |= PDFF_DEAD;
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                             "Device %s probably dropped dead!", pd->pd_ProductStr);
 
             psdSendEvent(EHMB_DEVICEDEAD, pp->pp_Device, NULL);
@@ -4183,7 +4183,7 @@ AROS_LH1(LONG, psdWaitPipe,
         if((!pd->pd_DeadCount) && ((pd->pd_Flags & (PDFF_DEAD|PDFF_CONNECTED)) == (PDFF_DEAD|PDFF_CONNECTED)))
         {
             pd->pd_Flags &= ~PDFF_DEAD;
-            psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                             "Uuuhuuuhh, the zombie %s returned from the dead!", pd->pd_ProductStr);
         }
     }
@@ -4980,7 +4980,7 @@ AROS_LH2(struct PsdRTIsoHandler *, psdAllocRTIsoHandlerA,
     }
     if(!(pep->pep_Interface->pif_Config->pc_Device->pd_Hardware->phw_Capabilities & UHCF_RT_ISO))
     {
-        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) libname, "Your HW controller driver does not support realtime iso transfers. Sorry.");
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Your HW controller driver does not support realtime iso transfers. Sorry.");
         return(NULL);
     }
     if((prt = psdAllocVec(sizeof(struct PsdRTIsoHandler))))
@@ -5003,7 +5003,7 @@ AROS_LH2(struct PsdRTIsoHandler *, psdAllocRTIsoHandlerA,
                 Permit();
                 return(prt);
             } else {
-                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                "Adding RT Iso Handler failed: %s (%ld)",
                                psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
             }
@@ -5143,7 +5143,7 @@ AROS_LH2(struct PsdUsbClass *, psdAddClass,
         if(FindName(&ps->ps_Classes, cls->lib_Node.ln_Name))
         {
             Permit();
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                            "Attempted to add class %s twice. Nothing is good enough for people like you.",
                            name);
             KPRINTF(20, ("attempt to add class twice!\n"));
@@ -5169,7 +5169,7 @@ AROS_LH2(struct PsdUsbClass *, psdAddClass,
             psdUnlockPBase();
             msgoff = ps->ps_FunnyCount++ & 7;
 
-            psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                            evilmsg[msgoff],
                            cls->lib_Node.ln_Name, cls->lib_Version, cls->lib_Revision, desc);
             psdSendEvent(EHMB_ADDCLASS, puc, NULL);
@@ -5238,14 +5238,14 @@ AROS_LH1(void, psdRemClass,
         psdUnlockPBase();
         if(puc->puc_UseCnt)
         {
-            psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
                            "This should never happen! Class %s still in use (cnt=%ld). Could not get rid of it! Sorry, we're broke.",
                            puc->puc_ClassBase->lib_Node.ln_Name, puc->puc_UseCnt);
             Wait(0L);
             /*psdDelayMS(2000);*/
         }
     }
-    psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                    "I shot class %s, but I didn't kill the deputy.",
                    puc->puc_ClassBase->lib_Node.ln_Name);
     CloseLibrary(puc->puc_ClassBase);
@@ -5350,7 +5350,7 @@ AROS_LH0(void, psdClassScan,
     puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
     if(!puc->puc_Node.ln_Succ)
     {
-        psdAddErrorMsg0(RETURN_WARN, (STRPTR) libname, "ClassScan attempted with no classes installed!");
+        psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "ClassScan attempted with no classes installed!");
         psdUnlockPBase();
         return;
     }
@@ -5431,7 +5431,7 @@ AROS_LH1(struct PsdAppBinding *, psdClaimAppBindingA,
             /* If there are bindings, get rid of them. */
             if(pd->pd_DevBinding)
             {
-                psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                "%s really wants to bind to %s, so I'm letting the old binding go.",
                                FindTask(NULL)->tc_Node.ln_Name,
                                pd->pd_ProductStr);
@@ -5446,7 +5446,7 @@ AROS_LH1(struct PsdAppBinding *, psdClaimAppBindingA,
                     {
                         if(pif->pif_IfBinding)
                         {
-                            psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                            "%s really wants to bind to %s, so I'm letting the old binding go.",
                                            FindTask(NULL)->tc_Node.ln_Name,
                                            pd->pd_ProductStr);
@@ -5707,7 +5707,7 @@ AROS_LH1(void, psdHubClassScan,
                         puc->puc_UseCnt++;
                         psdSendEvent(EHMB_ADDBINDING, pd, NULL);
                     } else {
-                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                                        "Forced device binding of %s to %s failed.", pd->pd_ProductStr, owner);
                     }
                     break;
@@ -5774,7 +5774,7 @@ AROS_LH1(void, psdHubClassScan,
                                             binding = (APTR) usbDoMethod(UCM_ForceInterfaceBinding, pif);
                                             if(!binding)
                                             {
-                                                psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                                                psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                                                                "Forced interface binding of %s to %s failed.", pd->pd_ProductStr, owner);
                                             }
                                         }
@@ -5804,7 +5804,7 @@ AROS_LH1(void, psdHubClassScan,
                                         if(!pif->pif_Node.ln_Succ)
                                         {
                                             KPRINTF(5, ("Fucked it up!\n"));
-                                            psdAddErrorMsg0(RETURN_FAIL, (STRPTR) libname, "Something incredibly stupid happend. I've given up.");
+                                            psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Something incredibly stupid happend. I've given up.");
                                             Permit();
                                             break;
                                         }
@@ -5873,7 +5873,7 @@ AROS_LH1(void, psdHubClassScan,
                         binding = (APTR) usbDoMethod(UCM_ForceDeviceBinding, pd, TAG_END);
                         if(!binding)
                         {
-                            psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                                            "Forced device binding of %s to %s failed.", pd->pd_ProductStr, owner);
                         }
                     }
@@ -6168,7 +6168,7 @@ AROS_LH2(BOOL, psdReadCfg,
     }
     if((AROS_LONG2BE(*buf) != ID_FORM) || (AROS_LONG2BE(buf[2]) != pic->pic_FormID))
     {
-        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) libname, "Tried to replace a cfg form with a chunk or with an alien form!");
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Tried to replace a cfg form with a chunk or with an alien form!");
         pUnlockSem(ps, &ps->ps_ConfigLock);
         return(FALSE);
     }
@@ -6193,7 +6193,7 @@ AROS_LH2(BOOL, psdReadCfg,
     }
     if(len)
     {
-        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) libname, "Tried to add a nasty corrupted FORM chunk! Configuration is probably b0rken!");
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Tried to add a nasty corrupted FORM chunk! Configuration is probably b0rken!");
         res = 0;
     }
 
@@ -6259,7 +6259,7 @@ AROS_LH1(BOOL, psdLoadCfgFromDisk,
         }
         Close(filehandle);
     } else {
-        psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                        "Failed to load config from '%s'!",
                        filename);
     }
@@ -6307,7 +6307,7 @@ AROS_LH2(BOOL, psdSaveCfgToDisk,
             Close(filehandle);
             saved = TRUE;
         } else {
-            psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                            "Failed to write config to '%s'!",
                            filename);
         }
@@ -6781,7 +6781,7 @@ AROS_LH0(void, psdParseCfg,
         // so unbind those classes that promote themselves as AfterDOS
 
         psdLockReadPBase();
-        psdAddErrorMsg0(RETURN_OK, (STRPTR) libname, "Checking AfterDOS...");
+        psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Checking AfterDOS...");
         puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
         while(puc->puc_Node.ln_Succ)
         {
@@ -6803,7 +6803,7 @@ AROS_LH0(void, psdParseCfg,
                     if(pd->pd_DevBinding && (pd->pd_ClsBinding == puc) && (!(pd->pd_Flags & PDFF_APPBINDING)))
                     {
                         psdUnlockPBase();
-                        psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                        psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                        "AfterDOS: Temporarily releasing %s %s binding to %s.",
                                        puc->puc_ClassName, "device", pd->pd_ProductStr);
                         psdReleaseDevBinding(pd);
@@ -6820,7 +6820,7 @@ AROS_LH0(void, psdParseCfg,
                             if(pif->pif_IfBinding && (pif->pif_ClsBinding == puc))
                             {
                                 psdUnlockPBase();
-                                psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                                "AfterDOS: Temporarily releasing %s %s binding to %s.",
                                                puc->puc_ClassName, "interface", pd->pd_ProductStr);
                                 psdReleaseIfBinding(pif);
@@ -6859,7 +6859,7 @@ AROS_LH0(void, psdParseCfg,
         puc = (struct PsdUsbClass *) FindName(&ps->ps_Classes, "massstorage.class");
         if(puc && puc->puc_UseCnt)
         {
-            psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                                "Delaying further execution by %ld second(s) (boot delay).",
                                ps->ps_GlobalCfg->pgc_BootDelay);
             if(ps->ps_GlobalCfg->pgc_BootDelay >= 1);
@@ -6867,7 +6867,7 @@ AROS_LH0(void, psdParseCfg,
                 psdDelayMS((ps->ps_GlobalCfg->pgc_BootDelay-1)*1000);
             }
         } else {
-            psdAddErrorMsg0(RETURN_OK, (STRPTR) libname, "Boot delay skipped, no mass storage devices found.");
+            psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Boot delay skipped, no mass storage devices found.");
         }
     }
     AROS_LIBFUNC_EXIT
@@ -7619,7 +7619,7 @@ struct PsdIFFContext * pAddCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic
             }
             if(len)
             {
-                psdAddErrorMsg0(RETURN_FAIL, (STRPTR) libname, "Tried to add a nasty corrupted FORM chunk! Configuration is probably b0rken!");
+                psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Tried to add a nasty corrupted FORM chunk! Configuration is probably b0rken!");
                 return(NULL);
             }
         } else {
@@ -7900,7 +7900,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                         }
                         if(&dbuf[dlen] > bufend)
                         {
-                            psdAddErrorMsg0(RETURN_ERROR, (STRPTR) libname, "End of descriptor past buffer!");
+                            psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "End of descriptor past buffer!");
                         }
                         switch(dbuf[1]) /* bDescriptorType */
                         {
@@ -7992,7 +7992,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                         {
                                             if(!pif)
                                             {
-                                                psdAddErrorMsg0(RETURN_ERROR, (STRPTR) libname, "Alternate interface without prior main interface!");
+                                                psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Alternate interface without prior main interface!");
                                                 KPRINTF(20, ("    Alternate interface without prior main interface\n"));
                                                 pif = altif;
                                             } else {
@@ -8008,7 +8008,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                         KPRINTF(20, ("    Interface allocation failed\n"));
                                     }
                                 } else {
-                                    psdAddErrorMsg0(RETURN_ERROR, (STRPTR) libname, "Interface without prior config descriptor!");
+                                    psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Interface without prior config descriptor!");
                                     KPRINTF(20, ("    Interface descriptor without Config\n"));
                                 }
                                 break;
@@ -8033,7 +8033,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                         pep->pep_NumTransMuFr = ((AROS_WORD2LE(usep->wMaxPacketSize)>>11) & 3) + 1;
                                         if(pep->pep_NumTransMuFr == 4)
                                         {
-                                            psdAddErrorMsg0(RETURN_WARN, (STRPTR) libname, "Endpoint contains illegal Num Trans µFrame value!");
+                                            psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Endpoint contains illegal Num Trans µFrame value!");
                                             pep->pep_NumTransMuFr = 1;
                                         }
 
@@ -8050,7 +8050,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                                 case USEAF_ISOCHRONOUS:
                                                     if(pep->pep_MaxPktSize > 1024)
                                                     {
-                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                                                        "Endpoint contains %s (%ld) MaxPktSize value!",
                                                                        (STRPTR) "too high", pep->pep_MaxPktSize);
                                                         pep->pep_MaxPktSize = 1024;
@@ -8059,14 +8059,14 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                                 case USEAF_INTERRUPT:
                                                     if(!pep->pep_Interval)
                                                     {
-                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                                                        "%sspeed %s endpoint contains %s interval value! Fixing.",
                                                                        (STRPTR) "High", eptype, (STRPTR) "zero");
                                                         pep->pep_Interval = 1;
                                                     }
                                                     else if(pep->pep_Interval > 16)
                                                     {
-                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                                                        "%sspeed %s endpoint contains %s interval value! Fixing.",
                                                                        (STRPTR) "High", eptype, (STRPTR) "too high");
                                                         pep->pep_Interval = 16;
@@ -8082,7 +8082,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                                 case USEAF_INTERRUPT:
                                                     if(pep->pep_Interval < 8)
                                                     {
-                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "%sspeed %s endpoint contains %s interval value! Fixing.",
+                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "%sspeed %s endpoint contains %s interval value! Fixing.",
                                                                        (STRPTR) "Low", eptype, (STRPTR) "too low");
                                                         pep->pep_Interval = 8;
                                                     }
@@ -8094,7 +8094,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                                     break;
 
                                                 case USEAF_ISOCHRONOUS:
-                                                    psdAddErrorMsg0(RETURN_ERROR, (STRPTR) libname, "Lowspeed devices cannot have isochronous endpoints!");
+                                                    psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Lowspeed devices cannot have isochronous endpoints!");
                                                     break;
                                             }
                                         } else {
@@ -8103,7 +8103,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                                 case USEAF_INTERRUPT:
                                                     if(!pep->pep_Interval)
                                                     {
-                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "%sspeed %s endpoint contains %s interval value! Fixing.",
+                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "%sspeed %s endpoint contains %s interval value! Fixing.",
                                                                        (STRPTR) "Full", eptype, (STRPTR) "zero");
                                                         pep->pep_Interval = 1;
                                                     }
@@ -8117,18 +8117,18 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                                 case USEAF_ISOCHRONOUS:
                                                     if(pep->pep_MaxPktSize > 1023)
                                                     {
-                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "Endpoint contains too high (%ld) MaxPktSize value! Fixing.", pep->pep_MaxPktSize);
+                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Endpoint contains too high (%ld) MaxPktSize value! Fixing.", pep->pep_MaxPktSize);
                                                         pep->pep_MaxPktSize = 1023;
                                                     }
                                                     if(!pep->pep_Interval)
                                                     {
-                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "%sspeed %s endpoint contains %s interval value! Fixing.",
+                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "%sspeed %s endpoint contains %s interval value! Fixing.",
                                                                        (STRPTR) "Full", eptype, (STRPTR) "zero");
                                                         pep->pep_Interval = 1;
                                                     }
                                                     else if(pep->pep_Interval > 16)
                                                     {
-                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "%sspeed %s endpoint contains %s interval value! Fixing.",
+                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "%sspeed %s endpoint contains %s interval value! Fixing.",
                                                                        (STRPTR) "Full", eptype, (STRPTR) "too high");
                                                         pep->pep_Interval = 16;
                                                     }
@@ -8150,7 +8150,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                         KPRINTF(20, ("      Endpoint allocation failed\n"));
                                     }
                                 } else {
-                                    psdAddErrorMsg0(RETURN_WARN, (STRPTR) libname, "Endpoint without prior interface descriptor!");
+                                    psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Endpoint without prior interface descriptor!");
                                     KPRINTF(20, ("      Endpoint descriptor without Interface\n"));
                                 }
                                 break;
@@ -8167,12 +8167,12 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                             case UDT_OTHERSPEED_QUALIFIER:
                             case UDT_INTERFACE_POWER:
                             case UDT_OTG:
-                                //psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "Skipping descriptor %02lx (pc=%08lx, pif=%08lx altpif=%08lx).", dbuf[1], pc, pif, altif);
+                                //psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Skipping descriptor %02lx (pc=%08lx, pif=%08lx altpif=%08lx).", dbuf[1], pc, pif, altif);
                                 KPRINTF(1, ("Skipping unknown descriptor %ld.\n", dbuf[1]));
                                 break;
 
                             default:
-                                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "Skipping unknown descriptor %02lx.", dbuf[1]);
+                                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Skipping unknown descriptor %02lx.", dbuf[1]);
                                 KPRINTF(1, ("Skipping unknown descriptor %ld.\n", dbuf[1]));
                                 break;
                         }
@@ -8218,7 +8218,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                     //psdUnlockDevice(pd);
                     //return(TRUE);
                 } else {
-                    psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                    "GET_DESCRIPTOR (len %ld) failed: %s (%ld)",
                                    len, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
                     KPRINTF(15, ("GET_DESCRIPTOR failed %ld!\n", ioerr));
@@ -8228,7 +8228,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                 KPRINTF(20, ("No memory for %ld bytes config temp buffer!\n", len));
             }
         } else {
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                            "GET_DESCRIPTOR (len %ld) failed: %s (%ld)",
                            9, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
             KPRINTF(15, ("GET_DESCRIPTOR (9) failed %ld!\n", ioerr));
@@ -8364,7 +8364,7 @@ void pPowerRecurseSupply(LIBBASETYPEPTR ps, struct PsdDevice *pd)
     {
         if(!(pd->pd_Flags & PDFF_LOWPOWER))
         {
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                            "Detected low power condition for '%s'.", pd->pd_ProductStr);
             pd->pd_Flags |= PDFF_LOWPOWER;
             psdSendEvent(EHMB_DEVICELOWPW, pd, NULL);
@@ -8372,7 +8372,7 @@ void pPowerRecurseSupply(LIBBASETYPEPTR ps, struct PsdDevice *pd)
     } else {
         if(pd->pd_Flags & PDFF_LOWPOWER)
         {
-            psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                            "Low power condition resolved for '%s'.", pd->pd_ProductStr);
             pd->pd_Flags &= ~PDFF_LOWPOWER;
         }
@@ -8480,7 +8480,7 @@ BOOL pFixBrokenConfig(struct PsdPipe *pp)
                 if(pif->pif_IfClass != MASSSTORE_CLASSCODE)
                 {
                     fixed = TRUE;
-                    psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "Fixing broken %s interface descriptor!", (STRPTR) "E-Shuttle LS120");
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Fixing broken %s interface descriptor!", (STRPTR) "E-Shuttle LS120");
                     pif->pif_IfClass = MASSSTORE_CLASSCODE;
                     pif->pif_IfSubClass = MS_ATAPI_SUBCLASS;
                     pif->pif_IfProto = MS_PROTO_CB;
@@ -8492,7 +8492,7 @@ BOOL pFixBrokenConfig(struct PsdPipe *pp)
             if((pd->pd_ProductID == 0x002E) || (pd->pd_ProductID == 0x0010)) /* Handycam */
             {
                 fixed = TRUE;
-                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "Fixing broken %s interface descriptor!", (STRPTR) "Sony MSD");
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Fixing broken %s interface descriptor!", (STRPTR) "Sony MSD");
                 pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
                 /* Get msd interface and fix it */
                 pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
@@ -8509,7 +8509,7 @@ BOOL pFixBrokenConfig(struct PsdPipe *pp)
                 if(pif->pif_IfClass != MASSSTORE_CLASSCODE)
                 {
                     fixed = TRUE;
-                    psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "Fixing broken %s interface descriptor!", (STRPTR) "Y-E Data USB Floppy");
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Fixing broken %s interface descriptor!", (STRPTR) "Y-E Data USB Floppy");
                     pif->pif_IfClass = MASSSTORE_CLASSCODE;
                     pif->pif_IfSubClass = MS_UFI_SUBCLASS;
                     pif->pif_IfProto = (pd->pd_DevVers < 0x0300) ? MS_PROTO_CB : MS_PROTO_CBI;
@@ -8520,7 +8520,7 @@ BOOL pFixBrokenConfig(struct PsdPipe *pp)
         case 0x04ce: /* ScanLogic */
             if(pd->pd_ProductID == 0x0002)
             {
-                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "Fixing broken %s interface descriptor!", (STRPTR) "ScanLogic");
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Fixing broken %s interface descriptor!", (STRPTR) "ScanLogic");
                 pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
                 /* Get msd interface and fix it */
                 pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
@@ -8532,7 +8532,7 @@ BOOL pFixBrokenConfig(struct PsdPipe *pp)
         case 0x0584: /* Ratoc cardreader */
             if(pd->pd_ProductID == 0x0008)
             {
-                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "Fixing broken %s interface descriptor!", (STRPTR) "RATOC");
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Fixing broken %s interface descriptor!", (STRPTR) "RATOC");
                 pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
                 /* Get msd interface and fix it */
                 pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
@@ -8546,7 +8546,7 @@ BOOL pFixBrokenConfig(struct PsdPipe *pp)
         case 0x04b8: /* Epson */
             if(pd->pd_ProductID == 0x0602) /* EPX Storage device (Card slot in Printer) */
             {
-                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "Fixing broken %s interface descriptor!", (STRPTR) "Epson storage");
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Fixing broken %s interface descriptor!", (STRPTR) "Epson storage");
                 pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
                 /* Get msd interface and fix it */
                 pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
@@ -8604,7 +8604,7 @@ BOOL pStartEventHandler(LIBBASETYPEPTR ps)
     if(ph->ph_Task)
     {
         ReleaseSemaphore(&ps->ps_PoPoLock);
-        psdAddErrorMsg0(RETURN_OK, (STRPTR) libname, "Event broadcaster started.");
+        psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Event broadcaster started.");
         return(TRUE);
     }
     ReleaseSemaphore(&ps->ps_PoPoLock);
@@ -8777,7 +8777,7 @@ AROS_UFH0(void, pDeviceTask)
             sigmask = SIGBREAKF_CTRL_C;
             if(caps & UHCF_QUICKIO)
             {
-                psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Enabling QuickIO for %s.", prodname);
+                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Enabling QuickIO for %s.", prodname);
                 phw->phw_TaskMsgPort.mp_Flags = PA_CALLBACK;
                 phw->phw_TaskMsgPort.mp_SigTask = (APTR) pQuickForwardRequest;
 
@@ -8836,13 +8836,13 @@ AROS_UFH0(void, pDeviceTask)
                 psdDelayMS(100);
                 if(++cnt == 50)
                 {
-                    psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                    "There are still %ld IORequests pending, before unit can go down. Driver buggy?",
                                    phw->phw_MsgCount);
                 }
                 if(cnt == 300)
                 {
-                    psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                    "Okay, I've waited long enough, sod these %ld IORequests.",
                                    phw->phw_MsgCount);
                     phw->phw_MsgCount = 0;
@@ -8860,7 +8860,7 @@ AROS_UFH0(void, pDeviceTask)
             psdUnlockPBase();
             CloseDevice((struct IORequest *) phw->phw_RootIOReq);
         } else {
-            psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname,
+            psdAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
                            "Opening %s unit %ld failed %s (%ld).",
                            phw->phw_DevName, phw->phw_Unit, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
         }
@@ -8979,7 +8979,7 @@ AROS_UFH0(void, pEventHandlerTask)
                                     //FreeSignal(po->po_ReadySignal);
                                     if(po->po_Task)
                                     {
-                                        psdAddErrorMsg0(RETURN_OK, (STRPTR) libname, "PoPo kicks ass.");
+                                        psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "PoPo kicks ass.");
                                     }
                                 }
                                 if((cfgchanged + 2) == counter)
@@ -9040,7 +9040,7 @@ AROS_UFH0(void, pEventHandlerTask)
                                                 }
                                                 if(doit)
                                                 {
-                                                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Suspending '%s'.", pd->pd_ProductStr);
+                                                    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Suspending '%s'.", pd->pd_ProductStr);
                                                     psdSuspendDevice(pd);
                                                 }
                                                 pd->pd_LastActivity.tv_secs = 0;
