@@ -3064,15 +3064,15 @@ void uhciUpdateFrameCounter(struct PCIController *hc)
 {
     UWORD framecnt;
     Disable();
-    framecnt = READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT);
-    if(framecnt < (hc->hc_FrameCounter & 0xffff))
+    framecnt = READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT) & 0x07ff;
+    if(framecnt < (hc->hc_FrameCounter & 0x07ff))
     {
-        hc->hc_FrameCounter |= 0xffff;
+        hc->hc_FrameCounter |= 0x07ff;
         hc->hc_FrameCounter++;
         hc->hc_FrameCounter |= framecnt;
         KPRINTF(10, ("Frame Counter Rollover %ld\n", hc->hc_FrameCounter));
     } else {
-        hc->hc_FrameCounter = (hc->hc_FrameCounter & 0xffff0000)|framecnt;
+        hc->hc_FrameCounter = (hc->hc_FrameCounter & 0xfffff800)|framecnt;
     }
     Enable();
 }
