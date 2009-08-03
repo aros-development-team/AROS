@@ -17,7 +17,7 @@
 
     LOCATION
 
-        Workbench:Tools/Commodities
+        SYS:Tools/Commodities
 
     FUNCTION
 
@@ -28,10 +28,10 @@
         CX_PRIORITY  --  The priority of the commodity
         
         QUALIFIER    --  Qualifier to match the clicks (LEFT_ALT, RIGHT_ALT,
-                     CTRL or NONE).
+                         CTRL or NONE).
         
         NUMCLICKS    --  Number of clicks to bring window to front. Value
-                     must be greater than 0.
+                         must be greater than 0.
 
     RESULT
 

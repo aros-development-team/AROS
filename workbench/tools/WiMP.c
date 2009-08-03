@@ -16,7 +16,7 @@
 
     LOCATION
 
-        Workbench:Tools
+        SYS:Tools
 
     FUNCTION
 
