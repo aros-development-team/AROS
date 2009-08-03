@@ -17,7 +17,7 @@
 
     LOCATION
 
-        Workbench:Tools/Commodities
+        SYS:Tools/Commodities
 
     FUNCTION
 
