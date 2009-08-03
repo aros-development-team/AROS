@@ -101,7 +101,9 @@ void SaveToDisk(struct PCIInfo *DeviceInfo)
 	FPuts( DeviceInfoFile, "RangeList_5: ");
 	FPuts( DeviceInfoFile, DeviceInfo->Rangelist_5 );
 	FPuts( DeviceInfoFile, "\n" );
-
+	
+	/*Clean up the Device Values*/
+	CleanUpPCIToolInfo(DeviceInfo);
 
 	Close( DeviceInfoFile );
 
@@ -229,5 +231,183 @@ void WriteToPCIInfoFile(struct PCIInfo *DeviceInfo)
 		FPuts( DeviceInfoFile, DeviceInfo->Rangelist_5 );
 		FPuts( DeviceInfoFile, "\n" );
 		FPuts( DeviceInfoFile, "\n" );
+		/*Clean up the Device Values*/
+		CleanUpPCIToolInfo(DeviceInfo);
 	}
+
 }
+
+void CleanUpPCIToolInfo(struct PCIInfo *DeviceInfo)
+{
+	
+
+	CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Driver_name[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Direct_bus[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Hardware_info[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Description[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Vendor_name[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Product_name[CleanIndex] = ' ';
+	}
+	
+	CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Subsystem[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 10)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->VendorID[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 10)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->ProductID[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 10)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->RevisionID[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Class[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Subclass[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Interface[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 10)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->ROM_Base[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 10)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->ROM_Size[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 10)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->IRQ[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Status[CleanIndex] = ' ';
+	}
+
+	
+CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Rangelist_0[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Rangelist_1[CleanIndex] = ' ';
+	}
+
+	CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Rangelist_2[CleanIndex] = ' ';
+	}
+
+CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Rangelist_3[CleanIndex] = ' ';
+	}
+
+
+CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Rangelist_4[CleanIndex] = ' ';
+	}
+
+CleanIndex = 0;
+	while(CleanIndex < 200)
+	{	
+		CleanIndex = CleanIndex + 1;
+		DeviceInfo->Rangelist_5[CleanIndex] = ' ';
+	}
+
+
+
+	
+	
+	
+}
+

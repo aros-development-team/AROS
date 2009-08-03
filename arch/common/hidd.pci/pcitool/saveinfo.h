@@ -39,6 +39,7 @@ char Rangelist_4[200];
 char Rangelist_5[200];
 
 };
+
  
 /*Save only the displayed PCI Information to RAM Disk*/
 void SaveToDisk(struct PCIInfo *DeviceInfo);
@@ -49,7 +50,11 @@ BOOL OpenPCIInfoFile(void);
 void ClosePCIInfoFile(void);
 /*Closes the file opened by OpenPCIInfoFile*/
 void WriteToPCIInfoFile(struct PCIInfo *DeviceInfo);
-
+/*File Handle*/
 BPTR DeviceInfoFile;
+/*clean up*/
+int CleanIndex;
+void CleanUpPCIToolInfo(struct PCIInfo *DeviceInfo);
+
 
 #endif /*SAVEINFO_H_*/

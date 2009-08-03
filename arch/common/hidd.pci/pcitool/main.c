@@ -27,7 +27,7 @@
 #include "saveinfo.h"
 
 #define APPNAME "PCITool"
-#define VERSION "PCITool 0.3 (13.5.2009)"
+#define VERSION "PCITool 0.4 (1.8.2009)"
 #define IDB_SAVE 10001
 #define IDB_SAVEALL 10002
 static const char version[] = "$VER: " VERSION "\n";
@@ -310,6 +310,7 @@ AROS_UFH3(void, select_function,
 	{
 	    memoryPrint(ranges[0], 0, val, val2, val3);
 	    DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[0], MUIV_List_Insert_Bottom);
+	    strcpy(SaveDeviceInfo.Rangelist_0, ranges[0]);
 	}
 
 	OOP_GetAttr(obj, aHidd_PCIDevice_Base1, (APTR)&val);
@@ -320,6 +321,7 @@ AROS_UFH3(void, select_function,
 	{
 	    memoryPrint(ranges[1], 1, val, val2, val3);
 	    DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[1], MUIV_List_Insert_Bottom);
+	    strcpy(SaveDeviceInfo.Rangelist_1, ranges[1]);
 	}
 
 	OOP_GetAttr(obj, aHidd_PCIDevice_isBridge, (APTR)&val);
@@ -334,6 +336,7 @@ AROS_UFH3(void, select_function,
 	    {
 	        memoryPrint(ranges[2], 2, val, val2, val3);
 		DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[2], MUIV_List_Insert_Bottom);
+	        strcpy(SaveDeviceInfo.Rangelist_2, ranges[2]);
 	    }
 
 	    OOP_GetAttr(obj, aHidd_PCIDevice_Base3, (APTR)&val);
@@ -344,6 +347,7 @@ AROS_UFH3(void, select_function,
 	    {
 	        memoryPrint(ranges[3], 3, val, val2, val3);
 		DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[3], MUIV_List_Insert_Bottom);
+	        strcpy(SaveDeviceInfo.Rangelist_3, ranges[3]);
 	    }
 
 	    OOP_GetAttr(obj, aHidd_PCIDevice_Base4, (APTR)&val);
@@ -354,6 +358,7 @@ AROS_UFH3(void, select_function,
 	    {
 	        memoryPrint(ranges[4], 4, val, val2, val3);
 		DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[4], MUIV_List_Insert_Bottom);
+	        strcpy(SaveDeviceInfo.Rangelist_4, ranges[4]);
 	    }
 
 	    OOP_GetAttr(obj, aHidd_PCIDevice_Base5, (APTR)&val);
@@ -364,6 +369,7 @@ AROS_UFH3(void, select_function,
 	    {
 		memoryPrint(ranges[5], 5, val, val2, val3);
 		DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[5], MUIV_List_Insert_Bottom);
+	        strcpy(SaveDeviceInfo.Rangelist_5, ranges[5]);
 	    }
 	}
 	else
@@ -376,36 +382,31 @@ AROS_UFH3(void, select_function,
 		     val, (val2) ? (CONST_STRPTR)" " : _(MSG_NOT),
 		     (val3) ? (CONST_STRPTR)" " : _(MSG_NOT));
 	    DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[2], MUIV_List_Insert_Bottom);
-
+	    strcpy(SaveDeviceInfo.Rangelist_2, ranges[2]);
 	    OOP_GetAttr(obj, aHidd_PCIDevice_MemoryBase, (APTR)&val);
 	    OOP_GetAttr(obj, aHidd_PCIDevice_MemoryLimit, (APTR)&val2);
 	    
 	    snprintf(ranges[3], 59, _(MSG_MEMORY_RANGE),
 		val, val2);
 	    DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[3], MUIV_List_Insert_Bottom);
-
+	    strcpy(SaveDeviceInfo.Rangelist_3, ranges[3]);
 	    OOP_GetAttr(obj, aHidd_PCIDevice_PrefetchableBase, (APTR)&val);
 	    OOP_GetAttr(obj, aHidd_PCIDevice_PrefetchableLimit, (APTR)&val2);
 	    
 	    snprintf(ranges[4], 59, _(MSG_PREFETCHABLE_MEMORY),
 		val, val2);
 	    DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[4], MUIV_List_Insert_Bottom);
-	    
+	    strcpy(SaveDeviceInfo.Rangelist_4, ranges[4]);
 	    OOP_GetAttr(obj, aHidd_PCIDevice_IOBase, (APTR)&val);
 	    OOP_GetAttr(obj, aHidd_PCIDevice_IOLimit, (APTR)&val2);
 	    
 	    snprintf(ranges[5], 59, _(MSG_IO_RANGE),
 		val, val2);
 	    DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[5], MUIV_List_Insert_Bottom);
-	   
-	}
-	    /*Get the entry in ranges Rangelist Listview for Textfile output*/
-	    strcpy(SaveDeviceInfo.Rangelist_0, ranges[0]);
-	    strcpy(SaveDeviceInfo.Rangelist_1, ranges[1]);
-	    strcpy(SaveDeviceInfo.Rangelist_2, ranges[2]);
-	    strcpy(SaveDeviceInfo.Rangelist_3, ranges[3]);
-	    strcpy(SaveDeviceInfo.Rangelist_4, ranges[4]);
 	    strcpy(SaveDeviceInfo.Rangelist_5, ranges[5]);
+	}
+	   
+	   
 	    
     {
 		IPTR io, mem, master, snoop, is66;
@@ -644,8 +645,7 @@ void loop(void)
  
 
 
-		//id = DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs);
-
+		
            
                 switch(DoMethod(app, MUIM_Application_NewInput, &sigs)) 
                 {
@@ -661,14 +661,15 @@ void loop(void)
 				set(DriverList, MUIA_List_Active, MUIV_List_Active_Top);
 				DoMethod(DriverList, MUIM_List_Redraw,MUIV_List_Redraw_All);
 				WriteToPCIInfoFile(&SaveDeviceInfo);
+				
 				while( i < (entries - 1))
 				{
 					
 					i = i + 1;
 					set(DriverList, MUIA_List_Active, MUIV_List_Active_Down);
 					DoMethod(DriverList,MUIM_List_Redraw,MUIV_List_Redraw_All); 
-					WriteToPCIInfoFile(&SaveDeviceInfo);	
-							
+					WriteToPCIInfoFile(&SaveDeviceInfo);
+												
 				}
 				ClosePCIInfoFile();				
 				i = 0;
