@@ -128,7 +128,16 @@ clean:
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/fd2inline clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/fd2pragma clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/sfdc clean SRCDIR=$(SRCDIR) TOP=$(TOP)
-	-@$(RM) $(ARCHDIR) Makefile config.cache config.status config.log mmake.cache mmake.config rom/mmakefile config/make.cfg $(AROS_DEVELOPMENT)/include/aros/config.h $(GENDIR)/include/aros/config.h $(HOSTGENDIR)/config/host.cfg $(GENDIR)/config/target.cfg $(GENDIR)/config/make.defaults $(GENDIR)/config/specs $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-gcc $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-ld $(GENDIR)/scripts/genshared $(TOOLDIR)/genmf.py tools/adflib/myconf.aros tools/collect-aros/env.h
+	-@$(RM) $(ARCHDIR) Makefile config.cache config.status config.log \
+		mmake.cache mmake.config rom/mmakefile config/make.cfg \
+		$(AROS_DEVELOPMENT)/include/aros/config.h \
+		$(GENDIR)/include/aros/config.h $(HOSTGENDIR)/config/host.cfg \
+		$(GENDIR)/config/target.cfg $(GENDIR)/config/make.defaults \
+		$(GENDIR)/config/specs \
+		$(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-gcc \
+		$(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-ld \
+		$(GENDIR)/scripts/genshared $(TOOLDIR)/genmf.py \
+		tools/adflib/myconf.aros tools/collect-aros/env.h
 
 # Clean the sources and tools
 arch-clean: clean
