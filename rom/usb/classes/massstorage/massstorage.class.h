@@ -43,19 +43,19 @@
 
 /* Protos */
 
-struct NepClassMS * usbAttemptInterfaceBinding(struct NepMSBase *nh, struct PsdInterface *pif);
-struct NepClassMS * usbForceInterfaceBinding(struct NepMSBase *nh, struct PsdInterface *pif);
-void usbReleaseInterfaceBinding(struct NepMSBase *nh, struct NepClassMS *ncm);
+struct NepClassMS * GM_UNIQUENAME(usbAttemptInterfaceBinding)(struct NepMSBase *nh, struct PsdInterface *pif);
+struct NepClassMS * GM_UNIQUENAME(usbForceInterfaceBinding)(struct NepMSBase *nh, struct PsdInterface *pif);
+void GM_UNIQUENAME(usbReleaseInterfaceBinding)(struct NepMSBase *nh, struct NepClassMS *ncm);
 
-struct NepClassMS * nAllocMS(void);
-void nFreeMS(struct NepClassMS *ncm);
+struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void);
+void GM_UNIQUENAME(nFreeMS)(struct NepClassMS *ncm);
 
-BOOL nLoadClassConfig(struct NepMSBase *nh);
-BOOL nLoadBindingConfig(struct NepClassMS *ncm);
-LONG nOpenBindingCfgWindow(struct NepMSBase *nh, struct NepClassMS *ncm);
+BOOL GM_UNIQUENAME(nLoadClassConfig)(struct NepMSBase *nh);
+BOOL GM_UNIQUENAME(nLoadBindingConfig)(struct NepClassMS *ncm);
+LONG GM_UNIQUENAME(nOpenBindingCfgWindow)(struct NepMSBase *nh, struct NepClassMS *ncm);
 
-void nGUITaskCleanup(struct NepClassMS *ncm);
-BOOL nStoreConfig(struct NepClassMS *ncm);
+void GM_UNIQUENAME(nGUITaskCleanup)(struct NepClassMS *ncm);
+BOOL GM_UNIQUENAME(nStoreConfig)(struct NepClassMS *ncm);
 
 LONG nScsiDirect(struct NepClassMS *ncm, struct SCSICmd *scsicmd);
 LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd);
@@ -72,8 +72,8 @@ LONG nGetWriteProtect(struct NepClassMS *ncm);
 LONG nStartStop(struct NepClassMS *ncm, struct IOStdReq *ioreq);
 
 BOOL nStartRemovableTask(struct Library *ps, struct NepMSBase *nh);
-struct NepMSBase * nAllocRT(void);
-void nFreeRT(struct NepMSBase *nh);
+struct NepMSBase * GM_UNIQUENAME(nAllocRT)(void);
+void GM_UNIQUENAME(nFreeRT)(struct NepMSBase *nh);
 void nUnmountPartition(struct NepClassMS *ncm);
 LONG nIOCmdTunnel(struct NepClassMS *ncm, struct IOStdReq *ioreq);
 LONG nScsiDirectTunnel(struct NepClassMS *ncm, struct SCSICmd *scsicmd);
@@ -87,11 +87,11 @@ void CheckISO9660(struct NepClassMS *ncm);
 
 void AutoDetectMaxTransfer(struct NepClassMS *ncm);
 
-AROS_UFP0(void, nMSTask);
-AROS_UFP0(void, nRemovableTask);
-AROS_UFP0(void, nGUITask);
+AROS_UFP0(void, GM_UNIQUENAME(nMSTask));
+AROS_UFP0(void, GM_UNIQUENAME(nRemovableTask));
+AROS_UFP0(void, GM_UNIQUENAME(nGUITask));
 
-AROS_UFP3(LONG, LUNListDisplayHook,
+AROS_UFP3(LONG, GM_UNIQUENAME(LUNListDisplayHook),
           AROS_UFPA(struct Hook *, hook, A0),
           AROS_UFPA(char **, strarr, A2),
           AROS_UFPA(struct NepClassMS *, ncm, A1));
