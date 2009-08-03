@@ -135,6 +135,7 @@ struct AutoBindData ClassBinds[] =
     { 0x0a46, 0x0268 },    /* ShanTou ST268 USB NIC */
     { 0x0a46, 0x8515 },    /* ADMtek ADM8515 USB NIC */
     { 0x0a47, 0x9601 },    /* Hirose USB-100 */
+    { 0x0fe6, 0x8101 },    /* DM9601 USB to Fast Ethernet Adapter */
     { 0, 0 }
 };
 
