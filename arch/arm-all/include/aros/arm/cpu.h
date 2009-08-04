@@ -2,7 +2,7 @@
 #define AROS_ARM_CPU_H
 /*
     Copyright � 1995-2008, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 
     NOTE: This file must compile *without* any other header !
 
@@ -58,8 +58,8 @@ struct FullJumpVec
 do \
 {  \
     struct FullJumpVec *_v = (v); \
-    _v->jmp = 0xe51ff004; \		/* ldr pc, [pc, #-4] */
-    _v->vec = (ULONG)(a); \		/* .word target_address */
+    _v->jmp = 0xe51ff004; 		/* ldr pc, [pc, #-4] */ 	\
+    _v->vec = (ULONG)(a); 		/* .word target_address */ 	\
 } while (0)
 
 /*
