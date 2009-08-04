@@ -7,6 +7,8 @@ FUNCS := \
 
 SHELLFILES := PsdDevLister PsdErrorlog AddUSBClasses AddUSBHardware PsdStackLoader 
 
+USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+
 #MM kernel-usb-poseidon-includes : \
 #MM     kernel-exec-includes \
 #MM     kernel-dos-includes \
@@ -22,7 +24,7 @@ SHELLFILES := PsdDevLister PsdErrorlog AddUSBClasses AddUSBHardware PsdStackLoad
 %build_module mmake=kernel-usb-poseidon \
     modname=poseidon modtype=library \
     files="$(FUNCS) $(FILES)" \
-    uselibs="amiga rom mui"
+    uselibs="amiga rom"
 
 
 %build_progs mmake=kernel-usb-shelltools \

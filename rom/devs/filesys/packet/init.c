@@ -92,21 +92,22 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
     TEXT *dos_path;
     struct DosPacket *dp;
 
-    D(bug("[packet] in open\n"));
+    D(bug("[packet] in open by Task %s\n", FindTask(NULL)->tc_Node.ln_Name));
 
     dn = iofs->io_Union.io_OpenDevice.io_DeviceNode;
 
-    D(bug("[packet] devicename '%s' unit %d dosname '%s' handler '%s'\n",
+    D(bug("[packet] devicenode=%08lx devicename '%s' unit %d dosname '%s' handler '%s'\n",
+            dn,
             iofs->io_Union.io_OpenDevice.io_DeviceName,
             iofs->io_Union.io_OpenDevice.io_Unit,
             iofs->io_Union.io_OpenDevice.io_DosName,
-            dn->dn_Handler));
+            AROS_BSTR_ADDR(dn->dn_Handler)));
 
     /* find this mount */
     mount = NULL;
     ForeachNode(&(pb->mounts), scan) {
         /* XXX what happens if the mount point matches but the handler doesn't? */
-        if (strcmp(scan->handler_name, dn->dn_Handler) == 0 &&
+        if (strcmp(scan->handler_name, AROS_BSTR_ADDR(dn->dn_Handler)) == 0 &&
             strcmp(scan->mount_point, iofs->io_Union.io_OpenDevice.io_DosName) == 0) {
             mount = scan;
             break;
@@ -120,7 +121,7 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
          * not already loaded */
         seglist = dn->dn_SegList;
         for (i = 0; seglist == NULL && search_path[i] != NULL; i++) {
-            snprintf(filename, MAXFILENAMELENGTH, search_path[i], dn->dn_Handler);
+            snprintf(filename, MAXFILENAMELENGTH, search_path[i], AROS_BSTR_ADDR(dn->dn_Handler));
             seglist = LoadSeg(filename);
             if (seglist != NULL) {
                 loaded = TRUE;
@@ -131,7 +132,7 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
         }
 
         if (seglist == NULL) {
-            kprintf("[packet] couldn't open %s\n", dn->dn_Handler);
+            kprintf("[packet] couldn't open %s\n", AROS_BSTR_ADDR(dn->dn_Handler));
             iofs->IOFS.io_Error = IOERR_OPENFAIL;
             return FALSE;
         }
@@ -139,7 +140,7 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
         /* got it, create our mount struct */
         mount = (struct ph_mount *) AllocVec(sizeof(struct ph_mount), MEMF_PUBLIC | MEMF_CLEAR);
 
-        strncpy(mount->handler_name, dn->dn_Handler, MAXFILENAMELENGTH);
+        strncpy(mount->handler_name, AROS_BSTR_ADDR(dn->dn_Handler), MAXFILENAMELENGTH);
         strncpy(mount->mount_point, iofs->io_Union.io_OpenDevice.io_DosName, MAXFILENAMELENGTH);
 
         /* only store seg list for later unloading if we loaded it ourselves */
