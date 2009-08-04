@@ -1,6 +1,8 @@
 #   $Id: mmakefile.src  $
 include $(TOP)/config/make.cfg
 
+USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+
 FILES :=    pegasus.class dev debug
 
 #MM- kernel-usb-classes-pegasus : kernel-usb-usbclass kernel-usb-poseidon
@@ -8,6 +10,6 @@ FILES :=    pegasus.class dev debug
 %build_module mmake=kernel-usb-classes-pegasus \
     modname=pegasus modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
-    uselibs="amiga rom mui"
+    uselibs="amiga rom"
 
 %common

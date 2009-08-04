@@ -40,6 +40,7 @@
 #include LC_LIBDEFS_FILE
 
 #define BNF_RETRY 0x8000 /* Private flag for the BootNode */
+#define BNF_MOUNTED 0x4000 /* Private flag for the BootNode */
 
 extern BOOL __dosboot_InitHidds(struct ExecBase *, struct DosLibrary *);
 extern void __dosboot_Boot(struct ExecBase *SysBase, BOOL hidds_ok);
@@ -51,6 +52,7 @@ BOOL __dosboot_RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSB
     struct MsgPort *mp;
     struct IOFileSys *iofs;
     BOOL ok = FALSE;
+    BOOL opened = FALSE;
 
     D(bug("[DOSBoot] __dosboot_RunHandler()\n" ));
     mp = CreateMsgPort();
@@ -90,13 +92,20 @@ BOOL __dosboot_RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSB
 	    iofs->io_Union.io_OpenDevice.io_DeviceNode = deviceNode;
 
 	    D(bug("[DOSBoot] __dosboot_RunHandler: Starting up %s\n", handler));
-	    if (!OpenDevice(handler, 0, &iofs->IOFS, fssmFlags) ||
-        	!OpenDevice("packet.handler", 0, &iofs->IOFS, fssmFlags))
+	    opened = !OpenDevice(handler, 0, &iofs->IOFS, fssmFlags);
+	    if(!opened)
+	    {
+		D(bug("[DOSBoot] __dosboot_RunHandler: Retrying with packet.handler\n"));
+		opened = !OpenDevice("packet.handler", 0, &iofs->IOFS, fssmFlags);
+	    }
+	    if (opened)
 	    {
 		/* Ok, this means that the handler was able to open. */
 		D(bug("[DOSBoot] __dosboot_RunHandler: Handler started\n"));
 		deviceNode->dn_Ext.dn_AROS.dn_Device = iofs->IOFS.io_Device;
 		deviceNode->dn_Ext.dn_AROS.dn_Unit = iofs->IOFS.io_Unit;
+		// FIXME I think the device must be closed again, especially because the IORequest is freed a few lines below (chodges, 04-08-2009)
+		//CloseDevice(&iofs->IOFS);
 		ok = TRUE;
 	    }
 
@@ -127,6 +136,7 @@ static BOOL __dosboot_Mount(struct DeviceNode *dn, struct DosLibrary * DOSBase)
     {
         if (!AddDosEntry((struct DosList *) dn))
         {
+            kprintf("Mounting node %08lx (%s) failed at AddDosEntry() -- maybe it was already added by someone else!\n", dn, dn->dn_Ext.dn_AROS.dn_DevName);
             Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
         }
     }
@@ -318,6 +328,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
         }
         else
         {
+            bootNode->bn_Flags |= BNF_MOUNTED;
             bootNode->bn_Flags &= ~BNF_RETRY;
             D(bug("[DOSBoot] __dosboot_BootProcess: Marked '%s' as useable\n",
                     deviceName ? deviceName : "(null)"));
@@ -365,8 +376,27 @@ AROS_UFH3(void, __dosboot_BootProcess,
                 tr->tr_time.tv_secs = 5;
                 tr->tr_time.tv_micro = 0;
                 DoIO((struct IORequest *)tr);
-            } else
+            } else {
                 Delay(500);
+            }
+            
+            /* retry to mount stuff -- there might be some additional device in the meanwhile */
+            ForeachNode(&ExpansionBase->MountList, bootNode)
+            {
+                D(bug("[DOSBoot] __dosboot_BootProcess: Retrying to mount '%s' ...\n", deviceName ? deviceName : "(null)"));
+                if(((bootNode->bn_Flags & BNF_RETRY) || (!(bootNode->bn_Flags & BNF_MOUNTED))) && (bootNode->bn_Node.ln_Pri != -128))
+                {
+                    if (!(__dosboot_Mount( (struct DeviceNode *) bootNode->bn_DeviceNode, (struct DosLibrary *) DOSBase)))
+                    {
+                        bootNode->bn_Flags |= BNF_RETRY;
+                    } else {
+                        bootNode->bn_Flags |= BNF_MOUNTED;
+                        bootNode->bn_Flags &= ~BNF_RETRY;
+                        D(bug("[DOSBoot] __dosboot_BootProcess: Late marked '%s' as useable\n",
+                              deviceName ? deviceName : "(null)"));
+                    }
+                }
+            }
         }
     }
 
@@ -463,10 +493,13 @@ AROS_UFH3(void, __dosboot_BootProcess,
                 D(bug("[DOSBoot] __dosboot_BootProcess: Retrying node: %p, DevNode: %p, Name = %s\n", bootNode, bootNode->bn_DeviceNode, deviceName ? deviceName : "(null)" ));
                 if( !__dosboot_Mount((struct DeviceNode *)bootNode->bn_DeviceNode, (struct DosLibrary *)DOSBase))
                 {
+                    Forbid();
                     REMOVE( bootNode );
+                    Permit();
                 }
             }
         }
+        ExpansionBase->Flags |= EBF_BOOTFINISHED;
 
         /* We don't need expansion.library any more */
         CloseLibrary( (struct Library *) ExpansionBase );

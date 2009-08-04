@@ -1,6 +1,8 @@
 #   $Id: mmakefile.src  $
 include $(TOP)/config/make.cfg
 
+USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+
 FILES :=    bootmouse.class debug
 
 #MM- kernel-usb-classes-bootmouse : kernel-usb-usbclass kernel-usb-poseidon
@@ -8,6 +10,6 @@ FILES :=    bootmouse.class debug
 %build_module mmake=kernel-usb-classes-bootmouse \
     modname=bootmouse modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
-    uselibs="amiga rom mui"
+    uselibs="amiga rom"
 
 %common

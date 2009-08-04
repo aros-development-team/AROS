@@ -76,12 +76,35 @@
 
     struct DosLibrary *DOSBase;
     BOOL ok = FALSE;
+    struct BootNode *bn;
 
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
 
     /* Aha, DOS is up and running... */
     if (DOSBase != NULL)
     {
+	/* Due to race conditions while booting (dos becomes available), 
+	   we will check the mount list if the entry is already there.
+	   As long as we are in the boot process, leave the mounting to 
+	   that process. Otherwise, mount it immediately. */
+	ForeachNode(&ExpansionBase->MountList, bn)
+	{
+	    if(stricmp(AROS_BSTR_ADDR(((struct DeviceNode *) bn->bn_DeviceNode)->dn_Name), AROS_BSTR_ADDR(deviceNode->dn_Name)) == 0)
+	    {
+		// so there was already an entry with that DOS name.
+		if(ExpansionBase->Flags & EBF_BOOTFINISHED)
+		{
+		    // well, just add it to the DOS List, the mount list won't be touched anymore anyway.
+		    // we won't remove the duplicate entry though.
+		} else {
+		    // if that node is already the mount list, don't bother
+		    CloseLibrary((struct Library *)DOSBase);
+		    return FALSE;
+		}
+		break;
+	    }
+	}
+        
 	/* We should add the filesystem to the DOS device list. It will
 	   be usable from this point onwards.
 

@@ -76,7 +76,7 @@
 
     if (dlist == NULL) return success;
 
-    D(bug("[AddDosEntry] Adding %b\n", dlist->dol_Name));
+    D(bug("[AddDosEntry] Adding %b from Task %s\n", dlist->dol_Name, FindTask(NULL)->tc_Node.ln_Name));
     dl = LockDosList(LDF_ALL | LDF_READ);
 
     /* If the passed entry has dol_Task defined, then it's a packet-based
@@ -133,6 +133,7 @@
 	    if(dl->dol_Type != DLT_VOLUME &&
 	       !Stricmp(dl->dol_Ext.dol_AROS.dol_DevName, dlist->dol_Ext.dol_AROS.dol_DevName))
 	    {
+		D(bug("[AddDosEntry] Name clash for %08lx->dol_DevName: %s and %08lx->dol_DevName %s\n", dl, dl->dol_Ext.dol_AROS.dol_DevName, dlist, dlist->dol_Ext.dol_AROS.dol_DevName));
 		success = 0;
 		break;
 	    }

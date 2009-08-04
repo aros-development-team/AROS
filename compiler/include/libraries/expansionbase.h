@@ -75,6 +75,14 @@ struct ExpansionBase
 #define EBB_KICKBACK36  5       /* reserved by AmigaDOS */
 #define EBF_KICKBACK36  (1L<<5)
 
+/*  The following flag is set by dosboot to indicate expansion.library, that 
+    the dos boot process has been finished and that it will no longer do
+    anything with the MountList. All futher mount attempts shall go to
+    AddDosNode() instead of AddBootNode(). Notice that this uses the same
+    bit as EBB_KICKBACK36, which is considered obsolete. */
+#define EBB_BOOTFINISHED 5
+#define EBF_BOOTFINISHED (1L<<5)
+
 /*  If the following flag is set by a floppies boot code, then when DOS
     awakes, it will not open its initial console window until the first
     output is written to that shell. Otherwise the old behaviour will

@@ -5463,22 +5463,23 @@ struct DeviceNode * FindMatchingDevice(struct NepClassMS *ncm, struct DosEnvec *
         {
             fssm = NULL;
 
-            if((!(((ULONG) list->dol_misc.dol_handler.dol_Startup) >> 30)) &&
-               TypeOfMem(BADDR(list->dol_misc.dol_handler.dol_Startup)))
+            /*if((!(((ULONG) list->dol_misc.dol_handler.dol_Startup) >> 30)) &&
+               TypeOfMem(BADDR(list->dol_misc.dol_handler.dol_Startup)))*/
             {
                 fssm = BADDR(list->dol_misc.dol_handler.dol_Startup);
             }
 
             if(fssm > (struct FileSysStartupMsg *) 0x1000)
             {
-                if((*((UBYTE *) fssm)) == 0)
+//                if((*((UBYTE *) fssm)) == 0)
                 {
                     struct DosEnvec *de = BADDR(fssm->fssm_Environ);
                     STRPTR devname = BADDR(fssm->fssm_Device);
 
-                    if((!((ULONG) de >> 30)) && TypeOfMem(de) &&
+                    if(TypeOfMem(de) && TypeOfMem(devname) && (de->de_TableSize > 0) && (de->de_TableSize < 32))
+                    /*if((!((ULONG) de >> 30)) && TypeOfMem(de) &&
                        (!((ULONG) devname >> 30)) && TypeOfMem(devname) &&
-                       (de->de_TableSize > 0) && (de->de_TableSize < 32))
+                       (de->de_TableSize > 0) && (de->de_TableSize < 32))*/
                     {
                         if(MatchPartition(ncm, envec, fssm))
                         {
@@ -5494,10 +5495,6 @@ struct DeviceNode * FindMatchingDevice(struct NepClassMS *ncm, struct DosEnvec *
     return(node);
 }
 /* \\\ */
-
-/* FIXME that bootcode is probably irrelevant to AROS */
-ULONG bootcode[8] =  { 0x43FA0010, 0x4EAEFFA0, 0x22407200, 0x4EAEFF9A,
-                       0x4E75646F, 0x732E6C69, 0x62726172, 0x79000000 };
 
 /* /// "MountPartition()" */
 BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
@@ -5575,8 +5572,6 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
 
             if((node = MakeDosNode(params)))
             {
-                struct ConfigDev *cd = NULL;
-                struct DiagArea *da = NULL;
                 BOOL installboot;
                 KPRINTF(10, ("MakeDosNode() succeeded, patchflags %04lx\n", patch.fse_PatchFlags));
                 node->dn_StackSize = 16384;
@@ -5628,20 +5623,9 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
                     // device
                     ncm->ncm_CUC->cuc_AutoUnmount = FALSE;
                     GM_UNIQUENAME(nStoreConfig)(ncm);
-
-                    cd = AllocVec(sizeof(struct ConfigDev), MEMF_PUBLIC|MEMF_CLEAR);
-                    da = AllocVec(sizeof(struct DiagArea)+8*4, MEMF_PUBLIC|MEMF_CLEAR);
-                    if(cd && da)
-                    {
-                        cd->cd_Rom.er_Type = ERTF_DIAGVALID;
-                        *((struct DiagArea **) (&cd->cd_Rom.er_Reserved0c)) = da;
-                        da->da_Config = DAC_CONFIGTIME;
-                        da->da_BootPoint = sizeof(struct DiagArea);
-                        CopyMemQuick(bootcode, ((UBYTE *) da) + sizeof(struct DiagArea), 8*4);
-                    }
                 }
 
-                if(AddBootNode(nh->nh_RDsk.rdsk_PART.pb_Environment[DE_BOOTPRI], ADNF_STARTPROC, node, cd))
+                if(AddBootNode(nh->nh_RDsk.rdsk_PART.pb_Environment[DE_BOOTPRI], ADNF_STARTPROC, node, NULL))
                 {
                     KPRINTF(10, ("AddBootNode() succeeded\n"));
                     psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),

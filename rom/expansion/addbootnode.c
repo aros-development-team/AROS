@@ -117,8 +117,17 @@
     */
 
     /* Is this enough of a test? */
-    if(FindName((struct List *)&SysBase->LibList, "dos.library") == NULL)
+    if(!(ExpansionBase->Flags & EBF_BOOTFINISHED))
     {
+	/* Don't add the same node twice */
+	ForeachNode(&ExpansionBase->MountList, bn)
+	{
+	    if(stricmp(AROS_BSTR_ADDR(((struct DeviceNode *) bn->bn_DeviceNode)->dn_Name), AROS_BSTR_ADDR(deviceNode->dn_Name)) == 0)
+	    {
+		// so there was already an entry with that DOS name.
+		return FALSE;
+	    }
+	}
 	if((bn = AllocMem(sizeof(struct BootNode), MEMF_CLEAR|MEMF_PUBLIC)))
 	{
 	    bn->bn_Node.ln_Name = (STRPTR)configDev;
@@ -126,8 +135,9 @@
 	    bn->bn_Node.ln_Pri = bootPri;
 	    bn->bn_Flags = flags;
 	    bn->bn_DeviceNode = deviceNode;
-
+	    Forbid();
 	    Enqueue( &ExpansionBase->MountList, (struct Node *)bn );
+	    Permit();
 	}
 	else
 	    return FALSE;

@@ -7,11 +7,11 @@ FILES :=    hid.class hid.gui hidctrl.gui numtostr debug
 #MM				contrib-zune-classes-nlist-class \
 #MM				contrib-zune-classes-nlistview-class
 
-USER_CFLAGS := -DUSE_NLIST
+USER_CFLAGS := -DUSE_NLIST -DMUIMASTER_YES_INLINE_STDARG
 
 %build_module mmake=kernel-usb-classes-hid \
     modname=hid modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
-    uselibs="amiga rom mui"
+    uselibs="amiga rom"
 
 %common
