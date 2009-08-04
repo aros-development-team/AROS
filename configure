@@ -8881,6 +8881,19 @@ $as_echo "$as_me: error: \"Unknown CPU for Solaris -- $target_cpu\"" >&2;}
 	gcc_target_cpu="powerpc"
 	;;
 
+    efika)
+        aros_target_arch="efika"
+        aros_shared_default="no"
+        aros_target_cpu="arm"
+        aros_object_format="elf32-littlearm"
+        aros_flavour="standalone"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
+        aros_kernel_ldflags=""
+        aros_default_wbwidth=1024
+        aros_default_wbheight=600
+        aros_config_cflags="$aros_config_cflags -march=armv6 -mfpu=vfp -mfloat-abi=softfp -mthumb-interwork -mno-toc -fno-asynchronous-unwind-tables"
+        ;;
+
     chrp)
     aros_target_arch="chrp"
     aros_shared_default="no"
@@ -13913,7 +13926,8 @@ $debug ||
 if test -n "$CONFIG_FILES"; then
 
 
-ac_cr=''
+ac_cr='
+'
 ac_cs_awk_cr=`$AWK 'BEGIN { print "a\rb" }' </dev/null 2>/dev/null`
 if test "$ac_cs_awk_cr" = "a${ac_cr}b"; then
   ac_cs_awk_cr='\\r'
