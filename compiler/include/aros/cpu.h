@@ -1,7 +1,7 @@
 #ifndef AROS_CPU_H
 #define AROS_CPU_H
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     CPU independent version of the <aros/cpu.h> header. This is the one
@@ -17,6 +17,7 @@
 #define AROS_CPU_SPARC64            7
 #define AROS_CPU_IA64               8
 #define AROS_CPU_X8664              9
+#define AROS_CPU_ARM				10
 
 /*
     Firstly, include the sub-include file for a particular CPU.
@@ -29,6 +30,8 @@
 #   include <aros/m68k/cpu.h>
 #elif defined __powerpc__
 #   include <aros/ppc/cpu.h>
+#elif defined __arm__
+#	include <aros/arm/cpu.h>
 #else
 #   error unsupported CPU type
 #endif
@@ -216,7 +219,7 @@
 #endif
 
 #ifndef STACKED
-#define STACKED __attribute__((aligned(4))) 
+#define STACKED __attribute__((aligned(4)))
 #endif
 
 #endif /* AROS_CPU_H */
