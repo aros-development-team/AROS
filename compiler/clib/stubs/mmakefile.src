@@ -34,5 +34,5 @@ $(STUBSDIR)/$(GENSTUBS) : $(GENSTUBS).c $(AROS_INCLUDES)/sys/syscall.def \
 
 $(STUBSDIR)/archspecific.h: archspecific.c $(GENINCDIR)/aros/$(AROS_TARGET_CPU)/cpu.h | $(STUBSDIR)
 	@$(TARGET_CC) -S $< -o $(STUBSDIR)/archspecific.s
-	@grep "^[/#][*d]" $(STUBSDIR)/archspecific.s | $(SED) s/@SED@[$$]*//g >$@
+	@grep "^[/#][*d]" $(STUBSDIR)/archspecific.s | $(SED) s/@SED@[$$\#]*//g >$@
 	@$(RM) $(STUBSDIR)/archspecific.s
