@@ -53,7 +53,7 @@ BOOT_TAR_EXECUTABLES := \
     Devs/pipefs.handler \
     Libs/arosc.library Libs/asl.library Libs/commodities.library \
     Libs/datatypes.library Libs/diskfont.library Libs/gadtools.library \
-    Libs/icon.library \
+    Libs/icon.library Libs/workbench.library \
     Libs/reqtools.library Libs/muimaster.library Libs/coolimages.library \
     Prefs/Font \
     Prefs/Time \
