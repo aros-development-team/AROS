@@ -20,7 +20,7 @@
 #elif __powerpc__ || __ppc__
 #   define _JMPLEN 58
 #elif __arm__
-#   define _JMPLEN 64
+#   define _JMPLEN 63
 #endif
 
 typedef struct __jmp_buf
