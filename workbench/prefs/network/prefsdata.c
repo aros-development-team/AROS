@@ -158,7 +158,7 @@ BOOL GetNoTracking()
     return FALSE;
 }
 
-/* Puts part 1 into empy buffer */
+/* Puts part 1 into empty buffer */
 VOID CombinePath1P(STRPTR dstbuffer, ULONG dstbufferlen, CONST_STRPTR part1)
 {
     dstbuffer[0] = '\0'; /* Make sure buffer is treated as empty */
@@ -235,10 +235,13 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     if (!ConfFile) return FALSE;
     fprintf(ConfFile, "HOST %s %s.%s %s\n", GetIP(), GetHost(), GetDomain(), GetHost());
     fprintf(ConfFile, "HOST %s gateway\n", GetGate());
-    fprintf(ConfFile, "; Domain names\n");
-    fprintf(ConfFile, "; Name servers\n");
-    fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(0));
-    fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(1));
+    if (!GetDHCP())
+    {
+        fprintf(ConfFile, "; Domain names\n");
+        fprintf(ConfFile, "; Name servers\n");
+        fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(0));
+        fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(1));
+    }
     fclose(ConfFile);
 
     CombinePath2P(filename, filenamelen, destdbdir, "static-routes");
@@ -329,7 +332,7 @@ BOOL RestartStack()
             Signal(arostcptask, SIGBREAKF_CTRL_C);
     }
 
-    /* Check if shutdown successfull */
+    /* Check if shutdown successful */
     trycount = 0;
     while(IsStackRunning())
     {
@@ -358,7 +361,7 @@ BOOL RestartStack()
     }
 
     
-    /* Check if startup successfull */
+    /* Check if startup successful */
     trycount = 0;
     while(!IsStackRunning())
     {
@@ -442,7 +445,7 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
     STRPTR tstring;
     struct Tokenizer tok;
 
-    /* This function will not fail. It will load as much data as possible. Rest will be defaul values */
+    /* This function will not fail. It will load as much data as possible. Rest will be default values */
 
     CombinePath3P(filename, filenamelen, directory, "db", "general.config"); 
     OpenTokenFile(&tok, filename);
