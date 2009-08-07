@@ -29,6 +29,7 @@
 #ifndef	_FENV_H_
 #define	_FENV_H_
 
+#include <sys/cdefs.h>
 #include <sys/_types.h>
 
 typedef	__uint32_t	fenv_t;

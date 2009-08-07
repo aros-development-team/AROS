@@ -38,6 +38,8 @@
 #   include <aros/m68k/_fpmath.h>
 #elif defined __powerpc__
 #   include <aros/ppc/_fpmath.h>
+#elif defined __arm__
+#   include <aros/arm/_fpmath.h>
 #else
 #   error unsupported CPU type
 #endif
