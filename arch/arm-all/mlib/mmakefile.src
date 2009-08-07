@@ -1,0 +1,11 @@
+# $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
+#
+include $(TOP)/config/make.cfg
+
+#MM- linklibs-arosm-arm : linklibs-arosm-hasfpu
+
+%build_archspecific \
+  mainmmake=linklibs-arosm-hasfpu \
+  maindir=compiler/mlib \
+  arch=arm \
+  files="fenv infinity"

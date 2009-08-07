@@ -1,7 +1,7 @@
 /*
-    Copyright © 2007, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2007, The AROS Development Team. All rights reserved.
     $Id$
-  
+
     C99 floating-point environment
 */
 
@@ -12,6 +12,8 @@
 #   include <aros/x86_64/fenv.h>
 #elif defined __powerpc__
 #   include <aros/ppc/fenv.h>
+#elif defined __arm__
+#   include <aros/arm/fenv.h>
 
 /* otherwise just use the stub implementation */
 #elif !defined _FENV_H_
