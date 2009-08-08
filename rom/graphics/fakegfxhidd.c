@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -485,7 +485,7 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	    
 	    /* Now that we have disposed the old image using the old
 	       backup bm, we can install the new backup bm before
-	       rendering the new curso
+	       rendering the new cursor
 	    */
 	    
 	    if (NULL != data->curs_backup)
@@ -1398,8 +1398,8 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
     x = data->curs_x;
     y = data->curs_y;
     
-    w2end = fb_width  - 1 - data->curs_x;
-    h2end = fb_height - 1 - data->curs_y;
+    w2end = fb_width - data->curs_x;
+    h2end = fb_height - data->curs_y;
     
     if (w2end <= 0 || h2end <= 0) /* Cursor outside framebuffer */
 	return;
