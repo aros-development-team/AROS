@@ -74,10 +74,12 @@ int __stat(BPTR lock, struct stat *sb)
         if(NameFromLock(lock, buffer, buffersize))
             break;
         else if(   IoErr() == ERROR_OBJECT_IN_USE
-                || IoErr() == ERROR_NOT_IMPLEMENTED)
+                || IoErr() == ERROR_NOT_IMPLEMENTED
+                || IoErr() == ERROR_OBJECT_NOT_FOUND && fib->fib_EntryType == ST_PIPEFILE)
         {
             /* We can't retrieve name because lock is an exclusive lock
-               or Examine is not implemented in this handler */
+               or Examine is not implemented in this handler
+               or the lock refers to an XPIPE: file having always empty name */
             buffer[0] = '\0';
             break;
         }
