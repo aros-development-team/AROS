@@ -539,7 +539,7 @@ BOOL nLoadBindingConfig(struct NepClassEth *ncp)
         cdc = psdGetCfgChunk(pic, AROS_LONG2BE(ncp->ncp_CDC->cdc_ChunkID));
         if(cdc)
         {
-            CopyMem(((UBYTE *) cdc) + 8, ((UBYTE *) ncp->ncp_CDC) + 8, min(cdc->cdc_Length, ncp->ncp_CDC->cdc_Length));
+            CopyMem(((UBYTE *) cdc) + 8, ((UBYTE *) ncp->ncp_CDC) + 8, min(AROS_LONG2BE(cdc->cdc_Length), AROS_LONG2BE(ncp->ncp_CDC->cdc_Length)));
             psdFreeVec(cdc);
             ncp->ncp_UsingDefaultCfg = FALSE;
         }
@@ -874,7 +874,7 @@ AROS_UFH0(void, nEthTask)
         KPRINTF(20, ("Going down the river!\n"));
         nFreeEth(ncp);
     }
-    
+
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
@@ -1119,74 +1119,6 @@ LONG nWriteDMRegs(struct NepClassEth *ncp, UBYTE *data, ULONG len, ULONG offset)
 }
 /* \\\ */
 
-#if 0
-/* /// "nReadEEPROMMAC()" */
-BOOL nReadEEPROMMAC(struct NepClassEth *ncp, UBYTE *macptr)
-{
-    UBYTE eeword[2];
-    ULONG cnt;
-    UWORD timeout;
-    LONG ioerr;
-    LONG data;
-
-    for(cnt = 0; cnt < 3; cnt++)
-    {
-        ioerr = nWriteDMReg(ncp, DMREG_PHY_ADDR, cnt);
-        if(ioerr)
-        {
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
-                           "Writing eeprom offset %ld failed: %s (%ld)",
-                           cnt,
-                           psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-            return(FALSE);
-        }
-        ioerr = nWriteDMReg(ncp, DMREG_PHY_CTRL, PHY_READ|PHY_RELOAD_EEPROM);
-        if(ioerr)
-        {
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
-                           "Writing eeprom ctrl %ld = 0 failed: %s (%ld)",
-                           cnt,
-                           psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-            return(FALSE);
-        }
-        psdDelayMS(1);
-        timeout = 10;
-        while(--timeout)
-        {
-            data = nReadDMReg(ncp, DMREG_PHY_CTRL);
-            if(data < 0)
-            {
-                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
-                               "Reading eeprom ctrl %ld failed: %s (%ld)",
-                               cnt,
-                               psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-                return(FALSE);
-            }
-            if(!(data & PHY_BUSY))
-            {
-                break;
-            }
-            psdDelayMS(10);
-        }
-        if(!timeout)
-        {
-            KPRINTF(20, ("Timeout waiting for PHY to respond (read reg %ld)!\n", cnt));
-            return(FALSE);
-        }
-        ioerr = nReadDMRegs(ncp, eeword, 2, DMREG_PHY_DATA_LOW);
-        if(ioerr)
-        {
-            return(FALSE);
-        }
-        *macptr++ = eeword[0];
-        *macptr++ = eeword[1];
-        //psdDelayMS(100);
-    }
-    return(TRUE);
-}
-/* \\\ */
-#endif
-
 /* /// "nReadPhyWord()" */
 LONG nReadPhyWord(struct NepClassEth *ncp, ULONG phyreg)
 {
@@ -1320,28 +1252,6 @@ BOOL nInitDavicom(struct NepClassEth *ncp)
         return(FALSE);
     }
 
-#if 0
-    psdPipeSetup(ncp->ncp_EP0Pipe, URTF_STANDARD|URTF_ENDPOINT,
-                 USR_CLEAR_FEATURE, UFS_ENDPOINT_HALT, (ULONG) ncp->ncp_EPInNum|URTF_IN);
-    ioerr = psdDoPipe(ncp->ncp_EP0Pipe, NULL, 0);
-    if(ioerr)
-    {
-        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
-                       "Clearing IN-endpoint stall failed: %s (%ld)",
-                       psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-    }
-
-    psdPipeSetup(ncp->ncp_EP0Pipe, URTF_STANDARD|URTF_ENDPOINT,
-                 USR_CLEAR_FEATURE, UFS_ENDPOINT_HALT, (ULONG) ncp->ncp_EPOutNum);
-    ioerr = psdDoPipe(ncp->ncp_EP0Pipe, NULL, 0);
-    if(ioerr)
-    {
-        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
-                       "Clearing OUT-endpoint stall failed: %s (%ld)",
-                       psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-    }
-#endif
-
     data = nReadPhyWord(ncp, MII_BMSR);
     KPRINTF(10, ("Phy %04lx\n", data));
     if((data > 0) && (data != 0xffff) && (data & BMSR_MEDIA))
@@ -1430,6 +1340,7 @@ void nSetOnline(struct NepClassEth *ncp)
             if(data & ADVERTISE_100FULL)
             {
                 // 100Base-TX Full Duplex
+                negstr = MediaTypeStrings[MT_100BASE_TX_FULL_DUP];
             }
             else if(data & ADVERTISE_100HALF)
             {
@@ -1550,23 +1461,16 @@ BOOL nWritePacket(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
     /* Not a raw packet? */
     if(!(ioreq->ios2_Req.io_Flags & SANA2IOF_RAW))
     {
-        //UWORD cnt;
+        UWORD cnt;
         KPRINTF(10, ("RAW WRITE!\n"));
         /* The ethernet header isn't included in the data */
         /* Build ethernet packet header */
-#if 1
-        *((ULONG *) eph->eph_Dest) = *((ULONG *) ioreq->ios2_DstAddr);
-        *((UWORD *) (&eph->eph_Dest[4])) = *((UWORD *) (&ioreq->ios2_DstAddr[4]));
-        *((ULONG *) eph->eph_Src) = *((ULONG *) ncp->ncp_MacAddress);
-        *((UWORD *) (&eph->eph_Src[4])) = *((UWORD *) (&ncp->ncp_MacAddress[4]));
-#else
         for(cnt = 0; cnt < ETHER_ADDR_SIZE; cnt++)
         {
             eph->eph_Dest[cnt] = ioreq->ios2_DstAddr[cnt];
             eph->eph_Src[cnt]  = ncp->ncp_MacAddress[cnt];
         }
-#endif
-        eph->eph_Type = packettype;
+        eph->eph_Type = AROS_WORD2BE(packettype);
 
         /* Packet data is at txbuffer */
         copydest += sizeof(struct EtherPacketHeader);
@@ -1617,17 +1521,17 @@ BOOL nWritePacket(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
     ncp->ncp_WriteBufNum ^= 1;
 
     DB(
-        if(eph->eph_Type < ETHERPKT_SIZE)
+        if(AROS_BE2WORD(eph->eph_Type) < ETHERPKT_SIZE)
         {
             KPRINTF(5, ("writepacket: %04lx%08lx > %04lx%08lx (IEEE802.3) len %lu, %lu bytes\n",
                         *((UWORD *) eph->eph_Src), *((ULONG *) (eph->eph_Src + 2)),
                         *((UWORD *) eph->eph_Dest), *((ULONG *) (eph->eph_Dest + 2)),
-                        eph->eph_Type, writelen));
+                        AROS_BE2WORD(eph->eph_Type), writelen));
         } else {
             KPRINTF(5, ("writepacket: %04lx%08lx > %04lx%08lx type %lu, %lu bytes\n",
                         *((UWORD *) eph->eph_Src), *((ULONG *) (eph->eph_Src + 2)),
                         *((UWORD *) eph->eph_Dest), *((ULONG *) (eph->eph_Dest + 2)),
-                        eph->eph_Type, writelen));
+                        AROS_BE2WORD(eph->eph_Type), writelen));
         }
         //dumpmem(buf, (ULONG) writelen);
     )
@@ -1665,7 +1569,7 @@ UWORD nReadIOReq(struct NepClassEth *ncp, struct EtherPacketHeader *eph, UWORD d
     }
 
     /* Build up the ios2 structure enough so we can call the packet filter. */
-    ioreq->ios2_PacketType = eph->eph_Type;
+    ioreq->ios2_PacketType = AROS_BE2WORD(eph->eph_Type);
     for(cnt = 0; cnt < ETHER_ADDR_SIZE; cnt++)
     {
         ioreq->ios2_SrcAddr[cnt] = eph->eph_Src[cnt];
@@ -1680,7 +1584,7 @@ UWORD nReadIOReq(struct NepClassEth *ncp, struct EtherPacketHeader *eph, UWORD d
     {
         /* This packet got dropped! */
         KPRINTF(7, ("readioreq: packet type %lu for ioreq 0x%08lx dropped\n",
-                eph->eph_Type, ioreq));
+                AROS_BE2WORD(eph->eph_Type), ioreq));
         return flags;
     }
 
@@ -1786,7 +1690,7 @@ BOOL nReadPacket(struct NepClassEth *ncp, UBYTE *pktptr, ULONG len)
 
     eph = (struct EtherPacketHeader *) pktptr;
     packetdata = (UBYTE *) (eph + 1);
-    stats = FindPacketTypeStats(ncp, (ULONG) eph->eph_Type);
+    stats = FindPacketTypeStats(ncp, (ULONG) AROS_BE2WORD(eph->eph_Type));
     flags = DROPPED|PACKETFILTER;
 
     /* Calculate size of the actual data */
@@ -1814,8 +1718,8 @@ BOOL nReadPacket(struct NepClassEth *ncp, UBYTE *pktptr, ULONG len)
             while((nextnode = (struct IOSana2Req *) (((struct Node *) worknode)->ln_Succ)))
             {
                 /* Check the packet type. Also handles 802.3 packets. */
-                if((worknode->ios2_PacketType == eph->eph_Type) ||
-                   ((eph->eph_Type < ETHERPKT_SIZE) && (worknode->ios2_PacketType < ETHERPKT_SIZE)))
+                if((worknode->ios2_PacketType == AROS_BE2WORD(eph->eph_Type)) ||
+                   ((AROS_BE2WORD(eph->eph_Type) < ETHERPKT_SIZE) && (worknode->ios2_PacketType < ETHERPKT_SIZE)))
                 {
                     flags = nReadIOReq(ncp, eph, datasize, worknode, flags);
                     /* Break out - let other callers get the packet too */
@@ -1865,7 +1769,7 @@ BOOL nReadPacket(struct NepClassEth *ncp, UBYTE *pktptr, ULONG len)
     {
         stats->PacketsDropped++;
     }
-    KPRINTF(9, ("readpacket: packet type %lu dropped\n", eph->eph_Type));
+    KPRINTF(9, ("readpacket: packet type %lu dropped\n", AROS_BE2WORD(eph->eph_Type)));
 
     /* Trigger any rx or generic error events */
     nDoEvent(ncp, S2EVENT_ERROR|S2EVENT_RX);
@@ -2112,7 +2016,7 @@ AROS_UFH0(void, nGUITask)
         set(ncp->ncp_MainWindow, MUIA_Window_Open, FALSE);
     }
     nGUITaskCleanup(ncp);
-    
+
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
