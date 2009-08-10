@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2008 The AROS Development Team
+ * Copyright © 2007-2009 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -74,10 +74,24 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG acce
     struct DirEntry de;
     ULONG dir_cluster;
 
-    /* the base lock must be a directory. if it's NULL, then it's the root,
-     * otherwise we check its attributes */
-    if (fl != NULL && !(fl->gl->attr & ATTR_DIRECTORY))
-        return ERROR_OBJECT_WRONG_TYPE;
+    /* if the name is empty, just duplicate the base lock */
+    if (namelen == 0)
+        return CopyLock(fl, lock);
+
+    /* if the base lock is a file, the name must either be empty (handled
+     * above) or start with '/' (handled here) */
+    if (fl != NULL && !(fl->gl->attr & ATTR_DIRECTORY)) {
+        if (name[0] == '/') {
+            if (namelen == 1)
+                return OpLockParent(fl, lock);
+            else {
+                name++;
+                namelen--;
+            }
+        }
+        else
+            return ERROR_OBJECT_WRONG_TYPE;
+    }
 
     /* the . and .. entries are invisible to the user */
     if (name[0] == '.' && (namelen == 1 || (name[1] == '.' && namelen == 2))) {
@@ -86,7 +100,12 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG acce
     }
 
     /* get the first cluster of the directory to look for the file in */
-    dir_cluster = (fl != NULL) ? fl->ioh.first_cluster : 0;
+    if (fl == NULL)
+        dir_cluster = 0;
+    else if (fl->gl->attr & ATTR_DIRECTORY)
+        dir_cluster = fl->ioh.first_cluster;
+    else
+        dir_cluster = fl->gl->dir_cluster;
 
     D(bug("[fat] trying to obtain lock on '"); RawPutChars(name, namelen);
       bug("' in dir at cluster %ld\n", dir_cluster));
