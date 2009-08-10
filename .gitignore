@@ -301,6 +301,15 @@
 # /arch/all-unix/libs/oss/
 /arch/all-unix/libs/oss/mmakefile
 
+# /arch/arm-all/clib/
+/arch/arm-all/clib/mmakefile
+
+# /arch/arm-all/include/
+/arch/arm-all/include/mmakefile
+
+# /arch/arm-all/mlib/
+/arch/arm-all/mlib/mmakefile
+
 # /arch/common/ata.device/
 /arch/common/ata.device/mmakefile
 
@@ -1218,6 +1227,96 @@
 /rom/timer/mmakefile
 /rom/timer/libdefs.h
 /rom/timer/*.s
+
+# /rom/usb/
+/rom/usb/mmakefile
+
+# /rom/usb/classes/
+/rom/usb/classes/mmakefile
+
+# /rom/usb/classes/asixeth/
+/rom/usb/classes/asixeth/mmakefile
+
+# /rom/usb/classes/audio/
+/rom/usb/classes/audio/mmakefile
+
+# /rom/usb/classes/bluetooth/
+/rom/usb/classes/bluetooth/mmakefile
+
+# /rom/usb/classes/bootkeyboard/
+/rom/usb/classes/bootkeyboard/mmakefile
+
+# /rom/usb/classes/bootmouse/
+/rom/usb/classes/bootmouse/mmakefile
+
+# /rom/usb/classes/camdmidi/
+/rom/usb/classes/camdmidi/mmakefile
+
+# /rom/usb/classes/cdcacm/
+/rom/usb/classes/cdcacm/mmakefile
+
+# /rom/usb/classes/davicometh/
+/rom/usb/classes/davicometh/mmakefile
+
+# /rom/usb/classes/dfu/
+/rom/usb/classes/dfu/mmakefile
+
+# /rom/usb/classes/egalaxtouch/
+/rom/usb/classes/egalaxtouch/mmakefile
+
+# /rom/usb/classes/ethwrap/
+/rom/usb/classes/ethwrap/mmakefile
+
+# /rom/usb/classes/hid/
+/rom/usb/classes/hid/mmakefile
+
+# /rom/usb/classes/hub/
+/rom/usb/classes/hub/mmakefile
+
+# /rom/usb/classes/massstorage/
+/rom/usb/classes/massstorage/mmakefile
+
+# /rom/usb/classes/moschipeth/
+/rom/usb/classes/moschipeth/mmakefile
+
+# /rom/usb/classes/palmpda/
+/rom/usb/classes/palmpda/mmakefile
+
+# /rom/usb/classes/pegasuseth/
+/rom/usb/classes/pegasuseth/mmakefile
+
+# /rom/usb/classes/printer/
+/rom/usb/classes/printer/mmakefile
+
+# /rom/usb/classes/ptp/
+/rom/usb/classes/ptp/mmakefile
+
+# /rom/usb/classes/rawwrap/
+/rom/usb/classes/rawwrap/mmakefile
+
+# /rom/usb/classes/serialcp210x/
+/rom/usb/classes/serialcp210x/mmakefile
+
+# /rom/usb/classes/serialpl2303/
+/rom/usb/classes/serialpl2303/mmakefile
+
+# /rom/usb/classes/simplemidi/
+/rom/usb/classes/simplemidi/mmakefile
+
+# /rom/usb/classes/stir4200/
+/rom/usb/classes/stir4200/mmakefile
+
+# /rom/usb/pciusb/
+/rom/usb/pciusb/mmakefile
+
+# /rom/usb/poseidon/
+/rom/usb/poseidon/mmakefile
+
+# /rom/usb/shellapps/
+/rom/usb/shellapps/mmakefile
+
+# /rom/usb/trident/
+/rom/usb/trident/mmakefile
 
 # /rom/utility/
 /rom/utility/mmakefile
