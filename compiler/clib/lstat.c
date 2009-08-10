@@ -3,22 +3,19 @@
     $Id$
 */
 
-#include <dos/dos.h>
-#include <dos/dosextens.h>
 #include <dos/filesystem.h>
 #include <proto/dos.h>
-#include <proto/exec.h>
 
 #include <errno.h>
 
-#include "__time.h"
+#include "__arosc_privdata.h"
 #include "__errno.h"
 #include "__stat.h"
 #include "__upath.h"
 
 #include <aros/debug.h>
 
-/* like Dos.Lock but no automatick soft link resolution */
+/* like Dos.Lock but no automatic soft link resolution */
 static BPTR __lock(
     const char* name,
     LONG        accessMode);
