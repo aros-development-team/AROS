@@ -1,0 +1,13 @@
+#   $Id$
+#
+#   AEABI support for ARM CPU's
+#
+include $(TOP)/config/make.cfg
+
+# clib needs it :)
+
+#MM- linklibs-clib-arm : includes-asm_h-arm linklibs-aeabi-arm
+#MM- linklibs: linklibs-aeabi-arm
+
+%build_linklib mmake=linklibs-aeabi-arm \
+    libname=aeabi files="" asmfiles="uidivmod idivmod idiv0"
