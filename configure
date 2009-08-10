@@ -677,6 +677,7 @@ aros_config_ldflags
 aros_config_aflags
 aros_config_cflags
 aros_compiler_libs
+aros_arch_libs
 aros_object_format
 aros_shared_ld
 aros_shared_default
@@ -8207,6 +8208,7 @@ aros_target_nm_flags="-C -ul"
 aros_target_strip_flags="--strip-unneeded -R.comment"
 
 aros_compiler_libs=
+aros_arch_libs=
 
 aros_target_genmap="-Wl,-Map -Xlinker"
 
@@ -8891,6 +8893,7 @@ $as_echo "$as_me: error: \"Unknown CPU for Solaris -- $target_cpu\"" >&2;}
         aros_kernel_ldflags=""
         aros_default_wbwidth=1024
         aros_default_wbheight=600
+        aros_arch_libs="-laeabi"
         aros_config_cflags="$aros_config_cflags -march=armv6 -mfpu=vfp -mfloat-abi=softfp -mthumb-interwork -fno-asynchronous-unwind-tables -fno-exceptions"
         aros_config_aflags="$aros_config_aflags -march=armv6 -mfpu=vfp -mfloat-abi=softfp -mthumb-interwork -fno-asynchronous-unwind-tables -fno-exceptions"
         ;;
