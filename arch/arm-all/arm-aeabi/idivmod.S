@@ -46,5 +46,3 @@ __aeabi_idivmod:	stmfd	sp!,{r0, r1, ip, lr}
 			sub	r1, r1, r3
 			bx	lr
 
-			.global __aeabi_uldivmod
-__aeabi_uldivmod: bx lr
