@@ -1,17 +1,25 @@
 /*
- * uldiv.c
+ * ldiv.c
  *
  *  Created on: Aug 12, 2009
  *      Author: misc
  */
 
+
 #include <inttypes.h>
 
 void __attribute__((noreturn)) __aeabi_ldiv0(uint64_t);
 
-uint64_t __uldiv(uint64_t a, uint64_t b)
+int64_t __ldiv(int64_t a, int64_t b)
 {
-	uint64_t ret = 0;
+	int32_t sign = ((int32_t)(a >> 32))^((int32_t)(b >> 32));
+	int64_t ret = 0;
+
+	if (a < 0)
+		a = -a;
+	if (b < 0)
+		b = -b;
+
 	if (b == 0)
 	{
 		__aeabi_ldiv0(a);
@@ -39,14 +47,18 @@ uint64_t __uldiv(uint64_t a, uint64_t b)
 			b >>=1;
 		} while(mask);
 	}
+
+	if (sign < 0)
+		ret = -ret;
+
 	return ret;
 }
 
-uint64_t __uldivmod_helper(uint64_t a, uint64_t b, uint64_t *remainder)
+int64_t __ldivmod_helper(int64_t a, int64_t b, int64_t *remainder)
 {
-	uint64_t quotient;
+	int64_t quotient;
 
-	quotient = __uldiv(a, b);
+	quotient = __ldiv(a, b);
 
 	*remainder = a - b * quotient;
 
