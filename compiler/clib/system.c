@@ -53,15 +53,13 @@ static int system_no_sh(const char *string);
 
 ******************************************************************************/
 {
-#if 0
-    // Disabled because code like system("dir:c") doesn't work with the Bash.
-    // It might be necessary to check for -nix compile option if some
-    // applications really need a Bash.
-
     BPTR lock;
     APTR old_proc_window;
     struct Process *me;
 
+    if (!__doupath)
+        return system_no_sh(string);
+    
     if (string == NULL || string[0] == '\0')
     {
 	D(bug("system(cmd=, args=)=1\n"));
@@ -74,18 +72,13 @@ static int system_no_sh(const char *string);
     lock = Lock((STRPTR) "bin:sh", SHARED_LOCK);
     me->pr_WindowPtr = old_proc_window;
     
-    if(lock)
+    if (lock)
     {
 	UnLock(lock);
 	return system_sh(string);
     }
-    else
-    {
-	return system_no_sh(string);
-    }
-#else
+
     return system_no_sh(string);
-#endif
 } /* system */
 
 
