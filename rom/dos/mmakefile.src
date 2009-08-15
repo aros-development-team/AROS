@@ -6,7 +6,7 @@ USER_CFLAGS := -D__DOS_NOLIBBASE__
 
 IMAGE_TYPES := aos aout elf elf64 elf_aros
 FILES	  := errorlist lddemon runprocess iofs_sendpkt \
-	     filesystem_support match_misc newcliproc rootnode dosdoio\
+	     match_misc newcliproc rootnode dosdoio\
 	     patternmatching internalseek internalflush \
 	     $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
 

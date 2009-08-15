@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal types and stuff for dos
@@ -17,6 +17,11 @@
 #include <utility/tagitem.h>
 
 #include "dos_dosdoio.h"
+
+/* the alternative is to do something similar in clib or
+   to have two files with the same contents
+*/
+#include "../../compiler/clib/__filesystem_support.h"
 
 #ifdef TimerBase
 #undef TimerBase
@@ -63,14 +68,6 @@ struct vfp
 (((struct FileHandle *)BADDR(f))->fh_Flags&FHF_WRITE&& \
  ((struct FileHandle *)BADDR(f))->fh_Pos<((struct FileHandle *)BADDR(f))->fh_End? \
 *((struct FileHandle *)BADDR(f))->fh_Pos++=c,0:FPutC(f,c))
-
-void InitIOFS(struct IOFileSys *iofs, ULONG type,
-	      struct DosLibrary *DOSBase);
-
-CONST_STRPTR StripVolume(CONST_STRPTR name);
-
-LONG DoIOFS(struct IOFileSys *iofs, struct DevProc *dvp, CONST_STRPTR name,
-    struct DosLibrary *DOSBase);
 
 void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport, struct DosLibrary *DOSBase);
 
