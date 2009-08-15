@@ -1787,7 +1787,10 @@ static LONG set_owner(struct emulbase   *emulbase,
     if (!check_volume(handle, emulbase))
         return ERROR_OBJECT_NOT_FOUND;
 
-    /* only root can make reasonable use of chown() */
+    /* a user can only use chown() to switch the group id to
+       any group he's in, i.e. actually only root can make
+       reasonable use of chown(), so if we're root we keep
+       the current state */
     if (geteuid() != 0)
         return ret;
     
