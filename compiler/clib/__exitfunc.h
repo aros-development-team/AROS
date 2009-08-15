@@ -24,5 +24,6 @@ struct AtExitNode
 #define AEN_PTR 1
 
 int __addexitfunc(struct AtExitNode *aen);
+void __callexitfuncs(void);
 
 #endif

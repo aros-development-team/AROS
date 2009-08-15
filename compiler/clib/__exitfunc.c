@@ -17,6 +17,27 @@ int __addexitfunc(struct AtExitNode *aen)
     return 0;
 }
 
+void __callexitfuncs(void)
+{
+    struct AtExitNode *aen;
+
+    while (
+        (aen = (struct AtExitNode *) REMHEAD((struct List *) &__atexit_list))
+    )
+    {
+        switch (aen->node.ln_Type)
+        {
+        case AEN_VOID:
+            aen->func.fvoid();
+            break;
+
+        case AEN_PTR:
+            aen->func.fptr(__aros_startup_error, aen->ptr);
+            break;
+        }
+    }
+}
+
 int __init_atexit(void)
 {
     NEWLIST((struct List *)&__atexit_list);
@@ -26,24 +47,8 @@ int __init_atexit(void)
 
 void __exit_atexit(void)
 {
-    {
-	struct AtExitNode *aen;
-
-	while ((aen = (struct AtExitNode *) REMHEAD(
-	                           (struct List *) &__atexit_list)))
-	{
-	    switch (aen->node.ln_Type)
-	    {
-	    case AEN_VOID:
-		aen->func.fvoid();
-		break;
-
-	    case AEN_PTR:
-		aen->func.fptr(__aros_startup_error, aen->ptr);
-		break;
-	    }
-	}
-    }
+    if (!(__get_arosc_privdata()->acpd_flags & ACPD_NEWSTARTUP))
+        __callexitfuncs();
 }
 
 ADD2INIT(__init_atexit, 100);
