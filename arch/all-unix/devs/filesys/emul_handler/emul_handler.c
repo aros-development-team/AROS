@@ -274,7 +274,7 @@ BOOL shrink(struct emulbase *emulbase, char *filename)
 
 /* Allocate a buffer, in which the filename is appended to the pathname. */
 static LONG makefilename(struct emulbase *emulbase,
-			 char **dest, STRPTR dirname, STRPTR filename)
+			 char **dest, STRPTR dirname, CONST_STRPTR filename)
 {
     LONG ret = 0;
     int len, dirlen;
@@ -500,6 +500,30 @@ static int nocase_rename(struct emulbase *emulbase, char *oldpath, char *newpath
 
 /*-------------------------------------------------------------------------------------------*/
 
+static int nocase_chmod(struct emulbase *emulbase, char *path, mode_t mode)
+{
+    fixcase(emulbase, path);
+    return chmod(path, mode);
+}
+
+/*-------------------------------------------------------------------------------------------*/
+
+static int nocase_readlink(struct emulbase *emulbase, char *path, char *buffer, size_t size)
+{
+    fixcase(emulbase, path);
+    return readlink(path, buffer, size);
+}
+
+/*-------------------------------------------------------------------------------------------*/
+
+static int nocase_chown(struct emulbase *emulbase, char* path, uid_t owner, gid_t group)
+{
+    fixcase(emulbase, path);
+    return chown(path, owner, group);
+}
+
+/*-------------------------------------------------------------------------------------------*/
+
 #undef open
 #define open(a,b,c) nocase_open(emulbase, a, b, c)
 
@@ -529,6 +553,15 @@ static int nocase_rename(struct emulbase *emulbase, char *oldpath, char *newpath
 
 #undef rename
 #define rename(a,b) nocase_rename(emulbase, a, b)
+
+#undef chmod
+#define chmod(a,b) nocase_chmod(emulbase, a, b)
+
+#undef readlink
+#define readlink(a,b,c) nocase_readlink(emulbase, a, b, c)
+
+#undef chown
+#define chown(a, b, c) nocase_chown(emulbase, a, b, c)
 
 #endif /* NO_CASE_SENSITIVITY */
 
@@ -1723,7 +1756,7 @@ static LONG set_date(struct emulbase *emulbase,
 
 /*********************************************************************************************/
 
-ULONG parent_dir(struct emulbase *emulbase,
+static ULONG parent_dir(struct emulbase *emulbase,
 		 struct filehandle *fh,
 	         char ** DirName)
 {
@@ -1733,11 +1766,41 @@ ULONG parent_dir(struct emulbase *emulbase,
 
 /*********************************************************************************************/
 
-void parent_dir_post(struct emulbase *emulbase, char ** DirName)
+static void parent_dir_post(struct emulbase *emulbase, char ** DirName)
 {
   /* free the previously allocated memory */
   emul_free(emulbase, *DirName);
   **DirName = 0;
+}
+
+/*********************************************************************************************/
+
+static LONG set_owner(struct emulbase   *emulbase,
+                      struct filehandle *handle,
+                      CONST_STRPTR      name,
+                      uid_t             owner,
+                      gid_t             group)
+{
+    LONG ret = 0;
+    char *uname;
+
+    if (!check_volume(handle, emulbase))
+        return ERROR_OBJECT_NOT_FOUND;
+
+    /* only root can make reasonable use of chown() */
+    if (geteuid() != 0)
+        return ret;
+    
+    ret = makefilename(emulbase, &uname, handle->name, name);
+    if (!ret)
+    {
+        if (chown(uname, owner, group) < 0)
+            ret = err_u2a();
+
+        emul_free(emulbase, uname);
+    }
+
+    return ret;
 }
 
 /*********************************************************************************************/
@@ -2321,8 +2384,15 @@ AROS_LH1(void, beginio,
 			   &iofs->io_Union.io_SET_DATE.io_Date);
 	break;
 
-    case FSA_SET_COMMENT:
     case FSA_SET_OWNER:
+        error = set_owner(emulbase,
+                          (struct filehandle *) iofs->IOFS.io_Unit,
+                          iofs->io_Union.io_SET_OWNER.io_Filename,
+                          iofs->io_Union.io_SET_OWNER.io_UID,
+                          iofs->io_Union.io_SET_OWNER.io_GID);
+        break;
+        
+    case FSA_SET_COMMENT:
     case FSA_MORE_CACHE:
     case FSA_FORMAT:
     case FSA_MOUNT_MODE:
