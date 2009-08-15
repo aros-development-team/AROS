@@ -15,6 +15,10 @@
 #include "arosc_init.h"
 #include "etask.h"
 
+void __arosc_program_startup(void);
+void __arosc_program_end(void);
+
+
 static int __arosc_libopen(struct Library *aroscbase)
 {
     return arosc_internalinit();
@@ -28,7 +32,7 @@ static void __arosc_libclose(struct Library *aroscbase)
 ADD2OPENLIB(__arosc_libopen, 0);
 ADD2CLOSELIB(__arosc_libclose, 0);
 
-ADD2LIBS("arosc.library", 39, struct Library *, aroscbase);
+ADD2LIBS("arosc.library", 42, struct Library *, aroscbase);
 
 static struct arosc_startup arosc_startup;
 
@@ -37,6 +41,8 @@ static void __arosc_startup(void)
     struct Process *myproc;
 
     D(bug("[__arosc_startup] Start\n"));
+
+    __arosc_program_startup();
 
     myproc = (struct Process *)FindTask(NULL);
     GetIntETask(FindTask(NULL))->iet_startup = &arosc_startup;
@@ -52,6 +58,8 @@ static void __arosc_startup(void)
         D(bug("[__arosc_startup] setjmp() return from longjmp\n"));
         __startup_error = arosc_startup.as_startup_error;
     }
+
+    __arosc_program_end();
 
     D(bug("[__arosc_startup] Leave\n"));
 }

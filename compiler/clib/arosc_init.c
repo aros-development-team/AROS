@@ -60,7 +60,7 @@ const struct Resident resident=
     (struct Resident *)&resident,
     (APTR)&arosc_end,
     RTF_AUTOINIT,
-    41,
+    42,
     NT_LIBRARY,
     0,
     (char *)name,
@@ -70,7 +70,7 @@ const struct Resident resident=
 
 const char name[]="arosc.library";
 
-const char version[]="$VER: arosc.library 41.1 (" __DATE__ ")\n\015";
+const char version[]="$VER: arosc.library 42.0 (" __DATE__ ")\n\015";
 
 const APTR inittabl[4]=
 {
