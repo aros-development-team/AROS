@@ -37,6 +37,7 @@ LIB	    := $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
 
 COMMON	:= \
 	__alloca \
+	__filesystem_support \
 	__isinf \
 	bcmp \
 	bcopy \
@@ -428,6 +429,7 @@ ROM_COMMON_ARCH := \
 ROM_STATIC := \
         __arosc_userdata \
 	__ctype \
+	__filesystem_support \
 	__isinf \
 	__vcformat \
 	__vcscan \

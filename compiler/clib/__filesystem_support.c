@@ -1,21 +1,16 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc:
-    Lang: English
+    Desc: dos support functions for internal use
 */
 
-#include <dos/dos.h>
-#include <dos/dosextens.h>
+#include <aros/debug.h>
+
 #include <dos/filesystem.h>
-#include <exec/memory.h>
 #include <proto/dos.h>
-#include <proto/exec.h>
-#include "dos_intern.h"
 
-#include <string.h>
-
+#include "__filesystem_support.h"
 
 void InitIOFS(struct IOFileSys *iofs, ULONG type,
 	      struct DosLibrary *DOSBase)
@@ -59,7 +54,7 @@ LONG DoIOFS(struct IOFileSys *iofs, struct DevProc *dvp, CONST_STRPTR name,
     if (name != NULL)
         iofs->io_Union.io_NamedFile.io_Filename = StripVolume(name);
 
-    DosDoIO((struct IORequest *)iofs);
+    DoIO((struct IORequest *)iofs);
 
     if (freedvp)
         FreeDeviceProc(dvp);
