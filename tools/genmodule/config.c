@@ -299,6 +299,7 @@ static char *readsections(struct config *, struct classinfo *, int);
 static void readsectionconfig(struct config *, struct classinfo *, int);
 static void readsectioncdef(struct config *);
 static void readsectioncdefprivate(struct config *);
+static void readsectionstartup(struct config *);
 static void readsectionfunctionlist(struct config *);
 static void readsectionmethodlist(struct classinfo *);
 static void readsectionclass(struct config *);
@@ -400,7 +401,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
 	{
 	    static char *parts[] =
 	    {
-		"config", "cdefprivate", "cdef", "functionlist", "methodlist", "class"
+		"config", "cdefprivate", "cdef", "startup", "functionlist", "methodlist", "class"
 	    };
 	    const unsigned int nums = sizeof(parts)/sizeof(char *);
 	    unsigned int partnum;
@@ -449,21 +450,27 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
 		readsectioncdef(cfg);
 		break;
 
-	    case 4: /* functionlist */
+            case 4: /* startup */
+                if (inclass)
+		    exitfileerror(20, "startup section not allowed in class section\n");
+                readsectionstartup(cfg);
+                break;
+
+	    case 5: /* functionlist */
 		if (inclass)
 		    exitfileerror(20, "functionlist section not allow in class section\n");
 		readsectionfunctionlist(cfg);
 		cfg->intcfg |= CFG_NOREADREF;
 		break;
 
-	    case 5: /* methodlist */
+	    case 6: /* methodlist */
 		if (cl == NULL)
 		    exitfileerror(20, "methodlist section when not in a class\n");
 		readsectionmethodlist(cl);
 		cfg->intcfg |= CFG_NOREADREF;
 		break;
 		
-	    case 6: /* class */
+	    case 7: /* class */
 		if (inclass)
 		    exitfileerror(20, "class section may not be nested\n");
 		readsectionclass(cfg);
@@ -1154,7 +1161,7 @@ static void readsectioncdef(struct config *cfg)
 	    s = line+2;
 	    while (isspace(*s)) s++;
 	    if (strncmp(s, "end", 3)!=0)
-		exitfileerror(20, "\"##end <cdef\" expected\n");
+		exitfileerror(20, "\"##end cdef\" expected\n");
 
 	    s += 3;
 	    while (isspace(*s)) s++;
@@ -1199,6 +1206,43 @@ static void readsectioncdefprivate(struct config *cfg)
 		exitfileerror(20, "\"##end cdefprivate\" expected\n");
 
 	    s += 11;
+	    while (isspace(*s)) s++;
+	    if (*s!='\0')
+		exitfileerror(20, "unexpected character at position %d\n");
+
+	    atend = 1;
+	}
+    }
+}
+
+static void readsectionstartup(struct config *cfg)
+{
+    int atend = 0;
+    char *line, *s;
+    
+    while (!atend)
+    {
+	line = readline();
+	if (line==NULL)
+	    exitfileerror(20, "unexptected end of file in section startup\n");
+
+	if (strncmp(line, "##", 2)!=0)
+	{
+	    slist_append(&cfg->startuplines, line);
+	}
+	else
+	{
+	    s = line+2;
+	    while (isspace(*s)) s++;
+	    if (strncmp(s, "end", 3)!=0)
+		exitfileerror(20, "\"##end startup\" expected\n");
+
+	    s += 3;
+	    while (isspace(*s)) s++;
+	    if (strncmp(s, "startup", 7)!=0)
+		exitfileerror(20, "\"##end startup\" expected\n");
+
+	    s += 7;
 	    while (isspace(*s)) s++;
 	    if (*s!='\0')
 		exitfileerror(20, "unexpected character at position %d\n");
