@@ -120,8 +120,8 @@ struct config
      */
     struct stringlist *forcelist;
 
-    /* Code to add to the generated fioles */
-    struct stringlist *cdeflines, *cdefprivatelines;
+    /* Code to add to the generated files */
+    struct stringlist *cdeflines, *cdefprivatelines, *startuplines;
 
     /* device specific data */
     char *beginiofunc, *abortiofunc;

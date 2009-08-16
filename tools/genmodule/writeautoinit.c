@@ -10,6 +10,7 @@ void writeautoinit(struct config *cfg)
 {
     FILE *out;
     char line[256], *banner;
+    struct stringlist *linelistit;
     
     snprintf(line, 255, "%s/%s_autoinit.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
@@ -32,6 +33,12 @@ void writeautoinit(struct config *cfg)
 	    cfg->modulename, cfg->majorversion, cfg->libbasetypeptrextern, cfg->libbase
     );
     freeBanner(banner);
+
+    /* Write the code to be added to startup provided in the config file */
+    for (linelistit = cfg->startuplines; linelistit != NULL; linelistit = linelistit->next)
+    {
+        fprintf(out, "%s\n", linelistit->s);
+    }
 
     if (cfg->forcelist!=NULL)
     {
