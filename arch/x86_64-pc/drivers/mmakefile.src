@@ -11,7 +11,7 @@ include $(TOP)/config/make.cfg
 #MM    kernel-pc-i386-mouse-kobj
 
 #MM- kernel-pc-x86_64-drivers : \
-#MM    kernel-pc-i386-trackdisk \
+#MM    kernel-pc-i386-trackdisk-kobj \
 #MM    kernel-pc-i386-serial \
 #MM    kernel-pc-i386-parallel \
 #MM    kernel-pc-i386-vga \
