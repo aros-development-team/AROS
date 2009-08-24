@@ -8894,8 +8894,8 @@ $as_echo "$as_me: error: \"Unknown CPU for Solaris -- $target_cpu\"" >&2;}
         aros_default_wbwidth=1024
         aros_default_wbheight=600
         aros_arch_libs="-laeabi"
-        aros_config_cflags="$aros_config_cflags -march=armv6 -mfpu=vfp -mfloat-abi=softfp -mthumb-interwork -fno-asynchronous-unwind-tables -fno-exceptions"
-        aros_config_aflags="$aros_config_aflags -march=armv6 -mfpu=vfp -mfloat-abi=softfp -mthumb-interwork -fno-asynchronous-unwind-tables -fno-exceptions"
+		aros_config_cflags="$aros_config_cflags -march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp -fno-asynchronous-unwind-tables -fno-exceptions"
+		aros_config_aflags="$aros_config_aflags -march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp -fno-asynchronous-unwind-tables -fno-exceptions"
         ;;
 
     chrp)
