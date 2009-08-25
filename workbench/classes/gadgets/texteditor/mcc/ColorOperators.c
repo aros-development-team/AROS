@@ -21,7 +21,7 @@
 ***************************************************************************/
 
 #include "private.h"
-
+///GetColor()
 UWORD GetColor (UWORD x, struct line_node *line)
 {
   UWORD color = 0;
@@ -41,7 +41,9 @@ UWORD GetColor (UWORD x, struct line_node *line)
   RETURN(color);
   return(color);
 }
+///
 
+///AddColorToLine()
 void  AddColorToLine (UWORD x, struct line_node *line, UWORD length, UWORD color, struct InstData *data)
 {
   UWORD *colors   = line->line.Colors;
@@ -106,7 +108,9 @@ void  AddColorToLine (UWORD x, struct line_node *line, UWORD length, UWORD color
 
   LEAVE();
 }
+///
 
+///AddColor()
 VOID AddColor (struct marking *realblock, UWORD color, struct InstData *data)
 {
   struct marking    newblock;
@@ -152,3 +156,4 @@ VOID AddColor (struct marking *realblock, UWORD color, struct InstData *data)
 
   LEAVE();
 }
+///

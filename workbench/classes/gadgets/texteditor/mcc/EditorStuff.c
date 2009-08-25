@@ -42,6 +42,7 @@ void EndClipSession(struct InstData *data);
 #include <proto/keymap.h>
 #include <proto/locale.h>
 
+///utf8_to_ansi()
 static char *utf8_to_ansi(struct InstData *data, STRPTR src)
 {
    static struct KeyMap *keymap;
@@ -129,8 +130,10 @@ static char *utf8_to_ansi(struct InstData *data, STRPTR src)
    RETURN(dst);
    return dst;
 }
+///
 #endif
 
+///PasteClip()
 /*----------------------*
  * Paste from Clipboard *
  *----------------------*/
@@ -447,6 +450,9 @@ BOOL PasteClip (LONG x, struct line_node *actline, struct InstData *data)
   RETURN(res);
   return res;
 }
+///
+
+///MergeLines()
 /*--------------------------*
  * Merge two lines into one *
  *--------------------------*/
@@ -705,6 +711,9 @@ BOOL MergeLines(struct line_node *line, struct InstData *data)
     return(FALSE);
   }
 }
+///
+
+///SplitLine()
 /*---------------------*
  * Split line into two *
  *---------------------*/
@@ -990,6 +999,9 @@ BOOL SplitLine(LONG x, struct line_node *line, BOOL move_crsr, struct UserAction
     return (FALSE);
   }
 }
+///
+
+///strcpyback()
 /*------------------------------------------------------------------*
  * Backwards string copy, please replace with some assembler stuff! *
  *------------------------------------------------------------------*/
@@ -1009,7 +1021,9 @@ static void strcpyback(char *dest, char *src)
 
   LEAVE();
 }
+///
 
+///OptimizedPrint()
 /* ------------------------------------ *
  *  Functions which updates the display *
  * ------------------------------------ */
@@ -1036,7 +1050,9 @@ void OptimizedPrint(LONG x, struct line_node *line, LONG line_nr, LONG width, st
 
   LEAVE();
 }
+///
 
+///UpdateChange()
 static void UpdateChange(LONG x, struct line_node *line, LONG length, const char *characters, struct UserAction *buffer, struct InstData *data)
 {
   LONG diff;
@@ -1139,7 +1155,9 @@ static void UpdateChange(LONG x, struct line_node *line, LONG length, const char
 
   LEAVE();
 }
+///
 
+///PasteChars()
 /*------------------------------*
  * Paste n characters to a line *
  *------------------------------*/
@@ -1193,6 +1211,9 @@ BOOL PasteChars(LONG x, struct line_node *line, LONG length, const char *charact
   RETURN(TRUE);
   return(TRUE);
 }
+///
+
+///RemoveChars()
 /*----------------------------*
  * Remove n chars from a line *
  *----------------------------*/
@@ -1296,4 +1317,5 @@ BOOL RemoveChars(LONG x, struct line_node *line, LONG length, struct InstData *d
   RETURN(TRUE);
   return(TRUE);
 }
+///
 

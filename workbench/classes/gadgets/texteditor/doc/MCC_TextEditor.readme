@@ -1,11 +1,11 @@
-Short:        TextEditor custom class for MUI, V15.28
+Short:        TextEditor custom class for MUI, V15.29
 Author:       TextEditor.mcc Open Source Team
 Uploader:     Jens Langner <Jens.Langner@light-speed.de>
 Type:         dev/mui
-Version:      15.28
-Replaces:     dev/mui/MCC_TextEditor-15.27.lha
+Version:      15.29
+Replaces:     dev/mui/MCC_TextEditor-15.28.lha
 Requires:     AmigaOS 3.0+ or MorphOS, MUI 3.8+, 68020+/PPC604e+
-Architecture: ppc-amigaos >= 4.0.0; m68k-amigaos >= 3.0; ppc-morphos >= 1.4.2
+Architecture: ppc-amigaos >= 4.0.0; m68k-amigaos >= 3.0; ppc-morphos >= 1.4.2; i386-aros; ppc-aros; x86_64-aros
 
 ABOUT TextEditor.mcc
 ********************
@@ -32,6 +32,27 @@ YAM or SimpleMail as the main text editing gadget. Its main features are:
 - Pixel smooth scrolling
 - AREXX interface for scripted programming
 
+TextEditor is available for AmigaOS3, AmigaOS4, MorphOS and AROS.
+
+Manual Installation
+~~~~~~~~~~~~~~~~~~~
+1) Extract the archive to a temporary directory.
+
+   > cd RAM:
+   > lha x MCC_TextEditor.lha
+
+2) Go to the "MCC_TextEditor/Libs/MUI/<OS>" directory where <OS> is the directory
+   matching the operating system you want to install TextEditor.mcc for:
+
+   > cd MCC_TextEditor/Libs/MUI/AmigaOS4
+
+3) copy all #?.mcc and #?.mcp files found in that <OS> directory to the
+   global "MUI:libs/mui/" directory on your system partition:
+
+   > copy #?.mcc MUI:Libs/mui/
+   > copy #?.mcp MUI:Libs/mui/
+
+4) reboot and enjoy the new version ;)
 
 LEGALESE
 ********

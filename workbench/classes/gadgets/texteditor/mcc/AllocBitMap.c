@@ -35,6 +35,7 @@
 #define USE_OS3 (((struct Library *)GfxBase)->lib_Version >= 39)
 #endif
 
+///MUIG_AllocBitMap()
 struct BitMap * SAVEDS ASM MUIG_AllocBitMap(REG(d0, LONG width), REG(d1, LONG height), REG(d2, LONG depth), REG(d3, LONG flags), REG(a0, struct BitMap *friend))
 {
   struct BitMap *bm = NULL;
@@ -84,8 +85,9 @@ struct BitMap * SAVEDS ASM MUIG_AllocBitMap(REG(d0, LONG width), REG(d1, LONG he
   RETURN(bm);
   return bm;
 }
+///
 
-
+///MUIG_FreeBitMap()
 VOID SAVEDS ASM MUIG_FreeBitMap(REG(a0, struct BitMap *bm))
 {
   ENTER();
@@ -108,3 +110,4 @@ VOID SAVEDS ASM MUIG_FreeBitMap(REG(a0, struct BitMap *bm))
 
   LEAVE();
 }
+///

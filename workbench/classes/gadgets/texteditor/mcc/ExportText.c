@@ -26,6 +26,7 @@
 
 #include "private.h"
 
+///ExportText()
 void *ExportText(UNUSED struct MUIP_TextEditor_ExportText *msg, struct InstData *data)
 {
   struct line_node *node = data->firstline;
@@ -69,3 +70,4 @@ void *ExportText(UNUSED struct MUIP_TextEditor_ExportText *msg, struct InstData 
   RETURN(user_data);
   return user_data;
 }
+///

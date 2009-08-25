@@ -59,7 +59,7 @@ TextEditor.mcc/MUIM_TextEditor_Search
 
     *******************************************************************
     Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
-    $Id: MCC_TextEditor.doc 515 2009-06-11 10:16:20Z shinkuro $
+    $Id: MCC_TextEditor.doc 521 2009-06-18 17:38:26Z shinkuro $
 
     TextEditor.mcc is a multiline string gadget which holds most of the
     functions of a normal text editor including some special function-
@@ -1428,6 +1428,10 @@ TextEditor.mcc/MUIM_TextEditor_Search
 
          MUIF_TextEditor_Search_CaseSensitive
           If you want the search to be case sensitive, then set this flag.
+
+         MUIF_TextEditor_Search_Backwards
+          With this flag TextEditor will perform a backward search from 
+          cursor position.
 
     RESULT
         TRUE if the string was found, otherwise FALSE.

@@ -24,6 +24,7 @@
 
 #include "private.h"
 
+///UpdateStyles()
 void  UpdateStyles (struct InstData *data)
 {
   UWORD style;
@@ -82,7 +83,9 @@ void  UpdateStyles (struct InstData *data)
 
   LEAVE();
 }
+///
 
+///GetStyle()
 LONG  GetStyle (LONG x, struct line_node *line)
 {
   LONG  style = 0;
@@ -104,7 +107,9 @@ LONG  GetStyle (LONG x, struct line_node *line)
   RETURN(style);
   return(style);
 }
+///
 
+///AddStyleToLine()
 void  AddStyleToLine  (LONG x, struct line_node *line, LONG length, unsigned short style, struct InstData *data)
 {
   unsigned short *styles    = line->line.Styles;
@@ -187,7 +192,9 @@ void  AddStyleToLine  (LONG x, struct line_node *line, LONG length, unsigned sho
 
   LEAVE();
 }
+///
 
+///AddStyle()
 void  AddStyle (struct marking *realblock, unsigned short style, long Set, struct InstData *data)
 {
   struct  marking newblock;
@@ -256,3 +263,4 @@ void  AddStyle (struct marking *realblock, unsigned short style, long Set, struc
 
   LEAVE();
 }
+///

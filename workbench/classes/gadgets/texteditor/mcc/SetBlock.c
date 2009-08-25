@@ -25,7 +25,7 @@
 #include <proto/utility.h>
 
 #include "private.h"
-
+///OM_SetBlock()
 ULONG OM_SetBlock(struct MUIP_TextEditor_SetBlock *msg, struct InstData *data)
 {
   struct marking newblock;
@@ -110,3 +110,4 @@ ULONG OM_SetBlock(struct MUIP_TextEditor_SetBlock *msg, struct InstData *data)
   RETURN(TRUE);
   return TRUE;
 }
+///

@@ -19,7 +19,6 @@
  $Id$
 
 ***************************************************************************/
-
 #include <string.h>
 
 #include <clib/alib_protos.h>
@@ -27,6 +26,7 @@
 
 #include "private.h"
 
+///SimpleMarkText()
 VOID SimpleMarkText (UWORD startx, struct line_node *startline, UWORD stopx, struct line_node *stopline, struct InstData *data)
 {
   ENTER();
@@ -52,10 +52,12 @@ VOID SimpleMarkText (UWORD startx, struct line_node *startline, UWORD stopx, str
 
   LEAVE();
 }
+///
 
 static LONG Native_strncmp (STRPTR str1, STRPTR str2, LONG len) { return strncmp(str1, str2, len); }
 static LONG Utility_strnicmp (STRPTR str1, STRPTR str2, LONG len) { return Strnicmp(str1, str2, len); }
 
+///OM_Search()
 ULONG OM_Search (struct MUIP_TextEditor_Search *msg, struct InstData *data)
 {
   STRPTR str = msg->SearchString;
@@ -103,41 +105,84 @@ ULONG OM_Search (struct MUIP_TextEditor_Search *msg, struct InstData *data)
       }
     }
 
-    while(line)
+    if(msg->Flags & MUIF_TextEditor_Search_Backwards)
     {
-      LONG skip;
-      STRPTR contents = line->line.Contents + cursor + len-1;
-      STRPTR upper = line->line.Contents + line->line.Length;
+//D(DBF_STARTUP, "MUIF_TextEditor_Search_Backwards  search=%s\n", msg->SearchString);
+      if(Enabled(data))
+        cursor -= len;
 
-      while(contents < upper)
+      while(line)
       {
-        skip = map[(int)(*contents)];
-        contents += skip;
+        LONG lenTmp  = len;
+        STRPTR contents = line->line.Contents + cursor - lenTmp+1;
+        STRPTR lower = line->line.Contents;
 
-        if(skip <= 0)
+        while(contents >= lower)
         {
+//D(DBF_STARTUP, "MUIF_TextEditor_Search_Backwards  previous=%ld, contents=%s\n",line, contents);
           if(!StrCmp(contents, msg->SearchString, len))
           {
             UWORD startx = contents - line->line.Contents;
 
+//D(DBF_STARTUP, "MUIF_TextEditor_Search_Backwards found\n");
+              
             SimpleMarkText(startx, line, startx+len, line, data);
 
             RETURN(TRUE);
             return TRUE;
           }
-          contents += len;
+          contents -= 1;
+          lenTmp += 1;
         }
-      }
 
-      cursor = 0;
-      line = line->next;
+        line = line->previous;
+
+        if (line)
+          cursor = line->line.Length;
+      }
     }
+    else
+    {
+      while(line)
+      {
+        LONG skip;
+        STRPTR contents = line->line.Contents + cursor + len-1;
+        STRPTR upper = line->line.Contents + line->line.Length;
+
+        while(contents < upper)
+        {
+          skip = map[(int)(*contents)];
+          contents += skip;
+
+          if(skip <= 0)
+          {
+            if(!StrCmp(contents, msg->SearchString, len))
+            {
+              UWORD startx = contents - line->line.Contents;
+
+              SimpleMarkText(startx, line, startx+len, line, data);
+
+              RETURN(TRUE);
+              return TRUE;
+            }
+            contents += len;
+          }
+        }
+
+        cursor = 0;
+
+        line = line->next;
+      }
+    }
+
   }
 
   RETURN(FALSE);
   return FALSE;
 }
+///
 
+///OM_Replace()
 ULONG OM_Replace (Object *obj, struct MUIP_TextEditor_Replace *msg, struct InstData *data)
 {
   ULONG res = FALSE;
@@ -154,3 +199,4 @@ ULONG OM_Replace (Object *obj, struct MUIP_TextEditor_Replace *msg, struct InstD
   RETURN(res);
   return res;
 }
+///

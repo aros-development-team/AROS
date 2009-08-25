@@ -1,5 +1,5 @@
 @DataBase TextEditor.guide
-@$VER: TextEditor.Guide 15.28 (04.01.2009)
+@$VER: TextEditor.Guide 15.29 (23.08.2009)
 
 @Node Main "TextEditor - AmigaGuide(R) documentation"
 
@@ -339,6 +339,16 @@ History
 list of changes since 15.9)
 
 Quick summary:
+
+15.29 (23.08.2009)
+
+- fixed a random crash when editing text due to a possible buffer overun.
+- ported TextEditor to all known AROS platforms (i386/ppc/x86_64)
+- implemented new MUIM_TextEditor_SetBlock method to perform modifications on a selected
+  block without having to select it in advance.
+- implemented MUIF_TextEditor_Search_Backwards to perform a backward search operation.
+- ToUpper and ToLower operations are part of the redo/undo framework and can be reverted
+  now.
 
 15.28 (04.01.2009)
 

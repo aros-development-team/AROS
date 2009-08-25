@@ -26,6 +26,7 @@
 
 #include "private.h"
 
+///ImportText()
 /***********************************************************************
  Import the given 0 terminated text by invoking the gicen import Hook
  for every line
@@ -113,3 +114,4 @@ struct line_node *ImportText(char *contents, struct InstData *data, struct Hook 
   RETURN(first_line);
   return first_line;
 }
+///
