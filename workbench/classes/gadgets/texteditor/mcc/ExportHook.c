@@ -36,6 +36,7 @@ struct Buffer
   ULONG   size;
 };
 
+///ExportHookFunc()
 HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
 {
   struct Buffer *buf = emsg->UserData;
@@ -375,3 +376,4 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
 MakeHookWithData(ExportHookPlain, ExportHookFunc, MUIV_TextEditor_ExportHook_Plain);
 MakeHookWithData(ExportHookEMail, ExportHookFunc, MUIV_TextEditor_ExportHook_EMail);
 MakeHookWithData(ExportHookNoStyle, ExportHookFunc, MUIV_TextEditor_ExportHook_NoStyle);
+///

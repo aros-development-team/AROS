@@ -33,6 +33,7 @@
 
 #include "private.h"
 
+///RedrawArea()
 VOID RedrawArea(UWORD startx, struct line_node *startline, UWORD stopx, struct line_node *stopline, struct InstData *data)
 {
   struct pos_info pos1, pos2;
@@ -59,7 +60,9 @@ VOID RedrawArea(UWORD startx, struct line_node *startline, UWORD stopx, struct l
 
   LEAVE();
 }
+///
 
+///GetBlock()
 char *GetBlock(struct marking *block, struct InstData *data)
 {
   LONG    startx, stopx;
@@ -279,7 +282,9 @@ char *GetBlock(struct marking *block, struct InstData *data)
   RETURN(text);
   return(text);
 }
+///
 
+///NiceBlock()
 void NiceBlock(struct marking *realblock, struct marking *newblock)
 {
   LONG  startx = realblock->startx, stopx = realblock->stopx;
@@ -330,7 +335,9 @@ void NiceBlock(struct marking *realblock, struct marking *newblock)
 
   LEAVE();
 }
+///
 
+///InitClipboard()
 BOOL InitClipboard(struct InstData *data, ULONG flags)
 {
   struct IFFHandle *iff;
@@ -364,7 +371,9 @@ BOOL InitClipboard(struct InstData *data, ULONG flags)
   RETURN(FALSE);
   return(FALSE);
 }
+///
 
+///EndClipSession()
 void EndClipSession(struct InstData *data)
 {
   ENTER();
@@ -381,7 +390,9 @@ void EndClipSession(struct InstData *data)
 
   LEAVE();
 }
+///
 
+///ClipInfo()
 void ClipInfo(struct line_node *line, struct InstData *data)
 {
   LONG error;
@@ -423,7 +434,9 @@ void ClipInfo(struct line_node *line, struct InstData *data)
 
   LEAVE();
 }
+///
 
+///ClipChars()
 void ClipChars(LONG x, struct line_node *line, LONG length, struct InstData *data)
 {
   UWORD style[2] = {1, GetStyle(x-1, line)};
@@ -557,7 +570,9 @@ void ClipChars(LONG x, struct line_node *line, LONG length, struct InstData *dat
 
   LEAVE();
 }
+///
 
+///ClipLine()
 void ClipLine(struct line_node *line, struct InstData *data)
 {
   UWORD *styles = line->line.Styles;
@@ -614,7 +629,9 @@ void ClipLine(struct line_node *line, struct InstData *data)
 
   LEAVE();
 }
+///
 
+///CutBlock()
 LONG CutBlock(struct InstData *data, BOOL Clipboard, BOOL NoCut, BOOL update)
 {
   struct  marking newblock;
@@ -633,7 +650,9 @@ LONG CutBlock(struct InstData *data, BOOL Clipboard, BOOL NoCut, BOOL update)
   RETURN(result);
   return(result);
 }
+///
 
+///CutBlock2()
 LONG CutBlock2(struct InstData *data, BOOL Clipboard, BOOL NoCut, struct marking *newblock, BOOL update)
 {
   LONG  tvisual_y, error;
@@ -774,4 +793,4 @@ end:
   RETURN(res);
   return res;
 }
-
+///

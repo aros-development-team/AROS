@@ -36,6 +36,7 @@
 #include "TextEditor_mcp.h"
 #include "private.h"
 
+///GetFont()
 struct TextFont *GetFont(UNUSED struct InstData *data, void *obj, long attr)
 {
   char *setting;
@@ -90,7 +91,9 @@ struct TextFont *GetFont(UNUSED struct InstData *data, void *obj, long attr)
   RETURN(f);
   return f;
 }
+///
 
+///SetCol()
 void SetCol (struct InstData *data, void *obj, long item, ULONG *storage, long bit)
 {
   struct MUI_PenSpec *spec;
@@ -107,7 +110,9 @@ void SetCol (struct InstData *data, void *obj, long item, ULONG *storage, long b
 
   LEAVE();
 }
+///
 
+///InitConfig()
 void InitConfig(Object *obj, struct InstData *data)
 {
   ULONG setting = 0;
@@ -413,7 +418,9 @@ void InitConfig(Object *obj, struct InstData *data)
 
   LEAVE();
 }
+///
 
+///FreeConfig()
 void  FreeConfig  (struct InstData *data, struct MUI_RenderInfo *mri)
 {
   ENTER();
@@ -453,4 +460,5 @@ void  FreeConfig  (struct InstData *data, struct MUI_RenderInfo *mri)
 
   LEAVE();
 }
+///
 

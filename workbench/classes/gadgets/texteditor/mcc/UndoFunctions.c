@@ -29,6 +29,7 @@
 
 #include "private.h"
 
+///LineNr()
 unsigned short LineNr(struct line_node *line, struct InstData *data)
 {
   unsigned short result = 1;
@@ -45,7 +46,9 @@ unsigned short LineNr(struct line_node *line, struct InstData *data)
   RETURN(result);
   return(result);
 }
+///
 
+///LineNode()
 struct line_node *LineNode(unsigned short linenr, struct InstData *data)
 {
   struct line_node *actual = data->firstline;
@@ -60,7 +63,9 @@ struct line_node *LineNode(unsigned short linenr, struct InstData *data)
   RETURN(actual);
   return(actual);
 }
+///
 
+///Undo()
 long Undo(struct InstData *data)
 {
   ENTER();
@@ -213,7 +218,9 @@ long Undo(struct InstData *data)
     return(FALSE);
   }
 }
+///
 
+///Redo()
 long Redo(struct InstData *data)
 {
   ENTER();
@@ -324,7 +331,9 @@ long Redo(struct InstData *data)
     return(FALSE);
   }
 }
+///
 
+///AddToUndoBuffer()
 long AddToUndoBuffer(enum EventType eventtype, char *eventdata, struct InstData *data)
 {
   ENTER();
@@ -477,7 +486,9 @@ long AddToUndoBuffer(enum EventType eventtype, char *eventdata, struct InstData 
   RETURN(TRUE);
   return(TRUE);
 }
+///
 
+///ResetUndoBuffer()
 void ResetUndoBuffer(struct InstData *data)
 {
   ENTER();
@@ -513,7 +524,9 @@ void ResetUndoBuffer(struct InstData *data)
 
   LEAVE();
 }
+///
 
+///ResizeUndoBuffer()
 void ResizeUndoBuffer(struct InstData *data, ULONG level)
 {
   ENTER();
@@ -553,3 +566,4 @@ void ResizeUndoBuffer(struct InstData *data, ULONG level)
 
   LEAVE();
 }
+///

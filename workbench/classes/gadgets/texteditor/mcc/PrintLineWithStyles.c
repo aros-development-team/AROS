@@ -27,6 +27,7 @@
 
 #include "private.h"
 
+///convert()
 ULONG convert(ULONG style)
 {
     unsigned long result = FS_NORMAL;
@@ -40,12 +41,16 @@ ULONG convert(ULONG style)
 
   return(result);
 }
+///
 
+///ConvertPen()
 ULONG ConvertPen (UWORD color, BOOL highlight, struct InstData *data)
 {
   return(color ? (ULONG)(data->colormap ? (ULONG)data->colormap[color-1] : (ULONG)((color <= 8) ? _pens(data->object)[color-1] : color-9)) : (ULONG)(highlight ? (ULONG)data->highlightcolor : (ULONG)data->textcolor));
 }
+///
 
+///DrawSeparator()
 VOID DrawSeparator (struct RastPort *rp, WORD X, WORD Y, WORD Width, WORD Height, struct InstData *data)
 {
   ENTER();
@@ -63,7 +68,9 @@ VOID DrawSeparator (struct RastPort *rp, WORD X, WORD Y, WORD Width, WORD Height
 
   LEAVE();
 }
+///
 
+///PrintLine()
 LONG PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, struct InstData *data)
 {
   STRPTR text = line->line.Contents;
@@ -428,3 +435,4 @@ LONG PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, 
   RETURN(length);
   return(length);
 }
+///

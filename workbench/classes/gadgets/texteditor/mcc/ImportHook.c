@@ -43,7 +43,7 @@ struct grow
 
 
 /*************************************************************************/
-
+///GetHex()
 STATIC LONG GetHex(char *src)
 {
   if ((src[0] >= '0' && src[0] <= '9')) return src[0] - '0';
@@ -51,7 +51,9 @@ STATIC LONG GetHex(char *src)
   if ((src[0] >= 'A' && src[0] <= 'F')) return src[0] - 'A' + 10;
   return -1;
 }
+///
 
+///GetQP()
 /************************************************************************
  Convert a =XX string to it's value (into *val). Returns TRUE if
  conversion was successfull in that case *src_ptr will advanved as well.
@@ -78,7 +80,8 @@ STATIC BOOL GetQP(char **src_ptr, unsigned char *val)
   }
   return FALSE;
 }
-
+///
+///GetLong()
 /************************************************************************
  Reads out the next value at *src_ptr and advances src_ptr.
  Returns TRUE if succedded else FALSE
@@ -93,7 +96,8 @@ STATIC BOOL GetLong(char **src_ptr, LONG *val)
   }
   return FALSE;
 }
-
+///
+///FindEOL()
 /************************************************************************
  Returns the end of line in the current line (pointing at the linefeed).
  If a 0 byte is encountered it returns the pointer to the 0 byte.
@@ -119,7 +123,8 @@ STATIC char *FindEOL(char *src, int *tabs_ptr)
   if (tabs_ptr) *tabs_ptr = tabs;
   return eol;
 }
-
+///
+///AddToGrow()
 /************************************************************************
  Adds two new values to the given grow. This function guarantees
  that there is at least space for 2 additional values.
@@ -150,9 +155,13 @@ STATIC VOID AddToGrow(struct grow *grow, UWORD val1, UWORD val2)
     grow->current++;
   }
 }
+///
 
-// searches through a string and returns TRUE if the string contains
-// any text (except newlines) until the stopchar is found
+///ContainsText()
+/************************************************************************
+ searches through a string and returns TRUE if the string contains
+ any text (except newlines) until the stopchar is found
+*************************************************************************/
 static BOOL ContainsText(char *str, char stopchar)
 {
   if(str)
@@ -172,7 +181,8 @@ static BOOL ContainsText(char *str, char stopchar)
 
   return FALSE;
 }
-
+///
+///PlainImportHookFunc()
 /************************************************************************
  The plain import hook. It supports following escape sequences:
 
@@ -383,7 +393,9 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
   return eol + 1;
 }
 MakeHook(ImPlainHook, PlainImportHookFunc);
+///
 
+///MimeImport()
 /************************************************************************
  The MIME import hook. It supports following escape sequences:
 
@@ -760,21 +772,28 @@ STATIC STRPTR MimeImport(struct ImportMessage *msg, LONG type)
   if (!eol || eol[0] == 0) return NULL;
   return eol + 1;
 }
+///
 
+///EMailImportHookFunc()
 HOOKPROTONHNO(EMailImportHookFunc, STRPTR , struct ImportMessage *msg)
 {
   return MimeImport(msg,0);
 }
 MakeHook(ImEMailHook, EMailImportHookFunc);
+///
 
+///MIMEImportHookFunc()
 HOOKPROTONHNO(MIMEImportHookFunc, STRPTR, struct ImportMessage *msg)
 {
   return MimeImport(msg,1);
 }
 MakeHook(ImMIMEHook, MIMEImportHookFunc);
+///
 
+///MIMEQuoteImportHookFunc()
 HOOKPROTONHNO(MIMEQuoteImportHookFunc, STRPTR, struct ImportMessage *msg)
 {
   return MimeImport(msg,2);
 }
 MakeHook(ImMIMEQuoteHook, MIMEQuoteImportHookFunc);
+///

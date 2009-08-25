@@ -31,7 +31,7 @@ FILES := library \
         Pointer \
         PrintLineWithStyles \
         Search \
-		SetBlock \
+        SetBlock \
         SpellChecker \
         StyleOperators \
         UndoFunctions \

@@ -49,6 +49,7 @@ struct PathNode
 };
 #endif
 
+///SelectCode()
 HOOKPROTONH(SelectCode, void, void *lvobj, long **parms)
 {
   struct InstData *data = (struct InstData *)*parms;
@@ -83,7 +84,9 @@ HOOKPROTONH(SelectCode, void, void *lvobj, long **parms)
   LEAVE();
 }
 MakeStaticHook(SelectHook, SelectCode);
+///
 
+///SendRexx()
 static LONG SendRexx(char *word, const char *command, UNUSED struct InstData *data)
 {
   struct MsgPort *rexxport;
@@ -136,9 +139,11 @@ static LONG SendRexx(char *word, const char *command, UNUSED struct InstData *da
   RETURN(result);
   return result;
 }
+///
 
 #if !defined(__amigaos4__) && !defined(__MORPHOS__) && !defined(__AROS__)
 #undef WorkbenchControl
+///WorkbenchControl()
 BOOL WorkbenchControl(STRPTR name, ...)
 { BOOL ret;
   va_list args;
@@ -147,8 +152,10 @@ BOOL WorkbenchControl(STRPTR name, ...)
   va_end(args);
   return ret;
 }
+///
 #endif
 
+///CloneSearchPath()
 /***********************************************************************
  This returns a duplicated search path (preferable the workbench
  searchpath) usable for NP_Path of SystemTagList().
@@ -209,7 +216,9 @@ static BPTR CloneSearchPath(void)
   RETURN(path);
   return path;
 }
+///
 
+///FreeSearchPath()
 /***********************************************************************
  Free the memory returned by CloneSearchPath
 ************************************************************************/
@@ -238,7 +247,9 @@ static VOID FreeSearchPath(BPTR path)
 #endif
   }
 }
+///
 
+///SendCLI()
 static LONG SendCLI(char *word, const char *command, UNUSED struct InstData *data)
 {
   char buffer[512];
@@ -261,7 +272,9 @@ static LONG SendCLI(char *word, const char *command, UNUSED struct InstData *dat
 
   return result;
 }
+///
 
+///SuggestWindow()
 void *SuggestWindow (struct InstData *data)
 {
     void *lvobj;
@@ -310,7 +323,9 @@ void *SuggestWindow (struct InstData *data)
   data->SuggestListview = lvobj;
   return(data->SuggestWindow);
 }
+///
 
+///LookupWord()
 BOOL LookupWord(STRPTR word, struct InstData *data)
 {
   char buf[4];
@@ -331,7 +346,9 @@ BOOL LookupWord(STRPTR word, struct InstData *data)
   }
   return(TRUE);
 }
+///
 
+///SuggestWord()
 void SuggestWord (struct InstData *data)
 {
     ULONG   top, left;
@@ -448,7 +465,9 @@ void SuggestWord (struct InstData *data)
     DisplayBeep(NULL);
   }
 }
+///
 
+///CheckWord()
 void CheckWord (struct InstData *data)
 {
   if(data->TypeAndSpell && data->CPos_X && IsAlpha(data->mylocale, *(data->actualline->line.Contents+data->CPos_X-1)))
@@ -481,3 +500,4 @@ void CheckWord (struct InstData *data)
     }
   }
 }
+///

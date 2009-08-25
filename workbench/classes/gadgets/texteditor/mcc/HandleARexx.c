@@ -81,6 +81,7 @@ enum
 };
 #define MaxArgs 8
 
+///CallFunction()
 static ULONG CallFunction(UWORD function, IPTR *args, const char *txtargs, struct InstData *data)
 {
   struct line_node *oldactualline = data->actualline;
@@ -430,7 +431,9 @@ static ULONG CallFunction(UWORD function, IPTR *args, const char *txtargs, struc
   RETURN(result);
   return(result);
 }
+///
 
+///HandleARexx()
 ULONG HandleARexx(struct InstData *data, STRPTR command)
 {
   ULONG result = 0;
@@ -492,7 +495,7 @@ ULONG HandleARexx(struct InstData *data, STRPTR command)
             myrdargs->RDA_Source.CS_CurChr = 0;
             myrdargs->RDA_Flags |= RDAF_NOPROMPT;
 
-            if((ra_result = ReadArgs(Commands[function].Template, (LONG *)Args, myrdargs)))
+            if((ra_result = ReadArgs(Commands[function].Template, (APTR)Args, myrdargs)))
             {
               result = CallFunction(function, Args, NULL, data);
 
@@ -511,8 +514,10 @@ ULONG HandleARexx(struct InstData *data, STRPTR command)
   RETURN(result);
   return result;
 }
+///
 
 /*
+///StringCompare()
 LONG StringCompare (STRPTR str1, STRPTR str2, LONG *match)
 {
   while(*str1 && *str2)
@@ -530,7 +535,9 @@ LONG StringCompare (STRPTR str1, STRPTR str2, LONG *match)
     return(TRUE);
   }
 }
+///
 
+///Navigate()
 VOID Navigate (STRPTR command, struct InstData *data, LONG *match)
 {
     struct   line_node   *oldactualline = data->actualline;
@@ -587,7 +594,9 @@ VOID Navigate (STRPTR command, struct InstData *data, LONG *match)
       SetCursor(data->CPos_X, data->actualline, TRUE, data);
   }
 }
+///
 
+///HandleARexx()
 ULONG HandleARexx (struct InstData *data, STRPTR command)
 {
     LONG  match = FALSE;
@@ -670,7 +679,9 @@ ULONG HandleARexx (struct InstData *data, STRPTR command)
     }
   }
   return(match);
-}*/
+}
+///
+*/
 /*  GetBlock
   GetLine
   GetContents

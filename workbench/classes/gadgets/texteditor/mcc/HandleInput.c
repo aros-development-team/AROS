@@ -45,6 +45,7 @@
 
 static BOOL ReactOnRawKey(struct IntuiMessage *imsg, struct InstData *data);
 
+///RAWToANSI()
 static ULONG RAWToANSI(struct IntuiMessage *imsg)
 {
   struct InputEvent event;
@@ -66,7 +67,9 @@ static ULONG RAWToANSI(struct IntuiMessage *imsg)
   RETURN(code);
   return(code);
 }
+///
 
+///MUIM_HandleInput()
 IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
   struct InstData *data = INST_DATA(cl, obj);
@@ -452,7 +455,9 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
   RETURN(0);
   return(0);
 }
+///
 
+///DoBlock()
 static VOID DoBlock(BOOL clipboard, BOOL erase, struct InstData *data)
 {
   ENTER();
@@ -462,7 +467,9 @@ static VOID DoBlock(BOOL clipboard, BOOL erase, struct InstData *data)
 
   LEAVE();
 }
+///
 
+///EraseBlock()
 static VOID EraseBlock(BOOL clipboard, struct InstData *data)
 {
   ENTER();
@@ -479,7 +486,9 @@ static VOID EraseBlock(BOOL clipboard, struct InstData *data)
 
   LEAVE();
 }
+///
 
+///Key_Clear()
 void Key_Clear(struct InstData *data)
 {
   ENTER();
@@ -488,9 +497,11 @@ void Key_Clear(struct InstData *data)
 
   LEAVE();
 }
+///
 
 enum {Del_BOL = 0, Del_EOL, Del_BOW, Del_EOW};
 
+///Key_DelSomething()
 void Key_DelSomething(ULONG what, struct InstData *data)
 {
   ENTER();
@@ -531,7 +542,9 @@ void Key_DelSomething(ULONG what, struct InstData *data)
 
   LEAVE();
 }
+///
 
+///Key_DelLine()
 void Key_DelLine(struct InstData *data)
 {
   ENTER();
@@ -563,8 +576,9 @@ void Key_DelLine(struct InstData *data)
 
   LEAVE();
 }
+///
 
-
+///Key_Cut()
 void Key_Cut(struct InstData *data)
 {
   ENTER();
@@ -574,7 +588,9 @@ void Key_Cut(struct InstData *data)
 
   LEAVE();
 }
+///
 
+///Key_Copy()
 void Key_Copy(struct InstData *data)
 {
   ENTER();
@@ -589,7 +605,9 @@ void Key_Copy(struct InstData *data)
 
   LEAVE();
 }
+///
 
+///Key_Paste()
 void Key_Paste(struct InstData *data)
 {
   BOOL update;
@@ -617,7 +635,9 @@ void Key_Paste(struct InstData *data)
 
   LEAVE();
 }
+///
 
+///Key_Tab()
 void Key_Tab(struct InstData *data)
 {
   ENTER();
@@ -645,7 +665,9 @@ void Key_Tab(struct InstData *data)
 
   LEAVE();
 }
+///
 
+///Key_Return()
 void Key_Return(struct InstData *data)
 {
   ENTER();
@@ -664,7 +686,9 @@ void Key_Return(struct InstData *data)
 
   LEAVE();
 }
+///
 
+///Key_Backspace()
 void Key_Backspace(struct InstData *data)
 {
   ENTER();
@@ -695,7 +719,9 @@ void Key_Backspace(struct InstData *data)
 
   LEAVE();
 }
+///
 
+///Key_Delete()
 void Key_Delete (struct InstData *data)
 {
   ENTER();
@@ -723,8 +749,10 @@ void Key_Delete (struct InstData *data)
 
   LEAVE();
 }
+///
 
 /*
+///cutcopypasteerase()
 void cutcopypasteerase (UBYTE key, ULONG qualifier, struct InstData *data)
 {
     UWORD updatefrom;
@@ -773,8 +801,10 @@ void cutcopypasteerase (UBYTE key, ULONG qualifier, struct InstData *data)
   if(!NoCut)
     DumpText(data->visual_y+updatefrom, updatefrom, stopline, TRUE, data);
 }
+///
 */
 
+///Key_Normal()
 void Key_Normal(UBYTE key, struct InstData *data)
 {
   ENTER();
@@ -835,7 +865,9 @@ void Key_Normal(UBYTE key, struct InstData *data)
 
   LEAVE();
 }
+///
 
+///ConvertKey()
 /*----------------*
  * Convert Rawkey *
  *----------------*/
@@ -876,7 +908,9 @@ static BOOL ConvertKey(struct IntuiMessage *imsg, struct InstData *data)
   RETURN(result);
   return(result);
 }
+///
 
+///MatchQual()
 static BOOL MatchQual(ULONG input, ULONG match, UWORD action, struct InstData *data)
 {
   BOOL result = FALSE;
@@ -926,8 +960,10 @@ static BOOL MatchQual(ULONG input, ULONG match, UWORD action, struct InstData *d
   RETURN(result);
   return result;
 }
+///
 
 
+///FindKey()
 /*---------------------------------*
  * Function to handle a cursormove *
  *---------------------------------*/
@@ -1246,7 +1282,9 @@ static LONG FindKey(UBYTE key, ULONG qualifier, struct InstData *data)
   RETURN(2);
   return(2);
 }
+///
 
+///ReactOnRawKey()
 static BOOL ReactOnRawKey(struct IntuiMessage *imsg, struct InstData *data)
 {
   struct line_node *oldactualline = data->actualline;
@@ -1315,6 +1353,9 @@ static BOOL ReactOnRawKey(struct IntuiMessage *imsg, struct InstData *data)
   RETURN(result);
   return(result);
 }
+///
+
+///ScrollIntoDisplay()
 /*------------------------------------------------------*
  * Make sure that the cursor is inside the visible area *
  *------------------------------------------------------*/
@@ -1346,6 +1387,9 @@ void ScrollIntoDisplay(struct InstData *data)
 
   LEAVE();
 }
+///
+
+///MarkText()
 /*------------------------*
  * Update the marked area *
  *------------------------*/
@@ -1395,3 +1439,4 @@ void MarkText(LONG x1, struct line_node *line1, LONG x2, struct line_node *line2
 
   LEAVE();
 }
+///

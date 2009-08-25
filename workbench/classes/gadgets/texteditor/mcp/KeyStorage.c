@@ -108,7 +108,7 @@ enum Keys
 
 void ConvertKeyString (STRPTR keystring, UWORD action, struct KeyAction *storage)
 {
-  LONG args[key_count];
+  IPTR args[key_count];
   struct RDArgs *ra_result;
   struct RDArgs *myrdargs;
 
@@ -150,7 +150,7 @@ void ConvertKeyString (STRPTR keystring, UWORD action, struct KeyAction *storage
       myrdargs->RDA_Source.CS_CurChr = 0;
       myrdargs->RDA_Flags |= RDAF_NOPROMPT;
 
-      if((ra_result = ReadArgs(ratemplate, args, myrdargs)) != NULL)
+      if((ra_result = ReadArgs(ratemplate, (APTR)args, myrdargs)) != NULL)
       {
         // Scan for 12 qualifier keys
         if(args[key_lshift])

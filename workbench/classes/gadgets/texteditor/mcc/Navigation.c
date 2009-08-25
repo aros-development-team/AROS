@@ -29,6 +29,7 @@
 
 struct pos_info pos;
 
+///FlowSpace()
 ULONG FlowSpace (UWORD flow, STRPTR text, struct InstData *data)
 {
   ULONG flowspace = 0;
@@ -48,7 +49,9 @@ ULONG FlowSpace (UWORD flow, STRPTR text, struct InstData *data)
   RETURN(flowspace);
   return(flowspace);
 }
+///
 
+///CursorOffset()
 static ULONG CursorOffset(struct InstData *data)
 {
   struct line_node *line = data->actualline;
@@ -85,7 +88,9 @@ static ULONG CursorOffset(struct InstData *data)
   RETURN(res);
   return res;
 }
+///
 
+///GetPosInPixels()
 /*---------------------------------------*
  * Return the number of pixels to cursor *
  *---------------------------------------*/
@@ -107,7 +112,9 @@ static LONG GetPosInPixels(LONG bytes, LONG x, struct InstData *data)
   RETURN(pos);
   return(pos);
 }
+///
 
+///SetBookmark()
 VOID SetBookmark (UWORD nr, struct InstData *data)
 {
   ENTER();
@@ -120,7 +127,9 @@ VOID SetBookmark (UWORD nr, struct InstData *data)
 
   LEAVE();
 }
+///
 
+///GotoBookmark()
 VOID GotoBookmark (UWORD nr, struct InstData *data)
 {
   ENTER();
@@ -156,9 +165,10 @@ VOID GotoBookmark (UWORD nr, struct InstData *data)
 
   LEAVE();
 }
+///
 
+///GoTop()
 /*---- CursorUp ---- */
-
 void  GoTop (struct InstData *data)
 {
   ENTER();
@@ -168,7 +178,9 @@ void  GoTop (struct InstData *data)
 
   LEAVE();
 }
+///
 
+///GoPreviousLine()
 void  GoPreviousLine (struct InstData *data)
 {
   ENTER();
@@ -179,7 +191,9 @@ void  GoPreviousLine (struct InstData *data)
 
   LEAVE();
 }
+///
 
+///GoPreviousPage()
 void  GoPreviousPage (struct InstData *data)
 {
   ENTER();
@@ -231,7 +245,9 @@ void  GoPreviousPage (struct InstData *data)
 
   LEAVE();
 }
+///
 
+///GoUp()
 void  GoUp  (struct InstData *data)
 {
   ENTER();
@@ -272,9 +288,10 @@ void  GoUp  (struct InstData *data)
 
   LEAVE();
 }
+///
 
+///GoBottom()
 /*---- CursorDown ---- */
-
 void  GoBottom (struct InstData *data)
 {
   ENTER();
@@ -285,7 +302,9 @@ void  GoBottom (struct InstData *data)
 
   LEAVE();
 }
+///
 
+///GoNextLine()
 void  GoNextLine  (struct InstData *data)
 {
   ENTER();
@@ -297,7 +316,9 @@ void  GoNextLine  (struct InstData *data)
 
   LEAVE();
 }
+///
 
+///GoNextPage()
 void  GoNextPage  (struct InstData *data)
 {
   ENTER();
@@ -340,7 +361,9 @@ void  GoNextPage  (struct InstData *data)
 
   LEAVE();
 }
+///
 
+///GoDown()
 void  GoDown   (struct InstData *data)
 {
   ENTER();
@@ -376,9 +399,10 @@ void  GoDown   (struct InstData *data)
 
   LEAVE();
 }
+///
 
+///GoEndOfLine()
 /*---- CursorRight ---- */
-
 void  GoEndOfLine (struct InstData *data)
 {
   ENTER();
@@ -396,7 +420,9 @@ void  GoEndOfLine (struct InstData *data)
 
   LEAVE();
 }
+///
 
+///GoNextWord()
 void  GoNextWord  (struct InstData *data)
 {
   //BOOL EOL = (data->CPos_X == data->actualline->line.Length);
@@ -428,7 +454,9 @@ FindNextWord:
 
   LEAVE();
 }
+///
 
+///GoNextSentence()
 void  GoNextSentence (struct InstData *data)
 {
   ENTER();
@@ -449,7 +477,9 @@ void  GoNextSentence (struct InstData *data)
 
   LEAVE();
 }
+///
 
+///GoRight()
 void  GoRight  (struct InstData *data)
 {
   ENTER();
@@ -460,9 +490,10 @@ void  GoRight  (struct InstData *data)
 
   LEAVE();
 }
+///
 
+///GoStartOfLine()
 /*---- CursorLeft ---- */
-
 void  GoStartOfLine  (struct InstData *data)
 {
   ENTER();
@@ -475,8 +506,9 @@ void  GoStartOfLine  (struct InstData *data)
 
   LEAVE();
 }
+///
 
-
+///GoPreviousWord()
 void  GoPreviousWord (struct InstData *data)
 {
   //BOOL SOL = (!data->CPos_X);
@@ -513,7 +545,9 @@ FindWord:
 
   LEAVE();
 }
+///
 
+///GoPreviousSentence()
 void  GoPreviousSentence   (struct InstData *data)
 {
   ENTER();
@@ -542,7 +576,9 @@ void  GoPreviousSentence   (struct InstData *data)
 
   LEAVE();
 }
+///
 
+///GoLeft()
 void  GoLeft   (struct InstData *data)
 {
   ENTER();
@@ -560,7 +596,9 @@ void  GoLeft   (struct InstData *data)
 
   LEAVE();
 }
+///
 
+///CheckSep()
 /*-----------------------------------------*
  * Check if given char is a word-seperator *
  *-----------------------------------------*/
@@ -573,6 +611,9 @@ long  CheckSep (unsigned char character, struct InstData *data)
       return(FALSE);
   else  return(TRUE);  */
 }
+///
+
+///CheckSent()
 /*-----------------------------------------*
  * Check if given char is a sentence ender *
  *-----------------------------------------*/
@@ -582,7 +623,9 @@ long CheckSent(unsigned char character, UNUSED struct InstData *data)
       return(TRUE);
   else  return(FALSE);
 }
+///
 
+///NextLine()
 /*-----------------------------------*
  * Move cursor to start of next line *
  *-----------------------------------*/
@@ -602,7 +645,9 @@ void  NextLine (struct InstData *data)
 
   LEAVE();
 }
+///
 
+///PosFromCursor()
 /*-----------------------------------------*
  * Place the cursor, based on an X Y coord *
  *-----------------------------------------*/
@@ -636,3 +681,4 @@ void PosFromCursor(WORD MouseX, WORD MouseY, struct InstData *data)
 
   LEAVE();
 }
+///

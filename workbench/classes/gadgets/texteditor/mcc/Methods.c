@@ -32,6 +32,7 @@
 
 ULONG FlowSpace(UWORD, STRPTR, struct InstData *);
 
+///OM_BlockInfo()
 ULONG OM_BlockInfo(struct MUIP_TextEditor_BlockInfo *msg, struct InstData *data)
 {
   ULONG result = FALSE;
@@ -53,8 +54,9 @@ ULONG OM_BlockInfo(struct MUIP_TextEditor_BlockInfo *msg, struct InstData *data)
   RETURN(result);
   return(result);
 }
+///
 
-
+///OM_QueryKeyAction()
 ULONG OM_QueryKeyAction(UNUSED struct IClass *cl, Object *obj, struct MUIP_TextEditor_QueryKeyAction *msg)
 {
   struct te_key *userkeys;
@@ -85,7 +87,9 @@ ULONG OM_QueryKeyAction(UNUSED struct IClass *cl, Object *obj, struct MUIP_TextE
   RETURN((ULONG)foundKey);
   return (ULONG)foundKey;
 }
+///
 
+///OM_MarkText()
 ULONG OM_MarkText (struct MUIP_TextEditor_MarkText *msg, struct InstData *data)
 {
   ENTER();
@@ -138,7 +142,9 @@ ULONG OM_MarkText (struct MUIP_TextEditor_MarkText *msg, struct InstData *data)
   RETURN(TRUE);
   return(TRUE);
 }
+///
 
+///CleanText()
 ULONG ClearText (struct InstData *data)
 {
   struct line_node *newcontents;
@@ -179,8 +185,9 @@ ULONG ClearText (struct InstData *data)
   RETURN(TRUE);
   return(TRUE);
 }
+///
 
-
+///ToggleCursor()
 ULONG ToggleCursor (struct InstData *data)
 {
   ENTER();
@@ -202,7 +209,9 @@ ULONG ToggleCursor (struct InstData *data)
   RETURN(TRUE);
   return(TRUE);
 }
+///
 
+///InputTrigger()
 ULONG InputTrigger(struct IClass *cl, Object *obj)
 {
   struct InstData *data = INST_DATA(cl, obj);
@@ -400,8 +409,9 @@ ULONG InputTrigger(struct IClass *cl, Object *obj)
   RETURN(TRUE);
   return(TRUE);
 }
+///
 
-
+///InsertText()
 ULONG InsertText (struct InstData *data, STRPTR text, BOOL movecursor)
 {
   struct line_node *line, *actline = data->actualline;
@@ -497,3 +507,4 @@ ULONG InsertText (struct InstData *data, STRPTR text, BOOL movecursor)
   RETURN(TRUE);
   return(TRUE);
 }
+///

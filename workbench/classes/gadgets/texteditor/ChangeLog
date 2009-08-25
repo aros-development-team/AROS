@@ -2,8 +2,49 @@
 MUI TextEditor MCC class - ChangeLog
 ------------------------------------
 
-$Id: ChangeLog 519 2009-06-11 12:22:40Z damato $
-$URL: https://texteditor-mcc.svn.sourceforge.net/svnroot/texteditor-mcc/trunk/ChangeLog $
+$Id: ChangeLog 528 2009-08-23 17:03:52Z damato $
+$URL: https://texteditor-mcc.svn.sourceforge.net/svnroot/texteditor-mcc/releases/15.29/ChangeLog $
+
+#### v15.29 RELEASE ############################################################
+
+2009-08-23 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcp/library.c, misc: fixed the version string and prepared everything for a
+    new official release.
+
+2009-08-21 Gianfranco Gignina <sh1nkur0 at libero.it>
+
+  * mcc/all : Inserted special comment strings to better read 
+    sources on CubicIDE
+
+2009-08-14 Thore Böckelmann <tboeckel@gmx.de>
+
+  * Makefiles: added "-g" to the debug flags. It seems the OS3 GCC 2.95.3 cross
+    compiler needs this to generate debug infos at all.
+
+2009-08-03 Gianfranco Gignina <sh1nkur0 at libero.it>
+
+  * mcc/CaseConversion.c : now ToUpper and ToLower operations
+    are can be reverted by user;
+
+2009-06-30 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/HandleArexx.c, mcp/KeyStorage.c: fixed two warnings.
+
+2009-06-27 Matthias Rustler <mrustler@gmx.de>
+
+  * include/libraries/mui.h: backport of an AROS related fix.
+  * misc: some warnings removed
+
+2009-06-18 Gianfranco Gignina <sh1nkur0 at libero.it>
+
+  * Implemented MUIF_TextEditor_Search_Backwards for MUIM_TextEditor_Search.
+
+2009-06-15 Matthias Rustler <mrustler@gmx.de>
+
+  * mmakefile.src : new file SetBlock added
+  * demo/mmakefile.src : created
+  * demo/TextEditor-Demo.c: some warnings removed
 
 2009-06-11 Jens Langner <Jens.Langner@light-speed.de>
 
@@ -20,7 +61,7 @@ $URL: https://texteditor-mcc.svn.sourceforge.net/svnroot/texteditor-mcc/trunk/Ch
     and include file. Gianfranco, please make sure to check in working files
     without any unfixed conflicts!
 
-2009-06-11 Gianfranco Gignina <sh1nkur0@libero.it>
+2009-06-11 Gianfranco Gignina <sh1nkur0  at libero.it>
 
   * Implemented MUIM_TextEditor_SetBlock and modified MUIM_TextEditor_ExportBlock
     to get block giving to it coordinates, see autodoc for more details.

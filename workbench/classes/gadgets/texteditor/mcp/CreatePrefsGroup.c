@@ -691,7 +691,7 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
           MUIA_ContextMenu, data->editpopup,
           MUIA_TextEditor_Contents,
             "\033r\033b" LIB_DATE "\033n\n"
-            "\n\33cTextEditor.mcp " LIB_REV_STRING CPU " (" LIB_DATE ")\n"
+            "\n\33cTextEditor.mcp " LIB_REV_STRING " [" SYSTEMSHORT "/" CPU "] (" LIB_DATE ")\n"
             "Copyright (C) 1997-2000 Allan Odgaard\n"
             LIB_COPYRIGHT
             "\n\033[s:9]\n"
