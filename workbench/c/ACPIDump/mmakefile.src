@@ -1,0 +1,24 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
+
+include $(TOP)/config/make.cfg
+
+FILES	:= acpidump
+
+x86FILES := x86/acpidump \
+            x86/AMD/acpidump \
+            x86/Cyrix/acpidump \
+            x86/Intel/acpidump \
+            x86/NatSemi/acpidump \
+            x86/RiSE/acpidump
+
+EXEDIR  := $(AROS_C)
+
+#MM workbench-c-acpidump : includes linklibs
+
+%build_prog mmake=workbench-c-acpidump \
+    progname=ACPIDump targetdir=$(EXEDIR) \
+    files="$(FILES) $(x86FILES)" \
+    uselibs="arossupport amiga arosc m"
+
+%common
