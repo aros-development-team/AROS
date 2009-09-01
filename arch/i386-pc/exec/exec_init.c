@@ -69,6 +69,7 @@
 #include <aros/multiboot.h>
 
 #include <hardware/custom.h>
+#include <hardware/acpi/acpi.h>
 
 #include <proto/exec.h>
 
@@ -117,6 +118,7 @@
 /*
  * Some declarations
  */
+void    get_ACPI_RSDPTR(struct arosmb *mb);
 void    exec_init() __no_ret;       /* init NEVER returns */
 void    exec_cinit() __no_ret;      /* c-style init NEVER returns */
 int     exec_check_base();
@@ -498,6 +500,9 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 
 #warning "TODO: WE MUST PARSE THE BIOS MEMORY MAP HERE AND PROTECT NECESSARY STRUCTS (i.e ACPI stores its data in the last few meg of physical ram..)"
 
+    /* save the RSP PTR */
+    get_ACPI_RSDPTR(arosmb);
+
     rkprintf("Clearing system area...");
 
     /*
@@ -607,7 +612,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
          * If not, then use calculated ExecBase */
         if ((extmem = exec_RamCheck_fast(arosmb)))
         {
-	    rkprintf("%x Fastmem\n",extmem);
+    	    rkprintf("%x Fastmem\n",extmem);
             /* We have found some FAST memory. Let's use it for ExecBase */
             ExecBase = (struct ExecBase *) 0x01000000;
             ExecBase += negsize;
@@ -619,7 +624,8 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 /************* NICJA - Fix this code so that only unused meory is flushed, and protect certain ares - ie acpi */
         
 	    /* Ogun - Disable cruddy attempt to save ACPI data for now */
-	    //bzero((void *)0x01000000, extmem - 0x01000000 - 0x500000);
+
+        //bzero((void *)0x01000000, extmem - 0x01000000 - 0x500000);
 	    bzero((void *)0x01000000, extmem - 0x01000000);
         }
 
@@ -629,7 +635,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
          */
 
         locmem = exec_RamCheck_dma(arosmb);
-	rkprintf("%x Chipmem\n",locmem);
+    	rkprintf("%x Chipmem\n",locmem);
 
         rkprintf("OK\nExecBase=%p\n", ExecBase);
 
@@ -640,10 +646,10 @@ void exec_cinit(unsigned long magic, unsigned long addr)
          * We will leave area 0x90000 - 0xa0000 uncleared as there is
          * temporary system stack!
          */
-	rkprintf("Clearing ChipMem...\n");
+	    rkprintf("Clearing ChipMem...\n");
 	
-	bzero((void *)0x2000, 0x90000-0x2000);
-	bzero(&_end, locmem -(ULONG)&_end);
+	    bzero((void *)0x2000, 0x90000-0x2000);
+	    bzero(&_end, locmem -(ULONG)&_end);
     }
     else
     {
@@ -778,7 +784,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
             (APTR)0x2000,
             (STRPTR)exec_chipname);
 
-        rkprintf("Chip Memory : %luMB\nFast Memory : %luMB\n",
+        rkprintf("Chip Memory : %uMB\nFast Memory : %uMB\n",
                 locmem >> 20, (extmem - locmem) >> 20);
     }
     else
@@ -790,7 +796,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
             (APTR)base,
             (STRPTR)exec_chipname);
 
-        rkprintf("Chip Memory : %luMB\n", locmem >> 20);
+        rkprintf("Chip Memory : %uMB\n", locmem >> 20);
     }
 
     rkprintf("Memory added\n");
@@ -801,7 +807,41 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     /* Protect bootup stack from being allocated */
     AllocAbs(0x3000,0x90000);
 
+    /* Protect ACPI & other spaces returned by GRUB loader  */
+
+    /* Protect the RSD PTR which is always in the first MB for later use */
+    if(arosmb->acpirsdp)
+    AllocAbs(arosmb->acpirsdp, arosmb->acpilength);
+
+/*
+    // tcheko : GRUB returns end of uppermem (fastmem) always lower than ACPI table data
+    // protecting TYPE_RESERVED hangs boot process
+
+    struct mb_mmap* mmap = arosmb->mmap_addr;
+    for (mmap = (struct mb_mmap *) arosmb->mmap_addr;
+                (unsigned long) mmap < arosmb->mmap_addr + arosmb->mmap_len;
+                mmap = (struct mb_mmap *) ((unsigned long) mmap + mmap->size + sizeof (mmap->size)))
+    {
+        if(mmap->type == MMAP_TYPE_ACPIDATA)
+        {
+            rkprintf("Protecting ACPI DATA memory space (%x:%lu)\n", mmap->addr_low, mmap->len_low);
+            AllocAbs(mmap->addr_low, mmap->len_low);
+        }         
+        if(mmap->type == MMAP_TYPE_ACPINVS)
+        {
+            rkprintf("Protecting ACPI NVS memory space (%x:%lu)\n", mmap->addr_low, mmap->len_low);
+            AllocAbs(mmap->addr_low, mmap->len_low);            
+        }
+        if(mmap->type == MMAP_TYPE_RESERVED)
+        {
+            rkprintf("Protecting reserved memory space (%x:%lu)\n", mmap->addr_low, mmap->len_low);
+            AllocAbs(mmap->addr_low, mmap->len_low);            
+        }
+    }
+*/
+
     rkprintf("Kernel protected\n");
+
 
     rkprintf("Adding \"exec.library\"...");
 
@@ -1133,6 +1173,42 @@ asm("\nexec_DefaultTrap:\n\t"
     "pushl  %eax\n\t"
     "call    Exec_Alert");
 
+
+
+void get_ACPI_RSDPTR(struct arosmb* mb)
+{
+	unsigned char *j, *k, sum=0;
+	
+    /* Finding RSD PTR */
+    for (j = (unsigned char*)0x000E0000; j < (unsigned char*)(0x000E0000 + 0x00020000); j += 16)
+    {
+        
+        /* The signature and checksum must both be correct */
+        if(j[0] == 'R' && j[1] == 'S' && j[2] == 'D' && j[3] == ' ' && j[4] == 'P' && j[5] == 'T' && j[6] == 'R' && j[7] == ' ')
+        { 
+            
+            /* We have the signature, let's check the checksum*/ 
+        	k = j + (((struct ACPI_TABLE_TYPE_RSDP*)j)->revision < 2)?20:36;		/* revision is stored at index 15 */
+
+	        for (; j < k; sum += *(j++));
+	        
+    		if(!sum)
+            {
+                rkprintf("ACPI RSD PTR address found!\n");
+                mb->acpirsdp = (IPTR)j;
+                mb->acpilength = (((struct ACPI_TABLE_TYPE_RSDP*)j)->revision < 2)?20:36;
+            }
+            else
+            {
+                rkprintf("Wrong ACPI RSDP checksum\n");
+                break;
+            }
+        }
+    }
+}
+
+
+
 #warning "TODO: We should use info from BIOS here."
 int exec_RamCheck_dma(struct arosmb *arosmb)
 {
@@ -1184,14 +1260,14 @@ int exec_RamCheck_fast(struct arosmb *arosmb)
 
     if(arosmb->flags & MB_FLAGS_MEM)
     {
-	/* If less than 15MB upper, no fastmem here */
-	if ((arosmb->mem_upper * 1024) <= 0xF00000)
-	{
-	    return 0;
-	}
-	/* Found memory, so we need to do some quick math */
-	tmp = (arosmb->mem_upper * 1024) + 0x100000;
-	return tmp;
+	    /* If less than 15MB upper, no fastmem here */
+	    if ((arosmb->mem_upper * 1024) <= 0xF00000)
+	    {
+	        return 0;
+	    }
+	    /* Found memory, so we need to do some quick math */
+	    tmp = (arosmb->mem_upper * 1024) + 0x100000;
+	    return tmp;
     }
     /* No memory info from bios, do a scan */
     do

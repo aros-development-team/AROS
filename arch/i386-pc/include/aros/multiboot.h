@@ -159,6 +159,8 @@ struct arosmb {
     UBYTE   vbe_palette_width;	    /* VBE palette width */
     struct vbe_mode vmi;            /* VBE mode information */
     struct vbe_controller vci;      /* VBE controller information */
+    IPTR    acpirsdp;
+    ULONG   acpilength;
 };
 
 struct mb_drive {
