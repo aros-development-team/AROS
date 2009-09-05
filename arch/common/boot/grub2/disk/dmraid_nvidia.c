@@ -42,7 +42,7 @@
 #define NV_LEVEL_1_0		0x8180
 
 #define NV_ARRAY_FLAG_BOOT		1 /* BIOS use only.  */
-#define NV_ARRAY_FLAG_ERROR		2 /* Degraded or offling.  */
+#define NV_ARRAY_FLAG_ERROR		2 /* Degraded or offline.  */
 #define NV_ARRAY_FLAG_PARITY_VALID	4 /* RAID-3/5 parity valid.  */
 
 struct grub_nv_array
@@ -99,7 +99,7 @@ grub_dmraid_nv_detect (grub_disk_t disk, struct grub_raid_array *array)
 
   sector = grub_disk_get_size (disk) - 2;
 
-  if (grub_disk_read (disk, sector, 0, sizeof (sb), (char *) &sb))
+  if (grub_disk_read (disk, sector, 0, sizeof (sb), &sb))
     return grub_errno;
 
   if (grub_memcmp (sb.vendor, NV_ID_STRING, 6))
@@ -161,5 +161,5 @@ GRUB_MOD_INIT(dm_nv)
 
 GRUB_MOD_FINI(dm_nv)
 {
-  grub_raid_register (&grub_dmraid_nv_dev);
+  grub_raid_unregister (&grub_dmraid_nv_dev);
 }

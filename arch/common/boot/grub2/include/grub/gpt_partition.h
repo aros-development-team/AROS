@@ -64,7 +64,7 @@ struct grub_gpt_partentry
   grub_uint8_t guid[16];
   grub_uint64_t start;
   grub_uint64_t end;
-  grub_uint8_t attrib;
+  grub_uint64_t attrib;
   char name[72];
 } __attribute__ ((packed));
 

@@ -1,0 +1,58 @@
+#! /bin/sh
+#
+# Copyright (C) 2009  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+# Usage: usage
+# Print the usage.
+usage () {
+    cat <<EOF
+Usage: $0 [OPTION]
+Create vbios and int10 dump
+
+  -o, --output=DIR        set output directory
+  -h, --help              print this message and exit
+  -v, --version           print the version information and exit
+
+Report bugs to <bug-grub@gnu.org>.
+EOF
+}
+
+# Check the arguments.
+for option in "$@"; do
+    case "$option" in
+    -h | --help)
+	usage
+	exit 0 ;;
+    -v | --version)
+	echo "$0 (GNU GRUB @PACKAGE_VERSION@)"
+	exit 0 ;;
+    -o)
+	shift
+	output_dir=$1
+	;;
+    --output=)
+	output_dir=`echo "$option" | sed 's/--output=//'`
+	;;
+    -*)
+	echo "Unrecognized option \`$option'" 1>&2
+	usage
+	exit 1
+	;;
+    esac
+done
+
+dd if=/dev/mem of=${output_dir}vbios.bin bs=65536 skip=12 count=1
+dd if=/dev/mem of=${output_dir}int10.bin bs=4 skip=16 count=1

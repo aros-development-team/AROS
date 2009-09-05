@@ -61,17 +61,16 @@ grub_elf_file (grub_file_t file)
 {
   grub_elf_t elf;
 
-  elf = grub_malloc (sizeof (*elf));
+  elf = grub_zalloc (sizeof (*elf));
   if (! elf)
     return 0;
 
   elf->file = file;
-  elf->phdrs = 0;
 
   if (grub_file_seek (elf->file, 0) == (grub_off_t) -1)
     goto fail;
 
-  if (grub_file_read (elf->file, (char *) &elf->ehdr, sizeof (elf->ehdr))
+  if (grub_file_read (elf->file, &elf->ehdr, sizeof (elf->ehdr))
       != sizeof (elf->ehdr))
     {
       grub_error_push ();
@@ -228,13 +227,14 @@ grub_elf32_load (grub_elf_t _elf, grub_elf32_load_hook_t _load_hook,
   {
     grub_elf32_load_hook_t load_hook = (grub_elf32_load_hook_t) hook;
     grub_addr_t load_addr;
-
-    if (phdr->p_type != PT_LOAD)
-      return 0;
+    int do_load = 1;
 
     load_addr = phdr->p_paddr;
-    if (load_hook && load_hook (phdr, &load_addr))
+    if (load_hook && load_hook (phdr, &load_addr, &do_load))
       return 1;
+
+    if (! do_load)
+      return 0;
 
     if (load_addr < load_base)
       load_base = load_addr;
@@ -407,13 +407,14 @@ grub_elf64_load (grub_elf_t _elf, grub_elf64_load_hook_t _load_hook,
   {
     grub_elf64_load_hook_t load_hook = (grub_elf64_load_hook_t) hook;
     grub_addr_t load_addr;
-
-    if (phdr->p_type != PT_LOAD)
-      return 0;
+    int do_load = 1;
 
     load_addr = phdr->p_paddr;
-    if (load_hook && load_hook (phdr, &load_addr))
+    if (load_hook && load_hook (phdr, &load_addr, &do_load))
       return 1;
+
+    if (! do_load)
+      return 0;
 
     if (load_addr < load_base)
       load_base = load_addr;

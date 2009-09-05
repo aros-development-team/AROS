@@ -61,6 +61,22 @@ hexdump (unsigned long bse, char *buf, int len)
 
       grub_printf ("%s\n", line);
 
+      /* Print only first and last line if more than 3 lines are identical.  */
+      if (len >= 4 * 16
+	  && ! grub_memcmp (buf, buf + 1 * 16, 16)
+	  && ! grub_memcmp (buf, buf + 2 * 16, 16)
+	  && ! grub_memcmp (buf, buf + 3 * 16, 16))
+	{
+	  grub_printf ("*\n");
+	  do
+	    {
+	      bse += 16;
+	      buf += 16;
+	      len -= 16;
+	    }
+	  while (len >= 3 * 16 && ! grub_memcmp (buf, buf + 2 * 16, 16));
+	}
+
       bse += 16;
       buf += 16;
       len -= cnt;

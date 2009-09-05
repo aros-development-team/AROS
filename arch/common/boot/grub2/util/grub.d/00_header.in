@@ -1,7 +1,7 @@
 #! /bin/sh -e
 
-# update-grub helper script.
-# Copyright (C) 2006,2007,2008  Free Software Foundation, Inc.
+# grub-mkconfig helper script.
+# Copyright (C) 2006,2007,2008,2009  Free Software Foundation, Inc.
 #
 # GRUB is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ grub_prefix=`echo /boot/grub | sed ${transform}`
 . ${libdir}/grub/grub-mkconfig_lib
 
 # Do this as early as possible, since other commands might depend on it.
-# (e.g. the `font' command might need lvm or raid modules)
+# (e.g. the `loadfont' command might need lvm or raid modules)
 for i in ${GRUB_PRELOAD_MODULES} ; do
   echo "insmod $i"
 done
@@ -37,7 +37,6 @@ if [ "x${GRUB_GFXMODE}" = "x" ] ; then GRUB_GFXMODE=640x480 ; fi
 
 cat << EOF
 set default=${GRUB_DEFAULT}
-set timeout=${GRUB_TIMEOUT}
 EOF
 
 case ${GRUB_TERMINAL_INPUT}:${GRUB_TERMINAL_OUTPUT} in
@@ -47,7 +46,7 @@ case ${GRUB_TERMINAL_INPUT}:${GRUB_TERMINAL_OUTPUT} in
     fi
 
     if [ "x${GRUB_SERIAL_COMMAND}" = "x" ] ; then
-      echo "Warning, requested serial terminal but GRUB_SERIAL_COMMAND is unspecified. Default parameters will be used." >&2
+      grub_warn "Requested serial terminal but GRUB_SERIAL_COMMAND is unspecified. Default parameters will be used."
       GRUB_SERIAL_COMMAND=serial
     fi
     echo "${GRUB_SERIAL_COMMAND}"
@@ -74,23 +73,11 @@ case x${GRUB_TERMINAL_OUTPUT} in
     # Make the font accessible
     prepare_grub_to_access_device `${grub_probe} --target=device ${GRUB_FONT_PATH}`
 
-    # Pick a video backend
-    video_backend=
-    for i in vbe ; do
-      if test -e ${grub_prefix}/$i.mod ; then
-        video_backend=$i
-        break
-      fi
-    done
-    if ! [ "${video_backend}" ] ; then
-      echo "No suitable backend could be found for gfxterm." >&2 ; exit 1
-    fi
-
     cat << EOF
-if font `make_system_path_relative_to_its_root ${GRUB_FONT_PATH}` ; then
+if loadfont `make_system_path_relative_to_its_root ${GRUB_FONT_PATH}` ; then
   set gfxmode=${GRUB_GFXMODE}
   insmod gfxterm
-  insmod ${video_backend}
+  insmod ${GRUB_VIDEO_BACKEND}
   if terminal_output gfxterm ; then true ; else
     # For backward compatibility with versions of terminal.mod that don't
     # understand terminal_output
@@ -112,3 +99,20 @@ fi
 EOF
   ;;
 esac
+
+if [ "x${GRUB_HIDDEN_TIMEOUT}" != "x" ] ; then
+  if [ "x${GRUB_HIDDEN_TIMEOUT_QUIET}" = "xtrue" ] ; then 
+    verbose=
+  else
+    verbose=" --verbose"
+  fi
+  cat << EOF
+if sleep$verbose --interruptible ${GRUB_HIDDEN_TIMEOUT} ; then
+  set timeout=${GRUB_TIMEOUT}
+fi
+EOF
+else
+  cat << EOF
+set timeout=${GRUB_TIMEOUT}
+EOF
+fi

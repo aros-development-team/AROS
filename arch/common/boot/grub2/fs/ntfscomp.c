@@ -57,7 +57,7 @@ decomp_getch (struct grub_ntfs_comp *cc, unsigned char *res)
 static grub_err_t
 decomp_get16 (struct grub_ntfs_comp *cc, grub_uint16_t * res)
 {
-  unsigned char c1, c2;
+  unsigned char c1 = 0, c2 = 0;
 
   if ((decomp_getch (cc, &c1)) || (decomp_getch (cc, &c2)))
     return grub_errno;
@@ -134,7 +134,7 @@ decomp_block (struct grub_ntfs_comp *cc, char *dest)
 		}
 	      else
 		{
-		  unsigned char ch;
+		  unsigned char ch = 0;
 
 		  if (decomp_getch (cc, &ch))
 		    return grub_errno;
@@ -163,7 +163,7 @@ decomp_block (struct grub_ntfs_comp *cc, char *dest)
 	n = cnt;
       if ((dest) && (n))
 	{
-	  memcpy (dest, &cc->cbuf[cc->cbuf_ofs], n);
+	  grub_memcpy (dest, &cc->cbuf[cc->cbuf_ofs], n);
 	  dest += n;
 	}
       cnt -= n;
@@ -365,7 +365,6 @@ quit:
 
 GRUB_MOD_INIT (ntfscomp)
 {
-  (void) mod;
   grub_ntfscomp_func = ntfscomp;
 }
 

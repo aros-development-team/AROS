@@ -17,12 +17,11 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/normal.h>
 #include <grub/dl.h>
-#include <grub/arg.h>
 #include <grub/err.h>
 #include <grub/misc.h>
 #include <grub/machine/pxe.h>
+#include <grub/extcmd.h>
 
 static const struct grub_arg_option options[] =
 {
@@ -46,9 +45,11 @@ print_ip (grub_uint32_t ip)
 }
 
 static grub_err_t
-grub_cmd_pxe (struct grub_arg_list *state, int argc __attribute__ ((unused)),
+grub_cmd_pxe (grub_extcmd_t cmd, int argc __attribute__ ((unused)),
 	      char **args __attribute__ ((unused)))
 {
+  struct grub_arg_list *state = cmd->state;
+
   if (! grub_pxe_pxenv)
     return grub_error (GRUB_ERR_FILE_NOT_FOUND, "no pxe environment");
 
@@ -83,15 +84,16 @@ grub_cmd_pxe (struct grub_arg_list *state, int argc __attribute__ ((unused)),
   return 0;
 }
 
+static grub_extcmd_t cmd;
+
 GRUB_MOD_INIT(pxecmd)
 {
-  (void) mod;			/* To stop warning. */
-  grub_register_command ("pxe", grub_cmd_pxe, GRUB_COMMAND_FLAG_BOTH,
-			 "pxe [-i|-b|-u]",
-                         "Command to control the PXE device.", options);
+  cmd = grub_register_extcmd ("pxe", grub_cmd_pxe, GRUB_COMMAND_FLAG_BOTH,
+			      "pxe [-i|-b|-u]",
+			      "Command to control the PXE device.", options);
 }
 
 GRUB_MOD_FINI(pxecmd)
 {
-  grub_unregister_command ("pxe");
+  grub_unregister_extcmd (cmd);
 }

@@ -2,7 +2,10 @@ dnl Check whether target compiler is working
 AC_DEFUN(grub_PROG_TARGET_CC,
 [AC_MSG_CHECKING([whether target compiler is working])
 AC_CACHE_VAL(grub_cv_prog_target_cc,
-[AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[]])],
+[AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+asm (".globl start; start: nop");
+int main (void);
+]], [[]])],
   		[grub_cv_prog_target_cc=yes],
 		[grub_cv_prog_target_cc=no])
 ])
@@ -112,7 +115,7 @@ LDFLAGS="$save_LDFLAGS"
 AC_MSG_RESULT([$grub_cv_prog_ld_build_id_none])
 
 if test "x$grub_cv_prog_ld_build_id_none" = xyes; then
-  MODULE_LDFLAGS="$MODULE_LDFLAGS -Wl,--build-id=none"
+  TARGET_LDFLAGS="$TARGET_LDFLAGS -Wl,--build-id=none"
 fi
 ])
 
@@ -155,6 +158,36 @@ fi
 rm -f conftest*])
 
 AC_MSG_RESULT([$grub_cv_i386_asm_addr32])])
+
+dnl check if our compiler is apple cc
+dnl because it requires numerous workarounds
+AC_DEFUN(grub_apple_cc,
+[AC_REQUIRE([AC_PROG_CC])
+AC_MSG_CHECKING([whether our compiler is apple cc])
+AC_CACHE_VAL(grub_cv_apple_cc,
+[if $CC -v 2>&1 | grep "Apple Inc." > /dev/null; then
+  grub_cv_apple_cc=yes
+else
+  grub_cv_apple_cc=no
+fi
+])
+
+AC_MSG_RESULT([$grub_cv_apple_cc])])
+
+dnl check if our target compiler is apple cc
+dnl because it requires numerous workarounds
+AC_DEFUN(grub_apple_target_cc,
+[AC_REQUIRE([AC_PROG_CC])
+AC_MSG_CHECKING([whether our target compiler is apple cc])
+AC_CACHE_VAL(grub_cv_apple_target_cc,
+[if $CC -v 2>&1 | grep "Apple Inc." > /dev/null; then
+  grub_cv_apple_target_cc=yes
+else
+  grub_cv_apple_target_cc=no
+fi
+])
+
+AC_MSG_RESULT([$grub_cv_apple_target_cc])])
 
 
 dnl Later versions of GAS requires that addr32 and data32 prefixes
@@ -202,7 +235,7 @@ AC_MSG_CHECKING(dnl
 [whether an absolute indirect call/jump must not be prefixed with an asterisk])
 AC_CACHE_VAL(grub_cv_i386_asm_absolute_without_asterisk,
 [cat > conftest.s <<\EOF
-	lcall	*(offset)	
+	lcall	*(offset)
 offset:
 	.long	0
 	.word	0
@@ -223,39 +256,6 @@ fi
 
 AC_MSG_RESULT([$grub_cv_i386_asm_absolute_without_asterisk])])
 
-
-dnl Check what symbol is defined as a start symbol.
-dnl Written by Yoshinori K. Okuji.
-AC_DEFUN(grub_CHECK_START_SYMBOL,
-[AC_REQUIRE([AC_PROG_CC])
-AC_MSG_CHECKING([if start is defined by the compiler])
-AC_CACHE_VAL(grub_cv_check_start_symbol,
-[AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
-		[[asm ("incl start")]])],
-		[grub_cv_check_start_symbol=yes],
-		[grub_cv_check_start_symbol=no])])
-
-AC_MSG_RESULT([$grub_cv_check_start_symbol])
-
-AC_MSG_CHECKING([if _start is defined by the compiler])
-AC_CACHE_VAL(grub_cv_check_uscore_start_symbol,
-[AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
-		[[asm ("incl _start")]])],
-		[grub_cv_check_uscore_start_symbol=yes],
-		[grub_cv_check_uscore_start_symbol=no])])
-
-AC_MSG_RESULT([$grub_cv_check_uscore_start_symbol])
-
-AH_TEMPLATE([START_SYMBOL], [Define it to either start or _start])
-
-if test "x$grub_cv_check_start_symbol" = xyes; then
-  AC_DEFINE([START_SYMBOL], [start])
-elif test "x$grub_cv_check_uscore_start_symbol" = xyes; then
-  AC_DEFINE([START_SYMBOL], [_start])
-else
-  AC_MSG_ERROR([neither start nor _start is defined])
-fi
-])
 
 dnl Check what symbol is defined as a bss start symbol.
 dnl Written by Michael Hohmoth and Yoshinori K. Okuji.
@@ -334,59 +334,6 @@ else
 fi
 ])
 
-dnl Check if the C compiler has a bug while using nested functions when
-dnl mregparm is used on the i386.  Some gcc versions do not pass the third
-dnl parameter correctly to the nested function.
-dnl Written by Marco Gerards.
-AC_DEFUN(grub_I386_CHECK_REGPARM_BUG,
-[AC_REQUIRE([AC_PROG_CC])
-AC_MSG_CHECKING([if GCC has the regparm=3 bug])
-AC_CACHE_VAL(grub_cv_i386_check_nested_functions,
-[AC_RUN_IFELSE([AC_LANG_SOURCE(
-[[
-static int
-test (int *n)
-{
-  return *n == -1;
-}
-
-static int
-testfunc (int __attribute__ ((__regparm__ (3))) (*hook) (int a, int b, int *c))
-{
-  int a = 0;
-  int b = 0;
-  int c = -1;
-  return hook (a, b, &c);
-}
-
-int
-main (void)
-{
-  int __attribute__ ((__regparm__ (3))) nestedfunc (int a, int b, int *c)
-    {
-      return a == b && test (c);
-    }
-  return testfunc (nestedfunc) ? 0 : 1;
-}
-]])],
-	[grub_cv_i386_check_nested_functions=no],
-	[grub_cv_i386_check_nested_functions=yes])])
-
-AC_MSG_RESULT([$grub_cv_i386_check_nested_functions])
-
-if test "x$grub_cv_i386_check_nested_functions" = xyes; then
-  AC_DEFINE([NESTED_FUNC_ATTR], 
-	[__attribute__ ((__regparm__ (1)))],
-	[Catch gcc bug])
-else
-dnl Unfortunately, the above test does not detect a bug in gcc-4.0.
-dnl So use regparm 2 until a better test is found.
-  AC_DEFINE([NESTED_FUNC_ATTR], 
-	[__attribute__ ((__regparm__ (1)))],
-	[Catch gcc bug])
-fi
-])
-
 dnl Check if the C compiler generates calls to `__enable_execute_stack()'.
 AC_DEFUN(grub_CHECK_ENABLE_EXECUTE_STACK,[
 AC_MSG_CHECKING([whether `$CC' generates calls to `__enable_execute_stack()'])
@@ -445,6 +392,52 @@ AC_LANG_CONFTEST([[void foo (void) { volatile char a[8]; a[3]; }]])
   rm -f conftest.s
 else
   sap_possible=no]
+  AC_MSG_RESULT([no])
+[fi]
+])
+
+dnl Check if ln can handle directories properly (mingw).
+AC_DEFUN(grub_CHECK_LINK_DIR,[
+AC_MSG_CHECKING([whether ln can handle directories properly])
+[mkdir testdir 2>/dev/null
+case $srcdir in
+[\\/$]* | ?:[\\/]* ) reldir=$srcdir/include/grub/util ;;
+    *) reldir=../$srcdir/include/grub/util ;;
+esac
+if ln -s $reldir testdir/util 2>/dev/null ; then]
+  AC_MSG_RESULT([yes])
+  [link_dir=yes
+else
+  link_dir=no]
+  AC_MSG_RESULT([no])
+[fi
+rm -rf testdir]
+])
+
+dnl Check if the C compiler supports `-fPIE'.
+AC_DEFUN(grub_CHECK_PIE,[
+[# Position independent executable.
+pie_possible=yes]
+AC_MSG_CHECKING([whether `$CC' has `-fPIE' as default])
+# Is this a reliable test case?
+AC_LANG_CONFTEST([[
+#ifdef __PIE__
+int main() {
+	return 0;
+}
+#else
+#error NO __PIE__ DEFINED
+#endif
+]])
+
+[# `$CC -c -o ...' might not be portable.  But, oh, well...  Is calling
+# `ac_compile' like this correct, after all?
+if eval "$ac_compile -S -o conftest.s" 2> /dev/null; then]
+  AC_MSG_RESULT([yes])
+  [# Should we clear up other files as well, having called `AC_LANG_CONFTEST'?
+  rm -f conftest.s
+else
+  pie_possible=no]
   AC_MSG_RESULT([no])
 [fi]
 ])

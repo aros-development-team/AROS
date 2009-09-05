@@ -92,15 +92,15 @@ grub_raid6_recover (struct grub_raid_array *array, int disknr, int p,
                     char *buf, grub_disk_addr_t sector, int size)
 {
   int i, q, pos;
-  int err[2], nerr;
+  int bad1 = -1, bad2 = -1;
   char *pbuf = 0, *qbuf = 0;
 
   size <<= GRUB_DISK_SECTOR_BITS;
-  pbuf = grub_malloc (size);
+  pbuf = grub_zalloc (size);
   if (!pbuf)
     goto quit;
 
-  qbuf = grub_malloc (size);
+  qbuf = grub_zalloc (size);
   if (!qbuf)
     goto quit;
 
@@ -108,18 +108,14 @@ grub_raid6_recover (struct grub_raid_array *array, int disknr, int p,
   if (q == (int) array->total_devs)
     q = 0;
 
-  grub_memset (pbuf, 0, size);
-  grub_memset (qbuf, 0, size);
-
   pos = q + 1;
   if (pos == (int) array->total_devs)
     pos = 0;
 
-  nerr = 1;
   for (i = 0; i < (int) array->total_devs - 2; i++)
     {
       if (pos == disknr)
-        err[0] = i;
+        bad1 = i;
       else
         {
           if ((array->device[pos]) &&
@@ -131,10 +127,11 @@ grub_raid6_recover (struct grub_raid_array *array, int disknr, int p,
             }
           else
             {
-              if (nerr >= 2)
+              /* Too many bad devices */
+              if (bad2 >= 0)
                 goto quit;
 
-              err[nerr++] = i;
+              bad2 = i;
               grub_errno = GRUB_ERR_NONE;
             }
         }
@@ -144,8 +141,13 @@ grub_raid6_recover (struct grub_raid_array *array, int disknr, int p,
         pos = 0;
     }
 
-  if (nerr == 1)
+  /* Invalid disknr or p */
+  if (bad1 < 0)
+    goto quit;
+
+  if (bad2 < 0)
     {
+      /* One bad device */
       if ((array->device[p]) &&
           (! grub_disk_read (array->device[p], sector, 0, size, buf)))
         {
@@ -164,11 +166,12 @@ grub_raid6_recover (struct grub_raid_array *array, int disknr, int p,
         goto quit;
 
       grub_raid_block_xor (buf, qbuf, size);
-      grub_raid_block_mul (raid6_table2[255 - err[0]][255 - err[0]], buf,
+      grub_raid_block_mul (raid6_table2[255 - bad1][255 - bad1], buf,
                            size);
     }
   else
     {
+      /* Two bad devices */
       grub_uint8_t c;
 
       if ((! array->device[p]) || (! array->device[q]))
@@ -187,10 +190,10 @@ grub_raid6_recover (struct grub_raid_array *array, int disknr, int p,
 
       grub_raid_block_xor (qbuf, buf, size);
 
-      c = raid6_table2[err[1]][err[0]];
+      c = raid6_table2[bad2][bad1];
       grub_raid_block_mul (c, qbuf, size);
 
-      c = raid6_table1[raid6_table2[err[1]][err[1]]][c];
+      c = raid6_table1[raid6_table2[bad2][bad2]][c];
       grub_raid_block_mul (c, pbuf, size);
 
       grub_raid_block_xor (pbuf, qbuf, size);

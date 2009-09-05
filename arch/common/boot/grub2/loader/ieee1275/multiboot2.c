@@ -17,25 +17,36 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <multiboot2.h>
 #include <grub/loader.h>
 #include <grub/ieee1275/ieee1275.h>
 #include <grub/multiboot2.h>
+#include <multiboot2.h>
 #include <grub/err.h>
 #include <grub/elf.h>
 #include <grub/misc.h>
 #include <grub/mm.h>
 #include <grub/machine/kernel.h>
 #include <grub/machine/loader.h>
+#ifdef __i386__
+#include <grub/cpu/multiboot.h>
+#endif
 
 typedef void (*kernel_entry_t) (unsigned long, void *, int (void *),
                                 unsigned long, unsigned long);
 
 /* Claim the memory occupied by the multiboot kernel.  */
 grub_err_t
-grub_mb2_arch_elf32_hook (Elf32_Phdr *phdr, UNUSED grub_addr_t *addr)
+grub_mb2_arch_elf32_hook (Elf32_Phdr *phdr, UNUSED grub_addr_t *addr,
+			  int *do_load)
 {
   int rc;
+
+  if (phdr->p_type != PT_LOAD)
+    {
+      *do_load = 0;
+      return 0;
+    }
+  *do_load = 1;
 
   rc = grub_claimmap (phdr->p_paddr, phdr->p_memsz);
   if (rc)
@@ -50,9 +61,17 @@ grub_mb2_arch_elf32_hook (Elf32_Phdr *phdr, UNUSED grub_addr_t *addr)
 
 /* Claim the memory occupied by the multiboot kernel.  */
 grub_err_t
-grub_mb2_arch_elf64_hook (Elf64_Phdr *phdr, UNUSED grub_addr_t *addr)
+grub_mb2_arch_elf64_hook (Elf64_Phdr *phdr, UNUSED grub_addr_t *addr,
+			  int *do_load)
 {
   int rc;
+
+  if (phdr->p_type != PT_LOAD)
+    {
+      *do_load = 0;
+      return 0;
+    }
+  *do_load = 1;
 
   rc = grub_claimmap (phdr->p_paddr, phdr->p_memsz);
   if (rc)

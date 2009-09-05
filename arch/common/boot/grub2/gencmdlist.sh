@@ -15,4 +15,8 @@
 
 module=$1
 
-grep -v "^#" | sed -ne "/grub_register_command *( *\"/{s/.*( *\"\([^\"]*\)\".*/\1: $module/;p;}"
+grep -v "^#" | sed -n \
+ -e "/grub_register_command *( *\"/{s/.*( *\"\([^\"]*\)\".*/\1: $module/;p;}" \
+ -e "/grub_register_extcmd *( *\"/{s/.*( *\"\([^\"]*\)\".*/*\1: $module/;p;}" \
+ -e "/grub_register_command_p1 *( *\"/{s/.*( *\"\([^\"]*\)\".*/*\1: $module/;p;}"
+

@@ -1,0 +1,4 @@
+@set UPDATED 7 Ago 2009
+@set UPDATED-MONTH Ago 2009
+@set EDITION 1.97~beta2
+@set VERSION 1.97~beta2

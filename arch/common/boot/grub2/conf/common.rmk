@@ -14,14 +14,15 @@ grub_probe_SOURCES = util/grub-probe.c	\
 	kern/device.c kern/disk.c kern/err.c kern/misc.c	\
 	kern/parser.c kern/partition.c kern/file.c		\
 	\
-	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c		\
+	fs/affs.c fs/cpio.c fs/fat.c fs/ext2.c fs/hfs.c		\
 	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c	\
 	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c		\
-	fs/ufs.c fs/xfs.c fs/afs.c				\
+	fs/ufs.c fs/ufs2.c fs/xfs.c fs/afs.c fs/afs_be.c	\
+	fs/befs.c fs/befs_be.c fs/tar.c		\
 	\
-	partmap/pc.c partmap/apple.c partmap/gpt.c 		\
+	partmap/msdos.c partmap/apple.c partmap/sun.c partmap/gpt.c\
 	kern/fs.c kern/env.c fs/fshelp.c			\
-	disk/lvm.c disk/raid.c disk/mdraid_linux.c grub_probe_init.c
+	disk/raid.c disk/mdraid_linux.c disk/lvm.c grub_probe_init.c
 
 ifeq ($(enable_grub_fstest), yes)
 bin_UTILITIES += grub-fstest
@@ -31,23 +32,34 @@ endif
 util/grub-fstest.c_DEPENDENCIES = grub_fstest_init.h
 grub_fstest_SOURCES = util/grub-fstest.c util/hostfs.c util/misc.c 	\
 	kern/file.c kern/device.c kern/disk.c kern/err.c kern/misc.c	\
-	disk/host.c disk/loopback.c  normal/arg.c normal/misc.c		\
+	disk/host.c disk/loopback.c kern/list.c kern/command.c		\
+	lib/arg.c commands/extcmd.c normal/datetime.c normal/misc.c	\
 	lib/hexdump.c lib/crc.c commands/blocklist.c commands/ls.c 	\
 	\
-	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c			\
+	fs/affs.c fs/cpio.c fs/fat.c fs/ext2.c fs/hfs.c			\
 	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c		\
 	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c			\
-	fs/ufs.c fs/xfs.c fs/afs.c					\
+	fs/ufs.c fs/ufs2.c fs/xfs.c fs/afs.c fs/afs_be.c fs/befs.c 	\
+	fs/befs_be.c fs/tar.c			\
 	\
-	kern/partition.c partmap/pc.c partmap/apple.c partmap/gpt.c 	\
-	kern/fs.c kern/env.c fs/fshelp.c disk/lvm.c disk/raid.c		\
+	kern/partition.c partmap/msdos.c partmap/apple.c partmap/sun.c	\
+	partmap/gpt.c							\
+	kern/fs.c kern/env.c fs/fshelp.c disk/raid.c			\
 	disk/raid5_recover.c disk/raid6_recover.c 			\
-	disk/mdraid_linux.c disk/dmraid_nvidia.c 			\
+	disk/mdraid_linux.c disk/dmraid_nvidia.c disk/lvm.c 		\
 	grub_fstest_init.c
 
+# For grub-mkfont.
+ifeq ($(enable_grub_mkfont), yes)
+bin_UTILITIES += grub-mkfont
+grub_mkfont_SOURCES = util/grub-mkfont.c util/misc.c
+grub_mkfont_CFLAGS = $(freetype_cflags)
+grub_mkfont_LDFLAGS = $(freetype_libs)
+endif
+
 # For the parser.
-grub_script.tab.c grub_script.tab.h: normal/parser.y
-	$(YACC) -d -p grub_script_yy -b grub_script $(srcdir)/normal/parser.y
+grub_script.tab.c grub_script.tab.h: script/sh/parser.y
+	$(YACC) -d -p grub_script_yy -b grub_script $(srcdir)/script/sh/parser.y
 DISTCLEANFILES += grub_script.tab.c grub_script.tab.h
 
 # For grub-emu.
@@ -115,6 +127,16 @@ endif
 grub_pe2elf_SOURCES = util/grub-pe2elf.c util/misc.c
 CLEANFILES += grub-pe2elf
 
+# grub_macho2img assumes a lot about source file.
+# So installing it definitively is useless
+# But adding to bin_UTILITIES is needed for
+# genmk.rb to work
+ifeq (0,1)
+bin_UTILITIES += grub-macho2img
+endif
+grub_macho2img_SOURCES = util/grub-macho2img.c
+CLEANFILES += grub-macho2img
+
 # For grub-mkconfig
 grub-mkconfig: util/grub-mkconfig.in config.status
 	./config.status --file=$@:$<
@@ -125,33 +147,39 @@ CLEANFILES += grub-mkconfig
 grub-mkconfig_lib: util/grub-mkconfig_lib.in config.status
 	./config.status --file=$@:$<
 	chmod +x $@
-lib_DATA += grub-mkconfig_lib
+lib_SCRIPTS += grub-mkconfig_lib
 CLEANFILES += grub-mkconfig_lib
 
 update-grub_lib: util/update-grub_lib.in config.status
 	./config.status --file=$@:$<
 	chmod +x $@
-lib_DATA += update-grub_lib
+lib_SCRIPTS += update-grub_lib
 CLEANFILES += update-grub_lib
 
 %: util/grub.d/%.in config.status
 	./config.status --file=$@:$<
 	chmod +x $@
-grub-mkconfig_SCRIPTS = 00_header 10_linux 10_hurd 10_freebsd 30_os-prober 40_custom
-ifeq ($(target_os), cygwin)
-grub-mkconfig_SCRIPTS += 10_windows
+grub-mkconfig_SCRIPTS = 00_header 30_os-prober 40_custom
+ifneq (, $(host_kernel))
+grub-mkconfig_SCRIPTS += 10_$(host_kernel)
 endif
 
 CLEANFILES += $(grub-mkconfig_SCRIPTS)
 
 grub-mkconfig_DATA += util/grub.d/README
 
+# For grub-dumpbios
+grub-dumpbios: util/grub-dumpbios.in config.status
+	./config.status --file=$@:$<
+	chmod +x $@
+sbin_SCRIPTS += grub-dumpbios
+CLEANFILES += grub-dumpbios
 
 # Filing systems.
-pkglib_MODULES += fshelp.mod fat.mod ufs.mod ext2.mod ntfs.mod		\
+pkglib_MODULES += fshelp.mod fat.mod ufs1.mod ufs2.mod ext2.mod ntfs.mod \
 	ntfscomp.mod minix.mod hfs.mod jfs.mod iso9660.mod xfs.mod	\
-	affs.mod sfs.mod hfsplus.mod reiserfs.mod cpio.mod udf.mod	\
-	afs.mod
+	affs.mod sfs.mod hfsplus.mod reiserfs.mod cpio.mod tar.mod	\
+	udf.mod	afs.mod afs_be.mod befs.mod befs_be.mod
 
 # For fshelp.mod.
 fshelp_mod_SOURCES = fs/fshelp.c
@@ -163,10 +191,15 @@ fat_mod_SOURCES = fs/fat.c
 fat_mod_CFLAGS = $(COMMON_CFLAGS)
 fat_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For ufs.mod.
-ufs_mod_SOURCES = fs/ufs.c
-ufs_mod_CFLAGS = $(COMMON_CFLAGS)
-ufs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+# For ufs1.mod.
+ufs1_mod_SOURCES = fs/ufs.c
+ufs1_mod_CFLAGS = $(COMMON_CFLAGS)
+ufs1_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For ufs2.mod.
+ufs2_mod_SOURCES = fs/ufs2.c
+ufs2_mod_CFLAGS = $(COMMON_CFLAGS)
+ufs2_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For ext2.mod.
 ext2_mod_SOURCES = fs/ext2.c
@@ -233,6 +266,11 @@ cpio_mod_SOURCES = fs/cpio.c
 cpio_mod_CFLAGS = $(COMMON_CFLAGS)
 cpio_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
+# For tar.mod.
+tar_mod_SOURCES = fs/tar.c
+tar_mod_CFLAGS = $(COMMON_CFLAGS)
+tar_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
 # For udf.mod.
 udf_mod_SOURCES = fs/udf.c
 udf_mod_CFLAGS = $(COMMON_CFLAGS)
@@ -243,38 +281,52 @@ afs_mod_SOURCES = fs/afs.c
 afs_mod_CFLAGS = $(COMMON_CFLAGS)
 afs_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
+# For afs_be.mod.
+afs_be_mod_SOURCES = fs/afs_be.c
+afs_be_mod_CFLAGS = $(COMMON_CFLAGS)
+afs_be_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For befs.mod.
+befs_mod_SOURCES = fs/befs.c
+befs_mod_CFLAGS = $(COMMON_CFLAGS)
+befs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For befs_be.mod.
+befs_be_mod_SOURCES = fs/befs_be.c
+befs_be_mod_CFLAGS = $(COMMON_CFLAGS)
+befs_be_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
 # Partition maps.
-pkglib_MODULES += amiga.mod apple.mod pc.mod sun.mod acorn.mod gpt.mod
 
-# For amiga.mod
-amiga_mod_SOURCES = partmap/amiga.c
-amiga_mod_CFLAGS = $(COMMON_CFLAGS)
-amiga_mod_LDFLAGS = $(COMMON_LDFLAGS)
+pkglib_MODULES += part_amiga.mod
+part_amiga_mod_SOURCES = partmap/amiga.c
+part_amiga_mod_CFLAGS = $(COMMON_CFLAGS)
+part_amiga_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For apple.mod
-apple_mod_SOURCES = partmap/apple.c
-apple_mod_CFLAGS = $(COMMON_CFLAGS)
-apple_mod_LDFLAGS = $(COMMON_LDFLAGS)
+pkglib_MODULES += part_apple.mod
+part_apple_mod_SOURCES = partmap/apple.c
+part_apple_mod_CFLAGS = $(COMMON_CFLAGS)
+part_apple_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For pc.mod
-pc_mod_SOURCES = partmap/pc.c
-pc_mod_CFLAGS = $(COMMON_CFLAGS)
-pc_mod_LDFLAGS = $(COMMON_LDFLAGS)
+pkglib_MODULES += part_msdos.mod
+part_msdos_mod_SOURCES = partmap/msdos.c
+part_msdos_mod_CFLAGS = $(COMMON_CFLAGS)
+part_msdos_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For sun.mod
-sun_mod_SOURCES = partmap/sun.c
-sun_mod_CFLAGS = $(COMMON_CFLAGS)
-sun_mod_LDFLAGS = $(COMMON_LDFLAGS)
+pkglib_MODULES += part_sun.mod
+part_sun_mod_SOURCES = partmap/sun.c
+part_sun_mod_CFLAGS = $(COMMON_CFLAGS)
+part_sun_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For acorn.mod
-acorn_mod_SOURCES = partmap/acorn.c
-acorn_mod_CFLAGS = $(COMMON_CFLAGS)
-acorn_mod_LDFLAGS = $(COMMON_LDFLAGS)
+pkglib_MODULES += part_acorn.mod
+part_acorn_mod_SOURCES = partmap/acorn.c
+part_acorn_mod_CFLAGS = $(COMMON_CFLAGS)
+part_acorn_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For gpt.mod
-gpt_mod_SOURCES = partmap/gpt.c
-gpt_mod_CFLAGS = $(COMMON_CFLAGS)
-gpt_mod_LDFLAGS = $(COMMON_LDFLAGS)
+pkglib_MODULES += part_gpt.mod
+part_gpt_mod_SOURCES = partmap/gpt.c
+part_gpt_mod_CFLAGS = $(COMMON_CFLAGS)
+part_gpt_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # Special disk structures and generic drivers
 
@@ -317,26 +369,54 @@ scsi_mod_CFLAGS = $(COMMON_CFLAGS)
 scsi_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # Commands.
-pkglib_MODULES += hello.mod boot.mod terminal.mod ls.mod	\
-	cmp.mod cat.mod help.mod font.mod search.mod		\
-	loopback.mod fs_uuid.mod configfile.mod echo.mod	\
+pkglib_MODULES += minicmd.mod extcmd.mod hello.mod handler.mod	\
+	ls.mod cmp.mod cat.mod help.mod search.mod loopback.mod	\
+	fs_file.mod fs_uuid.mod configfile.mod echo.mod		\
 	terminfo.mod test.mod blocklist.mod hexdump.mod		\
-	read.mod sleep.mod loadenv.mod crc.mod
+	read.mod sleep.mod loadenv.mod crc.mod parttool.mod	\
+	msdospart.mod memrw.mod normal.mod sh.mod lua.mod	\
+	gptsync.mod true.mod probe.mod password.mod		\
+	keystatus.mod
+
+# For password.mod.
+password_mod_SOURCES = commands/password.c
+password_mod_CFLAGS = $(COMMON_CFLAGS)
+password_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For gptsync.mod.
+gptsync_mod_SOURCES = commands/gptsync.c
+gptsync_mod_CFLAGS = $(COMMON_CFLAGS)
+gptsync_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For minicmd.mod.
+minicmd_mod_SOURCES = commands/minicmd.c
+minicmd_mod_CFLAGS = $(COMMON_CFLAGS)
+minicmd_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For extcmd.mod.
+extcmd_mod_SOURCES = commands/extcmd.c lib/arg.c
+extcmd_mod_CFLAGS = $(COMMON_CFLAGS)
+extcmd_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For hello.mod.
 hello_mod_SOURCES = hello/hello.c
 hello_mod_CFLAGS = $(COMMON_CFLAGS)
 hello_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For boot.mod.
-boot_mod_SOURCES = commands/boot.c
-boot_mod_CFLAGS = $(COMMON_CFLAGS)
-boot_mod_LDFLAGS = $(COMMON_LDFLAGS)
+# For parttool.mod.
+parttool_mod_SOURCES = commands/parttool.c
+parttool_mod_CFLAGS = $(COMMON_CFLAGS)
+parttool_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For terminal.mod.
-terminal_mod_SOURCES = commands/terminal.c
-terminal_mod_CFLAGS = $(COMMON_CFLAGS)
-terminal_mod_LDFLAGS = $(COMMON_LDFLAGS)
+# For msdospart.mod.
+msdospart_mod_SOURCES = parttool/msdospart.c
+msdospart_mod_CFLAGS = $(COMMON_CFLAGS)
+msdospart_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For handler.mod.
+handler_mod_SOURCES = commands/handler.c
+handler_mod_CFLAGS = $(COMMON_CFLAGS)
+handler_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For ls.mod.
 ls_mod_SOURCES = commands/ls.c
@@ -363,11 +443,6 @@ help_mod_SOURCES = commands/help.c
 help_mod_CFLAGS = $(COMMON_CFLAGS)
 help_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For font.mod.
-font_mod_SOURCES = font/manager.c
-font_mod_CFLAGS = $(COMMON_CFLAGS)
-font_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
 # For search.mod.
 search_mod_SOURCES = commands/search.c
 search_mod_CFLAGS = $(COMMON_CFLAGS)
@@ -382,6 +457,11 @@ test_mod_LDFLAGS = $(COMMON_LDFLAGS)
 loopback_mod_SOURCES = disk/loopback.c
 loopback_mod_CFLAGS = $(COMMON_CFLAGS)
 loopback_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For fs_file.mod
+fs_file_mod_SOURCES = disk/fs_file.c
+fs_file_mod_CFLAGS = $(COMMON_CFLAGS)
+fs_file_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For fs_uuid.mod
 fs_uuid_mod_SOURCES = disk/fs_uuid.c
@@ -428,6 +508,107 @@ crc_mod_SOURCES = commands/crc.c lib/crc.c
 crc_mod_CFLAGS = $(COMMON_CFLAGS)
 crc_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
+# For memrw.mod.
+memrw_mod_SOURCES = commands/memrw.c
+memrw_mod_CFLAGS = $(COMMON_CFLAGS)
+memrw_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For true.mod
+true_mod_SOURCES = commands/true.c
+true_mod_CFLAGS = $(COMMON_CFLAGS)
+true_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For probe.mod.
+probe_mod_SOURCES = commands/probe.c
+probe_mod_CFLAGS = $(COMMON_CFLAGS)
+probe_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For keystatus.mod.
+keystatus_mod_SOURCES = commands/keystatus.c
+keystatus_mod_CFLAGS = $(COMMON_CFLAGS)
+keystatus_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For normal.mod.
+normal_mod_SOURCES = normal/main.c normal/cmdline.c normal/dyncmd.c \
+	normal/auth.c normal/autofs.c normal/handler.c \
+	normal/color.c normal/completion.c normal/datetime.c normal/menu.c \
+	normal/menu_entry.c normal/menu_text.c normal/menu_viewer.c \
+	normal/misc.c
+normal_mod_CFLAGS = $(COMMON_CFLAGS)
+normal_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For sh.mod.
+sh_mod_SOURCES = script/sh/main.c script/sh/script.c script/sh/execute.c \
+	script/sh/function.c script/sh/lexer.c grub_script.tab.c
+sh_mod_CFLAGS = $(COMMON_CFLAGS)
+sh_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For lua.mod.
+lua_mod_SOURCES = script/lua/lapi.c script/lua/lcode.c script/lua/ldebug.c \
+	script/lua/ldo.c script/lua/ldump.c script/lua/lfunc.c \
+	script/lua/lgc.c script/lua/llex.c script/lua/lmem.c \
+	script/lua/lobject.c script/lua/lopcodes.c script/lua/lparser.c \
+	script/lua/lstate.c script/lua/lstring.c script/lua/ltable.c \
+	script/lua/ltm.c script/lua/lundump.c script/lua/lvm.c \
+	script/lua/lzio.c script/lua/lauxlib.c script/lua/lbaselib.c \
+	script/lua/linit.c script/lua/ltablib.c script/lua/lstrlib.c \
+	script/lua/grub_main.c script/lua/grub_lib.c
+lua_mod_CFLAGS = $(COMMON_CFLAGS)
+lua_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# Extra libraries for lua
+# script/lua/lmathlib.c script/lua/loslib.c script/lua/liolib.c
+# script/lua/ldblib.c script/lua/loadlib.c
+
+# Common Video Subsystem specific modules.
+pkglib_MODULES += video.mod videotest.mod bitmap.mod tga.mod jpeg.mod	\
+	png.mod	font.mod gfxterm.mod video_fb.mod
+
+# For video.mod.
+video_mod_SOURCES = video/video.c
+video_mod_CFLAGS = $(COMMON_CFLAGS)
+video_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+video_fb_mod_SOURCES = video/fb/video_fb.c video/fb/fbblit.c \
+		  video/fb/fbfill.c video/fb/fbutil.c
+video_fb_mod_CFLAGS = $(COMMON_CFLAGS)
+video_fb_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For videotest.mod.
+videotest_mod_SOURCES = commands/videotest.c
+videotest_mod_CFLAGS = $(COMMON_CFLAGS)
+videotest_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For bitmap.mod
+bitmap_mod_SOURCES = video/bitmap.c
+bitmap_mod_CFLAGS = $(COMMON_CFLAGS)
+bitmap_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For tga.mod
+tga_mod_SOURCES = video/readers/tga.c
+tga_mod_CFLAGS = $(COMMON_CFLAGS)
+tga_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For jpeg.mod.
+jpeg_mod_SOURCES = video/readers/jpeg.c
+jpeg_mod_CFLAGS = $(COMMON_CFLAGS)
+jpeg_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For png.mod.
+png_mod_SOURCES = video/readers/png.c
+png_mod_CFLAGS = $(COMMON_CFLAGS)
+png_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For font.mod.
+font_mod_SOURCES = font/font_cmd.c font/font.c
+font_mod_CFLAGS = $(COMMON_CFLAGS)
+font_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For gfxterm.mod.
+gfxterm_mod_SOURCES = term/gfxterm.c
+gfxterm_mod_CFLAGS = $(COMMON_CFLAGS)
+gfxterm_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
 # Misc.
 pkglib_MODULES += gzio.mod bufio.mod elf.mod
 
@@ -445,3 +626,16 @@ gzio_mod_LDFLAGS = $(COMMON_LDFLAGS)
 bufio_mod_SOURCES = io/bufio.c
 bufio_mod_CFLAGS = $(COMMON_CFLAGS)
 bufio_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# Misc.
+pkglib_MODULES += xnu_uuid.mod
+
+# For elf.mod.
+xnu_uuid_mod_SOURCES = commands/xnu_uuid.c
+xnu_uuid_mod_CFLAGS = $(COMMON_CFLAGS)
+xnu_uuid_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+pkglib_MODULES += setjmp.mod
+setjmp_mod_SOURCES = lib/$(target_cpu)/setjmp.S
+setjmp_mod_ASFLAGS = $(COMMON_ASFLAGS)
+setjmp_mod_LDFLAGS = $(COMMON_LDFLAGS)

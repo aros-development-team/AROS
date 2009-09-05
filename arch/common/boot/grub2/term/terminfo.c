@@ -27,10 +27,10 @@
 #include <grub/mm.h>
 #include <grub/err.h>
 #include <grub/dl.h>
-#include <grub/normal.h>
 #include <grub/term.h>
 #include <grub/terminfo.h>
 #include <grub/tparm.h>
+#include <grub/command.h>
 
 struct terminfo
 {
@@ -90,7 +90,7 @@ grub_terminfo_set_current (const char *str)
   grub_terminfo_free (&term.reverse_video_off);
   grub_terminfo_free (&term.cursor_on);
   grub_terminfo_free (&term.cursor_off);
-  
+
   if (grub_strcmp ("vt100", str) == 0)
     {
       term.name              = grub_strdup ("vt100");
@@ -102,7 +102,7 @@ grub_terminfo_set_current (const char *str)
       term.cursor_off        = grub_strdup ("\e[?25l");
       return grub_errno;
     }
-  
+
   return grub_error (GRUB_ERR_BAD_ARGUMENT, "unknown terminfo type.");
 }
 
@@ -159,8 +159,8 @@ grub_terminfo_cursor_off (void)
 /* GRUB Command.  */
 
 static grub_err_t
-grub_cmd_terminfo (struct grub_arg_list *state __attribute__ ((unused)),
-		int argc, char **args)
+grub_cmd_terminfo (grub_command_t cmd __attribute__ ((unused)),
+		   int argc, char **args)
 {
   if (argc == 0)
   {
@@ -173,15 +173,16 @@ grub_cmd_terminfo (struct grub_arg_list *state __attribute__ ((unused)),
     return grub_terminfo_set_current (args[0]);
 }
 
+static grub_command_t cmd;
+
 GRUB_MOD_INIT(terminfo)
 {
-  (void) mod;			/* To stop warning. */
-  grub_register_command ("terminfo", grub_cmd_terminfo, GRUB_COMMAND_FLAG_BOTH,
-			 "terminfo [TERM]", "Set terminfo type.", 0);
+  cmd = grub_register_command ("terminfo", grub_cmd_terminfo,
+			       "terminfo [TERM]", "Set terminfo type.");
   grub_terminfo_set_current ("vt100");
 }
 
 GRUB_MOD_FINI(terminfo)
 {
-  grub_unregister_command ("terminfo");
+  grub_unregister_command (cmd);
 }

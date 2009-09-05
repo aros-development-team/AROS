@@ -46,5 +46,6 @@ void EXPORT_FUNC (grub_reboot) (void);
  * use APM even if it is available.  */
 void EXPORT_FUNC (grub_halt) (int no_apm);
 
+void EXPORT_FUNC(grub_stop_floppy) (void);
 
 #endif /* ! GRUB_INIT_MACHINE_HEADER */

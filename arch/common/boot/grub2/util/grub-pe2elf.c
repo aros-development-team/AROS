@@ -40,10 +40,10 @@ static void
 usage (int status)
 {
   if (status)
-    fprintf (stderr, "Try ``grub-editenv --help'' for more information.\n");
+    fprintf (stderr, "Try ``grub-pe2elf --help'' for more information.\n");
   else
     printf ("\
-Usage: grub-editenv [OPTIONS] input [output]\n\
+Usage: grub-pe2elf [OPTIONS] input [output]\n\
 \n\
 Tool to convert pe image to elf.\n\
 \nOptions:\n\
@@ -344,10 +344,17 @@ write_symbol_table (FILE* fp, char *image,
         }
       else
         {
+	  char short_name[9];
           char *name;
 
-          name = ((pe_symtab->long_name[0]) ? pe_symtab->short_name :
-                  pe_strtab + pe_symtab->long_name[1]);
+	  if (pe_symtab->long_name[0])
+	    {
+	      strncpy (short_name, pe_symtab->short_name, 8);
+	      short_name[8] = 0;
+	      name = short_name;
+	    }
+	  else
+	    name = pe_strtab + pe_symtab->long_name[1];
 
           if ((strcmp (name, "_grub_mod_init")) &&
               (strcmp (name, "_grub_mod_fini")) &&

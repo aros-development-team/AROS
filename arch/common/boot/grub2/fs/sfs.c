@@ -135,9 +135,7 @@ struct grub_sfs_data
   char *label;
 };
 
-#ifndef GRUB_UTIL
 static grub_dl_t my_mod;
-#endif
 
 
 /* Lookup the extent starting with BLOCK in the filesystem described
@@ -196,7 +194,7 @@ grub_sfs_read_extent (struct grub_sfs_data *data, unsigned int block,
 	      /* We found a correct leaf.  */
 	      *size = grub_be_to_cpu16 (extent->size);
 	      *nextext = grub_be_to_cpu32 (extent->next);
-	      
+
 	      grub_free (treeblock);
 	      return 0;
 	    }
@@ -274,7 +272,7 @@ grub_sfs_mount (grub_disk_t disk)
 
   /* Read the rootblock.  */
   grub_disk_read (disk, 0, 0, sizeof (struct grub_sfs_rblock),
-		  (char *) &data->rblock);
+		  &data->rblock);
   if (grub_errno)
     goto fail;
 
@@ -372,7 +370,7 @@ grub_sfs_iterate_dir (grub_fshelp_node_t dir,
       node->data = data;
       node->size = size;
       node->block = block;
-      
+
       return hook (name, type, node);
     }
 
@@ -453,20 +451,18 @@ grub_sfs_open (struct grub_file *file, const char *name)
 {
   struct grub_sfs_data *data;
   struct grub_fshelp_node *fdiro = 0;
-  
-#ifndef GRUB_UTIL
+
   grub_dl_ref (my_mod);
-#endif
-  
+
   data = grub_sfs_mount (file->device->disk);
   if (!data)
     goto fail;
-  
+
   grub_fshelp_find_file (name, &data->diropen, &fdiro, grub_sfs_iterate_dir,
 			 grub_sfs_read_symlink, GRUB_FSHELP_REG);
   if (grub_errno)
     goto fail;
-  
+
   file->size = fdiro->size;
   data->diropen = *fdiro;
   grub_free (fdiro);
@@ -482,10 +478,8 @@ grub_sfs_open (struct grub_file *file, const char *name)
   if (data)
     grub_free (data->label);
   grub_free (data);
-  
-#ifndef GRUB_UTIL
+
   grub_dl_unref (my_mod);
-#endif
 
   return grub_errno;
 }
@@ -496,9 +490,7 @@ grub_sfs_close (grub_file_t file)
 {
   grub_free (file->data);
 
-#ifndef GRUB_UTIL
   grub_dl_unref (my_mod);
-#endif
 
   return GRUB_ERR_NONE;
 }
@@ -518,12 +510,13 @@ grub_sfs_read (grub_file_t file, char *buf, grub_size_t len)
 
 
 static grub_err_t
-grub_sfs_dir (grub_device_t device, const char *path, 
-	       int (*hook) (const char *filename, int dir))
+grub_sfs_dir (grub_device_t device, const char *path,
+	       int (*hook) (const char *filename,
+			    const struct grub_dirhook_info *info))
 {
   struct grub_sfs_data *data = 0;
   struct grub_fshelp_node *fdiro = 0;
-  
+
   auto int NESTED_FUNC_ATTR iterate (const char *filename,
 				     enum grub_fshelp_filetype filetype,
 				     grub_fshelp_node_t node);
@@ -532,20 +525,15 @@ grub_sfs_dir (grub_device_t device, const char *path,
 				enum grub_fshelp_filetype filetype,
 				grub_fshelp_node_t node)
     {
+      struct grub_dirhook_info info;
+      grub_memset (&info, 0, sizeof (info));
+      info.dir = ((filetype & GRUB_FSHELP_TYPE_MASK) == GRUB_FSHELP_DIR);
       grub_free (node);
-      
-      if (filetype == GRUB_FSHELP_DIR)
-	return hook (filename, 1);
-      else
-	return hook (filename, 0);
-      
-      return 0;
+      return hook (filename, &info);
     }
 
-#ifndef GRUB_UTIL
   grub_dl_ref (my_mod);
-#endif
-  
+
   data = grub_sfs_mount (device->disk);
   if (!data)
     goto fail;
@@ -556,7 +544,7 @@ grub_sfs_dir (grub_device_t device, const char *path,
     goto fail;
 
   grub_sfs_iterate_dir (fdiro, iterate);
-  
+
  fail:
   if (data && fdiro != &data->diropen)
     grub_free (fdiro);
@@ -564,9 +552,7 @@ grub_sfs_dir (grub_device_t device, const char *path,
     grub_free (data->label);
   grub_free (data);
 
-#ifndef GRUB_UTIL
   grub_dl_unref (my_mod);
-#endif
 
   return grub_errno;
 }
@@ -602,9 +588,7 @@ static struct grub_fs grub_sfs_fs =
 GRUB_MOD_INIT(sfs)
 {
   grub_fs_register (&grub_sfs_fs);
-#ifndef GRUB_UTIL
   my_mod = mod;
-#endif
 }
 
 GRUB_MOD_FINI(sfs)

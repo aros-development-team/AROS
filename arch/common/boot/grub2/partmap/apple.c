@@ -30,6 +30,7 @@ struct grub_apple_header
   /* The magic number to identify the partition map, it should have
      the value `0x4552'.  */
   grub_uint16_t magic;
+  grub_uint16_t blocksize;
 };
 
 struct grub_apple_part
@@ -76,8 +77,8 @@ struct grub_apple_part
 
   /* Reserved.  */
   grub_uint32_t reserved2;
-  
-  /* The entrypoint of the bootcode.  */
+
+  /* The entry point of the bootcode.  */
   grub_uint32_t bootcode_entrypoint;
 
   /* Reserved.  */
@@ -94,10 +95,6 @@ struct grub_apple_part
 };
 
 static struct grub_partition_map grub_apple_partition_map;
-
-#ifndef GRUB_UTIL
-static grub_dl_t my_mod;
-#endif
 
 
 static grub_err_t
@@ -109,8 +106,8 @@ apple_partition_map_iterate (grub_disk_t disk,
   struct grub_apple_header aheader;
   struct grub_apple_part apart;
   struct grub_disk raw;
-  int partno = 0;
-  unsigned pos = GRUB_DISK_SECTOR_SIZE;
+  int partno = 0, partnum = 0;
+  unsigned pos;
 
   /* Enforce raw disk access.  */
   raw = *disk;
@@ -118,7 +115,7 @@ apple_partition_map_iterate (grub_disk_t disk,
 
   part.partmap = &grub_apple_partition_map;
 
-  if (grub_disk_read (&raw, 0, 0, sizeof (aheader), (char *) &aheader))
+  if (grub_disk_read (&raw, 0, 0, sizeof (aheader), &aheader))
     return grub_errno;
 
   if (grub_be_to_cpu16 (aheader.magic) != GRUB_APPLE_HEADER_MAGIC)
@@ -130,11 +127,13 @@ apple_partition_map_iterate (grub_disk_t disk,
       goto fail;
     }
 
-  for (;;)
+  pos = grub_be_to_cpu16 (aheader.blocksize);
+
+  do
     {
       if (grub_disk_read (&raw, pos / GRUB_DISK_SECTOR_SIZE,
 			  pos % GRUB_DISK_SECTOR_SIZE,
-			  sizeof (struct grub_apple_part),  (char *) &apart))
+			  sizeof (struct grub_apple_part),  &apart))
 	return grub_errno;
 
       if (grub_be_to_cpu16 (apart.magic) != GRUB_APPLE_PART_MAGIC)
@@ -146,8 +145,15 @@ apple_partition_map_iterate (grub_disk_t disk,
 	  break;
 	}
 
-      part.start = grub_be_to_cpu32 (apart.first_phys_block);
-      part.len = grub_be_to_cpu32 (apart.blockcnt);
+      if (partnum == 0)
+	partnum = grub_be_to_cpu32 (apart.partmap_size);
+
+      part.start = ((grub_disk_addr_t) grub_be_to_cpu32 (apart.first_phys_block)
+		    * grub_be_to_cpu16 (aheader.blocksize))
+	/ GRUB_DISK_SECTOR_SIZE;
+      part.len = ((grub_disk_addr_t) grub_be_to_cpu32 (apart.blockcnt)
+		  * grub_be_to_cpu16 (aheader.blocksize))
+	/ GRUB_DISK_SECTOR_SIZE;
       part.offset = pos;
       part.index = partno;
 
@@ -160,15 +166,12 @@ apple_partition_map_iterate (grub_disk_t disk,
       if (hook (disk, &part))
 	return grub_errno;
 
-      if (grub_be_to_cpu32 (apart.first_phys_block)
-	  == GRUB_DISK_SECTOR_SIZE * 2)
-	return 0;
-
-      pos += sizeof (struct grub_apple_part);
+      pos += grub_be_to_cpu16 (aheader.blocksize);
       partno++;
     }
+  while (partno < partnum);
 
-  if (pos != GRUB_DISK_SECTOR_SIZE)
+  if (partno != 0)
     return 0;
 
  fail:
@@ -185,7 +188,7 @@ apple_partition_map_probe (grub_disk_t disk, const char *str)
   char *s = (char *) str;
 
   auto int find_func (grub_disk_t d, const grub_partition_t partition);
-  
+
   int find_func (grub_disk_t d __attribute__ ((unused)),
 		 const grub_partition_t partition)
     {
@@ -194,14 +197,14 @@ apple_partition_map_probe (grub_disk_t disk, const char *str)
 	  p = (grub_partition_t) grub_malloc (sizeof (*p));
 	  if (! p)
 	    return 1;
-	  
+
 	  grub_memcpy (p, partition, sizeof (*p));
 	  return 1;
 	}
-      
+
       return 0;
     }
-  
+
   /* Get the partition number.  */
   partnum = grub_strtoul (s, 0, 10) - 1;
   if (grub_errno)
@@ -209,7 +212,7 @@ apple_partition_map_probe (grub_disk_t disk, const char *str)
       grub_error (GRUB_ERR_BAD_FILENAME, "invalid partition");
       return 0;
     }
-  
+
   if (apple_partition_map_iterate (disk, find_func))
     goto fail;
 
@@ -238,7 +241,7 @@ apple_partition_map_get_name (const grub_partition_t p)
 /* Partition map type.  */
 static struct grub_partition_map grub_apple_partition_map =
   {
-    .name = "apple_partition_map",
+    .name = "part_apple",
     .iterate = apple_partition_map_iterate,
     .probe = apple_partition_map_probe,
     .get_name = apple_partition_map_get_name
@@ -247,9 +250,6 @@ static struct grub_partition_map grub_apple_partition_map =
 GRUB_MOD_INIT(apple_partition_map)
 {
   grub_partition_map_register (&grub_apple_partition_map);
-#ifndef GRUB_UTIL
-  my_mod = mod;
-#endif
 }
 
 GRUB_MOD_FINI(apple_partition_map)

@@ -22,7 +22,6 @@
 #include <grub/dl.h>
 #include <grub/mm.h>
 #include <grub/misc.h>
-#include <grub/arg.h>
 #include <grub/bufio.h>
 
 /* Uncomment following define to enable PNG debug.  */
@@ -110,7 +109,7 @@ struct grub_png_data
 
   grub_uint8_t *cur_rgb;
 
-  int cur_colume, cur_filter, first_line;
+  int cur_column, cur_filter, first_line;
 };
 
 static grub_uint32_t
@@ -119,7 +118,7 @@ grub_png_get_dword (struct grub_png_data *data)
   grub_uint32_t r;
 
   r = 0;
-  grub_file_read (data->file, (char *) &r, sizeof (grub_uint32_t));
+  grub_file_read (data->file, &r, sizeof (grub_uint32_t));
 
   return grub_be_to_cpu32 (r);
 }
@@ -161,7 +160,7 @@ grub_png_get_byte (struct grub_png_data *data)
     }
 
   r = 0;
-  grub_file_read (data->file, (char *) &r, 1);
+  grub_file_read (data->file, &r, 1);
 
   if (data->inside_idat)
     data->idat_remain--;
@@ -266,7 +265,7 @@ grub_png_decode_image_header (struct grub_png_data *data)
 
   data->raw_bytes = data->image_height * (data->image_width + 1) * data->bpp;
 
-  data->cur_colume = 0;
+  data->cur_column = 0;
   data->first_line = 1;
 
   if (grub_png_get_byte (data) != PNG_COMPRESSION_BASE)
@@ -523,7 +522,7 @@ grub_png_output_byte (struct grub_png_data *data, grub_uint8_t n)
   if (--data->raw_bytes < 0)
     return grub_error (GRUB_ERR_BAD_FILE_TYPE, "image size overflown");
 
-  if (data->cur_colume == 0)
+  if (data->cur_column == 0)
     {
       if (n >= PNG_FILTER_VALUE_LAST)
 	return grub_error (GRUB_ERR_BAD_FILE_TYPE, "invalid filter value");
@@ -533,9 +532,9 @@ grub_png_output_byte (struct grub_png_data *data, grub_uint8_t n)
   else
     *(data->cur_rgb++) = n;
 
-  data->cur_colume++;
+  data->cur_column++;
   row_bytes = data->image_width * data->bpp;
-  if (data->cur_colume == row_bytes + 1)
+  if (data->cur_column == row_bytes + 1)
     {
       grub_uint8_t *blank_line = NULL;
       grub_uint8_t *cur = data->cur_rgb - row_bytes;
@@ -544,11 +543,10 @@ grub_png_output_byte (struct grub_png_data *data, grub_uint8_t n)
 
       if (data->first_line)
 	{
-	  blank_line = grub_malloc (row_bytes);
+	  blank_line = grub_zalloc (row_bytes);
 	  if (blank_line == NULL)
 	    return grub_errno;
 
-	  grub_memset (blank_line, 0, row_bytes);
 	  up = blank_line;
 	}
       else
@@ -624,7 +622,7 @@ grub_png_output_byte (struct grub_png_data *data, grub_uint8_t n)
       if (blank_line)
 	grub_free (blank_line);
 
-      data->cur_colume = 0;
+      data->cur_column = 0;
       data->first_line = 0;
     }
 
@@ -782,7 +780,7 @@ grub_png_decode_png (struct grub_png_data *data)
 {
   grub_uint8_t magic[8];
 
-  if (grub_file_read (data->file, (char *) &magic[0], 8) != 8)
+  if (grub_file_read (data->file, &magic[0], 8) != 8)
     return grub_errno;
 
   if (grub_memcmp (magic, png_magic, sizeof (png_magic)))
@@ -844,10 +842,9 @@ grub_video_reader_png (struct grub_video_bitmap **bitmap,
   if (!file)
     return grub_errno;
 
-  data = grub_malloc (sizeof (*data));
+  data = grub_zalloc (sizeof (*data));
   if (data != NULL)
     {
-      grub_memset (data, 0, sizeof (*data));
       data->file = file;
       data->bitmap = bitmap;
 

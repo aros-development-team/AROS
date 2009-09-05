@@ -1,7 +1,7 @@
 /* ls.c - command to list files and devices */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003,2005,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2005,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,13 +22,14 @@
 #include <grub/mm.h>
 #include <grub/err.h>
 #include <grub/dl.h>
-#include <grub/normal.h>
-#include <grub/arg.h>
 #include <grub/disk.h>
 #include <grub/device.h>
 #include <grub/term.h>
 #include <grub/partition.h>
 #include <grub/file.h>
+#include <grub/normal.h>
+#include <grub/extcmd.h>
+#include <grub/datetime.h>
 
 static const struct grub_arg_option options[] =
   {
@@ -50,10 +51,10 @@ grub_ls_list_devices (int longlist)
 	grub_normal_print_device_info (name);
       else
 	grub_printf ("(%s) ", name);
-  
+
       return 0;
     }
-  
+
   grub_device_iterate (grub_ls_print_devices);
   grub_putchar ('\n');
   grub_refresh ();
@@ -68,28 +69,32 @@ grub_ls_list_files (char *dirname, int longlist, int all, int human)
   grub_fs_t fs;
   const char *path;
   grub_device_t dev;
-  auto int print_files (const char *filename, int dir);
-  auto int print_files_long (const char *filename, int dir);
-  
-  int print_files (const char *filename, int dir)
+
+  auto int print_files (const char *filename,
+			const struct grub_dirhook_info *info);
+  auto int print_files_long (const char *filename,
+			     const struct grub_dirhook_info *info);
+
+  int print_files (const char *filename, const struct grub_dirhook_info *info)
     {
       if (all || filename[0] != '.')
-	grub_printf ("%s%s ", filename, dir ? "/" : "");
-      
+	grub_printf ("%s%s ", filename, info->dir ? "/" : "");
+
       return 0;
     }
-     
-  int print_files_long (const char *filename, int dir)
+
+  int print_files_long (const char *filename,
+			const struct grub_dirhook_info *info)
     {
       char pathname[grub_strlen (dirname) + grub_strlen (filename) + 1];
 
       if ((! all) && (filename[0] == '.'))
 	return 0;
 
-      if (! dir)
+      if (! info->dir)
 	{
 	  grub_file_t file;
-	  
+
 	  if (dirname[grub_strlen (dirname) - 1] == '/')
 	    grub_sprintf (pathname, "%s%s", dirname, filename);
 	  else
@@ -112,7 +117,7 @@ grub_ls_list_files (char *dirname, int longlist, int all, int human)
 	      int fsz = file->size;
 	      int units = 0;
 	      char buf[20];
-	      
+
 	      while (fsz / 1024)
 		{
 		  fsize = (fsize + 512) / 1024;
@@ -131,14 +136,30 @@ grub_ls_list_files (char *dirname, int longlist, int all, int human)
 		}
 	      else
 		grub_printf ("%-12llu", (unsigned long long) file->size);
-	      
+
 	    }
 	  grub_file_close (file);
-      	}
+	}
       else
 	grub_printf ("%-12s", "DIR");
 
-      grub_printf ("%s%s\n", filename, dir ? "/" : "");
+      if (info->mtimeset)
+	{
+	  struct grub_datetime datetime;
+	  grub_unixtime2datetime (info->mtime, &datetime);
+	  if (human)
+	    grub_printf (" %d-%02d-%02d %02d:%02d:%02d %-11s ",
+			 datetime.year, datetime.month, datetime.day,
+			 datetime.hour, datetime.minute,
+			 datetime.second,
+			 grub_get_weekday_name (&datetime));
+	  else
+	    grub_printf (" %04d%02d%02d%02d%02d%02d ",
+			 datetime.year, datetime.month,
+			 datetime.day, datetime.hour,
+			 datetime.minute, datetime.second);
+	}
+      grub_printf ("%s%s\n", filename, info->dir ? "/" : "");
 
       return 0;
     }
@@ -154,13 +175,13 @@ grub_ls_list_files (char *dirname, int longlist, int all, int human)
     path = dirname;
   else
     path++;
-  
+
   if (! path && ! device_name)
     {
       grub_error (GRUB_ERR_BAD_ARGUMENT, "invalid argument");
       goto fail;
     }
-      
+
   if (! *path)
     {
       if (grub_errno == GRUB_ERR_UNKNOWN_FS)
@@ -181,47 +202,50 @@ grub_ls_list_files (char *dirname, int longlist, int all, int human)
 	  /* PATH might be a regular file.  */
 	  char *p;
 	  grub_file_t file;
-
+	  struct grub_dirhook_info info;
 	  grub_errno = 0;
-	  
+
 	  file = grub_file_open (dirname);
 	  if (! file)
 	    goto fail;
-	  
+
 	  grub_file_close (file);
-	  
+
 	  p = grub_strrchr (dirname, '/') + 1;
 	  dirname = grub_strndup (dirname, p - dirname);
 	  if (! dirname)
 	    goto fail;
 
 	  all = 1;
+	  grub_memset (&info, 0, sizeof (info));
 	  if (longlist)
-	    print_files_long (p, 0);
+	    print_files_long (p, &info);
 	  else
-	    print_files (p, 0);
+	    print_files (p, &info);
 
 	  grub_free (dirname);
 	}
 
       if (grub_errno == GRUB_ERR_NONE)
 	grub_putchar ('\n');
-      
+
       grub_refresh ();
     }
 
  fail:
   if (dev)
     grub_device_close (dev);
-      
+
   grub_free (device_name);
 
   return 0;
 }
 
 static grub_err_t
-grub_cmd_ls (struct grub_arg_list *state, int argc, char **args)
+grub_cmd_ls (grub_extcmd_t cmd, int argc, char **args)
 {
+  struct grub_arg_list *state = cmd->state;
+
   if (argc == 0)
     grub_ls_list_devices (state[0].set);
   else
@@ -231,15 +255,16 @@ grub_cmd_ls (struct grub_arg_list *state, int argc, char **args)
   return 0;
 }
 
+static grub_extcmd_t cmd;
+
 GRUB_MOD_INIT(ls)
 {
-  (void)mod;			/* To stop warning. */
-  grub_register_command ("ls", grub_cmd_ls, GRUB_COMMAND_FLAG_BOTH,
-			 "ls [-l|-h|-a] [FILE]",
-			 "List devices and files.", options);
+  cmd = grub_register_extcmd ("ls", grub_cmd_ls, GRUB_COMMAND_FLAG_BOTH,
+			      "ls [-l|-h|-a] [FILE]",
+			      "List devices and files.", options);
 }
 
 GRUB_MOD_FINI(ls)
 {
-  grub_unregister_command ("ls");
+  grub_unregister_extcmd (cmd);
 }

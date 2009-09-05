@@ -71,7 +71,7 @@ grub_ofconsole_writeesc (const char *str)
       char chr = *(str++);
       grub_ieee1275_write (stdout_ihandle, &chr, 1, 0);
     }
-  
+
 }
 
 static void
@@ -158,19 +158,19 @@ grub_ofconsole_readkey (int *key)
 	  *key = '\e';
 	  return 1;
 	}
-      
+
       if (c != 91)
 	return 0;
-      
+
       grub_ieee1275_read (stdin_ihandle, &c, 1, &actual);
       if (actual <= 0)
 	return 0;
-      
+
       switch (c)
 	{
 	case 65:
 	  /* Up: Ctrl-p.  */
-	  c = 16; 
+	  c = 16;
 	  break;
 	case 66:
 	  /* Down: Ctrl-n.  */
@@ -186,7 +186,7 @@ grub_ofconsole_readkey (int *key)
 	  break;
 	}
     }
-  
+
   *key = c;
   return actual > 0;
 }
@@ -196,7 +196,7 @@ grub_ofconsole_checkkey (void)
 {
   int key;
   int read;
-  
+
   if (grub_buflen)
     return 1;
 
@@ -207,7 +207,7 @@ grub_ofconsole_checkkey (void)
       grub_buflen = 1;
       return 1;
     }
-    
+
   return -1;
 }
 
@@ -223,7 +223,7 @@ grub_ofconsole_getkey (void)
     }
 
   while (! grub_ofconsole_readkey (&key));
-  
+
   return key;
 }
 
@@ -420,8 +420,8 @@ static struct grub_term_output grub_ofconsole_term_output =
 void
 grub_console_init (void)
 {
-  grub_term_register_input (&grub_ofconsole_term_input);
-  grub_term_register_output (&grub_ofconsole_term_output);
+  grub_term_register_input ("ofconsole", &grub_ofconsole_term_input);
+  grub_term_register_output ("ofconsole", &grub_ofconsole_term_output);
 }
 
 void

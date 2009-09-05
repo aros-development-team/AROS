@@ -130,9 +130,12 @@ static void grub_claim_heap (void)
 {
   unsigned long total = 0;
 
-  auto int NESTED_FUNC_ATTR heap_init (grub_uint64_t addr, grub_uint64_t len);
-  int NESTED_FUNC_ATTR heap_init (grub_uint64_t addr, grub_uint64_t len)
+  auto int NESTED_FUNC_ATTR heap_init (grub_uint64_t addr, grub_uint64_t len, grub_uint32_t type);
+  int NESTED_FUNC_ATTR heap_init (grub_uint64_t addr, grub_uint64_t len, grub_uint32_t type)
   {
+    if (type != 1)
+      return 0;
+
     len -= 1; /* Required for some firmware.  */
 
     /* Never exceed HEAP_MAX_SIZE  */
@@ -147,7 +150,7 @@ static void grub_claim_heap (void)
 
     /* In theory, firmware should already prevent this from happening by not
        listing our own image in /memory/available.  The check below is intended
-       as a safegard in case that doesn't happen.  It does, however, not protect
+       as a safeguard in case that doesn't happen.  However, it doesn't protect
        us from corrupting our module area, which extends up to a
        yet-undetermined region above _end.  */
     if ((addr < (grub_addr_t) _end) && ((addr + len) > (grub_addr_t) _start))
@@ -174,9 +177,9 @@ static void grub_claim_heap (void)
   }
 
   if (grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_CANNOT_INTERPRET))
-    heap_init (HEAP_MAX_ADDR - HEAP_MIN_SIZE, HEAP_MIN_SIZE);
+    heap_init (HEAP_MAX_ADDR - HEAP_MIN_SIZE, HEAP_MIN_SIZE, 1);
   else
-    grub_available_iterate (heap_init);
+    grub_machine_mmap_iterate (heap_init);
 }
 
 #ifdef __i386__
@@ -187,10 +190,10 @@ grub_uint32_t grub_upper_mem;
 static void
 grub_get_extended_memory (void)
 {
-  auto int NESTED_FUNC_ATTR find_ext_mem (grub_uint64_t addr, grub_uint64_t len);
-  int NESTED_FUNC_ATTR find_ext_mem (grub_uint64_t addr, grub_uint64_t len)
+  auto int NESTED_FUNC_ATTR find_ext_mem (grub_uint64_t addr, grub_uint64_t len, grub_uint32_t type);
+  int NESTED_FUNC_ATTR find_ext_mem (grub_uint64_t addr, grub_uint64_t len, grub_uint32_t type)
     {
-      if (addr == 0x100000)
+      if (type == 1 && addr == 0x100000)
         {
           grub_upper_mem = len;
           return 1;
@@ -199,7 +202,7 @@ grub_get_extended_memory (void)
       return 0;
     }
 
-  grub_available_iterate (find_ext_mem);
+  grub_machine_mmap_iterate (find_ext_mem);
 }
 
 #endif
@@ -210,7 +213,7 @@ void
 grub_machine_init (void)
 {
   char args[256];
-  int actual;
+  grub_ssize_t actual;
 
   grub_ieee1275_init ();
 

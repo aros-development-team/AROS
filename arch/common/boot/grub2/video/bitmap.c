@@ -50,7 +50,7 @@ grub_video_bitmap_reader_unregister (grub_video_bitmap_reader_t reader)
 
 /* Creates new bitmap, saves created bitmap on success to *bitmap.  */
 grub_err_t
-grub_video_bitmap_create (struct grub_video_bitmap **bitmap, 
+grub_video_bitmap_create (struct grub_video_bitmap **bitmap,
                           unsigned int width, unsigned int height,
                           enum grub_video_blit_format blit_format)
 {
@@ -79,7 +79,7 @@ grub_video_bitmap_create (struct grub_video_bitmap **bitmap,
   switch (blit_format)
     {
       case GRUB_VIDEO_BLIT_FORMAT_RGBA_8888:
-        mode_info->mode_type = GRUB_VIDEO_MODE_TYPE_RGB 
+        mode_info->mode_type = GRUB_VIDEO_MODE_TYPE_RGB
                                | GRUB_VIDEO_MODE_TYPE_ALPHA;
         mode_info->bpp = 32;
         mode_info->bytes_per_pixel = 4;
@@ -137,7 +137,7 @@ grub_video_bitmap_create (struct grub_video_bitmap **bitmap,
   /* Calculate size needed for the data.  */
   size = (width * mode_info->bytes_per_pixel) * height;
 
-  (*bitmap)->data = grub_malloc (size);  
+  (*bitmap)->data = grub_zalloc (size);
   if (! (*bitmap)->data)
     {
       grub_free (*bitmap);
@@ -145,9 +145,6 @@ grub_video_bitmap_create (struct grub_video_bitmap **bitmap,
 
       return grub_errno;
     }
-
-  /* Clear bitmap.  */
-  grub_memset ((*bitmap)->data, 0, size);
 
   return GRUB_ERR_NONE;
 }
@@ -185,7 +182,7 @@ match_extension (const char *filename, const char *ext)
 
 /* Loads bitmap using registered bitmap readers.  */
 grub_err_t
-grub_video_bitmap_load (struct grub_video_bitmap **bitmap, 
+grub_video_bitmap_load (struct grub_video_bitmap **bitmap,
                         const char *filename)
 {
   grub_video_bitmap_reader_t reader = bitmap_readers_list;

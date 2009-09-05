@@ -17,17 +17,16 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/normal.h>
 #include <grub/dl.h>
-#include <grub/arg.h>
 #include <grub/file.h>
 #include <grub/disk.h>
 #include <grub/term.h>
 #include <grub/misc.h>
 #include <grub/gzio.h>
+#include <grub/command.h>
 
 static grub_err_t
-grub_cmd_cat (struct grub_arg_list *state __attribute__ ((unused)),
+grub_cmd_cat (grub_command_t cmd __attribute__ ((unused)),
 	      int argc, char **args)
 
 {
@@ -42,16 +41,16 @@ grub_cmd_cat (struct grub_arg_list *state __attribute__ ((unused)),
   file = grub_gzfile_open (args[0], 1);
   if (! file)
     return 0;
-  
+
   while ((size = grub_file_read (file, buf, sizeof (buf))) > 0
 	 && key != GRUB_TERM_ESC)
     {
       int i;
-      
+
       for (i = 0; i < size; i++)
 	{
 	  unsigned char c = buf[i];
-	  
+
 	  if ((grub_isprint (c) || grub_isspace (c)) && c != '\r')
 	    grub_putchar (c);
 	  else
@@ -70,19 +69,19 @@ grub_cmd_cat (struct grub_arg_list *state __attribute__ ((unused)),
   grub_putchar ('\n');
   grub_refresh ();
   grub_file_close (file);
-  
+
   return 0;
 }
 
+static grub_command_t cmd;
 
 GRUB_MOD_INIT(cat)
 {
-  (void) mod;			/* To stop warning. */
-  grub_register_command ("cat", grub_cmd_cat, GRUB_COMMAND_FLAG_BOTH,
-			 "cat FILE", "Show the contents of a file.", 0);
+  cmd = grub_register_command_p1 ("cat", grub_cmd_cat,
+				  "cat FILE", "Show the contents of a file.");
 }
 
 GRUB_MOD_FINI(cat)
 {
-  grub_unregister_command ("cat");
+  grub_unregister_command (cmd);
 }

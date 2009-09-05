@@ -26,8 +26,8 @@
 grub_uint64_t
 grub_rtc_get_time_ms (void)
 {
-  /* By dimensional analysis: 
-    
+  /* By dimensional analysis:
+
       1000 ms   N rtc ticks       1 s
       ------- * ----------- * ----------- = 1000*N/T ms
         1 s          1        T rtc ticks

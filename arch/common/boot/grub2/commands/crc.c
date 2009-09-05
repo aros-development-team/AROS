@@ -17,16 +17,15 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/normal.h>
 #include <grub/dl.h>
-#include <grub/arg.h>
 #include <grub/disk.h>
 #include <grub/file.h>
 #include <grub/misc.h>
 #include <grub/lib/crc.h>
+#include <grub/command.h>
 
 static grub_err_t
-grub_cmd_crc (struct grub_arg_list *state __attribute__ ((unused)),
+grub_cmd_crc (grub_command_t cmd __attribute__ ((unused)),
 	      int argc, char **args)
 
 {
@@ -53,14 +52,16 @@ grub_cmd_crc (struct grub_arg_list *state __attribute__ ((unused)),
   return 0;
 }
 
+static grub_command_t cmd;
+
 GRUB_MOD_INIT(crc)
 {
-  (void) mod;			/* To stop warning. */
-  grub_register_command ("crc", grub_cmd_crc, GRUB_COMMAND_FLAG_BOTH,
-			 "crc FILE", "Calculate the crc32 checksum of a file.", 0);
+  cmd = grub_register_command ("crc", grub_cmd_crc,
+			       "crc FILE",
+			       "Calculate the crc32 checksum of a file.");
 }
 
 GRUB_MOD_FINI(crc)
 {
-  grub_unregister_command ("crc");
+  grub_unregister_command (cmd);
 }

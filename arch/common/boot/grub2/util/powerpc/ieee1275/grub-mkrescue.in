@@ -30,7 +30,7 @@ target_cpu=@target_cpu@
 platform=@platform@
 pkglibdir=${libdir}/`echo ${PACKAGE_TARNAME}/${target_cpu}-${platform} | sed ${transform}`
 
-grub_mkimage=${bindir}/`echo grub-mkimage | sed ${transform}`
+grub_mkimage=${bindir}/`echo grub-mkelfimage | sed ${transform}`
 
 # Usage: usage
 # Print the usage.

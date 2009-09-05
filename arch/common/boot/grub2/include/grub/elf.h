@@ -1,5 +1,5 @@
 /* This file defines standard ELF types, structures, and macros.
-   Copyright (C) 1995-1999, 2000, 2001, 2002 Free Software Foundation, Inc.
+   Copyright (C) 1995-1999, 2000, 2001, 2002,2008 Free Software Foundation, Inc.
    This file was part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -206,18 +206,18 @@ typedef struct
 #define EM_68HC12	53		/* Motorola M68HC12 */
 #define EM_MMA		54		/* Fujitsu MMA Multimedia Accelerator*/
 #define EM_PCP		55		/* Siemens PCP */
-#define EM_NCPU		56		/* Sony nCPU embeeded RISC */
+#define EM_NCPU		56		/* Sony nCPU embedded RISC */
 #define EM_NDR1		57		/* Denso NDR1 microprocessor */
 #define EM_STARCORE	58		/* Motorola Start*Core processor */
 #define EM_ME16		59		/* Toyota ME16 processor */
-#define EM_ST100	60		/* STMicroelectronic ST100 processor */
+#define EM_ST100	60		/* STMicroelectronics ST100 processor */
 #define EM_TINYJ	61		/* Advanced Logic Corp. Tinyj emb.fam*/
 #define EM_X86_64	62		/* AMD x86-64 architecture */
 #define EM_PDSP		63		/* Sony DSP Processor */
 
 #define EM_FX66		66		/* Siemens FX66 microcontroller */
 #define EM_ST9PLUS	67		/* STMicroelectronics ST9+ 8/16 mc */
-#define EM_ST7		68		/* STmicroelectronics ST7 8 bit mc */
+#define EM_ST7		68		/* STMicroelectronics ST7 8 bit mc */
 #define EM_68HC16	69		/* Motorola MC68HC16 microcontroller */
 #define EM_68HC11	70		/* Motorola MC68HC11 microcontroller */
 #define EM_68HC08	71		/* Motorola MC68HC08 microcontroller */
@@ -319,7 +319,7 @@ typedef struct
 #define SHT_FINI_ARRAY	  15		/* Array of destructors */
 #define SHT_PREINIT_ARRAY 16		/* Array of pre-constructors */
 #define SHT_GROUP	  17		/* Section group */
-#define SHT_SYMTAB_SHNDX  18		/* Extended section indeces */
+#define SHT_SYMTAB_SHNDX  18		/* Extended section indices */
 #define	SHT_NUM		  19		/* Number of defined types.  */
 #define SHT_LOOS	  0x60000000	/* Start OS-specific */
 #define SHT_GNU_LIBLIST	  0x6ffffff7	/* Prelink library list */
@@ -1191,7 +1191,7 @@ typedef struct
 #define R_SPARC_LM22		36	/* Low middle 22 bits of ... */
 #define R_SPARC_PC_HH22		37	/* Top 22 bits of pc rel 64 bit */
 #define R_SPARC_PC_HM10		38	/* High middle 10 bit of ... */
-#define R_SPARC_PC_LM22		39	/* Low miggle 22 bits of ... */
+#define R_SPARC_PC_LM22		39	/* Low middle 22 bits of ... */
 #define R_SPARC_WDISP16		40	/* PC relative 16 bit shifted */
 #define R_SPARC_WDISP19		41	/* PC relative 19 bit shifted */
 #define R_SPARC_7		43	/* Direct 7 bit */
@@ -1625,9 +1625,9 @@ typedef Elf32_Addr Elf32_Conflict;
 #define EFA_PARISC_1_1		    0x0210 /* PA-RISC 1.1 big-endian.  */
 #define EFA_PARISC_2_0		    0x0214 /* PA-RISC 2.0 big-endian.  */
 
-/* Additional section indeces.  */
+/* Additional section indices.  */
 
-#define SHN_PARISC_ANSI_COMMON	0xff00	   /* Section for tenatively declared
+#define SHN_PARISC_ANSI_COMMON	0xff00	   /* Section for tentatively declared
 					      symbols in ANSI C.  */
 #define SHN_PARISC_HUGE_COMMON	0xff01	   /* Common blocks in huge model.  */
 
@@ -1784,7 +1784,7 @@ typedef Elf32_Addr Elf32_Conflict;
 
 /* Legal values for sh_type field of Elf64_Shdr.  */
 
-/* These two are primerily concerned with ECOFF debugging info.  */
+/* These two are primarily concerned with ECOFF debugging info.  */
 #define SHT_ALPHA_DEBUG		0x70000001
 #define SHT_ALPHA_REGINFO	0x70000002
 
@@ -2329,5 +2329,49 @@ typedef Elf32_Addr Elf32_Conflict;
 #define R_X86_64_TPOFF32	23	/* Offset in initial TLS block */
 
 #define R_X86_64_NUM		24
+
+#if GRUB_TARGET_WORDSIZE == 32
+
+typedef Elf32_Addr Elf_Addr;
+typedef Elf32_Ehdr Elf_Ehdr;
+typedef Elf32_Half Elf_Half;
+typedef Elf32_Off Elf_Off;
+typedef Elf32_Rel Elf_Rel;
+typedef Elf32_Rela Elf_Rela;
+typedef Elf32_Section Elf_Section;
+typedef Elf32_Shdr Elf_Shdr;
+typedef Elf32_Sword Elf_Sword;
+typedef Elf32_Sym Elf_Sym;
+typedef Elf32_Word Elf_Word;
+typedef Elf32_Xword Elf_Xword;
+
+#define ELF_ST_BIND(val)	ELF32_ST_BIND(val)
+#define ELF_ST_TYPE(val)	ELF32_ST_TYPE(val)
+#define ELF_R_SYM(val)		ELF32_R_SYM(val)
+#define ELF_R_TYPE(val)		ELF32_R_TYPE(val)
+#define ELF_R_INFO(sym, type)	ELF32_R_INFO(sym, type)
+
+#elif GRUB_TARGET_WORDSIZE == 64
+
+typedef Elf64_Addr Elf_Addr;
+typedef Elf64_Ehdr Elf_Ehdr;
+typedef Elf64_Half Elf_Half;
+typedef Elf64_Off Elf_Off;
+typedef Elf64_Rel Elf_Rel;
+typedef Elf64_Rela Elf_Rela;
+typedef Elf64_Section Elf_Section;
+typedef Elf64_Shdr Elf_Shdr;
+typedef Elf64_Sword Elf_Sword;
+typedef Elf64_Sym Elf_Sym;
+typedef Elf64_Word Elf_Word;
+typedef Elf64_Xword Elf_Xword;
+
+#define ELF_ST_BIND(val)	ELF64_ST_BIND (val)
+#define ELF_ST_TYPE(val)	ELF64_ST_TYPE (val)
+#define ELF_R_SYM(val)		ELF64_R_SYM(val)
+#define ELF_R_TYPE(val)		ELF64_R_TYPE(val)
+#define ELF_R_INFO(sym, type)	ELF64_R_INFO(sym, type)
+
+#endif /* GRUB_TARGET_WORDSIZE == 64 */
 
 #endif /* ! GRUB_ELF_H */

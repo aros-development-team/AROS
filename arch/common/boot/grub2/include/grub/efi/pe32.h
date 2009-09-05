@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -98,7 +98,7 @@ struct grub_pe32_optional_header
   grub_uint32_t bss_size;
   grub_uint32_t entry_addr;
   grub_uint32_t code_base;
-  
+
 #if GRUB_TARGET_SIZEOF_VOID_P == 4
   grub_uint32_t data_base;
   grub_uint32_t image_base;
@@ -139,7 +139,7 @@ struct grub_pe32_optional_header
 
   grub_uint32_t loader_flags;
   grub_uint32_t num_data_directories;
-  
+
   /* Data directories.  */
   struct grub_pe32_data_directory export_table;
   struct grub_pe32_data_directory import_table;
@@ -210,7 +210,7 @@ struct grub_pe32_header
 {
   /* This should be filled in with GRUB_PE32_MSDOS_STUB.  */
   grub_uint8_t msdos_stub[GRUB_PE32_MSDOS_STUB_SIZE];
-  
+
   /* This is always PE\0\0.  */
   char signature[4];
 
@@ -231,7 +231,16 @@ struct grub_pe32_fixup_block
 #define GRUB_PE32_FIXUP_ENTRY(type, offset)	(((type) << 12) | (offset))
 
 #define GRUB_PE32_REL_BASED_ABSOLUTE	0
+#define GRUB_PE32_REL_BASED_HIGH	1
+#define GRUB_PE32_REL_BASED_LOW		2
 #define GRUB_PE32_REL_BASED_HIGHLOW	3
+#define GRUB_PE32_REL_BASED_HIGHADJ	4
+#define GRUB_PE32_REL_BASED_MIPS_JMPADDR 5
+#define GRUB_PE32_REL_BASED_SECTION	6
+#define GRUB_PE32_REL_BASED_REL		7
+#define GRUB_PE32_REL_BASED_IA64_IMM64	9
+#define GRUB_PE32_REL_BASED_DIR64	10
+#define GRUB_PE32_REL_BASED_HIGH3ADJ	11
 
 struct grub_pe32_symbol
 {

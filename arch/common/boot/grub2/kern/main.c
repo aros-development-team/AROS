@@ -22,11 +22,13 @@
 #include <grub/symbol.h>
 #include <grub/dl.h>
 #include <grub/term.h>
-#include <grub/rescue.h>
 #include <grub/file.h>
 #include <grub/device.h>
 #include <grub/env.h>
 #include <grub/mm.h>
+#include <grub/command.h>
+#include <grub/reader.h>
+#include <grub/parser.h>
 
 void
 grub_module_iterate (int (*hook) (struct grub_module_header *header))
@@ -37,7 +39,7 @@ grub_module_iterate (int (*hook) (struct grub_module_header *header))
 
   modbase = grub_arch_modules_addr ();
   modinfo = (struct grub_module_info *) modbase;
-  
+
   /* Check if there are any modules.  */
   if ((modinfo == 0) || modinfo->magic != GRUB_MODULE_MAGIC)
     return;
@@ -72,6 +74,24 @@ grub_load_modules (void)
   grub_module_iterate (hook);
 }
 
+static void
+grub_load_config (void)
+{
+  auto int hook (struct grub_module_header *);
+  int hook (struct grub_module_header *header)
+    {
+      /* Not an ELF module, skip.  */
+      if (header->type != OBJ_TYPE_CONFIG)
+	return 0;
+
+      grub_parser_execute ((char *) header +
+			   sizeof (struct grub_module_header));
+      return 1;
+    }
+
+  grub_module_iterate (hook);
+}
+
 /* Write hook for the environment variables of root. Remove surrounding
    parentheses, if any.  */
 static char *
@@ -80,7 +100,7 @@ grub_env_write_root (struct grub_env_var *var __attribute__ ((unused)),
 {
   /* XXX Is it better to check the existence of the device?  */
   grub_size_t len = grub_strlen (val);
-  
+
   if (val[0] == '(' && val[len - 1] == ')')
     return grub_strndup (val + 1, len - 2);
 
@@ -95,9 +115,9 @@ grub_set_root_dev (void)
 
   grub_register_variable_hook ("root", 0, grub_env_write_root);
   grub_env_export ("root");
-  
+
   prefix = grub_env_get ("prefix");
-  
+
   if (prefix)
     {
       char *dev;
@@ -117,9 +137,12 @@ grub_load_normal_mode (void)
 {
   /* Load the module.  */
   grub_dl_load ("normal");
-  
+
   /* Something went wrong.  Print errors here to let user know why we're entering rescue mode.  */
   grub_print_error ();
+  grub_errno = 0;
+
+  grub_command_execute ("normal", 0, 0);
 }
 
 /* The main routine.  */
@@ -144,9 +167,11 @@ grub_main (void)
   grub_env_export ("prefix");
   grub_set_root_dev ();
 
-  /* Load the normal mode module.  */
+  grub_register_core_commands ();
+  grub_register_rescue_parser ();
+  grub_register_rescue_reader ();
+
+  grub_load_config ();
   grub_load_normal_mode ();
-  
-  /* Enter the rescue mode.  */
-  grub_enter_rescue_mode ();
+  grub_reader_loop (0);
 }

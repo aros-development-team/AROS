@@ -41,11 +41,11 @@ grub_device_open (const char *name)
 	  goto fail;
 	}
     }
-    
+
   dev = grub_malloc (sizeof (*dev));
   if (! dev)
     goto fail;
-  
+
   /* Try to open a disk.  */
   disk = grub_disk_open (name);
   if (! disk)
@@ -59,7 +59,7 @@ grub_device_open (const char *name)
  fail:
   if (disk)
     grub_disk_close (disk);
-  
+
   grub_free (dev);
 
   return 0;
@@ -82,53 +82,75 @@ grub_device_iterate (int (*hook) (const char *name))
   auto int iterate_disk (const char *disk_name);
   auto int iterate_partition (grub_disk_t disk,
 			      const grub_partition_t partition);
-  
+
+  struct part_ent
+  {
+    struct part_ent *next;
+    char name[0];
+  } *ents;
+
   int iterate_disk (const char *disk_name)
     {
       grub_device_t dev;
 
       if (hook (disk_name))
 	return 1;
-      
+
       dev = grub_device_open (disk_name);
       if (! dev)
 	return 0;
-      
+
       if (dev->disk && dev->disk->has_partitions)
-	if (grub_partition_iterate (dev->disk, iterate_partition))
-	  {
-	    grub_device_close (dev);
-	    return 1;
-	  }
+	{
+	  struct part_ent *p;
+	  int ret = 0;
+
+	  ents = NULL;
+	  (void) grub_partition_iterate (dev->disk, iterate_partition);
+	  grub_device_close (dev);
+
+	  p = ents;
+	  while (p != NULL)
+	    {
+	      struct part_ent *next = p->next;
+
+	      if (!ret)
+		ret = hook (p->name);
+	      grub_free (p);
+	      p = next;
+	    }
+
+	  return ret;
+	}
 
       grub_device_close (dev);
       return 0;
     }
-  
+
   int iterate_partition (grub_disk_t disk, const grub_partition_t partition)
     {
       char *partition_name;
-      char *device_name;
-      int ret;
-      
+      struct part_ent *p;
+
       partition_name = grub_partition_get_name (partition);
       if (! partition_name)
 	return 1;
-      
-      device_name = grub_malloc (grub_strlen (disk->name) + 1
-				 + grub_strlen (partition_name) + 1);
-      if (! device_name)
+
+      p = grub_malloc (sizeof (p->next) + grub_strlen (disk->name) + 1 +
+		       grub_strlen (partition_name) + 1);
+      if (!p)
 	{
 	  grub_free (partition_name);
 	  return 1;
 	}
 
-      grub_sprintf (device_name, "%s,%s", disk->name, partition_name);
+      grub_sprintf (p->name, "%s,%s", disk->name, partition_name);
       grub_free (partition_name);
 
-      ret = hook (device_name);
-      grub_free (device_name);
-      return ret;
+      p->next = ents;
+      ents = p;
+
+      return 0;
     }
 
   /* Only disk devices are supported at the moment.  */

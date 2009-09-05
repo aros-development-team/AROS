@@ -19,9 +19,4 @@
 #ifndef GRUB_LOADER_MACHINE_HEADER
 #define GRUB_LOADER_MACHINE_HEADER	1
 
-/* It is necessary to export these functions, because normal mode commands
-   reuse rescue mode commands.  */
-void grub_rescue_cmd_linux (int argc, char *argv[]);
-void grub_rescue_cmd_initrd (int argc, char *argv[]);
-
 #endif /* ! GRUB_LOADER_MACHINE_HEADER */

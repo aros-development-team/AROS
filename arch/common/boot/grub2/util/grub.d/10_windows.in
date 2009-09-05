@@ -1,6 +1,6 @@
 #! /bin/sh -e
 
-# update-grub helper script.
+# grub-mkconfig helper script.
 # Copyright (C) 2008  Free Software Foundation, Inc.
 #
 # GRUB is free software: you can redistribute it and/or modify

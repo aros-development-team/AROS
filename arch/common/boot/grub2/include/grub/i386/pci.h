@@ -32,4 +32,39 @@ grub_pci_read (grub_pci_address_t addr)
   return grub_inl (GRUB_PCI_DATA_REG);
 }
 
+static inline grub_uint16_t
+grub_pci_read_word (grub_pci_address_t addr)
+{
+  grub_outl (addr & ~3, GRUB_PCI_ADDR_REG);
+  return grub_inw (GRUB_PCI_DATA_REG + (addr & 3));
+}
+
+static inline grub_uint8_t
+grub_pci_read_byte (grub_pci_address_t addr)
+{
+  grub_outl (addr & ~3, GRUB_PCI_ADDR_REG);
+  return grub_inb (GRUB_PCI_DATA_REG + (addr & 3));
+}
+
+static inline void
+grub_pci_write (grub_pci_address_t addr, grub_uint32_t data)
+{
+  grub_outl (addr, GRUB_PCI_ADDR_REG);
+  grub_outl (data, GRUB_PCI_DATA_REG);
+}
+
+static inline void
+grub_pci_write_word (grub_pci_address_t addr, grub_uint16_t data)
+{
+  grub_outl (addr & ~3, GRUB_PCI_ADDR_REG);
+  grub_outw (data, GRUB_PCI_DATA_REG + (addr & 3));
+}
+
+static inline void
+grub_pci_write_byte (grub_pci_address_t addr, grub_uint8_t data)
+{
+  grub_outl (addr & ~3, GRUB_PCI_ADDR_REG);
+  grub_outb (data, GRUB_PCI_DATA_REG + (addr & 3));
+}
+
 #endif /* GRUB_CPU_PCI_H */

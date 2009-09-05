@@ -41,11 +41,10 @@
 #define GRUB_KERNEL_MACHINE_DATA_END		0x5c
 
 /* The size of the first region which won't be compressed.  */
-#if defined(ENABLE_LZO)
-#define GRUB_KERNEL_MACHINE_RAW_SIZE		(GRUB_KERNEL_MACHINE_DATA_END + 0x450)
-#elif defined(ENABLE_LZMA)
 #define GRUB_KERNEL_MACHINE_RAW_SIZE		(GRUB_KERNEL_MACHINE_DATA_END + 0x5F0)
-#endif
+
+/* Enable LZMA compression */
+#define ENABLE_LZMA	1
 
 #ifndef ASM_FILE
 
@@ -69,13 +68,7 @@ extern grub_int32_t grub_install_bsd_part;
 extern char grub_prefix[];
 
 /* The boot BIOS drive number.  */
-extern grub_int32_t EXPORT_VAR(grub_boot_drive);
-
-/* The root BIOS drive number.  */
-extern grub_int32_t grub_root_drive;
-
-/* The end address of the kernel.  */
-extern grub_addr_t grub_end_addr;
+extern grub_uint8_t EXPORT_VAR(grub_boot_drive);
 
 #endif /* ! ASM_FILE */
 

@@ -42,7 +42,7 @@ grub_host_open (const char *name, grub_disk_t disk)
 
   disk->total_sectors = 0;
   disk->id = (unsigned long) "host";
-  
+
   disk->has_partitions = 0;
   disk->data = 0;
 
@@ -87,7 +87,6 @@ static struct grub_disk_dev grub_host_dev =
 
 GRUB_MOD_INIT(host)
 {
-  (void) mod;			/* To stop warning. */
   grub_disk_dev_register (&grub_host_dev);
 }
 

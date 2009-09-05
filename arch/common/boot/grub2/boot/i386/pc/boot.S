@@ -1,7 +1,7 @@
 /* -*-Asm-*- */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2005,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2005,2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,20 +17,16 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <grub/symbol.h>
 #include <grub/boot.h>
 #include <grub/machine/boot.h>
-	
+
 /*
  *  defines for the code go here
  */
 
-	/* Absolute addresses
-	   This makes the assembler generate the address without support
-	   from the linker. (ELF can't relocate 16-bit addresses!) */
-#define ABS(x) (x-_start+0x7c00)
-
 	/* Print message string */
-#define MSG(x)	movw $ABS(x), %si; call message
+#define MSG(x)	movw $x, %si; call LOCAL(message)
 
 	.file	"boot.S"
 
@@ -40,7 +36,9 @@
 	   in real mode. */
 	.code16
 
-.globl _start; _start:
+.globl _start, start;
+_start:
+start:
 	/*
 	 * _start is loaded at 0x7c00 and is jumped to with CS:IP 0:0x7c00
 	 */
@@ -50,7 +48,7 @@
 	 * parameter block.
 	 */
 
-	jmp	after_BPB
+	jmp	LOCAL(after_BPB)
 	nop	/* do I care about this ??? */
 
 	/*
@@ -59,12 +57,13 @@
 	 * this area.
 	 */
 
+	. = _start + GRUB_BOOT_MACHINE_BPB_START
 	. = _start + 4
 
 	/* scratch space */
 mode:
 	.byte	0
-disk_address_packet:	
+disk_address_packet:
 sectors:
 	.long	0
 heads:
@@ -85,21 +84,19 @@ cylinder_start:
 	 * End of BIOS parameter block.
 	 */
 
-boot_version:	
-	.byte	GRUB_BOOT_VERSION_MAJOR, GRUB_BOOT_VERSION_MINOR
 kernel_address:
 	.word	GRUB_BOOT_MACHINE_KERNEL_ADDR
-kernel_segment:
-	.word	GRUB_BOOT_MACHINE_KERNEL_SEG
+
+	. = _start + GRUB_BOOT_MACHINE_KERNEL_SECTOR
 kernel_sector:
 	.long	1, 0
-boot_drive:	
+
+	. = _start + GRUB_BOOT_MACHINE_BOOT_DRIVE
+boot_drive:
 	.byte 0xff	/* the disk to load kernel from */
 			/* 0xff means use the boot drive */
-root_drive:
-        .byte 0xff
 
-after_BPB:
+LOCAL(after_BPB):
 
 /* general setup */
 	cli		/* we're not safe here! */
@@ -112,20 +109,21 @@ after_BPB:
          * possible boot drive. If GRUB is installed into a floppy,
          * this does nothing (only jump).
          */
+	. = _start + GRUB_BOOT_MACHINE_DRIVE_CHECK
 boot_drive_check:
         jmp     1f	/* grub-setup may overwrite this jump */
         testb   $0x80, %dl
         jnz     1f
         movb    $0x80, %dl
 1:
-	
+
 	/*
 	 * ljmp to the next instruction because some bogus BIOSes
 	 * jump to 07C0:0000 instead of 0000:7C00.
 	 */
-	ljmp	$0, $ABS(real_start)
+	ljmp	$0, $real_start
 
-real_start:	
+real_start:
 
 	/* set up %ds and %ss as offset from 0 */
 	xorw	%ax, %ax
@@ -140,9 +138,7 @@ real_start:
 	/*
 	 *  Check if we have a forced disk reference here
 	 */
-        /* assign root_drive at the same time */
-        movw    ABS(boot_drive), %ax
-        movb    %ah, %dh
+	movb   boot_drive, %al
 	cmpb	$0xff, %al
 	je	1f
 	movb	%al, %dl
@@ -154,18 +150,18 @@ real_start:
 	MSG(notification_string)
 
 	/* set %si to the disk address packet */
-	movw	$ABS(disk_address_packet), %si
-	
+	movw	$disk_address_packet, %si
+
 	/* do not probe LBA if the drive is a floppy */
 	testb	$GRUB_BOOT_MACHINE_BIOS_HD_FLAG, %dl
-	jz	chs_mode
-			
+	jz	LOCAL(chs_mode)
+
 	/* check if LBA is supported */
 	movb	$0x41, %ah
 	movw	$0x55aa, %bx
 	int	$0x13
 
-	/* 
+	/*
 	 *  %dl may have been clobbered by INT 13, AH=41H.
 	 *  This happens, for example, with AST BIOS 1.04.
 	 */
@@ -173,21 +169,21 @@ real_start:
 	pushw	%dx
 
 	/* use CHS if fails */
-	jc	chs_mode
+	jc	LOCAL(chs_mode)
 	cmpw	$0xaa55, %bx
-	jne	chs_mode
+	jne	LOCAL(chs_mode)
 
 	andw	$1, %cx
-	jz	chs_mode
-	
+	jz	LOCAL(chs_mode)
+
 lba_mode:
 	xorw	%ax, %ax
 	movw	%ax, 4(%si)
 
-	incw	%ax	
+	incw	%ax
 	/* set the mode to non-zero */
 	movb	%al, -1(%si)
-	
+
 	/* the blocks */
 	movw	%ax, 2(%si)
 
@@ -195,9 +191,9 @@ lba_mode:
 	movw	$0x0010, (%si)
 
 	/* the absolute address */
-	movl	ABS(kernel_sector), %ebx
+	movl	kernel_sector, %ebx
 	movl	%ebx, 8(%si)
-	movl	ABS(kernel_sector + 4), %ebx
+	movl	kernel_sector + 4, %ebx
 	movl	%ebx, 12(%si)
 
 	/* the segment of buffer address */
@@ -216,34 +212,34 @@ lba_mode:
 	int	$0x13
 
 	/* LBA read is not supported, so fallback to CHS.  */
-	jc	chs_mode
+	jc	LOCAL(chs_mode)
 
 	movw	$GRUB_BOOT_MACHINE_BUFFER_SEG, %bx
-	jmp	copy_buffer
-		
-chs_mode:	
+	jmp	LOCAL(copy_buffer)
+
+LOCAL(chs_mode):
 	/*
 	 *  Determine the hard disk geometry from the BIOS!
 	 *  We do this first, so that LS-120 IDE floppies work correctly.
 	 */
 	movb	$8, %ah
 	int	$0x13
-	jnc	final_init
+	jnc	LOCAL(final_init)
 
 	/*
 	 *  The call failed, so maybe use the floppy probe instead.
 	 */
 	testb	$GRUB_BOOT_MACHINE_BIOS_HD_FLAG, %dl
-	jz	floppy_probe
+	jz	LOCAL(floppy_probe)
 
 	/* Nope, we definitely have a hard disk, and we're screwed. */
-	jmp	hd_probe_error
+	jmp	LOCAL(hd_probe_error)
 
-final_init:
+LOCAL(final_init):
 	/* set the mode to zero */
 	movzbl	%dh, %eax
 	movb	%ah, -1(%si)
-	
+
 	/* save number of heads */
 	incw	%ax
 	movl	%eax, 4(%si)
@@ -265,12 +261,13 @@ final_init:
 
 setup_sectors:
 	/* load logical sector start (top half) */
-	movl	ABS(kernel_sector + 4), %eax
+	movl	kernel_sector + 4, %eax
+
 	orl	%eax, %eax
-	jnz	geometry_error
-	
+	jnz	LOCAL(geometry_error)
+
 	/* load logical sector start (bottom half) */
-	movl	ABS(kernel_sector), %eax
+	movl	kernel_sector, %eax
 
 	/* zero %edx */
 	xorl	%edx, %edx
@@ -286,7 +283,7 @@ setup_sectors:
 
 	/* do we need too many cylinders? */
 	cmpw	8(%si), %ax
-	jge	geometry_error
+	jge	LOCAL(geometry_error)
 
 	/* normalize sector start (1-based) */
 	incb	%cl
@@ -304,7 +301,6 @@ setup_sectors:
 
 	/* restore %dl */
 	popw	%dx
-        pushw   %dx
 
 	/* head start */
 	movb	%al, %dh
@@ -329,33 +325,31 @@ setup_sectors:
 	movw	$0x0201, %ax	/* function 2 */
 	int	$0x13
 
-	jc	read_error
+	jc	LOCAL(read_error)
 
 	movw	%es, %bx
-	
-copy_buffer:
-	movw	ABS(kernel_segment), %es
 
+LOCAL(copy_buffer):
 	/*
 	 * We need to save %cx and %si because the startup code in
 	 * kernel uses them without initializing them.
 	 */
 	pusha
 	pushw	%ds
-	
+
 	movw	$0x100, %cx
 	movw	%bx, %ds
 	xorw	%si, %si
-	xorw	%di, %di
-	
+	movw	$GRUB_BOOT_MACHINE_KERNEL_ADDR, %di
+	movw	%si, %es
+
 	cld
-	
+
 	rep
 	movsw
 
 	popw	%ds
 	popa
-        popw    %dx
 
 	/* boot kernel */
 	jmp	*(kernel_address)
@@ -365,36 +359,37 @@ copy_buffer:
 /*
  * BIOS Geometry translation error (past the end of the disk geometry!).
  */
-geometry_error:
+LOCAL(geometry_error):
 	MSG(geometry_error_string)
-	jmp	general_error
+	jmp	LOCAL(general_error)
 
 /*
  * Disk probe failure.
  */
-hd_probe_error:
+LOCAL(hd_probe_error):
 	MSG(hd_probe_error_string)
-	jmp	general_error
+	jmp	LOCAL(general_error)
 
 /*
  * Read error on the disk.
  */
-read_error:
+LOCAL(read_error):
 	MSG(read_error_string)
 
-general_error:
+LOCAL(general_error):
 	MSG(general_error_string)
 
 /* go here when you need to stop the machine hard after an error condition */
         /* tell the BIOS a boot failure, which may result in no effect */
         int	$0x18
-stop:	jmp	stop
+LOCAL(stop):
+	jmp	LOCAL(stop)
 
-notification_string:	.string "GRUB "
-geometry_error_string:	.string "Geom"
-hd_probe_error_string:	.string "Hard Disk"
-read_error_string:	.string "Read"
-general_error_string:	.string " Error"
+notification_string:	.asciz "GRUB "
+geometry_error_string:	.asciz "Geom"
+hd_probe_error_string:	.asciz "Hard Disk"
+read_error_string:	.asciz "Read"
+general_error_string:	.asciz " Error\r\n"
 
 /*
  * message: write the string pointed to by %si
@@ -411,7 +406,7 @@ general_error_string:	.string " Error"
 	movw	$0x0001, %bx
 	movb	$0xe, %ah
 	int	$0x10		/* display a byte */
-message:
+LOCAL(message):
 	lodsb
 	cmpb	$0, %al
 	jne	1b	/* if not end of string, jmp to display */
@@ -423,7 +418,7 @@ message:
 	 */
 
 	. = _start + GRUB_BOOT_MACHINE_WINDOWS_NT_MAGIC
-nt_magic:	
+nt_magic:
 	.long 0
 	.word 0
 
@@ -433,20 +428,20 @@ nt_magic:
 	 *  sneaky, huh?
 	 */
 
-part_start:	
 	. = _start + GRUB_BOOT_MACHINE_PART_START
+part_start:
 
 probe_values:
 	.byte	36, 18, 15, 9, 0
 
-floppy_probe:
+LOCAL(floppy_probe):
 /*
  *  Perform floppy probe.
  */
 
-	movw	$ABS(probe_values-1), %si
+	movw	$probe_values - 1, %si
 
-probe_loop:
+LOCAL(probe_loop):
 	/* reset floppy controller INT 13h AH=0 */
 	xorw	%ax, %ax
 	int	$0x13
@@ -462,9 +457,10 @@ probe_loop:
  * Floppy disk probe failure.
  */
 	MSG(fd_probe_error_string)
-	jmp	general_error
+	jmp	LOCAL(general_error)
 
-fd_probe_error_string:	.string "Floppy"
+/* "Floppy" */
+fd_probe_error_string:	.asciz "Floppy"
 
 1:
 	/* perform read */
@@ -474,14 +470,14 @@ fd_probe_error_string:	.string "Floppy"
 	movb	$0, %dh
 	int	$0x13
 
-	/* if error, jump to "probe_loop" */
-	jc	probe_loop
+	/* if error, jump to "LOCAL(probe_loop)" */
+	jc	LOCAL(probe_loop)
 
 	/* %cl is already the correct value! */
 	movb	$1, %dh
 	movb	$79, %ch
 
-	jmp	final_init
+	jmp	LOCAL(final_init)
 
 	. = _start + GRUB_BOOT_MACHINE_PART_END
 

@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2006,2007,2009  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,27 +16,22 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/machine/memory.h>
 #include <grub/video.h>
 #include <grub/types.h>
 #include <grub/dl.h>
 #include <grub/misc.h>
-#include <grub/normal.h>
-#include <grub/arg.h>
 #include <grub/mm.h>
 #include <grub/font.h>
 #include <grub/term.h>
+#include <grub/command.h>
 
 static grub_err_t
-grub_cmd_videotest (struct grub_arg_list *state __attribute__ ((unused)),
+grub_cmd_videotest (grub_command_t cmd __attribute__ ((unused)),
                     int argc __attribute__ ((unused)),
                     char **args __attribute__ ((unused)))
 {
-  if (grub_video_setup (1024, 768,
-                        GRUB_VIDEO_MODE_TYPE_INDEX_COLOR) != GRUB_ERR_NONE)
+  if (grub_video_set_mode ("1024x768;800x600;640x480", 0) != GRUB_ERR_NONE)
     return grub_errno;
-
-  grub_getkey ();
 
   grub_video_color_t color;
   unsigned int x;
@@ -44,9 +39,15 @@ grub_cmd_videotest (struct grub_arg_list *state __attribute__ ((unused)),
   unsigned int width;
   unsigned int height;
   int i;
-  struct grub_font_glyph glyph;
+  grub_font_t sansbig;
+  grub_font_t sans;
+  grub_font_t sanssmall;
+  grub_font_t fixed;
+  struct grub_font_glyph *glyph;
   struct grub_video_render_target *text_layer;
   grub_video_color_t palette[16];
+  const char *str;
+  int texty;
 
   grub_video_get_viewport (&x, &y, &width, &height);
 
@@ -65,8 +66,15 @@ grub_cmd_videotest (struct grub_arg_list *state __attribute__ ((unused)),
   color = grub_video_map_rgb (0, 255, 255);
   grub_video_fill_rect (color, 100, 100, 100, 100);
 
-  grub_font_get_glyph ('*', &glyph);  
-  grub_video_blit_glyph (&glyph, color, 200 ,0);
+  sansbig = grub_font_get ("Helvetica Bold 24");
+  sans = grub_font_get ("Helvetica Bold 14");
+  sanssmall = grub_font_get ("Helvetica 8");
+  fixed = grub_font_get ("Fixed 20");
+  if (! sansbig || ! sans || ! sanssmall || ! fixed)
+    return grub_error (GRUB_ERR_BAD_FONT, "No font loaded.");
+
+  glyph = grub_font_get_glyph (fixed, '*');
+  grub_font_draw_glyph (glyph, color, 200 ,0);
 
   grub_video_set_viewport (x + 150, y + 150,
                            width - 150 * 2, height - 150 * 2);
@@ -77,18 +85,69 @@ grub_cmd_videotest (struct grub_arg_list *state __attribute__ ((unused)),
 
   color = grub_video_map_rgb (255, 255, 255);
 
-  grub_font_get_glyph ('A', &glyph);
-  grub_video_blit_glyph (&glyph, color, 16, 16);
-  grub_font_get_glyph ('B', &glyph);
-  grub_video_blit_glyph (&glyph, color, 16 * 2, 16);
+  texty = 32;
+  grub_font_draw_string ("The quick brown fox jumped over the lazy dog.",
+                         sans, color, 16, texty);
+  texty += grub_font_get_descent (sans) + grub_font_get_leading (sans);
 
-  grub_font_get_glyph ('*', &glyph);
+  texty += grub_font_get_ascent (fixed);
+  grub_font_draw_string ("The quick brown fox jumped over the lazy dog.",
+                         fixed, color, 16, texty);
+  texty += grub_font_get_descent (fixed) + grub_font_get_leading (fixed);
+
+  /* To convert Unicode characters into UTF-8 for this test, the following
+     command is useful:
+       echo -ne '\x00\x00\x26\x3A' | iconv -f UTF-32BE -t UTF-8 | od -t x1
+     This converts the Unicode character U+263A to UTF-8.  */
+
+  /* Characters used:
+     Code point  Description                    UTF-8 encoding
+     ----------- ------------------------------ --------------
+     U+263A      unfilled smiley face           E2 98 BA
+     U+00A1      inverted exclamation point     C2 A1
+     U+00A3      British pound currency symbol  C2 A3
+     U+03C4      Greek tau                      CF 84
+     U+00E4      lowercase letter a with umlaut C3 A4
+     U+2124      set 'Z' symbol (integers)      E2 84 A4
+     U+2287      subset symbol                  E2 8A 87
+     U+211D      set 'R' symbol (real numbers)  E2 84 9D  */
+
+  str =
+    "Unicode test: happy\xE2\x98\xBA \xC2\xA3 5.00"
+    " \xC2\xA1\xCF\x84\xC3\xA4u! "
+    " \xE2\x84\xA4\xE2\x8A\x87\xE2\x84\x9D";
+  color = grub_video_map_rgb (128, 128, 255);
+
+  /* All characters in the string exist in the 'Fixed 20' (10x20) font.  */
+  texty += grub_font_get_ascent(fixed);
+  grub_font_draw_string (str, fixed, color, 16, texty);
+  texty += grub_font_get_descent (fixed) + grub_font_get_leading (fixed);
+
+  /* Some character don't exist in the Helvetica font, so the font engine
+     will fall back to using glyphs from another font that does contain them.
+     TODO The font engine should be smart about selecting a replacement font
+     and prioritize fonts with similar sizes.  */
+
+  texty += grub_font_get_ascent(sansbig);
+  grub_font_draw_string (str, sansbig, color, 16, texty);
+  texty += grub_font_get_descent (sansbig) + grub_font_get_leading (sansbig);
+
+  texty += grub_font_get_ascent(sans);
+  grub_font_draw_string (str, sans, color, 16, texty);
+  texty += grub_font_get_descent (sans) + grub_font_get_leading (sans);
+
+  texty += grub_font_get_ascent(sanssmall);
+  grub_font_draw_string (str, sanssmall, color, 16, texty);
+  texty += (grub_font_get_descent (sanssmall)
+            + grub_font_get_leading (sanssmall));
+
+  glyph = grub_font_get_glyph (fixed, '*');
 
   for (i = 0; i < 16; i++)
     {
       color = grub_video_map_color (i);
       palette[i] = color;
-      grub_video_blit_glyph (&glyph, color, 16 + i * 16, 32);
+      grub_font_draw_glyph (glyph, color, 16 + i * 16, 220);
     }
 
   grub_video_set_active_render_target (GRUB_VIDEO_RENDER_TARGET_DISPLAY);
@@ -114,17 +173,15 @@ grub_cmd_videotest (struct grub_arg_list *state __attribute__ ((unused)),
   return grub_errno;
 }
 
+static grub_command_t cmd;
+
 GRUB_MOD_INIT(videotest)
 {
-  grub_register_command ("videotest",
-                         grub_cmd_videotest,
-                         GRUB_COMMAND_FLAG_BOTH,
-                         "videotest",
-                         "Test video subsystem",
-                         0);
+  cmd = grub_register_command ("videotest", grub_cmd_videotest,
+			       0, "Test video subsystem");
 }
 
 GRUB_MOD_FINI(videotest)
 {
-  grub_unregister_command ("videotest");
+  grub_unregister_command (cmd);
 }

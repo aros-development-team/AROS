@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2008  Free Software Foundation, Inc.
+ *  Copyright (C) 2008,2009  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,12 +21,15 @@
 
 #include <grub/types.h>
 
-#define KERNEL_TYPE_NONE	0
-#define KERNEL_TYPE_FREEBSD	1
-#define KERNEL_TYPE_OPENBSD	2
-#define KERNEL_TYPE_NETBSD	3
+enum bsd_kernel_types
+  {
+    KERNEL_TYPE_NONE,
+    KERNEL_TYPE_FREEBSD,
+    KERNEL_TYPE_OPENBSD,
+    KERNEL_TYPE_NETBSD,
+  };
 
-#define GRUB_BSD_TEMP_BUFFER	0x68000
+#define GRUB_BSD_TEMP_BUFFER   0x80000
 
 #define FREEBSD_RB_ASKNAME	(1 << 0)  /* ask for file name to reboot from */
 #define FREEBSD_RB_SINGLE       (1 << 1)  /* reboot to single user only */
@@ -80,10 +83,14 @@
 #define FREEBSD_MODINFOMD_SHDR		0x0009	/* section header table */
 #define FREEBSD_MODINFOMD_NOCOPY	0x8000	/* don't copy this metadata to the kernel */
 
+#define FREEBSD_MODINFOMD_SMAP		0x1001
+
 #define FREEBSD_MODINFOMD_DEPLIST	(0x4001 | FREEBSD_MODINFOMD_NOCOPY)  /* depends on */
 
 #define FREEBSD_MODTYPE_KERNEL		"elf kernel"
-#define FREEBSD_MODTYPE_MODULE		"elf module"
+#define FREEBSD_MODTYPE_KERNEL64	"elf64 kernel"
+#define FREEBSD_MODTYPE_ELF_MODULE	"elf module"
+#define FREEBSD_MODTYPE_ELF_MODULE_OBJ	"elf obj module"
 #define FREEBSD_MODTYPE_RAW		"raw"
 
 struct grub_freebsd_bootinfo
@@ -148,6 +155,10 @@ struct grub_openbsd_bios_mmap
 {
   grub_uint64_t addr;
   grub_uint64_t len;
+#define	OPENBSD_MMAP_AVAILABLE	1
+#define	OPENBSD_MMAP_RESERVED 2
+#define	OPENBSD_MMAP_ACPI	3
+#define	OPENBSD_MMAP_NVS 	4
   grub_uint32_t type;
 };
 
@@ -180,6 +191,8 @@ struct grub_openbsd_bootargs
 #define NETBSD_AB_VERBOSE	(1 << 17) /* boot verbosely */
 #define NETBSD_AB_SILENT	(1 << 18) /* boot silently */
 #define NETBSD_AB_DEBUG		(1 << 19) /* boot with debug messages */
+#define NETBSD_AB_NOSMP		(1 << 28) /* Boot without SMP support.  */
+#define NETBSD_AB_NOACPI        (1 << 29) /* Boot without ACPI support.  */
 
 struct grub_netbsd_bootinfo
 {
@@ -190,11 +203,29 @@ struct grub_netbsd_bootinfo
 #define NETBSD_BTINFO_BOOTPATH		0
 #define NETBSD_BTINFO_ROOTDEVICE	1
 #define NETBSD_BTINFO_BOOTDISK		3
+#define NETBSD_BTINFO_MEMMAP		9
 
 struct grub_netbsd_btinfo_common
 {
   int len;
   int type;
+};
+
+struct grub_netbsd_btinfo_mmap_header
+{
+  struct grub_netbsd_btinfo_common common;
+  grub_uint32_t count;
+};
+
+struct grub_netbsd_btinfo_mmap_entry
+{
+  grub_uint64_t addr;
+  grub_uint64_t len;
+#define	NETBSD_MMAP_AVAILABLE	1
+#define	NETBSD_MMAP_RESERVED 	2
+#define	NETBSD_MMAP_ACPI	3
+#define	NETBSD_MMAP_NVS 	4
+  grub_uint32_t type;
 };
 
 struct grub_netbsd_btinfo_bootpath
@@ -222,11 +253,26 @@ struct grub_netbsd_btinfo_bootdisk
   int partition;
 };
 
-void grub_rescue_cmd_freebsd (int argc, char *argv[]);
-void grub_rescue_cmd_openbsd (int argc, char *argv[]);
-void grub_rescue_cmd_netbsd (int argc, char *argv[]);
+void grub_unix_real_boot (grub_addr_t entry, ...)
+     __attribute__ ((cdecl,noreturn));
+grub_err_t grub_freebsd_load_elfmodule32 (grub_file_t file, int argc,
+					  char *argv[], grub_addr_t *kern_end);
+grub_err_t grub_freebsd_load_elfmodule_obj64 (grub_file_t file, int argc,
+					      char *argv[],
+					      grub_addr_t *kern_end);
+grub_err_t grub_freebsd_load_elf_meta32 (grub_file_t file,
+					 grub_addr_t *kern_end);
+grub_err_t grub_freebsd_load_elf_meta64 (grub_file_t file,
+					 grub_addr_t *kern_end);
 
-void grub_rescue_cmd_freebsd_loadenv (int argc, char *argv[]);
-void grub_rescue_cmd_freebsd_module (int argc, char *argv[]);
+grub_err_t grub_freebsd_add_meta (grub_uint32_t type, void *data,
+				  grub_uint32_t len);
+grub_err_t grub_freebsd_add_meta_module (char *filename, char *type,
+					 int argc, char **argv,
+					 grub_addr_t addr, grub_uint32_t size);
+
+extern grub_uint8_t grub_bsd64_trampoline_start, grub_bsd64_trampoline_end;
+extern grub_uint32_t grub_bsd64_trampoline_selfjump;
+extern grub_uint32_t grub_bsd64_trampoline_gdt;
 
 #endif /* ! GRUB_BSD_CPU_HEADER */

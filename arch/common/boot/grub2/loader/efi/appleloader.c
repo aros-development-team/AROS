@@ -22,9 +22,9 @@
 #include <grub/mm.h>
 #include <grub/dl.h>
 #include <grub/misc.h>
-#include <grub/normal.h>
 #include <grub/efi/api.h>
 #include <grub/efi/efi.h>
+#include <grub/command.h>
 
 static grub_dl_t my_mod;
 
@@ -103,6 +103,16 @@ static grub_uint8_t devpath_4[] =
   0x01, 0xAE, 0xF2, 0xB7, 0x7F, 0xFF, 0x04, 0x00,
 };
 
+/* late-2008 MB/MBP (NVidia chipset)  */
+static grub_uint8_t devpath_5[] = {
+    0x01, 0x03, 0x18, 0x00, 0x0B, 0x00, 0x00, 0x00,
+    0x00, 0x40, 0xCB, 0xFF, 0x00, 0x00, 0x00, 0x00,
+    0xFF, 0xBF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00,
+    0x04, 0x06, 0x14, 0x00, 0xEB, 0x85, 0x05, 0x2B,
+    0xB8, 0xD8, 0xA9, 0x49, 0x8B, 0x8C, 0xE2, 0x1B,
+    0x01, 0xAE, 0xF2, 0xB7, 0x7F, 0xFF, 0x04, 0x00,
+};
+
 struct devdata
 {
   char *model;
@@ -115,11 +125,12 @@ struct devdata devs[] =
   {"Mac Pro", (grub_efi_device_path_t *) devpath_2},
   {"MBP", (grub_efi_device_path_t *) devpath_3},
   {"MBA", (grub_efi_device_path_t *) devpath_4},
+  {"MB NV", (grub_efi_device_path_t *) devpath_5},
   {NULL, NULL},
 };
 
 static grub_err_t
-grub_cmd_appleloader (struct grub_arg_list *state __attribute__ ((unused)),
+grub_cmd_appleloader (grub_command_t cmd __attribute__ ((unused)),
                       int argc, char *argv[])
 {
   grub_efi_boot_services_t *b;
@@ -192,17 +203,16 @@ grub_cmd_appleloader (struct grub_arg_list *state __attribute__ ((unused)),
   return grub_errno;
 }
 
+static grub_command_t cmd;
+
 GRUB_MOD_INIT(appleloader)
 {
-  grub_register_command ("appleloader", grub_cmd_appleloader,
-			 GRUB_COMMAND_FLAG_BOTH,
-			 "appleloader [OPTS]",
-			 "Boot legacy system.", 0);
-
+  cmd = grub_register_command ("appleloader", grub_cmd_appleloader,
+			       "appleloader [OPTS]", "Boot legacy system.");
   my_mod = mod;
 }
 
 GRUB_MOD_FINI(appleloader)
 {
-  grub_unregister_command ("appleloader");
+  grub_unregister_command (cmd);
 }

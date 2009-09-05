@@ -4,16 +4,16 @@ include $(TOP)/config/make.cfg
 #MM bootloader-grub2gfx-common : grub2-dirs
 #MM bootloader-grub2gfx-common-livecd : grub2-dirs
 
-bootloader-grub2gfx-common: $(BINDIR)/boot/grub/splash.png $(BINDIR)/boot/grub/_unifont.pff
+bootloader-grub2gfx-common: $(BINDIR)/boot/grub/splash.png $(BINDIR)/boot/grub/_unicode.pf2
 
 $(BINDIR)/boot/grub/splash.png: splash.png
 		$(CP) $< $(BINDIR)/boot/grub/
 
-$(BINDIR)/boot/grub/_unifont.pff: unifont.pff
-		$(CP) $< $(BINDIR)/boot/grub/_unifont.pff
+$(BINDIR)/boot/grub/_unicode.pf2: unicode.pf2
+		$(CP) $< $(BINDIR)/boot/grub/_unicode.pf2
 
-bootloader-grub2gfx-common-livecd: $(BINDIR)/boot/grub/unifont.pff
+bootloader-grub2gfx-common-livecd: $(BINDIR)/boot/grub/unicode.pf2
 
-$(BINDIR)/boot/grub/unifont.pff: unifont.pff
+$(BINDIR)/boot/grub/unicode.pf2: unicode.pf2
 		$(CP) $< $(BINDIR)/boot/grub/
 

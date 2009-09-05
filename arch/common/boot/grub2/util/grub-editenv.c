@@ -1,7 +1,7 @@
 /* grub-editenv.c - tool to edit environment block.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2008 Free Software Foundation, Inc.
+ *  Copyright (C) 2008,2009 Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,12 +21,15 @@
 #include <grub/types.h>
 #include <grub/util/misc.h>
 #include <grub/lib/envblk.h>
+#include <grub/handler.h>
 
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
 #include <getopt.h>
+
+#define DEFAULT_ENVBLK_SIZE	1024
 
 void
 grub_putchar (int c)
@@ -40,17 +43,8 @@ grub_refresh (void)
   fflush (stdout);
 }
 
-void *
-grub_term_get_current_input (void)
-{
-  return 0;
-}
-
-void *
-grub_term_get_current_output (void)
-{
-  return 0;
-}
+struct grub_handler_class grub_term_input_class;
+struct grub_handler_class grub_term_output_class;
 
 int
 grub_getkey (void)
@@ -71,9 +65,6 @@ static struct option options[] = {
   {0, 0, 0, 0}
 };
 
-char buffer[GRUB_ENVBLK_MAXLEN];
-grub_envblk_t envblk;
-
 static void
 usage (int status)
 {
@@ -86,10 +77,9 @@ Usage: grub-editenv [OPTIONS] FILENAME COMMAND\n\
 Tool to edit environment block.\n\
 \nCommands:\n\
   create                    create a blank environment block file\n\
-  info                      show information about the environment block\n\
   list                      list the current variables\n\
-  set [name=value] ...      change/delete variables\n\
-  clear                     delete all variables\n\
+  set [name=value ...]      set variables\n\
+  unset [name ....]         delete variables\n\
 \nOptions:\n\
   -h, --help                display this message and exit\n\
   -V, --version             print version information and exit\n\
@@ -100,105 +90,158 @@ Report bugs to <%s>.\n", PACKAGE_BUGREPORT);
   exit (status);
 }
 
-int
-create_envblk_file (char *name)
+static void
+create_envblk_file (const char *name)
 {
-  FILE *f;
-  grub_envblk_t p;
+  FILE *fp;
+  char *buf;
 
-  f = fopen (name, "wb");
-  if (! f)
-    return 1;
+  buf = malloc (DEFAULT_ENVBLK_SIZE);
+  if (! buf)
+    grub_util_error ("out of memory");
 
-  /* Just in case OS don't save 0s.  */
-  memset (buffer, -1, sizeof (buffer));
+  fp = fopen (name, "wb");
+  if (! fp)
+    grub_util_error ("cannot open the file %s", name);
 
-  p = (grub_envblk_t) &buffer[0];
-  p->signature = GRUB_ENVBLK_SIGNATURE;
-  p->length = sizeof (buffer) - sizeof (struct grub_envblk);
-  p->data[0] = p->data[1] = 0;
+  memcpy (buf, GRUB_ENVBLK_SIGNATURE, sizeof (GRUB_ENVBLK_SIGNATURE) - 1);
+  memset (buf + sizeof (GRUB_ENVBLK_SIGNATURE) - 1, '#',
+          DEFAULT_ENVBLK_SIZE - sizeof (GRUB_ENVBLK_SIGNATURE) + 1);
 
-  fwrite (buffer, sizeof (buffer), 1, f);
+  if (fwrite (buf, 1, DEFAULT_ENVBLK_SIZE, fp) != DEFAULT_ENVBLK_SIZE)
+    grub_util_error ("cannot write to the file %s", name);
 
-  fclose (f);
-  return 0;
+  fsync (fileno (fp));
+  free (buf);
+  fclose (fp);
 }
 
-FILE *
-open_envblk_file (char *name)
+static grub_envblk_t
+open_envblk_file (const char *name)
 {
-  FILE *f;
+  FILE *fp;
+  char *buf;
+  size_t size;
+  grub_envblk_t envblk;
 
-  f = fopen (name, "r+b");
-  if (! f)
-    grub_util_error ("Can\'t open file %s", name);
+  fp = fopen (name, "rb");
+  if (! fp)
+    {
+      /* Create the file implicitly.  */
+      create_envblk_file (name);
+      fp = fopen (name, "rb");
+      if (! fp)
+        grub_util_error ("cannot open the file %s", name);
+    }
 
-  if (fread (buffer, 1, sizeof (buffer), f) != sizeof (buffer))
-    grub_util_error ("The envblk file is too short");
+  if (fseek (fp, 0, SEEK_END) < 0)
+    grub_util_error ("cannot seek the file %s", name);
 
-  envblk = grub_envblk_find (buffer);
+  size = (size_t) ftell (fp);
+
+  if (fseek (fp, 0, SEEK_SET) < 0)
+    grub_util_error ("cannot seek the file %s", name);
+
+  buf = malloc (size);
+  if (! buf)
+    grub_util_error ("out of memory");
+
+  if (fread (buf, 1, size, fp) != size)
+    grub_util_error ("cannot read the file %s", name);
+
+  fclose (fp);
+
+  envblk = grub_envblk_open (buf, size);
   if (! envblk)
-    grub_util_error ("Can\'t find environment block");
+    grub_util_error ("invalid environment block");
 
-  return f;
+  return envblk;
 }
 
 static void
-cmd_info (void)
+list_variables (const char *name)
 {
-  printf ("Envblk offset: %ld\n", (long) (envblk->data - buffer));
-  printf ("Envblk length: %d\n", envblk->length);
-}
+  grub_envblk_t envblk;
 
-static void
-cmd_list (void)
-{
-  auto int hook (char *name, char *value);
-  int hook (char *name, char *value)
+  auto int print_var (const char *name, const char *value);
+  int print_var (const char *name, const char *value)
     {
       printf ("%s=%s\n", name, value);
       return 0;
     }
 
-  grub_envblk_iterate (envblk, hook);
+  envblk = open_envblk_file (name);
+  grub_envblk_iterate (envblk, print_var);
+  grub_envblk_close (envblk);
 }
 
 static void
-cmd_set (int argc, char *argv[])
+write_envblk (const char *name, grub_envblk_t envblk)
 {
+  FILE *fp;
+
+  fp = fopen (name, "wb");
+  if (! fp)
+    grub_util_error ("cannot open the file %s", name);
+
+  if (fwrite (grub_envblk_buffer (envblk), 1, grub_envblk_size (envblk), fp)
+      != grub_envblk_size (envblk))
+    grub_util_error ("cannot write to the file %s", name);
+
+  fsync (fileno (fp));
+  fclose (fp);
+}
+
+static void
+set_variables (const char *name, int argc, char *argv[])
+{
+  grub_envblk_t envblk;
+
+  envblk = open_envblk_file (name);
   while (argc)
     {
       char *p;
 
       p = strchr (argv[0], '=');
       if (! p)
-        grub_util_error ("Invalid parameter");
+        grub_util_error ("invalid parameter %s", argv[0]);
 
       *(p++) = 0;
 
-      if (*p)
-        {
-          if (grub_envblk_insert (envblk, argv[0], p))
-            grub_util_error ("Environment block too small");
-        }
-      else
-        grub_envblk_delete (envblk, argv[0]);
+      if (! grub_envblk_set (envblk, argv[0], p))
+        grub_util_error ("environment block too small");
 
       argc--;
       argv++;
     }
+
+  write_envblk (name, envblk);
+  grub_envblk_close (envblk);
 }
 
 static void
-cmd_clear (void)
+unset_variables (const char *name, int argc, char *argv[])
 {
-  envblk->data[0] = envblk->data[1] = 0;
+  grub_envblk_t envblk;
+
+  envblk = open_envblk_file (name);
+  while (argc)
+    {
+      grub_envblk_delete (envblk, argv[0]);
+
+      argc--;
+      argv++;
+    }
+
+  write_envblk (name, envblk);
+  grub_envblk_close (envblk);
 }
 
 int
 main (int argc, char *argv[])
 {
-  FILE *f;
+  char *filename;
+  char *command;
 
   progname = "grub-editenv";
 
@@ -230,40 +273,35 @@ main (int argc, char *argv[])
 	  }
     }
 
-  /* Obtain PATH.  */
+  /* Obtain the filename.  */
   if (optind >= argc)
     {
-      fprintf (stderr, "Filename not specified.\n");
+      fprintf (stderr, "no filename specified\n");
       usage (1);
     }
 
   if (optind + 1 >= argc)
     {
-      fprintf (stderr, "Command not specified.\n");
+      fprintf (stderr, "no command specified\n");
       usage (1);
     }
 
-  if (! strcmp (argv[optind + 1], "create"))
-    return create_envblk_file (argv[optind]);
+  filename = argv[optind];
+  command = argv[optind + 1];
 
-  f = open_envblk_file (argv[optind]);
-
-  optind++;
-  if (! strcmp (argv[optind], "info"))
-    cmd_info ();
-  else if (! strcmp (argv[optind], "list"))
-    cmd_list ();
+  if (strcmp (command, "create") == 0)
+    create_envblk_file (filename);
+  else if (strcmp (command, "list") == 0)
+    list_variables (filename);
+  else if (strcmp (command, "set") == 0)
+    set_variables (filename, argc - optind - 2, argv + optind + 2);
+  else if (strcmp (command, "unset") == 0)
+    unset_variables (filename, argc - optind - 2, argv + optind + 2);
   else
     {
-      if (! strcmp (argv[optind], "set"))
-        cmd_set (argc - optind - 1, argv + optind + 1);
-      else if (! strcmp (argv[optind], "clear"))
-        cmd_clear ();
-
-      fseek (f, 0, SEEK_SET);
-      fwrite (buffer, sizeof (buffer), 1, f);
+      fprintf (stderr, "unknown command %s\n", command);
+      usage (1);
     }
-  fclose (f);
 
   return 0;
 }

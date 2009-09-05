@@ -107,9 +107,9 @@ static struct grub_disk_dev grub_pxe_dev =
   };
 
 static grub_err_t
-grub_pxefs_dir (grub_device_t device __attribute((unused)),
-                const char *path __attribute((unused)),
-                int (*hook) (const char *filename, int dir) __attribute((unused)))
+grub_pxefs_dir (grub_device_t device UNUSED, const char *path UNUSED,
+		int (*hook) (const char *filename,
+			     const struct grub_dirhook_info *info) UNUSED)
 {
   return GRUB_ERR_NONE;
 }
@@ -125,9 +125,15 @@ grub_pxefs_open (struct grub_file *file, const char *name)
   struct grub_pxe_data *data;
   grub_file_t file_int, bufio;
 
+  if (curr_file != 0)
+    {
+      grub_pxe_call (GRUB_PXENV_TFTP_CLOSE, &c.c2);
+      curr_file = 0;
+    }
+
   c.c1.server_ip = grub_pxe_server_ip;
   c.c1.gateway_ip = grub_pxe_gateway_ip;
-  grub_strcpy (c.c1.filename, name);
+  grub_strcpy ((char *)&c.c1.filename[0], name);
   grub_pxe_call (GRUB_PXENV_TFTP_GET_FSIZE, &c.c1);
   if (c.c1.status)
     return grub_error (GRUB_ERR_FILE_NOT_FOUND, "file not found");
@@ -140,11 +146,10 @@ grub_pxefs_open (struct grub_file *file, const char *name)
   if (c.c2.status)
     return grub_error (GRUB_ERR_BAD_FS, "open fails");
 
-  data = grub_malloc (sizeof (struct grub_pxe_data) + grub_strlen (name) + 1);
+  data = grub_zalloc (sizeof (struct grub_pxe_data) + grub_strlen (name) + 1);
   if (! data)
     return grub_errno;
 
-  data->packet_number = 0;
   data->block_size = grub_pxe_blksize;
   grub_strcpy (data->filename, name);
 
@@ -183,23 +188,30 @@ grub_pxefs_read (grub_file_t file, char *buf, grub_size_t len)
 
   pn = grub_divmod64 (file->offset, data->block_size, &r);
   if (r)
-    return grub_error (GRUB_ERR_BAD_FS,
-                       "read access must be aligned to packet size");
+    {
+      grub_error (GRUB_ERR_BAD_FS,
+		  "read access must be aligned to packet size");
+      return -1;
+    }
 
   if ((curr_file != file) || (data->packet_number > pn))
     {
       struct grub_pxenv_tftp_open o;
 
-      grub_pxe_call (GRUB_PXENV_TFTP_CLOSE, &o);
+      if (curr_file != 0)
+        grub_pxe_call (GRUB_PXENV_TFTP_CLOSE, &o);
 
       o.server_ip = grub_pxe_server_ip;
       o.gateway_ip = grub_pxe_gateway_ip;
-      grub_strcpy (o.filename, data->filename);
+      grub_strcpy ((char *)&o.filename[0], data->filename);
       o.tftp_port = grub_cpu_to_be16 (GRUB_PXE_TFTP_PORT);
       o.packet_size = data->block_size;
       grub_pxe_call (GRUB_PXENV_TFTP_OPEN, &o);
       if (o.status)
-        return grub_error (GRUB_ERR_BAD_FS, "open fails");
+	{
+	  grub_error (GRUB_ERR_BAD_FS, "open fails");
+	  return -1;
+	}
       data->packet_number = 0;
       curr_file = file;
     }
@@ -227,7 +239,12 @@ grub_pxefs_close (grub_file_t file)
 {
   struct grub_pxenv_tftp_close c;
 
-  grub_pxe_call (GRUB_PXENV_TFTP_CLOSE, &c);
+  if (curr_file == file)
+    {
+      grub_pxe_call (GRUB_PXENV_TFTP_CLOSE, &c);
+      curr_file = 0;
+    }
+
   grub_free (file->data);
 
   return GRUB_ERR_NONE;
@@ -293,8 +310,6 @@ grub_pxe_unload (void)
 
 GRUB_MOD_INIT(pxe)
 {
-  (void) mod;			/* To stop warning. */
-
   grub_pxe_detect ();
   if (grub_pxe_pxenv)
     {

@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2003,2005,2006,2007 Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2005,2006,2007,2009 Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
  * Note: These functions defined in this file may be called from C.
  *       Be careful of that you must not modify some registers. Quote
  *       from gcc-2.95.2/gcc/config/i386/i386.h:
-	
+
    1 for registers not available across function calls.
    These must include the FIXED_REGISTERS and also any
    registers that can be used without being saved.
@@ -84,7 +84,7 @@ gdt:
 
 	/* -- data segment --
 	 * base = 0x00000000, limit 0xFFFFF (4 KiB Granularity), present
-	 * type = 32 bit data read/write, DPL = 0 
+	 * type = 32 bit data read/write, DPL = 0
 	 */
 	.word	0xFFFF, 0
 	.byte	0, 0x92, 0xCF, 0
@@ -110,11 +110,57 @@ gdtdesc:
 	.long	gdt			/* addr */
 
 /*
- *  These next routine, "prot_to_real" is structured in a very
- *  specific way.  Be very careful when changing it.
+ *  These next two routines, "real_to_prot" and "prot_to_real" are structured
+ *  in a very specific way.  Be very careful when changing them.
  *
- *  NOTE:  Use of it messes up %eax and %ebp.
+ *  NOTE:  Use of either one messes up %eax and %ebp.
  */
+
+real_to_prot:
+	.code16
+	cli
+
+	/* load the GDT register */
+	xorw	%ax, %ax
+	movw	%ax, %ds
+	DATA32	ADDR32	lgdt	gdtdesc
+
+	/* turn on protected mode */
+	movl	%cr0, %eax
+	orl	$GRUB_MEMORY_MACHINE_CR0_PE_ON, %eax
+	movl	%eax, %cr0
+
+	/* jump to relocation, flush prefetch queue, and reload %cs */
+	DATA32	ljmp	$GRUB_MEMORY_MACHINE_PROT_MODE_CSEG, $protcseg
+
+	.code32
+protcseg:
+	/* reload other segment registers */
+	movw	$GRUB_MEMORY_MACHINE_PROT_MODE_DSEG, %ax
+	movw	%ax, %ds
+	movw	%ax, %es
+	movw	%ax, %fs
+	movw	%ax, %gs
+	movw	%ax, %ss
+
+	/* put the return address in a known safe location */
+	movl	(%esp), %eax
+	movl	%eax, GRUB_MEMORY_MACHINE_REAL_STACK
+
+	/* get protected mode stack */
+	movl	protstack, %eax
+	movl	%eax, %esp
+	movl	%eax, %ebp
+
+	/* get return address onto the right stack */
+	movl	GRUB_MEMORY_MACHINE_REAL_STACK, %eax
+	movl	%eax, (%esp)
+
+	/* zero %eax */
+	xorl	%eax, %eax
+
+	/* return on the old (or initialized) stack! */
+	ret
 
 prot_to_real:
 	/* just in case, set GDT */

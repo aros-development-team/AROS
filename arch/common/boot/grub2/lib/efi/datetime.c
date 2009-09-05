@@ -21,7 +21,7 @@
 #include <grub/symbol.h>
 #include <grub/efi/api.h>
 #include <grub/efi/efi.h>
-#include <grub/lib/datetime.h>
+#include <grub/datetime.h>
 
 grub_err_t
 grub_get_datetime (struct grub_datetime *datetime)

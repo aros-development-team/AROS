@@ -22,10 +22,10 @@
 #include <grub/loader.h>
 #include <grub/dl.h>
 #include <grub/mm.h>
-#include <grub/rescue.h>
 #include <grub/misc.h>
 #include <grub/ieee1275/ieee1275.h>
 #include <grub/machine/loader.h>
+#include <grub/command.h>
 
 #define ELF32_LOADMASK (0xc0000000UL)
 #define ELF64_LOADMASK (0xc000000000000000ULL)
@@ -131,9 +131,16 @@ grub_linux_load32 (grub_elf_t elf)
     return grub_error (GRUB_ERR_OUT_OF_MEMORY, "Could not claim memory.");
 
   /* Now load the segments into the area we claimed.  */
-  auto grub_err_t offset_phdr (Elf32_Phdr *phdr, grub_addr_t *addr);
-  grub_err_t offset_phdr (Elf32_Phdr *phdr, grub_addr_t *addr)
+  auto grub_err_t offset_phdr (Elf32_Phdr *phdr, grub_addr_t *addr, int *do_load);
+  grub_err_t offset_phdr (Elf32_Phdr *phdr, grub_addr_t *addr, int *do_load)
     {
+      if (phdr->p_type != PT_LOAD)
+	{
+	  *do_load = 0;
+	  return 0;
+	}
+      *do_load = 1;
+
       /* Linux's program headers incorrectly contain virtual addresses.
        * Translate those to physical, and offset to the area we claimed.  */
       *addr = (phdr->p_paddr & ~ELF32_LOADMASK) + linux_addr;
@@ -174,9 +181,15 @@ grub_linux_load64 (grub_elf_t elf)
     return grub_error (GRUB_ERR_OUT_OF_MEMORY, "Could not claim memory.");
 
   /* Now load the segments into the area we claimed.  */
-  auto grub_err_t offset_phdr (Elf64_Phdr *phdr, grub_addr_t *addr);
-  grub_err_t offset_phdr (Elf64_Phdr *phdr, grub_addr_t *addr)
+  auto grub_err_t offset_phdr (Elf64_Phdr *phdr, grub_addr_t *addr, int *do_load);
+  grub_err_t offset_phdr (Elf64_Phdr *phdr, grub_addr_t *addr, int *do_load)
     {
+      if (phdr->p_type != PT_LOAD)
+	{
+	  *do_load = 0;
+	  return 0;
+	}
+      *do_load = 1;
       /* Linux's program headers incorrectly contain virtual addresses.
        * Translate those to physical, and offset to the area we claimed.  */
       *addr = (phdr->p_paddr & ~ELF64_LOADMASK) + linux_addr;
@@ -185,8 +198,9 @@ grub_linux_load64 (grub_elf_t elf)
   return grub_elf64_load (elf, offset_phdr, 0, 0);
 }
 
-void
-grub_rescue_cmd_linux (int argc, char *argv[])
+static grub_err_t
+grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
+		int argc, char *argv[])
 {
   grub_elf_t elf = 0;
   int i;
@@ -237,7 +251,7 @@ grub_rescue_cmd_linux (int argc, char *argv[])
   /* Specify the boot file.  */
   dest = grub_stpcpy (linux_args, "BOOT_IMAGE=");
   dest = grub_stpcpy (dest, argv[0]);
-  
+
   for (i = 1; i < argc; i++)
     {
       *dest++ = ' ';
@@ -261,10 +275,13 @@ out:
       initrd_addr = 0;
       loaded = 1;
     }
+
+  return grub_errno;
 }
 
-void
-grub_rescue_cmd_initrd (int argc, char *argv[])
+static grub_err_t
+grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
+		 int argc, char *argv[])
 {
   grub_file_t file = 0;
   grub_ssize_t size;
@@ -293,9 +310,9 @@ grub_rescue_cmd_initrd (int argc, char *argv[])
 
   /* Attempt to claim at a series of addresses until successful in
      the same way that grub_rescue_cmd_linux does.  */
-  for (addr = first_addr; addr < first_addr + 200 * 0x100000; addr += 0x100000) 
+  for (addr = first_addr; addr < first_addr + 200 * 0x100000; addr += 0x100000)
     {
-      grub_dprintf ("loader", "Attempting to claim at 0x%x, size 0x%x.\n", 
+      grub_dprintf ("loader", "Attempting to claim at 0x%x, size 0x%x.\n",
 		    addr, size);
       found_addr = grub_claimmap (addr, size);
       if (found_addr != -1)
@@ -323,21 +340,23 @@ grub_rescue_cmd_initrd (int argc, char *argv[])
  fail:
   if (file)
     grub_file_close (file);
+
+  return grub_errno;
 }
 
-
+static grub_command_t cmd_linux, cmd_initrd;
 
 GRUB_MOD_INIT(linux)
 {
-  grub_rescue_register_command ("linux", grub_rescue_cmd_linux,
-				"load a linux kernel");
-  grub_rescue_register_command ("initrd", grub_rescue_cmd_initrd,
-				"load an initrd");
+  cmd_linux = grub_register_command ("linux", grub_cmd_linux,
+				     0, "load a linux kernel");
+  cmd_initrd = grub_register_command ("initrd", grub_cmd_initrd,
+				      0, "load an initrd");
   my_mod = mod;
 }
 
 GRUB_MOD_FINI(linux)
 {
-  grub_rescue_unregister_command ("linux");
-  grub_rescue_unregister_command ("initrd");
+  grub_unregister_command (cmd_linux);
+  grub_unregister_command (cmd_initrd);
 }

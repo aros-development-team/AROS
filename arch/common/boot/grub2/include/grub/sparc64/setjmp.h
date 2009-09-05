@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2004,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2004,2006,2007,2009  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,10 +19,11 @@
 #ifndef GRUB_SETJMP_CPU_HEADER
 #define GRUB_SETJMP_CPU_HEADER	1
 
-/* FIXME (sparc64).  */
-typedef unsigned long grub_jmp_buf[20];
+#include <grub/types.h>
 
-int grub_setjmp (grub_jmp_buf env);
+typedef grub_uint64_t grub_jmp_buf[3];
+
+int grub_setjmp (grub_jmp_buf env) __attribute__ ((returns_twice));
 void grub_longjmp (grub_jmp_buf env, int val) __attribute__ ((noreturn));
 
 #endif /* ! GRUB_SETJMP_CPU_HEADER */

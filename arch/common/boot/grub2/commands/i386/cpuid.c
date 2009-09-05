@@ -18,21 +18,17 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/normal.h>
 #include <grub/dl.h>
-#include <grub/arg.h>
 #include <grub/misc.h>
 #include <grub/mm.h>
 #include <grub/env.h>
+#include <grub/command.h>
+#include <grub/extcmd.h>
 
 #define cpuid(num,a,b,c,d) \
   asm volatile ("xchgl %%ebx, %1; cpuid; xchgl %%ebx, %1" \
 		: "=a" (a), "=r" (b), "=c" (c), "=d" (d)  \
 		: "0" (num))
-
-#define bit_LM (1 << 29)
-
-static unsigned char has_longmode = 0;
 
 static const struct grub_arg_option options[] =
   {
@@ -40,13 +36,20 @@ static const struct grub_arg_option options[] =
     {0, 0, 0, 0, 0, 0}
   };
 
+#define bit_LM (1 << 29)
+
+static unsigned char has_longmode = 0;
+
 static grub_err_t
-grub_cmd_cpuid (struct grub_arg_list *state __attribute__ ((unused)),
-	       int argc __attribute__ ((unused)),
-	       char **args __attribute__ ((unused)))
+grub_cmd_cpuid (grub_extcmd_t cmd __attribute__ ((unused)),
+		int argc __attribute__ ((unused)),
+		char **args __attribute__ ((unused)))
 {
-  return !has_longmode;
+  return has_longmode ? GRUB_ERR_NONE
+    : grub_error (GRUB_ERR_TEST_FAILURE, "false");
 }
+
+static grub_extcmd_t cmd;
 
 GRUB_MOD_INIT(cpuid)
 {
@@ -83,11 +86,11 @@ GRUB_MOD_INIT(cpuid)
 done:
 #endif
 
-  grub_register_command ("cpuid", grub_cmd_cpuid, GRUB_COMMAND_FLAG_CMDLINE,
-			 "cpuid", "Check for CPU features", options);
+  cmd = grub_register_extcmd ("cpuid", grub_cmd_cpuid, GRUB_COMMAND_FLAG_BOTH,
+			      "cpuid [-l]", "Check for CPU features", options);
 }
 
 GRUB_MOD_FINI(cpuid)
 {
-  grub_unregister_command ("cpuid");
+  grub_unregister_extcmd (cmd);
 }

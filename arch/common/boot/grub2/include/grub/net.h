@@ -49,7 +49,7 @@ struct grub_net
 {
   /* The net name.  */
   const char *name;
-  
+
   /* The underlying disk device.  */
   grub_net_dev_t dev;
 
@@ -58,7 +58,7 @@ struct grub_net
 
   /* FIXME: More data would be required, such as an IP address, a mask,
      a gateway, etc.  */
-  
+
   /* Device-specific data.  */
   void *data;
 };

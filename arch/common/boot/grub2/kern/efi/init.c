@@ -43,7 +43,7 @@ void
 grub_efi_set_prefix (void)
 {
   grub_efi_loaded_image_t *image;
-  
+
   image = grub_efi_get_loaded_image (grub_efi_image_handle);
   if (image)
     {
@@ -52,12 +52,12 @@ grub_efi_set_prefix (void)
 
       device = grub_efidisk_get_device_name (image->device_handle);
       file = grub_efi_get_filename (image->file_path);
-      
+
       if (device && file)
 	{
 	  char *p;
 	  char *prefix;
-	  
+
 	  /* Get the directory.  */
 	  p = grub_strrchr (file, '/');
 	  if (p)
@@ -72,7 +72,7 @@ grub_efi_set_prefix (void)
 	      grub_free (prefix);
 	    }
 	}
-      
+
       grub_free (device);
       grub_free (file);
     }

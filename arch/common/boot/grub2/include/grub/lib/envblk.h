@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2008  Free Software Foundation, Inc.
+ *  Copyright (C) 2008,2009  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,27 +19,37 @@
 #ifndef GRUB_ENVBLK_HEADER
 #define GRUB_ENVBLK_HEADER	1
 
-#define GRUB_ENVBLK_SIGNATURE	0x764e6547	/* GeNv  */
-
-#define GRUB_ENVBLK_MAXLEN	8192
-
+#define GRUB_ENVBLK_SIGNATURE	"# GRUB Environment Block\n"
 #define GRUB_ENVBLK_DEFCFG	"grubenv"
 
 #ifndef ASM_FILE
 
 struct grub_envblk
 {
-  grub_uint32_t signature;
-  grub_uint16_t length;
-  char data[0];
-} __attribute__ ((packed));
+  char *buf;
+  grub_size_t size;
+};
 typedef struct grub_envblk *grub_envblk_t;
 
-grub_envblk_t grub_envblk_find (char *buf);
-int grub_envblk_insert (grub_envblk_t envblk, char *name, char *value);
-void grub_envblk_delete (grub_envblk_t envblk, char *name);
-void grub_envblk_iterate (grub_envblk_t envblk, int hook (char *name, char *value));
+grub_envblk_t grub_envblk_open (char *buf, grub_size_t size);
+int grub_envblk_set (grub_envblk_t envblk, const char *name, const char *value);
+void grub_envblk_delete (grub_envblk_t envblk, const char *name);
+void grub_envblk_iterate (grub_envblk_t envblk,
+                          int hook (const char *name, const char *value));
+void grub_envblk_close (grub_envblk_t envblk);
 
-#endif
+static inline char *
+grub_envblk_buffer (const grub_envblk_t envblk)
+{
+  return envblk->buf;
+}
+
+static inline grub_size_t
+grub_envblk_size (const grub_envblk_t envblk)
+{
+  return envblk->size;
+}
+
+#endif /* ! ASM_FILE */
 
 #endif /* ! GRUB_ENVBLK_HEADER */

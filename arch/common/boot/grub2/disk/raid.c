@@ -77,7 +77,7 @@ static int
 grub_raid_iterate (int (*hook) (const char *name))
 {
   struct grub_raid_array *array;
-  
+
   for (array = array_list; array != NULL; array = array->next)
     {
       if (grub_is_array_readable (array))
@@ -95,7 +95,7 @@ grub_raid_memberlist (grub_disk_t disk)
   struct grub_raid_array *array = disk->data;
   grub_disk_memberlist_t list = NULL, tmp;
   unsigned int i;
-  
+
   for (i = 0; i < array->total_devs; i++)
     if (array->device[i])
       {
@@ -104,7 +104,7 @@ grub_raid_memberlist (grub_disk_t disk)
         tmp->next = list;
         list = tmp;
       }
-  
+
   return list;
 }
 #endif
@@ -114,7 +114,7 @@ grub_raid_open (const char *name, grub_disk_t disk)
 {
   struct grub_raid_array *array;
   unsigned n;
-  
+
   for (array = array_list; array != NULL; array = array->next)
     {
       if (!grub_strcmp (array->name, name))
@@ -161,7 +161,7 @@ grub_raid_open (const char *name, grub_disk_t disk)
 
   grub_dprintf ("raid", "%s: level=%d, total_sectors=%lld\n", name,
 		array->level, (unsigned long long) disk->total_sectors);
-  
+
   return 0;
 }
 
@@ -172,12 +172,13 @@ grub_raid_close (grub_disk_t disk __attribute ((unused)))
 }
 
 void
-grub_raid_block_xor (char *buf1, char *buf2, int size)
+grub_raid_block_xor (char *buf1, const char *buf2, int size)
 {
-  grub_size_t *p1, *p2;
+  grub_size_t *p1;
+  const grub_size_t *p2;
 
   p1 = (grub_size_t *) buf1;
-  p2 = (grub_size_t *) buf2;
+  p2 = (const grub_size_t *) buf2;
   size /= GRUB_CPU_SIZEOF_VOID_P;
 
   while (size)
@@ -347,7 +348,7 @@ grub_raid_read (grub_disk_t disk, grub_disk_addr_t sector,
           p = array->total_devs - n;
 
 	read_sector *= array->chunk_size;
-	
+
 	while (1)
 	  {
             grub_size_t read_size;
@@ -404,7 +405,7 @@ grub_raid_read (grub_disk_t disk, grub_disk_addr_t sector,
                 if (err)
                   break;
               }
-	    
+
 	    buf += read_size << GRUB_DISK_SECTOR_BITS;
 	    size -= read_size;
 	    if (! size)
@@ -459,7 +460,7 @@ grub_raid_read (grub_disk_t disk, grub_disk_addr_t sector,
       }
       break;
     }
-  
+
   return err;
 }
 
@@ -477,7 +478,7 @@ insert_array (grub_disk_t disk, struct grub_raid_array *new_array,
               const char *scanner_name)
 {
   struct grub_raid_array *array = 0, *p;
-  
+
   /* See whether the device is part of an array we have already seen a
      device from. */
   for (p = array_list; p != NULL; p = p->next)
@@ -495,18 +496,15 @@ insert_array (grub_disk_t disk, struct grub_raid_array *new_array,
         if (array->total_devs == array->nr_devs)
           /* We found more members of the array than the array
              actually has according to its superblock.  This shouldn't
-             happen normally, but what is the sanest things to do in such
-             a case? */
-          return grub_error (GRUB_ERR_BAD_NUMBER,
-                             "array->nr_devs > array->total_devs (%d)?!?",
-                             array->total_devs);
+             happen normally.  */
+          grub_dprintf ("raid", "array->nr_devs > array->total_devs (%d)?!?",
+			array->total_devs);
 
         if (array->device[new_array->index] != NULL)
           /* We found multiple devices with the same number. Again,
              this shouldn't happen.*/
-          return grub_error (GRUB_ERR_BAD_NUMBER,
-                             "Found two disks with the number %d?!?",
-                             new_array->number);
+          grub_dprintf ("raid", "Found two disks with the number %d?!?",
+			new_array->number);
 
         if (new_array->disk_size < array->disk_size)
           array->disk_size = new_array->disk_size;
@@ -526,7 +524,7 @@ insert_array (grub_disk_t disk, struct grub_raid_array *new_array,
       *array = *new_array;
       array->nr_devs = 0;
       grub_memset (&array->device, 0, sizeof (array->device));
-      
+
       /* Check whether we don't have multiple arrays with the same number. */
       for (p = array_list; p != NULL; p = p->next)
         {
@@ -576,7 +574,7 @@ insert_array (grub_disk_t disk, struct grub_raid_array *new_array,
       array->next = array_list;
       array_list = array;
 
-      /* RAID 1 doestn't use a chunksize but code assumes one so set
+      /* RAID 1 doesn't use a chunksize but code assumes one so set
 	 one. */
       if (array->level == 1)
 	array->chunk_size = 64;
@@ -592,56 +590,6 @@ insert_array (grub_disk_t disk, struct grub_raid_array *new_array,
 static grub_raid_t grub_raid_list;
 
 static void
-grub_raid_scan_device (int head_only)
-{
-  auto int hook (const char *name);
-  int hook (const char *name)
-    {
-      grub_disk_t disk;
-      struct grub_raid_array array;
-      struct grub_raid *p;
-
-      grub_dprintf ("raid", "Scanning for RAID devices\n");
-
-      disk = grub_disk_open (name);
-      if (!disk)
-        return 0;
-
-      if (disk->total_sectors == ULONG_MAX)
-        {
-          grub_disk_close (disk);
-          return 0;
-        }
-
-      for (p = grub_raid_list; p; p = p->next)
-        {
-          if (! p->detect (disk, &array))
-            {
-              if (! insert_array (disk, &array, p->name))
-                return 0;
-
-              break;
-            }
-
-          /* This error usually means it's not raid, no need to display
-             it.  */
-          if (grub_errno != GRUB_ERR_OUT_OF_RANGE)
-            grub_print_error ();
-
-          grub_errno = GRUB_ERR_NONE;
-          if (head_only)
-            break;
-        }
-
-      grub_disk_close (disk);
-
-      return 0;
-    }
-  
-  grub_device_iterate (&hook);
-}
-
-static void
 free_array (void)
 {
   struct grub_raid_array *array;
@@ -651,7 +599,7 @@ free_array (void)
     {
       struct grub_raid_array *p;
       int i;
-	  
+
       p = array;
       array = array->next;
 
@@ -666,13 +614,42 @@ free_array (void)
 
   array_list = 0;
 }
-  
+
 void
 grub_raid_register (grub_raid_t raid)
 {
+  auto int hook (const char *name);
+  int hook (const char *name)
+    {
+      grub_disk_t disk;
+      struct grub_raid_array array;
+
+      grub_dprintf ("raid", "Scanning for RAID devices on disk %s\n", name);
+
+      disk = grub_disk_open (name);
+      if (!disk)
+        return 0;
+
+      if ((disk->total_sectors != GRUB_ULONG_MAX) &&
+	  (! grub_raid_list->detect (disk, &array)) &&
+	  (! insert_array (disk, &array, grub_raid_list->name)))
+	return 0;
+
+      /* This error usually means it's not raid, no need to display
+	 it.  */
+      if (grub_errno != GRUB_ERR_OUT_OF_RANGE)
+	grub_print_error ();
+
+      grub_errno = GRUB_ERR_NONE;
+
+      grub_disk_close (disk);
+
+      return 0;
+    }
+
   raid->next = grub_raid_list;
   grub_raid_list = raid;
-  grub_raid_scan_device (1);
+  grub_device_iterate (&hook);
 }
 
 void
@@ -686,13 +663,6 @@ grub_raid_unregister (grub_raid_t raid)
 	*p = q->next;
 	break;
       }
-}
-
-void
-grub_raid_rescan (void)
-{
-  free_array ();
-  grub_raid_scan_device (0);
 }
 
 static struct grub_disk_dev grub_raid_dev =

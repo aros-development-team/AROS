@@ -34,14 +34,14 @@ _start:
          *  These MUST be at byte offset 6 and 7 of the executable
          *  DO NOT MOVE !!!
          */
-        . = EXT_C(start) + 0x6
+        . = _start + 0x6
         .byte   GRUB_BOOT_VERSION_MAJOR, GRUB_BOOT_VERSION_MINOR
 
         /*
          *  This is a special data area 8 bytes from the beginning.
          */
 
-        . = EXT_C(start) + 0x8
+        . = _start + 0x8
 
 VARIABLE(grub_prefix)
 	/* to be filled by grub-mkimage */
@@ -50,7 +50,7 @@ VARIABLE(grub_prefix)
          *  Leave some breathing room for the prefix.
          */
 
-        . = EXT_C(start) + 0x50
+        . = _start + 0x50
 
 codestart:
 	/*

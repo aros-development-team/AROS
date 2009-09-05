@@ -1,7 +1,7 @@
 /* callwrap.S - wrapper for x86_64 efi calls */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2006,2007,2009  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -87,10 +87,30 @@ FUNCTION(efi_wrap_6)
 	subq $56, %rsp
 	mov 56+8(%rsp), %rax
 	mov %rax, 40(%rsp)
-	mov %r9, (%rsp)
+	mov %r9, 32(%rsp)
 	mov %r8, %r9
 	mov %rcx, %r8
 	mov %rsi, %rcx
 	call *%rdi
 	addq $56, %rsp
+	ret
+
+FUNCTION(efi_wrap_10)
+	subq $88, %rsp
+	mov 88+40(%rsp), %rax
+	mov %rax, 72(%rsp)
+	mov 88+32(%rsp), %rax
+	mov %rax, 64(%rsp)
+	mov 88+24(%rsp), %rax
+	mov %rax, 56(%rsp)
+	mov 88+16(%rsp), %rax
+	mov %rax, 48(%rsp)
+	mov 88+8(%rsp), %rax
+	mov %rax, 40(%rsp)
+	mov %r9, 32(%rsp)
+	mov %r8, %r9
+	mov %rcx, %r8
+	mov %rsi, %rcx
+	call *%rdi
+	addq $88, %rsp
 	ret

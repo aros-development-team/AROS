@@ -40,7 +40,7 @@ grub_err_t
 grub_error (grub_err_t n, const char *fmt, ...)
 {
   va_list ap;
-  
+
   grub_errno = n;
 
   va_start (ap, fmt);
@@ -73,7 +73,7 @@ grub_error_push (void)
       grub_memcpy (grub_error_stack_items[grub_error_stack_pos].errmsg,
                    grub_errmsg,
                    sizeof (grub_errmsg));
-        
+
       /* Advance to next error stack position.  */
       grub_error_stack_pos++;
     }
@@ -96,19 +96,19 @@ grub_error_pop (void)
     {
       /* Pop error message from error stack to current active error.  */
       grub_error_stack_pos--;
-      
+
       grub_errno = grub_error_stack_items[grub_error_stack_pos].errno;
       grub_memcpy (grub_errmsg,
                    grub_error_stack_items[grub_error_stack_pos].errmsg,
                    sizeof (grub_errmsg));
-                  
+
       return 1;
     }
   else
     {
       /* There is no more items on error stack, reset to no error state.  */
       grub_errno = GRUB_ERR_NONE;
-      
+
       return 0;
     }
 }
@@ -122,9 +122,9 @@ grub_print_error (void)
     {
       if (grub_errno != GRUB_ERR_NONE)
         grub_err_printf ("error: %s\n", grub_errmsg);
-    } 
+    }
   while (grub_error_pop ());
-  
+
   /* If there was an assert while using error stack, report about it.  */
   if (grub_error_stack_assert)
     {

@@ -26,7 +26,7 @@
 grub_err_t
 grub_arch_dl_check_header (void *ehdr)
 {
-  Elf64_Ehdr *e = ehdr;
+  Elf_Ehdr *e = ehdr;
 
   /* Check the magic numbers.  */
   if (e->e_ident[EI_CLASS] != ELFCLASS64
@@ -42,28 +42,26 @@ grub_arch_dl_check_header (void *ehdr)
 grub_err_t
 grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
 {
-  Elf64_Ehdr *e = ehdr;
-  Elf64_Shdr *s;
-  Elf64_Sym *symtab;
-  Elf64_Word entsize;
+  Elf_Ehdr *e = ehdr;
+  Elf_Shdr *s;
+  Elf_Word entsize;
   unsigned i;
-  
+
   /* Find a symbol table.  */
-  for (i = 0, s = (Elf64_Shdr *) ((char *) e + e->e_shoff);
+  for (i = 0, s = (Elf_Shdr *) ((char *) e + e->e_shoff);
        i < e->e_shnum;
-       i++, s = (Elf64_Shdr *) ((char *) s + e->e_shentsize))
+       i++, s = (Elf_Shdr *) ((char *) s + e->e_shentsize))
     if (s->sh_type == SHT_SYMTAB)
       break;
 
   if (i == e->e_shnum)
     return grub_error (GRUB_ERR_BAD_MODULE, "no symtab found");
-  
-  symtab = (Elf64_Sym *) ((char *) e + s->sh_offset);
+
   entsize = s->sh_entsize;
-  
-  for (i = 0, s = (Elf64_Shdr *) ((char *) e + e->e_shoff);
+
+  for (i = 0, s = (Elf_Shdr *) ((char *) e + e->e_shoff);
        i < e->e_shnum;
-       i++, s = (Elf64_Shdr *) ((char *) s + e->e_shentsize))
+       i++, s = (Elf_Shdr *) ((char *) s + e->e_shentsize))
     if (s->sh_type == SHT_RELA)
       {
 	grub_dl_segment_t seg;
@@ -75,27 +73,27 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
 
 	if (seg)
 	  {
-	    Elf64_Rela *rel, *max;
-	    
-	    for (rel = (Elf64_Rela *) ((char *) e + s->sh_offset),
+	    Elf_Rela *rel, *max;
+
+	    for (rel = (Elf_Rela *) ((char *) e + s->sh_offset),
 		   max = rel + s->sh_size / s->sh_entsize;
 		 rel < max;
 		 rel++)
 	      {
-		Elf64_Word *addr;
-		Elf64_Sym *sym;
-		Elf64_Addr value;
-		
+		Elf_Word *addr;
+		Elf_Sym *sym;
+		Elf_Addr value;
+
 		if (seg->size < rel->r_offset)
 		  return grub_error (GRUB_ERR_BAD_MODULE,
 				     "reloc offset is out of the segment");
-		
-		addr = (Elf64_Word *) ((char *) seg->addr + rel->r_offset);
-		sym = (Elf64_Sym *) ((char *) symtab
-				     + entsize * ELF64_R_SYM (rel->r_info));
+
+		addr = (Elf_Word *) ((char *) seg->addr + rel->r_offset);
+		sym = (Elf_Sym *) ((char *) mod->symtab
+				     + entsize * ELF_R_SYM (rel->r_info));
 
 		value = sym->st_value + rel->r_addend;
-		switch (ELF64_R_TYPE (rel->r_info))
+		switch (ELF_R_TYPE (rel->r_info) & 0xff)
 		  {
                   case R_SPARC_32: /* 3 V-word32 */
                     if (value & 0xFFFFFFFF00000000)
@@ -104,13 +102,13 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
                     *addr = value;
                     break;
                   case R_SPARC_WDISP30: /* 7 V-disp30 */
-                    if (((value - (Elf64_Addr) addr) & 0xFFFFFFFF00000000) &&
-                        ((value - (Elf64_Addr) addr) & 0xFFFFFFFF00000000
-                        != 0xFFFFFFFF00000000))
+                    if (((value - (Elf_Addr) addr) & 0xFFFFFFFF00000000) &&
+                        (((value - (Elf_Addr) addr) & 0xFFFFFFFF00000000)
+			 != 0xFFFFFFFF00000000))
                       return grub_error (GRUB_ERR_BAD_MODULE,
                                          "Displacement out of 30 bits range");
                     *addr = (*addr & 0xC0000000) |
-                      (((grub_int32_t) ((value - (Elf64_Addr) addr) >> 2)) &
+                      (((grub_int32_t) ((value - (Elf_Addr) addr) >> 2)) &
                        0x3FFFFFFF);
                     break;
                   case R_SPARC_HI22: /* 9 V-imm22 */
@@ -123,16 +121,22 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
                     *addr = (*addr & 0xFFFFFC00) | (value & 0x3FF);
                     break;
                   case R_SPARC_64: /* 32 V-xwords64 */
-                    *(Elf64_Xword *) addr = value;
+                    *(Elf_Xword *) addr = value;
                     break;
+		  case R_SPARC_OLO10:
+		    *addr = (*addr & ~0x1fff)
+		      | (((value & 0x3ff) +
+			  (ELF_R_TYPE (rel->r_info) >> 8))
+			 & 0x1fff);
+		    break;
 		  default:
 		    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
 				       "This relocation (%d) is not implemented yet",
-				       ELF64_R_TYPE (rel->r_info));
+				       ELF_R_TYPE (rel->r_info));
 		  }
 	      }
 	  }
       }
-  
+
   return GRUB_ERR_NONE;
 }

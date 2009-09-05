@@ -52,7 +52,7 @@ typedef struct grub_file *grub_file_t;
 char *EXPORT_FUNC(grub_file_get_device_name) (const char *name);
 
 grub_file_t EXPORT_FUNC(grub_file_open) (const char *name);
-grub_ssize_t EXPORT_FUNC(grub_file_read) (grub_file_t file, char *buf,
+grub_ssize_t EXPORT_FUNC(grub_file_read) (grub_file_t file, void *buf,
 					  grub_size_t len);
 grub_off_t EXPORT_FUNC(grub_file_seek) (grub_file_t file, grub_off_t offset);
 grub_err_t EXPORT_FUNC(grub_file_close) (grub_file_t file);

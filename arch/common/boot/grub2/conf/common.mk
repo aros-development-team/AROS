@@ -7,9 +7,7 @@ grub_mkelfimage_SOURCES = util/elf/grub-mkimage.c util/misc.c \
 	util/resolve.c
 CLEANFILES += grub-mkelfimage$(EXEEXT) grub_mkelfimage-util_elf_grub_mkimage.o grub_mkelfimage-util_misc.o grub_mkelfimage-util_resolve.o
 MOSTLYCLEANFILES += grub_mkelfimage-util_elf_grub_mkimage.d grub_mkelfimage-util_misc.d grub_mkelfimage-util_resolve.d
-
-grub-mkelfimage: $(grub_mkelfimage_DEPENDENCIES) grub_mkelfimage-util_elf_grub_mkimage.o grub_mkelfimage-util_misc.o grub_mkelfimage-util_resolve.o
-	$(CC) -o $@ grub_mkelfimage-util_elf_grub_mkimage.o grub_mkelfimage-util_misc.o grub_mkelfimage-util_resolve.o $(LDFLAGS) $(grub_mkelfimage_LDFLAGS)
+grub_mkelfimage_OBJECTS += grub_mkelfimage-util_elf_grub_mkimage.o grub_mkelfimage-util_misc.o grub_mkelfimage-util_resolve.o
 
 grub_mkelfimage-util_elf_grub_mkimage.o: util/elf/grub-mkimage.c $(util/elf/grub-mkimage.c_DEPENDENCIES)
 	$(CC) -Iutil/elf -I$(srcdir)/util/elf $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_mkelfimage_CFLAGS) -MD -c -o $@ $<
@@ -33,19 +31,18 @@ grub_probe_SOURCES = util/grub-probe.c	\
 	kern/device.c kern/disk.c kern/err.c kern/misc.c	\
 	kern/parser.c kern/partition.c kern/file.c		\
 	\
-	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c		\
+	fs/affs.c fs/cpio.c fs/fat.c fs/ext2.c fs/hfs.c		\
 	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c	\
 	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c		\
-	fs/ufs.c fs/xfs.c fs/afs.c				\
+	fs/ufs.c fs/ufs2.c fs/xfs.c fs/afs.c fs/afs_be.c	\
+	fs/befs.c fs/befs_be.c fs/tar.c		\
 	\
-	partmap/pc.c partmap/apple.c partmap/gpt.c 		\
+	partmap/msdos.c partmap/apple.c partmap/sun.c partmap/gpt.c\
 	kern/fs.c kern/env.c fs/fshelp.c			\
-	disk/lvm.c disk/raid.c disk/mdraid_linux.c grub_probe_init.c
-CLEANFILES += grub-probe$(EXEEXT) grub_probe-util_grub_probe.o grub_probe-util_hostdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-kern_file.o grub_probe-fs_affs.o grub_probe-fs_cpio.o grub_probe-fs_ext2.o grub_probe-fs_fat.o grub_probe-fs_hfs.o grub_probe-fs_hfsplus.o grub_probe-fs_iso9660.o grub_probe-fs_udf.o grub_probe-fs_jfs.o grub_probe-fs_minix.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_reiserfs.o grub_probe-fs_sfs.o grub_probe-fs_ufs.o grub_probe-fs_xfs.o grub_probe-fs_afs.o grub_probe-partmap_pc.o grub_probe-partmap_apple.o grub_probe-partmap_gpt.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_lvm.o grub_probe-disk_raid.o grub_probe-disk_mdraid_linux.o grub_probe-grub_probe_init.o
-MOSTLYCLEANFILES += grub_probe-util_grub_probe.d grub_probe-util_hostdisk.d grub_probe-util_misc.d grub_probe-util_getroot.d grub_probe-kern_device.d grub_probe-kern_disk.d grub_probe-kern_err.d grub_probe-kern_misc.d grub_probe-kern_parser.d grub_probe-kern_partition.d grub_probe-kern_file.d grub_probe-fs_affs.d grub_probe-fs_cpio.d grub_probe-fs_ext2.d grub_probe-fs_fat.d grub_probe-fs_hfs.d grub_probe-fs_hfsplus.d grub_probe-fs_iso9660.d grub_probe-fs_udf.d grub_probe-fs_jfs.d grub_probe-fs_minix.d grub_probe-fs_ntfs.d grub_probe-fs_ntfscomp.d grub_probe-fs_reiserfs.d grub_probe-fs_sfs.d grub_probe-fs_ufs.d grub_probe-fs_xfs.d grub_probe-fs_afs.d grub_probe-partmap_pc.d grub_probe-partmap_apple.d grub_probe-partmap_gpt.d grub_probe-kern_fs.d grub_probe-kern_env.d grub_probe-fs_fshelp.d grub_probe-disk_lvm.d grub_probe-disk_raid.d grub_probe-disk_mdraid_linux.d grub_probe-grub_probe_init.d
-
-grub-probe: $(grub_probe_DEPENDENCIES) grub_probe-util_grub_probe.o grub_probe-util_hostdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-kern_file.o grub_probe-fs_affs.o grub_probe-fs_cpio.o grub_probe-fs_ext2.o grub_probe-fs_fat.o grub_probe-fs_hfs.o grub_probe-fs_hfsplus.o grub_probe-fs_iso9660.o grub_probe-fs_udf.o grub_probe-fs_jfs.o grub_probe-fs_minix.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_reiserfs.o grub_probe-fs_sfs.o grub_probe-fs_ufs.o grub_probe-fs_xfs.o grub_probe-fs_afs.o grub_probe-partmap_pc.o grub_probe-partmap_apple.o grub_probe-partmap_gpt.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_lvm.o grub_probe-disk_raid.o grub_probe-disk_mdraid_linux.o grub_probe-grub_probe_init.o
-	$(CC) -o $@ grub_probe-util_grub_probe.o grub_probe-util_hostdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-kern_file.o grub_probe-fs_affs.o grub_probe-fs_cpio.o grub_probe-fs_ext2.o grub_probe-fs_fat.o grub_probe-fs_hfs.o grub_probe-fs_hfsplus.o grub_probe-fs_iso9660.o grub_probe-fs_udf.o grub_probe-fs_jfs.o grub_probe-fs_minix.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_reiserfs.o grub_probe-fs_sfs.o grub_probe-fs_ufs.o grub_probe-fs_xfs.o grub_probe-fs_afs.o grub_probe-partmap_pc.o grub_probe-partmap_apple.o grub_probe-partmap_gpt.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_lvm.o grub_probe-disk_raid.o grub_probe-disk_mdraid_linux.o grub_probe-grub_probe_init.o $(LDFLAGS) $(grub_probe_LDFLAGS)
+	disk/raid.c disk/mdraid_linux.c disk/lvm.c grub_probe_init.c
+CLEANFILES += grub-probe$(EXEEXT) grub_probe-util_grub_probe.o grub_probe-util_hostdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-kern_file.o grub_probe-fs_affs.o grub_probe-fs_cpio.o grub_probe-fs_fat.o grub_probe-fs_ext2.o grub_probe-fs_hfs.o grub_probe-fs_hfsplus.o grub_probe-fs_iso9660.o grub_probe-fs_udf.o grub_probe-fs_jfs.o grub_probe-fs_minix.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_reiserfs.o grub_probe-fs_sfs.o grub_probe-fs_ufs.o grub_probe-fs_ufs2.o grub_probe-fs_xfs.o grub_probe-fs_afs.o grub_probe-fs_afs_be.o grub_probe-fs_befs.o grub_probe-fs_befs_be.o grub_probe-fs_tar.o grub_probe-partmap_msdos.o grub_probe-partmap_apple.o grub_probe-partmap_sun.o grub_probe-partmap_gpt.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_raid.o grub_probe-disk_mdraid_linux.o grub_probe-disk_lvm.o grub_probe-grub_probe_init.o
+MOSTLYCLEANFILES += grub_probe-util_grub_probe.d grub_probe-util_hostdisk.d grub_probe-util_misc.d grub_probe-util_getroot.d grub_probe-kern_device.d grub_probe-kern_disk.d grub_probe-kern_err.d grub_probe-kern_misc.d grub_probe-kern_parser.d grub_probe-kern_partition.d grub_probe-kern_file.d grub_probe-fs_affs.d grub_probe-fs_cpio.d grub_probe-fs_fat.d grub_probe-fs_ext2.d grub_probe-fs_hfs.d grub_probe-fs_hfsplus.d grub_probe-fs_iso9660.d grub_probe-fs_udf.d grub_probe-fs_jfs.d grub_probe-fs_minix.d grub_probe-fs_ntfs.d grub_probe-fs_ntfscomp.d grub_probe-fs_reiserfs.d grub_probe-fs_sfs.d grub_probe-fs_ufs.d grub_probe-fs_ufs2.d grub_probe-fs_xfs.d grub_probe-fs_afs.d grub_probe-fs_afs_be.d grub_probe-fs_befs.d grub_probe-fs_befs_be.d grub_probe-fs_tar.d grub_probe-partmap_msdos.d grub_probe-partmap_apple.d grub_probe-partmap_sun.d grub_probe-partmap_gpt.d grub_probe-kern_fs.d grub_probe-kern_env.d grub_probe-fs_fshelp.d grub_probe-disk_raid.d grub_probe-disk_mdraid_linux.d grub_probe-disk_lvm.d grub_probe-grub_probe_init.d
+grub_probe_OBJECTS += grub_probe-util_grub_probe.o grub_probe-util_hostdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-kern_file.o grub_probe-fs_affs.o grub_probe-fs_cpio.o grub_probe-fs_fat.o grub_probe-fs_ext2.o grub_probe-fs_hfs.o grub_probe-fs_hfsplus.o grub_probe-fs_iso9660.o grub_probe-fs_udf.o grub_probe-fs_jfs.o grub_probe-fs_minix.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_reiserfs.o grub_probe-fs_sfs.o grub_probe-fs_ufs.o grub_probe-fs_ufs2.o grub_probe-fs_xfs.o grub_probe-fs_afs.o grub_probe-fs_afs_be.o grub_probe-fs_befs.o grub_probe-fs_befs_be.o grub_probe-fs_tar.o grub_probe-partmap_msdos.o grub_probe-partmap_apple.o grub_probe-partmap_sun.o grub_probe-partmap_gpt.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_raid.o grub_probe-disk_mdraid_linux.o grub_probe-disk_lvm.o grub_probe-grub_probe_init.o
 
 grub_probe-util_grub_probe.o: util/grub-probe.c $(util/grub-probe.c_DEPENDENCIES)
 	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
@@ -99,13 +96,13 @@ grub_probe-fs_cpio.o: fs/cpio.c $(fs/cpio.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
 -include grub_probe-fs_cpio.d
 
-grub_probe-fs_ext2.o: fs/ext2.c $(fs/ext2.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_ext2.d
-
 grub_probe-fs_fat.o: fs/fat.c $(fs/fat.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
 -include grub_probe-fs_fat.d
+
+grub_probe-fs_ext2.o: fs/ext2.c $(fs/ext2.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
+-include grub_probe-fs_ext2.d
 
 grub_probe-fs_hfs.o: fs/hfs.c $(fs/hfs.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
@@ -151,6 +148,10 @@ grub_probe-fs_ufs.o: fs/ufs.c $(fs/ufs.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
 -include grub_probe-fs_ufs.d
 
+grub_probe-fs_ufs2.o: fs/ufs2.c $(fs/ufs2.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
+-include grub_probe-fs_ufs2.d
+
 grub_probe-fs_xfs.o: fs/xfs.c $(fs/xfs.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
 -include grub_probe-fs_xfs.d
@@ -159,13 +160,33 @@ grub_probe-fs_afs.o: fs/afs.c $(fs/afs.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
 -include grub_probe-fs_afs.d
 
-grub_probe-partmap_pc.o: partmap/pc.c $(partmap/pc.c_DEPENDENCIES)
+grub_probe-fs_afs_be.o: fs/afs_be.c $(fs/afs_be.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
+-include grub_probe-fs_afs_be.d
+
+grub_probe-fs_befs.o: fs/befs.c $(fs/befs.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
+-include grub_probe-fs_befs.d
+
+grub_probe-fs_befs_be.o: fs/befs_be.c $(fs/befs_be.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
+-include grub_probe-fs_befs_be.d
+
+grub_probe-fs_tar.o: fs/tar.c $(fs/tar.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
+-include grub_probe-fs_tar.d
+
+grub_probe-partmap_msdos.o: partmap/msdos.c $(partmap/msdos.c_DEPENDENCIES)
 	$(CC) -Ipartmap -I$(srcdir)/partmap $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-partmap_pc.d
+-include grub_probe-partmap_msdos.d
 
 grub_probe-partmap_apple.o: partmap/apple.c $(partmap/apple.c_DEPENDENCIES)
 	$(CC) -Ipartmap -I$(srcdir)/partmap $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
 -include grub_probe-partmap_apple.d
+
+grub_probe-partmap_sun.o: partmap/sun.c $(partmap/sun.c_DEPENDENCIES)
+	$(CC) -Ipartmap -I$(srcdir)/partmap $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
+-include grub_probe-partmap_sun.d
 
 grub_probe-partmap_gpt.o: partmap/gpt.c $(partmap/gpt.c_DEPENDENCIES)
 	$(CC) -Ipartmap -I$(srcdir)/partmap $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
@@ -183,10 +204,6 @@ grub_probe-fs_fshelp.o: fs/fshelp.c $(fs/fshelp.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
 -include grub_probe-fs_fshelp.d
 
-grub_probe-disk_lvm.o: disk/lvm.c $(disk/lvm.c_DEPENDENCIES)
-	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-disk_lvm.d
-
 grub_probe-disk_raid.o: disk/raid.c $(disk/raid.c_DEPENDENCIES)
 	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
 -include grub_probe-disk_raid.d
@@ -194,6 +211,10 @@ grub_probe-disk_raid.o: disk/raid.c $(disk/raid.c_DEPENDENCIES)
 grub_probe-disk_mdraid_linux.o: disk/mdraid_linux.c $(disk/mdraid_linux.c_DEPENDENCIES)
 	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
 -include grub_probe-disk_mdraid_linux.d
+
+grub_probe-disk_lvm.o: disk/lvm.c $(disk/lvm.c_DEPENDENCIES)
+	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
+-include grub_probe-disk_lvm.d
 
 grub_probe-grub_probe_init.o: grub_probe_init.c $(grub_probe_init.c_DEPENDENCIES)
 	$(CC) -I. -I$(srcdir)/. $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
@@ -208,24 +229,25 @@ endif
 util/grub-fstest.c_DEPENDENCIES = grub_fstest_init.h
 grub_fstest_SOURCES = util/grub-fstest.c util/hostfs.c util/misc.c 	\
 	kern/file.c kern/device.c kern/disk.c kern/err.c kern/misc.c	\
-	disk/host.c disk/loopback.c  normal/arg.c normal/misc.c		\
+	disk/host.c disk/loopback.c kern/list.c kern/command.c		\
+	lib/arg.c commands/extcmd.c normal/datetime.c normal/misc.c	\
 	lib/hexdump.c lib/crc.c commands/blocklist.c commands/ls.c 	\
 	\
-	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c			\
+	fs/affs.c fs/cpio.c fs/fat.c fs/ext2.c fs/hfs.c			\
 	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c		\
 	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c			\
-	fs/ufs.c fs/xfs.c fs/afs.c					\
+	fs/ufs.c fs/ufs2.c fs/xfs.c fs/afs.c fs/afs_be.c fs/befs.c 	\
+	fs/befs_be.c fs/tar.c			\
 	\
-	kern/partition.c partmap/pc.c partmap/apple.c partmap/gpt.c 	\
-	kern/fs.c kern/env.c fs/fshelp.c disk/lvm.c disk/raid.c		\
+	kern/partition.c partmap/msdos.c partmap/apple.c partmap/sun.c	\
+	partmap/gpt.c							\
+	kern/fs.c kern/env.c fs/fshelp.c disk/raid.c			\
 	disk/raid5_recover.c disk/raid6_recover.c 			\
-	disk/mdraid_linux.c disk/dmraid_nvidia.c 			\
+	disk/mdraid_linux.c disk/dmraid_nvidia.c disk/lvm.c 		\
 	grub_fstest_init.c
-CLEANFILES += grub-fstest$(EXEEXT) grub_fstest-util_grub_fstest.o grub_fstest-util_hostfs.o grub_fstest-util_misc.o grub_fstest-kern_file.o grub_fstest-kern_device.o grub_fstest-kern_disk.o grub_fstest-kern_err.o grub_fstest-kern_misc.o grub_fstest-disk_host.o grub_fstest-disk_loopback.o grub_fstest-normal_arg.o grub_fstest-normal_misc.o grub_fstest-lib_hexdump.o grub_fstest-lib_crc.o grub_fstest-commands_blocklist.o grub_fstest-commands_ls.o grub_fstest-fs_affs.o grub_fstest-fs_cpio.o grub_fstest-fs_ext2.o grub_fstest-fs_fat.o grub_fstest-fs_hfs.o grub_fstest-fs_hfsplus.o grub_fstest-fs_iso9660.o grub_fstest-fs_udf.o grub_fstest-fs_jfs.o grub_fstest-fs_minix.o grub_fstest-fs_ntfs.o grub_fstest-fs_ntfscomp.o grub_fstest-fs_reiserfs.o grub_fstest-fs_sfs.o grub_fstest-fs_ufs.o grub_fstest-fs_xfs.o grub_fstest-fs_afs.o grub_fstest-kern_partition.o grub_fstest-partmap_pc.o grub_fstest-partmap_apple.o grub_fstest-partmap_gpt.o grub_fstest-kern_fs.o grub_fstest-kern_env.o grub_fstest-fs_fshelp.o grub_fstest-disk_lvm.o grub_fstest-disk_raid.o grub_fstest-disk_raid5_recover.o grub_fstest-disk_raid6_recover.o grub_fstest-disk_mdraid_linux.o grub_fstest-disk_dmraid_nvidia.o grub_fstest-grub_fstest_init.o
-MOSTLYCLEANFILES += grub_fstest-util_grub_fstest.d grub_fstest-util_hostfs.d grub_fstest-util_misc.d grub_fstest-kern_file.d grub_fstest-kern_device.d grub_fstest-kern_disk.d grub_fstest-kern_err.d grub_fstest-kern_misc.d grub_fstest-disk_host.d grub_fstest-disk_loopback.d grub_fstest-normal_arg.d grub_fstest-normal_misc.d grub_fstest-lib_hexdump.d grub_fstest-lib_crc.d grub_fstest-commands_blocklist.d grub_fstest-commands_ls.d grub_fstest-fs_affs.d grub_fstest-fs_cpio.d grub_fstest-fs_ext2.d grub_fstest-fs_fat.d grub_fstest-fs_hfs.d grub_fstest-fs_hfsplus.d grub_fstest-fs_iso9660.d grub_fstest-fs_udf.d grub_fstest-fs_jfs.d grub_fstest-fs_minix.d grub_fstest-fs_ntfs.d grub_fstest-fs_ntfscomp.d grub_fstest-fs_reiserfs.d grub_fstest-fs_sfs.d grub_fstest-fs_ufs.d grub_fstest-fs_xfs.d grub_fstest-fs_afs.d grub_fstest-kern_partition.d grub_fstest-partmap_pc.d grub_fstest-partmap_apple.d grub_fstest-partmap_gpt.d grub_fstest-kern_fs.d grub_fstest-kern_env.d grub_fstest-fs_fshelp.d grub_fstest-disk_lvm.d grub_fstest-disk_raid.d grub_fstest-disk_raid5_recover.d grub_fstest-disk_raid6_recover.d grub_fstest-disk_mdraid_linux.d grub_fstest-disk_dmraid_nvidia.d grub_fstest-grub_fstest_init.d
-
-grub-fstest: $(grub_fstest_DEPENDENCIES) grub_fstest-util_grub_fstest.o grub_fstest-util_hostfs.o grub_fstest-util_misc.o grub_fstest-kern_file.o grub_fstest-kern_device.o grub_fstest-kern_disk.o grub_fstest-kern_err.o grub_fstest-kern_misc.o grub_fstest-disk_host.o grub_fstest-disk_loopback.o grub_fstest-normal_arg.o grub_fstest-normal_misc.o grub_fstest-lib_hexdump.o grub_fstest-lib_crc.o grub_fstest-commands_blocklist.o grub_fstest-commands_ls.o grub_fstest-fs_affs.o grub_fstest-fs_cpio.o grub_fstest-fs_ext2.o grub_fstest-fs_fat.o grub_fstest-fs_hfs.o grub_fstest-fs_hfsplus.o grub_fstest-fs_iso9660.o grub_fstest-fs_udf.o grub_fstest-fs_jfs.o grub_fstest-fs_minix.o grub_fstest-fs_ntfs.o grub_fstest-fs_ntfscomp.o grub_fstest-fs_reiserfs.o grub_fstest-fs_sfs.o grub_fstest-fs_ufs.o grub_fstest-fs_xfs.o grub_fstest-fs_afs.o grub_fstest-kern_partition.o grub_fstest-partmap_pc.o grub_fstest-partmap_apple.o grub_fstest-partmap_gpt.o grub_fstest-kern_fs.o grub_fstest-kern_env.o grub_fstest-fs_fshelp.o grub_fstest-disk_lvm.o grub_fstest-disk_raid.o grub_fstest-disk_raid5_recover.o grub_fstest-disk_raid6_recover.o grub_fstest-disk_mdraid_linux.o grub_fstest-disk_dmraid_nvidia.o grub_fstest-grub_fstest_init.o
-	$(CC) -o $@ grub_fstest-util_grub_fstest.o grub_fstest-util_hostfs.o grub_fstest-util_misc.o grub_fstest-kern_file.o grub_fstest-kern_device.o grub_fstest-kern_disk.o grub_fstest-kern_err.o grub_fstest-kern_misc.o grub_fstest-disk_host.o grub_fstest-disk_loopback.o grub_fstest-normal_arg.o grub_fstest-normal_misc.o grub_fstest-lib_hexdump.o grub_fstest-lib_crc.o grub_fstest-commands_blocklist.o grub_fstest-commands_ls.o grub_fstest-fs_affs.o grub_fstest-fs_cpio.o grub_fstest-fs_ext2.o grub_fstest-fs_fat.o grub_fstest-fs_hfs.o grub_fstest-fs_hfsplus.o grub_fstest-fs_iso9660.o grub_fstest-fs_udf.o grub_fstest-fs_jfs.o grub_fstest-fs_minix.o grub_fstest-fs_ntfs.o grub_fstest-fs_ntfscomp.o grub_fstest-fs_reiserfs.o grub_fstest-fs_sfs.o grub_fstest-fs_ufs.o grub_fstest-fs_xfs.o grub_fstest-fs_afs.o grub_fstest-kern_partition.o grub_fstest-partmap_pc.o grub_fstest-partmap_apple.o grub_fstest-partmap_gpt.o grub_fstest-kern_fs.o grub_fstest-kern_env.o grub_fstest-fs_fshelp.o grub_fstest-disk_lvm.o grub_fstest-disk_raid.o grub_fstest-disk_raid5_recover.o grub_fstest-disk_raid6_recover.o grub_fstest-disk_mdraid_linux.o grub_fstest-disk_dmraid_nvidia.o grub_fstest-grub_fstest_init.o $(LDFLAGS) $(grub_fstest_LDFLAGS)
+CLEANFILES += grub-fstest$(EXEEXT) grub_fstest-util_grub_fstest.o grub_fstest-util_hostfs.o grub_fstest-util_misc.o grub_fstest-kern_file.o grub_fstest-kern_device.o grub_fstest-kern_disk.o grub_fstest-kern_err.o grub_fstest-kern_misc.o grub_fstest-disk_host.o grub_fstest-disk_loopback.o grub_fstest-kern_list.o grub_fstest-kern_command.o grub_fstest-lib_arg.o grub_fstest-commands_extcmd.o grub_fstest-normal_datetime.o grub_fstest-normal_misc.o grub_fstest-lib_hexdump.o grub_fstest-lib_crc.o grub_fstest-commands_blocklist.o grub_fstest-commands_ls.o grub_fstest-fs_affs.o grub_fstest-fs_cpio.o grub_fstest-fs_fat.o grub_fstest-fs_ext2.o grub_fstest-fs_hfs.o grub_fstest-fs_hfsplus.o grub_fstest-fs_iso9660.o grub_fstest-fs_udf.o grub_fstest-fs_jfs.o grub_fstest-fs_minix.o grub_fstest-fs_ntfs.o grub_fstest-fs_ntfscomp.o grub_fstest-fs_reiserfs.o grub_fstest-fs_sfs.o grub_fstest-fs_ufs.o grub_fstest-fs_ufs2.o grub_fstest-fs_xfs.o grub_fstest-fs_afs.o grub_fstest-fs_afs_be.o grub_fstest-fs_befs.o grub_fstest-fs_befs_be.o grub_fstest-fs_tar.o grub_fstest-kern_partition.o grub_fstest-partmap_msdos.o grub_fstest-partmap_apple.o grub_fstest-partmap_sun.o grub_fstest-partmap_gpt.o grub_fstest-kern_fs.o grub_fstest-kern_env.o grub_fstest-fs_fshelp.o grub_fstest-disk_raid.o grub_fstest-disk_raid5_recover.o grub_fstest-disk_raid6_recover.o grub_fstest-disk_mdraid_linux.o grub_fstest-disk_dmraid_nvidia.o grub_fstest-disk_lvm.o grub_fstest-grub_fstest_init.o
+MOSTLYCLEANFILES += grub_fstest-util_grub_fstest.d grub_fstest-util_hostfs.d grub_fstest-util_misc.d grub_fstest-kern_file.d grub_fstest-kern_device.d grub_fstest-kern_disk.d grub_fstest-kern_err.d grub_fstest-kern_misc.d grub_fstest-disk_host.d grub_fstest-disk_loopback.d grub_fstest-kern_list.d grub_fstest-kern_command.d grub_fstest-lib_arg.d grub_fstest-commands_extcmd.d grub_fstest-normal_datetime.d grub_fstest-normal_misc.d grub_fstest-lib_hexdump.d grub_fstest-lib_crc.d grub_fstest-commands_blocklist.d grub_fstest-commands_ls.d grub_fstest-fs_affs.d grub_fstest-fs_cpio.d grub_fstest-fs_fat.d grub_fstest-fs_ext2.d grub_fstest-fs_hfs.d grub_fstest-fs_hfsplus.d grub_fstest-fs_iso9660.d grub_fstest-fs_udf.d grub_fstest-fs_jfs.d grub_fstest-fs_minix.d grub_fstest-fs_ntfs.d grub_fstest-fs_ntfscomp.d grub_fstest-fs_reiserfs.d grub_fstest-fs_sfs.d grub_fstest-fs_ufs.d grub_fstest-fs_ufs2.d grub_fstest-fs_xfs.d grub_fstest-fs_afs.d grub_fstest-fs_afs_be.d grub_fstest-fs_befs.d grub_fstest-fs_befs_be.d grub_fstest-fs_tar.d grub_fstest-kern_partition.d grub_fstest-partmap_msdos.d grub_fstest-partmap_apple.d grub_fstest-partmap_sun.d grub_fstest-partmap_gpt.d grub_fstest-kern_fs.d grub_fstest-kern_env.d grub_fstest-fs_fshelp.d grub_fstest-disk_raid.d grub_fstest-disk_raid5_recover.d grub_fstest-disk_raid6_recover.d grub_fstest-disk_mdraid_linux.d grub_fstest-disk_dmraid_nvidia.d grub_fstest-disk_lvm.d grub_fstest-grub_fstest_init.d
+grub_fstest_OBJECTS += grub_fstest-util_grub_fstest.o grub_fstest-util_hostfs.o grub_fstest-util_misc.o grub_fstest-kern_file.o grub_fstest-kern_device.o grub_fstest-kern_disk.o grub_fstest-kern_err.o grub_fstest-kern_misc.o grub_fstest-disk_host.o grub_fstest-disk_loopback.o grub_fstest-kern_list.o grub_fstest-kern_command.o grub_fstest-lib_arg.o grub_fstest-commands_extcmd.o grub_fstest-normal_datetime.o grub_fstest-normal_misc.o grub_fstest-lib_hexdump.o grub_fstest-lib_crc.o grub_fstest-commands_blocklist.o grub_fstest-commands_ls.o grub_fstest-fs_affs.o grub_fstest-fs_cpio.o grub_fstest-fs_fat.o grub_fstest-fs_ext2.o grub_fstest-fs_hfs.o grub_fstest-fs_hfsplus.o grub_fstest-fs_iso9660.o grub_fstest-fs_udf.o grub_fstest-fs_jfs.o grub_fstest-fs_minix.o grub_fstest-fs_ntfs.o grub_fstest-fs_ntfscomp.o grub_fstest-fs_reiserfs.o grub_fstest-fs_sfs.o grub_fstest-fs_ufs.o grub_fstest-fs_ufs2.o grub_fstest-fs_xfs.o grub_fstest-fs_afs.o grub_fstest-fs_afs_be.o grub_fstest-fs_befs.o grub_fstest-fs_befs_be.o grub_fstest-fs_tar.o grub_fstest-kern_partition.o grub_fstest-partmap_msdos.o grub_fstest-partmap_apple.o grub_fstest-partmap_sun.o grub_fstest-partmap_gpt.o grub_fstest-kern_fs.o grub_fstest-kern_env.o grub_fstest-fs_fshelp.o grub_fstest-disk_raid.o grub_fstest-disk_raid5_recover.o grub_fstest-disk_raid6_recover.o grub_fstest-disk_mdraid_linux.o grub_fstest-disk_dmraid_nvidia.o grub_fstest-disk_lvm.o grub_fstest-grub_fstest_init.o
 
 grub_fstest-util_grub_fstest.o: util/grub-fstest.c $(util/grub-fstest.c_DEPENDENCIES)
 	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
@@ -267,9 +289,25 @@ grub_fstest-disk_loopback.o: disk/loopback.c $(disk/loopback.c_DEPENDENCIES)
 	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
 -include grub_fstest-disk_loopback.d
 
-grub_fstest-normal_arg.o: normal/arg.c $(normal/arg.c_DEPENDENCIES)
+grub_fstest-kern_list.o: kern/list.c $(kern/list.c_DEPENDENCIES)
+	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
+-include grub_fstest-kern_list.d
+
+grub_fstest-kern_command.o: kern/command.c $(kern/command.c_DEPENDENCIES)
+	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
+-include grub_fstest-kern_command.d
+
+grub_fstest-lib_arg.o: lib/arg.c $(lib/arg.c_DEPENDENCIES)
+	$(CC) -Ilib -I$(srcdir)/lib $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
+-include grub_fstest-lib_arg.d
+
+grub_fstest-commands_extcmd.o: commands/extcmd.c $(commands/extcmd.c_DEPENDENCIES)
+	$(CC) -Icommands -I$(srcdir)/commands $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
+-include grub_fstest-commands_extcmd.d
+
+grub_fstest-normal_datetime.o: normal/datetime.c $(normal/datetime.c_DEPENDENCIES)
 	$(CC) -Inormal -I$(srcdir)/normal $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
--include grub_fstest-normal_arg.d
+-include grub_fstest-normal_datetime.d
 
 grub_fstest-normal_misc.o: normal/misc.c $(normal/misc.c_DEPENDENCIES)
 	$(CC) -Inormal -I$(srcdir)/normal $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
@@ -299,13 +337,13 @@ grub_fstest-fs_cpio.o: fs/cpio.c $(fs/cpio.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
 -include grub_fstest-fs_cpio.d
 
-grub_fstest-fs_ext2.o: fs/ext2.c $(fs/ext2.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
--include grub_fstest-fs_ext2.d
-
 grub_fstest-fs_fat.o: fs/fat.c $(fs/fat.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
 -include grub_fstest-fs_fat.d
+
+grub_fstest-fs_ext2.o: fs/ext2.c $(fs/ext2.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
+-include grub_fstest-fs_ext2.d
 
 grub_fstest-fs_hfs.o: fs/hfs.c $(fs/hfs.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
@@ -351,6 +389,10 @@ grub_fstest-fs_ufs.o: fs/ufs.c $(fs/ufs.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
 -include grub_fstest-fs_ufs.d
 
+grub_fstest-fs_ufs2.o: fs/ufs2.c $(fs/ufs2.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
+-include grub_fstest-fs_ufs2.d
+
 grub_fstest-fs_xfs.o: fs/xfs.c $(fs/xfs.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
 -include grub_fstest-fs_xfs.d
@@ -359,17 +401,37 @@ grub_fstest-fs_afs.o: fs/afs.c $(fs/afs.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
 -include grub_fstest-fs_afs.d
 
+grub_fstest-fs_afs_be.o: fs/afs_be.c $(fs/afs_be.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
+-include grub_fstest-fs_afs_be.d
+
+grub_fstest-fs_befs.o: fs/befs.c $(fs/befs.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
+-include grub_fstest-fs_befs.d
+
+grub_fstest-fs_befs_be.o: fs/befs_be.c $(fs/befs_be.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
+-include grub_fstest-fs_befs_be.d
+
+grub_fstest-fs_tar.o: fs/tar.c $(fs/tar.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
+-include grub_fstest-fs_tar.d
+
 grub_fstest-kern_partition.o: kern/partition.c $(kern/partition.c_DEPENDENCIES)
 	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
 -include grub_fstest-kern_partition.d
 
-grub_fstest-partmap_pc.o: partmap/pc.c $(partmap/pc.c_DEPENDENCIES)
+grub_fstest-partmap_msdos.o: partmap/msdos.c $(partmap/msdos.c_DEPENDENCIES)
 	$(CC) -Ipartmap -I$(srcdir)/partmap $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
--include grub_fstest-partmap_pc.d
+-include grub_fstest-partmap_msdos.d
 
 grub_fstest-partmap_apple.o: partmap/apple.c $(partmap/apple.c_DEPENDENCIES)
 	$(CC) -Ipartmap -I$(srcdir)/partmap $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
 -include grub_fstest-partmap_apple.d
+
+grub_fstest-partmap_sun.o: partmap/sun.c $(partmap/sun.c_DEPENDENCIES)
+	$(CC) -Ipartmap -I$(srcdir)/partmap $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
+-include grub_fstest-partmap_sun.d
 
 grub_fstest-partmap_gpt.o: partmap/gpt.c $(partmap/gpt.c_DEPENDENCIES)
 	$(CC) -Ipartmap -I$(srcdir)/partmap $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
@@ -386,10 +448,6 @@ grub_fstest-kern_env.o: kern/env.c $(kern/env.c_DEPENDENCIES)
 grub_fstest-fs_fshelp.o: fs/fshelp.c $(fs/fshelp.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
 -include grub_fstest-fs_fshelp.d
-
-grub_fstest-disk_lvm.o: disk/lvm.c $(disk/lvm.c_DEPENDENCIES)
-	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
--include grub_fstest-disk_lvm.d
 
 grub_fstest-disk_raid.o: disk/raid.c $(disk/raid.c_DEPENDENCIES)
 	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
@@ -411,14 +469,38 @@ grub_fstest-disk_dmraid_nvidia.o: disk/dmraid_nvidia.c $(disk/dmraid_nvidia.c_DE
 	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
 -include grub_fstest-disk_dmraid_nvidia.d
 
+grub_fstest-disk_lvm.o: disk/lvm.c $(disk/lvm.c_DEPENDENCIES)
+	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
+-include grub_fstest-disk_lvm.d
+
 grub_fstest-grub_fstest_init.o: grub_fstest_init.c $(grub_fstest_init.c_DEPENDENCIES)
 	$(CC) -I. -I$(srcdir)/. $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
 -include grub_fstest-grub_fstest_init.d
 
 
+# For grub-mkfont.
+ifeq ($(enable_grub_mkfont), yes)
+bin_UTILITIES += grub-mkfont
+grub_mkfont_SOURCES = util/grub-mkfont.c util/misc.c
+CLEANFILES += grub-mkfont$(EXEEXT) grub_mkfont-util_grub_mkfont.o grub_mkfont-util_misc.o
+MOSTLYCLEANFILES += grub_mkfont-util_grub_mkfont.d grub_mkfont-util_misc.d
+grub_mkfont_OBJECTS += grub_mkfont-util_grub_mkfont.o grub_mkfont-util_misc.o
+
+grub_mkfont-util_grub_mkfont.o: util/grub-mkfont.c $(util/grub-mkfont.c_DEPENDENCIES)
+	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_mkfont_CFLAGS) -MD -c -o $@ $<
+-include grub_mkfont-util_grub_mkfont.d
+
+grub_mkfont-util_misc.o: util/misc.c $(util/misc.c_DEPENDENCIES)
+	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_mkfont_CFLAGS) -MD -c -o $@ $<
+-include grub_mkfont-util_misc.d
+
+grub_mkfont_CFLAGS = $(freetype_cflags)
+grub_mkfont_LDFLAGS = $(freetype_libs)
+endif
+
 # For the parser.
-grub_script.tab.c grub_script.tab.h: normal/parser.y
-	$(YACC) -d -p grub_script_yy -b grub_script $(srcdir)/normal/parser.y
+grub_script.tab.c grub_script.tab.h: script/sh/parser.y
+	$(YACC) -d -p grub_script_yy -b grub_script $(srcdir)/script/sh/parser.y
 DISTCLEANFILES += grub_script.tab.c grub_script.tab.h
 
 # For grub-emu.
@@ -478,9 +560,7 @@ bin_UTILITIES += grub-editenv
 grub_editenv_SOURCES = util/grub-editenv.c lib/envblk.c util/misc.c kern/misc.c kern/err.c
 CLEANFILES += grub-editenv$(EXEEXT) grub_editenv-util_grub_editenv.o grub_editenv-lib_envblk.o grub_editenv-util_misc.o grub_editenv-kern_misc.o grub_editenv-kern_err.o
 MOSTLYCLEANFILES += grub_editenv-util_grub_editenv.d grub_editenv-lib_envblk.d grub_editenv-util_misc.d grub_editenv-kern_misc.d grub_editenv-kern_err.d
-
-grub-editenv: $(grub_editenv_DEPENDENCIES) grub_editenv-util_grub_editenv.o grub_editenv-lib_envblk.o grub_editenv-util_misc.o grub_editenv-kern_misc.o grub_editenv-kern_err.o
-	$(CC) -o $@ grub_editenv-util_grub_editenv.o grub_editenv-lib_envblk.o grub_editenv-util_misc.o grub_editenv-kern_misc.o grub_editenv-kern_err.o $(LDFLAGS) $(grub_editenv_LDFLAGS)
+grub_editenv_OBJECTS += grub_editenv-util_grub_editenv.o grub_editenv-lib_envblk.o grub_editenv-util_misc.o grub_editenv-kern_misc.o grub_editenv-kern_err.o
 
 grub_editenv-util_grub_editenv.o: util/grub-editenv.c $(util/grub-editenv.c_DEPENDENCIES)
 	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_editenv_CFLAGS) -MD -c -o $@ $<
@@ -512,9 +592,7 @@ endif
 grub_pe2elf_SOURCES = util/grub-pe2elf.c util/misc.c
 CLEANFILES += grub-pe2elf$(EXEEXT) grub_pe2elf-util_grub_pe2elf.o grub_pe2elf-util_misc.o
 MOSTLYCLEANFILES += grub_pe2elf-util_grub_pe2elf.d grub_pe2elf-util_misc.d
-
-grub-pe2elf: $(grub_pe2elf_DEPENDENCIES) grub_pe2elf-util_grub_pe2elf.o grub_pe2elf-util_misc.o
-	$(CC) -o $@ grub_pe2elf-util_grub_pe2elf.o grub_pe2elf-util_misc.o $(LDFLAGS) $(grub_pe2elf_LDFLAGS)
+grub_pe2elf_OBJECTS += grub_pe2elf-util_grub_pe2elf.o grub_pe2elf-util_misc.o
 
 grub_pe2elf-util_grub_pe2elf.o: util/grub-pe2elf.c $(util/grub-pe2elf.c_DEPENDENCIES)
 	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_pe2elf_CFLAGS) -MD -c -o $@ $<
@@ -526,6 +604,24 @@ grub_pe2elf-util_misc.o: util/misc.c $(util/misc.c_DEPENDENCIES)
 
 CLEANFILES += grub-pe2elf
 
+# grub_macho2img assumes a lot about source file.
+# So installing it definitively is useless
+# But adding to bin_UTILITIES is needed for
+# genmk.rb to work
+ifeq (0,1)
+bin_UTILITIES += grub-macho2img
+endif
+grub_macho2img_SOURCES = util/grub-macho2img.c
+CLEANFILES += grub-macho2img$(EXEEXT) grub_macho2img-util_grub_macho2img.o
+MOSTLYCLEANFILES += grub_macho2img-util_grub_macho2img.d
+grub_macho2img_OBJECTS += grub_macho2img-util_grub_macho2img.o
+
+grub_macho2img-util_grub_macho2img.o: util/grub-macho2img.c $(util/grub-macho2img.c_DEPENDENCIES)
+	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_macho2img_CFLAGS) -MD -c -o $@ $<
+-include grub_macho2img-util_grub_macho2img.d
+
+CLEANFILES += grub-macho2img
+
 # For grub-mkconfig
 grub-mkconfig: util/grub-mkconfig.in config.status
 	./config.status --file=$@:$<
@@ -536,33 +632,39 @@ CLEANFILES += grub-mkconfig
 grub-mkconfig_lib: util/grub-mkconfig_lib.in config.status
 	./config.status --file=$@:$<
 	chmod +x $@
-lib_DATA += grub-mkconfig_lib
+lib_SCRIPTS += grub-mkconfig_lib
 CLEANFILES += grub-mkconfig_lib
 
 update-grub_lib: util/update-grub_lib.in config.status
 	./config.status --file=$@:$<
 	chmod +x $@
-lib_DATA += update-grub_lib
+lib_SCRIPTS += update-grub_lib
 CLEANFILES += update-grub_lib
 
 %: util/grub.d/%.in config.status
 	./config.status --file=$@:$<
 	chmod +x $@
-grub-mkconfig_SCRIPTS = 00_header 10_linux 10_hurd 10_freebsd 30_os-prober 40_custom
-ifeq ($(target_os), cygwin)
-grub-mkconfig_SCRIPTS += 10_windows
+grub-mkconfig_SCRIPTS = 00_header 30_os-prober 40_custom
+ifneq (, $(host_kernel))
+grub-mkconfig_SCRIPTS += 10_$(host_kernel)
 endif
 
 CLEANFILES += $(grub-mkconfig_SCRIPTS)
 
 grub-mkconfig_DATA += util/grub.d/README
 
+# For grub-dumpbios
+grub-dumpbios: util/grub-dumpbios.in config.status
+	./config.status --file=$@:$<
+	chmod +x $@
+sbin_SCRIPTS += grub-dumpbios
+CLEANFILES += grub-dumpbios
 
 # Filing systems.
-pkglib_MODULES += fshelp.mod fat.mod ufs.mod ext2.mod ntfs.mod		\
+pkglib_MODULES += fshelp.mod fat.mod ufs1.mod ufs2.mod ext2.mod ntfs.mod \
 	ntfscomp.mod minix.mod hfs.mod jfs.mod iso9660.mod xfs.mod	\
-	affs.mod sfs.mod hfsplus.mod reiserfs.mod cpio.mod udf.mod	\
-	afs.mod
+	affs.mod sfs.mod hfsplus.mod reiserfs.mod cpio.mod tar.mod	\
+	udf.mod	afs.mod afs_be.mod befs.mod befs_be.mod
 
 # For fshelp.mod.
 fshelp_mod_SOURCES = fs/fshelp.c
@@ -574,11 +676,20 @@ endif
 MOSTLYCLEANFILES += fshelp_mod-fs_fshelp.d
 UNDSYMFILES += und-fshelp.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 fshelp.mod: pre-fshelp.o mod-fshelp.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(fshelp_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-fshelp.o mod-fshelp.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(fshelp_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-fshelp.o mod-fshelp.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+fshelp.mod: pre-fshelp.o mod-fshelp.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(fshelp_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-fshelp.o mod-fshelp.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-fshelp.o: $(fshelp_mod_DEPENDENCIES) fshelp_mod-fs_fshelp.o
 	-rm -f $@
@@ -591,8 +702,13 @@ mod-fshelp.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'fshelp' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(fshelp_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-fshelp.lst: pre-fshelp.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 fshelp/' > $@
+else
+def-fshelp.lst: pre-fshelp.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 fshelp/' > $@
+endif
 endif
 
 und-fshelp.lst: pre-fshelp.o
@@ -603,20 +719,27 @@ fshelp_mod-fs_fshelp.o: fs/fshelp.c $(fs/fshelp.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fshelp_mod_CFLAGS) -MD -c -o $@ $<
 -include fshelp_mod-fs_fshelp.d
 
-CLEANFILES += cmd-fshelp_mod-fs_fshelp.lst fs-fshelp_mod-fs_fshelp.lst partmap-fshelp_mod-fs_fshelp.lst
+CLEANFILES += cmd-fshelp_mod-fs_fshelp.lst fs-fshelp_mod-fs_fshelp.lst partmap-fshelp_mod-fs_fshelp.lst handler-fshelp_mod-fs_fshelp.lst parttool-fshelp_mod-fs_fshelp.lst
 COMMANDFILES += cmd-fshelp_mod-fs_fshelp.lst
 FSFILES += fs-fshelp_mod-fs_fshelp.lst
+PARTTOOLFILES += parttool-fshelp_mod-fs_fshelp.lst
 PARTMAPFILES += partmap-fshelp_mod-fs_fshelp.lst
+HANDLERFILES += handler-fshelp_mod-fs_fshelp.lst
 
 cmd-fshelp_mod-fs_fshelp.lst: fs/fshelp.c $(fs/fshelp.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(fshelp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh fshelp > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fshelp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh fshelp > $@ || (rm -f $@; exit 1)
 
 fs-fshelp_mod-fs_fshelp.lst: fs/fshelp.c $(fs/fshelp.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(fshelp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh fshelp > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fshelp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh fshelp > $@ || (rm -f $@; exit 1)
+
+parttool-fshelp_mod-fs_fshelp.lst: fs/fshelp.c $(fs/fshelp.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fshelp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh fshelp > $@ || (rm -f $@; exit 1)
 
 partmap-fshelp_mod-fs_fshelp.lst: fs/fshelp.c $(fs/fshelp.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(fshelp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh fshelp > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fshelp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh fshelp > $@ || (rm -f $@; exit 1)
 
+handler-fshelp_mod-fs_fshelp.lst: fs/fshelp.c $(fs/fshelp.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fshelp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh fshelp > $@ || (rm -f $@; exit 1)
 
 fshelp_mod_CFLAGS = $(COMMON_CFLAGS)
 fshelp_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -631,11 +754,20 @@ endif
 MOSTLYCLEANFILES += fat_mod-fs_fat.d
 UNDSYMFILES += und-fat.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 fat.mod: pre-fat.o mod-fat.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(fat_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-fat.o mod-fat.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(fat_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-fat.o mod-fat.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+fat.mod: pre-fat.o mod-fat.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(fat_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-fat.o mod-fat.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-fat.o: $(fat_mod_DEPENDENCIES) fat_mod-fs_fat.o
 	-rm -f $@
@@ -648,8 +780,13 @@ mod-fat.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'fat' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(fat_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-fat.lst: pre-fat.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 fat/' > $@
+else
+def-fat.lst: pre-fat.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 fat/' > $@
+endif
 endif
 
 und-fat.lst: pre-fat.o
@@ -660,80 +797,186 @@ fat_mod-fs_fat.o: fs/fat.c $(fs/fat.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fat_mod_CFLAGS) -MD -c -o $@ $<
 -include fat_mod-fs_fat.d
 
-CLEANFILES += cmd-fat_mod-fs_fat.lst fs-fat_mod-fs_fat.lst partmap-fat_mod-fs_fat.lst
+CLEANFILES += cmd-fat_mod-fs_fat.lst fs-fat_mod-fs_fat.lst partmap-fat_mod-fs_fat.lst handler-fat_mod-fs_fat.lst parttool-fat_mod-fs_fat.lst
 COMMANDFILES += cmd-fat_mod-fs_fat.lst
 FSFILES += fs-fat_mod-fs_fat.lst
+PARTTOOLFILES += parttool-fat_mod-fs_fat.lst
 PARTMAPFILES += partmap-fat_mod-fs_fat.lst
+HANDLERFILES += handler-fat_mod-fs_fat.lst
 
 cmd-fat_mod-fs_fat.lst: fs/fat.c $(fs/fat.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(fat_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh fat > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fat_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh fat > $@ || (rm -f $@; exit 1)
 
 fs-fat_mod-fs_fat.lst: fs/fat.c $(fs/fat.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(fat_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh fat > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fat_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh fat > $@ || (rm -f $@; exit 1)
+
+parttool-fat_mod-fs_fat.lst: fs/fat.c $(fs/fat.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fat_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh fat > $@ || (rm -f $@; exit 1)
 
 partmap-fat_mod-fs_fat.lst: fs/fat.c $(fs/fat.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(fat_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh fat > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fat_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh fat > $@ || (rm -f $@; exit 1)
 
+handler-fat_mod-fs_fat.lst: fs/fat.c $(fs/fat.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fat_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh fat > $@ || (rm -f $@; exit 1)
 
 fat_mod_CFLAGS = $(COMMON_CFLAGS)
 fat_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For ufs.mod.
-ufs_mod_SOURCES = fs/ufs.c
-CLEANFILES += ufs.mod mod-ufs.o mod-ufs.c pre-ufs.o ufs_mod-fs_ufs.o und-ufs.lst
-ifneq ($(ufs_mod_EXPORTS),no)
-CLEANFILES += def-ufs.lst
-DEFSYMFILES += def-ufs.lst
+# For ufs1.mod.
+ufs1_mod_SOURCES = fs/ufs.c
+CLEANFILES += ufs1.mod mod-ufs1.o mod-ufs1.c pre-ufs1.o ufs1_mod-fs_ufs.o und-ufs1.lst
+ifneq ($(ufs1_mod_EXPORTS),no)
+CLEANFILES += def-ufs1.lst
+DEFSYMFILES += def-ufs1.lst
 endif
-MOSTLYCLEANFILES += ufs_mod-fs_ufs.d
-UNDSYMFILES += und-ufs.lst
+MOSTLYCLEANFILES += ufs1_mod-fs_ufs.d
+UNDSYMFILES += und-ufs1.lst
 
-ufs.mod: pre-ufs.o mod-ufs.o $(TARGET_OBJ2ELF)
+ifneq ($(TARGET_APPLE_CC),1)
+ufs1.mod: pre-ufs1.o mod-ufs1.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(ufs_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-ufs.o mod-ufs.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(ufs1_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-ufs1.o mod-ufs1.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
-
-pre-ufs.o: $(ufs_mod_DEPENDENCIES) ufs_mod-fs_ufs.o
+else
+ufs1.mod: pre-ufs1.o mod-ufs1.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(ufs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ ufs_mod-fs_ufs.o
-
-mod-ufs.o: mod-ufs.c
-	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ufs_mod_CFLAGS) -c -o $@ $<
-
-mod-ufs.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
-	sh $(srcdir)/genmodsrc.sh 'ufs' $< > $@ || (rm -f $@; exit 1)
-
-ifneq ($(ufs_mod_EXPORTS),no)
-def-ufs.lst: pre-ufs.o
-	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 ufs/' > $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(ufs1_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-ufs1.o mod-ufs1.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
 endif
 
-und-ufs.lst: pre-ufs.o
-	echo 'ufs' > $@
+pre-ufs1.o: $(ufs1_mod_DEPENDENCIES) ufs1_mod-fs_ufs.o
+	-rm -f $@
+	$(TARGET_CC) $(ufs1_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ ufs1_mod-fs_ufs.o
+
+mod-ufs1.o: mod-ufs1.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ufs1_mod_CFLAGS) -c -o $@ $<
+
+mod-ufs1.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'ufs1' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(ufs1_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-ufs1.lst: pre-ufs1.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 ufs1/' > $@
+else
+def-ufs1.lst: pre-ufs1.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 ufs1/' > $@
+endif
+endif
+
+und-ufs1.lst: pre-ufs1.o
+	echo 'ufs1' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-ufs_mod-fs_ufs.o: fs/ufs.c $(fs/ufs.c_DEPENDENCIES)
-	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ufs_mod_CFLAGS) -MD -c -o $@ $<
--include ufs_mod-fs_ufs.d
+ufs1_mod-fs_ufs.o: fs/ufs.c $(fs/ufs.c_DEPENDENCIES)
+	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ufs1_mod_CFLAGS) -MD -c -o $@ $<
+-include ufs1_mod-fs_ufs.d
 
-CLEANFILES += cmd-ufs_mod-fs_ufs.lst fs-ufs_mod-fs_ufs.lst partmap-ufs_mod-fs_ufs.lst
-COMMANDFILES += cmd-ufs_mod-fs_ufs.lst
-FSFILES += fs-ufs_mod-fs_ufs.lst
-PARTMAPFILES += partmap-ufs_mod-fs_ufs.lst
+CLEANFILES += cmd-ufs1_mod-fs_ufs.lst fs-ufs1_mod-fs_ufs.lst partmap-ufs1_mod-fs_ufs.lst handler-ufs1_mod-fs_ufs.lst parttool-ufs1_mod-fs_ufs.lst
+COMMANDFILES += cmd-ufs1_mod-fs_ufs.lst
+FSFILES += fs-ufs1_mod-fs_ufs.lst
+PARTTOOLFILES += parttool-ufs1_mod-fs_ufs.lst
+PARTMAPFILES += partmap-ufs1_mod-fs_ufs.lst
+HANDLERFILES += handler-ufs1_mod-fs_ufs.lst
 
-cmd-ufs_mod-fs_ufs.lst: fs/ufs.c $(fs/ufs.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ufs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh ufs > $@ || (rm -f $@; exit 1)
+cmd-ufs1_mod-fs_ufs.lst: fs/ufs.c $(fs/ufs.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ufs1_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh ufs1 > $@ || (rm -f $@; exit 1)
 
-fs-ufs_mod-fs_ufs.lst: fs/ufs.c $(fs/ufs.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ufs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh ufs > $@ || (rm -f $@; exit 1)
+fs-ufs1_mod-fs_ufs.lst: fs/ufs.c $(fs/ufs.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ufs1_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh ufs1 > $@ || (rm -f $@; exit 1)
 
-partmap-ufs_mod-fs_ufs.lst: fs/ufs.c $(fs/ufs.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ufs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh ufs > $@ || (rm -f $@; exit 1)
+parttool-ufs1_mod-fs_ufs.lst: fs/ufs.c $(fs/ufs.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ufs1_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh ufs1 > $@ || (rm -f $@; exit 1)
 
+partmap-ufs1_mod-fs_ufs.lst: fs/ufs.c $(fs/ufs.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ufs1_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh ufs1 > $@ || (rm -f $@; exit 1)
 
-ufs_mod_CFLAGS = $(COMMON_CFLAGS)
-ufs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+handler-ufs1_mod-fs_ufs.lst: fs/ufs.c $(fs/ufs.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ufs1_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh ufs1 > $@ || (rm -f $@; exit 1)
+
+ufs1_mod_CFLAGS = $(COMMON_CFLAGS)
+ufs1_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For ufs2.mod.
+ufs2_mod_SOURCES = fs/ufs2.c
+CLEANFILES += ufs2.mod mod-ufs2.o mod-ufs2.c pre-ufs2.o ufs2_mod-fs_ufs2.o und-ufs2.lst
+ifneq ($(ufs2_mod_EXPORTS),no)
+CLEANFILES += def-ufs2.lst
+DEFSYMFILES += def-ufs2.lst
+endif
+MOSTLYCLEANFILES += ufs2_mod-fs_ufs2.d
+UNDSYMFILES += und-ufs2.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+ufs2.mod: pre-ufs2.o mod-ufs2.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(ufs2_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-ufs2.o mod-ufs2.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+ufs2.mod: pre-ufs2.o mod-ufs2.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(ufs2_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-ufs2.o mod-ufs2.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-ufs2.o: $(ufs2_mod_DEPENDENCIES) ufs2_mod-fs_ufs2.o
+	-rm -f $@
+	$(TARGET_CC) $(ufs2_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ ufs2_mod-fs_ufs2.o
+
+mod-ufs2.o: mod-ufs2.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ufs2_mod_CFLAGS) -c -o $@ $<
+
+mod-ufs2.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'ufs2' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(ufs2_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-ufs2.lst: pre-ufs2.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 ufs2/' > $@
+else
+def-ufs2.lst: pre-ufs2.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 ufs2/' > $@
+endif
+endif
+
+und-ufs2.lst: pre-ufs2.o
+	echo 'ufs2' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+ufs2_mod-fs_ufs2.o: fs/ufs2.c $(fs/ufs2.c_DEPENDENCIES)
+	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ufs2_mod_CFLAGS) -MD -c -o $@ $<
+-include ufs2_mod-fs_ufs2.d
+
+CLEANFILES += cmd-ufs2_mod-fs_ufs2.lst fs-ufs2_mod-fs_ufs2.lst partmap-ufs2_mod-fs_ufs2.lst handler-ufs2_mod-fs_ufs2.lst parttool-ufs2_mod-fs_ufs2.lst
+COMMANDFILES += cmd-ufs2_mod-fs_ufs2.lst
+FSFILES += fs-ufs2_mod-fs_ufs2.lst
+PARTTOOLFILES += parttool-ufs2_mod-fs_ufs2.lst
+PARTMAPFILES += partmap-ufs2_mod-fs_ufs2.lst
+HANDLERFILES += handler-ufs2_mod-fs_ufs2.lst
+
+cmd-ufs2_mod-fs_ufs2.lst: fs/ufs2.c $(fs/ufs2.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ufs2_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh ufs2 > $@ || (rm -f $@; exit 1)
+
+fs-ufs2_mod-fs_ufs2.lst: fs/ufs2.c $(fs/ufs2.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ufs2_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh ufs2 > $@ || (rm -f $@; exit 1)
+
+parttool-ufs2_mod-fs_ufs2.lst: fs/ufs2.c $(fs/ufs2.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ufs2_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh ufs2 > $@ || (rm -f $@; exit 1)
+
+partmap-ufs2_mod-fs_ufs2.lst: fs/ufs2.c $(fs/ufs2.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ufs2_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh ufs2 > $@ || (rm -f $@; exit 1)
+
+handler-ufs2_mod-fs_ufs2.lst: fs/ufs2.c $(fs/ufs2.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ufs2_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh ufs2 > $@ || (rm -f $@; exit 1)
+
+ufs2_mod_CFLAGS = $(COMMON_CFLAGS)
+ufs2_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For ext2.mod.
 ext2_mod_SOURCES = fs/ext2.c
@@ -745,11 +988,20 @@ endif
 MOSTLYCLEANFILES += ext2_mod-fs_ext2.d
 UNDSYMFILES += und-ext2.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 ext2.mod: pre-ext2.o mod-ext2.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(ext2_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-ext2.o mod-ext2.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(ext2_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-ext2.o mod-ext2.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+ext2.mod: pre-ext2.o mod-ext2.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(ext2_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-ext2.o mod-ext2.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-ext2.o: $(ext2_mod_DEPENDENCIES) ext2_mod-fs_ext2.o
 	-rm -f $@
@@ -762,8 +1014,13 @@ mod-ext2.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'ext2' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(ext2_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-ext2.lst: pre-ext2.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 ext2/' > $@
+else
+def-ext2.lst: pre-ext2.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 ext2/' > $@
+endif
 endif
 
 und-ext2.lst: pre-ext2.o
@@ -774,20 +1031,27 @@ ext2_mod-fs_ext2.o: fs/ext2.c $(fs/ext2.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ext2_mod_CFLAGS) -MD -c -o $@ $<
 -include ext2_mod-fs_ext2.d
 
-CLEANFILES += cmd-ext2_mod-fs_ext2.lst fs-ext2_mod-fs_ext2.lst partmap-ext2_mod-fs_ext2.lst
+CLEANFILES += cmd-ext2_mod-fs_ext2.lst fs-ext2_mod-fs_ext2.lst partmap-ext2_mod-fs_ext2.lst handler-ext2_mod-fs_ext2.lst parttool-ext2_mod-fs_ext2.lst
 COMMANDFILES += cmd-ext2_mod-fs_ext2.lst
 FSFILES += fs-ext2_mod-fs_ext2.lst
+PARTTOOLFILES += parttool-ext2_mod-fs_ext2.lst
 PARTMAPFILES += partmap-ext2_mod-fs_ext2.lst
+HANDLERFILES += handler-ext2_mod-fs_ext2.lst
 
 cmd-ext2_mod-fs_ext2.lst: fs/ext2.c $(fs/ext2.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ext2_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh ext2 > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ext2_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh ext2 > $@ || (rm -f $@; exit 1)
 
 fs-ext2_mod-fs_ext2.lst: fs/ext2.c $(fs/ext2.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ext2_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh ext2 > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ext2_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh ext2 > $@ || (rm -f $@; exit 1)
+
+parttool-ext2_mod-fs_ext2.lst: fs/ext2.c $(fs/ext2.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ext2_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh ext2 > $@ || (rm -f $@; exit 1)
 
 partmap-ext2_mod-fs_ext2.lst: fs/ext2.c $(fs/ext2.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ext2_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh ext2 > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ext2_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh ext2 > $@ || (rm -f $@; exit 1)
 
+handler-ext2_mod-fs_ext2.lst: fs/ext2.c $(fs/ext2.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ext2_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh ext2 > $@ || (rm -f $@; exit 1)
 
 ext2_mod_CFLAGS = $(COMMON_CFLAGS)
 ext2_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -802,11 +1066,20 @@ endif
 MOSTLYCLEANFILES += ntfs_mod-fs_ntfs.d
 UNDSYMFILES += und-ntfs.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 ntfs.mod: pre-ntfs.o mod-ntfs.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(ntfs_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-ntfs.o mod-ntfs.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(ntfs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-ntfs.o mod-ntfs.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+ntfs.mod: pre-ntfs.o mod-ntfs.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(ntfs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-ntfs.o mod-ntfs.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-ntfs.o: $(ntfs_mod_DEPENDENCIES) ntfs_mod-fs_ntfs.o
 	-rm -f $@
@@ -819,8 +1092,13 @@ mod-ntfs.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'ntfs' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(ntfs_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-ntfs.lst: pre-ntfs.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 ntfs/' > $@
+else
+def-ntfs.lst: pre-ntfs.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 ntfs/' > $@
+endif
 endif
 
 und-ntfs.lst: pre-ntfs.o
@@ -831,20 +1109,27 @@ ntfs_mod-fs_ntfs.o: fs/ntfs.c $(fs/ntfs.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ntfs_mod_CFLAGS) -MD -c -o $@ $<
 -include ntfs_mod-fs_ntfs.d
 
-CLEANFILES += cmd-ntfs_mod-fs_ntfs.lst fs-ntfs_mod-fs_ntfs.lst partmap-ntfs_mod-fs_ntfs.lst
+CLEANFILES += cmd-ntfs_mod-fs_ntfs.lst fs-ntfs_mod-fs_ntfs.lst partmap-ntfs_mod-fs_ntfs.lst handler-ntfs_mod-fs_ntfs.lst parttool-ntfs_mod-fs_ntfs.lst
 COMMANDFILES += cmd-ntfs_mod-fs_ntfs.lst
 FSFILES += fs-ntfs_mod-fs_ntfs.lst
+PARTTOOLFILES += parttool-ntfs_mod-fs_ntfs.lst
 PARTMAPFILES += partmap-ntfs_mod-fs_ntfs.lst
+HANDLERFILES += handler-ntfs_mod-fs_ntfs.lst
 
 cmd-ntfs_mod-fs_ntfs.lst: fs/ntfs.c $(fs/ntfs.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ntfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh ntfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ntfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh ntfs > $@ || (rm -f $@; exit 1)
 
 fs-ntfs_mod-fs_ntfs.lst: fs/ntfs.c $(fs/ntfs.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ntfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh ntfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ntfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh ntfs > $@ || (rm -f $@; exit 1)
+
+parttool-ntfs_mod-fs_ntfs.lst: fs/ntfs.c $(fs/ntfs.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ntfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh ntfs > $@ || (rm -f $@; exit 1)
 
 partmap-ntfs_mod-fs_ntfs.lst: fs/ntfs.c $(fs/ntfs.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ntfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh ntfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ntfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh ntfs > $@ || (rm -f $@; exit 1)
 
+handler-ntfs_mod-fs_ntfs.lst: fs/ntfs.c $(fs/ntfs.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ntfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh ntfs > $@ || (rm -f $@; exit 1)
 
 ntfs_mod_CFLAGS = $(COMMON_CFLAGS)
 ntfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -859,11 +1144,20 @@ endif
 MOSTLYCLEANFILES += ntfscomp_mod-fs_ntfscomp.d
 UNDSYMFILES += und-ntfscomp.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 ntfscomp.mod: pre-ntfscomp.o mod-ntfscomp.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(ntfscomp_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-ntfscomp.o mod-ntfscomp.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(ntfscomp_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-ntfscomp.o mod-ntfscomp.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+ntfscomp.mod: pre-ntfscomp.o mod-ntfscomp.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(ntfscomp_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-ntfscomp.o mod-ntfscomp.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-ntfscomp.o: $(ntfscomp_mod_DEPENDENCIES) ntfscomp_mod-fs_ntfscomp.o
 	-rm -f $@
@@ -876,8 +1170,13 @@ mod-ntfscomp.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'ntfscomp' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(ntfscomp_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-ntfscomp.lst: pre-ntfscomp.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 ntfscomp/' > $@
+else
+def-ntfscomp.lst: pre-ntfscomp.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 ntfscomp/' > $@
+endif
 endif
 
 und-ntfscomp.lst: pre-ntfscomp.o
@@ -888,20 +1187,27 @@ ntfscomp_mod-fs_ntfscomp.o: fs/ntfscomp.c $(fs/ntfscomp.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ntfscomp_mod_CFLAGS) -MD -c -o $@ $<
 -include ntfscomp_mod-fs_ntfscomp.d
 
-CLEANFILES += cmd-ntfscomp_mod-fs_ntfscomp.lst fs-ntfscomp_mod-fs_ntfscomp.lst partmap-ntfscomp_mod-fs_ntfscomp.lst
+CLEANFILES += cmd-ntfscomp_mod-fs_ntfscomp.lst fs-ntfscomp_mod-fs_ntfscomp.lst partmap-ntfscomp_mod-fs_ntfscomp.lst handler-ntfscomp_mod-fs_ntfscomp.lst parttool-ntfscomp_mod-fs_ntfscomp.lst
 COMMANDFILES += cmd-ntfscomp_mod-fs_ntfscomp.lst
 FSFILES += fs-ntfscomp_mod-fs_ntfscomp.lst
+PARTTOOLFILES += parttool-ntfscomp_mod-fs_ntfscomp.lst
 PARTMAPFILES += partmap-ntfscomp_mod-fs_ntfscomp.lst
+HANDLERFILES += handler-ntfscomp_mod-fs_ntfscomp.lst
 
 cmd-ntfscomp_mod-fs_ntfscomp.lst: fs/ntfscomp.c $(fs/ntfscomp.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ntfscomp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh ntfscomp > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ntfscomp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh ntfscomp > $@ || (rm -f $@; exit 1)
 
 fs-ntfscomp_mod-fs_ntfscomp.lst: fs/ntfscomp.c $(fs/ntfscomp.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ntfscomp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh ntfscomp > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ntfscomp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh ntfscomp > $@ || (rm -f $@; exit 1)
+
+parttool-ntfscomp_mod-fs_ntfscomp.lst: fs/ntfscomp.c $(fs/ntfscomp.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ntfscomp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh ntfscomp > $@ || (rm -f $@; exit 1)
 
 partmap-ntfscomp_mod-fs_ntfscomp.lst: fs/ntfscomp.c $(fs/ntfscomp.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ntfscomp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh ntfscomp > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ntfscomp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh ntfscomp > $@ || (rm -f $@; exit 1)
 
+handler-ntfscomp_mod-fs_ntfscomp.lst: fs/ntfscomp.c $(fs/ntfscomp.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ntfscomp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh ntfscomp > $@ || (rm -f $@; exit 1)
 
 ntfscomp_mod_CFLAGS = $(COMMON_CFLAGS)
 ntfscomp_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -916,11 +1222,20 @@ endif
 MOSTLYCLEANFILES += minix_mod-fs_minix.d
 UNDSYMFILES += und-minix.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 minix.mod: pre-minix.o mod-minix.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(minix_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-minix.o mod-minix.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(minix_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-minix.o mod-minix.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+minix.mod: pre-minix.o mod-minix.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(minix_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-minix.o mod-minix.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-minix.o: $(minix_mod_DEPENDENCIES) minix_mod-fs_minix.o
 	-rm -f $@
@@ -933,8 +1248,13 @@ mod-minix.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'minix' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(minix_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-minix.lst: pre-minix.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 minix/' > $@
+else
+def-minix.lst: pre-minix.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 minix/' > $@
+endif
 endif
 
 und-minix.lst: pre-minix.o
@@ -945,20 +1265,27 @@ minix_mod-fs_minix.o: fs/minix.c $(fs/minix.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(minix_mod_CFLAGS) -MD -c -o $@ $<
 -include minix_mod-fs_minix.d
 
-CLEANFILES += cmd-minix_mod-fs_minix.lst fs-minix_mod-fs_minix.lst partmap-minix_mod-fs_minix.lst
+CLEANFILES += cmd-minix_mod-fs_minix.lst fs-minix_mod-fs_minix.lst partmap-minix_mod-fs_minix.lst handler-minix_mod-fs_minix.lst parttool-minix_mod-fs_minix.lst
 COMMANDFILES += cmd-minix_mod-fs_minix.lst
 FSFILES += fs-minix_mod-fs_minix.lst
+PARTTOOLFILES += parttool-minix_mod-fs_minix.lst
 PARTMAPFILES += partmap-minix_mod-fs_minix.lst
+HANDLERFILES += handler-minix_mod-fs_minix.lst
 
 cmd-minix_mod-fs_minix.lst: fs/minix.c $(fs/minix.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(minix_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh minix > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(minix_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh minix > $@ || (rm -f $@; exit 1)
 
 fs-minix_mod-fs_minix.lst: fs/minix.c $(fs/minix.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(minix_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh minix > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(minix_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh minix > $@ || (rm -f $@; exit 1)
+
+parttool-minix_mod-fs_minix.lst: fs/minix.c $(fs/minix.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(minix_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh minix > $@ || (rm -f $@; exit 1)
 
 partmap-minix_mod-fs_minix.lst: fs/minix.c $(fs/minix.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(minix_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh minix > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(minix_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh minix > $@ || (rm -f $@; exit 1)
 
+handler-minix_mod-fs_minix.lst: fs/minix.c $(fs/minix.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(minix_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh minix > $@ || (rm -f $@; exit 1)
 
 minix_mod_CFLAGS = $(COMMON_CFLAGS)
 minix_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -973,11 +1300,20 @@ endif
 MOSTLYCLEANFILES += hfs_mod-fs_hfs.d
 UNDSYMFILES += und-hfs.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 hfs.mod: pre-hfs.o mod-hfs.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(hfs_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-hfs.o mod-hfs.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(hfs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-hfs.o mod-hfs.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+hfs.mod: pre-hfs.o mod-hfs.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(hfs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-hfs.o mod-hfs.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-hfs.o: $(hfs_mod_DEPENDENCIES) hfs_mod-fs_hfs.o
 	-rm -f $@
@@ -990,8 +1326,13 @@ mod-hfs.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'hfs' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(hfs_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-hfs.lst: pre-hfs.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 hfs/' > $@
+else
+def-hfs.lst: pre-hfs.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 hfs/' > $@
+endif
 endif
 
 und-hfs.lst: pre-hfs.o
@@ -1002,20 +1343,27 @@ hfs_mod-fs_hfs.o: fs/hfs.c $(fs/hfs.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hfs_mod_CFLAGS) -MD -c -o $@ $<
 -include hfs_mod-fs_hfs.d
 
-CLEANFILES += cmd-hfs_mod-fs_hfs.lst fs-hfs_mod-fs_hfs.lst partmap-hfs_mod-fs_hfs.lst
+CLEANFILES += cmd-hfs_mod-fs_hfs.lst fs-hfs_mod-fs_hfs.lst partmap-hfs_mod-fs_hfs.lst handler-hfs_mod-fs_hfs.lst parttool-hfs_mod-fs_hfs.lst
 COMMANDFILES += cmd-hfs_mod-fs_hfs.lst
 FSFILES += fs-hfs_mod-fs_hfs.lst
+PARTTOOLFILES += parttool-hfs_mod-fs_hfs.lst
 PARTMAPFILES += partmap-hfs_mod-fs_hfs.lst
+HANDLERFILES += handler-hfs_mod-fs_hfs.lst
 
 cmd-hfs_mod-fs_hfs.lst: fs/hfs.c $(fs/hfs.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(hfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh hfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh hfs > $@ || (rm -f $@; exit 1)
 
 fs-hfs_mod-fs_hfs.lst: fs/hfs.c $(fs/hfs.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(hfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh hfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh hfs > $@ || (rm -f $@; exit 1)
+
+parttool-hfs_mod-fs_hfs.lst: fs/hfs.c $(fs/hfs.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh hfs > $@ || (rm -f $@; exit 1)
 
 partmap-hfs_mod-fs_hfs.lst: fs/hfs.c $(fs/hfs.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(hfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh hfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh hfs > $@ || (rm -f $@; exit 1)
 
+handler-hfs_mod-fs_hfs.lst: fs/hfs.c $(fs/hfs.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh hfs > $@ || (rm -f $@; exit 1)
 
 hfs_mod_CFLAGS = $(COMMON_CFLAGS)
 hfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -1030,11 +1378,20 @@ endif
 MOSTLYCLEANFILES += jfs_mod-fs_jfs.d
 UNDSYMFILES += und-jfs.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 jfs.mod: pre-jfs.o mod-jfs.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(jfs_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-jfs.o mod-jfs.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(jfs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-jfs.o mod-jfs.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+jfs.mod: pre-jfs.o mod-jfs.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(jfs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-jfs.o mod-jfs.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-jfs.o: $(jfs_mod_DEPENDENCIES) jfs_mod-fs_jfs.o
 	-rm -f $@
@@ -1047,8 +1404,13 @@ mod-jfs.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'jfs' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(jfs_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-jfs.lst: pre-jfs.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 jfs/' > $@
+else
+def-jfs.lst: pre-jfs.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 jfs/' > $@
+endif
 endif
 
 und-jfs.lst: pre-jfs.o
@@ -1059,20 +1421,27 @@ jfs_mod-fs_jfs.o: fs/jfs.c $(fs/jfs.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(jfs_mod_CFLAGS) -MD -c -o $@ $<
 -include jfs_mod-fs_jfs.d
 
-CLEANFILES += cmd-jfs_mod-fs_jfs.lst fs-jfs_mod-fs_jfs.lst partmap-jfs_mod-fs_jfs.lst
+CLEANFILES += cmd-jfs_mod-fs_jfs.lst fs-jfs_mod-fs_jfs.lst partmap-jfs_mod-fs_jfs.lst handler-jfs_mod-fs_jfs.lst parttool-jfs_mod-fs_jfs.lst
 COMMANDFILES += cmd-jfs_mod-fs_jfs.lst
 FSFILES += fs-jfs_mod-fs_jfs.lst
+PARTTOOLFILES += parttool-jfs_mod-fs_jfs.lst
 PARTMAPFILES += partmap-jfs_mod-fs_jfs.lst
+HANDLERFILES += handler-jfs_mod-fs_jfs.lst
 
 cmd-jfs_mod-fs_jfs.lst: fs/jfs.c $(fs/jfs.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(jfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh jfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(jfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh jfs > $@ || (rm -f $@; exit 1)
 
 fs-jfs_mod-fs_jfs.lst: fs/jfs.c $(fs/jfs.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(jfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh jfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(jfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh jfs > $@ || (rm -f $@; exit 1)
+
+parttool-jfs_mod-fs_jfs.lst: fs/jfs.c $(fs/jfs.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(jfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh jfs > $@ || (rm -f $@; exit 1)
 
 partmap-jfs_mod-fs_jfs.lst: fs/jfs.c $(fs/jfs.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(jfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh jfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(jfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh jfs > $@ || (rm -f $@; exit 1)
 
+handler-jfs_mod-fs_jfs.lst: fs/jfs.c $(fs/jfs.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(jfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh jfs > $@ || (rm -f $@; exit 1)
 
 jfs_mod_CFLAGS = $(COMMON_CFLAGS)
 jfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -1087,11 +1456,20 @@ endif
 MOSTLYCLEANFILES += iso9660_mod-fs_iso9660.d
 UNDSYMFILES += und-iso9660.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 iso9660.mod: pre-iso9660.o mod-iso9660.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(iso9660_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-iso9660.o mod-iso9660.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(iso9660_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-iso9660.o mod-iso9660.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+iso9660.mod: pre-iso9660.o mod-iso9660.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(iso9660_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-iso9660.o mod-iso9660.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-iso9660.o: $(iso9660_mod_DEPENDENCIES) iso9660_mod-fs_iso9660.o
 	-rm -f $@
@@ -1104,8 +1482,13 @@ mod-iso9660.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'iso9660' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(iso9660_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-iso9660.lst: pre-iso9660.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 iso9660/' > $@
+else
+def-iso9660.lst: pre-iso9660.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 iso9660/' > $@
+endif
 endif
 
 und-iso9660.lst: pre-iso9660.o
@@ -1116,20 +1499,27 @@ iso9660_mod-fs_iso9660.o: fs/iso9660.c $(fs/iso9660.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(iso9660_mod_CFLAGS) -MD -c -o $@ $<
 -include iso9660_mod-fs_iso9660.d
 
-CLEANFILES += cmd-iso9660_mod-fs_iso9660.lst fs-iso9660_mod-fs_iso9660.lst partmap-iso9660_mod-fs_iso9660.lst
+CLEANFILES += cmd-iso9660_mod-fs_iso9660.lst fs-iso9660_mod-fs_iso9660.lst partmap-iso9660_mod-fs_iso9660.lst handler-iso9660_mod-fs_iso9660.lst parttool-iso9660_mod-fs_iso9660.lst
 COMMANDFILES += cmd-iso9660_mod-fs_iso9660.lst
 FSFILES += fs-iso9660_mod-fs_iso9660.lst
+PARTTOOLFILES += parttool-iso9660_mod-fs_iso9660.lst
 PARTMAPFILES += partmap-iso9660_mod-fs_iso9660.lst
+HANDLERFILES += handler-iso9660_mod-fs_iso9660.lst
 
 cmd-iso9660_mod-fs_iso9660.lst: fs/iso9660.c $(fs/iso9660.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(iso9660_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh iso9660 > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(iso9660_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh iso9660 > $@ || (rm -f $@; exit 1)
 
 fs-iso9660_mod-fs_iso9660.lst: fs/iso9660.c $(fs/iso9660.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(iso9660_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh iso9660 > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(iso9660_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh iso9660 > $@ || (rm -f $@; exit 1)
+
+parttool-iso9660_mod-fs_iso9660.lst: fs/iso9660.c $(fs/iso9660.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(iso9660_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh iso9660 > $@ || (rm -f $@; exit 1)
 
 partmap-iso9660_mod-fs_iso9660.lst: fs/iso9660.c $(fs/iso9660.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(iso9660_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh iso9660 > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(iso9660_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh iso9660 > $@ || (rm -f $@; exit 1)
 
+handler-iso9660_mod-fs_iso9660.lst: fs/iso9660.c $(fs/iso9660.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(iso9660_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh iso9660 > $@ || (rm -f $@; exit 1)
 
 iso9660_mod_CFLAGS = $(COMMON_CFLAGS)
 iso9660_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -1144,11 +1534,20 @@ endif
 MOSTLYCLEANFILES += xfs_mod-fs_xfs.d
 UNDSYMFILES += und-xfs.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 xfs.mod: pre-xfs.o mod-xfs.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(xfs_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-xfs.o mod-xfs.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(xfs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-xfs.o mod-xfs.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+xfs.mod: pre-xfs.o mod-xfs.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(xfs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-xfs.o mod-xfs.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-xfs.o: $(xfs_mod_DEPENDENCIES) xfs_mod-fs_xfs.o
 	-rm -f $@
@@ -1161,8 +1560,13 @@ mod-xfs.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'xfs' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(xfs_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-xfs.lst: pre-xfs.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 xfs/' > $@
+else
+def-xfs.lst: pre-xfs.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 xfs/' > $@
+endif
 endif
 
 und-xfs.lst: pre-xfs.o
@@ -1173,20 +1577,27 @@ xfs_mod-fs_xfs.o: fs/xfs.c $(fs/xfs.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(xfs_mod_CFLAGS) -MD -c -o $@ $<
 -include xfs_mod-fs_xfs.d
 
-CLEANFILES += cmd-xfs_mod-fs_xfs.lst fs-xfs_mod-fs_xfs.lst partmap-xfs_mod-fs_xfs.lst
+CLEANFILES += cmd-xfs_mod-fs_xfs.lst fs-xfs_mod-fs_xfs.lst partmap-xfs_mod-fs_xfs.lst handler-xfs_mod-fs_xfs.lst parttool-xfs_mod-fs_xfs.lst
 COMMANDFILES += cmd-xfs_mod-fs_xfs.lst
 FSFILES += fs-xfs_mod-fs_xfs.lst
+PARTTOOLFILES += parttool-xfs_mod-fs_xfs.lst
 PARTMAPFILES += partmap-xfs_mod-fs_xfs.lst
+HANDLERFILES += handler-xfs_mod-fs_xfs.lst
 
 cmd-xfs_mod-fs_xfs.lst: fs/xfs.c $(fs/xfs.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(xfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh xfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(xfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh xfs > $@ || (rm -f $@; exit 1)
 
 fs-xfs_mod-fs_xfs.lst: fs/xfs.c $(fs/xfs.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(xfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh xfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(xfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh xfs > $@ || (rm -f $@; exit 1)
+
+parttool-xfs_mod-fs_xfs.lst: fs/xfs.c $(fs/xfs.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(xfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh xfs > $@ || (rm -f $@; exit 1)
 
 partmap-xfs_mod-fs_xfs.lst: fs/xfs.c $(fs/xfs.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(xfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh xfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(xfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh xfs > $@ || (rm -f $@; exit 1)
 
+handler-xfs_mod-fs_xfs.lst: fs/xfs.c $(fs/xfs.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(xfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh xfs > $@ || (rm -f $@; exit 1)
 
 xfs_mod_CFLAGS = $(COMMON_CFLAGS)
 xfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -1201,11 +1612,20 @@ endif
 MOSTLYCLEANFILES += affs_mod-fs_affs.d
 UNDSYMFILES += und-affs.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 affs.mod: pre-affs.o mod-affs.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(affs_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-affs.o mod-affs.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(affs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-affs.o mod-affs.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+affs.mod: pre-affs.o mod-affs.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(affs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-affs.o mod-affs.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-affs.o: $(affs_mod_DEPENDENCIES) affs_mod-fs_affs.o
 	-rm -f $@
@@ -1218,8 +1638,13 @@ mod-affs.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'affs' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(affs_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-affs.lst: pre-affs.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 affs/' > $@
+else
+def-affs.lst: pre-affs.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 affs/' > $@
+endif
 endif
 
 und-affs.lst: pre-affs.o
@@ -1230,20 +1655,27 @@ affs_mod-fs_affs.o: fs/affs.c $(fs/affs.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(affs_mod_CFLAGS) -MD -c -o $@ $<
 -include affs_mod-fs_affs.d
 
-CLEANFILES += cmd-affs_mod-fs_affs.lst fs-affs_mod-fs_affs.lst partmap-affs_mod-fs_affs.lst
+CLEANFILES += cmd-affs_mod-fs_affs.lst fs-affs_mod-fs_affs.lst partmap-affs_mod-fs_affs.lst handler-affs_mod-fs_affs.lst parttool-affs_mod-fs_affs.lst
 COMMANDFILES += cmd-affs_mod-fs_affs.lst
 FSFILES += fs-affs_mod-fs_affs.lst
+PARTTOOLFILES += parttool-affs_mod-fs_affs.lst
 PARTMAPFILES += partmap-affs_mod-fs_affs.lst
+HANDLERFILES += handler-affs_mod-fs_affs.lst
 
 cmd-affs_mod-fs_affs.lst: fs/affs.c $(fs/affs.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(affs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh affs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(affs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh affs > $@ || (rm -f $@; exit 1)
 
 fs-affs_mod-fs_affs.lst: fs/affs.c $(fs/affs.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(affs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh affs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(affs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh affs > $@ || (rm -f $@; exit 1)
+
+parttool-affs_mod-fs_affs.lst: fs/affs.c $(fs/affs.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(affs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh affs > $@ || (rm -f $@; exit 1)
 
 partmap-affs_mod-fs_affs.lst: fs/affs.c $(fs/affs.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(affs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh affs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(affs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh affs > $@ || (rm -f $@; exit 1)
 
+handler-affs_mod-fs_affs.lst: fs/affs.c $(fs/affs.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(affs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh affs > $@ || (rm -f $@; exit 1)
 
 affs_mod_CFLAGS = $(COMMON_CFLAGS)
 affs_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -1258,11 +1690,20 @@ endif
 MOSTLYCLEANFILES += sfs_mod-fs_sfs.d
 UNDSYMFILES += und-sfs.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 sfs.mod: pre-sfs.o mod-sfs.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(sfs_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-sfs.o mod-sfs.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(sfs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-sfs.o mod-sfs.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+sfs.mod: pre-sfs.o mod-sfs.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(sfs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-sfs.o mod-sfs.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-sfs.o: $(sfs_mod_DEPENDENCIES) sfs_mod-fs_sfs.o
 	-rm -f $@
@@ -1275,8 +1716,13 @@ mod-sfs.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'sfs' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(sfs_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-sfs.lst: pre-sfs.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 sfs/' > $@
+else
+def-sfs.lst: pre-sfs.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 sfs/' > $@
+endif
 endif
 
 und-sfs.lst: pre-sfs.o
@@ -1287,20 +1733,27 @@ sfs_mod-fs_sfs.o: fs/sfs.c $(fs/sfs.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sfs_mod_CFLAGS) -MD -c -o $@ $<
 -include sfs_mod-fs_sfs.d
 
-CLEANFILES += cmd-sfs_mod-fs_sfs.lst fs-sfs_mod-fs_sfs.lst partmap-sfs_mod-fs_sfs.lst
+CLEANFILES += cmd-sfs_mod-fs_sfs.lst fs-sfs_mod-fs_sfs.lst partmap-sfs_mod-fs_sfs.lst handler-sfs_mod-fs_sfs.lst parttool-sfs_mod-fs_sfs.lst
 COMMANDFILES += cmd-sfs_mod-fs_sfs.lst
 FSFILES += fs-sfs_mod-fs_sfs.lst
+PARTTOOLFILES += parttool-sfs_mod-fs_sfs.lst
 PARTMAPFILES += partmap-sfs_mod-fs_sfs.lst
+HANDLERFILES += handler-sfs_mod-fs_sfs.lst
 
 cmd-sfs_mod-fs_sfs.lst: fs/sfs.c $(fs/sfs.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(sfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh sfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh sfs > $@ || (rm -f $@; exit 1)
 
 fs-sfs_mod-fs_sfs.lst: fs/sfs.c $(fs/sfs.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(sfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh sfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh sfs > $@ || (rm -f $@; exit 1)
+
+parttool-sfs_mod-fs_sfs.lst: fs/sfs.c $(fs/sfs.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh sfs > $@ || (rm -f $@; exit 1)
 
 partmap-sfs_mod-fs_sfs.lst: fs/sfs.c $(fs/sfs.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(sfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh sfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh sfs > $@ || (rm -f $@; exit 1)
 
+handler-sfs_mod-fs_sfs.lst: fs/sfs.c $(fs/sfs.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh sfs > $@ || (rm -f $@; exit 1)
 
 sfs_mod_CFLAGS = $(COMMON_CFLAGS)
 sfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -1315,11 +1768,20 @@ endif
 MOSTLYCLEANFILES += hfsplus_mod-fs_hfsplus.d
 UNDSYMFILES += und-hfsplus.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 hfsplus.mod: pre-hfsplus.o mod-hfsplus.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(hfsplus_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-hfsplus.o mod-hfsplus.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(hfsplus_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-hfsplus.o mod-hfsplus.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+hfsplus.mod: pre-hfsplus.o mod-hfsplus.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(hfsplus_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-hfsplus.o mod-hfsplus.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-hfsplus.o: $(hfsplus_mod_DEPENDENCIES) hfsplus_mod-fs_hfsplus.o
 	-rm -f $@
@@ -1332,8 +1794,13 @@ mod-hfsplus.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'hfsplus' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(hfsplus_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-hfsplus.lst: pre-hfsplus.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 hfsplus/' > $@
+else
+def-hfsplus.lst: pre-hfsplus.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 hfsplus/' > $@
+endif
 endif
 
 und-hfsplus.lst: pre-hfsplus.o
@@ -1344,20 +1811,27 @@ hfsplus_mod-fs_hfsplus.o: fs/hfsplus.c $(fs/hfsplus.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hfsplus_mod_CFLAGS) -MD -c -o $@ $<
 -include hfsplus_mod-fs_hfsplus.d
 
-CLEANFILES += cmd-hfsplus_mod-fs_hfsplus.lst fs-hfsplus_mod-fs_hfsplus.lst partmap-hfsplus_mod-fs_hfsplus.lst
+CLEANFILES += cmd-hfsplus_mod-fs_hfsplus.lst fs-hfsplus_mod-fs_hfsplus.lst partmap-hfsplus_mod-fs_hfsplus.lst handler-hfsplus_mod-fs_hfsplus.lst parttool-hfsplus_mod-fs_hfsplus.lst
 COMMANDFILES += cmd-hfsplus_mod-fs_hfsplus.lst
 FSFILES += fs-hfsplus_mod-fs_hfsplus.lst
+PARTTOOLFILES += parttool-hfsplus_mod-fs_hfsplus.lst
 PARTMAPFILES += partmap-hfsplus_mod-fs_hfsplus.lst
+HANDLERFILES += handler-hfsplus_mod-fs_hfsplus.lst
 
 cmd-hfsplus_mod-fs_hfsplus.lst: fs/hfsplus.c $(fs/hfsplus.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(hfsplus_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh hfsplus > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hfsplus_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh hfsplus > $@ || (rm -f $@; exit 1)
 
 fs-hfsplus_mod-fs_hfsplus.lst: fs/hfsplus.c $(fs/hfsplus.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(hfsplus_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh hfsplus > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hfsplus_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh hfsplus > $@ || (rm -f $@; exit 1)
+
+parttool-hfsplus_mod-fs_hfsplus.lst: fs/hfsplus.c $(fs/hfsplus.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hfsplus_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh hfsplus > $@ || (rm -f $@; exit 1)
 
 partmap-hfsplus_mod-fs_hfsplus.lst: fs/hfsplus.c $(fs/hfsplus.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(hfsplus_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh hfsplus > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hfsplus_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh hfsplus > $@ || (rm -f $@; exit 1)
 
+handler-hfsplus_mod-fs_hfsplus.lst: fs/hfsplus.c $(fs/hfsplus.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hfsplus_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh hfsplus > $@ || (rm -f $@; exit 1)
 
 hfsplus_mod_CFLAGS = $(COMMON_CFLAGS)
 hfsplus_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -1372,11 +1846,20 @@ endif
 MOSTLYCLEANFILES += reiserfs_mod-fs_reiserfs.d
 UNDSYMFILES += und-reiserfs.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 reiserfs.mod: pre-reiserfs.o mod-reiserfs.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(reiserfs_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-reiserfs.o mod-reiserfs.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(reiserfs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-reiserfs.o mod-reiserfs.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+reiserfs.mod: pre-reiserfs.o mod-reiserfs.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(reiserfs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-reiserfs.o mod-reiserfs.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-reiserfs.o: $(reiserfs_mod_DEPENDENCIES) reiserfs_mod-fs_reiserfs.o
 	-rm -f $@
@@ -1389,8 +1872,13 @@ mod-reiserfs.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'reiserfs' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(reiserfs_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-reiserfs.lst: pre-reiserfs.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 reiserfs/' > $@
+else
+def-reiserfs.lst: pre-reiserfs.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 reiserfs/' > $@
+endif
 endif
 
 und-reiserfs.lst: pre-reiserfs.o
@@ -1401,20 +1889,27 @@ reiserfs_mod-fs_reiserfs.o: fs/reiserfs.c $(fs/reiserfs.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(reiserfs_mod_CFLAGS) -MD -c -o $@ $<
 -include reiserfs_mod-fs_reiserfs.d
 
-CLEANFILES += cmd-reiserfs_mod-fs_reiserfs.lst fs-reiserfs_mod-fs_reiserfs.lst partmap-reiserfs_mod-fs_reiserfs.lst
+CLEANFILES += cmd-reiserfs_mod-fs_reiserfs.lst fs-reiserfs_mod-fs_reiserfs.lst partmap-reiserfs_mod-fs_reiserfs.lst handler-reiserfs_mod-fs_reiserfs.lst parttool-reiserfs_mod-fs_reiserfs.lst
 COMMANDFILES += cmd-reiserfs_mod-fs_reiserfs.lst
 FSFILES += fs-reiserfs_mod-fs_reiserfs.lst
+PARTTOOLFILES += parttool-reiserfs_mod-fs_reiserfs.lst
 PARTMAPFILES += partmap-reiserfs_mod-fs_reiserfs.lst
+HANDLERFILES += handler-reiserfs_mod-fs_reiserfs.lst
 
 cmd-reiserfs_mod-fs_reiserfs.lst: fs/reiserfs.c $(fs/reiserfs.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(reiserfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh reiserfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(reiserfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh reiserfs > $@ || (rm -f $@; exit 1)
 
 fs-reiserfs_mod-fs_reiserfs.lst: fs/reiserfs.c $(fs/reiserfs.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(reiserfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh reiserfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(reiserfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh reiserfs > $@ || (rm -f $@; exit 1)
+
+parttool-reiserfs_mod-fs_reiserfs.lst: fs/reiserfs.c $(fs/reiserfs.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(reiserfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh reiserfs > $@ || (rm -f $@; exit 1)
 
 partmap-reiserfs_mod-fs_reiserfs.lst: fs/reiserfs.c $(fs/reiserfs.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(reiserfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh reiserfs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(reiserfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh reiserfs > $@ || (rm -f $@; exit 1)
 
+handler-reiserfs_mod-fs_reiserfs.lst: fs/reiserfs.c $(fs/reiserfs.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(reiserfs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh reiserfs > $@ || (rm -f $@; exit 1)
 
 reiserfs_mod_CFLAGS = $(COMMON_CFLAGS)
 reiserfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -1429,11 +1924,20 @@ endif
 MOSTLYCLEANFILES += cpio_mod-fs_cpio.d
 UNDSYMFILES += und-cpio.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 cpio.mod: pre-cpio.o mod-cpio.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(cpio_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-cpio.o mod-cpio.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(cpio_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-cpio.o mod-cpio.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+cpio.mod: pre-cpio.o mod-cpio.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(cpio_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-cpio.o mod-cpio.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-cpio.o: $(cpio_mod_DEPENDENCIES) cpio_mod-fs_cpio.o
 	-rm -f $@
@@ -1446,8 +1950,13 @@ mod-cpio.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'cpio' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(cpio_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-cpio.lst: pre-cpio.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 cpio/' > $@
+else
+def-cpio.lst: pre-cpio.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 cpio/' > $@
+endif
 endif
 
 und-cpio.lst: pre-cpio.o
@@ -1458,23 +1967,108 @@ cpio_mod-fs_cpio.o: fs/cpio.c $(fs/cpio.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cpio_mod_CFLAGS) -MD -c -o $@ $<
 -include cpio_mod-fs_cpio.d
 
-CLEANFILES += cmd-cpio_mod-fs_cpio.lst fs-cpio_mod-fs_cpio.lst partmap-cpio_mod-fs_cpio.lst
+CLEANFILES += cmd-cpio_mod-fs_cpio.lst fs-cpio_mod-fs_cpio.lst partmap-cpio_mod-fs_cpio.lst handler-cpio_mod-fs_cpio.lst parttool-cpio_mod-fs_cpio.lst
 COMMANDFILES += cmd-cpio_mod-fs_cpio.lst
 FSFILES += fs-cpio_mod-fs_cpio.lst
+PARTTOOLFILES += parttool-cpio_mod-fs_cpio.lst
 PARTMAPFILES += partmap-cpio_mod-fs_cpio.lst
+HANDLERFILES += handler-cpio_mod-fs_cpio.lst
 
 cmd-cpio_mod-fs_cpio.lst: fs/cpio.c $(fs/cpio.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(cpio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh cpio > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cpio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh cpio > $@ || (rm -f $@; exit 1)
 
 fs-cpio_mod-fs_cpio.lst: fs/cpio.c $(fs/cpio.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(cpio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh cpio > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cpio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh cpio > $@ || (rm -f $@; exit 1)
+
+parttool-cpio_mod-fs_cpio.lst: fs/cpio.c $(fs/cpio.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cpio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh cpio > $@ || (rm -f $@; exit 1)
 
 partmap-cpio_mod-fs_cpio.lst: fs/cpio.c $(fs/cpio.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(cpio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh cpio > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cpio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh cpio > $@ || (rm -f $@; exit 1)
 
+handler-cpio_mod-fs_cpio.lst: fs/cpio.c $(fs/cpio.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cpio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh cpio > $@ || (rm -f $@; exit 1)
 
 cpio_mod_CFLAGS = $(COMMON_CFLAGS)
 cpio_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For tar.mod.
+tar_mod_SOURCES = fs/tar.c
+CLEANFILES += tar.mod mod-tar.o mod-tar.c pre-tar.o tar_mod-fs_tar.o und-tar.lst
+ifneq ($(tar_mod_EXPORTS),no)
+CLEANFILES += def-tar.lst
+DEFSYMFILES += def-tar.lst
+endif
+MOSTLYCLEANFILES += tar_mod-fs_tar.d
+UNDSYMFILES += und-tar.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+tar.mod: pre-tar.o mod-tar.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(tar_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-tar.o mod-tar.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+tar.mod: pre-tar.o mod-tar.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(tar_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-tar.o mod-tar.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-tar.o: $(tar_mod_DEPENDENCIES) tar_mod-fs_tar.o
+	-rm -f $@
+	$(TARGET_CC) $(tar_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ tar_mod-fs_tar.o
+
+mod-tar.o: mod-tar.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(tar_mod_CFLAGS) -c -o $@ $<
+
+mod-tar.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'tar' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(tar_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-tar.lst: pre-tar.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 tar/' > $@
+else
+def-tar.lst: pre-tar.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 tar/' > $@
+endif
+endif
+
+und-tar.lst: pre-tar.o
+	echo 'tar' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+tar_mod-fs_tar.o: fs/tar.c $(fs/tar.c_DEPENDENCIES)
+	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(tar_mod_CFLAGS) -MD -c -o $@ $<
+-include tar_mod-fs_tar.d
+
+CLEANFILES += cmd-tar_mod-fs_tar.lst fs-tar_mod-fs_tar.lst partmap-tar_mod-fs_tar.lst handler-tar_mod-fs_tar.lst parttool-tar_mod-fs_tar.lst
+COMMANDFILES += cmd-tar_mod-fs_tar.lst
+FSFILES += fs-tar_mod-fs_tar.lst
+PARTTOOLFILES += parttool-tar_mod-fs_tar.lst
+PARTMAPFILES += partmap-tar_mod-fs_tar.lst
+HANDLERFILES += handler-tar_mod-fs_tar.lst
+
+cmd-tar_mod-fs_tar.lst: fs/tar.c $(fs/tar.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(tar_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh tar > $@ || (rm -f $@; exit 1)
+
+fs-tar_mod-fs_tar.lst: fs/tar.c $(fs/tar.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(tar_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh tar > $@ || (rm -f $@; exit 1)
+
+parttool-tar_mod-fs_tar.lst: fs/tar.c $(fs/tar.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(tar_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh tar > $@ || (rm -f $@; exit 1)
+
+partmap-tar_mod-fs_tar.lst: fs/tar.c $(fs/tar.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(tar_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh tar > $@ || (rm -f $@; exit 1)
+
+handler-tar_mod-fs_tar.lst: fs/tar.c $(fs/tar.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(tar_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh tar > $@ || (rm -f $@; exit 1)
+
+tar_mod_CFLAGS = $(COMMON_CFLAGS)
+tar_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For udf.mod.
 udf_mod_SOURCES = fs/udf.c
@@ -1486,11 +2080,20 @@ endif
 MOSTLYCLEANFILES += udf_mod-fs_udf.d
 UNDSYMFILES += und-udf.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 udf.mod: pre-udf.o mod-udf.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(udf_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-udf.o mod-udf.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(udf_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-udf.o mod-udf.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+udf.mod: pre-udf.o mod-udf.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(udf_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-udf.o mod-udf.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-udf.o: $(udf_mod_DEPENDENCIES) udf_mod-fs_udf.o
 	-rm -f $@
@@ -1503,8 +2106,13 @@ mod-udf.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'udf' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(udf_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-udf.lst: pre-udf.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 udf/' > $@
+else
+def-udf.lst: pre-udf.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 udf/' > $@
+endif
 endif
 
 und-udf.lst: pre-udf.o
@@ -1515,20 +2123,27 @@ udf_mod-fs_udf.o: fs/udf.c $(fs/udf.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(udf_mod_CFLAGS) -MD -c -o $@ $<
 -include udf_mod-fs_udf.d
 
-CLEANFILES += cmd-udf_mod-fs_udf.lst fs-udf_mod-fs_udf.lst partmap-udf_mod-fs_udf.lst
+CLEANFILES += cmd-udf_mod-fs_udf.lst fs-udf_mod-fs_udf.lst partmap-udf_mod-fs_udf.lst handler-udf_mod-fs_udf.lst parttool-udf_mod-fs_udf.lst
 COMMANDFILES += cmd-udf_mod-fs_udf.lst
 FSFILES += fs-udf_mod-fs_udf.lst
+PARTTOOLFILES += parttool-udf_mod-fs_udf.lst
 PARTMAPFILES += partmap-udf_mod-fs_udf.lst
+HANDLERFILES += handler-udf_mod-fs_udf.lst
 
 cmd-udf_mod-fs_udf.lst: fs/udf.c $(fs/udf.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(udf_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh udf > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(udf_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh udf > $@ || (rm -f $@; exit 1)
 
 fs-udf_mod-fs_udf.lst: fs/udf.c $(fs/udf.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(udf_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh udf > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(udf_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh udf > $@ || (rm -f $@; exit 1)
+
+parttool-udf_mod-fs_udf.lst: fs/udf.c $(fs/udf.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(udf_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh udf > $@ || (rm -f $@; exit 1)
 
 partmap-udf_mod-fs_udf.lst: fs/udf.c $(fs/udf.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(udf_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh udf > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(udf_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh udf > $@ || (rm -f $@; exit 1)
 
+handler-udf_mod-fs_udf.lst: fs/udf.c $(fs/udf.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(udf_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh udf > $@ || (rm -f $@; exit 1)
 
 udf_mod_CFLAGS = $(COMMON_CFLAGS)
 udf_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -1543,11 +2158,20 @@ endif
 MOSTLYCLEANFILES += afs_mod-fs_afs.d
 UNDSYMFILES += und-afs.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 afs.mod: pre-afs.o mod-afs.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(afs_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-afs.o mod-afs.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(afs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-afs.o mod-afs.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+afs.mod: pre-afs.o mod-afs.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(afs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-afs.o mod-afs.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-afs.o: $(afs_mod_DEPENDENCIES) afs_mod-fs_afs.o
 	-rm -f $@
@@ -1560,8 +2184,13 @@ mod-afs.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'afs' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(afs_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-afs.lst: pre-afs.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 afs/' > $@
+else
+def-afs.lst: pre-afs.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 afs/' > $@
+endif
 endif
 
 und-afs.lst: pre-afs.o
@@ -1572,368 +2201,734 @@ afs_mod-fs_afs.o: fs/afs.c $(fs/afs.c_DEPENDENCIES)
 	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(afs_mod_CFLAGS) -MD -c -o $@ $<
 -include afs_mod-fs_afs.d
 
-CLEANFILES += cmd-afs_mod-fs_afs.lst fs-afs_mod-fs_afs.lst partmap-afs_mod-fs_afs.lst
+CLEANFILES += cmd-afs_mod-fs_afs.lst fs-afs_mod-fs_afs.lst partmap-afs_mod-fs_afs.lst handler-afs_mod-fs_afs.lst parttool-afs_mod-fs_afs.lst
 COMMANDFILES += cmd-afs_mod-fs_afs.lst
 FSFILES += fs-afs_mod-fs_afs.lst
+PARTTOOLFILES += parttool-afs_mod-fs_afs.lst
 PARTMAPFILES += partmap-afs_mod-fs_afs.lst
+HANDLERFILES += handler-afs_mod-fs_afs.lst
 
 cmd-afs_mod-fs_afs.lst: fs/afs.c $(fs/afs.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(afs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh afs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(afs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh afs > $@ || (rm -f $@; exit 1)
 
 fs-afs_mod-fs_afs.lst: fs/afs.c $(fs/afs.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(afs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh afs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(afs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh afs > $@ || (rm -f $@; exit 1)
+
+parttool-afs_mod-fs_afs.lst: fs/afs.c $(fs/afs.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(afs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh afs > $@ || (rm -f $@; exit 1)
 
 partmap-afs_mod-fs_afs.lst: fs/afs.c $(fs/afs.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(afs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh afs > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(afs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh afs > $@ || (rm -f $@; exit 1)
 
+handler-afs_mod-fs_afs.lst: fs/afs.c $(fs/afs.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(afs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh afs > $@ || (rm -f $@; exit 1)
 
 afs_mod_CFLAGS = $(COMMON_CFLAGS)
 afs_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
+# For afs_be.mod.
+afs_be_mod_SOURCES = fs/afs_be.c
+CLEANFILES += afs_be.mod mod-afs_be.o mod-afs_be.c pre-afs_be.o afs_be_mod-fs_afs_be.o und-afs_be.lst
+ifneq ($(afs_be_mod_EXPORTS),no)
+CLEANFILES += def-afs_be.lst
+DEFSYMFILES += def-afs_be.lst
+endif
+MOSTLYCLEANFILES += afs_be_mod-fs_afs_be.d
+UNDSYMFILES += und-afs_be.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+afs_be.mod: pre-afs_be.o mod-afs_be.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(afs_be_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-afs_be.o mod-afs_be.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+afs_be.mod: pre-afs_be.o mod-afs_be.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(afs_be_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-afs_be.o mod-afs_be.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-afs_be.o: $(afs_be_mod_DEPENDENCIES) afs_be_mod-fs_afs_be.o
+	-rm -f $@
+	$(TARGET_CC) $(afs_be_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ afs_be_mod-fs_afs_be.o
+
+mod-afs_be.o: mod-afs_be.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(afs_be_mod_CFLAGS) -c -o $@ $<
+
+mod-afs_be.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'afs_be' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(afs_be_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-afs_be.lst: pre-afs_be.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 afs_be/' > $@
+else
+def-afs_be.lst: pre-afs_be.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 afs_be/' > $@
+endif
+endif
+
+und-afs_be.lst: pre-afs_be.o
+	echo 'afs_be' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+afs_be_mod-fs_afs_be.o: fs/afs_be.c $(fs/afs_be.c_DEPENDENCIES)
+	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(afs_be_mod_CFLAGS) -MD -c -o $@ $<
+-include afs_be_mod-fs_afs_be.d
+
+CLEANFILES += cmd-afs_be_mod-fs_afs_be.lst fs-afs_be_mod-fs_afs_be.lst partmap-afs_be_mod-fs_afs_be.lst handler-afs_be_mod-fs_afs_be.lst parttool-afs_be_mod-fs_afs_be.lst
+COMMANDFILES += cmd-afs_be_mod-fs_afs_be.lst
+FSFILES += fs-afs_be_mod-fs_afs_be.lst
+PARTTOOLFILES += parttool-afs_be_mod-fs_afs_be.lst
+PARTMAPFILES += partmap-afs_be_mod-fs_afs_be.lst
+HANDLERFILES += handler-afs_be_mod-fs_afs_be.lst
+
+cmd-afs_be_mod-fs_afs_be.lst: fs/afs_be.c $(fs/afs_be.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(afs_be_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh afs_be > $@ || (rm -f $@; exit 1)
+
+fs-afs_be_mod-fs_afs_be.lst: fs/afs_be.c $(fs/afs_be.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(afs_be_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh afs_be > $@ || (rm -f $@; exit 1)
+
+parttool-afs_be_mod-fs_afs_be.lst: fs/afs_be.c $(fs/afs_be.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(afs_be_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh afs_be > $@ || (rm -f $@; exit 1)
+
+partmap-afs_be_mod-fs_afs_be.lst: fs/afs_be.c $(fs/afs_be.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(afs_be_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh afs_be > $@ || (rm -f $@; exit 1)
+
+handler-afs_be_mod-fs_afs_be.lst: fs/afs_be.c $(fs/afs_be.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(afs_be_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh afs_be > $@ || (rm -f $@; exit 1)
+
+afs_be_mod_CFLAGS = $(COMMON_CFLAGS)
+afs_be_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For befs.mod.
+befs_mod_SOURCES = fs/befs.c
+CLEANFILES += befs.mod mod-befs.o mod-befs.c pre-befs.o befs_mod-fs_befs.o und-befs.lst
+ifneq ($(befs_mod_EXPORTS),no)
+CLEANFILES += def-befs.lst
+DEFSYMFILES += def-befs.lst
+endif
+MOSTLYCLEANFILES += befs_mod-fs_befs.d
+UNDSYMFILES += und-befs.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+befs.mod: pre-befs.o mod-befs.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(befs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-befs.o mod-befs.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+befs.mod: pre-befs.o mod-befs.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(befs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-befs.o mod-befs.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-befs.o: $(befs_mod_DEPENDENCIES) befs_mod-fs_befs.o
+	-rm -f $@
+	$(TARGET_CC) $(befs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ befs_mod-fs_befs.o
+
+mod-befs.o: mod-befs.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(befs_mod_CFLAGS) -c -o $@ $<
+
+mod-befs.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'befs' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(befs_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-befs.lst: pre-befs.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 befs/' > $@
+else
+def-befs.lst: pre-befs.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 befs/' > $@
+endif
+endif
+
+und-befs.lst: pre-befs.o
+	echo 'befs' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+befs_mod-fs_befs.o: fs/befs.c $(fs/befs.c_DEPENDENCIES)
+	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(befs_mod_CFLAGS) -MD -c -o $@ $<
+-include befs_mod-fs_befs.d
+
+CLEANFILES += cmd-befs_mod-fs_befs.lst fs-befs_mod-fs_befs.lst partmap-befs_mod-fs_befs.lst handler-befs_mod-fs_befs.lst parttool-befs_mod-fs_befs.lst
+COMMANDFILES += cmd-befs_mod-fs_befs.lst
+FSFILES += fs-befs_mod-fs_befs.lst
+PARTTOOLFILES += parttool-befs_mod-fs_befs.lst
+PARTMAPFILES += partmap-befs_mod-fs_befs.lst
+HANDLERFILES += handler-befs_mod-fs_befs.lst
+
+cmd-befs_mod-fs_befs.lst: fs/befs.c $(fs/befs.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(befs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh befs > $@ || (rm -f $@; exit 1)
+
+fs-befs_mod-fs_befs.lst: fs/befs.c $(fs/befs.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(befs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh befs > $@ || (rm -f $@; exit 1)
+
+parttool-befs_mod-fs_befs.lst: fs/befs.c $(fs/befs.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(befs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh befs > $@ || (rm -f $@; exit 1)
+
+partmap-befs_mod-fs_befs.lst: fs/befs.c $(fs/befs.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(befs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh befs > $@ || (rm -f $@; exit 1)
+
+handler-befs_mod-fs_befs.lst: fs/befs.c $(fs/befs.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(befs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh befs > $@ || (rm -f $@; exit 1)
+
+befs_mod_CFLAGS = $(COMMON_CFLAGS)
+befs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For befs_be.mod.
+befs_be_mod_SOURCES = fs/befs_be.c
+CLEANFILES += befs_be.mod mod-befs_be.o mod-befs_be.c pre-befs_be.o befs_be_mod-fs_befs_be.o und-befs_be.lst
+ifneq ($(befs_be_mod_EXPORTS),no)
+CLEANFILES += def-befs_be.lst
+DEFSYMFILES += def-befs_be.lst
+endif
+MOSTLYCLEANFILES += befs_be_mod-fs_befs_be.d
+UNDSYMFILES += und-befs_be.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+befs_be.mod: pre-befs_be.o mod-befs_be.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(befs_be_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-befs_be.o mod-befs_be.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+befs_be.mod: pre-befs_be.o mod-befs_be.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(befs_be_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-befs_be.o mod-befs_be.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-befs_be.o: $(befs_be_mod_DEPENDENCIES) befs_be_mod-fs_befs_be.o
+	-rm -f $@
+	$(TARGET_CC) $(befs_be_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ befs_be_mod-fs_befs_be.o
+
+mod-befs_be.o: mod-befs_be.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(befs_be_mod_CFLAGS) -c -o $@ $<
+
+mod-befs_be.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'befs_be' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(befs_be_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-befs_be.lst: pre-befs_be.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 befs_be/' > $@
+else
+def-befs_be.lst: pre-befs_be.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 befs_be/' > $@
+endif
+endif
+
+und-befs_be.lst: pre-befs_be.o
+	echo 'befs_be' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+befs_be_mod-fs_befs_be.o: fs/befs_be.c $(fs/befs_be.c_DEPENDENCIES)
+	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(befs_be_mod_CFLAGS) -MD -c -o $@ $<
+-include befs_be_mod-fs_befs_be.d
+
+CLEANFILES += cmd-befs_be_mod-fs_befs_be.lst fs-befs_be_mod-fs_befs_be.lst partmap-befs_be_mod-fs_befs_be.lst handler-befs_be_mod-fs_befs_be.lst parttool-befs_be_mod-fs_befs_be.lst
+COMMANDFILES += cmd-befs_be_mod-fs_befs_be.lst
+FSFILES += fs-befs_be_mod-fs_befs_be.lst
+PARTTOOLFILES += parttool-befs_be_mod-fs_befs_be.lst
+PARTMAPFILES += partmap-befs_be_mod-fs_befs_be.lst
+HANDLERFILES += handler-befs_be_mod-fs_befs_be.lst
+
+cmd-befs_be_mod-fs_befs_be.lst: fs/befs_be.c $(fs/befs_be.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(befs_be_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh befs_be > $@ || (rm -f $@; exit 1)
+
+fs-befs_be_mod-fs_befs_be.lst: fs/befs_be.c $(fs/befs_be.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(befs_be_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh befs_be > $@ || (rm -f $@; exit 1)
+
+parttool-befs_be_mod-fs_befs_be.lst: fs/befs_be.c $(fs/befs_be.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(befs_be_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh befs_be > $@ || (rm -f $@; exit 1)
+
+partmap-befs_be_mod-fs_befs_be.lst: fs/befs_be.c $(fs/befs_be.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(befs_be_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh befs_be > $@ || (rm -f $@; exit 1)
+
+handler-befs_be_mod-fs_befs_be.lst: fs/befs_be.c $(fs/befs_be.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(befs_be_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh befs_be > $@ || (rm -f $@; exit 1)
+
+befs_be_mod_CFLAGS = $(COMMON_CFLAGS)
+befs_be_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
 # Partition maps.
-pkglib_MODULES += amiga.mod apple.mod pc.mod sun.mod acorn.mod gpt.mod
 
-# For amiga.mod
-amiga_mod_SOURCES = partmap/amiga.c
-CLEANFILES += amiga.mod mod-amiga.o mod-amiga.c pre-amiga.o amiga_mod-partmap_amiga.o und-amiga.lst
-ifneq ($(amiga_mod_EXPORTS),no)
-CLEANFILES += def-amiga.lst
-DEFSYMFILES += def-amiga.lst
+pkglib_MODULES += part_amiga.mod
+part_amiga_mod_SOURCES = partmap/amiga.c
+CLEANFILES += part_amiga.mod mod-part_amiga.o mod-part_amiga.c pre-part_amiga.o part_amiga_mod-partmap_amiga.o und-part_amiga.lst
+ifneq ($(part_amiga_mod_EXPORTS),no)
+CLEANFILES += def-part_amiga.lst
+DEFSYMFILES += def-part_amiga.lst
 endif
-MOSTLYCLEANFILES += amiga_mod-partmap_amiga.d
-UNDSYMFILES += und-amiga.lst
+MOSTLYCLEANFILES += part_amiga_mod-partmap_amiga.d
+UNDSYMFILES += und-part_amiga.lst
 
-amiga.mod: pre-amiga.o mod-amiga.o $(TARGET_OBJ2ELF)
+ifneq ($(TARGET_APPLE_CC),1)
+part_amiga.mod: pre-part_amiga.o mod-part_amiga.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(amiga_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-amiga.o mod-amiga.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(part_amiga_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-part_amiga.o mod-part_amiga.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
-
-pre-amiga.o: $(amiga_mod_DEPENDENCIES) amiga_mod-partmap_amiga.o
+else
+part_amiga.mod: pre-part_amiga.o mod-part_amiga.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(amiga_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ amiga_mod-partmap_amiga.o
-
-mod-amiga.o: mod-amiga.c
-	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(amiga_mod_CFLAGS) -c -o $@ $<
-
-mod-amiga.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
-	sh $(srcdir)/genmodsrc.sh 'amiga' $< > $@ || (rm -f $@; exit 1)
-
-ifneq ($(amiga_mod_EXPORTS),no)
-def-amiga.lst: pre-amiga.o
-	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 amiga/' > $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(part_amiga_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-part_amiga.o mod-part_amiga.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
 endif
 
-und-amiga.lst: pre-amiga.o
-	echo 'amiga' > $@
+pre-part_amiga.o: $(part_amiga_mod_DEPENDENCIES) part_amiga_mod-partmap_amiga.o
+	-rm -f $@
+	$(TARGET_CC) $(part_amiga_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ part_amiga_mod-partmap_amiga.o
+
+mod-part_amiga.o: mod-part_amiga.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(part_amiga_mod_CFLAGS) -c -o $@ $<
+
+mod-part_amiga.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'part_amiga' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(part_amiga_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-part_amiga.lst: pre-part_amiga.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 part_amiga/' > $@
+else
+def-part_amiga.lst: pre-part_amiga.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 part_amiga/' > $@
+endif
+endif
+
+und-part_amiga.lst: pre-part_amiga.o
+	echo 'part_amiga' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-amiga_mod-partmap_amiga.o: partmap/amiga.c $(partmap/amiga.c_DEPENDENCIES)
-	$(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(amiga_mod_CFLAGS) -MD -c -o $@ $<
--include amiga_mod-partmap_amiga.d
+part_amiga_mod-partmap_amiga.o: partmap/amiga.c $(partmap/amiga.c_DEPENDENCIES)
+	$(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_amiga_mod_CFLAGS) -MD -c -o $@ $<
+-include part_amiga_mod-partmap_amiga.d
 
-CLEANFILES += cmd-amiga_mod-partmap_amiga.lst fs-amiga_mod-partmap_amiga.lst partmap-amiga_mod-partmap_amiga.lst
-COMMANDFILES += cmd-amiga_mod-partmap_amiga.lst
-FSFILES += fs-amiga_mod-partmap_amiga.lst
-PARTMAPFILES += partmap-amiga_mod-partmap_amiga.lst
+CLEANFILES += cmd-part_amiga_mod-partmap_amiga.lst fs-part_amiga_mod-partmap_amiga.lst partmap-part_amiga_mod-partmap_amiga.lst handler-part_amiga_mod-partmap_amiga.lst parttool-part_amiga_mod-partmap_amiga.lst
+COMMANDFILES += cmd-part_amiga_mod-partmap_amiga.lst
+FSFILES += fs-part_amiga_mod-partmap_amiga.lst
+PARTTOOLFILES += parttool-part_amiga_mod-partmap_amiga.lst
+PARTMAPFILES += partmap-part_amiga_mod-partmap_amiga.lst
+HANDLERFILES += handler-part_amiga_mod-partmap_amiga.lst
 
-cmd-amiga_mod-partmap_amiga.lst: partmap/amiga.c $(partmap/amiga.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(amiga_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh amiga > $@ || (rm -f $@; exit 1)
+cmd-part_amiga_mod-partmap_amiga.lst: partmap/amiga.c $(partmap/amiga.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_amiga_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh part_amiga > $@ || (rm -f $@; exit 1)
 
-fs-amiga_mod-partmap_amiga.lst: partmap/amiga.c $(partmap/amiga.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(amiga_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh amiga > $@ || (rm -f $@; exit 1)
+fs-part_amiga_mod-partmap_amiga.lst: partmap/amiga.c $(partmap/amiga.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_amiga_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh part_amiga > $@ || (rm -f $@; exit 1)
 
-partmap-amiga_mod-partmap_amiga.lst: partmap/amiga.c $(partmap/amiga.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(amiga_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh amiga > $@ || (rm -f $@; exit 1)
+parttool-part_amiga_mod-partmap_amiga.lst: partmap/amiga.c $(partmap/amiga.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_amiga_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh part_amiga > $@ || (rm -f $@; exit 1)
 
+partmap-part_amiga_mod-partmap_amiga.lst: partmap/amiga.c $(partmap/amiga.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_amiga_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh part_amiga > $@ || (rm -f $@; exit 1)
 
-amiga_mod_CFLAGS = $(COMMON_CFLAGS)
-amiga_mod_LDFLAGS = $(COMMON_LDFLAGS)
+handler-part_amiga_mod-partmap_amiga.lst: partmap/amiga.c $(partmap/amiga.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_amiga_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh part_amiga > $@ || (rm -f $@; exit 1)
 
-# For apple.mod
-apple_mod_SOURCES = partmap/apple.c
-CLEANFILES += apple.mod mod-apple.o mod-apple.c pre-apple.o apple_mod-partmap_apple.o und-apple.lst
-ifneq ($(apple_mod_EXPORTS),no)
-CLEANFILES += def-apple.lst
-DEFSYMFILES += def-apple.lst
+part_amiga_mod_CFLAGS = $(COMMON_CFLAGS)
+part_amiga_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+pkglib_MODULES += part_apple.mod
+part_apple_mod_SOURCES = partmap/apple.c
+CLEANFILES += part_apple.mod mod-part_apple.o mod-part_apple.c pre-part_apple.o part_apple_mod-partmap_apple.o und-part_apple.lst
+ifneq ($(part_apple_mod_EXPORTS),no)
+CLEANFILES += def-part_apple.lst
+DEFSYMFILES += def-part_apple.lst
 endif
-MOSTLYCLEANFILES += apple_mod-partmap_apple.d
-UNDSYMFILES += und-apple.lst
+MOSTLYCLEANFILES += part_apple_mod-partmap_apple.d
+UNDSYMFILES += und-part_apple.lst
 
-apple.mod: pre-apple.o mod-apple.o $(TARGET_OBJ2ELF)
+ifneq ($(TARGET_APPLE_CC),1)
+part_apple.mod: pre-part_apple.o mod-part_apple.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(apple_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-apple.o mod-apple.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(part_apple_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-part_apple.o mod-part_apple.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
-
-pre-apple.o: $(apple_mod_DEPENDENCIES) apple_mod-partmap_apple.o
+else
+part_apple.mod: pre-part_apple.o mod-part_apple.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(apple_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ apple_mod-partmap_apple.o
-
-mod-apple.o: mod-apple.c
-	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(apple_mod_CFLAGS) -c -o $@ $<
-
-mod-apple.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
-	sh $(srcdir)/genmodsrc.sh 'apple' $< > $@ || (rm -f $@; exit 1)
-
-ifneq ($(apple_mod_EXPORTS),no)
-def-apple.lst: pre-apple.o
-	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 apple/' > $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(part_apple_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-part_apple.o mod-part_apple.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
 endif
 
-und-apple.lst: pre-apple.o
-	echo 'apple' > $@
+pre-part_apple.o: $(part_apple_mod_DEPENDENCIES) part_apple_mod-partmap_apple.o
+	-rm -f $@
+	$(TARGET_CC) $(part_apple_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ part_apple_mod-partmap_apple.o
+
+mod-part_apple.o: mod-part_apple.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(part_apple_mod_CFLAGS) -c -o $@ $<
+
+mod-part_apple.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'part_apple' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(part_apple_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-part_apple.lst: pre-part_apple.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 part_apple/' > $@
+else
+def-part_apple.lst: pre-part_apple.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 part_apple/' > $@
+endif
+endif
+
+und-part_apple.lst: pre-part_apple.o
+	echo 'part_apple' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-apple_mod-partmap_apple.o: partmap/apple.c $(partmap/apple.c_DEPENDENCIES)
-	$(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(apple_mod_CFLAGS) -MD -c -o $@ $<
--include apple_mod-partmap_apple.d
+part_apple_mod-partmap_apple.o: partmap/apple.c $(partmap/apple.c_DEPENDENCIES)
+	$(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_apple_mod_CFLAGS) -MD -c -o $@ $<
+-include part_apple_mod-partmap_apple.d
 
-CLEANFILES += cmd-apple_mod-partmap_apple.lst fs-apple_mod-partmap_apple.lst partmap-apple_mod-partmap_apple.lst
-COMMANDFILES += cmd-apple_mod-partmap_apple.lst
-FSFILES += fs-apple_mod-partmap_apple.lst
-PARTMAPFILES += partmap-apple_mod-partmap_apple.lst
+CLEANFILES += cmd-part_apple_mod-partmap_apple.lst fs-part_apple_mod-partmap_apple.lst partmap-part_apple_mod-partmap_apple.lst handler-part_apple_mod-partmap_apple.lst parttool-part_apple_mod-partmap_apple.lst
+COMMANDFILES += cmd-part_apple_mod-partmap_apple.lst
+FSFILES += fs-part_apple_mod-partmap_apple.lst
+PARTTOOLFILES += parttool-part_apple_mod-partmap_apple.lst
+PARTMAPFILES += partmap-part_apple_mod-partmap_apple.lst
+HANDLERFILES += handler-part_apple_mod-partmap_apple.lst
 
-cmd-apple_mod-partmap_apple.lst: partmap/apple.c $(partmap/apple.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(apple_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh apple > $@ || (rm -f $@; exit 1)
+cmd-part_apple_mod-partmap_apple.lst: partmap/apple.c $(partmap/apple.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_apple_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh part_apple > $@ || (rm -f $@; exit 1)
 
-fs-apple_mod-partmap_apple.lst: partmap/apple.c $(partmap/apple.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(apple_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh apple > $@ || (rm -f $@; exit 1)
+fs-part_apple_mod-partmap_apple.lst: partmap/apple.c $(partmap/apple.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_apple_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh part_apple > $@ || (rm -f $@; exit 1)
 
-partmap-apple_mod-partmap_apple.lst: partmap/apple.c $(partmap/apple.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(apple_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh apple > $@ || (rm -f $@; exit 1)
+parttool-part_apple_mod-partmap_apple.lst: partmap/apple.c $(partmap/apple.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_apple_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh part_apple > $@ || (rm -f $@; exit 1)
 
+partmap-part_apple_mod-partmap_apple.lst: partmap/apple.c $(partmap/apple.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_apple_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh part_apple > $@ || (rm -f $@; exit 1)
 
-apple_mod_CFLAGS = $(COMMON_CFLAGS)
-apple_mod_LDFLAGS = $(COMMON_LDFLAGS)
+handler-part_apple_mod-partmap_apple.lst: partmap/apple.c $(partmap/apple.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_apple_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh part_apple > $@ || (rm -f $@; exit 1)
 
-# For pc.mod
-pc_mod_SOURCES = partmap/pc.c
-CLEANFILES += pc.mod mod-pc.o mod-pc.c pre-pc.o pc_mod-partmap_pc.o und-pc.lst
-ifneq ($(pc_mod_EXPORTS),no)
-CLEANFILES += def-pc.lst
-DEFSYMFILES += def-pc.lst
+part_apple_mod_CFLAGS = $(COMMON_CFLAGS)
+part_apple_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+pkglib_MODULES += part_msdos.mod
+part_msdos_mod_SOURCES = partmap/msdos.c
+CLEANFILES += part_msdos.mod mod-part_msdos.o mod-part_msdos.c pre-part_msdos.o part_msdos_mod-partmap_msdos.o und-part_msdos.lst
+ifneq ($(part_msdos_mod_EXPORTS),no)
+CLEANFILES += def-part_msdos.lst
+DEFSYMFILES += def-part_msdos.lst
 endif
-MOSTLYCLEANFILES += pc_mod-partmap_pc.d
-UNDSYMFILES += und-pc.lst
+MOSTLYCLEANFILES += part_msdos_mod-partmap_msdos.d
+UNDSYMFILES += und-part_msdos.lst
 
-pc.mod: pre-pc.o mod-pc.o $(TARGET_OBJ2ELF)
+ifneq ($(TARGET_APPLE_CC),1)
+part_msdos.mod: pre-part_msdos.o mod-part_msdos.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(pc_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-pc.o mod-pc.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(part_msdos_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-part_msdos.o mod-part_msdos.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
-
-pre-pc.o: $(pc_mod_DEPENDENCIES) pc_mod-partmap_pc.o
+else
+part_msdos.mod: pre-part_msdos.o mod-part_msdos.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(pc_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pc_mod-partmap_pc.o
-
-mod-pc.o: mod-pc.c
-	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(pc_mod_CFLAGS) -c -o $@ $<
-
-mod-pc.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
-	sh $(srcdir)/genmodsrc.sh 'pc' $< > $@ || (rm -f $@; exit 1)
-
-ifneq ($(pc_mod_EXPORTS),no)
-def-pc.lst: pre-pc.o
-	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 pc/' > $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(part_msdos_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-part_msdos.o mod-part_msdos.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
 endif
 
-und-pc.lst: pre-pc.o
-	echo 'pc' > $@
+pre-part_msdos.o: $(part_msdos_mod_DEPENDENCIES) part_msdos_mod-partmap_msdos.o
+	-rm -f $@
+	$(TARGET_CC) $(part_msdos_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ part_msdos_mod-partmap_msdos.o
+
+mod-part_msdos.o: mod-part_msdos.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(part_msdos_mod_CFLAGS) -c -o $@ $<
+
+mod-part_msdos.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'part_msdos' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(part_msdos_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-part_msdos.lst: pre-part_msdos.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 part_msdos/' > $@
+else
+def-part_msdos.lst: pre-part_msdos.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 part_msdos/' > $@
+endif
+endif
+
+und-part_msdos.lst: pre-part_msdos.o
+	echo 'part_msdos' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-pc_mod-partmap_pc.o: partmap/pc.c $(partmap/pc.c_DEPENDENCIES)
-	$(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(pc_mod_CFLAGS) -MD -c -o $@ $<
--include pc_mod-partmap_pc.d
+part_msdos_mod-partmap_msdos.o: partmap/msdos.c $(partmap/msdos.c_DEPENDENCIES)
+	$(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_msdos_mod_CFLAGS) -MD -c -o $@ $<
+-include part_msdos_mod-partmap_msdos.d
 
-CLEANFILES += cmd-pc_mod-partmap_pc.lst fs-pc_mod-partmap_pc.lst partmap-pc_mod-partmap_pc.lst
-COMMANDFILES += cmd-pc_mod-partmap_pc.lst
-FSFILES += fs-pc_mod-partmap_pc.lst
-PARTMAPFILES += partmap-pc_mod-partmap_pc.lst
+CLEANFILES += cmd-part_msdos_mod-partmap_msdos.lst fs-part_msdos_mod-partmap_msdos.lst partmap-part_msdos_mod-partmap_msdos.lst handler-part_msdos_mod-partmap_msdos.lst parttool-part_msdos_mod-partmap_msdos.lst
+COMMANDFILES += cmd-part_msdos_mod-partmap_msdos.lst
+FSFILES += fs-part_msdos_mod-partmap_msdos.lst
+PARTTOOLFILES += parttool-part_msdos_mod-partmap_msdos.lst
+PARTMAPFILES += partmap-part_msdos_mod-partmap_msdos.lst
+HANDLERFILES += handler-part_msdos_mod-partmap_msdos.lst
 
-cmd-pc_mod-partmap_pc.lst: partmap/pc.c $(partmap/pc.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(pc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh pc > $@ || (rm -f $@; exit 1)
+cmd-part_msdos_mod-partmap_msdos.lst: partmap/msdos.c $(partmap/msdos.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_msdos_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh part_msdos > $@ || (rm -f $@; exit 1)
 
-fs-pc_mod-partmap_pc.lst: partmap/pc.c $(partmap/pc.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(pc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh pc > $@ || (rm -f $@; exit 1)
+fs-part_msdos_mod-partmap_msdos.lst: partmap/msdos.c $(partmap/msdos.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_msdos_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh part_msdos > $@ || (rm -f $@; exit 1)
 
-partmap-pc_mod-partmap_pc.lst: partmap/pc.c $(partmap/pc.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(pc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh pc > $@ || (rm -f $@; exit 1)
+parttool-part_msdos_mod-partmap_msdos.lst: partmap/msdos.c $(partmap/msdos.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_msdos_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh part_msdos > $@ || (rm -f $@; exit 1)
 
+partmap-part_msdos_mod-partmap_msdos.lst: partmap/msdos.c $(partmap/msdos.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_msdos_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh part_msdos > $@ || (rm -f $@; exit 1)
 
-pc_mod_CFLAGS = $(COMMON_CFLAGS)
-pc_mod_LDFLAGS = $(COMMON_LDFLAGS)
+handler-part_msdos_mod-partmap_msdos.lst: partmap/msdos.c $(partmap/msdos.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_msdos_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh part_msdos > $@ || (rm -f $@; exit 1)
 
-# For sun.mod
-sun_mod_SOURCES = partmap/sun.c
-CLEANFILES += sun.mod mod-sun.o mod-sun.c pre-sun.o sun_mod-partmap_sun.o und-sun.lst
-ifneq ($(sun_mod_EXPORTS),no)
-CLEANFILES += def-sun.lst
-DEFSYMFILES += def-sun.lst
+part_msdos_mod_CFLAGS = $(COMMON_CFLAGS)
+part_msdos_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+pkglib_MODULES += part_sun.mod
+part_sun_mod_SOURCES = partmap/sun.c
+CLEANFILES += part_sun.mod mod-part_sun.o mod-part_sun.c pre-part_sun.o part_sun_mod-partmap_sun.o und-part_sun.lst
+ifneq ($(part_sun_mod_EXPORTS),no)
+CLEANFILES += def-part_sun.lst
+DEFSYMFILES += def-part_sun.lst
 endif
-MOSTLYCLEANFILES += sun_mod-partmap_sun.d
-UNDSYMFILES += und-sun.lst
+MOSTLYCLEANFILES += part_sun_mod-partmap_sun.d
+UNDSYMFILES += und-part_sun.lst
 
-sun.mod: pre-sun.o mod-sun.o $(TARGET_OBJ2ELF)
+ifneq ($(TARGET_APPLE_CC),1)
+part_sun.mod: pre-part_sun.o mod-part_sun.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(sun_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-sun.o mod-sun.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(part_sun_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-part_sun.o mod-part_sun.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
-
-pre-sun.o: $(sun_mod_DEPENDENCIES) sun_mod-partmap_sun.o
+else
+part_sun.mod: pre-part_sun.o mod-part_sun.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(sun_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ sun_mod-partmap_sun.o
-
-mod-sun.o: mod-sun.c
-	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(sun_mod_CFLAGS) -c -o $@ $<
-
-mod-sun.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
-	sh $(srcdir)/genmodsrc.sh 'sun' $< > $@ || (rm -f $@; exit 1)
-
-ifneq ($(sun_mod_EXPORTS),no)
-def-sun.lst: pre-sun.o
-	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 sun/' > $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(part_sun_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-part_sun.o mod-part_sun.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
 endif
 
-und-sun.lst: pre-sun.o
-	echo 'sun' > $@
+pre-part_sun.o: $(part_sun_mod_DEPENDENCIES) part_sun_mod-partmap_sun.o
+	-rm -f $@
+	$(TARGET_CC) $(part_sun_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ part_sun_mod-partmap_sun.o
+
+mod-part_sun.o: mod-part_sun.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(part_sun_mod_CFLAGS) -c -o $@ $<
+
+mod-part_sun.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'part_sun' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(part_sun_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-part_sun.lst: pre-part_sun.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 part_sun/' > $@
+else
+def-part_sun.lst: pre-part_sun.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 part_sun/' > $@
+endif
+endif
+
+und-part_sun.lst: pre-part_sun.o
+	echo 'part_sun' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-sun_mod-partmap_sun.o: partmap/sun.c $(partmap/sun.c_DEPENDENCIES)
-	$(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sun_mod_CFLAGS) -MD -c -o $@ $<
--include sun_mod-partmap_sun.d
+part_sun_mod-partmap_sun.o: partmap/sun.c $(partmap/sun.c_DEPENDENCIES)
+	$(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_sun_mod_CFLAGS) -MD -c -o $@ $<
+-include part_sun_mod-partmap_sun.d
 
-CLEANFILES += cmd-sun_mod-partmap_sun.lst fs-sun_mod-partmap_sun.lst partmap-sun_mod-partmap_sun.lst
-COMMANDFILES += cmd-sun_mod-partmap_sun.lst
-FSFILES += fs-sun_mod-partmap_sun.lst
-PARTMAPFILES += partmap-sun_mod-partmap_sun.lst
+CLEANFILES += cmd-part_sun_mod-partmap_sun.lst fs-part_sun_mod-partmap_sun.lst partmap-part_sun_mod-partmap_sun.lst handler-part_sun_mod-partmap_sun.lst parttool-part_sun_mod-partmap_sun.lst
+COMMANDFILES += cmd-part_sun_mod-partmap_sun.lst
+FSFILES += fs-part_sun_mod-partmap_sun.lst
+PARTTOOLFILES += parttool-part_sun_mod-partmap_sun.lst
+PARTMAPFILES += partmap-part_sun_mod-partmap_sun.lst
+HANDLERFILES += handler-part_sun_mod-partmap_sun.lst
 
-cmd-sun_mod-partmap_sun.lst: partmap/sun.c $(partmap/sun.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(sun_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh sun > $@ || (rm -f $@; exit 1)
+cmd-part_sun_mod-partmap_sun.lst: partmap/sun.c $(partmap/sun.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_sun_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh part_sun > $@ || (rm -f $@; exit 1)
 
-fs-sun_mod-partmap_sun.lst: partmap/sun.c $(partmap/sun.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(sun_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh sun > $@ || (rm -f $@; exit 1)
+fs-part_sun_mod-partmap_sun.lst: partmap/sun.c $(partmap/sun.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_sun_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh part_sun > $@ || (rm -f $@; exit 1)
 
-partmap-sun_mod-partmap_sun.lst: partmap/sun.c $(partmap/sun.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(sun_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh sun > $@ || (rm -f $@; exit 1)
+parttool-part_sun_mod-partmap_sun.lst: partmap/sun.c $(partmap/sun.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_sun_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh part_sun > $@ || (rm -f $@; exit 1)
 
+partmap-part_sun_mod-partmap_sun.lst: partmap/sun.c $(partmap/sun.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_sun_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh part_sun > $@ || (rm -f $@; exit 1)
 
-sun_mod_CFLAGS = $(COMMON_CFLAGS)
-sun_mod_LDFLAGS = $(COMMON_LDFLAGS)
+handler-part_sun_mod-partmap_sun.lst: partmap/sun.c $(partmap/sun.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_sun_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh part_sun > $@ || (rm -f $@; exit 1)
 
-# For acorn.mod
-acorn_mod_SOURCES = partmap/acorn.c
-CLEANFILES += acorn.mod mod-acorn.o mod-acorn.c pre-acorn.o acorn_mod-partmap_acorn.o und-acorn.lst
-ifneq ($(acorn_mod_EXPORTS),no)
-CLEANFILES += def-acorn.lst
-DEFSYMFILES += def-acorn.lst
+part_sun_mod_CFLAGS = $(COMMON_CFLAGS)
+part_sun_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+pkglib_MODULES += part_acorn.mod
+part_acorn_mod_SOURCES = partmap/acorn.c
+CLEANFILES += part_acorn.mod mod-part_acorn.o mod-part_acorn.c pre-part_acorn.o part_acorn_mod-partmap_acorn.o und-part_acorn.lst
+ifneq ($(part_acorn_mod_EXPORTS),no)
+CLEANFILES += def-part_acorn.lst
+DEFSYMFILES += def-part_acorn.lst
 endif
-MOSTLYCLEANFILES += acorn_mod-partmap_acorn.d
-UNDSYMFILES += und-acorn.lst
+MOSTLYCLEANFILES += part_acorn_mod-partmap_acorn.d
+UNDSYMFILES += und-part_acorn.lst
 
-acorn.mod: pre-acorn.o mod-acorn.o $(TARGET_OBJ2ELF)
+ifneq ($(TARGET_APPLE_CC),1)
+part_acorn.mod: pre-part_acorn.o mod-part_acorn.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(acorn_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-acorn.o mod-acorn.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(part_acorn_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-part_acorn.o mod-part_acorn.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
-
-pre-acorn.o: $(acorn_mod_DEPENDENCIES) acorn_mod-partmap_acorn.o
+else
+part_acorn.mod: pre-part_acorn.o mod-part_acorn.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(acorn_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ acorn_mod-partmap_acorn.o
-
-mod-acorn.o: mod-acorn.c
-	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(acorn_mod_CFLAGS) -c -o $@ $<
-
-mod-acorn.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
-	sh $(srcdir)/genmodsrc.sh 'acorn' $< > $@ || (rm -f $@; exit 1)
-
-ifneq ($(acorn_mod_EXPORTS),no)
-def-acorn.lst: pre-acorn.o
-	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 acorn/' > $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(part_acorn_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-part_acorn.o mod-part_acorn.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
 endif
 
-und-acorn.lst: pre-acorn.o
-	echo 'acorn' > $@
+pre-part_acorn.o: $(part_acorn_mod_DEPENDENCIES) part_acorn_mod-partmap_acorn.o
+	-rm -f $@
+	$(TARGET_CC) $(part_acorn_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ part_acorn_mod-partmap_acorn.o
+
+mod-part_acorn.o: mod-part_acorn.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(part_acorn_mod_CFLAGS) -c -o $@ $<
+
+mod-part_acorn.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'part_acorn' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(part_acorn_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-part_acorn.lst: pre-part_acorn.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 part_acorn/' > $@
+else
+def-part_acorn.lst: pre-part_acorn.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 part_acorn/' > $@
+endif
+endif
+
+und-part_acorn.lst: pre-part_acorn.o
+	echo 'part_acorn' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-acorn_mod-partmap_acorn.o: partmap/acorn.c $(partmap/acorn.c_DEPENDENCIES)
-	$(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(acorn_mod_CFLAGS) -MD -c -o $@ $<
--include acorn_mod-partmap_acorn.d
+part_acorn_mod-partmap_acorn.o: partmap/acorn.c $(partmap/acorn.c_DEPENDENCIES)
+	$(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_acorn_mod_CFLAGS) -MD -c -o $@ $<
+-include part_acorn_mod-partmap_acorn.d
 
-CLEANFILES += cmd-acorn_mod-partmap_acorn.lst fs-acorn_mod-partmap_acorn.lst partmap-acorn_mod-partmap_acorn.lst
-COMMANDFILES += cmd-acorn_mod-partmap_acorn.lst
-FSFILES += fs-acorn_mod-partmap_acorn.lst
-PARTMAPFILES += partmap-acorn_mod-partmap_acorn.lst
+CLEANFILES += cmd-part_acorn_mod-partmap_acorn.lst fs-part_acorn_mod-partmap_acorn.lst partmap-part_acorn_mod-partmap_acorn.lst handler-part_acorn_mod-partmap_acorn.lst parttool-part_acorn_mod-partmap_acorn.lst
+COMMANDFILES += cmd-part_acorn_mod-partmap_acorn.lst
+FSFILES += fs-part_acorn_mod-partmap_acorn.lst
+PARTTOOLFILES += parttool-part_acorn_mod-partmap_acorn.lst
+PARTMAPFILES += partmap-part_acorn_mod-partmap_acorn.lst
+HANDLERFILES += handler-part_acorn_mod-partmap_acorn.lst
 
-cmd-acorn_mod-partmap_acorn.lst: partmap/acorn.c $(partmap/acorn.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(acorn_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh acorn > $@ || (rm -f $@; exit 1)
+cmd-part_acorn_mod-partmap_acorn.lst: partmap/acorn.c $(partmap/acorn.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_acorn_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh part_acorn > $@ || (rm -f $@; exit 1)
 
-fs-acorn_mod-partmap_acorn.lst: partmap/acorn.c $(partmap/acorn.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(acorn_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh acorn > $@ || (rm -f $@; exit 1)
+fs-part_acorn_mod-partmap_acorn.lst: partmap/acorn.c $(partmap/acorn.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_acorn_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh part_acorn > $@ || (rm -f $@; exit 1)
 
-partmap-acorn_mod-partmap_acorn.lst: partmap/acorn.c $(partmap/acorn.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(acorn_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh acorn > $@ || (rm -f $@; exit 1)
+parttool-part_acorn_mod-partmap_acorn.lst: partmap/acorn.c $(partmap/acorn.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_acorn_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh part_acorn > $@ || (rm -f $@; exit 1)
 
+partmap-part_acorn_mod-partmap_acorn.lst: partmap/acorn.c $(partmap/acorn.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_acorn_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh part_acorn > $@ || (rm -f $@; exit 1)
 
-acorn_mod_CFLAGS = $(COMMON_CFLAGS)
-acorn_mod_LDFLAGS = $(COMMON_LDFLAGS)
+handler-part_acorn_mod-partmap_acorn.lst: partmap/acorn.c $(partmap/acorn.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_acorn_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh part_acorn > $@ || (rm -f $@; exit 1)
 
-# For gpt.mod
-gpt_mod_SOURCES = partmap/gpt.c
-CLEANFILES += gpt.mod mod-gpt.o mod-gpt.c pre-gpt.o gpt_mod-partmap_gpt.o und-gpt.lst
-ifneq ($(gpt_mod_EXPORTS),no)
-CLEANFILES += def-gpt.lst
-DEFSYMFILES += def-gpt.lst
+part_acorn_mod_CFLAGS = $(COMMON_CFLAGS)
+part_acorn_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+pkglib_MODULES += part_gpt.mod
+part_gpt_mod_SOURCES = partmap/gpt.c
+CLEANFILES += part_gpt.mod mod-part_gpt.o mod-part_gpt.c pre-part_gpt.o part_gpt_mod-partmap_gpt.o und-part_gpt.lst
+ifneq ($(part_gpt_mod_EXPORTS),no)
+CLEANFILES += def-part_gpt.lst
+DEFSYMFILES += def-part_gpt.lst
 endif
-MOSTLYCLEANFILES += gpt_mod-partmap_gpt.d
-UNDSYMFILES += und-gpt.lst
+MOSTLYCLEANFILES += part_gpt_mod-partmap_gpt.d
+UNDSYMFILES += und-part_gpt.lst
 
-gpt.mod: pre-gpt.o mod-gpt.o $(TARGET_OBJ2ELF)
+ifneq ($(TARGET_APPLE_CC),1)
+part_gpt.mod: pre-part_gpt.o mod-part_gpt.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(gpt_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-gpt.o mod-gpt.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(part_gpt_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-part_gpt.o mod-part_gpt.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
-
-pre-gpt.o: $(gpt_mod_DEPENDENCIES) gpt_mod-partmap_gpt.o
+else
+part_gpt.mod: pre-part_gpt.o mod-part_gpt.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(gpt_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ gpt_mod-partmap_gpt.o
-
-mod-gpt.o: mod-gpt.c
-	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(gpt_mod_CFLAGS) -c -o $@ $<
-
-mod-gpt.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
-	sh $(srcdir)/genmodsrc.sh 'gpt' $< > $@ || (rm -f $@; exit 1)
-
-ifneq ($(gpt_mod_EXPORTS),no)
-def-gpt.lst: pre-gpt.o
-	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 gpt/' > $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(part_gpt_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-part_gpt.o mod-part_gpt.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
 endif
 
-und-gpt.lst: pre-gpt.o
-	echo 'gpt' > $@
+pre-part_gpt.o: $(part_gpt_mod_DEPENDENCIES) part_gpt_mod-partmap_gpt.o
+	-rm -f $@
+	$(TARGET_CC) $(part_gpt_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ part_gpt_mod-partmap_gpt.o
+
+mod-part_gpt.o: mod-part_gpt.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(part_gpt_mod_CFLAGS) -c -o $@ $<
+
+mod-part_gpt.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'part_gpt' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(part_gpt_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-part_gpt.lst: pre-part_gpt.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 part_gpt/' > $@
+else
+def-part_gpt.lst: pre-part_gpt.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 part_gpt/' > $@
+endif
+endif
+
+und-part_gpt.lst: pre-part_gpt.o
+	echo 'part_gpt' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-gpt_mod-partmap_gpt.o: partmap/gpt.c $(partmap/gpt.c_DEPENDENCIES)
-	$(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gpt_mod_CFLAGS) -MD -c -o $@ $<
--include gpt_mod-partmap_gpt.d
+part_gpt_mod-partmap_gpt.o: partmap/gpt.c $(partmap/gpt.c_DEPENDENCIES)
+	$(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_gpt_mod_CFLAGS) -MD -c -o $@ $<
+-include part_gpt_mod-partmap_gpt.d
 
-CLEANFILES += cmd-gpt_mod-partmap_gpt.lst fs-gpt_mod-partmap_gpt.lst partmap-gpt_mod-partmap_gpt.lst
-COMMANDFILES += cmd-gpt_mod-partmap_gpt.lst
-FSFILES += fs-gpt_mod-partmap_gpt.lst
-PARTMAPFILES += partmap-gpt_mod-partmap_gpt.lst
+CLEANFILES += cmd-part_gpt_mod-partmap_gpt.lst fs-part_gpt_mod-partmap_gpt.lst partmap-part_gpt_mod-partmap_gpt.lst handler-part_gpt_mod-partmap_gpt.lst parttool-part_gpt_mod-partmap_gpt.lst
+COMMANDFILES += cmd-part_gpt_mod-partmap_gpt.lst
+FSFILES += fs-part_gpt_mod-partmap_gpt.lst
+PARTTOOLFILES += parttool-part_gpt_mod-partmap_gpt.lst
+PARTMAPFILES += partmap-part_gpt_mod-partmap_gpt.lst
+HANDLERFILES += handler-part_gpt_mod-partmap_gpt.lst
 
-cmd-gpt_mod-partmap_gpt.lst: partmap/gpt.c $(partmap/gpt.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(gpt_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh gpt > $@ || (rm -f $@; exit 1)
+cmd-part_gpt_mod-partmap_gpt.lst: partmap/gpt.c $(partmap/gpt.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_gpt_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh part_gpt > $@ || (rm -f $@; exit 1)
 
-fs-gpt_mod-partmap_gpt.lst: partmap/gpt.c $(partmap/gpt.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(gpt_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh gpt > $@ || (rm -f $@; exit 1)
+fs-part_gpt_mod-partmap_gpt.lst: partmap/gpt.c $(partmap/gpt.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_gpt_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh part_gpt > $@ || (rm -f $@; exit 1)
 
-partmap-gpt_mod-partmap_gpt.lst: partmap/gpt.c $(partmap/gpt.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(gpt_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh gpt > $@ || (rm -f $@; exit 1)
+parttool-part_gpt_mod-partmap_gpt.lst: partmap/gpt.c $(partmap/gpt.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_gpt_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh part_gpt > $@ || (rm -f $@; exit 1)
 
+partmap-part_gpt_mod-partmap_gpt.lst: partmap/gpt.c $(partmap/gpt.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_gpt_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh part_gpt > $@ || (rm -f $@; exit 1)
 
-gpt_mod_CFLAGS = $(COMMON_CFLAGS)
-gpt_mod_LDFLAGS = $(COMMON_LDFLAGS)
+handler-part_gpt_mod-partmap_gpt.lst: partmap/gpt.c $(partmap/gpt.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ipartmap -I$(srcdir)/partmap $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(part_gpt_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh part_gpt > $@ || (rm -f $@; exit 1)
+
+part_gpt_mod_CFLAGS = $(COMMON_CFLAGS)
+part_gpt_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # Special disk structures and generic drivers
 
@@ -1950,11 +2945,20 @@ endif
 MOSTLYCLEANFILES += raid_mod-disk_raid.d
 UNDSYMFILES += und-raid.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 raid.mod: pre-raid.o mod-raid.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(raid_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-raid.o mod-raid.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(raid_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-raid.o mod-raid.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+raid.mod: pre-raid.o mod-raid.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(raid_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-raid.o mod-raid.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-raid.o: $(raid_mod_DEPENDENCIES) raid_mod-disk_raid.o
 	-rm -f $@
@@ -1967,8 +2971,13 @@ mod-raid.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'raid' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(raid_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-raid.lst: pre-raid.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 raid/' > $@
+else
+def-raid.lst: pre-raid.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 raid/' > $@
+endif
 endif
 
 und-raid.lst: pre-raid.o
@@ -1979,20 +2988,27 @@ raid_mod-disk_raid.o: disk/raid.c $(disk/raid.c_DEPENDENCIES)
 	$(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid_mod_CFLAGS) -MD -c -o $@ $<
 -include raid_mod-disk_raid.d
 
-CLEANFILES += cmd-raid_mod-disk_raid.lst fs-raid_mod-disk_raid.lst partmap-raid_mod-disk_raid.lst
+CLEANFILES += cmd-raid_mod-disk_raid.lst fs-raid_mod-disk_raid.lst partmap-raid_mod-disk_raid.lst handler-raid_mod-disk_raid.lst parttool-raid_mod-disk_raid.lst
 COMMANDFILES += cmd-raid_mod-disk_raid.lst
 FSFILES += fs-raid_mod-disk_raid.lst
+PARTTOOLFILES += parttool-raid_mod-disk_raid.lst
 PARTMAPFILES += partmap-raid_mod-disk_raid.lst
+HANDLERFILES += handler-raid_mod-disk_raid.lst
 
 cmd-raid_mod-disk_raid.lst: disk/raid.c $(disk/raid.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(raid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh raid > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh raid > $@ || (rm -f $@; exit 1)
 
 fs-raid_mod-disk_raid.lst: disk/raid.c $(disk/raid.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(raid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh raid > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh raid > $@ || (rm -f $@; exit 1)
+
+parttool-raid_mod-disk_raid.lst: disk/raid.c $(disk/raid.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh raid > $@ || (rm -f $@; exit 1)
 
 partmap-raid_mod-disk_raid.lst: disk/raid.c $(disk/raid.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(raid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh raid > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh raid > $@ || (rm -f $@; exit 1)
 
+handler-raid_mod-disk_raid.lst: disk/raid.c $(disk/raid.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh raid > $@ || (rm -f $@; exit 1)
 
 raid_mod_CFLAGS = $(COMMON_CFLAGS)
 raid_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -2007,11 +3023,20 @@ endif
 MOSTLYCLEANFILES += raid5rec_mod-disk_raid5_recover.d
 UNDSYMFILES += und-raid5rec.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 raid5rec.mod: pre-raid5rec.o mod-raid5rec.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(raid5rec_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-raid5rec.o mod-raid5rec.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(raid5rec_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-raid5rec.o mod-raid5rec.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+raid5rec.mod: pre-raid5rec.o mod-raid5rec.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(raid5rec_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-raid5rec.o mod-raid5rec.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-raid5rec.o: $(raid5rec_mod_DEPENDENCIES) raid5rec_mod-disk_raid5_recover.o
 	-rm -f $@
@@ -2024,8 +3049,13 @@ mod-raid5rec.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'raid5rec' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(raid5rec_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-raid5rec.lst: pre-raid5rec.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 raid5rec/' > $@
+else
+def-raid5rec.lst: pre-raid5rec.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 raid5rec/' > $@
+endif
 endif
 
 und-raid5rec.lst: pre-raid5rec.o
@@ -2036,20 +3066,27 @@ raid5rec_mod-disk_raid5_recover.o: disk/raid5_recover.c $(disk/raid5_recover.c_D
 	$(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid5rec_mod_CFLAGS) -MD -c -o $@ $<
 -include raid5rec_mod-disk_raid5_recover.d
 
-CLEANFILES += cmd-raid5rec_mod-disk_raid5_recover.lst fs-raid5rec_mod-disk_raid5_recover.lst partmap-raid5rec_mod-disk_raid5_recover.lst
+CLEANFILES += cmd-raid5rec_mod-disk_raid5_recover.lst fs-raid5rec_mod-disk_raid5_recover.lst partmap-raid5rec_mod-disk_raid5_recover.lst handler-raid5rec_mod-disk_raid5_recover.lst parttool-raid5rec_mod-disk_raid5_recover.lst
 COMMANDFILES += cmd-raid5rec_mod-disk_raid5_recover.lst
 FSFILES += fs-raid5rec_mod-disk_raid5_recover.lst
+PARTTOOLFILES += parttool-raid5rec_mod-disk_raid5_recover.lst
 PARTMAPFILES += partmap-raid5rec_mod-disk_raid5_recover.lst
+HANDLERFILES += handler-raid5rec_mod-disk_raid5_recover.lst
 
 cmd-raid5rec_mod-disk_raid5_recover.lst: disk/raid5_recover.c $(disk/raid5_recover.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(raid5rec_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh raid5rec > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid5rec_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh raid5rec > $@ || (rm -f $@; exit 1)
 
 fs-raid5rec_mod-disk_raid5_recover.lst: disk/raid5_recover.c $(disk/raid5_recover.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(raid5rec_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh raid5rec > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid5rec_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh raid5rec > $@ || (rm -f $@; exit 1)
+
+parttool-raid5rec_mod-disk_raid5_recover.lst: disk/raid5_recover.c $(disk/raid5_recover.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid5rec_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh raid5rec > $@ || (rm -f $@; exit 1)
 
 partmap-raid5rec_mod-disk_raid5_recover.lst: disk/raid5_recover.c $(disk/raid5_recover.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(raid5rec_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh raid5rec > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid5rec_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh raid5rec > $@ || (rm -f $@; exit 1)
 
+handler-raid5rec_mod-disk_raid5_recover.lst: disk/raid5_recover.c $(disk/raid5_recover.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid5rec_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh raid5rec > $@ || (rm -f $@; exit 1)
 
 raid5rec_mod_CFLAGS = $(COMMON_CFLAGS)
 raid5rec_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -2064,11 +3101,20 @@ endif
 MOSTLYCLEANFILES += raid6rec_mod-disk_raid6_recover.d
 UNDSYMFILES += und-raid6rec.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 raid6rec.mod: pre-raid6rec.o mod-raid6rec.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(raid6rec_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-raid6rec.o mod-raid6rec.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(raid6rec_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-raid6rec.o mod-raid6rec.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+raid6rec.mod: pre-raid6rec.o mod-raid6rec.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(raid6rec_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-raid6rec.o mod-raid6rec.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-raid6rec.o: $(raid6rec_mod_DEPENDENCIES) raid6rec_mod-disk_raid6_recover.o
 	-rm -f $@
@@ -2081,8 +3127,13 @@ mod-raid6rec.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'raid6rec' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(raid6rec_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-raid6rec.lst: pre-raid6rec.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 raid6rec/' > $@
+else
+def-raid6rec.lst: pre-raid6rec.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 raid6rec/' > $@
+endif
 endif
 
 und-raid6rec.lst: pre-raid6rec.o
@@ -2093,20 +3144,27 @@ raid6rec_mod-disk_raid6_recover.o: disk/raid6_recover.c $(disk/raid6_recover.c_D
 	$(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid6rec_mod_CFLAGS) -MD -c -o $@ $<
 -include raid6rec_mod-disk_raid6_recover.d
 
-CLEANFILES += cmd-raid6rec_mod-disk_raid6_recover.lst fs-raid6rec_mod-disk_raid6_recover.lst partmap-raid6rec_mod-disk_raid6_recover.lst
+CLEANFILES += cmd-raid6rec_mod-disk_raid6_recover.lst fs-raid6rec_mod-disk_raid6_recover.lst partmap-raid6rec_mod-disk_raid6_recover.lst handler-raid6rec_mod-disk_raid6_recover.lst parttool-raid6rec_mod-disk_raid6_recover.lst
 COMMANDFILES += cmd-raid6rec_mod-disk_raid6_recover.lst
 FSFILES += fs-raid6rec_mod-disk_raid6_recover.lst
+PARTTOOLFILES += parttool-raid6rec_mod-disk_raid6_recover.lst
 PARTMAPFILES += partmap-raid6rec_mod-disk_raid6_recover.lst
+HANDLERFILES += handler-raid6rec_mod-disk_raid6_recover.lst
 
 cmd-raid6rec_mod-disk_raid6_recover.lst: disk/raid6_recover.c $(disk/raid6_recover.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(raid6rec_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh raid6rec > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid6rec_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh raid6rec > $@ || (rm -f $@; exit 1)
 
 fs-raid6rec_mod-disk_raid6_recover.lst: disk/raid6_recover.c $(disk/raid6_recover.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(raid6rec_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh raid6rec > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid6rec_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh raid6rec > $@ || (rm -f $@; exit 1)
+
+parttool-raid6rec_mod-disk_raid6_recover.lst: disk/raid6_recover.c $(disk/raid6_recover.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid6rec_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh raid6rec > $@ || (rm -f $@; exit 1)
 
 partmap-raid6rec_mod-disk_raid6_recover.lst: disk/raid6_recover.c $(disk/raid6_recover.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(raid6rec_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh raid6rec > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid6rec_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh raid6rec > $@ || (rm -f $@; exit 1)
 
+handler-raid6rec_mod-disk_raid6_recover.lst: disk/raid6_recover.c $(disk/raid6_recover.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(raid6rec_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh raid6rec > $@ || (rm -f $@; exit 1)
 
 raid6rec_mod_CFLAGS = $(COMMON_CFLAGS)
 raid6rec_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -2121,11 +3179,20 @@ endif
 MOSTLYCLEANFILES += mdraid_mod-disk_mdraid_linux.d
 UNDSYMFILES += und-mdraid.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 mdraid.mod: pre-mdraid.o mod-mdraid.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(mdraid_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-mdraid.o mod-mdraid.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(mdraid_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-mdraid.o mod-mdraid.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+mdraid.mod: pre-mdraid.o mod-mdraid.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(mdraid_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-mdraid.o mod-mdraid.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-mdraid.o: $(mdraid_mod_DEPENDENCIES) mdraid_mod-disk_mdraid_linux.o
 	-rm -f $@
@@ -2138,8 +3205,13 @@ mod-mdraid.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'mdraid' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(mdraid_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-mdraid.lst: pre-mdraid.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 mdraid/' > $@
+else
+def-mdraid.lst: pre-mdraid.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 mdraid/' > $@
+endif
 endif
 
 und-mdraid.lst: pre-mdraid.o
@@ -2150,20 +3222,27 @@ mdraid_mod-disk_mdraid_linux.o: disk/mdraid_linux.c $(disk/mdraid_linux.c_DEPEND
 	$(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(mdraid_mod_CFLAGS) -MD -c -o $@ $<
 -include mdraid_mod-disk_mdraid_linux.d
 
-CLEANFILES += cmd-mdraid_mod-disk_mdraid_linux.lst fs-mdraid_mod-disk_mdraid_linux.lst partmap-mdraid_mod-disk_mdraid_linux.lst
+CLEANFILES += cmd-mdraid_mod-disk_mdraid_linux.lst fs-mdraid_mod-disk_mdraid_linux.lst partmap-mdraid_mod-disk_mdraid_linux.lst handler-mdraid_mod-disk_mdraid_linux.lst parttool-mdraid_mod-disk_mdraid_linux.lst
 COMMANDFILES += cmd-mdraid_mod-disk_mdraid_linux.lst
 FSFILES += fs-mdraid_mod-disk_mdraid_linux.lst
+PARTTOOLFILES += parttool-mdraid_mod-disk_mdraid_linux.lst
 PARTMAPFILES += partmap-mdraid_mod-disk_mdraid_linux.lst
+HANDLERFILES += handler-mdraid_mod-disk_mdraid_linux.lst
 
 cmd-mdraid_mod-disk_mdraid_linux.lst: disk/mdraid_linux.c $(disk/mdraid_linux.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(mdraid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh mdraid > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(mdraid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh mdraid > $@ || (rm -f $@; exit 1)
 
 fs-mdraid_mod-disk_mdraid_linux.lst: disk/mdraid_linux.c $(disk/mdraid_linux.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(mdraid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh mdraid > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(mdraid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh mdraid > $@ || (rm -f $@; exit 1)
+
+parttool-mdraid_mod-disk_mdraid_linux.lst: disk/mdraid_linux.c $(disk/mdraid_linux.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(mdraid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh mdraid > $@ || (rm -f $@; exit 1)
 
 partmap-mdraid_mod-disk_mdraid_linux.lst: disk/mdraid_linux.c $(disk/mdraid_linux.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(mdraid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh mdraid > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(mdraid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh mdraid > $@ || (rm -f $@; exit 1)
 
+handler-mdraid_mod-disk_mdraid_linux.lst: disk/mdraid_linux.c $(disk/mdraid_linux.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(mdraid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh mdraid > $@ || (rm -f $@; exit 1)
 
 mdraid_mod_CFLAGS = $(COMMON_CFLAGS)
 mdraid_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -2178,11 +3257,20 @@ endif
 MOSTLYCLEANFILES += dm_nv_mod-disk_dmraid_nvidia.d
 UNDSYMFILES += und-dm_nv.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 dm_nv.mod: pre-dm_nv.o mod-dm_nv.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(dm_nv_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-dm_nv.o mod-dm_nv.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(dm_nv_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-dm_nv.o mod-dm_nv.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+dm_nv.mod: pre-dm_nv.o mod-dm_nv.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(dm_nv_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-dm_nv.o mod-dm_nv.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-dm_nv.o: $(dm_nv_mod_DEPENDENCIES) dm_nv_mod-disk_dmraid_nvidia.o
 	-rm -f $@
@@ -2195,8 +3283,13 @@ mod-dm_nv.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'dm_nv' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(dm_nv_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-dm_nv.lst: pre-dm_nv.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 dm_nv/' > $@
+else
+def-dm_nv.lst: pre-dm_nv.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 dm_nv/' > $@
+endif
 endif
 
 und-dm_nv.lst: pre-dm_nv.o
@@ -2207,20 +3300,27 @@ dm_nv_mod-disk_dmraid_nvidia.o: disk/dmraid_nvidia.c $(disk/dmraid_nvidia.c_DEPE
 	$(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(dm_nv_mod_CFLAGS) -MD -c -o $@ $<
 -include dm_nv_mod-disk_dmraid_nvidia.d
 
-CLEANFILES += cmd-dm_nv_mod-disk_dmraid_nvidia.lst fs-dm_nv_mod-disk_dmraid_nvidia.lst partmap-dm_nv_mod-disk_dmraid_nvidia.lst
+CLEANFILES += cmd-dm_nv_mod-disk_dmraid_nvidia.lst fs-dm_nv_mod-disk_dmraid_nvidia.lst partmap-dm_nv_mod-disk_dmraid_nvidia.lst handler-dm_nv_mod-disk_dmraid_nvidia.lst parttool-dm_nv_mod-disk_dmraid_nvidia.lst
 COMMANDFILES += cmd-dm_nv_mod-disk_dmraid_nvidia.lst
 FSFILES += fs-dm_nv_mod-disk_dmraid_nvidia.lst
+PARTTOOLFILES += parttool-dm_nv_mod-disk_dmraid_nvidia.lst
 PARTMAPFILES += partmap-dm_nv_mod-disk_dmraid_nvidia.lst
+HANDLERFILES += handler-dm_nv_mod-disk_dmraid_nvidia.lst
 
 cmd-dm_nv_mod-disk_dmraid_nvidia.lst: disk/dmraid_nvidia.c $(disk/dmraid_nvidia.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(dm_nv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh dm_nv > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(dm_nv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh dm_nv > $@ || (rm -f $@; exit 1)
 
 fs-dm_nv_mod-disk_dmraid_nvidia.lst: disk/dmraid_nvidia.c $(disk/dmraid_nvidia.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(dm_nv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh dm_nv > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(dm_nv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh dm_nv > $@ || (rm -f $@; exit 1)
+
+parttool-dm_nv_mod-disk_dmraid_nvidia.lst: disk/dmraid_nvidia.c $(disk/dmraid_nvidia.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(dm_nv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh dm_nv > $@ || (rm -f $@; exit 1)
 
 partmap-dm_nv_mod-disk_dmraid_nvidia.lst: disk/dmraid_nvidia.c $(disk/dmraid_nvidia.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(dm_nv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh dm_nv > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(dm_nv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh dm_nv > $@ || (rm -f $@; exit 1)
 
+handler-dm_nv_mod-disk_dmraid_nvidia.lst: disk/dmraid_nvidia.c $(disk/dmraid_nvidia.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(dm_nv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh dm_nv > $@ || (rm -f $@; exit 1)
 
 dm_nv_mod_CFLAGS = $(COMMON_CFLAGS)
 dm_nv_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -2235,11 +3335,20 @@ endif
 MOSTLYCLEANFILES += lvm_mod-disk_lvm.d
 UNDSYMFILES += und-lvm.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 lvm.mod: pre-lvm.o mod-lvm.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(lvm_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-lvm.o mod-lvm.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(lvm_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-lvm.o mod-lvm.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+lvm.mod: pre-lvm.o mod-lvm.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(lvm_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-lvm.o mod-lvm.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-lvm.o: $(lvm_mod_DEPENDENCIES) lvm_mod-disk_lvm.o
 	-rm -f $@
@@ -2252,8 +3361,13 @@ mod-lvm.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'lvm' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(lvm_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-lvm.lst: pre-lvm.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 lvm/' > $@
+else
+def-lvm.lst: pre-lvm.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 lvm/' > $@
+endif
 endif
 
 und-lvm.lst: pre-lvm.o
@@ -2264,20 +3378,27 @@ lvm_mod-disk_lvm.o: disk/lvm.c $(disk/lvm.c_DEPENDENCIES)
 	$(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lvm_mod_CFLAGS) -MD -c -o $@ $<
 -include lvm_mod-disk_lvm.d
 
-CLEANFILES += cmd-lvm_mod-disk_lvm.lst fs-lvm_mod-disk_lvm.lst partmap-lvm_mod-disk_lvm.lst
+CLEANFILES += cmd-lvm_mod-disk_lvm.lst fs-lvm_mod-disk_lvm.lst partmap-lvm_mod-disk_lvm.lst handler-lvm_mod-disk_lvm.lst parttool-lvm_mod-disk_lvm.lst
 COMMANDFILES += cmd-lvm_mod-disk_lvm.lst
 FSFILES += fs-lvm_mod-disk_lvm.lst
+PARTTOOLFILES += parttool-lvm_mod-disk_lvm.lst
 PARTMAPFILES += partmap-lvm_mod-disk_lvm.lst
+HANDLERFILES += handler-lvm_mod-disk_lvm.lst
 
 cmd-lvm_mod-disk_lvm.lst: disk/lvm.c $(disk/lvm.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(lvm_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lvm > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lvm_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lvm > $@ || (rm -f $@; exit 1)
 
 fs-lvm_mod-disk_lvm.lst: disk/lvm.c $(disk/lvm.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(lvm_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lvm > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lvm_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lvm > $@ || (rm -f $@; exit 1)
+
+parttool-lvm_mod-disk_lvm.lst: disk/lvm.c $(disk/lvm.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lvm_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lvm > $@ || (rm -f $@; exit 1)
 
 partmap-lvm_mod-disk_lvm.lst: disk/lvm.c $(disk/lvm.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(lvm_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lvm > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lvm_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lvm > $@ || (rm -f $@; exit 1)
 
+handler-lvm_mod-disk_lvm.lst: disk/lvm.c $(disk/lvm.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lvm_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lvm > $@ || (rm -f $@; exit 1)
 
 lvm_mod_CFLAGS = $(COMMON_CFLAGS)
 lvm_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -2292,11 +3413,20 @@ endif
 MOSTLYCLEANFILES += scsi_mod-disk_scsi.d
 UNDSYMFILES += und-scsi.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 scsi.mod: pre-scsi.o mod-scsi.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(scsi_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-scsi.o mod-scsi.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(scsi_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-scsi.o mod-scsi.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+scsi.mod: pre-scsi.o mod-scsi.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(scsi_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-scsi.o mod-scsi.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-scsi.o: $(scsi_mod_DEPENDENCIES) scsi_mod-disk_scsi.o
 	-rm -f $@
@@ -2309,8 +3439,13 @@ mod-scsi.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'scsi' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(scsi_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-scsi.lst: pre-scsi.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 scsi/' > $@
+else
+def-scsi.lst: pre-scsi.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 scsi/' > $@
+endif
 endif
 
 und-scsi.lst: pre-scsi.o
@@ -2321,30 +3456,378 @@ scsi_mod-disk_scsi.o: disk/scsi.c $(disk/scsi.c_DEPENDENCIES)
 	$(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(scsi_mod_CFLAGS) -MD -c -o $@ $<
 -include scsi_mod-disk_scsi.d
 
-CLEANFILES += cmd-scsi_mod-disk_scsi.lst fs-scsi_mod-disk_scsi.lst partmap-scsi_mod-disk_scsi.lst
+CLEANFILES += cmd-scsi_mod-disk_scsi.lst fs-scsi_mod-disk_scsi.lst partmap-scsi_mod-disk_scsi.lst handler-scsi_mod-disk_scsi.lst parttool-scsi_mod-disk_scsi.lst
 COMMANDFILES += cmd-scsi_mod-disk_scsi.lst
 FSFILES += fs-scsi_mod-disk_scsi.lst
+PARTTOOLFILES += parttool-scsi_mod-disk_scsi.lst
 PARTMAPFILES += partmap-scsi_mod-disk_scsi.lst
+HANDLERFILES += handler-scsi_mod-disk_scsi.lst
 
 cmd-scsi_mod-disk_scsi.lst: disk/scsi.c $(disk/scsi.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(scsi_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh scsi > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(scsi_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh scsi > $@ || (rm -f $@; exit 1)
 
 fs-scsi_mod-disk_scsi.lst: disk/scsi.c $(disk/scsi.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(scsi_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh scsi > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(scsi_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh scsi > $@ || (rm -f $@; exit 1)
+
+parttool-scsi_mod-disk_scsi.lst: disk/scsi.c $(disk/scsi.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(scsi_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh scsi > $@ || (rm -f $@; exit 1)
 
 partmap-scsi_mod-disk_scsi.lst: disk/scsi.c $(disk/scsi.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(scsi_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh scsi > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(scsi_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh scsi > $@ || (rm -f $@; exit 1)
 
+handler-scsi_mod-disk_scsi.lst: disk/scsi.c $(disk/scsi.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(scsi_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh scsi > $@ || (rm -f $@; exit 1)
 
 scsi_mod_CFLAGS = $(COMMON_CFLAGS)
 scsi_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # Commands.
-pkglib_MODULES += hello.mod boot.mod terminal.mod ls.mod	\
-	cmp.mod cat.mod help.mod font.mod search.mod		\
-	loopback.mod fs_uuid.mod configfile.mod echo.mod	\
+pkglib_MODULES += minicmd.mod extcmd.mod hello.mod handler.mod	\
+	ls.mod cmp.mod cat.mod help.mod search.mod loopback.mod	\
+	fs_file.mod fs_uuid.mod configfile.mod echo.mod		\
 	terminfo.mod test.mod blocklist.mod hexdump.mod		\
-	read.mod sleep.mod loadenv.mod crc.mod
+	read.mod sleep.mod loadenv.mod crc.mod parttool.mod	\
+	msdospart.mod memrw.mod normal.mod sh.mod lua.mod	\
+	gptsync.mod true.mod probe.mod password.mod		\
+	keystatus.mod
+
+# For password.mod.
+password_mod_SOURCES = commands/password.c
+CLEANFILES += password.mod mod-password.o mod-password.c pre-password.o password_mod-commands_password.o und-password.lst
+ifneq ($(password_mod_EXPORTS),no)
+CLEANFILES += def-password.lst
+DEFSYMFILES += def-password.lst
+endif
+MOSTLYCLEANFILES += password_mod-commands_password.d
+UNDSYMFILES += und-password.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+password.mod: pre-password.o mod-password.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(password_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-password.o mod-password.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+password.mod: pre-password.o mod-password.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(password_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-password.o mod-password.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-password.o: $(password_mod_DEPENDENCIES) password_mod-commands_password.o
+	-rm -f $@
+	$(TARGET_CC) $(password_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ password_mod-commands_password.o
+
+mod-password.o: mod-password.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(password_mod_CFLAGS) -c -o $@ $<
+
+mod-password.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'password' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(password_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-password.lst: pre-password.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 password/' > $@
+else
+def-password.lst: pre-password.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 password/' > $@
+endif
+endif
+
+und-password.lst: pre-password.o
+	echo 'password' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+password_mod-commands_password.o: commands/password.c $(commands/password.c_DEPENDENCIES)
+	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(password_mod_CFLAGS) -MD -c -o $@ $<
+-include password_mod-commands_password.d
+
+CLEANFILES += cmd-password_mod-commands_password.lst fs-password_mod-commands_password.lst partmap-password_mod-commands_password.lst handler-password_mod-commands_password.lst parttool-password_mod-commands_password.lst
+COMMANDFILES += cmd-password_mod-commands_password.lst
+FSFILES += fs-password_mod-commands_password.lst
+PARTTOOLFILES += parttool-password_mod-commands_password.lst
+PARTMAPFILES += partmap-password_mod-commands_password.lst
+HANDLERFILES += handler-password_mod-commands_password.lst
+
+cmd-password_mod-commands_password.lst: commands/password.c $(commands/password.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(password_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh password > $@ || (rm -f $@; exit 1)
+
+fs-password_mod-commands_password.lst: commands/password.c $(commands/password.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(password_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh password > $@ || (rm -f $@; exit 1)
+
+parttool-password_mod-commands_password.lst: commands/password.c $(commands/password.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(password_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh password > $@ || (rm -f $@; exit 1)
+
+partmap-password_mod-commands_password.lst: commands/password.c $(commands/password.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(password_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh password > $@ || (rm -f $@; exit 1)
+
+handler-password_mod-commands_password.lst: commands/password.c $(commands/password.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(password_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh password > $@ || (rm -f $@; exit 1)
+
+password_mod_CFLAGS = $(COMMON_CFLAGS)
+password_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For gptsync.mod.
+gptsync_mod_SOURCES = commands/gptsync.c
+CLEANFILES += gptsync.mod mod-gptsync.o mod-gptsync.c pre-gptsync.o gptsync_mod-commands_gptsync.o und-gptsync.lst
+ifneq ($(gptsync_mod_EXPORTS),no)
+CLEANFILES += def-gptsync.lst
+DEFSYMFILES += def-gptsync.lst
+endif
+MOSTLYCLEANFILES += gptsync_mod-commands_gptsync.d
+UNDSYMFILES += und-gptsync.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+gptsync.mod: pre-gptsync.o mod-gptsync.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(gptsync_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-gptsync.o mod-gptsync.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+gptsync.mod: pre-gptsync.o mod-gptsync.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(gptsync_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-gptsync.o mod-gptsync.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-gptsync.o: $(gptsync_mod_DEPENDENCIES) gptsync_mod-commands_gptsync.o
+	-rm -f $@
+	$(TARGET_CC) $(gptsync_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ gptsync_mod-commands_gptsync.o
+
+mod-gptsync.o: mod-gptsync.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(gptsync_mod_CFLAGS) -c -o $@ $<
+
+mod-gptsync.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'gptsync' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(gptsync_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-gptsync.lst: pre-gptsync.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 gptsync/' > $@
+else
+def-gptsync.lst: pre-gptsync.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 gptsync/' > $@
+endif
+endif
+
+und-gptsync.lst: pre-gptsync.o
+	echo 'gptsync' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+gptsync_mod-commands_gptsync.o: commands/gptsync.c $(commands/gptsync.c_DEPENDENCIES)
+	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gptsync_mod_CFLAGS) -MD -c -o $@ $<
+-include gptsync_mod-commands_gptsync.d
+
+CLEANFILES += cmd-gptsync_mod-commands_gptsync.lst fs-gptsync_mod-commands_gptsync.lst partmap-gptsync_mod-commands_gptsync.lst handler-gptsync_mod-commands_gptsync.lst parttool-gptsync_mod-commands_gptsync.lst
+COMMANDFILES += cmd-gptsync_mod-commands_gptsync.lst
+FSFILES += fs-gptsync_mod-commands_gptsync.lst
+PARTTOOLFILES += parttool-gptsync_mod-commands_gptsync.lst
+PARTMAPFILES += partmap-gptsync_mod-commands_gptsync.lst
+HANDLERFILES += handler-gptsync_mod-commands_gptsync.lst
+
+cmd-gptsync_mod-commands_gptsync.lst: commands/gptsync.c $(commands/gptsync.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gptsync_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh gptsync > $@ || (rm -f $@; exit 1)
+
+fs-gptsync_mod-commands_gptsync.lst: commands/gptsync.c $(commands/gptsync.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gptsync_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh gptsync > $@ || (rm -f $@; exit 1)
+
+parttool-gptsync_mod-commands_gptsync.lst: commands/gptsync.c $(commands/gptsync.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gptsync_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh gptsync > $@ || (rm -f $@; exit 1)
+
+partmap-gptsync_mod-commands_gptsync.lst: commands/gptsync.c $(commands/gptsync.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gptsync_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh gptsync > $@ || (rm -f $@; exit 1)
+
+handler-gptsync_mod-commands_gptsync.lst: commands/gptsync.c $(commands/gptsync.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gptsync_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh gptsync > $@ || (rm -f $@; exit 1)
+
+gptsync_mod_CFLAGS = $(COMMON_CFLAGS)
+gptsync_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For minicmd.mod.
+minicmd_mod_SOURCES = commands/minicmd.c
+CLEANFILES += minicmd.mod mod-minicmd.o mod-minicmd.c pre-minicmd.o minicmd_mod-commands_minicmd.o und-minicmd.lst
+ifneq ($(minicmd_mod_EXPORTS),no)
+CLEANFILES += def-minicmd.lst
+DEFSYMFILES += def-minicmd.lst
+endif
+MOSTLYCLEANFILES += minicmd_mod-commands_minicmd.d
+UNDSYMFILES += und-minicmd.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+minicmd.mod: pre-minicmd.o mod-minicmd.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(minicmd_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-minicmd.o mod-minicmd.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+minicmd.mod: pre-minicmd.o mod-minicmd.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(minicmd_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-minicmd.o mod-minicmd.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-minicmd.o: $(minicmd_mod_DEPENDENCIES) minicmd_mod-commands_minicmd.o
+	-rm -f $@
+	$(TARGET_CC) $(minicmd_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ minicmd_mod-commands_minicmd.o
+
+mod-minicmd.o: mod-minicmd.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(minicmd_mod_CFLAGS) -c -o $@ $<
+
+mod-minicmd.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'minicmd' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(minicmd_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-minicmd.lst: pre-minicmd.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 minicmd/' > $@
+else
+def-minicmd.lst: pre-minicmd.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 minicmd/' > $@
+endif
+endif
+
+und-minicmd.lst: pre-minicmd.o
+	echo 'minicmd' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+minicmd_mod-commands_minicmd.o: commands/minicmd.c $(commands/minicmd.c_DEPENDENCIES)
+	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(minicmd_mod_CFLAGS) -MD -c -o $@ $<
+-include minicmd_mod-commands_minicmd.d
+
+CLEANFILES += cmd-minicmd_mod-commands_minicmd.lst fs-minicmd_mod-commands_minicmd.lst partmap-minicmd_mod-commands_minicmd.lst handler-minicmd_mod-commands_minicmd.lst parttool-minicmd_mod-commands_minicmd.lst
+COMMANDFILES += cmd-minicmd_mod-commands_minicmd.lst
+FSFILES += fs-minicmd_mod-commands_minicmd.lst
+PARTTOOLFILES += parttool-minicmd_mod-commands_minicmd.lst
+PARTMAPFILES += partmap-minicmd_mod-commands_minicmd.lst
+HANDLERFILES += handler-minicmd_mod-commands_minicmd.lst
+
+cmd-minicmd_mod-commands_minicmd.lst: commands/minicmd.c $(commands/minicmd.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(minicmd_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh minicmd > $@ || (rm -f $@; exit 1)
+
+fs-minicmd_mod-commands_minicmd.lst: commands/minicmd.c $(commands/minicmd.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(minicmd_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh minicmd > $@ || (rm -f $@; exit 1)
+
+parttool-minicmd_mod-commands_minicmd.lst: commands/minicmd.c $(commands/minicmd.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(minicmd_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh minicmd > $@ || (rm -f $@; exit 1)
+
+partmap-minicmd_mod-commands_minicmd.lst: commands/minicmd.c $(commands/minicmd.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(minicmd_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh minicmd > $@ || (rm -f $@; exit 1)
+
+handler-minicmd_mod-commands_minicmd.lst: commands/minicmd.c $(commands/minicmd.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(minicmd_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh minicmd > $@ || (rm -f $@; exit 1)
+
+minicmd_mod_CFLAGS = $(COMMON_CFLAGS)
+minicmd_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For extcmd.mod.
+extcmd_mod_SOURCES = commands/extcmd.c lib/arg.c
+CLEANFILES += extcmd.mod mod-extcmd.o mod-extcmd.c pre-extcmd.o extcmd_mod-commands_extcmd.o extcmd_mod-lib_arg.o und-extcmd.lst
+ifneq ($(extcmd_mod_EXPORTS),no)
+CLEANFILES += def-extcmd.lst
+DEFSYMFILES += def-extcmd.lst
+endif
+MOSTLYCLEANFILES += extcmd_mod-commands_extcmd.d extcmd_mod-lib_arg.d
+UNDSYMFILES += und-extcmd.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+extcmd.mod: pre-extcmd.o mod-extcmd.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(extcmd_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-extcmd.o mod-extcmd.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+extcmd.mod: pre-extcmd.o mod-extcmd.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(extcmd_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-extcmd.o mod-extcmd.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-extcmd.o: $(extcmd_mod_DEPENDENCIES) extcmd_mod-commands_extcmd.o extcmd_mod-lib_arg.o
+	-rm -f $@
+	$(TARGET_CC) $(extcmd_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ extcmd_mod-commands_extcmd.o extcmd_mod-lib_arg.o
+
+mod-extcmd.o: mod-extcmd.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(extcmd_mod_CFLAGS) -c -o $@ $<
+
+mod-extcmd.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'extcmd' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(extcmd_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-extcmd.lst: pre-extcmd.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 extcmd/' > $@
+else
+def-extcmd.lst: pre-extcmd.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 extcmd/' > $@
+endif
+endif
+
+und-extcmd.lst: pre-extcmd.o
+	echo 'extcmd' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+extcmd_mod-commands_extcmd.o: commands/extcmd.c $(commands/extcmd.c_DEPENDENCIES)
+	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(extcmd_mod_CFLAGS) -MD -c -o $@ $<
+-include extcmd_mod-commands_extcmd.d
+
+CLEANFILES += cmd-extcmd_mod-commands_extcmd.lst fs-extcmd_mod-commands_extcmd.lst partmap-extcmd_mod-commands_extcmd.lst handler-extcmd_mod-commands_extcmd.lst parttool-extcmd_mod-commands_extcmd.lst
+COMMANDFILES += cmd-extcmd_mod-commands_extcmd.lst
+FSFILES += fs-extcmd_mod-commands_extcmd.lst
+PARTTOOLFILES += parttool-extcmd_mod-commands_extcmd.lst
+PARTMAPFILES += partmap-extcmd_mod-commands_extcmd.lst
+HANDLERFILES += handler-extcmd_mod-commands_extcmd.lst
+
+cmd-extcmd_mod-commands_extcmd.lst: commands/extcmd.c $(commands/extcmd.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(extcmd_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh extcmd > $@ || (rm -f $@; exit 1)
+
+fs-extcmd_mod-commands_extcmd.lst: commands/extcmd.c $(commands/extcmd.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(extcmd_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh extcmd > $@ || (rm -f $@; exit 1)
+
+parttool-extcmd_mod-commands_extcmd.lst: commands/extcmd.c $(commands/extcmd.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(extcmd_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh extcmd > $@ || (rm -f $@; exit 1)
+
+partmap-extcmd_mod-commands_extcmd.lst: commands/extcmd.c $(commands/extcmd.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(extcmd_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh extcmd > $@ || (rm -f $@; exit 1)
+
+handler-extcmd_mod-commands_extcmd.lst: commands/extcmd.c $(commands/extcmd.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(extcmd_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh extcmd > $@ || (rm -f $@; exit 1)
+
+extcmd_mod-lib_arg.o: lib/arg.c $(lib/arg.c_DEPENDENCIES)
+	$(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(extcmd_mod_CFLAGS) -MD -c -o $@ $<
+-include extcmd_mod-lib_arg.d
+
+CLEANFILES += cmd-extcmd_mod-lib_arg.lst fs-extcmd_mod-lib_arg.lst partmap-extcmd_mod-lib_arg.lst handler-extcmd_mod-lib_arg.lst parttool-extcmd_mod-lib_arg.lst
+COMMANDFILES += cmd-extcmd_mod-lib_arg.lst
+FSFILES += fs-extcmd_mod-lib_arg.lst
+PARTTOOLFILES += parttool-extcmd_mod-lib_arg.lst
+PARTMAPFILES += partmap-extcmd_mod-lib_arg.lst
+HANDLERFILES += handler-extcmd_mod-lib_arg.lst
+
+cmd-extcmd_mod-lib_arg.lst: lib/arg.c $(lib/arg.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(extcmd_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh extcmd > $@ || (rm -f $@; exit 1)
+
+fs-extcmd_mod-lib_arg.lst: lib/arg.c $(lib/arg.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(extcmd_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh extcmd > $@ || (rm -f $@; exit 1)
+
+parttool-extcmd_mod-lib_arg.lst: lib/arg.c $(lib/arg.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(extcmd_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh extcmd > $@ || (rm -f $@; exit 1)
+
+partmap-extcmd_mod-lib_arg.lst: lib/arg.c $(lib/arg.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(extcmd_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh extcmd > $@ || (rm -f $@; exit 1)
+
+handler-extcmd_mod-lib_arg.lst: lib/arg.c $(lib/arg.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(extcmd_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh extcmd > $@ || (rm -f $@; exit 1)
+
+extcmd_mod_CFLAGS = $(COMMON_CFLAGS)
+extcmd_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For hello.mod.
 hello_mod_SOURCES = hello/hello.c
@@ -2356,11 +3839,20 @@ endif
 MOSTLYCLEANFILES += hello_mod-hello_hello.d
 UNDSYMFILES += und-hello.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 hello.mod: pre-hello.o mod-hello.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(hello_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-hello.o mod-hello.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(hello_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-hello.o mod-hello.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+hello.mod: pre-hello.o mod-hello.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(hello_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-hello.o mod-hello.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-hello.o: $(hello_mod_DEPENDENCIES) hello_mod-hello_hello.o
 	-rm -f $@
@@ -2373,8 +3865,13 @@ mod-hello.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'hello' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(hello_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-hello.lst: pre-hello.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 hello/' > $@
+else
+def-hello.lst: pre-hello.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 hello/' > $@
+endif
 endif
 
 und-hello.lst: pre-hello.o
@@ -2385,137 +3882,264 @@ hello_mod-hello_hello.o: hello/hello.c $(hello/hello.c_DEPENDENCIES)
 	$(TARGET_CC) -Ihello -I$(srcdir)/hello $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hello_mod_CFLAGS) -MD -c -o $@ $<
 -include hello_mod-hello_hello.d
 
-CLEANFILES += cmd-hello_mod-hello_hello.lst fs-hello_mod-hello_hello.lst partmap-hello_mod-hello_hello.lst
+CLEANFILES += cmd-hello_mod-hello_hello.lst fs-hello_mod-hello_hello.lst partmap-hello_mod-hello_hello.lst handler-hello_mod-hello_hello.lst parttool-hello_mod-hello_hello.lst
 COMMANDFILES += cmd-hello_mod-hello_hello.lst
 FSFILES += fs-hello_mod-hello_hello.lst
+PARTTOOLFILES += parttool-hello_mod-hello_hello.lst
 PARTMAPFILES += partmap-hello_mod-hello_hello.lst
+HANDLERFILES += handler-hello_mod-hello_hello.lst
 
 cmd-hello_mod-hello_hello.lst: hello/hello.c $(hello/hello.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ihello -I$(srcdir)/hello $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(hello_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh hello > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ihello -I$(srcdir)/hello $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hello_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh hello > $@ || (rm -f $@; exit 1)
 
 fs-hello_mod-hello_hello.lst: hello/hello.c $(hello/hello.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ihello -I$(srcdir)/hello $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(hello_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh hello > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ihello -I$(srcdir)/hello $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hello_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh hello > $@ || (rm -f $@; exit 1)
+
+parttool-hello_mod-hello_hello.lst: hello/hello.c $(hello/hello.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ihello -I$(srcdir)/hello $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hello_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh hello > $@ || (rm -f $@; exit 1)
 
 partmap-hello_mod-hello_hello.lst: hello/hello.c $(hello/hello.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ihello -I$(srcdir)/hello $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(hello_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh hello > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ihello -I$(srcdir)/hello $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hello_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh hello > $@ || (rm -f $@; exit 1)
 
+handler-hello_mod-hello_hello.lst: hello/hello.c $(hello/hello.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ihello -I$(srcdir)/hello $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hello_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh hello > $@ || (rm -f $@; exit 1)
 
 hello_mod_CFLAGS = $(COMMON_CFLAGS)
 hello_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For boot.mod.
-boot_mod_SOURCES = commands/boot.c
-CLEANFILES += boot.mod mod-boot.o mod-boot.c pre-boot.o boot_mod-commands_boot.o und-boot.lst
-ifneq ($(boot_mod_EXPORTS),no)
-CLEANFILES += def-boot.lst
-DEFSYMFILES += def-boot.lst
+# For parttool.mod.
+parttool_mod_SOURCES = commands/parttool.c
+CLEANFILES += parttool.mod mod-parttool.o mod-parttool.c pre-parttool.o parttool_mod-commands_parttool.o und-parttool.lst
+ifneq ($(parttool_mod_EXPORTS),no)
+CLEANFILES += def-parttool.lst
+DEFSYMFILES += def-parttool.lst
 endif
-MOSTLYCLEANFILES += boot_mod-commands_boot.d
-UNDSYMFILES += und-boot.lst
+MOSTLYCLEANFILES += parttool_mod-commands_parttool.d
+UNDSYMFILES += und-parttool.lst
 
-boot.mod: pre-boot.o mod-boot.o $(TARGET_OBJ2ELF)
+ifneq ($(TARGET_APPLE_CC),1)
+parttool.mod: pre-parttool.o mod-parttool.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(boot_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-boot.o mod-boot.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(parttool_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-parttool.o mod-parttool.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
-
-pre-boot.o: $(boot_mod_DEPENDENCIES) boot_mod-commands_boot.o
+else
+parttool.mod: pre-parttool.o mod-parttool.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(boot_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ boot_mod-commands_boot.o
-
-mod-boot.o: mod-boot.c
-	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(boot_mod_CFLAGS) -c -o $@ $<
-
-mod-boot.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
-	sh $(srcdir)/genmodsrc.sh 'boot' $< > $@ || (rm -f $@; exit 1)
-
-ifneq ($(boot_mod_EXPORTS),no)
-def-boot.lst: pre-boot.o
-	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 boot/' > $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(parttool_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-parttool.o mod-parttool.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
 endif
 
-und-boot.lst: pre-boot.o
-	echo 'boot' > $@
+pre-parttool.o: $(parttool_mod_DEPENDENCIES) parttool_mod-commands_parttool.o
+	-rm -f $@
+	$(TARGET_CC) $(parttool_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ parttool_mod-commands_parttool.o
+
+mod-parttool.o: mod-parttool.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(parttool_mod_CFLAGS) -c -o $@ $<
+
+mod-parttool.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'parttool' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(parttool_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-parttool.lst: pre-parttool.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 parttool/' > $@
+else
+def-parttool.lst: pre-parttool.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 parttool/' > $@
+endif
+endif
+
+und-parttool.lst: pre-parttool.o
+	echo 'parttool' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-boot_mod-commands_boot.o: commands/boot.c $(commands/boot.c_DEPENDENCIES)
-	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(boot_mod_CFLAGS) -MD -c -o $@ $<
--include boot_mod-commands_boot.d
+parttool_mod-commands_parttool.o: commands/parttool.c $(commands/parttool.c_DEPENDENCIES)
+	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(parttool_mod_CFLAGS) -MD -c -o $@ $<
+-include parttool_mod-commands_parttool.d
 
-CLEANFILES += cmd-boot_mod-commands_boot.lst fs-boot_mod-commands_boot.lst partmap-boot_mod-commands_boot.lst
-COMMANDFILES += cmd-boot_mod-commands_boot.lst
-FSFILES += fs-boot_mod-commands_boot.lst
-PARTMAPFILES += partmap-boot_mod-commands_boot.lst
+CLEANFILES += cmd-parttool_mod-commands_parttool.lst fs-parttool_mod-commands_parttool.lst partmap-parttool_mod-commands_parttool.lst handler-parttool_mod-commands_parttool.lst parttool-parttool_mod-commands_parttool.lst
+COMMANDFILES += cmd-parttool_mod-commands_parttool.lst
+FSFILES += fs-parttool_mod-commands_parttool.lst
+PARTTOOLFILES += parttool-parttool_mod-commands_parttool.lst
+PARTMAPFILES += partmap-parttool_mod-commands_parttool.lst
+HANDLERFILES += handler-parttool_mod-commands_parttool.lst
 
-cmd-boot_mod-commands_boot.lst: commands/boot.c $(commands/boot.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(boot_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh boot > $@ || (rm -f $@; exit 1)
+cmd-parttool_mod-commands_parttool.lst: commands/parttool.c $(commands/parttool.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(parttool_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh parttool > $@ || (rm -f $@; exit 1)
 
-fs-boot_mod-commands_boot.lst: commands/boot.c $(commands/boot.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(boot_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh boot > $@ || (rm -f $@; exit 1)
+fs-parttool_mod-commands_parttool.lst: commands/parttool.c $(commands/parttool.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(parttool_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh parttool > $@ || (rm -f $@; exit 1)
 
-partmap-boot_mod-commands_boot.lst: commands/boot.c $(commands/boot.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(boot_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh boot > $@ || (rm -f $@; exit 1)
+parttool-parttool_mod-commands_parttool.lst: commands/parttool.c $(commands/parttool.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(parttool_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh parttool > $@ || (rm -f $@; exit 1)
 
+partmap-parttool_mod-commands_parttool.lst: commands/parttool.c $(commands/parttool.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(parttool_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh parttool > $@ || (rm -f $@; exit 1)
 
-boot_mod_CFLAGS = $(COMMON_CFLAGS)
-boot_mod_LDFLAGS = $(COMMON_LDFLAGS)
+handler-parttool_mod-commands_parttool.lst: commands/parttool.c $(commands/parttool.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(parttool_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh parttool > $@ || (rm -f $@; exit 1)
 
-# For terminal.mod.
-terminal_mod_SOURCES = commands/terminal.c
-CLEANFILES += terminal.mod mod-terminal.o mod-terminal.c pre-terminal.o terminal_mod-commands_terminal.o und-terminal.lst
-ifneq ($(terminal_mod_EXPORTS),no)
-CLEANFILES += def-terminal.lst
-DEFSYMFILES += def-terminal.lst
+parttool_mod_CFLAGS = $(COMMON_CFLAGS)
+parttool_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For msdospart.mod.
+msdospart_mod_SOURCES = parttool/msdospart.c
+CLEANFILES += msdospart.mod mod-msdospart.o mod-msdospart.c pre-msdospart.o msdospart_mod-parttool_msdospart.o und-msdospart.lst
+ifneq ($(msdospart_mod_EXPORTS),no)
+CLEANFILES += def-msdospart.lst
+DEFSYMFILES += def-msdospart.lst
 endif
-MOSTLYCLEANFILES += terminal_mod-commands_terminal.d
-UNDSYMFILES += und-terminal.lst
+MOSTLYCLEANFILES += msdospart_mod-parttool_msdospart.d
+UNDSYMFILES += und-msdospart.lst
 
-terminal.mod: pre-terminal.o mod-terminal.o $(TARGET_OBJ2ELF)
+ifneq ($(TARGET_APPLE_CC),1)
+msdospart.mod: pre-msdospart.o mod-msdospart.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(terminal_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-terminal.o mod-terminal.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(msdospart_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-msdospart.o mod-msdospart.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
-
-pre-terminal.o: $(terminal_mod_DEPENDENCIES) terminal_mod-commands_terminal.o
+else
+msdospart.mod: pre-msdospart.o mod-msdospart.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(terminal_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ terminal_mod-commands_terminal.o
-
-mod-terminal.o: mod-terminal.c
-	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(terminal_mod_CFLAGS) -c -o $@ $<
-
-mod-terminal.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
-	sh $(srcdir)/genmodsrc.sh 'terminal' $< > $@ || (rm -f $@; exit 1)
-
-ifneq ($(terminal_mod_EXPORTS),no)
-def-terminal.lst: pre-terminal.o
-	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 terminal/' > $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(msdospart_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-msdospart.o mod-msdospart.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
 endif
 
-und-terminal.lst: pre-terminal.o
-	echo 'terminal' > $@
+pre-msdospart.o: $(msdospart_mod_DEPENDENCIES) msdospart_mod-parttool_msdospart.o
+	-rm -f $@
+	$(TARGET_CC) $(msdospart_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ msdospart_mod-parttool_msdospart.o
+
+mod-msdospart.o: mod-msdospart.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(msdospart_mod_CFLAGS) -c -o $@ $<
+
+mod-msdospart.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'msdospart' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(msdospart_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-msdospart.lst: pre-msdospart.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 msdospart/' > $@
+else
+def-msdospart.lst: pre-msdospart.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 msdospart/' > $@
+endif
+endif
+
+und-msdospart.lst: pre-msdospart.o
+	echo 'msdospart' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-terminal_mod-commands_terminal.o: commands/terminal.c $(commands/terminal.c_DEPENDENCIES)
-	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(terminal_mod_CFLAGS) -MD -c -o $@ $<
--include terminal_mod-commands_terminal.d
+msdospart_mod-parttool_msdospart.o: parttool/msdospart.c $(parttool/msdospart.c_DEPENDENCIES)
+	$(TARGET_CC) -Iparttool -I$(srcdir)/parttool $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(msdospart_mod_CFLAGS) -MD -c -o $@ $<
+-include msdospart_mod-parttool_msdospart.d
 
-CLEANFILES += cmd-terminal_mod-commands_terminal.lst fs-terminal_mod-commands_terminal.lst partmap-terminal_mod-commands_terminal.lst
-COMMANDFILES += cmd-terminal_mod-commands_terminal.lst
-FSFILES += fs-terminal_mod-commands_terminal.lst
-PARTMAPFILES += partmap-terminal_mod-commands_terminal.lst
+CLEANFILES += cmd-msdospart_mod-parttool_msdospart.lst fs-msdospart_mod-parttool_msdospart.lst partmap-msdospart_mod-parttool_msdospart.lst handler-msdospart_mod-parttool_msdospart.lst parttool-msdospart_mod-parttool_msdospart.lst
+COMMANDFILES += cmd-msdospart_mod-parttool_msdospart.lst
+FSFILES += fs-msdospart_mod-parttool_msdospart.lst
+PARTTOOLFILES += parttool-msdospart_mod-parttool_msdospart.lst
+PARTMAPFILES += partmap-msdospart_mod-parttool_msdospart.lst
+HANDLERFILES += handler-msdospart_mod-parttool_msdospart.lst
 
-cmd-terminal_mod-commands_terminal.lst: commands/terminal.c $(commands/terminal.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(terminal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh terminal > $@ || (rm -f $@; exit 1)
+cmd-msdospart_mod-parttool_msdospart.lst: parttool/msdospart.c $(parttool/msdospart.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iparttool -I$(srcdir)/parttool $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(msdospart_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh msdospart > $@ || (rm -f $@; exit 1)
 
-fs-terminal_mod-commands_terminal.lst: commands/terminal.c $(commands/terminal.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(terminal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh terminal > $@ || (rm -f $@; exit 1)
+fs-msdospart_mod-parttool_msdospart.lst: parttool/msdospart.c $(parttool/msdospart.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iparttool -I$(srcdir)/parttool $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(msdospart_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh msdospart > $@ || (rm -f $@; exit 1)
 
-partmap-terminal_mod-commands_terminal.lst: commands/terminal.c $(commands/terminal.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(terminal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh terminal > $@ || (rm -f $@; exit 1)
+parttool-msdospart_mod-parttool_msdospart.lst: parttool/msdospart.c $(parttool/msdospart.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iparttool -I$(srcdir)/parttool $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(msdospart_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh msdospart > $@ || (rm -f $@; exit 1)
 
+partmap-msdospart_mod-parttool_msdospart.lst: parttool/msdospart.c $(parttool/msdospart.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iparttool -I$(srcdir)/parttool $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(msdospart_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh msdospart > $@ || (rm -f $@; exit 1)
 
-terminal_mod_CFLAGS = $(COMMON_CFLAGS)
-terminal_mod_LDFLAGS = $(COMMON_LDFLAGS)
+handler-msdospart_mod-parttool_msdospart.lst: parttool/msdospart.c $(parttool/msdospart.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iparttool -I$(srcdir)/parttool $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(msdospart_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh msdospart > $@ || (rm -f $@; exit 1)
+
+msdospart_mod_CFLAGS = $(COMMON_CFLAGS)
+msdospart_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For handler.mod.
+handler_mod_SOURCES = commands/handler.c
+CLEANFILES += handler.mod mod-handler.o mod-handler.c pre-handler.o handler_mod-commands_handler.o und-handler.lst
+ifneq ($(handler_mod_EXPORTS),no)
+CLEANFILES += def-handler.lst
+DEFSYMFILES += def-handler.lst
+endif
+MOSTLYCLEANFILES += handler_mod-commands_handler.d
+UNDSYMFILES += und-handler.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+handler.mod: pre-handler.o mod-handler.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(handler_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-handler.o mod-handler.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+handler.mod: pre-handler.o mod-handler.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(handler_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-handler.o mod-handler.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-handler.o: $(handler_mod_DEPENDENCIES) handler_mod-commands_handler.o
+	-rm -f $@
+	$(TARGET_CC) $(handler_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ handler_mod-commands_handler.o
+
+mod-handler.o: mod-handler.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(handler_mod_CFLAGS) -c -o $@ $<
+
+mod-handler.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'handler' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(handler_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-handler.lst: pre-handler.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 handler/' > $@
+else
+def-handler.lst: pre-handler.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 handler/' > $@
+endif
+endif
+
+und-handler.lst: pre-handler.o
+	echo 'handler' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+handler_mod-commands_handler.o: commands/handler.c $(commands/handler.c_DEPENDENCIES)
+	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(handler_mod_CFLAGS) -MD -c -o $@ $<
+-include handler_mod-commands_handler.d
+
+CLEANFILES += cmd-handler_mod-commands_handler.lst fs-handler_mod-commands_handler.lst partmap-handler_mod-commands_handler.lst handler-handler_mod-commands_handler.lst parttool-handler_mod-commands_handler.lst
+COMMANDFILES += cmd-handler_mod-commands_handler.lst
+FSFILES += fs-handler_mod-commands_handler.lst
+PARTTOOLFILES += parttool-handler_mod-commands_handler.lst
+PARTMAPFILES += partmap-handler_mod-commands_handler.lst
+HANDLERFILES += handler-handler_mod-commands_handler.lst
+
+cmd-handler_mod-commands_handler.lst: commands/handler.c $(commands/handler.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(handler_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh handler > $@ || (rm -f $@; exit 1)
+
+fs-handler_mod-commands_handler.lst: commands/handler.c $(commands/handler.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(handler_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh handler > $@ || (rm -f $@; exit 1)
+
+parttool-handler_mod-commands_handler.lst: commands/handler.c $(commands/handler.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(handler_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh handler > $@ || (rm -f $@; exit 1)
+
+partmap-handler_mod-commands_handler.lst: commands/handler.c $(commands/handler.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(handler_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh handler > $@ || (rm -f $@; exit 1)
+
+handler-handler_mod-commands_handler.lst: commands/handler.c $(commands/handler.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(handler_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh handler > $@ || (rm -f $@; exit 1)
+
+handler_mod_CFLAGS = $(COMMON_CFLAGS)
+handler_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For ls.mod.
 ls_mod_SOURCES = commands/ls.c
@@ -2527,11 +4151,20 @@ endif
 MOSTLYCLEANFILES += ls_mod-commands_ls.d
 UNDSYMFILES += und-ls.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 ls.mod: pre-ls.o mod-ls.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(ls_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-ls.o mod-ls.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(ls_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-ls.o mod-ls.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+ls.mod: pre-ls.o mod-ls.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(ls_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-ls.o mod-ls.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-ls.o: $(ls_mod_DEPENDENCIES) ls_mod-commands_ls.o
 	-rm -f $@
@@ -2544,8 +4177,13 @@ mod-ls.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'ls' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(ls_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-ls.lst: pre-ls.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 ls/' > $@
+else
+def-ls.lst: pre-ls.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 ls/' > $@
+endif
 endif
 
 und-ls.lst: pre-ls.o
@@ -2556,20 +4194,27 @@ ls_mod-commands_ls.o: commands/ls.c $(commands/ls.c_DEPENDENCIES)
 	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ls_mod_CFLAGS) -MD -c -o $@ $<
 -include ls_mod-commands_ls.d
 
-CLEANFILES += cmd-ls_mod-commands_ls.lst fs-ls_mod-commands_ls.lst partmap-ls_mod-commands_ls.lst
+CLEANFILES += cmd-ls_mod-commands_ls.lst fs-ls_mod-commands_ls.lst partmap-ls_mod-commands_ls.lst handler-ls_mod-commands_ls.lst parttool-ls_mod-commands_ls.lst
 COMMANDFILES += cmd-ls_mod-commands_ls.lst
 FSFILES += fs-ls_mod-commands_ls.lst
+PARTTOOLFILES += parttool-ls_mod-commands_ls.lst
 PARTMAPFILES += partmap-ls_mod-commands_ls.lst
+HANDLERFILES += handler-ls_mod-commands_ls.lst
 
 cmd-ls_mod-commands_ls.lst: commands/ls.c $(commands/ls.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ls_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh ls > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ls_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh ls > $@ || (rm -f $@; exit 1)
 
 fs-ls_mod-commands_ls.lst: commands/ls.c $(commands/ls.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ls_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh ls > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ls_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh ls > $@ || (rm -f $@; exit 1)
+
+parttool-ls_mod-commands_ls.lst: commands/ls.c $(commands/ls.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ls_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh ls > $@ || (rm -f $@; exit 1)
 
 partmap-ls_mod-commands_ls.lst: commands/ls.c $(commands/ls.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ls_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh ls > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ls_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh ls > $@ || (rm -f $@; exit 1)
 
+handler-ls_mod-commands_ls.lst: commands/ls.c $(commands/ls.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ls_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh ls > $@ || (rm -f $@; exit 1)
 
 ls_mod_CFLAGS = $(COMMON_CFLAGS)
 ls_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -2584,11 +4229,20 @@ endif
 MOSTLYCLEANFILES += cmp_mod-commands_cmp.d
 UNDSYMFILES += und-cmp.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 cmp.mod: pre-cmp.o mod-cmp.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(cmp_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-cmp.o mod-cmp.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(cmp_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-cmp.o mod-cmp.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+cmp.mod: pre-cmp.o mod-cmp.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(cmp_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-cmp.o mod-cmp.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-cmp.o: $(cmp_mod_DEPENDENCIES) cmp_mod-commands_cmp.o
 	-rm -f $@
@@ -2601,8 +4255,13 @@ mod-cmp.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'cmp' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(cmp_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-cmp.lst: pre-cmp.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 cmp/' > $@
+else
+def-cmp.lst: pre-cmp.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 cmp/' > $@
+endif
 endif
 
 und-cmp.lst: pre-cmp.o
@@ -2613,20 +4272,27 @@ cmp_mod-commands_cmp.o: commands/cmp.c $(commands/cmp.c_DEPENDENCIES)
 	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cmp_mod_CFLAGS) -MD -c -o $@ $<
 -include cmp_mod-commands_cmp.d
 
-CLEANFILES += cmd-cmp_mod-commands_cmp.lst fs-cmp_mod-commands_cmp.lst partmap-cmp_mod-commands_cmp.lst
+CLEANFILES += cmd-cmp_mod-commands_cmp.lst fs-cmp_mod-commands_cmp.lst partmap-cmp_mod-commands_cmp.lst handler-cmp_mod-commands_cmp.lst parttool-cmp_mod-commands_cmp.lst
 COMMANDFILES += cmd-cmp_mod-commands_cmp.lst
 FSFILES += fs-cmp_mod-commands_cmp.lst
+PARTTOOLFILES += parttool-cmp_mod-commands_cmp.lst
 PARTMAPFILES += partmap-cmp_mod-commands_cmp.lst
+HANDLERFILES += handler-cmp_mod-commands_cmp.lst
 
 cmd-cmp_mod-commands_cmp.lst: commands/cmp.c $(commands/cmp.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(cmp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh cmp > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cmp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh cmp > $@ || (rm -f $@; exit 1)
 
 fs-cmp_mod-commands_cmp.lst: commands/cmp.c $(commands/cmp.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(cmp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh cmp > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cmp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh cmp > $@ || (rm -f $@; exit 1)
+
+parttool-cmp_mod-commands_cmp.lst: commands/cmp.c $(commands/cmp.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cmp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh cmp > $@ || (rm -f $@; exit 1)
 
 partmap-cmp_mod-commands_cmp.lst: commands/cmp.c $(commands/cmp.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(cmp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh cmp > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cmp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh cmp > $@ || (rm -f $@; exit 1)
 
+handler-cmp_mod-commands_cmp.lst: commands/cmp.c $(commands/cmp.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cmp_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh cmp > $@ || (rm -f $@; exit 1)
 
 cmp_mod_CFLAGS = $(COMMON_CFLAGS)
 cmp_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -2641,11 +4307,20 @@ endif
 MOSTLYCLEANFILES += cat_mod-commands_cat.d
 UNDSYMFILES += und-cat.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 cat.mod: pre-cat.o mod-cat.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(cat_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-cat.o mod-cat.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(cat_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-cat.o mod-cat.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+cat.mod: pre-cat.o mod-cat.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(cat_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-cat.o mod-cat.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-cat.o: $(cat_mod_DEPENDENCIES) cat_mod-commands_cat.o
 	-rm -f $@
@@ -2658,8 +4333,13 @@ mod-cat.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'cat' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(cat_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-cat.lst: pre-cat.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 cat/' > $@
+else
+def-cat.lst: pre-cat.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 cat/' > $@
+endif
 endif
 
 und-cat.lst: pre-cat.o
@@ -2670,20 +4350,27 @@ cat_mod-commands_cat.o: commands/cat.c $(commands/cat.c_DEPENDENCIES)
 	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cat_mod_CFLAGS) -MD -c -o $@ $<
 -include cat_mod-commands_cat.d
 
-CLEANFILES += cmd-cat_mod-commands_cat.lst fs-cat_mod-commands_cat.lst partmap-cat_mod-commands_cat.lst
+CLEANFILES += cmd-cat_mod-commands_cat.lst fs-cat_mod-commands_cat.lst partmap-cat_mod-commands_cat.lst handler-cat_mod-commands_cat.lst parttool-cat_mod-commands_cat.lst
 COMMANDFILES += cmd-cat_mod-commands_cat.lst
 FSFILES += fs-cat_mod-commands_cat.lst
+PARTTOOLFILES += parttool-cat_mod-commands_cat.lst
 PARTMAPFILES += partmap-cat_mod-commands_cat.lst
+HANDLERFILES += handler-cat_mod-commands_cat.lst
 
 cmd-cat_mod-commands_cat.lst: commands/cat.c $(commands/cat.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(cat_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh cat > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cat_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh cat > $@ || (rm -f $@; exit 1)
 
 fs-cat_mod-commands_cat.lst: commands/cat.c $(commands/cat.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(cat_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh cat > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cat_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh cat > $@ || (rm -f $@; exit 1)
+
+parttool-cat_mod-commands_cat.lst: commands/cat.c $(commands/cat.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cat_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh cat > $@ || (rm -f $@; exit 1)
 
 partmap-cat_mod-commands_cat.lst: commands/cat.c $(commands/cat.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(cat_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh cat > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cat_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh cat > $@ || (rm -f $@; exit 1)
 
+handler-cat_mod-commands_cat.lst: commands/cat.c $(commands/cat.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cat_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh cat > $@ || (rm -f $@; exit 1)
 
 cat_mod_CFLAGS = $(COMMON_CFLAGS)
 cat_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -2698,11 +4385,20 @@ endif
 MOSTLYCLEANFILES += echo_mod-commands_echo.d
 UNDSYMFILES += und-echo.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 echo.mod: pre-echo.o mod-echo.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(echo_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-echo.o mod-echo.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(echo_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-echo.o mod-echo.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+echo.mod: pre-echo.o mod-echo.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(echo_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-echo.o mod-echo.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-echo.o: $(echo_mod_DEPENDENCIES) echo_mod-commands_echo.o
 	-rm -f $@
@@ -2715,8 +4411,13 @@ mod-echo.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'echo' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(echo_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-echo.lst: pre-echo.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 echo/' > $@
+else
+def-echo.lst: pre-echo.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 echo/' > $@
+endif
 endif
 
 und-echo.lst: pre-echo.o
@@ -2727,20 +4428,27 @@ echo_mod-commands_echo.o: commands/echo.c $(commands/echo.c_DEPENDENCIES)
 	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(echo_mod_CFLAGS) -MD -c -o $@ $<
 -include echo_mod-commands_echo.d
 
-CLEANFILES += cmd-echo_mod-commands_echo.lst fs-echo_mod-commands_echo.lst partmap-echo_mod-commands_echo.lst
+CLEANFILES += cmd-echo_mod-commands_echo.lst fs-echo_mod-commands_echo.lst partmap-echo_mod-commands_echo.lst handler-echo_mod-commands_echo.lst parttool-echo_mod-commands_echo.lst
 COMMANDFILES += cmd-echo_mod-commands_echo.lst
 FSFILES += fs-echo_mod-commands_echo.lst
+PARTTOOLFILES += parttool-echo_mod-commands_echo.lst
 PARTMAPFILES += partmap-echo_mod-commands_echo.lst
+HANDLERFILES += handler-echo_mod-commands_echo.lst
 
 cmd-echo_mod-commands_echo.lst: commands/echo.c $(commands/echo.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(echo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh echo > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(echo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh echo > $@ || (rm -f $@; exit 1)
 
 fs-echo_mod-commands_echo.lst: commands/echo.c $(commands/echo.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(echo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh echo > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(echo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh echo > $@ || (rm -f $@; exit 1)
+
+parttool-echo_mod-commands_echo.lst: commands/echo.c $(commands/echo.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(echo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh echo > $@ || (rm -f $@; exit 1)
 
 partmap-echo_mod-commands_echo.lst: commands/echo.c $(commands/echo.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(echo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh echo > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(echo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh echo > $@ || (rm -f $@; exit 1)
 
+handler-echo_mod-commands_echo.lst: commands/echo.c $(commands/echo.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(echo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh echo > $@ || (rm -f $@; exit 1)
 
 echo_mod_CFLAGS = $(COMMON_CFLAGS)
 echo_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -2755,11 +4463,20 @@ endif
 MOSTLYCLEANFILES += help_mod-commands_help.d
 UNDSYMFILES += und-help.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 help.mod: pre-help.o mod-help.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(help_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-help.o mod-help.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(help_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-help.o mod-help.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+help.mod: pre-help.o mod-help.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(help_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-help.o mod-help.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-help.o: $(help_mod_DEPENDENCIES) help_mod-commands_help.o
 	-rm -f $@
@@ -2772,8 +4489,13 @@ mod-help.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'help' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(help_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-help.lst: pre-help.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 help/' > $@
+else
+def-help.lst: pre-help.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 help/' > $@
+endif
 endif
 
 und-help.lst: pre-help.o
@@ -2784,80 +4506,30 @@ help_mod-commands_help.o: commands/help.c $(commands/help.c_DEPENDENCIES)
 	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(help_mod_CFLAGS) -MD -c -o $@ $<
 -include help_mod-commands_help.d
 
-CLEANFILES += cmd-help_mod-commands_help.lst fs-help_mod-commands_help.lst partmap-help_mod-commands_help.lst
+CLEANFILES += cmd-help_mod-commands_help.lst fs-help_mod-commands_help.lst partmap-help_mod-commands_help.lst handler-help_mod-commands_help.lst parttool-help_mod-commands_help.lst
 COMMANDFILES += cmd-help_mod-commands_help.lst
 FSFILES += fs-help_mod-commands_help.lst
+PARTTOOLFILES += parttool-help_mod-commands_help.lst
 PARTMAPFILES += partmap-help_mod-commands_help.lst
+HANDLERFILES += handler-help_mod-commands_help.lst
 
 cmd-help_mod-commands_help.lst: commands/help.c $(commands/help.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(help_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh help > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(help_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh help > $@ || (rm -f $@; exit 1)
 
 fs-help_mod-commands_help.lst: commands/help.c $(commands/help.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(help_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh help > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(help_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh help > $@ || (rm -f $@; exit 1)
+
+parttool-help_mod-commands_help.lst: commands/help.c $(commands/help.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(help_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh help > $@ || (rm -f $@; exit 1)
 
 partmap-help_mod-commands_help.lst: commands/help.c $(commands/help.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(help_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh help > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(help_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh help > $@ || (rm -f $@; exit 1)
 
+handler-help_mod-commands_help.lst: commands/help.c $(commands/help.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(help_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh help > $@ || (rm -f $@; exit 1)
 
 help_mod_CFLAGS = $(COMMON_CFLAGS)
 help_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For font.mod.
-font_mod_SOURCES = font/manager.c
-CLEANFILES += font.mod mod-font.o mod-font.c pre-font.o font_mod-font_manager.o und-font.lst
-ifneq ($(font_mod_EXPORTS),no)
-CLEANFILES += def-font.lst
-DEFSYMFILES += def-font.lst
-endif
-MOSTLYCLEANFILES += font_mod-font_manager.d
-UNDSYMFILES += und-font.lst
-
-font.mod: pre-font.o mod-font.o $(TARGET_OBJ2ELF)
-	-rm -f $@
-	$(TARGET_CC) $(font_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-font.o mod-font.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
-	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
-
-pre-font.o: $(font_mod_DEPENDENCIES) font_mod-font_manager.o
-	-rm -f $@
-	$(TARGET_CC) $(font_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ font_mod-font_manager.o
-
-mod-font.o: mod-font.c
-	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(font_mod_CFLAGS) -c -o $@ $<
-
-mod-font.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
-	sh $(srcdir)/genmodsrc.sh 'font' $< > $@ || (rm -f $@; exit 1)
-
-ifneq ($(font_mod_EXPORTS),no)
-def-font.lst: pre-font.o
-	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 font/' > $@
-endif
-
-und-font.lst: pre-font.o
-	echo 'font' > $@
-	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
-
-font_mod-font_manager.o: font/manager.c $(font/manager.c_DEPENDENCIES)
-	$(TARGET_CC) -Ifont -I$(srcdir)/font $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(font_mod_CFLAGS) -MD -c -o $@ $<
--include font_mod-font_manager.d
-
-CLEANFILES += cmd-font_mod-font_manager.lst fs-font_mod-font_manager.lst partmap-font_mod-font_manager.lst
-COMMANDFILES += cmd-font_mod-font_manager.lst
-FSFILES += fs-font_mod-font_manager.lst
-PARTMAPFILES += partmap-font_mod-font_manager.lst
-
-cmd-font_mod-font_manager.lst: font/manager.c $(font/manager.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ifont -I$(srcdir)/font $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(font_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh font > $@ || (rm -f $@; exit 1)
-
-fs-font_mod-font_manager.lst: font/manager.c $(font/manager.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ifont -I$(srcdir)/font $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(font_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh font > $@ || (rm -f $@; exit 1)
-
-partmap-font_mod-font_manager.lst: font/manager.c $(font/manager.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ifont -I$(srcdir)/font $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(font_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh font > $@ || (rm -f $@; exit 1)
-
-
-font_mod_CFLAGS = $(COMMON_CFLAGS)
-font_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For search.mod.
 search_mod_SOURCES = commands/search.c
@@ -2869,11 +4541,20 @@ endif
 MOSTLYCLEANFILES += search_mod-commands_search.d
 UNDSYMFILES += und-search.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 search.mod: pre-search.o mod-search.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(search_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-search.o mod-search.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(search_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-search.o mod-search.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+search.mod: pre-search.o mod-search.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(search_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-search.o mod-search.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-search.o: $(search_mod_DEPENDENCIES) search_mod-commands_search.o
 	-rm -f $@
@@ -2886,8 +4567,13 @@ mod-search.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'search' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(search_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-search.lst: pre-search.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 search/' > $@
+else
+def-search.lst: pre-search.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 search/' > $@
+endif
 endif
 
 und-search.lst: pre-search.o
@@ -2898,20 +4584,27 @@ search_mod-commands_search.o: commands/search.c $(commands/search.c_DEPENDENCIES
 	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(search_mod_CFLAGS) -MD -c -o $@ $<
 -include search_mod-commands_search.d
 
-CLEANFILES += cmd-search_mod-commands_search.lst fs-search_mod-commands_search.lst partmap-search_mod-commands_search.lst
+CLEANFILES += cmd-search_mod-commands_search.lst fs-search_mod-commands_search.lst partmap-search_mod-commands_search.lst handler-search_mod-commands_search.lst parttool-search_mod-commands_search.lst
 COMMANDFILES += cmd-search_mod-commands_search.lst
 FSFILES += fs-search_mod-commands_search.lst
+PARTTOOLFILES += parttool-search_mod-commands_search.lst
 PARTMAPFILES += partmap-search_mod-commands_search.lst
+HANDLERFILES += handler-search_mod-commands_search.lst
 
 cmd-search_mod-commands_search.lst: commands/search.c $(commands/search.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(search_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh search > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(search_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh search > $@ || (rm -f $@; exit 1)
 
 fs-search_mod-commands_search.lst: commands/search.c $(commands/search.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(search_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh search > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(search_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh search > $@ || (rm -f $@; exit 1)
+
+parttool-search_mod-commands_search.lst: commands/search.c $(commands/search.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(search_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh search > $@ || (rm -f $@; exit 1)
 
 partmap-search_mod-commands_search.lst: commands/search.c $(commands/search.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(search_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh search > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(search_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh search > $@ || (rm -f $@; exit 1)
 
+handler-search_mod-commands_search.lst: commands/search.c $(commands/search.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(search_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh search > $@ || (rm -f $@; exit 1)
 
 search_mod_CFLAGS = $(COMMON_CFLAGS)
 search_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -2926,11 +4619,20 @@ endif
 MOSTLYCLEANFILES += test_mod-commands_test.d
 UNDSYMFILES += und-test.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 test.mod: pre-test.o mod-test.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(test_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-test.o mod-test.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(test_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-test.o mod-test.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+test.mod: pre-test.o mod-test.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(test_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-test.o mod-test.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-test.o: $(test_mod_DEPENDENCIES) test_mod-commands_test.o
 	-rm -f $@
@@ -2943,8 +4645,13 @@ mod-test.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'test' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(test_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-test.lst: pre-test.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 test/' > $@
+else
+def-test.lst: pre-test.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 test/' > $@
+endif
 endif
 
 und-test.lst: pre-test.o
@@ -2955,20 +4662,27 @@ test_mod-commands_test.o: commands/test.c $(commands/test.c_DEPENDENCIES)
 	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(test_mod_CFLAGS) -MD -c -o $@ $<
 -include test_mod-commands_test.d
 
-CLEANFILES += cmd-test_mod-commands_test.lst fs-test_mod-commands_test.lst partmap-test_mod-commands_test.lst
+CLEANFILES += cmd-test_mod-commands_test.lst fs-test_mod-commands_test.lst partmap-test_mod-commands_test.lst handler-test_mod-commands_test.lst parttool-test_mod-commands_test.lst
 COMMANDFILES += cmd-test_mod-commands_test.lst
 FSFILES += fs-test_mod-commands_test.lst
+PARTTOOLFILES += parttool-test_mod-commands_test.lst
 PARTMAPFILES += partmap-test_mod-commands_test.lst
+HANDLERFILES += handler-test_mod-commands_test.lst
 
 cmd-test_mod-commands_test.lst: commands/test.c $(commands/test.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(test_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh test > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(test_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh test > $@ || (rm -f $@; exit 1)
 
 fs-test_mod-commands_test.lst: commands/test.c $(commands/test.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(test_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh test > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(test_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh test > $@ || (rm -f $@; exit 1)
+
+parttool-test_mod-commands_test.lst: commands/test.c $(commands/test.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(test_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh test > $@ || (rm -f $@; exit 1)
 
 partmap-test_mod-commands_test.lst: commands/test.c $(commands/test.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(test_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh test > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(test_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh test > $@ || (rm -f $@; exit 1)
 
+handler-test_mod-commands_test.lst: commands/test.c $(commands/test.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(test_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh test > $@ || (rm -f $@; exit 1)
 
 test_mod_CFLAGS = $(COMMON_CFLAGS)
 test_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -2983,11 +4697,20 @@ endif
 MOSTLYCLEANFILES += loopback_mod-disk_loopback.d
 UNDSYMFILES += und-loopback.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 loopback.mod: pre-loopback.o mod-loopback.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(loopback_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-loopback.o mod-loopback.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(loopback_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-loopback.o mod-loopback.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+loopback.mod: pre-loopback.o mod-loopback.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(loopback_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-loopback.o mod-loopback.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-loopback.o: $(loopback_mod_DEPENDENCIES) loopback_mod-disk_loopback.o
 	-rm -f $@
@@ -3000,8 +4723,13 @@ mod-loopback.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'loopback' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(loopback_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-loopback.lst: pre-loopback.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 loopback/' > $@
+else
+def-loopback.lst: pre-loopback.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 loopback/' > $@
+endif
 endif
 
 und-loopback.lst: pre-loopback.o
@@ -3012,23 +4740,108 @@ loopback_mod-disk_loopback.o: disk/loopback.c $(disk/loopback.c_DEPENDENCIES)
 	$(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loopback_mod_CFLAGS) -MD -c -o $@ $<
 -include loopback_mod-disk_loopback.d
 
-CLEANFILES += cmd-loopback_mod-disk_loopback.lst fs-loopback_mod-disk_loopback.lst partmap-loopback_mod-disk_loopback.lst
+CLEANFILES += cmd-loopback_mod-disk_loopback.lst fs-loopback_mod-disk_loopback.lst partmap-loopback_mod-disk_loopback.lst handler-loopback_mod-disk_loopback.lst parttool-loopback_mod-disk_loopback.lst
 COMMANDFILES += cmd-loopback_mod-disk_loopback.lst
 FSFILES += fs-loopback_mod-disk_loopback.lst
+PARTTOOLFILES += parttool-loopback_mod-disk_loopback.lst
 PARTMAPFILES += partmap-loopback_mod-disk_loopback.lst
+HANDLERFILES += handler-loopback_mod-disk_loopback.lst
 
 cmd-loopback_mod-disk_loopback.lst: disk/loopback.c $(disk/loopback.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(loopback_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh loopback > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loopback_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh loopback > $@ || (rm -f $@; exit 1)
 
 fs-loopback_mod-disk_loopback.lst: disk/loopback.c $(disk/loopback.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(loopback_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh loopback > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loopback_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh loopback > $@ || (rm -f $@; exit 1)
+
+parttool-loopback_mod-disk_loopback.lst: disk/loopback.c $(disk/loopback.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loopback_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh loopback > $@ || (rm -f $@; exit 1)
 
 partmap-loopback_mod-disk_loopback.lst: disk/loopback.c $(disk/loopback.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(loopback_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh loopback > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loopback_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh loopback > $@ || (rm -f $@; exit 1)
 
+handler-loopback_mod-disk_loopback.lst: disk/loopback.c $(disk/loopback.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loopback_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh loopback > $@ || (rm -f $@; exit 1)
 
 loopback_mod_CFLAGS = $(COMMON_CFLAGS)
 loopback_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For fs_file.mod
+fs_file_mod_SOURCES = disk/fs_file.c
+CLEANFILES += fs_file.mod mod-fs_file.o mod-fs_file.c pre-fs_file.o fs_file_mod-disk_fs_file.o und-fs_file.lst
+ifneq ($(fs_file_mod_EXPORTS),no)
+CLEANFILES += def-fs_file.lst
+DEFSYMFILES += def-fs_file.lst
+endif
+MOSTLYCLEANFILES += fs_file_mod-disk_fs_file.d
+UNDSYMFILES += und-fs_file.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+fs_file.mod: pre-fs_file.o mod-fs_file.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(fs_file_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-fs_file.o mod-fs_file.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+fs_file.mod: pre-fs_file.o mod-fs_file.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(fs_file_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-fs_file.o mod-fs_file.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-fs_file.o: $(fs_file_mod_DEPENDENCIES) fs_file_mod-disk_fs_file.o
+	-rm -f $@
+	$(TARGET_CC) $(fs_file_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ fs_file_mod-disk_fs_file.o
+
+mod-fs_file.o: mod-fs_file.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(fs_file_mod_CFLAGS) -c -o $@ $<
+
+mod-fs_file.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'fs_file' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(fs_file_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-fs_file.lst: pre-fs_file.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 fs_file/' > $@
+else
+def-fs_file.lst: pre-fs_file.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 fs_file/' > $@
+endif
+endif
+
+und-fs_file.lst: pre-fs_file.o
+	echo 'fs_file' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+fs_file_mod-disk_fs_file.o: disk/fs_file.c $(disk/fs_file.c_DEPENDENCIES)
+	$(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fs_file_mod_CFLAGS) -MD -c -o $@ $<
+-include fs_file_mod-disk_fs_file.d
+
+CLEANFILES += cmd-fs_file_mod-disk_fs_file.lst fs-fs_file_mod-disk_fs_file.lst partmap-fs_file_mod-disk_fs_file.lst handler-fs_file_mod-disk_fs_file.lst parttool-fs_file_mod-disk_fs_file.lst
+COMMANDFILES += cmd-fs_file_mod-disk_fs_file.lst
+FSFILES += fs-fs_file_mod-disk_fs_file.lst
+PARTTOOLFILES += parttool-fs_file_mod-disk_fs_file.lst
+PARTMAPFILES += partmap-fs_file_mod-disk_fs_file.lst
+HANDLERFILES += handler-fs_file_mod-disk_fs_file.lst
+
+cmd-fs_file_mod-disk_fs_file.lst: disk/fs_file.c $(disk/fs_file.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fs_file_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh fs_file > $@ || (rm -f $@; exit 1)
+
+fs-fs_file_mod-disk_fs_file.lst: disk/fs_file.c $(disk/fs_file.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fs_file_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh fs_file > $@ || (rm -f $@; exit 1)
+
+parttool-fs_file_mod-disk_fs_file.lst: disk/fs_file.c $(disk/fs_file.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fs_file_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh fs_file > $@ || (rm -f $@; exit 1)
+
+partmap-fs_file_mod-disk_fs_file.lst: disk/fs_file.c $(disk/fs_file.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fs_file_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh fs_file > $@ || (rm -f $@; exit 1)
+
+handler-fs_file_mod-disk_fs_file.lst: disk/fs_file.c $(disk/fs_file.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fs_file_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh fs_file > $@ || (rm -f $@; exit 1)
+
+fs_file_mod_CFLAGS = $(COMMON_CFLAGS)
+fs_file_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For fs_uuid.mod
 fs_uuid_mod_SOURCES = disk/fs_uuid.c
@@ -3040,11 +4853,20 @@ endif
 MOSTLYCLEANFILES += fs_uuid_mod-disk_fs_uuid.d
 UNDSYMFILES += und-fs_uuid.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 fs_uuid.mod: pre-fs_uuid.o mod-fs_uuid.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(fs_uuid_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-fs_uuid.o mod-fs_uuid.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(fs_uuid_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-fs_uuid.o mod-fs_uuid.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+fs_uuid.mod: pre-fs_uuid.o mod-fs_uuid.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(fs_uuid_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-fs_uuid.o mod-fs_uuid.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-fs_uuid.o: $(fs_uuid_mod_DEPENDENCIES) fs_uuid_mod-disk_fs_uuid.o
 	-rm -f $@
@@ -3057,8 +4879,13 @@ mod-fs_uuid.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'fs_uuid' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(fs_uuid_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-fs_uuid.lst: pre-fs_uuid.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 fs_uuid/' > $@
+else
+def-fs_uuid.lst: pre-fs_uuid.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 fs_uuid/' > $@
+endif
 endif
 
 und-fs_uuid.lst: pre-fs_uuid.o
@@ -3069,20 +4896,27 @@ fs_uuid_mod-disk_fs_uuid.o: disk/fs_uuid.c $(disk/fs_uuid.c_DEPENDENCIES)
 	$(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fs_uuid_mod_CFLAGS) -MD -c -o $@ $<
 -include fs_uuid_mod-disk_fs_uuid.d
 
-CLEANFILES += cmd-fs_uuid_mod-disk_fs_uuid.lst fs-fs_uuid_mod-disk_fs_uuid.lst partmap-fs_uuid_mod-disk_fs_uuid.lst
+CLEANFILES += cmd-fs_uuid_mod-disk_fs_uuid.lst fs-fs_uuid_mod-disk_fs_uuid.lst partmap-fs_uuid_mod-disk_fs_uuid.lst handler-fs_uuid_mod-disk_fs_uuid.lst parttool-fs_uuid_mod-disk_fs_uuid.lst
 COMMANDFILES += cmd-fs_uuid_mod-disk_fs_uuid.lst
 FSFILES += fs-fs_uuid_mod-disk_fs_uuid.lst
+PARTTOOLFILES += parttool-fs_uuid_mod-disk_fs_uuid.lst
 PARTMAPFILES += partmap-fs_uuid_mod-disk_fs_uuid.lst
+HANDLERFILES += handler-fs_uuid_mod-disk_fs_uuid.lst
 
 cmd-fs_uuid_mod-disk_fs_uuid.lst: disk/fs_uuid.c $(disk/fs_uuid.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(fs_uuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh fs_uuid > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fs_uuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh fs_uuid > $@ || (rm -f $@; exit 1)
 
 fs-fs_uuid_mod-disk_fs_uuid.lst: disk/fs_uuid.c $(disk/fs_uuid.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(fs_uuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh fs_uuid > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fs_uuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh fs_uuid > $@ || (rm -f $@; exit 1)
+
+parttool-fs_uuid_mod-disk_fs_uuid.lst: disk/fs_uuid.c $(disk/fs_uuid.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fs_uuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh fs_uuid > $@ || (rm -f $@; exit 1)
 
 partmap-fs_uuid_mod-disk_fs_uuid.lst: disk/fs_uuid.c $(disk/fs_uuid.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(fs_uuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh fs_uuid > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fs_uuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh fs_uuid > $@ || (rm -f $@; exit 1)
 
+handler-fs_uuid_mod-disk_fs_uuid.lst: disk/fs_uuid.c $(disk/fs_uuid.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(fs_uuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh fs_uuid > $@ || (rm -f $@; exit 1)
 
 fs_uuid_mod_CFLAGS = $(COMMON_CFLAGS)
 fs_uuid_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -3097,11 +4931,20 @@ endif
 MOSTLYCLEANFILES += configfile_mod-commands_configfile.d
 UNDSYMFILES += und-configfile.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 configfile.mod: pre-configfile.o mod-configfile.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(configfile_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-configfile.o mod-configfile.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(configfile_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-configfile.o mod-configfile.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+configfile.mod: pre-configfile.o mod-configfile.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(configfile_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-configfile.o mod-configfile.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-configfile.o: $(configfile_mod_DEPENDENCIES) configfile_mod-commands_configfile.o
 	-rm -f $@
@@ -3114,8 +4957,13 @@ mod-configfile.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'configfile' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(configfile_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-configfile.lst: pre-configfile.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 configfile/' > $@
+else
+def-configfile.lst: pre-configfile.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 configfile/' > $@
+endif
 endif
 
 und-configfile.lst: pre-configfile.o
@@ -3126,20 +4974,27 @@ configfile_mod-commands_configfile.o: commands/configfile.c $(commands/configfil
 	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(configfile_mod_CFLAGS) -MD -c -o $@ $<
 -include configfile_mod-commands_configfile.d
 
-CLEANFILES += cmd-configfile_mod-commands_configfile.lst fs-configfile_mod-commands_configfile.lst partmap-configfile_mod-commands_configfile.lst
+CLEANFILES += cmd-configfile_mod-commands_configfile.lst fs-configfile_mod-commands_configfile.lst partmap-configfile_mod-commands_configfile.lst handler-configfile_mod-commands_configfile.lst parttool-configfile_mod-commands_configfile.lst
 COMMANDFILES += cmd-configfile_mod-commands_configfile.lst
 FSFILES += fs-configfile_mod-commands_configfile.lst
+PARTTOOLFILES += parttool-configfile_mod-commands_configfile.lst
 PARTMAPFILES += partmap-configfile_mod-commands_configfile.lst
+HANDLERFILES += handler-configfile_mod-commands_configfile.lst
 
 cmd-configfile_mod-commands_configfile.lst: commands/configfile.c $(commands/configfile.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(configfile_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh configfile > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(configfile_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh configfile > $@ || (rm -f $@; exit 1)
 
 fs-configfile_mod-commands_configfile.lst: commands/configfile.c $(commands/configfile.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(configfile_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh configfile > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(configfile_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh configfile > $@ || (rm -f $@; exit 1)
+
+parttool-configfile_mod-commands_configfile.lst: commands/configfile.c $(commands/configfile.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(configfile_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh configfile > $@ || (rm -f $@; exit 1)
 
 partmap-configfile_mod-commands_configfile.lst: commands/configfile.c $(commands/configfile.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(configfile_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh configfile > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(configfile_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh configfile > $@ || (rm -f $@; exit 1)
 
+handler-configfile_mod-commands_configfile.lst: commands/configfile.c $(commands/configfile.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(configfile_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh configfile > $@ || (rm -f $@; exit 1)
 
 configfile_mod_CFLAGS = $(COMMON_CFLAGS)
 configfile_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -3154,11 +5009,20 @@ endif
 MOSTLYCLEANFILES += terminfo_mod-term_terminfo.d terminfo_mod-term_tparm.d
 UNDSYMFILES += und-terminfo.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 terminfo.mod: pre-terminfo.o mod-terminfo.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(terminfo_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-terminfo.o mod-terminfo.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(terminfo_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-terminfo.o mod-terminfo.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+terminfo.mod: pre-terminfo.o mod-terminfo.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(terminfo_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-terminfo.o mod-terminfo.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-terminfo.o: $(terminfo_mod_DEPENDENCIES) terminfo_mod-term_terminfo.o terminfo_mod-term_tparm.o
 	-rm -f $@
@@ -3171,8 +5035,13 @@ mod-terminfo.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'terminfo' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(terminfo_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-terminfo.lst: pre-terminfo.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 terminfo/' > $@
+else
+def-terminfo.lst: pre-terminfo.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 terminfo/' > $@
+endif
 endif
 
 und-terminfo.lst: pre-terminfo.o
@@ -3183,39 +5052,53 @@ terminfo_mod-term_terminfo.o: term/terminfo.c $(term/terminfo.c_DEPENDENCIES)
 	$(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -MD -c -o $@ $<
 -include terminfo_mod-term_terminfo.d
 
-CLEANFILES += cmd-terminfo_mod-term_terminfo.lst fs-terminfo_mod-term_terminfo.lst partmap-terminfo_mod-term_terminfo.lst
+CLEANFILES += cmd-terminfo_mod-term_terminfo.lst fs-terminfo_mod-term_terminfo.lst partmap-terminfo_mod-term_terminfo.lst handler-terminfo_mod-term_terminfo.lst parttool-terminfo_mod-term_terminfo.lst
 COMMANDFILES += cmd-terminfo_mod-term_terminfo.lst
 FSFILES += fs-terminfo_mod-term_terminfo.lst
+PARTTOOLFILES += parttool-terminfo_mod-term_terminfo.lst
 PARTMAPFILES += partmap-terminfo_mod-term_terminfo.lst
+HANDLERFILES += handler-terminfo_mod-term_terminfo.lst
 
 cmd-terminfo_mod-term_terminfo.lst: term/terminfo.c $(term/terminfo.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh terminfo > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh terminfo > $@ || (rm -f $@; exit 1)
 
 fs-terminfo_mod-term_terminfo.lst: term/terminfo.c $(term/terminfo.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh terminfo > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh terminfo > $@ || (rm -f $@; exit 1)
+
+parttool-terminfo_mod-term_terminfo.lst: term/terminfo.c $(term/terminfo.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh terminfo > $@ || (rm -f $@; exit 1)
 
 partmap-terminfo_mod-term_terminfo.lst: term/terminfo.c $(term/terminfo.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh terminfo > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh terminfo > $@ || (rm -f $@; exit 1)
 
+handler-terminfo_mod-term_terminfo.lst: term/terminfo.c $(term/terminfo.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh terminfo > $@ || (rm -f $@; exit 1)
 
 terminfo_mod-term_tparm.o: term/tparm.c $(term/tparm.c_DEPENDENCIES)
 	$(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -MD -c -o $@ $<
 -include terminfo_mod-term_tparm.d
 
-CLEANFILES += cmd-terminfo_mod-term_tparm.lst fs-terminfo_mod-term_tparm.lst partmap-terminfo_mod-term_tparm.lst
+CLEANFILES += cmd-terminfo_mod-term_tparm.lst fs-terminfo_mod-term_tparm.lst partmap-terminfo_mod-term_tparm.lst handler-terminfo_mod-term_tparm.lst parttool-terminfo_mod-term_tparm.lst
 COMMANDFILES += cmd-terminfo_mod-term_tparm.lst
 FSFILES += fs-terminfo_mod-term_tparm.lst
+PARTTOOLFILES += parttool-terminfo_mod-term_tparm.lst
 PARTMAPFILES += partmap-terminfo_mod-term_tparm.lst
+HANDLERFILES += handler-terminfo_mod-term_tparm.lst
 
 cmd-terminfo_mod-term_tparm.lst: term/tparm.c $(term/tparm.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh terminfo > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh terminfo > $@ || (rm -f $@; exit 1)
 
 fs-terminfo_mod-term_tparm.lst: term/tparm.c $(term/tparm.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh terminfo > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh terminfo > $@ || (rm -f $@; exit 1)
+
+parttool-terminfo_mod-term_tparm.lst: term/tparm.c $(term/tparm.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh terminfo > $@ || (rm -f $@; exit 1)
 
 partmap-terminfo_mod-term_tparm.lst: term/tparm.c $(term/tparm.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh terminfo > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh terminfo > $@ || (rm -f $@; exit 1)
 
+handler-terminfo_mod-term_tparm.lst: term/tparm.c $(term/tparm.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(terminfo_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh terminfo > $@ || (rm -f $@; exit 1)
 
 terminfo_mod_CFLAGS = $(COMMON_CFLAGS)
 terminfo_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -3230,11 +5113,20 @@ endif
 MOSTLYCLEANFILES += blocklist_mod-commands_blocklist.d
 UNDSYMFILES += und-blocklist.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 blocklist.mod: pre-blocklist.o mod-blocklist.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(blocklist_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-blocklist.o mod-blocklist.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(blocklist_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-blocklist.o mod-blocklist.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+blocklist.mod: pre-blocklist.o mod-blocklist.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(blocklist_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-blocklist.o mod-blocklist.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-blocklist.o: $(blocklist_mod_DEPENDENCIES) blocklist_mod-commands_blocklist.o
 	-rm -f $@
@@ -3247,8 +5139,13 @@ mod-blocklist.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'blocklist' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(blocklist_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-blocklist.lst: pre-blocklist.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 blocklist/' > $@
+else
+def-blocklist.lst: pre-blocklist.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 blocklist/' > $@
+endif
 endif
 
 und-blocklist.lst: pre-blocklist.o
@@ -3259,20 +5156,27 @@ blocklist_mod-commands_blocklist.o: commands/blocklist.c $(commands/blocklist.c_
 	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(blocklist_mod_CFLAGS) -MD -c -o $@ $<
 -include blocklist_mod-commands_blocklist.d
 
-CLEANFILES += cmd-blocklist_mod-commands_blocklist.lst fs-blocklist_mod-commands_blocklist.lst partmap-blocklist_mod-commands_blocklist.lst
+CLEANFILES += cmd-blocklist_mod-commands_blocklist.lst fs-blocklist_mod-commands_blocklist.lst partmap-blocklist_mod-commands_blocklist.lst handler-blocklist_mod-commands_blocklist.lst parttool-blocklist_mod-commands_blocklist.lst
 COMMANDFILES += cmd-blocklist_mod-commands_blocklist.lst
 FSFILES += fs-blocklist_mod-commands_blocklist.lst
+PARTTOOLFILES += parttool-blocklist_mod-commands_blocklist.lst
 PARTMAPFILES += partmap-blocklist_mod-commands_blocklist.lst
+HANDLERFILES += handler-blocklist_mod-commands_blocklist.lst
 
 cmd-blocklist_mod-commands_blocklist.lst: commands/blocklist.c $(commands/blocklist.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(blocklist_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh blocklist > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(blocklist_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh blocklist > $@ || (rm -f $@; exit 1)
 
 fs-blocklist_mod-commands_blocklist.lst: commands/blocklist.c $(commands/blocklist.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(blocklist_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh blocklist > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(blocklist_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh blocklist > $@ || (rm -f $@; exit 1)
+
+parttool-blocklist_mod-commands_blocklist.lst: commands/blocklist.c $(commands/blocklist.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(blocklist_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh blocklist > $@ || (rm -f $@; exit 1)
 
 partmap-blocklist_mod-commands_blocklist.lst: commands/blocklist.c $(commands/blocklist.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(blocklist_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh blocklist > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(blocklist_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh blocklist > $@ || (rm -f $@; exit 1)
 
+handler-blocklist_mod-commands_blocklist.lst: commands/blocklist.c $(commands/blocklist.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(blocklist_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh blocklist > $@ || (rm -f $@; exit 1)
 
 blocklist_mod_CFLAGS = $(COMMON_CFLAGS)
 blocklist_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -3287,11 +5191,20 @@ endif
 MOSTLYCLEANFILES += hexdump_mod-commands_hexdump.d hexdump_mod-lib_hexdump.d
 UNDSYMFILES += und-hexdump.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 hexdump.mod: pre-hexdump.o mod-hexdump.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(hexdump_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-hexdump.o mod-hexdump.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(hexdump_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-hexdump.o mod-hexdump.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+hexdump.mod: pre-hexdump.o mod-hexdump.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(hexdump_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-hexdump.o mod-hexdump.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-hexdump.o: $(hexdump_mod_DEPENDENCIES) hexdump_mod-commands_hexdump.o hexdump_mod-lib_hexdump.o
 	-rm -f $@
@@ -3304,8 +5217,13 @@ mod-hexdump.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'hexdump' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(hexdump_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-hexdump.lst: pre-hexdump.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 hexdump/' > $@
+else
+def-hexdump.lst: pre-hexdump.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 hexdump/' > $@
+endif
 endif
 
 und-hexdump.lst: pre-hexdump.o
@@ -3316,39 +5234,53 @@ hexdump_mod-commands_hexdump.o: commands/hexdump.c $(commands/hexdump.c_DEPENDEN
 	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -MD -c -o $@ $<
 -include hexdump_mod-commands_hexdump.d
 
-CLEANFILES += cmd-hexdump_mod-commands_hexdump.lst fs-hexdump_mod-commands_hexdump.lst partmap-hexdump_mod-commands_hexdump.lst
+CLEANFILES += cmd-hexdump_mod-commands_hexdump.lst fs-hexdump_mod-commands_hexdump.lst partmap-hexdump_mod-commands_hexdump.lst handler-hexdump_mod-commands_hexdump.lst parttool-hexdump_mod-commands_hexdump.lst
 COMMANDFILES += cmd-hexdump_mod-commands_hexdump.lst
 FSFILES += fs-hexdump_mod-commands_hexdump.lst
+PARTTOOLFILES += parttool-hexdump_mod-commands_hexdump.lst
 PARTMAPFILES += partmap-hexdump_mod-commands_hexdump.lst
+HANDLERFILES += handler-hexdump_mod-commands_hexdump.lst
 
 cmd-hexdump_mod-commands_hexdump.lst: commands/hexdump.c $(commands/hexdump.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh hexdump > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh hexdump > $@ || (rm -f $@; exit 1)
 
 fs-hexdump_mod-commands_hexdump.lst: commands/hexdump.c $(commands/hexdump.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh hexdump > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh hexdump > $@ || (rm -f $@; exit 1)
+
+parttool-hexdump_mod-commands_hexdump.lst: commands/hexdump.c $(commands/hexdump.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh hexdump > $@ || (rm -f $@; exit 1)
 
 partmap-hexdump_mod-commands_hexdump.lst: commands/hexdump.c $(commands/hexdump.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh hexdump > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh hexdump > $@ || (rm -f $@; exit 1)
 
+handler-hexdump_mod-commands_hexdump.lst: commands/hexdump.c $(commands/hexdump.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh hexdump > $@ || (rm -f $@; exit 1)
 
 hexdump_mod-lib_hexdump.o: lib/hexdump.c $(lib/hexdump.c_DEPENDENCIES)
 	$(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -MD -c -o $@ $<
 -include hexdump_mod-lib_hexdump.d
 
-CLEANFILES += cmd-hexdump_mod-lib_hexdump.lst fs-hexdump_mod-lib_hexdump.lst partmap-hexdump_mod-lib_hexdump.lst
+CLEANFILES += cmd-hexdump_mod-lib_hexdump.lst fs-hexdump_mod-lib_hexdump.lst partmap-hexdump_mod-lib_hexdump.lst handler-hexdump_mod-lib_hexdump.lst parttool-hexdump_mod-lib_hexdump.lst
 COMMANDFILES += cmd-hexdump_mod-lib_hexdump.lst
 FSFILES += fs-hexdump_mod-lib_hexdump.lst
+PARTTOOLFILES += parttool-hexdump_mod-lib_hexdump.lst
 PARTMAPFILES += partmap-hexdump_mod-lib_hexdump.lst
+HANDLERFILES += handler-hexdump_mod-lib_hexdump.lst
 
 cmd-hexdump_mod-lib_hexdump.lst: lib/hexdump.c $(lib/hexdump.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh hexdump > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh hexdump > $@ || (rm -f $@; exit 1)
 
 fs-hexdump_mod-lib_hexdump.lst: lib/hexdump.c $(lib/hexdump.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh hexdump > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh hexdump > $@ || (rm -f $@; exit 1)
+
+parttool-hexdump_mod-lib_hexdump.lst: lib/hexdump.c $(lib/hexdump.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh hexdump > $@ || (rm -f $@; exit 1)
 
 partmap-hexdump_mod-lib_hexdump.lst: lib/hexdump.c $(lib/hexdump.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh hexdump > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh hexdump > $@ || (rm -f $@; exit 1)
 
+handler-hexdump_mod-lib_hexdump.lst: lib/hexdump.c $(lib/hexdump.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(hexdump_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh hexdump > $@ || (rm -f $@; exit 1)
 
 hexdump_mod_CFLAGS = $(COMMON_CFLAGS)
 hexdump_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -3363,11 +5295,20 @@ endif
 MOSTLYCLEANFILES += read_mod-commands_read.d
 UNDSYMFILES += und-read.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 read.mod: pre-read.o mod-read.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(read_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-read.o mod-read.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(read_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-read.o mod-read.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+read.mod: pre-read.o mod-read.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(read_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-read.o mod-read.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-read.o: $(read_mod_DEPENDENCIES) read_mod-commands_read.o
 	-rm -f $@
@@ -3380,8 +5321,13 @@ mod-read.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'read' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(read_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-read.lst: pre-read.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 read/' > $@
+else
+def-read.lst: pre-read.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 read/' > $@
+endif
 endif
 
 und-read.lst: pre-read.o
@@ -3392,20 +5338,27 @@ read_mod-commands_read.o: commands/read.c $(commands/read.c_DEPENDENCIES)
 	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(read_mod_CFLAGS) -MD -c -o $@ $<
 -include read_mod-commands_read.d
 
-CLEANFILES += cmd-read_mod-commands_read.lst fs-read_mod-commands_read.lst partmap-read_mod-commands_read.lst
+CLEANFILES += cmd-read_mod-commands_read.lst fs-read_mod-commands_read.lst partmap-read_mod-commands_read.lst handler-read_mod-commands_read.lst parttool-read_mod-commands_read.lst
 COMMANDFILES += cmd-read_mod-commands_read.lst
 FSFILES += fs-read_mod-commands_read.lst
+PARTTOOLFILES += parttool-read_mod-commands_read.lst
 PARTMAPFILES += partmap-read_mod-commands_read.lst
+HANDLERFILES += handler-read_mod-commands_read.lst
 
 cmd-read_mod-commands_read.lst: commands/read.c $(commands/read.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(read_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh read > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(read_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh read > $@ || (rm -f $@; exit 1)
 
 fs-read_mod-commands_read.lst: commands/read.c $(commands/read.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(read_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh read > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(read_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh read > $@ || (rm -f $@; exit 1)
+
+parttool-read_mod-commands_read.lst: commands/read.c $(commands/read.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(read_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh read > $@ || (rm -f $@; exit 1)
 
 partmap-read_mod-commands_read.lst: commands/read.c $(commands/read.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(read_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh read > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(read_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh read > $@ || (rm -f $@; exit 1)
 
+handler-read_mod-commands_read.lst: commands/read.c $(commands/read.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(read_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh read > $@ || (rm -f $@; exit 1)
 
 read_mod_CFLAGS = $(COMMON_CFLAGS)
 read_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -3420,11 +5373,20 @@ endif
 MOSTLYCLEANFILES += sleep_mod-commands_sleep.d
 UNDSYMFILES += und-sleep.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 sleep.mod: pre-sleep.o mod-sleep.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(sleep_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-sleep.o mod-sleep.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(sleep_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-sleep.o mod-sleep.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+sleep.mod: pre-sleep.o mod-sleep.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(sleep_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-sleep.o mod-sleep.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-sleep.o: $(sleep_mod_DEPENDENCIES) sleep_mod-commands_sleep.o
 	-rm -f $@
@@ -3437,8 +5399,13 @@ mod-sleep.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'sleep' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(sleep_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-sleep.lst: pre-sleep.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 sleep/' > $@
+else
+def-sleep.lst: pre-sleep.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 sleep/' > $@
+endif
 endif
 
 und-sleep.lst: pre-sleep.o
@@ -3449,20 +5416,27 @@ sleep_mod-commands_sleep.o: commands/sleep.c $(commands/sleep.c_DEPENDENCIES)
 	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sleep_mod_CFLAGS) -MD -c -o $@ $<
 -include sleep_mod-commands_sleep.d
 
-CLEANFILES += cmd-sleep_mod-commands_sleep.lst fs-sleep_mod-commands_sleep.lst partmap-sleep_mod-commands_sleep.lst
+CLEANFILES += cmd-sleep_mod-commands_sleep.lst fs-sleep_mod-commands_sleep.lst partmap-sleep_mod-commands_sleep.lst handler-sleep_mod-commands_sleep.lst parttool-sleep_mod-commands_sleep.lst
 COMMANDFILES += cmd-sleep_mod-commands_sleep.lst
 FSFILES += fs-sleep_mod-commands_sleep.lst
+PARTTOOLFILES += parttool-sleep_mod-commands_sleep.lst
 PARTMAPFILES += partmap-sleep_mod-commands_sleep.lst
+HANDLERFILES += handler-sleep_mod-commands_sleep.lst
 
 cmd-sleep_mod-commands_sleep.lst: commands/sleep.c $(commands/sleep.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(sleep_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh sleep > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sleep_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh sleep > $@ || (rm -f $@; exit 1)
 
 fs-sleep_mod-commands_sleep.lst: commands/sleep.c $(commands/sleep.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(sleep_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh sleep > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sleep_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh sleep > $@ || (rm -f $@; exit 1)
+
+parttool-sleep_mod-commands_sleep.lst: commands/sleep.c $(commands/sleep.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sleep_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh sleep > $@ || (rm -f $@; exit 1)
 
 partmap-sleep_mod-commands_sleep.lst: commands/sleep.c $(commands/sleep.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(sleep_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh sleep > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sleep_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh sleep > $@ || (rm -f $@; exit 1)
 
+handler-sleep_mod-commands_sleep.lst: commands/sleep.c $(commands/sleep.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sleep_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh sleep > $@ || (rm -f $@; exit 1)
 
 sleep_mod_CFLAGS = $(COMMON_CFLAGS)
 sleep_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -3477,11 +5451,20 @@ endif
 MOSTLYCLEANFILES += loadenv_mod-commands_loadenv.d loadenv_mod-lib_envblk.d
 UNDSYMFILES += und-loadenv.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 loadenv.mod: pre-loadenv.o mod-loadenv.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(loadenv_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-loadenv.o mod-loadenv.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(loadenv_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-loadenv.o mod-loadenv.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+loadenv.mod: pre-loadenv.o mod-loadenv.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(loadenv_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-loadenv.o mod-loadenv.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-loadenv.o: $(loadenv_mod_DEPENDENCIES) loadenv_mod-commands_loadenv.o loadenv_mod-lib_envblk.o
 	-rm -f $@
@@ -3494,8 +5477,13 @@ mod-loadenv.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'loadenv' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(loadenv_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-loadenv.lst: pre-loadenv.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 loadenv/' > $@
+else
+def-loadenv.lst: pre-loadenv.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 loadenv/' > $@
+endif
 endif
 
 und-loadenv.lst: pre-loadenv.o
@@ -3506,39 +5494,53 @@ loadenv_mod-commands_loadenv.o: commands/loadenv.c $(commands/loadenv.c_DEPENDEN
 	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -MD -c -o $@ $<
 -include loadenv_mod-commands_loadenv.d
 
-CLEANFILES += cmd-loadenv_mod-commands_loadenv.lst fs-loadenv_mod-commands_loadenv.lst partmap-loadenv_mod-commands_loadenv.lst
+CLEANFILES += cmd-loadenv_mod-commands_loadenv.lst fs-loadenv_mod-commands_loadenv.lst partmap-loadenv_mod-commands_loadenv.lst handler-loadenv_mod-commands_loadenv.lst parttool-loadenv_mod-commands_loadenv.lst
 COMMANDFILES += cmd-loadenv_mod-commands_loadenv.lst
 FSFILES += fs-loadenv_mod-commands_loadenv.lst
+PARTTOOLFILES += parttool-loadenv_mod-commands_loadenv.lst
 PARTMAPFILES += partmap-loadenv_mod-commands_loadenv.lst
+HANDLERFILES += handler-loadenv_mod-commands_loadenv.lst
 
 cmd-loadenv_mod-commands_loadenv.lst: commands/loadenv.c $(commands/loadenv.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh loadenv > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh loadenv > $@ || (rm -f $@; exit 1)
 
 fs-loadenv_mod-commands_loadenv.lst: commands/loadenv.c $(commands/loadenv.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh loadenv > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh loadenv > $@ || (rm -f $@; exit 1)
+
+parttool-loadenv_mod-commands_loadenv.lst: commands/loadenv.c $(commands/loadenv.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh loadenv > $@ || (rm -f $@; exit 1)
 
 partmap-loadenv_mod-commands_loadenv.lst: commands/loadenv.c $(commands/loadenv.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh loadenv > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh loadenv > $@ || (rm -f $@; exit 1)
 
+handler-loadenv_mod-commands_loadenv.lst: commands/loadenv.c $(commands/loadenv.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh loadenv > $@ || (rm -f $@; exit 1)
 
 loadenv_mod-lib_envblk.o: lib/envblk.c $(lib/envblk.c_DEPENDENCIES)
 	$(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -MD -c -o $@ $<
 -include loadenv_mod-lib_envblk.d
 
-CLEANFILES += cmd-loadenv_mod-lib_envblk.lst fs-loadenv_mod-lib_envblk.lst partmap-loadenv_mod-lib_envblk.lst
+CLEANFILES += cmd-loadenv_mod-lib_envblk.lst fs-loadenv_mod-lib_envblk.lst partmap-loadenv_mod-lib_envblk.lst handler-loadenv_mod-lib_envblk.lst parttool-loadenv_mod-lib_envblk.lst
 COMMANDFILES += cmd-loadenv_mod-lib_envblk.lst
 FSFILES += fs-loadenv_mod-lib_envblk.lst
+PARTTOOLFILES += parttool-loadenv_mod-lib_envblk.lst
 PARTMAPFILES += partmap-loadenv_mod-lib_envblk.lst
+HANDLERFILES += handler-loadenv_mod-lib_envblk.lst
 
 cmd-loadenv_mod-lib_envblk.lst: lib/envblk.c $(lib/envblk.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh loadenv > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh loadenv > $@ || (rm -f $@; exit 1)
 
 fs-loadenv_mod-lib_envblk.lst: lib/envblk.c $(lib/envblk.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh loadenv > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh loadenv > $@ || (rm -f $@; exit 1)
+
+parttool-loadenv_mod-lib_envblk.lst: lib/envblk.c $(lib/envblk.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh loadenv > $@ || (rm -f $@; exit 1)
 
 partmap-loadenv_mod-lib_envblk.lst: lib/envblk.c $(lib/envblk.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh loadenv > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh loadenv > $@ || (rm -f $@; exit 1)
 
+handler-loadenv_mod-lib_envblk.lst: lib/envblk.c $(lib/envblk.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(loadenv_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh loadenv > $@ || (rm -f $@; exit 1)
 
 loadenv_mod_CFLAGS = $(COMMON_CFLAGS)
 loadenv_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -3553,11 +5555,20 @@ endif
 MOSTLYCLEANFILES += crc_mod-commands_crc.d crc_mod-lib_crc.d
 UNDSYMFILES += und-crc.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 crc.mod: pre-crc.o mod-crc.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(crc_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-crc.o mod-crc.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(crc_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-crc.o mod-crc.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+crc.mod: pre-crc.o mod-crc.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(crc_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-crc.o mod-crc.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-crc.o: $(crc_mod_DEPENDENCIES) crc_mod-commands_crc.o crc_mod-lib_crc.o
 	-rm -f $@
@@ -3570,8 +5581,13 @@ mod-crc.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'crc' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(crc_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-crc.lst: pre-crc.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 crc/' > $@
+else
+def-crc.lst: pre-crc.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 crc/' > $@
+endif
 endif
 
 und-crc.lst: pre-crc.o
@@ -3582,42 +5598,2547 @@ crc_mod-commands_crc.o: commands/crc.c $(commands/crc.c_DEPENDENCIES)
 	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -MD -c -o $@ $<
 -include crc_mod-commands_crc.d
 
-CLEANFILES += cmd-crc_mod-commands_crc.lst fs-crc_mod-commands_crc.lst partmap-crc_mod-commands_crc.lst
+CLEANFILES += cmd-crc_mod-commands_crc.lst fs-crc_mod-commands_crc.lst partmap-crc_mod-commands_crc.lst handler-crc_mod-commands_crc.lst parttool-crc_mod-commands_crc.lst
 COMMANDFILES += cmd-crc_mod-commands_crc.lst
 FSFILES += fs-crc_mod-commands_crc.lst
+PARTTOOLFILES += parttool-crc_mod-commands_crc.lst
 PARTMAPFILES += partmap-crc_mod-commands_crc.lst
+HANDLERFILES += handler-crc_mod-commands_crc.lst
 
 cmd-crc_mod-commands_crc.lst: commands/crc.c $(commands/crc.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh crc > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh crc > $@ || (rm -f $@; exit 1)
 
 fs-crc_mod-commands_crc.lst: commands/crc.c $(commands/crc.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh crc > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh crc > $@ || (rm -f $@; exit 1)
+
+parttool-crc_mod-commands_crc.lst: commands/crc.c $(commands/crc.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh crc > $@ || (rm -f $@; exit 1)
 
 partmap-crc_mod-commands_crc.lst: commands/crc.c $(commands/crc.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh crc > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh crc > $@ || (rm -f $@; exit 1)
 
+handler-crc_mod-commands_crc.lst: commands/crc.c $(commands/crc.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh crc > $@ || (rm -f $@; exit 1)
 
 crc_mod-lib_crc.o: lib/crc.c $(lib/crc.c_DEPENDENCIES)
 	$(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -MD -c -o $@ $<
 -include crc_mod-lib_crc.d
 
-CLEANFILES += cmd-crc_mod-lib_crc.lst fs-crc_mod-lib_crc.lst partmap-crc_mod-lib_crc.lst
+CLEANFILES += cmd-crc_mod-lib_crc.lst fs-crc_mod-lib_crc.lst partmap-crc_mod-lib_crc.lst handler-crc_mod-lib_crc.lst parttool-crc_mod-lib_crc.lst
 COMMANDFILES += cmd-crc_mod-lib_crc.lst
 FSFILES += fs-crc_mod-lib_crc.lst
+PARTTOOLFILES += parttool-crc_mod-lib_crc.lst
 PARTMAPFILES += partmap-crc_mod-lib_crc.lst
+HANDLERFILES += handler-crc_mod-lib_crc.lst
 
 cmd-crc_mod-lib_crc.lst: lib/crc.c $(lib/crc.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh crc > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh crc > $@ || (rm -f $@; exit 1)
 
 fs-crc_mod-lib_crc.lst: lib/crc.c $(lib/crc.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh crc > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh crc > $@ || (rm -f $@; exit 1)
+
+parttool-crc_mod-lib_crc.lst: lib/crc.c $(lib/crc.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh crc > $@ || (rm -f $@; exit 1)
 
 partmap-crc_mod-lib_crc.lst: lib/crc.c $(lib/crc.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh crc > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh crc > $@ || (rm -f $@; exit 1)
 
+handler-crc_mod-lib_crc.lst: lib/crc.c $(lib/crc.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ilib -I$(srcdir)/lib $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(crc_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh crc > $@ || (rm -f $@; exit 1)
 
 crc_mod_CFLAGS = $(COMMON_CFLAGS)
 crc_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For memrw.mod.
+memrw_mod_SOURCES = commands/memrw.c
+CLEANFILES += memrw.mod mod-memrw.o mod-memrw.c pre-memrw.o memrw_mod-commands_memrw.o und-memrw.lst
+ifneq ($(memrw_mod_EXPORTS),no)
+CLEANFILES += def-memrw.lst
+DEFSYMFILES += def-memrw.lst
+endif
+MOSTLYCLEANFILES += memrw_mod-commands_memrw.d
+UNDSYMFILES += und-memrw.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+memrw.mod: pre-memrw.o mod-memrw.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(memrw_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-memrw.o mod-memrw.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+memrw.mod: pre-memrw.o mod-memrw.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(memrw_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-memrw.o mod-memrw.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-memrw.o: $(memrw_mod_DEPENDENCIES) memrw_mod-commands_memrw.o
+	-rm -f $@
+	$(TARGET_CC) $(memrw_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ memrw_mod-commands_memrw.o
+
+mod-memrw.o: mod-memrw.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(memrw_mod_CFLAGS) -c -o $@ $<
+
+mod-memrw.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'memrw' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(memrw_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-memrw.lst: pre-memrw.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 memrw/' > $@
+else
+def-memrw.lst: pre-memrw.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 memrw/' > $@
+endif
+endif
+
+und-memrw.lst: pre-memrw.o
+	echo 'memrw' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+memrw_mod-commands_memrw.o: commands/memrw.c $(commands/memrw.c_DEPENDENCIES)
+	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(memrw_mod_CFLAGS) -MD -c -o $@ $<
+-include memrw_mod-commands_memrw.d
+
+CLEANFILES += cmd-memrw_mod-commands_memrw.lst fs-memrw_mod-commands_memrw.lst partmap-memrw_mod-commands_memrw.lst handler-memrw_mod-commands_memrw.lst parttool-memrw_mod-commands_memrw.lst
+COMMANDFILES += cmd-memrw_mod-commands_memrw.lst
+FSFILES += fs-memrw_mod-commands_memrw.lst
+PARTTOOLFILES += parttool-memrw_mod-commands_memrw.lst
+PARTMAPFILES += partmap-memrw_mod-commands_memrw.lst
+HANDLERFILES += handler-memrw_mod-commands_memrw.lst
+
+cmd-memrw_mod-commands_memrw.lst: commands/memrw.c $(commands/memrw.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(memrw_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh memrw > $@ || (rm -f $@; exit 1)
+
+fs-memrw_mod-commands_memrw.lst: commands/memrw.c $(commands/memrw.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(memrw_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh memrw > $@ || (rm -f $@; exit 1)
+
+parttool-memrw_mod-commands_memrw.lst: commands/memrw.c $(commands/memrw.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(memrw_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh memrw > $@ || (rm -f $@; exit 1)
+
+partmap-memrw_mod-commands_memrw.lst: commands/memrw.c $(commands/memrw.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(memrw_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh memrw > $@ || (rm -f $@; exit 1)
+
+handler-memrw_mod-commands_memrw.lst: commands/memrw.c $(commands/memrw.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(memrw_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh memrw > $@ || (rm -f $@; exit 1)
+
+memrw_mod_CFLAGS = $(COMMON_CFLAGS)
+memrw_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For true.mod
+true_mod_SOURCES = commands/true.c
+CLEANFILES += true.mod mod-true.o mod-true.c pre-true.o true_mod-commands_true.o und-true.lst
+ifneq ($(true_mod_EXPORTS),no)
+CLEANFILES += def-true.lst
+DEFSYMFILES += def-true.lst
+endif
+MOSTLYCLEANFILES += true_mod-commands_true.d
+UNDSYMFILES += und-true.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+true.mod: pre-true.o mod-true.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(true_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-true.o mod-true.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+true.mod: pre-true.o mod-true.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(true_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-true.o mod-true.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-true.o: $(true_mod_DEPENDENCIES) true_mod-commands_true.o
+	-rm -f $@
+	$(TARGET_CC) $(true_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ true_mod-commands_true.o
+
+mod-true.o: mod-true.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(true_mod_CFLAGS) -c -o $@ $<
+
+mod-true.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'true' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(true_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-true.lst: pre-true.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 true/' > $@
+else
+def-true.lst: pre-true.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 true/' > $@
+endif
+endif
+
+und-true.lst: pre-true.o
+	echo 'true' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+true_mod-commands_true.o: commands/true.c $(commands/true.c_DEPENDENCIES)
+	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(true_mod_CFLAGS) -MD -c -o $@ $<
+-include true_mod-commands_true.d
+
+CLEANFILES += cmd-true_mod-commands_true.lst fs-true_mod-commands_true.lst partmap-true_mod-commands_true.lst handler-true_mod-commands_true.lst parttool-true_mod-commands_true.lst
+COMMANDFILES += cmd-true_mod-commands_true.lst
+FSFILES += fs-true_mod-commands_true.lst
+PARTTOOLFILES += parttool-true_mod-commands_true.lst
+PARTMAPFILES += partmap-true_mod-commands_true.lst
+HANDLERFILES += handler-true_mod-commands_true.lst
+
+cmd-true_mod-commands_true.lst: commands/true.c $(commands/true.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(true_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh true > $@ || (rm -f $@; exit 1)
+
+fs-true_mod-commands_true.lst: commands/true.c $(commands/true.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(true_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh true > $@ || (rm -f $@; exit 1)
+
+parttool-true_mod-commands_true.lst: commands/true.c $(commands/true.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(true_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh true > $@ || (rm -f $@; exit 1)
+
+partmap-true_mod-commands_true.lst: commands/true.c $(commands/true.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(true_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh true > $@ || (rm -f $@; exit 1)
+
+handler-true_mod-commands_true.lst: commands/true.c $(commands/true.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(true_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh true > $@ || (rm -f $@; exit 1)
+
+true_mod_CFLAGS = $(COMMON_CFLAGS)
+true_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For probe.mod.
+probe_mod_SOURCES = commands/probe.c
+CLEANFILES += probe.mod mod-probe.o mod-probe.c pre-probe.o probe_mod-commands_probe.o und-probe.lst
+ifneq ($(probe_mod_EXPORTS),no)
+CLEANFILES += def-probe.lst
+DEFSYMFILES += def-probe.lst
+endif
+MOSTLYCLEANFILES += probe_mod-commands_probe.d
+UNDSYMFILES += und-probe.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+probe.mod: pre-probe.o mod-probe.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(probe_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-probe.o mod-probe.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+probe.mod: pre-probe.o mod-probe.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(probe_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-probe.o mod-probe.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-probe.o: $(probe_mod_DEPENDENCIES) probe_mod-commands_probe.o
+	-rm -f $@
+	$(TARGET_CC) $(probe_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ probe_mod-commands_probe.o
+
+mod-probe.o: mod-probe.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(probe_mod_CFLAGS) -c -o $@ $<
+
+mod-probe.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'probe' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(probe_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-probe.lst: pre-probe.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 probe/' > $@
+else
+def-probe.lst: pre-probe.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 probe/' > $@
+endif
+endif
+
+und-probe.lst: pre-probe.o
+	echo 'probe' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+probe_mod-commands_probe.o: commands/probe.c $(commands/probe.c_DEPENDENCIES)
+	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(probe_mod_CFLAGS) -MD -c -o $@ $<
+-include probe_mod-commands_probe.d
+
+CLEANFILES += cmd-probe_mod-commands_probe.lst fs-probe_mod-commands_probe.lst partmap-probe_mod-commands_probe.lst handler-probe_mod-commands_probe.lst parttool-probe_mod-commands_probe.lst
+COMMANDFILES += cmd-probe_mod-commands_probe.lst
+FSFILES += fs-probe_mod-commands_probe.lst
+PARTTOOLFILES += parttool-probe_mod-commands_probe.lst
+PARTMAPFILES += partmap-probe_mod-commands_probe.lst
+HANDLERFILES += handler-probe_mod-commands_probe.lst
+
+cmd-probe_mod-commands_probe.lst: commands/probe.c $(commands/probe.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(probe_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh probe > $@ || (rm -f $@; exit 1)
+
+fs-probe_mod-commands_probe.lst: commands/probe.c $(commands/probe.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(probe_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh probe > $@ || (rm -f $@; exit 1)
+
+parttool-probe_mod-commands_probe.lst: commands/probe.c $(commands/probe.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(probe_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh probe > $@ || (rm -f $@; exit 1)
+
+partmap-probe_mod-commands_probe.lst: commands/probe.c $(commands/probe.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(probe_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh probe > $@ || (rm -f $@; exit 1)
+
+handler-probe_mod-commands_probe.lst: commands/probe.c $(commands/probe.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(probe_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh probe > $@ || (rm -f $@; exit 1)
+
+probe_mod_CFLAGS = $(COMMON_CFLAGS)
+probe_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For keystatus.mod.
+keystatus_mod_SOURCES = commands/keystatus.c
+CLEANFILES += keystatus.mod mod-keystatus.o mod-keystatus.c pre-keystatus.o keystatus_mod-commands_keystatus.o und-keystatus.lst
+ifneq ($(keystatus_mod_EXPORTS),no)
+CLEANFILES += def-keystatus.lst
+DEFSYMFILES += def-keystatus.lst
+endif
+MOSTLYCLEANFILES += keystatus_mod-commands_keystatus.d
+UNDSYMFILES += und-keystatus.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+keystatus.mod: pre-keystatus.o mod-keystatus.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(keystatus_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-keystatus.o mod-keystatus.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+keystatus.mod: pre-keystatus.o mod-keystatus.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(keystatus_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-keystatus.o mod-keystatus.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-keystatus.o: $(keystatus_mod_DEPENDENCIES) keystatus_mod-commands_keystatus.o
+	-rm -f $@
+	$(TARGET_CC) $(keystatus_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ keystatus_mod-commands_keystatus.o
+
+mod-keystatus.o: mod-keystatus.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(keystatus_mod_CFLAGS) -c -o $@ $<
+
+mod-keystatus.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'keystatus' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(keystatus_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-keystatus.lst: pre-keystatus.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 keystatus/' > $@
+else
+def-keystatus.lst: pre-keystatus.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 keystatus/' > $@
+endif
+endif
+
+und-keystatus.lst: pre-keystatus.o
+	echo 'keystatus' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+keystatus_mod-commands_keystatus.o: commands/keystatus.c $(commands/keystatus.c_DEPENDENCIES)
+	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(keystatus_mod_CFLAGS) -MD -c -o $@ $<
+-include keystatus_mod-commands_keystatus.d
+
+CLEANFILES += cmd-keystatus_mod-commands_keystatus.lst fs-keystatus_mod-commands_keystatus.lst partmap-keystatus_mod-commands_keystatus.lst handler-keystatus_mod-commands_keystatus.lst parttool-keystatus_mod-commands_keystatus.lst
+COMMANDFILES += cmd-keystatus_mod-commands_keystatus.lst
+FSFILES += fs-keystatus_mod-commands_keystatus.lst
+PARTTOOLFILES += parttool-keystatus_mod-commands_keystatus.lst
+PARTMAPFILES += partmap-keystatus_mod-commands_keystatus.lst
+HANDLERFILES += handler-keystatus_mod-commands_keystatus.lst
+
+cmd-keystatus_mod-commands_keystatus.lst: commands/keystatus.c $(commands/keystatus.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(keystatus_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh keystatus > $@ || (rm -f $@; exit 1)
+
+fs-keystatus_mod-commands_keystatus.lst: commands/keystatus.c $(commands/keystatus.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(keystatus_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh keystatus > $@ || (rm -f $@; exit 1)
+
+parttool-keystatus_mod-commands_keystatus.lst: commands/keystatus.c $(commands/keystatus.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(keystatus_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh keystatus > $@ || (rm -f $@; exit 1)
+
+partmap-keystatus_mod-commands_keystatus.lst: commands/keystatus.c $(commands/keystatus.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(keystatus_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh keystatus > $@ || (rm -f $@; exit 1)
+
+handler-keystatus_mod-commands_keystatus.lst: commands/keystatus.c $(commands/keystatus.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(keystatus_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh keystatus > $@ || (rm -f $@; exit 1)
+
+keystatus_mod_CFLAGS = $(COMMON_CFLAGS)
+keystatus_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For normal.mod.
+normal_mod_SOURCES = normal/main.c normal/cmdline.c normal/dyncmd.c \
+	normal/auth.c normal/autofs.c normal/handler.c \
+	normal/color.c normal/completion.c normal/datetime.c normal/menu.c \
+	normal/menu_entry.c normal/menu_text.c normal/menu_viewer.c \
+	normal/misc.c
+CLEANFILES += normal.mod mod-normal.o mod-normal.c pre-normal.o normal_mod-normal_main.o normal_mod-normal_cmdline.o normal_mod-normal_dyncmd.o normal_mod-normal_auth.o normal_mod-normal_autofs.o normal_mod-normal_handler.o normal_mod-normal_color.o normal_mod-normal_completion.o normal_mod-normal_datetime.o normal_mod-normal_menu.o normal_mod-normal_menu_entry.o normal_mod-normal_menu_text.o normal_mod-normal_menu_viewer.o normal_mod-normal_misc.o und-normal.lst
+ifneq ($(normal_mod_EXPORTS),no)
+CLEANFILES += def-normal.lst
+DEFSYMFILES += def-normal.lst
+endif
+MOSTLYCLEANFILES += normal_mod-normal_main.d normal_mod-normal_cmdline.d normal_mod-normal_dyncmd.d normal_mod-normal_auth.d normal_mod-normal_autofs.d normal_mod-normal_handler.d normal_mod-normal_color.d normal_mod-normal_completion.d normal_mod-normal_datetime.d normal_mod-normal_menu.d normal_mod-normal_menu_entry.d normal_mod-normal_menu_text.d normal_mod-normal_menu_viewer.d normal_mod-normal_misc.d
+UNDSYMFILES += und-normal.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+normal.mod: pre-normal.o mod-normal.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(normal_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-normal.o mod-normal.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+normal.mod: pre-normal.o mod-normal.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(normal_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-normal.o mod-normal.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-normal.o: $(normal_mod_DEPENDENCIES) normal_mod-normal_main.o normal_mod-normal_cmdline.o normal_mod-normal_dyncmd.o normal_mod-normal_auth.o normal_mod-normal_autofs.o normal_mod-normal_handler.o normal_mod-normal_color.o normal_mod-normal_completion.o normal_mod-normal_datetime.o normal_mod-normal_menu.o normal_mod-normal_menu_entry.o normal_mod-normal_menu_text.o normal_mod-normal_menu_viewer.o normal_mod-normal_misc.o
+	-rm -f $@
+	$(TARGET_CC) $(normal_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ normal_mod-normal_main.o normal_mod-normal_cmdline.o normal_mod-normal_dyncmd.o normal_mod-normal_auth.o normal_mod-normal_autofs.o normal_mod-normal_handler.o normal_mod-normal_color.o normal_mod-normal_completion.o normal_mod-normal_datetime.o normal_mod-normal_menu.o normal_mod-normal_menu_entry.o normal_mod-normal_menu_text.o normal_mod-normal_menu_viewer.o normal_mod-normal_misc.o
+
+mod-normal.o: mod-normal.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -c -o $@ $<
+
+mod-normal.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'normal' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(normal_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-normal.lst: pre-normal.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 normal/' > $@
+else
+def-normal.lst: pre-normal.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 normal/' > $@
+endif
+endif
+
+und-normal.lst: pre-normal.o
+	echo 'normal' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+normal_mod-normal_main.o: normal/main.c $(normal/main.c_DEPENDENCIES)
+	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
+-include normal_mod-normal_main.d
+
+CLEANFILES += cmd-normal_mod-normal_main.lst fs-normal_mod-normal_main.lst partmap-normal_mod-normal_main.lst handler-normal_mod-normal_main.lst parttool-normal_mod-normal_main.lst
+COMMANDFILES += cmd-normal_mod-normal_main.lst
+FSFILES += fs-normal_mod-normal_main.lst
+PARTTOOLFILES += parttool-normal_mod-normal_main.lst
+PARTMAPFILES += partmap-normal_mod-normal_main.lst
+HANDLERFILES += handler-normal_mod-normal_main.lst
+
+cmd-normal_mod-normal_main.lst: normal/main.c $(normal/main.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
+
+fs-normal_mod-normal_main.lst: normal/main.c $(normal/main.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
+
+parttool-normal_mod-normal_main.lst: normal/main.c $(normal/main.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh normal > $@ || (rm -f $@; exit 1)
+
+partmap-normal_mod-normal_main.lst: normal/main.c $(normal/main.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh normal > $@ || (rm -f $@; exit 1)
+
+handler-normal_mod-normal_main.lst: normal/main.c $(normal/main.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh normal > $@ || (rm -f $@; exit 1)
+
+normal_mod-normal_cmdline.o: normal/cmdline.c $(normal/cmdline.c_DEPENDENCIES)
+	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
+-include normal_mod-normal_cmdline.d
+
+CLEANFILES += cmd-normal_mod-normal_cmdline.lst fs-normal_mod-normal_cmdline.lst partmap-normal_mod-normal_cmdline.lst handler-normal_mod-normal_cmdline.lst parttool-normal_mod-normal_cmdline.lst
+COMMANDFILES += cmd-normal_mod-normal_cmdline.lst
+FSFILES += fs-normal_mod-normal_cmdline.lst
+PARTTOOLFILES += parttool-normal_mod-normal_cmdline.lst
+PARTMAPFILES += partmap-normal_mod-normal_cmdline.lst
+HANDLERFILES += handler-normal_mod-normal_cmdline.lst
+
+cmd-normal_mod-normal_cmdline.lst: normal/cmdline.c $(normal/cmdline.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
+
+fs-normal_mod-normal_cmdline.lst: normal/cmdline.c $(normal/cmdline.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
+
+parttool-normal_mod-normal_cmdline.lst: normal/cmdline.c $(normal/cmdline.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh normal > $@ || (rm -f $@; exit 1)
+
+partmap-normal_mod-normal_cmdline.lst: normal/cmdline.c $(normal/cmdline.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh normal > $@ || (rm -f $@; exit 1)
+
+handler-normal_mod-normal_cmdline.lst: normal/cmdline.c $(normal/cmdline.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh normal > $@ || (rm -f $@; exit 1)
+
+normal_mod-normal_dyncmd.o: normal/dyncmd.c $(normal/dyncmd.c_DEPENDENCIES)
+	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
+-include normal_mod-normal_dyncmd.d
+
+CLEANFILES += cmd-normal_mod-normal_dyncmd.lst fs-normal_mod-normal_dyncmd.lst partmap-normal_mod-normal_dyncmd.lst handler-normal_mod-normal_dyncmd.lst parttool-normal_mod-normal_dyncmd.lst
+COMMANDFILES += cmd-normal_mod-normal_dyncmd.lst
+FSFILES += fs-normal_mod-normal_dyncmd.lst
+PARTTOOLFILES += parttool-normal_mod-normal_dyncmd.lst
+PARTMAPFILES += partmap-normal_mod-normal_dyncmd.lst
+HANDLERFILES += handler-normal_mod-normal_dyncmd.lst
+
+cmd-normal_mod-normal_dyncmd.lst: normal/dyncmd.c $(normal/dyncmd.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
+
+fs-normal_mod-normal_dyncmd.lst: normal/dyncmd.c $(normal/dyncmd.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
+
+parttool-normal_mod-normal_dyncmd.lst: normal/dyncmd.c $(normal/dyncmd.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh normal > $@ || (rm -f $@; exit 1)
+
+partmap-normal_mod-normal_dyncmd.lst: normal/dyncmd.c $(normal/dyncmd.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh normal > $@ || (rm -f $@; exit 1)
+
+handler-normal_mod-normal_dyncmd.lst: normal/dyncmd.c $(normal/dyncmd.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh normal > $@ || (rm -f $@; exit 1)
+
+normal_mod-normal_auth.o: normal/auth.c $(normal/auth.c_DEPENDENCIES)
+	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
+-include normal_mod-normal_auth.d
+
+CLEANFILES += cmd-normal_mod-normal_auth.lst fs-normal_mod-normal_auth.lst partmap-normal_mod-normal_auth.lst handler-normal_mod-normal_auth.lst parttool-normal_mod-normal_auth.lst
+COMMANDFILES += cmd-normal_mod-normal_auth.lst
+FSFILES += fs-normal_mod-normal_auth.lst
+PARTTOOLFILES += parttool-normal_mod-normal_auth.lst
+PARTMAPFILES += partmap-normal_mod-normal_auth.lst
+HANDLERFILES += handler-normal_mod-normal_auth.lst
+
+cmd-normal_mod-normal_auth.lst: normal/auth.c $(normal/auth.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
+
+fs-normal_mod-normal_auth.lst: normal/auth.c $(normal/auth.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
+
+parttool-normal_mod-normal_auth.lst: normal/auth.c $(normal/auth.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh normal > $@ || (rm -f $@; exit 1)
+
+partmap-normal_mod-normal_auth.lst: normal/auth.c $(normal/auth.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh normal > $@ || (rm -f $@; exit 1)
+
+handler-normal_mod-normal_auth.lst: normal/auth.c $(normal/auth.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh normal > $@ || (rm -f $@; exit 1)
+
+normal_mod-normal_autofs.o: normal/autofs.c $(normal/autofs.c_DEPENDENCIES)
+	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
+-include normal_mod-normal_autofs.d
+
+CLEANFILES += cmd-normal_mod-normal_autofs.lst fs-normal_mod-normal_autofs.lst partmap-normal_mod-normal_autofs.lst handler-normal_mod-normal_autofs.lst parttool-normal_mod-normal_autofs.lst
+COMMANDFILES += cmd-normal_mod-normal_autofs.lst
+FSFILES += fs-normal_mod-normal_autofs.lst
+PARTTOOLFILES += parttool-normal_mod-normal_autofs.lst
+PARTMAPFILES += partmap-normal_mod-normal_autofs.lst
+HANDLERFILES += handler-normal_mod-normal_autofs.lst
+
+cmd-normal_mod-normal_autofs.lst: normal/autofs.c $(normal/autofs.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
+
+fs-normal_mod-normal_autofs.lst: normal/autofs.c $(normal/autofs.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
+
+parttool-normal_mod-normal_autofs.lst: normal/autofs.c $(normal/autofs.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh normal > $@ || (rm -f $@; exit 1)
+
+partmap-normal_mod-normal_autofs.lst: normal/autofs.c $(normal/autofs.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh normal > $@ || (rm -f $@; exit 1)
+
+handler-normal_mod-normal_autofs.lst: normal/autofs.c $(normal/autofs.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh normal > $@ || (rm -f $@; exit 1)
+
+normal_mod-normal_handler.o: normal/handler.c $(normal/handler.c_DEPENDENCIES)
+	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
+-include normal_mod-normal_handler.d
+
+CLEANFILES += cmd-normal_mod-normal_handler.lst fs-normal_mod-normal_handler.lst partmap-normal_mod-normal_handler.lst handler-normal_mod-normal_handler.lst parttool-normal_mod-normal_handler.lst
+COMMANDFILES += cmd-normal_mod-normal_handler.lst
+FSFILES += fs-normal_mod-normal_handler.lst
+PARTTOOLFILES += parttool-normal_mod-normal_handler.lst
+PARTMAPFILES += partmap-normal_mod-normal_handler.lst
+HANDLERFILES += handler-normal_mod-normal_handler.lst
+
+cmd-normal_mod-normal_handler.lst: normal/handler.c $(normal/handler.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
+
+fs-normal_mod-normal_handler.lst: normal/handler.c $(normal/handler.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
+
+parttool-normal_mod-normal_handler.lst: normal/handler.c $(normal/handler.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh normal > $@ || (rm -f $@; exit 1)
+
+partmap-normal_mod-normal_handler.lst: normal/handler.c $(normal/handler.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh normal > $@ || (rm -f $@; exit 1)
+
+handler-normal_mod-normal_handler.lst: normal/handler.c $(normal/handler.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh normal > $@ || (rm -f $@; exit 1)
+
+normal_mod-normal_color.o: normal/color.c $(normal/color.c_DEPENDENCIES)
+	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
+-include normal_mod-normal_color.d
+
+CLEANFILES += cmd-normal_mod-normal_color.lst fs-normal_mod-normal_color.lst partmap-normal_mod-normal_color.lst handler-normal_mod-normal_color.lst parttool-normal_mod-normal_color.lst
+COMMANDFILES += cmd-normal_mod-normal_color.lst
+FSFILES += fs-normal_mod-normal_color.lst
+PARTTOOLFILES += parttool-normal_mod-normal_color.lst
+PARTMAPFILES += partmap-normal_mod-normal_color.lst
+HANDLERFILES += handler-normal_mod-normal_color.lst
+
+cmd-normal_mod-normal_color.lst: normal/color.c $(normal/color.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
+
+fs-normal_mod-normal_color.lst: normal/color.c $(normal/color.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
+
+parttool-normal_mod-normal_color.lst: normal/color.c $(normal/color.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh normal > $@ || (rm -f $@; exit 1)
+
+partmap-normal_mod-normal_color.lst: normal/color.c $(normal/color.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh normal > $@ || (rm -f $@; exit 1)
+
+handler-normal_mod-normal_color.lst: normal/color.c $(normal/color.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh normal > $@ || (rm -f $@; exit 1)
+
+normal_mod-normal_completion.o: normal/completion.c $(normal/completion.c_DEPENDENCIES)
+	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
+-include normal_mod-normal_completion.d
+
+CLEANFILES += cmd-normal_mod-normal_completion.lst fs-normal_mod-normal_completion.lst partmap-normal_mod-normal_completion.lst handler-normal_mod-normal_completion.lst parttool-normal_mod-normal_completion.lst
+COMMANDFILES += cmd-normal_mod-normal_completion.lst
+FSFILES += fs-normal_mod-normal_completion.lst
+PARTTOOLFILES += parttool-normal_mod-normal_completion.lst
+PARTMAPFILES += partmap-normal_mod-normal_completion.lst
+HANDLERFILES += handler-normal_mod-normal_completion.lst
+
+cmd-normal_mod-normal_completion.lst: normal/completion.c $(normal/completion.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
+
+fs-normal_mod-normal_completion.lst: normal/completion.c $(normal/completion.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
+
+parttool-normal_mod-normal_completion.lst: normal/completion.c $(normal/completion.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh normal > $@ || (rm -f $@; exit 1)
+
+partmap-normal_mod-normal_completion.lst: normal/completion.c $(normal/completion.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh normal > $@ || (rm -f $@; exit 1)
+
+handler-normal_mod-normal_completion.lst: normal/completion.c $(normal/completion.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh normal > $@ || (rm -f $@; exit 1)
+
+normal_mod-normal_datetime.o: normal/datetime.c $(normal/datetime.c_DEPENDENCIES)
+	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
+-include normal_mod-normal_datetime.d
+
+CLEANFILES += cmd-normal_mod-normal_datetime.lst fs-normal_mod-normal_datetime.lst partmap-normal_mod-normal_datetime.lst handler-normal_mod-normal_datetime.lst parttool-normal_mod-normal_datetime.lst
+COMMANDFILES += cmd-normal_mod-normal_datetime.lst
+FSFILES += fs-normal_mod-normal_datetime.lst
+PARTTOOLFILES += parttool-normal_mod-normal_datetime.lst
+PARTMAPFILES += partmap-normal_mod-normal_datetime.lst
+HANDLERFILES += handler-normal_mod-normal_datetime.lst
+
+cmd-normal_mod-normal_datetime.lst: normal/datetime.c $(normal/datetime.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
+
+fs-normal_mod-normal_datetime.lst: normal/datetime.c $(normal/datetime.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
+
+parttool-normal_mod-normal_datetime.lst: normal/datetime.c $(normal/datetime.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh normal > $@ || (rm -f $@; exit 1)
+
+partmap-normal_mod-normal_datetime.lst: normal/datetime.c $(normal/datetime.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh normal > $@ || (rm -f $@; exit 1)
+
+handler-normal_mod-normal_datetime.lst: normal/datetime.c $(normal/datetime.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh normal > $@ || (rm -f $@; exit 1)
+
+normal_mod-normal_menu.o: normal/menu.c $(normal/menu.c_DEPENDENCIES)
+	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
+-include normal_mod-normal_menu.d
+
+CLEANFILES += cmd-normal_mod-normal_menu.lst fs-normal_mod-normal_menu.lst partmap-normal_mod-normal_menu.lst handler-normal_mod-normal_menu.lst parttool-normal_mod-normal_menu.lst
+COMMANDFILES += cmd-normal_mod-normal_menu.lst
+FSFILES += fs-normal_mod-normal_menu.lst
+PARTTOOLFILES += parttool-normal_mod-normal_menu.lst
+PARTMAPFILES += partmap-normal_mod-normal_menu.lst
+HANDLERFILES += handler-normal_mod-normal_menu.lst
+
+cmd-normal_mod-normal_menu.lst: normal/menu.c $(normal/menu.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
+
+fs-normal_mod-normal_menu.lst: normal/menu.c $(normal/menu.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
+
+parttool-normal_mod-normal_menu.lst: normal/menu.c $(normal/menu.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh normal > $@ || (rm -f $@; exit 1)
+
+partmap-normal_mod-normal_menu.lst: normal/menu.c $(normal/menu.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh normal > $@ || (rm -f $@; exit 1)
+
+handler-normal_mod-normal_menu.lst: normal/menu.c $(normal/menu.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh normal > $@ || (rm -f $@; exit 1)
+
+normal_mod-normal_menu_entry.o: normal/menu_entry.c $(normal/menu_entry.c_DEPENDENCIES)
+	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
+-include normal_mod-normal_menu_entry.d
+
+CLEANFILES += cmd-normal_mod-normal_menu_entry.lst fs-normal_mod-normal_menu_entry.lst partmap-normal_mod-normal_menu_entry.lst handler-normal_mod-normal_menu_entry.lst parttool-normal_mod-normal_menu_entry.lst
+COMMANDFILES += cmd-normal_mod-normal_menu_entry.lst
+FSFILES += fs-normal_mod-normal_menu_entry.lst
+PARTTOOLFILES += parttool-normal_mod-normal_menu_entry.lst
+PARTMAPFILES += partmap-normal_mod-normal_menu_entry.lst
+HANDLERFILES += handler-normal_mod-normal_menu_entry.lst
+
+cmd-normal_mod-normal_menu_entry.lst: normal/menu_entry.c $(normal/menu_entry.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
+
+fs-normal_mod-normal_menu_entry.lst: normal/menu_entry.c $(normal/menu_entry.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
+
+parttool-normal_mod-normal_menu_entry.lst: normal/menu_entry.c $(normal/menu_entry.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh normal > $@ || (rm -f $@; exit 1)
+
+partmap-normal_mod-normal_menu_entry.lst: normal/menu_entry.c $(normal/menu_entry.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh normal > $@ || (rm -f $@; exit 1)
+
+handler-normal_mod-normal_menu_entry.lst: normal/menu_entry.c $(normal/menu_entry.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh normal > $@ || (rm -f $@; exit 1)
+
+normal_mod-normal_menu_text.o: normal/menu_text.c $(normal/menu_text.c_DEPENDENCIES)
+	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
+-include normal_mod-normal_menu_text.d
+
+CLEANFILES += cmd-normal_mod-normal_menu_text.lst fs-normal_mod-normal_menu_text.lst partmap-normal_mod-normal_menu_text.lst handler-normal_mod-normal_menu_text.lst parttool-normal_mod-normal_menu_text.lst
+COMMANDFILES += cmd-normal_mod-normal_menu_text.lst
+FSFILES += fs-normal_mod-normal_menu_text.lst
+PARTTOOLFILES += parttool-normal_mod-normal_menu_text.lst
+PARTMAPFILES += partmap-normal_mod-normal_menu_text.lst
+HANDLERFILES += handler-normal_mod-normal_menu_text.lst
+
+cmd-normal_mod-normal_menu_text.lst: normal/menu_text.c $(normal/menu_text.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
+
+fs-normal_mod-normal_menu_text.lst: normal/menu_text.c $(normal/menu_text.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
+
+parttool-normal_mod-normal_menu_text.lst: normal/menu_text.c $(normal/menu_text.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh normal > $@ || (rm -f $@; exit 1)
+
+partmap-normal_mod-normal_menu_text.lst: normal/menu_text.c $(normal/menu_text.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh normal > $@ || (rm -f $@; exit 1)
+
+handler-normal_mod-normal_menu_text.lst: normal/menu_text.c $(normal/menu_text.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh normal > $@ || (rm -f $@; exit 1)
+
+normal_mod-normal_menu_viewer.o: normal/menu_viewer.c $(normal/menu_viewer.c_DEPENDENCIES)
+	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
+-include normal_mod-normal_menu_viewer.d
+
+CLEANFILES += cmd-normal_mod-normal_menu_viewer.lst fs-normal_mod-normal_menu_viewer.lst partmap-normal_mod-normal_menu_viewer.lst handler-normal_mod-normal_menu_viewer.lst parttool-normal_mod-normal_menu_viewer.lst
+COMMANDFILES += cmd-normal_mod-normal_menu_viewer.lst
+FSFILES += fs-normal_mod-normal_menu_viewer.lst
+PARTTOOLFILES += parttool-normal_mod-normal_menu_viewer.lst
+PARTMAPFILES += partmap-normal_mod-normal_menu_viewer.lst
+HANDLERFILES += handler-normal_mod-normal_menu_viewer.lst
+
+cmd-normal_mod-normal_menu_viewer.lst: normal/menu_viewer.c $(normal/menu_viewer.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
+
+fs-normal_mod-normal_menu_viewer.lst: normal/menu_viewer.c $(normal/menu_viewer.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
+
+parttool-normal_mod-normal_menu_viewer.lst: normal/menu_viewer.c $(normal/menu_viewer.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh normal > $@ || (rm -f $@; exit 1)
+
+partmap-normal_mod-normal_menu_viewer.lst: normal/menu_viewer.c $(normal/menu_viewer.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh normal > $@ || (rm -f $@; exit 1)
+
+handler-normal_mod-normal_menu_viewer.lst: normal/menu_viewer.c $(normal/menu_viewer.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh normal > $@ || (rm -f $@; exit 1)
+
+normal_mod-normal_misc.o: normal/misc.c $(normal/misc.c_DEPENDENCIES)
+	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
+-include normal_mod-normal_misc.d
+
+CLEANFILES += cmd-normal_mod-normal_misc.lst fs-normal_mod-normal_misc.lst partmap-normal_mod-normal_misc.lst handler-normal_mod-normal_misc.lst parttool-normal_mod-normal_misc.lst
+COMMANDFILES += cmd-normal_mod-normal_misc.lst
+FSFILES += fs-normal_mod-normal_misc.lst
+PARTTOOLFILES += parttool-normal_mod-normal_misc.lst
+PARTMAPFILES += partmap-normal_mod-normal_misc.lst
+HANDLERFILES += handler-normal_mod-normal_misc.lst
+
+cmd-normal_mod-normal_misc.lst: normal/misc.c $(normal/misc.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
+
+fs-normal_mod-normal_misc.lst: normal/misc.c $(normal/misc.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
+
+parttool-normal_mod-normal_misc.lst: normal/misc.c $(normal/misc.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh normal > $@ || (rm -f $@; exit 1)
+
+partmap-normal_mod-normal_misc.lst: normal/misc.c $(normal/misc.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh normal > $@ || (rm -f $@; exit 1)
+
+handler-normal_mod-normal_misc.lst: normal/misc.c $(normal/misc.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh normal > $@ || (rm -f $@; exit 1)
+
+normal_mod_CFLAGS = $(COMMON_CFLAGS)
+normal_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For sh.mod.
+sh_mod_SOURCES = script/sh/main.c script/sh/script.c script/sh/execute.c \
+	script/sh/function.c script/sh/lexer.c grub_script.tab.c
+CLEANFILES += sh.mod mod-sh.o mod-sh.c pre-sh.o sh_mod-script_sh_main.o sh_mod-script_sh_script.o sh_mod-script_sh_execute.o sh_mod-script_sh_function.o sh_mod-script_sh_lexer.o sh_mod-grub_script_tab.o und-sh.lst
+ifneq ($(sh_mod_EXPORTS),no)
+CLEANFILES += def-sh.lst
+DEFSYMFILES += def-sh.lst
+endif
+MOSTLYCLEANFILES += sh_mod-script_sh_main.d sh_mod-script_sh_script.d sh_mod-script_sh_execute.d sh_mod-script_sh_function.d sh_mod-script_sh_lexer.d sh_mod-grub_script_tab.d
+UNDSYMFILES += und-sh.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+sh.mod: pre-sh.o mod-sh.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(sh_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-sh.o mod-sh.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+sh.mod: pre-sh.o mod-sh.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(sh_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-sh.o mod-sh.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-sh.o: $(sh_mod_DEPENDENCIES) sh_mod-script_sh_main.o sh_mod-script_sh_script.o sh_mod-script_sh_execute.o sh_mod-script_sh_function.o sh_mod-script_sh_lexer.o sh_mod-grub_script_tab.o
+	-rm -f $@
+	$(TARGET_CC) $(sh_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ sh_mod-script_sh_main.o sh_mod-script_sh_script.o sh_mod-script_sh_execute.o sh_mod-script_sh_function.o sh_mod-script_sh_lexer.o sh_mod-grub_script_tab.o
+
+mod-sh.o: mod-sh.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -c -o $@ $<
+
+mod-sh.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'sh' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(sh_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-sh.lst: pre-sh.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 sh/' > $@
+else
+def-sh.lst: pre-sh.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 sh/' > $@
+endif
+endif
+
+und-sh.lst: pre-sh.o
+	echo 'sh' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+sh_mod-script_sh_main.o: script/sh/main.c $(script/sh/main.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -MD -c -o $@ $<
+-include sh_mod-script_sh_main.d
+
+CLEANFILES += cmd-sh_mod-script_sh_main.lst fs-sh_mod-script_sh_main.lst partmap-sh_mod-script_sh_main.lst handler-sh_mod-script_sh_main.lst parttool-sh_mod-script_sh_main.lst
+COMMANDFILES += cmd-sh_mod-script_sh_main.lst
+FSFILES += fs-sh_mod-script_sh_main.lst
+PARTTOOLFILES += parttool-sh_mod-script_sh_main.lst
+PARTMAPFILES += partmap-sh_mod-script_sh_main.lst
+HANDLERFILES += handler-sh_mod-script_sh_main.lst
+
+cmd-sh_mod-script_sh_main.lst: script/sh/main.c $(script/sh/main.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh sh > $@ || (rm -f $@; exit 1)
+
+fs-sh_mod-script_sh_main.lst: script/sh/main.c $(script/sh/main.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh sh > $@ || (rm -f $@; exit 1)
+
+parttool-sh_mod-script_sh_main.lst: script/sh/main.c $(script/sh/main.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh sh > $@ || (rm -f $@; exit 1)
+
+partmap-sh_mod-script_sh_main.lst: script/sh/main.c $(script/sh/main.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh sh > $@ || (rm -f $@; exit 1)
+
+handler-sh_mod-script_sh_main.lst: script/sh/main.c $(script/sh/main.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh sh > $@ || (rm -f $@; exit 1)
+
+sh_mod-script_sh_script.o: script/sh/script.c $(script/sh/script.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -MD -c -o $@ $<
+-include sh_mod-script_sh_script.d
+
+CLEANFILES += cmd-sh_mod-script_sh_script.lst fs-sh_mod-script_sh_script.lst partmap-sh_mod-script_sh_script.lst handler-sh_mod-script_sh_script.lst parttool-sh_mod-script_sh_script.lst
+COMMANDFILES += cmd-sh_mod-script_sh_script.lst
+FSFILES += fs-sh_mod-script_sh_script.lst
+PARTTOOLFILES += parttool-sh_mod-script_sh_script.lst
+PARTMAPFILES += partmap-sh_mod-script_sh_script.lst
+HANDLERFILES += handler-sh_mod-script_sh_script.lst
+
+cmd-sh_mod-script_sh_script.lst: script/sh/script.c $(script/sh/script.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh sh > $@ || (rm -f $@; exit 1)
+
+fs-sh_mod-script_sh_script.lst: script/sh/script.c $(script/sh/script.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh sh > $@ || (rm -f $@; exit 1)
+
+parttool-sh_mod-script_sh_script.lst: script/sh/script.c $(script/sh/script.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh sh > $@ || (rm -f $@; exit 1)
+
+partmap-sh_mod-script_sh_script.lst: script/sh/script.c $(script/sh/script.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh sh > $@ || (rm -f $@; exit 1)
+
+handler-sh_mod-script_sh_script.lst: script/sh/script.c $(script/sh/script.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh sh > $@ || (rm -f $@; exit 1)
+
+sh_mod-script_sh_execute.o: script/sh/execute.c $(script/sh/execute.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -MD -c -o $@ $<
+-include sh_mod-script_sh_execute.d
+
+CLEANFILES += cmd-sh_mod-script_sh_execute.lst fs-sh_mod-script_sh_execute.lst partmap-sh_mod-script_sh_execute.lst handler-sh_mod-script_sh_execute.lst parttool-sh_mod-script_sh_execute.lst
+COMMANDFILES += cmd-sh_mod-script_sh_execute.lst
+FSFILES += fs-sh_mod-script_sh_execute.lst
+PARTTOOLFILES += parttool-sh_mod-script_sh_execute.lst
+PARTMAPFILES += partmap-sh_mod-script_sh_execute.lst
+HANDLERFILES += handler-sh_mod-script_sh_execute.lst
+
+cmd-sh_mod-script_sh_execute.lst: script/sh/execute.c $(script/sh/execute.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh sh > $@ || (rm -f $@; exit 1)
+
+fs-sh_mod-script_sh_execute.lst: script/sh/execute.c $(script/sh/execute.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh sh > $@ || (rm -f $@; exit 1)
+
+parttool-sh_mod-script_sh_execute.lst: script/sh/execute.c $(script/sh/execute.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh sh > $@ || (rm -f $@; exit 1)
+
+partmap-sh_mod-script_sh_execute.lst: script/sh/execute.c $(script/sh/execute.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh sh > $@ || (rm -f $@; exit 1)
+
+handler-sh_mod-script_sh_execute.lst: script/sh/execute.c $(script/sh/execute.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh sh > $@ || (rm -f $@; exit 1)
+
+sh_mod-script_sh_function.o: script/sh/function.c $(script/sh/function.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -MD -c -o $@ $<
+-include sh_mod-script_sh_function.d
+
+CLEANFILES += cmd-sh_mod-script_sh_function.lst fs-sh_mod-script_sh_function.lst partmap-sh_mod-script_sh_function.lst handler-sh_mod-script_sh_function.lst parttool-sh_mod-script_sh_function.lst
+COMMANDFILES += cmd-sh_mod-script_sh_function.lst
+FSFILES += fs-sh_mod-script_sh_function.lst
+PARTTOOLFILES += parttool-sh_mod-script_sh_function.lst
+PARTMAPFILES += partmap-sh_mod-script_sh_function.lst
+HANDLERFILES += handler-sh_mod-script_sh_function.lst
+
+cmd-sh_mod-script_sh_function.lst: script/sh/function.c $(script/sh/function.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh sh > $@ || (rm -f $@; exit 1)
+
+fs-sh_mod-script_sh_function.lst: script/sh/function.c $(script/sh/function.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh sh > $@ || (rm -f $@; exit 1)
+
+parttool-sh_mod-script_sh_function.lst: script/sh/function.c $(script/sh/function.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh sh > $@ || (rm -f $@; exit 1)
+
+partmap-sh_mod-script_sh_function.lst: script/sh/function.c $(script/sh/function.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh sh > $@ || (rm -f $@; exit 1)
+
+handler-sh_mod-script_sh_function.lst: script/sh/function.c $(script/sh/function.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh sh > $@ || (rm -f $@; exit 1)
+
+sh_mod-script_sh_lexer.o: script/sh/lexer.c $(script/sh/lexer.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -MD -c -o $@ $<
+-include sh_mod-script_sh_lexer.d
+
+CLEANFILES += cmd-sh_mod-script_sh_lexer.lst fs-sh_mod-script_sh_lexer.lst partmap-sh_mod-script_sh_lexer.lst handler-sh_mod-script_sh_lexer.lst parttool-sh_mod-script_sh_lexer.lst
+COMMANDFILES += cmd-sh_mod-script_sh_lexer.lst
+FSFILES += fs-sh_mod-script_sh_lexer.lst
+PARTTOOLFILES += parttool-sh_mod-script_sh_lexer.lst
+PARTMAPFILES += partmap-sh_mod-script_sh_lexer.lst
+HANDLERFILES += handler-sh_mod-script_sh_lexer.lst
+
+cmd-sh_mod-script_sh_lexer.lst: script/sh/lexer.c $(script/sh/lexer.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh sh > $@ || (rm -f $@; exit 1)
+
+fs-sh_mod-script_sh_lexer.lst: script/sh/lexer.c $(script/sh/lexer.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh sh > $@ || (rm -f $@; exit 1)
+
+parttool-sh_mod-script_sh_lexer.lst: script/sh/lexer.c $(script/sh/lexer.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh sh > $@ || (rm -f $@; exit 1)
+
+partmap-sh_mod-script_sh_lexer.lst: script/sh/lexer.c $(script/sh/lexer.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh sh > $@ || (rm -f $@; exit 1)
+
+handler-sh_mod-script_sh_lexer.lst: script/sh/lexer.c $(script/sh/lexer.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/sh -I$(srcdir)/script/sh $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh sh > $@ || (rm -f $@; exit 1)
+
+sh_mod-grub_script_tab.o: grub_script.tab.c $(grub_script.tab.c_DEPENDENCIES)
+	$(TARGET_CC) -I. -I$(srcdir)/. $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -MD -c -o $@ $<
+-include sh_mod-grub_script_tab.d
+
+CLEANFILES += cmd-sh_mod-grub_script_tab.lst fs-sh_mod-grub_script_tab.lst partmap-sh_mod-grub_script_tab.lst handler-sh_mod-grub_script_tab.lst parttool-sh_mod-grub_script_tab.lst
+COMMANDFILES += cmd-sh_mod-grub_script_tab.lst
+FSFILES += fs-sh_mod-grub_script_tab.lst
+PARTTOOLFILES += parttool-sh_mod-grub_script_tab.lst
+PARTMAPFILES += partmap-sh_mod-grub_script_tab.lst
+HANDLERFILES += handler-sh_mod-grub_script_tab.lst
+
+cmd-sh_mod-grub_script_tab.lst: grub_script.tab.c $(grub_script.tab.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -I. -I$(srcdir)/. $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh sh > $@ || (rm -f $@; exit 1)
+
+fs-sh_mod-grub_script_tab.lst: grub_script.tab.c $(grub_script.tab.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -I. -I$(srcdir)/. $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh sh > $@ || (rm -f $@; exit 1)
+
+parttool-sh_mod-grub_script_tab.lst: grub_script.tab.c $(grub_script.tab.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -I. -I$(srcdir)/. $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh sh > $@ || (rm -f $@; exit 1)
+
+partmap-sh_mod-grub_script_tab.lst: grub_script.tab.c $(grub_script.tab.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -I. -I$(srcdir)/. $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh sh > $@ || (rm -f $@; exit 1)
+
+handler-sh_mod-grub_script_tab.lst: grub_script.tab.c $(grub_script.tab.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -I. -I$(srcdir)/. $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(sh_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh sh > $@ || (rm -f $@; exit 1)
+
+sh_mod_CFLAGS = $(COMMON_CFLAGS)
+sh_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For lua.mod.
+lua_mod_SOURCES = script/lua/lapi.c script/lua/lcode.c script/lua/ldebug.c \
+	script/lua/ldo.c script/lua/ldump.c script/lua/lfunc.c \
+	script/lua/lgc.c script/lua/llex.c script/lua/lmem.c \
+	script/lua/lobject.c script/lua/lopcodes.c script/lua/lparser.c \
+	script/lua/lstate.c script/lua/lstring.c script/lua/ltable.c \
+	script/lua/ltm.c script/lua/lundump.c script/lua/lvm.c \
+	script/lua/lzio.c script/lua/lauxlib.c script/lua/lbaselib.c \
+	script/lua/linit.c script/lua/ltablib.c script/lua/lstrlib.c \
+	script/lua/grub_main.c script/lua/grub_lib.c
+CLEANFILES += lua.mod mod-lua.o mod-lua.c pre-lua.o lua_mod-script_lua_lapi.o lua_mod-script_lua_lcode.o lua_mod-script_lua_ldebug.o lua_mod-script_lua_ldo.o lua_mod-script_lua_ldump.o lua_mod-script_lua_lfunc.o lua_mod-script_lua_lgc.o lua_mod-script_lua_llex.o lua_mod-script_lua_lmem.o lua_mod-script_lua_lobject.o lua_mod-script_lua_lopcodes.o lua_mod-script_lua_lparser.o lua_mod-script_lua_lstate.o lua_mod-script_lua_lstring.o lua_mod-script_lua_ltable.o lua_mod-script_lua_ltm.o lua_mod-script_lua_lundump.o lua_mod-script_lua_lvm.o lua_mod-script_lua_lzio.o lua_mod-script_lua_lauxlib.o lua_mod-script_lua_lbaselib.o lua_mod-script_lua_linit.o lua_mod-script_lua_ltablib.o lua_mod-script_lua_lstrlib.o lua_mod-script_lua_grub_main.o lua_mod-script_lua_grub_lib.o und-lua.lst
+ifneq ($(lua_mod_EXPORTS),no)
+CLEANFILES += def-lua.lst
+DEFSYMFILES += def-lua.lst
+endif
+MOSTLYCLEANFILES += lua_mod-script_lua_lapi.d lua_mod-script_lua_lcode.d lua_mod-script_lua_ldebug.d lua_mod-script_lua_ldo.d lua_mod-script_lua_ldump.d lua_mod-script_lua_lfunc.d lua_mod-script_lua_lgc.d lua_mod-script_lua_llex.d lua_mod-script_lua_lmem.d lua_mod-script_lua_lobject.d lua_mod-script_lua_lopcodes.d lua_mod-script_lua_lparser.d lua_mod-script_lua_lstate.d lua_mod-script_lua_lstring.d lua_mod-script_lua_ltable.d lua_mod-script_lua_ltm.d lua_mod-script_lua_lundump.d lua_mod-script_lua_lvm.d lua_mod-script_lua_lzio.d lua_mod-script_lua_lauxlib.d lua_mod-script_lua_lbaselib.d lua_mod-script_lua_linit.d lua_mod-script_lua_ltablib.d lua_mod-script_lua_lstrlib.d lua_mod-script_lua_grub_main.d lua_mod-script_lua_grub_lib.d
+UNDSYMFILES += und-lua.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+lua.mod: pre-lua.o mod-lua.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(lua_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-lua.o mod-lua.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+lua.mod: pre-lua.o mod-lua.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(lua_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-lua.o mod-lua.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-lua.o: $(lua_mod_DEPENDENCIES) lua_mod-script_lua_lapi.o lua_mod-script_lua_lcode.o lua_mod-script_lua_ldebug.o lua_mod-script_lua_ldo.o lua_mod-script_lua_ldump.o lua_mod-script_lua_lfunc.o lua_mod-script_lua_lgc.o lua_mod-script_lua_llex.o lua_mod-script_lua_lmem.o lua_mod-script_lua_lobject.o lua_mod-script_lua_lopcodes.o lua_mod-script_lua_lparser.o lua_mod-script_lua_lstate.o lua_mod-script_lua_lstring.o lua_mod-script_lua_ltable.o lua_mod-script_lua_ltm.o lua_mod-script_lua_lundump.o lua_mod-script_lua_lvm.o lua_mod-script_lua_lzio.o lua_mod-script_lua_lauxlib.o lua_mod-script_lua_lbaselib.o lua_mod-script_lua_linit.o lua_mod-script_lua_ltablib.o lua_mod-script_lua_lstrlib.o lua_mod-script_lua_grub_main.o lua_mod-script_lua_grub_lib.o
+	-rm -f $@
+	$(TARGET_CC) $(lua_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ lua_mod-script_lua_lapi.o lua_mod-script_lua_lcode.o lua_mod-script_lua_ldebug.o lua_mod-script_lua_ldo.o lua_mod-script_lua_ldump.o lua_mod-script_lua_lfunc.o lua_mod-script_lua_lgc.o lua_mod-script_lua_llex.o lua_mod-script_lua_lmem.o lua_mod-script_lua_lobject.o lua_mod-script_lua_lopcodes.o lua_mod-script_lua_lparser.o lua_mod-script_lua_lstate.o lua_mod-script_lua_lstring.o lua_mod-script_lua_ltable.o lua_mod-script_lua_ltm.o lua_mod-script_lua_lundump.o lua_mod-script_lua_lvm.o lua_mod-script_lua_lzio.o lua_mod-script_lua_lauxlib.o lua_mod-script_lua_lbaselib.o lua_mod-script_lua_linit.o lua_mod-script_lua_ltablib.o lua_mod-script_lua_lstrlib.o lua_mod-script_lua_grub_main.o lua_mod-script_lua_grub_lib.o
+
+mod-lua.o: mod-lua.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -c -o $@ $<
+
+mod-lua.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'lua' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(lua_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-lua.lst: pre-lua.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 lua/' > $@
+else
+def-lua.lst: pre-lua.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 lua/' > $@
+endif
+endif
+
+und-lua.lst: pre-lua.o
+	echo 'lua' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+lua_mod-script_lua_lapi.o: script/lua/lapi.c $(script/lua/lapi.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_lapi.d
+
+CLEANFILES += cmd-lua_mod-script_lua_lapi.lst fs-lua_mod-script_lua_lapi.lst partmap-lua_mod-script_lua_lapi.lst handler-lua_mod-script_lua_lapi.lst parttool-lua_mod-script_lua_lapi.lst
+COMMANDFILES += cmd-lua_mod-script_lua_lapi.lst
+FSFILES += fs-lua_mod-script_lua_lapi.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_lapi.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_lapi.lst
+HANDLERFILES += handler-lua_mod-script_lua_lapi.lst
+
+cmd-lua_mod-script_lua_lapi.lst: script/lua/lapi.c $(script/lua/lapi.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_lapi.lst: script/lua/lapi.c $(script/lua/lapi.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_lapi.lst: script/lua/lapi.c $(script/lua/lapi.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_lapi.lst: script/lua/lapi.c $(script/lua/lapi.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_lapi.lst: script/lua/lapi.c $(script/lua/lapi.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_lcode.o: script/lua/lcode.c $(script/lua/lcode.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_lcode.d
+
+CLEANFILES += cmd-lua_mod-script_lua_lcode.lst fs-lua_mod-script_lua_lcode.lst partmap-lua_mod-script_lua_lcode.lst handler-lua_mod-script_lua_lcode.lst parttool-lua_mod-script_lua_lcode.lst
+COMMANDFILES += cmd-lua_mod-script_lua_lcode.lst
+FSFILES += fs-lua_mod-script_lua_lcode.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_lcode.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_lcode.lst
+HANDLERFILES += handler-lua_mod-script_lua_lcode.lst
+
+cmd-lua_mod-script_lua_lcode.lst: script/lua/lcode.c $(script/lua/lcode.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_lcode.lst: script/lua/lcode.c $(script/lua/lcode.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_lcode.lst: script/lua/lcode.c $(script/lua/lcode.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_lcode.lst: script/lua/lcode.c $(script/lua/lcode.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_lcode.lst: script/lua/lcode.c $(script/lua/lcode.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_ldebug.o: script/lua/ldebug.c $(script/lua/ldebug.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_ldebug.d
+
+CLEANFILES += cmd-lua_mod-script_lua_ldebug.lst fs-lua_mod-script_lua_ldebug.lst partmap-lua_mod-script_lua_ldebug.lst handler-lua_mod-script_lua_ldebug.lst parttool-lua_mod-script_lua_ldebug.lst
+COMMANDFILES += cmd-lua_mod-script_lua_ldebug.lst
+FSFILES += fs-lua_mod-script_lua_ldebug.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_ldebug.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_ldebug.lst
+HANDLERFILES += handler-lua_mod-script_lua_ldebug.lst
+
+cmd-lua_mod-script_lua_ldebug.lst: script/lua/ldebug.c $(script/lua/ldebug.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_ldebug.lst: script/lua/ldebug.c $(script/lua/ldebug.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_ldebug.lst: script/lua/ldebug.c $(script/lua/ldebug.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_ldebug.lst: script/lua/ldebug.c $(script/lua/ldebug.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_ldebug.lst: script/lua/ldebug.c $(script/lua/ldebug.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_ldo.o: script/lua/ldo.c $(script/lua/ldo.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_ldo.d
+
+CLEANFILES += cmd-lua_mod-script_lua_ldo.lst fs-lua_mod-script_lua_ldo.lst partmap-lua_mod-script_lua_ldo.lst handler-lua_mod-script_lua_ldo.lst parttool-lua_mod-script_lua_ldo.lst
+COMMANDFILES += cmd-lua_mod-script_lua_ldo.lst
+FSFILES += fs-lua_mod-script_lua_ldo.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_ldo.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_ldo.lst
+HANDLERFILES += handler-lua_mod-script_lua_ldo.lst
+
+cmd-lua_mod-script_lua_ldo.lst: script/lua/ldo.c $(script/lua/ldo.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_ldo.lst: script/lua/ldo.c $(script/lua/ldo.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_ldo.lst: script/lua/ldo.c $(script/lua/ldo.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_ldo.lst: script/lua/ldo.c $(script/lua/ldo.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_ldo.lst: script/lua/ldo.c $(script/lua/ldo.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_ldump.o: script/lua/ldump.c $(script/lua/ldump.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_ldump.d
+
+CLEANFILES += cmd-lua_mod-script_lua_ldump.lst fs-lua_mod-script_lua_ldump.lst partmap-lua_mod-script_lua_ldump.lst handler-lua_mod-script_lua_ldump.lst parttool-lua_mod-script_lua_ldump.lst
+COMMANDFILES += cmd-lua_mod-script_lua_ldump.lst
+FSFILES += fs-lua_mod-script_lua_ldump.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_ldump.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_ldump.lst
+HANDLERFILES += handler-lua_mod-script_lua_ldump.lst
+
+cmd-lua_mod-script_lua_ldump.lst: script/lua/ldump.c $(script/lua/ldump.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_ldump.lst: script/lua/ldump.c $(script/lua/ldump.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_ldump.lst: script/lua/ldump.c $(script/lua/ldump.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_ldump.lst: script/lua/ldump.c $(script/lua/ldump.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_ldump.lst: script/lua/ldump.c $(script/lua/ldump.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_lfunc.o: script/lua/lfunc.c $(script/lua/lfunc.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_lfunc.d
+
+CLEANFILES += cmd-lua_mod-script_lua_lfunc.lst fs-lua_mod-script_lua_lfunc.lst partmap-lua_mod-script_lua_lfunc.lst handler-lua_mod-script_lua_lfunc.lst parttool-lua_mod-script_lua_lfunc.lst
+COMMANDFILES += cmd-lua_mod-script_lua_lfunc.lst
+FSFILES += fs-lua_mod-script_lua_lfunc.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_lfunc.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_lfunc.lst
+HANDLERFILES += handler-lua_mod-script_lua_lfunc.lst
+
+cmd-lua_mod-script_lua_lfunc.lst: script/lua/lfunc.c $(script/lua/lfunc.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_lfunc.lst: script/lua/lfunc.c $(script/lua/lfunc.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_lfunc.lst: script/lua/lfunc.c $(script/lua/lfunc.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_lfunc.lst: script/lua/lfunc.c $(script/lua/lfunc.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_lfunc.lst: script/lua/lfunc.c $(script/lua/lfunc.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_lgc.o: script/lua/lgc.c $(script/lua/lgc.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_lgc.d
+
+CLEANFILES += cmd-lua_mod-script_lua_lgc.lst fs-lua_mod-script_lua_lgc.lst partmap-lua_mod-script_lua_lgc.lst handler-lua_mod-script_lua_lgc.lst parttool-lua_mod-script_lua_lgc.lst
+COMMANDFILES += cmd-lua_mod-script_lua_lgc.lst
+FSFILES += fs-lua_mod-script_lua_lgc.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_lgc.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_lgc.lst
+HANDLERFILES += handler-lua_mod-script_lua_lgc.lst
+
+cmd-lua_mod-script_lua_lgc.lst: script/lua/lgc.c $(script/lua/lgc.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_lgc.lst: script/lua/lgc.c $(script/lua/lgc.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_lgc.lst: script/lua/lgc.c $(script/lua/lgc.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_lgc.lst: script/lua/lgc.c $(script/lua/lgc.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_lgc.lst: script/lua/lgc.c $(script/lua/lgc.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_llex.o: script/lua/llex.c $(script/lua/llex.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_llex.d
+
+CLEANFILES += cmd-lua_mod-script_lua_llex.lst fs-lua_mod-script_lua_llex.lst partmap-lua_mod-script_lua_llex.lst handler-lua_mod-script_lua_llex.lst parttool-lua_mod-script_lua_llex.lst
+COMMANDFILES += cmd-lua_mod-script_lua_llex.lst
+FSFILES += fs-lua_mod-script_lua_llex.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_llex.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_llex.lst
+HANDLERFILES += handler-lua_mod-script_lua_llex.lst
+
+cmd-lua_mod-script_lua_llex.lst: script/lua/llex.c $(script/lua/llex.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_llex.lst: script/lua/llex.c $(script/lua/llex.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_llex.lst: script/lua/llex.c $(script/lua/llex.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_llex.lst: script/lua/llex.c $(script/lua/llex.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_llex.lst: script/lua/llex.c $(script/lua/llex.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_lmem.o: script/lua/lmem.c $(script/lua/lmem.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_lmem.d
+
+CLEANFILES += cmd-lua_mod-script_lua_lmem.lst fs-lua_mod-script_lua_lmem.lst partmap-lua_mod-script_lua_lmem.lst handler-lua_mod-script_lua_lmem.lst parttool-lua_mod-script_lua_lmem.lst
+COMMANDFILES += cmd-lua_mod-script_lua_lmem.lst
+FSFILES += fs-lua_mod-script_lua_lmem.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_lmem.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_lmem.lst
+HANDLERFILES += handler-lua_mod-script_lua_lmem.lst
+
+cmd-lua_mod-script_lua_lmem.lst: script/lua/lmem.c $(script/lua/lmem.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_lmem.lst: script/lua/lmem.c $(script/lua/lmem.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_lmem.lst: script/lua/lmem.c $(script/lua/lmem.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_lmem.lst: script/lua/lmem.c $(script/lua/lmem.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_lmem.lst: script/lua/lmem.c $(script/lua/lmem.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_lobject.o: script/lua/lobject.c $(script/lua/lobject.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_lobject.d
+
+CLEANFILES += cmd-lua_mod-script_lua_lobject.lst fs-lua_mod-script_lua_lobject.lst partmap-lua_mod-script_lua_lobject.lst handler-lua_mod-script_lua_lobject.lst parttool-lua_mod-script_lua_lobject.lst
+COMMANDFILES += cmd-lua_mod-script_lua_lobject.lst
+FSFILES += fs-lua_mod-script_lua_lobject.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_lobject.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_lobject.lst
+HANDLERFILES += handler-lua_mod-script_lua_lobject.lst
+
+cmd-lua_mod-script_lua_lobject.lst: script/lua/lobject.c $(script/lua/lobject.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_lobject.lst: script/lua/lobject.c $(script/lua/lobject.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_lobject.lst: script/lua/lobject.c $(script/lua/lobject.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_lobject.lst: script/lua/lobject.c $(script/lua/lobject.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_lobject.lst: script/lua/lobject.c $(script/lua/lobject.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_lopcodes.o: script/lua/lopcodes.c $(script/lua/lopcodes.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_lopcodes.d
+
+CLEANFILES += cmd-lua_mod-script_lua_lopcodes.lst fs-lua_mod-script_lua_lopcodes.lst partmap-lua_mod-script_lua_lopcodes.lst handler-lua_mod-script_lua_lopcodes.lst parttool-lua_mod-script_lua_lopcodes.lst
+COMMANDFILES += cmd-lua_mod-script_lua_lopcodes.lst
+FSFILES += fs-lua_mod-script_lua_lopcodes.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_lopcodes.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_lopcodes.lst
+HANDLERFILES += handler-lua_mod-script_lua_lopcodes.lst
+
+cmd-lua_mod-script_lua_lopcodes.lst: script/lua/lopcodes.c $(script/lua/lopcodes.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_lopcodes.lst: script/lua/lopcodes.c $(script/lua/lopcodes.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_lopcodes.lst: script/lua/lopcodes.c $(script/lua/lopcodes.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_lopcodes.lst: script/lua/lopcodes.c $(script/lua/lopcodes.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_lopcodes.lst: script/lua/lopcodes.c $(script/lua/lopcodes.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_lparser.o: script/lua/lparser.c $(script/lua/lparser.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_lparser.d
+
+CLEANFILES += cmd-lua_mod-script_lua_lparser.lst fs-lua_mod-script_lua_lparser.lst partmap-lua_mod-script_lua_lparser.lst handler-lua_mod-script_lua_lparser.lst parttool-lua_mod-script_lua_lparser.lst
+COMMANDFILES += cmd-lua_mod-script_lua_lparser.lst
+FSFILES += fs-lua_mod-script_lua_lparser.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_lparser.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_lparser.lst
+HANDLERFILES += handler-lua_mod-script_lua_lparser.lst
+
+cmd-lua_mod-script_lua_lparser.lst: script/lua/lparser.c $(script/lua/lparser.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_lparser.lst: script/lua/lparser.c $(script/lua/lparser.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_lparser.lst: script/lua/lparser.c $(script/lua/lparser.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_lparser.lst: script/lua/lparser.c $(script/lua/lparser.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_lparser.lst: script/lua/lparser.c $(script/lua/lparser.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_lstate.o: script/lua/lstate.c $(script/lua/lstate.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_lstate.d
+
+CLEANFILES += cmd-lua_mod-script_lua_lstate.lst fs-lua_mod-script_lua_lstate.lst partmap-lua_mod-script_lua_lstate.lst handler-lua_mod-script_lua_lstate.lst parttool-lua_mod-script_lua_lstate.lst
+COMMANDFILES += cmd-lua_mod-script_lua_lstate.lst
+FSFILES += fs-lua_mod-script_lua_lstate.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_lstate.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_lstate.lst
+HANDLERFILES += handler-lua_mod-script_lua_lstate.lst
+
+cmd-lua_mod-script_lua_lstate.lst: script/lua/lstate.c $(script/lua/lstate.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_lstate.lst: script/lua/lstate.c $(script/lua/lstate.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_lstate.lst: script/lua/lstate.c $(script/lua/lstate.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_lstate.lst: script/lua/lstate.c $(script/lua/lstate.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_lstate.lst: script/lua/lstate.c $(script/lua/lstate.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_lstring.o: script/lua/lstring.c $(script/lua/lstring.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_lstring.d
+
+CLEANFILES += cmd-lua_mod-script_lua_lstring.lst fs-lua_mod-script_lua_lstring.lst partmap-lua_mod-script_lua_lstring.lst handler-lua_mod-script_lua_lstring.lst parttool-lua_mod-script_lua_lstring.lst
+COMMANDFILES += cmd-lua_mod-script_lua_lstring.lst
+FSFILES += fs-lua_mod-script_lua_lstring.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_lstring.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_lstring.lst
+HANDLERFILES += handler-lua_mod-script_lua_lstring.lst
+
+cmd-lua_mod-script_lua_lstring.lst: script/lua/lstring.c $(script/lua/lstring.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_lstring.lst: script/lua/lstring.c $(script/lua/lstring.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_lstring.lst: script/lua/lstring.c $(script/lua/lstring.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_lstring.lst: script/lua/lstring.c $(script/lua/lstring.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_lstring.lst: script/lua/lstring.c $(script/lua/lstring.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_ltable.o: script/lua/ltable.c $(script/lua/ltable.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_ltable.d
+
+CLEANFILES += cmd-lua_mod-script_lua_ltable.lst fs-lua_mod-script_lua_ltable.lst partmap-lua_mod-script_lua_ltable.lst handler-lua_mod-script_lua_ltable.lst parttool-lua_mod-script_lua_ltable.lst
+COMMANDFILES += cmd-lua_mod-script_lua_ltable.lst
+FSFILES += fs-lua_mod-script_lua_ltable.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_ltable.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_ltable.lst
+HANDLERFILES += handler-lua_mod-script_lua_ltable.lst
+
+cmd-lua_mod-script_lua_ltable.lst: script/lua/ltable.c $(script/lua/ltable.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_ltable.lst: script/lua/ltable.c $(script/lua/ltable.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_ltable.lst: script/lua/ltable.c $(script/lua/ltable.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_ltable.lst: script/lua/ltable.c $(script/lua/ltable.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_ltable.lst: script/lua/ltable.c $(script/lua/ltable.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_ltm.o: script/lua/ltm.c $(script/lua/ltm.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_ltm.d
+
+CLEANFILES += cmd-lua_mod-script_lua_ltm.lst fs-lua_mod-script_lua_ltm.lst partmap-lua_mod-script_lua_ltm.lst handler-lua_mod-script_lua_ltm.lst parttool-lua_mod-script_lua_ltm.lst
+COMMANDFILES += cmd-lua_mod-script_lua_ltm.lst
+FSFILES += fs-lua_mod-script_lua_ltm.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_ltm.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_ltm.lst
+HANDLERFILES += handler-lua_mod-script_lua_ltm.lst
+
+cmd-lua_mod-script_lua_ltm.lst: script/lua/ltm.c $(script/lua/ltm.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_ltm.lst: script/lua/ltm.c $(script/lua/ltm.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_ltm.lst: script/lua/ltm.c $(script/lua/ltm.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_ltm.lst: script/lua/ltm.c $(script/lua/ltm.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_ltm.lst: script/lua/ltm.c $(script/lua/ltm.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_lundump.o: script/lua/lundump.c $(script/lua/lundump.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_lundump.d
+
+CLEANFILES += cmd-lua_mod-script_lua_lundump.lst fs-lua_mod-script_lua_lundump.lst partmap-lua_mod-script_lua_lundump.lst handler-lua_mod-script_lua_lundump.lst parttool-lua_mod-script_lua_lundump.lst
+COMMANDFILES += cmd-lua_mod-script_lua_lundump.lst
+FSFILES += fs-lua_mod-script_lua_lundump.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_lundump.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_lundump.lst
+HANDLERFILES += handler-lua_mod-script_lua_lundump.lst
+
+cmd-lua_mod-script_lua_lundump.lst: script/lua/lundump.c $(script/lua/lundump.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_lundump.lst: script/lua/lundump.c $(script/lua/lundump.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_lundump.lst: script/lua/lundump.c $(script/lua/lundump.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_lundump.lst: script/lua/lundump.c $(script/lua/lundump.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_lundump.lst: script/lua/lundump.c $(script/lua/lundump.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_lvm.o: script/lua/lvm.c $(script/lua/lvm.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_lvm.d
+
+CLEANFILES += cmd-lua_mod-script_lua_lvm.lst fs-lua_mod-script_lua_lvm.lst partmap-lua_mod-script_lua_lvm.lst handler-lua_mod-script_lua_lvm.lst parttool-lua_mod-script_lua_lvm.lst
+COMMANDFILES += cmd-lua_mod-script_lua_lvm.lst
+FSFILES += fs-lua_mod-script_lua_lvm.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_lvm.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_lvm.lst
+HANDLERFILES += handler-lua_mod-script_lua_lvm.lst
+
+cmd-lua_mod-script_lua_lvm.lst: script/lua/lvm.c $(script/lua/lvm.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_lvm.lst: script/lua/lvm.c $(script/lua/lvm.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_lvm.lst: script/lua/lvm.c $(script/lua/lvm.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_lvm.lst: script/lua/lvm.c $(script/lua/lvm.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_lvm.lst: script/lua/lvm.c $(script/lua/lvm.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_lzio.o: script/lua/lzio.c $(script/lua/lzio.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_lzio.d
+
+CLEANFILES += cmd-lua_mod-script_lua_lzio.lst fs-lua_mod-script_lua_lzio.lst partmap-lua_mod-script_lua_lzio.lst handler-lua_mod-script_lua_lzio.lst parttool-lua_mod-script_lua_lzio.lst
+COMMANDFILES += cmd-lua_mod-script_lua_lzio.lst
+FSFILES += fs-lua_mod-script_lua_lzio.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_lzio.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_lzio.lst
+HANDLERFILES += handler-lua_mod-script_lua_lzio.lst
+
+cmd-lua_mod-script_lua_lzio.lst: script/lua/lzio.c $(script/lua/lzio.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_lzio.lst: script/lua/lzio.c $(script/lua/lzio.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_lzio.lst: script/lua/lzio.c $(script/lua/lzio.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_lzio.lst: script/lua/lzio.c $(script/lua/lzio.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_lzio.lst: script/lua/lzio.c $(script/lua/lzio.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_lauxlib.o: script/lua/lauxlib.c $(script/lua/lauxlib.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_lauxlib.d
+
+CLEANFILES += cmd-lua_mod-script_lua_lauxlib.lst fs-lua_mod-script_lua_lauxlib.lst partmap-lua_mod-script_lua_lauxlib.lst handler-lua_mod-script_lua_lauxlib.lst parttool-lua_mod-script_lua_lauxlib.lst
+COMMANDFILES += cmd-lua_mod-script_lua_lauxlib.lst
+FSFILES += fs-lua_mod-script_lua_lauxlib.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_lauxlib.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_lauxlib.lst
+HANDLERFILES += handler-lua_mod-script_lua_lauxlib.lst
+
+cmd-lua_mod-script_lua_lauxlib.lst: script/lua/lauxlib.c $(script/lua/lauxlib.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_lauxlib.lst: script/lua/lauxlib.c $(script/lua/lauxlib.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_lauxlib.lst: script/lua/lauxlib.c $(script/lua/lauxlib.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_lauxlib.lst: script/lua/lauxlib.c $(script/lua/lauxlib.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_lauxlib.lst: script/lua/lauxlib.c $(script/lua/lauxlib.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_lbaselib.o: script/lua/lbaselib.c $(script/lua/lbaselib.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_lbaselib.d
+
+CLEANFILES += cmd-lua_mod-script_lua_lbaselib.lst fs-lua_mod-script_lua_lbaselib.lst partmap-lua_mod-script_lua_lbaselib.lst handler-lua_mod-script_lua_lbaselib.lst parttool-lua_mod-script_lua_lbaselib.lst
+COMMANDFILES += cmd-lua_mod-script_lua_lbaselib.lst
+FSFILES += fs-lua_mod-script_lua_lbaselib.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_lbaselib.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_lbaselib.lst
+HANDLERFILES += handler-lua_mod-script_lua_lbaselib.lst
+
+cmd-lua_mod-script_lua_lbaselib.lst: script/lua/lbaselib.c $(script/lua/lbaselib.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_lbaselib.lst: script/lua/lbaselib.c $(script/lua/lbaselib.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_lbaselib.lst: script/lua/lbaselib.c $(script/lua/lbaselib.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_lbaselib.lst: script/lua/lbaselib.c $(script/lua/lbaselib.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_lbaselib.lst: script/lua/lbaselib.c $(script/lua/lbaselib.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_linit.o: script/lua/linit.c $(script/lua/linit.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_linit.d
+
+CLEANFILES += cmd-lua_mod-script_lua_linit.lst fs-lua_mod-script_lua_linit.lst partmap-lua_mod-script_lua_linit.lst handler-lua_mod-script_lua_linit.lst parttool-lua_mod-script_lua_linit.lst
+COMMANDFILES += cmd-lua_mod-script_lua_linit.lst
+FSFILES += fs-lua_mod-script_lua_linit.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_linit.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_linit.lst
+HANDLERFILES += handler-lua_mod-script_lua_linit.lst
+
+cmd-lua_mod-script_lua_linit.lst: script/lua/linit.c $(script/lua/linit.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_linit.lst: script/lua/linit.c $(script/lua/linit.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_linit.lst: script/lua/linit.c $(script/lua/linit.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_linit.lst: script/lua/linit.c $(script/lua/linit.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_linit.lst: script/lua/linit.c $(script/lua/linit.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_ltablib.o: script/lua/ltablib.c $(script/lua/ltablib.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_ltablib.d
+
+CLEANFILES += cmd-lua_mod-script_lua_ltablib.lst fs-lua_mod-script_lua_ltablib.lst partmap-lua_mod-script_lua_ltablib.lst handler-lua_mod-script_lua_ltablib.lst parttool-lua_mod-script_lua_ltablib.lst
+COMMANDFILES += cmd-lua_mod-script_lua_ltablib.lst
+FSFILES += fs-lua_mod-script_lua_ltablib.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_ltablib.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_ltablib.lst
+HANDLERFILES += handler-lua_mod-script_lua_ltablib.lst
+
+cmd-lua_mod-script_lua_ltablib.lst: script/lua/ltablib.c $(script/lua/ltablib.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_ltablib.lst: script/lua/ltablib.c $(script/lua/ltablib.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_ltablib.lst: script/lua/ltablib.c $(script/lua/ltablib.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_ltablib.lst: script/lua/ltablib.c $(script/lua/ltablib.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_ltablib.lst: script/lua/ltablib.c $(script/lua/ltablib.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_lstrlib.o: script/lua/lstrlib.c $(script/lua/lstrlib.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_lstrlib.d
+
+CLEANFILES += cmd-lua_mod-script_lua_lstrlib.lst fs-lua_mod-script_lua_lstrlib.lst partmap-lua_mod-script_lua_lstrlib.lst handler-lua_mod-script_lua_lstrlib.lst parttool-lua_mod-script_lua_lstrlib.lst
+COMMANDFILES += cmd-lua_mod-script_lua_lstrlib.lst
+FSFILES += fs-lua_mod-script_lua_lstrlib.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_lstrlib.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_lstrlib.lst
+HANDLERFILES += handler-lua_mod-script_lua_lstrlib.lst
+
+cmd-lua_mod-script_lua_lstrlib.lst: script/lua/lstrlib.c $(script/lua/lstrlib.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_lstrlib.lst: script/lua/lstrlib.c $(script/lua/lstrlib.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_lstrlib.lst: script/lua/lstrlib.c $(script/lua/lstrlib.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_lstrlib.lst: script/lua/lstrlib.c $(script/lua/lstrlib.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_lstrlib.lst: script/lua/lstrlib.c $(script/lua/lstrlib.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_grub_main.o: script/lua/grub_main.c $(script/lua/grub_main.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_grub_main.d
+
+CLEANFILES += cmd-lua_mod-script_lua_grub_main.lst fs-lua_mod-script_lua_grub_main.lst partmap-lua_mod-script_lua_grub_main.lst handler-lua_mod-script_lua_grub_main.lst parttool-lua_mod-script_lua_grub_main.lst
+COMMANDFILES += cmd-lua_mod-script_lua_grub_main.lst
+FSFILES += fs-lua_mod-script_lua_grub_main.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_grub_main.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_grub_main.lst
+HANDLERFILES += handler-lua_mod-script_lua_grub_main.lst
+
+cmd-lua_mod-script_lua_grub_main.lst: script/lua/grub_main.c $(script/lua/grub_main.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_grub_main.lst: script/lua/grub_main.c $(script/lua/grub_main.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_grub_main.lst: script/lua/grub_main.c $(script/lua/grub_main.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_grub_main.lst: script/lua/grub_main.c $(script/lua/grub_main.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_grub_main.lst: script/lua/grub_main.c $(script/lua/grub_main.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod-script_lua_grub_lib.o: script/lua/grub_lib.c $(script/lua/grub_lib.c_DEPENDENCIES)
+	$(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -MD -c -o $@ $<
+-include lua_mod-script_lua_grub_lib.d
+
+CLEANFILES += cmd-lua_mod-script_lua_grub_lib.lst fs-lua_mod-script_lua_grub_lib.lst partmap-lua_mod-script_lua_grub_lib.lst handler-lua_mod-script_lua_grub_lib.lst parttool-lua_mod-script_lua_grub_lib.lst
+COMMANDFILES += cmd-lua_mod-script_lua_grub_lib.lst
+FSFILES += fs-lua_mod-script_lua_grub_lib.lst
+PARTTOOLFILES += parttool-lua_mod-script_lua_grub_lib.lst
+PARTMAPFILES += partmap-lua_mod-script_lua_grub_lib.lst
+HANDLERFILES += handler-lua_mod-script_lua_grub_lib.lst
+
+cmd-lua_mod-script_lua_grub_lib.lst: script/lua/grub_lib.c $(script/lua/grub_lib.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh lua > $@ || (rm -f $@; exit 1)
+
+fs-lua_mod-script_lua_grub_lib.lst: script/lua/grub_lib.c $(script/lua/grub_lib.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh lua > $@ || (rm -f $@; exit 1)
+
+parttool-lua_mod-script_lua_grub_lib.lst: script/lua/grub_lib.c $(script/lua/grub_lib.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh lua > $@ || (rm -f $@; exit 1)
+
+partmap-lua_mod-script_lua_grub_lib.lst: script/lua/grub_lib.c $(script/lua/grub_lib.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh lua > $@ || (rm -f $@; exit 1)
+
+handler-lua_mod-script_lua_grub_lib.lst: script/lua/grub_lib.c $(script/lua/grub_lib.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iscript/lua -I$(srcdir)/script/lua $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(lua_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh lua > $@ || (rm -f $@; exit 1)
+
+lua_mod_CFLAGS = $(COMMON_CFLAGS)
+lua_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# Extra libraries for lua
+# script/lua/lmathlib.c script/lua/loslib.c script/lua/liolib.c
+# script/lua/ldblib.c script/lua/loadlib.c
+
+# Common Video Subsystem specific modules.
+pkglib_MODULES += video.mod videotest.mod bitmap.mod tga.mod jpeg.mod	\
+	png.mod	font.mod gfxterm.mod video_fb.mod
+
+# For video.mod.
+video_mod_SOURCES = video/video.c
+CLEANFILES += video.mod mod-video.o mod-video.c pre-video.o video_mod-video_video.o und-video.lst
+ifneq ($(video_mod_EXPORTS),no)
+CLEANFILES += def-video.lst
+DEFSYMFILES += def-video.lst
+endif
+MOSTLYCLEANFILES += video_mod-video_video.d
+UNDSYMFILES += und-video.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+video.mod: pre-video.o mod-video.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(video_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-video.o mod-video.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+video.mod: pre-video.o mod-video.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(video_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-video.o mod-video.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-video.o: $(video_mod_DEPENDENCIES) video_mod-video_video.o
+	-rm -f $@
+	$(TARGET_CC) $(video_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ video_mod-video_video.o
+
+mod-video.o: mod-video.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(video_mod_CFLAGS) -c -o $@ $<
+
+mod-video.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'video' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(video_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-video.lst: pre-video.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 video/' > $@
+else
+def-video.lst: pre-video.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 video/' > $@
+endif
+endif
+
+und-video.lst: pre-video.o
+	echo 'video' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+video_mod-video_video.o: video/video.c $(video/video.c_DEPENDENCIES)
+	$(TARGET_CC) -Ivideo -I$(srcdir)/video $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_mod_CFLAGS) -MD -c -o $@ $<
+-include video_mod-video_video.d
+
+CLEANFILES += cmd-video_mod-video_video.lst fs-video_mod-video_video.lst partmap-video_mod-video_video.lst handler-video_mod-video_video.lst parttool-video_mod-video_video.lst
+COMMANDFILES += cmd-video_mod-video_video.lst
+FSFILES += fs-video_mod-video_video.lst
+PARTTOOLFILES += parttool-video_mod-video_video.lst
+PARTMAPFILES += partmap-video_mod-video_video.lst
+HANDLERFILES += handler-video_mod-video_video.lst
+
+cmd-video_mod-video_video.lst: video/video.c $(video/video.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo -I$(srcdir)/video $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh video > $@ || (rm -f $@; exit 1)
+
+fs-video_mod-video_video.lst: video/video.c $(video/video.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo -I$(srcdir)/video $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh video > $@ || (rm -f $@; exit 1)
+
+parttool-video_mod-video_video.lst: video/video.c $(video/video.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo -I$(srcdir)/video $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh video > $@ || (rm -f $@; exit 1)
+
+partmap-video_mod-video_video.lst: video/video.c $(video/video.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo -I$(srcdir)/video $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh video > $@ || (rm -f $@; exit 1)
+
+handler-video_mod-video_video.lst: video/video.c $(video/video.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo -I$(srcdir)/video $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh video > $@ || (rm -f $@; exit 1)
+
+video_mod_CFLAGS = $(COMMON_CFLAGS)
+video_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+video_fb_mod_SOURCES = video/fb/video_fb.c video/fb/fbblit.c \
+		  video/fb/fbfill.c video/fb/fbutil.c
+CLEANFILES += video_fb.mod mod-video_fb.o mod-video_fb.c pre-video_fb.o video_fb_mod-video_fb_video_fb.o video_fb_mod-video_fb_fbblit.o video_fb_mod-video_fb_fbfill.o video_fb_mod-video_fb_fbutil.o und-video_fb.lst
+ifneq ($(video_fb_mod_EXPORTS),no)
+CLEANFILES += def-video_fb.lst
+DEFSYMFILES += def-video_fb.lst
+endif
+MOSTLYCLEANFILES += video_fb_mod-video_fb_video_fb.d video_fb_mod-video_fb_fbblit.d video_fb_mod-video_fb_fbfill.d video_fb_mod-video_fb_fbutil.d
+UNDSYMFILES += und-video_fb.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+video_fb.mod: pre-video_fb.o mod-video_fb.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(video_fb_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-video_fb.o mod-video_fb.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+video_fb.mod: pre-video_fb.o mod-video_fb.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(video_fb_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-video_fb.o mod-video_fb.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-video_fb.o: $(video_fb_mod_DEPENDENCIES) video_fb_mod-video_fb_video_fb.o video_fb_mod-video_fb_fbblit.o video_fb_mod-video_fb_fbfill.o video_fb_mod-video_fb_fbutil.o
+	-rm -f $@
+	$(TARGET_CC) $(video_fb_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ video_fb_mod-video_fb_video_fb.o video_fb_mod-video_fb_fbblit.o video_fb_mod-video_fb_fbfill.o video_fb_mod-video_fb_fbutil.o
+
+mod-video_fb.o: mod-video_fb.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -c -o $@ $<
+
+mod-video_fb.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'video_fb' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(video_fb_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-video_fb.lst: pre-video_fb.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 video_fb/' > $@
+else
+def-video_fb.lst: pre-video_fb.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 video_fb/' > $@
+endif
+endif
+
+und-video_fb.lst: pre-video_fb.o
+	echo 'video_fb' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+video_fb_mod-video_fb_video_fb.o: video/fb/video_fb.c $(video/fb/video_fb.c_DEPENDENCIES)
+	$(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -MD -c -o $@ $<
+-include video_fb_mod-video_fb_video_fb.d
+
+CLEANFILES += cmd-video_fb_mod-video_fb_video_fb.lst fs-video_fb_mod-video_fb_video_fb.lst partmap-video_fb_mod-video_fb_video_fb.lst handler-video_fb_mod-video_fb_video_fb.lst parttool-video_fb_mod-video_fb_video_fb.lst
+COMMANDFILES += cmd-video_fb_mod-video_fb_video_fb.lst
+FSFILES += fs-video_fb_mod-video_fb_video_fb.lst
+PARTTOOLFILES += parttool-video_fb_mod-video_fb_video_fb.lst
+PARTMAPFILES += partmap-video_fb_mod-video_fb_video_fb.lst
+HANDLERFILES += handler-video_fb_mod-video_fb_video_fb.lst
+
+cmd-video_fb_mod-video_fb_video_fb.lst: video/fb/video_fb.c $(video/fb/video_fb.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+fs-video_fb_mod-video_fb_video_fb.lst: video/fb/video_fb.c $(video/fb/video_fb.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+parttool-video_fb_mod-video_fb_video_fb.lst: video/fb/video_fb.c $(video/fb/video_fb.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+partmap-video_fb_mod-video_fb_video_fb.lst: video/fb/video_fb.c $(video/fb/video_fb.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+handler-video_fb_mod-video_fb_video_fb.lst: video/fb/video_fb.c $(video/fb/video_fb.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+video_fb_mod-video_fb_fbblit.o: video/fb/fbblit.c $(video/fb/fbblit.c_DEPENDENCIES)
+	$(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -MD -c -o $@ $<
+-include video_fb_mod-video_fb_fbblit.d
+
+CLEANFILES += cmd-video_fb_mod-video_fb_fbblit.lst fs-video_fb_mod-video_fb_fbblit.lst partmap-video_fb_mod-video_fb_fbblit.lst handler-video_fb_mod-video_fb_fbblit.lst parttool-video_fb_mod-video_fb_fbblit.lst
+COMMANDFILES += cmd-video_fb_mod-video_fb_fbblit.lst
+FSFILES += fs-video_fb_mod-video_fb_fbblit.lst
+PARTTOOLFILES += parttool-video_fb_mod-video_fb_fbblit.lst
+PARTMAPFILES += partmap-video_fb_mod-video_fb_fbblit.lst
+HANDLERFILES += handler-video_fb_mod-video_fb_fbblit.lst
+
+cmd-video_fb_mod-video_fb_fbblit.lst: video/fb/fbblit.c $(video/fb/fbblit.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+fs-video_fb_mod-video_fb_fbblit.lst: video/fb/fbblit.c $(video/fb/fbblit.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+parttool-video_fb_mod-video_fb_fbblit.lst: video/fb/fbblit.c $(video/fb/fbblit.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+partmap-video_fb_mod-video_fb_fbblit.lst: video/fb/fbblit.c $(video/fb/fbblit.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+handler-video_fb_mod-video_fb_fbblit.lst: video/fb/fbblit.c $(video/fb/fbblit.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+video_fb_mod-video_fb_fbfill.o: video/fb/fbfill.c $(video/fb/fbfill.c_DEPENDENCIES)
+	$(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -MD -c -o $@ $<
+-include video_fb_mod-video_fb_fbfill.d
+
+CLEANFILES += cmd-video_fb_mod-video_fb_fbfill.lst fs-video_fb_mod-video_fb_fbfill.lst partmap-video_fb_mod-video_fb_fbfill.lst handler-video_fb_mod-video_fb_fbfill.lst parttool-video_fb_mod-video_fb_fbfill.lst
+COMMANDFILES += cmd-video_fb_mod-video_fb_fbfill.lst
+FSFILES += fs-video_fb_mod-video_fb_fbfill.lst
+PARTTOOLFILES += parttool-video_fb_mod-video_fb_fbfill.lst
+PARTMAPFILES += partmap-video_fb_mod-video_fb_fbfill.lst
+HANDLERFILES += handler-video_fb_mod-video_fb_fbfill.lst
+
+cmd-video_fb_mod-video_fb_fbfill.lst: video/fb/fbfill.c $(video/fb/fbfill.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+fs-video_fb_mod-video_fb_fbfill.lst: video/fb/fbfill.c $(video/fb/fbfill.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+parttool-video_fb_mod-video_fb_fbfill.lst: video/fb/fbfill.c $(video/fb/fbfill.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+partmap-video_fb_mod-video_fb_fbfill.lst: video/fb/fbfill.c $(video/fb/fbfill.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+handler-video_fb_mod-video_fb_fbfill.lst: video/fb/fbfill.c $(video/fb/fbfill.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+video_fb_mod-video_fb_fbutil.o: video/fb/fbutil.c $(video/fb/fbutil.c_DEPENDENCIES)
+	$(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -MD -c -o $@ $<
+-include video_fb_mod-video_fb_fbutil.d
+
+CLEANFILES += cmd-video_fb_mod-video_fb_fbutil.lst fs-video_fb_mod-video_fb_fbutil.lst partmap-video_fb_mod-video_fb_fbutil.lst handler-video_fb_mod-video_fb_fbutil.lst parttool-video_fb_mod-video_fb_fbutil.lst
+COMMANDFILES += cmd-video_fb_mod-video_fb_fbutil.lst
+FSFILES += fs-video_fb_mod-video_fb_fbutil.lst
+PARTTOOLFILES += parttool-video_fb_mod-video_fb_fbutil.lst
+PARTMAPFILES += partmap-video_fb_mod-video_fb_fbutil.lst
+HANDLERFILES += handler-video_fb_mod-video_fb_fbutil.lst
+
+cmd-video_fb_mod-video_fb_fbutil.lst: video/fb/fbutil.c $(video/fb/fbutil.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+fs-video_fb_mod-video_fb_fbutil.lst: video/fb/fbutil.c $(video/fb/fbutil.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+parttool-video_fb_mod-video_fb_fbutil.lst: video/fb/fbutil.c $(video/fb/fbutil.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+partmap-video_fb_mod-video_fb_fbutil.lst: video/fb/fbutil.c $(video/fb/fbutil.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+handler-video_fb_mod-video_fb_fbutil.lst: video/fb/fbutil.c $(video/fb/fbutil.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/fb -I$(srcdir)/video/fb $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(video_fb_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh video_fb > $@ || (rm -f $@; exit 1)
+
+video_fb_mod_CFLAGS = $(COMMON_CFLAGS)
+video_fb_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For videotest.mod.
+videotest_mod_SOURCES = commands/videotest.c
+CLEANFILES += videotest.mod mod-videotest.o mod-videotest.c pre-videotest.o videotest_mod-commands_videotest.o und-videotest.lst
+ifneq ($(videotest_mod_EXPORTS),no)
+CLEANFILES += def-videotest.lst
+DEFSYMFILES += def-videotest.lst
+endif
+MOSTLYCLEANFILES += videotest_mod-commands_videotest.d
+UNDSYMFILES += und-videotest.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+videotest.mod: pre-videotest.o mod-videotest.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(videotest_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-videotest.o mod-videotest.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+videotest.mod: pre-videotest.o mod-videotest.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(videotest_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-videotest.o mod-videotest.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-videotest.o: $(videotest_mod_DEPENDENCIES) videotest_mod-commands_videotest.o
+	-rm -f $@
+	$(TARGET_CC) $(videotest_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ videotest_mod-commands_videotest.o
+
+mod-videotest.o: mod-videotest.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(videotest_mod_CFLAGS) -c -o $@ $<
+
+mod-videotest.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'videotest' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(videotest_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-videotest.lst: pre-videotest.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 videotest/' > $@
+else
+def-videotest.lst: pre-videotest.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 videotest/' > $@
+endif
+endif
+
+und-videotest.lst: pre-videotest.o
+	echo 'videotest' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+videotest_mod-commands_videotest.o: commands/videotest.c $(commands/videotest.c_DEPENDENCIES)
+	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(videotest_mod_CFLAGS) -MD -c -o $@ $<
+-include videotest_mod-commands_videotest.d
+
+CLEANFILES += cmd-videotest_mod-commands_videotest.lst fs-videotest_mod-commands_videotest.lst partmap-videotest_mod-commands_videotest.lst handler-videotest_mod-commands_videotest.lst parttool-videotest_mod-commands_videotest.lst
+COMMANDFILES += cmd-videotest_mod-commands_videotest.lst
+FSFILES += fs-videotest_mod-commands_videotest.lst
+PARTTOOLFILES += parttool-videotest_mod-commands_videotest.lst
+PARTMAPFILES += partmap-videotest_mod-commands_videotest.lst
+HANDLERFILES += handler-videotest_mod-commands_videotest.lst
+
+cmd-videotest_mod-commands_videotest.lst: commands/videotest.c $(commands/videotest.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(videotest_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh videotest > $@ || (rm -f $@; exit 1)
+
+fs-videotest_mod-commands_videotest.lst: commands/videotest.c $(commands/videotest.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(videotest_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh videotest > $@ || (rm -f $@; exit 1)
+
+parttool-videotest_mod-commands_videotest.lst: commands/videotest.c $(commands/videotest.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(videotest_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh videotest > $@ || (rm -f $@; exit 1)
+
+partmap-videotest_mod-commands_videotest.lst: commands/videotest.c $(commands/videotest.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(videotest_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh videotest > $@ || (rm -f $@; exit 1)
+
+handler-videotest_mod-commands_videotest.lst: commands/videotest.c $(commands/videotest.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(videotest_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh videotest > $@ || (rm -f $@; exit 1)
+
+videotest_mod_CFLAGS = $(COMMON_CFLAGS)
+videotest_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For bitmap.mod
+bitmap_mod_SOURCES = video/bitmap.c
+CLEANFILES += bitmap.mod mod-bitmap.o mod-bitmap.c pre-bitmap.o bitmap_mod-video_bitmap.o und-bitmap.lst
+ifneq ($(bitmap_mod_EXPORTS),no)
+CLEANFILES += def-bitmap.lst
+DEFSYMFILES += def-bitmap.lst
+endif
+MOSTLYCLEANFILES += bitmap_mod-video_bitmap.d
+UNDSYMFILES += und-bitmap.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+bitmap.mod: pre-bitmap.o mod-bitmap.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(bitmap_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-bitmap.o mod-bitmap.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+bitmap.mod: pre-bitmap.o mod-bitmap.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(bitmap_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-bitmap.o mod-bitmap.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-bitmap.o: $(bitmap_mod_DEPENDENCIES) bitmap_mod-video_bitmap.o
+	-rm -f $@
+	$(TARGET_CC) $(bitmap_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ bitmap_mod-video_bitmap.o
+
+mod-bitmap.o: mod-bitmap.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(bitmap_mod_CFLAGS) -c -o $@ $<
+
+mod-bitmap.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'bitmap' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(bitmap_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-bitmap.lst: pre-bitmap.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 bitmap/' > $@
+else
+def-bitmap.lst: pre-bitmap.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 bitmap/' > $@
+endif
+endif
+
+und-bitmap.lst: pre-bitmap.o
+	echo 'bitmap' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+bitmap_mod-video_bitmap.o: video/bitmap.c $(video/bitmap.c_DEPENDENCIES)
+	$(TARGET_CC) -Ivideo -I$(srcdir)/video $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(bitmap_mod_CFLAGS) -MD -c -o $@ $<
+-include bitmap_mod-video_bitmap.d
+
+CLEANFILES += cmd-bitmap_mod-video_bitmap.lst fs-bitmap_mod-video_bitmap.lst partmap-bitmap_mod-video_bitmap.lst handler-bitmap_mod-video_bitmap.lst parttool-bitmap_mod-video_bitmap.lst
+COMMANDFILES += cmd-bitmap_mod-video_bitmap.lst
+FSFILES += fs-bitmap_mod-video_bitmap.lst
+PARTTOOLFILES += parttool-bitmap_mod-video_bitmap.lst
+PARTMAPFILES += partmap-bitmap_mod-video_bitmap.lst
+HANDLERFILES += handler-bitmap_mod-video_bitmap.lst
+
+cmd-bitmap_mod-video_bitmap.lst: video/bitmap.c $(video/bitmap.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo -I$(srcdir)/video $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(bitmap_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh bitmap > $@ || (rm -f $@; exit 1)
+
+fs-bitmap_mod-video_bitmap.lst: video/bitmap.c $(video/bitmap.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo -I$(srcdir)/video $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(bitmap_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh bitmap > $@ || (rm -f $@; exit 1)
+
+parttool-bitmap_mod-video_bitmap.lst: video/bitmap.c $(video/bitmap.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo -I$(srcdir)/video $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(bitmap_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh bitmap > $@ || (rm -f $@; exit 1)
+
+partmap-bitmap_mod-video_bitmap.lst: video/bitmap.c $(video/bitmap.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo -I$(srcdir)/video $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(bitmap_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh bitmap > $@ || (rm -f $@; exit 1)
+
+handler-bitmap_mod-video_bitmap.lst: video/bitmap.c $(video/bitmap.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo -I$(srcdir)/video $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(bitmap_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh bitmap > $@ || (rm -f $@; exit 1)
+
+bitmap_mod_CFLAGS = $(COMMON_CFLAGS)
+bitmap_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For tga.mod
+tga_mod_SOURCES = video/readers/tga.c
+CLEANFILES += tga.mod mod-tga.o mod-tga.c pre-tga.o tga_mod-video_readers_tga.o und-tga.lst
+ifneq ($(tga_mod_EXPORTS),no)
+CLEANFILES += def-tga.lst
+DEFSYMFILES += def-tga.lst
+endif
+MOSTLYCLEANFILES += tga_mod-video_readers_tga.d
+UNDSYMFILES += und-tga.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+tga.mod: pre-tga.o mod-tga.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(tga_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-tga.o mod-tga.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+tga.mod: pre-tga.o mod-tga.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(tga_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-tga.o mod-tga.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-tga.o: $(tga_mod_DEPENDENCIES) tga_mod-video_readers_tga.o
+	-rm -f $@
+	$(TARGET_CC) $(tga_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ tga_mod-video_readers_tga.o
+
+mod-tga.o: mod-tga.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(tga_mod_CFLAGS) -c -o $@ $<
+
+mod-tga.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'tga' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(tga_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-tga.lst: pre-tga.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 tga/' > $@
+else
+def-tga.lst: pre-tga.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 tga/' > $@
+endif
+endif
+
+und-tga.lst: pre-tga.o
+	echo 'tga' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+tga_mod-video_readers_tga.o: video/readers/tga.c $(video/readers/tga.c_DEPENDENCIES)
+	$(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(tga_mod_CFLAGS) -MD -c -o $@ $<
+-include tga_mod-video_readers_tga.d
+
+CLEANFILES += cmd-tga_mod-video_readers_tga.lst fs-tga_mod-video_readers_tga.lst partmap-tga_mod-video_readers_tga.lst handler-tga_mod-video_readers_tga.lst parttool-tga_mod-video_readers_tga.lst
+COMMANDFILES += cmd-tga_mod-video_readers_tga.lst
+FSFILES += fs-tga_mod-video_readers_tga.lst
+PARTTOOLFILES += parttool-tga_mod-video_readers_tga.lst
+PARTMAPFILES += partmap-tga_mod-video_readers_tga.lst
+HANDLERFILES += handler-tga_mod-video_readers_tga.lst
+
+cmd-tga_mod-video_readers_tga.lst: video/readers/tga.c $(video/readers/tga.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(tga_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh tga > $@ || (rm -f $@; exit 1)
+
+fs-tga_mod-video_readers_tga.lst: video/readers/tga.c $(video/readers/tga.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(tga_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh tga > $@ || (rm -f $@; exit 1)
+
+parttool-tga_mod-video_readers_tga.lst: video/readers/tga.c $(video/readers/tga.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(tga_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh tga > $@ || (rm -f $@; exit 1)
+
+partmap-tga_mod-video_readers_tga.lst: video/readers/tga.c $(video/readers/tga.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(tga_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh tga > $@ || (rm -f $@; exit 1)
+
+handler-tga_mod-video_readers_tga.lst: video/readers/tga.c $(video/readers/tga.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(tga_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh tga > $@ || (rm -f $@; exit 1)
+
+tga_mod_CFLAGS = $(COMMON_CFLAGS)
+tga_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For jpeg.mod.
+jpeg_mod_SOURCES = video/readers/jpeg.c
+CLEANFILES += jpeg.mod mod-jpeg.o mod-jpeg.c pre-jpeg.o jpeg_mod-video_readers_jpeg.o und-jpeg.lst
+ifneq ($(jpeg_mod_EXPORTS),no)
+CLEANFILES += def-jpeg.lst
+DEFSYMFILES += def-jpeg.lst
+endif
+MOSTLYCLEANFILES += jpeg_mod-video_readers_jpeg.d
+UNDSYMFILES += und-jpeg.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+jpeg.mod: pre-jpeg.o mod-jpeg.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(jpeg_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-jpeg.o mod-jpeg.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+jpeg.mod: pre-jpeg.o mod-jpeg.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(jpeg_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-jpeg.o mod-jpeg.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-jpeg.o: $(jpeg_mod_DEPENDENCIES) jpeg_mod-video_readers_jpeg.o
+	-rm -f $@
+	$(TARGET_CC) $(jpeg_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ jpeg_mod-video_readers_jpeg.o
+
+mod-jpeg.o: mod-jpeg.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(jpeg_mod_CFLAGS) -c -o $@ $<
+
+mod-jpeg.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'jpeg' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(jpeg_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-jpeg.lst: pre-jpeg.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 jpeg/' > $@
+else
+def-jpeg.lst: pre-jpeg.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 jpeg/' > $@
+endif
+endif
+
+und-jpeg.lst: pre-jpeg.o
+	echo 'jpeg' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+jpeg_mod-video_readers_jpeg.o: video/readers/jpeg.c $(video/readers/jpeg.c_DEPENDENCIES)
+	$(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(jpeg_mod_CFLAGS) -MD -c -o $@ $<
+-include jpeg_mod-video_readers_jpeg.d
+
+CLEANFILES += cmd-jpeg_mod-video_readers_jpeg.lst fs-jpeg_mod-video_readers_jpeg.lst partmap-jpeg_mod-video_readers_jpeg.lst handler-jpeg_mod-video_readers_jpeg.lst parttool-jpeg_mod-video_readers_jpeg.lst
+COMMANDFILES += cmd-jpeg_mod-video_readers_jpeg.lst
+FSFILES += fs-jpeg_mod-video_readers_jpeg.lst
+PARTTOOLFILES += parttool-jpeg_mod-video_readers_jpeg.lst
+PARTMAPFILES += partmap-jpeg_mod-video_readers_jpeg.lst
+HANDLERFILES += handler-jpeg_mod-video_readers_jpeg.lst
+
+cmd-jpeg_mod-video_readers_jpeg.lst: video/readers/jpeg.c $(video/readers/jpeg.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(jpeg_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh jpeg > $@ || (rm -f $@; exit 1)
+
+fs-jpeg_mod-video_readers_jpeg.lst: video/readers/jpeg.c $(video/readers/jpeg.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(jpeg_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh jpeg > $@ || (rm -f $@; exit 1)
+
+parttool-jpeg_mod-video_readers_jpeg.lst: video/readers/jpeg.c $(video/readers/jpeg.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(jpeg_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh jpeg > $@ || (rm -f $@; exit 1)
+
+partmap-jpeg_mod-video_readers_jpeg.lst: video/readers/jpeg.c $(video/readers/jpeg.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(jpeg_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh jpeg > $@ || (rm -f $@; exit 1)
+
+handler-jpeg_mod-video_readers_jpeg.lst: video/readers/jpeg.c $(video/readers/jpeg.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(jpeg_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh jpeg > $@ || (rm -f $@; exit 1)
+
+jpeg_mod_CFLAGS = $(COMMON_CFLAGS)
+jpeg_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For png.mod.
+png_mod_SOURCES = video/readers/png.c
+CLEANFILES += png.mod mod-png.o mod-png.c pre-png.o png_mod-video_readers_png.o und-png.lst
+ifneq ($(png_mod_EXPORTS),no)
+CLEANFILES += def-png.lst
+DEFSYMFILES += def-png.lst
+endif
+MOSTLYCLEANFILES += png_mod-video_readers_png.d
+UNDSYMFILES += und-png.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+png.mod: pre-png.o mod-png.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(png_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-png.o mod-png.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+png.mod: pre-png.o mod-png.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(png_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-png.o mod-png.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-png.o: $(png_mod_DEPENDENCIES) png_mod-video_readers_png.o
+	-rm -f $@
+	$(TARGET_CC) $(png_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ png_mod-video_readers_png.o
+
+mod-png.o: mod-png.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(png_mod_CFLAGS) -c -o $@ $<
+
+mod-png.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'png' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(png_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-png.lst: pre-png.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 png/' > $@
+else
+def-png.lst: pre-png.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 png/' > $@
+endif
+endif
+
+und-png.lst: pre-png.o
+	echo 'png' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+png_mod-video_readers_png.o: video/readers/png.c $(video/readers/png.c_DEPENDENCIES)
+	$(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(png_mod_CFLAGS) -MD -c -o $@ $<
+-include png_mod-video_readers_png.d
+
+CLEANFILES += cmd-png_mod-video_readers_png.lst fs-png_mod-video_readers_png.lst partmap-png_mod-video_readers_png.lst handler-png_mod-video_readers_png.lst parttool-png_mod-video_readers_png.lst
+COMMANDFILES += cmd-png_mod-video_readers_png.lst
+FSFILES += fs-png_mod-video_readers_png.lst
+PARTTOOLFILES += parttool-png_mod-video_readers_png.lst
+PARTMAPFILES += partmap-png_mod-video_readers_png.lst
+HANDLERFILES += handler-png_mod-video_readers_png.lst
+
+cmd-png_mod-video_readers_png.lst: video/readers/png.c $(video/readers/png.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(png_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh png > $@ || (rm -f $@; exit 1)
+
+fs-png_mod-video_readers_png.lst: video/readers/png.c $(video/readers/png.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(png_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh png > $@ || (rm -f $@; exit 1)
+
+parttool-png_mod-video_readers_png.lst: video/readers/png.c $(video/readers/png.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(png_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh png > $@ || (rm -f $@; exit 1)
+
+partmap-png_mod-video_readers_png.lst: video/readers/png.c $(video/readers/png.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(png_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh png > $@ || (rm -f $@; exit 1)
+
+handler-png_mod-video_readers_png.lst: video/readers/png.c $(video/readers/png.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ivideo/readers -I$(srcdir)/video/readers $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(png_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh png > $@ || (rm -f $@; exit 1)
+
+png_mod_CFLAGS = $(COMMON_CFLAGS)
+png_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For font.mod.
+font_mod_SOURCES = font/font_cmd.c font/font.c
+CLEANFILES += font.mod mod-font.o mod-font.c pre-font.o font_mod-font_font_cmd.o font_mod-font_font.o und-font.lst
+ifneq ($(font_mod_EXPORTS),no)
+CLEANFILES += def-font.lst
+DEFSYMFILES += def-font.lst
+endif
+MOSTLYCLEANFILES += font_mod-font_font_cmd.d font_mod-font_font.d
+UNDSYMFILES += und-font.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+font.mod: pre-font.o mod-font.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(font_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-font.o mod-font.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+font.mod: pre-font.o mod-font.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(font_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-font.o mod-font.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-font.o: $(font_mod_DEPENDENCIES) font_mod-font_font_cmd.o font_mod-font_font.o
+	-rm -f $@
+	$(TARGET_CC) $(font_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ font_mod-font_font_cmd.o font_mod-font_font.o
+
+mod-font.o: mod-font.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(font_mod_CFLAGS) -c -o $@ $<
+
+mod-font.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'font' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(font_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-font.lst: pre-font.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 font/' > $@
+else
+def-font.lst: pre-font.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 font/' > $@
+endif
+endif
+
+und-font.lst: pre-font.o
+	echo 'font' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+font_mod-font_font_cmd.o: font/font_cmd.c $(font/font_cmd.c_DEPENDENCIES)
+	$(TARGET_CC) -Ifont -I$(srcdir)/font $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(font_mod_CFLAGS) -MD -c -o $@ $<
+-include font_mod-font_font_cmd.d
+
+CLEANFILES += cmd-font_mod-font_font_cmd.lst fs-font_mod-font_font_cmd.lst partmap-font_mod-font_font_cmd.lst handler-font_mod-font_font_cmd.lst parttool-font_mod-font_font_cmd.lst
+COMMANDFILES += cmd-font_mod-font_font_cmd.lst
+FSFILES += fs-font_mod-font_font_cmd.lst
+PARTTOOLFILES += parttool-font_mod-font_font_cmd.lst
+PARTMAPFILES += partmap-font_mod-font_font_cmd.lst
+HANDLERFILES += handler-font_mod-font_font_cmd.lst
+
+cmd-font_mod-font_font_cmd.lst: font/font_cmd.c $(font/font_cmd.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ifont -I$(srcdir)/font $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(font_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh font > $@ || (rm -f $@; exit 1)
+
+fs-font_mod-font_font_cmd.lst: font/font_cmd.c $(font/font_cmd.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ifont -I$(srcdir)/font $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(font_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh font > $@ || (rm -f $@; exit 1)
+
+parttool-font_mod-font_font_cmd.lst: font/font_cmd.c $(font/font_cmd.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifont -I$(srcdir)/font $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(font_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh font > $@ || (rm -f $@; exit 1)
+
+partmap-font_mod-font_font_cmd.lst: font/font_cmd.c $(font/font_cmd.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ifont -I$(srcdir)/font $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(font_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh font > $@ || (rm -f $@; exit 1)
+
+handler-font_mod-font_font_cmd.lst: font/font_cmd.c $(font/font_cmd.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifont -I$(srcdir)/font $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(font_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh font > $@ || (rm -f $@; exit 1)
+
+font_mod-font_font.o: font/font.c $(font/font.c_DEPENDENCIES)
+	$(TARGET_CC) -Ifont -I$(srcdir)/font $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(font_mod_CFLAGS) -MD -c -o $@ $<
+-include font_mod-font_font.d
+
+CLEANFILES += cmd-font_mod-font_font.lst fs-font_mod-font_font.lst partmap-font_mod-font_font.lst handler-font_mod-font_font.lst parttool-font_mod-font_font.lst
+COMMANDFILES += cmd-font_mod-font_font.lst
+FSFILES += fs-font_mod-font_font.lst
+PARTTOOLFILES += parttool-font_mod-font_font.lst
+PARTMAPFILES += partmap-font_mod-font_font.lst
+HANDLERFILES += handler-font_mod-font_font.lst
+
+cmd-font_mod-font_font.lst: font/font.c $(font/font.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ifont -I$(srcdir)/font $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(font_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh font > $@ || (rm -f $@; exit 1)
+
+fs-font_mod-font_font.lst: font/font.c $(font/font.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ifont -I$(srcdir)/font $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(font_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh font > $@ || (rm -f $@; exit 1)
+
+parttool-font_mod-font_font.lst: font/font.c $(font/font.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ifont -I$(srcdir)/font $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(font_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh font > $@ || (rm -f $@; exit 1)
+
+partmap-font_mod-font_font.lst: font/font.c $(font/font.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ifont -I$(srcdir)/font $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(font_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh font > $@ || (rm -f $@; exit 1)
+
+handler-font_mod-font_font.lst: font/font.c $(font/font.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ifont -I$(srcdir)/font $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(font_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh font > $@ || (rm -f $@; exit 1)
+
+font_mod_CFLAGS = $(COMMON_CFLAGS)
+font_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For gfxterm.mod.
+gfxterm_mod_SOURCES = term/gfxterm.c
+CLEANFILES += gfxterm.mod mod-gfxterm.o mod-gfxterm.c pre-gfxterm.o gfxterm_mod-term_gfxterm.o und-gfxterm.lst
+ifneq ($(gfxterm_mod_EXPORTS),no)
+CLEANFILES += def-gfxterm.lst
+DEFSYMFILES += def-gfxterm.lst
+endif
+MOSTLYCLEANFILES += gfxterm_mod-term_gfxterm.d
+UNDSYMFILES += und-gfxterm.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+gfxterm.mod: pre-gfxterm.o mod-gfxterm.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(gfxterm_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-gfxterm.o mod-gfxterm.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+gfxterm.mod: pre-gfxterm.o mod-gfxterm.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(gfxterm_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-gfxterm.o mod-gfxterm.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-gfxterm.o: $(gfxterm_mod_DEPENDENCIES) gfxterm_mod-term_gfxterm.o
+	-rm -f $@
+	$(TARGET_CC) $(gfxterm_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ gfxterm_mod-term_gfxterm.o
+
+mod-gfxterm.o: mod-gfxterm.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(gfxterm_mod_CFLAGS) -c -o $@ $<
+
+mod-gfxterm.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'gfxterm' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(gfxterm_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-gfxterm.lst: pre-gfxterm.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 gfxterm/' > $@
+else
+def-gfxterm.lst: pre-gfxterm.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 gfxterm/' > $@
+endif
+endif
+
+und-gfxterm.lst: pre-gfxterm.o
+	echo 'gfxterm' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+gfxterm_mod-term_gfxterm.o: term/gfxterm.c $(term/gfxterm.c_DEPENDENCIES)
+	$(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gfxterm_mod_CFLAGS) -MD -c -o $@ $<
+-include gfxterm_mod-term_gfxterm.d
+
+CLEANFILES += cmd-gfxterm_mod-term_gfxterm.lst fs-gfxterm_mod-term_gfxterm.lst partmap-gfxterm_mod-term_gfxterm.lst handler-gfxterm_mod-term_gfxterm.lst parttool-gfxterm_mod-term_gfxterm.lst
+COMMANDFILES += cmd-gfxterm_mod-term_gfxterm.lst
+FSFILES += fs-gfxterm_mod-term_gfxterm.lst
+PARTTOOLFILES += parttool-gfxterm_mod-term_gfxterm.lst
+PARTMAPFILES += partmap-gfxterm_mod-term_gfxterm.lst
+HANDLERFILES += handler-gfxterm_mod-term_gfxterm.lst
+
+cmd-gfxterm_mod-term_gfxterm.lst: term/gfxterm.c $(term/gfxterm.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gfxterm_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh gfxterm > $@ || (rm -f $@; exit 1)
+
+fs-gfxterm_mod-term_gfxterm.lst: term/gfxterm.c $(term/gfxterm.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gfxterm_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh gfxterm > $@ || (rm -f $@; exit 1)
+
+parttool-gfxterm_mod-term_gfxterm.lst: term/gfxterm.c $(term/gfxterm.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gfxterm_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh gfxterm > $@ || (rm -f $@; exit 1)
+
+partmap-gfxterm_mod-term_gfxterm.lst: term/gfxterm.c $(term/gfxterm.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gfxterm_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh gfxterm > $@ || (rm -f $@; exit 1)
+
+handler-gfxterm_mod-term_gfxterm.lst: term/gfxterm.c $(term/gfxterm.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iterm -I$(srcdir)/term $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gfxterm_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh gfxterm > $@ || (rm -f $@; exit 1)
+
+gfxterm_mod_CFLAGS = $(COMMON_CFLAGS)
+gfxterm_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # Misc.
 pkglib_MODULES += gzio.mod bufio.mod elf.mod
@@ -3632,11 +8153,20 @@ endif
 MOSTLYCLEANFILES += elf_mod-kern_elf.d
 UNDSYMFILES += und-elf.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 elf.mod: pre-elf.o mod-elf.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(elf_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-elf.o mod-elf.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(elf_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-elf.o mod-elf.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+elf.mod: pre-elf.o mod-elf.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(elf_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-elf.o mod-elf.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-elf.o: $(elf_mod_DEPENDENCIES) elf_mod-kern_elf.o
 	-rm -f $@
@@ -3649,8 +8179,13 @@ mod-elf.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'elf' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(elf_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-elf.lst: pre-elf.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 elf/' > $@
+else
+def-elf.lst: pre-elf.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 elf/' > $@
+endif
 endif
 
 und-elf.lst: pre-elf.o
@@ -3661,20 +8196,27 @@ elf_mod-kern_elf.o: kern/elf.c $(kern/elf.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(elf_mod_CFLAGS) -MD -c -o $@ $<
 -include elf_mod-kern_elf.d
 
-CLEANFILES += cmd-elf_mod-kern_elf.lst fs-elf_mod-kern_elf.lst partmap-elf_mod-kern_elf.lst
+CLEANFILES += cmd-elf_mod-kern_elf.lst fs-elf_mod-kern_elf.lst partmap-elf_mod-kern_elf.lst handler-elf_mod-kern_elf.lst parttool-elf_mod-kern_elf.lst
 COMMANDFILES += cmd-elf_mod-kern_elf.lst
 FSFILES += fs-elf_mod-kern_elf.lst
+PARTTOOLFILES += parttool-elf_mod-kern_elf.lst
 PARTMAPFILES += partmap-elf_mod-kern_elf.lst
+HANDLERFILES += handler-elf_mod-kern_elf.lst
 
 cmd-elf_mod-kern_elf.lst: kern/elf.c $(kern/elf.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(elf_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh elf > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(elf_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh elf > $@ || (rm -f $@; exit 1)
 
 fs-elf_mod-kern_elf.lst: kern/elf.c $(kern/elf.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(elf_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh elf > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(elf_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh elf > $@ || (rm -f $@; exit 1)
+
+parttool-elf_mod-kern_elf.lst: kern/elf.c $(kern/elf.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(elf_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh elf > $@ || (rm -f $@; exit 1)
 
 partmap-elf_mod-kern_elf.lst: kern/elf.c $(kern/elf.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(elf_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh elf > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(elf_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh elf > $@ || (rm -f $@; exit 1)
 
+handler-elf_mod-kern_elf.lst: kern/elf.c $(kern/elf.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(elf_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh elf > $@ || (rm -f $@; exit 1)
 
 elf_mod_CFLAGS = $(COMMON_CFLAGS)
 elf_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -3689,11 +8231,20 @@ endif
 MOSTLYCLEANFILES += gzio_mod-io_gzio.d
 UNDSYMFILES += und-gzio.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 gzio.mod: pre-gzio.o mod-gzio.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(gzio_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-gzio.o mod-gzio.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(gzio_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-gzio.o mod-gzio.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+gzio.mod: pre-gzio.o mod-gzio.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(gzio_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-gzio.o mod-gzio.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-gzio.o: $(gzio_mod_DEPENDENCIES) gzio_mod-io_gzio.o
 	-rm -f $@
@@ -3706,8 +8257,13 @@ mod-gzio.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'gzio' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(gzio_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-gzio.lst: pre-gzio.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 gzio/' > $@
+else
+def-gzio.lst: pre-gzio.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 gzio/' > $@
+endif
 endif
 
 und-gzio.lst: pre-gzio.o
@@ -3718,20 +8274,27 @@ gzio_mod-io_gzio.o: io/gzio.c $(io/gzio.c_DEPENDENCIES)
 	$(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gzio_mod_CFLAGS) -MD -c -o $@ $<
 -include gzio_mod-io_gzio.d
 
-CLEANFILES += cmd-gzio_mod-io_gzio.lst fs-gzio_mod-io_gzio.lst partmap-gzio_mod-io_gzio.lst
+CLEANFILES += cmd-gzio_mod-io_gzio.lst fs-gzio_mod-io_gzio.lst partmap-gzio_mod-io_gzio.lst handler-gzio_mod-io_gzio.lst parttool-gzio_mod-io_gzio.lst
 COMMANDFILES += cmd-gzio_mod-io_gzio.lst
 FSFILES += fs-gzio_mod-io_gzio.lst
+PARTTOOLFILES += parttool-gzio_mod-io_gzio.lst
 PARTMAPFILES += partmap-gzio_mod-io_gzio.lst
+HANDLERFILES += handler-gzio_mod-io_gzio.lst
 
 cmd-gzio_mod-io_gzio.lst: io/gzio.c $(io/gzio.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(gzio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh gzio > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gzio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh gzio > $@ || (rm -f $@; exit 1)
 
 fs-gzio_mod-io_gzio.lst: io/gzio.c $(io/gzio.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(gzio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh gzio > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gzio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh gzio > $@ || (rm -f $@; exit 1)
+
+parttool-gzio_mod-io_gzio.lst: io/gzio.c $(io/gzio.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gzio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh gzio > $@ || (rm -f $@; exit 1)
 
 partmap-gzio_mod-io_gzio.lst: io/gzio.c $(io/gzio.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(gzio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh gzio > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gzio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh gzio > $@ || (rm -f $@; exit 1)
 
+handler-gzio_mod-io_gzio.lst: io/gzio.c $(io/gzio.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(gzio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh gzio > $@ || (rm -f $@; exit 1)
 
 gzio_mod_CFLAGS = $(COMMON_CFLAGS)
 gzio_mod_LDFLAGS = $(COMMON_LDFLAGS)
@@ -3746,11 +8309,20 @@ endif
 MOSTLYCLEANFILES += bufio_mod-io_bufio.d
 UNDSYMFILES += und-bufio.lst
 
+ifneq ($(TARGET_APPLE_CC),1)
 bufio.mod: pre-bufio.o mod-bufio.o $(TARGET_OBJ2ELF)
 	-rm -f $@
-	$(TARGET_CC) $(bufio_mod_LDFLAGS) $(TARGET_LDFLAGS) $(MODULE_LDFLAGS) -Wl,-r,-d -o $@ pre-bufio.o mod-bufio.o
-	if test ! -z $(TARGET_OBJ2ELF); then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(TARGET_CC) $(bufio_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-bufio.o mod-bufio.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
 	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+bufio.mod: pre-bufio.o mod-bufio.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(bufio_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-bufio.o mod-bufio.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
 
 pre-bufio.o: $(bufio_mod_DEPENDENCIES) bufio_mod-io_bufio.o
 	-rm -f $@
@@ -3763,8 +8335,13 @@ mod-bufio.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
 	sh $(srcdir)/genmodsrc.sh 'bufio' $< > $@ || (rm -f $@; exit 1)
 
 ifneq ($(bufio_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
 def-bufio.lst: pre-bufio.o
 	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 bufio/' > $@
+else
+def-bufio.lst: pre-bufio.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 bufio/' > $@
+endif
 endif
 
 und-bufio.lst: pre-bufio.o
@@ -3775,20 +8352,207 @@ bufio_mod-io_bufio.o: io/bufio.c $(io/bufio.c_DEPENDENCIES)
 	$(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(bufio_mod_CFLAGS) -MD -c -o $@ $<
 -include bufio_mod-io_bufio.d
 
-CLEANFILES += cmd-bufio_mod-io_bufio.lst fs-bufio_mod-io_bufio.lst partmap-bufio_mod-io_bufio.lst
+CLEANFILES += cmd-bufio_mod-io_bufio.lst fs-bufio_mod-io_bufio.lst partmap-bufio_mod-io_bufio.lst handler-bufio_mod-io_bufio.lst parttool-bufio_mod-io_bufio.lst
 COMMANDFILES += cmd-bufio_mod-io_bufio.lst
 FSFILES += fs-bufio_mod-io_bufio.lst
+PARTTOOLFILES += parttool-bufio_mod-io_bufio.lst
 PARTMAPFILES += partmap-bufio_mod-io_bufio.lst
+HANDLERFILES += handler-bufio_mod-io_bufio.lst
 
 cmd-bufio_mod-io_bufio.lst: io/bufio.c $(io/bufio.c_DEPENDENCIES) gencmdlist.sh
-	set -e; 	  $(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(bufio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh bufio > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(bufio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh bufio > $@ || (rm -f $@; exit 1)
 
 fs-bufio_mod-io_bufio.lst: io/bufio.c $(io/bufio.c_DEPENDENCIES) genfslist.sh
-	set -e; 	  $(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(bufio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh bufio > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(bufio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh bufio > $@ || (rm -f $@; exit 1)
+
+parttool-bufio_mod-io_bufio.lst: io/bufio.c $(io/bufio.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(bufio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh bufio > $@ || (rm -f $@; exit 1)
 
 partmap-bufio_mod-io_bufio.lst: io/bufio.c $(io/bufio.c_DEPENDENCIES) genpartmaplist.sh
-	set -e; 	  $(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(bufio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh bufio > $@ || (rm -f $@; exit 1)
+	set -e; 	  $(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(bufio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh bufio > $@ || (rm -f $@; exit 1)
 
+handler-bufio_mod-io_bufio.lst: io/bufio.c $(io/bufio.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Iio -I$(srcdir)/io $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(bufio_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh bufio > $@ || (rm -f $@; exit 1)
 
 bufio_mod_CFLAGS = $(COMMON_CFLAGS)
 bufio_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# Misc.
+pkglib_MODULES += xnu_uuid.mod
+
+# For elf.mod.
+xnu_uuid_mod_SOURCES = commands/xnu_uuid.c
+CLEANFILES += xnu_uuid.mod mod-xnu_uuid.o mod-xnu_uuid.c pre-xnu_uuid.o xnu_uuid_mod-commands_xnu_uuid.o und-xnu_uuid.lst
+ifneq ($(xnu_uuid_mod_EXPORTS),no)
+CLEANFILES += def-xnu_uuid.lst
+DEFSYMFILES += def-xnu_uuid.lst
+endif
+MOSTLYCLEANFILES += xnu_uuid_mod-commands_xnu_uuid.d
+UNDSYMFILES += und-xnu_uuid.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+xnu_uuid.mod: pre-xnu_uuid.o mod-xnu_uuid.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(xnu_uuid_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-xnu_uuid.o mod-xnu_uuid.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+xnu_uuid.mod: pre-xnu_uuid.o mod-xnu_uuid.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(xnu_uuid_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-xnu_uuid.o mod-xnu_uuid.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-xnu_uuid.o: $(xnu_uuid_mod_DEPENDENCIES) xnu_uuid_mod-commands_xnu_uuid.o
+	-rm -f $@
+	$(TARGET_CC) $(xnu_uuid_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ xnu_uuid_mod-commands_xnu_uuid.o
+
+mod-xnu_uuid.o: mod-xnu_uuid.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(xnu_uuid_mod_CFLAGS) -c -o $@ $<
+
+mod-xnu_uuid.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'xnu_uuid' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(xnu_uuid_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-xnu_uuid.lst: pre-xnu_uuid.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 xnu_uuid/' > $@
+else
+def-xnu_uuid.lst: pre-xnu_uuid.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 xnu_uuid/' > $@
+endif
+endif
+
+und-xnu_uuid.lst: pre-xnu_uuid.o
+	echo 'xnu_uuid' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+xnu_uuid_mod-commands_xnu_uuid.o: commands/xnu_uuid.c $(commands/xnu_uuid.c_DEPENDENCIES)
+	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(xnu_uuid_mod_CFLAGS) -MD -c -o $@ $<
+-include xnu_uuid_mod-commands_xnu_uuid.d
+
+CLEANFILES += cmd-xnu_uuid_mod-commands_xnu_uuid.lst fs-xnu_uuid_mod-commands_xnu_uuid.lst partmap-xnu_uuid_mod-commands_xnu_uuid.lst handler-xnu_uuid_mod-commands_xnu_uuid.lst parttool-xnu_uuid_mod-commands_xnu_uuid.lst
+COMMANDFILES += cmd-xnu_uuid_mod-commands_xnu_uuid.lst
+FSFILES += fs-xnu_uuid_mod-commands_xnu_uuid.lst
+PARTTOOLFILES += parttool-xnu_uuid_mod-commands_xnu_uuid.lst
+PARTMAPFILES += partmap-xnu_uuid_mod-commands_xnu_uuid.lst
+HANDLERFILES += handler-xnu_uuid_mod-commands_xnu_uuid.lst
+
+cmd-xnu_uuid_mod-commands_xnu_uuid.lst: commands/xnu_uuid.c $(commands/xnu_uuid.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(xnu_uuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh xnu_uuid > $@ || (rm -f $@; exit 1)
+
+fs-xnu_uuid_mod-commands_xnu_uuid.lst: commands/xnu_uuid.c $(commands/xnu_uuid.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(xnu_uuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh xnu_uuid > $@ || (rm -f $@; exit 1)
+
+parttool-xnu_uuid_mod-commands_xnu_uuid.lst: commands/xnu_uuid.c $(commands/xnu_uuid.c_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(xnu_uuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh xnu_uuid > $@ || (rm -f $@; exit 1)
+
+partmap-xnu_uuid_mod-commands_xnu_uuid.lst: commands/xnu_uuid.c $(commands/xnu_uuid.c_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(xnu_uuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh xnu_uuid > $@ || (rm -f $@; exit 1)
+
+handler-xnu_uuid_mod-commands_xnu_uuid.lst: commands/xnu_uuid.c $(commands/xnu_uuid.c_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(xnu_uuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh xnu_uuid > $@ || (rm -f $@; exit 1)
+
+xnu_uuid_mod_CFLAGS = $(COMMON_CFLAGS)
+xnu_uuid_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+pkglib_MODULES += setjmp.mod
+setjmp_mod_SOURCES = lib/$(target_cpu)/setjmp.S
+CLEANFILES += setjmp.mod mod-setjmp.o mod-setjmp.c pre-setjmp.o setjmp_mod-lib___target_cpu__setjmp.o und-setjmp.lst
+ifneq ($(setjmp_mod_EXPORTS),no)
+CLEANFILES += def-setjmp.lst
+DEFSYMFILES += def-setjmp.lst
+endif
+MOSTLYCLEANFILES += setjmp_mod-lib___target_cpu__setjmp.d
+UNDSYMFILES += und-setjmp.lst
+
+ifneq ($(TARGET_APPLE_CC),1)
+setjmp.mod: pre-setjmp.o mod-setjmp.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	$(TARGET_CC) $(setjmp_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ pre-setjmp.o mod-setjmp.o
+	if test ! -z "$(TARGET_OBJ2ELF)"; then ./$(TARGET_OBJ2ELF) $@ || (rm -f $@; exit 1); fi
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -K _grub_mod_init -K _grub_mod_fini -R .note -R .comment $@
+else
+setjmp.mod: pre-setjmp.o mod-setjmp.o $(TARGET_OBJ2ELF)
+	-rm -f $@
+	-rm -f $@.bin
+	$(TARGET_CC) $(setjmp_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@.bin pre-setjmp.o mod-setjmp.o
+	$(OBJCONV) -f$(TARGET_MODULE_FORMAT) -nr:_grub_mod_init:grub_mod_init -nr:_grub_mod_fini:grub_mod_fini -wd1106 -nu -nd $@.bin $@
+	-rm -f $@.bin
+endif
+
+pre-setjmp.o: $(setjmp_mod_DEPENDENCIES) setjmp_mod-lib___target_cpu__setjmp.o
+	-rm -f $@
+	$(TARGET_CC) $(setjmp_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ setjmp_mod-lib___target_cpu__setjmp.o
+
+mod-setjmp.o: mod-setjmp.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(setjmp_mod_CFLAGS) -c -o $@ $<
+
+mod-setjmp.c: $(builddir)/moddep.lst $(srcdir)/genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'setjmp' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(setjmp_mod_EXPORTS),no)
+ifneq ($(TARGET_APPLE_CC),1)
+def-setjmp.lst: pre-setjmp.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 setjmp/' > $@
+else
+def-setjmp.lst: pre-setjmp.o
+	$(NM) -g -P -p $< | grep -E '^[a-zA-Z0-9_]* [TDS]'  | sed 's/^\([^ ]*\).*/\1 setjmp/' > $@
+endif
+endif
+
+und-setjmp.lst: pre-setjmp.o
+	echo 'setjmp' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+setjmp_mod-lib___target_cpu__setjmp.o: lib/$(target_cpu)/setjmp.S $(lib/$(target_cpu)/setjmp.S_DEPENDENCIES)
+	$(TARGET_CC) -Ilib/$(target_cpu) -I$(srcdir)/lib/$(target_cpu) $(TARGET_CPPFLAGS) -DASM_FILE=1 $(TARGET_ASFLAGS) $(setjmp_mod_ASFLAGS) -MD -c -o $@ $<
+-include setjmp_mod-lib___target_cpu__setjmp.d
+
+CLEANFILES += cmd-setjmp_mod-lib___target_cpu__setjmp.lst fs-setjmp_mod-lib___target_cpu__setjmp.lst partmap-setjmp_mod-lib___target_cpu__setjmp.lst handler-setjmp_mod-lib___target_cpu__setjmp.lst parttool-setjmp_mod-lib___target_cpu__setjmp.lst
+COMMANDFILES += cmd-setjmp_mod-lib___target_cpu__setjmp.lst
+FSFILES += fs-setjmp_mod-lib___target_cpu__setjmp.lst
+PARTTOOLFILES += parttool-setjmp_mod-lib___target_cpu__setjmp.lst
+PARTMAPFILES += partmap-setjmp_mod-lib___target_cpu__setjmp.lst
+HANDLERFILES += handler-setjmp_mod-lib___target_cpu__setjmp.lst
+
+cmd-setjmp_mod-lib___target_cpu__setjmp.lst: lib/$(target_cpu)/setjmp.S $(lib/$(target_cpu)/setjmp.S_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ilib/$(target_cpu) -I$(srcdir)/lib/$(target_cpu) $(TARGET_CPPFLAGS) -DASM_FILE=1 $(TARGET_ASFLAGS) $(setjmp_mod_ASFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh setjmp > $@ || (rm -f $@; exit 1)
+
+fs-setjmp_mod-lib___target_cpu__setjmp.lst: lib/$(target_cpu)/setjmp.S $(lib/$(target_cpu)/setjmp.S_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ilib/$(target_cpu) -I$(srcdir)/lib/$(target_cpu) $(TARGET_CPPFLAGS) -DASM_FILE=1 $(TARGET_ASFLAGS) $(setjmp_mod_ASFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh setjmp > $@ || (rm -f $@; exit 1)
+
+parttool-setjmp_mod-lib___target_cpu__setjmp.lst: lib/$(target_cpu)/setjmp.S $(lib/$(target_cpu)/setjmp.S_DEPENDENCIES) genparttoollist.sh
+	set -e; 	  $(TARGET_CC) -Ilib/$(target_cpu) -I$(srcdir)/lib/$(target_cpu) $(TARGET_CPPFLAGS) -DASM_FILE=1 $(TARGET_ASFLAGS) $(setjmp_mod_ASFLAGS) -E $< 	  | sh $(srcdir)/genparttoollist.sh setjmp > $@ || (rm -f $@; exit 1)
+
+partmap-setjmp_mod-lib___target_cpu__setjmp.lst: lib/$(target_cpu)/setjmp.S $(lib/$(target_cpu)/setjmp.S_DEPENDENCIES) genpartmaplist.sh
+	set -e; 	  $(TARGET_CC) -Ilib/$(target_cpu) -I$(srcdir)/lib/$(target_cpu) $(TARGET_CPPFLAGS) -DASM_FILE=1 $(TARGET_ASFLAGS) $(setjmp_mod_ASFLAGS) -E $< 	  | sh $(srcdir)/genpartmaplist.sh setjmp > $@ || (rm -f $@; exit 1)
+
+handler-setjmp_mod-lib___target_cpu__setjmp.lst: lib/$(target_cpu)/setjmp.S $(lib/$(target_cpu)/setjmp.S_DEPENDENCIES) genhandlerlist.sh
+	set -e; 	  $(TARGET_CC) -Ilib/$(target_cpu) -I$(srcdir)/lib/$(target_cpu) $(TARGET_CPPFLAGS) -DASM_FILE=1 $(TARGET_ASFLAGS) $(setjmp_mod_ASFLAGS) -E $< 	  | sh $(srcdir)/genhandlerlist.sh setjmp > $@ || (rm -f $@; exit 1)
+
+setjmp_mod_ASFLAGS = $(COMMON_ASFLAGS)
+setjmp_mod_LDFLAGS = $(COMMON_LDFLAGS)
+grub-mkelfimage: $(grub_mkelfimage_DEPENDENCIES) $(grub_mkelfimage_OBJECTS)
+	$(CC) -o $@ $(grub_mkelfimage_OBJECTS) $(LDFLAGS) $(grub_mkelfimage_LDFLAGS)
+
+grub-probe: $(grub_probe_DEPENDENCIES) $(grub_probe_OBJECTS)
+	$(CC) -o $@ $(grub_probe_OBJECTS) $(LDFLAGS) $(grub_probe_LDFLAGS)
+
+grub-fstest: $(grub_fstest_DEPENDENCIES) $(grub_fstest_OBJECTS)
+	$(CC) -o $@ $(grub_fstest_OBJECTS) $(LDFLAGS) $(grub_fstest_LDFLAGS)
+
+grub-mkfont: $(grub_mkfont_DEPENDENCIES) $(grub_mkfont_OBJECTS)
+	$(CC) -o $@ $(grub_mkfont_OBJECTS) $(LDFLAGS) $(grub_mkfont_LDFLAGS)
+
+grub-editenv: $(grub_editenv_DEPENDENCIES) $(grub_editenv_OBJECTS)
+	$(CC) -o $@ $(grub_editenv_OBJECTS) $(LDFLAGS) $(grub_editenv_LDFLAGS)
+
+grub-pe2elf: $(grub_pe2elf_DEPENDENCIES) $(grub_pe2elf_OBJECTS)
+	$(CC) -o $@ $(grub_pe2elf_OBJECTS) $(LDFLAGS) $(grub_pe2elf_LDFLAGS)
+
+grub-macho2img: $(grub_macho2img_DEPENDENCIES) $(grub_macho2img_OBJECTS)
+	$(CC) -o $@ $(grub_macho2img_OBJECTS) $(LDFLAGS) $(grub_macho2img_LDFLAGS)
+

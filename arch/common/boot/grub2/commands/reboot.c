@@ -17,9 +17,9 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/normal.h>
 #include <grub/dl.h>
 #include <grub/machine/machine.h>
+#include <grub/command.h>
 
 #if defined(GRUB_MACHINE_IEEE1275)
 #include <grub/machine/kernel.h>
@@ -34,7 +34,7 @@
 
 
 static grub_err_t
-grub_cmd_reboot (struct grub_arg_list *state __attribute__ ((unused)),
+grub_cmd_reboot (grub_command_t cmd __attribute__ ((unused)),
 		 int argc __attribute__ ((unused)),
 		 char **args __attribute__ ((unused)))
 {
@@ -42,15 +42,15 @@ grub_cmd_reboot (struct grub_arg_list *state __attribute__ ((unused)),
   return 0;
 }
 
+static grub_command_t cmd;
 
 GRUB_MOD_INIT(reboot)
 {
-  (void)mod;			/* To stop warning. */
-  grub_register_command ("reboot", grub_cmd_reboot, GRUB_COMMAND_FLAG_BOTH,
-			 "reboot", "Reboot the computer", 0);
+  cmd = grub_register_command ("reboot", grub_cmd_reboot,
+			       0, "Reboot the computer");
 }
 
 GRUB_MOD_FINI(reboot)
 {
-  grub_unregister_command ("reboot");
+  grub_unregister_command (cmd);
 }
