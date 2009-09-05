@@ -38,13 +38,13 @@
 	
     EXAMPLE
 
-        Install-grub2-i386-pc device ata.device unit 0 grub dh0:boot/grub
+        Install-grub2-i386-pc DEVICE ata.device UNIT 0 GRUB DH0:boot/grub
 
     BUGS
 
     SEE ALSO
 
-        Partition, Sys:System/Format
+        Partition, SYS:System/Format
 	
     INTERNALS
 
@@ -71,14 +71,13 @@
 /* Defines for grub2 data */
 /* boot.img pointers */
 #define GRUB_BOOT_MACHINE_BPB_START         0x03
-#define GRUB_BOOT_MACHINE_BPB_END           0x3e
+#define GRUB_BOOT_MACHINE_BPB_END           0x5a
 #define GRUB_BOOT_MACHINE_WINDOWS_NT_MAGIC	0x01b8 /* Following grub2 grub-setup sources */
 #define GRUB_BOOT_MACHINE_PART_START        0x01be
 #define GRUB_BOOT_MACHINE_PART_END          0x01fe
-#define GRUB_BOOT_MACHINE_KERNEL_SECTOR	    0x44
-#define GRUB_BOOT_MACHINE_BOOT_DRIVE        0x4c
-#define GRUB_BOOT_MACHINE_ROOT_DRIVE        0x4d
-#define GRUB_BOOT_MACHINE_DRIVE_CHECK       0x4f
+#define GRUB_BOOT_MACHINE_KERNEL_SECTOR	    0x5c
+#define GRUB_BOOT_MACHINE_BOOT_DRIVE        0x64
+#define GRUB_BOOT_MACHINE_DRIVE_CHECK       0x66
 
 /* core.img pointers */
 #define GRUB_KERNEL_MACHINE_INSTALL_DOS_PART 0x14
@@ -120,7 +119,7 @@ struct BlockNode
     UWORD seg_adr;
 };
 
-const TEXT version[] = "$VER: Install-grub2-i386-pc 41.2 (3.6.2009)";
+const TEXT version[] = "$VER: Install-grub2-i386-pc 41.3 (3.9.2009)";
 
 CONST_STRPTR CORE_IMG_FILE_NAME = "core.img";
 
@@ -742,8 +741,6 @@ BOOL writeBootIMG(STRPTR bootimgpath, struct Volume * bootimgvol, struct Volume 
 
 		        UBYTE *boot_drive = 
                     (UBYTE *) (boot_img + GRUB_BOOT_MACHINE_BOOT_DRIVE);
-		        UBYTE *root_drive =
-		            (UBYTE *) (boot_img + GRUB_BOOT_MACHINE_ROOT_DRIVE);
 		        UWORD *boot_drive_check =
 		            (UWORD *) (boot_img + GRUB_BOOT_MACHINE_DRIVE_CHECK);
 
@@ -752,7 +749,6 @@ BOOL writeBootIMG(STRPTR bootimgpath, struct Volume * bootimgvol, struct Volume 
                 else
                     *boot_drive = getDriveNumber(coreimgvol->device, unit)
                         | BIOS_HDISK_FLAG;
-		        *root_drive = 0xFF;
 		        *boot_drive_check = 0x9090;
 
 		        D(bug("[install] writeBootIMG: Install to HARDDISK\n"));
