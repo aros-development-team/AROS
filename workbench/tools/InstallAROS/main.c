@@ -771,7 +771,7 @@ IPTR Install__MUIM_IC_NextStep
 				data->instc_stage_prev = EInstallOptionsStage;
 				break;
 			}
-            else if (strlen(XGET(grub_device, MUIA_String_Contents)) == 0)
+            else if (strlen((STRPTR)XGET(grub_device, MUIA_String_Contents)) == 0)
             {
                 /* Go back if user hasn't entered a device name for GRUB */
                 MUI_RequestA(data->installer, data->window, 0, "Error",
@@ -1984,18 +1984,20 @@ localecopydone:
 #if GRUB == 2
         DoMethod(self, MUIM_IC_CopyFiles, srcPath, dstPath, "#?.mod", FALSE);
 
-        numgrubfiles = 7;
         TEXT *grub_files[] =
         {
             "boot.img",       "boot.img",
             "core.img",       "core.img",
             "grub.cfg",       "grub.cfg",
             "splash.png",     "splash.png",
-            "_unifont.pff",   "_unifont.pff",
+            "_unicode.pf2",   "_unicode.pf2",
             "command.lst",    "command.lst",
             "fs.lst",         "fs.lst",
+            "moddep.lst",         "moddep.lst",
 			NULL
         };
+        numgrubfiles = (sizeof(grub_files) / sizeof(TEXT *) - 1) / 2;
+while(numgrubfiles != 8);
 
         GRUB_COPY_FILE_LOOP
 
@@ -2003,26 +2005,26 @@ localecopydone:
         GET(data->instc_options_grub->gopt_grub2mode, MUIA_Cycle_Active, &option);
 	    if ((int)option == 1)
         {
-            /* gfx mode - copy _unifont.pff -> unifont.pff */
-            ULONG newDstLen = strlen(dstPath) + strlen("_unifont.pff") + 2;
+            /* gfx mode - copy _unicode.pf2 -> unicode.pf2 */
+            ULONG newDstLen = strlen(dstPath) + strlen("_unicode.pf2") + 2;
             TEXT srcFile[newDstLen];
             TEXT dstFile[newDstLen];
             
             sprintf(srcFile, "%s", dstPath);
             sprintf(dstFile, "%s", dstPath);
-            AddPart(srcFile, "_unifont.pff", newDstLen);
-            AddPart(dstFile, "unifont.pff", newDstLen);
+            AddPart(srcFile, "_unicode.pf2", newDstLen);
+            AddPart(dstFile, "unicode.pf2", newDstLen);
             
             DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
         }
         else
         {
-            /* other - delete unifont.pff */
-            ULONG newDstLen = strlen(dstPath) + strlen("unifont.pff") + 2;
+            /* other - delete unicode.pf2 */
+            ULONG newDstLen = strlen(dstPath) + strlen("unicode.pf2") + 2;
             TEXT dstFile[newDstLen];
             
             sprintf(dstFile, "%s", dstPath);
-            AddPart(dstFile, "unifont.pff", newDstLen);
+            AddPart(dstFile, "unicode.pf2", newDstLen);
             
             DeleteFile(dstFile);
         }
@@ -2984,7 +2986,7 @@ int main(int argc,char *argv[])
 
 	Object *app = ApplicationObject,
 		MUIA_Application_Title,       (IPTR) "AROS Installer",
-		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.3 (5.6.2009)",
+		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.4 (5.9.2009)",
 		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2009, The AROS Development Team. All rights reserved.",
 		MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
 		MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
