@@ -121,7 +121,7 @@ struct grub_lvm_mda_header {
   grub_uint32_t version;
   grub_uint64_t start;		/* Absolute start byte of mda_header */
   grub_uint64_t size;		/* Size of metadata area */
-  
+
   struct grub_lvm_raw_locn raw_locns[0];	/* NULL-terminated list */
 } __attribute__ ((packed));
 

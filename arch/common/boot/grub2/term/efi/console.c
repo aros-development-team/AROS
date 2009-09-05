@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -89,9 +89,9 @@ grub_console_putchar (grub_uint32_t c)
 {
   grub_efi_char16_t str[2];
   grub_efi_simple_text_output_interface_t *o;
-  
+
   o = grub_efi_system_table->con_out;
-  
+
   /* For now, do not try to use a surrogate pair.  */
   if (c > 0xffff)
     c = '?';
@@ -102,7 +102,7 @@ grub_console_putchar (grub_uint32_t c)
   /* Should this test be cached?  */
   if (c > 0x7f && efi_call_2 (o->test_string, o, str) != GRUB_EFI_SUCCESS)
     return;
-  
+
   efi_call_2 (o->output_string, o, str);
 }
 
@@ -119,7 +119,7 @@ grub_console_checkkey (void)
   grub_efi_simple_input_interface_t *i;
   grub_efi_input_key_t key;
   grub_efi_status_t status;
-  
+
   if (read_key >= 0)
     return 1;
 
@@ -131,7 +131,7 @@ grub_console_checkkey (void)
     case GRUB_EFI_SUCCESS:
       {
 	grub_uint16_t xy;
-	
+
 	xy = grub_getxy ();
 	grub_gotoxy (0, 0);
 	grub_printf ("scan_code=%x,unicode_char=%x  ",
@@ -150,7 +150,7 @@ grub_console_checkkey (void)
       break;
     }
 #endif
-  
+
   if (status == GRUB_EFI_SUCCESS)
     {
       switch (key.scan_code)
@@ -229,11 +229,11 @@ grub_console_getkey (void)
       status = efi_call_3 (b->wait_for_event, 1, &(i->wait_for_key), &index);
       if (status != GRUB_EFI_SUCCESS)
         return -1;
-      
+
       grub_console_checkkey ();
     }
   while (read_key < 0);
-  
+
   key = read_key;
   read_key = -1;
   return key;
@@ -244,7 +244,7 @@ grub_console_getwh (void)
 {
   grub_efi_simple_text_output_interface_t *o;
   grub_efi_uintn_t columns, rows;
-  
+
   o = grub_efi_system_table->con_out;
   if (efi_call_4 (o->query_mode, o, o->mode->mode, &columns, &rows) != GRUB_EFI_SUCCESS)
     {
@@ -260,7 +260,7 @@ static grub_uint16_t
 grub_console_getxy (void)
 {
   grub_efi_simple_text_output_interface_t *o;
-  
+
   o = grub_efi_system_table->con_out;
   return ((o->mode->cursor_column << 8) | o->mode->cursor_row);
 }
@@ -269,7 +269,7 @@ static void
 grub_console_gotoxy (grub_uint8_t x, grub_uint8_t y)
 {
   grub_efi_simple_text_output_interface_t *o;
-  
+
   o = grub_efi_system_table->con_out;
   efi_call_3 (o->set_cursor_position, o, x, y);
 }
@@ -279,7 +279,7 @@ grub_console_cls (void)
 {
   grub_efi_simple_text_output_interface_t *o;
   grub_efi_int32_t orig_attr;
-  
+
   o = grub_efi_system_table->con_out;
   orig_attr = o->mode->attribute;
   efi_call_2 (o->set_attributes, o, GRUB_EFI_BACKGROUND_BLACK);
@@ -366,8 +366,8 @@ grub_console_init (void)
       return;
     }
 
-  grub_term_register_input (&grub_console_term_input);
-  grub_term_register_output (&grub_console_term_output);
+  grub_term_register_input ("console", &grub_console_term_input);
+  grub_term_register_output ("console", &grub_console_term_output);
 }
 
 void

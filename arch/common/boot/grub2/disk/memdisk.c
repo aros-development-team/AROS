@@ -104,7 +104,7 @@ GRUB_MOD_INIT(memdisk)
 
       return 0;
     }
-  
+
   grub_module_iterate (hook);
 }
 

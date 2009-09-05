@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2003,2005,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2003,2005,2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -38,8 +38,8 @@
 
 extern char *progname;
 extern int verbosity;
-extern jmp_buf main_env;
 
+void grub_util_warn (const char *fmt, ...);
 void grub_util_info (const char *fmt, ...);
 void grub_util_error (const char *fmt, ...) __attribute__ ((noreturn));
 
@@ -69,6 +69,7 @@ int asprintf (char **buf, const char *fmt, ...);
 #define ftello ftello64
 
 void sync (void);
+int fsync (int fno);
 void sleep(int s);
 
 grub_int64_t grub_util_get_disk_size (char *name);

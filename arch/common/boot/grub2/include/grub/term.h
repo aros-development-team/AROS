@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2003,2005,2007,2008  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2003,2005,2007,2008,2009  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,13 +31,14 @@
 #define GRUB_TERM_NPAGE		3
 #define GRUB_TERM_ESC		'\e'
 #define GRUB_TERM_TAB		'\t'
-#define GRUB_TERM_BACKSPACE	'\b'
+#define GRUB_TERM_BACKSPACE	8
 
 #ifndef ASM_FILE
 
 #include <grub/err.h>
 #include <grub/symbol.h>
 #include <grub/types.h>
+#include <grub/handler.h>
 
 /* These are used to represent the various color states we use.  */
 typedef enum
@@ -69,6 +70,12 @@ grub_term_color_state;
 #define GRUB_TERM_DUMB		(1 << 2)
 /* Set when the terminal needs to be initialized.  */
 #define GRUB_TERM_NEED_INIT	(1 << 16)
+
+
+/* Bitmasks for modifier keys returned by grub_getkeystatus.  */
+#define GRUB_TERM_STATUS_SHIFT	(1 << 0)
+#define GRUB_TERM_STATUS_CTRL	(1 << 1)
+#define GRUB_TERM_STATUS_ALT	(1 << 2)
 
 
 /* Unicode characters for fancy graphics.  */
@@ -139,6 +146,9 @@ grub_term_color_state;
 
 struct grub_term_input
 {
+  /* The next terminal.  */
+  struct grub_term_input *next;
+
   /* The terminal name.  */
   const char *name;
 
@@ -147,20 +157,23 @@ struct grub_term_input
 
   /* Clean up the terminal.  */
   grub_err_t (*fini) (void);
-  
+
   /* Check if any input character is available.  */
   int (*checkkey) (void);
-  
+
   /* Get a character.  */
   int (*getkey) (void);
 
-  /* The next terminal.  */
-  struct grub_term_input *next;
+  /* Get keyboard modifier status.  */
+  int (*getkeystatus) (void);
 };
 typedef struct grub_term_input *grub_term_input_t;
 
 struct grub_term_output
 {
+  /* The next terminal.  */
+  struct grub_term_output *next;
+
   /* The terminal name.  */
   const char *name;
 
@@ -169,37 +182,37 @@ struct grub_term_output
 
   /* Clean up the terminal.  */
   grub_err_t (*fini) (void);
-  
+
   /* Put a character. C is encoded in Unicode.  */
   void (*putchar) (grub_uint32_t c);
 
   /* Get the number of columns occupied by a given character C. C is
      encoded in Unicode.  */
   grub_ssize_t (*getcharwidth) (grub_uint32_t c);
-  
+
   /* Get the screen size. The return value is ((Width << 8) | Height).  */
   grub_uint16_t (*getwh) (void);
 
   /* Get the cursor position. The return value is ((X << 8) | Y).  */
   grub_uint16_t (*getxy) (void);
-  
+
   /* Go to the position (X, Y).  */
   void (*gotoxy) (grub_uint8_t x, grub_uint8_t y);
-  
+
   /* Clear the screen.  */
   void (*cls) (void);
-  
+
   /* Set the current color to be used */
   void (*setcolorstate) (grub_term_color_state state);
-  
+
   /* Set the normal color and the highlight color. The format of each
      color is VGA's.  */
   void (*setcolor) (grub_uint8_t normal_color, grub_uint8_t highlight_color);
-  
+
   /* Get the normal color and the highlight color. The format of each
      color is VGA's.  */
   void (*getcolor) (grub_uint8_t *normal_color, grub_uint8_t *highlight_color);
-  
+
   /* Turn on/off the cursor.  */
   void (*setcursor) (int on);
 
@@ -208,29 +221,70 @@ struct grub_term_output
 
   /* The feature flags defined above.  */
   grub_uint32_t flags;
-  
-  /* The next terminal.  */
-  struct grub_term_output *next;
 };
 typedef struct grub_term_output *grub_term_output_t;
 
-void EXPORT_FUNC(grub_term_register_input) (grub_term_input_t term);
-void EXPORT_FUNC(grub_term_register_output) (grub_term_output_t term);
-void EXPORT_FUNC(grub_term_unregister_input) (grub_term_input_t term);
-void EXPORT_FUNC(grub_term_unregister_output) (grub_term_output_t term);
-void EXPORT_FUNC(grub_term_iterate_input) (int (*hook) (grub_term_input_t term));
-void EXPORT_FUNC(grub_term_iterate_output) (int (*hook) (grub_term_output_t term));
+extern struct grub_handler_class EXPORT_VAR(grub_term_input_class);
+extern struct grub_handler_class EXPORT_VAR(grub_term_output_class);
 
-grub_err_t EXPORT_FUNC(grub_term_set_current_input) (grub_term_input_t term);
-grub_err_t EXPORT_FUNC(grub_term_set_current_output) (grub_term_output_t term);
-grub_term_input_t EXPORT_FUNC(grub_term_get_current_input) (void);
-grub_term_output_t EXPORT_FUNC(grub_term_get_current_output) (void);
+static inline void
+grub_term_register_input (const char *name __attribute__ ((unused)),
+			  grub_term_input_t term)
+{
+  grub_handler_register (&grub_term_input_class, GRUB_AS_HANDLER (term));
+}
+
+static inline void
+grub_term_register_output (const char *name __attribute__ ((unused)),
+			   grub_term_output_t term)
+{
+  grub_handler_register (&grub_term_output_class, GRUB_AS_HANDLER (term));
+}
+
+static inline void
+grub_term_unregister_input (grub_term_input_t term)
+{
+  grub_handler_unregister (&grub_term_input_class, GRUB_AS_HANDLER (term));
+}
+
+static inline void
+grub_term_unregister_output (grub_term_output_t term)
+{
+  grub_handler_unregister (&grub_term_output_class, GRUB_AS_HANDLER (term));
+}
+
+static inline grub_err_t
+grub_term_set_current_input (grub_term_input_t term)
+{
+  return grub_handler_set_current (&grub_term_input_class,
+				   GRUB_AS_HANDLER (term));
+}
+
+static inline grub_err_t
+grub_term_set_current_output (grub_term_output_t term)
+{
+  return grub_handler_set_current (&grub_term_output_class,
+				   GRUB_AS_HANDLER (term));
+}
+
+static inline grub_term_input_t
+grub_term_get_current_input (void)
+{
+  return (grub_term_input_t) grub_term_input_class.cur_handler;
+}
+
+static inline grub_term_output_t
+grub_term_get_current_output (void)
+{
+  return (grub_term_output_t) grub_term_output_class.cur_handler;
+}
 
 void EXPORT_FUNC(grub_putchar) (int c);
 void EXPORT_FUNC(grub_putcode) (grub_uint32_t code);
 grub_ssize_t EXPORT_FUNC(grub_getcharwidth) (grub_uint32_t code);
 int EXPORT_FUNC(grub_getkey) (void);
 int EXPORT_FUNC(grub_checkkey) (void);
+int EXPORT_FUNC(grub_getkeystatus) (void);
 grub_uint16_t EXPORT_FUNC(grub_getwh) (void);
 grub_uint16_t EXPORT_FUNC(grub_getxy) (void);
 void EXPORT_FUNC(grub_gotoxy) (grub_uint8_t x, grub_uint8_t y);

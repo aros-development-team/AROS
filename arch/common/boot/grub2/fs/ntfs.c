@@ -25,9 +25,7 @@
 #include <grub/fshelp.h>
 #include <grub/ntfs.h>
 
-#ifndef GRUB_UTIL
 static grub_dl_t my_mod;
-#endif
 
 ntfscomp_func_t grub_ntfscomp_func;
 
@@ -603,11 +601,10 @@ list_file (struct grub_ntfs_file *diro, char *pos,
 	    (u32at (pos, 0x48) & ATTR_DIRECTORY) ? GRUB_FSHELP_DIR :
 	    GRUB_FSHELP_REG;
 
-	  fdiro = grub_malloc (sizeof (struct grub_ntfs_file));
+	  fdiro = grub_zalloc (sizeof (struct grub_ntfs_file));
 	  if (!fdiro)
 	    return 0;
 
-	  grub_memset (fdiro, 0, sizeof (*fdiro));
 	  fdiro->data = diro->data;
 	  fdiro->ino = u32at (pos, 0);
 
@@ -793,16 +790,14 @@ grub_ntfs_mount (grub_disk_t disk)
   if (!disk)
     goto fail;
 
-  data = (struct grub_ntfs_data *) grub_malloc (sizeof (*data));
+  data = (struct grub_ntfs_data *) grub_zalloc (sizeof (*data));
   if (!data)
     goto fail;
-
-  grub_memset (data, 0, sizeof (*data));
 
   data->disk = disk;
 
   /* Read the BPB.  */
-  if (grub_disk_read (disk, 0, 0, sizeof (bpb), (char *) &bpb))
+  if (grub_disk_read (disk, 0, 0, sizeof (bpb), &bpb))
     goto fail;
 
   if (grub_memcmp ((char *) &bpb.oem_name, "NTFS", 4))
@@ -864,7 +859,8 @@ fail:
 
 static grub_err_t
 grub_ntfs_dir (grub_device_t device, const char *path,
-	       int (*hook) (const char *filename, int dir))
+	       int (*hook) (const char *filename,
+			    const struct grub_dirhook_info *info))
 {
   struct grub_ntfs_data *data = 0;
   struct grub_fshelp_node *fdiro = 0;
@@ -877,20 +873,14 @@ grub_ntfs_dir (grub_device_t device, const char *path,
 				enum grub_fshelp_filetype filetype,
 				grub_fshelp_node_t node)
   {
-    grub_free (node);
-
-    if (filetype == GRUB_FSHELP_DIR)
-      return hook (filename, 1);
-    else
-      return hook (filename, 0);
-
-    return 0;
+      struct grub_dirhook_info info;
+      grub_memset (&info, 0, sizeof (info));
+      info.dir = ((filetype & GRUB_FSHELP_TYPE_MASK) == GRUB_FSHELP_DIR);
+      grub_free (node);
+      return hook (filename, &info);
   }
 
-#ifndef GRUB_UTIL
   grub_dl_ref (my_mod);
-#endif
-
 
   data = grub_ntfs_mount (device->disk);
   if (!data)
@@ -917,9 +907,7 @@ fail:
       grub_free (data);
     }
 
-#ifndef GRUB_UTIL
   grub_dl_unref (my_mod);
-#endif
 
   return grub_errno;
 }
@@ -930,9 +918,7 @@ grub_ntfs_open (grub_file_t file, const char *name)
   struct grub_ntfs_data *data = 0;
   struct grub_fshelp_node *mft = 0;
 
-#ifndef GRUB_UTIL
   grub_dl_ref (my_mod);
-#endif
 
   data = grub_ntfs_mount (file->device->disk);
   if (!data)
@@ -970,9 +956,7 @@ fail:
       grub_free (data);
     }
 
-#ifndef GRUB_UTIL
   grub_dl_unref (my_mod);
-#endif
 
   return grub_errno;
 }
@@ -985,15 +969,6 @@ grub_ntfs_read (grub_file_t file, char *buf, grub_size_t len)
   mft = &((struct grub_ntfs_data *) file->data)->cmft;
   if (file->read_hook)
     mft->attr.save_pos = 1;
-
-  if (file->offset > file->size)
-    {
-      grub_error (GRUB_ERR_BAD_FS, "Bad offset");
-      return -1;
-    }
-
-  if (file->offset + len > file->size)
-    len = file->size - file->offset;
 
   read_attr (&mft->attr, buf, file->offset, len, 1, file->read_hook);
   return (grub_errno) ? 0 : len;
@@ -1013,9 +988,7 @@ grub_ntfs_close (grub_file_t file)
       grub_free (data);
     }
 
-#ifndef GRUB_UTIL
   grub_dl_unref (my_mod);
-#endif
 
   return grub_errno;
 }
@@ -1027,9 +1000,7 @@ grub_ntfs_label (grub_device_t device, char **label)
   struct grub_fshelp_node *mft = 0;
   char *pa;
 
-#ifndef GRUB_UTIL
   grub_dl_ref (my_mod);
-#endif
 
   *label = 0;
 
@@ -1081,9 +1052,7 @@ fail:
       grub_free (data);
     }
 
-#ifndef GRUB_UTIL
   grub_dl_unref (my_mod);
-#endif
 
   return grub_errno;
 }
@@ -1094,9 +1063,7 @@ grub_ntfs_uuid (grub_device_t device, char **uuid)
   struct grub_ntfs_data *data;
   grub_disk_t disk = device->disk;
 
-#ifndef GRUB_UTIL
   grub_dl_ref (my_mod);
-#endif
 
   data = grub_ntfs_mount (disk);
   if (data)
@@ -1107,9 +1074,7 @@ grub_ntfs_uuid (grub_device_t device, char **uuid)
   else
     *uuid = NULL;
 
-#ifndef GRUB_UTIL
   grub_dl_unref (my_mod);
-#endif
 
   grub_free (data);
 
@@ -1130,9 +1095,7 @@ static struct grub_fs grub_ntfs_fs = {
 GRUB_MOD_INIT (ntfs)
 {
   grub_fs_register (&grub_ntfs_fs);
-#ifndef GRUB_UTIL
   my_mod = mod;
-#endif
 }
 
 GRUB_MOD_FINI (ntfs)

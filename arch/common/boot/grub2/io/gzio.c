@@ -164,20 +164,29 @@ typedef unsigned long ulg;
 static int
 test_header (grub_file_t file)
 {
-  unsigned char buf[10] __attribute__ ((aligned));
+  struct {
+    grub_uint16_t magic;
+    grub_uint8_t method;
+    grub_uint8_t flags;
+    grub_uint32_t timestamp;
+    grub_uint8_t extra_flags;
+    grub_uint8_t os_type;
+  } hdr;
+  grub_uint16_t extra_len;
+  grub_uint32_t orig_len;
   grub_gzio_t gzio = file->data;
 
   if (grub_file_tell (gzio->file) != 0)
     grub_file_seek (gzio->file, 0);
-  
+
   /*
    *  This checks if the file is gzipped.  If a problem occurs here
    *  (other than a real error with the disk) then we don't think it
    *  is a compressed file, and simply mark it as such.
    */
-  if (grub_file_read (gzio->file, (char *) buf, 10) != 10
-      || ((*((grub_uint16_t *) buf) != GZIP_MAGIC)
-	  && (*((grub_uint16_t *) buf) != OLD_GZIP_MAGIC)))
+  if (grub_file_read (gzio->file, &hdr, 10) != 10
+      || ((hdr.magic != GZIP_MAGIC)
+	  && (hdr.magic != OLD_GZIP_MAGIC)))
     {
       grub_error (GRUB_ERR_BAD_FILE_TYPE, "no gzip magic found");
       return 0;
@@ -188,24 +197,24 @@ test_header (grub_file_t file)
    *  problem occurs from here on, then we have corrupt or otherwise
    *  bad data, and the error should be reported to the user.
    */
-  if (buf[2] != DEFLATED
-      || (buf[3] & UNSUPPORTED_FLAGS)
-      || ((buf[3] & EXTRA_FIELD)
-	  && (grub_file_read (gzio->file, (char *) buf, 2) != 2
+  if (hdr.method != DEFLATED
+      || (hdr.flags & UNSUPPORTED_FLAGS)
+      || ((hdr.flags & EXTRA_FIELD)
+	  && (grub_file_read (gzio->file, &extra_len, 2) != 2
 	      || eat_field (gzio->file,
-			    grub_le_to_cpu16 (*((grub_uint16_t *) buf)))))
-      || ((buf[3] & ORIG_NAME) && eat_field (gzio->file, -1))
-      || ((buf[3] & COMMENT) && eat_field (gzio->file, -1)))
+			    grub_le_to_cpu16 (extra_len))))
+      || ((hdr.flags & ORIG_NAME) && eat_field (gzio->file, -1))
+      || ((hdr.flags & COMMENT) && eat_field (gzio->file, -1)))
     {
       grub_error (GRUB_ERR_BAD_GZIP_DATA, "unsupported gzip format");
       return 0;
     }
 
   gzio->data_offset = grub_file_tell (gzio->file);
-  
-  grub_file_seek (gzio->file, grub_file_size (gzio->file) - 8);
-  
-  if (grub_file_read (gzio->file, (char *) buf, 8) != 8)
+
+  grub_file_seek (gzio->file, grub_file_size (gzio->file) - 4);
+
+  if (grub_file_read (gzio->file, &orig_len, 4) != 4)
     {
       grub_error (GRUB_ERR_BAD_FILE_TYPE, "unsupported gzip format");
       return 0;
@@ -213,7 +222,7 @@ test_header (grub_file_t file)
 
   /* FIXME: this does not handle files whose original size is over 4GB.
      But how can we know the real original size?  */
-  file->size = grub_le_to_cpu32 (*((grub_uint32_t *) (buf + 4)));
+  file->size = grub_le_to_cpu32 (orig_len);
 
   initialize_tables (file);
 
@@ -362,12 +371,12 @@ static int
 get_byte (grub_file_t file)
 {
   grub_gzio_t gzio = file->data;
-  
+
   if (grub_file_tell (gzio->file) == (grub_off_t) gzio->data_offset
       || gzio->inbuf_d == INBUFSIZ)
     {
       gzio->inbuf_d = 0;
-      grub_file_read (gzio->file, (char *) gzio->inbuf, INBUFSIZ);
+      grub_file_read (gzio->file, gzio->inbuf, INBUFSIZ);
     }
 
   return gzio->inbuf[gzio->inbuf_d++];
@@ -614,7 +623,7 @@ inflate_codes_in_window (grub_file_t file)
   register ulg b;		/* bit buffer */
   register unsigned k;		/* number of bits in bit buffer */
   grub_gzio_t gzio = file->data;
-  
+
   /* make local copies of globals */
   d = gzio->inflate_d;
   n = gzio->inflate_n;
@@ -746,7 +755,7 @@ init_stored_block (grub_file_t file)
   register ulg b;		/* bit buffer */
   register unsigned k;		/* number of bits in bit buffer */
   grub_gzio_t gzio = file->data;
-  
+
   /* make local copies of globals */
   b = gzio->bb;			/* initialize bit buffer */
   k = gzio->bk;
@@ -780,7 +789,7 @@ init_fixed_block (grub_file_t file)
   int i;			/* temporary variable */
   unsigned l[288];		/* length list for huft_build */
   grub_gzio_t gzio = file->data;
-  
+
   /* set up literal table */
   for (i = 0; i < 144; i++)
     l[i] = 8;
@@ -836,7 +845,7 @@ init_dynamic_block (grub_file_t file)
   register ulg b;		/* bit buffer */
   register unsigned k;		/* number of bits in bit buffer */
   grub_gzio_t gzio = file->data;
-  
+
   /* make local bit buffer */
   b = gzio->bb;
   k = gzio->bk;
@@ -971,7 +980,7 @@ get_new_block (grub_file_t file)
   register ulg b;		/* bit buffer */
   register unsigned k;		/* number of bits in bit buffer */
   grub_gzio_t gzio = file->data;
-  
+
   /* make local bit buffer */
   b = gzio->bb;
   k = gzio->bk;
@@ -1011,7 +1020,7 @@ static void
 inflate_window (grub_file_t file)
 {
   grub_gzio_t gzio = file->data;
-  
+
   /* initialize window */
   gzio->wp = 0;
 
@@ -1081,7 +1090,7 @@ static void
 initialize_tables (grub_file_t file)
 {
   grub_gzio_t gzio = file->data;
-  
+
   gzio->saved_offset = 0;
   grub_file_seek (gzio->file, gzio->data_offset);
 
@@ -1107,7 +1116,7 @@ grub_gzio_open (grub_file_t io, int transparent)
 {
   grub_file_t file;
   grub_gzio_t gzio = 0;
-  
+
   file = (grub_file_t) grub_malloc (sizeof (*file));
   if (! file)
     return 0;
@@ -1118,10 +1127,10 @@ grub_gzio_open (grub_file_t io, int transparent)
       grub_free (file);
       return 0;
     }
-  
+
   grub_memset (gzio, 0, sizeof (*gzio));
   gzio->file = io;
-  
+
   file->device = io->device;
   file->offset = 0;
   file->data = gzio;
@@ -1142,7 +1151,7 @@ grub_gzio_open (grub_file_t io, int transparent)
       else
 	return 0;
     }
-  
+
   return file;
 }
 
@@ -1151,7 +1160,7 @@ grub_file_t
 grub_gzfile_open (const char *name, int transparent)
 {
   grub_file_t io, file;
-  
+
   io = grub_file_open (name);
   if (! io)
     return 0;
@@ -1172,7 +1181,7 @@ grub_gzio_read (grub_file_t file, char *buf, grub_size_t len)
   grub_ssize_t ret = 0;
   grub_gzio_t gzio = file->data;
   grub_off_t offset;
-  
+
   /* Do we reset decompression to the beginning of the file?  */
   if (gzio->saved_offset > file->offset + WSIZE)
     initialize_tables (file);
@@ -1184,7 +1193,7 @@ grub_gzio_read (grub_file_t file, char *buf, grub_size_t len)
    */
 
   offset = file->offset;
-  
+
   while (len > 0 && grub_errno == GRUB_ERR_NONE)
     {
       register grub_size_t size;
@@ -1217,7 +1226,7 @@ static grub_err_t
 grub_gzio_close (grub_file_t file)
 {
   grub_gzio_t gzio = file->data;
-  
+
   grub_file_close (gzio->file);
   huft_free (gzio->tl);
   huft_free (gzio->td);

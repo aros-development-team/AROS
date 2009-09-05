@@ -23,10 +23,6 @@
 #include <grub/symbol.h>
 #include <grub/multiboot.h>
 
-void EXPORT_FUNC(grub_multiboot2_real_boot) (grub_addr_t entry,
-                                             struct grub_multiboot_info *mbi)
-     __attribute__ ((noreturn));
-
 void grub_rescue_cmd_linux (int argc, char *argv[]);
 void grub_rescue_cmd_initrd (int argc, char *argv[]);
 

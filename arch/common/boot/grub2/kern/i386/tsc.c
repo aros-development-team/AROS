@@ -1,6 +1,6 @@
 /* kern/i386/tsc.c - x86 TSC time source implementation
  * Requires Pentium or better x86 CPU that supports the RDTSC instruction.
- * This module uses the RTC (via grub_get_rtc()) to calibrate the TSC to 
+ * This module uses the RTC (via grub_get_rtc()) to calibrate the TSC to
  * real time.
  *
  *  GRUB  --  GRand Unified Bootloader

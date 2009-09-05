@@ -1,7 +1,7 @@
 /* multiboot2.c - boot a multiboot 2 OS image. */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,30 +17,48 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <multiboot2.h>
 #include <grub/multiboot2.h>
+#include <multiboot2.h>
 #include <grub/elf.h>
 #include <grub/err.h>
 #include <grub/machine/loader.h>
 #include <grub/mm.h>
+#include <grub/multiboot.h>
+#include <grub/cpu/multiboot.h>
 
 grub_err_t
-grub_mb2_arch_elf32_hook (Elf32_Phdr *phdr, UNUSED grub_addr_t *addr)
+grub_mb2_arch_elf32_hook (Elf32_Phdr *phdr, UNUSED grub_addr_t *addr,
+			  int *do_load)
 {
   Elf32_Addr paddr = phdr->p_paddr;
 
+  if (phdr->p_type != PT_LOAD)
+    {
+      *do_load = 0;
+      return 0;
+    }
+  *do_load = 1;
+
   if ((paddr < grub_os_area_addr)
       || (paddr + phdr->p_memsz > grub_os_area_addr + grub_os_area_size))
-    return grub_error(GRUB_ERR_OUT_OF_RANGE,"Address 0x%x is out of range", 
+    return grub_error(GRUB_ERR_OUT_OF_RANGE,"Address 0x%x is out of range",
                       paddr);
 
   return GRUB_ERR_NONE;
 }
 
 grub_err_t
-grub_mb2_arch_elf64_hook (Elf64_Phdr *phdr, UNUSED grub_addr_t *addr)
+grub_mb2_arch_elf64_hook (Elf64_Phdr *phdr, UNUSED grub_addr_t *addr,
+			  int *do_load)
 {
   Elf64_Addr paddr = phdr->p_paddr;
+
+  if (phdr->p_type != PT_LOAD)
+    {
+      *do_load = 0;
+      return 0;
+    }
+  *do_load = 1;
 
   if ((paddr < grub_os_area_addr)
       || (paddr + phdr->p_memsz > grub_os_area_addr + grub_os_area_size))
@@ -80,7 +98,7 @@ void
 grub_mb2_arch_unload (struct multiboot_tag_header *tags)
 {
    struct multiboot_tag_header *tag;
-   
+
    /* Free all module memory in the tag list.  */
    for_each_tag (tag, tags)
      {

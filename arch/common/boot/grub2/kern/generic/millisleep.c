@@ -29,9 +29,9 @@ grub_millisleep (grub_uint32_t ms)
 
   start = grub_get_time_ms ();
 
-  /* Instead of setting an end time and looping while the current time is 
+  /* Instead of setting an end time and looping while the current time is
      less than that, comparing the elapsed sleep time with the desired sleep
-     time handles the (unlikely!) case that the timer would wrap around 
+     time handles the (unlikely!) case that the timer would wrap around
      during the sleep. */
 
   while (grub_get_time_ms () - start < ms)

@@ -22,8 +22,8 @@
 #include <grub/time.h>
 #include <grub/types.h>
 #include <grub/misc.h>
-#include <grub/normal.h>
 #include <grub/machine/time.h>
+#include <grub/extcmd.h>
 
 static const struct grub_arg_option options[] =
   {
@@ -60,8 +60,9 @@ grub_interruptible_millisleep (grub_uint32_t ms)
 }
 
 static grub_err_t
-grub_cmd_sleep (struct grub_arg_list *state, int argc, char **args)
+grub_cmd_sleep (grub_extcmd_t cmd, int argc, char **args)
 {
+  struct grub_arg_list *state = cmd->state;
   grub_uint16_t xy;
   int n;
 
@@ -99,14 +100,17 @@ grub_cmd_sleep (struct grub_arg_list *state, int argc, char **args)
   return 0;
 }
 
+static grub_extcmd_t cmd;
 
 GRUB_MOD_INIT(sleep)
 {
-  grub_register_command ("sleep", grub_cmd_sleep, GRUB_COMMAND_FLAG_BOTH,
-			 "sleep NUMBER_OF_SECONDS", "Wait for a specified number of seconds", options);
+  cmd = grub_register_extcmd ("sleep", grub_cmd_sleep, GRUB_COMMAND_FLAG_BOTH,
+			      "sleep NUMBER_OF_SECONDS",
+			      "Wait for a specified number of seconds",
+			      options);
 }
 
 GRUB_MOD_FINI(sleep)
 {
-  grub_unregister_command ("sleep");
+  grub_unregister_extcmd (cmd);
 }

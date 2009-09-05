@@ -1,7 +1,7 @@
 #! /bin/sh -e
 
-# update-grub helper script.
-# Copyright (C) 2006,2007,2008  Free Software Foundation, Inc.
+# grub-mkconfig helper script.
+# Copyright (C) 2006,2007,2008,2009  Free Software Foundation, Inc.
 #
 # GRUB is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,55 +42,23 @@ else
   LINUX_ROOT_DEVICE=UUID=${GRUB_DEVICE_UUID}
 fi
 
-test_numeric ()
+linux_entry ()
 {
-  local a=$1
-  local cmp=$2
-  local b=$3
-  if [ "$a" = "$b" ] ; then
-    case $cmp in
-      ge|eq|le) return 0 ;;
-      gt|lt) return 1 ;;
-    esac
+  cat << EOF
+menuentry "$1" {
+EOF
+  prepare_grub_to_access_device ${GRUB_DEVICE_BOOT} | sed -e "s/^/\t/"
+  cat << EOF
+	linux	${rel_dirname}/${basename} root=${linux_root_device_thisversion} ro $2
+EOF
+  if test -n "${initrd}" ; then
+    cat << EOF
+	initrd	${rel_dirname}/${initrd}
+EOF
   fi
-  if [ "$cmp" = "lt" ] ; then
-    c=$a
-    a=$b
-    b=$c
-  fi
-  if (echo $a ; echo $b) | sort -n | head -n 1 | grep -qx $b ; then
-    return 0
-  else
-    return 1
-  fi
+  cat << EOF
 }
-
-test_gt ()
-{
-  local a=`echo $1 | sed -e "s/vmlinu[zx]-//g"`
-  local b=`echo $2 | sed -e "s/vmlinu[zx]-//g"`
-  local cmp=gt
-  if [ "x$b" = "x" ] ; then
-    return 0
-  fi
-  case $a:$b in
-    *.old:*.old) ;;
-    *.old:*) a=`echo -n $a | sed -e s/\.old$//g` ; cmp=gt ;;
-    *:*.old) b=`echo -n $b | sed -e s/\.old$//g` ; cmp=ge ;;
-  esac
-  test_numeric $a $cmp $b
-  return $?
-}
-
-find_latest ()
-{
-  local a=""
-  for i in $@ ; do
-    if test_gt "$i" "$a" ; then
-      a="$i"
-    fi
-  done
-  echo "$a"
+EOF
 }
 
 list=`for i in /boot/vmlinu[xz]-* /vmlinu[xz]-* ; do
@@ -98,7 +66,7 @@ list=`for i in /boot/vmlinu[xz]-* /vmlinu[xz]-* ; do
       done`
 
 while [ "x$list" != "x" ] ; do
-  linux=`find_latest $list`
+  linux=`version_find_latest $list`
   echo "Found linux image: $linux" >&2
   basename=`basename $linux`
   dirname=`dirname $linux`
@@ -109,7 +77,8 @@ while [ "x$list" != "x" ] ; do
 
   initrd=
   for i in "initrd.img-${version}" "initrd-${version}.img" \
-	   "initrd.img-${alt_version}" "initrd-${alt_version}.img"; do
+	   "initrd-${version}" "initrd.img-${alt_version}" \
+	   "initrd-${alt_version}.img" "initrd-${alt_version}"; do
     if test -e "${dirname}/${i}" ; then
       initrd="$i"
       break
@@ -122,37 +91,12 @@ while [ "x$list" != "x" ] ; do
     linux_root_device_thisversion=${GRUB_DEVICE}
   fi
 
-  cat << EOF
-menuentry "${OS}, linux ${version}" {
-EOF
-  prepare_grub_to_access_device ${GRUB_DEVICE_BOOT} | sed -e "s/^/\t/"
-  cat << EOF
-	linux	${rel_dirname}/${basename} root=${linux_root_device_thisversion} ro ${GRUB_CMDLINE_LINUX} ${GRUB_CMDLINE_LINUX_DEFAULT}
-EOF
-  if test -n "${initrd}" ; then
-    cat << EOF
-	initrd	${rel_dirname}/${initrd}
-EOF
+  linux_entry "${OS}, Linux ${version}" \
+      "${GRUB_CMDLINE_LINUX} ${GRUB_CMDLINE_LINUX_DEFAULT}"
+  if [ "x${GRUB_DISABLE_LINUX_RECOVERY}" != "xtrue" ]; then
+    linux_entry "${OS}, Linux ${version} (recovery mode)" \
+	"single ${GRUB_CMDLINE_LINUX}"
   fi
-  cat << EOF
-}
-EOF
-
-  cat << EOF
-menuentry "${OS}, linux ${version} (single-user mode)" {
-EOF
-  prepare_grub_to_access_device ${GRUB_DEVICE_BOOT} | sed -e "s/^/\t/"
-  cat << EOF
-	linux	${rel_dirname}/${basename} root=${linux_root_device_thisversion} ro single ${GRUB_CMDLINE_LINUX}
-EOF
-  if test -n "${initrd}" ; then
-    cat << EOF
-	initrd	${rel_dirname}/${initrd}
-EOF
-  fi
-  cat << EOF
-}
-EOF
 
   list=`echo $list | tr ' ' '\n' | grep -vx $linux | tr '\n' ' '`
 done

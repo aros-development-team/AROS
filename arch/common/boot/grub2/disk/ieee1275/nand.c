@@ -44,8 +44,7 @@ grub_nand_iterate (int (*hook) (const char *name))
       return 0;
     }
 
-  grub_devalias_iterate (dev_iterate);
-  return 0;
+  return grub_devalias_iterate (dev_iterate);
 }
 
 static grub_err_t
@@ -60,8 +59,8 @@ grub_nand_open (const char *name, grub_disk_t disk)
   struct size_args
     {
       struct grub_ieee1275_common_hdr common;
-      char *method;
-      grub_ieee1275_ihandle_t ihandle;
+      grub_ieee1275_cell_t method;
+      grub_ieee1275_cell_t ihandle;
       grub_ieee1275_cell_t result;
       grub_ieee1275_cell_t size1;
       grub_ieee1275_cell_t size2;
@@ -84,7 +83,7 @@ grub_nand_open (const char *name, grub_disk_t disk)
   data->handle = dev_ihandle;
 
   INIT_IEEE1275_COMMON (&args.common, "call-method", 2, 2);
-  args.method = "block-size";
+  args.method = (grub_ieee1275_cell_t) "block-size";
   args.ihandle = dev_ihandle;
   args.result = 1;
 
@@ -97,7 +96,7 @@ grub_nand_open (const char *name, grub_disk_t disk)
   data->block_size = (args.size1 >> GRUB_DISK_SECTOR_BITS);
 
   INIT_IEEE1275_COMMON (&args.common, "call-method", 2, 3);
-  args.method = "size";
+  args.method = (grub_ieee1275_cell_t) "size";
   args.ihandle = dev_ihandle;
   args.result = 1;
 
@@ -143,8 +142,8 @@ grub_nand_read (grub_disk_t disk, grub_disk_addr_t sector,
   struct read_args
     {
       struct grub_ieee1275_common_hdr common;
-      char *method;
-      grub_ieee1275_ihandle_t ihandle;
+      grub_ieee1275_cell_t method;
+      grub_ieee1275_cell_t ihandle;
       grub_ieee1275_cell_t ofs;
       grub_ieee1275_cell_t page;
       grub_ieee1275_cell_t len;
@@ -153,7 +152,7 @@ grub_nand_read (grub_disk_t disk, grub_disk_addr_t sector,
     } args;
 
   INIT_IEEE1275_COMMON (&args.common, "call-method", 6, 1);
-  args.method = "pio-read";
+  args.method = (grub_ieee1275_cell_t) "pio-read";
   args.ihandle = data->handle;
   args.buf = (grub_ieee1275_cell_t) buf;
   args.page = (grub_ieee1275_cell_t) ((grub_size_t) sector / data->block_size);

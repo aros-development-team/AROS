@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2005,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2005,2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -50,6 +50,14 @@
 # error "This architecture is not supported because sizeof(void *) != 4 and sizeof(void *) != 8"
 #endif
 
+#ifndef GRUB_TARGET_WORDSIZE
+# if GRUB_TARGET_SIZEOF_VOID_P == 4
+#  define GRUB_TARGET_WORDSIZE 32
+# elif GRUB_TARGET_SIZEOF_VOID_P == 8
+#  define GRUB_TARGET_WORDSIZE 64
+# endif
+#endif
+
 /* Define various wide integers.  */
 typedef signed char		grub_int8_t;
 typedef short			grub_int16_t;
@@ -93,11 +101,23 @@ typedef grub_int32_t	grub_ssize_t;
 #endif
 
 #if GRUB_CPU_SIZEOF_VOID_P == 8
-# define ULONG_MAX 18446744073709551615UL
-# define LONG_MAX 9223372036854775807UL
+# define GRUB_ULONG_MAX 18446744073709551615UL
+# define GRUB_LONG_MAX 9223372036854775807L
+# define GRUB_LONG_MIN (-9223372036854775807L - 1)
 #else
-# define ULONG_MAX 4294967295UL
-# define LONG_MAX 2147483647UL
+# define GRUB_ULONG_MAX 4294967295UL
+# define GRUB_LONG_MAX 2147483647L
+# define GRUB_LONG_MIN (-2147483647L - 1)
+#endif
+
+#if GRUB_CPU_SIZEOF_VOID_P == 4
+#define UINT_TO_PTR(x) ((void*)(grub_uint32_t)(x))
+#define PTR_TO_UINT64(x) ((grub_uint64_t)(grub_uint32_t)(x))
+#define PTR_TO_UINT32(x) ((grub_uint32_t)(x))
+#else
+#define UINT_TO_PTR(x) ((void*)(grub_uint64_t)(x))
+#define PTR_TO_UINT64(x) ((grub_uint64_t)(x))
+#define PTR_TO_UINT32(x) ((grub_uint32_t)(grub_uint64_t)(x))
 #endif
 
 /* The type for representing a file offset.  */

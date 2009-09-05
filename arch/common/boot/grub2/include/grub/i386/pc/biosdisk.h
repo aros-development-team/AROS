@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2005,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2005,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ struct grub_biosdisk_drp
   grub_uint8_t device_path[8];
   grub_uint8_t reserved2;
   grub_uint8_t checksum;
-  
+
   /* XXX: This is necessary, because the BIOS of Thinkpad X20
      writes a garbage to the tail of drive parameters,
      regardless of a size specified in a caller.  */

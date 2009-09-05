@@ -30,6 +30,7 @@
 
 void grub_mm_init_region (void *addr, grub_size_t size);
 void *EXPORT_FUNC(grub_malloc) (grub_size_t size);
+void *EXPORT_FUNC(grub_zalloc) (grub_size_t size);
 void EXPORT_FUNC(grub_free) (void *ptr);
 void *EXPORT_FUNC(grub_realloc) (void *ptr, grub_size_t size);
 void *EXPORT_FUNC(grub_memalign) (grub_size_t align, grub_size_t size);
@@ -45,6 +46,9 @@ void grub_mm_dump (unsigned lineno);
 #define grub_malloc(size)	\
   grub_debug_malloc (__FILE__, __LINE__, size)
 
+#define grub_zalloc(size)	\
+  grub_debug_zalloc (__FILE__, __LINE__, size)
+
 #define grub_realloc(ptr,size)	\
   grub_debug_realloc (__FILE__, __LINE__, ptr, size)
 
@@ -56,6 +60,8 @@ void grub_mm_dump (unsigned lineno);
 
 void *EXPORT_FUNC(grub_debug_malloc) (const char *file, int line,
 				      grub_size_t size);
+void *EXPORT_FUNC(grub_debug_zalloc) (const char *file, int line,
+				       grub_size_t size);
 void EXPORT_FUNC(grub_debug_free) (const char *file, int line, void *ptr);
 void *EXPORT_FUNC(grub_debug_realloc) (const char *file, int line, void *ptr,
 				       grub_size_t size);

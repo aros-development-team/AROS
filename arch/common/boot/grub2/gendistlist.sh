@@ -1,6 +1,6 @@
 #! /bin/sh
 #
-# Copyright (C) 2005, 2008  Free Software Foundation, Inc.
+# Copyright (C) 2005, 2008, 2009  Free Software Foundation, Inc.
 #
 # This gendistlist.sh is free software; the author
 # gives unlimited permission to copy and/or distribute it,
@@ -16,12 +16,13 @@
 EXTRA_DISTFILES="AUTHORS COPYING ChangeLog DISTLIST INSTALL NEWS README \
 	THANKS TODO Makefile.in aclocal.m4 autogen.sh config.guess \
 	config.h.in config.sub configure configure.ac gencmdlist.sh \
-	gendistlist.sh genfslist.sh geninit.sh geninitheader.sh genkernsyms.sh.in \
-	genmk.rb genmoddep.awk genmodsrc.sh genpartmaplist.sh gensymlist.sh.in
-	install-sh mkinstalldirs stamp-h.in"
+	gendistlist.sh genfslist.sh genhandlerlist.sh geninit.sh \
+	geninitheader.sh genkernsyms.sh.in genmk.rb genmoddep.awk \
+	genmodsrc.sh genpartmaplist.sh genparttoollist.sh \
+	gensymlist.sh.in install-sh mkinstalldirs stamp-h.in"
 
-DISTDIRS="boot bus commands conf disk docs font fs hello hook include io kern lib \
-	loader normal partmap term util video"
+DISTDIRS="boot bus commands conf disk docs efiemu font fs hello hook include io \
+	kern lib loader mmap normal partmap parttool script term util video"
 
 LC_COLLATE=C
 export LC_COLLATE
@@ -34,10 +35,10 @@ dir=`dirname $0`
 cd $dir
 
 for dir in $DISTDIRS; do
-  for d in `find $dir -type d | sort`; do
+  for d in `find $dir -type d | sed '/\/\.svn$/d;\/\.svn\//d' | sort`; do
     find $d -maxdepth 1 -name '*.[chSy]' -o -name '*.mk' -o -name '*.rmk' \
       -o -name '*.rb' -o -name '*.in' -o -name '*.tex' -o -name '*.texi' \
-      -o -name 'grub.cfg' -o -name 'README' -o -name '*.sc' -o -name 'mdate.sh' \
-      | sort
+      -o -name 'grub.cfg' -o -name 'README' -o -name '*.sc' -o -name 'mdate-sh' \
+      -o -name '*.sh' | sort
   done
 done

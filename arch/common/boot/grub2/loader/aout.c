@@ -49,7 +49,7 @@ grub_aout_load (grub_file_t file, int offset,
   if (!load_size)
     load_size = file->size - offset;
 
-  grub_file_read (file, (char *) load_addr, load_size);
+  grub_file_read (file, (void *) load_addr, load_size);
 
   if (grub_errno)
     return grub_errno;

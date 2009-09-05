@@ -16,8 +16,6 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define ASM_FILE	1
-
 #include <grub/symbol.h>
 #include <grub/machine/memory.h>
 #include <grub/cpu/linux.h>
@@ -45,7 +43,7 @@ _start:
 	 *  This is a special data area at a fixed offset from the beginning.
 	 */
 
-	. = EXT_C(start) + GRUB_KERNEL_CPU_PREFIX
+	. = _start + GRUB_KERNEL_CPU_PREFIX
 
 VARIABLE(grub_prefix)
 	/* to be filled by grub-mkimage */
@@ -54,19 +52,11 @@ VARIABLE(grub_prefix)
 	 *  Leave some breathing room for the prefix.
 	 */
 
-	. = EXT_C(start) + GRUB_KERNEL_CPU_DATA_END
+	. = _start + GRUB_KERNEL_CPU_DATA_END
 
 codestart:
 	movl %eax, EXT_C(grub_ieee1275_entry_fn)
 	jmp EXT_C(grub_main)
-
-/*
- *  This call is special...  it never returns...  in fact it should simply
- *  hang at this point!
- */
-FUNCTION(grub_stop)
-	hlt
-	jmp EXT_C(grub_stop)
 
 /*
  *  prot_to_real and associated structures (but NOT real_to_prot, that is

@@ -1,6 +1,6 @@
 # -*- makefile -*-
 #
-# Copyright (C) 1994,1995,1996,1997,1998,1999,2000,2001,2002,2004,2005,2006,2007 Free Software Foundation, Inc.
+# Copyright (C) 1994,1995,1996,1997,1998,1999,2000,2001,2002,2004,2005,2006,2007,2008,2009 Free Software Foundation, Inc.
 #
 # This Makefile.in is free software; the author
 # gives unlimited permission to copy and/or distribute it,
@@ -47,8 +47,11 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 
+host_os = @host_os@
+host_kernel = @host_kernel@
+host_cpu = @host_cpu@
+
 target_cpu = @target_cpu@
-target_os = @target_os@
 platform = @platform@
 
 INSTALL = @INSTALL@
@@ -61,18 +64,23 @@ mkinstalldirs = $(srcdir)/mkinstalldirs
 
 CC = @CC@
 CFLAGS = @CFLAGS@
+ASFLAGS = @ASFLAGS@
 LDFLAGS = @LDFLAGS@
 CPPFLAGS = @CPPFLAGS@ -I$(builddir) -I$(builddir)/include -I$(srcdir)/include -Wall -W \
 	 -DGRUB_LIBDIR=\"$(pkglibdir)\"
 TARGET_CC = @TARGET_CC@
 TARGET_CFLAGS = @TARGET_CFLAGS@
+TARGET_ASFLAGS = @TARGET_ASFLAGS@
+TARGET_MODULE_FORMAT = @TARGET_MODULE_FORMAT@
+TARGET_APPLE_CC = @TARGET_APPLE_CC@
+OBJCONV = @OBJCONV@
 TARGET_CPPFLAGS = @TARGET_CPPFLAGS@ -I$(builddir) -I$(builddir)/include -I$(srcdir)/include \
 	-Wall -W
 TARGET_LDFLAGS = @TARGET_LDFLAGS@
 TARGET_IMG_LDSCRIPT = @TARGET_IMG_LDSCRIPT@
 TARGET_IMG_LDFLAGS = @TARGET_IMG_LDFLAGS@
+TARGET_IMG_CFLAGS = @TARGET_IMG_CFLAGS@
 TARGET_OBJ2ELF = @TARGET_OBJ2ELF@
-MODULE_LDFLAGS = @MODULE_LDFLAGS@
 EXEEXT = @EXEEXT@
 OBJCOPY = @OBJCOPY@
 STRIP = @STRIP@
@@ -86,15 +94,19 @@ HELP2MAN := LANG=C $(HELP2MAN) --no-info --source=FSF
 endif
 AWK = @AWK@
 LIBCURSES = @LIBCURSES@
-LIBLZO = @LIBLZO@
+LIBUSB = @LIBUSB@
 YACC = @YACC@
-UNIFONT_HEX = @UNIFONT_HEX@
+UNIFONT_BDF = @UNIFONT_BDF@
 
 # Options.
 enable_grub_emu = @enable_grub_emu@
+enable_grub_emu_usb = @enable_grub_emu_usb@
 enable_grub_fstest = @enable_grub_fstest@
 enable_grub_pe2elf = @enable_grub_pe2elf@
-enable_lzo = @enable_lzo@
+enable_grub_mkfont = @enable_grub_mkfont@
+freetype_cflags = @freetype_cflags@
+freetype_libs = @freetype_libs@
+enable_efiemu = @enable_efiemu@
 
 ### General variables.
 
@@ -105,13 +117,14 @@ RMKFILES = $(addprefix conf/,common.rmk i386-coreboot.rmk i386-efi.rmk \
 MKFILES = $(patsubst %.rmk,%.mk,$(RMKFILES))
 
 PKGLIB = $(pkglib_IMAGES) $(pkglib_MODULES) $(pkglib_PROGRAMS) \
-	$(pkglib_DATA) $(lib_DATA) $(pkglib_BUILDDIR)
-PKGDATA = $(pkgdata_DATA) $(pkgdata_SRCDIR)
+	$(pkglib_DATA) $(pkglib_BUILDDIR)
+PKGDATA = $(pkgdata_DATA)
 PROGRAMS = $(bin_UTILITIES) $(sbin_UTILITIES)
-SCRIPTS = $(bin_SCRIPTS) $(sbin_SCRIPTS) $(grub-mkconfig_SCRIPTS)
+SCRIPTS = $(bin_SCRIPTS) $(sbin_SCRIPTS) $(grub-mkconfig_SCRIPTS) \
+	$(lib_SCRIPTS)
 
 CLEANFILES =
-MOSTLYCLEANFILES = 
+MOSTLYCLEANFILES =
 DISTCLEANFILES = config.status config.cache config.log config.h \
 	Makefile stamp-h include/grub/cpu include/grub/machine \
 	gensymlist.sh genkernsyms.sh build_env.mk
@@ -133,7 +146,7 @@ include $(srcdir)/conf/$(target_cpu)-$(platform).mk
 ### General targets.
 
 CLEANFILES += $(pkglib_DATA) $(pkgdata_DATA)
-pkglib_DATA += moddep.lst command.lst fs.lst partmap.lst
+pkglib_DATA += moddep.lst command.lst fs.lst partmap.lst parttool.lst handler.lst
 moddep.lst: $(DEFSYMFILES) $(UNDSYMFILES) genmoddep.awk
 	cat $(DEFSYMFILES) /dev/null \
 	  | $(AWK) -f $(srcdir)/genmoddep.awk $(UNDSYMFILES) > $@ \
@@ -148,19 +161,29 @@ fs.lst: $(FSFILES)
 partmap.lst: $(PARTMAPFILES)
 	cat $^ /dev/null | sort > $@
 
-ifeq (, $(UNIFONT_HEX))
+handler.lst: $(HANDLERFILES)
+	cat $^ /dev/null | sort > $@
+
+parttool.lst: $(PARTTOOLFILES)
+	cat $^ /dev/null | sort | uniq > $@
+
+ifeq (, $(UNIFONT_BDF))
 else
-pkgdata_DATA += unicode.pff ascii.pff
+
+ifeq ($(enable_grub_mkfont),yes)
+
+pkgdata_DATA += unicode.pf2 ascii.pf2
 
 # Arrows and lines are needed to draw the menu, so we always include them
 UNICODE_ARROWS=0x2190-0x2193
 UNICODE_LINES=0x2501-0x251B
 
-unicode.pff: $(UNIFONT_HEX)
-	ruby $(srcdir)/util/unifont2pff.rb $(UNIFONT_HEX) > $@
+unicode.pf2: $(UNIFONT_BDF) grub-mkfont
+	$(builddir)/grub-mkfont -o $@ $(UNIFONT_BDF)
 
-ascii.pff: $(UNIFONT_HEX)
-	ruby $(srcdir)/util/unifont2pff.rb 0x0-0x7f $(UNICODE_ARROWS) $(UNICODE_LINES) $(UNIFONT_HEX) > $@
+ascii.pf2: $(UNIFONT_BDF) grub-mkfont
+	$(builddir)/grub-mkfont -o $@ $(UNIFONT_BDF) -r 0x0-0x7f,$(UNICODE_ARROWS),$(UNICODE_LINES)
+endif
 endif
 
 # Used for building modules externally
@@ -169,75 +192,81 @@ build_env.mk: Makefile
 	(\
 	echo "TARGET_CC=$(TARGET_CC)" ; \
 	echo "TARGET_CFLAGS=$(TARGET_CFLAGS)" ; \
-	echo "TARGET_CPPFLAGS=$(TARGET_CPPFLAGS) -I$(pkglibdir)" ; \
+	echo "TARGET_ASFLAGS=$(TARGET_ASFLAGS)" ; \
+	echo "TARGET_CPPFLAGS=$(TARGET_CPPFLAGS) -I$(pkglibdir) -I$(includedir)" ; \
 	echo "STRIP=$(STRIP)" ; \
+	echo "OBJCONV=$(OBJCONV)" ; \
+	echo "TARGET_MODULE_FORMAT=$(TARGET_MODULE_FORMAT)" ; \
+	echo "TARGET_APPLE_CC=$(TARGET_APPLE_CC)" ; \
 	echo "COMMON_ASFLAGS=$(COMMON_ASFLAGS)" ; \
 	echo "COMMON_CFLAGS=$(COMMON_CFLAGS)" ; \
 	echo "COMMON_LDFLAGS=$(COMMON_LDFLAGS)"\
 	) > $@
 pkglib_BUILDDIR += config.h grub_script.tab.h
-pkgdata_SRCDIR += genmodsrc.sh genmk.rb
-include_DATA += $(shell find $(srcdir)/include -name \*.h | sed -e "s,^$(srcdir)/,,g") include/grub/cpu
+include_DATA += $(shell find $(srcdir)/include -name \*.h | sed -e "s,^$(srcdir)/,,g") \
+	include/grub/cpu include/grub/machine
 
 all-local: $(PROGRAMS) $(PKGLIB) $(PKGDATA) $(SCRIPTS) $(MKFILES)
 
 install: install-local
 
 install-local: all
-	$(mkinstalldirs) $(DESTDIR)$(pkglibdir)
+	$(SHELL) $(mkinstalldirs) $(DESTDIR)$(pkglibdir)
+	rm -f $(DESTDIR)$(pkglibdir)/*
 	@list='$(PKGLIB)'; \
 	for file in $$list; do \
 	  if test -f "$$file"; then dir=; else dir="$(srcdir)/"; fi; \
 	  dest="`echo $$file | sed 's,.*/,,'`"; \
 	  $(INSTALL_DATA) $$dir$$file $(DESTDIR)$(pkglibdir)/$$dest; \
 	done
-	$(mkinstalldirs) $(DESTDIR)$(includedir)
+	$(SHELL) $(mkinstalldirs) $(DESTDIR)$(includedir)
 	@list='$(include_DATA)'; \
 	for file in $$list; do \
-	  if test -f "$$file"; then dir=; else dir="$(srcdir)/"; fi; \
+	  if test -e "$$file"; then dir=; else dir="$(srcdir)/"; fi; \
 	  dest="`echo $$file | sed 's,include/,,'`"; \
-	  destdir="`echo $$dest | sed 's,\(^\|/\)[^/]*$$,,g'`"; \
-	  $(mkinstalldirs) $(DESTDIR)$(includedir)/$$destdir; \
+	  destdir="`echo $$dest | sed 's,[^/]*$$,,g'`"; \
+	  $(SHELL) $(mkinstalldirs) $(DESTDIR)$(includedir)/$$destdir; \
 	  if test -f "$$dir$$file"; then \
 	    $(INSTALL_DATA) $$dir$$file $(DESTDIR)$(includedir)/$$dest; \
 	  elif test -L "$$dir$$file"; then \
-	    cp -d $$dir$$file $(DESTDIR)$(includedir)/$$dest; \
+	    rm -rf $(DESTDIR)$(includedir)/$$dest && \
+	    cp -fR $$dir$$file $(DESTDIR)$(includedir)/$$dest; \
 	  fi; \
 	done
-	$(mkinstalldirs) $(DESTDIR)$(pkgdatadir)
+	$(SHELL) $(mkinstalldirs) $(DESTDIR)$(pkgdatadir)
 	@list='$(PKGDATA)'; \
 	for file in $$list; do \
 	  if test -f "$$file"; then dir=; else dir="$(srcdir)/"; fi; \
 	  dest="`echo $$file | sed 's,.*/,,'`"; \
 	  $(INSTALL_DATA) $$dir$$file $(DESTDIR)$(pkgdatadir)/$$dest; \
 	done
-	$(mkinstalldirs) $(DESTDIR)$(bindir) $(DESTDIR)$(mandir)/man1
+	$(SHELL) $(mkinstalldirs) $(DESTDIR)$(bindir) $(DESTDIR)$(mandir)/man1
 	@list='$(bin_UTILITIES)'; for file in $$list; do \
 	  if test -f "$$file"; then dir=; else dir="$(srcdir)/"; fi; \
 	  dest="`echo $$file | sed 's,.*/,,' | sed '$(transform)'`"; \
 	  $(INSTALL_PROGRAM) $$dir$$file $(DESTDIR)$(bindir)/$$dest; \
-	  $(HELP2MAN) --section=1 $(builddir)/$$file > $(DESTDIR)$(mandir)/man1/$$dest.1; \
+	  $(HELP2MAN) --section=1 -o $(DESTDIR)$(mandir)/man1/$$dest.1 $(builddir)/$$file; \
 	done
-	$(mkinstalldirs) $(DESTDIR)$(sbindir) $(DESTDIR)$(mandir)/man8
+	$(SHELL) $(mkinstalldirs) $(DESTDIR)$(sbindir) $(DESTDIR)$(mandir)/man8
 	@list='$(sbin_UTILITIES)'; for file in $$list; do \
 	  if test -f "$$file"; then dir=; else dir="$(srcdir)/"; fi; \
 	  dest="`echo $$file | sed 's,.*/,,' | sed '$(transform)'`"; \
 	  $(INSTALL_PROGRAM) $$dir$$file $(DESTDIR)$(sbindir)/$$dest; \
-	  $(HELP2MAN) --section=8 $(builddir)/$$file > $(DESTDIR)$(mandir)/man8/$$dest.8; \
+	  $(HELP2MAN) --section=8 -o $(DESTDIR)$(mandir)/man8/$$dest.8 $(builddir)/$$file; \
 	done
 	@list='$(bin_SCRIPTS)'; for file in $$list; do \
 	  if test -f "$$file"; then dir=; else dir="$(srcdir)/"; fi; \
 	  dest="`echo $$file | sed 's,.*/,,' | sed '$(transform)'`"; \
 	  $(INSTALL_SCRIPT) $$dir$$file $(DESTDIR)$(bindir)/$$dest; \
-	  $(HELP2MAN) --section=1 $(builddir)/$$file > $(DESTDIR)$(mandir)/man1/$$dest.1; \
+	  $(HELP2MAN) --section=1 -o $(DESTDIR)$(mandir)/man1/$$dest.1 $(builddir)/$$file; \
 	done
 	@list='$(sbin_SCRIPTS)'; for file in $$list; do \
 	  if test -f "$$file"; then dir=; else dir="$(srcdir)/"; fi; \
 	  dest="`echo $$file | sed 's,.*/,,' | sed '$(transform)'`"; \
 	  $(INSTALL_SCRIPT) $$dir$$file $(DESTDIR)$(sbindir)/$$dest; \
-	  $(HELP2MAN) --section=8 $(builddir)/$$file > $(DESTDIR)$(mandir)/man8/$$dest.8; \
+	  $(HELP2MAN) --section=8 -o $(DESTDIR)$(mandir)/man8/$$dest.8 $(builddir)/$$file; \
 	done
-	$(mkinstalldirs) $(DESTDIR)$(sysconfdir)/grub.d
+	$(SHELL) $(mkinstalldirs) $(DESTDIR)$(sysconfdir)/grub.d
 	@list='$(grub-mkconfig_SCRIPTS)'; for file in $$list; do \
 	  if test -f "$$file"; then dir=; else dir="$(srcdir)/"; fi; \
 	  dest="`echo $$file | sed 's,.*/,,' | sed '$(transform)'`"; \
@@ -248,8 +277,8 @@ install-local: all
 	  dest="`echo $$file | sed 's,.*/,,' | sed '$(transform)'`"; \
 	  $(INSTALL_DATA) $$dir$$file $(DESTDIR)$(sysconfdir)/grub.d/$$dest; \
 	done
-	$(mkinstalldirs) $(DESTDIR)$(libdir)/grub
-	@list='$(lib_DATA)'; \
+	$(SHELL) $(mkinstalldirs) $(DESTDIR)$(libdir)/grub
+	@list='$(lib_SCRIPTS)'; \
 	for file in $$list; do \
 	  if test -f "$$file"; then dir=; else dir="$(srcdir)/"; fi; \
 	  dest="`echo $$file | sed 's,.*/,,'`"; \
@@ -273,14 +302,27 @@ uninstall:
 	@list='$(bin_UTILITIES) $(bin_SCRIPTS)'; for file in $$list; do \
 	  dest="`echo $$file | sed 's,.*/,,' | sed '$(transform)'`"; \
 	  rm -f $(DESTDIR)$(bindir)/$$dest; \
+	  rm -f $(DESTDIR)$(mandir)/man1/$$dest.1; \
 	done
 	@list='$(sbin_UTILITIES) $(sbin_SCRIPTS)'; for file in $$list; do \
 	  dest="`echo $$file | sed 's,.*/,,' | sed '$(transform)'`"; \
 	  rm -f $(DESTDIR)$(sbindir)/$$dest; \
+	  rm -f $(DESTDIR)$(mandir)/man8/$$dest.8; \
 	done
 	@list='$(grub-mkconfig_SCRIPTS) $(grub-mkconfig_DATA)'; for file in $$list; do \
 	  dest="`echo $$file | sed 's,.*/,,' | sed '$(transform)'`"; \
 	  rm -f $(DESTDIR)$(sysconfdir)/grub.d/$$dest; \
+	done
+	@list='$(include_DATA)'; \
+	for file in $$list; do \
+	  dest="`echo $$file | sed 's,include/,,'`"; \
+	  rm -f $(DESTDIR)$(includedir)/$$dest; \
+	done
+	@list='$(lib_SCRIPTS)'; \
+	for file in $$list; do \
+	  dest="`echo $$file | sed 's,.*/,,'`"; \
+	  echo rm -f $(DESTDIR)$(libdir)/$$dest; \
+	  rm -f $(DESTDIR)$(libdir)/grub/$$dest; \
 	done
 
 clean:
@@ -303,15 +345,15 @@ dvi:
 distdir=$(PACKAGE_TARNAME)-$(PACKAGE_VERSION)
 
 DISTLIST: gendistlist.sh
-	sh $(srcdir)/gendistlist.sh > $(srcdir)/DISTLIST
+	$(SHELL) $(srcdir)/gendistlist.sh > $(srcdir)/DISTLIST
 
 distdir: DISTLIST
 	-chmod -R a+w $(distdir) >/dev/null 2>&1; rm -rf $(distdir)
-	$(mkinstalldirs) $(distdir)
+	$(SHELL) $(mkinstalldirs) $(distdir)
 	for i in `cat $(srcdir)/DISTLIST`; do \
 	  dir=`echo "$$i" | sed 's:/[^/]*$$::'`; \
 	  if test -d $(srcdir)/$$dir; then \
-	    $(mkinstalldirs) $(distdir)/$$dir; \
+	    $(SHELL) $(mkinstalldirs) $(distdir)/$$dir; \
 	  fi; \
 	  cp -p $(srcdir)/$$i $(distdir)/$$i || exit 1; \
 	done
@@ -333,7 +375,7 @@ distcheck: dist
 	chmod a-w $(distdir)
 	dc_instdir=`CDPATH=: && cd $(distdir)/=inst && pwd` \
 	  && cd $(distdir)/=build \
-	  && ../configure --srcdir=.. --prefix=$$dc_instdir \
+	  && $(SHELL) ../configure --srcdir=.. --prefix=$$dc_instdir \
 	  && $(MAKE) all dvi check install && $(MAKE) uninstall \
 	  && (test `find $$dc_instdir -type f -print | wc -l` -le 1 \
 	     || (echo "Error: files left after uninstall" 1>&2; \
@@ -363,19 +405,19 @@ $(srcdir)/stamp-h.in: configure.ac aclocal.m4
 
 config.h: stamp-h
 stamp-h: config.h.in config.status
-	./config.status
+	$(SHELL) ./config.status
 
 Makefile: Makefile.in config.status
-	./config.status
+	$(SHELL) ./config.status
 
 config.status: configure
-	./config.status --recheck
+	$(SHELL) ./config.status --recheck
 
 gensymlist.sh: gensymlist.sh.in config.status
-	./config.status
+	$(SHELL) ./config.status
 
 genkernsyms.sh: genkernsyms.sh.in config.status
-	./config.status
+	$(SHELL) ./config.status
 
 .PHONY: all install install-strip uninstall clean mostlyclean distclean
 .PHONY: maintainer-clean info dvi dist check

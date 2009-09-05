@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000,2001,2002,2003,2004,2005,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2000,2001,2002,2003,2004,2005,2007,2008,2009  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,16 +17,16 @@
  */
 
 #include <grub/machine/machine.h>
+#include <grub/machine/memory.h>
 #include <grub/machine/serial.h>
 #include <grub/machine/console.h>
 #include <grub/term.h>
 #include <grub/types.h>
 #include <grub/dl.h>
 #include <grub/misc.h>
-#include <grub/normal.h>
-#include <grub/arg.h>
 #include <grub/terminfo.h>
 #include <grub/cpu/io.h>
+#include <grub/extcmd.h>
 
 #define TEXT_WIDTH	80
 #define TEXT_HEIGHT	25
@@ -65,12 +65,11 @@ struct serial_port
 static struct serial_port serial_settings;
 
 #ifdef GRUB_MACHINE_PCBIOS
-/* The BIOS data area.  */
-static const unsigned short *serial_hw_io_addr = (const unsigned short *) 0x0400;
+static const unsigned short *serial_hw_io_addr = (const unsigned short *) GRUB_MEMORY_MACHINE_BIOS_DATA_AREA_ADDR;
 #define GRUB_SERIAL_PORT_NUM 4
 #else
 static const unsigned short serial_hw_io_addr[] = { 0x3f8, 0x2f8, 0x3e8, 0x2e8 };
-#define GRUB_SERIAL_PORT_NUM (sizeof(serial_hw_io_addr)/sizeof(serial_hw_io_addr[0]))
+#define GRUB_SERIAL_PORT_NUM (ARRAY_SIZE(serial_hw_io_addr))
 #endif
 
 /* Return the port number for the UNITth serial device.  */
@@ -113,6 +112,7 @@ serial_hw_put (const int c)
 static void
 serial_translate_key_sequence (void)
 {
+  unsigned int i;
   static struct
   {
     char key;
@@ -128,7 +128,7 @@ serial_translate_key_sequence (void)
       {'H', 1},
       {'4', 4}
     };
-  
+
   static struct
   {
       short key;
@@ -142,34 +142,27 @@ serial_translate_key_sequence (void)
       {('6' | ('~' << 8)), 3}
     };
 
-  /* The buffer must start with "ESC [".  */
-  if (*((unsigned short *) input_buf) != ('\e' | ('[' << 8)))
+  if (npending < 3)
     return;
 
-  if (npending >= 3)
-    {
-      unsigned int i;
-      
-      for (i = 0;
-	   i < sizeof (three_code_table) / sizeof (three_code_table[0]);
-	   i++)
-	if (three_code_table[i].key == input_buf[2])
-	  {
-	    input_buf[0] = three_code_table[i].ascii;
-	    npending -= 2;
-	    grub_memmove (input_buf + 1, input_buf + 3, npending - 1);
-	    return;
-	  }
-    }
+  /* The buffer must start with "ESC [".  */
+  if (input_buf[0] != '\e' || input_buf[1] != '[')
+    return;
+
+  for (i = 0; ARRAY_SIZE (three_code_table); i++)
+    if (three_code_table[i].key == input_buf[2])
+      {
+	input_buf[0] = three_code_table[i].ascii;
+	npending -= 2;
+	grub_memmove (input_buf + 1, input_buf + 3, npending - 1);
+	return;
+      }
 
   if (npending >= 4)
     {
-      unsigned int i;
-      short key = *((short *) (input_buf + 2));
-      
-      for (i = 0;
-	   i < sizeof (four_code_table) / sizeof (four_code_table[0]);
-	   i++)
+      short key = input_buf[3] | (input_buf[4] << 8);
+
+      for (i = 0; i < ARRAY_SIZE (four_code_table); i++)
 	if (four_code_table[i].key == key)
 	  {
 	    input_buf[0] = four_code_table[i].ascii;
@@ -188,16 +181,16 @@ fill_input_buf (const int nowait)
   for (i = 0; i < 10000 && npending < sizeof (input_buf); i++)
     {
       int c;
-      
+
       c = serial_hw_fetch ();
       if (c >= 0)
 	{
 	  input_buf[npending++] = c;
-	  
+
 	  /* Reset the counter to zero, to wait for the same interval.  */
 	  i = 0;
 	}
-      
+
       if (nowait)
 	break;
     }
@@ -325,60 +318,60 @@ grub_serial_putchar (grub_uint32_t c)
 	    case GRUB_TERM_DISP_LEFT:
 	      c = '<';
 	      break;
-	      
+
 	    case GRUB_TERM_DISP_UP:
 	      c = '^';
 	      break;
-	      
+
 	    case GRUB_TERM_DISP_RIGHT:
 	      c = '>';
 	      break;
-	      
+
 	    case GRUB_TERM_DISP_DOWN:
 	      c = 'v';
 	      break;
-	      
+
 	    case GRUB_TERM_DISP_HLINE:
 	      c = '-';
 	      break;
-	      
+
 	    case GRUB_TERM_DISP_VLINE:
 	      c = '|';
 	      break;
-	      
+
 	    case GRUB_TERM_DISP_UL:
 	    case GRUB_TERM_DISP_UR:
 	    case GRUB_TERM_DISP_LL:
 	    case GRUB_TERM_DISP_LR:
 	      c = '+';
 	      break;
-	      
+
 	    default:
 	      c = '?';
 	      break;
 	    }
 	}
-      
+
       switch (c)
 	{
 	case '\a':
 	  break;
-	  
+
 	case '\b':
 	case 127:
 	  if (xpos > 0)
 	    xpos--;
 	  break;
-	  
+
 	case '\n':
 	  if (ypos < TEXT_HEIGHT)
 	    ypos++;
 	  break;
-	  
+
 	case '\r':
 	  xpos = 0;
 	  break;
-	  
+
 	default:
 	  if (xpos >= TEXT_WIDTH)
 	    {
@@ -389,7 +382,7 @@ grub_serial_putchar (grub_uint32_t c)
 	  break;
 	}
     }
-  
+
   serial_hw_put (c);
 }
 
@@ -423,7 +416,7 @@ grub_serial_gotoxy (grub_uint8_t x, grub_uint8_t y)
       keep_track = 0;
       grub_terminfo_gotoxy (x, y);
       keep_track = 1;
-      
+
       xpos = x;
       ypos = y;
     }
@@ -491,10 +484,11 @@ static struct grub_term_output grub_serial_term_output =
 
 
 static grub_err_t
-grub_cmd_serial (struct grub_arg_list *state,
+grub_cmd_serial (grub_extcmd_t cmd,
                  int argc __attribute__ ((unused)),
 		 char **args __attribute__ ((unused)))
 {
+  struct grub_arg_list *state = cmd->state;
   struct serial_port backup_settings = serial_settings;
   grub_err_t hwiniterr;
 
@@ -507,10 +501,10 @@ grub_cmd_serial (struct grub_arg_list *state,
       if (!serial_settings.port)
 	return grub_error (GRUB_ERR_BAD_ARGUMENT, "bad unit number.");
     }
-  
+
   if (state[1].set)
     serial_settings.port = (unsigned short) grub_strtoul (state[1].arg, 0, 0);
-  
+
   if (state[2].set)
     {
       unsigned long speed;
@@ -523,7 +517,7 @@ grub_cmd_serial (struct grub_arg_list *state,
 	  return grub_error (GRUB_ERR_BAD_ARGUMENT, "bad speed");
 	}
     }
-  
+
   if (state[3].set)
     {
       if (! grub_strcmp (state[3].arg, "5"))
@@ -540,7 +534,7 @@ grub_cmd_serial (struct grub_arg_list *state,
 	  return grub_error (GRUB_ERR_BAD_ARGUMENT, "bad word length");
 	}
     }
-  
+
   if (state[4].set)
     {
       if (! grub_strcmp (state[4].arg, "no"))
@@ -555,7 +549,7 @@ grub_cmd_serial (struct grub_arg_list *state,
 	  return grub_error (GRUB_ERR_BAD_ARGUMENT, "bad parity");
 	}
     }
-  
+
   if (state[5].set)
     {
       if (! grub_strcmp (state[5].arg, "1"))
@@ -571,14 +565,14 @@ grub_cmd_serial (struct grub_arg_list *state,
 
   /* Initialize with new settings.  */
   hwiniterr = serial_hw_init ();
-  
+
   if (hwiniterr == GRUB_ERR_NONE)
     {
       /* Register terminal if not yet registered.  */
       if (registered == 0)
 	{
-	  grub_term_register_input (&grub_serial_term_input);
-	  grub_term_register_output (&grub_serial_term_output);
+	  grub_term_register_input ("serial", &grub_serial_term_input);
+	  grub_term_register_output ("serial", &grub_serial_term_output);
 	  registered = 1;
 	}
     }
@@ -599,15 +593,19 @@ grub_cmd_serial (struct grub_arg_list *state,
 	    }
 	}
     }
-  
+
   return hwiniterr;
 }
 
+static grub_extcmd_t cmd;
+
 GRUB_MOD_INIT(serial)
 {
-  (void) mod;			/* To stop warning. */
-  grub_register_command ("serial", grub_cmd_serial, GRUB_COMMAND_FLAG_BOTH,
-                         "serial [OPTIONS...]", "Configure serial port.", options);
+  cmd = grub_register_extcmd ("serial", grub_cmd_serial,
+			      GRUB_COMMAND_FLAG_BOTH,
+			      "serial [OPTIONS...]",
+			      "Configure serial port.", options);
+
   /* Set default settings.  */
   serial_settings.port      = serial_hw_get_port (0);
   serial_settings.divisor   = serial_get_divisor (9600);
@@ -618,7 +616,7 @@ GRUB_MOD_INIT(serial)
 
 GRUB_MOD_FINI(serial)
 {
-  grub_unregister_command ("serial");
+  grub_unregister_extcmd (cmd);
   if (registered == 1)		/* Unregister terminal only if registered. */
     {
       grub_term_unregister_input (&grub_serial_term_input);

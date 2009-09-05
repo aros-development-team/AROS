@@ -22,11 +22,5 @@
 #include <grub/types.h>
 #include <grub/symbol.h>
 
-/* It is necessary to export these functions, because normal mode commands
-   reuse rescue mode commands.  */
-void grub_rescue_cmd_linux (int argc, char *argv[]);
-void grub_rescue_cmd_initrd (int argc, char *argv[]);
-
-void EXPORT_FUNC(grub_linux_real_boot) (void);
 
 #endif /* ! GRUB_LOADER_MACHINE_HEADER */

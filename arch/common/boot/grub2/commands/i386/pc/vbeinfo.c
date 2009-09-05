@@ -1,7 +1,7 @@
 /* vbeinfo.c - command to list compatible VBE video modes.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2005,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2005,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,14 +17,13 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/normal.h>
 #include <grub/dl.h>
-#include <grub/arg.h>
 #include <grub/env.h>
 #include <grub/misc.h>
 #include <grub/machine/init.h>
 #include <grub/machine/vbe.h>
 #include <grub/mm.h>
+#include <grub/command.h>
 
 static void *
 real2pm (grub_vbe_farptr_t ptr)
@@ -34,7 +33,7 @@ real2pm (grub_vbe_farptr_t ptr)
 }
 
 static grub_err_t
-grub_cmd_vbeinfo (struct grub_arg_list *state __attribute__ ((unused)),
+grub_cmd_vbeinfo (grub_command_t cmd __attribute__ ((unused)),
 		  int argc __attribute__ ((unused)),
 		  char **args __attribute__ ((unused)))
 {
@@ -53,7 +52,7 @@ grub_cmd_vbeinfo (struct grub_arg_list *state __attribute__ ((unused)),
     return err;
 
   grub_printf ("VBE info:   version: %d.%d  OEM software rev: %d.%d\n",
-               controller_info.version >> 8, 
+	       controller_info.version >> 8,
                controller_info.version & 0xFF,
                controller_info.oem_software_rev >> 8,
                controller_info.oem_software_rev & 0xFF);
@@ -67,24 +66,24 @@ grub_cmd_vbeinfo (struct grub_arg_list *state __attribute__ ((unused)),
   p = video_mode_list = real2pm (controller_info.video_mode_ptr);
   while (*p++ != 0xFFFF)
     ;
-  
+
   video_mode_list_size = (grub_addr_t) p - (grub_addr_t) video_mode_list;
   saved_video_mode_list = grub_malloc (video_mode_list_size);
   if (! saved_video_mode_list)
     return grub_errno;
 
   grub_memcpy (saved_video_mode_list, video_mode_list, video_mode_list_size);
-  
+
   grub_printf ("List of compatible video modes:\n");
   grub_printf ("Legend: P=Packed pixel, D=Direct color, "
-               "mask/pos=R/G/B/reserved\n"); 
+	       "mask/pos=R/G/B/reserved\n");
 
   /* Walk through all video modes listed.  */
   for (p = saved_video_mode_list; *p != 0xFFFF; p++)
     {
       const char *memory_model = 0;
       grub_uint32_t mode = (grub_uint32_t) *p;
-      
+
       err = grub_vbe_get_video_mode_info (mode, &mode_info_tmp);
       if (err != GRUB_ERR_NONE)
 	{
@@ -128,7 +127,7 @@ grub_cmd_vbeinfo (struct grub_arg_list *state __attribute__ ((unused)),
       if (! memory_model)
 	continue;
 
-      grub_printf ("0x%03x:  %4d x %4d x %2d  %s", 
+      grub_printf ("0x%03x:  %4d x %4d x %2d  %s",
                    mode,
                    mode_info_tmp.x_resolution,
                    mode_info_tmp.y_resolution,
@@ -150,7 +149,7 @@ grub_cmd_vbeinfo (struct grub_arg_list *state __attribute__ ((unused)),
     }
 
   grub_free (saved_video_mode_list);
-  
+
   /* Check existence of vbe_mode environment variable.  */
   modevar = grub_env_get ("vbe_mode");
 
@@ -170,18 +169,16 @@ grub_cmd_vbeinfo (struct grub_arg_list *state __attribute__ ((unused)),
   return 0;
 }
 
+static grub_command_t cmd;
+
 GRUB_MOD_INIT(vbeinfo)
 {
-  (void) mod;			/* To stop warning.  */
-  grub_register_command ("vbeinfo",
-                         grub_cmd_vbeinfo,
-                         GRUB_COMMAND_FLAG_BOTH,
-                         "vbeinfo",
-                         "List compatible VESA BIOS extension video modes.",
-                         0);
+  cmd =
+    grub_register_command ("vbeinfo", grub_cmd_vbeinfo, 0,
+			   "List compatible VESA BIOS extension video modes.");
 }
 
 GRUB_MOD_FINI(vbeinfo)
 {
-  grub_unregister_command ("vbeinfo");
+  grub_unregister_command (cmd);
 }

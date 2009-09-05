@@ -22,7 +22,6 @@
 #include <grub/dl.h>
 #include <grub/mm.h>
 #include <grub/misc.h>
-#include <grub/arg.h>
 #include <grub/bufio.h>
 
 /* Uncomment following define to enable JPEG debug.  */
@@ -89,7 +88,7 @@ grub_jpeg_get_byte (struct grub_jpeg_data *data)
   grub_uint8_t r;
 
   r = 0;
-  grub_file_read (data->file, (char *) &r, 1);
+  grub_file_read (data->file, &r, 1);
 
   return r;
 }
@@ -100,7 +99,7 @@ grub_jpeg_get_word (struct grub_jpeg_data *data)
   grub_uint16_t r;
 
   r = 0;
-  grub_file_read (data->file, (char *) &r, sizeof (grub_uint16_t));
+  grub_file_read (data->file, &r, sizeof (grub_uint16_t));
 
   return grub_be_to_cpu16 (r);
 }
@@ -182,7 +181,7 @@ grub_jpeg_decode_huff_table (struct grub_jpeg_data *data)
     return grub_error (GRUB_ERR_BAD_FILE_TYPE,
 		       "jpeg: too many huffman tables");
 
-  if (grub_file_read (data->file, (char *) &count, sizeof (count)) !=
+  if (grub_file_read (data->file, &count, sizeof (count)) !=
       sizeof (count))
     return grub_errno;
 
@@ -195,7 +194,7 @@ grub_jpeg_decode_huff_table (struct grub_jpeg_data *data)
   if (grub_errno)
     return grub_errno;
 
-  if (grub_file_read (data->file, (char *) data->huff_value[id], n) != n)
+  if (grub_file_read (data->file, data->huff_value[id], n) != n)
     return grub_errno;
 
   base = 0;
@@ -235,7 +234,7 @@ grub_jpeg_decode_quan_table (struct grub_jpeg_data *data)
     return grub_error (GRUB_ERR_BAD_FILE_TYPE,
 		       "jpeg: too many quantization tables");
 
-  if (grub_file_read (data->file, (char *) &data->quan_table[id], 64) != 64)
+  if (grub_file_read (data->file, &data->quan_table[id], 64) != 64)
     return grub_errno;
 
   if (data->file->offset != next_marker)
@@ -668,12 +667,11 @@ grub_video_reader_jpeg (struct grub_video_bitmap **bitmap,
   if (!file)
     return grub_errno;
 
-  data = grub_malloc (sizeof (*data));
+  data = grub_zalloc (sizeof (*data));
   if (data != NULL)
     {
       int i;
 
-      grub_memset (data, 0, sizeof (*data));
       data->file = file;
       data->bitmap = bitmap;
       grub_jpeg_decode_jpeg (data);

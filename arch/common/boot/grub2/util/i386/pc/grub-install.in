@@ -1,7 +1,7 @@
 #! /bin/sh
 
 # Install GRUB on your drive.
-# Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007,2008  Free Software Foundation, Inc.
+# Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009  Free Software Foundation, Inc.
 #
 # GRUB is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -32,7 +32,11 @@ platform=@platform@
 pkglibdir=${libdir}/`echo ${PACKAGE_TARNAME}/${target_cpu}-${platform} | sed ${transform}`
 
 grub_setup=${sbindir}/`echo grub-setup | sed ${transform}`
-grub_mkimage=${bindir}/`echo grub-mkimage | sed ${transform}`
+if [ "${target_cpu}-${platform}" = "i386-pc" ] ; then
+    grub_mkimage=${bindir}/`echo grub-mkimage | sed ${transform}`
+else
+    grub_mkimage=${bindir}/`echo grub-mkelfimage | sed ${transform}`
+fi
 grub_mkdevicemap=${sbindir}/`echo grub-mkdevicemap | sed ${transform}`
 grub_probe=${sbindir}/`echo grub-probe | sed ${transform}`
 rootdir=
@@ -44,6 +48,12 @@ no_floppy=
 force_lba=
 recheck=no
 debug=no
+
+if [ "${target_cpu}-${platform}" = "i386-pc" ] ; then
+    disk_module=biosdisk
+else
+    disk_module=ata
+fi
 
 # Usage: usage
 # Print the usage.
@@ -63,6 +73,14 @@ Install GRUB on your drive.
   --grub-probe=FILE       use FILE as grub-probe
   --no-floppy             do not probe any floppy drive
   --recheck               probe a device map even if it already exists
+  --force                 install even if problems are detected
+EOF
+if [ "${target_cpu}-${platform}" = "i386-pc" ] ; then
+    cat <<EOF
+  --disk-module=MODULE    disk module to use
+EOF
+fi
+    cat <<EOF
 
 INSTALL_DEVICE can be a GRUB device name or a system device filename.
 
@@ -99,9 +117,15 @@ for option in "$@"; do
 	no_floppy="--no-floppy" ;;
     --recheck)
 	recheck=yes ;;
+    --disk-module=*)
+	if [ "${target_cpu}-${platform}" = "i386-pc" ] ; then
+           disk_module=`echo "$option" | sed 's/--disk-module=//'`
+        fi ;;
     # This is an undocumented feature...
     --debug)
 	debug=yes ;;
+    -f | --force)
+        setup_force="--force" ;;
     -*)
 	echo "Unrecognized option \`$option'" 1>&2
 	usage
@@ -153,12 +177,14 @@ device_map=${grubdir}/device.map
 grub_probe="${grub_probe} --device-map=${device_map}"
 
 # Check if GRUB is installed.
-set $grub_setup dummy
-if test -f "$1"; then
-    :
-else
-    echo "$1: Not found." 1>&2
-    exit 1
+if [ "${target_cpu}-${platform}" = "i386-pc" ] ; then
+    set $grub_setup dummy
+    if test -f "$1"; then
+        :
+    else
+        echo "$1: Not found." 1>&2
+        exit 1
+    fi
 fi
 
 set $grub_mkimage dummy
@@ -205,14 +231,21 @@ if test -n "$tmp"; then
 fi
 
 # Copy the GRUB images to the GRUB directory.
-for file in ${grubdir}/*.mod ${grubdir}/*.lst ${grubdir}/*.img; do
+for file in ${grubdir}/*.mod ${grubdir}/*.lst ${grubdir}/*.img ${grubdir}/efiemu??.o; do
     if test -f $file && [ "`basename $file`" != menu.lst ]; then
 	rm -f $file || exit 1
     fi
 done
-for file in ${pkglibdir}/*.mod ${pkglibdir}/*.lst ${pkglibdir}/*.img; do
+for file in ${pkglibdir}/*.mod ${pkglibdir}/*.lst; do
     cp -f $file ${grubdir} || exit 1
 done
+if [ "${target_cpu}-${platform}" = "i386-pc" ] ; then
+    for file in ${pkglibdir}/*.img ${pkglibdir}/efiemu??.o; do
+	if test -f $file; then
+	    cp -f $file ${grubdir} || exit 1
+	fi
+    done
+fi
 
 # Write device to a variable so we don't have to traverse /dev every time.
 grub_device=`$grub_probe --target=device ${grubdir}`
@@ -234,7 +267,8 @@ partmap_module=`$grub_probe --target=partmap --device ${grub_device} 2> /dev/nul
 devabstraction_module=`$grub_probe --target=abstraction --device ${grub_device}`
 
 # The order in this list is critical.  Be careful when modifying it.
-modules="$modules $fs_module $partmap_module biosdisk $devabstraction_module"
+modules="$modules $disk_module"
+modules="$modules $fs_module $partmap_module $devabstraction_module"
 
 prefix_drive=
 if [ "x${devabstraction_module}" = "x" ] ; then
@@ -246,9 +280,18 @@ if [ "x${devabstraction_module}" = "x" ] ; then
     grub_drive="`$grub_probe --target=drive --device ${grub_device}`"
 
     # Strip partition number
-    install_drive="`echo ${install_drive} | sed -e s/,[0-9]*//g`"
-    grub_drive="`echo ${grub_drive} | sed -e s/,[0-9]*//g`"
-    if [ "x${grub_drive}" != "x${install_drive}" ] ; then
+    install_drive="`echo ${install_drive} | sed -e s/,[0-9]*[a-z]*//g`"
+    grub_drive="`echo ${grub_drive} | sed -e s/,[0-9]*[a-z]*//g`"
+    if [ "$disk_module" = ata ] ; then
+        # generic method (used on coreboot and ata mod)
+        uuid="`$grub_probe --target=fs_uuid --device ${grub_device}`"
+        if [ "x${uuid}" = "x" ] ; then
+          echo "UUID needed with ata mod, but the filesystem containing ${grubdir} does not support UUIDs." 1>&2
+          exit 1
+        fi
+        prefix_drive="(UUID=${uuid})"
+        modules="$modules fs_uuid"
+    elif [ "x${grub_drive}" != "x${install_drive}" ] ; then
         uuid="`$grub_probe --target=fs_uuid --device ${grub_device}`"
         if [ "x${uuid}" = "x" ] ; then
           echo "You attempted a cross-disk install, but the filesystem containing ${grubdir} does not support UUIDs." 1>&2
@@ -266,11 +309,15 @@ if [ "x${relative_grubdir}" = "x" ] ; then
     relative_grubdir=/
 fi
 
-$grub_mkimage --output=${grubdir}/core.img --prefix=${prefix_drive}${relative_grubdir} $modules || exit 1
+if [ "${target_cpu}-${platform}" = "i386-pc" ] ; then
+    $grub_mkimage --output=${grubdir}/core.img --prefix=${prefix_drive}${relative_grubdir} $modules || exit 1
 
-# Now perform the installation.
-$grub_setup ${setup_verbose} --directory=${grubdir} --device-map=${device_map} \
-    ${install_device} || exit 1
+    # Now perform the installation.
+    $grub_setup ${setup_verbose} ${setup_force} --directory=${grubdir} --device-map=${device_map} \
+        ${install_device} || exit 1
+else
+    $grub_mkimage -d ${pkglibdir} --output=/boot/multiboot.img --prefix=${prefix_drive}${relative_grubdir} $modules || exit 1
+fi
 
 # Prompt the user to check if the device map is correct.
 echo "Installation finished. No error reported."

@@ -45,9 +45,8 @@ static int num_regions;
 
 grub_addr_t grub_os_area_addr;
 grub_size_t grub_os_area_size;
-grub_size_t grub_lower_mem, grub_upper_mem;
 
-void 
+void
 grub_arch_sync_caches (void *address __attribute__ ((unused)),
 		       grub_size_t len __attribute__ ((unused)))
 {
@@ -61,24 +60,21 @@ make_install_device (void)
 
   if (grub_prefix[0] != '(')
     {
-      /* If the root drive is not set explicitly, assume that it is identical
-         to the boot drive.  */
-      if (grub_root_drive == 0xFF)
-        grub_root_drive = grub_boot_drive;
-      
-      grub_sprintf (dev, "(%cd%u", (grub_root_drive & 0x80) ? 'h' : 'f',
-                    grub_root_drive & 0x7f);
-      
+      /* No hardcoded root partition - make it from the boot drive and the
+	 partition number encoded at the install time.  */
+      grub_sprintf (dev, "(%cd%u", (grub_boot_drive & 0x80) ? 'h' : 'f',
+		    grub_boot_drive & 0x7f);
+
       if (grub_install_dos_part >= 0)
 	grub_sprintf (dev + grub_strlen (dev), ",%u", grub_install_dos_part + 1);
-      
+
       if (grub_install_bsd_part >= 0)
 	grub_sprintf (dev + grub_strlen (dev), ",%c", grub_install_bsd_part + 'a');
-      
+
       grub_sprintf (dev + grub_strlen (dev), ")%s", grub_prefix);
       grub_strcpy (grub_prefix, dev);
     }
-      
+
   return grub_prefix;
 }
 
@@ -116,7 +112,7 @@ compact_mem_regions (void)
     if (mem_regions[i].addr + mem_regions[i].size >= mem_regions[i + 1].addr)
       {
 	j = i + 1;
-	
+
 	if (mem_regions[i].addr + mem_regions[i].size
 	    < mem_regions[j].addr + mem_regions[j].size)
 	  mem_regions[i].size = (mem_regions[j].addr + mem_regions[j].size
@@ -133,12 +129,13 @@ void
 grub_machine_init (void)
 {
   int i;
-  
+  int grub_lower_mem;
+
   /* Initialize the console as early as possible.  */
   grub_console_init ();
-  
+
   grub_lower_mem = grub_get_memsize (0) << 10;
-  
+
   /* Sanity check.  */
   if (grub_lower_mem < GRUB_MEMORY_MACHINE_RESERVED_END)
     grub_fatal ("too small memory");
@@ -148,11 +145,16 @@ grub_machine_init (void)
   grub_gate_a20 (1);
 #endif
 
+/* FIXME: This prevents loader/i386/linux.c from using low memory.  When our
+   heap implements support for requesting a chunk in low memory, this should
+   no longer be a problem.  */
+#if 0
   /* Add the lower memory into free memory.  */
   if (grub_lower_mem >= GRUB_MEMORY_MACHINE_RESERVED_END)
     add_mem_region (GRUB_MEMORY_MACHINE_RESERVED_END,
 		    grub_lower_mem - GRUB_MEMORY_MACHINE_RESERVED_END);
-  
+#endif
+
   auto int NESTED_FUNC_ATTR hook (grub_uint64_t, grub_uint64_t, grub_uint32_t);
   int NESTED_FUNC_ATTR hook (grub_uint64_t addr, grub_uint64_t size, grub_uint32_t type)
     {
@@ -161,16 +163,16 @@ grub_machine_init (void)
 	{
 	  if (size <= 0x100000 - addr)
 	    return 0;
-	  
+
 	  size -= 0x100000 - addr;
 	  addr = 0x100000;
 	}
-	
+
       /* Ignore >4GB.  */
       if (addr <= 0xFFFFFFFF && type == GRUB_MACHINE_MEMORY_AVAILABLE)
 	{
 	  grub_size_t len;
-	  
+
 	  len = (grub_size_t) ((addr + size > 0xFFFFFFFF)
 		 ? 0xFFFFFFFF - addr
 		 : size);
@@ -181,7 +183,7 @@ grub_machine_init (void)
     }
 
   grub_machine_mmap_iterate (hook);
-  
+
   compact_mem_regions ();
 
   /* Add the memory regions to free memory, except for the region starting
@@ -192,7 +194,6 @@ grub_machine_init (void)
       {
 	grub_size_t quarter = mem_regions[i].size >> 2;
 
-	grub_upper_mem = mem_regions[i].size;
 	grub_os_area_addr = mem_regions[i].addr;
 	grub_os_area_size = mem_regions[i].size - quarter;
 	grub_mm_init_region ((void *) (grub_os_area_addr + grub_os_area_size),
@@ -200,7 +201,7 @@ grub_machine_init (void)
       }
     else
       grub_mm_init_region ((void *) mem_regions[i].addr, mem_regions[i].size);
-  
+
   if (! grub_os_area_addr)
     grub_fatal ("no upper memory");
 
@@ -218,6 +219,7 @@ void
 grub_machine_fini (void)
 {
   grub_console_fini ();
+  grub_stop_floppy ();
 }
 
 /* Return the end of the core image.  */

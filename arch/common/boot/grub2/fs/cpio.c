@@ -23,9 +23,10 @@
 #include <grub/disk.h>
 #include <grub/dl.h>
 
+#ifndef MODE_USTAR
+/* cpio support */
 #define	MAGIC_BCPIO	070707
-
-struct HEAD_BCPIO
+struct head
 {
   grub_uint16_t magic;
   grub_uint16_t dev;
@@ -41,10 +42,10 @@ struct HEAD_BCPIO
   grub_uint16_t filesize_1;
   grub_uint16_t filesize_2;
 } __attribute__ ((packed));
-
+#else
+/* tar support */
 #define MAGIC_USTAR	"ustar"
-
-struct HEAD_USTAR
+struct head
 {
   char name[100];
   char mode[8];
@@ -63,11 +64,7 @@ struct HEAD_USTAR
   char devminor[8];
   char prefix[155];
 } __attribute__ ((packed));
-
-#define HEAD_LENG	sizeof(struct HEAD_USTAR)
-
-#define MODE_BCPIO	1
-#define MODE_USTAR	2
+#endif
 
 struct grub_cpio_data
 {
@@ -75,23 +72,19 @@ struct grub_cpio_data
   grub_uint32_t hofs;
   grub_uint32_t dofs;
   grub_uint32_t size;
-  int mode;
 };
 
-#ifndef GRUB_UTIL
 static grub_dl_t my_mod;
-#endif
 
 static grub_err_t
 grub_cpio_find_file (struct grub_cpio_data *data, char **name,
 		     grub_uint32_t * ofs)
 {
-  if (data->mode == MODE_BCPIO)
-    {
-      struct HEAD_BCPIO hd;
+#ifndef MODE_USTAR
+      struct head hd;
 
       if (grub_disk_read
-	  (data->disk, 0, data->hofs, sizeof (hd), (char *) &hd))
+	  (data->disk, 0, data->hofs, sizeof (hd), &hd))
 	return grub_errno;
 
       if (hd.magic != MAGIC_BCPIO)
@@ -123,13 +116,11 @@ grub_cpio_find_file (struct grub_cpio_data *data, char **name,
       *ofs = data->dofs + data->size;
       if (data->size & 1)
 	(*ofs)++;
-    }
-  else
-    {
-      struct HEAD_USTAR hd;
+#else
+      struct head hd;
 
       if (grub_disk_read
-	  (data->disk, 0, data->hofs, sizeof (hd), (char *) &hd))
+	  (data->disk, 0, data->hofs, sizeof (hd), &hd))
 	return grub_errno;
 
       if (!hd.name[0])
@@ -148,26 +139,25 @@ grub_cpio_find_file (struct grub_cpio_data *data, char **name,
       data->dofs = data->hofs + GRUB_DISK_SECTOR_SIZE;
       *ofs = data->dofs + ((data->size + GRUB_DISK_SECTOR_SIZE - 1) &
 			   ~(GRUB_DISK_SECTOR_SIZE - 1));
-    }
+#endif
   return GRUB_ERR_NONE;
 }
 
 static struct grub_cpio_data *
 grub_cpio_mount (grub_disk_t disk)
 {
-  char hd[HEAD_LENG];
+  struct head hd;
   struct grub_cpio_data *data;
-  int mode;
 
-  if (grub_disk_read (disk, 0, 0, sizeof (hd), hd))
+  if (grub_disk_read (disk, 0, 0, sizeof (hd), &hd))
     goto fail;
 
-  if (((struct HEAD_BCPIO *) hd)->magic == MAGIC_BCPIO)
-    mode = MODE_BCPIO;
-  else if (!grub_memcmp (((struct HEAD_USTAR *) hd)->magic, MAGIC_USTAR,
-			 sizeof (MAGIC_USTAR) - 1))
-    mode = MODE_USTAR;
-  else
+#ifndef MODE_USTAR
+  if (hd.magic != MAGIC_BCPIO)
+#else
+  if (grub_memcmp (hd.magic, MAGIC_USTAR,
+		   sizeof (MAGIC_USTAR) - 1))
+#endif
     goto fail;
 
   data = (struct grub_cpio_data *) grub_malloc (sizeof (*data));
@@ -175,18 +165,24 @@ grub_cpio_mount (grub_disk_t disk)
     goto fail;
 
   data->disk = disk;
-  data->mode = mode;
 
   return data;
 
 fail:
-  grub_error (GRUB_ERR_BAD_FS, "not a cpio filesystem");
+  grub_error (GRUB_ERR_BAD_FS, "not a "
+#ifdef MODE_USTAR
+	      "tar"
+#else
+	      "cpio"
+#endif
+	      " filesystem");
   return 0;
 }
 
 static grub_err_t
 grub_cpio_dir (grub_device_t device, const char *path,
-	       int (*hook) (const char *filename, int dir))
+	       int (*hook) (const char *filename,
+			    const struct grub_dirhook_info *info))
 {
   struct grub_cpio_data *data;
   grub_uint32_t ofs;
@@ -194,9 +190,7 @@ grub_cpio_dir (grub_device_t device, const char *path,
   const char *np;
   int len;
 
-#ifndef GRUB_UTIL
   grub_dl_ref (my_mod);
-#endif
 
   prev = 0;
 
@@ -230,7 +224,11 @@ grub_cpio_dir (grub_device_t device, const char *path,
 
 	  if ((!prev) || (grub_strcmp (prev, name) != 0))
 	    {
-	      hook (name + len, p != NULL);
+	      struct grub_dirhook_info info;
+	      grub_memset (&info, 0, sizeof (info));
+	      info.dir = (p != NULL);
+
+	      hook (name + len, &info);
 	      if (prev)
 		grub_free (prev);
 	      prev = name;
@@ -249,9 +247,7 @@ fail:
   if (data)
     grub_free (data);
 
-#ifndef GRUB_UTIL
   grub_dl_unref (my_mod);
-#endif
 
   return grub_errno;
 }
@@ -264,9 +260,7 @@ grub_cpio_open (grub_file_t file, const char *name)
   char *fn;
   int i, j;
 
-#ifndef GRUB_UTIL
   grub_dl_ref (my_mod);
-#endif
 
   data = grub_cpio_mount (file->device->disk);
   if (!data)
@@ -292,13 +286,13 @@ grub_cpio_open (grub_file_t file, const char *name)
 	{
 	  if (name[i] != fn[j])
 	    goto no_match;
-	  
+
 	  if (name[i] == '\0')
 	    break;
-	  
+
 	  if (name[i] == '/' && name[i+1] == '/')
 	    i++;
-	  
+
 	  i++;
 	  j++;
 	}
@@ -310,7 +304,7 @@ grub_cpio_open (grub_file_t file, const char *name)
       return GRUB_ERR_NONE;
 
     no_match:
-      
+
       grub_free (fn);
       data->hofs = ofs;
     }
@@ -320,9 +314,7 @@ fail:
   if (data)
     grub_free (data);
 
-#ifndef GRUB_UTIL
   grub_dl_unref (my_mod);
-#endif
 
   return grub_errno;
 }
@@ -342,32 +334,38 @@ grub_cpio_close (grub_file_t file)
 {
   grub_free (file->data);
 
-#ifndef GRUB_UTIL
   grub_dl_unref (my_mod);
-#endif
 
   return grub_errno;
 }
 
 static struct grub_fs grub_cpio_fs = {
+#ifdef MODE_USTAR
+  .name = "tarfs",
+#else
   .name = "cpiofs",
+#endif
   .dir = grub_cpio_dir,
   .open = grub_cpio_open,
   .read = grub_cpio_read,
   .close = grub_cpio_close,
-  .label = 0,
-  .next = 0
 };
 
+#ifdef MODE_USTAR
 GRUB_MOD_INIT (cpio)
+#else
+GRUB_MOD_INIT (tar)
+#endif
 {
   grub_fs_register (&grub_cpio_fs);
-#ifndef GRUB_UTIL
   my_mod = mod;
-#endif
 }
 
+#ifdef MODE_USTAR
 GRUB_MOD_FINI (cpio)
+#else
+GRUB_MOD_FINI (tar)
+#endif
 {
   grub_fs_unregister (&grub_cpio_fs);
 }

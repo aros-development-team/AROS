@@ -22,7 +22,6 @@
 #include <grub/dl.h>
 #include <grub/mm.h>
 #include <grub/misc.h>
-#include <grub/arg.h>
 #include <grub/bufio.h>
 
 /* Uncomment following define to enable TGA debug.  */
@@ -99,7 +98,7 @@ tga_load_truecolor_rle_R8G8B8 (struct grub_video_bitmap *bitmap,
 
       for (x = 0; x < header->image_width;)
         {
-          if (grub_file_read (file, (char *)&type, sizeof (type)) != sizeof(type))
+          if (grub_file_read (file, &type, sizeof (type)) != sizeof(type))
             return grub_errno;
 
           if (type & 0x80)
@@ -108,7 +107,7 @@ tga_load_truecolor_rle_R8G8B8 (struct grub_video_bitmap *bitmap,
               type &= 0x7f;
               type++;
 
-              if (grub_file_read (file, (char *)&tmp[0], bytes_per_pixel)
+              if (grub_file_read (file, &tmp[0], bytes_per_pixel)
                   != bytes_per_pixel)
                 return grub_errno;
 
@@ -133,7 +132,7 @@ tga_load_truecolor_rle_R8G8B8 (struct grub_video_bitmap *bitmap,
 
               while (type)
                 {
-                  if (grub_file_read (file, (char *)&tmp[0], bytes_per_pixel)
+                  if (grub_file_read (file, &tmp[0], bytes_per_pixel)
                       != bytes_per_pixel)
                     return grub_errno;
 
@@ -178,7 +177,7 @@ tga_load_truecolor_rle_R8G8B8A8 (struct grub_video_bitmap *bitmap,
 
       for (x = 0; x < header->image_width;)
         {
-          if (grub_file_read (file, (char *)&type, sizeof (type)) != sizeof(type))
+          if (grub_file_read (file, &type, sizeof (type)) != sizeof(type))
             return grub_errno;
 
           if (type & 0x80)
@@ -187,7 +186,7 @@ tga_load_truecolor_rle_R8G8B8A8 (struct grub_video_bitmap *bitmap,
               type &= 0x7f;
               type++;
 
-              if (grub_file_read (file, (char *)&tmp[0], bytes_per_pixel)
+              if (grub_file_read (file, &tmp[0], bytes_per_pixel)
                   != bytes_per_pixel)
                 return grub_errno;
 
@@ -213,7 +212,7 @@ tga_load_truecolor_rle_R8G8B8A8 (struct grub_video_bitmap *bitmap,
 
               while (type)
                 {
-                  if (grub_file_read (file, (char *)&tmp[0], bytes_per_pixel)
+                  if (grub_file_read (file, &tmp[0], bytes_per_pixel)
                       != bytes_per_pixel)
                     return grub_errno;
 
@@ -258,7 +257,7 @@ tga_load_truecolor_R8G8B8 (struct grub_video_bitmap *bitmap,
 
       for (x = 0; x < header->image_width; x++)
         {
-          if (grub_file_read (file, (char *)&tmp[0], bytes_per_pixel)
+          if (grub_file_read (file, &tmp[0], bytes_per_pixel)
               != bytes_per_pixel)
             return grub_errno;
 
@@ -295,7 +294,7 @@ tga_load_truecolor_R8G8B8A8 (struct grub_video_bitmap *bitmap,
 
       for (x = 0; x < header->image_width; x++)
         {
-          if (grub_file_read (file, (char *)&tmp[0], bytes_per_pixel)
+          if (grub_file_read (file, &tmp[0], bytes_per_pixel)
               != bytes_per_pixel)
             return grub_errno;
 
@@ -328,7 +327,7 @@ grub_video_reader_tga (struct grub_video_bitmap **bitmap,
      not going to support developer area & extensions at this point.  */
 
   /* Read TGA header from beginning of file.  */
-  if (grub_file_read (file, (char*)&header, sizeof (header)) 
+  if (grub_file_read (file, &header, sizeof (header))
       != sizeof (header))
     {
       grub_file_close (file);
@@ -461,7 +460,7 @@ grub_cmd_tgatest (struct grub_arg_list *state __attribute__ ((unused)),
   if (argc != 1)
     return grub_error (GRUB_ERR_BAD_ARGUMENT, "file name required");
 
-  grub_video_reader_tga (&bitmap, args[0]);  
+  grub_video_reader_tga (&bitmap, args[0]);
   if (grub_errno != GRUB_ERR_NONE)
     return grub_errno;
 

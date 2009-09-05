@@ -17,12 +17,11 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/normal.h>
 #include <grub/dl.h>
-#include <grub/arg.h>
 #include <grub/err.h>
 #include <grub/misc.h>
-#include <grub/lib/datetime.h>
+#include <grub/datetime.h>
+#include <grub/command.h>
 
 #define GRUB_DATETIME_SET_YEAR		1
 #define GRUB_DATETIME_SET_MONTH		2
@@ -32,7 +31,7 @@
 #define GRUB_DATETIME_SET_SECOND	32
 
 static grub_err_t
-grub_cmd_date (struct grub_arg_list *state __attribute__ ((unused)),
+grub_cmd_date (grub_command_t cmd __attribute__ ((unused)),
                int argc, char **args)
 {
   struct grub_datetime datetime;
@@ -130,16 +129,17 @@ fail:
   return grub_error (GRUB_ERR_BAD_ARGUMENT, "invalid datetime");
 }
 
+static grub_command_t cmd;
+
 GRUB_MOD_INIT(date)
 {
-  (void) mod;			/* To stop warning. */
-  grub_register_command ("date", grub_cmd_date,
-                         GRUB_COMMAND_FLAG_BOTH,
-			 "date [[year-]month-day] [hour:minute[:second]]",
-                         "Command to display/set current datetime.", 0);
+  cmd =
+    grub_register_command ("date", grub_cmd_date,
+			   "date [[year-]month-day] [hour:minute[:second]]",
+			   "Command to display/set current datetime.");
 }
 
 GRUB_MOD_FINI(date)
 {
-  grub_unregister_command ("date");
+  grub_unregister_command (cmd);
 }

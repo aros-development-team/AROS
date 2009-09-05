@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2005,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2005,2006,2007,2008,2009  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ struct grub_module_header
   {
     OBJ_TYPE_ELF,
     OBJ_TYPE_MEMDISK,
+    OBJ_TYPE_CONFIG
   }  grub_module_header_types;
 
   /* The size of object (including this header).  */
@@ -64,7 +65,7 @@ void grub_main (void);
 void grub_machine_init (void);
 
 /* The machine-specific finalization.  */
-void grub_machine_fini (void);
+void EXPORT_FUNC(grub_machine_fini) (void);
 
 /* The machine-specific prefix initialization.  */
 void grub_machine_set_prefix (void);

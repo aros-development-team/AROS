@@ -33,7 +33,7 @@ void
 grub_partition_map_unregister (grub_partition_map_t partmap)
 {
   grub_partition_map_t *p, q;
-  
+
   for (p = &grub_partition_map_list, q = *p; q; p = &(q->next), q = q->next)
     if (q == partmap)
       {
@@ -90,7 +90,7 @@ grub_partition_iterate (struct grub_disk *disk,
 {
   grub_partition_map_t partmap = 0;
   int ret = 0;
-  
+
   auto int part_map_iterate (const grub_partition_map_t p);
   auto int part_map_iterate_hook (grub_disk_t d,
 				  const grub_partition_t partition);
@@ -100,7 +100,7 @@ grub_partition_iterate (struct grub_disk *disk,
     {
       return 1;
     }
-  
+
   int part_map_iterate (const grub_partition_map_t p)
     {
       grub_dprintf ("partition", "Detecting %s...\n", p->name);
@@ -122,7 +122,7 @@ grub_partition_iterate (struct grub_disk *disk,
   grub_partition_map_iterate (part_map_iterate);
   if (partmap)
     ret = partmap->iterate (disk, hook);
-  
+
   return ret;
 }
 

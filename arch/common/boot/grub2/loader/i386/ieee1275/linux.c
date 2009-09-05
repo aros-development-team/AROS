@@ -25,13 +25,13 @@
 #include <grub/disk.h>
 #include <grub/misc.h>
 #include <grub/types.h>
-#include <grub/rescue.h>
 #include <grub/mm.h>
 #include <grub/dl.h>
 #include <grub/env.h>
 #include <grub/term.h>
 #include <grub/cpu/linux.h>
 #include <grub/ieee1275/ieee1275.h>
+#include <grub/command.h>
 
 #define GRUB_OFW_LINUX_PARAMS_ADDR	0x90000
 #define GRUB_OFW_LINUX_KERNEL_ADDR	0x100000
@@ -100,7 +100,7 @@ grub_linux_boot (void)
 
   grub_memset ((char *) params, 0, GRUB_OFW_LINUX_CL_OFFSET);
 
-  params->alt_mem = grub_upper_mem >> 10;
+  params->alt_mem = grub_mmap_get_upper () >> 10;
   params->ext_mem = params->alt_mem;
 
   lh->cmd_line_ptr = (char *)
@@ -140,8 +140,9 @@ grub_linux_boot (void)
   return GRUB_ERR_NONE;
 }
 
-void
-grub_rescue_cmd_linux (int argc, char *argv[])
+static grub_err_t
+grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
+		int argc, char *argv[])
 {
   grub_file_t file = 0;
   struct linux_kernel_header lh;
@@ -162,7 +163,7 @@ grub_rescue_cmd_linux (int argc, char *argv[])
   if (! file)
     goto fail;
 
-  if (grub_file_read (file, (char *) &lh, sizeof (lh)) != sizeof (lh))
+  if (grub_file_read (file, &lh, sizeof (lh)) != sizeof (lh))
     {
       grub_error (GRUB_ERR_READ_ERROR, "cannot read the linux header");
       goto fail;
@@ -229,10 +230,13 @@ fail:
 
       grub_dl_unref (my_mod);
     }
+
+  return grub_errno;
 }
 
-void
-grub_rescue_cmd_initrd (int argc, char *argv[])
+static grub_err_t
+grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
+		 int argc, char *argv[])
 {
   grub_file_t file = 0;
 
@@ -253,7 +257,7 @@ grub_rescue_cmd_initrd (int argc, char *argv[])
     goto fail;
 
   initrd_size = grub_file_size (file);
-  if (grub_file_read (file, (char *) GRUB_OFW_LINUX_INITRD_ADDR,
+  if (grub_file_read (file, (void *) GRUB_OFW_LINUX_INITRD_ADDR,
                       initrd_size) != (int) initrd_size)
     {
       grub_error (GRUB_ERR_FILE_READ_ERROR, "Couldn't read file");
@@ -263,21 +267,23 @@ grub_rescue_cmd_initrd (int argc, char *argv[])
 fail:
   if (file)
     grub_file_close (file);
+
+  return grub_errno;
 }
+
+static grub_command_t cmd_linux, cmd_initrd;
 
 GRUB_MOD_INIT(linux)
 {
-  grub_rescue_register_command ("linux",
-				grub_rescue_cmd_linux,
-				"load linux");
-  grub_rescue_register_command ("initrd",
-				grub_rescue_cmd_initrd,
-				"load initrd");
+  cmd_linux = grub_register_command ("linux", grub_cmd_linux,
+				     0, "load linux");
+  cmd_initrd = grub_register_command ("initrd", grub_cmd_initrd,
+				      0, "load initrd");
   my_mod = mod;
 }
 
 GRUB_MOD_FINI(linux)
 {
-  grub_rescue_unregister_command ("linux");
-  grub_rescue_unregister_command ("initrd");
+  grub_unregister_command (cmd_linux);
+  grub_unregister_command (cmd_initrd);
 }

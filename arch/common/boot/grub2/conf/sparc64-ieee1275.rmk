@@ -1,280 +1,189 @@
 
 # -*- makefile -*-
 
-COMMON_ASFLAGS = -nostdinc
-COMMON_CFLAGS = -ggdb -ffreestanding -m64 -mno-app-regs
-COMMON_LDFLAGS = -melf64_sparc -nostdlib
+COMMON_ASFLAGS = -nostdinc -m64
+COMMON_CFLAGS = -ffreestanding -m64 -mno-app-regs
+COMMON_LDFLAGS = -melf64_sparc -nostdlib -mno-relax
 
 # Used by various components.  These rules need to precede them.
-normal/lexer.c_DEPENDENCIES = grub_script.tab.h
+script/sh/lexer.c_DEPENDENCIES = grub_script.tab.h
 
 # Images.
+pkglib_IMAGES = boot.img diskboot.img kernel.img
+
+# For boot.img.
+boot_img_SOURCES = boot/sparc64/ieee1275/boot.S
+boot_img_ASFLAGS = $(COMMON_ASFLAGS)
+boot_img_LDFLAGS = $(COMMON_LDFLAGS) -Wl,-N,-Ttext,0x4000
+boot_img_FORMAT = a.out-sunos-big
+
+# For diskboot.img.
+diskboot_img_SOURCES = boot/sparc64/ieee1275/diskboot.S
+diskboot_img_ASFLAGS = $(COMMON_ASFLAGS)
+diskboot_img_LDFLAGS = $(COMMON_LDFLAGS) -Wl,-N,-Ttext,0x4200
+diskboot_img_FORMAT = binary
 
 MOSTLYCLEANFILES += symlist.c kernel_syms.lst
 DEFSYMFILES += kernel_syms.lst
 
-kernel_elf_HEADERS = arg.h boot.h cache.h device.h disk.h dl.h elf.h elfload.h \
-	env.h err.h file.h fs.h kernel.h misc.h mm.h net.h parser.h rescue.h \
-	symbol.h term.h time.h types.h sparc64/libgcc.h loader.h partition.h \
-	pc_partition.h ieee1275/ieee1275.h machine/kernel.h
+kernel_img_HEADERS = boot.h cache.h device.h disk.h dl.h elf.h elfload.h \
+	env.h err.h file.h fs.h kernel.h loader.h misc.h mm.h net.h parser.h \
+	partition.h msdos_partition.h reader.h symbol.h term.h time.h types.h \
+	list.h handler.h command.h \
+	sparc64/libgcc.h ieee1275/ieee1275.h machine/kernel.h \
+	sparc64/ieee1275/ieee1275.h
+kernel_img_SOURCES = kern/sparc64/ieee1275/crt0.S kern/ieee1275/cmain.c	\
+	kern/ieee1275/ieee1275.c kern/main.c kern/device.c		\
+	kern/disk.c kern/dl.c kern/err.c kern/file.c kern/fs.c		\
+	kern/misc.c kern/mm.c kern/reader.c kern/term.c			\
+	kern/rescue_parser.c kern/rescue_reader.c \
+	kern/list.c kern/handler.c kern/command.c kern/corecmd.c	\
+	kern/sparc64/ieee1275/ieee1275.c 				\
+	kern/sparc64/ieee1275/init.c 					\
+	kern/ieee1275/mmap.c						\
+	term/ieee1275/ofconsole.c 					\
+	kern/ieee1275/openfw.c disk/ieee1275/ofdisk.c 			\
+	kern/parser.c kern/partition.c kern/env.c kern/$(target_cpu)/dl.c	\
+	kern/generic/millisleep.c kern/time.c				\
+	symlist.c kern/$(target_cpu)/cache.S
+kernel_img_CFLAGS = $(COMMON_CFLAGS)
+kernel_img_ASFLAGS = $(COMMON_ASFLAGS)
+kernel_img_LDFLAGS = -nostdlib -Wl,-N,-Ttext,0x200000,-Bstatic,-melf64_sparc -static-libgcc -lgcc
+kernel_img_FORMAT = binary
 
-symlist.c: $(addprefix include/grub/,$(kernel_elf_HEADERS)) config.h gensymlist.sh
+symlist.c: $(addprefix include/grub/,$(kernel_img_HEADERS)) config.h gensymlist.sh
 	/bin/sh gensymlist.sh $(filter %.h,$^) > $@ || (rm -f $@; exit 1)
 
-# For the parser.
-grub_script.tab.c grub_script.tab.h: normal/parser.y
-	$(YACC) -d -p grub_script_yy -b grub_script $(srcdir)/normal/parser.y
-
-kernel_syms.lst: $(addprefix include/grub/,$(kernel_elf_HEADERS)) config.h genkernsyms.sh
+kernel_syms.lst: $(addprefix include/grub/,$(kernel_img_HEADERS)) config.h genkernsyms.sh
 	/bin/sh genkernsyms.sh $(filter %.h,$^) > $@ || (rm -f $@; exit 1)
 
-# Programs
-pkglib_PROGRAMS = kernel.elf
-
 # Utilities.
-#bin_UTILITIES = grub-mkimage
-#ifeq ($(enable_grub_emu), yes)
-#bin_UTILITIES += grub-emu
-#endif
+bin_UTILITIES = grub-mkimage
+sbin_UTILITIES = grub-setup grub-mkdevicemap grub-ofpathname
+ifeq ($(enable_grub_emu), yes)
+sbin_UTILITIES += grub-emu
+endif
 
 # For grub-mkimage.
 grub_mkimage_SOURCES = util/sparc64/ieee1275/grub-mkimage.c util/misc.c \
-        util/resolve.c 
+        util/resolve.c
+
+# For grub-setup.
+util/sparc64/ieee1275/grub-setup.c_DEPENDENCIES = grub_setup_init.h
+grub_setup_SOURCES = util/sparc64/ieee1275/grub-setup.c util/hostdisk.c	\
+	util/misc.c util/getroot.c kern/device.c kern/disk.c	\
+	kern/err.c kern/misc.c kern/parser.c kern/partition.c	\
+	kern/file.c kern/fs.c kern/env.c fs/fshelp.c		\
+	\
+	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c		\
+	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c	\
+	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c		\
+	fs/ufs.c fs/ufs2.c fs/xfs.c fs/afs.c fs/afs_be.c	\
+	fs/befs.c fs/befs_be.c fs/tar.c			\
+	\
+	partmap/amiga.c	partmap/apple.c partmap/msdos.c		\
+	partmap/sun.c partmap/acorn.c				\
+	\
+	disk/raid.c disk/mdraid_linux.c disk/lvm.c		\
+	util/raid.c util/lvm.c					\
+	grub_setup_init.c
+
+# For grub-mkdevicemap.
+grub_mkdevicemap_SOURCES = util/grub-mkdevicemap.c util/deviceiter.c \
+	util/ieee1275/ofpath.c util/ieee1275/devicemap.c util/misc.c
+
+# For grub-ofpathname.
+grub_ofpathname_SOURCES = util/sparc64/ieee1275/grub-ofpathname.c \
+	util/ieee1275/ofpath.c util/misc.c
 
 # For grub-emu
-#grub_emu_SOURCES = commands/boot.c commands/cat.c commands/cmp.c 	\
-#	commands/configfile.c commands/default.c commands/help.c	\
-#	commands/search.c commands/terminal.c commands/ls.c		\
-#	commands/timeout.c commands/test.c				\
-#	commands/halt.c commands/reboot.c		\
-#	disk/loopback.c							\
-#	fs/affs.c fs/ext2.c fs/fat.c fs/fshelp.c fs/hfs.c fs/iso9660.c  \
-#	fs/jfs.c fs/minix.c fs/sfs.c fs/ufs.c fs/xfs.c                  \
-#	grub_script.tab.c						\
-#	io/gzio.c                                                       \
-#	kern/device.c kern/disk.c kern/dl.c kern/env.c kern/err.c 	\
-#	kern/file.c kern/fs.c kern/loader.c kern/main.c kern/misc.c	\
-#	kern/parser.c kern/partition.c kern/rescue.c kern/term.c	\
-#	normal/arg.c normal/cmdline.c normal/command.c			\
-#	normal/completion.c normal/context.c normal/execute.c		\
-#	normal/function.c normal/lexer.c				\
-#	normal/main.c normal/menu.c normal/menu_entry.c	normal/misc.c	\
-#	partmap/amiga.c	partmap/apple.c partmap/pc.c partmap/sun.c	\
-#	partmap/acorn.c							\
-#	util/console.c util/grub-emu.c util/misc.c			\
-#	util/hostdisk.c util/getroot.c			\
-#	util/sparc64/ieee1275/misc.c
+util/grub-emu.c_DEPENDENCIES = grub_emu_init.h
+grub_emu_SOURCES = commands/minicmd.c commands/cat.c commands/cmp.c 	\
+	commands/configfile.c commands/help.c				\
+	commands/search.c commands/handler.c commands/test.c 		\
+	commands/ls.c commands/blocklist.c commands/hexdump.c		\
+	lib/hexdump.c commands/halt.c commands/reboot.c 		\
+	lib/envblk.c commands/loadenv.c					\
+	commands/gptsync.c commands/probe.c commands/xnu_uuid.c		\
+	commands/password.c commands/keystatus.c			\
+	disk/loopback.c							\
+	\
+	fs/affs.c fs/cpio.c fs/fat.c fs/ext2.c fs/hfs.c			\
+	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c		\
+	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c			\
+	fs/ufs.c fs/ufs2.c fs/xfs.c fs/afs.c fs/afs_be.c		\
+	fs/befs.c fs/befs_be.c fs/tar.c				\
+	\
+	io/gzio.c							\
+	kern/device.c kern/disk.c kern/dl.c kern/elf.c kern/env.c	\
+	kern/err.c kern/file.c kern/fs.c commands/boot.c kern/main.c	\
+	kern/misc.c kern/parser.c kern/partition.c kern/reader.c	\
+	kern/rescue_reader.c kern/rescue_parser.c			\
+	kern/term.c kern/list.c kern/handler.c fs/fshelp.c		\
+	kern/command.c kern/corecmd.c commands/extcmd.c			\
+	lib/arg.c normal/cmdline.c normal/datetime.c 			\
+	normal/completion.c normal/misc.c		 		\
+	normal/handler.c normal/auth.c normal/autofs.c normal/main.c	\
+	normal/menu.c 							\
+	normal/menu_text.c						\
+	normal/menu_entry.c normal/menu_viewer.c 	 		\
+	normal/color.c							\
+	script/sh/main.c script/sh/execute.c script/sh/function.c	\
+	script/sh/lexer.c script/sh/script.c				\
+	partmap/amiga.c	partmap/apple.c partmap/msdos.c partmap/sun.c	\
+	partmap/acorn.c							\
+	util/console.c util/hostfs.c util/grub-emu.c util/misc.c	\
+	util/hostdisk.c util/getroot.c					\
+	\
+	disk/raid.c disk/raid5_recover.c disk/raid6_recover.c		\
+	disk/mdraid_linux.c disk/dmraid_nvidia.c disk/lvm.c		\
+	commands/parttool.c parttool/msdospart.c				\
+	grub_script.tab.c grub_emu_init.c
 
 grub_emu_LDFLAGS = $(LIBCURSES)
 
-kernel_elf_SOURCES = kern/sparc64/ieee1275/init.c kern/ieee1275/ieee1275.c \
-	kern/main.c kern/device.c kern/disk.c kern/dl.c kern/file.c \
-	kern/fs.c kern/err.c kern/misc.c kern/mm.c kern/loader.c \
-	kern/rescue.c kern/term.c term/ieee1275/ofconsole.c \
-	kern/sparc64/ieee1275/openfw.c disk/ieee1275/ofdisk.c \
-	kern/partition.c kern/env.c kern/sparc64/dl.c symlist.c \
-	kern/generic/millisleep.c kern/generic/get_time_ms.c \
-	kern/sparc64/cache.S kern/parser.c
-kernel_elf_HEADERS = grub/sparc64/ieee1275/ieee1275.h
-kernel_elf_CFLAGS = $(COMMON_CFLAGS)
-kernel_elf_ASFLAGS = $(COMMON_ASFLAGS)
-kernel_elf_LDFLAGS = -mno-app-regs -nostdlib -Wl,-N,-Ttext,0x200000,-Bstatic,-melf64_sparc
+# Scripts.
+sbin_SCRIPTS = grub-install
+
+# For grub-install.
+grub_install_SOURCES = util/sparc64/ieee1275/grub-install.in
 
 # Modules.
-#_linux.mod linux.mod
-pkglib_MODULES = fat.mod ufs.mod ext2.mod minix.mod \
-	hfs.mod jfs.mod normal.mod hello.mod font.mod ls.mod \
-	boot.mod cmp.mod cat.mod terminal.mod fshelp.mod amiga.mod apple.mod \
-	pc.mod suspend.mod loopback.mod help.mod reboot.mod halt.mod sun.mod \
-	configfile.mod search.mod gzio.mod xfs.mod \
-	affs.mod sfs.mod acorn.mod
-
-# For fshelp.mod.
-fshelp_mod_SOURCES = fs/fshelp.c
-fshelp_mod_CFLAGS = $(COMMON_CFLAGS)
-fshelp_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For fat.mod.
-fat_mod_SOURCES = fs/fat.c
-fat_mod_CFLAGS = $(COMMON_CFLAGS)
-fat_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For ext2.mod.
-ext2_mod_SOURCES = fs/ext2.c
-ext2_mod_CFLAGS = $(COMMON_CFLAGS)
-ext2_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For ufs.mod.
-ufs_mod_SOURCES = fs/ufs.c
-ufs_mod_CFLAGS = $(COMMON_CFLAGS)
-ufs_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For minix.mod.
-minix_mod_SOURCES = fs/minix.c
-minix_mod_CFLAGS = $(COMMON_CFLAGS)
-minix_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For hfs.mod.
-hfs_mod_SOURCES = fs/hfs.c
-hfs_mod_CFLAGS = $(COMMON_CFLAGS)
-hfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For jfs.mod.
-jfs_mod_SOURCES = fs/jfs.c
-jfs_mod_CFLAGS = $(COMMON_CFLAGS)
-jfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For iso9660.mod.
-iso9660_mod_SOURCES = fs/iso9660.c
-iso9660_mod_CFLAGS = $(COMMON_CFLAGS)
-iso9660_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For xfs.mod.
-xfs_mod_SOURCES = fs/xfs.c
-xfs_mod_CFLAGS = $(COMMON_CFLAGS)
-xfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For affs.mod.
-affs_mod_SOURCES = fs/affs.c
-affs_mod_CFLAGS = $(COMMON_CFLAGS)
-affs_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For sfs.mod.
-sfs_mod_SOURCES = fs/sfs.c
-sfs_mod_CFLAGS = $(COMMON_CFLAGS)
-sfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For _linux.mod.
-#_linux_mod_SOURCES = loader/sparc64/ieee1275/linux.c
-#_linux_mod_CFLAGS = $(COMMON_CFLAGS)
-#_linux_mod_LDFLAGS = $(COMMON_LDFLAGS)
- 
-# For linux.mod.
-#linux_mod_SOURCES = loader/sparc64/ieee1275/linux_normal.c
-#linux_mod_CFLAGS = $(COMMON_CFLAGS)
-#linux_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For normal.mod.
-normal_mod_SOURCES = normal/arg.c normal/cmdline.c normal/command.c	\
-	normal/completion.c normal/execute.c				\
-	normal/function.c normal/lexer.c normal/main.c normal/menu.c	\
-	normal/menu_entry.c normal/misc.c normal/script.c		\
-	normal/sparc64/setjmp.S						\
-	grub_script.tab.c
-normal_mod_CFLAGS = $(COMMON_CFLAGS)
-normal_mod_ASFLAGS = $(COMMON_ASFLAGS)
-normal_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For hello.mod.
-hello_mod_SOURCES = hello/hello.c
-hello_mod_CFLAGS = $(COMMON_CFLAGS)
-hello_mod_LDFLAGS = $(COMMON_LDFLAGS)
+pkglib_MODULES = halt.mod \
+	linux.mod \
+	reboot.mod \
+	memdisk.mod \
+	lsmmap.mod
 
 # For boot.mod.
-boot_mod_SOURCES = commands/boot.c
+pkglib_MODULES += boot.mod 
+boot_mod_SOURCES = commands/boot.c lib/i386/pc/biosnum.c
 boot_mod_CFLAGS = $(COMMON_CFLAGS)
 boot_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For terminal.mod.
-terminal_mod_SOURCES = commands/terminal.c
-terminal_mod_CFLAGS = $(COMMON_CFLAGS)
-terminal_mod_LDFLAGS = $(COMMON_LDFLAGS)
+# For linux.mod.
+linux_mod_SOURCES = loader/sparc64/ieee1275/linux.c
+linux_mod_CFLAGS = $(COMMON_CFLAGS)
+linux_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For ls.mod.
-ls_mod_SOURCES = commands/ls.c
-ls_mod_CFLAGS = $(COMMON_CFLAGS)
-ls_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For cmp.mod.
-cmp_mod_SOURCES = commands/cmp.c
-cmp_mod_CFLAGS = $(COMMON_CFLAGS)
-cmp_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For cat.mod.
-cat_mod_SOURCES = commands/cat.c
-cat_mod_CFLAGS = $(COMMON_CFLAGS)
-cat_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For font.mod.
-font_mod_SOURCES = font/manager.c
-font_mod_CFLAGS = $(COMMON_CFLAGS)
-font_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For amiga.mod
-amiga_mod_SOURCES = partmap/amiga.c
-amiga_mod_CFLAGS = $(COMMON_CFLAGS)
-amiga_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For apple.mod
-apple_mod_SOURCES = partmap/apple.c
-apple_mod_CFLAGS = $(COMMON_CFLAGS)
-apple_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For pc.mod
-pc_mod_SOURCES = partmap/pc.c
-pc_mod_CFLAGS = $(COMMON_CFLAGS)
-pc_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For sun.mod
-sun_mod_SOURCES = partmap/sun.c
-sun_mod_CFLAGS = $(COMMON_CFLAGS)
-sun_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For acorn.mod
-acorn_mod_SOURCES = partmap/acorn.c
-acorn_mod_CFLAGS = $(COMMON_CFLAGS)
-
-# For loopback.mod
-loopback_mod_SOURCES = disk/loopback.c
-loopback_mod_CFLAGS = $(COMMON_CFLAGS)
-loopback_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For suspend.mod
-suspend_mod_SOURCES = commands/ieee1275/suspend.c
-suspend_mod_CFLAGS = $(COMMON_CFLAGS)
-suspend_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For reboot.mod
+# For reboot.mod.
 reboot_mod_SOURCES = commands/reboot.c
 reboot_mod_CFLAGS = $(COMMON_CFLAGS)
 reboot_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For halt.mod
+# For halt.mod.
 halt_mod_SOURCES = commands/halt.c
 halt_mod_CFLAGS = $(COMMON_CFLAGS)
 halt_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For help.mod.
-help_mod_SOURCES = commands/help.c
-help_mod_CFLAGS = $(COMMON_CFLAGS)
-help_mod_LDFLAGS = $(COMMON_LDFLAGS)
+# For memdisk.mod.
+memdisk_mod_SOURCES = disk/memdisk.c
+memdisk_mod_CFLAGS = $(COMMON_CFLAGS)
+memdisk_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For default.mod
-default_mod_SOURCES = commands/default.c
-default_mod_CFLAGS =  $(COMMON_CFLAGS)
-default_mod_LDFLAGS = $(COMMON_LDFLAGS)
+# For lsmmap.mod
+lsmmap_mod_SOURCES = commands/lsmmap.c
+lsmmap_mod_CFLAGS = $(COMMON_CFLAGS)
+lsmmap_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For timeout.mod
-timeout_mod_SOURCES = commands/timeout.c
-timeout_mod_CFLAGS =  $(COMMON_CFLAGS)
-timeout_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For configfile.mod
-configfile_mod_SOURCES = commands/configfile.c
-configfile_mod_CFLAGS = $(COMMON_CFLAGS)
-configfile_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For search.mod.
-search_mod_SOURCES = commands/search.c
-search_mod_CFLAGS = $(COMMON_CFLAGS)
-search_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For gzio.mod.
-gzio_mod_SOURCES = io/gzio.c
-gzio_mod_CFLAGS = $(COMMON_CFLAGS)
-gzio_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For test.mod.
-test_mod_SOURCES = commands/test.c
-test_mod_CFLAGS = $(COMMON_CFLAGS)
-test_mod_LDFLAGS = $(COMMON_LDFLAGS)
+include $(srcdir)/conf/common.mk

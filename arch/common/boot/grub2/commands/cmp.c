@@ -17,18 +17,17 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/normal.h>
 #include <grub/dl.h>
-#include <grub/arg.h>
 #include <grub/misc.h>
 #include <grub/file.h>
 #include <grub/mm.h>
 #include <grub/gzio.h>
+#include <grub/command.h>
 
 #define BUFFER_SIZE 512
 
 static grub_err_t
-grub_cmd_cmp (struct grub_arg_list *state __attribute__ ((unused)),
+grub_cmd_cmp (grub_command_t cmd __attribute__ ((unused)),
 	      int argc, char **args)
 {
   grub_ssize_t rd1, rd2;
@@ -50,7 +49,7 @@ grub_cmd_cmp (struct grub_arg_list *state __attribute__ ((unused)),
     goto cleanup;
 
   if (grub_file_size (file1) != grub_file_size (file2))
-    grub_printf ("Differ in size: %llu [%s], %llu [%s]\n", 
+    grub_printf ("Differ in size: %llu [%s], %llu [%s]\n",
 		 (unsigned long long) grub_file_size (file1), args[0],
 		 (unsigned long long) grub_file_size (file2), args[1]);
   else
@@ -59,14 +58,14 @@ grub_cmd_cmp (struct grub_arg_list *state __attribute__ ((unused)),
 
       buf1 = grub_malloc (BUFFER_SIZE);
       buf2 = grub_malloc (BUFFER_SIZE);
-      
+
       if (! buf1 || ! buf2)
         goto cleanup;
-      
+
       do
 	{
 	  int i;
-	  
+
 	  rd1 = grub_file_read (file1, buf1, BUFFER_SIZE);
 	  rd2 = grub_file_read (file2, buf2, BUFFER_SIZE);
 
@@ -84,15 +83,15 @@ grub_cmd_cmp (struct grub_arg_list *state __attribute__ ((unused)),
 		}
 	    }
 	  pos += BUFFER_SIZE;
-	  
+
 	}
       while (rd2);
-      
+
       grub_printf ("The files are identical.\n");
     }
 
 cleanup:
-  
+
   if (buf1)
     grub_free (buf1);
   if (buf2)
@@ -105,15 +104,15 @@ cleanup:
   return grub_errno;
 }
 
+static grub_command_t cmd;
 
 GRUB_MOD_INIT(cmp)
 {
-  (void) mod;			/* To stop warning. */
-  grub_register_command ("cmp", grub_cmd_cmp, GRUB_COMMAND_FLAG_BOTH,
-			 "cmp FILE1 FILE2", "Compare two files.", 0);
+  cmd = grub_register_command ("cmp", grub_cmd_cmp,
+			       "cmp FILE1 FILE2", "Compare two files.");
 }
 
 GRUB_MOD_FINI(cmp)
 {
-  grub_unregister_command ("cmp");
+  grub_unregister_command (cmd);
 }

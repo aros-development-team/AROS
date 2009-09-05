@@ -1,7 +1,7 @@
 /* parser.c - the part of the parser that can return partial tokens */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2005,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2005,2007,2009  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -47,8 +47,8 @@ static struct grub_parser_state_transition state_transitions[] =
 
   { GRUB_PARSER_STATE_QVAR, GRUB_PARSER_STATE_QVARNAME2, '{', 0},
   { GRUB_PARSER_STATE_QVAR, GRUB_PARSER_STATE_QVARNAME, 0, 1},
-  { GRUB_PARSER_STATE_QVARNAME, GRUB_PARSER_STATE_DQUOTE, ' ', 1},
   { GRUB_PARSER_STATE_QVARNAME, GRUB_PARSER_STATE_TEXT, '\"', 0},
+  { GRUB_PARSER_STATE_QVARNAME, GRUB_PARSER_STATE_DQUOTE, ' ', 1},
   { GRUB_PARSER_STATE_QVARNAME2, GRUB_PARSER_STATE_DQUOTE, '}', 0},
 
   { 0, 0, 0, 0}
@@ -60,9 +60,7 @@ grub_parser_state_t
 grub_parser_cmdline_state (grub_parser_state_t state, char c, char *result)
 {
   struct grub_parser_state_transition *transition;
-  struct grub_parser_state_transition *next_match = 0;
   struct grub_parser_state_transition default_transition;
-  int found = 0;
 
   default_transition.to_state = state;
   default_transition.keep_value = 1;
@@ -70,26 +68,24 @@ grub_parser_cmdline_state (grub_parser_state_t state, char c, char *result)
   /* Look for a good translation.  */
   for (transition = state_transitions; transition->from_state; transition++)
     {
+      if (transition->from_state != state)
+	continue;
       /* An exact match was found, use it.  */
-      if (transition->from_state == state && transition->input == c)
-	{
-	  found = 1;
-	  break;
-	}
+      if (transition->input == c)
+	break;
+
+      if (transition->input == ' ' && ! grub_isalpha (c)
+	  && ! grub_isdigit (c) && c != '_')
+	break;
 
       /* A less perfect match was found, use this one if no exact
 	 match can be found.  */
-      if (transition->from_state == state && transition->input == 0)
-	next_match = transition;
+      if (transition->input == 0)
+	break;
     }
 
-  if (! found)
-    {
-      if (next_match)
-	transition = next_match;
-      else
-	transition = &default_transition;
-    }
+  if (! transition->from_state)
+    transition = &default_transition;
 
   if (transition->keep_value)
     *result = c;
@@ -100,7 +96,7 @@ grub_parser_cmdline_state (grub_parser_state_t state, char c, char *result)
 
 
 grub_err_t
-grub_parser_split_cmdline (const char *cmdline, grub_err_t (*getline) (char **),
+grub_parser_split_cmdline (const char *cmdline, grub_reader_getline_t getline,
 			   int *argc, char ***argv)
 {
   grub_parser_state_t state = GRUB_PARSER_STATE_TEXT;
@@ -140,7 +136,7 @@ grub_parser_split_cmdline (const char *cmdline, grub_err_t (*getline) (char **),
       vp = varname;
       if (! val)
 	return;
-      
+
       /* Insert the contents of the variable in the buffer.  */
       for (; *val; val++)
 	*(bp++) = *val;
@@ -152,7 +148,7 @@ grub_parser_split_cmdline (const char *cmdline, grub_err_t (*getline) (char **),
       if (! *rd)
 	{
 	  if (getline)
-	    getline (&rd);
+	    getline (&rd, 1);
 	  else break;
 	}
 
@@ -160,7 +156,7 @@ grub_parser_split_cmdline (const char *cmdline, grub_err_t (*getline) (char **),
 	{
 	  grub_parser_state_t newstate;
 	  char use;
-	  
+
 	  newstate = grub_parser_cmdline_state (state, *rd, &use);
 
 	  /* If a variable was being processed and this character does
@@ -197,14 +193,14 @@ grub_parser_split_cmdline (const char *cmdline, grub_err_t (*getline) (char **),
   /* A special case for when the last character was part of a
      variable.  */
   add_var (GRUB_PARSER_STATE_TEXT);
-  
+
 
   /* Reserve memory for the return values.  */
   args = grub_malloc (bp - buffer);
   if (! args)
     return grub_errno;
   grub_memcpy (args, buffer, bp - buffer);
-  
+
   *argv = grub_malloc (sizeof (char *) * (*argc + 1));
   if (! *argv)
     {
@@ -226,4 +222,48 @@ grub_parser_split_cmdline (const char *cmdline, grub_err_t (*getline) (char **),
   (*argc)--;
 
   return 0;
+}
+
+struct grub_handler_class grub_parser_class =
+  {
+    .name = "parser"
+  };
+
+grub_err_t
+grub_parser_execute (char *source)
+{
+  auto grub_err_t getline (char **line, int cont);
+  grub_err_t getline (char **line, int cont __attribute__ ((unused)))
+    {
+      char *p;
+
+      if (! source)
+	{
+	  *line = 0;
+	  return 0;
+	}
+
+      p = grub_strchr (source, '\n');
+      if (p)
+	*p = 0;
+
+      *line = grub_strdup (source);
+      if (p)
+	*p = '\n';
+      source = p ? p + 1 : 0;
+      return 0;
+    }
+
+  while (source)
+    {
+      char *line;
+      grub_parser_t parser;
+
+      getline (&line, 0);
+      parser = grub_parser_get_current ();
+      parser->parse_line (line, getline);
+      grub_free (line);
+    }
+
+  return grub_errno;
 }

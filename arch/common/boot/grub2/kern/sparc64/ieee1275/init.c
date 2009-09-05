@@ -1,7 +1,7 @@
-/*  init.c -- Initialize GRUB on the Ultra Sprac (sparc64).  */
+/*  init.c -- Initialize GRUB on SPARC64.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003,2004,2005,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2009 Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,159 +18,111 @@
  */
 
 #include <grub/kernel.h>
-#include <grub/dl.h>
-#include <grub/disk.h>
 #include <grub/mm.h>
-#include <grub/partition.h>
-#include <grub/normal.h>
-#include <grub/fs.h>
-#include <grub/setjmp.h>
 #include <grub/env.h>
+#include <grub/err.h>
 #include <grub/misc.h>
 #include <grub/time.h>
 #include <grub/machine/console.h>
 #include <grub/machine/kernel.h>
+#include <grub/machine/time.h>
 #include <grub/ieee1275/ofdisk.h>
 #include <grub/ieee1275/ieee1275.h>
 
-/* OpenBoot entry point.  */
-int (*grub_ieee1275_entry_fn) (void *);
-grub_ieee1275_phandle_t grub_ieee1275_chosen;
-static grub_uint32_t grub_ieee1275_flags;
-/* FIXME (sparc64).  */
-static const grub_addr_t grub_heap_start = 0x40000;
-static grub_addr_t grub_heap_len;
-
 void
-_start (uint64_t r0 __attribute__((unused)),
-        uint64_t r1 __attribute__((unused)),
-        uint64_t r2 __attribute__((unused)),
-        uint64_t r3 __attribute__((unused)),
-        uint64_t r4,
-        uint64_t r5 __attribute__((unused)));
-void
-_start (uint64_t r0 __attribute__((unused)),
-        uint64_t r1 __attribute__((unused)),
-        uint64_t r2 __attribute__((unused)),
-        uint64_t r3 __attribute__((unused)),
-        uint64_t r4,
-        uint64_t r5 __attribute__((unused)))
+grub_exit (void)
 {
-  grub_ieee1275_entry_fn = (int (*)(void *)) r4;
-
-  grub_ieee1275_finddevice ("/chosen", &grub_ieee1275_chosen);
-
-  /* Now invoke the main function.  */
-  grub_main ();
-
-  /* Never reached.  */
+  grub_ieee1275_exit ();
 }
 
-int
-grub_ieee1275_test_flag (enum grub_ieee1275_flag flag)
+static grub_uint64_t
+ieee1275_get_time_ms (void)
 {
-  return (grub_ieee1275_flags & (1 << flag));
+  grub_uint32_t msecs = 0;
+
+  grub_ieee1275_milliseconds (&msecs);
+
+  return msecs;
 }
 
-void
-grub_ieee1275_set_flag (enum grub_ieee1275_flag flag)
+grub_uint32_t
+grub_get_rtc (void)
 {
-  grub_ieee1275_flags |= (1 << flag);
+  return ieee1275_get_time_ms ();
 }
 
-/* Translate an OF filesystem path (separated by backslashes), into a GRUB
-   path (separated by forward slashes).  */
-static void
-grub_translate_ieee1275_path (char *filepath)
+grub_addr_t
+grub_arch_modules_addr (void)
 {
-  char *backslash;
-
-  backslash = grub_strchr (filepath, '\\');
-  while (backslash != 0)
-    {
-      *backslash = '/';
-      backslash = grub_strchr (filepath, '\\');
-    }
+  extern char _end[];
+  return (grub_addr_t) _end;
 }
 
 void
 grub_machine_set_prefix (void)
 {
-  char bootpath[64]; /* XXX check length */
-  char *filename;
-  char *prefix;
-
-  if (grub_ieee1275_get_property (grub_ieee1275_chosen, "bootpath", bootpath,
-				  sizeof (bootpath), 0))
+  if (grub_prefix[0] != '(')
     {
-      /* Should never happen.  */
-      grub_printf ("/chosen/bootpath property missing!\n");
-      grub_env_set ("prefix", "");
-      return;
-    }
+      char bootpath[IEEE1275_MAX_PATH_LEN];
+      char *prefix, *path, *colon;
+      grub_ssize_t actual;
 
-  /* Transform an OF device path to a GRUB path.  */
-
-  prefix = grub_ieee1275_encode_devname (bootpath);
-
-  filename = grub_ieee1275_get_filename (bootpath);
-  if (filename)
-    {
-      char *newprefix;
-      char *lastslash = grub_strrchr (filename, '\\');
-
-      /* Truncate at last directory.  */
-      if (lastslash)
-        {
-	  *lastslash = '\0';
-	  grub_translate_ieee1275_path (filename);
-
-	  newprefix = grub_malloc (grub_strlen (prefix)
-				   + grub_strlen (filename));
-	  grub_sprintf (newprefix, "%s%s", prefix, filename);
-	  grub_free (prefix);
-	  prefix = newprefix;
+      if (grub_ieee1275_get_property (grub_ieee1275_chosen, "bootpath",
+				      &bootpath, sizeof (bootpath), &actual))
+	{
+	  /* Should never happen.  */
+	  grub_printf ("/chosen/bootpath property missing!\n");
+	  grub_env_set ("prefix", "");
+	  return;
 	}
+
+      /* Transform an OF device path to a GRUB path.  */
+      colon = grub_strchr (bootpath, ':');
+      if (colon)
+	{
+	  char *part = colon + 1;
+
+	  /* Consistently provide numbered partitions to GRUB.
+	     OpenBOOT traditionally uses alphabetical partition
+	     specifiers.  */
+	  if (part[0] >= 'a' && part[0] <= 'z')
+	    part[0] = '1' + (part[0] - 'a');
+	}
+      prefix = grub_ieee1275_encode_devname (bootpath);
+
+      path = grub_malloc (grub_strlen (grub_prefix)
+			  + grub_strlen (prefix)
+			  + 2);
+      grub_sprintf(path, "%s%s", prefix, grub_prefix);
+
+      grub_strcpy (grub_prefix, path);
+
+      grub_free (path);
+      grub_free (prefix);
     }
 
-  grub_env_set ("prefix", prefix);
-
-  grub_free (filename);
-  grub_free (prefix);
+  grub_env_set ("prefix", grub_prefix);
 }
 
-grub_uint64_t ieee1275_get_time_ms (void);
-
-void
-grub_machine_init (void)
+static void
+grub_heap_init (void)
 {
-  char *args;
-  grub_ssize_t length;
+  grub_mm_init_region ((void *)(long)0x4000UL, 0x200000 - 0x4000);
+}
 
-  grub_console_init ();
+static void
+grub_parse_cmdline (void)
+{
+  grub_ssize_t actual;
+  char args[256];
 
-  /* FIXME (sparc64).  */
-  grub_heap_len = (grub_addr_t) &_start - 0x1000 - grub_heap_start;
-
-  if (grub_ieee1275_claim (grub_heap_start, grub_heap_len, 0, 0))
-      grub_fatal ("Failed to claim heap at %p, len 0x%x\n", grub_heap_start,
-		   grub_heap_len);
-  grub_mm_init_region ((void *) grub_heap_start, grub_heap_len);
-
-  grub_ofdisk_init ();
-
-  /* Process commandline.  */
-  if (grub_ieee1275_get_property_length (grub_ieee1275_chosen, "bootargs",
-                                         &length) == 0 &&
-      length > 0)
+  if (grub_ieee1275_get_property (grub_ieee1275_chosen, "bootargs", &args,
+				  sizeof args, &actual) == 0
+      && actual > 1)
     {
-      grub_ssize_t i = 0;
+      int i = 0;
 
-      args = grub_malloc (length);
-      grub_ieee1275_get_property (grub_ieee1275_chosen, "bootargs", args,
-				  length, 0);
-
-      while (i < length)
+      while (i < actual)
 	{
 	  char *command = &args[i];
 	  char *end;
@@ -178,7 +130,7 @@ grub_machine_init (void)
 
 	  end = grub_strchr (command, ';');
 	  if (end == 0)
-	    i = length; /* No more commands after this one.  */
+	    i = actual; /* No more commands after this one.  */
 	  else
 	    {
 	      *end = '\0';
@@ -196,7 +148,19 @@ grub_machine_init (void)
 	    }
 	}
     }
+}
 
+void
+grub_machine_init (void)
+{
+  grub_ieee1275_init ();
+  grub_console_init ();
+  grub_heap_init ();
+
+  grub_ieee1275_set_flag (GRUB_IEEE1275_FLAG_NO_PARTITION_0);
+  grub_ofdisk_init ();
+
+  grub_parse_cmdline ();
   grub_install_get_time_ms (ieee1275_get_time_ms);
 }
 
@@ -205,33 +169,4 @@ grub_machine_fini (void)
 {
   grub_ofdisk_fini ();
   grub_console_fini ();
-}
-
-void
-grub_exit (void)
-{
-  grub_ieee1275_enter ();
-}
-
-grub_uint64_t
-ieee1275_get_time_ms (void)
-{
-  return grub_get_rtc ();
-}
-
-grub_uint32_t
-grub_get_rtc (void)
-{
-  grub_uint32_t msecs;
-
-  if (grub_ieee1275_milliseconds (&msecs))
-    return 0;
-
-  return msecs;
-}
-
-grub_addr_t
-grub_arch_modules_addr (void)
-{
-  return GRUB_IEEE1275_MODULE_BASE;
 }

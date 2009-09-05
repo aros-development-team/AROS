@@ -37,9 +37,9 @@ struct grub_elf_file
 typedef struct grub_elf_file *grub_elf_t;
 
 typedef grub_err_t (*grub_elf32_load_hook_t)
-  (Elf32_Phdr *phdr, grub_addr_t *addr);
+  (Elf32_Phdr *phdr, grub_addr_t *addr, int *load);
 typedef grub_err_t (*grub_elf64_load_hook_t)
-  (Elf64_Phdr *phdr, grub_addr_t *addr);
+  (Elf64_Phdr *phdr, grub_addr_t *addr, int *load);
 
 grub_elf_t grub_elf_open (const char *);
 grub_elf_t grub_elf_file (grub_file_t);

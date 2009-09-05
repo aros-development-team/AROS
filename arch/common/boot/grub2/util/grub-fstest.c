@@ -28,10 +28,9 @@
 #include <grub/env.h>
 #include <grub/term.h>
 #include <grub/mm.h>
-#include <grub/normal.h>
-#include <grub/raid.h>
 #include <grub/lib/hexdump.h>
 #include <grub/lib/crc.h>
+#include <grub/command.h>
 
 #include <grub_fstest_init.h>
 
@@ -53,17 +52,8 @@ grub_getkey (void)
   return -1;
 }
 
-grub_term_input_t
-grub_term_get_current_input (void)
-{
-  return 0;
-}
-
-grub_term_output_t
-grub_term_get_current_output (void)
-{
-  return 0;
-}
+struct grub_handler_class grub_term_input_class;
+struct grub_handler_class grub_term_output_class;
 
 void
 grub_refresh (void)
@@ -71,73 +61,16 @@ grub_refresh (void)
   fflush (stdout);
 }
 
-static struct grub_command cmd_loopback;
-static struct grub_command cmd_blocklist;
-static struct grub_command cmd_ls;
-
-grub_command_t
-grub_register_command (const char *name,
-		       grub_err_t (*func) (struct grub_arg_list * state,
-					   int argc, char **args),
-		       unsigned flags,
-		       const char *summary __attribute__ ((unused)),
-		       const char *description __attribute__ ((unused)),
-		       const struct grub_arg_option *options)
-{
-  grub_command_t cmd = 0;
-
-  if (!grub_strcmp (name, "loopback"))
-    cmd = &cmd_loopback;
-  else if (!grub_strcmp (name, "blocklist"))
-    cmd = &cmd_blocklist;
-  else if (!grub_strcmp (name, "ls"))
-    cmd = &cmd_ls;
-
-  if (cmd)
-    {
-      cmd->func = func;
-      cmd->flags = flags;
-      cmd->options = options;
-    }
-  return NULL;
-}
-
 static grub_err_t
-execute_command (grub_command_t cmd, int n, char **args)
+execute_command (char *name, int n, char **args)
 {
-  int maxargs = 0;
-  grub_err_t ret = 0;
-  struct grub_arg_list *state;
-  struct grub_arg_option *parser;
-  char **parsed_arglist;
-  int numargs;
+  grub_command_t cmd;
 
-  /* Count the amount of options the command has.  */
-  parser = (struct grub_arg_option *) cmd->options;
-  while (parser && (parser++)->doc)
-    maxargs++;
+  cmd = grub_command_find (name);
+  if (! cmd)
+    grub_util_error ("Can\'t find command %s", name);
 
-  /* Set up the option state.  */
-  state = grub_malloc (sizeof (struct grub_arg_list) * maxargs);
-  grub_memset (state, 0, sizeof (struct grub_arg_list) * maxargs);
-
-  /* Start the command.  */
-  if (!(cmd->flags & GRUB_COMMAND_FLAG_NO_ARG_PARSE))
-    {
-      if (grub_arg_parse (cmd, n, args, state, &parsed_arglist, &numargs))
-	ret = (cmd->func) (state, numargs, parsed_arglist);
-    }
-  else
-    ret = (cmd->func) (state, n, args);
-
-  grub_free (state);
-
-  return ret;
-}
-
-void
-grub_unregister_command (const char *name __attribute__ ((unused)))
-{
+  return (cmd->func) (cmd, n, args);
 }
 
 #define CMD_LS          1
@@ -355,15 +288,21 @@ fstest (char **images, int num_disks, int cmd, int n, char **args)
       grub_sprintf (loop_name, "loop%d", i);
       grub_sprintf (host_file, "(host)%s", images[i]);
 
-      if (execute_command (&cmd_loopback, 3, argv))
+      if (execute_command ("loopback", 3, argv))
         grub_util_error ("loopback command fails.");
     }
 
-  grub_raid_rescan ();
+  grub_lvm_fini ();
+  grub_mdraid_fini ();
+  grub_raid_fini ();
+  grub_raid_init ();
+  grub_mdraid_init ();
+  grub_lvm_init ();
+
   switch (cmd)
     {
     case CMD_LS:
-      execute_command (&cmd_ls, n, args);
+      execute_command ("ls", n, args);
       break;
     case CMD_CP:
       cmd_cp (args[0], args[1]);
@@ -378,7 +317,7 @@ fstest (char **images, int num_disks, int cmd, int n, char **args)
       cmd_crc (args[0]);
       break;
     case CMD_BLOCKLIST:
-      execute_command (&cmd_blocklist, n, args);
+      execute_command ("blocklist", n, args);
       grub_printf ("\n");
     }
 
@@ -387,7 +326,7 @@ fstest (char **images, int num_disks, int cmd, int n, char **args)
   for (i = 0; i < num_disks; i++)
     {
       grub_sprintf (loop_name, "loop%d", i);
-      execute_command (&cmd_loopback, 2, argv);
+      execute_command ("loopback", 2, argv);
     }
 }
 

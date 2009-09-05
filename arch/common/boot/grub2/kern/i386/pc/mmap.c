@@ -18,15 +18,16 @@
 
 #include <grub/machine/init.h>
 #include <grub/machine/memory.h>
+#include <grub/err.h>
 #include <grub/types.h>
 
-void
+grub_err_t
 grub_machine_mmap_iterate (int NESTED_FUNC_ATTR (*hook) (grub_uint64_t, grub_uint64_t, grub_uint32_t))
 {
   grub_uint32_t cont;
   struct grub_machine_mmap_entry *entry
     = (struct grub_machine_mmap_entry *) GRUB_MEMORY_MACHINE_SCRATCH_ADDR;
-  
+
   /* Check if grub_get_mmap_entry works.  */
   cont = grub_get_mmap_entry (entry, 0);
 
@@ -57,4 +58,6 @@ grub_machine_mmap_iterate (int NESTED_FUNC_ATTR (*hook) (grub_uint64_t, grub_uin
       else
 	hook (0x100000, grub_get_memsize (1) << 10, GRUB_MACHINE_MEMORY_AVAILABLE);
     }
+
+  return 0;
 }

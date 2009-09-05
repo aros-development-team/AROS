@@ -17,7 +17,6 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <alloca.h>
 #include <grub/types.h>
 #include <grub/err.h>
 #include <grub/misc.h>
@@ -32,39 +31,62 @@ enum grub_ieee1275_parse_type
 };
 
 /* Walk children of 'devpath', calling hook for each.  */
-grub_err_t
+int
 grub_children_iterate (char *devpath,
-		  int (*hook) (struct grub_ieee1275_devalias *alias))
+		       int (*hook) (struct grub_ieee1275_devalias *alias))
 {
   grub_ieee1275_phandle_t dev;
   grub_ieee1275_phandle_t child;
+  char *childtype, *childpath;
+  char *childname, *fullname;
+  int ret = 0;
 
   if (grub_ieee1275_finddevice (devpath, &dev))
-    return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "Unknown device");
+    return 0;
 
   if (grub_ieee1275_child (dev, &child))
-    return grub_error (GRUB_ERR_BAD_DEVICE, "Device has no children");
+    return 0;
+
+  childtype = grub_malloc (IEEE1275_MAX_PROP_LEN);
+  if (!childtype)
+    return 0;
+  childpath = grub_malloc (IEEE1275_MAX_PATH_LEN);
+  if (!childpath)
+    {
+      grub_free (childtype);
+      return 0;
+    }
+  childname = grub_malloc (IEEE1275_MAX_PROP_LEN);
+  if (!childname)
+    {
+      grub_free (childpath);
+      grub_free (childtype);
+      return 0;
+    }
+  fullname = grub_malloc (IEEE1275_MAX_PATH_LEN);
+  if (!fullname)
+    {
+      grub_free (childname);
+      grub_free (childpath);
+      grub_free (childtype);
+      return 0;
+    }
 
   do
     {
-      /* XXX: Don't use hardcoded path lengths.  */
-      char childtype[64];
-      char childpath[64];
-      char childname[64];
-      char fullname[64];
       struct grub_ieee1275_devalias alias;
-      int actual;
+      grub_ssize_t actual;
 
-      if (grub_ieee1275_get_property (child, "device_type", &childtype,
-				      sizeof childtype, &actual))
+      if (grub_ieee1275_get_property (child, "device_type", childtype,
+				      IEEE1275_MAX_PROP_LEN, &actual))
 	continue;
 
-      if (grub_ieee1275_package_to_path (child, childpath, sizeof childpath,
-					 &actual))
+      if (grub_ieee1275_package_to_path (child, childpath,
+					 IEEE1275_MAX_PATH_LEN, &actual))
 	continue;
 
-      if (grub_ieee1275_get_property (child, "name", &childname,
-				      sizeof childname, &actual))
+      if (grub_ieee1275_get_property (child, "name", childname,
+				      IEEE1275_MAX_PROP_LEN, &actual))
 	continue;
 
       grub_sprintf (fullname, "%s/%s", devpath, childname);
@@ -72,25 +94,43 @@ grub_children_iterate (char *devpath,
       alias.type = childtype;
       alias.path = childpath;
       alias.name = fullname;
-      hook (&alias);
+      ret = hook (&alias);
+      if (ret)
+	break;
     }
   while (grub_ieee1275_peer (child, &child));
 
-  return 0;
+  grub_free (fullname);
+  grub_free (childname);
+  grub_free (childpath);
+  grub_free (childtype);
+
+  return ret;
 }
 
 /* Iterate through all device aliases.  This function can be used to
    find a device of a specific type.  */
-grub_err_t
+int
 grub_devalias_iterate (int (*hook) (struct grub_ieee1275_devalias *alias))
 {
   grub_ieee1275_phandle_t aliases;
-  char aliasname[32];
-  int actual;
+  char *aliasname, *devtype;
+  grub_ssize_t actual;
   struct grub_ieee1275_devalias alias;
+  int ret = 0;
 
   if (grub_ieee1275_finddevice ("/aliases", &aliases))
-    return -1;
+    return 0;
+
+  aliasname = grub_malloc (IEEE1275_MAX_PROP_LEN);
+  if (!aliasname)
+    return 0;
+  devtype = grub_malloc (IEEE1275_MAX_PROP_LEN);
+  if (!devtype)
+    {
+      grub_free (aliasname);
+      return 0;
+    }
 
   /* Find the first property.  */
   aliasname[0] = '\0';
@@ -100,8 +140,6 @@ grub_devalias_iterate (int (*hook) (struct grub_ieee1275_devalias *alias))
       grub_ieee1275_phandle_t dev;
       grub_ssize_t pathlen;
       char *devpath;
-      /* XXX: This should be large enough for any possible case.  */
-      char devtype[64];
 
       grub_dprintf ("devalias", "devalias name = %s\n", aliasname);
 
@@ -111,9 +149,17 @@ grub_devalias_iterate (int (*hook) (struct grub_ieee1275_devalias *alias))
       if (!grub_strcmp (aliasname, "name"))
 	continue;
 
+      /* Sun's OpenBoot often doesn't zero terminate the device alias
+	 strings, so we will add a NULL byte at the end explicitly.  */
+      pathlen += 1;
+
       devpath = grub_malloc (pathlen);
       if (! devpath)
-	return grub_errno;
+	{
+	  grub_free (devtype);
+	  grub_free (aliasname);
+	  return 0;
+	}
 
       if (grub_ieee1275_get_property (aliases, aliasname, devpath, pathlen,
 				      &actual))
@@ -121,6 +167,7 @@ grub_devalias_iterate (int (*hook) (struct grub_ieee1275_devalias *alias))
 	  grub_dprintf ("devalias", "get_property (%s) failed\n", aliasname);
 	  goto nextprop;
 	}
+      devpath [actual] = '\0';
 
       if (grub_ieee1275_finddevice (devpath, &dev))
 	{
@@ -129,7 +176,7 @@ grub_devalias_iterate (int (*hook) (struct grub_ieee1275_devalias *alias))
 	}
 
       if (grub_ieee1275_get_property (dev, "device_type", devtype,
-				      sizeof devtype, &actual))
+				      IEEE1275_MAX_PROP_LEN, &actual))
 	{
 	  /* NAND device don't have device_type property.  */
           devtype[0] = 0;
@@ -138,62 +185,17 @@ grub_devalias_iterate (int (*hook) (struct grub_ieee1275_devalias *alias))
       alias.name = aliasname;
       alias.path = devpath;
       alias.type = devtype;
-      hook (&alias);
+      ret = hook (&alias);
 
 nextprop:
       grub_free (devpath);
-    }
-
-  return 0;
-}
-
-grub_err_t grub_available_iterate (int NESTED_FUNC_ATTR (*hook) (grub_uint64_t, grub_uint64_t))
-{
-  grub_ieee1275_phandle_t root;
-  grub_ieee1275_phandle_t memory;
-  grub_uint32_t available[32];
-  grub_ssize_t available_size;
-  grub_uint32_t address_cells = 1;
-  grub_uint32_t size_cells = 1;
-  int i;
-
-  /* Determine the format of each entry in `available'.  */
-  grub_ieee1275_finddevice ("/", &root);
-  grub_ieee1275_get_integer_property (root, "#address-cells", &address_cells,
-				      sizeof address_cells, 0);
-  grub_ieee1275_get_integer_property (root, "#size-cells", &size_cells,
-				      sizeof size_cells, 0);
-
-  /* Load `/memory/available'.  */
-  if (grub_ieee1275_finddevice ("/memory", &memory))
-    return grub_error (GRUB_ERR_UNKNOWN_DEVICE,
-		       "Couldn't find /memory node");
-  if (grub_ieee1275_get_integer_property (memory, "available", available,
-					  sizeof available, &available_size))
-    return grub_error (GRUB_ERR_UNKNOWN_DEVICE,
-		       "Couldn't examine /memory/available property");
-
-  /* Decode each entry and call `hook'.  */
-  i = 0;
-  available_size /= sizeof (grub_uint32_t);
-  while (i < available_size)
-    {
-      grub_uint64_t address;
-      grub_uint64_t size;
-
-      address = available[i++];
-      if (address_cells == 2)
-	address = (address << 32) | available[i++];
-
-      size = available[i++];
-      if (size_cells == 2)
-	size = (size << 32) | available[i++];
-
-      if (hook (address, size))
+      if (ret)
 	break;
     }
 
-  return grub_errno;
+  grub_free (devtype);
+  grub_free (aliasname);
+  return ret;
 }
 
 /* Call the "map" method of /chosen/mmu.  */
@@ -203,17 +205,17 @@ grub_map (grub_addr_t phys, grub_addr_t virt, grub_uint32_t size,
 {
   struct map_args {
     struct grub_ieee1275_common_hdr common;
-    char *method;
-    grub_ieee1275_ihandle_t ihandle;
-    grub_uint32_t mode;
-    grub_uint32_t size;
-    grub_uint32_t virt;
-    grub_uint32_t phys;
-    int catch_result;
+    grub_ieee1275_cell_t method;
+    grub_ieee1275_cell_t ihandle;
+    grub_ieee1275_cell_t mode;
+    grub_ieee1275_cell_t size;
+    grub_ieee1275_cell_t virt;
+    grub_ieee1275_cell_t phys;
+    grub_ieee1275_cell_t catch_result;
   } args;
 
   INIT_IEEE1275_COMMON (&args.common, "call-method", 6, 1);
-  args.method = "map";
+  args.method = (grub_ieee1275_cell_t) "map";
   args.ihandle = grub_ieee1275_mmu;
   args.phys = phys;
   args.virt = virt;
@@ -235,7 +237,8 @@ grub_claimmap (grub_addr_t addr, grub_size_t size)
   if (! grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_REAL_MODE)
       && grub_map (addr, addr, size, 0x00))
     {
-      grub_printf ("map failed: address 0x%x, size 0x%x\n", addr, size);
+      grub_printf ("map failed: address 0x%llx, size 0x%llx\n",
+		   (long long) addr, (long long) size);
       grub_ieee1275_release (addr, size);
       return -1;
     }
@@ -405,7 +408,7 @@ grub_reboot (void)
 void
 grub_halt (void)
 {
-  /* Not standarized.  We try both known commands.  */
+  /* Not standardized.  We try both known commands.  */
 
   grub_ieee1275_interpret ("shut-down", 0);
   grub_ieee1275_interpret ("power-off", 0);

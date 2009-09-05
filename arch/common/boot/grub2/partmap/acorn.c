@@ -61,7 +61,7 @@ acorn_partition_map_find (grub_disk_t disk, struct linux_part *m,
 
   err = grub_disk_read (disk, 0xC00 / GRUB_DISK_SECTOR_SIZE, 0,
 			sizeof (struct grub_acorn_boot_block),
-			(char *) &boot);
+			&boot);
   if (err)
     return err;
 
@@ -81,7 +81,7 @@ acorn_partition_map_find (grub_disk_t disk, struct linux_part *m,
 
   return grub_disk_read (disk, *sector, 0,
 			 sizeof (struct linux_part) * LINUX_MAP_ENTRIES,
-			 (char *) m);
+			 m);
 
 fail:
   return grub_error (GRUB_ERR_BAD_PART_TABLE,
@@ -140,7 +140,7 @@ acorn_partition_map_probe (grub_disk_t disk, const char *str)
   grub_disk_addr_t sector;
   grub_err_t err;
   grub_partition_t p;
-  
+
   /* Enforce raw disk access.  */
   raw.partition = 0;
 
@@ -189,7 +189,7 @@ acorn_partition_map_get_name (const grub_partition_t p)
 /* Partition map type.  */
 static struct grub_partition_map grub_acorn_partition_map =
 {
-  .name = "Linux/ADFS partition map",
+  .name = "part_acorn",
   .iterate = acorn_partition_map_iterate,
   .probe = acorn_partition_map_probe,
   .get_name = acorn_partition_map_get_name

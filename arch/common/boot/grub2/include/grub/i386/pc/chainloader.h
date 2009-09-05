@@ -27,7 +27,4 @@ typedef enum
     GRUB_CHAINLOADER_FORCE = 0x1
   } grub_chainloader_flags_t;
 
-void EXPORT_FUNC(grub_chainloader_cmd) (const char * file,
-					grub_chainloader_flags_t flags);
-
 #endif /* GRUB_CHAINLOADER_MACHINE_HEADER */

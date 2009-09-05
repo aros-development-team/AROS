@@ -41,7 +41,7 @@ void
 grub_scsi_dev_unregister (grub_scsi_dev_t dev)
 {
   grub_scsi_dev_t *p, q;
-  
+
   for (p = &grub_scsi_dev_list, q = *p; q; p = &(q->next), q = q->next)
     if (q == dev)
       {
@@ -52,7 +52,7 @@ grub_scsi_dev_unregister (grub_scsi_dev_t dev)
 
 
 /* Determine the the device is removable and the type of the device
-   SCSI.  */ 
+   SCSI.  */
 static grub_err_t
 grub_scsi_inquiry (grub_scsi_t scsi)
 {
@@ -119,7 +119,7 @@ grub_scsi_read10 (grub_disk_t disk, grub_disk_addr_t sector,
   rd.reserved2 = 0;
   rd.pad = 0;
 
-  return scsi->dev->read (scsi, sizeof (rd), (char *) &rd, size * 512, buf);
+  return scsi->dev->read (scsi, sizeof (rd), (char *) &rd, size * scsi->blocksize, buf);
 }
 
 /* Send a SCSI request for DISK: read SIZE sectors starting with
@@ -140,7 +140,7 @@ grub_scsi_read12 (grub_disk_t disk, grub_disk_addr_t sector,
   rd.reserved = 0;
   rd.control = 0;
 
-  return scsi->dev->read (scsi, sizeof (rd), (char *) &rd, size * 512, buf);
+  return scsi->dev->read (scsi, sizeof (rd), (char *) &rd, size * scsi->blocksize, buf);
 }
 
 #if 0
@@ -163,7 +163,7 @@ grub_scsi_write10 (grub_disk_t disk, grub_disk_addr_t sector,
   wr.reserved2 = 0;
   wr.pad = 0;
 
-  return scsi->dev->write (scsi, sizeof (wr), (char *) &wr, size * 512, buf);
+  return scsi->dev->write (scsi, sizeof (wr), (char *) &wr, size * scsi->blocksize, buf);
 }
 
 /* Send a SCSI request for DISK: write the data stored in BUF to SIZE
@@ -184,7 +184,7 @@ grub_scsi_write12 (grub_disk_t disk, grub_disk_addr_t sector,
   wr.reserved = 0;
   wr.pad = 0;
 
-  return scsi->dev->write (scsi, sizeof (wr), (char *) &wr, size * 512, buf);
+  return scsi->dev->write (scsi, sizeof (wr), (char *) &wr, size * scsi->blocksize, buf);
 }
 #endif
 
@@ -231,7 +231,7 @@ grub_scsi_open (const char *name, grub_disk_t disk)
   grub_err_t err;
   int len;
   int lun;
-  
+
   scsi = grub_malloc (sizeof (*scsi));
   if (! scsi)
     return grub_errno;
@@ -246,62 +246,69 @@ grub_scsi_open (const char *name, grub_disk_t disk)
 
   for (p = grub_scsi_dev_list; p; p = p->next)
     {
-      if (! p->open (name, scsi))
+      if (p->open (name, scsi))
+	continue;
+
+      disk->id = (unsigned long) "scsi"; /* XXX */
+      disk->data = scsi;
+      scsi->dev = p;
+      scsi->lun = lun;
+      scsi->name = grub_strdup (name);
+      if (! scsi->name)
 	{
-	  disk->id = (unsigned long) "scsi"; /* XXX */
-	  disk->data = scsi;
-	  scsi->dev = p;
-	  scsi->lun = lun;
-	  scsi->name = grub_strdup (name);
-	  if (! scsi->name)
-	    {
-	      return grub_errno;
-	    }
-
-	  grub_dprintf ("scsi", "dev opened\n");
-
-	  err = grub_scsi_inquiry (scsi);
-	  if (err)
-	    {
-	      grub_dprintf ("scsi", "inquiry failed\n");
-	      return grub_errno;
-	    }
-
-	  grub_dprintf ("scsi", "inquiry: devtype=0x%02x removable=%d\n",
-			scsi->devtype, scsi->removable);
-	  
-	  /* Try to be conservative about the device types
-	     supported.  */
-	  if (scsi->devtype != grub_scsi_devtype_direct
-	      && scsi->devtype != grub_scsi_devtype_cdrom)
-	    {
-	      return grub_error (GRUB_ERR_UNKNOWN_DEVICE,
-				 "unknown SCSI device");
-	    }
-
-	  if (scsi->devtype == grub_scsi_devtype_cdrom)
-	    disk->has_partitions = 0;
-	  else
-	    disk->has_partitions = 1;
-
-	  err = grub_scsi_read_capacity (scsi);
-	  if (err)
-	    {
-	      grub_dprintf ("scsi", "READ CAPACITY failed\n");
-	      return grub_errno;
-	    }
-
-	  /* SCSI blocks can be something else than 512, although GRUB
-	     wants 512 byte blocks.  */
-	  disk->total_sectors = ((scsi->size * scsi->blocksize)
-				 << GRUB_DISK_SECTOR_BITS);
-
-	  grub_dprintf ("scsi", "capacity=%llu, blksize=%d\n",
-			disk->total_sectors, scsi->blocksize);
-
-	  return GRUB_ERR_NONE;
+	  grub_free (scsi);
+	  return grub_errno;
 	}
+
+      grub_dprintf ("scsi", "dev opened\n");
+
+      err = grub_scsi_inquiry (scsi);
+      if (err)
+	{
+	  grub_free (scsi);
+	  grub_dprintf ("scsi", "inquiry failed\n");
+	  return err;
+	}
+
+      grub_dprintf ("scsi", "inquiry: devtype=0x%02x removable=%d\n",
+		    scsi->devtype, scsi->removable);
+
+      /* Try to be conservative about the device types
+	 supported.  */
+      if (scsi->devtype != grub_scsi_devtype_direct
+	  && scsi->devtype != grub_scsi_devtype_cdrom)
+	{
+	  grub_free (scsi);
+	  return grub_error (GRUB_ERR_UNKNOWN_DEVICE,
+			     "unknown SCSI device");
+	}
+
+      if (scsi->devtype == grub_scsi_devtype_cdrom)
+	disk->has_partitions = 0;
+      else
+	disk->has_partitions = 1;
+
+      err = grub_scsi_read_capacity (scsi);
+      if (err)
+	{
+	  grub_free (scsi);
+	  grub_dprintf ("scsi", "READ CAPACITY failed\n");
+	  return err;
+	}
+
+      /* SCSI blocks can be something else than 512, although GRUB
+	 wants 512 byte blocks.  */
+      disk->total_sectors = ((scsi->size * scsi->blocksize)
+			     << GRUB_DISK_SECTOR_BITS);
+
+      grub_dprintf ("scsi", "capacity=%llu, blksize=%d\n",
+		    (unsigned long long) disk->total_sectors,
+		    scsi->blocksize);
+
+      return GRUB_ERR_NONE;
     }
+
+  grub_free (scsi);
 
   return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "not a SCSI disk");
 }
@@ -312,7 +319,8 @@ grub_scsi_close (grub_disk_t disk)
   grub_scsi_t scsi;
 
   scsi = disk->data;
-  return scsi->dev->close (scsi);
+  scsi->dev->close (scsi);
+  grub_free (scsi);
 }
 
 static grub_err_t
@@ -325,8 +333,22 @@ grub_scsi_read (grub_disk_t disk, grub_disk_addr_t sector,
 
   /* SCSI sectors are variable in size.  GRUB uses 512 byte
      sectors.  */
-  sector = grub_divmod64 (sector, scsi->blocksize >> GRUB_DISK_SECTOR_BITS,
-			  NULL);
+  if (scsi->blocksize != GRUB_DISK_SECTOR_SIZE)
+    {
+      unsigned spb = scsi->blocksize >> GRUB_DISK_SECTOR_BITS;
+      if (! (spb != 0 && (scsi->blocksize & GRUB_DISK_SECTOR_SIZE) == 0))
+	return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
+			   "Unsupported SCSI block size");
+
+      grub_uint32_t sector_mod = 0;
+      sector = grub_divmod64 (sector, spb, &sector_mod);
+
+      if (! (sector_mod == 0 && size % spb == 0))
+	return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
+			   "Unaligned SCSI read not supported");
+
+      size /= spb;
+    }
 
   /* Depending on the type, select a read function.  */
   switch (scsi->devtype)

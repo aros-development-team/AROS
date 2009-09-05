@@ -27,6 +27,14 @@
 /* Forward declaration is required, because of mutual reference.  */
 struct grub_file;
 
+struct grub_dirhook_info
+{
+  int dir:1;
+  int mtimeset:1;
+  int case_insensitive:1;
+  grub_int32_t mtime;
+};
+
 /* Filesystem descriptor.  */
 struct grub_fs
 {
@@ -35,17 +43,18 @@ struct grub_fs
 
   /* Call HOOK with each file under DIR.  */
   grub_err_t (*dir) (grub_device_t device, const char *path,
-		     int (*hook) (const char *filename, int dir));
-  
+		     int (*hook) (const char *filename,
+				  const struct grub_dirhook_info *info));
+
   /* Open a file named NAME and initialize FILE.  */
   grub_err_t (*open) (struct grub_file *file, const char *name);
-  
+
   /* Read LEN bytes data from FILE into BUF.  */
   grub_ssize_t (*read) (struct grub_file *file, char *buf, grub_size_t len);
-  
+
   /* Close the file FILE.  */
   grub_err_t (*close) (struct grub_file *file);
-  
+
   /* Return the label of the device DEVICE in LABEL.  The label is
      returned in a grub_malloc'ed buffer and should be freed by the
      caller.  */
@@ -55,6 +64,9 @@ struct grub_fs
      returned in a grub_malloc'ed buffer and should be freed by the
      caller.  */
   grub_err_t (*uuid) (grub_device_t device, char **uuid);
+
+  /* Get writing time of filesystem. */
+  grub_err_t (*mtime) (grub_device_t device, grub_int32_t *timebuf);
 
   /* The next filesystem.  */
   struct grub_fs *next;

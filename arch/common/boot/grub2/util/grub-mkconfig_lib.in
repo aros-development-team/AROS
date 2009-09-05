@@ -1,5 +1,5 @@
 # Helper library for grub-mkconfig
-# Copyright (C) 2007,2008  Free Software Foundation, Inc.
+# Copyright (C) 2007,2008,2009  Free Software Foundation, Inc.
 #
 # GRUB is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,6 +24,11 @@ sbindir=@sbindir@
 pkgdatadir=${datadir}/`echo @PACKAGE_TARNAME@ | sed "${transform}"`
 
 grub_probe=${sbindir}/`echo grub-probe | sed ${transform}`
+
+grub_warn ()
+{
+  echo "Warning: $@" >&2
+}
 
 make_system_path_relative_to_its_root ()
 {
@@ -107,7 +112,7 @@ convert_system_path_to_grub_path ()
 {
   path=$1
 
-  echo "Warning: convert_system_path_to_grub_path() is deprecated.  Use prepare_grub_to_access_device() instead." >&2
+  grub_warn "convert_system_path_to_grub_path() is deprecated.  Use prepare_grub_to_access_device() instead."
 
   # abort if GRUB can't access the path
   if is_path_readable_by_grub ${path} ; then : ; else
@@ -131,33 +136,21 @@ prepare_grub_to_access_device ()
 
   # Abstraction modules aren't auto-loaded.
   abstraction="`${grub_probe} --device ${device} --target=abstraction`"
-  if [ "x${abstraction}" = "x" ] ; then : ; else
-    echo "insmod ${abstraction}"
-  fi
+  for module in ${abstraction} ; do 
+    echo "insmod ${module}"
+  done
+
+  fs="`${grub_probe} --device ${device} --target=fs`"
+  for module in ${fs} ; do
+    echo "insmod ${module}"
+  done
 
   # If there's a filesystem UUID that GRUB is capable of identifying, use it;
   # otherwise set root as per value in device.map.
   echo "set root=`${grub_probe} --device ${device} --target=drive`"
   if fs_uuid="`${grub_probe} --device ${device} --target=fs_uuid 2> /dev/null`" ; then
-    echo "search --fs-uuid --set ${fs_uuid}"
+    echo "search --no-floppy --fs-uuid --set ${fs_uuid}"
   fi
-}
-
-font_path ()
-{
-  for dir in ${pkgdatadir} /boot/grub /usr/share/grub ; do
-    # FIXME: We prefer ascii because loading complete fonts is too slow (and
-    # we don't yet provide the gettext magic that would make unicode useful).
-    for basename in ascii unicode unifont ; do
-      path="${dir}/${basename}.pff"
-      if is_path_readable_by_grub ${path} > /dev/null ; then
-        echo "${path}"
-        return 0
-      fi
-    done
-  done
-
-  return 1
 }
 
 grub_file_is_not_garbage ()
@@ -170,4 +163,55 @@ grub_file_is_not_garbage ()
     return 1
   fi
   return 0
+}
+
+version_test_numeric ()
+{
+  local a=$1
+  local cmp=$2
+  local b=$3
+  if [ "$a" = "$b" ] ; then
+    case $cmp in
+      ge|eq|le) return 0 ;;
+      gt|lt) return 1 ;;
+    esac
+  fi
+  if [ "$cmp" = "lt" ] ; then
+    c=$a
+    a=$b
+    b=$c
+  fi
+  if (echo $a ; echo $b) | sort -n | head -n 1 | grep -qx $b ; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+version_test_gt ()
+{
+  local a=`echo $1 | sed -e "s/[^-]*-//"`
+  local b=`echo $2 | sed -e "s/[^-]*-//"`
+  local cmp=gt
+  if [ "x$b" = "x" ] ; then
+    return 0
+  fi
+  case $a:$b in
+    *.old:*.old) ;;
+    *.old:*) a=`echo -n $a | sed -e s/\.old$//` ; cmp=gt ;;
+    *:*.old) b=`echo -n $b | sed -e s/\.old$//` ; cmp=ge ;;
+  esac
+  version_test_numeric $a $cmp $b
+  return $?
+}
+
+version_find_latest ()
+{
+  local a=""
+  for i in $@ ; do
+    if version_test_gt "$i" "$a" ; then
+      a="$i"
+    fi
+  done
+  echo "$a"
 }

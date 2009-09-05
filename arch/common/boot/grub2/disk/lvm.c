@@ -101,7 +101,7 @@ grub_lvm_open (const char *name, grub_disk_t disk)
   disk->id = lv->number;
   disk->data = lv;
   disk->total_sectors = lv->size;
-  
+
   return 0;
 }
 
@@ -174,7 +174,7 @@ grub_lvm_read (grub_disk_t disk, grub_disk_addr_t sector,
 
       stripe += stripenr;
       pv = stripe->pv;
-      
+
       seg_offset = ((grub_uint64_t) stripe->start
 		    * (grub_uint64_t) vg->extent_size) + pv->start;
 
@@ -189,7 +189,7 @@ grub_lvm_read (grub_disk_t disk, grub_disk_addr_t sector,
   else
     err = grub_error (GRUB_ERR_UNKNOWN_DEVICE,
 		      "Physical volume %s not found", pv->name);
-  
+
   return err;
 }
 
@@ -220,7 +220,7 @@ grub_lvm_scan_device (const char *name)
   unsigned int i, j, vgname_len;
   struct grub_lvm_vg *vg;
   struct grub_lvm_pv *pv;
-  
+
   disk = grub_disk_open (name);
   if (!disk)
     return 0;
@@ -231,7 +231,7 @@ grub_lvm_scan_device (const char *name)
       err = grub_disk_read (disk, i, 0, sizeof(buf), buf);
       if (err)
 	goto fail;
-      
+
       if ((! grub_strncmp ((char *)lh->id, GRUB_LVM_LABEL_ID,
 			   sizeof (lh->id)))
 	  && (! grub_strncmp ((char *)lh->type, GRUB_LVM_LVM2_LABEL,
@@ -242,7 +242,7 @@ grub_lvm_scan_device (const char *name)
   /* Return if we didn't find a label. */
   if (i == GRUB_LVM_LABEL_SCAN_SECTORS)
     goto fail;
-  
+
   pvh = (struct grub_lvm_pv_header *) (buf + grub_le_to_cpu32(lh->offset_xl));
 
   for (i = 0, j = 0; i < GRUB_LVM_ID_LEN; i++)
@@ -263,23 +263,17 @@ grub_lvm_scan_device (const char *name)
   if (dlocn->offset)
     {
       grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
-		  "We don't support multiple data areas");
-		  
+		  "We don't support multiple LVM data areas");
+
       goto fail;
     }
 
   dlocn++;
   mda_offset = grub_le_to_cpu64 (dlocn->offset);
   mda_size = grub_le_to_cpu64 (dlocn->size);
-  dlocn++;
-  
-  if (dlocn->offset)
-    {
-      grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
-		  "We don't support multiple metadata areas");
-		  
-      goto fail;
-    }
+
+  /* It's possible to have multiple copies of metadata areas, we just use the
+     first one.  */
 
   /* Allocate buffer space for the circular worst-case scenario. */
   metadatabuf = grub_malloc (2 * mda_size);
@@ -296,7 +290,7 @@ grub_lvm_scan_device (const char *name)
       || (grub_le_to_cpu32 (mdah->version) != GRUB_LVM_FMTT_VERSION))
     {
       grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
-		  "Unknown metadata header");
+		  "Unknown LVM metadata header");
       goto fail2;
     }
 
@@ -361,39 +355,39 @@ grub_lvm_scan_device (const char *name)
       if (p)
 	{
 	  p += sizeof ("physical_volumes {") - 1;
-	  
+
 	  /* Add all the pvs to the volume group. */
 	  while (1)
 	    {
 	      int s;
 	      while (grub_isspace (*p))
 		p++;
-	      
+
 	      if (*p == '}')
 		break;
-	      
+
 	      pv = grub_malloc (sizeof (*pv));
 	      q = p;
 	      while (*q != ' ')
 		q++;
-	      
+
 	      s = q - p;
 	      pv->name = grub_malloc (s + 1);
 	      grub_memcpy (pv->name, p, s);
 	      pv->name[s] = '\0';
-	      
+
 	      p = grub_strstr (p, "id = \"");
 	      if (p == NULL)
 		goto pvs_fail;
 	      p += sizeof("id = \"") - 1;
-	      
+
 	      grub_memcpy (pv->id, p, GRUB_LVM_ID_STRLEN);
 	      pv->id[GRUB_LVM_ID_STRLEN] = '\0';
-	      
+
 	      pv->start = grub_lvm_getvalue (&p, "pe_start = ");
 	      if (p == NULL)
 		goto pvs_fail;
-	      
+
 	      p = grub_strchr (p, '}');
 	      if (p == NULL)
 		goto pvs_fail;
@@ -402,7 +396,7 @@ grub_lvm_scan_device (const char *name)
 	      pv->disk = NULL;
 	      pv->next = vg->pvs;
 	      vg->pvs = pv;
-	      
+
 	      continue;
 	    pvs_fail:
 	      grub_free (pv->name);
@@ -415,49 +409,49 @@ grub_lvm_scan_device (const char *name)
       if (p)
 	{
 	  p += 18;
-	  
+
 	  /* And add all the lvs to the volume group. */
 	  while (1)
 	    {
 	      int s;
 	      struct grub_lvm_lv *lv;
 	      struct grub_lvm_segment *seg;
-	      
+
 	      while (grub_isspace (*p))
 		p++;
-	      
+
 	      if (*p == '}')
 		break;
-	      
+
 	      lv = grub_malloc (sizeof (*lv));
-	      
+
 	      q = p;
 	      while (*q != ' ')
 		q++;
-	      
+
 	      s = q - p;
 	      lv->name = grub_malloc (vgname_len + 1 + s + 1);
 	      grub_memcpy (lv->name, vgname, vgname_len);
 	      lv->name[vgname_len] = '-';
 	      grub_memcpy (lv->name + vgname_len + 1, p, s);
 	      lv->name[vgname_len + 1 + s] = '\0';
-	      
+
 	      lv->size = 0;
-	      
+
 	      lv->segment_count = grub_lvm_getvalue (&p, "segment_count = ");
 	      if (p == NULL)
 		goto lvs_fail;
 	      lv->segments = grub_malloc (sizeof (*seg) * lv->segment_count);
 	      seg = lv->segments;
-	      
+
 	      for (i = 0; i < lv->segment_count; i++)
 		{
 		  struct grub_lvm_stripe *stripe;
-		  
+
 		  p = grub_strstr (p, "segment");
 		  if (p == NULL)
 		    goto lvs_segment_fail;
-		  
+
 		  seg->start_extent = grub_lvm_getvalue (&p, "start_extent = ");
 		  if (p == NULL)
 		    goto lvs_segment_fail;
@@ -467,25 +461,25 @@ grub_lvm_scan_device (const char *name)
 		  seg->stripe_count = grub_lvm_getvalue (&p, "stripe_count = ");
 		  if (p == NULL)
 		    goto lvs_segment_fail;
-		  
+
 		  lv->size += seg->extent_count * vg->extent_size;
-		  
+
 		  if (seg->stripe_count != 1)
 		    seg->stripe_size = grub_lvm_getvalue (&p, "stripe_size = ");
-		  
+
 		  seg->stripes = grub_malloc (sizeof (*stripe)
 					      * seg->stripe_count);
 		  stripe = seg->stripes;
-		  
+
 		  p = grub_strstr (p, "stripes = [");
 		  if (p == NULL)
 		    goto lvs_segment_fail2;
 		  p += sizeof("stripes = [") - 1;
-		  
+
 		  for (j = 0; j < seg->stripe_count; j++)
 		    {
 		      char *pvname;
-		      
+
 		      p = grub_strchr (p, '"');
 		      if (p == NULL)
 			continue;
@@ -494,14 +488,14 @@ grub_lvm_scan_device (const char *name)
 			q++;
 
 		      s = q - p;
-		      
+
 		      pvname = grub_malloc (s + 1);
                       if (pvname == NULL)
                         goto lvs_segment_fail2;
-                      
+
 		      grub_memcpy (pvname, p, s);
 		      pvname[s] = '\0';
-		      
+
 		      if (vg->pvs)
 			for (pv = vg->pvs; pv; pv = pv->next)
 			  {
@@ -511,16 +505,16 @@ grub_lvm_scan_device (const char *name)
 				break;
 			      }
 			  }
-		      
+
 		      grub_free(pvname);
-		      
+
 		      stripe->start = grub_lvm_getvalue (&p, ",");
 		      if (p == NULL)
 			continue;
-		      
+
 		      stripe++;
 		    }
-		  
+
 		  seg++;
 
 		  continue;
@@ -530,11 +524,12 @@ grub_lvm_scan_device (const char *name)
 		  goto fail4;
 		}
 
-	      p = grub_strchr (p, '}');
+	      if (p != NULL)
+		p = grub_strchr (p, '}');
 	      if (p == NULL)
 		goto lvs_fail;
 	      p += 3;
-	      
+
 	      lv->number = lv_count++;
 	      lv->vg = vg;
 	      lv->next = vg->lvs;
@@ -563,7 +558,10 @@ grub_lvm_scan_device (const char *name)
       {
 	if (! grub_memcmp (pv->id, pv_id, GRUB_LVM_ID_STRLEN))
 	  {
-	    pv->disk = grub_disk_open (name);
+	    /* This could happen to LVM on RAID, pv->disk points to the
+	       raid device, we shouldn't change it.  */
+	    if (! pv->disk)
+	      pv->disk = grub_disk_open (name);
 	    break;
 	  }
       }

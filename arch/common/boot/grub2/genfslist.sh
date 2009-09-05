@@ -1,6 +1,6 @@
 #! /bin/sh
 #
-# Copyright (C) 2005  Free Software Foundation, Inc.
+# Copyright (C) 2005,2008  Free Software Foundation, Inc.
 #
 # This gensymlist.sh is free software; the author
 # gives unlimited permission to copy and/or distribute it,

@@ -171,7 +171,7 @@ grub_mdraid_detect (grub_disk_t disk, struct grub_raid_array *array)
   size = grub_disk_get_size (disk);
   sector = NEW_SIZE_SECTORS (size);
 
-  if (grub_disk_read (disk, sector, 0, SB_BYTES, (char *) &sb))
+  if (grub_disk_read (disk, sector, 0, SB_BYTES, &sb))
     return grub_errno;
 
   /* Look whether there is a RAID superblock. */
@@ -229,5 +229,5 @@ GRUB_MOD_INIT (mdraid)
 
 GRUB_MOD_FINI (mdraid)
 {
-  grub_raid_register (&grub_mdraid_dev);
+  grub_raid_unregister (&grub_mdraid_dev);
 }

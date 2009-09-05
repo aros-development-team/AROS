@@ -142,11 +142,18 @@ grub_vga_text_setcursor (int on)
     grub_outb (old | CRTC_CURSOR_DISABLE, CRTC_DATA_PORT);
 }
 
+static grub_err_t
+grub_vga_text_init_fini (void)
+{
+  grub_vga_text_cls ();
+  return 0;
+}
+
 static struct grub_term_output grub_vga_text_term =
   {
     .name = "vga_text",
-    .init = grub_vga_text_cls,
-    .fini = grub_vga_text_cls,
+    .init = grub_vga_text_init_fini,
+    .fini = grub_vga_text_init_fini,
     .putchar = grub_console_putchar,
     .getcharwidth = grub_console_getcharwidth,
     .getwh = grub_console_getwh,
@@ -161,7 +168,7 @@ static struct grub_term_output grub_vga_text_term =
 
 GRUB_MOD_INIT(vga_text)
 {
-  grub_term_register_output (&grub_vga_text_term);
+  grub_term_register_output ("vga_text", &grub_vga_text_term);
 }
 
 GRUB_MOD_FINI(vga_text)

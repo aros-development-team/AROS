@@ -1,7 +1,7 @@
 /* lspci.c - List PCI devices.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2008  Free Software Foundation, Inc.
+ *  Copyright (C) 2008, 2009  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,8 +19,8 @@
 
 #include <grub/pci.h>
 #include <grub/dl.h>
-#include <grub/normal.h>
 #include <grub/misc.h>
+#include <grub/command.h>
 
 struct grub_pci_classname
 {
@@ -37,6 +37,7 @@ static const struct grub_pci_classname grub_pci_classes[] =
     { 1, 2, "Floppy Controller" },
     { 1, 3, "IPI Controller" },
     { 1, 4, "RAID Controller" },
+    { 1, 6, "SATA Controller" },
     { 1, 0x80, "Mass storage Controller" },
     { 2, 0, "Ethernet Controller" },
     { 2, 1, "Token Ring Controller" },
@@ -113,7 +114,7 @@ grub_pci_get_class (int class, int subclass)
   return 0;
 }
 
-static int
+static int NESTED_FUNC_ATTR
 grub_lspci_iter (int bus, int dev, int func, grub_pci_id_t pciid)
 {
   grub_uint32_t class;
@@ -124,7 +125,7 @@ grub_lspci_iter (int bus, int dev, int func, grub_pci_id_t pciid)
 	       pciid >> 16);
   addr = grub_pci_make_address (bus, dev, func, 2);
   class = grub_pci_read (addr);
-	  
+
   /* Lookup the class name, if there isn't a specific one,
      retry with 0x80 to get the generic class name.  */
   sclass = grub_pci_get_class (class >> 24, (class >> 16) & 0xFF);
@@ -133,13 +134,19 @@ grub_lspci_iter (int bus, int dev, int func, grub_pci_id_t pciid)
   if (! sclass)
     sclass = "";
 
-  grub_printf (" %s\n", sclass);
+  grub_printf (" [%04x] %s", (class >> 16) & 0xffff, sclass);
+
+  grub_uint8_t pi = (class >> 8) & 0xff;
+  if (pi)
+    grub_printf (" [PI %02x]", pi);
+
+  grub_printf ("\n");
 
   return 0;
 }
 
 static grub_err_t
-grub_cmd_lspci (struct grub_arg_list *state __attribute__ ((unused)),
+grub_cmd_lspci (grub_command_t cmd __attribute__ ((unused)),
 		int argc __attribute__ ((unused)),
 		char **args __attribute__ ((unused)))
 {
@@ -147,18 +154,15 @@ grub_cmd_lspci (struct grub_arg_list *state __attribute__ ((unused)),
   return GRUB_ERR_NONE;
 }
 
-
-
+static grub_command_t cmd;
 
 GRUB_MOD_INIT(pci)
 {
-  (void) mod;			/* To stop warning. */
-  grub_register_command ("lspci", grub_cmd_lspci, GRUB_COMMAND_FLAG_BOTH,
-			 "lspci", "List PCI devices", 0);
+  cmd = grub_register_command ("lspci", grub_cmd_lspci,
+			       0, "List PCI devices");
 }
-
 
 GRUB_MOD_FINI(pci)
 {
-  grub_unregister_command ("lspci");
+  grub_unregister_command (cmd);
 }

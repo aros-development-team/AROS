@@ -17,7 +17,7 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/lib/datetime.h>
+#include <grub/datetime.h>
 #include <grub/i386/cmos.h>
 
 grub_err_t

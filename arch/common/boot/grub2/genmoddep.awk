@@ -40,7 +40,7 @@ FNR == 1 {
 END {
   if (error == 1)
     exit 1;
-  
+
   for (mod in modtab) {
     # Remove duplications.
     split(modtab[mod], depmods, " ");
@@ -50,7 +50,7 @@ END {
     for (i in depmods) {
       depmod = depmods[i];
       # Ignore kernel, as always loaded.
-      if (depmod != "kernel")
+      if (depmod != "kernel" && depmod != mod)
 	uniqmods[depmod] = 1;
     }
     modlist = ""

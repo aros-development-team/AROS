@@ -17,17 +17,16 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/normal.h>
 #include <grub/dl.h>
-#include <grub/arg.h>
 #include <grub/misc.h>
 #include <grub/file.h>
 #include <grub/mm.h>
 #include <grub/disk.h>
 #include <grub/partition.h>
+#include <grub/command.h>
 
 static grub_err_t
-grub_cmd_blocklist (struct grub_arg_list *state __attribute__ ((unused)),
+grub_cmd_blocklist (grub_command_t cmd __attribute__ ((unused)),
 		    int argc, char **args)
 {
   grub_file_t file;
@@ -40,7 +39,7 @@ grub_cmd_blocklist (struct grub_arg_list *state __attribute__ ((unused)),
 			    unsigned length);
   auto void NESTED_FUNC_ATTR print_blocklist (grub_disk_addr_t sector, unsigned num,
 			     unsigned offset, unsigned length);
-  
+
   void NESTED_FUNC_ATTR read_blocklist (grub_disk_addr_t sector, unsigned offset,
 		       unsigned length)
     {
@@ -52,7 +51,7 @@ grub_cmd_blocklist (struct grub_arg_list *state __attribute__ ((unused)),
 	      num_sectors++;
 	      return;
 	    }
-	  
+
 	  print_blocklist (start_sector, num_sectors, 0, 0);
 	  num_sectors = 0;
 	}
@@ -65,7 +64,7 @@ grub_cmd_blocklist (struct grub_arg_list *state __attribute__ ((unused)),
       else
 	print_blocklist (sector, 0, offset, length);
     }
-  
+
   void NESTED_FUNC_ATTR print_blocklist (grub_disk_addr_t sector, unsigned num,
 			unsigned offset, unsigned length)
     {
@@ -78,7 +77,7 @@ grub_cmd_blocklist (struct grub_arg_list *state __attribute__ ((unused)),
       if (offset != 0 || length != 0)
 	grub_printf ("[%u-%u]", offset, offset + length);
     }
-  
+
   if (argc < 1)
     return grub_error (GRUB_ERR_BAD_ARGUMENT, "no file specified");
 
@@ -92,7 +91,7 @@ grub_cmd_blocklist (struct grub_arg_list *state __attribute__ ((unused)),
 
   if (file->device->disk->partition)
     part_start = grub_partition_get_start (file->device->disk->partition);
-  
+
   file->read_hook = read_blocklist;
 
   while (grub_file_read (file, buf, sizeof (buf)) > 0)
@@ -100,23 +99,21 @@ grub_cmd_blocklist (struct grub_arg_list *state __attribute__ ((unused)),
 
   if (num_sectors > 0)
     print_blocklist (start_sector, num_sectors, 0, 0);
-  
+
   grub_file_close (file);
 
   return grub_errno;
 }
 
+static grub_command_t cmd;
 
 GRUB_MOD_INIT(blocklist)
 {
-  (void) mod;			/* To stop warning. */
-  grub_register_command ("blocklist", grub_cmd_blocklist,
-			 GRUB_COMMAND_FLAG_BOTH,
-			 "blocklist FILE",
-			 "Print a block list.", 0);
+  cmd = grub_register_command ("blocklist", grub_cmd_blocklist,
+			       "blocklist FILE", "Print a block list.");
 }
 
 GRUB_MOD_FINI(blocklist)
 {
-  grub_unregister_command ("blocklist");
+  grub_unregister_command (cmd);
 }

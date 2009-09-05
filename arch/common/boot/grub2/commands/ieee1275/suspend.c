@@ -17,14 +17,14 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/normal.h>
 #include <grub/dl.h>
 #include <grub/misc.h>
 #include <grub/term.h>
 #include <grub/ieee1275/ieee1275.h>
+#include <grub/command.h>
 
 static grub_err_t
-grub_cmd_suspend (struct grub_arg_list *state  __attribute__ ((unused)),
+grub_cmd_suspend (grub_command_t cmd __attribute__ ((unused)),
 		  int argc __attribute__ ((unused)),
 		  char **args __attribute__ ((unused)))
 {
@@ -34,15 +34,15 @@ grub_cmd_suspend (struct grub_arg_list *state  __attribute__ ((unused)),
   return 0;
 }
 
+static grub_command_t cmd;
 
 GRUB_MOD_INIT(ieee1275_suspend)
 {
-  (void)mod;			/* To stop warning. */
-  grub_register_command ("suspend", grub_cmd_suspend, GRUB_COMMAND_FLAG_BOTH,
-			 "suspend", "Return to Open Firmware prompt", 0);
+  cmd = grub_register_command ("suspend", grub_cmd_suspend,
+			       0, "Return to Open Firmware prompt");
 }
 
 GRUB_MOD_FINI(ieee1275_suspend)
 {
-  grub_unregister_command ("suspend");
+  grub_unregister_command (cmd);
 }
