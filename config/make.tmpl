@@ -2159,7 +2159,10 @@ $(%(mmake)-configflag) : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	cd $(%(mmake)-pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
 	CC="$(HOST_CC)" \
-	    %(srcdir)/configure $(%(mmake)-config_opts) %(extraoptions) && \
+	    TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
+	    TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)" \
+	    %(srcdir)/configure $(%(mmake)-config_opts) %(extraoptions) \
+	    --target=$(AROS_TARGET_CPU)-aros && \
 	    $(TOUCH) $@
 endif
 ifeq (%(compiler),target)
@@ -2184,7 +2187,7 @@ $(%(mmake)-configflag) : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	%mkdirs_q $(%(mmake)-pkgdir)
 	cd $(%(mmake)-pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
-	CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
+	CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
 	    AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)" \
 	    %(srcdir)/configure $(%(mmake)-config_opts) %(extraoptions) \
 	    --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH) \
