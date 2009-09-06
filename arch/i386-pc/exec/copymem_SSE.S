@@ -1,22 +1,22 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 /*****************************************************************************
- 
+
     NAME
- 
+
  	AROS_LH3(void, CopyMem_SSE,
- 
+
     SYNOPSIS
  	AROS_LHA(const void *, source, A0),
  	AROS_LHA(void *, destination, A1),
  	AROS_LHA(unsigned long, len, D0),
- 
+
     LOCATION
  	struct ExecBase *, SysBase, 104, Exec) (if we're lucky)
- 
+
     FUNCTION
 	Copy some data from one location to another in memory using
 	SSE optimised copying method if enough data.
@@ -29,20 +29,20 @@
     RESULT
 
     NOTES
-	The source and destination area *ARE* allowed to overlap.
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
+	The source and destination area *ARE* allowed to overlap.
+
     HISTORY
 	wooohooo! i **love** assembly code
 	my pipelining ain't best, but this code should perform well
- 
+
 ******************************************************************************/
 #include "aros/i386/asm.h"
 #include <aros/config.h>
@@ -57,7 +57,7 @@ AROS_SLIB_ENTRY(CopyMem_SSE,Exec):
 
 	movl	16(%esp),%esi
 	movl	20(%esp),%edi
-	movl	24(%esp),%eax	    
+	movl	24(%esp),%eax
 	cmpl	$64,%eax	    /* first, verify if it makes any sense at all to bring cannons */
 	jge	.fast_copy
 
@@ -65,7 +65,7 @@ AROS_SLIB_ENTRY(CopyMem_SSE,Exec):
 	** set count register. check direction
 	*/
 	movl	%eax,%ecx
-	cmp	%esi,%edi
+	cmp	%edi,%esi
 	jl	.copy_reverse
 
 	/*
@@ -120,7 +120,7 @@ AROS_SLIB_ENTRY(CopyMem_SSE,Exec):
 
 	/*
 	** compute step
-	cmp	%esi,%edi
+	cmp	%edi,%esi
 	jl	.copy_backward
 	*/
 
