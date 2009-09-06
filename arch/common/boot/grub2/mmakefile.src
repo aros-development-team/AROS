@@ -16,55 +16,10 @@ export CFLAGS        := $(CFLAGS1) -D__AROS__ #-g -O0 -fno-inline
 export TARGET_CFLAGS := $(CFLAGS1) -D__AROS__ #-g -O0 -fno-inline
 
 %build_with_configure mmake=grub2-host compiler=host nix=yes	\
-	prefix="$(HOSTGENDIR)/$(CURDIR)/host_binaries"	install_target= \
-	extraoptions="--disable-grub-fstest --disable-efiemu --disable-mm-debug --disable-grub-emu --disable-pe2elf"
+	prefix="$(HOSTGENDIR)/$(CURDIR)/host_binaries" install_target= \
+	extraoptions="--enable-grub-emu --enable-grub-fstest"
 
 GRUB2_MODS := sh biosdisk fshelp part_msdos part_amiga affs sfs iso9660
-#GRUB2_MODS := affs part_amiga biosdisk fshelp part_msdos sfs iso9660 \
-normal          acpi                         pci\
-                gzio                play\
-afs                 halt                png\
-aout                handler             probe\
-at_keyboard         hdparm              pxe\
-ata                 hello               \
-ata_pthru           help                pxecmd\
-befs                hexdump             raid\
-            hfs                 raid5rec\
-bitmap              hfsplus             raid6rec\
-blocklist                        read\
-               jfs                 reboot\
-boot                jpeg                reiserfs\
-bsd                               scsi\
-bufio               linux               search\
-cat                 linux16             serial\
-chain               loadenv             \
-cmp                 loopback            sh\
-             ls                  sleep\
-configfile          lsmmap              tar\
-                lspci               terminfo\
-cpio                                 test\
-cpuid               lvm                 tga\
-crc                 mdraid              true\
-date                memdisk             udf\
-datehook            memrw               ufs1\
-datetime            minicmd             ufs2\
-            minix               uhci\
-dm_nv               mmap                usb\
-drivemap                          usb_keyboard\
-echo                msdospart           usbms\
-efiemu              multiboot           usbtest\
-elf                               vbe\
-ext2                ntfs                vbeinfo\
-extcmd              ntfscomp            vbetest\
-fat                 ohci                vga\
-font                part_acorn          vga_text\
-                            video\
-fs_file             part_apple          video_fb\
-fs_uuid             part_gpt            videotest\
-                        xfs\
-gfxterm             part_sun            xnu\
-gptsync             parttool            xnu_uuid\
-password             setjmp lua
 
 LST_FILES  :=	command fs moddep
 
