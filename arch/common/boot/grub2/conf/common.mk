@@ -24,7 +24,7 @@ grub_mkelfimage-util_resolve.o: util/resolve.c $(util/resolve.c_DEPENDENCIES)
 util/elf/grub-mkimage.c_DEPENDENCIES = Makefile
 
 # For grub-probe.
-sbin_UTILITIES += grub-probe
+#sbin_UTILITIES += grub-probe
 util/grub-probe.c_DEPENDENCIES = grub_probe_init.h
 grub_probe_SOURCES = util/grub-probe.c	\
 	util/hostdisk.c	util/misc.c util/getroot.c		\
@@ -556,7 +556,7 @@ grub_fstest_init.c: grub_fstest_init.lst $(filter-out grub_fstest_init.c,$(grub_
 DISTCLEANFILES += grub_fstest_init.c
 
 # for grub-editenv
-bin_UTILITIES += grub-editenv
+#bin_UTILITIES += grub-editenv
 grub_editenv_SOURCES = util/grub-editenv.c lib/envblk.c util/misc.c kern/misc.c kern/err.c
 CLEANFILES += grub-editenv$(EXEEXT) grub_editenv-util_grub_editenv.o grub_editenv-lib_envblk.o grub_editenv-util_misc.o grub_editenv-kern_misc.o grub_editenv-kern_err.o
 MOSTLYCLEANFILES += grub_editenv-util_grub_editenv.d grub_editenv-lib_envblk.d grub_editenv-util_misc.d grub_editenv-kern_misc.d grub_editenv-kern_err.d
