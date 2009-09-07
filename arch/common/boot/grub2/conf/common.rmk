@@ -7,7 +7,7 @@ grub_mkelfimage_SOURCES = util/elf/grub-mkimage.c util/misc.c \
 util/elf/grub-mkimage.c_DEPENDENCIES = Makefile
 
 # For grub-probe.
-sbin_UTILITIES += grub-probe
+#sbin_UTILITIES += grub-probe
 util/grub-probe.c_DEPENDENCIES = grub_probe_init.h
 grub_probe_SOURCES = util/grub-probe.c	\
 	util/hostdisk.c	util/misc.c util/getroot.c		\
@@ -115,7 +115,7 @@ grub_fstest_init.c: grub_fstest_init.lst $(filter-out grub_fstest_init.c,$(grub_
 DISTCLEANFILES += grub_fstest_init.c
 
 # for grub-editenv
-bin_UTILITIES += grub-editenv
+#bin_UTILITIES += grub-editenv
 grub_editenv_SOURCES = util/grub-editenv.c lib/envblk.c util/misc.c kern/misc.c kern/err.c
 CLEANFILES += grub-editenv
 

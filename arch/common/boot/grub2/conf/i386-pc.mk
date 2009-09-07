@@ -348,7 +348,7 @@ kernel_syms.lst: $(addprefix include/grub/,$(kernel_img_HEADERS)) config.h genke
 
 # Utilities.
 bin_UTILITIES = grub-mkimage
-sbin_UTILITIES = grub-setup grub-mkdevicemap
+#sbin_UTILITIES = grub-setup grub-mkdevicemap
 ifeq ($(enable_grub_emu), yes)
 sbin_UTILITIES += grub-emu
 endif
