@@ -69,14 +69,12 @@ else
   platform="$with_platform"
 fi
 
-# Adjust CPU unless target was explicitly specified.
-if test -z "$target_alias"; then
-  case "$target_cpu"-"$platform" in
-    x86_64-efi) ;;
-    x86_64-*) target_cpu=i386 ;;
-    powerpc64-ieee1275) target_cpu=powerpc ;;
-  esac
-fi
+# Adjust CPU.
+case "$target_cpu"-"$platform" in
+  x86_64-efi) ;;
+  x86_64-*) target_cpu=i386 ;;
+  powerpc64-ieee1275) target_cpu=powerpc ;;
+esac
 
 # Check if the platform is supported, make final adjustments.
 case "$target_cpu"-"$platform" in
