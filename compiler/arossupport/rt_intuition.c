@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic functions for ressource tracking
@@ -98,7 +98,14 @@ static IPTR RT_OpenScreen (RTData * rtd, ScreenResource * rt, va_list args, BOOL
     switch (op)
     {
     case RTTO_OpenScreenTags:
+#ifdef AROS_SLOWSTACKTAGS
+    {
+    	Tag t = va_arg(args, Tag);
+    	tags = GetTagsFromStack(t, args);
+    }
+#else
 	tags = (struct TagItem *)args;
+#endif
 	break;
 
     case RTTO_OpenScreenTagList:
@@ -128,6 +135,11 @@ static IPTR RT_OpenScreen (RTData * rtd, ScreenResource * rt, va_list args, BOOL
 
     rt->Screen = OpenScreenTagList (ns, tags);
 
+#ifdef AROS_SLOWSTACKTAGS
+    if (op == RTTO_OpenScreenTags)
+    	FreeTagsFromStack(tags);
+#endif
+
     if (rt->Screen)
 	*success = TRUE;
 
@@ -150,7 +162,8 @@ static IPTR RT_CloseScreen (RTData * rtd, ScreenResource * rt)
 
 	while ((win = rt->Screen->FirstWindow))
 	{
-	    if (RT_Search (rtd, RTT_WINDOW, (RTNode **)prtwin, NULL) == RT_SEARCH_FOUND)
+		va_list ap;
+	    if (RT_Search (rtd, RTT_WINDOW, (RTNode **)prtwin, ap) == RT_SEARCH_FOUND)
 	    {
 		RT_FreeResource (rtd, RTT_WINDOW, (RTNode *)rtwin);
 	    }
@@ -298,7 +311,14 @@ static IPTR RT_OpenWindow (RTData * rtd, WindowResource * rt, va_list args, BOOL
     switch (op)
     {
     case RTTO_OpenWindowTags:
+#ifdef AROS_SLOWSTACKTAGS
+    {
+    	Tag t = va_arg (args, Tag);
+    	tags = GetTagsFromStack(t, args);
+    }
+#else
 	tags = (struct TagItem *)args;
+#endif
 	break;
 
     case RTTO_OpenWindowTagList:
@@ -333,6 +353,11 @@ static IPTR RT_OpenWindow (RTData * rtd, WindowResource * rt, va_list args, BOOL
 
     if (rt->Window)
 	*success = TRUE;
+
+#ifdef AROS_SLOWSTACKTAGS
+    if (op == RTTO_OpenWindowTags)
+    	FreeTagsFromStack(tags);
+#endif
 
     return (IPTR)(rt->Window);
 } /* RT_OpenWindow */
