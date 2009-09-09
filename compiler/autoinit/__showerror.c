@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: autoinit library - support function for showing errors to the user
@@ -39,7 +39,7 @@ void __showerror(char *format, const IPTR *args)
             VPrintf(format, args);
         else
             PutStr(format);
-            
+
         PutStr("\n");
     }
     else
@@ -63,16 +63,16 @@ void __showerror(char *format, const IPTR *args)
         if (name)
             kprintf("%s: ", name);
 
-        if (args) {
-            vkprintf(format, args);
-            kprintf("\n");
-        }
-        else
+//        if (args) {
+//            vkprintf(format, args);
+//            kprintf("\n");
+//        }
+//        else
             kprintf("%s\n", format);
     }
 
     if (DOSBase != NULL)
         CloseLibrary((struct Library *)DOSBase);
-    
+
 }
 
