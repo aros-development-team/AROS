@@ -30,7 +30,7 @@ AROS_LP2(int, listen,
 AROS_LP3(int, accept,
          AROS_LPA(int, s, D0),
          AROS_LPA(struct sockaddr *, addr, A0),
-         AROS_LPA(int *, addrlen, A1),
+         AROS_LPA(socklen_t *, addrlen, A1),
          LIBBASETYPEPTR, SocketBase, 8, BSDSocket
 );
 AROS_LP3(int, connect,
