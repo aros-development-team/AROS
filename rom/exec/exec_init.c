@@ -296,6 +296,8 @@ sysBase->VBlankFrequency = 50;
 	    Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
 	}
 
+	PREPARE_INITIAL_CONTEXT(t, NULL /* NOT USED ANYWAY*/);
+
 	sysBase->ThisTask = t;
     }
 
