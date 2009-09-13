@@ -534,7 +534,9 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
     {
         error = interact(&is);
     }
-    
+
+    CloseLibrary((struct Library *)UtilityBase);
+
     D(bug("Exiting shell\n"));
 
     return error;
