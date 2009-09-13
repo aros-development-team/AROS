@@ -183,7 +183,7 @@ char *combinePath(APTR pool, char *path, char *file)
     if (path[strlen(path)-1] != '/') l++;
 
     if (pool == NULL) out = AllocVec(l, MEMF_CLEAR); 
-    else out = AllocPooled(pool, l);
+    else out = AllocVecPooled(pool, l);
     
     if (out) 
     {
@@ -208,7 +208,7 @@ char *allocPath(APTR pool, char *str)
     {
         for (l=0; s0 != s1; s0++,l++);
         
-        s = AllocPooled(pool, l+1);
+        s = AllocVecPooled(pool, l+1);
         if (s) strncpy(s, str, l);
     }
     return s;
@@ -223,7 +223,7 @@ void freeString(APTR pool, char *str)
         if (pool == NULL) 
             FreeVec(str); 
         else 
-            FreePooled(pool, str, strlen(str)+1);
+            FreeVecPooled(pool, str);
     }
 }
 ///
@@ -247,7 +247,7 @@ char *allocString(APTR pool, char *str)
     
     if (pool == NULL) 
         b = (char*) AllocVec(l+1, MEMF_CLEAR); 
-    else b = (char*) AllocPooled(pool, l+1);
+    else b = (char*) AllocVecPooled(pool, l+1);
     
     if (b && (l>0)) strncpy (b, str, l);
     return b;
@@ -261,13 +261,13 @@ void InfoRename(APTR pool, char *from, char *to)
 
     if ((from == NULL) || (to == NULL)) return;
 
-    frominfo = AllocPooled(pool, strlen(from)+6);
+    frominfo = AllocVecPooled(pool, strlen(from)+6);
 
     if (frominfo) 
     {
         strncpy (frominfo, from, strlen(from));
         strcat(frominfo,".info");
-        toinfo = AllocPooled(pool, strlen(to)+6);
+        toinfo = AllocVecPooled(pool, strlen(to)+6);
 
         if (toinfo) 
         {
@@ -287,14 +287,14 @@ char  *allocPathFromLock(APTR pool, BPTR lock)
     char *pathb, *path;
 
     path = NULL;
-    pathb = AllocPooled(pool, PATHBUFFERSIZE);
+    pathb = AllocVecPooled(pool, PATHBUFFERSIZE);
     if (pathb) 
     {
         if (NameFromLock(lock, pathb, PATHBUFFERSIZE)) 
         {
             path = allocString(pool, pathb);
         }
-        FreePooled(pool, pathb, PATHBUFFERSIZE);
+        FreeVecPooled(pool, pathb);
     }
     return path;
 }
@@ -618,7 +618,7 @@ BOOL  copyFile(APTR pool, char *file, char *destpath, struct FileInfoBlock *file
     to = combinePath(pool, destpath, FilePart(file));
     if (to) 
     {
-        buffer = AllocPooled(pool, bufferlen);
+        buffer = AllocVecPooled(pool, bufferlen);
         if (buffer) 
         {
             in = Open(file, MODE_OLDFILE);
@@ -667,7 +667,7 @@ BOOL  copyFile(APTR pool, char *file, char *destpath, struct FileInfoBlock *file
                 }
                 Close(in);
             }
-            FreePooled(pool, buffer, bufferlen);
+            FreeVecPooled(pool, buffer);
         }
         freeString(pool, to);
     }
@@ -846,7 +846,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
                                         if (len>0) 
                                         {
                                             
-                                            fe = AllocPooled(pool, sizeof(struct FileEntry) + len);
+                                            fe = AllocVecPooled(pool, sizeof(struct FileEntry) + len);
                                             if (fe) 
                                             {
                                                 strcpy(fe->name, FIB->fib_FileName);
@@ -1007,7 +1007,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
                                                     if (len>0) 
                                                     {
                                                         
-                                                        fe = AllocPooled(pool, sizeof(struct FileEntry) + len);
+                                                        fe = AllocVecPooled(pool, sizeof(struct FileEntry) + len);
                                                         if (fe) 
                                                         {
                                                             strcpy(fe->name, FIB->fib_FileName);
@@ -1048,7 +1048,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
                         deleteFile(fef->name);
                     }
                     fe = fef->next;
-                    FreePooled(pool, fef, sizeof(struct FileEntry) + len);
+                    FreeVecPooled(pool, fef);
                     fef = fe;
                 }
 
@@ -1093,7 +1093,7 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
 
     if (pool == NULL) return FALSE;
 
-    infoname = AllocPooled(pool, strlen(s)+6);
+    infoname = AllocVecPooled(pool, strlen(s)+6);
     display.userdata = userdata;
     delDisplay.userdata = userdata;
     
@@ -1103,7 +1103,7 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
         strcat(infoname,".info");
     }
 
-    if (d) destinfo = AllocPooled(pool, strlen(d)+6); else destinfo = NULL;
+    if (d) destinfo = AllocVecPooled(pool, strlen(d)+6); else destinfo = NULL;
 
     if (destinfo) 
     {
