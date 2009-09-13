@@ -111,7 +111,8 @@ typedef @sighandler@ SignalHandler;
 struct AROS_cpu_context
 {
     ULONG                     regs[9]; /* eip (PC), ebp (FP), eax, ebx, ecx, edx, edi, esi, eflags */
-    struct _fpstate           fpstate; /* FPU state */
+    UBYTE                     fpbuffer[sizeof(struct _fpstate) + 15]; /* Buffer for FPU state */
+    struct _fpstate *         fpstate; /* FPU state pointer inside fpbuffer */
     int                       errno_backup;
     struct AROS_cpu_context * sc;
 };
@@ -224,8 +225,7 @@ struct AROS_cpu_context
     Update: We store the registers in our own structure now
 */
 
-//#   define NO_FPU
-
+/*  define NO_FPU */
 /*
     This macro returns 1 if an FPU is available.
 */
@@ -239,14 +239,14 @@ struct AROS_cpu_context
         do                                      \
 	{                                       \
     	    if (HAS_FPU(sc))                    \
-	        (cc)->fpstate = *(sc)->fpstate; \
+	        *(cc)->fpstate = *(sc)->fpstate; \
 	} while (0)
 
 #define RESTORE_FPU(cc,sc)                      \
         do                                      \
 	{                                       \
     	    if (HAS_FPU(sc))                    \
-	        *(sc)->fpstate = (cc)->fpstate; \
+	        *(sc)->fpstate = *(cc)->fpstate; \
 	} while (0)
 
 /*
@@ -317,10 +317,36 @@ struct AROS_cpu_context
 
 #ifndef NO_FPU
 
+#define cpuid(num, eax, ebx, ecx, edx) \
+    do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
+
 #define PREPARE_INITIAL_CONTEXT(task,startpc) \
-   asm volatile("fninit\n\t" \
-    	    	"fnsave %0\n\t" \
-		"fwait" : "=m" (GetCpuContext(task)->fpstate))
+    UBYTE * ptr = (GetCpuContext(task)->fpbuffer); \
+    UBYTE current_xmm[512+16], *curr = current_xmm; \
+    curr = (UBYTE*)(((IPTR)curr + 15) & ~15); \
+    ptr = (UBYTE*)(((IPTR)ptr+15)&~15); /* Realign to next 16 byte boundary (needed for SSE, won't hurt for FPU only) */ \
+    GetCpuContext(task)->fpstate = (struct _fpstate *)ptr; \
+    UBYTE * fxsr_frame = ptr + 112; /* See definition of struct _fpstate for 32bit systems */ \
+    /* Detect SEE capability */ \
+    ULONG v1,v2,v3,v4; \
+    cpuid(1, v1,v2,v3,v4); \
+    if (v4 & (1 << 24)) \
+    { \
+    switch ((v4 >> 25) & 3) \
+    { \
+        case 3:\
+        case 2:\
+        case 1:\
+        /* FPU + SSE */ \
+        asm volatile("fxsave (%0); fninit; fwait; fxsave (%1); fnsave (%2); fxrstor (%0);"\
+        ::"r"(curr),"r"(fxsr_frame), "r"(GetCpuContext(task)->fpstate)); \
+    }\
+    }\
+    else\
+    { \
+        /* FPU only */ \
+        asm volatile("fnsave (%0); fninit; fwait; fnsave (%1); frstor (%0);"::"r"(curr), "r"(GetCpuContext(task)->fpstate)); \
+    }
 
 #else
 
