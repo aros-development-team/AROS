@@ -47,7 +47,7 @@
         AROS_LC3(int, accept, \
                   AROS_LCA(int,(__arg1),D0), \
                   AROS_LCA(struct sockaddr *,(__arg2),A0), \
-                  AROS_LCA(int *,(__arg3),A1), \
+                  AROS_LCA(socklen_t *,(__arg3),A1), \
         struct Library *, (__SocketBase), 8, BSDSocket)
 
 #define accept(arg1, arg2, arg3) \

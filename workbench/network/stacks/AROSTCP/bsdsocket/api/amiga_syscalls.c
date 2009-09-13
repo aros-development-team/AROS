@@ -195,7 +195,7 @@ D(bug("[AROSTCP](amiga_syscalls.c) UL_Listen(%ld, %ld)\n", s, backlog));
 AROS_LH3(LONG, accept,
    AROS_LHA(LONG, s, D0),
    AROS_LHA(caddr_t, name, A0),
-   AROS_LHA(ULONG *, anamelen, A1),
+   AROS_LHA(socklen_t *, anamelen, A1),
    struct SocketBase *, libPtr, 5, UL)
 {
   AROS_LIBFUNC_INIT
