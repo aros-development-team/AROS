@@ -13,10 +13,8 @@ FILES := \
     trees \
     zutil \
     inflate \
-    infblock \
+	infback \
     inftrees \
-    infcodes \
-    infutil \
     inffast
 
 #MM- linklibs-core : linklibs-zlib
