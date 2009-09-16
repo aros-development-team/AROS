@@ -12,6 +12,16 @@
 #include "gfxfuncsupport.h"
 #include "intregions.h"
 
+struct ellipse_render_data
+{
+    struct render_special_info rsi;
+    LONG a, b;    
+};
+
+static ULONG ellipse_render(APTR ellipse_rd, LONG srcx, LONG srcy,
+    	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+			   LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase);
+
 /*****************************************************************************
 
     NAME */
@@ -60,11 +70,8 @@
     AROS_LIBFUNC_INIT
 
     struct Rectangle 	rr;
+    struct ellipse_render_data erd;
     OOP_Object      	*gc;
-    struct Layer    	*L = rp->Layer;
-    struct BitMap   	*bm = rp->BitMap;
-    struct Rectangle 	 rp_clip_rectangle;
-    BOOL    	    	 have_rp_cliprectangle;
     
     if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return;
@@ -81,167 +88,36 @@
     rr.MinY = yCenter - b;
     rr.MaxX = xCenter + a;
     rr.MaxY = yCenter + b;
-  
-    if (NULL == L)
-    {
-        /* No layer, probably a screen, but may be a user inited bitmap */
-	OOP_Object *bm_obj;
-	
-	bm_obj = OBTAIN_HIDD_BM(bm);
-	if (bm_obj)
-	{
-	    /* No need for clipping */
-	    HIDD_BM_DrawEllipse(bm_obj, gc
-		    , xCenter, yCenter
-		    , a, b
-	    );
-            HIDD_BM_UpdateRect(bm_obj, xCenter - a, yCenter - b, a + a, b + b);
 
-	    RELEASE_HIDD_BM(bm_obj, bm);
-	}
-	    
-    }
-    else
-    {
-        struct ClipRect     *CR;
-	WORD 	    	    xrel;
-        WORD 	    	    yrel;
-	struct Rectangle    torender, intersect;
-	OOP_Object  	    *bm_obj;
-	
-	LockLayerRom(L);
-	
-	CR = L->ClipRect;
-	
-	xrel = L->bounds.MinX;
-	yrel = L->bounds.MinY;
-	
-	xCenter -= L->Scroll_X;
-	yCenter -= L->Scroll_Y;
-
-	have_rp_cliprectangle = GetRPClipRectangleForLayer(rp, L, &rp_clip_rectangle, GfxBase);
-	
-	torender.MinX = rr.MinX + xrel - L->Scroll_X;
-	torender.MinY = rr.MinY + yrel - L->Scroll_Y;
-	torender.MaxX = rr.MaxX + xrel - L->Scroll_X;
-	torender.MaxY = rr.MaxY + yrel - L->Scroll_Y;
-		
-	for (;NULL != CR; CR = CR->Next)
-	{
-	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
-	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
-		CR->lobs));
-		
-	    /* Does this cliprect intersect with area to rectfill ? */
-	    if (_AndRectRect(&CR->bounds, &torender, &intersect))
-	    {
-	    	if (!have_rp_cliprectangle || _AndRectRect(&rp_clip_rectangle, &intersect, &intersect))
-		{
-	            if (NULL == CR->lobs)
-		    {
-
-			/* Set clip rectangle */
-    	    		/* bug("Setting cliprect: %d %d %d %d : layerrel: %d %d %d %d\n"
-		    	    , intersect.MinX
-			    , intersect.MinY
-			    , intersect.MaxX
-			    , intersect.MaxY
-
-		    	    , intersect.MinX - xrel
-			    , intersect.MinY - yrel
-			    , intersect.MaxX - xrel
-			    , intersect.MaxY - yrel
-			);
-    	    		*/		    
-			HIDD_GC_SetClipRect(gc
-		    	    , intersect.MinX
-			    , intersect.MinY
-			    , intersect.MaxX
-			    , intersect.MaxY
-			);
-
-    	    	    	bm_obj = OBTAIN_HIDD_BM(bm);			
-			if (bm_obj)
-			{
-			    HIDD_BM_DrawEllipse(bm_obj
-		    		, gc
-				, xCenter + xrel
-				, yCenter + yrel
-				, a
-				, b
-			    );
-                            HIDD_BM_UpdateRect(bm_obj, xCenter + xrel - a, yCenter + yrel - b, a + a, b + b);
-			    
-    	    	    	    RELEASE_HIDD_BM(bm_obj, bm);			    
-    	    	    	}
-			
-			HIDD_GC_UnsetClipRect(gc);
-
-
-		    }
-		    else
-		    {
-			/* Render into offscreen cliprect bitmap */
-			if (L->Flags & LAYERSIMPLE)
-		    	    continue;
-			else if (L->Flags & LAYERSUPER)
-			{
-		    	    D(bug("do_render_func(): Superbitmap not handled yet\n"));
-			}
-			else
-			{
-		    	    LONG bm_rel_minx, bm_rel_miny, bm_rel_maxx, bm_rel_maxy;
-			    LONG layer_rel_x, layer_rel_y;
-
-			    layer_rel_x = intersect.MinX - xrel;
-			    layer_rel_y = intersect.MinY - yrel;
-
-			    bm_rel_minx = intersect.MinX - CR->bounds.MinX;
-			    bm_rel_miny = intersect.MinY - CR->bounds.MinY;
-			    bm_rel_maxx = intersect.MaxX - CR->bounds.MinX;
-			    bm_rel_maxy = intersect.MaxY - CR->bounds.MinY;
-
-		    	    HIDD_GC_SetClipRect(gc
-		    		    , bm_rel_minx + ALIGN_OFFSET(CR->bounds.MinX)
-				    , bm_rel_miny
-				    , bm_rel_maxx + ALIGN_OFFSET(CR->bounds.MinX) 
-				    , bm_rel_maxy
-			    );
-
-    	    	    	    bm_obj = OBTAIN_HIDD_BM(CR->BitMap);
-			    if (bm_obj)
-			    {	
-				HIDD_BM_DrawEllipse(bm_obj
-					, gc
-					, bm_rel_minx - (layer_rel_x - xCenter) + ALIGN_OFFSET(CR->bounds.MinX)
-					, bm_rel_miny - (layer_rel_y - yCenter)
-					, a
-					, b
-				);
-                                HIDD_BM_UpdateRect(bm_obj, bm_rel_minx - (layer_rel_x - xCenter) + ALIGN_OFFSET(CR->bounds.MinX) - a,
-                                                           bm_rel_miny - (layer_rel_y - yCenter) - b,
-                                                           a + a, b + b);
-
-    	    	    	    	RELEASE_HIDD_BM(bm_obj, CR->BitMap);
-			    }
-			    
-			    HIDD_GC_UnsetClipRect(gc);
-			}
-
-		    } /* if (CR->lobs == NULL) */
-		
-		} /* if it also intersects with possible rastport clip rectangle */
-
-	    } /* if (cliprect intersects with area to render into) */
-	    
-	} /* for (each cliprect in the layer) */
-	
-        UnlockLayerRom(L);
-	
-    } /* if (rp->Layer) */
+    erd.a = a;
+    erd.b = b;
+    
+    do_render_func(rp, NULL, &rr, ellipse_render, &erd, TRUE, TRUE, GfxBase);
     
     RELEASE_DRIVERDATA(rp, GfxBase);
     
     AROS_LIBFUNC_EXIT
     
 } /* DrawEllipse */
+
+/****************************************************************************************/
+
+static ULONG ellipse_render(APTR ellipse_rd, LONG srcx, LONG srcy,
+    	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+			   LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase)
+{
+    struct ellipse_render_data *erd;
+
+    erd = (struct ellipse_render_data *)ellipse_rd;
+
+    HIDD_GC_SetClipRect(dst_gc, x1, y1, x2, y2);
+
+    HIDD_BM_DrawEllipse(dstbm_obj, dst_gc, erd->a + x1 - srcx, erd->b + y1 - srcy,
+					   erd->a, erd->b); 
+
+    HIDD_GC_UnsetClipRect(dst_gc);
+   
+    return 0;
+}
+
+/****************************************************************************************/
