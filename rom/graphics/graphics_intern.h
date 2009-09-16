@@ -51,6 +51,8 @@
 #include "fontsupport.h"
 #include "objcache.h"
 
+#define BITMAP_CLIPPING	    	1
+
 #define REGIONS_USE_MEMPOOL 	1
 
 /* Setting BMDEPTH_COMPATIBILITY to 1 will cause bitmap->Depth

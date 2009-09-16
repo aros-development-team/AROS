@@ -299,11 +299,18 @@ ULONG do_pixel_func(struct RastPort *rp
     {
 	OOP_Object *bm_obj;
 	IPTR width, height;
-	
+
+	have_rp_cliprectangle = GetRPClipRectangleForBitMap(rp, bm, &rp_clip_rectangle, GfxBase);
+    	if (have_rp_cliprectangle && !_IsPointInRect(&rp_clip_rectangle, x, y))
+	{
+	    return -1;
+	}
+		
 	bm_obj = OBTAIN_HIDD_BM(bm);
 	if (NULL == bm_obj)
 	    return -1;
 	
+#if 0 /* With enabled BITMAP_CLIPPING this will be done automatically */
 	OOP_GetAttr(bm_obj, aHidd_BitMap_Width,  &width);
 	OOP_GetAttr(bm_obj, aHidd_BitMap_Height, &height);
 
@@ -318,6 +325,7 @@ ULONG do_pixel_func(struct RastPort *rp
 	     return -1;
 
 	}
+#endif
 	
     	/* This is a screen */
 	retval = render_func(funcdata, bm_obj, gc, x, y, GfxBase);
@@ -1727,26 +1735,44 @@ BOOL GetRPClipRectangleForBitMap(struct RastPort *rp, struct BitMap *bm,
 {
     if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_VALID)
     {
+	struct Rectangle bm_rect;
 	
+	bm_rect.MinX = 0;
+	bm_rect.MinY = 0;
+	bm_rect.MaxX = GetBitMapAttr(bm, BMA_WIDTH) - 1;
+	bm_rect.MaxY = GetBitMapAttr(bm, BMA_HEIGHT) - 1;
+		
     	*r = RP_DRIVERDATA(rp)->dd_ClipRectangle;
 	
 	if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_RELRIGHT)
 	{
-    	    LONG width = GetBitMapAttr(bm, BMA_WIDTH);
-	    
-	    r->MaxX += width - 1;
+	    r->MaxX += bm_rect.MaxX;
 	}
 	
 	if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_RELBOTTOM)
 	{
-	    LONG height = GetBitMapAttr(bm, BMA_HEIGHT);
-	    
-	    r->MaxY += height - 1;
+	    r->MaxY += bm_rect.MaxY;
 	}
+	
+	if ((r->MaxX >= r->MinX) && (r->MaxY >= r->MinY))
+	{
+	    if (_AndRectRect(r, &bm_rect, r))
+	    {
+	    	return TRUE;
+	    }
+	}
+    }
+
+    if (BITMAP_CLIPPING)
+    {
+    	r->MinX = 0;
+	r->MinY = 0;
+	r->MaxX = GetBitMapAttr(bm, BMA_WIDTH) - 1;
+	r->MaxY = GetBitMapAttr(bm, BMA_HEIGHT) - 1;
 	
 	return TRUE;
     }
-    
+        
     return FALSE;
 }
 
