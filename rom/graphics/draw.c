@@ -16,6 +16,16 @@
 #include "intregions.h"
 #include <stdlib.h>
 
+struct draw_render_data
+{
+    struct render_special_info rsi;
+    LONG x1, y1, x2, y2;    
+};
+
+static ULONG draw_render(APTR draw_rd, LONG srcx, LONG srcy,
+    	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+			   LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase);
+
 /*****************************************************************************
 
     NAME */
@@ -65,14 +75,11 @@
     AROS_LIBFUNC_INIT
 
 
-    struct Rectangle 	rr;
-    OOP_Object      	*gc;
-    struct Layer    	*L = rp->Layer;
-    struct BitMap   	*bm = rp->BitMap;
-    struct Rectangle 	 rp_clip_rectangle;
-    BOOL    	    	 have_rp_cliprectangle;
-    LONG    	    	 dx, dy;
-    LONG    	    	 x1, y1;
+    struct Rectangle 	    rr;
+    OOP_Object      	    *gc;
+    struct draw_render_data drd;
+    LONG    	    	    dx;
+    LONG    	    	    x1, y1;
     
     if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return;
@@ -124,161 +131,14 @@
     	}
     }
          
-	
-    if (NULL == L)
-    {
-        /* No layer, probably a screen, but may be a user inited bitmap */
-	OOP_Object *bm_obj;
-
-	bm_obj = OBTAIN_HIDD_BM(bm);
-	if (bm_obj)
-	{
-	    /* No need for clipping */
-	    HIDD_BM_DrawLine(bm_obj, gc, x1, y1, x, y);  
-            HIDD_BM_UpdateRect(bm_obj, MIN(x1, x), MIN(y1, y), abs(x - x1) + 1, abs(y - y1) + 1);
-	
-	    RELEASE_HIDD_BM(bm_obj, bm);
-	}
-	    
-    }
-    else
-    {
-        struct ClipRect     *CR;
-	WORD 	    	    xrel;
-        WORD 	    	    yrel;
-	struct Rectangle    torender, intersect;
-	OOP_Object  	    *bm_obj;
-
-	LockLayerRom(L);
-
-    	x1 -= L->Scroll_X;
-	y1 -= L->Scroll_Y;
-	x  -= L->Scroll_X;
-	y  -= L->Scroll_Y;
-	
-	have_rp_cliprectangle = GetRPClipRectangleForLayer(rp, L, &rp_clip_rectangle, GfxBase);
-	
-	xrel = L->bounds.MinX;
-	yrel = L->bounds.MinY;
-		
-	torender.MinX = rr.MinX + xrel - L->Scroll_X;
-	torender.MinY = rr.MinY + yrel - L->Scroll_Y;
-	torender.MaxX = rr.MaxX + xrel - L->Scroll_X;
-	torender.MaxY = rr.MaxY + yrel - L->Scroll_Y;
-		
-	CR = L->ClipRect;
-	
-	for (;NULL != CR; CR = CR->Next)
-	{
-	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
-	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
-		CR->lobs));
-		
-	    /* Does this cliprect intersect with area to rectfill ? */
-	    if (_AndRectRect(&CR->bounds, &torender, &intersect))
-	    {
-	    	if (!have_rp_cliprectangle || _AndRectRect(&rp_clip_rectangle, &intersect, &intersect))
-		{
-	            if (NULL == CR->lobs)
-		    {		
-			/* Set clip rectangle */
-			HIDD_GC_SetClipRect(gc
-		    	    , intersect.MinX
-			    , intersect.MinY
-			    , intersect.MaxX
-			    , intersect.MaxY
-			);
-
-    	    	    	bm_obj = OBTAIN_HIDD_BM(bm);
-			if (bm_obj)
-			{
-			    HIDD_BM_DrawLine(bm_obj
-		    		, gc
-				, x1 + xrel
-				, y1 + yrel
-				, x + xrel
-				, y + yrel
-			    );
-                            HIDD_BM_UpdateRect(bm_obj
-                                , MIN(x1, x) + xrel
-                                , MIN(y1, y) + yrel
-                                , abs(x - x1) + 1
-                                , abs(y - y1) + 1
-                            );
-			    
-			    RELEASE_HIDD_BM(bm_obj, bm);
-			}
-
-			HIDD_GC_UnsetClipRect(gc);
-
-		    }
-		    else
-		    {
-			/* Render into offscreen cliprect bitmap */
-			if (L->Flags & LAYERSIMPLE)
-		    	    continue;
-			else if (L->Flags & LAYERSUPER)
-			{
-		    	    D(bug("do_render_func(): Superbitmap not handled yet\n"));
-			}
-			else
-			{
-		    	    LONG bm_rel_minx, bm_rel_miny, bm_rel_maxx, bm_rel_maxy;
-			    LONG layer_rel_x, layer_rel_y;
-
-			    layer_rel_x = intersect.MinX - xrel;
-			    layer_rel_y = intersect.MinY - yrel;
-
-
-			    bm_rel_minx = intersect.MinX - CR->bounds.MinX;
-			    bm_rel_miny = intersect.MinY - CR->bounds.MinY;
-			    bm_rel_maxx = intersect.MaxX - CR->bounds.MinX;
-			    bm_rel_maxy = intersect.MaxY - CR->bounds.MinY;
-
-		    	    HIDD_GC_SetClipRect(gc
-		    		    , bm_rel_minx + ALIGN_OFFSET(CR->bounds.MinX)
-				    , bm_rel_miny
-				    , bm_rel_maxx + ALIGN_OFFSET(CR->bounds.MinX) 
-				    , bm_rel_maxy
-			    );
-
-    	    	    	    bm_obj = OBTAIN_HIDD_BM(CR->BitMap);
-			    if (bm_obj)
-			    {
-				HIDD_BM_DrawLine(bm_obj
-					, gc
-					, bm_rel_minx - (layer_rel_x - x1) + ALIGN_OFFSET(CR->bounds.MinX)
-					, bm_rel_miny - (layer_rel_y - y1)
-					, bm_rel_minx - (layer_rel_x - x) + ALIGN_OFFSET(CR->bounds.MinX)
-					, bm_rel_miny - (layer_rel_y - y)
-				);
-                                HIDD_BM_UpdateRect(bm_obj
-                                        , bm_rel_minx - (layer_rel_x - MIN(x1, x)) + ALIGN_OFFSET(CR->bounds.MinX)
-                                        , bm_rel_miny - (layer_rel_y - MIN(y1, y))
-                                        , abs(x - x1) + 1
-                                        , abs(y - y1) + 1
-                                );
-				
-				RELEASE_HIDD_BM(bm_obj, CR->BitMap);
-    	    	    	    }
-			    HIDD_GC_UnsetClipRect(gc);
-			}
-
-		    } /* if (CR->lobs == NULL) */
-		
-		} /* if it also intersects with possible rastport clip rectangle */
-		
-	    } /* if (cliprect intersects with area to render into) */
-	    
-	} /* for (each cliprect in the layer) */
-	
-        UnlockLayerRom(L);
-	
-    } /* if (rp->Layer) */
+    drd.x1 = x1 - rr.MinX;
+    drd.y1 = y1 - rr.MinY;
+    drd.x2 = x - rr.MinX;
+    drd.y2 = y - rr.MinY;
     
-    dx = abs(x1 - x);
-    dy = abs(y1 - y);
-    if (dy > dx) dx = dy;
+    do_render_func(rp, NULL, &rr, draw_render, &drd, TRUE, TRUE, GfxBase);
+        
+    dx = (drd.x2 > drd.y2) ? drd.x2 : drd.y2;
     
     rp->linpatcnt = ((LONG)rp->linpatcnt - dx) & 15;
 
@@ -290,3 +150,31 @@
     AROS_LIBFUNC_EXIT
     
 } /* Draw */
+
+/****************************************************************************************/
+
+static ULONG draw_render(APTR draw_rd, LONG srcx, LONG srcy,
+    	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+			   LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase)
+{
+    struct draw_render_data *drd;
+    ULONG   	    	     width, height;
+
+    width  = x2 - x1 + 1;
+    height = y2 - y1 + 1;
+
+    drd = (struct draw_render_data *)draw_rd;
+
+    HIDD_GC_SetClipRect(dst_gc, x1, y1, x2, y2);
+
+    HIDD_BM_DrawLine(dstbm_obj, dst_gc, drd->x1 + x1 - srcx,
+    	    	    	    	    	drd->y1 + y1 - srcy,
+					drd->x2 + x1 - srcx,
+					drd->y2 + y1 - srcy); 
+
+    HIDD_GC_UnsetClipRect(dst_gc);
+   
+    return 0;
+}
+
+/****************************************************************************************/
