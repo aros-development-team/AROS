@@ -40,7 +40,7 @@
  * 2009-03-05  T. Wiszkowski       remade timeouts, added timer-based and benchmark-based delays.
  */
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <aros/symbolsets.h>
