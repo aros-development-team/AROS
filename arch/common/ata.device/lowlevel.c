@@ -68,7 +68,7 @@
 #define DUMP_MORE(a)
 #define DATA(a) D(a)
 #define DATAPI(a) D(a)
-#define DINIT(a) D(a)
+#define DINIT(a) (a)
 
 #include <aros/debug.h>
 #include <exec/types.h>
