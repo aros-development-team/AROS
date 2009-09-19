@@ -42,7 +42,8 @@
 /* Predefinitions */
 
 void kbd_keyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
-void kbd_process_key(struct kbd_data *, UBYTE);
+void kbd_process_key(struct kbd_data *, UBYTE,
+    struct ExecBase *SysBase);
 
 void kbd_updateleds();
 int  kbd_reset(void);
@@ -81,6 +82,7 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     APTR    	    callback = NULL;
     APTR    	    callbackdata = NULL;
     BOOL    	    has_kbd_hidd = FALSE;
+    UBYTE           status;
     
     EnterFunc(bug("Kbd::New()\n"));
 
@@ -129,7 +131,13 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     if (NULL == callback)
     	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    /* Only continue if there appears to be a keyboard port */
+    status = kbd_read_status();
+    if (status == 0 || status == 0xff)
+        o = NULL;
+    else
+        o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
     if (o)
     {
         struct kbd_data *data = OOP_INST_DATA(cl, o);
@@ -169,7 +177,7 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             /* Report last key received before keyboard was reset, so that
              * keyboard.device knows about any key currently held down */
             if (last_code > 0)
-                kbd_process_key(data, (UBYTE)last_code);
+                kbd_process_key(data, (UBYTE)last_code, SysBase);
 
             HIDD_IRQ_AddHandler(XSD(cl)->irqhidd, irq, vHidd_IRQ_Keyboard);
             ObtainSemaphore(&XSD(cl)->sema);
@@ -319,7 +327,7 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	    continue;
 	}
 
-        kbd_process_key(data, keycode);
+        kbd_process_key(data, keycode, SysBase);
     } /* for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--) */
 
     if (!work)
@@ -334,7 +342,10 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     return;
 }
 
-void kbd_process_key(struct kbd_data *data, UBYTE keycode)
+#undef SysBase
+
+void kbd_process_key(struct kbd_data *data, UBYTE keycode,
+    struct ExecBase *SysBase)
 {
     ULONG   	    kbd_keystate = data->kbd_keystate;
     UBYTE   	    downkeycode;
@@ -419,17 +430,17 @@ void kbd_process_key(struct kbd_data *data, UBYTE keycode)
     switch(event)
     {
         case K_KP_Numl:
-            kbd_keystate ^= 0x02;    /* Turn Numlock bit on */
+            kbd_keystate ^= 0x02;    /* Toggle Numlock bit */
             kbd_updateleds(kbd_keystate);
             break;
 
         case K_Scroll_Lock:
-            kbd_keystate ^= 0x01;    /* Turn Scrolllock bit on */
+            kbd_keystate ^= 0x01;    /* Toggle Scrolllock bit */
             kbd_updateleds(kbd_keystate);
             break;
 
         case K_CapsLock:
-            kbd_keystate ^= 0x04;    /* Turn Capslock bit on */
+            kbd_keystate ^= 0x04;    /* Toggle Capslock bit */
             kbd_updateleds(kbd_keystate);
             break;
 
@@ -474,10 +485,12 @@ void kbd_process_key(struct kbd_data *data, UBYTE keycode)
             break;
 
         case K_RMeta:
+        case K_Menu:
             kbd_keystate |= FLAG_RMETA;
             break;
 
         case (K_RMeta | 0x80):
+        case (K_Menu | 0x80):
             kbd_keystate &= ~FLAG_RMETA;
             break;
 
@@ -549,7 +562,6 @@ void kbd_process_key(struct kbd_data *data, UBYTE keycode)
 
 /****************************************************************************************/
 
-#undef SysBase
 #define SysBase (*(struct ExecBase **)4UL)
 
 #warning This should go somewhere higher but D(bug()) is not possible there

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -100,5 +100,5 @@ static const __attribute__((section(".text"))) WORD e0_keytable[NUM_E0KEYS] =
     NOKEY   	    , /* 090 (0x5A) */
     RAWKEY_LAMIGA   , /* 091 (0x5B) K_LMeta */
     RAWKEY_RAMIGA   , /* 092 (0x5C) K_RMeta */
-    RAWKEY_HELP       /* 093 (0x5D) K_Menu -> HELP */   
+    RAWKEY_RAMIGA     /* 093 (0x5D) K_Menu */
 };

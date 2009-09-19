@@ -23,7 +23,7 @@
 #define K_F11		0x0057
 #define K_F12		0x0058
 #define K_Sys_Req	0x4037	/* PrintScreen key */
-#define K_Scroll_Lock	0x4046  /* It's not a special key but trate is as such */
+#define K_Scroll_Lock	0x4046  /* It's not a special key but treat it as such */
 #define K_Pause		0x1f01 	/* Pause/Break key */
 #define K_BackQuote	0x0029
 #define K_0		0x000b
