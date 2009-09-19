@@ -17,6 +17,6 @@ MSG_DEPTH (//)
 MSG_AUTOSCROLL (//)
 \33lAutoscroll
 ;
-MSG_SELECT (//)
-Select a Screen Mode
+MSG_DISPLAY_MODE (//)
+Display Mode
 ;

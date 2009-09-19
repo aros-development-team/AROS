@@ -50,8 +50,9 @@ Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_PrefsEditor_Path, (IPTR)"SYS/screenmode.prefs",
         
 	Child, (IPTR)VGroup,
+	    Child, CLabel(_(MSG_DISPLAY_MODE)),
 	    Child, (IPTR)(selector   = (Object *)ScreenModeSelectorObject, End),
-	    Child, (IPTR)(properties = (Object *)ScreenModePropertiesObject, GroupFrame, End),
+//FIXME: show again when it works:	    Child, (IPTR)(properties = (Object *)ScreenModePropertiesObject, GroupFrame, End),
 	End,
         
         TAG_DONE
@@ -62,6 +63,7 @@ Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         SETUP_INST_DATA;
         
 	data->selector   = selector;
+	properties = (Object *)ScreenModePropertiesObject, End; //TO BE REMOVED
         data->properties = properties;
 	     
         /*-- Setup notifications -------------------------------------------*/
