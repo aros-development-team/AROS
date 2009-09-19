@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -55,6 +55,7 @@ Object *ScreenModeSelector__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
     STRPTR *modes_array;
     ULONG  *ids_array;
     ULONG   id, num_modes, cur_mode;
+    Object *list;
          
     struct DisplayInfo    DisplayInfo;
     struct DimensionInfo  DimensionInfo;
@@ -66,19 +67,17 @@ Object *ScreenModeSelector__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
     num_modes = 0; id = INVALID_ID;
     while ((id = NextDisplayInfo(id)) != INVALID_ID) num_modes++;
 	 
-    modes_array = AllocVec(sizeof(STRPTR) * (1 + num_modes + 1), MEMF_CLEAR);
+    modes_array = AllocVec(sizeof(STRPTR) * (num_modes + 1), MEMF_CLEAR);
     if (!modes_array)
         goto err;
 	
-    ids_array   = AllocVec(sizeof(ULONG) * (1 + num_modes + 1), MEMF_ANY);
+    ids_array   = AllocVec(sizeof(ULONG) * (num_modes + 1), MEMF_ANY);
     if (!ids_array)
         goto err;
-	 
-    modes_array[0]           = _(MSG_SELECT);
-    ids_array[0]             = INVALID_ID;
-    ids_array[num_modes + 1] = INVALID_ID;
+
+    ids_array[num_modes] = INVALID_ID;
     
-    cur_mode = 1;
+    cur_mode = 0;
     while ((id = NextDisplayInfo(id)) != INVALID_ID)
     {
         if ((id & MONITOR_ID_MASK) == DEFAULT_MONITOR_ID)
@@ -109,17 +108,22 @@ Object *ScreenModeSelector__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
 	cur_mode++;
     }
 
+    list = ListObject,
+        InputListFrame,
+        MUIA_List_SourceArray, (IPTR)modes_array,
+        End;
+
     self = (Object *)DoSuperNewTags
     (
         CLASS, self, NULL,
-        MUIA_Cycle_Entries, (IPTR)modes_array,
+        MUIA_Listview_List, (IPTR)list,
         TAG_MORE,           (IPTR)message->ops_AttrList
     );
 
     if (!self)
         goto err;
 	
-    DoMethod(self, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+    DoMethod(self, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
              (IPTR)self, 3, MUIM_CallHook, (IPTR)&SelectHook, MUIV_TriggerValue);
  
     data = INST_DATA(CLASS, self);    
@@ -142,7 +146,7 @@ IPTR ScreenModeSelector__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 
     if (data->modes_array)
     {
-        for (cur_mode = 1; data->modes_array[cur_mode]; cur_mode++)
+        for (cur_mode = 0; data->modes_array[cur_mode]; cur_mode++)
 	    FreeVec(data->modes_array[cur_mode]);
 		 
 	FreeVec(data->modes_array);
@@ -177,7 +181,7 @@ IPTR ScreenModeSelector__OM_SET(Class *CLASS, Object *self, struct opSet *messag
 		
 		for
 		(
-		    i = 1;
+		    i = 0;
 		    data->ids_array[i] != tag->ti_Data && data->ids_array[i] != INVALID_ID;
 		    i++
 		);
@@ -215,7 +219,7 @@ IPTR ScreenModeSelector__OM_GET(Class *CLASS, Object *self, struct opGet *messag
 
 ZUNE_CUSTOMCLASS_4
 (
-    ScreenModeSelector, NULL, MUIC_Cycle, NULL,   
+    ScreenModeSelector, NULL, MUIC_Listview, NULL,   
     OM_NEW,     struct opSet *,
     OM_DISPOSE, Msg,
     OM_GET,     struct opGet *,
