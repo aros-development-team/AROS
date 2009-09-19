@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -94,7 +94,7 @@ static const __attribute__((section(".text"))) WORD std_keytable[NUM_STDKEYS] =
     NOKEY   	    	,  /* 084 (0x54) */
     NOKEY   	    	,  /* 085 (0x55) */
     RAWKEY_LESSGREATER	,  /* 086 (0x56) K_LessGreater */
-    RAWKEY_LAMIGA   	,  /* 087 (0x57) K_F11 - Note: we map to LAMIGA, F11 rawkey code would be 0x4B */
+    RAWKEY_HELP   	,  /* 087 (0x57) K_F11 - Note: we map to HELP, F11 rawkey code would be 0x4B */
     RAWKEY_RAMIGA   	   /* 088 (0x58) K_F12 - Note: we map to RAMIGA, F12 rawkey code would be 0x6F */
       
 };
