@@ -2220,15 +2220,31 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
     ata_WaitNano(400);
     //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
+    /* Try to ensure device's signature is in place */
+    ata_out(ATA_EXECUTE_DIAG, ata_Command, port);
+
+    ata_WaitTO(bus->ab_Timer, 0, 2000, 0);
+    while (ata_ReadStatus(bus) & ATAF_BUSY)
+    ata_WaitNano(400);
+    //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
+
+    ata_out(0xa0 | (unit << 4), ata_DevHead, port);
+    do
+    {
+        ata_WaitNano(400);
+        //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
+    }
+    while (0 != (ATAF_BUSY & ata_ReadStatus(bus)));
+
     /* Check basic signature. All live devices should provide it */
-    tmp1 = ata_in(ata_Count, port);
-    tmp2 = ata_in(ata_LBALow, port);
-    DINIT(bug("[ATA  ] ata_ReadSignature: Checking Count / LBA (%d:%d) against expected values\n", tmp1, tmp2));
+    tmp1 = ata_in(ata_LBALow, port);
+    DINIT(bug("[ATA  ] ata_ReadSignature: Checking Sector Number/LBA Low (%d)"
+        " against expected value\n", tmp1));
 
     DINIT(bug("[ATA  ] ata_ReadSignature: Status %02lx Device %02lx\n",
         ata_in(ata_Status, port), ata_in(ata_DevHead, port)));
 
-    if ((tmp1 == 0x01) && (tmp2 == 0x01))
+    if (tmp1 == 0x01)
     {
         /* Ok, ATA/ATAPI device. Get detailed signature */
         DINIT(bug("[ATA  ] ata_ReadSignature: Found an ATA[PI] Device. Attempting to detect specific subtype\n"));
@@ -2241,22 +2257,6 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
         switch ((tmp1 << 8) | tmp2)
         {
             case 0x0000:
-                if (0 == (ata_ReadStatus(bus) & 0xfe))
-                    return DEV_NONE;
-                ata_out(ATA_EXECUTE_DIAG, ata_Command, port);
-
-                ata_WaitTO(bus->ab_Timer, 0, 2000, 0);
-                while (ata_ReadStatus(bus) & ATAF_BUSY)
-                    ata_WaitNano(400);
-                    //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
-
-                ata_out(0xa0 | (unit << 4), ata_DevHead, port);
-                do
-                {
-                    ata_WaitNano(400);
-                    //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
-                }
-                while (0 != (ATAF_BUSY & ata_ReadStatus(bus)));
                 DINIT(bug("[ATA  ] ata_ReadSignature: Further validating ATA signature: %lx & 0x7f = 1, %lx & 0x10 = unit\n", ata_in(ata_Error, port), ata_in(ata_DevHead, port)));
 
                 if ((ata_in(ata_Error, port) & 0x7f) == 1)
@@ -2305,7 +2305,7 @@ void ata_ResetBus(struct ata_Bus *bus)
 
     /* Set and then reset the soft reset bit in the Device Control
      * register.  This causes device 0 be selected */
-    D(bug("[ATA  ] ata_ResetBus(%d)\n", bus->ab_BusNum));
+    DINIT(bug("[ATA  ] ata_ResetBus(%d)\n", bus->ab_BusNum));
     ata_out(0xa0 | (0 << 4), ata_DevHead, port);    /* Select it never the less */
     ata_WaitNano(400);
     //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
@@ -2317,25 +2317,28 @@ void ata_ResetBus(struct ata_Bus *bus)
 
     /* If there is a device 0, wait for device 0 to clear BSY */
     if (DEV_NONE != bus->ab_Dev[0]) {
-        D(bug("[ATA%02ld] ata_ResetBus: Wait for Device to clear BSY\n", ((bus->ab_BusNum << 1 ) + 0)));
+        DINIT(bug("[ATA%02ld] ata_ResetBus: Wait for Device to clear BSY\n",
+            ((bus->ab_BusNum << 1 ) + 0)));
         TimeOut = 1000;     /* Timeout 1s (1ms x 1000) */
         while ( 1 ) {
             if ((ata_ReadStatus(bus) & ATAF_BUSY) == 0)
                 break;
             ata_WaitTO(bus->ab_Timer, 0, 1000, 0);
             if (!(--TimeOut)) {
-                D(bug("[ATA%02ld] ata_ResetBus: Device Timed Out!\n", ((bus->ab_BusNum << 1 ) + 0)));
+                DINIT(bug("[ATA%02ld] ata_ResetBus: Device Timed Out!\n",
+                    ((bus->ab_BusNum << 1 ) + 0)));
                 bus->ab_Dev[0] = DEV_NONE;
                 break;
             }
         }
-        D(bug("[ATA%02ld] ata_ResetBus: Wait left after %d ms\n", ((bus->ab_BusNum << 1 ) + 0), (1000 - TimeOut)));
+        DINIT(bug("[ATA%02ld] ata_ResetBus: Wait left after %d ms\n",
+            ((bus->ab_BusNum << 1 ) + 0), (1000 - TimeOut)));
     }
 
     /* If there is a device 1, wait until device 1 allows
      * register access */
     if (DEV_NONE != bus->ab_Dev[1]) {
-        D(bug("[ATA  ] ata_ResetBus: Wait DEV1 to allow access\n"));
+        DINIT(bug("[ATA  ] ata_ResetBus: Wait DEV1 to allow access\n"));
         ata_out(0xa0 | (1 << 4), ata_DevHead, port);
         ata_WaitNano(400);
         //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
@@ -2345,27 +2348,31 @@ void ata_ResetBus(struct ata_Bus *bus)
                 break;
             ata_WaitTO(bus->ab_Timer, 0, 1000, 0);
             if (!(--TimeOut)) {
-                D(bug("[ATA  ] ata_ResetBus: DEV1 1/2 TimeOut!\n"));
+                DINIT(bug("[ATA  ] ata_ResetBus: DEV1 1/2 TimeOut!\n"));
                 bus->ab_Dev[1] = DEV_NONE;
                 break;
             }
         }
-        D(bug("[ATA  ] ata_ResetBus: DEV1 1/2 Wait left after %d ms\n", (1000 - TimeOut)));
+        DINIT(bug("[ATA  ] ata_ResetBus: DEV1 1/2 Wait left after %d ms\n",
+            (1000 - TimeOut)));
 
         if (DEV_NONE != bus->ab_Dev[1]) {
-            D(bug("[ATA%02ld] ata_ResetBus: Wait for Device to clear BSY\n", ((bus->ab_BusNum << 1 ) + 1)));
+            DINIT(bug("[ATA%02ld] ata_ResetBus: Wait for Device to clear BSY\n",
+                ((bus->ab_BusNum << 1 ) + 1)));
             TimeOut = 1000;     /* Timeout 1s (1ms x 1000) */
             while ( 1 ) {
                 if ((ata_ReadStatus(bus) & ATAF_BUSY) == 0)
                     break;
                 ata_WaitTO(bus->ab_Timer, 0, 1000, 0);
                 if (!(--TimeOut)) {
-                    D(bug("[ATA%02ld] ata_ResetBus: Device Timed Out!\n", ((bus->ab_BusNum << 1 ) + 1)));
+                    DINIT(bug("[ATA%02ld] ata_ResetBus: Device Timed Out!\n",
+                        ((bus->ab_BusNum << 1 ) + 1)));
                     bus->ab_Dev[1] = DEV_NONE;
                     break;
                 }
             }
-            D(bug("[ATA%02ld] ata_ResetBus: Wait left after %d ms\n", ((bus->ab_BusNum << 1 ) + 1), 1000 - TimeOut));
+            DINIT(bug("[ATA%02ld] ata_ResetBus: Wait left after %d ms\n",
+                ((bus->ab_BusNum << 1 ) + 1), 1000 - TimeOut));
         }
     }
 
@@ -2386,7 +2393,7 @@ void ata_InitBus(struct ata_Bus *bus)
      */
     bus->ab_Timer = ata_OpenTimer();
 
-    D(bug("[ATA  ] ata_InitBus(%d)\n", bus->ab_BusNum));
+    DINIT(bug("[ATA  ] ata_InitBus(%d)\n", bus->ab_BusNum));
 
     bus->ab_Dev[0] = DEV_NONE;
     bus->ab_Dev[1] = DEV_NONE;
@@ -2411,13 +2418,13 @@ void ata_InitBus(struct ata_Bus *bus)
 
         if ((tmp1 == 0x55) && (tmp2 == 0xaa))
             bus->ab_Dev[i] = DEV_UNKNOWN;
-        D(bug("[ATA%02ld] ata_InitBus: Device type = %x\n",
+        DINIT(bug("[ATA%02ld] ata_InitBus: Device type = %x\n",
             (bus->ab_BusNum << 1 ) + i, bus->ab_Dev[i]));
     }
 
     ata_ResetBus(bus);
     ata_CloseTimer(bus->ab_Timer);
-    D(bug("[ATA  ] ata_InitBus: Finished\n"));
+    DINIT(bug("[ATA  ] ata_InitBus: Finished\n"));
 }
 
 /*

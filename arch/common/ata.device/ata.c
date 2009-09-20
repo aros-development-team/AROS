@@ -1045,7 +1045,7 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSema
     ObtainSemaphoreShared(ssem);
     Signal(parent, SIGBREAKF_CTRL_C);
 
-	bus->ab_Timer = ata_OpenTimer();
+    bus->ab_Timer = ata_OpenTimer();
 
     /* Get the signal used for sleeping */
     bus->ab_Task = FindTask(0);
