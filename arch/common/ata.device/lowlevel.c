@@ -1462,8 +1462,19 @@ BYTE ata_Identify(struct ata_Unit* unit)
         CT_NoBlock
     };
 
+    /* If the right command fails, try the wrong one. If both fail, abort */
     if (ata_exec_cmd(unit, &acb))
-        return IOERR_OPENFAIL;
+    {
+        acb.command = atapi ? ATA_IDENTIFY_DEVICE : ATA_IDENTIFY_ATAPI;
+        if (ata_exec_cmd(unit, &acb))
+            return IOERR_OPENFAIL;
+        unit->au_Bus->ab_Dev[unit->au_UnitNum & 1] ^= 0x82;
+        atapi = unit->au_Bus->ab_Dev[unit->au_UnitNum & 1] & 0x80;
+        DINIT(bug("[ATA%02ld] ata_Identify:"
+            " Incorrect device signature detected."
+            " Switching device type to %lx.\n", unit->au_UnitNum,
+            unit->au_Bus->ab_Dev[unit->au_UnitNum & 1]));
+    }
 
     /*
      * If every second word is zero with 32-bit reads, switch to 16-bit
