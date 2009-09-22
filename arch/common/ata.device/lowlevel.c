@@ -2225,7 +2225,7 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
 
     ata_WaitTO(bus->ab_Timer, 0, 2000, 0);
     while (ata_ReadStatus(bus) & ATAF_BUSY)
-    ata_WaitNano(400);
+        ata_WaitNano(400);
     //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
     ata_out(0xa0 | (unit << 4), ata_DevHead, port);
