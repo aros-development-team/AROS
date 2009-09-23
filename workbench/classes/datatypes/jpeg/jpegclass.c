@@ -127,6 +127,21 @@ my_fill_input_buffer (j_decompress_ptr cinfo)
   return TRUE;
 }
 
+METHODDEF(void)
+my_skip_input_data (j_decompress_ptr cinfo, long num_bytes)
+{
+  my_src_ptr src = (my_src_ptr) cinfo->src;
+
+  if (num_bytes > 0) {
+    while (num_bytes > (long) src->pub.bytes_in_buffer) {
+      num_bytes -= (long) src->pub.bytes_in_buffer;
+      (void)my_fill_input_buffer(cinfo);
+    }
+    src->pub.next_input_byte += (size_t) num_bytes;
+    src->pub.bytes_in_buffer -= (size_t) num_bytes;
+  }
+}
+
 /* Dummy function for the linker */
 void exit(int bla)
 {
@@ -209,6 +224,7 @@ static BOOL LoadJPEG(struct IClass *cl, Object *o)
     jpeg_stdio_src(&cinfo, (FILE *)filehandle);
     src = (my_src_ptr) cinfo.src;
     src->pub.fill_input_buffer = my_fill_input_buffer;
+    src->pub.skip_input_data = my_skip_input_data;
     
     D(bug("jpeg.datatype/LoadJPEG(): Read Header\n"));
     (void) jpeg_read_header(&cinfo, TRUE);
