@@ -44,9 +44,6 @@
 
     TAGS
 
-    PDTA_Screen     --  for pictureclass objects
-    ADTA_Screen     --  for animationclass objects
-
     NOTES
 
     EXAMPLE
