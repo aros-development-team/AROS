@@ -608,7 +608,7 @@ static void render_on_rastport(struct Picture_Data *pd, struct Gadget *g, LONG S
     }
     else
     {   
-        if (bmhd->bmh_Masking == mskHasMask)
+        if ((bmhd->bmh_Masking == mskHasMask) || (bmhd->bmh_Masking == mskHasTransparentColor))
         {
             /* Transparency with mask */
             APTR mask = NULL;
