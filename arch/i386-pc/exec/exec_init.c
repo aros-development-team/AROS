@@ -606,7 +606,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
         while (*fp++ != (VOID *) -1) negsize += LIB_VECTSIZE;
 
         ExecBase = (struct ExecBase *) 0x00002000; /* Got ExecBase at the lowest possible addr */
-        ExecBase += negsize;   /* Substract lowest vector so jump table would fit */
+        ExecBase += negsize;   /* Subtract lowest vector so jump table would fit */
 
         /* Check whether we have some FAST memory,
          * If not, then use calculated ExecBase */
@@ -616,17 +616,6 @@ void exec_cinit(unsigned long magic, unsigned long addr)
             /* We have found some FAST memory. Let's use it for ExecBase */
             ExecBase = (struct ExecBase *) 0x01000000;
             ExecBase += negsize;
-            
-            /* Now we will clear FAST memory. */
-	    /* Disabled due to taking to much time on P4 machines */
-	    rkprintf("Clearing FastMem...");
-
-/************* NICJA - Fix this code so that only unused meory is flushed, and protect certain ares - ie acpi */
-        
-	    /* Ogun - Disable cruddy attempt to save ACPI data for now */
-
-        //bzero((void *)0x01000000, extmem - 0x01000000 - 0x500000);
-	    bzero((void *)0x01000000, extmem - 0x01000000);
         }
 
         /*
@@ -638,18 +627,6 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     	rkprintf("%x Chipmem\n",locmem);
 
         rkprintf("OK\nExecBase=%p\n", ExecBase);
-
-        /* Clear chip ram. Do it carefully as we have kernel somewhere in chip! */
-
-        /*
-         * NOTE:
-         * We will leave area 0x90000 - 0xa0000 uncleared as there is
-         * temporary system stack!
-         */
-	    rkprintf("Clearing ChipMem...\n");
-	
-	    bzero((void *)0x2000, 0x90000-0x2000);
-	    bzero(&_end, locmem -(ULONG)&_end);
     }
     else
     {
@@ -1041,7 +1018,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 		rkprintf("SSE2 ");
 	    case 1:
 		rkprintf("SSE\n");
-		/* Patch exec with SSE-aware CPU context functions */
+		/* Patch exec with some SSE-aware functions */
 	        SetFunction(&ExecBase->LibNode, -6*LIB_VECTSIZE, AROS_SLIB_ENTRY(PrepareContext_SSE, Exec));
 	        SetFunction(&ExecBase->LibNode, -9*LIB_VECTSIZE, AROS_SLIB_ENTRY(Switch_SSE, Exec));
 	        SetFunction(&ExecBase->LibNode, -10*LIB_VECTSIZE, AROS_SLIB_ENTRY(Dispatch_SSE, Exec));
