@@ -11,7 +11,7 @@
 /*
     Save/restore macros. These are used to save scratch registers
     while entering interrupt. Inside interrupt if you cover it with
-    this macros you may use freely these registers. All other HAS to
+    these macros you may use freely these registers. All others HAVE to
     be preserved.
 */
 
@@ -206,7 +206,7 @@ Exec_Schedule_x:    cli     	    	    	    	    /* stegerg: added -> CHECKME */
                     ret
 
 /*
-    This routine does a task switch. It sores the context of
+    This routine does a task switch. It stores the context of
     running task and calls dispatcher.
 
     The context is stored in special place inside Task struncture.
