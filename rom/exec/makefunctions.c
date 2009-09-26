@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create the jumptable for a shared library or a device.
@@ -17,8 +17,8 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(APTR, target,        A0),
-	AROS_LHA(APTR, functionArray, A1),
-	AROS_LHA(APTR, funcDispBase,  A2),
+	AROS_LHA(CONST_APTR, functionArray, A1),
+	AROS_LHA(CONST_APTR, funcDispBase,  A2),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 15, Exec)

@@ -59,7 +59,7 @@
 	struct Device *,iORequest->io_Device,5,
     );
 
-    /* It the quick flag is cleared it wasn't done quick. Wait for completion. */
+    /* If the quick flag is cleared it wasn't done quickly. Wait for completion. */
     if(!(iORequest->io_Flags&IOF_QUICK))
 	WaitIO(iORequest);
 

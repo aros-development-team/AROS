@@ -39,7 +39,7 @@
 
     RESULT
 	Either the total of the available memory or the largest chunk if
-	MEMF_LARGEST ist set in the attributes.
+	MEMF_LARGEST is set in the attributes.
 
     NOTES
 	Due to the nature of multitasking the returned value may already
