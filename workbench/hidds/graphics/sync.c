@@ -90,8 +90,8 @@ VOID Sync__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		
 		pixtime = (DOUBLE)data->pixtime;
 		
-		pixtime /= 1000000000000;	/* pixtime is in 10E-12 secs */
-		pixclock = 1 / pixtime;		/* convert to Hz */
+		pixtime /= 1000000000000.0;	/* pixtime is in 10E-12 secs */
+		pixclock = 1.0 / pixtime;		/* convert to Hz */
 		*msg->storage = (ULONG)pixclock;
     	    #endif
 		break;
