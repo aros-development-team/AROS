@@ -446,6 +446,7 @@ static void cmd_Eject(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     D(bug("[ATA%02ld] cmd_Eject()\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum));
 
     IOStdReq(io)->io_Error = unit->au_Eject(unit);
+    cmd_TestChanged(io, LIBBASE);
 }
 
 static void cmd_GetGeometry(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
@@ -759,7 +760,7 @@ AROS_LH1(ULONG, GetBlkSize,
 
 /*
     The daemon of ata.device first opens all ATAPI devices and then enters
-    endless loop. Every 3 seconds it tells ATAPI units to check the media
+    endless loop. Every 2 seconds it tells ATAPI units to check the media
     presence. In case of any state change they will rise user-specified
     functions.
 */
@@ -817,7 +818,7 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
 {
     struct MsgPort *myport;     // Message port used with ata.device
 	struct IORequest *timer;	// timer
-    struct IOStdReq *ios[64];   // Placeholer for unit messages
+    struct IOStdReq *ios[64];   // Placeholder for unit messages
     int count = 0,b,d;
     struct ata_Bus *bus;
 
@@ -879,7 +880,6 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
            */
           if (count == sizeof(ios) / sizeof(*ios))
              break;
-
        }
        bus = (struct ata_Bus*)bus->ab_Node.mln_Succ;
     }
@@ -895,7 +895,7 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
          * call separate IORequest for every ATAPI device
          * we're calling HD_SCSICMD+1 command here -- anything like test unit ready?
          */
-        if (0 == (b & 3))
+        if (0 == (b & 1))
         {
             D(bug("[ATA++] Detecting media presence\n"));
             for (d=0; d < count; d++)
