@@ -2,7 +2,7 @@
 #define FDSK_DEVICE_GCC_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,10 +25,13 @@ struct unit
 {
     struct Message 		msg;
     struct fdskbase 		*fdskbase;
+    STRPTR                      filename;
     ULONG 			unitnum;
     ULONG			usecount;
     struct MsgPort 		port;
     BPTR 			file;
+    ULONG			changecount;
+    struct MinList 		changeints;
 };
 
 #endif

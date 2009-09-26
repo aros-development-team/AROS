@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -99,7 +99,8 @@ static int GM_UNIQUENAME(Open)
 
     D(bug("fdsk_device: in libopen func. No, it is not. So creating new unit ...\n"));
 
-    unit = (struct unit *)AllocMem(sizeof(struct unit), MEMF_PUBLIC);
+    unit = (struct unit *)AllocMem(sizeof(struct unit),
+        MEMF_PUBLIC | MEMF_CLEAR);
     if(unit != NULL)
     {
         D(bug("fdsk_device: in libopen func. Allocation of unit memory okay. Setting up unit and calling CreateNewProc ...\n"));
@@ -112,6 +113,7 @@ static int GM_UNIQUENAME(Open)
 	unit->port.mp_Node.ln_Type 	= NT_MSGPORT;
 	unit->port.mp_Flags 	 	= PA_IGNORE;
 	unit->port.mp_SigTask 		= CreateNewProc((struct TagItem *)tags);
+	NEWLIST((struct List *)&unit->changeints);
 
         D(bug("fdsk_device: in libopen func. CreateNewProc called. Proc = %x\n", unit->port.mp_SigTask));
 	
@@ -207,7 +209,10 @@ AROS_LH1(void, beginio,
 	case TD_FORMAT:
 	case TD_CHANGENUM:
 	case TD_CHANGESTATE:
+	case TD_ADDCHANGEINT:
+	case TD_REMCHANGEINT:
 	case TD_GETGEOMETRY:
+	case TD_EJECT:
 	    /* Forward to unit thread */
 	    PutMsg(&((struct unit *)iotd->iotd_Req.io_Unit)->port, 
 		   &iotd->iotd_Req.io_Message);
@@ -354,7 +359,24 @@ static LONG write(struct unit *unit, struct IOExtTD *iotd)
     return 0;
 }
 
-/****************************************************************************************/
+/**************************************************************************/
+
+static void addchangeint(struct unit *unit, struct IOExtTD *iotd) {
+    Forbid();
+    AddTail((struct List *)&unit->changeints, (struct Node *)iotd);
+    Permit();
+}
+
+/**************************************************************************/
+
+static void remchangeint(struct unit *unit, struct IOExtTD *iotd) {
+    Forbid();
+    Remove((struct Node *)iotd);
+    Permit();
+}
+
+/**************************************************************************/
+
 void getgeometry(struct unit *unit, struct DriveGeometry *dg) {
 struct FileInfoBlock fib;
 
@@ -372,7 +394,29 @@ struct FileInfoBlock fib;
     dg->dg_DeviceType = DG_DIRECT_ACCESS;
     dg->dg_Flags = 0;
 }
-/****************************************************************************************/
+
+/**************************************************************************/
+
+void eject(struct unit *unit, BOOL eject) {
+struct IOExtTD *iotd;
+
+    if (eject)
+    {
+        Close(unit->file);
+        unit->file = (BPTR)NULL;
+    }
+    else
+        unit->file = Open(unit->filename, MODE_OLDFILE);
+
+    unit->changecount++;
+
+    ForeachNode(&unit->changeints, iotd)
+    {
+        Cause((struct Interrupt *)iotd->iotd_Req.io_Data);
+    }
+}
+
+/**************************************************************************/
 
 AROS_UFH2(void, putchr, 
     AROS_UFHA(UBYTE, chr, D0), 
@@ -410,7 +454,7 @@ AROS_UFH3(LONG, unitentry,
     unit->port.mp_SigBit = AllocSignal(-1);
     unit->port.mp_Flags = PA_SIGNAL;
 
-    /* disable DOS error requesters. save it the old pointer so we can put it
+    /* disable DOS error requesters. save the old pointer so we can put it
      * back later */
     win = me->pr_WindowPtr;
     me->pr_WindowPtr = (APTR) -1;
@@ -419,6 +463,7 @@ AROS_UFH3(LONG, unitentry,
 
     D(bug("fdsk_device/unitentry: Trying to open \"%s\" ...\n", buf));
 
+    unit->filename = buf;
     unit->file = Open(buf, MODE_OLDFILE);
     if(!unit->file)
     {
@@ -447,7 +492,7 @@ AROS_UFH3(LONG, unitentry,
 	{
 	    if(&iotd->iotd_Req.io_Message == &unit->msg)
 	    {
-    		D(bug("fdsk_device/unitentry: Recevied EXIT message.\n"));
+    		D(bug("fdsk_device/unitentry: Received EXIT message.\n"));
 
 		Close(unit->file);
 		Forbid();
@@ -468,12 +513,27 @@ AROS_UFH3(LONG, unitentry,
  		    err = write(unit, iotd);
  		    break;
 		case TD_CHANGENUM:
+		    err = 0;
+		    iotd->iotd_Req.io_Actual = unit->changecount;
+		    break;
 		case TD_CHANGESTATE:
 		    err = 0;
-		    iotd->iotd_Req.io_Actual = 0;
+		    iotd->iotd_Req.io_Actual = unit->file == (BPTR)NULL;
+		    break;
+		case TD_ADDCHANGEINT:
+		    addchangeint(unit, iotd);
+		    err = 0;
+		    break;
+		case TD_REMCHANGEINT:
+		    remchangeint(unit, iotd);
+		    err = 0;
 		    break;
 		case TD_GETGEOMETRY:
 		    getgeometry(unit, (struct DriveGeometry *)iotd->iotd_Req.io_Data);
+		    err = 0;
+		    break;
+		case TD_EJECT:
+		    eject(unit, iotd->iotd_Req.io_Length);
 		    err = 0;
 		    break;
 		    
