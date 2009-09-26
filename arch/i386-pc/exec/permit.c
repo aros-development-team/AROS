@@ -43,7 +43,7 @@ void Exec_Permit_Supervisor();
     NOTES
 	This function preserves all registers.
 
-	To prevent deadlocks calling Wait() in forbidden state breaks
+	To prevent deadlocks, calling Wait() in forbidden state breaks
 	the forbid - thus taskswitches may happen again.
 
     EXAMPLE

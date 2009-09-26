@@ -24,7 +24,7 @@ extern struct irqDescriptor irq_desc[];
 void handle_IRQ_event(unsigned int irq, struct pt_regs * regs, struct irqServer * is);
 
 /*
- * Build all interrupt assemble code needed. We use some very ugly macros
+ * Build all interrupt assembly code needed. We use some very ugly macros
  * which were taken from linux sources.
  */
 
