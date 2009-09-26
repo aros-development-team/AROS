@@ -1,4 +1,4 @@
-# Copyright © 2003, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2009, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
@@ -19,6 +19,7 @@ FILES := \
     Delete \
     DevList \
     DiskChange \
+    Eject \
     Eval \
     Filenote \
     IconX \
@@ -30,6 +31,7 @@ FILES := \
     LeakWatch \
     LibList \
     List \
+    Load \
     Lock \
     MakeDir \
     MakeLink \
@@ -89,5 +91,9 @@ $(OBJDIR)/evalParser.tab.c : evalParser.y
 
 $(OBJDIR)/Eval.o : $(OBJDIR)/evalParser.tab.c $(SRCDIR)/$(CURDIR)/Eval.c
 	%compile_q from=$(SRCDIR)/$(CURDIR)/Eval.c opt="$(CFLAGS) -I$(OBJDIR)"
+
+$(OBJDIR)/Load.o : $(OBJDIR)/Eject.o
+	@$(ECHO) Copying $< to $@
+	@$(CP) $< $@
 
 %common
