@@ -47,8 +47,8 @@ Lang: English
 #include <devices/scsidisk.h>
 #include <devices/newstyle.h>
 #include <devices/timer.h>
+#include <devices/cd.h>
 #include <aros/bootloader.h>
-#include "include/cd.h"
 #include "include/scsicmds.h"
 
 #include <hidd/irq.h>
