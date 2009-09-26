@@ -52,7 +52,7 @@
 	The I/O request is still in use if it wasn't done quick
 	and isn't yet replied (ln_Type==NT_MESSAGE).
 	If it is still in use wait until it is complete.
-	Note the the port may be used for other things as well - so
+	Note that the port may be used for other things as well - so
 	don't just wait but repeat the check.
     */
     while(!(iORequest->io_Flags&IOF_QUICK)&&

@@ -51,7 +51,7 @@
 	/* Write char to stderr */
 	write (STDERR_FILENO, &chr, 1);
 
-	/* Make sure it makes it to the user. Slow but save. */
+	/* Make sure it makes it to the user. Slow but safe. */
 	fsync (STDERR_FILENO);
     }
 

@@ -25,8 +25,8 @@
 
 /*  FUNCTION
 	Tries to get an exclusive lock on a signal semaphore. If the semaphore
-	is already in use by another task this function does not wait but
-	return false instead.
+	is already in use by another task, this function does not wait but
+	returns false instead.
 
     INPUTS
 	sigSem - Pointer so semaphore structure.
@@ -55,7 +55,7 @@
 #if CHECK_INITSEM
     if (sigSem->ss_Link.ln_Type != NT_SIGNALSEM)
     {
-        kprintf("\n\nAttemptSemaphore called on an unintialized semaphore!!! "
+        kprintf("\n\nAttemptSemaphore called on an uninitialized semaphore!!! "
 	        "sem = %x  task = %x (%s)\n\n", sigSem, me, me->tc_Node.ln_Name);
     }
 #endif

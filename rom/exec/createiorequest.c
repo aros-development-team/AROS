@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create an I/O request.
@@ -16,7 +16,7 @@
 
     NAME */
 
-	AROS_LH2(struct IORequest *, CreateIORequest,
+	AROS_LH2(APTR, CreateIORequest,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct MsgPort *, ioReplyPort, A0),
