@@ -2231,22 +2231,6 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
     ata_WaitNano(400);
     //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
-    /* Try to ensure device's signature is in place */
-    ata_out(ATA_EXECUTE_DIAG, ata_Command, port);
-
-    ata_WaitTO(bus->ab_Timer, 0, 2000, 0);
-    while (ata_ReadStatus(bus) & ATAF_BUSY)
-        ata_WaitNano(400);
-    //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
-
-    ata_out(0xa0 | (unit << 4), ata_DevHead, port);
-    do
-    {
-        ata_WaitNano(400);
-        //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
-    }
-    while (0 != (ATAF_BUSY & ata_ReadStatus(bus)));
-
     /* Check basic signature. All live devices should provide it */
     tmp1 = ata_in(ata_LBALow, port);
     DINIT(bug("[ATA  ] ata_ReadSignature: Checking Sector Number/LBA Low (%d)"
@@ -2268,6 +2252,22 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
         switch ((tmp1 << 8) | tmp2)
         {
             case 0x0000:
+                if (0 == (ata_ReadStatus(bus) & 0xfe))
+                    return DEV_NONE;
+                ata_out(ATA_EXECUTE_DIAG, ata_Command, port);
+
+                ata_WaitTO(bus->ab_Timer, 0, 2000, 0);
+                while (ata_ReadStatus(bus) & ATAF_BUSY)
+                    ata_WaitNano(400);
+                    //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
+
+                ata_out(0xa0 | (unit << 4), ata_DevHead, port);
+                do
+                {
+                    ata_WaitNano(400);
+                    //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
+                }
+                while (0 != (ATAF_BUSY & ata_ReadStatus(bus)));
                 DINIT(bug("[ATA  ] ata_ReadSignature: Further validating ATA signature: %lx & 0x7f = 1, %lx & 0x10 = unit\n", ata_in(ata_Error, port), ata_in(ata_DevHead, port)));
 
                 if ((ata_in(ata_Error, port) & 0x7f) == 1)
