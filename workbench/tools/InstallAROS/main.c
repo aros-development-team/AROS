@@ -2042,7 +2042,7 @@ while(numgrubfiles != 8);
 				Seek(menu_file, 0, OFFSET_END);
 				FPrintf(menu_file,
 					"\nmenuentry \"Microsoft Windows\" {\n    chainloader (hd%ld,%ld)+1\n}\n\n",
-					boot_Unit, part_no + 1); /* GRUB2 counts partitions from 1 */
+					0, part_no + 1); /* GRUB2 counts partitions from 1 */
 				Close(menu_file);
 			}
 			D(bug("[INSTALLER] Windows partition found."
@@ -2081,7 +2081,7 @@ while(numgrubfiles != 8);
 				Seek(menu_file, 0, OFFSET_END);
 				FPrintf(menu_file,
 					"\ntitle Microsoft Windows\nrootnoverify (hd%ld,%ld)\nchainloader +1\n",
-					boot_Unit, part_no);
+					0, part_no);
 				Close(menu_file);
 			}
 			D(bug("[INSTALLER] Windows partition found."
@@ -2986,7 +2986,7 @@ int main(int argc,char *argv[])
 
 	Object *app = ApplicationObject,
 		MUIA_Application_Title,       (IPTR) "AROS Installer",
-		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.4 (5.9.2009)",
+		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.5 (28.9.2009)",
 		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2009, The AROS Development Team. All rights reserved.",
 		MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
 		MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
