@@ -2246,6 +2246,11 @@ APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Gf
 	return NULL;
     }
 
+    if (GfxBase->GfxFlags & GFXFLAG_PREVENT_DIRECT_BITMAP_ACCESS)
+    {
+    	return NULL;
+    }
+    
     OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_PixFmt, (IPTR *)&pf);
     
     OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);

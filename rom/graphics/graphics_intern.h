@@ -227,13 +227,6 @@ struct GfxBase_intern
 
 #define JOIN_XY_COORDS(x,y)	(LONG)( ( ((UWORD)(y)) << 16) + ( ( ((UWORD)(x)) + 0x8000 ) & 0xFFFF ) )
 
-/* Defines */
-#define BMT_STANDARD		0x0000	/* Standard bitmap */
-#define BMT_RGB 		0x1234	/* RTG Bitmap. 24bit RGB chunky */
-#define BMT_RGBA		0x1238	/* RTG Bitmap. 32bit RGBA chunky */
-#define BMT_DRIVER		0x8000	/* Special RTG bitmap.
-				   	   Use this as an offset. */
-
 #define TFE(tfe) 		(*(struct TextFontExtension**)&tfe)
 
 #define TFE_MATCHWORD	    	0xDFE7 /* randomly invented */
@@ -244,6 +237,9 @@ struct GfxBase_intern
 #define AREAINFOFLAG_DRAW   	0x01
 #define AREAINFOFLAG_CLOSEDRAW	0x02
 #define AREAINFOFLAG_ELLIPSE	0x03
+
+/* Private flags for GfxBase->GfxFlags. NOTE: C:GfxControl changes these!! */
+#define GFXFLAG_PREVENT_DIRECT_BITMAP_ACCESS 0x8000
 
 /* Forward declaration */
 struct ViewPort;
