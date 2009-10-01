@@ -70,7 +70,7 @@
  * C99 defines a new keyword restrict that can help do optimisation where
  * pointers are used in programs. We'd like to support optimisation :-)
  */
-#   if defined(__STDC__VERSION__) &&  __STDC__VERSION__ >= 199901L
+#   if defined(__STDC_VERSION__) &&  __STDC_VERSION__ >= 199901L
 #	define	    __restrict__    restrict
 #   else
 #	define	    __restrict__
