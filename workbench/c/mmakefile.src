@@ -22,6 +22,7 @@ FILES := \
     Eject \
     Eval \
     Filenote \
+    GfxControl \
     IconX \
     Info \
     Install \
