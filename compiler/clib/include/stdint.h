@@ -2,7 +2,7 @@
 #define _STDINT_H_
 
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Standard fixed sized integral types.
@@ -131,15 +131,39 @@ typedef ULONG	uintmax_t;
 	    WINT_MIN, _MAX (must be <= -65535 or >= 65535)
 #endif
 
-#if defined __cplusplus && defined __STD_CONSTANT_MACROS
-	    INT<N>_C(value) constant to int_least<N>_t
-	    UINT<N>_C(vlaue) constant to uint_least<N>_t
-
-	    eg UINT64_C(0x1234)	=>  0x1234ULL
-
-	    INTMAX_C(), UINTMAX_C()
-#endif
-
 */
+
+#if !defined __cplusplus || defined __STDC_CONSTANT_MACROS
+
+/* Signed.  */
+# define INT8_C(c)	c
+# define INT16_C(c)	c
+# define INT32_C(c)	c
+# if __WORDSIZE == 64
+#  define INT64_C(c)	c ## L
+# else
+#  define INT64_C(c)	c ## LL
+# endif
+
+/* Unsigned.  */
+# define UINT8_C(c)	c
+# define UINT16_C(c)	c
+# define UINT32_C(c)	c ## U
+# if __WORDSIZE == 64
+#  define UINT64_C(c)	c ## UL
+# else
+#  define UINT64_C(c)	c ## ULL
+# endif
+
+/* Maximal type.  */
+# if __WORDSIZE == 64
+#  define INTMAX_C(c)	c ## L
+#  define UINTMAX_C(c)	c ## UL
+# else
+#  define INTMAX_C(c)	c ## LL
+#  define UINTMAX_C(c)	c ## ULL
+# endif
+
+#endif
 
 #endif /* _STDINT_H_ */
