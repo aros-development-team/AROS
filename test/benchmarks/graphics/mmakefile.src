@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES       := primitives
+FILES       := primitives writepixelarray
 EXEDIR      := $(AROS_TESTS)/benchmarks/graphics
 
 #MM- test-benchmarks : test-benchmarks-graphics
