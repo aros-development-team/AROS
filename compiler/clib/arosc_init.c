@@ -289,7 +289,7 @@ int arosc_internalinit(void)
     D(bug("arosc_internalinit(): acpd_usercount=%d\n", privdata->acpd_usercount));
     privdata->acpd_usercount++;
 
-    D(bug("Exiting arosc_internalexit(): me(%x)->name = %s, acpd_usercount = %d\n\n",
+    D(bug("Exiting arosc_internalinit(): me(%x)->name = %s, acpd_usercount = %d\n\n",
           FindTask(NULL), FindTask(NULL)->tc_Node.ln_Name, privdata->acpd_usercount
     ));
 
