@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Exec utility functions.
@@ -343,16 +343,21 @@ Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
         FreeVec(child);
     }
 
-    /* Orphan all our remaining children. */
-#warning FIXME: should we link the children to our parent?
-    ForeachNode(&et->et_Children, child)
-        child->et_Parent = NULL;
-
     /* If we have an ETask parent, tell it we have exited. */
     if(et->et_Parent != NULL)
     {
         parent = GetETask(et->et_Parent);
-        /* Nofity parent only if child was created with NP_NotifyOnDeath set 
+
+        /* Link children to our parent. */
+        ForeachNode(&et->et_Children, child)
+        {
+            child->et_Parent = et->et_Parent;
+            Forbid();
+            ADDTAIL(&parent->et_Children, child);
+            Permit();
+        }
+
+        /* Notify parent only if child was created with NP_NotifyOnDeath set 
            to TRUE */
         if(
             parent != NULL && 
@@ -381,10 +386,13 @@ Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
     }
     else
     {
+        /* Orphan all our remaining children. */
+        ForeachNode(&et->et_Children, child)
+            child->et_Parent = NULL;
+
 #ifdef DEBUG_ETASK
 	FreeVec(et->iet_Me);
 #endif
         FreeVec(et);
     }
 }
-
