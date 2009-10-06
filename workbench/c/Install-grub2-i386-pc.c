@@ -150,6 +150,8 @@ struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path)
 	    UnLockDosList(LDF_READ);
 	    if (dn)
 	    {
+                dname[i] = ':';
+                dname[i + 1] = '\0';
 		if (IsFileSystem(dname))
 		{
 		    return (struct FileSysStartupMsg *) BADDR(dn->dn_Startup);

@@ -134,6 +134,8 @@ D(bug("[install-i386] getDiskFSSM('%s')\n", path));
 			UnLockDosList(LDF_READ);
 			if (dn)
 			{
+				dname[i] = ':';
+				dname[i + 1] = '\0';
 				if (IsFileSystem(dname))
 				{
 					return (struct FileSysStartupMsg *)BADDR(dn->dn_Startup);
