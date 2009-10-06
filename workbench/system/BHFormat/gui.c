@@ -324,7 +324,7 @@ struct SFormatEntry* SelectDevice(void)
         End),
     End;
 
-    if(app == NULL) return;
+    if(app == NULL) return NULL;
 	
     VolumesToList(list);
 
