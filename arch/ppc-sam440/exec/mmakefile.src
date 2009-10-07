@@ -12,8 +12,8 @@ AFILES		:= \
 #MM kernel-exec : kernel-exec-sam440-ppc
 #MM kernel-exec-sam440-ppc : kernel-kernel-ppc-includes kernel-exec-includes
 
-USER_CFLAGS     := -I$(TOP)/rom/exec -Os
-USER_AFLAGS     := -I$(TOP)/rom/exec -I$(GENINCDIR) -Os
+USER_CFLAGS     := -I$(SRCDIR)/rom/exec -Os
+USER_AFLAGS     := -I$(SRCDIR)/rom/exec -I$(GENINCDIR) -Os
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=sam440-ppc \
   files=$(CFILES) asmfiles=$(AFILES) modulename=exec
