@@ -7,12 +7,12 @@ FILES := kernel_init scheduler intr mmu tags syscall debug uic
 kernel-sam440-ppc: $(BINDIR)/boot/aros-amcc440
 
 $(BINDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
-	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o -L$(LIBDIR) -lrom -larosm -lautoinit -llibinit 
+	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o -L$(LIBDIR) -lrom -larosm -lautoinit -llibinit
 
 #MM kernel-kernel-sam440-ppc : includes
 #MM kernel-kernel-sam440-ppc-kobj : includes
 
 %build_module mmake=kernel-kernel-sam440-ppc 	\
   modname=kernel modtype=resource		\
-  cflags="$(CFLAGS) -I$(TOP)/rom/exec"		\
+  cflags="$(CFLAGS) -I$(SRCDIR)/rom/exec"		\
   files="$(FILES)" uselibs="rom"

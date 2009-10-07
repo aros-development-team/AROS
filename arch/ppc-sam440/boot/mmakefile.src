@@ -73,13 +73,13 @@ kernel-package-sam440-ppc:
 	# Dirty hack to link graphics.library with cybergraphics (they use the same graphics_driver!!!)
 	$(KERNEL_LD) -r $(BINDIR)/boot/modules/graphics.library $(KOBJSDIR)/cybergraphics_library.o -o $(BINDIR)/boot/modules/gfx.library
 	$(RM) $(BINDIR)/boot/modules/graphics.library
-	#$(TOP)/tools/package/pkg c $(BINDIR)/boot/kernel.pkg $(BINDIR)/.pkg
+	#$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/kernel.pkg $(BINDIR)/.pkg
 	
 bootiso-sam440-ppc: $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 
 $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso:
 	%mkdirs_q $(AROSDIR)/S
-	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
+	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
 	@$(MKDIR) -p "$(PORTSDIR)"
 	@mkisofs -f \
@@ -98,5 +98,5 @@ $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 #MM setup-sam440-ppc
 setup-sam440-ppc : 
 	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
-	$(CP) menu.lst $(BINDIR)/boot/
-#	$(CP) menu.lst.DH0 $(BINDIR)/boot/
+	$(CP) $(SRCDIR)/$(CURDIR)/menu.lst $(BINDIR)/boot/
+#	$(CP) $(SRCDIR)/$(CURDIR)/menu.lst.DH0 $(BINDIR)/boot/

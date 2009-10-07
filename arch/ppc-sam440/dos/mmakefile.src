@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.. -I$(TOP)/rom/dos
+USER_INCLUDES := -I.. -I$(SRCDIR)/rom/dos
 
 %build_archspecific \
   mainmmake=kernel-dos maindir=rom/dos \
