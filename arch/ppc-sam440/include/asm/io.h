@@ -73,6 +73,8 @@ static inline void outl_le(uint32_t val, uint32_t *port) {
     asm volatile("stwbrx %1,0,%2; eieio":"=m"(*port):"r"(val),"r"(port));
 }
 
+#define AROS_PCI_IO_FUNCS 1
+
 static inline void pci_outb(uint8_t val, uint16_t port)
 {
     outb(val, (uint8_t *)(port + PCIC0_IO));
@@ -142,6 +144,5 @@ static inline uint32_t pci_inl_le(uint16_t port)
 {
     return inl_le((uint32_t *)(port + PCIC0_IO));
 }
-
 
 #endif /*ASM_IO_H*/
