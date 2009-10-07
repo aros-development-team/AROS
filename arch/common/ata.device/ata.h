@@ -32,6 +32,7 @@ Lang: English
  *                                 medium removal, device detection, bus management and much more
  * 2008-06-24  P. Fedin            Added 'nomulti' flag to disable multisector operations
  * 2009-02-21  M. Schulz           ata_in/ata_out declared as functions, if no PCI-io operations are defined.
+ * 2009-10-07  M. Weiss            Rely on definition of AROS_PCI_IO_FUNCS to check if PCI-io operations are defined.
  */
 
 #include <exec/types.h>
@@ -389,14 +390,14 @@ typedef enum
 #define ata_out(val, offset, port)  outb((val), (offset)+(port))
 #define ata_in(offset, port)        inb((offset)+(port))
 #define ata_outl(val, offset, port) outl((val), (offset)+(port))
-#elif !defined (pci_outb)
-void ata_out(UBYTE val, UWORD offset, IPTR port);
-UBYTE ata_in(UWORD offset, IPTR port);
-void ata_outl(ULONG val, UWORD offset, IPTR port);
-#else
+#elif defined(AROS_PCI_IO_FUNCS)
 #define ata_out(val, offset, port)  pci_outb((val), (offset)+(port))
 #define ata_in(offset, port)        pci_inb((offset)+(port))
 #define ata_outl(val, offset, port) pci_outl_le((val), (offset)+(port))
+#else
+void ata_out(UBYTE val, UWORD offset, IPTR port);
+UBYTE ata_in(UWORD offset, IPTR port);
+void ata_outl(ULONG val, UWORD offset, IPTR port);
 #endif
 
 
