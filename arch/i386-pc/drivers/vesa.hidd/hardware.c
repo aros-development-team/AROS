@@ -147,7 +147,7 @@ void vesaDoRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG 
 {
     UBYTE *src, *dst;
     ULONG srcmod, dstmod;
-    LONG x, y, w, h;
+    LONG  y, w, h;
 
     x1 *= data->bytesperpix;
     x2 *= data->bytesperpix; x2 += data->bytesperpix - 1;
@@ -210,9 +210,9 @@ AROS_UFH3(void, Enumerator,
 
     D(bug("[VESA] Enumerator: Found device\n"));
 
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (IPTR *)&driver);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&driver);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &Vendor);
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, (IPTR *)&buf);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, (APTR)&buf);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0, &size);
 
     /* BIOS of S3 video cards may forget to set up linear framebuffer start address.

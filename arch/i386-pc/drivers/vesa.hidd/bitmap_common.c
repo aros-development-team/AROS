@@ -968,7 +968,7 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
 
 #if defined(OnBitmap) && defined(BUFFERED_VRAM)
 
-BOOL MNAME_BM(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
+VOID MNAME_BM(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     struct HWData *hwdata = &XSD(cl)->data;
