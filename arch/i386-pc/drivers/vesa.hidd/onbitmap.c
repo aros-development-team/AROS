@@ -66,8 +66,6 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	OOP_Object  	    *pf;
 	IPTR 	    	     width, height, depth, multi;
 	HIDDT_ModeID 	     modeid;
-	OOP_Object  	    *sync;
-	ULONG 	    	     pixelc;
 
 	data = OOP_INST_DATA(cl, o);
 	
@@ -77,8 +75,8 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	/* Get attr values */
 	OOP_GetAttr(o, aHidd_BitMap_Width, &width);
 	OOP_GetAttr(o, aHidd_BitMap_Height, &height);
-	OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&data->gfxhidd);
-	OOP_GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)&pf);
+	OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&data->gfxhidd);
+	OOP_GetAttr(o,  aHidd_BitMap_PixFmt, (APTR)&pf);
 	data->pixfmtobj = pf;
 	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
 	OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &multi);
