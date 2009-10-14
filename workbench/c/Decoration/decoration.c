@@ -4117,7 +4117,7 @@ IPTR menudecor_draw_sysimage(Class *cl, Object *obj, struct mdpDrawSysImage *msg
     switch(msg->mdp_Which)
     {
         case AMIGAKEY:
-            if (md->img_amigakey.ok)
+            if (md && md->img_amigakey.ok)
             {
                 ni = &md->img_amigakey;
                 isset = TRUE;
@@ -4125,7 +4125,7 @@ IPTR menudecor_draw_sysimage(Class *cl, Object *obj, struct mdpDrawSysImage *msg
             break;
 
         case MENUCHECK:
-            if (md->img_amigakey.ok)
+            if (md && md->img_amigakey.ok)
             {
                 ni = &md->img_menucheck;
                 isset = TRUE;
@@ -4133,7 +4133,7 @@ IPTR menudecor_draw_sysimage(Class *cl, Object *obj, struct mdpDrawSysImage *msg
             break;
 
         case SUBMENUIMAGE:
-            if (md->img_submenu.ok)
+            if (md && md->img_submenu.ok)
             {
                 ni = &md->img_submenu;
                 isset = TRUE;
