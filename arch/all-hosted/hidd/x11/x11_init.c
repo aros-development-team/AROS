@@ -85,6 +85,19 @@ static int MyErrorHandler (Display * display, XErrorEvent * errevent)
 {
     char buffer[256];
 
+#if USE_XSHM
+    extern int xshm_major;
+
+    if ((xshm_major != 0) && (errevent->request_code == xshm_major) &&
+        (errevent->minor_code == 4) && /* XShmGetImage */
+	(errevent->error_code == BadMatch))
+    {
+    	/* Ignore this error */
+	
+	return 0;
+    }
+#endif
+    
     XCALL(XGetErrorText, display, errevent->error_code, buffer, sizeof (buffer));
 
     kprintf("XError %d (Major=%d, Minor=%d) task = %s\n%s\n",
