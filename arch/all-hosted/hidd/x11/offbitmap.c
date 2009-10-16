@@ -88,7 +88,7 @@ OOP_Object *X11OffBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     OOP_Object  *friend = NULL, *pixfmt;
     Drawable 	 friend_drawable = 0, d = 0;
     Display 	*display;
-    ULONG   	 width, height, depth;
+    IPTR   	 width, height, depth;
     IPTR    	 attrs[num_Hidd_BitMap_Attrs];
     int     	 screen;
     BOOL    	 ok = TRUE;
@@ -264,7 +264,7 @@ VOID X11OffBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 VOID X11OffBM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    ULONG   	    	width, height;
+    IPTR   	    	width, height;
         
     /* Get width & height from bitmap superclass */
   
