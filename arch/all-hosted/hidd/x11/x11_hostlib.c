@@ -92,10 +92,11 @@ static const char *x11_func_names[] = {
     "XStoreName",
     "XSync",
     "XAllocColor",
-    "XLookupString"
+    "XLookupString",
+    "XQueryExtension"
 };
 
-#define X11_NUM_FUNCS (74)
+#define X11_NUM_FUNCS (75)
 
 static const char *libc_func_names[] = {
 #if USE_XSHM

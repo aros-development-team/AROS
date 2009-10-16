@@ -85,6 +85,7 @@ struct x11_func {
     int (*XSync) ( Display* , int );
     int (*XAllocColor) ( Display* , Colormap , XColor* );
     int (*XLookupString) ( XKeyEvent* , char* , int , KeySym* , XComposeStatus* );
+    int (*XQueryExtension) (Display *, char*, int*, int*, int*);
 };
 
 struct libc_func {
