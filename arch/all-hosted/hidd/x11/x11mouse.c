@@ -118,7 +118,7 @@ OOP_Object * X11Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
 /****************************************************************************************/
 
-VOID X11Mouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, struct pRoot_Dispose *msg)
+VOID X11Mouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     EnterFunc(bug("[X11Mouse] Dispose()\n"));
 
