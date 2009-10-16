@@ -167,6 +167,7 @@ VOID MNAME(Hidd_BitMap__PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     LOCK_X11
      
     XCALL(XSetForeground, data->display, data->gc, msg->pixel);
+    XCALL(XSetFunction, data->display, data->gc, GXcopy);
     XCALL(XDrawPoint, data->display, DRAWABLE(data), data->gc, msg->x, msg->y);
     XFLUSH(data->display);
 
@@ -506,6 +507,7 @@ static void getimage_xshm(OOP_Class *cl, OOP_Object *o, LONG x, LONG y,
     LONG    	    	 current_y;
     LONG    	    	 maxlines;
     OOP_Object      	*pf;
+    Pixmap  	    	 temp_pixmap = 0;
 
     ASSERT(width > 0 && height > 0);
     
@@ -548,6 +550,8 @@ static void getimage_xshm(OOP_Class *cl, OOP_Object *o, LONG x, LONG y,
         
     ObtainSemaphore(&XSD(cl)->shm_sema);
 
+    LOCK_X11
+
     while (ysize)
     {
 	/* Get some more pixels from the Ximage */
@@ -557,17 +561,53 @@ static void getimage_xshm(OOP_Class *cl, OOP_Object *o, LONG x, LONG y,
 	ysize -= lines_to_copy;
 	image->height = lines_to_copy;
 
-    	LOCK_X11	
-	get_xshm_ximage(data->display, DRAWABLE(data), image,
-	    	    	x, y + current_y);
-    	UNLOCK_X11
+	if (!temp_pixmap)
+	{
+	    if (!(get_xshm_ximage(data->display, DRAWABLE(data), image,
+	    		    	  x, y + current_y)))
+	    {
+	    	/* XGetImage fails if done on a part of a X window which is off
+		   screen (OTOH, it's no problem if it is hidden by another window).
+		   If get_xshm_image() failed, we assume that this has happened and
+		   thefore copy the area to a temp pixmap, and then get the ximage
+		   from there. */
+		
+	    	temp_pixmap = XCALL(XCreatePixmap, data->display, DRAWABLE(data),
+		    	    	    width, height - current_y, DefaultDepth(data->display, data->screen));
 
+    	    	if (temp_pixmap)
+		{
+    	    	    XCALL(XSetFunction, data->display, data->gc, GXcopy);
+
+		    XCALL(XCopyArea, data->display, DRAWABLE(data), temp_pixmap, data->gc,
+		    	  x, y + current_y, width, height - current_y, 0, 0);
+
+    	    	    XCALL(XSetFunction, data->display, data->gc, GC_DRMD(data->gc));
+
+		    x = 0; y = 0; current_y = 0;
+		}
+	    }
+	}
+	
+	if (temp_pixmap)
+	{
+	    get_xshm_ximage(data->display, temp_pixmap, image,
+	    	    	    x, y + current_y);
+	}
+		
 	current_y += lines_to_copy;
 	
 	pixarray = fromimage_func(cl, o, pixarray, image, image->width,
 	    	    	    	  lines_to_copy, depth, fromimage_data);
 	
     } /* while (pixels left to copy) */
+
+    if (temp_pixmap)
+    {
+    	XCALL(XFreePixmap,data->display, temp_pixmap);
+    }
+    
+    UNLOCK_X11
     
     ReleaseSemaphore(&XSD(cl)->shm_sema);
 
