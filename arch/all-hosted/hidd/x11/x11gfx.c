@@ -53,6 +53,8 @@
 #define IS_X11GFX_ATTR(attr, idx) ( ( (idx) = (attr) - HiddX11GfxAB) < num_Hidd_X11Gfx_Attrs)
 
 
+int xshm_major;
+
 /* Some attrbases needed as global vars.
   These are write-once read-many */
 
@@ -863,7 +865,7 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
 
 #if USE_XSHM
     {
-    	char *displayname = XCALL(XDisplayName, xsd->display);
+    	char *displayname = XCALL(XDisplayName, NULL);
 	
 	if ((strncmp(displayname, ":", 1) == 0) ||
 	    (strncmp(displayname, "unix:", 5) == 0))
@@ -880,8 +882,12 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
 	    }
 	    else
 	    {
+	        int a, b;
+		
         	InitSemaphore(&xsd->shm_sema);
         	xsd->use_xshm = TRUE;
+		
+		XCALL(XQueryExtension, xsd->display, "MIT-SHM", &xshm_major, &a, &b);
 	    }
 	}
     }    	
