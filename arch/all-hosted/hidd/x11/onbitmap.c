@@ -504,7 +504,7 @@ VOID X11OnBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 VOID X11OnBM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    ULONG   	    	width, height;
+    IPTR   	    	width, height;
     
     XSetWindowAttributes winattr;
         
