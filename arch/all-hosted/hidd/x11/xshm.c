@@ -232,10 +232,12 @@ void put_xshm_ximage(Display *display, Drawable d, GC gc, XImage *image,
 
 /****************************************************************************************/
 
-void get_xshm_ximage(Display *display, Drawable d, XImage *image, int x, int y)
+int get_xshm_ximage(Display *display, Drawable d, XImage *image, int x, int y)
 {
     XCALL(XSync, display, False);
     XEXTCALL(XShmGetImage, display, d, image, x, y, AllPlanes);
+    
+    return (int)XEXTCALL(XShmGetImage, display, d, image, x, y, AllPlanes);
 }
 
 /****************************************************************************************/
