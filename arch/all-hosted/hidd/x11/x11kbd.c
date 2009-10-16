@@ -562,7 +562,7 @@ OOP_Object * X11Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
 /****************************************************************************************/
 
-VOID X11Kbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, struct pRoot_Dispose *msg)
+VOID X11Kbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     EnterFunc(bug("[X11Kbd] Dispose()\n"));
 
