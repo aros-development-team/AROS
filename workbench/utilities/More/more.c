@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,6 +13,8 @@
 #include <libraries/locale.h>
 #include <libraries/gadtools.h>
 #include <devices/rawkeycodes.h>
+#include <workbench/workbench.h>
+#include <proto/wb.h>
 
 #include <graphics/gfx.h>
 #include <utility/hooks.h>
@@ -100,6 +102,8 @@ struct DrawInfo 	*dri;
 APTR			vi;
 struct Menu		*menus;
 struct Window		*win;
+struct MsgPort          *msgport;
+struct AppWindow        *appwindow;
 
 ULONG 			gotomask, findmask;
 UBYTE			filenamebuffer[300];
@@ -129,7 +133,7 @@ static WORD 		fontbaseline, textstartx, textstarty, textendx, textendy;
 static WORD 		textwidth, textheight, viewstartx, viewstarty;
 static WORD 		winwidth, winheight;
 
-static ULONG		winmask;
+static ULONG		winmask, msgmask;
 static LONG 		filelen, num_lines, max_textlen;
 static LONG 		search_startline, found_line = -1;
 static WORD 	    	arrowticker;
@@ -178,7 +182,16 @@ VOID Cleanup(CONST_STRPTR msg)
     CleanupRequesters();
 
     KillMenus();
-    
+
+    if (appwindow)
+    {
+        RemoveAppWindow(appwindow);
+    }
+    if (msgport)
+    {
+        DeleteMsgPort(msgport);
+    }
+
     if (win)
     {
 	for(i = 0; i < NUM_GADGETS;i++)
@@ -730,6 +743,32 @@ static void SetWinTitle(void)
 
 /****************************************************************************************/
 
+static void HandleFileChange(void)
+{
+    strncpy(filenamebuffer, filename, 299);
+    SetWinTitle();
+    MySetAPen(rp, bgpen);
+    RectFill(rp, textstartx, textstarty, textendx, textendy);
+
+    CalcVisible();
+
+    viewstartx = viewstarty = 0;
+
+    SetGadgetAttrs(gad[GAD_HORIZSCROLL], win, 0, PGA_Top	, viewstartx	,
+ 					     PGA_Visible, visiblex	,
+					     PGA_Total	, max_textlen	,
+					     TAG_DONE);
+
+    SetGadgetAttrs(gad[GAD_VERTSCROLL], win, 0, PGA_Top	, viewstarty	,
+					    PGA_Visible	, visibley	,
+					    PGA_Total	, num_lines	,
+					    TAG_DONE);
+    DrawAllText();
+
+}
+
+/****************************************************************************************/
+
 static void MakeWin(void)
 {	
     if (!(win = OpenWindowTags(NULL, WA_PubScreen	, (IPTR)scr	        , 
@@ -773,6 +812,16 @@ static void MakeWin(void)
     SetWinTitle();
     
     winmask = 1L << win->UserPort->mp_SigBit;
+
+    if (!(msgport = CreateMsgPort()))
+    {
+        Cleanup(MSG(MSG_CANT_CREATE_MSGPORT));
+    }
+    if (!(appwindow = AddAppWindow(0,0,win,msgport,NULL)))
+    {
+        Cleanup(MSG(MSG_CANT_ADD_APPWINDOW));
+    }
+    msgmask = 1L << msgport->mp_SigBit;
 
     winwidth = win->Width;
     winheight = win->Height;
@@ -1229,6 +1278,30 @@ static BOOL HandleWin(void)
     UWORD		men, code;
     UBYTE		key;
     BOOL 		pagescroll, maxscroll, quitme = FALSE;
+    LONG                editorvarbuffer[300];
+    struct AppMessage  *appmsg;
+    struct WBArg       *argptr;
+    
+    while ((appmsg = (struct AppMessage *) GetMsg(msgport)))
+    {
+        if (appmsg->am_Type == AMTYPE_APPWINDOW)
+        {
+            if (appmsg->am_NumArgs >= 1)
+            {
+                NameFromLock(appmsg->am_ArgList->wa_Lock, filenamebuffer, 299);
+                AddPart(filenamebuffer, appmsg->am_ArgList->wa_Name, 299);
+                filename = filenamebuffer;
+                D(bug("[More] appwindow received message: filename = %s\n", filename));
+            }
+        }
+
+        ReplyMsg ((struct Message *) appmsg);
+        ActivateWindow(win);
+        
+        if (OpenFile())
+            HandleFileChange();
+        
+    } /* while ((appmsg = (struct AppMessage *) GetMsg(msgport))) */
 
     while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
     {
@@ -1357,6 +1430,15 @@ static BOOL HandleWin(void)
 		{
 		    DoSearch(SEARCH_PREV);
 		}
+		else if (strchr(MSG(MSG_SHORTCUT_EDITOR), key))
+		{
+                    if ( (GetVar("editor", (STRPTR) editorvarbuffer, 299, GVF_GLOBAL_ONLY)) != -1L )
+                    {
+                        sprintf(s, "Run QUIET \"%s\" \"%s\"", editorvarbuffer, filenamebuffer );
+		        if (SystemTags(s, TAG_END))
+		            DisplayBeep(NULL);
+                    }
+                }
 		break;
 
 	    case IDCMP_RAWKEY:
@@ -1466,26 +1548,7 @@ static BOOL HandleWin(void)
 				{
 				    if (OpenFile())
 				    {
-					strncpy(filenamebuffer, filename, 299);
-				        SetWinTitle();
-					MySetAPen(rp, bgpen);
-					RectFill(rp, textstartx, textstarty, textendx, textendy);
-					
-					CalcVisible();
-					
-					viewstartx = viewstarty = 0;
-					
-					SetGadgetAttrs(gad[GAD_HORIZSCROLL], win, 0, PGA_Top	, viewstartx	, 
-										     PGA_Visible, visiblex	,
-										     PGA_Total	, max_textlen	,
-										     TAG_DONE);
-
-					SetGadgetAttrs(gad[GAD_VERTSCROLL], win, 0, PGA_Top	, viewstarty	, 
-										    PGA_Visible	, visibley	, 
-										    PGA_Total	, num_lines	,
-										    TAG_DONE);
-					DrawAllText();   					
-					
+					HandleFileChange();
 				    } /* if (OpenFile()) */
 				    
 				} /* if ((filename = GetFile())) */
@@ -1542,9 +1605,10 @@ static void HandleAll(void)
 
     while(!quitme)
     {
-	sigs = Wait(winmask | gotomask | findmask);
+	sigs = Wait(msgmask | winmask | gotomask | findmask);
 
-	if (sigs & winmask) quitme = HandleWin();
+	if ( (sigs & winmask) || (sigs & msgmask) )
+	    quitme = HandleWin();
 
 	if (sigs & gotomask)
 	{

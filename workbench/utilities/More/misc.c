@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -160,7 +160,7 @@ void About(void)
     EasyRequest(win, &es, NULL, (IPTR)VERSION,
 				(IPTR)REVISION,
 				(IPTR)DATESTR, 
-				(IPTR)"2005-2007",
+				(IPTR)"2005-2009",
 				(IPTR)"AROS Development Team");
 
 }
