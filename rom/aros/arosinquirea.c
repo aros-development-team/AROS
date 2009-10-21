@@ -87,6 +87,10 @@ IPTR kickbase(void);
 	AI_ArosVariant IPTR
 		Configure time variant name.
 
+	AI_ArosArchitecture IPTR
+		Return the target architecture.
+
+
     RESULT
 	All queries understood by this call will have appropriate values
 	assigned to the location a tag's ti_Data pointed to.
@@ -126,75 +130,74 @@ IPTR kickbase(void);
 	{
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
-	/*
-	    Only support these tags if we are on the native machine. On other
-	    machines this call will not touch the storage space. Set the
-	    storage space to 0 if you want to see if this call touches it.
-	*/
-
-	case AI_KickstartBase:
-	    SetData (tag, APTR, kickbase());
-	    break;
-
-	case AI_KickstartSize:
-	    SetData (tag, ULONG, kicksize());
-	    break;
-
-	case AI_KickstartVersion:
-	    SetData (tag, UWORD, *(UWORD *)(kickbase() + LOC_MAJORV));
-	    break;
-
-	case AI_KickstartRevision:
-	    SetData (tag, UWORD, *(UWORD *)(kickbase() + LOC_MINORV));
-	    break;
+        /*
+        Only support these tags if we are on the native machine. On other
+        machines this call will not touch the storage space. Set the
+        storage space to 0 if you want to see if this call touches it.
+        */
+        
+        case AI_KickstartBase:
+            SetData (tag, APTR, kickbase());
+            break;
+        
+        case AI_KickstartSize:
+            SetData (tag, ULONG, kicksize());
+            break;
+        
+        case AI_KickstartVersion:
+            SetData (tag, UWORD, *(UWORD *)(kickbase() + LOC_MAJORV));
+            break;
+        
+        case AI_KickstartRevision:
+            SetData (tag, UWORD, *(UWORD *)(kickbase() + LOC_MINORV));
+            break;
 #else
-	case AI_KickstartSize:
-	    SetData (tag, ULONG, 0);
-	    break;
+        case AI_KickstartSize:
+            SetData (tag, ULONG, 0);
+            break;
 
 #endif
 
-	case AI_ArosVersion:
-	    /*
-		aros.library version masquerades as AROS version. This means
-		that all aros modules must have the same major version number.
-	    */
-	    SetData (tag, IPTR, VERSION_NUMBER);
-	    break;
-
-	case AI_ArosReleaseMajor:
-	    /* Update this whenever a new AROS is released */
-	    SetData (tag, IPTR, AROS_VERSION_MAJOR);
-	    break;
-
-	case AI_ArosReleaseMinor:
-	    /* Update this whenever a new AROS is released */
-	    SetData (tag, IPTR, AROS_VERSION_MINOR);
-	    break;
-
+        case AI_ArosVersion:
+            /*
+            aros.library version masquerades as AROS version. This means
+            that all aros modules must have the same major version number.
+            */
+            SetData (tag, IPTR, VERSION_NUMBER);
+            break;
+        
+        case AI_ArosReleaseMajor:
+            /* Update this whenever a new AROS is released */
+            SetData (tag, IPTR, AROS_VERSION_MAJOR);
+            break;
+        
+        case AI_ArosReleaseMinor:
+            /* Update this whenever a new AROS is released */
+            SetData (tag, IPTR, AROS_VERSION_MINOR);
+            break;
+        
         case AI_ArosReleaseDate:
             /* Update this whenever a new AROS is released */
             SetData (tag, IPTR, AROS_RELEASE_DATE);
             break;
-
+        
         case AI_ArosBuildDate:
             SetData (tag, IPTR, (IPTR)__DATE__);
-
             break;
-
+        
         case AI_ArosVariant:
             SetData (tag, IPTR, (IPTR) VARIANT);
             break;
-
-	case AI_ArosArchitecture:
+        
+        case AI_ArosArchitecture:
             SetData (tag, IPTR, (IPTR) AROS_ARCHITECTURE);
             break;
-
+        
         default:
             SetData (tag, IPTR, 0);
             break;
-
-	}
+        
+        }
     }
 
     return ret;
