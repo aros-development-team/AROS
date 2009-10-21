@@ -3,15 +3,10 @@
 
 /*
     Copyright © 1995-2008, The AROS Development Team. All rights reserved.
-    $Id$
+    $Id: os_unix_support.h 30792 2009-03-07 22:40:04Z neil $
 */
 
 #include <stdio.h>
-#ifdef _WIN32
-#include "winsock2.h"
-#else
-#include <arpa/inet.h>
-#endif
 
 /* exec/types.h */
 typedef signed char    BYTE;
@@ -196,8 +191,9 @@ struct DosEnvec {
 #define kprintf printf
 
 /* (aros/macros.h) */
-#define OS_BE2LONG ntohl
-#define OS_LONG2BE htonl
+/* Note that it works only on x86. Well, Windows on bigendian CPUs exists (or existed) only in theory */
+#define OS_BE2LONG(x) ((((x) & 0x000000FF) << 24) | (((x) & 0x0000FF00) << 8) | (((x) & 0x00FF0000) >> 8) | ((x) >> 24))
+#define OS_LONG2BE OS_BE2LONG
 
 /* (aros/machine.h) */
 #define OS_PTRALIGN (sizeof(APTR))
