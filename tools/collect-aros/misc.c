@@ -7,6 +7,28 @@
 
 #include "misc.h"
 
+#ifdef _WIN32
+#define PATH_SEPARATOR ';'
+
+/* If we're running on MinGW, PATH is in native Windows form while
+   COMPILER_PATH has ';' as entries separator but still has '/' as directory
+   separator, so we have to convert it. This is what this magic for. */
+
+void copy_path(char *to, char *from)
+{
+    do {
+	if (*from == '/')
+	    *to = '\\';
+	else
+	    *to = *from;
+	to++;
+    } while (*from++);
+}
+#else
+#define PATH_SEPARATOR ':'
+#define copy_path strcpy
+#endif
+
 char *program_name;
 void nonfatal(const char *msg, const char *errorstr)
 {
@@ -40,10 +62,10 @@ void set_compiler_path(void)
             new_path = malloc(5 + compiler_path_len + 1 + path_len + 1);
             if (new_path)
             {
-                memcpy(new_path, "PATH=", 5);
-                memcpy(new_path + 5, compiler_path, compiler_path_len);
-                memcpy(new_path + 5 + compiler_path_len, ":", 1);
-                memcpy(new_path + 5 + compiler_path_len + 1, path, path_len + 1);
+                strcpy(new_path, "PATH=");
+                copy_path(new_path + 5, compiler_path);
+                new_path[5 + compiler_path_len] = PATH_SEPARATOR;
+                strcpy(new_path + 5 + compiler_path_len + 1, path);
 
 	        if (putenv(new_path) == 0)
 		    path_set = 1;

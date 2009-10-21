@@ -26,6 +26,11 @@ HOST_LDFLAGS += -lbfd -liberty -lz
 COLLECT-AROS-BACKEND   := backend-bfd.c
 COLLECT-AROS-DOCOMMAND := docommand-spawn.c
 endif
+ifeq ($(AROS_HOST_ARCH),mingw32)
+COLLECT_CFLAGS += -D_HAVE_LIBIBERTY_
+HOST_LDFLAGS += -liberty
+COLLECT-AROS-DOCOMMAND := docommand-spawn.c
+endif
 
 all : $(COLLECT-AROS)
 
