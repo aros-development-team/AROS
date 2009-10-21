@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,6 +10,7 @@
 #include <stdlib.h> /* for exit() */
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>  /*  toupper() */
 
 #include "compilerspecific.h"
 #include "debug.h"
@@ -122,7 +123,12 @@ void OutputMessage(CONST_STRPTR msg)
 void Cleanup(CONST_STRPTR msg)
 {
     OutputMessage(msg);
-    
+
+    if (appwindow)
+        RemoveAppWindow(appwindow);
+    if (msgport)
+        DeleteMsgPort(msgport);
+
     KillWindow();
     KillMenus();
     KillGadgets();
@@ -132,7 +138,8 @@ void Cleanup(CONST_STRPTR msg)
     KillFont();
     FreeArguments();
     
-    if (cd != NULL) CurrentDir(cd); /* restore current directory */
+    if (cd != NULL)
+        CurrentDir(cd); /* restore current directory */
     
     CloseLibs();
     CleanupLocale();
@@ -789,6 +796,17 @@ static void MakeWindow(void)
     AddDTOToWin();
 	
     SetMenuStrip(win, menus);
+    
+    winmask = 1L << win->UserPort->mp_SigBit;
+    if (!(msgport = CreateMsgPort()))
+    {
+        Cleanup(MSG(MSG_CANT_CREATE_MSGPORT));
+    }
+    if (!(appwindow = AddAppWindow(0,0,win,msgport,NULL)))
+    {
+        Cleanup(MSG(MSG_CANT_ADD_APPWINDOW));
+    }
+    msgmask = 1L << msgport->mp_SigBit;
 }
 
 /*********************************************************************************************/
@@ -941,10 +959,36 @@ static void HandleAll(void)
     UWORD               men;
     BOOL                quitme = FALSE;
     const STRPTR	not_supported = "Sorry, not supported yet\n";
+    ULONG               sigs;
     
     while (!quitme)
     {
-	WaitPort(win->UserPort);
+	sigs = Wait(msgmask | winmask );
+//        if ( (sigs & winmask) || (sigs & msgmask) )
+        LONG                editorvarbuffer[300];
+        struct AppMessage  *appmsg;
+
+        while ((appmsg = (struct AppMessage *) GetMsg(msgport)))
+        {
+            if (appmsg->am_Type == AMTYPE_APPWINDOW)
+            {
+                if (appmsg->am_NumArgs >= 1)
+                {
+                    NameFromLock(appmsg->am_ArgList->wa_Lock, filenamebuffer, 299);
+                    AddPart(filenamebuffer, appmsg->am_ArgList->wa_Name, 299);
+                    filename = filenamebuffer;
+                    D(bug("[Multiview] appwindow received message: filename = %s\n", filename));
+                }
+            }
+
+            ReplyMsg ((struct Message *) appmsg);
+            ActivateWindow(win);
+
+            if (filename)
+                OpenDTO();
+
+        } /* while ((appmsg = (struct AppMessage *) GetMsg(msgport))) */
+        
 	while((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
 	{
 //	    D(if (msg->Class!=IDCMP_INTUITICKS) bug("  Msg Class %08lx\n", (long)msg->Class));
@@ -955,7 +999,7 @@ static void HandleAll(void)
 		    break;
 		
 		case IDCMP_VANILLAKEY:
-//		    D(bug("Vanillakey %d\n", (int)msg->Code));
+		    D(bug("[Multiview] Vanillakey %d\n", (int)msg->Code));
 		    switch(msg->Code)
 		    {
 			case 27: /* ESC */
@@ -985,7 +1029,17 @@ static void HandleAll(void)
 			    if (dto_supports_browse_prev) DoTrigger(STM_BROWSE_PREV);
 			    break;
 
-		    } /* switch(msg->Code) */
+                    } /* switch(msg->Code) */
+                    if (strchr(MSG(MSG_SHORTCUT_EDITOR), toupper(msg->Code)))
+		    {
+                        if ( (GetVar("editor", (STRPTR) editorvarbuffer, 299, GVF_GLOBAL_ONLY)) != -1L )
+                        {
+                            sprintf(s, "Run QUIET \"%s\" \"%s\"", editorvarbuffer, filename );
+		            D(bug("[Multiview] editor command: \"%s\"\n", s));
+                            if (SystemTags(s, TAG_END))
+		                DisplayBeep(NULL);
+                        }
+                    }
 		    break;
 
 		case IDCMP_RAWKEY:

@@ -26,6 +26,12 @@ Can't create menus!
 MSG_CANT_CREATE_WIN (//)
 Can't create window!
 ;
+MSG_CANT_CREATE_MSGPORT (//)
+Can't create message port!
+;
+MSG_CANT_ADD_APPWINDOW (//)
+Can't promote window as an AppWindow!
+;
 MSG_SAVE_FAILED (//)
 Saving to file failed!
 ;
@@ -142,4 +148,7 @@ Continue
 ;
 MSG_OK (//)
 Ok
+;
+MSG_SHORTCUT_EDITOR (//)
+E
 ;

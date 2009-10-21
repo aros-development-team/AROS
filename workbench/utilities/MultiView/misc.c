@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -299,7 +299,7 @@ void About(void)
     {
 	if (dt)
 	{
-	    gid_string = GetDTString(dt->dtn_Header->dth_GroupID);
+	    gid_string = (STRPTR) GetDTString(dt->dtn_Header->dth_GroupID);
 	    name_string = dt->dtn_Header->dth_Name;
 	}
     }

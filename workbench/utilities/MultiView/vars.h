@@ -75,3 +75,8 @@ VAR UWORD			pdt_origheight;
 VAR WORD			pdt_zoom;
 VAR BOOL			pdt_fit_win;
 VAR BOOL			pdt_keep_aspect;
+/* variables for AppWindow handling */
+VAR struct MsgPort             *msgport;
+VAR struct AppWindow           *appwindow;
+VAR ULONG                       winmask;
+VAR ULONG                       msgmask;
