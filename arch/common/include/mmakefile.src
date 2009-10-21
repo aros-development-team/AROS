@@ -6,7 +6,7 @@ includes-asm_h-$(CPU) : $(GENINCDIR)/aros/$(CPU)/asm.h
 .PHONY : includes-asm_h-$(CPU)
 
 $(OBJDIR)/asm.s : asm.c | $(OBJDIR)
-	$(TARGET_CC) -S $< -o $@
+	$(TARGET_CC) $(CFLAGS) -S $< -o $@
 
 $(GENINCDIR)/aros/$(CPU)/asm.h : $(OBJDIR)/asm.s | $(GENINCDIR)/aros/$(AROS_TARGET_CPU)
 	grep "^[/#][*d]" $< | sed s/[$$]//g >$@

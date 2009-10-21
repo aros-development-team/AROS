@@ -11,6 +11,8 @@
 #include "gensets.h"
 #include "env.h"
 
+#define EXTRA_ARG_CNT 2
+
 static char *ldscriptname, *tempoutput, *ld_name, *strip_name;
 static FILE *ldscriptfile;
 
@@ -28,7 +30,7 @@ static void exitfunc(void)
 
 int main(int argc, char *argv[])
 {
-    int cnt;
+    int cnt, i;
     char *output, **ldargs;
     /* incremental = 1 -> don't do final linking.
        incremental = 2 -> don't do final linking AND STILL produce symbol sets.  */
@@ -99,13 +101,16 @@ int main(int argc, char *argv[])
 	}
     }
 
-    ldargs = xmalloc(sizeof(char *) * (argc+2 + 2*(incremental != 1)));
+    ldargs = xmalloc(sizeof(char *) * (argc + EXTRA_ARG_CNT
+        + ((incremental == 1) ? 0 : 2)) + 1);
 
     ldargs[0] = ld_name;
-    ldargs[1] = "-r";
+    ldargs[1] = OBJECT_FORMAT;
+    ldargs[2] = "-r";
 
-    for (cnt = 1; cnt < argc; cnt++)
-    	ldargs[cnt+1] = argv[cnt];
+    for (i = 1; i < argc; i++)
+        ldargs[i + EXTRA_ARG_CNT] = argv[i];
+    cnt = argc + EXTRA_ARG_CNT;
 
     if (incremental != 1)
     {
@@ -120,12 +125,11 @@ int main(int argc, char *argv[])
 	    fatal(ldscriptname ? ldscriptname : "make_temp_file()", strerror(errno));
 	}
 
-        ldargs[cnt + 1] = "-o";
-        ldargs[cnt + 2] = tempoutput;
-	cnt += 2;
+        ldargs[cnt++] = "-o";
+        ldargs[cnt++] = tempoutput;
     }
 
-    ldargs[cnt+1] = NULL;
+    ldargs[cnt] = NULL;
               
     docommandvp(ld_name, ldargs);
 
@@ -147,7 +151,8 @@ int main(int argc, char *argv[])
     fclose(ldscriptfile);
     ldscriptfile = NULL;
 
-    docommandlp(ld_name, ld_name, "-r", "-o", output, tempoutput, "-T", ldscriptname, do_verbose, NULL);
+    docommandlp(ld_name, ld_name, OBJECT_FORMAT, "-r", "-o", output,
+        tempoutput, "-T", ldscriptname, do_verbose, NULL);
 
     if (incremental != 0)
         return EXIT_SUCCESS;

@@ -664,6 +664,11 @@ case "$target_os" in
 		aros_object_format="elf_i386"
 		aros_flavour="emulation"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
+		aros_config_cflags="$aros_config_cflags -m32"
+		aros_kernel_cflags="$aros_kernel_cflags -m32"
+		aros_config_aflags="$aros_config_aflags -m32"
+		aros_config_ldflags="-m32"
+		aros_kernel_ldflags="-melf_i386"
 		aros_default_wbdepth=8
 		gcc_target_cpu="i386"
 		;;
@@ -720,7 +725,11 @@ case "$target_os" in
                 fi
 		aros_flavour="standalone"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-		aros_kernel_ldflags=""
+		aros_config_cflags="$aros_config_cflags -m32"
+		aros_kernel_cflags="$aros_kernel_cflags -m32"
+		aros_config_aflags="$aros_config_aflags -m32"
+		aros_config_ldflags="-m32"
+		aros_kernel_ldflags="-melf_i386"
 		aros_default_wbwidth=640
 		aros_default_wbheight=480
 		gcc_target_cpu="i386"
@@ -1085,11 +1094,16 @@ else
 fi
 AC_MSG_RESULT($aros_target_guitheme)
 
-# Find out if we are cross-compiling (ie. if we can't use the host compiler
+# Find out if we are cross-compiling (i.e. if we can't use the host compiler
 # for target code)
 cross_compiling=no
 if test "$aros_host_cpu" != "$aros_target_cpu" ; then
     cross_compiling=yes
+fi
+if test "$aros_host_cpu" == "x86_64" ; then
+    if test "$aros_target_cpu" == "i386" ; then
+        cross_compiling=no
+    fi
 fi
 if test "$aros_host_arch" == "darwin" ; then
     cross_compiling=yes

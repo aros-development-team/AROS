@@ -9,7 +9,7 @@ include $(TOP)/config/make.cfg
 #USER_INCLUDES := -I$(GENINCDIR)
 #USER_CFLAGS := -D__AROS__ $(HOST_X11_CFLAGS)
 
-FLAGS := $(HOST_CFLAGS) -I$(GENINCDIR)
+FLAGS := $(KERNEL_CFLAGS) -I$(GENINCDIR)
 
 X11KEYMAPTABLE_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey.table
 
@@ -19,7 +19,7 @@ FILES	   := x11_hostlib x11_init x11 support x11gfx onbitmap offbitmap x11kbd x1
 
 %build_module mmake=kernel-x11gfx \
   modname=x11gfx modtype=hidd \
-  files=$(FILES) compiler=host \
+  files=$(FILES) compiler=kernel \
   cflags=$(FLAGS) \
   uselibs="oop hiddgraphicsstubs"
 
@@ -64,6 +64,6 @@ setup-x11keymaptable :
 	%mkdirs_q $(AROS_DEVS)/Keymaps $(AROS_DEVS)/Keymaps/X11
 		
 $(TOOLDIR)/makexkeytable: makexkeytable.c
-	$(HOST_CC) $(HOST_CFLAGS) $(USER_INCLUDES) $< -o $@ $(HOST_X11_LIBS)
+	$(KERNEL_CC) $(KERNEL_CFLAGS) $(USER_INCLUDES) $< -o $@ $(HOST_X11_LIBS)
 
 %common
