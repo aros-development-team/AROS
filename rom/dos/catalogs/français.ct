@@ -1,4 +1,4 @@
-## version $VER: dos.catalog 1.0 (10.03.2001)
+## version $VER: dos.catalog 1.0 (21.10.2009)
 ## codeset 0
 ## language français
 ;
@@ -52,7 +52,7 @@ Le fichier n'est pas exécutable
 ; file is not executable
 ;
 MSG_ERROR_INVALID_RESIDENT_LIBRARY
-Librairie résidente invalide
+Librairie résidente non valide
 ;
 ; invalid resident library
 ;
@@ -62,7 +62,7 @@ Erreur 201 (pas de répertoire par défaut)
 ; error 201 
 ;
 MSG_ERROR_OBJECT_IN_USE
-Objet en utilisation
+Objet en cours d'utilisation
 ;
 ; object is in use
 ;
@@ -87,7 +87,7 @@ Mauvais descriptif de fenêtre
 ; invalid window description
 ;
 MSG_ERROR_OBJECT_TOO_LARGE
-L'objet est trop gros
+L'objet est trop volumineux
 ;
 ; object too large  
 ;
@@ -142,7 +142,7 @@ Le disque (ou le périphérique) n'est pas monté
 ; device (or volume) is not mounted
 ;
 MSG_ERROR_SEEK_ERROR
-Recherche interrompue 
+Recherche interrompue
 ;
 ; seek failure
 ;
@@ -197,7 +197,7 @@ L'objet est lié
 ; object is linked 
 ;
 MSG_ERROR_BAD_HUNK
-Mauvais descriptif de fichiers
+Mauvais descriptif de fichier
 ;
 ; bad loadfile hunk
 ;
@@ -244,69 +244,34 @@ Le fichier n'est pas exécutable
 ; === New ErrorReport() format strings. Need to be translated.
 ;
 MSG_STRING_DISK_NOT_VALIDATED
-Volume "%s" is not validated
+Le volume "%s" n'a pas été validé
 ;
 MSG_STRING_DISK_WRITE_PROTECTED
-Volume "%s" is write protected
+Le volume "%s" est protégé en écriture
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_INSERT
-Please insert volume "%s" in any drive
+Veuillez insérer le volume "%s" dans un des lecteurs
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE
-Please replace volume "%s" in any drive
+Veuillez réinsérer le volume "%s" dans un des lecteurs
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET
-Please replace volume "%s" in "%s"
+Veuillez réinsérer le volume "%s" dans "%s"
 ;
 MSG_STRING_DISK_FULL
-Volume "%s" is full
+Le volume "%s" est plein
 ;
 MSG_STRING_NOT_A_DOS_DISK
-Not a DOS disk in "%s"
+Disque non DOS dans "%s"
 ;
 MSG_STRING_NO_DISK
-No disk present in "%s"
+Pas de disque présent dans "%s"
 ;
 MSG_STRING_ABORT_BUSY
-You MUST replace volume "%s" in "%s"!
+Vous DEVEZ réinsérer le volume "%s" dans "%s"!
 ;
 MSG_STRING_ABORT_DISK_ERROR
-Volume "%s" has a read/write error
-;
-; === End of new ErrorRequest() format strings. Old ones follow for reference.
-;
-;MSG_STRING_INSERT_VOLUME
-;Insérez le disque\n\
-;%s\n\
-;dans un lecteur
-;
-; Please insert volume\n%s\nin any drive 
-;
-;MSG_STRING_VOLUME_FULL
-;Le volume %s est plein
-;
-; The volume %s is full 
-;
-;MSG_STRING_NO_DISK
-;Pas de disque dans le lecteur %s
-;
-; No disk in drive %s 
-;
-;MSG_STRING_NO_DOS_DISK
-;Le disque dans le lecteur %s n'est pas formaté
-;
-; Not a DOS disk in drive %s 
-;
-;MSG_STRING_MUST_REPLACE
-;Vous DEVEZ replacer le volume\n\
-;%s\n\
-;Dans le lecteur %s
-;
-; You MUST replace volume\n\
-; %s\n\
-; in drive %s 
-;
-; === End of ErrorRequest() format strings.
+Erreur de lecture/écriture sur le volume "%s" 
 ;
 MSG_STRING_RETRY
 Réessayer
