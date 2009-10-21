@@ -27,6 +27,7 @@ Boston, MA 02111-1307, USA.  */
 
 #include "dep.h"
 #include "mem.h"
+#include "win32.h"
 
 Dep *
 newdepnode (const char * path)

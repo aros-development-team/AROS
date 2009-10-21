@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2009, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -45,7 +45,8 @@ Boston, MA 02111-1307, USA.  */
 #include "mem.h"
 #include "var.h"
 #include "mmake.h"
-#include "io.h"
+#include "io_.h"
+#include "win32.h"
 
 #if defined(DEBUG_DIRNODE)
 #define debug(a) a
