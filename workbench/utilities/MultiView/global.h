@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -114,6 +114,10 @@
 #include <workbench/startup.h>
 #endif
 
+#ifndef WORKBENCH_WORKBENCH_H
+#include <workbench/workbench.h>
+#endif
+
 /*********************************************************************************************/
 
 #ifndef PROTO_EXEC_H
@@ -166,6 +170,10 @@
 
 #ifndef PROTO_DISKFONT_H
 #include <proto/diskfont.h>
+#endif
+
+#ifndef PROTO_WB_H
+#include <proto/wb.h>
 #endif
 
 /*********************************************************************************************/
