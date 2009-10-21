@@ -1781,23 +1781,24 @@ AC_CONFIG_COMMANDS([compiler_executable],
 	ln -sf ${prefix2}-gcc          ${prefix}-gcc
 	ln -sf ${prefix2}-ld           ${prefix}-ld
 
-        ln -sf $aros_target_as_ln      ${prefix}-as
-        ln -sf $aros_target_nm_ln      ${prefix}-nm
-        ln -sf $aros_target_ar_ln      ${prefix}-ar
-        ln -sf $aros_target_ranlib_ln  ${prefix}-ranlib
-        ln -sf $aros_target_objcopy_ln ${prefix}-objcopy
-        ln -sf $aros_target_objdump_ln ${prefix}-objdump
-        ln -sf $aros_target_strip_ln   ${prefix}-strip
+        ln -sf $aros_target_as_ln$aros_host_exe_suffix      ${prefix}-as
+        ln -sf $aros_target_nm_ln$aros_host_exe_suffix      ${prefix}-nm
+        ln -sf $aros_target_ar_ln$aros_host_exe_suffix      ${prefix}-ar
+        ln -sf $aros_target_ranlib_ln$aros_host_exe_suffix  ${prefix}-ranlib
+        ln -sf $aros_target_objcopy_ln$aros_host_exe_suffix ${prefix}-objcopy
+        ln -sf $aros_target_objdump_ln$aros_host_exe_suffix ${prefix}-objdump
+        ln -sf $aros_target_strip_ln$aros_host_exe_suffix   ${prefix}-strip
 
-        ln -sf $aros_target_as_ln      ${prefix2}-as
-        ln -sf $aros_target_nm_ln      ${prefix2}-nm
-        ln -sf $aros_target_ar_ln      ${prefix2}-ar
-        ln -sf $aros_target_ranlib_ln  ${prefix2}-ranlib
-        ln -sf $aros_target_objcopy_ln ${prefix2}-objcopy
-        ln -sf $aros_target_objdump_ln ${prefix2}-objdump
-        ln -sf $aros_target_strip_ln   ${prefix2}-strip
+        ln -sf $aros_target_as_ln$aros_host_exe_suffix      ${prefix2}-as
+        ln -sf $aros_target_nm_ln$aros_host_exe_suffix      ${prefix2}-nm
+        ln -sf $aros_target_ar_ln$aros_host_exe_suffix      ${prefix2}-ar
+        ln -sf $aros_target_ranlib_ln$aros_host_exe_suffix  ${prefix2}-ranlib
+        ln -sf $aros_target_objcopy_ln$aros_host_exe_suffix ${prefix2}-objcopy
+        ln -sf $aros_target_objdump_ln$aros_host_exe_suffix ${prefix2}-objdump
+        ln -sf $aros_target_strip_ln$aros_host_exe_suffix   ${prefix2}-strip
     ],
     [
+        aros_host_exe_suffix=${aros_host_exe_suffix}
         aros_tools_dir=${aros_tools_dir}
         aros_target_cpu=${aros_target_cpu}
         aros_target_arch=${aros_target_arch}
