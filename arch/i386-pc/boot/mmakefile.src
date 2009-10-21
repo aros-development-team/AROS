@@ -77,7 +77,7 @@ kernel-link-pc-i386 : $(BINDIR)/boot/aros-pc-i386
 kernel-package-pc-i386 : $(BINDIR)/boot/aros-pc-i386.gz
 
 $(BINDIR)/boot/aros-pc-i386 : $(KOBJS) $(DEPLIBS)
-	@$(KERNEL_CC) -Wl,-N,-e,kernel_startup,-Ttext,0x00100000 \
+	@$(KERNEL_CC) $(KERNEL_CFLAGS) -Wl,-N,-e,kernel_startup,-Ttext,0x00100000 \
 	    $(GENMAP) $(OSGENDIR)/boot/aros.map -o $@ $(KOBJS) \
 	    -static $(NOSTARTUP_LDFLAGS) -L$(LIBDIR) $(LIBS)
 	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@

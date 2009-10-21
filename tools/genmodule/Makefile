@@ -1,4 +1,4 @@
-#   Copyright © 2002, The AROS Development Team. All rights reserved.
+#   Copyright © 2002-2009, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: Makefile to create genmodule
@@ -30,7 +30,7 @@ $(GENMODULEINCLUDE) : include/aros/libcall.h
 	@$(CP) $< $@
 
 archspecific.h: archspecific.c $(AROS_INCLUDES)/aros/$(AROS_TARGET_CPU)/cpu.h
-	@$(TARGET_CC) -S $<
+	@$(TARGET_CC) $(CFLAGS) -S $<
 	@grep "^[/#][*d]" archspecific.s | sed s/@SED@[$$\#]*//g >$@
 	@rm archspecific.s
 

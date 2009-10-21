@@ -1,4 +1,4 @@
-# Copyright © 2000-2008, The AROS Development Team. All rights reserved.
+# Copyright © 2000-2009, The AROS Development Team. All rights reserved.
 # $Id$
 #
 # Makefile to build collect-aros.
@@ -18,7 +18,7 @@ COLLECT-AROS-DIR := $(TOP)/tools/collect-aros
 else
 COLLECT-AROS-DIR := .
 endif
-COLLECT_CFLAGS  ?= $(USER_CFLAGS) -I $(COLLECT-AROS-DIR)
+COLLECT_CFLAGS  ?= $(HOST_CFLAGS) $(USER_CFLAGS) -I $(COLLECT-AROS-DIR)
 
 ifeq ($(AROS_HOST_ARCH),aros)
 COLLECT_CFLAGS += -D_HAVE_LIBIBERTY_

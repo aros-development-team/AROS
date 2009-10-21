@@ -24,6 +24,7 @@ kernel-exec-pc-i386 :: $(TARGETDIR)/vesa.bin.o
 
 $(TARGETDIR)/vesa.bin.o: vesa.c
 	$(TARGET_CC) $(CFLAGS) -c -I$(GENINCDIR) $< -o $(TARGETDIR)/vesa.o
-	$(KERNEL_LD) -e 0x1000 -Ttext 0x1000 -N -d -nostdlib --oformat binary -o $(TARGETDIR)/vesa $(TARGETDIR)/vesa.o
+	$(KERNEL_LD) $(KERNEL_LDFLAGS) -e 0x1000 -Ttext 0x1000 -N -d \
+	-nostdlib --oformat binary -o $(TARGETDIR)/vesa $(TARGETDIR)/vesa.o
 	rm $(TARGETDIR)/vesa.o
 	cd $(TARGETDIR) && $(TARGET_LD) -r --format binary vesa -o vesa.bin.o
