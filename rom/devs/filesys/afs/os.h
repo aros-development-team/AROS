@@ -2,12 +2,14 @@
 #define OS_SUPPORT_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #ifdef __AROS__
 #include "os_aros_support.h"
+#elif defined(_WIN32)
+#include "os_windows_support.h"
 #elif defined(unix) || defined(__MACH__)
 #include "os_unix_support.h"
 #else
