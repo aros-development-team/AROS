@@ -25,6 +25,9 @@ Boston, MA 02111-1307, USA.  */
 #ifdef HAVE_NETINET_IN_H
 #   include <netinet/in.h> /* for htonl/ntohl() */
 #endif
+#ifdef _WIN32
+#include "winsock2.h"
+#endif
 
 #include "mem.h"
 

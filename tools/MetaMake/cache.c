@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2009, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -43,10 +43,11 @@ Boston, MA 02111-1307, USA.  */
 
 #include "cache.h"
 #include "mem.h"
-#include "io.h"
+#include "io_.h"
 #include "var.h"
 #include "dep.h"
 #include "mmake.h"
+#include "win32.h"
 
 #if defined(DEBUG_CACHE)
 #define debug(a) a

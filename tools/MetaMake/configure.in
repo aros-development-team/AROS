@@ -15,6 +15,9 @@ srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
 METAMAKE_SRCDIR=${srcpwd}
 AC_MSG_RESULT($METAMAKE_SRCDIR)
 
+dnl Find out our host
+AC_CANONICAL_HOST
+
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
@@ -46,6 +49,7 @@ dnl Checks for library functions.
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(getcwd strdup strndup strerror)
 
+AC_SUBST(host_os)
 AC_SUBST(mmake_objdir)
 AC_SUBST(METAMAKE_SRCDIR)
 

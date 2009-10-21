@@ -12,12 +12,17 @@ bindir = @bindir@
 mmsrcdir = @METAMAKE_SRCDIR@
 mmake_LDADD = $(LDADD)
 mmake_objdir = @mmake_objdir@
+OS=@host_os@
 DEPDIR = $(mmake_objdir)/.deps
 mmake_OBJECTS =  $(mmake_objdir)/mmake.o $(mmake_objdir)/mem.o $(mmake_objdir)/list.o $(mmake_objdir)/var.o $(mmake_objdir)/dirnode.o $(mmake_objdir)/dep.o $(mmake_objdir)/project.o $(mmake_objdir)/cache.o $(mmake_objdir)/io.o
 DEFAULT_INCLUDES = -I.$(mmsrcdir) -I.$(SRCDIR)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+
+ifeq ($(OS),mingw32)
+LIBS += -liberty -lws2_32
+endif
 
 all: makedirs $(mmake_objdir)/mmake$(EXEEXT)
 
