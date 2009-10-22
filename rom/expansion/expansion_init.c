@@ -24,6 +24,9 @@ static int ExpansionInit(LIBBASETYPEPTR LIBBASE)
 {
     NEWLIST(&LIBBASE->eb_MountList);
 
+    memset(&LIBBASE->eb_BindSemaphore, 0, sizeof(LIBBASE->eb_BindSemaphore));
+    InitSemaphore(&LIBBASE->eb_BindSemaphore);
+
     /* See what expansion hardware we can detect. */
 #if 0
     ConfigChain();
