@@ -81,16 +81,19 @@
     else
 	cd = oldConfigDev;
 
-    while( cd->cd_Node.ln_Succ != NULL )
+    if (cd)
     {
-	if
-	(
-	    ((manufacturer == -1) || (cd->cd_Rom.er_Manufacturer == manufacturer))
-	 && ((product == -1) || (cd->cd_Rom.er_Product == product))
-	)
-	    break;
+        while( cd->cd_Node.ln_Succ != NULL )
+        {
+            if
+            (
+                ((manufacturer == -1) || (cd->cd_Rom.er_Manufacturer == manufacturer))
+             && ((product == -1) || (cd->cd_Rom.er_Product == product))
+            )
+                break;
 
-	cd = (struct ConfigDev *)cd->cd_Node.ln_Succ;
+            cd = (struct ConfigDev *)cd->cd_Node.ln_Succ;
+        }
     }
 
     ReleaseConfigBinding();
