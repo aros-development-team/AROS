@@ -12,6 +12,7 @@
 #include <exec/semaphores.h>
 #include <oop/oop.h>
 #include <proto/exec.h>
+#include <proto/utility.h>
 #include <proto/oop.h>
 
 #include <hidd/hidd.h>
