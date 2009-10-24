@@ -2,7 +2,7 @@ include $(TOP)/config/make.cfg
 
 #USER_INCLUDES = -I$(GENINCDIR)
 
-FLAGS := $(HOST_CFLAGS) -I$(GENINCDIR)
+FLAGS := $(KERNEL_CFLAGS) -I$(GENINCDIR)
 
 %build_module mmake=workbench-devs-tap-unix \
     modname=tap modtype=device \
@@ -10,6 +10,6 @@ FLAGS := $(HOST_CFLAGS) -I$(GENINCDIR)
     files="init command iotask" \
     cflags=$(FLAGS) \
     uselibs="oop amiga rom m hiddstubs" \
-    compiler=host
+    compiler=kernel
 
 %common

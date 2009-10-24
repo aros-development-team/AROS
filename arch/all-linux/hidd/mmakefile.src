@@ -5,5 +5,5 @@ FILES := linux_init gfxclass bmclass kbdclass mouseclass inputtask
 
 %build_module mmake=kernel-hidd-linux \
   modname=linux modtype=hidd \
-  files=$(FILES)  cflags="$(HOST_CFLAGS) -I$(GENINCDIR) -D__AROS__" \
-  compiler=host
+  files=$(FILES) cflags="$(KERNEL_CFLAGS) -I$(GENINCDIR) -D__AROS__" \
+  compiler=kernel
