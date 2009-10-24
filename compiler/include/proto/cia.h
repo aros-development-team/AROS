@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,7 +10,7 @@
 #include <aros/system.h>
 #endif
 
-#include <clib/cia_protos.h>
-#include <defines/cia.h>
+//#include <clib/cia_protos.h>
+//#include <defines/cia.h>
 
 #endif /* PROTO_CIA_H */
