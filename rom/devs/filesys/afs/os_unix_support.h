@@ -2,11 +2,12 @@
 #define OS_UNIX_SUPPORT_H
 
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <stdio.h>
+#include <stdint.h>
 #ifdef _WIN32
 #include "winsock2.h"
 #else
@@ -14,19 +15,19 @@
 #endif
 
 /* exec/types.h */
-typedef signed char    BYTE;
-typedef unsigned char  UBYTE;
-typedef signed short   WORD;
-typedef unsigned short UWORD;
-typedef signed long    LONG;
-typedef unsigned long  ULONG;
+typedef int8_t    BYTE;
+typedef uint8_t  UBYTE;
+typedef int16_t   WORD;
+typedef uint16_t UWORD;
+typedef int32_t    LONG;
+typedef uint32_t  ULONG;
 typedef void*          APTR;
 typedef char*          STRPTR;
 typedef const char*    CONST_STRPTR;
 typedef unsigned char  TEXT;
 typedef unsigned long  IPTR;
 typedef unsigned long  BPTR;
-typedef short          BOOL;
+typedef int16_t          BOOL;
 #define VOID  void
 #define FALSE 0L
 #define TRUE  1L
