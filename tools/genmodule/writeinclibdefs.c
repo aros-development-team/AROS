@@ -68,7 +68,7 @@ void writeinclibdefs(struct config *cfg)
         "#define MAJOR_VERSION    %u\n"
         "#define REVISION_NUMBER  %u\n"
         "#define MINOR_VERSION    %u\n"
-        "#define VERSION_STRING   \"%s.%s %u.%u (%s)%s%s\\r\\n\"\n"
+        "#define VERSION_STRING   \"$VER: %s.%s %u.%u (%s)%s%s\\r\\n\"\n"
         "#define COPYRIGHT_STRING \"%s\"\n"
         "#define LIBEND           GM_UNIQUENAME(End)\n"
         "#define LIBFUNCTABLE     GM_UNIQUENAME(FuncTable)\n"
