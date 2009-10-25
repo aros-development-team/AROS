@@ -177,33 +177,34 @@ $(DISTDIR)/system-pc-i386.img: $(SYSTEM_DEST_FILES) \
 	$(COPYTOAFS) $@ --name "AROS Live Floppy" --size floppy1440 $(SYSTEM_DEST_DIR)
 
 $(SYSTEM_DEST_DIR)/S/Startup-Sequence:
-	@$(CP) $(TOP)/workbench/s/Startup-Sequence.DEMOFLOPPY $@
+	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence.DEMOFLOPPY $@
 
-$(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): install.c
+$(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): $(SRCDIR)/$(CURDIR)/install.c
+	echo $(GENDIR)/$(CURDIR)
 	@$(MKDIR) -p $(GENDIR)/$(CURDIR)
-	@$(HOST_CC) install.c -o $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
+	@$(HOST_CC) $(HOST_CFLAGS) $(SRCDIR)/$(CURDIR)/install.c -o $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 
 $(SYSTEM_DEST_DIR)/AROS.pkg : $(addprefix $(BOOT_SRC_DIR)/,$(BOOT_TAR_FILES))
 	@$(RM) -rf $(OSGENDIR)/boot/bootdisk.compressed
 	@$(MKDIR) -p $(OSGENDIR)/boot/bootdisk.compressed
 	@$(MKDIR) -p $(OSGENDIR)/boot/bootdisk.compressed/S
-	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(OSGENDIR)/boot/bootdisk.compressed/S/Startup-Sequence
+	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(OSGENDIR)/boot/bootdisk.compressed/S/Startup-Sequence
 	@( \
             oldpwd=$$PWD; \
             cd $(BOOT_SRC_DIR) && \
             for path in $(BOOT_TAR_EXECUTABLES); do \
-                $(SH) $(TOP)/$(CURDIR)/copypath $$path $(OSGENDIR)/boot/bootdisk.compressed ; \
+                $(SH) $(SRCDIR)/$(CURDIR)/copypath $$path $(OSGENDIR)/boot/bootdisk.compressed ; \
 				$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/bootdisk.compressed/$$path ; \
             done && \
             for path in $(BOOT_TAR_ICONS); do \
-                $(SH) $(TOP)/$(CURDIR)/copypath $$path $(OSGENDIR)/boot/bootdisk.compressed ; \
+                $(SH) $(SRCDIR)/$(CURDIR)/copypath $$path $(OSGENDIR)/boot/bootdisk.compressed ; \
             done && \
             for path in $(BOOT_TAR_MISC); do \
-                $(SH) $(TOP)/$(CURDIR)/copypath $$path $(OSGENDIR)/boot/bootdisk.compressed ; \
+                $(SH) $(SRCDIR)/$(CURDIR)/copypath $$path $(OSGENDIR)/boot/bootdisk.compressed ; \
             done && \
             cd $(OSGENDIR)/boot/ && \
             $(RM) AROS.pkg && \
-            $(TOP)/tools/package/pkg c AROS.pkg bootdisk.compressed && \
+            $(SRCDIR)/tools/package/pkg c AROS.pkg bootdisk.compressed && \
             bzip2 -9 AROS.pkg && \
             mv -f AROS.pkg.bz2 $(SYSTEM_DEST_DIR)/AROS.pkg \
         )
