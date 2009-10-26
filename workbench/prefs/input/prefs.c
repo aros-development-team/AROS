@@ -50,6 +50,7 @@ struct nameexp layout_expansion_table[] =
     {"usa2" , "Dvorak"	    	    , NULL },
     {"dvl"  , "Dvorak Left-handed"  , NULL },
     {"dvr"  , "Dvorak Right-handed" , NULL },
+    {"el"   , "Ellinikí"    	    , "Hellas"           },
     {"ir"   , "English Ireland"     , "Ireland"        },
     {"e"    , "Español"     	    , "España" },
     {"sp"   , "Español no deadkeys" , "España" },
