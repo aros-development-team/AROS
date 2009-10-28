@@ -6493,6 +6493,7 @@ ignore_undefined_symbols=""
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-stack-protector" >&5
 $as_echo_n "checking whether ${CC} accepts -fno-stack-protector... " >&6; }
+save_cc="$CC"
 save_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -fno-stack-protector"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -6517,6 +6518,34 @@ $as_echo "$use_no_stack_protector" >&6; }
 if test "x-$use_no_stack_protector" = "x-yes" ; then
     aros_host_cflags="$aros_host_cflags -fno-stack-protector"
 fi
+if test "x-$cross_compiling" = "x-yes"; then
+    CC="$aros_kernel_cc"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-stack-protector" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-stack-protector... " >&6; }
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  use_no_stack_protector="yes"
+else
+  use_no_stack_protector="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_no_stack_protector" >&5
+$as_echo "$use_no_stack_protector" >&6; }
+fi
+if test "x-$use_no_stack_protector" = "x-yes" ; then
+    aros_kernel_cflags="$aros_kernel_cflags -fno-stack-protector"
+fi
+CC="$save_cc"
 CFLAGS="$save_cflags"
 
 

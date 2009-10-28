@@ -473,6 +473,7 @@ ignore_undefined_symbols=""
 #
 
 AC_MSG_CHECKING([whether ${CC} accepts -fno-stack-protector])
+save_cc="$CC"
 save_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -fno-stack-protector"
 AC_TRY_COMPILE(,, use_no_stack_protector="yes", use_no_stack_protector="no")
@@ -480,6 +481,16 @@ AC_MSG_RESULT($use_no_stack_protector)
 if test "x-$use_no_stack_protector" = "x-yes" ; then
     aros_host_cflags="$aros_host_cflags -fno-stack-protector"
 fi
+if test "x-$cross_compiling" = "x-yes"; then
+    CC="$aros_kernel_cc"
+    AC_MSG_CHECKING([whether ${CC} accepts -fno-stack-protector])
+    AC_TRY_COMPILE(,, use_no_stack_protector="yes", use_no_stack_protector="no")
+    AC_MSG_RESULT($use_no_stack_protector)
+fi
+if test "x-$use_no_stack_protector" = "x-yes" ; then
+    aros_kernel_cflags="$aros_kernel_cflags -fno-stack-protector"
+fi
+CC="$save_cc"
 CFLAGS="$save_cflags"
 
 
@@ -1583,7 +1594,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
             fi
 
         else
-            dnl found it, setup the metatarget
+            dnl found it, set up the metatarget
             sdl_hidd_target=kernel-hidd-sdl
             aros_host_sdl_cflags=SDL_CFLAGS
             aros_host_sdl_libs=SDL_LIBS
