@@ -256,7 +256,7 @@ Arrêt du système
 ; System shutdown
 ;
 MSG_SHUTDOWN_BODY
-Que voulez vous faire ? 
+Que désirez vous faire ? 
 ; What would you like to do?
 ;
 MSG_SHUTDOWN_BUTTONS
@@ -264,7 +264,7 @@ Eteindre|Redémarrer l'ordinateur|Redémarrer AROS|*Annuler
 ; Power off|Restart computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED
-L'action n'est pas supportée par votre système.
+L'action n'est pas disponible pour cette machine.
 ; The selected action is not supported by your system.
 ;
 MSG_OK
@@ -312,7 +312,7 @@ Voulez vous réellement supprimer le fichier
 ; Really delete file
 ;
 MSG_REQU_DELETE_FILE_M
-situé
+situé dans
 ; located in
 ;
 MSG_REQU_DELETE_FILE_E
@@ -324,11 +324,11 @@ Remplacer le fichier...
 ; Overwrite file...
 ;
 MSG_REQU_OVERWRITE_S
-Voulez vous réellement remplacer le fichier
+Désirez vous réellement remplacer le fichier
 ; Really overwrite file
 ;
 MSG_REQU_OVERWRITE_M
-situé
+situé dans
 ; located in
 ;
 MSG_REQU_OVERWRITE_E
@@ -352,7 +352,7 @@ _Déprotéger|Déprotéger _tous|_Non|_Non à tou_s
 ; _Unprotect|Unprotect _All|_No|No _to ALL
 ;
 MSG_REQU_PROTECTION_UNPROTECTDRAWER_S
-Voulez vous déprotéger le dossier
+Désirez vous déprotéger le dossier
 ; Do you wish to unprotect drawer
 ;
 MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
@@ -360,11 +360,11 @@ MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
 ; ?
 ;
 MSG_NOFILEACCESS_S
-Impossible d'accèder au fichier
+Impossible d'accéder au fichier
 ; Can't access file
 ;
 MSG_NOFILEACCESS_M
-situé
+situé dans
 ; located in
 ;
 MSG_NOFILEACCESS_E
@@ -380,11 +380,11 @@ MSG_NODRAWERACCESS_E
 ;  
 ;
 MSG_REQU_FILEUNPROTECT_S
-Voulez vous déprotéger le fichier
+Désirez vous déprotéger le fichier
 ; Do you wish to unprotect file
 ;
 MSG_REQU_FILEUNPROTECT_M
-situé
+situé dans
 ; located in
 ;
 MSG_REQU_FILEUNPROTECT_E
