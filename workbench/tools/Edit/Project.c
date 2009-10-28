@@ -222,15 +222,18 @@ char save_project(Project p, char refresh, char ask)
 	}
 
 	if( refresh )
-		UpdateTitle(Wnd, p),
-		update_panel_name( p );
+	{
+		UpdateTitle(Wnd, p), update_panel_name( p );
+    }
 
 	retval = save_file(p->path, p->the_line, p->eol, p->protection);
 
 	if (retval)
-            unset_modif_mark(p, FALSE);
+	{
+        unset_modif_mark(p, TRUE);
+    }
 
-        return retval;
+    return retval;
 }
 
 /*** Save all modified projects ***/
