@@ -16,11 +16,11 @@ Commande et arguments :
 ; Command and arguments:
 ;
 MSG_BUTTON_EXECUTE
-_Exécute
+_Exécuter
 ; _Execute
 ;
 MSG_BUTTON_CANCEL
-_Annule
+_Annuler
 ; _Cancel
 ;
 MSG_CONSOLE_TITLE
@@ -36,7 +36,7 @@ MSG_ERROR_OK
 ; *OK
 ;
 MSG_ERROR_LOCALE
-Impossible d'initialiser la locale.
+Impossible d'initialiser les informations de localisation.
 ; Can't initialize locale.
 ;
 MSG_ERROR_CLASSES
