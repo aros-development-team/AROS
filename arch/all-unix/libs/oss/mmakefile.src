@@ -28,4 +28,4 @@ FILES := funcs
 USER_CFLAGS := -I$(AROS_INCLUDES) -D__AROS__
 %build_module mmake=workbench-libs-oss-unix-module modname=oss \
     modtype=library files="$(FILES) oss_init" linklibname=ossshared \
-    uselibs="oop amiga rom m hiddstubs" compiler=host
+    uselibs="oop amiga rom m hiddstubs" compiler=kernel
