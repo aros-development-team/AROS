@@ -371,7 +371,7 @@ STATIC CONST IPTR lokeymap[] =
     BYTES('(', ']', '(', '9'),		/* 09 9 */
     BYTES(')', '}', ')', '0'),		/* 0A 0 */
     BYTES(0, 0, '_', '-'),    	/* 0B Right of 0 */
-    BYTES('+', '=', '`', '+'),		/* 0C 2nd right of 0 */
+    BYTES('+', '=', '=', '+'),		/* 0C 2nd right of 0 */
     BYTES(0, 0, 0, 0),				/* 0D 3rd right of 0 */
     BYTES(0, 0, 0, 0),				/* 0E undefined */
     BYTES('0', '0', '0', '0'), 		/* 0F NUM 0 */
@@ -510,10 +510,10 @@ STATIC CONST UBYTE locapsable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 08 - 0F */
     
     SETBITS(1, 1, 1, 1, 1, 1, 1, 1),	/* 10 - 17 */
-    SETBITS(1, 1, 1, 0, 0, 0, 0, 0),	/* 18 - 1F */
+    SETBITS(1, 1, 0, 0, 0, 0, 0, 0),	/* 18 - 1F */
     
     SETBITS(1, 1, 1, 1, 1, 1, 1, 1),	/* 20 - 27 */
-    SETBITS(1, 1, 1, 0, 0, 0, 0, 0),	/* 28 - 2F */
+    SETBITS(1, 1, 0, 0, 0, 0, 0, 0),	/* 28 - 2F */
     
     SETBITS(0, 1, 1, 1, 1, 1, 1, 1),	/* 30 - 37 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0)		/* 38 - 3F */
