@@ -6551,6 +6551,39 @@ CFLAGS="$save_cflags"
 
 #-----------------------------------------------------------------------------
 
+# Check if we can explicitly choose older version of symbol hashing
+
+save_cflags="$CFLAGS"
+CFLAGS="$CFLAGS -Wl,--hash-style=sysv"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wl,--hash-style=sysv" >&5
+$as_echo_n "checking whether ${CC} accepts -Wl,--hash-style=sysv... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  use_hash_style="yes"
+else
+  use_hash_style="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_hash_style" >&5
+$as_echo "$use_hash_style" >&6; }
+if test "x-$use_hash_style" = "x-yes" ; then
+    aros_kernel_ldflags="$aros_kernel_ldflags -Wl,--hash-style=sysv"
+fi
+CFLAGS="$save_cflags"
+
+
+#-----------------------------------------------------------------------------
+
 # Disable pointer-signedness warnings if the compiler recognises the option
 # (this only works for the host compiler at the moment)
 
