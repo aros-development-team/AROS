@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 #define AROS_ALMOST_COMPATIBLE
@@ -306,6 +306,7 @@ struct header
 	catalog->ic_UseCount = 1;
     	catalog->ic_Catalog.cat_Language = catalog->ic_LanguageName;
 	strcpy(catalog->ic_Name, name);
+	catalog->ic_Catalog.cat_Link.ln_Name = catalog->ic_Name; /* Scout expects this */
 
 	InitIFFasDOS(iff);
 
