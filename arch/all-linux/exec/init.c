@@ -170,8 +170,8 @@ extern APTR __libc_realloc(APTR mem, size_t newsize);
 
 
 static int memnest;
-#define MEMLOCK Forbid();
-#define MEMUNLOCK Permit();
+#define MEMLOCK if (SysBase != NULL) Forbid();
+#define MEMUNLOCK if (SysBase != NULL) Permit();
 
 static APTR myAlloc(struct MemHeaderExt *mhe, ULONG size, ULONG *flags)
 {
@@ -561,7 +561,7 @@ int main(int argc, char **argv)
     }
 
     /*  There is nothing more system dependant to set up,
-        so lets start that ball rolling...
+        so let's start that ball rolling...
 
         The InitCode() call should never return in a working system.
     */
