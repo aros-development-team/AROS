@@ -1,4 +1,4 @@
-dnl Copyright ï¿½ 1997-2009, The AROS Development Team. All rights reserved.
+dnl Copyright © 1997-2009, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for configuration file
@@ -504,7 +504,7 @@ AC_MSG_CHECKING([whether ${CC} accepts -Wl,--hash-style=sysv])
 AC_TRY_COMPILE(,, use_hash_style="yes", use_hash_style="no")
 AC_MSG_RESULT($use_hash_style)
 if test "x-$use_hash_style" = "x-yes" ; then
-    aros_kernel_ldflags="$aros_kernel_ldflags -Wl,--hash-style=sysv"
+    aros_kernel_cflags="$aros_kernel_cflags -Wl,--hash-style=sysv"
 fi
 CFLAGS="$save_cflags"
 
@@ -1020,7 +1020,6 @@ case "$target_os" in
 		aros_object_format="m68kelf"
 		aros_flavour="palmnative"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
-		aros_kernel_ldflags=""
 		aros_default_wbwidth=160
                 aros_default_wbheight=160
 		aros_default_wbdepth=1
