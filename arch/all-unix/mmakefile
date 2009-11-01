@@ -69,4 +69,4 @@ $(BINDIR)/boot:
 USER_CFLAGS := -I$(GENINCDIR) -D__AROS__
 $(BINDIR)/boot/aros-unix: $(DEP_LIBS) $(KOBJS) $(BINDIR)/boot
 	$(HOST_CC) $(CFLAGS) $(HOST_LDFLAGS) $< $(KOBJS) $(LIBS) \
-		-o $@ $(KERNEL_LDFLAGS) $(DBUS_LIBFLAGS)
+		-o $@ $(KERNEL_CFLAGS) $(DBUS_LIBFLAGS)
