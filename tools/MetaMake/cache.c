@@ -437,9 +437,9 @@ int mktempfile(char **name)
 {
     static char tmpname[20];
     
-    strcpy(tmpname, "/tmp/genmfxxxxxx");
+    strcpy(tmpname, "/tmp/genmfXXXXXX");
     *name = tmpname;
-    return mkstemp(tmpname)l
+    return mkstemp(tmpname);
 }
 
 #endif
