@@ -417,12 +417,39 @@ debug(printf("MMAKE:cache.c->updatetargetlist('%s')\n", node->node.name));
     return reread;
 }
 
+#ifdef _WIN32
+
+int mktempfile(char **name)
+{
+    char *temp = getenv("TEMP");
+    size_t pathlen = strlen(temp) + 13;
+    char *path = xmalloc(pathlen);
+
+    strcpy(path, temp);
+    strcat(path, "\\genmfXXXXXX");
+    *name = path;
+    return mkstemps(path, 0);
+}
+
+#else
+
+int mktempfile(char **name)
+{
+    static char tmpname[20];
+    
+    strcpy(tmpname, "/tmp/genmfxxxxxx");
+    *name = tmpname;
+    return mkstemp(tmpname)l
+}
+
+#endif
+
 
 void
 regeneratemf (Cache_priv * cache, List * regeneratefiles)
 {
     Regenerate * reg,* reg2;
-    char tmpname[20];
+    char *tmpname;
     int fd;
     FILE *f;
 
@@ -430,9 +457,8 @@ debug(printf("MMAKE:cache.c->regeneratemf()\n"));
 
     if (GetHead (regeneratefiles) == NULL)
 	return;
-    
-    strcpy (tmpname, "/tmp/genmfXXXXXX");
-    fd = mkstemp (tmpname);
+
+    fd = mktempfile(&tmpname);
     if (fd < 0)
     {
 	error ("Could not create temporary file %s", tmpname);
