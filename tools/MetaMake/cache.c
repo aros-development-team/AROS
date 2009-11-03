@@ -184,7 +184,7 @@ readcache (Cache_priv * cache)
     strcat (path, "/mmake.cache");
     assert (strlen(path) < sizeof(path));
 
-    fh = fopen (path, "r");
+    fh = fopen (path, "rb");
 
     if (fh)
     {
@@ -261,7 +261,7 @@ debug(printf("MMAKE:cache.c->writecache()\n"));
     strcat (path, "/mmake.cache");
     assert (strlen(path) < sizeof(path));
 
-    fh = fopen (path, "w");
+    fh = fopen (path, "wb");
 
     if (!fh)
     {
