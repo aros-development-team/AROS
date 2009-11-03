@@ -43,17 +43,11 @@ else
 fi
 AC_MSG_RESULT($target)
 
-# If we're running on MinGW, we have to put Windows-stype paths into specs, since
-# MinGW-hosted gcc doesn't understand UNIX-style paths internally (like /C/ instead of C:/)
-
-if test $host_os = "mingw32"; then
-    PWDCMD="pwd -W"
-fi
-
 #don't know where else to put this...
 AC_MSG_CHECKING([Building AROS in .. ])
-AROS_BUILDDIR=`${PWDCMD-pwd}`
+AROS_BUILDDIR=$PWD
 AC_MSG_RESULT($AROS_BUILDDIR)
+AROS_BUILDDIR_NATIVE=AROS_BUILDDIR
 
 AC_MSG_CHECKING([AROS Source in .. ])
 srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
@@ -317,6 +311,7 @@ case "$host_os" in
     mingw32*)
         aros_host_arch="mingw32"
 	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+	AROS_BUILDDIR_NATIVE=`pwd -W`
 	case "$host_cpu" in
 	    *i?86*)
 		aros_host_cpu="i386"
@@ -1650,6 +1645,7 @@ AC_SUBST(aros_cpu)
 AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
 AC_SUBST(AROS_BUILDDIR)
+AC_SUBST(AROS_BUILDDIR_NATIVE)
 AC_SUBST(SRCDIR)
 AC_SUBST(AROS_PORTSSRCDIR)
 
