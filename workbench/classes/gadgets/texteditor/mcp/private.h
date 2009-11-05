@@ -177,8 +177,8 @@ extern struct MUI_CustomClass *text_mcc;
 extern const struct te_key default_keybindings[];
 
 Object *CreatePrefsGroup(struct InstData_MCP *data);
-void ImportKeys(void *, struct InstData_MCP *data);
-void ExportKeys(void *, struct InstData_MCP *);
+void ImportKeys(struct InstData_MCP *data, void *);
+void ExportKeys(struct InstData_MCP *data, void *);
 void AddKeyBinding (STRPTR keystring, UWORD action, struct KeyAction *storage);
 void ConvertKeyString (STRPTR keystring, UWORD action, struct KeyAction *storage);
 void KeyToString(STRPTR buffer, ULONG buffer_len, struct KeyAction *ka);

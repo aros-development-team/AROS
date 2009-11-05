@@ -25,10 +25,12 @@
 #include <proto/utility.h>
 
 #include "private.h"
+#include "Debug.h"
 
-///ExportBlock()
-void *ExportBlock(struct MUIP_TextEditor_ExportBlock *msg, struct InstData *data)
+/// mExportBlock()
+IPTR mExportBlock(struct IClass *cl, Object *obj, struct MUIP_TextEditor_ExportBlock *msg)
 {
+  struct InstData *data = INST_DATA(cl, obj);
   struct line_node *node;
   struct Hook *exportHook = data->ExportHook;
   ULONG wraplen = data->ExportWrap;
@@ -40,7 +42,7 @@ void *ExportBlock(struct MUIP_TextEditor_ExportBlock *msg, struct InstData *data
   ENTER();
 
   // get information about marked text
-  if(data->blockinfo.enabled)
+  if(data->blockinfo.enabled == TRUE)
     NiceBlock(&data->blockinfo, &newblock);
   else
   {
@@ -54,7 +56,7 @@ void *ExportBlock(struct MUIP_TextEditor_ExportBlock *msg, struct InstData *data
   {
 
     if(msg->starty <= (ULONG)data->totallines)
-      newblock.startline = LineNode(msg->starty+1, data);
+      newblock.startline = LineNode(data, msg->starty+1);
 
     if(msg->startx <= (newblock.startline)->line.Length)
       newblock.startx = msg->startx;
@@ -63,7 +65,7 @@ void *ExportBlock(struct MUIP_TextEditor_ExportBlock *msg, struct InstData *data
       newblock.stopx = msg->stopx;
 
     if(msg->starty <= (ULONG)data->totallines)
-      newblock.stopline = LineNode(msg->stopy+1, data);
+      newblock.stopline = LineNode(data, msg->stopy+1);
   }
 
   node = newblock.startline;
@@ -82,7 +84,7 @@ void *ExportBlock(struct MUIP_TextEditor_ExportBlock *msg, struct InstData *data
     emsg.Length = node->line.Length;
     emsg.Styles = node->line.Styles;
     emsg.Colors = node->line.Colors;
-    emsg.Highlight = node->line.Color;
+    emsg.Highlight = node->line.Highlight;
     emsg.Flow = node->line.Flow;
     emsg.Separator = node->line.Separator;
     emsg.ExportWrap = wraplen;
@@ -107,7 +109,7 @@ void *ExportBlock(struct MUIP_TextEditor_ExportBlock *msg, struct InstData *data
       else
         emsg.SkipBack = 0;
     }
-    
+
     // call the ExportHook and exit immediately if it returns NULL
     if((user_data = (void*)CallHookPkt(exportHook, NULL, &emsg)) == NULL)
       break;
@@ -120,7 +122,9 @@ void *ExportBlock(struct MUIP_TextEditor_ExportBlock *msg, struct InstData *data
     node = next_node;
   }
 
-  RETURN(user_data);
-  return user_data;
+  RETURN((IPTR)user_data);
+  return (IPTR)user_data;
 }
+
 ///
+

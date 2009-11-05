@@ -32,6 +32,7 @@
 #include <proto/dos.h>
 
 #include "private.h"
+#include "Debug.h"
 
 struct RexxCommand
 {
@@ -81,8 +82,8 @@ enum
 };
 #define MaxArgs 8
 
-///CallFunction()
-static ULONG CallFunction(UWORD function, IPTR *args, const char *txtargs, struct InstData *data)
+/// CallFunction()
+static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, const char *txtargs)
 {
   struct line_node *oldactualline = data->actualline;
   UWORD oldCPos_X = data->CPos_X;
@@ -93,7 +94,7 @@ static ULONG CallFunction(UWORD function, IPTR *args, const char *txtargs, struc
 
   SHOWVALUE(DBF_REXX, function);
 
-  if(data->flags & FLG_ReadOnly)
+  if(isFlagSet(data->flags, FLG_ReadOnly))
   {
     switch(function)
     {
@@ -127,7 +128,7 @@ static ULONG CallFunction(UWORD function, IPTR *args, const char *txtargs, struc
   else
   {
     if(function > GOTOBOOKMARK || function < GOTOLINE)
-      data->flags &= ~FLG_ARexxMark;
+      clearFlag(data->flags, FLG_ARexxMark);
 
     switch(function)
     {
@@ -315,27 +316,27 @@ static ULONG CallFunction(UWORD function, IPTR *args, const char *txtargs, struc
 
       case SETBOOKMARK:
         if(*args)
-          SetBookmark(*(ULONG *)*args-1, data);
+          SetBookmark(data, *(ULONG *)*args-1);
         break;
 
       case GOTOBOOKMARK:
         if(*args)
-          GotoBookmark(*(ULONG *)*args-1, data);
+          GotoBookmark(data, *(ULONG *)*args-1);
         break;
 
       case MARK:
         if(*++args)
         {
           data->flags &= ~FLG_ARexxMark;
-          if(data->blockinfo.enabled)
+          if(data->blockinfo.enabled == TRUE)
           {
             data->blockinfo.enabled = FALSE;
-            MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
+            MarkText(data, data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline);
           }
         }
         else
         {
-          data->flags |= FLG_ARexxMark;
+          setFlag(data->flags, FLG_ARexxMark);
         }
         break;
 
@@ -372,48 +373,48 @@ static ULONG CallFunction(UWORD function, IPTR *args, const char *txtargs, struc
         data->blockinfo.stopline = actual;
         data->blockinfo.stopx = data->blockinfo.stopline->line.Length-1;
         data->blockinfo.enabled = TRUE;
-        MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
+        MarkText(data, data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline);
       }
       break;
 
       case SELECTNONE:
       {
         data->blockinfo.enabled = FALSE;
-        MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
+        MarkText(data, data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline);
       }
       break;
     }
 
     if(data->CPos_X != oldCPos_X || oldactualline != data->actualline)
     {
-      if(data->flags & FLG_Active && function <= GOTOBOOKMARK && function >= GOTOLINE)
-        SetCursor(oldCPos_X, oldactualline, FALSE, data);
+      if(isFlagSet(data->flags, FLG_Active) && function <= GOTOBOOKMARK && function >= GOTOLINE)
+        SetCursor(data, oldCPos_X, oldactualline, FALSE);
 
-      if(data->flags & FLG_ARexxMark)
+      if(isFlagSet(data->flags, FLG_ARexxMark))
       {
         data->blockinfo.stopline = data->actualline;
         data->blockinfo.stopx = data->CPos_X;
-        if(!data->blockinfo.enabled)
+        if(data->blockinfo.enabled == FALSE)
         {
           data->blockinfo.enabled = TRUE;
           data->blockinfo.startline = oldactualline;
           data->blockinfo.startx = oldCPos_X;
         }
-        MarkText(oldCPos_X, oldactualline, data->CPos_X, data->actualline, data);
+        MarkText(data, oldCPos_X, oldactualline, data->CPos_X, data->actualline);
       }
       else
       {
-        if(data->blockinfo.enabled)
+        if(data->blockinfo.enabled == TRUE)
         {
           data->blockinfo.enabled = FALSE;
-          MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
+          MarkText(data, data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline);
         }
       }
 
       ScrollIntoDisplay(data);
 
-      if(data->flags & FLG_Active && function <= GOTOBOOKMARK && function >= GOTOLINE)
-        SetCursor(data->CPos_X, data->actualline, TRUE, data);
+      if(isFlagSet(data->flags, FLG_Active) && function <= GOTOBOOKMARK && function >= GOTOLINE)
+        SetCursor(data, data->CPos_X, data->actualline, TRUE);
 
       // make sure to notify others that the cursor has changed and so on.
       data->NoNotify = TRUE;
@@ -422,7 +423,7 @@ static ULONG CallFunction(UWORD function, IPTR *args, const char *txtargs, struc
         set(data->object, MUIA_TextEditor_CursorX, data->CPos_X);
 
       if(data->actualline != oldactualline)
-        set(data->object, MUIA_TextEditor_CursorY, LineNr(data->actualline, data)-1);
+        set(data->object, MUIA_TextEditor_CursorY, LineNr(data, data->actualline)-1);
 
       data->NoNotify = FALSE;
     }
@@ -431,16 +432,18 @@ static ULONG CallFunction(UWORD function, IPTR *args, const char *txtargs, struc
   RETURN(result);
   return(result);
 }
-///
 
-///HandleARexx()
-ULONG HandleARexx(struct InstData *data, STRPTR command)
+///
+/// mHandleARexx()
+IPTR mHandleARexx(struct IClass *cl, Object *obj, struct MUIP_TextEditor_ARexxCmd *msg)
 {
-  ULONG result = 0;
+  struct InstData *data = INST_DATA(cl, obj);
+  IPTR result = 0;
+  STRPTR command = msg->command;
 
   ENTER();
 
-  if(data->shown && command && command[0] != '\0')
+  if(data->shown == TRUE && command != NULL && command[0] != '\0')
   {
     const char *txtargs = "";
     const char *cmd;
@@ -448,7 +451,7 @@ ULONG HandleARexx(struct InstData *data, STRPTR command)
 
     SHOWSTRING(DBF_REXX, command);
 
-    for(function=0; (cmd = Commands[function].Command); function++)
+    for(function=0; (cmd = Commands[function].Command) != NULL; function++)
     {
       int cmdlen = strlen(cmd);
 
@@ -463,7 +466,7 @@ ULONG HandleARexx(struct InstData *data, STRPTR command)
     SHOWVALUE(DBF_REXX, function);
     SHOWSTRING(DBF_REXX, txtargs);
 
-    if(Commands[function].Command && (*txtargs == '\0' || Commands[function].Template))
+    if(Commands[function].Command != NULL && (*txtargs == '\0' || Commands[function].Template != NULL))
     {
       IPTR Args[MaxArgs];
 
@@ -477,12 +480,12 @@ ULONG HandleARexx(struct InstData *data, STRPTR command)
       {
         struct RDArgs *myrdargs = NULL;
 
-        if((myrdargs = AllocDosObject(DOS_RDARGS, NULL)))
+        if((myrdargs = AllocDosObject(DOS_RDARGS, NULL)) != NULL)
         {
           ULONG length = strlen(txtargs);
           char *buffer;
 
-          if((buffer = MyAllocPooled(data->mypool, length+2)))
+          if((buffer = AllocVecPooled(data->mypool, length+2)) != NULL)
           {
             struct RDArgs *ra_result = NULL;
 
@@ -495,195 +498,24 @@ ULONG HandleARexx(struct InstData *data, STRPTR command)
             myrdargs->RDA_Source.CS_CurChr = 0;
             myrdargs->RDA_Flags |= RDAF_NOPROMPT;
 
-            if((ra_result = ReadArgs(Commands[function].Template, (APTR)Args, myrdargs)))
+            if((ra_result = ReadArgs(Commands[function].Template, (APTR)Args, myrdargs)) != NULL)
             {
-              result = CallFunction(function, Args, NULL, data);
+              result = CallFunction(data, function, Args, NULL);
 
               FreeArgs(ra_result);
             }
-            MyFreePooled(data->mypool, buffer);
+            FreeVecPooled(data->mypool, buffer);
           }
           FreeDosObject(DOS_RDARGS, myrdargs);
         }
       }
       else
-        result = CallFunction(function, Args, (char *)txtargs, data);
+        result = CallFunction(data, function, Args, (char *)txtargs);
     }
   }
 
   RETURN(result);
   return result;
 }
+
 ///
-
-/*
-///StringCompare()
-LONG StringCompare (STRPTR str1, STRPTR str2, LONG *match)
-{
-  while(*str1 && *str2)
-  {
-    if(ToUpper(*str1++) != *str2++)
-      return(FALSE);
-  }
-  if(*str1 || *str2)
-  {
-    return(FALSE);
-  }
-  else
-  {
-    *match = TRUE;
-    return(TRUE);
-  }
-}
-///
-
-///Navigate()
-VOID Navigate (STRPTR command, struct InstData *data, LONG *match)
-{
-    struct   line_node   *oldactualline = data->actualline;
-    int                  oldCPos_X = data->CPos_X;
-
-  if(StringCompare(command, "EOL", match))
-    GoEndOfLine(data);
-  if(StringCompare(command, "BOL", match))
-    GoStartOfLine(data);
-
-  if(StringCompare(command, "TOP", match))
-    GoTop(data);
-  if(StringCompare(command, "BOTTOM", match))
-    GoBottom(data);
-
-  if(StringCompare(command, "NEXTWORD", match))
-    GoNextWord(data);
-  if(StringCompare(command, "PREVWORD", match))
-    GoPreviousWord(data);
-
-  if(StringCompare(command, "NEXTSENTENCE", match))
-    GoNextSentence(data);
-  if(StringCompare(command, "PREVSENTENCE", match))
-    GoPreviousSentence(data);
-
-  if(StringCompare(command, "NEXTPARAGRAPH", match))
-    GoNextLine(data);
-  if(StringCompare(command, "PREVPARAGRAPH", match))
-    GoPreviousLine(data);
-
-  if(StringCompare(command, "NEXTPAGE", match))
-    GoNextPage(data);
-  if(StringCompare(command, "PREVPAGE", match))
-    GoPreviousPage(data);
-
-  if(StringCompare(command, "MOVELEFT", match))
-    GoLeft(data);
-  if(StringCompare(command, "MOVERIGHT", match))
-    GoRight(data);
-
-  if(StringCompare(command, "MOVEUP", match))
-    GoUp(data);
-  if(StringCompare(command, "MOVEDOWN", match))
-    GoDown(data);
-
-  if((*match) && (data->CPos_X != oldCPos_X || oldactualline != data->actualline))
-  {
-    if(data->flags & FLG_Active)
-      SetCursor(oldCPos_X, oldactualline, FALSE, data);
-
-    ScrollIntoDisplay(data);
-
-    if(tst == (ULONG)data->object)
-      SetCursor(data->CPos_X, data->actualline, TRUE, data);
-  }
-}
-///
-
-///HandleARexx()
-ULONG HandleARexx (struct InstData *data, STRPTR command)
-{
-    LONG  match = FALSE;
-
-  if(StringCompare(command, "COPY", &match))
-    Key_Copy(data);
-
-  if(!(data->flags & FLG_ReadOnly))
-  {
-      UBYTE buffer[6];
-
-    strncpy(buffer, command, 5);
-    buffer[5] = '\0';
-    if(StringCompare(buffer, "TEXT ", &match))
-    {
-        struct Hook *oldhook = data->ImportHook;
-
-      data->ImportHook = &ImPlainHook;
-      DoMethod(data->object, MUIM_TextEditor_InsertText, command+5, MUIV_TextEditor_InsertText_Cursor);
-      data->ImportHook = oldhook;
-    }
-
-    if(StringCompare(command, "CLEAR", &match))
-      DoMethod(data->object, MUIM_TextEditor_ClearText);
-    if(StringCompare(command, "PASTE", &match))
-      Key_Paste(data);
-    if(StringCompare(command, "UNDO", &match))
-      Undo(data);
-    if(StringCompare(command, "REDO", &match))
-      Redo(data);
-
-    if(StringCompare(command, "CUT", &match))
-      Key_Cut(data);
-
-    if(Enabled(data))
-    {
-      if(StringCompare(command, "ERASE", &match))
-        Key_Clear(data);
-    }
-    else
-    {
-      if(StringCompare(command, "BACKSPACE", &match))
-        Key_Backspace(data);
-      if(StringCompare(command, "DELETE", &match))
-        Key_Delete(data);
-    }
-
-    if(!match)
-      Navigate(command, data, &match);
-
-    if(match && (data->flags & FLG_Active))
-    {
-      SetCursor(data->CPos_X, data->actualline, FALSE, data);
-    }
-  }
-  else
-  {
-      int new_y = data->visual_y-1;
-
-    if(StringCompare(command, "TOP", &match))
-      new_y = 0;
-    if(StringCompare(command, "PREVPAGE", &match))
-      new_y -= data->maxlines;
-    if(StringCompare(command, "MOVEUP", &match))
-      new_y -= 1;
-    if(StringCompare(command, "BOTTOM", &match))
-      new_y = data->totallines-data->maxlines;
-    if(StringCompare(command, "NEXTPAGE", &match))
-      new_y += data->maxlines;
-    if(StringCompare(command, "MOVEDOWN", &match))
-      new_y += 1;
-
-    if(new_y != data->visual_y-1)
-    {
-      if(new_y > data->totallines-data->maxlines)
-        new_y = data->totallines-data->maxlines;
-      if(new_y < 0)
-        new_y = 0;
-      SetAttrs(data->object, MUIA_TextEditor_Prop_First, new_y*data->height, TAG_DONE);
-    }
-  }
-  return(match);
-}
-///
-*/
-/*  GetBlock
-  GetLine
-  GetContents
-  GetCursorX
-  GetCursorY    */

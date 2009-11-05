@@ -1,5 +1,5 @@
 @DataBase TextEditor.guide
-@$VER: TextEditor.Guide 15.29 (23.08.2009)
+@$VER: TextEditor.Guide 15.31 (24.10.2009)
 
 @Node Main "TextEditor - AmigaGuide(R) documentation"
 
@@ -339,6 +339,24 @@ History
 list of changes since 15.9)
 
 Quick summary:
+
+15.31 (24.10.2009)
+
+- fixed a bunch of memory wholes and made the whole code of TE.mcc more reliable in many
+  ways.
+- completely rewritten the undo/redo functionality from scratch. Now the whole undo/redo
+  functionality should be more stable. Now the undo/redo buffer size can also be choosen
+  without¿any fixed step size.
+- replaced the internal Clipboard management by a separate process driving clipboard
+  management which reduces the consumed signals of applications using TE.mcc
+- fixed a bunch of possible crash bugs which made the use of latest versions quite
+  unreliable
+- fixed many textstyle related bugs in the internals of TE.mcc
+
+15.30 (30.08.2009)
+
+- fixed a bug which made TE.mcc loose track about the styles and colors being in use
+- changed internals to more easily handle styles&colors
 
 15.29 (23.08.2009)
 

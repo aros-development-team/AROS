@@ -23,9 +23,10 @@
 #include <proto/utility.h>
 
 #include "private.h"
+#include "Debug.h"
 
-///MangleCharacters()
-VOID MangleCharacters(UBYTE (*change)(UBYTE c), struct InstData *data)
+/// MangleCharacters()
+static void MangleCharacters(struct InstData *data, char (*change)(char c))
 {
   LONG startx, stopx, _startx;
   struct line_node *startline, *stopline, *_startline;
@@ -55,8 +56,8 @@ VOID MangleCharacters(UBYTE (*change)(UBYTE c), struct InstData *data)
     newblock.stopx     = stopx;
   }
 
-  AddToUndoBuffer(ET_DELETEBLOCK, (char *)&newblock, data);
-  AddToUndoBuffer(ET_PASTEBLOCK, (char *)&newblock, data);
+  AddToUndoBuffer(data, ET_DELETEBLOCK, &newblock);
+  AddToUndoBuffer(data, ET_PASTEBLOCK, &newblock);
 
   _startx = startx;
   _startline = startline;
@@ -77,54 +78,37 @@ VOID MangleCharacters(UBYTE (*change)(UBYTE c), struct InstData *data)
   }
 
   data->HasChanged = TRUE;
-  RedrawArea(_startx, _startline, stopx, stopline, data);
+  RedrawArea(data, _startx, _startline, stopx, stopline);
 
   LEAVE();
 }
-///
 
-///ChangeToUpper()
-UBYTE ChangeToUpper(UBYTE c)
+///
+/// ChangeToUpper()
+static char ChangeToUpper(char c)
 {
   return ToUpper(c);
 }
-///
 
-///Key_ToUpper()
-VOID Key_ToUpper(struct InstData *data)
+///
+/// Key_ToUpper()
+void Key_ToUpper(struct InstData *data)
 {
-  MangleCharacters(ChangeToUpper, data);
+  MangleCharacters(data, ChangeToUpper);
 }
-///
 
-///ChangeToLower()
-UBYTE ChangeToLower(UBYTE c)
+///
+/// ChangeToLower()
+static char ChangeToLower(char c)
 {
   return ToLower(c);
 }
-///
 
-///Key_ToLower()
-VOID Key_ToLower(struct InstData *data)
-{
-  MangleCharacters(ChangeToLower, data);
-}
 ///
+/// Key_ToLower()
+void Key_ToLower(struct InstData *data)
+{
+  MangleCharacters(data, ChangeToLower);
+}
 
-/*
-///ChangeToOtherCase()
-VOID ChangeToOtherCase (UBYTE &letter)
-{
-  if(isupper(letter))
-      letter = ToLower(letter);
-  else  letter = ToUpper(letter);
-}
 ///
-
-///Key_ToOtherCase()
-VOID Key_ToOtherCase (struct InstData *data)
-{
-  MangleCharacters(ChangeToOtherCase, data);
-}
-///
-*/

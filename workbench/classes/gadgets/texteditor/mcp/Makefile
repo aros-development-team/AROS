@@ -186,16 +186,17 @@ COBJS = locale.o \
 
 TOBJS = Preference.o
 
-MCCOBJS  = $(addprefix $(OBJDIR)/,$(LOBJS)) $(addprefix $(OBJDIR)/,$(COBJS))
+MCPOBJS  = $(addprefix $(OBJDIR)/,$(LOBJS)) $(addprefix $(OBJDIR)/,$(COBJS))
 TESTOBJS = $(addprefix $(OBJDIR)/,$(COBJS)) $(addprefix $(OBJDIR)/,$(TOBJS))
 
 # available catalog translations
-CATALOGS = $(LOCALE)/german.catalog \
-           $(LOCALE)/french.catalog \
-           $(LOCALE)/swedish.catalog \
+CATALOGS = $(LOCALE)/czech.catalog \
            $(LOCALE)/danish.catalog \
+           $(LOCALE)/french.catalog \
+           $(LOCALE)/german.catalog \
            $(LOCALE)/russian.catalog \
-           $(LOCALE)/czech.catalog
+           $(LOCALE)/swedish.catalog
+
 
 # different options per target OS
 ifeq ($(OS), os4)
@@ -370,9 +371,9 @@ $(LOCALE)/%.catalog: $(LOCALE)/%.ct
 	@$(FC) $(LOCALE)/TextEditor_mcp.cd $< CATALOG $@
 
 # for linking the target
-$(TARGET): $(M68KSTUBS) $(MCCOBJS)
+$(TARGET): $(M68KSTUBS) $(MCPOBJS)
 	@echo "  LD $@.debug"
-	@$(CC) -nostartfiles $(LDFLAGS) -o $@.debug $(MCCOBJS) $(M68KSTUBS) $(LDLIBS) -Wl,--cref,-M,-Map=$@.map
+	@$(CC) -nostartfiles $(LDFLAGS) -o $@.debug $(MCPOBJS) $(M68KSTUBS) $(LDLIBS) -Wl,--cref,-M,-Map=$@.map
 	@echo "  LD $@"
 	@$(STRIP) --preserve-dates -R.comment -R.sdata2 -S -o $@ $@.debug
 
@@ -406,7 +407,7 @@ dump:
 clean:
 	-$(RM) $(TARGET) $(TARGET).debug $(TARGET).map
 	-$(RM) $(TESTTARGET) $(TESTTARGET).debug $(TESTTARGET).map
-	-$(RM) $(MCCOBJS) $(TESTOBJS) $(M68KSTUBS)
+	-$(RM) $(MCPOBJS) $(TESTOBJS) $(M68KSTUBS)
 
 .PHONY: distclean
 distclean: clean

@@ -204,6 +204,7 @@ struct ClickMessage
 #define LNSB_StrikeThru      3 /* Let separator go thru the textfont */
 #define LNSB_Thick           4 /* Extra thick separator */
 
+#define LNSF_None            0
 #define LNSF_Top             (1<<LNSB_Top)
 #define LNSF_Middle          (1<<LNSB_Middle)
 #define LNSF_Bottom          (1<<LNSB_Bottom)

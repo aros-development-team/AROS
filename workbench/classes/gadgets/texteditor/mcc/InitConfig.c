@@ -35,66 +35,55 @@
 
 #include "TextEditor_mcp.h"
 #include "private.h"
+#include "Debug.h"
 
-///GetFont()
-struct TextFont *GetFont(UNUSED struct InstData *data, void *obj, long attr)
+/// GetFont()
+static struct TextFont *GetFont(UNUSED struct InstData *data, void *obj, long attr)
 {
+  struct TextFont *font = NULL;
   char *setting;
-  char *fontname;
-  char *size_ptr;
-  struct TextFont *f;
-  struct TextAttr myfont;
-  int fontname_len;
 
   ENTER();
 
-  if(!DoMethod(obj, MUIM_GetConfigItem, attr, &setting))
+  if(DoMethod(obj, MUIM_GetConfigItem, attr, &setting) && setting != NULL)
   {
-    RETURN(NULL);
-    return NULL;
+    char *fontname;
+    int fontnameLen;
+
+    fontnameLen = strlen(setting)+6;
+    if((fontname = AllocVec(fontnameLen, MEMF_SHARED|MEMF_CLEAR)) != NULL)
+    {
+      char *sizePtr;
+      struct TextAttr textAttr;
+
+      textAttr.ta_Name = fontname;
+      textAttr.ta_YSize = 8;
+      textAttr.ta_Style = FS_NORMAL;
+      textAttr.ta_Flags = 0;
+
+      strlcpy(fontname, setting, fontnameLen);
+      if((sizePtr = strchr(fontname, '/')) != NULL)
+      {
+        LONG size;
+
+        StrToLong(sizePtr + 1, &size);
+        strlcpy(sizePtr, ".font", fontnameLen-(sizePtr-fontname));
+        textAttr.ta_YSize = size;
+      }
+
+      font = OpenDiskFont(&textAttr);
+    }
+
+    FreeVec(fontname);
   }
 
-  if(!setting)
-  {
-    RETURN(NULL);
-    return NULL;
-  }
-
-  fontname_len = strlen(setting)+6;
-  if(!(fontname = AllocVec(fontname_len, MEMF_SHARED|MEMF_CLEAR)))
-  {
-    RETURN(NULL);
-    return NULL;
-  }
-
-  f = NULL;
-
-  myfont.ta_Name = fontname;
-  myfont.ta_YSize = 8;
-  myfont.ta_Style = FS_NORMAL;
-  myfont.ta_Flags = 0;
-
-  strlcpy(fontname, setting, fontname_len);
-  size_ptr = strchr(fontname,'/');
-  if (size_ptr)
-  {
-    LONG size;
-
-    StrToLong(size_ptr + 1, &size);
-    strlcpy(size_ptr, ".font", fontname_len-(size_ptr-fontname));
-    myfont.ta_YSize = size;
-  }
-
-  f = OpenDiskFont(&myfont);
-  FreeVec(fontname);
-
-  RETURN(f);
-  return f;
+  RETURN(font);
+  return font;
 }
-///
 
-///SetCol()
-void SetCol (struct InstData *data, void *obj, long item, ULONG *storage, long bit)
+///
+/// SetCol()
+static void SetCol(struct InstData *data, void *obj, long item, ULONG *storage, long bit)
 {
   struct MUI_PenSpec *spec;
 
@@ -110,27 +99,26 @@ void SetCol (struct InstData *data, void *obj, long item, ULONG *storage, long b
 
   LEAVE();
 }
-///
 
-///InitConfig()
-void InitConfig(Object *obj, struct InstData *data)
+///
+/// InitConfig()
+void InitConfig(struct InstData *data, Object *obj)
 {
   ULONG setting = 0;
-  UWORD *muipens = _pens(obj);
   BOOL loadDefaultKeys = FALSE;
 
   ENTER();
 
   data->allocatedpens = 0;
-  data->textcolor         = *(muipens+MPEN_TEXT);
-  data->backgroundcolor   = *(muipens+MPEN_BACKGROUND);
-  data->highlightcolor    = *(muipens+MPEN_SHINE);
-  data->cursorcolor       = *(muipens+MPEN_SHINE);
-  data->cursortextcolor   = *(muipens+MPEN_TEXT);
-  data->markedcolor       = *(muipens+MPEN_FILL);
-  data->separatorshine    = *(muipens+MPEN_HALFSHINE);
-  data->separatorshadow   = *(muipens+MPEN_HALFSHADOW);
-  data->inactivecolor     = *(muipens+MPEN_HALFSHADOW);
+  data->textcolor         = _pens(obj)[MPEN_TEXT];
+  data->backgroundcolor   = _pens(obj)[MPEN_BACKGROUND];
+  data->highlightcolor    = _pens(obj)[MPEN_SHINE];
+  data->cursorcolor       = _pens(obj)[MPEN_SHINE];
+  data->cursortextcolor   = _pens(obj)[MPEN_TEXT];
+  data->markedcolor       = _pens(obj)[MPEN_FILL];
+  data->separatorshine    = _pens(obj)[MPEN_HALFSHINE];
+  data->separatorshadow   = _pens(obj)[MPEN_HALFSHADOW];
+  data->inactivecolor     = _pens(obj)[MPEN_HALFSHADOW];
 
   SetCol(data, obj, MUICFG_TextEditor_TextColor, &data->textcolor, 0);
   SetCol(data, obj, MUICFG_TextEditor_CursorColor, &data->cursorcolor, 1);
@@ -141,7 +129,7 @@ void InitConfig(Object *obj, struct InstData *data)
   SetCol(data, obj, MUICFG_TextEditor_SeparatorShadow, &data->separatorshadow, 6);
   SetCol(data, obj, MUICFG_TextEditor_InactiveColor, &data->inactivecolor, 7);
 
-  if(!(data->flags & FLG_OwnBkgn))
+  if(isFlagClear(data->flags, FLG_OwnBackground))
   {
     LONG background = MUII_BACKGROUND;
 
@@ -193,7 +181,7 @@ void InitConfig(Object *obj, struct InstData *data)
 
   data->normalfont  = GetFont(data, obj, MUICFG_TextEditor_NormalFont);
   data->fixedfont   = GetFont(data, obj, MUICFG_TextEditor_FixedFont);
-  data->font = data->use_fixedfont ? data->fixedfont : data->normalfont;
+  data->font = (data->use_fixedfont == TRUE) ? data->fixedfont : data->normalfont;
 
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_BlockQual, &setting))
   {
@@ -228,7 +216,7 @@ void InitConfig(Object *obj, struct InstData *data)
     }
   }
 
-  if(!(data->flags & FLG_OwnFrame))
+  if(isFlagClear(data->flags, FLG_OwnFrame))
   {
   #ifndef __AROS__
     if(MUIMasterBase->lib_Version >= 20)
@@ -243,28 +231,25 @@ void InitConfig(Object *obj, struct InstData *data)
   data->TypeAndSpell = FALSE;
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_TypeNSpell, &setting))
   {
-    data->TypeAndSpell = *(long *)setting;
+    if(*(long *)setting)
+      data->TypeAndSpell = TRUE;
     set(obj, MUIA_TextEditor_TypeAndSpell, data->TypeAndSpell);
   }
 
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_CheckWord, &setting))
   {
     if(*(long *)setting)
-    {
-      data->flags |= FLG_CheckWords;
-    }
+      setFlag(data->flags, FLG_CheckWords);
     else
-    {
-      data->flags &= ~FLG_CheckWords;
-    }
+      clearFlag(data->flags, FLG_CheckWords);
   }
 
   data->Flow = data->actualline->line.Flow;
   data->Pen = GetColor(data->CPos_X, data->actualline);
 
-  if(~data->flags & FLG_FirstInit)
+  if(isFlagClear(data->flags, FLG_FirstInit))
   {
-    data->flags |= FLG_FirstInit;
+    setFlag(data->flags, FLG_FirstInit);
     data->NoNotify = TRUE;
     SetAttrs(obj,
             MUIA_FillArea,              FALSE,
@@ -286,51 +271,47 @@ void InitConfig(Object *obj, struct InstData *data)
 
     setting = (long)&lort;
     DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_Smooth, &setting);
-    if(data->slider)
+    if(data->slider != NULL)
     {
       set(data->slider, MUIA_Prop_DoSmooth, *(long *)setting);
     }
   }
 
+  data->selectPointer = TRUE;
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_SelectPointer, &setting))
   {
-    data->selectPointer = *(long *)setting;
+    if(*(long *)setting == 0)
+      data->selectPointer = FALSE;
   }
-  else
-    data->selectPointer = TRUE;
 
+  data->inactiveCursor = TRUE;
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_InactiveCursor, &setting))
   {
-    data->inactiveCursor = *(long *)setting;
+    if(*(long *)setting == 0)
+      data->inactiveCursor = FALSE;
   }
-  else
-    data->inactiveCursor = TRUE;
 
   {
-    ULONG undolevel;
+    ULONG undoSteps;
 
     // get the saved undo size only if it was not yet set by the application
-    if(data->userUndoSize == FALSE)
+    if(data->userUndoBufferSize == FALSE)
     {
-      undolevel = 500;
+      undoSteps = 500;
 
       if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_UndoSize, &setting))
       {
-        undolevel = *(long *)setting;
+        undoSteps = *(long *)setting;
 
         // constrain the number of undo levels only if undo is enabled
-        if(undolevel != 0 && undolevel < 20)
-          undolevel = 20;
+        if(undoSteps != 0 && undoSteps < 20)
+          undoSteps = 20;
       }
-
-      // add 5 levels only if undo is enabled at all
-      if(undolevel != 0)
-        undolevel += 5;
     }
     else
-      undolevel = data->undolevel;
+      undoSteps = data->maxUndoSteps;
 
-    ResizeUndoBuffer(data, undolevel);
+    ResizeUndoBuffer(data, undoSteps);
   }
 
   data->LookupSpawn = 0;
@@ -373,7 +354,7 @@ void InitConfig(Object *obj, struct InstData *data)
     ULONG size;
 
     setting = 0;
-    if(loadDefaultKeys || !DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_Keybindings, &setting) || setting == 0)
+    if(loadDefaultKeys == TRUE || !DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_Keybindings, &setting) || setting == 0)
       userkeys = (struct te_key *)default_keybindings;
     else
       userkeys = (struct te_key *)setting;
@@ -384,7 +365,7 @@ void InitConfig(Object *obj, struct InstData *data)
     // now we calculate the memory size
     size = (count+1)*sizeof(struct te_key);
 
-    if((data->RawkeyBindings = MyAllocPooled(data->mypool, size)))
+    if((data->RawkeyBindings = AllocVecPooled(data->mypool, size)) != NULL)
     {
       ULONG i;
       struct te_key *mykeys = data->RawkeyBindings;
@@ -395,7 +376,7 @@ void InitConfig(Object *obj, struct InstData *data)
       {
         struct te_key *curKey = &mykeys[i];
 
-        D(DBF_STARTUP, "checking curKey[%d]: %08lx", i, curKey);
+        //D(DBF_STARTUP, "checking curKey[%d]: %08lx", i, curKey);
 
         if(curKey->code >= 500)
         {
@@ -407,7 +388,7 @@ void InitConfig(Object *obj, struct InstData *data)
           curKey->code = RAW[0];
           curKey->qual |= RAW[1];
 
-          if(RAW[0] == 67 && !(curKey->qual & IEQUALIFIER_NUMERICPAD))
+          if(RAW[0] == 67 && isFlagClear(curKey->qual, IEQUALIFIER_NUMERICPAD))
           {
             curKey->code = 68;
           }
@@ -418,15 +399,15 @@ void InitConfig(Object *obj, struct InstData *data)
 
   LEAVE();
 }
-///
 
-///FreeConfig()
-void  FreeConfig  (struct InstData *data, struct MUI_RenderInfo *mri)
+///
+/// FreeConfig()
+void FreeConfig(struct InstData *data, struct MUI_RenderInfo *mri)
 {
   ENTER();
 
-  if(data->RawkeyBindings)
-    MyFreePooled(data->mypool, data->RawkeyBindings);
+  if(data->RawkeyBindings != NULL)
+    FreeVecPooled(data->mypool, data->RawkeyBindings);
 
   if(data->allocatedpens & 1)
     MUI_ReleasePen(mri, data->textcolor);
@@ -447,9 +428,9 @@ void  FreeConfig  (struct InstData *data, struct MUI_RenderInfo *mri)
   if(data->allocatedpens & 256)
     MUI_ReleasePen(mri, data->inactivecolor);
 
-  if(data->normalfont)
+  if(data->normalfont != NULL)
     CloseFont(data->normalfont);
-  if(data->fixedfont)
+  if(data->fixedfont != NULL)
     CloseFont(data->fixedfont);
 
   if(data->BlinkSpeed == 2)
@@ -460,5 +441,5 @@ void  FreeConfig  (struct InstData *data, struct MUI_RenderInfo *mri)
 
   LEAVE();
 }
-///
 
+///

@@ -178,7 +178,8 @@ COBJS = AllocBitMap.o \
         AllocFunctions.o \
         BlockOperators.o \
         CaseConversion.o \
-  		  ColorOperators.o \
+        ClipboardServer.o \
+        ColorOperators.o \
         Dispatcher.o \
         EditorStuff.o \
         ExportHook.o \
@@ -186,7 +187,7 @@ COBJS = AllocBitMap.o \
         ExportText.o \
         GetSetAttrs.o \
         HandleARexx.o \
-	  	  HandleInput.o \
+        HandleInput.o \
         InitConfig.o \
         ImportHook.o \
         ImportText.o \

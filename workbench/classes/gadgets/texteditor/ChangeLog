@@ -2,8 +2,174 @@
 MUI TextEditor MCC class - ChangeLog
 ------------------------------------
 
-$Id: ChangeLog 528 2009-08-23 17:03:52Z damato $
-$URL: https://texteditor-mcc.svn.sourceforge.net/svnroot/texteditor-mcc/releases/15.29/ChangeLog $
+$Id: ChangeLog 583 2009-10-24 22:18:47Z damato $
+$URL: https://texteditor-mcc.svn.sourceforge.net/svnroot/texteditor-mcc/releases/15.31/ChangeLog $
+
+#### v15.31 RELEASE ############################################################
+
+2009-10-24 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final release preparations
+
+2009-10-21 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/ImportHook.c: the import hooks didn't set the allocation size of the
+    contents in the line structure which caused bogus error messages in the
+    debug log and caused trashed memory when a line had to be expanded.
+  * mcc/MixedFunctions.c: the recently changed ExpandLine() and CompressLine()
+    functions used the wrong length. This could lead to visibly truncated lines.
+  * mcc/BlockOperators.c, mcc/ExportHook.c: avoid allocating zero sized buffers
+    and make sure not to produce memory leaks when getting a block's contents.
+    An empty last line caused leaks and false error messages about not enough
+    memory for the undo buffer. This was yet an other of Allan's ancient bugs...
+  * mcc/Debug.c: added BLOCK debug class.
+
+2009-10-20 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/TextEditor-Test.c: the debug stuff was initialized after the starting
+    the clipboard server which requires a fully set up debug environment.
+  * mcc/ColorOperators.c, mcc/StyleOperators.c, mcc/ImportHook.c: added a
+    missing #include.
+
+2009-10-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/SpellChecker.c: the spell checker no longer treats a missing ENV:Found
+    variable as a failure and thus will no longer DisplayBeep() in this case.
+  * mcc/misc: added an allocation size counter to each line to get rid of the
+    necessity to peek around in memory to get an allocation's size.
+
+2009-10-12 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/misc: added a proper definition for "no separator" and use it all over
+    the place.
+  * mcc/misc: cleaned up the dispatcher a bit. Now all method functions have the
+    usual class/object/message parameters.
+
+2009-10-09 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/BlockOperators.c: cutting a line to the clipboard and deleting complete
+    lines will now free the attached color informations as well. Before only the
+    text and the styles were freed which means this was a potential memory leak.
+  * mcc/Dispatcher.c: the OM_DISPOSE method will now free all lines together
+    with their contents, styles and colors. Although we are using a per-instance
+    memory pool this is not absolutely necessary to avoid memory leaks, but it
+    is bad style to rely on such features.
+  * mcc/Debug.c: implemented the memory tracking for the debug build as known
+    from YAM to catch possible memory leaks.
+
+2009-10-08 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/UndoFunctions.c: when reusing an undo entry the former contents were not
+    erased and could lead to double freeing if that entry contained a clip of
+    pasted or deleted text. Now the contents are always cleared.
+
+2009-10-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/misc, mcp/misc: again *LOTS* of code cleanup to make this monster more
+    readable and understandable.
+
+2009-10-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Debug.c, mcc/SpellChecker.c: added the SPELL debug flag to get some
+    debug output from the spell checking process.
+
+2009-10-05 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/SpellChecker.c: added the usual ENTER()/LEAVE() macro calls.
+  * mcc/UndoFunctions.c, mcc/Methods.c: fixed a double FreeMem() call and a
+    copy'n'paste bug which prevented a proper redraw after undoing the deletion
+    of a text block.
+  * mcc/StyleOperators.c: added a missing notification when the style changed
+    from bold to non-bold.
+  * mcp/CreatePrefsGroup.c: removed the "+-5" part from the undo level slider,
+    because the new Undo/Redo management doesn't need these additional steps
+    anymore.
+  * mcc/UndoFunctions.c: reimplemented the complete Undo/Redo handling from
+    scratch. Before lots of temporary pointers were used and had to be kept in
+    sync, which most probably did not always happen. It is really amazing how
+    complicated such a trivial handling can be implemented. Shame on you, Allan!
+  * mcc/misc: *LOTS* of code cleanup. This code is a real mess! I really wonder
+    what kind of mysterious crashes are still lurking in there :(
+
+2009-10-02 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/misc: added some house keeping variables to the style and color handling
+    to detect possible buffer overruns. These also make it possible to get rid
+    of peeking around to get the size of a previous allocation.
+
+2009-09-29 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/ClipboardServer.c: added the missing NP_CodeType=CODETYPE_PPC tag for
+    the MOS build.
+
+2009-09-25 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/EditorStuff.c: fixed a bug which treated columns numbers as color
+    numbers.
+  * mcc/misc: fixed some LONG variable to BOOL, as this is what they really are.
+
+2009-09-24 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/misc: replaced the complete embedded clipboard stuff by a server process
+    which does the dirty stuff. This fixes the issue that opening two write
+    windows in YAM made pasting text impossible.
+
+2009-09-21 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Dispatcher.c: added a name the memory pool for the OS4 build.
+
+2009-09-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/misc: replaced all custom "end of color" markers by a proper definition.
+
+2009-09-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/EditorStuff.c: fixed yet another crash when removing lines. This old
+    handling was a *real* *big* *mess*. Exploiting features of the C language
+    is cool, as long as other persons understand it without asking more than
+    twice. This stuff really was *far* beyond!! :(
+
+2009-08-31 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/EditorStuff.c: fixed another style handling bug which lost some styles
+    when pasting a text with styles from the clipboard.
+  * mcc/EditorStuff.c: fixed another recently introduced bug which caused random
+    crashes because a pointer was not handled correctly. It seems at least the
+    crashes are gone now, but there are still issues when pasting text with
+    styles. This only works in the first column or if the text is pasted twice.
+    The good news is that this also happened with the old style handling.
+
+2009-08-30 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/EditorStuff.c: replaced accidental "+" by "*". This might have caused
+    the recent crashes in case there were lots of different colors in one line.
+
+#### v15.30 RELEASE ############################################################
+
+2009-08-30 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final release preparations
+
+2009-08-28 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/UndoFunctions.c: changed the return code of some functions from "long"
+    to "BOOL" as this is what they really return.
+
+2009-08-27 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/misc: replaced the complete array based style and color stuff by proper
+    structures which carry the starting column and style/color information
+    around. This makes the whole stuff much better understandable and by far
+    better maintainable. I really hope I did all the conversions right and
+    didn't mix up anything. So far all tests have been successful.
+    Also replaced the absolutely ugly peeking into the ULONG ahead of an
+    allocation to obtain the allocation size in bytes by a proper function call.
+
+2009-08-25 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/EditorStuff.c: fixed a bad bug which made TE.mcc loose track about the
+    styles and colors being in use. Added a function to dump all informations
+    about a single line to track this one down.
 
 #### v15.29 RELEASE ############################################################
 
@@ -14,7 +180,7 @@ $URL: https://texteditor-mcc.svn.sourceforge.net/svnroot/texteditor-mcc/releases
 
 2009-08-21 Gianfranco Gignina <sh1nkur0 at libero.it>
 
-  * mcc/all : Inserted special comment strings to better read 
+  * mcc/all : Inserted special comment strings to better read
     sources on CubicIDE
 
 2009-08-14 Thore Böckelmann <tboeckel@gmx.de>

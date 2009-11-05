@@ -12,6 +12,7 @@ FILES := library \
         AllocFunctions \
         BlockOperators \
         CaseConversion \
+        ClipboardServer \
         ColorOperators \
         Dispatcher \
         EditorStuff \

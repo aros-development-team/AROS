@@ -396,7 +396,6 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
                 MUIA_ShortHelp, tr(HelpBubble_UndoLevel),
                 MUIA_Numeric_Min, 0,
                 MUIA_Numeric_Max, 2000,
-                MUIA_Numeric_Format, tr(MSG_UNDO_SLIDER_FORMAT),
                 MUIA_CycleChain, TRUE,
               End,
               Child, TxtLabel(tr(MSG_Label_TabSize), 0),

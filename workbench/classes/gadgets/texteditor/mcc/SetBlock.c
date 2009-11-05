@@ -25,15 +25,17 @@
 #include <proto/utility.h>
 
 #include "private.h"
-///OM_SetBlock()
-ULONG OM_SetBlock(struct MUIP_TextEditor_SetBlock *msg, struct InstData *data)
+#include "Debug.h"
+
+/// mSetBlock()
+IPTR mSetBlock(struct InstData *data, struct MUIP_TextEditor_SetBlock *msg)
 {
   struct marking newblock;
- 
+
   ENTER();
 
   if(msg->starty <= (ULONG)data->totallines)
-    newblock.startline = LineNode(msg->starty+1, data);
+    newblock.startline = LineNode(data, msg->starty+1);
 
   if(msg->startx <= (newblock.startline)->line.Length)
     newblock.startx = msg->startx;
@@ -44,18 +46,18 @@ ULONG OM_SetBlock(struct MUIP_TextEditor_SetBlock *msg, struct InstData *data)
     newblock.stopx = msg->stopx-1;
 
   if(msg->starty <= (ULONG)data->totallines)
-    newblock.stopline = LineNode(msg->stopy+1, data);
+    newblock.stopline = LineNode(data, msg->stopy+1);
 
 //D(DBF_STARTUP, "(newblock.startline)->line.Length=%ld\n", (newblock.startline)->line.Length);
 //D(DBF_STARTUP, "MSG : startx=%ld, stopx=%ld, starty=%ld, stopy=%ld operation=%ld, value=%ld\n", msg->startx,msg->stopx,msg->starty,msg->stopy,msg->operation,msg->value);
-//D(DBF_STARTUP, "NBK : startx=%ld, stopx=%ld, starty=%ld, stopy=%ld operation=%ld, value=%ld\n", newblock.startx,newblock.stopx,(LineNr(newblock.startline, data)-1), (LineNr(newblock.stopline, data)-1),msg->operation,msg->value);
+//D(DBF_STARTUP, "NBK : startx=%ld, stopx=%ld, starty=%ld, stopy=%ld operation=%ld, value=%ld\n", newblock.startx,newblock.stopx,(LineNr(newblock.startline)-1), (LineNr(data, newblock.stopline)-1),msg->operation,msg->value);
 
   if(isFlagSet(msg->operation, MUIF_TextEditor_SetBlock_Color))
   {
 //D(DBF_STARTUP, "SetBlock: color %ld\n", msg->value);
     newblock.enabled = TRUE;
 
-    AddColor(&newblock, (UWORD)msg->value, data);
+    AddColor(data, &newblock, (UWORD)msg->value);
 
     newblock.enabled = FALSE;
   }
@@ -63,19 +65,19 @@ ULONG OM_SetBlock(struct MUIP_TextEditor_SetBlock *msg, struct InstData *data)
   if(isFlagSet(msg->operation, MUIF_TextEditor_SetBlock_StyleBold))
   {
 //D(DBF_STARTUP, "SetBlock: StyleBold %ld\n", msg->value);
-    AddStyle(&newblock, BOLD, msg->value, data);
+    AddStyle(data, &newblock, BOLD, msg->value != 0);
   }
 
   if(isFlagSet(msg->operation, MUIF_TextEditor_SetBlock_StyleItalic))
   {
 //D(DBF_STARTUP, "SetBlock: StyleItalic %ld\n", msg->value);
-    AddStyle(&newblock, ITALIC, msg->value, data);
+    AddStyle(data, &newblock, ITALIC, msg->value != 0);
   }
 
   if(isFlagSet(msg->operation, MUIF_TextEditor_SetBlock_StyleUnderline))
   {
 //D(DBF_STARTUP, "SetBlock: StyleUnderline %ld\n", msg->value);
-    AddStyle(&newblock, UNDERLINE, msg->value, data);
+    AddStyle(data, &newblock, UNDERLINE, msg->value != 0);
   }
 
   if(isFlagSet(msg->operation, MUIF_TextEditor_SetBlock_Flow))
@@ -88,7 +90,7 @@ ULONG OM_SetBlock(struct MUIP_TextEditor_SetBlock *msg, struct InstData *data)
 
     NiceBlock(&newblock, &newblock2);
     startline = newblock2.startline;
-    start = LineToVisual(startline, data);
+    start = LineToVisual(data, startline);
 
     do
     {
@@ -100,14 +102,15 @@ ULONG OM_SetBlock(struct MUIP_TextEditor_SetBlock *msg, struct InstData *data)
 
     if(start < 1)
       start = 1;
-    
+
     if(start-1+lines > data->maxlines)
       lines = data->maxlines-(start-1);
-    
-    DumpText(data->visual_y+start-1, start-1, start-1+lines, TRUE, data);
+
+    DumpText(data, data->visual_y+start-1, start-1, start-1+lines, TRUE);
   }
 
   RETURN(TRUE);
   return TRUE;
 }
+
 ///

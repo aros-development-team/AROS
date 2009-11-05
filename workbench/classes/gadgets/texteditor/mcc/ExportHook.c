@@ -27,6 +27,7 @@
 #include <proto/exec.h>
 
 #include "private.h"
+#include "Debug.h"
 
 struct Buffer
 {
@@ -36,41 +37,30 @@ struct Buffer
   ULONG   size;
 };
 
-///ExportHookFunc()
+/// ExportHookFunc()
 HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
 {
   struct Buffer *buf = emsg->UserData;
-  LONG length;
-  UWORD *styles = emsg->Styles;
-  UWORD *colors = emsg->Colors;
-  UWORD lastpos = 0;
-  UWORD currentstyle = 0;
-  STRPTR result = NULL;
-  STRPTR startx;
   struct InstData *data = emsg->data;
-  LONG expand;
-  ULONG hookType = (ULONG)hook->h_Data;
+  STRPTR result = NULL;
 
   ENTER();
 
+  // create a temporary buffer if we don't have one yet
   if(buf == NULL)
   {
-    if(data != NULL)
+    if((buf = AllocVec(sizeof(*buf), MEMF_SHARED|MEMF_CLEAR)) != NULL)
     {
-      buf = MyAllocPooled(data->mypool, sizeof(struct Buffer));
-      if(buf != NULL)
+      if(data != NULL)
       {
-        buf->buffer = MyAllocPooled(data->mypool, 512);
-        buf->size   = 512;
+        // respect our pool's threshold size
+        buf->buffer = AllocVecPooled(data->mypool, 512);
+        buf->size = 512;
       }
-    }
-    else
-    {
-      buf = AllocVec(sizeof(struct Buffer), MEMF_SHARED|MEMF_CLEAR);
-      if(buf != NULL)
+      else
       {
         buf->buffer = AllocVec(1024, MEMF_SHARED|MEMF_CLEAR);
-        buf->size   = 1024;
+        buf->size = 1024;
       }
     }
 
@@ -83,17 +73,20 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
 
   if(buf != NULL && buf->buffer != NULL)
   {
-    expand = 10*emsg->Length;
+    LONG expand = emsg->Length * 10;
 
     if(buf->buffer+buf->size < buf->pointer+expand)
     {
+      // remember the current buffer, size and offset
       STRPTR oldbuf = buf->buffer;
       ULONG oldsize = buf->size;
       ULONG offset = buf->pointer - oldbuf;
 
-      if(data)
+      // allocate an expanded buffer
+      if(data != NULL)
       {
-        buf->buffer = MyAllocPooled(data->mypool, oldsize+expand+512);
+        // respect our pool's threshold size
+        buf->buffer = AllocVecPooled(data->mypool, oldsize+expand+512);
         buf->size = oldsize+expand+512;
       }
       else
@@ -101,279 +94,307 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
         buf->buffer = AllocVec(oldsize+expand+1024, MEMF_SHARED|MEMF_CLEAR);
         buf->size = oldsize+expand+1024;
       }
-      buf->pointer = buf->buffer+offset;
 
-      memcpy(buf->buffer, oldbuf, offset);
+      if(buf->buffer != NULL)
+      {
+        buf->pointer = buf->buffer+offset;
 
-      if(data)
-        MyFreePooled(data->mypool, oldbuf);
+        memcpy(buf->buffer, oldbuf, offset);
+      }
+      else
+      {
+        W(DBF_BLOCK, "failed to allocate temporary buffer");
+        emsg->failure = TRUE;
+      }
+
+      // free the old buffer
+      if(data != NULL)
+        FreeVecPooled(data->mypool, oldbuf);
       else
         FreeVec(oldbuf);
     }
 
-    // if this hook is of plain type we have consider highlighting as well.
-    if(emsg->Highlight && hookType == MUIV_TextEditor_ExportHook_Plain)
+    if(emsg->failure == FALSE)
     {
-      *buf->pointer++ = '\033';
-      *buf->pointer++ = 'h';
-    }
+      LONG length;
+      struct LineStyle *styles = emsg->Styles;
+      struct LineColor *colors = emsg->Colors;
+      UWORD lastpos = 0;
+      UWORD currentstyle = 0;
+      ULONG hookType = (ULONG)hook->h_Data;
+      STRPTR startx;
 
-    if(hookType == MUIV_TextEditor_ExportHook_Plain && emsg->Flow != buf->flow)
-    {
-      *buf->pointer++ = '\033';
-
-      switch(emsg->Flow)
+      // if this hook is of plain type we have consider highlighting as well.
+      if(emsg->Highlight == TRUE && hookType == MUIV_TextEditor_ExportHook_Plain)
       {
-        case MUIV_TextEditor_Flow_Right:
-          *buf->pointer++ = 'r';
-        break;
-
-        case MUIV_TextEditor_Flow_Center:
-          *buf->pointer++ = 'c';
-        break;
-
-        case MUIV_TextEditor_Flow_Left:
-        default:
-          *buf->pointer++ = 'l';
+        *buf->pointer++ = '\033';
+        *buf->pointer++ = 'h';
       }
 
-      buf->flow = emsg->Flow;
-    }
-
-    if(emsg->Separator)
-    {
-      if(hookType == MUIV_TextEditor_ExportHook_Plain)
-        snprintf(buf->pointer, buf->size-(buf->pointer-buf->buffer), "\033[s:%d]", emsg->Separator);
-      else
-        strlcpy(buf->pointer, ((emsg->Separator & LNSF_Thick) ? "<tsb>" : "<sb>"), buf->size-(buf->pointer-buf->buffer));
-
-      buf->pointer += strlen(buf->pointer);
-    }
-
-    // define some start values.
-    startx = buf->pointer;
-    length = emsg->Length-emsg->SkipFront-emsg->SkipBack;
-    lastpos = emsg->SkipFront;
-
-    if((styles || colors) &&
-       (hookType == MUIV_TextEditor_ExportHook_EMail || hookType == MUIV_TextEditor_ExportHook_Plain))
-    {
-      UWORD pos;
-      WORD style;
-      BOOL coloured = FALSE;
-      UWORD colour_state = 7;
-
-      while(length > 0 && ((styles && *styles != 0xffff) || (colors && *colors != 0xffff)))
+      if(hookType == MUIV_TextEditor_ExportHook_Plain && emsg->Flow != buf->flow)
       {
-        BOOL color;
-        LONG len;
+        *buf->pointer++ = '\033';
 
-        if(colors == NULL || (styles && (coloured ? *styles < *colors : *styles <= *colors)))
+        switch(emsg->Flow)
         {
-          pos = *styles++ - 1;
-          style = *styles++;
-          color = FALSE;
+          case MUIV_TextEditor_Flow_Right:
+            *buf->pointer++ = 'r';
+          break;
+
+          case MUIV_TextEditor_Flow_Center:
+            *buf->pointer++ = 'c';
+          break;
+
+          case MUIV_TextEditor_Flow_Left:
+          default:
+            *buf->pointer++ = 'l';
+          break;
         }
+
+        buf->flow = emsg->Flow;
+      }
+
+      if(emsg->Separator != LNSF_None)
+      {
+        if(hookType == MUIV_TextEditor_ExportHook_Plain)
+          snprintf(buf->pointer, buf->size-(buf->pointer-buf->buffer), "\033[s:%d]", emsg->Separator);
         else
+          strlcpy(buf->pointer, isFlagSet(emsg->Separator, LNSF_Thick) ? "<tsb>" : "<sb>", buf->size-(buf->pointer-buf->buffer));
+
+        buf->pointer += strlen(buf->pointer);
+      }
+
+      // define some start values.
+      startx = buf->pointer;
+      length = emsg->Length-emsg->SkipFront-emsg->SkipBack;
+      lastpos = emsg->SkipFront;
+
+      if((styles != NULL || colors != NULL) &&
+         (hookType == MUIV_TextEditor_ExportHook_EMail || hookType == MUIV_TextEditor_ExportHook_Plain))
+      {
+        UWORD pos;
+        WORD style;
+        BOOL coloured = FALSE;
+        UWORD colour_state = 7;
+
+        while(length > 0 && ((styles != NULL && styles->column != EOS) || (colors != NULL && colors->column != EOC)))
         {
-          pos = *colors++ - 1;
-          style = *colors++;
-          color = TRUE;
-        }
+          BOOL color;
+          LONG len;
 
-        // skip styles&colors which below lastpos
-        if(pos < lastpos)
-          continue;
-
-        // depending on how much we export
-        // we have to fire up the style convert routines.
-        if(pos-lastpos <= length)
-        {
-          len = pos-lastpos;
-          memcpy(buf->pointer, emsg->Contents+lastpos, len);
-          buf->pointer += len;
-
-          if(hookType == MUIV_TextEditor_ExportHook_EMail)
+          if(colors == NULL || (styles != NULL && (coloured ? styles->column < colors->column : styles->column <= colors->column)))
           {
-            if(color)
-            {
-              if((coloured = (style == colour_state ? TRUE : FALSE)))
-              {
-                *buf->pointer++ = '#';
-                colour_state ^= 7;
-              }
-            }
-            else
-            {
-              switch(style)
-              {
-                case UNDERLINE:
-                case ~UNDERLINE:
-                {
-                  *buf->pointer++ = '_';
-                }
-                break;
-
-                case BOLD:
-                case ~BOLD:
-                {
-                  *buf->pointer++ = '*';
-                }
-                break;
-
-                case ITALIC:
-                case ~ITALIC:
-                {
-                  *buf->pointer++ = '/';
-                }
-                break;
-              }
-            }
+            pos = styles->column - 1;
+            style = styles->style;
+            styles++;
+            color = FALSE;
           }
-          else if(hookType == MUIV_TextEditor_ExportHook_Plain)
+          else
           {
-            if(color)
+            pos = colors->column - 1;
+            style = colors->color;
+            colors++;
+            color = TRUE;
+          }
+
+          // skip styles&colors which below lastpos
+          if(pos < lastpos)
+            continue;
+
+          // depending on how much we export
+          // we have to fire up the style convert routines.
+          if(pos-lastpos <= length)
+          {
+            len = pos-lastpos;
+            memcpy(buf->pointer, emsg->Contents+lastpos, len);
+            buf->pointer += len;
+
+            if(hookType == MUIV_TextEditor_ExportHook_EMail)
             {
-              snprintf(buf->pointer, buf->size-(buf->pointer-buf->buffer), "\033p[%d]", style);
-              buf->pointer += strlen(buf->pointer);
-            }
-            else
-            {
-              switch(style)
+              if(color == TRUE)
               {
-                case UNDERLINE:
+                if((coloured = (style == colour_state ? TRUE : FALSE)))
                 {
-                  *buf->pointer++ = '\033';
-                  *buf->pointer++ = 'u';
-                  currentstyle |= UNDERLINE;
+                  *buf->pointer++ = '#';
+                  colour_state ^= 7;
                 }
-                break;
-
-                case BOLD:
+              }
+              else
+              {
+                switch(style)
                 {
-                  *buf->pointer++ = '\033';
-                  *buf->pointer++ = 'b';
-                  currentstyle |= BOLD;
+                  case UNDERLINE:
+                  case ~UNDERLINE:
+                  {
+                    *buf->pointer++ = '_';
+                  }
+                  break;
+
+                  case BOLD:
+                  case ~BOLD:
+                  {
+                    *buf->pointer++ = '*';
+                  }
+                  break;
+
+                  case ITALIC:
+                  case ~ITALIC:
+                  {
+                    *buf->pointer++ = '/';
+                  }
+                  break;
                 }
-                break;
-
-                case ITALIC:
+              }
+            }
+            else if(hookType == MUIV_TextEditor_ExportHook_Plain)
+            {
+              if(color == TRUE)
+              {
+                snprintf(buf->pointer, buf->size-(buf->pointer-buf->buffer), "\033p[%d]", style);
+                buf->pointer += strlen(buf->pointer);
+              }
+              else
+              {
+                switch(style)
                 {
-                  *buf->pointer++ = '\033';
-                  *buf->pointer++ = 'i';
-                  currentstyle |= ITALIC;
-                }
-                break;
-
-                case ~UNDERLINE:
-                case ~BOLD:
-                case ~ITALIC:
-                {
-                  currentstyle &= style;
-
-                  if(pos+1 != *styles || *(styles+1) < 0x8000)
+                  case UNDERLINE:
                   {
                     *buf->pointer++ = '\033';
-                    *buf->pointer++ = 'n';
+                    *buf->pointer++ = 'u';
+                    setFlag(currentstyle, UNDERLINE);
+                  }
+                  break;
 
-                    if(currentstyle & UNDERLINE)
+                  case BOLD:
+                  {
+                    *buf->pointer++ = '\033';
+                    *buf->pointer++ = 'b';
+                    setFlag(currentstyle, BOLD);
+                  }
+                  break;
+
+                  case ITALIC:
+                  {
+                    *buf->pointer++ = '\033';
+                    *buf->pointer++ = 'i';
+                    setFlag(currentstyle, ITALIC);
+                  }
+                  break;
+
+                  case ~UNDERLINE:
+                  case ~BOLD:
+                  case ~ITALIC:
+                  {
+                    currentstyle &= style;
+
+                    if(pos+1 != styles->column || styles->style < 0x8000)
                     {
                       *buf->pointer++ = '\033';
-                      *buf->pointer++ = 'u';
-                    }
+                      *buf->pointer++ = 'n';
 
-                    if(currentstyle & BOLD)
-                    {
-                      *buf->pointer++ = '\033';
-                      *buf->pointer++ = 'b';
-                    }
+                      if(isFlagSet(currentstyle, UNDERLINE))
+                      {
+                        *buf->pointer++ = '\033';
+                        *buf->pointer++ = 'u';
+                      }
 
-                    if(currentstyle & ITALIC)
-                    {
-                      *buf->pointer++ = '\033';
-                      *buf->pointer++ = 'i';
+                      if(isFlagSet(currentstyle, BOLD))
+                      {
+                        *buf->pointer++ = '\033';
+                        *buf->pointer++ = 'b';
+                      }
+
+                      if(isFlagSet(currentstyle, ITALIC))
+                      {
+                        *buf->pointer++ = '\033';
+                        *buf->pointer++ = 'i';
+                      }
                     }
                   }
+                  break;
                 }
-                break;
               }
             }
           }
+          else
+          {
+            len = length;
+            memcpy(buf->pointer, emsg->Contents+lastpos, len);
+            buf->pointer += len;
+          }
+
+          length -= len;
+
+          if(length == -1)
+            length = 0;
+
+          lastpos = pos;
+        }
+      }
+
+      if(length > 0)
+      {
+        memcpy(buf->pointer, emsg->Contents+lastpos, length);
+        buf->pointer += length;
+      }
+
+      // NUL terminate our buffer string
+      *buf->pointer = '\0';
+
+      while(emsg->ExportWrap != 0 && buf->pointer-startx > (LONG)emsg->ExportWrap)
+      {
+        ULONG max = emsg->ExportWrap+1;
+
+        if(startx[emsg->ExportWrap] != '\n')
+        {
+          while(--max && *(startx+max) != ' ')
+            ; // empty while
+        }
+
+        if(max)
+        {
+          *(startx += max) = '\n';
         }
         else
         {
-          len = length;
-          memcpy(buf->pointer, emsg->Contents+lastpos, len);
-          buf->pointer += len;
-        }
+          while(++startx < buf->pointer && *(startx) != ' ')
+            ; // empty while
 
-        length -= len;
-
-        if(length == -1)
-          length = 0;
-
-        lastpos = pos;
-      }
-    }
-
-    if(length > 0)
-    {
-      memcpy(buf->pointer, emsg->Contents+lastpos, length);
-      buf->pointer += length;
-    }
-
-    // NUL terminate our buffer string
-    *buf->pointer = '\0';
-
-    while(emsg->ExportWrap && buf->pointer-startx > (LONG)emsg->ExportWrap)
-    {
-      ULONG max = emsg->ExportWrap+1;
-
-      if(startx[emsg->ExportWrap] != '\n')
-      {
-        while(--max && *(startx+max) != ' ')
-          ; // empty while
-      }
-
-      if(max)
-      {
-        *(startx += max) = '\n';
-      }
-      else
-      {
-        while(++startx < buf->pointer && *(startx) != ' ')
-          ; // empty while
-
-        if(buf->pointer != startx)
-        {
-          *startx = '\n';
+          if(buf->pointer != startx)
+          {
+            *startx = '\n';
+          }
         }
       }
     }
 
-    if(emsg->Last)
+    if(emsg->Last == TRUE)
     {
+      // free the temporary struct after we processed the last line
       result = buf->buffer;
-
-      if(data)
-      {
-        MyFreePooled(data->mypool, buf);
-      }
-      else
-      {
-        FreeVec(buf);
-      }
+      FreeVec(buf);
     }
     else
     {
+      // return the temporary struct for the next call
       result = (STRPTR)buf;
     }
   }
+  else
+  {
+    W(DBF_BLOCK, "failed to allocate temporary buffer");
+    SHOWVALUE(DBF_BLOCK, buf);
+    if(buf != NULL)
+      SHOWVALUE(DBF_BLOCK, buf->buffer);
+    emsg->failure = TRUE;
+  }
 
   RETURN(result);
-  return(result);
+  return result;
 }
+
 MakeHookWithData(ExportHookPlain, ExportHookFunc, MUIV_TextEditor_ExportHook_Plain);
 MakeHookWithData(ExportHookEMail, ExportHookFunc, MUIV_TextEditor_ExportHook_EMail);
 MakeHookWithData(ExportHookNoStyle, ExportHookFunc, MUIV_TextEditor_ExportHook_NoStyle);
+
 ///

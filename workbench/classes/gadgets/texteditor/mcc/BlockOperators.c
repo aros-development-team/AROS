@@ -22,8 +22,6 @@
 
 #include <string.h>
 
-#include <exec/io.h>
-#include <devices/clipboard.h>
 #include <libraries/iffparse.h>
 
 #include <clib/alib_protos.h>
@@ -32,43 +30,50 @@
 #include <proto/iffparse.h>
 
 #include "private.h"
+#include "Debug.h"
 
-///RedrawArea()
-VOID RedrawArea(UWORD startx, struct line_node *startline, UWORD stopx, struct line_node *stopline, struct InstData *data)
+/// RedrawArea()
+void RedrawArea(struct InstData *data, UWORD startx, struct line_node *startline, UWORD stopx, struct line_node *stopline)
 {
   struct pos_info pos1, pos2;
-  LONG line_nr1 = LineToVisual(startline, data) - 1;
-  LONG line_nr2 = LineToVisual(stopline, data) - 1;
+  LONG line_nr1;
+  LONG line_nr2;
 
   ENTER();
 
-  OffsetToLines(startx, startline, &pos1, data);
+  line_nr1 = LineToVisual(data, startline) - 1;
+  line_nr2 = LineToVisual(data, stopline) - 1;
+
+  OffsetToLines(data, startx, startline, &pos1);
 
   if(stopx >= stopline->line.Length)
     stopx = stopline->line.Length-1;
 
-  OffsetToLines(stopx, stopline, &pos2, data);
+  OffsetToLines(data, stopx, stopline, &pos2);
 
-  if((line_nr1 += pos1.lines-1) < 0)
+  line_nr1 += pos1.lines-1;
+  if(line_nr1 < 0)
     line_nr1 = 0;
-  if((line_nr2 += pos2.lines-1) >= data->maxlines)
+
+  line_nr2 += pos2.lines-1;
+  if(line_nr2 >= data->maxlines)
     line_nr2 = data->maxlines-1;
   if(line_nr1 <= line_nr2)
   {
-    DumpText(data->visual_y+line_nr1, line_nr1, line_nr2+1, TRUE, data);
+    DumpText(data, data->visual_y+line_nr1, line_nr1, line_nr2+1, TRUE);
   }
 
   LEAVE();
 }
-///
 
-///GetBlock()
-char *GetBlock(struct marking *block, struct InstData *data)
+///
+/// GetBlock()
+STRPTR GetBlock(struct InstData *data, struct marking *block)
 {
-  LONG    startx, stopx;
-  struct  line_node *startline, *stopline, *act;
-  char    *text = NULL;
-  struct  ExportMessage emsg;
+  LONG startx, stopx;
+  struct line_node *startline, *stopline, *act;
+  STRPTR text = NULL;
+  struct ExportMessage emsg;
 
   ENTER();
 
@@ -88,203 +93,270 @@ char *GetBlock(struct marking *block, struct InstData *data)
   emsg.ExportWrap = 0;
   emsg.Last = FALSE;
   emsg.data = data;
+  emsg.failure = FALSE;
 
   if(startline != stopline)
   {
-    /* Create a firstline look-a-like */
-    emsg.Contents = (STRPTR)MyAllocPooled(data->mypool, startline->line.Length-startx);
-    if(startline->line.Styles && *startline->line.Styles != EOS)
+    // Create a firstline look-a-like if it contains any text
+    D(DBF_BLOCK, "exporting first line with length %ld, starting at %ld", startline->line.Length-startx, startx);
+    if(emsg.failure == FALSE && startline->line.Length-startx > 0 && (emsg.Contents = AllocVecPooled(data->mypool, startline->line.Length-startx+1)) != NULL)
     {
-        ULONG startstyle = GetStyle(startx, startline);
-
-      if((emsg.Styles = (UWORD *)MyAllocPooled(data->mypool, *((ULONG *)startline->line.Styles-1)+16)))
+      if(startline->line.Styles != NULL && startline->line.Styles[0].column != EOS)
       {
-          UWORD *styles = emsg.Styles,
-              *oldstyles = startline->line.Styles;
+        UWORD startstyle = GetStyle(startx, startline);
 
-        if(startstyle & BOLD)
+        // allocate space for all old styles and up to 4 new styles
+        if((emsg.Styles = (struct LineStyle *)AllocVecPooled(data->mypool, (startline->line.usedStyles+4) * sizeof(struct LineStyle))) != NULL)
         {
-          *styles++ = 1;  *styles++ = BOLD;
-        }
-        if(startstyle & ITALIC)
-        {
-          *styles++ = 1;  *styles++ = ITALIC;
-        }
-        if(startstyle & UNDERLINE)
-        {
-          *styles++ = 1;  *styles++ = UNDERLINE;
-        }
+          struct LineStyle *styles = emsg.Styles;
+          struct LineStyle *oldstyles = startline->line.Styles;
 
-        while(*oldstyles <= startx)
-          oldstyles += 2;
+          if(isFlagSet(startstyle, BOLD))
+          {
+            styles->column = 1;
+            styles->style = BOLD;
+            styles++;
+          }
+          if(isFlagSet(startstyle, ITALIC))
+          {
+            styles->column = 1;
+            styles->style = ITALIC;
+            styles++;
+          }
+          if(isFlagSet(startstyle, UNDERLINE))
+          {
+            styles->column = 1;
+            styles->style = UNDERLINE;
+            styles++;
+          }
 
-        while(*oldstyles != EOS)
-        {
-          *styles++ = *oldstyles++ - startx;  *styles++ = *oldstyles++;
+          while(oldstyles->column <= startx)
+            oldstyles++;
+
+          while(oldstyles->column != EOS)
+          {
+            styles->column = oldstyles->column - startx;
+            styles->style = oldstyles->style;
+            styles++;
+            oldstyles++;
+          }
+          styles->column = EOS;
         }
-        *styles = EOS;
       }
-    }
-    else
-      emsg.Styles = NULL;
+      else
+        emsg.Styles = NULL;
 
-    emsg.Colors = NULL;
-    if(emsg.Contents)
-    {
-      memcpy(emsg.Contents, startline->line.Contents + startx, startline->line.Length - startx);
+      emsg.Colors = NULL;
+
+      strlcpy(emsg.Contents, &startline->line.Contents[startx], startline->line.Length-startx+1);
       emsg.Length = startline->line.Length - startx;
       emsg.Flow = startline->line.Flow;
       emsg.Separator = startline->line.Separator;
-      emsg.Highlight = startline->line.Color;
+      emsg.Highlight = startline->line.Highlight;
       emsg.UserData = (APTR)CallHookA(&ExportHookPlain, NULL, &emsg);
-      MyFreePooled(data->mypool, emsg.Contents);
+
+      FreeVecPooled(data->mypool, emsg.Contents);
+
+      if(emsg.Styles != NULL)
+        FreeVecPooled(data->mypool, emsg.Styles);
     }
 
-    if(emsg.Styles)
-      MyFreePooled(data->mypool, emsg.Styles);
-
-    /* Start iterating... */
+    // Start iterating...
     act = startline->next;
-    while(act != stopline)
+    while(emsg.failure == FALSE && act != stopline)
     {
+      D(DBF_BLOCK, "exporting line with length %ld", act->line.Length);
       emsg.Contents = act->line.Contents;
       emsg.Length   = act->line.Length;
       emsg.Styles   = act->line.Styles;
       emsg.Colors   = act->line.Colors;
       emsg.Flow   = act->line.Flow;
       emsg.Separator = act->line.Separator;
-      emsg.Highlight = act->line.Color;
-      emsg.UserData = (APTR)CallHookA(&ExportHookPlain, (APTR)NULL, &emsg);
+      emsg.Highlight = act->line.Highlight;
+      emsg.UserData = (APTR)CallHookA(&ExportHookPlain, NULL, &emsg);
       act = act->next;
     }
 
-    /* Create a Lastline look-a-like */
-    emsg.Contents = (STRPTR)MyAllocPooled(data->mypool, stopx);
-    if(stopline->line.Styles && *stopline->line.Styles != EOS)
+    // Create a Lastline look-a-like if it contains any text
+    D(DBF_BLOCK, "exporting last line, stopping at %ld", stopx);
+    if(emsg.failure == FALSE && stopx > 0 && (emsg.Contents = AllocVecPooled(data->mypool, stopx+1)) != NULL)
     {
-        ULONG stopstyle = GetStyle(stopx, stopline);
-
-      if((emsg.Styles = (UWORD *)MyAllocPooled(data->mypool, *((ULONG *)stopline->line.Styles-1)+16)))
+      if(stopline->line.Styles != NULL && stopline->line.Styles->column != EOS)
       {
-          UWORD *styles = emsg.Styles,
-              *oldstyles = stopline->line.Styles;
+        UWORD stopstyle = GetStyle(stopx, stopline);
 
-        while(*oldstyles <= stopx)
+        // allocate space for all old styles and up to 4 new styles
+        if((emsg.Styles = AllocVecPooled(data->mypool, (stopline->line.usedStyles+4) * sizeof(struct LineStyle))) != NULL)
         {
-          *styles++ = *oldstyles++; *styles++ = *oldstyles++;
-        }
+          struct LineStyle *styles = emsg.Styles;
+          struct LineStyle *oldstyles = stopline->line.Styles;
 
-        if(stopstyle & BOLD)
-        {
-          *styles++ = stopx+1;  *styles++ = ~BOLD;
+          while(oldstyles->column <= stopx)
+          {
+            styles->column = oldstyles->column;
+            styles->style = oldstyles->style;
+            styles++;
+            oldstyles++;
+          }
+
+          if(isFlagSet(stopstyle, BOLD))
+          {
+            styles->column = stopx+1;
+            styles->style = ~BOLD;
+            styles++;
+          }
+          if(isFlagSet(stopstyle, ITALIC))
+          {
+            styles->column = stopx+1;
+            styles->style = ~ITALIC;
+            styles++;
+          }
+          if(isFlagSet(stopstyle, UNDERLINE))
+          {
+            styles->column = stopx+1;
+            styles->style = ~UNDERLINE;
+            styles++;
+          }
+          styles->column = EOS;
         }
-        if(stopstyle & ITALIC)
-        {
-          *styles++ = stopx+1;  *styles++ = ~ITALIC;
-        }
-        if(stopstyle & UNDERLINE)
-        {
-          *styles++ = stopx+1;  *styles++ = ~UNDERLINE;
-        }
-        *styles = EOS;
       }
-    }
-    else
-      emsg.Styles = NULL;
+      else
+        emsg.Styles = NULL;
 
-    emsg.Colors = NULL;
-    if(emsg.Contents)
-    {
-      memcpy(emsg.Contents, stopline->line.Contents, stopx);
+      emsg.Colors = NULL;
+
+      strlcpy(emsg.Contents, stopline->line.Contents, stopx+1);
       emsg.Length = stopx;
       emsg.Flow = stopline->line.Flow;
       emsg.Separator = stopline->line.Separator;
-      emsg.Highlight = stopline->line.Color;
+      emsg.Highlight = stopline->line.Highlight;
       emsg.Last = TRUE;
       text = (STRPTR)CallHookA(&ExportHookPlain, NULL, &emsg);
-      MyFreePooled(data->mypool, emsg.Contents);
-    }
 
-    if(emsg.Styles)
-      MyFreePooled(data->mypool, emsg.Styles);
+      FreeVecPooled(data->mypool, emsg.Contents);
+
+      if(emsg.Styles != NULL)
+        FreeVecPooled(data->mypool, emsg.Styles);
+
+      // clear the state pointer
+      emsg.UserData = NULL;
+    }
   }
   else
   {
-    /* Create a single line */
-    emsg.Contents = (STRPTR)MyAllocPooled(data->mypool, stopx-startx);
-    if(startline->line.Styles && *startline->line.Styles != EOS)
+    // Create a single line
+    D(DBF_BLOCK, "exporting single line, starting at %ld, stopping at %ld", startx, stopx);
+    if(emsg.failure == FALSE && stopx-startx > 0 && (emsg.Contents = AllocVecPooled(data->mypool, stopx-startx+1)) != NULL)
     {
-        ULONG startstyle = GetStyle(startx, startline);
-        ULONG stopstyle = GetStyle(stopx, stopline);
-
-      if((emsg.Styles = (UWORD *)MyAllocPooled(data->mypool, *((ULONG *)startline->line.Styles-1))))
+      if(startline->line.Styles != NULL && startline->line.Styles->column != EOS)
       {
-          UWORD *styles = emsg.Styles,
-              *oldstyles = startline->line.Styles;
+        UWORD startstyle = GetStyle(startx, startline);
+        UWORD stopstyle = GetStyle(stopx, stopline);
 
-        if(startstyle & BOLD)
+        // allocate space for all old styles and up to 4 new styles
+        if((emsg.Styles = (struct LineStyle *)AllocVecPooled(data->mypool, (startline->line.usedStyles+4) * sizeof(struct LineStyle))) != NULL)
         {
-          *styles++ = 1;  *styles++ = BOLD;
-        }
-        if(startstyle & ITALIC)
-        {
-          *styles++ = 1;  *styles++ = ITALIC;
-        }
-        if(startstyle & UNDERLINE)
-        {
-          *styles++ = 1;  *styles++ = UNDERLINE;
-        }
+          struct LineStyle *styles = emsg.Styles;
+          struct LineStyle *oldstyles = startline->line.Styles;
 
-        while(*oldstyles <= startx)
-          oldstyles += 2;
+          if(isFlagSet(startstyle, BOLD))
+          {
+            styles->column = 1;
+            styles->style = BOLD;
+            styles++;
+          }
+          if(isFlagSet(startstyle, ITALIC))
+          {
+            styles->column = 1;
+            styles->style = ITALIC;
+            styles++;
+          }
+          if(isFlagSet(startstyle, UNDERLINE))
+          {
+            styles->column = 1;
+            styles->style = UNDERLINE;
+            styles++;
+          }
 
-        while(*oldstyles <= stopx)
-        {
-          *styles++ = *oldstyles++ - startx;
-          *styles++ = *oldstyles++;
-        }
+          while(oldstyles->column <= startx)
+            oldstyles++;
 
-        if(stopstyle & BOLD)
-        {
-          *styles++ = stopx-startx+1; *styles++ = ~BOLD;
+          while(oldstyles->column <= stopx)
+          {
+            styles->column = oldstyles->column - startx;
+            styles->style = oldstyles->style;
+            styles++;
+            oldstyles++;
+          }
+
+          if(isFlagSet(stopstyle, BOLD))
+          {
+            styles->column = stopx-startx+1;
+            styles->style = ~BOLD;
+            styles++;
+          }
+          if(isFlagSet(stopstyle, ITALIC))
+          {
+            styles->column = stopx-startx+1;
+            styles->style = ~ITALIC;
+            styles++;
+          }
+          if(isFlagSet(stopstyle, UNDERLINE))
+          {
+            styles->column = stopx-startx+1;
+            styles->style = ~UNDERLINE;
+            styles++;
+          }
+          styles->column = EOS;
         }
-        if(stopstyle & ITALIC)
-        {
-          *styles++ = stopx-startx+1; *styles++ = ~ITALIC;
-        }
-        if(stopstyle & UNDERLINE)
-        {
-          *styles++ = stopx-startx+1; *styles++ = ~UNDERLINE;
-        }
-        *styles = EOS;
       }
-    }
-    else
-      emsg.Styles = NULL;
+      else
+        emsg.Styles = NULL;
 
-    emsg.Colors = NULL;
-    if(emsg.Contents)
-    {
-      memcpy(emsg.Contents, startline->line.Contents+startx, stopx-startx);
+      emsg.Colors = NULL;
+
+      strlcpy(emsg.Contents, &startline->line.Contents[startx], stopx-startx+1);
       emsg.Length = stopx-startx;
       emsg.Flow = startline->line.Flow;
       emsg.Separator = startline->line.Separator;
-      emsg.Highlight = startline->line.Color;
+      emsg.Highlight = startline->line.Highlight;
       emsg.Last = TRUE;
       text = (STRPTR)CallHookA(&ExportHookPlain, NULL, &emsg);
-      MyFreePooled(data->mypool, emsg.Contents);
-    }
 
-    if(emsg.Styles)
-      MyFreePooled(data->mypool, emsg.Styles);
+      FreeVecPooled(data->mypool, emsg.Contents);
+
+      if(emsg.Styles != NULL)
+        FreeVecPooled(data->mypool, emsg.Styles);
+
+      // clear the state pointer
+      emsg.UserData = NULL;
+    }
+  }
+
+  if(emsg.UserData != NULL)
+  {
+    SHOWVALUE(DBF_BLOCK, emsg.failure);
+    // clear the state pointer if that didn't happen before
+    // and get the final exported text
+    emsg.Contents = (STRPTR)"\n";
+    emsg.Styles = NULL;
+    emsg.Colors = NULL;
+    emsg.Length = 0;
+    emsg.Flow = MUIV_TextEditor_Flow_Left;
+    emsg.Separator = LNSF_None;
+    emsg.Highlight = FALSE;
+    emsg.Last = TRUE;
+    // clear the failure signal, otherwise the hook will do nothing
+    emsg.failure = FALSE;
+    text = (STRPTR)CallHookA(&ExportHookPlain, NULL, &emsg);
   }
 
   RETURN(text);
-  return(text);
+  return text;
 }
-///
 
-///NiceBlock()
+///
+/// NiceBlock()
 void NiceBlock(struct marking *realblock, struct marking *newblock)
 {
   LONG  startx = realblock->startx, stopx = realblock->stopx;
@@ -335,303 +407,9 @@ void NiceBlock(struct marking *realblock, struct marking *newblock)
 
   LEAVE();
 }
+
 ///
-
-///InitClipboard()
-BOOL InitClipboard(struct InstData *data, ULONG flags)
-{
-  struct IFFHandle *iff;
-
-  ENTER();
-
-  if((iff = AllocIFF()) != NULL)
-  {
-    SHOWVALUE(DBF_CLIPBOARD, iff);
-    if((iff->iff_Stream = (ULONG)OpenClipboard(0)) != 0)
-    {
-      SHOWVALUE(DBF_CLIPBOARD, iff->iff_Stream);
-      InitIFFasClip(iff);
-
-      if(OpenIFF(iff, flags) == 0)
-      {
-        data->iff = iff;
-
-        SHOWVALUE(DBF_CLIPBOARD, flags);
-
-        RETURN(TRUE);
-        return TRUE;
-      }
-
-      CloseClipboard((struct ClipboardHandle *)iff->iff_Stream);
-    }
-
-    FreeIFF(iff);
-  }
-
-  RETURN(FALSE);
-  return(FALSE);
-}
-///
-
-///EndClipSession()
-void EndClipSession(struct InstData *data)
-{
-  ENTER();
-
-  if(data->iff != NULL)
-  {
-    CloseIFF(data->iff);
-
-    CloseClipboard((struct ClipboardHandle *)data->iff->iff_Stream);
-
-    FreeIFF(data->iff);
-    data->iff = NULL;
-  }
-
-  LEAVE();
-}
-///
-
-///ClipInfo()
-void ClipInfo(struct line_node *line, struct InstData *data)
-{
-  LONG error;
-
-  ENTER();
-
-  if(line->line.Flow != MUIV_TextEditor_Flow_Left)
-  {
-    D(DBF_CLIPBOARD, "writing FLOW");
-    error = PushChunk(data->iff, 0, ID_FLOW, IFFSIZE_UNKNOWN);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-    error = WriteChunkBytes(data->iff, &line->line.Flow, 2);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-    error = PopChunk(data->iff);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-  }
-
-  if(line->line.Separator)
-  {
-    D(DBF_CLIPBOARD, "writing SBAR");
-    error = PushChunk(data->iff, 0, ID_SBAR, IFFSIZE_UNKNOWN);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-    error = WriteChunkBytes(data->iff, &line->line.Separator, 2);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-    error = PopChunk(data->iff);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-  }
-
-  if(line->line.Color)
-  {
-    D(DBF_CLIPBOARD, "writing HIGH");
-    error = PushChunk(data->iff, 0, ID_HIGH, IFFSIZE_UNKNOWN);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-    error = WriteChunkBytes(data->iff, &line->line.Color, 2);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-    error = PopChunk(data->iff);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-  }
-
-  LEAVE();
-}
-///
-
-///ClipChars()
-void ClipChars(LONG x, struct line_node *line, LONG length, struct InstData *data)
-{
-  UWORD style[2] = {1, GetStyle(x-1, line)};
-  UWORD color[2] = {1, 0};
-  UWORD *colors = line->line.Colors;
-  LONG error;
-
-  ENTER();
-
-  D(DBF_CLIPBOARD, "ClipChars()");
-
-  ClipInfo(line, data);
-
-  if(colors)
-  {
-    D(DBF_CLIPBOARD, "writing COLS");
-    error = PushChunk(data->iff, 0, ID_COLS, IFFSIZE_UNKNOWN);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-
-    while((*colors <= x) && (*colors != 0xffff))
-    {
-      color[1] = *(colors+1);
-      colors += 2;
-    }
-
-    if(color[1] != 0 && *colors-x != 1)
-    {
-      error = WriteChunkBytes(data->iff, color, 4);
-      SHOWVALUE(DBF_CLIPBOARD, error);
-    }
-
-    if(*colors != 0xffff)
-    {
-      while(*colors <= x+length)
-      {
-        color[0] = *colors++ - x;
-        color[1] = *colors++;
-
-        error = WriteChunkBytes(data->iff, color, 4);
-        SHOWVALUE(DBF_CLIPBOARD, error);
-      }
-    }
-
-    error = PopChunk(data->iff);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-  }
-
-  D(DBF_CLIPBOARD, "writing STYL");
-  error = PushChunk(data->iff, 0, ID_STYL, IFFSIZE_UNKNOWN);
-  SHOWVALUE(DBF_CLIPBOARD, error);
-
-  if(style[1] != 0)
-  {
-    unsigned short t_style = style[1];
-
-    if(t_style & BOLD)
-    {
-      style[1] = BOLD;
-      error = WriteChunkBytes(data->iff, style, 4);
-      SHOWVALUE(DBF_CLIPBOARD, error);
-    }
-    if(t_style & ITALIC)
-    {
-      style[1] = ITALIC;
-      error = WriteChunkBytes(data->iff, style, 4);
-      SHOWVALUE(DBF_CLIPBOARD, error);
-    }
-    if(t_style & UNDERLINE)
-    {
-      style[1] = UNDERLINE;
-      error = WriteChunkBytes(data->iff, style, 4);
-      SHOWVALUE(DBF_CLIPBOARD, error);
-    }
-  }
-
-  if(line->line.Styles)
-  {
-    unsigned short *styles = line->line.Styles;
-
-    while((*styles <= x) && (*styles != EOS))
-      styles += 2;
-
-    if(*styles != EOS)
-    {
-      while(*styles <= x+length)
-      {
-        style[0] = *styles++ - x;
-        style[1] = *styles++;
-        error = WriteChunkBytes(data->iff, style, 4);
-        SHOWVALUE(DBF_CLIPBOARD, error);
-      }
-
-      style[0] = length+1;
-      style[1] = GetStyle(x+length-1, line);
-      if(style[1] != 0)
-      {
-        unsigned short t_style = style[1];
-
-        if(t_style & BOLD)
-        {
-          style[1] = ~BOLD;
-          error = WriteChunkBytes(data->iff, style, 4);
-          SHOWVALUE(DBF_CLIPBOARD, error);
-        }
-        if(t_style & ITALIC)
-        {
-          style[1] = ~ITALIC;
-          error = WriteChunkBytes(data->iff, style, 4);
-          SHOWVALUE(DBF_CLIPBOARD, error);
-        }
-        if(t_style & UNDERLINE)
-        {
-          style[1] = ~UNDERLINE;
-          error = WriteChunkBytes(data->iff, style, 4);
-          SHOWVALUE(DBF_CLIPBOARD, error);
-        }
-      }
-    }
-  }
-
-  error = PopChunk(data->iff);
-  SHOWVALUE(DBF_CLIPBOARD, error);
-
-  D(DBF_CLIPBOARD, "writing CHRS");
-  error = PushChunk(data->iff, 0, ID_CHRS, IFFSIZE_UNKNOWN);
-  SHOWVALUE(DBF_CLIPBOARD, error);
-  error = WriteChunkBytes(data->iff, line->line.Contents + x, length);
-  SHOWVALUE(DBF_CLIPBOARD, error);
-  error = PopChunk(data->iff);
-  SHOWVALUE(DBF_CLIPBOARD, error);
-
-  LEAVE();
-}
-///
-
-///ClipLine()
-void ClipLine(struct line_node *line, struct InstData *data)
-{
-  UWORD *styles = line->line.Styles;
-  UWORD *colors = line->line.Colors;
-  LONG error;
-
-  ENTER();
-
-  D(DBF_CLIPBOARD, "ClipLine()");
-
-  ClipInfo(line, data);
-
-  if(colors)
-  {
-    D(DBF_CLIPBOARD, "writing COLS");
-    error = PushChunk(data->iff, 0, ID_COLS, IFFSIZE_UNKNOWN);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-
-    while(*colors != 0xffff)
-    {
-      colors += 2;
-    }
-
-    error = WriteChunkBytes(data->iff, line->line.Colors, colors - line->line.Colors);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-    error = PopChunk(data->iff);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-  }
-
-  if(styles)
-  {
-    D(DBF_CLIPBOARD, "writing STYL");
-    error = PushChunk(data->iff, 0, ID_STYL, IFFSIZE_UNKNOWN);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-
-    while(*styles != EOS)
-    {
-      styles += 2;
-    }
-
-    error = WriteChunkBytes(data->iff, line->line.Styles, styles - line->line.Styles);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-    error = PopChunk(data->iff);
-    SHOWVALUE(DBF_CLIPBOARD, error);
-  }
-
-  D(DBF_CLIPBOARD, "writing CHRS");
-  error = PushChunk(data->iff, 0, ID_CHRS, IFFSIZE_UNKNOWN);
-  SHOWVALUE(DBF_CLIPBOARD, error);
-  error = WriteChunkBytes(data->iff, line->line.Contents, line->line.Length);
-  SHOWVALUE(DBF_CLIPBOARD, error);
-  error = PopChunk(data->iff);
-  SHOWVALUE(DBF_CLIPBOARD, error);
-
-  LEAVE();
-}
-///
-
-///CutBlock()
+/// CutBlock()
 LONG CutBlock(struct InstData *data, BOOL Clipboard, BOOL NoCut, BOOL update)
 {
   struct  marking newblock;
@@ -642,23 +420,24 @@ LONG CutBlock(struct InstData *data, BOOL Clipboard, BOOL NoCut, BOOL update)
   //D(DBF_STARTUP, "CutBlock: %ld %ld %ld", Clipboard, NoCut, update);
 
   NiceBlock(&data->blockinfo, &newblock);
-  if(!NoCut)
-    AddToUndoBuffer(ET_DELETEBLOCK, (char *)&newblock, data);
+  if(NoCut == FALSE)
+    AddToUndoBuffer(data, ET_DELETEBLOCK, &newblock);
 
-  result = CutBlock2(data, Clipboard, NoCut, &newblock, update);
+  result = CutBlock2(data, Clipboard, NoCut, update, &newblock);
 
   RETURN(result);
   return(result);
 }
-///
 
-///CutBlock2()
-LONG CutBlock2(struct InstData *data, BOOL Clipboard, BOOL NoCut, struct marking *newblock, BOOL update)
+///
+/// CutBlock2()
+LONG CutBlock2(struct InstData *data, BOOL Clipboard, BOOL NoCut, BOOL update, struct marking *newblock)
 {
-  LONG  tvisual_y, error;
+  LONG  tvisual_y;
   LONG  startx, stopx;
   LONG  res = 0;
   struct  line_node *startline, *stopline;
+  IPTR clipSession = (IPTR)NULL;
 
   ENTER();
 
@@ -677,13 +456,9 @@ LONG CutBlock2(struct InstData *data, BOOL Clipboard, BOOL NoCut, struct marking
 
     if(Clipboard == TRUE)
     {
-      if(InitClipboard(data, IFFF_WRITE))
+      if((clipSession = ClientStartSession(IFFF_WRITE)) != (IPTR)NULL)
       {
-        D(DBF_CLIPBOARD, "writing FORM");
-        error = PushChunk(data->iff, ID_FTXT, ID_FORM, IFFSIZE_UNKNOWN);
-        SHOWVALUE(DBF_CLIPBOARD, error);
-
-        ClipChars(startx, startline, startline->line.Length-startx, data);
+        ClientWriteChars(clipSession, startline, startx, startline->line.Length-startx);
       }
       else
       {
@@ -695,22 +470,24 @@ LONG CutBlock2(struct InstData *data, BOOL Clipboard, BOOL NoCut, struct marking
     {
       if(Clipboard == TRUE)
       {
-        ClipLine(c_startline, data);
+        ClientWriteLine(clipSession, c_startline);
       }
 
       if(NoCut == FALSE)
       {
         struct line_node *cc_startline = c_startline;
 
-        MyFreePooled(data->mypool, c_startline->line.Contents);
+        FreeVecPooled(data->mypool, c_startline->line.Contents);
         if(c_startline->line.Styles != NULL)
-          MyFreePooled(data->mypool, c_startline->line.Styles);
+          FreeVecPooled(data->mypool, c_startline->line.Styles);
+        if(c_startline->line.Colors != NULL)
+          FreeVecPooled(data->mypool, c_startline->line.Colors);
         data->totallines -= c_startline->visual;
         c_startline = c_startline->next;
 
         //D(DBF_STARTUP, "FreeLine %08lx", cc_startline);
 
-        FreeLine(cc_startline, data);
+        FreeLine(data, cc_startline);
       }
       else
         c_startline = c_startline->next;
@@ -719,9 +496,9 @@ LONG CutBlock2(struct InstData *data, BOOL Clipboard, BOOL NoCut, struct marking
     if(Clipboard == TRUE)
     {
       if(stopx != 0)
-        ClipChars(0, stopline, stopx, data);
+        ClientWriteChars(clipSession, stopline, 0, stopx);
 
-      EndClipSession(data);
+      ClientEndSession(clipSession);
     }
 
     if(NoCut == FALSE)
@@ -732,33 +509,29 @@ LONG CutBlock2(struct InstData *data, BOOL Clipboard, BOOL NoCut, struct marking
       //D(DBF_STARTUP, "RemoveChars: %ld %ld %08lx %ld", startx, stopx, startline, startline->line.Length);
 
       if(startline->line.Length-startx-1 > 0)
-        RemoveChars(startx, startline, startline->line.Length-startx-1, data);
+        RemoveChars(data, startx, startline, startline->line.Length-startx-1);
 
       if(stopx != 0)
-        RemoveChars(0, stopline, stopx, data);
+        RemoveChars(data, 0, stopline, stopx);
 
       data->CPos_X = startx;
       data->actualline = startline;
-      MergeLines(startline, data);
+      MergeLines(data, startline);
     }
   }
   else
   {
     if(Clipboard == TRUE)
     {
-      if(InitClipboard(data, IFFF_WRITE))
+      if((clipSession = ClientStartSession(IFFF_WRITE)) != (IPTR)NULL)
       {
-        D(DBF_CLIPBOARD, "writing FORM");
-        error = PushChunk(data->iff, ID_FTXT, ID_FORM, IFFSIZE_UNKNOWN);
-        SHOWVALUE(DBF_CLIPBOARD, error);
-
-        ClipChars(startx, startline, stopx-startx, data);
-        EndClipSession(data);
+        ClientWriteChars(clipSession, startline, startx, stopx-startx);
+        ClientEndSession(clipSession);
       }
 
       if(update == TRUE && NoCut == TRUE)
       {
-        MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
+        MarkText(data, data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline);
           goto end;
       }
     }
@@ -766,13 +539,13 @@ LONG CutBlock2(struct InstData *data, BOOL Clipboard, BOOL NoCut, struct marking
     if(NoCut == FALSE)
     {
       data->CPos_X = startx;
-      RemoveChars(startx, startline, stopx-startx, data);
+      RemoveChars(data, startx, startline, stopx-startx);
       if(update == TRUE)
         goto end;
     }
   }
 
-  tvisual_y = LineToVisual(startline, data)-1;
+  tvisual_y = LineToVisual(data, startline)-1;
   if(tvisual_y < 0 || tvisual_y > data->maxlines)
   {
     //D(DBF_STARTUP, "ScrollIntoDisplay");
@@ -784,7 +557,7 @@ LONG CutBlock2(struct InstData *data, BOOL Clipboard, BOOL NoCut, struct marking
   {
     //D(DBF_STARTUP, "DumpText! %ld %ld %ld", data->visual_y, tvisual_y, data->maxlines);
     data->update = TRUE;
-    DumpText(data->visual_y+tvisual_y, tvisual_y, data->maxlines, TRUE, data);
+    DumpText(data, data->visual_y+tvisual_y, tvisual_y, data->maxlines, TRUE);
   }
   res = tvisual_y;
 
@@ -793,4 +566,5 @@ end:
   RETURN(res);
   return res;
 }
+
 ///

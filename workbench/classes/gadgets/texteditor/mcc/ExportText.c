@@ -25,10 +25,12 @@
 #include <proto/utility.h>
 
 #include "private.h"
+#include "Debug.h"
 
-///ExportText()
-void *ExportText(UNUSED struct MUIP_TextEditor_ExportText *msg, struct InstData *data)
+/// mExportText()
+IPTR mExportText(struct IClass *cl, Object *obj, UNUSED struct MUIP_TextEditor_ExportText *msg)
 {
+  struct InstData *data = INST_DATA(cl, obj);
   struct line_node *node = data->firstline;
   struct Hook *exportHook = data->ExportHook;
   ULONG wraplen = data->ExportWrap;
@@ -49,7 +51,7 @@ void *ExportText(UNUSED struct MUIP_TextEditor_ExportText *msg, struct InstData 
     emsg.Length = node->line.Length;
     emsg.Styles = node->line.Styles;
     emsg.Colors = node->line.Colors;
-    emsg.Highlight = node->line.Color;
+    emsg.Highlight = node->line.Highlight;
     emsg.Flow = node->line.Flow;
     emsg.Separator = node->line.Separator;
     emsg.ExportWrap = wraplen;
@@ -67,7 +69,8 @@ void *ExportText(UNUSED struct MUIP_TextEditor_ExportText *msg, struct InstData 
     node = next_node;
   }
 
-  RETURN(user_data);
-  return user_data;
+  RETURN((IPTR)user_data);
+  return (IPTR)user_data;
 }
+
 ///

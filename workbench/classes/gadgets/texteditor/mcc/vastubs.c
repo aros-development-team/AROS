@@ -38,12 +38,14 @@ APTR NewObject( struct IClass *classPtr, CONST_STRPTR classID, Tag tag1, ... )
 { return NewObjectA(classPtr, classID, (struct TagItem *)&tag1); }
 ULONG SetAttrs( APTR object, ULONG tag1, ... )
 { return SetAttrsA(object, (struct TagItem *)&tag1); }
-VOID SetWindowPointer( struct Window *win, Tag tag1, ... )
+void SetWindowPointer( struct Window *win, Tag tag1, ... )
 { SetWindowPointerA(win, (struct TagItem *)&tag1); }
 
 #include <proto/dos.h>
 LONG SystemTags( CONST_STRPTR command, ULONG tag1type, ... )
 { return SystemTagList(command, (struct TagItem *)&tag1type); }
+struct Process *CreateNewProcTags( ULONG tag1, ... )
+{ return CreateNewProc((struct TagItem *)&tag1); }
 
 #else
   #error "VARGS stubs are only save on m68k systems!"
