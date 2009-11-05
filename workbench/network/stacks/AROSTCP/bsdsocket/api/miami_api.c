@@ -106,6 +106,7 @@ D(bug("[AROSTCP](miami_api.c) MiamiLIB_Open: Created MIAMI user library base: 0x
 		SocketBase = OpenLibrary("bsdsocket.library", VERSION);
 		if (SocketBase) {
 			D(__log(LOG_DEBUG,"miami.library opened: SocketBase = 0x%p, MiamiBase = 0x%p", (IPTR)SocketBase, (IPTR)MiamiBase);)
+			MasterBase->lib_OpenCnt++;
 			return(MiamiBase);
 		}
 		D(else kprintf("Unable to open bsdsocket.library\n");)
