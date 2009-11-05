@@ -24,10 +24,12 @@
 
 #include "private.h"
 
+#define DEBUG_USE_MALLOC_REDEFINE
 #include "Debug.h"
 
-///MyAllocPooled()
-APTR MyAllocPooled(APTR pool, ULONG length)
+/// AllocVecPooled()
+#if !defined(__amigaos4__) && !defined(__MORPHOS__) && !defined(__AROS__)
+APTR AllocVecPooled(APTR pool, ULONG length)
 {
   ULONG *mem;
 
@@ -35,18 +37,17 @@ APTR MyAllocPooled(APTR pool, ULONG length)
 
   length += sizeof(ULONG);
   if((mem = AllocPooled(pool, length)))
-  {
-    *mem = length;
-    mem += 1;
-  }
+    *mem++ = length;
 
   RETURN(mem);
   return(mem);
 }
-///
+#endif // !__amigaos4__ && !__MORPHOS__
 
-///MyFreePooled()
-VOID MyFreePooled(APTR pool, APTR mem)
+///
+/// FreeVecPooled()
+#if !defined(__amigaos4__) && !defined(__MORPHOS__) && !defined(__AROS__)
+void FreeVecPooled(APTR pool, APTR mem)
 {
   ULONG *memptr, length;
 
@@ -59,32 +60,33 @@ VOID MyFreePooled(APTR pool, APTR mem)
 
   LEAVE();
 }
-///
+#endif // !__amigaos4__ && !__MORPHOS__
 
-///AllocLine()
+///
+/// AllocLine()
 struct line_node *AllocLine(struct InstData *data)
 {
   struct line_node *newline;
 
   ENTER();
 
-  newline = AllocPooled(data->mypool, sizeof(struct line_node));
+  newline = AllocVecPooled(data->mypool, sizeof(struct line_node));
 
   RETURN(newline);
   return newline;
 }
-///
 
-///FreeLine()
-void FreeLine(struct line_node* line, struct InstData *data)
+///
+/// FreeLine()
+void FreeLine(struct InstData *data, struct line_node* line)
 {
   ENTER();
 
-  // we make sure the line is not references by other
+  // we make sure the line is not referenced by other
   // structures as well such as the global blockinfo structure.
   if(data->blockinfo.startline == line)
   {
-    if(line->next)
+    if(line->next != NULL)
       data->blockinfo.startline = line->next;
     else
     {
@@ -95,7 +97,7 @@ void FreeLine(struct line_node* line, struct InstData *data)
 
   if(data->blockinfo.stopline == line)
   {
-    if(line->previous)
+    if(line->previous != NULL)
       data->blockinfo.stopline = line->previous;
     else
     {
@@ -104,9 +106,10 @@ void FreeLine(struct line_node* line, struct InstData *data)
     }
   }
 
-  // lets use FreePooled to free the memory of the line
-  FreePooled(data->mypool, line, sizeof(struct line_node));
+  // finally free the line itself
+  FreeVecPooled(data->mypool, line);
 
   LEAVE();
 }
+
 ///

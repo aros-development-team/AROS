@@ -274,7 +274,7 @@ DISPATCHERPROTO(_DispatcherP);
 
 /* Our library structure, consisting of a struct Library, a segment pointer */
 /* and a semaphore. We need the semaphore to protect init/exit stuff in our */
-/* open/close fuSnctions */
+/* open/close functions */
 struct LibraryHeader
 {
   struct Library         lh_Library;

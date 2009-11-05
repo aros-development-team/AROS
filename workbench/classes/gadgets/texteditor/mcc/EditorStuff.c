@@ -29,14 +29,10 @@
 #include <proto/graphics.h>
 #include <proto/layers.h>
 #include <proto/exec.h>
-#include <proto/iffparse.h>
 #include <proto/intuition.h>
 
 #include "private.h"
 #include "Debug.h"
-
-BOOL InitClipboard(struct InstData *data, ULONG flags);
-void EndClipSession(struct InstData *data);
 
 #if defined(__MORPHOS__)
 #include <proto/keymap.h>
@@ -85,7 +81,7 @@ static char *utf8_to_ansi(struct InstData *data, STRPTR src)
    }
    while (octets > 0);
 
-   dst = MyAllocPooled(data->mypool, strlength);
+   dst = AllocVecPooled(data->mypool, strlength);
 
    if (dst)
    {
@@ -121,7 +117,7 @@ static char *utf8_to_ansi(struct InstData *data, STRPTR src)
       }
       while (octets > 0);
 
-      MyFreePooled(data->mypool, src);   // Free original buffer
+      FreeVecPooled(data->mypool, src);   // Free original buffer
    }
 
    if(dst == NULL)
@@ -130,520 +126,561 @@ static char *utf8_to_ansi(struct InstData *data, STRPTR src)
    RETURN(dst);
    return dst;
 }
+
 ///
 #endif
 
-///PasteClip()
+/// DumpLine()
+#if defined(DEBUG)
+void DumpLine(struct line_node *line)
+{
+  ENTER();
+
+  D(DBF_DUMP, "length %3ld, contents '%s'", line->line.Length, line->line.Contents);
+
+  if(line->line.Styles != NULL)
+  {
+    struct LineStyle *styles = line->line.Styles;
+
+    D(DBF_DUMP, "styles:");
+    while(styles->column != EOS)
+    {
+      D(DBF_DUMP, "style 0x%04lx starting at column %3ld", styles->style, styles->column);
+      styles++;
+    }
+  }
+
+  if(line->line.Colors != NULL)
+  {
+    struct LineColor *colors = line->line.Colors;
+
+    D(DBF_DUMP, "colors:");
+    while(colors->column != EOC)
+    {
+      D(DBF_DUMP, "color %3ld starting at column %3ld", colors->color, colors->column);
+      colors++;
+    }
+  }
+
+  LEAVE();
+}
+#else
+#define DumpLine(line) ((void)0)
+#endif
+
+///
+/// PasteClip()
 /*----------------------*
  * Paste from Clipboard *
  *----------------------*/
-BOOL PasteClip (LONG x, struct line_node *actline, struct InstData *data)
+BOOL PasteClip(struct InstData *data, LONG x, struct line_node *actline)
 {
-  struct line_node *line = NULL;
-  struct line_node *startline = NULL;
-  struct line_node *previous = NULL;
-  UWORD   *styles = NULL;
-  UWORD   *colors = NULL;
-  STRPTR  textline;
-  BOOL newline = TRUE;
   BOOL res = FALSE;
+  IPTR clipSession;
 
   ENTER();
 
-  if(InitClipboard(data, IFFF_READ))
+  if((clipSession = ClientStartSession(IFFF_READ)) != (IPTR)NULL)
   {
-    if(StopChunk(data->iff, ID_FTXT, ID_CHRS) == 0 &&
-       StopChunk(data->iff, ID_FTXT, ID_FLOW) == 0 &&
-       StopChunk(data->iff, ID_FTXT, ID_HIGH) == 0 &&
-       StopChunk(data->iff, ID_FTXT, ID_SBAR) == 0 &&
-       StopChunk(data->iff, ID_FTXT, ID_COLS) == 0 &&
-       StopChunk(data->iff, ID_FTXT, ID_STYL) == 0 &&
-       StopChunk(data->iff, ID_FTXT, ID_CSET) == 0)
+    LONG error;
+    BOOL newline = TRUE;
+    struct line_node *importedLines = NULL;
+    struct line_node *importedLine = NULL;
+    struct line_node *previous = NULL;
+
+    do
     {
-      LONG error, codeset = 0;
-      UWORD flow = MUIV_TextEditor_Flow_Left;
-      UWORD color = FALSE;
-      UWORD separator = 0;
-      BOOL ownclip = FALSE;
-      LONG updatefrom;
+      struct line_node *line = NULL;
+      ULONG codeset = 0;
 
-      while(TRUE)
+      error = ClientReadLine(clipSession, &line, &codeset);
+      SHOWVALUE(DBF_CLIPBOARD, error);
+      SHOWVALUE(DBF_CLIPBOARD, line);
+      SHOWVALUE(DBF_CLIPBOARD, codeset);
+
+      if(error == 0 && line != NULL)
       {
-        struct ContextNode *cn;
+        struct LineStyle *styles = NULL;
+        ULONG allocatedStyles = 0;
+        struct LineColor *colors = NULL;
+        ULONG allocatedColors = 0;
+        BOOL ownclip = FALSE;
 
-        error = ParseIFF(data->iff, IFFPARSE_SCAN);
-        SHOWVALUE(DBF_CLIPBOARD, error);
-        if(error == IFFERR_EOC)
-          continue;
-        else if(error)
-          break;
-
-        if((cn = CurrentChunk(data->iff)) != NULL)
+        SHOWVALUE(DBF_CLIPBOARD, line->line.Styles);
+        if(line->line.Styles != NULL)
         {
-          switch (cn->cn_ID)
+          allocatedStyles = line->line.allocatedStyles;
+
+          if((styles = AllocVecPooled(data->mypool, allocatedStyles * sizeof(*styles))) != NULL)
+            memcpy(styles, line->line.Styles, allocatedStyles * sizeof(*styles));
+
+          FreeVec(line->line.Styles);
+          line->line.Styles = NULL;
+
+          // we found styles, this mean the clip was created by ourselves
+          ownclip = TRUE;
+        }
+
+        SHOWVALUE(DBF_CLIPBOARD, line->line.Colors);
+        if(line->line.Colors != NULL)
+        {
+          allocatedColors = line->line.allocatedColors;
+
+          if((colors = AllocVecPooled(data->mypool, allocatedColors * sizeof(*colors))) != NULL)
+            memcpy(colors, line->line.Colors, allocatedColors * sizeof(*colors));
+
+          FreeVec(line->line.Colors);
+          line->line.Colors = NULL;
+
+          // we found colors, this mean the clip was created by ourselves
+          ownclip = TRUE;
+        }
+
+        SHOWVALUE(DBF_CLIPBOARD, line->line.Contents);
+        if(line->line.Contents != NULL)
+        {
+          STRPTR contents = line->line.Contents;
+          ULONG length = line->line.Length;
+
+          if(ownclip == FALSE)
           {
-            case ID_CSET:
-              D(DBF_CLIPBOARD, "reading FLOW");
-              SHOWVALUE(DBF_CLIPBOARD, cn->cn_Size);
-              if(cn->cn_Size >= 4)
-              {
-                /* Only the first four bytes are interesting */
-                if(ReadChunkBytes(data->iff, &codeset, 4) != 4)
-                {
-                  codeset = 0;
-                }
-                SHOWVALUE(DBF_CLIPBOARD, codeset);
-              }
-              break;
+            // this is a foreign clip
+            D(DBF_CLIPBOARD, "importing foreign clip");
 
-            case ID_FLOW:
-              D(DBF_CLIPBOARD, "reading FLOW");
-              SHOWVALUE(DBF_CLIPBOARD, cn->cn_Size);
-              if(cn->cn_Size == 2)
-              {
-                if(ReadChunkBytes(data->iff, &flow, 2) == 2)
-                  if(flow > MUIV_TextEditor_Flow_Right)
-                    flow = MUIV_TextEditor_Flow_Left;
-                SHOWVALUE(DBF_CLIPBOARD, flow);
-              }
-              break;
+            if(contents[length-1] != '\n')
+              newline = FALSE;
+            else
+              length--;
+            contents[length] = '\0';
 
-            case ID_HIGH:
-              D(DBF_CLIPBOARD, "reading HIGH");
-              SHOWVALUE(DBF_CLIPBOARD, cn->cn_Size);
-              if (cn->cn_Size == 2)
-              {
-                error = ReadChunkBytes(data->iff, &color, 2);
-                SHOWVALUE(DBF_CLIPBOARD, color);
-                SHOWVALUE(DBF_CLIPBOARD, error);
-              }
-              break;
+            #if defined(__MORPHOS__)
+            if(codeset == CODESET_UTF8 && IS_MORPHOS2)
+              contents = utf8_to_ansi(data, contents);
+            #endif
 
-            case ID_SBAR:
-              D(DBF_CLIPBOARD, "reading SBAR");
-              SHOWVALUE(DBF_CLIPBOARD, cn->cn_Size);
-              if (cn->cn_Size == 2)
-              {
-                error = ReadChunkBytes(data->iff, &separator, 2);
-                SHOWVALUE(DBF_CLIPBOARD, separator);
-                SHOWVALUE(DBF_CLIPBOARD, error);
-              }
-              break;
+            SHOWSTRING(DBF_CLIPBOARD, contents);
 
-            case ID_COLS:
-              D(DBF_CLIPBOARD, "reading COLS");
-              SHOWVALUE(DBF_CLIPBOARD, cn->cn_Size);
-              if(colors)
-              {
-                MyFreePooled(data->mypool, colors);
-                colors = NULL;
-              }
-              // allocate one word more than the chunk tell us, because we terminate the array with an additional value
-              if(cn->cn_Size > 0 && (colors = (UWORD *)MyAllocPooled(data->mypool, cn->cn_Size + sizeof(UWORD))) != NULL)
-              {
-                error = ReadChunkBytes(data->iff, colors, cn->cn_Size);
-                SHOWVALUE(DBF_CLIPBOARD, error);
-                colors[cn->cn_Size / 2] = 0xffff;
-              }
-              break;
-
-            case ID_STYL:
-              D(DBF_CLIPBOARD, "reading STYL");
-              SHOWVALUE(DBF_CLIPBOARD, cn->cn_Size);
-              ownclip = TRUE;
-              if(styles)
-              {
-                MyFreePooled(data->mypool, styles);
-                styles = NULL;
-              }
-              // allocate one word more than the chunk tell us, because we terminate the array with an additional value
-              if(cn->cn_Size > 0 && (styles = (UWORD *)MyAllocPooled(data->mypool, cn->cn_Size + sizeof(UWORD))) != NULL)
-              {
-                error = ReadChunkBytes(data->iff, styles, cn->cn_Size);
-                SHOWVALUE(DBF_CLIPBOARD, error);
-                styles[cn->cn_Size / 2] = EOS;
-              }
-              break;
-
-            case ID_CHRS:
+            if((importedLine = ImportText(data, contents, &ImPlainHook, data->ImportWrap)) != NULL)
             {
-              D(DBF_CLIPBOARD, "reading CHRS");
-              SHOWVALUE(DBF_CLIPBOARD, cn->cn_Size);
+              DumpLine(importedLine);
 
-              data->HasChanged = TRUE;
+              if(importedLines == NULL)
+                importedLines = importedLine;
+              if(previous != NULL)
+                previous->next = importedLine;
 
-              if(cn->cn_Size > 0 && !ownclip)
+              importedLine->previous = previous;
+              importedLine->visual = VisualHeight(data, importedLine);
+              while(importedLine->next != NULL)
               {
-                char *contents;
-                ULONG length = cn->cn_Size;
+                importedLine = importedLine->next;
+                importedLine->visual = VisualHeight(data, importedLine);
+                DumpLine(importedLine);
+              }
 
-                if((contents = (char *)MyAllocPooled(data->mypool, length + 1)) != NULL)
-                {
-                  error = ReadChunkBytes(data->iff, contents, length);
-                  SHOWVALUE(DBF_CLIPBOARD, error);
+              previous = importedLine;
+            }
+          }
+          else
+          {
+            // this is one of our own clips
+            D(DBF_CLIPBOARD, "importing TextEditor.mcc clip");
 
-                  if(contents[length - 1] != '\n')
-                  {
-                    newline = FALSE;
-                  }
-                  else
-                  {
-                    length--;
-                  }
-                  contents[length] = '\0';
+            if(contents[length-1] != '\n')
+            {
+              newline = FALSE;
+              contents[length] = '\n';
+              length++;
+            }
+            contents[length] = '\0';
 
-                  #if defined(__MORPHOS__)
-                  if (codeset == CODESET_UTF8)
-                  {
-                    if (IS_MORPHOS2)
-                      contents = utf8_to_ansi(data, contents);
-                  }
-                  #endif
+            SHOWSTRING(DBF_CLIPBOARD, contents);
 
-                  if((line = ImportText(contents, data, &ImPlainHook, data->ImportWrap)))
-                  {
-                    if(!startline)
-                      startline = line;
-                    if(previous)
-                      previous->next  = line;
+            if((importedLine = AllocLine(data)) != NULL)
+            {
+              if((contents = AllocVecPooled(data->mypool, length+1)) != NULL)
+              {
+                strcpy(contents, line->line.Contents);
+                importedLine->previous = previous;
+                importedLine->line.Contents = contents;
+                importedLine->line.Length = length;
+                importedLine->line.allocatedContents = length+1;
+                importedLine->visual = VisualHeight(data, line);
+                importedLine->line.Highlight = line->line.Highlight;
+                importedLine->line.Flow = line->line.Flow;
+                importedLine->line.Separator = line->line.Separator;
+                importedLine->line.Styles = styles;
+                importedLine->line.allocatedStyles = allocatedStyles;
+                importedLine->line.usedStyles = allocatedStyles;
+                importedLine->line.Colors = colors;
+                importedLine->line.allocatedColors = allocatedColors;
+                importedLine->line.usedColors = allocatedColors;
 
-                    line->previous    = previous;
-                    line->visual    = VisualHeight(line, data);
-                    data->totallines += line->visual;
-                    while(line->next)
-                    {
-                      line = line->next;
-                      line->visual    = VisualHeight(line, data);
-                      data->totallines += line->visual;
-                    }
-                    previous = line;
-                  }
-                  MyFreePooled(data->mypool, contents);
-                }
+                DumpLine(importedLine);
+
+                if(importedLines == NULL)
+                  importedLines = importedLine;
+                if(previous != NULL)
+                  previous->next = importedLine;
+
+                previous = importedLine;
               }
               else
               {
-                ULONG length = cn->cn_Size;
-
-                if(length > 0 && (textline = (char *)MyAllocPooled(data->mypool, length + 2)) != NULL)
-                {
-                  error = ReadChunkBytes(data->iff, textline, length);
-                  SHOWVALUE(DBF_CLIPBOARD, error);
-
-                  if (textline[length - 1] != '\n')
-                  {
-                    newline = FALSE;
-                    textline[length] = '\n';
-                    length++;
-                  }
-                  textline[length] = '\0';
-
-                  if((line = AllocLine(data)))
-                  {
-                    line->next     = NULL;
-                    line->previous   = previous;
-                    line->line.Contents   = textline;
-                    line->line.Length   = length;
-                    line->visual   = VisualHeight(line, data);
-                    line->line.Color    = color;
-                    line->line.Flow     = flow;
-                    line->line.Separator = separator;
-                    line->line.Styles   = styles;
-                    line->line.Colors   = colors;
-                    data->totallines += line->visual;
-
-                    if(!startline)
-                      startline = line;
-                    if(previous)
-                      previous->next  = line;
-
-                    previous = line;
-                  }
-                  else
-                  {
-                    if(styles)
-                      MyFreePooled(data->mypool, (void *)styles);
-                    if(colors)
-                      MyFreePooled(data->mypool, (void *)colors);
-                  }
-                }
-                else
-                {
-                  if(styles)
-                    MyFreePooled(data->mypool, styles);
-                  if(colors)
-                    MyFreePooled(data->mypool, (void *)colors);
-                }
-                styles    = NULL;
-                colors    = NULL;
-                flow      = MUIV_TextEditor_Flow_Left;
-                color     = FALSE;
-                separator = 0;
-                ownclip   = FALSE;
+                FreeLine(data, importedLine);
+                importedLine = NULL;
               }
             }
-            break;
           }
-        }
-      }
 
-      if(line)
-      {
-        BOOL oneline = FALSE;
+          FreeVec(line->line.Contents);
+          line->line.Contents = NULL;
+        }
 
-        SplitLine(x, actline, FALSE, NULL, data);
-        line->next = actline->next;
-        actline->next->previous = line;
-        actline->next = startline;
-        startline->previous = actline;
-        data->CPos_X = line->line.Length-1;
-        if(actline->next == line)
-        {
-          data->CPos_X += actline->line.Length-1;
-          oneline = TRUE;
-        }
-        if(!newline)
-          MergeLines(line, data);
-        MergeLines(actline, data);
-        if(oneline)
-          line = actline;
-        if(newline)
-        {
-          line = line->next;
-          data->CPos_X = 0;
-        }
-        data->actualline = line;
+        FreeVec(line);
+        line = NULL;
       }
       else
       {
-        switch(error)
-        {
-          case IFFERR_MANGLED:
-          case IFFERR_SYNTAX:
-          case IFFERR_NOTIFF:
-            D(DBF_CLIPBOARD, "no FTXT clip!");
-            DoMethod(data->object, MUIM_TextEditor_HandleError, Error_ClipboardIsNotFTXT);
-            break;
-          default:
-            D(DBF_CLIPBOARD, "clipboard is empty!");
-            DoMethod(data->object, MUIM_TextEditor_HandleError, Error_ClipboardIsEmpty);
-            break;
-        }
+        // we either encountered an error or we just finished importing the complete clip
+        break;
       }
+    }
+    while(error == 0 || error != IFFERR_EOF);
+
+    ClientEndSession(clipSession);
+    //error = 42;
+
+    SHOWVALUE(DBF_CLIPBOARD, error);
+    SHOWVALUE(DBF_CLIPBOARD, IFFERR_EOF);
+    SHOWVALUE(DBF_CLIPBOARD, importedLines);
+    if(error == IFFERR_EOF && importedLines != NULL)
+    {
+      BOOL oneline = FALSE;
+      struct line_node *line;
+      LONG updatefrom;
+
+      // sum up the visual heights of all imported lines
+      line = importedLines;
+      while(line != NULL)
+      {
+        data->totallines += line->visual;
+        line = line->next;
+      }
+
+      SplitLine(data, x, actline, FALSE, NULL);
+      importedLine->next = actline->next;
+      actline->next->previous = importedLine;
+      actline->next = importedLines;
+      importedLines->previous = actline;
+      data->CPos_X = importedLine->line.Length-1;
+      if(actline->next == importedLine)
+      {
+        data->CPos_X += actline->line.Length-1;
+        oneline = TRUE;
+      }
+      if(newline == FALSE)
+      {
+        D(DBF_CLIPBOARD, "merging line");
+        MergeLines(data, importedLine);
+      }
+      D(DBF_CLIPBOARD, "merging actline");
+      MergeLines(data, actline);
+
+      if(oneline == TRUE)
+        importedLine = actline;
+      if(newline == TRUE)
+      {
+        importedLine = importedLine->next;
+        data->CPos_X = 0;
+      }
+      data->actualline = importedLine;
+
       data->update = TRUE;
 
       ScrollIntoDisplay(data);
-      updatefrom = LineToVisual(actline, data)-1;
+      updatefrom = LineToVisual(data, actline)-1;
       if(updatefrom < 0)
         updatefrom = 0;
-      DumpText(data->visual_y+updatefrom, updatefrom, data->maxlines, TRUE, data);
+      DumpText(data, data->visual_y+updatefrom, updatefrom, data->maxlines, TRUE);
 
-      if(data->update)
+      if(data->update == TRUE)
         res = TRUE;
       else
         data->update = TRUE;
     }
+    else
+    {
+      struct line_node *line = importedLines;
 
-    EndClipSession(data);
+      // in case of an error we free all imported lines so far
+      while(line != NULL)
+      {
+        struct line_node *next = line->next;
+
+        D(DBF_CLIPBOARD, "freeing %ld colors", line->line.allocatedColors);
+        if(line->line.Colors != NULL)
+          FreeVecPooled(data->mypool, line->line.Colors);
+        D(DBF_CLIPBOARD, "freeing %ld styles", line->line.allocatedStyles);
+        if(line->line.Styles != NULL)
+          FreeVecPooled(data->mypool, line->line.Styles);
+        D(DBF_CLIPBOARD, "freeing contents");
+        if(line->line.Contents != NULL)
+          FreeVecPooled(data->mypool, line->line.Contents);
+        D(DBF_CLIPBOARD, "freeing line");
+        FreeLine(data, line);
+        line = next;
+      }
+
+      switch(error)
+      {
+        case IFFERR_MANGLED:
+        case IFFERR_SYNTAX:
+        case IFFERR_NOTIFF:
+          D(DBF_CLIPBOARD, "no FTXT clip!");
+          DoMethod(data->object, MUIM_TextEditor_HandleError, Error_ClipboardIsNotFTXT);
+          break;
+
+        default:
+          D(DBF_CLIPBOARD, "clipboard is empty!");
+          DoMethod(data->object, MUIM_TextEditor_HandleError, Error_ClipboardIsEmpty);
+          break;
+      }
+    }
   }
 
   RETURN(res);
   return res;
 }
-///
 
-///MergeLines()
+///
+/// MergeLines()
 /*--------------------------*
  * Merge two lines into one *
  *--------------------------*/
-BOOL MergeLines(struct line_node *line, struct InstData *data)
+BOOL MergeLines(struct InstData *data, struct line_node *line)
 {
+  BOOL result = FALSE;
   struct line_node *next;
-  char  *newbuffer;
-  LONG  visual, oldvisual, line_nr;
-  LONG  emptyline = FALSE;
-  LONG  color = line->line.Color;
+  char *newbuffer;
+  ULONG newbufferSize;
+  LONG visual, oldvisual, line_nr;
+  BOOL emptyline = FALSE;
+  BOOL highlight = line->line.Highlight;
   UWORD flow = line->line.Flow;
   UWORD separator = line->line.Separator;
 
   ENTER();
 
+  D(DBF_DUMP, "before merge");
+  DumpLine(line);
+
   data->HasChanged = TRUE;
   if(line->line.Length == 1)
   {
     emptyline = TRUE;
-    color = line->next->line.Color;
+    highlight = line->next->line.Highlight;
     flow = line->next->line.Flow;
     separator = line->next->line.Separator;
   }
   visual = line->visual + line->next->visual;
 
-  if((newbuffer = MyAllocPooled(data->mypool, line->line.Length+line->next->line.Length+1)) != NULL)
+  newbufferSize = line->line.Length+line->next->line.Length+1;
+  if((newbuffer = AllocVecPooled(data->mypool, newbufferSize)) != NULL)
   {
     memcpy(newbuffer, line->line.Contents, line->line.Length-1);
     memcpy(newbuffer+line->line.Length-1, line->next->line.Contents, line->next->line.Length+1);
-    MyFreePooled(data->mypool, line->line.Contents);
-    MyFreePooled(data->mypool, line->next->line.Contents);
+    FreeVecPooled(data->mypool, line->line.Contents);
+    FreeVecPooled(data->mypool, line->next->line.Contents);
 
     if(emptyline == TRUE)
     {
       if(line->line.Styles != NULL)
-        MyFreePooled(data->mypool, line->line.Styles);
+        FreeVecPooled(data->mypool, line->line.Styles);
 
       line->line.Styles = line->next->line.Styles;
+      line->line.allocatedStyles = line->next->line.allocatedStyles;
+      line->line.usedStyles = line->next->line.usedStyles;
 
       if(line->line.Colors != NULL)
-        MyFreePooled(data->mypool, line->line.Colors);
+        FreeVecPooled(data->mypool, line->line.Colors);
 
       line->line.Colors = line->next->line.Colors;
+      line->line.allocatedColors = line->next->line.allocatedColors;
+      line->line.usedColors = line->next->line.usedColors;
     }
     else
     {
-      UWORD *styles;
-      UWORD *styles1 = line->line.Styles;
-      UWORD *styles2 = line->next->line.Styles;
-      UWORD *colors;
-      UWORD *colors1 = line->line.Colors;
-      UWORD *colors2 = line->next->line.Colors;
-      UWORD length = 12;
+      struct LineStyle *styles;
+      struct LineStyle *styles1 = line->line.Styles;
+      struct LineStyle *styles2 = line->next->line.Styles;
+      struct LineColor *colors;
+      struct LineColor *colors1 = line->line.Colors;
+      struct LineColor *colors2 = line->next->line.Colors;
+      ULONG allocStyles;
+      ULONG allocColors;
 
-      if(styles1 != NULL)
-        length += *((long *)styles1-1) - 4;
-      if(styles2 != NULL)
-        length += *((long *)styles2-1) - 4;
+      allocStyles = 3 + line->line.usedStyles + line->next->line.usedStyles;
 
-      if((styles = MyAllocPooled(data->mypool, length)) != NULL)
+      if((styles = AllocVecPooled(data->mypool, allocStyles * sizeof(*styles))) != NULL)
       {
-        unsigned short* t_styles = styles;
-        unsigned short  style = 0;
-
-        SHOWVALUE(DBF_CLIPBOARD, length);
-        SHOWVALUE(DBF_CLIPBOARD, styles);
-        SHOWVALUE(DBF_CLIPBOARD, styles1);
-        SHOWVALUE(DBF_CLIPBOARD, styles2);
+        struct LineStyle *t_styles = styles;
+        ULONG usedStyles = 0;
+        UWORD style = 0;
 
         if(styles2 != NULL)
         {
-          unsigned short* t_styles2 = styles2;
+          struct LineStyle *t_styles2 = styles2;
 
-          while(*t_styles2++ == 1)
+          // collect all styles which start at the beginning of the line to be appended
+          while(t_styles2->column == 1)
           {
-            if(*t_styles2 > 0xff)
-              style &= *t_styles2++;
+            D(DBF_STYLE, "appending style 0x%04lx", t_styles->style);
+            if(t_styles->style > 0xff)
+              style &= t_styles2->style;
             else
-              style |= *t_styles2++;
+              style |= t_styles2->style;
+
+            t_styles2++;
           }
         }
 
         if(styles1 != NULL)
         {
-          while(*styles1 != EOS)
+          while(styles1->column != EOS)
           {
-            if((*styles1 == line->line.Length) && ((~*(styles1+1) & style) == (*(styles1+1)  ^ 0xffff)))
+            if(styles1->column == line->line.Length && ((~styles1->style & style) == (styles1->style ^ 0xffff)))
             {
-              style &= *(styles1+1);
-              styles1 += 2;
+              D(DBF_STYLE, "ignoring style 0x%04lx at column %ld (1)", styles1->style, styles1->column);
+              style &= styles1->style;
+              styles1++;
             }
             else
             {
-              *styles++ = *styles1++;
-              *styles++ = *styles1++;
+              D(DBF_STYLE, "prepending style 0x%04lx at column %ld", styles1->style, styles1->column);
+              styles->column = styles1->column;
+              styles->style = styles1->style;
+              styles1++;
+              styles++;
+              usedStyles++;
             }
           }
-          SHOWVALUE(DBF_CLIPBOARD, line->line.Styles);
-          MyFreePooled(data->mypool, line->line.Styles);
+          FreeVecPooled(data->mypool, line->line.Styles);
         }
 
         if(styles2 != NULL)
         {
-          while(*styles2 != EOS)
+          while(styles2->column != EOS)
           {
-            if((*styles2 == 1)  && (!(*(styles2+1) & style)))
+            if(styles2->column == 1 && (styles2->style & style) == 0)
             {
-              styles2 += 2;
+              D(DBF_STYLE, "ignoring style 0x%04lx at column %ld (2)", styles2->style, styles2->column);
+              styles2++;
             }
             else
             {
-              *styles++ = *styles2++ + line->line.Length - 1;
-              *styles++ = *styles2++;
+              D(DBF_STYLE, "appending style 0x%04lx at column %ld from column %ld", styles2->style, styles2->column + line->line.Length - 1, styles2->column);
+              styles->column = styles2->column + line->line.Length - 1;
+              styles->style = styles2->style;
+              styles2++;
+              styles++;
+              usedStyles++;
             }
           }
-          SHOWVALUE(DBF_CLIPBOARD, line->next->line.Styles);
-          MyFreePooled(data->mypool, line->next->line.Styles);
+          FreeVecPooled(data->mypool, line->next->line.Styles);
         }
-        *styles = EOS;
+        styles->column = EOS;
+        usedStyles++;
+
         line->line.Styles = t_styles;
+        line->line.allocatedStyles = allocStyles;
+        line->line.usedStyles = usedStyles;
+        if(usedStyles > allocStyles)
+        {
+          E(DBF_STYLE, "used styles (%ld) > allocated styles (%ld)", usedStyles, allocStyles);
+          DumpLine(line);
+        }
       }
 
-      length = 12;
+      allocColors = 3 + line->line.usedColors + line->next->line.usedColors;
 
-      if(colors1 != NULL)
-        length += *((long *)colors1-1) - 4;
-      if(colors2 != NULL)
-        length += *((long *)colors2-1) - 4;
-
-      if((colors = MyAllocPooled(data->mypool, length)) != NULL)
+      if((colors = AllocVecPooled(data->mypool, allocColors * sizeof(*colors))) != NULL)
       {
-        UWORD *t_colors = colors;
+        struct LineColor *t_colors = colors;
+        ULONG usedColors = 0;
         UWORD end_color = 0;
-
-        SHOWVALUE(DBF_CLIPBOARD, length);
-        SHOWVALUE(DBF_CLIPBOARD, colors);
-        SHOWVALUE(DBF_CLIPBOARD, colors1);
-        SHOWVALUE(DBF_CLIPBOARD, colors2);
 
         if(colors1 != NULL)
         {
-          while(*colors1 < line->line.Length && *colors1 != 0xffff)
+          while(colors1->column < line->line.Length && colors1->column != EOC)
           {
-            *colors++ = *colors1++;
-            end_color = *colors1;
-            *colors++ = *colors1++;
+            colors->column = colors1->column;
+            end_color = colors1->color;
+            colors->color = colors1->color;
+            colors1++;
+            colors++;
+            usedColors++;
           }
-          SHOWVALUE(DBF_CLIPBOARD, line->line.Colors);
-          MyFreePooled(data->mypool, line->line.Colors);
+          FreeVecPooled(data->mypool, line->line.Colors);
         }
 
-        if(end_color && (colors2 == NULL || *colors2 != 1))
+        if(end_color != 0 && (colors2 == NULL || colors2->column != 1))
         {
-          *colors++ = line->line.Length;
-          *colors++ = 0;
+          colors->column = line->line.Length;
+          colors->color = 0;
+          colors++;
+          usedColors++;
         }
 
         if(colors2 != NULL)
         {
-          if(*colors2 == 1 && *(colors2+1) == end_color)
-            colors2 += 2;
+          if(colors2->column == 1 && colors2->color == end_color)
+            colors2++;
 
-          while(*colors2 != 0xffff)
+          while(colors2->column != EOC)
           {
-            *colors++ = *colors2++ + line->line.Length - 1;
-            *colors++ = *colors2++;
+            colors->column = colors2->column + line->line.Length - 1;
+            colors->color = colors2->color;
+            colors2++;
+            colors++;
+            usedColors++;
           }
-          SHOWVALUE(DBF_CLIPBOARD, line->next->line.Colors);
-          MyFreePooled(data->mypool, line->next->line.Colors);
+          FreeVecPooled(data->mypool, line->next->line.Colors);
         }
-        *colors = 0xffff;
+        colors->column = EOC;
+        usedColors++;
+
         line->line.Colors = t_colors;
+        line->line.allocatedColors = allocColors;
+        line->line.usedColors = usedColors;
+        if(usedColors > allocColors)
+        {
+          E(DBF_STYLE, "used colors (%ld) > allocated colors (%ld)", usedColors, allocColors);
+          DumpLine(line);
+        }
       }
     }
 
     line->line.Contents = newbuffer;
     line->line.Length  = strlen(newbuffer);
+    line->line.allocatedContents = newbufferSize;
 
     next = line->next;
     line->next = line->next->next;
     if(line->next != NULL)
       line->next->previous = line;
     oldvisual = line->visual;
-    line->visual = VisualHeight(line, data);
-    line->line.Color = color;
+    line->visual = VisualHeight(data, line);
+    line->line.Highlight = highlight;
     line->line.Flow = flow;
     line->line.Separator = separator;
 
-    FreeLine(next, data);
+    D(DBF_DUMP, "after merge");
+    DumpLine(line);
 
-    line_nr = LineToVisual(line, data);
+    FreeLine(data, next);
+
+    line_nr = LineToVisual(data, line);
 
     // handle that we have to scroll up/down due to word wrapping
     // that occurrs when merging lines
@@ -652,22 +689,22 @@ BOOL MergeLines(struct line_node *line, struct InstData *data)
       data->totallines -= 1;
       if(line_nr+line->visual-1 < data->maxlines)
       {
-        if(emptyline && line_nr > 0)
+        if(emptyline == TRUE && line_nr > 0)
         {
-          if(data->fastbackground)
+          if(data->fastbackground == TRUE)
           {
-            ScrollUp(line_nr - 1, 1, data);
-            SetCursor(data->CPos_X, data->actualline, TRUE, data);
+            ScrollUp(data, line_nr - 1, 1);
+            SetCursor(data, data->CPos_X, data->actualline, TRUE);
           }
           else
-            DumpText(data->visual_y+line_nr-1, line_nr-1, data->maxlines, TRUE, data);
+            DumpText(data, data->visual_y+line_nr-1, line_nr-1, data->maxlines, TRUE);
         }
         else
         {
-          if(data->fastbackground)
-            ScrollUp(line_nr + line->visual - 1, 1, data);
+          if(data->fastbackground == TRUE)
+            ScrollUp(data, line_nr + line->visual - 1, 1);
           else
-            DumpText(data->visual_y+line_nr+line->visual-1, line_nr+line->visual-1, data->maxlines, TRUE, data);
+            DumpText(data, data->visual_y+line_nr+line->visual-1, line_nr+line->visual-1, data->maxlines, TRUE);
         }
       }
     }
@@ -675,20 +712,26 @@ BOOL MergeLines(struct line_node *line, struct InstData *data)
     {
       data->totallines += 1;
       if(line_nr+line->visual-1 < data->maxlines)
-        ScrollDown(line_nr + line->visual - 2, 1, data);
+        ScrollDown(data, line_nr + line->visual - 2, 1);
     }
 
-    if(!(emptyline && (line_nr + line->visual - 1 < data->maxlines)))
+    if(emptyline == FALSE || line_nr + line->visual - 1 >= data->maxlines)
     {
       LONG t_oldvisual = oldvisual;
       LONG t_line_nr   = line_nr;
       ULONG c = 0;
 
-      while((--t_oldvisual) && (t_line_nr++ <= data->maxlines))
-        c = c + LineCharsWidth(line->line.Contents+c, data);
+      while((--t_oldvisual) && t_line_nr <= data->maxlines)
+      {
+        c += LineCharsWidth(data, &line->line.Contents[c]);
+        t_line_nr++;
+      }
 
-      while((c < line->line.Length) && (t_line_nr <= data->maxlines))
-        c = c + PrintLine(c, line, t_line_nr++, TRUE, data);
+      while(c < line->line.Length && t_line_nr <= data->maxlines)
+      {
+        c += PrintLine(data, c, line, t_line_nr, TRUE);
+        t_line_nr++;
+      }
     }
 
     if(line_nr + oldvisual == 1 && line->visual == visual-1)
@@ -696,29 +739,27 @@ BOOL MergeLines(struct line_node *line, struct InstData *data)
       data->visual_y--;
       data->totallines -= 1;
 
-      if(data->fastbackground)
-        DumpText(data->visual_y, 0, visual-1, TRUE, data);
+      if(data->fastbackground == TRUE)
+        DumpText(data, data->visual_y, 0, visual-1, TRUE);
       else
-        DumpText(data->visual_y, 0, data->maxlines, TRUE, data);
+        DumpText(data, data->visual_y, 0, data->maxlines, TRUE);
     }
 
-    RETURN(TRUE);
-    return(TRUE);
+    result = TRUE;
   }
-  else
-  {
-    RETURN(FALSE);
-    return(FALSE);
-  }
-}
-///
 
-///SplitLine()
+  RETURN(result);
+  return result;
+}
+
+///
+/// SplitLine()
 /*---------------------*
  * Split line into two *
  *---------------------*/
-BOOL SplitLine(LONG x, struct line_node *line, BOOL move_crsr, struct UserAction *buffer, struct InstData *data)
+BOOL SplitLine(struct InstData *data, LONG x, struct line_node *line, BOOL move_crsr, struct UserAction *buffer)
 {
+  BOOL result = FALSE;
   struct line_node *newline;
   struct line_node *next;
   struct pos_info pos;
@@ -729,155 +770,239 @@ BOOL SplitLine(LONG x, struct line_node *line, BOOL move_crsr, struct UserAction
 
   ENTER();
 
-  OffsetToLines(x, line, &pos, data);
+  D(DBF_DUMP, "before split, x=%ld",x);
+  DumpLine(line);
+
+  OffsetToLines(data, x, line, &pos);
   lines = pos.lines;
 
   next = line->next;
   if((newline = AllocLine(data)) != NULL)
   {
-    UWORD *styles = line->line.Styles;
-    UWORD *newstyles = NULL;
-    UWORD *colors = line->line.Colors;
-    UWORD *newcolors = NULL;
+    struct LineStyle *styles = line->line.Styles;
+    struct LineStyle *newstyles = NULL;
+    struct LineColor *colors = line->line.Colors;
+    struct LineColor *newcolors = NULL;
+    ULONG numStyles = 0;
+    ULONG usedOldStyles = 0;
+    ULONG usedNewStyles = 0;
+    ULONG numColors = 0;
+    ULONG usedOldColors = 0;
+    ULONG usedNewColors = 0;
 
     data->HasChanged = TRUE;
-    Init_LineNode(newline, line, line->line.Contents+x, data);
-    newline->line.Color = line->line.Color;
+    Init_LineNode(data, newline, line, &line->line.Contents[x]);
+    newline->line.Highlight = line->line.Highlight;
     newline->line.Flow = line->line.Flow;
     newline->line.Separator = line->line.Separator;
     if(buffer != NULL)
     {
-      newline->line.Color = buffer->del.style;
+      newline->line.Highlight = buffer->del.highlight;
       newline->line.Flow = buffer->del.flow;
       newline->line.Separator = buffer->del.separator;
     }
 
     if(styles != NULL)
     {
-      LONG  style = 0;
-      LONG  length = 0;
-      UWORD *ostyles;
+      UWORD style = 0;
+      struct LineStyle *ostyles;
 
-      while(*styles++ <= x+1)
+      // collect the applied styles up to the given position
+      while(styles->column <= x+1)
       {
-        if(*styles > 0xff)
-          style &= *styles++;
+        D(DBF_STYLE, "collecting style 0x%04lx at column %ld", styles->style, styles->column);
+        if(styles->style > 0xff)
+          style &= styles->style;
         else
-          style |= *styles++;
-      }
-      styles--;
-      ostyles = styles;
-      while(*(styles+length) != EOS)
-        length += 2;
-      length = (length*2) + 16;
+          style |= styles->style;
+        SHOWVALUE(DBF_STYLE, style);
 
-      if((newstyles = MyAllocPooled(data->mypool, length)) != NULL)
+        styles++;
+        usedOldStyles++;
+      }
+      ostyles = styles;
+
+      // count the remaining number of style changes on this line
+      while(styles[numStyles].column != EOS)
+        numStyles++;
+      // we can get up to 4 new style changes
+      numStyles += 4;
+      D(DBF_STYLE, "allocating space for %ld styles", numStyles);
+
+      if((newstyles = AllocVecPooled(data->mypool, numStyles * sizeof(*newstyles))) != NULL)
       {
-          UWORD *nstyles = newstyles;
+        struct LineStyle *nstyles = newstyles;
 
         if(isFlagSet(style, BOLD))
         {
-          *nstyles++ = 1;
-          *nstyles++ = BOLD;
+          D(DBF_STYLE, "adding new bold style");
+          nstyles->column = 1;
+          nstyles->style = BOLD;
+          nstyles++;
+          usedNewStyles++;
         }
         if(isFlagSet(style, ITALIC))
         {
-          *nstyles++ = 1;
-          *nstyles++ = ITALIC;
+          D(DBF_STYLE, "adding new italic style");
+          nstyles->column = 1;
+          nstyles->style = ITALIC;
+          nstyles++;
+          usedNewStyles++;
         }
         if(isFlagSet(style, UNDERLINE))
         {
-          *nstyles++ = 1;
-          *nstyles++ = UNDERLINE;
+          D(DBF_STYLE, "adding new underline style");
+          nstyles->column = 1;
+          nstyles->style = UNDERLINE;
+          nstyles++;
+          usedNewStyles++;
         }
 
-        while(*styles != EOS)
+        // add the remaining style changes to the new line
+        while(styles->column != EOS)
         {
-          *nstyles++ = (*styles++) - x;
-          *nstyles++ = *styles++;
+          D(DBF_STYLE, "copying style 0x%04lx from column %ld to column %ld", styles->style, styles->column, styles->column-x);
+          nstyles->column = styles->column - x;
+          nstyles->style = styles->style;
+          nstyles++;
+          usedNewStyles++;
+          styles++;
         }
-        *nstyles = EOS;
+        nstyles->column = EOS;
+        usedNewStyles++;
       }
 
+      // if there was any style active at the end of the old line we remove that style here
       if(isFlagSet(style, BOLD))
       {
-        *ostyles++ = x+1;
-        *ostyles++ = ~BOLD;
+        D(DBF_STYLE, "removing old bold style at column %ld", x+1);
+        ostyles->column = x+1;
+        ostyles->style = ~BOLD;
+        ostyles++;
+        usedOldStyles++;
       }
       if(isFlagSet(style, ITALIC))
       {
-        *ostyles++ = x+1;
-        *ostyles++ = ~ITALIC;
+        D(DBF_STYLE, "removing old italic style at column %ld", x+1);
+        ostyles->column = x+1;
+        ostyles->style = ~ITALIC;
+        ostyles++;
+        usedOldStyles++;
       }
       if(isFlagSet(style, UNDERLINE))
       {
-        *ostyles++ = x+1;
-        *ostyles++ = ~UNDERLINE;
+        D(DBF_STYLE, "removing old underline style at column %ld", x+1);
+        ostyles->column = x+1;
+        ostyles->style = ~UNDERLINE;
+        ostyles++;
+        usedOldStyles++;
       }
-      if(x != 0)
+      if(x == 0)
         ostyles = line->line.Styles;
-      *ostyles = EOS;
+
+      // terminate the style changes of the old line
+      ostyles->column = EOS;
+      usedOldStyles++;
+
+      line->line.usedStyles = usedOldStyles;
+      if(usedOldStyles > line->line.allocatedStyles)
+      {
+        E(DBF_STYLE, "used styles (%ld) > allocated styles (%ld)", usedOldStyles, line->line.allocatedStyles);
+        DumpLine(line);
+      }
     }
     newline->line.Styles = newstyles;
+    newline->line.allocatedStyles = numStyles;
+    newline->line.usedStyles = usedNewStyles;
+    if(usedNewStyles > numStyles)
+    {
+      E(DBF_STYLE, "used styles (%ld) > allocated styles (%ld)", usedNewStyles, numStyles);
+      DumpLine(newline);
+    }
 
     if(colors != NULL)
     {
       UWORD color = GetColor(x, line);
-      UWORD length = 0;
-      UWORD *ocolors;
+      struct LineColor *ocolors;
 
-      while(*colors <= x+1)
+      // ignore all color changes up to the given position
+      while(colors->column <= x+1)
       {
-        colors += 2;
+        colors++;
+        usedOldColors++;
       }
       ocolors = colors;
 
-      while(*(colors+length) != 0xffff)
-        length += 2;
-      length = (length*2) + 16;
+      // count the number of remaining color changes on this line
+      while(colors[numColors].column != EOC)
+        numColors++;
+      // we can get up to 4 new color changes
+      numColors += 4;
+      D(DBF_STYLE, "allocating space for %ld colors", numColors);
 
-      if((newcolors = MyAllocPooled(data->mypool, length)) != NULL)
+      if((newcolors = AllocVecPooled(data->mypool, numColors * sizeof(*newcolors))) != NULL)
       {
-        UWORD *ncolors = newcolors;
+        struct LineColor *ncolors = newcolors;
 
-        if(color && *colors-x != 1)
+        if(color != 0 && colors->column-x != 1)
         {
-          *ncolors++ = 1;
-          *ncolors++ = color;
+          ncolors->column = 1;
+          ncolors->color = color;
+          ncolors++;
+          usedNewColors++;
         }
 
-        while(*colors != 0xffff)
+        // add the remaining color changes to the new line
+        while(colors->column != EOC)
         {
-          *ncolors++ = (*colors++) - x;
-          *ncolors++ = *colors++;
+          ncolors->column = colors->column - x;
+          ncolors->color = colors->color;
+          ncolors++;
+          usedNewColors++;
+          colors++;
         }
-        *ncolors = 0xffff;
+        ncolors->column = EOC;
+        usedNewColors++;
       }
-      if(x != 0)
+      if(x == 0)
         ocolors = line->line.Colors;
-      *ocolors = 0xffff;
+      // terminate the color changes of the old line
+      ocolors->column = EOC;
+      usedOldColors++;
+
+      line->line.usedColors = usedOldColors;
+      if(usedOldColors > line->line.allocatedColors)
+      {
+        E(DBF_STYLE, "used colors (%ld) > allocated colors (%ld)", usedOldColors, line->line.allocatedColors);
+        DumpLine(line);
+      }
     }
     newline->line.Colors = newcolors;
-
+    newline->line.allocatedColors = numColors;
+    newline->line.usedColors = usedNewColors;
+    if(usedNewColors > numColors)
+    {
+      E(DBF_STYLE, "used colors (%ld) > allocated colors (%ld)", usedNewColors, numColors);
+      DumpLine(newline);
+    }
 
     newline->next = next;
     if(next != NULL)
       next->previous = newline;
 
-    *(line->line.Contents+x) = '\n';
-    *(line->line.Contents+x+1) = '\0';
+    line->line.Contents[x] = '\n';
+    line->line.Contents[x+1] = '\0';
     line->line.Length = x+1;
 
-/*------------------*/
     c = line->visual;
-    line->visual = VisualHeight(line, data);
-    CompressLine(line, data);
+    line->visual = VisualHeight(data, line);
+    CompressLine(data, line);
 
-    line_nr = LineToVisual(line, data) + line->visual - 1;
+    line_nr = LineToVisual(data, line) + line->visual - 1;
     if(line_nr < 0)
       line_nr = 0;
 
-    if(move_crsr)
+    if(move_crsr == TRUE)
     {
       data->CPos_X = 0;
       data->actualline = data->actualline->next;
@@ -885,28 +1010,31 @@ BOOL SplitLine(LONG x, struct line_node *line, BOOL move_crsr, struct UserAction
 
     if(x == 0)
     {
-      line->line.Color = 0;
-      line->line.Separator = 0;
-      if(!(line->previous && line->previous->line.Flow == line->line.Flow))
+      // split at the beginning of the line
+      line->line.Highlight = FALSE;
+      line->line.Separator = LNSF_None;
+      if(line->previous == NULL || line->previous->line.Flow != line->line.Flow)
       {
         line->line.Flow = MUIV_TextEditor_Flow_Left;
       }
+
       if(line_nr != data->maxlines)
       {
         data->totallines += 1;
-        if(data->fastbackground)
+        if(data->fastbackground == TRUE)
         {
-          if(line_nr)
+          if(line_nr != 0)
           {
-            ScrollDown(line_nr-1, 1, data);
-            PrintLine(0, line, line_nr, FALSE, data);
+            ScrollDown(data, line_nr-1, 1);
+            PrintLine(data, 0, line, line_nr, FALSE);
           }
           else
           {
-            ScrollDown(line_nr, 1, data);
+            ScrollDown(data, line_nr, 1);
           }
         }
-        else  DumpText(data->visual_y+line_nr-1, line_nr-1, data->maxlines, TRUE, data);
+        else
+          DumpText(data, data->visual_y+line_nr-1, line_nr-1, data->maxlines, TRUE);
       }
       else
       {
@@ -922,112 +1050,108 @@ BOOL SplitLine(LONG x, struct line_node *line, BOOL move_crsr, struct UserAction
                     data->xpos + data->innerwidth - 1, (data->ypos + ((data->maxlines-1) * data->height)) - 1);
           InstallLayerHook(data->rport->Layer, oldhook);
 
-          PrintLine(0, line, data->maxlines-1, FALSE, data);
-          if(!data->fastbackground)
+          PrintLine(data, 0, line, data->maxlines-1, FALSE);
+          if(data->fastbackground == FALSE)
           {
-            DumpText(data->visual_y+data->maxlines-1, data->maxlines-1, data->maxlines, TRUE, data);
+            DumpText(data, data->visual_y+data->maxlines-1, data->maxlines-1, data->maxlines, TRUE);
           }
         }
       }
 
-      RETURN(TRUE);
-      return(TRUE);
-    }
+      D(DBF_DUMP, "after split, old line");
+      DumpLine(line);
+      D(DBF_DUMP, "after split, new line");
+      DumpLine(newline);
 
-    if(x == (LONG)(line->line.Length + newline->line.Length - 2))
+      result = TRUE;
+    }
+    else if(x == (LONG)(line->line.Length + newline->line.Length - 2))
     {
+      // split at the end of the line
       data->totallines += 1;
       if(buffer == NULL)
       {
-        line->next->line.Color = 0;
-        line->next->line.Separator = 0;
+        line->next->line.Highlight = FALSE;
+        line->next->line.Separator = LNSF_None;
       }
-      SetCursor(crsr_x, crsr_l, FALSE, data);
+      SetCursor(data, crsr_x, crsr_l, FALSE);
       if(line_nr < data->maxlines)
       {
-        if(data->fastbackground)
+        if(data->fastbackground == TRUE)
         {
-          ScrollDown(line_nr, 1, data);
+          ScrollDown(data, line_nr, 1);
           if(line_nr+1 <= data->maxlines)
-            PrintLine(0, line->next, line_nr+1, FALSE, data);
+            PrintLine(data, 0, line->next, line_nr+1, FALSE);
         }
-        else  DumpText(data->visual_y+line_nr, line_nr, data->maxlines, TRUE, data);
+        else
+          DumpText(data, data->visual_y+line_nr, line_nr, data->maxlines, TRUE);
       }
 
-      RETURN(TRUE);
-      return(TRUE);
-    }
-    x = line->line.Length;
+      D(DBF_DUMP, "after split, old line");
+      DumpLine(line);
+      D(DBF_DUMP, "after split, new line");
+      DumpLine(newline);
 
-    OffsetToLines(x-1, line, &pos, data);
-    if(((ULONG)(line->visual + line->next->visual) >= c) && (line->visual == lines))
-    {
-      if((ULONG)(line->visual + line->next->visual) > c)
-        data->totallines += 1;
-
-      PrintLine(pos.bytes, line, line_nr, TRUE, data);
-
-      if((line_nr+line->next->visual-1 < data->maxlines) && ((ULONG)(line->visual + line->next->visual) > c))
-      {
-        ScrollDown(line_nr+line->next->visual-1, 1, data);
-      }
+      result = TRUE;
     }
     else
     {
-      PrintLine((x-1)-pos.x, line, line_nr, TRUE, data);
+      // split somewhere in the middle
+      x = line->line.Length;
 
-      if((line_nr < data->maxlines) && ((ULONG)(line->visual + line->next->visual) < c))
+      OffsetToLines(data, x-1, line, &pos);
+      if((ULONG)(line->visual + line->next->visual) >= c && line->visual == lines)
       {
-        data->totallines -= 1;
-        ScrollUp(line_nr, 1, data);
+        if((ULONG)(line->visual + line->next->visual) > c)
+          data->totallines += 1;
+
+        PrintLine(data, pos.bytes, line, line_nr, TRUE);
+
+        if(line_nr+line->next->visual-1 < data->maxlines && (ULONG)(line->visual + line->next->visual) > c)
+        {
+          ScrollDown(data, line_nr+line->next->visual-1, 1);
+        }
       }
+      else
+      {
+        PrintLine(data, (x-1)-pos.x, line, line_nr, TRUE);
+
+        if(line_nr < data->maxlines && (ULONG)(line->visual + line->next->visual) < c)
+        {
+          data->totallines -= 1;
+          ScrollUp(data, line_nr, 1);
+        }
+      }
+  /*------------------*/
+      line = line->next;
+      line_nr++;
+      c = 0;
+      while(c < line->line.Length && line_nr <= data->maxlines)
+      {
+        c = c + PrintLine(data, c, line, line_nr, TRUE);
+        line_nr++;
+      }
+    /* Her printes !HELE! den nye linie, burde optimeres! */
+
+      D(DBF_DUMP, "after split, old line");
+      DumpLine(line);
+      D(DBF_DUMP, "after split, new line");
+      DumpLine(newline);
+
+      result = TRUE;
     }
-/*------------------*/
-    line = line->next;
-    line_nr++;
-    c = 0;
-    while((c < line->line.Length) && (line_nr <= data->maxlines))
-      c = c + PrintLine(c, line, line_nr++, TRUE, data);
-  /* Her printes !HELE! den nye linie, burde optimeres! */
-
-    RETURN(TRUE);
-    return (TRUE);
   }
-  else
-  {
-    RETURN(FALSE);
-    return (FALSE);
-  }
+
+  RETURN(result);
+  return result;
 }
+
 ///
-
-///strcpyback()
-/*------------------------------------------------------------------*
- * Backwards string copy, please replace with some assembler stuff! *
- *------------------------------------------------------------------*/
-static void strcpyback(char *dest, char *src)
-{
-  size_t length;
-
-  ENTER();
-
-  length = strlen(src)+1;
-  dest = dest + length;
-  src = src + length;
-
-  length++;
-  while(--length)
-    *--dest = *--src;
-
-  LEAVE();
-}
-///
-
-///OptimizedPrint()
+/// OptimizedPrint()
 /* ------------------------------------ *
  *  Functions which updates the display *
  * ------------------------------------ */
-void OptimizedPrint(LONG x, struct line_node *line, LONG line_nr, LONG width, struct InstData *data)
+static void OptimizedPrint(struct InstData *data, LONG x, struct line_node *line, LONG line_nr, LONG width)
 {
   ENTER();
 
@@ -1035,13 +1159,13 @@ void OptimizedPrint(LONG x, struct line_node *line, LONG line_nr, LONG width, st
   {
     LONG twidth;
 
-    twidth = PrintLine(x, line, line_nr, TRUE, data);
+    twidth = PrintLine(data, x, line, line_nr, TRUE);
     line_nr++;
 
     if(twidth != width && x+twidth < (LONG)line->line.Length && line_nr <= data->maxlines)
     {
       x += twidth;
-      width = LineCharsWidth(line->line.Contents+x+width, data) + width - twidth;
+      width += LineCharsWidth(data, &line->line.Contents[x+width]) - twidth;
     }
     else
       break;
@@ -1050,10 +1174,10 @@ void OptimizedPrint(LONG x, struct line_node *line, LONG line_nr, LONG width, st
 
   LEAVE();
 }
-///
 
-///UpdateChange()
-static void UpdateChange(LONG x, struct line_node *line, LONG length, const char *characters, struct UserAction *buffer, struct InstData *data)
+///
+/// UpdateChange()
+static void UpdateChange(struct InstData *data, LONG x, struct line_node *line, LONG length, const char *characters, struct UserAction *buffer)
 {
   LONG diff;
   LONG skip=0;
@@ -1064,52 +1188,52 @@ static void UpdateChange(LONG x, struct line_node *line, LONG length, const char
 
   ENTER();
 
-  line_nr = LineToVisual(line, data);
+  line_nr = LineToVisual(data, line);
   orgline_nr = line_nr;
 
   do
   {
+    width = LineCharsWidth(data, line->line.Contents + skip);
+
     // don't exceed the line length!
     if(skip > (LONG)line->line.Length)
       break;
 
-    width = LineCharsWidth(line->line.Contents + skip, data);
-    if(width > 0 && skip + width < x)
-    {
-      lineabove_width = width;
-      skip += width;
-      line_nr++;
-    }
-    else
+    if(width <= 0 || skip + width >= x)
       break;
+
+    lineabove_width = width;
+    skip += width;
+    line_nr++;
   }
   while(TRUE);
 
   if(characters != NULL)
   {
-    strcpyback(line->line.Contents+x+length, line->line.Contents+x);
-    memcpy(line->line.Contents+x, characters, length);
+    memmove(&line->line.Contents[x+length], &line->line.Contents[x], strlen(&line->line.Contents[x])+1);
+    memcpy(&line->line.Contents[x], characters, length);
     width += length;
     line->line.Length += length;
     if(buffer != NULL)
     {
       UWORD style = buffer->del.style;
 
-      AddStyleToLine(x, line, 1, (style & BOLD) ? BOLD : ~BOLD, data);
-      AddStyleToLine(x, line, 1, (style & ITALIC) ? ITALIC : ~ITALIC, data);
-      AddStyleToLine(x, line, 1, (style & UNDERLINE) ? UNDERLINE : ~UNDERLINE, data);
+      AddStyleToLine(data, x, line, 1, isFlagSet(style, BOLD) ? BOLD : ~BOLD);
+      AddStyleToLine(data, x, line, 1, isFlagSet(style, ITALIC) ? ITALIC : ~ITALIC);
+      AddStyleToLine(data, x, line, 1, isFlagSet(style, UNDERLINE) ? UNDERLINE : ~UNDERLINE);
       line->line.Flow = buffer->del.flow;
       line->line.Separator = buffer->del.separator;
+      #warning is buffer->del.highlight missing here?
     }
   }
   else
   {
-    strlcpy(line->line.Contents+x, line->line.Contents+x+length, line->line.Length);
+    strlcpy(&line->line.Contents[x], &line->line.Contents[x+length], line->line.Length);
     width -= length;
     line->line.Length -= length;
   }
 
-  diff = VisualHeight(line, data) - line->visual;
+  diff = VisualHeight(data, line) - line->visual;
   if(diff != 0)
   {
     LONG movement;
@@ -1122,23 +1246,23 @@ static void UpdateChange(LONG x, struct line_node *line, LONG length, const char
     if(diff > 0)
     {
       if(movement < data->maxlines)
-        ScrollDown(movement, diff, data);
+        ScrollDown(data, movement, diff);
     }
     else
     {
       movement = orgline_nr + line->visual - 1;
       if(movement <= data->maxlines)
-        ScrollUp(movement, -diff, data);
+        ScrollUp(data, movement, -diff);
     }
   }
 
   if(orgline_nr != line_nr)
   {
-    if(lineabove_width != LineCharsWidth(line->line.Contents+skip-lineabove_width, data))
+    if(lineabove_width != LineCharsWidth(data, &line->line.Contents[skip-lineabove_width]))
     {
       LONG newwidth;
 
-      newwidth = PrintLine(skip-lineabove_width, line, line_nr-1, TRUE, data) - lineabove_width;
+      newwidth = PrintLine(data, skip-lineabove_width, line, line_nr-1, TRUE) - lineabove_width;
       skip  += newwidth;
       width -= newwidth;
       if(skip >= (LONG)line->line.Length)
@@ -1149,173 +1273,178 @@ static void UpdateChange(LONG x, struct line_node *line, LONG length, const char
     }
   }
 
-  OptimizedPrint(skip, line, line_nr, width, data);
+  OptimizedPrint(data, skip, line, line_nr, width);
   ScrollIntoDisplay(data);
   data->HasChanged = TRUE;
 
   LEAVE();
 }
-///
 
-///PasteChars()
+///
+/// PasteChars()
 /*------------------------------*
  * Paste n characters to a line *
  *------------------------------*/
-BOOL PasteChars(LONG x, struct line_node *line, LONG length, const char *characters, struct UserAction *buffer, struct InstData *data)
+BOOL PasteChars(struct InstData *data, LONG x, struct line_node *line, LONG length, const char *characters, struct UserAction *buffer)
 {
   ENTER();
 
   if(line->line.Styles != NULL)
   {
-    if(*line->line.Styles != EOS)
+    if(line->line.Styles[0].column != EOS)
     {
       ULONG c = 0;
 
-      while(*(line->line.Styles+c) <= x+1)
-        c += 2;
-      while(*(line->line.Styles+c) != EOS)
+      while(line->line.Styles[c].column <= x+1)
+        c++;
+      while(line->line.Styles[c].column != EOS)
       {
-        *(line->line.Styles+c) += length;
-        c += 2;
+        line->line.Styles[c].column += length;
+        c++;
       }
     }
   }
 
   if(line->line.Colors != NULL)
   {
-    if(*line->line.Colors != 0xffff)
+    if(line->line.Colors[0].column != EOC)
     {
-        ULONG c = 0;
+      ULONG c = 0;
 
-      while(*(line->line.Colors+c) <= x+1)
-        c += 2;
-      while(*(line->line.Colors+c) != 0xffff)
+      while(line->line.Colors[c].column <= x+1)
+        c++;
+      while(line->line.Colors[c].column != EOC)
       {
-        *(line->line.Colors+c) += length;
-        c += 2;
+        line->line.Colors[c].column += length;
+        c++;
       }
     }
   }
 
-  if((*((long *)line->line.Contents-1))-4 < (LONG)(line->line.Length + length + 1))
+  if(line->line.allocatedContents < line->line.Length + length + 1)
   {
-    if(ExpandLine(line, length, data) == FALSE)
+    if(ExpandLine(data, line, length) == FALSE)
     {
       RETURN(FALSE);
       return(FALSE);
     }
   }
 
-  UpdateChange(x, line, length, characters, buffer, data);
+  UpdateChange(data, x, line, length, characters, buffer);
 
   RETURN(TRUE);
   return(TRUE);
 }
-///
 
-///RemoveChars()
+///
+/// RemoveChars()
 /*----------------------------*
  * Remove n chars from a line *
  *----------------------------*/
-BOOL RemoveChars(LONG x, struct line_node *line, LONG length, struct InstData *data)
+BOOL RemoveChars(struct InstData *data, LONG x, struct line_node *line, LONG length)
 {
   ENTER();
 
-  if(line->line.Styles != NULL)
+  if(line->line.Styles != NULL && line->line.Styles[0].column != EOS)
   {
-    if(*line->line.Styles != EOS)
+    UWORD start_style = GetStyle(x-1, line);
+    UWORD end_style = GetStyle(x+length, line);
+    ULONG c = 0, store;
+
+    while(line->line.Styles[c].column <= x)
+      c++;
+
+    if(start_style != end_style)
     {
-        UWORD start_style = GetStyle(x-1, line);
-        UWORD end_style = GetStyle(x+length, line);
-        ULONG c = 0, store;
+      UWORD turn_off = start_style & ~end_style;
+      UWORD turn_on  = end_style & ~start_style;
 
-      while(*(line->line.Styles+c) <= x)
-        c += 2;
-
-      if(start_style != end_style)
+      if(isFlagSet(turn_off, BOLD))
       {
-        UWORD turn_off = start_style & ~end_style;
-        UWORD turn_on  = end_style & ~start_style;
-
-        if(isFlagSet(turn_off, BOLD))
-        {
-          *(line->line.Styles+c++) = x+1;
-          *(line->line.Styles+c++) = ~BOLD;
-        }
-        if(isFlagSet(turn_off, ITALIC))
-        {
-          *(line->line.Styles+c++) = x+1;
-          *(line->line.Styles+c++) = ~ITALIC;
-        }
-        if(isFlagSet(turn_off, UNDERLINE))
-        {
-          *(line->line.Styles+c++) = x+1;
-          *(line->line.Styles+c++) = ~UNDERLINE;
-        }
-        if(isFlagSet(turn_on, BOLD))
-        {
-          *(line->line.Styles+c++) = x+1;
-          *(line->line.Styles+c++) = BOLD;
-        }
-        if(isFlagSet(turn_on, ITALIC))
-        {
-          *(line->line.Styles+c++) = x+1;
-          *(line->line.Styles+c++) = ITALIC;
-        }
-        if(isFlagSet(turn_on, UNDERLINE))
-        {
-          *(line->line.Styles+c++) = x+1;
-          *(line->line.Styles+c++) = UNDERLINE;
-        }
+        line->line.Styles[c].column = x+1;
+        line->line.Styles[c].style = ~BOLD;
+        c++;
       }
-
-      store = c;
-      while(*(line->line.Styles+c) <= x+length+1)
-        c += 2;
-
-      while(*(line->line.Styles+c) != EOS)
+      if(isFlagSet(turn_off, ITALIC))
       {
-        *(line->line.Styles+store++) = *(line->line.Styles+c++)-length;
-        *(line->line.Styles+store++) = *(line->line.Styles+c++);
+        line->line.Styles[c].column = x+1;
+        line->line.Styles[c].style = ~ITALIC;
+        c++;
       }
-      *(line->line.Styles+store) = EOS;
+      if(isFlagSet(turn_off, UNDERLINE))
+      {
+        line->line.Styles[c].column = x+1;
+        line->line.Styles[c].style = ~UNDERLINE;
+        c++;
+      }
+      if(isFlagSet(turn_on, BOLD))
+      {
+        line->line.Styles[c].column = x+1;
+        line->line.Styles[c].style = BOLD;
+        c++;
+      }
+      if(isFlagSet(turn_on, ITALIC))
+      {
+        line->line.Styles[c].column = x+1;
+        line->line.Styles[c].style = ITALIC;
+        c++;
+      }
+      if(isFlagSet(turn_on, UNDERLINE))
+      {
+        line->line.Styles[c].column = x+1;
+        line->line.Styles[c].style = UNDERLINE;
+        c++;
+      }
     }
+
+    store = c;
+    while(line->line.Styles[c].column <= x+length+1)
+      c++;
+
+    while(line->line.Styles[c].column != EOS)
+    {
+      line->line.Styles[store].column = line->line.Styles[c].column-length;
+      line->line.Styles[store].style = line->line.Styles[c].style;
+      c++;
+      store++;
+    }
+    line->line.Styles[store].column = EOS;
   }
 
-  if(line->line.Colors != NULL)
+  if(line->line.Colors != NULL && line->line.Colors[0].column != EOC)
   {
-    if(*line->line.Colors != 0xffff)
+    UWORD start_color = (x != 0) ? GetColor(x-1, line) : 0;
+    UWORD end_color = GetColor(x+length, line);
+    ULONG c = 0, store;
+
+    while(line->line.Colors[c].column <= x)
+      c++;
+
+    if(start_color != end_color)
     {
-      UWORD start_color = x ? GetColor(x-1, line) : 0;
-      UWORD end_color = GetColor(x+length, line);
-      ULONG c = 0, store;
-
-      while(*(line->line.Colors+c) <= x)
-        c += 2;
-
-      if(start_color != end_color)
-      {
-        *(line->line.Colors+c++) = x+1;
-        *(line->line.Colors+c++) = end_color;
-      }
-
-      store = c;
-      while(*(line->line.Colors+c) <= x+length+1)
-        c += 2;
-
-      while(*(line->line.Colors+c) != 0xffff)
-      {
-        *(line->line.Colors+store++) = *(line->line.Colors+c++)-length;
-        *(line->line.Colors+store++) = *(line->line.Colors+c++);
-      }
-      *(line->line.Colors+store) = 0xffff;
+      line->line.Colors[c].column = x+1;
+      line->line.Colors[c].color = end_color;
+      c++;
     }
+
+    store = c;
+    while(line->line.Colors[c].column <= x+length+1)
+      c++;
+
+    while(line->line.Colors[c].column != EOC)
+    {
+      line->line.Colors[store].column = line->line.Colors[c].column-length;
+      line->line.Colors[store].color = line->line.Colors[c].color;
+      c++;
+      store++;
+    }
+    line->line.Colors[store].column = EOC;
   }
 
-  UpdateChange(x, line, length, NULL, NULL, data);
+  UpdateChange(data, x, line, length, NULL, NULL);
 
   RETURN(TRUE);
   return(TRUE);
 }
-///
 
+///

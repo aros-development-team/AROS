@@ -25,90 +25,91 @@
 #include <proto/exec.h>
 
 #include "private.h"
+#include "Debug.h"
 
-///ImportText()
+/// ImportText()
 /***********************************************************************
  Import the given 0 terminated text by invoking the gicen import Hook
  for every line
 ***********************************************************************/
-struct line_node *ImportText(char *contents, struct InstData *data, struct Hook *importHook, LONG wraplength)
+struct line_node *ImportText(struct InstData *data, char *contents, struct Hook *importHook, LONG wraplength)
 {
-  struct line_node *first_line, *line;
-  struct ImportMessage im;
+  struct line_node *first_line;
 
   ENTER();
 
-  im.Data = contents;
-  im.ImportWrap = wraplength;
-  im.PoolHandle = data->mypool;
-
-  line = AllocLine(data);
-  if(!line)
+  if((first_line = AllocLine(data)) != NULL)
   {
-    RETURN(NULL);
-    return NULL;
-  }
+    struct line_node *line;
+    struct ImportMessage im;
 
-  memset(line,0,sizeof(*line));
-  first_line = line;
+    im.Data = contents;
+    im.ImportWrap = wraplength;
+    im.PoolHandle = data->mypool;
 
-  while (1)
-  {
-    struct line_node *new_line;
+    memset(first_line, 0, sizeof(*first_line));
+    line = first_line;
 
-    im.linenode = &line->line;
-
-    /* invoke the hook, it will return NULL in case it is finished or
-     * an error occured */
-    im.Data = (char*)CallHookPkt(importHook, NULL, &im);
-
-    if (!im.Data)
+    while(TRUE)
     {
-      if (!line->line.Contents)
+      struct line_node *new_line;
+
+      im.linenode = &line->line;
+
+      /* invoke the hook, it will return NULL in case it is finished or
+       * an error occured */
+      im.Data = (char*)CallHookPkt(importHook, NULL, &im);
+
+      if (!im.Data)
       {
-        /* Free the line node if it didn't contain any contents */
-        if (line->previous)
+        if (!line->line.Contents)
         {
-          line->previous->next = NULL;
-
-          FreeLine(line, data);
-        }
-        else
-        {
-          char *ctext;
-
-          // if the line has nor predecessor it was obviously the first line
-          // so we prepare a "fake" line_node to let the textEditor clear our
-          // text
-          if((ctext = MyAllocPooled(data->mypool, 2)))
+          /* Free the line node if it didn't contain any contents */
+          if (line->previous)
           {
-            ctext[0] = '\n';
-            ctext[1] = '\0';
-            line->line.Contents = ctext;
-            line->line.Length   = 1;
-          } else
+            line->previous->next = NULL;
+
+            FreeLine(data, line);
+          }
+          else
           {
-            FreeLine(first_line, data);
-            first_line = NULL;
+            char *ctext;
+
+            // if the line has nor predecessor it was obviously the first line
+            // so we prepare a "fake" line_node to let the textEditor clear our
+            // text
+            if((ctext = AllocVecPooled(data->mypool, 2)) != NULL)
+            {
+              ctext[0] = '\n';
+              ctext[1] = '\0';
+              line->line.Contents = ctext;
+              line->line.Length = 1;
+              line->line.allocatedContents = 2;
+            }
+            else
+            {
+              FreeLine(data, first_line);
+              first_line = NULL;
+            }
           }
         }
+        break;
       }
-      break;
+
+      if((new_line = AllocLine(data)) == NULL)
+        break;
+
+      memset(new_line, 0, sizeof(*new_line));
+
+      // Inherit the flow from the previous line, but only if
+      // the clearFlow variable is not set
+      if(line->line.clearFlow == FALSE)
+        new_line->line.Flow = line->line.Flow;
+
+      new_line->previous = line;
+      line->next = new_line;
+      line = new_line;
     }
-
-    if(!(new_line = AllocLine(data)))
-      break;
-
-    memset(new_line,0,sizeof(*new_line));
-
-    // Inherit the flow from the previous line, but only if
-    // the clearFlow variable is not set
-    if(line->line.clearFlow == FALSE)
-      new_line->line.Flow = line->line.Flow;
-
-    new_line->previous = line;
-    line->next = new_line;
-    line = new_line;
   }
 
   RETURN(first_line);

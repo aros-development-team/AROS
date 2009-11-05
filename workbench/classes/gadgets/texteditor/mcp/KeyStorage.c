@@ -106,7 +106,7 @@ enum Keys
     key_count,
 };
 
-void ConvertKeyString (STRPTR keystring, UWORD action, struct KeyAction *storage)
+void ConvertKeyString(STRPTR keystring, UWORD action, struct KeyAction *storage)
 {
   IPTR args[key_count];
   struct RDArgs *ra_result;
@@ -435,7 +435,7 @@ void KeyToString(STRPTR buffer, ULONG buffer_len, struct KeyAction *ka)
   }
 }
 
-void ImportKeys(void *config, struct InstData_MCP *data)
+void ImportKeys(struct InstData_MCP *data, void *config)
 {
   void *cfg_data;
   struct te_key *userkeys;
@@ -463,7 +463,7 @@ void ImportKeys(void *config, struct InstData_MCP *data)
   LEAVE();
 }
 
-void ExportKeys(void *config, struct InstData_MCP *data)
+void ExportKeys(struct InstData_MCP *data, void *config)
 {
     ULONG c, size;
     struct te_key *entry;

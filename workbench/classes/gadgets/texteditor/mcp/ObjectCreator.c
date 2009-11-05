@@ -141,55 +141,55 @@ const char *FunctionName (UWORD func)
     case MUIV_TextEditor_KeyAction_Undo:
       name = tr(MSG_Function_Undo);
       break;
-    
+
     case MUIV_TextEditor_KeyAction_Redo:
       name = tr(MSG_Function_Redo);
       break;
-    
+
     case MUIV_TextEditor_KeyAction_DelEOL:
       name = tr(MSG_Function_DelEOL);
       break;
-    
+
     case MUIV_TextEditor_KeyAction_DelBOL:
       name = tr(MSG_Function_DelBOL);
       break;
-    
+
     case MUIV_TextEditor_KeyAction_DelEOW:
       name = tr(MSG_Function_DelEOW);
       break;
-    
+
     case MUIV_TextEditor_KeyAction_DelBOW:
       name = tr(MSG_Function_DelBOW);
       break;
-    
+
     case MUIV_TextEditor_KeyAction_DelLine:
       name = tr(MSG_Function_DelLine);
       break;
-    
+
     case MUIV_TextEditor_KeyAction_NextGadget:
       name = tr(MSG_Function_NextGadget);
       break;
-    
+
     case MUIV_TextEditor_KeyAction_GotoBookmark1:
       name = tr(MSG_Function_GotoBookmark1);
       break;
-    
+
     case MUIV_TextEditor_KeyAction_GotoBookmark2:
       name = tr(MSG_Function_GotoBookmark2);
       break;
-    
+
     case MUIV_TextEditor_KeyAction_GotoBookmark3:
       name = tr(MSG_Function_GotoBookmark3);
       break;
-    
+
     case MUIV_TextEditor_KeyAction_SetBookmark1:
       name = tr(MSG_Function_SetBookmark1);
       break;
-    
+
     case MUIV_TextEditor_KeyAction_SetBookmark2:
       name = tr(MSG_Function_SetBookmark2);
       break;
-    
+
     case MUIV_TextEditor_KeyAction_SetBookmark3:
       name = tr(MSG_Function_SetBookmark3);
       break;
@@ -201,7 +201,7 @@ const char *FunctionName (UWORD func)
     case MUIV_TextEditor_KeyAction_SelectNone:
       name = tr(MSG_Function_SelectNone);
       break;
-    
+
     default:
       name = "";
   }
@@ -391,7 +391,7 @@ ULONG GadgetsToConfig(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, 
   cfg_data = CONFIG_VERSION;
   DoMethod(msg->configdata, MUIM_Dataspace_Add, &cfg_data, sizeof(LONG), MUICFG_TextEditor_ConfigVersion);
 
-  ExportKeys(msg->configdata, data);
+  ExportKeys(data, msg->configdata);
 
   cfg_data = xget(data->frame, MUIA_Framedisplay_Spec);
   DoMethod(msg->configdata, MUIM_Dataspace_Add, cfg_data, sizeof(struct MUI_FrameSpec), MUICFG_TextEditor_Frame);
@@ -490,14 +490,14 @@ ULONG ConfigToGadgets(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, 
       if(MUI_Request(NULL, NULL, 0L, tr(MSG_WarnConfigVersion_Title), tr(MSG_ResetAbort), tr(MSG_WarnConfigVersion)) == 1)
       {
         // reset the keybindings to their default values.
-        ImportKeys(NULL, data);
+        ImportKeys(data, NULL);
         importKeys = FALSE;
       }
     }
   }
 
-  if(importKeys)
-    ImportKeys(msg->configdata, data);
+  if(importKeys == TRUE)
+    ImportKeys(data, msg->configdata);
 
   if((cfg_data = (void *)DoMethod(msg->configdata, MUIM_Dataspace_Find, MUICFG_TextEditor_LookupCmd)))
   {

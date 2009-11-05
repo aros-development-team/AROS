@@ -27,17 +27,17 @@
 
 #include <exec/tasks.h>
 #include <libraries/mui.h>
-#include <devices/clipboard.h>
-#include <libraries/iffparse.h>
 
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/muimaster.h>
 #include <proto/intuition.h>
-#include <proto/iffparse.h>
 #include <proto/utility.h>
 
 #include "private.h"
+#define DEBUG_USE_MALLOC_REDEFINE
+#include "Debug.h"
+#include "version.h"
 
 #include "SDI_hook.h"
 
@@ -125,11 +125,10 @@ struct Library *LocaleBase = NULL;
 struct Library *MUIMasterBase = NULL;
 struct Library *RexxSysBase = NULL;
 struct Library *UtilityBase = NULL;
-struct Library *IFFParseBase = NULL;
 struct Library *WorkbenchBase = NULL;
 #elif defined(__MORPHOS__)
 struct Library *DiskfontBase = NULL;
-struct Library *GfxBase = NULL;
+struct GfxBase *GfxBase = NULL;
 struct IntuitionBase *IntuitionBase = NULL;
 struct Library *KeymapBase = NULL;
 struct Library *LayersBase = NULL;
@@ -137,11 +136,10 @@ struct Library *LocaleBase = NULL;
 struct Library *MUIMasterBase = NULL;
 struct Library *RexxSysBase = NULL;
 struct Library *UtilityBase = NULL;
-struct Library *IFFParseBase = NULL;
 struct Library *WorkbenchBase = NULL;
 #else
 struct Library *DiskfontBase = NULL;
-struct Library *GfxBase = NULL;
+struct GfxBase *GfxBase = NULL;
 struct IntuitionBase *IntuitionBase = NULL;
 struct Library *KeymapBase = NULL;
 struct Library *LayersBase = NULL;
@@ -153,7 +151,6 @@ struct UtilityBase *UtilityBase = NULL;
 #else
 struct Library *UtilityBase = NULL;
 #endif
-struct Library *IFFParseBase = NULL;
 struct Library *WorkbenchBase = NULL;
 #endif
 
@@ -167,7 +164,6 @@ struct LocaleIFace *ILocale = NULL;
 struct MUIMasterIFace *IMUIMaster = NULL;
 struct RexxSysIFace *IRexxSys = NULL;
 struct UtilityIFace *IUtility = NULL;
-struct IFFParseIFace *IIFFParse = NULL;
 struct WorkbenchIFace *IWorkbench = NULL;
 #endif
 
@@ -184,7 +180,7 @@ int main(void)
 
   if((DiskfontBase = OpenLibrary("diskfont.library", 38)) &&
     GETINTERFACE(IDiskfont, DiskfontBase))
-  if((GfxBase = OpenLibrary("graphics.library", 38)) &&
+  if((GfxBase = (APTR)OpenLibrary("graphics.library", 38)) &&
     GETINTERFACE(IGraphics, GfxBase))
   if((IntuitionBase = (APTR)OpenLibrary("intuition.library", 38)) &&
     GETINTERFACE(IIntuition, IntuitionBase))
@@ -198,8 +194,6 @@ int main(void)
     GETINTERFACE(IRexxSys, RexxSysBase))
   if((UtilityBase = (APTR)OpenLibrary("utility.library", 38)) &&
     GETINTERFACE(IUtility, UtilityBase))
-  if((IFFParseBase = OpenLibrary("iffparse.library", 36)) &&
-    GETINTERFACE(IIFFParse, IFFParseBase))
   {
     /* Open workbench.library (optional) */
     if ((WorkbenchBase = OpenLibrary("workbench.library",0)))
@@ -215,394 +209,411 @@ int main(void)
     SetupDebug();
     #endif
 
-    if((args = ReadArgs("FILENAME,MIME/S,MIMEQUOTED/S,SKIPHEADER/S,FIXED/S,EMAIL/S", argarray, NULL)))
+    if(StartClipboardServer())
     {
-      if((MUIMasterBase = OpenLibrary("muimaster.library", MUIMASTER_VMIN)) &&
-        GETINTERFACE(IMUIMaster, MUIMasterBase))
+      if((args = ReadArgs("FILENAME,MIME/S,MIMEQUOTED/S,SKIPHEADER/S,FIXED/S,EMAIL/S", argarray, NULL)))
       {
-          Object *app, *window, *clear, *cut, *copy, *paste, *erase,
-                 *bold, *italic, *underline, *ischanged, *undo, *redo, *string,
-                 *xslider, *yslider, *flow, *search, *replace, *wrapmode, *wrapborder,
-                 *rgroup, *isdisabled, *isreadonly;
-          const char *flow_text[] = { "Left", "Center", "Right", NULL };
-          const char *wrap_modes[] = { "NoWrap", "SoftWrap", "HardWrap", NULL };
-          const char *classes[] = { "TextEditor.mcc", NULL };
-          int wrap_border = 76;
+        if((MUIMasterBase = OpenLibrary("muimaster.library", MUIMASTER_VMIN)) &&
+          GETINTERFACE(IMUIMaster, MUIMasterBase))
+        {
+            Object *app, *window, *clear, *cut, *copy, *paste, *erase,
+                   *bold, *italic, *underline, *ischanged, *undo, *redo, *string,
+                   *xslider, *yslider, *flow, *search, *replace, *wrapmode, *wrapborder,
+                   *rgroup, *isdisabled, *isreadonly;
+                   Object *lower,*upper;
+            const char *flow_text[] = { "Left", "Center", "Right", NULL };
+            const char *wrap_modes[] = { "NoWrap", "SoftWrap", "HardWrap", NULL };
+            const char *classes[] = { "TextEditor.mcc", NULL };
+            int wrap_border = 76;
 
-        mcc = MUI_CreateCustomClass(NULL, "Area.mui", NULL, sizeof(struct InstData), ENTRY(_Dispatcher));
+          mcc = MUI_CreateCustomClass(NULL, "Area.mui", NULL, sizeof(struct InstData), ENTRY(_Dispatcher));
 
-        app = MUI_NewObject("Application.mui",
-              MUIA_Application_Author,      "TextEditor.mcc Open Source Team",
-              MUIA_Application_Base,        "TextEditor-Test",
-              MUIA_Application_Copyright,   "(c) 2000-2009 TextEditor.mcc Open Source Team",
-              MUIA_Application_Description, "TextEditor.mcc test program",
-              MUIA_Application_Title,       "TextEditor-Test",
-              MUIA_Application_Version,     "$VER: TextEditor-Test (" __DATE__ ")",
-              MUIA_Application_RexxHook,    &ARexxHook,
-              MUIA_Application_UsedClasses, classes,
+          app = MUI_NewObject("Application.mui",
+                MUIA_Application_Author,      "TextEditor.mcc Open Source Team",
+                MUIA_Application_Base,        "TextEditor-Test",
+                MUIA_Application_Copyright,   LIB_COPYRIGHT,
+                MUIA_Application_Description, "TextEditor.mcc test program",
+                MUIA_Application_Title,       "TextEditor-Test",
+                MUIA_Application_Version,     "$VER: TextEditor-Test (" __DATE__ ")",
+                MUIA_Application_RexxHook,    &ARexxHook,
+                MUIA_Application_UsedClasses, classes,
 
-              MUIA_Application_Window,
-                window = WindowObject,
-                MUIA_Window_Title,    "TextEditor-Test",
-                MUIA_Window_ID,       MAKE_ID('M','A','I','N'),
-                MUIA_Window_RootObject, VGroup,
-                  Child, VGroup,
-                    Child, HGroup,
+                MUIA_Application_Window,
+                  window = WindowObject,
+                  MUIA_Window_Title,    "TextEditor-Test",
+                  MUIA_Window_ID,       MAKE_ID('M','A','I','N'),
+                  MUIA_Window_RootObject, VGroup,
+                    Child, VGroup,
+                      Child, HGroup,
 
-                      Child, clear = MUI_MakeObject(MUIO_Button, "Clear"),
-                      Child, cut = MUI_MakeObject(MUIO_Button, "Cut"),
-                      Child, copy = MUI_MakeObject(MUIO_Button, "Copy"),
-                      Child, paste = MUI_MakeObject(MUIO_Button, "_Paste"),
-                      Child, erase = MUI_MakeObject(MUIO_Button, "Erase"),
-                      Child, undo = MUI_MakeObject(MUIO_Button, "_Undo"),
-                      Child, redo = MUI_MakeObject(MUIO_Button, "_Redo"),
-                      Child, search = MUI_MakeObject(MUIO_Button, "Search"),
-                      Child, replace = MUI_MakeObject(MUIO_Button, "Replace"),
+                        Child, clear = MUI_MakeObject(MUIO_Button, "Clear"),
+                        Child, cut = MUI_MakeObject(MUIO_Button, "Cut"),
+                        Child, copy = MUI_MakeObject(MUIO_Button, "Copy"),
+                        Child, paste = MUI_MakeObject(MUIO_Button, "_Paste"),
+                        Child, erase = MUI_MakeObject(MUIO_Button, "Erase"),
+                        Child, undo = MUI_MakeObject(MUIO_Button, "_Undo"),
+                        Child, redo = MUI_MakeObject(MUIO_Button, "_Redo"),
+                        Child, search = MUI_MakeObject(MUIO_Button, "Search"),
+                        Child, replace = MUI_MakeObject(MUIO_Button, "Replace"),
+                        Child, lower = MUI_MakeObject(MUIO_Button, "lower"),
+                        Child, upper = MUI_MakeObject(MUIO_Button, "upper"),
 
-                    End,
+                      End,
 
-                    Child, HGroup,
+                      Child, HGroup,
 
-                      Child, bold = TextObject,
-                        MUIA_Background,    MUII_ButtonBack,
-                        MUIA_Frame,         MUIV_Frame_Button,
-                        MUIA_Text_PreParse, "\33c",
-                        MUIA_Text_Contents, "Bold",
-                        MUIA_FixHeight,     17,
-                        MUIA_FixWidth,      24,
-                        MUIA_InputMode,     MUIV_InputMode_Toggle,
+                        Child, bold = TextObject,
+                          MUIA_Background,    MUII_ButtonBack,
+                          MUIA_Frame,         MUIV_Frame_Button,
+                          MUIA_Text_PreParse, "\33c",
+                          MUIA_Text_Contents, "Bold",
+                          MUIA_FixHeight,     17,
+                          MUIA_FixWidth,      24,
+                          MUIA_InputMode,     MUIV_InputMode_Toggle,
+                          End,
+
+                        Child, italic = TextObject,
+                          MUIA_Background,    MUII_ButtonBack,
+                          MUIA_Frame,         MUIV_Frame_Button,
+                          MUIA_Text_PreParse, "\33c",
+                          MUIA_Text_Contents, "Italic",
+                          MUIA_FixHeight,     17,
+                          MUIA_FixWidth,      24,
+                          MUIA_InputMode,     MUIV_InputMode_Toggle,
                         End,
 
-                      Child, italic = TextObject,
-                        MUIA_Background,    MUII_ButtonBack,
-                        MUIA_Frame,         MUIV_Frame_Button,
-                        MUIA_Text_PreParse, "\33c",
-                        MUIA_Text_Contents, "Italic",
-                        MUIA_FixHeight,     17,
-                        MUIA_FixWidth,      24,
-                        MUIA_InputMode,     MUIV_InputMode_Toggle,
-                      End,
-
-                      Child, underline = TextObject,
-                        MUIA_Background,    MUII_ButtonBack,
-                        MUIA_Frame,         MUIV_Frame_Button,
-                        MUIA_Text_PreParse, "\33c",
-                        MUIA_Text_Contents, "Underline",
-                        MUIA_FixHeight,     17,
-                        MUIA_FixWidth,      24,
-                        MUIA_InputMode,     MUIV_InputMode_Toggle,
-                      End,
-
-                      Child, ischanged = MUI_MakeObject(MUIO_Checkmark, "Is changed?"),
-                      Child, isdisabled = MUI_MakeObject(MUIO_Checkmark, "Is disabled?"),
-                      Child, isreadonly = MUI_MakeObject(MUIO_Checkmark, "Is read-only?"),
-                      Child, flow = MUI_MakeObject(MUIO_Cycle, NULL, flow_text),
-                      Child, wrapmode = MUI_MakeObject(MUIO_Cycle, NULL, wrap_modes),
-                      Child, wrapborder = MUI_MakeObject(MUIO_Slider, NULL, 0, 1000),
-
-                    End,
-
-                    Child, HGroup,
-
-
-/*                          Child, NewObject(mcc->mcc_Class, NULL,
-                            InputListFrame,
-//                            MUIA_TextEditor_InVirtualGroup, TRUE,
-                            MUIA_TextEditor_Contents, "Jeg er en dulle!",
-                            End,
-*/
-/*                      Child, ScrollgroupObject,
-                        MUIA_Scrollgroup_Contents, VirtgroupObject,
-
-*/
-/*                      Child, RegisterGroup(titles),
-                          Child, HGroup,
-*/
-/*                            Child, ColGroup(5),
-                              Child, NewObject(mcc->mcc_Class, NULL, End,
-                              Child, NewObject(mcc->mcc_Class, NULL, End,
-                              Child, NewObject(mcc->mcc_Class, NULL, End,
-                              Child, NewObject(mcc->mcc_Class, NULL, End,
-                              Child, NewObject(mcc->mcc_Class, NULL, End,
-                              Child, NewObject(mcc->mcc_Class, NULL, End,
-                              Child, NewObject(mcc->mcc_Class, NULL, End,
-                              Child, NewObject(mcc->mcc_Class, NULL, End,
-                              Child, NewObject(mcc->mcc_Class, NULL, End,
-                              Child, NewObject(mcc->mcc_Class, NULL, End,
-                            End,
-*/
-                            Child, rgroup = RegisterGroup(page_titles),
-                              MUIA_Register_Frame, TRUE,
-                              Child,HGroup,
-                                MUIA_Group_Spacing, 0,
-                                Child, editorgad = NewObject(mcc->mcc_Class, NULL,
-//                                MUIA_Frame, "602211",
-//                                InputListFrame,
-//                                MUIA_Background, MUII_GroupBack,
-//                                MUIA_TextEditor_FixedFont, TRUE,
-                                  MUIA_TextEditor_AutoClip, FALSE,
-//                                  MUIA_TextEditor_ReadOnly, TRUE,
-//                                 MUIA_TextEditor_ActiveObjectOnClick, TRUE,
-                                  MUIA_TextEditor_DoubleClickHook, &URLHook,
-//                                MUIA_TextEditor_HorizontalScroll, TRUE,
-//                                MUIA_TextEditor_ImportWrap, 1023,
-                                  MUIA_TextEditor_WrapBorder, wrap_border,
-//                                MUIA_TextEditor_ExportWrap, 80,
-
-                                MUIA_TextEditor_ExportHook, MUIV_TextEditor_ExportHook_NoStyle,
-//                                MUIA_TextEditor_ImportHook, MUIV_TextEditor_ImportHook_EMail,
-                                  MUIA_CycleChain,    TRUE,
-//                                MUIA_TextEditor_ReadOnly, TRUE,
-//                                MUIA_TextEditor_InVirtualGroup, TRUE,
-//                                MUIA_Disabled, TRUE,
-//                                MUIA_TextEditor_Columns,  40,
-//                                MUIA_TextEditor_CursorX, 30,
-//                                MUIA_TextEditor_CursorY, 7,
-                                  MUIA_ControlChar, 'a',
-                                  MUIA_TextEditor_Contents,
-
-                                    "\33r\33b" __DATE__ "\33n\n"
-                                    "\n\33cTextEditor.gadget V15.0ß\n"
-                                    "Copyright 1997 by Allan Odgaard\n"
-                                    "\33l\n\33[s:9]\n"
-                                    "For feedback write to: Duff@DIKU.DK\n"
-                                    "For the latest version, try: \33p[7]\33uhttp://www.DIKU.dk/students/duff/texteditor/\33n\n"
-                                    "\n"
-                                    "\33hThis gadget is not \33ifreeware\33n. You may not use it in your own programs without a licence. A licence can be obtained thru the author.\n"
-                                    "\nColor test: \33b\33p[1]SHINE, \33p[2]HALFSHINE, \33p[3]BACKGROUND, \33p[4]HALFSHADOW, \33p[5]SHADOW, \33p[6]TEXT, \33p[7]FILL, \33p[8]MARK\33n\n"
-                                    "\n"
-                                    "\33[s:2]\33c\33u\33b Usage: \33n\n"
-                                    "\33l\n"
-                                    "You can doubleclick a word to select it, if you hold LMB after a doubleclick, then it will only mark \33bcomplete\33n words. Tripleclicking has the same effect, but for lines.\n"
-                                    "You can extend your block by holding down shift while you press LMB where you want the block to end.\n"
-                                    "While you drag to scroll, the farther away from the gadget your mouse pointer is, the faster the gadget will scroll.\n"
-                                    "\n"
-                                    "\33c\33[s:2]\33u\33b Keybindings \33n\n\33l"
-                                    "\n"
-                                    "Hold down shift and press a navigation key to mark. When something is marked you can use: LAmiga x, c to cut or copy. Delete or Backspace to erase. Or any other key to overwrite.\n"
-                                    "LAmiga + z, Z, v = Undo, Redo, Paste.\n"
-                                    "TAB will insert 3 spaces.\n"
-                                    "\n"
-                                    "  \33u  Navigation combinations:  \33n\n"
-                                    "Ctrl + left, right, up, down = BOL, EOF, Top, Bottm.\n"
-                                    "Alt + left, right, up, down = BOW(PrevWord), NextWord, StartOfPage(PrevPage), EndOfPage(NextPage).\n"
-                                    "Ctrl-Alt + left, right, up, down = PrevSentence, NextSentence, PrevParagraph, NextParagraph.\n"
-                                    "\n"
-                                    "  \33u  Delete combinations:  \33n\n"
-                                    "Ctrl + Backspace, Delete = \"Delele To BOL\", \"Delele To EOL\".\n"
-                                    "Alt + Backspace, Delete = \"Delele To BOW\", \"Delete To NextWord\".\n",
-                                End,
-                                Child, slider = MUI_NewObject("Scrollbar.mui", End,
-                              End,
-                              Child, VGroup,
-                                Child, TextObject,
-                                  MUIA_Text_Contents, "TextEditor object is now hidden!!!",
-                                End,
-                              End,
-                            End,
-                          End,
-/*                          End,
+                        Child, underline = TextObject,
+                          MUIA_Background,    MUII_ButtonBack,
+                          MUIA_Frame,         MUIV_Frame_Button,
+                          MUIA_Text_PreParse, "\33c",
+                          MUIA_Text_Contents, "Underline",
+                          MUIA_FixHeight,     17,
+                          MUIA_FixWidth,      24,
+                          MUIA_InputMode,     MUIV_InputMode_Toggle,
                         End,
-*/
-/*                          Child, RectangleObject, End,
-                          End,
 
+                        Child, ischanged = MUI_MakeObject(MUIO_Checkmark, "Is changed?"),
+                        Child, isdisabled = MUI_MakeObject(MUIO_Checkmark, "Is disabled?"),
+                        Child, isreadonly = MUI_MakeObject(MUIO_Checkmark, "Is read-only?"),
+                        Child, flow = MUI_MakeObject(MUIO_Cycle, NULL, flow_text),
+                        Child, wrapmode = MUI_MakeObject(MUIO_Cycle, NULL, wrap_modes),
+                        Child, wrapborder = MUI_MakeObject(MUIO_Slider, NULL, 0, 1000),
 
-
-                          End,
-*/                    Child, HGroup,
-                      Child, xslider = MUI_MakeObject(MUIO_Slider, NULL, 0, 1000),
-                      Child, yslider = MUI_MakeObject(MUIO_Slider, NULL, 0, 200),
                       End,
-                    Child, string = StringObject,
-                      StringFrame,
-                      MUIA_CycleChain, TRUE,
-                      MUIA_String_MaxLen, 256,
-                    End,
 
+                      Child, HGroup,
+
+
+  /*                          Child, NewObject(mcc->mcc_Class, NULL,
+                              InputListFrame,
+  //                            MUIA_TextEditor_InVirtualGroup, TRUE,
+                              MUIA_TextEditor_Contents, "Jeg er en dulle!",
+                              End,
+  */
+  /*                      Child, ScrollgroupObject,
+                          MUIA_Scrollgroup_Contents, VirtgroupObject,
+
+  */
+  /*                      Child, RegisterGroup(titles),
+                            Child, HGroup,
+  */
+  /*                            Child, ColGroup(5),
+                                Child, NewObject(mcc->mcc_Class, NULL, End,
+                                Child, NewObject(mcc->mcc_Class, NULL, End,
+                                Child, NewObject(mcc->mcc_Class, NULL, End,
+                                Child, NewObject(mcc->mcc_Class, NULL, End,
+                                Child, NewObject(mcc->mcc_Class, NULL, End,
+                                Child, NewObject(mcc->mcc_Class, NULL, End,
+                                Child, NewObject(mcc->mcc_Class, NULL, End,
+                                Child, NewObject(mcc->mcc_Class, NULL, End,
+                                Child, NewObject(mcc->mcc_Class, NULL, End,
+                                Child, NewObject(mcc->mcc_Class, NULL, End,
+                              End,
+  */
+                              Child, rgroup = RegisterGroup(page_titles),
+                                MUIA_Register_Frame, TRUE,
+                                Child,HGroup,
+                                  MUIA_Group_Spacing, 0,
+                                  Child, editorgad = NewObject(mcc->mcc_Class, NULL,
+  //                                MUIA_Frame, "602211",
+  //                                InputListFrame,
+  //                                MUIA_Background, MUII_GroupBack,
+  //                                MUIA_TextEditor_FixedFont, TRUE,
+                                    MUIA_TextEditor_AutoClip, FALSE,
+  //                                  MUIA_TextEditor_ReadOnly, TRUE,
+  //                                 MUIA_TextEditor_ActiveObjectOnClick, TRUE,
+                                    MUIA_TextEditor_DoubleClickHook, &URLHook,
+  //                                MUIA_TextEditor_HorizontalScroll, TRUE,
+  //                                MUIA_TextEditor_ImportWrap, 1023,
+                                    MUIA_TextEditor_WrapBorder, wrap_border,
+  //                                MUIA_TextEditor_ExportWrap, 80,
+
+                                  MUIA_TextEditor_ExportHook, MUIV_TextEditor_ExportHook_NoStyle,
+  //                                MUIA_TextEditor_ImportHook, MUIV_TextEditor_ImportHook_EMail,
+                                    MUIA_CycleChain,    TRUE,
+  //                                MUIA_TextEditor_ReadOnly, TRUE,
+  //                                MUIA_TextEditor_InVirtualGroup, TRUE,
+  //                                MUIA_Disabled, TRUE,
+  //                                MUIA_TextEditor_Columns,  40,
+  //                                MUIA_TextEditor_CursorX, 30,
+  //                                MUIA_TextEditor_CursorY, 7,
+                                    MUIA_ControlChar, 'a',
+                                    MUIA_TextEditor_Contents,
+
+                                      "\n"
+                                      "\33r\33b" __DATE__ "\33n\n"
+                                      "\n\33cTextEditor.mcc " LIB_REV_STRING " test program\n"
+                                      "Copyright (C) 1997 by Allan Odgaard\n"
+                                      LIB_COPYRIGHT "\n"
+                                      "\33l\n\33[s:9]\n"
+                                      "For feedback write to: Duff@DIKU.DK\n"
+                                      "For the latest version, try: \33p[7]\33uhttp://www.DIKU.dk/students/duff/texteditor/\33n\n"
+                                      "\n"
+                                      "\33hThis gadget is not \33ifreeware\33n. You may not use it in your own programs without a licence. A licence can be obtained thru the author.\n"
+                                      "\nColor test: \33b\33p[1]SHINE, \33p[2]HALFSHINE, \33p[3]BACKGROUND, \33p[4]HALFSHADOW, \33p[5]SHADOW, \33p[6]TEXT, \33p[7]FILL, \33p[8]MARK\33n\n"
+                                      "\nStyle test: \33bBOLD\33n, \33iITALIC\33n, \33uUNDERLINE\33n, \33b\33iBOLD & ITALIC\33n, \33b\33uBOLD & UNDERLINE\33n, \33i\33uITALIC & UNDERLINE\33n, \33b\33i\33uBOLD & ITALIC & UNDERLINE\33n\n"
+                                      "\n"
+                                      "\33[s:2]\33c\33u\33b Usage: \33n\n"
+                                      "\33l\n"
+                                      "You can doubleclick a word to select it, if you hold LMB after a doubleclick, then it will only mark \33bcomplete\33n words. Tripleclicking has the same effect, but for lines.\n"
+                                      "You can extend your block by holding down shift while you press LMB where you want the block to end.\n"
+                                      "While you drag to scroll, the farther away from the gadget your mouse pointer is, the faster the gadget will scroll.\n"
+                                      "\n"
+                                      "\33c\33[s:2]\33u\33b Keybindings \33n\n\33l"
+                                      "\n"
+                                      "Hold down shift and press a navigation key to mark. When something is marked you can use: LAmiga x, c to cut or copy. Delete or Backspace to erase. Or any other key to overwrite.\n"
+                                      "LAmiga + z, Z, v = Undo, Redo, Paste.\n"
+                                      "TAB will insert 3 spaces.\n"
+                                      "\n"
+                                      "  \33u  Navigation combinations:  \33n\n"
+                                      "Ctrl + left, right, up, down = BOL, EOF, Top, Bottm.\n"
+                                      "Alt + left, right, up, down = BOW(PrevWord), NextWord, StartOfPage(PrevPage), EndOfPage(NextPage).\n"
+                                      "Ctrl-Alt + left, right, up, down = PrevSentence, NextSentence, PrevParagraph, NextParagraph.\n"
+                                      "\n"
+                                      "  \33u  Delete combinations:  \33n\n"
+                                      "Ctrl + Backspace, Delete = \"Delele To BOL\", \"Delele To EOL\".\n"
+                                      "Alt + Backspace, Delete = \"Delele To BOW\", \"Delete To NextWord\".\n",
+                                  End,
+                                  Child, slider = MUI_NewObject("Scrollbar.mui", End,
+                                End,
+                                Child, VGroup,
+                                  Child, TextObject,
+                                    MUIA_Text_Contents, "TextEditor object is now hidden!!!",
+                                  End,
+                                End,
+                              End,
+                            End,
+  /*                          End,
+                          End,
+  */
+  /*                          Child, RectangleObject, End,
+                            End,
+
+
+
+                            End,
+  */                    Child, HGroup,
+                        Child, xslider = MUI_MakeObject(MUIO_Slider, NULL, 0, 1000),
+                        Child, yslider = MUI_MakeObject(MUIO_Slider, NULL, 0, 200),
+                        End,
+                      Child, string = StringObject,
+                        StringFrame,
+                        MUIA_CycleChain, TRUE,
+                        MUIA_String_MaxLen, 256,
+                      End,
+
+                      TAG_DONE ),
                     TAG_DONE ),
                   TAG_DONE ),
-                TAG_DONE ),
-              TAG_DONE );
+                TAG_DONE );
 
-        if(app)
-        {
-            unsigned long sigs;
-            unsigned long running = 1;
-            BPTR  fh;
-
-          set(editorgad, MUIA_TextEditor_Slider, slider);
-
-          if(argarray[4])
+          if(app)
           {
-            set(editorgad, MUIA_TextEditor_FixedFont, TRUE);
-          }
+              unsigned long sigs;
+              unsigned long running = 1;
+              BPTR  fh;
 
-          if (argarray[0])
-          {
-            if((fh = Open((char *)argarray[0], MODE_OLDFILE)))
+            set(editorgad, MUIA_TextEditor_Slider, slider);
+
+            if(argarray[4])
             {
-                char  *text = AllocVec(50*1024, 0L);
-                char  *buffer = text;
-                int size;
+              set(editorgad, MUIA_TextEditor_FixedFont, TRUE);
+            }
 
-              size = Read(fh, text, (50*1024)-2);
-              text[size] = '\0';
-              Close(fh);
-
-              if(argarray[3])
+            if (argarray[0])
+            {
+              if((fh = Open((char *)argarray[0], MODE_OLDFILE)))
               {
-                while(*buffer != '\n' && buffer < &text[size])
+                  char  *text = AllocVec(50*1024, 0L);
+                  char  *buffer = text;
+                  int size;
+
+                size = Read(fh, text, (50*1024)-2);
+                text[size] = '\0';
+                Close(fh);
+
+                if(argarray[3])
                 {
-                  while(*buffer++ != '\n');
+                  while(*buffer != '\n' && buffer < &text[size])
+                  {
+                    while(*buffer++ != '\n');
+                  }
+                }
+
+                if(argarray[2])
+                  set(editorgad, MUIA_TextEditor_ImportHook, MUIV_TextEditor_ImportHook_MIMEQuoted);
+                else
+                  if(argarray[1])
+                    set(editorgad, MUIA_TextEditor_ImportHook, MUIV_TextEditor_ImportHook_MIME);
+                  else
+                    if(argarray[5])
+                      set(editorgad, MUIA_TextEditor_ImportHook, MUIV_TextEditor_ImportHook_EMail);
+
+                SetAttrs(editorgad, MUIA_TextEditor_Contents, buffer,
+                              TAG_DONE);
+                FreeVec(text);
+              }
+            }
+
+            DoMethod(window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+
+            DoMethod(flow, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_Flow, MUIV_TriggerValue);
+            DoMethod(wrapmode, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_WrapMode, MUIV_TriggerValue);
+            DoMethod(wrapborder, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_WrapBorder, MUIV_TriggerValue);
+            DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_Flow, MUIV_EveryTime, flow, 3, MUIM_NoNotifySet, MUIA_Cycle_Active, MUIV_TriggerValue);
+
+            DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_CursorX, MUIV_EveryTime, xslider, 3, MUIM_NoNotifySet, MUIA_Numeric_Value, MUIV_TriggerValue);
+  //          DoMethod(xslider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_Position, MUIV_TriggerValue);
+            DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_CursorY, MUIV_EveryTime, yslider, 3, MUIM_NoNotifySet, MUIA_Numeric_Value, MUIV_TriggerValue);
+            DoMethod(yslider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_CursorY, MUIV_TriggerValue);
+
+            DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_AreaMarked, MUIV_EveryTime, MUIV_Notify_Self, 7, MUIM_MultiSet, MUIA_Disabled, MUIV_NotTriggerValue, cut, copy, erase, NULL);
+            DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_UndoAvailable, MUIV_EveryTime, undo, 3, MUIM_Set, MUIA_Disabled, MUIV_NotTriggerValue);
+            DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_RedoAvailable, MUIV_EveryTime, redo, 3, MUIM_Set, MUIA_Disabled, MUIV_NotTriggerValue);
+            DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_StyleBold, MUIV_EveryTime, bold, 3, MUIM_NoNotifySet, MUIA_Selected, MUIV_TriggerValue);
+            DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_StyleItalic, MUIV_EveryTime, italic, 3, MUIM_NoNotifySet, MUIA_Selected, MUIV_TriggerValue);
+            DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_StyleUnderline, MUIV_EveryTime, underline, 3, MUIM_NoNotifySet, MUIA_Selected, MUIV_TriggerValue);
+
+            DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_HasChanged, MUIV_EveryTime, ischanged, 3, MUIM_NoNotifySet, MUIA_Selected, MUIV_TriggerValue);
+            DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_HasChanged, MUIV_EveryTime, ischanged, 3, MUIM_NoNotifySet, MUIA_Image_State, MUIV_TriggerValue);
+            DoMethod(ischanged, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_HasChanged, MUIV_TriggerValue);
+
+            DoMethod(isdisabled, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, editorgad, 3, MUIM_Set, MUIA_Disabled, MUIV_TriggerValue);
+            DoMethod(isreadonly, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, editorgad, 3, MUIM_Set, MUIA_TextEditor_ReadOnly, MUIV_TriggerValue);
+
+            DoMethod(clear, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "Clear");
+  //          DoMethod(clear, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_CallHook, &ExportBlockHook);
+  //          DoMethod(clear, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_HasChanged, FALSE);
+
+            DoMethod(cut,   MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "Cut");
+            DoMethod(copy,  MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "Copy");
+            DoMethod(paste, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "Paste");
+            DoMethod(erase, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "Erase");
+  //          DoMethod(undo,  MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 3, MUIM_Set, MUIA_TextEditor_Prop_First, 13*15);
+            DoMethod(undo,  MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "Undo");
+            DoMethod(redo,  MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "Redo");
+            DoMethod(search,  MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 3, MUIM_TextEditor_Search, "is not", 0);//MUIF_TextEditor_Search_CaseSensitive);
+            DoMethod(replace, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 3, MUIM_TextEditor_Replace, "replaced", 0);
+            DoMethod(lower, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "ToLower");
+            DoMethod(upper, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "ToUpper");
+
+            DoMethod(bold,      MUIM_Notify, MUIA_Selected, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_StyleBold, MUIV_TriggerValue);
+            DoMethod(italic,    MUIM_Notify, MUIA_Selected, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_StyleItalic, MUIV_TriggerValue);
+            DoMethod(underline, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_StyleUnderline, MUIV_TriggerValue);
+
+            DoMethod(string, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, editorgad, 2, MUIM_TextEditor_ARexxCmd, MUIV_TriggerValue);
+  //          DoMethod(string, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, window, 3, MUIM_Set, MUIA_Window_ActiveObject, string);
+  //          DoMethod(string, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, editorgad, 3, MUIM_TextEditor_Search, MUIV_TriggerValue, 0L);//MUIF_TextEditor_Search_FromTop);
+  //          DoMethod(string, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, editorgad, 3, MUIM_TextEditor_Replace, MUIV_TriggerValue, 0L);//MUIF_TextEditor_Search_FromTop);
+
+            DoMethod(window, MUIM_Notify, MUIA_Window_InputEvent, "f1", rgroup, 3, MUIM_Set, MUIA_Group_ActivePage, 0);
+            DoMethod(window, MUIM_Notify, MUIA_Window_InputEvent, "f2", rgroup, 3, MUIM_Set, MUIA_Group_ActivePage, 1);
+
+            set(window, MUIA_Window_ActiveObject, editorgad);
+            set(window, MUIA_Window_Open, TRUE);
+  //          set(wrapmode, MUIA_Cycle_Active, MUIV_TextEditor_WrapMode_HardWrap);
+            set(wrapmode, MUIA_Cycle_Active, MUIV_TextEditor_WrapMode_SoftWrap);
+            set(wrapborder, MUIA_Numeric_Value, wrap_border);
+
+
+  /*          {
+              ULONG delta = xget(editorgad, MUIA_TextEditor_Prop_DeltaFactor);
+              printf("Delta: %d\n", delta);
+            }
+  */
+
+  /*          {
+              struct MUIP_TextEditor_Keybinding *key;
+
+              key = (struct MUIP_TextEditor_Keybinding *)DoMethod(editorgad, MUIM_TextEditor_QueryKeyAction, MUIV_TextEditor_KeyAction_Copy);
+
+              printf("code: %d, qualifier: %ld, action: %d\n", key->code, key->qualifier, key->action);
+            }
+  */
+  //          DoMethod(editorgad, MUIM_TextEditor_MarkText, 0x000a000f, 0x0030000f);
+            do
+            {
+              ULONG changed;
+
+              while((LONG)DoMethod(app, MUIM_Application_NewInput, &sigs) != (LONG)MUIV_Application_ReturnID_Quit)
+              {
+                if(sigs)
+                {
+                  sigs = Wait(sigs | SIGBREAKF_CTRL_C);
+                  if(sigs & SIGBREAKF_CTRL_C)
+                    break;
                 }
               }
 
-              if(argarray[2])
-                set(editorgad, MUIA_TextEditor_ImportHook, MUIV_TextEditor_ImportHook_MIMEQuoted);
-              else
-                if(argarray[1])
-                  set(editorgad, MUIA_TextEditor_ImportHook, MUIV_TextEditor_ImportHook_MIME);
-                else
-                  if(argarray[5])
-                    set(editorgad, MUIA_TextEditor_ImportHook, MUIV_TextEditor_ImportHook_EMail);
+              changed = xget(editorgad, MUIA_TextEditor_HasChanged);
+              if(argarray[0] && changed && !(sigs & SIGBREAKF_CTRL_C))
+                running = MUI_Request(app, window, 0L, "Warning", "*_Proceed|_Save|_Cancel", "\33cText '%s'\n is modified. Save it?", argarray[0]);
 
-              SetAttrs(editorgad, MUIA_TextEditor_Contents, buffer,
-                            TAG_DONE);
+            }
+            while(running == 0);
+
+            if(running == 2)
+            {
+                void  *text = (void *)DoMethod(editorgad, MUIM_TextEditor_ExportText);
+
+              if(argarray[0] && (fh = Open((char *)argarray[0], MODE_NEWFILE)))
+              {
+                Write(fh, text, strlen(text));
+                Close(fh);
+              }
               FreeVec(text);
             }
-          }
+            MUI_DisposeObject(app);
 
-          DoMethod(window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-
-          DoMethod(flow, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_Flow, MUIV_TriggerValue);
-          DoMethod(wrapmode, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_WrapMode, MUIV_TriggerValue);
-          DoMethod(wrapborder, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_WrapBorder, MUIV_TriggerValue);
-          DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_Flow, MUIV_EveryTime, flow, 3, MUIM_NoNotifySet, MUIA_Cycle_Active, MUIV_TriggerValue);
-
-          DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_CursorX, MUIV_EveryTime, xslider, 3, MUIM_NoNotifySet, MUIA_Numeric_Value, MUIV_TriggerValue);
-//          DoMethod(xslider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_Position, MUIV_TriggerValue);
-          DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_CursorY, MUIV_EveryTime, yslider, 3, MUIM_NoNotifySet, MUIA_Numeric_Value, MUIV_TriggerValue);
-          DoMethod(yslider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_CursorY, MUIV_TriggerValue);
-
-          DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_AreaMarked, MUIV_EveryTime, MUIV_Notify_Self, 7, MUIM_MultiSet, MUIA_Disabled, MUIV_NotTriggerValue, cut, copy, erase, NULL);
-          DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_UndoAvailable, MUIV_EveryTime, undo, 3, MUIM_Set, MUIA_Disabled, MUIV_NotTriggerValue);
-          DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_RedoAvailable, MUIV_EveryTime, redo, 3, MUIM_Set, MUIA_Disabled, MUIV_NotTriggerValue);
-          DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_StyleBold, MUIV_EveryTime, bold, 3, MUIM_NoNotifySet, MUIA_Selected, MUIV_TriggerValue);
-          DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_StyleItalic, MUIV_EveryTime, italic, 3, MUIM_NoNotifySet, MUIA_Selected, MUIV_TriggerValue);
-          DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_StyleUnderline, MUIV_EveryTime, underline, 3, MUIM_NoNotifySet, MUIA_Selected, MUIV_TriggerValue);
-
-          DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_HasChanged, MUIV_EveryTime, ischanged, 3, MUIM_NoNotifySet, MUIA_Selected, MUIV_TriggerValue);
-          DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_HasChanged, MUIV_EveryTime, ischanged, 3, MUIM_NoNotifySet, MUIA_Image_State, MUIV_TriggerValue);
-          DoMethod(ischanged, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_HasChanged, MUIV_TriggerValue);
-
-          DoMethod(isdisabled, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, editorgad, 3, MUIM_Set, MUIA_Disabled, MUIV_TriggerValue);
-          DoMethod(isreadonly, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, editorgad, 3, MUIM_Set, MUIA_TextEditor_ReadOnly, MUIV_TriggerValue);
-
-          DoMethod(clear, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "Clear");
-//          DoMethod(clear, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_CallHook, &ExportBlockHook);
-//          DoMethod(clear, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_HasChanged, FALSE);
-
-          DoMethod(cut,   MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "Cut");
-          DoMethod(copy,  MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "Copy");
-          DoMethod(paste, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "Paste");
-          DoMethod(erase, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "Erase");
-//          DoMethod(undo,  MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 3, MUIM_Set, MUIA_TextEditor_Prop_First, 13*15);
-          DoMethod(undo,  MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "Undo");
-          DoMethod(redo,  MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "Redo");
-          DoMethod(search,  MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 3, MUIM_TextEditor_Search, "is not", 0);//MUIF_TextEditor_Search_CaseSensitive);
-          DoMethod(replace, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 3, MUIM_TextEditor_Replace, "replaced", 0);
-
-          DoMethod(bold,      MUIM_Notify, MUIA_Selected, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_StyleBold, MUIV_TriggerValue);
-          DoMethod(italic,    MUIM_Notify, MUIA_Selected, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_StyleItalic, MUIV_TriggerValue);
-          DoMethod(underline, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_StyleUnderline, MUIV_TriggerValue);
-
-          DoMethod(string, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, editorgad, 2, MUIM_TextEditor_ARexxCmd, MUIV_TriggerValue);
-//          DoMethod(string, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, window, 3, MUIM_Set, MUIA_Window_ActiveObject, string);
-//          DoMethod(string, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, editorgad, 3, MUIM_TextEditor_Search, MUIV_TriggerValue, 0L);//MUIF_TextEditor_Search_FromTop);
-//          DoMethod(string, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, editorgad, 3, MUIM_TextEditor_Replace, MUIV_TriggerValue, 0L);//MUIF_TextEditor_Search_FromTop);
-
-          DoMethod(window, MUIM_Notify, MUIA_Window_InputEvent, "f1", rgroup, 3, MUIM_Set, MUIA_Group_ActivePage, 0);
-          DoMethod(window, MUIM_Notify, MUIA_Window_InputEvent, "f2", rgroup, 3, MUIM_Set, MUIA_Group_ActivePage, 1);
-
-          set(window, MUIA_Window_ActiveObject, editorgad);
-          set(window, MUIA_Window_Open, TRUE);
-//          set(wrapmode, MUIA_Cycle_Active, MUIV_TextEditor_WrapMode_HardWrap);
-          set(wrapmode, MUIA_Cycle_Active, MUIV_TextEditor_WrapMode_SoftWrap);
-          set(wrapborder, MUIA_Numeric_Value, wrap_border);
-
-
-/*          {
-            ULONG delta = xget(editorgad, MUIA_TextEditor_Prop_DeltaFactor);
-            printf("Delta: %d\n", delta);
-          }
-*/
-
-/*          {
-            struct MUIP_TextEditor_Keybinding *key;
-
-            key = (struct MUIP_TextEditor_Keybinding *)DoMethod(editorgad, MUIM_TextEditor_QueryKeyAction, MUIV_TextEditor_KeyAction_Copy);
-
-            printf("code: %d, qualifier: %ld, action: %d\n", key->code, key->qualifier, key->action);
-          }
-*/
-//          DoMethod(editorgad, MUIM_TextEditor_MarkText, 0x000a000f, 0x0030000f);
-          do
-          {
-            ULONG changed;
-
-            while((LONG)DoMethod(app, MUIM_Application_NewInput, &sigs) != (LONG)MUIV_Application_ReturnID_Quit)
+            if(mcc)
             {
-              if(sigs)
-              {
-                sigs = Wait(sigs | SIGBREAKF_CTRL_C);
-                if(sigs & SIGBREAKF_CTRL_C)
-                  break;
-              }
+              MUI_DeleteCustomClass(mcc);
             }
-
-            changed = xget(editorgad, MUIA_TextEditor_HasChanged);
-            if(argarray[0] && changed && !(sigs & SIGBREAKF_CTRL_C))
-              running = MUI_Request(app, window, 0L, "Warning", "*_Proceed|_Save|_Cancel", "\33cText '%s'\n is modified. Save it?", argarray[0]);
-
           }
-          while(running == 0);
+          else printf("Failed to create application\n");
 
-          if(running == 2)
-          {
-              void  *text = (void *)DoMethod(editorgad, MUIM_TextEditor_ExportText);
-
-            if(argarray[0] && (fh = Open((char *)argarray[0], MODE_NEWFILE)))
-            {
-              Write(fh, text, strlen(text));
-              Close(fh);
-            }
-            FreeVec(text);
-          }
-          MUI_DisposeObject(app);
-
-          if(mcc)
-          {
-            MUI_DeleteCustomClass(mcc);
-          }
+          DROPINTERFACE(IMUIMaster);
+          CloseLibrary(MUIMasterBase);
+          MUIMasterBase = NULL;
         }
-        else printf("Failed to create application\n");
 
-        DROPINTERFACE(IMUIMaster);
-        CloseLibrary(MUIMasterBase);
-        MUIMasterBase = NULL;
+        FreeArgs(args);
+      }
+      else
+      {
+        char prgname[32];
+        long error = IoErr();
+
+        GetProgramName(prgname, 32);
+        PrintFault(error, prgname);
       }
 
-      FreeArgs(args);
+      ShutdownClipboardServer();
     }
-    else
-    {
-      char prgname[32];
-      long error = IoErr();
 
-      GetProgramName(prgname, 32);
-      PrintFault(error, prgname);
-    }
+    #if defined(DEBUG)
+    CleanupDebug();
+    #endif
   }
 
   if(WorkbenchBase)
@@ -610,12 +621,7 @@ int main(void)
     DROPINTERFACE(IWorkbench);
     WorkbenchBase = NULL;
   }
-  if(IFFParseBase)
-  {
-    DROPINTERFACE(IIFFParse);
-    CloseLibrary(IFFParseBase);
-    IFFParseBase = NULL;
-  }
+
   if(UtilityBase)
   {
     DROPINTERFACE(IUtility);
@@ -655,7 +661,7 @@ int main(void)
   if(GfxBase)
   {
     DROPINTERFACE(IGraphics);
-    CloseLibrary(GfxBase);
+    CloseLibrary((struct Library *)GfxBase);
   }
 
   if(DiskfontBase)

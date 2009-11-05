@@ -32,6 +32,7 @@
 /******************************************************************************/
 
 #include "private.h"
+#include "Debug.h"
 #include "version.h"
 
 #define VERSION       LIB_VERSION
@@ -57,7 +58,6 @@ struct Library *KeymapBase = NULL;
 struct Library *LayersBase = NULL;
 struct Library *LocaleBase = NULL;
 struct Library *RexxSysBase = NULL;
-struct Library *IFFParseBase = NULL;
 struct Library *WorkbenchBase = NULL;
 
 #if defined(__amigaos4__)
@@ -66,7 +66,6 @@ struct KeymapIFace *IKeymap = NULL;
 struct LayersIFace *ILayers = NULL;
 struct LocaleIFace *ILocale = NULL;
 struct RexxSysIFace *IRexxSys = NULL;
-struct IFFParseIFace *IIFFParse = NULL;
 struct Interface *IWorkbench = NULL;
 #endif
 
@@ -103,8 +102,7 @@ static BOOL ClassInit(UNUSED struct Library *base)
           if((DiskfontBase = OpenLibrary("diskfont.library", 36)) &&
              GETINTERFACE(IDiskfont, struct DiskfontIFace *, DiskfontBase))
           {
-            if((IFFParseBase = OpenLibrary("iffparse.library", 36)) &&
-               GETINTERFACE(IIFFParse, struct IFFParseIFace *, IFFParseBase))
+            if(StartClipboardServer() == TRUE)
             {
               /* workbench.library is optional */
               if ((WorkbenchBase = OpenLibrary("workbench.library", 44)))
@@ -120,9 +118,9 @@ static BOOL ClassInit(UNUSED struct Library *base)
               return(TRUE);
             }
 
-            DROPINTERFACE(IIFFParse);
-            CloseLibrary(IFFParseBase);
-            IFFParseBase = NULL;
+            DROPINTERFACE(IDiskfont);
+            CloseLibrary(DiskfontBase);
+            DiskfontBase = NULL;
           }
 
           DROPINTERFACE(IRexxSys);
@@ -154,18 +152,13 @@ static VOID ClassExpunge(UNUSED struct Library *base)
 {
   ENTER();
 
+  ShutdownClipboardServer();
+
   if(WorkbenchBase)
   {
     DROPINTERFACE(IWorkbench);
     CloseLibrary(WorkbenchBase);
     WorkbenchBase = NULL;
-  }
-
-  if(IFFParseBase)
-  {
-    DROPINTERFACE(IIFFParse);
-    CloseLibrary(IFFParseBase);
-    IFFParseBase = NULL;
   }
 
   if(DiskfontBase)
@@ -205,3 +198,4 @@ static VOID ClassExpunge(UNUSED struct Library *base)
 
   LEAVE();
 }
+
