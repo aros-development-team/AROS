@@ -489,7 +489,7 @@ static AROS_UFH3(struct LibraryHeader *, LibInit,
                  AROS_UFHA(struct ExecBase *, sb, A6)
 )
 {
-    AROS_USERFUNC_INIT
+  AROS_USERFUNC_INIT
 #else
 static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base), REG(a0, BPTR librarySegment), REG(a6, struct ExecBase *sb))
 {
@@ -560,7 +560,14 @@ static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
       return base;
     }
     else
+    {
+      #if defined(MIN_STACKSIZE) && !defined(__amigaos4__)
+      callLibFunction(freeBase, base);
+      #else
+      freeBase(base);
+      #endif
       CodesetsBase = NULL;
+    }
 
     #if defined(__amigaos4__) && defined(__NEWLIB__)
     if(NewlibBase)

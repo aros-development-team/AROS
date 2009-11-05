@@ -2710,6 +2710,7 @@ CodesetsConvertStrA(REG(a0, struct TagItem *attrs))
   STRPTR dstStr = NULL;
   ULONG srcLen = 0;
   ULONG dstLen = 0;
+  ULONG charSize = 0;
 
   ENTER();
 
@@ -2721,14 +2722,23 @@ CodesetsConvertStrA(REG(a0, struct TagItem *attrs))
   if((srcCodeset = (struct codeset *)GetTagData(CSA_SourceCodeset, (ULONG)NULL, attrs)) == NULL)
     srcCodeset = defaultCodeset(TRUE);
 
-  if (srcStr != NULL)
+  if(srcStr != NULL)
   {
-    if (srcCodeset == CodesetsBase->utf32Codeset)
+    if(srcCodeset == CodesetsBase->utf32Codeset)
+    {
       srcLen = utf32_strlen((UTF32 *)srcStr);
-    else if (srcCodeset == CodesetsBase->utf16Codeset)
+      charSize = sizeof(UTF32);
+    }
+    else if(srcCodeset == CodesetsBase->utf16Codeset)
+    {
       srcLen = utf16_strlen((UTF16 *)srcStr);
+      charSize = sizeof(UTF16);
+    }
     else
+    {
       srcLen = strlen(srcStr);
+      charSize = sizeof(char);
+    }
   }
   else
     srcLen = 0;
@@ -2744,96 +2754,123 @@ CodesetsConvertStrA(REG(a0, struct TagItem *attrs))
 
     D(DBF_UTF, "srcCodeset: '%s' dstCodeset: '%s'", srcCodeset->name, dstCodeset->name);
 
-    // check that the user didn't supplied the very same codeset
-    // or otherwise a conversion is not required.
-    if(srcCodeset != NULL && dstCodeset != NULL && srcCodeset != dstCodeset)
+    if(srcCodeset != NULL && dstCodeset != NULL)
     {
-      BOOL utf8Create = FALSE;
-      BOOL strCreate = FALSE;
-      UTF8 *utf8str;
-      ULONG utf8strLen = 0;
-      ULONG *destLenPtr = NULL;
-      BOOL mapForeignChars;
-      struct Hook *mapForeignCharsHook;
-
-      mapForeignChars = (BOOL)GetTagData(CSA_MapForeignChars, FALSE, attrs);
-      mapForeignCharsHook = (struct Hook *)GetTagData(CSA_MapForeignCharsHook, (ULONG)NULL, attrs);
-
-      // if the source codeset is UTF-8 we don't have to use the UTF8Create()
-      // function and can directly call the UTF8ToStr() function
-      if(srcCodeset != CodesetsBase->utf8Codeset)
+      // check that the user didn't supplied the very same codeset
+      // or otherwise a conversion is not required.
+      if(srcCodeset != dstCodeset)
       {
-        struct TagItem tags[] = { { CSA_SourceCodeset,  (ULONG)srcCodeset  },
-                                  { CSA_Source,         (ULONG)srcStr      },
-                                  { CSA_SourceLen,      srcLen             },
-                                  { CSA_DestLenPtr,     (ULONG)&utf8strLen },
-                                  { TAG_DONE,           0                  } };
+        BOOL utf8Create = FALSE;
+        BOOL strCreate = FALSE;
+        UTF8 *utf8str;
+        ULONG utf8strLen = 0;
+        ULONG *destLenPtr = NULL;
+        BOOL mapForeignChars;
+        struct Hook *mapForeignCharsHook;
 
-        utf8str = CodesetsUTF8CreateA((struct TagItem *)&tags[0]);
+        mapForeignChars = (BOOL)GetTagData(CSA_MapForeignChars, FALSE, attrs);
+        mapForeignCharsHook = (struct Hook *)GetTagData(CSA_MapForeignCharsHook, (ULONG)NULL, attrs);
 
-        utf8Create = TRUE;
+        // if the source codeset is UTF-8 we don't have to use the UTF8Create()
+        // function and can directly call the UTF8ToStr() function
+        if(srcCodeset != CodesetsBase->utf8Codeset)
+        {
+          struct TagItem tags[] = { { CSA_SourceCodeset,  (ULONG)srcCodeset  },
+                                    { CSA_Source,         (ULONG)srcStr      },
+                                    { CSA_SourceLen,      srcLen             },
+                                    { CSA_DestLenPtr,     (ULONG)&utf8strLen },
+                                    { TAG_DONE,           0                  } };
+
+          utf8str = CodesetsUTF8CreateA((struct TagItem *)&tags[0]);
+
+          utf8Create = TRUE;
+        }
+        else
+        {
+          utf8str = (UTF8 *)srcStr;
+          utf8strLen = srcLen;
+        }
+
+        // in case the destination codeset is UTF-8 we don't have to actually
+        // use the UTF8ToStr() function and can immediately return our
+        // UTF8 string
+        if(utf8str != NULL && utf8strLen > 0 && dstCodeset != CodesetsBase->utf8Codeset)
+        {
+          struct TagItem tags[] = { { CSA_DestCodeset,          (ULONG)dstCodeset          },
+                                    { CSA_Source,               (ULONG)utf8str             },
+                                    { CSA_SourceLen,            utf8strLen                 },
+                                    { CSA_DestLenPtr,           (ULONG)&dstLen             },
+                                    { CSA_MapForeignChars,      mapForeignChars            },
+                                    { CSA_MapForeignCharsHook,  (ULONG)mapForeignCharsHook },
+                                    { TAG_DONE,                 0                          } };
+
+          dstStr = CodesetsUTF8ToStrA((struct TagItem *)&tags[0]);
+
+          strCreate = TRUE;
+        }
+        else
+        {
+          dstStr = (STRPTR)utf8str;
+          dstLen = utf8strLen;
+        }
+
+        D(DBF_UTF, "srcStr: %lx srcLen: %ld dstStr: %lx dstLen: %ld utf8create: %ld strCreate: %ld", srcStr, srcLen,
+                                                                                                     dstStr, dstLen,
+                                                                                                     utf8Create,
+                                                                                                     strCreate);
+
+        // if everything was successfull we can go and finalize everything
+        if(dstStr != NULL && utf8str != NULL)
+        {
+          // as the conversion was a two way pass we have to either free the
+          // memory of the utf8 string or not
+          if(utf8Create == TRUE && strCreate == TRUE)
+            CodesetsFreeA(utf8str, NULL);
+
+          // if the user wants to be informed abour the length
+          // of our destination string we store the length now in the supplied ptr.
+          if((destLenPtr = (ULONG *)GetTagData(CSA_DestLenPtr, (ULONG)NULL, attrs)) != NULL)
+            *destLenPtr = dstLen;
+
+          D(DBF_UTF, "successfully converted string with len %ld", dstLen);
+        }
+        else
+        {
+          W(DBF_ALWAYS, "an error occurred while trying to convert a string");
+
+          // free all memory in case the conversion didn't work out
+          if(utf8Create == TRUE && utf8str != NULL)
+            CodesetsFreeA(utf8str, NULL);
+
+          if(strCreate == TRUE && dstStr != NULL)
+            CodesetsFreeA(dstStr, NULL);
+
+          dstStr = NULL;
+        }
       }
       else
       {
-        utf8str = (UTF8 *)srcStr;
-        utf8strLen = srcLen;
-      }
+        // we got the same source and destination codesets passed in
+        // instead of failing silently we just create a copy of the source string
+        ULONG *destLenPtr = NULL;
 
-      // in case the destination codeset is UTF-8 we don't have to actually
-      // use the UTF8ToStr() function and can immediately return our
-      // UTF8 string
-      if(utf8str != NULL && utf8strLen > 0 && dstCodeset != CodesetsBase->utf8Codeset)
-      {
-        struct TagItem tags[] = { { CSA_DestCodeset,          (ULONG)dstCodeset          },
-                                  { CSA_Source,               (ULONG)utf8str             },
-                                  { CSA_SourceLen,            utf8strLen                 },
-                                  { CSA_DestLenPtr,           (ULONG)&dstLen             },
-                                  { CSA_MapForeignChars,      mapForeignChars            },
-                                  { CSA_MapForeignCharsHook,  (ULONG)mapForeignCharsHook },
-                                  { TAG_DONE,                 0                          } };
-
-        dstStr = CodesetsUTF8ToStrA((struct TagItem *)&tags[0]);
-
-        strCreate = TRUE;
-      }
-      else
-      {
-        dstStr = (STRPTR)utf8str;
-        dstLen = utf8strLen;
-      }
-
-      D(DBF_UTF, "srcStr: %lx srcLen: %ld dstStr: %lx dstLen: %ld utf8create: %ld strCreate: %ld", srcStr, srcLen,
-                                                                                                   dstStr, dstLen,
-                                                                                                   utf8Create,
-                                                                                                   strCreate);
-
-      // if everything was successfull we can go and finalize everything
-      if(dstStr != NULL && utf8str != NULL)
-      {
-        // as the conversion was a two way pass we have to either free the
-        // memory of the utf8 string or not
-        if(utf8Create == TRUE && strCreate == TRUE)
-          CodesetsFreeA(utf8str, NULL);
+        // allocate memory for the destination string, including a trailing NUL byte
+        if((dstStr = allocArbitrateVecPooled(srcLen + charSize)) != NULL)
+        {
+          // just copy the source string without any further modification
+          // we must use memcpy() as the source string could be UTF16/32 encoded and
+          // thus strcpy() would not do what we want.
+          memcpy(dstStr, srcStr, srcLen + charSize);
+          dstLen = srcLen;
+          D(DBF_UTF, "successfully copied string with len %ld", dstLen);
+        }
+        else
+          W(DBF_ALWAYS, "no memory for dest string");
 
         // if the user wants to be informed abour the length
         // of our destination string we store the length now in the supplied ptr.
         if((destLenPtr = (ULONG *)GetTagData(CSA_DestLenPtr, (ULONG)NULL, attrs)) != NULL)
           *destLenPtr = dstLen;
-
-        D(DBF_UTF, "successfully converted string with len %ld", dstLen);
-      }
-      else
-      {
-        W(DBF_ALWAYS, "an error occurred while trying to convert a string");
-
-        // free all memory in case the conversion didn't work out
-        if(utf8Create == TRUE && utf8str != NULL)
-          CodesetsFreeA(utf8str, NULL);
-
-        if(strCreate == TRUE && dstStr != NULL)
-          CodesetsFreeA(dstStr, NULL);
-
-        dstStr = NULL;
       }
     }
   }

@@ -284,7 +284,7 @@ mpopupNew(struct IClass *cl,Object *obj,struct opSet *msg)
 ** Codesets popup dispatcher
 */
 
-DISPATCHERPROTO(popupDispatcher)
+DISPATCHER(popupDispatcher)
 {
     switch (msg->MethodID)
     {
@@ -523,7 +523,7 @@ meditorSave(struct IClass *cl, Object *obj, UNUSED Msg msg)
 ** Editor dispatcher
 */
 
-DISPATCHERPROTO(editorDispatcher)
+DISPATCHER(editorDispatcher)
 {
     switch (msg->MethodID)
     {
@@ -765,7 +765,7 @@ mappOpenMUIConfigWindow(struct IClass *cl,Object *obj,Msg msg)
 ** App dispatcher
 */
 
-DISPATCHERPROTO(appDispatcher)
+DISPATCHER(appDispatcher)
 {
     switch (msg->MethodID)
     {
