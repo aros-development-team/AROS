@@ -2,8 +2,68 @@
 openurl.library - ChangeLog
 ---------------------------
 
-$Id: ChangeLog 112 2009-05-30 22:12:10Z abalabanb $
+$Id: ChangeLog 126 2009-10-24 17:43:02Z damato $
 $URL: https://openurllib.svn.sourceforge.net/svnroot/openurllib/trunk/ChangeLog $
+
+#### v7.6 RELEASE ##############################################################
+
+2009-10-24  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.6 release preparations
+
+2009-09-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * misc: added a name to all memory pools for OS4.
+
+2009-09-16 Thore Böckelmann <tboeckel@gmx.de>
+
+  * prefs/applist.c: integrated the hook structures into the instance data and
+    set these after creating the object instead of using global hooks. Thus
+    multiple instances of the prefs program will use the correct hook data. This
+    fixes bug #2859339.
+
+2009-08-14 Thore Böckelmann <tboeckel@gmx.de>
+
+  * Makefiles: added "-g" to the debug flags. It seems the OS3 GCC 2.95.3 cross
+    compiler needs this to generate debug infos at all.
+
+2009-07-21 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/libinit.c: in case something in the LibInit() call fails everything
+    set up before will now correctly be freed again to avoid memory leaks.
+
+2009-06-16  Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/prefs.c: changed OWB's port name to "OWB" instead of "OWB.1" because
+    openurl.library takes care of additional numbers itself. This fixes bug
+    #2801806.
+
+2009-06-07  Matthias Rustler <mrustler@gmx.de>
+
+  * libinit.c: Merged Staf's fixes from codesets.library
+
+2009-06-07  Matthias Rustler <mrustler@gmx.de>
+
+  * Makefile fix for linker library
+
+2009-06-02  Matthias Rustler <mrustler@gmx.de>
+
+  * Fixes for the AROS metamakefiles
+  * linkerlib for auto-opening (like it was done for codesets.library)
+
+2009-06-02  Thore Böckelmann <tboeckel@gmx.de>
+
+  * raPrefs/OpenURL.c: restored accidently removed sections.
+
+2009-06-01  Thore Böckelmann <tboeckel@gmx.de>
+
+  * raPrefs/#?.c: added the two new macros iset() and gadset() to replace the
+    quite long SetAttrs() and SetGadgetAttrs() calls.
+
+2009-05-31  Thore Böckelmann <tboeckel@gmx.de>
+
+  * raPrefs/#?.c: fixed all warnings and replaced GetAttr() call by the iget()
+    macro.
 
 2009-05-24  Alexandre Balaban <alexandre@balaban.fr>
 
@@ -48,7 +108,7 @@ $URL: https://openurllib.svn.sourceforge.net/svnroot/openurllib/trunk/ChangeLog 
   * include: updated the mui includes to use "muiaros.h" instead of "mui.h"
     for an AROS compile. Otherwise the binaries won't work, I am afraid.
     In addition a little cleanup in the include directory has been performed.
-  
+
 2009-05-25  Jens Langner <Jens.Langner@light-speed.de>
 
   * misc: fixed all remaining compiler warnings when compiling for AROS.

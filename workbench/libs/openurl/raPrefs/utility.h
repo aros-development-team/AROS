@@ -24,9 +24,11 @@
 #include <intuition/classusr.h>
 
 int VARARGS68K RA_Request( Object * pWin, const char * strTitle, const char * strGadgets, const char * strFormat, ... );
-
 void freeList( struct List * list );
 
+#define iget(obj, attr)         ({uint32 b=0; IIntuition->GetAttr(attr, (Object *)(obj), &b); b;})
+#define gadset(obj, win, ...)   IIntuition->SetGadgetAttrs((obj), (win), NULL, __VA_ARGS__, TAG_DONE)
+#define iset(obj, win, ...)     IIntuition->SetAttrs((obj), __VA_ARGS__, TAG_DONE)
 
 #endif // UTILITY_H
 

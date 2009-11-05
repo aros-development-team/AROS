@@ -271,6 +271,10 @@ struct listData
     TEXT  format[64];
 
     ULONG  flags;
+
+    struct Hook conHook;
+    struct Hook desHook;
+    struct Hook dispHook;
 };
 
 enum
@@ -287,7 +291,7 @@ struct listIO
 
 /**************************************************************************/
 
-HOOKPROTO(conFun, struct URL_Node *, APTR pool, struct URL_Node *node)
+HOOKPROTO(conFunc, struct URL_Node *, APTR pool, struct URL_Node *node)
 {
     struct listData *data = hook->h_Data;
     struct URL_Node *new;
@@ -302,21 +306,21 @@ HOOKPROTO(conFun, struct URL_Node *, APTR pool, struct URL_Node *node)
 
     return new;
 }
-MakeStaticHook(conHook, conFun);
+MakeStaticHook(conHook, conFunc);
 
 /**************************************************************************/
 
-HOOKPROTO(destFun, void, APTR pool, struct URL_Node *node)
+HOOKPROTO(desFunc, void, APTR pool, struct URL_Node *node)
 {
     struct listData *data = hook->h_Data;
 
     FreePooled(pool,node,data->nodeSize);
 }
-MakeStaticHook(destHook, destFun);
+MakeStaticHook(desHook, desFunc);
 
 /**************************************************************************/
 
-HOOKPROTO(dispFun, void, STRPTR *array, struct URL_Node *node)
+HOOKPROTO(dispFunc, void, STRPTR *array, struct URL_Node *node)
 {
     struct listData *data = hook->h_Data;
 
@@ -345,26 +349,34 @@ HOOKPROTO(dispFun, void, STRPTR *array, struct URL_Node *node)
         *array   = getString(MSG_Edit_ListPath);
     }
 }
-MakeStaticHook(dispHook, dispFun);
+MakeStaticHook(dispHook, dispFunc);
 
 /**************************************************************************/
 
 static IPTR mListNew(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    if((obj = (Object *)DoSuperNew(cl,obj,
+  if((obj = (Object *)DoSuperNew(cl,obj,
             InputListFrame,
             MUIA_List_Title,         TRUE,
             MUIA_List_Format,        "C=0,C=1,C=2",
             MUIA_List_DragSortable,  TRUE,
             MUIA_List_Pool,          g_pool,
-            MUIA_List_ConstructHook, &conHook,
-            MUIA_List_DestructHook,  &destHook,
-            MUIA_List_DisplayHook,   &dispHook,
             MUIA_List_DragSortable,  TRUE,
             MUIA_List_ShowDropMarks, TRUE,
             TAG_MORE, msg->ops_AttrList)) != NULL)
-    {
+  {
         struct listData *data = INST_DATA(cl,obj);
+
+        // the hooks make use of the instance data and hence must not
+        // put the data pointer into the global hook definitions
+        InitHook(&data->conHook, conHook, data);
+        InitHook(&data->desHook, desHook, data);
+        InitHook(&data->dispHook, dispHook, data);
+
+        // now tell the list object to use the local hooks
+        set(obj, MUIA_List_ConstructHook, &data->conHook);
+        set(obj, MUIA_List_DestructHook, &data->desHook);
+        set(obj, MUIA_List_DisplayHook, &data->dispHook);
 
         data->nameOfs  = GetTagData(MUIA_AppList_NodeNameOffset,0,msg->ops_AttrList);
         data->pathOfs  = GetTagData(MUIA_AppList_NodePathOffset,0,msg->ops_AttrList);
@@ -374,9 +386,6 @@ static IPTR mListNew(struct IClass *cl, Object *obj, struct opSet *msg)
 
         if (lampClass) data->olamp = lampObject, End;
 
-        conHook.h_Data = data;
-        destHook.h_Data = data;
-        dispHook.h_Data = data;
     }
 
     return (IPTR)obj;

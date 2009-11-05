@@ -128,7 +128,7 @@ void setDefaultPrefs(struct URL_Prefs *p)
   bn->ubn_Flags = UNF_DISABLED;
   strlcpy(bn->ubn_Name,"OWB", sizeof(bn->ubn_Name));
   strlcpy(bn->ubn_Path,"OWB \"%u\"", sizeof(bn->ubn_Path));
-  strlcpy(bn->ubn_Port,"OWB.1", sizeof(bn->ubn_Port));
+  strlcpy(bn->ubn_Port,"OWB", sizeof(bn->ubn_Port));
   strlcpy(bn->ubn_ShowCmd,"", sizeof(bn->ubn_ShowCmd));
   strlcpy(bn->ubn_ToFrontCmd,"SCREENTOFRONT", sizeof(bn->ubn_ToFrontCmd));
   strlcpy(bn->ubn_OpenURLCmd,"OPENURL \"%u\"", sizeof(bn->ubn_OpenURLCmd));
