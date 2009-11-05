@@ -70,6 +70,7 @@
 #include "handlers.h"
 #include "mailers.h"
 #include "utility.h"
+#include "macros.h"
 
 #include "version.h"
 
@@ -169,9 +170,9 @@ static struct NewMenu menu[] =
 };
 
 void IDCMPFunc(struct Hook *hook,Object *wobj,struct IntuiMessage *Msg);
-ULONG loadPrefs( ULONG mode );
-ULONG storePrefs( BOOL bStorePrefs );
-void updateFTPWindow( struct URL_FTPNode  * pFTP );
+ULONG loadPrefs(ULONG mode);
+ULONG storePrefs(BOOL bStorePrefs);
+void updateFTPWindow(struct URL_FTPNode  * pFTP);
 
 Object *make_window(void)
 {
@@ -490,22 +491,22 @@ int main()
 {
     initStrings();
 
-    localizeStrings( PageLabels );
+    localizeStrings(PageLabels);
 
     localizeNewMenu(menu);
 
-    if( !(OpenURLBase = IExec->OpenLibrary(OPENURLNAME, OPENURLVER ) ) )
+    if(!(OpenURLBase = IExec->OpenLibrary(OPENURLNAME, OPENURLVER)))
          return -1;
-    if( !(IOpenURL = (struct OpenURLIFace*)IExec->GetInterface(OpenURLBase, "main", 1L, NULL) ) )
+    if(!(IOpenURL = (struct OpenURLIFace*)IExec->GetInterface(OpenURLBase, "main", 1L, NULL)))
         return -1;
 
     RA_SetUpHook(idcmphook, IDCMPFunc, NULL);
 
     if((AppPort = IExec->CreateMsgPort()) != NULL)
     {
-        IExec->NewList( &list_Brow );
-        IExec->NewList( &list_Mail );
-        IExec->NewList( &list_FTPs );
+        IExec->NewList(&list_Brow);
+        IExec->NewList(&list_Mail);
+        IExec->NewList(&list_FTPs);
 
         win = make_window();
         edit_brow_win = make_edit_brow_win();
@@ -516,26 +517,21 @@ int main()
 
         // Set up inter-group label alignment
 
-        IIntuition->SetAttrs( OBJ(OBJ_FTP_ALIGN1),
-            LAYOUT_AlignLabels, OBJ(OBJ_FTP_ALIGN2), TAG_DONE);
-
-        IIntuition->SetAttrs( OBJ(OBJ_MAIL_ALIGN1),
-            LAYOUT_AlignLabels, OBJ(OBJ_MAIL_ALIGN2), TAG_DONE);
-
-        IIntuition->SetAttrs( OBJ(OBJ_LBROWSER_BROW),
-                                ICA_TARGET, OBJ(OBJ_EDIT_BROW),
-                                ICA_MAP,    lst2btn,
-                                TAG_DONE );
-
+        iset(OBJ(OBJ_FTP_ALIGN1), LAYOUT_AlignLabels, OBJ(OBJ_FTP_ALIGN2));
+        iset(OBJ(OBJ_MAIL_ALIGN1), LAYOUT_AlignLabels, OBJ(OBJ_MAIL_ALIGN2));
+        iset(OBJ(OBJ_LBROWSER_BROW), ICA_TARGET, OBJ(OBJ_EDIT_BROW),
+                                     ICA_MAP,    lst2btn);
 
         if((window = RA_OpenWindow(win)) != NULL)
         {
-            uint32 sigmask = 0, siggot = 0;
+            uint32 sigmask;
             BOOL done = FALSE;
 
-            IIntuition->GetAttr(WINDOW_SigMask, win, &sigmask);
+            sigmask = iget(win, WINDOW_SigMask);
             while (!done)
             {
+                uint32 siggot;
+
                 siggot = IExec->Wait(sigmask);
                 if (siggot & sigmask)
                 {
@@ -562,8 +558,8 @@ int main()
         IExec->DeleteMsgPort(AppPort);
     }
 
-    IExec->DropInterface( (struct Interface*)IOpenURL );
-    IExec->CloseLibrary( OpenURLBase );
+    IExec->DropInterface((struct Interface*)IOpenURL);
+    IExec->CloseLibrary(OpenURLBase);
 
     uninitStrings();
 
@@ -584,19 +580,19 @@ void IDCMPFunc(UNUSED struct Hook *hook, UNUSED Object *wobj, struct IntuiMessag
 
  //  find out which button was clicked, to replace OBJ_STRING with the correct String gad
 
-   //         IIntuition->SetGadgetAttrs( GAD(OBJ_STRING), window, NULL,
+   //         gadset(GAD(OBJ_STRING), window, NULL,
    //             GA_Text, hidden_strings[active], TAG_END);
         }
     }
 }
 
-ULONG loadPrefs( ULONG mode )
+ULONG loadPrefs(ULONG mode)
 {
     struct URL_Prefs       *p;
     ULONG                  error = 0;
 
     /* get the openurl.library prefs */
-/*    switch( mode )
+/*    switch(mode)
     {
         case MUIV_Win_GetPrefs_InUse:      mode = URL_GetPrefs_Mode_InUse;   break;
         case MUIV_Win_GetPrefs_LastSaveds: mode = URL_GetPrefs_Mode_Envarc;  break;
@@ -622,29 +618,29 @@ ULONG loadPrefs( ULONG mode )
     }
 
     /* Browsers */
-	IIntuition->SetGadgetAttrs(GAD(OBJ_LBROWSER_BROW), window, NULL, LISTBROWSER_Labels, ~0, TAG_DONE);
-    updateBrowserList( &list_Brow, p->up_BrowserList );
-	IIntuition->SetGadgetAttrs(GAD(OBJ_LBROWSER_BROW), window, NULL, LISTBROWSER_Labels, &list_Brow, LISTBROWSER_AutoFit, TRUE, TAG_DONE);
+	gadset(GAD(OBJ_LBROWSER_BROW), window, LISTBROWSER_Labels, ~0);
+    updateBrowserList(&list_Brow, p->up_BrowserList);
+	gadset(GAD(OBJ_LBROWSER_BROW), window, LISTBROWSER_Labels, &list_Brow, LISTBROWSER_AutoFit, TRUE);
 
     /* Mailers */
-    IIntuition->SetGadgetAttrs(GAD(OBJ_LBROWSER_MAIL), window, NULL, LISTBROWSER_Labels, ~0, TAG_DONE);
-    updateMailerList( &list_Mail, p->up_MailerList );
-    IIntuition->SetGadgetAttrs(GAD(OBJ_LBROWSER_MAIL), window, NULL, LISTBROWSER_Labels, &list_Mail, LISTBROWSER_AutoFit, TRUE, TAG_DONE);
+    gadset(GAD(OBJ_LBROWSER_MAIL), window, LISTBROWSER_Labels, ~0, TAG_DONE);
+    updateMailerList(&list_Mail, p->up_MailerList);
+    gadset(GAD(OBJ_LBROWSER_MAIL), window, LISTBROWSER_Labels, &list_Mail, LISTBROWSER_AutoFit, TRUE);
 
     /* FTPs */
-	IIntuition->SetGadgetAttrs(GAD(OBJ_LBROWSER_FTP), window, NULL, LISTBROWSER_Labels, ~0, TAG_DONE);
-    updateFTPList( &list_FTPs, p->up_FTPList );
-	IIntuition->SetGadgetAttrs(GAD(OBJ_LBROWSER_FTP), window, NULL, LISTBROWSER_Labels, &list_FTPs, LISTBROWSER_AutoFit, TRUE, TAG_DONE);
+	gadset(GAD(OBJ_LBROWSER_FTP), window, LISTBROWSER_Labels, ~0, TAG_DONE);
+    updateFTPList(&list_FTPs, p->up_FTPList);
+	gadset(GAD(OBJ_LBROWSER_FTP), window, LISTBROWSER_Labels, &list_FTPs, LISTBROWSER_AutoFit, TRUE);
 
     /* Miscellaneous */
-    IIntuition->SetGadgetAttrs(GAD(OBJ_PREPEND), window, NULL, GA_Selected, p->up_Flags & UPF_PREPENDHTTP, TAG_DONE);
-    IIntuition->SetGadgetAttrs(GAD(OBJ_SEND_MAILTO), window, NULL, GA_Selected, p->up_Flags & UPF_DOMAILTO, TAG_DONE);
-    IIntuition->SetGadgetAttrs(GAD(OBJ_SEND_FTP), window, NULL, GA_Selected, p->up_Flags & UPF_DOFTP, TAG_DONE);
+    gadset(GAD(OBJ_PREPEND), window, GA_Selected, isFlagSet(p->up_Flags, UPF_PREPENDHTTP));
+    gadset(GAD(OBJ_SEND_MAILTO), window, GA_Selected, isFlagSet(p->up_Flags, UPF_DOMAILTO));
+    gadset(GAD(OBJ_SEND_FTP), window, GA_Selected, isFlagSet(p->up_Flags, UPF_DOFTP));
 
-    IIntuition->SetGadgetAttrs(GAD(OBJ_UNICONIFY), window, NULL, GA_Selected, p->up_DefShow, TAG_DONE);
-    IIntuition->SetGadgetAttrs(GAD(OBJ_BRING), window, NULL, GA_Selected, p->up_DefBringToFront, TAG_DONE);
-    IIntuition->SetGadgetAttrs(GAD(OBJ_OPEN), window, NULL, GA_Selected, p->up_DefNewWindow, TAG_DONE);
-    IIntuition->SetGadgetAttrs(GAD(OBJ_LAUNCH), window, NULL, GA_Selected, p->up_DefLaunch, TAG_DONE);
+    gadset(GAD(OBJ_UNICONIFY), window, GA_Selected, p->up_DefShow);
+    gadset(GAD(OBJ_BRING), window, GA_Selected, p->up_DefBringToFront);
+    gadset(GAD(OBJ_OPEN), window, GA_Selected, p->up_DefNewWindow);
+    gadset(GAD(OBJ_LAUNCH), window, GA_Selected, p->up_DefLaunch);
 
     /* free the preferences */
     IOpenURL->URL_FreePrefsA(p,NULL);
@@ -652,54 +648,52 @@ ULONG loadPrefs( ULONG mode )
     return TRUE;
 }
 
-ULONG storePrefs( BOOL bStorePrefs )
+ULONG storePrefs(BOOL bStorePrefs)
 {
-    ULONG lLong = 0;
-    struct URL_Prefs     up;
+    struct URL_Prefs up;
 
     /* Copy settings from gadgets into structure */
     up.up_Version = PREFS_VERSION;
 
     /* Browsers */
-    IExec->CopyMem( &list_Brow, &up.up_BrowserList, sizeof(struct MinList) );
+    IExec->CopyMem(&list_Brow, &up.up_BrowserList, sizeof(struct MinList));
 
     /* Mailers */
-    IExec->CopyMem( &list_Mail, &up.up_MailerList, sizeof(struct MinList) );
+    IExec->CopyMem(&list_Mail, &up.up_MailerList, sizeof(struct MinList));
 
     /* FTPs */
-    IExec->CopyMem( &list_FTPs, &up.up_FTPList, sizeof(struct MinList) );
+    IExec->CopyMem(&list_FTPs, &up.up_FTPList, sizeof(struct MinList));
 
     /* Miscellaneous */
-    if(IIntuition->GetAttr( GA_Selected, OBJ(OBJ_PREPEND), &lLong ))
-    {
-        if(lLong)
-            up.up_Flags |= UPF_PREPENDHTTP;
-        else
-            up.up_Flags &= ~UPF_PREPENDHTTP;
-    }
-    if(IIntuition->GetAttr( GA_Selected, OBJ(OBJ_SEND_MAILTO), &lLong ))
-    {
-        if(lLong)
-            up.up_Flags |= UPF_DOMAILTO;
-        else
-            up.up_Flags &= ~UPF_DOMAILTO;
-    }
-    if(IIntuition->GetAttr( GA_Selected, OBJ(OBJ_SEND_FTP), &lLong ))
-    {
-        if(lLong)
-            up.up_Flags |= UPF_DOFTP;
-        else
-            up.up_Flags &= ~UPF_DOFTP;
-    }
+    if(iget(OBJ(OBJ_PREPEND), GA_Selected))
+        SET_FLAG(up.up_Flags, UPF_PREPENDHTTP);
+    else
+        CLEAR_FLAG(up.up_Flags, UPF_PREPENDHTTP);
 
-    if(IIntuition->GetAttr( GA_Selected, OBJ(OBJ_UNICONIFY), &lLong ))
-        up.up_DefShow         = lLong;
-    if(IIntuition->GetAttr( GA_Selected, OBJ(OBJ_BRING), &lLong ))
-        up.up_DefBringToFront = lLong;
-    if(IIntuition->GetAttr( GA_Selected, OBJ(OBJ_OPEN), &lLong ))
-        up.up_DefNewWindow    = lLong;
-    if(IIntuition->GetAttr( GA_Selected, OBJ(OBJ_LAUNCH), &lLong ))
-        up.up_DefLaunch       = lLong;
+    if(iget(OBJ(OBJ_SEND_MAILTO), GA_Selected))
+        SET_FLAG(up.up_Flags, UPF_DOMAILTO);
+    else
+        CLEAR_FLAG(up.up_Flags, UPF_DOMAILTO);
+
+    if(iget(OBJ(OBJ_SEND_FTP), GA_Selected))
+        SET_FLAG(up.up_Flags, UPF_DOFTP);
+    else
+        CLEAR_FLAG(up.up_Flags, UPF_DOFTP);
+
+    if(iget(OBJ(OBJ_SEND_MAILTO), GA_Selected))
+        SET_FLAG(up.up_Flags, UPF_DOMAILTO);
+    else
+        CLEAR_FLAG(up.up_Flags, UPF_DOMAILTO);
+
+    if(iget(OBJ(OBJ_SEND_FTP), GA_Selected))
+        SET_FLAG(up.up_Flags, UPF_DOFTP);
+    else
+        CLEAR_FLAG(up.up_Flags, UPF_DOFTP);
+
+    up.up_DefShow = iget(OBJ(OBJ_UNICONIFY), GA_Selected);
+    up.up_DefBringToFront = iget(OBJ(OBJ_BRING), GA_Selected);
+    up.up_DefNewWindow = iget(OBJ(OBJ_OPEN), GA_Selected);
+    up.up_DefLaunch = iget(OBJ(OBJ_LAUNCH), GA_Selected);
 
     /* Save to disk */
     if (!IOpenURL->URL_SetPrefs(&up,URL_SetPrefs_Save,bStorePrefs,TAG_DONE))

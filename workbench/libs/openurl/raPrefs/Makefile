@@ -159,7 +159,7 @@ TARGET   = $(BINDIR)/OpenURL
 WARN     = -W -Wall -Wwrite-strings -Wpointer-arith -Wsign-compare
 OPTFLAGS = -O3 -fomit-frame-pointer -funroll-loops
 DEBUG    = -DDEBUG -O0
-DEBUGSYM = -gstabs
+DEBUGSYM = -g -gstabs
 CFLAGS   = -I. -I../include $(CPU) $(WARN) $(OPTFLAGS) $(DEBUG) $(DEBUGSYM) $(USER_CFLAGS)
 LDFLAGS  = $(CPU) $(DEBUGSYM)
 LDLIBS   =
@@ -181,7 +181,7 @@ ifeq ($(OS), os4)
   CRT      = newlib
   CPU      = -mcpu=powerpc
   WARN     += -Wdeclaration-after-statement -Wdisabled-optimization
-  REDEFINE = 
+  REDEFINE =
   CFLAGS   += -mcrt=$(CRT) -D__NEW_TIMEVAL_DEFINITION_USED__ \
               $(REDEFINE) -Wa,-mregnames
   LDFLAGS  += -mcrt=$(CRT)

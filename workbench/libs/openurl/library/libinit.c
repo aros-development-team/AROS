@@ -94,6 +94,31 @@ static struct LibraryHeader * LIBFUNC LibOpen   (void);
 static BPTR                   LIBFUNC LibClose  (void);
 static LONG                   LIBFUNC LibNull   (void);
 
+#elif defined(__AROS__)
+
+#include <aros/libcall.h>
+
+#define Openurl_LibOpen LibOpen
+#define Openurl_LibClose LibClose
+#define Openurl_LibExpunge LibExpunge
+
+static AROS_UFP3 (struct LibraryHeader *, LibInit,
+                  AROS_UFPA(struct LibraryHeader *, base, D0),
+                  AROS_UFPA(BPTR, librarySegment, A0),
+                  AROS_UFPA(struct ExecBase *, sb, A6)
+);
+static AROS_LD1 (struct LibraryHeader *, LibOpen,
+                 AROS_LPA (UNUSED ULONG, version, D0),
+                 struct LibraryHeader *, base, 1, Openurl
+);
+static AROS_LD0 (BPTR, LibClose,
+                 struct LibraryHeader *, base, 2, Openurl
+);
+static AROS_LD1(BPTR, LibExpunge,
+                AROS_LPA(UNUSED struct LibraryHeader *, __extrabase, D0),
+                struct LibraryHeader *, base, 3, Openurl
+);
+
 #else
 
 static struct LibraryHeader * LIBFUNC LibInit    (REG(d0, struct LibraryHeader *lh), REG(a0, BPTR Segment), REG(a6, struct ExecBase *sb));
@@ -431,6 +456,14 @@ static struct LibraryHeader * LibInit(struct LibraryHeader *base, BPTR librarySe
 #elif defined(__MORPHOS__)
 static struct LibraryHeader * LibInit(struct LibraryHeader *base, BPTR librarySegment, struct ExecBase *sb)
 {
+#elif defined(__AROS__)
+static AROS_UFH3(struct LibraryHeader *, LibInit,
+                 AROS_UFHA(struct LibraryHeader *, base, D0),
+                 AROS_UFHA(BPTR, librarySegment, A0),
+                 AROS_UFHA(struct ExecBase *, sb, A6)
+)
+{
+  AROS_USERFUNC_INIT
 #else
 static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base), REG(a0, BPTR librarySegment), REG(a6, struct ExecBase *sb))
 {
@@ -503,7 +536,14 @@ static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
       return base;
     }
     else
+    {
+      #if defined(MIN_STACKSIZE) && !defined(__amigaos4__)
+      callLibFunction(freeBase, base);
+      #else
+      freeBase(base);
+      #endif
       OpenURLBase = NULL;
+    }
 
     #if defined(__amigaos4__) && defined(__NEWLIB__)
     if(NewlibBase)
@@ -515,7 +555,10 @@ static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
     #endif
   }
 
-  return NULL;
+  return(NULL);
+#ifdef __AROS__
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 /****************************************************************************/
@@ -534,6 +577,13 @@ static BPTR LibExpunge(struct LibraryManagerInterface *Self)
 static BPTR LibExpunge(void)
 {
   struct LibraryHeader *base = (struct LibraryHeader*)REG_A6;
+#elif defined(__AROS__)
+static AROS_LH1(BPTR, LibExpunge,
+         AROS_LHA(UNUSED struct LibraryHeader *, __extrabase, D0),
+         struct LibraryHeader *, base, 3, Openurl
+)
+{
+    AROS_LIBFUNC_INIT
 #else
 static BPTR LIBFUNC LibExpunge(REG(a6, struct LibraryHeader *base))
 {
@@ -585,6 +635,9 @@ static BPTR LIBFUNC LibExpunge(REG(a6, struct LibraryHeader *base))
   }
 
   return rc;
+#ifdef __AROS__
+  AROS_LIBFUNC_EXIT
+#endif
 }
 
 /****************************************************************************/
@@ -597,6 +650,13 @@ static struct LibraryHeader *LibOpen(struct LibraryManagerInterface *Self, ULONG
 static struct LibraryHeader *LibOpen(void)
 {
   struct LibraryHeader *base = (struct LibraryHeader*)REG_A6;
+#elif defined(__AROS__)
+static AROS_LH1(struct LibraryHeader *, LibOpen,
+                AROS_LHA(UNUSED ULONG, version, D0),
+                struct LibraryHeader *, base, 1, Openurl
+)
+{
+    AROS_LIBFUNC_INIT
 #else
 static struct LibraryHeader * LIBFUNC LibOpen(REG(d0, UNUSED ULONG version), REG(a6, struct LibraryHeader *base))
 {
@@ -622,6 +682,9 @@ static struct LibraryHeader * LIBFUNC LibOpen(REG(d0, UNUSED ULONG version), REG
   CLEAR_FLAG(base->libBase.lib_Flags, LIBF_DELEXP);
 
   return res;
+#ifdef __AROS__
+  AROS_LIBFUNC_EXIT
+#endif
 }
 
 /****************************************************************************/
@@ -634,6 +697,12 @@ static BPTR LibClose(struct LibraryManagerInterface *Self)
 static BPTR LibClose(void)
 {
   struct LibraryHeader *base = (struct LibraryHeader *)REG_A6;
+#elif defined(__AROS__)
+static AROS_LH0(BPTR, LibClose,
+                struct LibraryHeader *, base, 2, Openurl
+)
+{
+    AROS_LIBFUNC_INIT
 #else
 static BPTR LIBFUNC LibClose(REG(a6, struct LibraryHeader *base))
 {
@@ -657,6 +726,11 @@ static BPTR LIBFUNC LibClose(REG(a6, struct LibraryHeader *base))
       rc = LibExpunge(Self);
       #elif defined(__MORPHOS__)
       rc = LibExpunge();
+      #elif defined(__AROS__)
+      rc = AROS_LC1(BPTR, LibExpunge,
+                    AROS_LCA(struct LibraryHeader *, base, D0),
+                    struct LibraryHeader *, base, 3, Openurl
+      );
       #else
       rc = LibExpunge(base);
       #endif
@@ -664,6 +738,9 @@ static BPTR LIBFUNC LibClose(REG(a6, struct LibraryHeader *base))
   }
 
   return rc;
+#ifdef __AROS__
+  AROS_LIBFUNC_EXIT
+#endif
 }
 
 /****************************************************************************/

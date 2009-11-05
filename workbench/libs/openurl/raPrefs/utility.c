@@ -32,7 +32,7 @@
 #include <stdarg.h> // for va_list handling
 
 
-int VARARGS68K RA_Request( Object * pWin, const char * strTitle, const char * strGadgets, const char * strFormat, ... )
+int VARARGS68K RA_Request(Object * pWin, const char * strTitle, const char * strGadgets, const char * strFormat, ...)
 {
 	int nResult = -1;
 	va_list valist;
@@ -50,11 +50,11 @@ int VARARGS68K RA_Request( Object * pWin, const char * strTitle, const char * st
 
 	va_end(valist);
 
-	if( pReq )
+	if(pReq)
 	{
-		nResult = OpenRequester( pReq, pWin );
+		nResult = OpenRequester(pReq, pWin);
 
-		IIntuition->DisposeObject( pReq );
+		IIntuition->DisposeObject(pReq);
 		pReq = NULL;
 	}
 
@@ -62,12 +62,11 @@ int VARARGS68K RA_Request( Object * pWin, const char * strTitle, const char * st
 }
 
 // libération de la liste
-void freeList( struct List * list )
+void freeList(struct List * list)
 {
     struct Node *node;
 
     while((node = IExec->RemHead(list)) != NULL)
     	IListBrowser->FreeListBrowserNode(node);
 }
-
 

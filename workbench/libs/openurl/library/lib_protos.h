@@ -72,7 +72,7 @@ LIBPROTO(URL_GetPrefsA, struct URL_Prefs *, REG(a0, struct TagItem *attrs));
 #if defined(__amigaos4__)
 LIBPROTOVA(URL_GetPrefs, struct URL_Prefs *, ...);
 #else
-LIBFUNC struct URL_Prefs * STDARGS VARARGS68K URL_GetPrefs(Tag tag1, ...);
+LIBPROTOVA(URL_GetPrefs, struct URL_Prefs *, REG(a0, Tag tag1), ...);
 #endif
 LIBPROTO(URL_FreePrefsA, void, REG(a0, struct URL_Prefs *up), REG(a1, struct TagItem *attrs));
 LIBPROTOVA(URL_FreePrefs, void, REG(a0, struct URL_Prefs *up), ...);
@@ -82,7 +82,7 @@ LIBPROTO(URL_LaunchPrefsAppA, ULONG, REG(a0, struct TagItem *attrs));
 #if defined(__amigaos4__)
 LIBPROTOVA(URL_LaunchPrefsApp, ULONG, ...);
 #else
-LIBFUNC ULONG STDARGS VARARGS68K URL_LaunchPrefsApp(Tag tag1, ...);
+LIBPROTOVA(URL_LaunchPrefsApp, ULONG, REG(a0, Tag tag1), ...);
 #endif
 LIBPROTO(URL_GetAttr, ULONG, REG(d0, ULONG attr), REG(a0, ULONG *storage));
 
