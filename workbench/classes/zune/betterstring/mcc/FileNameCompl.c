@@ -51,7 +51,7 @@ BOOL OverwriteA(STRPTR text, UWORD x, UWORD length, UWORD ptrn_length, struct In
       ptrn_length += (data->MaxLength-1)-strlen(data->Contents);
       result = FALSE;
     }
-    data->Contents = (STRPTR)ExpandPool(data->Pool, data->Contents, expand);
+    data->Contents = (STRPTR)SharedPoolExpand(data->Contents, expand);
     strcpyback(data->Contents+x+ptrn_length, data->Contents+x+length);
   }
   else
@@ -289,7 +289,7 @@ BOOL FileNameComplete (Object *obj, BOOL backwards, struct InstData *data)
           oldletter = data->Contents[namestart];
           data->Contents[namestart] = '\0';
 
-          if((fncbuffer = (struct FNCData *)MyAllocPooled(data->Pool, 4100)))
+          if((fncbuffer = (struct FNCData *)SharedPoolAlloc(4100)))
           {
             fncbuffer->next = NULL;
 
@@ -309,7 +309,7 @@ BOOL FileNameComplete (Object *obj, BOOL backwards, struct InstData *data)
                 {
                   entries += control->eac_Entries;
 
-                  if((fncframe->next = (struct FNCData *)MyAllocPooled(data->Pool, 4100)))
+                  if((fncframe->next = (struct FNCData *)SharedPoolAlloc(4100)))
                     fncframe->next->next = NULL;
 
                   fncframe = fncframe->next;

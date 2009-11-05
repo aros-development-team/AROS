@@ -28,7 +28,6 @@
 #include <proto/muimaster.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
-#include <proto/iffparse.h>
 
 #include "BetterString_mcc.h"
 #include "private.h"
@@ -42,7 +41,6 @@ struct Library *LayersBase = NULL;
 struct Library *LocaleBase = NULL;
 struct Library *UtilityBase = NULL;
 struct Library *KeymapBase = NULL;
-struct Library *IFFParseBase = NULL;
 #elif defined(__MORPHOS__)
 struct Library *DiskfontBase = NULL;
 struct Library *GfxBase = NULL;
@@ -52,7 +50,6 @@ struct Library *LayersBase = NULL;
 struct Library *LocaleBase = NULL;
 struct Library *UtilityBase = NULL;
 struct Library *KeymapBase = NULL;
-struct Library *IFFParseBase = NULL;
 #else
 struct Library *DiskfontBase = NULL;
 struct Library *GfxBase = NULL;
@@ -66,7 +63,6 @@ struct UtilityBase *UtilityBase = NULL;
 struct Library *UtilityBase = NULL;
 #endif
 struct Library *KeymapBase = NULL;
-struct Library *IFFParseBase = NULL;
 #endif
 
 #if defined(__amigaos4__)
@@ -78,7 +74,6 @@ struct LayersIFace *ILayers = NULL;
 struct LocaleIFace *ILocale = NULL;
 struct UtilityIFace *IUtility = NULL;
 struct KeymapIFace *IKeymap = NULL;
-struct IFFParseIFace *IIFFParse = NULL;
 #endif
 
 extern SAVEDS ASM ULONG _Dispatcher(REG(a0, struct IClass * cl), REG(a2, Object * obj), REG(a1, Msg msg));
@@ -105,12 +100,11 @@ int main(void)
     GETINTERFACE(IUtility, UtilityBase))
   if((MUIMasterBase = OpenLibrary("muimaster.library", MUIMASTER_VMIN)) &&
     GETINTERFACE(IMUIMaster, MUIMasterBase))
-  if((IFFParseBase = OpenLibrary("iffparse.library", 36)) &&
-    GETINTERFACE(IIFFParse, IFFParseBase))
+  if(StartClipboardServer() == TRUE)
+  if(CreateSharedPool() == TRUE)
   {
     struct MUI_CustomClass *mcc;
     Object *a1, *a2, *app, *window, *bstring, *bstring2, *bpos, *ssize, *button, *numbutton;
-    Object *menu;
     const char *classes[] = {"BetterString.mcp", NULL};
 
     #if defined(DEBUG)
@@ -118,18 +112,6 @@ int main(void)
     #endif
 
     mcc = MUI_CreateCustomClass(NULL, "Area.mui", NULL, sizeof(struct InstData), ENTRY(_Dispatcher));
-
-    /*
-    menu = MenustripObject,
-            MUIA_Family_Child, MenuObject, MUIA_Menu_Title, "Test",
-              MUIA_Family_Child, MenuitemObject,
-                MUIA_Menuitem_Title,    "Dummy",
-                MUIA_Menuitem_Enabled,  TRUE,
-                MUIA_Menuitem_Shortcut, "V",
-              End,
-            End,
-           End,
-    */
 
     app =  ApplicationObject,
           MUIA_Application_Author,      "BetterString.mcc Open Source Team",
@@ -143,7 +125,6 @@ int main(void)
           MUIA_Application_Window, window = WindowObject,
             MUIA_Window_Title,  "BetterString-Test",
             MUIA_Window_ID,      MAKE_ID('M','A','I','N'),
-            //MUIA_Window_Menustrip, menu,
             MUIA_Window_RootObject, VGroup,
 
             Child, PopaslObject,
@@ -248,6 +229,14 @@ int main(void)
                 MUIA_String_MaxLen, 1024,
                 MUIA_CycleChain, TRUE,
                 End,
+              Child, (Object *)NewObject(mcc->mcc_Class, NULL,
+                StringFrame,
+                MUIA_String_AdvanceOnCR, TRUE,
+                MUIA_String_Contents, "Select on activate",
+                MUIA_String_MaxLen, 1024,
+                MUIA_CycleChain, TRUE,
+                MUIA_BetterString_SelectOnActive, TRUE,
+                End,
               Child, HGroup,
                 Child, button = SimpleButton("Insert"),
                 Child, bpos = SliderObject,
@@ -314,12 +303,8 @@ int main(void)
     MUIMasterBase = NULL;
   }
 
-  if(IFFParseBase)
-  {
-    DROPINTERFACE(IIFFParse);
-    CloseLibrary(IFFParseBase);
-    IFFParseBase = NULL;
-  }
+  DeleteSharedPool();
+  ShutdownClipboardServer();
 
   if(UtilityBase)
   {

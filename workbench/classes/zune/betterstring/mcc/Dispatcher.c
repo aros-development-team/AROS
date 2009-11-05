@@ -64,62 +64,53 @@ struct NewMenu PopupMenuData[] =
 //struct  MUIP_Backfill { ULONG MethodID; LONG left; LONG top; LONG right; LONG bottom; LONG xoffset; LONG yoffset; };
 //#endif
 
-IPTR  New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
   if((obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg)))
   {
     struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
 
-    #if defined(__amigaos4__)
-    if((data->Pool = AllocSysObjectTags(ASOT_MEMPOOL, ASOPOOL_MFlags, MEMF_SHARED,
-                                                      ASOPOOL_Puddle, 512,
-                                                      ASOPOOL_Threshold, 256,
-                                                      TAG_DONE)) != NULL)
-    #else
-    if((data->Pool = CreatePool(MEMF_ANY, 512, 256)) != NULL)
-    #endif
+//    kprintf("OM_NEW by %s\n", FindTask(NULL)->tc_Node.ln_Name);
+
+    data->locale = OpenLocale(NULL);
+    data->Contents = (STRPTR)SharedPoolAlloc(40);
+    *data->Contents = '\0';
+
+//    data->PopupMenu = MUI_MakeObject(MUIO_MenustripNM, PopupMenuData, NULL);
+    SetAttrs(obj,  MUIA_FillArea,    FALSE,
+//              MUIA_ContextMenu,  data->PopupMenu,
+//              MUIA_CustomBackfill, TRUE,
+              TAG_DONE );
+
+    if(FindTagItem(MUIA_Font, msg->ops_AttrList))
+      setFlag(data->Flags, FLG_OwnFont);
+
+    if(FindTagItem(MUIA_Background, msg->ops_AttrList))
+      setFlag(data->Flags, FLG_OwnBackground);
+
     {
-//      kprintf("OM_NEW by %s\n", FindTask(NULL)->tc_Node.ln_Name);
+      struct TagItem *tag;
 
-      data->locale = OpenLocale(NULL);
-      data->Contents = (STRPTR)MyAllocPooled(data->Pool, 40);
-      *data->Contents = '\0';
-
-//      data->PopupMenu = MUI_MakeObject(MUIO_MenustripNM, PopupMenuData, NULL);
-      SetAttrs(obj,  MUIA_FillArea,    FALSE,
-//                MUIA_ContextMenu,  data->PopupMenu,
-//                MUIA_CustomBackfill, TRUE,
-                TAG_DONE );
-
-      if(FindTagItem(MUIA_Font, msg->ops_AttrList))
-        setFlag(data->Flags, FLG_OwnFont);
-
-      if(FindTagItem(MUIA_Background, msg->ops_AttrList))
-        setFlag(data->Flags, FLG_OwnBackground);
-
+      if((tag = FindTagItem(MUIA_Frame, msg->ops_AttrList)))
       {
-        struct TagItem *tag;
-
-        if((tag = FindTagItem(MUIA_Frame, msg->ops_AttrList)))
-        {
-          if(tag->ti_Data == MUIV_Frame_String)
-            setFlag(data->Flags, FLG_SetFrame);
-        }
+        if(tag->ti_Data == MUIV_Frame_String)
+          setFlag(data->Flags, FLG_SetFrame);
       }
-
-      msg->MethodID = OM_SET;
-      Set(cl, obj, (struct opSet *)msg);
-      msg->MethodID = OM_NEW;
-      data->BufferPos = 0;
-
-      return((IPTR)obj);
     }
-    CoerceMethod(cl, obj, OM_DISPOSE);
+
+    msg->MethodID = OM_SET;
+    Set(cl, obj, (struct opSet *)msg);
+    msg->MethodID = OM_NEW;
+    data->BufferPos = 0;
+
+    return((IPTR)obj);
   }
+  CoerceMethod(cl, obj, OM_DISPOSE);
+
   return(FALSE);
 }
 
-IPTR  Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
 
@@ -128,16 +119,6 @@ IPTR  Dispose(struct IClass *cl, Object *obj, Msg msg)
     MUI_DisposeObject(data->PopupMenu);
 */
 
-  if(data->Pool != NULL)
-  {
-    #if defined(__amigaos4__)
-    FreeSysObject(ASOT_MEMPOOL, data->Pool);
-    #else
-    DeletePool(data->Pool);
-    #endif
-    data->Pool = NULL;
-  }
-
   if(data->locale != NULL)
   {
     CloseLocale(data->locale);
@@ -145,6 +126,32 @@ IPTR  Dispose(struct IClass *cl, Object *obj, Msg msg)
   }
 
   return(DoSuperMethodA(cl, obj, msg));
+}
+
+IPTR Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
+{
+  struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
+  ULONG id;
+
+  if((id = (muiNotifyData(obj)->mnd_ObjectID)) != 0)
+    DoMethod(msg->dataspace, MUIM_Dataspace_Add, data->Contents, strlen(data->Contents)+1, id);
+
+  return 0;
+}
+
+IPTR Import(UNUSED struct IClass *cl, Object *obj, struct MUIP_Import *msg)
+{
+  ULONG id;
+
+  if((id = (muiNotifyData(obj)->mnd_ObjectID)) != 0)
+  {
+      STRPTR contents = (STRPTR)DoMethod(msg->dataspace, MUIM_Dataspace_Find, id);
+
+//  if(contents)
+      set(obj, MUIA_String_Contents, contents);
+  }
+
+  return 0;
 }
 
 IPTR Setup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
@@ -218,7 +225,7 @@ IPTR Cleanup(struct IClass *cl, Object *obj, Msg msg)
   return(DoSuperMethodA(cl, obj, msg));
 }
 
-IPTR  AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
   struct TextFont *font;
@@ -282,10 +289,8 @@ IPTR Hide(struct IClass *cl, Object *obj, Msg msg)
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
 
 #ifdef __AROS__
-    if (data->Flags & FLG_Shown)
-    {
-        DeinitRastPort(&data->rport);
-    }
+  if(isFlagSet(data->Flags, FLG_Shown))
+    DeinitRastPort(&data->rport);
 #endif
 
   clearFlag(data->Flags, FLG_Shown);
@@ -310,9 +315,129 @@ IPTR mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
   return(0);
 }
 
+IPTR HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+{
+  struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
+  IPTR result;
+
+  if(isFlagSet(data->Flags, FLG_Ghosted) || isFlagClear(data->Flags, FLG_Shown))
+  {
+    result = 0;
+  }
+  else
+  {
+    ULONG display_pos = data->DisplayPos;
+
+    result = HandleInput(cl, obj, msg);
+    if(display_pos != data->DisplayPos)
+      set(obj, MUIA_String_DisplayPos, data->DisplayPos);
+
+    if(!result && data->ForwardObject != NULL)
+    {
+      ULONG attr = 0;
+
+      switch(msg->muikey)
+      {
+        case MUIKEY_TOP:
+          attr = MUIV_List_Active_Top;
+        break;
+
+        case MUIKEY_BOTTOM:
+          attr = MUIV_List_Active_Bottom;
+        break;
+
+        case MUIKEY_UP:
+          attr = MUIV_List_Active_Up;
+        break;
+
+        case MUIKEY_DOWN:
+          attr = MUIV_List_Active_Down;
+        break;
+
+        case MUIKEY_PAGEUP:
+          attr = MUIV_List_Active_PageUp;
+        break;
+
+        case MUIKEY_PAGEDOWN:
+          attr = MUIV_List_Active_PageDown;
+        break;
+      }
+
+      if(attr != 0)
+      {
+        set(data->ForwardObject, MUIA_List_Active, attr);
+        result = MUI_EventHandlerRC_Eat;
+      }
+    }
+  }
+
+  return result;
+}
+
+IPTR GoActive(struct IClass *cl, Object *obj, UNUSED Msg msg)
+{
+  struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
+
+  D(DBF_INPUT, "GoActive: %08lx", obj);
+
+  setFlag(data->Flags, FLG_Active);
+  setFlag(data->Flags, FLG_FreshActive);
+/*
+  DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
+  setFlag(data->ehnode.ehn_Events, IDCMP_RAWKEY);
+  DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
+*/
+  if(data->Original != NULL)
+    SharedPoolFree(data->Original);
+
+  if((data->Original = (STRPTR)SharedPoolAlloc(strlen(data->Contents)+1)) != NULL)
+    strlcpy(data->Original, data->Contents, strlen(data->Contents+1));
+
+  // select everything if this is necessary or requested
+  if((data->SelectOnActive == TRUE && isFlagClear(data->Flags, FLG_MouseButtonDown) && isFlagClear(data->Flags, FLG_ForceSelectOff)) ||
+     isFlagSet(data->Flags, FLG_ForceSelectOn))
+  {
+    data->BlockStart = 0;
+    data->BlockStop = strlen(data->Contents);
+    setFlag(data->Flags, FLG_BlockEnabled);
+  }
+
+  if(isFlagClear(data->Flags, FLG_OwnBackground))
+    set(obj, MUIA_Background, data->ActiveBackground);
+  else
+    MUI_Redraw(obj, MADF_DRAWUPDATE);
+
+  return TRUE;
+}
+
+IPTR GoInactive(struct IClass *cl, Object *obj, UNUSED Msg msg)
+{
+  struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
+
+  D(DBF_INPUT, "GoInActive: %08lx", obj);
+
+  // clean an eventually marked block and the
+  // active state flag of the gadget
+  clearFlag(data->Flags, FLG_BlockEnabled);
+  clearFlag(data->Flags, FLG_Active);
+  clearFlag(data->Flags, FLG_FreshActive);
+/*
+  DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
+  clearFlag(data->ehnode.ehn_Events, IDCMP_MOUSEMOVE);
+  DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
+*/
+
+  if(isFlagClear(data->Flags, FLG_OwnBackground))
+    set(obj, MUIA_Background, data->InactiveBackground);
+  else
+    MUI_Redraw(obj, MADF_DRAWUPDATE);
+
+  return TRUE;
+}
+
 DISPATCHER(_Dispatcher)
 {
-  IPTR  result = TRUE;
+  IPTR result = TRUE;
 
   ENTER();
 
@@ -343,125 +468,20 @@ DISPATCHER(_Dispatcher)
     break;
 
     case OM_SET:
-    {
       Set(cl, obj, (struct opSet *)msg);
       result = DoSuperMethodA(cl, obj, msg);
-    }
     break;
 
     case MUIM_HandleEvent:
-    {
-      struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
-
-      if(isFlagSet(data->Flags, FLG_Ghosted) || isFlagClear(data->Flags, FLG_Shown))
-      {
-        result = 0;
-      }
-      else
-      {
-        ULONG display_pos = data->DisplayPos;
-        result = HandleInput(cl, obj, (struct MUIP_HandleEvent *)msg);
-        if(display_pos != data->DisplayPos)
-          SetAttrs(obj, MUIA_String_DisplayPos, data->DisplayPos, TAG_DONE);
-
-        if(!result && data->ForwardObject)
-        {
-          ULONG attr = 0;
-
-          switch(((struct MUIP_HandleEvent *)msg)->muikey)
-          {
-            case MUIKEY_TOP:
-              attr = MUIV_List_Active_Top;
-            break;
-
-            case MUIKEY_BOTTOM:
-              attr = MUIV_List_Active_Bottom;
-            break;
-
-            case MUIKEY_UP:
-              attr = MUIV_List_Active_Up;
-            break;
-
-            case MUIKEY_DOWN:
-              attr = MUIV_List_Active_Down;
-            break;
-
-            case MUIKEY_PAGEUP:
-              attr = MUIV_List_Active_PageUp;
-            break;
-
-            case MUIKEY_PAGEDOWN:
-              attr = MUIV_List_Active_PageDown;
-            break;
-          }
-
-          if(attr != 0)
-          {
-            SetAttrs(data->ForwardObject, MUIA_List_Active, attr, TAG_DONE);
-            result = MUI_EventHandlerRC_Eat;
-          }
-        }
-      }
-    }
+      result = HandleEvent(cl, obj, (struct MUIP_HandleEvent *)msg);
     break;
 
     case MUIM_GoActive:
-    {
-      struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
-
-      D(DBF_INPUT, "GoActive: %08lx", obj);
-
-      setFlag(data->Flags, FLG_Active);
-      setFlag(data->Flags, FLG_FreshActive);
-/*
-      DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
-      setFlag(data->ehnode.ehn_Events, IDCMP_RAWKEY);
-      DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
-*/
-      if(data->Original != NULL)
-        MyFreePooled(data->Pool, (APTR)data->Original);
-
-      if((data->Original = (STRPTR)MyAllocPooled(data->Pool, strlen(data->Contents)+1)) != NULL)
-        strlcpy(data->Original, data->Contents, strlen(data->Contents+1));
-
-      // select everything if this is necessary or requested
-      if((data->SelectOnActive == TRUE && isFlagClear(data->Flags, FLG_ForceSelectOff)) ||
-         isFlagSet(data->Flags, FLG_ForceSelectOn))
-      {
-        data->BlockStart = 0;
-        data->BlockStop = strlen(data->Contents);
-        setFlag(data->Flags, FLG_BlockEnabled);
-      }
-
-      if(isFlagClear(data->Flags, FLG_OwnBackground))
-        set(obj, MUIA_Background, data->ActiveBackground);
-      else
-        MUI_Redraw(obj, MADF_DRAWUPDATE);
-    }
+      result = GoActive(cl, obj, msg);
     break;
 
     case MUIM_GoInactive:
-    {
-      struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
-
-      D(DBF_INPUT, "GoInActive: %08lx", obj);
-
-      // clean an eventually marked block and the
-      // active state flag of the gadget
-      clearFlag(data->Flags, FLG_BlockEnabled);
-      clearFlag(data->Flags, FLG_Active);
-      clearFlag(data->Flags, FLG_FreshActive);
-
-/*    DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
-      clearFlag(data->ehnode.ehn_Events, IDCMP_MOUSEMOVE);
-      DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
-*/
-
-      if(isFlagClear(data->Flags, FLG_OwnBackground))
-        set(obj, MUIA_Background, data->InactiveBackground);
-      else
-        MUI_Redraw(obj, MADF_DRAWUPDATE);
-    }
+      result = GoInactive(cl, obj, msg);
     break;
 
     case MUIM_Hide:
@@ -477,32 +497,11 @@ DISPATCHER(_Dispatcher)
     break;
 
     case MUIM_Export:
-    {
-      struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
-      struct MUIP_Export *exp_msg = (struct MUIP_Export *)msg;
-      ULONG id;
-
-      if((id = (muiNotifyData(obj)->mnd_ObjectID)))
-        DoMethod(exp_msg->dataspace, MUIM_Dataspace_Add, data->Contents, strlen(data->Contents)+1, id);
-
-      result = 0;
-    }
+      result = Export(cl, obj, (struct MUIP_Export *)msg);
     break;
 
     case MUIM_Import:
-    {
-      struct MUIP_Import *imp_msg = (struct MUIP_Import *)msg;
-      ULONG id;
-
-      if((id = (muiNotifyData(obj)->mnd_ObjectID)))
-      {
-          STRPTR contents = (STRPTR)DoMethod(imp_msg->dataspace, MUIM_Dataspace_Find, id);
-
-//        if(contents)
-          set(obj, MUIA_String_Contents, contents);
-      }
-      result = 0;
-    }
+      result = Import(cl, obj, (struct MUIP_Import *)msg);
     break;
 
     case MUIM_BetterString_ClearSelected:

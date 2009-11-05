@@ -17,7 +17,7 @@ Hintergrund
 ; Background
 ;
 MSG_Label_Cursor
-Cursor
+Cursor:
 ; Cursor:
 ;
 MSG_Label_Fonts

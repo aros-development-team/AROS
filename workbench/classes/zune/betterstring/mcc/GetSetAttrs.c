@@ -71,7 +71,7 @@ IPTR Get(struct IClass *cl, Object *obj, struct opGet *msg)
     break;
 
     case MUIA_String_Integer:
-      StrToLong(data->Contents, (ULONG *)&ti_Data);
+      StrToLong(data->Contents, (LONG *)&ti_Data);
     break;
 
     case MUIA_String_MaxLen:
@@ -232,7 +232,7 @@ IPTR Set(struct IClass *cl, Object *obj, struct opSet *msg)
             WORD extra = strlen(new_str)-strlen(data->Contents);
 
             if(extra > 0)
-              data->Contents = (STRPTR)ExpandPool(data->Pool, data->Contents, extra);
+              data->Contents = (STRPTR)SharedPoolExpand(data->Contents, extra);
 
             strcpy(data->Contents, new_str);
             data->BufferPos = strlen(data->Contents);

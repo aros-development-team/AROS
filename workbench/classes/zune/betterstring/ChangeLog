@@ -2,8 +2,71 @@
 MUI BetterString MCC class - ChangeLog
 --------------------------------------
 
-$Id: ChangeLog 185 2009-06-07 17:50:57Z marust $
-$URL: https://bstring-mcc.svn.sourceforge.net/svnroot/bstring-mcc/trunk/ChangeLog $
+$Id: ChangeLog 213 2009-10-24 16:26:31Z damato $
+$URL: https://bstring-mcc.svn.sourceforge.net/svnroot/bstring-mcc/releases/11.17/ChangeLog $
+
+#### v11.17 RELEASE ###########################################################
+
+2009-10-24 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 11.17 release preparations
+ 
+2009-09-24 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/misc: renamed all pool function to "*Shared*" as this describes what
+    they really do.
+
+2009-09-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/HandleInput.c, mcc/ClipboardServer.c: the clipboard server process
+    now also makes use of the global memory pool.
+  * misc: replaced the per-instance memory pool by a global and semaphore
+    protected one. There is absolutely no benefit in having a separate pool
+    for every instance with only just one allocation within this pool.
+  * misc: added a name to all memory pools for OS4.
+
+2009-09-17 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/Makefile: fixed Makefile to be able generate the catalogs.
+  * mcp/locale/german.ct: added a missing colon in the german translation.
+
+2009-09-14 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/ClipboardServer.c: added NP_CodeType=CODETYPE_PPC for the MOS build.
+  * mcc/BetterString-Test.c: added forced select on activate object.
+  * mcc/ClipboardServer.c: fixed wrong server process function prototype for all
+    non-OS4 builds.
+  * mcc/Debug.c, mcc/Debug.h: added DBF_CLIPBOARD debug flag.
+  * mcc/HandleInput.c, mcc/ClipboardServer.c: moved UTF8 conversion function to
+    where it belongs.
+  * mcc/GetSetAttrs.c: fixed signedness warning for OS4.
+  * mcc/ClipboardServer.c, vastubs.c: fixed OS3 build.
+
+2009-09-09 Thore Böckelmann <tboeckel@gmx.de>
+
+  * ClipboardServer.c, HandleInput.c: loaded all clipboard access stuff off to
+    a separate process. Accessing the clipboard via iffparse.library requires
+    2 user signals for each instance and thus an application would run out of
+    free signals sooner or later. Especially YAM suffered from this with more
+    than one write window open.
+
+2009-08-14 Thore Böckelmann <tboeckel@gmx.de>
+
+  * Makefiles: added "-g" to the debug flags. It seems the OS3 GCC 2.95.3 cross
+    compiler needs this to generate debug infos at all.
+
+2009-06-26 Matthias Rustler <mrustler@gmx.de>
+
+  * mcp/mmakefile.src,
+    libraries/mui.h   : backport of some AROS related fixes.
+
+2009-06-24 Thore Böckelmann <tboeckel@gmx.de>
+
+  * Dispatcher.c, HandleInput.c: fixed the SelectOnActive feature in such a way
+    that the contents are only selected, if the left mouse button is *not*
+    pressed, because MUI issues MUIM_GoActive right after a click on an object.
+    Also cleaned up the dispatcher code a bit.
+  * PrintString.c: deobfuscated the cursor width calculation.
 
 2009-06-07 Matthias Rustler <mrustler@gmx.de>
 
