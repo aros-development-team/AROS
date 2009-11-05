@@ -26,44 +26,121 @@
 
 #include "private.h"
 
-APTR MyAllocPooled(APTR pool, ULONG length)
+#include "Debug.h"
+
+static APTR sharedPool;
+#if !defined(__amigaos4__) && !defined(__MORPHOS__)
+static struct SignalSemaphore sharedPoolSema;
+#endif
+
+BOOL CreateSharedPool(void)
+{
+  BOOL success = FALSE;
+
+  ENTER();
+
+  #if defined(__amigaos4__)
+  sharedPool = AllocSysObjectTags(ASOT_MEMPOOL, ASOPOOL_MFlags, MEMF_SHARED,
+                                                ASOPOOL_Puddle, 512,
+                                                ASOPOOL_Threshold, 256,
+                                                ASOPOOL_Name, "BetterString.mcc shared pool",
+                                                ASOPOOL_Protected, TRUE,
+                                                TAG_DONE);
+  #elif defined(__MORPHOS__)
+  sharedPool = CreatePool(MEMF_SEM_PROTECTED, 512, 256);
+  #else
+  sharedPool = CreatePool(MEMF_ANY, 512, 256);
+  InitSemaphore(&sharedPoolSema);
+  #endif
+
+  if(sharedPool != NULL)
+    success = TRUE;
+
+  RETURN(success);
+  return success;
+}
+
+void DeleteSharedPool(void)
+{
+  ENTER();
+
+  if(sharedPool != NULL)
+  {
+    #if defined(__amigaos4__)
+    FreeSysObject(ASOT_MEMPOOL, sharedPool);
+    #else
+    DeletePool(sharedPool);
+    #endif
+    sharedPool = NULL;
+  }
+
+  LEAVE();
+}
+
+APTR SharedPoolAlloc(ULONG length)
 {
   ULONG *mem;
 
+  ENTER();
+
+  #if !defined(__amigaos4__) && !defined(__MORPHOS__)
+  ObtainSemaphore(&sharedPoolSema);
+  #endif
+
   length = (length + sizeof(ULONG) + sizeof(ULONG) - 1) & ~(sizeof(ULONG)-1);
-  if((mem = AllocPooled(pool, length)))
+  if((mem = AllocPooled(sharedPool, length)))
   {
     *mem = length;
     mem += 1;
   }
 
-  return(mem);
+  #if !defined(__amigaos4__) && !defined(__MORPHOS__)
+  ReleaseSemaphore(&sharedPoolSema);
+  #endif
+
+  RETURN(mem);
+  return mem;
 }
 
-VOID MyFreePooled(APTR pool, APTR mem)
+VOID SharedPoolFree(APTR mem)
 {
   ULONG *memptr, length;
+
+  ENTER();
 
   memptr = &((ULONG *)mem)[-1];
   length = *memptr;
 
-  FreePooled(pool, memptr, length);
+  #if !defined(__amigaos4__) && !defined(__MORPHOS__)
+  ObtainSemaphore(&sharedPoolSema);
+  #endif
+
+  FreePooled(sharedPool, memptr, length);
+
+  #if !defined(__amigaos4__) && !defined(__MORPHOS__)
+  ReleaseSemaphore(&sharedPoolSema);
+  #endif
+
+  LEAVE();
 }
 
-APTR ExpandPool(APTR pool, APTR mem, ULONG extra)
+APTR SharedPoolExpand(APTR mem, ULONG extra)
 {
   ULONG length = ((ULONG *)mem)[-1] - sizeof(ULONG);
   ULONG sz = strlen((char *)mem) + extra;
 
+  ENTER();
+
   if(length <= sz)
   {
-    APTR new_mem = MyAllocPooled(pool, sz + 20);
+    APTR new_mem = SharedPoolAlloc(sz + 20);
 
     CopyMem(mem, new_mem, length);
-    MyFreePooled(pool, mem);
+    SharedPoolFree(mem);
 
     mem = new_mem;
   }
 
-  return(mem);
+  RETURN(mem);
+  return mem;
 }

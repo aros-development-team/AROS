@@ -13,6 +13,7 @@ USER_CFLAGS := -DNO_INLINE_STDARG
 FILES := \
         AllocBitMap \
         AllocFunctions \
+		ClipboardServer \
         Dispatcher \
         FileNameCompl \
         GetSetAttrs \

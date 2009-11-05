@@ -81,11 +81,12 @@ void SetupDebug(void)
 
     static struct { const char *token; const unsigned long flag; } dbflags[] =
     {
-      { "always",   DBF_ALWAYS  },
-      { "startup",  DBF_STARTUP },
-      { "input",    DBF_INPUT   },
-      { "all",      DBF_ALL     },
-      { NULL,       0           }
+      { "always",    DBF_ALWAYS    },
+      { "startup",   DBF_STARTUP   },
+      { "input",     DBF_INPUT     },
+      { "clipboard", DBF_CLIPBOARD },
+      { "all",       DBF_ALL       },
+      { NULL,        0             }
     };
 
     // we parse the env variable token-wise

@@ -64,7 +64,6 @@ struct InstData
   struct  MUI_EventHandlerNode    ehnode;
   struct  RastPort            rport;
   struct  Locale            *locale;
-  APTR    Pool;
   ULONG   Flags;
   Object  *PopupMenu;
 
@@ -107,24 +106,25 @@ struct InstData
   struct Hook *EditHook;
 };
 
-#define FLG_Secret         (1L << 0)
-#define FLG_AdvanceOnCr    (1L << 1)
-#define FLG_BlockEnabled   (1L << 2)
-#define FLG_Active         (1L << 3)
-#define FLG_Ghosted        (1L << 4)
-#define FLG_Shown          (1L << 5)
-#define FLG_Original       (1L << 6)
-#define FLG_RedoAvailable  (1L << 7)
-#define FLG_StayActive     (1L << 8)
-#define FLG_SetFrame       (1L << 9)
-#define FLG_OwnFont        (1L << 10)
-#define FLG_OwnBackground  (1L << 11)
-#define FLG_NoInput        (1L << 12)
-#define FLG_DragOutside    (1L << 13)
-#define FLG_NoShortcuts    (1L << 14)
-#define FLG_ForceSelectOn  (1L << 15)
-#define FLG_ForceSelectOff (1L << 16)
-#define FLG_FreshActive    (1L << 17)
+#define FLG_Secret          (1L << 0)
+#define FLG_AdvanceOnCr     (1L << 1)
+#define FLG_BlockEnabled    (1L << 2)
+#define FLG_Active          (1L << 3)
+#define FLG_Ghosted         (1L << 4)
+#define FLG_Shown           (1L << 5)
+#define FLG_Original        (1L << 6)
+#define FLG_RedoAvailable   (1L << 7)
+#define FLG_StayActive      (1L << 8)
+#define FLG_SetFrame        (1L << 9)
+#define FLG_OwnFont         (1L << 10)
+#define FLG_OwnBackground   (1L << 11)
+#define FLG_NoInput         (1L << 12)
+#define FLG_DragOutside     (1L << 13)
+#define FLG_NoShortcuts     (1L << 14)
+#define FLG_ForceSelectOn   (1L << 15)
+#define FLG_ForceSelectOff  (1L << 16)
+#define FLG_FreshActive     (1L << 17)
+#define FLG_MouseButtonDown (1L << 18)
 
 // proper RAWKEY_ defines were first introduced in OS4 and MorphOS
 // and unfortunately they are also a bit different, so lets
@@ -205,9 +205,11 @@ IPTR Get(struct IClass *, Object *, struct opGet *);
 IPTR Set(struct IClass *, Object *, struct opSet *);
 IPTR mDoAction(struct IClass *, Object *, struct MUIP_BetterString_DoAction *);
 
-APTR MyAllocPooled(APTR, ULONG);
-VOID MyFreePooled(APTR, APTR);
-APTR ExpandPool(APTR, APTR, ULONG);
+BOOL CreateSharedPool(void);
+void DeleteSharedPool(void);
+APTR SharedPoolAlloc(ULONG);
+VOID SharedPoolFree(APTR);
+APTR SharedPoolExpand(APTR, ULONG);
 
 VOID strcpyback(STRPTR, STRPTR);
 
@@ -229,6 +231,12 @@ void SetupSelectPointer(struct InstData *data);
 void CleanupSelectPointer(struct InstData *data);
 void ShowSelectPointer(Object *obj, struct InstData *data);
 void HideSelectPointer(Object *obj, struct InstData *data);
+
+// ClipboardServer.c
+BOOL StartClipboardServer(void);
+void ShutdownClipboardServer(void);
+void StringToClipboard(STRPTR str, LONG length);
+void ClipboardToString(STRPTR *str, LONG *length);
 
 #define setFlag(mask, flag)             (mask) |= (flag)
 #define clearFlag(mask, flag)           (mask) &= ~(flag)

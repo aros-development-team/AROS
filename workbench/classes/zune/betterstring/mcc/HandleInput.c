@@ -25,7 +25,6 @@
 
 #include <clib/alib_protos.h>
 #include <clib/macros.h>
-#include <libraries/iffparse.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
@@ -34,16 +33,10 @@
 #include <proto/layers.h>
 #include <proto/locale.h>
 #include <proto/dos.h>
-#include <proto/iffparse.h>
 
 #include "private.h"
 
 #include "SDI_stdarg.h"
-
-#define ID_FORM    MAKE_ID('F','O','R','M')
-#define ID_FTXT    MAKE_ID('F','T','X','T')
-#define ID_CHRS    MAKE_ID('C','H','R','S')
-#define ID_CSET    MAKE_ID('C','S','E','T')
 
 #define BlockEnabled(data)  (isFlagSet((data)->Flags, FLG_BlockEnabled) && (data)->BlockStart != (data)->BlockStop)
 
@@ -80,9 +73,9 @@ static int STDARGS MySPrintf(const char *buf, const char *fmt, ...)
 static void AddToUndo(struct InstData *data)
 {
   if(data->Undo)
-    MyFreePooled(data->Pool, data->Undo);
+    SharedPoolFree(data->Undo);
 
-  if((data->Undo = (STRPTR)MyAllocPooled(data->Pool, strlen(data->Contents)+1)))
+  if((data->Undo = (STRPTR)SharedPoolAlloc(strlen(data->Contents)+1)))
   {
     strlcpy(data->Undo, data->Contents, strlen(data->Contents)+1);
     data->UndoPos = data->BufferPos;
@@ -258,7 +251,7 @@ static void CopyBlock(struct InstData *data)
   if(isFlagClear(data->Flags, FLG_Secret))
   {
     UWORD Blk_Start, Blk_Width;
-    struct IFFHandle *iff;
+    //struct IFFHandle *iff;
 
     if(BlockEnabled(data) == TRUE)
     {
@@ -271,28 +264,7 @@ static void CopyBlock(struct InstData *data)
       Blk_Width = strlen(data->Contents);
     }
 
-    if((iff = AllocIFF()) != NULL)
-    {
-      if((iff->iff_Stream = (IPTR)OpenClipboard(0)) != 0)
-      {
-        InitIFFasClip(iff);
-
-        if(OpenIFF(iff, IFFF_WRITE) == 0)
-        {
-          PushChunk(iff, ID_FTXT, ID_FORM, IFFSIZE_UNKNOWN);
-          PushChunk(iff, 0, ID_CHRS, IFFSIZE_UNKNOWN);
-          WriteChunkBytes(iff, data->Contents + Blk_Start, Blk_Width);
-          PopChunk(iff);
-          PopChunk(iff);
-
-          CloseIFF(iff);
-        }
-
-        CloseClipboard((struct ClipboardHandle *)iff->iff_Stream);
-      }
-
-      FreeIFF(iff);
-    }
+    StringToClipboard(&data->Contents[Blk_Start], Blk_Width);
   }
 
   LEAVE();
@@ -319,125 +291,31 @@ static void CutBlock(struct InstData *data)
   LEAVE();
 }
 
-#if defined(__MORPHOS__)
-static void utf8_to_ansi(CONST_STRPTR src, STRPTR dst)
-{
-  static struct KeyMap *keymap;
-  ULONG octets;
-
-  keymap = AskKeyMapDefault();
-
-  do
-  {
-     WCHAR wc;
-     UBYTE c;
-
-     octets = UTF8_Decode(src, &wc);
-     c = ToANSI(wc, keymap);
-
-     *dst++ = c;
-     src += octets;
-  }
-  while (octets > 0);
-}
-#endif
-
 static void Paste(struct InstData *data)
 {
-  struct IFFHandle *iff;
+  STRPTR str;
+  LONG length;
 
   ENTER();
 
   // clear the selection
   DeleteBlock(data);
 
-  if((iff = AllocIFF()) != NULL)
+  ClipboardToString(&str, &length);
+  if(str != NULL && length > 0)
   {
-    if((iff->iff_Stream = (IPTR)OpenClipboard(0)) != 0)
+    if(data->MaxLength != 0 && strlen(data->Contents) + length > (ULONG)data->MaxLength - 1)
     {
-      InitIFFasClip(iff);
-
-      if(OpenIFF(iff, IFFF_READ) == 0)
-      {
-        if(StopChunk(iff, ID_FTXT, ID_CHRS) == 0 && StopChunk(iff, ID_FTXT, ID_CSET) == 0)
-        {
-          LONG codeset = 0;
-
-          while(TRUE)
-          {
-            LONG error;
-            struct ContextNode *cn;
-
-            error = ParseIFF(iff, IFFPARSE_SCAN);
-            if(error == IFFERR_EOC)
-              continue;
-            else if(error != 0)
-              break;
-
-            if((cn = CurrentChunk(iff)) != NULL)
-            {
-              if(cn->cn_ID == ID_CSET)
-              {
-                if (cn->cn_Size >= 4)
-                {
-                  /* Only the first four bytes are interesting */
-                  if(ReadChunkBytes(iff, &codeset, 4) != 4)
-                    codeset = 0;
-                }
-              }
-              else if(cn->cn_ID == ID_CHRS && cn->cn_Size > 0)
-              {
-                ULONG length = cn->cn_Size;
-                char *buffer;
-
-                if(data->MaxLength != 0 && strlen(data->Contents) + length > (ULONG)data->MaxLength - 1)
-                {
-                  DisplayBeep(NULL);
-                  length = data->MaxLength - 1 - strlen(data->Contents);
-                }
-
-                if((buffer = MyAllocPooled(data->Pool, length + 1)) != NULL)
-                {
-                  LONG readBytes;
-
-                  // read the string from the clipboard
-                  if((readBytes = ReadChunkBytes(iff, buffer, length)) > 0)
-                  {
-                    memset(buffer + readBytes, 0, length-readBytes+1);
-
-                    #if defined(__MORPHOS__)
-                    if (codeset == CODESET_UTF8)
-                    {
-                      if (IS_MORPHOS2)
-                      {
-                        utf8_to_ansi(buffer, buffer);
-                        readBytes = strlen(buffer);
-                      }
-                    }
-                    #endif
-
-                    data->Contents = (STRPTR)ExpandPool(data->Pool, data->Contents, readBytes);
-                    strcpyback(data->Contents + data->BufferPos + readBytes, data->Contents + data->BufferPos);
-                    memcpy(data->Contents + data->BufferPos, buffer, readBytes);
-                    data->BufferPos += readBytes;
-                  }
-                  else
-                    E(DBF_ALWAYS, "ReadChunkBytes error! (%ld)", readBytes);
-
-                  MyFreePooled(data->Pool, buffer);
-                }
-              }
-            }
-          }
-        }
-
-        CloseIFF(iff);
-      }
-
-      CloseClipboard((struct ClipboardHandle *)iff->iff_Stream);
+      DisplayBeep(NULL);
+      length = data->MaxLength - 1 - strlen(data->Contents);
     }
 
-    FreeIFF(iff);
+    data->Contents = (STRPTR)SharedPoolExpand(data->Contents, length);
+    strcpyback(data->Contents + data->BufferPos + length, data->Contents + data->BufferPos);
+    memcpy(data->Contents + data->BufferPos, str, length);
+    data->BufferPos += length;
+
+    SharedPoolFree(str);
   }
 
   LEAVE();
@@ -1044,7 +922,7 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                     if((data->MaxLength == 0 || (ULONG)data->MaxLength-1 > strlen(data->Contents)) &&
                        Accept(code, data->Accept) && Reject(code, data->Reject))
                     {
-                      data->Contents = (STRPTR)ExpandPool(data->Pool, data->Contents, 1);
+                      data->Contents = (STRPTR)SharedPoolExpand(data->Contents, 1);
                       strcpyback(data->Contents+data->BufferPos+1, data->Contents+data->BufferPos);
                       *(data->Contents+data->BufferPos) = code;
                       data->BufferPos++;
@@ -1211,7 +1089,7 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
           {
             fncframe = fncbuffer;
             fncbuffer = fncbuffer->next;
-            MyFreePooled(data->Pool, fncframe);
+            SharedPoolFree(fncframe);
           }
           data->FNCBuffer = NULL;
         }
@@ -1268,6 +1146,7 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
       {
         BOOL isOverObject = FALSE;
 
+        D(DBF_INPUT, "IDCMP_MOUSEMOVE");
         if(_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
         {
           #if defined(__MORPHOS__)
@@ -1296,13 +1175,15 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
           ShowSelectPointer(obj, data);
         else
           HideSelectPointer(obj, data);
-
-        D(DBF_INPUT, "IDCMP_MOUSEMOVE");
       }
       else if(msg->imsg->Class == IDCMP_MOUSEBUTTONS)
       {
+        D(DBF_INPUT, "IDCMP_MOUSEBUTTONS");
         if(msg->imsg->Code == (IECODE_LBUTTON | IECODE_UP_PREFIX))
         {
+          // forget the pressed mouse button
+          clearFlag(data->Flags, FLG_MouseButtonDown);
+
           if(isAnyFlagSet(data->ehnode.ehn_Events, /*IDCMP_MOUSEMOVE|*/IDCMP_INTUITICKS))
           {
             DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
@@ -1349,6 +1230,9 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
           WORD y = ad->mad_Box.Top  + ad->mad_addtop;
           WORD width = ad->mad_Box.Width - ad->mad_subwidth;
           WORD height = Font->tf_YSize;
+
+          // remember the pressed mouse button
+          setFlag(data->Flags, FLG_MouseButtonDown);
 
           if(msg->imsg->MouseX >= x && msg->imsg->MouseX < x+width && msg->imsg->MouseY >= y && msg->imsg->MouseY < y+height)
           {
