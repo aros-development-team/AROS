@@ -5,11 +5,49 @@ codesets.library - Library for handling different codesets
 $Id$
 $URL$
 
+#### 6.9 RELEASE #########################################################
+
+2009-10-24  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 6.9 release preparations.
+
+2009-09-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * misc: added a name to all memory pools for OS4.
+
+2009-08-14 Thore Böckelmann <tboeckel@gmx.de>
+
+  * Makefiles: added "-g" to the debug flags. It seems the OS3 GCC 2.95.3 cross
+    compiler needs this to generate debug infos at all.
+
+2009-07-21 Thore Böckelmann <tboeckel@gmx.de>
+
+  * libinit.c: in case something in the LibInit() call fails everything set up
+    before will now correctly be freed again to avoid memory leaks.
+
+2009-07-10 Thore Böckelmann <tboeckel@gmx.de>
+
+  * codesets.c: a conversion with identical source and destination codesets no
+    longer fails, although such a conversion doesn't make much sense. Instead
+    a copy of the source string is created which must be freed by a call to
+    CodesetsFree() as usual.
+
+2009-07-02  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * libraries/codesets.h: Added standard UTF#?_TYPEDEF around UTF8, UTF16 and
+    UTF32 typedefs to make sure they dont clash with system types in the future.
+
+2009-06-15  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * codesets.c: workaround for locale.library bug in MorphOS 2.2.
+    Fixes bug #2496990.
+
 2009-06-08  Staf Verhaegen <staf.verhaegen@skynet.be>
+
   * libinit.c: On AROS library base is not necessarily passed on the stack
     to the lib (de)init functions. Use AROS macros for the definition of those
     functions so that the passing is always done in the right way.
-    
+
 2009-06-07  Matthias Rustler <mrustler@gmx.de>
 
   * Makefiles for examples and linkerlib fixed.
@@ -80,7 +118,6 @@ $URL$
 
   * include: updated SDI headers to very latest versions.
 
-<<<< 124449794572929
 2009-03-25  Jens Langner <Jens.Langner@light-speed.de>
 
   * libinit.c: introduced a small fix to get the file compiled with the fixed
