@@ -598,8 +598,8 @@ void exec_cinit(unsigned long magic, unsigned long addr)
          * the memory. That means that we have to calculate amount of memory available.
          *
          * We will guess ExecBase pointer by taking the lowest possible address and
-         * substrating from it the offset of lowet vector used by Exec. This way the ExecBase
-         * Will be placed in the lowes address possible with fitting all functions :)
+         * subtracting from it the offset of lowest vector used by Exec. This way the ExecBase
+         * will be placed in the lowest address possible while fitting all functions :)
          */
         
         /* Calculate the size of the vector table */
@@ -618,9 +618,12 @@ void exec_cinit(unsigned long magic, unsigned long addr)
             ExecBase += negsize;
         }
 
+        /* Clear portion of ExecBase that won't be cleared later */
+        bzero(ExecBase, offsetof(struct ExecBase, IntVects[0]));
+
         /*
-         * Now, the FAST memory is cleared, the ExecBase is reserved. We have only to
-         * determine how much CHIP memory do we have.
+         * Now, ExecBase is reserved and partially cleared. We have only to
+         * determine how much CHIP memory we have.
          */
 
         locmem = exec_RamCheck_dma(arosmb);
@@ -638,7 +641,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
         rkprintf("Got old ExecBase = %p\n",ExecBase);
     }
     /*
-     * We happend to be here with local ExecBase properly set as well as
+     * We happen to be here with local ExecBase properly set as well as
      * local locmem and extmem
      */
 
@@ -1323,7 +1326,7 @@ int exec_check_base()
                 {
                     /*
                      * Really last thing. Check MaxLocMem and MaxExtMem fields
-                     * in ExecBase. First cannot be grater than 16MB and smaller
+                     * in ExecBase. First cannot be greater than 16MB and smaller
                      * than 2MB, second, if is not zero then has to be greater
                      * than 16MB
                      */
