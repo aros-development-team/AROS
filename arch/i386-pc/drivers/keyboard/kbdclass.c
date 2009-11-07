@@ -131,12 +131,17 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     if (NULL == callback)
     	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
+#if 0
+#warning This detection technique doesn't work with some chipsets
     /* Only continue if there appears to be a keyboard port */
     status = kbd_read_status();
     if (status == 0 || status == 0xff)
         o = NULL;
     else
         o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+#else
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+#endif
 
     if (o)
     {
