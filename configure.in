@@ -217,6 +217,24 @@ case "$host_os" in
 
 	;;
 
+    dragonfly*)
+        aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        aros_host_make="gmake"
+        aros_host_arch="dragonfly"
+        case $host_cpu in
+            *i?86*)
+                aros_host_cpu="i386"
+                ;;
+            *amd64*)
+                aros_host_cpu="x86_64"
+                ;;
+            *)
+                AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+                aros_host_cpu="$host_cpu"
+                ;;
+        esac
+        ;;
+
     netbsd*)
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
 	aros_host_make="gmake"
@@ -826,6 +844,27 @@ case "$target_os" in
 			;;
 	esac
 	;;
+
+    dragonfly*)
+        aros_target_arch="dragonfly"
+        aros_flavour="emulation"
+        case "$target_cpu" in
+            *i?86*)
+                aros_target_cpu="i386"
+                aros_object_format="elf_i386"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__DragonFly__"
+                ;;
+            *x86_64*)
+                aros_target_cpu="x86_64"
+                aros_object_format="elf_x86_64"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__DragonFly__"
+                ;;
+            *)
+                AC_MSG_ERROR("Unknown CPU for DragonFly -- $target_cpu")
+                ;;
+        esac
+        ;;
+
     netbsd*)
         aros_target_arch="netbsd"
 	case "$target_cpu" in
