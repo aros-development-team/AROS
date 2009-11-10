@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2006 The AROS Development Team. All rights reserved.
+    Copyright (C) 2006-2009 The AROS Development Team. All rights reserved.
     $Id$
     
     Desc: 32-bit bootstrap code used to boot the 64-bit AROS kernel.
@@ -95,6 +95,8 @@ const struct
     unsigned int base __attribute__((packed));
 } 
 GDT_sel = {sizeof(GDT)-1, (unsigned int)&GDT};
+
+static const char default_mod_name[] = "<unknown>";
 
 /*
     Setting descriptor tables up. It is perhaps not wise to embed it into the function. Most likely the more
@@ -245,17 +247,17 @@ int leave_32bit_mode()
  * 
  * Once the list is ready, the modules will be loaded and linked with kernel one after another. Please
  * note that no information exchange between the modules is allowed. Each of them is absolutely 
- * independent and has to care about itself (it has to clear it's own .bss region self). Kernel knows
+ * independent and has to care about itself (it has to clear its own .bss region itself). Kernel knows
  * about all modules only thanks to the list of resident modules, which is created during a memory scan
  * over the whole kernel.
  * 
- * Theoretically, such behaviour can guarantee us, that the GPL'ed modules do not conflict with kenrel
+ * Theoretically, such behaviour can guarantee us, that the GPL'ed modules do not conflict with kernel
  * and may be "part" of it, but since I am not a lawyer, I may be wrong.
  */
 
 /*
  * Find the storage for module with given name. If such module already exists, return a pointer to it,
- * so that it can be overrided by the new one. Otherwise, alloc space for new module.
+ * so that it can be overridden by the new one. Otherwise, alloc space for new module.
  */
 static struct module *module_prepare(const char *s, const struct module *m, int *count)
 {
@@ -266,8 +268,11 @@ static struct module *module_prepare(const char *s, const struct module *m, int 
     while (c>0)
     {
         /* Module exists? Break here to allow overriding it */
+#if 0
+// FIXME: we do not know the names of ELF modules
         if (__bs_strncmp(s, mo->name, __bs_strlen(s)) == 0)
             break;
+#endif
         
         /* Iterate... */
         c--;
@@ -304,7 +309,7 @@ static int find_modules(struct multiboot *mb, const struct module *m)
                 /* 
                  * The loaded file is an ELF object. It may be put directly into our list of modules
                  */
-                const char *s = __bs_remove_path((char*)mod->string);
+                const char *s = default_mod_name;
                 struct module *mo = module_prepare(s, m, &count);
 
                 mo->name = s;
@@ -515,7 +520,7 @@ void prepare_message(struct multiboot *mb)
     copied to specified locations only.
     
     After kernel copying, the bootstrap has to check whether the modules have been loaded by GRUB. The modules 
-    may be loaded separately, or as a collection in IFF file. This modules have to be linked with the kernel 
+    may be loaded separately, or as a collection in an IFF file. These modules have to be linked with the kernel 
     together. If any file is specified in both IFF file and list of separate modules, the copy in IFF has to
     be skipped.
 */
@@ -524,6 +529,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     struct multiboot *mb = (struct multiboot *)addr;/* Multiboot structure from GRUB */
     int module_count = 0;
     struct module *mod = (struct module *)__stack;  /* The list of modules at the bottom of stack */
+    struct module *m;
 
     clr();
 //    kprintf("[BOOT] Entered AROS Bootstrap @ %p [asm stub @ %p].\n", __bootstrap, kernel_bootstrap);
@@ -556,7 +562,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
         unsigned long len = mb->mmap_length;
         struct mb_mmap *mmap = (struct mb_mmap *)(KERNEL_OFFSET | mb->mmap_addr);
 
-        while(len >= sizeof(struct mb_mmap))
+        while (len >= sizeof(struct mb_mmap))
         {
             if (mmap->type == MMAP_TYPE_RAM)
             {
@@ -601,15 +607,11 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     module_count = find_modules(mb, mod);
     
     /* If any external modules are found, load them now */
-    if (module_count > 0)
+    for (m = mod; module_count > 0; module_count--, m++)
     {
-        struct module *m;
-        for (m = mod; module_count > 0; module_count--, m++)
-        {
-            kprintf("[BOOT] Loading %s... ", m->name);
-            load_elf_file(m->address, 0);
-            kprintf("\n");
-        }
+        kprintf("[BOOT] Loading %s... ", m->name);
+        load_elf_file(m->address, 0);
+        kprintf("\n");
     }
     
     /*
