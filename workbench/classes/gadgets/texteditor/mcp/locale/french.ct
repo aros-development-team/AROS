@@ -11,21 +11,21 @@ Déplacer le curseur en maintenant appuyée la\n\touche définie ici vous permet de
 ; that you set here to mark text.
 ;
 HelpBubble_CheckWord
-Cette option active, l'éditeur cherchera le mot\n\et affichera des suggestions si mal orthographié.
+Cette option active, l'éditeur cherchera le mot\n\et affichera des suggestions s'il est mal orthographié.
 ; If enabled, then the editor will lookup the word,\n\
 ; and only show suggestions if the word is misspelled.
 ;
 HelpBubble_Smooth
-Active le défilement fluide du texte.
+Activer le défilement fluide du texte.
 ; This will enable pixel smooth scrolling.
 ;
 HelpBubble_TypeNSpell
-Active la recherche des mots\n\en cours de frappe.
+Activer la recherche des mots\n\en cours de frappe.
 ; Enable this to let the editor\n\
 ; lookup the words while you type them.
 ;
 HelpBubble_UndoLevel
-Chaque option « défaire » utilise 10 octets de mémoire.\n\
+Chaque option « annuler » utilise 10 octets de mémoire.\n\
 Les options « couper » et « copier » prennent un peu plus,\n\
 selon la taille du bloc !
 ; Each undo eats 10 bytes of memory.\n\
@@ -81,7 +81,7 @@ Début de ligne
 ; Begin Of Line
 ;
 MSG_Function_Backspace
-Effacement arrière
+Retour arrière
 ; Backspace
 ;
 MSG_Function_Bottom
@@ -97,7 +97,7 @@ Couper
 ; Cut
 ;
 MSG_Function_DelBOL
-Effacer jusqu'au début de ligne
+Effacer jusqu'au début de la ligne
 ; Delete to BOL
 ;
 MSG_Function_DelBOW
@@ -105,11 +105,11 @@ Effacer jusqu'au début du mot
 ; Delete to BOW
 ;
 MSG_Function_DelEOL
-Effacer jusqu'à fin de ligne
+Effacer jusqu'à la fin de la ligne
 ; Delete to EOL
 ;
 MSG_Function_DelEOW
-Effacer jusqu'à fin de mot
+Effacer jusqu'à la fin du mot
 ; Delete to EOW
 ;
 MSG_Function_Delete
@@ -169,7 +169,7 @@ Mot précédent
 ; Prev Word
 ;
 MSG_Function_Redo
-Refaire
+Rétablir
 ; Redo
 ;
 MSG_Function_Return
@@ -193,7 +193,7 @@ Début du texte
 ; Top
 ;
 MSG_Function_Undo
-Défaire
+Annuler
 ; Undo
 ;
 MSG_Function_Up
@@ -229,8 +229,8 @@ qui permet de corriger votre texte lors de la frappe ou en mode suggestion.\n\
 Pour utiliser la correction automatique, vous devez inscrire dans le champ : \
 Commande pour vérification, le nom d'un script qui sera en mesure de \
 vérifier un mot et d'inscrire dans la variable d'environnement \"Found\", \
-soit la valeur 0 (lorsque mot non trouvé) ou la valeur 1 (lorsque mot trouvé).\n\
-Ce choix a été pris car c'est celui par défaut du logiciel AlphaSpell.\n\
+soit la valeur 0 (lorsque le mot est inconnu) ou la valeur 1 (lorsque mot a été trouvé).\n\
+Ce schéma a été retenu car c'est le comportement par défaut du logiciel AlphaSpell.\n\
 Vous inscrivez %s là ou vous souhaitez insérer le mot.\n\
 \n\
 Les utilisateurs d'AlphaSpell doivent inscrire ici:\n\
@@ -238,16 +238,16 @@ Les utilisateurs d'AlphaSpell doivent inscrire ici:\n\
 \33bARexx :\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' French.ald\"\n\
 \n\
 Vous \33bdevez\33n ajouter les guillemets, qui permettent à ARexx d'exécuter \
-le champs entier comme une commande plutôt qu'un script.\n\
+le champ entier comme une commande plutôt qu'un script.\n\
 \n\
 \33u Commande pour suggestion \33n\n\
-Si vous appuyez sur la touche Help sur un mot, l'éditeur démarre cette commande, \
-avec %s substituée au mot sous le curseur.\n\
+Si vous pressez la touche Help sur un mot, l'éditeur démarre cette commande, \
+avec %s substitué au mot sous le curseur.\n\
 Ce script doit produire un fichier dans T: nommé \"Matches\". Ce fichier est \
 alors lu par le gadget, et son contenu sera affiché dans une liste contextuelle, \
-de laquelle vous pouvez choisir un mot qui remplacera le mot mal orthographié.\n\
+à partir de laquelle vous pourrez choisir un mot qui remplacera le mot mal orthographié.\n\
 \n\
-Les utilisateurs d'AlphSpell doivent inscrire ici:\n\
+Les utilisateurs d'AlphaSpell doivent inscrire ici:\n\
 \n\
 \33bARexx :\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' French.ald\"\n\
 \n\
@@ -303,11 +303,11 @@ Arrière-plan
 ; Background
 ;
 MSG_Label_BlinkSpeed
-Clignotement
+Vitesse de clignotement
 ; Blinkspeed
 ;
 MSG_Label_BlkQual
-Touche de marquage
+Touche de sélection
 ; Block qualifier
 ;
 MSG_Label_Cursor
@@ -327,7 +327,7 @@ Surlignage
 ; Highlight
 ;
 MSG_Label_LookupCmd
-Commande pour vérification
+Commande de vérification
 ; Lookup command
 ;
 MSG_Label_LookupWords
@@ -371,7 +371,7 @@ Texte
 ; Text
 ;
 MSG_Label_UndoLevel
-Nombre défaire
+Niveaux d'annulation
 ; Undo levels
 ;
 MSG_Label_Width
@@ -423,7 +423,7 @@ Gauche
 ; Left
 ;
 MSG_MenuItem_Mark
-Marquage
+Sélection
 ; Mark
 ;
 MSG_MenuItem_Normal
@@ -435,7 +435,7 @@ Coller
 ; Paste
 ;
 MSG_MenuItem_Redo
-Refaire
+Rétablir
 ; Redo
 ;
 MSG_MenuItem_Right
@@ -459,7 +459,7 @@ Souligné
 ; Underline
 ;
 MSG_MenuItem_Undo
-Défaire
+Annuler
 ; Undo
 ;
 MSG_MenuSubTitle_Alignment
@@ -495,7 +495,7 @@ Choisir arrière-plan
 ; Select background
 ;
 MSG_PopWinTitle_Cursor
-Choisir une couleur de curseur
+Choisir la couleur du curseur
 ; Select cursor color
 ;
 MSG_PopWinTitle_Frame
@@ -503,23 +503,23 @@ Choisir un cadre
 ; Select frame
 ;
 MSG_PopWinTitle_Highlight
-Choisir une couleur de surlignage
+Choisir la couleur de surlignage
 ; Select highlight color
 ;
 MSG_PopWinTitle_Selected
-Choisir une couleur de bloc
+Choisir la couleur de sélection
 ; Select block color
 ;
 MSG_PopWinTitle_SeparatorShadow
-Choisir une couleur d'ombre pour le séparateur
+Choisir la couleur d'ombre pour le séparateur
 ; Select separators shadow color
 ;
 MSG_PopWinTitle_SeparatorShine
-Choisir une couleur brillante pour le séparateur
+Choisir la couleur brillante pour le séparateur
 ; Select separators shine color
 ;
 MSG_PopWinTitle_Text
-Choisir une couleur de texte
+Choisir la couleur du texte
 ; Select text color
 ;
 MSG_SliderText_MaxWidth
@@ -597,8 +597,8 @@ MSG_WarnConfigVersion
 Votre configuration de touches actuelle est incompatible\n\
 avec la version de TextEditor.mcc que vous possédez.\n\
 \n\
-Il est recommandé que vous réinitialisez la configuration\n\
-des touches à leur défaut et que vous les éditiez manuellement\n\
+Il est recommandé de réinitialiser cette configuration\n\
+de touches à leur valeurs initiales et de les éditer manuellement\n\
 ultérieurement.
 ; Your currently saved keybindings setup is incompatible\n\
 ; with the version of TextEditor.mcc you have installed.\n\
@@ -622,7 +622,7 @@ TextEditor.mcpo ne peut pas ouvrir la version minimale requise\n\
 de la classe MUI HotkeyString.mcc et n'a donc pas pu se lancer.\n\
 \n\
 Veuillez vous assurer que vous disposez bien de la dernière\n\
-version de la classe Hotkeystring.mcc dispônible depuis le\n\
+version de la classe Hotkeystring.mcc disponible depuis le\n\
 site http://www.sf.net/projects/bstring-mcc/.
 ; TextEditor.mcp couldn't open the minimum required\n\
 ; version of the HotkeyString.mcc custom class and\n\
@@ -637,4 +637,101 @@ MSG_Ok
 Ok
 ; Ok
 ;
+MSG_Label_InactiveCursor
+Curseur inactif
+;
+MSG_HELP_InactiveCursor
+Si activé, un curseur personalisé sera utilisé\n\
+lorsque l'éditeur n'aura pas le focus.
+;
+MSG_Label_SelectPointer
+Pointer de sélection
+;
+MSG_HELP_SelectPointer
+Si activé, un pointer de sélection personalisé apparaîtra\n\
+lorsque la souris sera au-dessus d'un objet TextEditor.
+;
+MSG_Label_InactiveColor
+Inactif
+;
+MSG_PopWinTitle_InactiveColor
+Choisir la couleur lorsque l'objet est inactif
+;
+MSG_HELP_TABSIZE
+Espaces insérés lors de l'utilisation de la touche <TAB>.
+;
+MSG_HELP_DESIGN_FRAME
+Bouton servant à ajuster un cadre.\n\
+Cliquez dessus pour ouvrir une fenêtre d'ajustement\n\
+ou utilisez les fonctions de glisser-déposer\n\
+pour copier d'un bouton à l'autre.
+;
+MSG_HELP_DESIGN_BACKGROUND
+Bouton servant à ajuster la couleur ou la trame\n\
+d'un arrière plan. Cliquez dessus pour ouvrir\n\
+une fenêtre d'ajustement ou utilisez les fonctions\n\
+de glisser-déposer pour copier d'un bouton à l'autre.
+;
+MSG_HELP_DESIGN_TEXT
+Couleur utilisée pour afficher le texte.
+;
+MSG_HELP_DESIGN_HIGHLIGHT
+Couleur utilisée pour afficher le texte sélectionné.
+;
+MSG_HELP_SEPARATOR_SHINE
+Couleur utilisée pour afficher les barres de séparations.
+;
+MSG_HELP_SEPARATOR_SHADOW
+Couleur utilisée pour afficher les barres de séparations ombrées.
+;
+MSG_HELP_FONTS_NORMAL
+Police de caractère utilisée par l'éditeur.
+;
+MSG_HELP_FONTS_FIXED
+Police de caractère utilisée par l'éditeur\n\
+lorsqu'une police de caractères fixes est nécessaire.
+;
+MSG_HELP_CURSOR_NORMAL
+Couleur utilisée pour afficher le curseur.
+;
+MSG_HELP_CURSOR_SELECTED
+Couleur utilisée pour afficher le curseur dans un texte sélectionné.
+;
+MSG_HELP_CURSOR_INACTIVE
+Couleur utilisée pour afficher le texte sélectionné\n\
+lorsque l'éditeur ne possède pas le focus.
+;
+MSG_HELP_CURSOR_WIDTH
+Largeur idéal du curseur.
+;
+MSG_HELP_CURSOR_BLINKSPEED
+Utiliser un curseur clignotant permet de le localiser plus facilement.\n\
+Sélectionner 'Aucun' pour désactiver cette possibilité.
+;
+MSG_HELP_BUTTON_DEFAULTKEYS
+Restaurer tous les raccourcis clavier à leurs valeurs originelles.
+;
+MSG_HELP_BUTTON_SNOOP
+Ce champ permet de définir un raccourci clavier pour cette action.\n\
+Vous pouvez directement éditer le contenu de l'objet ou bien\n\
+presser le bouton 'Apprendre' afin de permettre à l'objet d'enregistrer\n\
+les pressions des touches du clavier jusqu'a ce que vous utilisiez le bouton\n\
+une nouvelle fois pour valider la saisie.
+;
+MSG_HELP_BUTTON_INSERT
+Ajouter un nouveau raccourci clavier à la liste.
+;
+MSG_HELP_BUTTON_DELETE
+Retirer ce raccourci de la liste.
+;
+MSG_HELP_SPELLCHECKER_LOOKUP_CMD
+Spécifiez ici le script de commande que vous désirez utiliser\n\
+ou bien laisser ce champ vide afin de désactiver l'option 'type'n'spell'.
+;
+MSG_HELP_SPELLCHECKER_SUGGEST_CMD
+Spécifiez ici le script de commande que vous désirez utiliser\n\
+afin de suggérer une alternative au mot.
+;
+MSG_UNDO_SLIDER_FORMAT
+%ld (± 5)
 ;

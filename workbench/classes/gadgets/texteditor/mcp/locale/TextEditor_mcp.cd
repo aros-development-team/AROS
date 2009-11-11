@@ -512,8 +512,8 @@ MSG_HELP_CURSOR_NORMAL (148//)
 Default color to be used for the cursor.
 ;
 MSG_HELP_CURSOR_SELECTED (149//)
-Color to use to print\n\
-selected text.
+Color to be used for the cursor\n\
+in selected text.
 ;
 MSG_HELP_CURSOR_INACTIVE (150//)
 Color to use to print selected text\n\
