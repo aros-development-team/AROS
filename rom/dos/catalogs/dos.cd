@@ -32,7 +32,7 @@ MSG_ERROR_INVALID_RESIDENT_LIBRARY (122//)
 invalid resident library
 ;
 MSG_ERROR_NO_DEFAULT_DIR (201//)
-error 201
+no default directory
 ;
 MSG_ERROR_OBJECT_IN_USE (202//)
 object is in use

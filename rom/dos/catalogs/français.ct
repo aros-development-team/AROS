@@ -3,231 +3,231 @@
 ## language français
 ;
 MSG_ERROR_NO_FREE_STORE
-Pas assez de mémoire disponible
+pas assez de mémoire disponible
 ;
 ; not enough memory available
 ;
 MSG_ERROR_TASK_TABLE_FULL
-La table des processus est pleine
+la table des processus est pleine
 ;
 ; process table full
 ;
 MSG_ERROR_BAD_TEMPLATE
-Modèle incorrect
+modèle incorrect
 ;
 ; bad template 
 ;
 MSG_ERROR_BAD_NUMBER
-Nombre incorrect
+nombre incorrect
 ;
 ; bad number 
 ;
 MSG_ERROR_REQUIRED_ARG_MISSING
-Argument requis manquant
+argument requis manquant
 ; required argument missing
 ;
 MSG_ERROR_KEY_NEEDS_ARG
-Valeur après le mot clé manquante
+valeur après le mot clé manquante
 ;
 ; value after keyword missing
 ;
 MSG_ERROR_TOO_MANY_ARGS
-Nombre d'arguments faux
+nombre d'arguments faux
 ;
 ; wrong number of arguments
 ;
 MSG_ERROR_UNMATCHED_QUOTES
-Correspondance des guillemets erronée
+correspondance des guillemets erronée
 ;
 ; unmatched quotes
 ;
 MSG_ERROR_LINE_TOO_LONG
-Ligne d'arguments invalide ou trop longue
+ligne d'arguments invalide ou trop longue
 ;
 ; argument line invalid or too long 
 ;
 MSG_ERROR_FILE_NOT_OBJECT
-Le fichier n'est pas exécutable
+le fichier n'est pas exécutable
 ;
 ; file is not executable
 ;
 MSG_ERROR_INVALID_RESIDENT_LIBRARY
-Librairie résidente non valide
+bibliothèque résidente non valide
 ;
 ; invalid resident library
 ;
 MSG_ERROR_NO_DEFAULT_DIR
-Erreur 201 (pas de répertoire par défaut)
+pas de répertoire par défaut
 ;
 ; error 201 
 ;
 MSG_ERROR_OBJECT_IN_USE
-Objet en cours d'utilisation
+objet en cours d'utilisation
 ;
 ; object is in use
 ;
 MSG_ERROR_OBJECT_EXISTS
-L'objet existe déjà
+l'objet existe déjà
 ;
 ; object already exists 
 ;
 MSG_ERROR_DIR_NOT_FOUND
-Répertoire non trouvé
+répertoire non trouvé
 ;
 ; directory not found 
 ;
 MSG_ERROR_OBJECT_NOT_FOUND
-Objet non trouvé
+objet non trouvé
 ;
 ; object not found 
 ;
 MSG_ERROR_BAD_STREAM_NAME
-Mauvais descriptif de fenêtre
+mauvais descriptif de fenêtre
 ;
 ; invalid window description
 ;
 MSG_ERROR_OBJECT_TOO_LARGE
-L'objet est trop volumineux
+l'objet est trop volumineux
 ;
 ; object too large  
 ;
 MSG_ERROR_ACTION_NOT_KNOWN
-Action inconnue du système de fichiers
+action inconnue du système de fichiers
 ;
 ; filesystem action type unknown 
 ;
 MSG_ERROR_INVALID_COMPONENT_NAME
-Le nom de l'objet est incorrect
+le nom de l'objet est incorrect
 ;
 ; object name invalid
 ;
 MSG_ERROR_INVALID_LOCK
-Le verrou sur l'objet est incorrect
+le verrou sur l'objet est incorrect
 ;
 ; invalid object lock
 ;
 MSG_ERROR_OBJECT_WRONG_TYPE
-L'objet n'est pas du bon type
+l'objet n'est pas du bon type
 ;
 ; object is not of required type
 ;
 MSG_ERROR_DISK_NOT_VALIDATED
-Le disque n'est pas validé
+le disque n'est pas validé
 ;
 ; disk not validated 
 ;
 MSG_ERROR_DISK_WRITE_PROTECTED
-Le disque est protégé en écriture
+le disque est protégé en écriture
 ;
 ; disk is write-protected
 ;
 MSG_ERROR_RENAME_ACROSS_DEVICES
-Tentative de renommage entre supports différents
+tentative de renommage entre supports différents
 ;
 ; rename across devices attempted 
 ;
 MSG_ERROR_DIRECTORY_NOT_EMPTY
-Le répertoire n'est pas vide
+le répertoire n'est pas vide
 ;
 ; directory not empty
 ;
 MSG_ERROR_TOO_MANY_LEVELS
-Profondeur trop grande
+profondeur trop grande
 ;
 ; too many levels 
 ;
 MSG_ERROR_DEVICE_NOT_MOUNTED
-Le disque (ou le périphérique) n'est pas monté
+le disque (ou le périphérique) n'est pas monté
 ;
 ; device (or volume) is not mounted
 ;
 MSG_ERROR_SEEK_ERROR
-Recherche interrompue
+recherche interrompue
 ;
 ; seek failure
 ;
 MSG_ERROR_COMMENT_TOO_BIG
-Le commentaire est trop long
+le commentaire est trop long
 ;
 ; comment is too long
 ;
 MSG_ERROR_DISK_FULL
-Le disque est plein
+le disque est plein
 ;
 ; disk is full 
 ;
 MSG_ERROR_DELETE_PROTECTED
-L'objet est protégé contre l'effacement
+l'objet est protégé contre l'effacement
 ;
 ; object is protected from deletion
 ;
 MSG_ERROR_WRITE_PROTECTED
-Le fichier est protégé contre l'écriture
+le fichier est protégé contre l'écriture
 ;
 ; file is write protected
 ;
 MSG_ERROR_READ_PROTECTED
-Le fichier est protégé contre la lecture
+le fichier est protégé contre la lecture
 ;
 ; file is read protected
 ;
 MSG_ERROR_NOT_A_DOS_DISK
-Le disque n'est pas formaté
+le disque n'est pas formaté
 ;
 ; not a valid DOS disk
 ;
 MSG_ERROR_NO_DISK
-Il n'y a pas de disque dans le lecteur
+il n'y a pas de disque dans le lecteur
 ;
 ; no disk in drive
 ;
 MSG_ERROR_NO_MORE_ENTRIES
-Plus d'entrées dans le répertoire 
+plus d'entrées dans le répertoire 
 ;
 ; no more entries in directory
 ;
 MSG_ERROR_IS_SOFT_LINK
-L'objet est un lien logiciel
+l'objet est un lien logiciel
 ;
 ; object is soft link 
 ;
 MSG_ERROR_OBJECT_LINKED
-L'objet est lié
+l'objet est lié
 ;
 ; object is linked 
 ;
 MSG_ERROR_BAD_HUNK
-Mauvais descriptif de fichier
+mauvais descriptif de fichier
 ;
 ; bad loadfile hunk
 ;
 MSG_ERROR_NOT_IMPLEMENTED
-La fonction n'est pas implémentée
+la fonction n'est pas implémentée
 ;
 ; function not implemented
 ;
 MSG_ERROR_RECORD_NOT_LOCKED
-L'enregistrement n'est pas verrouillé
+l'enregistrement n'est pas verrouillé
 ;
 ; record not locked
 ;
 MSG_ERROR_LOCK_COLLISION
-Collision des enregistrements
+collision des enregistrements
 ;
 ; record lock collision
 ;
 MSG_ERROR_LOCK_TIMEOUT
-Verrou invalidé
+verrou invalidé
 ;
 ; record lock timeout
 ;
 MSG_ERROR_UNLOCK_ERROR
-Erreur lors du déverrouillage
+erreur lors du déverrouillage
 ;
 ; record unlock error
 ;
 MSG_ERROR_BUFFER_OVERFLOW
-Dépassement de tampon
+dépassement de mémoire tampon
 ;
 ; buffer overflow 
 ;
@@ -237,7 +237,7 @@ MSG_ERROR_BREAK
 ; ***Break 
 ;
 MSG_ERROR_NOT_EXECUTABLE
-Le fichier n'est pas exécutable
+le fichier n'est pas exécutable
 ;
 ; file not executable
 ;
@@ -289,17 +289,17 @@ Requête système
 ; System requester 
 ;
 MSG_ERROR_NO_MATCHING_ELSEENDIF
-Il manque ELSE ou ENDIF
+il manque Else ou EndIf
 ;
 ; no matching Else or EndIf
 ;
 MSG_ERROR_SCRIPT_ONLY
-Cette commande est supposée être utilisée en tant que script
+cette commande est supposée être utilisée en tant que script
 ;
 ; this command is supposed to be used in command files only
 ;
 MSG_ERROR_UNKNOWN
-Erreur inconnue
+erreur inconnue
 ;
 ; undefined error
 ;
