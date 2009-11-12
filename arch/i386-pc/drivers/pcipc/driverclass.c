@@ -193,7 +193,7 @@ void SanityCheck(struct pci_staticdata *psd)
     temp = ReadConfigWord(psd, 0, 0, 0, PCICS_PRODUCT);
     if ((temp != 0x0000) && (temp != 0xFFFF))
 	return;
-    D(bug("Sanity check failed\n"));
+    D(bug("[PCI.PC] Sanity check failed\n"));
     psd->ConfType = 0;
 }
 /* Class initialization and destruction */
@@ -203,7 +203,7 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     OOP_Object *pci;
     ULONG temp;
     
-    D(bug("PCPCI: Driver initialization\n"));
+    D(bug("[PCI.PC] Driver initialization\n"));
 
     struct pHidd_PCI_AddHardwareDriver msg,*pmsg=&msg;
     
@@ -211,7 +211,7 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     LIBBASE->psd.hiddAB = OOP_ObtainAttrBase(IID_Hidd);
     if (LIBBASE->psd.hiddPCIDriverAB == 0 || LIBBASE->psd.hiddAB == 0)
     {
-	D(bug("PCPCI: ObtainAttrBases failed\n"));
+	D(bug("[PCI.PC] ObtainAttrBases failed\n"));
 	return FALSE;
     }
 
@@ -223,7 +223,7 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 	LIBBASE->psd.ConfType = 1;
     outl(temp, PCI_AddressPort);
     if (LIBBASE->psd.ConfType == 1) {
-	D(bug("PCPCI: Configuration mechanism 1 detected\n"));
+	D(bug("[PCI.PC] Configuration mechanism 1 detected\n"));
         SanityCheck(&LIBBASE->psd);
     }
     if (LIBBASE->psd.ConfType == 0) {
@@ -232,7 +232,7 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 	outb(0x00, PCI_ForwardPort);
 	if ((inb(PCI_AddressPort) == 0x00) && (inb(PCI_ForwardPort) == 0x00)) {
 	    LIBBASE->psd.ConfType = 2;
-	    D(bug("PCPCI: configuration mechanism 2 detected\n"));
+	    D(bug("[PCI.PC] configuration mechanism 2 detected\n"));
 	    SanityCheck(&LIBBASE->psd);
 	}
     }
@@ -240,26 +240,26 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
        assume configuration type 1 for such systems.
        Probably SanityCheck() should be revised or removed at all. */
     if (LIBBASE->psd.ConfType == 0) {
-        D(bug("PCPCI: Failing back to configuration mechanism 1\n"));
+        D(bug("[PCI.PC] Failing back to configuration mechanism 1\n"));
         LIBBASE->psd.ConfType = 1;
     }
     
     msg.driverClass = LIBBASE->psd.driverClass;
     msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_AddHardwareDriver);
-    D(bug("PCPCI: Adding Driver to main the class OK\n"));
+    D(bug("[PCI.PC] Registering Driver with PCI base class..\n"));
 
     pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
     OOP_DoMethod(pci, (OOP_Msg)pmsg);
     OOP_DisposeObject(pci);
 
-    D(bug("PCPCI: All OK\n"));
+    D(bug("[PCI.PC] Driver initialization finished\n"));
 
     return TRUE;
 }
 
 static int PCPCI_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
-    D(bug("PCPCI: Class destruction\n"));
+    D(bug("[PCI.PC] Class destruction\n"));
     
     OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
     OOP_ReleaseAttrBase(IID_Hidd);
@@ -269,3 +269,4 @@ static int PCPCI_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 	
 ADD2INITLIB(PCPCI_InitClass, 0)
 ADD2EXPUNGELIB(PCPCI_ExpungeClass, 0)
+
