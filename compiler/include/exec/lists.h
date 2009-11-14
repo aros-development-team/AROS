@@ -119,7 +119,7 @@ do                                                        \
     struct Node *__aros_node_tmp = (struct Node *)(_n),  \
                 *n = __aros_node_tmp;                    \
                                                          \
-    n->ln_Succ->ln_Succ ? n->ln_Succ : (struct Node *)0; \
+    (n && n->ln_Succ->ln_Succ) ? n->ln_Succ : (struct Node *)0; \
 })
 
 #define GetPred(_n)                                      \
@@ -127,7 +127,7 @@ do                                                        \
     struct Node *__aros_node_tmp = (struct Node *)(_n),  \
                 *n = __aros_node_tmp;                    \
                                                          \
-    n->ln_Pred->ln_Pred ? n->ln_Pred : (struct Node *)0; \
+    (n && n->ln_Pred->ln_Pred) ? n->ln_Pred : (struct Node *)0; \
 })
 
 #define REMHEAD(_l)                                               \
