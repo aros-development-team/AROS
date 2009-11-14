@@ -31,7 +31,7 @@ $(COPYTOAFS): $(OBJS)
 	@$(HOST_CC) $(OBJS) $(AFSLIB) -o $@
 
 $(OBJDIR)/config.h: $(OBJDIR) myconf.aros
-	@./myconf.aros >> $@
+	@./myconf.aros $(TOP) >> $@
 
 $(OBJDIR)/%.o: %.c $(OBJDIR)/config.h
 	@$(ECHO) "Compiling $(notdir $@)..."

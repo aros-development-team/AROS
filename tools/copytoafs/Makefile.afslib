@@ -48,7 +48,7 @@ $(AFSLIB): $(OBJS)
 	@$(HOST_RANLIB) $@
 
 $(OBJDIR)/config.h: $(OBJDIR) myconf.aros
-	@./myconf.aros >> $@
+	@./myconf.aros $(TOP) >> $@
 
 $(OBJDIR)/%.o: $(AFSSRCDIR)/%.c $(OBJDIR)/config.h
 	@$(ECHO) "Compiling $(notdir $@)..."
