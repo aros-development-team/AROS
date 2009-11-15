@@ -1,0 +1,29 @@
+timeout 5
+default 5
+
+title AROS (NVidia graphics)
+    kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.nv lib=DRIVERS:nvidia.hidd ATA=32bit
+
+title AROS (ATI graphics)
+    kernel /boot/aros-pc-i386.gz gfx=RadeonDriver lib=DRIVERS:radeon.hidd ATA=32bit
+
+title AROS (VMWare SVGA graphics)
+    kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vmwaresvga lib=vmwaresvga.hidd ATA=32bit
+
+title AROS (true colour VESA graphics)
+    kernel /boot/aros-pc-i386.gz vesa=32bit ATA=32bit
+
+title AROS (high colour VESA graphics)
+    kernel /boot/aros-pc-i386.gz vesa=16bit ATA=32bit
+
+title AROS (true colour VESA graphics: 800x600)
+    kernel /boot/aros-pc-i386.gz vesa=800x600 ATA=32bit
+
+title AROS (true colour VESA graphics: 1024x768)
+    kernel /boot/aros-pc-i386.gz vesa=1024x768 ATA=32bit
+
+title AROS (true colour VESA graphics: 1280x1024)
+    kernel /boot/aros-pc-i386.gz vesa=1280x1024 ATA=32bit
+
+title AROS (safe mode)
+    kernel /boot/aros-pc-i386.gz ATA=nodma debug=memory

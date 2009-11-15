@@ -112,7 +112,7 @@ BOOT_DEST_DIR   := $(OSGENDIR)/boot/bootdisk
 SYSTEM_DEST_DIR := $(OSGENDIR)/boot/systemdisk
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub)
-BOOT_FILES += boot/grub/menu.lst boot/grub/stage1
+BOOT_FILES += boot/grub/stage1
 BOOT_TAR_MISC += boot/grub/menu.lst.DH0 boot/grub/stage2
 BOOT_EXTRA_FILES += $(BOOT_DEST_DIR)/boot/grub/stage2
 
