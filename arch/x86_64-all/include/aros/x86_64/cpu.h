@@ -55,7 +55,7 @@
 #define AROS_SIG_ATOMIC_MAX     0x7fffffff
 
 #ifndef __TINYC__
-register unsigned char * AROS_GET_SP asm("%rsp");
+register unsigned char * AROS_GET_SP __asm__("%rsp");
 #endif
 
 /*do we need a function attribute to get parameters on the stack? */
