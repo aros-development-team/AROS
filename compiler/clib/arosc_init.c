@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -318,6 +318,7 @@ int arosc_internalexit(void)
                 return 0;
             }
         }
+        privdata = parentprivdata;
     }
 
     D(bug("arosc_internalexit(): --acpd_usercount\n"));
