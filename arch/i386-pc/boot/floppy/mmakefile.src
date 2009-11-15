@@ -137,6 +137,7 @@ bootdisk-setup-pc-i386 :
 	-$(RM) -rf $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)/boot/grub
+	@$(CP) $(SRCDIR)/$(CURDIR)/menu.lst $(BOOT_DEST_DIR)/boot/grub/
 
 #MM
 systemdisk-setup-pc-i386 :
