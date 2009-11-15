@@ -42,6 +42,8 @@ void exec_DefaultTaskExit();
 extern ULONG Exec_MakeFunctions(APTR, APTR, APTR, APTR);
 IPTR **exec_RomTagScanner(struct TagItem *msg);
 int exec_main(struct TagItem *msg, void *entry);
+UBYTE core_APICGetTotal();
+UBYTE core_APICGetNumber();
 
 AROS_UFP5(void, SoftIntDispatch,
           AROS_UFPA(ULONG, intReady, D1),
