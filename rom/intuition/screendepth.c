@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2009, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -75,7 +75,7 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
 
     struct ScreenDepthActionMsg msg;
 
-    FireScreenNotifyMessageCode((IPTR) screen, flags, SNOTIFY_SCREENDEPTH, IntuitionBase);
+    FireScreenNotifyMessageCode((IPTR) screen, SNOTIFY_SCREENDEPTH, flags, IntuitionBase);
 
     if (reserved != NULL) return;
     SANITY_CHECK(screen)
