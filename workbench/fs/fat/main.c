@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2008 The AROS Development Team
+ * Copyright © 2007-2009 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -119,14 +119,6 @@ void handler(void) {
 
                             error = 0;
                             startuppacket = NULL;
-
-			    dl = LockDosList(LDF_WRITE | LDF_DEVICES);
-			    if (dl)
-			    {
-			        RemDosEntry(glob->devnode);
-			        FreeDosEntry(glob->devnode);
-			        UnLockDosList(LDF_WRITE | LDF_DEVICES);
-			    }
 
                             CleanupDiskHandler(diskchgsig_bit);
                         }
