@@ -1,7 +1,7 @@
 /*
  * packet.handler - Proxy filesystem for DOS packet handlers
  *
- * Copyright © 2007-2008 The AROS Development Team
+ * Copyright © 2007-2009 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -63,6 +63,7 @@ struct ph_mount {
 
     struct Process              *process;
     BPTR                        seglist;
+    BOOL                        is_loaded;
 
     struct Interrupt            reply_int;
     struct MsgPort              reply_port;
