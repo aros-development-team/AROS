@@ -41,7 +41,7 @@ AROS_UFH3(void, packet_startup,
     AROS_USERFUNC_INIT
 
     struct Process *me = (struct Process *) FindTask(NULL);
-    BPTR seglist = (BPTR) me->pr_Task.tc_UserData;
+    struct ph_mount *mount = me->pr_Task.tc_UserData;
     struct Message *message;
     struct DosPacket *packet;
     struct MsgPort *port;
@@ -53,7 +53,7 @@ AROS_UFH3(void, packet_startup,
        has swallowed it or if it's just slow coming from the init code below */
     WaitPort(&(me->pr_MsgPort));
 
-    AROS_UFC1(void, (LONG_FUNC) ((BPTR *) BADDR(seglist) + 1),
+    AROS_UFC1(void, (LONG_FUNC) ((BPTR *) BADDR(mount->seglist) + 1),
               AROS_UFCA(struct ExecBase *, SysBase, A6));
 
     D(bug("[packet] handler returned\n"));
@@ -61,8 +61,7 @@ AROS_UFH3(void, packet_startup,
     /* if we get here, the handler probably wasn't packet-based. We reply
        to the startup message ourselves if necessary */
     message = GetMsg(&(me->pr_MsgPort));
-    if (message != NULL)
-    {
+    if (message != NULL) {
         packet = (struct DosPacket *)((struct Node *)message)->ln_Name;
 
         port = packet->dp_Port;
@@ -74,6 +73,14 @@ AROS_UFH3(void, packet_startup,
 
         PutMsg(port, message);
     }
+
+    /* Remove this mount, and unload seglist if we loaded it ourselves */
+    if (mount->is_loaded)
+        UnLoadSeg(mount->seglist);
+    Disable();
+    Remove((struct Node *)mount);
+    Enable();
+    FreeVec(mount);
 
     AROS_USERFUNC_EXIT
 }
@@ -138,14 +145,14 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
         }
 
         /* got it, create our mount struct */
+#warning TO DO: check if mount is allocated
         mount = (struct ph_mount *) AllocVec(sizeof(struct ph_mount), MEMF_PUBLIC | MEMF_CLEAR);
 
         strncpy(mount->handler_name, AROS_BSTR_ADDR(dn->dn_Handler), MAXFILENAMELENGTH);
         strncpy(mount->mount_point, iofs->io_Union.io_OpenDevice.io_DosName, MAXFILENAMELENGTH);
 
-        /* only store seg list for later unloading if we loaded it ourselves */
-        if (loaded)
-            mount->seglist = seglist;
+        mount->seglist = seglist;
+        mount->is_loaded = loaded;
 
         D(bug("[packet] starting handler process\n"));
 
@@ -155,7 +162,7 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
                                            NP_Name,      pr_name,
                                            NP_StackSize, dn->dn_StackSize,
                                            NP_Priority,  dn->dn_Priority,
-                                           NP_UserData,  (IPTR) seglist,
+                                           NP_UserData,  (IPTR) mount,
                                            TAG_DONE);
 
         /* something went horribly wrong? */
@@ -202,8 +209,13 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
         /* set up device and unit in device node */
         dn->dn_Ext.dn_AROS.dn_Device = iofs->IOFS.io_Device;
         dn->dn_Ext.dn_AROS.dn_Unit = (struct Unit *) &(mount->root_handle);
-        D(bug("[packet] sending startup packet\n"));
 
+        /* remember this mount */
+        Disable();
+        AddTail((struct List *) &(pb->mounts), (struct Node *) mount);
+        Enable();
+
+        D(bug("[packet] sending startup packet\n"));
         PutMsg(&(mount->process->pr_MsgPort), dp->dp_Link);
         WaitPort(reply_port);
         GetMsg(reply_port);
@@ -216,16 +228,14 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
             iofs->IOFS.io_Error = dp->dp_Res2;
             dn->dn_Ext.dn_AROS.dn_Device = NULL;
             dn->dn_Ext.dn_AROS.dn_Unit = NULL;
+
+            Disable();
+            Remove((struct Node *)mount);
+            Enable();
         }
         else {
             /* hook the process up to the device node */
             dn->dn_Task = &(mount->process->pr_MsgPort);
-
-
-            /* remember this mount */
-            Disable();
-            AddTail((struct List *) &(pb->mounts), (struct Node *) mount);
-            Enable();
 
             iofs->IOFS.io_Unit = (struct Unit *) &(mount->root_handle);
             iofs->IOFS.io_Error = 0;
