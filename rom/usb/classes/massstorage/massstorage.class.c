@@ -2006,13 +2006,13 @@ LONG nGetGeometry(struct NepClassMS *ncm, struct IOStdReq *ioreq)
     if((ncm->ncm_CDC->cdc_PatchFlags & PFF_SIMPLE_SCSI) && (ncm->ncm_Geometry.dg_TotalSectors > 10000))
     {
         /*
-         * Just return a LBA layout
+         * Just return an LBA layout
          * R.S.
          */
-        ncm->ncm_Geometry.dg_Cylinders = 1;
-        ncm->ncm_Geometry.dg_CylSectors = ncm->ncm_Geometry.dg_TotalSectors;
+        ncm->ncm_Geometry.dg_Cylinders = ncm->ncm_Geometry.dg_TotalSectors;
+        ncm->ncm_Geometry.dg_CylSectors = 1;
         ncm->ncm_Geometry.dg_Heads = 1;
-        ncm->ncm_Geometry.dg_TrackSectors = ncm->ncm_Geometry.dg_TotalSectors;
+        ncm->ncm_Geometry.dg_TrackSectors = 1;
         gotcyl = gotheads = gotsect = gotcylsect = TRUE;
     } else {
         if(!((ncm->ncm_CDC->cdc_PatchFlags & PFF_SIMPLE_SCSI) ||
@@ -4461,6 +4461,34 @@ BOOL GM_UNIQUENAME(nStoreConfig)(struct NepClassMS *ncm)
 /* ********************************************************************* */
 
 /* /// "BSTR Macros" */
+#ifdef __AROS__
+
+#define b2cstr(bstr, cstr)\
+    do\
+    {\
+        UWORD _i = 0;\
+        UWORD _len = AROS_BSTR_strlen(bstr);\
+        while(_i < _len)\
+        {\
+            cstr[_i] = AROS_BSTR_getchar(bstr, _i);\
+            _i++;\
+        }\
+        cstr[_i] = '\0';\
+    } while(0)
+
+#define c2bstr(cstr, bstr)\
+    do\
+    {\
+        UWORD _i = 0;\
+        while(cstr[_i] != '\0')\
+        {\
+            AROS_BSTR_putchar(bstr, _i, cstr[_i]);\
+            _i++;\
+        }\
+        AROS_BSTR_setstrlen(bstr, _i);\
+    } while(0)
+#else
+
 #define b2cstr(bstr, cstr) { ULONG i; for (i = 0; i < bstr[0]; i++) cstr[i] = bstr[i + 1]; cstr[i] = 0x00; }
 
 #define c2bstr(cstr, bstr)\
@@ -4476,6 +4504,8 @@ BOOL GM_UNIQUENAME(nStoreConfig)(struct NepClassMS *ncm)
         }\
         bp[0] = i;\
     } while(0)
+
+#endif
 /* \\\ */
 
 #undef  ps
@@ -5548,13 +5578,7 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
         patch.fse_Handler = MKBADDR(AllocVec(AROS_BSTR_MEMSIZE4LEN(strlen(handler)), MEMF_PUBLIC | MEMF_CLEAR));
         if(patch.fse_Handler)
         {
-            UWORD i = 0;
-            while(handler[i])
-            {
-                AROS_BSTR_putchar(patch.fse_Handler, i, handler[i]);
-                i++;
-            }
-            AROS_BSTR_setstrlen(patch.fse_Handler, i);
+            c2bstr(handler, patch.fse_Handler);
             patch.fse_PatchFlags |= 0x0008;
             fsFound = TRUE;
         }
@@ -6013,7 +6037,7 @@ void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
                 strncpy((char *) nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName, ncm->ncm_CDC->cdc_NTFSName, 84);
                 CheckPartition(ncm);
             } else {
-                KPRINTF(10, ("unsuitable partition type\n"));
+                KPRINTF(10, ("unsuitable partition type 0x%x\n", mbr->mbr_Partition[part].pe_Type));
                 /*psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                "Unsuitable FAT partition type.");*/
             }
