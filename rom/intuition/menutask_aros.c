@@ -253,13 +253,12 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
                 mhd->scrmousex      	= mhd->scr->MouseX;
                 mhd->scrmousey      	= mhd->scr->MouseY;
                 mhd->firstmenupick      = MENUNULL;
-		mhd->TrueColor          = GetBitMapAttr(&mhd->scr->BitMap, BMA_DEPTH) > 8 ? TRUE: FALSE;
+                mhd->TrueColor          = GetBitMapAttr(&mhd->scr->BitMap, BMA_DEPTH) > 8 ? TRUE: FALSE;
 
                 /* close windows in the back first because
                    this is faster */
                 MakeMenuBarWin(mhd, IntuitionBase);
                 HandleMouseMove(mhd, IntuitionBase);
-
                 mhd->active = TRUE;
                 break;
 
@@ -273,17 +272,16 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
                 {
                     switch(msg->ie.ie_Class)
                     {
-                    case IECLASS_RAWMOUSE:
-                        if (msg->ie.ie_Code == IECODE_NOBUTTON)
-                        {
-                            HandleMouseMove(mhd, IntuitionBase);
-                        }
-                        else
-                        {
-                            HandleMouseClick(&msg->ie, mhd, IntuitionBase);
-                        }
-                        break;
-
+                        case IECLASS_RAWMOUSE:
+                            if (msg->ie.ie_Code == IECODE_NOBUTTON)
+                            {   
+                                HandleMouseMove(mhd, IntuitionBase);
+                            }
+                            else
+                            {
+                                HandleMouseClick(&msg->ie, mhd, IntuitionBase);
+                            }
+                            break;
                     }
 
                 } /* if (mhd->active) */
@@ -468,18 +466,18 @@ static void HandleMouseMove(struct MenuHandlerData *mhd, struct IntuitionBase *I
 static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
                              struct IntuitionBase *IntuitionBase)
 {
+    struct Layer *lay;
+
     switch(ie->ie_Code)
     {
-    case MENUUP:
-    case SELECTDOWN:
-        {
-            struct Layer *lay;
+        case MENUUP:
+        case SELECTDOWN:
 
             if ((lay = WhichLayer(&mhd->scr->LayerInfo, mhd->scrmousex, mhd->scrmousey)))
             {
                 struct Window   *win = (struct Window *)lay->Window;
                 struct MenuItem *item = NULL;
-                
+
                 win = (struct Window *)lay->Window;
 
                 if (win && (win == mhd->submenuwin) && (mhd->activesubitemnum != -1))
@@ -517,7 +515,6 @@ static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
 
             }
             break;
-        }
 
     } /* switch(ie->ie_Code) */
 }
@@ -595,7 +592,7 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
 {
     BOOL	customdraw = FALSE;
 
-    if (menu->Flags & MENUENABLED)
+    if ((menu->Flags & MENUENABLED) && mhd->menubarwin)
     {
         struct RastPort *rp = mhd->menubarwin->RPort;
         WORD x1, x2, y1, y2;
@@ -686,55 +683,57 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
 static struct Menu *FindMenu(WORD *var, struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
     struct Menu *menu;
-    WORD    	 mouse_x, mouse_y, i;
+    WORD mouse_x, mouse_y, i;
 
-    mouse_x = mhd->scrmousex - mhd->menubarwin->LeftEdge;
-    mouse_y = mhd->scrmousey - mhd->menubarwin->TopEdge;
-
-    if (MENUS_UNDERMOUSE)
+    if(mhd->menubarwin)
     {
-        menu = NULL;
-    
-        mouse_x -= mhd->innerleft;
-        mouse_y -= mhd->innertop;
-    
-        if ((mouse_x >= 0) && (mouse_x < mhd->menubaritemwidth) && (mouse_y >= 0))
+        mouse_x = mhd->scrmousex - mhd->menubarwin->LeftEdge;
+        mouse_y = mhd->scrmousey - mhd->menubarwin->TopEdge;
+
+        if (MENUS_UNDERMOUSE)
         {
-            i = mouse_y / mhd->menubaritemheight;
+            menu = NULL;
     
-            if ((i >= 0) && (i < mhd->nummenubaritems))
+            mouse_x -= mhd->innerleft;
+            mouse_y -= mhd->innertop;
+    
+            if ((mouse_x >= 0) && (mouse_x < mhd->menubaritemwidth) && (mouse_y >= 0))
             {
-                WORD i2 = i;
+                i = mouse_y / mhd->menubaritemheight;
     
-                menu = mhd->menu;
-                while(i && menu)
+                if ((i >= 0) && (i < mhd->nummenubaritems))
                 {
-                    i--;
-                    menu = menu->NextMenu;
+                    WORD i2 = i;
+    
+                    menu = mhd->menu;
+                    while(i && menu)
+                    {
+                        i--;
+                        menu = menu->NextMenu;
+                    }
+    
+                    if (menu && (i == 0))
+                    {
+                        *var = i2;
+                    }
                 }
-    
-                if (menu && (i == 0))
+            }
+        }
+        else
+        {
+            for(menu = mhd->menu, i = 0; menu; menu = menu->NextMenu, i++)
+            {
+                if ((mouse_x >= menu->LeftEdge) &&
+                        (mouse_x < menu->LeftEdge + menu->Width) &&
+                        (mouse_y >= 0) &&
+                        (mouse_y <= mhd->scr->BarHeight))
                 {
-                    *var = i2;
+                    *var = i;
+                    break;
                 }
             }
         }
     }
-    else
-    {
-        for(menu = mhd->menu, i = 0; menu; menu = menu->NextMenu, i++)
-        {
-            if ((mouse_x >= menu->LeftEdge) &&
-                    (mouse_x < menu->LeftEdge + menu->Width) &&
-                    (mouse_y >= 0) &&
-                    (mouse_y <= mhd->scr->BarHeight))
-            {
-                *var = i;
-                break;
-            }
-        }
-    }
-
     return menu;
 }
 
@@ -811,16 +810,21 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
         {WA_Height  	, mhd->scr->BarHeight + 1   },
         {WA_AutoAdjust  , TRUE              	    },
         {WA_Borderless  , TRUE              	    },
-        {WA_CustomScreen, (ULONG)mhd->scr           },
-        {WA_BackFill    , (IPTR)LAYERS_NOBACKFILL   },
+        {WA_CustomScreen, (ULONG) mhd->scr          },
+        {WA_BackFill    , (IPTR) LAYERS_NOBACKFILL  },
         {TAG_DONE                   	    	    }
     };
-    struct Menu     *menu;
+    struct Menu *menu;
+
+    mhd->menubarwin = NULL;
+    /* No entry to draw */
+    if(menu == NULL) return;
+    if(mhd->menu == NULL) return;
 
     if (MENUS_UNDERMOUSE)
     {
         struct RastPort *temprp;
-        WORD        	 w, maxw = 0;
+        WORD w, maxw = 0;
     
         if (!(temprp = CloneRastPort(&mhd->scr->RastPort))) return;
     
@@ -837,95 +841,100 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
                                  ITEXT_EXTRA_LEFT +
                                  ITEXT_EXTRA_RIGHT;
     
-        if (temprp->TxHeight > mhd->submenuimage->Height) mhd->menubaritemheight = temprp->TxHeight; else mhd->menubaritemheight = mhd->submenuimage->Height;
+        if (temprp->TxHeight > mhd->submenuimage->Height)
+		{
+			mhd->menubaritemheight = temprp->TxHeight;
+		}
+		else
+		{
+			mhd->menubaritemheight = mhd->submenuimage->Height;
+		}
 
-	mhd->menubaritemheight += (ITEXT_EXTRA_TOP + ITEXT_EXTRA_BOTTOM);
+        mhd->menubaritemheight += (ITEXT_EXTRA_TOP + ITEXT_EXTRA_BOTTOM);
 
- 	struct mdpGetMenuSpaces  msg;
+        struct mdpGetMenuSpaces  msg;
 
-	msg.MethodID 	   = MDM_GETMENUSPACES;
-	msg.mdp_TrueColor  = mhd->TrueColor;
-	msg.mdp_InnerLeft  = mhd->scr->MenuHBorder;
-	msg.mdp_InnerTop   = mhd->scr->MenuVBorder;
-	msg.mdp_InnerRight = mhd->scr->MenuHBorder;
-	msg.mdp_InnerBottom   = mhd->scr->MenuVBorder;
-	msg.mdp_ItemInnerLeft = 0;
-	msg.mdp_ItemInnerTop = 0;
-	msg.mdp_ItemInnerRight = 0;
-	msg.mdp_ItemInnerBottom = 0;
-	msg.mdp_MinWidth = 0;
-	msg.mdp_MinHeight = 0;
-	DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);	
-	mhd->innerleft = msg.mdp_InnerLeft;
-	mhd->innerright = msg.mdp_InnerRight;
-	mhd->innertop = msg.mdp_InnerTop;
-	mhd->innerbottom = msg.mdp_InnerBottom;
-	mhd->iteminnerleft = msg.mdp_ItemInnerLeft;
-	mhd->iteminnerright = msg.mdp_ItemInnerRight;
-	mhd->iteminnertop = msg.mdp_ItemInnerTop;
-	mhd->iteminnerbottom = msg.mdp_ItemInnerBottom;
-	mhd->menubaritemwidth += (mhd->iteminnerleft + mhd->iteminnerright);
-	mhd->menubaritemheight += (mhd->iteminnertop + mhd->iteminnerbottom);
+        msg.MethodID 	   = MDM_GETMENUSPACES;
+        msg.mdp_TrueColor  = mhd->TrueColor;
+        msg.mdp_InnerLeft  = mhd->scr->MenuHBorder;
+        msg.mdp_InnerTop   = mhd->scr->MenuVBorder;
+        msg.mdp_InnerRight = mhd->scr->MenuHBorder;
+        msg.mdp_InnerBottom   = mhd->scr->MenuVBorder;
+        msg.mdp_ItemInnerLeft = 0;
+        msg.mdp_ItemInnerTop = 0;
+        msg.mdp_ItemInnerRight = 0;
+        msg.mdp_ItemInnerBottom = 0;
+        msg.mdp_MinWidth = 0;
+        msg.mdp_MinHeight = 0;
+        DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);	
+        mhd->innerleft = msg.mdp_InnerLeft;
+        mhd->innerright = msg.mdp_InnerRight;
+        mhd->innertop = msg.mdp_InnerTop;
+        mhd->innerbottom = msg.mdp_InnerBottom;
+        mhd->iteminnerleft = msg.mdp_ItemInnerLeft;
+        mhd->iteminnerright = msg.mdp_ItemInnerRight;
+        mhd->iteminnertop = msg.mdp_ItemInnerTop;
+        mhd->iteminnerbottom = msg.mdp_ItemInnerBottom;
+        mhd->menubaritemwidth += (mhd->iteminnerleft + mhd->iteminnerright);
+        mhd->menubaritemheight += (mhd->iteminnertop + mhd->iteminnerbottom);
  
         win_tags[2].ti_Data = mhd->menubaritemwidth + mhd->innerleft + mhd->innerright;
         win_tags[3].ti_Data = mhd->menubaritemheight * mhd->nummenubaritems + mhd->innertop + mhd->innerbottom;
 
-	if (win_tags[2].ti_Data < msg.mdp_MinWidth)
-	{
-	    mhd->menubaritemwidth += (msg.mdp_MinWidth - win_tags[2].ti_Data);
-	    win_tags[2].ti_Data = msg.mdp_MinWidth;
-	}
+        if (win_tags[2].ti_Data < msg.mdp_MinWidth)
+        {
+            mhd->menubaritemwidth += (msg.mdp_MinWidth - win_tags[2].ti_Data);
+            win_tags[2].ti_Data = msg.mdp_MinWidth;
+        }
 
-	if (win_tags[3].ti_Data < msg.mdp_MinHeight)
-	{
-	    win_tags[3].ti_Data = msg.mdp_MinHeight;
-	}
+        if (win_tags[3].ti_Data < msg.mdp_MinHeight)
+        {
+            win_tags[3].ti_Data = msg.mdp_MinHeight;
+        }
 
         WORD PosX = mhd->scr->MouseX - win_tags[2].ti_Data / 2;
         win_tags[1].ti_Data = mhd->scr->MouseY;
 
-
- 	if ((PosX + win_tags[2].ti_Data) > mhd->scr->Width) PosX = mhd->scr->Width - win_tags[2].ti_Data;
- 	if ((win_tags[1].ti_Data + win_tags[3].ti_Data) > mhd->scr->Height) win_tags[1].ti_Data = mhd->scr->Height - win_tags[3].ti_Data;
+        if ((PosX + win_tags[2].ti_Data) > mhd->scr->Width) PosX = mhd->scr->Width - win_tags[2].ti_Data;
+        if ((win_tags[1].ti_Data + win_tags[3].ti_Data) > mhd->scr->Height) win_tags[1].ti_Data = mhd->scr->Height - win_tags[3].ti_Data;
         if (PosX < 0) PosX = 0;
         if (win_tags[1].ti_Data > 32000) win_tags[1].ti_Data = 0;
 
-	win_tags[0].ti_Data = PosX;
+        win_tags[0].ti_Data = PosX;
 
         FreeRastPort(temprp);
 
-	IPTR	userbuffersize;
+        IPTR userbuffersize;
 
-	GetAttr(MDA_UserBuffer, ((struct IntScreen *)(mhd->scr))->MenuDecorObj, &userbuffersize);
+        GetAttr(MDA_UserBuffer, ((struct IntScreen *)(mhd->scr))->MenuDecorObj, &userbuffersize);
 
-	if (userbuffersize)
-	{
-	    mhd->DecorUserBufferSize = userbuffersize;
-	    mhd->BarDecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
-	    if (0 == mhd->BarDecorUserBuffer) return;
-	}
+        if (userbuffersize)
+        {
+            mhd->DecorUserBufferSize = userbuffersize;
+            mhd->BarDecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
+            if (0 == mhd->BarDecorUserBuffer) return;
+        }
 
-	{
-	   struct mdpInitMenu  msg;
+        {
+           struct mdpInitMenu  msg;
 
-	   msg.MethodID 	    	= MDM_INITMENU;
-	   msg.mdp_TrueColor = mhd->TrueColor;
-	   msg.mdp_RPort     	= &mhd->scr->RastPort;
-	   msg.mdp_Left = win_tags[0].ti_Data;
-	   msg.mdp_Top = win_tags[1].ti_Data;
-	   msg.mdp_Width = win_tags[2].ti_Data;
-	   msg.mdp_Height = win_tags[3].ti_Data;
-	   msg.mdp_UserBuffer = mhd->BarDecorUserBuffer;
-       msg.mdp_ScreenUserBuffer   = ((struct IntScreen *) mhd->scr)->DecorUserBuffer;
+           msg.MethodID = MDM_INITMENU;
+           msg.mdp_TrueColor = mhd->TrueColor;
+           msg.mdp_RPort = &mhd->scr->RastPort;
+           msg.mdp_Left = win_tags[0].ti_Data;
+           msg.mdp_Top = win_tags[1].ti_Data;
+           msg.mdp_Width = win_tags[2].ti_Data;
+           msg.mdp_Height = win_tags[3].ti_Data;
+           msg.mdp_UserBuffer = mhd->BarDecorUserBuffer;
+           msg.mdp_ScreenUserBuffer = ((struct IntScreen *) mhd->scr)->DecorUserBuffer;
 
-       msg.mdp_Screen             = mhd->scr;
+           msg.mdp_Screen = mhd->scr;
 
-	   DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);	
-	}
+           DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);	
+        }
     }
     
-    D(bug("MakeMenuBarWin: mhd 0x%lx\n",
-          mhd));
+    D(bug("MakeMenuBarWin: mhd 0x%lx\n", mhd));
 
     mhd->menubarwin = OpenWindowTagList(0, win_tags);
 
@@ -947,20 +956,20 @@ static void KillMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
         mhd->menubarwin = NULL;
 
         if (MENUS_UNDERMOUSE)
-	{
-	    struct mdpExitMenu  msg;
+        {
+            struct mdpExitMenu  msg;
 
-	    msg.MethodID 	    	= MDM_EXITMENU;
-	    msg.mdp_UserBuffer = mhd->BarDecorUserBuffer;
-	    msg.mdp_TrueColor = mhd->TrueColor;
-	    DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);	
+            msg.MethodID = MDM_EXITMENU;
+            msg.mdp_UserBuffer = mhd->BarDecorUserBuffer;
+            msg.mdp_TrueColor = mhd->TrueColor;
+            DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);	
 
-	    if (mhd->BarDecorUserBuffer)
-	    {
-	        FreeMem((void *)mhd->BarDecorUserBuffer, mhd->DecorUserBufferSize);
+            if (mhd->BarDecorUserBuffer)
+            {
+                FreeMem((void *)mhd->BarDecorUserBuffer, mhd->DecorUserBufferSize);
     	    }
-	    mhd->BarDecorUserBuffer = 0;
-	}
+            mhd->BarDecorUserBuffer = 0;
+        }
 
     }
 
@@ -972,7 +981,7 @@ static void RenderMenuBar(struct MenuHandlerData *mhd, struct IntuitionBase *Int
 {
     if (mhd->menubarwin)
     {
-        struct Menu 	*menu = mhd->menu;
+        struct Menu *menu = mhd->menu;
         struct RastPort *rp = mhd->menubarwin->RPort;
 
         SetFont(rp, mhd->dri->dri_Font);
@@ -1019,69 +1028,73 @@ static void RenderMenuBar(struct MenuHandlerData *mhd, struct IntuitionBase *Int
 static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
                             struct IntuitionBase *IntuitionBase)
 {
-    struct RastPort *rp = mhd->menubarwin->RPort;
-    WORD             len = strlen(menu->MenuName);
-    WORD    	     x, y;
+    struct RastPort *rp;
+    WORD len = strlen(menu->MenuName);
+    WORD x, y;
 
-    SetDrMd(rp, JAM1);
- 
-    if (MENUS_UNDERMOUSE)
+    if(mhd->menubarwin)
     {
-        struct Menu *m;
-        WORD         yoff;
-    
-        yoff = 0;
-        for(m = mhd->menu; m && (m != menu);m = m ->NextMenu)
-        {
-            yoff++;
-        }
-    
-        x = mhd->innerleft + ITEXT_EXTRA_LEFT;
-        y = mhd->innertop + ITEXT_EXTRA_TOP + yoff * mhd->menubaritemheight;
-    }
-    else
-    {
-        x = mhd->scr->BarHBorder + menu->LeftEdge;
-        y = mhd->scr->BarVBorder;
-    }
+        rp = mhd->menubarwin->RPort;
+        SetDrMd(rp, JAM1);
 
-    if (MENUS_AMIGALOOK)
-    {
-        SetAPen(rp, mhd->dri->dri_Pens[BARDETAILPEN]);
-    }
-    else
-    {
-        SetAPen(rp, mhd->dri->dri_Pens[(menu->Flags & HIGHITEM) ? FILLTEXTPEN : TEXTPEN]);
-    }
-
-    Move(rp, x, y + rp->TxBaseline);
-    Text(rp, menu->MenuName, len);
-
-    if (MENUS_UNDERMOUSE)
-    {
-        if (menu->FirstItem)
-        {
-            WORD x2 = mhd->scr->MenuHBorder + mhd->menubaritemwidth - ITEXT_EXTRA_RIGHT - mhd->submenuimage->Width;
-
-	    DrawImageState(rp, mhd->submenuimage, x2, y + ((mhd->menubaritemheight - mhd->submenuimage->Height) >> 1), IDS_NORMAL, mhd->dri);
-        }
-    }
-    
-    if (!(menu->Flags & MENUENABLED))
-    {
-        WORD y2 = y + rp->TxHeight - 1;
-        WORD x2;
-        
         if (MENUS_UNDERMOUSE)
         {
-            x2 = mhd->scr->MenuHBorder + mhd->menubaritemwidth - 1;
+            struct Menu *m;
+            WORD         yoff;
+
+            yoff = 0;
+            for(m = mhd->menu; m && (m != menu);m = m ->NextMenu)
+            {
+                yoff++;
+            }
+
+            x = mhd->innerleft + ITEXT_EXTRA_LEFT;
+            y = mhd->innertop + ITEXT_EXTRA_TOP + yoff * mhd->menubaritemheight;
         }
         else
         {
-            x2 = x + TextLength(rp, menu->MenuName, len) - 1;
+            x = mhd->scr->BarHBorder + menu->LeftEdge;
+            y = mhd->scr->BarVBorder;
         }
 
-        RenderDisabledPattern(rp, x, y, x2, y2, mhd, IntuitionBase);
+        if (MENUS_AMIGALOOK)
+        {
+            SetAPen(rp, mhd->dri->dri_Pens[BARDETAILPEN]);
+        }
+        else
+        {
+            SetAPen(rp, mhd->dri->dri_Pens[(menu->Flags & HIGHITEM) ? FILLTEXTPEN : TEXTPEN]);
+        }
+
+        Move(rp, x, y + rp->TxBaseline);
+        Text(rp, menu->MenuName, len);
+
+        if (MENUS_UNDERMOUSE)
+        {
+            if (menu->FirstItem)
+            {
+                WORD x2 = mhd->scr->MenuHBorder + mhd->menubaritemwidth - ITEXT_EXTRA_RIGHT - mhd->submenuimage->Width;
+
+            DrawImageState(rp, mhd->submenuimage, x2, y + ((mhd->menubaritemheight - mhd->submenuimage->Height) >> 1), IDS_NORMAL, mhd->dri);
+            }
+        }
+
+        if (!(menu->Flags & MENUENABLED))
+        {
+            WORD y2 = y + rp->TxHeight - 1;
+            WORD x2;
+
+            if (MENUS_UNDERMOUSE)
+            {
+                x2 = mhd->scr->MenuHBorder + mhd->menubaritemwidth - 1;
+            }
+            else
+            {
+                x2 = x + TextLength(rp, menu->MenuName, len) - 1;
+            }
+
+            RenderDisabledPattern(rp, x, y, x2, y2, mhd, IntuitionBase);
+        }
     }
 }
 
@@ -1097,7 +1110,7 @@ static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
 
     struct mdpGetMenuSpaces  msg;
 
-    msg.MethodID 	   = MDM_GETMENUSPACES;
+    msg.MethodID = MDM_GETMENUSPACES;
     msg.mdp_TrueColor = mhd->TrueColor;
     msg.mdp_InnerLeft  = 0;
     msg.mdp_InnerTop   = 0;
@@ -1228,18 +1241,18 @@ static void KillMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
         {
             item->Flags &= ~ISDRAWN;
         }
-    		struct mdpExitMenu  msg;
+   		struct mdpExitMenu  msg;
 
-	msg.MethodID       = MDM_EXITMENU;
-	msg.mdp_TrueColor  = mhd->TrueColor;
-	msg.mdp_UserBuffer = mhd->DecorUserBuffer;
-	DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);	
+        msg.MethodID       = MDM_EXITMENU;
+        msg.mdp_TrueColor  = mhd->TrueColor;
+        msg.mdp_UserBuffer = mhd->DecorUserBuffer;
+        DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
 
-	if (mhd->DecorUserBuffer)
-	{
-	    FreeMem((void *)mhd->DecorUserBuffer, mhd->DecorUserBufferSize);
+        if (mhd->DecorUserBuffer)
+        {
+            FreeMem((void *)mhd->DecorUserBuffer, mhd->DecorUserBufferSize);
     	}
-	mhd->DecorUserBuffer = 0;
+        mhd->DecorUserBuffer = 0;
 
         mhd->activemenu->Flags &= ~MIDRAWN;
 
@@ -1288,83 +1301,86 @@ static void MakeSubMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
         {TAG_DONE                   	    	    }
     };
 
-    GetMenuBox(mhd->menubarwin, item, &mhd->submenubox.MinX,
-               &mhd->submenubox.MinY,
-               &mhd->submenubox.MaxX,
-               &mhd->submenubox.MaxY);
-
+    if(mhd->menubarwin)
     {
-        struct mdpGetMenuSpaces  msg;
+        GetMenuBox(mhd->menubarwin, item, &mhd->submenubox.MinX,
+                   &mhd->submenubox.MinY,
+                   &mhd->submenubox.MaxX,
+                   &mhd->submenubox.MaxY);
 
-    	msg.MethodID       = MDM_GETMENUSPACES;
-	msg.mdp_TrueColor  = mhd->TrueColor;
-    	msg.mdp_InnerLeft  = 0;
-    	msg.mdp_InnerTop   = 0;
-    	msg.mdp_InnerRight = 0;
-    	msg.mdp_InnerBottom   = 0;
+        {
+            struct mdpGetMenuSpaces  msg;
 
-    	DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);	
-    	mhd->menuinnerleft = msg.mdp_InnerLeft;
-    	mhd->menuinnerright = msg.mdp_InnerRight;
-    	mhd->menuinnertop = msg.mdp_InnerTop;
-    	mhd->menuinnerbottom = msg.mdp_InnerBottom;
+            msg.MethodID       = MDM_GETMENUSPACES;
+            msg.mdp_TrueColor  = mhd->TrueColor;
+            msg.mdp_InnerLeft  = 0;
+            msg.mdp_InnerTop   = 0;
+            msg.mdp_InnerRight = 0;
+            msg.mdp_InnerBottom   = 0;
+
+            DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
+            mhd->menuinnerleft = msg.mdp_InnerLeft;
+            mhd->menuinnerright = msg.mdp_InnerRight;
+            mhd->menuinnertop = msg.mdp_InnerTop;
+            mhd->menuinnerbottom = msg.mdp_InnerBottom;
+        }
+
+        win_tags[0].ti_Data = mhd->menuwin->LeftEdge +
+                              mhd->activeitem->LeftEdge - mhd->activemenu->JazzX +
+                              mhd->submenubox.MinX;
+
+        win_tags[1].ti_Data = mhd->menuwin->TopEdge +
+                              mhd->activeitem->TopEdge - mhd->activemenu->JazzY +
+                              mhd->submenubox.MinY;
+
+        win_tags[2].ti_Data = mhd->submenubox.MaxX - mhd->submenubox.MinX + 1 + mhd->menuinnerleft + mhd->menuinnerright;
+        win_tags[3].ti_Data = mhd->submenubox.MaxY - mhd->submenubox.MinY + 1 + mhd->menuinnertop + mhd->menuinnerbottom;
+
+        if ((win_tags[0].ti_Data + win_tags[2].ti_Data) > mhd->scr->Width) win_tags[0].ti_Data = mhd->scr->Width - win_tags[2].ti_Data;
+        if ((win_tags[1].ti_Data + win_tags[3].ti_Data) > mhd->scr->Height) win_tags[1].ti_Data = mhd->scr->Height - win_tags[3].ti_Data;
+        if (((LONG) win_tags[0].ti_Data) < 0) win_tags[0].ti_Data = 0;
+        if (((LONG) win_tags[1].ti_Data) < 0) win_tags[1].ti_Data = 0;
+
+        while(item)
+        {
+            item->Flags &= ~HIGHITEM;
+            item = item->NextItem;
+        }
+
+        IPTR	userbuffersize;
+
+        GetAttr(MDA_UserBuffer, ((struct IntScreen *)(mhd->scr))->MenuDecorObj, &userbuffersize);
+
+        if (userbuffersize)
+        {
+        mhd->DecorUserBufferSize = userbuffersize;
+        mhd->SubDecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
+        if (0 == mhd->SubDecorUserBuffer) return;
+        }
+
+        {
+            struct mdpInitMenu  msg;
+            msg.MethodID 	    	= MDM_INITMENU;
+            msg.mdp_TrueColor = mhd->TrueColor;
+            msg.mdp_RPort     	= &mhd->scr->RastPort;
+            msg.mdp_Left = win_tags[0].ti_Data;
+            msg.mdp_Top = win_tags[1].ti_Data;
+            msg.mdp_Width = win_tags[2].ti_Data;
+            msg.mdp_Height = win_tags[3].ti_Data;
+            msg.mdp_UserBuffer = mhd->SubDecorUserBuffer;
+            msg.mdp_ScreenUserBuffer   = ((struct IntScreen *) mhd->scr)->DecorUserBuffer;
+
+        msg.mdp_TrueColor = mhd->TrueColor;
+           msg.mdp_Screen             = mhd->scr;
+
+            DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
+        }
+        mhd->submenuwin = OpenWindowTagList(0, win_tags);
+
+        mhd->maxcommkeywidth_submenu = CalcMaxCommKeyWidth(mhd->submenuwin, mhd, IntuitionBase);
+
+        RenderSubMenu(mhd, IntuitionBase);
     }
-
-    win_tags[0].ti_Data = mhd->menuwin->LeftEdge +
-                          mhd->activeitem->LeftEdge - mhd->activemenu->JazzX +
-                          mhd->submenubox.MinX;
-
-    win_tags[1].ti_Data = mhd->menuwin->TopEdge +
-                          mhd->activeitem->TopEdge - mhd->activemenu->JazzY +
-                          mhd->submenubox.MinY;
-
-    win_tags[2].ti_Data = mhd->submenubox.MaxX - mhd->submenubox.MinX + 1 + mhd->menuinnerleft + mhd->menuinnerright;
-    win_tags[3].ti_Data = mhd->submenubox.MaxY - mhd->submenubox.MinY + 1 + mhd->menuinnertop + mhd->menuinnerbottom;
-
-    if ((win_tags[0].ti_Data + win_tags[2].ti_Data) > mhd->scr->Width) win_tags[0].ti_Data = mhd->scr->Width - win_tags[2].ti_Data;
-    if ((win_tags[1].ti_Data + win_tags[3].ti_Data) > mhd->scr->Height) win_tags[1].ti_Data = mhd->scr->Height - win_tags[3].ti_Data;
-    if (((LONG) win_tags[0].ti_Data) < 0) win_tags[0].ti_Data = 0;
-    if (((LONG) win_tags[1].ti_Data) < 0) win_tags[1].ti_Data = 0;
-
-    while(item)
-    {
-        item->Flags &= ~HIGHITEM;
-        item = item->NextItem;
-    }
-
-    IPTR	userbuffersize;
-
-    GetAttr(MDA_UserBuffer, ((struct IntScreen *)(mhd->scr))->MenuDecorObj, &userbuffersize);
-	
-    if (userbuffersize)
-    {
-	mhd->DecorUserBufferSize = userbuffersize;
-	mhd->SubDecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
-	if (0 == mhd->SubDecorUserBuffer) return;
-    }
-
-    {
-    	struct mdpInitMenu  msg;
-    	msg.MethodID 	    	= MDM_INITMENU;
-	msg.mdp_TrueColor = mhd->TrueColor;
-    	msg.mdp_RPort     	= &mhd->scr->RastPort;
-    	msg.mdp_Left = win_tags[0].ti_Data;
-    	msg.mdp_Top = win_tags[1].ti_Data;
-    	msg.mdp_Width = win_tags[2].ti_Data;
-    	msg.mdp_Height = win_tags[3].ti_Data;
-    	msg.mdp_UserBuffer = mhd->SubDecorUserBuffer;
-        msg.mdp_ScreenUserBuffer   = ((struct IntScreen *) mhd->scr)->DecorUserBuffer;
-
-	msg.mdp_TrueColor = mhd->TrueColor;
-       msg.mdp_Screen             = mhd->scr;
-
-    	DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);	
-    }
-    mhd->submenuwin = OpenWindowTagList(0, win_tags);
-
-    mhd->maxcommkeywidth_submenu = CalcMaxCommKeyWidth(mhd->submenuwin, mhd, IntuitionBase);
-
-    RenderSubMenu(mhd, IntuitionBase);
 }
 
 /**************************************************************************************************/
