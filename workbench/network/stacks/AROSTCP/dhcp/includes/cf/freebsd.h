@@ -35,7 +35,6 @@
 #include <syslog.h>
 #include <sys/types.h>
 #include <string.h>
-#include <paths.h>
 #include <errno.h>
 #include <unistd.h>
 #include <setjmp.h>
@@ -106,7 +105,7 @@ extern int h_errno;
  # define HAVE_DEV_RANDOM 1
  #endif /* HAVE_DEV_RANDOM */
 
-const char *cmds[] = {
+/*const char *cmds[] = {
 	"/bin/ps -axlw 2>&1",
 	"/usr/sbin/arp -an 2>&1",
 	"/usr/bin/netstat -an 2>&1",
@@ -138,5 +137,6 @@ const char *files[] = {
 	"/var/log/wtmp",
 	"/var/log/lastlog",
 	NULL
-};
+};*/
+
 #endif /* NEED_PRAND_CONF */
