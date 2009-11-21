@@ -37,19 +37,22 @@ static char copyright[] =
 "$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
 #endif /* not lint */
 
-#include "dhcpd.h"
 #if defined (USE_BPF_SEND) || defined (USE_BPF_RECEIVE)	\
 				|| defined (USE_LPF_RECEIVE)
 # if defined (USE_LPF_RECEIVE)
+#  include "dhcpd.h"
 #  include <asm/types.h>
 #  include <linux/filter.h>
 #  define bpf_insn sock_filter /* Linux: dare to be gratuitously different. */
 # else
+/* This one's for BSD based OSes (dunno if it breaks any other OSes) */
+# define USE_SOCKET_FALLBACK
+#  include "dhcpd.h"
 #  include <sys/ioctl.h>
 #  include <sys/uio.h>
-#  include <net/bpf.h>
+#  include "/usr/include/net/bpf.h"
 #  if defined (NEED_OSF_PFILT_HACKS)
-#   include <net/pfilt.h>
+#   include </usr/include/net/pfilt.h>
 #  endif
 # endif
 
