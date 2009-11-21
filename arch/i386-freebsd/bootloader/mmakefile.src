@@ -1,0 +1,5 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM- kernel-bootloader-freebsd-i386 : kernel-bootloader-unix
+#MM- kernel-bootloader-freebsd-i386-includes : kernel-bootloader-unix-includes

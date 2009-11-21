@@ -599,9 +599,6 @@ static int rtl8169_set_speed_xmii(struct net_device *unit,
 
 static void rtl8169_start_rx(struct net_device *unit)
 {
-    struct rtl8169_priv *np = get_pcnpriv(unit);
-    APTR base = get_hwbase(unit);
-
     RTLD(bug("[%s] rtl8169_start_rx\n", unit->rtl8169u_name))
     // Already running? Stop it.
     #warning "TODO: Handle starting/stopping Rx"
@@ -609,33 +606,24 @@ static void rtl8169_start_rx(struct net_device *unit)
 
 static void rtl8169_stop_rx(struct net_device *unit)
 {
-    APTR base = get_hwbase(unit);
-
     RTLD(bug("[%s] rtl8169_stop_rx\n", unit->rtl8169u_name))
     #warning "TODO: Handle starting/stopping Rx"
 }
 
 static void rtl8169_start_tx(struct net_device *unit)
 {
-    APTR base = get_hwbase(unit);
-
     RTLD(bug("[%s] rtl8169_start_tx()\n", unit->rtl8169u_name))
     #warning "TODO: Handle starting/stopping Tx"
 }
 
 static void rtl8169_stop_tx(struct net_device *unit)
 {
-    APTR base = get_hwbase(unit);
-
     RTLD(bug("[%s] rtl8169_stop_tx()\n", unit->rtl8169u_name))
     #warning "TODO: Handle starting/stopping Tx"
 }
 
 static void rtl8169_txrx_reset(struct net_device *unit)
 {
-    struct rtl8169_priv *np = get_pcnpriv(unit);
-    APTR base = get_hwbase(unit);
-
     RTLD(bug("[%s] rtl8169_txrx_reset()\n", unit->rtl8169u_name))
 }
 
@@ -645,11 +633,8 @@ static void rtl8169_txrx_reset(struct net_device *unit)
  */
 static void rtl8169_SetMulticast(struct net_device *unit)
 {
-    struct rtl8169_priv *np = get_pcnpriv(unit);
-    APTR base = get_hwbase(unit);
     ULONG addr[2];
     ULONG mask[2];
-    ULONG pff;
 
     RTLD(bug("[%s] rtl8169_SetMulticast()\n", unit->rtl8169u_name))
 
@@ -697,7 +682,6 @@ static void rtl8169_GetMACAddr(struct net_device *unit, char *addr, BOOL fromROM
 static void rtl8169_SetMACAddr(struct net_device *unit)
 {
     APTR base = get_hwbase(unit);
-    int i,j;
 
     RTLD(bug("[%s] rtl8169_SetMACAddr()\n", unit->rtl8169u_name))
 
@@ -852,9 +836,8 @@ static void rtl8169_Init(struct net_device *unit)
 
 /*    RTL_W8(base + (Cfg9346), Cfg9346_Unlock);
     np->features |= rtl8169_try_msi(pdev, base);
-    RTL_W8(base + (Cfg9346), Cfg9346_Lock); /*
-
-    /***/
+    RTL_W8(base + (Cfg9346), Cfg9346_Lock); 
+    */
 
     RTL_W8(base + (Cfg9346), Cfg9346_Lock);
 
