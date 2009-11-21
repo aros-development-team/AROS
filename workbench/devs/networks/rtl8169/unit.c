@@ -53,9 +53,6 @@
 extern UBYTE MMIO_R8(UBYTE *);
 extern UWORD MMIO_R16(UWORD *);
 extern ULONG MMIO_R32(ULONG *);
-extern void MMIO_W8(UBYTE *, UBYTE);
-extern void MMIO_W16(UWORD *, UWORD);
-extern void MMIO_W32(ULONG *, ULONG);
 
 extern void rtl8169_CheckLinkStatus(struct net_device *);
 
@@ -205,7 +202,7 @@ void RTL8169_Rx_Process(struct RTL8169Unit *unit)
 			break;
 		}
 
-	    rx_size = (rx_status & 0x00003FFF) - ETH_CRCSIZE;
+	    rx_size = (rx_status & 0x00001FFF) - ETH_CRCSIZE;
 
 		if (rx_status & RxRES)
 		{

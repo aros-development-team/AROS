@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 #MM- devs-networks-drivers-rtl8169-i386 : networking-drivers-rtl8169
 #MM- devs-networks-drivers-rtl8169-x86_64 : networking-drivers-rtl8169
 
-FILES := handler unit rtl8169 rtl8169_hw rtl8101_hw rtl8169_hw rtl8169_ids
+FILES := handler unit rtl8169 rtl8169_hw rtl8101_hw rtl8168_hw rtl8169_ids
 
 CFLAGSNORMAL = $(CFLAGS) -DDEBUG=0
 CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1

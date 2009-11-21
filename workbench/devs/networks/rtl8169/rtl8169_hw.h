@@ -32,6 +32,7 @@
 #include <stdlib.h>
 
 #include "unit.h"
+#include LC_LIBDEFS_FILE
 
 unsigned int rtl8169_tbi_link_ok(struct net_device *unit);
 unsigned int rtl8169_xmii_link_ok(struct net_device *unit);

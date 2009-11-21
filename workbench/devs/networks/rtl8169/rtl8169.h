@@ -1105,6 +1105,9 @@ void rtl_set_rx_tx_config_registers(struct net_device *unit);
 void rtl8169_write_gmii_reg_bit(struct net_device *unit, int reg, int bitnum, int bitval);
 UBYTE *get_hwbase(struct net_device *unit);
 struct rtl8169_priv *get_pcnpriv(struct net_device *unit);
+void MMIO_W32(APTR addr, ULONG val32);
+void MMIO_W16(APTR addr, UWORD val16);
+void MMIO_W8(APTR addr, UBYTE val8);
 
 #define udelay(usec) rtl8169_USecDelay(unit, usec)
 #endif
