@@ -817,8 +817,7 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
     struct Menu *menu;
 
     mhd->menubarwin = NULL;
-    /* No entry to draw */
-    if(menu == NULL) return;
+    /* No entry to draw ? */
     if(mhd->menu == NULL) return;
 
     if (MENUS_UNDERMOUSE)
