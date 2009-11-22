@@ -184,7 +184,7 @@ static int ftmanager_gui(void)
 	countto = 1;
 	while (codesetsupported[countfrom])
 	{
-		if (strcmp(codesetsupported[countfrom], "UTF-8"))
+		if (strncmp(codesetsupported[countfrom], "UTF", 3))
 		{
 			codesetentries[countto] = codesetsupported[countfrom];
 			countto++;
