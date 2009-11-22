@@ -21,26 +21,31 @@
 #include "fontwindow_class.h"
 #include "globals.h"
 
-#define ARG_TEMPLATE "TTFFONT/A,OUTFONT/A,SIZE/A/N,CODEPAGE"
+#define ARG_TEMPLATE "TTFFONT/A,OUTFONT/A,CODEPAGE"
 
 enum
 {
 	ARG_TTFFONT,
 	ARG_OUTFONT,
-	ARG_SIZE,
 	ARG_CODEPAGE,
 	ARG_COUNT
 };
 
 /***********************************************************************/
 
+/* Global variables */
+BPTR destdir;
+UWORD codepage[256];
 struct Library *CodesetsBase;
+
+/***********************************************************************/
 
 static struct RDArgs *rda;
 static Object *app;
 static STRPTR *codesetentries;
 static STRPTR *codesetsupported;
 
+/***********************************************************************/
 
 static void Cleanup(void)
 {
@@ -111,20 +116,20 @@ BOOL IsDefaultCodePage(void)
 	return TRUE;
 }
 
-static BOOL LoadCodePage(int entryindex, char *codepage)
+static BOOL LoadCodePage(int entryindex, char *codepg)
 {
 	struct codeset *cs = NULL;
 
 	SetDefaultCodePage();
 
-	if (entryindex == 0 && codepage == NULL) // keep default code page
+	if (entryindex == 0 && codepg == NULL) // keep default code page
 	{
 		return TRUE;
 	}
 
-	if (codepage)
+	if (codepg)
 	{
-		cs = CodesetsFind(codepage, CSA_FallbackToDefault, FALSE, TAG_DONE);
+		cs = CodesetsFind(codepg, CSA_FallbackToDefault, FALSE, TAG_DONE);
 	}
 	else if (entryindex > 0)
 	{
