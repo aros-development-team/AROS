@@ -181,7 +181,7 @@ BYTE setup_guipref( void )
 	if(wid[3] < width) wid[3] = width;
 
 	NewPrefWin.Width    = wid[0] + wid[3] + wid[1] + 130;
-	NewPrefWin.Height   = Scr->BarHeight + font->tf_YSize * 8 + (54 + SAMPLE_HEI);
+	NewPrefWin.Height   = Scr->BarHeight + font->tf_YSize * 8 + (59 + SAMPLE_HEI);
 	NewPrefWin.LeftEdge = 50;
 	NewPrefWin.TopEdge  = 50;
 	NewPrefWin.Screen   = Scr;
@@ -285,7 +285,7 @@ BYTE setup_guipref( void )
 		}
 
 		/* Create bottom row of gadgets */
-		NG.ng_TopEdge  = Wnd->Height-NG.ng_Height-5;
+		NG.ng_TopEdge  = Wnd->Height-NG.ng_Height-10;
 		NG.ng_LeftEdge = 10;
 		NG.ng_Width    = wid[2];
 		NG.ng_Flags    = PLACETEXT_IN;
@@ -312,9 +312,11 @@ BYTE setup_guipref( void )
 		NG.ng_Width      = Wnd->Width - 10 - (
 		NG.ng_LeftEdge  += NG.ng_Width+10);
 		NG.ng_GadgetID   = i+1;
-		CreateGadget(PALETTE_KIND, gad, &NG,
-						 GTPA_Depth, ((Scr->RastPort.BitMap->Depth > 5) ? 5 : Scr->RastPort.BitMap->Depth),
-						 TAG_DONE);
+		CreateGadget(PALETTE_KIND,
+                     gad,
+                     &NG,
+				     GTPA_Depth, ((Scr->RastPort.BitMap->Depth > 5) ? 5 : Scr->RastPort.BitMap->Depth),
+				     TAG_DONE);
 
 		/* Add gadgets to window: */
 		CopyMem(Wnd->RPort, &RPT, sizeof(RPT));
@@ -455,7 +457,7 @@ BYTE handle_pref_gadget(struct Gadget *G)
 		case UCS:	/* Save */
 			close_prefwnd(CMD_SAVPREF);
 			if(ConfigFile) save_prefs(&prefs);
-			 return TRUE;
+                return TRUE;
 		case UCS+1:	/* Use */
 			close_prefwnd(CMD_NEWPREF); return TRUE;
 		case UCS+2:	/* Cancel */
@@ -464,9 +466,12 @@ BYTE handle_pref_gadget(struct Gadget *G)
 			ColorIndex = msgbuf.Code; break;
 		case UCS+4: /* Palette */
 			if((&pen.bg)[ ColorIndex ] != msgbuf.Code)
-				(&pen.bg)[ ColorIndex ]  = msgbuf.Code,
-				(&prefs.pen.bg)[ ColorIndex ] = -msgbuf.Code-1,
-				render_sample(Wnd, Modif[ ColorIndex ] );
+            {
+				(&pen.bg)[ColorIndex]  = msgbuf.Code;
+				(&prefs.pen.bg)[ColorIndex] = -msgbuf.Code - 1;
+
+                render_sample(Wnd, Modif[ColorIndex] );
+            }
 	}
 	/* Returns TRUE if window is closed */
 	return FALSE;

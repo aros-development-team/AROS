@@ -185,3 +185,9 @@ Wanderer ScreenTitle
 MSG_ADVANCED (//)
 Advanced
 ;
+MSG_USE (//)
+&Use
+;
+MSG_CANCEL (//)
+&Cancel
+;

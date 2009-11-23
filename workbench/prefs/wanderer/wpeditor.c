@@ -1563,8 +1563,8 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 				End;	
 	/*Button Group-------------------------------------------------------*/
 	_WP_AdvancedView_ButtonGrpObj = (Object *)HGroup,
-					Child, (IPTR)(_WP_AdvancedView_ButtonObj_Use = ImageButton("Use", "THEME:Images/Gadgets/Prefs/Use")),
-					Child, (IPTR)(_WP_AdvancedView_ButtonObj_Cancel = ImageButton("Cancel", "THEME:Images/Gadgets/Prefs/Cancel")),
+					Child, (IPTR)(_WP_AdvancedView_ButtonObj_Use = ImageButton(_(MSG_USE), "THEME:Images/Gadgets/Prefs/Use")),
+					Child, (IPTR)(_WP_AdvancedView_ButtonObj_Cancel = ImageButton(_(MSG_CANCEL), "THEME:Images/Gadgets/Prefs/Cancel")),
 				End;
 	/*END Button Group--------------------------------------------------*/
 

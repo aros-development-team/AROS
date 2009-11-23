@@ -83,7 +83,7 @@ Utiliser
 ; Use
 ;
 MSG_BUTTON_NEW
-_Nouveau
+N_ouveau
 ; _New
 ;
 MSG_BUTTON_COPY
@@ -147,7 +147,7 @@ MSG_LIST_FOREIGNSCREEN
 ; (foreign)
 ;
 MSG_LABEL_PUBLICNAME
-_Nom public :
+No_m public :
 ; Public _Name:
 ;
 MSG_LABEL_SCREENTITLE
@@ -171,11 +171,11 @@ Drapeaux :
 ; Flags:
 ;
 MSG_LABEL_AUTOSCROLL
-Défilement _automatique
+Défilement au_tomatique
 ; _Autoscroll
 ;
 MSG_LABEL_NODRAG
-Pas de glisser
+Pas de déplacement
 ; No D_rag
 ;
 MSG_LABEL_EXCLUSIVE
@@ -203,7 +203,7 @@ Gadget de fermeture
 ; Close Gadget
 ;
 MSG_LABEL_OVERSCAN
-_Suraffichage :
+Su_raffichage :
 ; O_verscan:
 ;
 MSG_LABEL_SIZE

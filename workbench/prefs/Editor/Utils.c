@@ -50,7 +50,7 @@ WORD AddNum(ULONG nb, STRPTR buf)
 }
 
 
-/*** Measure the maximal lenght of a NULL-terminated array of string: ***/
+/*** Measure the maximal length of a NULL-terminated array of string: ***/
 WORD meas_table(UBYTE **strings)
 {
 	extern struct RastPort RPT;
