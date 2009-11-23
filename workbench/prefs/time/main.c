@@ -662,9 +662,9 @@ static void MakeGUI(void)
 		    MUIA_FixHeight, 1,
 		    MUIA_Group_SameWidth, TRUE,
     	    	#endif
-		    Child, saveobj = CoolImageIDButton(MSG(MSG_GAD_SAVE), COOL_SAVEIMAGE_ID),
-		    Child, useobj = CoolImageIDButton(MSG(MSG_GAD_USE), COOL_DOTIMAGE_ID),
-		    Child, cancelobj = CoolImageIDButton(MSG(MSG_GAD_CANCEL), COOL_CANCELIMAGE_ID),
+		    Child, saveobj = ImageButton(MSG(MSG_GAD_SAVE), "THEME:Images/Gadgets/Prefs/Save"),
+		    Child, useobj = ImageButton(MSG(MSG_GAD_USE), "THEME:Images/Gadgets/Prefs/Use"),
+		    Child, cancelobj = ImageButton(MSG(MSG_GAD_CANCEL), "THEME:Images/Gadgets/Prefs/Cancel"),
 		    End,
 		End,
 	    End,

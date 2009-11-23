@@ -292,6 +292,9 @@ Titre de l'écran Wanderer
 MSG_ADVANCED
 Réglages avancés
 ; Advanced
-;
-; ***NEW***
-;
+MSG_USE
+_Utiliser
+; Cancel
+MSG_CANCEL
+A_nnuler
+; Use

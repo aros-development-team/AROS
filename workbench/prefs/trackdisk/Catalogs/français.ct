@@ -10,13 +10,13 @@ MSG_TITLE
 Préférences Disquettes
 ;
 MSG_SAVE
-Sauver
+_Sauver
 ;
 MSG_USE
-Utiliser
+_Utiliser
 ;
 MSG_CANCEL
-Annuler
+A_nnuler
 ;
 MSG_DESCRIPTION
 Éditeur des préférences des disquettes
