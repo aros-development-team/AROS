@@ -139,18 +139,22 @@ char *join_string(int argc, char **argv)
     int x = 0;
 
     for (j = 0; j < argc; j++)
-	x += (strlen(argv[j]) + 1);
+    {
+        x += (strlen(argv[j]) + 1);
+    }
     D(printf("[Init] Allocating %lu bytes for string\n", x));
     str = malloc(x);
-    if (str) {
-	s = str;
-	for (j = 0; j < argc; j++) {
-	    strcpy(s, argv[j]);
-	    s += strlen(s);
-	    *s++ = ' ';
-	}
-	s[-1] = 0;
-	D(printf("[Init] Joined line: %s\n", str));
+    if (str)
+    {
+        s = str;
+        for (j = 0; j < argc; j++)
+        {
+            strcpy(s, argv[j]);
+            s += strlen(s);
+            *s++ = ' ';
+        }
+        s[-1] = 0;
+        D(printf("[Init] Joined line: %s\n", str));
     }
     return str;
 }
@@ -158,7 +162,7 @@ char *join_string(int argc, char **argv)
 extern char _start, _end;
 char bootstrapdir[PATH_MAX];
 char *BootLoader_Name = "FreeBSD";
-char *Kernel_Args = NULL;
+char *Kernel_Args = "";
 char **Kernel_ArgV;
 
 /*
@@ -174,58 +178,62 @@ int main(int argc, char **argv)
     struct ExecBase *SysBase;
     struct termios t;
     int psize = 0;
-    int i = 0, x;
+    int i = 1;
+    int x;
     BOOL mapSysBase = FALSE;
     struct stat st;
 
     getcwd(bootstrapdir, PATH_MAX);
-
     while (i < argc)
     {
-      if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
-      {
-        printf("AROS for FreeBSD\n");
-        printf("usage: %s [options] [kernel arguments]\n",argv[0]);
-	printf("Availible options:\n");
-        printf(" -h                 show this page\n");
-        printf(" -m <size>          allocate <size> Megabytes of memory for AROS\n");
-        printf(" -M                 allows programs to read SysBase from Address $4; SysBase is");
-        printf("                     found there in big endian format\n");
-        printf(" --help             same as '-h'\n");
-        printf(" --memsize <size>   same as '-m <size>'\n");
-        printf(" --mapsysbase       same as '-M'\n");
-        printf("\nPlease report bugs to the AROS development team. http://www.aros.org\n");
-        return 0;
-      }
-      else
-      if (!strcmp(argv[i], "--memsize") || !strcmp(argv[i], "-m"))
-      {
-        i++;
-        x = 0;
-        memSize = 0;
-        while ((argv[i])[x] >= '0' && (argv[i])[x] <= '9')
+        if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
         {
-          memSize = memSize * 10 + (argv[i])[x] - '0';
-          x++;
+            printf("AROS for FreeBSD\n");
+            printf("usage: %s [options] [kernel arguments]\n",argv[0]);
+            printf("Available options:\n");
+            printf(" -h                 show this page\n");
+            printf(" -m <size>          allocate <size> Megabytes of memory for AROS\n");
+            printf(" -M                 allows programs to read SysBase from Address $4; SysBase is");
+            printf("                    found there in big endian format\n");
+            printf(" --help             same as '-h'\n");
+            printf(" --memsize <size>   same as '-m <size>'\n");
+            printf(" --mapsysbase       same as '-M'\n");
+            printf("\nPlease report bugs to the AROS development team. http://www.aros.org\n");
+            return 0;
         }
-        i++;
-      }
-      else
-      if (!strcmp(argv[i], "--mapsysbase") || !strcmp(argv[i], "-M"))
-      {
-        mapSysBase = TRUE;
-        i++;
-      }
-      else
-        break;
+        else if (!strcmp(argv[i], "--memsize") || !strcmp(argv[i], "-m"))
+        {
+            i++;
+            x = 0;
+            memSize = 0;
+            while ((argv[i])[x] >= '0' && (argv[i])[x] <= '9')
+            {
+                memSize = memSize * 10 + (argv[i])[x] - '0';
+                x++;
+            }
+            i++;
+        }
+        else if (!strcmp(argv[i], "--mapsysbase") || !strcmp(argv[i], "-M"))
+        {
+            mapSysBase = TRUE;
+            i++;
+        }
+        else
+        {
+            break;
+        }
     }
 
     if (i < argc)
-	Kernel_Args = join_string(argc - i, &argv[i]);
+    {
+        Kernel_Args = join_string(argc - i, &argv[i]);
+    }
     Kernel_ArgV = argv;
 
     if (!stat("../AROS.boot", &st))
+    {
         chdir("..");
+    }
     /*
     First up, set up the memory.
 
