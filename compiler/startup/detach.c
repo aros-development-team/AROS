@@ -57,17 +57,19 @@ static void __startup_detach(void)
     BPTR                         mysegment = NULL;
     STRPTR                       detached_name;
 
-    D(bug("Entering __startup_detach(\"%s\", %d, %x)\n", argstr, argsize, SysBase));
+    D(bug("Entering __startup_detach()\n"));
 
     cli = Cli();
     /* Without a CLI detaching makes no sense, just jump to
        the real program.  */
     if (!cli)
     {
+		D(bug("Wasn't started from cli.\n"));
         __startup_entries_next();
     }  
     else
     {
+		D(bug("Was started from cli.\n"));
         mysegment = cli->cli_Module;
         cli->cli_Module = NULL;
 
@@ -90,6 +92,7 @@ static void __startup_detach(void)
             newproc = CreateNewProc(tags);
         }
 
+		D(bug("Process \"%s\" = 0x%x.\n", detached_name, newproc));
         if (!newproc)
         {
             cli->cli_Module = mysegment;
@@ -98,6 +101,7 @@ static void __startup_detach(void)
         else
             while (!__detacher_go_away) Wait(SIGF_SINGLE);
 
+		D(bug("__detached_return_value = %d.\n", __detached_return_value));
         if (__detached_return_value != RETURN_OK)
         {
             PutStr(FindTask(NULL)->tc_Node.ln_Name); PutStr(": Failed to detach.\n");
@@ -126,9 +130,9 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 {
     AROS_USERFUNC_INIT
     
-    LONG retval;
+    LONG retval = RETURN_OK;
       
-    D(bug("Entering __detach_trampoline(\"%s\", %d, %x)\n", argstr, argsize, SysBase));
+    D(bug("Entering __detach_trampoline()\n"));
 
     /* The program has two options: either take care of telling the detacher
        process when exactly to go away, via the Detach() function, or let this
@@ -159,15 +163,15 @@ void __Detach(LONG retval)
     if (__detacher_process != NULL)
     {
         __detached_return_value = retval;
-	__detacher_go_away      = TRUE;
+		__detacher_go_away      = TRUE;
 	
-	SetSignal(0, SIGF_SINGLE);
-	/* Tell the detacher process it can now go away */
+		SetSignal(0, SIGF_SINGLE);
+		/* Tell the detacher process it can now go away */
         Signal(&__detacher_process->pr_Task, SIGF_SINGLE);
 	
-	/* Wait for it to say "goodbye" */
-	Wait(SIGF_SINGLE);
-	__detacher_process = NULL;
+		/* Wait for it to say "goodbye" */
+		Wait(SIGF_SINGLE);
+		__detacher_process = NULL;
     }
 
     D(bug("Leaving __Detach\n"));
