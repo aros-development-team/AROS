@@ -189,12 +189,12 @@ int main(int argc, char **argv)
         if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
         {
             printf("AROS for FreeBSD\n");
-            printf("usage: %s [options] [kernel arguments]\n",argv[0]);
+            printf("usage: %s [options] [kernel arguments]\n", argv[0]);
             printf("Available options:\n");
             printf(" -h                 show this page\n");
             printf(" -m <size>          allocate <size> Megabytes of memory for AROS\n");
-            printf(" -M                 allows programs to read SysBase from Address $4; SysBase is");
-            printf("                    found there in big endian format\n");
+            printf(" -M                 allows programs to read SysBase from Address $4\n");
+            printf("                    (SysBase is found there in big endian format)\n");
             printf(" --help             same as '-h'\n");
             printf(" --memsize <size>   same as '-m <size>'\n");
             printf(" --mapsysbase       same as '-M'\n");
