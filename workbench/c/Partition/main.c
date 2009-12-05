@@ -209,7 +209,7 @@ int main(void)
         if (ARG(WORKSIZE) != (IPTR)NULL)
             workSize = *(LONG *)ARG(WORKSIZE);
 
-        D(bug("[C:Partition] Using %s, unit %d\n", device, unit));
+        D(bug("[C:Partition] Using %s, unit %ld\n", device, unit));
     
         if (!ARG(FORCE))
         {
@@ -626,14 +626,14 @@ static struct PartitionHandle *CreateRDBPartition
     partitionDE.de_MaxTransfer    = 0xFFFFFF;
     partitionDE.de_Mask           = 0xFFFFFFFE;
             
-    D(bug("[C:Partition] SizeBlock %d\n", partitionDE.de_SizeBlock ));
-    D(bug("[C:Partition] Surfaces %d\n", partitionDE.de_Surfaces));
-    D(bug("[C:Partition] BlocksPerTrack %d\n", partitionDE.de_BlocksPerTrack));
-    D(bug("[C:Partition] BufMemType %d\n", partitionDE.de_BufMemType));
-    D(bug("[C:Partition] TableSize %d\n", partitionDE.de_TableSize));
-    D(bug("[C:Partition] Reserved %d\n", partitionDE.de_Reserved));
-    D(bug("[C:Partition] HighCyl %d\n", partitionDE.de_HighCyl));
-    D(bug("[C:Partition] LowCyl %d\n", partitionDE.de_LowCyl));
+    D(bug("[C:Partition] SizeBlock %ld\n", partitionDE.de_SizeBlock ));
+    D(bug("[C:Partition] Surfaces %ld\n", partitionDE.de_Surfaces));
+    D(bug("[C:Partition] BlocksPerTrack %ld\n", partitionDE.de_BlocksPerTrack));
+    D(bug("[C:Partition] BufMemType %ld\n", partitionDE.de_BufMemType));
+    D(bug("[C:Partition] TableSize %ld\n", partitionDE.de_TableSize));
+    D(bug("[C:Partition] Reserved %ld\n", partitionDE.de_Reserved));
+    D(bug("[C:Partition] HighCyl %ld\n", partitionDE.de_HighCyl));
+    D(bug("[C:Partition] LowCyl %ld\n", partitionDE.de_LowCyl));
 
     partition = AddPartitionTags
     (
