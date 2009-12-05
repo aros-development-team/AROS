@@ -121,10 +121,10 @@ static const struct PartitionType sfs0 = { "SFS\0", 4 };
 
 
 /*** Prototypes *************************************************************/
-static VOID FindLargestGap(struct PartitionHandle *root, ULONG *gapLowBlock,
-    ULONG *gapHighBlock);
-static VOID CheckGap(struct PartitionHandle *root, ULONG partLimitBlock,
-    ULONG *gapLowBlock, ULONG *gapHighBlock);
+static VOID FindLargestGap(struct PartitionHandle *root, QUAD *gapLowBlock,
+    QUAD *gapHighBlock);
+static VOID CheckGap(struct PartitionHandle *root, QUAD partLimitBlock,
+    QUAD *gapLowBlock, QUAD *gapHighBlock);
 static struct PartitionHandle *CreateMBRPartition(
     struct PartitionHandle *parent, ULONG lowcyl, ULONG highcyl, UBYTE id);
 static struct PartitionHandle *CreateRDBPartition(
@@ -140,10 +140,10 @@ int main(void)
     TEXT choice = 'N';
     CONST_STRPTR device;
     const struct PartitionType *sysType, *workType;
-    LONG error = 0, sysSize = 0, workSize = 0, sysHighCyl, rootLowBlock = 1,
-        rootHighBlock = 0, extLowBlock = 1, extHighBlock = 0, lowBlock,
-        highBlock, lowCyl, highCyl, rootBlocks, extBlocks, reqHighCyl, unit,
-        hasActive = FALSE;
+    LONG error = 0, sysSize = 0, workSize = 0, sysHighCyl, lowCyl, highCyl,
+        reqHighCyl, unit, hasActive = FALSE;
+    QUAD rootLowBlock = 1, rootHighBlock = 0, extLowBlock = 1,
+        extHighBlock = 0, lowBlock, highBlock, rootBlocks, extBlocks;
     UWORD partCount = 0;
 
     /* Read and check arguments */
@@ -447,12 +447,12 @@ int main(void)
 }
 
 /* Find the low and high cylinder values for the largest gap on the disk */
-static VOID FindLargestGap(struct PartitionHandle *root, ULONG *gapLowBlock,
-    ULONG *gapHighBlock)
+static VOID FindLargestGap(struct PartitionHandle *root, QUAD *gapLowBlock,
+    QUAD *gapHighBlock)
 {
     struct PartitionHandle *partition;
     LONG reservedBlocks = 0;
-    ULONG partLimitBlock;
+    QUAD partLimitBlock;
 
     /* Check gap between start of disk and first partition, or until end of
        disk if there are no partitions */
@@ -477,11 +477,11 @@ static VOID FindLargestGap(struct PartitionHandle *root, ULONG *gapLowBlock,
 /* Check if the gap between the end of the current partition and the start of
    the next one is bigger than the biggest gap previously found. If so, it is
    stored as the new biggest gap. */
-static VOID CheckGap(struct PartitionHandle *root, ULONG partLimitBlock,
-    ULONG *gapLowBlock, ULONG *gapHighBlock)
+static VOID CheckGap(struct PartitionHandle *root, QUAD partLimitBlock,
+    QUAD *gapLowBlock, QUAD *gapHighBlock)
 {
     struct PartitionHandle *nextPartition;
-    ULONG lowBlock, nextLowBlock;
+    QUAD lowBlock, nextLowBlock;
 
     /* Search partitions for next partition by disk position */
     nextLowBlock = (root->de.de_HighCyl - root->de.de_LowCyl + 1)
