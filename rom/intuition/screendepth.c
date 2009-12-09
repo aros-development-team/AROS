@@ -64,6 +64,22 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
 
     BUGS
 
+    I am not sure, if it is enough, to just send a SNOTIFY message to one 
+    screen.  I would suggest, the former FirstScreen gets a SDEPTH_TOBACK 
+    message and the new FirstScreen gets a SDEPTH_TOFRONT message.
+    Currently only the screen supplied with ScreenDepth gets a message.
+   
+    But those messages need to be sent in front of the actual
+    screen depth change because of the SNOTIFY_WAIT_REPLY-flag must be
+    able to block the action. But we only know after int_screendepth(), 
+    if there was a change and which change took place. 
+
+    So I leave it, as it is. This way SNOTIFY_WAIT_REPLY should work 
+    at least. Is there something written in the AutoDocs, how this has 
+    to be done (each screen gets a message)?
+
+    (o1i)
+
     SEE ALSO
     ScreenToBack(), ScreenToFront()
 
@@ -75,10 +91,10 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
 
     struct ScreenDepthActionMsg msg;
 
-    FireScreenNotifyMessageCode((IPTR) screen, SNOTIFY_SCREENDEPTH, flags, IntuitionBase);
-
     if (reserved != NULL) return;
     SANITY_CHECK(screen)
+
+    FireScreenNotifyMessageCode((IPTR) screen, SNOTIFY_SCREENDEPTH, flags, IntuitionBase);
 
     msg.screen = screen;
     msg.flags  = flags;
