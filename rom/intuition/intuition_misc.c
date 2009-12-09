@@ -1084,6 +1084,7 @@ void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct Intui
                         msg->snm_Message.mn_Version = SCREENNOTIFY_VERSION;
                         msg->snm_Object = data;                           
                         msg->snm_Class = flag;
+                        msg->snm_Code = code;
                         msg->snm_UserData = sn->userdata;
                         msg->snm_Message.mn_Length = sizeof(struct ScreenNotifyMessage);
                         if (sn->flags & SNOTIFY_WAIT_REPLY)
