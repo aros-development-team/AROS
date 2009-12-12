@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics planar bitmap class implementation.
@@ -223,7 +223,7 @@ ULONG NVPlanBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 
     plane     = (UBYTE**)data->planes;
     offset    = msg->x / 8 + msg->y * data->bytesperrow;
-    pixel     = 1 >> (msg->x % 8); // 128 >> 
+    pixel     = 1 << (msg->x % 8); // 128 >> 
     retval    = 0;
 
     for(i = 0; i < data->depth; i++, plane ++)
