@@ -81,7 +81,7 @@ BOOL CopyInputEvent(struct InputEvent *from, struct InputEvent *to, struct Commo
 	    DEBUG_COPYIEVENT(dprintf("AddIEvents: CopyInputEvent() failed!\n"));
 	}
 	
-	ROUTECxMsg(msg, (CxObj *) &GPB(CxBase)->cx_BrokerList.lh_Head);
+	ROUTECxMsg(msg, (CxObj *) GPB(CxBase)->cx_BrokerList.lh_Head);
 	AddTail(&GPB(CxBase)->cx_MessageList, (struct Node *)msg);
 	
 	events = events->ie_NextEvent;
