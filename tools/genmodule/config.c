@@ -655,10 +655,12 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    case 6: /* date */
 		if (inclass)
 		    exitfileerror(20, "date not valid config option when in a class section\n");
+#ifndef _WIN32
 		if (strptime(s, "%e.%m.%Y", &date) == NULL)
 		{
 		    exitfileerror(20, "date string has to have d.m.yyyy format\n");
 		}
+#endif
 		cfg->datestring = strdup(s);
 		break;
 
