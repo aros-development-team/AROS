@@ -183,9 +183,9 @@ includes-copy : $(AROS_INCLUDES)/math.h
 
 #MM- linklibs-core : linklibs-mlib
 #MM- linklibs : linklibs-mlib
-#MM- linklibs-mlib : linklibs-arosm-$(CPU)
-#MM linklibs-arosm-hasfpu : arosm-setup-link includes
-#MM linklibs-arosm-nofpu : arosm-setup-link includes
+#MM- linklibs-mlib : linklibs-arosm-$(CPU) arosm-setup-link
+#MM linklibs-arosm-hasfpu : includes
+#MM linklibs-arosm-nofpu : includes
 
 # Define lint to get rid of the warnings about rcsid[]
 
@@ -200,6 +200,6 @@ USER_CFLAGS     := -D_IEEE_LIBM -Dlint '-D__FBSDID(x)=' \
 #MM
 arosm-setup-link :
 	@$(RM) $(AROS_LIB)/libm.a
-	@ln -s $(if $(filter aros, $(AROS_HOST_ARCH)),$(AROS_LIB)/libarosm.a,libarosm.a) $(AROS_LIB)/libm.a
+	@cd $(AROS_LIB); ln -s $(if $(filter aros, $(AROS_HOST_ARCH)),$(AROS_LIB)/libarosm.a,libarosm.a) libm.a
 
 %common
