@@ -11,8 +11,8 @@
 #ifdef _WIN32
 
 /* We can't just #include <winsock2.h> because many definitions will conflict */
-unsigned long __attribute__((dllimport)) __attribute__((stdcall)) htonl(unsigned long);
-unsigned long __attribute__((dllimport)) __attribute__((stdcall)) ntohl(unsigned long);
+__declspec(dllimport) __stdcall unsigned long htonl(unsigned long);
+__declspec(dllimport) __stdcall unsigned long ntohl(unsigned long);
 
 #else
 #include <arpa/inet.h>
