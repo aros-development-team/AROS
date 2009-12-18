@@ -6,6 +6,10 @@ DEBUG_OPTS := -g -DDEBUG=0
 
 FILES := copytoafs
 
+ifeq ($(AROS_HOST_ARCH),mingw32)
+LIBS := -lws2_32
+endif
+
 AFSSRCDIR := $(SRCDIR)/rom/devs/filesys/afs
 ifneq ($(HOSTGENDIR),)
 OBJDIR := $(HOSTGENDIR)/tools/host_copytoafs
@@ -28,7 +32,7 @@ all: depend $(OBJDIR) $(COPYTOAFS)
 
 $(COPYTOAFS): $(OBJS)
 	@$(ECHO) "Linking $@..."
-	@$(HOST_CC) $(OBJS) $(AFSLIB) -o $@
+	$(HOST_CC) $(OBJS) $(AFSLIB) -o $@ $(LIBS)
 
 $(OBJDIR)/config.h: $(OBJDIR) myconf.aros
 	@./myconf.aros $(TOP) >> $@
