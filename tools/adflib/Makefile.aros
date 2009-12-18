@@ -16,7 +16,7 @@ OBJS   := $(patsubst %, $(OBJDIR)/%.o, $(SRCS))
 DEPS   := $(patsubst %, $(OBJDIR)/%.d, $(SRCS))
 
 NATIV_DIR   := Generic
-HOST_CFLAGS := $(HOST_CFLAGS) -Wall -I. -O2 -I${NATIV_DIR} -I$(OBJDIR)
+HOST_CFLAGS := $(HOST_CFLAGS) -Wall -I. -IAROS -O2 -I${NATIV_DIR} -I$(OBJDIR)
 
 ifeq ($(SILENT),yes)
     ECHO := true
@@ -24,21 +24,16 @@ endif
 
 all : depend $(OBJDIR) $(ADFLIB)
 
-# to define LITT_ENDIAN on little endian machines (intel)
-# checks for sizeof(long)=4, sizeof(short)=2, sizeof(int)=4
-$(OBJDIR)/defendian.h: myconf.aros
-	@./myconf.aros >> $@
-
 $(ADFLIB) : $(OBJS) $(OBJDIR)/adf_nativ.o
 	@$(ECHO) "Creating adflib/$(notdir $@)..."
 	@$(HOST_AR) $@ $?
 	@$(HOST_RANLIB) $@
 
-$(OBJDIR)/%.o : %.c $(OBJDIR) $(OBJDIR)/defendian.h 
+$(OBJDIR)/%.o : %.c $(OBJDIR) AROS/defendian.h 
 	@$(ECHO) "Compiling $(notdir $@)..."
 	@$(HOST_CC) $(HOST_CFLAGS) -o $@ -c $<
 
-$(OBJDIR)/%.d : %.c $(OBJDIR) $(OBJDIR)/defendian.h
+$(OBJDIR)/%.d : %.c $(OBJDIR) AROS/defendian.h
 	@$(ECHO) "Finding dependencies for $<..."
 	@$(HOST_CC) $(HOST_CFLAGS) -M $< > $@
 
