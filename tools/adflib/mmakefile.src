@@ -29,6 +29,9 @@ endif
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(AROS_INCLUDES)/adf -I$(SRCDIR)/$(CURDIR)/Generic
 
+# without this make 3.81 on MinGW failed to pick up Generic/adf_nativ.c in pattern rule - sonic
+%rule_compile basename=Generic/adf_nativ targetdir=$(OBJDIR)
+
 %build_linklib mmake=linklibs-adf libname=adf files=$(FILES)
 
 
