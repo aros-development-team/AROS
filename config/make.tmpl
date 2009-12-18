@@ -1866,8 +1866,10 @@ endif
 
 %define copy_files_q files=$(FILES) src=. dst=/A maketarget=files-copy
 
+%(maketarget)_SRC := $(shell echo %(src) | sed 's/^\(.\):\//\/\1\//')
+
 %(maketarget) : setup 
-	$(foreach file, %(files), $(shell $(CP) $(addprefix $(if $(filter /%,%(src)),%(src),$(SRCDIR)/$(CURDIR)/%(src))/, $(file)) $(addprefix %(dst)/, $(file))))
+	$(foreach file, %(files), $(shell $(CP) $(addprefix $(if $(filter /%,$(%(maketarget)_SRC)),$(%(maketarget)_SRC),$(SRCDIR)/$(CURDIR)/$(%(maketarget)_SRC))/, $(file)) $(addprefix %(dst)/, $(file))))
 
 setup ::
 	%mkdirs_q %(dst)
@@ -1883,7 +1885,8 @@ setup ::
 
 %define copy_dir_recursive mmake=/A src=. dst=/A
 
-%(mmake)_FILES := $(shell cd $(if $(filter /%,%(src)),%(src),$(SRCDIR)/$(CURDIR)/%(src)); find . -path '*/CVS' -prune -o -path '*/.svn' -prune -o -name .cvsignore -prune -o -name mmakefile -prune -o -name mmakefile.src -prune -o -type f -print)
+%(mmake)_SRC   := $(shell echo %(src) | sed 's/^\(.\):\//\/\1\//')
+%(mmake)_FILES := $(shell cd $(if $(filter /%,$(%(mmake)_SRC)),$(%(mmake)_SRC),$(SRCDIR)/$(CURDIR)/$(%(mmake)_SRC)); find . -path '*/CVS' -prune -o -path '*/.svn' -prune -o -name .cvsignore -prune -o -name mmakefile -prune -o -name mmakefile.src -prune -o -type f -print)
 %(mmake)_DIRS  := $(sort $(dir $(%(mmake)_FILES)))
 
 define %(mmake)_mkdir
@@ -1911,7 +1914,7 @@ endef
 	    $(ECHO) "\$$(DST)/$$f: \$$(SRC)/$$f | \$$(dir \$$(DST)/$$f); $(CP) \$$< \$$@" >> $$m; \
 	done;  \
 	for dst in %(dst); do \
-	    $(MAKE) -f $$m DST=$$dst SRC=$(if $(filter /%,%(src)),%(src),$(SRCDIR)/$(CURDIR)/%(src)) all; \
+	    $(MAKE) -f $$m DST=$$dst SRC=$(if $(filter /%,$(%(mmake)_SRC)),$(%(mmake)_SRC),$(SRCDIR)/$(CURDIR)/$(%(mmake)_SRC)) all; \
 	done
 
 $(GENDIR)/$(CURDIR):
