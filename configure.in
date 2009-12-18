@@ -1901,9 +1901,6 @@ AC_CONFIG_COMMANDS([genmf_executable],
     [chmod a+x ${aros_tools_dir}/genmf.py],
     [aros_tools_dir=${aros_tools_dir}]
 )
-AC_CONFIG_COMMANDS([adflib_myaros.conf_executable],
-    [chmod a+x tools/adflib/myconf.aros]
-)
 
 AC_CONFIG_FILES(
     Makefile
@@ -1919,7 +1916,6 @@ AC_CONFIG_FILES(
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in
     ${aros_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in
     ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
-    tools/adflib/myconf.aros
     tools/collect-aros/env.h
 )
 
