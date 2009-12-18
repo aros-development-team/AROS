@@ -9,7 +9,11 @@
 #include <stdio.h>
 #include <stdint.h>
 #ifdef _WIN32
-#include "winsock2.h"
+
+/* We can't just #include <winsock2.h> because many definitions will conflict */
+unsigned long __attribute__((dllimport)) __attribute__((stdcall)) htonl(unsigned long);
+unsigned long __attribute__((dllimport)) __attribute__((stdcall)) ntohl(unsigned long);
+
 #else
 #include <arpa/inet.h>
 #endif
