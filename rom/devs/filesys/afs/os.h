@@ -8,12 +8,8 @@
 
 #ifdef __AROS__
 #include "os_aros_support.h"
-#elif defined(_WIN32)
-#include "os_windows_support.h"
-#elif defined(unix) || defined(__MACH__)
-#include "os_unix_support.h"
 #else
-#error "Operating System not supported"
+#include "os_unix_support.h"
 #endif
 
 struct BlockCache;
