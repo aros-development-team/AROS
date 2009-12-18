@@ -32,6 +32,6 @@ $(AROS_LIB)/libz.a : arosz-setup-link
 #MM
 arosz-setup-link :
 	@$(RM) $(AROS_LIB)/libz.a
-	@ln -s $(if $(filter aros, $(AROS_HOST_ARCH)),$(AROS_LIB)/libarosz.a,libarosz.a) $(AROS_LIB)/libz.a
+	@cd $(AROS_LIB); ln -s $(if $(filter aros, $(AROS_HOST_ARCH)),$(AROS_LIB)/libarosz.a,libarosz.a) libz.a
     
 %common
