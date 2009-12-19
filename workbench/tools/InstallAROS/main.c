@@ -2218,7 +2218,7 @@ static LONG FindWindowsPartition(STRPTR device, LONG unit)
 					TAG_DONE
 				);
 				id = type.id[0];
-				if (active && (id == 0x7 || id == 0xb))
+				if (active && (id == 0x7 || id == 0xb || id == 0xc))
 					partition_no = i;
 				i++;
 			}
@@ -2986,7 +2986,7 @@ int main(int argc,char *argv[])
 
 	Object *app = ApplicationObject,
 		MUIA_Application_Title,       (IPTR) "AROS Installer",
-		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.5 (28.9.2009)",
+		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.6 (19.12.2009)",
 		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2009, The AROS Development Team. All rights reserved.",
 		MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
 		MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
