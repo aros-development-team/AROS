@@ -1,0 +1,125 @@
+;
+;	$VER: Security.cd 1.0 (30.09.2007)
+;
+; Translated by Damir Sijakovic
+;
+; misc. strings
+;
+MSG_OK
+U Redu
+;OK
+;
+MSG_RESUME
+Nastaviti
+;Resume
+;
+MSG_WARNING_GUI
+Sigurnosno Upozorenje
+;Security Warning
+;
+MSG_LOGINREQ_GUI
+Sigurnosna Prijava
+;Security Login Request
+;
+MSG_LOGINPROMPT_GUI
+\33cDobrodošli u AROS Research OS\nAROS Verzija: %s\n\nMolimo vas unesite korisnièke detalje %s.
+;\33cWelcome to the AROS Research OS\nAROS Version: %s\n\nPlease fill in your user details\nto log onto %s.
+;
+MSG_LOGINREQ_CON
+\033[0;0H\033[J\n\n\n     AROS %s em %s\n
+;
+MSG_LOGINPROMPT_CON
+\n\nPrijava..:
+;\n\nLogin    :
+;
+MSG_PASSWDPROMPT_GUI
+Unesite vašu Zaporku
+;Enter your Password
+;
+MSG_PASSWDPROMPT_CON
+;Zaporka :
+Password :
+;
+MSG_LOGINFAIL_GUI
+Neispravna Prijava
+;Login Incorrect
+;
+MSG_LOGINFAIL_CON
+\n    Neispravna Prijava!\n
+;\n    Login Incorrect !!\n
+;
+MSG_LASTLOGIN
+Prijavljen %s, %s en %s.\n\nZadnja prijava %s, %s u %s.
+;Logged in on %s, %s at %s.\n\nLast login on %s, %s at %s.
+;
+MSG_FIRSTLOGIN
+Prijavljen %s, %s en %s.\n\nKorisnik nije prijavljen ranije.
+;Logged in on %s, %s at %s.\n\nNever logged in before.
+;
+; warning strings
+;
+MSG_NOMUFS
+Morate imati barem jednu particiju u AFFS formatu
+;You must have at least one partition with the AFFS FileSystem
+;
+MSG_NOCONFIGFILE
+;Konfiguracijsku datoteku nije moguæe uèitati\nSustav koristi zadanu konfiguraciju
+Couldn't load the configuration file\nUsing the default configuration
+;
+MSG_BADKEYFILE
+;Sigurnost je narušena: Pronaðen neispravan ili neusklaðen kljuè(evi)
+Security violation: Bad or inconsistent keyfile(s) found
+;
+MSG_BADENTRY_PASSWD
+;Neispravan unos pronaðen na liniji %ld datoteke zaporke\nOva linija æe biti ignorirana 
+Bad entry found on line %ld of the password file\nThis line will be ignored
+;
+MSG_BADENTRY_GROUP
+;Neispravan unos pronaðen na liniji %ld datoteke grupe\nOva linija æe biti ignorirana 
+Bad entry found on line %ld of the group file\nThis line will be ignored
+;
+MSG_BADVALUE_CONFIG
+;Neispravan vrijednost pronaðena na liniji %ld konfiguracijske datoteke\nOva vrijednost æe biti ignorirana 
+Bad value(s) found on line %ld of the configuration file\n\
+This value will be ignored
+;
+MSG_BADOPTION_CONFIG
+;Neispravan opcija pronaðena na liniji %ld konfiguracijske datoteke\nOva vrijednost æe biti ignorirana 
+Bad option found on line %ld of the configuration file\nThis line will be ignored
+;
+MSG_TOOMANYSECGROUPS
+Korisnik sa uid %ld ima previše sporednih grupa\n\
+Linija %ld datoteke grupe æe biti zanemarena
+;Too many secondary groups for user with uid %ld\n\
+;Line %ld of the group file will be ignored
+;
+; logfile strings
+;
+MSG_LOG_STARTUP
+Podizanje 
+;Startup
+;
+MSG_LOG_LOGIN
+Prijava od %ld do \'%s\'
+;Login from %ld to \'%s\'
+;
+MSG_LOG_LOGINFAIL
+Prijava od %ld do \'%s\' neuspjela
+;Login from %ld to \'%s\' failed
+;
+MSG_LOG_PASSWD
+Zaporka za %ld
+;Passwd for %ld
+;
+MSG_LOG_PASSWDFAIL
+Zaporka za %ld neuspjela
+;Passwd for %ld failed
+;
+MSG_LOG_CHECKPASSWD
+Provjera zaporke za %ld
+;CheckPasswd for %ld
+;
+MSG_LOG_CHECKPASSWDFAIL
+Provjera zaporke za %ld neuspjela
+;CheckPasswd for %ld failed
+;
