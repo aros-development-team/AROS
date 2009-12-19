@@ -18,7 +18,7 @@
 		
     TEMPLATE
 
-	DIR/M,P=PAT/K,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S
+	DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S
 
     LOCATION
 
@@ -124,7 +124,7 @@
 #include <stdlib.h>
 #include <memory.h>
 
-const TEXT version[] = "$VER: List 41.5 (3.12.2000)\n";
+const TEXT version[] = "$VER: List 41.6 (19.12.2009\n";
 
 #define ARG_TEMPLATE "DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S"
 
@@ -602,6 +602,7 @@ void printSummary(int files, int dirs, int nBlocks, BOOL noHead, BOOL PrintEmpty
 	
 	Printf("%ld bytes used\n", nBlocks * BLOCKSIZE);
     }
+    PutStr("\n");
 }
 
 
@@ -779,7 +780,6 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
 	if (dirnode != NULL)
 	{
 	    filename = dirnode->dirname;
-	    puts("");
 	    
 	    prev_dirnode = NULL;
 	    
