@@ -124,7 +124,7 @@
 #include <stdlib.h>
 #include <memory.h>
 
-const TEXT version[] = "$VER: List 41.6 (19.12.2009\n";
+const TEXT version[] = "$VER: List 41.6 (19.12.2009)\n";
 
 #define ARG_TEMPLATE "DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S"
 
