@@ -45,7 +45,8 @@ int main(void)
             End),
         End;
 
-        if (application != NULL) {
+        if (application != NULL)
+        {
             SET(window, MUIA_Window_Open, TRUE);
             DoMethod(application, MUIM_Application_Execute);
             SET(window, MUIA_Window_Open, FALSE);

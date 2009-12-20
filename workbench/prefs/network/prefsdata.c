@@ -31,7 +31,8 @@ void OpenTokenFile(struct Tokenizer * tok, STRPTR FileName)
     tok->newline = TRUE;
     if (!tok->tokenizedFile)
         tok->fend = TRUE;
-    else{
+    else
+    {
         tok->tokenizerLine = malloc(8192);
         tok->fend = FALSE;
         tok->newline = TRUE;
@@ -40,7 +41,8 @@ void OpenTokenFile(struct Tokenizer * tok, STRPTR FileName)
 
 void CloseTokenFile(struct Tokenizer * tok)
 {
-    if (tok->tokenizedFile) {
+    if (tok->tokenizedFile)
+    {
         fclose(tok->tokenizedFile);
         free(tok->tokenizerLine);
         tok->fend = TRUE;
@@ -51,21 +53,28 @@ void CloseTokenFile(struct Tokenizer * tok)
 void GetNextToken(struct Tokenizer * tok, STRPTR tk)
 {
     tok->newline = FALSE;
-    if (tok->token != NULL) {
+    if (tok->token != NULL)
+    {
         tok->token = strtok(NULL, tk);
         if (!tok->token)
             GetNextToken(tok, tk);
-    }else {
+    }
+    else
+    {
         tok->newline = TRUE;
-        if (!feof(tok->tokenizedFile)) {
+        if (!feof(tok->tokenizedFile))
+        {
             tok->tokenizerLine[0] = 0;
             fgets(tok->tokenizerLine, 8192, tok->tokenizedFile);
-            if (tok->tokenizerLine == NULL) {
+            if (tok->tokenizerLine == NULL)
+            {
                 tok->token = NULL;
                 GetNextToken(tok, tk);
-            }else
+            }
+            else
                 tok->token = strtok(tok->tokenizerLine, tk);
-        }else
+        }
+        else
             tok->fend = TRUE;
     }
 }
@@ -259,9 +268,9 @@ BOOL CopyFile(CONST_STRPTR srcfile, CONST_STRPTR dstfile)
     BPTR from = NULL, to = NULL;
     TEXT buffer[BUFSIZE];
 
-    if((from = Open(srcfile, MODE_OLDFILE)))
+    if ((from = Open(srcfile, MODE_OLDFILE)))
     {
-        if((to = Open(dstfile, MODE_NEWFILE)))
+        if ((to = Open(dstfile, MODE_NEWFILE)))
         {
             LONG	s=0;
 
@@ -363,7 +372,7 @@ BOOL RestartStack()
     
     /* Check if startup successful */
     trycount = 0;
-    while(!IsStackRunning())
+    while (!IsStackRunning())
     {
         if (trycount > 9) return FALSE;
         Delay(50);
@@ -449,10 +458,14 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
 
     CombinePath3P(filename, filenamelen, directory, "db", "general.config"); 
     OpenTokenFile(&tok, filename);
-    while (!tok.fend) {
-        if (tok.newline) { // read tokens from the beginning of line
-            if (tok.token) {
-                if (strcmp(tok.token, "HOSTNAME") == 0) {
+    while (!tok.fend)
+    {
+        if (tok.newline)
+        { // read tokens from the beginning of line
+            if (tok.token)
+            {
+                if (strcmp(tok.token, "HOSTNAME") == 0)
+                {
                     GetNextToken(&tok, "=\n");
                     tstring = strchr(tok.token, '.');
                     SetDomain(tstring + 1);
@@ -468,18 +481,23 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
     CombinePath3P(filename, filenamelen, directory, "db", "interfaces"); 
     OpenTokenFile(&tok, filename);
     /* Reads only first uncommented interface */
-    while (!tok.fend) {
+    while (!tok.fend)
+    {
         GetNextToken(&tok, " \n");
-        if (tok.token) {
+        if (tok.token)
+        {
             if (tok.newline) comment = FALSE;
             if (strncmp(tok.token, "#", 1) == 0) comment = TRUE;
 
-            if (!comment) {
-                if (strncmp(tok.token, "DEV=", 4) == 0) {
+            if (!comment)
+            {
+                if (strncmp(tok.token, "DEV=", 4) == 0)
+                {
                     tstring = strchr(tok.token, '=');
                     SetDevice(tstring + 1);
                 }
-                if (strncmp(tok.token, "IP=", 3) == 0) {
+                if (strncmp(tok.token, "IP=", 3) == 0)
+                {
                     tstring = strchr(tok.token, '=');
                     if (strncmp(tstring + 1, "DHCP", 4) == 0)
                     {
@@ -492,7 +510,8 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
                         SetDHCP(FALSE);
                     }
                 }
-                if (strncmp(tok.token, "NETMASK=", 8) == 0) {
+                if (strncmp(tok.token, "NETMASK=", 8) == 0)
+                {
                     tstring = strchr(tok.token, '=');
                     SetMask(tstring + 1);
                 }
@@ -504,10 +523,13 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
     CombinePath3P(filename, filenamelen, directory, "db", "netdb-myhost"); 
     OpenTokenFile(&tok, filename);
     int dnsc = 0;
-    while (!tok.fend) {
+    while (!tok.fend)
+    {
         GetNextToken(&tok, " \n");
-        if (tok.token) {
-            if (strncmp(tok.token, "NAMESERVER", 4) == 0) {
+        if (tok.token)
+        {
+            if (strncmp(tok.token, "NAMESERVER", 4) == 0)
+            {
                 GetNextToken(&tok, " \n");
                 SetDNS(dnsc, tok.token);
                 dnsc++;
@@ -519,12 +541,16 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
 
     CombinePath3P(filename, filenamelen, directory, "db", "static-routes"); 
     OpenTokenFile(&tok, filename);
-    while (!tok.fend) {
+    while (!tok.fend)
+    {
         GetNextToken(&tok, " \n");
-        if (tok.token) {
-            if (strncmp(tok.token, "DEFAULT", 4) == 0) {
+        if (tok.token)
+        {
+            if (strncmp(tok.token, "DEFAULT", 4) == 0)
+            {
                 GetNextToken(&tok, " \n");
-                if (strncmp(tok.token, "GATEWAY", 4) == 0) {
+                if (strncmp(tok.token, "GATEWAY", 4) == 0) 
+                {
                     GetNextToken(&tok, " \n");
                     SetGate(tok.token);
                 }
