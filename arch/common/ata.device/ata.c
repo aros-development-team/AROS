@@ -786,7 +786,7 @@ int ata_InitDaemonTask(LIBBASETYPEPTR LIBBASE)
         UBYTE *sp = AllocMem(STACK_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
         t->tc_SPLower = sp;
         t->tc_SPUpper = sp + STACK_SIZE;
-        t->tc_SPReg   = (UBYTE*)t->tc_SPUpper - SP_OFFSET - sizeof(APTR);
+        t->tc_SPReg   = (UBYTE*)t->tc_SPUpper - SP_OFFSET;
 
         ml->ml_NumEntries = 2;
         ml->ml_ME[0].me_Addr = t;
@@ -803,7 +803,7 @@ int ata_InitDaemonTask(LIBBASETYPEPTR LIBBASE)
 
         LIBBASE->ata_Daemon = t;
 
-        NewAddTask(t, DaemonCode, NULL, (struct TagItem*)&tags);
+        NewAddTask(t, DaemonCode, NULL, tags);
     }
 
     return (t != NULL);
@@ -950,11 +950,11 @@ int ata_InitBusTask(struct ata_Bus *bus, struct SignalSemaphore *ready)
 
     if (t && ml)
     {
-        /* Setup stack and put the pointer to the bus as the only parameter */
+        /* Setup stack */
         UBYTE *sp = AllocMem(STACK_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
         t->tc_SPLower = sp;
         t->tc_SPUpper = sp + STACK_SIZE;
-        t->tc_SPReg   = (UBYTE*)t->tc_SPUpper - SP_OFFSET - sizeof(APTR);
+        t->tc_SPReg   = (UBYTE*)t->tc_SPUpper - SP_OFFSET;
 
         /* Message port receiving all the IO requests */
         bus->ab_MsgPort = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC | MEMF_CLEAR);
@@ -982,7 +982,7 @@ int ata_InitBusTask(struct ata_Bus *bus, struct SignalSemaphore *ready)
         t->tc_Node.ln_Pri  = TASK_PRI;
 
         /* Wake up the task */
-        NewAddTask(t, TaskCode, NULL, (struct TagItem*)&tags);
+        NewAddTask(t, TaskCode, NULL, tags);
         Wait(SIGBREAKF_CTRL_C);
     }
 
