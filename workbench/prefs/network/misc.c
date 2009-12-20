@@ -8,5 +8,5 @@
 
 void ShowError(CONST_STRPTR message)
 {
-	Printf("ERROR: %s\n", message);
+    Printf("ERROR: %s\n", message);
 }

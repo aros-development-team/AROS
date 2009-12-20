@@ -16,17 +16,17 @@ STATIC struct RDArgs *rdargs;
 /*** Functions **************************************************************/
 BOOL ReadArguments(VOID)
 {
-	rdargs = ReadArgs(TEMPLATE, args, NULL);
-	return rdargs != NULL;
+    rdargs = ReadArgs(TEMPLATE, args, NULL);
+    return rdargs != NULL;
 }
 
 VOID FreeArguments(VOID)
 {
-	FreeArgs(rdargs);
+    FreeArgs(rdargs);
 }
 
 IPTR GetArgument(enum Argument id)
 {
-	if (id >= 0 && id < COUNT) return args[id];
-	else return 0;
+    if (id >= 0 && id < COUNT) return args[id];
+    else return 0;
 }

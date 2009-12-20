@@ -19,9 +19,9 @@
 
 int main(void)
 {
-	Object *application,  *window;
+    Object *application,  *window;
 
-	Locale_Initialize();
+    Locale_Initialize();
 
     ReadArguments();
 
@@ -58,5 +58,5 @@ int main(void)
 
     Locale_Deinitialize();
 
-	return 0;
+    return 0;
 }
