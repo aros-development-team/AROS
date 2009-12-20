@@ -92,6 +92,9 @@ const struct __text Resident Exec_resident =
         exec_main               /* Library initializer (for exec this value is irrelevant since we've jumped there at the begining to bring the system up */
 };
 
+extern UBYTE core_APICGetTotal();
+extern UBYTE core_APICGetNumber();
+
 /** Screen/Serial Debug **/
 
 
