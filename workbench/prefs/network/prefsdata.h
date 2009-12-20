@@ -9,6 +9,12 @@
 #define PREFS_PATH_ENVARC           "ENVARC:AROSTCP"
 #define AROSTCP_PACKAGE_VARIABLE    "SYS/Packages/AROSTCP"
 
+#define IPBUFLEN 64
+#define NAMEBUFLEN 512
+
+#define IPCHARS "0123456789."
+#define NAMECHARS "0123456789abcdefghijklmnopqrstuvwxyz-"
+
 enum ErrorCode
 {
     ALL_OK,
@@ -22,14 +28,14 @@ enum ErrorCode
 
 struct TCPPrefs
 {
-    TEXT IP[64];
-    TEXT mask[64];
-    TEXT gate[64];
-    TEXT DNS[2][64];
+    TEXT IP[IPBUFLEN];
+    TEXT mask[IPBUFLEN];
+    TEXT gate[IPBUFLEN];
+    TEXT DNS[2][IPBUFLEN];
     BOOL DHCP;
-    TEXT device[512];
-    TEXT host[512];
-    TEXT domain[512];
+    TEXT device[NAMEBUFLEN];
+    TEXT host[NAMEBUFLEN];
+    TEXT domain[NAMEBUFLEN];
     BOOL autostart;
 };
 
