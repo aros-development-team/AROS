@@ -10,10 +10,10 @@
 
 /*** Structures *************************************************************/
 enum Argument {
-	FROM,
-	USE,
-	SAVE,
-	COUNT /* Number of arguments */
+    FROM,
+    USE,
+    SAVE,
+    COUNT /* Number of arguments */
 };
 
 /*** Prototypes *************************************************************/
