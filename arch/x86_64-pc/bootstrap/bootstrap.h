@@ -50,9 +50,9 @@ struct module {
     void *address;
 };
 
-void *_binary_aros_o_start;
-void *_binary_vesa_start;
-long _binary_vesa_size;
+//extern void *_binary_aros_o_start;
+extern void *_binary_vesa_start;
+extern unsigned long _binary_vesa_size;
 
 #if defined(__i386__) || defined(__x86_64__)
     #define LONG2BE(v)  ({ unsigned int __v32; asm volatile("bswap %0":"=a"(__v32):"0"((v))); __v32; })
