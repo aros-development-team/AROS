@@ -29,12 +29,14 @@ CONST_STRPTR _(ULONG id)
 /* Setup ********************************************************************/
 VOID Locale_Initialize(VOID)
 {
-    if (LocaleBase != NULL) {
+    if (LocaleBase != NULL)
+    {
         catalog = OpenCatalog
               (
             NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE
               );
-    }else
+    }
+    else
         catalog = NULL;
 }
 

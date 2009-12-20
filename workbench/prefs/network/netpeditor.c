@@ -37,7 +37,8 @@ static CONST_STRPTR NetworkTabs[] = { NULL, NULL, NULL };
 static CONST_STRPTR DHCPCycle[] = { NULL, NULL, NULL };
 
 /*** Instance Data **********************************************************/
-struct NetPEditor_DATA {
+struct NetPEditor_DATA
+{
     Object  *netped_deviceString,
             *netped_IPString,
             *netped_maskString,
@@ -50,7 +51,6 @@ struct NetPEditor_DATA {
 };
 
 BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
-
 {
     STRPTR str = NULL;
     IPTR lng = 0;
@@ -110,13 +110,30 @@ void DisplayErrorMessage(Object * obj, enum ErrorCode errorcode)
 
     switch(errorcode)
     {
-    case(UNKNOWN_ERROR): errormessage = _(MSG_ERR_UNKNOWN_ERROR); break;
-    case(NOT_RESTARTED_STACK): errormessage = _(MSG_ERR_NOT_RESTARTED_STACK); break;
-    case(NOT_SAVED_PREFS_ENV): errormessage = _(MSG_ERR_NOT_SAVED_PREFS); additionaldata = PREFS_PATH_ENV; break;
-    case(NOT_SAVED_PREFS_ENVARC): errormessage = _(MSG_ERR_NOT_SAVED_PREFS); additionaldata = PREFS_PATH_ENVARC; break;
-    case(NOT_COPIED_FILES_ENV): errormessage = _(MSG_ERR_NOT_COPIED_FILES); additionaldata = PREFS_PATH_ENV; break;
-    case(NOT_COPIED_FILES_ENVARC): errormessage = _(MSG_ERR_NOT_COPIED_FILES); additionaldata = PREFS_PATH_ENVARC; break;
-    case(ALL_OK): return;
+        case UNKNOWN_ERROR:
+            errormessage = _(MSG_ERR_UNKNOWN_ERROR);
+            break;
+        case NOT_RESTARTED_STACK:
+            errormessage = _(MSG_ERR_NOT_RESTARTED_STACK);
+            break;
+        case NOT_SAVED_PREFS_ENV:
+            errormessage = _(MSG_ERR_NOT_SAVED_PREFS);
+            additionaldata = PREFS_PATH_ENV;
+            break;
+        case NOT_SAVED_PREFS_ENVARC:
+            errormessage = _(MSG_ERR_NOT_SAVED_PREFS);
+            additionaldata = PREFS_PATH_ENVARC;
+            break;
+        case NOT_COPIED_FILES_ENV:
+            errormessage = _(MSG_ERR_NOT_COPIED_FILES);
+            additionaldata = PREFS_PATH_ENV;
+            break;
+        case NOT_COPIED_FILES_ENVARC:
+            errormessage = _(MSG_ERR_NOT_COPIED_FILES);
+            additionaldata = PREFS_PATH_ENVARC;
+            break;
+        case ALL_OK:
+            return;
     }
 
     MUI_Request(app, wnd, 0, _(MSG_ERROR_TITLE), _(MSG_BUTTON_OK), errormessage, additionaldata);
@@ -147,16 +164,46 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 Child, (IPTR)Label2(__(MSG_DEVICE)),Child, (IPTR)PopaslObject,
                     MUIA_Popasl_Type,              ASL_FileRequest,
                     ASLFO_MaxHeight,               100,
-                    MUIA_Popstring_String,  (IPTR)(deviceString = (Object *)StringObject, TextFrame, MUIA_Background, MUII_TextBack, End),
+                    MUIA_Popstring_String, (IPTR)(deviceString = (Object *)StringObject,
+                        TextFrame,
+                        MUIA_Background, MUII_TextBack,
+                        MUIA_CycleChain, 1,
+                    End),
                     MUIA_Popstring_Button,  (IPTR)PopButton(MUII_PopUp),
                 End,
 
-                Child, (IPTR)Label2(__(MSG_IP_MODE)), Child, (IPTR)(DHCPState = (Object *)CycleObject, MUIA_Cycle_Entries, (IPTR)DHCPCycle, End),
-                Child, (IPTR)Label2(__(MSG_IP)), Child, (IPTR)(IPString = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789.", End),
-                Child, (IPTR)Label2(__(MSG_MASK)),Child, (IPTR)(maskString = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789.", End),
-                Child, (IPTR)Label2(__(MSG_GATE)),Child, (IPTR)(gateString = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789.", End),
-                Child, (IPTR)Label2(__(MSG_DNS1)),Child, (IPTR)(DNSString[0] = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789.", End),
-                Child, (IPTR)Label2(__(MSG_DNS2)),Child, (IPTR)(DNSString[1] = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789.", End),
+                Child, (IPTR)Label2(__(MSG_IP_MODE)),
+                Child, (IPTR)(DHCPState = (Object *)CycleObject, MUIA_Cycle_Entries, (IPTR)DHCPCycle, End),
+                Child, (IPTR)Label2(__(MSG_IP)),
+                Child, (IPTR)(IPString = (Object *)StringObject,
+                    TextFrame,
+                    MUIA_String_Accept, (IPTR)"0123456789.",
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(__(MSG_MASK)),
+                Child, (IPTR)(maskString = (Object *)StringObject,
+                    TextFrame,
+                    MUIA_String_Accept, (IPTR)"0123456789.",
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(__(MSG_GATE)),
+                Child, (IPTR)(gateString = (Object *)StringObject,
+                    TextFrame,
+                    MUIA_String_Accept, (IPTR)"0123456789.",
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(__(MSG_DNS1)),
+                Child, (IPTR)(DNSString[0] = (Object *)StringObject,
+                    TextFrame,
+                    MUIA_String_Accept, (IPTR)"0123456789.",
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(__(MSG_DNS2)),
+                Child, (IPTR)(DNSString[1] = (Object *)StringObject,
+                    TextFrame,
+                    MUIA_String_Accept, (IPTR)"0123456789.",
+                    MUIA_CycleChain, 1,
+                End),
                 Child, (IPTR)Label2(__(MSG_AUTOSTART_STACK)),
                 Child, (IPTR)HGroup,
                     Child, (IPTR)(autostart = MUI_MakeObject(MUIO_Checkmark, NULL)),
@@ -165,8 +212,18 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             End,
 
             Child, (IPTR)ColGroup(2),
-                Child, (IPTR)Label2(__(MSG_HOST_NAME)), Child, (IPTR)(hostString = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789abcdefghijklmnopqrstuvwxyz-", End),
-                Child, (IPTR)Label2(__(MSG_DOMAIN_NAME)), Child, (IPTR)(domainString = (Object *)StringObject, TextFrame, MUIA_String_Accept, (IPTR)"0123456789abcdefghijklmnopqrstuvwxyz-.", End),
+                Child, (IPTR)Label2(__(MSG_HOST_NAME)),
+                Child, (IPTR)(hostString = (Object *)StringObject,
+                    TextFrame,
+                    MUIA_String_Accept, (IPTR)"0123456789abcdefghijklmnopqrstuvwxyz-",
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(__(MSG_DOMAIN_NAME)),
+                Child, (IPTR)(domainString = (Object *)StringObject,
+                    TextFrame,
+                    MUIA_String_Accept, (IPTR)"0123456789abcdefghijklmnopqrstuvwxyz-.",
+                    MUIA_CycleChain, 1,
+                End),
             End,
 
         End, // register
@@ -175,7 +232,8 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     );
 
     
-    if (self != NULL) {
+    if (self != NULL)
+    {
         struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
         data->netped_deviceString  = deviceString;
         data->netped_IPString = IPString;
