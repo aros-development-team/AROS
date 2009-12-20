@@ -199,6 +199,7 @@ static struct _keytable english_keytable[] =
     {XK_Multi_key,	0x63 }, /* right control = control */
     {XK_Super_L,	0x66 },	/* left win = LAMIGA */
     {XK_Super_R,	0x67 },	/* right win = RAMIGA */
+    {XK_Menu,		0x67 }, /* menu key = RAMIGA */
     {XK_Meta_L,		0x64 }, /* left Alt = LALT */
     {XK_Mode_switch,	0x65 }, /* right Alt = RALT */
     
