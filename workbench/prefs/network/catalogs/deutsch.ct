@@ -1,0 +1,100 @@
+## version $VER: networkprefs.catalog 1.0 (20.12.2009)
+## language deutsch
+## codeset 0
+;
+MSG_NAME
+Netzwerkvoreinstellungen
+; Network Preferences
+;
+MSG_DESCRIPTION
+TCP/IP Netzwerkvoreinstellungen
+; TCP/IP Network preferences
+;
+MSG_DEVICE
+Gerät
+; Device
+;
+MSG_IP_MODE
+IP-Modus
+; IP Mode
+;
+MSG_IP
+IP-Adresse
+; IP
+;
+MSG_MASK
+Maske
+; Mask
+;
+MSG_GATE
+Gateway
+; Gate
+;
+MSG_DNS1
+Primärer DNS
+; Primary DNS
+;
+MSG_DNS2
+Sekundärer DNS
+; Secondary DNS
+;
+MSG_HOST_NAME
+Hostname
+; Host Name
+;
+MSG_DOMAIN_NAME
+Domänenname
+; Domain Name
+;
+MSG_IP_MODE_MANUAL
+Manuell
+; Manual
+;
+MSG_IP_MODE_DHCP
+Hole Adresse von DHCP
+; Get address from DHCP
+;
+MSG_TAB_IP_CONFIGURATION
+IP-Konfiguration
+; IP Configuration
+;
+MSG_TAB_COMPUTER_NAME
+Computername
+; Computer Name
+;
+MSG_AUTOSTART_STACK
+Automatischer Start
+; Autostart
+;
+MSG_ERR_UNKNOWN_ERROR
+Unbekannter Fehler
+; Unknown error
+;
+MSG_ERR_NOT_RESTARTED_STACK
+Neustart des Netzwerks fehlgeschlagen
+; Failed to restart network stack
+;
+MSG_BUTTON_OK
+OK
+; Ok
+;
+MSG_ERROR_TITLE
+Fehler
+; Error
+;
+MSG_ERR_NOT_SAVED_PREFS
+Netzwerk-Voreinstellungen konnten\nnicht in %s gespeichert werden
+; Network preferences not saved to %s
+;
+MSG_ERR_NOT_COPIED_FILES
+Zusätzliche Dateien konnten nicht\nnach %s kopiert werden
+; Additional files not copied to %s
+;
+MSG_INFO_TITLE
+Information
+; Information
+;
+MSG_PREFS_SAVED_RESTART
+Voreinstellungen wurden in %s gespeichert.\nStarte AROS neu um sie anzuwenden.
+; Preferences have been saved to %s.\nRestart AROS for them to take effect.
+;
