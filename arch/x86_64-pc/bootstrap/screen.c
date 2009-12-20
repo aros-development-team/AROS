@@ -5,7 +5,7 @@
     Desc: screen support functions ripped from the 32-bit native target.
 */
 
-//#define SCREEN_SERIAL_DEBUG
+//#define BOOTSTRAP_SERIAL_DEBUG
 
 #undef __save_flags
 #undef __restore_flags
@@ -46,6 +46,22 @@ void clr()
     __restore_flags(flags);
 }
 
+#if defined(BOOTSTRAP_SERIAL_DEBUG)
+unsigned char __inb(addr)
+{
+    unsigned char tmp;    
+    asm volatile ("inb %w1,%b0":"=r"(tmp):"Nd"(addr):"memory");
+    return tmp;
+}
+
+static int __serPutC(unsigned char data) 
+{
+    while (!(__inb(0x3F8 + 0x05) & 0x40));
+    asm volatile ("outb %b0,%w1"::"a"(data),"Nd"(0x3F8));
+    return __inb(0x3F8 + 0x05) & (0x02|0x04|0x08|0x10);
+}
+#endif
+
 void Putc(char chr)
 {
     unsigned long flags;
@@ -58,14 +74,10 @@ void Putc(char chr)
     }
     else if (!dead)
     {
-#warning "TODO: Enable screen debug to serial at config time, and note that it doesnt work properly on real hardware since it doesnt initialise the serial port to a given baud_rate"
-#if defined(SCREEN_SERIAL_DEBUG)
-#if AROS_SERIAL_DEBUG == 1
-        asm volatile ("outb %b0,%w1"::"a"(chr),"Nd"(0x3F8));
-#endif
-#if AROS_SERIAL_DEBUG == 2
-        asm volatile ("outb %b0,%w1"::"a"(chr),"Nd"(0x2F8));
-#endif    
+#if defined(BOOTSTRAP_SERIAL_DEBUG)
+        if (chr == 0x0A)
+            __serPutC(0x0D);
+        __serPutC(chr);
 #endif
         if (chr)
         {

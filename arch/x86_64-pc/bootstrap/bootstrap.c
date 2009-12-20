@@ -19,6 +19,8 @@
 #include "support.h"
 #include "vesa.h"
 
+#define PAGE_MASK 0xFFF
+
 /*
     The Multiboot-compliant header has to be within the first 4KB (1KB??) of ELF file, 
     therefore it will be packed into the .aros.startup section. I hope, that turning debug on
@@ -56,7 +58,6 @@ asm("	.text\n\t"
 */
 extern char *_prot_lo, *_prot_hi;
 static unsigned char __stack[65536] __attribute__((used));
-static unsigned char __vesa_buffer[4096];
 static unsigned char __bss_track[32768] __attribute__((used,section(".bss.aros.tables")));
 
 static struct {
@@ -351,18 +352,17 @@ static int find_modules(struct multiboot *mb, const struct module *m)
     return count;
 }
 
-void setupVesa(const char *str)
+void setupVESA(unsigned long vesa_base, char *vesa)
 {
-    char *vesa = __bs_strstr(str, "vesa=");
-    
-    if (vesa)
+    if ((vesa_base) && (vesa))
     {
         long x=0, y=0, d=0;
         long mode;
-        unsigned long vesa_size = (unsigned long)&_binary_vesa_size;
+
         void *vesa_start = &_binary_vesa_start;
+        unsigned long vesa_size = (unsigned long)&_binary_vesa_size;
         vesa+=5;
-     
+
         while (*vesa && *vesa != ',' && *vesa != 'x' && *vesa != ' ')
         {
             x = x*10 + *vesa++ - '0';
@@ -377,13 +377,16 @@ void setupVesa(const char *str)
         {
             d = d*10 + *vesa++ - '0';
         }
-        
-        kprintf("[VESA] module (@ %p) size=%d\n", &_binary_vesa_start, &_binary_vesa_size);
-        __bs_memcpy(__vesa_buffer, (void *)0x1000, sizeof(__vesa_buffer));
-        __bs_memcpy((void *)0x1000, vesa_start, vesa_size);
-        kprintf("[VESA] Module installed\n");
 
-        kprintf("[VESA] BestModeMatch for %dx%dx%d = ",x,y,d);        
+        kprintf("[BOOT] setupVESA: vesa.bin @ %p [size=%d]\n", &_binary_vesa_start, &_binary_vesa_size);
+#warning "TODO: Fix vesa.bin.o to support relocation (ouch)"
+        __bs_memcpy((void *)0x1000, vesa_start, vesa_size);
+        kprintf("[BOOT] setupVESA: Module copied to 0x1000\n");
+
+        __bs_memcpy((void *)vesa_base, vesa_start, vesa_size);
+        kprintf("[BOOT] setupVESA: vesa.bin relocated to trampoline @ %p\n", vesa_base);
+
+        kprintf("[BOOT] setupVESA: BestModeMatch for %dx%dx%d = ",x,y,d);
         mode = findMode(x,y,d);
 
         getModeInfo(mode);
@@ -391,15 +394,15 @@ void setupVesa(const char *str)
         getControllerInfo();
         __bs_memcpy(&VBEControllerInfo, controllerinfo, sizeof(struct vbe_controller));
 
-        if (modeinfo->mode_attributes & 0x80)
+        if (VBEModeInfo.mode_attributes & 0x80)
             mode |= 0x4000;
-        
+
         kprintf("%x\n",mode);
         if (setVbeMode(mode) == 0x004f)
         {
             unsigned char palwidth = 0;
-            
-            if (controllerinfo->capabilities & 0x01)
+
+            if (VBEControllerInfo.capabilities & 0x01)
                 paletteWidth(0x0800, &palwidth);
             else
                 palwidth = 6;
@@ -407,11 +410,11 @@ void setupVesa(const char *str)
             tag->ti_Tag = KRN_VBEModeInfo;
             tag->ti_Data = KERNEL_OFFSET | (unsigned long long)&VBEModeInfo;
             tag++;
-            
+
             tag->ti_Tag = KRN_VBEControllerInfo;
             tag->ti_Data = KERNEL_OFFSET | (unsigned long long)&VBEControllerInfo;
             tag++;
-            
+
             tag->ti_Tag = KRN_VBEMode;
             tag->ti_Data = mode;
             tag++;
@@ -420,9 +423,7 @@ void setupVesa(const char *str)
             tag->ti_Data = palwidth;
             tag++;
         }
-            
-        __bs_memcpy((void *)0x1000, __vesa_buffer, sizeof(__vesa_buffer));
-        kprintf("[VESA] Module uninstalled\n");
+        kprintf("[BOOT] setupVESA: VESA setup complete\n");
     }
 }
 
@@ -438,7 +439,7 @@ void change_kernel_address(const char *str)
         while (*kern && *kern != ' ' )
         {
             a = *kern++;
-            
+
             if (a >= '0' && a <= '9')
                 a -= '0';
             else if (a >= 'a' && a <= 'f')
@@ -449,8 +450,7 @@ void change_kernel_address(const char *str)
             
             addr = (addr << 4) + a;
         }
-        
-        
+
         if (addr >= 0x00200000)
         {
             kprintf("[BOOT] Kernel base address changed to %p\n", addr);
@@ -468,44 +468,39 @@ void change_kernel_address(const char *str)
 void prepare_message(struct multiboot *mb)
 {
     /*km.GRUBData.low = mb; */
-    
+
     tag->ti_Tag = KRN_GDT;
     tag->ti_Data = KERNEL_OFFSET | (unsigned long long)&GDT;
     tag++;
-    
+
     tag->ti_Tag = KRN_PL4;
     tag->ti_Data = KERNEL_OFFSET | (unsigned long long)&PML4;
     tag++;
-    
+
     tag->ti_Tag = KRN_KernelBase;
     tag->ti_Data = KERNEL_OFFSET | (unsigned long long)KernelTarget.off;
     tag++;
-    
+
     tag->ti_Tag = KRN_KernelLowest;
     tag->ti_Data = KERNEL_OFFSET | ((long)kernel_lowest() & ~4095);
     tag++;
-    
+
     tag->ti_Tag = KRN_KernelHighest;
     tag->ti_Data = KERNEL_OFFSET | (((long)kernel_highest() + 4095) & ~4095);
     tag++;
-    
+
     tag->ti_Tag = KRN_KernelBss;
     tag->ti_Data = KERNEL_OFFSET | (unsigned long long)__bss_track;
     tag++;
-    
-    if (VBEModeInfo.mode_attributes)
-    {
-
-    }
 
     tag->ti_Tag = KRN_ProtAreaStart;
     tag->ti_Data = &_prot_lo;
     tag++;
-    
+
     tag->ti_Tag = KRN_ProtAreaEnd;
     tag->ti_Data = &_prot_hi;
     tag++;
-    
+
     tag->ti_Tag = TAG_DONE;
 }
 
@@ -527,28 +522,35 @@ void prepare_message(struct multiboot *mb)
 static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int addr)
 {  
     struct multiboot *mb = (struct multiboot *)addr;/* Multiboot structure from GRUB */
-    int module_count = 0;
     struct module *mod = (struct module *)__stack;  /* The list of modules at the bottom of stack */
+    char *vesa = __bs_strstr(mb->cmdline, "vesa=");
+    int module_count = 0;
+    unsigned long vesa_size = 0;
+    unsigned long vesa_base = 0;
     struct module *m;
 
     clr();
 //    kprintf("[BOOT] Entered AROS Bootstrap @ %p [asm stub @ %p].\n", __bootstrap, kernel_bootstrap);
-        kprintf("[BOOT] Entered AROS Bootstrap @ %p\n", __bootstrap);
-    kprintf("[BOOT] Command line '%s'\n", mb->cmdline);
+    kprintf("[BOOT] Entered AROS Bootstrap @ %p\n", __bootstrap);
+    D(kprintf("[BOOT] Multiboot structure @ %p\n", mb));
+    D(kprintf("[BOOT] Command line '%s' @ %p\n", mb->cmdline, mb->cmdline));
 
-    kprintf("[BOOT] Stack @ %p, [%d bytes]\n",__stack, 65536);
+    D(kprintf("[BOOT] Stack @ %p, [%d bytes]\n", __stack, sizeof(__stack)));
 
     set_base_address((void *)KERNEL_TARGET_ADDRESS, __bss_track);
     change_kernel_address(mb->cmdline);
 
-    setupVesa(mb->cmdline);
+    if (vesa)
+    {
+        vesa_size = (unsigned long)&_binary_vesa_size;
+    }
 
     tag->ti_Tag = KRN_CmdLine;
     tag->ti_Data = KERNEL_OFFSET | (unsigned long long)(mb->cmdline);
     tag++;
     tag->ti_Tag = TAG_DONE;
 
-    if (mb->mmap_length)
+    if ((mb->mmap_addr) && (mb->mmap_length))
     {
         tag->ti_Tag = KRN_MMAPLength;
         tag->ti_Data = mb->mmap_length;
@@ -569,11 +571,13 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
                 unsigned long addr = (mmap->addr_low | ((unsigned long)mmap->addr_high << 32));
                 unsigned long size = (mmap->len_low | ((unsigned long)mmap->len_high << 32));
 
-                 if (addr < 0x00100000 && (addr+size) <= 0x00100000)
+                if (addr < 0x00100000 && (addr+size) <= 0x00100000)
                 {
-                    kprintf("[BOOT] MMAP: Using Entry %p [%d bytes] for lowpages\n", addr, size);
+                    D(kprintf("[BOOT] MMAP: Using Entry %p [%d bytes] for lowpages\n", addr, size));
                     tag->ti_Tag = KRN_MEMLower;
-                    tag->ti_Data = ((addr + size)/1024);
+                    vesa_base = ((addr + size) - vesa_size) & ~PAGE_MASK;
+                    D(kprintf("[BOOT] MMAP: Adjusted size for VESA Trampoline = %d\n", vesa_base - addr));
+                    tag->ti_Data = ((vesa_base - 1)/1024);
                     tag++;
                     break;
                 }
@@ -587,12 +591,19 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     else
     {
         tag->ti_Tag = KRN_MEMLower;
-        tag->ti_Data = mb->mem_lower;
+        vesa_base = (mb->mem_lower - vesa_size) & ~PAGE_MASK;
+        tag->ti_Data = ((vesa_base - 1)/1024);
         tag++;
         tag->ti_Tag = KRN_MEMUpper;
         tag->ti_Data = mb->mem_upper;
         tag++;
         tag->ti_Tag = TAG_DONE;     
+    }
+
+    if (vesa)
+    {
+        kprintf("[BOOT] VESA Trampoline @ %p\n", vesa_base);
+        setupVESA(vesa_base, vesa);
     }
 
     /* Setup stage - prepare 64-bit environment */
@@ -602,10 +613,10 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     /* Load the first ELF relocable object - the kernel itself */
     kprintf("[BOOT] Loading kernel\n");
     //load_elf_file(&_binary_aros_o_start, 0); //((unsigned long long)KERNEL_HIGH_OFFSET) << 39);
-    
+
     /* Search for external modules loaded by GRUB */
     module_count = find_modules(mb, mod);
-    
+
     /* If any external modules are found, load them now */
     for (m = mod; module_count > 0; module_count--, m++)
     {
@@ -613,7 +624,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
         load_elf_file(m->address, 0);
         kprintf("\n");
     }
-    
+
     /*
      * Prepare machine to leave the 32-bit mode. Activate 64-bit mode.
      */
@@ -629,11 +640,11 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
         asm volatile("ljmp *%0"::"m"(KernelTarget),"D"(&km));
     else
     	kprintf("[BOOT] PANIC! Your CPU does not support Long Mode\n");
-    
+
     /*
      * This code should not be reached at all.  
      */
     kprintf("HALT!\n");
-    
+
     for(;;) asm volatile("hlt");
 }
