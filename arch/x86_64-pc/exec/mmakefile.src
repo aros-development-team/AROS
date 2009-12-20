@@ -4,13 +4,13 @@ include $(TOP)/config/make.cfg
 CFILES          := \
         exec_init cause copymem disable enable preparecontext rawputchar serialrawio screen \
         initcode alert dispatch permit newaddtask remtask reschedule setexcept settaskpri \
-        findresident signal wait prepareexecbase #rawdofmt
+        findresident shutdowna signal wait prepareexecbase #rawdofmt
 # RawDoFmt() is left out since currently generic RawDoFmt should be 64bit-friendly. Due to
 # recent VNewRawDoFmt() introduction and code reorganization this x86/64-specific version
 # would not build any more. The code is left for reference in case of problems.
 # Pavel Fedin <sonic_amiga@rambler.ru>
 
-AFILES		:= stackswap
+AFILES		:= coldreboot stackswap
 
 #MM kernel-exec : kernel-exec-pc-x86_64
 #MM kernel-exec-pc-x86_64 : kernel-kernel-pc-x86_64-includes kernel-exec-includes includes-asm_h-x86_64
