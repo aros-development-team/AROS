@@ -10,6 +10,14 @@
 #include <stdio.h>
 #include "prefsdata.h"
 
+#define DEFAULTIP "192.168.0.188"
+#define DEFAULTMASK "255.255.255.0"
+#define DEFAULTGATE "192.168.0.1"
+#define DEFAULTDNS "192.168.0.1"
+#define DEFAULTDEVICE "DEVS:networks/pcnet32.device"
+#define DEFAULTHOST "arosbox"
+#define DEFAULTDOMAIN "arosnet"
+
 static struct TCPPrefs prefs;
 
 struct Tokenizer
@@ -81,14 +89,14 @@ void GetNextToken(struct Tokenizer * tok, STRPTR tk)
 
 void SetDefaultNetworkPrefsValues()
 {
-    SetIP("192.168.0.188");
-    SetMask("255.255.255.0");
-    SetGate("192.168.0.1");
-    SetDNS(0, "192.168.0.1");
-    SetDNS(1, "192.168.0.1");
-    SetDevice("DEVS:networks/pcnet32.device");
-    SetHost("arosbox");
-    SetDomain("arosnet");
+    SetIP(DEFAULTIP);
+    SetMask(DEFAULTMASK);
+    SetGate(DEFAULTGATE);
+    SetDNS(0, DEFAULTDNS);
+    SetDNS(1, DEFAULTDNS);
+    SetDevice(DEFAULTDEVICE);
+    SetHost(DEFAULTHOST);
+    SetDomain(DEFAULTDOMAIN);
     SetDHCP(FALSE);
     SetAutostart(FALSE);
 }
@@ -599,6 +607,36 @@ void InitNetworkPrefs(CONST_STRPTR directory, BOOL use, BOOL save)
     }
 }
 
+// check if 'str' contains only characters from 'accept'
+BOOL IsLegal(STRPTR str, STRPTR accept)
+{
+    int i, len;
+
+    if ((str == NULL) || (accept == NULL))
+    {
+        return FALSE;
+    }
+
+    len = strlen(str);
+    for (i = 0; i < len; i++)
+    {
+        if (strchr(accept, str[i]) == NULL)
+        {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+BOOL IsName(STRPTR w)
+{
+    if ((w == NULL) || (w[0] == '\0') || strspn(w, NAMECHARS))
+    {
+        return FALSE;
+    }
+    return TRUE;
+}
+
 /* Getters */
 
 STRPTR GetIP()
@@ -650,22 +688,38 @@ BOOL GetAutostart()
 
 void SetIP(STRPTR w)
 {
-    strlcpy(prefs.IP, w,63);
+    if (!IsLegal(w, IPCHARS))
+    {
+        w = DEFAULTIP;
+    }
+    strlcpy(prefs.IP, w, IPBUFLEN);
 }
 
 void SetMask(STRPTR  w)
 {
-    strlcpy(prefs.mask, w,63);
+    if (!IsLegal(w, IPCHARS))
+    {
+        w = DEFAULTMASK;
+    }
+    strlcpy(prefs.mask, w, IPBUFLEN);
 }
 
 void SetGate(STRPTR  w)
 {
-    strlcpy(prefs.gate, w,63);
+    if (!IsLegal(w, IPCHARS))
+    {
+        w = DEFAULTGATE;
+    }
+    strlcpy(prefs.gate, w, IPBUFLEN);
 }
 
 void SetDNS(LONG m, STRPTR w)
 {
-    strlcpy(prefs.DNS[m], w,63);
+    if (!IsLegal(w, IPCHARS))
+    {
+        w = DEFAULTDNS;
+    }
+    strlcpy(prefs.DNS[m], w, IPBUFLEN);
 }
 
 void SetDHCP(BOOL w)
@@ -675,20 +729,32 @@ void SetDHCP(BOOL w)
 
 void SetDevice(STRPTR w)
 {
-    strlcpy(prefs.device, w,511);
+    if (w == NULL || w[0] == '\0')
+    {
+        w = DEFAULTDEVICE;
+    }
+    strlcpy(prefs.device, w, NAMEBUFLEN);
 }
 
 void SetHost(STRPTR w)
 {
-    strlcpy(prefs.host, w,511);
+    if (!IsLegal(w, NAMECHARS))
+    {
+        w = DEFAULTHOST;
+    }
+    strlcpy(prefs.host, w, NAMEBUFLEN);
 }
 
 void SetDomain(STRPTR w)
 {
-    strlcpy(prefs.domain, w,511);
+    if (!IsLegal(w, NAMECHARS))
+    {
+        w = DEFAULTDOMAIN;
+    }
+    strlcpy(prefs.domain, w, NAMEBUFLEN);
 }
+
 void SetAutostart(BOOL w)
 {
     prefs.autostart = w;
 }
-
