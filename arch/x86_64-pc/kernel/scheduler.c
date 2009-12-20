@@ -79,7 +79,7 @@ AROS_LH0(void, KrnSchedule,
  */
 void core_Dispatch(regs_t *regs)
 {
-    struct ExecBase *SysBase = TLS_GET(SysBase);
+    volatile struct ExecBase *SysBase = TLS_GET(SysBase);
     struct Task *task;
     
     __asm__ __volatile__("cli;");
