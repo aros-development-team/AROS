@@ -106,7 +106,7 @@ int ser_Init(short, LONG, BYTE);
    AROS_LIBFUNC_INIT
     if (__serial_rawio_port > 0)
     {
-	if (ser_Init(__serial_rawio_port, 115200,SER_LCR_8BITS | SER_LCR_1STOPBIT | SER_LCR_NOPARITY))
+	if (ser_Init(__serial_rawio_port, SER_MAXBAUD, SER_LCR_8BITS | SER_LCR_1STOPBIT | SER_LCR_NOPARITY))
 		ser_FIFOLevel(__serial_rawio_port, 0);
     }
 
