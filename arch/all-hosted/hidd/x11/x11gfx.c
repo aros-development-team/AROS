@@ -304,8 +304,13 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
     /* We assume chunky */
     pftags[15].ti_Data = vHidd_BitMapType_Chunky;
-    
+
+    D(bug("Calling super method\n"));
+
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
+
+    D(bug("Super method called\n"));
+
     if (NULL != o)
     {
 	XColor      	 bg, fg;
@@ -316,6 +321,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	data->screen	= DefaultScreen( data->display );
 	data->depth	= DisplayPlanes( data->display, data->screen );
 	data->colmap	= DefaultColormap( data->display, data->screen );
+        D(bug("x11_func.XCreateFontCursor(%x), display(%x)\n", x11_func.XCreateFontCursor, data->display));
 	/* Create cursor */
         data->cursor = XCALL(XCreateFontCursor,  data->display, XC_top_left_arrow);
 
