@@ -117,6 +117,9 @@ static void setup_tables()
     GDT.super_cs.limit_low=0xffff;
     GDT.super_cs.limit_high=0xf;
     GDT.super_cs.g=1;
+    GDT.super_cs.base_low=0;
+    GDT.super_cs.base_mid=0;
+    GDT.super_cs.base_high=0;
     
     GDT.super_ds.type=0x12;	/* data segment */
     GDT.super_ds.dpl=0;		/* supervisor level */
@@ -125,6 +128,9 @@ static void setup_tables()
     GDT.super_ds.limit_high=0xf;
     GDT.super_ds.g=1;
     GDT.super_ds.d=1;   
+    GDT.super_ds.base_low=0;
+    GDT.super_ds.base_mid=0;
+    GDT.super_ds.base_high=0;
 }
 
 /*
