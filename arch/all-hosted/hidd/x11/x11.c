@@ -512,6 +512,7 @@ D(bug("Got input from unixio\n"));
 	    if ((event.type == ClientMessage) &&
 	        (event.xclient.data.l[0] == xsd->delete_win_atom))
 	    {
+                D(bug("Shutting down AROS\n"));
 		CCALL(raise, SIGINT);
 	    }
     	#endif	    

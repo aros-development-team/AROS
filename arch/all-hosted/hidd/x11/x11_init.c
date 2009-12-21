@@ -106,7 +106,7 @@ static int MyErrorHandler (Display * display, XErrorEvent * errevent)
 	    errevent->minor_code,
 	    FindTask(0)->tc_Node.ln_Name,
 	    buffer);
-	     
+
     return 0;
 }
 
@@ -141,6 +141,7 @@ static int X11_Init(LIBBASETYPEPTR LIBBASE)
      */
 
     xsd->display = XCALL(XOpenDisplay, NULL);
+    D(bug("display(%x)\n", xsd->display));
     if (xsd->display)
     {
 	struct x11task_params 	 xtp;

@@ -131,6 +131,7 @@ void *x11_hostlib_load_so(const char *sofile, const char **names, int nfuncs, vo
 
     for (i = 0; i < nfuncs; i++) {
         funcptr[i] = HostLib_GetPointer(handle, names[i], &err);
+        D(bug("%s(%x)\n", names[i], funcptr[i]));
         if (err != NULL) {
             kprintf("[x11] couldn't get symbol '%s' from '%s': %s\n");
             HostLib_Close(handle, NULL);
