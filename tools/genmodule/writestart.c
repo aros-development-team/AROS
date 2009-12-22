@@ -1146,8 +1146,8 @@ writefunctable(FILE *out,
 		    "{\n"
 		    "    &AROS_SLIB_ENTRY(%s,%s),\n"
 		    "    &AROS_SLIB_ENTRY(%s,%s),\n",
-		    funclistit->name, cfg->basename,
-		    funclistit2->name, cfg->basename
+		    funclistit->internalname, cfg->basename,
+		    funclistit2->internalname, cfg->basename
 	    );
 	    lvo += 2;
 	    funclistit = funclistit2->next;
@@ -1155,7 +1155,7 @@ writefunctable(FILE *out,
 	    if (funclistit->lvo == 3)
 	    {
 		fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n",
-			funclistit->name, cfg->basename
+			funclistit->internalname, cfg->basename
 		);
 		funclistit = funclistit->next;
 	    }
@@ -1166,7 +1166,7 @@ writefunctable(FILE *out,
 	    if (funclistit->lvo == 4)
 	    {
 		fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n",
-			funclistit->name, cfg->basename
+			funclistit->internalname, cfg->basename
 		);
 		funclistit = funclistit->next;
 	    }
@@ -1185,12 +1185,12 @@ writefunctable(FILE *out,
 	switch (funclistit->libcall)
 	{
 	case STACK:
-	    fprintf(out, "    &%s,\n", funclistit->name);
+	    fprintf(out, "    &%s,\n", funclistit->internalname);
 	    break;
 	    
 	case REGISTER:
 	case REGISTERMACRO:
-	    fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n", funclistit->name, cfg->basename);
+	    fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n", funclistit->internalname, cfg->basename);
 	    break;
 	    
 	default:
