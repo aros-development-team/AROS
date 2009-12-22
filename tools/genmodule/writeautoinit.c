@@ -21,6 +21,12 @@ void writeautoinit(struct config *cfg)
     	exit(20);
     }
 
+    /* Write the code to be added to startup provided in the config file */
+    for (linelistit = cfg->startuplines; linelistit != NULL; linelistit = linelistit->next)
+    {
+        fprintf(out, "%s\n", linelistit->s);
+    }
+
     banner = getBanner(cfg);
     fprintf(out,
         "%s"
@@ -33,12 +39,6 @@ void writeautoinit(struct config *cfg)
 	    cfg->modulename, cfg->majorversion, cfg->libbasetypeptrextern, cfg->libbase
     );
     freeBanner(banner);
-
-    /* Write the code to be added to startup provided in the config file */
-    for (linelistit = cfg->startuplines; linelistit != NULL; linelistit = linelistit->next)
-    {
-        fprintf(out, "%s\n", linelistit->s);
-    }
 
     if (cfg->forcelist!=NULL)
     {
