@@ -1,5 +1,5 @@
 #!/bin/sh
 if test -z "$COMPILER_PATH"; then
-    export COMPILER_PATH=@cc_programs_path@
+    export COMPILER_PATH="@cc_programs_path@"
 fi
 exec @aros_sdk_path@/@cc_cpu@-aros/lib/gcc-lib/collect-aros "$@"
