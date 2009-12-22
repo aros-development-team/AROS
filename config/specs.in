@@ -5,19 +5,19 @@
 
 
 *aros_include:
--nostdinc %{!nostdinc:-isystem @AROS_BUILDDIR_NATIVE@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include -isystem @aros_target_cc_includes@}
+-nostdinc %{!nostdinc:-isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include -isystem @aros_target_cc_includes@}
 
 *endfile:
 -lautoinit
 
 *link:
--m @aros_object_format@ -L@AROS_BUILDDIR_NATIVE@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib
+-m @aros_object_format@ -L@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib
 
 *lib:
 -lamiga -larossupport -larosc -lm @aros_arch_libs@
 
 *startfile:
-@AROS_BUILDDIR_NATIVE@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib/startup.o %{detach:@AROS_BUILDDIR_NATIVE@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib/detach.o} %{nix:@AROS_BUILDDIR_NATIVE@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib/nixmain.o}
+@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib/startup.o %{detach:@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib/detach.o} %{nix:@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib/nixmain.o}
 
 *aros_predefines:
 -D__ELF__ -D__@gcc_target_cpu@__ -A-system -Asystem(posix) -D__AROS__ -DAMIGA -D_AMIGA -D__AROS_ARCH_@aros_target_arch@__
@@ -29,7 +29,7 @@
 1
 
 .cd:
-@AROS_BUILDDIR_NATIVE@/bin/@aros_host_arch@-@aros_host_cpu@/tools/gcccatcomp.sh %i @AROS_BUILDDIR_NATIVE@/bin/@aros_host_arch@-@aros_host_cpu@/tools %g.c %{S:-S} %{!S:-c} %{o: %{o*}} %{!o:-o %{S: %b.s} %{!S:%{c: %b%O} %{!c:%w%g%O}}} %{pipe} %(aros_include) 
+@AROS_BUILDDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools/gcccatcomp.sh %i @AROS_BUILDDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools %g.c %{S:-S} %{!S:-c} %{o: %{o*}} %{!o:-o %{S: %b.s} %{!S:%{c: %b%O} %{!c:%w%g%O}}} %{pipe} %(aros_include) 
 
 *linker:
-@AROS_BUILDDIR_NATIVE@/bin/@aros_host_arch@-@aros_host_cpu@/tools/collect-aros @ignore_undefined_symbols@
+@AROS_BUILDDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools/collect-aros @ignore_undefined_symbols@
