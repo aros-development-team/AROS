@@ -804,7 +804,7 @@ sana_down(struct sana_softc *ssc)
     }
     req = req->ioip_next;
   }
-  if (ssc->ss_dev->dd_Library.lib_OpenCnt == 1) {
+  if (ssc->ss_dev && (ssc->ss_dev->dd_Library.lib_OpenCnt == 1)) {
     if (sreq = CreateIOSana2Req(ssc)) {
         sreq->ios2_Req.io_Command = S2_OFFLINE;
 
