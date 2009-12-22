@@ -368,6 +368,7 @@ $(TMP_TARGETS) $(TMP_DTARGETS) : | $(addsuffix .c,%(basenames))
 # Be sure that all .c files are found
 TMP_DIRS := $(filter-out ./,$(sort $(dir %(basenames)) $(addprefix $(SRCDIR)/$(CURDIR)/,$(dir %(basenames)))))
 ifneq ($(TMP_DIRS),)
+    TMP_DIRS := $(shell echo $(TMP_DIRS) | sed 's/\(.\):\//\/\1\//g')
     vpath %.c $(TMP_DIRS)
 endif
 
@@ -516,6 +517,7 @@ $(TMP_TARGETS) : | $(addsuffix %(suffix),%(basenames))
 # Be sure that all .c files are found
 TMP_DIRS := $(filter-out ./,$(sort $(dir %(basenames)) $(addprefix $(SRCDIR)/$(CURDIR)/,$(dir %(basenames)))))
 ifneq ($(TMP_DIRS),)
+    TMP_DIRS := $(shell echo $(TMP_DIRS) | sed 's/\(.\):\//\/\1\//g')
     vpath %%(suffix) $(TMP_DIRS)
 endif
 
@@ -730,6 +732,7 @@ $(TMP_TARGETS) : | $(addsuffix .c,%(basenames))
 # Be sure that all .c files are found
 TMP_DIRS := $(filter-out ./,$(sort $(dir %(basenames)) $(addprefix $(SRCDIR)/$(CURDIR)/,$(dir %(basenames)))))
 ifneq ($(TMP_DIRS),)
+    TMP_DIRS := $(shell echo $(TMP_DIRS) | sed 's/\(.\):\//\/\1\//g')
     vpath %.c $(TMP_DIRS)
 endif
 
@@ -933,7 +936,8 @@ ifneq (%(modsuffix),)
 endif
 ifneq (%(targetdir),)
     TMP_OPTS += -d %(targetdir)
-    TMP_TARGETS := $(addprefix %(targetdir)/,$(TMP_TARGETS))
+    TMP_TARGETDIR := $(shell echo %(targetdir) | sed 's/^\(.\):\//\/\1\//')
+    TMP_TARGETS := $(addprefix $(TMP_TARGETDIR)/,$(TMP_TARGETS))
 endif
 
 $(TMP_TARGETS) : OPTS := $(TMP_OPTS)
@@ -1598,7 +1602,8 @@ BD_LINKLIB    := %(libdir)/lib%(libname).a
 
 ifeq ($(TARGET),%(mmake))
 ifneq ($(dir $(BD_FILES)),./)
-vpath %.c $(addprefix $(SRCDIR)/$(CURDIR)/,$(dir $(BD_FILES)))
+TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+vpath %.c $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir $(BD_FILES)))
 endif
 
 %rule_compile basename=% targetdir=%(objdir) \
@@ -1745,9 +1750,10 @@ BD_OBJS$(BDID)    := $(BD_COBJS$(BDID)) $(BD_ASMOBJS$(BDID))
 BD_DEPS$(BDID)    := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(files))))
 
 ifeq ($(TARGET),%(mainmmake)-%(arch))
-vpath %.c $(addprefix $(SRCDIR)/$(CURDIR)/,$(dir %(files)))
-vpath %.s $(addprefix $(SRCDIR)/$(CURDIR)/,$(dir %(asmfiles)))
-vpath %.S $(addprefix $(SRCDIR)/$(CURDIR)/,$(dir %(asmfiles)))
+TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+vpath %.c $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(files)))
+vpath %.s $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(asmfiles)))
+vpath %.S $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(asmfiles)))
 endif
 
 $(BD_OBJS$(BDID)) : | $(BD_OBJDIR$(BDID))
