@@ -5,18 +5,22 @@ AC_PREREQ(2.61)
 AC_CONFIG_AUX_DIR(.)
 AC_CONFIG_SRCDIR(mmake.c)
 
+dnl Find out our host
+AC_CANONICAL_HOST
+
+if test "$host_os" = "mingw32" ; then
+    PWDCMD="pwd -W"
+fi
+
 #don't know where else to put this...
 AC_MSG_CHECKING([Building MetaMake in .. ])
-METAMAKE_BUILDDIR=$PWD
+METAMAKE_BUILDDIR=`${PWDCMD-pwd}`
 AC_MSG_RESULT($METAMAKE_BUILDDIR)
 
 AC_MSG_CHECKING([MetaMake Source in .. ])
 srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
 METAMAKE_SRCDIR=${srcpwd}
 AC_MSG_RESULT($METAMAKE_SRCDIR)
-
-dnl Find out our host
-AC_CANONICAL_HOST
 
 dnl Checks for programs.
 AC_PROG_CC
