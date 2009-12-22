@@ -716,7 +716,6 @@ aros_host_arch
 aros_cc_pre
 AROS_PORTSSRCDIR
 SRCDIR
-AROS_BUILDDIR_NATIVE
 AROS_BUILDDIR
 aros_flavour_uc
 aros_flavour
@@ -2158,13 +2157,16 @@ fi
 { $as_echo "$as_me:$LINENO: result: $target" >&5
 $as_echo "$target" >&6; }
 
+if test "$host_os" = "mingw32" ; then
+    PWDCMD="pwd -W"
+fi
+
 #don't know where else to put this...
 { $as_echo "$as_me:$LINENO: checking Building AROS in .. " >&5
 $as_echo_n "checking Building AROS in .. ... " >&6; }
-AROS_BUILDDIR=$PWD
+AROS_BUILDDIR=`${PWDCMD-pwd}`
 { $as_echo "$as_me:$LINENO: result: $AROS_BUILDDIR" >&5
 $as_echo "$AROS_BUILDDIR" >&6; }
-AROS_BUILDDIR_NATIVE=$AROS_BUILDDIR
 
 { $as_echo "$as_me:$LINENO: checking AROS Source in .. " >&5
 $as_echo_n "checking AROS Source in .. ... " >&6; }
@@ -4293,7 +4295,6 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
     mingw32*)
         aros_host_arch="mingw32"
 	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
-	AROS_BUILDDIR_NATIVE=`pwd -W`
 	case "$host_cpu" in
 	    *i?86*)
 		aros_host_cpu="i386"
@@ -12750,7 +12751,6 @@ $as_echo "$dbus" >&6; }
 
 
 # Generic
-
 
 
 
