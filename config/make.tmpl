@@ -1246,7 +1246,7 @@ $(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_KBASE))
 $(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
 	@$(ECHO) "Linking $@"
 	@$(AROS_LD) -Ur -o $@ $^ -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
-	@$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__$$/) || ($$3 ~ /^libraryset_.*$$/) {print "-L " $$3;}'`
+	@$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^libraryset_.*$$/) {print "-L " $$3;}'`
 
 
 ## Dependency fine-tuning
@@ -1504,7 +1504,7 @@ $(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_KBASE))
 $(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
 	@$(ECHO) "Linking $@"
 	@$(AROS_LD) -Ur -o $@ $^ -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
-	@$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__$$/) || ($$3 ~ /^libraryset_.*$$/) {print "-L " $$3;}'`
+	@$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^libraryset_.*$$/) {print "-L " $$3;}'`
 
 ## Dependency fine-tuning
 ##
