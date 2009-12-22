@@ -1655,9 +1655,10 @@ GLOB_MKDIRS += $(BD_DIRS)
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/%(description).cd $< CATALOG=%(dir)/$*/%(subdir)/%(name).catalog || [ $$? -lt 10 ]
 
 ifneq (%(source),)
+%(source) : TMP_SOURCEDESCRIPTION := $(shell echo %(sourcedescription) | sed 's/^\(.\):\//\/\1\//')
 %(source) : %(description).cd
 	@$(ECHO) "Creating %(name) catalog source file %(source)"
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/%(description).cd %(source)=%(sourcedescription).sd
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/%(description).cd %(source)=$(TMP_SOURCEDESCRIPTION).sd
 endif
 
 %(mmake)-clean : FILES := $(BD_OJS) %(source)
