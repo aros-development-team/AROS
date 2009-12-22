@@ -9,6 +9,8 @@ char *tests[] =
     "strchr",
     "stpblk",
     "tmpfile",
+    "ctype",
+    "sscanf",
 
      NULL
 };

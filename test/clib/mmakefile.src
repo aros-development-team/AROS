@@ -35,7 +35,9 @@ FILES := \
 	setjmp \
         system \
         execl \
-        chown
+        chown \
+        sscanf \
+        ctype
 
 EXEDIR := $(AROS_TESTS)/clib
 
