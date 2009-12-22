@@ -1,6 +1,8 @@
-## version $VER: XX.catalog XX.XX ($TODAY)
-## language X
+## version $VER: networkprefs.catalog 1.0 ($TODAY)
+## language français
 ## codeset 0
+;
+; TODO: update me and set version to 2
 ;
 MSG_NAME
 Préférences Réseau
@@ -71,7 +73,7 @@ Erreur inconnue
 ; Unknown error
 ;
 MSG_ERR_NOT_RESTARTED_STACK
-La pile réseau n'a pu démarrer. 
+La pile réseau n'a pu démarrer.
 ; Failed to restart network stack
 ;
 MSG_BUTTON_OK
@@ -95,6 +97,6 @@ Information
 ; Information
 ;
 MSG_PREFS_SAVED_RESTART
-Les préférences ont été sauvées vers %s. \nRedémarrer AROS pour que les modifications prenent effet. 
+Les préférences ont été sauvées vers %s. \nRedémarrer AROS pour que les modifications prenent effet.
 ; Preferences have been saved to %s.\nRestart AROS for them to take effect.
 ;

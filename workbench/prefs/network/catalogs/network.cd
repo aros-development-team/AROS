@@ -4,8 +4,14 @@ Network Preferences
 MSG_DESCRIPTION (//)
 TCP/IP Network preferences
 ;
+MSG_IFNAME (//)
+Name
+;
 MSG_DEVICE (//)
 Device
+;
+MSG_UNIT (//)
+Unit
 ;
 MSG_IP_MODE (//)
 IP Mode
@@ -54,6 +60,12 @@ Failed to restart network stack
 ;
 MSG_BUTTON_OK (//)
 Ok
+;
+MSG_BUTTON_ADD (//)
+Add
+;
+MSG_BUTTON_REMOVE (//)
+Remove
 ;
 MSG_ERROR_TITLE (//)
 Error

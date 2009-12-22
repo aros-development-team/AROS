@@ -15,7 +15,7 @@
 #include "netpeditor.h"
 #include "prefsdata.h"
 
-#define VERSION "$VER: Network 1.1 (20.12.2009) AROS Dev Team"
+#define VERSION "$VER: Network 1.2 (22.12.2009) AROS Dev Team"
 
 int main(void)
 {
@@ -26,11 +26,11 @@ int main(void)
     ReadArguments();
 
     InitNetworkPrefs(
-        (ARG(FROM) != (IPTR)NULL ? (STRPTR)ARG(FROM) : (STRPTR)PREFS_PATH_ENV), 
-        (ARG(USE) ? TRUE : FALSE), 
+        (ARG(FROM) != (IPTR)NULL ? (STRPTR)ARG(FROM) : (STRPTR)PREFS_PATH_ENV),
+        (ARG(USE) ? TRUE : FALSE),
         (ARG(SAVE) ? TRUE : FALSE));
 
-    /* Show application unless SAVE or USE parameters were used */  
+    /* Show application unless SAVE or USE parameters were used */
     if (!((BOOL)ARG(SAVE)) && !((BOOL)ARG(USE)))
     {
         application = (Object *)ApplicationObject,
