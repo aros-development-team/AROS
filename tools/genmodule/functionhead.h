@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: global include for genmodule. Defines global variables and
@@ -25,7 +25,7 @@ struct functionarg {
 
 struct functionhead {
     struct functionhead *next;
-    char *name;
+    char *name, *internalname;
     char *type;
     enum libcall libcall;
     unsigned int argcount;
@@ -45,6 +45,7 @@ struct functionarg *funcaddarg
     const char *arg, const char *reg
 );
 struct stringlist *funcaddalias(struct functionhead *funchead, const char *alias);
+void funcsetinternalname(struct functionhead *funchead, const char *intername);
 
 /* Write out the function prototypes for the functions in the given
  * cfg may be NULL if the list only contains functions with STACK libcall

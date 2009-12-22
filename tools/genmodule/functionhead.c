@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
     
     The code for storing information of functions present in the module
@@ -16,7 +16,7 @@ struct functionhead *newfunctionhead(const char *name, enum libcall libcall)
     if (funchead != NULL)
     {
 	funchead->next = NULL;
-	funchead->name = strdup(name);
+	funchead->internalname = funchead->name = strdup(name);
 	funchead->type = NULL;
 	funchead->libcall = libcall;
 	funchead->lvo = 0;
@@ -70,6 +70,13 @@ struct stringlist *funcaddalias(struct functionhead *funchead, const char *alias
     return slist_append(&funchead->aliases, alias);
 }
 
+void funcsetinternalname(struct functionhead *funchead, const char *internalname)
+{
+    if (funchead->name != funchead->internalname)
+        free(funchead->internalname);
+    funchead->internalname = strdup(internalname);
+}
+
 void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
 {
     struct functionhead *funclistit;
@@ -82,7 +89,7 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
 	switch (funclistit->libcall)
 	{
 	case STACK:
-	    fprintf(out, "%s %s(", funclistit->type, funclistit->name);
+	    fprintf(out, "%s %s(", funclistit->type, funclistit->internalname);
         
 	    for(arglistit = funclistit->arguments, first = 1;
 		arglistit != NULL;
@@ -99,7 +106,7 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
 	    
 	case REGISTER:
 	    assert(cfg);
-	    fprintf(out, "%s %s(", funclistit->type, funclistit->name);
+	    fprintf(out, "%s %s(", funclistit->type, funclistit->internalname);
 	    for (arglistit = funclistit->arguments, first = 1;
 		 arglistit!=NULL;
 		 arglistit = arglistit->next, first = 0
@@ -111,7 +118,7 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
 	    }
 	    fprintf(out,
 		    ");\nAROS_LH%d(%s, %s,\n",
-		    funclistit->argcount, funclistit->type, funclistit->name
+		    funclistit->argcount, funclistit->type, funclistit->internalname
 	    );
 	    for (arglistit = funclistit->arguments;
 		 arglistit!=NULL;
@@ -135,7 +142,7 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
 		    "    AROS_LIBFUNC_INIT\n\n"
 		    "    return %s(",
 		    cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename,
-		    funclistit->name
+		    funclistit->internalname
 	    );
 	    for (arglistit = funclistit->arguments, first = 1;
 		 arglistit!=NULL;
@@ -163,7 +170,7 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
 	    {
 		fprintf(out,
 			"AROS_LD%d(%s, %s,\n",
-			funclistit->argcount, funclistit->type, funclistit->name
+			funclistit->argcount, funclistit->type, funclistit->internalname
 		);
 		for (arglistit = funclistit->arguments;
 		     arglistit!=NULL;
@@ -191,7 +198,7 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
 	    {
 		fprintf(out,
 			"AROS_LDQUAD%d(%s, %s,\n",
-			funclistit->argcount, funclistit->type, funclistit->name
+			funclistit->argcount, funclistit->type, funclistit->internalname
 		);
 		for (arglistit = funclistit->arguments;
 		     arglistit != NULL;

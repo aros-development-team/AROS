@@ -77,7 +77,7 @@ void writeboopsidispatcher(FILE *out, struct classinfo *cl)
 	    }
 	    if (strcmp(methlistit->type, "void") != 0)
 		fprintf(out, "return (IPTR)");
-	    fprintf(out,"%s(", methlistit->name);
+	    fprintf(out,"%s(", methlistit->internalname);
             
             if (methlistit->argcount != 3)
             {

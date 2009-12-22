@@ -1361,6 +1361,37 @@ static void readsectionfunctionlist(struct config *cfg)
 		slist_append(&(*funclistptr)->aliases, s2);
 		cfg->intcfg |= CFG_GENASTUBS;
 	    }
+	    else if (strncmp(s, "function", 8) == 0)
+	    {
+		s += 8;
+		
+		if (!isspace(*s))
+		    exitfileerror(20, "Syntax error\n");
+		
+		while (isspace(*s)) s++;
+		if (*s == '\0' || !(isalpha(*s) || *s == '_'))
+		    exitfileerror(20, "syntax is '.function name'\n");
+		
+		s2 = s;
+		s++;
+		while (isalnum(*s) || *s == '_') s++;
+
+		if (isspace(*s))
+		{
+		    *s = '\0';
+		    do {
+			s++;
+		    } while (isspace(*s));
+		}
+
+		if (*s != '\0')
+		    exitfileerror(20, "syntax is '.function name'\n");
+		
+		if (*funclistptr == NULL)
+		    exitfileerror(20, ".function has to come after a function declaration\n");
+
+                funcsetinternalname(*funclistptr, s2);
+	    }
 	    else if (strncmp(s, "cfunction", 9)==0)
 	    {
 		if (*funclistptr == NULL)
@@ -1675,8 +1706,7 @@ static void readsectionmethodlist(struct classinfo *cl)
 		if (*methlistptr == NULL)
 		    exitfileerror(20, ".function has to come after a function declaration\n");
 
-		free((*methlistptr)->name);
-		(*methlistptr)->name = strdup(s2);
+                funcsetinternalname(*methlistptr, s2);
 	    }
 	    else if (strncmp(s, "interface", 9) == 0)
 	    {

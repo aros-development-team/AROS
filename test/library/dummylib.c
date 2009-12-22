@@ -19,7 +19,7 @@ AROS_LH2I(ULONG, add,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH2I(ULONG, asl,
+AROS_LH2I(ULONG, __int_asl,
     AROS_LHA(ULONG,a,D0),
     AROS_LHA(ULONG,b,D1),
     struct dummybase *,dummybase,6,Dummy
