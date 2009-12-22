@@ -15,6 +15,8 @@
 #define IPCHARS "0123456789."
 #define NAMECHARS "0123456789abcdefghijklmnopqrstuvwxyz-"
 
+#define MAXINTERFACES 15
+
 enum ErrorCode
 {
     ALL_OK,
@@ -26,40 +28,62 @@ enum ErrorCode
     NOT_RESTARTED_STACK
 };
 
-struct TCPPrefs
+struct Interface
 {
+    TEXT name[NAMEBUFLEN];
+    BOOL DHCP;
     TEXT IP[IPBUFLEN];
     TEXT mask[IPBUFLEN];
+    TEXT device[NAMEBUFLEN];
+    LONG unit;
+};
+
+struct TCPPrefs
+{
+    struct Interface interface[MAXINTERFACES];
+    LONG interfacecount;
     TEXT gate[IPBUFLEN];
     TEXT DNS[2][IPBUFLEN];
-    BOOL DHCP;
-    TEXT device[NAMEBUFLEN];
     TEXT host[NAMEBUFLEN];
     TEXT domain[NAMEBUFLEN];
     BOOL autostart;
 };
 
 void InitNetworkPrefs(CONST_STRPTR directory, BOOL use, BOOL save);
+void InitInterface(struct Interface *iface);
 enum ErrorCode SaveNetworkPrefs();
 enum ErrorCode UseNetworkPrefs();
 
+struct Interface * GetInterface(LONG index);
+STRPTR GetName(struct Interface *iface);
+BOOL   GetDHCP(struct Interface *iface);
+STRPTR GetIP(struct Interface *iface);
+STRPTR GetMask(struct Interface *iface);
+STRPTR GetDevice(struct Interface *iface);
+LONG   GetUnit(struct Interface *iface);
 
-STRPTR GetIP();
-STRPTR GetMask();
-STRPTR GetGate();
+STRPTR GetGate(void);
 STRPTR GetDNS(LONG m);
-BOOL GetDHCP();
-STRPTR GetDevice();
-STRPTR GetHost();
-STRPTR GetDomain();
-BOOL GetAutostart();
+STRPTR GetHost(void);
+STRPTR GetDomain(void);
+LONG   GetInterfaceCount(void);
+BOOL   GetAutostart(void);
 
-void SetIP(STRPTR w);
-void SetMask(STRPTR w);
+void SetInterface
+(
+    struct Interface *iface, STRPTR name, BOOL dhcp, STRPTR IP,
+    STRPTR mask, STRPTR device, LONG unit
+);
+void SetName(struct Interface *iface, STRPTR w);
+void SetDHCP(struct Interface *iface, BOOL w);
+void SetIP(struct Interface *iface, STRPTR w);
+void SetMask(struct Interface *iface, STRPTR w);
+void SetDevice(struct Interface *iface, STRPTR w);
+void SetUnit(struct Interface *iface, LONG w);
+
 void SetGate(STRPTR w);
 void SetDNS(LONG m, STRPTR w);
-void SetDHCP(BOOL w);
-void SetDevice(STRPTR w);
 void SetHost(STRPTR w);
 void SetDomain(STRPTR w);
+void SetInterfaceCount(LONG w);
 void SetAutostart(BOOL w);

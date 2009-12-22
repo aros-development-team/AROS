@@ -1,4 +1,4 @@
-## version $VER: networkprefs.catalog 1.0 (20.12.2009)
+## version $VER: networkprefs.catalog 2.0 (22.12.2009)
 ## language deutsch
 ## codeset 0
 ;
@@ -10,9 +10,17 @@ MSG_DESCRIPTION
 TCP/IP Netzwerkvoreinstellungen
 ; TCP/IP Network preferences
 ;
+MSG_IFNAME
+Name
+; Name
+;
 MSG_DEVICE
 Gerät
 ; Device
+;
+MSG_UNIT
+Einheit
+; Unit
 ;
 MSG_IP_MODE
 IP-Modus
@@ -77,6 +85,14 @@ Neustart des Netzwerks fehlgeschlagen
 MSG_BUTTON_OK
 OK
 ; Ok
+;
+MSG_BUTTON_ADD
+Hinzufügen
+; Add
+;
+MSG_BUTTON_REMOVE
+Entfernen
+; Remove
 ;
 MSG_ERROR_TITLE
 Fehler

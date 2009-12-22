@@ -10,6 +10,9 @@
 #include <stdio.h>
 #include "prefsdata.h"
 
+#include <aros/debug.h>
+
+#define DEFAULTNAME "eth0"
 #define DEFAULTIP "192.168.0.188"
 #define DEFAULTMASK "255.255.255.0"
 #define DEFAULTGATE "192.168.0.1"
@@ -89,23 +92,36 @@ void GetNextToken(struct Tokenizer * tok, STRPTR tk)
 
 void SetDefaultNetworkPrefsValues()
 {
-    SetIP(DEFAULTIP);
-    SetMask(DEFAULTMASK);
+    LONG i;
+    for (i = 0; i < MAXINTERFACES; i++)
+    {
+        InitInterface(GetInterface(i));
+    }
+    SetInterfaceCount(0);
+    SetDomain(DEFAULTDOMAIN);
+    SetHost(DEFAULTHOST);
     SetGate(DEFAULTGATE);
     SetDNS(0, DEFAULTDNS);
     SetDNS(1, DEFAULTDNS);
-    SetDevice(DEFAULTDEVICE);
-    SetHost(DEFAULTHOST);
-    SetDomain(DEFAULTDOMAIN);
-    SetDHCP(FALSE);
+
     SetAutostart(FALSE);
+}
+
+void InitInterface(struct Interface *iface)
+{
+    SetName(iface, DEFAULTNAME);
+    SetDHCP(iface, FALSE);
+    SetIP(iface, DEFAULTIP);
+    SetMask(iface, DEFAULTMASK);
+    SetDevice(iface, DEFAULTDEVICE);
+    SetUnit(iface, 0);
 }
 
 /* Returns TRUE if directory has been created or already existed */
 BOOL RecursiveCreateDir(CONST_STRPTR dirpath)
 {
     /* Will create directory even if top level directory does not exist */
-    
+
     BPTR lock = NULL;
     ULONG lastdirseparator = 0;
     ULONG dirpathlen = strlen(dirpath);
@@ -138,13 +154,13 @@ BOOL RecursiveCreateDir(CONST_STRPTR dirpath)
             if (lock == NULL)
                 break; /* Error with creation */
         }
-    
+
         tmpdirpath[lastdirseparator] = '/'; /* restore */
         lastdirseparator++;
     }
-    
+
     FreeVec(tmpdirpath);
-    
+
     if (lock == NULL)
         return FALSE;
     else
@@ -156,12 +172,12 @@ BOOL RecursiveCreateDir(CONST_STRPTR dirpath)
 }
 
 /* Returns TRUE if selected device needs to use NOTRACKING option */
-BOOL GetNoTracking()
+BOOL GetNoTracking(struct Interface *iface)
 {
     STRPTR devicename = NULL;
     LONG pos = 0;
-    TEXT devicepath[strlen(GetDevice()) + 1];
-    strcpy(devicepath, GetDevice());
+    TEXT devicepath[strlen(GetDevice(iface)) + 1];
+    strcpy(devicepath, GetDevice(iface));
     strupr(devicepath);
 
     while ((devicename = notrackingdevices[pos++]) != NULL)
@@ -171,7 +187,7 @@ BOOL GetNoTracking()
         if (strstr(devicepath, devicename) != NULL)
             return TRUE;
     }
-    
+
     return FALSE;
 }
 
@@ -199,11 +215,13 @@ VOID CombinePath3P(STRPTR dstbuffer, ULONG dstbufferlen, CONST_STRPTR part1, CON
 BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
 {
     FILE *ConfFile;
+    LONG i;
+    struct Interface *iface;
     ULONG filenamelen = strlen(destdir) + 4 + 20;
     TEXT filename[filenamelen];
     ULONG destdbdirlen = strlen(destdir) + 3 + 1;
     TEXT destdbdir[destdbdirlen];
-    
+
     CombinePath2P(destdbdir, destdbdirlen, destdir, "db");
 
     /* Create necessary directories */
@@ -240,25 +258,32 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     CombinePath2P(filename, filenamelen, destdbdir, "interfaces");
     ConfFile = fopen(filename, "w");
     if (!ConfFile) return FALSE;
-    fprintf(ConfFile,"eth0 DEV=%s UNIT=0 %s IP=%s NETMASK=%s UP\n", GetDevice(),
-        (GetNoTracking() ? (CONST_STRPTR)"NOTRACKING" : (CONST_STRPTR)""),
-        (GetDHCP() ? (CONST_STRPTR)"DHCP" : GetIP()), 
-        GetMask());
-
+    for(i = 0; i < GetInterfaceCount(); i++)
+    {
+        iface = GetInterface(i);
+        fprintf
+        (
+            ConfFile, "%s DEV=%s UNIT=0 %s IP=%s NETMASK=%s UP\n",
+            GetName(iface), GetDevice(iface),
+            (GetNoTracking(iface) ? (CONST_STRPTR)"NOTRACKING" : (CONST_STRPTR)""),
+            (GetDHCP(iface) ? (CONST_STRPTR)"DHCP" : GetIP(iface)),
+            GetMask(iface)
+        );
+    }
     fclose(ConfFile);
 
     CombinePath2P(filename, filenamelen, destdbdir, "netdb-myhost");
     ConfFile = fopen(filename, "w");
     if (!ConfFile) return FALSE;
-    fprintf(ConfFile, "HOST %s %s.%s %s\n", GetIP(), GetHost(), GetDomain(), GetHost());
+
+    //FIXME what IP should we write if we have multiple interfaces?
+    iface = GetInterface(0);
+    fprintf(ConfFile, "HOST %s %s.%s %s\n", GetIP(iface), GetHost(), GetDomain(), GetHost());
     fprintf(ConfFile, "HOST %s gateway\n", GetGate());
-    if (!GetDHCP())
-    {
-        fprintf(ConfFile, "; Domain names\n");
-        fprintf(ConfFile, "; Name servers\n");
-        fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(0));
-        fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(1));
-    }
+    fprintf(ConfFile, "; Domain names\n");
+    fprintf(ConfFile, "; Name servers\n");
+    fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(0));
+    fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(1));
     fclose(ConfFile);
 
     CombinePath2P(filename, filenamelen, destdbdir, "static-routes");
@@ -272,7 +297,7 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
 
 #define BUFSIZE 2048
 BOOL CopyFile(CONST_STRPTR srcfile, CONST_STRPTR dstfile)
-{   
+{
     BPTR from = NULL, to = NULL;
     TEXT buffer[BUFSIZE];
 
@@ -280,7 +305,7 @@ BOOL CopyFile(CONST_STRPTR srcfile, CONST_STRPTR dstfile)
     {
         if ((to = Open(dstfile, MODE_NEWFILE)))
         {
-            LONG	s=0;
+            LONG s = 0;
 
             do
             {
@@ -298,7 +323,7 @@ BOOL CopyFile(CONST_STRPTR srcfile, CONST_STRPTR dstfile)
                     return FALSE;
                 }
             } while (s == BUFSIZE);
-            
+
             Close(to);
             Close(from);
             return TRUE;
@@ -314,7 +339,7 @@ CONST_STRPTR GetDefaultStackLocation()
 {
     /* Use static variable so that it is initialized only once (and can be returned) */
     static TEXT path [1024] = {0};
-    
+
     /* Load path if needed - this will happen only once */
     if (path[0] == '\0')
     {
@@ -333,7 +358,7 @@ BOOL IsStackRunning()
         CloseLibrary(socketlib);
         return TRUE;
     }
-    
+
     return FALSE;
 }
 
@@ -377,7 +402,7 @@ BOOL RestartStack()
         SystemTagList(arostcppath, tags);
     }
 
-    
+
     /* Check if startup successful */
     trycount = 0;
     while (!IsStackRunning())
@@ -426,7 +451,7 @@ BOOL CopyDefaultConfiguration(CONST_STRPTR destdir)
     /* Create necessary directories */
     if (!RecursiveCreateDir(destdir)) return FALSE;
     if (!RecursiveCreateDir(destdbdir)) return FALSE;
-    
+
     /* Copy files */
     if (!AddFileFromDefaultStackLocation("hosts", destdir)) return FALSE;
     if (!AddFileFromDefaultStackLocation("inet.access", destdir)) return FALSE;
@@ -461,10 +486,12 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
     BOOL comment = FALSE;
     STRPTR tstring;
     struct Tokenizer tok;
+    LONG interfacecount;
+    struct Interface *iface;
 
     /* This function will not fail. It will load as much data as possible. Rest will be default values */
 
-    CombinePath3P(filename, filenamelen, directory, "db", "general.config"); 
+    CombinePath3P(filename, filenamelen, directory, "db", "general.config");
     OpenTokenFile(&tok, filename);
     while (!tok.fend)
     {
@@ -486,10 +513,13 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
     }
     CloseTokenFile(&tok);
 
-    CombinePath3P(filename, filenamelen, directory, "db", "interfaces"); 
+    CombinePath3P(filename, filenamelen, directory, "db", "interfaces");
     OpenTokenFile(&tok, filename);
-    /* Reads only first uncommented interface */
-    while (!tok.fend)
+
+    SetInterfaceCount(0);
+    interfacecount = 0;
+
+    while (!tok.fend && (interfacecount < MAXINTERFACES))
     {
         GetNextToken(&tok, " \n");
         if (tok.token)
@@ -499,36 +529,48 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
 
             if (!comment)
             {
+                if (tok.newline)
+                {
+                    iface = GetInterface(interfacecount);
+                    SetName(iface, tok.token);
+                    interfacecount++;
+                    SetInterfaceCount(interfacecount);
+                }
                 if (strncmp(tok.token, "DEV=", 4) == 0)
                 {
                     tstring = strchr(tok.token, '=');
-                    SetDevice(tstring + 1);
+                    SetDevice(iface, tstring + 1);
+                }
+                if (strncmp(tok.token, "UNIT=", 5) == 0)
+                {
+                    tstring = strchr(tok.token, '=');
+                    SetUnit(iface, atol(tstring + 1));
                 }
                 if (strncmp(tok.token, "IP=", 3) == 0)
                 {
                     tstring = strchr(tok.token, '=');
                     if (strncmp(tstring + 1, "DHCP", 4) == 0)
                     {
-                        SetDHCP(TRUE);
-                        SetIP("192.168.0.188");
+                        SetDHCP(iface, TRUE);
+                        SetIP(iface, DEFAULTIP);
                     }
                     else
                     {
-                        SetIP(tstring + 1);
-                        SetDHCP(FALSE);
+                        SetIP(iface, tstring + 1);
+                        SetDHCP(iface, FALSE);
                     }
                 }
                 if (strncmp(tok.token, "NETMASK=", 8) == 0)
                 {
                     tstring = strchr(tok.token, '=');
-                    SetMask(tstring + 1);
+                    SetMask(iface, tstring + 1);
                 }
             }
         }
     }
     CloseTokenFile(&tok);
 
-    CombinePath3P(filename, filenamelen, directory, "db", "netdb-myhost"); 
+    CombinePath3P(filename, filenamelen, directory, "db", "netdb-myhost");
     OpenTokenFile(&tok, filename);
     int dnsc = 0;
     while (!tok.fend)
@@ -536,7 +578,7 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
         GetNextToken(&tok, " \n");
         if (tok.token)
         {
-            if (strncmp(tok.token, "NAMESERVER", 4) == 0)
+            if (strncmp(tok.token, "NAMESERVER", 10) == 0)
             {
                 GetNextToken(&tok, " \n");
                 SetDNS(dnsc, tok.token);
@@ -547,17 +589,17 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
     }
     CloseTokenFile(&tok);
 
-    CombinePath3P(filename, filenamelen, directory, "db", "static-routes"); 
+    CombinePath3P(filename, filenamelen, directory, "db", "static-routes");
     OpenTokenFile(&tok, filename);
     while (!tok.fend)
     {
         GetNextToken(&tok, " \n");
         if (tok.token)
         {
-            if (strncmp(tok.token, "DEFAULT", 4) == 0)
+            if (strncmp(tok.token, "DEFAULT", 7) == 0)
             {
                 GetNextToken(&tok, " \n");
-                if (strncmp(tok.token, "GATEWAY", 4) == 0) 
+                if (strncmp(tok.token, "GATEWAY", 7) == 0)
                 {
                     GetNextToken(&tok, " \n");
                     SetGate(tok.token);
@@ -567,19 +609,19 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
     }
     CloseTokenFile(&tok);
 
-    CombinePath2P(filename, filenamelen, directory, "Autorun"); 
+    CombinePath2P(filename, filenamelen, directory, "Autorun");
     OpenTokenFile(&tok, filename);
-    while (!tok.fend) 
+    while (!tok.fend)
     {
         GetNextToken(&tok, " \n");
-        if (tok.token) 
+        if (tok.token)
         {
-            if (strncmp(tok.token, "True", 4) == 0) 
+            if (strncmp(tok.token, "True", 4) == 0)
             {
                 SetAutostart(TRUE);
                 break;
             }
-            else 
+            else
             {
                 SetAutostart(FALSE);
                 break;
@@ -594,13 +636,13 @@ void InitNetworkPrefs(CONST_STRPTR directory, BOOL use, BOOL save)
     SetDefaultNetworkPrefsValues();
 
     ReadNetworkPrefs(directory);
-    
+
     if (save)
     {
         SaveNetworkPrefs();
         return; /* save equals to use */
-    }    
-    
+    }
+
     if (use)
     {
         UseNetworkPrefs();
@@ -628,28 +670,46 @@ BOOL IsLegal(STRPTR str, STRPTR accept)
     return TRUE;
 }
 
-BOOL IsName(STRPTR w)
-{
-    if ((w == NULL) || (w[0] == '\0') || strspn(w, NAMECHARS))
-    {
-        return FALSE;
-    }
-    return TRUE;
-}
 
 /* Getters */
 
-STRPTR GetIP()
+struct Interface * GetInterface(LONG index)
 {
-    return prefs.IP;
+    return &prefs.interface[index];
 }
 
-STRPTR GetMask()
+STRPTR GetName(struct Interface *iface)
 {
-    return prefs.mask;
+    return iface->name;
 }
 
-STRPTR GetGate()
+BOOL GetDHCP(struct Interface *iface)
+{
+    return iface->DHCP;
+}
+
+STRPTR GetIP(struct Interface *iface)
+{
+    return iface->IP;
+}
+
+STRPTR GetMask(struct Interface *iface)
+{
+    return iface->mask;
+}
+
+STRPTR GetDevice(struct Interface *iface)
+{
+    return iface->device;
+}
+
+LONG GetUnit(struct Interface *iface)
+{
+    return iface->unit;
+}
+
+
+STRPTR GetGate(void)
 {
     return prefs.gate;
 }
@@ -659,50 +719,89 @@ STRPTR GetDNS(LONG m)
     return prefs.DNS[m];
 }
 
-BOOL GetDHCP()
-{
-    return prefs.DHCP;
-}
-
-STRPTR GetDevice()
-{
-    return prefs.device;
-}
-
-STRPTR GetHost()
+STRPTR GetHost(void)
 {
     return prefs.host;
 }
 
-STRPTR GetDomain()
+STRPTR GetDomain(void)
 {
     return prefs.domain;
 }
 
-BOOL GetAutostart()
+LONG GetInterfaceCount(void)
+{
+    return prefs.interfacecount;
+}
+
+BOOL GetAutostart(void)
 {
     return prefs.autostart;
 }
 
+
 /* Setters */
 
-void SetIP(STRPTR w)
+void SetInterface
+(
+    struct Interface *iface, STRPTR name, BOOL dhcp, STRPTR IP, STRPTR mask,
+    STRPTR device, LONG unit
+)
+{
+    SetName(iface, name);
+    SetDHCP(iface, dhcp);
+    SetIP(iface, IP);
+    SetMask(iface, mask);
+    SetDevice(iface, device);
+    SetUnit(iface, unit);
+}
+
+void SetName(struct Interface *iface, STRPTR w)
+{
+    if (!IsLegal(w, NAMECHARS))
+    {
+        w = DEFAULTNAME;
+    }
+    strlcpy(iface->name, w, NAMEBUFLEN);
+}
+
+void SetDHCP(struct Interface *iface, BOOL w)
+{
+    iface->DHCP = w;
+}
+
+void SetIP(struct Interface *iface, STRPTR w)
 {
     if (!IsLegal(w, IPCHARS))
     {
         w = DEFAULTIP;
     }
-    strlcpy(prefs.IP, w, IPBUFLEN);
+    strlcpy(iface->IP, w, IPBUFLEN);
 }
 
-void SetMask(STRPTR  w)
+void SetMask(struct Interface *iface, STRPTR  w)
 {
     if (!IsLegal(w, IPCHARS))
     {
         w = DEFAULTMASK;
     }
-    strlcpy(prefs.mask, w, IPBUFLEN);
+    strlcpy(iface->mask, w, IPBUFLEN);
 }
+
+void SetDevice(struct Interface *iface, STRPTR w)
+{
+    if (w == NULL || w[0] == '\0')
+    {
+        w = DEFAULTDEVICE;
+    }
+    strlcpy(iface->device, w, NAMEBUFLEN);
+}
+
+void SetUnit(struct Interface *iface, LONG w)
+{
+    iface->unit = w;
+}
+
 
 void SetGate(STRPTR  w)
 {
@@ -722,20 +821,6 @@ void SetDNS(LONG m, STRPTR w)
     strlcpy(prefs.DNS[m], w, IPBUFLEN);
 }
 
-void SetDHCP(BOOL w)
-{
-    prefs.DHCP = w;
-}
-
-void SetDevice(STRPTR w)
-{
-    if (w == NULL || w[0] == '\0')
-    {
-        w = DEFAULTDEVICE;
-    }
-    strlcpy(prefs.device, w, NAMEBUFLEN);
-}
-
 void SetHost(STRPTR w)
 {
     if (!IsLegal(w, NAMECHARS))
@@ -752,6 +837,11 @@ void SetDomain(STRPTR w)
         w = DEFAULTDOMAIN;
     }
     strlcpy(prefs.domain, w, NAMEBUFLEN);
+}
+
+void SetInterfaceCount(LONG w)
+{
+    prefs.interfacecount = w;
 }
 
 void SetAutostart(BOOL w)

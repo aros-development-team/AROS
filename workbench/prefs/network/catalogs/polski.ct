@@ -1,6 +1,9 @@
-## version $VER: networkprefs.catalog 1.0 (11.05.09)
+## version $VER: networkprefs.catalog 1.0 (11.05.2009)
 ## codeset 0
 ## language polski
+;
+; TODO: update me and set version to 2
+;
 MSG_NAME
 Preferencje Sieci
 ;Network Preferences
