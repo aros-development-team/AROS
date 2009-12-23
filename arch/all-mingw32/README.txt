@@ -7,16 +7,18 @@
 a) Working Cygwin environment (Mingw's MSYS is expected to work too but it's not tested).
 b) Netpbm package of course.
 c) Native gcc v3 (for Cygwin). In gcc v4 -mno-cygwin option is no more supported. If you use MSYS
-   you're free from this restriction.
-d) AROS-targetted crosscompiler. Cygwin version of it can be found on AROS Archives:
+   you're free from this restriction and can use the latest gcc.
+d) AROS-targetted crosscompiler. It can be found on AROS Archives:
    http://archives.aros-exec.org/index.php?function=browse&cat=development/cross
-   Use the latest gcc version, however i386-aros-gcc v3 also works.
+   Use the latest gcc and binutils version, however i386-aros-gcc v3 also works.
 e) Mingw32 libraries package for Cygwin.
+f) libiconv for MinGW (for building makecountry).
 
  That's all. Execute "./configure --target=mingw32-i386", then "make".
 
- At the moment native build is succesfully performed under cygwin using Cygwin's gcc v3.4.4 and
-i386-aros-gcc v4.2.2. Building under MSYS is a work in progress.
+ Native build is verified to be succesful in two environments:
+1. Cygwin + gcc v3.4.4 + i386-aros-gcc v4.2.2
+2. MinGW + MSYS + gcc 4.4.0 + i386-aros-binutils v2.19 + i386-aros-gcc v4.2.2
 
  You can also crosscompile it under other OS. The only restriction (implied by configure script,
 needs to be fixed): build system CPU should be different from i386. Otherwise configure suggests native build
@@ -85,4 +87,4 @@ drivers in order to communicate with VH threads. Currently their allocation is s
 will be implemented in future.
  For more details see kernel.resource, i hope the code is clear enough.
 
- 11.03.2009, Pavel Fedin <sonic.amiga@gmail.com>
+ 23.12.2009, Pavel Fedin <sonic.amiga@gmail.com>
