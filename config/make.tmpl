@@ -2162,6 +2162,7 @@ endif
 #MM
 %(mmake)-configure : $(%(mmake)-configflag)
 
+$(%(mmake)-configflag) : TMP_SRCDIR := $(shell echo %(srcdir) | sed 's/^\(.\):\//\/\1\//')
 ifeq (%(compiler),host)
 $(%(mmake)-configflag) : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	$(RM) $@ 
@@ -2171,7 +2172,7 @@ $(%(mmake)-configflag) : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	CC="$(HOST_CC)" \
 	    TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
 	    TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)" \
-	    %(srcdir)/configure $(%(mmake)-config_opts) %(extraoptions) \
+	    $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) %(extraoptions) \
 	    --target=$(AROS_TARGET_CPU)-aros && \
 	    $(TOUCH) $@
 endif
@@ -2183,7 +2184,7 @@ $(%(mmake)-configflag) : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	find . -name config.cache -exec $(RM) '{}' \; && \
 	CC="$(TARGET_CC) $(LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
 	    AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)" \
-	    %(srcdir)/configure $(%(mmake)-config_opts) %(extraoptions) \
+	    $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) %(extraoptions) \
 	    --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH) \
 	    --host=$(AROS_TARGET_CPU)-aros \
 	    --target=$(AROS_TARGET_CPU)-aros \
@@ -2199,7 +2200,7 @@ $(%(mmake)-configflag) : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	find . -name config.cache -exec $(RM) '{}' \; && \
 	CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
 	    AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)" \
-	    %(srcdir)/configure $(%(mmake)-config_opts) %(extraoptions) \
+	    $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) %(extraoptions) \
 	    --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH) \
 	    --host=$(AROS_TARGET_CPU)-aros \
 	    --target=$(AROS_TARGET_CPU)-aros --disable-nls \
