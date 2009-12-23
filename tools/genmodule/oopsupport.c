@@ -101,7 +101,7 @@ void writeoopinit(FILE *out, struct classinfo *cl)
 	    methods++;
 
 	fprintf(out, "        {(OOP_MethodFunc)%s, %s},\n",
-		methlistit->name, methlistit->method
+		methlistit->internalname, methlistit->method
 	);
     }
     /* Close the last declaration */
