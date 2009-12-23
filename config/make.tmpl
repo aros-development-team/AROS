@@ -366,7 +366,9 @@ TMP_WILDCARD := %(targetdir)/%
 $(TMP_TARGETS) $(TMP_DTARGETS) : | $(addsuffix .c,%(basenames))
 
 # Be sure that all .c files are found
-TMP_DIRS := $(filter-out ./,$(sort $(dir %(basenames)) $(addprefix $(SRCDIR)/$(CURDIR)/,$(dir %(basenames)))))
+TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+TMP_BASEDIRS := $(shell echo $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
+TMP_DIRS := $(foreach dir, $(TMP_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(TMP_SRCDIR)/$(CURDIR)/$(dir)))
 ifneq ($(TMP_DIRS),)
     TMP_DIRS := $(shell echo $(TMP_DIRS) | sed 's/\(.\):\//\/\1\//g')
     vpath %.c $(TMP_DIRS)
@@ -515,7 +517,9 @@ TMP_WILDCARD := %(targetdir)/%
 $(TMP_TARGETS) : | $(addsuffix %(suffix),%(basenames))
 
 # Be sure that all .c files are found
-TMP_DIRS := $(filter-out ./,$(sort $(dir %(basenames)) $(addprefix $(SRCDIR)/$(CURDIR)/,$(dir %(basenames)))))
+TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+TMP_BASEDIRS := $(shell echo $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
+TMP_DIRS := $(foreach dir, $(TMP_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(TMP_SRCDIR)/$(CURDIR)/$(dir)))
 ifneq ($(TMP_DIRS),)
     TMP_DIRS := $(shell echo $(TMP_DIRS) | sed 's/\(.\):\//\/\1\//g')
     vpath %%(suffix) $(TMP_DIRS)
@@ -730,7 +734,9 @@ TMP_WILDCARD := %(targetdir)/%.ref
 $(TMP_TARGETS) : | $(addsuffix .c,%(basenames))
 
 # Be sure that all .c files are found
-TMP_DIRS := $(filter-out ./,$(sort $(dir %(basenames)) $(addprefix $(SRCDIR)/$(CURDIR)/,$(dir %(basenames)))))
+TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+TMP_BASEDIRS := $(shell echo $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
+TMP_DIRS := $(foreach dir, $(TMP_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(TMP_SRCDIR)/$(CURDIR)/$(dir)))
 ifneq ($(TMP_DIRS),)
     TMP_DIRS := $(shell echo $(TMP_DIRS) | sed 's/\(.\):\//\/\1\//g')
     vpath %.c $(TMP_DIRS)
