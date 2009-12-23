@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 
 %build_module mmake=kernel-kernel-mingw32 	\
   modname=kernel modtype=resource		\
-  cflags="$(CFLAGS) -I$(TOP)/rom/exec"		\
+  cflags="$(CFLAGS) -I$(SRCDIR)/rom/exec"	\
   files="kernel_init debug intr scheduler mmu" uselibs="rom"
 
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
@@ -28,4 +28,4 @@ $(NATIVE_DIR) :
 	mkdir $(NATIVE_DIR)
 	 
 $(NATIVE_DIR)/%.o : %.c $(NATIVE_DIR)
-	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/rom/exec -I$(TOP)/arch/all-mingw32/exec
+	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ -c $< -I$(GENINCDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/arch/all-mingw32/exec
