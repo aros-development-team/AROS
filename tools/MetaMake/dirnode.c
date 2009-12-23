@@ -294,11 +294,9 @@ debug(printf("MMAKE:dirnode.c->scandirnode: Makefile node dir '%s'\n", node->nod
 
 		/* Add file to newsubdirs if it is a directory and it has not to be ignored
 		 */
-		if (lstat (dirent->d_name, &st) == -1)
-		{
-		    error ("scandirnode: stat(%s)", dirent->d_name);
-		    exit(20);
-		}
+		st.st_mode = 0; /* This makes us to ignore the file if it can't be stat()'ed.
+		                   This lets us to succesfully skip Unicode-named files under Windows */
+		lstat (dirent->d_name, &st);
 
                 /* TODO: Add support to MetaMake for going through links
                  * If this feature is to be supported one also has to implement

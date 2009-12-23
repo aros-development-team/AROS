@@ -184,4 +184,6 @@ GLOB_MKDIRS :=
 VPATH := $(SRCDIR)/$(CURDIR)
 
 # Macro for expanding wildcards in source directory
-WILDCARD = $(subst $(SRCDIR)/$(CURDIR)/,,$(wildcard $(addprefix $(SRCDIR)/$(CURDIR)/,$(1))))
+# We use shell script here in order to avoid Unicode file names that are listed by pattern expansion but can't be accessed
+# because of failing Unicode->ACP conversion under Windows
+WILDCARD = $(shell cd $(SRCDIR)/$(CURDIR); for file in $(1); do if [ -f $$file ]; then echo -n "$$file "; fi; done)
