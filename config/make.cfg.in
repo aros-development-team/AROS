@@ -181,7 +181,7 @@ endif
 GLOB_MKDIRS :=
 
 # Source directory is added to the target search path
-VPATH := $(SRCDIR)/$(CURDIR)
+VPATH := $(shell echo $(SRCDIR)/$(CURDIR) | sed 's/^\(.\):\//\/\1\//')
 
 # Macro for expanding wildcards in source directory
 # We use shell script here in order to avoid Unicode file names that are listed by pattern expansion but can't be accessed
