@@ -7,13 +7,14 @@ COUNTRYDIR   := $(AROS_LOCALE)/Countries
 MAKECOUNTRY  := $(OBJDIR)/makecountry
 OBJDIR 	     := $(GENDIR)/$(CURDIR)
 COUNTIFF     := $(foreach f,$(COUNTRIES),$(COUNTRYDIR)/$(f).country)
+COUNTIFF     := $(shell awk '($$2 == "COUNTRY_NAME") {gsub(/"/,"",$$3); printf "$(COUNTRYDIR)/%s.country ", $$3}' makecountry/makecountry.c)
 OBJS         := $(foreach f,countryprefs $(COUNTRIES),$(OBJDIR)/$(f).o)
 DEPS         := $(foreach f,countryprefs $(COUNTRIES),$(OBJDIR)/$(f).d)
 USER_CFLAGS  := -D_EURO
 
-# FIXME: Building makecountry on Cygwin and AROS requires to explicitly specify -liconv. Probably this should
+# FIXME: Building makecountry on these systems requires to explicitly specify -liconv. Probably this should
 #        be handled by configure script
-ifeq ($(filter-out aros cygwin,$(AROS_HOST_ARCH)),)
+ifeq ($(filter-out aros cygwin mingw32,$(AROS_HOST_ARCH)),)
 LIBICONV := -liconv
 else
 LIBICONV :=
@@ -28,7 +29,7 @@ workbench-locale-countries: $(MAKECOUNTRY) $(COUNTIFF)
 workbench-locale-countries-quick : workbench-locale-countries
 
 $(COUNTIFF) : | $(MAKECOUNTRY) $(COUNTRYDIR)
-$(COUNTRYDIR)/%.country : $(OBJDIR)/%.o
+$(COUNTRYDIR)/%.country : $(MAKECOUNTRY)
 	@$(ECHO) "Making $(notdir $@)..."
 	@cd $(SRCDIR)/$(CURDIR); $(MAKECOUNTRY) $(COUNTRYDIR)/ $*
 
