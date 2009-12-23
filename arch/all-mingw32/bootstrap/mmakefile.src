@@ -56,8 +56,8 @@ $(BINDIR)/boot/aros-mingw32: setup-mingw32 $(KOBJS)
 	  -o $@ $(KOBJS) $(NOSTARTUP_LDFLAGS)\
 	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lhiddgraphicsstubs
 
-$(TARGETDIR)/icon.o: icon.rc icon.ico
-	$(KERNEL_RESCOMP) --output-format=coff icon.rc $@
+$(TARGETDIR)/icon.o: $(SRCDIR)/$(CURDIR)/icon.rc $(SRCDIR)/$(CURDIR)/icon.ico
+	$(KERNEL_RESCOMP) --output-format=coff $< $@
 
 $(BINDIR)/boot/AROSBootstrap.exe: $(BOBJS)
 	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(BOBJS)

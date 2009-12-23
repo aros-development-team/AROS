@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.. -I$(TOP)/rom/timer
+USER_INCLUDES := -I$(SRCDIR)/rom/timer
 
 %build_archspecific \
   mainmmake=kernel-timer maindir=rom/timer \

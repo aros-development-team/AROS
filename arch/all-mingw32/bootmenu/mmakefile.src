@@ -1,7 +1,7 @@
 # $Id: mmakefile.src 29725 2008-10-11 23:48:13Z neil $
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.. -I$(TOP)/rom/bootmenu
+USER_INCLUDES := -I$(SRCDIR)/rom/bootmenu
 
 %build_archspecific \
   mainmmake=kernel-bootmenu maindir=rom/bootmenu \

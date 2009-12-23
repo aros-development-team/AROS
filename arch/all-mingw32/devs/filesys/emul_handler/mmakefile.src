@@ -29,4 +29,4 @@ $(NATIVE_DIR) :
 	mkdir $(NATIVE_DIR)
 	 
 $(NATIVE_DIR)/%.o : %.c $(NATIVE_DIR)
-	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/rom/exec
+	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ -c $< -I$(GENINCDIR)
