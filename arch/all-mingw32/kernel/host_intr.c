@@ -20,7 +20,7 @@ typedef unsigned char UBYTE;
 #include "cpucontext.h"
 
 #define DI(x)   /* Interrupts debug     */
-#define DT(x) x /* Traps debug          */
+#define DT(x)   /* Traps debug          */
 #define DS(x)   /* Task switcher debug  */
 #define DIRQ(x) /* IRQ debug		*/
 
