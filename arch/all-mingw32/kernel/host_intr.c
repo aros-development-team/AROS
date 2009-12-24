@@ -11,6 +11,7 @@ typedef unsigned char UBYTE;
 
 #include <stddef.h>
 #include <stdio.h>
+#include <exec/alerts.h>
 #include <exec/lists.h>
 #include <exec/execbase.h>
 #include "kernel_intern.h"
@@ -19,14 +20,22 @@ typedef unsigned char UBYTE;
 #include "cpucontext.h"
 
 #define DI(x)   /* Interrupts debug     */
+#define DT(x) x /* Traps debug          */
 #define DS(x)   /* Task switcher debug  */
 #define DIRQ(x) /* IRQ debug		*/
 
 #define AROS_EXCEPTION_SYSCALL 0x80000001
 
-struct SwitcherData {
+struct SwitcherData
+{
     HANDLE MainThread;
     HANDLE IntObjects[INTERRUPTS_NUM];
+};
+
+struct ExceptionTranslation
+{
+    DWORD ExceptionCode;
+    unsigned long TrapNum;
 };
 
 struct SwitcherData SwData;
@@ -52,10 +61,26 @@ void user_handler(uint8_t exception, struct List *list)
     }
 }
 
+struct ExceptionTranslation ExceptionsTable[] = {
+    {EXCEPTION_ACCESS_VIOLATION     , 2},
+    {EXCEPTION_ARRAY_BOUNDS_EXCEEDED, 3},
+    {EXCEPTION_BREAKPOINT	    , 4},
+    {EXCEPTION_DATATYPE_MISALIGNMENT, 3},
+    {EXCEPTION_FLT_DIVIDE_BY_ZERO   , 5},
+    {EXCEPTION_GUARD_PAGE	    , 3},
+    {EXCEPTION_ILLEGAL_INSTRUCTION  , 4},
+    {EXCEPTION_IN_PAGE_ERROR	    , 3},
+    {EXCEPTION_INT_DIVIDE_BY_ZERO   , 5},
+    {EXCEPTION_PRIV_INSTRUCTION     , 8},
+    {EXCEPTION_SINGLE_STEP	    , 9},
+    {0				    , 0}
+ };
+
 LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
 {
     	struct ExecBase *SysBase = *SysBasePtr;
     	struct KernelBase *KernelBase = *KernelBasePtr;
+	void (*trapHandler)(unsigned long) = NULL;
     	REG_SAVE_VAR;
 
 	Supervisor++;
@@ -87,13 +112,29 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
     	    {
         	struct Task *t = SysBase->ThisTask;
         	
-        	if (t)
-        	    printf("[KRN] %s %p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
-        	else
+        	if (t) {
+        	    printf("[KRN] %s 0x%p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
+		    trapHandler = t->tc_TrapCode;
+        	} else {
         	    printf("[KRN] No task\n");
+		    trapHandler = SysBase->TaskTrapCode;
+		}
     	    }
     	    PRINT_CPUCONTEXT(Except->ContextRecord);
-    	    printf("[KRN] **UNHANDLED EXCEPTION** stopping here...\n");
+	    
+	    DT(printf("Task trap handler 0x%p\n", trapHandler));
+	    DT(printf("Exec trap handler 0x%p\n", SysBase->TaskTrapCode));
+	    if (trapHandler) {
+	        struct ExceptionTranslation *ex;
+
+	        for (ex = ExceptionsTable; ex->ExceptionCode; ex++) {
+		    if (Except->ExceptionRecord->ExceptionCode == ex->ExceptionCode)
+		        break;
+		}
+		DT(printf("Calling trap %u\n", ex->TrapNum));
+	        trapHandler(ex->TrapNum);
+	    } else
+    	        printf("[KRN] **UNHANDLED EXCEPTION** stopping here...\n");
 	    return EXCEPTION_EXECUTE_HANDLER;
 	}
 }

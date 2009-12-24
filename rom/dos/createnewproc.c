@@ -354,7 +354,9 @@ static LONG AskSuspend(const TEXT *taskName, ULONG alertNum);
     process->pr_Task.tc_Node.ln_Type = NT_PROCESS;
     process->pr_Task.tc_Node.ln_Name = name;
     process->pr_Task.tc_Node.ln_Pri = defaults[11].ti_Data;
-    process->pr_Task.tc_TrapCode = TrapHandler;
+/*  Disabled because this can't work. The code in TrapHandler actually can't be called from
+    within CPU trap. Pavel Fedin <sonic.amiga@gmail.com>.
+    process->pr_Task.tc_TrapCode = TrapHandler;*/
     process->pr_Task.tc_SPLower = stack;
     process->pr_Task.tc_SPUpper = stack + defaults[9].ti_Data;
 

@@ -54,6 +54,7 @@ COMMONTESTFILES := \
     systemtagsslave \
     tasktest \
     tasktest2 \
+    traptest \
     ExNext \
     randtest \
     enqueue \

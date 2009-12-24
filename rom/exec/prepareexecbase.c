@@ -6,7 +6,7 @@
     Lang:
 */
 
-
+#include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/memory.h>
@@ -31,14 +31,10 @@ extern void *LIBFUNCTABLE[];
 extern struct Library * PrepareAROSSupportBase (struct ExecBase *);
 extern struct Resident Exec_resident; /* Need this for lib_IdString */
 extern void AROS_SLIB_ENTRY(CacheClearU,Exec)();
-AROS_UFP1(void, Exec_TrapHandler,
-	  AROS_UFPA(struct ExecBase *, SysBase, A6)
-);
 AROS_UFP1(void, Exec_TaskFinaliser,
 	  AROS_UFPA(struct ExecBase *, SysBase, A6)
 );
-
-extern void AROS_SLIB_ENTRY(TrapHandler,Exec)();
+extern void Exec_TrapHandler(ULONG trapNum);
 extern void AROS_SLIB_ENTRY(TaskFinaliser,Exec)();
 
 static APTR allocmem(struct MemHeader *mh, ULONG size)
@@ -168,7 +164,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 
     SysBase->Quantum        = 4;
 
-    SysBase->TaskTrapCode   = AROS_SLIB_ENTRY(TrapHandler,Exec);
+    SysBase->TaskTrapCode   = Exec_TrapHandler;
     SysBase->TaskExceptCode = NULL;
     SysBase->TaskExitCode   = AROS_SLIB_ENTRY(TaskFinaliser,Exec);
     SysBase->TaskSigAlloc   = 0xFFFF;
@@ -178,6 +174,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     SysBase->PowerSupplyFrequency = 1;
     
     SysBase->DebugAROSBase  = PrepareAROSSupportBase(SysBase);
+    D(bug("[execbase] TrapCode is 0x%p\n", SysBase->TaskTrapCode));
 
     return SysBase;
 }

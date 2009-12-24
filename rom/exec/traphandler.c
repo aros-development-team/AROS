@@ -1,30 +1,25 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Default trap handler
     Lang: english
 */
+
+#include <exec/alerts.h>
 #include <exec/tasks.h>
 #include <proto/exec.h>
 #include <proto/arossupport.h>
 
-AROS_UFH1(void, Exec_TrapHandler,
-	  AROS_UFHA(struct ExecBase *, SysBase, A6)
-)
+/* In original AmigaOS the trap handler is entered in supervisor mode with the
+ * following on the supervisor stack:
+ *  0(sp).l = trap#
+ *  4(sp) Processor dependent exception frame
+ * We should try to be as close as possible. I strongly beleive this implementation
+ * is quite incomplete.
+ */
+
+void Exec_TrapHandler(ULONG trapNum)
 {
-    AROS_USERFUNC_INIT
-
-    struct Task * task;
-
-    task = FindTask (NULL);
-
-    kprintf ( "Traphandler for Task %p (%s) invoked\n"
-	, task
-	, (task && task->tc_Node.ln_Name) ?
-	    task->tc_Node.ln_Name
-	    : "-- unknown task --"
-    );
-
-    AROS_USERFUNC_EXIT
+    Alert(AT_DeadEnd | trapNum);
 } /* TrapHandler */
