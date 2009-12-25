@@ -20,6 +20,7 @@
 #include <stdlib.h>
 
 #include "cpucontext.h"
+#include "exception.h"
 #include "kernel_intern.h"
 #include LC_LIBDEFS_FILE
 
@@ -150,15 +151,11 @@ char *kernel_functions[] = {
     "core_intr_enable",
     "core_syscall",
     "core_is_super",
+    "core_exception",
     NULL
 };
 
 /* rom startup */
-
-
-//make this the entry point
-//int startup(struct TagItem *msg) __attribute__ ((section (".aros.init")));
-
 int __startup startup(struct TagItem *msg)
 {
   void *hostlib;
@@ -244,10 +241,17 @@ int __startup startup(struct TagItem *msg)
       return -1;
   }
 
+  /* BEGIN_EXCEPTION() and END_EXCEPTION() are clever macros which create a SEH
+     frame around the nested code. We use it in order to catch exceptions in
+     AROS thread. */
+  BEGIN_EXCEPTION(KernelIFace.core_exception);
+  
   mykprintf("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n");
   InitCode(RTF_SINGLETASK, 0);
-
+  
   mykprintf("leaving startup!\n");
+  END_EXCEPTION();
+  
   HostIFace->HostLib_Close(hostlib, NULL);
   return 1;
 }

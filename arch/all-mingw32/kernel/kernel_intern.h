@@ -84,6 +84,7 @@ struct KernelInterface {
     long (*core_intr_enable)(void);
     void (*core_syscall)(unsigned long n);
     unsigned char (*core_is_super)(void);
+    long (*core_exception)(void *ExceptionRecord, void *EstablisherFrame, void *ContextRecord, void *DispatcherContext);
 };
 
 extern struct HostInterface *HostIFace;
