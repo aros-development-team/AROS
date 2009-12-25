@@ -1,6 +1,7 @@
 #define DEBUG 0
 
 #include <aros/system.h>
+#include <excpt.h>
 #include <windows.h>
 #define __typedef_LONG /* LONG, ULONG, WORD, BYTE and BOOL are declared in Windows headers. Looks like everything  */
 #define __typedef_WORD /* is the same except BOOL. It's defined to short on AROS and to int on Windows. This means */
@@ -76,7 +77,7 @@ struct ExceptionTranslation ExceptionsTable[] = {
     {0				    , 0}
  };
 
-LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
+EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *ExceptionRecord, void *EstablisherFrame, CONTEXT *ContextRecord, void *DispatcherContext)
 {
     	struct ExecBase *SysBase = *SysBasePtr;
     	struct KernelBase *KernelBase = *KernelBasePtr;
@@ -84,30 +85,30 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
     	REG_SAVE_VAR;
 
 	Supervisor++;
-	switch (Except->ExceptionRecord->ExceptionCode) {
+	switch (ExceptionRecord->ExceptionCode) {
 	case AROS_EXCEPTION_SYSCALL:
-	    CONTEXT_SAVE_REGS(Except->ContextRecord);
-	    DI(printf("[KRN] Syscall exception %lu\n", *Except->ExceptionRecord->ExceptionInformation));
-	    switch (*Except->ExceptionRecord->ExceptionInformation)
+	    CONTEXT_SAVE_REGS(ContextRecord);
+	    DI(printf("[KRN] Syscall exception %lu\n", *ExceptionRecord->ExceptionInformation));
+	    switch (*ExceptionRecord->ExceptionInformation)
 	    {
 	    case SC_CAUSE:
 	        core_Cause(SysBase);
 	        break;
 	    case SC_DISPATCH:
-	        core_Dispatch(Except->ContextRecord);
+	        core_Dispatch(ContextRecord);
 	        break;
 	    case SC_SWITCH:
-	        core_Switch(Except->ContextRecord);
+	        core_Switch(ContextRecord);
 	        break;
 	    case SC_SCHEDULE:
-	        core_Schedule(Except->ContextRecord);
+	        core_Schedule(ContextRecord);
 	        break;
 	    }
-	    CONTEXT_RESTORE_REGS(Except->ContextRecord);
+	    CONTEXT_RESTORE_REGS(ContextRecord);
 	    Supervisor--;
-	    return EXCEPTION_CONTINUE_EXECUTION;
+	    return ExceptionContinueExecution;
 	default:
-	    printf("[KRN] Exception 0x%08lX, context 0x%p, SysBase 0x%p, KernelBase 0x%p\n", Except->ExceptionRecord->ExceptionCode, Except->ContextRecord, SysBase, KernelBase);
+	    printf("[KRN] Exception 0x%08lX, context 0x%p, SysBase 0x%p, KernelBase 0x%p\n", ExceptionRecord->ExceptionCode, ContextRecord, SysBase, KernelBase);
     	    if (SysBase)
     	    {
         	struct Task *t = SysBase->ThisTask;
@@ -120,7 +121,7 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
 		    trapHandler = SysBase->TaskTrapCode;
 		}
     	    }
-    	    PRINT_CPUCONTEXT(Except->ContextRecord);
+    	    PRINT_CPUCONTEXT(ContextRecord);
 	    
 	    DT(printf("Task trap handler 0x%p\n", trapHandler));
 	    DT(printf("Exec trap handler 0x%p\n", SysBase->TaskTrapCode));
@@ -128,14 +129,14 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
 	        struct ExceptionTranslation *ex;
 
 	        for (ex = ExceptionsTable; ex->ExceptionCode; ex++) {
-		    if (Except->ExceptionRecord->ExceptionCode == ex->ExceptionCode)
+		    if (ExceptionRecord->ExceptionCode == ex->ExceptionCode)
 		        break;
 		}
 		DT(printf("Calling trap %u\n", ex->TrapNum));
 	        trapHandler(ex->TrapNum);
 	    } else
     	        printf("[KRN] **UNHANDLED EXCEPTION** stopping here...\n");
-	    return EXCEPTION_EXECUTE_HANDLER;
+	    return ExceptionContinueSearch;
 	}
 }
 
@@ -281,7 +282,6 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
     Ints_Enabled = 0;
     Supervisor = 0;
     Sleep_Mode = 0;
-    SetUnhandledExceptionFilter(ExceptionHandler);
     if (InitIntObjects(SwData.IntObjects)) {
     	SwData.IntObjects[INT_TIMER] = CreateWaitableTimer(NULL, 0, NULL);
     	if (SwData.IntObjects[INT_TIMER]) {
