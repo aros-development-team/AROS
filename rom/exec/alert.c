@@ -5,20 +5,12 @@
     Desc: Display an alert.
     Lang: english
 */
-#include <aros/config.h>
-#include <aros/debug.h>
-#include <exec/types.h>
-#include <exec/resident.h>
+
 #include <exec/alerts.h>
-#include <exec/rawfmt.h>
-#include <exec/tasks.h>
 #include <exec/execbase.h>
-#include <intuition/intuitionbase.h>
+#include <exec/rawfmt.h>
 #include <proto/exec.h>
-#include <proto/intuition.h>
-#include <aros/system.h>
-#include <aros/libcall.h>
-#include <aros/asmcall.h>
+#include <string.h>
 
 #include "alertstrings.h"
 
@@ -99,12 +91,11 @@ static void PrintFrame(void)
 {
     AROS_LIBFUNC_INIT
 
-    struct Task *task;
     UBYTE buffer[256], *buf;
 
     PrintFrame();
     PrintCentered(Alert_GetTitle(alertNum));
-    NewRawDoFmt(fmtstring, RAWFMTFUNC_STRING, buffer, task, Alert_GetTaskName(SysBase));
+    NewRawDoFmt(fmtstring, RAWFMTFUNC_STRING, buffer, SysBase->ThisTask, Alert_GetTaskName(SysBase->ThisTask));
     PrintCentered(buffer);
     buf = NewRawDoFmt(errstring, RAWFMTFUNC_STRING, buffer, alertNum);
     Alert_GetString(alertNum, --buf);
