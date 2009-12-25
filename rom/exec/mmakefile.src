@@ -8,7 +8,7 @@ include $(TOP)/config/make.cfg
 
 ALL_FUNCTIONS	:= \
 	abortio adddevice addhead addintserver addlibrary addmemhandler \
-	addmemlist addport addresource addsemaphore addtail addtask alert \
+	addmemlist addport addresource addsemaphore addtail addtask alert alertstrings \
 	allocabs allocate allocentry allocmem allocpooled allocsignal \
 	alloctrap allocvec attemptsemaphore attemptsemaphoreshared availmem \
 	cachecleare cacheclearu cachecontrol cachepostdma cachepredma cause \
