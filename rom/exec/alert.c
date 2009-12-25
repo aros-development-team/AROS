@@ -1,19 +1,59 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Display an alert.
     Lang: english
 */
-#include <exec/execbase.h>
-#include <aros/libcall.h>
+#include <aros/config.h>
+#include <aros/debug.h>
+#include <exec/types.h>
+#include <exec/resident.h>
 #include <exec/alerts.h>
+#include <exec/rawfmt.h>
+#include <exec/tasks.h>
+#include <exec/execbase.h>
+#include <intuition/intuitionbase.h>
 #include <proto/exec.h>
+#include <proto/intuition.h>
+#include <aros/system.h>
+#include <aros/libcall.h>
+#include <aros/asmcall.h>
 
-#ifdef kprintf
-#undef kprintf
-#endif
-int kprintf(const UBYTE *, ...);
+#include "alertstrings.h"
+
+#define ALERT_WIDTH 80
+
+static UBYTE *const fmtstring = "Task %08lx - %s";
+static UBYTE *const errstring = "Error %08lx - ";
+
+static void PrintChars(char c, ULONG n)
+{
+    while (n--)
+        RawPutChar(c);
+}
+
+static void PrintCentered(char *str)
+{
+    ULONG s = ALERT_WIDTH - 2 - strlen(str);
+    
+    RawPutChar('#');
+    if (s & 1)
+        RawPutChar(' ');
+    s >>= 1;
+    PrintChars(' ', s);
+    while (*str)
+        RawPutChar(*str++);
+    PrintChars(' ', s);
+    RawPutChar('#');
+    RawPutChar('\n');
+}
+
+static void PrintFrame(void)
+{
+    PrintChars('#', ALERT_WIDTH);
+    RawPutChar('\n');
+}
 
 /*****************************************************************************
 
@@ -50,231 +90,33 @@ int kprintf(const UBYTE *, ...);
     SEE ALSO
 
     INTERNALS
+        This is actually a poor-man implementation which prints alert information
+	to the debug output. Only this thing works everywhere and only this thing
+	can be called from within interrupts and traps. It's done so just because
+	it's better than nothing. Well, some day things will change...
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    static const char * CPUStrings[] =
-    {
-	"Hardware bus fault/access error",
-	"Illegal address access (ie: odd)",
-	"Illegal instruction",
-	"Divide by zero",
-	"Check instruction error",
-	"TrapV instruction error",
-	"Privilege violation error",
-	"Trace error",
-	"Line 1010 Emulator error",
-	"Line 1111 Emulator error",
-	"Stack frame format error",
-	"Spurious interrupt error",
-	"AutoVector Level 1 interrupt error",
-	"AutoVector Level 2 interrupt error",
-	"AutoVector Level 3 interrupt error",
-	"AutoVector Level 4 interrupt error",
-	"AutoVector Level 5 interrupt error",
-	"AutoVector Level 6 interrupt error",
-	"AutoVector Level 7 interrupt error",
-    },
-    * GenPurposeStrings[] =
-    {
-	"No memory",
-	"Make library",
-	"Open library",
-	"Open device",
-	"Open resource",
-	"I/O error",
-	"No signal",
-	"Bad parameter",
-	"Close library",
-	"Close device",
-	"Create process",
-    },
-    * AlertObjects[] =
-    {
-	"Exec",
-	"Graphics",
-	"Layers",
-	"Intuition",
 
-	"Math",
-	"DOS",
-	"RAM",
-	"Icon",
+    struct Task *task;
+    UBYTE buffer[256], *buf;
 
-	"Expansion",
-	"Diskfont",
-	"Utility",
-	"Keymap",
-
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-    /* 0x10 */
-	"Audio",
-	"Console",
-	"Gameport",
-	"Keyboard",
-
-	"Trackdisk",
-	"Timer",
-	NULL,
-	NULL,
-
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-    /* 0x20 */
-	"CIA",
-	"Disk",
-	"Misc",
-	NULL,
-
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-    /* 0x30 */
-	"Bootstrap",
-	"Workbench",
-	"Diskcopy",
-	"Gadtools",
-
-	"Unknown",
-    },
-    * ExecStrings[] =
-    {
-	"68000 exception vector checksum",
-	"Execbase checksum",
-	"Library checksum failure",
-	NULL,
-
-	"Corrupt memory list detected in FreeMem",
-	"No memory for interrupt servers",
-	"InitStruct() of an APTR source",
-	"A semaphore is in an illegal state at ReleaseSemaphore",
-
-	"Freeing memory already freed",
-	"Illegal 68k exception taken",
-	"Attempt to reuse active IORequest",
-	"Sanity check on memory list failed",
-
-	"IO attempted on closed IORequest",
-	"Stack appears to extend out of range",
-	"Memory header not located. (Usually an invalid address passed to FreeMem())",
-	"An attempt was made to use the old message semaphores",
-
-    };
-
-    struct Task * task;
-
-#   define GetSubSysId(a)       (((a) >> 24) & 0x7F)
-#   define GetGenError(a)       (((a) >> 16) & 0xFF)
-#   define GetSpecError(a)      ((a) & 0xFFFF)
-
-    task = FindTask (NULL);
-
-    /* since this is an emulation, we just show the bug in the console */
-    kprintf ( "GURU Meditation %04lx %04lx\n"
-	, alertNum >> 16
-	, alertNum & 0xFFFF
-    );
-
-    if (alertNum & 0x80000000)
-	kprintf ( "Deadend/" );
-    else
-	kprintf( "Recoverable/" );
-
-    switch (GetSubSysId (alertNum))
-    {
-    case 0: /* CPU/OS/App */
-	if (GetGenError (alertNum) == 0)
-	{
-	    kprintf( "CPU/" );
-
-	    if (GetSpecError (alertNum) >= 2 && GetSpecError (alertNum) <= 0x1F)
-		kprintf ("%s"
-		    , CPUStrings[GetSpecError (alertNum) - 2]
-		);
-	    else
-		kprintf ("*unknown*");
-	}
-	else if (GetGenError (alertNum) <= 0x0B)
-	{
-	    kprintf ("%s/"
-		, GenPurposeStrings[GetGenError (alertNum) - 1]
-	    );
-
-	    if (GetSpecError (alertNum) >= 0x8001
-		&& GetSpecError (alertNum) <= 0x8035)
-	    {
-		kprintf ("%s"
-		    , AlertObjects[GetSpecError (alertNum) - 0x8001]
-		);
-	    }
-	    else
-		kprintf ("*unknown*");
-	}
-
-	break;
-
-    case 1: /* Exec */
-	kprintf ("Exec/");
-
-	if (!GetGenError (alertNum)
-	    && GetSpecError (alertNum) >= 0x0001
-	    && GetSpecError (alertNum) <= 0x0010)
-	{
-	    kprintf ("%s"
-		, ExecStrings[GetSpecError (alertNum) - 0x0001]
-	    );
-	}
-	else
-	{
-	    kprintf ("*unknown*");
-	}
-
-	break;
-
-    case 2: /* Graphics */
-	kprintf ("Graphics/*unknown*");
-
-	break;
-
-    default:
-	kprintf ("*unknown*/*unknown*");
-    }
-
-    kprintf ("\nTask: %p (%s)\n"
-	, task
-	, (task && task->tc_Node.ln_Name) ?
-	    task->tc_Node.ln_Name
-	    : "-- unknown task --"
-    );
-
+    PrintFrame();
+    PrintCentered(Alert_GetTitle(alertNum));
+    NewRawDoFmt(fmtstring, RAWFMTFUNC_STRING, buffer, task, Alert_GetTaskName(SysBase));
+    PrintCentered(buffer);
+    buf = NewRawDoFmt(errstring, RAWFMTFUNC_STRING, buffer, alertNum);
+    Alert_GetString(alertNum, --buf);
+    PrintCentered(buffer);
+    PrintFrame();
+    RawPutChar('\n');
+    
     if (alertNum & AT_DeadEnd)
     {
-	/* Um, we have to do something here in order to prevent the 
-	    computer from continuing... */
+	/* Um, we have to do something here in order to prevent the
+	   computer from continuing... */
 	ColdReboot();
     }
     AROS_LIBFUNC_EXIT
-} /* Alert */
-
+}
