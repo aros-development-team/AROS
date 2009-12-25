@@ -107,7 +107,7 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
 	    Supervisor--;
 	    return EXCEPTION_CONTINUE_EXECUTION;
 	default:
-	    printf("[KRN] Exception 0x%08lX handler. Context @ %p, SysBase @ %p, KernelBase @ %p\n", Except->ExceptionRecord->ExceptionCode, Except->ContextRecord, SysBase, KernelBase);
+	    printf("[KRN] Exception 0x%08lX, context 0x%p, SysBase 0x%p, KernelBase 0x%p\n", Except->ExceptionRecord->ExceptionCode, Except->ContextRecord, SysBase, KernelBase);
     	    if (SysBase)
     	    {
         	struct Task *t = SysBase->ThisTask;
