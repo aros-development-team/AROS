@@ -55,9 +55,13 @@ struct NetPEditor_DATA
             *netped_nameString,
             *netped_interfaceList,
             *netped_addButton,
+            *netped_editButton,
             *netped_removeButton,
             *netped_unitString,
-            *netped_inputGroup;
+            *netped_inputGroup,
+            *netped_ifWindow,
+            *netped_applyButton,
+            *netped_closeButton;
 };
 
 AROS_UFH3S(APTR, constructFunc,
@@ -138,7 +142,6 @@ BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
             data->netped_interfaceList,
             MUIM_List_GetEntry, i, &ifaceentry
         );
-
         SetName(iface, ifaceentry->name);
         SetDHCP(iface, ifaceentry->DHCP);
         SetDevice(iface, ifaceentry->device);
@@ -254,7 +257,8 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     Object  *deviceString, *IPString, *maskString, *gateString,
             *DNSString[2], *hostString, *domainString, *DHCPState,
             *autostart, *interfaceList, *unitString,
-            *addButton, *removeButton, *nameString, *inputGroup;
+            *addButton, *editButton, *removeButton, *nameString,
+            *inputGroup, *ifWindow, *applyButton, *closeButton;
 
     DHCPCycle[0] = _(MSG_IP_MODE_MANUAL);
     DHCPCycle[1] = _(MSG_IP_MODE_DHCP);
@@ -290,52 +294,12 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     Child, (IPTR)(VGroup,
                         MUIA_HorizWeight, 0,
                         Child, (IPTR)(addButton = SimpleButton(_(MSG_BUTTON_ADD))),
+                        Child, (IPTR)(editButton = SimpleButton(_(MSG_BUTTON_EDIT))),
                         Child, (IPTR)(removeButton = SimpleButton(_(MSG_BUTTON_REMOVE))),
                         Child, (IPTR)HVSpace,
                     End),
                 End),
                 Child, (IPTR)(inputGroup = (Object *)ColGroup(2),
-                    GroupFrame,
-                    Child, (IPTR)Label2(_(MSG_IFNAME)),
-                    Child, (IPTR)(nameString = (Object *)StringObject,
-                        StringFrame,
-                        MUIA_String_Accept, (IPTR)NAMECHARS,
-                        MUIA_CycleChain, 1,
-                    End),
-                    Child, (IPTR)Label2(__(MSG_DEVICE)),
-                    Child, (IPTR)PopaslObject,
-                        MUIA_Popasl_Type,              ASL_FileRequest,
-                        ASLFO_MaxHeight,               100,
-                        MUIA_Popstring_String, (IPTR)(deviceString = (Object *)StringObject,
-                            StringFrame,
-                            MUIA_Background, MUII_TextBack,
-                            MUIA_CycleChain, 1,
-                        End),
-                        MUIA_Popstring_Button,  (IPTR)PopButton(MUII_PopUp),
-                    End,
-                    Child, (IPTR)Label2(_(MSG_UNIT)),
-                    Child, (IPTR)(unitString = (Object *)StringObject,
-                        StringFrame,
-                        MUIA_String_Accept, (IPTR)"0123456789",
-                        MUIA_CycleChain, 1,
-                    End),
-
-                    Child, (IPTR)Label2(__(MSG_IP_MODE)),
-                    Child, (IPTR)(DHCPState = (Object *)CycleObject,
-                        MUIA_Cycle_Entries, (IPTR)DHCPCycle,
-                    End),
-                    Child, (IPTR)Label2(__(MSG_IP)),
-                    Child, (IPTR)(IPString = (Object *)StringObject,
-                        StringFrame,
-                        MUIA_String_Accept, (IPTR)IPCHARS,
-                        MUIA_CycleChain, 1,
-                    End),
-                    Child, (IPTR)Label2(__(MSG_MASK)),
-                    Child, (IPTR)(maskString = (Object *)StringObject,
-                        StringFrame,
-                        MUIA_String_Accept, (IPTR)IPCHARS,
-                        MUIA_CycleChain, 1,
-                    End),
                     Child, (IPTR)Label2(__(MSG_GATE)),
                     Child, (IPTR)(gateString = (Object *)StringObject,
                         StringFrame,
@@ -382,10 +346,67 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         TAG_DONE
     );
 
+    ifWindow = (Object *)WindowObject,
+        MUIA_Window_Title, __(MSG_IFWINDOW_TITLE),
+        MUIA_Window_ID, MAKE_ID('I', 'P', 'W', 'I'),
+        MUIA_Window_CloseGadget, FALSE,
+        WindowContents, VGroup,
+            GroupFrame,
+            Child, (IPTR)ColGroup(2),
+                GroupFrame,
+                Child, (IPTR)Label2(_(MSG_IFNAME)),
+                Child, (IPTR)(nameString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_String_Accept, (IPTR)NAMECHARS,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(__(MSG_DEVICE)),
+                Child, (IPTR)PopaslObject,
+                    MUIA_Popasl_Type,              ASL_FileRequest,
+                    ASLFO_MaxHeight,               100,
+                    MUIA_Popstring_String, (IPTR)(deviceString = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_Background, MUII_TextBack,
+                        MUIA_CycleChain, 1,
+                    End),
+                    MUIA_Popstring_Button,  (IPTR)PopButton(MUII_PopUp),
+                End,
+                Child, (IPTR)Label2(_(MSG_UNIT)),
+                Child, (IPTR)(unitString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_String_Accept, (IPTR)"0123456789",
+                    MUIA_CycleChain, 1,
+                End),
 
-    if (self != NULL)
+                Child, (IPTR)Label2(__(MSG_IP_MODE)),
+                Child, (IPTR)(DHCPState = (Object *)CycleObject,
+                    MUIA_Cycle_Entries, (IPTR)DHCPCycle,
+                End),
+                Child, (IPTR)Label2(__(MSG_IP)),
+                Child, (IPTR)(IPString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_String_Accept, (IPTR)IPCHARS,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(__(MSG_MASK)),
+                Child, (IPTR)(maskString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_String_Accept, (IPTR)IPCHARS,
+                    MUIA_CycleChain, 1,
+                End),
+            End,
+            Child, HGroup,
+                Child, (IPTR)(applyButton = SimpleButton(_(MSG_BUTTON_APPLY))),
+                Child, (IPTR)(closeButton = SimpleButton(_(MSG_BUTTON_CLOSE))),
+            End,
+        End,
+    End;
+
+
+    if (self != NULL && ifWindow != NULL)
     {
         struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
         data->netped_deviceString  = deviceString;
         data->netped_IPString = IPString;
         data->netped_maskString = maskString;
@@ -398,90 +419,117 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_Autostart = autostart;
         data->netped_interfaceList = interfaceList;
         data->netped_addButton = addButton;
+        data->netped_editButton = editButton;
         data->netped_removeButton = removeButton;
         data->netped_unitString = unitString;
         data->netped_nameString = nameString;
         data->netped_inputGroup = inputGroup;
+        data->netped_ifWindow = ifWindow;
+        data->netped_applyButton = applyButton;
+        data->netped_closeButton = closeButton;
+
+        SET(removeButton, MUIA_Disabled, TRUE);
+        SET(editButton, MUIA_Disabled, TRUE);
 
         /*-- Setup notifications -------------------------------------------*/
         DoMethod
         (
-            nameString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR)self, 1, MUIM_NetPEditor_ChangeEntry
-        );
-        DoMethod
-        (
-            deviceString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR)self, 1, MUIM_NetPEditor_ChangeEntry
-        );
-        DoMethod
-        (
-            unitString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR)self, 1, MUIM_NetPEditor_ChangeEntry
-        );
-        DoMethod
-        (
-            IPString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR)self, 1, MUIM_NetPEditor_ChangeEntry
-        );
-        DoMethod
-        (
-            maskString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR)self, 1, MUIM_NetPEditor_ChangeEntry
-        );
-        DoMethod
-        (
             gateString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR)self, 1, MUIM_NetPEditor_ChangeEntry
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
         DoMethod
         (
             DNSString[0], MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR)self, 1, MUIM_NetPEditor_ChangeEntry
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
         DoMethod
         (
             DNSString[1], MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR)self, 1, MUIM_NetPEditor_ChangeEntry
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
         DoMethod
         (
             hostString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR)self, 1, MUIM_NetPEditor_ChangeEntry
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
         DoMethod
         (
             domainString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR)self, 1, MUIM_NetPEditor_ChangeEntry
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
         DoMethod
         (
             autostart, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR)self, 1, MUIM_NetPEditor_ChangeEntry
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
+
         DoMethod
         (
             DHCPState, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
             (IPTR)self, 1, MUIM_NetPEditor_IPModeChanged
         );
+
         DoMethod
         (
             addButton, MUIM_Notify, MUIA_Pressed, FALSE,
-            (IPTR)self, 1, MUIM_NetPEditor_AddEntry
+            (IPTR)self, 2, MUIM_NetPEditor_EditEntry, TRUE
+        );
+        DoMethod
+        (
+            editButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_EditEntry, FALSE
         );
         DoMethod
         (
             removeButton, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR)interfaceList, 2, MUIM_List_Remove, MUIV_List_Remove_Active
         );
+
         DoMethod
         (
             interfaceList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
-            (IPTR)self, 1, MUIM_NetPEditor_ActiveEntry
+            (IPTR)self, 1, MUIM_NetPEditor_ShowEntry
+        );
+
+        DoMethod
+        (
+            applyButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_ApplyEntry
+        );
+        DoMethod
+        (
+            closeButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)ifWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE
         );
     }
 
     return self;
+}
+
+IPTR NetPEditor__MUIM_Setup
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
+
+    DoMethod(_app(self), OM_ADDMEMBER, data->netped_ifWindow);
+
+    return TRUE;
+}
+
+IPTR NetPEditor__MUIM_Cleanup
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    DoMethod(_app(self), OM_REMMEMBER, data->netped_ifWindow);
+
+    return DoSuperMethodA(CLASS, self, message);
 }
 
 IPTR NetPEditor__MUIM_PrefsEditor_Save
@@ -590,17 +638,11 @@ IPTR NetPEditor__MUIM_NetPEditor_IPModeChanged
     if (lng==1)
     {
         SET(data->netped_IPString, MUIA_Disabled, TRUE);
-        SET(data->netped_gateString, MUIA_Disabled, TRUE);
-        SET(data->netped_DNSString[0], MUIA_Disabled, TRUE);
-        SET(data->netped_DNSString[1], MUIA_Disabled, TRUE);
         SET(data->netped_maskString, MUIA_Disabled, TRUE);
     }
     else
     {
         SET(data->netped_IPString, MUIA_Disabled, FALSE);
-        SET(data->netped_gateString, MUIA_Disabled, FALSE);
-        SET(data->netped_DNSString[0], MUIA_Disabled, FALSE);
-        SET(data->netped_DNSString[1], MUIA_Disabled, FALSE);
         SET(data->netped_maskString, MUIA_Disabled, FALSE);
     }
 
@@ -609,7 +651,10 @@ IPTR NetPEditor__MUIM_NetPEditor_IPModeChanged
     return TRUE;
 }
 
-IPTR NetPEditor__MUIM_NetPEditor_ActiveEntry
+/*
+    Shows content of current list entry in the interface window.
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ShowEntry
 (
     Class *CLASS, Object *self,
     Msg message
@@ -626,6 +671,9 @@ IPTR NetPEditor__MUIM_NetPEditor_ActiveEntry
     );
     if (iface)
     {
+        SET(data->netped_removeButton, MUIA_Disabled, FALSE);
+        SET(data->netped_editButton, MUIA_Disabled, FALSE);
+
         SET(data->netped_nameString, MUIA_String_Contents, iface->name);
         SET(data->netped_DHCPState, MUIA_Cycle_Active, iface->DHCP ? 1 : 0);
         SET(data->netped_IPString, MUIA_String_Contents, iface->IP);
@@ -635,34 +683,53 @@ IPTR NetPEditor__MUIM_NetPEditor_ActiveEntry
     }
     else
     {
-        // FIXME disabling of gadgets
+        SET(data->netped_removeButton, MUIA_Disabled, TRUE);
+        SET(data->netped_editButton, MUIA_Disabled, TRUE);
+        SET(data->netped_ifWindow, MUIA_Window_Open, FALSE);
     }
     return 0;
 }
 
-IPTR NetPEditor__MUIM_NetPEditor_AddEntry
+IPTR NetPEditor__MUIM_NetPEditor_EditEntry
 (
     Class *CLASS, Object *self,
-    Msg message
+    struct MUIP_NetPEditor_EditEntry *message
 )
 {
     struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 
-    LONG entries = XGET(data->netped_interfaceList, MUIA_List_Entries);
-    if (entries < MAXINTERFACES)
+    if (message->addEntry)
     {
-        struct Interface iface;
-        InitInterface(&iface);
-        DoMethod
-        (
-            data->netped_interfaceList,
-            MUIM_List_InsertSingle, &iface, MUIV_List_Insert_Bottom
-        );
+        /*
+            Create a new entry and make it the current one
+        */
+        LONG entries = XGET(data->netped_interfaceList, MUIA_List_Entries);
+        if (entries < MAXINTERFACES)
+        {
+            struct Interface iface;
+            InitInterface(&iface);
+            DoMethod
+            (
+                data->netped_interfaceList,
+                MUIM_List_InsertSingle, &iface, MUIV_List_Insert_Bottom
+            );
+        }
+        SET(data->netped_interfaceList, MUIA_List_Active, entries + 1);
     }
+
+    LONG active = XGET(data->netped_interfaceList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        SET(data->netped_ifWindow, MUIA_Window_Open, TRUE);
+    }
+
     return 0;
 }
 
-IPTR NetPEditor__MUIM_NetPEditor_ChangeEntry
+/*
+    Store data from interface window back in current list entry
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ApplyEntry
 (
     Class *CLASS, Object *self,
     Msg message
@@ -694,16 +761,18 @@ IPTR NetPEditor__MUIM_NetPEditor_ChangeEntry
 }
 
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_9
+ZUNE_CUSTOMCLASS_11
 (
     NetPEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                         struct opSet *,
+    MUIM_Setup,                     Msg,
+    MUIM_Cleanup,                   Msg,
     MUIM_PrefsEditor_ImportFH,      struct MUIP_PrefsEditor_ImportFH *,
     MUIM_PrefsEditor_ExportFH,      struct MUIP_PrefsEditor_ExportFH *,
     MUIM_PrefsEditor_Save,          Msg,
     MUIM_PrefsEditor_Use,           Msg,
     MUIM_NetPEditor_IPModeChanged,  Msg,
-    MUIM_NetPEditor_ActiveEntry,    Msg,
-    MUIM_NetPEditor_AddEntry,       Msg,
-    MUIM_NetPEditor_ChangeEntry,    Msg
+    MUIM_NetPEditor_ShowEntry,      Msg,
+    MUIM_NetPEditor_EditEntry,      struct MUIP_NetPEditor_EditEntry *,
+    MUIM_NetPEditor_ApplyEntry,     Msg
 );
