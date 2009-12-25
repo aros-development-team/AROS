@@ -84,11 +84,14 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 	void (*trapHandler)(unsigned long) = NULL;
     	REG_SAVE_VAR;
 
+        /* Enter supervisor mode, save important registers that must not be modified */
 	Supervisor++;
+	CONTEXT_SAVE_REGS(ContextRecord);
+
 	switch (ExceptionRecord->ExceptionCode) {
 	case AROS_EXCEPTION_SYSCALL:
-	    CONTEXT_SAVE_REGS(ContextRecord);
-	    DI(printf("[KRN] Syscall exception %lu\n", *ExceptionRecord->ExceptionInformation));
+	    /* It's a SysCall exception issued by core_syscall() */
+	    DI(printf("[KRN] Syscall %lu\n", *ExceptionRecord->ExceptionInformation));
 	    switch (*ExceptionRecord->ExceptionInformation)
 	    {
 	    case SC_CAUSE:
@@ -104,15 +107,15 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 	        core_Schedule(ContextRecord);
 	        break;
 	    }
-	    CONTEXT_RESTORE_REGS(ContextRecord);
-	    Supervisor--;
-	    return ExceptionContinueExecution;
+	    break;
 	default:
-	    printf("[KRN] Exception 0x%08lX, context 0x%p, SysBase 0x%p, KernelBase 0x%p\n", ExceptionRecord->ExceptionCode, ContextRecord, SysBase, KernelBase);
+	    /* It's something else, likely a CPU trap */
+	    printf("[KRN] Exception 0x%08lX, SysBase 0x%p, KernelBase 0x%p\n", ExceptionRecord->ExceptionCode, ContextRecord, SysBase, KernelBase);
+	    /* Find out trap handler for caught task */
     	    if (SysBase)
     	    {
         	struct Task *t = SysBase->ThisTask;
-        	
+
         	if (t) {
         	    printf("[KRN] %s 0x%p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
 		    trapHandler = t->tc_TrapCode;
@@ -122,22 +125,35 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 		}
     	    }
     	    PRINT_CPUCONTEXT(ContextRecord);
-	    
+
 	    DT(printf("Task trap handler 0x%p\n", trapHandler));
 	    DT(printf("Exec trap handler 0x%p\n", SysBase->TaskTrapCode));
 	    if (trapHandler) {
+	    	/* If there is a trap handler, execute it. In fact it's always there, exec.library
+		   supplies a default one. But first we have to convert exception code to
+		   the well-known */
 	        struct ExceptionTranslation *ex;
 
 	        for (ex = ExceptionsTable; ex->ExceptionCode; ex++) {
 		    if (ExceptionRecord->ExceptionCode == ex->ExceptionCode)
 		        break;
 		}
+		/* Call our trap handler. Note that we may return, this means that the handler has
+		   fixed the problem somehow and we may safely continue */
 		DT(printf("Calling trap %u\n", ex->TrapNum));
 	        trapHandler(ex->TrapNum);
-	    } else
+	    } else {
+	        /* We should never get here. But if we do, it's a true emergency.
+		   And we tell Windows to throw us away. */
     	        printf("[KRN] **UNHANDLED EXCEPTION** stopping here...\n");
-	    return ExceptionContinueSearch;
+	        return ExceptionContinueSearch;
+	    }
 	}
+
+	/* Restore important registers, exit supervisor */
+	CONTEXT_RESTORE_REGS(ContextRecord);
+	Supervisor--;
+	return ExceptionContinueExecution;
 }
 
 DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
