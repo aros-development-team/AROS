@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 1.2 (20.10.2007)
+## version $VER: wanderer.catalog 1.3 (25.12.2009)
 ## language deutsch
 ## codeset 0
 ;
@@ -215,15 +215,15 @@ MSG_MEN_TOOLS
 Hilfsmittel
 ; Tools
 ;
-MSG_MEN_ICONSORTING (//)
+MSG_MEN_ICONSORTING
 Piktogramme sortieren
 ; Enable Icon Sorting
 ;
-MSG_MEN_GROUPICONS (//)
+MSG_MEN_GROUPICONS
 Piktogramme gruppieren
 ; Group Icons
 ;
-MSG_MEN_ICONSCLOSE (//)
+MSG_MEN_ICONSCLOSE
 Schließen
 ; Close
 ;
@@ -268,10 +268,8 @@ Die gewählte Funktion wird von Ihrem System nicht unterstützt
 ; The selected action is not supported by your system.
 ;
 MSG_OK
-
+*OK
 ; *OK
-;
-; ***NEW***
 ;
 MSG_EMPTY_TRASH
 Papierkorb leeren
