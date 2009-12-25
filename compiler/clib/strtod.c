@@ -46,6 +46,7 @@
     EXAMPLE
 
     BUGS
+        NAN is not handled at the moment
 
     SEE ALSO
         atof(), atoi(), atol(), strtol(), strtoul()
@@ -54,6 +55,7 @@
 
 ******************************************************************************/
 {
+#warning TODO: implement NAN handling
     double        val = 0, precision;
     int           exp = 0;
     char          c = 0, c2 = 0;
