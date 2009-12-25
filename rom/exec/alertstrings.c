@@ -2,8 +2,7 @@
    Used by platform-specific Alert() implementations */
 
 #include <exec/alerts.h>
-#include <exec/execbase.h>
-#include <exec/types.h>
+#include <exec/tasks.h>
 
 #include "alertstrings.h"
 
@@ -410,10 +409,9 @@ STRPTR Alert_GetTitle(ULONG alertNum)
         return "Recoverable Alert!";
 }
 
-STRPTR Alert_GetTaskName(struct ExecBase *SysBase)
+STRPTR Alert_GetTaskName(struct Task *task)
 {
     STRPTR tname;
-    struct Task *task = SysBase->ThisTask;
 
     /* Find out the task name. The node type must be correct. */
     if (task && ((task->tc_Node.ln_Type == NT_TASK) || (task->tc_Node.ln_Type == NT_PROCESS))
