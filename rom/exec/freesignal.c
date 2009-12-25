@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free a signal.
@@ -47,15 +47,11 @@
 
     if(signalNum!=-1)
     {
-    	#warning "Forbid/Permit or atomic operation should not be needed here"
-	#warning "Because AllocSignal/FreeSignal access tc_SigAlloc only ever from same task?"
-	
-	/* Nobody guarantees that the compiler will make it atomic. */
-	Forbid();
+        /* No more atomic problem - i beleive THIS is atomic. - sonic */
+        struct Task *me = SysBase->ThisTask;
 
 	/* Clear the bit */
-	SysBase->ThisTask->tc_SigAlloc&=~(1<<signalNum);
-	Permit();
+	me->tc_SigAlloc &= ~(1<<signalNum);
     }
     AROS_LIBFUNC_EXIT
 } /* FreeSignal() */
