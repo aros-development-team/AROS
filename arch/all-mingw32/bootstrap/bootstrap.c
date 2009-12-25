@@ -45,7 +45,8 @@ struct HostInterface HostIFace = {
     Host_HostLib_GetInterface,
     Host_VKPrintF,
     Host_PutChar,
-    Host_Shutdown
+    Host_Shutdown,
+    Host_Alert
 };
 
 void *SysBase;
