@@ -8,4 +8,5 @@ struct HostInterface
     int (*VKPrintF)(const char *, va_list);
     int (*PutChar)(int c);
     void (*_Shutdown)(unsigned long action);
+    void (*_Alert)(char *text);
 };

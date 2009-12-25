@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CFILES := cause disable dispatch enable exec_init newaddtask permit preparecontext rawputchar \
+CFILES := alert cause disable dispatch enable exec_init newaddtask permit preparecontext rawputchar \
           remtask reschedule setexcept settaskpri  shutdowna signal wait idletask
 
 USER_CFLAGS := -I$(SRCDIR)/rom/exec
