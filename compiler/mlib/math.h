@@ -264,6 +264,7 @@ double	nextafter(double, double);
 double	remainder(double, double);
 double	remquo(double, double, int *);
 double	rint(double);
+double  nan(const char *tagp);
 #endif /* __BSD_VISIBLE || __ISO_C_VISIBLE >= 1999 || __XSI_VISIBLE */
 
 #if __BSD_VISIBLE || __XSI_VISIBLE
@@ -376,6 +377,8 @@ float	fdimf(float, float);
 float	fmaf(float, float, float);
 float	fmaxf(float, float) __pure2;
 float	fminf(float, float) __pure2;
+
+float   nanf(const char *tagp);
 #endif
 
 /*
@@ -488,6 +491,7 @@ long double	tanl(long double);
 long double	tgammal(long double);
 #endif
 long double	truncl(long double);
+long double     nanl(const char *tagp);
 
 #endif /* __ISO_C_VISIBLE >= 1999 */
 __END_DECLS
