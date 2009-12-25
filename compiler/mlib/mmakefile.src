@@ -163,6 +163,7 @@ FILES := \
     w_dremf \
     infinity \
     fenv \
+    nan \
     sincos \
     sincosf \
     sincosl
