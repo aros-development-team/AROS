@@ -100,6 +100,11 @@ void core_Dispatch(CONTEXT *regs)
 
     /* Handle tasks's flags */
     if (task->tc_Flags & TF_EXCEPT)
+	/* TODO: this is implemented completely in wrong way. Task exceptions in AmigaOS are called
+	   in a user-mode in the context of its task, not from within the task scheduler in its context.
+	   We should have core_Exception() which would do the job of remembering task's context somewhere,
+	   adjusting it to jump to exception handler, then restore task context back upon return from
+	   exception handler */
         Exception();
         
     if (task->tc_Flags & TF_LAUNCH)
