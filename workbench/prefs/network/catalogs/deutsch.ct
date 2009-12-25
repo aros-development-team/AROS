@@ -90,9 +90,21 @@ MSG_BUTTON_ADD
 Hinzufügen
 ; Add
 ;
+MSG_BUTTON_EDIT
+Ändern
+; Edit
+;
 MSG_BUTTON_REMOVE
 Entfernen
 ; Remove
+;
+MSG_BUTTON_APPLY
+Anwenden
+; Apply
+;
+MSG_BUTTON_CLOSE
+Schließen
+; Close
 ;
 MSG_ERROR_TITLE
 Fehler
@@ -113,4 +125,8 @@ Information
 MSG_PREFS_SAVED_RESTART
 Voreinstellungen wurden in %s gespeichert.\nStarte AROS neu um sie anzuwenden.
 ; Preferences have been saved to %s.\nRestart AROS for them to take effect.
+;
+MSG_IFWINDOW_TITLE
+Schnittstelle
+; Interface
 ;

@@ -19,8 +19,10 @@ extern struct MUI_CustomClass *NetPEditor_CLASS;
 #define NetPEditorObject BOOPSIOBJMACRO_START(NetPEditor_CLASS->mcc_Class)
 
 #define MUIM_NetPEditor_IPModeChanged   (MUIB_NetPEditor | 0x00000001)
-#define MUIM_NetPEditor_ActiveEntry     (MUIB_NetPEditor | 0x00000002)
-#define MUIM_NetPEditor_AddEntry        (MUIB_NetPEditor | 0x00000003)
-#define MUIM_NetPEditor_ChangeEntry     (MUIB_NetPEditor | 0x00000004)
+#define MUIM_NetPEditor_ShowEntry       (MUIB_NetPEditor | 0x00000002)
+#define MUIM_NetPEditor_EditEntry       (MUIB_NetPEditor | 0x00000003)
+#define MUIM_NetPEditor_ApplyEntry      (MUIB_NetPEditor | 0x00000004)
+
+struct MUIP_NetPEditor_EditEntry {STACKED ULONG MethodID; STACKED BOOL addEntry;};
 
 #endif /* _FWPEDITOR_H_ */

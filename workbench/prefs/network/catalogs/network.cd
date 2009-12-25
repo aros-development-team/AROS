@@ -64,8 +64,17 @@ Ok
 MSG_BUTTON_ADD (//)
 Add
 ;
+MSG_BUTTON_EDIT (//)
+Edit
+;
 MSG_BUTTON_REMOVE (//)
 Remove
+;
+MSG_BUTTON_APPLY (//)
+Apply
+;
+MSG_BUTTON_CLOSE (//)
+Close
 ;
 MSG_ERROR_TITLE (//)
 Error
@@ -81,4 +90,7 @@ Information
 ;
 MSG_PREFS_SAVED_RESTART (//)
 Preferences have been saved to %s.\nRestart AROS for them to take effect.
+;
+MSG_IFWINDOW_TITLE (//)
+Interface
 ;

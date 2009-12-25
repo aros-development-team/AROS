@@ -263,8 +263,8 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
         iface = GetInterface(i);
         fprintf
         (
-            ConfFile, "%s DEV=%s UNIT=0 %s IP=%s NETMASK=%s UP\n",
-            GetName(iface), GetDevice(iface),
+            ConfFile, "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s UP\n",
+            GetName(iface), GetDevice(iface), GetUnit(iface),
             (GetNoTracking(iface) ? (CONST_STRPTR)"NOTRACKING" : (CONST_STRPTR)""),
             (GetDHCP(iface) ? (CONST_STRPTR)"DHCP" : GetIP(iface)),
             GetMask(iface)

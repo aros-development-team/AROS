@@ -34,14 +34,14 @@ int main(void)
     if (!((BOOL)ARG(SAVE)) && !((BOOL)ARG(USE)))
     {
         application = (Object *)ApplicationObject,
-        MUIA_Application_Title,  __(MSG_NAME),
-        MUIA_Application_Version, (IPTR)VERSION,
-        MUIA_Application_Description,  __(MSG_DESCRIPTION),
-        MUIA_Application_Base, (IPTR)"NETPREF",
-        SubWindow, (IPTR)(window = (Object *)SystemPrefsWindowObject,
-            MUIA_Window_ID, MAKE_ID('N', 'E', 'T', 'P'),
-            WindowContents, (IPTR)NetPEditorObject,
-            End,
+            MUIA_Application_Title,  __(MSG_NAME),
+            MUIA_Application_Version, (IPTR)VERSION,
+            MUIA_Application_Description,  __(MSG_DESCRIPTION),
+            MUIA_Application_Base, (IPTR)"NETPREF",
+            SubWindow, (IPTR)(window = (Object *)SystemPrefsWindowObject,
+                MUIA_Window_ID, MAKE_ID('N', 'E', 'T', 'P'),
+                WindowContents, (IPTR)NetPEditorObject,
+                End,
             End),
         End;
 
