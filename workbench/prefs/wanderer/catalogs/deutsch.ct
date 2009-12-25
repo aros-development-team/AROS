@@ -1,7 +1,9 @@
 ## version $VER: wanderer.catalog 1.0 (10.11.2008)
 ## language deutsch
 ## codeset 0
-;;
+;
+; TODO: update me and set version to 2
+;
 MSG_NAME
 Wanderer Einstellungen
 ;

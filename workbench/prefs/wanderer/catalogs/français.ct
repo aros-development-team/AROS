@@ -103,8 +103,6 @@ MSG_ICONTEXTMODE_SHADOW
 Ombre
 ; Drop shadow
 ;
-; ***NEW***
-;
 MSG_ICONTEXTLENGTH
 Longueur maximale des textes d'icônes
 ; Max icon textlength
@@ -191,110 +189,79 @@ MSG_TILED
 Mosaique
 ; Tiled
 ;
-; ***NEW***
-;
 MSG_SCALED
 A l'échelle
 ; Scaled
-;
-; ***NEW***
 ;
 MSG_FLOATING
 Flottant
 ; Floating
 ;
-; ***NEW***
-;
 MSG_FIXED
 Fixe
 ; Fixed
-;
-; ***NEW***
 ;
 MSG_LABELLINELENGTH
 Longueur maximale d'une ligne
 ; Max. Label line length...
 ;
-; ***NEW***
-;
 MSG_USEMULTILINELABELS
 Utiliser les titres multilignes
 ; Use MultiLine Labels
-;
-; ***NEW***
 ;
 MSG_SHOWFOCUSEDICON
 Ne montrer que l'icone active
 ; Only show for Focus(ed) Icon
 ;
-; ***NEW***
-;
 MSG_NDISPLAYLINES
 Nombre de lignes à afficher
 ; No. of lines to display...
-;
-; ***NEW***
 ;
 MSG_TILEMODEOPTIONS
 Options de grille
 ; Tile Mode Options...
 ;
-; ***NEW***
-;
 MSG_SCALEMODEOPTIONS
 Options de mise à l'échelle...
 ; Scale Mode Options...
-;
-; ***NEW***
 ;
 MSG_ADVANCEDOPTIONS
 Options avancées
 ; Advanced Options...
 ;
-; ***NEW***
-;
 MSG_BACKGROUNDOPTIONS
 Options de fond
 ; Background Options...
-;
-; ***NEW***
 ;
 MSG_DRAWMODE
 Mode de dessin
 ; Draw mode :
 ;
-; ***NEW***
-;
 MSG_USERFILEONWB
 Fichier utilisateur sur le Workbench
 ; User Files Folder on Workbench
-;
-; ***NEW***
 ;
 MSG_NETWORKONWB
 Navigateur de réseau sur le Workbench
 ; Network Browser on Workbench
 ;
-; ***NEW***
-;
 MSG_VIEWSETTINGS
 Réglages des vues
 ; View Settings
-;
-; ***NEW***
 ;
 MSG_WANDERERSCREENTITLE
 Titre de l'écran Wanderer
 ; Wanderer ScreenTitle
 ;
-; ***NEW***
-;
 MSG_ADVANCED
 Réglages avancés
 ; Advanced
+;
 MSG_USE
 _Utiliser
-; Cancel
+; &Use
+;
 MSG_CANCEL
 A_nnuler
-; Use
+; &Cancel
+;
