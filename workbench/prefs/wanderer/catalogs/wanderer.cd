@@ -186,8 +186,8 @@ MSG_ADVANCED (//)
 Advanced
 ;
 MSG_USE (//)
-&Use
+_Use
 ;
 MSG_CANCEL (//)
-&Cancel
+C_ancel
 ;
