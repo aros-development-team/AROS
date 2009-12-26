@@ -276,9 +276,16 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     ConfFile = fopen(filename, "w");
     if (!ConfFile) return FALSE;
 
-    //FIXME what IP should we write if we have multiple interfaces?
-    iface = GetInterface(0);
-    fprintf(ConfFile, "HOST %s %s.%s %s\n", GetIP(iface), GetHost(), GetDomain(), GetHost());
+    for(i = 0; i < GetInterfaceCount(); i++)
+    {
+        iface = GetInterface(i);
+        fprintf
+        (
+            ConfFile, "HOST %s %s.%s %s\n",
+            GetIP(iface), GetHost(), GetDomain(), GetHost()
+        );
+    }
+
     fprintf(ConfFile, "HOST %s gateway\n", GetGate());
     fprintf(ConfFile, "; Domain names\n");
     fprintf(ConfFile, "; Name servers\n");
@@ -536,17 +543,17 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
                     interfacecount++;
                     SetInterfaceCount(interfacecount);
                 }
-                if (strncmp(tok.token, "DEV=", 4) == 0)
+                else if (strncmp(tok.token, "DEV=", 4) == 0)
                 {
                     tstring = strchr(tok.token, '=');
                     SetDevice(iface, tstring + 1);
                 }
-                if (strncmp(tok.token, "UNIT=", 5) == 0)
+                else if (strncmp(tok.token, "UNIT=", 5) == 0)
                 {
                     tstring = strchr(tok.token, '=');
                     SetUnit(iface, atol(tstring + 1));
                 }
-                if (strncmp(tok.token, "IP=", 3) == 0)
+                else if (strncmp(tok.token, "IP=", 3) == 0)
                 {
                     tstring = strchr(tok.token, '=');
                     if (strncmp(tstring + 1, "DHCP", 4) == 0)
@@ -560,7 +567,7 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
                         SetDHCP(iface, FALSE);
                     }
                 }
-                if (strncmp(tok.token, "NETMASK=", 8) == 0)
+                else if (strncmp(tok.token, "NETMASK=", 8) == 0)
                 {
                     tstring = strchr(tok.token, '=');
                     SetMask(iface, tstring + 1);
@@ -578,6 +585,7 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
         GetNextToken(&tok, " \n");
         if (tok.token)
         {
+            // Host and Domain are already read from general.config
             if (strncmp(tok.token, "NAMESERVER", 10) == 0)
             {
                 GetNextToken(&tok, " \n");
