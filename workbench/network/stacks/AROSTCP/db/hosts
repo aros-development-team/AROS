@@ -15,9 +15,9 @@
 ; (without ';' at begining of line) 
 ;
 ; 224.254.43.1 mail.mut.edu.mars mail ftp.mut.edu.mars ftp mut.edu.mars
-; ^	       ^		 ^    ^                ^   ^
-; |	       |		 \ these are aliases for the host name
-; |	       \ this is the canonicial name of the host
+; ^            ^                 ^    ^                ^   ^
+; |            |                 \ these are aliases for the host name
+; |            \ this is the canonicial name of the host
 ; \ this is the IP address of the host 
 ;
 ; You can include here all computers that you access with your Amiga.
