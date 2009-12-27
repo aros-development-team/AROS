@@ -17,6 +17,15 @@
 
 #define MAXINTERFACES 15
 
+#define DEFAULTNAME "eth0"
+#define DEFAULTIP "192.168.0.188"
+#define DEFAULTMASK "255.255.255.0"
+#define DEFAULTGATE "192.168.0.1"
+#define DEFAULTDNS "192.168.0.1"
+#define DEFAULTDEVICE "DEVS:networks/pcnet32.device"
+#define DEFAULTHOST "arosbox"
+#define DEFAULTDOMAIN "arosnet"
+
 enum ErrorCode
 {
     ALL_OK,
@@ -31,17 +40,19 @@ enum ErrorCode
 struct Interface
 {
     TEXT name[NAMEBUFLEN];
-    BOOL DHCP;
+    BOOL ifDHCP;
     TEXT IP[IPBUFLEN];
     TEXT mask[IPBUFLEN];
     TEXT device[NAMEBUFLEN];
     LONG unit;
+    BOOL up;
 };
 
 struct TCPPrefs
 {
     struct Interface interface[MAXINTERFACES];
     LONG interfacecount;
+    BOOL DHCP;
     TEXT gate[IPBUFLEN];
     TEXT DNS[2][IPBUFLEN];
     TEXT host[NAMEBUFLEN];
@@ -56,12 +67,14 @@ enum ErrorCode UseNetworkPrefs();
 
 struct Interface * GetInterface(LONG index);
 STRPTR GetName(struct Interface *iface);
-BOOL   GetDHCP(struct Interface *iface);
+BOOL   GetIfDHCP(struct Interface *iface);
 STRPTR GetIP(struct Interface *iface);
 STRPTR GetMask(struct Interface *iface);
 STRPTR GetDevice(struct Interface *iface);
 LONG   GetUnit(struct Interface *iface);
+BOOL   GetUp(struct Interface *iface);
 
+BOOL   GetDHCP(void);
 STRPTR GetGate(void);
 STRPTR GetDNS(LONG m);
 STRPTR GetHost(void);
@@ -72,15 +85,17 @@ BOOL   GetAutostart(void);
 void SetInterface
 (
     struct Interface *iface, STRPTR name, BOOL dhcp, STRPTR IP,
-    STRPTR mask, STRPTR device, LONG unit
+    STRPTR mask, STRPTR device, LONG unit, BOOL up
 );
 void SetName(struct Interface *iface, STRPTR w);
-void SetDHCP(struct Interface *iface, BOOL w);
+void SetIfDHCP(struct Interface *iface, BOOL w);
 void SetIP(struct Interface *iface, STRPTR w);
 void SetMask(struct Interface *iface, STRPTR w);
 void SetDevice(struct Interface *iface, STRPTR w);
 void SetUnit(struct Interface *iface, LONG w);
+void SetUp(struct Interface *iface, BOOL w);
 
+void SetDHCP(BOOL w);
 void SetGate(STRPTR w);
 void SetDNS(LONG m, STRPTR w);
 void SetHost(STRPTR w);

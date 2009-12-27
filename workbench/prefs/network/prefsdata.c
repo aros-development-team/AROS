@@ -12,15 +12,6 @@
 
 #include <aros/debug.h>
 
-#define DEFAULTNAME "eth0"
-#define DEFAULTIP "192.168.0.188"
-#define DEFAULTMASK "255.255.255.0"
-#define DEFAULTGATE "192.168.0.1"
-#define DEFAULTDNS "192.168.0.1"
-#define DEFAULTDEVICE "DEVS:networks/pcnet32.device"
-#define DEFAULTHOST "arosbox"
-#define DEFAULTDOMAIN "arosnet"
-
 static struct TCPPrefs prefs;
 
 struct Tokenizer
@@ -103,6 +94,7 @@ void SetDefaultNetworkPrefsValues()
     SetGate(DEFAULTGATE);
     SetDNS(0, DEFAULTDNS);
     SetDNS(1, DEFAULTDNS);
+    SetDHCP(FALSE);
 
     SetAutostart(FALSE);
 }
@@ -110,11 +102,12 @@ void SetDefaultNetworkPrefsValues()
 void InitInterface(struct Interface *iface)
 {
     SetName(iface, DEFAULTNAME);
-    SetDHCP(iface, FALSE);
+    SetIfDHCP(iface, FALSE);
     SetIP(iface, DEFAULTIP);
     SetMask(iface, DEFAULTMASK);
     SetDevice(iface, DEFAULTDEVICE);
     SetUnit(iface, 0);
+    SetUp(iface, FALSE);
 }
 
 /* Returns TRUE if directory has been created or already existed */
@@ -221,6 +214,7 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     TEXT filename[filenamelen];
     ULONG destdbdirlen = strlen(destdir) + 3 + 1;
     TEXT destdbdir[destdbdirlen];
+    LONG interfacecount = GetInterfaceCount();
 
     CombinePath2P(destdbdir, destdbdirlen, destdir, "db");
 
@@ -258,16 +252,17 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     CombinePath2P(filename, filenamelen, destdbdir, "interfaces");
     ConfFile = fopen(filename, "w");
     if (!ConfFile) return FALSE;
-    for(i = 0; i < GetInterfaceCount(); i++)
+    for(i = 0; i < interfacecount; i++)
     {
         iface = GetInterface(i);
         fprintf
         (
-            ConfFile, "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s UP\n",
+            ConfFile, "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s %s\n",
             GetName(iface), GetDevice(iface), GetUnit(iface),
             (GetNoTracking(iface) ? (CONST_STRPTR)"NOTRACKING" : (CONST_STRPTR)""),
-            (GetDHCP(iface) ? (CONST_STRPTR)"DHCP" : GetIP(iface)),
-            GetMask(iface)
+            (GetIfDHCP(iface) ? (CONST_STRPTR)"DHCP" : GetIP(iface)),
+            GetMask(iface),
+            (GetUp(iface) ? (CONST_STRPTR)"UP" : (CONST_STRPTR)"")
         );
     }
     fclose(ConfFile);
@@ -276,7 +271,7 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     ConfFile = fopen(filename, "w");
     if (!ConfFile) return FALSE;
 
-    for(i = 0; i < GetInterfaceCount(); i++)
+    for(i = 0; i < interfacecount; i++)
     {
         iface = GetInterface(i);
         fprintf
@@ -286,17 +281,25 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
         );
     }
 
-    fprintf(ConfFile, "HOST %s gateway\n", GetGate());
-    fprintf(ConfFile, "; Domain names\n");
-    fprintf(ConfFile, "; Name servers\n");
-    fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(0));
-    fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(1));
+    if (!GetDHCP())
+    {
+        // FIXME: old version wrote Gateway even when DHCP was enabled
+        fprintf(ConfFile, "HOST %s gateway\n", GetGate());
+        fprintf(ConfFile, "; Domain names\n");
+        fprintf(ConfFile, "; Name servers\n");
+        fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(0));
+        fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(1));
+    }
     fclose(ConfFile);
 
     CombinePath2P(filename, filenamelen, destdbdir, "static-routes");
     ConfFile = fopen(filename, "w");
     if (!ConfFile) return FALSE;
-    fprintf(ConfFile, "DEFAULT GATEWAY %s\n", GetGate());
+    if (!GetDHCP())
+    {
+        // FIXME: old version wrote Gateway even when DHCP was enabled
+        fprintf(ConfFile, "DEFAULT GATEWAY %s\n", GetGate());
+    }
     fclose(ConfFile);
 
     return TRUE;
@@ -498,6 +501,8 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
 
     /* This function will not fail. It will load as much data as possible. Rest will be default values */
 
+    SetDHCP(FALSE);
+
     CombinePath3P(filename, filenamelen, directory, "db", "general.config");
     OpenTokenFile(&tok, filename);
     while (!tok.fend)
@@ -558,19 +563,23 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
                     tstring = strchr(tok.token, '=');
                     if (strncmp(tstring + 1, "DHCP", 4) == 0)
                     {
-                        SetDHCP(iface, TRUE);
+                        SetIfDHCP(iface, TRUE);
                         SetIP(iface, DEFAULTIP);
                     }
                     else
                     {
                         SetIP(iface, tstring + 1);
-                        SetDHCP(iface, FALSE);
+                        SetIfDHCP(iface, FALSE);
                     }
                 }
                 else if (strncmp(tok.token, "NETMASK=", 8) == 0)
                 {
                     tstring = strchr(tok.token, '=');
                     SetMask(iface, tstring + 1);
+                }
+                else if (strncmp(tok.token, "UP", 2) == 0)
+                {
+                    SetUp(iface, TRUE);
                 }
             }
         }
@@ -594,6 +603,11 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
                 if (dnsc > 1) dnsc = 1;
             }
         }
+    }
+    // Assume DHCP if there is no nameserver
+    if (dnsc == 0)
+    {
+        SetDHCP(TRUE);
     }
     CloseTokenFile(&tok);
 
@@ -662,7 +676,7 @@ BOOL IsLegal(STRPTR str, STRPTR accept)
 {
     int i, len;
 
-    if ((str == NULL) || (accept == NULL))
+    if ((str == NULL) || (accept == NULL) || (str[0] == '\0'))
     {
         return FALSE;
     }
@@ -691,9 +705,9 @@ STRPTR GetName(struct Interface *iface)
     return iface->name;
 }
 
-BOOL GetDHCP(struct Interface *iface)
+BOOL GetIfDHCP(struct Interface *iface)
 {
-    return iface->DHCP;
+    return iface->ifDHCP;
 }
 
 STRPTR GetIP(struct Interface *iface)
@@ -714,6 +728,11 @@ STRPTR GetDevice(struct Interface *iface)
 LONG GetUnit(struct Interface *iface)
 {
     return iface->unit;
+}
+
+BOOL GetUp(struct Interface *iface)
+{
+    return iface->up;
 }
 
 
@@ -747,21 +766,27 @@ BOOL GetAutostart(void)
     return prefs.autostart;
 }
 
+BOOL GetDHCP(void)
+{
+    return prefs.DHCP;
+}
+
 
 /* Setters */
 
 void SetInterface
 (
     struct Interface *iface, STRPTR name, BOOL dhcp, STRPTR IP, STRPTR mask,
-    STRPTR device, LONG unit
+    STRPTR device, LONG unit, BOOL up
 )
 {
     SetName(iface, name);
-    SetDHCP(iface, dhcp);
+    SetIfDHCP(iface, dhcp);
     SetIP(iface, IP);
     SetMask(iface, mask);
     SetDevice(iface, device);
     SetUnit(iface, unit);
+    SetUp(iface, up);
 }
 
 void SetName(struct Interface *iface, STRPTR w)
@@ -773,9 +798,9 @@ void SetName(struct Interface *iface, STRPTR w)
     strlcpy(iface->name, w, NAMEBUFLEN);
 }
 
-void SetDHCP(struct Interface *iface, BOOL w)
+void SetIfDHCP(struct Interface *iface, BOOL w)
 {
-    iface->DHCP = w;
+    iface->ifDHCP = w;
 }
 
 void SetIP(struct Interface *iface, STRPTR w)
@@ -808,6 +833,11 @@ void SetDevice(struct Interface *iface, STRPTR w)
 void SetUnit(struct Interface *iface, LONG w)
 {
     iface->unit = w;
+}
+
+void SetUp(struct Interface *iface, BOOL w)
+{
+    iface->up = w;
 }
 
 
@@ -855,4 +885,9 @@ void SetInterfaceCount(LONG w)
 void SetAutostart(BOOL w)
 {
     prefs.autostart = w;
+}
+
+void SetDHCP(BOOL w)
+{
+    prefs.DHCP = w;
 }

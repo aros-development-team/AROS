@@ -7,6 +7,9 @@ TCP/IP Network preferences
 MSG_IFNAME (//)
 Name
 ;
+MSG_UP (//)
+Active
+;
 MSG_DEVICE (//)
 Device
 ;
@@ -50,7 +53,7 @@ MSG_TAB_COMPUTER_NAME (//)
 Computer Name
 ;
 MSG_AUTOSTART_STACK (//)
-Autostart
+Automatically start network during system boot?
 ;
 MSG_ERR_UNKNOWN_ERROR (//)
 Unknown error

@@ -14,6 +14,10 @@ MSG_IFNAME
 Name
 ; Name
 ;
+MSG_UP
+Aktiv
+; Active
+;
 MSG_DEVICE
 Gerät
 ; Device
@@ -71,7 +75,7 @@ Computername
 ; Computer Name
 ;
 MSG_AUTOSTART_STACK
-Automatischer Start
+Automatischer Start des Netzwerks beim Systembooten?
 ; Autostart
 ;
 MSG_ERR_UNKNOWN_ERROR
