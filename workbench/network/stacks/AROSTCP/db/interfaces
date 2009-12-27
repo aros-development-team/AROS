@@ -17,10 +17,10 @@
 # be defined here.
 #
 # This configuration file is read with template:
-# NAME/A, DEV=DEVICE/A/K, UNIT/N/K, IPTYPE/N/K, ARPTYPE=IPARPTYPE/N/K,
-# IPREQ=IPREQUESTS/N/K, ARPREQ=ARPREQUESTS/N/K, WRITEREQ=WRITEREQUESTS/N/K,
-# NOTRACKING/S, NOARP/S, ARPHDR/N/K, P2P=POINT2POINT/S, NOSIMPLEX/S,
-# LOOPBACK/S
+# NAME/A, DEV=DEVICE/A/K, UNIT/N/K, IP/K, NETMASK/K,UP/S, IPTYPE/N/K,
+# ARPTYPE=IPARPTYPE/N/K, IPREQ=IPREQUESTS/N/K, ARPREQ=ARPREQUESTS/N/K,
+# WRITEREQ=WRITEREQUESTS/N/K, NOTRACKING/S, NOARP/S, ARPHDR/N/K,
+# P2P=POINT2POINT/S, NOSIMPLEX/S, LOOPBACK/S
 #
 # Lines can be continued if their last character is '+'
 # '#' and ';' are comment characters - rest of the line is ignored
@@ -35,7 +35,7 @@
 #   If no Sana-II unit number is given, the interface unit number is used
 # IP/N/K
 #   IPv4 Address of the interface.
-#   (unimplemented) specifying DHCP for the address will cause th interface
+#   Specifying DHCP for the address will cause th interface
 #   retrieve configuration information using the DHCP protocol.
 #   [
 #      N.B. - if this is not set, it will need to be manually configured later

@@ -19,7 +19,7 @@
 ; sequentially line by line until a match is found. Access entry lines looks
 ; like the following...
 ;
-; <service>	<host/mask>			<access>	[LOG]
+; <service>  <host/mask>  <access>  [LOG]
 ;
 ; It is first checked whether the port where connection is made matches the
 ; port given <service>. Service can be given as a port number, already parsed
@@ -43,13 +43,13 @@
 ;
 ; *Example list
 ;
-; Service	Host[/Mask]			Access		[LOG]
+; Service  Host[/Mask]            Access [LOG]
 ;
-; finger	127.1				allow		LOG	
-; *		130.233.*.*			allow
-; nntp		130.233.0/255.252.0.0		allow		LOG
-; @		*.*.*.*				deny
-; *		*.*.*.*				allow		LOG
+; finger   127.1                  allow  LOG
+; *        130.233.*.*            allow
+; nntp     130.233.0/255.252.0.0  allow  LOG
+; @        *.*.*.*                deny
+; *        *.*.*.*                allow  LOG
 ;
 ; The list tells that finger queries from local host is to be logged. (2)
 ; All connections from hosts whose addresses start with 130.233 are to be
@@ -66,7 +66,7 @@
 ; nonstandard services, such as netfs and irc can then be access controlled
 ; with port-spesific entries in this access control list.
 
-;Service	Host[/Mask]			Access		[LOG]
+;Service   Host[/Mask]   Access   [LOG]
 ; *** add your entries here ***
 
 ; EOF
