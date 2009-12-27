@@ -8,10 +8,16 @@ FILES 	    := main args netpeditor prefsdata locale misc
 EXEDIR      := $(AROSDIR)/Prefs
 
 #MM- workbench-prefs : workbench-prefs-network
-#MM workbench-prefs-network : includes linklibs workbench-prefs-network-catalogs
+
+#MM workbench-prefs-network : includes linklibs workbench-prefs-network-catalogs \
+#MM workbench-prefs-network-cpy
 
 %build_prog mmake=workbench-prefs-network \
     progname=Network targetdir=$(EXEDIR) \
     files=$(FILES) uselibs="mui arossupport amiga arosc m"
+
+#MM workbench-prefs-network-cpy
+
+%copy_files_q files=interface src=. dst=$(AROS_IMAGES) maketarget=workbench-prefs-network-cpy
 
 %common

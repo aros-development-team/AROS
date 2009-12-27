@@ -24,5 +24,6 @@ extern struct MUI_CustomClass *NetPEditor_CLASS;
 #define MUIM_NetPEditor_ApplyEntry      (MUIB_NetPEditor | 0x00000004)
 
 struct MUIP_NetPEditor_EditEntry {STACKED ULONG MethodID; STACKED BOOL addEntry;};
+struct MUIP_NetPEditor_IPModeChanged {STACKED ULONG MethodID; STACKED BOOL interface;};
 
 #endif /* _FWPEDITOR_H_ */
