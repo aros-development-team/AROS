@@ -96,7 +96,8 @@ COMMONTESTFILES := \
     childwait \
     patchrgbconv \
     childstatus \
-    joystick
+    joystick \
+    supertest
 
 HOSTEDTESTFILES :=  \
     hostlib
