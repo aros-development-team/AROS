@@ -14,7 +14,7 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum)
         sizeof (struct EasyStruct),
         0,
         NULL,
-        "%08lx %s\nProgram failed (error #%08lx).\n"
+        "%P %s\nProgram failed (error #%08lx).\n"
             "Wait for disk activity to finish.",
         NULL,
     };

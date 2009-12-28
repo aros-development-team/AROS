@@ -71,7 +71,7 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
   BOOL  end;
   ULONG max_argpos;
   ULONG arg_counter;
-  ULONG *stream;
+  IPTR *stream;
   BOOL  scanning;
 
 #define INDICES 256
@@ -85,7 +85,7 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
   end          = FALSE;
   max_argpos   = 0;
   arg_counter  = 0;
-  stream       = (ULONG *) dataStream;
+  stream       = (IPTR *) dataStream;
   scanning     = TRUE;   /* The first time I will go through
                                   and determine the width of the data in the dataStream */
 
@@ -148,7 +148,7 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
               if (indices[i] != 0)
                 _sum =  sum + indices[i];
               else
-                _sum =  sum + 4;
+                _sum =  sum + sizeof(IPTR);
 
               indices[i] =  sum;
               sum        = _sum;
@@ -318,7 +318,7 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
               }
               else
 #endif /* USE_QUADFMT */
-                datasize = 4;
+                datasize = sizeof(APTR);
               break;
 
             default:
@@ -492,21 +492,19 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
                 indices[arg_pos-1] = datasize;
             break;
 
-            case 'x': /* upper case hexadecimal string */
-            case 'X': /* lower case hexadecimal string */
             case 'p': /* lower case pointer string */
             case 'P': /* upper case pointer string */
+	      fill = '0';
+	      width = sizeof(APTR)*2;
+	      /* %p is always at least natural pointer size */
+	      if (datasize < sizeof(APTR))
+	          datasize = sizeof(APTR);
+            case 'x': /* upper case hexadecimal string */
+            case 'X': /* lower case hexadecimal string */
 
               if (!scanning)
               {
                 const UBYTE *hexa;
-
-                /* %p is always at least natural pointer size (32bit) */
-                if (datasize < sizeof(void *) && (fmtTemplate[template_pos] == 'p' ||
-                                                  fmtTemplate[template_pos] == 'P'))
-                {
-                  datasize = sizeof(void *);
-                }
 
                 switch (datasize)
                 {

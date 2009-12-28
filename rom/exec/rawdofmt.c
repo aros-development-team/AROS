@@ -228,6 +228,10 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 		    IPTR number = 0; int base;
 		    static const char digits[] = "0123456789ABCDEF";
 
+		    case 'P':
+			fill = '0';
+			minwidth = sizeof(APTR)*2;
+			size = 'l';
 		    case 'x':
 		        base   = 16;
 			number = fetch_number(size, 1);
