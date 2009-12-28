@@ -93,39 +93,17 @@ static void PrintFrame(void)
 
     UBYTE buffer[256], *buf;
     struct Task *task = SysBase->ThisTask;
-    struct IntETask *iet;
-    ULONG ret;
-    
-    /* The following part has any sense only in usermode and only if we have task. */
-    if (task) {
-        /* Get internal task structure */
-        iet = GetIntETask(task);
-	/* If we already have alert number for this task, we are in double-crash during displaying
-           intuition requester. Well, take the initial alert code (because it's more helpful to the programmer)
-	   and proceed with system alert */
-	if (iet->iet_LastAlert[1])
-	    alertNum = iet->iet_LastAlert[1];
-	else {
-	    /* Otherwise we can try to put up Intuition requester first. Store alert code in order in ETask
-	       in order to indicate crash condition */
-	    iet->iet_LastAlert[1] = alertNum;
-	    /* Issue a requester */
-	    ret = Exec_UserAlert(alertNum);
-	    /* If we managed to get here, everything went OK, remove crash indicator */
-	    iet->iet_LastAlert[1] = 0;
-	    /* Return if Exec_UserAlert() allows us to do it */
-	    if (ret)
-	        return;
-	}
-    }
 
-    /* In future the code below this point should go to arch-specific sys_alert.c, and rom/exec/useralert.c
-       should be merged with rom/exec/alert.c.
-       Note that first part of this function differs only in KrnIsSuper() because some ports still don't
-       have kernel.resource */
+    /* First try to issue an Intuition requester */
+    alertNum = Exec_UserAlert(alertNum, task);
+    if (!alertNum)
+	return;
+    /* We're here if Intuition failed. Print alert to the debug output and reboot.
+       In future we should have more intelligent handling for such a case. For
+       example we should report what was wrong after we rebooted. */
     PrintFrame();
     PrintCentered(Alert_GetTitle(alertNum));
-    NewRawDoFmt(fmtstring, RAWFMTFUNC_STRING, buffer, SysBase->ThisTask, Alert_GetTaskName(SysBase->ThisTask));
+    NewRawDoFmt(fmtstring, RAWFMTFUNC_STRING, buffer, task, Alert_GetTaskName(task));
     PrintCentered(buffer);
     buf = NewRawDoFmt(errstring, RAWFMTFUNC_STRING, buffer, alertNum);
     Alert_GetString(alertNum, --buf);
