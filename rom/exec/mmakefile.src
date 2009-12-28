@@ -13,7 +13,7 @@ ALL_FUNCTIONS	:= \
 	alloctrap allocvec attemptsemaphore attemptsemaphoreshared availmem \
 	cachecleare cacheclearu cachecontrol cachepostdma cachepredma cause \
 	checkio childfree childorphan childstatus childwait closedevice \
-	closelibrary coldreboot copymem copymemquick createiorequest \
+	closelibrary coldreboot copymem copymemquick crashhandler createiorequest \
 	createmsgport createpool deallocate debug deleteiorequest \
 	deletemsgport deletepool disable dispatch doio enable enqueue \
 	exception findname findport findresident findsemaphore findtask \
@@ -29,7 +29,7 @@ ALL_FUNCTIONS	:= \
 	setsignal setsr settaskpri signal stackswap sumkickdata sumlibrary \
 	superstate supervisor switch taggedopenlibrary typeofmem userstate \
 	vacate wait waitio waitport allocvecpooled freevecpooled newallocentry \
-	newaddtask avl vnewrawdofmt shutdowna
+	newaddtask avl vnewrawdofmt shutdowna useralert
 
 
 INIT_FILE   := exec_init

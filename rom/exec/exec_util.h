@@ -35,6 +35,13 @@ struct Task *Exec_FindTaskByID(ULONG id, struct ExecBase *SysBase);
 struct ETask *Exec_FindChild(ULONG id, struct ExecBase *SysBase);
 struct IntETask *FindETask(struct List *, ULONG id, struct ExecBase *SysBase);
 
+STRPTR Alert_AddString(STRPTR dest, STRPTR src);
+STRPTR Alert_GetTitle(ULONG alertNum);
+STRPTR Alert_GetTaskName(struct Task *task);
+void Alert_GetString(ULONG alertnum, STRPTR buf);
+VOID Exec_CrashHandler(void);
+ULONG Exec_UserAlert(ULONG alertNum);
+
 APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,
 		      APTR PutChData, va_list VaListStream);
 

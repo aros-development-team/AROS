@@ -11,10 +11,12 @@
 #include <exec/execbase.h>
 #include <exec/rawfmt.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <string.h>
 
 #include "../kernel/hostinterface.h"
-#include "alertstrings.h"
+#include "etask.h"
+#include "exec_util.h"
 
 static UBYTE *const fmtstring = "Task %08lx - %s\n";
 static UBYTE *const errstring = "Error %08lx - ";
@@ -63,10 +65,41 @@ extern struct HostInterface *HostIFace;
     AROS_LIBFUNC_INIT
 
     UBYTE buffer[256], *buf;
+    struct Task *task = SysBase->ThisTask;
+    struct IntETask *iet;
+    ULONG ret;
+    
+    /* The following part has any sense only in usermode and only if we have task. */
+    if (!KrnIsSuper() && task) {
+        /* Get internal task structure */
+        iet = GetIntETask(task);
+	/* If we already have alert number for this task, we are in double-crash during displaying
+           intuition requester. Well, take the initial alert code (because it's more helpful to the programmer)
+	   and proceed with system alert */
+	if (iet->iet_LastAlert[1])
+	    alertNum = iet->iet_LastAlert[1];
+	else {
+	    /* Otherwise we can try to put up Intuition requester first. Store alert code in order in ETask
+	       in order to indicate crash condition */
+	    iet->iet_LastAlert[1] = alertNum;
+	    /* Issue a requester */
+	    ret = Exec_UserAlert(alertNum);
+	    /* If we managed to get here, everything went OK, remove crash indicator */
+	    iet->iet_LastAlert[1] = 0;
+	    /* Return if Exec_UserAlert() allows us to do it */
+	    if (ret)
+	        return;
+	}
+    }
+
+    /* In future the code below this point should go to arch-specific sys_alert.c, and rom/exec/useralert.c
+       should be merged with rom/exec/alert.c.
+       Note that first part of this function differs only in KrnIsSuper() because some ports still don't
+       have kernel.resource */
 
     buf = Alert_AddString(buffer, Alert_GetTitle(alertNum));
     *buf++ = '\n';
-    buf = NewRawDoFmt(fmtstring, RAWFMTFUNC_STRING, buf, SysBase->ThisTask, Alert_GetTaskName(SysBase->ThisTask));
+    buf = NewRawDoFmt(fmtstring, RAWFMTFUNC_STRING, buf, task, Alert_GetTaskName(task));
     buf = NewRawDoFmt(errstring, RAWFMTFUNC_STRING, --buf, alertNum);
     Alert_GetString(alertNum, --buf);
     Disable();
@@ -80,5 +113,6 @@ extern struct HostInterface *HostIFace;
 	HostIFace->_Shutdown(SD_ACTION_COLDREBOOT);
     }
     Enable();
+
     AROS_LIBFUNC_EXIT
 }

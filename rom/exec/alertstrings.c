@@ -4,7 +4,7 @@
 #include <exec/alerts.h>
 #include <exec/tasks.h>
 
-#include "alertstrings.h"
+#include "exec_util.h"
 
 struct Errors
 {

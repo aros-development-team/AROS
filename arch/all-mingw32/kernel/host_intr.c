@@ -81,7 +81,7 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 {
     	struct ExecBase *SysBase = *SysBasePtr;
     	struct KernelBase *KernelBase = *KernelBasePtr;
-	void (*trapHandler)(unsigned long) = NULL;
+	void (*trapHandler)(unsigned long, CONTEXT *) = NULL;
     	REG_SAVE_VAR;
 
         /* Enter supervisor mode, save important registers that must not be modified.
@@ -143,7 +143,7 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 		/* Call our trap handler. Note that we may return, this means that the handler has
 		   fixed the problem somehow and we may safely continue */
 		DT(printf("Calling trap %u\n", ex->TrapNum));
-	        trapHandler(ex->TrapNum);
+	        trapHandler(ex->TrapNum, ContextRecord);
 	    } else {
 	        /* We should never get here. But if we do, it's a true emergency.
 		   And we tell Windows to throw us away. */

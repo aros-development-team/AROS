@@ -24,6 +24,7 @@ struct IntETask
     APTR	 iet_startup;   /* Structure to store startup code stuff */
     UQUAD	 iet_CpuTime;
     UQUAD	 iet_private1;
+    ULONG	 iet_LastAlert[2];
 };
 
 #define GetIntETask(task)   ((struct IntETask *)(((struct Task *) \

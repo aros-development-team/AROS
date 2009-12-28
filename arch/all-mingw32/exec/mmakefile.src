@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 CFILES := alert cause disable dispatch enable exec_init newaddtask permit preparecontext rawputchar \
-          remtask reschedule setexcept settaskpri  shutdowna signal wait idletask
+          remtask reschedule setexcept settaskpri shutdowna signal traphandler wait idletask
 
 USER_CFLAGS := -I$(SRCDIR)/rom/exec
 %build_archspecific \
