@@ -15,8 +15,8 @@
  * following on the supervisor stack:
  *  0(sp).l = trap#
  *  4(sp) Processor dependent exception frame
- * We should try to be as close as possible. I strongly beleive this implementation
- * is quite incomplete.
+ * This generic implementation is quite incomplete. See arch/all-mingw32 for
+ * more correct and complete one.
  */
 
 void Exec_TrapHandler(ULONG trapNum)

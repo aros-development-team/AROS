@@ -15,7 +15,6 @@
 #include <string.h>
 
 #include "../kernel/hostinterface.h"
-#include "etask.h"
 #include "exec_util.h"
 
 static UBYTE *const fmtstring = "Task %08lx - %s\n";
@@ -66,36 +65,14 @@ extern struct HostInterface *HostIFace;
 
     UBYTE buffer[256], *buf;
     struct Task *task = SysBase->ThisTask;
-    struct IntETask *iet;
-    ULONG ret;
     
-    /* The following part has any sense only in usermode and only if we have task. */
-    if (!KrnIsSuper() && task) {
-        /* Get internal task structure */
-        iet = GetIntETask(task);
-	/* If we already have alert number for this task, we are in double-crash during displaying
-           intuition requester. Well, take the initial alert code (because it's more helpful to the programmer)
-	   and proceed with system alert */
-	if (iet->iet_LastAlert[1])
-	    alertNum = iet->iet_LastAlert[1];
-	else {
-	    /* Otherwise we can try to put up Intuition requester first. Store alert code in order in ETask
-	       in order to indicate crash condition */
-	    iet->iet_LastAlert[1] = alertNum;
-	    /* Issue a requester */
-	    ret = Exec_UserAlert(alertNum);
-	    /* If we managed to get here, everything went OK, remove crash indicator */
-	    iet->iet_LastAlert[1] = 0;
-	    /* Return if Exec_UserAlert() allows us to do it */
-	    if (ret)
-	        return;
-	}
+    /* If we are running in user mode we should first try to report a problem using AROS'
+       own way to do it */
+    if (!KrnIsSuper()) {
+        alertNum = Exec_UserAlert(alertNum, task);
+	if (!alertNum)
+	    return;
     }
-
-    /* In future the code below this point should go to arch-specific sys_alert.c, and rom/exec/useralert.c
-       should be merged with rom/exec/alert.c.
-       Note that first part of this function differs only in KrnIsSuper() because some ports still don't
-       have kernel.resource */
 
     buf = Alert_AddString(buffer, Alert_GetTitle(alertNum));
     *buf++ = '\n';
