@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -57,6 +57,7 @@ struct nameexp layout_expansion_table[] =
     {"et"   , "Estonian"    	    , NULL },
     {"fi"   , "Finnish"    	        , "Suomi"            },
     {"f"    , "Français"    	    , "France"           },
+    {"hr"   , "Hrvatski"    	    , "Hrvatska"         },
     {"ic"   , "Icelandic"    	    , "Island"           },
     {"i"    , "Italiana"    	    , "Italia"           },
     {"la"   , "Latin American"      , NULL },
