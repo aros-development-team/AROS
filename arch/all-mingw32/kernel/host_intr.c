@@ -84,8 +84,10 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 	void (*trapHandler)(unsigned long) = NULL;
     	REG_SAVE_VAR;
 
-        /* Enter supervisor mode, save important registers that must not be modified */
-	Supervisor++;
+        /* Enter supervisor mode, save important registers that must not be modified.
+	   Note that up to this point we still can be preempted by task switcher, i
+	   hope it's okay. */
+	Supervisor = 1;
 	CONTEXT_SAVE_REGS(ContextRecord);
 
 	switch (ExceptionRecord->ExceptionCode) {
@@ -152,7 +154,7 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 
 	/* Restore important registers, exit supervisor */
 	CONTEXT_RESTORE_REGS(ContextRecord);
-	Supervisor--;
+	Supervisor = 0;
 	return ExceptionContinueExecution;
 }
 
@@ -168,20 +170,26 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     for (;;) {
         obj = WaitForMultipleObjects(INTERRUPTS_NUM, args->IntObjects, FALSE, INFINITE);
         DS(bug("[Task switcher] Object %lu signalled\n", obj));
+	/* Stop main thread if it's not sleeping */
         if (Sleep_Mode != SLEEP_MODE_ON) {
             DS(res =) SuspendThread(args->MainThread);
     	    DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
     	}
-        if (Ints_Enabled) {
-    	    Supervisor++;
+	/* People say that on SMP systems thread is not stopped immediately by SuspendThread().
+	   So we have to do our best to ensure that is is really stopped. I hope GetThreadContext()
+	   guarantees it. */
+	CONTEXT_INIT_FLAGS(&MainCtx);
+    	DS(res =) GetThreadContext(args->MainThread, &MainCtx);
+    	DS(bug("[Task switcher] Get context result: %lu\n", res));
+	/* Supervisor can be set only by exception handler. If it is set, we are already in interrupt,
+	   let's wait for the next time */
+        if (!Supervisor && Ints_Enabled) {
+    	    Supervisor = 1;
     	    PendingInts[obj] = 0;
     	    /* 
-    	     * We will get and store the complete CPU context, but set only part of it.
+    	     * We get and store the complete CPU context, but set only part of it.
     	     * This can be a useful aid for future AROS debuggers.
     	     */
-    	    CONTEXT_INIT_FLAGS(&MainCtx);
-    	    DS(res =) GetThreadContext(args->MainThread, &MainCtx);
-    	    DS(bug("[Task switcher] Get context result: %lu\n", res));
     	    CONTEXT_SAVE_REGS(&MainCtx);
     	    DS(OutputDebugString("[Task switcher] original CPU context: ****\n"));
     	    DS(PrintCPUContext(&MainCtx));
@@ -195,11 +203,12 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     	        DS(res =)SetThreadContext(args->MainThread, &MainCtx);
     	        DS(bug("[Task switcher] Set context result: %lu\n", res));
     	    }
-    	    Supervisor--;
+    	    Supervisor = 0;
     	} else {
     	    PendingInts[obj] = 1;
             DS(bug("[KRN] Interrupts are disabled, interrupt %lu is pending\n", obj));
         }
+	/* Resuming main thread if AROS is not sleeping */
         if (Sleep_Mode)
             /* We've entered sleep mode */
             Sleep_Mode = SLEEP_MODE_ON;
