@@ -16,7 +16,7 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum)
             sizeof (struct EasyStruct),
             0,
             NULL,
-	    "Program failed - task held\n"
+	    "Program failed\n"
             "Task: #%P (%s)\n"
 	    "Error: #%08lx (%s)\n"
             "Wait for disk activity to finish.",
@@ -25,7 +25,6 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum)
         UBYTE buffer[256];
         STRPTR taskName = Alert_GetTaskName(task);
         CONST_APTR args[] = {task, taskName, (CONST_APTR)alertNum, buffer};
-        LONG choice;
 
         es.es_Title = Alert_GetTitle(alertNum);
         Alert_GetString(alertNum, buffer);
