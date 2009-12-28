@@ -49,7 +49,7 @@ void dumplist(struct GfxBase *GfxBase)
 }
 #endif
 
-inline struct RegionRectangleExtChunk *__NewRegionRectangleExtChunk
+static inline struct RegionRectangleExtChunk *__NewRegionRectangleExtChunk
 (
     struct GfxBase *GfxBase
 )
@@ -130,7 +130,7 @@ void __DisposeRegionRectangleExtChunk
 }
 
 
-inline struct RegionRectangle *_NewRegionRectangle
+struct RegionRectangle *_NewRegionRectangle
 (
     struct RegionRectangle **LastRectPtr,
     struct GfxBase *GfxBase
