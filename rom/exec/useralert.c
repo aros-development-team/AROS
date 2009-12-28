@@ -8,35 +8,34 @@
 
 static LONG AskSuspend(struct Task *task, ULONG alertNum)
 {
-    struct IntuitionBase *IntuitionBase;
-    struct EasyStruct es =
-    {
-        sizeof (struct EasyStruct),
-        0,
-        NULL,
-        "%P %s\nProgram failed (error #%08lx).\n"
-            "Wait for disk activity to finish.",
-        NULL,
-    };
-    STRPTR taskName = Alert_GetTaskName(task);
-    CONST_APTR args[] = {task, taskName, (CONST_APTR)alertNum};
     LONG choice = -1;
+    struct IntuitionBase *IntuitionBase = OpenLibrary("intuition.library", 36);
+    
+    if (IntuitionBase && IntuitionBase->FirstScreen) {
+        struct EasyStruct es = {
+            sizeof (struct EasyStruct),
+            0,
+            NULL,
+	    "Program failed - task held\n"
+            "Task: #%P (%s)\n"
+	    "Error: #%08lx (%s)\n"
+            "Wait for disk activity to finish.",
+            NULL,
+        };
+        UBYTE buffer[256];
+        STRPTR taskName = Alert_GetTaskName(task);
+        CONST_APTR args[] = {task, taskName, (CONST_APTR)alertNum, buffer};
+        LONG choice;
 
-    es.es_Title = Alert_GetTitle(alertNum);
-    if (alertNum & AT_DeadEnd)
-        es.es_GadgetFormat = "Suspend|Reboot";
-    else
-        es.es_GadgetFormat = "Ok";
-    IntuitionBase = OpenLibrary("intuition.library", 0);
-    if (IntuitionBase != NULL)
-    {
-        if (IntuitionBase->FirstScreen != NULL)
-        {
-            choice = EasyRequestArgs(NULL, &es, NULL, args);
-        }
+        es.es_Title = Alert_GetTitle(alertNum);
+        Alert_GetString(alertNum, buffer);
+        if (alertNum & AT_DeadEnd)
+            es.es_GadgetFormat = "Suspend|Reboot";
+        else
+            es.es_GadgetFormat = "Ok";
+        choice = EasyRequestArgs(NULL, &es, NULL, args);
 	CloseLibrary(IntuitionBase);
     }
-
     return choice;
 }
 
