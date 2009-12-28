@@ -35,9 +35,6 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 void internal_ChildWait(struct Task *task, struct DosLibrary * DOSBase);
 void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
-static VOID TrapHandler(ULONG alertNum);
-static LONG AskSuspend(const TEXT *taskName, ULONG alertNum);
-
 #include <aros/debug.h>
 
 /* Temporary macro */
@@ -354,9 +351,6 @@ static LONG AskSuspend(const TEXT *taskName, ULONG alertNum);
     process->pr_Task.tc_Node.ln_Type = NT_PROCESS;
     process->pr_Task.tc_Node.ln_Name = name;
     process->pr_Task.tc_Node.ln_Pri = defaults[11].ti_Data;
-/*  Disabled because this can't work. The code in TrapHandler actually can't be called from
-    within CPU trap. Pavel Fedin <sonic.amiga@gmail.com>.
-    process->pr_Task.tc_TrapCode = TrapHandler;*/
     process->pr_Task.tc_SPLower = stack;
     process->pr_Task.tc_SPUpper = stack + defaults[9].ti_Data;
 
@@ -737,46 +731,3 @@ static void KillCurrentProcess(void)
     
     CloseLibrary((struct Library * )DOSBase);
 }
-
-static VOID TrapHandler(ULONG alertNum)
-{
-    struct Task *task = FindTask(NULL);
-
-    if (AskSuspend(task->tc_Node.ln_Name, alertNum) == 1)
-    {
-        Wait(0);
-    }
-    else
-    {
-        ShowImminentReset();
-        ShutdownA(SD_ACTION_COLDREBOOT);
-    }
-}
-
-static LONG AskSuspend(const TEXT *taskName, ULONG alertNum)
-{
-    struct EasyStruct es =
-    {
-        sizeof (struct EasyStruct),
-        0,
-        "Software Failure",
-        "%s\nProgram failed (error #%08lx).\n"
-            "Wait for disk activity to finish.",
-        "Suspend|Reboot"
-    };
-    CONST_APTR args[] = {taskName, (CONST_APTR)alertNum, NULL};
-    LONG choice = 0;
-
-    es.es_TextFormat = "%s\nProgram failed (error #%08lx).\n"
-        "Wait for disk activity to finish.";
-    if (IntuitionBase != NULL)
-    {
-        if (IntuitionBase->FirstScreen != NULL)
-        {
-            choice = EasyRequestArgs(NULL, &es, NULL, args);
-        }
-    }
-
-    return choice;
-}  
-
