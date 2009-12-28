@@ -143,6 +143,36 @@ VOID CM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 /****************************************************************************************/
 
+static inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelFormat *pf)
+{
+    HIDDT_Pixel red     = color->red;
+    HIDDT_Pixel green   = color->green;
+    HIDDT_Pixel blue    = color->blue;
+    HIDDT_Pixel alpha   = color->alpha;
+
+    /* This code assumes that sizeof(HIDDT_Pixel) is a multimple of sizeof(col->#?)
+       which should be true for most (all?) systems. (I have never heard of any
+       system with for example 3 byte types.)
+    */
+
+    if (HIDD_PF_SWAPPIXELBYTES(pf))
+    {
+        #warning "int_map_truecolor assuming that SwapPixelBytes flag only set for 2-byte/16-bit pixel formats"
+
+        HIDDT_Pixel pixel = MAP_RGBA(red, green, blue, alpha, pf);
+
+        color->pixval = SWAPBYTES_WORD(pixel);
+    }
+    else
+    {
+        color->pixval = MAP_RGBA(red, green, blue, alpha, pf);
+    }
+
+    return color->pixval;
+}
+
+/****************************************************************************************/
+
 BOOL CM__Hidd_ColorMap__SetColors(OOP_Class *cl, OOP_Object *o,
 				  struct pHidd_ColorMap_SetColors *msg)
 {
@@ -156,7 +186,7 @@ BOOL CM__Hidd_ColorMap__SetColors(OOP_Class *cl, OOP_Object *o,
 
     numnew = msg->firstColor + msg->numColors;
     
-    /* See if there is enpugh space in the array  */
+    /* See if there is enough space in the array  */
     
     if (numnew > data->clut.entries)
     {
@@ -209,37 +239,6 @@ BOOL CM__Hidd_ColorMap__SetColors(OOP_Class *cl, OOP_Object *o,
     }
     
     return TRUE;
-}
-
-/****************************************************************************************/
-
-inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelFormat *pf)
-{
-    HIDDT_Pixel red	= color->red;
-    HIDDT_Pixel green	= color->green;
-    HIDDT_Pixel blue	= color->blue;
-    HIDDT_Pixel alpha   = color->alpha;
-    
-    
-    /* This code assumes that sizeof (HIDDT_Pixel is a multimple of sizeof(col->#?)
-       which should be true for most (all ?) systems. (I have never heard
-       of any system with for example 3 byte types.
-    */
-
-    if (HIDD_PF_SWAPPIXELBYTES(pf))
-    {
-	#warning "int_map_truecolor assuming that SwapPixelBytes flag only set for 2-byte/16-bit pixel formats"
-
-    	HIDDT_Pixel pixel = MAP_RGBA(red, green, blue, alpha, pf);
-			
-	color->pixval = SWAPBYTES_WORD(pixel);;
-    }
-    else
-    {
-    	color->pixval = MAP_RGBA(red, green, blue, alpha, pf);
-    }
-
-    return color->pixval;
 }
 
 /****************************************************************************************/
