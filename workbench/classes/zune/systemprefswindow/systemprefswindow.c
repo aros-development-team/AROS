@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2009, The AROS Development Team. All rights reserved.
     This file is part of the SystemPrefsWindow class, which is distributed under
     the terms of version 2.1 of the GNU Lesser General Public License.
     
@@ -12,6 +12,8 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/locale.h>
+#include <proto/asl.h>
+#include <proto/dos.h>
 
 #include <utility/tagitem.h>
 #include <libraries/gadtools.h>
@@ -81,7 +83,7 @@ Object *SystemPrefsWindow__OM_NEW
     struct SystemPrefsWindow_DATA *data = NULL; 
     struct TagItem *tag        = NULL;    
     struct Catalog *catalog    = NULL;
-    Object         *editor, /* *importMI, *exportMI, */ *testMI, *revertMI, 
+    Object         *editor, *importMI, *exportMI, *testMI, *revertMI, 
                    *saveMI, *useMI, *cancelMI;
     
     tag = FindTagItem(WindowContents, message->ops_AttrList);
@@ -104,16 +106,12 @@ Object *SystemPrefsWindow__OM_NEW
         MUIA_Window_Menustrip, (IPTR) MenustripObject,
             Child, (IPTR) MenuObject,
                 MUIA_Menu_Title, __(MSG_MENU_PREFS),
-                
-                /* FIXME: implement
-                Child, (IPTR) importMI = MakeMenuitem(_(MSG_MENU_PREFS_IMPORT)),
-                Child, (IPTR) exportMI = MakeMenuitem(_(MSG_MENU_PREFS_EXPORT)),
-                Child, (IPTR) MakeMenuitem(NM_BARLABEL),
-                */
-                
+                Child, (IPTR)(importMI = MakeMenuitem(_(MSG_MENU_PREFS_IMPORT))),
+                Child, (IPTR)(exportMI = MakeMenuitem(_(MSG_MENU_PREFS_EXPORT))),
+                Child, (IPTR)MakeMenuitem(NM_BARLABEL),
                 Child, (IPTR)(testMI   = MakeMenuitem(_(MSG_MENU_PREFS_TEST))),
                 Child, (IPTR)(revertMI = MakeMenuitem(_(MSG_MENU_PREFS_REVERT))),
-                Child, MakeMenuitem(NM_BARLABEL),
+                Child, (IPTR)MakeMenuitem(NM_BARLABEL),
                 Child, (IPTR)(saveMI   = MakeMenuitem(_(MSG_MENU_PREFS_SAVE))),
                 Child, (IPTR)(useMI    = MakeMenuitem(_(MSG_MENU_PREFS_USE))),
                 Child, (IPTR)(cancelMI = MakeMenuitem(_(MSG_MENU_PREFS_CANCEL))),
@@ -175,6 +173,16 @@ Object *SystemPrefsWindow__OM_NEW
         (
             cancelMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
             (IPTR) self, 1, MUIM_PrefsWindow_Cancel
+        );
+        DoMethod
+        (
+            importMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+            (IPTR) self, 1, MUIM_PrefsWindow_Import
+        );
+        DoMethod
+        (
+            exportMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+            (IPTR) self, 1, MUIM_PrefsWindow_Export
         );
     }
     else
@@ -342,4 +350,98 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Cancel
     );
 
     return TRUE;
+}
+
+IPTR SystemPrefsWindow__MUIM_PrefsWindow_Import
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_INST_DATA;
+
+    IPTR result = FALSE;
+
+    struct FileRequester *requester = MUI_AllocAslRequestTags
+    (
+        ASL_FileRequest,
+        ASLFR_RejectIcons, TRUE,
+        ASLFR_TitleText, "Import", // TODO: localize
+        TAG_DONE
+    );
+
+    if (requester)
+    {
+        BOOL result = MUI_AslRequest(requester, NULL);
+        if (result)
+        {
+            LONG buflen = strlen(requester->rf_Dir) + strlen(requester->rf_File) + 5;
+            STRPTR buffer = AllocVec(buflen, MEMF_ANY);
+            if (buffer)
+            {
+                strcpy(buffer, requester->rf_Dir);
+                if (AddPart(buffer, requester->rf_File, buflen))
+                {
+                    result = DoMethod
+                    (
+                        data->spwd_Editor,
+                        MUIM_PrefsEditor_Import,
+                        buffer
+                    );
+                    SET(data->spwd_Editor, MUIA_PrefsEditor_Changed, TRUE);
+                }
+                FreeVec(buffer);
+            }
+        }
+        FreeAslRequest(requester);
+        // FIXME: error reporting
+    }
+
+    return result;
+}
+
+IPTR SystemPrefsWindow__MUIM_PrefsWindow_Export
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_INST_DATA;
+
+    IPTR result = FALSE;
+
+    struct FileRequester *requester = MUI_AllocAslRequestTags
+    (
+        ASL_FileRequest,
+        ASLFR_RejectIcons, TRUE,
+        ASLFR_TitleText, "Export", // TODO: localize
+        ASLFR_DoSaveMode, TRUE,
+        TAG_DONE
+    );
+
+    if (requester)
+    {
+        BOOL result = MUI_AslRequest(requester, NULL);
+        if (result)
+        {
+            LONG buflen = strlen(requester->rf_Dir) + strlen(requester->rf_File) + 5;
+            STRPTR buffer = AllocVec(buflen, MEMF_ANY);
+            if (buffer)
+            {
+                strcpy(buffer, requester->rf_Dir);
+                if (AddPart(buffer, requester->rf_File, buflen))
+                {
+                    result = DoMethod
+                    (
+                        data->spwd_Editor,
+                        MUIM_PrefsEditor_Export,
+                        buffer
+                    );
+                }
+                FreeVec(buffer);
+            }
+        }
+        FreeAslRequest(requester);
+        // FIXME: error reporting
+    }
+
+    return result;
 }
