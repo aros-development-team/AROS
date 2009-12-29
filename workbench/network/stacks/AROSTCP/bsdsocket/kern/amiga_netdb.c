@@ -342,7 +342,7 @@ D(bug("[AROSTCP](amiga_netdb.c) addwith()\n"));
 }
 
 /* Copy an address */
-int inline setaddr(struct sockaddr_in *sa, char *addr, u_short af)
+static int inline setaddr(struct sockaddr_in *sa, char *addr, u_short af)
 {
   sa->sin_len = sizeof(struct sockaddr_in);
   sa->sin_family = af;

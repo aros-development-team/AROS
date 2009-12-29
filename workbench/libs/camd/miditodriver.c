@@ -72,14 +72,14 @@ __inline BYTE GetMsgLen(LONG msg){
 }
 
 
-__inline void IncBuffer(struct DriverData *data,ULONG **buffer){
+static __inline void IncBuffer(struct DriverData *data,ULONG **buffer){
 	(*buffer)++;
 	if(*buffer==data->bufferend){
 		*buffer=data->buffer;
 	}
 }
 
-__inline void IncBuffer_rt(struct DriverData *data,UBYTE **buffer_rt){
+static __inline void IncBuffer_rt(struct DriverData *data,UBYTE **buffer_rt){
 	(*buffer_rt)++;
 	if(*buffer_rt==data->bufferend_rt){
 		*buffer_rt=data->buffer_rt;
