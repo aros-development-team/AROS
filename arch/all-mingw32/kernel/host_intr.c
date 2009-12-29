@@ -77,6 +77,17 @@ struct ExceptionTranslation ExceptionsTable[] = {
     {0				    , 0}
  };
 
+static void core_LeaveInterrupt(void)
+{
+    struct ExecBase *SysBase = *SysBasePtr;
+    
+    if (SysBase) {
+        if ((char )SysBase->IDNestCnt < 0) {
+            core_intr_enable();
+	}
+    }
+}
+
 EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *ExceptionRecord, void *EstablisherFrame, CONTEXT *ContextRecord, void *DispatcherContext)
 {
     	struct ExecBase *SysBase = *SysBasePtr;
@@ -84,10 +95,13 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 	void (*trapHandler)(unsigned long, CONTEXT *) = NULL;
     	REG_SAVE_VAR;
 
-        /* Enter supervisor mode, save important registers that must not be modified.
+	/* We are already in interrupt and we must not be preempted by task switcher. 
 	   Note that up to this point we still can be preempted by task switcher, i
 	   hope it's okay. */
+        Ints_Enabled = 0;
+        /* Enter supervisor mode, */
 	Supervisor = 1;
+	/* Save important registers that must not be modified */
 	CONTEXT_SAVE_REGS(ContextRecord);
 
 	switch (ExceptionRecord->ExceptionCode) {
@@ -152,9 +166,12 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 	    }
 	}
 
-	/* Restore important registers, exit supervisor */
+	/* Restore important registers */
 	CONTEXT_RESTORE_REGS(ContextRecord);
+	/* Exit supervisor */
 	Supervisor = 0;
+	/* Restore interrupts state. I again hope that being preemted beyond this point is OK */
+	core_LeaveInterrupt();
 	return ExceptionContinueExecution;
 }
 
@@ -174,28 +191,31 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
         if (Sleep_Mode != SLEEP_MODE_ON) {
             DS(res =) SuspendThread(args->MainThread);
     	    DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
+	    /* People say that on SMP systems thread is not stopped immediately by SuspendThread().
+	       So we have to do our best to ensure that is is really stopped. I hope GetThreadContext()
+	       guarantees it. */
+	    CONTEXT_INIT_FLAGS(&MainCtx);
+    	    DS(res =) GetThreadContext(args->MainThread, &MainCtx);
+    	    DS(bug("[Task switcher] Get context result: %lu\n", res));
     	}
-	/* People say that on SMP systems thread is not stopped immediately by SuspendThread().
-	   So we have to do our best to ensure that is is really stopped. I hope GetThreadContext()
-	   guarantees it. */
-	CONTEXT_INIT_FLAGS(&MainCtx);
-    	DS(res =) GetThreadContext(args->MainThread, &MainCtx);
-    	DS(bug("[Task switcher] Get context result: %lu\n", res));
-	/* Supervisor can be set only by exception handler. If it is set, we are already in interrupt,
-	   let's wait for the next time */
-        if (!Supervisor && Ints_Enabled) {
+	/* Process the interrupt if we are allowed to */
+        if (Ints_Enabled) {
     	    Supervisor = 1;
     	    PendingInts[obj] = 0;
     	    /* 
-    	     * We get and store the complete CPU context, but set only part of it.
-    	     * This can be a useful aid for future AROS debuggers.
+    	     * We get and store the complete CPU context, but set only part of it
+	     * because changing some registers causes Windows to immediately shut down
+	     * our process. This can be a useful aid for future AROS debuggers.
     	     */
     	    CONTEXT_SAVE_REGS(&MainCtx);
     	    DS(OutputDebugString("[Task switcher] original CPU context: ****\n"));
     	    DS(PrintCPUContext(&MainCtx));
+	    /* Call user-defined IRQ handler */
     	    if (*KernelBasePtr)
 	    	user_handler(obj, (*KernelBasePtr)->kb_Interrupts);
+	    /* Call scheduler */
     	    core_ExitInterrupt(&MainCtx);
+	    /* If AROS is going to sleep, set new CPU context */
     	    if (!Sleep_Mode) {
     	        DS(OutputDebugString("[Task switcher] new CPU context: ****\n"));
     	        DS(PrintCPUContext(&MainCtx));
@@ -203,8 +223,11 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     	        DS(res =)SetThreadContext(args->MainThread, &MainCtx);
     	        DS(bug("[Task switcher] Set context result: %lu\n", res));
     	    }
+	    /* Leave supervisor mode and apply interrupts state */
     	    Supervisor = 0;
+	    core_LeaveInterrupt();
     	} else {
+	    /* Otherwise remember the interrupt in order to re-submit it later */
     	    PendingInts[obj] = 1;
             DS(bug("[KRN] Interrupts are disabled, interrupt %lu is pending\n", obj));
         }
