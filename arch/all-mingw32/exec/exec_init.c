@@ -60,9 +60,6 @@ static const UBYTE version[] = VERSION_STRING;
 
 extern void debugmem(void);
 
-/**************** GLOBAL SYSBASE ***************/
-struct ExecBase * SysBase = NULL;
-
 /*
     We temporarily redefine kprintf() so we use the real version in case
     we have one of these two fn's called before AROSSupportBase is ready.
