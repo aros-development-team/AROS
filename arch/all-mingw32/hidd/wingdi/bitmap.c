@@ -99,7 +99,7 @@ HIDDT_Pixel GDIBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o, struct pH
 /****************************************************************************************/
 
 /* Table of raster operations (ROPs) corresponding to AROS GC drawmodes */
-static ULONG DrawModeTable[] = {
+static ULONG Fill_DrawModeTable[] = {
     BLACKNESS,
     0x00A000C9,
     0x00500325,
@@ -124,7 +124,7 @@ static void FillRect(OOP_Class *cl, struct bitmap_data *data, OOP_Object *gc, UL
     ULONG col, mode;
     
     col = GC_FG(gc);
-    mode = DrawModeTable[GC_DRMD(gc)];
+    mode = Fill_DrawModeTable[GC_DRMD(gc)];
     DB2(bug("[GDI] Brush color 0x%08lX, mode 0x%08lX\n", col, mode));
 
     Forbid();
@@ -313,15 +313,54 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 
 /****************************************************************************************/
 
-/* TODO: Support raster operations, currently we support only vHidd_GC_DrawMode_Copy */
+/* Raster operations for a background */
+static ULONG Copy_DrawModeTable[] = {
+    BLACKNESS,
+    MERGECOPY,  /* PSa  - src AND brush       */
+    0x0030032A, /* PSna - NOT src AND brush   */
+    PATCOPY,	/* P    - brush		      */
+    0x000C0324, /* SPna - src AND NOT brush   */
+    SRCCOPY,    /* S    - src		      */
+    0x003C004A, /* PSx  - brush XOR src       */
+    0x00FC008A, /* PSo  - brush OR src        */
+    0x000300AA, /* PSon - NOT (brush OR src)  */
+    0x00C3006A, /* PSxn - NOT (brush XOR src) */
+    NOTSRCCOPY, /* Sn   - NOT src	      */
+    0x00F3022A, /* PSno - NOT src OR brush    */
+    0x000F0001, /* Pn   - NOT brush	      */
+    0x00CF0224, /* SPno - NOT brush OR src    */
+    0x003F00EA, /* PSan - NOT (brush AND src) */
+    WHITENESS
+};
+
+/* Raster operations for a background */
+static ULONG MaskedFill_DrawModeTable[] = {
+    BLACKNESS,
+    0x008003E9, /* PSDaa  - dest AND brush AND src       */
+    0x00400F0A, /* PSDnaa - NOT dest AND brush AND src   */
+    MERGECOPY,  /* PSa    - brush AND src	         */
+    0x00080F08, /* SDPnaa - NOT brush AND dest AND src   */
+    SRCAND,	/* DSa    - dest AND src	         */
+    0x00480368, /* SDPxa  - brush XOR dest AND src       */
+    0x00C803A8, /* SDPoa  - brush OR dest AND src        */
+    0x00040C88, /* SDPona - NOT (brush OR dest) AND src  */
+    0x00840C48, /* SDPxna - NOT (brush XOR dest) AND src */
+    SRCERASE,   /* SDna   - NOT dest AND src	         */
+    0x00C40E04, /* SPDnoa - NOT dest OR brush AND src    */
+    0x000C0324, /* SPna   - NOT brush AND src		 */
+    0x008C0E08, /* SDPnoa - NOT brush OR dest AND src	 */
+    0x004C0CC8, /* SDPana - NOT (brush AND dest) AND src */
+    SRCCOPY	/* WHITENESS AND src			 */
+};
 
 VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
 					    struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     HIDDT_Pixel fg, bg;
-    ULONG cemd;
+    ULONG drmd, cemd;
     APTR d = NULL;
+    APTR buf_dc, buf_bm, buf_dc_bm;
     APTR mask_dc, mask_bm, mask_dc_bm;
     APTR br, dc_br;
     
@@ -341,61 +380,79 @@ VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
     
     fg = GC_FG(msg->gc);
     bg = GC_BG(msg->gc);
+    drmd = GC_DRMD(msg->gc);
     cemd = GC_COLEXP(msg->gc);
 
     Forbid();
-    /* First we convert a source bitmap to 1-plane mask. We do it by creating a monochrome bitmap and copying our mask to it. */
-    mask_dc = GDICALL(CreateCompatibleDC, data->display);
-    if (mask_dc) {
-        mask_bm = GDICALL(CreateCompatibleBitmap, mask_dc, msg->width, msg->height);
-        if (mask_bm) {
-            mask_dc_bm = GDICALL(SelectObject, mask_dc, mask_bm);
-            if (mask_dc_bm) {
-                /* During this first blit, pixels equal to BkColor, become WHITE. Others become BLACK. This converts
-                   our truecolor display-compatible bitmap to a monochrome bitmap. A monochrome bitmap can be effectively
-                   used for masking in blit operations. AND operations with WHITE will leave pixels intact, AND with BLACK
-                   gives black. OR with black also leaves intact. */
-                GDICALL(SetBkColor, d, 0);
-                GDICALL(BitBlt, mask_dc, 0, 0, msg->width, msg->height, d, msg->srcX, msg->srcY, SRCCOPY);
-                /* Prepare a background first if needed */
-                if (cemd & vHidd_GC_ColExp_Opaque) {
-                    /* In opaque mode we first prepare a background. We do it by making a solid brush of background color
-                       and then blitting mask with MERGECOPY operation. MERGECOPY means "dest = source AND brush".
-                       Remember that source here is monochrome version of our mask.
-                       After this operation we get a background with black holes into which we will blit a foregroing
-                       color later */
-                    br = GDICALL(CreateSolidBrush, bg);
-                    if (br) {
-                        dc_br = GDICALL(SelectObject, data->dc, br);
-                        if (dc_br) {
-                            GDICALL(BitBlt, data->dc, msg->destX, msg->destY, msg->width, msg->height, mask_dc, 0, 0, MERGECOPY);
-                            GDICALL(SelectObject, data->dc, dc_br);
-                        }
-                        GDICALL(DeleteObject, br);
-                    }
-                } else
-                    /* In transparent mode we simply clear masked area using "dest = dest AND src" operation */
-                    GDICALL(BitBlt, data->dc, msg->destX, msg->destY, msg->width, msg->height, mask_dc, 0, 0, SRCAND);
-                br = GDICALL(CreateSolidBrush, fg);
-    		if (br) {
-    		    dc_br = GDICALL(SelectObject, data->dc, br);
-    		    if (dc_br) {
-    		        /* This unnamed operation code means "dest = dest OR (brush AND (NOT source))". In converts pixels which
-    		           are BLACK in our mask info foreground (brush) color and then merges the result with what we already
-    		           have in our destination bitmap */
-    		        GDICALL(BitBlt, data->dc, msg->destX, msg->destY, msg->width, msg->height, mask_dc, 0, 0, 0x00BA0B09);
-    		    	GDICALL(SelectObject, data->dc, dc_br);
-    		    }
-    		    GDICALL(DeleteObject, br);
-    		}
-    		GDICALL(SelectObject, mask_dc, mask_dc_bm);
-    	    }
-    	    GDICALL(DeleteObject, mask_bm);
+    /* First we create a buffer for foreground pixels */
+    buf_dc = GDICALL(CreateCompatibleDC, data->display);
+    if (buf_dc) {
+        buf_bm = GDICALL(CreateCompatibleBitmap, data->display, msg->width, msg->height);
+        if (buf_bm) {
+            buf_dc_bm = GDICALL(SelectObject, buf_dc, buf_bm);
+            if (buf_dc_bm) {    
+		    /* Then we convert a source bitmap to 1-plane mask. We do it by creating a monochrome bitmap and copying our mask to it. */
+		    mask_dc = GDICALL(CreateCompatibleDC, data->display);
+		    if (mask_dc) {
+			/* The bitmap is compatible with memory DC, not display DC. This is what gives us 1-plane bitmap */
+			mask_bm = GDICALL(CreateCompatibleBitmap, mask_dc, msg->width, msg->height);
+			if (mask_bm) {
+			    mask_dc_bm = GDICALL(SelectObject, mask_dc, mask_bm);
+			    if (mask_dc_bm) {
+				GDICALL(SetBkColor, d, 0);
+				/* During this first blit, pixels equal to BkColor, become WHITE. Others become BLACK. This converts
+				   our truecolor display-compatible bitmap to a monochrome bitmap. A monochrome bitmap can be effectively
+				   used for masking in blit operations. AND operations with WHITE will leave pixels intact, AND with BLACK
+				   gives black. OR with black also leaves intact. */
+				GDICALL(BitBlt, mask_dc, 0, 0, msg->width, msg->height, d, msg->srcX, msg->srcY, SRCCOPY);
+				/* Now we are ready to do the actual painting. We will separately create foreground image, background image,
+				   and then merge them.
+				   The first thing is to paint foreground pixels with foreground brush according to draw mode and store them in buffer. */
+				br = GDICALL(CreateSolidBrush, fg);
+				if (br) {
+				    dc_br = GDICALL(SelectObject, buf_dc, br);
+				    if (dc_br) {
+				        /* First we apply foreground color and DrawMode to the whole rectangle. The result is stored in the buffer bitmap */
+				        GDICALL(BitBlt, buf_dc, 0, 0, msg->width, msg->height, data->dc, msg->destX, msg->destY, Copy_DrawModeTable[drmd]);
+					/* Second we mask out background pixels using our mask with DSna (dest AND NOT src) opcode. Buffer's background will be black then */
+					GDICALL(BitBlt, buf_dc, 0, 0, msg->width, msg->height, mask_dc, 0, 0, 0x00220326);
+					GDICALL(SelectObject, buf_dc, dc_br);
+				    }
+				    GDICALL(DeleteObject, br);
+				}
+				/* Then we prepare a background */
+				if (cemd & vHidd_GC_ColExp_Opaque) {
+				    /* In opaque mode we can paint a background in place. We do it by making a solid brush of background color
+				       and then blitting mask with "dest = source AND (dest DRMD brush)" operation. Remember that source
+				       here is monochrome version of our mask. After this operation we get a background with black holes
+				       into which we will blit foregroing pixels later */
+				    br = GDICALL(CreateSolidBrush, bg);
+				    if (br) {
+					dc_br = GDICALL(SelectObject, data->dc, br);
+					if (dc_br) {
+					    GDICALL(BitBlt, data->dc, msg->destX, msg->destY, msg->width, msg->height, mask_dc, 0, 0, MaskedFill_DrawModeTable[drmd]);
+					    GDICALL(SelectObject, data->dc, dc_br);
+					}
+					GDICALL(DeleteObject, br);
+				    }
+				} else
+				    /* In transparent mode we simply clear masked area using "dest = dest AND src" operation */
+				    GDICALL(BitBlt, data->dc, msg->destX, msg->destY, msg->width, msg->height, mask_dc, 0, 0, SRCAND);
+				/* And at last we merge our buffer with the prepared destination bitmap using OR operation. Remember that the
+				   destination now has completed background but black holes instead of foreground */
+				GDICALL(BitBlt, data->dc, msg->destX, msg->destY, msg->width, msg->height, buf_dc, 0, 0, SRCPAINT);
+				GDICALL(SelectObject, mask_dc, mask_dc_bm);
+			    }
+			    GDICALL(DeleteObject, mask_bm);
+			}
+			GDICALL(DeleteDC, mask_dc);
+		    }
+		    GDICALL(SelectObject, buf_dc, buf_dc_bm);
+	    }
+	    GDICALL(DeleteObject, buf_bm);
 	}
-	GDICALL(DeleteDC, mask_dc);
+	GDICALL(DeleteDC, buf_dc);
     }
-    /* TODO: an alternative way to implement this function is to attach a palette to a monochrome bitmap and then directly blit it in
-       opaque mode. Probably it will be even faster than this two-op version. */
     REFRESH(msg->destX, msg->destY, msg->destX + msg->width, msg->destY + msg->height);
     Permit();
     CHECK_STACK
