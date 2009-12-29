@@ -46,16 +46,6 @@ typedef unsigned char UBYTE;
 #define DS(x)
 #define DSLEEP(x)
 
-static inline void core_LeaveInterrupt(void)
-{
-    struct ExecBase *SysBase = *SysBasePtr;
-    
-    DINT(bug("[KRN] core_LeaveInterrupt(): IDNestCnt is %d\n", SysBase->IDNestCnt));
-    if ((char )SysBase->IDNestCnt < 0) {
-        core_intr_enable();
-    }
-}
-
 /*
  * Task dispatcher. Basically it may be the same one no matter what scheduling algorithm is used
  */
@@ -80,8 +70,6 @@ void core_Dispatch(CONTEXT *regs)
             /* We are entering sleep mode */
 	    Sleep_Mode = SLEEP_MODE_PENDING;
         }
-
-        core_LeaveInterrupt();
         return;
     }
 
@@ -118,7 +106,6 @@ void core_Dispatch(CONTEXT *regs)
     *LastErrorPtr = ctx->LastError;
         
     /* Leave interrupt and jump to the new task */
-    core_LeaveInterrupt();
 }
 
 void core_Switch(CONTEXT *regs)
@@ -178,21 +165,15 @@ void core_Schedule(CONTEXT *regs)
     if (!(task->tc_Flags & TF_EXCEPT))
     {
         /* Is the TaskReady empty? If yes, then the running task is the only one. Let it work */
-        if (IsListEmpty(&SysBase->TaskReady)) {
-            core_LeaveInterrupt();
+        if (IsListEmpty(&SysBase->TaskReady))
             return;
-        }
-    
         /* Does the TaskReady list contains tasks with priority equal or lower than current task?
          * If so, then check further... */
         if (((struct Task*)GetHead(&SysBase->TaskReady))->tc_Node.ln_Pri <= task->tc_Node.ln_Pri)
         {
             /* If the running task did not used it's whole quantum yet, let it work */
             if (!(SysBase->SysFlags & 0x2000))
-            {
-                core_LeaveInterrupt();
                 return;
-            }
         }
     }
     
