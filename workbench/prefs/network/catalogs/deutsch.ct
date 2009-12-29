@@ -31,16 +31,16 @@ IP-Modus
 ; IP Mode
 ;
 MSG_IP
-IP-Adresse
-; IP
+Adresse
+; Address
 ;
 MSG_MASK
-Maske
-; Mask
+Netzmaske
+; Net Mask
 ;
 MSG_GATE
 Gateway
-; Gate
+; Gateway
 ;
 MSG_DNS1
 Primärer DNS
@@ -67,8 +67,8 @@ Hole Adresse von DHCP
 ; Get address from DHCP
 ;
 MSG_TAB_IP_CONFIGURATION
-IP-Konfiguration
-; IP Configuration
+IPv4-Konfiguration
+; IPv4 Configuration
 ;
 MSG_TAB_COMPUTER_NAME
 Computername
@@ -76,7 +76,7 @@ Computername
 ;
 MSG_AUTOSTART_STACK
 Automatischer Start des Netzwerks beim Systembooten?
-; Autostart
+; Automatically start network during system boot?
 ;
 MSG_ERR_UNKNOWN_ERROR
 Unbekannter Fehler
