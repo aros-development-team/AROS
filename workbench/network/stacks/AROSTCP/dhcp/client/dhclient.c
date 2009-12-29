@@ -2529,7 +2529,7 @@ int write_client_lease (client, lease, rewrite, makesure)
 #define CloseSocket close
 #endif
 
-void inline setaddr (struct sockaddr_in *sa, u_long addr, u_short af)
+static inline void setaddr (struct sockaddr_in *sa, u_long addr, u_short af)
 {
 	sa->sin_len = sizeof (struct sockaddr_in);
 	sa->sin_family = af;
