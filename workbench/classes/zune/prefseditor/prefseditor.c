@@ -185,6 +185,11 @@ IPTR PrefsEditor__OM_SET
                 if (data->ped_Path != NULL) FreeVec(data->ped_Path);
                 data->ped_Path = StrDup((CONST_STRPTR) tag->ti_Data);
                 break;
+
+            case MUIA_PrefsEditor_IconTool:
+                if (data->ped_IconTool != NULL) FreeVec(data->ped_IconTool);
+                data->ped_IconTool = StrDup((CONST_STRPTR) tag->ti_Data);
+                break;
         }
     }
     
@@ -224,6 +229,10 @@ IPTR PrefsEditor__OM_GET
             
         case MUIA_PrefsEditor_Path:
             *store = (IPTR) data->ped_Path;
+            break;
+
+        case MUIA_PrefsEditor_IconTool:
+            *store = (IPTR) data->ped_IconTool;
             break;
             
         default:

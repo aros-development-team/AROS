@@ -20,7 +20,8 @@ struct PrefsEditor_DATA
            ped_CanSave,
            ped_CanTest;
     STRPTR ped_Name,
-           ped_Path;
+           ped_Path,
+           ped_IconTool;
     BPTR   ped_BackupFH;
     TEXT   ped_BackupPath[15];
            /* Large enough for BACKUP_PREFIX, 8 digits and NULL byte */

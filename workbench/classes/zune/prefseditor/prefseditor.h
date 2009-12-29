@@ -2,7 +2,7 @@
 #define ZUNE_PREFSEDITOR_H
 
 /*
-    Copyright © 2004-2005, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2009, The AROS Development Team. All rights reserved.
     This file is part of the PrefsEditor class, which is distributed under
     the terms of version 2.1 of the GNU Lesser General Public License.
     
@@ -30,10 +30,11 @@ struct  MUIP_PrefsEditor_Import    {STACKED ULONG MethodID; STACKED CONST_STRPTR
 struct  MUIP_PrefsEditor_Export    {STACKED ULONG MethodID; STACKED CONST_STRPTR filename;};
 
 /*** Public (Abstract) Methods **********************************************/
-#define MUIM_PrefsEditor_ImportFH  (MUIB_PrefsEditor | 0x00000007)
-struct  MUIP_PrefsEditor_ImportFH  {STACKED ULONG MethodID; STACKED BPTR fh;};
-#define MUIM_PrefsEditor_ExportFH  (MUIB_PrefsEditor | 0x00000008)
-struct  MUIP_PrefsEditor_ExportFH  {STACKED ULONG MethodID; STACKED BPTR fh;};
+#define MUIM_PrefsEditor_ImportFH    (MUIB_PrefsEditor | 0x00000007)
+struct  MUIP_PrefsEditor_ImportFH    {STACKED ULONG MethodID; STACKED BPTR fh;};
+#define MUIM_PrefsEditor_ExportFH    (MUIB_PrefsEditor | 0x00000008)
+struct  MUIP_PrefsEditor_ExportFH    {STACKED ULONG MethodID; STACKED BPTR fh;};
+#define MUIM_PrefsEditor_SetDefaults (MUIB_PrefsEditor | 0x00000009)
 
 /*** Public Attributes ******************************************************/
 #define MUIA_PrefsEditor_Name      (MUIB_PrefsEditor | 0x00000000) /* --G  CONST_STRPTR */
@@ -44,6 +45,7 @@ struct  MUIP_PrefsEditor_ExportFH  {STACKED ULONG MethodID; STACKED BPTR fh;};
 
 /*** Protected Attributes ***************************************************/
 #define MUIA_PrefsEditor_Path      (MUIB_PrefsEditor | 0x00000003) /* I-G  CONST_STRPTR */
+#define MUIA_PrefsEditor_IconTool  (MUIB_PrefsEditor | 0x00000006) /* I-G  CONST_STRPTR */
 
 /*** Macros *****************************************************************/
 #define PrefsEditorObject MUIOBJMACRO_START(MUIC_PrefsEditor)

@@ -14,6 +14,7 @@
 #include <proto/locale.h>
 #include <proto/asl.h>
 #include <proto/dos.h>
+#include <proto/icon.h>
 
 #include <utility/tagitem.h>
 #include <libraries/gadtools.h>
@@ -83,8 +84,8 @@ Object *SystemPrefsWindow__OM_NEW
     struct SystemPrefsWindow_DATA *data = NULL; 
     struct TagItem *tag        = NULL;    
     struct Catalog *catalog    = NULL;
-    Object         *editor, *importMI, *exportMI, *testMI, *revertMI, 
-                   *saveMI, *useMI, *cancelMI;
+    Object         *editor, *importMI, *exportMI, *exportIconMI, *defaultsMI,
+                   *testMI, *revertMI, *saveMI, *useMI, *cancelMI;
     
     tag = FindTagItem(WindowContents, message->ops_AttrList);
     if (tag != NULL) editor = (Object *) tag->ti_Data;
@@ -108,6 +109,8 @@ Object *SystemPrefsWindow__OM_NEW
                 MUIA_Menu_Title, __(MSG_MENU_PREFS),
                 Child, (IPTR)(importMI = MakeMenuitem(_(MSG_MENU_PREFS_IMPORT))),
                 Child, (IPTR)(exportMI = MakeMenuitem(_(MSG_MENU_PREFS_EXPORT))),
+                Child, (IPTR)(exportIconMI = MakeMenuitem("Export with Icon...")),      // FIXME: localize
+                Child, (IPTR)(defaultsMI = MakeMenuitem("Reset to Defaults")),          // FIXME: localize
                 Child, (IPTR)MakeMenuitem(NM_BARLABEL),
                 Child, (IPTR)(testMI   = MakeMenuitem(_(MSG_MENU_PREFS_TEST))),
                 Child, (IPTR)(revertMI = MakeMenuitem(_(MSG_MENU_PREFS_REVERT))),
@@ -191,7 +194,17 @@ Object *SystemPrefsWindow__OM_NEW
         DoMethod
         (
             exportMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
-            (IPTR) self, 1, MUIM_PrefsWindow_Export
+            (IPTR) self, 2, MUIM_PrefsWindow_Export, FALSE
+        );
+        DoMethod
+        (
+            exportIconMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+            (IPTR) self, 2, MUIM_PrefsWindow_Export, TRUE
+        );
+        DoMethod
+        (
+            defaultsMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+            (IPTR) self, 1, MUIM_PrefsWindow_SetDefaults
         );
     }
     else
@@ -373,31 +386,31 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Import
 
     if (data->spwd_FileRequester)
     {
-        BOOL result = MUI_AslRequestTags
+        BOOL reqOK = MUI_AslRequestTags
         (
             data->spwd_FileRequester,
             ASLFR_TitleText, "Import",  // TODO: localize
             TAG_DONE
         );
-        if (result)
+        if (reqOK)
         {
             LONG buflen = strlen(data->spwd_FileRequester->rf_Dir) + 
                 strlen(data->spwd_FileRequester->rf_File) + 5;
-            STRPTR buffer = AllocVec(buflen, MEMF_ANY);
-            if (buffer)
+            STRPTR prefname = AllocVec(buflen, MEMF_ANY);
+            if (prefname)
             {
-                strcpy(buffer, data->spwd_FileRequester->rf_Dir);
-                if (AddPart(buffer, data->spwd_FileRequester->rf_File, buflen))
+                strcpy(prefname, data->spwd_FileRequester->rf_Dir);
+                if (AddPart(prefname, data->spwd_FileRequester->rf_File, buflen))
                 {
                     result = DoMethod
                     (
                         data->spwd_Editor,
                         MUIM_PrefsEditor_Import,
-                        buffer
+                        prefname
                     );
                     SET(data->spwd_Editor, MUIA_PrefsEditor_Changed, TRUE);
                 }
-                FreeVec(buffer);
+                FreeVec(prefname);
             }
         }
         // FIXME: error reporting
@@ -408,44 +421,80 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Import
 
 IPTR SystemPrefsWindow__MUIM_PrefsWindow_Export
 (
-    Class *CLASS, Object *self, Msg message
+    Class *CLASS, Object *self, struct MUIP_PrefsWindow_Export *message
 )
 {
     SETUP_INST_DATA;
 
     IPTR result = FALSE;
+    STRPTR prefname = NULL;
 
     if (data->spwd_FileRequester)
     {
-        BOOL result = MUI_AslRequestTags
+        BOOL reqOK = MUI_AslRequestTags
         (
             data->spwd_FileRequester,
             ASLFR_TitleText, "Export", // TODO: localize
             ASLFR_DoSaveMode, TRUE,
             TAG_DONE
         );
-        if (result)
+        if (reqOK)
         {
             LONG buflen = strlen(data->spwd_FileRequester->rf_Dir) +
                 strlen(data->spwd_FileRequester->rf_File) + 5;
-            STRPTR buffer = AllocVec(buflen, MEMF_ANY);
-            if (buffer)
+            prefname = AllocVec(buflen, MEMF_ANY);
+            if (prefname)
             {
-                strcpy(buffer, data->spwd_FileRequester->rf_Dir);
-                if (AddPart(buffer, data->spwd_FileRequester->rf_File, buflen))
+                strcpy(prefname, data->spwd_FileRequester->rf_Dir);
+                if (AddPart(prefname, data->spwd_FileRequester->rf_File, buflen))
                 {
                     result = DoMethod
                     (
                         data->spwd_Editor,
                         MUIM_PrefsEditor_Export,
-                        buffer
+                        prefname
                     );
                 }
-                FreeVec(buffer);
             }
         }
         // FIXME: error reporting
     }
 
+    if (result && message->withIcon)
+    {
+        struct DiskObject *dobj = GetDiskObject("ENVARC:sys/def_Pref");
+        if (dobj)
+        {
+            STRPTR oldDefTool = dobj->do_DefaultTool;
+            STRPTR *oldToolType = dobj->do_ToolTypes;
+            STRPTR newToolType[] = {"ACTION=USE", NULL};
+            dobj->do_DefaultTool = (STRPTR)XGET(data->spwd_Editor, MUIA_PrefsEditor_IconTool);
+            dobj->do_ToolTypes = newToolType;
+            PutDiskObject(prefname, dobj);
+            dobj->do_DefaultTool = oldDefTool;
+            dobj->do_ToolTypes = oldToolType;
+            FreeDiskObject(dobj);
+        }
+    }
+
+    FreeVec(prefname);
+
     return result;
+}
+
+IPTR SystemPrefsWindow__MUIM_PrefsWindow_SetDefaults
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_INST_DATA;
+    
+    if (!DoMethod(data->spwd_Editor, MUIM_PrefsEditor_SetDefaults))
+    {
+        // FIXME: error reporting
+        return FALSE;
+    }
+    SET(data->spwd_Editor, MUIA_PrefsEditor_Changed, TRUE);
+    
+    return TRUE;
 }
