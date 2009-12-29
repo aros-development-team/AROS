@@ -77,17 +77,6 @@ struct ExceptionTranslation ExceptionsTable[] = {
     {0				    , 0}
  };
 
-static void core_LeaveInterrupt(void)
-{
-    struct ExecBase *SysBase = *SysBasePtr;
-    
-    if (SysBase) {
-        if ((char )SysBase->IDNestCnt < 0) {
-            core_intr_enable();
-	}
-    }
-}
-
 EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *ExceptionRecord, void *EstablisherFrame, CONTEXT *ContextRecord, void *DispatcherContext)
 {
     	struct ExecBase *SysBase = *SysBasePtr;
@@ -114,13 +103,13 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 	        core_Cause(SysBase);
 	        break;
 	    case SC_DISPATCH:
-	        core_Dispatch(ContextRecord);
+	        core_Dispatch(ContextRecord, SysBase);
 	        break;
 	    case SC_SWITCH:
-	        core_Switch(ContextRecord);
+	        core_Switch(ContextRecord, SysBase);
 	        break;
 	    case SC_SCHEDULE:
-	        core_Schedule(ContextRecord);
+	        core_Schedule(ContextRecord, SysBase);
 	        break;
 	    }
 	    break;
@@ -171,7 +160,7 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 	/* Exit supervisor */
 	Supervisor = 0;
 	/* Restore interrupts state. I again hope that being preemted beyond this point is OK */
-	core_LeaveInterrupt();
+	core_LeaveInterrupt(SysBase);
 	return ExceptionContinueExecution;
 }
 
@@ -223,9 +212,8 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     	        DS(res =)SetThreadContext(args->MainThread, &MainCtx);
     	        DS(bug("[Task switcher] Set context result: %lu\n", res));
     	    }
-	    /* Leave supervisor mode and apply interrupts state */
+	    /* Leave supervisor mode */
     	    Supervisor = 0;
-	    core_LeaveInterrupt();
     	} else {
 	    /* Otherwise remember the interrupt in order to re-submit it later */
     	    PendingInts[obj] = 1;
