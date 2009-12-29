@@ -2,7 +2,7 @@
 #define ZUNE_PREFSWINDOW_H
 
 /*
-    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2009, The AROS Development Team. All rights reserved.
     This file is part of the PrefsWindow class, which is distributed under
     the terms of version 2.1 of the GNU Lesser General Public License.
     
@@ -23,6 +23,8 @@
 #define MUIM_PrefsWindow_Save            (MUIB_PrefsWindow | 0x00000002)
 #define MUIM_PrefsWindow_Use             (MUIB_PrefsWindow | 0x00000003)
 #define MUIM_PrefsWindow_Cancel          (MUIB_PrefsWindow | 0x00000004)
+#define MUIM_PrefsWindow_Import          (MUIB_PrefsWindow | 0x00000005)
+#define MUIM_PrefsWindow_Export          (MUIB_PrefsWindow | 0x00000006)
 
 /*** Protected Attributes ***************************************************/
 #define MUIA_PrefsWindow_Test_Disabled   (MUIB_PrefsWindow | 0x00000000)
