@@ -122,12 +122,18 @@ extern unsigned char PendingInts[INTERRUPTS_NUM];
 extern struct ExecBase **SysBasePtr;
 extern struct KernelBase **KernelBasePtr;
 
-void core_Dispatch(CONTEXT *regs);
-void core_Switch(CONTEXT *regs);
-void core_Schedule(CONTEXT *regs);
+void core_Dispatch(CONTEXT *regs, struct ExecBase *SysBase);
+void core_Switch(CONTEXT *regs, struct ExecBase *SysBase);
+void core_Schedule(CONTEXT *regs, struct ExecBase *SysBase);
 void core_ExitInterrupt(CONTEXT *regs);
 void core_Cause(struct ExecBase *SysBase);
 long core_intr_enable(void);
+
+static inline void core_LeaveInterrupt(struct ExecBase *SysBase)
+{   
+    if ((char )SysBase->IDNestCnt < 0)
+        core_intr_enable();
+}
 
 #endif
 

@@ -46,16 +46,16 @@ typedef unsigned char UBYTE;
 #define DS(x)
 #define DSLEEP(x)
 
+
+
 /*
  * Task dispatcher. Basically it may be the same one no matter what scheduling algorithm is used
  */
-void core_Dispatch(CONTEXT *regs)
+void core_Dispatch(CONTEXT *regs, struct ExecBase *SysBase)
 {
-    struct ExecBase *SysBase = *SysBasePtr;
     struct Task *task;
     struct AROSCPUContext *ctx;
 
-    Ints_Enabled = 0;
     D(bug("[KRN] core_Dispatch()\n"));
 
     /* 
@@ -108,13 +108,11 @@ void core_Dispatch(CONTEXT *regs)
     /* Leave interrupt and jump to the new task */
 }
 
-void core_Switch(CONTEXT *regs)
+void core_Switch(CONTEXT *regs, struct ExecBase *SysBase)
 {
-    struct ExecBase *SysBase = *SysBasePtr;
     struct Task *task;
     struct AROSCPUContext *ctx;
     
-    Ints_Enabled = 0;
     D(bug("[KRN] core_Switch()\n"));
     
     task = SysBase->ThisTask;
@@ -139,7 +137,7 @@ void core_Switch(CONTEXT *regs)
         task->tc_Switch(SysBase);
     }
     
-    core_Dispatch(regs);
+    core_Dispatch(regs, SysBase);
 }
 
 
@@ -148,12 +146,10 @@ void core_Switch(CONTEXT *regs)
  * in some smart way. This function is subject of change and it will be probably replaced
  * by some plugin system in the future
  */
-void core_Schedule(CONTEXT *regs)
+void core_Schedule(CONTEXT *regs, struct ExecBase *SysBase)
 {
-    struct ExecBase *SysBase = *SysBasePtr;
     struct Task *task;
 
-    Ints_Enabled = 0;
     D(bug("[KRN] core_Schedule()\n"));
             
     task = SysBase->ThisTask;
@@ -185,7 +181,7 @@ void core_Schedule(CONTEXT *regs)
     Enqueue(&SysBase->TaskReady, (struct Node *)task);
     
     /* Select new task to run */
-    core_Switch(regs);
+    core_Switch(regs, SysBase);
 }
 
 
@@ -199,36 +195,35 @@ void core_ExitInterrupt(CONTEXT *regs)
     char TDNestCnt;
 
     D(bug("[Scheduler] core_ExitInterrupt\n"));
-    if (SysBase)
+    /* Soft interrupt requested? It's high time to do it */
+    if (SysBase->SysFlags & SFF_SoftInt) {
+        DS(bug("[Scheduler] Causing SoftInt\n"));
+        core_Cause(SysBase);
+    }
+    /* No tasks active (AROS is sleeping)? If yes, just pick up
+       a new ready task (if any) */
+    if (Sleep_Mode) {
+        core_Dispatch(regs, SysBase);
+	core_LeaveInterrupt(SysBase);
+        return;
+    }
+    
+    /* If task switching is disabled, leave immediatelly */
+    TDNestCnt = SysBase->TDNestCnt; /* BYTE is unsigned in Windows so we can't use SysBase->TDNestCnt directly */
+    DS(bug("[Scheduler] TDNestCnt is %d\n", TDNestCnt));
+    if (TDNestCnt < 0)
     {
-        /* Soft interrupt requested? It's high time to do it */
-        if (SysBase->SysFlags & SFF_SoftInt) {
-            DS(bug("[Scheduler] Causing SoftInt\n"));
-            core_Cause(SysBase);
-        }
-    
-        if (Sleep_Mode) {
-            core_Dispatch(regs);
-            return;
-        }
-    
-        /* If task switching is disabled, leave immediatelly */
-        TDNestCnt = SysBase->TDNestCnt; /* BYTE is unsigned in Windows so we can't use SysBase->TDNestCnt directly */
-        DS(bug("[Scheduler] TDNestCnt is %d\n", TDNestCnt));
-        if (TDNestCnt < 0)
+        /* 
+         * Do not disturb task if it's not necessary. 
+         * Reschedule only if switch pending flag is set. Exit otherwise.
+         */
+        if (SysBase->AttnResched & ARF_AttnSwitch)
         {
-            /* 
-             * Do not disturb task if it's not necessary. 
-             * Reschedule only if switch pending flag is set. Exit otherwise.
-             */
-            if (SysBase->AttnResched & ARF_AttnSwitch)
-            {
-                DS(bug("[Scheduler] Rescheduling\n"));
-                core_Schedule(regs);
-            }
+            DS(bug("[Scheduler] Rescheduling\n"));
+            core_Schedule(regs, SysBase);
         }
     }
-    	DS(else printf("[Scheduler] SysBase is NULL\n");)
+    core_LeaveInterrupt(SysBase);
 }
 
 void core_Cause(struct ExecBase *SysBase)
