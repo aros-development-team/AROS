@@ -474,6 +474,11 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             interfaceList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
             (IPTR)self, 1, MUIM_NetPEditor_ShowEntry
         );
+        DoMethod
+        (
+            interfaceList, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_NetPEditor_EditEntry, FALSE
+        );
 
         DoMethod
         (
