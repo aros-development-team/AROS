@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <strings.h>
 
-#define D(X)
+#define D(x)
 #define DREL(x)
 
 #define kprintf printf
@@ -192,16 +192,12 @@ SysBase_no:     s = sym->value;
 
         DREL(printf("[ELF Loader] Relocating symbol "));
         DREL(if (sym->name) printf("%s", name); else printf("<unknown>"));
-        DREL(printf("type "));
+        DREL(printf(" type "));
 	switch (ELF32_R_TYPE(rel->info))
 	{
 	case R_386_32: /* 32bit absolute */
             DREL(printf("R_386_32"));
 	    *p += s;
-        if (*p < kbase) {
-            exit(0);
-        }
-
 	    break;
 		
 	case R_386_PC32: /* 32bit PC relative */

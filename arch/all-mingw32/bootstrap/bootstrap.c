@@ -49,6 +49,7 @@ struct HostInterface HostIFace = {
     Host_Alert
 };
 
+/* ***** This is the global SysBase ***** */
 void *SysBase;
 
 int main(int argc, char ** argv)
