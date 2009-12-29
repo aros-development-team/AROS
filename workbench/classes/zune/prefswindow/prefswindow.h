@@ -25,6 +25,8 @@
 #define MUIM_PrefsWindow_Cancel          (MUIB_PrefsWindow | 0x00000004)
 #define MUIM_PrefsWindow_Import          (MUIB_PrefsWindow | 0x00000005)
 #define MUIM_PrefsWindow_Export          (MUIB_PrefsWindow | 0x00000006)
+struct  MUIP_PrefsWindow_Export          {STACKED ULONG MethodID; STACKED BOOL withIcon;};
+#define MUIM_PrefsWindow_SetDefaults     (MUIB_PrefsWindow | 0x00000007)
 
 /*** Protected Attributes ***************************************************/
 #define MUIA_PrefsWindow_Test_Disabled   (MUIB_PrefsWindow | 0x00000000)
