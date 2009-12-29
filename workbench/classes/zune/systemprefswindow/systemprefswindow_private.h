@@ -10,12 +10,14 @@
 */
 
 #include <libraries/locale.h>
+#include <libraries/asl.h>
 
 /*** Instance data **********************************************************/
 struct SystemPrefsWindow_DATA
 {
-    struct Catalog *spwd_Catalog;
-    Object         *spwd_Editor;
+    struct Catalog       *spwd_Catalog;
+    Object               *spwd_Editor;
+    struct FileRequester *spwd_FileRequester;
 };
 
 /*** Private methods ********************************************************/

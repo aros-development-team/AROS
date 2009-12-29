@@ -127,7 +127,16 @@ Object *SystemPrefsWindow__OM_NEW
         data = INST_DATA(CLASS, self);
         data->spwd_Catalog = catalog;
         data->spwd_Editor  = editor;
-        
+
+        data->spwd_FileRequester = MUI_AllocAslRequestTags
+        (
+            ASL_FileRequest,
+            ASLFR_RejectIcons,   TRUE,
+            ASLFR_InitialDrawer, "SYS:Prefs/Presets",
+            ASLFR_DoPatterns,    TRUE,
+            TAG_DONE
+        );
+
         /*-- Handle initial attribute values -------------------------------*/
         SetAttrsA(self, message->ops_AttrList);
 
@@ -201,7 +210,8 @@ IPTR SystemPrefsWindow__OM_DISPOSE
     SETUP_INST_DATA;
 
     if (data->spwd_Catalog != NULL) CloseCatalog(data->spwd_Catalog);
-    
+    FreeAslRequest(data->spwd_FileRequester);
+
     return DoSuperMethodA(CLASS, self, message);
 }
 
@@ -361,25 +371,23 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Import
 
     IPTR result = FALSE;
 
-    struct FileRequester *requester = MUI_AllocAslRequestTags
-    (
-        ASL_FileRequest,
-        ASLFR_RejectIcons, TRUE,
-        ASLFR_TitleText, "Import", // TODO: localize
-        TAG_DONE
-    );
-
-    if (requester)
+    if (data->spwd_FileRequester)
     {
-        BOOL result = MUI_AslRequest(requester, NULL);
+        BOOL result = MUI_AslRequestTags
+        (
+            data->spwd_FileRequester,
+            ASLFR_TitleText, "Import",  // TODO: localize
+            TAG_DONE
+        );
         if (result)
         {
-            LONG buflen = strlen(requester->rf_Dir) + strlen(requester->rf_File) + 5;
+            LONG buflen = strlen(data->spwd_FileRequester->rf_Dir) + 
+                strlen(data->spwd_FileRequester->rf_File) + 5;
             STRPTR buffer = AllocVec(buflen, MEMF_ANY);
             if (buffer)
             {
-                strcpy(buffer, requester->rf_Dir);
-                if (AddPart(buffer, requester->rf_File, buflen))
+                strcpy(buffer, data->spwd_FileRequester->rf_Dir);
+                if (AddPart(buffer, data->spwd_FileRequester->rf_File, buflen))
                 {
                     result = DoMethod
                     (
@@ -392,7 +400,6 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Import
                 FreeVec(buffer);
             }
         }
-        FreeAslRequest(requester);
         // FIXME: error reporting
     }
 
@@ -408,26 +415,24 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Export
 
     IPTR result = FALSE;
 
-    struct FileRequester *requester = MUI_AllocAslRequestTags
-    (
-        ASL_FileRequest,
-        ASLFR_RejectIcons, TRUE,
-        ASLFR_TitleText, "Export", // TODO: localize
-        ASLFR_DoSaveMode, TRUE,
-        TAG_DONE
-    );
-
-    if (requester)
+    if (data->spwd_FileRequester)
     {
-        BOOL result = MUI_AslRequest(requester, NULL);
+        BOOL result = MUI_AslRequestTags
+        (
+            data->spwd_FileRequester,
+            ASLFR_TitleText, "Export", // TODO: localize
+            ASLFR_DoSaveMode, TRUE,
+            TAG_DONE
+        );
         if (result)
         {
-            LONG buflen = strlen(requester->rf_Dir) + strlen(requester->rf_File) + 5;
+            LONG buflen = strlen(data->spwd_FileRequester->rf_Dir) +
+                strlen(data->spwd_FileRequester->rf_File) + 5;
             STRPTR buffer = AllocVec(buflen, MEMF_ANY);
             if (buffer)
             {
-                strcpy(buffer, requester->rf_Dir);
-                if (AddPart(buffer, requester->rf_File, buflen))
+                strcpy(buffer, data->spwd_FileRequester->rf_Dir);
+                if (AddPart(buffer, data->spwd_FileRequester->rf_File, buflen))
                 {
                     result = DoMethod
                     (
@@ -439,7 +444,6 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Export
                 FreeVec(buffer);
             }
         }
-        FreeAslRequest(requester);
         // FIXME: error reporting
     }
 
