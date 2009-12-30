@@ -11,6 +11,16 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#include "exec_debug.h"
+#ifndef DEBUG_OpenLibrary
+#   define DEBUG_OpenLibrary 0
+#endif
+#undef DEBUG
+#if DEBUG_OpenLibrary
+#   define DEBUG 1
+#endif
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -54,6 +64,8 @@
 
     struct Library * library;
 
+    D(bug("OpenLibrary begin (\"%s\", %d)\n", libName, version));
+
     /* Arbitrate for the library list */
     Forbid();
 
@@ -83,6 +95,9 @@
 
     /* All done. */
     Permit();
+
+    D(bug("OpenLibrary end (\"%s\", %d)\n", libName, version));
+
     return library;
     AROS_LIBFUNC_EXIT
 } /* OpenLibrary */

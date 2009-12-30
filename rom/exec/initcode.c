@@ -9,6 +9,14 @@
 #include <exec/resident.h>
 #include <proto/exec.h>
 
+#include "exec_debug.h"
+#ifndef DEBUG_InitCode
+#   define DEBUG_InitCode 0
+#endif
+#undef DEBUG
+#if DEBUG_InitCode
+#   define DEBUG 1
+#endif
 #include <aros/debug.h>
 
 /*****************************************************************************

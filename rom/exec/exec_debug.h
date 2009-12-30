@@ -49,6 +49,7 @@
 #define DEBUG_FreeSignal 0
 #define DEBUG_FreeVec 0
 #define DEBUG_GetMsg 0
+#define DEBUG_InitCode 0
 #define DEBUG_InitResident 0
 #define DEBUG_InitSemaphore 0
 #define DEBUG_InitStruct 0
