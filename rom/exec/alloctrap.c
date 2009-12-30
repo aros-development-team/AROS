@@ -42,8 +42,8 @@
     AROS_LIBFUNC_INIT
 
     struct Task *ThisTask;
-    ULONG mask;
-    ULONG mask1;
+    UWORD mask;
+    UWORD mask1;
     
     ThisTask = FindTask(NULL);
     mask = GetTrapAlloc(ThisTask);
@@ -69,13 +69,12 @@
 	    return -1;
 
 	/* And get the bit number */
-	trapNum=(mask1&0xffff0000?16:0)+(mask1&0xff00ff00?8:0)+
-		  (mask1&0xf0f0f0f0? 4:0)+(mask1&0xcccccccc?2:0)+
-		  (mask1&0xaaaaaaaa? 1:0);
+	trapNum = (mask1 & 0xff00 ? 8 : 0) + (mask1 & 0xf0f0 ? 4 : 0) +
+		  (mask1 & 0xcccc ? 2 : 0) + (mask1 & 0xaaaa ? 1 : 0);
     }
     else
     {
-	mask1 = 1L << trapNum;
+	mask1 = 1 << trapNum;
 
 	/* If trap bit is already allocated, return. */
 	if(mask & mask1)
