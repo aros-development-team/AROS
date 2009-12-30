@@ -4,6 +4,9 @@
 
     Desc: Bitmap class for GDI hidd.
     Lang: English.
+    
+    Note: this implementation ignores GC_COLMASK. Windows GDI has no way to support it,
+          however color masks seem to be not used anywhere in AROS.
 */
 
 /****************************************************************************************/
@@ -59,12 +62,13 @@ static struct OOP_ABDescr attrbases[] =
 
 /****************************************************************************************/
 
-#define REFRESH(left, top, right, bottom)	   \
-if (data->window) {				   \
-    RECT r = {left, top, right, bottom};	   \
-        					   \
+#define REFRESH(left, top, right, bottom)					  \
+if (data->window) {								  \
+    RECT r = {left, top, right, bottom};					  \
+										  \
     USERCALL(RedrawWindow, data->window, &r, NULL, RDW_INVALIDATE|RDW_UPDATENOW); \
-}
+}										  \
+Permit()
 
 /****************************************************************************************/
 
@@ -74,9 +78,9 @@ VOID GDIBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     
     DB2(bug("[GDI] hidd.bitmap.gdibitmap::PutPixel(0x%p): (%lu, %lu) = 0x%08lX\n", o, msg->x, msg->y, msg->pixel));
     Forbid();
+    GDICALL(SetROP2, data->dc, R2_COPYPEN);
     GDICALL(SetPixel, data->dc, msg->x, msg->y, msg->pixel);
-    REFRESH(msg->x, msg->y, msg->x+1, msg->y+1)
-    Permit();
+    REFRESH(msg->x, msg->y, msg->x+1, msg->y+1);
     CHECK_STACK
 }
 
@@ -85,7 +89,6 @@ VOID GDIBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 HIDDT_Pixel GDIBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    APTR dc;
     HIDDT_Pixel     	pixel;
 
     Forbid();
@@ -97,6 +100,22 @@ HIDDT_Pixel GDIBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o, struct pH
 }
 
 /****************************************************************************************/
+
+static void FillRect(struct bitmap_data *data, ULONG col, ULONG mode, ULONG minX, ULONG minY, ULONG width, ULONG height)
+{
+    APTR br, orig_br;
+    DB2(bug("[GDI] Brush color 0x%08lX, mode 0x%08lX\n", col, mode));
+
+    Forbid();
+    br = GDICALL(CreateSolidBrush, col);
+    if (br) {
+        orig_br = GDICALL(SelectObject, data->dc, br);
+        GDICALL(PatBlt, data->dc, minX, minY, width, height, mode);
+        GDICALL(SelectObject, data->dc, orig_br);
+        GDICALL(DeleteObject, br);
+    }
+    /* Note the absence of Permit() because we are supposed to REFRESH() after drawing */
+}
 
 /* Table of raster operations (ROPs) corresponding to AROS GC drawmodes */
 static ULONG Fill_DrawModeTable[] = {
@@ -118,51 +137,57 @@ static ULONG Fill_DrawModeTable[] = {
     WHITENESS
 };
 
-static void FillRect(OOP_Class *cl, struct bitmap_data *data, OOP_Object *gc, ULONG minX, ULONG minY, ULONG maxX, ULONG maxY)
-{
-    APTR br, orig_br;
-    ULONG col, mode;
-    
-    col = GC_FG(gc);
-    mode = Fill_DrawModeTable[GC_DRMD(gc)];
-    DB2(bug("[GDI] Brush color 0x%08lX, mode 0x%08lX\n", col, mode));
-
-    Forbid();
-    br = GDICALL(CreateSolidBrush, col);
-    if (br) {
-        orig_br = GDICALL(SelectObject, data->dc, br);
-        GDICALL(PatBlt, data->dc, minX, minY, maxX - minX + 1, maxY - minY + 1, mode);
-        GDICALL(SelectObject, data->dc, orig_br);
-        GDICALL(DeleteObject, br);
-    }
-    REFRESH(minX, minY, maxX + 1, maxY + 1)
-    Permit();
-}
-
 VOID GDIBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
+    ULONG col = GC_FG(msg->gc);
+    ULONG mode = Fill_DrawModeTable[GC_DRMD(msg->gc)];
 
     D(bug("[GDI] hidd.bitmap.gdibitmap::FillRect(0x%p, %d,%d,%d,%d)\n", o, msg->minX, msg->minY, msg->maxX, msg->maxY));
-    FillRect(cl, data, msg->gc, msg->minX, msg->minY, msg->maxX, msg->maxY);
+    FillRect(data, col, mode, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
+    REFRESH(msg->minX, msg->minY, msg->maxX + 1, msg->maxY + 1);
     CHECK_STACK
 }
 
 /****************************************************************************************/
 
+/* Raster operations for drawing primitives */
+static ULONG R2_DrawModeTable[] = {
+    R2_BLACK,
+    R2_MASKPEN,     /* bitmap AND pen	    */
+    R2_MASKPENNOT,  /* NOT bitmap AND pen   */
+    R2_COPYPEN,     /* pen		    */
+    R2_MASKNOTPEN,  /* bitmap AND NOT pen   */
+    R2_NOP,	    /* bitmap		    */
+    R2_XORPEN,	    /* bitmap XOR pen	    */
+    R2_MERGEPEN,    /* bitmap OR pen	    */
+    R2_NOTMERGEPEN, /* NOT (bitmap OR pen)  */
+    R2_NOTXORPEN,   /* NOT (bitmap XOR pen) */
+    R2_NOT,	    /* NOT bitmap	    */
+    R2_MERGEPENNOT, /* NOT bitmap OR pen    */
+    R2_NOTCOPYPEN,  /* NOT pen		    */
+    R2_MERGENOTPEN, /* NOT pen OR bitmap    */
+    R2_NOTMASKPEN,  /* NOT (pen AND bitmap) */
+    R2_WHITE
+};
+
 ULONG GDIBM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPixel *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
+    ULONG col, mode;
+
+    DB2(bug("[GDI] hidd.bitmap.gdibitmap::DrawPixel(0x%p): (%lu, %lu)\n", o, msg->x, msg->y));    
+    col = GC_FG(msg->gc);
+    mode = R2_DrawModeTable[GC_DRMD(msg->gc)];
     
-    DB2(bug("[GDI] hidd.bitmap.gdibitmap::DrawPixel(0x%p): (%lu, %lu)\n", o, msg->x, msg->y));
-    /* Unfortunately GDI supports raster operations only in BitBlt() and in PatBlt() so we
-       have to emulate all functions using them. However it's necessary to overload as many
-       methods as possible because GetPixel()/PutPixel() are REALLY slow.
-       Here we implement DrawPixel() as filling 1x1 rectangle */
-    FillRect(cl, data, msg->gc, msg->x, msg->y, msg->x, msg->y);
+    Forbid();
+    GDICALL(SetROP2, data->dc, mode);
+    GDICALL(SetPixel, data->dc, msg->x, msg->y, col);
+    REFRESH(msg->x, msg->y, msg->x+1, msg->y+1);
     CHECK_STACK
     return 0;    
 }
+
 /****************************************************************************************/
 	
 VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
@@ -212,8 +237,7 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     	bitmapinfo.biHeight = -msg->height; /* Minus here means top-down bitmap */
     	Forbid();
         GDICALL(StretchDIBits, data->dc, msg->x, msg->y, msg->width, msg->height, 0, 0, msg->width, msg->height, buf, &bitmapinfo, DIB_RGB_COLORS, SRCCOPY);
-        REFRESH(msg->x, msg->y, msg->x + msg->width, msg->y + msg->height)
-    	Permit();
+        REFRESH(msg->x, msg->y, msg->x + msg->width, msg->y + msg->height);
         FreeMem(buf, bufsize);
     }
     CHECK_STACK
@@ -454,7 +478,6 @@ VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
 	GDICALL(DeleteDC, buf_dc);
     }
     REFRESH(msg->destX, msg->destY, msg->destX + msg->width, msg->destY + msg->height);
-    Permit();
     CHECK_STACK
 }
 
@@ -628,8 +651,6 @@ VOID GDIBM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     IPTR width, height;
-    APTR br;
-    RECT rect = {0, 0, 0, 0};
     
     EnterFunc(bug("[GDI] hidd.bitmap.gdibitmap::Clear()\n"));
     
@@ -637,25 +658,10 @@ VOID GDIBM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
   
     OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
     OOP_GetAttr(o, aHidd_BitMap_Height, &height);
-    rect.right = width;
-    rect.bottom = height;
     
-    D(bug("[GDI] Brush color 0x%08lX\n", GC_BG(msg->gc)));
-    Forbid();
-    br = GDICALL(CreateSolidBrush, GC_BG(msg->gc));
-    if (br) {
-        USERCALL(FillRect, data->dc, &rect, br);
-        GDICALL(DeleteObject, br);
-    }
-    REFRESH(0, 0, width , height)
-    Permit();
-    CHECK_STACK
+    FillRect(data, GC_BG(msg->gc), PATCOPY, 0, 0, width, height);
+    REFRESH(0, 0, width, height);
 }
-
-/****************************************************************************************/
-
-#undef XSD
-#define XSD(cl) (&LIBBASE->xsd)
 
 /****************************************************************************************/
 
