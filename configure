@@ -7488,7 +7488,7 @@ aros_shared_ld="$aros_host_ld"
 aros_target_mkdep="$aros_host_mkdep"
 aros_target_incl_def="$aros_host_incl"
 
-aros_kernel_cc="$aros_host_cc"
+aros_kernel_cc="$CC"
 
 # The default tools executables to be linked to.
 if test "$aros_target_cc" != ""; then
