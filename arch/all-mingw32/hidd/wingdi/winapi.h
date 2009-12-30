@@ -18,6 +18,23 @@
 #define CAPTUREBLT	0x40000000
 #define NOMIRRORBITMAP	0x80000000
 
+#define R2_BLACK	1
+#define R2_COPYPEN	13
+#define R2_MASKNOTPEN	3
+#define R2_MASKPEN	9
+#define R2_MASKPENNOT	5
+#define R2_MERGENOTPEN	12
+#define R2_MERGEPEN	15
+#define R2_MERGEPENNOT	14
+#define R2_NOP	11
+#define R2_NOT	6
+#define R2_NOTCOPYPEN	4
+#define R2_NOTMASKPEN	8
+#define R2_NOTMERGEPEN	2
+#define R2_NOTXORPEN	10
+#define R2_WHITE	16
+#define R2_XORPEN	7
+
 #define RDW_ERASE	    4
 #define RDW_FRAME	    1024
 #define RDW_INTERNALPAINT   2
