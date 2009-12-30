@@ -71,7 +71,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("InitResident $%lx (\"%s\")\n", resident, resident->rt_Name));
+    struct Library *library = NULL;
+    
+    D(bug("InitResident begin $%lx (\"%s\")\n", resident, resident->rt_Name));
 
     /* Check for validity */
     if(resident->rt_MatchWord != RTC_MATCHWORD ||
@@ -90,7 +92,8 @@
 	    ULONG_FUNC init;
 	};
 	struct init *init = (struct init *)resident->rt_Init;
-	struct Library *library;
+
+        D(bug("Initresident RTF_AUTOINIT\n"));
 
 	/*
 	    Make the library. Don't call the Init routine yet, but delay
@@ -159,18 +162,22 @@
 		}
 	    }
 	}
-
-	return library;
     }
     else
     {
+        D(bug("Initresident !RTF_AUTOINIT\n"));
+
 	/* ...or let the library do it. */
-	return AROS_UFC3(struct Library *, resident->rt_Init,
+	library = AROS_UFC3(struct Library *, resident->rt_Init,
 	    AROS_UFCA(ULONG,             0L,      D0),
 	    AROS_UFCA(BPTR,              segList, A0),
 	    AROS_UFCA(struct ExecBase *, SysBase, A6)
 	);
     }
+
+    D(bug("InitResident end $%lx (\"%s\")\n", resident, resident->rt_Name));
+	
+    return library;
 
     AROS_LIBFUNC_EXIT
 } /* InitResident */
