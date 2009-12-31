@@ -350,6 +350,7 @@ int main(int argc, char **argv)
     int ticrate = 100;
     BOOL mapSysBase   = FALSE;
     BOOL _use_hostmem = FALSE;
+    unsigned char* _stack = AROS_GET_SP;
 
     getcwd(bootstrapdir, PATH_MAX);
 
@@ -541,6 +542,23 @@ int main(int argc, char **argv)
         Forbid();
         Enqueue(&SysBase->MemList, &mh->mh_Node);
     }
+    /* Stack memory header. This special memory header covers a little part of the programs
+     * stack so that TypeOfMem() will not return 0 for addresses pointing into the stack
+     * during initialization.
+     */
+    if ((mh = (struct MemHeader *)AllocMem(sizeof(struct MemHeader), MEMF_PUBLIC)))
+    {
+        mh->mh_Node.ln_Type = NT_MEMORY;
+        mh->mh_Node.ln_Name = "stack memory";
+        mh->mh_Node.ln_Pri = -128;
+        mh->mh_Attributes = MEMF_KICK;
+        mh->mh_First = NULL;
+        mh->mh_Lower = (APTR)(_stack - 2048);
+        mh->mh_Upper = (APTR)_stack;
+        mh->mh_Free = 0;                        /* Never allocate from this chunk! */
+        Enqueue(&SysBase->MemList, &mh->mh_Node);
+    }
+    
     /* Ok, lets start up the kernel, we are probably using the UNIX
        kernel, or a variant of that (see config/unix).
     */
