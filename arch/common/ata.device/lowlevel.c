@@ -239,13 +239,13 @@ static BYTE ata_STUB_SCSI(struct ata_Unit *au, struct SCSICmd* cmd)
     return CDERR_NOCMD;
 }
 
-inline struct ata_Unit* ata_GetSelectedUnit(struct ata_Bus* bus)
+static inline struct ata_Unit* ata_GetSelectedUnit(struct ata_Bus* bus)
 {
     register int id = (ata_in(ata_DevHead, bus->ab_Port) & 0x10) >> 4;
     return bus->ab_Units[id];
 }
 
-inline BOOL ata_SelectUnit(struct ata_Unit* unit)
+static inline BOOL ata_SelectUnit(struct ata_Unit* unit)
 {
     ata_out(unit->au_DevMask, ata_DevHead, unit->au_Bus->ab_Port);
 

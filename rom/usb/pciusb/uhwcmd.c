@@ -2145,56 +2145,6 @@ void uhciFreeQContext(struct PCIController *hc, struct UhciQH *uqh)
 }
 /* \\\ */
 
-/* /// "uhciAllocQH()" */
-inline struct UhciQH * uhciAllocQH(struct PCIController *hc)
-{
-    struct UhciQH *uqh = hc->hc_UhciQHPool;
-
-    if(!uqh)
-    {
-        // out of QHs!
-        KPRINTF(20, ("Out of QHs!\n"));
-        return NULL;
-    }
-
-    hc->hc_UhciQHPool = (struct UhciQH *) uqh->uqh_Succ;
-    return(uqh);
-}
-/* \\\ */
-
-/* /// "uhciFreeQH()" */
-inline void uhciFreeQH(struct PCIController *hc, struct UhciQH *uqh)
-{
-    uqh->uqh_Succ = (struct UhciXX *) hc->hc_UhciQHPool;
-    hc->hc_UhciQHPool = uqh;
-}
-/* \\\ */
-
-/* /// "uhciAllocTD()" */
-inline struct UhciTD * uhciAllocTD(struct PCIController *hc)
-{
-    struct UhciTD *utd = hc->hc_UhciTDPool;
-
-    if(!utd)
-    {
-        // out of TDs!
-        KPRINTF(20, ("Out of TDs!\n"));
-        return NULL;
-    }
-
-    hc->hc_UhciTDPool = (struct UhciTD *) utd->utd_Succ;
-    return(utd);
-}
-/* \\\ */
-
-/* /// "uhciFreeTD()" */
-inline void uhciFreeTD(struct PCIController *hc, struct UhciTD *utd)
-{
-    utd->utd_Succ = (struct UhciXX *) hc->hc_UhciTDPool;
-    hc->hc_UhciTDPool = utd;
-}
-/* \\\ */
-
 /* /// "uhciUpdateIntTree()" */
 void uhciUpdateIntTree(struct PCIController *hc)
 {
@@ -3171,58 +3121,6 @@ void ohciFreeEDContext(struct PCIController *hc, struct OhciED *oed)
 
     ohciFreeED(hc, oed);
     Enable();
-}
-/* \\\ */
-
-/* /// "ohciAllocED()" */
-inline struct OhciED * ohciAllocED(struct PCIController *hc)
-{
-    struct OhciED *oed = hc->hc_OhciEDPool;
-
-    if(!oed)
-    {
-        // out of QHs!
-        KPRINTF(20, ("Out of EDs!\n"));
-        return NULL;
-    }
-
-    hc->hc_OhciEDPool = oed->oed_Succ;
-    return(oed);
-}
-/* \\\ */
-
-/* /// "ohciFreeED()" */
-inline void ohciFreeED(struct PCIController *hc, struct OhciED *oed)
-{
-    oed->oed_IOReq = NULL;
-    oed->oed_Succ = hc->hc_OhciEDPool;
-    hc->hc_OhciEDPool = oed;
-}
-/* \\\ */
-
-/* /// "ohciAllocTD()" */
-inline struct OhciTD * ohciAllocTD(struct PCIController *hc)
-{
-    struct OhciTD *otd = hc->hc_OhciTDPool;
-
-    if(!otd)
-    {
-        // out of TDs!
-        KPRINTF(20, ("Out of TDs!\n"));
-        return NULL;
-    }
-
-    hc->hc_OhciTDPool = otd->otd_Succ;
-    return(otd);
-}
-/* \\\ */
-
-/* /// "ohciFreeTD()" */
-inline void ohciFreeTD(struct PCIController *hc, struct OhciTD *otd)
-{
-    otd->otd_ED = NULL;
-    otd->otd_Succ = hc->hc_OhciTDPool;
-    hc->hc_OhciTDPool = otd;
 }
 /* \\\ */
 
@@ -4248,56 +4146,6 @@ void ehciFreeQHandTDs(struct PCIController *hc, struct EhciQH *eqh)
     }
 
     ehciFreeQH(hc, eqh);
-}
-/* \\\ */
-
-/* /// "ehciAllocQH()" */
-inline struct EhciQH * ehciAllocQH(struct PCIController *hc)
-{
-    struct EhciQH *eqh = hc->hc_EhciQHPool;
-
-    if(!eqh)
-    {
-        // out of QHs!
-        KPRINTF(20, ("Out of QHs!\n"));
-        return NULL;
-    }
-
-    hc->hc_EhciQHPool = (struct EhciQH *) eqh->eqh_Succ;
-    return(eqh);
-}
-/* \\\ */
-
-/* /// "ehciFreeQH()" */
-inline void ehciFreeQH(struct PCIController *hc, struct EhciQH *eqh)
-{
-    eqh->eqh_Succ = hc->hc_EhciQHPool;
-    hc->hc_EhciQHPool = eqh;
-}
-/* \\\ */
-
-/* /// "ehciAllocTD()" */
-inline struct EhciTD * ehciAllocTD(struct PCIController *hc)
-{
-    struct EhciTD *etd = hc->hc_EhciTDPool;
-
-    if(!etd)
-    {
-        // out of TDs!
-        KPRINTF(20, ("Out of TDs!\n"));
-        return NULL;
-    }
-
-    hc->hc_EhciTDPool = (struct EhciTD *) etd->etd_Succ;
-    return(etd);
-}
-/* \\\ */
-
-/* /// "ehciFreeTD()" */
-inline void ehciFreeTD(struct PCIController *hc, struct EhciTD *etd)
-{
-    etd->etd_Succ = hc->hc_EhciTDPool;
-    hc->hc_EhciTDPool = etd;
 }
 /* \\\ */
 

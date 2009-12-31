@@ -8,8 +8,8 @@
 #include "battclock_intern.h"
 #include "cmos.h"
 
-inline unsigned char read_port(unsigned char port);
-inline int bcd_to_dec(int x);
+static inline unsigned char read_port(unsigned char port);
+static inline int bcd_to_dec(int x);
 
 /*****************************************************************************
 
@@ -95,7 +95,7 @@ inline int bcd_to_dec(int x);
 } /* ReadBattClock */
 
 /* help functions */
-unsigned char read_port(unsigned char port)
+static inline unsigned char read_port(unsigned char port)
 {
     unsigned char tmp;
 
@@ -108,7 +108,7 @@ unsigned char read_port(unsigned char port)
     return tmp;
 }
 
-inline int bcd_to_dec(int x)
+static inline int bcd_to_dec(int x)
 {
     return ( (x >> 4) * 10 + (x & 0x0f) );
 }
