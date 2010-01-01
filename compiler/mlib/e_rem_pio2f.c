@@ -59,7 +59,10 @@ invpio2 =  6.36619772367581382433e-01, /* 0x3FE45F30, 0x6DC9C883 */
 pio2_1  =  1.57079632673412561417e+00, /* 0x3FF921FB, 0x54400000 */
 pio2_1t =  6.07710050650619224932e-11; /* 0x3DD0B461, 0x1A626331 */
 
-	int32_t __ieee754_rem_pio2f(float x, float *y)
+#ifndef INLINE_REM_PIO2F
+extern
+#endif
+__inline int32_t __ieee754_rem_pio2f(float x, float *y)
 {
 	double w,t,r,fn;
 	double tx[1],ty[2];

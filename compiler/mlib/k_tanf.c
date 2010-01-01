@@ -33,10 +33,10 @@ T[] =  {
   0x1362b9bf971bcd.0p-59,	/* 0.00946564784943673166728 */
 };
 
-#ifdef INLINE_KERNEL_TANDF
-extern inline
+#ifndef INLINE_KERNEL_TANDF
+extern
 #endif
-float
+__inline float
 __kernel_tandf(double x, int iy)
 {
 	double z,r,w,s,t,u;
