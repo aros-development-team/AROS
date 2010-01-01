@@ -199,7 +199,7 @@ struct PTE {
 #define wrcr(reg, val) \
     do { asm volatile("mov %0,%%" #reg::"r"(val)); } while(0)
 
-extern inline void __attribute__((always_inline)) rdmsr(uint32_t msr_no, uint32_t *ret_lo, uint32_t *ret_hi)
+static inline void __attribute__((always_inline)) rdmsr(uint32_t msr_no, uint32_t *ret_lo, uint32_t *ret_hi)
 {
     uint32_t ret1,ret2;
     asm volatile("rdmsr":"=a"(ret1),"=d"(ret2):"c"(msr_no));
@@ -207,19 +207,19 @@ extern inline void __attribute__((always_inline)) rdmsr(uint32_t msr_no, uint32_
     *ret_hi=ret2;
 }
 
-extern inline uint64_t __attribute__((always_inline)) rdmsrq(uint32_t msr_no)
+static inline uint64_t __attribute__((always_inline)) rdmsrq(uint32_t msr_no)
 {
     uint32_t ret1,ret2;
     asm volatile("rdmsr":"=a"(ret1),"=d"(ret2):"c"(msr_no));
     return ((uint64_t)ret1 | ((uint64_t)ret2 << 32));
 }
 
-extern inline void __attribute__((always_inline)) wrmsr(uint32_t msr_no, uint32_t val_lo, uint32_t val_hi)
+static inline void __attribute__((always_inline)) wrmsr(uint32_t msr_no, uint32_t val_lo, uint32_t val_hi)
 {
     asm volatile("wrmsr"::"a"(val_lo),"d"(val_hi),"c"(msr_no));
 }
 
-extern inline void __attribute__((always_inline)) wrmsrq(uint32_t msr_no, uint64_t val)
+static inline void __attribute__((always_inline)) wrmsrq(uint32_t msr_no, uint64_t val)
 {
     asm volatile("wrmsr"::"a"((uint32_t)(val & 0xffffffff)),"d"((uint32_t)(val >> 32)),"c"(msr_no));
 }
