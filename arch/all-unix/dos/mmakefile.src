@@ -7,7 +7,7 @@ USER_CFLAGS	:= -I$(SRCDIR)/rom/dos -I$(SRCDIR)/$(CURDIR)/..
   mainmmake=kernel-dos maindir=rom/dos \
   arch=unix \
   files="runprocess" \
-  compiler=host
+  compiler=kernel
 
 TESTS		:= runprocess
 

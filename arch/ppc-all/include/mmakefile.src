@@ -5,5 +5,5 @@ INCLUDE_FILES := aros/ppc/cpu.h aros/ppc/_fpmath.h aros/ppc/fenv.h
 %copy_includes mmake=compiler-includes
 
 INCLUDE_FILES := jmpdefs.h
-%copy_includes mmake=includes-common-ppc compiler=host
+%copy_includes mmake=includes-common-ppc compiler=kernel
 

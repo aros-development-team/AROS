@@ -7,7 +7,7 @@ FILES := kernel alert cause disable enable exception preparecontext stackswap sw
 USER_INCLUDES   := -I$(GENINCDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/$(CURDIR)/..
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
-  arch=unix compiler=host \
+  arch=unix compiler=kernel \
   files=$(FILES)
 
 #MM- kernel-exec-includes-unix : kernel-$(ARCH)-sigcore

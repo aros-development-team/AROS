@@ -44,7 +44,7 @@ $(BINDIR)/boot/kernel: setup-darwin-i386 $(KOBJS)
 
 
 $(BINDIR)/boot/AROSBootstrap: $(BOBJS)
-	$(HOST_CC) -o $@ $(BOBJS)
+	$(KERNEL_CC) -o $@ $(BOBJS)
 	 
 #MM
 clean ::
@@ -60,7 +60,7 @@ DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 -include $(DEPS)
 
 $(TARGETDIR)/%.o : %.c
-	$(HOST_CC) -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/rom/exec
+	$(KERNEL_CC) -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/rom/exec
 
 #$(TARGETDIR)/%.o : %.S
 #	%compile_q opt="$(CFLAGS)"
