@@ -45,7 +45,9 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tan.c,v 1.10 2005/11/02 14:0
  */
 
 #include "math.h"
+#define INLINE_REM_PIO2
 #include "math_private.h"
+#include "e_rem_pio2.c"
 
 double
 tan(double x)

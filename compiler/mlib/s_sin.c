@@ -46,7 +46,9 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_sin.c,v 1.10 2005/10/24 14:0
  */
 
 #include "math.h"
+#define INLINE_REM_PIO2
 #include "math_private.h"
+#include "e_rem_pio2.c"
 
 double
 sin(double x)

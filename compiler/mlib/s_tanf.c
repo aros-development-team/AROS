@@ -19,8 +19,10 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tanf.c,v 1.14 2005/11/28 05:
 #endif
 
 #include "math.h"
-#define	INLINE_KERNEL_TANDF
+#define INLINE_KERNEL_TANDF
+#define INLINE_REM_PIO2F
 #include "math_private.h"
+#include "e_rem_pio2f.c"
 #include "k_tanf.c"
 
 /* Small multiples of pi/2 rounded to double precision. */
