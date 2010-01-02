@@ -21,10 +21,10 @@ SO_LDFLAGS := -dynamiclib
 kernel-kernel-darwin-i386-native: $(NATIVE_DIR)/kernel_native$(SOEXT)
 
 $(NATIVE_DIR)/kernel_native$(SOEXT): $(NATIVE_OBJS)
-	$(HOST_CC) -o $@ $(SO_LDFLAGS) $(NATIVE_OBJS)
+	$(KERNEL_CC) -o $@ $(SO_LDFLAGS) $(NATIVE_OBJS)
 
 $(NATIVE_DIR) :
 	mkdir $(NATIVE_DIR)
 	 
 $(NATIVE_DIR)/%.o : native/%.c $(NATIVE_DIR)
-	$(HOST_CC) -o $@ -c $< -I$(TOP)/rom/exec -DNATIVE
+	$(KERNEL_CC) -o $@ -c $< -I$(TOP)/rom/exec -DNATIVE

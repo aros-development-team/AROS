@@ -7,6 +7,6 @@ USER_CFLAGS	:= -I$(SRCDIR)/rom/battclock -I$(SRCDIR)/$(CURDIR)/..
   mainmmake=kernel-battclock maindir=rom/battclock \
   arch=unix \
   files=readbattclock \
-  compiler=host
+  compiler=kernel
 
 %common

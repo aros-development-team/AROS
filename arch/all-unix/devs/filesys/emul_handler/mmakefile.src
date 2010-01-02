@@ -10,6 +10,6 @@ USER_INCLUDES := -I$(GENINCDIR)
 %build_module mmake=kernel-fs-emul \
   modname=emul modtype=device modsuffix=handler \
   files=emul_handler \
-  compiler=host
+  compiler=kernel
 
 

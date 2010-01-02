@@ -5,4 +5,4 @@ INCLUDE_FILES := aros/i386/cpu.h aros/i386/_fpmath.h aros/i386/fenv.h
 %copy_includes mmake=compiler-includes
 
 INCLUDE_FILES := jmpdefs.h
-%copy_includes mmake=includes-common-i386 compiler=host
+%copy_includes mmake=includes-common-i386 compiler=kernel

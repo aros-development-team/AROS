@@ -5,7 +5,7 @@ USER_CFLAGS := -I$(GENINCDIR) -D__AROS__
 %build_module mmake=kernel-unixio \
     modname=unixio modtype=hidd \
     files=unixio_class \
-    compiler=host
+    compiler=kernel
 
 STUBS := unixio_stubs
 

@@ -9,6 +9,6 @@ USER_INCLUDES := -I$(GENINCDIR)
   modname=serial modtype=hidd \
   files=$(FILES) \
   uselibs="amiga hiddstubs" usehostlibs=c \
-  compiler=host
+  compiler=kernel
 
 #MM workbench-hidd-unix-serial : kernel-unixio
