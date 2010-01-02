@@ -19,9 +19,11 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_cosf.c,v 1.15 2005/11/30 06:
 #endif
 
 #include "math.h"
-#define	INLINE_KERNEL_COSDF
-#define	INLINE_KERNEL_SINDF
+#define INLINE_KERNEL_COSDF
+#define INLINE_KERNEL_SINDF
+#define INLINE_REM_PIO2F
 #include "math_private.h"
+#include "e_rem_pio2f.c"
 #include "k_cosf.c"
 #include "k_sinf.c"
 
