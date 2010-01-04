@@ -2,6 +2,6 @@
 #define _MISC_H
 
 /*** Prototypes *************************************************************/
-void ShowError(CONST_STRPTR message);
+VOID ShowError(CONST_STRPTR message);
 
 #endif /* _MISC_H */

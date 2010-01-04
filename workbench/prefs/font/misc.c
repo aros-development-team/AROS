@@ -6,7 +6,7 @@
 #include <exec/types.h>
 #include <proto/dos.h>
 
-void ShowError(CONST_STRPTR message)
+VOID ShowError(CONST_STRPTR message)
 {
     Printf("ERROR: %s\n", message);
 }
