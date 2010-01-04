@@ -68,7 +68,10 @@ IPTR PrefsEditor__MUIM_Setup
     /*-- Load preferences --------------------------------------------------*/
     if (!DoMethod(self, MUIM_PrefsEditor_ImportFromDirectory, ENV))
     {
-        DoMethod(self, MUIM_PrefsEditor_ImportFromDirectory, ENVARC);
+        if (!DoMethod(self, MUIM_PrefsEditor_ImportFromDirectory, ENVARC))
+        {
+            DoMethod(self, MUIM_PrefsEditor_SetDefaults);
+        }
     }
     
     /*-- Store backup of initial preferences -------------------------------*/
