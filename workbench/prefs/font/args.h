@@ -18,7 +18,7 @@ enum Argument
 };
 
 /*** Prototypes *************************************************************/
-BOOL ReadArguments(VOID);
+BOOL ReadArguments(int argc, char **argv);
 VOID FreeArguments(VOID);
 IPTR GetArgument(enum Argument arg);
 

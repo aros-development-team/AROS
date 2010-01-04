@@ -13,48 +13,49 @@
 #include "locale.h"
 #include "args.h"
 #include "fpeditor.h"
+#include "prefs.h"
 
-#define VERSION "$VER: Fonts 0.1 ("ADATE") ©AROS Dev Team"
+#define VERSION "$VER: Fonts 0.2 ("ADATE") ©AROS Dev Team"
 
-int main(void)
+int main(int argc, char **argv)
 {
-    Object *application,  *window;
+    Object *application, *window;
 
     Locale_Initialize();
-    
-    if (ReadArguments())
-    {
-        /* FIXME: handle arguments... */
-        
-        // FROM - import prefs from this file at start
-        // USE  - 'use' the loaded prefs immediately, don't open window.
-        // SAVE - 'save' the lodaed prefs immediately, don't open window.
-        
-        FreeArguments();
-    }
-    
-    application = (Object *)ApplicationObject,
-        MUIA_Application_Title,  __(MSG_NAME),
-        MUIA_Application_Version, (IPTR) VERSION,
-        MUIA_Application_Description,  __(MSG_DESCRIPTION),
-        MUIA_Application_Base, (IPTR) "FONTPREF",
-        SubWindow, (IPTR) (window = (Object *)SystemPrefsWindowObject,
-		MUIA_Window_ID, MAKE_ID('F','W','I','N'),
-            WindowContents, (IPTR) FPEditorObject,
-            End,
-        End),
-    End;
 
-    if (application != NULL)
+    if (ReadArguments(argc, argv))
     {
-        SET(window, MUIA_Window_Open, TRUE);
-        DoMethod(application, MUIM_Application_Execute);
-        SET(window, MUIA_Window_Open, FALSE);
-        
-        MUI_DisposeObject(application);
+        if (ARG(USE) || ARG(SAVE))
+        {
+            Prefs_HandleArgs((STRPTR)ARG(FROM), ARG(USE), ARG(SAVE));
+        }
+        else
+        {
+            application = (Object *)ApplicationObject,
+                MUIA_Application_Title,  __(MSG_NAME),
+                MUIA_Application_Version, (IPTR) VERSION,
+                MUIA_Application_Description,  __(MSG_DESCRIPTION),
+                MUIA_Application_Base, (IPTR) "FONTPREF",
+                SubWindow, (IPTR) (window = (Object *)SystemPrefsWindowObject,
+                    MUIA_Window_ID, MAKE_ID('F','W','I','N'),
+                    WindowContents, (IPTR) FPEditorObject,
+                    End,
+                End),
+            End;
+
+            if (application != NULL)
+            {
+                SET(window, MUIA_Window_Open, TRUE);
+                DoMethod(application, MUIM_Application_Execute);
+                SET(window, MUIA_Window_Open, FALSE);
+
+                MUI_DisposeObject(application);
+            }
+        }
+        FreeArguments();
     }
 
     Locale_Deinitialize();
-    
+
     return 0;
 }
