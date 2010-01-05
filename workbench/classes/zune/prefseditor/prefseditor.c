@@ -70,7 +70,10 @@ IPTR PrefsEditor__MUIM_Setup
     {
         if (!DoMethod(self, MUIM_PrefsEditor_ImportFromDirectory, ENVARC))
         {
-            DoMethod(self, MUIM_PrefsEditor_SetDefaults);
+            if (DoMethod(self, MUIM_PrefsEditor_SetDefaults))
+            {
+                SET(self, MUIA_PrefsEditor_Changed, TRUE);
+            }
         }
     }
     
