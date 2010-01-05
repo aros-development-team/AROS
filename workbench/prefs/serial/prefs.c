@@ -60,14 +60,16 @@ struct SerialPrefs serialprefs;
 
 static BOOL Prefs_Load(STRPTR from)
 {
+    BOOL retval = FALSE;
+
     BPTR fh = Open(from, MODE_OLDFILE);
     if (fh)
     {
-        Prefs_ImportFH(fh);
+        retval = Prefs_ImportFH(fh);
         Close(fh);
-        return TRUE;
     }
-    return FALSE;
+
+    return retval;
 }
 
 /*********************************************************************************************/
@@ -233,7 +235,7 @@ BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
             {
                 ShowMessage
                 (
-                    "Can't read from file " PREFS_PATH_ENV
+                    "Can't read from file " PREFS_PATH_ENVARC
                     ".\nUsing default values."
                 );
                 Prefs_Default();
