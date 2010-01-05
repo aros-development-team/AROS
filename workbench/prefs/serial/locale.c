@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,51 +9,44 @@
 #define CATCOMP_ARRAY
 #include "strings.h"
 
-#include "global.h"
-
 #define CATALOG_NAME     "System/Prefs/Serial.catalog"
 #define CATALOG_VERSION  0
 
+/*** Variables **************************************************************/
 struct Catalog *catalog;
 
-/*********************************************************************************************/
 
-VOID InitLocale(VOID)
+/*** Functions **************************************************************/
+/* Main *********************************************************************/
+CONST_STRPTR _(ULONG id)
 {
-    if (LocaleBase != NULL)
+    if (LocaleBase != NULL && catalog != NULL)
     {
-	catalog = OpenCatalog(NULL, 
-	                      (STRPTR) CATALOG_NAME, 
-			      OC_Version, CATALOG_VERSION, 
-			      TAG_DONE);
-    }
-    else 
-    { 
-	catalog=NULL;
-    }
-}
-
-/*********************************************************************************************/
-
-VOID CleanupLocale(VOID)
-{
-    if (LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
-    catalog=NULL;
-}
-
-/*********************************************************************************************/
-
-CONST_STRPTR MSG(ULONG id)
-{
-    if ( (catalog != NULL) && (LocaleBase != NULL) )
-    {
-	    return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+        return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     }
     else
     {
-	    return CatCompArray[id].cca_Str;
+        return CatCompArray[id].cca_Str;
     }
 }
 
-/*********************************************************************************************/
+/* Setup ********************************************************************/
+VOID Locale_Initialize(VOID)
+{
+    if (LocaleBase != NULL)
+    {
+        catalog = OpenCatalog
+        (
+            NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE
+        );
+    }
+    else
+    {
+        catalog = NULL;
+    }
+}
 
+VOID Locale_Deinitialize(VOID)
+{
+    if (LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
+}

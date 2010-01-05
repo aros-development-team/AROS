@@ -1,5 +1,5 @@
-#ifndef _IPEDITOR_H_
-#define _IPEDITOR_H_
+#ifndef _SEREDITOR_H_
+#define _SEREDITOR_H_
 
 /*
     Copyright  2004, The AROS Development Team. All rights reserved.
@@ -16,7 +16,6 @@
 extern struct MUI_CustomClass *SerEditor_CLASS;
 extern struct SerialPrefs      serialprefs;
 
-
 /*** Macros *****************************************************************/
 #define SerEditorObject BOOPSIOBJMACRO_START(SerEditor_CLASS->mcc_Class)
 
@@ -26,4 +25,4 @@ extern struct SerialPrefs      serialprefs;
 #define STRINGIFY_RepeatDelay       0x01
 #define STRINGIFY_RepeatRate        0x02
 
-#endif /* _IPEDITOR_H_ */
+#endif /* _SEREDITOR_H_ */
