@@ -3,7 +3,7 @@
     $Id: ipeditor.c 21816 2007-09-25 12:35:29Z chodorowski, dariusb $
 */
 
-// #define MUIMASTER_YES_INLINE_STDARG
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <exec/types.h>
 #include <utility/tagitem.h>
@@ -28,82 +28,77 @@
 
 #include <aros/debug.h>
 
-#include "global.h"
 #include "locale.h"
 #include "sereditor.h"
+#include "prefs.h"
 
 /*** String Data ************************************************************/
 
 CONST_STRPTR BaudrateLabels[] =
 {
-	(CONST_STRPTR)    "50",
-	(CONST_STRPTR)    "75",
-	(CONST_STRPTR)   "110",
-	(CONST_STRPTR)   "134",
-	(CONST_STRPTR)   "150",
-	(CONST_STRPTR)   "200",
-	(CONST_STRPTR)   "300",
-	(CONST_STRPTR)   "600",
-	(CONST_STRPTR)  "1200",
-	(CONST_STRPTR)  "2400",
-	(CONST_STRPTR)  "4800",
-	(CONST_STRPTR)  "9600",
-	(CONST_STRPTR) "19200",
-	(CONST_STRPTR) "38400",
-	(CONST_STRPTR) "57600",
-	(CONST_STRPTR)"115200",
-	(CONST_STRPTR)   NULL
+    (CONST_STRPTR)    "50",
+    (CONST_STRPTR)    "75",
+    (CONST_STRPTR)   "110",
+    (CONST_STRPTR)   "134",
+    (CONST_STRPTR)   "150",
+    (CONST_STRPTR)   "200",
+    (CONST_STRPTR)   "300",
+    (CONST_STRPTR)   "600",
+    (CONST_STRPTR)  "1200",
+    (CONST_STRPTR)  "2400",
+    (CONST_STRPTR)  "4800",
+    (CONST_STRPTR)  "9600",
+    (CONST_STRPTR) "19200",
+    (CONST_STRPTR) "38400",
+    (CONST_STRPTR) "57600",
+    (CONST_STRPTR)"115200",
+    (CONST_STRPTR)   NULL
 };
 
 CONST_STRPTR StopBitsLabels[] =
 {
-	(CONST_STRPTR) "1",
-	(CONST_STRPTR) "1.5",
-	(CONST_STRPTR) "2",
-	NULL
+    (CONST_STRPTR) "1",
+    (CONST_STRPTR) "1.5",
+    (CONST_STRPTR) "2",
+    NULL
 };
 
 CONST_STRPTR DataBitsLabels[] =
 {
-	(CONST_STRPTR) "8",
-	(CONST_STRPTR) "7",
-	(CONST_STRPTR) "6",
-	(CONST_STRPTR) "5",
-	NULL
+    (CONST_STRPTR) "8",
+    (CONST_STRPTR) "7",
+    (CONST_STRPTR) "6",
+    (CONST_STRPTR) "5",
+    NULL
 };
 
 CONST_STRPTR BufferSizeLabels[] =
 {
-	(CONST_STRPTR)  "512",
-	(CONST_STRPTR) "1024",
-	(CONST_STRPTR) "2048",
-	(CONST_STRPTR) "4096",
-	NULL
+    (CONST_STRPTR)  "512",
+    (CONST_STRPTR) "1024",
+    (CONST_STRPTR) "2048",
+    (CONST_STRPTR) "4096",
+    NULL
 };
 
 /*** Instance Data **********************************************************/
 
 struct SerEditor_DATA
 {
-  int i;
+    int i;
 
-  CONST_STRPTR ParityLabels[5];
-  Object *child;
-  Object *baudrate;
-  Object *stopbits;
-  Object *databits;
-  Object *parity;
-  Object *inputbuffersize;
-  Object *outputbuffersize;
-
+    CONST_STRPTR ParityLabels[5];
+    Object *child;
+    Object *baudrate;
+    Object *stopbits;
+    Object *databits;
+    Object *parity;
+    Object *inputbuffersize;
+    Object *outputbuffersize;
 };
-
-struct SerialPrefs          serialprefs;
 
 STATIC VOID SerPrefs2Gadgets(struct SerEditor_DATA *data);
 STATIC VOID Gadgets2SerPrefs(struct SerEditor_DATA *data);
-       VOID ShowMsg(char *msg);
-
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct SerEditor_DATA *data = INST_DATA(CLASS, self)
@@ -117,124 +112,139 @@ Object *SerEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
     D(bug("[seredit class] SerEdit Class New\n"));
 
-    /* 
+    /*
      * we create self first and then create the child,
      * so we have self->data available already
      */
 
-    self = (Object *) DoSuperNewTags(
-			  CLASS, self, NULL,
-	     		  MUIA_PrefsEditor_Name, MSG(MSG_WINTITLE),
- 			  MUIA_PrefsEditor_Path, (IPTR) "SYS/Serial.prefs",
-			  TAG_DONE
-		      );
-    
-    if (self == NULL) 
+    self = (Object *) DoSuperNewTags
+    (
+        CLASS, self, NULL,
+        MUIA_PrefsEditor_Name, _(MSG_WINTITLE),
+        MUIA_PrefsEditor_Path, (IPTR) "SYS/serial.prefs",
+        MUIA_PrefsEditor_IconTool, (IPTR) "SYS:Prefs/Serial",
+
+        TAG_DONE
+    );
+
+    if (self)
     {
-	printf("UPS..TODO\n");
-	return NULL;
+        SETUP_INST_DATA;
+
+        data->ParityLabels[0] = _(MSG_PARITY_NONE);
+        data->ParityLabels[1] = _(MSG_PARITY_EVEN);
+        data->ParityLabels[2] = _(MSG_PARITY_ODD);
+        data->ParityLabels[3] = _(MSG_PARITY_MARK);
+        data->ParityLabels[4] = _(MSG_PARITY_SPACE);
+        data->ParityLabels[5] = NULL;
+
+    #if SHOWPIC
+        icon = MUI_NewObject("Dtpic.mui", MUIA_Dtpic_Name, "PROGDIR:Serial.info", TAG_DONE);
+
+        if (!icon) icon = HVSpace;
+    #endif
+
+        data->child =
+    #if SHOWPIC
+        HGroup,
+            Child, icon,
+            Child,
+    #endif
+
+        VGroup,
+            Child, ColGroup(2),
+                Child, (IPTR)Label1(_(MSG_GAD_BAUDRATE)),
+                Child, (IPTR)(data->baudrate = (Object *)CycleObject,
+                    MUIA_Cycle_Entries, (IPTR)BaudrateLabels,
+                End),
+                Child, (IPTR)Label1(_(MSG_GAD_DATABITS)),
+                Child, (IPTR)(data->databits = (Object *)CycleObject,
+                    MUIA_Cycle_Entries, (IPTR)DataBitsLabels,
+                End),
+                Child, (IPTR)Label1(_(MSG_GAD_PARITY)),
+                Child, (IPTR)(data->parity = (Object *)CycleObject,
+                    MUIA_Cycle_Entries, (IPTR)data->ParityLabels,
+                End),
+                Child, (IPTR)Label1(_(MSG_GAD_STOPBITS)),
+                Child, (IPTR)(data->stopbits = (Object *)CycleObject,
+                    MUIA_Cycle_Entries, (IPTR)StopBitsLabels,
+                End),
+                Child, (IPTR)Label1(_(MSG_GAD_INPUTBUFFERSIZE)),
+                Child, (IPTR)(data->inputbuffersize = (Object *)CycleObject,
+                    MUIA_Cycle_Entries, (IPTR)BufferSizeLabels,
+                End),
+                Child, (IPTR)Label1(_(MSG_GAD_OUTPUTBUFFERSIZE)),
+                Child, (IPTR)(data->outputbuffersize = (Object *)CycleObject,
+                    MUIA_Cycle_Entries, (IPTR)BufferSizeLabels,
+                End),
+            End, /* ColGroup */
+#if SHOWPIC
+        End,
+#endif
+        End;
+
+        DoMethod(self, OM_ADDMEMBER, (ULONG) data->child);
+
+        DoMethod
+        (
+            data->baudrate, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+        DoMethod
+        (
+            data->stopbits, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+        DoMethod
+        (
+            data->databits, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+        DoMethod
+            (data->parity, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+        DoMethod
+        (
+            data->inputbuffersize, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+        DoMethod
+        (
+            data->outputbuffersize, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+
+        SerPrefs2Gadgets(data);
     }
 
-    SETUP_INST_DATA;
-
-    data->ParityLabels[0] = MSG(MSG_PARITY_NONE);
-    data->ParityLabels[1] = MSG(MSG_PARITY_EVEN);
-    data->ParityLabels[2] = MSG(MSG_PARITY_ODD);
-    data->ParityLabels[3] = MSG(MSG_PARITY_MARK);
-    data->ParityLabels[4] = MSG(MSG_PARITY_SPACE);
-    data->ParityLabels[5] = NULL;
-
-#if SHOWPIC
-    icon=MUI_NewObject("Dtpic.mui",MUIA_Dtpic_Name,"PROGDIR:Serial.info",TAG_DONE);
-
-    if(!icon) icon=HVSpace;
-#endif
-
-    data->child=
-#if SHOWPIC
-    HGroup,
-      Child,
-	icon,
-      Child,
-#endif
-
-    VGroup,
-      Child, 
-	ColGroup(2),
-	  Child, Label1(MSG(MSG_GAD_BAUDRATE)),
-	  Child, data->baudrate = CycleObject,
-			    MUIA_Cycle_Entries, BaudrateLabels, 
-			  End,
-	  Child, Label1(MSG(MSG_GAD_DATABITS)),
-	  Child, data->databits = CycleObject,
-			    MUIA_Cycle_Entries, DataBitsLabels, 
-			  End,
-	  Child, Label1(MSG(MSG_GAD_PARITY)),
-	  Child, data->parity = CycleObject,
-			    MUIA_Cycle_Entries, data->ParityLabels, 
-			  End,
-	  Child, Label1(MSG(MSG_GAD_STOPBITS)),
-	  Child, data->stopbits = CycleObject,
-			    MUIA_Cycle_Entries, StopBitsLabels, 
-			  End,
-	  Child, Label1(MSG(MSG_GAD_INPUTBUFFERSIZE)),
-	  Child, data->inputbuffersize = CycleObject,
-			    MUIA_Cycle_Entries, BufferSizeLabels, 
-			  End,
-	  Child, Label1(MSG(MSG_GAD_OUTPUTBUFFERSIZE)),
-	  Child, data->outputbuffersize = CycleObject,
-			    MUIA_Cycle_Entries, BufferSizeLabels, 
-			  End,
-
-	End, /* ColGroup */
-#if SHOWPIC
-      End, 
-#endif
-    End; 
-
-    DoMethod(self,OM_ADDMEMBER,(ULONG) data->child);
-
-    DoMethod(data->baudrate, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
-    DoMethod(data->stopbits, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
-    DoMethod(data->databits, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
-    DoMethod(data->parity, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
-    DoMethod(data->inputbuffersize, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
-    DoMethod(data->outputbuffersize, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
-
-    SerPrefs2Gadgets(data);
-  
     return self;
 }
 
 /*
  * update struct serialprefs with actual data selected in gadgets
  */
-STATIC VOID Gadgets2SerPrefs (struct SerEditor_DATA *data)
+STATIC void Gadgets2SerPrefs (struct SerEditor_DATA *data)
 {
     D(bug("Gadgets2SerPrefs\n"));
 
-    serialprefs.sp_BaudRate =    atol((char *) 
-                                   BaudrateLabels[
-				     XGET(data->baudrate,
-				          MUIA_Cycle_Active)
-				   ]);
+    serialprefs.sp_BaudRate = atol
+    (
+        (char *)BaudrateLabels[XGET(data->baudrate, MUIA_Cycle_Active)]
+    );
 
     serialprefs.sp_BitsPerChar = XGET(data->databits, MUIA_Cycle_Active);
-
     serialprefs.sp_Parity =      XGET(data->parity,MUIA_Cycle_Active);
-
     serialprefs.sp_StopBits =    XGET(data->stopbits,MUIA_Cycle_Active);
 
-    serialprefs.sp_InputBuffer = atol((char *) 
-                                   BufferSizeLabels[
-				     XGET(data->inputbuffersize,
-				          MUIA_Cycle_Active)
-				   ]);
-    serialprefs.sp_OutputBuffer = atol((char *) 
-                                   BufferSizeLabels[
-				     XGET(data->outputbuffersize,
-				          MUIA_Cycle_Active)
-				   ]);
+    serialprefs.sp_InputBuffer = atol
+    (
+        (char *)BufferSizeLabels[XGET(data->inputbuffersize, MUIA_Cycle_Active)]
+    );
+    serialprefs.sp_OutputBuffer = atol
+    (
+        (char *)BufferSizeLabels[XGET(data->outputbuffersize, MUIA_Cycle_Active)]
+    );
 
     D(bug("Gadgets2SerPrefs left\n"));
 }
@@ -246,60 +256,47 @@ STATIC VOID RefreshGadget(Object *obj, ULONG value, CONST_STRPTR *labels)
 {
     ULONG i = 0;
 
-    while (NULL != labels[i]) {
-    	if (atol((char *) labels[i]) == value) {
-    	    set(obj, MUIA_Cycle_Active, i);
-    	    return;
-    	}
-    	i++;
+    while (NULL != labels[i])
+    {
+        if (atol((char *) labels[i]) == value)
+        {
+            NNSET(obj, MUIA_Cycle_Active, i);
+            return;
+        }
+        i++;
     }
-    set(obj, MUIA_Cycle_Active, 0);
+    NNSET(obj, MUIA_Cycle_Active, 0);
 }
 
 /*
- * update gadgets with values of struct serialprefs 
+ * update gadgets with values of struct serialprefs
  */
 STATIC VOID SerPrefs2Gadgets(struct SerEditor_DATA *data)
 {
-    RefreshGadget(data->baudrate,
-                  serialprefs.sp_BaudRate,
-		  BaudrateLabels);
+    RefreshGadget(data->baudrate, serialprefs.sp_BaudRate, BaudrateLabels);
 
-    set(data->databits, MUIA_Cycle_Active, serialprefs.sp_BitsPerChar);
+    NNSET(data->databits, MUIA_Cycle_Active, serialprefs.sp_BitsPerChar);
+    NNSET(data->parity, MUIA_Cycle_Active, serialprefs.sp_Parity);
+    NNSET(data->stopbits, MUIA_Cycle_Active, serialprefs.sp_StopBits);
 
-    set(data->parity, MUIA_Cycle_Active, serialprefs.sp_Parity);
-
-    set(data->stopbits, MUIA_Cycle_Active, serialprefs.sp_StopBits);
-
-    RefreshGadget(data->inputbuffersize,
-                  serialprefs.sp_InputBuffer,
-		  BufferSizeLabels);
-
-    RefreshGadget(data->outputbuffersize,
-                  serialprefs.sp_OutputBuffer,
-		  BufferSizeLabels);
+    RefreshGadget(data->inputbuffersize, serialprefs.sp_InputBuffer, BufferSizeLabels);
+    RefreshGadget(data->outputbuffersize, serialprefs.sp_OutputBuffer, BufferSizeLabels);
 }
 
 IPTR SerEditor__MUIM_PrefsEditor_ImportFH (
-    Class *CLASS, Object *self, 
+    Class *CLASS, Object *self,
     struct MUIP_PrefsEditor_ImportFH *message
 )
 {
     SETUP_INST_DATA;
+    BOOL success = TRUE;
 
     D(bug("[seredit class] SerEdit Class Import\n"));
 
-    if (!LoadPrefsFH(message->fh)) {
-	D(bug("[seredit class] SerEditor__MUIM_PrefsEditor_ImportFH failed\n"));
-	return FALSE;
-    }
+    success = Prefs_ImportFH(message->fh);
+    if (success) SerPrefs2Gadgets(data);
 
-    BackupPrefs();
-    SerPrefs2Gadgets(data);
-    SET(self, MUIA_PrefsEditor_Changed, FALSE);
-    SET(self, MUIA_PrefsEditor_Testing, FALSE);
-
-    return TRUE;
+    return success;
 }
 
 IPTR SerEditor__MUIM_PrefsEditor_ExportFH
@@ -309,66 +306,39 @@ IPTR SerEditor__MUIM_PrefsEditor_ExportFH
 )
 {
     SETUP_INST_DATA;
+    BOOL success = TRUE;
+
     D(bug("[seredit class] SerEdit Class Export\n"));
 
     Gadgets2SerPrefs(data);
-    return SavePrefsFH(message->fh);
+    success = Prefs_ExportFH(message->fh);
+
+    return success;
 }
 
-IPTR SerEditor__MUIM_PrefsEditor_Test
+IPTR SerEditor__MUIM_PrefsEditor_SetDefaults
 (
     Class *CLASS, Object *self, Msg message
 )
 {
     SETUP_INST_DATA;
-    BOOL result;
+    BOOL success = TRUE;
 
-    D(bug("[seredit class] SerEdit Class Test\n"));
+    D(bug("[seredit class] SerEdit Class SetDefaults\n"));
 
-    Gadgets2SerPrefs(data);
+    success = Prefs_Default();
+    if (success) SerPrefs2Gadgets(data);
 
-    result=SaveEnv();
-
-    if(result) { /* TRUE -> success */
-	SET(self, MUIA_PrefsEditor_Changed, FALSE);
-	SET(self, MUIA_PrefsEditor_Testing, TRUE);
-    }
-
-    return result; 
-}
-
-
-IPTR SerEditor__MUIM_PrefsEditor_Revert
-(
-    Class *CLASS, Object *self, Msg message
-)
-{
-    SETUP_INST_DATA;
-    BOOL result;
-
-    D(bug("[seredit class] SerEdit Class Revert\n"));
-
-    RestorePrefs();
-    SerPrefs2Gadgets(data);
-
-    result=SaveEnv();
-
-    if(result) {
-	SET(self, MUIA_PrefsEditor_Changed, FALSE);
-	SET(self, MUIA_PrefsEditor_Testing, FALSE);
-    }
-
-    return result;
+    return success;
 }
 
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_5
+ZUNE_CUSTOMCLASS_4
 (
     SerEditor, NULL, MUIC_PrefsEditor, NULL,
-    OM_NEW,                    struct opSet *,
-    MUIM_PrefsEditor_ImportFH, struct MUIP_PrefsEditor_ImportFH *,
-    MUIM_PrefsEditor_ExportFH, struct MUIP_PrefsEditor_ExportFH *,
-    MUIM_PrefsEditor_Test,     Msg,
-    MUIM_PrefsEditor_Revert,   Msg
+    OM_NEW,                       struct opSet *,
+    MUIM_PrefsEditor_ImportFH,    struct MUIP_PrefsEditor_ImportFH *,
+    MUIM_PrefsEditor_ExportFH,    struct MUIP_PrefsEditor_ExportFH *,
+    MUIM_PrefsEditor_SetDefaults, Msg
 );
 

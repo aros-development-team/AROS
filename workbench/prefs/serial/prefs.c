@@ -22,8 +22,13 @@
 
 #include <prefs/prefhdr.h>
 
-#include "global.h"
+#include "prefs.h"
+#include "misc.h"
 
+/*********************************************************************************************/
+
+#define PREFS_PATH_ENVARC "ENVARC:SYS/serial.prefs"
+#define PREFS_PATH_ENV    "ENV:SYS/serial.prefs"
 
 /*********************************************************************************************/
 
@@ -36,9 +41,7 @@ struct FilePrefHeader
 
 /*********************************************************************************************/
 
-static struct SerialPrefs   restore_prefs;
-struct SerialPrefs          serialprefs;
-static APTR 	    	    mempool;
+struct SerialPrefs serialprefs;
 
 /*********************************************************************************************/
 
@@ -55,294 +58,221 @@ static APTR 	    	    mempool;
 
 /*********************************************************************************************/
 
-VOID CleanupPrefs(void)
+static BOOL Prefs_Load(STRPTR from)
 {
-    D(bug("[serial prefs] CleanupPrefs\n"));
-    if (mempool) DeletePool(mempool);
+    BPTR fh = Open(from, MODE_OLDFILE);
+    if (fh)
+    {
+        Prefs_ImportFH(fh);
+        Close(fh);
+        return TRUE;
+    }
+    return FALSE;
 }
 
 /*********************************************************************************************/
 
-VOID CopyPrefs(struct SerialPrefs *s, struct SerialPrefs *d)
+BOOL Prefs_ImportFH(BPTR fh)
 {
-    CopyMem(s, d, sizeof(struct SerialPrefs));
-}
+    struct SerialPrefs  loadprefs;
+    struct IFFHandle   *iff;
+    BOOL                retval = FALSE;
 
-VOID BackupPrefs(void)
-{
-    CopyPrefs(&serialprefs, &restore_prefs);
-}
-
-VOID RestorePrefs(void)
-{
-    CopyPrefs(&restore_prefs, &serialprefs);
-}
-
-/*********************************************************************************************/
-
-/* 1 is success */
-
-ULONG InitPrefs(STRPTR filename, BOOL use, BOOL save)
-{
-    D(bug("[serial prefs] InitPrefs\n"));
-    mempool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR, 2048, 2048);
-    if (!mempool) 
-    {
-	ShowMsg("Out of memory!");
-	return 0;
-    }
-
-    if (!LoadPrefs(filename))
-    {
-    	if (!DefaultPrefs())
-	{
-	    CleanupPrefs();
-	    ShowMsg("Panic! Cannot setup default prefs!");
-	    return 0;
-	}
-    }
-    
-    restore_prefs = serialprefs;
-    
-    if (use || save)
-    {
-    	SavePrefs((CONST STRPTR) CONFIGNAME_ENV);
-    }
-    
-    if (save)
-    {
-    	SavePrefs((CONST STRPTR) CONFIGNAME_ENVARC);
-    }
-    
-    if (use || save) CleanupPrefs();
-
-    return 1;
-}
-
-/*********************************************************************************************/
-
-BOOL LoadPrefsFH(BPTR fh)
-{
-    static struct SerialPrefs loadprefs;
-    struct IFFHandle 	    	*iff;    
-    BOOL    	    	    	retval = FALSE;
-    
-    
     if ((iff = AllocIFF()))
     {
-    	iff->iff_Stream = (IPTR)fh;
-	    
-	InitIFFasDOS(iff);
-	
-	if (!OpenIFF(iff, IFFF_READ))
-	{
-	    D(bug("LoadPrefs: OpenIFF okay.\n"));
-	    
-	    if (!StopChunk(iff, ID_PREF, ID_SERL))
-	    {
-		D(bug("LoadPrefs: StopChunk okay.\n"));
-		
-		if (!ParseIFF(iff, IFFPARSE_SCAN))
-		{
-		    struct ContextNode *cn;
-		    
-		    D(bug("LoadPrefs: ParseIFF okay.\n"));
-		    
-		    cn = CurrentChunk(iff);
+        iff->iff_Stream = (IPTR)fh;
 
-		    if (cn->cn_Size == sizeof(struct SerialPrefs))
-		    {
-			D(bug("LoadPrefs: ID_SERL chunk size okay.\n"));
-			
-			if (ReadChunkBytes(iff, &loadprefs, sizeof(struct SerialPrefs)) == sizeof(struct SerialPrefs))
-			{
-			    D(bug("LoadPrefs: Reading chunk successful.\n"));
+        InitIFFasDOS(iff);
 
-			    serialprefs = loadprefs;
-			    
-			    D(bug("LoadPrefs: Everything okay :-)\n"));
-			    
-			    retval = TRUE;
-			}
-		    }
-		    
-		} /* if (!ParseIFF(iff, IFFPARSE_SCAN)) */
-		
-	    } /* if (!StopChunk(iff, ID_PREF, ID_SERL)) */
-	    
-	    CloseIFF(iff);
-			    
-	} /* if (!OpenIFF(iff, IFFF_READ)) */
-	
-    
-	FreeIFF(iff);
-	
+        if (!OpenIFF(iff, IFFF_READ))
+        {
+            D(bug("LoadPrefs: OpenIFF okay.\n"));
+
+            if (!StopChunk(iff, ID_PREF, ID_SERL))
+            {
+                D(bug("LoadPrefs: StopChunk okay.\n"));
+
+                if (!ParseIFF(iff, IFFPARSE_SCAN))
+                {
+                    struct ContextNode *cn;
+
+                    D(bug("LoadPrefs: ParseIFF okay.\n"));
+
+                    cn = CurrentChunk(iff);
+
+                    if (cn->cn_Size == sizeof(struct SerialPrefs))
+                    {
+                        D(bug("LoadPrefs: ID_SERL chunk size okay.\n"));
+
+                        if (ReadChunkBytes(iff, &loadprefs, sizeof(struct SerialPrefs)) == sizeof(struct SerialPrefs))
+                        {
+                            D(bug("LoadPrefs: Reading chunk successful.\n"));
+
+                            serialprefs = loadprefs;
+
+                            D(bug("LoadPrefs: Everything okay :-)\n"));
+
+                            retval = TRUE;
+                        }
+                    }
+                } /* if (!ParseIFF(iff, IFFPARSE_SCAN)) */
+            } /* if (!StopChunk(iff, ID_PREF, ID_SERL)) */
+            CloseIFF(iff);
+        } /* if (!OpenIFF(iff, IFFF_READ)) */
+        FreeIFF(iff);
     } /* if ((iff = AllocIFF())) */
-    
     return retval;
 }
 
-BOOL LoadPrefs(STRPTR filename) 
-{
-    BPTR fh;
-    BOOL ret;
-
-    D(bug("[serial prefs] LoadPrefsFH: Trying to open \"%s\"\n", filename));
-
-    fh=Open(filename, MODE_OLDFILE);
-
-    if(!fh) return FALSE;
-
-    ret=LoadPrefsFH(fh);
-
-    Close(fh);
-    return ret;
-}
 /*********************************************************************************************/
 
-BOOL SavePrefsFH(BPTR fh)
+BOOL Prefs_ExportFH(BPTR fh)
 {
-    static struct SerialPrefs 	saveprefs;
-    struct IFFHandle 	     	*iff;    
-    BOOL    	    	    	retval = FALSE, delete_if_error = FALSE;
-    
+    struct SerialPrefs  saveprefs;
+    struct IFFHandle   *iff;
+    BOOL                retval = FALSE;
+    BOOL                delete_if_error = FALSE;
+
     saveprefs = serialprefs;
-    
-    
+
     D(bug("SavePrefsFH: fh: %lx\n", fh));
-    //if ((iff->iff_Stream = (IPTR)Open(filename, MODE_NEWFILE)))
-    
+
     if ((iff = AllocIFF()))
     {
-	iff->iff_Stream = (IPTR) fh;
-	D(bug("SavePrefsFH: stream opened.\n"));
-	    
-	    delete_if_error = TRUE;
-	    
-	    InitIFFasDOS(iff);
-	    
-	    if (!OpenIFF(iff, IFFF_WRITE))
-	    {
-    	    	D(bug("SavePrefsFH: OpenIFF okay.\n"));
-		
-		if (!PushChunk(iff, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN))
-		{
-    	    	    D(bug("SavePrefsFH: PushChunk(FORM) okay.\n"));
-		    
-		    if (!PushChunk(iff, ID_PREF, ID_PRHD, sizeof(struct FilePrefHeader)))
-		    {
-		    	struct FilePrefHeader head;
+        iff->iff_Stream = (IPTR) fh;
+        D(bug("SavePrefsFH: stream opened.\n"));
 
-    	    	    	D(bug("SavePrefsFH: PushChunk(PRHD) okay.\n"));
-			
-			head.ph_Version  = PHV_CURRENT; 
-			head.ph_Type     = 0;
-			head.ph_Flags[0] =
-			head.ph_Flags[1] =
-			head.ph_Flags[2] =
-			head.ph_Flags[3] = 0;
-			
-			if (WriteChunkBytes(iff, &head, sizeof(head)) == sizeof(head))
-			{
-    	    	    	    D(bug("SavePrefsFH: WriteChunkBytes(PRHD) okay.\n"));
-			    
-			    PopChunk(iff);
-			    
-			    if (!PushChunk(iff, ID_PREF, ID_SERL, sizeof(struct SerialPrefs)))
-			    {
-    	    	    	    	D(bug("SavePrefsFH: PushChunk(LCLE) okay.\n"));
-				
-			    	if (WriteChunkBytes(iff, &saveprefs, sizeof(saveprefs)) == sizeof(saveprefs))
-				{
-   	    	    	    	    D(bug("SavePrefsFH: WriteChunkBytes(SERL) okay.\n"));
-  	    	    	    	    D(bug("SavePrefsFH: Everything okay :-)\n"));
-				    
-				    retval = TRUE;
-				}
-				
-    			    	PopChunk(iff);
+        delete_if_error = TRUE;
 
-			    } /* if (!PushChunk(iff, ID_PREF, ID_SERL, sizeof(struct LocalePrefs))) */
-			    			    
-			} /* if (WriteChunkBytes(iff, &head, sizeof(head)) == sizeof(head)) */
-			else
-		    	{
-			    PopChunk(iff);
-			}
-			
-		    } /* if (!PushChunk(iff, ID_PREF, ID_PRHD, sizeof(struct PrefHeader))) */
-		    
-		    PopChunk(iff);
-		    		    
-		} /* if (!PushChunk(iff, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN)) */
-		
-	    	CloseIFF(iff);
-				
-	    } /* if (!OpenIFF(iff, IFFFWRITE)) */
-	    
-	
-	FreeIFF(iff);
-	
+        InitIFFasDOS(iff);
+
+        if (!OpenIFF(iff, IFFF_WRITE))
+        {
+            D(bug("SavePrefsFH: OpenIFF okay.\n"));
+
+            if (!PushChunk(iff, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN))
+            {
+                D(bug("SavePrefsFH: PushChunk(FORM) okay.\n"));
+
+                if (!PushChunk(iff, ID_PREF, ID_PRHD, sizeof(struct FilePrefHeader)))
+                {
+                    struct FilePrefHeader head;
+
+                    D(bug("SavePrefsFH: PushChunk(PRHD) okay.\n"));
+
+                    head.ph_Version  = PHV_CURRENT;
+                    head.ph_Type     = 0;
+                    head.ph_Flags[0] =
+                    head.ph_Flags[1] =
+                    head.ph_Flags[2] =
+                    head.ph_Flags[3] = 0;
+
+                    if (WriteChunkBytes(iff, &head, sizeof(head)) == sizeof(head))
+                    {
+                        D(bug("SavePrefsFH: WriteChunkBytes(PRHD) okay.\n"));
+
+                        PopChunk(iff);
+
+                        if (!PushChunk(iff, ID_PREF, ID_SERL, sizeof(struct SerialPrefs)))
+                        {
+                            D(bug("SavePrefsFH: PushChunk(LCLE) okay.\n"));
+
+                            if (WriteChunkBytes(iff, &saveprefs, sizeof(saveprefs)) == sizeof(saveprefs))
+                            {
+                                D(bug("SavePrefsFH: WriteChunkBytes(SERL) okay.\n"));
+                                D(bug("SavePrefsFH: Everything okay :-)\n"));
+
+                                retval = TRUE;
+                            }
+                            PopChunk(iff);
+                        } /* if (!PushChunk(iff, ID_PREF, ID_SERL, sizeof(struct LocalePrefs))) */
+                    } /* if (WriteChunkBytes(iff, &head, sizeof(head)) == sizeof(head)) */
+                    else
+                    {
+                        PopChunk(iff);
+                    }
+                } /* if (!PushChunk(iff, ID_PREF, ID_PRHD, sizeof(struct PrefHeader))) */
+                PopChunk(iff);
+            } /* if (!PushChunk(iff, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN)) */
+            CloseIFF(iff);
+        } /* if (!OpenIFF(iff, IFFFWRITE)) */
+        FreeIFF(iff);
+
     } /* if ((iff = AllocIFF())) */
-    
+
     #if 0
     if (!retval && delete_if_error)
     {
-    	DeleteFile(filename);
+        DeleteFile(filename);
     }
     #endif
-	    
-    
-    return retval;    
+
+
+    return retval;
 }
 
-BOOL SavePrefs(CONST STRPTR filename) 
+/*********************************************************************************************/
+
+BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
 {
     BPTR fh;
-    BOOL ret;
 
-    D(bug("[serial prefs] SavePrefs: Trying to open \"%s\"\n", filename));
-
-    fh=Open(filename, MODE_NEWFILE);
-
-    if(fh == NULL) 
+    if (from)
     {
-      	D(bug("[serial prefs] open \"%s\" failed!\n", filename));
-       	return FALSE;
+        if (!Prefs_Load(from))
+        {
+            ShowMessage("Can't read from input file");
+            return FALSE;
+        }
+    }
+    else
+    {
+        if (!Prefs_Load(PREFS_PATH_ENV))
+        {
+            if (!Prefs_Load(PREFS_PATH_ENVARC))
+            {
+                ShowMessage
+                (
+                    "Can't read from file " PREFS_PATH_ENV
+                    ".\nUsing default values."
+                );
+                Prefs_Default();
+            }
+        }
     }
 
-    ret=SavePrefsFH(fh);
-
-    Close(fh);
-    return ret;
+    if (use || save)
+    {
+        fh = Open(PREFS_PATH_ENV, MODE_NEWFILE);
+        if (fh)
+        {
+            Prefs_ExportFH(fh);
+            Close(fh);
+        }
+        else
+        {
+            ShowMessage("Cant' open " PREFS_PATH_ENV " for writing.");
+        }
+    }
+    if (save)
+    {
+        fh = Open(PREFS_PATH_ENVARC, MODE_NEWFILE);
+        if (fh)
+        {
+            Prefs_ExportFH(fh);
+            Close(fh);
+        }
+        else
+        {
+            ShowMessage("Cant' open " PREFS_PATH_ENVARC " for writing.");
+        }
+    }
+    return TRUE;
 }
 
 /*********************************************************************************************/
 
-BOOL SaveEnv() {
-    BPTR fh;
-    BOOL result;
-
-    D(bug("[serial prefs] SaveEnv: Trying to open \"%s\"\n", CONFIGNAME_ENV));
-
-    fh=Open((CONST_STRPTR) CONFIGNAME_ENV, MODE_NEWFILE);
-
-    if(fh == NULL) 
-    {
-	D(bug("[serial prefs] open \"%s\" failed!\n", CONFIGNAME_ENV));
-	return FALSE;
-    }
-
-    result=SavePrefsFH(fh);
-
-    Close(fh);
-
-    return result;
-}
-
-/*********************************************************************************************/
-
-BOOL DefaultPrefs(void)
+BOOL Prefs_Default(VOID)
 {
     serialprefs.sp_Reserved[0]     = 0;
     serialprefs.sp_Reserved[1]     = 0;
