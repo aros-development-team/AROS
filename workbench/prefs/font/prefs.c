@@ -75,14 +75,15 @@ static VOID FontPrefs2FileFontPrefs(struct FontPrefs *fp, struct FileFontPrefs *
 
 static BOOL Prefs_Load(STRPTR from, struct FontPrefs fp[])
 {
+    BOOL retval = FALSE;
+
     BPTR fh = Open(from, MODE_OLDFILE);
     if (fh)
     {
-        Prefs_ImportFH(fh, fp);
+        retval = Prefs_ImportFH(fh, fp);
         Close(fh);
-        return TRUE;
     }
-    return FALSE;
+    return retval;
 }
 
 BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
@@ -94,7 +95,7 @@ BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
     {
         if (!Prefs_Load(from, fp))
         {
-            ShowError("Can't read from input file");
+            ShowMessage("Can't read from input file");
             return FALSE;
         }
     }
@@ -102,11 +103,11 @@ BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
     {
         if (!Prefs_Load(PREFS_PATH_ENV, fp))
         {
-            if (!Prefs_Load(PREFS_PATH_ENV, fp))
+            if (!Prefs_Load(PREFS_PATH_ENVARC, fp))
             {
-                ShowError
+                ShowMessage
                 (
-                    "Can't read from file " PREFS_PATH_ENV
+                    "Can't read from file " PREFS_PATH_ENVARC
                     ".\nUsing default values."
                 );
                 Prefs_Default(fp);
@@ -124,7 +125,7 @@ BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
         }
         else
         {
-            ShowError("Cant' open " PREFS_PATH_ENV " for writing.");
+            ShowMessage("Cant' open " PREFS_PATH_ENV " for writing.");
         }
     }
     if (save)
@@ -137,7 +138,7 @@ BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
         }
         else
         {
-            ShowError("Cant' open " PREFS_PATH_ENVARC " for writing.");
+            ShowMessage("Cant' open " PREFS_PATH_ENVARC " for writing.");
         }
     }
     return TRUE;
@@ -175,7 +176,7 @@ BOOL Prefs_ImportFH(BPTR fh, struct FontPrefs fp[])
 
     if (!(handle = AllocIFF()))
     {
-        ShowError(_(MSG_CANT_ALLOCATE_IFFPTR));
+        ShowMessage(_(MSG_CANT_ALLOCATE_IFFPTR));
         return(FALSE);
     }
 
@@ -228,7 +229,7 @@ BOOL Prefs_ImportFH(BPTR fh, struct FontPrefs fp[])
     }
     else
     {
-        ShowError(_(MSG_CANT_OPEN_STREAM));
+        ShowMessage(_(MSG_CANT_OPEN_STREAM));
     }
 
     FreeIFF(handle);
@@ -295,7 +296,7 @@ BOOL Prefs_ExportFH(BPTR fh, struct FontPrefs fp[])
         }
         else
         {
-            ShowError(_(MSG_CANT_OPEN_STREAM));
+            ShowMessage(_(MSG_CANT_OPEN_STREAM));
             success = FALSE;
         }
 
@@ -305,7 +306,7 @@ BOOL Prefs_ExportFH(BPTR fh, struct FontPrefs fp[])
     else // AllocIFF()
     {
         // Do something more here - if IFF allocation has failed, something isn't right
-        ShowError(_(MSG_CANT_ALLOCATE_IFFPTR));
+        ShowMessage(_(MSG_CANT_ALLOCATE_IFFPTR));
         success = FALSE;
     }
 

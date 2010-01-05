@@ -62,7 +62,7 @@ BOOL ReadArguments(int argc, char **argv)
                 }
                 else
                 {
-                    ShowError("Couldn't read DiskObject\n");
+                    ShowMessage("Couldn't read DiskObject\n");
                 }
             }
         }

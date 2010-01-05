@@ -4,9 +4,31 @@
 */
 
 #include <exec/types.h>
-#include <proto/dos.h>
 
-VOID ShowError(CONST_STRPTR message)
+#include <proto/dos.h>
+#include <proto/intuition.h>
+
+#include "locale.h"
+
+VOID ShowMessage(CONST_STRPTR msg)
 {
-    Printf("ERROR: %s\n", message);
+    struct EasyStruct es;
+
+    if (msg)
+    {
+        if (IntuitionBase)
+        {
+            es.es_StructSize   = sizeof(es);
+            es.es_Flags        = 0;
+            es.es_Title        = (CONST_STRPTR) "Serial";
+            es.es_TextFormat   = (CONST_STRPTR) msg;
+            es.es_GadgetFormat = _(MSG_OK);
+
+            EasyRequestArgs(NULL, &es, NULL, NULL); /* win=NULL -> wb screen */
+        }
+        else
+        {
+            Printf("Serial: %s\n", msg);
+        }
+    }
 }
