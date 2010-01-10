@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write defines/modulename.h. Part of genmodule.
@@ -31,15 +31,19 @@ void writeincdefines(struct config *cfg)
 	    "#ifndef DEFINES_%s_H\n"
 	    "#define DEFINES_%s_H\n"
 	    "\n"
-        "%s"
+	    "%s"
 	    "\n"
-        "/*\n"
+	    "/*\n"
 	    "    Desc: Defines for %s\n"
 	    "*/\n"
 	    "\n"
 	    "#include <aros/libcall.h>\n"
 	    "#include <exec/types.h>\n"
 	    "#include <aros/preprocessor/variadic/cast2iptr.hpp>\n"
+	    "\n"
+	    "#ifdef __cplusplus\n"
+	    "extern \"C\" {\n"
+	    "#endif /* __cplusplus */\n"
 	    "\n",
 	    cfg->modulenameupper, cfg->modulenameupper, banner, cfg->modulename
     );
@@ -67,6 +71,10 @@ void writeincdefines(struct config *cfg)
 	}
     }
     fprintf(out,
+	    "\n"
+	    "#ifdef __cplusplus\n"
+	    "}\n"
+	    "#endif /* __cplusplus */\n"
 	    "\n"
 	    "#endif /* DEFINES_%s_H*/\n",
 	    cfg->modulenameupper
