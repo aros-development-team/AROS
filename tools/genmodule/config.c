@@ -18,7 +18,7 @@
 const static char bannertemplate[] =
     "/*\n"
     "    *** Automatically generated from '%s'. Edits will be lost. ***\n"
-    "    Copyright © 1995-2009, The AROS Development Team. All rights reserved.\n"
+    "    Copyright © 1995-2010, The AROS Development Team. All rights reserved.\n"
     "*/\n";
 
 const char*

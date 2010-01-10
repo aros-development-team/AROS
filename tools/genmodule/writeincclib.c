@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write clib/modulename_protos.h. Part of genmodule.
@@ -29,9 +29,14 @@ void writeincclib(struct config *cfg)
 	    "#ifndef CLIB_%s_PROTOS_H\n"
 	    "#define CLIB_%s_PROTOS_H\n"
 	    "\n"
-        "%s"
+	    "%s"
 	    "\n"
-	    "#include <aros/libcall.h>\n",
+	    "#include <aros/libcall.h>\n"
+	    "\n"
+	    "#ifdef __cplusplus\n"
+	    "extern \"C\" {\n"
+	    "#endif /* __cplusplus */\n"
+	    "\n",
 	    cfg->modulenameupper, cfg->modulenameupper, banner
     );
     freeBanner(banner);
@@ -42,5 +47,12 @@ void writeincclib(struct config *cfg)
     if (cfg->command!=DUMMY)
 	writefuncprotos(out, cfg, cfg->funclist);
 
-    fprintf(out, "\n#endif /* CLIB_%s_PROTOS_H */\n", cfg->modulenameupper);
+    fprintf(out,
+	    "\n"
+	    "#ifdef __cplusplus\n"
+	    "}\n"
+	    "#endif /* __cplusplus */\n"
+	    "\n"
+	    "#endif /* CLIB_%s_PROTOS_H */\n",
+	    cfg->modulenameupper);
 }
