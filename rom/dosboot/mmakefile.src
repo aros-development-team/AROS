@@ -11,4 +11,4 @@ USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\""
 
 %build_module mmake=kernel-dosboot \
   modname=dosboot modtype=resource \
-  files=$(FILES)
+  files=$(FILES) uselibs="rom"

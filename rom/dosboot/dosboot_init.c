@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Start up the ol' Dos boot process.
@@ -42,8 +42,8 @@
 #define BNF_RETRY 0x8000 /* Private flag for the BootNode */
 #define BNF_MOUNTED 0x4000 /* Private flag for the BootNode */
 
-extern BOOL __dosboot_InitHidds(struct ExecBase *, struct DosLibrary *);
-extern void __dosboot_Boot(struct ExecBase *SysBase, BOOL hidds_ok);
+extern BOOL __dosboot_InitHidds(struct ExecBase *SysBase, struct DosLibrary *DosBase, APTR BootLoaderBase);
+extern void __dosboot_Boot(struct ExecBase *SysBase, BOOL hidds_ok, APTR BootLoaderBase);
 
 /** Support Functions **/
 /* Attempt to start a handler for the DeviceNode */
@@ -146,7 +146,6 @@ static BOOL __dosboot_Mount(struct DeviceNode *dn, struct DosLibrary * DOSBase)
 static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DOSBase)
 {
     BOOL            result = FALSE;
-    BPTR            lock, seglist;
     STRPTR          buffer;
     LONG            bufferLength;
 
@@ -154,8 +153,11 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
 
 #if defined(AROS_BOOT_CHECKSIG)
 #define AROSBOOTSIG_FILE ":AROS.boot"
+
+    BPTR lock;
     LONG readsize;
     struct FileInfoBlock abfile_fib;
+   
     bufferLength = strlen(deviceName) + sizeof(AROSBOOTSIG_FILE) + 1;
 
     if ((buffer = AllocMem(bufferLength, MEMF_ANY)) == NULL)
@@ -208,6 +210,8 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
 #else
 #define SHELL_FILE ":C/Shell"
 
+    BPTR seglist;
+    
     bufferLength = strlen(deviceName) + sizeof(SHELL_FILE) + 1;
 
     if ((buffer = AllocMem(bufferLength, MEMF_PUBLIC)) == NULL)
@@ -224,12 +228,11 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
     if ((seglist = LoadSeg(buffer)) == (BPTR)NULL)
     {
         D(bug("[DOSBoot] __dosboot_IsBootable: could not load '%s'\n", buffer));
+        goto cleanup;
     }
-    else
-    {
-        UnLoadSeg(seglist);
-        result = TRUE;
-    }
+
+    UnLoadSeg(seglist);
+    result = TRUE;
 #endif
 
 cleanup:
@@ -250,7 +253,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
 
     struct ExpansionBase        *ExpansionBase = NULL;
     struct DosLibrary           *DOSBase       = NULL;
-    LIBBASETYPEPTR              LIBBASE = FindTask(NULL)->tc_UserData;
+    LIBBASETYPEPTR              LIBBASE        = FindTask(NULL)->tc_UserData;
 
     struct BootNode             *bootNode      = NULL;
     struct Node                 *tmpNode       = NULL;
@@ -258,11 +261,12 @@ AROS_UFH3(void, __dosboot_BootProcess,
     LONG                        bootNameLength;
     BPTR                        lock;
     BOOL                        hidds_ok;
+    APTR                        BootLoaderBase = OpenResource("bootloader.resource");
 
     struct MsgPort *mp;         // Message port used with timer.device
     struct timerequest *tr = NULL;     // timer's time request message
 
-    D(bug("[DOSBoot] __dosboot_BootProcess()\n" ));
+    D(bug("[DOSBoot] __dosboot_BootProcess()\n"));
 
 #define deviceName (((struct DosList *) bootNode->bn_DeviceNode)->dol_Ext.dol_AROS.dol_DevName)
 
@@ -282,7 +286,6 @@ AROS_UFH3(void, __dosboot_BootProcess,
     if ((mp = CreateMsgPort()) != NULL)
     {
         if ((tr = (struct timerequest *)CreateIORequest(mp, sizeof(struct timerequest))) != NULL)
-
         {
             if ((OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0)) == 0)
                 #define ioStd(x) ((struct IOStdReq *)x)
@@ -308,9 +311,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
     ForeachNode(&ExpansionBase->MountList, bootNode)
     {
         D(bug("[DOSBoot] __dosboot_BootProcess: BootNode: %p, bn_DeviceNode: %p, Name '%s', Priority %4d\n",
-                bootNode, bootNode->bn_DeviceNode,
-                deviceName ? deviceName : "(null)",
-                bootNode->bn_Node.ln_Pri
+                bootNode, bootNode->bn_DeviceNode, deviceName, bootNode->bn_Node.ln_Pri
         ));
         /*
             Try to mount the filesystem. If it fails, mark the BootNode
@@ -319,19 +320,16 @@ AROS_UFH3(void, __dosboot_BootProcess,
             assigned.
         */
 
-        if (!(__dosboot_Mount( (struct DeviceNode *) bootNode->bn_DeviceNode ,
-                    (struct DosLibrary *) DOSBase)))
+        if (!(__dosboot_Mount( (struct DeviceNode *) bootNode->bn_DeviceNode, DOSBase)))
         {
             bootNode->bn_Flags |= BNF_RETRY;
-            D(bug("[DOSBoot] __dosboot_BootProcess: Marked '%s' as needing retry\n",
-                    deviceName ? deviceName : "(null)"));
+            D(bug("[DOSBoot] __dosboot_BootProcess: Marked '%s' as needing retry\n", deviceName));
         }
         else
         {
             bootNode->bn_Flags |= BNF_MOUNTED;
             bootNode->bn_Flags &= ~BNF_RETRY;
-            D(bug("[DOSBoot] __dosboot_BootProcess: Marked '%s' as useable\n",
-                    deviceName ? deviceName : "(null)"));
+            D(bug("[DOSBoot] __dosboot_BootProcess: Marked '%s' as useable\n", deviceName));
         }
     }
 
@@ -340,13 +338,13 @@ AROS_UFH3(void, __dosboot_BootProcess,
     {
         ForeachNode(&ExpansionBase->MountList, bootNode)
         {
-            D(bug("[DOSBoot] __dosboot_BootProcess: Trying '%s' ...\n", deviceName ? deviceName : "(null)"));
+            D(bug("[DOSBoot] __dosboot_BootProcess: Trying '%s' ...\n", deviceName));
             /*  Check if the mounted filesystem is bootable. If it's not,
                 it's probably some kind of transient error (ie. no disk
                 in drive or wrong disk) so we only move it to the end of
                 the list. */
             if ((!(bootNode->bn_Flags & BNF_RETRY)) && (bootNode->bn_Node.ln_Pri != -128) &&
-		__dosboot_IsBootable(deviceName, (struct DosLibrary *)DOSBase))
+		__dosboot_IsBootable(deviceName, DOSBase))
             {
                 LIBBASE->db_BootDevice = deviceName;
                 break;
@@ -383,17 +381,16 @@ AROS_UFH3(void, __dosboot_BootProcess,
             /* retry to mount stuff -- there might be some additional device in the meanwhile */
             ForeachNode(&ExpansionBase->MountList, bootNode)
             {
-                D(bug("[DOSBoot] __dosboot_BootProcess: Retrying to mount '%s' ...\n", deviceName ? deviceName : "(null)"));
+                D(bug("[DOSBoot] __dosboot_BootProcess: Retrying to mount '%s' ...\n", deviceName));
                 if(((bootNode->bn_Flags & BNF_RETRY) || (!(bootNode->bn_Flags & BNF_MOUNTED))) && (bootNode->bn_Node.ln_Pri != -128))
                 {
-                    if (!(__dosboot_Mount( (struct DeviceNode *) bootNode->bn_DeviceNode, (struct DosLibrary *) DOSBase)))
+                    if (!(__dosboot_Mount( (struct DeviceNode *) bootNode->bn_DeviceNode, DOSBase)))
                     {
                         bootNode->bn_Flags |= BNF_RETRY;
                     } else {
                         bootNode->bn_Flags |= BNF_MOUNTED;
                         bootNode->bn_Flags &= ~BNF_RETRY;
-                        D(bug("[DOSBoot] __dosboot_BootProcess: Late marked '%s' as useable\n",
-                              deviceName ? deviceName : "(null)"));
+                        D(bug("[DOSBoot] __dosboot_BootProcess: Late marked '%s' as useable\n", deviceName));
                     }
                 }
             }
@@ -490,8 +487,8 @@ AROS_UFH3(void, __dosboot_BootProcess,
         {
             if (bootNode->bn_Flags & BNF_RETRY)
             {
-                D(bug("[DOSBoot] __dosboot_BootProcess: Retrying node: %p, DevNode: %p, Name = %s\n", bootNode, bootNode->bn_DeviceNode, deviceName ? deviceName : "(null)" ));
-                if( !__dosboot_Mount((struct DeviceNode *)bootNode->bn_DeviceNode, (struct DosLibrary *)DOSBase))
+                D(bug("[DOSBoot] __dosboot_BootProcess: Retrying node: %p, DevNode: %p, Name = %s\n", bootNode, bootNode->bn_DeviceNode, deviceName));
+                if( !__dosboot_Mount((struct DeviceNode *)bootNode->bn_DeviceNode, DOSBase))
                 {
                     Forbid();
                     REMOVE( bootNode );
@@ -505,10 +502,10 @@ AROS_UFH3(void, __dosboot_BootProcess,
         CloseLibrary( (struct Library *) ExpansionBase );
 
         /* Initialize HIDDs */
-        hidds_ok = __dosboot_InitHidds(SysBase, (struct DosLibrary *)DOSBase);
+        hidds_ok = __dosboot_InitHidds(SysBase, DOSBase, BootLoaderBase);
 
         /* We now call the system dependant boot - should NEVER return! */
-        __dosboot_Boot(SysBase, hidds_ok);
+        __dosboot_Boot(SysBase, hidds_ok, BootLoaderBase);
     }
 
     //We Should NEVER reach here!
