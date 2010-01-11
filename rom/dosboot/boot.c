@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot your operating system.
@@ -9,6 +9,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include <aros/bootloader.h>
 #include <exec/types.h>
 #include <exec/alerts.h>
 #include <exec/libraries.h>
@@ -21,10 +22,11 @@
 #include <libraries/expansionbase.h>
 #include <utility/tagitem.h>
 
+#include <proto/bootloader.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-void __dosboot_Boot(struct ExecBase *SysBase, BOOL hidds_ok)
+void __dosboot_Boot(struct ExecBase *SysBase, BOOL hidds_ok, APTR BootLoaderBase)
 {
     LONG rc = RETURN_FAIL;
     BPTR cis = NULL;
@@ -66,7 +68,7 @@ void __dosboot_Boot(struct ExecBase *SysBase, BOOL hidds_ok)
         if ((ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0)) != NULL)
         {
             opensseq = !(ExpansionBase->Flags & EBF_DOSFLAG);
-            CloseLibrary(ExpansionBase);
+            CloseLibrary((struct Library*) ExpansionBase);
         }
 
         D(bug("[DOSBoot] __dosboot_Boot: Open Startup Sequence = %d\n", opensseq));
@@ -78,6 +80,37 @@ void __dosboot_Boot(struct ExecBase *SysBase, BOOL hidds_ok)
         }
         else
         {
+            /* If poseidon is enabled, ensure that ENV: exists to avoid missing volume requester.
+             * You could think we should check for this in bootmenu.resource because there we
+             * select to boot without startup sequence but there might be other places to do this
+             * selection in the future.
+             */
+            
+            if (BootLoaderBase)
+            {
+                /* TODO: create something like ExistsBootArg("enableusb") in bootloader.resource */
+                struct List *list = GetBootInfo(BL_Args);
+                BOOL enable = FALSE;
+                if (list)
+                {
+                    struct Node *node;
+                    ForeachNode(list, node)
+                    {
+                        if (stricmp(node->ln_Name, "enableusb") == 0)
+                        {
+                            enable = TRUE;
+                        }
+                    }
+                }
+                
+                if (enable)
+                {
+                    BPTR lock = CreateDir("RAM:ENV");
+                    if (lock)
+                        AssignLock("ENV", lock);
+                }
+            }
+
             tags[5].ti_Tag = TAG_IGNORE;
         }
 

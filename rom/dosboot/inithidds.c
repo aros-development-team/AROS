@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2008, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code that loads and initializes necessary HIDDs.
@@ -59,7 +59,7 @@ static BOOL __dosboot_InitDevice( STRPTR hiddclassname, STRPTR devicename,  stru
 #define isspace(c) \
 	(c == '\t' || c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\v')
 
-BOOL __dosboot_InitHidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
+BOOL __dosboot_InitHidds(struct ExecBase *sysBase, struct DosLibrary *dosBase, APTR BootLoaderBase)
 {
     /* This is the initialisation code for InitHIDDs module */
     struct initbase stack_b, *base = &stack_b;
@@ -68,7 +68,6 @@ BOOL __dosboot_InitHidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
     UBYTE gfxname[BUFSIZE], kbdname[BUFSIZE], mousename[BUFSIZE];
     BOOL def_gfx = TRUE, def_kbd = TRUE, def_mouse = TRUE;
     struct BootMenuBase *BootMenuBase;
-    APTR BootLoaderBase;
 
     base->sysbase = sysBase;
     base->dosbase = dosBase;
@@ -110,8 +109,8 @@ BOOL __dosboot_InitHidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 	fh = Open(HIDDPREFSFILE, FMF_READ);
 	if (fh)
 	{    
-	   D(bug("[DOS] __dosboot_InitHidds: hiddprefs file opened\n"));
-	    while (FGets(fh, buf, BUFSIZE))
+            D(bug("[DOS] __dosboot_InitHidds: hiddprefs file opened\n"));
+            while (FGets(fh, buf, BUFSIZE))
 	    {
 	        STRPTR keyword = buf, arg, end;
 		STRPTR s;
@@ -130,7 +129,7 @@ BOOL __dosboot_InitHidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 
 		D(bug("[DOS] __dosboot_InitHidds: Got line: %s\n", buf));
 
-		  /* Get keyword */
+		/* Get keyword */
 		while ((*keyword != 0) && isspace(*keyword))
 		    keyword ++;
 
@@ -193,7 +192,6 @@ BOOL __dosboot_InitHidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 	    Close(fh);
 	}
 
-	BootLoaderBase = OpenResource("bootloader.resource");
 	if (BootLoaderBase)
 	{
 	    struct List *list;
