@@ -106,7 +106,7 @@ static void trampoline(IPTR (*func)(), IPTR *ret, IPTR *args)
     
     ucx.uc_link = &ucx_return;
 
-    makecontext(&ucx, (void (*)()) trampoline, 3, func, &ret, args->Args);
+    makecontext(&ucx, (void (*)()) trampoline, 3, entry, &ret, args->Args);
     
     /*
        we enable again in trampoline, after we have swapped
