@@ -91,6 +91,11 @@ struct StackSwapStruct
     APTR  stk_Pointer; /* Stack pointer at switch point */
 };
 
+struct StackSwapArgs
+{
+    IPTR Args[8];          /* The C function arguments */
+};
+
 /* tc_Flags Bits */
 #define TB_PROCTIME	0
 #define TB_ETASK	3

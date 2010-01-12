@@ -4,7 +4,8 @@ include $(TOP)/config/make.cfg
 USER_AFLAGS := -I$(GENINCDIR)
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
-  asmfiles=execstubs \
+  asmfiles="execstubs stackswap" \
+  files=newstackswap \
   arch=i386
 
 #MM kernel-exec-i386 : includes-asm_h-i386
