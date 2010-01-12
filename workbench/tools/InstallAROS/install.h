@@ -127,7 +127,6 @@ static const char KMsgPartitioningFailed[] =
 "Partitioning of disk failed. InstallAROS\n"
 "will now quit.";
 
-#if GRUB == 1
 static const char KMsgGRUBNonFFSWarning[] =
 "You have selected a filesystem different\n"
 "than FFS-Intl for the DH0 partition. Since\n"
@@ -135,7 +134,6 @@ static const char KMsgGRUBNonFFSWarning[] =
 "GRUB bootloader, you will not be able to\n"
 "boot the system after installation\n\n"
 "Should the partitioning continue?\n";
-#endif
 
 /* Unused strings. Kept for reference */
 
@@ -356,4 +354,14 @@ struct Install_DATA
     BOOL                        instc_cflag_driveset;
 	BOOL						instc_copt_undoenabled;
 	BOOL						instc_copt_licensemandatory;
+};
+
+#define GRUB1 1
+#define GRUB2 2
+/* TODO: add more bootloaders */
+
+struct BootloaderData
+{
+    UBYTE type;
+    STRPTR file;
 };
