@@ -132,8 +132,8 @@ enum BootLoaderTypes {
 
 /* Files to check for. Must be in the same order as enum values before */
 STRPTR BootLoaderFiles[] = {
-    "boot/grub/stage2",
-    "boot/grub/grub.img",
+    "boot/grub/stage1",
+    "boot/grub/core.img",
     NULL
 };
 
