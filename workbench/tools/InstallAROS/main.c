@@ -38,10 +38,6 @@
 
 #include <mui/TextEditor_mcc.h>
 
-#ifndef GRUB
-#define GRUB 2
-#endif
-
 #include "install.h"
 
 
@@ -78,21 +74,21 @@
 #define POST_INSTALL_SCRIPT     "PROGDIR:InstallAROS-Post-Install"
 #define AROS_BOOT_FILE          "AROS.boot"
 
-#define GRUB_COPY_FILE_LOOP                                                     \
+#define GRUB_COPY_FILE_LOOP(files)                                              \
 SET(data->gauge2, MUIA_Gauge_Current, 0);                                       \
                                                                                 \
-while (grub_files[file_count] != NULL && data->inst_success == MUIV_Inst_InProgress)    \
+while (files[file_count] != NULL && data->inst_success == MUIV_Inst_InProgress) \
 {                                                                               \
-    ULONG newSrcLen = strlen(srcPath) + strlen(grub_files[file_count]) + 2;     \
-    ULONG newDstLen = strlen(dstPath) + strlen(grub_files[file_count + 1]) + 2; \
+    ULONG newSrcLen = strlen(srcPath) + strlen(files[file_count]) + 2;		\
+    ULONG newDstLen = strlen(dstPath) + strlen(files[file_count + 1]) + 2;	\
                                                                                 \
     TEXT srcFile[newSrcLen];                                                    \
     TEXT dstFile[newDstLen];                                                    \
                                                                                 \
     sprintf(srcFile, "%s", srcPath);                                            \
     sprintf(dstFile, "%s", dstPath);                                            \
-    AddPart(srcFile, grub_files[file_count], newSrcLen);                        \
-    AddPart(dstFile, grub_files[file_count + 1], newDstLen);                    \
+    AddPart(srcFile, files[file_count], newSrcLen);                     	\
+    AddPart(dstFile, files[file_count + 1], newDstLen);                 	\
                                                                                 \
     DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);                         \
                                                                                 \
@@ -126,6 +122,22 @@ while (grub_files[file_count] != NULL && data->inst_success == MUIV_Inst_InProgr
 #define INSTV_CURR              	101100
 
 /** End - NEW!! this is part of the "class" change ;) **/
+
+
+enum BootLoaderTypes {
+    BOOTLOADER_NONE = -1,
+    BOOTLOADER_GRUB1,
+    BOOTLOADER_GRUB2
+};
+
+/* Files to check for. Must be in the same order as enum values before */
+STRPTR BootLoaderFiles[] = {
+    "boot/grub/stage2",
+    "boot/grub/grub.img",
+    NULL
+};
+
+#define BOOTLOADER_PATH_LEN 20 /* Length of the largest string in BootLoaders array plus 2 */
 
 struct	ExpansionBase		*ExpansionBase = NULL;
 
@@ -167,6 +179,7 @@ Object* 			grub_device = NULL;
 Object* 			grub_unit = NULL;
 
 Object *reboot_group = NULL;
+LONG BootLoaderType;
 
 ULONG GuessFirstHD(CONST_STRPTR device);
 static struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path);
@@ -820,16 +833,14 @@ IPTR Install__MUIM_IC_NextStep
                 return 0;
             }
 
-#if GRUB == 1
             /* Warn user about partitiong DH0: to non FFS-Intl filesystem
                on GRUB */
-            if ((int)systype != 0)
+            if ((BootLoaderType == BOOTLOADER_GRUB1) && (systype != 0))
             {
                 if(MUI_RequestA(data->installer, data->window, 0, "Warning", 
                     "Continue Partitioning|*Cancel Partitioning", KMsgGRUBNonFFSWarning, NULL) != 1)
                     return 0;
             }
-#endif
         }
 		data->disable_back = TRUE;
 
@@ -1952,155 +1963,137 @@ localecopydone:
 	GET(data->instc_options_main->opt_bootloader, MUIA_Selected, &option);
 	if (option && (data->inst_success == MUIV_Inst_InProgress))
 	{
-		int numgrubfiles = 0,file_count = 0;
-		LONG part_no;
-		ULONG srcLen = strlen(source_Path) + strlen(BOOT_PATH) + strlen(GRUB_PATH) + 4;
-		ULONG dstLen = strlen(dest_Path)+ strlen(BOOT_PATH) + strlen(GRUB_PATH) + 4;
-		TEXT srcPath[srcLen];
-		TEXT dstPath[dstLen];
+	    int numgrubfiles = 0,file_count = 0;
+	    LONG part_no;
+	    ULONG srcLen = strlen(source_Path) + strlen(BOOT_PATH) + strlen(GRUB_PATH) + 4;
+	    ULONG dstLen = strlen(dest_Path)+ strlen(BOOT_PATH) + strlen(GRUB_PATH) + 4;
+	    TEXT srcPath[srcLen];
+	    TEXT dstPath[dstLen];
+	    TEXT tmp[256];
 
-		/* Copy kernel files */
-        sprintf(srcPath, "%s", source_Path);
-		sprintf(dstPath, "%s:", dest_Path);
-		AddPart(srcPath, BOOT_PATH, srcLen);
-		AddPart(dstPath, BOOT_PATH, dstLen);
-        DoMethod(self, MUIM_IC_CopyFiles, srcPath, dstPath, "#?", FALSE);
+	    /* Copy kernel files */
+            sprintf(srcPath, "%s", source_Path);
+	    sprintf(dstPath, "%s:", dest_Path);
+	    AddPart(srcPath, BOOT_PATH, srcLen);
+	    AddPart(dstPath, BOOT_PATH, dstLen);
+            DoMethod(self, MUIM_IC_CopyFiles, srcPath, dstPath, "#?", FALSE);
 
-		/* Installing GRUB */
-		D(bug("[INSTALLER] Installing Grub...\n"));
-		SET(data->label, MUIA_Text_Contents, "Installing Grub...");
-		SET(data->pageheader, MUIA_Text_Contents, KMsgBootLoader);
-		SET(data->label, MUIA_Text_Contents, "Copying BOOT files...");
+	    /* Installing GRUB */
+	    D(bug("[INSTALLER] Installing Grub...\n"));
+	    SET(data->label, MUIA_Text_Contents, "Installing Grub...");
+	    SET(data->pageheader, MUIA_Text_Contents, KMsgBootLoader);
+	    SET(data->label, MUIA_Text_Contents, "Copying BOOT files...");
 
-		AddPart(srcPath, GRUB_PATH, srcLen);
-		AddPart(dstPath, GRUB_PATH, dstLen);
-        /* Warning: do not modify srcPath or dstPath beyond this point */
+	    AddPart(srcPath, GRUB_PATH, srcLen);
+	    AddPart(dstPath, GRUB_PATH, dstLen);
+            /* Warning: do not modify srcPath or dstPath beyond this point */
 
-		/* Get drive chosen to install GRUB bootblock to */
-		GET(grub_device, MUIA_String_Contents, &option);
-		strcpy(boot_Device, (STRPTR)option);
-		boot_Unit = XGET(grub_unit, MUIA_String_Integer);
+	    /* Get drive chosen to install GRUB bootblock to */
+	    GET(grub_device, MUIA_String_Contents, &option);
+	    strcpy(boot_Device, (STRPTR)option);
+	    boot_Unit = XGET(grub_unit, MUIA_String_Integer);
 
-#if GRUB == 2
-        DoMethod(self, MUIM_IC_CopyFiles, srcPath, dstPath, "#?.mod", FALSE);
+	    switch (BootLoaderType) {
+	    case BOOTLOADER_GRUB2:
 
-        TEXT *grub_files[] =
-        {
-            "boot.img",       "boot.img",
-            "core.img",       "core.img",
-            "grub.cfg",       "grub.cfg",
-            "splash.png",     "splash.png",
-            "_unicode.pf2",   "_unicode.pf2",
-            "command.lst",    "command.lst",
-            "fs.lst",         "fs.lst",
-            "moddep.lst",         "moddep.lst",
-			NULL
-        };
-        numgrubfiles = (sizeof(grub_files) / sizeof(TEXT *) - 1) / 2;
-while(numgrubfiles != 8);
+                DoMethod(self, MUIM_IC_CopyFiles, srcPath, dstPath, "#?.mod", FALSE);
 
-        GRUB_COPY_FILE_LOOP
+                TEXT *grub2_files[] = {
+                    "boot.img",       "boot.img",
+                    "core.img",       "core.img",
+                    "grub.cfg",       "grub.cfg",
+                    "splash.png",     "splash.png",
+                    "_unicode.pf2",   "_unicode.pf2",
+                    "command.lst",    "command.lst",
+                    "fs.lst",         "fs.lst",
+                    "moddep.lst",     "moddep.lst",
+		    NULL
+                };
+                numgrubfiles = (sizeof(grub2_files) / sizeof(TEXT *) - 1) / 2;
 
-        /* Grub 2 text/gfx mode */
-        GET(data->instc_options_grub->gopt_grub2mode, MUIA_Cycle_Active, &option);
-	    if ((int)option == 1)
-        {
-            /* gfx mode - copy _unicode.pf2 -> unicode.pf2 */
-            ULONG newDstLen = strlen(dstPath) + strlen("_unicode.pf2") + 2;
-            TEXT srcFile[newDstLen];
-            TEXT dstFile[newDstLen];
+                GRUB_COPY_FILE_LOOP(grub2_files);
+
+                /* Grub 2 text/gfx mode */
+                GET(data->instc_options_grub->gopt_grub2mode, MUIA_Cycle_Active, &option);
+	        if (option == 1) {
+                    /* gfx mode - copy _unicode.pf2 -> unicode.pf2 */
+                    ULONG newDstLen = strlen(dstPath) + strlen("_unicode.pf2") + 2;
+                    TEXT srcFile[newDstLen];
+                    TEXT dstFile[newDstLen];
             
-            sprintf(srcFile, "%s", dstPath);
-            sprintf(dstFile, "%s", dstPath);
-            AddPart(srcFile, "_unicode.pf2", newDstLen);
-            AddPart(dstFile, "unicode.pf2", newDstLen);
+                    sprintf(srcFile, "%s", dstPath);
+                    sprintf(dstFile, "%s", dstPath);
+                    AddPart(srcFile, "_unicode.pf2", newDstLen);
+                    AddPart(dstFile, "unicode.pf2", newDstLen);
             
-            DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
-        }
-        else
-        {
-            /* other - delete unicode.pf2 */
-            ULONG newDstLen = strlen(dstPath) + strlen("unicode.pf2") + 2;
-            TEXT dstFile[newDstLen];
+                    DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
+                } else {
+                    /* other - delete unicode.pf2 */
+                    ULONG newDstLen = strlen(dstPath) + strlen("unicode.pf2") + 2;
+                    TEXT dstFile[newDstLen];
             
-            sprintf(dstFile, "%s", dstPath);
-            AddPart(dstFile, "unicode.pf2", newDstLen);
+                    sprintf(dstFile, "%s", dstPath);
+                    AddPart(dstFile, "unicode.pf2", newDstLen);
             
-            DeleteFile(dstFile);
-        }
+                    DeleteFile(dstFile);
+                }
 
-        TEXT tmp[256];
+	        /* Add entry to boot MS Windows if present */
+	        if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1) {
+		    sprintf(tmp, "%s", dstPath);
+                    AddPart(tmp, "grub.cfg", 256);
 
-		/* Add entry to boot MS Windows if present */
-		if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1)
-		{
-			sprintf(tmp, "%s", dstPath);
-            AddPart(tmp, "grub.cfg", 256);
-			BPTR menu_file = Open(tmp, MODE_READWRITE);
-			if (menu_file != NULL)
-			{
-				Seek(menu_file, 0, OFFSET_END);
-				FPrintf(menu_file,
-					"\nmenuentry \"Microsoft Windows\" {\n    chainloader (hd%ld,%ld)+1\n}\n\n",
-					0, part_no + 1); /* GRUB2 counts partitions from 1 */
-				Close(menu_file);
-			}
-			D(bug("[INSTALLER] Windows partition found."
-				" Adding Windows option to GRUB2 menu.\n"));
-		}
+		    BPTR menu_file = Open(tmp, MODE_READWRITE);
 
-		sprintf(tmp,
-			"C:Install-grub2-i386-pc DEVICE \"%s\" UNIT %d "
-			"GRUB \"%s\"",
-			boot_Device, boot_Unit, dstPath);
+		    if (menu_file != NULL) {
+		        Seek(menu_file, 0, OFFSET_END);
+		        FPrintf(menu_file, "\nmenuentry \"Microsoft Windows\" {\n    chainloader (hd%ld,%ld)+1\n}\n\n", 0, part_no + 1); /* GRUB2 counts partitions from 1 */
+		        Close(menu_file);
+		    }
+		    D(bug("[INSTALLER] Windows partition found. Adding Windows option to GRUB2 menu.\n"));
+	        }
 
-#elif GRUB == 1
-        CreateDir(dstPath);
+	        sprintf(tmp, "C:Install-grub2-i386-pc DEVICE \"%s\" UNIT %d GRUB \"%s\"", boot_Device, boot_Unit, dstPath);
 
-        numgrubfiles = 3;
-		TEXT *grub_files[] =
-		{
-			"stage1",		"stage1",
-			"stage2_hdisk",	"stage2",
-			"menu.lst.DH0",	"menu.lst",
-            NULL
-        };
+		break;
+	    case BOOTLOADER_GRUB1:
 
-        GRUB_COPY_FILE_LOOP
+                CreateDir(dstPath);
 
-        TEXT tmp[256];
+                numgrubfiles = 3;
 
-		/* Add entry to boot MS Windows if present */
-		if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1)
-		{
-			sprintf(tmp, "%s", dstPath);
-            AddPart(tmp, "menu.lst", 256);
-			BPTR menu_file = Open(tmp, MODE_READWRITE);
-			if (menu_file != NULL)
-			{
-				Seek(menu_file, 0, OFFSET_END);
-				FPrintf(menu_file,
-					"\ntitle Microsoft Windows\nrootnoverify (hd%ld,%ld)\nchainloader +1\n",
-					0, part_no);
-				Close(menu_file);
-			}
-			D(bug("[INSTALLER] Windows partition found."
-				" Adding Windows option to GRUB menu.\n"));
-			Execute(tmp, NULL, NULL);
-		}
+	        TEXT *grub_files[] = {
+		    "stage1",		"stage1",
+		    "stage2_hdisk",	"stage2",
+		    "menu.lst.DH0",	"menu.lst",
+                    NULL
+                };
 
-		sprintf(tmp,
-			"C:install-i386-pc DEVICE \"%s\" UNIT %d "
-			"GRUB \"%s\" FORCELBA",
-			boot_Device, boot_Unit, dstPath);
+                GRUB_COPY_FILE_LOOP(grub_files);
 
-#else
-#error bootloader not supported
-#endif
+	        /* Add entry to boot MS Windows if present */
+	        if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1) {
+		    sprintf(tmp, "%s", dstPath);
+                    AddPart(tmp, "menu.lst", 256);
 
-		D(bug("[INSTALLER] execute: %s\n", tmp));
-		Execute(tmp, NULL, NULL);
-		SET(data->gauge2, MUIA_Gauge_Current, 100);
+		    BPTR menu_file = Open(tmp, MODE_READWRITE);
+		    if (menu_file != NULL) {
+		        Seek(menu_file, 0, OFFSET_END);
+		        FPrintf(menu_file, "\ntitle Microsoft Windows\nrootnoverify (hd%ld,%ld)\nchainloader +1\n",	0, part_no);
+		        Close(menu_file);
+		    }
+		    D(bug("[INSTALLER] Windows partition found. Adding Windows option to GRUB menu.\n"));
+	        }
+
+	        sprintf(tmp, "C:install-i386-pc DEVICE \"%s\" UNIT %d GRUB \"%s\" FORCELBA", boot_Device, boot_Unit, dstPath);
+
+		break;
+		/* TODO: support more bootloaders */
+	    }
+
+	    D(bug("[INSTALLER] execute: %s\n", tmp));
+	    Execute(tmp, NULL, NULL);
+	    SET(data->gauge2, MUIA_Gauge_Current, 100);
 	}
 
 	SET(data->proceed, MUIA_Disabled, FALSE);
@@ -2805,20 +2798,29 @@ BOOPSI_DISPATCHER(IPTR, Install_Dispatcher, CLASS, self, message)
 }
 BOOPSI_DISPATCHER_END
 
-/***********
+/***********/
 
+void FindBootLoader(void)
+{
+    ULONG newSrcLen = strlen(source_Path) + BOOTLOADER_PATH_LEN;
+    TEXT srcFile[newSrcLen];
+    LONG i;
+    BPTR lock;
+    
+    for (i = 0; BootLoaderFiles[i]; i++) {
+        strcpy(srcFile, source_Path);
+        AddPart(srcFile, BootLoaderFiles[i], newSrcLen);
+	lock = Lock(srcFile, ACCESS_READ);
+	if (lock) {
+	    UnLock(lock);
+	    BootLoaderType = i;
+	    return;
+	}
+    }
+    BootLoaderType = BOOTLOADER_NONE;
+}
 
-
-
-
-
-
-
-
-
-
-
-***********/
+/***********/
 
 
 int main(int argc,char *argv[])
@@ -2855,7 +2857,7 @@ int main(int argc,char *argv[])
 	Object* check_core = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,TRUE , End;
 	Object* check_dev = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,FALSE , End;
 	Object* check_extras = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,TRUE , End;
-	Object* check_bootloader = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,TRUE , End;
+	Object* check_bootloader;
 
 	Object* check_reboot = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, End;
 
@@ -2907,11 +2909,6 @@ int main(int argc,char *argv[])
 		NULL
 	};
 
-#if GRUB == 2
-    cycle_fstypesys = CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, FALSE, MUIA_Cycle_Active, 1, End;
-#else
-    cycle_fstypesys = CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, FALSE, MUIA_Cycle_Active, 0, End;
-#endif
     cycle_fstypework = CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, TRUE, MUIA_Cycle_Active, 1, End;
 
 	static char *opt_sizeunits[] =
@@ -2966,6 +2963,12 @@ int main(int argc,char *argv[])
 
 	work_Path = work_path;
 	sprintf(work_Path,"" kDstWorkVol);
+	
+	FindBootLoader();
+	cycle_fstypesys = CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, FALSE, MUIA_Cycle_Active, BootLoaderType == BOOTLOADER_GRUB1 ? 0 : 1, End;
+	check_bootloader = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE,
+						MUIA_Selected, BootLoaderType == BOOTLOADER_NONE ? FALSE : TRUE, MUIA_Disabled, BootLoaderType == BOOTLOADER_NONE ? TRUE : FALSE, End;
+	
 /**/
 
 	lock = Lock(DEF_INSTALL_IMAGE, ACCESS_READ);
@@ -3050,6 +3053,7 @@ int main(int argc,char *argv[])
 												StringObject,
 												MUIA_String_Contents, (IPTR) boot_Device,
 												MUIA_String_Reject, " \"\'*",
+												MUIA_Frame, MUIV_Frame_String,
 												MUIA_HorizWeight, 200,
 												End),
 											Child, (IPTR) HVSpace,
@@ -3058,6 +3062,7 @@ int main(int argc,char *argv[])
 												StringObject,
 												MUIA_String_Integer, 0,
 												MUIA_String_Accept, "0123456789",
+												MUIA_Frame, MUIV_Frame_String,
 												MUIA_HorizWeight, 20,
 												End),
 										End,
@@ -3081,7 +3086,9 @@ int main(int argc,char *argv[])
 											Child, (IPTR) (sys_size = StringObject,
 												MUIA_String_Accept, "0123456789",
 												MUIA_String_Integer, 0,
-												MUIA_Disabled, TRUE, End),
+												MUIA_Disabled, TRUE,
+												MUIA_Frame, MUIV_Frame_String,
+											End),
 											Child, (IPTR) cycle_sysunits,
 											Child, (IPTR) check_sizesys,
 											Child, (IPTR) LLabel("Specify Size"),
@@ -3100,7 +3107,9 @@ int main(int argc,char *argv[])
 											Child, (IPTR) (work_size = StringObject,
 												MUIA_String_Accept, "0123456789",
 												MUIA_String_Integer, 0,
-												MUIA_Disabled, TRUE, End),
+												MUIA_Disabled, TRUE,
+												MUIA_Frame, MUIV_Frame_String,
+											End),
 											Child, (IPTR) cycle_workunits,
 											Child, (IPTR) check_sizework,
 											Child, (IPTR) LLabel("Specify Size"),
@@ -3145,6 +3154,7 @@ int main(int argc,char *argv[])
 										Child, (IPTR) HVSpace,
 										Child, (IPTR) (dest_volume = StringObject,
 											MUIA_String_Contents, (IPTR) dest_Path,
+											MUIA_Frame, MUIV_Frame_String,
 											End),
 										Child, (IPTR) HVSpace,
 										Child, (IPTR) ColGroup(2),
@@ -3171,6 +3181,7 @@ int main(int argc,char *argv[])
 											MUIA_String_Contents,
 											(IPTR) work_Path,
 											MUIA_Disabled, TRUE,
+											MUIA_Frame, MUIV_Frame_String,
 											End),
 										Child, (IPTR) HVSpace,
 									End,
@@ -3191,6 +3202,7 @@ int main(int argc,char *argv[])
 											Child, (IPTR) (grub_device =
 												StringObject,
 												MUIA_String_Reject, " \"\'*",
+												MUIA_Frame, MUIV_Frame_String,
 												MUIA_HorizWeight, 200,
 												End),
 											Child, (IPTR) HVSpace,
@@ -3199,6 +3211,7 @@ int main(int argc,char *argv[])
 												StringObject,
 												MUIA_String_Integer, 0,
 												MUIA_String_Accept, "0123456789",
+												MUIA_Frame, MUIV_Frame_String,
 												MUIA_HorizWeight, 20,
 												End),
 										End,
