@@ -64,46 +64,44 @@ OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	struct gdimouse_data *data = OOP_INST_DATA(cl, o);
 	struct TagItem       *tag, *tstate;
 	
-	data->buttons = 0;
-	data->interrupt = KrnAddIRQHandler(3, MouseIntHandler, data, NULL);
-	D(bug("[GDIMouse] Mouse interrupt object: 0x%p\n", data->interrupt));
-    	if (!data->interrupt) {
-    	    OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-	    
-    	    OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
-            return NULL;
-        }
-	tstate = msg->attrList;
-	while ((tag = NextTagItem((const struct TagItem **)&tstate)))
-	{
-	    ULONG idx;
-	    
-	    if (IS_HIDDMOUSE_ATTR(tag->ti_Tag, idx))
-	    {
-	    	switch (idx)
+	MOUSEDATA->irq = KrnAllocIRQ();
+	if (MOUSEDATA->irq != -1) {
+	    data->buttons = 0;
+	    data->interrupt = KrnAddIRQHandler(3, MouseIntHandler, data, NULL);
+	    D(bug("[GDIMouse] Mouse interrupt object: 0x%p\n", data->interrupt));
+    	    if (data->interrupt) {
+		tstate = msg->attrList;
+		while ((tag = NextTagItem((const struct TagItem **)&tstate)))
 		{
-		    case aoHidd_Mouse_IrqHandler:
-		        D(bug("[GDIMouse] Callback address 0x%p\n", tag->ti_Data));
-		    	data->mouse_callback = (VOID (*)())tag->ti_Data;
-			break;
-			
-		    case aoHidd_Mouse_IrqHandlerData:
-		        D(bug("[GDIMouse] Callback data 0x%p\n", tag->ti_Data));
-		    	data->callbackdata = (APTR)tag->ti_Data;
-			break;
-		}
-	    }
+		    ULONG idx;
 	    
-	} /* while (tags to process) */
+		    if (IS_HIDDMOUSE_ATTR(tag->ti_Tag, idx)) {
+			switch (idx) {
+			case aoHidd_Mouse_IrqHandler:
+		            D(bug("[GDIMouse] Callback address 0x%p\n", tag->ti_Data));
+		    	    data->mouse_callback = (VOID (*)())tag->ti_Data;
+			    break;
+			case aoHidd_Mouse_IrqHandlerData:
+		            D(bug("[GDIMouse] Callback data 0x%p\n", tag->ti_Data));
+		    	    data->callbackdata = (APTR)tag->ti_Data;
+			    break;
+			}
+		    }
+		} /* while (tags to process) */
 	
-	/* Install the mouse hidd */
+		/* Install the mouse hidd */
 	
-	ObtainSemaphore( &XSD(cl)->sema);
-	XSD(cl)->mousehidd = o;
-	ReleaseSemaphore( &XSD(cl)->sema);
-	
+		ObtainSemaphore( &XSD(cl)->sema);
+		XSD(cl)->mousehidd = o;
+		ReleaseSemaphore( &XSD(cl)->sema);
+		return o;
+	    }
+	    KrnFreeIRQ(MOUSEDATA->irq);
+	}
+    	OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+    	OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
+        return NULL;
     }
-    
     return o;
 }
 

@@ -17,25 +17,23 @@ AROS_LH4(void *, KrnAddIRQHandler,
 {
     AROS_LIBFUNC_INIT
 
-    struct IntrNode *handle = NULL;
+    struct IntrNode *handle;
+
     D(bug("[KRN] KrnAddIRQHandler(%02x, %012p, %012p, %012p):\n", irq, handler, handlerData, handlerData2));
-    if (irq < INTERRUPTS_NUM)
-    {
-        handle = AllocMem(sizeof(struct IntrNode), MEMF_PUBLIC);
-        D(bug("[KRN]   handle=%012p\n", handle));
+    handle = AllocMem(sizeof(struct IntrNode), MEMF_PUBLIC);
+    D(bug("[KRN]   handle=%012p\n", handle));
         
-        if (handle)
-        {
-            handle->in_Handler = handler;
-            handle->in_HandlerData = handlerData;
-            handle->in_HandlerData2 = handlerData2;
-            handle->in_type = it_interrupt;
-            handle->in_nr = irq;
+    if (handle)
+    {
+        handle->in_Handler = handler;
+        handle->in_HandlerData = handlerData;
+        handle->in_HandlerData2 = handlerData2;
+        handle->in_type = it_interrupt;
+        handle->in_nr = irq;
             
-            Disable();
-            ADDHEAD(&KernelBase->kb_Interrupts[irq], &handle->in_Node);
-            Enable();
-        }
+        Disable();
+        ADDHEAD(&KernelBase->kb_Interrupts, &handle->in_Node);
+        Enable();
     }
     return handle;
 
@@ -138,6 +136,34 @@ AROS_LH0I(int, KrnIsSuper,
     AROS_LIBFUNC_INIT
     
     return KernelIFace.core_is_super() ? 1 : 0;
+    
+    AROS_LIBFUNC_EXIT
+}
+
+
+AROS_LH0I(LONG, KrnAllocIRQ,
+	  struct KernelBase *, KernelBase, 23, Kernel)
+{
+    AROS_LIBFUNC_INIT
+    LONG res;
+    
+    Forbid();
+    res = KernelIFace.core_alloc_irq();
+    Permit();
+    return res;
+    
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH1I(LONG, KrnFreeIRQ,
+	  AROS_LHA(uint8_t, irq, D0),
+	  struct KernelBase *, KernelBase, 24, Kernel)
+{
+    AROS_LIBFUNC_INIT
+    
+    Forbid();
+    KernelIFace.core_free_irq(irq);
+    Permit();
     
     AROS_LIBFUNC_EXIT
 }

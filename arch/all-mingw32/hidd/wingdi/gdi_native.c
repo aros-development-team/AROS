@@ -30,7 +30,7 @@ static ULONG SendKbdIRQ(UINT msg, DWORD key)
     DKBD(printf("[GDI] Keyboard event 0x%04lX key 0x%04lX\n", msg, key));
     GDI_KeyboardData.EventCode = msg;
     GDI_KeyboardData.KeyCode = key;
-    return KrnCauseIRQ(4);
+    return KrnCauseIRQ(GDI_KeyboardData.irq);
 }
 
 /* We have to use this weird hook technique because there's no other way to prevent "Win" keys
@@ -120,7 +120,7 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
 
 /****************************************************************************************/
 
-DWORD WINAPI gdithread_entry(ULONG *p)
+DWORD WINAPI gdithread_entry(struct gfx_control *ctl)
 {
     HHOOK keyhook;
     BOOL res;
@@ -149,8 +149,8 @@ DWORD WINAPI gdithread_entry(ULONG *p)
     wcl = RegisterClass(&wcl_desc);
     D(printf("[GDI] Created window class 0x%p\n", wcl));
     if (wcl) {
-        *p = 1;
-        KrnCauseIRQ(2);
+        ctl->window_ready = 1;
+        KrnCauseIRQ(ctl->irq);
     	do {
             res = GetMessage(&msg, NULL, 0, 0);
             D(printf("[GDI] GetMessage returned %ld\n", res));
@@ -186,7 +186,7 @@ DWORD WINAPI gdithread_entry(ULONG *p)
             	            gdata->fbwin = NULL;
             	        }
             	    }
-            	    KrnCauseIRQ(2);
+            	    KrnCauseIRQ(ctl->irq);
             	    break;
             	default:
             	    DispatchMessage(&msg);
@@ -197,17 +197,17 @@ DWORD WINAPI gdithread_entry(ULONG *p)
     }
     if (keyhook)
         UnhookWindowsHookEx(keyhook);
-    KrnCauseIRQ(2);
+    KrnCauseIRQ(ctl->irq);
 }
 
 /****************************************************************************************/
 
-ULONG __declspec(dllexport) GDI_Init(ULONG *p)
+ULONG __declspec(dllexport) GDI_Init(struct gfx_control *p)
 {
     HANDLE th;
     
     window_active = FALSE;
-    *p = 0;
+    p->window_ready = 0;
     last_key = 0;
     th = CreateThread(NULL, 0, gdithread_entry, p, 0, &thread_id);
     D(printf("[GDI] Started thread 0x%p ID 0x%08lX\n", th, thread_id));

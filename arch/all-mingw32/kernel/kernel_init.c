@@ -137,8 +137,7 @@ static int Kernel_Init(LIBBASETYPEPTR kBase)
   for (i=0; i < EXCEPTIONS_NUM; i++)
         NEWLIST(&kBase->kb_Exceptions[i]);
 
-  for (i=0; i < INTERRUPTS_NUM; i++)
-        NEWLIST(&kBase->kb_Interrupts[i]);
+  NEWLIST(&kBase->kb_Interrupts);
   D(mykprintf("[Kernel] KrnGetBootInfo yields %p\n",Kernel_KrnGetBootInfo()));
   return 1;
 }
@@ -152,6 +151,8 @@ char *kernel_functions[] = {
     "core_syscall",
     "core_is_super",
     "core_exception",
+    "core_alloc_irq",
+    "core_free_irq",
     NULL
 };
 

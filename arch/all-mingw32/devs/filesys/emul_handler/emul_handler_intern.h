@@ -20,6 +20,7 @@ struct AsyncReaderControl
     unsigned long error;
     unsigned long sig;
     void *task;
+    long irq;
 };
 
 #define ASYNC_CMD_SHUTDOWN 0

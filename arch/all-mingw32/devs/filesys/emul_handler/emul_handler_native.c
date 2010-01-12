@@ -145,7 +145,7 @@ DWORD WINAPI EmulThread(struct AsyncReaderControl *emsg)
 	    res = ReadFile(emsg->fh, emsg->addr, emsg->len, &emsg->actual, NULL);
 	    emsg->error = res ? 0 : GetLastError();
 	    DASYNC(printf("[EmulHandler I/O] %lu bytes transferred, result %ld, error %lu\n", emsg->actual, res, emsg->error));
-	    KrnCauseIRQ(1);
+	    KrnCauseIRQ(emsg->irq);
 	}
     }
 }

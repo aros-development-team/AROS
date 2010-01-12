@@ -13,13 +13,17 @@
 #define WM_USER 1024
 #endif
 
+struct gfx_control
+{
+    long irq;
+    unsigned long window_ready;
+};
+
 #ifdef __AROS__
 
 #include <exec/libraries.h>
 #include <oop/oop.h>
 #include <exec/semaphores.h>
-
-/* #define GDI_LOAD_KEYMAPTABLE	1*/
 
 #include "winapi.h"
 #include "gdi_hostlib.h"
@@ -77,7 +81,7 @@ struct gdi_staticdata
     ULONG   	    	     blue_shift;
     ULONG   	    	     depth; /* Size of pixel in bits */
 
-    ULONG		     window_ready;
+    struct gfx_control	     ctl;
 
 /*  ULONG   	    	     bytes_per_pixel;
     ULONG   	    	     clut_shift;
@@ -137,6 +141,7 @@ VOID  gdiclipboard_handle_event(struct gdi_staticdata *, XEvent *);
 
 #include <windows.h>
 #define IPTR ULONG_PTR
+#define UBYTE BYTE
 
 #endif
 
@@ -153,6 +158,7 @@ struct gfx_data
     void *bitmap_dc; /* Memory device context of currently shown bitmap */
     IPTR width;      /* Size of currently shown bitmap (window size)    */
     IPTR height;
+    UBYTE irq;	     /* IRQ number */
 };
 
 struct MouseData
@@ -162,12 +168,14 @@ struct MouseData
     unsigned short MouseY;
     unsigned short Buttons;
     unsigned short WheelDelta;
+    long irq;
 };
 
 struct KeyboardData
 {
     unsigned short EventCode;
     unsigned short KeyCode;
+    long irq;
 };
 
 #ifdef __AROS__

@@ -35,10 +35,7 @@
 
 /****************************************************************************************/
 
-static UBYTE keycode2rawkey[256];
-
 static VOID KbdIntHandler(struct gdikbd_data *data, void *p);
-/* long xkey2hidd (XKeyEvent *xk, struct gdi_staticdata *xsd);*/
 
 static OOP_AttrBase HiddKbdAB;
 
@@ -105,23 +102,25 @@ OOP_Object * GDIKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     {
 	struct gdikbd_data *data = OOP_INST_DATA(cl, o);
 	
-	data->interrupt = KrnAddIRQHandler(4, KbdIntHandler, data, NULL);
-	if (!data->interrupt) {
-    	    OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+	KEYBOARDDATA->irq = KrnAllocIRQ();
+	if (KEYBOARDDATA->irq != -1) {
+	    data->interrupt = KrnAddIRQHandler(4, KbdIntHandler, data, NULL);
+	    if (data->interrupt) {
+	    	data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
+		data->callbackdata = callbackdata;
+	
+		ObtainSemaphore( &XSD(cl)->sema);
+		XSD(cl)->kbdhidd = o;
+		ReleaseSemaphore( &XSD(cl)->sema);
 	    
-    	    OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
-            return NULL;
-        }
-	
-	data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
-	data->callbackdata = callbackdata;
-	
-	ObtainSemaphore( &XSD(cl)->sema);
-	XSD(cl)->kbdhidd = o;
-	ReleaseSemaphore( &XSD(cl)->sema);
+	        ReturnPtr("GDIKbd::New", OOP_Object *, o);
+	    }
+	    KrnFreeIRQ(KEYBOARDDATA->irq);
+	}
+	OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+	OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
+	return NULL;
     }
-    
-    ReturnPtr("GDIKbd::New", OOP_Object *, o);
 }
 
 /****************************************************************************************/
