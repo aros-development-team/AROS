@@ -6,31 +6,35 @@
     Lang: english
 */
 #include <aros/asmcall.h>	/* LONG_FUNC */
-#ifndef TEST
-#   include <dos/dosextens.h>
-#   include <proto/exec.h>
-#   include <aros/debug.h>
-#else
-#   include <exec/types.h>
-#   include <exec/tasks.h>
-#   define D(x)	/* eps */
-
-struct Process;
-
-struct DosLibrary
-{
-    struct ExecBase * dl_SysBase;
-};
-
-extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
-
-#define StackSwap(s)	StackSwap(s, SysBase)
-#define AROS_SLIB_ENTRY(a,b)	a
-
-#endif /* TEST */
+#include <dos/dosextens.h>
+#include <proto/exec.h>
+#include <aros/debug.h>
 
 #include <string.h>
 
+AROS_UFH5(static ULONG, CallEntry,
+	  AROS_UFHA(APTR, pReturn_Addr, D0),
+	  AROS_UFHA(struct StackSwapStruct*, sss, D1),
+	  AROS_UFHA(STRPTR, argptr, D2),
+	  AROS_UFHA(ULONG, argsize, D3),
+	  AROS_UFHA(LONG_FUNC, entry, D4))
+{
+    AROS_USERFUNC_INIT
+
+#ifndef AROS_UFC3R
+#error You need to write the AROS_UFC3R macro for your CPU
+#endif
+
+    return AROS_UFC3R(ULONG, entry,
+		      AROS_UFCA(STRPTR, argptr, A0),
+		      AROS_UFCA(ULONG, argsize, D0),
+		      AROS_UFCA(struct ExecBase *, SysBase, A6),
+		      pReturn_Addr,
+		      (sss->stk_Upper - (ULONG)sss->stk_Lower) /* used by m68k-linux arch, needed?? */
+		     );
+
+    AROS_USERFUNC_EXIT
+}
 
 /**************************************************************************
 
@@ -72,120 +76,19 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
 
 **************************************************************************/
 {
-    APTR *	oldSP;
-    APTR *	sp;
-    ULONG *	retptr;
-    ULONG	ret;
-    APTR 	oldReturnAddr;
-
-    retptr = &ret;
-
-    sp = (APTR *)(sss->stk_Upper);
-    oldSP = (APTR *)&DOSBase;
-    oldReturnAddr = proc->pr_ReturnAddr;
-
-    /* Compute argsize automatically */
-    if (argsize == -1)
-    {
-	argsize = strlen(argptr);
-    }
-
-    /* Copy stack + locals + regs + everything */
-    while ( oldSP != (APTR *)&ret )
-    {
-	*--sp = *oldSP--;
-    }
-
-    sss->stk_Pointer = sp;
-
-    D(bug("In RunProcess() entry=%lx, *entry=%lx\n", (IPTR)entry, (IPTR)*entry));
-    StackSwap(sss);
-
+    LONG ret;
+    APTR oldReturnAddr = proc->pr_ReturnAddr; /* might be changed by CallEntry */
+    struct StackSwapArgs args = {{
+	(IPTR) &proc->pr_ReturnAddr,
+	(IPTR) sss,
+	(IPTR) argptr,
+	argsize == -1 ? strlen(argptr) : argsize, /* Compute argsize automatically */
+	(IPTR) entry
+    }};
+    
     /* Call the function with the new stack */
-    /*
-	We have to set the pr_ReturnAddr pointer to the correct value
-	before we call the entry() otherwise some startup code will
-	not work.
-
-	This can be done rather more easily on the m68k than elsewhere.
-    */
-#ifndef AROS_UFC3R
-#error You need to write the AROS_UFC3R macro for your CPU
-#endif
-
-   /* The AROS_UFC3R() macro doesn't work on my system (gcc 2.95.1, Linux 2.3.50)
-    * this is the workaround I'm currently using:
-    */
-
-//    *retptr = entry(argptr,argsize,SysBase);
-
-    *retptr = AROS_UFC3R(ULONG, entry,
-		AROS_UFCA(CONST_STRPTR, argptr, A0),
-		AROS_UFCA(ULONG, argsize, D0),
-		AROS_UFCA(struct ExecBase *, SysBase, A6),
-		&proc->pr_ReturnAddr, (sss->stk_Upper - (ULONG)sss->stk_Lower)
-	      );
-
-    StackSwap(sss);
+    ret = NewStackSwap(sss, CallEntry, &args);
 
     proc->pr_ReturnAddr = oldReturnAddr;
-
     return ret;
 }
-
-#ifdef TEST
-
-#include <stdio.h>
-
-ULONG teststack[4096];
-
-int DemoProc (const char * argstr, int argsize, struct ExecBase * SysBase)
-{
-    printf ("arg=\"%s\" (len=%d\n", argstr, argsize);
-
-    return argsize;
-} /* DemoProc */
-
-int main (int argc, char ** argv)
-{
-    int ret, len;
-    char * argstr;
-    struct StackSwapStruct sss;
-    struct DosLibrary DosBase;
-
-    sss.stk_Lower = teststack;
-    sss.stk_Upper = &teststack[sizeof(teststack) / sizeof(teststack[0])];
-    sss.stk_Pointer = sss.stk_Upper;
-
-    DosBase.dl_SysBase = (struct ExecBase *)0x0bad0bad;
-
-    printf ("Stack=%p\n", &ret);
-
-    argstr = "Hello world.";
-
-    len = strlen (argstr);
-
-    ret = RunProcess (NULL,
-	&sss,
-	argstr,
-	len,
-	(LONG_FUNC)DemoProc,
-	&DOSBase
-    );
-
-    printf ("Stack=%p\n", &ret);
-    printf ("RunProcess=%d\n",ret);
-
-    if (len == ret)
-    {
-	printf("Test ok.\n");
-    }
-    else
-    {
-	printf("Test failed.\n");
-    }
-
-    return 0;
-}
-
-#endif /* TEST */
