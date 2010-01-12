@@ -39,19 +39,14 @@
 */
 
 #define EXCEPTIONS_NUM 1
-#define INTERRUPTS_NUM 5
 
 #define INT_TIMER 0
-#define INT_IO    1
-#define INT_GFX   2
-#define INT_MOUSE 3
-#define INT_KBD	  4
 
 struct KernelBase {
     struct Node         kb_Node;
     void *              kb_MemPool;
     struct List         kb_Exceptions[EXCEPTIONS_NUM];
-    struct List         kb_Interrupts[INTERRUPTS_NUM];
+    struct List         kb_Interrupts;
 };
 
 struct KernelBSS {
@@ -85,6 +80,8 @@ struct KernelInterface {
     void (*core_syscall)(unsigned long n);
     unsigned char (*core_is_super)(void);
     long (*core_exception)(void *ExceptionRecord, void *EstablisherFrame, void *ContextRecord, void *DispatcherContext);
+    long (*core_alloc_irq)(void);
+    void (*core_free_irq)(unsigned char irq);
 };
 
 extern struct HostInterface *HostIFace;
@@ -118,7 +115,7 @@ extern DWORD SwitcherId;
 extern DWORD *LastErrorPtr;
 extern unsigned char Ints_Enabled;
 extern unsigned char Sleep_Mode;
-extern unsigned char PendingInts[INTERRUPTS_NUM];
+extern unsigned char PendingInts[256];
 extern struct ExecBase **SysBasePtr;
 extern struct KernelBase **KernelBasePtr;
 

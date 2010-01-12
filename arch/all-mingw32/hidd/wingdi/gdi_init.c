@@ -24,8 +24,6 @@
 #include <hidd/graphics.h>
 
 #include <aros/symbolsets.h>
-
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
@@ -57,14 +55,12 @@ static BOOL initclasses(struct gdi_staticdata *xsd)
 {
     /* Get some attrbases */
     
-    if (!OOP_ObtainAttrBases(abd))
-    	goto failure;
-
-    return TRUE;
-        
-failure:
+    if (OOP_ObtainAttrBases(abd)) {
+	xsd->ctl.irq = KrnAllocIRQ();
+	if (xsd->ctl.irq != -1)
+	    return TRUE;
+    }
     freeclasses(xsd);
-
     return FALSE; 
 }
 
@@ -72,6 +68,8 @@ failure:
 
 static VOID freeclasses(struct gdi_staticdata *xsd)
 {
+    if (xsd->ctl.irq != -1)
+        KrnFreeIRQ(xsd->ctl.irq);
     OOP_ReleaseAttrBases(abd);
 }
 
@@ -102,15 +100,15 @@ static int GDI_Init(LIBBASETYPEPTR LIBBASE)
 */
 	if (initclasses(xsd)) {
 	    me = FindTask(NULL);
-	    gfx_int = KrnAddIRQHandler(2, GfxIntHandler, NULL, me);
+	    gfx_int = KrnAddIRQHandler(xsd->ctl.irq, GfxIntHandler, NULL, me);
 	    if (gfx_int) {
 	        SetSignal(0, SIGF_BLIT);
 		Forbid();
-		NATIVECALL(GDI_Init, &xsd->window_ready);
+		NATIVECALL(GDI_Init, &xsd->ctl);
 		Permit();
 		Wait(SIGF_BLIT);
 		KrnRemIRQHandler(gfx_int);
-		if (xsd->window_ready) {
+		if (xsd->ctl.window_ready) {
 	    	    D(bug("GDI_Init succeeded\n"));
 	    	    return TRUE;
 		}

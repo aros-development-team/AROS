@@ -27,38 +27,43 @@ typedef unsigned char UBYTE;
 
 #define AROS_EXCEPTION_SYSCALL 0x80000001
 
-struct SwitcherData
-{
-    HANDLE MainThread;
-    HANDLE IntObjects[INTERRUPTS_NUM];
-};
-
 struct ExceptionTranslation
 {
     DWORD ExceptionCode;
     unsigned long TrapNum;
 };
 
-struct SwitcherData SwData;
+HANDLE MainThread;
 DWORD *LastErrorPtr;
 unsigned char Ints_Enabled;
-unsigned char PendingInts[INTERRUPTS_NUM];
+unsigned short Ints_Num;
+HANDLE IntObjects[256];
+unsigned char PendingInts[256];
+unsigned char AllocatedInts[256];
 unsigned char Supervisor;
 unsigned char Sleep_Mode;
 struct ExecBase **SysBasePtr;
 struct KernelBase **KernelBasePtr;
 
-void user_handler(uint8_t exception, struct List *list)
+void user_exception_handler(uint8_t exception, struct List *list)
 {
-    if (!IsListEmpty(&list[exception]))
-    {
-        struct IntrNode *in, *in2;
+    struct IntrNode *in, *in2;
 
-        ForeachNodeSafe(&list[exception], in, in2)
-        {
-            if (in->in_Handler)
-                in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
-        }
+    ForeachNodeSafe(&list[exception], in, in2)
+    {
+        if (in->in_Handler)
+            in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
+    }
+}
+
+void user_irq_handler(uint8_t exception, struct List *list)
+{
+    struct IntrNode *in, *in2;
+
+    ForeachNodeSafe(list, in, in2)
+    {
+        if (in->in_Handler && (in->in_nr == exception))
+            in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
     }
 }
 
@@ -164,7 +169,7 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 	return ExceptionContinueExecution;
 }
 
-DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
+DWORD WINAPI TaskSwitcher()
 {
     HANDLE IntEvent;
     DWORD obj;
@@ -174,17 +179,17 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     MSG msg;
 
     for (;;) {
-        obj = WaitForMultipleObjects(INTERRUPTS_NUM, args->IntObjects, FALSE, INFINITE);
+        obj = WaitForMultipleObjects(Ints_Num, IntObjects, FALSE, INFINITE);
         DS(bug("[Task switcher] Object %lu signalled\n", obj));
 	/* Stop main thread if it's not sleeping */
         if (Sleep_Mode != SLEEP_MODE_ON) {
-            DS(res =) SuspendThread(args->MainThread);
+            DS(res =) SuspendThread(MainThread);
     	    DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
 	    /* People say that on SMP systems thread is not stopped immediately by SuspendThread().
 	       So we have to do our best to ensure that is is really stopped. I hope GetThreadContext()
 	       guarantees it. */
 	    CONTEXT_INIT_FLAGS(&MainCtx);
-    	    DS(res =) GetThreadContext(args->MainThread, &MainCtx);
+    	    DS(res =) GetThreadContext(MainThread, &MainCtx);
     	    DS(bug("[Task switcher] Get context result: %lu\n", res));
     	}
 	/* Process the interrupt if we are allowed to */
@@ -201,7 +206,7 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     	    DS(PrintCPUContext(&MainCtx));
 	    /* Call user-defined IRQ handler */
     	    if (*KernelBasePtr)
-	    	user_handler(obj, (*KernelBasePtr)->kb_Interrupts);
+	    	user_irq_handler(obj, &(*KernelBasePtr)->kb_Interrupts);
 	    /* Call scheduler */
     	    core_ExitInterrupt(&MainCtx);
 	    /* If AROS is going to sleep, set new CPU context */
@@ -209,7 +214,7 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     	        DS(OutputDebugString("[Task switcher] new CPU context: ****\n"));
     	        DS(PrintCPUContext(&MainCtx));
     	        CONTEXT_RESTORE_REGS(&MainCtx);
-    	        DS(res =)SetThreadContext(args->MainThread, &MainCtx);
+    	        DS(res =)SetThreadContext(MainThread, &MainCtx);
     	        DS(bug("[Task switcher] Set context result: %lu\n", res));
     	    }
 	    /* Leave supervisor mode */
@@ -224,7 +229,7 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
             /* We've entered sleep mode */
             Sleep_Mode = SLEEP_MODE_ON;
         else {
-            DS(res =) ResumeThread(args->MainThread);
+            DS(res =) ResumeThread(MainThread);
             DS(bug("[Task switcher] Resume thread result: %lu\n", res));
         }
     }
@@ -241,7 +246,7 @@ long __declspec(dllexport) core_intr_disable(void)
 
 long __declspec(dllexport) core_intr_enable(void)
 {
-    int i;
+    unsigned char i;
 
     DI(printf("[KRN] enabling interrupts\n"));
     Ints_Enabled = 1;
@@ -249,10 +254,10 @@ long __declspec(dllexport) core_intr_enable(void)
        to force-trigger a waitable timer in Windows. A workaround is possible, but the design will
        be complicated then (we need a companion event in this case). Probably it will be implemented
        in future. */
-    for (i = INT_IO; i < INTERRUPTS_NUM; i++) {
+    for (i = 1; i < Ints_Num; i++) {
         if (PendingInts[i]) {
             DI(printf("[KRN] enable: sigalling about pending interrupt %lu\n", i));
-            SetEvent(SwData.IntObjects[i]);
+            SetEvent(IntObjects[i]);
         }
     }
 }
@@ -274,33 +279,6 @@ unsigned char __declspec(dllexport) core_is_super(void)
     return Supervisor;
 }
 
-BOOL InitIntObjects(HANDLE *Objs)
-{
-    int i;
-
-    for (i = 0; i < INTERRUPTS_NUM; i++) {
-        Objs[i] = NULL;
-        PendingInts[i] = 0;
-    }
-    /* Timer interrupt is a waitable timer, it's not an event */
-    for (i = INT_IO; i < INTERRUPTS_NUM; i++) {
-        Objs[i] = CreateEvent(NULL, FALSE, FALSE, NULL);
-        if (!Objs[i])
-            return FALSE;
-    }
-    return TRUE;
-}
-
-void CleanupIntObjects(HANDLE *Objs)
-{
-    int i;
-
-    for (i = 0; i < INTERRUPTS_NUM; i++) {
-        if (Objs[i])
-            CloseHandle(Objs[i]);
-    }
-}
-
 int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase **SysBasePointer, struct KernelBase **KernelBasePointer)
 {
     HANDLE ThisProcess;
@@ -318,66 +296,97 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
     Ints_Enabled = 0;
     Supervisor = 0;
     Sleep_Mode = 0;
-    if (InitIntObjects(SwData.IntObjects)) {
-    	SwData.IntObjects[INT_TIMER] = CreateWaitableTimer(NULL, 0, NULL);
-    	if (SwData.IntObjects[INT_TIMER]) {
-	    ThisProcess = GetCurrentProcess();
-	    if (DuplicateHandle(ThisProcess, GetCurrentThread(), ThisProcess, &SwData.MainThread, 0, TRUE, DUPLICATE_SAME_ACCESS)) {
-	        FillMemory(&osver, sizeof(osver), 0);
-	        osver.dwOSVersionInfoSize = sizeof(osver);
-	        GetVersionEx(&osver);
-	        /* LastError value is part of our context. In order to manipulate it we have to hack
-	           into Windows TEB (thread environment block).
-	           Since this structure is private, error code offset changes from version to version.
-	           The following offsets are known:
-	           * Windows 95 and 98 - 0x60
-	           * Windows Me - 0x74
-	           * Windows NT (all family, fixed at last) - 0x34
-	         */
-	        switch(osver.dwPlatformId) {
-	        case VER_PLATFORM_WIN32_WINDOWS:
-	            if (osver.dwMajorVersion == 4) {
-	                if (osver.dwMinorVersion > 10)
-	                    LastErrOffset = 0x74;
-	                else
-	                    LastErrOffset = 0x60;
-	            }
-	            break;
-	        case VER_PLATFORM_WIN32_NT:
-	            LastErrOffset = 0x34;
-	            break;
-	        }
-	        if (LastErrOffset) {
-		    MainTEB = NtCurrentTeb();
-		    LastErrorPtr = MainTEB + LastErrOffset;
-		    SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, &SwData, 0, &SwitcherId);
-		    if (SwitcherThread) {
-			D(printf("[KRN] Task switcher started, ID %lu\n", SwitcherId));
-#ifdef SLOW
-			TimerPeriod = 5000;
-#else
-			TimerPeriod = 1000/TimerPeriod;
-#endif
-			VBLPeriod.QuadPart = -10000*(LONGLONG)TimerPeriod;
-			return SetWaitableTimer(SwData.IntObjects[INT_TIMER], &VBLPeriod, TimerPeriod, NULL, NULL, 0);
-		    }
-			D(else printf("[KRN] Failed to run task switcher thread\n");)
-		} else
-		    printf("Unsupported Windows version %u.%u, platform ID %u\n", osver.dwMajorVersion, osver.dwMinorVersion, osver.dwPlatformId);
-	    }
-		D(else printf("[KRN] failed to get thread handle\n");)
-	}
-	    D(else printf("[KRN] Failed to create timer interrupt\n");)
+    for (i = 1; i < 256; i++) {
+	IntObjects[i] = NULL;
+        AllocatedInts[i] = 0;
     }
-        D(else printf("[KRN] failed to create interrupt objects\n");)
-    CleanupIntObjects(SwData.IntObjects);
+    IntObjects[INT_TIMER] = CreateWaitableTimer(NULL, 0, NULL);
+    if (IntObjects[INT_TIMER]) {
+	AllocatedInts[INT_TIMER] = 1;
+	PendingInts[INT_TIMER] = 0;
+	Ints_Num = 1;
+	ThisProcess = GetCurrentProcess();
+	if (DuplicateHandle(ThisProcess, GetCurrentThread(), ThisProcess, &MainThread, 0, TRUE, DUPLICATE_SAME_ACCESS)) {
+	    FillMemory(&osver, sizeof(osver), 0);
+	    osver.dwOSVersionInfoSize = sizeof(osver);
+	    GetVersionEx(&osver);
+	    /* LastError value is part of our context. In order to manipulate it we have to hack
+	       into Windows TEB (thread environment block).
+	       Since this structure is private, error code offset changes from version to version.
+	       The following offsets are known:
+	       * Windows 95 and 98 - 0x60
+	       * Windows Me - 0x74
+	       * Windows NT (all family, fixed at last) - 0x34
+	     */
+	    switch(osver.dwPlatformId) {
+	    case VER_PLATFORM_WIN32_WINDOWS:
+	        if (osver.dwMajorVersion == 4) {
+	            if (osver.dwMinorVersion > 10)
+	                LastErrOffset = 0x74;
+	            else
+	                LastErrOffset = 0x60;
+	        }
+	        break;
+	    case VER_PLATFORM_WIN32_NT:
+	        LastErrOffset = 0x34;
+	        break;
+	    }
+	    if (LastErrOffset) {
+		MainTEB = NtCurrentTeb();
+		LastErrorPtr = MainTEB + LastErrOffset;
+		SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, NULL, 0, &SwitcherId);
+		if (SwitcherThread) {
+		    D(printf("[KRN] Task switcher started, ID %lu\n", SwitcherId));
+#ifdef SLOW
+		    TimerPeriod = 5000;
+#else
+		    TimerPeriod = 1000/TimerPeriod;
+#endif
+		    VBLPeriod.QuadPart = -10000*(LONGLONG)TimerPeriod;
+		    return SetWaitableTimer(IntObjects[INT_TIMER], &VBLPeriod, TimerPeriod, NULL, NULL, 0);
+		}
+		    D(else printf("[KRN] Failed to run task switcher thread\n");)
+	    } else
+		printf("Unsupported Windows version %u.%u, platform ID %u\n", osver.dwMajorVersion, osver.dwMinorVersion, osver.dwPlatformId);
+	}
+	    D(else printf("[KRN] failed to get thread handle\n");)
+    }
+	D(else printf("[KRN] Failed to create timer interrupt\n");)
     return 0;
+}
+
+long __declspec(dllexport) core_alloc_irq(void)
+{
+    long irq = 0;
+    
+    for (irq = 0; irq < 256; irq++) {
+        if (!AllocatedInts[irq]) {
+	    if (!IntObjects[irq]) {
+	        IntObjects[irq] = CreateEvent(NULL, FALSE, FALSE, NULL);
+		if (!IntObjects[irq])
+		    return -1;
+	    }
+	    PendingInts[irq] = 0;
+	    AllocatedInts[irq] = 1;
+	    if (irq == Ints_Num)
+		Ints_Num++;
+	    return irq;
+	}
+    }
+    return -1;
+}
+
+void __declspec(dllexport) core_free_irq(unsigned char irq)
+{
+    AllocatedInts[irq] = 0;
+    while (!AllocatedInts[Ints_Num - 1])
+        Ints_Num--;
 }
 
 /*
  * This is the only function to be called by modules other than kernel.resource.
  * It is used for causing interrupts from within asynchronous threads of
- * emul.handler and wingdi.hidd.
+ * virtual hardware drivers.
  */
 
 unsigned long __declspec(dllexport) KrnCauseIRQ(unsigned char irq)
@@ -385,7 +394,7 @@ unsigned long __declspec(dllexport) KrnCauseIRQ(unsigned char irq)
     unsigned long res;
 
     D(printf("[kernel IRQ] Causing IRQ %u\n", irq));
-    res = SetEvent(SwData.IntObjects[irq]);
+    res = SetEvent(IntObjects[irq]);
     D(printf("[kernel IRQ] Result: %ld\n", res));
     return res;
 }
