@@ -1,5 +1,5 @@
 /*
- Copyright  1995-2009, The AROS Development Team. All rights reserved.
+ Copyright  1995-2010, The AROS Development Team. All rights reserved.
  $Id$
  
  Desc: Filesystem that accesses an underlying Windows filesystem.
@@ -15,6 +15,7 @@
 #define DFNAME(x)
 #define DFSIZE(x)
 #define DOPEN(x)
+#define DOPEN2(x)
 #define DSEEK(x)
 #define DASYNC(x)
 
@@ -350,9 +351,10 @@ void *DoOpen(char *path, int mode, int protect)
   ULONG flags = 0;
   ULONG lock;
   ULONG create;
+  ULONG err;
   void *res;
   
-  D(bug("[emul] DoOpen(): mode 0x%08lX\n", mode));
+  DOPEN2(bug("[emul] DoOpen(\"%s\", 0x%08lX)\n", path, mode));
   if (mode & FMF_WRITE)
       flags = GENERIC_WRITE;
   if (mode & FMF_READ)
@@ -364,11 +366,23 @@ void *DoOpen(char *path, int mode, int protect)
       create = (flags & FMF_CLEAR) ? CREATE_ALWAYS : OPEN_ALWAYS;
   else
       create = (flags & FMF_CLEAR) ? TRUNCATE_EXISTING : OPEN_EXISTING;
-  D(bug("[emul] CreateFile: name \"%s\", flags 0x%08lX, lock 0x%08lX, create %lu\n", path, flags, lock, create));
+  DOPEN2(bug("[emul] CreateFile: name \"%s\", flags 0x%08lX, lock 0x%08lX, create %lu\n", path, flags, lock, create));
   Forbid();
   res = OpenFile(path, flags, lock, NULL, create, prot_a2w(protect), NULL);
+  err = GetLastError();
   Permit();
-  DB2(bug("[emul] FileHandle = 0x%08lX\n", res));
+  /* Hack: dll's in LIBS:Host and AROSBootstrap.exe are locked against writing by
+     Windows while AROS is running. However we may still read them. MODE_OLDFILE
+     also requests write access with shared lock, this is why it fails on these files.
+     Here we try to work around this by attempting to open the file in read-only mode
+     (FMF_READ) when we discover this problem.
+     I hope this will not affect files really open in AROS because exclusive lock
+     disallows read access also. */
+  if ((err == ERROR_SHARING_VIOLATION) && (mode == FMF_MODE_OLDFILE)) {
+      DOPEN2(bug("[emul] ERROR_SHARING_VIOLATION on MODE_OLDFILE, attempting read-only access\n"));
+      return DoOpen(path, FMF_READ, protect);
+  }
+  DOPEN2(bug("[emul] FileHandle = 0x%08lX\n", res));
   return res;
 }
 
@@ -447,6 +461,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, STRPTR 
 	{
 	    int kind;
 	    
+	    DOPEN(bug("[emul] AROS object name: %s\n", fh->name));
 	    DOPEN(bug("[emul] Host object name: %s\n", fh->hostname));	    
 	    kind = Stat(fh->hostname, NULL);
 	    DOPEN(bug("[emul] object type: %ld\n", kind));
