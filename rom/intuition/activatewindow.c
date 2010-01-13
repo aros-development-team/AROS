@@ -213,7 +213,7 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
                     }
 
                     //jDc: fix some weird refresh pbs
-                    SetPointerPos(scr->Screen.MouseX, scr->Screen.MouseY);
+                    MySetPointerPos(IntuitionBase, scr->Screen.MouseX, scr->Screen.MouseY);
                 }
                 else
                 {

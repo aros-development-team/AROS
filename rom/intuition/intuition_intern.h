@@ -992,9 +992,6 @@ void FireScreenNotifyMessage(IPTR data, ULONG flag, struct IntuitionBase *Intuit
 void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct IntuitionBase *IntuitionBase);
 
 /* misc.c */
-extern struct RastPort *MyCreateRastPort(struct IntuitionBase *);
-extern struct RastPort *MyCloneRastPort(struct IntuitionBase *, struct RastPort *);
-extern void MyFreeRastPort(struct IntuitionBase *, struct RastPort *);
 extern void MySetPointerPos(struct IntuitionBase *, int, int);
 struct TextFont *SafeReopenFont(struct IntuitionBase *, struct TextFont **);
 extern Object *MakePointerFromPrefs(struct IntuitionBase *, struct Preferences *);

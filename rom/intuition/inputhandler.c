@@ -1338,7 +1338,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             }
 
                     #if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP
-            SetPointerPos(ie->ie_X, ie->ie_Y);
+            MySetPointerPos(IntuitionBase, ie->ie_X, ie->ie_Y);
                     #else
                 pointerposx = ie->ie_X;
             pointerposy = ie->ie_Y;
@@ -2779,7 +2779,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    }
 
     	    	    #if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP
-			SetPointerPos(ie->ie_X, ie->ie_Y);
+			MySetPointerPos(IntuitionBase, ie->ie_X, ie->ie_Y);
     	    	    #else
 		    	pointerposx = ie->ie_X;
 			pointerposy = ie->ie_Y;
@@ -3856,7 +3856,7 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
 #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
     if (call_setpointerpos)
     {
-    	SetPointerPos(pointerposx, pointerposy);
+    	MySetPointerPos(IntuitionBase, pointerposx, pointerposy);
     }
 #endif
 
