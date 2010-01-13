@@ -20,7 +20,7 @@ void MySetPointerPos(struct IntuitionBase *IntuitionBase, int x, int y)
     IntuitionBase->MouseX = x;
     IntuitionBase->MouseY = y;
 
-    if (scr)
+    if (scr && scr->Pointer)
     {
         D(bug("MoveSprite Viewport 0x%lx %ld %ld\n",&scr->Screen.ViewPort,x + scr->Pointer->xoffset - scr->Screen.LeftEdge,y + scr->Pointer->yoffset - scr->Screen.TopEdge));
         D(bug("MoveSprite data 0x%lx, height %ld, x %ld, y %ld, num %ld, wordwidth, 0x%lx, flags 0x%lx\n",
