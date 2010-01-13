@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1564,8 +1564,10 @@ IPTR Install__MUIM_IC_CopyFiles
             message->fileMask));
 
     /* Check entry condition */
-    if (data->inst_success != MUIV_Inst_InProgress)
+    if (data->inst_success != MUIV_Inst_InProgress) {
+        D(bug("[INSTALLER.CFs] Installation failed\n"));
         return totalFilesCopied;
+    }
 
     SET(data->gauge2, MUIA_Gauge_Current, 0);
 
@@ -1847,13 +1849,20 @@ localecopydone:
             "WBStartup",    "WBStartup",
             NULL
         };
-        TEXT destinationPath[strlen(dest_Path) + 2];
+	ULONG dstLen = strlen(dest_Path) + strlen(AROS_BOOT_FILE) + 2;
+        TEXT destinationPath[dstLen];
 
         /* Copying Core system Files */
         D(bug("[INSTALLER] Copying Core files...\n"));
         SET(data->label, MUIA_Text_Contents, "Copying Core System files...");
         sprintf(destinationPath, "%s:", dest_Path);
         CopyDirArray(CLASS, self, source_Path, destinationPath, core_dirs);
+
+	/* Copy kernel files */
+        strcpy(tmp, source_Path);
+	AddPart(tmp, BOOT_PATH, 100);
+	sprintf(destinationPath, "%s:%s", dest_Path, BOOT_PATH);
+        DoMethod(self, MUIM_IC_CopyFiles, tmp, destinationPath, "#?", FALSE);
 
         /* Copy AROS.boot file */
         sprintf(tmp, "%s", source_Path);
@@ -1970,13 +1979,6 @@ localecopydone:
 	    TEXT srcPath[srcLen];
 	    TEXT dstPath[dstLen];
 	    TEXT tmp[256];
-
-	    /* Copy kernel files */
-            sprintf(srcPath, "%s", source_Path);
-	    sprintf(dstPath, "%s:", dest_Path);
-	    AddPart(srcPath, BOOT_PATH, srcLen);
-	    AddPart(dstPath, BOOT_PATH, dstLen);
-            DoMethod(self, MUIM_IC_CopyFiles, srcPath, dstPath, "#?", FALSE);
 
 	    /* Installing GRUB */
 	    D(bug("[INSTALLER] Installing Grub...\n"));
