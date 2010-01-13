@@ -4,15 +4,15 @@
 
  In order to compile it natively under Windows OS you need:
 
-a) Working Cygwin environment (Mingw's MSYS is expected to work too but it's not tested).
+a) Working Cygwin or MinGW + MSYS environment.
 b) Netpbm package of course.
 c) Native gcc v3 (for Cygwin). In gcc v4 -mno-cygwin option is no more supported. If you use MSYS
    you're free from this restriction and can use the latest gcc.
 d) AROS-targetted crosscompiler. It can be found on AROS Archives:
    http://archives.aros-exec.org/index.php?function=browse&cat=development/cross
    Use the latest gcc and binutils version, however i386-aros-gcc v3 also works.
-e) Mingw32 libraries package for Cygwin.
-f) libiconv for MinGW (for building makecountry).
+e) Mingw32 libraries package (only for Cygwin).
+f) libiconv (only for MinGW - for building makecountry).
 
  That's all. Execute "./configure --target=mingw32-i386", then "make".
 
