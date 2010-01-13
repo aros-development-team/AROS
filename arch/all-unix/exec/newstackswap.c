@@ -31,15 +31,8 @@ static void trampoline(IPTR (*func)(), IPTR *ret, IPTR *args)
     /* this was called from NewStackSwap() which also called Disable */
     Enable();
     
-    *ret = AROS_UFC8(IPTR, func,
-		     AROS_UFCA(IPTR, args[0], D0),
-		     AROS_UFCA(IPTR, args[1], D1),
-		     AROS_UFCA(IPTR, args[2], D2),
-		     AROS_UFCA(IPTR, args[3], D3),
-		     AROS_UFCA(IPTR, args[4], D4),
-		     AROS_UFCA(IPTR, args[5], D5),
-		     AROS_UFCA(IPTR, args[6], D6),
-		     AROS_UFCA(IPTR, args[7], D7));
+    *ret = func(args[0], args[1], args[2], args[3],
+		args[4], args[5], args[6], args[7]);
 
     /* this was called from NewStackSwap() which will enable again */        
     Disable();
