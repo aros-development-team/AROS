@@ -38,7 +38,6 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/battclock.h>
 #include <proto/oop.h>
 #include <proto/timer.h>
 #include <proto/utility.h>
@@ -735,7 +734,6 @@ AROS_UFH3(void, RTL8139_Schedular,
 
 	LIBBASETYPEPTR			LIBBASE = unit->rtl8139u_device;
 	struct MsgPort 			*reply_port, *input;
-	APTR 					BattClockBase;
 
 RTLD(bug("[%s] RTL8139_Schedular()\n", taskSelf->tc_Node.ln_Name))
 RTLD(bug("[%s] RTL8139_Schedular: Setting up device '%s'\n", taskSelf->tc_Node.ln_Name, unit->rtl8139u_name))
@@ -751,12 +749,6 @@ RTLD(bug("[%s] RTL8139_Schedular: Failed to create Input message port\n", taskSe
 	}
 
 	unit->rtl8139u_input_port = input; 
-
-	/* Randomize the generator with current time */
-	if ((BattClockBase =  OpenResource("battclock.resource")) != NULL)
-	{
-		srandom(ReadBattClock());
-	}
 
 	if ((unit->rtl8139u_TimerSlowPort = CreateMsgPort()) != NULL)
 	{

@@ -38,7 +38,6 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/battclock.h>
 #include <proto/oop.h>
 #include <proto/timer.h>
 #include <proto/utility.h>
@@ -929,7 +928,6 @@ AROS_UFH3(void, PCN32_Schedular,
 
     struct PCN32Unit *dev = FindTask(NULL)->tc_UserData;
     LIBBASETYPEPTR LIBBASE = dev->pcnu_device;
-    APTR BattClockBase;
     struct MsgPort *reply_port, *input;
 
 D(bug("[pcnet32] PCN32_Schedular()\n"));
@@ -939,10 +937,6 @@ D(bug("[pcnet32] PCN32_Schedular: Setting device up\n"));
     input = CreateMsgPort();
 
     dev->pcnu_input_port = input; 
-
-    /* Randomize the generator with current time */
-    BattClockBase =  OpenResource("battclock.resource");
-    srandom(ReadBattClock());
 
     dev->pcnu_TimerSlowPort = CreateMsgPort();
 

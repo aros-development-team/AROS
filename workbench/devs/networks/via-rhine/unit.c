@@ -38,7 +38,6 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/battclock.h>
 #include <proto/oop.h>
 #include <proto/timer.h>
 #include <proto/utility.h>
@@ -668,7 +667,6 @@ AROS_UFH3(void, VIARHINE_Schedular,
 
     struct VIARHINEUnit *dev = FindTask(NULL)->tc_UserData;
     LIBBASETYPEPTR LIBBASE = dev->rhineu_device;
-    APTR BattClockBase;
     struct MsgPort *reply_port, *input;
 
 D(bug("%s VIARHINE_Schedular()\n", dev->rhineu_name));
@@ -678,10 +676,6 @@ D(bug("%s VIARHINE_Schedular: Setting device up\n", dev->rhineu_name));
     input = CreateMsgPort();
 
     dev->rhineu_input_port = input; 
-
-    /* Randomize the generator with current time */
-    BattClockBase =  OpenResource("battclock.resource");
-    srandom(ReadBattClock());
 
     dev->rhineu_TimerSlowPort = CreateMsgPort();
 
