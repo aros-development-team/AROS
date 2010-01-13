@@ -132,6 +132,8 @@ static inline void core_LeaveInterrupt(struct ExecBase *SysBase)
         core_intr_enable();
 }
 
+#define bug printf
+
 #endif
 
 #endif /*KERNEL_INTERN_H_*/

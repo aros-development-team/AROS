@@ -1,5 +1,3 @@
-#define DEBUG 0
-
 #include <aros/system.h>
 #include <windows.h>
 #define __typedef_LONG /* LONG, ULONG, WORD, BYTE and BOOL are declared in Windows headers. Looks like everything  */
@@ -16,7 +14,6 @@ typedef unsigned char UBYTE;
 #include <hardware/intbits.h>
 #include "etask.h"
 #include "kernel_intern.h"
-#include "host_debug.h"
 #include "cpucontext.h"
 
 /* We have to redefine these flags here because including exec_intern.h causes conflicts
@@ -37,16 +34,10 @@ typedef unsigned char UBYTE;
 			               AROS_LCA(struct Node *,(arg2),A1), \
 				       struct ExecBase *, SysBase, 45, Exec)
 
-/*
- * Be careful with this, actually enabling this causes AROS to abort on first exception
- * because of OutputDebugString() calls. Looks like WinAPI functions love to perform stack
- * check and silently abort if they think something is wrong.
- */
+#define D(x)
 #define DINT(x)
 #define DS(x)
 #define DSLEEP(x)
-
-
 
 /*
  * Task dispatcher. Basically it may be the same one no matter what scheduling algorithm is used
@@ -73,6 +64,7 @@ void core_Dispatch(CONTEXT *regs, struct ExecBase *SysBase)
         return;
     }
 
+    DSLEEP(if (Sleep_Mode) bug("[KRN] Exiting sleep mode\n");)
     Sleep_Mode = SLEEP_MODE_OFF;
     SysBase->DispCount++;
         

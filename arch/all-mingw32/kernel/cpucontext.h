@@ -74,17 +74,17 @@ struct AROSCPUContext
 		 "    ESP=%08lx  EBP=%08lx  EIP=%08lx\n" \
 		 "    EAX=%08lx  EBX=%08lx  ECX=%08lx  EDX=%08lx\n" \
 		 "    EDI=%08lx  ESI=%08lx  EFLAGS=%08lx\n" \
-	    , ctx->ContextFlags \
-	    , ctx->Esp \
-	    , ctx->Ebp \
-	    , ctx->Eip \
-	    , ctx->Eax \
-	    , ctx->Ebx \
-	    , ctx->Ecx \
-	    , ctx->Edx \
-	    , ctx->Edi \
-	    , ctx->Esi \
-	    , ctx->EFlags \
+	    , (ctx)->ContextFlags \
+	    , (ctx)->Esp \
+	    , (ctx)->Ebp \
+	    , (ctx)->Eip \
+	    , (ctx)->Eax \
+	    , (ctx)->Ebx \
+	    , (ctx)->Ecx \
+	    , (ctx)->Edx \
+	    , (ctx)->Edi \
+	    , (ctx)->Esi \
+	    , (ctx)->EFlags \
       );
 
 #define PREPARE_INITIAL_CONTEXT(ctx, sp, pc) ctx->Ebp = 0;			 \

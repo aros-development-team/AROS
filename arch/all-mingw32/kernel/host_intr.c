@@ -1,5 +1,3 @@
-#define DEBUG 0
-
 #include <aros/system.h>
 #include <excpt.h>
 #include <windows.h>
@@ -17,13 +15,20 @@ typedef unsigned char UBYTE;
 #include <exec/execbase.h>
 #include "kernel_intern.h"
 #include "syscall.h"
-#include "host_debug.h"
 #include "cpucontext.h"
 
-#define DI(x)   /* Interrupts debug     */
-#define DT(x)   /* Traps debug          */
-#define DS(x)   /* Task switcher debug  */
-#define DIRQ(x) /* IRQ debug		*/
+/*
+ * Console output in Windows seems to be protected via semaphores. SuspendThread() at the moment
+ * of writing something to console leaves it in locked state. Attempt to write something to it from
+ * within task scheduler. Because of this certain debug types that are known to halt the system are
+ * marked as DANGEROUS.
+ */
+
+#define D(x)	 /* Init debug		*/
+#define DI(x)    /* Interrupts debug    - DANGEROUS */
+#define DT(x)    /* Traps debug         */
+#define DS(x)    /* Task switcher debug - DANGEROUS */
+#define DIRQ(x)  /* IRQ debug		*/
 
 #define AROS_EXCEPTION_SYSCALL 0x80000001
 
@@ -101,7 +106,6 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 	switch (ExceptionRecord->ExceptionCode) {
 	case AROS_EXCEPTION_SYSCALL:
 	    /* It's a SysCall exception issued by core_syscall() */
-	    DI(printf("[KRN] Syscall %lu\n", *ExceptionRecord->ExceptionInformation));
 	    switch (*ExceptionRecord->ExceptionInformation)
 	    {
 	    case SC_CAUSE:
@@ -202,8 +206,8 @@ DWORD WINAPI TaskSwitcher()
 	     * our process. This can be a useful aid for future AROS debuggers.
     	     */
     	    CONTEXT_SAVE_REGS(&MainCtx);
-    	    DS(OutputDebugString("[Task switcher] original CPU context: ****\n"));
-    	    DS(PrintCPUContext(&MainCtx));
+    	    DS(bug("[Task switcher] original CPU context: ****\n"));
+    	    DS(PRINT_CPUCONTEXT(&MainCtx));
 	    /* Call user-defined IRQ handler */
     	    if (*KernelBasePtr)
 	    	user_irq_handler(obj, &(*KernelBasePtr)->kb_Interrupts);
@@ -211,8 +215,8 @@ DWORD WINAPI TaskSwitcher()
     	    core_ExitInterrupt(&MainCtx);
 	    /* If AROS is going to sleep, set new CPU context */
     	    if (!Sleep_Mode) {
-    	        DS(OutputDebugString("[Task switcher] new CPU context: ****\n"));
-    	        DS(PrintCPUContext(&MainCtx));
+    	        DS(bug("[Task switcher] new CPU context: ****\n"));
+    	        DS(PRINT_CPUCONTEXT(&MainCtx));
     	        CONTEXT_RESTORE_REGS(&MainCtx);
     	        DS(res =)SetThreadContext(MainThread, &MainCtx);
     	        DS(bug("[Task switcher] Set context result: %lu\n", res));
@@ -229,6 +233,7 @@ DWORD WINAPI TaskSwitcher()
             /* We've entered sleep mode */
             Sleep_Mode = SLEEP_MODE_ON;
         else {
+	    DS(bug("[Task switcher] Resuming main thread\n"));
             DS(res =) ResumeThread(MainThread);
             DS(bug("[Task switcher] Resume thread result: %lu\n", res));
         }
