@@ -213,13 +213,13 @@ extern void aros_not_implemented ();
     long _n3 = (long)(n3);\
     long _re;\
     __asm__ __volatile__(\
+    	"movl   %%esp,%1\n\t"\
 	"movl   %5,%%eax\n\t"\
 	"pushl  %%eax\n\t"\
 	"movl   %4,%%eax\n\t"\
 	"pushl  %%eax\n\t"\
 	"movl   %3,%%eax\n\t"\
 	"pushl  %%eax\n\t"\
-	"movl   %%esp,%1\n\t"\
 	"movl   %2,%%eax\n\t"\
 	"call   *%%eax\n\t"\
 	"lea    12(%%esp),%%esp\n\t"\

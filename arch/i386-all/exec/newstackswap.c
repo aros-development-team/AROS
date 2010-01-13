@@ -31,7 +31,8 @@
 		    and current bounds of the stack you wish to use.
 	entry	-   Address of the function to call.
 	args	-   A structure (actually an array) containing up to 8
-		    function arguments
+		    function arguments. The function is called using C calling
+		    convention (no AROS_UHFx macro needed).
 
     RESULT
 	A value actually returned by your function. The function will be
@@ -75,8 +76,7 @@
     D(bug("In NewStackSwap() entry=%lx, *entry=%lx\n", (IPTR)entry, (IPTR)*entry));
     StackSwap(sss);
 
-    /* Call the function with the new stack.
-       On x86 we do not need to use AROS_UFCx macros */
+    /* Call the function with the new stack */
     *retptr = entry(args->Args[0], args->Args[1], args->Args[2], args->Args[3],
 		    args->Args[4], args->Args[5], args->Args[6], args->Args[7]);
 

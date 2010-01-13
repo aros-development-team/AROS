@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: RunProcess() - Run a process from an entry point with args
@@ -12,14 +12,9 @@
 
 #include <string.h>
 
-AROS_UFH5(static ULONG, CallEntry,
-	  AROS_UFHA(APTR, pReturn_Addr, D0),
-	  AROS_UFHA(struct StackSwapStruct*, sss, D1),
-	  AROS_UFHA(STRPTR, argptr, D2),
-	  AROS_UFHA(ULONG, argsize, D3),
-	  AROS_UFHA(LONG_FUNC, entry, D4))
+static ULONG CallEntry(APTR pReturn_Addr, struct StackSwapStruct* sss,
+		       STRPTR argptr, ULONG argsize, LONG_FUNC entry)
 {
-    AROS_USERFUNC_INIT
 
 #ifndef AROS_UFC3R
 #error You need to write the AROS_UFC3R macro for your CPU
@@ -33,7 +28,6 @@ AROS_UFH5(static ULONG, CallEntry,
 		      (sss->stk_Upper - (ULONG)sss->stk_Lower) /* used by m68k-linux arch, needed?? */
 		     );
 
-    AROS_USERFUNC_EXIT
 }
 
 /**************************************************************************
