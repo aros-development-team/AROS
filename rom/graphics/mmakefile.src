@@ -176,8 +176,6 @@ FUNCTIONS := \
 	setfrontbitmap \
 	setmaxpen \
 	setoutlinepen \
-	setpointerpos \
-	setpointershape \
 	setrast \
 	setregion \
 	setrgb32 \

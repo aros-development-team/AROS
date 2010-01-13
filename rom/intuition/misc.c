@@ -1,9 +1,10 @@
 /*
-    Copyright © 2002-2003 The MorphOS Development Team, All Rights Reserved.
+    Copyright © 2002-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
+#include <aros/debug.h>
 #include <exec/memory.h>
 #include <graphics/rastport.h>
 #include <intuition/pointerclass.h>
@@ -12,7 +13,42 @@
 #include <proto/intuition.h>
 #include "intuition_intern.h"
 
+void MySetPointerPos(struct IntuitionBase *IntuitionBase, int x, int y)
+{
+    struct IntScreen *scr = GetPrivScreen(IntuitionBase->ActiveScreen);
+
+    IntuitionBase->MouseX = x;
+    IntuitionBase->MouseY = y;
+
+    if (scr)
+    {
+        D(bug("MoveSprite Viewport 0x%lx %ld %ld\n",&scr->Screen.ViewPort,x + scr->Pointer->xoffset - scr->Screen.LeftEdge,y + scr->Pointer->yoffset - scr->Screen.TopEdge));
+        D(bug("MoveSprite data 0x%lx, height %ld, x %ld, y %ld, num %ld, wordwidth, 0x%lx, flags 0x%lx\n",
+                scr->Pointer->sprite->es_SimpleSprite.posctldata,
+                scr->Pointer->sprite->es_SimpleSprite.height,
+                scr->Pointer->sprite->es_SimpleSprite.x,
+                scr->Pointer->sprite->es_SimpleSprite.y,
+                scr->Pointer->sprite->es_SimpleSprite.num,
+                scr->Pointer->sprite->es_wordwidth,
+                scr->Pointer->sprite->es_flags));
+        MoveSprite(&scr->Screen.ViewPort, &scr->Pointer->sprite->es_SimpleSprite,
+                   x + scr->Pointer->xoffset,
+                   y + scr->Pointer->yoffset);
+        D(bug("MoveSprite data 0x%lx, height %ld, x %ld, y %ld, num %ld, wordwidth, 0x%lx, flags 0x%lx\n",
+                scr->Pointer->sprite->es_SimpleSprite.posctldata,
+                scr->Pointer->sprite->es_SimpleSprite.height,
+                scr->Pointer->sprite->es_SimpleSprite.x,
+                scr->Pointer->sprite->es_SimpleSprite.y,
+                scr->Pointer->sprite->es_SimpleSprite.num,
+                scr->Pointer->sprite->es_wordwidth,
+                scr->Pointer->sprite->es_flags));
+    }
+}
+
 #ifdef __MORPHOS__
+
+/* TODO: there are no such functions in MorphOS/AmigaOS, may be we should make them private too? */
+
 struct RastPort *MyCreateRastPort(struct IntuitionBase *IntuitionBase)
 {
     struct RastPort *newrp = AllocMem(sizeof(*newrp), MEMF_PUBLIC);
@@ -48,53 +84,6 @@ void MyFreeRastPort(struct IntuitionBase *IntuitionBase, struct RastPort *rp)
     FreeMem(rp, sizeof(*rp));
 }
 
-
-void MySetPointerPos(struct IntuitionBase *IntuitionBase, int x, int y)
-{
-    struct IntScreen *scr = GetPrivScreen(IntuitionBase->ActiveScreen);
-
-    IntuitionBase->MouseX = x;
-    IntuitionBase->MouseY = y;
-
-    if (scr)
-    {
-#if 0
-        dprintf("MoveSprite Viewport 0x%lx %ld %ld\n",&scr->Screen.ViewPort,x + scr->Pointer->xoffset - scr->Screen.LeftEdge,y + scr->Pointer->yoffset - scr->Screen.TopEdge);
-        dprintf("MoveSprite data 0x%lx, height %ld, x %ld, y %ld, num %ld, wordwidth, 0x%lx, flags 0x%lx\n",
-                scr->Pointer->sprite->es_SimpleSprite.posctldata,
-                scr->Pointer->sprite->es_SimpleSprite.height,
-                scr->Pointer->sprite->es_SimpleSprite.x,
-                scr->Pointer->sprite->es_SimpleSprite.y,
-                scr->Pointer->sprite->es_SimpleSprite.num,
-                scr->Pointer->sprite->es_wordwidth,
-                scr->Pointer->sprite->es_flags);
-#endif
-        MoveSprite(&scr->Screen.ViewPort, &scr->Pointer->sprite->es_SimpleSprite,
-                   x + scr->Pointer->xoffset,
-                   y + scr->Pointer->yoffset);
-#if 0
-        dprintf("MoveSprite data 0x%lx, height %ld, x %ld, y %ld, num %ld, wordwidth, 0x%lx, flags 0x%lx\n",
-                scr->Pointer->sprite->es_SimpleSprite.posctldata,
-                scr->Pointer->sprite->es_SimpleSprite.height,
-                scr->Pointer->sprite->es_SimpleSprite.x,
-                scr->Pointer->sprite->es_SimpleSprite.y,
-                scr->Pointer->sprite->es_SimpleSprite.num,
-                scr->Pointer->sprite->es_wordwidth,
-                scr->Pointer->sprite->es_flags);
-#endif
-    }
-    else
-    {
-        //  dprintf("No Screen for mouseptr\n");
-    }
-
-}
-
-LONG IsLayerVisible(struct Layer *layer)
-{
-    return TRUE;
-}
-
 BOOL IsLayerHiddenBySibling(struct Layer *layer, BOOL xx)
 {
     struct Window *win = layer->Window;
@@ -128,30 +117,6 @@ BOOL IsLayerHiddenBySibling(struct Layer *layer, BOOL xx)
         return NULL;
 	
     } else return NULL;
-}
-
-/* Only function needed from libc.a. Oh well. */
-long atol(const char *str)
-{
-    long value = 0;
-    int  neg = 0;
-    
-    while (*str == ' ' || *str == '\t')
-        ++str;
-    if (*str == '-')
-    {
-        neg = 1;
-        ++str;
-    }
-    while (*str >= '0' && *str <= '9')
-    {
-        value *= 10;
-        value += *str - '0';
-        ++str;
-    }
-    if (neg)
-        value = -value;
-    return value;
 }
 
 #endif

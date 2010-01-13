@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function MoveSprite()
@@ -8,6 +8,9 @@
 #include <aros/debug.h>
 #include <graphics/view.h>
 #include <graphics/sprite.h>
+#include <oop/oop.h>
+
+#include "graphics_intern.h"
 
 /*****************************************************************************
 
@@ -48,8 +51,13 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write graphics/MoveSprite()
-    aros_print_not_implemented ("MoveSprite");
+    if (sprite->num) /* We have only sprite #0 for the mouse cursor */
+        return;
+	
+    /* Note that we actually do not have ViewPorts and views, so we simply
+       ignore the ViewPort */
+    if (SDD(GfxBase)->gfxhidd)
+    	HIDD_Gfx_SetCursorPos(SDD(GfxBase)->gfxhidd, x, y);
 
     AROS_LIBFUNC_EXIT
 } /* MoveSprite */
