@@ -5,4 +5,4 @@ FILES := sdl_hostlib sdl_init event keymap gfxclass bmclass mouseclass kbdclass
 %build_module mmake=kernel-hidd-sdl \
   modname=sdl modtype=hidd \
   files=$(FILES) cflags="$(CFLAGS) $(SDL_CFLAGS)" \
-  uselibs="oop hiddgraphicsstubs utility"
+  uselibs="oop hiddgraphicsstubs utility rom"

@@ -38,7 +38,6 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/battclock.h>
 #include <proto/oop.h>
 #include <proto/timer.h>
 #include <proto/utility.h>
@@ -688,7 +687,6 @@ AROS_UFH3(void, SiS900_Schedular,
     struct SiS900Unit *unit = sm_UD->sis900sm_Unit;
 
     LIBBASETYPEPTR LIBBASE = unit->sis900u_device;
-    APTR BattClockBase;
     struct MsgPort *reply_port, *input;
 
 D(bug("%s SiS900_Schedular()\n", unit->sis900u_name));
@@ -698,10 +696,6 @@ D(bug("%s SiS900_Schedular: Setting device up\n", unit->sis900u_name));
     input = CreateMsgPort();
 
     unit->sis900u_input_port = input; 
-
-    /* Randomize the generator with current time */
-    BattClockBase =  OpenResource("battclock.resource");
-    srandom(ReadBattClock());
 
     unit->sis900u_TimerSlowPort = CreateMsgPort();
 

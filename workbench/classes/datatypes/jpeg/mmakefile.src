@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 USER_CFLAGS   := -DMYDEBUG
 
-FILES := jpegclass stubs
+FILES := jpegclass stubs memory
 
 #MM- workbench-datatypes-complete: workbench-datatypes-jpeg
 #MM workbench-datatypes-jpg : includes linklibs linklibs-jpg

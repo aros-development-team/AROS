@@ -648,6 +648,8 @@ $(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o $(TMP_DEPLI
 #------------------------------------------------------------------------------
 # Link the %(objs) and %(endobj) to %(module) with errors in %(err) and using
 # the libraries in %(uselibs) and the host libraries in %(usehostlibs)
+# The -noarosc flag is added so that modules are not linked with arosc.library
+# (see /config/specs.in file)
 %define rule_linkmodule module=/A objs=/A endobj=/A err=/A objdir=$(OBJDIR) \
     uselibs= usehostlibs=
 
@@ -655,9 +657,9 @@ $(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o $(TMP_DEPLI
 %(module) : ENDTAG := %(endobj)
 %(module) : ERR := %(err)
 %(module) : OBJDIR := %(objdir)
-%(module) : LIBS := $(addprefix -l,%(uselibs)) -larosc -lautoinit -llibinit -L/usr/lib $(addprefix -l,%(usehostlibs))
+%(module) : LIBS := $(addprefix -l,%(uselibs)) -lautoinit -llibinit -L/usr/lib $(addprefix -l,%(usehostlibs))
 %(module) : %(objs) %(endobj) $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
-	%link_module_q err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR)
+	%link_module_q err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR) ldflags="$(LDFLAGS) -noarosc"
 
 %end
 #------------------------------------------------------------------------------

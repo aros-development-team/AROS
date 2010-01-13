@@ -37,7 +37,6 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/battclock.h>
 #include <proto/oop.h>
 #include <proto/timer.h>
 #include <proto/utility.h>
@@ -519,7 +518,6 @@ AROS_UFH3(void, e1000func_Schedular,
     struct e1000Unit *unit = sm_UD->e1ksm_Unit;
 
     LIBBASETYPEPTR LIBBASE = unit->e1ku_device;
-    APTR BattClockBase;
     struct MsgPort *reply_port, *input;
 
 D(bug("[%s] e1000func_Schedular()\n", unit->e1ku_name));
@@ -530,10 +528,6 @@ D(bug("[%s] e1000func_Schedular: Setting device up\n", unit->e1ku_name));
 
     unit->e1ku_input_port = input; 
 
-    /* Randomize the generator with current time */
-    BattClockBase =  OpenResource("battclock.resource");
-    srandom(ReadBattClock());
-    
     unit->e1ku_TimerSlowPort = CreateMsgPort();
 
     if (unit->e1ku_TimerSlowPort)

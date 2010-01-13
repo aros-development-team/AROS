@@ -37,4 +37,4 @@ FUNCS := \
 %build_module mmake=kernel-workbench \
   modname=workbench modtype=library \
   files="workbench_init $(FUNCS) $(FILES)" \
-  uselibs=icon
+  uselibs="icon rom"
