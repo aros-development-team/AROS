@@ -51,6 +51,9 @@
 {
     AROS_LIBFUNC_INIT
 
+    sprite->x = x;
+    sprite->y = y;
+    
     if (sprite->num) /* We have only sprite #0 for the mouse cursor */
         return;
 	
