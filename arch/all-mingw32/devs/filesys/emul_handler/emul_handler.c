@@ -351,7 +351,6 @@ void *DoOpen(char *path, int mode, int protect)
   ULONG flags = 0;
   ULONG lock;
   ULONG create;
-  ULONG err;
   void *res;
   
   DOPEN2(bug("[emul] DoOpen(\"%s\", 0x%08lX)\n", path, mode));
@@ -366,11 +365,10 @@ void *DoOpen(char *path, int mode, int protect)
       create = (flags & FMF_CLEAR) ? CREATE_ALWAYS : OPEN_ALWAYS;
   else
       create = (flags & FMF_CLEAR) ? TRUNCATE_EXISTING : OPEN_EXISTING;
+  protect = prot_a2w(protect);
   DOPEN2(bug("[emul] CreateFile: name \"%s\", flags 0x%08lX, lock 0x%08lX, create %lu\n", path, flags, lock, create));
   Forbid();
-  res = OpenFile(path, flags, lock, NULL, create, prot_a2w(protect), NULL);
-  err = GetLastError();
-  Permit();
+  res = OpenFile(path, flags, lock, NULL, create, protect, NULL);
   /* Hack: dll's in LIBS:Host and AROSBootstrap.exe are locked against writing by
      Windows while AROS is running. However we may still read them. MODE_OLDFILE
      also requests write access with shared lock, this is why it fails on these files.
@@ -378,10 +376,14 @@ void *DoOpen(char *path, int mode, int protect)
      (FMF_READ) when we discover this problem.
      I hope this will not affect files really open in AROS because exclusive lock
      disallows read access also. */
-  if ((err == ERROR_SHARING_VIOLATION) && (mode == FMF_MODE_OLDFILE)) {
-      DOPEN2(bug("[emul] ERROR_SHARING_VIOLATION on MODE_OLDFILE, attempting read-only access\n"));
-      return DoOpen(path, FMF_READ, protect);
+  if (res == INVALID_HANDLE_VALUE) {
+      ULONG err = GetLastError();
+
+      if ((err == ERROR_SHARING_VIOLATION) && (mode == FMF_MODE_OLDFILE)) {
+	  res = OpenFile(path, GENERIC_READ, lock, NULL, OPEN_EXISTING, protect, NULL);
+      }
   }
+  Permit();
   DOPEN2(bug("[emul] FileHandle = 0x%08lX\n", res));
   return res;
 }
