@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,7 +14,6 @@
 #include <proto/arossupport.h>
 
 #include "graphics_intern.h"
-#include "graphics_internal.h"
 #include "fakegfxhidd.h"
 
 #define DEBUG 1

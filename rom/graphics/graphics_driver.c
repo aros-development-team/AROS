@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Driver for using gfxhidd for gfx output
@@ -42,8 +42,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "fakegfxhidd.h"
 #include "graphics_intern.h"
-#include "graphics_internal.h"
 #include "intregions.h"
 #include "dispinfo.h"
 #include "gfxfuncsupport.h"
