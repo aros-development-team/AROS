@@ -12,4 +12,5 @@ FUNCS := askkeymapdefault mapansi maprawkey setkeymapdefault
 
 %build_module mmake=kernel-keymap \
   modname=keymap modtype=library \
-  files="keymap_init $(FUNCS) $(FILES)"
+  files="keymap_init $(FUNCS) $(FILES)" \
+  uselibs="rom"

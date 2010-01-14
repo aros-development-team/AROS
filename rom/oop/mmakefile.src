@@ -28,6 +28,7 @@ USER_CFLAGS := -DAROS_USE_OOP -D__OOP_NOLIBBASE__
 %build_module mmake=kernel-oop \
   modname=oop modtype=library \
   files="oop_init $(FUNCS) $(FILES)" \
+  uselibs="rom"
 
 #MM includes-copy
 
