@@ -1,6 +1,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/lowlevel.h>
+#include <libraries/lowlevel_ext.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,9 +21,13 @@ static void printbuttons(ULONG val)
 
 static void printmousedirections(ULONG val)
 {
-    printf("[%d,%d]", val & JP_MHORZ_MASK, val & JP_MVERT_MASK);
+    printf("[%d,%d]", (val & JP_MHORZ_MASK), (val & JP_MVERT_MASK) >> 8);
 }
 
+static void printajoydirections(ULONG val)
+{
+    printf("[%d, %d]", (val & JP_XAXIS_MASK), (val & JP_YAXIS_MASK) >> 8);
+}
 static void printjoydirections(ULONG val)
 {
     if (val & JPF_JOY_UP)       printf("[UP]");
@@ -63,6 +68,13 @@ static void printjoyport(ULONG val)
     {
         printf("MOUSE - ");
         printmousedirections(val);
+        printbuttons(val);
+    }
+    
+    if ((val & JP_TYPE_MASK) == JP_TYPE_ANALOGUE)
+    {
+        printf("JOYSTICK[ANALOGUE] - ");
+        printajoydirections(val);
         printbuttons(val);
     }
 
