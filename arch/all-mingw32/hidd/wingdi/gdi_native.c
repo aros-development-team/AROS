@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2009, The AROS Development Team. All rights reserved.
-    $Id: gdi.c 27757 2008-01-26 15:05:40Z verhaegs $
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    $Id: gdi.c 27757 2008-01-26 15:05:40Z sonic $
 
     Desc: Host-side part of GDI hidd. Handles windows and receives events.
     Lang: English.
@@ -22,6 +22,7 @@ static DWORD last_key;
 
 __declspec(dllexport) struct MouseData GDI_MouseData;
 __declspec(dllexport) struct KeyboardData GDI_KeyboardData;
+struct Gfx_Control gdictl;
 
 /****************************************************************************************/
 
@@ -30,7 +31,7 @@ static ULONG SendKbdIRQ(UINT msg, DWORD key)
     DKBD(printf("[GDI] Keyboard event 0x%04lX key 0x%04lX\n", msg, key));
     GDI_KeyboardData.EventCode = msg;
     GDI_KeyboardData.KeyCode = key;
-    return KrnCauseIRQ(GDI_KeyboardData.irq);
+    return KrnCauseIRQ(GDI_KeyboardData.IrqNum);
 }
 
 /* We have to use this weird hook technique because there's no other way to prevent "Win" keys
@@ -90,7 +91,7 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
     	GDI_MouseData.MouseY = GET_Y_LPARAM(lp);
     	GDI_MouseData.Buttons = wp & 0x0000FFFF;
     	GDI_MouseData.WheelDelta = wp >> 16;
-        KrnCauseIRQ(3);
+        KrnCauseIRQ(GDI_MouseData.IrqNum);
     	return 0;
 /* This keyboard-related fragment is not used on Windows NT because keyboard hook intercepts all keyboard messages.
    It is left here for Windows 9x. */
@@ -118,9 +119,7 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
     return DefWindowProc(win, msg, wp, lp);
 }
 
-/****************************************************************************************/
-
-DWORD WINAPI gdithread_entry(struct gfx_control *ctl)
+DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
 {
     HHOOK keyhook;
     BOOL res;
@@ -150,7 +149,7 @@ DWORD WINAPI gdithread_entry(struct gfx_control *ctl)
     D(printf("[GDI] Created window class 0x%p\n", wcl));
     if (wcl) {
         ctl->window_ready = 1;
-        KrnCauseIRQ(ctl->irq);
+        KrnCauseIRQ(ctl->IrqNum);
     	do {
             res = GetMessage(&msg, NULL, 0, 0);
             D(printf("[GDI] GetMessage returned %ld\n", res));
@@ -186,7 +185,7 @@ DWORD WINAPI gdithread_entry(struct gfx_control *ctl)
             	            gdata->fbwin = NULL;
             	        }
             	    }
-            	    KrnCauseIRQ(ctl->irq);
+            	    KrnCauseIRQ(ctl->IrqNum);
             	    break;
             	default:
             	    DispatchMessage(&msg);
@@ -197,12 +196,41 @@ DWORD WINAPI gdithread_entry(struct gfx_control *ctl)
     }
     if (keyhook)
         UnhookWindowsHookEx(keyhook);
-    KrnCauseIRQ(ctl->irq);
+    KrnCauseIRQ(ctl->IrqNum);
 }
 
 /****************************************************************************************/
 
-ULONG __declspec(dllexport) GDI_Init(struct gfx_control *p)
+struct Gfx_Control *__declspec(dllexport) GDI_Init(void)
+{
+    long irq;
+
+    irq = KrnAllocIRQ();
+    if (irq != -1) {
+        gdictl.IrqNum = irq;
+        irq = KrnAllocIRQ();
+	if (irq != -1) {
+	    GDI_KeyboardData.IrqNum = irq;
+	    irq = KrnAllocIRQ();
+	    if (irq != -1) {
+	        GDI_MouseData.IrqNum = irq;
+		return &gdictl;
+	    }
+	    KrnFreeIRQ(GDI_KeyboardData.IrqNum);
+	}
+	KrnFreeIRQ(gdictl.IrqNum);
+    }
+    return NULL;
+}
+
+void __declspec(dllexport) GDI_Shutdown(struct Gfx_Control *ctl)
+{
+    KrnFreeIRQ(GDI_MouseData.IrqNum);
+    KrnFreeIRQ(GDI_KeyboardData.IrqNum);
+    KrnFreeIRQ(ctl->IrqNum);
+}
+
+ULONG __declspec(dllexport) GDI_Start(struct Gfx_Control *p)
 {
     HANDLE th;
     
@@ -211,12 +239,12 @@ ULONG __declspec(dllexport) GDI_Init(struct gfx_control *p)
     last_key = 0;
     th = CreateThread(NULL, 0, gdithread_entry, p, 0, &thread_id);
     D(printf("[GDI] Started thread 0x%p ID 0x%08lX\n", th, thread_id));
-    if (th)
+    if (th) {
         CloseHandle(th);
-    return th ? 1 : 0;
+	return 1;
+    }
+    return 0;
 }
-
-/****************************************************************************************/
 
 ULONG __declspec(dllexport) GDI_PutMsg(void *window, UINT msg, WPARAM wp, LPARAM lp)
 {

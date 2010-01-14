@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2009, The AROS Development Team. All rights reserved.
-    $Id: gdigfx.c 29127 2008-08-10 20:13:22Z inermis $
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    $Id: gdigfx.c 29127 2008-08-10 20:13:22Z sonic $
 
     Desc: GDI gfx HIDD for AROS.
     Lang: English.
@@ -464,7 +464,7 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
     D(bug("[GDI] hidd.gfx.wingdi::Show(0x%p)\n", msg->bitMap));
 
     me = FindTask(NULL);
-    gfx_int = KrnAddIRQHandler(2, GfxIntHandler, data, me);
+    gfx_int = KrnAddIRQHandler(XSD(cl)->ctl->IrqNum, GfxIntHandler, data, me);
     if (gfx_int) {
 	Forbid();
 

@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2009, The AROS Development Team. All rights reserved.
-    $Id: gdi_init.c 27757 2008-01-26 15:05:40Z verhaegs $
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    $Id: gdi_init.c 27757 2008-01-26 15:05:40Z sonic $
 
     Desc: GDI hidd initialization code.
     Lang: English.
@@ -55,21 +55,13 @@ static BOOL initclasses(struct gdi_staticdata *xsd)
 {
     /* Get some attrbases */
     
-    if (OOP_ObtainAttrBases(abd)) {
-	xsd->ctl.irq = KrnAllocIRQ();
-	if (xsd->ctl.irq != -1)
-	    return TRUE;
-    }
-    freeclasses(xsd);
-    return FALSE; 
+    return OOP_ObtainAttrBases(abd);
 }
 
 /****************************************************************************************/
 
 static VOID freeclasses(struct gdi_staticdata *xsd)
 {
-    if (xsd->ctl.irq != -1)
-        KrnFreeIRQ(xsd->ctl.irq);
     OOP_ReleaseAttrBases(abd);
 }
 
@@ -99,26 +91,31 @@ static int GDI_Init(LIBBASETYPEPTR LIBBASE)
         xsd->clipboard_targets_atom  = XCALL(XInternAtom, xsd->display, "TARGETS", FALSE);
 */
 	if (initclasses(xsd)) {
-	    me = FindTask(NULL);
-	    gfx_int = KrnAddIRQHandler(xsd->ctl.irq, GfxIntHandler, NULL, me);
-	    if (gfx_int) {
-	        SetSignal(0, SIGF_BLIT);
-		Forbid();
-		NATIVECALL(GDI_Init, &xsd->ctl);
-		Permit();
-		Wait(SIGF_BLIT);
-		KrnRemIRQHandler(gfx_int);
-		if (xsd->ctl.window_ready) {
-	    	    D(bug("GDI_Init succeeded\n"));
-	    	    return TRUE;
-		}
+	    Forbid();
+	    xsd->ctl = NATIVECALL(GDI_Init);
+	    Permit();
+	    if (xsd->ctl) {
+	        me = FindTask(NULL);
+	        gfx_int = KrnAddIRQHandler(xsd->ctl->IrqNum, GfxIntHandler, NULL, me);
+	        if (gfx_int) {
+	            SetSignal(0, SIGF_BLIT);
+		    Forbid();
+		    NATIVECALL(GDI_Start, xsd->ctl);
+		    Permit();
+		    Wait(SIGF_BLIT);
+		    KrnRemIRQHandler(gfx_int);
+		    if (xsd->ctl->window_ready) {
+	    	        D(bug("GDI_Init succeeded\n"));
+	    	        return TRUE;
+		    }
+	        }
+		NATIVECALL(GDI_Shutdown, xsd->ctl);
 	    }
 	    freeclasses(xsd);
         }
     }
-    
+
     D(bug("GDI_Init failed\n"));
-    
     return FALSE;
 }
 

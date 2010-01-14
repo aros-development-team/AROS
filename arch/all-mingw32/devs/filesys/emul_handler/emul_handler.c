@@ -737,76 +737,71 @@ static LONG startup(struct emulbase *emulbase)
 	    emulbase->ConsoleReader = InitNative();
 	    Permit();
 	    if (emulbase->ConsoleReader) {
-		D(bug("[Emulhandler] Created console reader %p\n", emulbase->ConsoleReader));
-		emulbase->ConsoleReader->irq = KrnAllocIRQ();
-		D(bug("[Emulhandler] Allocated console reader IRQ %d\n", emulbase->ConsoleReader->irq));
-		if (emulbase->ConsoleReader->irq != -1) {
-	            emulbase->ConsoleInt = KrnAddIRQHandler(emulbase->ConsoleReader->irq, EmulIntHandler, emulbase->ConsoleReader, NULL);
-	            D(bug("[Emulhandler] Added console interrupt %p\n", emulbase->ConsoleReader));
-	            if (emulbase->ConsoleInt) {
+		D(bug("[Emulhandler] Console reader at %p with IRQ %u\n", emulbase->ConsoleReader, emulbase->ConsoleReader->IrqNum));
+	        emulbase->ConsoleInt = KrnAddIRQHandler(emulbase->ConsoleReader->IrqNum, EmulIntHandler, emulbase->ConsoleReader, NULL);
+	        D(bug("[Emulhandler] Added console interrupt %p\n", emulbase->ConsoleReader));
+	        if (emulbase->ConsoleInt) {
 
-		        /*
-		           Allocate space for the string from same mem,
-		           Use AROS_BSTR_MEMSIZE4LEN macro for space to
-		           to allocate and add an extra 4 for alignment
-		           purposes.
-		        */
+		    /*
+		       Allocate space for the string from same mem,
+		       Use AROS_BSTR_MEMSIZE4LEN macro for space to
+		       to allocate and add an extra 4 for alignment
+		       purposes.
+		    */
 
-		        dlv = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)), MEMF_CLEAR|MEMF_PUBLIC);
-		        if (dlv) {
-			    dlv2 = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(VOLNAME)), MEMF_CLEAR|MEMF_PUBLIC);
-			    if(dlv2 != NULL)
-			    {
-			        BSTR s;
-			        BSTR s2;
-			        WORD i;
+		    dlv = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)), MEMF_CLEAR|MEMF_PUBLIC);
+		    if (dlv) {
+			dlv2 = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(VOLNAME)), MEMF_CLEAR|MEMF_PUBLIC);
+			if(dlv2 != NULL)
+			{
+			    BSTR s;
+			    BSTR s2;
+			    WORD i;
 
-			        D(kprintf("[Emulhandler] startup allocated dlv/dlv2\n"));
-			        /* We want s to point to the first 4-byte
-			           aligned memory after the structure.
-			         */
-			        s = (BSTR)MKBADDR(((IPTR)dlv + sizeof(struct DeviceNode) + 3) & ~3);
-			        s2 = (BSTR)MKBADDR(((IPTR)dlv2 + sizeof(struct DeviceNode) + 3) & ~3);
+			    D(kprintf("[Emulhandler] startup allocated dlv/dlv2\n"));
+			    /* We want s to point to the first 4-byte
+			       aligned memory after the structure.
+			     */
+			    s = (BSTR)MKBADDR(((IPTR)dlv + sizeof(struct DeviceNode) + 3) & ~3);
+			    s2 = (BSTR)MKBADDR(((IPTR)dlv2 + sizeof(struct DeviceNode) + 3) & ~3);
 
-			        for(i = 0; i < sizeof(DEVNAME) - 1; i++)
-				    AROS_BSTR_putchar(s, i, devname[i]);
-			        AROS_BSTR_setstrlen(s, sizeof(DEVNAME) - 1);
+			    for(i = 0; i < sizeof(DEVNAME) - 1; i++)
+				AROS_BSTR_putchar(s, i, devname[i]);
+			    AROS_BSTR_setstrlen(s, sizeof(DEVNAME) - 1);
 
-			        dlv->dn_Type    = DLT_DEVICE;
-			        dlv->dn_Ext.dn_AROS.dn_Unit   = (struct Unit *)fhv;
-			        dlv->dn_Ext.dn_AROS.dn_Device = &emulbase->device;
-			        dlv->dn_Handler = NULL;
-			        dlv->dn_Startup = NULL;
-			        dlv->dn_Name    = s;
-			        dlv->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv->dn_Name);
+			    dlv->dn_Type    = DLT_DEVICE;
+			    dlv->dn_Ext.dn_AROS.dn_Unit   = (struct Unit *)fhv;
+			    dlv->dn_Ext.dn_AROS.dn_Device = &emulbase->device;
+			    dlv->dn_Handler = NULL;
+			    dlv->dn_Startup = NULL;
+			    dlv->dn_Name    = s;
+			    dlv->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv->dn_Name);
 
-			        AddBootNode(5, 0, dlv, NULL);
+			    AddBootNode(5, 0, dlv, NULL);
 
-			        for(i = 0; i < sizeof(VOLNAME) - 1; i++)
-				    AROS_BSTR_putchar(s2, i, volname[i]);
-			        AROS_BSTR_setstrlen(s2, sizeof(VOLNAME) - 1);
+			    for(i = 0; i < sizeof(VOLNAME) - 1; i++)
+				AROS_BSTR_putchar(s2, i, volname[i]);
+			    AROS_BSTR_setstrlen(s2, sizeof(VOLNAME) - 1);
 					
-			        dlv2->dn_Type   = DLT_VOLUME;
-			        dlv2->dn_Ext.dn_AROS.dn_Unit   = (struct Unit *)fhv;
-			        dlv2->dn_Ext.dn_AROS.dn_Device = &emulbase->device;
-			        dlv2->dn_Handler = NULL;
-			        dlv2->dn_Startup = NULL;
-			        dlv2->dn_Name = s2;
-			        dlv2->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv2->dn_Name);
+			    dlv2->dn_Type   = DLT_VOLUME;
+			    dlv2->dn_Ext.dn_AROS.dn_Unit   = (struct Unit *)fhv;
+			    dlv2->dn_Ext.dn_AROS.dn_Device = &emulbase->device;
+			    dlv2->dn_Handler = NULL;
+			    dlv2->dn_Startup = NULL;
+			    dlv2->dn_Name = s2;
+			    dlv2->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv2->dn_Name);
 					
-			        /* Make sure this is not booted from */
-			        AddBootNode(-128, 0, dlv2, NULL);
-			        fhv->dl = dlv2;
+			    /* Make sure this is not booted from */
+			    AddBootNode(-128, 0, dlv2, NULL);
+			    fhv->dl = dlv2;
 			    
-			        /* Increment our open counter because we use ourselves */
-			        emulbase->device.dd_Library.lib_OpenCnt++;
-			        return 0;
-			    }
-			    FreeMem(dlv, sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)));
-		        }
-			KrnRemIRQHandler(emulbase->ConsoleInt);
+			    /* Increment our open counter because we use ourselves */
+			    emulbase->device.dd_Library.lib_OpenCnt++;
+			    return 0;
+			}
+			FreeMem(dlv, sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)));
 		    }
-		    KrnFreeIRQ(emulbase->ConsoleReader->irq);
+		    KrnRemIRQHandler(emulbase->ConsoleInt);
 		}
 	    }
 	    if (fhe)

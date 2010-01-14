@@ -102,20 +102,16 @@ OOP_Object * GDIKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     {
 	struct gdikbd_data *data = OOP_INST_DATA(cl, o);
 	
-	KEYBOARDDATA->irq = KrnAllocIRQ();
-	if (KEYBOARDDATA->irq != -1) {
-	    data->interrupt = KrnAddIRQHandler(4, KbdIntHandler, data, NULL);
-	    if (data->interrupt) {
-	    	data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
-		data->callbackdata = callbackdata;
-	
-		ObtainSemaphore( &XSD(cl)->sema);
-		XSD(cl)->kbdhidd = o;
-		ReleaseSemaphore( &XSD(cl)->sema);
-	    
-	        ReturnPtr("GDIKbd::New", OOP_Object *, o);
-	    }
-	    KrnFreeIRQ(KEYBOARDDATA->irq);
+	data->interrupt = KrnAddIRQHandler(KEYBOARDDATA->IrqNum, KbdIntHandler, data, NULL);
+	if (data->interrupt) {
+	    data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
+	    data->callbackdata = callbackdata;
+
+	    ObtainSemaphore( &XSD(cl)->sema);
+	    XSD(cl)->kbdhidd = o;
+	    ReleaseSemaphore( &XSD(cl)->sema);
+
+	    ReturnPtr("GDIKbd::New", OOP_Object *, o);
 	}
 	OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 	OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);

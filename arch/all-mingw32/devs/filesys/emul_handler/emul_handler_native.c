@@ -145,7 +145,7 @@ DWORD WINAPI EmulThread(struct AsyncReaderControl *emsg)
 	    res = ReadFile(emsg->fh, emsg->addr, emsg->len, &emsg->actual, NULL);
 	    emsg->error = res ? 0 : GetLastError();
 	    DASYNC(printf("[EmulHandler I/O] %lu bytes transferred, result %ld, error %lu\n", emsg->actual, res, emsg->error));
-	    KrnCauseIRQ(emsg->irq);
+	    KrnCauseIRQ(emsg->IrqNum);
 	}
     }
 }
@@ -154,14 +154,22 @@ struct AsyncReaderControl ControlStruct;
 
 struct AsyncReaderControl * __declspec(dllexport) Emul_Init_Native(void)
 {
+    HANDLE thread;
     DWORD id;
+    long irq;
 
-    ControlStruct.CmdEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-    if (ControlStruct.CmdEvent) {
-    	ControlStruct.thread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)EmulThread, &ControlStruct, 0, &id);
-    	if (ControlStruct.thread)
-    	    return &ControlStruct;
-    	CloseHandle(ControlStruct.CmdEvent);
+    irq = KrnAllocIRQ();
+    if (irq != -1) {
+        ControlStruct.IrqNum = irq;
+        ControlStruct.CmdEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+        if (ControlStruct.CmdEvent) {
+    	    thread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)EmulThread, &ControlStruct, 0, &id);
+    	    if (thread) {
+		CloseHandle(thread);
+    	        return &ControlStruct;
+	    }
+    	    CloseHandle(ControlStruct.CmdEvent);
+	}
     }
     return NULL;
 }

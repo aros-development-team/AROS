@@ -2,8 +2,8 @@
 #define HIDD_GDI_H
 
 /*
-    Copyright  1995-2008, The AROS Development Team. All rights reserved.
-    $Id: gdi.h 27106 2007-10-28 10:49:03Z verhaegs $
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    $Id: gdi.h 27106 2007-10-28 10:49:03Z sonic $
 
     Desc: Include for the gdi HIDD.
     Lang: English.
@@ -13,10 +13,28 @@
 #define WM_USER 1024
 #endif
 
-struct gfx_control
+/* GDI virtual hardware registers */
+struct Gfx_Control
 {
-    long irq;
-    unsigned long window_ready;
+    unsigned char IrqNum;
+    unsigned char window_ready;
+};
+
+struct MouseData
+{
+    unsigned char  IrqNum;
+    unsigned short EventCode;
+    unsigned short MouseX;
+    unsigned short MouseY;
+    unsigned short Buttons;
+    unsigned short WheelDelta;
+};
+
+struct KeyboardData
+{
+    unsigned char IrqNum;
+    unsigned short EventCode;
+    unsigned short KeyCode;
 };
 
 #ifdef __AROS__
@@ -81,7 +99,7 @@ struct gdi_staticdata
     ULONG   	    	     blue_shift;
     ULONG   	    	     depth; /* Size of pixel in bits */
 
-    struct gfx_control	     ctl;
+    struct Gfx_Control	    *ctl;
 
 /*  ULONG   	    	     bytes_per_pixel;
     ULONG   	    	     clut_shift;
@@ -159,23 +177,6 @@ struct gfx_data
     IPTR width;      /* Size of currently shown bitmap (window size)    */
     IPTR height;
     UBYTE irq;	     /* IRQ number */
-};
-
-struct MouseData
-{
-    unsigned short EventCode;
-    unsigned short MouseX;
-    unsigned short MouseY;
-    unsigned short Buttons;
-    unsigned short WheelDelta;
-    long irq;
-};
-
-struct KeyboardData
-{
-    unsigned short EventCode;
-    unsigned short KeyCode;
-    long irq;
 };
 
 #ifdef __AROS__
