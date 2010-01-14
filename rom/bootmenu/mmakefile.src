@@ -10,4 +10,4 @@ USER_INCLUDES := -I$(SRCDIR)/rom/devs
 
 %build_module mmake=kernel-bootmenu \
   modname=bootmenu modtype=resource \
-  files=$(FILES)
+  files=$(FILES) uselibs="rom"
