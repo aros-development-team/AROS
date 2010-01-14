@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Unix filedescriptor/socket IO
@@ -172,23 +172,14 @@ static void WaitForIO (void)
 	    	kprintf(" ASYNC SET, ");
 	    else
 	    	kprintf(" ASYNC NOT SET, ");
-	    }
+	}
 	    
-	    kprintf("\n");
+	kprintf("\n");
 #endif		    
 		    
-	    D(bug("wfio: Waiting for message or signal for task %s\n",ud->ud_WaitForIO->tc_Node.ln_Name));
+	D(bug("wfio: Waiting for message or signal for task %s\n",ud->ud_WaitForIO->tc_Node.ln_Name));
 #ifdef __linux__
-            rmask =
-                Wait
-                (
-                    (1UL << ud->ud_Port->mp_SigBit)
-                    |
-                    (1UL << timer_port->mp_SigBit)
-                    |
-                    SIGBREAKF_CTRL_C
-                );
-
+            rmask = Wait((1UL << ud->ud_Port->mp_SigBit)|(1UL << timer_port->mp_SigBit)|SIGBREAKF_CTRL_C);
 	    if (rmask & 1 << timer_port -> mp_SigBit)
 	    {
 	        /*
@@ -231,8 +222,7 @@ static void WaitForIO (void)
 	      flags = fcntl (msg->fd, F_GETFL);
 	      fcntl (msg->fd, F_SETFL, flags | FASYNC | O_NONBLOCK);
 #ifdef __linux__
-	      if (msg->mode & vHidd_UnixIO_Write &&
-	          msg->fd_type & vHidd_UnixIO_Terminal) {
+	      if (msg->mode & vHidd_UnixIO_Write && msg->fd_type & vHidd_UnixIO_Terminal) {
 	          terminals_write_counter++;
 	          if (1 == terminals_write_counter) {
 	              unixio_start_timer(timerio);
@@ -332,8 +322,7 @@ static void WaitForIO (void)
 		    msg->result = err;
 		    goto reply;
 		}
-		else if ((vHidd_UnixIO_Read & msg->mode) &&
-		         FD_ISSET (msg->fd, &rfds))
+		else if ((vHidd_UnixIO_Read & msg->mode) && FD_ISSET (msg->fd, &rfds))
 		{
 		    if (msg->callback)
 		    {
@@ -349,8 +338,7 @@ static void WaitForIO (void)
 			goto reply;
 		    }
 		}
-		else if ((vHidd_UnixIO_Write & msg->mode) &&
-		         FD_ISSET (msg->fd, &wfds))
+		else if ((vHidd_UnixIO_Write & msg->mode) && FD_ISSET (msg->fd, &wfds))
 		{
 		    msg->result = 0;
 reply:
@@ -368,14 +356,14 @@ kprintf("\tUnixIO task: Replying a message from task %s (%x) to port %x (flags :
 			    (msg->fd_type & vHidd_UnixIO_Terminal)) /* stegerg: CHECKME added vHidd_Unixio_terminal check */
 			{
                             terminals_write_counter--;
-                      if (terminals_write_counter == 0) {
-                        if (!CheckIO(&timerio->tr_node)) 
-                          AbortIO(&timerio->tr_node);
-                        WaitIO(&timerio->tr_node);
-    	    	    	SetSignal(0, 1L << timer_port->mp_SigBit);
+				if (terminals_write_counter == 0) {
+				    if (!CheckIO(&timerio->tr_node)) 
+					AbortIO(&timerio->tr_node);
+				    WaitIO(&timerio->tr_node);
+				    SetSignal(0, 1L << timer_port->mp_SigBit);
 
+				}
 			}
-		      }
 #endif
 		    } else {
 		        /*
