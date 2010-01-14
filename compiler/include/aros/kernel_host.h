@@ -14,6 +14,9 @@
 #define IMPORT
 #endif
 
+long IMPORT KrnAllocIRQ(void);
+void IMPORT KrnFreeIRQ(unsigned char irq);
+void *IMPORT KrnGetIRQObject(unsigned char irq);
 unsigned long IMPORT KrnCauseIRQ(unsigned char irq);
 
 #endif
