@@ -37,27 +37,14 @@ void ASMCALL
 ISAC_SetMasterInt( REG( d0, BOOL               on ),
                    REG( a6, struct ISAPNPBase* res ) )
 {
-    bug("[ISAPNP] ISAC_SetMasterInt() is not implemented\n");
-/*UWORD* reg2 = (UWORD*)( res->m_Base + 0x18002 );
-
-  if( on )
-  {
-    WriteWord( reg2, 0 );
-  }
-  else
-  {
-    ReadWord( reg2 );
-  }*/
+    /* On a PC we have no interrupt mapping so we don't have a 'master interrupt' */
 }
 
 
 BOOL ASMCALL
 ISAC_GetMasterInt( REG( a6, struct ISAPNPBase* res ) )
 {
-    bug("[ISAPNP] ISAC_GetMasterInt() is not implemented\n");
-/*UWORD* reg1 = (UWORD*)( res->m_Base + 0x18000 );
-
-  return ( ReadWord( reg1 ) & 1 ) != 0;*/
+    return TRUE;
 }
 
 
@@ -65,26 +52,14 @@ void ASMCALL
 ISAC_SetWaitState( REG( d0, BOOL               on ),
                    REG( a6, struct ISAPNPBase* res ) )
 {
-    bug("[ISAPNP] ISAC_SetWaitState() is not implemented\n");
-#if 0
-  UBYTE* reg3 = (UBYTE*) ( isa_Base + 0x18007 );
-
-  if( (  on && !WaitState() ) ||
-      ( !on &&  WaitState() ) )
-  {
-    *reg3 = 0;             // Toggle
-  }
-#endif
+    /* On a PC we can't control it */
 }
 
 
 BOOL ASMCALL
 ISAC_GetWaitState( REG( a6, struct ISAPNPBase* res ) )
 {
-    bug("[ISAPNP] ISAC_GetWaitState() is not implemented\n");
-/*UWORD* reg1 = (UWORD*)( res->m_Base + 0x18000 );
-
-  return ( ReadWord( reg1 ) & 2 ) != 0;*/
+    return TRUE;
 }
 
 
