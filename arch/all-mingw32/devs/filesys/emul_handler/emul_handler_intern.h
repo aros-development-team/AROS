@@ -8,19 +8,19 @@
     Lang: english
 */
 
+/* This structure describes our virtual hardware registers */
 struct AsyncReaderControl
 {
-    unsigned char cmd;
-    void *CmdEvent;
-    void *thread;
-    void *fh;
-    void *addr;
-    unsigned long len;
-    unsigned long actual;
-    unsigned long error;
-    unsigned long sig;
-    void *task;
-    long irq;
+    unsigned char cmd;	  /* Command				        */
+    void *fh;		  /* File handle to operate on			*/
+    void *addr;		  /* Buffer address				*/
+    unsigned long len;	  /* Requested data length			*/
+    unsigned long actual; /* Actual data length				*/
+    unsigned long error;  /* Error code					*/
+    void *CmdEvent;	  /* Event to trigger in order to tell us to go */
+    unsigned char IrqNum; /* IRQ number on AROS side			*/
+    unsigned long sig;	  /* AROS signal to use, used by IRQ handler	*/
+    void *task;		  /* AROS task to signal, used by IRQ handler	*/
 };
 
 #define ASYNC_CMD_SHUTDOWN 0

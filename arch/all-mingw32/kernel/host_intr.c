@@ -360,7 +360,15 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
     return 0;
 }
 
-long __declspec(dllexport) core_alloc_irq(void)
+/*
+ * The following is host-side IRQ API.
+ *
+ * It is used by virtual hadrware implemented as asynchronous host operating
+ * system threads.
+ *
+ */
+
+long __declspec(dllexport) KrnAllocIRQ(void)
 {
     long irq = 0;
     
@@ -381,18 +389,17 @@ long __declspec(dllexport) core_alloc_irq(void)
     return -1;
 }
 
-void __declspec(dllexport) core_free_irq(unsigned char irq)
+void __declspec(dllexport) KrnFreeIRQ(unsigned char irq)
 {
     AllocatedInts[irq] = 0;
     while (!AllocatedInts[Ints_Num - 1])
         Ints_Num--;
 }
 
-/*
- * This is the only function to be called by modules other than kernel.resource.
- * It is used for causing interrupts from within asynchronous threads of
- * virtual hardware drivers.
- */
+void *__declspec(dllexport) KrnGetIRQObject(unsigned char irq)
+{
+    return IntObjects[irq];
+}
 
 unsigned long __declspec(dllexport) KrnCauseIRQ(unsigned char irq)
 {

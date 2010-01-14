@@ -140,30 +140,3 @@ AROS_LH0I(int, KrnIsSuper,
     AROS_LIBFUNC_EXIT
 }
 
-
-AROS_LH0I(LONG, KrnAllocIRQ,
-	  struct KernelBase *, KernelBase, 23, Kernel)
-{
-    AROS_LIBFUNC_INIT
-    LONG res;
-    
-    Forbid();
-    res = KernelIFace.core_alloc_irq();
-    Permit();
-    return res;
-    
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH1I(LONG, KrnFreeIRQ,
-	  AROS_LHA(uint8_t, irq, D0),
-	  struct KernelBase *, KernelBase, 24, Kernel)
-{
-    AROS_LIBFUNC_INIT
-    
-    Forbid();
-    KernelIFace.core_free_irq(irq);
-    Permit();
-    
-    AROS_LIBFUNC_EXIT
-}
