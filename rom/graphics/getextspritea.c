@@ -33,7 +33,6 @@
         Sprite_number - a sprite number or -1 for an error
 
     NOTES
-	Not implemented.
 
     EXAMPLE
 
@@ -42,6 +41,10 @@
     SEE ALSO
 
     INTERNALS
+    	AROS does not have complete sprite system, instead it has a (hacky)
+	minimal implementation enough to drive mouse pointer as a single
+	sprite #0. This assumes that this sprite is always allocated by the OS
+	itself and can't be used by user applications. So we just return error.
 
     HISTORY
 
@@ -49,9 +52,6 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-#warning TODO: Write graphics/GetExtSpriteA()
-    aros_print_not_implemented ("GetExtSpriteA");
 
     return -1;
 
