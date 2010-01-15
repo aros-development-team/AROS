@@ -892,7 +892,7 @@ static const char THIS_FILE[] = __FILE__;
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Colormap Entries %ld\n",
                                  numcolors));
 
-        if ((screen->Screen.ViewPort.ColorMap = GetColorMap(numcolors < 32 ? 32 : numcolors)) != NULL)
+        if ((screen->Screen.ViewPort.ColorMap = GetColorMap(numcolors)) != NULL)
         {
 
 #ifndef __MORPHOS__ /* Use VideoControl for MorphOS */
@@ -1068,7 +1068,7 @@ static const char THIS_FILE[] = __FILE__;
 
         /* Allocate pens for the mouse pointer */
         q = &GetPrivIBase(IntuitionBase)->ActivePreferences->color17;
-	if (numcolors < 20)
+	if (numcolors < 24)
 	    /* FIXME: this assumes that we have at least 16 colors */
 	    c = numcolors - 7;
 	else
