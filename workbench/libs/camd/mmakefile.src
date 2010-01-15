@@ -53,6 +53,7 @@ FUNCS := \
 
 %build_module mmake=workbench-libs-camd \
     modname=camd modtype=library \
-    files="$(FUNCS) $(FILES) camd_init" uselibs=amiga
+    files="$(FUNCS) $(FILES) camd_init" \
+    uselibs="rom amiga"
 
 %common
