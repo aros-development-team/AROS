@@ -40,24 +40,24 @@ int main()
         MUIA_Application_Description, (IPTR) __(MSG_NAME),
         MUIA_Application_SingleTask, TRUE,
         MUIA_Application_Base, (IPTR) "SCREENMODEPREF",
-	SubWindow, (IPTR)(win = SystemPrefsWindowObject,
-	MUIA_Window_ID, MAKE_ID('S','W','I','N'),
+        SubWindow, (IPTR)(win = SystemPrefsWindowObject,
+        MUIA_Window_ID, MAKE_ID('S','W','I','N'),
             WindowContents, (IPTR) SMEditorObject,
             End,
-	End),
+        End),
     End;
 
     if (app)
-    {	     
+    {
         set(win, MUIA_Window_Open, TRUE);
-	
+        
         DoMethod(app, MUIM_Application_Execute);
     
         MUI_DisposeObject(app);
 
         Locale_Deinitialize();
 
-	return RETURN_ERROR;        
+        return RETURN_ERROR;        
     }
     else
     {

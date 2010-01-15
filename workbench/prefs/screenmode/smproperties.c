@@ -24,7 +24,7 @@ struct ScreenModeProperties_DATA
 {
     Object *width, *height, *depth,
            *def_width, *def_height;
-	   
+           
     Object *autoscroll;
     
     ULONG DisplayID;
@@ -49,10 +49,10 @@ struct ScreenModeProperties_DATA
 
 Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-    struct ScreenModeProperties_DATA *data;	 
+    struct ScreenModeProperties_DATA *data;
     Object *width, *height, *depth,
            *def_width, *def_height;
-	   
+
     Object *autoscroll;
     
     ULONG id;
@@ -60,31 +60,31 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     self = (Object *)DoSuperNewTags
     (
         CLASS, self, NULL,
-	MUIA_Group_Horiz, TRUE,
+        MUIA_Group_Horiz, TRUE,
         Child, (IPTR)ColGroup(4),
-	    Child, (IPTR)Label1(__(MSG_WIDTH)),
-	    Child, HLeft(width = (Object *)NumericbuttonObject, End),
-	    Child, (IPTR)(def_width = (Object *)CheckMarkObject, End),
-	    Child, (IPTR)Label1(__(MSG_DEFAULT)),
-	        
-	    Child, (IPTR)Label1(__(MSG_HEIGHT)),
-	    Child, HLeft(height = (Object *)NumericbuttonObject, End),
-	    Child, (IPTR)(def_height = (Object *)CheckMarkObject, End),
-	    Child, (IPTR)Label1(__(MSG_DEFAULT)),
-	        
-	    Child, (IPTR)Label1(__(MSG_DEPTH)),
-	    Child, HLeft(depth = (Object *)NumericbuttonObject, End),
-	    Child, (IPTR)RectangleObject, End,
-	    Child, (IPTR)RectangleObject, End,		
-	End,  
-	    
-	Child, (IPTR)MUI_MakeObject(MUIO_VBar, 20),
-	    
-	Child, (IPTR)HCenter(HGroup,
-	    Child, (IPTR)Label1(__(MSG_AUTOSCROLL)),
-	    Child, (IPTR)(autoscroll = (Object *)CheckMarkObject, End),
-	End),
-	
+            Child, (IPTR)Label1(__(MSG_WIDTH)),
+            Child, HLeft(width = (Object *)NumericbuttonObject, End),
+            Child, (IPTR)(def_width = (Object *)CheckMarkObject, End),
+            Child, (IPTR)Label1(__(MSG_DEFAULT)),
+                
+            Child, (IPTR)Label1(__(MSG_HEIGHT)),
+            Child, HLeft(height = (Object *)NumericbuttonObject, End),
+            Child, (IPTR)(def_height = (Object *)CheckMarkObject, End),
+            Child, (IPTR)Label1(__(MSG_DEFAULT)),
+                
+            Child, (IPTR)Label1(__(MSG_DEPTH)),
+            Child, HLeft(depth = (Object *)NumericbuttonObject, End),
+            Child, (IPTR)RectangleObject, End,
+            Child, (IPTR)RectangleObject, End,
+        End,  
+            
+        Child, (IPTR)MUI_MakeObject(MUIO_VBar, 20),
+            
+        Child, (IPTR)HCenter(HGroup,
+            Child, (IPTR)Label1(__(MSG_AUTOSCROLL)),
+            Child, (IPTR)(autoscroll = (Object *)CheckMarkObject, End),
+        End),
+        
         TAG_MORE, (IPTR)message->ops_AttrList
     );
     
@@ -103,50 +103,50 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     DoMethod
     (
         width, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
-	(IPTR)self, 3,
-	MUIM_Set, MUIA_ScreenModeProperties_Width, MUIV_TriggerValue
+        (IPTR)self, 3,
+        MUIM_Set, MUIA_ScreenModeProperties_Width, MUIV_TriggerValue
     );
     
     DoMethod
     (
         height, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
-	(IPTR)self, 3,
-	MUIM_Set, MUIA_ScreenModeProperties_Height, MUIV_TriggerValue
+        (IPTR)self, 3,
+        MUIM_Set, MUIA_ScreenModeProperties_Height, MUIV_TriggerValue
     );
     
     DoMethod
     (
         depth, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
-	(IPTR)self, 3,
-	MUIM_Set, MUIA_ScreenModeProperties_Depth, MUIV_TriggerValue
+        (IPTR)self, 3,
+        MUIM_Set, MUIA_ScreenModeProperties_Depth, MUIV_TriggerValue
     );
     
     DoMethod
     (
         def_width, MUIM_Notify, MUIA_Selected, TRUE,
-	(IPTR)width, 1,
-	MUIM_Numeric_SetDefault
+        (IPTR)width, 1,
+        MUIM_Numeric_SetDefault
     );
 
     DoMethod
     (
         width, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
-	(IPTR)def_width, 3,
-	MUIM_Set, MUIA_Selected, FALSE
+        (IPTR)def_width, 3,
+        MUIM_Set, MUIA_Selected, FALSE
     );
     
     DoMethod
     (
         def_height, MUIM_Notify, MUIA_Selected, TRUE,
-	(IPTR)height, 1,
-	MUIM_Numeric_SetDefault
+        (IPTR)height, 1,
+        MUIM_Numeric_SetDefault
     );
 
     DoMethod
     (
         height, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
-	(IPTR)def_height, 3,
-	MUIM_Set, MUIA_Selected, FALSE
+        (IPTR)def_height, 3,
+        MUIM_Set, MUIA_Selected, FALSE
     );
         
     id = GetTagData(MUIA_ScreenModeProperties_DisplayID, INVALID_ID, message->ops_AttrList); 
@@ -179,124 +179,124 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
     {
         switch (tag->ti_Tag)
         {
-	    case MUIA_NoNotify:
-	        no_notify = MUIA_NoNotify;
-		break;
-		
-	    case MUIA_ScreenModeProperties_DisplayID:
-	    {
-	        struct TagItem width_tags[] =
-		{
-		    { no_notify,            TRUE },
-		    { MUIA_Numeric_Min,        0 },
-		    { MUIA_Numeric_Max,        0 },
-		    { MUIA_Numeric_Default,    0 },
-		    { TAG_DONE,                0 }
-		};
-	        struct TagItem height_tags[] =
-		{
-		    { no_notify,            TRUE },
-		    { MUIA_Numeric_Min,        0 },
-		    { MUIA_Numeric_Max,        0 },
-		    { MUIA_Numeric_Default,    0 },
-		    { TAG_DONE,                0 }
-		};
-	        struct TagItem depth_tags[] =
-		{
-		    { no_notify,            TRUE },
-		    { MUIA_Numeric_Min,        0 },
-		    { MUIA_Numeric_Max,        0 },
-		    { MUIA_Numeric_Default,    0 },
-		    { TAG_DONE,                0 }
-		};
-	        
-                struct DimensionInfo dim;
-		
-		BOOL autoscroll;
+            case MUIA_NoNotify:
+                no_notify = MUIA_NoNotify;
+                break;
                 
-		if (GetDisplayInfoData(NULL, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, tag->ti_Data))
+            case MUIA_ScreenModeProperties_DisplayID:
+            {
+                struct TagItem width_tags[] =
+                {
+                    { no_notify,            TRUE },
+                    { MUIA_Numeric_Min,        0 },
+                    { MUIA_Numeric_Max,        0 },
+                    { MUIA_Numeric_Default,    0 },
+                    { TAG_DONE,                0 }
+                };
+                struct TagItem height_tags[] =
+                {
+                    { no_notify,            TRUE },
+                    { MUIA_Numeric_Min,        0 },
+                    { MUIA_Numeric_Max,        0 },
+                    { MUIA_Numeric_Default,    0 },
+                    { TAG_DONE,                0 }
+                };
+                struct TagItem depth_tags[] =
+                {
+                    { no_notify,            TRUE },
+                    { MUIA_Numeric_Min,        0 },
+                    { MUIA_Numeric_Max,        0 },
+                    { MUIA_Numeric_Default,    0 },
+                    { TAG_DONE,                0 }
+                };
+                
+                struct DimensionInfo dim;
+                
+                BOOL autoscroll;
+                
+                if (GetDisplayInfoData(NULL, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, tag->ti_Data))
                 {
                     width_tags[1].ti_Data  = dim.MinRasterWidth;
                     height_tags[1].ti_Data = dim.MinRasterHeight;
                     depth_tags[1].ti_Data  = 1;
-	    
+            
                     width_tags[2].ti_Data  = dim.MaxRasterWidth;
                     height_tags[2].ti_Data = dim.MaxRasterHeight;
-	            depth_tags[2].ti_Data  = dim.MaxDepth;
-	    
+                    depth_tags[2].ti_Data  = dim.MaxDepth;
+            
                     width_tags[3].ti_Data  = dim.Nominal.MaxX - dim.Nominal.MinX + 1;
                     height_tags[3].ti_Data = dim.Nominal.MaxY - dim.Nominal.MinY + 1;
-	            depth_tags[3].ti_Data  = dim.MaxDepth;
+                    depth_tags[3].ti_Data  = dim.MaxDepth;
                     
-		    id = tag->ti_Data;		    
-		}
-		
-		/* Enable autoscroll only if the maximum sizes are bigger than 
-		   the resolution.  */
-		   
-		autoscroll = width_tags[2].ti_Data  > width_tags[3].ti_Data  &&
-		             height_tags[2].ti_Data > height_tags[3].ti_Data;
-    
-  	        data->DisplayID = id;
- 	        nfset(self, MUIA_Disabled, id == INVALID_ID);
-		
-		SetAttrsA(data->width,  width_tags);
-		SetAttrsA(data->height, height_tags);
-		SetAttrsA(data->depth,  depth_tags);
-		
-		SetAttrs(data->autoscroll, no_notify, TRUE, 
-		                           MUIA_Disabled, !autoscroll,
-					   MUIA_Selected, autoscroll,
-					   TAG_DONE);
+                    id = tag->ti_Data;		    
+                }
                 
-		break;
-	    }
-	    
-	    case MUIA_ScreenModeProperties_Width:
-	        if (id != INVALID_ID)
-		{
-		    WORD width = tag->ti_Data;
-		    if (width != -1)
-		        SetAttrs(data->width, no_notify, TRUE, MUIA_Numeric_Value, width, TAG_DONE);
-		    else
-		        DoMethod(data->width, MUIM_Numeric_SetDefault);
-		    
-		    nnset(data->def_width, MUIA_Selected, width == -1);
-		}
-		break;
-		
-	    case MUIA_ScreenModeProperties_Height:
-	        if (id != INVALID_ID)
-		{
-		    WORD height = tag->ti_Data;
-		    if (height != -1)
-		        SetAttrs(data->height, no_notify, TRUE, MUIA_Numeric_Value, height, TAG_DONE);
-		    else
-		        DoMethod(data->height, MUIM_Numeric_SetDefault);
-		    
-		    nnset(data->def_height, MUIA_Selected, height == -1);
-		}
-		break;
-	    
-	    case MUIA_ScreenModeProperties_Depth:
-	        if (id != INVALID_ID)
-		{
-		    WORD depth = tag->ti_Data;
-		    if (depth != -1)
-		        SetAttrs(data->depth, no_notify, TRUE, MUIA_Numeric_Value, depth, TAG_DONE);
-		    else
-		        DoMethod(data->depth, MUIM_Numeric_SetDefault);
-		}
-		break;
-	    
-	    case MUIA_ScreenModeProperties_Autoscroll:
-	        if (id != INVALID_ID && !XGET(data->autoscroll, MUIA_Disabled))
-		    SetAttrs(data->autoscroll, no_notify, TRUE, MUIA_Selected, tag->ti_Data != 0);
-		break;
-	}
-    }		    
+                /* Enable autoscroll only if the maximum sizes are bigger than 
+                   the resolution.  */
+                   
+                autoscroll = width_tags[2].ti_Data  > width_tags[3].ti_Data  &&
+                             height_tags[2].ti_Data > height_tags[3].ti_Data;
+    
+                data->DisplayID = id;
+                nfset(self, MUIA_Disabled, id == INVALID_ID);
+                
+                SetAttrsA(data->width,  width_tags);
+                SetAttrsA(data->height, height_tags);
+                SetAttrsA(data->depth,  depth_tags);
+                
+                SetAttrs(data->autoscroll, no_notify, TRUE, 
+                                           MUIA_Disabled, !autoscroll,
+                                           MUIA_Selected, autoscroll,
+                                           TAG_DONE);
+                
+                break;
+            }
+            
+            case MUIA_ScreenModeProperties_Width:
+                if (id != INVALID_ID)
+                {
+                    WORD width = tag->ti_Data;
+                    if (width != -1)
+                        SetAttrs(data->width, no_notify, TRUE, MUIA_Numeric_Value, width, TAG_DONE);
+                    else
+                        DoMethod(data->width, MUIM_Numeric_SetDefault);
+                    
+                    nnset(data->def_width, MUIA_Selected, width == -1);
+                }
+                break;
+                
+            case MUIA_ScreenModeProperties_Height:
+                if (id != INVALID_ID)
+                {
+                    WORD height = tag->ti_Data;
+                    if (height != -1)
+                        SetAttrs(data->height, no_notify, TRUE, MUIA_Numeric_Value, height, TAG_DONE);
+                    else
+                        DoMethod(data->height, MUIM_Numeric_SetDefault);
+                    
+                    nnset(data->def_height, MUIA_Selected, height == -1);
+                }
+                break;
+            
+            case MUIA_ScreenModeProperties_Depth:
+                if (id != INVALID_ID)
+                {
+                    WORD depth = tag->ti_Data;
+                    if (depth != -1)
+                        SetAttrs(data->depth, no_notify, TRUE, MUIA_Numeric_Value, depth, TAG_DONE);
+                    else
+                        DoMethod(data->depth, MUIM_Numeric_SetDefault);
+                }
+                break;
+            
+            case MUIA_ScreenModeProperties_Autoscroll:
+                if (id != INVALID_ID && !XGET(data->autoscroll, MUIA_Disabled))
+                    SetAttrs(data->autoscroll, no_notify, TRUE, MUIA_Selected, tag->ti_Data != 0);
+                break;
+        }
+    }
 
-    return DoSuperMethodA(CLASS, self, (Msg)&noforward_message);	
+    return DoSuperMethodA(CLASS, self, (Msg)&noforward_message);
 }
 
 IPTR ScreenModeProperties__OM_GET(Class *CLASS, Object *self, struct opGet *message)
@@ -306,32 +306,32 @@ IPTR ScreenModeProperties__OM_GET(Class *CLASS, Object *self, struct opGet *mess
     switch (message->opg_AttrID)
     {
         case MUIA_ScreenModeProperties_DisplayID:
-	    *message->opg_Storage = data->DisplayID;
+            *message->opg_Storage = data->DisplayID;
             break;
         
-	case MUIA_ScreenModeProperties_Width:
-	    if (XGET(data->def_width, MUIA_Selected) == TRUE)
-	        *message->opg_Storage = -1;
-	    else
-	        *message->opg_Storage = XGET(data->width, MUIA_Numeric_Value);
+        case MUIA_ScreenModeProperties_Width:
+            if (XGET(data->def_width, MUIA_Selected) == TRUE)
+                *message->opg_Storage = -1;
+            else
+                *message->opg_Storage = XGET(data->width, MUIA_Numeric_Value);
             break;
         
-	case MUIA_ScreenModeProperties_Height:
-	    if (XGET(data->def_height, MUIA_Selected) == TRUE)
-	        *message->opg_Storage = -1;
-	    else
-	        *message->opg_Storage = XGET(data->height, MUIA_Numeric_Value);
+        case MUIA_ScreenModeProperties_Height:
+            if (XGET(data->def_height, MUIA_Selected) == TRUE)
+                *message->opg_Storage = -1;
+            else
+                *message->opg_Storage = XGET(data->height, MUIA_Numeric_Value);
             break;
         
-	case MUIA_ScreenModeProperties_Depth:
-	    *message->opg_Storage = XGET(data->depth, MUIA_Numeric_Value);
+        case MUIA_ScreenModeProperties_Depth:
+            *message->opg_Storage = XGET(data->depth, MUIA_Numeric_Value);
             break;
-	
+        
         case MUIA_ScreenModeProperties_Autoscroll:
-	    *message->opg_Storage = XGET(data->autoscroll, MUIA_Selected);
+            *message->opg_Storage = XGET(data->autoscroll, MUIA_Selected);
             break;
-	
-	default:
+        
+        default:
             return DoSuperMethodA(CLASS, self, (Msg)message);
     }
     

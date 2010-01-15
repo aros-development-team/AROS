@@ -56,56 +56,56 @@ Object *ScreenModeSelector__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
     ULONG  *ids_array;
     ULONG   id, num_modes, cur_mode;
     Object *list;
-         
+
     struct DisplayInfo    DisplayInfo;
     struct DimensionInfo  DimensionInfo;
     struct NameInfo       NameInfo;
     APTR handle;
-	 
+
     struct ScreenModeSelector_DATA *data;
-	 
+
     num_modes = 0; id = INVALID_ID;
     while ((id = NextDisplayInfo(id)) != INVALID_ID) num_modes++;
-	 
+
     modes_array = AllocVec(sizeof(STRPTR) * (num_modes + 1), MEMF_CLEAR);
     if (!modes_array)
         goto err;
-	
+
     ids_array   = AllocVec(sizeof(ULONG) * (num_modes + 1), MEMF_ANY);
     if (!ids_array)
         goto err;
 
     ids_array[num_modes] = INVALID_ID;
-    
+
     cur_mode = 0;
     while ((id = NextDisplayInfo(id)) != INVALID_ID)
     {
         if ((id & MONITOR_ID_MASK) == DEFAULT_MONITOR_ID)
-	    continue;
-	    
+            continue;
+
         if (!(handle = FindDisplayInfo(id)))
-	    continue;
-	    
+            continue;
+
         if (!GetDisplayInfoData(handle, (UBYTE *)&NameInfo, sizeof(struct NameInfo), DTAG_NAME, 0))
-	    continue;
-        
+            continue;
+
         if (!GetDisplayInfoData(handle, (UBYTE *)&DisplayInfo, sizeof(struct DisplayInfo), DTAG_DISP, 0))
-	    continue;
+            continue;
         
         if (!(DisplayInfo.PropertyFlags & DIPF_IS_WB) || DisplayInfo.NotAvailable)
-	    continue;
-        
-	if (!GetDisplayInfoData(handle, (UBYTE *)&DimensionInfo, sizeof(struct DimensionInfo), DTAG_DIMS, 0))
-	    continue;
-        
+            continue;
+
+        if (!GetDisplayInfoData(handle, (UBYTE *)&DimensionInfo, sizeof(struct DimensionInfo), DTAG_DIMS, 0))
+            continue;
+
         modes_array[cur_mode] = AllocVec(sizeof(NameInfo.Name), MEMF_ANY);
         if (!modes_array[cur_mode])
-	   continue;
-		 
+           continue;
+
         CopyMem(NameInfo.Name, modes_array[cur_mode], sizeof(NameInfo.Name));
-	ids_array[cur_mode] = id;
-	     
-	cur_mode++;
+        ids_array[cur_mode] = id;
+
+        cur_mode++;
     }
 
     list = ListObject,
@@ -122,14 +122,14 @@ Object *ScreenModeSelector__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
 
     if (!self)
         goto err;
-	
+
     DoMethod(self, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
              (IPTR)self, 3, MUIM_CallHook, (IPTR)&SelectHook, MUIV_TriggerValue);
  
     data = INST_DATA(CLASS, self);    
     data->modes_array = modes_array;
     data->ids_array   = ids_array;
-	 
+
     return self;
     
 err:
@@ -141,19 +141,19 @@ IPTR ScreenModeSelector__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 {
     struct ScreenModeSelector_DATA *data;
     ULONG cur_mode;
-	 
+
     data = INST_DATA(CLASS, self);    
 
     if (data->modes_array)
     {
         for (cur_mode = 0; data->modes_array[cur_mode]; cur_mode++)
-	    FreeVec(data->modes_array[cur_mode]);
-		 
-	FreeVec(data->modes_array);
+            FreeVec(data->modes_array[cur_mode]);
+
+        FreeVec(data->modes_array);
     }
-    
+
     FreeVec(data->ids_array);
-	 
+
     return DoSuperMethodA(CLASS, self, message);
 }
 
@@ -170,34 +170,34 @@ IPTR ScreenModeSelector__OM_SET(Class *CLASS, Object *self, struct opSet *messag
     };
     struct opSet noforward_message = *message;
     noforward_message.ops_AttrList = noforward_tags;
-    
+
     for (tags = message->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
         switch (tag->ti_Tag)
         {
-	    case MUIA_ScreenModeSelector_Active:
-	    {
-	        int i;
-		
-		for
-		(
-		    i = 0;
-		    data->ids_array[i] != tag->ti_Data && data->ids_array[i] != INVALID_ID;
-		    i++
-		);
-		
-		if (data->ids_array[i] == INVALID_ID)
-		    tag->ti_Data = INVALID_ID;
-		else
-		if (XGET(self, MUIA_Cycle_Active) != i)
-		    NFSET(self, MUIA_Cycle_Active, i);
-		
-		break;
-	    }
-	}
-    }		    
+            case MUIA_ScreenModeSelector_Active:
+            {
+                int i;
+                
+                for
+                (
+                    i = 0;
+                    data->ids_array[i] != tag->ti_Data && data->ids_array[i] != INVALID_ID;
+                    i++
+                );
+                
+                if (data->ids_array[i] == INVALID_ID)
+                    tag->ti_Data = INVALID_ID;
+                else
+                if (XGET(self, MUIA_Cycle_Active) != i)
+                    NFSET(self, MUIA_Cycle_Active, i);
+                
+                break;
+            }
+        }
+    }
 
-    return DoSuperMethodA(CLASS, self, (Msg)&noforward_message);	
+    return DoSuperMethodA(CLASS, self, (Msg)&noforward_message);
 }
 
 IPTR ScreenModeSelector__OM_GET(Class *CLASS, Object *self, struct opGet *message)
@@ -207,9 +207,9 @@ IPTR ScreenModeSelector__OM_GET(Class *CLASS, Object *self, struct opGet *messag
     switch (message->opg_AttrID)
     {
         case MUIA_ScreenModeSelector_Active:
-	    *message->opg_Storage = data->ids_array[XGET(self, MUIA_Cycle_Active)];
+            *message->opg_Storage = data->ids_array[XGET(self, MUIA_Cycle_Active)];
             break;
-	default:
+        default:
             return DoSuperMethodA(CLASS, self, (Msg)message);
     }
     

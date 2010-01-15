@@ -49,11 +49,11 @@ Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_PrefsEditor_Name, (IPTR) __(MSG_NAME),
         MUIA_PrefsEditor_Path, (IPTR)"SYS/screenmode.prefs",
         
-	Child, (IPTR)VGroup,
-	    Child, CLabel(_(MSG_DISPLAY_MODE)),
-	    Child, (IPTR)(selector   = (Object *)ScreenModeSelectorObject, End),
+        Child, (IPTR)VGroup,
+            Child, CLabel(_(MSG_DISPLAY_MODE)),
+            Child, (IPTR)(selector   = (Object *)ScreenModeSelectorObject, End),
 //FIXME: show again when it works:	    Child, (IPTR)(properties = (Object *)ScreenModePropertiesObject, GroupFrame, End),
-	End,
+        End,
         
         TAG_DONE
     );
@@ -62,52 +62,52 @@ Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     {
         SETUP_INST_DATA;
         
-	data->selector   = selector;
-	properties = (Object *)ScreenModePropertiesObject, End; //TO BE REMOVED
+        data->selector   = selector;
+        properties = (Object *)ScreenModePropertiesObject, End; //TO BE REMOVED
         data->properties = properties;
-	     
+             
         /*-- Setup notifications -------------------------------------------*/
         DoMethod
-	(
-	    selector, MUIM_Notify, MUIA_ScreenModeSelector_Active, MUIV_EveryTime,
-	    (IPTR)properties, 3,
-	    MUIM_Set, MUIA_ScreenModeProperties_DisplayID, MUIV_TriggerValue
-	);
-		
+        (
+            selector, MUIM_Notify, MUIA_ScreenModeSelector_Active, MUIV_EveryTime,
+            (IPTR)properties, 3,
+            MUIM_Set, MUIA_ScreenModeProperties_DisplayID, MUIV_TriggerValue
+        );
+                
         DoMethod
-	(
-	    properties, MUIM_Notify, MUIA_ScreenModeProperties_DisplayID, MUIV_EveryTime,
-	    (IPTR)self, 3,
-	    MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-	);
+        (
+            properties, MUIM_Notify, MUIA_ScreenModeProperties_DisplayID, MUIV_EveryTime,
+            (IPTR)self, 3,
+            MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
     
         DoMethod
-	(
-	    properties, MUIM_Notify, MUIA_ScreenModeProperties_Width, MUIV_EveryTime,
-	    (IPTR)self, 3,
-	    MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-	);
+        (
+            properties, MUIM_Notify, MUIA_ScreenModeProperties_Width, MUIV_EveryTime,
+            (IPTR)self, 3,
+            MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
         
-	DoMethod
-	(
-	    properties, MUIM_Notify, MUIA_ScreenModeProperties_Height, MUIV_EveryTime,
-	    (IPTR)self, 3,
-	    MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-	);
+        DoMethod
+        (
+            properties, MUIM_Notify, MUIA_ScreenModeProperties_Height, MUIV_EveryTime,
+            (IPTR)self, 3,
+            MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
         
-	DoMethod
-	(
-	    properties, MUIM_Notify, MUIA_ScreenModeProperties_Depth, MUIV_EveryTime,
-	    (IPTR)self, 3,
-	    MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-	);
-	
-	DoMethod
-	(
-	    properties, MUIM_Notify, MUIA_ScreenModeProperties_Autoscroll, MUIV_EveryTime,
-	    (IPTR)self, 3,
-	    MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-	);
+        DoMethod
+        (
+            properties, MUIM_Notify, MUIA_ScreenModeProperties_Depth, MUIV_EveryTime,
+            (IPTR)self, 3,
+            MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+        
+        DoMethod
+        (
+            properties, MUIM_Notify, MUIA_ScreenModeProperties_Autoscroll, MUIV_EveryTime,
+            (IPTR)self, 3,
+            MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
     }
     
     return self;
@@ -122,12 +122,12 @@ void SMPByteSwap(struct ScreenModePrefs *smp)
     int i;
     for (i = 0; i < sizeof(smp->smp_Reserved)/sizeof(ULONG); i++)
         SWAP(LONG, Reserved[i]);
-	
+        
         SWAP(LONG, DisplayID);
-	SWAP(WORD, Width);
-	SWAP(WORD, Height);
-	SWAP(WORD, Depth);
-	SWAP(WORD, Control);
+        SWAP(WORD, Width);
+        SWAP(WORD, Height);
+        SWAP(WORD, Depth);
+        SWAP(WORD, Control);
 #endif
 }
 
@@ -152,7 +152,7 @@ IPTR SMEditor__MUIM_PrefsEditor_ImportFH
 
     if ((error = OpenIFF(handle, IFFF_READ)) == 0)
     {
-	
+        
         BYTE i;
         
         // FIXME: We want some sanity checking here!
@@ -201,18 +201,18 @@ IPTR SMEditor__MUIM_PrefsEditor_ImportFH
     if (success)
     {
         SMPByteSwap(&smp);
-	
-	nnset(data->selector, MUIA_ScreenModeSelector_Active, smp.smp_DisplayID);
-	SetAttrs
-	(
-	    data->properties,
-	    MUIA_NoNotify,                        TRUE,
-	    MUIA_ScreenModeProperties_DisplayID,  smp.smp_DisplayID,
-	    MUIA_ScreenModeProperties_Width,      smp.smp_Width,
-	    MUIA_ScreenModeProperties_Height,     smp.smp_Height,
-	    MUIA_ScreenModeProperties_Depth,      smp.smp_Depth,
-	    MUIA_ScreenModeProperties_Autoscroll, smp.smp_Control & AUTOSCROLL,
-	    TAG_DONE
+        
+        nnset(data->selector, MUIA_ScreenModeSelector_Active, smp.smp_DisplayID);
+        SetAttrs
+        (
+            data->properties,
+            MUIA_NoNotify,                        TRUE,
+            MUIA_ScreenModeProperties_DisplayID,  smp.smp_DisplayID,
+            MUIA_ScreenModeProperties_Width,      smp.smp_Width,
+            MUIA_ScreenModeProperties_Height,     smp.smp_Height,
+            MUIA_ScreenModeProperties_Depth,      smp.smp_Depth,
+            MUIA_ScreenModeProperties_Autoscroll, smp.smp_Control & AUTOSCROLL,
+            TAG_DONE
         );
     }
     
@@ -241,10 +241,10 @@ IPTR SMEditor__MUIM_PrefsEditor_ExportFH
         if (!(error = OpenIFF(handle, IFFF_WRITE))) /* NULL = successful! */
         {
             struct ScreenModePrefs smp;
-	    
-	    memset(&smp, 0, sizeof(smp));
             
-	    BYTE i;
+            memset(&smp, 0, sizeof(smp));
+            
+            BYTE i;
             
             PushChunk(handle, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN); /* FIXME: IFFSIZE_UNKNOWN? */
             
@@ -266,18 +266,18 @@ IPTR SMEditor__MUIM_PrefsEditor_ExportFH
                     printf("error: PushChunk() = %ld ", error);
                 }
                 
-	        smp.smp_DisplayID = XGET(data->properties, MUIA_ScreenModeProperties_DisplayID);
+                smp.smp_DisplayID = XGET(data->properties, MUIA_ScreenModeProperties_DisplayID);
                 smp.smp_Width     = XGET(data->properties, MUIA_ScreenModeProperties_Width);
                 smp.smp_Height    = XGET(data->properties, MUIA_ScreenModeProperties_Height);
                 smp.smp_Depth     = XGET(data->properties, MUIA_ScreenModeProperties_Depth);
                 
-		if (XGET(data->properties, MUIA_ScreenModeProperties_Autoscroll))
-		    smp.smp_Control = AUTOSCROLL;
-		else
-		    smp.smp_Control = 0;
+                if (XGET(data->properties, MUIA_ScreenModeProperties_Autoscroll))
+                    smp.smp_Control = AUTOSCROLL;
+                else
+                    smp.smp_Control = 0;
                 
-		SMPByteSwap(&smp);
-			
+                SMPByteSwap(&smp);
+                        
                 error = WriteChunkBytes(handle, &smp, sizeof(struct ScreenModePrefs));
                 error = PopChunk(handle);
                                 
@@ -297,7 +297,7 @@ IPTR SMEditor__MUIM_PrefsEditor_ExportFH
         }
         
         CloseIFF(handle);
-	FreeIFF(handle);
+        FreeIFF(handle);
     }
     else // AllocIFF()
     {
@@ -329,7 +329,7 @@ IPTR SMEditor__MUIM_PrefsEditor_Use
     #warning "       PrefsEditor class.                                       "
     if (muiRenderInfo(self) && _win(self))
         set(_win(self), MUIA_Window_Open, FALSE);
-	    
+            
     return DoSuperMethodA(CLASS, self, message);
 }
 
