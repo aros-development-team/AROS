@@ -6,8 +6,8 @@
     Lang: English
 */
 
-#ifndef GLOBAL_H
-#define GLOBAL_H
+#ifndef _PREFS_H_
+#define _PREFS_H_
 
 #include <prefs/serial.h>
 #include <dos/dos.h>
@@ -25,4 +25,4 @@ extern struct SerialPrefs serialprefs;
 
 /*********************************************************************************************/
 
-#endif /* GLOBAL_H */
+#endif /* _PREFS_H_ */
