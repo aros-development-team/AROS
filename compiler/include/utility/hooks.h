@@ -2,7 +2,7 @@
 #define UTILITY_HOOKS_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,7 +26,7 @@ struct Hook
 };
 
 /* You can use this if you want for casting function pointers. */
-typedef IPTR (*HOOKFUNC)(struct Hook *, APTR, APTR);
+typedef IPTR (*HOOKFUNC)();
 
 /*
     Calling conventions for Amiga Hooks.
