@@ -2,14 +2,13 @@
 #define _SIGNAL_H_
 
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     System header file <signal.h>
     Based on SUSv2 with help from C99.
 */
 
-#include <sys/_types.h>
 #include <sys/cdefs.h>
 
 typedef void __sighandler_t (int);
@@ -38,10 +37,7 @@ typedef struct __sigset {
     unsigned int	__val[_SIG_WORDS];
 } sigset_t;
 
-#ifndef __AROS_PID_T_DECLARED
-#define __AROS_PID_T_DECLARED
-typedef __pid_t         pid_t;
-#endif
+#include <sys/types/pid_t.h>
 
 #endif /* !_ANSI_SOURCE */
 

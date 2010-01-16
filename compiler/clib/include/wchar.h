@@ -7,7 +7,6 @@
     Standard C Library: Extended multibyte and wide character utilities.
 */
 
-#include <sys/_types.h>
 #include <sys/cdefs.h>
 
 #define __need_size_t
@@ -18,11 +17,7 @@
 
 #include <stdint.h>
 
-/* FreeBSD 5.x headers do not define wchar_t */
-#ifndef __AROS_WINT_T_DECLARED
-#define __AROS_WINT_T_DECLARED
-typedef __wint_t wint_t;
-#endif
+#include <sys/types/wint_t.h>
 
 __BEGIN_DECLS
 

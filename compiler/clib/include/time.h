@@ -8,19 +8,11 @@
     Desc: ANSI-C header file time.h
     Lang: english
 */
-#include <sys/_types.h>
 #include <sys/cdefs.h>
 #include <sys/arosc.h>
 
-#ifndef __AROS_TIME_T_DECLARED
-#define __AROS_TIME_T_DECLARED
-typedef __time_t            time_t;
-#endif
-
-#ifndef __AROS_CLOCK_T_DECLARED
-#define __AROS_CLOCK_T_DECLARED
-typedef __clock_t           clock_t;
-#endif
+#include <sys/types/time_t.h>
+#include <sys/types/clock_t.h>
 
 #define __need_size_t
 #define __need_NULL
@@ -46,15 +38,8 @@ struct tm
 
 #if !defined(_ANSI_SOURCE) && defined(_P1003_1B_VISIBLE)
 
-#ifndef	__AROS_TIMER_T_DECLARED
-#define	__AROS_TIMER_T_DECLARED
-typedef	__timer_t           timer_t;
-#endif
-
-#ifndef	__AROS_CLOCKID_T_DECLARED
-#define	__AROS_CLOCKID_T_DECLARED
-typedef __clockid_t         clockid_t;
-#endif
+#include <sys/types/timer_t.h>
+#include <sys/types/clockid_t.h>
 
 struct timespec
 {

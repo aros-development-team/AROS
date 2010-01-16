@@ -61,101 +61,25 @@ typedef quad_t *        qaddr_t;
 
 /* Define the rest of the POSIX types */
 
-#ifndef __AROS_SSIZE_T_DECLARED
-#define __AROS_SSIZE_T_DECLARED
-typedef __ssize_t                   ssize_t;    /* Byte count or error      */
-#endif
-
-#ifndef __AROS_CLOCKID_T_DECLARED
-#define __AROS_CLOCKID_T_DECLARED
-typedef __clockid_t                 clockid_t;  /* ID for clock_ function   */
-#endif
-
-#ifndef __AROS_CLOCK_T_DECLARED
-#define __AROS_CLOCK_T_DECLARED
-typedef __clock_t                   clock_t;    /* Clock ticks              */
-#endif
-
-#ifndef __AROS_DEV_T_DECLARED
-#define __AROS_DEV_T_DECLARED
-typedef __dev_t                     dev_t;      /* Device IDs               */
-#endif
-
-#ifndef __AROS_FSBLKCNT_DECLARED
-#define __AROS_FSBLKCNT_DECLARED
-typedef __fsblkcnt_t                fsblkcnt_t; /* Count of blocks in FS    */
-typedef __fsfilcnt_t                fsfilcnt_t; /* Count of files in FS     */
-#endif
-
-#ifndef __AROS_GID_T_DECLARED
-#define __AROS_GID_T_DECLARED
-typedef __gid_t                     gid_t;      /* Group IDs                */
-#endif
-
-#ifndef __AROS_ID_T_DECLARED
-#define __AROS_ID_T_DECLARED
-typedef __id_t                      id_t;       /* User/Group/Proc ID       */
-#endif
-
-#ifndef __AROS_INO_T_DECLARED
-#define __AROS_INO_T_DECLARED
-typedef __ino_t                     ino_t;      /* Inode number             */
-#endif
-
-#ifndef __AROS_KEY_T_DECLARED
-#define __AROS_KEY_T_DECLARED
-typedef __key_t                     key_t;      /* Interprocess comms       */
-#endif
-
-#ifndef __AROS_MODE_T_DECLARED
-#define __AROS_MODE_T_DECLARED
-typedef __mode_t                    mode_t;     /* File access mode         */
-#endif
-
-#ifndef __AROS_NLINK_T_DECLARED
-#define __AROS_NLINK_T_DECLARED
-typedef __nlink_t                   nlink_t;    /* Link count               */
-#endif
-
-#ifndef __AROS_OFF_T_DECLARED
-#define __AROS_OFF_T_DECLARED
-typedef __off_t                     off_t;      /* Offset (in files)        */
-#endif
-
-#ifndef __AROS_PID_T_DECLARED
-#define __AROS_PID_T_DECLARED
-typedef __pid_t                     pid_t;      /* Process ID               */
-#endif
-
-#ifndef __AROS_SOCKLEN_T_DECLARED
-#define __AROS_SOCKLEN_T_DECLARED
-typedef __socklen_t                 socklen_t;
-#endif
-
-#ifndef __AROS_SUSECONDS_T_DECLARED
-#define __AROS_SUSECONDS_T_DECLARED
-typedef __suseconds_t               suseconds_t;/* Signed no of usecs       */
-#endif
-
-#ifndef __AROS_TIME_T_DECLARED
-#define __AROS_TIME_T_DECLARED
-typedef __time_t                    time_t;     /* Number of seconds        */
-#endif
-
-#ifndef __AROS_TIMER_T_DECLARED
-#define __AROS_TIMER_T_DECLARED
-typedef __timer_t                   timer_t;    /* Timer timer_create()     */
-#endif
-
-#ifndef __AROS_UID_T_DECLARED
-#define __AROS_UID_T_DECLARED
-typedef __uid_t                     uid_t;      /* User ID                  */
-#endif
-
-#ifndef __AROS_USECONDS_T_DECLARED
-#define __AROS_USECONDS_T_DECLARED
-typedef __useconds_t                useconds_t; /* Unsigned no usecs        */
-#endif
+#include <sys/types/ssize_t.h>
+#include <sys/types/clockid_t.h>
+#include <sys/types/clock_t.h>
+#include <sys/types/dev_t.h>
+#include <sys/types/fs_t.h>
+#include <sys/types/gid_t.h>
+#include <sys/types/id_t.h>
+#include <sys/types/ino_t.h>
+#include <sys/types/key_t.h>
+#include <sys/types/mode_t.h>
+#include <sys/types/nlink_t.h>
+#include <sys/types/off_t.h>
+#include <sys/types/pid_t.h>
+#include <sys/types/socklen_t.h>
+#include <sys/types/suseconds_t.h>
+#include <sys/types/time_t.h>
+#include <sys/types/timer_t.h>
+#include <sys/types/uid_t.h>
+#include <sys/types/useconds_t.h>
 
 /* These require this header to be included first */
 typedef	__blkcnt_t                  blkcnt_t;	/* File block count         */

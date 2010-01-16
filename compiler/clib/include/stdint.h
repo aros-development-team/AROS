@@ -2,95 +2,17 @@
 #define _STDINT_H_
 
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Standard fixed sized integral types.
 */
 
-#include <aros/cpu.h>
+#include <sys/types/int_t.h>
 
-#ifndef __AROS_INT64_T_DECLARED
-#define __AROS_INT64_T_DECLARED
-typedef signed AROS_64BIT_TYPE              int64_t;
-#endif
+#include <sys/types/intptr_t.h>
+#include <sys/types/uintptr_t.h>
 
-#ifndef __AROS_UINT64_T_DECLARED
-#define __AROS_UINT64_T_DECLARED
-typedef unsigned AROS_64BIT_TYPE            uint64_t;
-#endif
-
-#ifndef __AROS_INT32_T_DECLARED
-#define __AROS_INT32_T_DECLARED
-typedef signed AROS_32BIT_TYPE              int32_t;
-#endif
-
-#ifndef __AROS_UINT32_T_DECLARED
-#define __AROS_UINT32_T_DECLARED
-typedef unsigned AROS_32BIT_TYPE            uint32_t;
-#endif
-
-#ifndef __AROS_INT16_T_DECLARED
-#define __AROS_INT16_T_DECLARED
-typedef signed AROS_16BIT_TYPE              int16_t;
-#endif
-
-#ifndef __AROS_UINT16_T_DECLARED
-#define __AROS_UINT16_T_DECLARED
-typedef unsigned AROS_16BIT_TYPE            uint16_t;
-#endif
-
-#ifndef __AROS_INT8_T_DECLARED
-#define __AROS_INT8_T_DECLARED
-typedef signed AROS_8BIT_TYPE               int8_t;
-#endif
-
-#ifndef __AROS_UINT8_T_DECLARED
-#define __AROS_UINT8_T_DECLARED
-typedef unsigned AROS_8BIT_TYPE             uint8_t;
-#endif
-
-#ifndef __AROS_INTPTR_T_DECLARED
-#define __AROS_INTPTR_T_DECLARED
-typedef signed AROS_INTPTR_TYPE             intptr_t;
-#endif
-
-#ifndef __AROS_UINTPTR_T_DECLARED
-#define __AROS_UINTPTR_T_DECLARED
-typedef unsigned AROS_INTPTR_TYPE           uintptr_t;
-#endif
-
-/* Fast versions of these types */
-typedef signed AROS_64BIT_FASTTYPE          int_fast64_t;
-typedef unsigned AROS_64BIT_FASTTYPE        uint_fast64_t;
-typedef signed AROS_32BIT_FASTTYPE          int_fast32_t;
-typedef unsigned AROS_32BIT_FASTTYPE        uint_fast32_t;
-typedef signed AROS_16BIT_FASTTYPE          int_fast16_t;
-typedef unsigned AROS_16BIT_FASTTYPE        uint_fast16_t;
-typedef signed AROS_8BIT_FASTTYPE           int_fast8_t;
-typedef unsigned AROS_8BIT_FASTTYPE         uint_fast8_t;
-
-/* Minimum sized types */
-typedef signed AROS_64BIT_LEASTTYPE         int_least64_t;
-typedef unsigned AROS_64BIT_LEASTTYPE       uint_least64_t;
-typedef signed AROS_32BIT_LEASTTYPE         int_least32_t;
-typedef unsigned AROS_32BIT_LEASTTYPE       uint_least32_t;
-typedef signed AROS_16BIT_LEASTTYPE         int_least16_t;
-typedef unsigned AROS_16BIT_LEASTTYPE       uint_least16_t;
-typedef signed AROS_8BIT_LEASTTYPE          int_least8_t;
-typedef unsigned AROS_8BIT_LEASTTYPE        uint_least8_t;
-
-
-/*
-    Use the AROS_LARGEST_TYPE to describe the intmax_t and uintmax_t
-*/
-#if defined AROS_LARGEST_TYPE
-typedef signed   AROS_LARGEST_TYPE  intmax_t;
-typedef unsigned AROS_LARGEST_TYPE  uintmax_t;
-#else
-typedef LONG	intmax_t;
-typedef ULONG	uintmax_t;
-#endif
 
 #if !defined(__cplusplus) || defined(__STDC_LIMIT_MACROS)
 
