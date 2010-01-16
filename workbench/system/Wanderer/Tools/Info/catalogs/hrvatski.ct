@@ -1,0 +1,181 @@
+## version $VER: Info.catalog 1.2 (04.01.2010)
+## language hrvatski
+## codeset 0
+;
+;
+MSG_TITLE
+Informacije
+; Informations
+;
+MSG_DESCRIPTION
+Informacije Ikone
+; Icon informations
+;
+MSG_COPYRIGHT
+Informacije Ikone\nŒAROS Dev Team
+; Icon informations\n©AROS Dev Team
+;
+MSG_ICON
+Ikona
+; Icon
+;
+MSG_NAME
+Ime
+; Name
+;
+MSG_COMMENT
+Komentar
+; Comment
+;
+MSG_STACK
+Stack
+; Stack
+;
+MSG_DEFTOOL
+Alat
+; Tool
+;
+MSG_ICONTYPE
+Tip Ikone
+; Icon type
+;
+MSG_DISK
+Disk
+; Disk
+;
+MSG_DRAWER
+Mapa
+; Drawer
+;
+MSG_TOOL
+Alat
+; Tool
+;
+MSG_PROJECT
+Projekt
+; Project
+;
+MSG_GARBAGE
+Kanta za Smeæe
+; Garbage
+;
+MSG_DEVICE
+Ureðaj
+; Device
+;
+MSG_KICK
+Kick
+; Kick
+;
+MSG_APPICON
+App Ikona
+; AppIcon
+;
+MSG_INFORMATION
+Informacija
+; Information
+;
+MSG_PROTECTION
+Za¹tita
+; Protection
+;
+MSG_TOOLTYPES
+Tooltypes
+; Tooltypes
+;
+MSG_ERROR_SHELLSTART
+Pogre¹ka: Nije moguæe pokrenuti iz konzole
+; Error: Cannot be started from shell
+;
+MSG_ABOUT
+O Programu...
+; About...
+;
+MSG_QUIT
+Izlaz
+; Quit
+;
+MSG_READ
+Èitaj
+; Read
+;
+MSG_WRITE
+Pi¹i
+; Write
+;
+MSG_EXECUTE
+Izvr¹i
+; Execute
+;
+MSG_DELETE
+Izbri¹i
+; Delete
+;
+MSG_SCRIPT
+Skripta
+; Script
+;
+MSG_PURE
+Èist
+; Pure
+;
+MSG_ARCHIVED
+Arhivirano
+; Archived
+;
+MSG_STICKY
+Priljepljivo
+; Sticky
+;
+MSG_SIZE
+Velièina
+; Size
+;
+MSG_VERSION
+Verzija
+; Version
+;
+MSG_OWNERID
+ID Vlasnika
+; Owner ID
+;
+MSG_GROUPID
+ID Grupe
+; Group ID
+;
+MSG_OWNERNAME
+Vlasnik
+; Owner
+;
+MSG_GROUPNAME
+Grupa
+; Group
+;
+MSG_TYPE
+Tip
+; Type
+;
+MSG_DATE
+Datum
+; Date
+;
+MSG_NEW_KEY
+Novi Kljuè
+; New key
+;
+MSG_DELETE_KEY
+Izbri¹i Kljuè
+; Delete key
+;
+MSG_SAVE
+_Spremi
+; _Save
+;
+MSG_CANCEL
+Odustani
+; _Cancel
+;
+MSG_OK
+U redu
+; Ok
+;

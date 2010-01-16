@@ -1,0 +1,138 @@
+## version $VER: EditorPrefs.catalog 1.3 (22.12.2009)
+## language hrvatski
+## codeset 5
+;
+;
+; Catalog description for JanoPrefs
+; JanoPrefs.cd
+;
+; *****************************
+;  NewMenu strings
+; *****************************
+;
+; Edit Menu
+;
+MSG_RESETDEFAULT
+Predložene vrijednosti
+; Default values
+;
+MSG_LASTSAVED
+Zadnje spremljene vrijednosti 
+; Last saved values
+;
+; *******************
+;  Preference window
+; *******************
+;
+MSG_TITLEWIN
+Glavne postavke
+; Main setup
+;
+MSG_TAB
+Tabeliranje
+; Tabulation:
+;
+MSG_SEPARATORS
+Razdvajač
+; Separators:
+;
+MSG_TXTFONT
+Slovo teksta
+; Text font:
+;
+MSG_SCRFONT
+Slovo zaslona
+; Screen font:
+;
+MSG_PUBSCREEN
+Zaslonski mod
+; Screen mode:
+;
+MSG_BACKDROP
+Pozadina
+; Backdrop
+;
+MSG_LEFTMARGIN
+Lijeva margina
+; Left margin
+;
+MSG_AUTOINDENT
+Auto razmak
+; Auto indent
+;
+MSG_EXTEND
+Proširi numeričku tipkovnicu
+; Extended numeric pad
+;
+MSG_PREFSSAVE
+Spremi
+; Save
+;
+MSG_USEPREFS
+Koristi
+; Use
+;
+MSG_DISCARDPREFS
+Odustani
+; Cancel
+;
+MSG_USEDEF
+Koristi predloženo
+; Use Default
+;
+MSG_CHOOSEIT
+Izaberi jedan...
+; Choose one...
+;
+MSG_CLONEPARENT
+Zatvori izvorni
+; Clone parent
+;
+MSG_COLOR_BACK
+Podloga
+; Background
+;
+MSG_COLOR_TEXT
+Uobičajeni tekst
+; Standard text
+;
+MSG_COLOR_FILLTXT
+Izabrani ispunjeni tekst
+; Selected fill text
+;
+MSG_COLOR_FILLSEL
+Izabrani tekst
+; Selected text
+;
+MSG_COLOR_MARGINBACK
+Podloga margine
+; Margin background
+;
+MSG_COLOR_MARGINTXT
+Slovo margine
+; Margin text
+;
+MSG_COLOR_SHINE
+Sjaj panela
+; Panel shine
+;
+MSG_COLOR_SHADE
+Sjena panela
+; Panel shade
+;
+MSG_COLOR_PANELBACK
+Pozadina panela
+; Panel back
+;
+MSG_COLOR_PANELTEXT
+Slovo panela
+; Panel text
+;
+MSG_COLOR_GLYPH
+Simbol panela
+; Panel glyph
+;
+MSG_COLOR_MARKEDLINES
+Aktivni panel
+; Active panel
+;

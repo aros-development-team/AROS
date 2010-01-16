@@ -1,0 +1,84 @@
+## version $VER: wbnewdrawer.catalog 1.1 (03.01.2010)
+## language hrvatski
+## codeset 0
+;
+;
+MSG_TITLE
+Nova Mapa
+; WBNewDrawer
+;
+MSG_DESCRIPTION
+Stvara novu mapu sa ikonom po izboru
+; Creates new drawer with optional icon
+;
+MSG_COPYRIGHT
+Œ2006, AROS Dev Team
+; ©2006, AROS Dev Team
+;
+MSG_WINDOW_TITLE
+Stvori novu mapu
+; Create new drawer
+;
+MSG_LINE
+Unesite ime nove mape
+; Enter the name of the new drawer
+;
+MSG_NAME
+Ime nove mape:
+; New drawer name:
+;
+MSG_ICON
+Ikona
+; Icon
+;
+MSG_OK
+U redu
+; _OK
+;
+MSG_CANCEL
+Odustani
+; Ca_ncel
+;
+MSG_BASENAME
+Nova_Mapa
+; Rename_Me
+;
+MSG_ERROR_TITLE
+Pogre¹ka
+; Error
+;
+MSG_ALREADY_EXIST
+'%s' veæ postoji!
+; '%s' already exists!
+;
+MSG_CANT_CREATE
+Mapu '%s' nije moguæe stvoriti!
+; Can't create drawer '%s'!
+;
+MSG_INFO_ALREADY
+'%s'.info datoteka postoji!
+; '%s'.info already exists!
+;
+MSG_ILLEGAL_CHARS
+'%s' sadr¾i simbole koji nisu podr¾ani!
+; '%s' contains illegal characters!
+;
+MSG_NEEDS_MORE_ARGS
+Potrebno je 2 argumenta!
+; Need 2 arguments!
+;
+MSG_INVALID_LOCK
+Neispravan directory lock! 
+; Invalid directory lock!
+;
+MSG_WB_ONLY
+Alat nije moguæe pokrenuti iz konzole!\n
+; Cannot be started from shell!\n
+;
+MSG_FAILED_CREATE_APP
+Gre¹ka pri stvaranju aplikacije!
+; Failed to create Application!
+;
+MSG_WRONG_ICON_TYPE
+Postojeæa datoteka ikone '%s'.info nije tipa Mapa!
+; The existing icon file '%s'.info isn't of type Drawer!

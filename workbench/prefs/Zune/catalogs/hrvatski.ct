@@ -1,0 +1,923 @@
+## version $VER: Zune.catalog 1.7 (26.12.2009)
+## language hrvatski
+## codeset 0
+;
+;
+; buttonsp.c
+;-----------
+MSG_GENERAL
+Opæenito
+; General
+;
+MSG_BACKGROUND_COLON
+Podloga:
+; Background:
+;
+MSG_BACKGROUND_PRESSED
+Podloga u\npritisnutom stanje: 
+; Background in\npressed state:
+;
+MSG_TEXT_BUTTONS
+Tekst Dugma
+; Text Buttons
+;
+MSG_FRAME_COLON
+Okvir
+; Frame:
+;
+MSG_FONT
+Slovo:
+; Font:
+;
+MSG_IMAGE_BUTTONS
+Slike Dugma
+; Image Buttons
+;
+MSG_ADJUST_FRAME
+Podesi Okvir
+; Adjust Frame
+;
+MSG_CHECKMARKS
+Knaèice
+; Checkmarks
+;
+MSG_LOOK_COLON
+Izgled:
+; Look:
+;
+MSG_CHECKMARK
+Kvaèica
+; Checkmark
+;
+MSG_RADIO_BUTTONS
+Radio Dugma
+; Radio Buttons
+;
+MSG_RADIOBUTTON
+Radiodugme 
+; Radiobutton
+;
+MSG_LOOK
+Izgled
+; Look
+;
+MSG_H
+H
+; H
+;
+MSG_V
+V
+; V
+;
+MSG_SPACING
+Razmak
+; Spacing
+;
+;=============================
+; cyclesp.c
+;----------
+MSG_BELOW
+ispod
+; below
+;
+MSG_ON_ACTIVE
+na aktivnom
+; on active
+;
+MSG_CYCLE_GADGET_DESIGN
+Izgled Slijeda
+; Cycle Gadget Design
+;
+MSG_CYCLE
+Slijed
+; Cycle
+;
+MSG_POPUP_MENU_CONTROL
+Popup Izbornik
+; Popup Menu Control
+;
+MSG_POSITION
+Pozicija:
+; Position:
+;
+MSG_LEVEL
+Level:
+; Level:
+;
+MSG_SPEED
+Brzina:
+; Speed:
+;
+MSG_POPUP_MENU_DESIGN
+Popup Izbornik Izgled
+; Popup Menu Design
+;
+MSG_FRAME
+Okvir
+; Frame
+;
+MSG_ADJUST_BACKGROUND
+Podesi Podlogu
+; Adjust Background
+;
+MSG_BACKGROUND
+Podloga
+; Background
+;
+MSG_RECESSED_ENTRIES
+Raspu¹ten Natuknice:
+; Recessed Entries:
+;
+;=============================
+; groupsp.c
+;__________
+MSG_ABOVE
+iznad
+; above
+;
+MSG_CENTERED
+centrirano
+; centered
+;
+MSG_STANDARD
+standardno
+; standard
+;
+MSG_HILITE
+posvjetljeno
+; hilite
+;
+MSG_3D
+3D
+; 3d
+;
+MSG_OUTLINE
+vanjski obrisi
+; outline
+;
+MSG_TITLE
+Naslov
+; Title
+;
+MSG_COLOR
+Boja:
+; Color:
+;
+MSG_HORIZONTAL
+Horizontalno:
+; Horizontal:
+;
+MSG_VERTICAL
+Vertikalno:
+; Vertical:
+;
+MSG_REGISTER
+Registracija
+; Register
+;
+MSG_DEFAULT_SIZE_TRUNCATE_TITLES
+Postavljena velièina skraèeni naslova:
+; Default size truncate titles:
+;
+MSG_NORMAL
+Normal
+; Normal
+;
+MSG_VIRTUAL
+Virtual
+; Virtual
+;
+MSG_FRAMED
+Okvir
+; Framed
+;
+MSG_PAGE
+Stranica
+; Page
+;
+;=============================
+; listviewsp.c
+;-------------
+MSG_SHIFTED
+izdignuto
+; shifted
+;
+MSG_ALWAYS
+uvijek
+; always
+;
+MSG_LINEAR
+pravocrtan
+; linear
+;
+MSG_MIXED
+mje¹ano
+; mixed
+;
+MSG_CONTROL
+Kontrola
+; Control
+;
+MSG_MULTI
+Multi:
+; Multi:
+;
+MSG_REFRESH
+Obnovi:
+; Refresh:
+;
+MSG_SMOOTH
+Uglaðeno:
+; Smooth:
+;
+MSG_FONTS
+Slova
+; Fonts
+;
+MSG_NORMAL_COLON
+Normalno:
+; Normal:
+;
+MSG_FIXED
+Fiksirano:
+; Fixed:
+;
+MSG_LEADING
+Vodeæi
+; Leading
+;
+MSG_DESIGN
+Dizajn
+; Design
+;
+MSG_INPUT_LISTS
+Ulaz \nListe:
+; Input \nLists:
+;
+MSG_READONLY_LISTS
+Readonly \nListe:
+; Readonly \nLists:
+;
+MSG_CURSOR
+Pokazivaè
+; Cursor
+;
+MSG_ACTIVE
+Aktivno:
+; Active:
+;
+MSG_ACTIVE_SELECTED
+Aktivno &\nIzabrano:
+; Active &\nSelected:
+;
+MSG_SELECTED
+Izabrano:
+; Selected:
+;
+;=============================
+; navigationp.c
+;______________
+MSG_ALWAYS_SOLID
+uvijek trajan
+; always solid
+;
+MSG_GHOSTED_ON_BOX
+prividno na kutije
+; ghosted on box
+;
+MSG_GHOSTED_OUTSIDE_BOX
+prividno izvan kutije
+; ghosted outside box
+;
+MSG_ALWAYS_GHOSTED
+uvijek prividno
+; always ghosted
+;
+MSG_SHOW_FRAMES
+prika¾i okvire
+; show frames
+;
+MSG_SHOW_OBJECTS
+prika¾i objekte
+; show objects
+;
+MSG_KL_PRESS
+Pritinuto:
+; Press:
+;
+MSG_KL_TOGGLE
+Preklopno:
+; Toggle:
+;
+MSG_KL_UP
+Gore:
+; Up:
+;
+MSG_KL_DOWN
+Dolje:
+; Down:
+;
+MSG_KL_PAGE_UP
+Strana gore:
+; Page up:
+;
+MSG_KL_PAGE_DOWN
+Strana dolje:
+; Page down:
+;
+MSG_KL_TOP
+Vrh:
+; Top:
+;
+MSG_KL_BOTTOM
+Dno:
+; Bottom:
+;
+MSG_KL_LEFT
+Lijevo:
+; Left:
+;
+MSG_KL_RIGHT
+Desno:
+; Right:
+;
+MSG_KL_WORD_LEFT
+Rijeè lijevo:
+; Word left:
+;
+MSG_KL_WORD_RIGHT
+Rijeè desno:
+; Word right:
+;
+MSG_KL_LINE_START
+Poèetak linije:
+; Line start:
+;
+MSG_KL_LINE_END
+Kraj linije:
+; Line end:
+;
+MSG_KL_NEXT_GADGET
+Slijedeæi gadget:
+; Next gadget:
+;
+MSG_KL_PREV_GADGET
+Pro¹li gadget:
+; Prev. gadget:
+;
+MSG_KL_GADGET_OFF
+Iskljuæen gadget:
+; Gadget off:
+;
+MSG_KL_CLOSE_WINDOW
+Zatvori prozor:
+; Close window:
+;
+MSG_KL_NEXT_WINDOW
+Slijedeæi prozor:
+; Next window:
+;
+MSG_KL_PREV_WINDOW
+Pro¹li prozor:
+; Prev. window:
+;
+MSG_KL_HELP
+Pomoæ:
+; Help:
+;
+MSG_KL_POPUP
+Popup:
+; Popup:
+;
+MSG_DRAG_DROP
+Drag & Drop
+; Drag & Drop
+;
+MSG_LEFT_BUTTON
+Lijevo Dugme:
+; Left Button:
+;
+MSG_MIDDLE_BUTTON
+Middle Button:
+; Middle Button:
+;
+MSG_AUTOSTART
+Autostart:
+; Autostart:
+;
+MSG_PIXEL
+%ld piksel
+; %ld pixel
+;
+MSG_BALANCING_GROUPS
+Balansirajuèe Grupe
+; Balancing Groups
+;
+MSG_EXAMPLE
+Prijemer:
+; Example:
+;
+MSG_TRY_WITH
+Poku¹aj sa
+; Try with
+;
+MSG_SHIFT
+izdigni
+; shift
+;
+MSG_TOO
+isto!
+; too!
+;
+MSG_KEYBOARD_CONTROL
+Kontrola preko Tipkovnica
+; Keyboard Control
+;
+MSG_COLOR_ACTIVE_OBJ
+Boja aktivnog objekta:
+; Color of active object:
+;
+MSG_NEWLOOK
+newlook
+; newlook
+;
+MSG_CUSTOM
+vlastito
+; custom
+;
+MSG_ARROWS
+Strelice
+; Arrows
+;
+MSG_UP
+gore
+; up
+;
+MSG_ARROW_UP
+Strelica gore
+; Arrow up
+;
+MSG_ARROW_DOWN
+Strelica dolje
+; Arrow down
+;
+MSG_DOWN
+dolje
+; down
+;
+MSG_LEFT
+lijevo
+; left
+;
+MSG_ARROW_LEFT
+Strelica lijevo
+; Arrow left
+;
+MSG_ARROW_RIGHT
+Arrow desno
+; Arrow right
+;
+MSG_RIGHT
+desno
+; right
+;
+MSG_BAR
+Traka
+; Bar
+;
+MSG_GADGET_TYPE
+Tip Gadget-a:
+; Gadget Type:
+;
+MSG_SCROLLER
+Scroller
+; Scroller
+;
+MSG_KNOB
+Knob
+; Knob
+;
+MSG_ARRANGEMENT
+Razvrstavanje
+; Arrangement
+;
+;=============================
+; slidersp.c
+;-----------
+MSG_CONTAINER_DESIGN
+Izgled Kontejnera
+; Container Design
+;
+MSG_KNOB_DESIGN
+Izgled Knob-a
+; Knob Design
+;
+MSG_EXAMPLE_SLIDERS
+Primjer Slajdera
+; Example Sliders
+;
+;=============================
+; specialp.c
+;-----------
+MSG_TEXT_FIELDS
+Polje teksta
+; Text fields
+;
+MSG_EXAMPLE_TEXTFIELD
+Primjer Polja Teksta
+; Example Textfield
+;
+MSG_PROGRESS_INDICATOR
+Indikator Progresa
+; Progress Indicator
+;
+MSG_DEVICE_IMAGES
+Slike Ureðaja
+; Device Images
+;
+MSG_DRAWER
+Mapa
+; Drawer
+;
+MSG_HARDDISK
+Harddisk
+; Harddisk
+;
+MSG_DISK
+Disk
+; Disk
+;
+MSG_RAM
+RAM
+; RAM
+;
+MSG_VOLUME
+Volume
+; Volume
+;
+MSG_NETWORK
+Network
+; Network
+;
+MSG_ASSIGN
+Assign
+; Assign
+;
+MSG_TAPE_IMAGES
+Tape Slike
+; Tape Images
+;
+MSG_TAPE_PLAY
+Tape play
+; Tape play
+;
+MSG_TAPE_PLAYBACK
+Tape playback
+; Tape playback
+;
+MSG_TAPE_PAUSE
+Tape pause
+; Tape pause
+;
+MSG_TAPE_STOP
+Tape stop
+; Tape stop
+;
+MSG_TAPE_RECORD
+Tape record
+; Tape record
+;
+MSG_TAPE_UP
+Tape gore
+; Tape up
+;
+MSG_TAPE_DOWN
+Tape dolje
+; Tape down
+;
+;=============================
+; stringsp.c
+;-----------
+MSG_STRING_FRAME
+Okvir Niza
+; String Frame
+;
+MSG_SPECIAL_POPUP_BUTTONS
+Posebna Popup Dugma
+; Special Popup Buttons
+;
+MSG_POPUP
+Popup
+; Popup
+;
+MSG_DEFAULT
+Postavljeno
+; Default
+;
+MSG_FILE
+Datoteka
+; File
+;
+MSG_POPUP_FILE
+Popup datoteka
+; Popup file
+;
+MSG_POPUP_DRAWER
+Popup mapa
+; Popup drawer
+;
+MSG_INACTIVE_STRING_COLORS
+Boja Neaktivnog Niza
+; Inactive String Colors
+;
+MSG_TEXT
+Tekst
+; Text
+;
+MSG_ACTIVE_STRING_COLORS
+Boja Aktivnog Niza
+; Active String Colors
+;
+MSG_MARKED_STRING_COLORS
+Oznaèene Boje niza
+; Marked String Colors
+;
+MSG_EXAMPLE_STRING_GADGET
+Primjer Niz Gadgeta
+; Example String Gadget
+;
+;=============================
+; windowp.c
+;----------
+MSG_FORGET_ON_EXIT
+zaboravi na izlazu 
+; forget on exit
+;
+MSG_REMEMBER_ON_EXIT
+zapamti na izlazu
+; remember on exit
+;
+MSG_SAVE_ON_EXIT
+spremi na izlazu
+; save on exit
+;
+MSG_SMART
+pametno
+; smart
+;
+MSG_SIMPLE
+jednostavno
+; simple
+;
+MSG_WITHOUT_CLEAR
+sa èi¹èenjem
+; without clear
+;
+MSG_WITH_CLEAR
+bez èi¹èenja
+; with clear
+;
+MSG_POSITIONS
+Pozicija:
+; Positions:
+;
+MSG_REDRAW
+Redraw:
+; Redraw:
+;
+MSG_TINY
+Malo:
+; Tiny:
+;
+MSG_BIG
+Veliko:
+; Big:
+;
+MSG_WINDOW
+Prozor
+; Window
+;
+MSG_REQUESTER
+Biraè
+; Requester
+;
+MSG_L
+L
+; L
+;
+MSG_T
+G
+; T
+;
+MSG_R
+D
+; R
+;
+MSG_B
+D
+; B
+;
+MSG_BUTTONS
+Dugma
+; Buttons
+;
+;=============================
+; zune.c
+;-------
+MSG_WINTITLE1
+Zune - Opæe Postavke
+; Zune - Global Prefs
+;
+MSG_WINTITLE2
+Zune - Postavke za : %s
+; Zune - Prefs for : %s
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_OPEN
+Otvori...
+; Open ...
+;
+MSG_MEN_OPEN_SC
+O
+; O
+;
+MSG_MEN_APPEND
+Dodati...
+; Append ...
+;
+MSG_MEN_SAVEAS
+Spremi Kao...
+; Save As ...
+;
+MSG_MEN_SAVEAS_SC
+A
+; A
+;
+MSG_MEN_ABOUT
+O Programu...
+; About Zune ...
+;
+MSG_MEN_ABOUT_SC
+?
+; ?
+;
+MSG_MEN_QUIT
+Izlaz
+; Quit
+;
+MSG_MEN_QUIT_SC
+Q
+; Q
+;
+MSG_FRAME_CLIPBOARD
+Okvir meðuspremnika
+; Frame Clipboard
+;
+MSG_IMAGE_CLIPBOARD
+Slika meðuspremnika
+; Image Clipboard
+;
+MSG_GAD_TEST
+_Test
+; _Test
+;
+MSG_GAD_SAVE
+_Spremi
+; _Save
+;
+MSG_GAD_USE
+Koristi
+; _Use
+;
+MSG_GAD_CANCEL
+Odustani
+; _Cancel
+;
+MSG_DSC_SYSTEM
+Sustav
+; System
+;
+MSG_DSC_WINDOWS
+Prozori
+; Windows
+;
+MSG_DSC_GROUPS
+Grupe
+; Groups
+;
+MSG_DSC_BUTTONS
+Dugma
+; Buttons
+;
+MSG_DSC_CYCLES
+Slijedovi
+; Cycles
+;
+MSG_DSC_SLIDERS
+Klizaèi
+; Sliders
+;
+MSG_DSC_SCROLLBARS
+Klizne Trake
+; Scrollbars
+;
+MSG_DSC_LISTVIEWS
+Liste
+; Listviews
+;
+MSG_DSC_STRINGS
+Nizovi
+; Strings
+;
+MSG_DSC_NAVIGATION
+Navigacije
+; Navigation
+;
+MSG_DSC_SPECIAL
+Specijalno
+; Special
+;
+MSG_DSC_FRAMES
+Okviri
+; Frames
+;
+;=============================
+; zunestuff.c
+;------------
+MSG_ADJUST_PEN
+Podesi Pen (izabrana boja)
+; Adjust Pen
+;
+;=============================
+; framesp.c
+;----------
+MSG_CUSTOMFRAMES
+Vlastitiokviri
+; Customframes
+;
+;=============================
+; systemp.c
+;----------
+MSG_PUBLIC_SCREEN
+Javni Zaslon
+; Public Screen
+;
+MSG_NAME
+Ime:
+; Name:
+;
+MSG_CALL_INSPECTOR
+Otvori PSI
+; Call Inspector
+;
+MSG_POP_TO_FRONT
+Prebaci naprijed:
+; Pop to front:
+;
+MSG_ICONIFICATION
+Ikonifikacija
+; Iconification
+;
+MSG_HOTKEY
+Hotkey:
+; Hotkey:
+;
+MSG_SHOW
+Prika¾i:
+; Show:
+;
+MSG_ICON
+Ikona
+; Icon
+;
+MSG_MENU
+Izbornik
+; Menu
+;
+MSG_ON_STARTUP
+Na Startup-u:
+; On Startup:
+;
+MSG_INTERFACES
+Suèelja
+; Interfaces
+;
+MSG_AREXX
+ARexx:
+; ARexx:
+;
+MSG_BUBBLE_HELP
+Mjehuriæ Pomoæi
+; Bubble Help
+;
+MSG_FIRST_BUBBLE
+Prvi Mjehuriæ:
+; First Bubble:
+;
+MSG_NEXT_BUBBLE
+Slijedeæi Mjehuriæ:
+; Next Bubble:
+;

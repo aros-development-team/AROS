@@ -1,0 +1,169 @@
+## version $VER: HDToolBox.catalog 1.3 (27.12.2009)
+## language hrvatski
+## codeset 0
+;
+;
+WORD_Active
+Aktivno
+; Active
+;
+WORD_AddEntry
+Dodaj Ulaz
+; Add Entry
+;
+WORD_All
+Sve
+; All
+;
+WORD_Automount
+Automount
+; Automount
+;
+WORD_Bootable
+Moguèe Podizanje Sustava
+; Bootable
+;
+WORD_BootPri
+Prioritet Podizanja
+; Boot Priority
+;
+WORD_Cancel
+Odustani
+; Cancel
+;
+WORD_Changed
+Promijenjeno
+; Changed
+;
+WORD_Change_Type
+Promjeni Tip
+; Change Type
+;
+WORD_Create_Table
+Stvori Table
+; Create Table
+;
+WORD_Devices
+Ureðaji
+; Devices
+;
+WORD_DosEnvec
+DosEnvec
+; DosEnvec
+;
+WORD_Exit
+Izlaz
+; Exit
+;
+WORD_Geometry
+Geometrija
+; Geometry
+;
+WORD_Name
+Ime
+; Name
+;
+WORD_Switches
+Prekidaèi
+; Switches
+;
+WORD_Ok
+U redu
+; Ok
+;
+WORD_Parent
+Prethodni
+; Parent
+;
+WORD_Partitions
+Particije
+; Partitions
+;
+WORD_Partition_Table
+Table Particije
+; Partition Table
+;
+WORD_Partition_Table_Type
+Tip Table Particije
+; Partition Table Type
+;
+WORD_Partition_Type
+Tip Particije
+; Partition Type
+;
+WORD_RemoveEntry
+Ukloni Ulaz
+; Remove Entry
+;
+WORD_Rename
+Preimenuj
+; Rename
+;
+WORD_Resize_Move
+Promjeni velièinu/Pomakni
+; Resize/Move
+;
+WORD_Save_Changes
+Spremi Promjene
+; Save Changes
+;
+WORD_Size
+Velièina
+; Size
+;
+WORD_Unit
+Jedinica
+; Unit
+;
+WORD_Units
+Jedinice
+; Units
+;
+WORD_Unknown
+Nepoznato
+; Unknown
+;
+WORD_MENU_Project
+Projekt
+; Project
+;
+WORD_MENU_About
+O Programu
+; About
+;
+WORD_MENU_Quit
+Izlaz
+; Quit
+;
+MSG_ASK_SAVE
+Svi podatci da izmijenjenim particijama æe bit uni¹teni!\nSigurno ¾elite spremiti promjene particijske table '%s'?
+; All Data on modified partitions will be destroyed!\nAre you sure to write changes of partition table '%s'?
+;
+MSG_NO_MEMORY
+Nedovoljno memorije
+; Not enough memory
+;
+MSG_PARTITION_TABLE_FULL
+Particijska tabla je puna
+; Partition table full
+;
+MSG_Select_Empty_Area
+Izaberite prazni dio
+; Select empty area
+;
+MSG_Select_Partition_Resize_Move
+Izaberite particiju i promjenite velièinu/prebacite ju
+; Select a partition and resize/move it
+;
+MSG_Welcome
+Dobrodo¹li u particijski alat
+; Welcome to the partitioning tool
+;
+MSG_WriteTableError
+Gre¹ka pri zapisivanju particijske table
+; Error while writing partition table
+;
+MSG_CreateTableError
+Gre¹ka pri stvaranju particijske table
+; Error while creating partition table
+;

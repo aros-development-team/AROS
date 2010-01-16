@@ -1,0 +1,145 @@
+## version $VER: serial.catalog 1.0 (23.12.2009)
+## language hrvatski
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Ne mogu otvoriti  %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+Ne mogu zakljuèati javni zaslon!
+; Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Ne mogu dobiti DrawInfo!
+; Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Ne mogu dobiti VisualInfo!
+; Can't get VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Ne mogu stvoriti gadgets!
+; Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Ne mogu stvoriti izbornike!
+; Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Ne mogu stvoriti prozor!
+; Can't create window!
+;
+MSG_WINTITLE
+Postavke Serijskog Porta
+; Serial Preferences
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Otvori...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Spremi Kao...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Izlaz
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Uredi
+; Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Resetiraj na Predlo¾ene Postavke
+; D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Zadnje Spremljeno
+; L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Povrat
+; R\0Restore
+;
+MSG_MEN_SETTINGS
+Opcije
+; Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Napravi Ikone?
+; I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Uèitaj Postavke Serijskog porta
+; Load Serial Preferences
+;
+MSG_ASL_SAVE_TITLE
+Spremi Postavke Serijskog porta
+; Save Serial Preferences
+;
+MSG_OK
+U redu
+; Ok
+;
+MSG_GAD_SAVE
+Spremi
+; Save
+;
+MSG_GAD_USE
+Koristi
+; Use
+;
+MSG_GAD_CANCEL
+Odustani
+; Cancel
+;
+MSG_GAD_BAUDRATE
+Baudrate
+; Baudrate
+;
+MSG_GAD_PARITY
+Parity
+; Parity
+;
+MSG_GAD_STOPBITS
+Stop Bits
+; Stop Bits
+;
+MSG_GAD_DATABITS
+Data Bits
+; Data Bits
+;
+MSG_GAD_INPUTBUFFERSIZE
+Ulazna Velièina Spremnika
+; Input Buffer Size
+;
+MSG_GAD_OUTPUTBUFFERSIZE
+Izlazna Velièina Spremnika
+; Output Buffer Size
+;
+MSG_PARITY_NONE
+None
+; None
+;
+MSG_PARITY_EVEN
+Even
+; Even
+;
+MSG_PARITY_ODD
+Odd
+; Odd
+;
+MSG_PARITY_MARK
+Mark
+; Mark
+;
+MSG_PARITY_SPACE
+Space
+; Space
+;

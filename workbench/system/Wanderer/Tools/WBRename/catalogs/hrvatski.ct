@@ -1,0 +1,72 @@
+## version $VER: WBRename.catalog 1.2 (04.01.2010)
+## language hrvatski
+## codeset 0
+;
+;
+MSG_TITLE
+Alat za Preimenovanje
+; WBRename
+;
+MSG_DESCRIPTION
+Preimenuje datoteke i mape
+; Renames files and drawers
+;
+MSG_COPYRIGHT
+Œ2006, AROS Dev Team
+; ©2006, AROS Dev Team
+;
+MSG_WINDOW_TITLE
+Preimenuj
+; Rename
+;
+MSG_LINE
+Unesite novo ime
+; Enter a new name
+;
+MSG_NAME
+Novo Ime:
+; New name:
+;
+MSG_OK
+U redu
+; _OK
+;
+MSG_CANCEL
+Odustani
+; Ca_ncel
+;
+MSG_ERROR_TITLE
+Pogre¹ka
+; Error
+;
+MSG_ALREADY_EXIST
+'%s' veæ postoji!
+; '%s' already exists!
+;
+MSG_FAILED
+Gre¹ka pri preimenovanju '%s' :\n'%s'!
+; Rename of '%s' failed with error:\n'%s'!
+;
+MSG_ILLEGAL_CHARS
+'%s' sadr¾i simbole koji nisu podr¾ani!
+; '%s' contains illegal characters!
+;
+MSG_NEEDS_MORE_ARGS
+Potrebno je 2 argumenta!
+; Need 2 arguments!
+;
+MSG_INVALID_LOCK
+Neispravan directory lock!
+; Invalid directory lock!
+;
+MSG_WB_ONLY
+Alat nije moguæe pokrenuti iz konzole!\n
+; Cannot be started from shell!\n
+;
+MSG_FAILED_CREATE_APP
+Gre¹ka pri stvaranju aplikacije!
+; Failed to create Application!
+;
+MSG_OUTOFMEMORY
+Nedovoljno memorije!
+; Can't allocate RAM!

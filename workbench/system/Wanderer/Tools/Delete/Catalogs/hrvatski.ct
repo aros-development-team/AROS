@@ -1,0 +1,53 @@
+## version $VER: Delete.catalog 1.3 (04.01.2010)
+## language hrvatski
+## codeset 0
+;
+; 
+MSG_TITLE
+Brisanje
+; Delete
+;
+MSG_DELETE_REQUEST
+Izbrisati?
+; Delete?
+;
+MSG_DELETE_CHOICE
+Izbri¹i|Odustani
+; Delete|Cancel
+;
+MSG_REQUEST
+®elite li izbrisati '%s'?
+; Are you sure you want to delete '%s'?
+;
+MSG_ERROR
+Pogre¹ka
+; Error
+;
+MSG_OK
+U redu
+; OK
+;
+MSG_COULDNT_DELETE
+Datoteku nije moguæe izbrisati.
+; Could not delete file.
+;
+MSG_COULDNT_ALLOCATE
+Nedovoljno memorije.
+; Could not allocate memory.
+;
+MSG_COULDNT_LOCK
+Ne mogu zaprimiti datoteku za brisanje.
+; Could not lock file for deletion.
+;
+MSG_INFO
+Info
+; Info
+;
+MSG_WRONG_ARGS
+Pogre¹ka: Krivi broj argumenata. 
+; Error: Wrong number of arguments.
+;
+MSG_WB_ONLY
+Pogre¹ka: Program mora biti startan iz Wanderer-a.\n
+; Error: Must be started from Wanderer.\n
+;

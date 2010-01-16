@@ -1,0 +1,125 @@
+## version $VER: IControl.catalog 1.2 (22.12.09)
+## language hrvatski
+## codeset 5
+;
+;
+MSG_CANT_OPEN_LIB
+Ne mogu otvoriti %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_APP
+Ne mogu stvoriti objekt aplikacije!
+; Can't create application object!
+;
+MSG_CANT_CREATE_CUSTOM_CLASS
+Ne mogu stvoriti prilagoðenu preferenceswindow klasu
+; Can't create custom preferenceswindow class
+;
+MSG_WINTITLE
+Icontrol Postavke
+; IControl Preferences
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Otvori...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Spremi Kao...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Izlaz
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Uredi
+; Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Resetiraj na Predlo¾eno
+; D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Zadnje Spremljeno
+; L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Povrati
+; R\0Restore
+;
+MSG_MEN_SETTINGS
+Pode¹avanja
+; Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Napravi Ikone?
+; I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Uèitaj IControl Postavke
+; Load IControl Preferences
+;
+MSG_ASL_SAVE_TITLE
+Spremi IControl Postavke
+; Save IControl Preferences
+;
+MSG_OK
+U redu
+; Ok
+;
+MSG_MENUS_GROUP
+Izbornici
+; Menus
+;
+MSG_MENUS_TYPE
+Tip
+; Type
+;
+MSG_MENUS_TYPE_PULLDOWN
+Padajuæi
+; Pull-Down
+;
+MSG_MENUS_TYPE_POPUP
+Skoèni
+; Pop-Up
+;
+MSG_MENUS_LOOK
+Izgled
+; Look
+;
+MSG_MENUS_LOOK_CLASSIC
+Klasièni
+; Classic
+;
+MSG_MENUS_LOOK_3D
+Trodimenzionalni
+; 3D
+;
+MSG_WINDOWS
+Prozori
+; Windows
+;
+MSG_OFFSCREEN_MOVE
+Izvan granica zaslona 
+; Offscreen move:
+;
+MSG_SCREENS
+Zasloni
+; Screens
+;
+MSG_FRONTMOST_DEFAULT
+Prvi kao DefaultPubScreen:
+; Frontmost set as DefaultPubScreen:
+;
+MSG_OFFSCREEN_DESC
+Dozvoli prozorima premje¹tanje \n izvan vidljivog djela
+; Allow windows to be moved out of\nthe visible area
+;
+MSG_FRONTMOST_DEFAULT_DESC
+  Postavi prvi public screen\n kao predlo¾eni public screen
+; Make the frontmost public screen\nthe default public screen
+;
