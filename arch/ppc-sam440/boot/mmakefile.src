@@ -85,7 +85,7 @@ $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 	@$(MKDIR) -p "$(PORTSDIR)"
 	@mkisofs -f \
                 -o $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso \
-                -b bootloader \
+                -b Parthenope \
                 -no-emul-boot \
                 -allow-leading-dots \
 		-iso-level 4 \

@@ -178,12 +178,12 @@ void testboot_aros(menu_t * menu, void *kernel, boot_dev_t * boot)
 	video_draw_text(7, 9, 0, menu->kernel, 66);
 
 	for (i = 0; i < menu->modules_cnt; i++) {
-		printf("[BOOT] Loading file '%s'\n", menu->modules[i]);
+		printf("[BOOT] Loading file '%s'\n", menu->modules[i]->name);
 		if (boot->load_file(boot, menu->modules[i]->name, file_buff) < 0) {
 			return;
 		}
 		if (!load_elf_file(file_buff)) {
-			printf("[BOOT] Load ERRRO\n");
+			printf("[BOOT] Load ERROR\n");
 			return;
 		}
 		set_progress(i + 2);
@@ -193,7 +193,6 @@ void testboot_aros(menu_t * menu, void *kernel, boot_dev_t * boot)
 	void (*entry) (void *);
 	flush_cache(get_ptr_rw(), get_ptr_ro());
 
-	printf("[BOOT] Jumping into kernel\n");
 	entry = (void *)KERNEL_PHYS_BASE;
 
 	tags->ti_tag = KRN_KernelBss;
@@ -220,12 +219,8 @@ void testboot_aros(menu_t * menu, void *kernel, boot_dev_t * boot)
 	tags->ti_data = (unsigned long)get_ptr_ro();
 	tags++;
 
-	tags->ti_tag = KRN_ARGC;
-	tags->ti_data = (unsigned long)menu->argc;
-	tags++;
-
-	tags->ti_tag = KRN_ARGV;
-	tags->ti_data = (unsigned long)&menu->argv[0];
+	tags->ti_tag = KRN_CmdLine;
+	tags->ti_data = (unsigned long)menu->append;
 	tags++;
 
 	tags->ti_tag = 0;
@@ -238,6 +233,7 @@ void testboot_aros(menu_t * menu, void *kernel, boot_dev_t * boot)
 		bss++;
 	}
 
+        printf("[BOOT] Jumping into kernel @ %p\n", entry);
 	entry(&items[0]);
 
 	printf("[BOOT] Shouldn't be back...\n");
