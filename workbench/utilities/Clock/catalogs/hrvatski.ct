@@ -1,0 +1,25 @@
+## version $VER: clock.catalog 1.1 (21.12.2009)
+## language hrvatski
+## codeset 0
+;
+;
+MSG_ERROR_CANT_CREATE_APPLICATION
+Pogre¹ka: Ne mogu stvoriti objekt aplikacije.
+; Error: Can't create application object.
+;
+MSG_WINDOW_TITLE
+Sat
+; Clock
+;
+MSG_DESCRIPTION
+Sat
+; Wanderer Clock
+;
+MSG_OK
+U redu
+; Ok
+;
+MSG_ERROR_DISKOBJECT
+Pogre¹ka: Ne mogu stvoriti diskobject
+; Error: Can't create diskobject
+;

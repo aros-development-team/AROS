@@ -1,0 +1,440 @@
+## version $VER: Editor.catalog 1.4 (27.12.2009)
+## language hrvatski
+## codeset 0
+;
+;
+; Catalog description for JanoEditor
+; JanoEditor.cd
+;
+;
+; *****************************
+;  NewMenu strings
+; *****************************
+;
+; Project Menu
+;
+MSG_PROJECTTITLE
+Projekt
+; Project
+;
+MSG_NEWEMPTYFILE
+Novo
+; New
+;
+MSG_OPENNEWFILE
+Stvori datoteku...
+; Open file...
+;
+MSG_LOADINPRJ
+Spremi datoteku...
+; Load file...
+;
+MSG_SAVEFILE
+Spremi
+; Save
+;
+MSG_SAVEFILEAS
+Spremi kao...
+; Save as...
+;
+MSG_SAVECHANGES
+Spremi izjene
+; Save changes
+;
+MSG_PRINTFILE
+Printaj
+; Print
+;
+MSG_INFORMATION
+Informacije
+; Information...
+;
+MSG_CLOSE
+Zatvori
+; Close
+;
+MSG_QUIT
+Izlaz
+; Quit
+;
+; Edit Menu
+;
+MSG_EDITTITLE
+Ureðivanje
+; Edit
+;
+MSG_CUT
+Izre¾i
+; Cut
+;
+MSG_COPY
+Kopiraj
+; Copy
+;
+MSG_PASTE
+Zalijepi
+; Paste
+;
+MSG_MARK
+Oznaèi
+; Mark
+;
+MSG_MARKCOLUMN
+Oznaèi kolumnu
+; Mark column
+;
+MSG_SELECTALL
+Izaberi sve
+; Select all
+;
+MSG_DELLINE
+Izbri¹i liniju
+; Delete line
+;
+MSG_SUBTOOLS
+Alati
+; Tools
+;
+MSG_INDENT
+Uvuci
+; Indent
+;
+MSG_UNINDENT
+Izvuci
+; Unindent
+;
+MSG_UPPERCASE
+Velika slova
+; Upper case
+;
+MSG_LOWERCASE
+Mala slova
+; Lower case
+;
+MSG_TOGGLECASE
+Mjenjaj velika/mala slova
+; Toggle case
+;
+MSG_INSERTFILE
+Ubaci datoteku...
+; Insert file...
+;
+MSG_UNDO
+Poni¹ti
+; Undo
+;
+MSG_REDO
+Ponovo uèini
+; Redo
+;
+; Search Menu
+;
+MSG_SEARCHTITLE
+Pretra¾ivanje
+; Search
+;
+MSG_FIND
+Pronaði...
+; Find...
+;
+MSG_REPLACE
+Zamjeni...
+; Replace...
+;
+MSG_SUBFIND
+Tra¾i
+; Find
+;
+MSG_NEXTFIND
+Naprijed
+; Next
+;
+MSG_PREVFIND
+Nazad
+; Previous
+;
+MSG_NEXTREPLACE
+Zamjeni
+; Replace
+;
+MSG_PREVPAGE
+Stranica nazad
+; Previous page
+;
+MSG_NEXTPAGE
+Stranica naprijed
+; Next page
+;
+MSG_GOTOLINE
+Idi na liniju...
+; Goto line...
+;
+MSG_FINDBRACKET
+Odgovarajuèa zagrada
+; Matching bracket
+;
+MSG_LASTMODIF
+Zadnja promjena
+; Last modification
+;
+MSG_BEGOFLINE
+Poèetak linije
+; Start of line
+;
+MSG_ENDOFLINE
+Kraj linije
+; End of line
+;
+; Macro Menu
+;
+MSG_MACROTITLE
+Makroi
+; Macro
+;
+MSG_STARTRECORD
+Zapoèni snimanje
+; Start recording
+;
+MSG_STOPRECORD
+Zaustavi snimanje
+; Stop recording
+;
+MSG_PLAYMACRO
+Pokreni makro
+; Execute macro
+;
+MSG_REPEATMACRO
+Ponovi makro...
+; Repeat macro...
+;
+; Environment Menu
+;
+MSG_ENVTITLE
+Okru¾je
+; Environment
+;
+MSG_SCRMODE
+Rezolucija zaslona...
+; Screen mode...
+;
+MSG_FONTS
+Slova...
+; Fonts...
+;
+MSG_PREFS
+Opæe postavke...
+; General preferences...
+;
+MSG_LOADPREFS
+Uèitaj postavke
+; Load preferences..
+;
+MSG_SAVEPREFS
+Spremi postavke
+; Save preferences
+;
+MSG_SAVEPREFSAS
+Spremi postavke kao...
+; Save preferences as...
+;
+;
+;
+; *****************************
+;  Possible error messages
+; *****************************
+;
+ERR_BADOS
+Obsolete OS. Install v2.0 or better.
+; Obsolete OS. Install v2.0 or better.
+;
+ERR_NOASLREQ
+Gre¹ka pri otvaranju ASL requester-a!
+; Cannot alloc ASL requester!
+;
+ERR_NOMEM
+Nedovoljno memorije!
+; Out of memory!
+;
+ERR_NOGUI
+Gre¹ka pri otvaranju glavnog suèelja!
+; Main interface failed to open!
+;
+ERR_NONAME
+Bez naslova
+; No title
+; Not really an error but simplify translation
+;
+ERR_WRITECLIP
+Gre¹ka pri zapisivanju u meðuspremnik
+; Write error into clipboard device
+;
+ERR_OPENCLIP
+Gre¹ka pri otvaranju meðuspremnika!
+; Unable to open clipboard!
+;
+ERR_LOADFILE
+Gre¹ka pri uèitavanju datoteke
+; Unable to load requested file
+;
+ERR_NOTXTINCLIP
+Nema teksta u meðuspremniku
+; No text in clipboard
+;
+ERR_WRONG_TYPE
+Objekt je mapa!
+; Object is a directory!
+;
+ERR_READCLIP
+Nepotpuna operacije èitanja 
+; Read operation incomplete
+;
+ERR_NOBRACKET
+Nema umetka pod kursorom!
+; No parenthesis under cursor!
+;
+ERR_NOT_FOUND
+Uzorak `%s' nije pronaðen
+; Pattern `%s' not found
+;
+ERR_LOADFONT
+Ne mogu otvoriti slovo!
+; Can't open desired font!
+;
+ERR_NOPREFEDITOR
+Ne mogu locirati editor postavki!
+; Can't find preference editor!
+;
+ERR_BADPREFSFILE
+Nesipravan format datoteke postavki.
+; Bad preference file format.
+;
+ERR_FILEMODIFIED
+%s je izmjenjen.\nSigurno ¾elite zatvoriti?  
+; %s has been modified.\nAre you sure want to close it?
+;
+ERR_SLC
+Spremi|Zatvori|Odustani
+; Save|Close|Cancel
+;
+ERR_NOSEARCHTEXT
+Nema teksa za pretragu!
+; No text to search for!
+;
+ERR_FILEEXISTS
+Ova datoteka veæ postoji. ®elite li prepisat?
+; This file already exists. Overwrite it?
+;
+ERR_OC
+Da|Ne!
+; Yes|No!
+;
+WARN_RECORD
+Snimanje makroa u tijeku
+; Start recording macro
+;
+WARN_RECORDED
+Makro snimit
+; Macro recorded
+;
+WARN_REC
+[REC]
+; [REC]
+;
+;
+; *************************************
+;  Information window related messages
+; *************************************
+;
+MSG_ABOUT
+Informacije
+; Information
+;
+MSG_FORMATINFO
+%s\nDesigned by T.Pierron and C.Guillaume Œ 2000\n\nDatoteka ureðena: %s\nDu¾ina: %ld %s, %ld %s.
+; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
+;
+MSG_CONTINUE
+Nastavi
+; Continue
+;
+MSG_BYTE
+byte
+; byte
+;
+MSG_BYTES
+bytes
+; bytes
+;
+MSG_LINE
+linija
+; line
+;
+MSG_LINES
+linije
+; lines
+;
+;
+; *************************
+;  Search & replace window
+; *************************
+;
+MSG_SEARCHWINDOW
+Tra¾i uzorak
+; Search pattern
+;
+MSG_REPLACEWINDOW
+Tra¾i & Zamjeni
+; Search & Replace
+;
+MSG_SEARCHSTRING
+Pronaði:
+; Locate:
+;
+MSG_REPLACESTRING
+Zamjeni:
+; Replace:
+;
+MSG_OPTCASE
+Mala/velika slova
+; Match case
+;
+MSG_OPTWORDS
+Cijele rijeèi
+; Whole words
+;
+MSG_BUTTONREPLACE
+Zamjeni
+; _Replace
+;
+MSG_BUTTONREPALL
+Zamjeni Sve
+; Replace _All
+;
+MSG_BUTTONSEARCH
+Tra¾i
+; Search
+;
+MSG_NEXTSEARCH
+Zadnje
+; _Previous
+;
+MSG_USESEARCH
+Koristi
+; _Use
+;
+MSG_CANCELSEARCH
+Odustani
+; _Cancel
+;
+MSG_REPLACEALL
+%ld %s of `%s' zamjenjeno
+; %ld %s of `%s' replaced
+;
+MSG_OCCURENCY
+occurency
+; occurency
+;
+MSG_OCCURENCIES
+occurencies
+; occurencies
+;

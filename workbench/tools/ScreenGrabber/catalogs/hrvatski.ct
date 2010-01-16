@@ -1,0 +1,93 @@
+## version $VER: ScreenGrabber.catalog 1.3 (27.12.2009)
+## language hrvatski
+## codeset 0
+;
+;
+MSG_WINDOW_TITLE
+ScreenGrabber
+; ScreenGrabber
+;
+MSG_REFRESH
+Obnovi listu
+; Refresh list
+;
+MSG_SCREEN_INFO
+Informacije o zaslonu
+; Screen info
+;
+MSG_SIZE
+Velièina
+; Size
+;
+MSG_TITLE
+Naslov
+; Title
+;
+MSG_DEFAULT_TITLE
+Postavljeni naslov
+; Default title
+;
+MSG_GRABBING_OPTIONS
+Opcije 
+; Grabbing options
+;
+MSG_DELAY
+Ka¹njenje (s)
+; Delay (s)
+;
+MSG_HIDE
+Sakrij prozor snimatelja
+; Hide the grabber window
+;
+MSG_SAVE_OPTIONS
+Spremi opcije
+; Save options
+;
+MSG_SAVE_FILE
+Spremi datoteku
+; Save file
+;
+MSG_SCREENSHOT
+Snimi
+; Screenshot
+;
+MSG_SCREEN_PARM
+ %d x %d, dubina=%d
+; %d x %d, depth=%d
+;
+MSG_OVERWRITE
+Datoteka '%s' veè postoji.\n®elite li ju prepisati?
+; File '%s' already exists.\nDo you really want to overwrite it?
+;
+MSG_ERROR_TITLE
+Screengrabber Gre¹ka
+; Screengrabber Error
+;
+MSG_GAD_OK
+U redu
+; _OK
+;
+MSG_GAD_YESNO
+DA|NE
+; YES|NO
+;
+MSG_ERR_DATATYPE
+Ne mogu stoviti datatype object!
+; Can't create datatype object!
+;
+MSG_NORAM
+Nedovoljno memorije!
+; Can't allocate RAM!
+;
+MSG_ERR_DATATYPEIO
+Zapisivanje '%s' neuspjelo sa IO pogre¹kom %ld!
+; Writing of '%s' failed with IO Error %ld!
+;
+MSG_ERR_OPENFILE
+Ne mogu otvoriti datoteku '%s' za izlaz!
+; Can't open file '%s' for output!
+;
+MSG_ERR_APP
+Ne mogu stvoriti objekt aplikacije!
+; Can't create application object!
+;

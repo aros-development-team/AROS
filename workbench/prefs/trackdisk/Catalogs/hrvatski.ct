@@ -1,0 +1,45 @@
+## version $VER: Trackdisk.catalog 1.2 (26.12.2009)
+## language hrvatski
+## codeset 0
+;
+;
+MSG_NAME
+Trackdisk
+; Trackdisk
+;
+MSG_TITLE
+Trackdisk Postavke
+; Trackdisk prefs
+;
+MSG_SAVE
+Spremi
+; Save
+;
+MSG_USE
+Koristi
+; Use
+;
+MSG_CANCEL
+Odustani
+; Cancel
+;
+MSG_DESCRIPTION
+trackdisk.device editor postavki
+; trackdisk.device preferences editor
+;
+MSG_WINDOW_TITLE
+trackdisk.device postavke
+; trackdisk.device preferences
+;
+MSG_DRIVE
+Ureðaj %u
+; Drive %u
+;
+MSG_NOCLICK
+Bez klikanja:
+; No click:
+;
+MSG_RETRIES
+Retries:
+; Retries:
+;

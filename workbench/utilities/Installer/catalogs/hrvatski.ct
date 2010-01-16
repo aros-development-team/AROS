@@ -1,0 +1,30 @@
+## version $VER: installer.catalog 1.0 (21.12.2009)
+## language hrvatski
+## codeset 0
+;
+;
+;
+MSG_OK
+U redu
+; OK
+;
+MSG_CANCEL
+Odustani
+; Cancel
+;
+MSG_MESSAGE
+Poruka
+; Message
+;
+MSG_PROMPT
+Prompt
+; Prompt
+;
+MSG_YES
+Da
+; Yes
+;
+MSG_NO
+Ne
+; No
+;

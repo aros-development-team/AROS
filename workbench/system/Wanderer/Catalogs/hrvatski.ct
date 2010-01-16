@@ -1,0 +1,449 @@
+## version $VER: wanderer.catalog 1.0 (03.01.2010)
+## language hrvatski
+## codeset 0
+;
+;
+MSG_TITLE
+Wanderer
+; Wanderer
+;
+MSG_DESCRIPTION
+Upravitelj datoteka
+; File manager
+;
+MSG_SCREENTITLE
+Wanderer %s grafièke mem %s druge mem
+; Wanderer %s graphics mem %s other mem
+;
+MSG_MEM_B
+B
+; B
+;
+MSG_MEM_K
+K
+; K
+;
+MSG_MEM_M
+M
+; M
+;
+MSG_MEM_G
+G
+; G
+;
+MSG_MEN_WANDERER
+Wanderer
+; Wanderer
+;
+MSG_MEN_BACKDROP
+Podloga
+; Backdrop
+;
+MSG_MEN_SC_BACKDROP
+B
+; B
+;
+MSG_MEN_EXECUTE
+Izvr¹i Naredbu...
+; Execute...
+;
+MSG_MEN_SC_EXECUTE
+E
+; E
+;
+MSG_MEN_SHELL
+Konzola
+; Shell
+;
+MSG_MEN_SC_SHELL
+W
+; W
+;
+MSG_MEN_GUISET
+GUI postavke...
+; GUI settings...
+;
+MSG_MEN_ABOUT
+O Programu...
+; About...
+;
+MSG_MEN_QUIT
+Izlaz...
+; Quit...
+;
+MSG_MEN_SC_QUIT
+Q
+; Q
+;
+MSG_MEN_WINDOW
+Prozor
+; Window
+;
+MSG_MEN_NEWDRAW
+Nova Mapa...
+; New drawer...
+;
+MSG_MEN_SC_NEWDRAW
+N
+; N
+;
+MSG_MEN_OPENPAR
+Otvori Prethodni
+; Open parent
+;
+MSG_MEN_CLOSE
+Zatvori
+; Close
+;
+MSG_MEN_SC_CLOSE
+K
+; K
+;
+MSG_MEN_UPDATE
+Obnovi
+; Update
+;
+MSG_MEN_CONTENTS
+Izaberi Sadr¾aj
+; Select contents
+;
+MSG_MEN_SC_CONTENTS
+A
+; A
+;
+MSG_MEN_CLRSEL
+Ukloni Selekciju
+; Clear selection
+;
+MSG_MEN_SC_CLRSEL
+Z
+; Z
+;
+MSG_MEN_SNAPSHT
+Zapamti Polo¾aj
+; Snapshot
+;
+MSG_MEN_ALL
+Sve
+; All
+;
+MSG_MEN_VIEW
+Prikaz
+; View
+;
+MSG_MEN_ICVIEW
+Ikone
+; Icon view
+;
+MSG_MEN_DCVIEW
+Detalji
+; Detail view
+;
+MSG_MEN_ALLFIL
+Sve Datoteke
+; All files
+;
+MSG_MEN_SORTIC
+Razvrstaj
+; Sort
+;
+MSG_MEN_CLNUP
+Pospremi
+; Clean up
+;
+MSG_MEN_SC_CLNUP
+U
+; U
+;
+MSG_MEN_BYNAME
+Po Imenu
+; By name
+;
+MSG_MEN_BYDATE
+Po Datumu
+; By date
+;
+MSG_MEN_BYSIZE
+Po Velièini
+; By size
+;
+MSG_MEN_BYTYPE
+Po Tipu
+; By type
+;
+MSG_MEN_REVERSE
+Obrnuto
+; Reverse
+;
+MSG_MEN_DRWFRST
+Mape Prvo
+; Drawers first
+;
+MSG_MEN_ICON
+Ikona
+; Icon
+;
+MSG_MEN_OPEN
+Otvori
+; Open
+;
+MSG_MEN_SC_OPEN
+O
+; O
+;
+MSG_MEN_RENAME
+Preimenuj...
+; Rename...
+;
+MSG_MEN_SC_RENAME
+R
+; R
+;
+MSG_MEN_INFO
+Informacija...
+; Information...
+;
+MSG_MEN_SC_INFO
+I
+; I
+;
+MSG_MEN_DELETE
+Izbri¹i
+; Delete...
+;
+MSG_MEN_TOOLS
+Alati
+; Tools
+;
+MSG_MEN_ICONSORTING
+Omoguæi Razvrstavanje Ikona
+; Enable Icon Sorting
+;
+MSG_MEN_GROUPICONS
+Grupiraj Ikone
+; Group Icons
+;
+MSG_MEN_ICONSCLOSE
+Zatvori
+; Close
+;
+MSG_REALLYQUIT
+®elite li izaæi iz Wanderer-a?
+; Do you really want to quit Wanderer?
+;
+MSG_YESNO
+*Da|Ne
+; *Yes|No
+;
+MSG_DUMMY
+DUMMY
+; DUMMY
+; DUMMY :)
+MSG_USERSCREENTITLE
+Wanderer %pc grafièke mem %pf druge mem
+; Wanderer %pc graphics mem %pf other mem
+;
+MSG_MEN_FORMAT
+Formatiraj Disk...
+; Format disk...
+;
+MSG_MEN_SHUTDOWN
+Iskljuèiti...
+; Shut down...
+;
+MSG_SHUTDOWN_TITLE
+Iskljuèiti Sustav
+; System shutdown
+;
+MSG_SHUTDOWN_BODY
+©to ¾elite uèiniti?
+; What would you like to do?
+;
+MSG_SHUTDOWN_BUTTONS
+Iskljuèiti|Resetiraj raèunalo|Resetiraj AROS|*Odustani
+; Power off|Restart computer|Restart AROS|*Cancel
+;
+MSG_ACTION_NOT_SUPPORTED
+Akcija koju ste izabrali nije podr¾ana od strane va¹eg sustava.
+; The selected action is not supported by your system.
+;
+MSG_OK
+*U redu
+; *OK
+;
+MSG_EMPTY_TRASH
+Isprazni Kantu za Smeæe
+; Empty trash
+;
+MSG_PUT_AWAY
+Stavi sa Strane
+; Put away
+;
+MSG_LEAVE_OUT
+Izbaci Van
+; Leave out
+;
+MSG_UNSNAPSHOT
+Zaboravi Polo¾aj
+; Unsnapshot
+;
+MSG_SNAPSHOT
+Zapamti Polo¾aj
+; Snapshot
+;
+MSG_REQU_DELETE
+Izbri¹i Datoteku...
+; Delete file...
+;
+MSG_REQU_DELETE_YESNO
+Da|Da za Sve|_Ne|Ne za Sve
+; _Yes|Yes to _all|_No|No _to all
+;
+MSG_REQU_DELETE_DRAWER_S
+Dali ste sigurni da ¾elite izbrisati Mapu
+; Really delete drawer
+;
+MSG_REQU_DELETE_DRAWER_E
+?
+; ?
+;
+MSG_REQU_DELETE_FILE_S
+Dali ste sigurni da ¾elite izbrisati Datoteku
+; Really delete file
+;
+MSG_REQU_DELETE_FILE_M
+koja se nalazi
+; located in
+;
+MSG_REQU_DELETE_FILE_E
+?
+; ?
+;
+MSG_REQU_OVERWRITE
+Spremi preko postojeæe datoteke...
+; Overwrite file...
+;
+MSG_REQU_OVERWRITE_S
+Dali ste sigurni da ¾elite spremiti preko postojeæe datoteke
+; Really overwrite file
+;
+MSG_REQU_OVERWRITE_M
+koja se nalazi
+; located in
+;
+MSG_REQU_OVERWRITE_E
+?
+; ?
+;
+MSG_REQU_OVERWRITE_YESNO
+Spremi|Spremi Sve|_Ne|Ne za Sve
+; _Overwrite|Overwrite _all|_No|No _to all
+;
+MSG_REQU_OVERWRITE_SKIPABORT
+Izo_stavi|
+; _Skip|Obust_avi
+;
+MSG_REQU_PROTECTION
+Za¹tita Datoteka
+; File Protection
+;
+MSG_REQU_PROTECTION_UNPROTECT
+_Ukloni za¹titu|Ukloni z_a¹titu za Sve|_Ne|Ne za Sve
+; _Unprotect|Unprotect _All|_No|No _to ALL
+;
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_S
+®elite li ukloniti za¹titu sa mape
+; Do you wish to unprotect drawer
+;
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
+?
+; ?
+;
+MSG_NOFILEACCESS_S
+Ne mogu pristupiti datoteci
+; Can't access file
+;
+MSG_NOFILEACCESS_M
+koja se nalazi 
+; located in
+;
+MSG_NOFILEACCESS_E
+
+;  
+;
+MSG_NODRAWERACCESS_S
+Ne mogu pristupiti mapi
+; Can't access drawer
+;
+MSG_NODRAWERACCESS_E
+
+;  
+;
+MSG_REQU_FILEUNPROTECT_S
+®elite li ukloniti za¹titu sa datoteke
+; Do you wish to unprotect file
+;
+MSG_REQU_FILEUNPROTECT_M
+koja se nalazi
+; located in
+;
+MSG_REQU_FILEUNPROTECT_E
+?
+; ?
+;
+MSG_WANDERER_FILEACCESS
+Pristup datoteke
+; Wanderer file access
+;
+MSG_WANDERER_FILEACCESS_PROCESSING
+Obrada u toku...
+; Processing...
+;
+MSG_WANDERER_FILEACCESS_STOP
+Stop
+; Stop
+;
+MSG_WANDERER_FILEACCESS_MOVEFROM
+Premjesti od
+; Move from
+;
+MSG_WANDERER_FILEACCESS_MOVETO
+Premjesti u
+; Move to
+;
+MSG_WANDERER_FILEACCESS_COPYFROM
+Kopiraj od
+; Copy from
+;
+MSG_WANDERER_FILEACCESS_COPYTO
+Kopiraj u
+; Copy to
+;
+MSG_WANDERER_FILEACCESS_FILE
+Datoteka
+; File
+;
+MSG_WANDERER_FILEACCESS_TRAFFIC
+Omjer prijenosa podataka
+; Data transfer rate
+;
+MSG_WANDERER_FILEACCESS_DELETEFROM
+Izbri¹i iz mape
+; Delete from drawer
+;
+MSG_WANDERER_FILEACCESS_FILETODELETE
+Datoteka za brisanje
+; File to delete
+;
+MSG_WANDERER_FILEACCESS_NOOFFILES
+Obraðenih datoteka:
+; Processed files:
+;
+MSG_WANDERER_FILEACCESS_ACTUAL
+Velièina trenutne datoteke:
+; Size of current file:
+;
+MSG_WANDERER_FILEACCESS_TOTAL
+Sveukupna velièina:
+; Overall size:
+;

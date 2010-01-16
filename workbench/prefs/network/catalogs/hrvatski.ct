@@ -1,0 +1,100 @@
+## version $VER: networkprefs.catalog 1.0 (23.12.09)
+## language hrvatski
+## codeset 0
+;
+MSG_NAME
+Mre¾ne Postavke
+; Network Preferences
+;
+MSG_DESCRIPTION
+TCP/IP Mre¾ne postavke
+; TCP/IP Network preferences
+;
+MSG_DEVICE
+Ureðaj
+; Device
+;
+MSG_IP_MODE
+IP Mod
+; IP Mode
+;
+MSG_IP
+IP
+; IP
+;
+MSG_MASK
+Mask
+; Mask
+;
+MSG_GATE
+Gate
+; Gate
+;
+MSG_DNS1
+Primarni DNS
+; Primary DNS
+;
+MSG_DNS2
+Sekundarni DNS
+; Secondary DNS
+;
+MSG_HOST_NAME
+Ime Domaæina
+; Host Name
+;
+MSG_DOMAIN_NAME
+Ime Domene
+; Domain Name
+;
+MSG_IP_MODE_MANUAL
+Manualno
+; Manual
+;
+MSG_IP_MODE_DHCP
+Pribavi adresu od DHCP
+; Get address from DHCP
+;
+MSG_TAB_IP_CONFIGURATION
+IP Konfiguracija
+; IP Configuration
+;
+MSG_TAB_COMPUTER_NAME
+Ime Raèunala
+; Computer Name
+;
+MSG_AUTOSTART_STACK
+Autostart
+; Autostart
+;
+MSG_ERR_UNKNOWN_ERROR
+Nepoznata gre¹ka
+; Unknown error
+;
+MSG_ERR_NOT_RESTARTED_STACK
+Neuspje¹an restart network stack
+; Failed to restart network stack
+;
+MSG_BUTTON_OK
+U redu
+; Ok
+;
+MSG_ERROR_TITLE
+gre¹ka
+; Error
+;
+MSG_ERR_NOT_SAVED_PREFS
+Mre¾ne postavke nisu spremljene u %s
+; Network preferences not saved to %s
+;
+MSG_ERR_NOT_COPIED_FILES
+Dodatne datoteke nisu kopirane u %s
+; Additional files not copied to %s
+;
+MSG_INFO_TITLE
+Obavijest
+; Information
+;
+MSG_PREFS_SAVED_RESTART
+Postavke su spremljene u %s.\nRestart je potreban.  
+; Preferences have been saved to %s.\nRestart AROS for them to take effect.
+;

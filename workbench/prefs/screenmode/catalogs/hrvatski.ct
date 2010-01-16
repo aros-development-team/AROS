@@ -1,0 +1,33 @@
+## version $VER: screenmode.catalog 1.1 (23.12.2009)
+## language hrvatski
+## codeset 0
+;
+;
+MSG_NAME
+Postavke Zaslona
+; ScreenMode Preferences
+; 
+MSG_WIDTH
+\33l©irina
+; \33lWidth:
+;
+MSG_DEFAULT
+\33l_default
+; \33l_default
+;
+MSG_HEIGHT
+\33lVisina
+; \33lHeight:
+;
+MSG_DEPTH
+\33lDubina
+; \33lDepth:
+;
+MSG_AUTOSCROLL
+\33lAuto-pomicanje
+; \33lAutoscroll
+;
+MSG_DISPLAY_MODE
+Mod Zaslona
+; Display Mode
+;

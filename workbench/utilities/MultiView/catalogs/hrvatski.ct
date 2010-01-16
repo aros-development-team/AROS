@@ -1,0 +1,209 @@
+## version $VER: multiview.catalog 1.0 (23.12.2009)
+## language hrvatski
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Ne mogu otvoriti %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_IC
+Ne mogu otvoriti objekte meðupovezivanja!
+; Can't create interconnection objects!
+;
+MSG_CANT_LOCK_SCR
+Ne mogu zakljuèati javni ekran!
+; Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Ne mogu dobiti DrawInfo!
+; Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Ne mogu dobiti VisualInfo!
+; Can't get VisualInfo!
+;
+MSG_CANT_CREATE_SYSIMAGE
+Ne mogu stvoriti SYSICLASS slike!
+; Can't create SYSICLASS images!
+;
+MSG_CANT_CREATE_GADGET
+Ne mogu stvoriti gadgete!
+; Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Ne mogu stvoriti izbornike!
+; Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Ne mogu stvoriti prozor!
+; Can't create window!
+;
+MSG_CANT_CREATE_MSGPORT
+Ne mogu otvoriti port za poruke!
+; Can't create message port!
+;
+MSG_CANT_ADD_APPWINDOW
+Ne mogu unaprijediti prozor u AppWindow!
+; Can't promote window as an AppWindow!
+;
+MSG_SAVE_FAILED
+Neuspjeh pri spremanju u datoteku!
+; Saving to file failed!
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Otvori...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Spremi kao...
+; A\0Save as...
+;
+MSG_MEN_PROJECT_SAVEAS_IFF
+I\0Spremi kao IFF...
+; I\0Save as IFF...
+;
+MSG_MEN_PROJECT_PRINT
+P\0Ispis
+; P\0Print
+;
+MSG_MEN_PROJECT_ABOUT
+?\0O Programu...
+; ?\0About...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Izlaz
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Uredi
+; Edit
+;
+MSG_MEN_EDIT_MARK
+B\0Oznaèi
+; B\0Mark
+;
+MSG_MEN_EDIT_COPY
+C\0Kopiraj
+; C\0Copy
+;
+MSG_MEN_EDIT_SELECTALL
+[\0Izaberi Sve
+; [\0Select All
+;
+MSG_MEN_EDIT_CLEARSELECTED
+]\0Ukloni Oznaku Selekcije
+; ]\0Clear Selected
+;
+MSG_MEN_WINDOW
+Prozor
+; Window
+;
+MSG_MEN_WINDOW_SEPSCREEN
+ \0UKoristi Odvojeni Ekran
+;  \0Use Separate Screen
+;
+MSG_MEN_WINDOW_MINIMIZE
+ \0Smanji
+;  \0Minimize
+;
+MSG_MEN_WINDOW_NORMAL
+ \0Normalno
+;  \0Normal
+;
+MSG_MEN_WINDOW_MAXIMIZE
+ \0Poveèaj
+;  \0Maximize
+;
+MSG_MEN_SETTINGS
+Opcije
+; Settings
+;
+MSG_MEN_SETTINGS_SAVEDEF
+D\0Spremi kao Postavljeno
+; D\0Save As Defaults
+;
+MSG_MEN_PICT
+Slika
+; Picture
+;
+MSG_MEN_PICT_ZOOM_IN
+ \0Poveèaj
+;  \0Zoom in
+;
+MSG_MEN_PICT_ZOOM_OUT
+ \0Smanji
+;  \0Zoom out
+;
+MSG_MEN_PICT_RESET
+ \0 Vrati u Poèetnu Velièinu
+;  \0Reset Size
+;
+MSG_MEN_PICT_FIT_WIN
+ \0Popuni Prozor
+;  \0Fit to Window
+;
+MSG_MEN_PICT_KEEP_ASPECT
+ \0Zadr¾i Omjer ©irine i Visine
+;  \0Keep Aspect Ratio
+;
+MSG_MEN_PICT_FORCE_MAP
+ \0Prisili Mapiranje Palete
+;  \0Force Palette Mapping
+;
+MSG_MEN_PICT_DITHER
+ \0Dithering
+;  \0Dithering
+;
+MSG_MEN_TEXT
+Tekst
+; Text
+;
+MSG_MEN_TEXT_WORDWRAP
+ \0Omoguèi Word Wrap
+;  \0Enable Word Wrap
+;
+MSG_MEN_TEXT_SEARCH
+ \0Tra¾i...
+;  \0Search for...
+;
+MSG_MEN_TEXT_SEARCH_PREV
+ \0Tra¾i nazad
+;  \0Search for previous
+;
+MSG_MEN_TEXT_SEARCH_NEXT
+ \0Tra¾i naprijed
+;  \0Search for next
+;
+MSG_ASL_OPEN_TITLE
+Izaberite Datoteku koju ®elite Otvoriti 
+; Select File to Open
+;
+MSG_ASL_SAVE_TITLE
+Izaberite Datoteku u koju ®elite Spremiti
+; Select File to Save to
+;
+MSG_ABOUT
+MultiView %ld.%ld (%s)\ndatatypes.library %s\n\n%s %s
+; MultiView %ld.%ld (%s)\ndatatypes.library %s\n\n%s %s
+;
+MSG_ABOUT_TITLE
+Multipreglednik
+; MultiView
+;
+MSG_CONTINUE
+Nastavi
+; Continue
+;
+MSG_OK
+U redu
+; Ok
+;
+MSG_SHORTCUT_EDITOR
+E
+; E
+;

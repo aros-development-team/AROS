@@ -1,0 +1,267 @@
+## version $VER: Wanderer.catalog 1.3 (23.12.2009)
+## language hrvatski
+## codeset 0
+;
+;
+MSG_NAME
+Postavke Desktopa
+; Wanderer Prefs
+;
+MSG_DESCRIPTION
+Postavke Desktopa
+; Wanderer preferences
+;
+MSG_BACKGROUNDS
+Podloge
+; Backgrounds
+;
+MSG_BACKGROUND_WORKBENCH
+Desktop
+; Workbench
+;
+MSG_BACKGROUND_DRAWERS
+Prozori
+; Drawers
+;
+MSG_SELECT_WORKBENCH_BACKGROUND
+Izaberi Podlogu Desktopa
+; Select Workbench Background
+;
+MSG_SELECT_DRAWER_BACKGROUND
+Izaberi Podlogu Prozora
+; Select Drawer Background
+;
+MSG_GENERAL
+Opæenito
+; General
+;
+MSG_APPEARANCE
+Izgled
+; Appearance
+;
+MSG_TOOLBAR
+Alatna Traka
+; Toolbar
+;
+MSG_CLASSIC
+Klasièno
+; Classic
+;
+MSG_ENHANCED
+Napredno
+; Enhanced
+;
+MSG_NAVIGATION
+Navigacija
+; Navigation
+;
+MSG_METHOD
+Metoda
+; Method
+;
+MSG_OBJECTS
+Objekti
+; Objects
+;
+MSG_PREVIEW
+Predpregled
+; Preview
+;
+MSG_TOOLBAR_ENABLED
+Alatna Traka Omoguèena
+; Toolbar Enabled
+;
+MSG_ICONSPREFS
+Izgled i Pona¹anje Ikona
+; Icons look and feel
+;
+MSG_ICONLISTMODE
+Ikone lista
+; Icon listmode
+;
+MSG_ICONLISTMODE_PLAIN
+Poslo¾i ikone obièno
+; List icons plainly
+;
+MSG_ICONLISTMODE_GRID
+Poslo¾i ikone sa mre¾om
+; List icons by grid
+;
+MSG_ICONTEXTMODE
+Prikaz Slova
+; Icons text drawmode
+;
+MSG_ICONTEXTMODE_OUTLINE
+Vanjski Obris
+; Outline
+;
+MSG_ICONTEXTMODE_PLAIN
+Obièno
+; Plain
+;
+MSG_ICONTEXTMODE_SHADOW
+Sjena
+; Drop shadow
+;
+MSG_ICONTEXTLENGTH
+Maksimalna du¾ina teksta
+; Max icon textlength
+;
+MSG_DOUBLEBUFFERED
+dupli spremnik
+; double buffering
+;
+MSG_MISC
+razno
+; misc
+;
+MSG_BUBBLESCREENTITLE
+%pc = slobodno Chip Ram\n\
+%pf = slobodno Fast Ram\n\
+%pt = ukupno slobodno Ram\n\
+%PC = Chip Ram\n\
+%PF = Fast Ram\n\
+%PT = Total Ram\n\
+%os = AROS verzija\n\
+%wb = Wanderer verzija\n\
+%ov = AROS verzija\n\
+%wv = workbench.library verzija
+; %pc = Chip Ram free\n\
+; %pf = Fast Ram free\n\
+; %pt = Total Ram free\n\
+; %PC = Chip Ram\n\
+; %PF = Fast Ram\n\
+; %PT = Total Ram\n\
+; %os = AROS version\n\
+; %wb = Wanderer version\n\
+; %ov = Exact AROS version\n\
+; %wv = Exact workbench.library version
+;
+MSG_TILEMODE
+Tapete :
+; Tile mode :
+;
+MSG_XOFFSET
+X Razmak :
+; X Offset :
+;
+MSG_YOFFSET
+Y Razmak :
+; Y Offset :
+;
+MSG_ICONLABELFONT
+Slovo Ikona...
+; Icon Label Font...
+;
+MSG_ICONINFOFONT
+Slovo Ikon Info-a... 
+; Icon Info Font...
+;
+MSG_HORIZSPACINGICON
+Horizontalni razmak izmeðu ikona
+; Horizontal spacing between icons
+;
+MSG_VERTSPACINGICON
+Vertikalni razmak izmeðu ikona
+; Vertical spacing between icons
+;
+MSG_PADDINGICONIMAGELABEL
+Razmak izmeðu ikone i teksta
+; Padding between Icon Image and Label
+;
+MSG_HORIZPADDINGLABELTEXT
+Horizontalni razmak izmeðu okvira i teksta
+; Horizontal Padding between Label Frame and Text
+;
+MSG_VERTPADDINGLABELTEXT
+Vertikalni razmak izmeðu okvira i teksta
+; Vertical Padding between Label Frame and Text
+;
+MSG_FRAMEWIDTH
+©irina Okvira
+; Label Frame Width
+;
+MSG_FRAMEHEIGHT
+Visina Okvira
+; Label Frame Height
+;
+MSG_TILED
+Tapetirano
+; Tiled
+;
+MSG_SCALED
+Skalirano
+; Scaled
+;
+MSG_FLOATING
+Plutajuæe
+; Floating
+;
+MSG_FIXED
+Fiksirano
+; Fixed
+;
+MSG_LABELLINELENGTH
+Maksimalna du¾ina linije...
+; Max. Label line length...
+;
+MSG_USEMULTILINELABELS
+Koristi vi¹e redaka
+; Use MultiLine Labels
+;
+MSG_SHOWFOCUSEDICON
+Prika¾i samo za Fokusirane Ikone
+; Only show for Focus(ed) Icon
+;
+MSG_NDISPLAYLINES
+Broj linija za prikaz...
+; No. of lines to display...
+;
+MSG_TILEMODEOPTIONS
+Opcije Tapetiranog Moda...
+; Tile Mode Options...
+;
+MSG_SCALEMODEOPTIONS
+Opcije Skaliranog Moda...
+; Scale Mode Options...
+;
+MSG_ADVANCEDOPTIONS
+Napredne Opcije...
+; Advanced Options...
+;
+MSG_BACKGROUNDOPTIONS
+Opcije Podloge...
+; Background Options...
+;
+MSG_DRAWMODE
+Naèin Iscrtavanja
+; Draw mode :
+;
+MSG_USERFILEONWB
+Korisnikove Mape i Datoteke na Desktopu
+; User Files Folder on Workbench
+;
+MSG_NETWORKONWB
+Internet Pretra¾ivaè na Desktopu
+; Network Browser on Workbench
+;
+MSG_VIEWSETTINGS
+Opcije Pregleda
+; View Settings
+;
+MSG_WANDERERSCREENTITLE
+Naslovni tekst na Desktopu
+; Wanderer ScreenTitle
+;
+MSG_ADVANCED
+Napredno
+; Advanced
+;
+MSG_USE
+Koristi
+; &Use
+;
+MSG_CANCEL
+Odustani
+; &Cancel
+;
