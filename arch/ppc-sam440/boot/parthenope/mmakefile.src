@@ -1,8 +1,0 @@
-# $Id: mmakefile.src 31863 2009-10-07 17:00:19Z weissms $
-include $(TOP)/config/make.cfg
-
-TARGETDIR	:= $(AROSDIR)
-FILES 		:= parthenope cdrom context elf ext2 menu rdb.c sfs support tftp
-
-#MM parthenope-sam440:
-parthenope-sam440: $(TARGETDIR)/Parthenope
