@@ -8,7 +8,6 @@
     Desc: POSIX header file unistd.h
     Lang: english
 */
-#include <sys/_types.h>
 #include <sys/types.h>
 
 /*
@@ -116,40 +115,13 @@
 #define __need_size_t
 #include <stddef.h>
 
-#ifndef __AROS_GID_T_DECLARED
-#define __AROS_GID_T_DECLARED
-typedef __gid_t     gid_t;
-#endif
-
-#ifndef __AROS_INTPTR_T_DECLARED
-#define __AROS_INTPTR_T_DECLARED
-typedef __intptr_t  intptr_t;
-#endif
-
-#ifndef __AROS_OFF_T_DECLARED
-#define __AROS_OFF_T_DECLARED
-typedef __off_t     off_t;
-#endif
-
-#ifndef __AROS_PID_T_DECLARED
-#define __AROS_PID_T_DECLARED
-typedef __pid_t     pid_t;
-#endif
-
-#ifndef __AROS_SSIZE_T_DECLARED
-#define __AROS_SSIZE_T_DECLARED
-typedef __ssize_t   ssize_t;
-#endif
-
-#ifndef __AROS_UID_T_DECLARED
-#define __AROS_UID_T_DECLARED
-typedef __uid_t     uid_t;
-#endif
-
-#ifndef __AROS_USECONDS_T_DECLARED
-#define __AROS_USECONDS_T_DECLARED
-typedef __useconds_t    useconds_t;
-#endif
+#include <sys/types/gid_t.h>
+#include <sys/types/intptr_t.h>
+#include <sys/types/off_t.h>
+#include <sys/types/pid_t.h>
+#include <sys/types/ssize_t.h>
+#include <sys/types/uid_t.h>
+#include <sys/types/useconds_t.h>
 
 /*
     Values for the second argument to access.

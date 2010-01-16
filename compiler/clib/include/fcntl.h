@@ -2,14 +2,13 @@
 #define _FCNTL_H_
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file fcntl.h
     Lang: english
 */
 
-#include <sys/_types.h>
 #include <sys/cdefs.h>
 
 #if __XSI_VISIBLE
@@ -17,20 +16,9 @@
 #include <sys/stat.h>
 #endif
 
-#ifndef __AROS_PID_T_DECLARED
-#define __AROS_PID_T_DECLARED
-typedef __pid_t         pid_t;
-#endif
-
-#ifndef __AROS_MODE_T_DECLARED
-#define __AROS_MODE_T_DECLARED
-typedef __mode_t        mode_t;
-#endif
-
-#ifndef __AROS_OFF_T_DECLARED
-#define __AROS_OFF_T_DECLARED
-typedef __off_t         off_t;
-#endif
+#include <sys/types/pid_t.h>
+#include <sys/types/mode_t.h>
+#include <sys/types/off_t.h>
 
 /* Flags for open */
 

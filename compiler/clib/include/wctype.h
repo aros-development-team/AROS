@@ -8,15 +8,10 @@
     Introduced in ISO 8879:1999 ("C99").
 */
 
-#include <sys/_types.h>
-
 #define __need_wchar_t
 #include <stddef.h>
 
-#ifndef __AROS_WINT_T_DECLARED
-#define __AROS_WINT_T_DECLARED
-typedef __wint_t wint_t;
-#endif
+#include <sys/types/wint_t.h>
 
 #ifndef WEOF
 #define	WEOF	((wint_t)-1)

@@ -14,10 +14,7 @@
     You do not need to define size_t in this file. (POSIX)
 */
 
-#ifndef __AROS_GID_T_DECLARED
-#define __AROS_GID_T_DECLARED
-typedef __gid_t gid_t;
-#endif
+#include <sys/types/gid_t.h>
 
 struct group
 {
