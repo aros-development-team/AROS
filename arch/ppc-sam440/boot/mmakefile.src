@@ -3,6 +3,7 @@ include $(TOP)/config/make.cfg
 
 
 #MM bootiso-sam440-ppc: \
+#MM parthenope-sam440 \
 #MM	kernel-sam440-ppc \
 #MM	kernel-package-sam440-ppc \
 #MM	workbench-complete \
