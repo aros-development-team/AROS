@@ -10,6 +10,6 @@ FILES	:=	\
 
 %build_module mmake=kernel-pc-i386-vesa \
   modname=vesagfx modtype=hidd \
-  files=$(FILES) uselibs="hiddgraphicsstubs oop"
+  files=$(FILES) uselibs="hiddgraphicsstubs oop rom"
 
 
