@@ -27,7 +27,7 @@ Parthenope_SOURCES=\
 	parthenope.c
 
 Parthenope_LDFLAGS = -nostartfiles -nodefaultlibs -static -Wl,-s -Wl,-N -Wl,--entry=bootstrap -Wl,--script=ldscript.lds
-CFLAGS = -Wall -fno-builtin -nostdinc -nostdlib -DIN_PARTHENOPE -Os -DVERSION=\"85\" -DDATE=\"`date +%-d.%-m.%Y`\"
+CFLAGS = -Wall -fno-builtin -nostdinc -nostdlib -DIN_PARTHENOPE -Os -DVERSION=\"91\" -DDATE=\"`date +%-d.%-m.%Y`\"
 if USE_UBOOT
 CFLAGS += -ffixed-r2 -ffixed-r14 -ffixed-r29 -DUSE_UBOOT
 endif
