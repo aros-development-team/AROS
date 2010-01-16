@@ -9,7 +9,7 @@ MY_CFLAGS	:= -DUSE_UBOOT -ffixed-r2 -ffixed-r14 -ffixed-r29 -Wall -fno-builtin -
 parthenope-sam440: $(AROSDIR)/Parthenope
 
 $(AROSDIR)/Parthenope: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
-		$(TARGET_CC) -nostartfiles -nodefaultlibs -static -Wl,-s -Wl,-N -Wl,--entry=bootstrap -Wl,--script=ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) -o $@
+		$(KERNEL_LD) -s -N --entry=bootstrap --script=ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) -o $@
 
 #MM
 clean ::
