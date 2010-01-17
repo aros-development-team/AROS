@@ -9,6 +9,7 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-complete : \
 #MM	    workbench-directories \
+#MM	    workbench-c \
 #MM	    workbench-hidds \
 #MM	    workbench-classes-complete \
 #MM	    workbench-devs-complete \
