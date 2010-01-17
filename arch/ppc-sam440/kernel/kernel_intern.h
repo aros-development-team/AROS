@@ -20,7 +20,6 @@
 
 struct KernelBase {
     struct Node         kb_Node;
-    void *              kb_MemPool;
     struct List         kb_Exceptions[16];
     struct List         kb_Interrupts[64];
     struct MemHeader    *kb_SupervisorMem;
@@ -50,9 +49,9 @@ static inline struct KernelBase *getKernelBase()
     return (struct KernelBase *)rdspr(SPRG4U);
 }
 
-static inline struct KernelBase *getSysBase()
+static inline struct ExecBase *getSysBase()
 {
-    return (struct KernelBase *)rdspr(SPRG5U);
+    return (struct ExecBase *)rdspr(SPRG5U);
 }
 
 static inline void goSuper() {
