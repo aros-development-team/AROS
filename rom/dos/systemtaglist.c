@@ -184,7 +184,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 	    cos = DupFH(cis, FMF_WRITE, DOSBase);
 	else
 	    cos = Open("*", FMF_WRITE);
-;
+
         if (!cos) goto end;
 
 	cos_opened = TRUE;
@@ -222,7 +222,10 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 #warning implement UserShell and BootShell
     shellseg = LoadSeg("C:Shell");
     if (!shellseg)
+    {
+	D(bug("Could not load C:Shell\n"));
         goto end;
+    }
 
     newtags = CloneTagItems(tags);
     if (newtags)
