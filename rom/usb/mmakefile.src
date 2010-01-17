@@ -7,6 +7,9 @@ include $(TOP)/config/make.cfg
 #MM- kernel-usb-pc-x86_64 : \
 #MM         kernel-usb
 
+#MM- kernel-usb-sam440-ppc : \
+#MM         kernel-usb
+
 #MM- kernel-usb : \
 #MM      kernel-usb-poseidon \
 #MM      kernel-usb-shelltools \
@@ -19,6 +22,9 @@ include $(TOP)/config/make.cfg
 #MM      kernel-usb-kobj
 
 #MM- kernel-usb-kobj-pc-x86_64 : \
+#MM      kernel-usb-kobj
+
+#MM- kernel-usb-kobj-sam440-ppc : \
 #MM      kernel-usb-kobj
 
 #MM- kernel-usb-kobj : \
@@ -43,16 +49,22 @@ include $(TOP)/config/make.cfg
 #MM- kernel-usb-includes-pc-x86_64 : \
 #MM      kernel-usb-includes
 
+#MM- kernel-usb-includes-sam440-ppc : \
+#MM      kernel-usb-includes
+
 #MM- kernel-usb-includes : \
 #MM      kernel-usb-poseidon-includes \
 #MM      kernel-usb-usbclass-includes
 
 .PHONY: kernel-usb-pc-i386
 .PHONY: kernel-usb-pc-x86_64
+.PHONY: kernel-usb-sam440-ppc
 .PHONY: kernel-usb-kobj-pc-i386
 .PHONY: kernel-usb-kobj-pc-x86_64
+.PHONY: kernel-usb-kobj-sam440-ppc
 .PHONY: kernel-usb-includes-pc-i386
 .PHONY: kernel-usb-includes-pc-x86_64
+.PHONY: kernel-usb-includes-sam440-ppc
 .PHONY: kernel-usb
 .PHONY: kernel-usb-kobj
 .PHONY: kernel-usb-includes

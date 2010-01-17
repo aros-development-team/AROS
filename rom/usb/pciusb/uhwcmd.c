@@ -3107,6 +3107,7 @@ void ohciFreeEDContext(struct PCIController *hc, struct OhciED *oed)
     oed->oed_Succ->oed_Pred = oed->oed_Pred;
     oed->oed_Pred->oed_Succ = oed->oed_Succ;
     oed->oed_Pred->oed_NextED = oed->oed_Succ->oed_Self;
+    CacheClearE(&oed->oed_Pred->oed_EPCaps, 16, CACRF_ClearD);
     SYNC;
 
     Disable();
@@ -3142,6 +3143,7 @@ void ohciUpdateIntTree(struct PCIController *hc)
             lastusedoed = oed->oed_Succ;
         }
         oed->oed_NextED = lastusedoed->oed_Self;
+        CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
         predoed = oed;
     }
 }
@@ -3153,11 +3155,13 @@ void ohciHandleFinishedTDs(struct PCIController *hc)
     struct PCIUnit *unit = hc->hc_Unit;
     struct IOUsbHWReq *ioreq;
     struct IOUsbHWReq *nextioreq;
-    struct OhciED *oed;
+    struct OhciED *oed = NULL;
     struct OhciTD *otd;
     UWORD devadrep;
     ULONG len;
     ULONG ctrlstatus;
+    ULONG epcaps;
+    BOOL direction_in;
     BOOL updatetree = FALSE;
     ULONG donehead;
     BOOL retire;
@@ -3176,18 +3180,29 @@ void ohciHandleFinishedTDs(struct PCIController *hc)
     KPRINTF(10, ("DoneHead=%08lx, OTD=%08lx, Frame=%ld\n", donehead, otd, READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT)));
     do
     {
+        CacheClearE(&otd->otd_Ctrl, 16, CACRF_InvalidateD);
         oed = otd->otd_ED;
         if(!oed)
         {
             KPRINTF(200, ("Came across a rogue TD that already has been freed!\n"));
+            if(!otd->otd_NextTD)
+            {
+                break;
+            }
             otd = (struct OhciTD *) ((READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16);
             continue;
         }
+        CacheClearE(&oed->oed_EPCaps, 16, CACRF_InvalidateD);
         ctrlstatus = READMEM32_LE(&otd->otd_Ctrl);
         if(otd->otd_BufferPtr)
         {
             // FIXME this will blow up if physical memory is ever going to be discontinuous
             len = READMEM32_LE(&otd->otd_BufferPtr) - (READMEM32_LE(&otd->otd_BufferEnd) + 1 - otd->otd_Length);
+            epcaps = READMEM32_LE(&oed->oed_EPCaps);
+            direction_in = (epcaps & OECF_DIRECTION_TD)
+                        ? (ioreq->iouh_SetupData.bmRequestType & URTF_IN)
+                        : (epcaps & OECF_DIRECTION_IN);
+            CachePostDMA(READMEM32_LE(&otd->otd_BufferPtr), &len, direction_in ? 0 : DMA_ReadFromRAM);
         } else {
             len = otd->otd_Length;
         }
@@ -3196,6 +3211,10 @@ void ohciHandleFinishedTDs(struct PCIController *hc)
         if(!ioreq)
         {
             KPRINTF(200, ("Came across a rogue IOReq that already has been replied!\n"));
+            if(!otd->otd_NextTD)
+            {
+                break;
+            }
             otd = (struct OhciTD *) ((READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16);
             continue;
         }
@@ -3345,7 +3364,7 @@ void ohciHandleFinishedTDs(struct PCIController *hc)
                     }
                     if(len)
                     {
-                        WRITEMEM32_LE(&otd->otd_BufferPtr, phyaddr);
+                        WRITEMEM32_LE(&otd->otd_BufferPtr, CachePreDMA(phyaddr, &len, (ioreq->iouh_Dir == UHDIR_IN) ? 0 : DMA_ReadFromRAM));
                         phyaddr += len - 1;
                         WRITEMEM32_LE(&otd->otd_BufferEnd, phyaddr);
                         phyaddr++;
@@ -3353,6 +3372,7 @@ void ohciHandleFinishedTDs(struct PCIController *hc)
                         CONSTWRITEMEM32_LE(&otd->otd_BufferPtr, 0);
                         CONSTWRITEMEM32_LE(&otd->otd_BufferEnd, 0);
                     }
+                    CacheClearE(&otd->otd_Ctrl, 16, CACRF_ClearD);
                     actual += len;
                     otd = otd->otd_Succ;
                 } while(otd && ((actual < ioreq->iouh_Length) || (len && (ioreq->iouh_Dir == UHDIR_OUT) && (actual == ioreq->iouh_Length) && (!ioreq->iouh_Flags & UHFF_NOSHORTPKT) && ((actual % ioreq->iouh_MaxPktSize) == 0))));
@@ -3360,6 +3380,7 @@ void ohciHandleFinishedTDs(struct PCIController *hc)
                 predotd->otd_NextTD = hc->hc_OhciTermTD->otd_Self;
 
                 CONSTWRITEMEM32_LE(&predotd->otd_Ctrl, OTCF_CC_INVALID);
+                CacheClearE(&predotd->otd_Ctrl, 16, CACRF_ClearD);
 
                 Disable();
                 AddTail(&hc->hc_TDQueue, &ioreq->iouh_Req.io_Message.mn_Node);
@@ -3367,6 +3388,7 @@ void ohciHandleFinishedTDs(struct PCIController *hc)
                 // keep toggle bit
                 ctrlstatus = READMEM32_LE(&oed->oed_HeadPtr) & OEHF_DATA1;
                 WRITEMEM32_LE(&oed->oed_HeadPtr, READMEM32_LE(&oed->oed_FirstTD->otd_Self)|ctrlstatus);
+                CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
 
                 oldenables = READREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS);
                 oldenables |= OCSF_BULKENABLE;
@@ -3481,7 +3503,8 @@ void ohciScheduleCtrlTDs(struct PCIController *hc)
         setupotd->otd_ED = oed;
         setupotd->otd_Length = 0; // don't increase io_Actual for that transfer
         CONSTWRITEMEM32_LE(&setupotd->otd_Ctrl, OTCF_PIDCODE_SETUP|OTCF_CC_INVALID|OTCF_NOINT);
-        WRITEMEM32_LE(&setupotd->otd_BufferPtr, (ULONG) pciGetPhysical(hc, &ioreq->iouh_SetupData));
+        len = 8;
+        WRITEMEM32_LE(&setupotd->otd_BufferPtr, (ULONG) CachePreDMA(pciGetPhysical(hc, &ioreq->iouh_SetupData), &len, DMA_ReadFromRAM));
         WRITEMEM32_LE(&setupotd->otd_BufferEnd, (ULONG) pciGetPhysical(hc, ((UBYTE *) (&ioreq->iouh_SetupData)) + 7));
 
         ctrl = (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? (OTCF_PIDCODE_IN|OTCF_CC_INVALID|OTCF_NOINT) : (OTCF_PIDCODE_OUT|OTCF_CC_INVALID|OTCF_NOINT);
@@ -3510,9 +3533,10 @@ void ohciScheduleCtrlTDs(struct PCIController *hc)
                 dataotd->otd_Length = len;
                 KPRINTF(1, ("TD with %ld bytes\n", len));
                 WRITEMEM32_LE(&dataotd->otd_Ctrl, ctrl);
-                WRITEMEM32_LE(&dataotd->otd_BufferPtr, phyaddr);
+                WRITEMEM32_LE(&dataotd->otd_BufferPtr, CachePreDMA(phyaddr, &len, (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? 0 : DMA_ReadFromRAM));
                 phyaddr += len - 1;
                 WRITEMEM32_LE(&dataotd->otd_BufferEnd, phyaddr);
+                CacheClearE(&dataotd->otd_Ctrl, 16, CACRF_ClearD);
                 phyaddr++;
                 actual += len;
                 predotd = dataotd;
@@ -3540,6 +3564,8 @@ void ohciScheduleCtrlTDs(struct PCIController *hc)
             setupotd->otd_Succ = termotd;
             setupotd->otd_NextTD = termotd->otd_Self;
         }
+        CacheClearE(&setupotd->otd_Ctrl, 16, CACRF_ClearD);
+        CacheClearE(&predotd->otd_Ctrl, 16, CACRF_ClearD);
 
         ctrl ^= (OTCF_PIDCODE_IN^OTCF_PIDCODE_OUT)|OTCF_NOINT|OTCF_DATA1|OTCF_TOGGLEFROMTD;
 
@@ -3550,6 +3576,7 @@ void ohciScheduleCtrlTDs(struct PCIController *hc)
         CONSTWRITEMEM32_LE(&termotd->otd_Ctrl, ctrl);
         CONSTWRITEMEM32_LE(&termotd->otd_BufferPtr, 0);
         CONSTWRITEMEM32_LE(&termotd->otd_BufferEnd, 0);
+        CacheClearE(&termotd->otd_Ctrl, 16, CACRF_ClearD);
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
         ioreq->iouh_DriverPrivate1 = oed;
@@ -3568,6 +3595,7 @@ void ohciScheduleCtrlTDs(struct PCIController *hc)
         oed->oed_Pred->oed_Succ = oed;
         oed->oed_Pred->oed_NextED = oed->oed_Self;
         oed->oed_Succ->oed_Pred = oed;
+        CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
         SYNC;
 
         KPRINTF(5, ("ED: EPCaps=%08lx, HeadPtr=%08lx, TailPtr=%08lx, NextED=%08lx\n",
@@ -3671,7 +3699,7 @@ void ohciScheduleIntTDs(struct PCIController *hc)
             CONSTWRITEMEM32_LE(&otd->otd_Ctrl, OTCF_CC_INVALID|OTCF_NOINT);
             if(len)
             {
-                WRITEMEM32_LE(&otd->otd_BufferPtr, phyaddr);
+                WRITEMEM32_LE(&otd->otd_BufferPtr, CachePreDMA(phyaddr, &len, (ioreq->iouh_Dir == UHDIR_IN) ? 0 : DMA_ReadFromRAM));
                 phyaddr += len - 1;
                 WRITEMEM32_LE(&otd->otd_BufferEnd, phyaddr);
                 phyaddr++;
@@ -3680,6 +3708,7 @@ void ohciScheduleIntTDs(struct PCIController *hc)
                 CONSTWRITEMEM32_LE(&otd->otd_BufferEnd, 0);
             }
             actual += len;
+            CacheClearE(&otd->otd_Ctrl, 16, CACRF_ClearD);
             predotd = otd;
         } while(actual < ioreq->iouh_Length);
 
@@ -3701,6 +3730,7 @@ void ohciScheduleIntTDs(struct PCIController *hc)
         predotd->otd_NextTD = hc->hc_OhciTermTD->otd_Self;
 
         CONSTWRITEMEM32_LE(&predotd->otd_Ctrl, OTCF_CC_INVALID);
+        CacheClearE(&predotd->otd_Ctrl, 16, CACRF_ClearD);
 
         if(ioreq->iouh_Interval >= 31)
         {
@@ -3730,6 +3760,8 @@ void ohciScheduleIntTDs(struct PCIController *hc)
         intoed->oed_Succ = oed;
         intoed->oed_NextED = oed->oed_Self;
         oed->oed_Succ->oed_Pred = oed;
+        CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
+        CacheClearE(&intoed->oed_EPCaps, 16, CACRF_ClearD);
         SYNC;
 
         KPRINTF(5, ("ED: EPCaps=%08lx, HeadPtr=%08lx, TailPtr=%08lx, NextED=%08lx\n",
@@ -3829,7 +3861,7 @@ void ohciScheduleBulkTDs(struct PCIController *hc)
             CONSTWRITEMEM32_LE(&otd->otd_Ctrl, OTCF_CC_INVALID|OTCF_NOINT);
             if(len)
             {
-                WRITEMEM32_LE(&otd->otd_BufferPtr, phyaddr);
+                WRITEMEM32_LE(&otd->otd_BufferPtr, CachePreDMA(phyaddr, &len, (ioreq->iouh_Dir == UHDIR_IN) ? 0 : DMA_ReadFromRAM));
                 phyaddr += len - 1;
                 WRITEMEM32_LE(&otd->otd_BufferEnd, phyaddr);
                 phyaddr++;
@@ -3838,6 +3870,7 @@ void ohciScheduleBulkTDs(struct PCIController *hc)
                 CONSTWRITEMEM32_LE(&otd->otd_BufferEnd, 0);
             }
             actual += len;
+            CacheClearE(&otd->otd_Ctrl, 16, CACRF_ClearD);
 
             predotd = otd;
         } while((actual < ioreq->iouh_Length) || (len && (ioreq->iouh_Dir == UHDIR_OUT) && (actual == ioreq->iouh_Length) && (!ioreq->iouh_Flags & UHFF_NOSHORTPKT) && ((actual % ioreq->iouh_MaxPktSize) == 0)));
@@ -3861,6 +3894,7 @@ void ohciScheduleBulkTDs(struct PCIController *hc)
         predotd->otd_NextTD = hc->hc_OhciTermTD->otd_Self;
 
         CONSTWRITEMEM32_LE(&predotd->otd_Ctrl, OTCF_CC_INVALID);
+        CacheClearE(&predotd->otd_Ctrl, 16, CACRF_ClearD);
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
         ioreq->iouh_DriverPrivate1 = oed;
@@ -3879,6 +3913,8 @@ void ohciScheduleBulkTDs(struct PCIController *hc)
         oed->oed_Pred->oed_Succ = oed;
         oed->oed_Pred->oed_NextED = oed->oed_Self;
         oed->oed_Succ->oed_Pred = oed;
+        CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
+        CacheClearE(&oed->oed_Pred->oed_EPCaps, 16, CACRF_ClearD);
         SYNC;
 
         KPRINTF(10, ("Activating BULK at %ld\n", READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT)));
@@ -3952,7 +3988,11 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     struct PCIDevice *base = hc->hc_Device;
     struct PCIUnit *unit = hc->hc_Unit;
     ULONG intr = 0;
-    ULONG donehead = READMEM32_LE(&hc->hc_OhciHCCA->oha_DoneHead);
+    ULONG donehead;
+
+    CacheClearE(&hc->hc_OhciHCCA->oha_DoneHead, sizeof(hc->hc_OhciHCCA->oha_DoneHead), CACRF_InvalidateD);
+
+    donehead = READMEM32_LE(&hc->hc_OhciHCCA->oha_DoneHead);
 
     if(donehead)
     {
@@ -3966,14 +4006,17 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         if(hc->hc_OhciDoneQueue)
         {
             struct OhciTD *donetd = (struct OhciTD *) (donehead - hc->hc_PCIVirtualAdjust - 16);
+            CacheClearE(&donetd->otd_Ctrl, 16, CACRF_InvalidateD);
             while(donetd->otd_NextTD)
             {
                 donetd = (struct OhciTD *) (donetd->otd_NextTD - hc->hc_PCIVirtualAdjust - 16);
+                CacheClearE(&donetd->otd_Ctrl, 16, CACRF_InvalidateD);
             }
             WRITEMEM32_LE(&donetd->otd_NextTD, hc->hc_OhciDoneQueue);
         }
         hc->hc_OhciDoneQueue = donehead;
         CONSTWRITEMEM32_LE(&hc->hc_OhciHCCA->oha_DoneHead, 0);
+        CacheClearE(&hc->hc_OhciHCCA->oha_DoneHead, sizeof(hc->hc_OhciHCCA->oha_DoneHead), CACRF_ClearD);
     } else {
         intr = READREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS);
     }
@@ -4085,6 +4128,7 @@ void ehciFreeAsyncContext(struct PCIController *hc, struct EhciQH *eqh)
     KPRINTF(5, ("Unlinking AsyncContext %08lx\n", eqh));
     // unlink from schedule
     eqh->eqh_Pred->eqh_NextQH = eqh->eqh_Succ->eqh_Self;
+    CacheClearE(&eqh->eqh_Pred->eqh_NextQH, 32, CACRF_ClearD);
     SYNC;
 
     eqh->eqh_Succ->eqh_Pred = eqh->eqh_Pred;
@@ -4110,6 +4154,7 @@ void ehciFreePeriodicContext(struct PCIController *hc, struct EhciQH *eqh)
     KPRINTF(5, ("Unlinking PeriodicContext %08lx\n", eqh));
     // unlink from schedule
     eqh->eqh_Pred->eqh_NextQH = eqh->eqh_Succ->eqh_Self;
+    CacheClearE(&eqh->eqh_Pred->eqh_NextQH, 32, CACRF_ClearD);
     SYNC;
 
     eqh->eqh_Succ->eqh_Pred = eqh->eqh_Pred;
@@ -4167,6 +4212,7 @@ void ehciUpdateIntTree(struct PCIController *hc)
             lastusedeqh = eqh->eqh_Succ;
         }
         eqh->eqh_NextQH = lastusedeqh->eqh_Self;
+        CacheClearE(&eqh->eqh_NextQH, 32, CACRF_ClearD);
         predeqh = eqh;
     }
 }
@@ -4204,6 +4250,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc)
             KPRINTF(1, ("Examining IOReq=%08lx with EQH=%08lx\n", ioreq, eqh));
             SYNC;
 
+            CacheClearE(&eqh->eqh_NextQH, 32, CACRF_InvalidateD);
             epctrlstatus = READMEM32_LE(&eqh->eqh_CtrlStatus);
             nexttd = READMEM32_LE(&eqh->eqh_NextTD);
             devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
