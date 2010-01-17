@@ -34,7 +34,8 @@ USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 
 %build_module mmake=kernel-usb-usbromstartup \
   modname=usbromstartup modtype=resource \
-  files="usbromstartup"
+  files="usbromstartup" \
+  uselibs="rom"
 
 
 %common
