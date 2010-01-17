@@ -69,7 +69,11 @@ AROS_UFH3(void, pciEnumerator,
         // BIOS needs plug & play os option disabled. Alternatively AROS must support APIC reconfiguration
         KPRINTF(200, ("ERROR: PCI card has no interrupt line assigned by BIOS, disable Plug & Play OS!\n"));
     }
+#if defined(__powerpc__)
+    else if((hcitype == HCITYPE_OHCI))
+#else
     else if((hcitype == HCITYPE_UHCI) || (hcitype == HCITYPE_OHCI) || (hcitype == HCITYPE_EHCI))
+#endif
     {
         KPRINTF(10, ("Found PCI device 0x%lx of type %ld, Intline=%ld\n", devid, hcitype, intline));
 
@@ -844,6 +848,10 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     uhwDelayMS(50, hu, hd);
                     WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA, hubdesca);
 
+                    CacheClearE(hc->hc_OhciHCCA,   sizeof(struct OhciHCCA),                  CACRF_ClearD);
+                    CacheClearE(hc->hc_OhciEDPool, sizeof(struct OhciED) * OHCI_ED_POOLSIZE, CACRF_ClearD);
+                    CacheClearE(hc->hc_OhciTDPool, sizeof(struct OhciTD) * OHCI_TD_POOLSIZE, CACRF_ClearD);
+                    
                     CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, OCLF_PERIODICENABLE|OCLF_CTRLENABLE|OCLF_BULKENABLE|OCLF_USBOPER);
                     SYNC;
 
@@ -1105,7 +1113,10 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     hc->hc_PCIIntEnMask = EHSF_ALL_INTS;
                     WRITEREG32_LE(hc->hc_RegBase, EHCI_USBINTEN, hc->hc_PCIIntEnMask);
 
-
+                    CacheClearE(hc->hc_EhciFrameList, sizeof(ULONG) * EHCI_FRAMELIST_SIZE,      CACRF_ClearD);
+                    CacheClearE(hc->hc_EhciQHPool,    sizeof(struct EhciQH) * EHCI_QH_POOLSIZE, CACRF_ClearD);
+                    CacheClearE(hc->hc_EhciTDPool,    sizeof(struct EhciTD) * EHCI_TD_POOLSIZE, CACRF_ClearD);
+                    
                     CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_CONFIGFLAG, EHCF_CONFIGURED);
                     hc->hc_EhciUsbCmd |= EHUF_RUNSTOP|EHUF_PERIODICENABLE|EHUF_ASYNCENABLE;
                     WRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, hc->hc_EhciUsbCmd);

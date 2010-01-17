@@ -12,7 +12,10 @@
 
 // hmmm, these were PPC specific barriers
 
-#ifndef SYNC
+#undef SYNC
+#ifdef __powerpc__
+#define SYNC asm volatile("eieio");
+#else
 #define SYNC
 #endif
 
