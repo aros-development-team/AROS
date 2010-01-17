@@ -27,7 +27,7 @@ typedef struct __jmp_buf
 {
     unsigned long retaddr;
     unsigned long regs[_JMPLEN];
-} jmp_buf[1];
+} jmp_buf[1]  __attribute__ ((aligned (16)));
 
 #if !defined(_ANSI_SOURCE)
 typedef struct __sigjmp_buf
