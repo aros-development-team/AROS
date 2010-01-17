@@ -1,47 +1,100 @@
 # menu.lst config file for PPC AROS. Test version ;)
 
-timeout 5
-default 1
+delay 5
+default 0
+
+title AROS PowerPC test poseidon
+    kernel boot/aros-amcc440 enableusb
+    module boot/modules/afs.handler
+    module boot/modules/amberram.handler
+    module boot/modules/aros.library
+    module boot/modules/ata.device
+    module boot/modules/battclock.resource
+    module boot/modules/boot.library
+    module boot/modules/bootloader.resource
+    module boot/modules/bootmenu.resource
+    module boot/modules/cdrom.handler
+    module boot/modules/con.handler
+    module boot/modules/console.device
+    module boot/modules/dosboot.resource
+    module boot/modules/dos.library
+    module boot/modules/expansion.library
+    module boot/modules/gameport.device
+    module boot/modules/gfx.library
+    module boot/modules/graphics.hidd
+    module boot/modules/hiddclass.hidd
+    module boot/modules/i2c.hidd
+    module boot/modules/input.device
+    module boot/modules/intuition.library
+    module boot/modules/irq.hidd
+    module boot/modules/keyboard.device
+    module boot/modules/keymap.library
+    module boot/modules/layers.library
+    module boot/modules/mathieeesingbas.library
+    module boot/modules/misc.resource
+    module boot/modules/nil.handler
+    module boot/modules/oop.library
+    module boot/modules/packet.handler
+    module boot/modules/partition.library
+    module boot/modules/pci-amcc440.hidd
+    module boot/modules/pci.hidd
+    module boot/modules/radeon.hidd
+    module boot/modules/sfs.handler
+    module boot/modules/timer.device
+    module boot/modules/utility.library
+    module boot/modules/workbench.library
+    module boot/modules/poseidon.library
+    module boot/modules/pciusb.device
+    module boot/modules/hid.class
+    module boot/modules/hub.class
+    module boot/modules/bootmouse.class
+    module boot/modules/bootkeyboard.class
+    module boot/modules/massstorage.class
+    module boot/modules/usbromstartup.resource
 
 title AROS PowerPC test 1
     kernel boot/aros-amcc440 arg1 argument_2 "some arg 3" another_one
-    module boot/modules/expansion.library
-    module boot/modules/utility.library
-    module boot/modules/partition.library
-    module boot/modules/battclock.resource
+    module boot/modules/afs.handler
+    module boot/modules/amberram.handler
     module boot/modules/aros.library
-    module boot/modules/bootloader.resource
-    module boot/modules/mathieeesingbas.library
-    module boot/modules/oop.library
-    module boot/modules/hiddclass.hidd
-    module boot/modules/misc.resource
-    module boot/modules/graphics.hidd
-    module boot/modules/gfx.library
-    module boot/modules/keymap.library
-    module boot/modules/intuition.library
-    module boot/modules/layers.library
-    module boot/modules/input.device
-    module boot/modules/pci.hidd
-    module boot/modules/pci-amcc440.hidd
-    module boot/modules/i2c.hidd
-    module boot/modules/keyboard.device
-    module boot/modules/gameport.device
-    module boot/modules/console.device
-    module boot/modules/workbench.library
-    module boot/modules/con.handler
-    module boot/modules/nil.handler
-    module boot/modules/ram.handler
-    module boot/modules/packet.handler
-    module boot/modules/dos.library
-    module boot/modules/irq.hidd
-    module boot/modules/boot.library
-    module boot/modules/timer.device
-    module boot/modules/radeon.hidd
     module boot/modules/ata.device
+    module boot/modules/battclock.resource
+    module boot/modules/boot.library
+    module boot/modules/bootloader.resource
+    module boot/modules/bootmenu.resource
     module boot/modules/cdrom.handler
+    module boot/modules/con.handler
+    module boot/modules/console.device
+    module boot/modules/dosboot.resource
+    module boot/modules/dos.library
+    module boot/modules/expansion.library
+    module boot/modules/gameport.device
+    module boot/modules/gfx.library
+    module boot/modules/graphics.hidd
+    module boot/modules/hiddclass.hidd
+    module boot/modules/i2c.hidd
+    module boot/modules/input.device
+    module boot/modules/intuition.library
+    module boot/modules/irq.hidd
+    module boot/modules/keyboard.device
+    module boot/modules/keymap.library
+    module boot/modules/layers.library
+    module boot/modules/mathieeesingbas.library
+    module boot/modules/misc.resource
+    module boot/modules/nil.handler
     module boot/modules/ohci.hidd
+    module boot/modules/oop.library
+    module boot/modules/packet.handler
+    module boot/modules/partition.library
+    module boot/modules/pci-amcc440.hidd
+    module boot/modules/pci.hidd
+    module boot/modules/radeon.hidd
+    module boot/modules/sfs.handler
+    module boot/modules/timer.device
     module boot/modules/usb.hidd
     module boot/modules/hid.hidd
+    module boot/modules/utility.library
+    module boot/modules/workbench.library
 
 title AROS PPC with EMAC driver (not working yet)
     kernel boot/aros-amcc440 arg1 argument_2 "some arg 3" another_one
@@ -83,4 +136,3 @@ title AROS PPC with EMAC driver (not working yet)
     module boot/modules/usb.hidd
     module boot/modules/hid.hidd
     module Devs/Networks/emac.device
-
