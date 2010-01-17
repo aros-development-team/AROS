@@ -1155,6 +1155,7 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
 {
     UBYTE type=0;
     BOOL dma=FALSE;
+#if 0 // We can't set drive modes unless we also set the controller's timing registers
     ata_CommandBlock acb =
     {
         ATA_SET_FEATURES,
@@ -1169,6 +1170,7 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
         CM_NoData,
         CT_LBA28
     };
+#endif
     DINIT(bug("[ATA%02ld] common_SetXferMode: Trying to set mode %d\n", unit->au_UnitNum, mode));
 
     if ((unit->au_DMAPort == 0) && (mode >= AB_XFER_MDMA0))
@@ -1310,8 +1312,8 @@ static void common_SetBestXferMode(struct ata_Unit* unit)
     int max = AB_XFER_UDMA6;
 
     if (unit->au_Bus->ab_Base->ata_NoDMA || unit->au_DMAPort == 0
-        || !(unit->au_Drive->id_MWDMASupport & 0x0700)
-        && !(unit->au_Drive->id_UDMASupport & 0x7f00))
+        || (   !(unit->au_Drive->id_MWDMASupport & 0x0700)
+            && !(unit->au_Drive->id_UDMASupport  & 0x7f00)))
     {
         /*
          * make sure you reduce scan search to pio here!
@@ -2231,81 +2233,60 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
     ata_WaitNano(400);
     //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
-    /* Check basic signature. All live devices should provide it */
-    tmp1 = ata_in(ata_LBALow, port);
-    DINIT(bug("[ATA  ] ata_ReadSignature: Checking Sector Number/LBA Low (%d)"
-        " against expected value\n", tmp1));
-
     DINIT(bug("[ATA  ] ata_ReadSignature: Status %02lx Device %02lx\n",
-        ata_in(ata_Status, port), ata_in(ata_DevHead, port)));
+    ata_ReadStatus(bus), ata_in(ata_DevHead, port)));
 
-    if (tmp1 == 0x01)
+    /* Ok, ATA/ATAPI device. Get detailed signature */
+    DINIT(bug("[ATA  ] ata_ReadSignature: ATA[PI] device present. Attempting to detect specific subtype\n"));
+
+    tmp1 = ata_in(ata_LBAMid, port);
+    tmp2 = ata_in(ata_LBAHigh, port);
+
+    DINIT(bug("[ATA  ] ata_ReadSignature: Subtype check returned %02lx:%02lx (%04lx)\n", tmp1, tmp2, (tmp1 << 8) | tmp2));
+
+    switch ((tmp1 << 8) | tmp2)
     {
-        /* Ok, ATA/ATAPI device. Get detailed signature */
-        DINIT(bug("[ATA  ] ata_ReadSignature: Found an ATA[PI] Device. Attempting to detect specific subtype\n"));
+        case 0x14eb:
+            DINIT(bug("[ATA  ] ata_ReadSignature: Found signature for ATAPI device\n"));
+            return DEV_ATAPI;
 
-        tmp1 = ata_in(ata_LBAMid, port);
-        tmp2 = ata_in(ata_LBAHigh, port);
+        case 0x3cc3:
+            DINIT(bug("[ATA  ] ata_ReadSignature: Found signature for SATA device\n"));
+            return DEV_SATA;
 
-        DINIT(bug("[ATA  ] ata_ReadSignature: Subtype check returned %02lx:%02lx (%04lx)\n", tmp1, tmp2, (tmp1 << 8) | tmp2));
+        case 0x6996:
+            DINIT(bug("[ATA  ] ata_ReadSignature: Found signature for SATAPI device\n"));
+            return DEV_SATAPI;
 
-        switch ((tmp1 << 8) | tmp2)
-        {
-            case 0x0000:
-                if (0 == (ata_ReadStatus(bus) & 0xfe))
-                    return DEV_NONE;
-                ata_out(ATA_EXECUTE_DIAG, ata_Command, port);
-
-                ata_WaitTO(bus->ab_Timer, 0, 2000, 0);
-                while (ata_ReadStatus(bus) & ATAF_BUSY)
-                    ata_WaitNano(400);
-                    //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
-
-                ata_out(0xa0 | (unit << 4), ata_DevHead, port);
-                do
-                {
-                    ata_WaitNano(400);
-                    //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
-                }
-                while (0 != (ATAF_BUSY & ata_ReadStatus(bus)));
-                DINIT(bug("[ATA  ] ata_ReadSignature: Further validating ATA signature: %lx & 0x7f = 1, %lx & 0x10 = unit\n", ata_in(ata_Error, port), ata_in(ata_DevHead, port)));
-
-                if ((ata_in(ata_Error, port) & 0x7f) == 1)
-                {
-                    DINIT(bug("[ATA  ] ata_ReadSignature: Found *valid* signature for ATA device\n"));
-                    return DEV_ATA;
-                }
-                bug("[ATA  ] ata_ReadSignature: Found signature for ATA "
-                    "device, but further validation failed\n");
+        default:
+            if (0 == (ata_ReadStatus(bus) & 0xfe))
                 return DEV_NONE;
+            ata_out(ATA_EXECUTE_DIAG, ata_Command, port);
 
-            case 0x14eb:
-                DINIT(bug("[ATA  ] ata_ReadSignature: Found signature for ATAPI device\n"));
-                return DEV_ATAPI;
+            ata_WaitTO(bus->ab_Timer, 0, 2000, 0);
+            while (ata_ReadStatus(bus) & ATAF_BUSY)
+                ata_WaitNano(400);
+                //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
-            case 0x3cc3:
-                DINIT(bug("[ATA  ] ata_ReadSignature: Found signature for SATA device\n"));
-                return DEV_SATA;
+            ata_out(0xa0 | (unit << 4), ata_DevHead, port);
+            do
+            {
+                ata_WaitNano(400);
+                //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
+            }
+            while (0 != (ATAF_BUSY & ata_ReadStatus(bus)));
+            DINIT(bug("[ATA  ] ata_ReadSignature: Further validating ATA signature: %lx & 0x7f = 1, %lx & 0x10 = unit\n", ata_in(ata_Error, port), ata_in(ata_DevHead, port)));
 
-            case 0x6996:
-                DINIT(bug("[ATA  ] ata_ReadSignature: Found signature for SATAPI device\n"));
-                return DEV_SATAPI;
-
-            default:
-                if (((tmp1 | tmp2) == 0xff) &&
-                    ((tmp1 & tmp2) == 0x00))
-                {
-                    bug("[ATA  ] ata_ReadSignature: Found valid subtype, but don't know how to handle this device: %02lx %02lx\n", tmp1, tmp2);
-                }
-                else
-                {
-                    bug("[ATA  ] ata_ReadSignature: Invalid signature: %02lx %02lx\n", tmp1, tmp2);
-                }
-                return DEV_NONE;
-        }
+            if ((ata_in(ata_Error, port) & 0x7f) == 1)
+            {
+                DINIT(bug("[ATA  ] ata_ReadSignature: Found *valid* signature for ATA device\n"));
+                /* this might still be an (S)ATAPI device, but we correct that in ata_Identify */
+                return DEV_ATA;
+            }
+            bug("[ATA  ] ata_ReadSignature: Found signature for ATA "
+                "device, but further validation failed\n");
+            return DEV_NONE;
     }
-
-    return DEV_NONE;
 }
 
 void ata_ResetBus(struct ata_Bus *bus)
@@ -2346,21 +2327,21 @@ void ata_ResetBus(struct ata_Bus *bus)
             ((bus->ab_BusNum << 1 ) + 0), (1000 - TimeOut)));
     }
 
-    /* If there is a device 1, wait until device 1 allows
-     * register access */
+    /* If there is a device 1, wait some time until device 1 allows
+     * register access, but fail only if BSY isn't cleared */
     if (DEV_NONE != bus->ab_Dev[1]) {
         DINIT(bug("[ATA  ] ata_ResetBus: Wait DEV1 to allow access\n"));
         ata_out(0xa0 | (1 << 4), ata_DevHead, port);
         ata_WaitNano(400);
         //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
-        TimeOut = 1000;     /* Timeout 1s (1ms x 1000) */
+
+        TimeOut = 50;     /* Timeout 50ms (1ms x 50) */
         while ( 1 ) {
-            if ( (ata_in(2, port) == 0x01) && (ata_in(3, port) == 0x01) )
+            if ( (ata_in(ata_Count, port) == 0x01) && (ata_in(ata_LBALow, port) == 0x01) )
                 break;
             ata_WaitTO(bus->ab_Timer, 0, 1000, 0);
             if (!(--TimeOut)) {
                 DINIT(bug("[ATA  ] ata_ResetBus: DEV1 1/2 TimeOut!\n"));
-                bus->ab_Dev[1] = DEV_NONE;
                 break;
             }
         }
@@ -2417,15 +2398,15 @@ void ata_InitBus(struct ata_Bus *bus)
         ata_out(0x2, ata_AltControl, bus->ab_Alt);
 
         /* Write some pattern to registers */
-        ata_out(0x55, ata_LBAMid, port);
-        ata_out(0xaa, ata_LBAHigh, port);
-        ata_out(0xaa, ata_LBAMid, port);
-        ata_out(0x55, ata_LBAHigh, port);
-        ata_out(0x55, ata_LBAMid, port);
-        ata_out(0xaa, ata_LBAHigh, port);
+        ata_out(0x55, ata_Count, port);
+        ata_out(0xaa, ata_LBALow, port);
+        ata_out(0xaa, ata_Count, port);
+        ata_out(0x55, ata_LBALow, port);
+        ata_out(0x55, ata_Count, port);
+        ata_out(0xaa, ata_LBALow, port);
 
-        tmp1 = ata_in(ata_LBAMid, port);
-        tmp2 = ata_in(ata_LBAHigh, port);
+        tmp1 = ata_in(ata_Count, port);
+        tmp2 = ata_in(ata_LBALow, port);
 
         if ((tmp1 == 0x55) && (tmp2 == 0xaa))
             bus->ab_Dev[i] = DEV_UNKNOWN;
