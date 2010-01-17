@@ -247,7 +247,7 @@ void intr_init()
 #define _STR(x) #x
 #define STR(x) _STR(x)
 #define PUT_INTR_TEMPLATE(num, handler) \
-    asm volatile(".section .aros.init,\"ax\"\n\t.align 5\n\t.globl __EXCEPTION_" STR(num) "_Prolog\n\t.type __EXCEPTION_" STR(num) "_Prolog,@function\n"    \
+    asm volatile(".section .text,\"ax\"\n\t.align 5\n\t.globl __EXCEPTION_" STR(num) "_Prolog\n\t.type __EXCEPTION_" STR(num) "_Prolog,@function\n"    \
         "__EXCEPTION_" STR(num) "_Prolog: \n\t"                                                       \
                  "mtsprg1 %%r3          \n\t"   /* save %r3 */                                                  \
                  "mfcr %%r3             \n\t"   /* copy CR to %r3 */                                            \
@@ -454,7 +454,7 @@ static void __attribute__((used)) __EXCEPTION_Prolog_template()
 
 static void __attribute__((used)) __EXCEPTION_Trampoline_template()
 {
-    asm volatile(".section .aros.init,\"ax\"\n\t.align 5\n\t.globl __EXCEPTION_Trampoline\n\t.type __EXCEPTION_Trampoline,@function\n"
+    asm volatile(".section .text,\"ax\"\n\t.align 5\n\t.globl __EXCEPTION_Trampoline\n\t.type __EXCEPTION_Trampoline,@function\n"
         "__EXCEPTION_Trampoline:            \n\t"
                  "stw %%r6,%[gpr6](%%r3) \n\t"
                  "stw %%r7,%[gpr7](%%r3) \n\t"
@@ -524,7 +524,7 @@ static void __attribute__((used)) __EXCEPTION_Trampoline_template()
 
 static void __attribute__((used)) __core_LeaveInterrupt()
 {
-    asm volatile(".section .aros.init,\"ax\"\n\t.align 5\n\t.globl core_LeaveInterrupt\n\t.type core_LeaveInterrupt,@function\n"
+    asm volatile(".section .text,\"ax\"\n\t.align 5\n\t.globl core_LeaveInterrupt\n\t.type core_LeaveInterrupt,@function\n"
         "core_LeaveInterrupt:            \n\t"
                  "lwz %%r31,%[gpr31](%%r3)      \n\t"
                  "lwz %%r30,%[gpr30](%%r3)      \n\t"
