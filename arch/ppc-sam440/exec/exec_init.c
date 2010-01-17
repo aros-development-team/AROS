@@ -23,6 +23,8 @@
 
 #include "../kernel/kernel_intern.h"
 
+D(extern void debugmem(void));
+
 int exec_main(struct TagItem *msg, void *entry);
 extern const APTR Exec_FuncTable[];
 extern ULONG Exec_MakeFunctions(APTR, APTR, APTR, APTR);
@@ -351,6 +353,8 @@ int exec_main(struct TagItem *msg, void *entry)
     D(bug("[exec] InitCode(RTF_SINGLETASK)\n"));
     InitCode(RTF_SINGLETASK, 0);
     
+    D(debugmem());
+
     D(bug("[exec] InitCode(RTF_COLDSTART)\n"));
     InitCode(RTF_COLDSTART, 0);
             
