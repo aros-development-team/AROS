@@ -1,12 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-
 #MM bootiso-sam440-ppc: \
 #MM parthenope-sam440 \
 #MM	kernel-sam440-ppc \
 #MM	kernel-package-sam440-ppc \
 #MM	workbench-complete \
+#MM	arch-common-boot-generatebootsig \
 #MM	devs-networks-drivers-emac-powerpc \
 #MM	aros-tcpip-apps
 
@@ -34,28 +34,34 @@ include $(TOP)/config/make.cfg
 #MM	kernel-console \
 #MM	kernel-fs-con \
 #MM	kernel-fs-packet \
+#MM	kernel-fs-afs \
 #MM	kernel-workbench \
 #MM	kernel-bootloader-sam440-ppc \
 #MM	kernel-dos \
 #MM	kernel-boot \
 #MM	kernel-bootmenu \
+#MM	kernel-dosboot \
 #MM	kernel-ata \
 #MM	hidd-i2c \
 #MM	hidd-radeon \
 #MM	hidd-usb \
 #MM	workbench-fs-nil \
-#MM	workbench-fs-ram \
 #MM	workbench-libs-partition \
 #MM	kernel-sam440-ppc-irq \
 #MM	contrib-cdvdfs \
-#MM	workbench-hidd-graphics
+#MM	contrib-sfs \
+#MM	contrib-amberram \
+#MM	workbench-hidd-graphics \
+#MM	kernel-usb-sam440-ppc \
+#MM	kernel-usb-usbromstartup
 
-PKG_LIBS := aros mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench dos boot
-PKG_RSRC := misc bootloader battclock
-PKG_DEVS :=  input gameport keyboard console timer ata
-PKG_HANDLERS := con nil ram packet cdrom
-PKG_HIDDS:= graphics hiddclass pci pci-amcc440 i2c radeon irq usb ohci
-PKG_USB:= hid
+PKG_LIBS     := aros mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench dos boot poseidon
+PKG_RSRC     := misc bootloader battclock bootmenu dosboot usbromstartup
+PKG_DEVS     := input gameport keyboard console timer ata USBHardware/pciusb
+PKG_HANDLERS := con nil amberram packet cdrom sfs afs
+PKG_HIDDS    := graphics hiddclass pci pci-amcc440 i2c radeon irq usb ohci
+PKG_USB      := hid
+PKG_USB_PSD  := hid hub bootmouse bootkeyboard massstorage
 
 MODULES := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
@@ -63,7 +69,8 @@ MODULES := \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .handler, $(PKG_HANDLERS))) \
 	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
-	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) 
+	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) \
+	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB_PSD))) \
 
 .PHONY: $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 	
@@ -84,17 +91,16 @@ $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 	@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
 	@$(MKDIR) -p "$(PORTSDIR)"
 	@mkisofs -f \
-                -o $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso \
-                -b Parthenope \
-                -no-emul-boot \
-                -allow-leading-dots \
+		-o $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso \
+		-b Parthenope \
+		-no-emul-boot \
+		-allow-leading-dots \
 		-iso-level 4 \
-                -V "AROS Live CD" \
-                -publisher "AROS Development Team" \
+		-V "AROS Live CD" \
+		-publisher "AROS Development Team" \
 		-sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
-                -l -J -r \
-                $(AROSDIR)
-
+		-l -J -r \
+		$(AROSDIR)
 
 #MM setup-sam440-ppc
 setup-sam440-ppc : 
