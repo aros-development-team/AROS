@@ -138,7 +138,7 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 
     /* Get new stackpointer. */
     /* sp=task->tc_SPReg; */
-    if (task->tc_SPReg==NULL)
+    if (task->tc_SPReg==NULL || task->tc_SPReg==task->tc_SPUpper)
 #if AROS_STACK_GROWS_DOWNWARDS
         task->tc_SPReg = (UBYTE *)(task->tc_SPUpper) - SP_OFFSET;
 #else
@@ -147,10 +147,10 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 
     if ((IPTR)task->tc_SPReg & 0xf)
     {
-	bug("[exec] NewAddTask with unaligned stack pointer! fixing %08x->%08x\n",
-	    task->tc_SPReg, (IPTR)task->tc_SPReg & 0xfffffff0);
-	
-	task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & 0xfffffff0);
+        bug("[exec] NewAddTask '%s' with unaligned stack pointer! fixing %08x->%08x\n",
+            task->tc_Node.ln_Name, task->tc_SPReg, (IPTR)task->tc_SPReg & 0xfffffff0);
+
+        task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & 0xfffffff0);
     }
 
 #if AROS_STACK_DEBUG
