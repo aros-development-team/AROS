@@ -1986,6 +1986,9 @@ localecopydone:
 	    SET(data->pageheader, MUIA_Text_Contents, KMsgBootLoader);
 	    SET(data->label, MUIA_Text_Contents, "Copying BOOT files...");
 
+	    strcpy(srcPath, source_Path);
+	    AddPart(srcPath, BOOT_PATH, srcLen);
+	    sprintf(dstPath, "%s:%s", dest_Path, BOOT_PATH);
 	    AddPart(srcPath, GRUB_PATH, srcLen);
 	    AddPart(dstPath, GRUB_PATH, dstLen);
             /* Warning: do not modify srcPath or dstPath beyond this point */
