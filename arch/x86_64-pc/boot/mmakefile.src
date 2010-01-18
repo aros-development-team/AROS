@@ -12,7 +12,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-misc \
 #MM	kernel-mathieeesingbas \
 #MM	workbench-libs-partition \
-#MM	workbench-hidd-graphics \
+#MM	kernel-hidd-graphics \
 #MM	kernel-graphics \
 #MM	kernel-layers \
 #MM	kernel-keymap \

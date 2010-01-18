@@ -51,7 +51,7 @@ include $(TOP)/config/make.cfg
 #MM	contrib-cdvdfs \
 #MM	contrib-sfs \
 #MM	contrib-amberram \
-#MM	workbench-hidd-graphics \
+#MM	kernel-hidd-graphics \
 #MM	kernel-usb-sam440-ppc \
 #MM	kernel-usb-usbromstartup
 

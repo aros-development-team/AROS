@@ -1,17 +1,16 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-hidds : workbench-hidd-graphics
-#MM- workbench-hidd-graphics : kernel-oop-linklib
-#MM- workbench-hidd-graphics-kobj : kernel-oop-linklib
-#MM- linklibs : workbench-hidd-graphics-stubs
+#MM- kernel-hidd-graphics : kernel-oop-linklib
+#MM- kernel-hidd-graphics-kobj : kernel-oop-linklib
+#MM- linklibs : kernel-hidd-graphics-stubs
 
 FILES       := graphics_init GraphicsClass BM_Class CM_Class GC_Class  \
                planarbm chunkybm convertpixels memblit	\
 	       pixfmt sync
 
 USER_CFLAGS      := -DAROS_USE_OOP
-%build_module mmake=workbench-hidd-graphics \
+%build_module mmake=kernel-hidd-graphics \
   modname=graphics modtype=hidd \
   files=$(FILES) \
   uselibs="hiddgraphicsstubs oop rom"
@@ -21,11 +20,11 @@ STUBS       := $(LIBNAME)_stubs
 STUB_FILE   := $(LIBDIR)/libhidd$(LIBNAME)stubs.a
 STUB_OBJS   := $(foreach f,$(STUBS), $(OBJDIR)/$(f).o)
 
-#MM workbench-hidd-graphics-setup :
-workbench-hidd-graphics-setup : setup
+#MM kernel-hidd-graphics-setup :
+kernel-hidd-graphics-setup : setup
 
-#MM workbench-hidd-graphics-stubs : workbench-hidd-graphics-setup
-workbench-hidd-graphics-stubs : $(STUB_FILE)
+#MM kernel-hidd-graphics-stubs : kernel-hidd-graphics-setup
+kernel-hidd-graphics-stubs : $(STUB_FILE)
 
 $(STUB_FILE) : $(STUB_OBJS) $(MY_INCLS) 
 	%mklib_q from=$(STUB_OBJS)

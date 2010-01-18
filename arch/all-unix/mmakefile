@@ -11,7 +11,7 @@ include $(TOP)/config/make.cfg
 #MM     contrib-amberram-kobj                         \
 #MM     kernel-dosboot-kobj                           \
 #MM	kernel-bootloader-unix-kobj		      \
-#MM	workbench-hidd-graphics-kobj		      \
+#MM	kernel-hidd-graphics-kobj		      \
 #MM     workbench-hidd-unix-parallel-kobj             \
 #MM     workbench-hidd-unix-serial-kobj		      \
 #MM	arch-common-boot-generatebootsig
