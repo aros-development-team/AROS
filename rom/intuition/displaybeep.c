@@ -1,9 +1,10 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
+#include <aros/debug.h>
 #include <proto/graphics.h>
 #include "intuition_intern.h"
 
@@ -62,7 +63,7 @@ static inline ULONG beepcolor(ULONG x)
     BOOL AllScreens = FALSE;
     //ULONG lock;
 
-    //dprintf("INT_DisplayBeep: entry, screen 0x%lx\n", (ULONG) screen);
+    D(bug("INT_DisplayBeep: entry, screen 0x%p\n", screen));
 
 #ifdef USEWINDOWLOCK
     ObtainSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
@@ -81,7 +82,7 @@ static inline ULONG beepcolor(ULONG x)
 
     while (screen)
     {
-        //dprintf("INT_DisplayBeep: screen 0x%lx\n", (ULONG) screen);
+        D(bug("INT_DisplayBeep: screen 0x%p\n", screen));
 
         if (screen->Flags & BEEPING)
         {
@@ -92,7 +93,7 @@ static inline ULONG beepcolor(ULONG x)
             screen->Flags |= BEEPING;
 
             RenderScreenBar(screen, FALSE, IntuitionBase);
-            //dprintf("INT_DisplayBeep: RenderScreenBar done for screen 0x%lx\n", (ULONG) screen);
+            D(bug("INT_DisplayBeep: RenderScreenBar done for screen 0x%p\n", screen));
 
             GetPrivIBase(IntuitionBase)->BeepingScreens++;
             GetPrivScreen(screen)->BeepingCounter = BEEPTICKS;
@@ -106,7 +107,7 @@ static inline ULONG beepcolor(ULONG x)
 #ifdef USEWINDOWLOCK
     ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
 #endif
-    //dprintf("INT_DisplayBeep: done\n");
+    D(bug("INT_DisplayBeep: done\n"));
 
 #else /* USE_NEWDISPLAYBEEP */
 
