@@ -18,6 +18,7 @@ struct Gfx_Control
 {
     unsigned char IrqNum;
     unsigned char window_ready;
+    void *cursor;
 };
 
 struct MouseData
@@ -170,7 +171,7 @@ struct gfx_data
 {
     void *display;
     ULONG depth;
-/*  Cursor	 cursor;*/
+    void *cursor;
     void *bitmap;    /* Currently shown bitmap object			*/
     void *fbwin;     /* Frame buffer window			        */
     void *bitmap_dc; /* Memory device context of currently shown bitmap */

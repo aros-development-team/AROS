@@ -235,7 +235,25 @@ typedef struct tagRGBQUAD {
   BYTE    rgbReserved; 
 } RGBQUAD;
 
+typedef struct tagBITMAP {
+  ULONG   bmType;
+  ULONG   bmWidth; 
+  ULONG   bmHeight; 
+  ULONG   bmWidthBytes; 
+  UWORD   bmPlanes; 
+  UWORD   bmBitsPixel; 
+  APTR bmBits; 
+} BITMAP, *PBITMAP; 
+
 typedef struct tagBITMAPINFO { 
   BITMAPINFOHEADER bmiHeader; 
   RGBQUAD          bmiColors[1];
 } BITMAPINFO, *PBITMAPINFO;
+
+typedef struct _ICONINFO {
+    ULONG fIcon;
+    ULONG xHotspot;
+    ULONG yHotspot;
+    APTR hbmMask;
+    APTR hbmColor;
+} ICONINFO;

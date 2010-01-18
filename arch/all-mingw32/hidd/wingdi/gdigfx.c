@@ -292,6 +292,13 @@ VOID GDICl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     EnterFunc(bug("GDIGfx::Dispose(o=%p)\n", o));
     
     data = OOP_INST_DATA(cl, o);
+    
+    if (data->cursor) {
+        Forbid();
+        USERCALL(DestroyIcon, data->cursor);
+	Permit();
+    }
+    
     cleanupgdistuff(XSD(cl));
 
     D(bug("GDIGfx::Dispose: calling super\n"));    
@@ -545,10 +552,102 @@ VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 
 /****************************************************************************************/
 
-BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
 {
-    /* Dummy implementation */
-    return TRUE;
+    struct gfx_data *data = OOP_INST_DATA(cl, o);
+    OOP_Object *pfmt;
+    OOP_Object *colormap;
+    HIDDT_StdPixFmt pixfmt;
+    HIDDT_Color color;
+    IPTR width, height, x, y;
+    ULONG *buf, *mask, *b, *m;
+    ULONG bufsize;
+    APTR buf_bm, mask_bm;
+    APTR cursor = NULL;
+    
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_PixFmt, (APTR)&pfmt);
+    OOP_GetAttr(pfmt, aHidd_PixFmt_StdPixFmt, &pixfmt);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, (APTR)&colormap);
+    
+    bufsize = width * height * 4;
+    buf = AllocMem(bufsize, MEMF_ANY);
+    if (buf) {
+        mask = AllocMem(bufsize, MEMF_ANY);
+	if (mask) {
+	    BITMAP bm;
+	    struct pHidd_BitMap_GetPixel __gp = {
+		mID: OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetPixel)
+	    }, *getpixel = &__gp;
+
+	    struct pHidd_ColorMap_GetColor __gc = {
+		mID:	     OOP_GetMethodID(IID_Hidd_ColorMap, moHidd_ColorMap_GetColor),
+		colorReturn: &color,
+	    }, *getcolor = &__gc;
+
+	    b = buf;
+	    m = mask;
+	    for (y = 0; y < height; y++)
+	    {
+		for (x = 0; x < width; x++)
+		{
+		    HIDDT_Pixel pixel;
+		    getpixel->x = x;
+		    getpixel->y = y;
+		    pixel = OOP_DoMethod(msg->shape, (OOP_Msg)getpixel);
+
+		    if (pixfmt == vHidd_StdPixFmt_LUT8)
+		    {
+		        getcolor->colorNo = pixel;
+		        OOP_DoMethod(colormap, (OOP_Msg)getcolor);
+			/* On Windows XP the most significant byte specifies alpha channel, while the mask is ignored.
+			   We specify 0xDF as alpha value, just for coonless and fun :) */
+		        *b++ = ((pixel ? 0xDF000000 : 0) | (color.red << 8) & 0xff0000) | ((color.green) & 0x00ff00) | ((color.blue >> 8) & 0x0000ff);
+			*m++ = pixel ? 0 : 0xFFFFFFFF;
+		    }
+		}
+	    }
+	    bm.bmType = 0;
+	    bm.bmWidth = width;
+	    bm.bmHeight = height;
+	    bm.bmWidthBytes = width * 4;
+            bm.bmPlanes = 1;
+	    bm.bmBitsPixel = 32;
+	    bm.bmBits = buf;
+	    Forbid();
+	    buf_bm = GDICALL(CreateBitmapIndirect, &bm);
+	    if (buf_bm) {
+	        bm.bmBits = mask;
+	        mask_bm = GDICALL(CreateBitmapIndirect, &bm);
+		if (mask_bm) {
+		    /* TODO: we specify hotspot at (0, 0), however this is not always true.
+			     We need to have some way to bring here values from intuition.library */
+		    ICONINFO curs = {
+		        FALSE,
+			0, 0,
+			mask_bm, buf_bm
+		    };
+		    cursor = USERCALL(CreateIconIndirect, &curs);
+		    if (cursor) {
+		        D(bug("[GDI] Created cursor 0x%p\n", cursor));
+			XSD(cl)->ctl->cursor = cursor;
+		        if (data->cursor) {
+			    D(bug("[GDI] Deleting old cursor 0x%p\n", data->cursor));
+			    USERCALL(DestroyIcon, data->cursor);
+			}
+			data->cursor = cursor;
+		    }
+		    GDICALL(DeleteObject, mask_bm);
+		}
+		GDICALL(DeleteObject, buf_bm);
+	    }
+	    Permit();
+	    FreeMem(mask, bufsize);
+	}
+	FreeMem(buf, bufsize);
+    }
+    return cursor ? TRUE : FALSE;
 }
 
 /****************************************************************************************/

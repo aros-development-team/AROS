@@ -25,6 +25,7 @@ static const char *gdi_func_names[] = {
     "CreateCompatibleDC",
     "DeleteDC",
     "GetDeviceCaps",
+    "CreateBitmapIndirect",
     "CreateCompatibleBitmap",
     "CreateSolidBrush",
     "DeleteObject",
@@ -41,6 +42,8 @@ static const char *gdi_func_names[] = {
 };
 
 static const char *user_func_names[] = {
+    "CreateIconIndirect",
+    "DestroyIcon",
     "RedrawWindow",
      NULL
 };
