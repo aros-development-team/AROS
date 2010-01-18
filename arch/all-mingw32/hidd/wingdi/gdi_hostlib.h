@@ -8,6 +8,7 @@ struct gdi_func {
     __attribute__((stdcall)) APTR (*CreateCompatibleDC)(APTR hdc);
     __attribute__((stdcall)) LONG (*DeleteDC)(APTR hdc);
     __attribute__((stdcall)) LONG (*GetDeviceCaps)(APTR hdc, LONG nIndex);
+    __attribute__((stdcall)) APTR (*CreateBitmapIndirect)(CONST BITMAP *lpbm);
     __attribute__((stdcall)) APTR (*CreateCompatibleBitmap)(APTR hdc, ULONG nWidth, ULONG nHeight);
     __attribute__((stdcall)) APTR (*CreateSolidBrush)(ULONG crColor);
     __attribute__((stdcall)) LONG (*DeleteObject)(APTR hObject);
@@ -27,6 +28,8 @@ struct gdi_func {
 };
 
 struct user_func {
+    __attribute__((stdcall)) APTR (*CreateIconIndirect)(ICONINFO *piconinfo);
+    __attribute__((stdcall)) ULONG (*DestroyIcon)(APTR hIcon);
     __attribute__((stdcall)) ULONG (*RedrawWindow)(APTR hWnd, CONST RECT* lpRect, APTR hrgnUpdate, ULONG flags);
 };
 

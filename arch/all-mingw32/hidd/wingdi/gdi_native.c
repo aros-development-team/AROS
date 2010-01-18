@@ -78,6 +78,12 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
         BitBlt(window_dc, x, y, xsize, ysize, bitmap_dc, x, y, SRCCOPY);
         EndPaint(win, &ps);
         return 0;
+    case WM_SETCURSOR:
+	if (gdictl.cursor) {
+	    SetCursor(gdictl.cursor);
+	    return 0;
+	}
+	break;
     case WM_MOUSEMOVE:
     case WM_LBUTTONDOWN:
     case WM_LBUTTONUP:
@@ -214,6 +220,7 @@ struct Gfx_Control *__declspec(dllexport) GDI_Init(void)
 	    irq = KrnAllocIRQ();
 	    if (irq != -1) {
 	        GDI_MouseData.IrqNum = irq;
+		gdictl.cursor = NULL;
 		return &gdictl;
 	    }
 	    KrnFreeIRQ(GDI_KeyboardData.IrqNum);
