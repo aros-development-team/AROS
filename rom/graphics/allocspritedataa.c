@@ -178,7 +178,7 @@
             bsa.bsa_XSrcFactor  = SCALE_NORMAL;
             bsa.bsa_YSrcFactor  = SCALE_NORMAL;
 	    /* Graphics drivers expect mouse pointer bitmap in LUT8 format, so we give it */
-            bsa.bsa_DestBitMap  = AllocBitMap(width, height, 4, BMF_CLEAR|BMF_SPECIALFMT|SHIFT_PIXFMT(PIXFMT_LUT8), NULL);
+            bsa.bsa_DestBitMap  = AllocBitMap(width, height, 8, BMF_CLEAR|BMF_SPECIALFMT|SHIFT_PIXFMT(PIXFMT_LUT8), NULL);
 	    if (bsa.bsa_DestBitMap) {
 		BitMapScale(&bsa);
         
