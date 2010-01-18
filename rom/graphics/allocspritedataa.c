@@ -88,6 +88,8 @@
         ULONG width = 16;
         const struct TagItem * tstate = tagList;
         struct TagItem * tag;
+	struct BitMap *friend_bm = NULL;
+	ULONG pixfmt = BMF_SPECIALFMT|SHIFT_PIXFMT(PIXFMT_LUT8);
 	struct BitMap old_bitmap;
 	UWORD *planes;
 	ULONG planes_size;
@@ -157,6 +159,17 @@
 	            return NULL;
 	    } else
 	        height = bsa.bsa_SrcHeight;
+
+	    /* This is a part of experimental truecolor pointer support.
+
+	       Check the depth of the source bitmap. If it's more than 8,
+	       it's a hi/truecolor bitmap, and we should allocate the sprite
+	       bitmap in the same format. I hope specifying friend bitmap
+	       does this. */
+	    if (GetBitMapAttr(bitmap, BMA_DEPTH) > 8) {
+	        friend_bm = bitmap;
+		pixfmt = 0;
+	    }
 	}
 
         sprite = AllocVec(sizeof(*sprite), MEMF_PUBLIC | MEMF_CLEAR);
@@ -178,7 +191,7 @@
             bsa.bsa_XSrcFactor  = SCALE_NORMAL;
             bsa.bsa_YSrcFactor  = SCALE_NORMAL;
 	    /* Graphics drivers expect mouse pointer bitmap in LUT8 format, so we give it */
-            bsa.bsa_DestBitMap  = AllocBitMap(width, height, 8, BMF_CLEAR|BMF_SPECIALFMT|SHIFT_PIXFMT(PIXFMT_LUT8), NULL);
+            bsa.bsa_DestBitMap  = AllocBitMap(width, height, 8, BMF_CLEAR|pixfmt, friend_bm);
 	    if (bsa.bsa_DestBitMap) {
 		BitMapScale(&bsa);
         
