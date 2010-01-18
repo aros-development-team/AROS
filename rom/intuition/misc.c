@@ -162,49 +162,24 @@ struct TextFont *SafeReopenFont(struct IntuitionBase *IntuitionBase,
 Object *MakePointerFromData(struct IntuitionBase *IntuitionBase,
                             UWORD *source, int xOffset, int yOffset, int width, int height)
 {
-    struct BitMap    bitmap;
-    Object  	    *retval;
-    UWORD   	     plane0[64], plane1[64];
-    UWORD   	    *p = plane0;
-    UWORD   	    *q = plane1;
-    UWORD   	    *s = source;
-    UWORD   	     mask = ~((1 << (16 - width)) - 1);
-    int     	     k;
+    struct TagItem pointertags[] = {
+        {POINTERA_BitMap      , (IPTR)source},
+        {POINTERA_XOffset     , xOffset      },
+        {POINTERA_YOffset     , yOffset      },
+	{SPRITEA_OldDataFormat, TRUE	     },
+	{SPRITEA_Width	      , width	     },
+	{SPRITEA_OutputHeight , height	     },
+        {TAG_DONE                            }
+    };
 
-    if (height > 64)
-        height = 64;
-
-    InitBitMap(&bitmap, 2, 16, height);
-    bitmap.Planes[0] = (PLANEPTR)plane0;
-    bitmap.Planes[1] = (PLANEPTR)plane1;
-
-    for (k = 0; k < height; ++k)
-    {
-        *p++ = AROS_WORD2BE(*s++ & mask);
-        *q++ = AROS_WORD2BE(*s++ & mask);
-    }
-
-    {
-        struct TagItem pointertags[] =
-        {
-            {POINTERA_BitMap 	, (IPTR)&bitmap },
-            {POINTERA_XOffset   , xOffset       },
-            {POINTERA_YOffset   , yOffset       },
-            {TAG_DONE                           }
-        };
-
-        retval = NewObjectA(GetPrivIBase(IntuitionBase)->pointerclass, NULL, pointertags);
-    }
-
-    return retval;
+    return NewObjectA(GetPrivIBase(IntuitionBase)->pointerclass, NULL, pointertags);
 }
 
 Object *MakePointerFromPrefs(struct IntuitionBase *IntuitionBase, struct Preferences *prefs)
 {
     SetPointerColors(IntuitionBase);
     
-    return MakePointerFromData(IntuitionBase,
-                               prefs->PointerMatrix + 2, prefs->XOffset, prefs->YOffset, 16, 16);
+    return MakePointerFromData(IntuitionBase, prefs->PointerMatrix, prefs->XOffset, prefs->YOffset, 16, 16);
 }
 
 void InstallPointer(struct IntuitionBase *IntuitionBase, Object **old, Object *pointer)

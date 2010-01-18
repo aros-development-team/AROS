@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -63,8 +63,7 @@
 
     if (window && pointer)
     {
-        Object *ptrobj = MakePointerFromData(IntuitionBase,
-                                             pointer + 2, xOffset, yOffset, width, height);
+        Object *ptrobj = MakePointerFromData(IntuitionBase, pointer, xOffset, yOffset, width, height);
 
         if (ptrobj)
         {

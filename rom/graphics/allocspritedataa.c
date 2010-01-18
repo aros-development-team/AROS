@@ -82,10 +82,15 @@
     D(bug("AllocSpriteDataA(0x%08lX)\n", bitmap));
     if (NULL != bitmap) {
 #define SCALE_NORMAL  16
-        ULONG height = (ULONG)GetBitMapAttr(bitmap, BMA_HEIGHT);
+	BOOL have_OutputHeight = FALSE;
+	BOOL have_OldDataFormat = FALSE;
+        ULONG height, orig_height;
         ULONG width = 16;
         const struct TagItem * tstate = tagList;
         struct TagItem * tag;
+	struct BitMap old_bitmap;
+	UWORD *planes;
+	ULONG planes_size;
         struct BitScaleArgs bsa;
         LONG xrep = 0, yrep = 0;
 
@@ -106,24 +111,56 @@
                 break;
             
                 case SPRITEA_OutputHeight:
-                    if (tag->ti_Data > (ULONG)GetBitMapAttr(bitmap, BMA_HEIGHT)) {
-                        return NULL;
-                    }
                     height = tag->ti_Data;
+		    have_OutputHeight = TRUE;
                 break;
-            
+
+		/* Currently we don't support this */
                 case SPRITEA_Attached:
+		    return 0;
                 
-                break;
-            
+		case SPRITEA_OldDataFormat:
+		    have_OldDataFormat = TRUE;
             }
         }
+	
+	if (have_OldDataFormat) {
+	    UWORD *s = (UWORD *)bitmap + 2;
+	    UWORD *p, *q;
+	    UWORD mask;
+	    int k;
+
+	    InitBitMap(&old_bitmap, 2, 16, height);
+	    planes_size = height * sizeof(UWORD) * 2;
+	    planes = AllocMem(planes_size, MEMF_ANY);
+	    if (!planes)
+	        return NULL;
+	    p = planes;
+	    q = &planes[height];
+	    mask = ~((1 << (16 - width)) - 1);
+	    old_bitmap.Planes[0] = (PLANEPTR)p;
+	    old_bitmap.Planes[1] = (PLANEPTR)q;
+
+	    for (k = 0; k < height; ++k) {
+		*p++ = AROS_WORD2BE(*s++ & mask);
+		*q++ = AROS_WORD2BE(*s++ & mask);
+	    }
+	    bsa.bsa_SrcBitMap = &old_bitmap;
+	    bsa.bsa_SrcWidth = 16;
+	    bsa.bsa_SrcHeight = height;
+	} else {
+	    bsa.bsa_SrcBitMap   = bitmap;
+	    bsa.bsa_SrcWidth  = GetBitMapAttr(bitmap, BMA_WIDTH);
+	    bsa.bsa_SrcHeight = GetBitMapAttr(bitmap, BMA_HEIGHT);
+	    if (have_OutputHeight) {
+	        if (height > bsa.bsa_SrcHeight)
+	            return NULL;
+	    } else
+	        height = bsa.bsa_SrcHeight;
+	}
 
         sprite = AllocVec(sizeof(*sprite), MEMF_PUBLIC | MEMF_CLEAR);
         if (NULL != sprite) {
-
-            bsa.bsa_SrcWidth  = GetBitMapAttr(bitmap, BMA_WIDTH);
-            bsa.bsa_SrcHeight = GetBitMapAttr(bitmap, BMA_HEIGHT);
 
 	    D(bug("Source width %u Source height %u Sprite width %u Sprite height %u XReplication %u YReplication %u\n", bsa.bsa_SrcWidth, bsa.bsa_SrcHeight, width, height, xrep, yrep));
             if (xrep > 0) {
@@ -140,21 +177,27 @@
 
             bsa.bsa_XSrcFactor  = SCALE_NORMAL;
             bsa.bsa_YSrcFactor  = SCALE_NORMAL;
-            bsa.bsa_SrcBitMap   = bitmap;
 	    /* Graphics drivers expect mouse pointer bitmap in LUT8 format, so we give it */
             bsa.bsa_DestBitMap  = AllocBitMap(width, height, 4, BMF_CLEAR|BMF_SPECIALFMT|SHIFT_PIXFMT(PIXFMT_LUT8), NULL);
-            BitMapScale(&bsa);
+	    if (bsa.bsa_DestBitMap) {
+		BitMapScale(&bsa);
         
-            sprite->es_SimpleSprite.height = height;
-            sprite->es_SimpleSprite.x      = 0;
-            sprite->es_SimpleSprite.y      = 0;
-            sprite->es_SimpleSprite.num    = 0;
-            sprite->es_wordwidth           = width >> 4;
-            sprite->es_flags               = 0;
-            sprite->es_BitMap              = bsa.bsa_DestBitMap;
+		sprite->es_SimpleSprite.height = height;
+		sprite->es_SimpleSprite.x      = 0;
+		sprite->es_SimpleSprite.y      = 0;
+		sprite->es_SimpleSprite.num    = 0;
+		sprite->es_wordwidth           = width >> 4;
+		sprite->es_flags               = 0;
+		sprite->es_BitMap              = bsa.bsa_DestBitMap;
             
-	    D(bug("Allocated sprite data 0x%08lX: bitmap 0x%08lX, height %u\n", sprite, sprite->es_BitMap, sprite->es_SimpleSprite.height));
+		D(bug("Allocated sprite data 0x%08lX: bitmap 0x%08lX, height %u\n", sprite, sprite->es_BitMap, sprite->es_SimpleSprite.height));
+	    } else {
+	        FreeVec(sprite);
+		sprite = NULL;
+	    }
         }
+	if (have_OldDataFormat)
+	    FreeMem(planes, planes_size);
     }
     return sprite;
 
