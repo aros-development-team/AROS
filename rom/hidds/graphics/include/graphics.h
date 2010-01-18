@@ -249,6 +249,8 @@ struct pHidd_Gfx_SetCursorShape
 {
     OOP_MethodID    mID;
     OOP_Object      *shape;
+    LONG	    xoffset;
+    LONG	    yoffset;
 };
 
 struct pHidd_Gfx_SetCursorPos
@@ -1392,7 +1394,7 @@ BOOL 	      HIDD_Gfx_CheckMode(OOP_Object *obj, HIDDT_ModeID modeID, OOP_Object 
 BOOL 	      HIDD_Gfx_GetMode(OOP_Object *obj, HIDDT_ModeID modeID, OOP_Object **syncPtr, OOP_Object **pixFmtPtr);
 HIDDT_ModeID  HIDD_Gfx_NextModeID(OOP_Object *obj, HIDDT_ModeID modeID, OOP_Object **syncPtr, OOP_Object **pixFmtPtr);
 
-BOOL HIDD_Gfx_SetCursorShape(OOP_Object *obj, OOP_Object *shape);
+BOOL HIDD_Gfx_SetCursorShape(OOP_Object *obj, OOP_Object *shape, LONG xoffset, LONG yoffset);
 BOOL HIDD_Gfx_SetCursorPos(OOP_Object *obj, LONG x, LONG y);
 VOID HIDD_Gfx_SetCursorVisible(OOP_Object *obj, BOOL visible);
 

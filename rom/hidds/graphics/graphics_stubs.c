@@ -212,7 +212,7 @@ HIDDT_ModeID HIDD_Gfx_NextModeID(OOP_Object *obj, HIDDT_ModeID modeID, OOP_Objec
 
 /***************************************************************/
 
-BOOL HIDD_Gfx_SetCursorShape(OOP_Object *obj, OOP_Object *shape)
+BOOL HIDD_Gfx_SetCursorShape(OOP_Object *obj, OOP_Object *shape, LONG xoffset, LONG yoffset)
 {
     STATIC_MID;
     struct pHidd_Gfx_SetCursorShape p, *msg = &p;
@@ -221,6 +221,8 @@ BOOL HIDD_Gfx_SetCursorShape(OOP_Object *obj, OOP_Object *shape)
         
     p.mID = mid;
     p.shape = shape;
+    p.xoffset = xoffset;
+    p.yoffset = yoffset;
 
     return (BOOL)OOP_DoMethod(obj, (OOP_Msg) msg);
     
