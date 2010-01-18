@@ -179,7 +179,7 @@ VOID HIDD_BM_BitMapScale(OOP_Object *, OOP_Object *, OOP_Object *, struct BitSca
                                             bitScaleArgs->bsa_YDestFactor,
                                             bitScaleArgs->bsa_YSrcFactor);
 
-    	    HIDD_BM_BitMapScale(SDD(GfxBase)->pointerbm
+    	    HIDD_BM_BitMapScale(srcbm_obj
 	    	, srcbm_obj
     		, dstbm_obj
     		, bitScaleArgs

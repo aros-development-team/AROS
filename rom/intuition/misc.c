@@ -5,6 +5,7 @@
 */
 
 #include <aros/debug.h>
+#include <aros/macros.h>
 #include <exec/memory.h>
 #include <graphics/rastport.h>
 #include <intuition/pointerclass.h>
@@ -179,8 +180,8 @@ Object *MakePointerFromData(struct IntuitionBase *IntuitionBase,
 
     for (k = 0; k < height; ++k)
     {
-        *p++ = *s++ & mask;
-        *q++ = *s++ & mask;
+        *p++ = AROS_WORD2BE(*s++ & mask);
+        *q++ = AROS_WORD2BE(*s++ & mask);
     }
 
     {

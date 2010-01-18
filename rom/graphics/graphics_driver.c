@@ -53,10 +53,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-
-static BOOL init_cursor(struct GfxBase *GfxBase);
-static VOID cleanup_cursor(struct GfxBase *GfxBase);
-
 struct rgbpix_render_data
 {
     HIDDT_Pixel pixel;
@@ -470,8 +466,6 @@ void driver_expunge (struct GfxBase * GfxBase)
 {
     
     /* Try to free some other stuff */
-    cleanup_cursor(GfxBase);
-
     if (SDD(GfxBase)->framebuffer) {
 	OOP_DisposeObject(SDD(GfxBase)->framebuffer);
 	SDD(GfxBase)->framebuffer = NULL;
@@ -532,112 +526,6 @@ static OOP_Object *create_framebuffer(struct GfxBase *GfxBase)
     }
 
     return fb;
-}
-const UBYTE def_pointer_shape[] =
-{
-    01,03,00,00,00,00,00,00,00,00,00,
-    02,01,03,03,00,00,00,00,00,00,00,
-    00,02,01,01,03,03,00,00,00,00,00,
-    00,02,01,01,01,01,03,03,00,00,00,
-    00,00,02,01,01,01,01,01,03,03,00,
-    00,00,02,01,01,01,01,01,01,01,00,
-    00,00,00,02,01,01,01,03,00,00,00,
-    00,00,00,02,01,01,03,01,03,00,00,
-    00,00,00,00,02,01,00,02,01,03,00,
-    00,00,00,00,02,01,00,00,02,01,03,
-    00,00,00,00,00,00,00,00,00,01,01
-};
-
-#define DEF_POINTER_WIDTH	11
-#define DEF_POINTER_HEIGHT	11
-#define DEF_POINTER_DEPTH	4
-
-
-static BOOL init_cursor(struct GfxBase *GfxBase)
-{
-    /* Create the pointer bitmap */
-    struct TagItem pbmtags[] = {
-    	{ aHidd_BitMap_Width,		DEF_POINTER_WIDTH		},
-	{ aHidd_BitMap_Height,		DEF_POINTER_HEIGHT		},
-	{ aHidd_BitMap_StdPixFmt,	vHidd_StdPixFmt_LUT8		},
-	{ TAG_DONE, 0UL }
-    };
-    SDD(GfxBase)->pointerbm = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, pbmtags);
-    if (NULL != SDD(GfxBase)->pointerbm) {
-	OOP_Object *gc;
-	    
-	gc = obtain_cache_object(SDD(GfxBase)->gc_cache, GfxBase);
-	if (NULL != gc) {
-	    /* Copy the default pointer image into the created pointer bitmap */
-	    struct TagItem gc_tags[] = {
-		{ aHidd_GC_DrawMode,	vHidd_GC_DrawMode_Copy	},
-		{ TAG_DONE, 0UL }
-	    };
-	    
-	    HIDDT_Color col[DEF_POINTER_DEPTH] = {{0}};
-	    
-	    col[0].red		= 0x0000;
-	    col[0].green	= 0x0000;
-	    col[0].blue		= 0x0000;
-	    col[0].alpha	= 0x0000;
-	    col[1].red		= 0xE0E0;
-	    col[1].green	= 0x4040;
-	    col[1].blue		= 0x4040;
-	    col[1].alpha	= 0x0000;
-	    col[2].red		= 0x0000;
-	    col[2].green	= 0x0000;
-	    col[2].blue		= 0x0000;
-	    col[2].alpha	= 0x0000;
-	    col[3].red		= 0xE0E0;
-	    col[3].green	= 0xE0E0;
-	    col[3].blue		= 0xC0C0;
-	    col[3].alpha	= 0x0000;
-	    
-	    HIDD_BM_SetColors(SDD(GfxBase)->pointerbm, col, 0, DEF_POINTER_DEPTH);
-
-	    OOP_SetAttrs(gc, gc_tags);
-#if 0
-	    /* PutImageLUT not yet implemented in gfx baseclass */	    
-	    HIDD_BM_PutImageLUT(SDD(GfxBase)->pointerbm, gc
-			, (UBYTE *)def_pointer_shape
-			, DEF_POINTER_WIDTH
-			, 0, 0
-			, DEF_POINTER_WIDTH, DEF_POINTER_HEIGHT
-			, &plut
-	    );
-#else
-	    HIDD_BM_PutImage(SDD(GfxBase)->pointerbm, gc
-			, (UBYTE *)def_pointer_shape
-			, DEF_POINTER_WIDTH
-			, 0, 0
-			, DEF_POINTER_WIDTH, DEF_POINTER_HEIGHT
-			, vHidd_StdPixFmt_LUT8
-	    );
-
-#endif		
-	    release_cache_object(SDD(GfxBase)->gc_cache, gc, GfxBase);
-	    
-	    if (HIDD_Gfx_SetCursorShape(SDD(GfxBase)->gfxhidd, SDD(GfxBase)->pointerbm)) {
-		D(bug("CURSOR SHAPE SET\n"));
-		/* Make it visible */
-		HIDD_Gfx_SetCursorVisible(SDD(GfxBase)->gfxhidd, TRUE);
-		
-	    	return TRUE;
-	    }
-	}
-    }
-    
-    cleanup_cursor(GfxBase);
-
-    return FALSE;
-}
-
-static VOID cleanup_cursor(struct GfxBase *GfxBase)
-{
-    if (NULL != SDD(GfxBase)->pointerbm) {
-   	OOP_DisposeObject(SDD(GfxBase)->pointerbm);
-	SDD(GfxBase)->pointerbm = NULL;
-    }
 }
 
 BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
@@ -711,10 +599,7 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 			    SDD(GfxBase)->framebuffer = create_framebuffer(GfxBase);
 			if (noframebuffer || SDD(GfxBase)->framebuffer) {
 			    D(bug("FRAMEBUFFER OK: %p\n", SDD(GfxBase)->framebuffer));
-			    if (init_cursor(GfxBase)) {
-			        D(bug("MOUSE INITED\n"));
-		                ReturnBool("driver_LateGfxInit", TRUE);
-			    }
+		            ReturnBool("driver_LateGfxInit", TRUE);
 			}
 			if (SDD(GfxBase)->framebuffer)
 			    OOP_DisposeObject(SDD(GfxBase)->framebuffer);
