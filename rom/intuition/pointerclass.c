@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -31,9 +31,12 @@
 
 /***********************************************************************************/
 
+/* Empty sprite */
 UWORD posctldata[] =
 {
-    0x0000,0x0000
+    0x0000,0x0000, /* posctl		     */
+    0x0000,0x0000, /* Empty pixels, one line */
+    0x0000,0x0000  /* Reserved		     */
 };
 
 /***********************************************************************************/
@@ -46,6 +49,12 @@ IPTR PointerClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     {
 	struct TagItem *tags = msg->ops_AttrList;
 	struct BitMap *bitmap = (struct BitMap *)GetTagData(POINTERA_BitMap, (IPTR)NULL, tags);
+	
+	/* Hack: we accept and pass on to AllocSpriteDataA() these attributes in order to
+	         provide code reuse. Applications should not rely on it, this is private! */
+	BOOL oldbitmap = GetTagData(SPRITEA_OldDataFormat, FALSE, tags);
+	IPTR width = GetTagData(SPRITEA_Width, 16, tags);
+	IPTR height = GetTagData(SPRITEA_OutputHeight, 0, tags);
 
 	//ULONG xResolution = GetTagData(POINTERA_XResolution, POINTERXRESN_DEFAULT, tags);
 	//ULONG yResolution = GetTagData(POINTERA_YResolution, POINTERYRESN_DEFAULT, tags);
@@ -66,30 +75,30 @@ IPTR PointerClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         {
 	    struct TagItem spritetags[] =
 	    {
-		{SPRITEA_Width  , 0 },
-		{TAG_SKIP	    , 0 },
-		{TAG_SKIP	    , 0 },
-		{TAG_DONE        	}
+		{SPRITEA_Width        , 0   },
+		{SPRITEA_OutputHeight , 0   },
+		{SPRITEA_OldDataFormat, TRUE},
+		{TAG_DONE        	    }
 	    };
 	    struct ExtSprite *sprite;
 	    struct BitMap *spritedata=(struct BitMap *)bitmap;
 
 	    if(spritedata != NULL)
 	    {
-		spritetags[0].ti_Data = GetTagData(POINTERA_WordWidth,
-						   ((GetBitMapAttr(bitmap, BMA_WIDTH) + 15) & ~15)>>4, tags) * 16;
-		spritetags[1].ti_Tag = TAG_SKIP;
-		spritetags[2].ti_Tag = TAG_SKIP;
+	        if (oldbitmap) {
+		    spritetags[0].ti_Data = width;
+		    spritetags[1].ti_Data = height;
+		} else {
+		    spritetags[0].ti_Data = GetTagData(POINTERA_WordWidth, ((GetBitMapAttr(bitmap, BMA_WIDTH) + 15) & ~15)>>4, tags) * 16;
+		    spritetags[1].ti_Tag = TAG_DONE;
+		}
 	    }
 	    else
 	    {
 		D(kprintf("PointerClass: OM_NEW called without bitmap, using dummy sprite !\n"));
 
 		spritetags[0].ti_Data = 16;
-		spritetags[1].ti_Tag = SPRITEA_OutputHeight;
 		spritetags[1].ti_Data = 1; 
-		spritetags[2].ti_Tag = SPRITEA_OldDataFormat;
-		spritetags[2].ti_Data = TRUE;
 		bitmap = (struct BitMap *)posctldata;
 
 	    }
