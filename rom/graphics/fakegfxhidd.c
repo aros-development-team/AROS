@@ -16,7 +16,7 @@
 #include "graphics_intern.h"
 #include "fakegfxhidd.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /******************************************************************************/
@@ -135,7 +135,6 @@ static void FakeGfxHidd_ObtainSemaphore(struct SignalSemaphore *sigSem, BOOL urg
 	    request, so we must be the last to get the semaphore.
 	*/
 
-    	#warning This must be atomic!
 	AROS_ATOMIC_AND(me->tc_SigRecvd, ~SIGF_SINGLE);
 	
 	if (urgent)
@@ -476,49 +475,28 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	}
 	    
 	data->curs_bm = shape;
-		
-	if (data->curs_on)
-	{
-	    /* Erase the old cursor */
-	    draw_cursor(data, FALSE, TRUE, CSD(cl));
+	
+	/* Erase the old cursor */
+	draw_cursor(data, FALSE, TRUE, CSD(cl));
 	    
-	    /* Now that we have disposed the old image using the old
-	       backup bm, we can install the new backup bm before
-	       rendering the new cursor
-	    */
+	/* Now that we have disposed the old image using the old
+	   backup bm, we can install the new backup bm before
+	   rendering the new cursor
+	*/
 	    
-	    if (NULL != data->curs_backup)
-	    	OOP_DisposeObject(data->curs_backup);
+	if (NULL != data->curs_backup)
+	    OOP_DisposeObject(data->curs_backup);
 
-	    data->curs_width	= curs_width;
-	    data->curs_height	= curs_height;
+	data->curs_width	= curs_width;
+	data->curs_height	= curs_height;
 
-	    data->curs_maxx	= data->curs_x + curs_width  - 1;
-	    data->curs_maxy	= data->curs_y + curs_height - 1;
-	    data->curs_backup = new_backup;
+	data->curs_maxx	= data->curs_x + curs_width  - 1;
+	data->curs_maxy	= data->curs_y + curs_height - 1;
+	data->curs_backup = new_backup;
 
-	    rethink_cursor(data, CSD(cl));
+	rethink_cursor(data, CSD(cl));
 	    
-	    draw_cursor(data, TRUE, TRUE, CSD(cl));
-	    
-	}
-	else
-	{
-
-	    if (NULL != data->curs_backup)
-	    	OOP_DisposeObject(data->curs_backup);
-
-	    data->curs_width	= curs_width;
-	    data->curs_height	= curs_height;
-
-	    data->curs_maxx	= data->curs_x + curs_width  - 1;
-	    data->curs_maxy	= data->curs_y + curs_height - 1;
-	    data->curs_backup = new_backup;
-	    
-	    rethink_cursor(data, CSD(cl));
-
-	}
-
+	draw_cursor(data, TRUE, TRUE, CSD(cl));
     }
     
     return TRUE;
@@ -529,19 +507,17 @@ static BOOL gfx_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetC
     struct gfx_data *data;
     
     data = OOP_INST_DATA(cl, o);
-LFB_QUICK(data);    
+    LFB_QUICK(data);
     /* erase the old cursor */
-    if (data->curs_on)
-    	draw_cursor(data, FALSE, TRUE, CSD(cl));
+    draw_cursor(data, FALSE, TRUE, CSD(cl));
 	
     data->curs_x = msg->x;
     data->curs_y = msg->y;
     data->curs_maxx = data->curs_x + data->curs_width  - 1;
     data->curs_maxy = data->curs_y + data->curs_height - 1;
     
-    if (data->curs_on)
-    	draw_cursor(data, TRUE, TRUE, CSD(cl));
-UFB_QUICK(data);	
+    draw_cursor(data, TRUE, TRUE, CSD(cl));
+    UFB_QUICK(data);
     return TRUE;
 }
 
@@ -565,8 +541,8 @@ LFB_QUICK(data);
     {
     	if (data->curs_on)
 	{
-	    data->curs_on = FALSE;
 	    draw_cursor(data, FALSE, TRUE, CSD(cl));
+	    data->curs_on = FALSE;
 	}
     }
     
@@ -1334,7 +1310,10 @@ static VOID rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
     OOP_Object *pf, *colmap;
     IPTR    	depth, fbdepth, i;
 
-    D(bug("rethink_cursor()\n"));
+    D(bug("rethink_cursor(), curs_bm is 0x%p\n", data->curs_bm));
+    if (!data->curs_bm)
+        return;
+
     OOP_GetAttr(data->curs_backup, aHidd_BitMap_PixFmt, (IPTR *)&pf);
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, &fbdepth);
     
@@ -1379,11 +1358,13 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
 	{ TAG_DONE  	    , 0UL   	    	    	}
     };
     
-    if (NULL == data->curs_bm || NULL == data->framebuffer || !data->curs_on)
+    if (!data->curs_on)
+        return;
+    
+    if (NULL == data->curs_bm || NULL == data->framebuffer)
     {
     	D(bug("!!! draw_cursor: FAKE GFX HIDD NOT PROPERLY INITIALIZED !!!\n"));
-	D(bug("CURS BM: %p, FB: %p, ON: %d\n"
-		, data->curs_bm, data->framebuffer, data->curs_on));
+	D(bug("CURS BM: 0x%p, FB: 0x%p\n", data->curs_bm, data->framebuffer));
     	return;
     }
     

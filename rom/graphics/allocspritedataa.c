@@ -1,15 +1,17 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function AllocSpriteDataA()
     Lang: english
 */
+
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <aros/debug.h>
-#include <graphics/gfx.h>
+#include <cybergraphx/cybergraphics.h>
 #include <graphics/sprite.h>
 #include <graphics/scale.h>
 #include <utility/tagitem.h>
@@ -77,6 +79,7 @@
 
     struct ExtSprite *sprite = NULL;
     
+    D(bug("AllocSpriteDataA(0x%08lX)\n", bitmap));
     if (NULL != bitmap) {
 #define SCALE_NORMAL  16
         ULONG height = (ULONG)GetBitMapAttr(bitmap, BMA_HEIGHT);
@@ -122,6 +125,7 @@
             bsa.bsa_SrcWidth  = GetBitMapAttr(bitmap, BMA_WIDTH);
             bsa.bsa_SrcHeight = GetBitMapAttr(bitmap, BMA_HEIGHT);
 
+	    D(bug("Source width %u Source height %u Sprite width %u Sprite height %u XReplication %u YReplication %u\n", bsa.bsa_SrcWidth, bsa.bsa_SrcHeight, width, height, xrep, yrep));
             if (xrep > 0) {
                 bsa.bsa_XDestFactor = SCALE_NORMAL << xrep;
             } else {
@@ -137,11 +141,8 @@
             bsa.bsa_XSrcFactor  = SCALE_NORMAL;
             bsa.bsa_YSrcFactor  = SCALE_NORMAL;
             bsa.bsa_SrcBitMap   = bitmap;
-            bsa.bsa_DestBitMap  = AllocBitMap(width,
-                                              height,
-                                              4,
-                                              BMF_CLEAR|BMF_DISPLAYABLE,
-                                              NULL);
+	    /* Graphics drivers expect mouse pointer bitmap in LUT8 format, so we give it */
+            bsa.bsa_DestBitMap  = AllocBitMap(width, height, 4, BMF_CLEAR|BMF_SPECIALFMT|SHIFT_PIXFMT(PIXFMT_LUT8), NULL);
             BitMapScale(&bsa);
         
             sprite->es_SimpleSprite.height = height;
@@ -152,6 +153,7 @@
             sprite->es_flags               = 0;
             sprite->es_BitMap              = bsa.bsa_DestBitMap;
             
+	    D(bug("Allocated sprite data 0x%08lX: bitmap 0x%08lX, height %u\n", sprite, sprite->es_BitMap, sprite->es_SimpleSprite.height));
         }
     }
     return sprite;

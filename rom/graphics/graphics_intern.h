@@ -150,11 +150,6 @@ struct shared_driverdata
     /* Does the gfx hidd support hardware pointers ? */    
     BOOL    	    	     has_hw_cursor;
 
-    /* This is used if the gfx hidd does not support hardware mouse pointers */
-    OOP_Object      	     *pointerbm;
-    LONG    	    	     pointer_x;
-    LONG    	    	     pointer_y;
-    
     struct class_static_data fakegfx_staticdata;
     BOOL    	    	     fakegfx_inited;
     
