@@ -36,7 +36,7 @@ KOBJS := $(K_RES) $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(KOBJS_HIDD)
 #MM			 kernel				    \
 #MM			 kernel-fs-emul-mingw32-kobj	    \
 #MM			 kernel-fs-packet-kobj		    \
-#MM			 workbench-hidd-graphics-kobj	    \
+#MM			 kernel-hidd-graphics-kobj	    \
 #MM			 kernel-hidd-wingdi-kobj	    \
 #MM			 contrib-amberram-kobj
 

@@ -49,7 +49,7 @@ include $(TOP)/config/make.cfg
 #MM	contrib-cdvdfs \
 #MM contrib-sfs \
 #MM contrib-amberram \
-#MM	workbench-hidd-graphics \
+#MM	kernel-hidd-graphics \
 #MM	devs-networks-drivers-fec-powerpc
 
 PKG_GEN_LIBS 	:= aros partition expansion utility oop graphics layers intuition keymap workbench boot dos

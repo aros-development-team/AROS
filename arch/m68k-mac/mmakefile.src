@@ -56,7 +56,7 @@ create-mf-inc-again :
 #MM	kernel-fs-con                      \
 #MM     kernel-misc-kobj \
 #MM     kernel-fs-afs-kobj \
-#MM     workbench-hidd-graphics-kobj \
+#MM     kernel-hidd-graphics-kobj \
 #MM	kernel-mac-m68k-drivers
 
 # Setup
