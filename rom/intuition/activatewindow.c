@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -17,6 +17,7 @@
 #include "strgadgets.h"
 #include "gadgets.h"
 #include "menus.h"
+#include "../graphics/graphics_private.h"
 #include <intuition/pointerclass.h>
 
 struct ActivateWindowActionMsg
@@ -200,8 +201,11 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
                 DEBUG_POINTER(dprintf("ActivateWindow: scr 0x%lx pointer 0x%lx sprite 0x%lx\n",
                               scr, pointer, shared_pointer->sprite));
 
-                if (ChangeExtSpriteA(&scr->Screen.ViewPort,
-                             scr->Pointer->sprite, shared_pointer->sprite, NULL))
+                if (ChangeExtSprite(&scr->Screen.ViewPort,
+				    scr->Pointer->sprite, shared_pointer->sprite,
+				    CSTAG_XOffset, shared_pointer->xoffset,
+				    CSTAG_YOffset, shared_pointer->yoffset,
+				    TAG_DONE))
                 {
                     ObtainSharedPointer(shared_pointer, IntuitionBase);
                     ReleaseSharedPointer(scr->Pointer, IntuitionBase);

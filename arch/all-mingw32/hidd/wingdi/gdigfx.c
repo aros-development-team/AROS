@@ -621,11 +621,9 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	        bm.bmBits = mask;
 	        mask_bm = GDICALL(CreateBitmapIndirect, &bm);
 		if (mask_bm) {
-		    /* TODO: we specify hotspot at (0, 0), however this is not always true.
-			     We need to have some way to bring here values from intuition.library */
 		    ICONINFO curs = {
 		        FALSE,
-			0, 0,
+			-msg->xoffset, -msg->yoffset,
 			mask_bm, buf_bm
 		    };
 		    cursor = USERCALL(CreateIconIndirect, &curs);
@@ -648,22 +646,6 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	FreeMem(buf, bufsize);
     }
     return cursor ? TRUE : FALSE;
-}
-
-/****************************************************************************************/
-
-BOOL GDICl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
-{
-    /* Dummy implementation */
-    return TRUE;
-}
-
-/****************************************************************************************/
-
-VOID GDICl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
-{
-    /* Dummy implementation */
-    return;
 }
 
 /****************************************************************************************/

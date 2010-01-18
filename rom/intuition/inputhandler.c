@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -35,6 +35,7 @@
 #include "propgadgets.h"
 #include "strgadgets.h"
 #include "gadgets.h"
+#include "../graphics/graphics_private.h" /* CSTAG_xxx */
 #include "intuition_intern.h" /* EWFLG_xxx */
 #include "inputhandler_support.h"
 #include "inputhandler_actions.h"
@@ -3505,8 +3506,11 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
                             DEBUG_POINTER(dprintf("InputHandler: sprite 0x%lx\n",
                                           shared_pointer->sprite));
 
-                            if (ChangeExtSpriteA(&scr->Screen.ViewPort,
-                                         scr->Pointer->sprite, shared_pointer->sprite, NULL))
+                            if (ChangeExtSprite(&scr->Screen.ViewPort,
+						scr->Pointer->sprite, shared_pointer->sprite,
+						CSTAG_XOffset, shared_pointer->xoffset,
+						CSTAG_YOffset, shared_pointer->yoffset,
+						TAG_DONE))
                             {
                                 ObtainSharedPointer(shared_pointer, IntuitionBase);
                                 ReleaseSharedPointer(scr->Pointer, IntuitionBase);

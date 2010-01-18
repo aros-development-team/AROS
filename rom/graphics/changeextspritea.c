@@ -7,12 +7,15 @@
 */
 
 #include <aros/debug.h>
+#include <graphics/gfxbase.h>
 #include <graphics/view.h>
 #include <graphics/sprite.h>
 #include <utility/tagitem.h>
+#include <proto/utility.h>
 
 #include "gfxfuncsupport.h"
 #include "graphics_intern.h"
+#include "graphics_private.h"
 
 #define DEF_POINTER_DEPTH 4
 
@@ -55,6 +58,12 @@
     INTERNALS
         This is a minimal implementation which supports only single sprite #0
         for mouse pointer.
+	
+	Hosted ports can use host OS' native mouse cursor functions, which need
+	to know hotspot coordinates. Passing them to the graphics driver is done
+	using two private tags: CSTAG_XOffset and CSTAG_YOffset. Possible complete
+	sprite engine implementation would need to distinguish between actual sprite
+	and mouse cursor, so this can be just a temporary hack.
 
     HISTORY
 
@@ -67,6 +76,8 @@
     HIDDT_Color col[DEF_POINTER_DEPTH] = {{0}};
     UWORD i, firstcolor;
     LONG res;
+    LONG xoffset = GetTagData(CSTAG_XOffset, 0, tags);
+    LONG yoffset = GetTagData(CSTAG_YOffset, 0, tags);
 
     D(bug("ChangeExtSpriteA(0x%p, 0x%p, 0x%p)\n", vp, oldsprite, newsprite));
     
@@ -118,7 +129,7 @@
     HIDD_BM_SetColors(bitmap, col, 0, DEF_POINTER_DEPTH);
     
     /* At last we actually set the cursor shape and make sure it is visible */
-    res = HIDD_Gfx_SetCursorShape(SDD(GfxBase)->gfxhidd, bitmap);
+    res = HIDD_Gfx_SetCursorShape(SDD(GfxBase)->gfxhidd, bitmap, xoffset, yoffset);
     if (res)
         HIDD_Gfx_SetCursorVisible(SDD(GfxBase)->gfxhidd, TRUE);
     return res;

@@ -13,6 +13,7 @@
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include "intuition_intern.h"
+#include "../graphics/graphics_private.h"
 
 void MySetPointerPos(struct IntuitionBase *IntuitionBase, int x, int y)
 {
@@ -209,8 +210,11 @@ void InstallPointer(struct IntuitionBase *IntuitionBase, Object **old, Object *p
         {
             DEBUG_POINTER(dprintf("InstallPointer: scr 0x%lx pointer 0x%lx sprite 0x%lx\n",
                                   scr, pointer, newpointer->sprite));
-            if (ChangeExtSpriteA(&scr->Screen.ViewPort,
-                                 oldpointer->sprite, newpointer->sprite, NULL))
+            if (ChangeExtSprite(&scr->Screen.ViewPort,
+                                oldpointer->sprite, newpointer->sprite,
+				CSTAG_XOffset, newpointer->xoffset,
+				CSTAG_YOffset, newpointer->yoffset,
+				TAG_DONE))
             {
                 ObtainSharedPointer(newpointer, IntuitionBase);
                 ReleaseSharedPointer(oldpointer, IntuitionBase);
