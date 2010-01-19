@@ -111,7 +111,7 @@
 
     D(bug("Sprite colors:\n"));
     /* This is effectively the same as GetRGB32(), but takes into account that our array
-       is 16-bit, not 32-bit */
+       is 16-bit, not 32-bit, and fills in alpha channel data */
     for (i = 1; i < DEF_POINTER_DEPTH; i++ )
     {
         ULONG red, green, blue;
@@ -122,6 +122,7 @@
 	col[i].red = red;
 	col[i].green = green;
 	col[i].blue = blue;
+	col[i].alpha = 0x9F9F;
     }
 
     bitmap = OBTAIN_HIDD_BM(newsprite->es_BitMap);

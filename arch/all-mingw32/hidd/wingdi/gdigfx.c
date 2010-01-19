@@ -557,7 +557,7 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
     struct gfx_data *data = OOP_INST_DATA(cl, o);
     OOP_Object *pfmt;
     OOP_Object *colormap;
-    HIDDT_StdPixFmt pixfmt;
+    IPTR depth;
     HIDDT_Color color;
     IPTR width, height, x, y;
     ULONG *buf, *mask, *b, *m;
@@ -568,7 +568,7 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
     OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
     OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
     OOP_GetAttr(msg->shape, aHidd_BitMap_PixFmt, (APTR)&pfmt);
-    OOP_GetAttr(pfmt, aHidd_PixFmt_StdPixFmt, &pixfmt);
+    OOP_GetAttr(pfmt, aHidd_PixFmt_Depth, &depth);
     OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, (APTR)&colormap);
     
     bufsize = width * height * 4;
@@ -597,14 +597,13 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
 		    getpixel->y = y;
 		    pixel = OOP_DoMethod(msg->shape, (OOP_Msg)getpixel);
 
-		    if (pixfmt == vHidd_StdPixFmt_LUT8)
-		    {
+		    /* TODO: actual support for hi- and truecolor cursors */
+		    if (depth <= 8) {
 		        getcolor->colorNo = pixel;
 		        OOP_DoMethod(colormap, (OOP_Msg)getcolor);
-			/* On Windows XP the most significant byte specifies alpha channel, while the mask is ignored.
-			   We specify 0xDF as alpha value, just for coonless and fun :) */
-		        *b++ = ((pixel ? 0xDF000000 : 0) | (color.red << 8) & 0xff0000) | ((color.green) & 0x00ff00) | ((color.blue >> 8) & 0x0000ff);
-			*m++ = pixel ? 0 : 0xFFFFFFFF;
+			/* On Windows XP the most significant byte specifies alpha channel, while the mask is ignored. */
+		        *b++ = ((color.alpha << 16) & 0xFF000000) | ((color.red << 8) & 0xff0000) | ((color.green) & 0x00ff00) | ((color.blue >> 8) & 0x0000ff);
+			*m++ = color.alpha ? 0 : 0xFFFFFFFF;
 		    }
 		}
 	    }
