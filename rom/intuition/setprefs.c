@@ -63,11 +63,18 @@
     {
         ULONG lock = LockIBase(0);
         BOOL  changepointer = FALSE;
+	BOOL  changepointercolors = FALSE;
 
         if (size > offsetof(struct Preferences, PointerMatrix))
         {
             if (memcmp(&prefbuffer->PointerMatrix,&GetPrivIBase(IntuitionBase)->ActivePreferences->PointerMatrix,POINTERSIZE) != 0)
                 changepointer = TRUE;
+        }
+	
+        if (size > offsetof(struct Preferences, color17))
+        {
+            if (memcmp(&prefbuffer->color17, &GetPrivIBase(IntuitionBase)->ActivePreferences->color17, sizeof(UWORD) * 3) != 0)
+                changepointercolors = TRUE;
         }
 
         CopyMem(prefbuffer,
@@ -152,8 +159,7 @@
             DEBUG_SETPREFS(dprintf("SetPrefs: no InputIO..don't set Key prefs\n"));
         }
 
-        //#ifndef __MORPHOS__
-        if (size > offsetof(struct Preferences, PointerMatrix) && changepointer)
+        if (changepointer)
         {
             Object *pointer = MakePointerFromPrefs(IntuitionBase, GetPrivIBase(IntuitionBase)->ActivePreferences);
             if (pointer)
@@ -161,8 +167,10 @@
                 InstallPointer(IntuitionBase, &GetPrivIBase(IntuitionBase)->DefaultPointer, pointer);
             }
         }
-        //#endif
-    
+
+	if (changepointercolors)
+	    SetPointerColors(IntuitionBase);
+
         /*
         ** If inform == TRUE then notify all windows that want to know about
         ** an update on the preferences.

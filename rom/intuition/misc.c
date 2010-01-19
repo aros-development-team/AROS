@@ -238,7 +238,7 @@ void SetPointerColors(struct IntuitionBase *IntuitionBase)
     UWORD   	  *p;
     int     	   k;
     ULONG   	   lock = LockIBase(0);
-  //struct Screen *scr;
+    struct Screen *scr = IntuitionBase->ActiveScreen;
 
     DEBUG_POINTER(dprintf("SetPointerColors()\n");)
 
@@ -246,11 +246,14 @@ void SetPointerColors(struct IntuitionBase *IntuitionBase)
 
     DEBUG_POINTER(dprintf("color17 %04lx color18 %04lx color19 %04lx color20 %04lx\n",p[0],p[1],p[2],p[3]);)
 
-    if (IntuitionBase->ActiveScreen)
+    if (scr)
     {
+	/* FIXME: this assumes that we have at least 12 colors */
+	ULONG firstcol = scr->ViewPort.ColorMap->Count > 24 ?  17 : scr->ViewPort.ColorMap->Count - 7;
+
         for (k = 0; k < 3; ++k, ++p)
         {
-            SetRGB4(&IntuitionBase->ActiveScreen->ViewPort,
+            SetRGB4(&scr->ViewPort,
                     k + 17, *p >> 8, (*p >> 4) & 0xf, *p & 0xf);
         }
     }
