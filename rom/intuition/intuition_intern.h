@@ -632,8 +632,10 @@ struct IntScreen
     Object                  *depthgadget;
     UWORD                    SpecialFlags;
     struct Layer            *rootLayer;
+#if !USE_NEWDISPLAYBEEP
     ULONG                    DisplayBeepColor0[3];
     struct Window           *DisplayBeepWindow;
+#endif
     ULONG                    ModeID;
     struct MonitorSpec      *Monitor;
     struct SharedPointer    *Pointer;
