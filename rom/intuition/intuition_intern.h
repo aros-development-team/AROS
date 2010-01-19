@@ -502,6 +502,8 @@ struct IntIntuitionBase
 #ifdef __MORPHOS__
     struct ViewExtra        	*ViewLordExtra;
     LONG                    	 SpriteNum;
+#else
+    BOOL			ViewLord_ok;
 #endif
 
 #ifdef SKINS
@@ -1146,7 +1148,7 @@ AROS_UFPA(APTR  , args      , A1));
 #define DEBUG_WORKBENCH(x)          	;
 #define DEBUG_LOCKPUBSCREENLIST(x)  	;
 #define DEBUG_UNLOCKPUBSCREENLIST(x)    ;
-#define DEBUG_RETHINKDISPLAY(x)     	;
+#define DEBUG_RETHINKDISPLAY(x)    	;
 
 /*
  * Private data structures of the classes defined by intuition.library

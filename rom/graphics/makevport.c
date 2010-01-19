@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function MakeVPort()
@@ -49,10 +49,9 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write graphics/MakeVPort()
-    aros_print_not_implemented ("MakeVPort");
+    /* We don't have copper and don't use copperlists, so just do nothing */
 
-    return MVP_NO_MEM;
+    return MVP_OK;
 
     AROS_LIBFUNC_EXIT
 } /* MakeVPort */

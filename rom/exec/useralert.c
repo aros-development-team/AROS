@@ -76,7 +76,6 @@ ULONG Exec_UserAlert(ULONG alertNum, struct Task *task)
     if (alertNum & AT_DeadEnd)
     {
         if (res == 0) {
-/*          ShowImminentReset();*/
 	    ColdReboot();
 	    /* In case if ColdReboot() doesn't work */
             ShutdownA(SD_ACTION_COLDREBOOT);

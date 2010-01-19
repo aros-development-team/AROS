@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2006, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -209,6 +209,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     GetPrivIBase(LIBBASE)->DefWinDecorObj = GetPrivIBase(LIBBASE)->WinDecorObj;
     GetPrivIBase(LIBBASE)->DefScrDecorObj = GetPrivIBase(LIBBASE)->ScrDecorObj;
     GetPrivIBase(LIBBASE)->DefMenuDecorObj = GetPrivIBase(LIBBASE)->MenuDecorObj;
+    LIBBASE->ViewLord_ok = FALSE;
 
     DEBUG_INIT(dprintf("LIB_Init: done\n"));
 
@@ -290,9 +291,9 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
 	D(bug("DoIO() called\n"));
     }
 
-#ifdef __MORPHOS__
-    if (!GfxBase)
+    if (!LIBBASE->ViewLord_ok)
     {
+#ifdef __MORPHOS__
 	struct ViewExtra *ve;
 
 	if (!(ve = GfxNew(VIEW_EXTRA_TYPE)))
@@ -301,17 +302,17 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
 	    DEBUG_OPEN(dprintf("LIB_Open: can't create view extra\n"));
 	    return FALSE;
 	}
-
-	InitView(&IntuitionBase->ViewLord);
-
-	GfxAssociate(&IntuitionBase->ViewLord, ve);
+#endif
+	D(bug("[intuition] Calling InitView()\n"));
+	InitView(&LIBBASE->IBase.ViewLord);
+#ifdef __MORPHOS__
+	GfxAssociate(&LIBBASE->IBase.ViewLord, ve);
 
 	GetPrivIBase(LIBBASE)->ViewLordExtra = ve;
-
 	GetPrivIBase(LIBBASE)->SpriteNum = -1;
-
-    }
 #endif
+	LIBBASE->ViewLord_ok = TRUE;
+    }
     
     if (!GetPrivIBase(LIBBASE)->ScreenFont)
 	GetPrivIBase(LIBBASE)->ScreenFont = GfxBase->DefaultFont;
