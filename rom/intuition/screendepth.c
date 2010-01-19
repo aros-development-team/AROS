@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2009, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -355,16 +355,8 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
 
     } /* if (current) */
 
-#ifdef __MORPHOS__
     IntuitionBase->ActiveScreen = IntuitionBase->FirstScreen;
     RethinkDisplay();
-#else
-    if (IntuitionBase->FirstScreen != oldfront)
-    {
-        SetFrontBitMap(IntuitionBase->FirstScreen->RastPort.BitMap, TRUE);
-        IntuitionBase->ActiveScreen = IntuitionBase->FirstScreen;
-    }
-#endif
 
     win = NULL;
 #if 0 /* FIXME: backport, disabled */

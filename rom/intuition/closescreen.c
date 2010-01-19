@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -143,11 +143,9 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
         DisposeObject(((struct IntScreen *)screen)->depthgadget);
     }
 
-#ifdef __MORPHOS__
     RethinkDisplay();
-
+#ifdef __MORPHOS__
     FreeVPortCopLists(&screen->ViewPort);
-
     {
         struct TagItem tags[2];
 
@@ -159,20 +157,6 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
         {
             GfxFree((APTR)tags[0].ti_Data);
         }
-    }
-#else
-/* !!! Setting a new front bitmap MUST be done before freeing the old one */
-    if (NULL != IntuitionBase->FirstScreen)
-    {
-        /* We MUST pas FALSE in the "copyback" parameter
-        since the old screen bitmap has been deleted
-        */
-        SetFrontBitMap(IntuitionBase->FirstScreen->RastPort.BitMap, FALSE);
-
-    }
-    else
-    {
-        SetFrontBitMap(NULL, FALSE);
     }
 #endif
 

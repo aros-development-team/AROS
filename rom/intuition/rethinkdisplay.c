@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -47,7 +47,6 @@
 {
     AROS_LIBFUNC_INIT
 
-#ifdef __MORPHOS__
     struct Screen    *screen;
     struct ViewPort  *viewport;
     struct ViewPort **viewportptr;
@@ -73,8 +72,6 @@
     }
     else
     {
-    	#warning FIXME: only the first screen is made visible
-
         /* Find visible screens */
 
         DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: Find visible screens\n"));
@@ -83,18 +80,24 @@
 
         screen->ViewPort.Modes &= ~VP_HIDE;
 
+/* This portion is left for reference, it was here originally. Its intention is to
+   prevent other screens except frontmose one from becoming visible. I commented it
+   out in order to let Intuition to build a complete list of ViewPorts. In future
+   this can aid in implementing screen dragging.
+						Pavel Fedin <pavel_fedin@mail.ru>
         while ((screen = screen->NextScreen))
         {
             screen->ViewPort.Modes |= VP_HIDE;
         }
-
+*/
         /* Build the list of viewports in the view */
-
+	DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: Building viewports list\n"));
         viewportptr = &IntuitionBase->ViewLord.ViewPort;
         for (screen = IntuitionBase->FirstScreen; screen; screen = screen->NextScreen)
         {
             if ((screen->ViewPort.Modes & VP_HIDE) == 0)
             {
+		DEBUG_RETHINKDISPLAY(bug("[RethinkDisplay] Adding ViewPort 0x%p for screen 0x%p\n", &screen->ViewPort, screen));
                 *viewportptr = &screen->ViewPort;
                 viewportptr = &screen->ViewPort.Next;
             }
@@ -102,20 +105,20 @@
         *viewportptr = NULL;
 
         /* Find view mode */
-
+	DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: Find view mode\n"));
         modes = (IntuitionBase->ViewLord.Modes & ~LACE) | SPRITES;
-        for (viewport = IntuitionBase->ViewLord.ViewPort; viewport; viewport = viewport->Next)
-            modes |= screen->ViewPort.Modes & LACE;
+        for (viewport = IntuitionBase->ViewLord.ViewPort; viewport; viewport = viewport->Next) {
+            modes |= viewport->Modes & LACE;
+	}
 
+#ifdef __MORPHOS__
         /* Reinitialize the view */
-
         FreeSprite(GetPrivIBase(IntuitionBase)->SpriteNum);
         GetPrivIBase(IntuitionBase)->SpriteNum = -1;
-
         DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: LoadView(NULL)\n"));
 
-        LoadView(NULL);
-
+        LoadView(NULL); /* On hosted AROS this LoadView() can cause irritating window reopen */
+#endif
         if (IntuitionBase->ViewLord.LOFCprList)
             FreeCprList(IntuitionBase->ViewLord.LOFCprList);
 
@@ -124,15 +127,16 @@
 
         IntuitionBase->ViewLord.LOFCprList = NULL;
         IntuitionBase->ViewLord.SHFCprList = NULL;
-
         IntuitionBase->ViewLord.DxOffset = 0; /***/
         IntuitionBase->ViewLord.DyOffset = 0; /***/
         IntuitionBase->ViewLord.Modes = modes;
         screen = IntuitionBase->FirstScreen;
+#ifdef __MORPHOS__
         GetPrivIBase(IntuitionBase)->ViewLordExtra->Monitor = GetPrivScreen(screen)->Monitor;
-
+#endif
         /* Rebuild copper lists for screens needing a mode change */
 
+	DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: Making viewports\n"));
         for (viewport = IntuitionBase->ViewLord.ViewPort; viewport; viewport = viewport->Next)
         {
             if ((viewport->Modes ^ modes) & LACE)
@@ -161,7 +165,7 @@
                             IntuitionBase->ActiveScreen,
                             GetPrivScreen(IntuitionBase->ActiveScreen)->Pointer,
                             GetPrivScreen(IntuitionBase->ActiveScreen)->Pointer->sprite));
-
+#ifdef __MORPHOS__
                 if (GetPrivIBase(IntuitionBase)->SpriteNum == -1 &&
                         IntuitionBase->FirstScreen &&
                         GetPrivScreen(IntuitionBase->FirstScreen)->Pointer &&
@@ -182,6 +186,7 @@
                     IntuitionBase->FirstScreen->MouseX = xpos;
                     IntuitionBase->FirstScreen->MouseY = ypos;
                 }
+#endif
             }
         }
     }
@@ -192,8 +197,5 @@
 
     return failure;
 
-#else
-    return 0;
-#endif
     AROS_LIBFUNC_EXIT
 } /* RethinkDisplay */

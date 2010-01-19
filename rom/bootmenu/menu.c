@@ -304,7 +304,6 @@ static BOOL initScreen(struct BootMenuBase_intern *BootMenuBase, struct BootConf
             Alert(AT_DeadEnd | AN_BadGadget);
 
         CloseScreen(BootMenuBase->bm_Screen);
-        ShowImminentReset();
     }
     else
         Alert(AT_DeadEnd | AN_OpenScreen);

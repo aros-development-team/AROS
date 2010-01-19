@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -127,9 +127,6 @@ static const char THIS_FILE[] = __FILE__;
     struct MonitorInfo       monitor;
 #ifdef __MORPHOS__
     ULONG                    allocbitmapflags = BMF_DISPLAYABLE;
-#else
-    BOOL            	     frontbm_set = FALSE;
-    struct BitMap    	    *old_front_bm = NULL;
 #endif
     //ULONG                  lock;
     WORD                     numcolors;
@@ -160,11 +157,6 @@ static const char THIS_FILE[] = __FILE__;
           , newScreen->Height
           , newScreen->Depth
          ));
-
-#ifndef __MORPHOS__
-    if (IntuitionBase->FirstScreen)
-        old_front_bm = IntuitionBase->FirstScreen->RastPort.BitMap;
-#endif
 
     FireScreenNotifyMessage((IPTR) newScreen, SNOTIFY_BEFORE_OPENSCREEN, IntuitionBase);
 
@@ -1425,16 +1417,6 @@ static const char THIS_FILE[] = __FILE__;
         }
     }
 
-#ifndef __MORPHOS__
-    if (ok)
-    {
-        if (!SetFrontBitMap(screen->Screen.RastPort.BitMap, TRUE))
-            ok = FALSE;
-        else
-            frontbm_set = TRUE;
-    }
-#endif
-
 #ifdef SKINS
     if (ok)
     {
@@ -1621,7 +1603,6 @@ static const char THIS_FILE[] = __FILE__;
         screen->Screen.MenuHBorder = 4;
 #endif
 
-        struct IntDrawInfo        *dri = &screen->DInfo;
         struct sdpInitScreen       msg;
 
         msg.MethodID 	           = SDM_INITSCREEN;
@@ -1704,7 +1685,6 @@ static const char THIS_FILE[] = __FILE__;
             screen->Screen.FirstGadget = (struct Gadget *)screen->depthgadget;
             if (screen->Screen.FirstGadget)
             {
-    		struct IntDrawInfo     	      *dri = &screen->DInfo;
     		struct sdpLayoutScreenGadgets  msg;
 
                 screen->Screen.FirstGadget->GadgetType |= GTYP_SCRGADGET;
@@ -1825,13 +1805,12 @@ static const char THIS_FILE[] = __FILE__;
         ok = MakeScreen(&screen->Screen) == 0;
         DEBUG_OPENSCREEN(dprintf("OpenScreen: MakeScreen %s\n", ok ? "ok" : "failed"));
     }
-
+#endif
     if (ok)
     {
         ok = RethinkDisplay() == 0;
         DEBUG_OPENSCREEN(dprintf("OpenScreen: RethinkDisplay %s\n", ok ? "ok" : "failed"));
     }
-#endif
 
 #ifdef SKINS
     if (ok)
@@ -1846,14 +1825,6 @@ static const char THIS_FILE[] = __FILE__;
 
     if (!ok)
     {
-#ifndef __MORPHOS__
-        if (frontbm_set)
-        {
-            if (NULL != old_front_bm)
-                SetFrontBitMap(old_front_bm, FALSE);
-        }
-#endif
-
         if (li_inited)
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Get ThinLayerInfo\n"));

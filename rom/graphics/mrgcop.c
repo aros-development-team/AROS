@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function MrgCop()
@@ -51,10 +51,8 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write graphics/MrgCop()
-    aros_print_not_implemented ("MrgCop");
-
-    return MCOP_NO_MEM;
+    /* We don't have copper and don't use copperlists, so just do nothing */
+    return MCOP_OK;
 
     AROS_LIBFUNC_EXIT
 } /* MrgCop */

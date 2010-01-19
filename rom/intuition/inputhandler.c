@@ -3130,7 +3130,6 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
                 } /* if key is one of LAMIGA/LALT/RAMIGA/RALT */
 
                 if ((iihdata->ActQualifier & (IEQUALIFIER_LCOMMAND | IEQUALIFIER_RCOMMAND)) &&
-                    MouseCoordsRelative() &&
                     ((ie->ie_Code == RAWKEY_UP)    ||
                      (ie->ie_Code == RAWKEY_DOWN)  ||
                      (ie->ie_Code == RAWKEY_LEFT)  ||
