@@ -512,10 +512,31 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 
 /****************************************************************************************/
 
+/* Raster operations for a background */
+static ULONG BitmapCopy_DrawModeTable[] = {
+    BLACKNESS,
+    SRCAND,  	 /* DSa  - src AND dest       */
+    SRCERASE,	 /* SDna - src AND NOT dest   */
+    SRCCOPY,	 /* S    - src		      */
+    0x00220326,  /* DSna - NOT src AND dest   */
+    0x00AA0029,  /* D    - dest		      */
+    SRCINVERT,   /* DSx  - src XOR dest	      */
+    SRCPAINT,	 /* DSo  - src OR dest	      */
+    NOTSRCERASE, /* DSon - NOT (src OR dest)  */
+    0x00990066,  /* DSxn - NOT (src XOR dest) */
+    DSTINVERT,	 /* Dn   - NOT dest	      */
+    0x00DD0228,  /* SDno - src OR NOT dest    */
+    NOTSRCCOPY,	 /* Sn   - NOT src	      */
+    MERGEPAINT,  /* DSno - NOT src OR dest    */
+    0x007700E6,  /* DSan - NOT (src AND dest) */
+    WHITENESS
+};
+
 VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     APTR src = NULL, dest = NULL;
     APTR wnd;
+    ULONG drmd;
     struct gfx_data *data;
     
     EnterFunc(bug("[GDI] hidd.gfx.wingdi::CopyBox(0x%p(%lu, %lu, %lu, %lu) -> 0x%p(%lu, %lu,)\n", msg->src, msg->srcX, msg->srcY, msg->width, msg->height,
@@ -536,10 +557,11 @@ VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 	return;
     }
 
+    drmd = GC_DRMD(msg->gc);
     Forbid();
     /* We do it inside the semaphore because Show() can be called from within another process */
     OOP_GetAttr(msg->dest, aHidd_GDIBitMap_Window, (IPTR *)&wnd);
-    GDICALL(BitBlt, dest, msg->destX, msg->destY, msg->width, msg->height, src, msg->srcX, msg->srcY, SRCCOPY);
+    GDICALL(BitBlt, dest, msg->destX, msg->destY, msg->width, msg->height, src, msg->srcX, msg->srcY, BitmapCopy_DrawModeTable[drmd]);
     if (wnd) {
         RECT r = {msg->destX, msg->destY, msg->destX + msg->width, msg->destY + msg->height};
 
