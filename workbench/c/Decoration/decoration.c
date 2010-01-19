@@ -3784,8 +3784,15 @@ IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreenBar *ms
     UWORD                  *pens = msg->sdp_Dri->dri_Pens;
     LONG                    left, right, titlelen = 0;
     BOOL                    hastitle = TRUE;
+    BOOL		    beeping = scr->Flags & BEEPING;
 
-    if (sd->img_stitlebar.ok) WriteTiledImage(NULL, rp, &sd->img_stitlebar, 0, 0, data->img_stitlebar->w, data->img_stitlebar->h, 0, 0, scr->Width, data->img_stitlebar->h);
+    if (beeping) {
+        SetAPen(rp, pens[BARDETAILPEN]);
+        RectFill(rp, 0, 0, scr->Width, data->img_stitlebar->h);
+    } else {
+        if (sd->img_stitlebar.ok)
+	    WriteTiledImage(NULL, rp, &sd->img_stitlebar, 0, 0, data->img_stitlebar->w, data->img_stitlebar->h, 0, 0, scr->Width, data->img_stitlebar->h);
+    }
     if (sd->img_sbarlogo.ok) WriteTiledImage(NULL, rp, &sd->img_sbarlogo, 0, 0, data->img_sbarlogo->w, data->img_sbarlogo->h, data->slogo_off, (scr->BarHeight + 1 - data->img_sbarlogo->h) / 2, data->img_sbarlogo->w, data->img_sbarlogo->h);
     if (scr->Title == NULL) hastitle = FALSE;
 
@@ -3809,7 +3816,7 @@ IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreenBar *ms
 
         if (!sd->truecolor || ((data->outline == FALSE) && (data->shadow == FALSE)))
         {
-	    SetAPen(rp, pens[BARDETAILPEN]);
+	    SetAPen(rp, pens[beeping ? BARBLOCKPEN : BARDETAILPEN]);
             Move(rp, tx, ty);
             Text(rp, scr->Title, titlelen);
         }
