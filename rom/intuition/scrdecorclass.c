@@ -386,7 +386,7 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
     D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR()\n"));
 
 #if USE_NEWDISPLAYBEEP
-        beeping = (BOOL)((msg->sdp_Screen->Flags & BEEPING) && (GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8));
+    beeping = msg->sdp_Screen->Flags & BEEPING;
 #endif
 
     findtitlearea(msg->sdp_Screen, &left, &right);

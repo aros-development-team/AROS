@@ -206,7 +206,7 @@ void * memclr(APTR, ULONG);
 //#define BEGINUPDATEGADGETREFRESH
 //#define DAMAGECACHE
 
-//#define USEWINDOWLOCK
+#define USEWINDOWLOCK
 #ifdef USEWINDOWLOCK
 #define LOCKWINDOW  	    	    	    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
 #define UNLOCKWINDOW 	    	    	    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
