@@ -6,6 +6,7 @@
 
 #include <proto/exec.h>
 #include <intuition/iprefs.h>
+#include <intuition/pointerclass.h>
 
 #include "intuition_intern.h"
 
@@ -117,6 +118,33 @@
 	    
             break;
 	}
+
+	case IPREFS_TYPE_POINTER:
+        DEBUG_SETIPREFS(bug("SetIPrefs: IP_POINTER\n"));
+        {
+            struct IPointerPrefs *fp = data;
+            struct TagItem pointertags[] =
+                {
+                    {
+                        POINTERA_BitMap    , (ULONG) fp->BitMap
+                    },
+                    {POINTERA_XOffset   , fp->XOffset   },
+                    {POINTERA_YOffset   , fp->YOffset   },
+                    {TAG_DONE               }
+                };
+
+            Object *pointer = NewObjectA(
+                          GetPrivIBase(IntuitionBase)->pointerclass,
+                          NULL,
+                          pointertags);
+
+            Object **oldptr = fp->Which ?
+                      &GetPrivIBase(IntuitionBase)->BusyPointer :
+                      &GetPrivIBase(IntuitionBase)->DefaultPointer;
+
+            InstallPointer(IntuitionBase, oldptr, pointer);
+        }
+        break;
 	
 	default:
             DEBUG_SETIPREFS(bug("SetIPrefs: Unknown Prefs Type\n"));
