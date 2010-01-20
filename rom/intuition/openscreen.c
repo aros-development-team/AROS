@@ -660,8 +660,6 @@ static const char THIS_FILE[] = __FILE__;
 
     DEBUG_OPENSCREEN(dprintf("OpenScreen: ModeID 0x%08lx\n", modeid));
 
-#ifdef __MORPHOS__
-
     InitRastPort(&screen->Screen.RastPort);
     rp_inited = TRUE;
     success = FALSE;
@@ -705,7 +703,7 @@ static const char THIS_FILE[] = __FILE__;
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Monitor 0x%lx Width %ld Height %ld\n",
                                  screen->Monitor, ns.Width, ns.Height));
-
+#ifdef __MORPHOS__
         if (ns.Type & CUSTOMBITMAP)
         {
             struct BitMap *custombm;
@@ -789,55 +787,15 @@ static const char THIS_FILE[] = __FILE__;
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: BitMap 0x%lx\n",
                                  screen->Screen.RastPort.BitMap));
+#endif
     }
     else
     {
         DEBUG_OPENSCREEN(dprintf("OpenScreen: no displayinfo\n"));
     }
-#else
-    if ((displayinfo = FindDisplayInfo(modeid)) != NULL &&
-        GetDisplayInfoData(displayinfo, (UBYTE *)&dimensions, sizeof(dimensions), DTAG_DIMS, modeid) &&
-        GetDisplayInfoData(displayinfo, (UBYTE *)&monitor, sizeof(monitor), DTAG_MNTR, modeid))
-    {
-        screen->Monitor = monitor.Mspc;
 
-        if (dclip == NULL)
-        {
-            switch (overscan)
-            {
-            case OSCAN_STANDARD:
-                dclip = &dimensions.StdOScan;
-                break;
-
-            case OSCAN_MAX:
-                dclip = &dimensions.MaxOScan;
-                break;
-
-            case OSCAN_VIDEO:
-                dclip = &dimensions.VideoOScan;
-                break;
-
-            default:
-                dclip = &dimensions.TxtOScan;
-                break;
-            }
-        }
-
-        if (ns.Width == STDSCREENWIDTH)
-            ns.Width = dclip->MaxX - dclip->MinX + 1;
-
-        if (ns.Height == STDSCREENHEIGHT)
-            ns.Height = dclip->MaxY - dclip->MinY + 1;
-
-    }
-
-    if ((success = InitRastPort (&screen->Screen.RastPort)))
-    {
-        rp_inited = TRUE;
-    }
-
+#ifndef __MORPHOS__
     screen->Screen.RastPort.BitMap = screen->AllocatedBitmap = AllocScreenBitMap(modeid);
-
 #endif
     D(bug("got bitmap\n"));
 
