@@ -7,6 +7,7 @@
 */
 #include <aros/debug.h>
 #include <graphics/gfx.h>
+#include <graphics/gfxbase.h>
 #include <graphics/view.h>
 
 /*****************************************************************************
@@ -52,15 +53,18 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* This is a very basic implementation. First, it completely ignores struct DBufInfo,
-       which is probably wrong. Second, screen refresh is completely not in sync with VBlank
+    /* This is a very basic implementation. Screen refresh is completely not in sync with VBlank
        (probably it's LoadView's job?). The main problem here is that AROS completely misses
        VBlank interrupt. */
-       
+
     /* Just insert a new bitmap and reload current view. LoadView() is expected to care about
        the rest of stuff. */
     vp->RasInfo->BitMap = bm;
     LoadView(GfxBase->ActiView);
+
+    /* Reply both messages - the displayed bitmap has been swapped */
+    ReplyMsg(&db->dbi_SafeMessage);
+    ReplyMsg(&db->dbi_DispMessage);
 
     AROS_LIBFUNC_EXIT
 } /* ChangeVPBitMap */
