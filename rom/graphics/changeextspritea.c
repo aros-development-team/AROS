@@ -106,7 +106,7 @@
               display modes, and we should take into account that on for example 4-color screen
               this simply won't work
     */
-    firstcolor = vp->ColorMap->Count > 24 ? 16 : vp->ColorMap->Count - 8;
+    firstcolor = vp->ColorMap->SpriteBase_Even;
     D(bug("Display has %u colors, pointer starts from %u\n", vp->ColorMap->Count, firstcolor));
 
     D(bug("Sprite colors:\n"));
