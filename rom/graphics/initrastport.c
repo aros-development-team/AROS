@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$	$Log
 
     Desc: Graphics function InitRastPort()
@@ -51,7 +51,7 @@ static const struct RastPort defaultRastPort =
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(BOOL, InitRastPort,
+	AROS_LH1(void, InitRastPort,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp, A1),
@@ -66,14 +66,14 @@ static const struct RastPort defaultRastPort =
 	rp - The RastPort to initialize.
 
     RESULT
-	TRUE if the RastPort was successfully initialized and FALSE
-	otherwise.
+	all entries in RastPort get zeroed out, with the following exceptions:
+
+	    Mask, FgPen, AOLPen, and LinePtrn are set to -1.
+	    The DrawMode is set to JAM2
+	    The font is set to the standard system font
 
     NOTES
 	You must call DeinitRastPort() before you free the structure.
-
-	AROS defines this function with a return value which you should
-	check.
 
     EXAMPLE
 
@@ -95,8 +95,6 @@ static const struct RastPort defaultRastPort =
     RP_BACKPOINTER(rp) = rp; /* Mark rastport as valid (no manual clone) */
     
     SetFont (rp, GfxBase->DefaultFont);
-
-    return TRUE;
 
     AROS_LIBFUNC_EXIT
     
