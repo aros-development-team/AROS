@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function ChangeVPBitMap()
@@ -52,8 +52,15 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write graphics/ChangeVPBitMap()
-    aros_print_not_implemented ("ChangeVPBitMap");
+    /* This is a very basic implementation. First, it completely ignores struct DBufInfo,
+       which is probably wrong. Second, screen refresh is completely not in sync with VBlank
+       (probably it's LoadView's job?). The main problem here is that AROS completely misses
+       VBlank interrupt. */
+       
+    /* Just insert a new bitmap and reload current view. LoadView() is expected to care about
+       the rest of stuff. */
+    vp->RasInfo->BitMap = bm;
+    LoadView(GfxBase->ActiView);
 
     AROS_LIBFUNC_EXIT
 } /* ChangeVPBitMap */

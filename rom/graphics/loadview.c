@@ -69,7 +69,6 @@
     HIDDT_ColorModel 	colmod;
     OOP_Object      	*fb;
     BOOL    	    	ok = FALSE;
-    ULONG   	    	showflags = 0;
 
     /* Take the first ViewPort from the view. Its bitmap will be the frontmost one.
        If NULL is passed as a view, we simply clear the display. */
@@ -89,12 +88,7 @@
 	return;
     }
 
-    if (bitmap)
-    {
-    	showflags |= fHidd_Gfx_Show_CopyBack;
-    }
-
-    fb = HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, (bitmap ? HIDD_BM_OBJ(bitmap) : NULL), showflags);
+    fb = HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, (bitmap ? HIDD_BM_OBJ(bitmap) : NULL), fHidd_Gfx_Show_CopyBack);
 
     if (NULL == fb)
     {
@@ -142,6 +136,9 @@
     	    
 	}
 	Permit();
+
+	/* Set the current view */
+	GfxBase->ActiView = view;
     }
 
     AROS_LIBFUNC_EXIT
