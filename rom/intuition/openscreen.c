@@ -884,11 +884,18 @@ static const char THIS_FILE[] = __FILE__;
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Colormap Entries %ld\n",
                                  numcolors));
 
+	/* Originally at this point we allocated a ColorMap with at least 32 entries.
+	   This can be needed again in order to store sprite colors if our hardware
+	   allows to use additional palette entries for mouse pointer */
         if ((screen->Screen.ViewPort.ColorMap = GetColorMap(numcolors)) != NULL)
         {
 
 #ifndef __MORPHOS__ /* Use VideoControl for MorphOS */
             screen->Screen.ViewPort.ColorMap->VPModeID = modeid;
+	    screen->Screen.ViewPort.ColorMap->cm_vp = &screen->Screen.ViewPort;
+	    screen->Screen.ViewPort.ColorMap->NormalDisplayInfo = displayinfo;
+	    screen->Screen.ViewPort.DWidth = dclip->MaxX - dclip->MinX + 1;
+            screen->Screen.ViewPort.DHeight = dclip->MaxY - dclip->MinY + 1;
 #endif
 
             if (0 == AttachPalExtra(screen->Screen.ViewPort.ColorMap,
@@ -1060,12 +1067,8 @@ static const char THIS_FILE[] = __FILE__;
 
         /* Allocate pens for the mouse pointer */
         q = &GetPrivIBase(IntuitionBase)->ActivePreferences->color17;
-	if (numcolors < 24)
-	    /* FIXME: this assumes that we have at least 16 colors */
-	    c = numcolors - 7;
-	else
-	    c = 17;
-        for (k = 0; k < 3; ++k, ++q)
+	c = screen->Screen.ViewPort.ColorMap->SpriteBase_Even;
+        for (k = 1; k < 4; ++k, ++q)
         {
     	    DEBUG_OPENSCREEN(dprintf("OpenScreen: ColorMap 0x%lx Pen %ld R 0x%lx G 0x%lx B 0x%lx\n",
                                      screen->Screen.ViewPort.ColorMap,
