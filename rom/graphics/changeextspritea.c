@@ -15,7 +15,6 @@
 
 #include "gfxfuncsupport.h"
 #include "graphics_intern.h"
-#include "graphics_private.h"
 
 #define DEF_POINTER_DEPTH 4
 
