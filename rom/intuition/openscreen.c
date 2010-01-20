@@ -29,6 +29,8 @@
 #ifdef __MORPHOS__
 #include <proto/cybergraphics.h>
 #include <cybergraphx/cybergraphics.h>
+#else
+#include "../graphics/graphics_private.h"
 #endif
 #include "intuition_intern.h"
 #include "intuition_customize.h"
@@ -703,13 +705,14 @@ static const char THIS_FILE[] = __FILE__;
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Monitor 0x%lx Width %ld Height %ld\n",
                                  screen->Monitor, ns.Width, ns.Height));
-#ifdef __MORPHOS__
+
+        screen->Screen.RastPort.BitMap = NULL;
         if (ns.Type & CUSTOMBITMAP)
         {
             struct BitMap *custombm;
 
             custombm = ns.CustomBitMap;
-
+#ifdef __MORPHOS__
             if (IsCyberModeID(modeid) && custombm)
             {
                 int pixfmt = GetCyberIDAttr(CYBRIDATTR_PIXFMT,modeid);
@@ -720,6 +723,11 @@ static const char THIS_FILE[] = __FILE__;
                         custombm = NULL;
                 }
             }
+#else
+	    /* May be check mode too? Or copy back from given bitmap? */
+	    if (!(custombm->Flags & HIDD_BMF_SCREEN_BITMAP))
+	        custombm = NULL;
+#endif
 
             if(custombm != NULL)
             {
@@ -734,14 +742,10 @@ static const char THIS_FILE[] = __FILE__;
               	ns.Type &= ~CUSTOMBITMAP;
             }
         }
-        else
-        {
-            screen->Screen.RastPort.BitMap = NULL;
-        }
-
 
         if(screen->Screen.RastPort.BitMap == NULL)
         {
+#ifdef __MORPHOS__
             ULONG pixfmt;
             ULONG Depth;
 
@@ -779,7 +783,9 @@ static const char THIS_FILE[] = __FILE__;
                                              Depth,
                                              allocbitmapflags | (pixfmt << 24),
                                              NULL);
-
+#else
+	    screen->Screen.RastPort.BitMap = AllocScreenBitMap(modeid);
+#endif
             screen->AllocatedBitmap = screen->Screen.RastPort.BitMap;
 
             memcpy(&screen->Screen.BitMap,screen->Screen.RastPort.BitMap,sizeof(struct BitMap));
@@ -787,17 +793,11 @@ static const char THIS_FILE[] = __FILE__;
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: BitMap 0x%lx\n",
                                  screen->Screen.RastPort.BitMap));
-#endif
     }
     else
     {
         DEBUG_OPENSCREEN(dprintf("OpenScreen: no displayinfo\n"));
     }
-
-#ifndef __MORPHOS__
-    screen->Screen.RastPort.BitMap = screen->AllocatedBitmap = AllocScreenBitMap(modeid);
-#endif
-    D(bug("got bitmap\n"));
 
     /* Init screen's viewport */
     InitVPort(&screen->Screen.ViewPort);
