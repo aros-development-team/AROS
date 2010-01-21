@@ -1,0 +1,136 @@
+## version $VER: Network.catalog 2.0 (21.1.2010)
+## language czech
+## codeset 0
+;
+MSG_NAME
+Pøipojení k síti (editor Network)
+; Network Preferences
+;
+MSG_DESCRIPTION
+Nastavení pøipojení k síti
+; TCP/IP Network preferences
+;
+MSG_IFNAME
+Název
+; Name
+;
+MSG_UP
+Aktivní
+; Active
+;
+MSG_DEVICE
+Ovladaè
+; Device
+;
+MSG_UNIT
+Jednotka
+; Unit
+;
+MSG_IP_MODE
+Pøidìlování adresy
+; IP Mode
+;
+MSG_IP
+Adresa
+; Address
+;
+MSG_MASK
+Maska
+; Net Mask
+;
+MSG_GATE
+Brána
+; Gateway
+;
+MSG_DNS1
+Primární DNS
+; Primary DNS
+;
+MSG_DNS2
+Sekundární DNS
+; Secondary DNS
+;
+MSG_HOST_NAME
+Název hostitele
+; Host Name
+;
+MSG_DOMAIN_NAME
+Název domény
+; Domain Name
+;
+MSG_IP_MODE_MANUAL
+Ruèním zadáním
+; Manual
+;
+MSG_IP_MODE_DHCP
+Automaticky z DHCP
+; Get address from DHCP
+;
+MSG_TAB_IP_CONFIGURATION
+Konfigurace TCP/IP
+; IPv4 Configuration
+;
+MSG_TAB_COMPUTER_NAME
+Název poèítaèe
+; Computer Name
+;
+MSG_AUTOSTART_STACK
+Automaticky pøipojit k síti pøi ka¾dém spu¹tìní?
+; Automatically start network during system boot?
+;
+MSG_ERR_UNKNOWN_ERROR
+Neznámá chyba
+; Unknown error
+;
+MSG_ERR_NOT_RESTARTED_STACK
+Chyba pøi restartu sí»ových slu¾eb.
+; Failed to restart network stack
+;
+MSG_BUTTON_OK
+OK
+; Ok
+;
+MSG_BUTTON_ADD
+Pøidat
+; Add
+;
+MSG_BUTTON_EDIT
+Upravit
+; Edit
+;
+MSG_BUTTON_REMOVE
+Odebrat
+; Remove
+;
+MSG_BUTTON_APPLY
+Pou¾ít
+; Apply
+;
+MSG_BUTTON_CLOSE
+Zavøít
+; Close
+;
+MSG_ERROR_TITLE
+Chyba
+; Error
+;
+MSG_ERR_NOT_SAVED_PREFS
+Nelze ulo¾it konfiguraèní soubory.\n(cesta: %s).
+; Network preferences not saved to %s
+;
+MSG_ERR_NOT_COPIED_FILES
+Nelze zkopírovat potøebné soubory.\n(cesta: %s).
+; Additional files not copied to %s
+;
+MSG_INFO_TITLE
+Informace
+; Information
+;
+MSG_PREFS_SAVED_RESTART
+Konfiguraèní soubory byly úspì¹nì ulo¾eny.\n(cesta: %s)\nProvedené zmìny vy¾adují restart systému.
+; Preferences have been saved to %s.\nRestart AROS for them to take effect.
+;
+MSG_IFWINDOW_TITLE
+Rozhraní
+; Interface
+;
