@@ -17,6 +17,9 @@
 #include "fakegfxhidd.h"
 
 #define DEBUG 0
+/* SIMULATE_LUT_FB is used for simulating LUT operations on truecolor framebuffer.
+   Useful for debugging.
+#define SIMULATE_LUT_FB */
 #include <aros/debug.h>
 
 /******************************************************************************/
@@ -45,7 +48,9 @@ struct gfx_data
     
     OOP_Object      	    *curs_bm;
     OOP_Object      	    *curs_backup;
-    HIDDT_Pixel     	    curs_pixels[256];
+    UBYTE     	    	    *curs_pixels;
+    HIDDT_StdPixFmt	    curs_pixfmt;
+    UBYTE		    curs_bpp;
     BOOL    	    	    curs_on;
     LONG    	    	    curs_x;
     LONG    	    	    curs_y;
@@ -337,6 +342,9 @@ static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	data->curs_backup = NULL;
     }
     
+    if (data->curs_pixels)
+	FreeMem(data->curs_pixels, data->curs_width * data->curs_height * 4);
+    
     if (NULL != data->gc)
     {
     	OOP_DisposeObject(data->gc);
@@ -418,16 +426,21 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	    OOP_DisposeObject(data->curs_backup);
 	    data->curs_backup = NULL;
 	}
-	    
+	if (data->curs_pixels) {
+	    FreeMem(data->curs_pixels, data->curs_width * data->curs_height * 4);
+	    data->curs_pixels = NULL;
+	}
     }
     else
     {
     
-	IPTR curs_width, curs_height, curs_depth;
-	IPTR mode_width, mode_height, mode_depth;
-	OOP_Object *curs_pf, *mode_sync,* mode_pf;
+	IPTR curs_width, curs_height;
+	IPTR mode_width, mode_height;
+	OOP_Object *mode_sync,* mode_pf;
 	IPTR fbmode;
 	OOP_Object *new_backup;
+	APTR new_curs_pixels;
+	ULONG curs_pixels_len;
 	
 	struct TagItem bmtags[] =
 	{
@@ -440,22 +453,16 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	    
 	OOP_GetAttr(shape, aHidd_BitMap_Width,  &curs_width);
 	OOP_GetAttr(shape, aHidd_BitMap_Height, &curs_height);
-	
-	OOP_GetAttr(shape, aHidd_BitMap_PixFmt, (IPTR *)&curs_pf);
-	    
-	OOP_GetAttr(curs_pf, aHidd_PixFmt_Depth, &curs_depth);
+
 	OOP_GetAttr(data->framebuffer, aHidd_BitMap_ModeID, &fbmode);
 	HIDD_Gfx_GetMode(o, (HIDDT_ModeID)fbmode, &mode_sync, &mode_pf);
-	    
 	OOP_GetAttr(mode_sync, aHidd_Sync_HDisp, &mode_width);
 	OOP_GetAttr(mode_sync, aHidd_Sync_VDisp, &mode_height);
-	OOP_GetAttr(mode_pf, aHidd_PixFmt_Depth, &mode_depth);
 
 	/* Disallow very large cursors, and cursors with higher
 	    depth than the framebuffer bitmap */
 	if (    ( curs_width  > (mode_width  / 2) )
-	     || ( curs_height > (mode_height / 2) )
-	     || ( curs_depth  > mode_depth) )
+	     || ( curs_height > (mode_height / 2) ))
 	{
 	     D(bug("!!! FakeGfx::SetCursorShape: CURSOR BM HAS INVALID ATTRS !!!\n"));
 	     return FALSE;
@@ -466,11 +473,18 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	bmtags[2].ti_Data = curs_height;
 	bmtags[3].ti_Data = (IPTR)data->framebuffer;
 	
+	/* Create new cursor pixelbuffer. We multiply size by 4 because we want ARGB data
+	   to fit in. */
+	curs_pixels_len = curs_width * curs_height * 4;
+	new_curs_pixels = AllocMem(curs_pixels_len, MEMF_ANY);
+	if (!new_curs_pixels)
+	    return FALSE;
 	new_backup = HIDD_Gfx_NewBitMap(data->gfxhidd, bmtags);
 	    
 	if (NULL == new_backup)
 	{
 	    D(bug("!!! FakeGfx::SetCursorShape: COULD NOT CREATE BACKUP BM !!!\n"));
+	    FreeMem(new_curs_pixels, curs_pixels_len);
 	    return FALSE;
 	}
 	    
@@ -486,6 +500,8 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	    
 	if (NULL != data->curs_backup)
 	    OOP_DisposeObject(data->curs_backup);
+	if (data->curs_pixels)
+	    FreeMem(data->curs_pixels, data->curs_width * data->curs_height * 4);
 
 	data->curs_width	= curs_width;
 	data->curs_height	= curs_height;
@@ -493,6 +509,7 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	data->curs_maxx	= data->curs_x + curs_width  - 1;
 	data->curs_maxy	= data->curs_y + curs_height - 1;
 	data->curs_backup = new_backup;
+	data->curs_pixels = new_curs_pixels;
 
 	rethink_cursor(data, CSD(cl));
 	    
@@ -1307,41 +1324,38 @@ static void free_fakefbclass(OOP_Class *cl, struct class_static_data *csd)
 
 static VOID rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
 {
-    OOP_Object *pf, *colmap;
-    IPTR    	depth, fbdepth, i;
+    OOP_Object *pf;
+    IPTR    	fbdepth, i;
+    UWORD	curs_base;
 
     D(bug("rethink_cursor(), curs_bm is 0x%p\n", data->curs_bm));
     if (!data->curs_bm)
         return;
 
-    OOP_GetAttr(data->curs_backup, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    OOP_GetAttr(data->framebuffer, aHidd_BitMap_PixFmt, &pf);
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, &fbdepth);
-    
-    OOP_GetAttr(data->curs_bm, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
-    OOP_GetAttr(data->curs_bm, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
 
-    if (depth > 8) depth = 8;
-    	
-    for(i = 0; i < (1L << depth); i++)
+#ifndef SIMULATE_LUT_FB
+    if (fbdepth > 8) {
+        data->curs_pixfmt = vHidd_StdPixFmt_ARGB32;
+	data->curs_bpp	  = 4;
+    } else
+#endif
     {
-    	if (fbdepth > 8)
-	{
-    	    HIDDT_Color col;
-
-	    HIDD_CM_GetColor(colmap, i, &col);
-	    data->curs_pixels[i] = HIDD_BM_MapColor(data->curs_backup, &col);
-	}
-	else
-	{
-	    /* FIXME: this assumes fbdepth > 3 */
-	    if (fbdepth > 4)
-		data->curs_pixels[i] = i + 16;
-	    else
-		data->curs_pixels[i] = i + (1 << fbdepth) - 8;
+	data->curs_pixfmt = vHidd_StdPixFmt_LUT8;
+	data->curs_bpp	  = 1;
+	/* TODO: curs_base should be somehow synchronised with SpriteBase field of ColorMap */
+	curs_base = (fbdepth > 4) ? 16 : (1 << fbdepth) - 8;
+    }
+    /* If we have some good bitmap->bitmap blitting function with alpha channel support,
+       we would not need this extra buffer and conversion for truecolor screens. */
+    HIDD_BM_GetImage(data->curs_bm, data->curs_pixels, data->curs_width * data->curs_bpp, 0, 0, data->curs_width, data->curs_height, data->curs_pixfmt);
+    if (fbdepth < 9) {
+	for (i = 0; i < data->curs_width * data->curs_height; i++) {
+	    if (data->curs_bm[i])
+	        data->curs_bm[i] += curs_base;
 	}
     }
-    
 }
 
 static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struct class_static_data *csd)
@@ -1408,34 +1422,45 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
 
 	data->backup_done = TRUE;
 
-    	// bug("RENDERING CURSOR IMAGE\n");
+    	DB2(bug("RENDERING CURSOR IMAGE\n"));
 	/* Render the cursor image */
-	
-    #if 0
-	HIDD_Gfx_CopyBox(data->gfxhidd
-	    , data->curs_bm
-	    , 0, 0
-	    , data->framebuffer
-	    , data->curs_x, data->curs_y
-	    , width, height
-	    , data->gc
-	);
-    #else
-    	for(y = 0; y < height; y++)
-	{
-    	    for(x = 0; x < width; x++)
+	if (data->curs_pixfmt == vHidd_StdPixFmt_ARGB32)
+	    /* Just for information: PutImage works here too. Which one is faster? */
+	    HIDD_BM_PutAlphaImage(data->framebuffer, data->gc, data->curs_pixels, data->curs_width * data->curs_bpp, data->curs_x, data->curs_y, width, height);
+	else {
+	    /* Unfortunately we don't have any transparent blit function in our HIDD API, so we have to do it by hands. */
+	    ULONG pixnum = 0;
+#ifdef SIMULATE_LUT_FB
+	    OOP_Object *pfmt;
+	    OOP_Object *cmap;
+	    IPTR fbdepth;
+	    
+	    OOP_GetAttr(data->framebuffer, aHidd_BitMap_PixFmt, &pfmt);
+	    OOP_GetAttr(pfmt, aHidd_PixFmt_Depth, &fbdepth);
+	    OOP_GetAttr(data->curs_bm, aHidd_BitMap_ColorMap, &cmap);
+#endif
+    	    for(y = 0; y < height; y++)
 	    {
-    	    	HIDDT_Pixel pix;
-		
-		pix = HIDD_BM_GetPixel(data->curs_bm, x, y);
-		if (pix)
-		{		    
-		    HIDD_BM_PutPixel(data->framebuffer, data->curs_x + x, data->curs_y + y, data->curs_pixels[pix]);
+    	        for(x = 0; x < width; x++)
+	        {
+		    HIDDT_Pixel pix = data->curs_pixels[pixnum + x];
+
+		    if (pix) {
+#ifdef SIMULATE_LUT_FB
+			if (fbdepth > 8) {
+			    HIDDT_Color col;
+
+			    HIDD_CM_GetColor(cmap, pix, &col);
+			    pix = HIDD_BM_MapColor(data->framebuffer, &col);
+			}
+#endif
+		        HIDD_BM_PutPixel(data->framebuffer, data->curs_x + x, data->curs_y + y, pix);
+		    }
 		}
+		/* data->curs_bpp is always 1 here so we ignore it */
+		pixnum += data->curs_width;
 	    }
 	}
-	
-    #endif
         
         if (updaterect) HIDD_BM_UpdateRect(data->framebuffer, data->curs_x, data->curs_y, width, height);
     
