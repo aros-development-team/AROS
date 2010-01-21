@@ -1,6 +1,6 @@
-## version $VER: PCITool.catalog 1.1 (10.12.2007)
+## version $VER: PCITool.catalog 1.2 (21.1.2010)
 ## language czech
-## codeset 5
+## codeset 0
 ;
 ;
 MSG_TITLE
@@ -36,7 +36,7 @@ Název:
 ; Driver name:
 ;
 MSG_DIRECT_BUS
-Pøímo na sbìrnici:
+Pøímý pøístup:
 ; Direct bus:
 ;
 MSG_HARDWARE_INFO
@@ -100,7 +100,7 @@ Velikost ROM:
 ; ROM Size:
 ;
 MSG_BRIDGE
-Zaøízení typu Bridge, sbìrnice %d (ISA %s zapnuto, VGA %s zapnuto)
+Bridge pro sbìrnici %d (ISA %saktivní, VGA %saktivní)
 ; Bridge handles bus %d (ISA %senabled, VGA %senabled)
 ;
 MSG_MEMORY_RANGE
@@ -144,7 +144,7 @@ MSG_NA
 ; N/A
 ;
 MSG_NOT
-není
+ne
 ; not
 ;
 MSG_SIZE4
@@ -154,6 +154,14 @@ MSG_SIZE4
 MSG_SIZE8
 %s na adrese 0x%08x (velikost: 0x%08x)
 ; %s at 0x%08x (size 0x%08x)
+;
+MSG_SAVETORAMDISK
+Ulo¾it informace o vybraném zaøízení
+; Save Device Information to RAM Disk
+;
+MSG_SAVEALLTORAMDISK
+Ulo¾it ve¹keré zobrazené informace
+; Save complete PCI Information to RAM Disk
 ;
 MSG_UNUSED
 -nepou¾ito-
