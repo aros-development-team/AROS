@@ -2,7 +2,7 @@
 #define HIDD_GRAPHICS_H
 
 /*
-    Copyright  1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definitions for the Graphics HIDD system.
@@ -1784,6 +1784,8 @@ BOOL HIDD_BM_ObtainDirectAccess(OOP_Object *o,
 				ULONG *memSizeReturn);
 
 VOID HIDD_BM_ReleaseDirectAccess(OOP_Object *obj);
+
+VOID HIDD_BM_BitMapScale(OOP_Object *obj, OOP_Object *src, OOP_Object *dest, struct BitScaleArgs * bsa, OOP_Object *gc);
 
 HIDDT_RGBConversionFunction HIDD_BM_SetRGBConversionFunction(OOP_Object *o,
     	    	    	    	HIDDT_StdPixFmt srcPixFmt,
