@@ -94,9 +94,17 @@ static const void     *target_address          __attribute__((used, section(".te
 static struct TagItem *BootMsg                 __attribute__((used));
 static char            CmdLine[200]            __attribute__((used));
 
+module_t *	modlist;
+uint32_t	modlength;
+
+uintptr_t	memlo;
+
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 {
     struct TagItem *tmp = tmp_struct.bootup_tags;
+
+    /* Lowest usable kernel memory */
+    memlo = 0xff000000;
     
     /* Disable interrupts and let FPU work */
     wrmsr((rdmsr() & ~(MSR_CE | MSR_EE | MSR_ME)) | MSR_FP);
@@ -130,10 +138,67 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
             tmp->ti_Data = (STACKIPTR) CmdLine;
             D(bug("[KRN] CmdLine %s\n", tmp->ti_Data));
         }
+        else if (tmp->ti_Tag == KRN_BootLoader)
+        {
+        	tmp->ti_Data = (STACKIPTR) memlo;
+        	memlo += (strlen(memlo) + 4) & ~3;
+        	strcpy((char*)tmp->ti_Data, (const char*) msg->ti_Data);
+        }
+        else if (tmp->ti_Tag == KRN_DebugInfo)
+        {
+        	int i;
+        	struct MinList *mlist = tmp->ti_Data;
+
+        	D(bug("[KRN] DebugInfo at %08x\n", mlist));
+
+        	module_t *mod = (module_t *)memlo;
+
+        	ListLength(mlist, modlength);
+        	modlist = mod;
+
+        	memlo = &mod[modlength];
+
+        	D(bug("[KRN] Bootstrap loaded debug info for %d modules\n", modlength));
+        	/* Copy the module entries */
+        	for (i=0; i < modlength; i++)
+        	{
+        		module_t *m = REMHEAD(mlist);
+        		symbol_t *sym;
+
+        		mod[i].m_lowest = m->m_lowest;
+        		mod[i].m_highest = m->m_highest;
+        		mod[i].m_str = NULL;
+        		NEWLIST(&mod[i].m_symbols);
+        		mod[i].m_name = (char *)memlo;
+        		memlo += (strlen(m->m_name) + 4) & ~3;
+        		strcpy(mod[i].m_name, m->m_name);
+
+        		ForeachNode(&m->m_symbols, sym)
+        		{
+        			symbol_t *newsym = memlo;
+        			memlo += sizeof(symbol_t);
+
+        			newsym->s_name = memlo;
+        			memlo += (strlen(sym->s_name)+4)&~3;
+        			strcpy(newsym->s_name, sym->s_name);
+
+        			newsym->s_lowest = sym->s_lowest;
+        			newsym->s_highest = sym->s_highest;
+
+        			ADDTAIL(&mod[i].m_symbols, newsym);
+        		}
+        	}
+
+        	D(bug("[KRN] Debug info uses %d KB of memory\n", ((intptr_t)memlo - (intptr_t)mod) >> 10));
+
+        }
 
         ++tmp;
         ++msg;
     }
+
+    memlo = (memlo + 4095) & ~4095;
+
     BootMsg = tmp_struct.bootup_tags;
     D(bug("[KRN] BootMsg @ %p\n", BootMsg));
 
@@ -172,6 +237,8 @@ AROS_LH0I(struct TagItem *, KrnGetBootInfo,
     AROS_LIBFUNC_EXIT
 }
 
+struct MemHeader mh;
+
 static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 {
     int i;
@@ -180,8 +247,6 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     uintptr_t krn_lowest  = krnGetTagData(KRN_KernelLowest,  0, BootMsg);
     uintptr_t krn_highest = krnGetTagData(KRN_KernelHighest, 0, BootMsg);
     
-    struct MemHeader* mh;
-
     D(bug("[KRN] Kernel resource post-exec init\n"));
 
     /* 4K granularity for data sections */
@@ -204,26 +269,32 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     for (i=0; i < 64; i++)
         NEWLIST(&LIBBASE->kb_Interrupts[i]);
 
-    /* Prepare MemHeader structure to allocate from private low memory */
-    mh                     = (struct MemHeader *) 0xff000000;
-    mh->mh_Node.ln_Type    = NT_MEMORY;
-    mh->mh_Node.ln_Pri     = 0;
-    mh->mh_Node.ln_Name    = "Kernel Memory";
-    mh->mh_Attributes      = MEMF_FAST | MEMF_KICK | MEMF_LOCAL;
-    mh->mh_First           = (struct MemChunk *) (mh + MEMHEADER_TOTAL);
-    mh->mh_Free            = (krn_lowest - MEMHEADER_TOTAL) & ~(MEMCHUNK_TOTAL-1);
-    mh->mh_Lower           = mh->mh_First;
-    mh->mh_Upper           = (APTR) ((uintptr_t) 0xff000000 + krn_lowest - 1);
-    mh->mh_First->mc_Next  = NULL;
-    mh->mh_First->mc_Bytes = mh->mh_Free;
+    NEWLIST(&LIBBASE->kb_Modules);
 
-    LIBBASE->kb_SupervisorMem = mh;
+    D(bug("[KRN] Preparing kernel private memory "));
+    /* Prepare MemHeader structure to allocate from private low memory */
+    mh.mh_Node.ln_Type    = NT_MEMORY;
+    mh.mh_Node.ln_Pri     = 0;
+    mh.mh_Node.ln_Name    = "Kernel Memory";
+    mh.mh_Attributes      = MEMF_FAST | MEMF_KICK | MEMF_LOCAL;
+    mh.mh_First           = (struct MemChunk *)memlo;
+    mh.mh_Lower           = mh.mh_First;
+    mh.mh_Upper           = (APTR) ((uintptr_t) 0xff000000 + krn_lowest - 1);
+
+    mh.mh_Free            = (uintptr_t)mh.mh_Upper - (uintptr_t)mh.mh_Lower + 1;
+    mh.mh_First->mc_Next  = NULL;
+    mh.mh_First->mc_Bytes = mh.mh_Free;
+
+    D(bug("[KRN] %08x - %08x, %d KB free\n", mh.mh_Lower, mh.mh_Upper, mh.mh_Free >> 10));
+
+    LIBBASE->kb_SupervisorMem = &mh;
 
     /*
      * Add MemHeader about kernel memory to public MemList to avoid invalid
      * pointer debug messages for pointer that reference correctly into these
      * mem regions.
     */
+    struct MemHeader *mh;
     mh                     = AllocMem(sizeof(struct MemHeader), MEMF_PUBLIC);
     mh->mh_Node.ln_Type    = NT_MEMORY;
     mh->mh_Node.ln_Pri     = -128;
