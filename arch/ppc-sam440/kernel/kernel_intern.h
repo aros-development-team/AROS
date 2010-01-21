@@ -22,7 +22,8 @@ struct KernelBase {
     struct Node         kb_Node;
     struct List         kb_Exceptions[16];
     struct List         kb_Interrupts[64];
-    struct MemHeader    *kb_SupervisorMem;
+    struct MemHeader *  kb_SupervisorMem;
+    struct MinList      kb_Modules;
 };
 
 struct KernelBSS {
@@ -43,6 +44,22 @@ struct IntrNode {
     uint8_t             in_type;
     uint8_t             in_nr;
 };
+
+typedef struct {
+	struct MinNode	m_node;
+	char *          m_name;
+	char *          m_str;
+	intptr_t        m_lowest;
+	intptr_t        m_highest;
+	struct MinList  m_symbols;
+} module_t;
+
+typedef struct {
+	struct MinNode  s_node;
+	char *			s_name;
+	intptr_t        s_lowest;
+	intptr_t        s_highest;
+} symbol_t;
 
 static inline struct KernelBase *getKernelBase()
 {
@@ -100,5 +117,7 @@ static inline void bug(const char *format, ...)
     AROS_SLIB_ENTRY(KrnBug, Kernel)(format, args, kbase);
     va_end(args);
 }
+
+uint32_t findNames(intptr_t addr, char **module, char **function);
 
 #endif /*KERNEL_INTERN_H_*/
