@@ -9,6 +9,55 @@ typedef struct list {
 	struct node *l_head, *l_tail, *l_tailpred;
 } list_t;
 
+typedef struct {
+	node_t			m_node;
+	char *			m_name;
+	char *			m_str;
+	unsigned long	m_lowest;
+	unsigned long	m_highest;
+	list_t			m_symbols;
+} module_t;
+
+typedef struct {
+	node_t          s_node;
+	char *			s_name;
+	unsigned long   s_lowest;
+	unsigned long 	s_highest;
+} symbol_t;
+
+static inline void new_list(list_t *l)
+{
+        l->l_tailpred = (node_t *)l;
+        l->l_tail     = (node_t *)0;
+        l->l_head     = (node_t *)&l->l_tail;
+}
+
+static inline void add_head(list_t *l, node_t *n)
+{
+        n->n_succ = l->l_head;
+        n->n_pred = (node_t *)&l->l_head;
+
+        l->l_head->n_pred = n;
+        l->l_head = n;
+}
+
+static inline void add_tail(list_t *l, node_t *n)
+{
+        n->n_succ = (node_t *)&l->l_tail;
+        n->n_pred = l->l_tailpred;
+
+        l->l_tailpred->n_succ = n;
+        l->l_tailpred = n;
+}
+
+static inline node_t *remove(node_t *n)
+{
+        n->n_pred->n_succ = n->n_succ;
+        n->n_succ->n_pred = n->n_pred;
+
+        return n;
+}
+
 list_t *list_new(void);
 void list_append(list_t * self, node_t * node);
 
@@ -81,8 +130,12 @@ int StackSwap(struct StackSwapStruct *sss);
 #define KRN_ProtAreaEnd         (KRN_Dummy + 14)
 #define KRN_VBEMode             (KRN_Dummy + 15)
 #define KRN_VBEPaletteWidth     (KRN_Dummy + 16)
-#define KRN_ARGC                (KRN_Dummy + 17)
-#define KRN_ARGV                (KRN_Dummy + 18)
+#define KRN_MEMLower         	(KRN_Dummy + 17)
+#define KRN_MEMUpper          	(KRN_Dummy + 18)
+#define KRN_OpenFirmwareTree	(KRN_Dummy + 19)
+#define KRN_HostInterface		(KRN_Dummy + 20)
+#define KRN_DebugInfo			(KRN_Dummy + 21)
+#define KRN_BootLoader          (KRN_Dummy + 22)
 
 #ifdef IN_PARTHENOPE
 char *strcpy(char *dest, const char *src);

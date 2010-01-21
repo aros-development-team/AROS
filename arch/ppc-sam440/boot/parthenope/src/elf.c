@@ -21,6 +21,8 @@
 #include "elf.h"
 #include "support.h"
 
+extern list_t *debug_info;
+
 static char *ptr_ro = (char *)KERNEL_PHYS_BASE;
 static char *ptr_rw = (char *)KERNEL_PHYS_BASE;
 
@@ -215,12 +217,14 @@ SysBase_no:			s = sym->value;
 	return 1;
 }
 
-int load_elf_file(void *file)
+int load_elf_file(const char *name, void *file)
 {
 	struct elfheader *eh;
 	struct sheader *sh;
 	long i;
 	int shown = 0;
+
+	module_t *mod;
 
 	eh = file;
 
@@ -267,5 +271,83 @@ int load_elf_file(void *file)
 			}
 		}
 	}
+
+	/* Register the module */
+	mod = malloc(sizeof(module_t));
+	(printf("[BOOT] module=%p\n", mod));
+
+	if (mod)
+	{
+		int i,j;
+
+		new_list(&mod->m_symbols);
+
+		mod->m_name = malloc(strlen(name)+1);
+		mod->m_lowest = 0xffffffff;
+		mod->m_highest = 0x00000000;
+		mod->m_str = NULL;
+
+		if (mod->m_name)
+		{
+			memcpy(mod->m_name, name, strlen(name)+1);
+
+			(printf("[BOOT] name=%s\n", mod->m_name));
+
+			for (i=0; i < eh->shnum; i++)
+			{
+				/* If we have string table, copy it */
+				if (sh[i].type == SHT_STRTAB && i != eh->shstrndx)
+				{
+					if (!mod->m_str)
+					{
+						mod->m_str = malloc(sh[i].size);
+						memcpy(mod->m_str, sh[i].addr, sh[i].size);
+
+						(printf("[BOOT] symbol table copied from %p to %p\n", sh[i].addr, mod->m_str));
+					}
+				}
+
+				if ((sh[i].flags & (SHF_ALLOC | SHF_EXECINSTR)) == (SHF_ALLOC | SHF_EXECINSTR))
+				{
+					if (sh[i].addr)
+					{
+						unsigned long virt = sh[i].addr + KERNEL_VIRT_BASE - KERNEL_PHYS_BASE;
+
+						if (virt < mod->m_lowest)
+							mod->m_lowest = virt;
+						if (virt + sh[i].size > mod->m_highest)
+							mod->m_highest = virt + sh[i].size;
+					}
+				}
+			}
+
+			(printf("[BOOT] m_lowest=%p, m_highest=%p\n", mod->m_lowest, mod->m_highest));
+			for (i=0; i < eh->shnum; i++)
+			{
+				if (sh[i].addr && sh[i].type == SHT_SYMTAB)
+				{
+					struct symbol *st = (struct symbol *)sh[i].addr;
+
+					for (j=0; j < (sh[i].size / sizeof(struct symbol)); j++)
+					{
+						if (sh[st[j].shindex].addr && (sh[st[j].shindex].flags & (SHF_ALLOC | SHF_EXECINSTR)) == (SHF_ALLOC | SHF_EXECINSTR))
+						{
+							symbol_t *sym = malloc(sizeof(symbol_t));
+							sym->s_name = &mod->m_str[st[j].name];
+							sym->s_lowest = sh[st[j].shindex].addr + st[j].value + KERNEL_VIRT_BASE - KERNEL_PHYS_BASE;
+							sym->s_highest = sym->s_lowest + st[j].size;
+
+							add_head(&mod->m_symbols, sym);
+						}
+					}
+
+					break;
+				}
+			}
+
+			add_head(debug_info, mod);
+		}
+	}
+
 	return 1;
 }
