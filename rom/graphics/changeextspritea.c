@@ -91,19 +91,11 @@
 
     /* HIDD_Gfx_SetCursorShape() expects a LUT8 bitmap with palette. A correct bitmap was prepared by
        AllocSpriteDataA(), but it does not have a palette yet (because in original AmigaOS bitmaps
-       simply do not contain a palette). So now we have to attach a palette to the bitmap.
-       In order to stay compatible with the original we pick up sprite palette from 17-19 colormap entries.
-       However note that sometimes we don't have enough colors, so we may shift down sprite colors
-       in the palette if needed.
-       
-       TODO: In future we may support colorful pointers, because in theory we could give even truecolor
-             bitmap to AllocSpriteDataA(). In such a case we would already have complete data here and
-	     would not need to add a palette.
-       
-       FIXME: current pointer color mapping assumes that we always have at least 16 colors.
-              For current hardware supported by AROS it's true, but in future we may support more
-              display modes, and we should take into account that on for example 4-color screen
-              this simply won't work
+       simply do not contain a palette). So now we have to attach a palette to the bitmap. We pick it
+       up from our ViewPort, paying attention to base color number in the ColorMap.
+
+       TODO: Probably we should check here if the palette is already present? Nothing prevents us from
+	     supplying a colorful bitmap to AllocSpriteDataA(), why not to support this?
     */
     firstcolor = vp->ColorMap->SpriteBase_Even;
     D(bug("Display has %u colors, pointer starts from %u\n", vp->ColorMap->Count, firstcolor));
