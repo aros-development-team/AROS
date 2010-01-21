@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -67,8 +67,7 @@
 		default: D(bug("RUBBISH BYTES PER PIXEL IN GET_TRUE_PIX()\n")); break;	\
 	}	
 
-
-#define GET_PAL_PIX(s, pix, pf, lut)	\
+#define GET_PAL_PIX(s, pix, pf, lut)		\
 	switch (pf->bytes_per_pixel) {			\
 		case 4: GETPIX32(s, pix); break;	\
 		case 3: GETPIX24(s, pix); break;	\
@@ -120,9 +119,22 @@
 		default: D(bug("RUBBISH BYTES PER PIXEL IN PUT_TRUE_PIX()\n")); break;	\
 	}	
 
+#define GET_PAL_PIX_CM(s, pix, pf)			\
+	switch (pf->bytes_per_pixel) {			\
+		case 4: GETPIX32(s, pix); break;	\
+		case 3: GETPIX24(s, pix); break;	\
+		case 2: GETPIX16(s, pix); break;	\
+		case 1: GETPIX8 (s, pix); break;	\
+		default: D(bug("RUBBISH BYTES PER PIXEL IN GET_PAL_PIX_CM()\n")); break;	\
+	}
 
-
-
+#define PUT_TRUE_PIX_CM(d, pix, pf)			\
+	switch (pf->bytes_per_pixel) {			\
+		case 4: PUTPIX32(d, pix); break;	\
+		case 3: PUTPIX24(d, pix); break;	\
+		case 2: PUTPIX16(d, pix); break;	    	    	    	\
+		default: D(bug("RUBBISH BYTES PER PIXEL IN PUT_TRUE_PIX_CM()\n")); break;	\
+	}
 
 #define INIT_VARS()	\
 	UBYTE *src = *msg->srcPixels;			\
@@ -223,15 +235,18 @@ static VOID true_to_pal(OOP_Class *cl, OOP_Object *o,
 static VOID pal_to_true(OOP_Class *cl, OOP_Object *o,
     	    	    	struct pHidd_BitMap_ConvertPixels *msg)
 {
-    HIDDT_Pixel *lut;
+    HIDDT_PixelLUT *lut;
+    struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
 
     INIT_VARS()
     INIT_FMTVARS()
     
     LONG x, y;
-    
-    lut = msg->pixlut->pixels;
-	
+
+    lut = msg->pixlut;
+    D(bug("[ConvertPixels] pal_to_true(): pixlut is 0x%p, colormap is 0x%p\n", lut, data->colmap));
+
+    DB2(bug("[ConvertPixels] Buffer contents:\n"));
     for (y = 0; y < msg->height; y ++)
     {
     	APTR s = src;
@@ -240,17 +255,39 @@ static VOID pal_to_true(OOP_Class *cl, OOP_Object *o,
 	for (x = 0; x < msg->width; x ++)
 	{
 	    ULONG srcpix = 0;
+
+	    if (lut) {
+	        GET_PAL_PIX(s, srcpix, srcfmt, lut->pixels);
 	    
-	    GET_PAL_PIX(s, srcpix, srcfmt, lut);
-	    
-	    /* We now have a pixel in Native32 format. Put it back */
-	    PUT_TRUE_PIX(d, srcpix, dstfmt);
-	    
-	
+		DB2(bug("0x%08lX ", srcpix));
+	        /* We now have a pixel in Native32 format. Put it back */
+	        PUT_TRUE_PIX(d, srcpix, dstfmt);
+	    } else {
+		if (data->colmap) {
+		    HIDDT_Color col = {0};
+		    HIDDT_Pixel red, green, blue, alpha;
+		
+		    /* For optimization purposes we don't swap bytes after MAP_RGBA
+		       in order not to swap them back when putting into destination
+		       buffer. */
+		    GET_PAL_PIX_CM(s, srcpix, srcfmt);
+		    HIDD_CM_GetColor(data->colmap, srcpix, &col);
+		    red   = col.red;
+		    green = col.green;
+		    blue  = col.blue;
+		    alpha = col.alpha;
+		    srcpix = MAP_RGBA(red, green, blue, alpha, dstfmt);
+		}
+		/* If there's neither pixlut nor colormap provided
+		   we'll end up in all black. At least won't crash
+		   and make the problem clearly visible */
+		DB2(bug("0x%08lX ", srcpix));
+		PUT_TRUE_PIX_CM(d, srcpix, dstfmt);
+	    }
 	}
 	src += msg->srcMod;
 	dst += msg->dstMod;
-	
+	DB2(bug("\n"));
     } 
     
     *msg->srcPixels = src;
@@ -428,9 +465,7 @@ VOID BM__Hidd_BitMap__ConvertPixels(OOP_Class *cl, OOP_Object *o,
     dstfmt = msg->dstPixFmt;
     
 
-/* bug("ConvertPixels: src=%d, dst=%d\n"
-	, srcfmt->stdpixfmt, dstfmt->stdpixfmt);
-*/    
+    D(bug("ConvertPixels: src=%d, dst=%d\n", srcfmt->stdpixfmt, dstfmt->stdpixfmt));
 
     /* Check if source and dest are the same format */
     if (srcfmt->stdpixfmt == dstfmt->stdpixfmt)
