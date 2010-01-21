@@ -41,6 +41,8 @@ char __attribute__ ((__used__)) * version =
 extern unsigned long __bss_start;
 extern unsigned long _end;
 
+list_t *debug_info;
+
 #define __startup __attribute__((section(".aros.startup")))
 
 static void clear_bss()
@@ -165,7 +167,7 @@ void testboot_aros(menu_t * menu, void *kernel, boot_dev_t * boot)
 	tagitem_t items[50];
 	tagitem_t *tags = &items[0];
 
-	if (!load_elf_file(kernel))
+	if (!load_elf_file(menu->kernel, kernel))
 		return;
 
 	max_entries = menu->modules_cnt + 1;
@@ -182,7 +184,7 @@ void testboot_aros(menu_t * menu, void *kernel, boot_dev_t * boot)
 		if (boot->load_file(boot, menu->modules[i]->name, file_buff) < 0) {
 			return;
 		}
-		if (!load_elf_file(file_buff)) {
+		if (!load_elf_file(menu->modules[i]->name, file_buff)) {
 			printf("[BOOT] Load ERROR\n");
 			return;
 		}
@@ -221,6 +223,14 @@ void testboot_aros(menu_t * menu, void *kernel, boot_dev_t * boot)
 
 	tags->ti_tag = KRN_CmdLine;
 	tags->ti_data = (unsigned long)menu->append;
+	tags++;
+
+	tags->ti_tag = KRN_BootLoader;
+	tags->ti_data = (unsigned long)"Parthenope 0." VERSION " (" DATE ")";
+	tags++;
+
+	tags->ti_tag = KRN_DebugInfo;
+	tags->ti_data = (unsigned long)debug_info;
 	tags++;
 
 	tags->ti_tag = 0;
@@ -306,6 +316,8 @@ int __startup bootstrap(context_t * ctx)
 	context_init(ctx);
 
 	setenv("stdout", "serial");
+
+	debug_info = list_new();
 
 	video_clear();
 	video_draw_text(5, 4, 0, " Parthenope (ub2lb) version 0." VERSION, 80);
