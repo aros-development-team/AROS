@@ -261,7 +261,7 @@ void intr_init()
                  "b 2f                  \n"                                                                     \
         "1:       mr %%r3,%%r1          \n\t"   /* Supervisor case: use current stack */                        \
         "2:       addi %%r3,%%r3,%1     "                                                                       \
-                 ::"i"(MSR_PR),"i"(-sizeof(regs_t))); \
+                 ::"i"(MSR_PR),"i"(-sizeof(context_t))); \
         asm volatile("stw %%r0, %[gpr0](%%r3)  \n\t" \
                   "stw %%r1, %[gpr1](%%r3)  \n\t" \
                   "stw %%r2, %[gpr2](%%r3)  \n\t" \
@@ -407,6 +407,23 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
         D(bug("[KRN] %08x: %08x\n", &p[i], p[i]));
     }
 
+    {
+        char *mod, *func;
+        uint32_t offset;
+
+        offset = findNames(ctx->lr, &mod, &func);
+
+        D(bug("[KRN] LR=%08x: "));
+
+        if (func)
+                D(bug(": byte %d in func %s, module %s\n", offset, func, mod));
+        else if (mod)
+                D(bug(": byte %d in module %s\n", offset, mod));
+        else
+                D(bug("\n"));
+
+    }
+
     D(bug("[KRN] Backtrace:\n"));
     uint32_t *sp = ctx->gpr[1];
     while(*sp)
@@ -492,169 +509,322 @@ static void __attribute__((used)) __EXCEPTION_Prolog_template()
 
 static void __attribute__((used)) __EXCEPTION_Trampoline_template()
 {
-    asm volatile(".section .text,\"ax\"\n\t.align 5\n\t.globl __EXCEPTION_Trampoline\n\t.type __EXCEPTION_Trampoline,@function\n"
-        "__EXCEPTION_Trampoline:            \n\t"
-                 "stw %%r6,%[gpr6](%%r3) \n\t"
-                 "stw %%r7,%[gpr7](%%r3) \n\t"
-                 "stw %%r8,%[gpr8](%%r3) \n\t"
-                 "stw %%r9,%[gpr9](%%r3) \n\t"
-                 "stw %%r10,%[gpr10](%%r3) \n\t"
-                 "stw %%r11,%[gpr11](%%r3) \n\t"
-                 "stw %%r12,%[gpr12](%%r3) \n\t"
-                 "stw %%r13,%[gpr13](%%r3) \n\t"
-                 "stw %%r14,%[gpr14](%%r3) \n\t"
-                 "stw %%r15,%[gpr15](%%r3) \n\t"
-                 "stw %%r16,%[gpr16](%%r3) \n\t"
-                 "stw %%r17,%[gpr17](%%r3) \n\t"
-                 "stw %%r18,%[gpr18](%%r3) \n\t"
-                 "stw %%r19,%[gpr19](%%r3) \n\t"
-                 "stw %%r20,%[gpr20](%%r3) \n\t"
-                 "stw %%r21,%[gpr21](%%r3) \n\t"
-                 "stw %%r22,%[gpr22](%%r3) \n\t"
-                 "stw %%r23,%[gpr23](%%r3) \n\t"
-                 "stw %%r24,%[gpr24](%%r3) \n\t"
-                 "stw %%r25,%[gpr25](%%r3) \n\t"
-                 "stw %%r26,%[gpr26](%%r3) \n\t"
-                 "stw %%r27,%[gpr27](%%r3) \n\t"
-                 "stw %%r28,%[gpr28](%%r3) \n\t"
-                 "stw %%r29,%[gpr29](%%r3) \n\t"
-                 "stw %%r30,%[gpr30](%%r3) \n\t"
-                 "stw %%r31,%[gpr31](%%r3) \n\t"
-                 "mr %%r28,%%r3            \n\t"
-                 "mr %%r29,%%r4            \n\t"
-                 "mr %%r30,%%r5            \n\t"
-                 "mtsrr0 %%r5           \n\t"
-                 "lis %%r9, %[msrval]@ha  \n\t"
-                 "ori %%r9,%%r9, %[msrval]@l \n\t"
-                 "mtsrr1 %%r9              \n\t"
-                 "sync; isync; rfi"
-                 ::
-                 [gpr6]"i"(offsetof(regs_t, gpr[6])),
-                 [gpr7]"i"(offsetof(regs_t, gpr[7])),
-                 [gpr8]"i"(offsetof(regs_t, gpr[8])),
-                 [gpr9]"i"(offsetof(regs_t, gpr[9])),
-                 [gpr10]"i"(offsetof(regs_t, gpr[10])),
-                 [gpr11]"i"(offsetof(regs_t, gpr[11])),
-                 [gpr12]"i"(offsetof(regs_t, gpr[12])),
-                 [gpr13]"i"(offsetof(regs_t, gpr[13])),
-                 [gpr14]"i"(offsetof(regs_t, gpr[14])),
-                 [gpr15]"i"(offsetof(regs_t, gpr[15])),
-                 [gpr16]"i"(offsetof(regs_t, gpr[16])),
-                 [gpr17]"i"(offsetof(regs_t, gpr[17])),
-                 [gpr18]"i"(offsetof(regs_t, gpr[18])),
-                 [gpr19]"i"(offsetof(regs_t, gpr[19])),
-                 [gpr20]"i"(offsetof(regs_t, gpr[20])),
-                 [gpr21]"i"(offsetof(regs_t, gpr[21])),
-                 [gpr22]"i"(offsetof(regs_t, gpr[22])),
-                 [gpr23]"i"(offsetof(regs_t, gpr[23])),
-                 [gpr24]"i"(offsetof(regs_t, gpr[24])),
-                 [gpr25]"i"(offsetof(regs_t, gpr[25])),
-                 [gpr26]"i"(offsetof(regs_t, gpr[26])),
-                 [gpr27]"i"(offsetof(regs_t, gpr[27])),
-                 [gpr28]"i"(offsetof(regs_t, gpr[28])),
-                 [gpr29]"i"(offsetof(regs_t, gpr[29])),
-                 [gpr30]"i"(offsetof(regs_t, gpr[30])),
-                 [gpr31]"i"(offsetof(regs_t, gpr[31])),
-                 [msrval]"i"(MSR_ME|MSR_CE|MSR_FP)
-    );
+	asm volatile(".section .text,\"ax\"\n\t.align 5\n\t.globl __EXCEPTION_Trampoline\n\t.type __EXCEPTION_Trampoline,@function\n"
+			"__EXCEPTION_Trampoline:            \n\t"
+			"stw %%r6,%[gpr6](%%r3) \n\t"
+			"stw %%r7,%[gpr7](%%r3) \n\t"
+			"stw %%r8,%[gpr8](%%r3) \n\t"
+			"stw %%r9,%[gpr9](%%r3) \n\t"
+			"stw %%r10,%[gpr10](%%r3) \n\t"
+			"stw %%r11,%[gpr11](%%r3) \n\t"
+			"stw %%r12,%[gpr12](%%r3) \n\t"
+			"stw %%r13,%[gpr13](%%r3) \n\t"
+			"stw %%r14,%[gpr14](%%r3) \n\t"
+			"stw %%r15,%[gpr15](%%r3) \n\t"
+			"stw %%r16,%[gpr16](%%r3) \n\t"
+			"stw %%r17,%[gpr17](%%r3) \n\t"
+			"stw %%r18,%[gpr18](%%r3) \n\t"
+			"stw %%r19,%[gpr19](%%r3) \n\t"
+			"stw %%r20,%[gpr20](%%r3) \n\t"
+			"stw %%r21,%[gpr21](%%r3) \n\t"
+			"stw %%r22,%[gpr22](%%r3) \n\t"
+			"stw %%r23,%[gpr23](%%r3) \n\t"
+			"stw %%r24,%[gpr24](%%r3) \n\t"
+			"stw %%r25,%[gpr25](%%r3) \n\t"
+			"stw %%r26,%[gpr26](%%r3) \n\t"
+			"stw %%r27,%[gpr27](%%r3) \n\t"
+			"stw %%r28,%[gpr28](%%r3) \n\t"
+			"stw %%r29,%[gpr29](%%r3) \n\t"
+			"stw %%r30,%[gpr30](%%r3) \n\t"
+			"stw %%r31,%[gpr31](%%r3) \n\t"
+			::
+			[gpr6]"i"(offsetof(regs_t, gpr[6])),
+			[gpr7]"i"(offsetof(regs_t, gpr[7])),
+			[gpr8]"i"(offsetof(regs_t, gpr[8])),
+			[gpr9]"i"(offsetof(regs_t, gpr[9])),
+			[gpr10]"i"(offsetof(regs_t, gpr[10])),
+			[gpr11]"i"(offsetof(regs_t, gpr[11])),
+			[gpr12]"i"(offsetof(regs_t, gpr[12])),
+			[gpr13]"i"(offsetof(regs_t, gpr[13])),
+			[gpr14]"i"(offsetof(regs_t, gpr[14])),
+			[gpr15]"i"(offsetof(regs_t, gpr[15])),
+			[gpr16]"i"(offsetof(regs_t, gpr[16])),
+			[gpr17]"i"(offsetof(regs_t, gpr[17])),
+			[gpr18]"i"(offsetof(regs_t, gpr[18])),
+			[gpr19]"i"(offsetof(regs_t, gpr[19])),
+			[gpr20]"i"(offsetof(regs_t, gpr[20])),
+			[gpr21]"i"(offsetof(regs_t, gpr[21])),
+			[gpr22]"i"(offsetof(regs_t, gpr[22])),
+			[gpr23]"i"(offsetof(regs_t, gpr[23])),
+			[gpr24]"i"(offsetof(regs_t, gpr[24])),
+			[gpr25]"i"(offsetof(regs_t, gpr[25])),
+			[gpr26]"i"(offsetof(regs_t, gpr[26])),
+			[gpr27]"i"(offsetof(regs_t, gpr[27])),
+			[gpr28]"i"(offsetof(regs_t, gpr[28])),
+			[gpr29]"i"(offsetof(regs_t, gpr[29])),
+			[gpr30]"i"(offsetof(regs_t, gpr[30])),
+			[gpr31]"i"(offsetof(regs_t, gpr[31]))
+	);
+
+	asm volatile(
+			"mfmsr %%r0                                             \n\t"
+			"ori %%r0,%%r0, %[msrval]@l \n\t"
+			"mtmsr %%r0; isync                              \n\t"
+			"stfd %%f0,%[fr0](%%r3)         \n\t"
+			"mffs %%f0                                              \n\t"
+			"stfd %%f0,%[fpscr](%%r3)               \n\t"
+			"stfd %%f1,%[fr1](%%r3)         \n\t"
+			"stfd %%f2,%[fr2](%%r3)         \n\t"
+			"stfd %%f3,%[fr3](%%r3)         \n\t"
+			"stfd %%f4,%[fr4](%%r3)         \n\t"
+			"stfd %%f5,%[fr5](%%r3)         \n\t"
+			"stfd %%f6,%[fr6](%%r3)         \n\t"
+			"stfd %%f7,%[fr7](%%r3)         \n\t"
+			"stfd %%f8,%[fr8](%%r3)         \n\t"
+			"stfd %%f9,%[fr9](%%r3)         \n\t"
+			"stfd %%f10,%[fr10](%%r3)               \n\t"
+			"stfd %%f11,%[fr11](%%r3)               \n\t"
+			"stfd %%f12,%[fr12](%%r3)               \n\t"
+			"stfd %%f13,%[fr13](%%r3)               \n\t"
+			"stfd %%f14,%[fr14](%%r3)               \n\t"
+			"stfd %%f15,%[fr15](%%r3)               \n\t"
+			::
+			[fpscr]"i"(offsetof(context_t, fpu.fpscr)),
+			[fr0]"i"(offsetof(context_t, fpu.fpr[0])),
+			[fr1]"i"(offsetof(context_t, fpu.fpr[1])),
+			[fr2]"i"(offsetof(context_t, fpu.fpr[2])),
+			[fr3]"i"(offsetof(context_t, fpu.fpr[3])),
+			[fr4]"i"(offsetof(context_t, fpu.fpr[4])),
+			[fr5]"i"(offsetof(context_t, fpu.fpr[5])),
+			[fr6]"i"(offsetof(context_t, fpu.fpr[6])),
+			[fr7]"i"(offsetof(context_t, fpu.fpr[7])),
+			[fr8]"i"(offsetof(context_t, fpu.fpr[8])),
+			[fr9]"i"(offsetof(context_t, fpu.fpr[9])),
+			[fr10]"i"(offsetof(context_t, fpu.fpr[10])),
+			[fr11]"i"(offsetof(context_t, fpu.fpr[11])),
+			[fr12]"i"(offsetof(context_t, fpu.fpr[12])),
+			[fr13]"i"(offsetof(context_t, fpu.fpr[13])),
+			[fr14]"i"(offsetof(context_t, fpu.fpr[14])),
+			[fr15]"i"(offsetof(context_t, fpu.fpr[15])),
+			[msrval]"i"(MSR_FP)
+	);
+
+	asm volatile(
+			"stfd %%f16,%[fr16](%%r3)               \n\t"
+			"stfd %%f17,%[fr17](%%r3)               \n\t"
+			"stfd %%f18,%[fr18](%%r3)               \n\t"
+			"stfd %%f19,%[fr19](%%r3)               \n\t"
+			"stfd %%f20,%[fr20](%%r3)               \n\t"
+			"stfd %%f21,%[fr21](%%r3)               \n\t"
+			"stfd %%f22,%[fr22](%%r3)               \n\t"
+			"stfd %%f23,%[fr23](%%r3)               \n\t"
+			"stfd %%f24,%[fr24](%%r3)               \n\t"
+			"stfd %%f25,%[fr25](%%r3)               \n\t"
+			"stfd %%f26,%[fr26](%%r3)               \n\t"
+			"stfd %%f27,%[fr27](%%r3)               \n\t"
+			"stfd %%f28,%[fr28](%%r3)               \n\t"
+			"stfd %%f29,%[fr29](%%r3)               \n\t"
+			"stfd %%f30,%[fr30](%%r3)               \n\t"
+			"stfd %%f31,%[fr31](%%r3)               \n\t"
+			"mr %%r28,%%r3            \n\t"
+			"mr %%r29,%%r4            \n\t"
+			"mr %%r30,%%r5            \n\t"
+			"mtsrr0 %%r5           \n\t"
+			"lis %%r9, %[msrval]@ha  \n\t"
+			"ori %%r9,%%r9, %[msrval]@l \n\t"
+			"mtsrr1 %%r9              \n\t"
+			"sync; isync; rfi"
+			::
+			[fr16]"i"(offsetof(context_t, fpu.fpr[16])),
+			[fr17]"i"(offsetof(context_t, fpu.fpr[17])),
+			[fr18]"i"(offsetof(context_t, fpu.fpr[18])),
+			[fr19]"i"(offsetof(context_t, fpu.fpr[19])),
+			[fr20]"i"(offsetof(context_t, fpu.fpr[20])),
+			[fr21]"i"(offsetof(context_t, fpu.fpr[21])),
+			[fr22]"i"(offsetof(context_t, fpu.fpr[22])),
+			[fr23]"i"(offsetof(context_t, fpu.fpr[23])),
+			[fr24]"i"(offsetof(context_t, fpu.fpr[24])),
+			[fr25]"i"(offsetof(context_t, fpu.fpr[25])),
+			[fr26]"i"(offsetof(context_t, fpu.fpr[26])),
+			[fr27]"i"(offsetof(context_t, fpu.fpr[27])),
+			[fr28]"i"(offsetof(context_t, fpu.fpr[28])),
+			[fr29]"i"(offsetof(context_t, fpu.fpr[29])),
+			[fr30]"i"(offsetof(context_t, fpu.fpr[30])),
+			[fr31]"i"(offsetof(context_t, fpu.fpr[31])),
+			[msrval]"i"(MSR_ME|MSR_CE|MSR_FP)
+	);
 }
 
 
 static void __attribute__((used)) __core_LeaveInterrupt()
 {
-    asm volatile(".section .text,\"ax\"\n\t.align 5\n\t.globl core_LeaveInterrupt\n\t.type core_LeaveInterrupt,@function\n"
-        "core_LeaveInterrupt:            \n\t"
-                 "lwz %%r31,%[gpr31](%%r3)      \n\t"
-                 "lwz %%r30,%[gpr30](%%r3)      \n\t"
-                 "lwz %%r29,%[gpr29](%%r3)      \n\t"
-                 "lwz %%r28,%[gpr28](%%r3)      \n\t"
-                 "lwz %%r27,%[gpr27](%%r3)      \n\t"
-                 "lwz %%r26,%[gpr26](%%r3)      \n\t"
-                 "lwz %%r25,%[gpr25](%%r3)      \n\t"
-                 "lwz %%r24,%[gpr24](%%r3)      \n\t"
-                 "lwz %%r23,%[gpr23](%%r3)      \n\t"
-                 "lwz %%r22,%[gpr22](%%r3)      \n\t"
-                 "lwz %%r21,%[gpr21](%%r3)      \n\t"
-                 "lwz %%r20,%[gpr20](%%r3)      \n\t"
-                 "lwz %%r19,%[gpr19](%%r3)      \n\t"
-                 "lwz %%r18,%[gpr18](%%r3)      \n\t"
-                 "lwz %%r17,%[gpr17](%%r3)      \n\t"
-                 "lwz %%r16,%[gpr16](%%r3)      \n\t"
-                 "lwz %%r15,%[gpr15](%%r3)      \n\t"
-                 "lwz %%r14,%[gpr14](%%r3)      \n\t"
-                 "lwz %%r13,%[gpr13](%%r3)      \n\t"
-                 "lwz %%r12,%[gpr12](%%r3)      \n\t"
-        ::
-        [gpr12]"i"(offsetof(regs_t, gpr[12])),
-        [gpr13]"i"(offsetof(regs_t, gpr[13])),
-        [gpr14]"i"(offsetof(regs_t, gpr[14])),
-        [gpr15]"i"(offsetof(regs_t, gpr[15])),
-        [gpr16]"i"(offsetof(regs_t, gpr[16])),
-        [gpr17]"i"(offsetof(regs_t, gpr[17])),
-        [gpr18]"i"(offsetof(regs_t, gpr[18])),
-        [gpr19]"i"(offsetof(regs_t, gpr[19])),
-        [gpr20]"i"(offsetof(regs_t, gpr[20])),
-        [gpr21]"i"(offsetof(regs_t, gpr[21])),
-        [gpr22]"i"(offsetof(regs_t, gpr[22])),
-        [gpr23]"i"(offsetof(regs_t, gpr[23])),
-        [gpr24]"i"(offsetof(regs_t, gpr[24])),
-        [gpr25]"i"(offsetof(regs_t, gpr[25])),
-        [gpr26]"i"(offsetof(regs_t, gpr[26])),
-        [gpr27]"i"(offsetof(regs_t, gpr[27])),
-        [gpr28]"i"(offsetof(regs_t, gpr[28])),
-        [gpr29]"i"(offsetof(regs_t, gpr[29])),
-        [gpr30]"i"(offsetof(regs_t, gpr[30])),
-        [gpr31]"i"(offsetof(regs_t, gpr[31]))
-        );
+	asm volatile(".section .text,\"ax\"\n\t.align 5\n\t.globl core_LeaveInterrupt\n\t.type core_LeaveInterrupt,@function\n"
+			"core_LeaveInterrupt:            \n\t"
+			"lwz %%r31,%[gpr31](%%r3)      \n\t"
+			"lwz %%r30,%[gpr30](%%r3)      \n\t"
+			"lwz %%r29,%[gpr29](%%r3)      \n\t"
+			"lwz %%r28,%[gpr28](%%r3)      \n\t"
+			"lwz %%r27,%[gpr27](%%r3)      \n\t"
+			"lwz %%r26,%[gpr26](%%r3)      \n\t"
+			"lwz %%r25,%[gpr25](%%r3)      \n\t"
+			"lwz %%r24,%[gpr24](%%r3)      \n\t"
+			"lwz %%r23,%[gpr23](%%r3)      \n\t"
+			"lwz %%r22,%[gpr22](%%r3)      \n\t"
+			"lwz %%r21,%[gpr21](%%r3)      \n\t"
+			"lwz %%r20,%[gpr20](%%r3)      \n\t"
+			"lwz %%r19,%[gpr19](%%r3)      \n\t"
+			"lwz %%r18,%[gpr18](%%r3)      \n\t"
+			"lwz %%r17,%[gpr17](%%r3)      \n\t"
+			"lwz %%r16,%[gpr16](%%r3)      \n\t"
+			"lwz %%r15,%[gpr15](%%r3)      \n\t"
+			"lwz %%r14,%[gpr14](%%r3)      \n\t"
+			"lwz %%r13,%[gpr13](%%r3)      \n\t"
+			"lwz %%r12,%[gpr12](%%r3)      \n\t"
+			::
+			[gpr12]"i"(offsetof(regs_t, gpr[12])),
+			[gpr13]"i"(offsetof(regs_t, gpr[13])),
+			[gpr14]"i"(offsetof(regs_t, gpr[14])),
+			[gpr15]"i"(offsetof(regs_t, gpr[15])),
+			[gpr16]"i"(offsetof(regs_t, gpr[16])),
+			[gpr17]"i"(offsetof(regs_t, gpr[17])),
+			[gpr18]"i"(offsetof(regs_t, gpr[18])),
+			[gpr19]"i"(offsetof(regs_t, gpr[19])),
+			[gpr20]"i"(offsetof(regs_t, gpr[20])),
+			[gpr21]"i"(offsetof(regs_t, gpr[21])),
+			[gpr22]"i"(offsetof(regs_t, gpr[22])),
+			[gpr23]"i"(offsetof(regs_t, gpr[23])),
+			[gpr24]"i"(offsetof(regs_t, gpr[24])),
+			[gpr25]"i"(offsetof(regs_t, gpr[25])),
+			[gpr26]"i"(offsetof(regs_t, gpr[26])),
+			[gpr27]"i"(offsetof(regs_t, gpr[27])),
+			[gpr28]"i"(offsetof(regs_t, gpr[28])),
+			[gpr29]"i"(offsetof(regs_t, gpr[29])),
+			[gpr30]"i"(offsetof(regs_t, gpr[30])),
+			[gpr31]"i"(offsetof(regs_t, gpr[31]))
+	);
 
-    asm volatile(
-                 "lwz %%r11,%[gpr11](%%r3)      \n\t"
-                 "lwz %%r0,%[srr0](%%r3)        \n\t"
-                 "mtsrr0 %%r0                   \n\t"
-                 "lwz %%r0,%[srr1](%%r3)        \n\t"
-                 //"rlwinm %%r0,%%r0,0,14,12      \n\t"
-                 "mtsrr1 %%r0                   \n\t"
-                 "lwz %%r0,%[ctr](%%r3)         \n\t"
-                 "mtctr %%r0                    \n\t"
-                 "lwz %%r0,%[lr](%%r3)          \n\t"
-                 "mtlr %%r0                     \n\t"
-                 "lwz %%r0,%[xer](%%r3)         \n\t"
-                 "mtxer %%r0                    \n\t"
-                 "lwz %%r10,%[gpr10](%%r3)      \n\t"
-                 "lwz %%r9,%[gpr9](%%r3)        \n\t"
-                 "lwz %%r8,%[gpr8](%%r3)        \n\t"
-                 "lwz %%r7,%[gpr7](%%r3)        \n\t"
-                 "lwz %%r6,%[gpr6](%%r3)        \n\t"
-                 "lwz %%r5,%[gpr5](%%r3)        \n\t"
-                 "lwz %%r4,%[gpr4](%%r3)        \n\t"
-                 "lwz %%r0,%[gpr3](%%r3)        \n\t"
-                 "mtsprg1 %%r0                  \n\t"
-                 "lwz %%r2,%[gpr2](%%r3)        \n\t"
-                 "stwcx. %%r0,0,%%r1            \n\t"
-                 "lwz %%r0,%[ccr](%%r3)         \n\t"
-                 "mtcr %%r0                     \n\t"
-                 "lwz %%r1,%[gpr1](%%r3)        \n\t"
-                 "lwz %%r0,%[gpr0](%%r3)        \n\t"
-                 "mfsprg1 %%r3                  \n\t"
-                 "sync; isync; rfi"
-        ::
-        [ccr]"i"(offsetof(regs_t, ccr)),        /* */
-        [srr0]"i"(offsetof(regs_t, srr0)),      /* */
-        [srr1]"i"(offsetof(regs_t, srr1)),/* */
-        [ctr]"i"(offsetof(regs_t, ctr)),/**/
-        [lr]"i"(offsetof(regs_t, lr)),/**/
-        [xer]"i"(offsetof(regs_t, xer)),
-        [gpr0]"i"(offsetof(regs_t, gpr[0])),
-        [gpr1]"i"(offsetof(regs_t, gpr[1])),
-        [gpr2]"i"(offsetof(regs_t, gpr[2])),
-        [gpr3]"i"(offsetof(regs_t, gpr[3])),
-        [gpr4]"i"(offsetof(regs_t, gpr[4])),
-        [gpr5]"i"(offsetof(regs_t, gpr[5])),
-        [gpr6]"i"(offsetof(regs_t, gpr[6])),
-        [gpr7]"i"(offsetof(regs_t, gpr[7])),
-        [gpr8]"i"(offsetof(regs_t, gpr[8])),
-        [gpr9]"i"(offsetof(regs_t, gpr[9])),
-        [gpr10]"i"(offsetof(regs_t, gpr[10])),
-        [gpr11]"i"(offsetof(regs_t, gpr[11]))
-    );
+	asm volatile(
+			"lfd  %%f0,%[fpscr](%%r3)               \n\t"
+			"mtfsf 255,%%f0                                         \n\t"
+			"lfd %%f0,%[fr0](%%r3)          \n\t"
+			"lfd %%f1,%[fr1](%%r3)          \n\t"
+			"lfd %%f2,%[fr2](%%r3)          \n\t"
+			"lfd %%f3,%[fr3](%%r3)          \n\t"
+			"lfd %%f4,%[fr4](%%r3)          \n\t"
+			"lfd %%f5,%[fr5](%%r3)          \n\t"
+			"lfd %%f6,%[fr6](%%r3)          \n\t"
+			"lfd %%f7,%[fr7](%%r3)          \n\t"
+			"lfd %%f8,%[fr8](%%r3)          \n\t"
+			"lfd %%f9,%[fr9](%%r3)          \n\t"
+			"lfd %%f10,%[fr10](%%r3)                \n\t"
+			"lfd %%f11,%[fr11](%%r3)                \n\t"
+			"lfd %%f12,%[fr12](%%r3)                \n\t"
+			"lfd %%f13,%[fr13](%%r3)                \n\t"
+			"lfd %%f14,%[fr14](%%r3)                \n\t"
+			"lfd %%f15,%[fr15](%%r3)                \n\t"
+			::
+			[fpscr]"i"(offsetof(context_t, fpu.fpscr)),
+			[fr0]"i"(offsetof(context_t, fpu.fpr[0])),
+			[fr1]"i"(offsetof(context_t, fpu.fpr[1])),
+			[fr2]"i"(offsetof(context_t, fpu.fpr[2])),
+			[fr3]"i"(offsetof(context_t, fpu.fpr[3])),
+			[fr4]"i"(offsetof(context_t, fpu.fpr[4])),
+			[fr5]"i"(offsetof(context_t, fpu.fpr[5])),
+			[fr6]"i"(offsetof(context_t, fpu.fpr[6])),
+			[fr7]"i"(offsetof(context_t, fpu.fpr[7])),
+			[fr8]"i"(offsetof(context_t, fpu.fpr[8])),
+			[fr9]"i"(offsetof(context_t, fpu.fpr[9])),
+			[fr10]"i"(offsetof(context_t, fpu.fpr[10])),
+			[fr11]"i"(offsetof(context_t, fpu.fpr[11])),
+			[fr12]"i"(offsetof(context_t, fpu.fpr[12])),
+			[fr13]"i"(offsetof(context_t, fpu.fpr[13])),
+			[fr14]"i"(offsetof(context_t, fpu.fpr[14])),
+			[fr15]"i"(offsetof(context_t, fpu.fpr[15]))
+	);
+	asm volatile(
+			"lfd %%f16,%[fr16](%%r3)                \n\t"
+			"lfd %%f17,%[fr17](%%r3)                \n\t"
+			"lfd %%f18,%[fr18](%%r3)                \n\t"
+			"lfd %%f19,%[fr19](%%r3)                \n\t"
+			"lfd %%f20,%[fr20](%%r3)                \n\t"
+			"lfd %%f21,%[fr21](%%r3)                \n\t"
+			"lfd %%f22,%[fr22](%%r3)                \n\t"
+			"lfd %%f23,%[fr23](%%r3)                \n\t"
+			"lfd %%f24,%[fr24](%%r3)                \n\t"
+			"lfd %%f25,%[fr25](%%r3)                \n\t"
+			"lfd %%f26,%[fr26](%%r3)                \n\t"
+			"lfd %%f27,%[fr27](%%r3)                \n\t"
+			"lfd %%f28,%[fr28](%%r3)                \n\t"
+			"lfd %%f29,%[fr29](%%r3)                \n\t"
+			"lfd %%f30,%[fr30](%%r3)                \n\t"
+			"lfd %%f31,%[fr31](%%r3)                \n\t"
+			::
+			[fr16]"i"(offsetof(context_t, fpu.fpr[16])),
+			[fr17]"i"(offsetof(context_t, fpu.fpr[17])),
+			[fr18]"i"(offsetof(context_t, fpu.fpr[18])),
+			[fr19]"i"(offsetof(context_t, fpu.fpr[19])),
+			[fr20]"i"(offsetof(context_t, fpu.fpr[20])),
+			[fr21]"i"(offsetof(context_t, fpu.fpr[21])),
+			[fr22]"i"(offsetof(context_t, fpu.fpr[22])),
+			[fr23]"i"(offsetof(context_t, fpu.fpr[23])),
+			[fr24]"i"(offsetof(context_t, fpu.fpr[24])),
+			[fr25]"i"(offsetof(context_t, fpu.fpr[25])),
+			[fr26]"i"(offsetof(context_t, fpu.fpr[26])),
+			[fr27]"i"(offsetof(context_t, fpu.fpr[27])),
+			[fr28]"i"(offsetof(context_t, fpu.fpr[28])),
+			[fr29]"i"(offsetof(context_t, fpu.fpr[29])),
+			[fr30]"i"(offsetof(context_t, fpu.fpr[30])),
+			[fr31]"i"(offsetof(context_t, fpu.fpr[31]))
+	);
+
+	asm volatile(
+			"lwz %%r11,%[gpr11](%%r3)      \n\t"
+			"lwz %%r0,%[srr0](%%r3)        \n\t"
+			"mtsrr0 %%r0                   \n\t"
+			"lwz %%r0,%[srr1](%%r3)        \n\t"
+			//"rlwinm %%r0,%%r0,0,14,12      \n\t"
+			"mtsrr1 %%r0                   \n\t"
+			"lwz %%r0,%[ctr](%%r3)         \n\t"
+			"mtctr %%r0                    \n\t"
+			"lwz %%r0,%[lr](%%r3)          \n\t"
+			"mtlr %%r0                     \n\t"
+			"lwz %%r0,%[xer](%%r3)         \n\t"
+			"mtxer %%r0                    \n\t"
+			"lwz %%r10,%[gpr10](%%r3)      \n\t"
+			"lwz %%r9,%[gpr9](%%r3)        \n\t"
+			"lwz %%r8,%[gpr8](%%r3)        \n\t"
+			"lwz %%r7,%[gpr7](%%r3)        \n\t"
+			"lwz %%r6,%[gpr6](%%r3)        \n\t"
+			"lwz %%r5,%[gpr5](%%r3)        \n\t"
+			"lwz %%r4,%[gpr4](%%r3)        \n\t"
+			"lwz %%r0,%[gpr3](%%r3)        \n\t"
+			"mtsprg1 %%r0                  \n\t"
+			"lwz %%r2,%[gpr2](%%r3)        \n\t"
+			"stwcx. %%r0,0,%%r1            \n\t"
+			"lwz %%r0,%[ccr](%%r3)         \n\t"
+			"mtcr %%r0                     \n\t"
+			"lwz %%r1,%[gpr1](%%r3)        \n\t"
+			"lwz %%r0,%[gpr0](%%r3)        \n\t"
+			"mfsprg1 %%r3                  \n\t"
+			"sync; isync; rfi"
+			::
+			[ccr]"i"(offsetof(regs_t, ccr)),        /* */
+			[srr0]"i"(offsetof(regs_t, srr0)),      /* */
+			[srr1]"i"(offsetof(regs_t, srr1)),/* */
+			[ctr]"i"(offsetof(regs_t, ctr)),/**/
+			[lr]"i"(offsetof(regs_t, lr)),/**/
+			[xer]"i"(offsetof(regs_t, xer)),
+			[gpr0]"i"(offsetof(regs_t, gpr[0])),
+			[gpr1]"i"(offsetof(regs_t, gpr[1])),
+			[gpr2]"i"(offsetof(regs_t, gpr[2])),
+			[gpr3]"i"(offsetof(regs_t, gpr[3])),
+			[gpr4]"i"(offsetof(regs_t, gpr[4])),
+			[gpr5]"i"(offsetof(regs_t, gpr[5])),
+			[gpr6]"i"(offsetof(regs_t, gpr[6])),
+			[gpr7]"i"(offsetof(regs_t, gpr[7])),
+			[gpr8]"i"(offsetof(regs_t, gpr[8])),
+			[gpr9]"i"(offsetof(regs_t, gpr[9])),
+			[gpr10]"i"(offsetof(regs_t, gpr[10])),
+			[gpr11]"i"(offsetof(regs_t, gpr[11]))
+	);
 }

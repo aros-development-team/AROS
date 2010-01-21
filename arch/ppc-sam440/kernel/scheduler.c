@@ -131,7 +131,7 @@ void core_Dispatch(regs_t *regs)
         }
         
         /* Restore the task's state */
-        bcopy(GetIntETask(task)->iet_Context, regs, sizeof(regs_t));
+        bcopy(GetIntETask(task)->iet_Context, regs, sizeof(context_t));
         /* Copy the fpu, mmx, xmm state */
 #warning FIXME: Change to the lazy saving of the FPU state!!!!
 #warning TODO: No FPU support yet!!!!!!! Yay, it sucks! :-D
@@ -160,7 +160,7 @@ void core_Switch(regs_t *regs)
         //D(bug("[KRN] Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
         
         /* Copy current task's context into the ETask structure */
-        bcopy(regs, GetIntETask(task)->iet_Context, sizeof(regs_t));
+        bcopy(regs, GetIntETask(task)->iet_Context, sizeof(context_t));
         
         /* Copy the fpu, mmx, xmm state */
 #warning FIXME: Change to the lazy saving of the FPU state!!!!
