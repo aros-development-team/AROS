@@ -413,7 +413,7 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
 
         offset = findNames(ctx->lr, &mod, &func);
 
-        D(bug("[KRN] LR=%08x: ", ctx->lr));
+        D(bug("[KRN] LR=%08x", ctx->lr));
 
         if (func)
                 D(bug(": byte %d in func %s, module %s\n", offset, func, mod));
