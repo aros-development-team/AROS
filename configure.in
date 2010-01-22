@@ -495,7 +495,6 @@ ignore_undefined_symbols=""
 #
 
 AC_MSG_CHECKING([whether ${CC} accepts -fno-stack-protector])
-save_cc="$CC"
 save_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -fno-stack-protector"
 AC_TRY_COMPILE(,, use_no_stack_protector="yes", use_no_stack_protector="no")
@@ -503,29 +502,7 @@ AC_MSG_RESULT($use_no_stack_protector)
 if test "x-$use_no_stack_protector" = "x-yes" ; then
     aros_host_cflags="$aros_host_cflags -fno-stack-protector"
 fi
-CC="$aros_kernel_cc"
-if test "x-$cross_compiling" = "x-yes"; then
-    AC_MSG_CHECKING([whether ${CC} accepts -fno-stack-protector])
-    AC_TRY_COMPILE(,, use_no_stack_protector="yes", use_no_stack_protector="no")
-    AC_MSG_RESULT($use_no_stack_protector)
-fi
-if test "x-$use_no_stack_protector" = "x-yes" ; then
-    aros_kernel_cflags="$aros_kernel_cflags -fno-stack-protector"
-fi
-
-#-----------------------------------------------------------------------------
-
-# Check if we can explicitly choose older version of symbol hashing
-
-CFLAGS="$save_cflags -Wl,--hash-style=sysv"
-AC_MSG_CHECKING([whether ${CC} accepts -Wl,--hash-style=sysv])
-AC_TRY_LINK(,, use_hash_style="yes", use_hash_style="no")
-AC_MSG_RESULT($use_hash_style)
-if test "x-$use_hash_style" = "x-yes" ; then
-    aros_kernel_cflags="$aros_kernel_cflags -Wl,--hash-style=sysv"
-fi
 CFLAGS="$save_cflags"
-CC="$save_cc"
 
 #-----------------------------------------------------------------------------
 
@@ -1377,6 +1354,9 @@ kernel_cflags_iquote=$host_cflags_iquote
 kernel_cflags_iquote_end=$host_cflags_iquote_end
 if test "x-$cross_compiling" = "x-yes"; then
     CC="$aros_kernel_cc"
+    AC_MSG_CHECKING([whether ${CC} accepts -fno-stack-protector])
+    AC_TRY_COMPILE(,, use_no_stack_protector="yes", use_no_stack_protector="no")
+    AC_MSG_RESULT($use_no_stack_protector)
     AC_MSG_CHECKING([whether ${CC} accepts -iquote])
     AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
     AC_MSG_RESULT($has_iquote)
@@ -1402,6 +1382,22 @@ if test "$orig_target_cc" != "$aros_kernel_cc"; then
         aros_cflags_iquote=-I
         aros_cflags_iquote_end=-I-
     fi
+fi
+if test "x-$use_no_stack_protector" = "x-yes" ; then
+    aros_kernel_cflags="$aros_kernel_cflags -fno-stack-protector"
+fi
+
+#-----------------------------------------------------------------------------
+
+# Check if we can explicitly choose older version of symbol hashing
+
+CFLAGS="save_cflags -Wl,--hash-style=sysv"
+CC="$aros_kernel_cc"
+AC_MSG_CHECKING([whether ${CC} accepts -Wl,--hash-style=sysv])
+AC_TRY_LINK(,, use_hash_style="yes", use_hash_style="no")
+AC_MSG_RESULT($use_hash_style)
+if test "x-$use_hash_style" = "x-yes" ; then
+    aros_kernel_cflags="$aros_kernel_cflags -Wl,--hash-style=sysv"
 fi
 CC="$save_cc"
 CFLAGS="$save_cflags"
