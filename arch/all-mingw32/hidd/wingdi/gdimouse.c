@@ -103,7 +103,7 @@ OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
 /****************************************************************************************/
 
-VOID GDIMouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, struct pRoot_Dispose *msg)
+VOID GDIMouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct gdimouse_data *data = OOP_INST_DATA(cl, o);
     
