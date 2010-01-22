@@ -30,12 +30,14 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 {
     struct TagItem *bootinfo;
     STRPTR Kernel_Args;
+    APTR KernelBase;
 
     D(bug("[BootLdr] Init\n"));
 
     BootLoaderBase->Flags = 0;
     NEWLIST(&(BootLoaderBase->Args));
 
+    KernelBase = OpenResource("kernel.resource");
     bootinfo = KrnGetBootInfo();
     BootLoaderBase->LdrName = (STRPTR)GetTagData(KRN_BootLoader, 0, bootinfo);
 
