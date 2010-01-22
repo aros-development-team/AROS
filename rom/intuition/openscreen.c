@@ -995,8 +995,8 @@ static const char THIS_FILE[] = __FILE__;
         p = GetPrivIBase(IntuitionBase)->Colors;
         for (k = 0; k < 4 && k < numcolors; ++k)
         {
-            DEBUG_OPENSCREEN(dprintf("OpenScreen: SetRGB32 Viewport 0x%lx Index %ld R 0x%lx G 0x%lx B 0x%lx\n",
-                                     screen->Screen.ViewPort,
+            DEBUG_OPENSCREEN(dprintf("OpenScreen: SetRGB32 Viewport 0x%p Index %ld R 0x%lx G 0x%lx B 0x%lx\n",
+                                     &screen->Screen.ViewPort,
                                      k, p[k].red, p[k].green, p[k].blue));
             SetRGB32(&screen->Screen.ViewPort, k, p[k].red, p[k].green, p[k].blue);
         }
@@ -1008,8 +1008,8 @@ static const char THIS_FILE[] = __FILE__;
     	    #warning Isn`t that only set for FullPalette ?
             for (k = 0; k < 4; ++k)
             {
-                DEBUG_OPENSCREEN(dprintf("OpenScreen: SetRGB32 Viewport 0x%lx Index %ld R 0x%lx G 0x%lx B 0x%lx\n",
-                                         screen->Screen.ViewPort,
+                DEBUG_OPENSCREEN(dprintf("OpenScreen: SetRGB32 Viewport 0x%p Index %ld R 0x%lx G 0x%lx B 0x%lx\n",
+                                         &screen->Screen.ViewPort,
                                          numcolors - k - 1, p[k+4].red, p[k+4].green, p[k+4].blue));
 
                 ObtainPen(screen->Screen.ViewPort.ColorMap,

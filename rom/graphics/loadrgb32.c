@@ -1,18 +1,15 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
+#define DEBUG 0
+
 #include <aros/debug.h>
 #include "graphics_intern.h"
 #include <proto/graphics.h>
-
-#if DEBUG
-#undef THIS_FILE
-static const char THIS_FILE[] = __FILE__;
-#endif
 
 /*****************************************************************************
 
@@ -64,6 +61,7 @@ static const char THIS_FILE[] = __FILE__;
 
     /* it is legal to pass a NULL table */
     
+    D(bug("LoadRGB32(0x%p)\n", vp));
     if (table)
     {
         ULONG count;
@@ -78,8 +76,10 @@ static const char THIS_FILE[] = __FILE__;
 
 	    table ++;
 
+	    D(bug("[LoadRGB32] Setting %u colors starting from %u\n", count, first));
 	    for (t = 0; t < count; t++)
 	    {
+		D(bug("[LoadRGB32] Color %u R 0x%08lX G 0x%08lX B %08lX\n", t + first, table[0], table[1], table[2]));
 		SetRGB32 (vp,
 	    		  t + first,
 			  table[0],
