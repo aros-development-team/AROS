@@ -503,8 +503,8 @@ AC_MSG_RESULT($use_no_stack_protector)
 if test "x-$use_no_stack_protector" = "x-yes" ; then
     aros_host_cflags="$aros_host_cflags -fno-stack-protector"
 fi
+CC="$aros_kernel_cc"
 if test "x-$cross_compiling" = "x-yes"; then
-    CC="$aros_kernel_cc"
     AC_MSG_CHECKING([whether ${CC} accepts -fno-stack-protector])
     AC_TRY_COMPILE(,, use_no_stack_protector="yes", use_no_stack_protector="no")
     AC_MSG_RESULT($use_no_stack_protector)
