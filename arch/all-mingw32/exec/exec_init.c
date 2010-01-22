@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2009, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: exec.library resident and initialization.
@@ -153,6 +153,8 @@ void VBlankHandler(struct ExecBase *SysBase, void *dummy)
 
 extern ULONG SoftIntDispatch();
 
+APTR KernelBase = NULL;
+
 AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     AROS_UFHA(ULONG, dummy, D0),
     AROS_UFHA(BPTR, segList, A0),
@@ -161,8 +163,10 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 {
     AROS_USERFUNC_INIT
 
-    D(bug("[exec_init] Entered exec.library init\n"));
+    D(bug("[exec_init] Entered exec.library init, SysBase is 0x%p\n", sysBase));
     SysBase = sysBase;
+    KernelBase = OpenResource("kernel.resource");
+    D(bug("[exec_init] KernelBase is 0x%p\n", KernelBase));
     /*
 	Create boot task.  Sigh, we actually create a Process sized Task,
 	since DOS needs to call things which think it has a Process and
@@ -228,6 +232,7 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	sysBase->ThisTask = t;
 	sysBase->Elapsed = sysBase->Quantum;
     }
+    D(bug("[exec_init] Installing interrupt servers\n"));
     {
 	/* Install the interrupt servers */
 	int i;
