@@ -1166,7 +1166,7 @@ if test "$aros_host_cpu" != "$aros_target_cpu" ; then
 fi
 if test "$aros_host_cpu" == "x86_64" ; then
     if test "$aros_target_cpu" == "i386" ; then
-	if test "$aros_target_arch != "mingw32"; then
+	if test "$aros_target_arch" != "mingw32"; then
 	    cross_compiling=no
 	fi
     fi
