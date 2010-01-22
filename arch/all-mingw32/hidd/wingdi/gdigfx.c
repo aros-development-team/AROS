@@ -582,7 +582,7 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
     IPTR depth;
     HIDDT_Color color;
     IPTR width, height, x, y;
-    ULONG *buf, *mask, *b, *m;
+    ULONG *buf, *mask;
     ULONG bufsize;
     APTR buf_bm, mask_bm;
     APTR cursor = NULL;
@@ -599,36 +599,18 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
         mask = AllocMem(bufsize, MEMF_ANY);
 	if (mask) {
 	    BITMAP bm;
-	    struct pHidd_BitMap_GetPixel __gp = {
-		mID: OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetPixel)
-	    }, *getpixel = &__gp;
+	    ULONG i;
 
-	    struct pHidd_ColorMap_GetColor __gc = {
-		mID:	     OOP_GetMethodID(IID_Hidd_ColorMap, moHidd_ColorMap_GetColor),
-		colorReturn: &color,
-	    }, *getcolor = &__gc;
+#if AROS_BIG_ENDIAN
+	    HIDD_BM_GetImage(msg->shape, (UBYTE *)buf, width * 4, 0, 0, width, height, vHidd_StdPixFmt_ARGB32);
+#else
+	    HIDD_BM_GetImage(msg->shape, (UBYTE *)buf, width * 4, 0, 0, width, height, vHidd_StdPixFmt_BGRA32);
+#endif
+	    /* Construct the mask from alpha channel data. The mask will be used on pre-XP systems or
+	       on LUT screens. Of course there'll be no alpha blending there. */
+	    for (i = 0; i < width * height; i++)
+	        mask[i] = (buf[i] & 0xFF000000) ? 0 : 0xFFFFFFFF;
 
-	    b = buf;
-	    m = mask;
-	    for (y = 0; y < height; y++)
-	    {
-		for (x = 0; x < width; x++)
-		{
-		    HIDDT_Pixel pixel;
-		    getpixel->x = x;
-		    getpixel->y = y;
-		    pixel = OOP_DoMethod(msg->shape, (OOP_Msg)getpixel);
-
-		    /* TODO: actual support for hi- and truecolor cursors */
-		    if (depth <= 8) {
-		        getcolor->colorNo = pixel;
-		        OOP_DoMethod(colormap, (OOP_Msg)getcolor);
-			/* On Windows XP the most significant byte specifies alpha channel, while the mask is ignored. */
-		        *b++ = ((color.alpha << 16) & 0xFF000000) | ((color.red << 8) & 0xff0000) | ((color.green) & 0x00ff00) | ((color.blue >> 8) & 0x0000ff);
-			*m++ = color.alpha ? 0 : 0xFFFFFFFF;
-		    }
-		}
-	    }
 	    bm.bmType = 0;
 	    bm.bmWidth = width;
 	    bm.bmHeight = height;
@@ -651,6 +633,7 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
 		    if (cursor) {
 		        D(bug("[GDI] Created cursor 0x%p\n", cursor));
 			XSD(cl)->ctl->cursor = cursor;
+			USERCALL(SetCursor, cursor);
 		        if (data->cursor) {
 			    D(bug("[GDI] Deleting old cursor 0x%p\n", data->cursor));
 			    USERCALL(DestroyIcon, data->cursor);

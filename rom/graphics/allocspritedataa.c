@@ -17,6 +17,7 @@
 #include <utility/tagitem.h>
 #include <exec/exec.h>
 #include <string.h>
+#include "gfxfuncsupport.h"
 #include "graphics_intern.h"
 
 /*****************************************************************************
@@ -84,15 +85,15 @@
 #define SCALE_NORMAL  16
 	BOOL have_OutputHeight = FALSE;
 	BOOL have_OldDataFormat = FALSE;
-        ULONG height, orig_height;
+        ULONG height = 0;
         ULONG width = 16;
         const struct TagItem * tstate = tagList;
         struct TagItem * tag;
 	struct BitMap *friend_bm = NULL;
 	ULONG pixfmt = BMF_SPECIALFMT|SHIFT_PIXFMT(PIXFMT_LUT8);
 	struct BitMap old_bitmap;
-	UWORD *planes;
-	ULONG planes_size;
+	UWORD *planes = NULL;
+	ULONG planes_size = 0;
         struct BitScaleArgs bsa;
         LONG xrep = 0, yrep = 0;
 
@@ -162,11 +163,14 @@
 
 	    /* This is a part of experimental truecolor pointer support.
 
-	       Check the depth of the source bitmap. If it's more than 8,
-	       it's a hi/truecolor bitmap, and we should allocate the sprite
-	       bitmap in the same format. I hope specifying friend bitmap
-	       does this. */
-	    if (GetBitMapAttr(bitmap, BMA_DEPTH) > 8) {
+	       Check if the source bitmap is a HIDD bitmap. If so, we do
+	       not specify pixelformat and take if from original bitmap
+	       instead. 
+	       In fact the whole trick is a temporary hack. Old display
+	       drivers will fail to set or display pointer sprite if
+	       the supplied bitmap is not in LUT8 format. This is wrong
+	       by itself and needs to be fixed. */
+	    if (IS_HIDD_BM(bitmap)) {
 	        friend_bm = bitmap;
 		pixfmt = 0;
 	    }

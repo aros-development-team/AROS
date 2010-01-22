@@ -121,7 +121,7 @@ OOP_Object * GDIKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
 /****************************************************************************************/
 
-VOID GDIKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, struct pRoot_Dispose *msg)
+VOID GDIKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct gdikbd_data *data = OOP_INST_DATA(cl, o);
 

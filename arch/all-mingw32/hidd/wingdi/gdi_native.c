@@ -58,7 +58,7 @@ LRESULT CALLBACK key_callback(int code, WPARAM wp, KBDLLHOOKSTRUCT *lp)
     	SendKbdIRQ(wp, key);
         return 1;
     }
-    return CallNextHookEx(NULL, code, wp, lp);
+    return CallNextHookEx(NULL, code, wp, (LPARAM)lp);
 }
 
 LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
@@ -130,7 +130,7 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
     HHOOK keyhook;
     BOOL res;
     MSG msg;
-    ATOM wcl;
+    LONG wcl;
     WINDOWPLACEMENT wpos;
     WNDCLASS wcl_desc = {
         CS_NOCLOSE,
@@ -140,7 +140,7 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
         NULL,
         NULL,
         NULL,
-        COLOR_WINDOW,
+        (HBRUSH)COLOR_WINDOW,
         NULL,
         "AROS_Screen"
     };
@@ -148,7 +148,7 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
     LONG width, height;
 
     wcl_desc.hInstance = GetModuleHandle(NULL);
-    keyhook = SetWindowsHookEx(WH_KEYBOARD_LL, key_callback, wcl_desc.hInstance, 0);
+    keyhook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)key_callback, wcl_desc.hInstance, 0);
     wcl_desc.hIcon = LoadIcon(wcl_desc.hInstance, MAKEINTRESOURCE(101));
     wcl_desc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wcl = RegisterClass(&wcl_desc);
@@ -168,7 +168,7 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
             	        width = GetSystemMetrics(SM_CXFIXEDFRAME) * 2 + gdata->width;
             	        height = GetSystemMetrics(SM_CYFIXEDFRAME) * 2 + gdata->height + GetSystemMetrics(SM_CYCAPTION);
             	    	if (!gdata->fbwin) {
-            	    	    gdata->fbwin = CreateWindow(wcl, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
+            	    	    gdata->fbwin = CreateWindow((LPCSTR)wcl, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
 						        CW_USEDEFAULT, CW_USEDEFAULT, width,  height, NULL, NULL,
 						        wcl_desc.hInstance, NULL);
             	    	    ShowWindow(gdata->fbwin, SW_SHOW);
@@ -181,7 +181,7 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
 	            	    }
 	            	}
 	            	if (gdata->fbwin) {
-	            	    SetWindowLongPtr(gdata->fbwin, GWLP_USERDATA, gdata->bitmap_dc);
+	            	    SetWindowLongPtr(gdata->fbwin, GWLP_USERDATA, (LONG_PTR)gdata->bitmap_dc);
             	            RedrawWindow(gdata->fbwin, NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
             	        }
             	    } else {
@@ -198,7 +198,7 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
             	}
 	    }
         } while (res > 0);
-        UnregisterClass(wcl, wcl_desc.hInstance);
+        UnregisterClass((LPCSTR)wcl, wcl_desc.hInstance);
     }
     if (keyhook)
         UnhookWindowsHookEx(keyhook);
@@ -244,7 +244,7 @@ ULONG __declspec(dllexport) GDI_Start(struct Gfx_Control *p)
     window_active = FALSE;
     p->window_ready = 0;
     last_key = 0;
-    th = CreateThread(NULL, 0, gdithread_entry, p, 0, &thread_id);
+    th = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)gdithread_entry, p, 0, &thread_id);
     D(printf("[GDI] Started thread 0x%p ID 0x%08lX\n", th, thread_id));
     if (th) {
         CloseHandle(th);

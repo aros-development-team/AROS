@@ -30,6 +30,7 @@ struct gdi_func {
 struct user_func {
     __attribute__((stdcall)) APTR (*CreateIconIndirect)(ICONINFO *piconinfo);
     __attribute__((stdcall)) ULONG (*DestroyIcon)(APTR hIcon);
+    __attribute__((stdcall)) APTR (*SetCursor)(APTR hCursor);
     __attribute__((stdcall)) ULONG (*RedrawWindow)(APTR hWnd, CONST RECT* lpRect, APTR hrgnUpdate, ULONG flags);
 };
 
