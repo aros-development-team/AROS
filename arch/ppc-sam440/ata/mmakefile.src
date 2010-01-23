@@ -2,6 +2,6 @@
 include $(TOP)/config/make.cfg
 
 %build_archspecific \
-  mainmmake=kernel-ata maindir=arch/common/ata.device \
-  arch=sam440-ppc cflags="$(CFLAGS) -I$(SRCDIR)/arch/common/ata.device"\
+  mainmmake=kernel-ata maindir=rom/devs/ata.device \
+  arch=sam440-ppc cflags="$(CFLAGS) -I$(SRCDIR)/rom/devs/ata.device"\
   files="lowlevel_sam440"
