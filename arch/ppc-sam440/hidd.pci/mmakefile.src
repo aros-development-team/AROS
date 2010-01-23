@@ -1,0 +1,7 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+%build_archspecific \
+  mainmmake=kernel-pci maindir=rom/hidds/hidd.pci \
+  arch=sam440-ppc \
+  files="atomic"
