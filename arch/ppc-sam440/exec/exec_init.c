@@ -329,8 +329,7 @@ int exec_main(struct TagItem *msg, void *entry)
             /* Initialise the ETask data. */
             InitETask(t, t->tc_UnionETask.tc_ETask);
 
-            GetIntETask(t)->iet_Context = AllocTaskMem(t
-                , SIZEOF_ALL_REGISTERS
+            GetIntETask(t)->iet_Context = AllocMem(SIZEOF_ALL_REGISTERS
                 , MEMF_PUBLIC|MEMF_CLEAR
             );
 

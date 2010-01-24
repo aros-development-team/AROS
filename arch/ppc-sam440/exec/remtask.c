@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Remove a task
@@ -13,6 +13,7 @@
 
 #include "../kernel/kernel_intern.h"
 
+#include "etask.h"
 #include "exec_util.h"
 #include "exec_debug.h"
 #ifndef DEBUG_RemTask
@@ -66,6 +67,7 @@
     AROS_LIBFUNC_INIT
     struct MemList *mb;
     struct ETask *et;
+    void *KernelBase = getKernelBase();
 
     /* A value of NULL means current task */
     if (task==NULL)
@@ -96,6 +98,10 @@
 
     /* Uninitialize ETask structure */
     et = GetETask(task);
+
+    KrnDeleteContext(GetIntETask(task)->iet_Context);
+    GetIntETask(task)->iet_Context = NULL;
+
     if(et != NULL)
     {
 	CleanupETask(task, et);
@@ -107,8 +113,6 @@
     /* Freeing myself? */
     if(task==SysBase->ThisTask)
     {
-        void *KernelBase = getKernelBase();
-
         /* Can't do that - let the dispatcher do it. */
         task->tc_State=TS_REMOVED;
 
