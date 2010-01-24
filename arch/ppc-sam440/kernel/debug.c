@@ -223,6 +223,8 @@ AROS_LH3(void, KrnRegisterModule,
 
 	struct ExecBase *SysBase = getSysBase();
 
+	bug("[KRN] RegisterModule(%s)\n", name);
+
 	if (name && sections && eh)
 	{
 		module_t *mod = AllocVec(sizeof(module_t), MEMF_PUBLIC | MEMF_CLEAR);
@@ -323,6 +325,8 @@ AROS_LH1(void, KrnUnregisterModule,
 			symbol_t *sym;
 
 			Remove(mod);
+
+			bug("[KRN] UnregisterModule(%s)\n", mod->m_name);
 
 			if (mod->m_str)
 				FreeVec(mod->m_str);
