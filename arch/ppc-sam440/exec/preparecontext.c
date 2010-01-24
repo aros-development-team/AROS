@@ -3,6 +3,7 @@
 #include <exec/memory.h>
 #include <utility/tagitem.h>
 #include <asm/amcc440.h>
+#include <proto/kernel.h>
 #include "etask.h"
 #include "exec_util.h"
 
@@ -13,6 +14,8 @@
 
 #define Regs(t) ((struct regs_t *)(GetIntETask(t)->iet_Context))
 
+extern void *priv_KernelBase;
+
 static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fallBack,
                                     struct TagItem *tagList, struct ExecBase *SysBase)
 {
@@ -22,6 +25,8 @@ static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
     IPTR        args[8] = {0};
     WORD        numargs = 0;
  
+    void *KernelBase = priv_KernelBase;
+
     while(tagList)
     {
         switch(tagList->ti_Tag)
@@ -62,16 +67,15 @@ static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
     if (!(task->tc_Flags & TF_ETASK) )
         return NULL;
 
-    /* Get the memory for CPU context. Alloc it with MEMF_CLEAR flag */
-    GetIntETask (task)->iet_Context = AllocTaskMem (task
-        , SIZEOF_ALL_REGISTERS
-        , MEMF_PUBLIC|MEMF_CLEAR
-    );
+    /* Get the memory for CPU context. */
+    GetIntETask (task)->iet_Context = KrnCreateContext();
     
     D(bug("[exec] PrepareContext: iet_Context = %012p\n", GetIntETask (task)->iet_Context));
     
     if (!(ctx = (context_t *)GetIntETask (task)->iet_Context))
         return NULL;
+
+    SuperState();
 
     if (numargs)
     {
@@ -128,6 +132,9 @@ static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
              ctx->cpu.gpr[24],ctx->cpu.gpr[25],ctx->cpu.gpr[26],ctx->cpu.gpr[27]));
     D(bug("[exec] GPR28=%08x GPR29=%08x GPR30=%08x GPR31=%08x\n",
              ctx->cpu.gpr[28],ctx->cpu.gpr[29],ctx->cpu.gpr[30],ctx->cpu.gpr[31]));
+
+    UserState(NULL);
+
     return sp;
 }
 
