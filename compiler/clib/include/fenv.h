@@ -14,6 +14,8 @@
 #   include <aros/ppc/fenv.h>
 #elif defined __arm__
 #   include <aros/arm/fenv.h>
+#elif defined __mc68000__
+#   include <aros/m68k/fenv.h>
 
 /* otherwise just use the stub implementation */
 #elif !defined _FENV_H_
