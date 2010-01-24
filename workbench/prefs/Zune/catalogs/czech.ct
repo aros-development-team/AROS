@@ -1,4 +1,4 @@
-## version $VER: Zune.catalog 1.7 (26.3.2009)
+## version $VER: Zune.catalog 1.8 (22.1.2010)
 ## language czech
 ## codeset 0
 ;
@@ -796,6 +796,10 @@ MSG_GAD_CANCEL
 _Zru¹it
 ; _Cancel
 ;
+MSG_DSC_SYSTEM
+Systém
+; System
+;
 MSG_DSC_WINDOWS
 Okna
 ; Windows
@@ -853,4 +857,67 @@ Definice barvy
 MSG_CUSTOMFRAMES
 Speciální rámeèky
 ; Customframes
+;
+;=============================
+; systemp.c
+;----------
+MSG_PUBLIC_SCREEN
+Veøejná obrazovka
+; Public Screen
+;
+MSG_NAME
+Název:
+; Name:
+;
+MSG_CALL_INSPECTOR
+Spustit správce
+; Call Inspector
+;
+MSG_POP_TO_FRONT
+Pøesunout do popøedí:
+; Pop to front:
+;
+MSG_ICONIFICATION
+Ikonifikace
+; Iconification
+;
+MSG_HOTKEY
+Klávesová zkratka:
+; Hotkey:
+;
+MSG_SHOW
+Zobrazit:
+; Show:
+;
+MSG_ICON
+Ve formì ikony na plo¹e
+; Icon
+;
+MSG_MENU
+Polo¾ku v menu 'Nástroje'
+; Menu
+;
+MSG_ON_STARTUP
+Po spu¹tìní:
+; On Startup:
+;
+MSG_INTERFACES
+Rozhraní
+; Interfaces
+;
+MSG_AREXX
+Povolit rozhraní ARexx:
+; ARexx:
+;
+MSG_BUBBLE_HELP
+Bublinová nápovìda
+; Bubble Help
+;
+MSG_FIRST_BUBBLE
+První bublina:
+; First Bubble:
+;
+MSG_NEXT_BUBBLE
+Dal¹í bublina:
+; Next Bubble:
 ;

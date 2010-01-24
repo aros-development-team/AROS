@@ -1,8 +1,7 @@
-## version $VER: Wanderer.catalog 1.3 (20.12.2007)
+## version $VER: Wanderer.catalog 2.0 (24.1.2010)
 ## language czech
-## codeset 5
+## codeset 0
 ;
-; TODO: update me and set version to 2
 ;
 MSG_NAME
 Správce souborù (editor Wanderer)
@@ -101,17 +100,15 @@ Standardní
 ; Plain
 ;
 MSG_ICONTEXTMODE_SHADOW
-
+Stínovaný
 ; Drop shadow
 ;
-; ***NEW***
-;
 MSG_ICONTEXTLENGTH
-Max. délka názvu
+Max. délka textu
 ; Max icon textlength
 ;
 MSG_DOUBLEBUFFERED
-Zrychlené??
+Zrychlené
 ; double buffering
 ;
 MSG_MISC
@@ -141,176 +138,130 @@ MSG_BUBBLESCREENTITLE
 ; %wv = Exact workbench.library version
 ;
 MSG_TILEMODE
-
+Zpùsob umístìní:
 ; Tile mode :
 ;
 MSG_XOFFSET
-
+Odstup vodorovnì:
 ; X Offset :
 ;
 MSG_YOFFSET
-
+Odstup svisle:
 ; Y Offset :
 ;
 MSG_ICONLABELFONT
-
+Písmo pro popis
 ; Icon Label Font...
 ;
-; ***NEW***
-;
 MSG_ICONINFOFONT
-
+Písmo pro informace
 ; Icon Info Font...
 ;
-; ***NEW***
-;
 MSG_HORIZSPACINGICON
-
+Odstup mezi ikonami, vodorovnì:
 ; Horizontal spacing between icons
 ;
-; ***NEW***
-;
 MSG_VERTSPACINGICON
-
+Odstup mezi ikonami, svisle:
 ; Vertical spacing between icons
 ;
-; ***NEW***
-;
 MSG_PADDINGICONIMAGELABEL
-
+Odstup mezi ikonou a popisem
 ; Padding between Icon Image and Label
 ;
-; ***NEW***
-;
 MSG_HORIZPADDINGLABELTEXT
-
+Odstup mezi okrajem rámeèku a textem, vodorovnì
 ; Horizontal Padding between Label Frame and Text
 ;
-; ***NEW***
-;
 MSG_VERTPADDINGLABELTEXT
-
+Odstup mezi okrajem rámeèku a textem, svisle
 ; Vertical Padding between Label Frame and Text
 ;
-; ***NEW***
-;
 MSG_FRAMEWIDTH
-
+©íøka rámeèku pro popis
 ; Label Frame Width
 ;
-; ***NEW***
-;
 MSG_FRAMEHEIGHT
-
+Vý¹ka rámeèku pro popis
 ; Label Frame Height
 ;
-; ***NEW***
-;
 MSG_TILED
-
+Umístit vedle sebe
 ; Tiled
 ;
-; ***NEW***
-;
 MSG_SCALED
-
+Pøizpùsobit velikost
 ; Scaled
 ;
-; ***NEW***
-;
 MSG_FLOATING
-
+Plovoucí
 ; Floating
 ;
-; ***NEW***
-;
 MSG_FIXED
-
+Pevný
 ; Fixed
 ;
-; ***NEW***
-;
 MSG_LABELLINELENGTH
-
+Max. délka popisu
 ; Max. Label line length...
 ;
-; ***NEW***
-;
 MSG_USEMULTILINELABELS
-
+Pou¾ít víceøádkový popis
 ; Use MultiLine Labels
 ;
-; ***NEW***
-;
 MSG_SHOWFOCUSEDICON
-
+Zobrazit pouze vybrané
 ; Only show for Focus(ed) Icon
 ;
-; ***NEW***
-;
 MSG_NDISPLAYLINES
-
+Poèet zobrazených øádkù
 ; No. of lines to display...
 ;
-; ***NEW***
-;
 MSG_TILEMODEOPTIONS
-
+Mo¾nosti
 ; Tile Mode Options...
 ;
-; ***NEW***
-;
 MSG_SCALEMODEOPTIONS
-
+Mo¾nosti
 ; Scale Mode Options...
 ;
-; ***NEW***
-;
 MSG_ADVANCEDOPTIONS
-
+Pøehled vlastností
 ; Advanced Options...
 ;
-; ***NEW***
-;
 MSG_BACKGROUNDOPTIONS
-
+Pozadí na plo¹e
 ; Background Options...
 ;
-; ***NEW***
-;
 MSG_DRAWMODE
-
+Zpùsob vykreslení:
 ; Draw mode :
 ;
-; ***NEW***
-;
 MSG_USERFILEONWB
-
+Povolit skuteèná data na pracovní plo¹e
 ; User Files Folder on Workbench
 ;
-; ***NEW***
-;
 MSG_NETWORKONWB
-
+Umo¾nit procházení sítì z pracovní plochy
 ; Network Browser on Workbench
 ;
-; ***NEW***
-;
 MSG_VIEWSETTINGS
-
+Mo¾nosti zobrazení
 ; View Settings
 ;
-; ***NEW***
-;
 MSG_WANDERERSCREENTITLE
-
+Titulek obrazovky
 ; Wanderer ScreenTitle
 ;
-; ***NEW***
-;
 MSG_ADVANCED
-
+Vlastnosti...
 ; Advanced
 ;
-; ***NEW***
+MSG_USE
+_Pou¾ít
+; _Use
+;
+MSG_CANCEL
+_Zru¹it
+; C_ancel
 ;
