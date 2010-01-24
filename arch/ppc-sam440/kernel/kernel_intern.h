@@ -24,6 +24,7 @@ struct KernelBase {
     struct List         kb_Interrupts[64];
     struct MemHeader *  kb_SupervisorMem;
     struct MinList      kb_Modules;
+    context_t *			kb_FPUOwner;
 };
 
 struct KernelBSS {
@@ -71,14 +72,26 @@ static inline struct ExecBase *getSysBase()
     return (struct ExecBase *)rdspr(SPRG5U);
 }
 
-static inline void goSuper() {
-    asm volatile("li %%r3,%0; sc"::"i"(SC_SUPERSTATE):"memory","r3");
+static inline uint32_t goSuper() {
+	register uint32_t oldmsr asm("r3");
+	asm volatile("li %0,%1; sc":"=r"(oldmsr):"i"(SC_SUPERSTATE):"memory");
+	return oldmsr;
 }
 
 static inline void goUser() {
     wrmsr(rdmsr() | (MSR_PR));
 }
 
+static inline uint64_t mftbu()
+{
+	uint32_t lo,hi,tmp;
+
+	do {
+		asm volatile("mftbu %0; mftb %1; mftbu %2":"=r"(hi),"=r"(lo),"=r"(tmp));
+	} while(tmp != hi);
+
+	return (((uint64_t)hi) << 32) | ((uint64_t)lo);
+}
 
 intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList);
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);

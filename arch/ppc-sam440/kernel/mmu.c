@@ -133,6 +133,23 @@ void map_region(uintptr_t physbase, uintptr_t virtbase, uintptr_t length, uint32
     D(bug("%2d TLB%s\n", tlb_temp, tlb_temp > 1 ? "s":""));
 }
 
+AROS_LH1(void *, KrnVirtualToPhysical,
+		AROS_LHA(void *, virtual, A0),
+		struct KernelBase *, KernelBase, 0, Kernel)
+{
+	AROS_LIBFUNC_INIT
+
+	uintptr_t virt = (uintptr_t)virtual;
+	uintptr_t phys = virt;
+
+	if (virt >= 0xff000000)
+		phys = virt - 0xff000000;
+
+	return (void*)phys;
+
+	AROS_LIBFUNC_EXIT
+}
+
 void mmu_init(struct TagItem *tags)
 {
     uintptr_t krn_lowest  = krnGetTagData(KRN_KernelLowest,  0, tags);

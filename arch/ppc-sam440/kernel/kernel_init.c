@@ -96,7 +96,7 @@ static char            CmdLine[200]            __attribute__((used));
 
 module_t *	modlist;
 uint32_t	modlength;
-
+void *priv_KernelBase;
 uintptr_t	memlo;
 
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
@@ -173,6 +173,8 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         		memlo += (strlen(m->m_name) + 4) & ~3;
         		strcpy(mod[i].m_name, m->m_name);
 
+        		D(bug("[KRN] Module %s\n", m->m_name));
+
         		ForeachNode(&m->m_symbols, sym)
         		{
         			symbol_t *newsym = memlo;
@@ -227,6 +229,57 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     }
 }
 
+AROS_LH0(void *, KrnCreateContext,
+         struct KernelBase *, KernelBase, 10, Kernel)
+{
+    AROS_LIBFUNC_INIT
+
+    context_t *ctx;
+
+    uint32_t oldmsr = goSuper();
+
+    ctx = Allocate(KernelBase->kb_SupervisorMem, sizeof(context_t));
+    bzero(ctx, sizeof(context_t));
+
+    wrmsr(oldmsr);
+
+    if (!ctx)
+        ctx = AllocMem(sizeof(context_t), MEMF_PUBLIC|MEMF_CLEAR);
+
+    bug("[KRN] CreateContext()=%08x\n", ctx);
+
+    return ctx;
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH1(void, KrnDeleteContext,
+                AROS_LHA(void *, context, A0),
+         struct KernelBase *, KernelBase, 10, Kernel)
+{
+    AROS_LIBFUNC_INIT
+
+    bug("[KRN] DeleteContext(%08x)\n", context);
+
+    /* Was context in supervisor space? Deallocate it there :) */
+    if ((intptr_t)context & 0xf0000000)
+    {
+        uint32_t oldmsr = goSuper();
+
+        Deallocate(KernelBase->kb_SupervisorMem, context, sizeof(context_t));
+
+        wrmsr(oldmsr);
+    }
+    else
+        FreeMem(context, sizeof(context_t));
+
+    /* Was this context owning a FPU? Make FPU totally free then */
+    if (KernelBase->kb_FPUOwner == context)
+        KernelBase->kb_FPUOwner = NULL;
+
+    AROS_LIBFUNC_EXIT
+}
+
 AROS_LH0I(struct TagItem *, KrnGetBootInfo,
          struct KernelBase *, KernelBase, 10, Kernel)
 {
@@ -259,6 +312,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
      * exec.library itself.
      */
     wrspr(SPRG4, LIBBASE);
+    priv_KernelBase = LIBBASE;
 
     D(bug("[KRN] Allowing userspace to flush caches\n"));
     wrspr(MMUCR, rdspr(MMUCR) & ~0x000c0000);

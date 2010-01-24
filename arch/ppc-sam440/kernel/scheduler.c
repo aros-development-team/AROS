@@ -99,6 +99,7 @@ void core_Dispatch(regs_t *regs)
             /* Sleep almost forever ;) */
             //__asm__ __volatile__("wrteei 1; sync; isync;");
             wrmsr(rdmsr() | MSR_POW | MSR_EE);
+            __asm__ __volatile__("sync; isync;");
             __asm__ __volatile__("wrteei 0");
             //D(bug("[\n"));
             
@@ -131,10 +132,14 @@ void core_Dispatch(regs_t *regs)
         }
         
         /* Restore the task's state */
-        bcopy(GetIntETask(task)->iet_Context, regs, sizeof(context_t));
+        regs = GetIntETask(task)->iet_Context;
+
+        if (SysBase->IDNestCnt < 0)
+        	regs->srr1 |= MSR_EE;
+
+        //bcopy(GetIntETask(task)->iet_Context, regs, sizeof(context_t));
         /* Copy the fpu, mmx, xmm state */
 #warning FIXME: Change to the lazy saving of the FPU state!!!!
-#warning TODO: No FPU support yet!!!!!!! Yay, it sucks! :-D
     //    IPTR sse_ctx = ((IPTR)GetIntETask(task)->iet_Context + sizeof(regs_t) + 15) & ~15;
     //    asm volatile("fxrstor (%0)"::"D"(sse_ctx));
         
@@ -164,7 +169,6 @@ void core_Switch(regs_t *regs)
         
         /* Copy the fpu, mmx, xmm state */
 #warning FIXME: Change to the lazy saving of the FPU state!!!!
-#warning TODO: Write the damn FPU handling at all!!!!!!!! ;-D LOL
     //    IPTR sse_ctx = ((IPTR)GetIntETask(task)->iet_Context + sizeof(regs_t) + 15) & ~15;
     //    asm volatile("fxsave (%0)"::"D"(sse_ctx));
         

@@ -252,7 +252,6 @@ void intr_init()
                  "mtsprg1 %%r3          \n\t"   /* save %r3 */                                                  \
                  "mfcr %%r3             \n\t"   /* copy CR to %r3 */                                            \
                  "mtsprg2 %%r3          \n\t"   /* save %r3 */                                                  \
-                                                                                                                \
                  "mfsrr1 %%r3           \n\t"   /* srr1 (previous MSR) reg into %r3 */                          \
                  "andi. %%r3,%%r3,%0    \n\t"   /* Was the PR bit set in MSR already? */                        \
                  "beq- 1f               \n\t"   /* No, we were in supervisor mode */                           \
@@ -782,7 +781,7 @@ static void __attribute__((used)) __core_LeaveInterrupt()
 			"lwz %%r0,%[srr0](%%r3)        \n\t"
 			"mtsrr0 %%r0                   \n\t"
 			"lwz %%r0,%[srr1](%%r3)        \n\t"
-			//"rlwinm %%r0,%%r0,0,14,12      \n\t"
+			"rlwinm %%r0,%%r0,0,14,12      \n\t"
 			"mtsrr1 %%r0                   \n\t"
 			"lwz %%r0,%[ctr](%%r3)         \n\t"
 			"mtctr %%r0                    \n\t"

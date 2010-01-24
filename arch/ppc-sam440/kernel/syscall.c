@@ -8,7 +8,8 @@ extern char * __text_end;
 void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, void *self)
 {
     struct KernelBase *KernelBase = getKernelBase();
-    
+    int cause = 0;
+
 //    D(bug("[KRN] SysCall handler. context @ %p SC=%d\n", ctx, ctx->gpr[3]));
     
     if ((char*)ctx->srr0 < &__text_start || (char*)ctx->srr0 >= &__text_end)
@@ -28,6 +29,7 @@ void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, v
             break;
         
         case SC_SUPERSTATE:
+        	ctx->gpr[3] = ctx->srr1;
             ctx->srr1 &= ~MSR_PR;
             break;
         
@@ -39,12 +41,8 @@ void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, v
             break;
         
         case SC_CAUSE:
-            {
-                struct ExecBase *SysBase = getSysBase();
-                if (SysBase)
-                    core_Cause(SysBase);
-            }
-            break;
+        	cause = 1;
+        	break;
         
         case SC_DISPATCH:
             core_Dispatch(ctx);
@@ -72,5 +70,8 @@ void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, v
         }
     }
     
-    core_LeaveInterrupt(ctx);
+    if (cause)
+    	core_ExitInterrupt(ctx);
+    else
+    	core_LeaveInterrupt(ctx);
 }
