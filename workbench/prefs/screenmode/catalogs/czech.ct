@@ -1,10 +1,10 @@
-## version $VER: screenmode.catalog 1.1 (23.11.2007)
+## version $VER: Screenmode.catalog 1.2 (22.1.2010)
 ## language czech
 ## codeset 0
 ;
 ;
 MSG_NAME
-Rozli¹ení obrazovky (editor Screenmode)
+Zobrazení (editor Screenmode)
 ; ScreenMode Preferences
 ; 
 MSG_WIDTH
@@ -27,7 +27,7 @@ MSG_AUTOSCROLL
 \33lRolování
 ; \33lAutoscroll
 ;
-MSG_SELECT
-Výbìr rozli¹ení obrazovky
-; Select a Screen Mode
+MSG_DISPLAY_MODE
+Seznam zobrazovacích módù
+; Display Mode
 ;

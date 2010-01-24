@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 1.0 (22.11.2007)
+## version $VER: Wanderer.catalog 1.1 (24.1.2010)
 ## language czech
 ## codeset 0
 ;
@@ -9,7 +9,7 @@ Wanderer
 ;
 MSG_DESCRIPTION
 Správce souborù
-; File Manager
+; File manager
 ;
 MSG_SCREENTITLE
 Wanderer   %s grafické pamìti  %s ostatní pamìti
@@ -52,8 +52,8 @@ E
 ; E
 ;
 MSG_MEN_SHELL
-Shell...
-; Shell...
+Shell
+; Shell
 ;
 MSG_MEN_SC_SHELL
 W
@@ -61,7 +61,7 @@ W
 ;
 MSG_MEN_GUISET
 Vzhled systému...
-; GUI Settings...
+; GUI settings...
 ;
 MSG_MEN_ABOUT
 O programu...
@@ -81,7 +81,7 @@ Okno
 ;
 MSG_MEN_NEWDRAW
 Nový adresáø...
-; New Drawer...
+; New drawer...
 ;
 MSG_MEN_SC_NEWDRAW
 N
@@ -89,7 +89,7 @@ N
 ;
 MSG_MEN_OPENPAR
 Vy¹¹í adresáø
-; Open Parent
+; Open parent
 ;
 MSG_MEN_CLOSE
 Zavøít
@@ -105,7 +105,7 @@ Aktualizovat
 ;
 MSG_MEN_CONTENTS
 Vybrat v¹e
-; Select Contents
+; Select contents
 ;
 MSG_MEN_SC_CONTENTS
 A
@@ -145,11 +145,11 @@ V¹echny objekty
 ;
 MSG_MEN_SORTIC
 Seøadit
-; Sorted
+; Sort
 ;
 MSG_MEN_CLNUP
 Srovnat ikony
-; Clean Up
+; Clean up
 ;
 MSG_MEN_SC_CLNUP
 U
@@ -161,11 +161,15 @@ Dle názvu
 ;
 MSG_MEN_BYDATE
 Dle data
-; By Date
+; By date
 ;
 MSG_MEN_BYSIZE
 Dle velikosti
 ; By size
+;
+MSG_MEN_BYTYPE
+Dle druhu
+; By type
 ;
 MSG_MEN_REVERSE
 Obrácenì
@@ -211,8 +215,20 @@ MSG_MEN_TOOLS
 Nástroje
 ; Tools
 ;
+MSG_MEN_ICONSORTING
+Povolit øazení
+; Enable Icon Sorting
+;
+MSG_MEN_GROUPICONS
+Seskupit ikony
+; Group Icons
+;
+MSG_MEN_ICONSCLOSE
+Zavøít
+; Close
+;
 MSG_REALLYQUIT
-Opravdu chcete ukonèit systém Wanderer?
+Opravdu chcete ukonèit správce souborù?
 ; Do you really want to quit Wanderer?
 ;
 MSG_YESNO
@@ -226,4 +242,208 @@ DUMMY
 MSG_USERSCREENTITLE
 Wanderer   %pc grafické pamìti  %pf ostatní pamìti
 ; Wanderer %pc graphics mem %pf other mem
+;
+MSG_MEN_FORMAT
+Zformátovat disk...
+; Format disk...
+;
+MSG_MEN_SHUTDOWN
+Vypnout systém...
+; Shut down...
+;
+MSG_SHUTDOWN_TITLE
+Vypnutí systému
+; System shutdown
+;
+MSG_SHUTDOWN_BODY
+Vyberte prosím po¾adovanou akci.
+; What would you like to do?
+;
+MSG_SHUTDOWN_BUTTONS
+Vypnout|Restartovat hardware|Restartovat AROS|*Zru¹it
+; Power off|Restart computer|Restart AROS|*Cancel
+;
+MSG_ACTION_NOT_SUPPORTED
+Po¾adovanou akci nelze provést.
+; The selected action is not supported by your system.
+;
+MSG_OK
+*OK
+; *OK
+;
+MSG_EMPTY_TRASH
+Vyprázdnit ko¹
+; Empty trash
+;
+MSG_PUT_AWAY
+Sklidit z plochy
+; Put away
+;
+MSG_LEAVE_OUT
+Umístit na plochu
+; Leave out
+;
+MSG_UNSNAPSHOT
+Zru¹it umístìní
+; Unsnapshot
+;
+MSG_SNAPSHOT
+Zapsat umístìní
+; Snapshot
+;
+MSG_REQU_DELETE
+Smazat soubor
+; Delete file...
+;
+MSG_REQU_DELETE_YESNO
+_Smazat|Smaz_at v¹e|_Nemazat|Pø_eru¹it
+; _Yes|Yes to _all|_No|No _to all
+;
+MSG_REQU_DELETE_DRAWER_S
+Opravdu chcete smazat adresáø
+; Really delete drawer
+;
+MSG_REQU_DELETE_DRAWER_E
+?
+; ?
+;
+MSG_REQU_DELETE_FILE_S
+Opravdu chcete smazat soubor
+; Really delete file
+;
+MSG_REQU_DELETE_FILE_M
+umístìný v adresáøi
+; located in
+;
+MSG_REQU_DELETE_FILE_E
+?
+; ?
+;
+MSG_REQU_OVERWRITE
+Pøepsat soubor
+; Overwrite file...
+;
+MSG_REQU_OVERWRITE_S
+Opravdu chcete pøepsat soubor
+; Really overwrite file
+;
+MSG_REQU_OVERWRITE_M
+umístìný v adresáøi
+; located in
+;
+MSG_REQU_OVERWRITE_E
+?
+; ?
+;
+MSG_REQU_OVERWRITE_YESNO
+_Pøepsat|Pøeps_at v¹e|_Nemazat|Pø_eru¹it
+; _Overwrite|Overwrite _all|_No|No _to all
+;
+MSG_REQU_OVERWRITE_SKIPABORT
+Pøe_skoèit|Pø_eru¹it
+; _Skip|_Abort
+;
+MSG_REQU_PROTECTION
+Ochrana proti smazání
+; File Protection
+;
+MSG_REQU_PROTECTION_UNPROTECT
+_Odebrat|Odebr_at v¹em|_Nemìnit|Pø_eru¹it
+; _Unprotect|Unprotect _All|_No|No _to ALL
+;
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_S
+Chcete odebrat ochranu proti smazání u adresáøe
+; Do you wish to unprotect drawer
+;
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
+?
+; ?
+;
+MSG_NOFILEACCESS_S
+Chyba pøi zamykání souboru
+; Can't access file
+;
+MSG_NOFILEACCESS_M
+umístìný v adresáøi
+; located in
+;
+MSG_NOFILEACCESS_E
+
+;  
+;
+MSG_NODRAWERACCESS_S
+Chyba pøi zamykání adresáøe
+; Can't access drawer
+;
+MSG_NODRAWERACCESS_E
+
+;  
+;
+MSG_REQU_FILEUNPROTECT_S
+Chcete odebrat ochranu proti smazání u souboru
+; Do you wish to unprotect file
+;
+MSG_REQU_FILEUNPROTECT_M
+umístìného v adresáøi
+; located in
+;
+MSG_REQU_FILEUNPROTECT_E
+?
+; ?
+;
+MSG_WANDERER_FILEACCESS
+Práce se soubory
+; Wanderer file access
+;
+MSG_WANDERER_FILEACCESS_PROCESSING
+Zpracování dat...
+; Processing...
+;
+MSG_WANDERER_FILEACCESS_STOP
+Pøeru¹it
+; Stop
+;
+MSG_WANDERER_FILEACCESS_MOVEFROM
+Pøesunout z
+; Move from
+;
+MSG_WANDERER_FILEACCESS_MOVETO
+Pøesunout do
+; Move to
+;
+MSG_WANDERER_FILEACCESS_COPYFROM
+Zkopírovat z
+; Copy from
+;
+MSG_WANDERER_FILEACCESS_COPYTO
+Zkopírovat do
+; Copy to
+;
+MSG_WANDERER_FILEACCESS_FILE
+Soubor
+; File
+;
+MSG_WANDERER_FILEACCESS_TRAFFIC
+Pøenosová rychlost
+; Data transfer rate
+;
+MSG_WANDERER_FILEACCESS_DELETEFROM
+Smazat z adresáøe
+; Delete from drawer
+;
+MSG_WANDERER_FILEACCESS_FILETODELETE
+Smazat soubor
+; File to delete
+;
+MSG_WANDERER_FILEACCESS_NOOFFILES
+Zpracovaných souborù:
+; Processed files:
+;
+MSG_WANDERER_FILEACCESS_ACTUAL
+Aktuální soubor:
+; Size of current file:
+;
+MSG_WANDERER_FILEACCESS_TOTAL
+Celková velikost:
+; Overall size:
 ;
