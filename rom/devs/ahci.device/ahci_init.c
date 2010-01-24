@@ -26,6 +26,14 @@ and HBA_task code for each of them (or one).
 Every implemented port gets a unit number even if no device sits on the port because of hotplugging.
 In case of multiple HBA's first found HBA and its first implemented port gets unit number 0 and so on.
 
+ahci_init.c
+    - Enumerator
+    - Device init code
+ahci_device.c
+    - Open, Close, BeginIO, AbortIO, etc... or append init code to device
+ahci_hbahw
+    - HBA specific code 
+
 */
 
 static
@@ -35,6 +43,8 @@ AROS_UFH3(void, ahci_Enumerator,
     AROS_UFHA(APTR,             message,    A1))
 {
 	AROS_USERFUNC_INIT
+
+    IPTR    VendorID, ProductID;
 
     APTR    abar;
     IPTR    size;
@@ -49,6 +59,11 @@ AROS_UFH3(void, ahci_Enumerator,
         OOP_Object *PCIDriver;
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&PCIDriver);
 	    asd->PCIDriver = PCIDriver;
+
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorID);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
+        hba_chip->VendorID = VendorID;
+        hba_chip->ProductID = ProductID;
 
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base5, (APTR)&abar);
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size5, &size);
@@ -115,6 +130,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
                 int i;
                 ForeachNode(&asd->ahci_hba_list, hba_chip) {
                     D(bug("[AHCI]  HBA abar = %08x\n", hba_chip->abar));
+                    ahci_init_hba(hba_chip);
 
                     /* abar in hba_chip points to memory region with hba type structure */
                     hba = hba_chip->abar;

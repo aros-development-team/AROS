@@ -3,5 +3,5 @@ include $(TOP)/config/make.cfg
 
 %build_module mmake=kernel-ahci \
   modname=ahci modtype=device \
-  files="ahci_init" \
+  files="ahci_init ahci_hbahw" \
   uselibs="rom oop hiddstubs"
