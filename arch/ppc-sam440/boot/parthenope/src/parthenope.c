@@ -163,7 +163,7 @@ void testboot_aros(menu_t * menu, void *kernel, boot_dev_t * boot)
 {
 	int i;
 	char tmpbuf[100];
-	void *file_buff = malloc(5 * 1024 * 1024);
+	void *file_buff = malloc(10 * 1024 * 1024);
 	tagitem_t items[50];
 	tagitem_t *tags = &items[0];
 
