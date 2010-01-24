@@ -54,14 +54,16 @@ struct ahci_staticdata {
     APTR    ahci_MemPool;
 
     /* List of all found AHCI host devices (referred to as host bus adapters, or HBA) */
-    struct  MinList      ahci_hba_list;
+    struct  MinList ahci_hba_list;
 
 };
 
 /* One instance of HBA */
 struct ahci_hba_chip {
 
-    struct  MinNode       hba_Node;
+    struct  MinNode hba_Node;
+
+    IPTR    ProductID, VendorID;
 
     APTR    abar;
     IPTR    intline;
@@ -73,6 +75,12 @@ struct ahciBase {
     struct Device device;
     struct ahci_staticdata asd;
 };
+
+/* ahci_hbahw prototypes */
+void ahci_init_hba(struct ahci_hba_chip *hba_chip);
+void ahci_reset_hba(struct ahci_hba_chip *hba_chip);
+BOOL ahci_enable_hba(struct ahci_hba_chip *hba_chip);
+void ahci_disable_hba(struct ahci_hba_chip *hba_chip);
 
 #endif // _AHCI_HEADER_H
 
