@@ -4,6 +4,7 @@
     $Id$
 */
 
+#include <hidd/graphics.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/classes.h>
@@ -40,6 +41,8 @@ UWORD posctldata[] =
 };
 
 /***********************************************************************************/
+
+#define DEF_POINTER_DEPTH 4
 
 IPTR PointerClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
@@ -117,10 +120,32 @@ IPTR PointerClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 	    if (sprite)
 	    {
-		struct SharedPointer *shared = CreateSharedPointer(sprite,
-								   GetTagData(POINTERA_XOffset, 0, tags),
-								   GetTagData(POINTERA_YOffset, 0, tags),
-								   IntuitionBase);
+	        struct SharedPointer *shared;
+
+	        /* If our pointer doesn't already have a user-supplied colormap, we attach it here.
+		   This makes the pointer to always have its own colors on hi- and truecolor screens.
+		   In addition it gets an alpha channel.
+		   Note that this relies on the fact that AllocSpriteDataA() always generates HIDD bitmap
+		   in sprite->es_BitMap. */
+		if (!sprite->es_BitMap->Planes[2]) {
+		    ULONG i;
+		    HIDDT_Color col[DEF_POINTER_DEPTH] = {{0}};
+		    UWORD *q = &GetPrivIBase(IntuitionBase)->ActivePreferences->color17;
+
+		    for (i = 1; i < DEF_POINTER_DEPTH; i++ ) {
+			col[i].red   = (*q >> 8) * 0x1111;
+			col[i].green = ((*q >> 4) & 0xf) * 0x1111;
+			col[i].blue  = (*q & 0xf) * 0x1111;
+			col[i].alpha = 0x9F9F;
+			q++;
+		    }
+		    HIDD_BM_SetColors(sprite->es_BitMap->Planes[0], col, 0, DEF_POINTER_DEPTH);
+		}
+	    
+		shared = CreateSharedPointer(sprite,
+					     GetTagData(POINTERA_XOffset, 0, tags),
+					     GetTagData(POINTERA_YOffset, 0, tags),
+					     IntuitionBase);
 
 		if (shared)
 		{

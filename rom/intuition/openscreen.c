@@ -49,6 +49,12 @@
 #endif
 #include <aros/debug.h>
 
+/* This definition turns on compatibility mode where sprite colors
+   are allocated on hi- and truecolor screens also. This may be needed
+   if some software relies on this allocation. AROS itself currently does
+   not need this.
+#define ALWAYS_ALLOCATE_SPRITE_COLORS */
+
 struct OpenScreenActionMsg
 {
     struct IntuiActionMsg    msg;
@@ -987,8 +993,7 @@ static const char THIS_FILE[] = __FILE__;
     if (ok)
     {
         struct Color32 *p;
-        int 	    	k, c;
-        UWORD 	       *q;
+        int 	    	k;
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Set first 4 colors\n"));
 
@@ -1020,32 +1025,35 @@ static const char THIS_FILE[] = __FILE__;
                           0);
             }
         }
+	/* Allocate pens for mouse pointer sprite only on LUT screens. On hi- and
+	   truecolor screens sprite colors come from colormap attached to the sprite
+	   bitmap itself.
+	   See pointerclass::New() for details. */
+#ifndef ALWAYS_ALLOCATE_SPRITE_COLORS
+	if (ns.Depth < 9) {
+#endif
+	    UWORD *q = &GetPrivIBase(IntuitionBase)->ActivePreferences->color17;
+	    ULONG c = screen->Screen.ViewPort.ColorMap->SpriteBase_Even;
 
-        DEBUG_OPENSCREEN(dprintf("OpenScreen: Obtain Mousepointer colors\n"));
-
-        /* Allocate pens for the mouse pointer */
-        q = &GetPrivIBase(IntuitionBase)->ActivePreferences->color17;
-	c = screen->Screen.ViewPort.ColorMap->SpriteBase_Even;
-        for (k = 1; k < 4; ++k, ++q)
-        {
-    	    DEBUG_OPENSCREEN(dprintf("OpenScreen: ColorMap 0x%lx Pen %ld R 0x%lx G 0x%lx B 0x%lx\n",
-                                     screen->Screen.ViewPort.ColorMap,
-                                     k + c,
-                                     (*q >> 8) * 0x11111111,
-                                     ((*q >> 4) & 0xf) * 0x11111111,
-                                     (*q & 0xf) * 0x11111111));
-            ObtainPen(screen->Screen.ViewPort.ColorMap,
+	    DEBUG_OPENSCREEN(dprintf("OpenScreen: Obtain Mousepointer colors\n"));
+            /* Allocate pens for the mouse pointer */
+            for (k = 1; k < 4; ++k, ++q)
+            {
+    	        DEBUG_OPENSCREEN(dprintf("OpenScreen: ColorMap 0x%lx Pen %ld R 0x%lx G 0x%lx B 0x%lx\n",
+                                         screen->Screen.ViewPort.ColorMap,
+                                         k + c,
+					 (*q >> 8) * 0x11111111,
+					 ((*q >> 4) & 0xf) * 0x11111111,
+					 (*q & 0xf) * 0x11111111));
+                ObtainPen(screen->Screen.ViewPort.ColorMap,
                           k + c,
                           (*q >> 8) * 0x11111111,
                           ((*q >> 4) & 0xf) * 0x11111111,
                           (*q & 0xf) * 0x11111111,
                           0);
 /* The following piece is left for reference only. It came from
-   classic Amiga where mouse pointer was implemented as a hardware
-   sprite. It always uses DAC registers 17 - 19, even for screens
-   with small depth.
-   In future we probably need some other mechanism for setting
-   pointer palette, probably separate HIDD methods.
+   classic Amiga where mouse pointer could use additional DAC registers
+   even for screens with small depth.
             if (k + 17 < numcolors)
             {
                 ObtainPen(screen->Screen.ViewPort.ColorMap,
@@ -1064,7 +1072,10 @@ static const char THIS_FILE[] = __FILE__;
                          ((*q >> 4) & 0xf) * 0x11111111,
                          (*q & 0xf) * 0x11111111);
             }*/
+	    }
+#ifndef ALWAYS_ALLOCATE_SPRITE_COLORS
         }
+#endif
 
         if (colors)  /* if SA_Colors tag exists */
         {
