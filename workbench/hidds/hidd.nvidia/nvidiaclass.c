@@ -208,6 +208,11 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	1680, 1728, 1760, 1840,
 	1050, 1053, 1059, 1080,
 	"NVIDIA:1680x1050");
+    
+    MAKE_SYNC(1920x1080_60, 173000,
+	1920, 2048, 2248, 2576,
+	1080, 1083, 1088, 1120,
+	"NVIDIA:1920x1080");
 
     MAKE_SYNC(1920x1200_60, 162090,
         1920, 1984, 2176, 2480,
@@ -227,6 +232,7 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1280x800_60 },
 	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1440x900_60 },
 	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1680x1050_60 },
+	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1920x1080_60 },
 	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1920x1200_60 },
 
 	{ TAG_DONE, 0UL }

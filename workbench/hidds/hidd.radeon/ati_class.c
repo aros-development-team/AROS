@@ -565,6 +565,11 @@ OOP_Object *METHOD(ATI, Root, New)
 	1050, 1051, 1054, 1087,
 	"ATI:1680x1050");
 
+    MAKE_SYNC(1920x1080_60, 173000,
+	1920, 2048, 2248, 2576,
+	1080, 1083, 1088, 1120,
+	"ATI:1920x1080");
+
     MAKE_SYNC(1920x1200_60, 154000,
 	1920, 1968, 2000, 2080,
 	1200, 1203, 1209, 1235,
@@ -593,6 +598,7 @@ OOP_Object *METHOD(ATI, Root, New)
         { aHidd_Gfx_SyncTags,   (IPTR)sync_1280x800_60 },
         { aHidd_Gfx_SyncTags,   (IPTR)sync_1440x900_60 },
         { aHidd_Gfx_SyncTags,   (IPTR)sync_1680x1050_60 },
+        { aHidd_Gfx_SyncTags,   (IPTR)sync_1920x1080_60 },
         { aHidd_Gfx_SyncTags,   (IPTR)sync_1920x1200_60 },
 
         { TAG_DONE, 0UL }
