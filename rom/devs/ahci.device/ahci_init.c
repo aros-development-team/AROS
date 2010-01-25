@@ -53,40 +53,45 @@ AROS_UFH3(void, ahci_Enumerator,
 
     struct ahci_staticdata *asd = hook->h_Data;
 
-    struct ahci_hba_chip *hba_chip;
-    if((hba_chip = (struct ahci_hba_chip*) AllocVecPooled(asd->ahci_MemPool, sizeof(struct ahci_hba_chip)))) {
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base5, (APTR)&abar);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size5, &size);
+    if( !(abar == 0) ) {
 
-        OOP_Object *PCIDriver;
-        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&PCIDriver);
-	    asd->PCIDriver = PCIDriver;
+        struct ahci_hba_chip *hba_chip;
+        if((hba_chip = (struct ahci_hba_chip*) AllocVecPooled(asd->ahci_MemPool, sizeof(struct ahci_hba_chip)))) {
 
-        OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorID);
-        OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
-        hba_chip->VendorID = VendorID;
-        hba_chip->ProductID = ProductID;
+            OOP_Object *PCIDriver;
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&PCIDriver);
+	        asd->PCIDriver = PCIDriver;
 
-        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base5, (APTR)&abar);
-        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size5, &size);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorID);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
+            hba_chip->VendorID = VendorID;
+            hba_chip->ProductID = ProductID;
 
-        struct pHidd_PCIDriver_MapPCI mappci,*msg = &mappci;
-	    mappci.mID = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_MapPCI);
-	    mappci.PCIAddress = abar;
-	    mappci.Length = size;
-	    hba_chip->abar = (APTR)OOP_DoMethod(PCIDriver, (OOP_Msg)msg);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base5, (APTR)&abar);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size5, &size);
 
-        OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &intline);
-        hba_chip->intline = intline;
+            struct pHidd_PCIDriver_MapPCI mappci,*msg = &mappci;
+	        mappci.mID = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_MapPCI);
+	        mappci.PCIAddress = abar;
+	        mappci.Length = size;
+	        hba_chip->abar = (APTR)OOP_DoMethod(PCIDriver, (OOP_Msg)msg);
 
-        struct TagItem attrs[] = {
-            { aHidd_PCIDevice_isIO,    FALSE },
-            { aHidd_PCIDevice_isMEM,    TRUE },
-            { aHidd_PCIDevice_isMaster, TRUE },
-            { TAG_DONE, 0UL },
-        };
-        OOP_SetAttrs(pciDevice, (struct TagItem*)&attrs);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &intline);
+            hba_chip->intline = intline;
 
-        AddTail((struct List*)&asd->ahci_hba_list, (struct Node*)hba_chip);
+            struct TagItem attrs[] = {
+                { aHidd_PCIDevice_isIO,    FALSE },
+                { aHidd_PCIDevice_isMEM,    TRUE },
+                { aHidd_PCIDevice_isMaster, TRUE },
+                { TAG_DONE, 0UL },
+            };
+            OOP_SetAttrs(pciDevice, (struct TagItem*)&attrs);
 
+            AddTail((struct List*)&asd->ahci_hba_list, (struct Node*)hba_chip);
+
+        }
     }
 	AROS_USERFUNC_EXIT
 

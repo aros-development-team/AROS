@@ -34,8 +34,12 @@ void ahci_init_hba(struct ahci_hba_chip *hba_chip) {
     struct ahci_hba *hba;
     hba = hba_chip->abar;
 
-    hba_chip->Version = hba->vs;
+    /*
+        Enable AHCI mode
+    */
+	ahci_enable_hba(hba_chip);
 
+    hba_chip->Version = hba->vs;
     D(bug("[AHCI] Version %x.%02x\n",
         ((hba_chip->Version >> 20) & 0xf0) + ((hba_chip->Version >> 16) & 0x0f),
         ((hba_chip->Version >> 4) & 0xf0) + (hba_chip->Version & 0x0f) ));
@@ -85,7 +89,7 @@ void ahci_reset_hba(struct ahci_hba_chip *hba_chip) {
     /*
         Enable AHCI mode
     */
-	hba->ghc |= GHC_AE;
+	ahci_enable_hba(hba_chip);
 
     /*
         Reset HBA
@@ -102,7 +106,7 @@ void ahci_reset_hba(struct ahci_hba_chip *hba_chip) {
     /*
         Reenable AHCI mode
     */
-	hba->ghc |= GHC_AE;
+    ahci_enable_hba(hba_chip);
 
 	/*
         Clear interrupts
@@ -120,7 +124,14 @@ BOOL ahci_enable_hba(struct ahci_hba_chip *hba_chip) {
     struct ahci_hba *hba;
     hba = hba_chip->abar;
 
-    hba->ghc |= GHC_AE;
+    /*
+        Access to any other register than to GHC is not allowed when GHC_AE = 0,
+        ...but the implementation of GHC_AE bit depends on CAP_SAM -> RW or RO ?!?
+        Clear other bits while setting AE (MRSM, IE and HR)
+    */
+
+    if( !(hba->cap == CAP_SAM) )
+	    hba->ghc = GHC_AE;
 
     return ((hba->ghc && GHC_AE) ? TRUE:FALSE);
 }
@@ -131,6 +142,7 @@ void ahci_disable_hba(struct ahci_hba_chip *hba_chip) {
     struct ahci_hba *hba;
     hba = hba_chip->abar;
 
-    hba->ghc &= ~GHC_AE;
+    if( !(hba->cap == CAP_SAM) )
+        hba->ghc = 0x00000000;
 
 }
