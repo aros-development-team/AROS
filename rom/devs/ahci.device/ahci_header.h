@@ -68,6 +68,9 @@ struct ahci_hba_chip {
     APTR    abar;
     IPTR    intline;
 
+    ULONG   Version;
+    ULONG   PortNBR;
+
 };
 
 /* ahci.device base */
