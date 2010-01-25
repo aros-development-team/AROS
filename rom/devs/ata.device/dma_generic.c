@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2009, The AROS Development Team. All rights reserved
+    Copyright ï¿½ 2004-2009, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -115,6 +115,7 @@ LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
         array->prde_Length |= AROS_LONG2LE(PRDE_EOT);
     }
     D(bug("[ATA  ] dma_Setup: PRD Table set - %ld items in total.\n", items));
+    
     /*
      * PRD table all set.
      */
@@ -130,6 +131,8 @@ BOOL dma_SetupPRD(struct ata_Unit *unit, APTR buffer, ULONG sectors, BOOL io)
 BOOL dma_SetupPRDSize(struct ata_Unit *unit, APTR buffer, ULONG size, BOOL read)
 {
     LONG items = 0;
+    IPTR prd_phys;
+    ULONG length;
 
     D(bug("[ATA%02ld] dma_SetupPRDSize(buffer @ %p, %ld bytes, PRD @ %x for %s)\n", unit->au_UnitNum, buffer, size, unit->au_Bus->ab_PRD, read ? "READ" : "WRITE"));
 
@@ -138,9 +141,11 @@ BOOL dma_SetupPRDSize(struct ata_Unit *unit, APTR buffer, ULONG size, BOOL read)
     if (0 == items)
         return FALSE;
 
-    CacheClearE(unit->au_Bus->ab_PRD, items * sizeof(struct PRDEntry), CACRF_ClearD);
-    
-    ata_outl((ULONG)unit->au_Bus->ab_PRD, dma_PRD, unit->au_DMAPort);
+    length = items * sizeof(struct PRDEntry);
+
+    prd_phys = (IPTR)CachePreDMA(unit->au_Bus->ab_PRD, &length, DMA_ReadFromRAM);
+
+    ata_outl(prd_phys, dma_PRD, unit->au_DMAPort);
 
     if (read)
         ata_out(DMA_WRITE, dma_Command, unit->au_DMAPort); /* inverse logic */
