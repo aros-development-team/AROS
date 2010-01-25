@@ -9,6 +9,12 @@
 #include <exec/types.h>
 #include <inttypes.h>
 
+#define AHCI_VERSION_0_95   0x00000095
+#define AHCI_VERSION_1_00   0x00010000
+#define AHCI_VERSION_1_10   0x00010100
+#define AHCI_VERSION_1_20   0x00010200
+#define AHCI_VERSION_1_30   0x00010300
+
 enum {
 	CAP_S64A		= (1 << 31),	// Supports 64-bit Addressing
 	CAP_SNCQ		= (1 << 30),	// Supports Native Command Queuing
@@ -34,6 +40,20 @@ enum {
 	CAP_SXS 		= (1 << 5), 	// Supports External SATA
 	CAP_NP_MASK		= 0x1f,			// Number of Ports (zero-based number)
 	CAP_NP_SHIFT	= 0,
+};
+
+enum {
+    CAP2_APST       = (1 << 2),     // Automatic Partial to Slumber Transitions (APST)
+    CAP2_NVNP       = (1 << 1),     // NVMHCI Present (NVMP)
+    CAP2_BOH        = (1 << 0),     // BIOS/OS Handoff (BOH)
+};
+
+enum {
+    BOHC_BB         = (1 << 4),
+    BOHC_OOC        = (1 << 3),
+    BOHC_SOOE       = (1 << 2),
+    BOHC_OOS        = (1 << 1),
+    BOHC_BOS        = (1 << 0),
 };
 
 enum {
@@ -97,44 +117,43 @@ enum {
 	PORT_INT_DHR	= (1 << 0),		// Device to Host Register FIS Interrupt
 };
 
-/* Volatile ? */
 struct ahci_port {
-	ULONG		clb;			// Port x Command List Base Address (alignment 1024 byte)
-	ULONG		clbu;			// Port x Command List Base Address Upper 32-Bits
-	ULONG		fb;				// Port x FIS Base Address (alignment 256 byte)
-	ULONG		fbu;			// Port x FIS Base Address Upper 32-Bits
-	ULONG		is;				// Port x Interrupt Status
-	ULONG		ie;				// Port x Interrupt Enable
-	ULONG		cmd;			// Port x Command and Status
-	ULONG 		res1;			// Port x Reserved
-	ULONG		tfd;			// Port x Task File Data
-	ULONG		sig;			// Port x Signature
-	ULONG		ssts;			// Port x Serial ATA Status (SCR0: SStatus)
-	ULONG		sctl;			// Port x Serial ATA Control (SCR2: SControl)
-	ULONG		serr;			// Port x Serial ATA Error (SCR1: SError)
-	ULONG		sact;			// Port x Serial ATA Active (SCR3: SActive)
-	ULONG		ci;				// Port x Command Issue
-	ULONG		sntf;			// Port x Serial ATA Notification (SCR4: SNotification)
-	ULONG		res2;			// Port x FIS-based Switching Control
-	ULONG		res[11];		// Port x Reserved
-	ULONG		vendor[4];		// Port x Vendor Specific
+	volatile ULONG      clb;			// Port x Command List Base Address (alignment 1024 byte)
+	volatile ULONG      clbu;			// Port x Command List Base Address Upper 32-Bits
+	volatile ULONG      fb;				// Port x FIS Base Address (alignment 256 byte)
+	volatile ULONG      fbu;			// Port x FIS Base Address Upper 32-Bits
+	volatile ULONG      is;				// Port x Interrupt Status
+	volatile ULONG      ie;				// Port x Interrupt Enable
+	volatile ULONG      cmd;			// Port x Command and Status
+	volatile ULONG      res1;			// Port x Reserved
+	volatile ULONG      tfd;			// Port x Task File Data
+	volatile ULONG      sig;			// Port x Signature
+	volatile ULONG      ssts;			// Port x Serial ATA Status (SCR0: SStatus)
+	volatile ULONG      sctl;			// Port x Serial ATA Control (SCR2: SControl)
+	volatile ULONG      serr;			// Port x Serial ATA Error (SCR1: SError)
+	volatile ULONG      sact;			// Port x Serial ATA Active (SCR3: SActive)
+	volatile ULONG      ci;				// Port x Command Issue
+	volatile ULONG      sntf;			// Port x Serial ATA Notification (SCR4: SNotification)
+	volatile ULONG      res2;			// Port x FIS-based Switching Control
+	volatile ULONG      res[11];		// Port x Reserved
+	volatile ULONG      vendor[4];		// Port x Vendor Specific
 } __attribute__((__packed__));
 
 struct ahci_hba {
-	ULONG       cap;			// 0x00 Host Capabilities
-	ULONG       ghc;			// 0x04 Global Host Control
-	ULONG       is;				// 0x08 Interrupt Status
-	ULONG       pi;				// 0x0c Ports Implemented
-	ULONG       vs;				// 0x10 Version
-	ULONG       ccc_ctl;		// 0x14 Command Completion Coalescing Control
-	ULONG       ccc_ports;		// 0x18 Command Completion Coalsecing Ports
-	ULONG       em_loc;			// 0x1c Enclosure Management Location
-	ULONG       em_ctl;			// 0x20 Enclosure Management Control
-	ULONG       cap2;           // 0x24 Host Capabilities Extended
-    ULONG       bohc;           // 0x28 BIOS/OS Handoff Control and Status
-    ULONG       res[29];        // 0x2c-0x9f Reserved
-	ULONG		vendor[24];     // 0xa0-0xff Vendor Specific registers
-    struct ahci_port port[32];  // 0x100
+    volatile ULONG      cap;			// 0x00 Host Capabilities
+    volatile ULONG      ghc;			// 0x04 Global Host Control
+    volatile ULONG      is;				// 0x08 Interrupt Status
+    volatile ULONG      pi;				// 0x0c Ports Implemented
+    volatile ULONG      vs;				// 0x10 Version
+    volatile ULONG      ccc_ctl;		// 0x14 Command Completion Coalescing Control
+    volatile ULONG      ccc_ports;		// 0x18 Command Completion Coalsecing Ports
+    volatile ULONG      em_loc;			// 0x1c Enclosure Management Location
+    volatile ULONG      em_ctl;			// 0x20 Enclosure Management Control
+    volatile ULONG      cap2;           // 0x24 Host Capabilities Extended
+    volatile ULONG      bohc;           // 0x28 BIOS/OS Handoff Control and Status
+    volatile ULONG      res[29];        // 0x2c-0x9f Reserved
+    volatile ULONG      vendor[24];     // 0xa0-0xff Vendor Specific registers
+    struct ahci_port    port[32];       // 0x100
 } __attribute__((__packed__));
 
 #endif // _AHCI_HBA_H

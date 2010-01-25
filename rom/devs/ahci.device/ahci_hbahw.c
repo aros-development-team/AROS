@@ -34,18 +34,84 @@ void ahci_init_hba(struct ahci_hba_chip *hba_chip) {
     struct ahci_hba *hba;
     hba = hba_chip->abar;
 
-    D(bug("[AHCI] GHC = %08x", hba->ghc));
-    ahci_enable_hba(hba_chip);
-    D(bug("[AHCI] GHC = %08x", hba->ghc));
-    ahci_disable_hba(hba_chip);
-    D(bug("[AHCI] GHC = %08x", hba->ghc));
-    ahci_enable_hba(hba_chip);
-    D(bug("[AHCI] GHC = %08x", hba->ghc));
+    hba_chip->Version = hba->vs;
+
+    D(bug("[AHCI] Version %x.%02x\n",
+        ((hba_chip->Version >> 20) & 0xf0) + ((hba_chip->Version >> 16) & 0x0f),
+        ((hba_chip->Version >> 4) & 0xf0) + (hba_chip->Version & 0x0f) ));
+
+    /*
+        BIOS handoff if HBA supports it
+    */
+	if ( (hba_chip->Version >= AHCI_VERSION_1_20) ) {
+		if( (hba->cap2 && CAP2_BOH) ) {
+            D(bug("[AHCI] HBA supports BIOS/OS handoff\n"));
+            hba->bohc |= BOHC_OOS;
+            while( (hba->bohc && BOHC_BOS) );
+            //wait 25ms
+            if( (hba->bohc && BOHC_BB) ) {
+                //Wait minimum of 2 seconds to give BIOS time for finishing outstanding commands.
+            }
+        }
+    }
+
+    /*
+        Reset the HBA
+    */
+    ahci_reset_hba( hba_chip );
+
+    /*
+        What about the staggered spin-up?
+    */
+
+    ULONG i;
+    hba_chip->PortNBR = 0;
+    for (i = 0; i <= 31; i++) {
+        if( ((hba->pi) & (1<<i)) ) {
+            hba_chip->PortNBR++;
+        }
+    }
 
 }
 
 void ahci_reset_hba(struct ahci_hba_chip *hba_chip) {
     D(bug("[AHCI] (%04x:%04x) HBA reset...\n", hba_chip->VendorID, hba_chip->ProductID));
+
+    struct ahci_hba *hba;
+    hba = hba_chip->abar;
+
+    ULONG Timeout;
+
+    /*
+        Enable AHCI mode
+    */
+	hba->ghc |= GHC_AE;
+
+    /*
+        Reset HBA
+    */
+    hba->ghc |= GHC_HR;
+
+    Timeout = 5000;
+    while( (hba->ghc && GHC_HR) ) {
+        if( (--Timeout == 0) )
+            D(bug("[AHCI] Timeout while doing HBA reset!\n"));
+            break;
+    }
+
+    /*
+        Reenable AHCI mode
+    */
+	hba->ghc |= GHC_AE;
+
+	/*
+        Clear interrupts
+    */
+
+	/*
+        Configure CCC, if supporting
+    */
+
 }
 
 BOOL ahci_enable_hba(struct ahci_hba_chip *hba_chip) {

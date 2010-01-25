@@ -126,38 +126,9 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
                 HIDD_PCI_EnumDevices(asd->PCIObject, &FindHook, Requirements);
 
                 struct ahci_hba_chip *hba_chip;
-                struct ahci_hba *hba;
-                int i;
+
                 ForeachNode(&asd->ahci_hba_list, hba_chip) {
-                    D(bug("[AHCI]  HBA abar = %08x\n", hba_chip->abar));
                     ahci_init_hba(hba_chip);
-
-                    /* abar in hba_chip points to memory region with hba type structure */
-                    hba = hba_chip->abar;
-
-                    /* Parse some registers so it would look like this does something... or test if structures are in order */
-                    /* Huge amount of information can be gathered just from hba's cap register */
-
-                    D(bug("        cap       %08x\n", hba->cap));
-                    D(bug("        ghc       %08x\n", hba->ghc));
-                    D(bug("        is        %08x\n", hba->is));
-                    D(bug("        pi        %08x\n", hba->pi));
-                    D(bug("        vs        %08x\n", hba->vs));
-                    D(bug("        ccc_ctl   %08x\n", hba->ccc_ctl));
-                    D(bug("        ccc_ports %08x\n", hba->ccc_ports));
-                    D(bug("        em_loc    %08x\n", hba->em_loc));
-                    D(bug("        em_ctl    %08x\n", hba->em_ctl));
-                    D(bug("        cap2      %08x\n", hba->cap2));
-                    D(bug("        bohc      %08x\n", hba->bohc));
-
-                    D(bug("        # of ports %d\n", (hba->cap & 0x1f)+1) );
-//                  for (i = 0; i <= (hba->cap & 0x1f); i++) {
-                    for (i = 0; i <= 31; i++) {
-                        if( ((hba->pi) & (1<<i)) ) {
-                            D(bug("        port %d implemented\n", i+1));
-                            D(bug("        clb       %08x\n", hba->port[i].clb));
-                        }
-                    }
                     return TRUE;
                 }
             }else{
