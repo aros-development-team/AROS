@@ -132,7 +132,7 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
 #if 0
-#warning This detection technique doesn't work with some chipsets
+#warning This detection technique does not work with some chipsets
     /* Only continue if there appears to be a keyboard port */
     status = kbd_read_status();
     if (status == 0 || status == 0xff)
