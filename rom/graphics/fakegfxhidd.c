@@ -17,9 +17,12 @@
 #include "fakegfxhidd.h"
 
 #define DEBUG 0
-/* SIMULATE_LUT_FB is used for simulating LUT operations on truecolor framebuffer.
-   Useful for debugging.
-#define SIMULATE_LUT_FB */
+/* DISABLE_ARGB_POINTER actually makes the software mouse pointer code to always
+   behave like if a LUT framebuffer is used.
+   Useful for debugging if you have only truecolor display modes.
+   If you define this, make sure that ALWAYS_ALLOCATE_SPRITE_COLORS in
+   intuition/openscreen.c is also defined.
+#define DISABLE_ARGB_POINTER */
 #include <aros/debug.h>
 
 /******************************************************************************/
@@ -1324,8 +1327,8 @@ static void free_fakefbclass(OOP_Class *cl, struct class_static_data *csd)
 
 static VOID rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
 {
-    OOP_Object *pf;
-    IPTR    	fbdepth, i;
+    OOP_Object *pf, *cmap;
+    IPTR    	fbdepth, curdepth, i;
     UWORD	curs_base;
 
     D(bug("rethink_cursor(), curs_bm is 0x%p\n", data->curs_bm));
@@ -1334,9 +1337,20 @@ static VOID rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
 
     OOP_GetAttr(data->framebuffer, aHidd_BitMap_PixFmt, &pf);
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, &fbdepth);
+    OOP_GetAttr(data->curs_bm, aHidd_BitMap_ColorMap, &cmap);
+    OOP_GetAttr(data->curs_bm, aHidd_BitMap_PixFmt, &pf);
+    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &curdepth);
 
 #ifndef SIMULATE_LUT_FB
-    if (fbdepth > 8) {
+    /* We can get ARGB data from the pointer bitmap only
+       on one of two cases:
+       1) Pointer bitmap has more than 256 colors, in this case it
+          stores ARGB data in itself.
+       2) Pointer bitmap is a LUT bitmap with a colormap attached.
+          In this case colormap should contain ARGB values for actual
+	  colors.
+       Of course having ARGB data makes sense only on truecolor screens. */
+    if ((fbdepth > 8) && ((curdepth > 8) || cmap)) {
         data->curs_pixfmt = vHidd_StdPixFmt_ARGB32;
 	data->curs_bpp	  = 4;
     } else
@@ -1350,10 +1364,10 @@ static VOID rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
     /* If we have some good bitmap->bitmap blitting function with alpha channel support,
        we would not need this extra buffer and conversion for truecolor screens. */
     HIDD_BM_GetImage(data->curs_bm, data->curs_pixels, data->curs_width * data->curs_bpp, 0, 0, data->curs_width, data->curs_height, data->curs_pixfmt);
-    if (fbdepth < 9) {
+    if (data->curs_pixfmt == vHidd_StdPixFmt_LUT8) {
 	for (i = 0; i < data->curs_width * data->curs_height; i++) {
-	    if (data->curs_bm[i])
-	        data->curs_bm[i] += curs_base;
+	    if (data->curs_pixels[i])
+	        data->curs_pixels[i] += curs_base;
 	}
     }
 }
@@ -1430,15 +1444,10 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
 	else {
 	    /* Unfortunately we don't have any transparent blit function in our HIDD API, so we have to do it by hands. */
 	    ULONG pixnum = 0;
-#ifdef SIMULATE_LUT_FB
-	    OOP_Object *pfmt;
 	    OOP_Object *cmap;
-	    IPTR fbdepth;
 	    
-	    OOP_GetAttr(data->framebuffer, aHidd_BitMap_PixFmt, &pfmt);
-	    OOP_GetAttr(pfmt, aHidd_PixFmt_Depth, &fbdepth);
-	    OOP_GetAttr(data->curs_bm, aHidd_BitMap_ColorMap, &cmap);
-#endif
+	    OOP_GetAttr(data->framebuffer, aHidd_BitMap_ColorMap, &cmap);
+
     	    for(y = 0; y < height; y++)
 	    {
     	        for(x = 0; x < width; x++)
@@ -1446,14 +1455,7 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
 		    HIDDT_Pixel pix = data->curs_pixels[pixnum + x];
 
 		    if (pix) {
-#ifdef SIMULATE_LUT_FB
-			if (fbdepth > 8) {
-			    HIDDT_Color col;
-
-			    HIDD_CM_GetColor(cmap, pix, &col);
-			    pix = HIDD_BM_MapColor(data->framebuffer, &col);
-			}
-#endif
+			pix = HIDD_CM_GetPixel(cmap, pix);
 		        HIDD_BM_PutPixel(data->framebuffer, data->curs_x + x, data->curs_y + y, pix);
 		    }
 		}

@@ -17,8 +17,6 @@
 #include "gfxfuncsupport.h"
 #include "graphics_intern.h"
 
-#define DEF_POINTER_DEPTH 4
-
 /*****************************************************************************
 
     NAME */
@@ -73,8 +71,6 @@
     AROS_LIBFUNC_INIT
     
     OOP_Object *bitmap;
-    HIDDT_Color col[DEF_POINTER_DEPTH] = {{0}};
-    UWORD i, firstcolor;
     LONG res;
     LONG xoffset = GetTagData(CSTAG_XOffset, 0, tags);
     LONG yoffset = GetTagData(CSTAG_YOffset, 0, tags);
@@ -90,35 +86,9 @@
     newsprite->es_SimpleSprite.y = oldsprite->es_SimpleSprite.y;
     D(bug("Sprite position: (%d, %d)\n", newsprite->es_SimpleSprite.x, newsprite->es_SimpleSprite.y));
 
+    /* Set the cursor shape and make sure it is visible */
     bitmap = OBTAIN_HIDD_BM(newsprite->es_BitMap);
-    D(bug("HIDD bitmap object: 0x%p, colormap object: 0x%p\n", bitmap, HIDD_BM_COLMAP(newsprite->es_BitMap)));
-    
-    /* If our bitmap does not have a colormap, we have to attach it now. We pick it up from our ViewPort's colormap,
-       paying attention to sprite base color number. */
-    if (!HIDD_BM_COLMAP(newsprite->es_BitMap)) {
-        firstcolor = vp->ColorMap->SpriteBase_Even;
-        D(bug("Display has %u colors, sprite starts from %u\n", vp->ColorMap->Count, firstcolor));
-
-        D(bug("Sprite colors:\n"));
-        /* This is effectively the same as GetRGB32(), but takes into account that our array
-           is 16-bit, not 32-bit, and fills in alpha channel data */
-        for (i = 1; i < DEF_POINTER_DEPTH; i++ )
-        {
-            ULONG red, green, blue;
-	
-	    color_get(vp->ColorMap, &red, &green, &blue, i + firstcolor);
-	    D(bug("%02u: R 0x%08X, G 0x%08X, B 0x%08X\n", i + firstcolor, red, green, blue));
-
-	    col[i].red = red;
-	    col[i].green = green;
-	    col[i].blue = blue;
-	    col[i].alpha = 0x9F9F;
-        }
-
-        HIDD_BM_SetColors(bitmap, col, 0, DEF_POINTER_DEPTH);
-    }
-    
-    /* At last we actually set the cursor shape and make sure it is visible */
+    D(bug("HIDD bitmap object: 0x%p\n", bitmap));
     res = HIDD_Gfx_SetCursorShape(SDD(GfxBase)->gfxhidd, bitmap, xoffset, yoffset);
     if (res)
         HIDD_Gfx_SetCursorVisible(SDD(GfxBase)->gfxhidd, TRUE);
