@@ -14,7 +14,7 @@
 
     NAME */
 
-	AROS_LH3(void, InitTmpRas,
+	AROS_LH3(struct TmpRas  *, InitTmpRas,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct TmpRas  *, tmpras, A0),
@@ -40,6 +40,8 @@
         for use with functions like Flood(), Text() and AreaEnd().
 
     NOTES
+        Alltough the RKRM says InitTmpRas is a VOID function every SDK
+        implements it so that it returns the tmpras argument.
 
     EXAMPLE
 
@@ -60,6 +62,8 @@
 
   tmpras->RasPtr = buffer;
   tmpras->Size   = size;
+
+  return tmpras;
 
   AROS_LIBFUNC_EXIT
 } /* InitTmpRas */
