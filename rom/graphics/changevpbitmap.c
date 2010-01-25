@@ -53,14 +53,15 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* This is a very basic implementation. Screen refresh is completely not in sync with VBlank
-       (probably it's LoadView's job?). The main problem here is that AROS completely misses
-       VBlank interrupt. */
+    /* This is a very basic implementation. Screen refresh is completely not in sync with VBlank.
+       The main problem here is that AROS completely misses VBlank interrupt. */
 
-    /* Just insert a new bitmap and reload current view. LoadView() is expected to care about
+    /* Just insert a new bitmap and rebuild current view. MrgCop() is expected to care about
        the rest of stuff. */
     vp->RasInfo->BitMap = bm;
-    LoadView(GfxBase->ActiView);
+    
+    /* On real Amiga we should probably have been called MakeVPort() before this */
+    MrgCop(GfxBase->ActiView);
 
     /* Reply both messages - the displayed bitmap has been swapped */
     ReplyMsg(&db->dbi_SafeMessage);

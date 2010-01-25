@@ -6,7 +6,10 @@
     Lang: english
 */
 #include <aros/debug.h>
+#include <graphics/gfxbase.h>
 #include <graphics/view.h>
+
+#include "graphics_intern.h"
 
 /*****************************************************************************
 
@@ -43,6 +46,9 @@
     SEE ALSO
 
     INTERNALS
+	AROS currently doesn't run on Amiga hardware, so we don't work with real copperlists. However
+	we try to behave as if we work with them. So if the view is set as active, we immediately apply
+	all changes.
 
     HISTORY
 
@@ -51,7 +57,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* We don't have copper and don't use copperlists, so just do nothing */
+    /* If the given view is a current one, apply changes immediately */
+    if (GfxBase->ActiView == view) {
+        if (!DisplayView(view, GfxBase))
+	    return MCOP_NO_MEM;
+    }
+
     return MCOP_OK;
 
     AROS_LIBFUNC_EXIT

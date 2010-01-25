@@ -16,76 +16,49 @@
 #include <proto/oop.h>
 #include <oop/oop.h>
 
-/*****************************************************************************
-
-    NAME */
-#include <proto/graphics.h>
-
-        AROS_LH1(void, LoadView,
-
-/*  SYNOPSIS */
-        AROS_LHA(struct View *, view, A1),
-
-/*  LOCATION */
-        struct GfxBase *, GfxBase, 37, Graphics)
-
-/*  FUNCTION
-
-    INPUTS
-        view - pointer to the View structure which contains the pointer to the
-               constructed coprocessor instructions list, or NULL
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-	Currently AROS doesn't have actual view & viewport implementation. For the
-	user this means that you can't drag screens. Only one screen is visible, and
-	it's the frontmost one.
-	The frontmost Intuition screen corresponds to the first ViewPort in the view
-	(see intuition/rethinkdisplay.c)
-
-    HISTORY
-
-
-******************************************************************************/
+BOOL DisplayView(struct View *view, struct GfxBase *GfxBase)
 {
-    AROS_LIBFUNC_INIT
-
     #warning THIS IS NOT THREADSAFE
 
     /* To make this threadsafe we have to lock
        all gfx access in all the rendering calls
     */
-    struct BitMap *bitmap;
+
+    struct ViewPort *vp;
+    struct BitMap *bitmap = NULL;
     OOP_Object      	*cmap, *pf;
     HIDDT_ColorModel 	colmod;
     OOP_Object      	*fb;
     BOOL    	    	ok = FALSE;
 
-    /* Take the first ViewPort from the view. Its bitmap will be the frontmost one.
-       If NULL is passed as a view, we simply clear the display. */
-    bitmap = view ? view->ViewPort->RasInfo->BitMap : NULL;
+    /* Take the first visibme ViewPort from the view. Its bitmap will be the frontmost one.
+       If NULL is passed as a view, or there are no visible ViewPorts, we simply clear the display
+       (bitmap is NULL). */
+    
+    if (view) {
+        for (vp = view->ViewPort; vp; vp = vp->Next) {
+            if (!(vp->Modes & VP_HIDE)) {
+	        bitmap = vp->RasInfo->BitMap;
+	        break;
+	    }
+	}
+    }
 
     D(bug("LoadView(): displaying bitmap 0x%p\n", bitmap));
     //if (bitmap && (BMF_DISPLAYABLE != (bitmap->Flags & BMF_DISPLAYABLE)))
     if (bitmap && (!(bitmap->Flags & BMF_AROS_HIDD) || !(HIDD_BM_FLAGS(bitmap) & HIDD_BMF_SCREEN_BITMAP)))
     {
     	D(bug("!!! LoadView(): TRYING TO SET NON-DISPLAYABLE BITMAP !!!\n"));
-	return;
+	return FALSE;
     }
+
+    /* TODO: Here we should somehow pass view->ViewPort->ColorMap->SpriteBase_Even to the driver. May be add
+       a parameter to Show() method? */
 
     if ( SDD(GfxBase)->frontbm == bitmap)
     {
     	D(bug("!!!!!!!!!!!!!!! SHOWING BITMAP %p TWICE !!!!!!!!!!!\n", bitmap));
-	return;
+	return TRUE;
     }
 
     fb = HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, (bitmap ? HIDD_BM_OBJ(bitmap) : NULL), fHidd_Gfx_Show_CopyBack);
@@ -93,6 +66,7 @@
     if (NULL == fb)
     {
     	D(bug("!!! LoadView(): HIDD_Gfx_Show() FAILED !!!\n"));
+	return FALSE;
     }
     else
     {
@@ -136,9 +110,60 @@
     	    
 	}
 	Permit();
+	return TRUE;
+    }
+}
 
-	/* Set the current view */
-	GfxBase->ActiView = view;
+/*****************************************************************************
+
+    NAME */
+#include <proto/graphics.h>
+
+        AROS_LH1(void, LoadView,
+
+/*  SYNOPSIS */
+        AROS_LHA(struct View *, view, A1),
+
+/*  LOCATION */
+        struct GfxBase *, GfxBase, 37, Graphics)
+
+/*  FUNCTION
+
+    INPUTS
+        view - pointer to the View structure which contains the pointer to the
+               constructed coprocessor instructions list, or NULL
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+	Currently AROS doesn't have actual view & viewport implementation. For the
+	user this means that you can't drag screens. Only one screen is visible, and
+	it's the frontmost one.
+	The frontmost Intuition screen corresponds to the first ViewPort in the view
+	(see intuition/rethinkdisplay.c)
+
+    HISTORY
+
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    /* If the view is already set as current, everything is already
+       done by MrgCop() */
+    if (GfxBase->ActiView != view) {
+        if (DisplayView(view, GfxBase))
+    	    /* Set the current view only if ApplyView() succeeded.
+	       Yes, what a crude way of error checking... */
+	    GfxBase->ActiView = view;
     }
 
     AROS_LIBFUNC_EXIT
