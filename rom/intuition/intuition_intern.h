@@ -2,7 +2,7 @@
 #define INTUITION_INTERN_H
 
 /*
-    Copyright  1995-2009, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -127,6 +127,11 @@ do {                                                                            
 #   define USE_OPAQUESIZE 0
 #endif
 
+/* This definition turns on compatibility mode where sprite colors
+   are allocated on hi- and truecolor screens also. This may be needed
+   if some software relies on this allocation. AROS itself currently does
+   not need this.
+#define ALWAYS_ALLOCATE_SPRITE_COLORS */
 
 #ifdef __MORPHOS__
 void    dprintf(char *, ...) __attribute__ ((format (printf, 1, 2)));

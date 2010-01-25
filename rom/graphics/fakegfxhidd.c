@@ -21,7 +21,7 @@
    behave like if a LUT framebuffer is used.
    Useful for debugging if you have only truecolor display modes.
    If you define this, make sure that ALWAYS_ALLOCATE_SPRITE_COLORS in
-   intuition/openscreen.c is also defined.
+   intuition/intuition_intern.h is also defined.
 #define DISABLE_ARGB_POINTER */
 #include <aros/debug.h>
 

@@ -49,12 +49,6 @@
 #endif
 #include <aros/debug.h>
 
-/* This definition turns on compatibility mode where sprite colors
-   are allocated on hi- and truecolor screens also. This may be needed
-   if some software relies on this allocation. AROS itself currently does
-   not need this.
-#define ALWAYS_ALLOCATE_SPRITE_COLORS */
-
 struct OpenScreenActionMsg
 {
     struct IntuiActionMsg    msg;
@@ -1030,8 +1024,9 @@ static const char THIS_FILE[] = __FILE__;
 	   bitmap itself.
 	   See pointerclass::New() for details. */
 #ifndef ALWAYS_ALLOCATE_SPRITE_COLORS
-	if (ns.Depth < 9) {
+	if (ns.Depth < 9)
 #endif
+	{
 	    UWORD *q = &GetPrivIBase(IntuitionBase)->ActivePreferences->color17;
 	    ULONG c = screen->Screen.ViewPort.ColorMap->SpriteBase_Even;
 
@@ -1073,9 +1068,7 @@ static const char THIS_FILE[] = __FILE__;
                          (*q & 0xf) * 0x11111111);
             }*/
 	    }
-#ifndef ALWAYS_ALLOCATE_SPRITE_COLORS
         }
-#endif
 
         if (colors)  /* if SA_Colors tag exists */
         {

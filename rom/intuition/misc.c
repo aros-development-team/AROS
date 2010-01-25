@@ -238,6 +238,7 @@ void SetPointerColors(struct IntuitionBase *IntuitionBase)
     UWORD   	  *p;
     int     	   k;
     ULONG   	   lock = LockIBase(0);
+    /* Probably this should apply to Workbench screen and not to currently active one? */
     struct Screen *scr = IntuitionBase->ActiveScreen;
 
     DEBUG_POINTER(dprintf("SetPointerColors()\n");)
@@ -248,13 +249,14 @@ void SetPointerColors(struct IntuitionBase *IntuitionBase)
 
     if (scr)
     {
-	/* FIXME: this assumes that we have at least 12 colors */
-	ULONG firstcol = scr->ViewPort.ColorMap->Count > 24 ?  17 : scr->ViewPort.ColorMap->Count - 7;
+#ifndef ALWAYS_ALLOCATE_SPRITE_COLORS
+        if (GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) < 9)
+#endif
+	{
+	    ULONG firstcol = scr->ViewPort.ColorMap->SpriteBase_Even;
 
-        for (k = 0; k < 3; ++k, ++p)
-        {
-            SetRGB4(&scr->ViewPort,
-                    k + 17, *p >> 8, (*p >> 4) & 0xf, *p & 0xf);
+            for (k = 1; k < 4; ++k, ++p)
+		SetRGB4(&scr->ViewPort, k + firstcol, *p >> 8, (*p >> 4) & 0xf, *p & 0xf);
         }
     }
 

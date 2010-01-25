@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -63,7 +63,6 @@
     {
         ULONG lock = LockIBase(0);
         BOOL  changepointer = FALSE;
-	BOOL  changepointercolors = FALSE;
 
         if (size > offsetof(struct Preferences, PointerMatrix))
         {
@@ -74,7 +73,7 @@
         if (size > offsetof(struct Preferences, color17))
         {
             if (memcmp(&prefbuffer->color17, &GetPrivIBase(IntuitionBase)->ActivePreferences->color17, sizeof(UWORD) * 3) != 0)
-                changepointercolors = TRUE;
+                changepointer = TRUE;
         }
 
         CopyMem(prefbuffer,
@@ -167,9 +166,6 @@
                 InstallPointer(IntuitionBase, &GetPrivIBase(IntuitionBase)->DefaultPointer, pointer);
             }
         }
-
-	if (changepointercolors)
-	    SetPointerColors(IntuitionBase);
 
         /*
         ** If inform == TRUE then notify all windows that want to know about
