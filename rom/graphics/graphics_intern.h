@@ -399,4 +399,6 @@ void __DisposeRegionRectangleExtChunk
     struct GfxBase *GfxBase
 );
 
+BOOL DisplayView(struct View *view, struct GfxBase *GfxBase);
+
 #endif /* GRAPHICS_INTERN_H */
