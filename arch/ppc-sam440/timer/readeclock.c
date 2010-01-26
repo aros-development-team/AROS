@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ReadEClock() - read the base frequency of timers.
@@ -16,6 +16,7 @@
 #include <asm/amcc440.h>
 
 #include "lowlevel.h"
+#include "../kernel/kernel_intern.h"
 
         AROS_LH1(ULONG, ReadEClock,
 
@@ -55,6 +56,8 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    struct KernelBase *KernelBase = getKernelBase();
     
     Disable();
 
@@ -64,7 +67,7 @@
     dest->ev_lo = TimerBase->tb_ticks_total & 0xffffffff;
     
     Enable();
-    return 66666666;
+    return KernelBase->kb_OPBFreq;
 
     AROS_LIBFUNC_EXIT
 } /* CmpTime */

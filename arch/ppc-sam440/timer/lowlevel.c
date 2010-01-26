@@ -2,6 +2,7 @@
 #include <asm/amcc440.h>
 #include <asm/io.h>
 #include "../kernel/syscall.h"
+#include "../kernel/kernel_intern.h"
 
 #include <aros/asmcall.h>
 #include <hardware/intbits.h>
@@ -17,12 +18,33 @@ uint32_t tbc_expected;
 uint32_t tbc_achieved;
 int32_t corr;
 
+//inline uint32_t __attribute__((const)) tick2usec(uint32_t tick)
+//{
+//    uint32_t retval;
+//    uint64_t tmp = ((uint64_t)tick) * 64424510;
+//
+//    retval = (tmp + 0x7fffffff) >> 32;
+//
+//    return retval;
+//}
+//
+//inline uint32_t __attribute__((const)) usec2tick(uint32_t usec)
+//{
+//    uint32_t retval;
+//    uint64_t tmp = ((uint64_t)usec) * 286331150203ULL;
+//
+//    retval = (tmp + 0x7fffffff) >> 32;
+//
+//    return retval;
+//}
+
 inline uint32_t __attribute__((const)) tick2usec(uint32_t tick)
 {
+    struct KernelBase *KernelBase = getKernelBase();
     uint32_t retval;
-    uint64_t tmp = ((uint64_t)tick) * 64424510;
+    uint64_t tmp = ((uint64_t)tick) * 1000000;
 
-    retval = (tmp + 0x7fffffff) >> 32;
+    retval = (uint32_t)((tmp) / KernelBase->kb_OPBFreq);
 
     return retval;
 }
@@ -30,9 +52,10 @@ inline uint32_t __attribute__((const)) tick2usec(uint32_t tick)
 inline uint32_t __attribute__((const)) usec2tick(uint32_t usec)
 {
     uint32_t retval;
-    uint64_t tmp = ((uint64_t)usec) * 286331150203ULL;
+    struct KernelBase *KernelBase = getKernelBase();
+    uint64_t tmp = ((uint64_t)usec) * KernelBase->kb_OPBFreq;
 
-    retval = (tmp + 0x7fffffff) >> 32;
+    retval = (tmp) / 1000000;
 
     return retval;
 }
@@ -42,6 +65,7 @@ void EClockUpdate(struct TimerBase *TimerBase)
     uint32_t time;
     uint32_t diff;
     int show = 0;
+    struct KernelBase *KernelBase = getKernelBase();
 
     time = inl(GPT0_TBC);
     diff = (time - TimerBase->tb_prev_tick);
@@ -52,16 +76,16 @@ void EClockUpdate(struct TimerBase *TimerBase)
     TimerBase->tb_ticks_sec += diff;
     TimerBase->tb_ticks_elapsed += diff;
 
-    if (TimerBase->tb_ticks_sec >= 66666666)
+    if (TimerBase->tb_ticks_sec >= KernelBase->kb_OPBFreq)
     {
-        TimerBase->tb_ticks_sec -= 66666666;
+        TimerBase->tb_ticks_sec -= KernelBase->kb_OPBFreq;
         TimerBase->tb_CurrentTime.tv_secs++;
         //show = 1;
     }
 
-    if (TimerBase->tb_ticks_elapsed >= 66666666)
+    if (TimerBase->tb_ticks_elapsed >= KernelBase->kb_OPBFreq)
     {
-        TimerBase->tb_ticks_elapsed -= 66666666;
+        TimerBase->tb_ticks_elapsed -= KernelBase->kb_OPBFreq;
         TimerBase->tb_Elapsed.tv_secs++;
     }
 
@@ -80,7 +104,8 @@ void EClockSet(struct TimerBase *TimerBase)
 
 void TimerSetup(struct TimerBase *TimerBase, uint32_t waste)
 {
-    int32_t delay = 1333333;  /* 50Hz in worst case */
+	struct KernelBase *KernelBase = getKernelBase();
+    int32_t delay = KernelBase->kb_OPBFreq / 50;  /* 50Hz in worst case */
     struct timeval time;
     struct timerequest *tr;
     uint32_t current_time;
