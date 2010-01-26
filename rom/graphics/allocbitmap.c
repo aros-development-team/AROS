@@ -405,7 +405,7 @@
 
 	    nbm->BytesPerRow = ((sizex + 15) >> 4) * 2;
 	    nbm->Rows	     = sizey;
-	    nbm->Flags	     = flags;
+	    nbm->Flags	     = flags | BMF_STANDARD;
 	    nbm->Depth	     = depth;
 	    nbm->pad	     = 0;
 
