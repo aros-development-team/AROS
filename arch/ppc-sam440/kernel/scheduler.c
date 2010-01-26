@@ -80,6 +80,8 @@ void core_Dispatch(regs_t *regs)
 {
     volatile struct ExecBase *SysBase = getSysBase();
     struct Task *task;
+    uint64_t idle;
+    extern uint64_t idle_time;
 
     if (SysBase)
     {
@@ -90,6 +92,7 @@ void core_Dispatch(regs_t *regs)
          * It should be extended by some plugin mechanism which would put CPU and whole machine
          * into some more sophisticated sleep states (ACPI?)
          */
+        idle = mftbu();
         while (IsListEmpty(&SysBase->TaskReady))
         {
             SysBase->IdleCount++;
@@ -108,7 +111,8 @@ void core_Dispatch(regs_t *regs)
                 core_Cause(SysBase);
             }
         }
-    
+        idle_time += mftbu() - idle;
+
         SysBase->DispCount++;
         
         /* Get the first task from the TaskReady list, and populate it's settings through Sysbase */
@@ -124,7 +128,10 @@ void core_Dispatch(regs_t *regs)
         /* Handle tasks's flags */
         if (task->tc_Flags & TF_EXCEPT)
             Exception();
-        
+
+        /* Store the launch time */
+        GetIntETask(task)->iet_private1 = mftbu();
+
         if (task->tc_Flags & TF_LAUNCH)
         {
             AROS_UFC1(void, task->tc_Launch,
@@ -186,6 +193,9 @@ void core_Switch(regs_t *regs)
             AROS_UFC1(void, task->tc_Switch,
                       AROS_UFCA(struct ExecBase *, SysBase, A6));
         }
+
+        /* Task says byebye. Update the CPU Time now. */
+        GetIntETask(task)->iet_CpuTime += mftbu() - GetIntETask(task)->iet_private1;
     }
     
     core_Dispatch(regs);

@@ -102,6 +102,7 @@ uintptr_t	memlo;
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 {
     struct TagItem *tmp = tmp_struct.bootup_tags;
+    uint32_t reg;
 
     /* Lowest usable kernel memory */
     memlo = 0xff000000;
@@ -208,11 +209,6 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     mmu_init(BootMsg);
     intr_init();
     
-    /* 
-     * Slow down the decrement interrupt a bit. Rough guess is that UBoot has left us with
-     * 1kHz DEC counter.
-     */
-    wrspr(DECAR, 0xffffffff);
 
     /* Initialize exec.library */
     exec_main(BootMsg, NULL);
@@ -246,8 +242,6 @@ AROS_LH0(void *, KrnCreateContext,
     if (!ctx)
         ctx = AllocMem(sizeof(context_t), MEMF_PUBLIC|MEMF_CLEAR);
 
-    bug("[KRN] CreateContext()=%08x\n", ctx);
-
     return ctx;
 
     AROS_LIBFUNC_EXIT
@@ -259,10 +253,8 @@ AROS_LH1(void, KrnDeleteContext,
 {
     AROS_LIBFUNC_INIT
 
-    bug("[KRN] DeleteContext(%08x)\n", context);
-
     /* Was context in supervisor space? Deallocate it there :) */
-    if ((intptr_t)context & 0xf0000000)
+    if (((intptr_t)context & 0xf0000000) == 0xf0000000)
     {
         uint32_t oldmsr = goSuper();
 
@@ -296,11 +288,97 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 {
     int i;
     struct ExecBase *SysBase = getSysBase();
+    uint32_t reg;
     
     uintptr_t krn_lowest  = krnGetTagData(KRN_KernelLowest,  0, BootMsg);
     uintptr_t krn_highest = krnGetTagData(KRN_KernelHighest, 0, BootMsg);
     
+    /* Get the PLB and CPU speed */
+
+    /* PLL divisors */
+    wrdcr(CPR0_CFGADDR, CPR0_PLLD0);
+    reg = rddcr(CPR0_CFGDATA);
+
+    uint32_t fbdv = (reg >> 24) & 0x1f;
+    if (fbdv == 0)
+    	fbdv = 32;
+    uint32_t fwdva = (reg >> 16) & 0x1f;
+    if (fwdva == 0)
+    	fwdva = 16;
+    uint32_t fwdvb = (reg >> 8) & 7;
+    if (fwdvb == 0)
+    	fwdvb = 8;
+    uint32_t lfbdv = reg & 0x3f;
+    if (lfbdv == 0)
+    	lfbdv = 64;
+
+    /* OPB clock divisor */
+    wrdcr(CPR0_CFGADDR, CPR0_OPBD0);
+    reg = rddcr(CPR0_CFGDATA);
+    uint32_t opbdv0 = (reg >> 24) & 3;
+    if (opbdv0 == 0)
+    	opbdv0 = 4;
+
+    /* Peripheral clock divisor */
+    wrdcr(CPR0_CFGADDR, CPR0_PERD0);
+    reg = rddcr(CPR0_CFGDATA);
+    uint32_t perdv0 = (reg >> 24) & 7;
+    if (perdv0 == 0)
+    	perdv0 = 8;
+
+    /* PCI clock divisor */
+    wrdcr(CPR0_CFGADDR, CPR0_SPCID);
+    reg = rddcr(CPR0_CFGDATA);
+    uint32_t spcid0 = (reg >> 24) & 3;
+    if (spcid0 == 0)
+    	spcid0 = 4;
+
+    /* Primary B divisor */
+    wrdcr(CPR0_CFGADDR, CPR0_PRIMBD0);
+    reg = rddcr(CPR0_CFGDATA);
+    uint32_t prbdv0 = (reg >> 24) & 7;
+    if (prbdv0 == 0)
+    	prbdv0 = 8;
+
+    /* All divisors there. Read PLL control register and calculate the m value (see 44ep.book) */
+    wrdcr(CPR0_CFGADDR, CPR0_PLLC0);
+    reg = rddcr(CPR0_CFGDATA);
+    uint32_t m;
+    switch ((reg >> 24) & 3) /* Feedback selector */
+    {
+    case 0:	/* PLL output (A or B) */
+    	if ((reg & 0x20000000)) /* PLLOUTB */
+    		m = lfbdv * fbdv * fwdvb;
+    	else
+    		m = lfbdv * fbdv * fwdva;
+    	break;
+    case 1: /* CPU */
+		m = fbdv * fwdva;
+    default:
+    	m = perdv0 * opbdv0 * fwdvb;
+    }
+
+    uint32_t vco = (m * 66666666) + m/2;
+    LIBBASE->kb_CPUFreq = vco / fwdva;
+    LIBBASE->kb_PLBFreq = vco / fwdvb / perdv0;
+    LIBBASE->kb_OPBFreq = LIBBASE->kb_PLBFreq / opbdv0;
+    LIBBASE->kb_EPBFreq = LIBBASE->kb_PLBFreq / perdv0;
+    LIBBASE->kb_PCIFreq = LIBBASE->kb_PLBFreq / spcid0;
+
+    /*
+     * Slow down the decrement interrupt a bit. Rough guess is that UBoot has left us with
+     * 1kHz DEC counter. Enable decrementer timer and automatic reload of decrementer value.
+     */
+    wrspr(DECAR, LIBBASE->kb_OPBFreq / 50);
+    wrspr(TCR, rdspr(TCR) | TCR_DIE | TCR_ARE);
+
     D(bug("[KRN] Kernel resource post-exec init\n"));
+
+    D(bug("[KRN] CPU Speed: %dHz\n", LIBBASE->kb_CPUFreq));
+    D(bug("[KRN] PLB Speed: %dHz\n", LIBBASE->kb_PLBFreq));
+    D(bug("[KRN] OPB Speed: %dHz\n", LIBBASE->kb_OPBFreq));
+    D(bug("[KRN] EPB Speed: %dHz\n", LIBBASE->kb_EPBFreq));
+    D(bug("[KRN] PCI Speed: %dHz\n", LIBBASE->kb_PCIFreq));
 
     /* 4K granularity for data sections */
     krn_lowest &= 0xfffff000;

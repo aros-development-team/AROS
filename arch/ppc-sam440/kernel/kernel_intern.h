@@ -25,6 +25,13 @@ struct KernelBase {
     struct MemHeader *  kb_SupervisorMem;
     struct MinList      kb_Modules;
     context_t *			kb_FPUOwner;
+    uint32_t			kb_CPUUsage;
+
+    uint32_t			kb_CPUFreq;
+    uint32_t			kb_PLBFreq;
+    uint32_t			kb_OPBFreq;
+    uint32_t			kb_PCIFreq;
+    uint32_t			kb_EPBFreq;
 };
 
 struct KernelBSS {
