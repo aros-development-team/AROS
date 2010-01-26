@@ -929,8 +929,8 @@ case "$target_os" in
 	aros_flavour="ppcnative"
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
 	aros_kernel_ldflags=""
-	aros_default_wbwidth=640
-	aros_default_wbheight=480
+	aros_default_wbwidth=1024
+	aros_default_wbheight=768
 	aros_config_cflags="$aros_config_cflags -mcpu=440fp -mno-toc -fno-asynchronous-unwind-tables"
 	gcc_target_cpu="powerpc"
 	;;
