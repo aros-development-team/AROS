@@ -133,8 +133,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
                 struct ahci_hba_chip *hba_chip;
 
                 ForeachNode(&asd->ahci_hba_list, hba_chip) {
-                    ahci_init_hba(hba_chip);
-                    return TRUE;
+                    if( ahci_setup_hbatask( hba_chip ) )
+                        return TRUE;
                 }
             }else{
                 D(bug("[AHCI] Failed to create memory pool\n"));

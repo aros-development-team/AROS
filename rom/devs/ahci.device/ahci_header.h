@@ -40,9 +40,12 @@
 #define __OOP_NOATTRBASES__
 
 #undef HiddPCIDeviceAttrBase
-#define HiddPCIDeviceAttrBase           (XSD(cl)->PCIDeviceAB)
+#define HiddPCIDeviceAttrBase (XSD(cl)->PCIDeviceAB)
 
 #define XSD(cl) (&((LIBBASETYPEPTR)cl->UserData)->asd)
+
+#define HBA_TASK_STACKSIZE  16*1024
+#define HBA_TASK_PRI        10
 
 struct ahci_staticdata {
 
@@ -69,7 +72,9 @@ struct ahci_hba_chip {
     IPTR    intline;
 
     ULONG   Version;
-    ULONG   PortNBR;
+    ULONG   PortCount;
+
+    struct Task     *hba_task;
 
 };
 
@@ -80,9 +85,10 @@ struct ahciBase {
 };
 
 /* ahci_hbahw prototypes */
+BOOL ahci_setup_hbatask(struct ahci_hba_chip *hba_chip);
 void ahci_init_hba(struct ahci_hba_chip *hba_chip);
 void ahci_reset_hba(struct ahci_hba_chip *hba_chip);
-BOOL ahci_enable_hba(struct ahci_hba_chip *hba_chip);
+void ahci_enable_hba(struct ahci_hba_chip *hba_chip);
 void ahci_disable_hba(struct ahci_hba_chip *hba_chip);
 
 #endif // _AHCI_HEADER_H
