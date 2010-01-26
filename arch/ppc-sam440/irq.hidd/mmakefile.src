@@ -8,4 +8,4 @@ FILES       := irq_init irqclass
 
 %build_module mmake=kernel-sam440-ppc-irq \
   modname=irq modtype=hidd \
-  files=$(FILES) uselibs="oop"
+  files=$(FILES) uselibs="oop rom"
