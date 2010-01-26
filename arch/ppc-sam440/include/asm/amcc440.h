@@ -184,8 +184,8 @@ static inline void wrmsr(uint32_t msr) {
 #define TCR_FP_17       0x01000000
 #define TCR_FP_21       0x02000000
 #define TCR_FP_25       0x03000000
-#define TCR_FP_FIE      0x00800000
-#define TCR_FP_ARE      0x00400000
+#define TCR_FIE         0x00800000
+#define TCR_ARE         0x00400000
 
 /* TSR register */
 #define TSR_ENW         0x80000000
@@ -207,6 +207,19 @@ static inline void wrmsr(uint32_t msr) {
     do { asm volatile("mtdcr %0,%1"::"i"(reg),"r"(val)); } while(0)
 
 /* System device control */
+#define CPR0_CFGADDR	0x000C	/* Clocking Configuration Address Register */
+#define CPR0_CFGDATA	0x000D	/* Clocking Configuration Data Register */
+#define CPR0_CLKUPD		0x0020	/* Clocking Update Register */
+#define CPR0_PLLC0		0x0040	/* PLL Control Register */
+#define CPR0_PLLD0		0x0060	/* PLL Divisor Register */
+#define CPR0_PRIMAD0	0x0080	/* Primary A Divisor Register */
+#define CPR0_PRIMBD0	0x00A0	/* Primary B Divisor Register */
+#define CPR0_OPBD0		0x00C0	/* OPB Clock Divisor Register */
+#define CPR0_PERD0		0x00E0	/* Peripheral Clock Divisor Register */
+#define CPR0_MALD		0x0100	/* MAL Clock Divisor Register */
+#define CPR0_SPCID		0x0120	/* Sync PCI Clock Divisor Register */
+#define CPR0_ICFG		0x0140	/* Clock/Power Configuration Register */
+
 #define SDR0_CFGADDR    0x000E  /* R/W System DCR Configuration Address Register */
 #define SDR0_CFGDATA    0x000F  /* R/W System DCR Configuration Data Register */
 #define SDR0_SDSTP0     0x0020  /*  R  Serial Device Strap Register 0 */
