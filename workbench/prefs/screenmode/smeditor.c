@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,6 +8,7 @@
 
 #include <libraries/mui.h>
 
+#include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/muimaster.h>
 #include <proto/intuition.h>
@@ -52,7 +53,7 @@ Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         Child, (IPTR)VGroup,
             Child, CLabel(_(MSG_DISPLAY_MODE)),
             Child, (IPTR)(selector   = (Object *)ScreenModeSelectorObject, End),
-//FIXME: show again when it works:	    Child, (IPTR)(properties = (Object *)ScreenModePropertiesObject, GroupFrame, End),
+	    Child, (IPTR)(properties = (Object *)ScreenModePropertiesObject, GroupFrame, End),
         End,
         
         TAG_DONE
@@ -63,7 +64,6 @@ Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         SETUP_INST_DATA;
         
         data->selector   = selector;
-        properties = (Object *)ScreenModePropertiesObject, End; //TO BE REMOVED
         data->properties = properties;
              
         /*-- Setup notifications -------------------------------------------*/
@@ -202,6 +202,11 @@ IPTR SMEditor__MUIM_PrefsEditor_ImportFH
     {
         SMPByteSwap(&smp);
         
+	D(Printf("[smeditor] Loaded preferences file:\n"));
+	D(Printf("[smeditor] DisplayID 0x%08lX\n", smp.smp_DisplayID));
+	D(Printf("[smeditor] Size %ldx%ld\n", smp.smp_Width, smp.smp_Height));
+	D(Printf("[smeditor] Depth %ld\n", smp.smp_Depth));
+	D(Printf("[smeditor] Control 0x%08lX\n", smp.smp_Control));
         nnset(data->selector, MUIA_ScreenModeSelector_Active, smp.smp_DisplayID);
         SetAttrs
         (
