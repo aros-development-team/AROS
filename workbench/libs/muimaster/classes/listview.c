@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -196,10 +196,78 @@ IPTR Listview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
+/**************************************************************************
+ OM_SET
+**************************************************************************/
+void ListView__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct TagItem        *tag;
+    const struct TagItem  *tags;
+
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    {
+	switch (tag->ti_Tag)
+	{
+	    case MUIA_List_CompareHook:
+	    case MUIA_List_ConstructHook:
+	    case MUIA_List_DestructHook:
+	    case MUIA_List_DisplayHook:
+	    case MUIA_List_VertProp_First:
+	    case MUIA_List_Format:
+	    case MUIA_List_VertProp_Entries:
+	    case MUIA_List_VertProp_Visible:
+	    case MUIA_List_Active:
+	    case MUIA_List_First:
+	    case MUIA_List_Visible:
+	    case MUIA_List_Entries:
+	    case MUIA_List_Quiet:
+	    {
+	        struct MUI_ListviewData *data = INST_DATA(cl, obj);
+	    
+	        SetAttrs(data->list, tag->ti_Tag, tag->ti_Data, TAG_DONE);
+	    }
+	}
+    }
+}
+
+/**************************************************************************
+ OM_GET
+**************************************************************************/
+IPTR ListView__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
+{
+    switch (msg->opg_AttrID)
+    {
+	case MUIA_List_CompareHook:
+	case MUIA_List_ConstructHook:
+	case MUIA_List_DestructHook:
+	case MUIA_List_DisplayHook:
+	case MUIA_List_VertProp_First:
+	case MUIA_List_Format:
+	case MUIA_List_VertProp_Entries:
+	case MUIA_List_VertProp_Visible:
+	case MUIA_List_Active:
+	case MUIA_List_First:
+	case MUIA_List_Visible:
+	case MUIA_List_Entries:
+	case MUIA_List_Quiet:
+	{
+	    struct MUI_ListviewData *data = INST_DATA(cl, obj);
+	    
+	    return GetAttr(msg->opg_AttrID, data->list, msg->opg_Storage);
+	}
+    }
+
+    return DoSuperMethodA(cl, obj, msg);
+}
+
 BOOPSI_DISPATCHER(IPTR, Listview_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
+        case OM_SET:
+	    ListView__OM_SET(cl, obj, (struct opSet *)msg);
+	    break;
+	case OM_GET:	 return ListView__OM_GET(cl, obj, (struct opGet *)msg);
 	case OM_NEW:     return Listview__OM_NEW(cl, obj, (struct opSet *)msg);
 	case OM_DISPOSE: return Listview__OM_DISPOSE(cl,obj,msg);
 	case MUIM_List_Clear:
