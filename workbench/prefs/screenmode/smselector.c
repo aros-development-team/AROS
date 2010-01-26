@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,6 +9,7 @@
 #include <libraries/mui.h>
 #include <utility/hooks.h>
 
+#include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/muimaster.h>
 #include <proto/intuition.h>
@@ -178,7 +179,8 @@ IPTR ScreenModeSelector__OM_SET(Class *CLASS, Object *self, struct opSet *messag
             case MUIA_ScreenModeSelector_Active:
             {
                 int i;
-                
+		
+		D(Printf("[smselector] Set Active ID 0x%08lX\n", tag->ti_Data));
                 for
                 (
                     i = 0;
@@ -188,9 +190,10 @@ IPTR ScreenModeSelector__OM_SET(Class *CLASS, Object *self, struct opSet *messag
                 
                 if (data->ids_array[i] == INVALID_ID)
                     tag->ti_Data = INVALID_ID;
-                else
-                if (XGET(self, MUIA_Cycle_Active) != i)
-                    NFSET(self, MUIA_Cycle_Active, i);
+                else {
+		    D(Printf("[smselector] Set active item %lu\n", i));
+                    NFSET(self, MUIA_List_Active, i);
+		}
                 
                 break;
             }
