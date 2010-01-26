@@ -6,6 +6,7 @@
 #define MUIMASTER_YES_INLINE_STDARG
 #define DEBUG 0
 
+#include <exec/rawfmt.h>
 #include <libraries/mui.h>
 #include <utility/hooks.h>
 
@@ -50,6 +51,33 @@ AROS_UFHA(APTR         , msg , A1))
     AROS_USERFUNC_EXIT;
 }
 static struct Hook SelectHook = { .h_Entry = SelectFunc };
+
+AROS_UFH3(IPTR, DisplayFunc,
+	  AROS_UFHA(struct Hook *, hook, A0),
+	  AROS_UFHA(char **, array, A2),
+	  AROS_UFHA(STRPTR, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    if (entry) {
+        ULONG *ids_array = hook->h_Data;
+        ULONG num = array[-1];
+        IPTR modeid = ids_array[num];
+        static char modeid_str[9];
+    
+        RawDoFmt("%08lx", &modeid, RAWFMTFUNC_STRING, modeid_str);
+        array[0] = modeid_str;
+        array[1] = entry;
+    } else {
+        array[0] = _(MSG_MODE_ID);
+	array[1] = _(MSG_DESCRIPTION);
+    }
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
+static struct Hook DisplayHook = { .h_Entry = DisplayFunc };
 
 Object *ScreenModeSelector__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
@@ -109,9 +137,14 @@ Object *ScreenModeSelector__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
         cur_mode++;
     }
 
+    DisplayHook.h_Data = ids_array;
+
     list = ListObject,
         InputListFrame,
+	MUIA_List_DisplayHook, &DisplayHook,
+	MUIA_List_Format, "BAR,",
         MUIA_List_SourceArray, (IPTR)modes_array,
+	MUIA_List_Title, TRUE,
         End;
 
     self = (Object *)DoSuperNewTags
