@@ -7,7 +7,7 @@ USER_INCLUDES := -I$(SRCDIR)/rom/devs
 
 %build_module mmake=kernel-gameport \
   modname=gameport modtype=device \
-  files=gameport uselibs="oop"
+  files=gameport uselibs="oop rom"
 
 #MM includes-copy
 
