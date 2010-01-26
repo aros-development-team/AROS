@@ -313,13 +313,16 @@ void intr_init()
                   */ \
                  asm volatile( "b __EXCEPTION_Trampoline\n\t");
 
+uint64_t idle_time;
+static uint64_t last_calc;
+
 void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exception, void *self)
 {
     struct KernelBase *KernelBase = getKernelBase();
 
     /* Clear the DIS bit - we have received decrementer exception */
     wrspr(TSR, TSR_DIS);
-//    D(bug("[KRN] Decrementer handler. Context @ %p. srr1=%08x\n", ctx, ctx->srr1));
+    //D(bug("[KRN] Decrementer handler. Context @ %p. srr1=%08x\n", ctx, ctx->srr1));
 
     if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
     {
@@ -330,6 +333,28 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
             if (in->in_Handler)
                 in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
         }
+    }
+
+    /* Idle time calculator */
+
+    uint64_t current = mftbu();
+    if (current - last_calc > KernelBase->kb_OPBFreq)
+    {
+    	uint32_t total_time = current - last_calc;
+
+    	if (total_time < idle_time)
+    		total_time = idle_time;
+
+    	KernelBase->kb_CPUUsage = 1000 - ((uint32_t)idle_time) / (total_time / 1000);
+
+    	if (KernelBase->kb_CPUUsage > 999)
+    		D(bug("[KRN] CPU usage: %3d.%d (%s)\n", KernelBase->kb_CPUUsage / 10, KernelBase->kb_CPUUsage % 10,
+    				SysBase->ThisTask->tc_Node.ln_Name));
+    	else
+    		D(bug("[KRN] CPU usage: %3d.%d\n", KernelBase->kb_CPUUsage / 10, KernelBase->kb_CPUUsage % 10));
+
+    	idle_time = 0;
+    	last_calc = current;
     }
 
     core_ExitInterrupt(ctx);
@@ -658,7 +683,7 @@ static void __attribute__((used)) __EXCEPTION_Trampoline_template()
 static void __attribute__((used)) __core_LeaveInterrupt()
 {
 	asm volatile(".section .text,\"ax\"\n\t.align 5\n\t.globl core_LeaveInterrupt\n\t.type core_LeaveInterrupt,@function\n"
-			"core_LeaveInterrupt:            \n\t"
+			"core_LeaveInterrupt: wrteei 0           \n\t"
 			"lwz %%r31,%[gpr31](%%r3)      \n\t"
 			"lwz %%r30,%[gpr30](%%r3)      \n\t"
 			"lwz %%r29,%[gpr29](%%r3)      \n\t"
