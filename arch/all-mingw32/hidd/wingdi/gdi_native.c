@@ -35,7 +35,6 @@ static WNDCLASS wcl_desc = {
 static DWORD thread_id;	   /* Window service thread ID			     */
 static BOOL window_active; /* Flag - AROS window is active		     */
 static ULONG wcl;	   /* Window class		   		     */
-static HHOOK keyhook;	   /* Keyboard hook				     */
 static DWORD last_key;     /* Last pressed key - used to suppress autorepeat */
 
 /* Virtual hardware registers - currently statically allocated */
@@ -153,6 +152,7 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
     struct gfx_data *gdata;
     LONG width, height;
 
+    keyhook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)key_callback, wcl_desc.hInstance, 0);
     do {
         res = GetMessage(&msg, NULL, 0, 0);
         D(printf("[GDI] GetMessage returned %ld\n", res));
@@ -201,7 +201,10 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
 	}
     } while (res > 0);
     
-    /* TODO: cleanup before exit */
+    /* TODO: Further cleanup (close windows etc) */
+
+    if (keyhook)
+	UnhookWindowsHookEx(keyhook);
 
     return 0;
 }
@@ -225,7 +228,6 @@ struct Gfx_Control *__declspec(dllexport) GDI_Init(void)
 		gdictl.cursor = NULL;
 		
 		wcl_desc.hInstance = GetModuleHandle(NULL);
-		keyhook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)key_callback, wcl_desc.hInstance, 0);
 		wcl_desc.hIcon = LoadIcon(wcl_desc.hInstance, MAKEINTRESOURCE(101));
 		wcl_desc.hCursor = LoadCursor(NULL, IDC_ARROW);
 		wcl = RegisterClass(&wcl_desc);
@@ -241,8 +243,6 @@ struct Gfx_Control *__declspec(dllexport) GDI_Init(void)
 		    }
 		    UnregisterClass((LPCSTR)wcl, wcl_desc.hInstance);
 		}
-		if (keyhook)
-		    UnhookWindowsHookEx(keyhook);
 	    }
 	    KrnFreeIRQ(GDI_KeyboardData.IrqNum);
 	}
@@ -254,8 +254,6 @@ struct Gfx_Control *__declspec(dllexport) GDI_Init(void)
 void __declspec(dllexport) GDI_Shutdown(struct Gfx_Control *ctl)
 {
     UnregisterClass((LPCSTR)wcl, wcl_desc.hInstance);
-    if (keyhook)
-        UnhookWindowsHookEx(keyhook);
     KrnFreeIRQ(GDI_MouseData.IrqNum);
     KrnFreeIRQ(GDI_KeyboardData.IrqNum);
     KrnFreeIRQ(ctl->IrqNum);
