@@ -20,3 +20,9 @@ MSG_AUTOSCROLL (//)
 MSG_DISPLAY_MODE (//)
 Display Mode
 ;
+MSG_MODE_ID (//)
+Mode ID
+;
+MSG_DESCRIPTION (//)
+Description
+;
