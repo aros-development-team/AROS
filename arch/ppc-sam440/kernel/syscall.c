@@ -111,6 +111,7 @@ void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, v
                 asm volatile("dcbi 0,%0"::"r"(ptr));
             }
             asm volatile("sync");
+            break;
         }
 
         case SC_REBOOT:
@@ -121,8 +122,44 @@ void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, v
         	 * exception to address 0xfffffffc.
         	 */
 
-        	uint64_t newtbu = mftbu() + KernelBase->kb_OPBFreq;
         	D(bug("[KRN] REBOOT..."));
+
+        	{
+        	        char *mod, *func;
+        	        uint32_t offset;
+
+        	        offset = findNames(ctx->lr, &mod, &func);
+
+        	        D(bug("[KRN] LR=%08x", ctx->lr));
+
+        	        if (func)
+        	                D(bug(": byte %d in func %s, module %s\n", offset, func, mod));
+        	        else if (mod)
+        	                D(bug(": byte %d in module %s\n", offset, mod));
+        	        else
+        	                D(bug("\n"));
+
+        	    }
+
+        	    D(bug("[KRN] Backtrace:\n"));
+        	    uint32_t *sp = ctx->gpr[1];
+        	    while(*sp)
+        	    {
+        	            char *mod, *func;
+        	            sp = (uint32_t *)sp[0];
+        	            uint32_t offset;
+
+        	            offset = findNames(sp[1], &mod, &func);
+
+        	            if (func)
+        	                    D(bug("[KRN]  %08x: byte %d in func %s, module %s\n", sp[1], offset, func, mod));
+        	            else if (mod)
+        	                    D(bug("[KRN]  %08x: byte %d in module %s\n", sp[1], offset, mod));
+        	            else
+        	                    D(bug("[KRN]  %08x\n", sp[1]));
+        	    }
+
+        	uint64_t newtbu = mftbu() + KernelBase->kb_OPBFreq;
         	while(newtbu > mftbu());
         	D(bug("3..."));
         	newtbu = mftbu() + KernelBase->kb_OPBFreq;
