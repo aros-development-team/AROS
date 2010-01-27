@@ -76,11 +76,16 @@ struct gdikbd_data
 #define IID_Hidd_GDIKbd		"hidd.kbd.gdi"
 #define CLID_Hidd_GDIKbd	"hidd.kbd.gdi"
 
+
+/***** GDIGfx HIDD *******************/
+
+#define CLID_Hidd_GDIGfx	"hidd.gfx.gdi"
+
 struct gdi_staticdata
 {
     struct SignalSemaphore   sema; /* Protecting this whole struct */
      
-    APTR 	    	     display;
+    APTR 	    	     display;	  /* System display object */
     
     OOP_Class 	    	    *gfxclass;
     OOP_Class 	    	    *bmclass;
@@ -91,44 +96,21 @@ struct gdi_staticdata
     OOP_Object      	    *mousehidd;
     OOP_Object      	    *kbdhidd;
 
-    ULONG		     red_mask;
+    ULONG		     red_mask;	  /* Color data */
     ULONG		     green_mask;
     ULONG		     blue_mask;
     ULONG   	    	     red_shift;
     ULONG   	    	     green_shift;
     ULONG   	    	     blue_shift;
-    ULONG   	    	     depth; /* Size of pixel in bits */
+    ULONG   	    	     depth;	  /* Size of pixel in bits */
 
     struct Gfx_Control	    *ctl;
 
-/*  ULONG   	    	     bytes_per_pixel;
+/* LUT-specific data seems to be not needed because looks like Windows always pretends to
+   have truecolor bitmaps and deals with palette on itself. 
+    ULONG   	    	     bytes_per_pixel;
     ULONG   	    	     clut_shift;
-    ULONG   	    	     clut_mask;
-
-    Atom    	    	     delete_win_atom;
-    Atom    	    	     clipboard_atom;
-    Atom    	    	     clipboard_property_atom;
-    Atom    	    	     clipboard_incr_atom;
-    Atom    	    	     clipboard_targets_atom;
-
-    Time    	    	     x_time;
-#if 0
-    VOID	    	     (*activecallback)(APTR, OOP_Object *, BOOL);
-    APTR	    	     callbackdata;
-#endif    
-
-    BOOL    	    	    fullscreen;
-
-    struct MsgPort  	    *hostclipboardmp;
-    struct Message  	    *hostclipboardmsg;
-    ULONG   	    	     hostclipboard_readstate;
-    unsigned char   	    *hostclipboard_incrbuffer;
-    ULONG   	    	     hostclipboard_incrbuffer_size;
-    unsigned char   	    *hostclipboard_writebuffer;
-    ULONG   	    	     hostclipboard_writebuffer_size;
-    Window    	    	     hostclipboard_writerequest_window;
-    Atom    	    	     hostclipboard_writerequest_property;
-    ULONG   	    	     hostclipboard_write_chunks;*/
+    ULONG   	    	     clut_mask; */
 };
 
 struct gdiclbase
@@ -138,20 +120,7 @@ struct gdiclbase
     struct gdi_staticdata xsd;
 };
 
-#define HOSTCLIPBOARDSTATE_IDLE     	0
-#define HOSTCLIPBOARDSTATE_READ     	1
-#define HOSTCLIPBOARDSTATE_READ_INCR    2
-#define HOSTCLIPBOARDSTATE_WRITE    	3
-/*
-VOID get_bitmap_info(struct gdi_staticdata *xsd, Drawable d, ULONG *sz, ULONG *bpl);
 
-BOOL set_pixelformat(struct TagItem *pftags, struct gdi_staticdata *xsd, Drawable d);
-
-ULONG gdiclipboard_init(struct gdi_staticdata *);
-VOID  gdiclipboard_handle_commands(struct gdi_staticdata *);
-BOOL  gdiclipboard_want_event(XEvent *);
-VOID  gdiclipboard_handle_event(struct gdi_staticdata *, XEvent *);
-*/
 #undef XSD
 #define XSD(cl)     	(&((struct gdiclbase *)cl->UserData)->xsd)
 
@@ -169,14 +138,12 @@ VOID  gdiclipboard_handle_event(struct gdi_staticdata *, XEvent *);
 struct gfx_data
 {
     void *display;
-    ULONG depth;
-    void *cursor;
+    void *cursor;    /* Windows mouse cursor object			*/
     void *bitmap;    /* Currently shown bitmap object			*/
-    void *fbwin;     /* Frame buffer window			        */
+    void *fbwin;     /* Display window				        */
     void *bitmap_dc; /* Memory device context of currently shown bitmap */
-    IPTR width;      /* Size of currently shown bitmap (window size)    */
+    IPTR width;      /* Display window size				*/
     IPTR height;
-    UBYTE irq;	     /* IRQ number */
 };
 
 #ifdef __AROS__

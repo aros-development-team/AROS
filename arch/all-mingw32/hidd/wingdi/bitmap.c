@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2009, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     $Id: bitmap.c 26918 2007-10-02 02:55:49Z rob $
 
     Desc: Bitmap class for GDI hidd.
@@ -35,7 +35,6 @@
 
 #include LC_LIBDEFS_FILE
 
-#include "gdigfx_intern.h"
 #include "gdi.h"
 
 #include "bitmap.h"
@@ -47,7 +46,6 @@
 
 static OOP_AttrBase HiddBitMapAttrBase;
 static OOP_AttrBase HiddPixFmtAttrBase;
-static OOP_AttrBase HiddGDIGfxAB;
 static OOP_AttrBase HiddGDIBitMapAB;
 
 static struct OOP_ABDescr attrbases[] = 
@@ -55,7 +53,6 @@ static struct OOP_ABDescr attrbases[] =
     { IID_Hidd_BitMap	, &HiddBitMapAttrBase 	},
     { IID_Hidd_PixFmt	, &HiddPixFmtAttrBase 	},
     /* Private bases */
-    { IID_Hidd_GDIGfx	, &HiddGDIGfxAB	    	},
     { IID_Hidd_GDIBitMap, &HiddGDIBitMapAB    	},
     { NULL  	    	, NULL      	    	}
 };
@@ -498,6 +495,12 @@ VOID GDIBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    case aoHidd_GDIBitMap_Window:
 	        *msg->storage = (IPTR)data->window;
 		break;
+	    case aoHidd_GDIBitMap_DisplayWidth:
+		*msg->storage = (IPTR)data->win_width;
+		break;
+	    case aoHidd_GDIBitMap_DisplayHeight:
+		*msg->storage = (IPTR)data->win_height;
+		break;
 	    default:
 	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
@@ -538,6 +541,7 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 /*  APTR 	 friend_drawable = NULL;*/
     APTR	 display, my_dc, my_bitmap, orig_bitmap;
     ULONG   	 width, height;
+    ULONG	 win_width, win_height;
     IPTR	 depth;
     IPTR    	 attrs[num_Hidd_BitMap_Attrs];
     int     	 screen;
@@ -573,7 +577,9 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	OOP_GetAttr(friend, aHidd_GDIBitMap_Drawable, (IPTR *)&friend_drawable);
     }*/
 
-    display = (APTR)GetTagData(aHidd_GDIGfx_SysDisplay, 0, msg->attrList);
+    display = (APTR)GetTagData(aHidd_GDIBitMap_SysDisplay, 0, msg->attrList);
+    win_width = GetTagData(aHidd_GDIBitMap_DisplayWidth, 0, msg->attrList);
+    win_height = GetTagData(aHidd_GDIBitMap_DisplayHeight, 0, msg->attrList);
 
     D(bug("Creating GDI bitmap: %ldx%ldx%ld\n", width, height, depth));
 
@@ -602,10 +608,11 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         memset(data, 0, sizeof(struct bitmap_data));
 	/* Get some info passed to us by the gdigfxhidd class */
 	data->display = display;
-/*	data->cursor  = (Cursor)   GetTagData(aHidd_GDIGfx_SysCursor,  0, msg->attrList);*/
 	data->dc = my_dc;
 	data->bitmap = my_bitmap;
 	data->dc_bitmap = orig_bitmap;
+	data->win_width = win_width;
+	data->win_height = win_height;
 	CHECK_STACK
     	ReturnPtr("GDIGfx.BitMap::New()", OOP_Object *, o);
     } /* if (object allocated by superclass) */

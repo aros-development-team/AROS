@@ -1,6 +1,5 @@
 #include <aros/config.h>
 
-#include "gdigfx_intern.h"
 #include "gdi.h"
 
 #include <aros/symbolsets.h>
