@@ -224,8 +224,10 @@ IPTR ScreenModeSelector__OM_SET(Class *CLASS, Object *self, struct opSet *messag
                 if (data->ids_array[i] == INVALID_ID)
                     tag->ti_Data = INVALID_ID;
                 else {
-		    D(Printf("[smselector] Set active item %lu\n", i));
-                    NNFSET(self, MUIA_List_Active, i);
+		    if (XGET(self, MUIA_List_Active) != i) {
+		        D(Printf("[smselector] Set active item %lu\n", i));
+                        NNFSET(self, MUIA_List_Active, i);
+		    }
 		}
                 
                 break;
