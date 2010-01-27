@@ -31,6 +31,7 @@ struct ScreenModeProperties_DATA
     ULONG DisplayID;
     UWORD MinWidth, MinHeight;
     UWORD MaxWidth, MaxHeight;
+    BOOL  VariableDepth;
 };
 
 #define CheckMarkObject                              \
@@ -230,10 +231,12 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     { MUIA_Numeric_Min,        0 },
                     { MUIA_Numeric_Max,        0 },
                     { MUIA_Numeric_Default,    0 },
+		    { MUIA_Disabled,	    FALSE},
                     { TAG_DONE,                0 }
                 };
                 
                 struct DimensionInfo dim;
+		struct DisplayInfo dinf;
                 
                 BOOL autoscroll;
 		
@@ -281,6 +284,19 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
 		        height_tags[4].ti_Data = AdjustHeight(height, data);
 		    }
                 }
+		
+		data->VariableDepth = TRUE;
+		if (GetDisplayInfoData(NULL, (UBYTE *)&dinf, sizeof(dinf), DTAG_DISP, tag->ti_Data)) {
+		
+		    /* Check me: original AmigaOS screenmode prefs do not allow to change depth for CyberGFX
+		       screenmodes. Here i attempt to do it too, however i don't know how it's detected.
+		       Here i rely on DIPF_IS_FOREIGN flag - sonic */
+		    if (dinf.PropertyFlags & DIPF_IS_FOREIGN) {
+		        data->VariableDepth = FALSE;
+		        depth_tags[3].ti_Tag = MUIA_Numeric_Value;
+			depth_tags[4].ti_Data = TRUE;
+		    }
+		}
                 
                 /* Enable autoscroll only if the maximum sizes are bigger than 
                    the resolution.  */
@@ -341,7 +357,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 break;
             
             case MUIA_ScreenModeProperties_Depth:
-                if (id != INVALID_ID)
+                if ((id != INVALID_ID) && data->VariableDepth);
                 {
                     WORD depth = tag->ti_Data;
 		    
