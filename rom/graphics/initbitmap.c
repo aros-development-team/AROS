@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -64,7 +64,7 @@
 
     bm->Depth = depth;
     bm->Rows  = height;
-    bm->Flags = 0;
+    bm->Flags = BMF_STANDARD;
     bm->pad   = 0;
     bm->BytesPerRow = ((width + 15) >> 3) & ~0x1;
 
