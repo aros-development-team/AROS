@@ -37,7 +37,6 @@ struct user_func {
 struct native_func {
     struct Gfx_Control *(*GDI_Init)(void);
     void (*GDI_Shutdown)(struct Gfx_Control *ctl);
-    ULONG (*GDI_Start)(struct Gfx_Control *ctl);
     ULONG (*GDI_PutMsg)(void *win, ULONG msg, IPTR wp, IPTR lp);
     struct MouseData *GDI_MouseData;
     struct KeyboardData *GDI_KeyboardData;

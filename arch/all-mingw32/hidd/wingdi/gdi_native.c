@@ -16,10 +16,29 @@
 #define DKBD(x)
 #define DWIN(x)
 
-static DWORD thread_id;
-static BOOL window_active;
-static DWORD last_key;
+LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp);
 
+/* Global variables shared by all windows (theoretical)	*/
+
+static WNDCLASS wcl_desc = {
+    CS_NOCLOSE,
+    window_callback,
+    0,
+    0,
+    NULL,
+    NULL,
+    NULL,
+    (HBRUSH)COLOR_WINDOW,
+    NULL,
+    "AROS_Screen"
+};
+static DWORD thread_id;	   /* Window service thread ID			     */
+static BOOL window_active; /* Flag - AROS window is active		     */
+static ULONG wcl;	   /* Window class		   		     */
+static HHOOK keyhook;	   /* Keyboard hook				     */
+static DWORD last_key;     /* Last pressed key - used to suppress autorepeat */
+
+/* Virtual hardware registers - currently statically allocated */
 __declspec(dllexport) struct MouseData GDI_MouseData;
 __declspec(dllexport) struct KeyboardData GDI_KeyboardData;
 struct Gfx_Control gdictl;
@@ -130,79 +149,61 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
     HHOOK keyhook;
     BOOL res;
     MSG msg;
-    LONG wcl;
     WINDOWPLACEMENT wpos;
-    WNDCLASS wcl_desc = {
-        CS_NOCLOSE,
-        window_callback,
-        0,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        (HBRUSH)COLOR_WINDOW,
-        NULL,
-        "AROS_Screen"
-    };
     struct gfx_data *gdata;
     LONG width, height;
 
-    wcl_desc.hInstance = GetModuleHandle(NULL);
-    keyhook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)key_callback, wcl_desc.hInstance, 0);
-    wcl_desc.hIcon = LoadIcon(wcl_desc.hInstance, MAKEINTRESOURCE(101));
-    wcl_desc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wcl = RegisterClass(&wcl_desc);
-    D(printf("[GDI] Created window class 0x%p\n", wcl));
-    if (wcl) {
-        ctl->window_ready = 1;
-        KrnCauseIRQ(ctl->IrqNum);
-    	do {
-            res = GetMessage(&msg, NULL, 0, 0);
-            D(printf("[GDI] GetMessage returned %ld\n", res));
-            if (res > 0) {
-            	D(printf("[GDI] Got message %lu\n", msg.message));
-            	switch (msg.message) {
-            	case NOTY_SHOW:
-            	    gdata = (struct gfx_data *)msg.wParam;
-            	    if (gdata->bitmap) {
-            	        width = GetSystemMetrics(SM_CXFIXEDFRAME) * 2 + gdata->width;
-            	        height = GetSystemMetrics(SM_CYFIXEDFRAME) * 2 + gdata->height + GetSystemMetrics(SM_CYCAPTION);
-            	    	if (!gdata->fbwin) {
-            	    	    gdata->fbwin = CreateWindow((LPCSTR)wcl, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
-						        CW_USEDEFAULT, CW_USEDEFAULT, width,  height, NULL, NULL,
-						        wcl_desc.hInstance, NULL);
-            	    	    ShowWindow(gdata->fbwin, SW_SHOW);
-            	        } else {
-            	            wpos.length = sizeof(wpos);
-		            if (GetWindowPlacement(msg.hwnd, &wpos)) {
-            			wpos.rcNormalPosition.right = wpos.rcNormalPosition.left + width;
-	            	    	wpos.rcNormalPosition.bottom = wpos.rcNormalPosition.top + height;
-	            	    	SetWindowPlacement(msg.hwnd, &wpos);
-	            	    }
-	            	}
-	            	if (gdata->fbwin) {
-	            	    SetWindowLongPtr(gdata->fbwin, GWLP_USERDATA, (LONG_PTR)gdata->bitmap_dc);
-            	            RedrawWindow(gdata->fbwin, NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
-            	        }
+    do {
+        res = GetMessage(&msg, NULL, 0, 0);
+        D(printf("[GDI] GetMessage returned %ld\n", res));
+        if (res > 0) {
+            D(printf("[GDI] Got message %lu\n", msg.message));
+            switch (msg.message) {
+            case NOTY_SHOW:
+                gdata = (struct gfx_data *)msg.wParam;
+		/* Have a bitmap to show? */
+                if (gdata->bitmap) {
+            	    width = GetSystemMetrics(SM_CXFIXEDFRAME) * 2 + gdata->width;
+            	    height = GetSystemMetrics(SM_CYFIXEDFRAME) * 2 + gdata->height + GetSystemMetrics(SM_CYCAPTION);
+		    /* Do we already have a window? */
+            	    if (!gdata->fbwin) {
+			/* Create it if we don't */
+            	    	gdata->fbwin = CreateWindow((LPCSTR)wcl, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
+					             CW_USEDEFAULT, CW_USEDEFAULT, width,  height, NULL, NULL,
+						     wcl_desc.hInstance, NULL);
+            	    	ShowWindow(gdata->fbwin, SW_SHOW);
             	    } else {
-            	        if (gdata->fbwin) {
-            	            DestroyWindow(gdata->fbwin);
-            	            window_active = FALSE;
-            	            gdata->fbwin = NULL;
-            	        }
+			/* Otherwise just adjust its position */
+            	        wpos.length = sizeof(wpos);
+		        if (GetWindowPlacement(msg.hwnd, &wpos)) {
+            		    wpos.rcNormalPosition.right = wpos.rcNormalPosition.left + width;
+	            	    wpos.rcNormalPosition.bottom = wpos.rcNormalPosition.top + height;
+	            	    SetWindowPlacement(msg.hwnd, &wpos);
+	            	}
+	            }
+	            if (gdata->fbwin) {
+	            	SetWindowLongPtr(gdata->fbwin, GWLP_USERDATA, (LONG_PTR)gdata->bitmap_dc);
+            	        RedrawWindow(gdata->fbwin, NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
             	    }
-            	    KrnCauseIRQ(ctl->IrqNum);
-            	    break;
-            	default:
-            	    DispatchMessage(&msg);
+            	} else {
+		    /* Close the window if bitmap is NULL */
+            	    if (gdata->fbwin) {
+            	        DestroyWindow(gdata->fbwin);
+            	        window_active = FALSE;
+            	        gdata->fbwin = NULL;
+		    }
             	}
-	    }
-        } while (res > 0);
-        UnregisterClass((LPCSTR)wcl, wcl_desc.hInstance);
-    }
-    if (keyhook)
-        UnhookWindowsHookEx(keyhook);
-    KrnCauseIRQ(ctl->IrqNum);
+            	KrnCauseIRQ(ctl->IrqNum);
+            	break;
+            default:
+            	DispatchMessage(&msg);
+            }
+	}
+    } while (res > 0);
+    
+    /* TODO: cleanup before exit */
+
+    return 0;
 }
 
 /****************************************************************************************/
@@ -210,6 +211,7 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
 struct Gfx_Control *__declspec(dllexport) GDI_Init(void)
 {
     long irq;
+    HANDLE th;
 
     irq = KrnAllocIRQ();
     if (irq != -1) {
@@ -221,7 +223,26 @@ struct Gfx_Control *__declspec(dllexport) GDI_Init(void)
 	    if (irq != -1) {
 	        GDI_MouseData.IrqNum = irq;
 		gdictl.cursor = NULL;
-		return &gdictl;
+		
+		wcl_desc.hInstance = GetModuleHandle(NULL);
+		keyhook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)key_callback, wcl_desc.hInstance, 0);
+		wcl_desc.hIcon = LoadIcon(wcl_desc.hInstance, MAKEINTRESOURCE(101));
+		wcl_desc.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wcl = RegisterClass(&wcl_desc);
+		D(printf("[GDI] Created window class 0x%04x\n", wcl));
+		if (wcl) {
+		    window_active = FALSE;
+		    last_key = 0;
+		    th = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)gdithread_entry, &gdictl, 0, &thread_id);
+		    D(printf("[GDI] Started thread 0x%p ID 0x%08lX\n", th, thread_id));
+		    if (th) {
+			CloseHandle(th);
+			return &gdictl;
+		    }
+		    UnregisterClass((LPCSTR)wcl, wcl_desc.hInstance);
+		}
+		if (keyhook)
+		    UnhookWindowsHookEx(keyhook);
 	    }
 	    KrnFreeIRQ(GDI_KeyboardData.IrqNum);
 	}
@@ -232,25 +253,12 @@ struct Gfx_Control *__declspec(dllexport) GDI_Init(void)
 
 void __declspec(dllexport) GDI_Shutdown(struct Gfx_Control *ctl)
 {
+    UnregisterClass((LPCSTR)wcl, wcl_desc.hInstance);
+    if (keyhook)
+        UnhookWindowsHookEx(keyhook);
     KrnFreeIRQ(GDI_MouseData.IrqNum);
     KrnFreeIRQ(GDI_KeyboardData.IrqNum);
     KrnFreeIRQ(ctl->IrqNum);
-}
-
-ULONG __declspec(dllexport) GDI_Start(struct Gfx_Control *p)
-{
-    HANDLE th;
-    
-    window_active = FALSE;
-    p->window_ready = 0;
-    last_key = 0;
-    th = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)gdithread_entry, p, 0, &thread_id);
-    D(printf("[GDI] Started thread 0x%p ID 0x%08lX\n", th, thread_id));
-    if (th) {
-        CloseHandle(th);
-	return 1;
-    }
-    return 0;
 }
 
 ULONG __declspec(dllexport) GDI_PutMsg(void *window, UINT msg, WPARAM wp, LPARAM lp)
