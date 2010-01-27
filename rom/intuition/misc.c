@@ -253,8 +253,10 @@ void SetPointerColors(struct IntuitionBase *IntuitionBase)
         if (GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) < 9)
 #endif
 	{
-	    ULONG firstcol = scr->ViewPort.ColorMap->SpriteBase_Even;
-
+	    UWORD firstcol = scr->ViewPort.ColorMap->SpriteBase_Even;
+	    
+	    /* Translate bank number and offset to color number - see graphics/getcolormap.c */
+	    firstcol = (firstcol << 4) | (firstcol >> 8);
             for (k = 1; k < 4; ++k, ++p)
 		SetRGB4(&scr->ViewPort, k + firstcol, *p >> 8, (*p >> 4) & 0xf, *p & 0xf);
         }

@@ -107,19 +107,23 @@
 	       we use 3, not 4 colors.
 	       Yes, sprites may look not as expected on screens with low color depth, but at
 	       least they will be seen. It's better than nothing.
+	       
+	       Note that because our base color number doesn't always divide by 16, we use MSB to store
+	       the remainder (offset in the color bank). Yes, it's a bit hacky, but i have no better idea
+	       at the moment.
 
 	       FIXME: this mapping scheme assumes that we always have at least 16 colors.
                For current display modes supported by AROS it's always true, but in future
 	       we may support more display modes (for example monochrome ones), and we
 	       should take into account that on screens with less than 11 colors this simply
 	       won't work */
-	    if (entries > 24) {
+	    if (entries > 23) {
 		/* FIXME: Shouldn't these be different? */
-	        NewCM->SpriteBase_Even  = 16;
-	        NewCM->SpriteBase_Odd   = 16;
+	        NewCM->SpriteBase_Even  = 0x0001;
+	        NewCM->SpriteBase_Odd   = 0x0001;
 	    } else {
-		NewCM->SpriteBase_Even  = entries - 8;
-		NewCM->SpriteBase_Odd   = entries - 8;
+		NewCM->SpriteBase_Even  = (entries - 8) << 8;
+		NewCM->SpriteBase_Odd   = (entries - 8) << 8;
 	    }
 	    NewCM->Bp_1_base        = 0x0008;
 

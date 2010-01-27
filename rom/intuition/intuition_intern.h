@@ -643,8 +643,10 @@ struct IntScreen
     ULONG                    DisplayBeepColor0[3];
     struct Window           *DisplayBeepWindow;
 #endif
+#ifdef __MORPHOS__
     ULONG                    ModeID;
     struct MonitorSpec      *Monitor;
+#endif
     struct SharedPointer    *Pointer;
     struct Window           *MenuVerifyActiveWindow;
     int                      MenuVerifyTimeOut;
