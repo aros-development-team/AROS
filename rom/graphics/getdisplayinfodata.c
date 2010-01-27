@@ -164,7 +164,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    di->NotAvailable = FALSE;
 	    
 	    /* Set the propertyflags */
-	    di->PropertyFlags = DIPF_IS_FOREIGN | DIPF_IS_WB;
+	    di->PropertyFlags = DIPF_IS_FOREIGN | DIPF_IS_WB | DIPF_IS_SPRITES | DIPF_IS_SPRITES_CHNG_BASE | DIPF_IS_DBUFFER;
 	    
 	    /* We simulate AGA. This field is really obsolete */
 	    di->PaletteRange = 4096;
@@ -180,12 +180,12 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    
 	    di->Resolution.x = 22;
 	    di->Resolution.y = 22;
-	    
+
+	    di->NumStdSprites = 1;
 /*	    
 	    di->Resolution.x = ?;
 	    di->Resolution.y = ?;
 	    di->PixelSpeed = ?;
-	    di->NumStdSprites = ?
 	    di->SpriteResolution.x = ?;
 	    di->SpriteResolution.y = ?;
 */	    

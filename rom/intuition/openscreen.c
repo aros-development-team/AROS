@@ -672,9 +672,9 @@ static const char THIS_FILE[] = __FILE__;
         GetDisplayInfoData(displayinfo, &monitor, sizeof(monitor), DTAG_MNTR, modeid))
     {
         success = TRUE;
-
+#ifdef __MORPHOS__
         screen->Monitor = monitor.Mspc;
-
+#endif
         if (dclip == NULL)
         {
             switch (overscan)
@@ -1028,8 +1028,10 @@ static const char THIS_FILE[] = __FILE__;
 #endif
 	{
 	    UWORD *q = &GetPrivIBase(IntuitionBase)->ActivePreferences->color17;
-	    ULONG c = screen->Screen.ViewPort.ColorMap->SpriteBase_Even;
+	    UWORD c = screen->Screen.ViewPort.ColorMap->SpriteBase_Even;
 
+	    /* Translate bank number and offset to color number - see graphics/getcolormap.c */
+	    c = (c << 4) | (c >> 8);
 	    DEBUG_OPENSCREEN(dprintf("OpenScreen: Obtain Mousepointer colors\n"));
             /* Allocate pens for the mouse pointer */
             for (k = 1; k < 4; ++k, ++q)
