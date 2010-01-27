@@ -32,7 +32,6 @@
 
 #include <aros/symbolsets.h>
 
-#include "gdigfx_intern.h"
 #include "gdi.h"
 #include "bitmap.h"
 
@@ -44,13 +43,10 @@
 
 /****************************************************************************************/
 
-#define IS_GDIGFX_ATTR(attr, idx) ( ( (idx) = (attr) - HiddGDIGfxAB) < num_Hidd_GDIGfx_Attrs)
-
 /* Some attrbases needed as global vars.
   These are write-once read-many */
 
 static OOP_AttrBase HiddBitMapAttrBase;  
-static OOP_AttrBase HiddGDIGfxAB;
 static OOP_AttrBase HiddGDIBitMapAB;
 static OOP_AttrBase HiddSyncAttrBase;
 static OOP_AttrBase HiddPixFmtAttrBase;
@@ -59,7 +55,6 @@ static OOP_AttrBase HiddGfxAttrBase;
 static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_BitMap	, &HiddBitMapAttrBase	},
-    { IID_Hidd_GDIGfx	, &HiddGDIGfxAB		},
     { IID_Hidd_GDIBitMap, &HiddGDIBitMapAB	},
     { IID_Hidd_Sync 	, &HiddSyncAttrBase	},
     { IID_Hidd_PixFmt	, &HiddPixFmtAttrBase	},
@@ -312,104 +307,76 @@ VOID GDICl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
     BOOL    	    	    	 displayable, framebuffer;    
+    HIDDT_ModeID		 modeid;
     struct pHidd_Gfx_NewBitMap   p;
     OOP_Object      	    	*newbm;
-    IPTR    	    	    	 drawable;
+    OOP_Object		  	*friend;
+    HIDDT_StdPixFmt		 stdpf;
     
     struct gfx_data 	    	*data;
     struct TagItem  	    	 tags[] =
     {
-    	{ aHidd_GDIGfx_SysDisplay   , 0UL },	/* 0 */
-	{ TAG_IGNORE	    	    , 0UL },	/* 1 */
-	{ TAG_MORE  	    	    , 0UL }     /* 2 */
+    	{ aHidd_GDIBitMap_SysDisplay   , 0UL },	/* 0 */
+	{ aHidd_GDIBitMap_DisplayWidth , 0UL },	/* 1 */
+	{ aHidd_GDIBitMap_DisplayHeight, 0UL },	/* 2 */
+	{ TAG_IGNORE	    	       , 0UL },	/* 3 */
+	{ TAG_MORE  	    	       , 0UL }  /* 4 */
     };
     
     EnterFunc(bug("GDIGfx::NewBitMap()\n"));
-    
     data = OOP_INST_DATA(cl, o);
     
-    tags[0].ti_Data = (IPTR)data->display;
-    tags[2].ti_Data = (IPTR)msg->attrList;
-    
-    /* Displayable bitmap ? */
-    displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
-    framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
-    
+    /* Never create a framebuffer */
+    framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);	
     if (framebuffer)
     {
         D(bug("[GDI] Attempt to create a framebuffer, we don't want it\n"));
         return NULL;
     }
-    else if (displayable)
-    {
-    	tags[1].ti_Tag	= aHidd_BitMap_ClassPtr;
-	tags[1].ti_Data	= (IPTR)XSD(cl)->bmclass;
-	D(bug("[GDI] Creating displayable bitmap, ClassPtr is %p\n", tags[1].ti_Data));
-    }
-    else
-    {
-    	/* When do we create a gdi offscreen bitmap ?
-	    - For 1-plane bitmaps.
-	    - Bitmaps that have a friend that is a GDI bitmap
-	      and there is no standard pixfmt supplied
-	    - If the user supplied a modeid.
-	*/
-	OOP_Object  	*friend;
-	BOOL 	    	 usegdi = FALSE;
-    	HIDDT_StdPixFmt  stdpf;
 
-	friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
-	stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
+    tags[0].ti_Data = (IPTR)data->display;
+    tags[3].ti_Data = (IPTR)XSD(cl)->bmclass;
+    tags[4].ti_Data = (IPTR)msg->attrList;
 
-	if (NULL != friend)
-	{
-	    if (vHidd_StdPixFmt_Unknown == stdpf)
-	    {
-	    	APTR d;
-		
-	    	/* Is the friend a GDI bitmap ? */
-	    	d = (APTR)OOP_GetAttr(friend, aHidd_GDIBitMap_DeviceContext, (IPTR *)&d);
-	    	if (d)
-		{
-	    	    usegdi = TRUE;
-		}
-	    }
-	}
+    /* When do we create a GDI bitmap ?
+	- If the bitmap is displayable
+	- If the user supplied a modeid
+	- For 1-plane bitmaps
+	- Bitmaps that have a friend that is a GDI bitmap
+	  and there is no standard pixfmt supplied */
+    displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
+    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+    friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
+    stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
 
-	if (!usegdi)
-	{
-	    if (vHidd_StdPixFmt_Plane == stdpf)
-	    {
-	    	usegdi = TRUE;
-	    }
-	    else
-	    {
-	    	HIDDT_ModeID modeid;
-		
-	    	modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-		
-		if (vHidd_ModeID_Invalid != modeid)
-		{
-		    usegdi = TRUE;
-		}
-	    }
-	}
-	
-	if (usegdi)
-	{
-	    tags[1].ti_Tag  = aHidd_BitMap_ClassPtr;
-	    tags[1].ti_Data = (IPTR)XSD(cl)->bmclass;
-	    D(bug("[GDI] Creating offscreen bitmap, ClassPtr is %p\n", tags[1].ti_Data));
+    if (displayable || (modeid != vHidd_ModeID_Invalid) || (stdpf == vHidd_StdPixFmt_Plane)) {
+        tags[3].ti_Tag  = aHidd_BitMap_ClassPtr;
+
+	/* This relies on the fact that bitmaps with aHidd_BitMap_Displayable set to TRUE always
+           also get aHidd_BitMap_ModeID with valid value. Currently this seems to be true and i
+	   beleive it should stay so */
+	if (modeid != vHidd_ModeID_Invalid) {
+	    OOP_Object *sync, *pixfmt;
 	    
+	    HIDD_Gfx_GetMode(o, modeid, &sync, &pixfmt);
+	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &tags[1].ti_Data);
+	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &tags[2].ti_Data);
 	}
-	    D(else kprintf("gdi hidd: Could not create offscreen bitmap for supplied attrs! Superclass hopefully can.\n");)
+	D(bug("[GDI] Displayable: %d, ModeID: 0x%08lX, Display size: %ux%u\n", displayable, modeid, tags[1].ti_Data, tags[2].ti_Data));
+    } else if (friend && (stdpf == vHidd_StdPixFmt_Unknown)) {
+        OOP_Object *gfxhidd;
+
+        OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, (APTR)&gfxhidd);
+	if (gfxhidd == o) {
+	    tags[3].ti_Tag  = aHidd_BitMap_ClassPtr;
+	}
     }
-    
+    D(if (tags[3].ti_Tag == aHidd_BitMap_ClassPtr) bug("[GDI] Creating GDI bitmap, ClassPtr is %p\n", tags[3].ti_Data);)
+	    
     /* !!! IMPORTANT !!! */
-    
     p.mID = msg->mID;
     p.attrList = tags;
-    
+
     newbm = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
     ReturnPtr("GDIGfx::NewBitMap", OOP_Object *, newbm);
 }
@@ -421,20 +388,7 @@ VOID GDICl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     struct gfx_data *data = OOP_INST_DATA(cl, o);
     ULONG   	     idx;
     
-    if (IS_GDIGFX_ATTR(msg->attrID, idx))
-    {
-	switch (idx)
-	{
-	    case aoHidd_GDIGfx_SysDisplay:
-	    	*msg->storage = (IPTR)data->display;
-		break;
-		
-	    default:
-	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-		break;
-	}
-    }
-    else if (IS_GFX_ATTR(msg->attrID, idx))
+    if (IS_GFX_ATTR(msg->attrID, idx))
     {
     	switch (idx)
 	{
@@ -453,7 +407,7 @@ VOID GDICl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
-    
+
     return;
 }
 
@@ -485,8 +439,8 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	if (msg->bitMap)
 	{
 	    OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_DeviceContext, (IPTR *)&data->bitmap_dc);
-	    OOP_GetAttr(msg->bitMap, aHidd_BitMap_Width, &data->width);
-	    OOP_GetAttr(msg->bitMap, aHidd_BitMap_Height, &data->height);
+	    OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_DisplayWidth, &data->width);
+	    OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_DisplayHeight, &data->height);
 	}
     	/* Hosted system has no real blitter, however we have host-side window service thread that does some work asynchronously,
 	   and this looks like a real blitter. So we use this signal. Before we do it we ensure that it's reset (because it's
@@ -539,7 +493,7 @@ VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
     ULONG drmd;
     struct gfx_data *data;
     
-    EnterFunc(bug("[GDI] hidd.gfx.wingdi::CopyBox(0x%p(%lu, %lu, %lu, %lu) -> 0x%p(%lu, %lu,)\n", msg->src, msg->srcX, msg->srcY, msg->width, msg->height,
+    EnterFunc(bug("[GDI] hidd.gfx.wingdi::CopyBox(0x%p(%lu, %lu, %lu, %lu) -> 0x%p(%lu, %lu)\n", msg->src, msg->srcX, msg->srcY, msg->width, msg->height,
     		  msg->dest, msg->destX, msg->destY));
     data = OOP_INST_DATA(cl, o);
     
