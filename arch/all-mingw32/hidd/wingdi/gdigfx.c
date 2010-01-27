@@ -399,7 +399,7 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 	{
 	    tags[1].ti_Tag  = aHidd_BitMap_ClassPtr;
 	    tags[1].ti_Data = (IPTR)XSD(cl)->bmclass;
-	    D(bug("[GDI] Creating offscreen bitmap, ClassPtr is %p\n", tags[5].ti_Data));
+	    D(bug("[GDI] Creating offscreen bitmap, ClassPtr is %p\n", tags[1].ti_Data));
 	    
 	}
 	    D(else kprintf("gdi hidd: Could not create offscreen bitmap for supplied attrs! Superclass hopefully can.\n");)
@@ -654,9 +654,6 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 /****************************************************************************************/
 
-#undef XSD
-#define XSD(cl) xsd
-
 /*
    Inits sysdisplay, sysscreen, colormap, etc.. */
 static BOOL initgdistuff(struct gdi_staticdata *xsd)
@@ -694,10 +691,6 @@ static VOID cleanupgdistuff(struct gdi_staticdata *xsd)
 {
     /* Do nothing for now */
 }
-
-/****************************************************************************************/
-
-#define xsd (&LIBBASE->xsd)
 
 /****************************************************************************************/
 

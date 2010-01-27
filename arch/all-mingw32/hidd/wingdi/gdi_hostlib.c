@@ -52,7 +52,6 @@ static const char *user_func_names[] = {
 static const char *native_func_names[] = {
     "GDI_Init",
     "GDI_Shutdown",
-    "GDI_Start",
     "GDI_PutMsg",
     "GDI_MouseData",
     "GDI_KeyboardData",

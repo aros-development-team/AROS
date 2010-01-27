@@ -17,7 +17,6 @@
 struct Gfx_Control
 {
     unsigned char IrqNum;
-    unsigned char window_ready;
     void *cursor;
 };
 
