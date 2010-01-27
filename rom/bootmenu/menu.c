@@ -261,7 +261,7 @@ static BOOL initScreen(struct BootMenuBase_intern *BootMenuBase, struct BootConf
                 BootMenuBase->bm_Screen->Height,
                 0, 1,                            /* DetailPen, BlockPen */
                 IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_VANILLAKEY | IDCMP_GADGETUP | IDCMP_GADGETDOWN, /* IDCMPFlags */
-                WFLG_SMART_REFRESH | WFLG_BORDERLESS, /* Flags */
+                WFLG_SMART_REFRESH | WFLG_BORDERLESS | WFLG_ACTIVATE, /* Flags */
                 first,       	                 /* FirstGadget */
                 NULL,       	                 /* CheckMark */
                 NULL,       	                 /* Title */
