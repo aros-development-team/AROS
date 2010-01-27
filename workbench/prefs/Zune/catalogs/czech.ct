@@ -1,4 +1,4 @@
-## version $VER: Zune.catalog 1.8 (22.1.2010)
+## version $VER: Zune.catalog 1.9 (26.1.2010)
 ## language czech
 ## codeset 0
 ;
@@ -890,11 +890,11 @@ Zobrazit:
 ; Show:
 ;
 MSG_ICON
-Ve formì ikony na plo¹e
+Ikonu na plo¹e
 ; Icon
 ;
 MSG_MENU
-Polo¾ku v menu 'Nástroje'
+V menu 'Nástroje'
 ; Menu
 ;
 MSG_ON_STARTUP

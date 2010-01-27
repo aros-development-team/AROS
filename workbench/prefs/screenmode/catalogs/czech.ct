@@ -1,4 +1,4 @@
-## version $VER: Screenmode.catalog 1.2 (22.1.2010)
+## version $VER: Screenmode.catalog 1.3 (27.1.2010)
 ## language czech
 ## codeset 0
 ;
@@ -30,4 +30,12 @@ MSG_AUTOSCROLL
 MSG_DISPLAY_MODE
 Seznam zobrazovacích módù
 ; Display Mode
+;
+MSG_MODE_ID
+Identifikátor
+; Mode ID
+;
+MSG_DESCRIPTION
+Popis
+; Description
 ;
