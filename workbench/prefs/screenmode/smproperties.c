@@ -104,6 +104,8 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     data->def_height = def_height;
     data->autoscroll = autoscroll;
     
+/*  Check me: this is likely not needed and can cause notifyloops - sonic
+
     DoMethod
     (
         width, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
@@ -123,7 +125,7 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
         depth, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
         (IPTR)self, 3,
         MUIM_Set, MUIA_ScreenModeProperties_Depth, MUIV_TriggerValue
-    );
+    );*/
     
     DoMethod
     (
@@ -289,7 +291,11 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 data->DisplayID = id;
 		
                 SetAttrs(self, MUIA_Disabled, id == INVALID_ID, TAG_DONE);
-		
+		if (id == INVALID_ID) {
+		    nnset(data->def_width, MUIA_Selected, TRUE);
+		    nnset(data->def_height, MUIA_Selected, TRUE);
+		}
+
                 SetAttrsA(data->width,  width_tags);
                 SetAttrsA(data->height, height_tags);
                 SetAttrsA(data->depth,  depth_tags);
