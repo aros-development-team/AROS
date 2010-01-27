@@ -41,10 +41,12 @@ inline int getc(void)
 }
 
 /* bogus uboot */
-static char *scan_list[5] = {
+static char *scan_list[7] = {
 	"s4sii",
 	"s4siicdrom",
 	"net",
+	"ssii",
+	"ssiicdrom",
 	NULL,
 	NULL
 };
