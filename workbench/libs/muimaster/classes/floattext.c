@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,56 +26,131 @@
 
 extern struct Library *MUIMasterBase;
 
+static void SetText(Object *obj, STRPTR text)
+{
+    DoMethod(obj, MUIM_List_Clear);
+    
+    // TODO: split the text in single lines, handling of attributes
+    // like tabwith etc.
+    if (text)
+    {
+	DoMethod(obj, MUIM_List_InsertSingle, text, MUIV_List_Insert_Top);
+    }
+}
+
 IPTR Floattext__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
+    struct Floattext_DATA *data;
+    struct TagItem        *tag;
+    const struct TagItem  *tags;
+
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
 
-    if (obj)
+    if (!obj)
     {
-    	struct Floattext_DATA *data = INST_DATA(cl, obj);
-	struct TagItem *tag;
-
-	if ((tag = FindTagItem(MUIA_Floattext_Text, msg->ops_AttrList)))
-	    data->text = (char *)tag->ti_Data;
-	else
-	    data->text = NULL;
-
-	if (data->text)
-	    DoMethod(obj, MUIM_List_InsertSingle, data->text, MUIV_List_Insert_Top);
+	return 0;
     }
+
+    data = INST_DATA(cl, obj);
+    data->tabsize = 8;
+
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    {
+	switch (tag->ti_Tag)
+	{
+	    case    MUIA_Floattext_Justify:
+		    data->justify = tag->ti_Data;
+		    break;
+
+
+	    case    MUIA_Floattext_SkipChars:
+		    data->skipchars = (STRPTR)tag->ti_Data;
+		    break;
+
+	    case    MUIA_Floattext_TabSize:
+		    data->tabsize = tag->ti_Data;
+		    break;
+
+	    case    MUIA_Floattext_Text:
+		    data->text = StrDup((STRPTR)tag->ti_Data);
+		    break;
+	}
+    }
+    
+    SetText(obj, data->text);
     
     return (IPTR)obj;
 }
 
 IPTR Floattext__OM_DISPOSE(struct IClass *cl, Object *obj, struct opSet *msg)
 {
+    struct Floattext_DATA *data = INST_DATA(cl, obj);
+
+    FreeVec(data->text);
+
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-IPTR Floattext__OM_GET(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Floattext__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
+    struct Floattext_DATA *data = INST_DATA(cl, obj);
+#define STORE *(msg->opg_Storage)
+
+    switch(msg->opg_AttrID)
+    {
+	case	MUIA_Floattext_Justify:
+		STORE = data->justify;
+		return 1;
+
+	case	MUIA_Floattext_Text:
+		STORE = (IPTR)data->text;
+		return 1;
+
+    }
+
+#undef STORE
+
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
 IPTR Floattext__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Floattext_DATA *data = INST_DATA(cl, obj);
-
-    const struct TagItem *tags;
-    const struct TagItem *tag;
+    struct TagItem        *tag;
+    const struct TagItem  *tags;
+    BOOL                   changed = FALSE;
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
-	case MUIA_Floattext_Text:
-	    DoMethod(obj, MUIM_List_Clear, NULL);
-	    //if (data->text) free
-	    data->text = (char *)tag->ti_Data;
-	    if (data->text)
-		DoMethod(obj, MUIM_List_InsertSingle, data->text, MUIV_List_Insert_Top);
-	    break;
+	    case    MUIA_Floattext_Justify:
+		    data->justify = tag->ti_Data;
+		    changed = TRUE;
+		    break;
+
+	    case    MUIA_Floattext_SkipChars:
+		    data->skipchars = (STRPTR)tag->ti_Data;
+		    changed = TRUE;
+		    break;
+
+	    case    MUIA_Floattext_TabSize:
+		    data->tabsize = tag->ti_Data;
+		    changed = TRUE;
+		    break;
+
+	    case    MUIA_Floattext_Text:
+		    FreeVec(data->text);
+		    data->text = StrDup((STRPTR)tag->ti_Data);
+		    changed = TRUE;
+		    break;
+
 	}
+    }
+
+    if (changed) // To avoid recursion
+    {
+	SetText(obj, data->text);
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -84,14 +159,12 @@ IPTR Floattext__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 #if ZUNE_BUILTIN_FLOATTEXT
 BOOPSI_DISPATCHER(IPTR, Floattext_Dispatcher, cl, obj, msg)
 {
-    struct opSet* omsg = (struct opSet *)msg;
-
     switch (msg->MethodID)
     {
-	case OM_NEW:	 return Floattext__OM_NEW(cl, obj, omsg);
-	case OM_DISPOSE: return Floattext__OM_DISPOSE(cl, obj, omsg);
-	case OM_GET:	 return Floattext__OM_GET(cl, obj, omsg);
-	case OM_SET:	 return Floattext__OM_SET(cl, obj, omsg);
+	case OM_NEW:	 return Floattext__OM_NEW(cl, obj, msg);
+	case OM_DISPOSE: return Floattext__OM_DISPOSE(cl, obj, msg);
+	case OM_GET:	 return Floattext__OM_GET(cl, obj, msg);
+	case OM_SET:	 return Floattext__OM_SET(cl, obj, msg);
 	
         default:	 return DoSuperMethodA(cl, obj, msg);
     }

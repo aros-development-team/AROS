@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2003, The AROS Development Team. All rights reserved.
+    Copyright  2002-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -406,6 +406,10 @@ struct MUI_RGBcolor
 
 #ifndef _MUI_CLASSES_LIST_H
 #include "classes/list.h"
+#endif
+
+#ifndef _MUI_CLASSES_FLOATTEXT_H
+#include "classes/floattext.h"
 #endif
 
 #ifndef _MUI_CLASSES_POPSTRING_H
