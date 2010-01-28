@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -92,6 +92,11 @@ struct sync_data {
     ULONG vsync_length;
     
     UBYTE description[32];
+    
+    ULONG hmin;
+    ULONG hmax;
+    ULONG vmin;
+    ULONG vmax;
 };
 
 

@@ -197,18 +197,24 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	{
 	    struct DimensionInfo *di;
 	    IPTR depth, width, height;
+	    IPTR minwidth, minheight;
+	    IPTR maxwidth, maxheight;
 	    
 	    OOP_GetAttr(pf,   aHidd_PixFmt_Depth, &depth);
 	    OOP_GetAttr(sync, aHidd_Sync_HDisp,   &width);
 	    OOP_GetAttr(sync, aHidd_Sync_VDisp,   &height);
-	    
+	    OOP_GetAttr(sync, aHidd_Sync_HMin,   &minwidth);
+	    OOP_GetAttr(sync, aHidd_Sync_VMin,   &minheight);
+	    OOP_GetAttr(sync, aHidd_Sync_HMin,   &maxwidth);
+	    OOP_GetAttr(sync, aHidd_Sync_VMin,   &maxheight);
+
 	    di = (struct DimensionInfo *)buf;
 	    di->MaxDepth = depth;
 	    
-	    di->MinRasterWidth	= width;
-	    di->MinRasterHeight	= height;
-	    di->MaxRasterWidth	= width;
-	    di->MaxRasterHeight	= height;
+	    di->MinRasterWidth	= minwidth;
+	    di->MinRasterHeight	= minheight;
+	    di->MaxRasterWidth	= maxwidth;
+	    di->MaxRasterHeight	= maxheight;
 	    
 	    di->Nominal.MinX	= 0;
 	    di->Nominal.MinY	= 0;

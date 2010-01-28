@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics hidd class implementation.
@@ -828,7 +828,6 @@ static HIDDT_ModeID *querymode(struct modequery *mq)
     register OOP_Object *pf;
     register OOP_Object *sync;
     BOOL    	    	mode_ok = FALSE;
-    OOP_Class 	    	*cl = mq->cl;
     ULONG   	    	syncidx, pfidx;
     
     mq->dims_ok	  = FALSE;
@@ -1984,7 +1983,7 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
 	/* Compute the pixtime */
 	pixclock =(DOUBLE)attrs[SYAO(PixelClock)];
 	pixtime = 1 / pixclock;
-	pixtime *= 1000000000000;
+	pixtime *= 1000000000000.0;
 	data->pixtime = (ULONG)pixtime;
     #endif
     #else
@@ -2065,7 +2064,25 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
 	    }
 	}
     }
-    
+
+    /* By default minimum/maximum bitmap size is equal to display size */
+    if (GOT_SYNC_ATTR(HMin))
+        data->hmin = attrs[SYAO(HMin)];
+    else
+        data->hmin = data->hdisp;
+    if (GOT_SYNC_ATTR(HMax))
+	data->hmax = attrs[SYAO(HMax)];
+    else
+	data->hmax = data->hdisp;
+    if (GOT_SYNC_ATTR(VMin))
+        data->vmin = attrs[SYAO(VMin)];
+    else
+        data->vmin = data->vdisp;
+    if (GOT_SYNC_ATTR(VMax))
+	data->vmax = attrs[SYAO(VMax)];
+    else
+	data->vmax = data->vdisp;
+
     return ok;
 }
 

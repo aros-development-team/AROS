@@ -2125,7 +2125,7 @@ enum
     */
     aoHidd_Sync_PixelClock,	/* [I.G] ULONG - Pixel clock in Hz */
     
-    aoHidd_Sync_HDisp,		/* [I.G] ULONG - time to draw pixels which are displayed */
+    aoHidd_Sync_HDisp,		/* [I.G] ULONG - displayed pixels per line */
     aoHidd_Sync_HSyncStart,	/* [I.G] ULONG - time to the start of the horizontal sync */
     aoHidd_Sync_HSyncEnd,	/* [I.G] ULONG - time to the end of the horizontal synf */
     aoHidd_Sync_HTotal,		/* [I.G] ULONG - total time to draw one line + the hsync time	*/
@@ -2136,6 +2136,11 @@ enum
     aoHidd_Sync_VTotal,		/* [I.G] ULONG - number of rows in the screen includeing vsync 	*/
     
     aoHidd_Sync_Description,	/* [I.G] STRPTR - guess what */
+    
+    aoHidd_Sync_HMin,		/* [I.G] ULONG - minimum acceptable bitmap width */
+    aoHidd_Sync_HMax,		/* [I.G] ULONG - maximum acceptable bitmap width */
+    aoHidd_Sync_VMin,		/* [I.G] ULONG - minimum acceptable bitmap height */
+    aoHidd_Sync_VMax,		/* [I.G] ULONG - maximum acceptable bitmap height */
     
     num_Hidd_Sync_Attrs
     
@@ -2165,6 +2170,11 @@ enum
 #define aHidd_Sync_VTotal	(HiddSyncAttrBase + aoHidd_Sync_VTotal)
 
 #define aHidd_Sync_Description	(HiddSyncAttrBase + aoHidd_Sync_Description)
+
+#define aHidd_Sync_HMin		(HiddSyncAttrBase + aoHidd_Sync_HMin)
+#define aHidd_Sync_HMax 	(HiddSyncAttrBase + aoHidd_Sync_HMax)
+#define aHidd_Sync_VMin		(HiddSyncAttrBase + aoHidd_Sync_VMin)
+#define aHidd_Sync_VMax		(HiddSyncAttrBase + aoHidd_Sync_VMax)
 
 #define IS_SYNC_ATTR(attr, idx) \
 	( ( ( idx ) = (attr) - HiddSyncAttrBase) < num_Hidd_Sync_Attrs)
