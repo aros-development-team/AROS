@@ -22,6 +22,7 @@ COMMONTESTFILES := \
     getcybermapattr \
     gfx \
     gfxtest \
+    screentest \
     hostcb \
     iffparsewrite \
     ilbmtoc \
