@@ -11,6 +11,7 @@
 #include <graphics/clip.h>
 #include <graphics/view.h>
 #include <graphics/sprite.h>
+#include <intuition/pointerclass.h>
 #include <utility/tagitem.h>
 #include <proto/utility.h>
 
@@ -59,9 +60,9 @@
 	
 	Hosted ports can use host OS' native mouse cursor functions, which need
 	to know hotspot coordinates. Passing them to the graphics driver is done
-	using two private tags: CSTAG_XOffset and CSTAG_YOffset. Possible complete
-	sprite engine implementation would need to distinguish between actual sprite
-	and mouse cursor, so this can be just a temporary hack.
+	by forwarding two pointerclass tags: POINTERA_XOffset and POINTERA_YOffset.
+	Possible complete sprite engine implementation might need to distinguish
+	between actual sprite and mouse cursor, so this can be just a temporary hack.
 
     HISTORY
 
@@ -72,8 +73,8 @@
     
     OOP_Object *bitmap;
     LONG res;
-    LONG xoffset = GetTagData(CSTAG_XOffset, 0, tags);
-    LONG yoffset = GetTagData(CSTAG_YOffset, 0, tags);
+    LONG xoffset = GetTagData(POINTERA_XOffset, 0, tags);
+    LONG yoffset = GetTagData(POINTERA_YOffset, 0, tags);
 
     D(bug("ChangeExtSpriteA(0x%p, 0x%p, 0x%p)\n", vp, oldsprite, newsprite));
     

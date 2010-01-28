@@ -2,7 +2,7 @@
 #define GRAPHICS_GFX_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphic structures
@@ -77,8 +77,10 @@ struct Rect32
 #define BMB_PIXFMT_SHIFTUP 24
 
 /* AROS specific flags */
-#define BMB_AROS_HIDD        8
+#define BMB_AROS_HIDD        7	   /* Obsolete definition, use BMF_SPECIALFMT instead */
 #define BMF_AROS_HIDD	(1L << 7)
+#define BMB_SCREEN	    23
+#define BMF_SCREEN 	(1l << 23) /* A bitmap is a screen bitmap and can be displayed */
 
 #define BMA_HEIGHT 0
 #define BMA_DEPTH  4

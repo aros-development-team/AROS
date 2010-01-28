@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new BitMap
@@ -13,6 +13,7 @@
 #include <cybergraphx/cybergraphics.h>
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
+#include "dispinfo.h"
 
 #define SET_TAG(tags, idx, tag, val)	\
     tags[idx].ti_Tag = tag ; tags[idx].ti_Data = (IPTR)val;
@@ -59,6 +60,9 @@
 		be allocated in such a manner that it can be displayed.
 		Displayable data has more severe alignment restrictions
 		than non-displayable data in some systems.
+		Note that it may be not enough to specify only this flag
+		to make the bitmap really displayable. See BMF_SCREEN
+		description.
 
 	    BMF_INTERLEAVED: tells graphics that you would like your
 		bitmap to be allocated with one large chunk of display
@@ -76,6 +80,12 @@
 	    BMF_SPECIALFMT: causes graphics to allocate a bitmap
 	    	of a standard CyberGraphX format. The format
 		(PIXFMT_????) must be stored in the 8 most significant bits.
+	
+	    BMF_SCREEN: causes graphics to allocate a bitmap which is actually
+		displayable using RTG driver. You must also pass a displaymode
+		ID number (and NOT a bitmap pointer) in friend_bitmap parameter.
+		Note that this flag is not stored in Flags member of the BitMap
+		structure.
 
 	friend_bitmap - pointer to another bitmap, or NULL. If this pointer
 	    is passed, then the bitmap data will be allocated in
@@ -108,6 +118,10 @@
 	Intuition Custom BitMaps or as RasInfo->BitMaps.  They may be
 	blitted to a BMF_DISPLAYABLE BitMap, using one of the BltBitMap()
 	family of functions.
+	
+	When allocating a displayable bitmap, make sure that its size is
+	within limits allowed by the display driver. Use GetDisplayInfoData()
+	with DTAG_DIMS in order to obtain the needed information.
 
     EXAMPLE
 
@@ -117,6 +131,10 @@
 	FreeBitMap()
 
     INTERNALS
+	Currently AROS ignores BMF_DISPLAYABLE flag at all. In order to
+	allocate a real displayable bitmap, you should pass BMF_SCREEN
+	flag with ModeID specified in friend_bitmap parameter.
+	This is a real difference of AROS, keep it in mind.
 
     HISTORY
 
@@ -125,45 +143,24 @@
     AROS_LIBFUNC_INIT
 
     struct BitMap *nbm;
-    HIDDT_ModeID hiddmode = vHidd_ModeID_Invalid;
+    ULONG hiddmode = INVALID_ID;
 
+    if (flags & BMF_SCREEN)
+    {
+    	hiddmode      = (ULONG)friend_bitmap;
+	friend_bitmap = NULL;
+    }
+
+    ASSERT_VALID_PTR_OR_NULL(friend_bitmap);
+    
     /*
 	If the depth is too large or the bitmap should be displayable or
 	there is a friend_bitmap bitmap and that's not a normal bitmap, then
 	call the RTG driver.
     */
-
-    /* Hack: see AllocScreenBitMap */
-
-    if ((LONG)depth < 0)
-    {
-	depth 	      	   = (ULONG)(-((LONG)depth));
-	hiddmode      	   = (HIDDT_ModeID)friend_bitmap;
-	friend_bitmap 	   = NULL;
-    }
-    else if (flags & HIDD_BMF_SCREEN_BITMAP) // (flags & BMF_DISPLAYABLE) 
-    {
-    	/* Make real BMF_DISPLAYABLE bitmap only, if a friend bitmap was
-	   specified which is displayable (ie. a screen bitmap). Because
-	   as the gfxhidd stuff is now, displayable bitmap needs to have
-	   a Display ModeID "known" to them. */
-	   
-    	if (friend_bitmap && IS_HIDD_BM(friend_bitmap) && (HIDD_BM_FLAGS(friend_bitmap) & HIDD_BMF_SCREEN_BITMAP)) // (friend_bitmap->Flags & BMF_DISPLAYABLE))
-	{
-    	    hiddmode = HIDD_BM_HIDDMODE(friend_bitmap);
-	}
-	else
-	{
-	    flags &= ~HIDD_BMF_SCREEN_BITMAP; //flags &= ~BMF_DISPLAYABLE;
-	}
-    }
-
-    ASSERT_VALID_PTR_OR_NULL(friend_bitmap);
-    
     if (
 	depth > 8
-	|| (flags & HIDD_BMF_SCREEN_BITMAP) // (flags & BMF_DISPLAYABLE)
-/*	|| (friend_bitmap && friend_bitmap->pad != 0) */
+	|| (flags & BMF_SCREEN)
 	|| (friend_bitmap && friend_bitmap->Flags & BMF_AROS_HIDD)
     	#warning Should	we also check for BMF_MINPLANES ?
 	|| (flags & BMF_SPECIALFMT) /* Cybergfx bitmap */
@@ -181,13 +178,13 @@
 	SET_BM_TAG( bm_tags, 0, Width,  sizex	);
 	SET_BM_TAG( bm_tags, 1, Height, sizey	);
 
-	if (flags & HIDD_BMF_SCREEN_BITMAP) // (flags & BMF_DISPLAYABLE)
+	if (flags & BMF_SCREEN)
 	{
 	    /* Use the hiddmode instead of depth/friend_bitmap */
-	    if  (vHidd_ModeID_Invalid == hiddmode)
+	    if  (INVALID_ID == hiddmode)
     		ReturnPtr("driver_AllocBitMap(Invalid modeID)", struct BitMap *, NULL);
 
-	    SET_BM_TAG(bm_tags, 2, ModeID, hiddmode);
+	    SET_BM_TAG(bm_tags, 2, ModeID, AMIGA_TO_HIDD_MODEID(hiddmode));
 	    SET_BM_TAG(bm_tags, 3, Displayable, TRUE);
 	    SET_TAG(bm_tags, 4, TAG_DONE, 0);
 	}
@@ -266,7 +263,7 @@
     		    HIDD_BM_COLMOD(nbm)     = colmod;
     		    HIDD_BM_COLMAP(nbm)     = colmap;
 		    HIDD_BM_REALDEPTH(nbm)  = depth;
-		    HIDD_BM_HIDDMODE(nbm)   = hiddmode;
+		    HIDD_BM_HIDDMODE(nbm)   = hiddmode; /* Note that it's Amiga ModeID, not a raw HIDD ModeID */
 		    
     		    nbm->Rows   = height;
     		    nbm->BytesPerRow = WIDTH_TO_BYTES(width);
@@ -278,11 +275,10 @@
     		    nbm->Flags  = flags | BMF_AROS_HIDD;
 
     		    /* If this is a displayable bitmap, create a color table for it */
-
-    		    if (flags & HIDD_BMF_SCREEN_BITMAP) // (flags & BMF_DISPLAYABLE)
+    		    if (flags & BMF_SCREEN)
 		    {
 		    	HIDD_BM_FLAGS(nbm) |= HIDD_BMF_SCREEN_BITMAP;
-			 
+
 		    	if (friend_bitmap)
 			{
 			    OOP_Object *oldcolmap;
@@ -337,7 +333,7 @@
 			
 			}
 			
-    		    } /* if (flags & HIDD_BMF_SCREEN_BITMAP) ... (flags & BMF_DISPLAYABLE) */
+    		    } /* if (flags & BMF_SCREEN) */
     		    else
     		    {
     			if (friend_bitmap)

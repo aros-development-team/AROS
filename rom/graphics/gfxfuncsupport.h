@@ -11,7 +11,6 @@
 /****************************************************************************************/
 
 #include <hidd/graphics.h>
-#include "graphics_private.h"
 
 #define PEN_BITS    8
 #define NUM_COLORS  (1L << PEN_BITS)
@@ -59,6 +58,7 @@ do                                                                             \
 /* HIDD BM Flags */
 
 #define HIDD_BMF_SHARED_PIXTAB    	1
+#define HIDD_BMF_SCREEN_BITMAP	      512
 
 /* Minterms and GC drawmodes are in opposite order */
 #define MINTERM_TO_GCDRMD(minterm) 	\

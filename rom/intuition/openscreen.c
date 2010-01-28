@@ -18,6 +18,7 @@
 #include <graphics/modeid.h>
 #include <graphics/videocontrol.h>
 #include <graphics/displayinfo.h>
+#include <hidd/graphics.h>
 #include <prefs/screenmode.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -26,12 +27,8 @@
 #include <proto/intuition.h>
 #include <proto/dos.h>
 #include <string.h>
-#ifdef __MORPHOS__
 #include <proto/cybergraphics.h>
 #include <cybergraphx/cybergraphics.h>
-#else
-#include "../graphics/graphics_private.h"
-#endif
 #include "intuition_intern.h"
 #include "intuition_customize.h"
 #include "intuition_extend.h"
@@ -60,16 +57,8 @@ struct OpenScreenActionMsg
 static VOID int_openscreen(struct OpenScreenActionMsg *msg,
                            struct IntuitionBase *IntuitionBase);
 
-#ifdef __MORPHOS__
+#ifdef SKINS
 extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
-#else
-//FIXME: NUMDRIPENS == DRIPEN_NUMDRIPENS ???
-extern const ULONG defaultdricolors[NUMDRIPENS];
-#endif
-
-#if DEBUG
-#undef THIS_FILE
-static const char THIS_FILE[] = __FILE__;
 #endif
 
 /*****************************************************************************
@@ -126,10 +115,10 @@ static const char THIS_FILE[] = __FILE__;
     LONG                     overscan = OSCAN_TEXT;
     DisplayInfoHandle        displayinfo;
     struct DimensionInfo     dimensions;
-    struct MonitorInfo       monitor;
 #ifdef __MORPHOS__
-    ULONG                    allocbitmapflags = BMF_DISPLAYABLE;
+    struct MonitorInfo       monitor;
 #endif
+    ULONG                    allocbitmapflags = BMF_DISPLAYABLE;
     //ULONG                  lock;
     WORD                     numcolors;
     BOOL                     workbench = FALSE;
@@ -484,7 +473,6 @@ static const char THIS_FILE[] = __FILE__;
                 break;
 
             case SA_Interleaved:
-#ifdef __MORPHOS__
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Interleaved 0x%lx\n",tag->ti_Data));
                 if (tag->ti_Data)
                 {
@@ -494,7 +482,6 @@ static const char THIS_FILE[] = __FILE__;
                 {
                     allocbitmapflags &= ~BMF_INTERLEAVED;
                 }
-#endif
                 break;
 
             case SA_Behind:
@@ -580,7 +567,7 @@ static const char THIS_FILE[] = __FILE__;
 
     } /* if (tagList) */
 
-    DEBUG_OPENSCREEN(dprintf("OpenScreen: Left %d Top %d Width %d Height %d Depth %d Tags 0x%lx\n",
+    DEBUG_OPENSCREEN(dprintf("OpenScreen(): Requested: Left %d Top %d Width %d Height %d Depth %d Tags 0x%lx\n",
                              ns.LeftEdge, ns.TopEdge, ns.Width, ns.Height, ns.Depth, tagList));
 
     /* First Init the RastPort then get the BitPlanes!! */
@@ -605,9 +592,12 @@ static const char THIS_FILE[] = __FILE__;
     }
 
 #ifdef __MORPHOS__
-    // if default HIRES_KEY or HIRESLACE_KEY is passed, make sure we find a replacement
-    // cybergraphx mode
-    //
+    /* if default HIRES_KEY or HIRESLACE_KEY is passed, make sure we find a replacement
+       cybergraphx mode.
+
+       In AROS this won't work because of sucky ModeID conversion. 0x00000000 will be
+       found as valid mode, it'll be the first HIDD mode, and it's quite not the best
+       one. */
     if (INVALID_ID != modeid)
     {
         if (FindDisplayInfo(modeid) == NULL)
@@ -660,7 +650,7 @@ static const char THIS_FILE[] = __FILE__;
         }
     }
 
-    DEBUG_OPENSCREEN(dprintf("OpenScreen: ModeID 0x%08lx\n", modeid));
+    DEBUG_OPENSCREEN(dprintf("OpenScreen(): Corrected ModeID: 0x%08lx\n", modeid));
 
     InitRastPort(&screen->Screen.RastPort);
     rp_inited = TRUE;
@@ -668,8 +658,11 @@ static const char THIS_FILE[] = __FILE__;
     numcolors = 0;
 
     if ((displayinfo = FindDisplayInfo(modeid)) != NULL &&
-        GetDisplayInfoData(displayinfo, &dimensions, sizeof(dimensions), DTAG_DIMS, modeid) &&
-        GetDisplayInfoData(displayinfo, &monitor, sizeof(monitor), DTAG_MNTR, modeid))
+        GetDisplayInfoData(displayinfo, &dimensions, sizeof(dimensions), DTAG_DIMS, modeid)
+#ifdef __MORPHOS__
+        && GetDisplayInfoData(displayinfo, &monitor, sizeof(monitor), DTAG_MNTR, modeid)
+#endif
+    )
     {
         success = TRUE;
 #ifdef __MORPHOS__
@@ -699,12 +692,19 @@ static const char THIS_FILE[] = __FILE__;
 
         if (ns.Width == STDSCREENWIDTH)
             ns.Width = dclip->MaxX - dclip->MinX + 1;
+	else if (ns.Width < dimensions.MinRasterWidth)
+	    ns.Width = dimensions.MinRasterWidth;
+	else if (ns.Width > dimensions.MaxRasterWidth)
+	    ns.Width = dimensions.MaxRasterWidth;
 
         if (ns.Height == STDSCREENHEIGHT)
             ns.Height = dclip->MaxY - dclip->MinY + 1;
+	else if (ns.Height < dimensions.MinRasterHeight)
+	    ns.Height = dimensions.MinRasterHeight;
+	else if (ns.Height > dimensions.MaxRasterHeight)
+	    ns.Height = dimensions.MaxRasterHeight;
 
-        DEBUG_OPENSCREEN(dprintf("OpenScreen: Monitor 0x%lx Width %ld Height %ld\n",
-                                 screen->Monitor, ns.Width, ns.Height));
+        DEBUG_OPENSCREEN(dprintf("OpenScreen(): Corrected: Width %ld Height %ld\n", ns.Width, ns.Height));
 
         screen->Screen.RastPort.BitMap = NULL;
         if (ns.Type & CUSTOMBITMAP)
@@ -724,9 +724,8 @@ static const char THIS_FILE[] = __FILE__;
                 }
             }
 #else
-	    /* May be check mode too? Or copy back from given bitmap? */
-	    if (!(custombm->Flags & HIDD_BMF_SCREEN_BITMAP))
-	        custombm = NULL;
+	    if (!(custombm->Flags & BMF_SPECIALFMT) || (modeid != (ULONG)custombm->Planes[7]))
+		custombm = NULL;
 #endif
 
             if(custombm != NULL)
@@ -747,7 +746,6 @@ static const char THIS_FILE[] = __FILE__;
         {
 #ifdef __MORPHOS__
             ULONG pixfmt;
-            ULONG Depth;
 
             Depth = (dimensions.MaxDepth > 8) ? dimensions.MaxDepth : ns.Depth;
 
@@ -784,7 +782,11 @@ static const char THIS_FILE[] = __FILE__;
                                              allocbitmapflags | (pixfmt << 24),
                                              NULL);
 #else
-	    screen->Screen.RastPort.BitMap = AllocScreenBitMap(modeid);
+	    screen->Screen.RastPort.BitMap = AllocBitMap(ns.Width,
+                                             ns.Height,
+                                             dimensions.MaxDepth,
+                                             allocbitmapflags | BMF_SCREEN,
+                                             (struct BitMap *)modeid);
 #endif
             screen->AllocatedBitmap = screen->Screen.RastPort.BitMap;
 
@@ -1114,11 +1116,6 @@ static const char THIS_FILE[] = __FILE__;
         /* Temporary hack */
         if (ns.Width >= 500 || ns.Height >= 300)
             screen->Screen.Flags |= SCREENHIRES;
-
-#ifndef __MORPHOS__
-        /* Mark the bitmap of the screen as an AROS-displayed BitMap */
-        screen->Screen.RastPort.BitMap->Flags |= BMF_AROS_HIDD;
-#endif
 
         /*
            Copy the data from the rastport's bitmap

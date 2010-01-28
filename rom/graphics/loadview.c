@@ -29,7 +29,6 @@ BOOL DisplayView(struct View *view, struct GfxBase *GfxBase)
     OOP_Object      	*cmap, *pf;
     HIDDT_ColorModel 	colmod;
     OOP_Object      	*fb;
-    BOOL    	    	ok = FALSE;
 
     /* Take the first visibme ViewPort from the view. Its bitmap will be the frontmost one.
        If NULL is passed as a view, or there are no visible ViewPorts, we simply clear the display
@@ -45,7 +44,6 @@ BOOL DisplayView(struct View *view, struct GfxBase *GfxBase)
     }
 
     D(bug("LoadView(): displaying bitmap 0x%p\n", bitmap));
-    //if (bitmap && (BMF_DISPLAYABLE != (bitmap->Flags & BMF_DISPLAYABLE)))
     if (bitmap && (!(bitmap->Flags & BMF_AROS_HIDD) || !(HIDD_BM_FLAGS(bitmap) & HIDD_BMF_SCREEN_BITMAP)))
     {
     	D(bug("!!! LoadView(): TRYING TO SET NON-DISPLAYABLE BITMAP !!!\n"));

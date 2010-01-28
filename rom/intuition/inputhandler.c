@@ -35,7 +35,6 @@
 #include "propgadgets.h"
 #include "strgadgets.h"
 #include "gadgets.h"
-#include "../graphics/graphics_private.h" /* CSTAG_xxx */
 #include "intuition_intern.h" /* EWFLG_xxx */
 #include "inputhandler_support.h"
 #include "inputhandler_actions.h"
@@ -3507,8 +3506,8 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
 
                             if (ChangeExtSprite(&scr->Screen.ViewPort,
 						scr->Pointer->sprite, shared_pointer->sprite,
-						CSTAG_XOffset, shared_pointer->xoffset,
-						CSTAG_YOffset, shared_pointer->yoffset,
+						POINTERA_XOffset, shared_pointer->xoffset,
+						POINTERA_YOffset, shared_pointer->yoffset,
 						TAG_DONE))
                             {
                                 ObtainSharedPointer(shared_pointer, IntuitionBase);
