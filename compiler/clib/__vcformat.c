@@ -195,9 +195,11 @@ const unsigned char *const __decimalpoint = ".";
 	  int base;
 
 	  if(type=='p')
-	  { subtype='l'; /* This is written as %#lx */
+	  { subtype='l'; /* This is written as %08lx (or %016lx on 64 bits) */
 	    type='x';
-	    flags|=ALTERNATEFLAG; }
+	    if (!width)
+	        width = sizeof(void *) * 2;
+	    flags |= ZEROPADFLAG; }
 
 	  if(type=='d'||type=='i') /* These are signed */
 	  {
