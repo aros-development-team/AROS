@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Sync info class
@@ -156,7 +156,23 @@ VOID Sync__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    case aoHidd_Sync_Description:
 	    	*msg->storage = (IPTR)data->description;
 		break;
-		
+
+	    case aoHidd_Sync_HMin:
+		*msg->storage = data->hmin;
+		break;
+
+	    case aoHidd_Sync_HMax:
+		*msg->storage = data->hmax;
+		break;
+
+	    case aoHidd_Sync_VMin:
+		*msg->storage = data->vmin;
+		break;
+
+	    case aoHidd_Sync_VMax:
+		*msg->storage = data->vmax;
+		break;
+
 	    default:
 	     	D(bug("!!! TRYING TO GET UNKNOWN ATTR FROM SYNC OBJECT !!!\n"));
     		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
