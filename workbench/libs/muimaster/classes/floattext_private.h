@@ -3,10 +3,13 @@
 
 struct Floattext_DATA
 {
-    struct Hook construct_hook;
-    struct Hook destruct_hook;
-    struct Hook display_hook;
-    char *text;
+    struct Hook  construct_hook;
+    struct Hook  destruct_hook;
+    struct Hook  display_hook;
+    STRPTR       text;
+    BOOL         justify;
+    STRPTR       skipchars;
+    LONG         tabsize;
 };
 
 #endif /* _FLOATTEXT_PRIVATE_H_ */
