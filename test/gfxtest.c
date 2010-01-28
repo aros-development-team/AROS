@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Demo showing x11gfx.hidd
+    Demo showing gfx hidd
 */
 
 #include <stdio.h>
@@ -171,7 +171,7 @@ ULONG patterncoltab[] = {
                           SA_Width, 	640,
                           SA_Height, 	480,
 			  SA_Depth,	24,
-			  SA_Title,	"X11 gfx hidd demo",
+			  SA_Title,	"gfx hidd demo",
 			  SA_Pens,	pens,
 			  
                           TAG_END);
