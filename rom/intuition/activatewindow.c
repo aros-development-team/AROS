@@ -17,7 +17,6 @@
 #include "strgadgets.h"
 #include "gadgets.h"
 #include "menus.h"
-#include "../graphics/graphics_private.h"
 #include <intuition/pointerclass.h>
 
 struct ActivateWindowActionMsg
@@ -203,8 +202,8 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
 
                 if (ChangeExtSprite(&scr->Screen.ViewPort,
 				    scr->Pointer->sprite, shared_pointer->sprite,
-				    CSTAG_XOffset, shared_pointer->xoffset,
-				    CSTAG_YOffset, shared_pointer->yoffset,
+				    POINTERA_XOffset, shared_pointer->xoffset,
+				    POINTERA_YOffset, shared_pointer->yoffset,
 				    TAG_DONE))
                 {
                     ObtainSharedPointer(shared_pointer, IntuitionBase);

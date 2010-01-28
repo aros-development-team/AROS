@@ -7,7 +7,6 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include "intuition_intern.h"
-#include "../graphics/graphics_private.h"
 #include <intuition/pointerclass.h>
 
 /*****************************************************************************
@@ -98,8 +97,8 @@
 
                     if (ChangeExtSprite(&scr->Screen.ViewPort,
                                         scr->Pointer->sprite, shared_pointer->sprite,
-					CSTAG_XOffset, shared_pointer->xoffset,
-					CSTAG_YOffset, shared_pointer->yoffset,
+					POINTERA_XOffset, shared_pointer->xoffset,
+					POINTERA_YOffset, shared_pointer->yoffset,
 					TAG_DONE))
                     {
                         ObtainSharedPointer(shared_pointer, IntuitionBase);
