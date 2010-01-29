@@ -8,7 +8,7 @@ struct Floattext_DATA
     STRPTR       text;
     BOOL         justify;
     STRPTR       skipchars;
-    LONG         tabsize;
+    ULONG        tabsize;
 };
 
 #endif /* _FLOATTEXT_PRIVATE_H_ */
