@@ -144,6 +144,8 @@ struct gfx_data
     void *bitmap_dc; /* Memory device context of currently shown bitmap */
     IPTR width;      /* Display window size				*/
     IPTR height;
+    IPTR bmwidth;    /* Bitmap size					*/
+    IPTR bmheight;
 };
 
 #ifdef __AROS__

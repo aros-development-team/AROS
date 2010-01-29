@@ -84,16 +84,18 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
     HDC bitmap_dc, window_dc;
     PAINTSTRUCT ps;
     LONG x, y, xsize, ysize;
+    struct gfx_data *gdata;
 
     switch(msg) {
     case WM_PAINT:
-        bitmap_dc = (HDC)GetWindowLongPtr(win, GWLP_USERDATA);
+        gdata = (HDC)GetWindowLongPtr(win, GWLP_USERDATA);
         window_dc = BeginPaint(win, &ps);
         x = ps.rcPaint.left;
         y = ps.rcPaint.top;
         xsize = ps.rcPaint.right - ps.rcPaint.left + 1;
         ysize = ps.rcPaint.bottom - ps.rcPaint.top + 1;
-        BitBlt(window_dc, x, y, xsize, ysize, bitmap_dc, x, y, SRCCOPY);
+	DWIN(printf("[GDI] WM_PAINT, coords: (%u, %u), size: %ux%u\n", x, y, xsize, ysize));
+        BitBlt(window_dc, x, y, xsize, ysize, gdata->bitmap_dc, x, y, SRCCOPY);
         EndPaint(win, &ps);
         return 0;
     case WM_SETCURSOR:
@@ -171,7 +173,10 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
             	    	gdata->fbwin = CreateWindow((LPCSTR)wcl, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
 					             CW_USEDEFAULT, CW_USEDEFAULT, width,  height, NULL, NULL,
 						     wcl_desc.hInstance, NULL);
-            	    	ShowWindow(gdata->fbwin, SW_SHOW);
+			if (gdata->fbwin) {
+			    SetWindowLongPtr(gdata->fbwin, GWLP_USERDATA, (LONG_PTR)gdata);
+            	    	    ShowWindow(gdata->fbwin, SW_SHOW);
+			}
             	    } else {
 			/* Otherwise just adjust its position */
             	        wpos.length = sizeof(wpos);
@@ -182,7 +187,6 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
 	            	}
 	            }
 	            if (gdata->fbwin) {
-	            	SetWindowLongPtr(gdata->fbwin, GWLP_USERDATA, (LONG_PTR)gdata->bitmap_dc);
             	        RedrawWindow(gdata->fbwin, NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
             	    }
             	} else {

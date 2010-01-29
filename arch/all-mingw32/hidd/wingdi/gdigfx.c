@@ -446,6 +446,8 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	    OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_DeviceContext, (IPTR *)&data->bitmap_dc);
 	    OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_DisplayWidth, &data->width);
 	    OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_DisplayHeight, &data->height);
+	    OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_DisplayWidth, &data->bmwidth);
+	    OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_DisplayHeight, &data->bmheight);
 	}
     	/* Hosted system has no real blitter, however we have host-side window service thread that does some work asynchronously,
 	   and this looks like a real blitter. So we use this signal. Before we do it we ensure that it's reset (because it's
