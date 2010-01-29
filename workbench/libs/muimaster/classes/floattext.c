@@ -40,7 +40,6 @@ static void SetText(Object *obj, struct Floattext_DATA *data)
 {
     DoMethod(obj, MUIM_List_Clear);
     
-    // TODO: handling of attributes like tabwith etc.
     if (data->text)
     {
 	STRPTR pos = data->text;
@@ -62,6 +61,8 @@ AROS_UFHA(APTR, pool, A2),
 AROS_UFHA(STRPTR, entry, A1))
 {
     AROS_USERFUNC_INIT
+
+    // TODO: MUIA_Floattext_Justify
 
     struct Floattext_DATA *data = hook->h_Data;
 
