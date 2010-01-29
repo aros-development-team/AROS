@@ -145,6 +145,7 @@ Object *ScreenModeSelector__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
 	MUIA_List_Format, "BAR,",
         MUIA_List_SourceArray, (IPTR)modes_array,
 	MUIA_List_Title, TRUE,
+	MUIA_CycleChain, TRUE, /* CHECKME: Keyboard input in the list doesn't work, why? */
         End;
 
     self = (Object *)DoSuperNewTags

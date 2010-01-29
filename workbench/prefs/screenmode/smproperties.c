@@ -69,17 +69,17 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
         MUIA_Group_Horiz, TRUE,
         Child, (IPTR)ColGroup(4),
             Child, (IPTR)Label1(__(MSG_WIDTH)),
-            Child, HLeft(width = (Object *)NumericbuttonObject, End),
-            Child, (IPTR)(def_width = (Object *)CheckMarkObject, End),
+            Child, HLeft(width = (Object *)NumericbuttonObject, MUIA_CycleChain, TRUE, End),
+            Child, (IPTR)(def_width = (Object *)CheckMarkObject, MUIA_CycleChain, TRUE, End),
             Child, (IPTR)Label1(__(MSG_DEFAULT)),
                 
             Child, (IPTR)Label1(__(MSG_HEIGHT)),
-            Child, HLeft(height = (Object *)NumericbuttonObject, End),
-            Child, (IPTR)(def_height = (Object *)CheckMarkObject, End),
+            Child, HLeft(height = (Object *)NumericbuttonObject, MUIA_CycleChain, TRUE, End),
+            Child, (IPTR)(def_height = (Object *)CheckMarkObject, MUIA_CycleChain, TRUE, End),
             Child, (IPTR)Label1(__(MSG_DEFAULT)),
                 
             Child, (IPTR)Label1(__(MSG_DEPTH)),
-            Child, HLeft(depth = (Object *)NumericbuttonObject, End),
+            Child, HLeft(depth = (Object *)NumericbuttonObject, MUIA_CycleChain, TRUE, End),
             Child, (IPTR)RectangleObject, End,
             Child, (IPTR)RectangleObject, End,
         End,  
@@ -88,7 +88,7 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
             
         Child, (IPTR)HCenter(HGroup,
             Child, (IPTR)Label1(__(MSG_AUTOSCROLL)),
-            Child, (IPTR)(autoscroll = (Object *)CheckMarkObject, End),
+            Child, (IPTR)(autoscroll = (Object *)CheckMarkObject, MUIA_CycleChain, TRUE, End),
         End),
         
         TAG_MORE, (IPTR)message->ops_AttrList
