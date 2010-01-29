@@ -26,16 +26,65 @@
 
 extern struct Library *MUIMasterBase;
 
-static void SetText(Object *obj, STRPTR text)
+// like strlen(), but \n ends string, too.
+static long MyStrLen(const char *ptr)
+{
+    const char * start = ptr;
+
+    while (*ptr && (*ptr != '\n')) ptr ++;
+
+    return (((long)ptr) - ((long)start));
+}
+
+static void SetText(Object *obj, struct Floattext_DATA *data)
 {
     DoMethod(obj, MUIM_List_Clear);
     
-    // TODO: split the text in single lines, handling of attributes
-    // like tabwith etc.
-    if (text)
+    // TODO: handling of attributes like tabwith etc.
+    if (data->text)
     {
-	DoMethod(obj, MUIM_List_InsertSingle, text, MUIV_List_Insert_Top);
+	STRPTR pos = data->text;
+	for (;;)
+	{
+	    LONG len = MyStrLen(pos); 
+	    DoMethod(obj, MUIM_List_InsertSingle, pos, MUIV_List_Insert_Bottom);
+	    pos += len;
+	    if (*pos == '\0')
+		break;
+	    pos++;
+	}
     }
+}
+
+AROS_UFH3S(APTR, construct_func,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(STRPTR, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    STRPTR new;
+    ULONG size = MyStrLen(entry) + 1;
+
+    if ((new = AllocVecPooled(pool, size)))
+    {
+	strlcpy(new, entry, size);
+    }
+    return new;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(void, destruct_func,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(STRPTR, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    FreeVecPooled(pool, entry);
+
+    AROS_USERFUNC_EXIT
 }
 
 IPTR Floattext__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
@@ -53,6 +102,13 @@ IPTR Floattext__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
     data->tabsize = 8;
+
+    data->construct_hook.h_Entry = (HOOKFUNC)construct_func;
+    data->destruct_hook.h_Entry  = (HOOKFUNC)destruct_func;
+
+    SetAttrs(obj, MUIA_List_ConstructHook, (IPTR)&data->construct_hook,
+		  MUIA_List_DestructHook,  (IPTR)&data->destruct_hook,
+		  TAG_DONE);
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
@@ -77,7 +133,7 @@ IPTR Floattext__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	}
     }
     
-    SetText(obj, data->text);
+    SetText(obj, data);
     
     return (IPTR)obj;
 }
@@ -150,7 +206,7 @@ IPTR Floattext__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (changed) // To avoid recursion
     {
-	SetText(obj, data->text);
+	SetText(obj, data);
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);

@@ -5,7 +5,6 @@ struct Floattext_DATA
 {
     struct Hook  construct_hook;
     struct Hook  destruct_hook;
-    struct Hook  display_hook;
     STRPTR       text;
     BOOL         justify;
     STRPTR       skipchars;
