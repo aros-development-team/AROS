@@ -31,6 +31,8 @@ struct ScreenModeProperties_DATA
     ULONG DisplayID;
     UWORD MinWidth, MinHeight;
     UWORD MaxWidth, MaxHeight;
+    UWORD DefWidth, DefHeight;
+    UWORD DefDepth;
     BOOL  VariableDepth;
 };
 
@@ -131,8 +133,8 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     DoMethod
     (
         def_width, MUIM_Notify, MUIA_Selected, TRUE,
-        (IPTR)width, 1,
-        MUIM_Numeric_SetDefault
+        (IPTR)self, 3,
+        MUIM_NoNotifySet, MUIA_ScreenModeProperties_Width, -1
     );
 
     DoMethod
@@ -145,8 +147,8 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     DoMethod
     (
         def_height, MUIM_Notify, MUIA_Selected, TRUE,
-        (IPTR)height, 1,
-        MUIM_Numeric_SetDefault
+        (IPTR)self, 3,
+        MUIM_NoNotifySet, MUIA_ScreenModeProperties_Height, -1
     );
 
     DoMethod
@@ -195,6 +197,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
     ULONG id        = INVALID_ID;
     IPTR  no_notify = TAG_IGNORE;
     IPTR ret;
+    WORD width, height, depth;
     
     DB2(Printf("[smproperties] OM_SET called\n"));
     for (tags = message->ops_AttrList; (tag = NextTagItem(&tags)); )
@@ -264,6 +267,9 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
 		    D(Printf("[smproperties] Display size: %lux%lu\n", width_tags[3].ti_Data, height_tags[3].ti_Data));
                     
                     id = tag->ti_Data;
+		    data->DefWidth = width_tags[3].ti_Data;
+		    data->DefHeight = height_tags[3].ti_Data;
+		    data->DefDepth = depth_tags[3].ti_Data;
 		    data->MinWidth = dim.MinRasterWidth;
 		    data->MinHeight = dim.MinRasterHeight;
 		    data->MaxWidth = dim.MaxRasterWidth;
@@ -325,47 +331,40 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
             }
             
             case MUIA_ScreenModeProperties_Width:
-                if (id != INVALID_ID)
-                {
-                    WORD width = tag->ti_Data;
+                width = tag->ti_Data;
 		    
-		    D(Printf("[smproperties] Set Width = %ld\n", width));
-                    if (width != -1) {
-		        width = AdjustWidth(width, data);
-                        SetAttrs(data->width, no_notify, TRUE, MUIA_Numeric_Value, width, TAG_DONE);
-                    } else
-                        DoMethod(data->width, MUIM_Numeric_SetDefault);
-                    
+		D(Printf("[smproperties] Set Width = %ld\n", width));
+                if (width == -1)
+		    width = data->DefWidth;
+		else
+		    width = AdjustWidth(width, data);
+                SetAttrs(data->width, no_notify, TRUE, MUIA_Numeric_Value, width, TAG_DONE);
+		if (no_notify == TAG_IGNORE)
                     nnset(data->def_width, MUIA_Selected, width == -1);
-                }
                 break;
                 
             case MUIA_ScreenModeProperties_Height:
-                if (id != INVALID_ID)
-                {
-                    WORD height = tag->ti_Data;
+                height = tag->ti_Data;
 		    
-		    D(Printf("[smproperties] Set Height = %ld\n", height));
-                    if (height != -1) {
-			height = AdjustHeight(height, data);
-                        SetAttrs(data->height, no_notify, TRUE, MUIA_Numeric_Value, height, TAG_DONE);
-                    } else
-                        DoMethod(data->height, MUIM_Numeric_SetDefault);
-                    
+		D(Printf("[smproperties] Set Height = %ld\n", height));
+                if (height == -1)
+		    height = data->DefHeight;
+		else
+		    height = AdjustHeight(height, data);
+                SetAttrs(data->height, no_notify, TRUE, MUIA_Numeric_Value, height, TAG_DONE);
+                if (no_notify == TAG_IGNORE)
                     nnset(data->def_height, MUIA_Selected, height == -1);
-                }
                 break;
             
             case MUIA_ScreenModeProperties_Depth:
-                if ((id != INVALID_ID) && data->VariableDepth);
+                if (data->VariableDepth)
                 {
-                    WORD depth = tag->ti_Data;
+                    depth = tag->ti_Data;
 		    
 		    D(Printf("[smproperties] Set Depth = %ld\n", depth));
-                    if (depth != -1)
-                        SetAttrs(data->depth, no_notify, TRUE, MUIA_Numeric_Value, depth, TAG_DONE);
-                    else
-                        DoMethod(data->depth, MUIM_Numeric_SetDefault);
+                    if (depth == -1)
+		        depth = data->DefDepth;
+                    SetAttrs(data->depth, no_notify, TRUE, MUIA_Numeric_Value, depth, TAG_DONE);
                 }
                 break;
             
