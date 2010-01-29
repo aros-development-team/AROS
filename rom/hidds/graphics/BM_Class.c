@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics bitmap class implementation.
@@ -236,14 +236,12 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 		    }
 		}
 		else
-		{
-		    data->width	 = attrs[AO(Width)];
-		    data->height = attrs[AO(Height)];
 		    data->prot.pixfmt = (OOP_Object *)attrs[AO(PixFmt)];
-		}
-
 	    } /* displayable */
-
+	    if (GOT_BM_ATTR(Width))
+	        data->width = attrs[AO(Width)];
+	    if (GOT_BM_ATTR(Height))
+	        data->height = attrs[AO(Height)];
 	} /* if (ok) */
 
 	if (ok)
