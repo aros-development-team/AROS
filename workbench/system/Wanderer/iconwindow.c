@@ -1,7 +1,8 @@
 /*
-  Copyright  2004-2009, The AROS Development Team. All rights reserved.
+  Copyright  2004-2010, The AROS Development Team. All rights reserved.
   $Id$
 */
+#define DOPENWINDOW(x) /* Window positioning and size */
 
 #define ZCC_QUIET
 
@@ -352,18 +353,18 @@ D(bug("[Wanderer:IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETT
                                                     MUIA_Font, (IPTR)_newIconWin__WindowFont,
                                                     TAG_DONE);
 
-        _newIconWin__WindowWidth = GetBitMapAttr(_newIconWin__Screen->RastPort.BitMap, BMA_WIDTH);
-        _newIconWin__WindowHeight = GetBitMapAttr(_newIconWin__Screen->RastPort.BitMap, BMA_HEIGHT);
-        D(bug("[Wanderer:IconWindow] %s: Screen dimensions ..  %ld x %ld\n", __PRETTY_FUNCTION__, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
+        _newIconWin__WindowWidth = _newIconWin__Screen->Width;
+        _newIconWin__WindowHeight = _newIconWin__Screen->Height;
+        DOPENWINDOW(bug("[Wanderer:IconWindow] %s: Screen dimensions ..  %ld x %ld\n", __PRETTY_FUNCTION__, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
 
         if (isBackdrop)
         {
-            D(bug("[Wanderer:IconWindow] %s: BACKDROP ROOT Window\n", __PRETTY_FUNCTION__));
+            DOPENWINDOW(bug("[Wanderer:IconWindow] %s: BACKDROP ROOT Window\n", __PRETTY_FUNCTION__));
             _newIconWin__Title = NULL;
         }
         else
         {
-            D(bug("[Wanderer:IconWindow] %s: Plain ROOT Window\n", __PRETTY_FUNCTION__));
+            DOPENWINDOW(bug("[Wanderer:IconWindow] %s: Plain ROOT Window\n", __PRETTY_FUNCTION__));
             _newIconWin__Title = __intern_wintitle_wanderer;
         }
 
@@ -511,8 +512,6 @@ D(bug("[Wanderer:IconWindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION_
         GET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
         SET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, ((current_DispFlags & icon__DispFlagMask)|icon__DispFlags));
 
-D(bug("[Wanderer:IconWindow] %s: Window Co-ords %d,%d [%d x %d]\n", __PRETTY_FUNCTION__, _newIconWin__WindowLeft, _newIconWin__WindowTop, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
-
         _newIconWin__TopPanelRootGroupObj = MUI_NewObject(MUIC_Group,
                 MUIA_InnerLeft,(0),
                 MUIA_InnerRight,(0),
@@ -597,8 +596,8 @@ D(bug("[Wanderer:IconWindow] %s: Window Co-ords %d,%d [%d x %d]\n", __PRETTY_FUN
                                         TAG_DONE);
 #endif
                             
-
-D(bug("[Wanderer:IconWindow] %s: Font @ 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__WindowFont));
+    DOPENWINDOW(bug("[Wanderer:IconWindow] %s: Window Co-ords %d,%d [%d x %d]\n", __PRETTY_FUNCTION__, _newIconWin__WindowLeft, _newIconWin__WindowTop, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
+    D(bug("[Wanderer:IconWindow] %s: Font @ 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__WindowFont));
 
 #ifdef __AROS__
     self = (Object *) DoSuperNewTags
