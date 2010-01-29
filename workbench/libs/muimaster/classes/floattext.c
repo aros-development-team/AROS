@@ -5,7 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/memory.h>
@@ -63,12 +63,50 @@ AROS_UFHA(STRPTR, entry, A1))
 {
     AROS_USERFUNC_INIT
 
+    struct Floattext_DATA *data = hook->h_Data;
+
     STRPTR new;
-    ULONG size = MyStrLen(entry) + 1;
+    ULONG tabs = 0;
+    ULONG i;
+    ULONG slen = MyStrLen(entry);
+    ULONG size = slen + 1;
+
+    // Count tabulators
+    for (i = 0; i < slen; i++)
+    {
+	if (entry[i] == '\t')
+	    tabs++;
+    }
+    size += tabs * data->tabsize; // Worst case
 
     if ((new = AllocVecPooled(pool, size)))
     {
-	strlcpy(new, entry, size);
+	ULONG oldpos = 0;
+	ULONG newpos = 0;
+	for (; oldpos < slen; oldpos++)
+	{
+	    if (data->skipchars)
+	    {
+		if (strchr(data->skipchars, entry[oldpos]))
+		{
+		    continue;
+		}
+	    }
+
+	    if (entry[oldpos] == '\t')
+	    {
+		LONG spaces = data->tabsize - (newpos % data->tabsize);
+		for ( ; spaces > 0 ; spaces --)
+		{
+		    new[newpos++] = ' ';
+		}
+	    }
+	    else
+	    {
+		new[newpos++] = entry[oldpos];
+	    }
+	}
+	new[newpos] = '\0';
     }
     return new;
 
@@ -101,9 +139,9 @@ IPTR Floattext__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     data = INST_DATA(cl, obj);
-    data->tabsize = 8;
 
     data->construct_hook.h_Entry = (HOOKFUNC)construct_func;
+    data->construct_hook.h_Data  = data;
     data->destruct_hook.h_Entry  = (HOOKFUNC)destruct_func;
 
     SetAttrs(obj, MUIA_List_ConstructHook, (IPTR)&data->construct_hook,
@@ -132,7 +170,12 @@ IPTR Floattext__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
 	}
     }
-    
+
+    if (data->tabsize == 0)
+	data->tabsize = 8;
+    else if (data->tabsize > 20)
+	data->tabsize = 20;
+
     SetText(obj, data);
     
     return (IPTR)obj;
@@ -206,6 +249,11 @@ IPTR Floattext__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (changed) // To avoid recursion
     {
+	if (data->tabsize == 0)
+	    data->tabsize = 8;
+	else if (data->tabsize > 20)
+	    data->tabsize = 20;
+
 	SetText(obj, data);
     }
 
