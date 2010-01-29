@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -101,6 +101,7 @@
 
 	APTR disphandle = FindDisplayInfo(modeid);
 
+	D(bug("[OpenWorkbench] Requested size: %dx%d, depth: %d, ModeID: 0x%08lX\n", width, height, depth, modeid));
         if (!disphandle)
 	{
     	    struct TagItem modetags[] =
@@ -112,6 +113,7 @@
 	    };
 
 	    modeid     = BestModeIDA(modetags);
+	    D(bug("[OpenWorkbench] Corrected ModeID: 0x%08lX\n", modeid));
 	    disphandle = FindDisplayInfo(modeid);
 	}
 
@@ -120,12 +122,15 @@
 	    struct DimensionInfo dim;
 
 	    #define BOUND(min, val, max) \
-	        (((min) > (val)) ? (min) : ((max) < (val)) ? (max) : (val))
+	        (((val) == -1) ? -1 : ((min) > (val)) ? (min) : ((max) < (val)) ? (max) : (val))
 
 	    if (GetDisplayInfoData(disphandle, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, 0))
             {
+	        D(bug("[OpenWorkbench] Minimum size: %dx%d\n", dim.MinRasterWidth, dim.MinRasterHeight));
+		D(bug("[OpenWorkbench] Maximum size: %dx%d\n", dim.MaxRasterWidth, dim.MaxRasterHeight));
 	        width  = BOUND(dim.MinRasterWidth,  width,  dim.MaxRasterWidth);
 		height = BOUND(dim.MinRasterHeight, height, dim.MaxRasterHeight);
+		D(bug("[OpenWorkbench] Corrected size: %dx%d\n", width, height));
 		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width = width;
 		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height = height;
             }
