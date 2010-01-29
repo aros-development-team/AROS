@@ -334,26 +334,26 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 width = tag->ti_Data;
 		    
 		D(Printf("[smproperties] Set Width = %ld\n", width));
+		if (no_notify == TAG_IGNORE)
+                    nnset(data->def_width, MUIA_Selected, width == -1);
                 if (width == -1)
 		    width = data->DefWidth;
 		else
 		    width = AdjustWidth(width, data);
                 SetAttrs(data->width, no_notify, TRUE, MUIA_Numeric_Value, width, TAG_DONE);
-		if (no_notify == TAG_IGNORE)
-                    nnset(data->def_width, MUIA_Selected, width == -1);
                 break;
                 
             case MUIA_ScreenModeProperties_Height:
                 height = tag->ti_Data;
 		    
 		D(Printf("[smproperties] Set Height = %ld\n", height));
+		if (no_notify == TAG_IGNORE)
+                    nnset(data->def_height, MUIA_Selected, height == -1);
                 if (height == -1)
 		    height = data->DefHeight;
 		else
 		    height = AdjustHeight(height, data);
                 SetAttrs(data->height, no_notify, TRUE, MUIA_Numeric_Value, height, TAG_DONE);
-                if (no_notify == TAG_IGNORE)
-                    nnset(data->def_height, MUIA_Selected, height == -1);
                 break;
             
             case MUIA_ScreenModeProperties_Depth:

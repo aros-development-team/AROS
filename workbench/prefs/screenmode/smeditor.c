@@ -211,7 +211,6 @@ IPTR SMEditor__MUIM_PrefsEditor_ImportFH
         SetAttrs
         (
             data->properties,
-            MUIA_NoNotify,                        TRUE,
             MUIA_ScreenModeProperties_DisplayID,  smp.smp_DisplayID,
             MUIA_ScreenModeProperties_Width,      smp.smp_Width,
             MUIA_ScreenModeProperties_Height,     smp.smp_Height,
