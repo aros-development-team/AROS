@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function GetDisplayInfoData()
@@ -205,8 +205,8 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    OOP_GetAttr(sync, aHidd_Sync_VDisp,   &height);
 	    OOP_GetAttr(sync, aHidd_Sync_HMin,   &minwidth);
 	    OOP_GetAttr(sync, aHidd_Sync_VMin,   &minheight);
-	    OOP_GetAttr(sync, aHidd_Sync_HMin,   &maxwidth);
-	    OOP_GetAttr(sync, aHidd_Sync_VMin,   &maxheight);
+	    OOP_GetAttr(sync, aHidd_Sync_HMax,   &maxwidth);
+	    OOP_GetAttr(sync, aHidd_Sync_VMax,   &maxheight);
 
 	    di = (struct DimensionInfo *)buf;
 	    di->MaxDepth = depth;

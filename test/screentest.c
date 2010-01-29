@@ -17,11 +17,18 @@
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 
+struct myargs
+{
+    LONG *width;
+    LONG *height;
+    STRPTR mode;
+};
+
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
 struct DosLibrary *DOSBase;
 
-struct Screen * openscreen(ULONG width, ULONG height);
+struct Screen * openscreen(ULONG width, ULONG height, ULONG mode);
 struct Window *openwindow(struct Screen *screen, const char *title, LONG x, LONG y, LONG w, LONG h);
 
 ULONG handleevents(struct Window *win, struct Screen *screen, WORD x, WORD y);
@@ -51,46 +58,57 @@ WORD drawtext(struct Window *win, WORD x, WORD y, char *fmt, ...)
     return y + win->IFont->tf_YSize;
 }	
 
+int __nocommandline = 1;
+
 int main(int argc, char **argv)
 {
+    struct myargs args = {NULL, NULL, NULL};
+    struct RDArgs *rda;
     ULONG width = 640;
     ULONG height = 480;
+    ULONG mode = INVALID_ID;
 
-    if (argc > 2) {
-        width = atoi(argv[1]);
-	height = atoi(argv[2]);
-    }
-    
     if ((IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 0))) 
     {
 	if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0))) 
         {
 	    if ((DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",0)))
 	    {
-	      struct Screen *screen;
-	      struct Window *w1;
-      
-              if ((screen = openscreen(width, height))) 
-              {
-		w1 = openwindow(screen, "Screen data",  W1_LEFT, W1_TOP, W1_WIDTH, W1_HEIGHT);
-		if (w1)
-		{
-		    WORD x = w1->BorderLeft;
-		    WORD y = w1->BorderTop;
-		    struct BitMap *bitmap = screen->RastPort.BitMap;
+		rda = ReadArgs("WIDTH/N,HEIGHT/N,MODEID", (IPTR *)&args, NULL);
+		if (rda) {
+		    struct Screen *screen;
+		    struct Window *w1;
 
-		    y = drawtext(w1, x, y, "Requested size: %ux%u", width, height);
-		    y = drawtext(w1, x, y, "Actual size: %ux%u", screen->Width, screen->Height);
-		    y = drawtext(w1, x, y, "BitMap size: %ux%u", GetBitMapAttr(bitmap, BMA_WIDTH), GetBitMapAttr(bitmap, BMA_HEIGHT));
-		    y = drawtext(w1, x, y, "ModeID: 0x%08lX", screen->ViewPort.ColorMap->VPModeID);
-		    handleevents(w1, screen, x, y);
-		    CloseWindow(w1);
-		}
-		CloseScreen(screen);
-	      }
-              CloseLibrary((struct Library *)DOSBase);
-	  }
-	  CloseLibrary((struct Library *)GfxBase);
+		    if (args.width)
+		        width = *args.width;
+		    if (args.height)
+		        height = *args.height;
+		    if (args.mode)
+		        mode = strtoul(args.mode, NULL, 16);
+                    if ((screen = openscreen(width, height, mode))) {
+			w1 = openwindow(screen, "Screen data",  W1_LEFT, W1_TOP, W1_WIDTH, W1_HEIGHT);
+			if (w1) {
+			    WORD x = w1->BorderLeft;
+		            WORD y = w1->BorderTop;
+			    struct BitMap *bitmap = screen->RastPort.BitMap;
+
+			    y = drawtext(w1, x, y, "Requested size: %ux%u", width, height);
+			    y = drawtext(w1, x, y, "Requested ModeID: 0x%08lX", mode);
+			    y = drawtext(w1, x, y, "Actual size: %ux%u", screen->Width, screen->Height);
+			    y = drawtext(w1, x, y, "Actual ModeID: 0x%08lX", screen->ViewPort.ColorMap->VPModeID);
+			    y = drawtext(w1, x, y, "BitMap size: %ux%u", GetBitMapAttr(bitmap, BMA_WIDTH), GetBitMapAttr(bitmap, BMA_HEIGHT));
+			    handleevents(w1, screen, x, y);
+			    CloseWindow(w1);
+			}
+		        CloseScreen(screen);
+		    } else
+		        printf("Failed to open screen\n");
+		    FreeArgs(rda);
+	        } else
+		    printf("Error parsing arguments\n");
+                CloseLibrary((struct Library *)DOSBase);
+	    }
+	    CloseLibrary((struct Library *)GfxBase);
 	}
 	CloseLibrary((struct Library *) IntuitionBase);
     }
@@ -128,7 +146,7 @@ struct Window *openwindow(struct Screen *screen, const char *title, LONG x, LONG
 }
 
 
-struct Screen * openscreen(ULONG width, ULONG height)
+struct Screen * openscreen(ULONG width, ULONG height, ULONG mode)
 {
   struct Screen * screen;
    
@@ -137,6 +155,7 @@ struct Screen * openscreen(ULONG width, ULONG height)
                           SA_Width, 	width,
                           SA_Height, 	height,
 			  SA_Depth,	24,
+			  SA_DisplayID,	mode,
 			  SA_Title,	"Screen opening and movement test",
                           TAG_END);
   return screen;
