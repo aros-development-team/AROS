@@ -14,58 +14,60 @@
 
 #include <zune/systemprefswindow.h>
 
+#include "args.h"
 #include "locale.h"
+#include "prefs.h"
 #include "smeditor.h"
 
-#define VERSION "ScreenMode Preferences 1.3 (19.9.2009)"
-#define COPYRIGHT "Copyright © 1995-2009, The AROS Development Team"
+#define VERSION "ScreenMode Preferences 1.4 (30.01.2010)"
+#define COPYRIGHT "Copyright © 1995-2010, The AROS Development Team"
 
 static const char vers[] = VERSION;
 static const char version[] = "$VER: " VERSION "\n";
 
 
-int __nocommandline = 1;
-
-int main()
+int main(int argc, char **argv)
 {
     Object *app, *win;
 
     Locale_Initialize();
 
-    app = ApplicationObject,
-        MUIA_Application_Title, (IPTR) __(MSG_NAME),
-        MUIA_Application_Version, (IPTR) vers,
-        MUIA_Application_Copyright, (IPTR) COPYRIGHT,
-        MUIA_Application_Author, (IPTR) "The AROS Development Team",
-        MUIA_Application_Description, (IPTR) __(MSG_NAME),
-        MUIA_Application_SingleTask, TRUE,
-        MUIA_Application_Base, (IPTR) "SCREENMODEPREF",
-        SubWindow, (IPTR)(win = SystemPrefsWindowObject,
-        MUIA_Window_ID, MAKE_ID('S','W','I','N'),
-            WindowContents, (IPTR) SMEditorObject,
-            End,
-        End),
-    End;
-
-    if (app)
+    if (ReadArguments(argc, argv))
     {
-        set(win, MUIA_Window_Open, TRUE);
-        
-        DoMethod(app, MUIM_Application_Execute);
-    
-        MUI_DisposeObject(app);
+        if (ARG(USE) || ARG(SAVE))
+        {
+            Prefs_HandleArgs((STRPTR)ARG(FROM), ARG(USE), ARG(SAVE));
+        }
+        else
+        {
+            app = ApplicationObject,
+                MUIA_Application_Title, (IPTR) __(MSG_NAME),
+                MUIA_Application_Version, (IPTR) vers,
+                MUIA_Application_Copyright, (IPTR) COPYRIGHT,
+                MUIA_Application_Author, (IPTR) "The AROS Development Team",
+                MUIA_Application_Description, (IPTR) __(MSG_NAME),
+                MUIA_Application_SingleTask, TRUE,
+                MUIA_Application_Base, (IPTR) "SCREENMODEPREF",
+                SubWindow, (IPTR)(win = SystemPrefsWindowObject,
+                MUIA_Window_ID, MAKE_ID('S','W','I','N'),
+                    WindowContents, (IPTR) SMEditorObject,
+                    End,
+                End),
+            End;
 
-        Locale_Deinitialize();
+            if (app)
+            {
+                set(win, MUIA_Window_Open, TRUE);
+                
+                DoMethod(app, MUIM_Application_Execute);
+            
+                MUI_DisposeObject(app);
+            }
+        }
+        FreeArguments();
+    }
 
-        return RETURN_ERROR;        
-    }
-    else
-    {
-        D(bug("screenmode preferences: couldn't create application"));
-    }
-    
     Locale_Deinitialize();
 
     return RETURN_OK;
 }
-

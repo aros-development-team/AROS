@@ -27,6 +27,7 @@
 
 #include "locale.h"
 
+#include "prefs.h"
 #include "smeditor.h"
 #include "smselector.h"
 #include "smproperties.h"
@@ -40,7 +41,65 @@ struct SMEditor_DATA
 #define SMEditorObject BOOPSIOBJMACRO_START(SMEditor_CLASS->mcc_Class)
 #define SETUP_INST_DATA struct SMEditor_DATA *data = INST_DATA(CLASS, self)
 
-Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
+static BOOL Gadgets2ScreenmodePrefs
+(
+    struct SMEditor_DATA *data
+)
+{
+    if (XGET(data->selector, MUIA_List_Active) == MUIV_List_Active_Off)
+    {
+        // No active list entry? Reset to defaults
+        Prefs_Default();
+    }
+    else
+    {
+        screenmodeprefs.smp_DisplayID = XGET(data->properties, MUIA_ScreenModeProperties_DisplayID);
+        screenmodeprefs.smp_Width     = XGET(data->properties, MUIA_ScreenModeProperties_Width);
+        screenmodeprefs.smp_Height    = XGET(data->properties, MUIA_ScreenModeProperties_Height);
+        screenmodeprefs.smp_Depth     = XGET(data->properties, MUIA_ScreenModeProperties_Depth);
+        
+        if (XGET(data->properties, MUIA_ScreenModeProperties_Autoscroll))
+            screenmodeprefs.smp_Control = AUTOSCROLL;
+        else
+            screenmodeprefs.smp_Control = 0;
+    }
+
+    D(bug("[smeditor] Gadgets2Prefs:\n"));
+    D(bug("[smeditor] DisplayID 0x%08lX\n", screenmodeprefs.smp_DisplayID));
+    D(bug("[smeditor] Size %ldx%ld\n", screenmodeprefs.smp_Width, screenmodeprefs.smp_Height));
+    D(bug("[smeditor] Depth %ld\n", screenmodeprefs.smp_Depth));
+    D(bug("[smeditor] Control 0x%08lX\n", screenmodeprefs.smp_Control));
+
+    return TRUE;
+}
+
+static BOOL ScreenmodePrefs2Gadgets
+(
+    struct SMEditor_DATA *data
+)
+{
+    D(bug("[smeditor] Prefs2Gadgets:\n"));
+    D(bug("[smeditor] DisplayID 0x%08lX\n", screenmodeprefs.smp_DisplayID));
+    D(bug("[smeditor] Size %ldx%ld\n", screenmodeprefs.smp_Width, screenmodeprefs.smp_Height));
+    D(bug("[smeditor] Depth %ld\n", screenmodeprefs.smp_Depth));
+    D(bug("[smeditor] Control 0x%08lX\n", screenmodeprefs.smp_Control));
+
+    NNSET(data->selector, MUIA_ScreenModeSelector_Active, screenmodeprefs.smp_DisplayID);
+    SetAttrs
+    (
+        data->properties,
+        MUIA_ScreenModeProperties_DisplayID,  screenmodeprefs.smp_DisplayID,
+        MUIA_ScreenModeProperties_Width,      screenmodeprefs.smp_Width,
+        MUIA_ScreenModeProperties_Height,     screenmodeprefs.smp_Height,
+        MUIA_ScreenModeProperties_Depth,      screenmodeprefs.smp_Depth,
+        MUIA_ScreenModeProperties_Autoscroll, screenmodeprefs.smp_Control & AUTOSCROLL,
+        TAG_DONE
+    );
+
+    return TRUE;
+}
+
+static Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     Object *selector, *properties;
     self = (Object *) DoSuperNewTags
@@ -49,11 +108,12 @@ Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         
         MUIA_PrefsEditor_Name, (IPTR) __(MSG_NAME),
         MUIA_PrefsEditor_Path, (IPTR)"SYS/screenmode.prefs",
-        
+        MUIA_PrefsEditor_IconTool, (IPTR)"SYS:Prefs/Screenmode",
+
         Child, (IPTR)VGroup,
             Child, CLabel(_(MSG_DISPLAY_MODE)),
             Child, (IPTR)(selector   = (Object *)ScreenModeSelectorObject, End),
-	    Child, (IPTR)(properties = (Object *)ScreenModePropertiesObject, GroupFrame, End),
+            Child, (IPTR)(properties = (Object *)ScreenModePropertiesObject, GroupFrame, End),
         End,
         
         TAG_DONE
@@ -113,247 +173,64 @@ Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     return self;
 }
 
-void SMPByteSwap(struct ScreenModePrefs *smp)
-{
-#if 0
-    #undef  SWAP
-    #define SWAP(type, field) smp->smp_ ## field = AROS_BE2 ## type(smp->smp_ ## field)
-    
-    int i;
-    for (i = 0; i < sizeof(smp->smp_Reserved)/sizeof(ULONG); i++)
-        SWAP(LONG, Reserved[i]);
-        
-        SWAP(LONG, DisplayID);
-        SWAP(WORD, Width);
-        SWAP(WORD, Height);
-        SWAP(WORD, Depth);
-        SWAP(WORD, Control);
-#endif
-}
-
-IPTR SMEditor__MUIM_PrefsEditor_ImportFH
+static IPTR SMEditor__MUIM_PrefsEditor_ImportFH
 (
     Class *CLASS, Object *self, 
     struct MUIP_PrefsEditor_ImportFH *message
 )
 {
     SETUP_INST_DATA;
-    struct ContextNode     *context;
-    struct IFFHandle       *handle;
-    struct ScreenModePrefs  smp;
-    BOOL                    success = TRUE;
-    LONG                    error;
-    
-    if (!(handle = AllocIFF()))
-        return FALSE;
-    
-    handle->iff_Stream = (IPTR) message->fh;
-    InitIFFasDOS(handle);
+    BOOL success = TRUE;
 
-    if ((error = OpenIFF(handle, IFFF_READ)) == 0)
-    {
-        
-        BYTE i;
-        
-        // FIXME: We want some sanity checking here!
-        for (i = 0; i < 1; i++)
-        {
-            if ((error = StopChunk(handle, ID_PREF, ID_SCRM)) == 0)
-            {
-                if ((error = ParseIFF(handle, IFFPARSE_SCAN)) == 0)
-                {
-                    context = CurrentChunk(handle);
-                    
-                    error = ReadChunkBytes
-                    (
-                        handle, &smp, sizeof(struct ScreenModePrefs)
-                    );
-                    
-                    if (error < 0)
-                    {
-                        printf("Error: ReadChunkBytes() returned %ld!\n", error);
-                    }                    
-                }
-                else
-                {
-                    printf("ParseIFF() failed, returncode %ld!\n", error);
-                    success = FALSE;
-                    break;
-                }
-            }
-            else
-            {
-                printf("StopChunk() failed, returncode %ld!\n", error);
-                success = FALSE;
-            }
-        }
+    success = Prefs_ImportFH(message->fh);
 
-        CloseIFF(handle);
-    }
-    else
-    {
-        //ShowError(_(MSG_CANT_OPEN_STREAM));
-    }
-
-    FreeIFF(handle);
-    
-    
     if (success)
     {
-        SMPByteSwap(&smp);
-        
-	D(Printf("[smeditor] Loaded preferences file:\n"));
-	D(Printf("[smeditor] DisplayID 0x%08lX\n", smp.smp_DisplayID));
-	D(Printf("[smeditor] Size %ldx%ld\n", smp.smp_Width, smp.smp_Height));
-	D(Printf("[smeditor] Depth %ld\n", smp.smp_Depth));
-	D(Printf("[smeditor] Control 0x%08lX\n", smp.smp_Control));
-        nnset(data->selector, MUIA_ScreenModeSelector_Active, smp.smp_DisplayID);
-        SetAttrs
-        (
-            data->properties,
-            MUIA_ScreenModeProperties_DisplayID,  smp.smp_DisplayID,
-            MUIA_ScreenModeProperties_Width,      smp.smp_Width,
-            MUIA_ScreenModeProperties_Height,     smp.smp_Height,
-            MUIA_ScreenModeProperties_Depth,      smp.smp_Depth,
-            MUIA_ScreenModeProperties_Autoscroll, smp.smp_Control & AUTOSCROLL,
-            TAG_DONE
-        );
+        ScreenmodePrefs2Gadgets(data);
     }
-    
+
     return success;
 }
 
-IPTR SMEditor__MUIM_PrefsEditor_ExportFH
+static IPTR SMEditor__MUIM_PrefsEditor_ExportFH
 (
     Class *CLASS, Object *self,
     struct MUIP_PrefsEditor_ExportFH *message
 )
 {
     SETUP_INST_DATA;
-    
-    struct PrefHeader header = { 0 }; 
-    struct IFFHandle *handle;
-    BOOL              success = TRUE;
-    LONG              error   = 0;
-        
-    if ((handle = AllocIFF()))
-    {
-        handle->iff_Stream = (IPTR) message->fh;
-        
-        InitIFFasDOS(handle);
-        
-        if (!(error = OpenIFF(handle, IFFF_WRITE))) /* NULL = successful! */
-        {
-            struct ScreenModePrefs smp;
-            
-            memset(&smp, 0, sizeof(smp));
-            
-            BYTE i;
-            
-            PushChunk(handle, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN); /* FIXME: IFFSIZE_UNKNOWN? */
-            
-            header.ph_Version = PHV_CURRENT;
-            header.ph_Type    = 0;
-            
-            PushChunk(handle, ID_PREF, ID_PRHD, IFFSIZE_UNKNOWN); /* FIXME: IFFSIZE_UNKNOWN? */
-            
-            WriteChunkBytes(handle, &header, sizeof(struct PrefHeader));
-            
-            PopChunk(handle);
-            
-            for (i = 0; i < 1; i++)
-            {
-                error = PushChunk(handle, ID_PREF, ID_SCRM, sizeof(struct ScreenModePrefs));
-                
-                if (error != 0) // TODO: We need some error checking here!
-                {
-                    printf("error: PushChunk() = %ld ", error);
-                }
-                
-                smp.smp_DisplayID = XGET(data->properties, MUIA_ScreenModeProperties_DisplayID);
-                smp.smp_Width     = XGET(data->properties, MUIA_ScreenModeProperties_Width);
-                smp.smp_Height    = XGET(data->properties, MUIA_ScreenModeProperties_Height);
-                smp.smp_Depth     = XGET(data->properties, MUIA_ScreenModeProperties_Depth);
-                
-                if (XGET(data->properties, MUIA_ScreenModeProperties_Autoscroll))
-                    smp.smp_Control = AUTOSCROLL;
-                else
-                    smp.smp_Control = 0;
-                
-                SMPByteSwap(&smp);
-                        
-                error = WriteChunkBytes(handle, &smp, sizeof(struct ScreenModePrefs));
-                error = PopChunk(handle);
-                                
-                if (error != 0) // TODO: We need some error checking here!
-                {
-                    printf("error: PopChunk() = %ld ", error);
-                }
-            }
+    BOOL success = TRUE;
 
-            // Terminate the FORM
-            PopChunk(handle);
-        }
-        else
-        {
-            //ShowError(_(MSG_CANT_OPEN_STREAM));
-            success = FALSE;
-        }
-        
-        CloseIFF(handle);
-        FreeIFF(handle);
-    }
-    else // AllocIFF()
+    Gadgets2ScreenmodePrefs(data);
+    success = Prefs_ExportFH(message->fh);
+
+    return success;
+}
+
+static IPTR SMEditor__MUIM_PrefsEditor_SetDefaults
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    SETUP_INST_DATA;
+    BOOL success = TRUE;
+
+    success = Prefs_Default();
+    if (success)
     {
-        // Do something more here - if IFF allocation has failed, something isn't right
-        //ShowError(_(MSG_CANT_ALLOCATE_IFFPTR));
-        success = FALSE;
+        ScreenmodePrefs2Gadgets(data);
+        SET(data->selector, MUIA_List_Active, MUIV_List_Active_Off);
     }
 
     return success;
 }
 
-IPTR SMEditor__MUIM_PrefsEditor_Test
-(
-    Class *CLASS, Object *self, Msg message
-)
-{
-   return FALSE;
-}
-
-IPTR SMEditor__MUIM_PrefsEditor_Use
-(
-    Class *CLASS, Object *self, Msg message
-)
-{
-    #warning "FIXME: Closing the window here only works because we're lucky   "
-    #warning "       and nothing needs to access anything that is put in the  "
-    #warning "       RenderInfo structure, which gets deallocated when closing"
-    #warning "       the window. This needs to be fixed directly in the       "
-    #warning "       PrefsEditor class.                                       "
-    if (muiRenderInfo(self) && _win(self))
-        set(_win(self), MUIA_Window_Open, FALSE);
-            
-    return DoSuperMethodA(CLASS, self, message);
-}
-
-#undef ALIAS
-#define ALIAS(old, new) \
-    AROS_MAKE_ALIAS(SMEditor__MUIM_PrefsEditor_ ## old, SMEditor__MUIM_PrefsEditor_ ## new)
-
-ALIAS(Test, Revert);
-ALIAS(Use, Save);
-ALIAS(Use, Cancel);
-
-ZUNE_CUSTOMCLASS_8
+ZUNE_CUSTOMCLASS_4
 (
     SMEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                    struct opSet *,
     MUIM_PrefsEditor_ImportFH, struct MUIP_PrefsEditor_ImportFH *,
     MUIM_PrefsEditor_ExportFH, struct MUIP_PrefsEditor_ExportFH *,
-    MUIM_PrefsEditor_Test,     Msg,
-    MUIM_PrefsEditor_Revert,   Msg,
-    MUIM_PrefsEditor_Use,      Msg,
-    MUIM_PrefsEditor_Save,     Msg,
-    MUIM_PrefsEditor_Cancel,   Msg
+    MUIM_PrefsEditor_SetDefaults,     Msg
 );
