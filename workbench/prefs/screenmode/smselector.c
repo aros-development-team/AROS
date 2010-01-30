@@ -53,24 +53,27 @@ AROS_UFHA(APTR         , msg , A1))
 static struct Hook SelectHook = { .h_Entry = SelectFunc };
 
 AROS_UFH3(IPTR, DisplayFunc,
-	  AROS_UFHA(struct Hook *, hook, A0),
-	  AROS_UFHA(char **, array, A2),
-	  AROS_UFHA(STRPTR, entry, A1))
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(char **, array, A2),
+AROS_UFHA(STRPTR, entry, A1))
 {
     AROS_USERFUNC_INIT
 
-    if (entry) {
+    if (entry)
+    {
         ULONG *ids_array = hook->h_Data;
-        ULONG num = array[-1];
+        ULONG num = (ULONG)array[-1];
         IPTR modeid = ids_array[num];
         static char modeid_str[9];
     
         RawDoFmt("%08lx", &modeid, RAWFMTFUNC_STRING, modeid_str);
         array[0] = modeid_str;
         array[1] = entry;
-    } else {
+    }
+    else
+    {
         array[0] = _(MSG_MODE_ID);
-	array[1] = _(MSG_DESCRIPTION);
+        array[1] = _(MSG_DESCRIPTION);
     }
     return 0;
 
@@ -139,14 +142,14 @@ Object *ScreenModeSelector__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
 
     DisplayHook.h_Data = ids_array;
 
-    list = ListObject,
+    list = (Object *)ListObject,
         InputListFrame,
-	MUIA_List_DisplayHook, &DisplayHook,
-	MUIA_List_Format, "BAR,",
+        MUIA_List_DisplayHook, (IPTR)&DisplayHook,
+        MUIA_List_Format, (IPTR)"BAR,",
         MUIA_List_SourceArray, (IPTR)modes_array,
-	MUIA_List_Title, TRUE,
-	MUIA_CycleChain, TRUE, /* CHECKME: Keyboard input in the list doesn't work, why? */
-        End;
+        MUIA_List_Title, TRUE,
+        MUIA_CycleChain, TRUE, /* CHECKME: Keyboard input in the list doesn't work, why? */
+    End;
 
     self = (Object *)DoSuperNewTags
     (
@@ -213,8 +216,8 @@ IPTR ScreenModeSelector__OM_SET(Class *CLASS, Object *self, struct opSet *messag
             case MUIA_ScreenModeSelector_Active:
             {
                 int i;
-		
-		D(Printf("[smselector] Set Active ID 0x%08lX\n", tag->ti_Data));
+
+                D(bug("[smselector] Set Active ID 0x%08lX\n", tag->ti_Data));
                 for
                 (
                     i = 0;
@@ -224,13 +227,14 @@ IPTR ScreenModeSelector__OM_SET(Class *CLASS, Object *self, struct opSet *messag
                 
                 if (data->ids_array[i] == INVALID_ID)
                     tag->ti_Data = INVALID_ID;
-                else {
-		    if (XGET(self, MUIA_List_Active) != i) {
-		        D(Printf("[smselector] Set active item %lu\n", i));
+                else
+                {
+                    if (XGET(self, MUIA_List_Active) != i)
+                    {
+                        D(bug("[smselector] Set active item %lu\n", i));
                         NNFSET(self, MUIA_List_Active, i);
-		    }
-		}
-                
+                    }
+                }
                 break;
             }
         }

@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := locale main smeditor smproperties smselector
+FILES       := args locale main misc prefs smeditor smproperties smselector
 EXEDIR      := $(AROS_PREFS)
 
 #MM- workbench-prefs : workbench-prefs-screenmode

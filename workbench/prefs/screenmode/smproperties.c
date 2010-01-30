@@ -97,7 +97,7 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     if (!self)
         goto err;
     
-    D(Printf("[smproperties] Created ScreenModeProperties object 0x%p\n", self));
+    D(bug("[smproperties] Created ScreenModeProperties object 0x%p\n", self));
     data = INST_DATA(CLASS, self);    
     
     data->width      = width;
@@ -159,7 +159,7 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     );
         
     id = GetTagData(MUIA_ScreenModeProperties_DisplayID, INVALID_ID, message->ops_AttrList);
-    D(Printf("[smproperties] Setting initial ModeID 0x%08lX\n", id));
+    D(bug("[smproperties] Setting initial ModeID 0x%08lX\n", id));
     set(self, MUIA_ScreenModeProperties_DisplayID, id);
     
     return self;
@@ -172,20 +172,20 @@ err:
 static inline UWORD AdjustWidth(UWORD width, struct ScreenModeProperties_DATA *data)
 {
     if (width < data->MinWidth)
-	width = data->MinWidth;
+        width = data->MinWidth;
     if (width > data->MaxWidth)
-	width = data->MaxWidth;
-    D(Printf("[smproperties] Adjusted width = %lu\n", width));
+        width = data->MaxWidth;
+    D(bug("[smproperties] Adjusted width = %lu\n", width));
     return width;
 }
 
 static inline UWORD AdjustHeight(UWORD height, struct ScreenModeProperties_DATA *data)
 {
     if (height < data->MinHeight)
-	height = data->MinHeight;
+        height = data->MinHeight;
     if (height > data->MaxHeight)
-	height = data->MaxHeight;
-    D(Printf("[smproperties] Adjusted height = %lu\n", height));
+        height = data->MaxHeight;
+    D(bug("[smproperties] Adjusted height = %lu\n", height));
     return height;
 }
 
@@ -199,7 +199,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
     IPTR ret;
     WORD width, height, depth;
     
-    DB2(Printf("[smproperties] OM_SET called\n"));
+    DB2(bug("[smproperties] OM_SET called\n"));
     for (tags = message->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
         switch (tag->ti_Tag)
@@ -216,7 +216,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     { MUIA_Numeric_Min,        0 },
                     { MUIA_Numeric_Max,        0 },
                     { MUIA_Numeric_Default,    0 },
-		    { MUIA_Numeric_Value,      0 },
+                    { MUIA_Numeric_Value,      0 },
                     { TAG_DONE,                0 }
                 };
                 struct TagItem height_tags[] =
@@ -225,7 +225,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     { MUIA_Numeric_Min,        0 },
                     { MUIA_Numeric_Max,        0 },
                     { MUIA_Numeric_Default,    0 },
-		    { MUIA_Numeric_Value,      0 },
+                    { MUIA_Numeric_Value,      0 },
                     { TAG_DONE,                0 }
                 };
                 struct TagItem depth_tags[] =
@@ -234,20 +234,20 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     { MUIA_Numeric_Min,        0 },
                     { MUIA_Numeric_Max,        0 },
                     { MUIA_Numeric_Default,    0 },
-		    { MUIA_Disabled,	    FALSE},
+                    { MUIA_Disabled,	    FALSE},
                     { TAG_DONE,                0 }
                 };
                 
                 struct DimensionInfo dim;
-		struct DisplayInfo dinf;
+                struct DisplayInfo dinf;
                 
                 BOOL autoscroll;
-		
-		D(Printf("[smproperties] Set DisplayID = 0x%08lx\n", tag->ti_Data));
+
+                D(bug("[smproperties] Set DisplayID = 0x%08lx\n", tag->ti_Data));
                 
                 if (GetDisplayInfoData(NULL, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, tag->ti_Data))
                 {
-		    IPTR width, height;
+                    IPTR width, height;
 
                     width_tags[1].ti_Data  = dim.MinRasterWidth;
                     height_tags[1].ti_Data = dim.MinRasterHeight;
@@ -260,49 +260,52 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     width_tags[3].ti_Data  = dim.Nominal.MaxX - dim.Nominal.MinX + 1;
                     height_tags[3].ti_Data = dim.Nominal.MaxY - dim.Nominal.MinY + 1;
                     depth_tags[3].ti_Data  = dim.MaxDepth;
-		    
-		    D(Printf("[smproperties] Obtained DimensionsInfo:\n"));
-		    D(Printf("[smproperties] Minimum raster: %lux%lux1\n", dim.MinRasterWidth, dim.MinRasterHeight));
-		    D(Printf("[smproperties] Maximum raster: %lux%lux%lu\n", dim.MaxRasterWidth, dim.MaxRasterHeight, dim. MaxDepth));
-		    D(Printf("[smproperties] Display size: %lux%lu\n", width_tags[3].ti_Data, height_tags[3].ti_Data));
+
+                    D(bug("[smproperties] Obtained DimensionsInfo:\n"));
+                    D(bug("[smproperties] Minimum raster: %lux%lux1\n", dim.MinRasterWidth, dim.MinRasterHeight));
+                    D(bug("[smproperties] Maximum raster: %lux%lux%lu\n", dim.MaxRasterWidth, dim.MaxRasterHeight, dim. MaxDepth));
+                    D(bug("[smproperties] Display size: %lux%lu\n", width_tags[3].ti_Data, height_tags[3].ti_Data));
                     
                     id = tag->ti_Data;
-		    data->DefWidth = width_tags[3].ti_Data;
-		    data->DefHeight = height_tags[3].ti_Data;
-		    data->DefDepth = depth_tags[3].ti_Data;
-		    data->MinWidth = dim.MinRasterWidth;
-		    data->MinHeight = dim.MinRasterHeight;
-		    data->MaxWidth = dim.MaxRasterWidth;
-		    data->MaxHeight = dim.MaxRasterHeight;
-		    
-		    GetAttr(MUIA_Selected, data->def_width, &width);
-		    GetAttr(MUIA_Selected, data->def_height, &height);
-		    if (width)
-		        width_tags[4].ti_Data = width_tags[3].ti_Data;
-		    else {
-		        GetAttr(MUIA_Numeric_Value, data->width, &width);
-			width_tags[4].ti_Data = AdjustWidth(width, data);
-		    }
-		    if (height)
-			height_tags[4].ti_Data = height_tags[3].ti_Data;
-		    else {
-		        GetAttr(MUIA_Numeric_Value, data->height, &height);
-		        height_tags[4].ti_Data = AdjustHeight(height, data);
-		    }
+                    data->DefWidth = width_tags[3].ti_Data;
+                    data->DefHeight = height_tags[3].ti_Data;
+                    data->DefDepth = depth_tags[3].ti_Data;
+                    data->MinWidth = dim.MinRasterWidth;
+                    data->MinHeight = dim.MinRasterHeight;
+                    data->MaxWidth = dim.MaxRasterWidth;
+                    data->MaxHeight = dim.MaxRasterHeight;
+
+                    GetAttr(MUIA_Selected, data->def_width, &width);
+                    GetAttr(MUIA_Selected, data->def_height, &height);
+                    if (width)
+                        width_tags[4].ti_Data = width_tags[3].ti_Data;
+                    else
+                    {
+                        GetAttr(MUIA_Numeric_Value, data->width, &width);
+                        width_tags[4].ti_Data = AdjustWidth(width, data);
+                    }
+                    if (height)
+                        height_tags[4].ti_Data = height_tags[3].ti_Data;
+                    else
+                    {
+                        GetAttr(MUIA_Numeric_Value, data->height, &height);
+                        height_tags[4].ti_Data = AdjustHeight(height, data);
+                    }
                 }
-		
-		data->VariableDepth = TRUE;
-		if (GetDisplayInfoData(NULL, (UBYTE *)&dinf, sizeof(dinf), DTAG_DISP, tag->ti_Data)) {
-		
-		    /* Check me: original AmigaOS screenmode prefs do not allow to change depth for CyberGFX
-		       screenmodes. Here i attempt to do it too, however i don't know how it's detected.
-		       Here i rely on DIPF_IS_FOREIGN flag - sonic */
-		    if (dinf.PropertyFlags & DIPF_IS_FOREIGN) {
-		        data->VariableDepth = FALSE;
-		        depth_tags[3].ti_Tag = MUIA_Numeric_Value;
-			depth_tags[4].ti_Data = TRUE;
-		    }
-		}
+
+                data->VariableDepth = TRUE;
+                if (GetDisplayInfoData(NULL, (UBYTE *)&dinf, sizeof(dinf), DTAG_DISP, tag->ti_Data))
+                {
+                    /* Check me: original AmigaOS screenmode prefs do not allow to change depth for CyberGFX
+                       screenmodes. Here i attempt to do it too, however i don't know how it's detected.
+                       Here i rely on DIPF_IS_FOREIGN flag - sonic */
+                    if (dinf.PropertyFlags & DIPF_IS_FOREIGN)
+                    {
+                        data->VariableDepth = FALSE;
+                        depth_tags[3].ti_Tag = MUIA_Numeric_Value;
+                        depth_tags[4].ti_Data = TRUE;
+                    }
+                }
                 
                 /* Enable autoscroll only if the maximum sizes are bigger than 
                    the resolution.  */
@@ -311,12 +314,13 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                              height_tags[2].ti_Data > height_tags[3].ti_Data;
     
                 data->DisplayID = id;
-		
+
                 SetAttrs(self, MUIA_Disabled, id == INVALID_ID, TAG_DONE);
-		if (id == INVALID_ID) {
-		    nnset(data->def_width, MUIA_Selected, TRUE);
-		    nnset(data->def_height, MUIA_Selected, TRUE);
-		}
+                if (id == INVALID_ID)
+                {
+                    nnset(data->def_width, MUIA_Selected, TRUE);
+                    nnset(data->def_height, MUIA_Selected, TRUE);
+                }
 
                 SetAttrsA(data->width,  width_tags);
                 SetAttrsA(data->height, height_tags);
@@ -332,27 +336,27 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
             
             case MUIA_ScreenModeProperties_Width:
                 width = tag->ti_Data;
-		    
-		D(Printf("[smproperties] Set Width = %ld\n", width));
-		if (no_notify == TAG_IGNORE)
+
+                D(bug("[smproperties] Set Width = %ld\n", width));
+                if (no_notify == TAG_IGNORE)
                     nnset(data->def_width, MUIA_Selected, width == -1);
                 if (width == -1)
-		    width = data->DefWidth;
-		else
-		    width = AdjustWidth(width, data);
+                    width = data->DefWidth;
+                else
+                    width = AdjustWidth(width, data);
                 SetAttrs(data->width, no_notify, TRUE, MUIA_Numeric_Value, width, TAG_DONE);
                 break;
                 
             case MUIA_ScreenModeProperties_Height:
                 height = tag->ti_Data;
-		    
-		D(Printf("[smproperties] Set Height = %ld\n", height));
-		if (no_notify == TAG_IGNORE)
+
+                D(bug("[smproperties] Set Height = %ld\n", height));
+                if (no_notify == TAG_IGNORE)
                     nnset(data->def_height, MUIA_Selected, height == -1);
                 if (height == -1)
-		    height = data->DefHeight;
-		else
-		    height = AdjustHeight(height, data);
+                    height = data->DefHeight;
+                else
+                    height = AdjustHeight(height, data);
                 SetAttrs(data->height, no_notify, TRUE, MUIA_Numeric_Value, height, TAG_DONE);
                 break;
             
@@ -360,26 +364,26 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 if (data->VariableDepth)
                 {
                     depth = tag->ti_Data;
-		    
-		    D(Printf("[smproperties] Set Depth = %ld\n", depth));
+
+                    D(bug("[smproperties] Set Depth = %ld\n", depth));
                     if (depth == -1)
-		        depth = data->DefDepth;
+                        depth = data->DefDepth;
                     SetAttrs(data->depth, no_notify, TRUE, MUIA_Numeric_Value, depth, TAG_DONE);
                 }
                 break;
             
             case MUIA_ScreenModeProperties_Autoscroll:
-	    
-	        D(Printf("[smproperties] Set Autoscroll = %lu\n", tag->ti_Data));
+
+                D(bug("[smproperties] Set Autoscroll = %lu\n", tag->ti_Data));
                 if (id != INVALID_ID && !XGET(data->autoscroll, MUIA_Disabled))
                     SetAttrs(data->autoscroll, no_notify, TRUE, MUIA_Selected, tag->ti_Data != 0);
                 break;
         }
     }
 
-    DB2(Printf("[smproperties] Calling OM_SET() on superclass\n"));
+    DB2(bug("[smproperties] Calling OM_SET() on superclass\n"));
     ret = DoSuperMethodA(CLASS, self, (Msg)message);
-    DB2(Printf("[smproperties] OM_SET() on superclass returned %ld\n", ret));
+    DB2(bug("[smproperties] OM_SET() on superclass returned %ld\n", ret));
     return ret;
 }
 
