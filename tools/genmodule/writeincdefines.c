@@ -41,9 +41,7 @@ void writeincdefines(struct config *cfg)
 	    "#include <exec/types.h>\n"
 	    "#include <aros/preprocessor/variadic/cast2iptr.hpp>\n"
 	    "\n"
-	    "#ifdef __cplusplus\n"
-	    "extern \"C\" {\n"
-	    "#endif /* __cplusplus */\n"
+	    "__BEGIN_DECLS\n"
 	    "\n",
 	    cfg->modulenameupper, cfg->modulenameupper, banner, cfg->modulename
     );
@@ -72,9 +70,7 @@ void writeincdefines(struct config *cfg)
     }
     fprintf(out,
 	    "\n"
-	    "#ifdef __cplusplus\n"
-	    "}\n"
-	    "#endif /* __cplusplus */\n"
+	    "__END_DECLS\n"
 	    "\n"
 	    "#endif /* DEFINES_%s_H*/\n",
 	    cfg->modulenameupper

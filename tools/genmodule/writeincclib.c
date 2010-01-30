@@ -32,10 +32,6 @@ void writeincclib(struct config *cfg)
 	    "%s"
 	    "\n"
 	    "#include <aros/libcall.h>\n"
-	    "\n"
-	    "#ifdef __cplusplus\n"
-	    "extern \"C\" {\n"
-	    "#endif /* __cplusplus */\n"
 	    "\n",
 	    cfg->modulenameupper, cfg->modulenameupper, banner
     );
@@ -44,14 +40,18 @@ void writeincclib(struct config *cfg)
     for (linelistit = cfg->cdeflines; linelistit!=NULL; linelistit = linelistit->next)
 	fprintf(out, "%s\n", linelistit->s);
 
+    fprintf(out,
+	    "\n"
+	    "__BEGIN_DECLS\n"
+	    "\n"
+    );
+
     if (cfg->command!=DUMMY)
 	writefuncprotos(out, cfg, cfg->funclist);
 
     fprintf(out,
 	    "\n"
-	    "#ifdef __cplusplus\n"
-	    "}\n"
-	    "#endif /* __cplusplus */\n"
+	    "__END_DECLS\n"
 	    "\n"
 	    "#endif /* CLIB_%s_PROTOS_H */\n",
 	    cfg->modulenameupper);
