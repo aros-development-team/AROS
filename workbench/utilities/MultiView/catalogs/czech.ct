@@ -1,4 +1,4 @@
-## version $VER: multiview.catalog 1.0 (23.11.2007)
+## version $VER: Multiview.catalog 1.1 (28.1.2010)
 ## language czech
 ## codeset 0
 ;
@@ -39,6 +39,14 @@ MSG_CANT_CREATE_WIN
 Nelze vytvoøit okno!
 ; Can't create window!
 ;
+MSG_CANT_CREATE_MSGPORT
+Nelze vytvoøit message port!
+; Can't create message port!
+;
+MSG_CANT_ADD_APPWINDOW
+Nelze nastavit okno typu AppWindow!
+; Can't promote window as an AppWindow!
+;
 MSG_SAVE_FAILED
 Chyba pøi ukládání souboru!
 ; Saving to file failed!
@@ -53,7 +61,7 @@ O\0Otevøít...
 ;
 MSG_MEN_PROJECT_SAVEAS
 A\0Ulo¾it jako...
-; A\0Save As...
+; A\0Save as...
 ;
 MSG_MEN_PROJECT_SAVEAS_IFF
 I\0Ulo¾it jako IFF...
@@ -194,4 +202,8 @@ OK
 MSG_OK
 OK
 ; Ok
+;
+MSG_SHORTCUT_EDITOR
+E
+; E
 ;

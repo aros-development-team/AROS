@@ -1,6 +1,6 @@
-## version $VER: More.catalog 1.4 (7.12.2007)
+## version $VER: More.catalog 1.5 (28.1.2010)
 ## language czech
-## codeset 5
+## codeset 0
 ;
 ;
 MSG_CANT_OPEN_LIB
@@ -38,6 +38,14 @@ Nelze vytvoøit menu!
 MSG_CANT_CREATE_WIN
 Nelze vytvoøit okno!
 ; Can't create window!
+;
+MSG_CANT_CREATE_MSGPORT
+Nelze vytvoøit message port!
+; Can't create message port!
+;
+MSG_CANT_ADD_APPWINDOW
+Nelze nastavit okno typu AppWindow!
+; Can't turn the window into an AppWindow!
 ;
 MSG_MEN_PROJECT
 Projekt
@@ -146,4 +154,8 @@ N
 MSG_SHORTCUT_PREV
 P
 ; P
+;
+MSG_SHORTCUT_EDITOR
+E
+; E
 ;

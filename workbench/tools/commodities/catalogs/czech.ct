@@ -1,8 +1,7 @@
-## version $VER: Commodities.catalog 1.5 (7.12.2007)
+## version $VER: Commodities.catalog 3.0 (27.1.2010)
 ## language czech
-## codeset 5
+## codeset 0
 ;
-; FIXME: This file requires updating. When done, bump version to 3
 ;
 MSG_CANT_OPEN_LIB
 Nelze otevøít knihovnu %s V%ld!\n
@@ -11,6 +10,10 @@ Nelze otevøít knihovnu %s V%ld!\n
 MSG_CANT_OPEN_INPUTDEVICE
 Nelze otevøít zaøízení input.device.
 ; Can't open 'input.device'
+;
+MSG_CANT_OPEN_CLIPDEVICE
+Nelze otevøít zaøízení clipboard.device.
+; Can't open 'clipboard.device'
 ;
 MSG_CANT_LOCK_SCR
 Nelze zamknout veøejnou obrazovku!\n
@@ -43,6 +46,10 @@ Není dostatek volné pamìti!\n
 MSG_CANT_CREATE_MSGPORT
 Nelze vytvoøit message port!\n
 ; Can't create message port!\n
+;
+MSG_CANT_ALLOCATE_SIGNAL
+Nelze alokovat po¾adovaný signál!\n
+; Can't allocate signal!\n
 ;
 MSG_CANT_CREATE_BROKER
 Nelze vytvoøit objekt CxBroker!\n
@@ -306,4 +313,46 @@ Seznam oken a obrazovek
 MSG_DEPTHMENU_CXDESCR
 Pøesune okno nebo obrazovku do popøedí
 ; Popup menu for depth gadgets
+;
+; ===============================================
+; AltKeyQ
+;
+MSG_ALTKEYQ_CXNAME
+AltKeyQ
+; AltKeyQ
+;
+MSG_ALTKEYQ_CXTITLE
+AltKeyQ
+; Character input by number
+;
+MSG_ALTKEYQ_CXDESCR
+Zadání po¾adovaného znaku jeho èíslem
+; MS-DOS Style Alt key usage
+;
+; ===============================================
+; ASCIITable
+;
+MSG_ASCIITABLE_CXNAME
+ASCIITable
+; ASCIITable
+;
+MSG_ASCIITABLE_CXTITLE
+Tabulka ASCII
+; ASCIITable:
+;
+MSG_ASCIITABLE_CXDESCR
+Výbìr po¾adovaného znaku z tabulky
+; Select keys from a GUI
+;
+MSG_ASCIITABLE_WINTITLE
+ASCIITable: klávesová zkratka = <%s>
+; ASCIITable: Hot Key = <%s>
+;
+MSG_ASCIITABLE_GAD_COPY
+Zkopírovat
+; Copy
+;
+MSG_ASCIITABLE_GAD_CLEAR
+Vymazat
+; Clear
 ;

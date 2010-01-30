@@ -1,0 +1,580 @@
+## version $VER: PSI.catalog 1.0 (28.1.2010)
+## language czech
+## codeset 0
+;
+MSG_MENU_PROJECT
+Projekt
+; Project
+;
+MSG_MENU_PROJECT_OPEN
+Otevøít...
+; Open...
+;
+MSG_MENU_PROJECT_APPEND
+Pøipojit...
+; Append...
+;
+MSG_MENU_PROJECT_SAVEAS
+Ulo¾it jako...
+; Save As...
+;
+MSG_MENU_PROJECT_ABOUT
+O programu...
+; About...
+;
+MSG_MENU_PROJECT_QUIT
+Ukonèit
+; Quit
+;
+MSG_MENU_EDIT
+Úpravy
+; Edit
+;
+MSG_MENU_EDIT_LASTSAVED
+Naposledy ulo¾ené
+; Last Saved
+;
+MSG_MENU_EDIT_RESTORE
+Obnovit pøedchozí
+; Restore
+;
+MSG_MENU_SETTINGS
+Nastavení
+; Settings
+;
+MSG_MENU_SETTINGS_MUI
+U¾ivatelské rozhraní...
+; MUI...
+;
+MSG_MENU_COLORS
+Barvy
+; Colors
+;
+MSG_MENU_COLORS_PRESETS
+Pøedvolby
+; Presets
+;
+MSG_MENU_COLORS_PRESETS_2COL
+Dvoubarevné
+; Monochrome Settings
+;
+MSG_MENU_COLORS_PRESETS_4COL
+Ètyøbarevné
+; 4-Color Settings
+;
+MSG_MENU_COLORS_PRESETS_8COL
+MagicWB
+; MagicWB Settings
+;
+MSG_BUTTON_OK
+_OK
+; _OK
+;
+MSG_BUTTON_CANCEL
+Zru¹it
+; Cancel
+;
+MSG_BUTTON_SAVE
+Ulo¾it
+; Save
+;
+MSG_BUTTON_USE
+Pou¾ít
+; Use
+;
+MSG_BUTTON_NEW
+_Nová
+; _New
+;
+MSG_BUTTON_COPY
+Z_kopírovat
+; _Copy
+;
+MSG_BUTTON_DELETE
+_Smazat
+; _Delete
+;
+MSG_BUTTON_EDIT
+U_pravit...
+; _Edit...
+;
+MSG_BUTTON_OPEN
+_Otevøít...
+; _Open
+;
+MSG_BUTTON_CLOSE
+_Zavøít
+; _Close
+;
+MSG_BUTTON_JUMP
+Pøe_jít na
+; _Jump
+;
+MSG_BUTTON_KILL
+Uvolnit
+; Kill
+;
+MSG_TITLE_PUBSCREENWINDOW
+Úprava obrazovky:
+; Edit Screen:
+;
+MSG_TITLE_SAVE
+Ulo¾it soubor
+; Save PublicScreen File
+;
+MSG_TITLE_OPEN
+Otevøít soubor
+; Load PublicScreen File
+;
+MSG_TITLE_APPEND
+Pøipojit soubor
+; Append PublicScreen File
+;
+MSG_LIST_SCREENNAME
+Název
+; Name
+;
+MSG_LIST_SCREENMODE
+Zobrazovací mód
+; Display Mode
+;
+MSG_LIST_UNKNOWNMODE
+(neznámá)
+; (unknown)
+;
+MSG_LIST_FOREIGNSCREEN
+(cizí)
+; (foreign)
+;
+MSG_LABEL_PUBLICNAME
+Veøejný _název:
+; Public _Name:
+;
+MSG_LABEL_SCREENTITLE
+_Titulek obrazovky:
+; Screen _Title:
+;
+MSG_LABEL_DISPLAYMODE
+Zobrazovací mó_d:
+; _Display Mode:
+;
+MSG_LABEL_DEFAULTFONT
+_Výchozí písmo:
+; Default _Font:
+;
+MSG_LABEL_BACKGROUND
+Pozadí o_brazovky:
+; _Background:
+;
+MSG_LABEL_PUBLICFLAGS
+Atributy:
+; Flags:
+;
+MSG_LABEL_AUTOSCROLL
+_Rolování
+; _Autoscroll
+;
+MSG_LABEL_NODRAG
+Nesta_hovatelná
+; No D_rag
+;
+MSG_LABEL_EXCLUSIVE
+_Exkluzivní
+; _Exclusive
+;
+MSG_LABEL_INTERLEAVED
+Pro_kládaná
+; _Interleaved
+;
+MSG_LABEL_OPENBEHIND
+Otevøít vza_du
+; Open Be_hind
+;
+MSG_LABEL_SYSTEMDEFAULT
+Výchozí pro s_ystém
+; S_ystem Default
+;
+MSG_LABEL_AUTOCLOSE
+Automaticky zavøít
+; Auto Close
+;
+MSG_LABEL_CLOSEGADGET
+Zavírací tlaèítko
+; Close Gadget
+;
+MSG_LABEL_OVERSCAN
+O_verscan:
+; O_verscan:
+;
+MSG_LABEL_SIZE
+Veliko_st:
+; _Size:
+;
+MSG_LABEL_CROSS
+_x
+; _x
+;
+MSG_LABEL_DEPTH
+_Hloubka:
+; _Depth:
+;
+MSG_LABEL_VISIBLE
+Viditelný rozmìr:
+; Visible:
+;
+MSG_LABEL_MINIMUM
+Nejmen¹í rozmìr:
+; Minimum:
+;
+MSG_LABEL_MAXIMUM
+Nejvìt¹í rozmìr:
+; Maximum:
+;
+MSG_LABEL_BITSPERGUN
+Bitù/slo¾ka:
+; Bits/Gun:
+;
+MSG_LABEL_SCANRATE
+Snímk. frekvence:
+; Scanrate:
+;
+MSG_LABEL_SCANLINE
+Øádk. frekvence:
+; Scanline:
+;
+MSG_CLI_SCREENOPENED
+Obrazovka otevøena (0).\n
+; Screen opened (0).\n
+;
+MSG_CLI_SCREENOPENFAILED
+Chyba pøi otvírání obrazovky (5).\n
+; Failed to open screen (5).\n
+;
+MSG_CLI_SCREENCLOSED
+Obrazovka zavøena (0).\n
+; Screen closed (0).\n
+;
+MSG_CLI_SCREENCLOSEFAILED
+Chyba pøi zavírání obrazovky (5).\n
+; Failed to close screen (5).\n
+;
+MSG_CLI_SYNTAXERROR
+Chyba syntaxe v pøíkazovém øádku (10).\n
+; Syntax Error in command line (10).\n
+;
+MSG_CLI_SCREENNOTFOUND
+Obrazovka nebyla nalezena (5).\n
+; Screen not found (5).\n
+;
+MSG_CLI_OUTOFMEMORY
+Není dostatek volné pamìti (20).\n
+; Out of memory (20).\n
+;
+MSG_CLI_NOAPPLICATION
+Chyba pøi vytváøení programu (20).\n
+; Failed to create application (20).\n
+;
+MSG_CLI_NOMUIMASTER
+Nelze otevøít knihovnu muimaster.library V11 (20).\n
+; Failed to open muimaster.library V11 (20).\n
+;
+MSG_ABOUT_NUMBEROFSCREENS
+Poèet obrazovek:
+; Number of screens:
+;
+MSG_TEXT_UNKNOWNMODE
+Neznámý zobrazovací mód
+; Unknown Display Mode
+;
+MSG_TEXT_FOREIGNSCREEN
+Cizí veøejná obrazovka
+; Foreign public screen
+;
+MSG_PALETTE_TITLE
+Paleta
+; Palette
+;
+MSG_PALETTE_FIRST
+První 4 barvy
+; First 4 colors
+;
+MSG_PALETTE_LAST
+Poslední 4 barvy
+; Last 4 colors
+;
+MSG_SYSPENS_TITLE
+Systémové barvy
+; System Pens
+;
+MSG_SYSPEN_DETAIL
+Detail
+; Detail
+;
+MSG_SYSPEN_BLOCK
+Blok
+; Block
+;
+MSG_SYSPEN_TEXT
+Text
+; Text
+;
+MSG_SYSPEN_SHINE
+Svìtlá
+; Shine
+;
+MSG_SYSPEN_SHADOW
+Stínovaná
+; Shadow
+;
+MSG_SYSPEN_FILL
+Výplòová
+; Fill
+;
+MSG_SYSPEN_FILLTEXT
+Výplòová, text
+; Filltext
+;
+MSG_SYSPEN_BACKGROUND
+Pozadí
+; Background
+;
+MSG_SYSPEN_HIGHLIGHT
+Zvýrazòovací
+; Highlight
+;
+MSG_SYSPEN_BARDETAIL
+Úzký pruh
+; Bardetail
+;
+MSG_SYSPEN_BARBLOCK
+©iroký pruh
+; Barblock
+;
+MSG_SYSPEN_BARTRIM
+Elegantní pruh
+; Bartrim
+;
+MSG_PALPRES_TITLE
+Pøedvolby barev
+; Color Presets
+;
+MSG_PALPRES_STANDARD
+0\0Standardní
+; 0\0Standard
+;
+MSG_PALPRES_TINT
+1\0Inkoustová
+; 1\0Tint
+;
+MSG_PALPRES_PHARAO
+2\0Faraón
+; 2\0Pharao
+;
+MSG_PALPRES_SUNSET
+3\0Západ slunce
+; 3\0Sunset
+;
+MSG_PALPRES_OCEAN
+4\0Oceán
+; 4\0Ocean
+;
+MSG_PALPRES_STEEL
+5\0Ocelová
+; 5\0Steel
+;
+MSG_PALPRES_CHOCOLATE
+6\0Èokoládová
+; 6\0Chocolate
+;
+MSG_PALPRES_PEWTER
+7\0Cínová
+; 7\0Pewter
+;
+MSG_PALPRES_WINE
+8\0Vínová
+; 8\0Wine
+;
+MSG_PALPRES_MAGICWB
+9\0MagicWB
+; 9\0MagicWB
+;
+MSG_PALPRES_CLONEWB
+Pøevzít ze systému
+; Clone WB
+;
+MSG_OVERSCAN_TEXT
+Textový
+; Text
+;
+MSG_OVERSCAN_GRAPHICS
+Grafický
+; Graphics
+;
+MSG_OVERSCAN_EXTREME
+Extrémní
+; Extreme
+;
+MSG_OVERSCAN_MAXIMUM
+Maximální
+; Maximum
+;
+MSG_EDITPAGE_ATTRIBUTES
+Atributy
+; Attributes
+;
+MSG_EDITPAGE_DISPLAY
+Zobrazovací mód
+; Display
+;
+MSG_EDITPAGE_COLORS
+Barvy
+; Colors
+;
+MSG_HELP_WHEEL
+Nastavení barvy pro skupinu vybraných polo¾ek.
+; Adjust color for\ngroup of pens.
+;
+MSG_HELP_INFO
+Informace o módu a rozmìrech obrazovky.
+; Information about\nmode & size.
+;
+MSG_HELP_NAME
+Definuje název veøejné obrazovky.\nLze zadat i masku pro cizí obrazovky.
+; Name of Public Screen.\nWildcards allowed for\nforeign screens.
+;
+MSG_HELP_TITLE
+Definuje text, zobrazený na horní li¹tì obrazovky.
+; Text that appears in\nthe screen's title bar.
+;
+MSG_HELP_FONT
+Definuje výchozí písmo pro obrazovku.
+; Default font\nfor the screen.
+;
+MSG_HELP_BACKGROUND
+Definuje obrázek pro výplò plochy pozadí.
+; Datatype picture used\nas background pattern.
+;
+MSG_HELP_AUTOSCROLL
+Pøejedete-li my¹í pøes okraje obrazovky, ta zaène rolovat.
+; The screen scrolls when\nthe mouse hits its borders.
+;
+MSG_HELP_NODRAG
+Vypne mo¾nost uchopení obrazovky za li¹tu a stáhnutí.
+; The screen\nis undraggable.
+;
+MSG_HELP_EXCLUSIVE
+Vypne mo¾nost sdílení obrazovky mezi programy.
+; The screen cannot share\nits display with others.
+;
+MSG_HELP_INTERLEAVED
+Vytvoøí obrazovku v prokládaném re¾imu.
+; The screen's bitmap is allocated\nin interleaved mode.
+;
+MSG_HELP_BEHIND
+Otevøe obrazovku na pozadí, za v¹emi ostatními obrazovkami.
+; The screen opens behind\nall other screens.
+;
+MSG_HELP_SYSTEMDEFAULT
+Nastaví obrazovku jako výchozí systémovou.
+; The screen becomes the\nsystem's default screen.
+;
+MSG_HELP_AUTOCLOSE
+Zavøe obrazovku automaticky po uzavøení posledního okna.
+; The screen closes when\nthe last window is closed.
+;
+MSG_HELP_CLOSEGADGET
+Pøidá na obrazovku tlaèítko pro zavøení.
+; The screen gets\na close gadget.
+;
+MSG_HELP_MODELIST
+Seznam zobrazovacích módù obrazovky.
+; List of available\ndisplay modes.
+;
+MSG_HELP_MODEINFO
+Informace o vybraném zobrazovacím módu.
+; Information about the\ncurrent display mode.
+;
+MSG_HELP_OVERSCAN
+Nastavení okrajových rozmìrù obrazovky.
+; Overscan size adjustment.
+;
+MSG_HELP_WIDTH
+Definuje ¹íøku obrazovky v bodech.
+; Width of screen,\nmeasured in pixels.
+;
+MSG_HELP_HEIGHT
+Definuje vý¹ku obrazovky v bodech.
+; Height of screen,\nmeasured in pixels.
+;
+MSG_HELP_DEPTH
+Definuje barevnou hloubku obrazovky.
+; Depth of screen,\nmeasured in planes.
+;
+MSG_HELP_PENLIST
+Seznam systémových barev; lze pøetáhnout jednu na druhou.
+; System pens, draggable\nto different color pot.
+;
+MSG_HELP_COLORFIELD
+Ukazuje aktuální barvu; lze zmìnit kliknutím.
+; Current color, click\non field to change it.
+;
+MSG_HELP_KILLCOLOR
+Umo¾ní odstranit barvu ze skupiny.
+; Remove this color\nfrom the group.
+;
+MSG_HELP_NEWCOLOR
+Umo¾ní pøidat novou barvu do skupiny.
+; Add a new color\nto the group.
+;
+MSG_HELP_EDITOK
+Ukonèí a zapamatuje si zmìny pro tuto obrazovku.
+; Exit and remember\nchanges for this screen.
+;
+MSG_HELP_EDITCANCEL
+Ukonèí a \33bzru¹í\33n zmìny provedené na této obrazovce.
+; Exit and \33bdiscard\33n\nchanges for this screen.
+;
+MSG_HELP_SCREENLIST
+Seznam definovaných veøejných obrazovek.
+; List of defined\npublic screens.
+;
+MSG_HELP_NEWSCREEN
+Vytvoøí novou veøejnou obrazovku.
+; Create a new\npublic screen.
+;
+MSG_HELP_COPYSCREEN
+Vytvoøí kopii vybrané veøejné obrazovky.
+; Create a copy\nof current screen.
+;
+MSG_HELP_DELETESCREEN
+Odstraní vybranou veøejnou obrazovku.
+; Delete current\npublic screen.
+;
+MSG_HELP_EDITSCREEN
+Upraví vybranou veøejnou obrazovku.
+; Edit current\npublic screen.
+;
+MSG_HELP_OPENSCREEN
+Otevøe vybranou veøejnou obrazovku.
+; Open current\npublic screen.
+;
+MSG_HELP_CLOSESCREEN
+Zavøe vybranou veøejnou obrazovku.
+; Close current\npublic screen.
+;
+MSG_HELP_JUMPSCREEN
+Pøejde na vybranou veøejnou obrazovku.
+; Jump to current\npublic screen.
+;
+MSG_HELP_SAVE
+Ukonèí a trvale ulo¾í ve¹keré zmìny na disk.
+; Exit and save\nchanges to disk.
+;
+MSG_HELP_USE
+Ukonèí a pro tuto relaci ulo¾í provedené zmìny.
+; Exit and save changes\nfor current session.
+;
+MSG_HELP_CANCEL
+Ukonèí a \33bzru¹í\33n provedené zmìny.
+; Exit and\n\33bdiscard\33n changes.
+;
