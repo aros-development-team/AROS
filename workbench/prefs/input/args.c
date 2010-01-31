@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
     $Id: args.c 21130 2004-02-28 22:50:12Z chodorowski $
 */
 
@@ -12,7 +12,7 @@
 STATIC CONST_STRPTR   TEMPLATE = "FROM,USE/S,SAVE/S";
 STATIC IPTR           args[COUNT];
 STATIC struct RDArgs *rdargs;
- 
+
 /*** Functions **************************************************************/
 BOOL ReadArguments(VOID)
 {

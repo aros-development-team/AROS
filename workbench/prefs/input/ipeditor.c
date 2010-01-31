@@ -1,5 +1,5 @@
 /*
-    Copyright  2003-2004, The AROS Development Team. All rights reserved.
+    Copyright  2003-2010, The AROS Development Team. All rights reserved.
     $Id: ipeditor.c 21816 2007-09-25 12:35:29Z chodorowski, dariusb $
 */
 
@@ -98,23 +98,23 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     self = (Object *) DoSuperNewTags
     (
         CLASS, self, NULL,
-        
+
         MUIA_PrefsEditor_Name,        __(MSG_NAME),
         MUIA_PrefsEditor_Path, (IPTR) "SYS/Input.prefs",
-        
+
         Child, (IPTR) RegisterGroup(InputTabs),
             Child, VGroup,
                 Child, HGroup,
                     Child, VGroup,
                         GroupFrameT(__(MSG_GAD_KEY_TYPE)),
                         MUIA_Weight, 45,
-			Child, ListviewObject,
-				MUIA_Listview_Input, FALSE,
-				MUIA_Listview_List, keyTypes = ListObject,
+                        Child, ListviewObject,
+                            MUIA_Listview_Input, FALSE,
+                            MUIA_Listview_List, keyTypes = ListObject,
                                 InputListFrame,
-				MUIA_List_DisplayHook, &display_hook,
-				End,
-			End,
+                                MUIA_List_DisplayHook, &display_hook,
+                            End,
+                        End,
                     End,
                     Child, VGroup,
                         MUIA_Weight, 55,
@@ -182,10 +182,10 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End,
             End,
         End,
-        
+
         TAG_DONE
     );
-    
+
     if (self != NULL)
     {
         SETUP_INST_DATA;
@@ -197,32 +197,61 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->iped_MouseSpeed = GadMouseSpeed;
         data->iped_DoubleClickDelay = DoubleClickDelay;
 
-	IPTR root;
+        IPTR root;
 
         ForeachNode(&keymap_list, entry)
         {
-	    root = DoMethod(keyTypes,
-			    MUIM_List_InsertSingle,
-			    (IPTR)entry,
-			    MUIV_List_Insert_Bottom);
+            root = DoMethod
+            (
+                keyTypes,
+                MUIM_List_InsertSingle,
+                (IPTR)entry,
+                MUIV_List_Insert_Bottom
+            );
         }
 
         /* Set default Values */
-        
+
         InputPrefs2Gadgets(data);
 
-        DoMethod(RepeatRate, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
-        DoMethod(RepeatDelay, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
-        DoMethod(DoubleClickDelay, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+        DoMethod
+        (
+            RepeatRate, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
 
-        DoMethod(GadMouseSpeed, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+        DoMethod
+        (
+            RepeatDelay, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
 
-	DoMethod(keyTypes, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+        DoMethod
+        (
+            DoubleClickDelay, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
 
-        DoMethod(Accelerated, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+        DoMethod
+        (
+            GadMouseSpeed, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+
+        DoMethod
+        (
+            keyTypes, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+
+        DoMethod
+        (
+            Accelerated, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
 
     }
-    
+
     return self;
 }
 
@@ -233,7 +262,7 @@ BOOL Gadgets2InputPrefs
 {
     IPTR    val;
     ULONG   micros, secs;
-    
+
     GET(data->iped_RepeatRate, MUIA_Numeric_Value, &val);
 
     micros = (12 - val) * 20000;
@@ -261,7 +290,10 @@ BOOL Gadgets2InputPrefs
 
     GET(data->iped_Accelerated, MUIA_Selected, &val);
 
-    if (val != 0) inputprefs.ip_MouseAccel = ~0; else inputprefs.ip_MouseAccel = 0;
+    if (val != 0)
+        inputprefs.ip_MouseAccel = ~0;
+    else
+        inputprefs.ip_MouseAccel = 0;
 
     GET(data->iped_MouseSpeed, MUIA_Cycle_Active, &val);
 
@@ -269,15 +301,16 @@ BOOL Gadgets2InputPrefs
 
     struct ListviewEntry *entry;
 
-    DoMethod(data->iped_KeyTypes,
-	     MUIM_List_GetEntry,
-	     MUIV_List_GetEntry_Active,
-	     &entry);
+    DoMethod
+    (
+        data->iped_KeyTypes, MUIM_List_GetEntry,
+        MUIV_List_GetEntry_Active, &entry
+    );
 
     if (entry != NULL)
     {
-	D(bug("IPrefs: selected %s\n", entry->realname));
-	strncpy(inputprefs.ip_Keymap, entry->realname, sizeof(inputprefs.ip_Keymap));
+        D(bug("IPrefs: selected %s\n", entry->realname));
+        strncpy(inputprefs.ip_Keymap, entry->realname, sizeof(inputprefs.ip_Keymap));
     }
 
     return TRUE;
@@ -291,7 +324,7 @@ BOOL InputPrefs2Gadgets
     ULONG rrate = 12 -(inputprefs.ip_KeyRptSpeed.tv_micro / 20000);
     ULONG rdelay = ((inputprefs.ip_KeyRptDelay.tv_micro + (inputprefs.ip_KeyRptDelay.tv_secs * 1000000)) / 20000) - 1;
     ULONG dcdelay = ((inputprefs.ip_DoubleClick.tv_micro + (inputprefs.ip_DoubleClick.tv_secs * 1000000)) / 20000) - 1;
-    
+
     NNSET(data->iped_RepeatRate, MUIA_Numeric_Value, (IPTR) rrate);
     NNSET(data->iped_RepeatDelay, MUIA_Numeric_Value, (IPTR) rdelay);
     NNSET(data->iped_DoubleClickDelay, MUIA_Numeric_Value, (IPTR) dcdelay);
@@ -308,7 +341,7 @@ BOOL InputPrefs2Gadgets
             break;
         }
 
-	++pos;
+        ++pos;
     }
 
     IPTR    active = 0;
@@ -323,13 +356,13 @@ BOOL InputPrefs2Gadgets
         case 2:
             active = 1;
             break;
-	    	    
+
         case 1:
         default:
             active = 2;
             break;
     }
-    
+
     NNSET(data->iped_MouseSpeed, MUIA_Cycle_Active, active);
 
     return TRUE;
@@ -337,7 +370,7 @@ BOOL InputPrefs2Gadgets
 
 IPTR IPEditor__MUIM_PrefsEditor_ImportFH
 (
-    Class *CLASS, Object *self, 
+    Class *CLASS, Object *self,
     struct MUIP_PrefsEditor_ImportFH *message
 )
 {
