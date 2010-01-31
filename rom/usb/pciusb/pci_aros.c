@@ -829,7 +829,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
                     WRITEREG32_LE(hc->hc_RegBase, OHCI_INTEN, hc->hc_PCIIntEnMask|OISF_MASTERENABLE);
 
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, OCLF_PERIODICENABLE|OCLF_CTRLENABLE|OCLF_BULKENABLE|OCLF_USBRESET);
+                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, OCLF_PERIODICENABLE|OCLF_CTRLENABLE|OCLF_BULKENABLE|OCLF_ISOENABLE|OCLF_USBRESET);
                     SYNC;
 
                     // make sure the ports are on with chipset quirk workaround
@@ -852,7 +852,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     CacheClearE(hc->hc_OhciEDPool, sizeof(struct OhciED) * OHCI_ED_POOLSIZE, CACRF_ClearD);
                     CacheClearE(hc->hc_OhciTDPool, sizeof(struct OhciTD) * OHCI_TD_POOLSIZE, CACRF_ClearD);
                     
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, OCLF_PERIODICENABLE|OCLF_CTRLENABLE|OCLF_BULKENABLE|OCLF_USBOPER);
+                    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, OCLF_PERIODICENABLE|OCLF_CTRLENABLE|OCLF_BULKENABLE|OCLF_ISOENABLE|OCLF_USBOPER);
                     SYNC;
 
                     KPRINTF(20, ("HW Init done\n"));
