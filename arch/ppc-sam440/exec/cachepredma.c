@@ -76,9 +76,10 @@ extern void *priv_KernelBase;
 
     void *addr = KrnVirtualToPhysical(address);
 
-        /* At PreDMA stage only data caches need to be flushed */
-    if (flags & DMA_ReadFromRAM)
-    	CacheClearE(address, *length, CACRF_ClearD);
+    D(bug("[exec] CachePreDMA(%08x, %d, %c) = %08x\n", address, *length, flags & DMA_ReadFromRAM ? 'R':'W', addr));
+
+    /* At PreDMA stage only data caches need to be flushed */
+   	CacheClearE(address, *length, CACRF_ClearD);
 
     return addr;
 
