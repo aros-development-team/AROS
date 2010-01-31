@@ -141,7 +141,7 @@ UWORD PCIDev__Hidd_PCIDevice__ReadConfigWord(OOP_Class *cl, OOP_Object *o, struc
     return getWord(cl, o, msg->reg);
 }
 
-UBYTE PCIDev__Hidd_PCIDevice__ReadConfigLong(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReadConfigLong *msg)
+ULONG PCIDev__Hidd_PCIDevice__ReadConfigLong(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReadConfigLong *msg)
 {
     return getLong(cl, o, msg->reg);
 }
