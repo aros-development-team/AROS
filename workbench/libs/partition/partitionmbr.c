@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -646,6 +646,10 @@ struct MBR *mbr;
 
     mbr = root->table->data;
     fillMem((BYTE *)mbr->pcpt, sizeof(mbr->pcpt), 0);
+    /* deleting the magic value will invalidate the
+     * partition table so it cannot be opened again
+     */
+    mbr->magic = 0;
     if (writeBlock(PartitionBase, root, 0, root->table->data))
         return 1;
     return 0;
