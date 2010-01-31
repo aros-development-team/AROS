@@ -406,7 +406,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     D(bug("[KRN] Preparing kernel private memory "));
     /* Prepare MemHeader structure to allocate from private low memory */
     mh.mh_Node.ln_Type    = NT_MEMORY;
-    mh.mh_Node.ln_Pri     = 0;
+    mh.mh_Node.ln_Pri     = -128;
     mh.mh_Node.ln_Name    = "Kernel Memory";
     mh.mh_Attributes      = MEMF_FAST | MEMF_KICK | MEMF_LOCAL;
     mh.mh_First           = (struct MemChunk *)memlo;
