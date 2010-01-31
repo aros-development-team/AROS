@@ -14,6 +14,7 @@
 /.cproject
 /.project
 /.externalToolBuilders
+/autom4te.cache
 
 # /arch/.unmaintained/all-netbsd/
 /arch/.unmaintained/all-netbsd/mmakefile
@@ -264,11 +265,6 @@
 # /arch/all-unix/devs/networks/tap/
 /arch/all-unix/devs/networks/tap/mmakefile
 
-# /arch/all-unix/dos/
-/arch/all-unix/dos/makefile.bak
-/arch/all-unix/dos/mmakefile
-/arch/all-unix/dos/makefile
-
 # /arch/all-unix/exec/
 /arch/all-unix/exec/mmakefile
 /arch/all-unix/exec/sigcore.h
@@ -285,9 +281,6 @@
 /arch/all-unix/hidd/serial/*.err
 /arch/all-unix/hidd/serial/serial_end.c
 
-# /arch/all-unix/hidd/tap/
-/arch/all-unix/hidd/tap/mmakefile
-
 # /arch/all-unix/hidd/unixio/
 /arch/all-unix/hidd/unixio/mmakefile
 
@@ -301,6 +294,9 @@
 # /arch/all-unix/libs/oss/
 /arch/all-unix/libs/oss/mmakefile
 
+# /arch/arm-all/arm-aeabi/
+/arch/arm-all/arm-aeabi/mmakefile
+
 # /arch/arm-all/clib/
 /arch/arm-all/clib/mmakefile
 
@@ -309,9 +305,6 @@
 
 # /arch/arm-all/mlib/
 /arch/arm-all/mlib/mmakefile
-
-# /arch/common/ata.device/
-/arch/common/ata.device/mmakefile
 
 # /arch/common/boot/
 /arch/common/boot/mmakefile
@@ -389,41 +382,6 @@
 # /arch/common/boot/iso/
 /arch/common/boot/iso/mmakefile
 
-# /arch/common/hidd.i2c/
-/arch/common/hidd.i2c/
-/arch/common/hidd.i2c/mmakefile
-
-# /arch/common/hidd.i2c/stubs/
-/arch/common/hidd.i2c/stubs/
-/arch/common/hidd.i2c/stubs/mmakefile
-
-# /arch/common/hidd.intelG33/
-/arch/common/hidd.intelG33/mmakefile
-
-# /arch/common/hidd.nvidia/
-/arch/common/hidd.nvidia/mmakefile
-
-# /arch/common/hidd.pci/
-/arch/common/hidd.pci/mmakefile
-
-# /arch/common/hidd.pci/pcitool/
-/arch/common/hidd.pci/pcitool/mmakefile
-/arch/common/hidd.pci/pcitool/strings.h
-
-# /arch/common/hidd.pci/pcitool/catalogs/
-/arch/common/hidd.pci/pcitool/catalogs/mmakefile
-
-# /arch/common/hidd.pci/stubs/
-/arch/common/hidd.pci/stubs/mmakefile
-
-# /arch/common/hidd.radeon/
-/arch/common/hidd.radeon/
-/arch/common/hidd.radeon/mmakefile
-
-# /arch/common/hidd.vmwaresvga/
-/arch/common/hidd.vmwaresvga/mmakefile
-/arch/common/hidd.vmwaresvga/libdefs.h
-
 # /arch/common/include/
 /arch/common/include/mmakefile
 
@@ -468,14 +426,14 @@
 # /arch/i386-darwin/kernel/include/
 /arch/i386-darwin/kernel/include/mmakefile
 
+# /arch/i386-freebsd/bootloader/
+/arch/i386-freebsd/bootloader/mmakefile
+
 # /arch/i386-linux/bootloader/
 /arch/i386-linux/bootloader/mmakefile
 
 # /arch/i386-linux/pcilinux/
 /arch/i386-linux/pcilinux/mmakefile
-
-# /arch/i386-mingw32/exec/
-/arch/i386-mingw32/exec/mmakefile
 
 # /arch/i386-pc/
 /arch/i386-pc/build
@@ -701,6 +659,12 @@
 # /arch/ppc-sam440/boot/
 /arch/ppc-sam440/boot/mmakefile
 
+# /arch/ppc-sam440/boot/parthenope/
+/arch/ppc-sam440/boot/parthenope/mmakefile
+
+# /arch/ppc-sam440/boot/parthenope/src/
+/arch/ppc-sam440/boot/parthenope/src/mmakefile
+
 # /arch/ppc-sam440/bootloader/
 /arch/ppc-sam440/bootloader/mmakefile
 
@@ -715,6 +679,9 @@
 
 # /arch/ppc-sam440/graphics/
 /arch/ppc-sam440/graphics/mmakefile
+
+# /arch/ppc-sam440/hidd.pci/
+/arch/ppc-sam440/hidd.pci/mmakefile
 
 # /arch/ppc-sam440/hidd.radeon/
 /arch/ppc-sam440/hidd.radeon/mmakefile
@@ -780,7 +747,6 @@
 /arch/x86_64-pc/bootloader/mmakefile
 
 # /arch/x86_64-pc/bootstrap/
-/arch/x86_64-pc/bootstrap/
 /arch/x86_64-pc/bootstrap/mmakefile
 
 # /arch/x86_64-pc/dos/
@@ -803,9 +769,6 @@
 
 # /arch/x86_64-pc/timer/
 /arch/x86_64-pc/timer/mmakefile
-
-# /arch/x86_64-pc/workbench/libs/locale/
-/arch/x86_64-pc/workbench/libs/locale/mmakefile
 
 # /compiler/
 /compiler/fdlibm
@@ -869,18 +832,7 @@
 
 # /compiler/libjpeg/
 /compiler/libjpeg/*.bak
-
-# /compiler/libjpeg/doc/
-/compiler/libjpeg/doc/mmakefile
-/compiler/libjpeg/doc/*.bak
-
-# /compiler/libjpeg/main/
-/compiler/libjpeg/main/mmakefile
-/compiler/libjpeg/main/*.bak
-
-# /compiler/libjpeg/test/
-/compiler/libjpeg/test/mmakefile
-/compiler/libjpeg/test/*.bak
+/compiler/libjpeg/mmakefile
 
 # /compiler/libpng/
 /compiler/libpng/mmakefile
@@ -1110,11 +1062,6 @@
 /rom/battclock/mmakefile
 /rom/battclock/libdefs.h
 
-# /rom/boopsi/
-/rom/boopsi/*.s
-/rom/boopsi/mmakefile
-/rom/boopsi/libdefs.h
-
 # /rom/boot/
 /rom/boot/mmakefile
 
@@ -1133,6 +1080,12 @@
 
 # /rom/devs/
 /rom/devs/makefile
+
+# /rom/devs/ahci.device/
+/rom/devs/ahci.device/mmakefile
+
+# /rom/devs/ata.device/
+/rom/devs/ata.device/mmakefile
 
 # /rom/devs/console/
 /rom/devs/console/mmakefile
@@ -1179,6 +1132,7 @@
 /rom/exec/*.s
 /rom/exec/mmakefile
 /rom/exec/libdefs.h
+/rom/exec/archspecific.h
 
 # /rom/expansion/
 /rom/expansion/mmakefile
@@ -1188,9 +1142,36 @@
 /rom/graphics/libdefs.h
 /rom/graphics/mmakefile
 
-# /rom/hidd/
-/rom/hidd/mmakefile
-/rom/hidd/libdefs.h
+# /rom/hidds/graphics/
+/rom/hidds/graphics/mmakefile
+/rom/hidds/graphics/libdefs.h
+/rom/hidds/graphics/CHANGES
+
+# /rom/hidds/hidd/
+/rom/hidds/hidd/mmakefile
+/rom/hidds/hidd/libdefs.h
+
+# /rom/hidds/hidd.pci/
+/rom/hidds/hidd.pci/mmakefile
+
+# /rom/hidds/hidd.pci/pcitool/
+/rom/hidds/hidd.pci/pcitool/mmakefile
+/rom/hidds/hidd.pci/pcitool/strings.h
+
+# /rom/hidds/hidd.pci/pcitool/catalogs/
+/rom/hidds/hidd.pci/pcitool/catalogs/mmakefile
+
+# /rom/hidds/hidd.pci/stubs/
+/rom/hidds/hidd.pci/stubs/mmakefile
+
+# /rom/hidds/irq/
+/rom/hidds/irq/mmakefile
+
+# /rom/hidds/kbd/
+/rom/hidds/kbd/mmakefile
+
+# /rom/hidds/mouse/
+/rom/hidds/mouse/mmakefile
 
 # /rom/hyperlayers/
 /rom/hyperlayers/mmakefile
@@ -1506,6 +1487,9 @@
 # /workbench/c/
 /workbench/c/mmakefile
 
+# /workbench/c/ACPIDump/
+/workbench/c/ACPIDump/mmakefile
+
 # /workbench/c/CPUInfo/
 /workbench/c/CPUInfo/mmakefile
 
@@ -1638,6 +1622,9 @@
 # /workbench/classes/gadgets/texteditor/
 /workbench/classes/gadgets/texteditor/mmakefile
 
+# /workbench/classes/gadgets/texteditor/demo/
+/workbench/classes/gadgets/texteditor/demo/mmakefile
+
 # /workbench/classes/gadgets/texteditor/mcc/
 /workbench/classes/gadgets/texteditor/mcc/*.o
 /workbench/classes/gadgets/texteditor/mcc/.obj_*
@@ -1669,6 +1656,8 @@
 
 # /workbench/classes/zune/betterstring/mcp/
 /workbench/classes/zune/betterstring/mcp/mmakefile
+/workbench/classes/zune/betterstring/mcp/locale.h
+/workbench/classes/zune/betterstring/mcp/locale.c
 
 # /workbench/classes/zune/busy/
 /workbench/classes/zune/busy/mmakefile
@@ -1776,6 +1765,9 @@
 # /workbench/devs/networks/rtl8168/
 /workbench/devs/networks/rtl8168/mmakefile
 
+# /workbench/devs/networks/rtl8169/
+/workbench/devs/networks/rtl8169/mmakefile
+
 # /workbench/devs/networks/sis900/
 /workbench/devs/networks/sis900/mmakefile
 
@@ -1806,19 +1798,24 @@
 # /workbench/hidds/
 /workbench/hidds/mmakefile
 
-# /workbench/hidds/graphics/
-/workbench/hidds/graphics/mmakefile
-/workbench/hidds/graphics/libdefs.h
-/workbench/hidds/graphics/CHANGES
+# /workbench/hidds/hidd.i2c/
+/workbench/hidds/hidd.i2c/mmakefile
 
-# /workbench/hidds/irq/
-/workbench/hidds/irq/mmakefile
+# /workbench/hidds/hidd.i2c/stubs/
+/workbench/hidds/hidd.i2c/stubs/mmakefile
 
-# /workbench/hidds/kbd/
-/workbench/hidds/kbd/mmakefile
+# /workbench/hidds/hidd.intelG33/
+/workbench/hidds/hidd.intelG33/mmakefile
 
-# /workbench/hidds/mouse/
-/workbench/hidds/mouse/mmakefile
+# /workbench/hidds/hidd.nvidia/
+/workbench/hidds/hidd.nvidia/mmakefile
+
+# /workbench/hidds/hidd.radeon/
+/workbench/hidds/hidd.radeon/mmakefile
+
+# /workbench/hidds/hidd.vmwaresvga/
+/workbench/hidds/hidd.vmwaresvga/mmakefile
+/workbench/hidds/hidd.vmwaresvga/libdefs.h
 
 # /workbench/hidds/parallel/
 /workbench/hidds/parallel/mmakefile
@@ -1829,9 +1826,6 @@
 /workbench/hidds/serial/mmakefile
 /workbench/hidds/serial/libdefs.h
 /workbench/hidds/serial/CHANGES
-
-# /workbench/hidds/tap/
-/workbench/hidds/tap/mmakefile
 
 # /workbench/libs/
 /workbench/libs/makefile
