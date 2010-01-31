@@ -61,6 +61,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[exec] CachePostDMA(%08x, %d, %c)\n", address, *length, flags & DMA_ReadFromRAM ? 'R':'W'));
+
     if (!(flags & DMA_ReadFromRAM))
         CacheClearE(address, *length, CACRF_InvalidateD | CACRF_ClearI);
 
