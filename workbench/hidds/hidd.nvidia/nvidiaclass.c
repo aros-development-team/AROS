@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: NVidia gfx class
@@ -187,6 +187,11 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	1024, 1025, 1028, 1066,
 	"NVIDIA:1280x1024");
 
+    MAKE_SYNC(1400x1050_60, 121750,
+	1400, 1488, 1632, 1864,
+	1050, 1053, 1057, 1089,
+	"NVIDIA:1400x1050");
+
     MAKE_SYNC(1600x1200_60, 155982,
 	1600, 1632, 1792, 2048,
 	1200, 1210, 1218, 1270,
@@ -228,6 +233,7 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1024x768_60	},
 	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1152x864_60  },
 	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1280x1024_60 },
+	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1400x1050_60 },
 	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1600x1200_60 },
 	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1280x800_60 },
 	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1440x900_60 },

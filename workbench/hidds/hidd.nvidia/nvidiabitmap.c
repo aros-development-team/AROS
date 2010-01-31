@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: NVidia bitmap class
@@ -197,7 +197,7 @@ OOP_Object *NVOnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 		{
 		    LOCK_HW
 		    
-		    InitMode(_sd, bm->state, width, height, depth, pixel, bm->framebuffer,
+		    InitMode(_sd, bm->state, bm->pitch/bytesPerPixel, height, depth, pixel, bm->framebuffer,
 			hdisp, vdisp,
 			hstart, hend, htotal,
 			vstart, vend, vtotal);
