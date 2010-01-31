@@ -3207,7 +3207,7 @@ void ohciHandleFinishedTDs(struct PCIController *hc)
         if (len)
         {
             epcaps = READMEM32_LE(&oed->oed_EPCaps);
-            direction_in = (epcaps & OECF_DIRECTION_TD)
+            direction_in = ((epcaps & OECM_DIRECTION) == OECF_DIRECTION_TD)
                         ? (ioreq->iouh_SetupData.bmRequestType & URTF_IN)
                         : (epcaps & OECF_DIRECTION_IN);
             CachePostDMA(READMEM32_LE(&otd->otd_BufferEnd) - len + 1, &len, direction_in ? 0 : DMA_ReadFromRAM);
