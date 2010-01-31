@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id: prefs.h 24051 2007-09-30 12:00:00 olivieradam, dariusb $
 
     Desc:
@@ -21,13 +21,13 @@
 #define ARRAY_TO_LONG(x) ( ((x)[0] << 24UL) + ((x)[1] << 16UL) + ((x)[2] << 8UL) + ((x)[3]) )
 #define ARRAY_TO_WORD(x) ( ((x)[0] << 8UL) + ((x)[1]) )
 
-#define LONG_TO_ARRAY(x,y) (y)[0] = (UBYTE)(ULONG)((x) >> 24UL); \
-    	    	    	   (y)[1] = (UBYTE)(ULONG)((x) >> 16UL); \
-			   (y)[2] = (UBYTE)(ULONG)((x) >>  8UL); \
-			   (y)[3] = (UBYTE)(ULONG)((x));
+#define LONG_TO_ARRAY(x,y)  (y)[0] = (UBYTE)(ULONG)((x) >> 24UL); \
+                            (y)[1] = (UBYTE)(ULONG)((x) >> 16UL); \
+                            (y)[2] = (UBYTE)(ULONG)((x) >>  8UL); \
+                            (y)[3] = (UBYTE)(ULONG)((x));
 
-#define WORD_TO_ARRAY(x,y) (y)[0] = (UBYTE)(ULONG)((x) >>  8UL); \
-			   (y)[1] = (UBYTE)(ULONG)((x));
+#define WORD_TO_ARRAY(x,y)  (y)[0] = (UBYTE)(ULONG)((x) >>  8UL); \
+                            (y)[1] = (UBYTE)(ULONG)((x));
 
 /*********************************************************************************************/
 
@@ -85,8 +85,3 @@ void kbd_cleanup(void);
 void RestorePrefs(void);
 BOOL DefaultPrefs(void);
 void CopyPrefs(struct InputPrefs *s, struct InputPrefs *d);
-
-
-
-
-

@@ -1,5 +1,5 @@
 /*
-    Copyright  2003-2004, The AROS Development Team. All rights reserved.
+    Copyright  2003-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -55,7 +55,7 @@ static void CloseInputDev(void)
         CloseDevice((struct IORequest *)InputIO);
         DeleteIORequest((struct IORequest *)InputIO);
     }
-    
+
     if (InputMP)
     {
         DeleteMsgPort(InputMP);
@@ -77,7 +77,7 @@ AROS_UFH3S(IPTR, StringifyDispatcher,
 {
     AROS_USERFUNC_INIT
 
-    if (msg->MethodID==OM_NEW)
+    if (msg->MethodID == OM_NEW)
     {
         obj = (Object*) DoSuperMethodA(cl,obj,msg);
         if (obj != NULL)
@@ -87,12 +87,12 @@ AROS_UFH3S(IPTR, StringifyDispatcher,
         }
         return (IPTR) obj;
     }
-    else if (msg->MethodID==MUIM_Numeric_Stringify)
+    else if (msg->MethodID == MUIM_Numeric_Stringify)
     {
         struct StringifyData *data = INST_DATA(cl,obj);
 
         struct MUIP_Numeric_Stringify *m = (APTR)msg;
-        
+
         if (data->Type == STRINGIFY_RepeatRate)
         {
             sprintf((char *)data->buf,"%3.2fs", 0.02*(12-m->value));
@@ -109,7 +109,7 @@ AROS_UFH3S(IPTR, StringifyDispatcher,
     }
 
     return (IPTR) DoSuperMethodA(cl,obj,msg);
-       
+
     AROS_USERFUNC_EXIT
 }
 
@@ -118,15 +118,15 @@ int main(void)
     Object *application,  *window;
 
     Locale_Initialize();
-    
+
     if (ReadArguments())
     {
         /* FIXME: handle arguments... */
-        
+
         // FROM - import prefs from this file at start
         // USE  - 'use' the loaded prefs immediately, don't open window.
         // SAVE - 'save' the lodaed prefs immediately, don't open window.
-        
+
         FreeArguments();
     }
 
@@ -157,7 +157,7 @@ int main(void)
                     TAG_DONE),
                 End),
             End;
-    
+
             if (application != NULL)
             {
                 SET(window, MUIA_Window_Open, TRUE);
