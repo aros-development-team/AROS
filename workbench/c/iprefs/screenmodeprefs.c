@@ -44,7 +44,7 @@ void ScreenModePrefs_Handler(STRPTR filename)
 	    i.smp_Width     = smp->smp_Width;
 	    i.smp_Height    = smp->smp_Height;
 	    i.smp_Depth     = smp->smp_Depth;
-	    i.smp_Control   = smp->smp_Control;
+	    i.smp_Control   = AROS_BE2WORD(smp->smp_Control);
 	    D(bug("[ScreenModePrefs] ModeID: 0x%08lX, Size: %dx%d, Depth: %d, Control: 0x%08lX\n",
 	          i.smp_DisplayID, i.smp_Width, i.smp_Height, i.smp_Depth, i.smp_Control));
 	
