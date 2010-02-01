@@ -658,7 +658,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     numcolors = 0;
 
     if ((displayinfo = FindDisplayInfo(modeid)) != NULL &&
-        GetDisplayInfoData(displayinfo, &dimensions, sizeof(dimensions), DTAG_DIMS, modeid)
+        GetDisplayInfoData(displayinfo, (APTR)&dimensions, sizeof(dimensions), DTAG_DIMS, modeid)
 #ifdef __MORPHOS__
         && GetDisplayInfoData(displayinfo, &monitor, sizeof(monitor), DTAG_MNTR, modeid)
 #endif
@@ -937,51 +937,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: VideoControl failed\n"));
             }
         }
-
-        // added 2002-03-10, pre iprefs openscreen has all first 4 colours black (cyfm)
-        // removed 2002-26-12, I now set the pens on start (zapek)
-        #if 0
-        if ((p = GetPrivIBase(IntuitionBase)->Colors))
-        {
-            int Sum;
-
-            DEBUG_OPENSCREEN(dprintf("OpenScreen: Intuition Color32 Table 0x%lx\n",p);)
-
-            Sum = p[0].red + p[0].green + p[0].blue;
-            Sum += p[1].red + p[1].green + p[1].blue;
-            Sum += p[2].red + p[2].green + p[2].blue;
-            Sum += p[3].red + p[3].green + p[3].blue;
-            if (Sum==0)
-            {
-                int i;
-
-                DEBUG_OPENSCREEN(dprintf("OpenScreen: All 4 first colours black, reset !!\n");)
-
-                for (i = 0; i < COLORTABLEENTRIES; i++)
-                {
-                    DEBUG_OPENSCREEN(dprintf("OpenScreen: Current Color32[%ld] R 0x%lx G 0x%lx B 0x%lx\n",
-                                             i,
-                                             p[i].red, p[i].green, p[i].blue));
-                }
-                p[0].red   = 0xAAAAAAAA;
-                p[0].green = 0xAAAAAAAA;
-                p[0].blue  = 0xAAAAAAAA;
-
-                p[1].red   = 0x00000000;
-                p[1].green = 0x00000000;
-                p[1].blue  = 0x00000000;
-
-                p[2].red   = 0xFFFFFFFF;
-                p[2].green = 0xFFFFFFFF;
-                p[2].blue  = 0xFFFFFFFF;
-
-                p[3].red   = 0x55555555;
-                p[3].green = 0x77777777;
-                p[3].blue  = 0xAAAAAAAA;
-
-            }
-        }
-        #endif
     }
 
 #endif
@@ -1029,26 +984,25 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 	if (ns.Depth < 9)
 #endif
 	{
-	    UWORD *q = &GetPrivIBase(IntuitionBase)->ActivePreferences->color17;
 	    UWORD c = screen->Screen.ViewPort.ColorMap->SpriteBase_Even;
 
 	    /* Translate bank number and offset to color number - see graphics/getcolormap.c */
 	    c = (c << 4) | (c >> 8);
 	    DEBUG_OPENSCREEN(dprintf("OpenScreen: Obtain Mousepointer colors\n"));
             /* Allocate pens for the mouse pointer */
-            for (k = 1; k < 4; ++k, ++q)
+            for (k = 1; k < 4; ++k)
             {
     	        DEBUG_OPENSCREEN(dprintf("OpenScreen: ColorMap 0x%lx Pen %ld R 0x%lx G 0x%lx B 0x%lx\n",
                                          screen->Screen.ViewPort.ColorMap,
                                          k + c,
-					 (*q >> 8) * 0x11111111,
-					 ((*q >> 4) & 0xf) * 0x11111111,
-					 (*q & 0xf) * 0x11111111));
+					 p[k+7].red,
+					 p[k+7].green,
+					 p[k+7].blue));
                 ObtainPen(screen->Screen.ViewPort.ColorMap,
                           k + c,
-                          (*q >> 8) * 0x11111111,
-                          ((*q >> 4) & 0xf) * 0x11111111,
-                          (*q & 0xf) * 0x11111111,
+                          p[k+7].red,
+			  p[k+7].green,
+			  p[k+7].blue,
                           0);
 /* The following piece is left for reference only. It came from
    classic Amiga where mouse pointer could use additional DAC registers

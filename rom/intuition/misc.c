@@ -234,7 +234,7 @@ void InstallPointer(struct IntuitionBase *IntuitionBase, Object **old, Object *p
 
 void SetPointerColors(struct IntuitionBase *IntuitionBase)
 {
-    UWORD   	  *p;
+    struct Color32 *p;
     int     	   k;
     ULONG   	   lock = LockIBase(0);
     /* Probably this should apply to Workbench screen and not to currently active one? */
@@ -242,9 +242,7 @@ void SetPointerColors(struct IntuitionBase *IntuitionBase)
 
     DEBUG_POINTER(dprintf("SetPointerColors()\n");)
 
-    p = &GetPrivIBase(IntuitionBase)->ActivePreferences->color17;
-
-    DEBUG_POINTER(dprintf("color17 %04lx color18 %04lx color19 %04lx color20 %04lx\n",p[0],p[1],p[2],p[3]);)
+    p = GetPrivIBase(IntuitionBase)->Colors;
 
     if (scr)
     {
@@ -256,8 +254,10 @@ void SetPointerColors(struct IntuitionBase *IntuitionBase)
 	    
 	    /* Translate bank number and offset to color number - see graphics/getcolormap.c */
 	    firstcol = (firstcol << 4) | (firstcol >> 8);
-            for (k = 1; k < 4; ++k, ++p)
-		SetRGB4(&scr->ViewPort, k + firstcol, *p >> 8, (*p >> 4) & 0xf, *p & 0xf);
+            for (k = 1; k < 4; ++k, ++p) {
+	        DEBUG_POINTER(dprintf("Color %u: R %08lx G %08lx B %08lx\n", p[k+7].red, p[k+7].green, p[k+7].blue);)
+		SetRGB32(&scr->ViewPort, k + firstcol, p[k+7].red, p[k+7].green, p[k+7].blue);
+	    }
         }
     }
 

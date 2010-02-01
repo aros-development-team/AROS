@@ -12,6 +12,18 @@
 #include <devices/inputevent.h>
 #include <stddef.h>
 
+static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *IntuitionBase)
+{
+    struct Color32 *q = GetPrivIBase(IntuitionBase)->Colors;
+    UBYTE i;
+	    
+    for (i = 0; i < cnt; i++) {
+        q[i + first].red   = ((p[i] >> 8) & 0x0F) * 0x11111111;
+	q[i + first].green = ((p[i] >> 4) & 0x0F) * 0x11111111;
+	q[i + first].blue  = (p[i] & 0x0F) * 0x11111111;
+    }
+}
+
 /*****************************************************************************
  
     NAME */
@@ -160,7 +172,10 @@
 
         if (changepointer)
         {
-            Object *pointer = MakePointerFromPrefs(IntuitionBase, GetPrivIBase(IntuitionBase)->ActivePreferences);
+            Object *pointer;
+	    
+	    SetColors(&GetPrivIBase(IntuitionBase)->ActivePreferences->color17, 8, 3, IntuitionBase);
+	    pointer = MakePointerFromPrefs(IntuitionBase, GetPrivIBase(IntuitionBase)->ActivePreferences);
             if (pointer)
             {
                 InstallPointer(IntuitionBase, &GetPrivIBase(IntuitionBase)->DefaultPointer, pointer);

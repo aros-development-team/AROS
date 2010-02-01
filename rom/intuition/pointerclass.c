@@ -130,14 +130,13 @@ IPTR PointerClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 		if (!sprite->es_BitMap->Planes[2]) {
 		    ULONG i;
 		    HIDDT_Color col[DEF_POINTER_DEPTH] = {{0}};
-		    UWORD *q = &GetPrivIBase(IntuitionBase)->ActivePreferences->color17;
+		    struct Color32 *q = GetPrivIBase(IntuitionBase)->Colors;
 
 		    for (i = 1; i < DEF_POINTER_DEPTH; i++ ) {
-			col[i].red   = (*q >> 8) * 0x1111;
-			col[i].green = ((*q >> 4) & 0xf) * 0x1111;
-			col[i].blue  = (*q & 0xf) * 0x1111;
+			col[i].red   = q[i + 7].red >> 16;
+			col[i].green = q[i + 7].green >> 16;
+			col[i].blue  = q[i + 7].blue >> 16;
 			col[i].alpha = 0x9F9F;
-			q++;
 		    }
 		    HIDD_BM_SetColors(sprite->es_BitMap->Planes[0], col, 0, DEF_POINTER_DEPTH);
 		}
