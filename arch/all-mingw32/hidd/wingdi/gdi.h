@@ -127,6 +127,7 @@ struct gdiclbase
 #else
 
 #include <windows.h>
+#define APTR void *
 #define IPTR ULONG_PTR
 #define UBYTE BYTE
 
@@ -137,15 +138,10 @@ struct gdiclbase
 /* Private instance data for Gfx hidd class */
 struct gfx_data
 {
-    void *display;
-    void *cursor;    /* Windows mouse cursor object			*/
-    void *bitmap;    /* Currently shown bitmap object			*/
-    void *fbwin;     /* Display window				        */
-    void *bitmap_dc; /* Memory device context of currently shown bitmap */
-    IPTR width;      /* Display window size				*/
-    IPTR height;
-    IPTR bmwidth;    /* Bitmap size					*/
-    IPTR bmheight;
+    void *display;   /* Windows system display object  */
+    void *cursor;    /* Windows mouse cursor object    */
+    void *bitmap;    /* Currently shown bitmap object  */
+    void *fbwin;     /* Display window		       */
 };
 
 #ifdef __AROS__

@@ -432,6 +432,8 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
     me = FindTask(NULL);
     gfx_int = KrnAddIRQHandler(XSD(cl)->ctl->IrqNum, GfxIntHandler, data, me);
     if (gfx_int) {
+	IPTR bmdata;
+
 	Forbid();
 
 	if (data->bitmap) {
@@ -440,21 +442,18 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	    OOP_SetAttrs(data->bitmap, (struct TagItem *)bm_win_tags);
 	}
 
+	/* It's quite not easy to call AROS API from within window service thread,
+	   so we pass private data of our bitmap class to it directly.
+	   Don't use such tricks in normal AROS code, this isn't really good. */
+	OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_Data, &bmdata);
 	data->bitmap = msg->bitMap;
-	if (msg->bitMap)
-	{
-	    OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_DeviceContext, (IPTR *)&data->bitmap_dc);
-	    OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_DisplayWidth, &data->width);
-	    OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_DisplayHeight, &data->height);
-	    OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_DisplayWidth, &data->bmwidth);
-	    OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_DisplayHeight, &data->bmheight);
-	}
+
     	/* Hosted system has no real blitter, however we have host-side window service thread that does some work asynchronously,
 	   and this looks like a real blitter. So we use this signal. Before we do it we ensure that it's reset (because it's
 	   the same as SIGF_SINGLE) */
 	SetSignal(0, SIGF_BLIT);
 	Forbid();
-	NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, 0);
+	NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, bmdata);
 	Permit();
 	Wait(SIGF_BLIT);
 
@@ -520,7 +519,6 @@ VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 
     drmd = GC_DRMD(msg->gc);
     Forbid();
-    /* We do it inside the semaphore because Show() can be called from within another process */
     OOP_GetAttr(msg->dest, aHidd_GDIBitMap_Window, (IPTR *)&wnd);
     GDICALL(BitBlt, dest, msg->destX, msg->destY, msg->width, msg->height, src, msg->srcX, msg->srcY, BitmapCopy_DrawModeTable[drmd]);
     if (wnd) {

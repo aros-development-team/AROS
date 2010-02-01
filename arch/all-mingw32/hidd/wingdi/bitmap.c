@@ -495,11 +495,8 @@ VOID GDIBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    case aoHidd_GDIBitMap_Window:
 	        *msg->storage = (IPTR)data->window;
 		break;
-	    case aoHidd_GDIBitMap_DisplayWidth:
-		*msg->storage = (IPTR)data->win_width;
-		break;
-	    case aoHidd_GDIBitMap_DisplayHeight:
-		*msg->storage = (IPTR)data->win_height;
+	    case aoHidd_GDIBitMap_Data:
+		*msg->storage = (IPTR)data;
 		break;
 	    default:
 	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -613,6 +610,8 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	data->dc_bitmap = orig_bitmap;
 	data->win_width = win_width;
 	data->win_height = win_height;
+	data->bm_width = width;
+	data->bm_height = height;
 	CHECK_STACK
     	ReturnPtr("GDIGfx.BitMap::New()", OOP_Object *, o);
     } /* if (object allocated by superclass) */
