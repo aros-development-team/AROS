@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -191,7 +191,7 @@ void InstallPatches(void);
 
 struct IFFHandle *CreateIFF(STRPTR filename, LONG *stopchunks, LONG numstopchunks);
 void KillIFF(struct IFFHandle *iff);
-
+APTR LoadChunk(struct IFFHandle *iff, LONG size);
 
 /* localeprefs.c */
 
@@ -222,6 +222,9 @@ void IControlPrefs_Handler(STRPTR filename);
 void WBPatternPrefs_Handler(STRPTR filename);
 void RootPatternCleanup (void);
 
+/* pointerprefs.c */
+
+void PointerPrefs_Handler(STRPTR filename);
 
 /*********************************************************************************************/
 

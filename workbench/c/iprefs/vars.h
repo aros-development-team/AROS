@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -37,7 +37,6 @@ VAR UBYTE   	    	    	envname[256];
 
 VAR UBYTE   	    	    	inputprefsname[256];
 VAR UBYTE   	    	    	fontprefsname[256];
-VAR UBYTE   	    	    	screenprefsname[256];
 VAR UBYTE   	    	    	localeprefsname[256];
 VAR UBYTE   	    	    	paletteprefsname[256];
 VAR UBYTE   	    	    	patternprefsname[256];
