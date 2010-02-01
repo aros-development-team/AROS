@@ -59,7 +59,7 @@ static BOOL Gadgets2ScreenmodePrefs
         screenmodeprefs.smp_Depth     = XGET(data->properties, MUIA_ScreenModeProperties_Depth);
         
         if (XGET(data->properties, MUIA_ScreenModeProperties_Autoscroll))
-            screenmodeprefs.smp_Control = AUTOSCROLL;
+            screenmodeprefs.smp_Control = SMF_AUTOSCROLL;
         else
             screenmodeprefs.smp_Control = 0;
     }
@@ -92,7 +92,7 @@ static BOOL ScreenmodePrefs2Gadgets
         MUIA_ScreenModeProperties_Width,      screenmodeprefs.smp_Width,
         MUIA_ScreenModeProperties_Height,     screenmodeprefs.smp_Height,
         MUIA_ScreenModeProperties_Depth,      screenmodeprefs.smp_Depth,
-        MUIA_ScreenModeProperties_Autoscroll, screenmodeprefs.smp_Control & AUTOSCROLL,
+        MUIA_ScreenModeProperties_Autoscroll, screenmodeprefs.smp_Control & SMF_AUTOSCROLL,
         TAG_DONE
     );
 

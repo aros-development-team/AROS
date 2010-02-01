@@ -80,7 +80,12 @@ BOOL Prefs_ImportFH(BPTR fh)
                 }
                 else
                 {
-                    screenmodeprefs = loadprefs;
+		    /* FIXME: in original prefs file all values are bigendian! */
+		    screenmodeprefs.smp_DisplayID = loadprefs.smp_DisplayID;
+		    screenmodeprefs.smp_Width     = loadprefs.smp_Width;
+		    screenmodeprefs.smp_Height    = loadprefs.smp_Height;
+		    screenmodeprefs.smp_Depth     = loadprefs.smp_Depth;
+		    screenmodeprefs.smp_Control   = AROS_BE2WORD(loadprefs.smp_Control);
                 }
             }
             else
@@ -117,7 +122,12 @@ BOOL Prefs_ExportFH(BPTR fh)
     BOOL                    success = TRUE;
     LONG                    error   = 0;
 
-    saveprefs = screenmodeprefs;
+    /* FIXME: in original prefs file all values are bigendian! */
+    saveprefs.smp_DisplayID = screenmodeprefs.smp_DisplayID;
+    saveprefs.smp_Width     = screenmodeprefs.smp_Width;
+    saveprefs.smp_Height    = screenmodeprefs.smp_Height;
+    saveprefs.smp_Depth     = screenmodeprefs.smp_Depth;
+    saveprefs.smp_Control   = AROS_WORD2BE(screenmodeprefs.smp_Control);
 
     if ((handle = AllocIFF()))
     {
