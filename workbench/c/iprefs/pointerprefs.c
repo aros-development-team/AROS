@@ -20,19 +20,18 @@
 
 /*********************************************************************************************/
 
-#define POINTER_COLORS 3
-
 static void InstallPointer(struct PointerPrefs *pp)
 {
     struct IPointerPrefs ip;
-    struct ColorSpec ic[POINTER_COLORS + 1];
     struct BitMap bm;
+    struct ColorSpec *ic;
     struct RGBTable *colors = (struct RGBTable *)&pp[1];
     UWORD i;
     UWORD width  = AROS_BE2WORD(pp->pp_Width);
     UWORD height = AROS_BE2WORD(pp->pp_Height);
     UWORD depth  = AROS_BE2WORD(pp->pp_Depth);
     UWORD ncols = (1 << depth) - 1;
+    ULONG ic_size = (1 << depth) * sizeof(struct ColorSpec);
 
     InitBitMap(&bm, depth, width, height);
 
@@ -50,22 +49,24 @@ static void InstallPointer(struct PointerPrefs *pp)
     D(bug("[PointerPrefs] YSize: %d\n", ip.YSize));
     D(bug("[PointerPrefs] Hotspot: (%d, %d)\n", ip.XOffset, ip.YOffset));
 
-    if (ncols > POINTER_COLORS)
-        ncols = POINTER_COLORS;
-    for (i = 0; i < ncols; i++) {
-        D(bug("[PointerPrefs] Color %u: 0x%02X %02X %02X\n", i, colors->t_Red, colors->t_Green, colors->t_Blue));
-	ic[i].ColorIndex = i + 8; /* Pointer colors have numbers 8-10 in the intuition's internal table */
-	ic[i].Red   = colors->t_Red   * 0x01010101;
-	ic[i].Green = colors->t_Green * 0x01010101;
-	ic[i].Blue  = colors->t_Blue  * 0x01010101;
-	colors++;
+    ic = AllocMem(ic_size, MEMF_ANY);
+    if (ic) {
+        for (i = 0; i < ncols; i++) {
+            D(bug("[PointerPrefs] Color %u RGB 0x%02X%02X%02X\n", i, colors->t_Red, colors->t_Green, colors->t_Blue));
+	    ic[i].ColorIndex = i + 8; /* Pointer colors have numbers 8-10 in the intuition's internal table */
+	    ic[i].Red   = colors->t_Red   * 0x0101;
+	    ic[i].Green = colors->t_Green * 0x0101;
+	    ic[i].Blue  = colors->t_Blue  * 0x0101;
+	    colors++;
+	}
+        ic[ncols].ColorIndex = -1; /* Terminator */
+
+        /* First change palette, then image. It is important in order to get correct colors on
+           truecolor screens */
+        SetIPrefs(ic, ic_size, IPREFS_TYPE_OLD_PALETTE);
+//      SetIPrefs(&ip, sizeof(struct IPointerPrefs), IPREFS_TYPE_POINTER);
+	FreeMem(ic, ic_size);
     }
-    ic[POINTER_COLORS].ColorIndex = -1;
-    
-    /* First change palette, then image. It is important in order to get correct colors on
-       truecolor screens */
-    SetIPrefs(&ic, sizeof(ic), IPREFS_TYPE_OLD_PALETTE);
-//  SetIPrefs(&ip, sizeof(struct IPointerPrefs), IPREFS_TYPE_POINTER);
 }
 
 static LONG stopchunks[] =
