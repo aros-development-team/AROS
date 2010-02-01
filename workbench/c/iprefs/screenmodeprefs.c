@@ -36,7 +36,7 @@ void ScreenModePrefs_Handler(STRPTR filename)
     iff = CreateIFF(filename, stopchunks, 1);
     
     if (iff) {
-        smp = LoadChunk(iff, sizeof(struct ScreenModePrefs));
+        smp = LoadChunk(iff, sizeof(struct ScreenModePrefs), MEMF_ANY);
 	if (smp) {
             struct IScreenModePrefs i;
 	

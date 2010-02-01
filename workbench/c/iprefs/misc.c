@@ -150,7 +150,7 @@ void KillIFF(struct IFFHandle *iff)
 
 /*********************************************************************************************/
 
-APTR LoadChunk(struct IFFHandle *iff, LONG size)
+APTR LoadChunk(struct IFFHandle *iff, LONG size, ULONG memtype)
 {
     APTR data;
 
@@ -163,7 +163,7 @@ APTR LoadChunk(struct IFFHandle *iff, LONG size)
 
    	D(bug("LoadChunk: Chunk size is %d, requested %d\n", cn->cn_Size, size));
 	if (cn->cn_Size >= size) {
-	    data = AllocVec(cn->cn_Size, MEMF_ANY);
+	    data = AllocVec(cn->cn_Size, memtype);
 	    if (data) {
 		D(bug("[LoadChunk] Allocated buffer\n"));
 		if (ReadChunkBytes(iff, data, cn->cn_Size) == cn->cn_Size) {
