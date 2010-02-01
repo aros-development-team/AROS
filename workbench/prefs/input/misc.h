@@ -1,7 +1,9 @@
 #ifndef _MISC_H
 #define _MISC_H
 
+#include <exec/types.h>
+
 /*** Prototypes *************************************************************/
-void ShowError(CONST_STRPTR message);
+VOID ShowMessage(CONST_STRPTR msg);
 
 #endif /* _MISC_H */

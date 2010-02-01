@@ -4,11 +4,11 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main args locale misc ipeditor prefs
+FILES       := main args locale misc ipeditor prefs stringify
 EXEDIR      := $(AROS_PREFS)
 
 #MM- workbench-prefs : workbench-prefs-input
-#MM workbench-prefs-input : workbench-prefs-input-catalogs 
+#MM workbench-prefs-input : workbench-prefs-input-catalogs
 
 USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 

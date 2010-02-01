@@ -10,23 +10,36 @@
 
 #define SHOWFLAGS 1  /* Set to 1 to show Flags in the keylist */
 
+#include <devices/input.h>
+
+#include <proto/alib.h>
+#include <proto/dos.h>
+#include <proto/intuition.h>
 #include <proto/keymap.h>
+#include <proto/iffparse.h>
+#include <proto/utility.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
 
 #include "prefs.h"
+#include "misc.h"
+
+/*********************************************************************************************/
+
+#define PREFS_PATH_ENVARC "ENVARC:SYS/input.prefs"
+#define PREFS_PATH_ENV    "ENV:SYS/input.prefs"
 
 /*********************************************************************************************/
 
 IPTR                mempool;
-BOOL                inputdev_changed = FALSE;
-struct List         keymap_list;
 struct InputPrefs   inputprefs;
-struct InputPrefs   restore_prefs;
-struct MsgPort     *InputMP;
+struct List         keymap_list;
 struct timerequest *InputIO;
-BPTR                testkeymap_seg = NULL;
+
+static BOOL                inputdev_changed = FALSE;
+static struct InputPrefs   backupprefs;
+static BPTR                testkeymap_seg = NULL;
 
 /*********************************************************************************************/
 
@@ -80,6 +93,22 @@ struct nameexp layout_expansion_table[] =
 
 /*********************************************************************************************/
 
+static BOOL Prefs_Load(STRPTR from)
+{
+    BOOL retval = FALSE;
+
+    BPTR fh = Open(from, MODE_OLDFILE);
+    if (fh)
+    {
+        retval = Prefs_ImportFH(fh);
+        Close(fh);
+    }
+
+    return retval;
+}
+
+/*********************************************************************************************/
+
 static void ExpandName(STRPTR name, STRPTR flag, struct nameexp *exp)
 {
     for(; exp->shortname; exp++)
@@ -110,7 +139,7 @@ void SortInNode(struct List *list, struct Node *node)
     Insert(list, node, prev);
 }
 
-void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
+void Prefs_ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
 {
     struct AnchorPath       ap;
     struct ListviewEntry    *entry, *entry2;
@@ -171,11 +200,11 @@ void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
 
 /*********************************************************************************************/
 
-BOOL LoadPrefs(BPTR fh)
+BOOL Prefs_ImportFH(BPTR fh)
 {
-    static struct FileInputPrefs    loadprefs;
-    struct IFFHandle                *iff;
-    BOOL                            retval = FALSE;
+    struct FileInputPrefs   loadprefs;
+    struct IFFHandle       *iff;
+    BOOL                    retval = FALSE;
 
     if ((iff = AllocIFF()))
     {
@@ -218,38 +247,32 @@ BOOL LoadPrefs(BPTR fh)
                                 inputprefs.ip_KeyRptDelay.tv_micro = ARRAY_TO_LONG(loadprefs.ip_KeyRptDelay_micro);
                                 inputprefs.ip_KeyRptSpeed.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_KeyRptSpeed_secs);
                                 inputprefs.ip_KeyRptSpeed.tv_micro = ARRAY_TO_LONG(loadprefs.ip_KeyRptSpeed_micro);
-                                inputprefs.ip_MouseAccel    	   = ARRAY_TO_WORD(loadprefs.ip_MouseAccel);
+                                inputprefs.ip_MouseAccel           = ARRAY_TO_WORD(loadprefs.ip_MouseAccel);
 
                                 D(bug("LoadPrefs: Everything okay :-)\n"));
 
                                 retval = TRUE;
                             }
                         }
-
                     } /* if (!ParseIFF(iff, IFFPARSE_SCAN)) */
-
                 } /* if (!StopChunk(iff, ID_PREF, ID_INPT)) */
-
                 CloseIFF(iff);
-
             } /* if (!OpenIFF(iff, IFFF_READ)) */
-
         } /* if (fh != NULL) */
-
         FreeIFF(iff);
-
     } /* if ((iff = AllocIFF())) */
 
-        return retval;
+    return retval;
     }
 
 /*********************************************************************************************/
 
-BOOL SavePrefs(BPTR fh)
+BOOL Prefs_ExportFH(BPTR fh)
 {
-    static struct FileInputPrefs    saveprefs;
-    struct IFFHandle                *iff;
-    BOOL                            retval = FALSE, delete_if_error = FALSE;
+    struct FileInputPrefs   saveprefs;
+    struct IFFHandle       *iff;
+    BOOL                    retval = FALSE;
+    BOOL                    delete_if_error = FALSE;
 
     CopyMem(inputprefs.ip_Keymap, saveprefs.ip_Keymap, sizeof(saveprefs.ip_Keymap));
     WORD_TO_ARRAY(inputprefs.ip_PointerTicks, saveprefs.ip_PointerTicks);
@@ -348,9 +371,68 @@ BOOL SavePrefs(BPTR fh)
 
 /*********************************************************************************************/
 
-BOOL DefaultPrefs(void)
+BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
 {
-    strcpy(inputprefs.ip_Keymap, "amiga_usa0");
+    BPTR fh;
+
+    if (from)
+    {
+        if (!Prefs_Load(from))
+        {
+            ShowMessage("Can't read from input file");
+            return FALSE;
+        }
+    }
+    else
+    {
+        if (!Prefs_Load(PREFS_PATH_ENV))
+        {
+            if (!Prefs_Load(PREFS_PATH_ENVARC))
+            {
+                ShowMessage
+                (
+                    "Can't read from file " PREFS_PATH_ENVARC
+                    ".\nUsing default values."
+                );
+                Prefs_Default();
+            }
+        }
+    }
+
+    if (use || save)
+    {
+        fh = Open(PREFS_PATH_ENV, MODE_NEWFILE);
+        if (fh)
+        {
+            Prefs_ExportFH(fh);
+            Close(fh);
+        }
+        else
+        {
+            ShowMessage("Can't open " PREFS_PATH_ENV " for writing.");
+        }
+    }
+    if (save)
+    {
+        fh = Open(PREFS_PATH_ENVARC, MODE_NEWFILE);
+        if (fh)
+        {
+            Prefs_ExportFH(fh);
+            Close(fh);
+        }
+        else
+        {
+            ShowMessage("Can't open " PREFS_PATH_ENVARC " for writing.");
+        }
+    }
+    return TRUE;
+}
+
+/*********************************************************************************************/
+
+BOOL Prefs_Default(void)
+{
+    strcpy(inputprefs.ip_Keymap, DEFAULT_KEYMAP);
     inputprefs.ip_PointerTicks         = 1;
     inputprefs.ip_DoubleClick.tv_secs  = 0;
     inputprefs.ip_DoubleClick.tv_micro = 500000;
@@ -365,14 +447,14 @@ BOOL DefaultPrefs(void)
 
 /*********************************************************************************************/
 
-void CopyPrefs(struct InputPrefs *s, struct InputPrefs *d)
+void Prefs_Backup(void)
 {
-    CopyMem(s, d, sizeof(struct InputPrefs));
+    backupprefs = inputprefs;
 }
 
-void RestorePrefs(void)
+void Prefs_Restore(void)
 {
-    CopyPrefs(&restore_prefs, &inputprefs);
+    inputprefs = backupprefs;
 }
 
 /*********************************************************************************************/
@@ -397,7 +479,7 @@ void update_inputdev(void)
     }
 }
 
-void try_setting_mousespeed(void)
+static void try_setting_mousespeed(void)
 {
     struct Preferences p;
 
@@ -418,7 +500,7 @@ void try_setting_mousespeed(void)
     SetPrefs(&p, sizeof(p), FALSE);
 }
 
-void try_setting_test_keymap(void)
+static void try_setting_test_keymap(void)
 {
     struct KeyMapResource *KeyMapResource;
     struct Library        *KeymapBase;
@@ -477,16 +559,16 @@ void try_setting_test_keymap(void)
 
 }
 
-void kbd_cleanup(void)
+void Prefs_kbd_cleanup(void)
 {
     if (inputdev_changed)
     {
         InputIO->tr_node.io_Command = IND_SETPERIOD;
-        InputIO->tr_time = restore_prefs.ip_KeyRptSpeed;
+        InputIO->tr_time = backupprefs.ip_KeyRptSpeed;
         DoIO(&InputIO->tr_node);
 
         InputIO->tr_node.io_Command = IND_SETTHRESH;
-        InputIO->tr_time = restore_prefs.ip_KeyRptDelay;
+        InputIO->tr_time = backupprefs.ip_KeyRptDelay;
         DoIO(&InputIO->tr_node);
         inputdev_changed = FALSE;
     }
@@ -495,4 +577,11 @@ void kbd_cleanup(void)
     {
         UnLoadSeg(testkeymap_seg);
     }
+}
+
+void Prefs_Test(void)
+{
+    update_inputdev();
+    try_setting_mousespeed();
+    try_setting_test_keymap();
 }

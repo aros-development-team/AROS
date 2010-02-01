@@ -1,6 +1,9 @@
+#ifndef _PREFS_H_
+#define _PREFS_H_
+
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: prefs.h 24051 2007-09-30 12:00:00 olivieradam, dariusb $
+    $Id$
 
     Desc:
     Lang: English
@@ -10,11 +13,13 @@
 
 #include <aros/macros.h>
 
+#include <dos/dos.h>
+#include <prefs/prefhdr.h>
+#include <prefs/input.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
-#include "global.h"
 
 /*********************************************************************************************/
 
@@ -28,6 +33,8 @@
 
 #define WORD_TO_ARRAY(x,y)  (y)[0] = (UBYTE)(ULONG)((x) >>  8UL); \
                             (y)[1] = (UBYTE)(ULONG)((x));
+
+#define DEFAULT_KEYMAP "amiga_usa0"
 
 /*********************************************************************************************/
 
@@ -75,13 +82,21 @@ struct KeymapEntry
 
 /*********************************************************************************************/
 
-void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize);
-BOOL LoadPrefs(BPTR fh);
-BOOL SavePrefs(BPTR fh);
-void update_inputdev(void);
-void try_setting_mousespeed(void);
-void try_setting_test_keymap(void);
-void kbd_cleanup(void);
-void RestorePrefs(void);
-BOOL DefaultPrefs(void);
-void CopyPrefs(struct InputPrefs *s, struct InputPrefs *d);
+void Prefs_ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize);
+BOOL Prefs_ImportFH(BPTR fh);
+BOOL Prefs_ExportFH(BPTR fh);
+BOOL Prefs_Default(void);
+BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save);
+void Prefs_Test(void);
+void Prefs_Restore(void);
+void Prefs_Backup(void);
+void Prefs_kbd_cleanup(void);
+
+/*********************************************************************************************/
+
+extern struct timerequest *InputIO;
+extern IPTR                mempool;
+extern struct List         keymap_list;
+extern struct InputPrefs   inputprefs;
+
+#endif
