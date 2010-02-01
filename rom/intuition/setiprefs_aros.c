@@ -145,7 +145,61 @@
             InstallPointer(IntuitionBase, oldptr, pointer);
         }
         break;
-	
+
+        case IPREFS_TYPE_OLD_PALETTE:
+        DEBUG_SETIPREFS(bug("SetIPrefs: IP_OLDPALETTE\n"));
+        {
+            struct ColorSpec *pp = data;
+            struct Color32 *p = GetPrivIBase(IntuitionBase)->Colors;
+	    BOOL update_pointer = FALSE;
+	    struct Preferences *ActivePrefs = GetPrivIBase(IntuitionBase)->ActivePreferences;
+
+            DEBUG_SETIPREFS(bug("SetIPrefs: Intuition Color32 Table 0x%p\n", p));
+
+            while (pp->ColorIndex != -1)
+            {
+                DEBUG_SETIPREFS(bug("SetIPrefs: Index %ld Red 0x%04lX Green 0x%04lX Blue 0x%04lX\n",
+                                    pp->ColorIndex, pp->Red, pp->Green, pp->Blue));
+                if (pp->ColorIndex < COLORTABLEENTRIES)
+                {
+                    p[pp->ColorIndex].red   = (pp->Red<<16)|pp->Red;
+                    p[pp->ColorIndex].green = (pp->Green<<16)|pp->Green;
+                    p[pp->ColorIndex].blue  = (pp->Blue<<16)|pp->Blue;
+
+                    /* Update oldstyle preferences */
+                    if (ActivePrefs)
+                    {
+		        UWORD *cols = NULL;
+			UWORD baseindex;
+			
+			if (pp->ColorIndex < 4) {
+			    baseindex = 0;
+			    cols = &ActivePrefs->color0;
+                        } else if (pp->ColorIndex >= 8 && pp->ColorIndex <= 10) {
+			    baseindex = 8;
+                            cols=&ActivePrefs->color17;
+			    update_pointer = TRUE;
+                        }
+			
+			if (cols)
+			    cols[pp->ColorIndex - baseindex] = ((pp->Red >> 4) & 0xf00) | ((pp->Green >> 8) & 0x0f0) | (pp->Blue >> 12);
+                    }
+                    DEBUG_SETIPREFS(bug("SetIPrefs: Set Color32 %ld Red 0x%lx Green 0x%lx Blue 0x%lx\n",
+                                (LONG) pp->ColorIndex,
+                                p[pp->ColorIndex].red,
+                                p[pp->ColorIndex].green,
+                                p[pp->ColorIndex].blue));
+                }
+                pp++;
+            }
+	    
+	    if (update_pointer) {
+	        DEBUG_SETIPREFS(bug("[SetIPrefs] Updating pointer colors\n"));
+	        SetPointerColors(IntuitionBase);
+	    }
+        }
+        break;
+
 	default:
             DEBUG_SETIPREFS(bug("SetIPrefs: Unknown Prefs Type\n"));
             Result = FALSE;
