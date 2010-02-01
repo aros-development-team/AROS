@@ -153,27 +153,20 @@ void KillIFF(struct IFFHandle *iff)
 APTR LoadChunk(struct IFFHandle *iff, LONG size, ULONG memtype)
 {
     APTR data;
+    struct ContextNode *cn = CurrentChunk(iff);
 
-    if (!ParseIFF(iff, IFFPARSE_SCAN)) {
-	struct ContextNode *cn;
-			
-    	D(bug("LoadChunk: ParseIFF okay.\n"));
-			
-	cn = CurrentChunk(iff);
+    D(bug("LoadChunk: Chunk size is %d, requested %d\n", cn->cn_Size, size));
+    if (cn->cn_Size >= size) {
+	data = AllocVec(cn->cn_Size, memtype);
+	if (data) {
+	    D(bug("[LoadChunk] Allocated buffer\n"));
+	    if (ReadChunkBytes(iff, data, cn->cn_Size) == cn->cn_Size) {
+   	        D(bug("LoadChunk: Reading chunk successful.\n"));
 
-   	D(bug("LoadChunk: Chunk size is %d, requested %d\n", cn->cn_Size, size));
-	if (cn->cn_Size >= size) {
-	    data = AllocVec(cn->cn_Size, memtype);
-	    if (data) {
-		D(bug("[LoadChunk] Allocated buffer\n"));
-		if (ReadChunkBytes(iff, data, cn->cn_Size) == cn->cn_Size) {
-   	    	    D(bug("LoadChunk: Reading chunk successful.\n"));
-
-		    return data;
-		}
-		FreeVec(data);
+		return data;
 	    }
+	    FreeVec(data);
 	}
-    } /* if (!ParseIFF(iff, IFFPARSE_SCAN)) */
+    }
     return NULL;
 }

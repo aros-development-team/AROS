@@ -20,7 +20,7 @@
 
 /*********************************************************************************************/
 
-static void InstallPointer(struct PointerPrefs *pp)
+static void InstallPointer(struct PointerPrefs *pp, UWORD which)
 {
     struct IPointerPrefs ip;
     struct BitMap bm;
@@ -41,7 +41,7 @@ static void InstallPointer(struct PointerPrefs *pp)
     ip.BytesPerRow = bm.BytesPerRow;
     ip.Size        = AROS_BE2WORD(pp->pp_Size);
     ip.YSize       = AROS_BE2WORD(pp->pp_YSize);
-    ip.Which       = AROS_BE2WORD(pp->pp_Which);
+    ip.Which       = which;
 
     D(bug("[PointerPrefs] Which: %d\n", ip.Which));
     D(bug("[PointerPrefs] Data size: %d\n", ip.Size));
@@ -77,25 +77,63 @@ static void InstallPointer(struct PointerPrefs *pp)
 
 static LONG stopchunks[] =
 {
-    ID_PREF, ID_PNTR
+    ID_PREF, ID_PNTR,
+    ID_PREF, ID_NPTR
 };
 
-void PointerPrefs_Handler(STRPTR filename)
+static void LoadPointerPrefs(STRPTR filename, WORD which, WORD installas);
+
+static void LoadPointerFile(STRPTR filename, UWORD which, UWORD installas, UWORD x, UWORD y)
+{
+    /* TODO: this may be NOT an IFF IREF file. It may also be raw image file.
+             We need to detect the file format and use datatypes if appropriate. */
+    LoadPointerPrefs(filename, which, installas);
+}
+
+static void LoadPointerPrefs(STRPTR filename, WORD which, WORD installas)
 {
     struct IFFHandle *iff;
     struct PointerPrefs *pp;
+    struct NewPointerPrefs *npp;
 
-    D(bug("In IPrefs:PointerPrefs_Handler\n"));
     D(bug("filename=%s\n",filename));
-
     iff = CreateIFF(filename, stopchunks, 1);
     if (iff) {
-        while ((pp = LoadChunk(iff, sizeof(struct PointerPrefs), MEMF_CHIP)) != NULL) {
-	    D(bug("[PointerPrefs] Got pointer chunk\n"));
-	    InstallPointer(pp);
-	    FreeVec(pp);
+    	while(ParseIFF(iff, IFFPARSE_SCAN) == 0)
+	{
+	    struct ContextNode   *cn;
+
+	    cn = CurrentChunk(iff);
+	    
+	    switch(cn->cn_ID) {
+	    case ID_PNTR:
+	        pp = LoadChunk(iff, sizeof(struct PointerPrefs), MEMF_CHIP);
+		if (pp) {
+		    UWORD code = AROS_BE2WORD(pp->pp_Which);
+
+		    D(bug("[PointerPrefs] Got AmigaOS 3.0 pointer chunk, code is %d\n", code));
+		    if ((which == -1) || (which == code)) {
+		        InstallPointer(pp, (installas == -1) ? code : installas);
+		    }
+		    FreeVec(pp);
+		}
+		break;
+	    case ID_NPTR:
+	        npp = LoadChunk(iff, sizeof(struct NewPointerPrefs), MEMF_ANY);
+		if (npp) {
+		    D(bug("[PointerPrefs] Got new pointer chunk\n"));
+		    LoadPointerFile(npp->npp_File, npp->npp_WhichInFile, npp->npp_Which, npp->npp_X, npp->npp_Y);
+		    FreeVec(npp);
+		}
+		break;
+	    }
 	}
 	KillIFF(iff);
     }
+}
 
+void PointerPrefs_Handler(STRPTR filename)
+{
+    D(bug("In IPrefs:PointerPrefs_Handler\n"));
+    LoadPointerPrefs(filename, -1, -1);
 }
