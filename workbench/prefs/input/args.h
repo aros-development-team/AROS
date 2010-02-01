@@ -3,7 +3,7 @@
 
 /*
     Copyright © 2003, The AROS Development Team. All rights reserved.
-    $Id: args.h 21130 2004-02-28 22:50:12Z chodorowski $
+    $Id$
 */
 
 #include <exec/types.h>
@@ -18,7 +18,7 @@ enum Argument
 };
 
 /*** Prototypes *************************************************************/
-BOOL ReadArguments(VOID);
+BOOL ReadArguments(int argc, char **argv);
 VOID FreeArguments(VOID);
 IPTR GetArgument(enum Argument arg);
 

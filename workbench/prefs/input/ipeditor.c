@@ -1,9 +1,9 @@
 /*
     Copyright  2003-2010, The AROS Development Team. All rights reserved.
-    $Id: ipeditor.c 21816 2007-09-25 12:35:29Z chodorowski, dariusb $
+    $Id$
 */
 
-// #define MUIMASTER_YES_INLINE_STDARG
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <exec/types.h>
 #include <utility/tagitem.h>
@@ -14,6 +14,7 @@
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
 
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
@@ -31,22 +32,17 @@
 #include "locale.h"
 #include "ipeditor.h"
 #include "prefs.h"
-
-extern struct List          keymap_list;
-extern struct InputPrefs    inputprefs;
-extern struct InputPrefs    restore_prefs;
-
-extern struct MUI_CustomClass *StringifyClass;
+#include "stringify.h"
 
 static    CONST_STRPTR InputTabs[] = {NULL, NULL, NULL, };
 static    CONST_STRPTR ButtonMappings[] = {NULL, NULL, NULL, NULL, };
 static    CONST_STRPTR MouseSpeed[] = {NULL, NULL, NULL, NULL, };
 
-/*** Instance Data **********************************************************/
+static struct Hook display_hook;
 
+/*** Instance Data **********************************************************/
 struct IPEditor_DATA
 {
-    struct InputPrefs  iped_InputPrefs;
     Object *iped_KeyTypes;
     Object *iped_RepeatRate;
     Object *iped_RepeatDelay;
@@ -55,7 +51,9 @@ struct IPEditor_DATA
     Object *iped_DoubleClickDelay;
 };
 
-BOOL InputPrefs2Gadgets(struct IPEditor_DATA *data);
+/*** Local Functions ********************************************************/
+static BOOL InputPrefs2Gadgets(struct IPEditor_DATA *data);
+static BOOL Gadgets2InputPrefs(struct IPEditor_DATA *data);
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct IPEditor_DATA *data = INST_DATA(CLASS, self)
@@ -79,7 +77,6 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     Object *DoubleClickDelay;
 
     struct ListviewEntry *entry;
-    static struct Hook display_hook;
 
     display_hook.h_Entry = HookEntry;
     display_hook.h_SubEntry = (HOOKFUNC)keytypes_display_func;
@@ -99,50 +96,52 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     (
         CLASS, self, NULL,
 
-        MUIA_PrefsEditor_Name,        __(MSG_NAME),
-        MUIA_PrefsEditor_Path, (IPTR) "SYS/Input.prefs",
+        MUIA_PrefsEditor_Name,     __(MSG_NAME),
+        MUIA_PrefsEditor_Path,     (IPTR) "SYS/input.prefs",
+        MUIA_PrefsEditor_IconTool, (IPTR) "SYS:Prefs/Input",
 
         Child, (IPTR) RegisterGroup(InputTabs),
-            Child, VGroup,
-                Child, HGroup,
-                    Child, VGroup,
+            Child, (IPTR)VGroup,
+                Child, (IPTR)HGroup,
+                    Child, (IPTR)VGroup,
                         GroupFrameT(__(MSG_GAD_KEY_TYPE)),
                         MUIA_Weight, 45,
-                        Child, ListviewObject,
+                        Child, (IPTR)ListviewObject,
                             MUIA_Listview_Input, FALSE,
-                            MUIA_Listview_List, keyTypes = ListObject,
+                            MUIA_Listview_List, (IPTR)(keyTypes = (Object *)ListObject,
                                 InputListFrame,
-                                MUIA_List_DisplayHook, &display_hook,
-                            End,
+                                 MUIA_List_AutoVisible, TRUE,
+                                MUIA_List_DisplayHook, (IPTR)&display_hook,
+                            End),
                         End,
                     End,
-                    Child, VGroup,
+                    Child, (IPTR)VGroup,
                         MUIA_Weight, 55,
-                        Child, HGroup,
+                        Child, (IPTR)HGroup,
                             GroupFrameT(__(MSG_GAD_KEY_REPEAT_RATE)),
-                            Child, RepeatRate = NewObject(StringifyClass->mcc_Class,0,
-                                MUIA_MyStringifyType,    STRINGIFY_RepeatRate,
+                            Child, (IPTR)(RepeatRate = (Object *)StringifyObject,
+                                MUIA_MyStringifyType, STRINGIFY_RepeatRate,
                                 MUIA_Numeric_Value, 0,
                                 MUIA_Numeric_Min, 0,
                                 MUIA_Numeric_Max, 12,
-                            TAG_DONE),
+                            End),
                         End,
-                        Child, HGroup,
+                        Child, (IPTR)HGroup,
                             GroupFrameT(__(MSG_GAD_KEY_REPEAT_DELAY)),
-                            Child, RepeatDelay = NewObject(StringifyClass->mcc_Class,0,
-                                MUIA_MyStringifyType,    STRINGIFY_RepeatDelay,
+                            Child, (IPTR)(RepeatDelay = (Object *)StringifyObject,
+                                MUIA_MyStringifyType, STRINGIFY_RepeatDelay,
                                 MUIA_Numeric_Value, 0,
                                 MUIA_Numeric_Min, 0,
                                 MUIA_Numeric_Max, 74,
-                            TAG_DONE),
+                            End),
                         End,
-                        Child, VGroup,
+                        Child, (IPTR)VGroup,
                             GroupFrameT(__(MSG_GAD_KEY_TEST)),
-                            Child, HVSpace,
-                            Child, StringObject,
+                            Child, (IPTR)HVSpace,
+                            Child, (IPTR)StringObject,
                                 StringFrame,
                             End,
-                            Child, HVSpace,
+                            Child, (IPTR)HVSpace,
                         End,
                     End,
                 End,
@@ -151,32 +150,33 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 Child, HGroup,
                     Child, VGroup,
                         Child, ColGroup(2),
+                            MUIA_Disabled, TRUE,
                             GroupFrameT(__(MSG_GAD_MOUSE_BUTTON_MAPPING)),
-                            Child, Label1(__(MSG_GAD_MOUSE_LEFT)),
+                            Child, (IPTR)Label1(__(MSG_GAD_MOUSE_LEFT)),
                             Child, MUI_MakeObject(MUIO_Cycle, NULL, ButtonMappings),
-                            Child, Label1(__(MSG_GAD_MOUSE_MIDDLE)),
+                            Child, (IPTR)Label1(__(MSG_GAD_MOUSE_MIDDLE)),
                             Child, MUI_MakeObject(MUIO_Cycle, NULL, ButtonMappings),
-                            Child, Label1(__(MSG_GAD_MOUSE_RIGHT)),
+                            Child, (IPTR)Label1(__(MSG_GAD_MOUSE_RIGHT)),
                             Child, MUI_MakeObject(MUIO_Cycle, NULL, ButtonMappings),
                         End,
-                        Child, HVSpace,
+                        Child, (IPTR)HVSpace,
                     End,
                     Child, VGroup,
                         Child, ColGroup(2),
                             GroupFrameT(__(MSG_GAD_MOUSE_SPEED)),
-                            Child, GadMouseSpeed = MUI_MakeObject(MUIO_Cycle, NULL, MouseSpeed),
-                            Child, HVSpace,
-                            Child, Label1(__(MSG_GAD_MOUSE_ACCELERATED)),
-                            Child, Accelerated = MUI_MakeObject(MUIO_Checkmark, NULL),
+                            Child, (IPTR)(GadMouseSpeed = MUI_MakeObject(MUIO_Cycle, NULL, MouseSpeed)),
+                            Child, (IPTR)HVSpace,
+                            Child, (IPTR)Label1(__(MSG_GAD_MOUSE_ACCELERATED)),
+                            Child, (IPTR)(Accelerated = MUI_MakeObject(MUIO_Checkmark, NULL)),
                         End,
                         Child, HGroup,
                             GroupFrameT(__(MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY)),
-                            Child, DoubleClickDelay = NewObject(StringifyClass->mcc_Class,0,
-                                MUIA_MyStringifyType,    STRINGIFY_DoubleClickDelay,
+                            Child, (IPTR)(DoubleClickDelay = (Object *)StringifyObject,
+                                MUIA_MyStringifyType, STRINGIFY_DoubleClickDelay,
                                 MUIA_Numeric_Value, 0,
                                 MUIA_Numeric_Min, 0,
                                 MUIA_Numeric_Max, 199,
-                            TAG_DONE),
+                            End),
                         End,
                     End,
                 End,
@@ -209,10 +209,6 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 MUIV_List_Insert_Bottom
             );
         }
-
-        /* Set default Values */
-
-        InputPrefs2Gadgets(data);
 
         DoMethod
         (
@@ -255,10 +251,7 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     return self;
 }
 
-BOOL Gadgets2InputPrefs
-(
-        struct IPEditor_DATA *data
-)
+static BOOL Gadgets2InputPrefs(struct IPEditor_DATA *data)
 {
     IPTR    val;
     ULONG   micros, secs;
@@ -312,14 +305,15 @@ BOOL Gadgets2InputPrefs
         D(bug("IPrefs: selected %s\n", entry->realname));
         strncpy(inputprefs.ip_Keymap, entry->realname, sizeof(inputprefs.ip_Keymap));
     }
+    else
+    {
+        strncpy(inputprefs.ip_Keymap, DEFAULT_KEYMAP, sizeof(inputprefs.ip_Keymap));
+    }
 
     return TRUE;
 }
 
-BOOL InputPrefs2Gadgets
-(
-    struct IPEditor_DATA *data
-)
+static BOOL InputPrefs2Gadgets(struct IPEditor_DATA *data)
 {
     ULONG rrate = 12 -(inputprefs.ip_KeyRptSpeed.tv_micro / 20000);
     ULONG rdelay = ((inputprefs.ip_KeyRptDelay.tv_micro + (inputprefs.ip_KeyRptDelay.tv_secs * 1000000)) / 20000) - 1;
@@ -333,6 +327,7 @@ BOOL InputPrefs2Gadgets
     struct ListviewEntry *entry;
     LONG pos = 0;
 
+    NNSET(data->iped_KeyTypes, MUIA_List_Active, MUIV_List_Active_Off);
     ForeachNode(&keymap_list, entry)
     {
         if (!stricmp(inputprefs.ip_Keymap, entry->realname))
@@ -376,9 +371,9 @@ IPTR IPEditor__MUIM_PrefsEditor_ImportFH
 {
     SETUP_INST_DATA;
 
-    if (LoadPrefs(message->fh))
+    if (Prefs_ImportFH(message->fh))
     {
-        CopyPrefs(&inputprefs, &restore_prefs);
+        Prefs_Backup();
         IPTR back = InputPrefs2Gadgets(data);
         SET(self, MUIA_PrefsEditor_Changed, FALSE);
         SET(self, MUIA_PrefsEditor_Testing, FALSE);
@@ -397,7 +392,7 @@ IPTR IPEditor__MUIM_PrefsEditor_ExportFH
 
     if (Gadgets2InputPrefs(data))
     {
-        return SavePrefs(message->fh);
+        return Prefs_ExportFH(message->fh);
     }
     return FALSE;
 }
@@ -411,10 +406,8 @@ IPTR IPEditor__MUIM_PrefsEditor_Test
     SETUP_INST_DATA;
 
     Gadgets2InputPrefs(data);
+    Prefs_Test();
 
-    update_inputdev();
-    try_setting_mousespeed();
-    try_setting_test_keymap();
     SET(self, MUIA_PrefsEditor_Changed, FALSE);
     SET(self, MUIA_PrefsEditor_Testing, TRUE);
 
@@ -426,29 +419,45 @@ IPTR IPEditor__MUIM_PrefsEditor_Revert
     Class *CLASS, Object *self, Msg message
 )
 {
-
     SETUP_INST_DATA;
 
-    CopyPrefs(&restore_prefs, &inputprefs);
-
+    Prefs_Restore();
     InputPrefs2Gadgets(data);
+    Prefs_Test();
 
-    update_inputdev();
-    try_setting_mousespeed();
-    try_setting_test_keymap();
     SET(self, MUIA_PrefsEditor_Changed, FALSE);
     SET(self, MUIA_PrefsEditor_Testing, FALSE);
 
     return TRUE;
 }
 
+IPTR IPEditor__MUIM_PrefsEditor_SetDefaults
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_INST_DATA;
+    BOOL success = TRUE;
+
+    success = Prefs_Default();
+    if (success)
+    {
+        InputPrefs2Gadgets(data);
+        Prefs_Backup();
+        Prefs_Test();
+    }
+
+    return success;
+}
+
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_5
+ZUNE_CUSTOMCLASS_6
 (
     IPEditor, NULL, MUIC_PrefsEditor, NULL,
-    OM_NEW,                    struct opSet *,
-    MUIM_PrefsEditor_ImportFH, struct MUIP_PrefsEditor_ImportFH *,
-    MUIM_PrefsEditor_ExportFH, struct MUIP_PrefsEditor_ExportFH *,
-    MUIM_PrefsEditor_Test,     Msg,
-    MUIM_PrefsEditor_Revert,   Msg
+    OM_NEW,                       struct opSet *,
+    MUIM_PrefsEditor_ImportFH,    struct MUIP_PrefsEditor_ImportFH *,
+    MUIM_PrefsEditor_ExportFH,    struct MUIP_PrefsEditor_ExportFH *,
+    MUIM_PrefsEditor_Test,        Msg,
+    MUIM_PrefsEditor_Revert,      Msg,
+    MUIM_PrefsEditor_SetDefaults, Msg
 );
