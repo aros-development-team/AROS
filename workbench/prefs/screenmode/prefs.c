@@ -6,12 +6,14 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include <intuition/preferences.h>
 #include <prefs/screenmode.h>
 #include <prefs/prefhdr.h>
 #include <graphics/modeid.h>
 
 #include <proto/dos.h>
 #include <proto/iffparse.h>
+#include <proto/intuition.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -248,15 +250,21 @@ BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
 
 BOOL Prefs_Default(VOID)
 {
+    static struct Preferences def;
+
+    GetDefPrefs(&def, sizeof(def));
     screenmodeprefs.smp_Reserved[0] = 0;
     screenmodeprefs.smp_Reserved[1] = 0;
     screenmodeprefs.smp_Reserved[2] = 0;
     screenmodeprefs.smp_Reserved[3] = 0;
-    screenmodeprefs.smp_DisplayID   = 0; // FIXME ???
-    screenmodeprefs.smp_Width       = AROS_DEFAULT_WBWIDTH;
-    screenmodeprefs.smp_Height      = AROS_DEFAULT_WBHEIGHT;
-    screenmodeprefs.smp_Depth       = AROS_DEFAULT_WBDEPTH;
+    screenmodeprefs.smp_DisplayID   = INVALID_ID;
+    screenmodeprefs.smp_Width       = def.wb_Width;
+    screenmodeprefs.smp_Height      = def.wb_Height;
+    screenmodeprefs.smp_Depth       = def.wb_Depth;
     screenmodeprefs.smp_Control     = 0;
+
+    D(Printf("[Prefs_Default] Default Workbench screen: %ldx%ldx%ld\n",
+             screenmodeprefs.smp_Width, screenmodeprefs.smp_Height, screenmodeprefs.smp_Depth));
 
     return TRUE;
 }
