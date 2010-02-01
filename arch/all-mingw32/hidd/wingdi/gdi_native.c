@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <aros/kernel_host.h>
 #include "gdi.h"
+#include "bitmap.h"
 
 #define D(x)
 #define DKBD(x)
@@ -84,18 +85,18 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
     HDC bitmap_dc, window_dc;
     PAINTSTRUCT ps;
     LONG x, y, xsize, ysize;
-    struct gfx_data *gdata;
+    struct bitmap_data *bmdata;
 
     switch(msg) {
     case WM_PAINT:
-        gdata = (HDC)GetWindowLongPtr(win, GWLP_USERDATA);
+        bmdata = (HDC)GetWindowLongPtr(win, GWLP_USERDATA);
         window_dc = BeginPaint(win, &ps);
         x = ps.rcPaint.left;
         y = ps.rcPaint.top;
         xsize = ps.rcPaint.right - ps.rcPaint.left + 1;
         ysize = ps.rcPaint.bottom - ps.rcPaint.top + 1;
 	DWIN(printf("[GDI] WM_PAINT, coords: (%u, %u), size: %ux%u\n", x, y, xsize, ysize));
-        BitBlt(window_dc, x, y, xsize, ysize, gdata->bitmap_dc, x, y, SRCCOPY);
+        BitBlt(window_dc, x, y, xsize, ysize, bmdata->dc, x, y, SRCCOPY);
         EndPaint(win, &ps);
         return 0;
     case WM_SETCURSOR:
@@ -152,6 +153,7 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
     MSG msg;
     WINDOWPLACEMENT wpos;
     struct gfx_data *gdata;
+    struct bitmap_data *bmdata;
     LONG width, height;
 
     keyhook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)key_callback, wcl_desc.hInstance, 0);
@@ -163,20 +165,19 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
             switch (msg.message) {
             case NOTY_SHOW:
                 gdata = (struct gfx_data *)msg.wParam;
+		bmdata = (struct bitmap_data *)msg.lParam;
 		/* Have a bitmap to show? */
                 if (gdata->bitmap) {
-            	    width = GetSystemMetrics(SM_CXFIXEDFRAME) * 2 + gdata->width;
-            	    height = GetSystemMetrics(SM_CYFIXEDFRAME) * 2 + gdata->height + GetSystemMetrics(SM_CYCAPTION);
+            	    width = GetSystemMetrics(SM_CXFIXEDFRAME) * 2 + bmdata->win_width;
+            	    height = GetSystemMetrics(SM_CYFIXEDFRAME) * 2 + bmdata->win_height + GetSystemMetrics(SM_CYCAPTION);
 		    /* Do we already have a window? */
             	    if (!gdata->fbwin) {
 			/* Create it if we don't */
             	    	gdata->fbwin = CreateWindow((LPCSTR)wcl, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
 					             CW_USEDEFAULT, CW_USEDEFAULT, width,  height, NULL, NULL,
 						     wcl_desc.hInstance, NULL);
-			if (gdata->fbwin) {
-			    SetWindowLongPtr(gdata->fbwin, GWLP_USERDATA, (LONG_PTR)gdata);
+			if (gdata->fbwin)
             	    	    ShowWindow(gdata->fbwin, SW_SHOW);
-			}
             	    } else {
 			/* Otherwise just adjust its position */
             	        wpos.length = sizeof(wpos);
@@ -187,6 +188,7 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
 	            	}
 	            }
 	            if (gdata->fbwin) {
+		    	SetWindowLongPtr(gdata->fbwin, GWLP_USERDATA, (LONG_PTR)bmdata);
             	        RedrawWindow(gdata->fbwin, NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
             	    }
             	} else {
