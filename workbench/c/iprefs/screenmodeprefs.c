@@ -36,20 +36,22 @@ void ScreenModePrefs_Handler(STRPTR filename)
     iff = CreateIFF(filename, stopchunks, 1);
     
     if (iff) {
-        smp = LoadChunk(iff, sizeof(struct ScreenModePrefs), MEMF_ANY);
-	if (smp) {
-            struct IScreenModePrefs i;
+        while(ParseIFF(iff, IFFPARSE_SCAN) == 0) {
+            smp = LoadChunk(iff, sizeof(struct ScreenModePrefs), MEMF_ANY);
+	    if (smp) {
+                struct IScreenModePrefs i;
 	
-	    i.smp_DisplayID = smp->smp_DisplayID;
-	    i.smp_Width     = smp->smp_Width;
-	    i.smp_Height    = smp->smp_Height;
-	    i.smp_Depth     = smp->smp_Depth;
-	    i.smp_Control   = AROS_BE2WORD(smp->smp_Control);
-	    D(bug("[ScreenModePrefs] ModeID: 0x%08lX, Size: %dx%d, Depth: %d, Control: 0x%08lX\n",
-	          i.smp_DisplayID, i.smp_Width, i.smp_Height, i.smp_Depth, i.smp_Control));
+	        i.smp_DisplayID = smp->smp_DisplayID;
+	        i.smp_Width     = smp->smp_Width;
+	        i.smp_Height    = smp->smp_Height;
+	        i.smp_Depth     = smp->smp_Depth;
+	        i.smp_Control   = AROS_BE2WORD(smp->smp_Control);
+	        D(bug("[ScreenModePrefs] ModeID: 0x%08lX, Size: %dx%d, Depth: %d, Control: 0x%08lX\n",
+	              i.smp_DisplayID, i.smp_Width, i.smp_Height, i.smp_Depth, i.smp_Control));
 	
-            SetIPrefs(&i, sizeof(struct IScreenModePrefs), IPREFS_TYPE_SCREENMODE);
-	    FreeVec(smp);
+                SetIPrefs(&i, sizeof(struct IScreenModePrefs), IPREFS_TYPE_SCREENMODE);
+	        FreeVec(smp);
+	    }
 	}
 	KillIFF(iff);
     }

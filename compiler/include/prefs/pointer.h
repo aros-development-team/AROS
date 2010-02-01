@@ -2,7 +2,7 @@
 #define PREFS_POINTER_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Pointer prefs definitions
@@ -39,6 +39,19 @@ struct RGBTable
     UBYTE t_Red;
     UBYTE t_Green;
     UBYTE t_Blue;
+};
+
+/* New preferences file, AROS-specific */
+/* Not stable yet, subject to change   */
+
+#define ID_NPTR MAKE_ID('N','P','T','R')
+
+struct NewPointerPrefs
+{
+    UBYTE npp_Which;	   /* Which Intuition pointer to replace	    */
+    UBYTE npp_WhichInFile; /* Which pointer to take if the file is IFF PREF */
+    UBYTE npp_X, npp_Y;    /* Hotspot coordinates		            */
+    char  npp_File[0];	   /* NULL-terminated file name follows             */
 };
 
 #endif /* PREFS_POINTER_H */
