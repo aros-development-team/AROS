@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 	
     Desc: Iprefs
@@ -96,7 +96,6 @@ preftable[] =
 {
     {"input"	    , inputprefsname     , InputPrefs_Handler      },
     {"font" 	    , fontprefsname      , FontPrefs_Handler       },
-    {"screenmode"   , screenprefsname	 , NULL                    },
     {"locale"	    , localeprefsname	 , LocalePrefs_Handler     },
     {"palette"	    , paletteprefsname   , NULL                    },
     {"wbpattern"    , patternprefsname   , WBPatternPrefs_Handler  },
@@ -104,7 +103,7 @@ preftable[] =
     {"screenmode"   , screenmodeprefsname, ScreenModePrefs_Handler },
     {"serial"	    , serialprefsname	 , SerialPrefs_Handler     },
     {"printer"	    , printerprefsname	 , NULL                    },
-    {"pointer"	    , pointerprefsname   , NULL                    },
+    {"pointer"	    , pointerprefsname   , PointerPrefs_Handler    },
     {"overscan"     , overscanprefsname  , NULL                    },
     {NULL   	    	    	    	      	    	    	   }
 
