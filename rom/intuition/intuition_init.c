@@ -73,6 +73,10 @@ const ULONG coltab[] =
     0x55555555, 0xDDDDDDDD, 0x55555555, /* Green      */
     0x00000000, 0x44444444, 0xDDDDDDDD, /* Dark Blue  */
     0xEEEEEEEE, 0x99999999, 0x00000000, /* Yellow     */
+    
+    0xbbbbbbbb, 0x00000000, 0x00000000, /* Default colors for mouse pointer */
+    0xdddddddd, 0x00000000, 0x00000000,
+    0xeeeeeeee, 0x00000000, 0x00000000
 };
 
 static int IntuitionInit(LIBBASETYPEPTR LIBBASE)

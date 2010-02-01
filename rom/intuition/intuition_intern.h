@@ -384,7 +384,7 @@ struct Color32
     ULONG blue;
 };
 
-#define COLORTABLEENTRIES   	8
+#define COLORTABLEENTRIES   	11
 
 struct IntScreen;
 
@@ -464,9 +464,6 @@ struct IntIntuitionBase
     struct Hook             	*GlobalEditHook;
     /* The default global edit hook */
     struct Hook             	 DefaultEditHook;
-
-
-    APTR                    	 DriverData; /* Pointer which the driver may use */
 
     struct Screen           	*DefaultPubScreen;
     struct SignalSemaphore  	 PubScrListLock;
