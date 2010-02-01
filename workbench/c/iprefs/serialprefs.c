@@ -45,7 +45,7 @@ void SerialPrefs_Handler(STRPTR filename)
     iff = CreateIFF(filename, stopchunks, 1);
     
     if (iff) {
-        serialprefs = LoadChunk(iff, sizeof(struct SerialPrefs));
+        serialprefs = LoadChunk(iff, sizeof(struct SerialPrefs), MEMF_ANY);
 	if (serialprefs) {
 	    struct Preferences prefs;
 	    ULONG index = 0;

@@ -191,7 +191,7 @@ void InstallPatches(void);
 
 struct IFFHandle *CreateIFF(STRPTR filename, LONG *stopchunks, LONG numstopchunks);
 void KillIFF(struct IFFHandle *iff);
-APTR LoadChunk(struct IFFHandle *iff, LONG size);
+APTR LoadChunk(struct IFFHandle *iff, LONG size, ULONG memtype);
 
 /* localeprefs.c */
 

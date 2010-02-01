@@ -10,7 +10,7 @@
 
 #include "global.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #include <aros/macros.h>
 #include <prefs/prefhdr.h>
@@ -32,9 +32,9 @@ static void InstallPointer(struct PointerPrefs *pp)
     UWORD depth  = AROS_BE2WORD(pp->pp_Depth);
     UWORD ncols = (1 << depth) - 1;
     ULONG ic_size = (1 << depth) * sizeof(struct ColorSpec);
+    UBYTE *planes;
 
     InitBitMap(&bm, depth, width, height);
-
     ip.BitMap      = &bm;
     ip.XOffset     = AROS_BE2WORD(pp->pp_X);
     ip.YOffset     = AROS_BE2WORD(pp->pp_Y);
@@ -61,10 +61,16 @@ static void InstallPointer(struct PointerPrefs *pp)
 	}
         ic[ncols].ColorIndex = -1; /* Terminator */
 
+	planes = (UBYTE *)colors;
+	for (i = 0; i < depth; i++) {
+	    bm.Planes[i] = planes;
+	    planes += bm.BytesPerRow * height;
+	}
+
         /* First change palette, then image. It is important in order to get correct colors on
            truecolor screens */
         SetIPrefs(ic, ic_size, IPREFS_TYPE_OLD_PALETTE);
-//      SetIPrefs(&ip, sizeof(struct IPointerPrefs), IPREFS_TYPE_POINTER);
+        SetIPrefs(&ip, sizeof(struct IPointerPrefs), IPREFS_TYPE_POINTER);
 	FreeMem(ic, ic_size);
     }
 }
@@ -75,7 +81,7 @@ static LONG stopchunks[] =
 };
 
 void PointerPrefs_Handler(STRPTR filename)
-{	
+{
     struct IFFHandle *iff;
     struct PointerPrefs *pp;
 
@@ -84,7 +90,7 @@ void PointerPrefs_Handler(STRPTR filename)
 
     iff = CreateIFF(filename, stopchunks, 1);
     if (iff) {
-        while ((pp = LoadChunk(iff, sizeof(struct PointerPrefs))) != NULL) {
+        while ((pp = LoadChunk(iff, sizeof(struct PointerPrefs), MEMF_CHIP)) != NULL) {
 	    D(bug("[PointerPrefs] Got pointer chunk\n"));
 	    InstallPointer(pp);
 	    FreeVec(pp);
