@@ -135,7 +135,7 @@
 
 	    InitBitMap(&old_bitmap, 2, 16, height);
 	    planes_size = height * sizeof(UWORD) * 2;
-	    planes = AllocMem(planes_size, MEMF_ANY);
+	    planes = AllocMem(planes_size, MEMF_CHIP);
 	    if (!planes)
 	        return NULL;
 	    p = planes;
