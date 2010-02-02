@@ -83,7 +83,7 @@ static LONG stopchunks[] =
 
 static void LoadPointerPrefs(STRPTR filename, WORD which, WORD installas);
 
-static void LoadPointerFile(STRPTR filename, UWORD which, UWORD installas, UWORD x, UWORD y)
+static void LoadPointerFile(STRPTR filename, ULONG which, UWORD installas, UWORD x, UWORD y)
 {
     /* TODO: this may be NOT an IFF IREF file. It may also be raw image file.
              We need to detect the file format and use datatypes if appropriate. */
@@ -109,11 +109,9 @@ static void LoadPointerPrefs(STRPTR filename, WORD which, WORD installas)
 	    case ID_PNTR:
 	        pp = LoadChunk(iff, sizeof(struct PointerPrefs), MEMF_CHIP);
 		if (pp) {
-		    UWORD code = AROS_BE2WORD(pp->pp_Which);
-
 		    D(bug("[PointerPrefs] Got AmigaOS 3.0 pointer chunk, code is %d\n", code));
-		    if ((which == -1) || (which == code)) {
-		        InstallPointer(pp, (installas == -1) ? code : installas);
+		    if ((which == -1) || (which == pp->pp_Which)) {
+		        InstallPointer(pp, AROS_BE2WORD((installas == -1) ? pp->pp_Which : installas));
 		    }
 		    FreeVec(pp);
 		}
@@ -122,6 +120,7 @@ static void LoadPointerPrefs(STRPTR filename, WORD which, WORD installas)
 	        npp = LoadChunk(iff, sizeof(struct NewPointerPrefs), MEMF_ANY);
 		if (npp) {
 		    D(bug("[PointerPrefs] Got new pointer chunk\n"));
+		    SetIPrefs(&npp->npp_AlphaValue, sizeof(UWORD), IPREFS_TYPE_POINTER_ALPHA);
 		    LoadPointerFile(npp->npp_File, npp->npp_WhichInFile, npp->npp_Which, npp->npp_X, npp->npp_Y);
 		    FreeVec(npp);
 		}

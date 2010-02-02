@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -33,6 +33,7 @@
     Depending on the operation
 
     NOTES
+        This function is currently considered private
 
     EXAMPLE
 
@@ -199,6 +200,10 @@
 	    }
         }
         break;
+	
+	case IPREFS_TYPE_POINTER_ALPHA:
+	    GetPrivIBase(IntuitionBase)->PointerAlpha = *(UWORD *)data;
+	break;
 
 	default:
             DEBUG_SETIPREFS(bug("SetIPrefs: Unknown Prefs Type\n"));

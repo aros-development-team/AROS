@@ -161,6 +161,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 	    p[i].blue = coltab[i*3+2];
 	}
     }
+    LIBBASE->PointerAlpha = 0x9F9F;
 
 #ifdef __MORPHOS__
     GetPrivIBase(LIBBASE)->mosmenuclass = InitMuiMenuClass(LIBBASE);
@@ -194,7 +195,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 #ifdef SKINS
     strcpy(GetPrivIBase(IntuitionBase)->IControlExtensions.ice_ClockFormat,"%X");
 #endif
-        
+      
     GetPrivIBase(LIBBASE)->FrameSize = FRAMESIZE_THIN;
 
     {

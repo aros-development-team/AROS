@@ -528,6 +528,7 @@ struct IntIntuitionBase
     UWORD                   	 DriPens4[NUMDRIPENS];
     UWORD                   	 DriPens8[NUMDRIPENS];
     struct Color32          	 Colors[COLORTABLEENTRIES];
+    UWORD			 PointerAlpha;
     ULONG                    	 DMStartSecs;
     ULONG                   	 DMStartMicro;
     struct IntScreen        	*MenuVerifyScreen;
@@ -547,10 +548,10 @@ struct IntIntuitionBase
     struct Hook             	 transphook; /* hook for windows with intui transp */
     struct Hook             	 notransphook; /* hook for windows with no additional transp (borderless,etc) */
 #endif
-//#ifdef INTUITION_NOTIFY_SUPPORT   // commented to avoid offset fuckup! - Piru
+#ifdef INTUITION_NOTIFY_SUPPORT
     struct Library          	*ScreenNotifyBase;
     struct Library          	*NotifyIntuitionBase;
-//#endif
+#endif
 
     struct RastPort         	 DoGadgetMethodRP;
     struct GadgetInfo       	 DoGadgetMethodGI;
