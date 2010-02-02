@@ -45,12 +45,14 @@
 #define GOT_BM_ATTR(code) GOT_ATTR(code, aoHidd_BitMap, bitmap)
 
 static OOP_AttrBase HiddBitMapAttrBase;
+static OOP_AttrBase HiddSyncAttrBase;
 static OOP_AttrBase HiddPixFmtAttrBase;
 static OOP_AttrBase HiddGDIBitMapAB;
 
 static struct OOP_ABDescr attrbases[] = 
 {
     { IID_Hidd_BitMap	, &HiddBitMapAttrBase 	},
+    { IID_Hidd_Sync 	, &HiddSyncAttrBase	},
     { IID_Hidd_PixFmt	, &HiddPixFmtAttrBase 	},
     /* Private bases */
     { IID_Hidd_GDIBitMap, &HiddGDIBitMapAB    	},
@@ -354,7 +356,7 @@ static ULONG Copy_DrawModeTable[] = {
     WHITENESS
 };
 
-/* Raster operations for a background */
+/* Raster operations for a foreground */
 static ULONG MaskedFill_DrawModeTable[] = {
     BLACKNESS,
     0x008003E9, /* PSDaa  - dest AND brush AND src       */
@@ -537,8 +539,10 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     OOP_Object  *friend = NULL, *pixfmt;
 /*  APTR 	 friend_drawable = NULL;*/
     APTR	 display, my_dc, my_bitmap, orig_bitmap;
-    ULONG   	 width, height;
-    ULONG	 win_width, win_height;
+    IPTR   	 width, height;
+    HIDDT_ModeID modeid;
+    IPTR	 win_width  = 0;
+    IPTR	 win_height = 0;
     IPTR	 depth;
     IPTR    	 attrs[num_Hidd_BitMap_Attrs];
     int     	 screen;
@@ -574,11 +578,22 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	OOP_GetAttr(friend, aHidd_GDIBitMap_Drawable, (IPTR *)&friend_drawable);
     }*/
 
-    display = (APTR)GetTagData(aHidd_GDIBitMap_SysDisplay, 0, msg->attrList);
-    win_width = GetTagData(aHidd_GDIBitMap_DisplayWidth, 0, msg->attrList);
-    win_height = GetTagData(aHidd_GDIBitMap_DisplayHeight, 0, msg->attrList);
-
     D(bug("Creating GDI bitmap: %ldx%ldx%ld\n", width, height, depth));
+    display = (APTR)GetTagData(aHidd_GDIBitMap_SysDisplay, 0, msg->attrList);
+    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+    /* This relies on the fact that bitmaps with aHidd_BitMap_Displayable set to TRUE always
+       also get aHidd_BitMap_ModeID with valid value. Currently this seems to be true and i
+       beleive it should stay so */
+    if (modeid != vHidd_ModeID_Invalid) {
+	OOP_Object *gfx = attrs[AO(GfxHidd)];
+	OOP_Object *sync, *pixfmt;
+
+	D(bug("[GDI] Display driver object: 0x%p\n", gfx));
+	HIDD_Gfx_GetMode(gfx, modeid, &sync, &pixfmt);
+	OOP_GetAttr(sync, aHidd_Sync_HDisp, &win_width);
+	OOP_GetAttr(sync, aHidd_Sync_VDisp, &win_height);
+	D(bug("[GDI] Display window size: %dx%d\n", win_width, win_height));
+    }
 
     Forbid();
     my_dc = GDICALL(CreateCompatibleDC, display);
