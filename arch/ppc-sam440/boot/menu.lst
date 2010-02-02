@@ -24,6 +24,7 @@ title AROS PowerPC test poseidon
     module boot/modules/graphics.hidd
     module boot/modules/hiddclass.hidd
     module boot/modules/i2c.hidd
+    module boot/modules/i2c-amcc440.hidd
     module boot/modules/input.device
     module boot/modules/intuition.library
     module boot/modules/irq.hidd
