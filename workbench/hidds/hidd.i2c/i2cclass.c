@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2004-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -258,9 +258,9 @@ BOOL METHOD(I2C, Hidd_I2C, PutByte)
         }
 
         if (i <= 0) {
-            bug("[I2C] PutByte(<%s>, 0x%02x, %d, %d, %d) timeout",
+            D(bug("[I2C] PutByte(<%s>, 0x%02x, %d, %d, %d) timeout",
                                        drv->name, msg->data, dev->BitTimeout,
-                                       dev->ByteTimeout, dev->AcknTimeout);
+                                       dev->ByteTimeout, dev->AcknTimeout));
             r = FALSE;
         }
 

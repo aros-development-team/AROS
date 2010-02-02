@@ -2,7 +2,7 @@
 #define HIDD_I2C_H
 
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -269,5 +269,7 @@ struct pHidd_I2CDevice_WriteRead
     UBYTE           *readBuffer;
     ULONG           readLength;
 };
+
+BOOL HIDD_I2C_ProbeAddress(OOP_Object *obj, UWORD address);
 
 #endif
