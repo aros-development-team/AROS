@@ -1,0 +1,7 @@
+# Copyright © 2010, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+%build_catalogs mmake=workbench-prefs-pointer-catalogs \
+                name=Serial subdir=System/Prefs

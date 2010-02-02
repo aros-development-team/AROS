@@ -1,0 +1,19 @@
+# $Id$
+# Makefile to make Pointer prefs program.
+
+include $(TOP)/config/make.cfg
+
+FILES := main locale pteditor prefs args misc
+
+#vars misc prefs
+
+EXEDIR      := $(AROSDIR)/Prefs
+
+##MM- workbench-prefs : workbench-prefs-pointer
+#MM workbench-prefs-pointer : includes linklibs workbench-prefs-pointer-catalogs
+
+%build_prog mmake=workbench-prefs-pointer \
+    progname=Pointer targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc m"
+
+%common
