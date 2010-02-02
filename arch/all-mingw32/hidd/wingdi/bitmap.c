@@ -539,6 +539,7 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     OOP_Object  *friend = NULL, *pixfmt;
 /*  APTR 	 friend_drawable = NULL;*/
     APTR	 display, my_dc, my_bitmap, orig_bitmap;
+    APTR	 bkgnd;
     IPTR   	 width, height;
     HIDDT_ModeID modeid;
     IPTR	 win_width  = 0;
@@ -604,6 +605,7 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         if (my_bitmap)
             orig_bitmap = GDICALL(SelectObject, my_dc, my_bitmap);
         D(bug("[GDI] Olriginal DC bitmap: 0x%p\n", orig_bitmap));
+	bkgnd = GDICALL(CreateSolidBrush, 0);
     }
     Permit();
 
@@ -627,11 +629,14 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	data->win_height = win_height;
 	data->bm_width = width;
 	data->bm_height = height;
+	data->bkgnd = bkgnd;
 	CHECK_STACK
     	ReturnPtr("GDIGfx.BitMap::New()", OOP_Object *, o);
     } /* if (object allocated by superclass) */
 dispose_bitmap:    
     Forbid();
+    if (bkgnd)
+        GDICALL(DeleteObject, bkgnd);
     if (orig_bitmap)
     	GDICALL(SelectObject, my_dc, orig_bitmap);
     if (my_bitmap)

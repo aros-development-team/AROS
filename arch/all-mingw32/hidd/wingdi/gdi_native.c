@@ -29,7 +29,7 @@ static WNDCLASS wcl_desc = {
     NULL,
     NULL,
     NULL,
-    (HBRUSH)COLOR_WINDOW,
+    NULL,
     NULL,
     "AROS_Screen"
 };
@@ -84,19 +84,46 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
 {
     HDC bitmap_dc, window_dc;
     PAINTSTRUCT ps;
-    LONG x, y, xsize, ysize;
+    LONG x, y, xend, yend, xsize, ysize;
+    RECT bg;
+    LONG rightbg = -1;
+    LONG bottombg = -1;
     struct bitmap_data *bmdata;
 
     switch(msg) {
     case WM_PAINT:
-        bmdata = (HDC)GetWindowLongPtr(win, GWLP_USERDATA);
+        bmdata = (struct bitmap_data *)GetWindowLongPtr(win, GWLP_USERDATA);
         window_dc = BeginPaint(win, &ps);
         x = ps.rcPaint.left;
         y = ps.rcPaint.top;
-        xsize = ps.rcPaint.right - ps.rcPaint.left + 1;
-        ysize = ps.rcPaint.bottom - ps.rcPaint.top + 1;
+	xend = ps.rcPaint.right + 1;
+	yend = ps.rcPaint.bottom + 1;
+	if (xend > bmdata->bm_width) {
+	    xsize = bmdata->bm_width - x;
+	    rightbg = bmdata->bm_width;
+	} else
+	    xsize = xend - x;
+	if (yend > bmdata->bm_height) {
+	    ysize = bmdata->bm_height - y;
+	    bottombg = bmdata->bm_height;
+	} else
+	    ysize = yend - y;
 	DWIN(printf("[GDI] WM_PAINT, coords: (%u, %u), size: %ux%u\n", x, y, xsize, ysize));
         BitBlt(window_dc, x, y, xsize, ysize, bmdata->dc, x, y, SRCCOPY);
+	if (rightbg != -1) {
+	    bg.left = rightbg;
+	    bg.top = y;
+	    bg.right = ps.rcPaint.right;
+	    bg.bottom = ps.rcPaint.bottom;
+	    FillRect(window_dc, &bg, bmdata->bkgnd);
+	}
+	if (bottombg != -1) {
+	    bg.left = x;
+	    bg.top = bottombg;
+	    bg.right = bmdata->bm_width;
+	    bg.bottom = ps.rcPaint.bottom;
+	    FillRect(window_dc, &bg, bmdata->bkgnd);
+	}
         EndPaint(win, &ps);
         return 0;
     case WM_SETCURSOR:

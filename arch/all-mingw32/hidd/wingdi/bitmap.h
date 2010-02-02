@@ -42,6 +42,7 @@ struct bitmap_data
     IPTR win_height;
     IPTR bm_width;   /* Bitmap size (cached, needed for window service thread			*/
     IPTR bm_height;
+    APTR bkgnd;	     /* Background brush							*/
 };
 
 #endif /* _BITMAP_H */
