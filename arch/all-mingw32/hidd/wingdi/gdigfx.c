@@ -322,10 +322,8 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     struct TagItem  	    	 tags[] =
     {
     	{ aHidd_GDIBitMap_SysDisplay   , 0UL },	/* 0 */
-	{ aHidd_GDIBitMap_DisplayWidth , 0UL },	/* 1 */
-	{ aHidd_GDIBitMap_DisplayHeight, 0UL },	/* 2 */
-	{ TAG_IGNORE	    	       , 0UL },	/* 3 */
-	{ TAG_MORE  	    	       , 0UL }  /* 4 */
+	{ TAG_IGNORE	    	       , 0UL },	/* 1 */
+	{ TAG_MORE  	    	       , 0UL }  /* 2 */
     };
     
     EnterFunc(bug("GDIGfx::NewBitMap()\n"));
@@ -340,8 +338,8 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     }
 
     tags[0].ti_Data = (IPTR)data->display;
-    tags[3].ti_Data = (IPTR)XSD(cl)->bmclass;
-    tags[4].ti_Data = (IPTR)msg->attrList;
+    tags[1].ti_Data = (IPTR)XSD(cl)->bmclass;
+    tags[2].ti_Data = (IPTR)msg->attrList;
 
     /* When do we create a GDI bitmap ?
 	- If the bitmap is displayable
@@ -355,28 +353,17 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
 
     if (displayable || (modeid != vHidd_ModeID_Invalid) || (stdpf == vHidd_StdPixFmt_Plane)) {
-        tags[3].ti_Tag  = aHidd_BitMap_ClassPtr;
-
-	/* This relies on the fact that bitmaps with aHidd_BitMap_Displayable set to TRUE always
-           also get aHidd_BitMap_ModeID with valid value. Currently this seems to be true and i
-	   beleive it should stay so */
-	if (modeid != vHidd_ModeID_Invalid) {
-	    OOP_Object *sync, *pixfmt;
-	    
-	    HIDD_Gfx_GetMode(o, modeid, &sync, &pixfmt);
-	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &tags[1].ti_Data);
-	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &tags[2].ti_Data);
-	}
-	D(bug("[GDI] Displayable: %d, ModeID: 0x%08lX, Display size: %ux%u\n", displayable, modeid, tags[1].ti_Data, tags[2].ti_Data));
+        tags[1].ti_Tag  = aHidd_BitMap_ClassPtr;
+	D(bug("[GDI] Displayable: %d, ModeID: 0x%08lX\n", displayable, modeid));
     } else if (friend && (stdpf == vHidd_StdPixFmt_Unknown)) {
         OOP_Object *gfxhidd;
 
         OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, (APTR)&gfxhidd);
 	if (gfxhidd == o) {
-	    tags[3].ti_Tag  = aHidd_BitMap_ClassPtr;
+	    tags[1].ti_Tag  = aHidd_BitMap_ClassPtr;
 	}
     }
-    D(if (tags[3].ti_Tag == aHidd_BitMap_ClassPtr) bug("[GDI] Creating GDI bitmap, ClassPtr is %p\n", tags[3].ti_Data);)
+    D(if (tags[1].ti_Tag == aHidd_BitMap_ClassPtr) bug("[GDI] Creating GDI bitmap, ClassPtr is %p\n", tags[1].ti_Data);)
 	    
     /* !!! IMPORTANT !!! */
     p.mID = msg->mID;
