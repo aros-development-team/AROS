@@ -165,14 +165,14 @@ void LoadPrefs(void)
 
 void ControlsToPrefs(struct DriveControls *dc, struct TDU_Prefs *pr)
 {
-	ULONG NoClick;
+	IPTR data;
 
 	D(bug("[Trackdisk.Prefs] ControlsToPrefs()\n"));
 
-	GetAttr(MUIA_Selected, dc->NoClickSwitch, (IPTR *)&NoClick);
-	pr->PubFlags = NoClick ? TDPF_NOCLICK : 0 ;
-	GetAttr(MUIA_Numeric_Value, dc->RetriesSlider, (IPTR *)&pr->RetryCnt);
-
+	GetAttr(MUIA_Selected, dc->NoClickSwitch, &data);
+	pr->PubFlags = data ? TDPF_NOCLICK : 0 ;
+	GetAttr(MUIA_Numeric_Value, dc->RetriesSlider, &data);
+	pr->RetryCnt = data;
 }
 
 void SavePrefs(void)

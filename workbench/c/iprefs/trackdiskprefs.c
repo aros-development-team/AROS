@@ -5,6 +5,7 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 
+#include "global.h"
 #include "trackdiskprefs.h"
 
 struct td_UnitPrefs TDPrefs[TD_NUMUNITS];
@@ -13,29 +14,30 @@ struct IORequest TDIO;
 void LoadPrefs(void)
 {
 	BPTR cf;
-	struct TagItem PrefsBuf;
+	ULONG PrefsBuf[2];
 	ULONG Unit;
 
 	cf = Open(TRACKDISK_PREFS_NAME, MODE_OLDFILE);
 	if (cf) {
 		Unit = 0;
 		while (FRead(cf, &PrefsBuf, sizeof(PrefsBuf), 1)) {
-			if (PrefsBuf.ti_Tag == TDPR_UnitNum)
-				Unit = PrefsBuf.ti_Data;
+
+			if (PrefsBuf[0] == TDPR_UnitNum)
+				Unit = PrefsBuf[1];
 			else {
 				if (Unit < TD_NUMUNITS) {
-					switch (PrefsBuf.ti_Tag)
+					switch (PrefsBuf[0])
 					{
 					case TDPR_PubFlags:
-						TDPrefs[Unit].PubFlags = PrefsBuf.ti_Data;
+						TDPrefs[Unit].PubFlags = PrefsBuf[1];
 						break;
 					case TDPR_RetryCnt:
-						TDPrefs[Unit].RetryCnt = PrefsBuf.ti_Data;
+						TDPrefs[Unit].RetryCnt = PrefsBuf[1];
 						break;
 					}
 				}
 			}
-			if (PrefsBuf.ti_Tag == TAG_DONE)
+			if (PrefsBuf[0] == TAG_DONE)
 				break;
 		}
 		Close(cf);

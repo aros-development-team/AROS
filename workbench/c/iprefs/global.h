@@ -163,6 +163,14 @@
 
 /*********************************************************************************************/
 
+#ifdef BIGENDIAN_PREFS
+#define GET_LONG AROS_BE2LONG
+#define GET_WORD AROS_BE2WORD
+#else
+#define GET_LONG(x) x
+#define GET_WORD(x) x
+#endif
+
 #define IPREFS_SEM_NAME     "« IPrefs »"
 #define DO_LOCALE_PATCHES   0
 
