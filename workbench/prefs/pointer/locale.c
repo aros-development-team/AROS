@@ -9,7 +9,7 @@
 #define CATCOMP_ARRAY
 #include "strings.h"
 
-#define CATALOG_NAME     "System/Prefs/Serial.catalog"
+#define CATALOG_NAME     "System/Prefs/Pointer.catalog"
 #define CATALOG_VERSION  0
 
 /*** Variables **************************************************************/
