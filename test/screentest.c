@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: gfxtest.c 32486 2010-01-28 09:26:14Z sonic $
+    $Id: screentest.c 32486 2010-01-28 09:26:14Z sonic $
 
     Screen opening test
 */
@@ -16,6 +16,12 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
+
+#include <stdarg.h>
+
+#ifndef IPTR
+#define IPTR ULONG
+#endif
 
 struct myargs
 {
@@ -152,11 +158,12 @@ struct Screen * openscreen(ULONG width, ULONG height, ULONG mode)
    
   printf("Opening screen, size: %ux%u\n", width, height);
   screen = OpenScreenTags(NULL,
-                          SA_Width, 	width,
-                          SA_Height, 	height,
-			  SA_Depth,	24,
-			  SA_DisplayID,	mode,
-			  SA_Title,	"Screen opening and movement test",
+                          SA_Width, 	 width,
+                          SA_Height, 	 height,
+                          SA_AutoScroll, TRUE,
+			  SA_Depth,	 24,
+			  SA_DisplayID,	 mode,
+			  SA_Title,	 "Screen opening and movement test",
                           TAG_END);
   return screen;
 }
@@ -180,10 +187,10 @@ ULONG handleevents(struct Window *win, struct Screen *screen, WORD x, WORD y)
 	    	terminated = TRUE;
 	    	break;
 	    case IDCMP_INTUITICKS:
-	        y1 = drawtext(win, x, y, "Screen position: (%u, %u)               ", screen->LeftEdge, screen->TopEdge);
-		y1 = drawtext(win, x, y1, "ViewPort size: %ux%u               ", screen->ViewPort.DWidth, screen->ViewPort.DHeight);
-		y1 = drawtext(win, x, y1, "ViewPort position: (%u, %u)               ", screen->ViewPort.DxOffset, screen->ViewPort.DyOffset);
-		drawtext(win, x, y1, "RasInfo position: (%u, %u)               ", screen->ViewPort.RasInfo->RxOffset, screen->ViewPort.RasInfo->RyOffset);
+	        y1 = drawtext(win, x, y, "Screen position: (%d, %d)               ", screen->LeftEdge, screen->TopEdge);
+		y1 = drawtext(win, x, y1, "ViewPort size: %dx%d               ", screen->ViewPort.DWidth, screen->ViewPort.DHeight);
+		y1 = drawtext(win, x, y1, "ViewPort position: (%d, %d)               ", screen->ViewPort.DxOffset, screen->ViewPort.DyOffset);
+		drawtext(win, x, y1, "RasInfo position: (%d, %d)               ", screen->ViewPort.RasInfo->RxOffset, screen->ViewPort.RasInfo->RyOffset);
 		break;
 		    					
 	    } /* switch (imsg->Class) */
