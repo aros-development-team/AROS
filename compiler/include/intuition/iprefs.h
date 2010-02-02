@@ -15,10 +15,11 @@
 
 /* These values may change in order to provide 
    binary compatibility with AmigaOS on m68k */
-#define IPREFS_TYPE_ICONTROL    0
-#define IPREFS_TYPE_SCREENMODE  1
-#define IPREFS_TYPE_POINTER     2
-#define IPREFS_TYPE_OLD_PALETTE 3
+#define IPREFS_TYPE_ICONTROL      0
+#define IPREFS_TYPE_SCREENMODE    1
+#define IPREFS_TYPE_POINTER       2
+#define IPREFS_TYPE_OLD_PALETTE   3
+#define IPREFS_TYPE_POINTER_ALPHA 4
 
 struct IScreenModePrefs
 {

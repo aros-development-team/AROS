@@ -48,10 +48,11 @@ struct RGBTable
 
 struct NewPointerPrefs
 {
-    UBYTE npp_Which;	   /* Which Intuition pointer to replace	    */
-    UBYTE npp_WhichInFile; /* Which pointer to take if the file is IFF PREF */
-    UBYTE npp_X, npp_Y;    /* Hotspot coordinates		            */
-    char  npp_File[0];	   /* NULL-terminated file name follows             */
+    UWORD npp_Which;	   /* Which Intuition pointer to replace	       */
+    UWORD npp_AlphaValue;  /* Alpha channel value if not specified in the file */
+    ULONG npp_WhichInFile; /* Which pointer to take from the file	       */
+    UBYTE npp_X, npp_Y;    /* Hotspot coordinates		               */
+    char  npp_File[0];	   /* NULL-terminated file name follows                */
 };
 
 #endif /* PREFS_POINTER_H */
