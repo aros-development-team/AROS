@@ -630,7 +630,7 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     my_dc = GDICALL(CreateCompatibleDC, display);
     D(bug("[GDI] Memory device context: 0x%p\n", my_dc));
     if (my_dc) {
-        my_bitmap = GDICALL(CreateCompatibleBitmap, display, width, height);
+        my_bitmap = GDICALL(CreateCompatibleBitmap, display, (width + 15) & ~15, height);
         D(bug("[GDI] Memory bitmap: 0x%p\n", my_bitmap));
         if (my_bitmap)
             orig_bitmap = GDICALL(SelectObject, my_dc, my_bitmap);
