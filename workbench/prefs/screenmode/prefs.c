@@ -12,6 +12,7 @@
 #include <graphics/modeid.h>
 
 #include <proto/dos.h>
+#include <proto/exec.h>
 #include <proto/iffparse.h>
 #include <proto/intuition.h>
 
@@ -20,6 +21,14 @@
 
 #include "prefs.h"
 #include "misc.h"
+
+#ifdef BIGENDIAN_PREFS
+#define GET_WORD AROS_BE2WORD
+#define GET_LONG AROS_BE2LONG
+#else
+#define GET_WORD(x) x
+#define GET_LONG(x) x
+#endif
 
 /*********************************************************************************************/
 
@@ -82,11 +91,11 @@ BOOL Prefs_ImportFH(BPTR fh)
                 }
                 else
                 {
-		    /* FIXME: in original prefs file all values are bigendian! */
-		    screenmodeprefs.smp_DisplayID = loadprefs.smp_DisplayID;
-		    screenmodeprefs.smp_Width     = loadprefs.smp_Width;
-		    screenmodeprefs.smp_Height    = loadprefs.smp_Height;
-		    screenmodeprefs.smp_Depth     = loadprefs.smp_Depth;
+		    CopyMemQuick(loadprefs.smp_Reserved, screenmodeprefs.smp_Reserved, sizeof(screenmodeprefs.smp_Reserved));
+		    screenmodeprefs.smp_DisplayID = GET_LONG(loadprefs.smp_DisplayID);
+		    screenmodeprefs.smp_Width     = GET_WORD(loadprefs.smp_Width);
+		    screenmodeprefs.smp_Height    = GET_WORD(loadprefs.smp_Height);
+		    screenmodeprefs.smp_Depth     = GET_WORD(loadprefs.smp_Depth);
 		    screenmodeprefs.smp_Control   = AROS_BE2WORD(loadprefs.smp_Control);
                 }
             }
@@ -124,11 +133,11 @@ BOOL Prefs_ExportFH(BPTR fh)
     BOOL                    success = TRUE;
     LONG                    error   = 0;
 
-    /* FIXME: in original prefs file all values are bigendian! */
-    saveprefs.smp_DisplayID = screenmodeprefs.smp_DisplayID;
-    saveprefs.smp_Width     = screenmodeprefs.smp_Width;
-    saveprefs.smp_Height    = screenmodeprefs.smp_Height;
-    saveprefs.smp_Depth     = screenmodeprefs.smp_Depth;
+    CopyMemQuick(screenmodeprefs.smp_Reserved, saveprefs.smp_Reserved, sizeof(screenmodeprefs.smp_Reserved));
+    saveprefs.smp_DisplayID = GET_LONG(screenmodeprefs.smp_DisplayID);
+    saveprefs.smp_Width     = GET_WORD(screenmodeprefs.smp_Width);
+    saveprefs.smp_Height    = GET_WORD(screenmodeprefs.smp_Height);
+    saveprefs.smp_Depth     = GET_WORD(screenmodeprefs.smp_Depth);
     saveprefs.smp_Control   = AROS_WORD2BE(screenmodeprefs.smp_Control);
 
     if ((handle = AllocIFF()))

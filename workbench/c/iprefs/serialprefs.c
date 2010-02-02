@@ -63,13 +63,13 @@ void SerialPrefs_Handler(STRPTR filename)
 		    index = 0;
 
 	        D(bug("Setting new serial prefs.\n"));
-	        D(bug("Setting baudrate to %d\n",serialprefs->sp_BaudRate));
+	        D(bug("Setting baudrate to %d\n", GET_LONG(serialprefs->sp_BaudRate)));
 	        D(bug("Setting receive buffer size to %d\n",buffersizes[index]));
 	        D(bug("Setting read bit len to %d\n",8-serialprefs->sp_BitsPerChar));
 	        D(bug("Setting write bit len to %d\n",8-serialprefs->sp_BitsPerChar));
 	        D(bug("Setting stop bits to %d\n",1+serialprefs->sp_StopBits));
 
-	        prefs.BaudRate   =  serialprefs->sp_BaudRate;
+	        prefs.BaudRate   =  GET_LONG(serialprefs->sp_BaudRate);
 	        prefs.SerRWBits  = (serialprefs->sp_BitsPerChar << 4) | serialprefs->sp_BitsPerChar;
 	        prefs.SerStopBuf = (serialprefs->sp_StopBits    << 4) | index;
 	        prefs.SerParShk  = (serialprefs->sp_Parity      << 4) | serialprefs->sp_InputHandshake;
