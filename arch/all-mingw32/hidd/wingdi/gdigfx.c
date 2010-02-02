@@ -419,7 +419,7 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
     me = FindTask(NULL);
     gfx_int = KrnAddIRQHandler(XSD(cl)->ctl->IrqNum, GfxIntHandler, data, me);
     if (gfx_int) {
-	IPTR bmdata;
+	IPTR bmdata = 0;
 
 	Forbid();
 
@@ -432,7 +432,8 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	/* It's quite not easy to call AROS API from within window service thread,
 	   so we pass private data of our bitmap class to it directly.
 	   Don't use such tricks in normal AROS code, this isn't really good. */
-	OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_Data, &bmdata);
+	if (msg->bitMap)
+	    OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_Data, &bmdata);
 	data->bitmap = msg->bitMap;
 
     	/* Hosted system has no real blitter, however we have host-side window service thread that does some work asynchronously,
