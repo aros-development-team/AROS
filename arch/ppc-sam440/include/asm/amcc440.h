@@ -3,6 +3,8 @@
 
 #include <inttypes.h>
 
+#define CLID_I2C_AMCC440	"hidd.i2c.amcc440"
+
 typedef struct regs {
     uint32_t    gpr[32];
     uint32_t    srr0;
@@ -361,6 +363,19 @@ static inline void wrmsr(uint32_t msr) {
 #define INTR_EWU1       63      /* Ethernet 1 Wake-up Interrupt Status */
 
 /* UART registers */
+
+#define IIC0_XTCNTLSS		0xEF60070F
+#define IIC0_DIRECTCNTL	0xEF600710
+
+#define IIC1_XTCNTLSS		0xEF60080F
+#define IIC1_DIRECTCNTL	0xEF600810
+
+#define IIC_XTCNTLSS_SRST		0x01
+
+#define IIC_DIRECTCNTL_SDAC	0x08
+#define IIC_DIRECTCNTL_SCLC	0x04
+#define IIC_DIRECTCNTL_MSDA	0x02
+#define IIC_DIRECTCNTL_MSCL	0x01
 
 /* UART0 */
 #define UART0_RBR       0xEF600300
