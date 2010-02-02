@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Get an attribute from a bitmap.
@@ -15,6 +15,7 @@
 #include <exec/types.h>
 #include <graphics/gfx.h>
 #include <proto/graphics.h>
+#include <proto/oop.h>
 
 	AROS_LH2(IPTR, GetBitMapAttr,
 
@@ -67,7 +68,10 @@
 	    
 	case BMA_WIDTH:
 	  /* must return width in pixel! */
-            retval = (IPTR)(bitmap->BytesPerRow * 8);
+	    if (IS_HIDD_BM(bitmap))
+	        OOP_GetAttr(HIDD_BM_OBJ(bitmap), aHidd_BitMap_Width, &retval);
+	    else
+                retval = (IPTR)(bitmap->BytesPerRow * 8);
 	    break;
 	    
 	case BMA_DEPTH:
