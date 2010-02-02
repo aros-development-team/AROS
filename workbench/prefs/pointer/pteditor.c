@@ -31,10 +31,16 @@
 #include "pteditor.h"
 #include "prefs.h"
 
+static CONST_STRPTR type_entries[] = {"Normal", "Busy", NULL};
+
 /*** Instance Data **********************************************************/
 struct PTEditor_DATA
 {
-    Object *child;
+    Object *pted_previewImage;
+    Object *pted_typeCycle;
+    Object *pted_fileString;
+    Object *pted_spotButton;
+    Object *pted_alphaSlider;
 };
 
 STATIC VOID PTPrefs2Gadgets(struct PTEditor_DATA *data);
@@ -46,26 +52,56 @@ STATIC VOID Gadgets2PTPrefs(struct PTEditor_DATA *data);
 /*** Methods ****************************************************************/
 Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-    D(bug("[seredit class] SerEdit Class New\n"));
-
-    /*
-     * we create self first and then create the child,
-     * so we have self->data available already
-     */
+    Object *previewImage, *typeCycle, *fileString, *spotButton, *alphaSlider;
 
     self = (Object *) DoSuperNewTags
     (
         CLASS, self, NULL,
         MUIA_PrefsEditor_Name, _(MSG_WINTITLE),
-        MUIA_PrefsEditor_Path, (IPTR) "SYS/pointer.prefs",
-        MUIA_PrefsEditor_IconTool, (IPTR) "SYS:Prefs/Pointer",
+        MUIA_PrefsEditor_Path, (IPTR)"SYS/pointer.prefs",
+        MUIA_PrefsEditor_IconTool, (IPTR)"SYS:Prefs/Pointer",
 
+        Child, HGroup,
+            Child, (IPTR)(previewImage = (Object *)ImageObject,
+                GroupFrame,
+            End),
+            Child, ColGroup(2),
+                GroupFrame,
+                Child, (IPTR)Label2("Type"),
+                Child, (IPTR)(typeCycle = (Object *)CycleObject,
+                    MUIA_Cycle_Entries, type_entries,
+                End),
+                Child, (IPTR)Label2("Load"),
+                Child, (IPTR)PopaslObject,
+                    MUIA_Popasl_Type, ASL_FileRequest,
+                    ASLFO_MaxHeight, 100,
+                    MUIA_Popstring_String, (IPTR)(fileString = (Object *)StringObject,
+                        StringFrame,
+                    End),
+                    MUIA_Popstring_Button, (IPTR)PopButton(MUII_PopUp),
+                End,
+
+                Child, (IPTR)HVSpace,
+                Child, (IPTR)(spotButton = SimpleButton("Set Hotspot")),
+                Child, (IPTR)Label2("Alpha"),
+                Child, (IPTR)(alphaSlider = (Object *)SliderObject,
+                    MUIA_Numeric_Min, 0,
+                    MUIA_Numeric_Max, 255,
+                End),
+            End,
+        End,
         TAG_DONE
     );
 
     if (self)
     {
         SETUP_INST_DATA;
+
+        data->pted_previewImage = previewImage;
+        data->pted_typeCycle    = typeCycle;
+        data->pted_fileString   = fileString;
+        data->pted_spotButton   = spotButton;
+        data->pted_alphaSlider  = alphaSlider;
 #if 0
         DoMethod
         (
