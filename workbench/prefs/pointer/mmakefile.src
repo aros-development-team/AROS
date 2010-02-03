@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := main locale pteditor prefs args misc
+FILES := main locale ppreview pteditor prefs args misc
 
 #vars misc prefs
 
