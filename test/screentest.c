@@ -27,14 +27,17 @@ struct myargs
 {
     LONG *width;
     LONG *height;
+    LONG *depth;
     STRPTR mode;
+    LONG *scroll;
+    LONG *drag;
+    LONG *likewb;
 };
 
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
 struct DosLibrary *DOSBase;
 
-struct Screen * openscreen(ULONG width, ULONG height, ULONG mode);
 struct Window *openwindow(struct Screen *screen, const char *title, LONG x, LONG y, LONG w, LONG h);
 
 ULONG handleevents(struct Window *win, struct Screen *screen, WORD x, WORD y);
@@ -42,7 +45,7 @@ ULONG handleevents(struct Window *win, struct Screen *screen, WORD x, WORD y);
 #define W1_LEFT		100
 #define W1_TOP		100
 #define W1_WIDTH	350
-#define W1_HEIGHT	200
+#define W1_HEIGHT	220
 
 WORD drawtext(struct Window *win, WORD x, WORD y, char *fmt, ...)
 {
@@ -68,11 +71,8 @@ int __nocommandline = 1;
 
 int main(int argc, char **argv)
 {
-    struct myargs args = {NULL, NULL, NULL};
+    struct myargs args = {NULL};
     struct RDArgs *rda;
-    ULONG width = 640;
-    ULONG height = 480;
-    ULONG mode = INVALID_ID;
 
     if ((IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 0))) 
     {
@@ -80,35 +80,75 @@ int main(int argc, char **argv)
         {
 	    if ((DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",0)))
 	    {
-		rda = ReadArgs("WIDTH/N,HEIGHT/N,MODEID", (IPTR *)&args, NULL);
+		rda = ReadArgs("WIDTH/N,HEIGHT/N,DEPTH/K/N,MODEID/K,SCROLL/K/N,DRAG/K/N,LIKEWB/K/N", (IPTR *)&args, NULL);
 		if (rda) {
 		    struct Screen *screen;
 		    struct Window *w1;
+		    ULONG oserr = 0;
+		    struct TagItem tags[] = {
+			{SA_Width,     640			         },
+			{SA_Height,    480			         },
+			{SA_Depth,     4			         },
+			{TAG_IGNORE,   0			         },
+			{TAG_IGNORE,   0			         },
+			{TAG_IGNORE,   0			         },
+			{TAG_IGNORE,   0			         },
+			{SA_Title,     "Screen opening and movement test"},
+			{SA_ErrorCode, &oserr			         },
+			{TAG_DONE,     0				 }
+		    };
 
 		    if (args.width)
-		        width = *args.width;
+		        tags[0].ti_Data = *args.width;
 		    if (args.height)
-		        height = *args.height;
-		    if (args.mode)
-		        mode = strtoul(args.mode, NULL, 16);
-                    if ((screen = openscreen(width, height, mode))) {
+		        tags[1].ti_Data = *args.height;
+		    if (args.depth)
+		        tags[2].ti_Data = *args.depth;
+		    printf("Opening screen, size: %lux%lu, depth: %lu\n", tags[0].ti_Data, tags[1].ti_Data, tags[3].ti_Data);
+		    if (args.mode) {
+		        tags[3].ti_Tag  = SA_DisplayID;
+			tags[3].ti_Data = strtoul(args.mode, NULL, 16);
+			printf("ModeID: 0x%08lX\n", tags[3].ti_Data);
+		    }
+		    if (args.scroll) {
+			tags[4].ti_Tag = SA_AutoScroll;
+			tags[4].ti_Data = *args.scroll;
+			printf("SA_Autoscroll: %ld\n", tags[4].ti_Data);
+		    }
+		    if (args.drag) {
+			tags[5].ti_Tag = SA_Draggable;
+			tags[5].ti_Data = *args.drag;
+			printf("SA_Draggable: %ld\n", tags[5].ti_Data);
+		    }
+		    if (args.likewb) {
+			tags[6].ti_Tag = SA_LikeWorkbench;
+			tags[6].ti_Data = *args.likewb;
+			printf("SA_LikeWorkbench: %ld\n", tags[6].ti_Data);
+		    }
+
+		    screen = OpenScreenTagList(NULL, tags);
+                    if (screen) {
 			w1 = openwindow(screen, "Screen data",  W1_LEFT, W1_TOP, W1_WIDTH, W1_HEIGHT);
 			if (w1) {
 			    WORD x = w1->BorderLeft;
 		            WORD y = w1->BorderTop;
 			    struct BitMap *bitmap = screen->RastPort.BitMap;
 
-			    y = drawtext(w1, x, y, "Requested size: %ux%u", width, height);
-			    y = drawtext(w1, x, y, "Requested ModeID: 0x%08lX", mode);
+			    y = drawtext(w1, x, y, "Requested size: %lux%lu", tags[0].ti_Data, tags[1].ti_Data);
+			    y = drawtext(w1, x, y, "Requested depth: %lu", tags[2].ti_Data);
+			    if (args.mode)
+			        y = drawtext(w1, x, y, "Requested ModeID: 0x%08lX", tags[3].ti_Data);
 			    y = drawtext(w1, x, y, "Actual size: %ux%u", screen->Width, screen->Height);
-			    y = drawtext(w1, x, y, "Actual ModeID: 0x%08lX", screen->ViewPort.ColorMap->VPModeID);
+			    y = drawtext(w1, x, y, "Actual ModeID: 0x%08X", screen->ViewPort.ColorMap->VPModeID);
+			    y = drawtext(w1, x, y, "Flags: 0x%04lX", screen->Flags);
 			    y = drawtext(w1, x, y, "BitMap size: %ux%u", GetBitMapAttr(bitmap, BMA_WIDTH), GetBitMapAttr(bitmap, BMA_HEIGHT));
+			    y = drawtext(w1, x, y, "BitMap depth: %u", GetBitMapAttr(bitmap, BMA_DEPTH));
 			    handleevents(w1, screen, x, y);
 			    CloseWindow(w1);
 			}
 		        CloseScreen(screen);
 		    } else
-		        printf("Failed to open screen\n");
+		        printf("Failed to open screen, error: %d\n", oserr);
 		    FreeArgs(rda);
 	        } else
 		    printf("Error parsing arguments\n");
@@ -149,23 +189,6 @@ struct Window *openwindow(struct Screen *screen, const char *title, LONG x, LONG
   printf("Window opened\n");
   
   return window;
-}
-
-
-struct Screen * openscreen(ULONG width, ULONG height, ULONG mode)
-{
-  struct Screen * screen;
-   
-  printf("Opening screen, size: %ux%u\n", width, height);
-  screen = OpenScreenTags(NULL,
-                          SA_Width, 	 width,
-                          SA_Height, 	 height,
-                          SA_AutoScroll, TRUE,
-			  SA_Depth,	 24,
-			  SA_DisplayID,	 mode,
-			  SA_Title,	 "Screen opening and movement test",
-                          TAG_END);
-  return screen;
 }
 
 ULONG handleevents(struct Window *win, struct Screen *screen, WORD x, WORD y)
