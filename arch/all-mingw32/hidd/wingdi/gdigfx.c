@@ -204,8 +204,8 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	{ aHidd_Sync_UpperMargin, 0		    	},
 	{ aHidd_Sync_LowerMargin, 0		    	},
 	{ aHidd_Sync_VSyncLength, 0		    	},
-	{ aHidd_Sync_HMin	, 100			}, /* In fact these can be even smaller, and */
-	{ aHidd_Sync_VMin	, 100			}, /* maximum can be even bigger...	     */
+	{ aHidd_Sync_HMin	, 112			}, /* In fact these can be even smaller, and */
+	{ aHidd_Sync_VMin	, 112			}, /* maximum can be even bigger...	     */
 	{ aHidd_Sync_HMax	, 16384			},
 	{ aHidd_Sync_VMax	, 16384			},
 
