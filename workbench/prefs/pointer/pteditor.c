@@ -28,6 +28,7 @@
 #include <aros/debug.h>
 
 #include "locale.h"
+#include "ppreview.h"
 #include "pteditor.h"
 #include "prefs.h"
 
@@ -62,7 +63,7 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_PrefsEditor_IconTool, (IPTR)"SYS:Prefs/Pointer",
 
         Child, HGroup,
-            Child, (IPTR)(previewImage = (Object *)ImageObject,
+            Child, (IPTR)(previewImage = (Object *)PPreviewObject,
                 GroupFrame,
             End),
             Child, ColGroup(2),
