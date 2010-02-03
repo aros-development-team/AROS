@@ -237,7 +237,7 @@ void forward_to_uae(struct TagItem *argsTagList, struct IconList_Entry *ent)
 	    else {
 		/* argl. someone closed the port inbetween !? */
 		D(bug("[Wanderer] %s: ERROR: someone closed the port inbetween !? \n", __PRETTY_FUNCTION__));
-		DeletePort(pool);
+		DeletePool(pool);
 	    }
 	    Permit();
 	}
