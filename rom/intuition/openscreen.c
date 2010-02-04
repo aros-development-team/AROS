@@ -122,6 +122,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     //ULONG                  lock;
     WORD                     numcolors;
     BOOL                     workbench = FALSE;
+    BOOL		     draggable = TRUE;
     struct TagItem   	     modetags[] =
     {
         { BIDTAG_Depth        	, 0UL   },
@@ -532,6 +533,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
             case SA_Draggable:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Draggable 0x%lx\n",tag->ti_Data));
+		draggable = tag->ti_Data;
                 break;
 
             case SA_Exclusive:
@@ -1156,19 +1158,18 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         }
         else if (sysfont == 1)
         {
-    	#if 1
+#if 1
             /* Use safe OpenFont here - Piru
              */
             screen->DInfo.dri.dri_Font = SafeReopenFont(IntuitionBase, &GetPrivIBase(IntuitionBase)->ScreenFont);
-    	#else
-
-    	    #warning: Really hacky way of re-opening ScreenFont
+#else
+#warning: Really hacky way of re-opening ScreenFont
 
             Forbid();
             screen->DInfo.dri.dri_Font = GetPrivIBase(IntuitionBase)->ScreenFont;
             screen->DInfo.dri.dri_Font->tf_Accessors++;
             Permit();
-    	#endif
+#endif
 
 	    screen->SpecialFlags |= SF_SysFont;
 
@@ -1563,21 +1564,19 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
      if (ok)
      {
-
-        {
-    	    #define SDEPTH_HEIGHT (screen->Screen.BarHeight + 1)
-    	    #ifdef IA_Screen
-    	    #undef IA_Screen
-    	    #endif
-    	    #define IA_Screen   (IA_Dummy + 0x1f) /* OS v44 includes!*/
+#define SDEPTH_HEIGHT (screen->Screen.BarHeight + 1)
+#ifdef IA_Screen
+#undef IA_Screen
+#endif
+#define IA_Screen   (IA_Dummy + 0x1f) /* OS v44 includes!*/
 
             struct TagItem sdepth_tags[] =
             {
                 {GA_Image	, 0     	},
                 {GA_Top 	, 0             },
-	    #if SQUARE_WIN_GADGETS
+#if SQUARE_WIN_GADGETS
 		{GA_Width	, SDEPTH_HEIGHT },
-	    #endif
+#endif
                 {GA_Height	, SDEPTH_HEIGHT },
                 {GA_SysGadget   , TRUE          },
                 {GA_SysGType    , GTYP_SDEPTH   },
@@ -1636,15 +1635,14 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
                 if (im) DisposeObject(im);
             }
 
-        }
 
-#if 1
+#if DEBUG_OpenScreen
         {
             int i;
 
             for (i = 0;i <= screen->DInfo.dri.dri_NumPens; i++)
             {
-                DEBUG_OPENSCREEN(dprintf("OpenScreen: dri_Pen[%ld] = %ld\n",i,screen->DInfo.dri.dri_Pens[i]));
+                dprintf("OpenScreen: dri_Pen[%ld] = %ld\n",i,screen->DInfo.dri.dri_Pens[i]));
             }
         }
 #endif
@@ -1678,6 +1676,9 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
             if (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_DISAPPEARINGTITLEBAR) screen->SpecialFlags |= SF_AppearingBar;
         }
 #endif
+	if (draggable)
+	    screen->SpecialFlags |= SF_Draggable;
+	DEBUG_OPENSCREEN(bug("[OpenScreen] Special flags: 0x%04X\n", screen->SpecialFlags));
 
         //jDc: ALL screens MUST have BarLayer!
         CreateScreenBar(&screen->Screen, IntuitionBase);

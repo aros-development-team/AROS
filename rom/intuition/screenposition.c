@@ -1,8 +1,10 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
+
+#include <proto/graphics.h>
 
 #include "intuition_intern.h"
 
@@ -70,17 +72,27 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write intuition/ScreenPosition()
-    //    aros_print_not_implemented ("ScreenPosition");
+    /* Shup up the function because there's no actual scrolling yet. Adjusting offsets
+       without actual scrolling screws up intuition's input. */
+    return;
 
-    /* shut up the compiler */
-    IntuitionBase = IntuitionBase;
-    screen = screen;
-    flags = flags;
-    x1 = x1;
-    x2 = x2;
-    y1 = y1;
-    y2 = y2;
+    if ((flags & SPOS_FORCEDRAG) || (GetPrivScreen(screen)->SpecialFlags & SF_Draggable)) {
+    
+        if (flags & SPOS_ABSOLUTE) {
+	    D(bug("[ScreenPosition] Absolute position: (%d, %d)\n", x1, y1));
+	    screen->LeftEdge = x1;
+	    screen->TopEdge  = y1;
+	} else {
+	    D(bug("[ScreenPosition] Relative position: (%d, %d)\n", x1, y1));
+	    screen->LeftEdge += x1;
+	    screen->TopEdge  += y1;
+	}
+	D(bug("[ScreenPosition] New position: (%d, %d)\n",screen->LeftEdge , screen->TopEdge));
+
+	screen->ViewPort.DxOffset = screen->LeftEdge;
+	screen->ViewPort.DyOffset = screen->TopEdge;
+	ScrollVPort(&screen->ViewPort);
+    }
 
     AROS_LIBFUNC_EXIT
 } /* ScreenPosition */
