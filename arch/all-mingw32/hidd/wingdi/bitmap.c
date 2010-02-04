@@ -527,9 +527,6 @@ VOID GDIBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    case aoHidd_GDIBitMap_Window:
 	        *msg->storage = (IPTR)data->window;
 		break;
-	    case aoHidd_GDIBitMap_Data:
-		*msg->storage = (IPTR)data;
-		break;
 	    default:
 	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;

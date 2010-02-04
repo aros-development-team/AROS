@@ -15,7 +15,6 @@ enum
     aoHidd_GDIBitMap_DeviceContext, /* ..G - bitmap's device context	      */
     aoHidd_GDIBitMap_Window,	    /* .SG - a window the bitmap displayed in */
     aoHidd_GDIBitMap_SysDisplay,    /* I.. - a display to be compatible with  */
-    aoHidd_GDIBitMap_Data,	    /* ..G - instance data of the object      */
 
     num_Hidd_GDIBitMap_Attrs
 };
@@ -23,7 +22,6 @@ enum
 #define aHidd_GDIBitMap_DeviceContext	(HiddGDIBitMapAB + aoHidd_GDIBitMap_DeviceContext)
 #define aHidd_GDIBitMap_Window		(HiddGDIBitMapAB + aoHidd_GDIBitMap_Window)
 #define aHidd_GDIBitMap_SysDisplay	(HiddGDIBitMapAB + aoHidd_GDIBitMap_SysDisplay)
-#define aHidd_GDIBitMap_Data		(HiddGDIBitMapAB + aoHidd_GDIBitMap_Data)
 
 #define IS_BM_ATTR(attr, idx) 	    ( ( (idx) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 #define IS_GDIBM_ATTR(attr, idx)    ( ( (idx) = (attr) - HiddGDIBitMapAB) < num_Hidd_GDIBitMap_Attrs)
