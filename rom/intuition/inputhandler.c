@@ -462,6 +462,1234 @@ struct Window *GetToolBoxWindow(struct InputEvent *ie, struct IntuitionBase *Int
 
 /****************************************************************************************/
 
+static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *iihdata, struct Window *w,
+				       struct Gadget *gadget, struct GadgetInfo *gi,
+				       ULONG stitlebarhit, BOOL new_active_window, BOOL IsToolbox,
+				       struct InputEvent *orig_ie, BOOL *keep_event, BOOL *reuse_event,
+#if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
+				       BOOL *call_setpointerpos,
+#endif
+				       struct IntuitionBase *IntuitionBase)
+{
+    struct Requester *req = w ? w->FirstRequest : NULL;
+
+    switch (ie->ie_Code) {
+    case SELECTDOWN:
+    {
+	    BOOL new_gadget = FALSE;
+	    BOOL sizeverify = FALSE;
+
+	    iihdata->ActQualifier |= IEQUALIFIER_LEFTBUTTON;
+
+#ifdef SKINS
+	    iihdata->TitlebarAppearTime = 0;
+#endif
+	    if (MENUS_ACTIVE)
+	    {
+		FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+		*keep_event = FALSE;
+		break;
+	    }
+
+#ifdef SKINS
+	    if (!gadget && w)
+	    {
+		struct Gadget * draggadget = 0;
+
+		if ((!(w->FirstRequest)) && (w->Flags & WFLG_DRAGBAR) && MatchHotkey(ie,IA_ACTIVEWINDOWMOVE,IntuitionBase))
+		{
+		    if (w->MouseX < IW(w)->sizeimage_width || w->MouseX > w->Width - IW(w)->sizeimage_width - 1 || w->MouseY < ((IW(w)->sizeimage_height > w->BorderTop) ? IW(w)->sizeimage_height : w->BorderTop) || w->MouseY > w->Height - IW(w)->sizeimage_height - 1)
+		    {
+			for (draggadget = w->FirstGadget; draggadget; draggadget = draggadget->NextGadget)
+			{
+			    if ((draggadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDRAGGING)
+			    {
+				gadget = draggadget;
+				new_gadget = TRUE;
+				break;
+			    }
+			}
+		    }
+		}
+
+		if ((!(w->FirstRequest)) && (w->Flags & WFLG_SIZEGADGET) && MatchHotkey(ie,IA_ACTIVEWINDOWSIZE,IntuitionBase))
+		{
+		    if (w->MouseX < IW(w)->sizeimage_width || w->MouseX > w->Width - IW(w)->sizeimage_width - 1 || w->MouseY < ((IW(w)->sizeimage_height > w->BorderTop) ? IW(w)->sizeimage_height : w->BorderTop) || w->MouseY > w->Height - IW(w)->sizeimage_height - 1)
+		    {
+			for (draggadget = w->FirstGadget; draggadget; draggadget = draggadget->NextGadget)
+			{
+			    if ((draggadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SIZING)
+			    {
+				gadget = draggadget;
+				new_gadget = TRUE;
+				break;
+			    }
+			}
+		    }
+		}
+	    }
+#endif
+
+	    if (!gadget)
+	    {
+		/* use the *frontmost* screen rather than active one when searching
+		 for sdepth gadget! */
+		gadget = FindGadget (IntuitionBase->FirstScreen,
+			     stitlebarhit ? 0 : w, stitlebarhit ? 0 : req,
+			     IntuitionBase->ActiveScreen ? IntuitionBase->ActiveScreen->MouseX : 0,
+			     IntuitionBase->ActiveScreen ? IntuitionBase->ActiveScreen->MouseY : 0,
+			     gi, FALSE, IntuitionBase);
+
+		D(bug("Click on gadget %p\n", gadget));
+		new_gadget = TRUE;
+
+	    } /* if (!gadget) */
+
+	    if (!IsToolbox) {
+	        if (!gadget && stitlebarhit)
+	        {
+		    struct Window *ww = 0;
+		
+		    if ((ww = FindDesktopWindow(IntuitionBase->FirstScreen,IntuitionBase)))
+		    {
+		        ActivateWindow(ww);
+		        w = ww;
+		    }
+	        }
+
+	        if (!stitlebarhit && !new_active_window && DoubleClick(GetPrivIBase(IntuitionBase)->LastClickSecs,GetPrivIBase(IntuitionBase)->LastClickMicro,
+								        ie->ie_TimeStamp.tv_secs,ie->ie_TimeStamp.tv_micro))
+	        {
+		    if (GetPrivIBase(IntuitionBase)->DoubleClickButton != SELECTDOWN)
+		    {
+		        GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
+		        GetPrivIBase(IntuitionBase)->DoubleClickButton = SELECTDOWN;
+		    }
+		    else
+		    {
+		        GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
+		    }
+	        }
+	        else
+	        {
+		    GetPrivIBase(IntuitionBase)->DoubleClickButton = SELECTDOWN;
+		    GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
+	        }
+
+	        /* update last click time for doubleclicktofront */
+	        GetPrivIBase(IntuitionBase)->LastClickSecs = ie->ie_TimeStamp.tv_secs;
+	        GetPrivIBase(IntuitionBase)->LastClickMicro = ie->ie_TimeStamp.tv_micro;
+
+#ifdef SKINS
+	        if (!stitlebarhit)
+	        {
+		    ULONG result;
+		
+		    if (!(gadget && ((gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDEPTH)))
+			if ((result = RunHotkeys(ie,IntuitionBase)))
+			{
+			    //gadget = NULL;
+			    if (result == RUNHOTREUSE)
+			    {
+				*reuse_event = TRUE;
+			    }
+			    else
+			    {
+				*keep_event = FALSE;
+			    }
+			}
+	        }
+#endif
+	    }
+	    if (gadget && new_gadget)
+	    {
+		if (w && (w->IDCMPFlags & IDCMP_SIZEVERIFY) &&
+		    (gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SIZING /*||
+					 (gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WZOOM*/)
+		{
+		    ih_fire_intuimessage(w,
+					 IDCMP_SIZEVERIFY,
+					 0,
+					 gadget,
+					 IntuitionBase);
+		    gadget = NULL;
+		    sizeverify = TRUE;
+		}
+		else
+		{
+		    BOOL is_draggad, is_sizegad;
+		    UWORD gsystype;
+
+		    /* Whenever the active gadget changes the gi must be updated
+		       because it is cached in iidata->GadgetInfo!!!! Don't
+		       forget to do this if somewhere else the active
+		       gadget is changed, for example in ActivateGadget!!! */
+
+		    PrepareGadgetInfo(gi, IntuitionBase->ActiveScreen, w, req);
+		    SetGadgetInfoGadget(gi, gadget, IntuitionBase);
+		    
+		    gsystype = gadget->GadgetType & GTYP_SYSTYPEMASK;
+		    is_draggad = ((gsystype == GTYP_WDRAGGING)
+#ifdef __MORPHOS__
+				  || (gsystype == GTYP_WDRAGGING2)
+#endif
+				 );
+		    is_sizegad = (gsystype == GTYP_SIZING);
+
+		    /* jDc: intui68k sends IDCMPs for GACT_IMMEDIATE drag&sizegads! */
+		    if (gadget->Activation & GACT_IMMEDIATE)
+		    {
+			ih_fire_intuimessage(w,
+					     IDCMP_GADGETDOWN,
+					     0,
+					     gadget,
+					     IntuitionBase);
+		    }
+
+		    if (is_draggad || is_sizegad)
+		    {
+			if (IS_BOOPSI_GADGET(gadget))
+			{
+			    DoGPInput(gi,
+				      gadget,
+				      ie,
+				      GM_GOACTIVE,
+				      reuse_event,
+				      IntuitionBase);
+
+			    /* Ignoring retval of dispatcher above is what
+			       AmigaOS does too for boopsi drag/resize
+			       gadgets */
+
+			}
+
+			/* From now on the master drag/size gadget takes over */
+			if ((w->MoreFlags & WMFLG_IAMMUI) && (w->Flags & WFLG_BORDERLESS))
+			    iihdata->ActiveSysGadget = is_draggad ? gadget : 0;
+			else
+			    iihdata->ActiveSysGadget = gadget;
+			gadget = is_draggad ? iihdata->MasterDragGadget : iihdata->MasterSizeGadget;
+		    }
+		}
+	    }
+
+	    if (gadget)
+	    {
+
+		switch (gadget->GadgetType & GTYP_GTYPEMASK)
+		{
+		case GTYP_BOOLGADGET:
+		    /* Only set the GFLG_SELECTED flag for RELVERIFY and
+		     * TOGGLESELECT gadget. It's for the user to do it if
+		     * he wants for other GADGIMMEDIATE ones.
+		     * Only RELVERIFY gadgets stay active.
+		     */
+
+		    if (gadget->Activation & (GACT_TOGGLESELECT | GACT_RELVERIFY))
+		    {
+			gadget->Flags ^= GFLG_SELECTED;
+			RefreshBoolGadgetState(gadget, w, req, IntuitionBase);
+		    }
+
+		    if (gadget->Activation & GACT_RELVERIFY)
+		    {
+			gadget->Activation |= GACT_ACTIVEGADGET;
+			iihdata->MouseWasInsideBoolGadget = TRUE;
+		    }
+		    else
+		    {
+			gadget = NULL;
+		    }
+		    break;
+
+		case GTYP_PROPGADGET:
+		    HandlePropSelectDown(gadget,
+				 w,
+				 req,
+				 w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, gi->gi_Screen, gi->gi_Window, NULL),
+				 w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, gi->gi_Screen, gi->gi_Window, NULL),
+				 IntuitionBase);
+
+
+		    break;
+
+		case GTYP_STRGADGET:
+		    /* If the click was inside the active strgad,
+		    ** then let it update cursor pos,
+		    ** else deactivate stringadget and reuse event.
+		    */
+
+		    if (InsideGadget(gi->gi_Screen, gi->gi_Window,
+				     gi->gi_Requester, gadget,
+				     gi->gi_Screen->MouseX, gi->gi_Screen->MouseY))
+		    {
+			UWORD imsgcode;
+
+			HandleStrInput(gadget, gi, ie, &imsgcode,
+				   IntuitionBase);
+		    }
+		    else
+		    {
+			gadget->Flags &= ~GFLG_SELECTED;
+
+			RefreshStrGadget(gadget, w, req, IntuitionBase);
+			/* Gadget not active anymore */
+			gadget = NULL;
+			*reuse_event = TRUE;
+		    }
+		    break;
+
+		case GTYP_CUSTOMGADGET:
+		    gadget = DoGPInput(gi,
+			       gadget,
+			       ie,
+			       (new_gadget ? GM_GOACTIVE : GM_HANDLEINPUT),
+			       reuse_event,
+			       IntuitionBase);
+		    D(bug("new_gadget %d, goactive %p\n", new_gadget, gadget));
+
+		    if (gadget && new_gadget && (!(gadget->GadgetType & GTYP_SIZING)))
+		    {
+			/* For compatibility, send a GM_HANDLEINPUT too */
+			struct InputEvent newie;
+			BOOL 	    	  reuse_event;
+			
+			newie.ie_NextEvent  = NULL;
+			newie.ie_Class      = IECLASS_RAWMOUSE;
+			newie.ie_SubClass   = 0;
+			newie.ie_Code 	    = IECODE_NOBUTTON;
+			newie.ie_Qualifier  = ie->ie_Qualifier;
+			newie.ie_X  	    = 0;
+			newie.ie_Y  	    = 0;
+			newie.ie_TimeStamp.tv_secs  = IntuitionBase->Seconds;
+			newie.ie_TimeStamp.tv_micro = IntuitionBase->Micros;
+			
+			gadget = DoGPInput(gi,
+				   gadget,
+				   &newie,
+				   GM_HANDLEINPUT,
+				   &reuse_event,
+				   IntuitionBase);
+			D(bug("handleinput %p\n", gadget));
+		    }
+		    break;
+
+		case    0: //orig gadtools / some 1.3 gadgets
+		    if (IS_SYS_GADGET(gadget))
+		    {
+			HandleSysGadgetVerify(gi, gadget, IntuitionBase);
+		    }
+		    else
+		    {
+			if (gadget->Activation & GACT_RELVERIFY)
+			{
+			    gadget->Activation |= GACT_ACTIVEGADGET;
+			    iihdata->MouseWasInsideBoolGadget = TRUE;
+			    if (gadget->Flags & GFLG_GADGHIMAGE)
+			    {
+				gadget->Flags ^= GFLG_SELECTED;
+				RefreshBoolGadgetState(gadget, w, req, IntuitionBase);
+			    }
+			}
+			else
+			{
+			    /* jDc: this is what original intuition does, before crashing after a while ;)*/
+			    ih_fire_intuimessage(w,
+						 IDCMP_MOUSEBUTTONS,
+						 SELECTDOWN,
+						 w,
+						 IntuitionBase);
+			}
+		    }
+		    break;
+		} /* switch (GadgetType) */
+
+	    } /* if (a gadget is active) */
+	    else if (w && (!req || req->Flags & NOISYREQ) && !sizeverify && !stitlebarhit)
+	    {
+		ih_fire_intuimessage(w,
+				     IDCMP_MOUSEBUTTONS,
+				     SELECTDOWN,
+				     w,
+				     IntuitionBase);
+	    }
+
+    } /* case SELECTDOWN */
+    break;
+
+    case SELECTUP:
+	iihdata->ActQualifier &= ~IEQUALIFIER_LEFTBUTTON;
+
+#ifdef SKINS
+	iihdata->TitlebarAppearTime = 0;
+#endif
+	if (MENUS_ACTIVE)
+	{
+	    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+	    *keep_event = FALSE;
+	    break;
+	}
+
+	if (gadget)
+	{
+	    BOOL inside = InsideGadget(gi->gi_Screen, gi->gi_Window,
+				       gi->gi_Requester, gadget,
+				       gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
+
+	    /*int selected = (gadget->Flags & GFLG_SELECTED) != 0;*/
+
+	    switch (gadget->GadgetType & GTYP_GTYPEMASK)
+	    {
+	    case GTYP_BOOLGADGET:
+		/* Must be a RELVERIFY gadget */
+
+		if (!(gadget->Activation & GACT_TOGGLESELECT) && inside)
+		{
+		    gadget->Flags ^= GFLG_SELECTED;
+		    RefreshBoolGadgetState(gadget, w, req, IntuitionBase);
+		}
+
+		if (inside)
+		{
+		    if (IS_SYS_GADGET(gadget))
+		    {
+			HandleSysGadgetVerify(gi, gadget, IntuitionBase);
+		    }
+		    else
+		    {
+			if (req && gadget->Activation & GACT_ENDGADGET)
+			{
+			    EndRequest(req, w);
+
+			    req = w->FirstRequest;
+			}
+
+			ih_fire_intuimessage(w,
+					    IDCMP_GADGETUP,
+					    0,
+					    gadget,
+					    IntuitionBase);
+		    }
+		}
+		else
+		{
+		    /* RKRM say so */
+		    ih_fire_intuimessage(w,
+					 IDCMP_MOUSEBUTTONS,
+					 SELECTUP,
+					 w,
+					 IntuitionBase);
+		}
+
+		gadget->Activation &= ~GACT_ACTIVEGADGET;
+		gadget = NULL;
+		break;
+
+	    case GTYP_PROPGADGET:
+		HandlePropSelectUp(gadget, w, req, IntuitionBase);
+		if (gadget->Activation & GACT_RELVERIFY)
+		{
+		    ih_fire_intuimessage(w,
+					 IDCMP_GADGETUP,
+					 0,
+					 gadget,
+					 IntuitionBase);
+		}
+
+		gadget = NULL;
+		break;
+
+		/* Intuition string gadgets don't care about SELECTUP */
+
+	    case GTYP_CUSTOMGADGET:
+		gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, reuse_event, IntuitionBase);
+		break;
+
+	    case 0: //orig gadtools / some 1.3 gadgets
+		/* jDc: adding a gadget with gtyp field set to NULL crashes intui68k
+		** seems we don't need compatibility on this field ;) anyway we should
+		** handle the case of GTYP_CLOSE, etc, set by some "cod3r"
+		*/
+		gadget->Activation &= ~GACT_ACTIVEGADGET;
+		if (gadget->Activation & GACT_RELVERIFY)
+		{
+		    if (gadget->Flags & GFLG_GADGHIMAGE)
+		    {
+			if (inside)
+			{
+			    gadget->Flags ^= GFLG_SELECTED;
+			    RefreshBoolGadgetState(gadget, w, req, IntuitionBase);
+			}
+		    }
+
+		    if (inside)
+		    {
+			ih_fire_intuimessage(w,
+					     IDCMP_GADGETUP,
+					     0,
+					     gadget,
+					     IntuitionBase);
+		    }
+		} else {
+		    ih_fire_intuimessage(w,
+					 IDCMP_MOUSEBUTTONS,
+					 SELECTUP,
+					 w,
+					 IntuitionBase);
+		}
+		gadget = NULL;
+		break;
+
+	    } /* switch GadgetType */
+
+	} /* if (a gadget is currently active) */
+	else if (w && (!req || req->Flags & NOISYREQ))
+	{
+	    ih_fire_intuimessage(w,
+				 IDCMP_MOUSEBUTTONS,
+				 SELECTUP,
+				 w,
+				 IntuitionBase);
+	}
+
+	break; /* case SELECTUP */
+
+    case MENUDOWN:
+	iihdata->ActQualifier |= IEQUALIFIER_RBUTTON;
+
+#ifdef SKINS
+	iihdata->TitlebarAppearTime = 0;
+#endif
+	if (MENUS_ACTIVE)
+	{
+	    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+	    *keep_event = FALSE;
+	    break;
+	}
+
+	if (DoubleClick(GetPrivIBase(IntuitionBase)->LastClickSecs,GetPrivIBase(IntuitionBase)->LastClickMicro,
+		    ie->ie_TimeStamp.tv_secs,ie->ie_TimeStamp.tv_micro))
+	{
+	    if (GetPrivIBase(IntuitionBase)->DoubleClickButton != MENUDOWN)
+	    {
+		GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
+		GetPrivIBase(IntuitionBase)->DoubleClickButton = MENUDOWN;
+	    }
+	    else
+	    {
+		GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
+	    }
+	}
+	else
+	{
+	    GetPrivIBase(IntuitionBase)->DoubleClickButton = MENUDOWN;
+	    GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
+	}
+
+	/* update last click time for doubleclicktofront */
+	GetPrivIBase(IntuitionBase)->LastClickSecs = ie->ie_TimeStamp.tv_secs;
+	GetPrivIBase(IntuitionBase)->LastClickMicro = ie->ie_TimeStamp.tv_micro;
+
+#ifdef SKINS
+	{
+	    ULONG result;
+	    
+	    if ((result = RunHotkeys(ie,IntuitionBase)))
+	    {
+		if (result == RUNHOTREUSE)
+		{
+		    *reuse_event = TRUE;
+		}
+		else
+		{
+		    *keep_event = FALSE;
+		}
+		break;
+	    }
+	    w = IntuitionBase->ActiveWindow;
+	}
+#endif
+
+#ifdef SKINS
+	if ((!MENUS_ACTIVE) && (!gadget) && (!(iihdata->ActQualifier & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_MIDBUTTON))))
+	{
+	    struct Gadget   	*gad;
+	    struct GadgetInfo 	 ginf;
+	    ULONG   	    	 hit;
+	    struct Window   	*wind = FindActiveWindow(0,&hit,IntuitionBase);
+
+	    if (wind)
+	    {
+		gad = FindGadget (IntuitionBase->FirstScreen,
+				  hit ? 0 : wind,0,
+				  IntuitionBase->ActiveScreen->MouseX,
+				  IntuitionBase->ActiveScreen->MouseY,
+				  &ginf, TRUE, IntuitionBase);
+
+		if (gad && ((gad->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDEPTH))
+		{
+		    CreateSmallMenuTask(wind,SMALLMENU_TYPE_WINDOWDEPTH,IntuitionBase);
+		    *keep_event = FALSE;
+		    break;
+		}
+		
+		if (gad && ((gad->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SDEPTH))
+		{
+		    CreateSmallMenuTask(0,SMALLMENU_TYPE_SCREENDEPTH,IntuitionBase);
+		    *keep_event = FALSE;
+		    break;
+		}
+	    }
+	}
+#endif
+
+	if (w && !req && w->DMRequest && !(w->Flags & WFLG_RMBTRAP))
+	{
+	    if (!MENUS_ACTIVE &&
+		DoubleClick(GetPrivIBase(IntuitionBase)->DMStartSecs,
+			GetPrivIBase(IntuitionBase)->DMStartMicro,
+			ie->ie_TimeStamp.tv_secs,
+			ie->ie_TimeStamp.tv_micro))
+	    {
+		if (w->IDCMPFlags & IDCMP_REQVERIFY)
+		{
+		    ih_fire_intuimessage(w,
+					 IDCMP_REQVERIFY,
+					 MENUHOT,
+					 NULL,
+					 IntuitionBase);
+		}
+		else if (Request(w->DMRequest, w))
+		{
+		    req = w->DMRequest;
+		    
+		    ih_fire_intuimessage(w,
+					 IDCMP_REQSET,
+					 0,
+					 w,
+					 IntuitionBase);
+		}
+		*keep_event = FALSE;
+		break;
+	    }
+
+	    GetPrivIBase(IntuitionBase)->DMStartSecs  = ie->ie_TimeStamp.tv_secs;
+	    GetPrivIBase(IntuitionBase)->DMStartMicro = ie->ie_TimeStamp.tv_micro;
+	}
+
+	if (w && !gadget)
+	{
+	    if (!(w->Flags & WFLG_RMBTRAP) && !req)
+	    {
+		struct IntScreen *scr = GetPrivScreen(w->WScreen);
+		struct Window 	 *w1;
+		ULONG 	    	  lock;
+		BOOL	    	  mouseon = TRUE;
+
+		scr->MenuVerifyMsgCount = 0;
+
+		if (w->MouseX < 0 || w->MouseY < 0) mouseon = FALSE;
+		if (w->MouseX > w->Width || w->MouseY > w->Height) mouseon = FALSE;
+
+		if (w->IDCMPFlags & IDCMP_MENUVERIFY && (!(IW(w)->specialflags & SPFLAG_IAMDEAD)))
+		{
+		    ih_fire_intuimessage(w,
+					 IDCMP_MENUVERIFY,
+					 mouseon ? MENUHOT : MENUWAITING,
+					 w,
+					 IntuitionBase);
+		    scr->MenuVerifyMsgCount++;
+		}
+
+		lock = LockIBase(0);
+
+		for (w1 = scr->Screen.FirstWindow; w1; w1 = w1->NextWindow)
+		{
+		    if ((w1->IDCMPFlags & IDCMP_MENUVERIFY) && (w1 != w) && (!(IW(w)->specialflags & SPFLAG_IAMDEAD)))
+		    {
+			ih_fire_intuimessage(w1,
+					     IDCMP_MENUVERIFY,
+					     MENUWAITING,
+					     w1,
+					     IntuitionBase);
+			++scr->MenuVerifyMsgCount;
+		    }
+		}
+
+		UnlockIBase(lock);
+
+		/* FIXME: when a window is opened with IDCMP_MENUVERIFY
+		 * (or this event is requested via ModifyIDCMP), and a
+		 * verify operation is pending, the window should get
+		 * a verify message too. Oh well.
+		 */
+
+		if (scr->MenuVerifyMsgCount)
+		{
+		    GetPrivIBase(IntuitionBase)->MenuVerifyScreen = scr;
+		    scr->MenuVerifyActiveWindow = w;
+		    scr->MenuVerifyTimeOut = 2;
+		    scr->MenuVerifySeconds = IntuitionBase->Seconds;
+		    scr->MenuVerifyMicros  = IntuitionBase->Micros;
+		}
+		else if (FireMenuMessage(MMCODE_START, w, NULL/*ie*/, IntuitionBase))
+		{
+		    /* This lock will be released only when the user is
+		       done with menus = when IECLASS_MENU + IESUBCLASS_MENUSTOP
+		       event arrives (generated by MenuHandler task) */
+
+		    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
+		    iihdata->MenuWindow = w;
+		    MENUS_ACTIVE = TRUE;
+		}
+	    }
+	}
+	/* fall through */
+
+    case MENUUP:
+    case MIDDLEDOWN:
+    case MIDDLEUP:
+
+	switch(ie->ie_Code) {
+	case MENUUP:
+	    iihdata->ActQualifier &= ~IEQUALIFIER_RBUTTON;
+	    if (GetPrivIBase(IntuitionBase)->MenuVerifyScreen)
+	    {
+		struct Window 	 *w1;
+		struct IntScreen *scr = GetPrivIBase(IntuitionBase)->MenuVerifyScreen;
+		ULONG 	    	  lock = LockIBase(0);
+
+		for (w1 = scr->Screen.FirstWindow; w1; w1 = w1->NextWindow)
+		{
+		    if (w1->IDCMPFlags & IDCMP_MENUVERIFY && w1->IDCMPFlags & IDCMP_MOUSEBUTTONS)
+		    {
+			ih_fire_intuimessage(w1,
+					     IDCMP_MOUSEBUTTONS,
+					     MENUUP,
+					     w1,
+					     IntuitionBase);
+		    }
+		}
+
+		UnlockIBase(lock);
+
+		/* FIXME: when the active window replies the verifymessage,
+		 * it should get a IDCMP_MENUPICK/MENUNULL message.
+		 */
+		GetPrivIBase(IntuitionBase)->MenuVerifyScreen = NULL;
+		scr->MenuVerifyActiveWindow = NULL;
+		scr->MenuVerifyMsgCount = 0;
+		scr->MenuVerifyTimeOut = 0;
+		scr->MenuVerifySeconds = 0;
+		scr->MenuVerifyMicros = 0;
+	    }
+	    break;
+
+	case MIDDLEDOWN:
+	    iihdata->ActQualifier |= IEQUALIFIER_MIDBUTTON;
+	    if (DoubleClick(GetPrivIBase(IntuitionBase)->LastClickSecs,GetPrivIBase(IntuitionBase)->LastClickMicro,
+			ie->ie_TimeStamp.tv_secs,ie->ie_TimeStamp.tv_micro))
+	    {
+		if (GetPrivIBase(IntuitionBase)->DoubleClickButton != MIDDLEDOWN)
+		{
+		    GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
+		    GetPrivIBase(IntuitionBase)->DoubleClickButton = MIDDLEDOWN;
+		} else
+		    GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
+	    } else {
+		GetPrivIBase(IntuitionBase)->DoubleClickButton = MIDDLEDOWN;
+		GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
+	    }
+	    /* update last click time for doubleclicktofront */
+	    GetPrivIBase(IntuitionBase)->LastClickSecs = ie->ie_TimeStamp.tv_secs;
+	    GetPrivIBase(IntuitionBase)->LastClickMicro = ie->ie_TimeStamp.tv_micro;
+	    break;
+
+	case MIDDLEUP:
+	    iihdata->ActQualifier &= ~IEQUALIFIER_MIDBUTTON;
+	    break;
+	}
+
+#ifdef SKINS
+	iihdata->TitlebarAppearTime = 0;
+#endif
+	if (MENUS_ACTIVE)
+	{
+	    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+	    *keep_event = FALSE;
+	    break;
+	}
+
+#ifdef SKINS
+	if (ie->ie_Code == MIDDLEDOWN)
+	{
+	    ULONG result;
+	    
+	    if ((result = RunHotkeys(ie,IntuitionBase)))
+	    {
+		if (result == RUNHOTREUSE)
+		{
+		    *reuse_event = TRUE;
+		}
+		else
+		{
+		    *keep_event = FALSE;
+		}
+		break;
+	    }
+	    w = IntuitionBase->ActiveWindow;
+	}
+#endif
+	if (gadget)
+	{
+	    if (IS_BOOPSI_GADGET(gadget))
+	    {
+		gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, reuse_event, IntuitionBase);
+	    }
+
+	} /* if (there is an active gadget) */
+	else if (w && (!req || req->Flags & NOISYREQ) && w != GetPrivScreen(w->WScreen)->MenuVerifyActiveWindow)
+	{
+	    ih_fire_intuimessage(w,
+			     IDCMP_MOUSEBUTTONS,
+			     ie->ie_Code,
+			     w,
+			     IntuitionBase);
+	}
+
+	break; /* case MENUDOWN */
+
+    case IECODE_NOBUTTON: /* MOUSEMOVE */
+    {
+	    if (ie->ie_Qualifier & IEQUALIFIER_RELATIVEMOUSE) {
+		struct Screen *scr;
+		//ULONG Thresh;
+
+		/* Add delta information lost in previous mousemove event. See below. */			
+		iihdata->DeltaMouseX = ie->ie_X + iihdata->DeltaMouseX_Correction;
+		iihdata->DeltaMouseY = ie->ie_Y + iihdata->DeltaMouseY_Correction;
+
+#define ACCELERATOR_THRESH      2
+#define ACCELERATOR_MULTI       2
+
+		if (GetPrivIBase(IntuitionBase)->ActivePreferences->EnableCLI & MOUSE_ACCEL)
+		{
+		    /* Acceleration */
+		    if (ABS(iihdata->DeltaMouseX) > ACCELERATOR_THRESH)
+		    {
+			iihdata->DeltaMouseX *= ACCELERATOR_MULTI;
+		    }
+		    if (ABS(iihdata->DeltaMouseY) > ACCELERATOR_THRESH)
+		    {
+			iihdata->DeltaMouseY *= ACCELERATOR_MULTI;
+		    }
+		}
+		
+		switch(GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks)
+		{
+		    case 0:
+			iihdata->DeltaMouseX_Correction = 0;
+			iihdata->DeltaMouseX_Correction = 0;
+			break;
+		    
+		    default:
+			/* Remember the delta information which gets lost because of division by PointerTicks.
+			   Will be added to prescaled deltas of next mousemove event. If this is not done, moving
+			   the mouse very slowly would cause it to not move at all */
+			   
+			iihdata->DeltaMouseX_Correction = iihdata->DeltaMouseX % GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
+			iihdata->DeltaMouseY_Correction = iihdata->DeltaMouseY % GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
+			
+			iihdata->DeltaMouseX /= GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
+			iihdata->DeltaMouseY /= GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
+			break;
+		}
+
+
+		ie->ie_X = iihdata->DeltaMouseX + iihdata->LastMouseX;
+		ie->ie_Y = iihdata->DeltaMouseY + iihdata->LastMouseY;
+
+		//jDc: not really necessary to lock this for reading since this ptr is only modified
+		//by functions synced with inputhandler
+		//lock = LockIBase(0);
+		scr = IntuitionBase->FirstScreen;
+
+		if (scr)
+		{
+		    if (IntuitionBase->FirstScreen->Flags & AUTOSCROLL)
+		    {
+
+#define VWIDTH IntuitionBase->ViewLord.ViewPort->DWidth
+#define VHEIGHT IntuitionBase->ViewLord.ViewPort->DHeight
+#define VDX IntuitionBase->ViewLord.ViewPort->DxOffset
+#define VDY IntuitionBase->ViewLord.ViewPort->DyOffset
+
+			if ((ie->ie_X > VWIDTH - scr->LeftEdge - 1) || (ie->ie_X < - scr->LeftEdge) ||
+			     (ie->ie_Y > VHEIGHT - scr->TopEdge - 1) || (ie->ie_Y < - scr->TopEdge))
+			{
+			    if (ie->ie_X >  VWIDTH - scr->LeftEdge - 1)
+			    {
+				scr->LeftEdge = VWIDTH - ie->ie_X;
+				if (VWIDTH - scr->LeftEdge > scr->Width) scr->LeftEdge = VWIDTH - scr->Width; 
+				VDX = scr->LeftEdge;
+			    }  
+
+			    if (ie->ie_X < -scr->LeftEdge)
+			    {
+				scr->LeftEdge = -ie->ie_X;
+				if (scr->LeftEdge < VWIDTH - scr->Width) scr->LeftEdge = VWIDTH - scr->Width;
+				if(scr->LeftEdge > 0) scr->LeftEdge = 0;    // we don't support > 0 LeftEdges
+				VDX = scr->LeftEdge;
+			    }
+
+			    if (ie->ie_Y >  VHEIGHT - scr->TopEdge - 1)
+			    {
+				scr->TopEdge = VHEIGHT - ie->ie_Y;
+				if (VHEIGHT - scr->TopEdge > scr->Height) scr->TopEdge = VHEIGHT - scr->Height;
+				VDY = scr->TopEdge;
+			    }
+
+			    if (ie->ie_Y < -scr->TopEdge)
+			    {
+				scr->TopEdge = - ie->ie_Y;
+				if (scr->TopEdge < VHEIGHT - scr->Height) scr->TopEdge = VHEIGHT - scr->Height;
+				if(scr->TopEdge > 0) scr->TopEdge = 0;
+				VDY = scr->TopEdge;
+			    }
+
+			    ScrollVPort(IntuitionBase->ViewLord.ViewPort);
+			}
+		    }
+
+		    if (ie->ie_X >= scr->Width + max(scr->LeftEdge,0))  ie->ie_X = scr->Width + max(scr->LeftEdge,0) - 1;
+		    if (ie->ie_Y >= scr->Height + max(scr->TopEdge,0)) ie->ie_Y = scr->Height + max(scr->TopEdge,0) - 1;
+		    if (ie->ie_X < - scr->LeftEdge) ie->ie_X = - scr->LeftEdge;
+		    if (ie->ie_Y < - scr->TopEdge) ie->ie_Y = - scr->TopEdge;
+
+		}
+		else
+		{
+		    if (ie->ie_X >= 320) ie->ie_X = 320 - 1;
+		    if (ie->ie_Y >= 200) ie->ie_Y = 200 - 1;
+		    if (ie->ie_X < 0) ie->ie_X = 0;
+		    if (ie->ie_Y < 0) ie->ie_Y = 0;
+		}
+		//UnlockIBase(lock);
+	    } else {
+		iihdata->DeltaMouseX = ie->ie_X - iihdata->LastMouseX;
+		iihdata->DeltaMouseY = ie->ie_Y - iihdata->LastMouseY;
+	    }
+
+#ifdef SKINS
+	    if (gadget == iihdata->MasterDragGadget)
+	    {
+		struct gpInput gpi;
+		ULONG 	       retval;
+
+		gpi.MethodID 	= GM_MOVETEST;
+		gpi.gpi_GInfo 	= gi;
+		gpi.gpi_Mouse.X = ie->ie_X - gi->gi_Window->WScreen->LeftEdge;
+		gpi.gpi_Mouse.Y = ie->ie_Y - gi->gi_Window->WScreen->TopEdge;
+		gpi.gpi_IEvent  = ie;
+
+		retval = Locked_DoMethodA(gi->gi_Window, gadget, (Msg)&gpi, IntuitionBase);
+		if (retval == MOVETEST_ADJUSTPOS)
+		{
+		    ie->ie_X = gpi.gpi_Mouse.X + gi->gi_Window->WScreen->LeftEdge;
+		    ie->ie_Y = gpi.gpi_Mouse.Y + gi->gi_Window->WScreen->TopEdge;
+		}
+
+	    }
+#endif
+	    /* Do Mouse Bounding - mouse will be most restrictive of screen size or mouse bounds */
+	    if (iihdata->MouseBoundsActiveFlag)
+	    {			
+		if (ie->ie_X < iihdata->MouseBoundsLeft)
+		    ie->ie_X = iihdata->MouseBoundsLeft;
+		else if (ie->ie_X > iihdata->MouseBoundsRight)
+		    ie->ie_X = iihdata->MouseBoundsRight;
+		
+		if (ie->ie_Y < iihdata->MouseBoundsTop)
+		    ie->ie_Y = iihdata->MouseBoundsTop;
+		else if (ie->ie_Y > iihdata->MouseBoundsBottom)
+		    ie->ie_Y = iihdata->MouseBoundsBottom;
+	    }
+
+#if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP
+	    MySetPointerPos(IntuitionBase, ie->ie_X, ie->ie_Y);
+#else
+	    *call_setpointerpos = TRUE;
+#endif
+	    iihdata->LastMouseX = ie->ie_X;
+	    iihdata->LastMouseY = ie->ie_Y;
+
+	    notify_mousemove_screensandwindows(ie->ie_X, ie->ie_Y, IntuitionBase);
+
+#ifdef SKINS
+	    if (!gadget)
+	    {
+		if (iihdata->TitlebarOnTop)
+		{
+		    if (IntuitionBase->FirstScreen->MouseY > IntuitionBase->FirstScreen->BarHeight && GetPrivScreen(IntuitionBase->FirstScreen)->SpecialFlags & SF_AppearingBar)
+		    {
+			iihdata->TitlebarOnTop = FALSE;
+			iihdata->TitlebarAppearTime = 0;
+
+			LOCK_REFRESH(IntuitionBase->FirstScreen);
+
+			MoveLayer(0,IntuitionBase->FirstScreen->BarLayer,0,-(IntuitionBase->FirstScreen->BarHeight + 1));
+			CheckLayers(IntuitionBase->FirstScreen, IntuitionBase);
+
+			UNLOCK_REFRESH(IntuitionBase->FirstScreen);
+		    }
+		}
+		else
+		{
+		    if (IntuitionBase->FirstScreen->MouseY == 0 && GetPrivScreen(IntuitionBase->FirstScreen)->SpecialFlags & SF_AppearingBar && !MENUS_ACTIVE && !(PeekQualifier() & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_RBUTTON|IEQUALIFIER_MIDBUTTON)))
+		    {
+			if (!(iihdata->TitlebarAppearTime))
+			{
+			    iihdata->TitlebarAppearTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
+			    iihdata->TitlebarAppearTime += ie->ie_TimeStamp.tv_micro / 20000;
+			}
+		    }
+		    else
+		    {
+			iihdata->TitlebarAppearTime = 0;
+		    }
+		}
+	    }
+#endif
+	    if (MENUS_ACTIVE) {
+		FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+		*keep_event = FALSE;
+		break;
+	    }
+
+	    if (gadget)
+	    {
+		*keep_event = FALSE;
+
+		switch (gadget->GadgetType & GTYP_GTYPEMASK)
+		{
+		case GTYP_BOOLGADGET:
+		case 0: //fallback for sucky gadgets
+		    /* Must be a RELVERIFY gadget */
+		    {
+			BOOL inside;
+
+			inside = InsideGadget(gi->gi_Screen,
+					      gi->gi_Window,
+					      gi->gi_Requester,
+					      gadget,
+					      gi->gi_Screen->MouseX,
+					      gi->gi_Screen->MouseY);
+
+			if  (inside != iihdata->MouseWasInsideBoolGadget) {
+			    iihdata->MouseWasInsideBoolGadget = inside;
+
+			    gadget->Flags ^= GFLG_SELECTED;
+			    RefreshBoolGadgetState(gadget, w, req, IntuitionBase);
+			}
+		    }
+		    break;
+
+		case GTYP_PROPGADGET:
+		    HandlePropMouseMove(gadget,
+					w,
+					req,
+					w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, gi->gi_Screen, gi->gi_Window, NULL),
+					w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, gi->gi_Screen, gi->gi_Window, NULL),
+					IntuitionBase);
+
+		    break;
+
+		case GTYP_CUSTOMGADGET:
+		    gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, reuse_event, IntuitionBase);
+		    break;
+
+		} /* switch GadgetType */
+
+	    } /* if (a gadget is currently active) */
+
+	    *keep_event = FALSE;
+
+	    if (!w)
+		break;
+
+	    if (IW(w)->helpflags & HELPF_GADGETHELP && (!(PeekQualifier() & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_RBUTTON|IEQUALIFIER_MIDBUTTON))))
+	    {
+		struct Window *hw;
+		struct Gadget *g;
+
+		hw = FindActiveWindow(ie, 0, IntuitionBase);
+
+		if (hw != w &&
+		    (!hw || !(IW(w)->helpflags & HELPF_ISHELPGROUP) ||
+		     !(IW(hw)->helpflags & HELPF_ISHELPGROUP) ||
+		     IW(w)->helpgroup != IW(hw)->helpgroup))
+		{
+
+		    if (iihdata->LastHelpWindow)
+		    {
+			fire_intuimessage(w,
+					  IDCMP_GADGETHELP,
+					  0,
+					  NULL,
+					  IntuitionBase);
+
+			iihdata->LastHelpGadget = NULL;
+			iihdata->LastHelpWindow = NULL;
+			iihdata->HelpGadgetFindTime = 0;
+		    }
+		}
+		else
+		{
+		    g = FindHelpGadget (hw,
+					IntuitionBase->ActiveScreen->MouseX,
+					IntuitionBase->ActiveScreen->MouseY,
+					IntuitionBase);
+		    if (g && g != iihdata->LastHelpGadget)
+		    {
+			if (!iihdata->LastHelpGadget)
+			{
+			    iihdata->HelpGadgetFindTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
+			    iihdata->HelpGadgetFindTime += ie->ie_TimeStamp.tv_micro / 20000;
+			} else {
+			    if (hw == iihdata->LastHelpWindow)
+			    {
+				iihdata->HelpGadgetFindTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
+				iihdata->HelpGadgetFindTime += ie->ie_TimeStamp.tv_micro / 20000;
+				iihdata->HelpGadgetFindTime += 25;//smaller delay
+			    }
+			}
+		    }
+		    else if (g != iihdata->LastHelpGadget ||
+			 hw != iihdata->LastHelpWindow)
+		    {
+			fire_intuimessage(hw,
+					  IDCMP_GADGETHELP,
+					  0, /* Don't know what it should be */
+					  hw,
+					  IntuitionBase);
+		    }
+
+		    iihdata->LastHelpGadget = g;
+		    iihdata->LastHelpWindow = hw;
+		}
+	    }
+	    else
+	    {
+		iihdata->LastHelpGadget = NULL;
+		iihdata->LastHelpWindow = NULL;
+		iihdata->HelpGadgetFindTime = 0;
+	    }
+
+	    if (!(w->IDCMPFlags & IDCMP_MOUSEMOVE))
+		break;
+
+	    /* Send IDCMP_MOUSEMOVE if WFLG_REPORTMOUSE is set
+	       and/or active gadget has GACT_FOLLOWMOUSE set */
+
+	    /* jDc: do NOT send when sizegad is pressed */
+
+	    if (!(w->Flags & WFLG_REPORTMOUSE))
+	    {
+		if (!gadget)
+		    break;
+		if (!(gadget->Activation & GACT_FOLLOWMOUSE))
+		    break;
+	    } else {
+		if (gadget && (gadget->GadgetType & (GTYP_SIZING|GTYP_WDRAGGING)))
+		    break;
+	    }
+
+	    orig_ie->ie_Class = IECLASS_RAWMOUSE;
+
+	    /* Limit the number of IDCMP_MOUSEMOVE messages sent to intuition.
+	       note that this comes after handling gadgets, because gadgets should get all events.
+	    */
+
+	    if (IW(w)->num_mouseevents >= IW(w)->mousequeue)
+	    {
+		BOOL old_msg_found = FALSE;
+
+		/* Mouse Queue is full, so try looking for a not
+		   yet GetMsg()ed IntuiMessage in w->UserPort
+		   trying to modify that. */
+
+		Forbid();
+		if (w->UserPort)
+		{
+		    struct IntuiMessage *im;
+
+		    for (im = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_TailPred;
+			im->ExecMessage.mn_Node.ln_Pred;
+			im = (struct IntuiMessage *)im->ExecMessage.mn_Node.ln_Pred)
+		    {
+			if ((im->Class == IDCMP_MOUSEMOVE) &&
+			    (im->IDCMPWindow == w))
+			{
+			    im->Qualifier = iihdata->ActQualifier;
+
+			    if (w->IDCMPFlags & IDCMP_DELTAMOVE)
+			    {
+				im->MouseX = iihdata->DeltaMouseX;
+				im->MouseY = iihdata->DeltaMouseY;
+			    }
+			    else
+			    {
+				im->MouseX = w->MouseX;
+				im->MouseY = w->MouseY;
+			    }
+			    CurrentTime(&im->Seconds, &im->Micros);
+
+			    old_msg_found = TRUE;
+			    break;
+			}
+		    }
+		} /* if (w->UserPort) */
+		Permit();
+
+		/* no need to send a new message if we modified
+		   an existing one ... */
+
+		if (old_msg_found) break;
+
+		/* ... otherwise we are in a strange situation. The mouse
+		   queue is full, but we did not find an existing MOUSEMOVE
+		   imsg in w->UserPort. So the app probably has removed
+		   an imsg from the UserPort with GetMsg but we did not get
+		   the ReplyMsg, yet. In this case we do send a new message */
+
+		HandleIntuiReplyPort(iihdata, IntuitionBase);
+
+	    }
+
+	    /* MouseQueue is not full, so we can send a message. We increase
+	       IntWindow->num_mouseevents which will later be decreased after
+	       the Intuition InputHandler gets the ReplyMessage from the app
+	       and handles it in HandleIntuiReplyPort() */
+
+	    if (ih_fire_intuimessage(w,
+				     IDCMP_MOUSEMOVE,
+				     IECODE_NOBUTTON,
+				     w,
+				     IntuitionBase))
+	    {
+		IW(w)->num_mouseevents++;
+	    }
+
+	    break;
+
+    } /* case IECODE_NOBUTTON */
+    } /* switch (ie->ie_Code)  (what button was pressed ?) */
+    
+    return gadget;
+}
+
+/****************************************************************************************/
+
 AROS_UFH2(struct InputEvent *, IntuiInputHandler,
           AROS_UFHA(struct InputEvent *,      oldchain,       A0),
           AROS_UFHA(struct IIHData *,         iihdata,        A1)
@@ -480,7 +1708,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     struct Requester      *req;
     ULONG                  stitlebarhit = 0;
 #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
-    WORD    	    	   pointerposx, pointerposy;
     BOOL    	    	   call_setpointerpos = FALSE;
 #endif
 
@@ -552,960 +1779,17 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
         {
             /* Do ToolBox Window Actions */
             /* ToolBox Windows supports only a subset of IECLASS Actions */
-            w = toolbox;
-            req = NULL;
-            if (w)
-                req = w->FirstRequest;
             switch (ie->ie_Class) {
 
             case IECLASS_RAWMOUSE:
-                switch (ie->ie_Code) {
-                case SELECTDOWN:
-                {
-
-                    BOOL new_boxgadget = FALSE;
-                    BOOL sizeverify = FALSE;
-
-                    iihdata->ActQualifier |= IEQUALIFIER_LEFTBUTTON;
-
-                    if (MENUS_ACTIVE)
-                    {
-                        FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-                        keep_event = FALSE;
-                        break;
-                    }
-
-                    if (!boxgadget)
-                    {
-                        /* use the *frontmost* screen rather than active one when searching
-                         for sdepth gadget! */
-                        boxgadget = FindGadget (IntuitionBase->FirstScreen,
-                                     stitlebarhit ? 0 : w, stitlebarhit ? 0 : req,
-                                     IntuitionBase->ActiveScreen ? IntuitionBase->ActiveScreen->MouseX : 0,
-                                     IntuitionBase->ActiveScreen ? IntuitionBase->ActiveScreen->MouseY : 0,
-                                     boxgi, FALSE, IntuitionBase);
-
-                        D(bug("Click on gadget %p\n", boxgadget));
-                        new_boxgadget = TRUE;
-  
-                    } /* if (!boxgadget) */
-
-
-                    if (boxgadget && new_boxgadget)
-                    {
-                        if (w && (w->IDCMPFlags & IDCMP_SIZEVERIFY) &&
-                            ((boxgadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SIZING /*||
-                                                 (boxgadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WZOOM*/))
-                        {
-                            ih_fire_intuimessage(w,
-                                             IDCMP_SIZEVERIFY,
-                                             0,
-                                             boxgadget,
-                                             IntuitionBase);
-                            boxgadget = NULL;
-                            sizeverify = TRUE;
-                        }
-                        else
-                        {
-                            BOOL is_draggad, is_sizegad;
-
-                            /* Whenever the active gadget changes the gi must be updated
-                               because it is cached in iidata->GadgetInfo!!!! Don't
-                               forget to do this if somewhere else the active
-                               gadget is changed, for example in ActivateGadget!!! */
-
-                            PrepareGadgetInfo(boxgi, IntuitionBase->ActiveScreen, w, req);
-                            SetGadgetInfoGadget(boxgi, boxgadget, IntuitionBase);
-
-
-                            is_draggad = ((boxgadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDRAGGING);
-                            is_sizegad = ((boxgadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SIZING);
-
-                            /* jDc: intui68k sends IDCMPs for GACT_IMMEDIATE drag&sizegads! */
-                            if (boxgadget->Activation & GACT_IMMEDIATE)
-                            {
-                                ih_fire_intuimessage(w,
-                                                 IDCMP_GADGETDOWN,
-                                                 0,
-                                                 boxgadget,
-                                                 IntuitionBase);
-                            }
-
-                            if (is_draggad || is_sizegad)
-                            {
-                                if (IS_BOOPSI_GADGET(boxgadget))
-                                {
-                                    DoGPInput(boxgi,
-                                              boxgadget,
-                                              ie,
-                                              GM_GOACTIVE,
-                                              &reuse_event,
-                                              IntuitionBase);
-
-                                    /* Ignoring retval of dispatcher above is what
-                                       AmigaOS does too for boopsi drag/resize
-                                       gadgets */
-
-                                }
-
-                                /* From now on the master drag/size gadget takes over */
-                                if ((w->MoreFlags & WMFLG_IAMMUI) && (w->Flags & WFLG_BORDERLESS))
-                                    iihdata->ActiveSysGadget = is_draggad ? boxgadget : 0;
-                                else
-                                    iihdata->ActiveSysGadget = boxgadget;
-                                boxgadget = is_draggad ? iihdata->MasterDragGadget : iihdata->MasterSizeGadget;
-                            }
-                        }
-                    }
-
-                    if (boxgadget)
-                    {
-
-
-                        switch (boxgadget->GadgetType & GTYP_GTYPEMASK)
-                        {
-                        case GTYP_BOOLGADGET:
-                            /* Only set the GFLG_SELECTED flag for RELVERIFY and
-                             * TOGGLESELECT gadget. It's for the user to do it if
-                             * he wants for other GADGIMMEDIATE ones.
-                             * Only RELVERIFY gadgets stay active.
-                             */
-
-                            if (boxgadget->Activation & (GACT_TOGGLESELECT | GACT_RELVERIFY))
-                            {
-                                boxgadget->Flags ^= GFLG_SELECTED;
-                                RefreshBoolGadgetState(boxgadget, w, req, IntuitionBase);
-                            }
-
-                            if (boxgadget->Activation & GACT_RELVERIFY)
-                            {
-                                boxgadget->Activation |= GACT_ACTIVEGADGET;
-                                iihdata->MouseWasInsideBoolGadget = TRUE;
-                            }
-                            else
-                            {
-                                boxgadget = NULL;
-                            }
-
-                            break;
-
-                        case GTYP_PROPGADGET:
-                            HandlePropSelectDown(boxgadget,
-                                         w,
-                                         req,
-                                         w->MouseX - boxgi->gi_Domain.Left - GetGadgetLeft(boxgadget, boxgi->gi_Screen, boxgi->gi_Window, NULL),
-                                         w->MouseY - boxgi->gi_Domain.Top  - GetGadgetTop(boxgadget, boxgi->gi_Screen, boxgi->gi_Window, NULL),
-                                         IntuitionBase);
-
-
-                            break;
-/*
-                        case GTYP_STRGADGET:
-      
-
-                            if (InsideGadget(boxgi->gi_Screen, boxgi->gi_Window,
-                                         boxgi->gi_Requester, boxgadget,
-                                         boxgi->gi_Screen->MouseX, boxgi->gi_Screen->MouseY))
-                            {
-                                UWORD imsgcode;
-
-                                HandleStrInput(boxgadget, boxgi, ie, &imsgcode,
-                                           IntuitionBase);
-                            }
-                            else
-                            {
-                                boxgadget->Flags &= ~GFLG_SELECTED;
-
-                                RefreshStrGadget(boxgadget, w, req, IntuitionBase);
-                                boxgadget = NULL;
-                                reuse_event = TRUE;
-                            }
-                            break;
-*/
-                        case GTYP_CUSTOMGADGET:
-
-                            boxgadget = DoGPInput(boxgi,
-                                       boxgadget,
-                                       ie,
-                                       (new_boxgadget ? GM_GOACTIVE : GM_HANDLEINPUT),
-                                       &reuse_event,
-                                       IntuitionBase);
-                            D(bug("new_boxgadget %d, goactive %p\n", new_boxgadget, boxgadget));
-
-
-                            if (boxgadget && new_boxgadget && (!(boxgadget->GadgetType & GTYP_SIZING)))
-                            {
-                                /* For compatibility, send a GM_HANDLEINPUT too */
-                                struct InputEvent newie;
-                                BOOL              reuse_event;
-                
-                                newie.ie_NextEvent  = NULL;
-                                newie.ie_Class      = IECLASS_RAWMOUSE;
-                                newie.ie_SubClass   = 0;
-                                newie.ie_Code       = IECODE_NOBUTTON;
-                                newie.ie_Qualifier  = ie->ie_Qualifier;
-                                newie.ie_X          = 0;
-                                newie.ie_Y          = 0;
-                                newie.ie_TimeStamp.tv_secs  = IntuitionBase->Seconds;
-                                newie.ie_TimeStamp.tv_micro = IntuitionBase->Micros;
-                
-                                boxgadget = DoGPInput(boxgi,
-                                           boxgadget,
-                                           &newie,
-                                           GM_HANDLEINPUT,
-                                           &reuse_event,
-                                           IntuitionBase);
-                                D(bug("handleinput %p\n", boxgadget));
-                            }
-
-                            break;
-
-                        case    0: //orig gadtools / some 1.3 gadgets
-
-                            if (IS_SYS_GADGET(boxgadget))
-                                HandleSysGadgetVerify(boxgi, boxgadget, IntuitionBase);
-			    else {
-                                if (boxgadget->Activation & GACT_RELVERIFY)
-                                {
-                                    boxgadget->Activation |= GACT_ACTIVEGADGET;
-                                    iihdata->MouseWasInsideBoolGadget = TRUE;
-                                    if (boxgadget->Flags & GFLG_GADGHIMAGE)
-                                    {
-                                        boxgadget->Flags ^= GFLG_SELECTED;
-                                        RefreshBoolGadgetState(boxgadget, w, req, IntuitionBase);
-                                    }
-                                } else {
-                                    /* jDc: this is what original intuition does, before crashing after a while ;)*/
-                                    ih_fire_intuimessage(w,
-                                                     IDCMP_MOUSEBUTTONS,
-                                                     SELECTDOWN,
-                                                     w,
-                                                     IntuitionBase);
-                                }
-                            }
-
-                            break;
-                        } /* switch (GadgetType) */
-
-                    } /* if (a boxgadget is active) */
-                    else if (w && (!req || req->Flags & NOISYREQ) && !sizeverify && !stitlebarhit)
-                    {
-
-                        ih_fire_intuimessage(w,
-                                             IDCMP_MOUSEBUTTONS,
-                                             SELECTDOWN,
-                                             w,
-                                             IntuitionBase);
-
-                    }
-
-
-                } /* case SELECTDOWN */
-                break;
-
-                case SELECTUP:
-                    iihdata->ActQualifier &= ~IEQUALIFIER_LEFTBUTTON;
-
-
-                    if (MENUS_ACTIVE) {
-                        FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-                        keep_event = FALSE;
-                        break;
-                    }
-
-                    if (boxgadget) {
-                        BOOL inside = InsideGadget(boxgi->gi_Screen, boxgi->gi_Window,
-                                           boxgi->gi_Requester, boxgadget,
-                                           boxgi->gi_Screen->MouseX, boxgi->gi_Screen->MouseY);
-
-                        /*int selected = (boxgadget->Flags & GFLG_SELECTED) != 0;*/
-
-                        switch (boxgadget->GadgetType & GTYP_GTYPEMASK) {
-			case GTYP_BOOLGADGET:
-				/* Must be a RELVERIFY boxgadget */
-
-				if (!(boxgadget->Activation & GACT_TOGGLESELECT) && inside)
-				{
-				    boxgadget->Flags ^= GFLG_SELECTED;
-				    RefreshBoolGadgetState(boxgadget, w, req, IntuitionBase);
-				}
-
-				if (inside)
-				{
-				    if (IS_SYS_GADGET(boxgadget))
-				    {
-					HandleSysGadgetVerify(boxgi, boxgadget, IntuitionBase);
-				    }
-				    else
-				    {
-					if (req && boxgadget->Activation & GACT_ENDGADGET)
-					{
-					    EndRequest(req, w);
-
-					    req = w->FirstRequest;
-					}
-
-					ih_fire_intuimessage(w,
-							IDCMP_GADGETUP,
-							0,
-							boxgadget,
-							IntuitionBase);
-				    }
-				}
-				else
-				{
-				    /* RKRM say so */
-				    ih_fire_intuimessage(w,
-						     IDCMP_MOUSEBUTTONS,
-						     SELECTUP,
-						     w,
-						     IntuitionBase);
-				}
-
-				boxgadget->Activation &= ~GACT_ACTIVEGADGET;
-				boxgadget = NULL;
-				break;
-
-			case GTYP_PROPGADGET:
-				HandlePropSelectUp(boxgadget, w, req, IntuitionBase);
-				if (boxgadget->Activation & GACT_RELVERIFY)
-				{
-				    ih_fire_intuimessage(w,
-						     IDCMP_GADGETUP,
-						     0,
-						     boxgadget,
-						     IntuitionBase);
-				}
-
-				boxgadget = NULL;
-				break;
-
-				/* Intuition string gadgets don't care about SELECTUP */
-
-			case GTYP_CUSTOMGADGET:
-				boxgadget = DoGPInput(boxgi, boxgadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
-				break;
-/*
-			case 0: //orig gadtools / some 1.3 gadgets
-	 
-				boxgadget->Activation &= ~GACT_ACTIVEGADGET;
-				if (boxgadget->Activation & GACT_RELVERIFY)
-				{
-				    if (boxgadget->Flags & GFLG_GADGHIMAGE)
-				    {
-					if (inside)
-					{
-					    boxgadget->Flags ^= GFLG_SELECTED;
-					    RefreshBoolGadgetState(boxgadget, w, req, IntuitionBase);
-					}
-				    }
-
-				    if (inside)
-				    {
-					ih_fire_intuimessage(w,
-							     IDCMP_GADGETUP,
-							     0,
-							     boxgadget,
-							     IntuitionBase);
-				    }
-				} else {
-				    ih_fire_intuimessage(w,
-							 IDCMP_MOUSEBUTTONS,
-							 SELECTUP,
-							 w,
-							 IntuitionBase);
-				}
-				boxgadget = NULL;
-				break;
-	*/
-
-			} /* switch GadgetType */
-
-                    } /* if (a boxgadget is currently active) */
-                    else if (w && (!req || req->Flags & NOISYREQ)) {
-                        ih_fire_intuimessage(w,
-                                     IDCMP_MOUSEBUTTONS,
-                                     SELECTUP,
-                                     w,
-                                     IntuitionBase);
-                    }
-
-                    break; /* case SELECTUP */
-
-                case MENUDOWN:
-			iihdata->ActQualifier |= IEQUALIFIER_RBUTTON;
-
-
-			if (MENUS_ACTIVE)
-			{
-			    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-			    keep_event = FALSE;
-			    break;
-			}
-
-
-			if (w && !req && w->DMRequest && !(w->Flags & WFLG_RMBTRAP))
-			{
-			    if (!MENUS_ACTIVE &&
-				DoubleClick(GetPrivIBase(IntuitionBase)->DMStartSecs,
-					GetPrivIBase(IntuitionBase)->DMStartMicro,
-					ie->ie_TimeStamp.tv_secs,
-					ie->ie_TimeStamp.tv_micro))
-			    {
-				if (w->IDCMPFlags & IDCMP_REQVERIFY)
-				{
-				    ih_fire_intuimessage(w,
-						     IDCMP_REQVERIFY,
-						     MENUHOT,
-						     NULL,
-						     IntuitionBase);
-				}
-				else if (Request(w->DMRequest, w))
-				{
-				    req = w->DMRequest;
-			
-				    ih_fire_intuimessage(w,
-						     IDCMP_REQSET,
-						     0,
-						     w,
-						     IntuitionBase);
-				}
-				keep_event = FALSE;
-				break;
-			    }
-
-			}
-
-			if (w && !boxgadget)
-			{
-			    if (!(w->Flags & WFLG_RMBTRAP) && !req)
-			    {
-				struct IntScreen *scr = GetPrivScreen(w->WScreen);
-				struct Window    *w1;
-				ULONG             lock;
-				BOOL              mouseon = TRUE;
-
-				scr->MenuVerifyMsgCount = 0;
-
-				if (w->MouseX < 0 || w->MouseY < 0) mouseon = FALSE;
-				if (w->MouseX > w->Width || w->MouseY > w->Height) mouseon = FALSE;
-
-				if (w->IDCMPFlags & IDCMP_MENUVERIFY && (!(IW(w)->specialflags & SPFLAG_IAMDEAD)))
-				{
-				    ih_fire_intuimessage(w,
-						     IDCMP_MENUVERIFY,
-						     mouseon ? MENUHOT : MENUWAITING,
-						     w,
-						     IntuitionBase);
-				    scr->MenuVerifyMsgCount++;
-				}
-
-				lock = LockIBase(0);
-
-				for (w1 = scr->Screen.FirstWindow; w1; w1 = w1->NextWindow)
-				{
-				    if ((w1->IDCMPFlags & IDCMP_MENUVERIFY) && (w1 != w) && (!(IW(w)->specialflags & SPFLAG_IAMDEAD)))
-				    {
-					ih_fire_intuimessage(w1,
-							 IDCMP_MENUVERIFY,
-							 MENUWAITING,
-							 w1,
-							 IntuitionBase);
-					++scr->MenuVerifyMsgCount;
-				    }
-				}
-
-				UnlockIBase(lock);
-
-				/* FIXME: when a window is opened with IDCMP_MENUVERIFY
-				 * (or this event is requested via ModifyIDCMP), and a
-				 * verify operation is pending, the window should get
-				 * a verify message too. Oh well.
-				 */
-
-				if (scr->MenuVerifyMsgCount)
-				{
-				    GetPrivIBase(IntuitionBase)->MenuVerifyScreen = scr;
-				    scr->MenuVerifyActiveWindow = w;
-				    scr->MenuVerifyTimeOut = 2;
-				    scr->MenuVerifySeconds = IntuitionBase->Seconds;
-				    scr->MenuVerifyMicros  = IntuitionBase->Micros;
-				}
-				else if (FireMenuMessage(MMCODE_START, w, NULL/*ie*/, IntuitionBase))
-				{
-				    /* This lock will be released only when the user is
-				       done with menus = when IECLASS_MENU + IESUBCLASS_MENUSTOP
-				       event arrives (generated by MenuHandler task) */
-
-				    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
-				    iihdata->MenuWindow = w;
-				    MENUS_ACTIVE = TRUE;
-				}
-			    }
-			}
-			/* fall through */
-
-		case MENUUP:
-		case MIDDLEDOWN:
-		case MIDDLEUP:
-
-			switch(ie->ie_Code) {
-			case MENUUP:
-			    iihdata->ActQualifier &= ~IEQUALIFIER_RBUTTON;
-			    if (GetPrivIBase(IntuitionBase)->MenuVerifyScreen)
-			    {
-				struct Window    *w1;
-				struct IntScreen *scr = GetPrivIBase(IntuitionBase)->MenuVerifyScreen;
-				ULONG             lock = LockIBase(0);
-
-				for (w1 = scr->Screen.FirstWindow; w1; w1 = w1->NextWindow)
-				{
-				    if (w1->IDCMPFlags & IDCMP_MENUVERIFY && w1->IDCMPFlags & IDCMP_MOUSEBUTTONS)
-				    {
-					ih_fire_intuimessage(w1,
-							 IDCMP_MOUSEBUTTONS,
-							 MENUUP,
-							 w1,
-							 IntuitionBase);
-				    }
-				}
-
-				UnlockIBase(lock);
-
-				/* FIXME: when the active window replies the verifymessage,
-				 * it should get a IDCMP_MENUPICK/MENUNULL message.
-				 */
-				GetPrivIBase(IntuitionBase)->MenuVerifyScreen = NULL;
-				scr->MenuVerifyActiveWindow = NULL;
-				scr->MenuVerifyMsgCount = 0;
-				scr->MenuVerifyTimeOut = 0;
-				scr->MenuVerifySeconds = 0;
-				scr->MenuVerifyMicros = 0;
-			    }
-			    break;
-
-			case MIDDLEDOWN:
-			    iihdata->ActQualifier |= IEQUALIFIER_MIDBUTTON;
-			    if (DoubleClick(GetPrivIBase(IntuitionBase)->LastClickSecs,GetPrivIBase(IntuitionBase)->LastClickMicro,
-					ie->ie_TimeStamp.tv_secs,ie->ie_TimeStamp.tv_micro))
-			    {
-				if (GetPrivIBase(IntuitionBase)->DoubleClickButton != MIDDLEDOWN)
-				{
-				    GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
-				    GetPrivIBase(IntuitionBase)->DoubleClickButton = MIDDLEDOWN;
-				} else
-				    GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
-			    } else {
-				GetPrivIBase(IntuitionBase)->DoubleClickButton = MIDDLEDOWN;
-				GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
-			    }
-			    /* update last click time for doubleclicktofront */
-			    GetPrivIBase(IntuitionBase)->LastClickSecs = ie->ie_TimeStamp.tv_secs;
-			    GetPrivIBase(IntuitionBase)->LastClickMicro = ie->ie_TimeStamp.tv_micro;
-			    break;
-
-			case MIDDLEUP:
-			    iihdata->ActQualifier &= ~IEQUALIFIER_MIDBUTTON;
-			    break;
-			}
-
-			if (MENUS_ACTIVE)
-			{
-			    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-			    keep_event = FALSE;
-			    break;
-			}
-
-			if (boxgadget)
-			{
-			    if (IS_BOOPSI_GADGET(boxgadget))
-			    {
-				boxgadget = DoGPInput(boxgi, boxgadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
-			    }
-
-			} /* if (there is an active boxgadget) */
-			else if (w && (!req || req->Flags & NOISYREQ) && w != GetPrivScreen(w->WScreen)->MenuVerifyActiveWindow)
-			{
-			    ih_fire_intuimessage(w,
-					     IDCMP_MOUSEBUTTONS,
-					     ie->ie_Code,
-					     w,
-					     IntuitionBase);
-			}
-
-			break; /* case MENUDOWN */
-
-		case IECODE_NOBUTTON: /* MOUSEMOVE */
-		{
-		    if (ie->ie_Qualifier & IEQUALIFIER_RELATIVEMOUSE) {
-			struct Screen *scr;
-			//ULONG Thresh;
-
-			/* Add delta information lost in previous mousemove event. See below. */            
-			iihdata->DeltaMouseX = ie->ie_X + iihdata->DeltaMouseX_Correction;
-			iihdata->DeltaMouseY = ie->ie_Y + iihdata->DeltaMouseY_Correction;
-
-#define ACCELERATOR_THRESH      2
-#define ACCELERATOR_MULTI       2
-
-			if (GetPrivIBase(IntuitionBase)->ActivePreferences->EnableCLI & MOUSE_ACCEL)
-			{
-			    /* Acceleration */
-			    if (ABS(iihdata->DeltaMouseX) > ACCELERATOR_THRESH)
-			    {
-				iihdata->DeltaMouseX *= ACCELERATOR_MULTI;
-			    }
-			    if (ABS(iihdata->DeltaMouseY) > ACCELERATOR_THRESH)
-			    {
-				iihdata->DeltaMouseY *= ACCELERATOR_MULTI;
-			    }
-			}
-			
-			switch(GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks)
-			{
-			case 0:
-			    iihdata->DeltaMouseX_Correction = 0;
-			    iihdata->DeltaMouseX_Correction = 0;
-			    break;
-			    
-			default:
-			    /* Remember the delta information which gets lost because of division by PointerTicks.
-			       Will be added to prescaled deltas of next mousemove event. If this is not done, moving
-			       the mouse very slowly would cause it to not move at all */
-			    iihdata->DeltaMouseX_Correction = iihdata->DeltaMouseX % GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
-			    iihdata->DeltaMouseY_Correction = iihdata->DeltaMouseY % GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
-		
-			    iihdata->DeltaMouseX /= GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
-			    iihdata->DeltaMouseY /= GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
-			    break;
-			}
-
-			ie->ie_X = iihdata->DeltaMouseX + iihdata->LastMouseX;
-			ie->ie_Y = iihdata->DeltaMouseY + iihdata->LastMouseY;
-
-			//jDc: not really necessary to lock this for reading since this ptr is only modified
-			//by functions synced with inputhandler
-			//lock = LockIBase(0);
-			scr = IntuitionBase->FirstScreen;
-
-			if (scr)
-			{
-			    if (IntuitionBase->FirstScreen->Flags & AUTOSCROLL)
-			    {
-
-#define VWIDTH IntuitionBase->ViewLord.ViewPort->DWidth
-#define VHEIGHT IntuitionBase->ViewLord.ViewPort->DHeight
-#define VDX IntuitionBase->ViewLord.ViewPort->DxOffset
-#define VDY IntuitionBase->ViewLord.ViewPort->DyOffset
-
-				if ((ie->ie_X > VWIDTH - scr->LeftEdge - 1) || (ie->ie_X < - scr->LeftEdge) ||
-				     (ie->ie_Y > VHEIGHT - scr->TopEdge - 1) || (ie->ie_Y < - scr->TopEdge))
-				{
-				    if (ie->ie_X >  VWIDTH - scr->LeftEdge - 1)
-				    {
-					scr->LeftEdge = VWIDTH - ie->ie_X;
-					if (VWIDTH - scr->LeftEdge > scr->Width) scr->LeftEdge = VWIDTH - scr->Width; 
-					VDX = scr->LeftEdge;
-				    }  
-
-				    if (ie->ie_X < -scr->LeftEdge)
-				    {
-					scr->LeftEdge = -ie->ie_X;
-					if (scr->LeftEdge < VWIDTH - scr->Width) scr->LeftEdge = VWIDTH - scr->Width;
-					if(scr->LeftEdge > 0) scr->LeftEdge = 0;    // we don't support > 0 LeftEdges
-					VDX = scr->LeftEdge;
-				    }
-
-				    if (ie->ie_Y >  VHEIGHT - scr->TopEdge - 1)
-				    {
-					scr->TopEdge = VHEIGHT - ie->ie_Y;
-					if (VHEIGHT - scr->TopEdge > scr->Height) scr->TopEdge = VHEIGHT - scr->Height;
-					VDY = scr->TopEdge;
-				    }
-
-				    if (ie->ie_Y < -scr->TopEdge)
-				    {
-					scr->TopEdge = - ie->ie_Y;
-					if (scr->TopEdge < VHEIGHT - scr->Height) scr->TopEdge = VHEIGHT - scr->Height;
-					if(scr->TopEdge > 0) scr->TopEdge = 0;
-					VDY = scr->TopEdge;
-				    }
-
-				    ScrollVPort(IntuitionBase->ViewLord.ViewPort);
-				}
-			    }
-
-			    if (ie->ie_X >= scr->Width + max(scr->LeftEdge,0))  ie->ie_X = scr->Width + max(scr->LeftEdge,0) - 1;
-			    if (ie->ie_Y >= scr->Height + max(scr->TopEdge,0)) ie->ie_Y = scr->Height + max(scr->TopEdge,0) - 1;
-			    if (ie->ie_X < - scr->LeftEdge) ie->ie_X = - scr->LeftEdge;
-			    if (ie->ie_Y < - scr->TopEdge) ie->ie_Y = - scr->TopEdge;
-
-			}
-			else
-			{
-			    if (ie->ie_X >= 320) ie->ie_X = 320 - 1;
-			    if (ie->ie_Y >= 200) ie->ie_Y = 200 - 1;
-			    if (ie->ie_X < 0) ie->ie_X = 0;
-			    if (ie->ie_Y < 0) ie->ie_Y = 0;
-			}
-			//UnlockIBase(lock);
-		    } else {
-			iihdata->DeltaMouseX = ie->ie_X - iihdata->LastMouseX;
-			iihdata->DeltaMouseY = ie->ie_Y - iihdata->LastMouseY;
-		    }
-
-		    /* Do Mouse Bounding - mouse will be most restrictive of screen size or mouse bounds */
-		    if (iihdata->MouseBoundsActiveFlag)
-		    {           
-			if (ie->ie_X < iihdata->MouseBoundsLeft)
-			    ie->ie_X = iihdata->MouseBoundsLeft;
-			else if (ie->ie_X > iihdata->MouseBoundsRight)
-			    ie->ie_X = iihdata->MouseBoundsRight;
-
-			if (ie->ie_Y < iihdata->MouseBoundsTop)
-			    ie->ie_Y = iihdata->MouseBoundsTop;
-			else if (ie->ie_Y > iihdata->MouseBoundsBottom)
-			ie->ie_Y = iihdata->MouseBoundsBottom;
-
-		    }
-
-#if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP
-		    MySetPointerPos(IntuitionBase, ie->ie_X, ie->ie_Y);
-#else
-		    pointerposx = ie->ie_X;
-		    pointerposy = ie->ie_Y;
-		    call_setpointerpos = TRUE;
+	        boxgadget = Process_RawMouse(ie, iihdata, toolbox, boxgadget, boxgi, 0, FALSE, TRUE,
+					     orig_ie, &keep_event, &reuse_event,
+#if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
+					     &call_setpointerpos,
 #endif
+					     IntuitionBase);
+		break;
 
-		    iihdata->LastMouseX = ie->ie_X;
-		    iihdata->LastMouseY = ie->ie_Y;
-
-		    notify_mousemove_screensandwindows(ie->ie_X, ie->ie_Y, IntuitionBase);
-
-		    if (MENUS_ACTIVE) {
-			FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-			keep_event = FALSE;
-			break;
-		    }
-
-		    if (boxgadget)
-		    {
-			keep_event = FALSE;
-
-			switch (boxgadget->GadgetType & GTYP_GTYPEMASK)
-			{
-			case GTYP_BOOLGADGET:
-			case 0: //fallback for sucky gadgets
-			/* Must be a RELVERIFY boxgadget */
-			{
-			    BOOL inside;
-
-			    inside = InsideGadget(boxgi->gi_Screen,
-						  boxgi->gi_Window,
-						  boxgi->gi_Requester,
-						  boxgadget,
-						  boxgi->gi_Screen->MouseX,
-						  boxgi->gi_Screen->MouseY);
-
-			    if  (inside != iihdata->MouseWasInsideBoolGadget) {
-				iihdata->MouseWasInsideBoolGadget = inside;
-
-				boxgadget->Flags ^= GFLG_SELECTED;
-				RefreshBoolGadgetState(boxgadget, w, req, IntuitionBase);
-			    }
-			}
-			break;
-
-			case GTYP_PROPGADGET:
-			    HandlePropMouseMove(boxgadget,
-					    w,
-					    req,
-					    w->MouseX - boxgi->gi_Domain.Left - GetGadgetLeft(boxgadget, boxgi->gi_Screen, boxgi->gi_Window, NULL),
-					    w->MouseY - boxgi->gi_Domain.Top  - GetGadgetTop(boxgadget, boxgi->gi_Screen, boxgi->gi_Window, NULL),
-					    IntuitionBase);
-
-			    break;
-
-			case GTYP_CUSTOMGADGET:
-			    boxgadget = DoGPInput(boxgi, boxgadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
-			    break;
-
-			} /* switch GadgetType */
-
-		    } /* if (a boxgadget is currently active) */
-
-		    keep_event = FALSE;
-
-		    if (!w)
-		        break;
-
-		    if (IW(w)->helpflags & HELPF_GADGETHELP && (!(PeekQualifier() & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_RBUTTON|IEQUALIFIER_MIDBUTTON))))
-		    {
-			struct Window *hw;
-			struct Gadget *g;
-
-			hw = FindActiveWindow(ie, 0, IntuitionBase);
-
-			if (hw != w &&
-			    (!hw || !(IW(w)->helpflags & HELPF_ISHELPGROUP) ||
-			     !(IW(hw)->helpflags & HELPF_ISHELPGROUP) ||
-			     IW(w)->helpgroup != IW(hw)->helpgroup))
-			{
-
-			    if (iihdata->LastHelpWindow)
-			    {
-				fire_intuimessage(w,
-					      IDCMP_GADGETHELP,
-					      0,
-					      NULL,
-					      IntuitionBase);
-
-				iihdata->LastHelpGadget = NULL;
-				iihdata->LastHelpWindow = NULL;
-				iihdata->HelpGadgetFindTime = 0;
-			    }
-			}
-			else
-			{
-			    g = FindHelpGadget (hw,
-					    IntuitionBase->ActiveScreen->MouseX,
-					    IntuitionBase->ActiveScreen->MouseY,
-					    IntuitionBase);
-			    if (g && g != iihdata->LastHelpGadget)
-			    {
-				if (!iihdata->LastHelpGadget)
-				{
-				    iihdata->HelpGadgetFindTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
-				    iihdata->HelpGadgetFindTime += ie->ie_TimeStamp.tv_micro / 20000;
-				} else {
-				    if (hw == iihdata->LastHelpWindow)
-				    {
-					iihdata->HelpGadgetFindTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
-					iihdata->HelpGadgetFindTime += ie->ie_TimeStamp.tv_micro / 20000;
-					iihdata->HelpGadgetFindTime += 25;//smaller delay
-				    }
-				}
-			    }
-			    else if (g != iihdata->LastHelpGadget ||
-				 hw != iihdata->LastHelpWindow)
-			    {
-				fire_intuimessage(hw,
-					      IDCMP_GADGETHELP,
-					      0, /* Don't know what it should be */
-					      hw,
-					      IntuitionBase);
-			    }
-
-			    iihdata->LastHelpGadget = g;
-			    iihdata->LastHelpWindow = hw;
-			}
-		    }
-		    else
-		    {
-			iihdata->LastHelpGadget = NULL;
-			iihdata->LastHelpWindow = NULL;
-			iihdata->HelpGadgetFindTime = 0;
-		    }
-
-		    if (!(w->IDCMPFlags & IDCMP_MOUSEMOVE))
-			break;
-
-		    /* Send IDCMP_MOUSEMOVE if WFLG_REPORTMOUSE is set
-		       and/or active boxgadget has GACT_FOLLOWMOUSE set */
-
-		    /* jDc: do NOT send when sizegad is pressed */
-
-		    if (!(w->Flags & WFLG_REPORTMOUSE))
-		    {
-			if (!boxgadget)
-			    break;
-			if (!(boxgadget->Activation & GACT_FOLLOWMOUSE))
-			    break;
-		    } else {
-			if (boxgadget && (boxgadget->GadgetType & (GTYP_SIZING|GTYP_WDRAGGING)))
-			    break;
-		    }
-
-		    orig_ie->ie_Class = IECLASS_RAWMOUSE;
-
-		    /* Limit the number of IDCMP_MOUSEMOVE messages sent to intuition.
-		       note that this comes after handling gadgets, because gadgets should get all events.
-		    */
-
-		    if (IW(w)->num_mouseevents >= IW(w)->mousequeue)
-		    {
-			BOOL old_msg_found = FALSE;
-
-			/* Mouse Queue is full, so try looking for a not
-			   yet GetMsg()ed IntuiMessage in w->UserPort
-			   trying to modify that. */
-
-			Forbid();
-			if (w->UserPort)
-			{
-			    struct IntuiMessage *im;
-
-			    for (im = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_TailPred;
-				im->ExecMessage.mn_Node.ln_Pred;
-				im = (struct IntuiMessage *)im->ExecMessage.mn_Node.ln_Pred)
-			    {
-				if ((im->Class == IDCMP_MOUSEMOVE) &&
-				    (im->IDCMPWindow == w))
-				{
-				    im->Qualifier = iihdata->ActQualifier;
-
-				    if (w->IDCMPFlags & IDCMP_DELTAMOVE)
-				    {
-					im->MouseX = iihdata->DeltaMouseX;
-					im->MouseY = iihdata->DeltaMouseY;
-				    }
-				    else
-				    {
-					im->MouseX = w->MouseX;
-					im->MouseY = w->MouseY;
-				    }
-				    CurrentTime(&im->Seconds, &im->Micros);
-
-				    old_msg_found = TRUE;
-				    break;
-				}
-			    }
-			} /* if (w->UserPort) */
-			Permit();
-
-			/* no need to send a new message if we modified
-			   an existing one ... */
-
-			if (old_msg_found) break;
-
-			/* ... otherwise we are in a strange situation. The mouse
-			   queue is full, but we did not find an existing MOUSEMOVE
-			   imsg in w->UserPort. So the app probably has removed
-			   an imsg from the UserPort with GetMsg but we did not get
-			   the ReplyMsg, yet. In this case we do send a new message */
-
-			HandleIntuiReplyPort(iihdata, IntuitionBase);
-
-		    }
-
-		    /* MouseQueue is not full, so we can send a message. We increase
-		       IntWindow->num_mouseevents which will later be decreased after
-		       the Intuition InputHandler gets the ReplyMessage from the app
-		       and handles it in HandleIntuiReplyPort() */
-		    if (ih_fire_intuimessage(w,
-					     IDCMP_MOUSEMOVE,
-					     IECODE_NOBUTTON,
-					     w,
-					     IntuitionBase))
-		    {
-			IW(w)->num_mouseevents++;
-		    }
-
-		    break;
-
-		} /* case IECODE_NOBUTTON */
-	        } /* switch (ie->ie_Code)  (what button was pressed ?) */
-                break;
             } /* switch (ie->ie_Class) */
         } /* if (toolbox) */
 
@@ -1693,1220 +1977,12 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             /* fall through */
 
         case IECLASS_RAWMOUSE:
-            switch (ie->ie_Code) {
-            case SELECTDOWN:
-                {
-                    BOOL new_gadget = FALSE;
-                    BOOL sizeverify = FALSE;
-
-                    iihdata->ActQualifier |= IEQUALIFIER_LEFTBUTTON;
-
-#ifdef SKINS
-                    iihdata->TitlebarAppearTime = 0;
+	    gadget = Process_RawMouse(ie, iihdata, w, gadget, gi, stitlebarhit, new_active_window, FALSE,
+				      orig_ie, &keep_event, &reuse_event,
+#if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
+				      &call_setpointerpos,
 #endif
-                    if (MENUS_ACTIVE)
-                    {
-                        FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-                        keep_event = FALSE;
-                        break;
-                    }
-
-#ifdef SKINS
-                    if (!gadget && w)
-                    {
-                        struct Gadget * draggadget = 0;
-
-                        if ((!(w->FirstRequest)) && (w->Flags & WFLG_DRAGBAR) && MatchHotkey(ie,IA_ACTIVEWINDOWMOVE,IntuitionBase))
-                        {
-                            if (w->MouseX < IW(w)->sizeimage_width || w->MouseX > w->Width - IW(w)->sizeimage_width - 1 || w->MouseY < ((IW(w)->sizeimage_height > w->BorderTop) ? IW(w)->sizeimage_height : w->BorderTop) || w->MouseY > w->Height - IW(w)->sizeimage_height - 1)
-                            {
-                                for (draggadget = w->FirstGadget; draggadget; draggadget = draggadget->NextGadget)
-                                {
-                                    if ((draggadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDRAGGING)
-                                    {
-                                        gadget = draggadget;
-                                        new_gadget = TRUE;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        if ((!(w->FirstRequest)) && (w->Flags & WFLG_SIZEGADGET) && MatchHotkey(ie,IA_ACTIVEWINDOWSIZE,IntuitionBase))
-                        {
-                            if (w->MouseX < IW(w)->sizeimage_width || w->MouseX > w->Width - IW(w)->sizeimage_width - 1 || w->MouseY < ((IW(w)->sizeimage_height > w->BorderTop) ? IW(w)->sizeimage_height : w->BorderTop) || w->MouseY > w->Height - IW(w)->sizeimage_height - 1)
-                            {
-                                for (draggadget = w->FirstGadget; draggadget; draggadget = draggadget->NextGadget)
-                                {
-                                    if ((draggadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SIZING)
-                                    {
-                                        gadget = draggadget;
-                                        new_gadget = TRUE;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-#endif
-
-                    if (!gadget)
-                    {
-                        /* use the *frontmost* screen rather than active one when searching
-                         for sdepth gadget! */
-                        gadget = FindGadget (IntuitionBase->FirstScreen,
-                                     stitlebarhit ? 0 : w, stitlebarhit ? 0 : req,
-                                     IntuitionBase->ActiveScreen ? IntuitionBase->ActiveScreen->MouseX : 0,
-                                     IntuitionBase->ActiveScreen ? IntuitionBase->ActiveScreen->MouseY : 0,
-                                     gi, FALSE, IntuitionBase);
-
-                        D(bug("Click on gadget %p\n", gadget));
-                        new_gadget = TRUE;
-  
-                    } /* if (!gadget) */
-
-                    if (!gadget && stitlebarhit)
-                    {
-                        struct Window *ww = 0;
-			
-                        if ((ww = FindDesktopWindow(IntuitionBase->FirstScreen,IntuitionBase)))
-                        {
-                            ActivateWindow(ww);
-                            w = ww;
-                        }
-                    }
-
-                    if (!stitlebarhit && !new_active_window && DoubleClick(GetPrivIBase(IntuitionBase)->LastClickSecs,GetPrivIBase(IntuitionBase)->LastClickMicro,
-                                ie->ie_TimeStamp.tv_secs,ie->ie_TimeStamp.tv_micro))
-                    {
-                        if (GetPrivIBase(IntuitionBase)->DoubleClickButton != SELECTDOWN)
-                        {
-                            GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
-                            GetPrivIBase(IntuitionBase)->DoubleClickButton = SELECTDOWN;
-                        }
-			else
-                        {
-                            GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
-                        }
-                    }
-		    else
-		    {
-                        GetPrivIBase(IntuitionBase)->DoubleClickButton = SELECTDOWN;
-                        GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
-                    }
-
-                    /* update last click time for doubleclicktofront */
-                    GetPrivIBase(IntuitionBase)->LastClickSecs = ie->ie_TimeStamp.tv_secs;
-                    GetPrivIBase(IntuitionBase)->LastClickMicro = ie->ie_TimeStamp.tv_micro;
-
-#ifdef SKINS
-                    if (!stitlebarhit)
-                    {
-                        ULONG result;
-			
-                        if (!(gadget && ((gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDEPTH)))
-                        if ((result = RunHotkeys(ie,IntuitionBase)))
-                        {
-                            //gadget = NULL;
-                            if (result == RUNHOTREUSE)
-                            {
-                                reuse_event = TRUE;
-                            }
-			    else
-			    {
-                                keep_event = FALSE;
-                            }
-                        }
-                    }
-#endif
-                    if (gadget && new_gadget)
-                    {
-                        if (w && (w->IDCMPFlags & IDCMP_SIZEVERIFY) &&
-                            ((gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SIZING /*||
-                                                 (gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WZOOM*/))
-                        {
-                            ih_fire_intuimessage(w,
-                                        	 IDCMP_SIZEVERIFY,
-                                        	 0,
-                                        	 gadget,
-                                        	 IntuitionBase);
-                            gadget = NULL;
-                            sizeverify = TRUE;
-                        }
-                        else
-                        {
-                            BOOL is_draggad, is_sizegad;
-
-                            /* Whenever the active gadget changes the gi must be updated
-                               because it is cached in iidata->GadgetInfo!!!! Don't
-                               forget to do this if somewhere else the active
-                               gadget is changed, for example in ActivateGadget!!! */
-
-                            PrepareGadgetInfo(gi, IntuitionBase->ActiveScreen, w, req);
-                            SetGadgetInfoGadget(gi, gadget, IntuitionBase);
-
-                            #ifdef __MORPHOS__
-                            is_draggad = (((gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDRAGGING) || ((gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDRAGGING2));
-                            #else
-                            is_draggad = ((gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDRAGGING);
-                            #endif
-                            is_sizegad = ((gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SIZING);
-
-                            #if 1
-                            /* jDc: intui68k sends IDCMPs for GACT_IMMEDIATE drag&sizegads! */
-                            if (gadget->Activation & GACT_IMMEDIATE)
-                            {
-                                ih_fire_intuimessage(w,
-                                        	     IDCMP_GADGETDOWN,
-                                        	     0,
-                                        	     gadget,
-                                        	     IntuitionBase);
-                            }
-                            #endif
-
-                            if (is_draggad || is_sizegad)
-                            {
-                                if (IS_BOOPSI_GADGET(gadget))
-                                {
-                                    DoGPInput(gi,
-                                              gadget,
-                                              ie,
-                                              GM_GOACTIVE,
-                                              &reuse_event,
-                                              IntuitionBase);
-
-                                    /* Ignoring retval of dispatcher above is what
-                                       AmigaOS does too for boopsi drag/resize
-                                       gadgets */
-
-                                }
-
-                                /* From now on the master drag/size gadget takes over */
-                                if ((w->MoreFlags & WMFLG_IAMMUI) && (w->Flags & WFLG_BORDERLESS))
-                                    iihdata->ActiveSysGadget = is_draggad ? gadget : 0;
-				else
-                                    iihdata->ActiveSysGadget = gadget;
-                                gadget = is_draggad ? iihdata->MasterDragGadget : iihdata->MasterSizeGadget;
-                            }
-                        }
-                    }
-
-                    if (gadget)
-                    {
-
-                        switch (gadget->GadgetType & GTYP_GTYPEMASK)
-                        {
-                        case GTYP_BOOLGADGET:
-                            /* Only set the GFLG_SELECTED flag for RELVERIFY and
-                             * TOGGLESELECT gadget. It's for the user to do it if
-                             * he wants for other GADGIMMEDIATE ones.
-                             * Only RELVERIFY gadgets stay active.
-                             */
-
-                            if (gadget->Activation & (GACT_TOGGLESELECT | GACT_RELVERIFY))
-                            {
-                                gadget->Flags ^= GFLG_SELECTED;
-                                RefreshBoolGadgetState(gadget, w, req, IntuitionBase);
-                            }
-
-                            if (gadget->Activation & GACT_RELVERIFY)
-                            {
-                                gadget->Activation |= GACT_ACTIVEGADGET;
-                                iihdata->MouseWasInsideBoolGadget = TRUE;
-                            }
-                            else
-                            {
-                                gadget = NULL;
-                            }
-                            break;
-
-                        case GTYP_PROPGADGET:
-                            HandlePropSelectDown(gadget,
-                                         w,
-                                         req,
-                                         w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, gi->gi_Screen, gi->gi_Window, NULL),
-                                         w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, gi->gi_Screen, gi->gi_Window, NULL),
-                                         IntuitionBase);
-
-
-                            break;
-
-                        case GTYP_STRGADGET:
-                            /* If the click was inside the active strgad,
-                            ** then let it update cursor pos,
-                            ** else deactivate stringadget and reuse event.
-                            */
-
-                            if (InsideGadget(gi->gi_Screen, gi->gi_Window,
-                                	     gi->gi_Requester, gadget,
-                                	     gi->gi_Screen->MouseX, gi->gi_Screen->MouseY))
-                            {
-                                UWORD imsgcode;
-
-                                HandleStrInput(gadget, gi, ie, &imsgcode,
-                                           IntuitionBase);
-                            }
-                            else
-                            {
-                                gadget->Flags &= ~GFLG_SELECTED;
-
-                                RefreshStrGadget(gadget, w, req, IntuitionBase);
-                                /* Gadget not active anymore */
-                                gadget = NULL;
-                                reuse_event = TRUE;
-                            }
-                            break;
-
-                        case GTYP_CUSTOMGADGET:
-                            gadget = DoGPInput(gi,
-                                       gadget,
-                                       ie,
-                                       (new_gadget ? GM_GOACTIVE : GM_HANDLEINPUT),
-                                       &reuse_event,
-                                       IntuitionBase);
-                            D(bug("new_gadget %d, goactive %p\n", new_gadget, gadget));
-
-                            if (gadget && new_gadget && (!(gadget->GadgetType & GTYP_SIZING)))
-                            {
-                                /* For compatibility, send a GM_HANDLEINPUT too */
-                                struct InputEvent newie;
-                                BOOL 	    	  reuse_event;
-				
-                                newie.ie_NextEvent  = NULL;
-                                newie.ie_Class      = IECLASS_RAWMOUSE;
-                                newie.ie_SubClass   = 0;
-                                newie.ie_Code 	    = IECODE_NOBUTTON;
-                                newie.ie_Qualifier  = ie->ie_Qualifier;
-                                newie.ie_X  	    = 0;
-                                newie.ie_Y  	    = 0;
-                                newie.ie_TimeStamp.tv_secs  = IntuitionBase->Seconds;
-                                newie.ie_TimeStamp.tv_micro = IntuitionBase->Micros;
-				
-                                gadget = DoGPInput(gi,
-                                           gadget,
-                                           &newie,
-                                           GM_HANDLEINPUT,
-                                           &reuse_event,
-                                           IntuitionBase);
-                                D(bug("handleinput %p\n", gadget));
-                            }
-                            break;
-
-                        case    0: //orig gadtools / some 1.3 gadgets
-                            if (IS_SYS_GADGET(gadget))
-                            {
-                                HandleSysGadgetVerify(gi, gadget, IntuitionBase);
-                            }
-			    else
-			    {
-                                if (gadget->Activation & GACT_RELVERIFY)
-                                {
-                                    gadget->Activation |= GACT_ACTIVEGADGET;
-                                    iihdata->MouseWasInsideBoolGadget = TRUE;
-                                    if (gadget->Flags & GFLG_GADGHIMAGE)
-                                    {
-                                        gadget->Flags ^= GFLG_SELECTED;
-                                        RefreshBoolGadgetState(gadget, w, req, IntuitionBase);
-                                    }
-                                }
-				else
-				{
-                                    /* jDc: this is what original intuition does, before crashing after a while ;)*/
-                                    ih_fire_intuimessage(w,
-                                                	 IDCMP_MOUSEBUTTONS,
-                                                	 SELECTDOWN,
-                                                	 w,
-                                                	 IntuitionBase);
-                                }
-                            }
-                            break;
-                        } /* switch (GadgetType) */
-
-                    } /* if (a gadget is active) */
-                    else if (w && (!req || req->Flags & NOISYREQ) && !sizeverify && !stitlebarhit)
-                    {
-                        ih_fire_intuimessage(w,
-                                             IDCMP_MOUSEBUTTONS,
-                                             SELECTDOWN,
-                                             w,
-                                             IntuitionBase);
-                    }
-
-
-                } /* case SELECTDOWN */
-                break;
-
-            case SELECTUP:
-                iihdata->ActQualifier &= ~IEQUALIFIER_LEFTBUTTON;
-
-#ifdef SKINS
-                iihdata->TitlebarAppearTime = 0;
-#endif
-                if (MENUS_ACTIVE)
-                {
-                    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-                    keep_event = FALSE;
-                    break;
-                }
-
-                if (gadget)
-                {
-                    BOOL inside = InsideGadget(gi->gi_Screen, gi->gi_Window,
-                                	       gi->gi_Requester, gadget,
-                                	       gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
-
-                    /*int selected = (gadget->Flags & GFLG_SELECTED) != 0;*/
-
-                    switch (gadget->GadgetType & GTYP_GTYPEMASK)
-                    {
-                    case GTYP_BOOLGADGET:
-                        /* Must be a RELVERIFY gadget */
-
-                        if (!(gadget->Activation & GACT_TOGGLESELECT) && inside)
-                        {
-                            gadget->Flags ^= GFLG_SELECTED;
-                            RefreshBoolGadgetState(gadget, w, req, IntuitionBase);
-                        }
-
-                        if (inside)
-                        {
-                            if (IS_SYS_GADGET(gadget))
-                            {
-                                HandleSysGadgetVerify(gi, gadget, IntuitionBase);
-                            }
-                            else
-                            {
-                                if (req && gadget->Activation & GACT_ENDGADGET)
-                                {
-                                    EndRequest(req, w);
-
-                                    req = w->FirstRequest;
-                                }
-
-                                ih_fire_intuimessage(w,
-                                        	    IDCMP_GADGETUP,
-                                        	    0,
-                                        	    gadget,
-                                        	    IntuitionBase);
-                            }
-                        }
-                        else
-                        {
-                            /* RKRM say so */
-                            ih_fire_intuimessage(w,
-                                        	 IDCMP_MOUSEBUTTONS,
-                                        	 SELECTUP,
-                                        	 w,
-                                        	 IntuitionBase);
-                        }
-
-                        gadget->Activation &= ~GACT_ACTIVEGADGET;
-                        gadget = NULL;
-                        break;
-
-                    case GTYP_PROPGADGET:
-                        HandlePropSelectUp(gadget, w, req, IntuitionBase);
-                        if (gadget->Activation & GACT_RELVERIFY)
-                        {
-                            ih_fire_intuimessage(w,
-                                        	 IDCMP_GADGETUP,
-                                        	 0,
-                                        	 gadget,
-                                        	 IntuitionBase);
-                        }
-
-                        gadget = NULL;
-                        break;
-
-                        /* Intuition string gadgets don't care about SELECTUP */
-
-                    case GTYP_CUSTOMGADGET:
-                        gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
-                        break;
-
-                    case 0: //orig gadtools / some 1.3 gadgets
-                        /* jDc: adding a gadget with gtyp field set to NULL crashes intui68k
-                        ** seems we don't need compatibility on this field ;) anyway we should
-                        ** handle the case of GTYP_CLOSE, etc, set by some "cod3r"
-                        */
-                        gadget->Activation &= ~GACT_ACTIVEGADGET;
-                        if (gadget->Activation & GACT_RELVERIFY)
-                        {
-                            if (gadget->Flags & GFLG_GADGHIMAGE)
-                            {
-                                if (inside)
-                                {
-                                    gadget->Flags ^= GFLG_SELECTED;
-                                    RefreshBoolGadgetState(gadget, w, req, IntuitionBase);
-                                }
-                            }
-
-                            if (inside)
-                            {
-                                ih_fire_intuimessage(w,
-                                                     IDCMP_GADGETUP,
-                                                     0,
-                                                     gadget,
-                                                     IntuitionBase);
-                            }
-                        } else {
-                            ih_fire_intuimessage(w,
-                                                 IDCMP_MOUSEBUTTONS,
-                                                 SELECTUP,
-                                                 w,
-                                                 IntuitionBase);
-                        }
-                        gadget = NULL;
-                        break;
-
-                    } /* switch GadgetType */
-
-                } /* if (a gadget is currently active) */
-                else if (w && (!req || req->Flags & NOISYREQ))
-                {
-                    ih_fire_intuimessage(w,
-                                	 IDCMP_MOUSEBUTTONS,
-                                	 SELECTUP,
-                                	 w,
-                                	 IntuitionBase);
-                }
-
-                break; /* case SELECTUP */
-
-            case MENUDOWN:
-                iihdata->ActQualifier |= IEQUALIFIER_RBUTTON;
-
-#ifdef SKINS
-                iihdata->TitlebarAppearTime = 0;
-#endif
-                if (MENUS_ACTIVE)
-                {
-                    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-                    keep_event = FALSE;
-                    break;
-                }
-
-                if (DoubleClick(GetPrivIBase(IntuitionBase)->LastClickSecs,GetPrivIBase(IntuitionBase)->LastClickMicro,
-                            ie->ie_TimeStamp.tv_secs,ie->ie_TimeStamp.tv_micro))
-                {
-                    if (GetPrivIBase(IntuitionBase)->DoubleClickButton != MENUDOWN)
-                    {
-                        GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
-                        GetPrivIBase(IntuitionBase)->DoubleClickButton = MENUDOWN;
-                    }
-		    else
-                    {
-                        GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
-                    }
-                }
-		else
-		{
-                    GetPrivIBase(IntuitionBase)->DoubleClickButton = MENUDOWN;
-                    GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
-                }
-
-                /* update last click time for doubleclicktofront */
-                GetPrivIBase(IntuitionBase)->LastClickSecs = ie->ie_TimeStamp.tv_secs;
-                GetPrivIBase(IntuitionBase)->LastClickMicro = ie->ie_TimeStamp.tv_micro;
-
-#ifdef SKINS
-                {
-                    ULONG result;
-		    
-                    if ((result = RunHotkeys(ie,IntuitionBase)))
-                    {
-                        if (result == RUNHOTREUSE)
-                        {
-                            reuse_event = TRUE;
-                        }
-			else
-			{
-                            keep_event = FALSE;
-                        }
-                        break;
-                    }
-                    w = IntuitionBase->ActiveWindow;
-                }
-#endif
-
-#ifdef SKINS
-                if ((!MENUS_ACTIVE) && (!gadget) && (!(iihdata->ActQualifier & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_MIDBUTTON))))
-                {
-                    struct Gadget   	*gad;
-                    struct GadgetInfo 	 ginf;
-                    ULONG   	    	 hit;
-                    struct Window   	*wind = FindActiveWindow(0,&hit,IntuitionBase);
-
-                    if (wind)
-                    {
-                        gad = FindGadget (IntuitionBase->FirstScreen,
-                                          hit ? 0 : wind,0,
-                                          IntuitionBase->ActiveScreen->MouseX,
-                                          IntuitionBase->ActiveScreen->MouseY,
-                                          &ginf, TRUE, IntuitionBase);
-
-                        if (gad && ((gad->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDEPTH))
-                        {
-                            CreateSmallMenuTask(wind,SMALLMENU_TYPE_WINDOWDEPTH,IntuitionBase);
-                            keep_event = FALSE;
-                            break;
-                        }
-			
-                        if (gad && ((gad->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SDEPTH))
-                        {
-                            CreateSmallMenuTask(0,SMALLMENU_TYPE_SCREENDEPTH,IntuitionBase);
-                            keep_event = FALSE;
-                            break;
-                        }
-                    }
-                }
-#endif
-
-                if (w && !req && w->DMRequest && !(w->Flags & WFLG_RMBTRAP))
-                {
-                    if (!MENUS_ACTIVE &&
-                        DoubleClick(GetPrivIBase(IntuitionBase)->DMStartSecs,
-                                GetPrivIBase(IntuitionBase)->DMStartMicro,
-                                ie->ie_TimeStamp.tv_secs,
-                                ie->ie_TimeStamp.tv_micro))
-                    {
-                        if (w->IDCMPFlags & IDCMP_REQVERIFY)
-                        {
-                            ih_fire_intuimessage(w,
-                                        	 IDCMP_REQVERIFY,
-                                        	 MENUHOT,
-                                        	 NULL,
-                                        	 IntuitionBase);
-                        }
-                        else if (Request(w->DMRequest, w))
-                        {
-                            req = w->DMRequest;
-			    
-                            ih_fire_intuimessage(w,
-                                        	 IDCMP_REQSET,
-                                        	 0,
-                                        	 w,
-                                        	 IntuitionBase);
-                        }
-                        keep_event = FALSE;
-                        break;
-                    }
-
-                    GetPrivIBase(IntuitionBase)->DMStartSecs  = ie->ie_TimeStamp.tv_secs;
-                    GetPrivIBase(IntuitionBase)->DMStartMicro = ie->ie_TimeStamp.tv_micro;
-                }
-
-                if (w && !gadget)
-                {
-                    if (!(w->Flags & WFLG_RMBTRAP) && !req)
-                    {
-                        struct IntScreen *scr = GetPrivScreen(w->WScreen);
-                        struct Window 	 *w1;
-                        ULONG 	    	  lock;
-                        BOOL	    	  mouseon = TRUE;
-
-                        scr->MenuVerifyMsgCount = 0;
-
-                        if (w->MouseX < 0 || w->MouseY < 0) mouseon = FALSE;
-                        if (w->MouseX > w->Width || w->MouseY > w->Height) mouseon = FALSE;
-
-                        if (w->IDCMPFlags & IDCMP_MENUVERIFY && (!(IW(w)->specialflags & SPFLAG_IAMDEAD)))
-                        {
-                            ih_fire_intuimessage(w,
-                                        	 IDCMP_MENUVERIFY,
-                                        	 mouseon ? MENUHOT : MENUWAITING,
-                                        	 w,
-                                        	 IntuitionBase);
-                            scr->MenuVerifyMsgCount++;
-                        }
-
-                        lock = LockIBase(0);
-
-                        for (w1 = scr->Screen.FirstWindow; w1; w1 = w1->NextWindow)
-                        {
-                            if ((w1->IDCMPFlags & IDCMP_MENUVERIFY) && (w1 != w) && (!(IW(w)->specialflags & SPFLAG_IAMDEAD)))
-                            {
-                                ih_fire_intuimessage(w1,
-                                        	     IDCMP_MENUVERIFY,
-                                        	     MENUWAITING,
-                                        	     w1,
-                                        	     IntuitionBase);
-                                ++scr->MenuVerifyMsgCount;
-                            }
-                        }
-
-                        UnlockIBase(lock);
-
-                        /* FIXME: when a window is opened with IDCMP_MENUVERIFY
-                         * (or this event is requested via ModifyIDCMP), and a
-                         * verify operation is pending, the window should get
-                         * a verify message too. Oh well.
-                         */
-
-                        if (scr->MenuVerifyMsgCount)
-                        {
-                            GetPrivIBase(IntuitionBase)->MenuVerifyScreen = scr;
-                            scr->MenuVerifyActiveWindow = w;
-                            scr->MenuVerifyTimeOut = 2;
-                            scr->MenuVerifySeconds = IntuitionBase->Seconds;
-                            scr->MenuVerifyMicros  = IntuitionBase->Micros;
-                        }
-                        else if (FireMenuMessage(MMCODE_START, w, NULL/*ie*/, IntuitionBase))
-                        {
-                            /* This lock will be released only when the user is
-                               done with menus = when IECLASS_MENU + IESUBCLASS_MENUSTOP
-                               event arrives (generated by MenuHandler task) */
-
-                            ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
-                            iihdata->MenuWindow = w;
-                            MENUS_ACTIVE = TRUE;
-                        }
-                    }
-                }
-                /* fall through */
-
-            case MENUUP:
-            case MIDDLEDOWN:
-            case MIDDLEUP:
-
-                switch(ie->ie_Code) {
-                case MENUUP:
-                    iihdata->ActQualifier &= ~IEQUALIFIER_RBUTTON;
-                    if (GetPrivIBase(IntuitionBase)->MenuVerifyScreen)
-                    {
-                        struct Window 	 *w1;
-                        struct IntScreen *scr = GetPrivIBase(IntuitionBase)->MenuVerifyScreen;
-                        ULONG 	    	  lock = LockIBase(0);
-
-                        for (w1 = scr->Screen.FirstWindow; w1; w1 = w1->NextWindow)
-                        {
-                            if (w1->IDCMPFlags & IDCMP_MENUVERIFY && w1->IDCMPFlags & IDCMP_MOUSEBUTTONS)
-                            {
-                                ih_fire_intuimessage(w1,
-                                        	     IDCMP_MOUSEBUTTONS,
-                                        	     MENUUP,
-                                        	     w1,
-                                        	     IntuitionBase);
-                            }
-                        }
-
-                        UnlockIBase(lock);
-
-                        /* FIXME: when the active window replies the verifymessage,
-                         * it should get a IDCMP_MENUPICK/MENUNULL message.
-                         */
-                        GetPrivIBase(IntuitionBase)->MenuVerifyScreen = NULL;
-                        scr->MenuVerifyActiveWindow = NULL;
-                        scr->MenuVerifyMsgCount = 0;
-                        scr->MenuVerifyTimeOut = 0;
-                        scr->MenuVerifySeconds = 0;
-                        scr->MenuVerifyMicros = 0;
-                    }
-                    break;
-
-                case MIDDLEDOWN:
-                    iihdata->ActQualifier |= IEQUALIFIER_MIDBUTTON;
-                    if (DoubleClick(GetPrivIBase(IntuitionBase)->LastClickSecs,GetPrivIBase(IntuitionBase)->LastClickMicro,
-                                ie->ie_TimeStamp.tv_secs,ie->ie_TimeStamp.tv_micro))
-                    {
-                        if (GetPrivIBase(IntuitionBase)->DoubleClickButton != MIDDLEDOWN)
-                        {
-                            GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
-                            GetPrivIBase(IntuitionBase)->DoubleClickButton = MIDDLEDOWN;
-                        } else
-                            GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
-                    } else {
-                        GetPrivIBase(IntuitionBase)->DoubleClickButton = MIDDLEDOWN;
-                        GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
-                    }
-                    /* update last click time for doubleclicktofront */
-                    GetPrivIBase(IntuitionBase)->LastClickSecs = ie->ie_TimeStamp.tv_secs;
-                    GetPrivIBase(IntuitionBase)->LastClickMicro = ie->ie_TimeStamp.tv_micro;
-                    break;
-
-                case MIDDLEUP:
-                    iihdata->ActQualifier &= ~IEQUALIFIER_MIDBUTTON;
-                    break;
-                }
-
-#ifdef SKINS
-                iihdata->TitlebarAppearTime = 0;
-#endif
-                if (MENUS_ACTIVE)
-                {
-                    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-                    keep_event = FALSE;
-                    break;
-                }
-
-#ifdef SKINS
-                if (ie->ie_Code == MIDDLEDOWN)
-                {
-                    ULONG result;
-		    
-                    if ((result = RunHotkeys(ie,IntuitionBase)))
-                    {
-                        if (result == RUNHOTREUSE)
-                        {
-                            reuse_event = TRUE;
-                        }
-			else
-			{
-                            keep_event = FALSE;
-                        }
-                        break;
-                    }
-                    w = IntuitionBase->ActiveWindow;
-                }
-#endif
-                if (gadget)
-                {
-                    if (IS_BOOPSI_GADGET(gadget))
-                    {
-                        gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
-                    }
-
-                } /* if (there is an active gadget) */
-                else if (w && (!req || req->Flags & NOISYREQ) && w != GetPrivScreen(w->WScreen)->MenuVerifyActiveWindow)
-                {
-                    ih_fire_intuimessage(w,
-                                     IDCMP_MOUSEBUTTONS,
-                                     ie->ie_Code,
-                                     w,
-                                     IntuitionBase);
-                }
-
-                break; /* case MENUDOWN */
-
-            case IECODE_NOBUTTON: /* MOUSEMOVE */
-                {
-                    if (ie->ie_Qualifier & IEQUALIFIER_RELATIVEMOUSE) {
-                        struct Screen *scr;
-                        //ULONG Thresh;
-
-    	    	    	/* Add delta information lost in previous mousemove event. See below. */			
-                        iihdata->DeltaMouseX = ie->ie_X + iihdata->DeltaMouseX_Correction;
-                        iihdata->DeltaMouseY = ie->ie_Y + iihdata->DeltaMouseY_Correction;
-
-#define ACCELERATOR_THRESH      2
-#define ACCELERATOR_MULTI       2
-
-                        if (GetPrivIBase(IntuitionBase)->ActivePreferences->EnableCLI & MOUSE_ACCEL)
-                        {
-                            /* Acceleration */
-                            if (ABS(iihdata->DeltaMouseX) > ACCELERATOR_THRESH)
-                            {
-                                iihdata->DeltaMouseX *= ACCELERATOR_MULTI;
-                            }
-                            if (ABS(iihdata->DeltaMouseY) > ACCELERATOR_THRESH)
-                            {
-                                iihdata->DeltaMouseY *= ACCELERATOR_MULTI;
-                            }
-                        }
-                        
-                        switch(GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks)
-                        {
-                            case 0:
-			    	iihdata->DeltaMouseX_Correction = 0;
-			    	iihdata->DeltaMouseX_Correction = 0;
-                                break;
-                            
-                            default:
-			    	/* Remember the delta information which gets lost because of division by PointerTicks.
-				   Will be added to prescaled deltas of next mousemove event. If this is not done, moving
-				   the mouse very slowly would cause it to not move at all */
-				   
-    				iihdata->DeltaMouseX_Correction = iihdata->DeltaMouseX % GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
-    				iihdata->DeltaMouseY_Correction = iihdata->DeltaMouseY % GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
-				
-                                iihdata->DeltaMouseX /= GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
-                                iihdata->DeltaMouseY /= GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
-                                break;
-                        }
-
-
-                        ie->ie_X = iihdata->DeltaMouseX + iihdata->LastMouseX;
-                        ie->ie_Y = iihdata->DeltaMouseY + iihdata->LastMouseY;
-
-                        //jDc: not really necessary to lock this for reading since this ptr is only modified
-                        //by functions synced with inputhandler
-                        //lock = LockIBase(0);
-                        scr = IntuitionBase->FirstScreen;
-
-                        if (scr)
-                        {
-                            if (IntuitionBase->FirstScreen->Flags & AUTOSCROLL)
-                            {
-
-#define VWIDTH IntuitionBase->ViewLord.ViewPort->DWidth
-#define VHEIGHT IntuitionBase->ViewLord.ViewPort->DHeight
-#define VDX IntuitionBase->ViewLord.ViewPort->DxOffset
-#define VDY IntuitionBase->ViewLord.ViewPort->DyOffset
-
-                                if ((ie->ie_X > VWIDTH - scr->LeftEdge - 1) || (ie->ie_X < - scr->LeftEdge) ||
-                                     (ie->ie_Y > VHEIGHT - scr->TopEdge - 1) || (ie->ie_Y < - scr->TopEdge))
-                                {
-                                    if (ie->ie_X >  VWIDTH - scr->LeftEdge - 1)
-                                    {
-                                        scr->LeftEdge = VWIDTH - ie->ie_X;
-                                        if (VWIDTH - scr->LeftEdge > scr->Width) scr->LeftEdge = VWIDTH - scr->Width; 
-                                        VDX = scr->LeftEdge;
-                                    }  
-
-                                    if (ie->ie_X < -scr->LeftEdge)
-                                    {
-                                        scr->LeftEdge = -ie->ie_X;
-                                        if (scr->LeftEdge < VWIDTH - scr->Width) scr->LeftEdge = VWIDTH - scr->Width;
-                                        if(scr->LeftEdge > 0) scr->LeftEdge = 0;    // we don't support > 0 LeftEdges
-                                        VDX = scr->LeftEdge;
-                                    }
-
-                                    if (ie->ie_Y >  VHEIGHT - scr->TopEdge - 1)
-                                    {
-                                        scr->TopEdge = VHEIGHT - ie->ie_Y;
-                                        if (VHEIGHT - scr->TopEdge > scr->Height) scr->TopEdge = VHEIGHT - scr->Height;
-                                        VDY = scr->TopEdge;
-                                    }
-
-                                    if (ie->ie_Y < -scr->TopEdge)
-                                    {
-                                        scr->TopEdge = - ie->ie_Y;
-                                        if (scr->TopEdge < VHEIGHT - scr->Height) scr->TopEdge = VHEIGHT - scr->Height;
-                                        if(scr->TopEdge > 0) scr->TopEdge = 0;
-                                        VDY = scr->TopEdge;
-                                    }
-
-                                    ScrollVPort(IntuitionBase->ViewLord.ViewPort);
-                                }
-                            }
-
-                            if (ie->ie_X >= scr->Width + max(scr->LeftEdge,0))  ie->ie_X = scr->Width + max(scr->LeftEdge,0) - 1;
-                            if (ie->ie_Y >= scr->Height + max(scr->TopEdge,0)) ie->ie_Y = scr->Height + max(scr->TopEdge,0) - 1;
-                            if (ie->ie_X < - scr->LeftEdge) ie->ie_X = - scr->LeftEdge;
-                            if (ie->ie_Y < - scr->TopEdge) ie->ie_Y = - scr->TopEdge;
-
-                        }
-                        else
-                        {
-                            if (ie->ie_X >= 320) ie->ie_X = 320 - 1;
-                            if (ie->ie_Y >= 200) ie->ie_Y = 200 - 1;
-                            if (ie->ie_X < 0) ie->ie_X = 0;
-                            if (ie->ie_Y < 0) ie->ie_Y = 0;
-                        }
-                        //UnlockIBase(lock);
-                    } else {
-                        iihdata->DeltaMouseX = ie->ie_X - iihdata->LastMouseX;
-                        iihdata->DeltaMouseY = ie->ie_Y - iihdata->LastMouseY;
-                    }
-
-#ifdef SKINS
-                    if (gadget == iihdata->MasterDragGadget)
-                    {
-                        struct gpInput gpi;
-                        ULONG 	       retval;
-
-                        gpi.MethodID 	= GM_MOVETEST;
-                        gpi.gpi_GInfo 	= gi;
-                        gpi.gpi_Mouse.X = ie->ie_X - gi->gi_Window->WScreen->LeftEdge;
-                        gpi.gpi_Mouse.Y = ie->ie_Y - gi->gi_Window->WScreen->TopEdge;
-                        gpi.gpi_IEvent  = ie;
-
-                        retval = Locked_DoMethodA(gi->gi_Window, gadget, (Msg)&gpi, IntuitionBase);
-                        if (retval == MOVETEST_ADJUSTPOS)
-                        {
-                            ie->ie_X = gpi.gpi_Mouse.X + gi->gi_Window->WScreen->LeftEdge;
-                            ie->ie_Y = gpi.gpi_Mouse.Y + gi->gi_Window->WScreen->TopEdge;
-                        }
-
-                    }
-#endif
-                    /* Do Mouse Bounding - mouse will be most restrictive of screen size or mouse bounds */
-		    if (iihdata->MouseBoundsActiveFlag)
-		    {			
-                        if (ie->ie_X < iihdata->MouseBoundsLeft)
-			    ie->ie_X = iihdata->MouseBoundsLeft;
-                        else if (ie->ie_X > iihdata->MouseBoundsRight)
-			    ie->ie_X = iihdata->MouseBoundsRight;
-                        
-                        if (ie->ie_Y < iihdata->MouseBoundsTop)
-			    ie->ie_Y = iihdata->MouseBoundsTop;
-                        else if (ie->ie_Y > iihdata->MouseBoundsBottom)
-			    ie->ie_Y = iihdata->MouseBoundsBottom;
-		    }
-
-    	    	    #if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP
-			MySetPointerPos(IntuitionBase, ie->ie_X, ie->ie_Y);
-    	    	    #else
-		    	pointerposx = ie->ie_X;
-			pointerposy = ie->ie_Y;
-			call_setpointerpos = TRUE;
-		    #endif
-
-                    iihdata->LastMouseX = ie->ie_X;
-                    iihdata->LastMouseY = ie->ie_Y;
-
-                    notify_mousemove_screensandwindows(ie->ie_X, ie->ie_Y, IntuitionBase);
-
-#ifdef SKINS
-                    if (!gadget)
-                    {
-                        if (iihdata->TitlebarOnTop)
-                        {
-                            if (IntuitionBase->FirstScreen->MouseY > IntuitionBase->FirstScreen->BarHeight && GetPrivScreen(IntuitionBase->FirstScreen)->SpecialFlags & SF_AppearingBar)
-                            {
-                                iihdata->TitlebarOnTop = FALSE;
-                                iihdata->TitlebarAppearTime = 0;
-
-                                LOCK_REFRESH(IntuitionBase->FirstScreen);
-
-                                MoveLayer(0,IntuitionBase->FirstScreen->BarLayer,0,-(IntuitionBase->FirstScreen->BarHeight + 1));
-                                CheckLayers(IntuitionBase->FirstScreen, IntuitionBase);
-
-                                UNLOCK_REFRESH(IntuitionBase->FirstScreen);
-                            }
-                        }
-			else
-			{
-                            if (IntuitionBase->FirstScreen->MouseY == 0 && GetPrivScreen(IntuitionBase->FirstScreen)->SpecialFlags & SF_AppearingBar && !MENUS_ACTIVE && !(PeekQualifier() & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_RBUTTON|IEQUALIFIER_MIDBUTTON)))
-                            {
-                                if (!(iihdata->TitlebarAppearTime))
-                                {
-                                    iihdata->TitlebarAppearTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
-                                    iihdata->TitlebarAppearTime += ie->ie_TimeStamp.tv_micro / 20000;
-                                }
-                            }
-			    else
-			    {
-                                iihdata->TitlebarAppearTime = 0;
-                            }
-                        }
-                    }
-#endif
-                    if (MENUS_ACTIVE) {
-                        FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-                        keep_event = FALSE;
-                        break;
-                    }
-
-                    if (gadget)
-                    {
-                        keep_event = FALSE;
-
-                        switch (gadget->GadgetType & GTYP_GTYPEMASK)
-                        {
-                        case GTYP_BOOLGADGET:
-                        case 0: //fallback for sucky gadgets
-                            /* Must be a RELVERIFY gadget */
-                            {
-                                BOOL inside;
-
-                                inside = InsideGadget(gi->gi_Screen,
-                                        	      gi->gi_Window,
-                                        	      gi->gi_Requester,
-                                        	      gadget,
-                                        	      gi->gi_Screen->MouseX,
-                                        	      gi->gi_Screen->MouseY);
-
-                                if  (inside != iihdata->MouseWasInsideBoolGadget) {
-                                    iihdata->MouseWasInsideBoolGadget = inside;
-
-                                    gadget->Flags ^= GFLG_SELECTED;
-                                    RefreshBoolGadgetState(gadget, w, req, IntuitionBase);
-                                }
-                            }
-                            break;
-
-                        case GTYP_PROPGADGET:
-                            HandlePropMouseMove(gadget,
-                                        	w,
-                                        	req,
-                                        	w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, gi->gi_Screen, gi->gi_Window, NULL),
-                                        	w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, gi->gi_Screen, gi->gi_Window, NULL),
-                                        	IntuitionBase);
-
-                            break;
-
-                        case GTYP_CUSTOMGADGET:
-                            gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
-                            break;
-
-                        } /* switch GadgetType */
-
-                    } /* if (a gadget is currently active) */
-
-                    keep_event = FALSE;
-
-                    if (!w)
-			break;
-
-                    if (IW(w)->helpflags & HELPF_GADGETHELP && (!(PeekQualifier() & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_RBUTTON|IEQUALIFIER_MIDBUTTON))))
-                    {
-                        struct Window *hw;
-                        struct Gadget *g;
-
-                        hw = FindActiveWindow(ie, 0, IntuitionBase);
-
-                        if (hw != w &&
-                            (!hw || !(IW(w)->helpflags & HELPF_ISHELPGROUP) ||
-                             !(IW(hw)->helpflags & HELPF_ISHELPGROUP) ||
-                             IW(w)->helpgroup != IW(hw)->helpgroup))
-                        {
-
-                            if (iihdata->LastHelpWindow)
-                            {
-                                fire_intuimessage(w,
-                                        	  IDCMP_GADGETHELP,
-                                        	  0,
-                                        	  NULL,
-                                        	  IntuitionBase);
-
-                                iihdata->LastHelpGadget = NULL;
-                                iihdata->LastHelpWindow = NULL;
-                                iihdata->HelpGadgetFindTime = 0;
-                            }
-                        }
-                        else
-                        {
-                            g = FindHelpGadget (hw,
-                                        	IntuitionBase->ActiveScreen->MouseX,
-                                        	IntuitionBase->ActiveScreen->MouseY,
-                                        	IntuitionBase);
-                            if (g && g != iihdata->LastHelpGadget)
-                            {
-                                if (!iihdata->LastHelpGadget)
-                                {
-                                    iihdata->HelpGadgetFindTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
-                                    iihdata->HelpGadgetFindTime += ie->ie_TimeStamp.tv_micro / 20000;
-                                } else {
-                                    if (hw == iihdata->LastHelpWindow)
-                                    {
-                                        iihdata->HelpGadgetFindTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
-                                        iihdata->HelpGadgetFindTime += ie->ie_TimeStamp.tv_micro / 20000;
-                                        iihdata->HelpGadgetFindTime += 25;//smaller delay
-                                    }
-                                }
-                            }
-                            else if (g != iihdata->LastHelpGadget ||
-                                 hw != iihdata->LastHelpWindow)
-                            {
-                                fire_intuimessage(hw,
-                                        	  IDCMP_GADGETHELP,
-                                        	  0, /* Don't know what it should be */
-                                        	  hw,
-                                        	  IntuitionBase);
-                            }
-
-                            iihdata->LastHelpGadget = g;
-                            iihdata->LastHelpWindow = hw;
-                        }
-                    }
-                    else
-                    {
-                        iihdata->LastHelpGadget = NULL;
-                        iihdata->LastHelpWindow = NULL;
-                        iihdata->HelpGadgetFindTime = 0;
-                    }
-
-                    if (!(w->IDCMPFlags & IDCMP_MOUSEMOVE))
-			break;
-
-                    /* Send IDCMP_MOUSEMOVE if WFLG_REPORTMOUSE is set
-                       and/or active gadget has GACT_FOLLOWMOUSE set */
-
-                    /* jDc: do NOT send when sizegad is pressed */
-
-                    if (!(w->Flags & WFLG_REPORTMOUSE))
-                    {
-                        if (!gadget)
-			    break;
-                        if (!(gadget->Activation & GACT_FOLLOWMOUSE))
-			    break;
-                    } else {
-                        if (gadget && (gadget->GadgetType & (GTYP_SIZING|GTYP_WDRAGGING)))
-			    break;
-                    }
-
-                    orig_ie->ie_Class = IECLASS_RAWMOUSE;
-
-                    /* Limit the number of IDCMP_MOUSEMOVE messages sent to intuition.
-                       note that this comes after handling gadgets, because gadgets should get all events.
-                    */
-
-                    if (IW(w)->num_mouseevents >= IW(w)->mousequeue)
-                    {
-                        BOOL old_msg_found = FALSE;
-
-                        /* Mouse Queue is full, so try looking for a not
-                           yet GetMsg()ed IntuiMessage in w->UserPort
-                           trying to modify that. */
-
-                        Forbid();
-                        if (w->UserPort)
-                        {
-                            struct IntuiMessage *im;
-
-                            for (im = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_TailPred;
-                                im->ExecMessage.mn_Node.ln_Pred;
-                                im = (struct IntuiMessage *)im->ExecMessage.mn_Node.ln_Pred)
-                            {
-                                if ((im->Class == IDCMP_MOUSEMOVE) &&
-                                    (im->IDCMPWindow == w))
-                                {
-                                    im->Qualifier = iihdata->ActQualifier;
-
-                                    if (w->IDCMPFlags & IDCMP_DELTAMOVE)
-                                    {
-                                        im->MouseX = iihdata->DeltaMouseX;
-                                        im->MouseY = iihdata->DeltaMouseY;
-                                    }
-                                    else
-                                    {
-                                        im->MouseX = w->MouseX;
-                                        im->MouseY = w->MouseY;
-                                    }
-                                    CurrentTime(&im->Seconds, &im->Micros);
-
-                                    old_msg_found = TRUE;
-                                    break;
-                                }
-                            }
-                        } /* if (w->UserPort) */
-                        Permit();
-
-                        /* no need to send a new message if we modified
-                           an existing one ... */
-
-                        if (old_msg_found) break;
-
-                        /* ... otherwise we are in a strange situation. The mouse
-                           queue is full, but we did not find an existing MOUSEMOVE
-                           imsg in w->UserPort. So the app probably has removed
-                           an imsg from the UserPort with GetMsg but we did not get
-                           the ReplyMsg, yet. In this case we do send a new message */
-
-                        HandleIntuiReplyPort(iihdata, IntuitionBase);
-
-                    }
-
-                    /* MouseQueue is not full, so we can send a message. We increase
-                       IntWindow->num_mouseevents which will later be decreased after
-                       the Intuition InputHandler gets the ReplyMessage from the app
-                       and handles it in HandleIntuiReplyPort() */
-
-                    if (ih_fire_intuimessage(w,
-                                	     IDCMP_MOUSEMOVE,
-                                	     IECODE_NOBUTTON,
-                                	     w,
-                                	     IntuitionBase))
-                    {
-                        IW(w)->num_mouseevents++;
-                    }
-
-                    break;
-
-                } /* case IECODE_NOBUTTON */
-
-            } /* switch (ie->ie_Code)  (what button was pressed ?) */
+				      IntuitionBase);
             break;
 
 #define KEY_QUALIFIERS (IEQUALIFIER_LSHIFT     | IEQUALIFIER_RSHIFT   | \
@@ -3705,9 +2781,7 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
 
 #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
     if (call_setpointerpos)
-    {
-    	MySetPointerPos(IntuitionBase, pointerposx, pointerposy);
-    }
+    	MySetPointerPos(IntuitionBase, iihdata->LastMouseX, iihdata->LastMouseY);
 #endif
 
     /* Terminate the event chain. */
