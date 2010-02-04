@@ -606,106 +606,78 @@ D(bug("[NVidia] CopyBox(src(%p,%d:%d@%d),dst(%p,%d:%d@%d),%d:%d\n",
 }
 
 #define ToRGB555(c) \
-    (((c & 0xf80000) >> 9) | ((c & 0xf800) >> 6) | ((c & 0xf8) >> 3) | 0x8000)
+    (((c & 0xf80000) >> 9) | ((c & 0xf800) >> 6) | ((c & 0xf8) >> 3) | ((c & 0xFF000000) ? 0x8000 : 0))
 
-#define ToRGB8888(alp,c) ((c) | ((alp) << 24))
-
-static void TransformCursor(struct staticdata *);
+/* Do we miss similar definition in include/hidd/graphics.h ? */
+#if AROS_BIG_ENDIAN
+#define Machine_ARGB32 vHidd_StdPixFmt_ARGB32
+#else
+#define Machine_ARGB32 vHidd_StdPixFmt_BGRA32
+#endif
 
 BOOL NV__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
 {
-//    bug("SetCursorShape %p\n", msg->shape);
-//    return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (msg->shape == NULL)
     {
 	NVShowHideCursor(_sd, 0);
 	_sd->Card.cursorVisible = 0;
+	return TRUE;
     }
     else
     {
-	OOP_Object	*pfmt;
-	OOP_Object	*colormap;
-	HIDDT_StdPixFmt	pixfmt;
-	HIDDT_Color	color;
-
-	IPTR		width, height, x, y;
-	IPTR		maxw,maxh;
-
-	ULONG		*curimg = (ULONG*)((IPTR)_sd->Card.CursorStart + (IPTR)_sd->Card.FrameBuffer);
-
-	struct pHidd_BitMap_GetPixel __gp = {
-	    mID:    OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetPixel)
-	}, *getpixel = &__gp;
-
-	struct pHidd_ColorMap_GetColor __gc = {
-	    mID:	    OOP_GetMethodID(IID_Hidd_ColorMap, moHidd_ColorMap_GetColor),
-	    colorReturn:    &color,
-	}, *getcolor = &__gc;
+	IPTR width, height, x;
 
 	OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
 	OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
-	OOP_GetAttr(msg->shape, aHidd_BitMap_PixFmt, (APTR)&pfmt);
-	OOP_GetAttr(pfmt, aHidd_PixFmt_StdPixFmt, &pixfmt);
-	OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, (APTR)&colormap);
 
 	if (_sd->Card.alphaCursor)
 	{
+	    ULONG *curimg = (ULONG *)_sd->Card.CURSOR;
+	    
 	    if (width > 64) width = 64;
 	    if (height > 64) height = 64;
 
-	    maxw = 64;
-	    maxh = 64;
+	    LOCK_HW
+
+	    /* Clear the matrix */
+	    for (x = 0; x < 64*64; x++)
+	        curimg[x] = 0;
+
+	    /* Get data from the bitmap */
+	    HIDD_BM_GetImage(msg->shape, (UBYTE *)curimg, 64*4, 0, 0, width, height, Machine_ARGB32);
+	    
+	    UNLOCK_HW
+	    return TRUE;   
 	}
 	else
 	{
+	    ULONG *tmp;
+	    UWORD *curimg = (UWORD *)_sd->Card.CURSOR;
+
 	    if (width > 32) width = 32;
 	    if (height > 32) height = 32;
 
-	    maxw = 32;
-	    maxh = 32;
+	    /* Allocate a temporary buffer. It will be cleared because the pool was created with MEMF_CLEAR */
+            tmp = AllocPooled(_sd->memPool, 4 * 32 * 32);
+	    if (tmp) {
+	        /* Get data from the bitmap, we need alpha channel too */
+	        HIDD_BM_GetImage(msg->shape, (UBYTE *)tmp, 4 * 32, 0, 0, width, height, Machine_ARGB32);
+
+	        LOCK_HW
+
+		/* Now convert the data */
+		for (x = 0; x < 32*32; x++)
+		    curimg[x] = ToRGB555(tmp[x]);
+
+		UNLOCK_HW
+
+		FreePooled(_sd->memPool, tmp, 4 * 32 * 32);
+		return TRUE;
+	    } else
+	        return FALSE;
 	}
-
-	LOCK_HW
-
-	for (x = 0; x < maxw*maxh; x++)
-	    curimg[x] = 0;
-
-	for (y = 0; y < height; y++)
-	{
-	    for (x = 0; x < width; x++)
-	    {
-		HIDDT_Pixel pixel;
-		getpixel->x = x;
-		getpixel->y = y;
-		pixel = OOP_DoMethod(msg->shape, (OOP_Msg)getpixel);
-
-		if (pixfmt == vHidd_StdPixFmt_LUT8)
-		{
-		    getcolor->colorNo = pixel;
-		    OOP_DoMethod(colormap, (OOP_Msg)getcolor);
-		    pixel = ((color.red << 8) & 0xff0000) |
-			    ((color.green) & 0x00ff00)    |
-			    ((color.blue >> 8) & 0x0000ff);
-
-		    curimg[maxw*2+3] = pixel ? 0x50000000 : 0x00000000;
-		    if (pixel)
-			*curimg++ = pixel;
-		    else curimg++;
-		}
-	    }
-	    for (x=width; x < maxw; x++, curimg++)
-		if (*curimg!=0x50000000) *curimg = 0;
-	}
-
-	for (y=height; y < maxh; y++)
-	    for (x=0; x < maxw; x++)
-		{ if (*curimg!=0x50000000) *curimg = 0; curimg++; }
-
-	UNLOCK_HW
     }
 
-    TransformCursor(_sd);
-    return TRUE;
 }
 
 VOID NV__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o,
@@ -724,48 +696,6 @@ VOID NV__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o,
 
 #undef _sd
 #define _sd sd
-
-static void TransformCursor(struct staticdata *sd)
-{
-    ULONG *tmp = AllocPooled(sd->memPool, 4 * 64 * 64);
-    ULONG dwords,i;
-    ULONG *curimg = (ULONG*)((IPTR)sd->Card.CursorStart + (IPTR)sd->Card.FrameBuffer);
-
-
-    if (sd->Card.alphaCursor)
-    {
-	dwords = 64*64;
-	for (i=0; i < dwords; i++)
-	{
-	    UBYTE alp;
-	    if (curimg[i] == 0) alp = 0;
-	    else alp = 0xe0;
-
-	    if (curimg[i] == 0x50000000) ((ULONG*)tmp)[i] = ToRGB8888(0x50,0);
-	    else ((ULONG*)tmp)[i] = ToRGB8888(alp, curimg[i]);
-	}
-    }
-    else
-    {
-	dwords = (32*32) >> 1;
-
-	for(i=0; i < dwords; i++)
-	{
-	    if (!curimg[i]) ((UWORD*)tmp)[i] = 0;
-	    else ((UWORD*)tmp)[i] = ToRGB555(curimg[i]);
-	}
-    }
-
-    LOCK_HW
-
-    for (i=0; i < dwords; i++)
-	sd->Card.CURSOR[i] = tmp[i];
-
-    UNLOCK_HW
-
-    FreePooled(sd->memPool, tmp, 4*64*64);
-}
-
 
 /*
     Allocates some memory area on GFX card, which may be sufficient for bitmap
