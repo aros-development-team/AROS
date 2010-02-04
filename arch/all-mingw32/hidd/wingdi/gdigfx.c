@@ -433,7 +433,7 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	   so we pass private data of our bitmap class to it directly.
 	   Don't use such tricks in normal AROS code, this isn't really good. */
 	if (msg->bitMap)
-	    OOP_GetAttr(msg->bitMap, aHidd_GDIBitMap_Data, &bmdata);
+	    bmdata = OOP_INST_DATA(XSD(cl)->bmclass, msg->bitMap);
 	data->bitmap = msg->bitMap;
 
     	/* Hosted system has no real blitter, however we have host-side window service thread that does some work asynchronously,
