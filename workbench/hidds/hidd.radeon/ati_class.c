@@ -330,39 +330,18 @@ BOOL METHOD(ATI, Hidd_Gfx, SetCursorShape)
     }
     else
     {
-        OOP_Object  *pfmt;
-        OOP_Object  *colormap;
-        HIDDT_StdPixFmt pixfmt;
-        HIDDT_Color color;
-
-        ULONG       width, height, x, y;
-        ULONG       maxw,maxh;
+        ULONG       width, height, x;
         ULONG       save1=0, save2=0;
 
         ULONG       *curimg = (ULONG*)((IPTR)sd->Card.CursorStart + (IPTR)sd->Card.FrameBuffer);
 
-        CURSOR_SWAPPING_DECL_MMIO;
-
-        struct pHidd_BitMap_GetPixel __gp = {
-            mID:    OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_GetPixel)
-        }, *getpixel = &__gp;
-
-        struct pHidd_ColorMap_GetColor __gc = {
-            mID:        OOP_GetMethodID((STRPTR)CLID_Hidd_ColorMap, moHidd_ColorMap_GetColor),
-            colorReturn:    &color,
-        }, *getcolor = &__gc;
+//      CURSOR_SWAPPING_DECL_MMIO;
 
         OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
         OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
-        OOP_GetAttr(msg->shape, aHidd_BitMap_PixFmt, (APTR)&pfmt);
-        OOP_GetAttr(pfmt, aHidd_PixFmt_StdPixFmt, &pixfmt);
-        OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, (APTR)&colormap);
 
         if (width > 64) width = 64;
         if (height > 64) height = 64;
-
-        maxw = 64;
-        maxh = 64;
 
         LOCK_HW
 
@@ -378,43 +357,16 @@ BOOL METHOD(ATI, Hidd_Gfx, SetCursorShape)
             OUTREG(RADEON_CRTC2_GEN_CNTL, save2 & (ULONG)~RADEON_CRTC2_CUR_EN);
         }
 
-        CURSOR_SWAPPING_START();
+//      CURSOR_SWAPPING_START();
 
-        for (x = 0; x < maxw*maxh; x++)
+        for (x = 0; x < 64*64; x++)
            curimg[x] = 0;
 
-        for (y = 0; y < height; y++)
-        {
-            for (x = 0; x < width; x++)
-            {
-                HIDDT_Pixel pixel;
-                getpixel->x = x;
-                getpixel->y = y;
-                pixel = OOP_DoMethod(msg->shape, (OOP_Msg)getpixel);
+	/* I always get the image in BGRA32 format (it becomes ARGB32 when picked up as ULONG on little-endian),
+	   so i don't turn on byte swapping */
+	HIDD_BM_GetImage(msg->shape, (UBYTE *)curimg, 64*4, 0, 0, width, height, vHidd_StdPixFmt_BGRA32);
 
-                if (pixfmt == vHidd_StdPixFmt_LUT8)
-                {
-		    if (pixel)
-		    {
-                	getcolor->colorNo = pixel;
-                	OOP_DoMethod(colormap, (OOP_Msg)getcolor);
-                	pixel = ((color.red << 8) & 0xff0000) |
-                    	    ((color.green) & 0x00ff00)    |
-                    	    ((color.blue >> 8) & 0x0000ff);
-                        *curimg++ = ToRGB8888(0xe0, pixel);
-                    }
-		    else *curimg++ = ToRGB8888(0,0);
-                }
-            }
-            for (x=width; x < maxw; x++, curimg++)
-                *curimg = 0;
-        }
-
-        for (y=height; y < maxh; y++)
-            for (x=0; x < maxw; x++)
-                { if (*curimg!=0x50000000) *curimg = 0; curimg++; }
-
-        CURSOR_SWAPPING_END();
+//      CURSOR_SWAPPING_END();
 
         if (!sd->Card.IsSecondary)
             OUTREG(RADEON_CRTC_GEN_CNTL, save1);

@@ -52,6 +52,7 @@
 #define DEBUG_HANDLER(x)    ;
 #define DEBUG_KEY(x)        ;
 #define DEBUG_SCREENKEY(x)  ;
+#define DEBUG_DRAG(x)
 
 /****************************************************************************************/
 
@@ -461,6 +462,14 @@ struct Window *GetToolBoxWindow(struct InputEvent *ie, struct IntuitionBase *Int
 }
 
 /****************************************************************************************/
+
+#define KEY_QUALIFIERS (IEQUALIFIER_LSHIFT     | IEQUALIFIER_RSHIFT   | \
+IEQUALIFIER_CAPSLOCK   | IEQUALIFIER_CONTROL  | \
+IEQUALIFIER_LALT       | IEQUALIFIER_RALT     | \
+IEQUALIFIER_LCOMMAND   | IEQUALIFIER_RCOMMAND | \
+IEQUALIFIER_NUMERICPAD)
+
+#define BUTTON_QUALIFIERS (IEQUALIFIER_MIDBUTTON | IEQUALIFIER_RBUTTON | IEQUALIFIER_LEFTBUTTON)
 
 static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *iihdata, struct Window *w,
 				       struct Gadget *gadget, struct GadgetInfo *gi,
@@ -1261,128 +1270,130 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
     case IECODE_NOBUTTON: /* MOUSEMOVE */
     {
-	    if (ie->ie_Qualifier & IEQUALIFIER_RELATIVEMOUSE) {
-		struct Screen *scr;
-		//ULONG Thresh;
+    	struct Screen *scr;
 
-		/* Add delta information lost in previous mousemove event. See below. */			
-		iihdata->DeltaMouseX = ie->ie_X + iihdata->DeltaMouseX_Correction;
-		iihdata->DeltaMouseY = ie->ie_Y + iihdata->DeltaMouseY_Correction;
+	if (ie->ie_Qualifier & IEQUALIFIER_RELATIVEMOUSE) {
+	    //ULONG Thresh;
+
+	    /* Add delta information lost in previous mousemove event. See below. */			
+	    iihdata->DeltaMouseX = ie->ie_X + iihdata->DeltaMouseX_Correction;
+	    iihdata->DeltaMouseY = ie->ie_Y + iihdata->DeltaMouseY_Correction;
 
 #define ACCELERATOR_THRESH      2
 #define ACCELERATOR_MULTI       2
 
-		if (GetPrivIBase(IntuitionBase)->ActivePreferences->EnableCLI & MOUSE_ACCEL)
-		{
-		    /* Acceleration */
-		    if (ABS(iihdata->DeltaMouseX) > ACCELERATOR_THRESH)
-		    {
-			iihdata->DeltaMouseX *= ACCELERATOR_MULTI;
-		    }
-		    if (ABS(iihdata->DeltaMouseY) > ACCELERATOR_THRESH)
-		    {
-			iihdata->DeltaMouseY *= ACCELERATOR_MULTI;
-		    }
-		}
+	    if (GetPrivIBase(IntuitionBase)->ActivePreferences->EnableCLI & MOUSE_ACCEL) {
+		/* Acceleration */
+		if (ABS(iihdata->DeltaMouseX) > ACCELERATOR_THRESH)
+		    iihdata->DeltaMouseX *= ACCELERATOR_MULTI;
+		if (ABS(iihdata->DeltaMouseY) > ACCELERATOR_THRESH)
+		    iihdata->DeltaMouseY *= ACCELERATOR_MULTI;
+	    }
 		
-		switch(GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks)
-		{
-		    case 0:
-			iihdata->DeltaMouseX_Correction = 0;
-			iihdata->DeltaMouseX_Correction = 0;
-			break;
+	    switch(GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks) {
+	    case 0:
+		iihdata->DeltaMouseX_Correction = 0;
+		iihdata->DeltaMouseX_Correction = 0;
+		break;
 		    
-		    default:
-			/* Remember the delta information which gets lost because of division by PointerTicks.
-			   Will be added to prescaled deltas of next mousemove event. If this is not done, moving
-			   the mouse very slowly would cause it to not move at all */
-			   
-			iihdata->DeltaMouseX_Correction = iihdata->DeltaMouseX % GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
-			iihdata->DeltaMouseY_Correction = iihdata->DeltaMouseY % GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
-			
-			iihdata->DeltaMouseX /= GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
-			iihdata->DeltaMouseY /= GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
-			break;
-		}
+	    default:
+		/* Remember the delta information which gets lost because of division by PointerTicks.
+		   Will be added to prescaled deltas of next mousemove event. If this is not done, moving
+		   the mouse very slowly would cause it to not move at all */
+		   
+		iihdata->DeltaMouseX_Correction = iihdata->DeltaMouseX % GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
+		iihdata->DeltaMouseY_Correction = iihdata->DeltaMouseY % GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
+		
+		iihdata->DeltaMouseX /= GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
+		iihdata->DeltaMouseY /= GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
+		break;
+	    }
 
 
-		ie->ie_X = iihdata->DeltaMouseX + iihdata->LastMouseX;
-		ie->ie_Y = iihdata->DeltaMouseY + iihdata->LastMouseY;
+	    ie->ie_X = iihdata->DeltaMouseX + iihdata->LastMouseX;
+	    ie->ie_Y = iihdata->DeltaMouseY + iihdata->LastMouseY;
+	} else {
+	    iihdata->DeltaMouseX = ie->ie_X - iihdata->LastMouseX;
+	    iihdata->DeltaMouseY = ie->ie_Y - iihdata->LastMouseY;
+	}
 
-		//jDc: not really necessary to lock this for reading since this ptr is only modified
-		//by functions synced with inputhandler
-		//lock = LockIBase(0);
-		scr = IntuitionBase->FirstScreen;
+	//jDc: not really necessary to lock this for reading since this ptr is only modified
+	//by functions synced with inputhandler
+	//lock = LockIBase(0);
+	scr = IntuitionBase->FirstScreen;
 
-		if (scr)
-		{
-		    if (IntuitionBase->FirstScreen->Flags & AUTOSCROLL)
-		    {
+	if (scr)
+	{
+	    /* Handle screen dragging if LAmiga + LButton are pressed.
+	       TODO: handle extra qualifier specified by IControl prefs. */
+	    if ((iihdata->ActQualifier & (KEY_QUALIFIERS | BUTTON_QUALIFIERS)) == (IEQUALIFIER_LCOMMAND | IEQUALIFIER_LEFTBUTTON)) {
+	        DEBUG_DRAG(bug("[InputHandler] Screen drag\n"));
+	        ScreenPosition(scr, SPOS_RELATIVE, iihdata->DeltaMouseX, iihdata->DeltaMouseY, 0, 0);
+	    }
+
+/* Some old nonfunctional code - left for better times
+	    if (scr->Flags & AUTOSCROLL)
+	    {
 
 #define VWIDTH IntuitionBase->ViewLord.ViewPort->DWidth
 #define VHEIGHT IntuitionBase->ViewLord.ViewPort->DHeight
 #define VDX IntuitionBase->ViewLord.ViewPort->DxOffset
 #define VDY IntuitionBase->ViewLord.ViewPort->DyOffset
 
-			if ((ie->ie_X > VWIDTH - scr->LeftEdge - 1) || (ie->ie_X < - scr->LeftEdge) ||
-			     (ie->ie_Y > VHEIGHT - scr->TopEdge - 1) || (ie->ie_Y < - scr->TopEdge))
-			{
-			    if (ie->ie_X >  VWIDTH - scr->LeftEdge - 1)
-			    {
-				scr->LeftEdge = VWIDTH - ie->ie_X;
-				if (VWIDTH - scr->LeftEdge > scr->Width) scr->LeftEdge = VWIDTH - scr->Width; 
-				VDX = scr->LeftEdge;
-			    }  
+		if ((ie->ie_X > VWIDTH - scr->LeftEdge - 1) || (ie->ie_X < - scr->LeftEdge) ||
+		     (ie->ie_Y > VHEIGHT - scr->TopEdge - 1) || (ie->ie_Y < - scr->TopEdge))
+		{
+		    if (ie->ie_X >  VWIDTH - scr->LeftEdge - 1)
+		    {
+			scr->LeftEdge = VWIDTH - ie->ie_X;
+			if (VWIDTH - scr->LeftEdge > scr->Width) scr->LeftEdge = VWIDTH - scr->Width; 
+			VDX = scr->LeftEdge;
+		    }  
 
-			    if (ie->ie_X < -scr->LeftEdge)
-			    {
-				scr->LeftEdge = -ie->ie_X;
-				if (scr->LeftEdge < VWIDTH - scr->Width) scr->LeftEdge = VWIDTH - scr->Width;
-				if(scr->LeftEdge > 0) scr->LeftEdge = 0;    // we don't support > 0 LeftEdges
-				VDX = scr->LeftEdge;
-			    }
-
-			    if (ie->ie_Y >  VHEIGHT - scr->TopEdge - 1)
-			    {
-				scr->TopEdge = VHEIGHT - ie->ie_Y;
-				if (VHEIGHT - scr->TopEdge > scr->Height) scr->TopEdge = VHEIGHT - scr->Height;
-				VDY = scr->TopEdge;
-			    }
-
-			    if (ie->ie_Y < -scr->TopEdge)
-			    {
-				scr->TopEdge = - ie->ie_Y;
-				if (scr->TopEdge < VHEIGHT - scr->Height) scr->TopEdge = VHEIGHT - scr->Height;
-				if(scr->TopEdge > 0) scr->TopEdge = 0;
-				VDY = scr->TopEdge;
-			    }
-
-			    ScrollVPort(IntuitionBase->ViewLord.ViewPort);
-			}
+		    if (ie->ie_X < -scr->LeftEdge)
+		    {
+			scr->LeftEdge = -ie->ie_X;
+			if (scr->LeftEdge < VWIDTH - scr->Width) scr->LeftEdge = VWIDTH - scr->Width;
+			if(scr->LeftEdge > 0) scr->LeftEdge = 0;    // we don't support > 0 LeftEdges
+			VDX = scr->LeftEdge;
 		    }
 
-		    if (ie->ie_X >= scr->Width + max(scr->LeftEdge,0))  ie->ie_X = scr->Width + max(scr->LeftEdge,0) - 1;
-		    if (ie->ie_Y >= scr->Height + max(scr->TopEdge,0)) ie->ie_Y = scr->Height + max(scr->TopEdge,0) - 1;
-		    if (ie->ie_X < - scr->LeftEdge) ie->ie_X = - scr->LeftEdge;
-		    if (ie->ie_Y < - scr->TopEdge) ie->ie_Y = - scr->TopEdge;
+		    if (ie->ie_Y >  VHEIGHT - scr->TopEdge - 1)
+		    {
+			scr->TopEdge = VHEIGHT - ie->ie_Y;
+			if (VHEIGHT - scr->TopEdge > scr->Height) scr->TopEdge = VHEIGHT - scr->Height;
+			VDY = scr->TopEdge;
+		    }
 
+		    if (ie->ie_Y < -scr->TopEdge)
+		    {
+			scr->TopEdge = - ie->ie_Y;
+			if (scr->TopEdge < VHEIGHT - scr->Height) scr->TopEdge = VHEIGHT - scr->Height;
+			if(scr->TopEdge > 0) scr->TopEdge = 0;
+			VDY = scr->TopEdge;
+		    }
+
+		    ScrollVPort(IntuitionBase->ViewLord.ViewPort);
 		}
-		else
-		{
-		    if (ie->ie_X >= 320) ie->ie_X = 320 - 1;
-		    if (ie->ie_Y >= 200) ie->ie_Y = 200 - 1;
-		    if (ie->ie_X < 0) ie->ie_X = 0;
-		    if (ie->ie_Y < 0) ie->ie_Y = 0;
-		}
-		//UnlockIBase(lock);
-	    } else {
-		iihdata->DeltaMouseX = ie->ie_X - iihdata->LastMouseX;
-		iihdata->DeltaMouseY = ie->ie_Y - iihdata->LastMouseY;
 	    }
+*/
+	    if (ie->ie_X >= scr->Width + max(scr->LeftEdge,0))  ie->ie_X = scr->Width + max(scr->LeftEdge,0) - 1;
+	    if (ie->ie_Y >= scr->Height + max(scr->TopEdge,0)) ie->ie_Y = scr->Height + max(scr->TopEdge,0) - 1;
+	    if (ie->ie_X < - scr->LeftEdge) ie->ie_X = - scr->LeftEdge;
+	    if (ie->ie_Y < - scr->TopEdge) ie->ie_Y = - scr->TopEdge;
+
+	}
+	else
+	{
+	    if (ie->ie_X >= 320) ie->ie_X = 320 - 1;
+	    if (ie->ie_Y >= 200) ie->ie_Y = 200 - 1;
+	    if (ie->ie_X < 0) ie->ie_X = 0;
+	    if (ie->ie_Y < 0) ie->ie_Y = 0;
+	}
+	//UnlockIBase(lock);
 
 #ifdef SKINS
-	    if (gadget == iihdata->MasterDragGadget)
-	    {
+	if (gadget == iihdata->MasterDragGadget) {
 		struct gpInput gpi;
 		ULONG 	       retval;
 
@@ -1399,35 +1410,33 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 		    ie->ie_Y = gpi.gpi_Mouse.Y + gi->gi_Window->WScreen->TopEdge;
 		}
 
-	    }
+	}
 #endif
-	    /* Do Mouse Bounding - mouse will be most restrictive of screen size or mouse bounds */
-	    if (iihdata->MouseBoundsActiveFlag)
-	    {			
-		if (ie->ie_X < iihdata->MouseBoundsLeft)
-		    ie->ie_X = iihdata->MouseBoundsLeft;
-		else if (ie->ie_X > iihdata->MouseBoundsRight)
-		    ie->ie_X = iihdata->MouseBoundsRight;
+	/* Do Mouse Bounding - mouse will be most restrictive of screen size or mouse bounds */
+	if (iihdata->MouseBoundsActiveFlag) {			
+	    if (ie->ie_X < iihdata->MouseBoundsLeft)
+		ie->ie_X = iihdata->MouseBoundsLeft;
+	    else if (ie->ie_X > iihdata->MouseBoundsRight)
+		ie->ie_X = iihdata->MouseBoundsRight;
 		
-		if (ie->ie_Y < iihdata->MouseBoundsTop)
-		    ie->ie_Y = iihdata->MouseBoundsTop;
-		else if (ie->ie_Y > iihdata->MouseBoundsBottom)
-		    ie->ie_Y = iihdata->MouseBoundsBottom;
-	    }
+	    if (ie->ie_Y < iihdata->MouseBoundsTop)
+		ie->ie_Y = iihdata->MouseBoundsTop;
+	    else if (ie->ie_Y > iihdata->MouseBoundsBottom)
+		ie->ie_Y = iihdata->MouseBoundsBottom;
+	}
 
 #if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP
-	    MySetPointerPos(IntuitionBase, ie->ie_X, ie->ie_Y);
+	MySetPointerPos(IntuitionBase, ie->ie_X, ie->ie_Y);
 #else
-	    *call_setpointerpos = TRUE;
+	*call_setpointerpos = TRUE;
 #endif
-	    iihdata->LastMouseX = ie->ie_X;
-	    iihdata->LastMouseY = ie->ie_Y;
+	iihdata->LastMouseX = ie->ie_X;
+	iihdata->LastMouseY = ie->ie_Y;
 
-	    notify_mousemove_screensandwindows(ie->ie_X, ie->ie_Y, IntuitionBase);
+	notify_mousemove_screensandwindows(ie->ie_X, ie->ie_Y, IntuitionBase);
 
 #ifdef SKINS
-	    if (!gadget)
-	    {
+	if (!gadget) {
 		if (iihdata->TitlebarOnTop)
 		{
 		    if (IntuitionBase->FirstScreen->MouseY > IntuitionBase->FirstScreen->BarHeight && GetPrivScreen(IntuitionBase->FirstScreen)->SpecialFlags & SF_AppearingBar)
@@ -1458,16 +1467,15 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 			iihdata->TitlebarAppearTime = 0;
 		    }
 		}
-	    }
+	}
 #endif
-	    if (MENUS_ACTIVE) {
+	if (MENUS_ACTIVE) {
 		FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
 		*keep_event = FALSE;
 		break;
-	    }
+	}
 
-	    if (gadget)
-	    {
+	if (gadget) {
 		*keep_event = FALSE;
 
 		switch (gadget->GadgetType & GTYP_GTYPEMASK)
@@ -1510,15 +1518,14 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
 		} /* switch GadgetType */
 
-	    } /* if (a gadget is currently active) */
+	} /* if (a gadget is currently active) */
 
-	    *keep_event = FALSE;
+	*keep_event = FALSE;
 
-	    if (!w)
-		break;
+	if (!w)
+	    break;
 
-	    if (IW(w)->helpflags & HELPF_GADGETHELP && (!(PeekQualifier() & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_RBUTTON|IEQUALIFIER_MIDBUTTON))))
-	    {
+	if (IW(w)->helpflags & HELPF_GADGETHELP && (!(PeekQualifier() & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_RBUTTON|IEQUALIFIER_MIDBUTTON)))) {
 		struct Window *hw;
 		struct Gadget *g;
 
@@ -1577,41 +1584,36 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 		    iihdata->LastHelpGadget = g;
 		    iihdata->LastHelpWindow = hw;
 		}
-	    }
-	    else
-	    {
+	} else {
 		iihdata->LastHelpGadget = NULL;
 		iihdata->LastHelpWindow = NULL;
 		iihdata->HelpGadgetFindTime = 0;
-	    }
+	}
 
-	    if (!(w->IDCMPFlags & IDCMP_MOUSEMOVE))
-		break;
+	if (!(w->IDCMPFlags & IDCMP_MOUSEMOVE))
+	    break;
 
-	    /* Send IDCMP_MOUSEMOVE if WFLG_REPORTMOUSE is set
-	       and/or active gadget has GACT_FOLLOWMOUSE set */
+	/* Send IDCMP_MOUSEMOVE if WFLG_REPORTMOUSE is set
+	   and/or active gadget has GACT_FOLLOWMOUSE set */
 
-	    /* jDc: do NOT send when sizegad is pressed */
-
-	    if (!(w->Flags & WFLG_REPORTMOUSE))
-	    {
+	/* jDc: do NOT send when sizegad is pressed */
+	if (!(w->Flags & WFLG_REPORTMOUSE)) {
 		if (!gadget)
 		    break;
 		if (!(gadget->Activation & GACT_FOLLOWMOUSE))
 		    break;
-	    } else {
+	} else {
 		if (gadget && (gadget->GadgetType & (GTYP_SIZING|GTYP_WDRAGGING)))
 		    break;
-	    }
+	}
 
-	    orig_ie->ie_Class = IECLASS_RAWMOUSE;
+	orig_ie->ie_Class = IECLASS_RAWMOUSE;
 
-	    /* Limit the number of IDCMP_MOUSEMOVE messages sent to intuition.
-	       note that this comes after handling gadgets, because gadgets should get all events.
-	    */
+	/* Limit the number of IDCMP_MOUSEMOVE messages sent to intuition.
+	   note that this comes after handling gadgets, because gadgets should get all events.
+	*/
 
-	    if (IW(w)->num_mouseevents >= IW(w)->mousequeue)
-	    {
+	if (IW(w)->num_mouseevents >= IW(w)->mousequeue) {
 		BOOL old_msg_found = FALSE;
 
 		/* Mouse Queue is full, so try looking for a not
@@ -1664,23 +1666,17 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
 		HandleIntuiReplyPort(iihdata, IntuitionBase);
 
-	    }
+	}
 
-	    /* MouseQueue is not full, so we can send a message. We increase
-	       IntWindow->num_mouseevents which will later be decreased after
-	       the Intuition InputHandler gets the ReplyMessage from the app
-	       and handles it in HandleIntuiReplyPort() */
+	/* MouseQueue is not full, so we can send a message. We increase
+	   IntWindow->num_mouseevents which will later be decreased after
+	   the Intuition InputHandler gets the ReplyMessage from the app
+	   and handles it in HandleIntuiReplyPort() */
 
-	    if (ih_fire_intuimessage(w,
-				     IDCMP_MOUSEMOVE,
-				     IECODE_NOBUTTON,
-				     w,
-				     IntuitionBase))
-	    {
-		IW(w)->num_mouseevents++;
-	    }
+	if (ih_fire_intuimessage(w, IDCMP_MOUSEMOVE, IECODE_NOBUTTON, w, IntuitionBase))
+	    IW(w)->num_mouseevents++;
 
-	    break;
+	break;
 
     } /* case IECODE_NOBUTTON */
     } /* switch (ie->ie_Code)  (what button was pressed ?) */
@@ -1985,12 +1981,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 				      IntuitionBase);
             break;
 
-#define KEY_QUALIFIERS (IEQUALIFIER_LSHIFT     | IEQUALIFIER_RSHIFT   | \
-IEQUALIFIER_CAPSLOCK   | IEQUALIFIER_CONTROL  | \
-IEQUALIFIER_LALT       | IEQUALIFIER_RALT     | \
-IEQUALIFIER_LCOMMAND   | IEQUALIFIER_RCOMMAND | \
-IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
-
         case IECLASS_RAWKEY:
             /* release events go only to gadgets and windows who
                have not set IDCMP_VANILLAKEY */
@@ -1998,8 +1988,8 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
             DEBUG_HANDLER(dprintf("Handler: IECLASS_RAWKEY\n"));
             DEBUG_KEY(dprintf("Handler: Qual 0x%lx\n",iihdata->ActQualifier));
 
-            iihdata->ActQualifier &= ~KEY_QUALIFIERS;
-            iihdata->ActQualifier |= (ie->ie_Qualifier & KEY_QUALIFIERS);
+            iihdata->ActQualifier &= ~(KEY_QUALIFIERS | IEQUALIFIER_REPEAT);
+            iihdata->ActQualifier |= (ie->ie_Qualifier & (KEY_QUALIFIERS | IEQUALIFIER_REPEAT));
 
             DEBUG_KEY(dprintf("Handler: real Qual 0x%lx\n",iihdata->ActQualifier));
 
