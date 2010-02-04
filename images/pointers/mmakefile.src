@@ -1,0 +1,8 @@
+# Copyright © 2010, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-complete : workbench-images-pointers
+
+%copy_dir_recursive mmake=workbench-images-pointers dst=$(AROSDIR)/System/Images/Pointers
