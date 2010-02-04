@@ -3363,7 +3363,7 @@ void ohciHandleFinishedTDs(struct PCIController *hc)
                     }
                     predotd = otd;
                     otd->otd_Length = len;
-                    KPRINTF(1, ("TD with %ld bytes\n", len));
+                    KPRINTF(1, ("TD with %ld bytes: %08x-%08x\n", len, phyaddr, phyaddr+len-1));
                     CONSTWRITEMEM32_LE(&otd->otd_Ctrl, OTCF_CC_INVALID|OTCF_NOINT);
                     if(otd->otd_Succ)
                     {
@@ -3873,7 +3873,7 @@ void ohciScheduleBulkTDs(struct PCIController *hc)
                 len = OHCI_PAGE_SIZE;
             }
             otd->otd_Length = len;
-            KPRINTF(1, ("TD with %ld bytes\n", len));
+            KPRINTF(1, ("TD with %ld bytes: %08x-%08x\n", len, phyaddr, phyaddr+len-1));
             CONSTWRITEMEM32_LE(&otd->otd_Ctrl, OTCF_CC_INVALID|OTCF_NOINT);
             if(len)
             {
@@ -4012,30 +4012,34 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 
     if(donehead)
     {
-        intr = OISF_DONEHEAD;
-        if(donehead & 1)
-        {
-            intr |= READREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS);
-        }
-        donehead &= OHCI_PTRMASK;
-        KPRINTF(5, ("New Donehead %08lx for old %08lx\n", donehead, hc->hc_OhciDoneQueue));
-        if(hc->hc_OhciDoneQueue)
-        {
-            struct OhciTD *donetd = (struct OhciTD *) (donehead - hc->hc_PCIVirtualAdjust - 16);
-            CacheClearE(&donetd->otd_Ctrl, 16, CACRF_InvalidateD);
-            while(donetd->otd_NextTD)
-            {
-                donetd = (struct OhciTD *) (donetd->otd_NextTD - hc->hc_PCIVirtualAdjust - 16);
-                CacheClearE(&donetd->otd_Ctrl, 16, CACRF_InvalidateD);
-            }
-            WRITEMEM32_LE(&donetd->otd_NextTD, hc->hc_OhciDoneQueue);
-        }
-        hc->hc_OhciDoneQueue = donehead;
-        CONSTWRITEMEM32_LE(&hc->hc_OhciHCCA->oha_DoneHead, 0);
-        CacheClearE(&hc->hc_OhciHCCA->oha_DoneHead, sizeof(hc->hc_OhciHCCA->oha_DoneHead), CACRF_ClearD);
+    	if (donehead & ~1)
+    		intr = OISF_DONEHEAD;
+    	if(donehead & 1)
+    	{
+    		intr |= READREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS);
+    	}
+    	donehead &= OHCI_PTRMASK;
+
+    	CONSTWRITEMEM32_LE(&hc->hc_OhciHCCA->oha_DoneHead, 0);
+
+    	KPRINTF(5, ("New Donehead %08lx for old %08lx\n", donehead, hc->hc_OhciDoneQueue));
     } else {
-        intr = READREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS);
+    	intr = READREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS);
+
+    	if (intr & OISF_DONEHEAD)
+    	{
+    		KPRINTF(1, ("!!!!!!!!!!!!!!!!!!!!!!!DoneHead was empty!!!!!!!!!!!!!!!!!!!\n"));
+    		CacheClearE(hc->hc_OhciHCCA, sizeof(struct OhciHCCA), CACRF_InvalidateD);
+    		donehead = READMEM32_LE(&hc->hc_OhciHCCA->oha_DoneHead) & OHCI_PTRMASK;
+    		CONSTWRITEMEM32_LE(&hc->hc_OhciHCCA->oha_DoneHead, 0);
+
+    		KPRINTF(5, ("New Donehead %08lx for old %08lx\n", donehead, hc->hc_OhciDoneQueue));
+    	}
     }
+    CacheClearE(hc->hc_OhciHCCA, sizeof(struct OhciHCCA), CACRF_ClearD);
+
+    intr &= ~OISF_MASTERENABLE;
+
     if(intr & hc->hc_PCIIntEnMask)
     {
         WRITEREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS, intr);
@@ -4127,10 +4131,28 @@ void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         }
         if(intr & OISF_DONEHEAD)
         {
-            KPRINTF(10, ("DoneHead %ld\n", READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT)));
-            SureCause(base, &hc->hc_CompleteInt);
+        	KPRINTF(10, ("DoneHead %ld\n", READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT)));
+
+        	if(hc->hc_OhciDoneQueue)
+        	{
+        		struct OhciTD *donetd = (struct OhciTD *) (donehead - hc->hc_PCIVirtualAdjust - 16);
+        		CacheClearE(&donetd->otd_Ctrl, 16, CACRF_InvalidateD);
+        		while(donetd->otd_NextTD)
+        		{
+        			donetd = (struct OhciTD *) (donetd->otd_NextTD - hc->hc_PCIVirtualAdjust - 16);
+        			CacheClearE(&donetd->otd_Ctrl, 16, CACRF_InvalidateD);
+        		}
+        		WRITEMEM32_LE(&donetd->otd_NextTD, hc->hc_OhciDoneQueue);
+        		CacheClearE(&donetd->otd_Ctrl, 16, CACRF_ClearD);
+        	}
+        	hc->hc_OhciDoneQueue = donehead;
+
+        	SureCause(base, &hc->hc_CompleteInt);
         }
     }
+
+    /* Unlock interrupts  */
+    WRITEREG32_LE(&hc->hc_RegBase, OHCI_INTEN, OISF_MASTERENABLE);
 }
 /* \\\ */
 
