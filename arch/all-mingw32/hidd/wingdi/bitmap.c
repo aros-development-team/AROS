@@ -536,7 +536,6 @@ VOID GDIBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 		break;
 	    }
 	} else if (IS_BM_ATTR(tag->ti_Tag, idx)) {
-#ifdef SCREEN_DRAG
 	    /* This is currently a W.I.P. You can enable it, and
 	       it will work, but Intuition's input gets all fucked up
 	       when the screen is shifted. */
@@ -551,7 +550,6 @@ VOID GDIBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 		change_position = TRUE;
 		break;
 	    }
-#endif
 	}
     }
 
