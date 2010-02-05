@@ -128,8 +128,6 @@ struct gdiclbase
 
 #include <windows.h>
 #define APTR void *
-#define IPTR ULONG_PTR
-#define UBYTE BYTE
 
 #endif
 

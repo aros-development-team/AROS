@@ -84,10 +84,10 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
 {
     HDC bitmap_dc, window_dc;
     PAINTSTRUCT ps;
-    LONG x, y, xend, yend, xsize, ysize;
+    LONG x, y, xsize, ysize;
+    LONG bm_xend, bm_yend;
+    LONG win_xend, win_yend;
     RECT bg;
-    LONG rightbg = -1;
-    LONG bottombg = -1;
     struct bitmap_data *bmdata;
     HBRUSH bkgnd;
 
@@ -97,35 +97,50 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
         window_dc = BeginPaint(win, &ps);
         x = ps.rcPaint.left;
         y = ps.rcPaint.top;
-	xend = ps.rcPaint.right + 1;
-	yend = ps.rcPaint.bottom + 1;
-	if (xend > bmdata->bm_width) {
-	    xsize = bmdata->bm_width - x;
-	    rightbg = bmdata->bm_width;
-	} else
-	    xsize = xend - x;
-	if (yend > bmdata->bm_height) {
-	    ysize = bmdata->bm_height - y;
-	    bottombg = bmdata->bm_height;
-	} else
-	    ysize = yend - y;
-	DWIN(printf("[GDI] WM_PAINT, coords: (%u, %u), size: %ux%u\n", x, y, xsize, ysize));
-        BitBlt(window_dc, x, y, xsize, ysize, bmdata->dc, x, y, SRCCOPY);
+	win_xend = ps.rcPaint.right + 1;
+	win_yend = ps.rcPaint.bottom + 1;
+	DWIN(printf("[WM_PAINT] Region from (%d, %d) to (%d, %d)\n", x, y, win_xend, win_yend));
+	bm_xend = bmdata->bm_left + bmdata->bm_width;
+	bm_yend = bmdata->bm_top + bmdata->bm_height;
+
+	/* Perform clipping of the bitmap region and draw background if needed */
 	bkgnd = GetSysColorBrush(COLOR_WINDOW);
-	if (rightbg != -1) {
-	    bg.left = rightbg;
+	if (x < bmdata->bm_left) {
+	    bg.left = x;
+	    bg.top = y;
+	    bg.right = bmdata->bm_left;
+	    bg.bottom = ps.rcPaint.bottom;
+	    FillRect(window_dc, &bg, bkgnd);
+	    x = bmdata->bm_left;
+	}
+	if (y < bmdata->bm_top) {
+	    bg.left = x;
+	    bg.top = y;
+	    bg.right = ps.rcPaint.right;
+	    bg.bottom = bmdata->bm_top;
+	    FillRect(window_dc, &bg, bkgnd);
+	    y = bmdata->bm_top;
+	}
+	if (win_xend > bm_xend) {
+	    bg.left = bm_xend;
 	    bg.top = y;
 	    bg.right = ps.rcPaint.right;
 	    bg.bottom = ps.rcPaint.bottom;
 	    FillRect(window_dc, &bg, bkgnd);
-	}
-	if (bottombg != -1) {
+	    xsize = bm_xend - x;
+	} else
+	    xsize = win_xend - x;
+	if (win_yend > bm_yend) {
+	    ysize = bm_yend - y;
 	    bg.left = x;
-	    bg.top = bottombg;
-	    bg.right = bmdata->bm_width;
+	    bg.top = bm_yend;
+	    bg.right = bm_xend;
 	    bg.bottom = ps.rcPaint.bottom;
 	    FillRect(window_dc, &bg, bkgnd);
-	}
+	} else
+	    ysize = win_yend - y;
+
+        BitBlt(window_dc, x, y, xsize, ysize, bmdata->dc, x - bmdata->bm_left, y - bmdata->bm_top, SRCCOPY);
         EndPaint(win, &ps);
         return 0;
     case WM_SETCURSOR:
