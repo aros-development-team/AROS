@@ -29,6 +29,7 @@ struct myargs
     LONG *height;
     LONG *depth;
     STRPTR mode;
+    LONG *oscan;
     LONG *scroll;
     LONG *drag;
     LONG *likewb;
@@ -80,7 +81,7 @@ int main(int argc, char **argv)
         {
 	    if ((DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",0)))
 	    {
-		rda = ReadArgs("WIDTH/N,HEIGHT/N,DEPTH/K/N,MODEID/K,SCROLL/K/N,DRAG/K/N,LIKEWB/K/N", (IPTR *)&args, NULL);
+		rda = ReadArgs("WIDTH/N,HEIGHT/N,DEPTH/K/N,MODEID/K,OVERSCAN/K/N,SCROLL/K/N,DRAG/K/N,LIKEWB/K/N", (IPTR *)&args, NULL);
 		if (rda) {
 		    struct Screen *screen;
 		    struct Window *w1;
@@ -89,6 +90,7 @@ int main(int argc, char **argv)
 			{SA_Width,     640			         },
 			{SA_Height,    480			         },
 			{SA_Depth,     4			         },
+			{TAG_IGNORE,   0			         },
 			{TAG_IGNORE,   0			         },
 			{TAG_IGNORE,   0			         },
 			{TAG_IGNORE,   0			         },
@@ -124,6 +126,11 @@ int main(int argc, char **argv)
 			tags[6].ti_Tag = SA_LikeWorkbench;
 			tags[6].ti_Data = *args.likewb;
 			printf("SA_LikeWorkbench: %ld\n", tags[6].ti_Data);
+		    }
+		    if (args.oscan) {
+			tags[7].ti_Tag = SA_Overscan;
+			tags[7].ti_Data = *args.oscan;
+			printf("SA_Overscan: %ld\n", tags[7].ti_Data);
 		    }
 
 		    screen = OpenScreenTagList(NULL, tags);
@@ -211,6 +218,7 @@ ULONG handleevents(struct Window *win, struct Screen *screen, WORD x, WORD y)
 	    	break;
 	    case IDCMP_INTUITICKS:
 	        y1 = drawtext(win, x, y, "Screen position: (%d, %d)               ", screen->LeftEdge, screen->TopEdge);
+		y1 = drawtext(win, x, y1, "Mouse position: (%d, %d)               ", screen->MouseX, screen->MouseY);
 		y1 = drawtext(win, x, y1, "ViewPort size: %dx%d               ", screen->ViewPort.DWidth, screen->ViewPort.DHeight);
 		y1 = drawtext(win, x, y1, "ViewPort position: (%d, %d)               ", screen->ViewPort.DxOffset, screen->ViewPort.DyOffset);
 		drawtext(win, x, y1, "RasInfo position: (%d, %d)               ", screen->ViewPort.RasInfo->RxOffset, screen->ViewPort.RasInfo->RyOffset);
