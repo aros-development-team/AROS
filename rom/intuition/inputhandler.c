@@ -490,6 +490,12 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
 	    iihdata->ActQualifier |= IEQUALIFIER_LEFTBUTTON;
 
+	    /* Ignore this event if screen drag qualifier is pressed */
+	    if ((iihdata->ActQualifier & KEY_QUALIFIERS) == IEQUALIFIER_LCOMMAND) {
+	        *keep_event = FALSE;
+		break;
+	    }
+
 #ifdef SKINS
 	    iihdata->TitlebarAppearTime = 0;
 #endif
@@ -828,6 +834,12 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
     case SELECTUP:
 	iihdata->ActQualifier &= ~IEQUALIFIER_LEFTBUTTON;
+
+	/* Ignore this event if screen drag qualifier is pressed */
+	if ((iihdata->ActQualifier & KEY_QUALIFIERS) == IEQUALIFIER_LCOMMAND) {
+	    *keep_event = FALSE;
+	    break;
+	}
 
 #ifdef SKINS
 	iihdata->TitlebarAppearTime = 0;
