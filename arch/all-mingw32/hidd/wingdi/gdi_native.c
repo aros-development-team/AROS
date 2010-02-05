@@ -29,7 +29,7 @@ static WNDCLASS wcl_desc = {
     NULL,
     NULL,
     NULL,
-    NULL,
+    (HBRUSH)(COLOR_WINDOW + 1),
     NULL,
     "AROS_Screen"
 };
@@ -89,6 +89,7 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
     LONG rightbg = -1;
     LONG bottombg = -1;
     struct bitmap_data *bmdata;
+    HBRUSH bkgnd;
 
     switch(msg) {
     case WM_PAINT:
@@ -110,19 +111,20 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
 	    ysize = yend - y;
 	DWIN(printf("[GDI] WM_PAINT, coords: (%u, %u), size: %ux%u\n", x, y, xsize, ysize));
         BitBlt(window_dc, x, y, xsize, ysize, bmdata->dc, x, y, SRCCOPY);
+	bkgnd = GetSysColorBrush(COLOR_WINDOW);
 	if (rightbg != -1) {
 	    bg.left = rightbg;
 	    bg.top = y;
 	    bg.right = ps.rcPaint.right;
 	    bg.bottom = ps.rcPaint.bottom;
-	    FillRect(window_dc, &bg, bmdata->bkgnd);
+	    FillRect(window_dc, &bg, bkgnd);
 	}
 	if (bottombg != -1) {
 	    bg.left = x;
 	    bg.top = bottombg;
 	    bg.right = bmdata->bm_width;
 	    bg.bottom = ps.rcPaint.bottom;
-	    FillRect(window_dc, &bg, bmdata->bkgnd);
+	    FillRect(window_dc, &bg, bkgnd);
 	}
         EndPaint(win, &ps);
         return 0;
