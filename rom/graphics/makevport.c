@@ -49,8 +49,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* We don't have copper and don't use copperlists, so just do nothing */
+    /* Use ScrollVPort() in order to validate offsets */
+    ScrollVPort(viewport);
 
+    /* We don't have copper and don't use copperlists, so nothing left to do */
     return MVP_OK;
 
     AROS_LIBFUNC_EXIT
