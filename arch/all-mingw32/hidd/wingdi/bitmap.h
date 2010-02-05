@@ -36,10 +36,12 @@ struct bitmap_data
     APTR dc_bitmap;  /* Original DC's bitmap object, needs to be put back before freeing the DC */
     APTR display;    /* System display - to what DC should be compatible			*/
     APTR window;     /* Window in which the bitmap is displayed				        */
-    IPTR win_width;  /* Window size (cached from ModeID)					*/
-    IPTR win_height;
-    IPTR bm_width;   /* Bitmap size (cached, needed for window service thread			*/
-    IPTR bm_height;
+    LONG win_width;  /* Window size (cached from ModeID)					*/
+    LONG win_height;
+    LONG bm_width;   /* Requested bitmap size. (not rounded up)					*/
+    LONG bm_height;
+    LONG bm_left;    /* Bitmap edge coordinates							*/
+    LONG bm_top;
 };
 
 #endif /* _BITMAP_H */

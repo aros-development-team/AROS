@@ -486,6 +486,7 @@ VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
     APTR wnd;
     ULONG drmd;
     struct gfx_data *data;
+    IPTR xoffset, yoffset;
     
     EnterFunc(bug("[GDI] hidd.gfx.wingdi::CopyBox(0x%p(%lu, %lu, %lu, %lu) -> 0x%p(%lu, %lu)\n", msg->src, msg->srcX, msg->srcY, msg->width, msg->height,
     		  msg->dest, msg->destX, msg->destY));
@@ -493,6 +494,8 @@ VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
     
     OOP_GetAttr(msg->src,  aHidd_GDIBitMap_DeviceContext, (IPTR *)&src);
     OOP_GetAttr(msg->dest, aHidd_GDIBitMap_DeviceContext, (IPTR *)&dest);
+    OOP_GetAttr(msg->dest, aHidd_BitMap_LeftEdge, &xoffset);
+    OOP_GetAttr(msg->dest, aHidd_BitMap_TopEdge, &yoffset);
 	
     if (NULL == dest || NULL == src)
     {
@@ -510,7 +513,12 @@ VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
     OOP_GetAttr(msg->dest, aHidd_GDIBitMap_Window, (IPTR *)&wnd);
     GDICALL(BitBlt, dest, msg->destX, msg->destY, msg->width, msg->height, src, msg->srcX, msg->srcY, BitmapCopy_DrawModeTable[drmd]);
     if (wnd) {
-        RECT r = {msg->destX, msg->destY, msg->destX + msg->width, msg->destY + msg->height};
+        RECT r = {
+	    msg->destX + xoffset,
+	    msg->destY + yoffset,
+	    msg->destX + xoffset + msg->width,
+	    msg->destY + yoffset + msg->height
+	};
 
         D(bug("[GDI] CopyBox(): Refresh\n"));
         USERCALL(RedrawWindow, wnd, &r, NULL, RDW_INVALIDATE|RDW_UPDATENOW);

@@ -63,7 +63,12 @@ static struct OOP_ABDescr attrbases[] =
 
 #define REFRESH(left, top, right, bottom)					  \
 if (data->window) {								  \
-    RECT r = {left, top, right, bottom};					  \
+    RECT r = {									  \
+        left + data->bm_left,							  \
+	top + data->bm_top,							  \
+        right + data->bm_left,							  \
+        bottom + data->bm_top							  \
+    };										  \
 										  \
     USERCALL(RedrawWindow, data->window, &r, NULL, RDW_INVALIDATE|RDW_UPDATENOW); \
 }										  \
@@ -487,23 +492,28 @@ VOID GDIBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     ULONG   	    	idx;
     
-    if (IS_GDIBM_ATTR(msg->attrID, idx))
-    {
+    if (IS_GDIBM_ATTR(msg->attrID, idx)) {
 	switch (idx)
 	{
-	    case aoHidd_GDIBitMap_DeviceContext:
-	    	*msg->storage = (IPTR)data->dc;
-		break;
-	    case aoHidd_GDIBitMap_Window:
-	        *msg->storage = (IPTR)data->window;
-		break;
-	    default:
-	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-		break;
+	case aoHidd_GDIBitMap_DeviceContext:
+	    *msg->storage = (IPTR)data->dc;
+	    return;
+	case aoHidd_GDIBitMap_Window:
+	    *msg->storage = (IPTR)data->window;
+	    return;
+	}
+    } else if (IS_BM_ATTR(msg->attrID, idx)) {
+        switch (idx)
+	{
+	case aoHidd_BitMap_LeftEdge:
+	    *msg->storage = data->bm_left;
+	    return;
+	case aoHidd_BitMap_TopEdge:
+	    *msg->storage = data->bm_top;
+	    return;
 	}
     }
-    else
-    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 /****************************************************************************************/
@@ -513,20 +523,57 @@ VOID GDIBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     struct bitmap_data *data = OOP_INST_DATA(cl, obj);
     struct TagItem  *tag, *tstate;
     ULONG   	    idx;
+    BOOL	    change_position = FALSE;
 
     tstate = msg->attrList;
     while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
-        if(IS_GDIBM_ATTR(tag->ti_Tag, idx))
-        {
+        if(IS_GDIBM_ATTR(tag->ti_Tag, idx)) {
             switch(idx)
             {
-                case aoHidd_GDIBitMap_Window:
-		    data->window = (APTR)tag->ti_Data;
-		    break;
+            case aoHidd_GDIBitMap_Window:
+		data->window = (APTR)tag->ti_Data;
+		break;
 	    }
+	} else if (IS_BM_ATTR(tag->ti_Tag, idx)) {
+#ifdef SCREEN_DRAG
+	    /* This is currently a W.I.P. You can enable it, and
+	       it will work, but Intuition's input gets all fucked up
+	       when the screen is shifted. */
+	    switch(idx)
+	    {
+	    case aoHidd_BitMap_LeftEdge:
+	        data->bm_left = tag->ti_Data;
+		change_position = TRUE;
+		break;
+	    case aoHidd_BitMap_TopEdge:
+	        data->bm_top = tag->ti_Data;
+		change_position = TRUE;
+		break;
+	    }
+#endif
 	}
     }
+
+    if (change_position) {
+	/* Fix up position. We can completely scroll out
+	   of our window into all 4 sides, but not more */
+	if (data->bm_left > data->win_width)
+	    data->bm_left = data->win_width;
+	else if (data->bm_left < -data->bm_width)
+	    data->bm_left = -data->bm_width;
+	if (data->bm_top > data->win_height)
+	    data->bm_top = data->win_height;
+	else if (data->bm_top < -data->bm_height)
+	    data->bm_top = -data->bm_height;
+
+	Forbid();
+	/* Refresh the whole window */
+	USERCALL(RedrawWindow, data->window, NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
+	Permit();
+    }
+
+    OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 }
 
 /****************************************************************************************/
@@ -536,7 +583,7 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     OOP_Object  *friend = NULL, *pixfmt;
 /*  APTR 	 friend_drawable = NULL;*/
     APTR	 display, my_dc, my_bitmap, orig_bitmap;
-    IPTR   	 width, height;
+    ULONG   	 width, height;
     HIDDT_ModeID modeid;
     IPTR	 win_width  = 0;
     IPTR	 win_height = 0;
@@ -613,17 +660,18 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     D(bug("[GDI] Object created by superclass: 0x%p\n", o));
     if (o) {
         data = OOP_INST_DATA(cl, o);
-        /* clear all data  */
-        memset(data, 0, sizeof(struct bitmap_data));
 	/* Get some info passed to us by the gdigfxhidd class */
-	data->display = display;
-	data->dc = my_dc;
-	data->bitmap = my_bitmap;
-	data->dc_bitmap = orig_bitmap;
-	data->win_width = win_width;
+	data->dc	 = my_dc;
+	data->bitmap     = my_bitmap;
+	data->dc_bitmap  = orig_bitmap;
+	data->display    = display;
+	data->window     = NULL;
+	data->win_width  = win_width;
 	data->win_height = win_height;
-	data->bm_width = width;
-	data->bm_height = height;
+	data->bm_width	 = width;
+	data->bm_height	 = height;
+	data->bm_left	 = 0;
+	data->bm_top	 = 0;
 	CHECK_STACK
     	ReturnPtr("GDIGfx.BitMap::New()", OOP_Object *, o);
     } /* if (object allocated by superclass) */
