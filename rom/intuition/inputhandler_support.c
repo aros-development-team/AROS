@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -75,8 +75,8 @@ void notify_mousemove_screensandwindows(WORD x,
     {
         struct Window * win = scr->FirstWindow;
 
-        scr->MouseX = x;// - scr->LeftEdge;
-        scr->MouseY = y;// - scr->TopEdge;
+        scr->MouseX = x - scr->LeftEdge;
+        scr->MouseY = y - scr->TopEdge;
 
         /*
         ** Visit all windows of this screen
