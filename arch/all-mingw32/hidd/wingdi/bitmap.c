@@ -69,13 +69,6 @@ if (data->window) {								  \
 }										  \
 Permit()
 
-#define NPREFRESH(left, top, right, bottom)					  \
-if (data->window) {								  \
-    RECT r = {left, top, right, bottom};					  \
-										  \
-    USERCALL(RedrawWindow, data->window, &r, NULL, RDW_INVALIDATE|RDW_UPDATENOW); \
-}
-
 /****************************************************************************************/
 
 VOID GDIBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
@@ -489,29 +482,6 @@ VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-BOOL GDIBM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
-{
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    BOOL ret = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    
-    if (ret && data->win_width && (msg->firstColor == 0)) {
-        APTR new_bg, old_bg;
-	ULONG col = ((msg->colors[0].red & 0xFF00) << 8) |
-		    (msg->colors[0].green & 0xFF00) |
-		    (msg->colors[0].blue >> 8);
-
-	old_bg = data->bkgnd;
-	Forbid();
-	data->bkgnd = GDICALL(CreateSolidBrush, col);
-	NPREFRESH(0, 0, data->win_width, data->win_height);
-	if (old_bg)
-	    GDICALL(DeleteObject, old_bg);
-	Permit();
-    }
-}
-
-/****************************************************************************************/
-
 VOID GDIBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
@@ -566,7 +536,6 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     OOP_Object  *friend = NULL, *pixfmt;
 /*  APTR 	 friend_drawable = NULL;*/
     APTR	 display, my_dc, my_bitmap, orig_bitmap;
-    APTR	 bkgnd;
     IPTR   	 width, height;
     HIDDT_ModeID modeid;
     IPTR	 win_width  = 0;
@@ -632,12 +601,6 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         if (my_bitmap)
             orig_bitmap = GDICALL(SelectObject, my_dc, my_bitmap);
         D(bug("[GDI] Olriginal DC bitmap: 0x%p\n", orig_bitmap));
-
-	/* Create background brush only for displayable bitmaps */
-	if (win_width)
-	    bkgnd = GDICALL(CreateSolidBrush, 0);
-	else
-	    bkgnd = NULL;
     }
     Permit();
 
@@ -661,14 +624,11 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	data->win_height = win_height;
 	data->bm_width = width;
 	data->bm_height = height;
-	data->bkgnd = bkgnd;
 	CHECK_STACK
     	ReturnPtr("GDIGfx.BitMap::New()", OOP_Object *, o);
     } /* if (object allocated by superclass) */
 dispose_bitmap:    
     Forbid();
-    if (bkgnd)
-        GDICALL(DeleteObject, bkgnd);
     if (orig_bitmap)
     	GDICALL(SelectObject, my_dc, orig_bitmap);
     if (my_bitmap)
@@ -689,8 +649,6 @@ VOID GDIBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     EnterFunc(bug("GDIGfx.BitMap::Dispose()\n"));
     
     Forbid();
-    if (data->bkgnd)
-        GDICALL(DeleteObject, data->bkgnd);
     if (data->dc_bitmap)
     	GDICALL(SelectObject, data->dc, data->dc_bitmap);
     if (data->bitmap)
