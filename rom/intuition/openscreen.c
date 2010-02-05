@@ -856,8 +856,12 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
             screen->Screen.ViewPort.ColorMap->VPModeID = modeid;
 	    screen->Screen.ViewPort.ColorMap->cm_vp = &screen->Screen.ViewPort;
 	    screen->Screen.ViewPort.ColorMap->NormalDisplayInfo = displayinfo;
+	    screen->Screen.ViewPort.DxOffset = ns.LeftEdge;
+	    screen->Screen.ViewPort.DyOffset = ns.TopEdge;
 	    screen->Screen.ViewPort.DWidth = dclip->MaxX - dclip->MinX + 1;
             screen->Screen.ViewPort.DHeight = dclip->MaxY - dclip->MinY + 1;
+	    /* ScrollVPort() will validate initial screen offsets */
+	    ScrollVPort(&screen->Screen.ViewPort);
 #endif
 
             if (0 == AttachPalExtra(screen->Screen.ViewPort.ColorMap,
@@ -915,6 +919,8 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
             memcpy(&vpe->DisplayClip, dclip,sizeof(struct Rectangle));
 
+	    screen->Screen.ViewPort.DxOffset = ns.LeftEdge;
+	    screen->Screen.ViewPort.DyOffset = ns.TopEdge;
             screen->Screen.ViewPort.DWidth = dclip->MaxX - dclip->MinX + 1;//ns.Width; /* or from dclip ? */
             screen->Screen.ViewPort.DHeight = dclip->MaxY - dclip->MinY + 1;//ns.Height;
 
@@ -1056,8 +1062,9 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
         D(bug("Loaded colors\n"));
 
-        COPY(LeftEdge);
-        COPY(TopEdge);
+	/* Put validated values into screen structure, this is important */
+	screen->Screen.LeftEdge = screen->Screen.ViewPort.DxOffset;
+        screen->Screen.TopEdge = screen->Screen.ViewPort.DyOffset;
         COPY(Width);
         COPY(Height);
         COPY(DetailPen);
