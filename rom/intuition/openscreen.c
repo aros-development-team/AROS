@@ -963,7 +963,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Set last 4 colors\n"));
 
-    	    #warning Isn`t that only set for FullPalette ?
             for (k = 0; k < 4; ++k)
             {
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SetRGB32 Viewport 0x%p Index %ld R 0x%lx G 0x%lx B 0x%lx\n",
