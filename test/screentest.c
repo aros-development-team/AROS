@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: screentest.c 32486 2010-01-28 09:26:14Z sonic $
+    $Id:$
 
     Screen opening test
 */
@@ -25,6 +25,8 @@
 
 struct myargs
 {
+    LONG *left;
+    LONG *top;
     LONG *width;
     LONG *height;
     LONG *depth;
@@ -81,7 +83,7 @@ int main(int argc, char **argv)
         {
 	    if ((DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",0)))
 	    {
-		rda = ReadArgs("WIDTH/N,HEIGHT/N,DEPTH/K/N,MODEID/K,OVERSCAN/K/N,SCROLL/K/N,DRAG/K/N,LIKEWB/K/N", (IPTR *)&args, NULL);
+		rda = ReadArgs("LEFT/K/N,TOP/K/N,WIDTH/N,HEIGHT/N,DEPTH/K/N,MODEID/K,OVERSCAN/K/N,SCROLL/K/N,DRAG/K/N,LIKEWB/K/N", (IPTR *)&args, NULL);
 		if (rda) {
 		    struct Screen *screen;
 		    struct Window *w1;
@@ -90,6 +92,8 @@ int main(int argc, char **argv)
 			{SA_Width,     640			         },
 			{SA_Height,    480			         },
 			{SA_Depth,     4			         },
+			{TAG_IGNORE,   0			         },
+			{TAG_IGNORE,   0			         },
 			{TAG_IGNORE,   0			         },
 			{TAG_IGNORE,   0			         },
 			{TAG_IGNORE,   0			         },
@@ -131,6 +135,16 @@ int main(int argc, char **argv)
 			tags[7].ti_Tag = SA_Overscan;
 			tags[7].ti_Data = *args.oscan;
 			printf("SA_Overscan: %ld\n", tags[7].ti_Data);
+		    }
+		    if (args.left) {
+			tags[8].ti_Tag = SA_Left;
+			tags[8].ti_Data = *args.left;
+			printf("SA_Left: %ld\n", tags[8].ti_Data);
+		    }
+		    if (args.top) {
+			tags[9].ti_Tag = SA_Top;
+			tags[9].ti_Data = *args.top;
+			printf("SA_Left: %ld\n", tags[9].ti_Data);
 		    }
 
 		    screen = OpenScreenTagList(NULL, tags);
