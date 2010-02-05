@@ -402,6 +402,13 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 		*msg->storage = pf->bytes_per_pixel * data->width;
 		break;
 	    }
+	    
+	    /* Generic bitmaps don't scroll. This has to be implemented
+	       in the subclass */
+	    case aoHidd_BitMap_LeftEdge:
+	    case aoHidd_BitMap_TopEdge:
+		*msg->storage = 0;
+		break;
 
             default:
 	    	D(bug("UNKNOWN ATTR IN BITMAP BASECLASS: %d\n", idx));
