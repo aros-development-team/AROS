@@ -1,7 +1,7 @@
 # $Id: mmakefile.src 22626 2004-12-27 16:17:54Z verhaegs $
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS 	:= -I$(TOP)/rom/battclock
+USER_CFLAGS 	:= -I$(SRCDIR)/rom/battclock
 %build_archspecific \
   mainmmake=kernel-battclock maindir=rom/battclock arch=sam440-ppc \
   files="readbattclock writebattclock" modulename=battclock
