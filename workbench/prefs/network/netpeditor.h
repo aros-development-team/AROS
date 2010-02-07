@@ -2,7 +2,7 @@
 #define _FPEDITOR_H_
 
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2010, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -23,7 +23,7 @@ extern struct MUI_CustomClass *NetPEditor_CLASS;
 #define MUIM_NetPEditor_EditEntry       (MUIB_NetPEditor | 0x00000003)
 #define MUIM_NetPEditor_ApplyEntry      (MUIB_NetPEditor | 0x00000004)
 
-struct MUIP_NetPEditor_EditEntry {STACKED ULONG MethodID; STACKED BOOL addEntry;};
-struct MUIP_NetPEditor_IPModeChanged {STACKED ULONG MethodID; STACKED BOOL interface;};
+struct MUIP_NetPEditor_EditEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};
+struct MUIP_NetPEditor_IPModeChanged {STACKED ULONG MethodID; STACKED ULONG interface;};
 
 #endif /* _FWPEDITOR_H_ */
