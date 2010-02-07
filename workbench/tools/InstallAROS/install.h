@@ -223,7 +223,7 @@ struct MUIP_CopyFiles
     STACKED CONST_STRPTR srcDir;
     STACKED CONST_STRPTR dstDir;
     STACKED CONST_STRPTR fileMask;
-    STACKED BOOL recursive;
+    STACKED ULONG recursive;
 };
 
 struct MUIP_CopyFile

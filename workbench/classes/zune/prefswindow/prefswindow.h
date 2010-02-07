@@ -2,7 +2,7 @@
 #define ZUNE_PREFSWINDOW_H
 
 /*
-    Copyright © 2003-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2010, The AROS Development Team. All rights reserved.
     This file is part of the PrefsWindow class, which is distributed under
     the terms of version 2.1 of the GNU Lesser General Public License.
     
@@ -25,7 +25,7 @@
 #define MUIM_PrefsWindow_Cancel          (MUIB_PrefsWindow | 0x00000004)
 #define MUIM_PrefsWindow_Import          (MUIB_PrefsWindow | 0x00000005)
 #define MUIM_PrefsWindow_Export          (MUIB_PrefsWindow | 0x00000006)
-struct  MUIP_PrefsWindow_Export          {STACKED ULONG MethodID; STACKED BOOL withIcon;};
+struct  MUIP_PrefsWindow_Export          {STACKED ULONG MethodID; STACKED ULONG withIcon;};
 #define MUIM_PrefsWindow_SetDefaults     (MUIB_PrefsWindow | 0x00000007)
 
 /*** Protected Attributes ***************************************************/
