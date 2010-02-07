@@ -12,6 +12,18 @@
 /*********************************************************************************************/
 
 #define MAXPOINTER (2)
+#define NAMEBUFLEN (1024)
+
+/*********************************************************************************************/
+
+/*
+    struct NewPointerPrefs has as last element an empty array
+*/
+struct ExtPointerPrefs
+{
+    struct NewPointerPrefs npp;
+    TEXT filename[NAMEBUFLEN];
+};
 
 /*********************************************************************************************/
 
@@ -22,7 +34,7 @@ BOOL Prefs_Default(VOID);
 
 /*********************************************************************************************/
 
-extern struct NewPointerPrefs pointerprefs[MAXPOINTER];
+extern struct ExtPointerPrefs pointerprefs[MAXPOINTER];
 
 /*********************************************************************************************/
 
