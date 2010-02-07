@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     File requester specific code.
@@ -1138,6 +1138,11 @@ STATIC ULONG SMGetSelectedMode(struct LayoutData *ld, struct AslBase_intern *Asl
     {
         ismreq->ism_DisplayDepth = SMGetDepth(ld, 0, AslBase);
     }
+    else
+    {
+        ismreq->ism_DisplayDepth = dispmode->dm_DimensionInfo.MaxDepth;
+    }
+
     req->sm_DisplayDepth = ismreq->ism_DisplayDepth;
       
     /* AutoScroll */
@@ -1151,7 +1156,3 @@ STATIC ULONG SMGetSelectedMode(struct LayoutData *ld, struct AslBase_intern *Asl
 }
 
 /*****************************************************************************************/
-/*****************************************************************************************/
-/*****************************************************************************************/
-/*****************************************************************************************/
-
