@@ -51,7 +51,7 @@ struct NewPointerPrefs
     UWORD npp_Which;	   /* Which Intuition pointer to replace	       */
     UWORD npp_AlphaValue;  /* Alpha channel value if not specified in the file */
     ULONG npp_WhichInFile; /* Which pointer to take from the file	       */
-    UBYTE npp_X, npp_Y;    /* Hotspot coordinates		               */
+    UWORD npp_X, npp_Y;    /* Hotspot coordinates		               */
     char  npp_File[0];	   /* NULL-terminated file name follows                */
 };
 
