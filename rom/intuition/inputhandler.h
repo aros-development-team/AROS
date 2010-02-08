@@ -74,6 +74,7 @@ struct IIHData
     UQUAD                    TitlebarAppearTime;
     BOOL                     TitlebarOnTop;
     BOOL                     MouseWasInsideBoolGadget;
+    BOOL		     ScreenDrag;
 
 };
 

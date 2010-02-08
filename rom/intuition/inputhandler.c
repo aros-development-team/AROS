@@ -490,8 +490,10 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
 	    iihdata->ActQualifier |= IEQUALIFIER_LEFTBUTTON;
 
-	    /* Ignore this event if screen drag qualifier is pressed */
+	    /* Enter screen dragging mode if LAmiga + LButton are pressed.
+	       TODO: handle extra qualifier specified by IControl prefs. */
 	    if ((iihdata->ActQualifier & KEY_QUALIFIERS) == IEQUALIFIER_LCOMMAND) {
+	        iihdata->ScreenDrag = TRUE;
 	        *keep_event = FALSE;
 		break;
 	    }
@@ -836,7 +838,8 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	iihdata->ActQualifier &= ~IEQUALIFIER_LEFTBUTTON;
 
 	/* Ignore this event if screen drag qualifier is pressed */
-	if ((iihdata->ActQualifier & KEY_QUALIFIERS) == IEQUALIFIER_LCOMMAND) {
+	if (iihdata->ScreenDrag) {
+	    iihdata->ScreenDrag = FALSE;
 	    *keep_event = FALSE;
 	    break;
 	}
@@ -1336,9 +1339,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
 	if (scr)
 	{
-	    /* Handle screen dragging if LAmiga + LButton are pressed.
-	       TODO: handle extra qualifier specified by IControl prefs. */
-	    if ((iihdata->ActQualifier & (KEY_QUALIFIERS | BUTTON_QUALIFIERS)) == (IEQUALIFIER_LCOMMAND | IEQUALIFIER_LEFTBUTTON)) {
+	    if (iihdata->ScreenDrag) {
 	        DEBUG_DRAG(bug("[InputHandler] Screen drag\n"));
 	        ScreenPosition(scr, SPOS_RELATIVE, iihdata->DeltaMouseX, iihdata->DeltaMouseY, 0, 0);
 	    }
