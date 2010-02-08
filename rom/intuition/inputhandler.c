@@ -1345,8 +1345,83 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	if (scr)
 	{
 	    if (iihdata->ScreenDrag) {
-	        DEBUG_DRAG(bug("[InputHandler] Screen drag\n"));
-	        ScreenPosition(scr, SPOS_RELATIVE, iihdata->DeltaMouseX, iihdata->DeltaMouseY, 0, 0);
+		WORD dx = iihdata->DeltaMouseX;
+		WORD dy = iihdata->DeltaMouseY;
+	        WORD min, max, val;
+
+		DEBUG_DRAG(bug("[InputHandler] Screen drag, delta is (%d, %d)\n", dx, dy));
+
+		/* Restrict dragging to a physical display area if the driver does not allow
+		   composition.
+		   FIXME: the whole thing relies on the fact that ViewPort size never
+		          changes and reflects physical display size. On original
+			  AmigaOS this is not true, and in AROS running on Amiga chipset
+			  this may be not true again. Probably we should keep limits in
+			  private screen structure. */
+		if (!(GetPrivScreen(scr)->SpecialFlags & SF_HorCompose)) {
+		    /* Calculate limits */
+		    if (scr->Width > scr->ViewPort.DWidth) {
+			min = scr->ViewPort.DWidth - scr->Width;
+			max = 0;
+		    } else {
+		        min = 0;
+			max = scr->ViewPort.DWidth - scr->Width;
+		    }
+		    /* The purpose of the following complex check is to prevent jumping if the
+		       screen was positioned out of user drag limits by the program itself using
+		       ScreenPosition() or OpenScreen(). We apply restrictions in parts depending
+		       on the dragging direction.
+		       May be the user should also be able do drag the screen back off-display in such
+		       a case?
+		       Calculate the position we would go to */
+		    val = scr->LeftEdge + dx;
+		    /* Determine the direction */
+		    if (dx < 0) {
+			/* Can we move at all in this direction ? */
+			if (scr->LeftEdge > min) {
+			    /* If too far, restrict it */
+			    if (val < min)
+				dx = min - scr->LeftEdge;
+			} else
+			    /* Just don't move if we can't */
+			    dx = 0;
+		    } else {
+			if (scr->LeftEdge < max) {
+			    if (val > max)
+				dx = max - scr->LeftEdge;
+			} else
+			    dx = 0;
+		    }
+		}
+	        if (!(GetPrivScreen(scr)->SpecialFlags & SF_VertCompose)) {
+		    DEBUG_DRAG(bug("[Inputhandler] Restricting vertical drag\n"));
+		    DEBUG_DRAG(bug("[Inputhandler] Screen size: %d, display size: %d\n", scr->Height, scr->ViewPort.DHeight));
+		    if (scr->Height > scr->ViewPort.DHeight) {
+			min = scr->ViewPort.DHeight - scr->Height;
+			max = 0;
+		    } else {
+		        min = 0;
+			max = scr->ViewPort.DHeight - scr->Height;
+		    }
+		    DEBUG_DRAG(bug("[Inputhandler] Limits: min %d max %d\n", min, max));
+		    val = scr->TopEdge + dy;
+		    DEBUG_DRAG(bug("[Inputhandler] New position would be %d\n", val));
+		    if (dy < 0) {
+			if (scr->TopEdge > min) {
+			    if (val < min)
+				dy = min - scr->TopEdge;
+			} else
+			    dy = 0;
+		    } else {
+			if (scr->TopEdge < max) {
+			    if (val > max)
+				dy = max - scr->TopEdge;
+			} else
+			    dy = 0;
+		    }
+		    DEBUG_DRAG(bug("[Inputhandler] Restricted delta will be %d\n", dy));
+		}
+	        ScreenPosition(scr, SPOS_RELATIVE, dx, dy, 0, 0);
 	    }
 
 /* Some old nonfunctional code - left for better times
