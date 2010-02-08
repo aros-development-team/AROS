@@ -52,15 +52,14 @@ static void killdto(struct Dtpic_DATA *data)
     
     if (data->dto)
     {
-    	DisposeDTObject(data->dto);
-	data->dto = NULL;
+        DisposeDTObject(data->dto);
+        data->dto = NULL;
     }
     
     if (data->datatypesbase)
     {
-    	CloseLibrary(data->datatypesbase);
+        CloseLibrary(data->datatypesbase);
     }
-    
 };
 
 /*
@@ -73,19 +72,19 @@ IPTR Dtpic__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (obj)
     {
-        struct Dtpic_DATA   *data = INST_DATA(cl, obj);
-        struct TagItem      *tags  = msg->ops_AttrList;
-        struct TagItem      *tag;
+        struct Dtpic_DATA    *data = INST_DATA(cl, obj);
+        const struct TagItem *tags = msg->ops_AttrList;
+        struct TagItem       *tag;
 
-        while ((tag = NextTagItem((const struct TagItem**)&tags)) != NULL)
+        while ((tag = NextTagItem(&tags)) != NULL)
         {
-        switch (tag->ti_Tag)
-        {
-            case MUIA_Dtpic_Name:
-                data->name = (STRPTR) AllocVec((ULONG) (strlen((char *)tag->ti_Data)+1) * sizeof(char),MEMF_ANY);
-                strcpy((char *)data->name,(char *)tag->ti_Data);
-	        break;
-        }
+            switch (tag->ti_Tag)
+            {
+                case MUIA_Dtpic_Name:
+                    data->name = AllocVec(strlen((char *)tag->ti_Data) + 1, MEMF_ANY);
+                    strcpy((char *)data->name, (char *)tag->ti_Data);
+                    break;
+            }
         }
     }
 
@@ -100,62 +99,60 @@ IPTR setup_datatype(struct IClass *cl, Object *obj)
 
     if (data->name)
     {
-    if ((data->datatypesbase = OpenLibrary("datatypes.library", 39)))
-    {
-        /* Prevent DOS Requesters from showing up */
-
-        struct Process *me = (struct Process *)FindTask(0);
-        APTR    	    oldwinptr = me->pr_WindowPtr;
-
-        me->pr_WindowPtr = (APTR)-1;
-
-        data->dto = NewDTObject(data->name, DTA_GroupID, GID_PICTURE,
-	            	    	    	    	OBP_Precision, PRECISION_IMAGE,
-	                    PDTA_Screen, _screen(obj),
-	                    PDTA_DestMode, PMODE_V43,
-	                    PDTA_UseFriendBitMap, TRUE,
-	                    TAG_DONE);
-        me->pr_WindowPtr = oldwinptr;
-
-        if (data->dto)
+        if ((data->datatypesbase = OpenLibrary("datatypes.library", 39)))
         {
-	        struct FrameInfo fri = {0};
+            /* Prevent DOS Requesters from showing up */
 
-            DoMethod(data->dto, DTM_FRAMEBOX, 0, &fri, &fri, sizeof(struct FrameInfo), 0);
+            struct Process *me = (struct Process *)FindTask(0);
+            APTR            oldwinptr = me->pr_WindowPtr;
 
-            if (fri.fri_Dimensions.Depth > 0)
+            me->pr_WindowPtr = (APTR)-1;
+
+            data->dto = NewDTObject(data->name, DTA_GroupID, GID_PICTURE,
+                                OBP_Precision, PRECISION_IMAGE,
+                                PDTA_Screen, _screen(obj),
+                                PDTA_DestMode, PMODE_V43,
+                                PDTA_UseFriendBitMap, TRUE,
+                                TAG_DONE);
+            me->pr_WindowPtr = oldwinptr;
+
+            if (data->dto)
             {
+                struct FrameInfo fri = {0};
 
-                if (DoMethod(data->dto, DTM_PROCLAYOUT, 0, 1))
+                DoMethod(data->dto, DTM_FRAMEBOX, 0, &fri, &fri, sizeof(struct FrameInfo), 0);
+
+                if (fri.fri_Dimensions.Depth > 0)
                 {
-
-                    get(data->dto, PDTA_BitMapHeader, &data->bmhd);
-
-                    if (data->bmhd)
+                    if (DoMethod(data->dto, DTM_PROCLAYOUT, 0, 1))
                     {
-                        if (data->bmhd->bmh_Masking != mskNone)
-                            set(obj, MUIA_FillArea, TRUE);
-                        else
-                            set(obj, MUIA_FillArea, FALSE);
+                        get(data->dto, PDTA_BitMapHeader, &data->bmhd);
 
-                        GetDTAttrs(data->dto, PDTA_DestBitMap, &data->bm, TAG_DONE);
+                        if (data->bmhd)
+                        {
+                            if (data->bmhd->bmh_Masking != mskNone)
+                                set(obj, MUIA_FillArea, TRUE);
+                            else
+                                set(obj, MUIA_FillArea, FALSE);
 
-                        if (!data->bm)
-                        {			    
-                            GetDTAttrs(data->dto, PDTA_BitMap, &data->bm, TAG_DONE);
-                        }
+                            GetDTAttrs(data->dto, PDTA_DestBitMap, &data->bm, TAG_DONE);
 
-                        if (data->bm) return TRUE;
+                            if (!data->bm)
+                            {
+                                GetDTAttrs(data->dto, PDTA_BitMap, &data->bm, TAG_DONE);
+                            }
 
-                    } /* if (data->bmhd) */
+                            if (data->bm) return TRUE;
 
-                } /* if (DoMethod(data->dto, DTM_PROCLAYOUT, 0, 1)) */
+                        } /* if (data->bmhd) */
 
-            } /* if (fri.fri_Dimensions.Depth > 0) */
+                    } /* if (DoMethod(data->dto, DTM_PROCLAYOUT, 0, 1)) */
 
-        } /* if (data->dto) */
-        
-    } /* if ((data->datatypesbase = OpenLibrary("datatypes.library", 39))) */
+                } /* if (fri.fri_Dimensions.Depth > 0) */
+
+            } /* if (data->dto) */
+
+        } /* if ((data->datatypesbase = OpenLibrary("datatypes.library", 39))) */
 
     } /* if (data->name) */
 
@@ -164,6 +161,7 @@ IPTR setup_datatype(struct IClass *cl, Object *obj)
 
     return TRUE;
 }
+
 IPTR Dtpic__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     if (!DoSuperMethodA(cl, obj, (Msg)msg)) return FALSE;
@@ -177,24 +175,24 @@ IPTR Dtpic__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *ms
 
     killdto(data);  
 
-    return DoSuperMethodA(cl,obj,(Msg)msg);
+    return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
 IPTR Dtpic__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct Dtpic_DATA *data = INST_DATA(cl, obj);
-    IPTR    	       retval;
+    IPTR               retval;
     
     retval = DoSuperMethodA(cl, obj, (Msg) msg);
     
     if (data->bm)
     {
-    	msg->MinMaxInfo->MinWidth  += data->bmhd->bmh_Width;
-    	msg->MinMaxInfo->MinHeight += data->bmhd->bmh_Height;
-    	msg->MinMaxInfo->DefWidth  += data->bmhd->bmh_Width;
-    	msg->MinMaxInfo->DefHeight += data->bmhd->bmh_Height;
-    	msg->MinMaxInfo->MaxWidth  += data->bmhd->bmh_Width;
-    	msg->MinMaxInfo->MaxHeight += data->bmhd->bmh_Height;	
+        msg->MinMaxInfo->MinWidth  += data->bmhd->bmh_Width;
+        msg->MinMaxInfo->MinHeight += data->bmhd->bmh_Height;
+        msg->MinMaxInfo->DefWidth  += data->bmhd->bmh_Width;
+        msg->MinMaxInfo->DefHeight += data->bmhd->bmh_Height;
+        msg->MinMaxInfo->MaxWidth  += data->bmhd->bmh_Width;
+        msg->MinMaxInfo->MaxHeight += data->bmhd->bmh_Height;
     }
     
     return retval;
@@ -214,7 +212,7 @@ IPTR Dtpic__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
         if ((depth >= 15) && (data->bmhd->bmh_Masking == mskHasAlpha))
         {
             /* Transparency on high color rast port with alpha channel in picture*/
-            ULONG * img = (ULONG *) AllocVec(_mwidth(obj) * _mheight(obj) * 4, MEMF_ANY);
+            ULONG * img = AllocVec(_mwidth(obj) * _mheight(obj) * 4, MEMF_ANY);
             if (img)
             {
                 struct pdtBlitPixelArray pa;
@@ -261,38 +259,38 @@ IPTR Dtpic__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     struct Dtpic_DATA *data = INST_DATA(cl, obj);
 
     if(data->name)
-	FreeVec(data->name);
-    
+        FreeVec(data->name);
+
     return DoSuperMethodA(cl, obj, msg);
 }
 
 IPTR Dtpic__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct Dtpic_DATA   *data  = INST_DATA(cl, obj);
-    struct TagItem      *tags  = msg->ops_AttrList;
-    struct TagItem      *tag;
-    ULONG               needs_redraw = 0;
+    struct Dtpic_DATA    *data  = INST_DATA(cl, obj);
+    const struct TagItem *tags  = msg->ops_AttrList;
+    struct TagItem       *tag;
+    ULONG                 needs_redraw = 0;
 
-    while ((tag = NextTagItem((const struct TagItem**)&tags)) != NULL)
+    while ((tag = NextTagItem(&tags)) != NULL)
     {
-    switch (tag->ti_Tag)
-    {
-        case MUIA_Dtpic_Name:
-            if (!data->name || strcmp(data->name, (char *)tag->ti_Data)) /* If no filename or different filenames */
-            {
-                if (data->name) FreeVec(data->name);
-                data->name = (STRPTR) AllocVec((ULONG) (strlen((char *)tag->ti_Data)+1) * sizeof(char), MEMF_ANY);
-                strcpy((char *)data->name,(char *)tag->ti_Data);
-                if (_flags(obj) & MADF_SETUP) setup_datatype(cl, obj); /* Run immediate setup only if base class is setup up */
-                needs_redraw = 1;
-            }
-		break;
-    }
+        switch (tag->ti_Tag)
+        {
+            case MUIA_Dtpic_Name:
+                if (!data->name || strcmp(data->name, (char *)tag->ti_Data)) /* If no filename or different filenames */
+                {
+                    if (data->name) FreeVec(data->name);
+                    data->name = AllocVec(strlen((char *)tag->ti_Data) + 1, MEMF_ANY);
+                    strcpy((char *)data->name,(char *)tag->ti_Data);
+                    if (_flags(obj) & MADF_SETUP) setup_datatype(cl, obj); /* Run immediate setup only if base class is setup up */
+                    needs_redraw = 1;
+                }
+                break;
+        }
     }
     
     if (needs_redraw)
     {
-        MUI_Redraw(obj,MADF_DRAWOBJECT);
+        MUI_Redraw(obj, MADF_DRAWOBJECT);
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -304,9 +302,9 @@ IPTR Dtpic__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
     switch(msg->opg_AttrID)
     {
-    case MUIA_Dtpic_Name:
-        *(msg->opg_Storage) = (IPTR)data->name;
-        return TRUE;
+        case MUIA_Dtpic_Name:
+            *(msg->opg_Storage) = (IPTR)data->name;
+            return TRUE;
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -317,16 +315,16 @@ BOOPSI_DISPATCHER(IPTR, Dtpic_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:         return Dtpic__OM_NEW(cl, obj, (struct opSet *)msg);
-	case MUIM_Setup:     return Dtpic__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
-	case MUIM_Cleanup:   return Dtpic__MUIM_Cleanup(cl, obj, (struct MUIP_Clean *)msg);
-	case MUIM_AskMinMax: return Dtpic__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
-	case MUIM_Draw:      return Dtpic__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
-	case OM_DISPOSE:     return Dtpic__OM_DISPOSE(cl, obj, msg);
-	case OM_SET:         return Dtpic__OM_SET(cl, obj, (struct opSet *)msg);
-	case OM_GET:         return Dtpic__OM_GET(cl, obj, (struct opGet *)msg);
-	default:             return DoSuperMethodA(cl, obj, msg);
-    }   
+        case OM_NEW:         return Dtpic__OM_NEW(cl, obj, (struct opSet *)msg);
+        case MUIM_Setup:     return Dtpic__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
+        case MUIM_Cleanup:   return Dtpic__MUIM_Cleanup(cl, obj, (struct MUIP_Clean *)msg);
+        case MUIM_AskMinMax: return Dtpic__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
+        case MUIM_Draw:      return Dtpic__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
+        case OM_DISPOSE:     return Dtpic__OM_DISPOSE(cl, obj, msg);
+        case OM_SET:         return Dtpic__OM_SET(cl, obj, (struct opSet *)msg);
+        case OM_GET:         return Dtpic__OM_GET(cl, obj, (struct opGet *)msg);
+        default:             return DoSuperMethodA(cl, obj, msg);
+    }
 }
 BOOPSI_DISPATCHER_END
 
