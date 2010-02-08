@@ -38,13 +38,12 @@ static CONST_STRPTR type_entries[] = {"Normal", "Busy", NULL};
 /*** Instance Data **********************************************************/
 struct PTEditor_DATA
 {
-    ULONG oldentry;
+    ULONG   pded_oldentry;
     Object *pted_previewImage;
     Object *pted_typeCycle;
     Object *pted_fileString;
-    Object *pted_spotButton;
     Object *pted_alphaSlider;
-    struct Hook cycleHook;
+    struct Hook pted_cycleHook;
 };
 
 STATIC VOID PTPrefs2Gadgets(struct PTEditor_DATA *data);
@@ -65,24 +64,36 @@ AROS_UFHA(APTR, msg, A1))
 
     ULONG entry = XGET(data->pted_typeCycle, MUIA_Cycle_Active);
 
-    D(bug("[POINTERPREF] entry %d oldentry %d\n", entry, data->oldentry));
+    D(bug("[POINTERPREF] entry %d oldentry %d\n", entry, data->pded_oldentry));
 
     // store data from previous entry
     strlcpy
     (
-        pointerprefs[data->oldentry].filename,
+        pointerprefs[data->pded_oldentry].filename,
         (STRPTR)XGET(data->pted_fileString, MUIA_String_Contents),
         NAMEBUFLEN
     );
-    pointerprefs[data->oldentry].npp.npp_AlphaValue = XGET(data->pted_alphaSlider, MUIA_Numeric_Value);
+    pointerprefs[data->pded_oldentry].npp.npp_AlphaValue =
+        XGET(data->pted_alphaSlider, MUIA_Numeric_Value);
+    pointerprefs[data->pded_oldentry].npp.npp_X =
+        XGET(data->pted_previewImage, MUIA_PPreview_HSpotX);
+    pointerprefs[data->pded_oldentry].npp.npp_Y =
+        XGET(data->pted_previewImage, MUIA_PPreview_HSpotY);
 
     // set data of current entry
-    NNSET(data->pted_fileString, MUIA_String_Contents, pointerprefs[entry].filename);
-    NNSET(data->pted_alphaSlider, MUIA_Numeric_Value, pointerprefs[entry].npp.npp_AlphaValue);
+    NNSET(data->pted_fileString,  MUIA_String_Contents, pointerprefs[entry].filename);
+    NNSET(data->pted_alphaSlider, MUIA_Numeric_Value,   pointerprefs[entry].npp.npp_AlphaValue);
 
-    data->oldentry = entry;
+    SetAttrs
+    (
+        data->pted_previewImage,
+        MUIA_PPreview_FileName, pointerprefs[entry].filename,
+        MUIA_PPreview_Alpha,    pointerprefs[entry].npp.npp_AlphaValue,
+        MUIA_PPreview_HSpotX,   pointerprefs[entry].npp.npp_X,
+        MUIA_PPreview_HSpotY,   pointerprefs[entry].npp.npp_Y
+    );
 
-    D(bug("[POINTERPREF/cycleFunction] name 1 %s\nname 2 %s\n", pointerprefs[0].filename, pointerprefs[1].filename));
+    data->pded_oldentry = entry;
 
     AROS_USERFUNC_EXIT
 }
@@ -90,7 +101,7 @@ AROS_UFHA(APTR, msg, A1))
 /*** Methods ****************************************************************/
 Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-    Object *previewImage, *typeCycle, *fileString, *spotButton, *alphaSlider;
+    Object *previewImage, *typeCycle, *fileString, *alphaSlider;
 
     self = (Object *) DoSuperNewTags
     (
@@ -105,11 +116,11 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             End),
             Child, ColGroup(2),
                 GroupFrame,
-                Child, (IPTR)Label2("Type"),
+                Child, (IPTR)Label2("Which"),
                 Child, (IPTR)(typeCycle = (Object *)CycleObject,
                     MUIA_Cycle_Entries, type_entries,
                 End),
-                Child, (IPTR)Label2("Load"),
+                Child, (IPTR)Label2("Filename"),
                 Child, (IPTR)PopaslObject,
                     MUIA_Popasl_Type, ASL_FileRequest,
                     MUIA_Popstring_String, (IPTR)(fileString = (Object *)StringObject,
@@ -118,9 +129,6 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     End),
                     MUIA_Popstring_Button, (IPTR)PopButton(MUII_PopUp),
                 End,
-
-                Child, (IPTR)HVSpace,
-                Child, (IPTR)(spotButton = SimpleButton("Set Hotspot")),
                 Child, (IPTR)Label2("Alpha"),
                 Child, (IPTR)(alphaSlider = (Object *)SliderObject,
                     MUIA_Numeric_Min, 0,
@@ -135,30 +143,23 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     {
         SETUP_INST_DATA;
 
-        data->cycleHook.h_Entry = (HOOKFUNC)cycleFunction;
-        data->cycleHook.h_Data = data;
+        data->pted_cycleHook.h_Entry = (HOOKFUNC)cycleFunction;
+        data->pted_cycleHook.h_Data  = data;
 
         data->pted_previewImage = previewImage;
         data->pted_typeCycle    = typeCycle;
         data->pted_fileString   = fileString;
-        data->pted_spotButton   = spotButton;
         data->pted_alphaSlider  = alphaSlider;
 
         DoMethod
         (
             data->pted_typeCycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR) self, 2, MUIM_CallHook, &data->cycleHook
+            (IPTR) self, 2, MUIM_CallHook, &data->pted_cycleHook
         );
 
         DoMethod
         (
             data->pted_fileString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-
-        DoMethod
-        (
-            data->pted_spotButton, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
 
@@ -181,8 +182,6 @@ STATIC void Gadgets2PTPrefs(struct PTEditor_DATA *data)
     // Trigger cycleHook
     SET(data->pted_typeCycle, MUIA_Cycle_Active, entry);
 
-    D(bug("[POINTERPREF/gadgets2prefs] name 1 %s\nname 2 %s\n", pointerprefs[0].filename, pointerprefs[1].filename));
-
 }
 
 STATIC VOID PTPrefs2Gadgets(struct PTEditor_DATA *data)
@@ -192,7 +191,14 @@ STATIC VOID PTPrefs2Gadgets(struct PTEditor_DATA *data)
     NNSET(data->pted_fileString, MUIA_String_Contents, pointerprefs[entry].filename);
     NNSET(data->pted_alphaSlider, MUIA_Numeric_Value, pointerprefs[entry].npp.npp_AlphaValue);
 
-    D(bug("[POINTERPREF/prefs2gadget] name 1 %s\nname 2 %s\n", pointerprefs[0].filename, pointerprefs[1].filename));
+    SetAttrs
+    (
+        data->pted_previewImage,
+        MUIA_PPreview_FileName, pointerprefs[entry].filename,
+        MUIA_PPreview_Alpha,    pointerprefs[entry].npp.npp_AlphaValue,
+        MUIA_PPreview_HSpotX,   pointerprefs[entry].npp.npp_X,
+        MUIA_PPreview_HSpotY,   pointerprefs[entry].npp.npp_Y
+    );
 }
 
 IPTR PTEditor__MUIM_PrefsEditor_ImportFH
@@ -206,8 +212,6 @@ IPTR PTEditor__MUIM_PrefsEditor_ImportFH
 
     success = Prefs_ImportFH(message->fh);
     if (success) PTPrefs2Gadgets(data);
-
-    D(bug("[POINTERPREF/importFH] name 1 %s\nname 2 %s\n", pointerprefs[0].filename, pointerprefs[1].filename));
 
     return success;
 }
@@ -223,8 +227,6 @@ IPTR PTEditor__MUIM_PrefsEditor_ExportFH
 
     Gadgets2PTPrefs(data);
     success = Prefs_ExportFH(message->fh);
-
-    D(bug("[POINTERPREF/ExportFH] name 1 %s\nname 2 %s\n", pointerprefs[0].filename, pointerprefs[1].filename));
 
     return success;
 }
