@@ -53,6 +53,7 @@
 #define DEBUG_KEY(x)        ;
 #define DEBUG_SCREENKEY(x)  ;
 #define DEBUG_DRAG(x)
+#define DEBUG_MOUSE(x)
 
 /****************************************************************************************/
 
@@ -1286,6 +1287,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
     case IECODE_NOBUTTON: /* MOUSEMOVE */
     {
     	struct Screen *scr;
+	UWORD xlimit, ylimit;
 
 	if (ie->ie_Qualifier & IEQUALIFIER_RELATIVEMOUSE) {
 	    //ULONG Thresh;
@@ -1328,8 +1330,11 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	    ie->ie_X = iihdata->DeltaMouseX + iihdata->LastMouseX;
 	    ie->ie_Y = iihdata->DeltaMouseY + iihdata->LastMouseY;
 	} else {
+	    DEBUG_MOUSE(bug("[Inputhandler] Last mouse position: (%d, %d), new mouse position: (%d, %d)\n",
+			    iihdata->LastMouseX, iihdata->LastMouseY, ie->ie_X, ie->ie_Y));
 	    iihdata->DeltaMouseX = ie->ie_X - iihdata->LastMouseX;
 	    iihdata->DeltaMouseY = ie->ie_Y - iihdata->LastMouseY;
+	    DEBUG_MOUSE(bug("[InputHandler] Delta is (%d, %d)\n", iihdata->DeltaMouseX, iihdata->DeltaMouseY));
 	}
 
 	//jDc: not really necessary to lock this for reading since this ptr is only modified
@@ -1390,19 +1395,19 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 		}
 	    }
 */
-	    if (ie->ie_X >= scr->Width + max(scr->LeftEdge,0))  ie->ie_X = scr->Width + max(scr->LeftEdge,0) - 1;
-	    if (ie->ie_Y >= scr->Height + max(scr->TopEdge,0)) ie->ie_Y = scr->Height + max(scr->TopEdge,0) - 1;
-	    if (ie->ie_X < - scr->LeftEdge) ie->ie_X = - scr->LeftEdge;
-	    if (ie->ie_Y < - scr->TopEdge) ie->ie_Y = - scr->TopEdge;
-
+	    xlimit = scr->ViewPort.DWidth - 1;
+	    ylimit = scr->ViewPort.DHeight - 1;
 	}
 	else
 	{
-	    if (ie->ie_X >= 320) ie->ie_X = 320 - 1;
-	    if (ie->ie_Y >= 200) ie->ie_Y = 200 - 1;
-	    if (ie->ie_X < 0) ie->ie_X = 0;
-	    if (ie->ie_Y < 0) ie->ie_Y = 0;
+	    /* If there's no active screen, we take 160x160 as a limit */
+	    xlimit = 159;
+	    ylimit = 159;
 	}
+	if (ie->ie_X > xlimit) ie->ie_X = xlimit;
+	if (ie->ie_Y > ylimit) ie->ie_Y = ylimit;
+	if (ie->ie_X < 0) ie->ie_X = 0;
+	if (ie->ie_Y < 0) ie->ie_Y = 0;
 	//UnlockIBase(lock);
 
 #ifdef SKINS
