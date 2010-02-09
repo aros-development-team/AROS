@@ -84,5 +84,5 @@
 
 void wbinvd()
 {
-    asm volatile("wbinvd":::"memory");
+    asm volatile("wbinvd; iret;":::"memory");
 }
