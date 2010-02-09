@@ -5,6 +5,7 @@
     Desc: Create a new BitMap
     Lang: english
 */
+
 #include <aros/debug.h>
 #include <string.h>
 #include <exec/memory.h>
@@ -152,6 +153,8 @@
     }
 
     ASSERT_VALID_PTR_OR_NULL(friend_bitmap);
+    D(bug("AllocBitMap(%u, %u, %u, 0x%08lX)\n", sizex, sizey, depth, flags));
+    D(bug("[AllocBitMap] ModeID: 0x%08lX, friend_bitmap: 0x%p\n", hiddmode, friend_bitmap));
     
     /*
 	If the depth is too large or the bitmap should be displayable or
@@ -168,11 +171,8 @@
     {
 
 	struct TagItem bm_tags[8];	/* Tags for offscreen bitmaps */
-		
-	/*
-	    bug("driver_AllocBitMap(sizex=%d, sizey=%d, depth=%d, flags=%d, friend_bitmap=%p)\n",
-    		sizex, sizey, depth, flags, friend_bitmap);
-	*/
+
+	D(bug("[AllocBitMap] Allocating HIDD bitmap\n"));
 
 
 	SET_BM_TAG( bm_tags, 0, Width,  sizex	);
@@ -180,6 +180,7 @@
 
 	if (flags & BMF_SCREEN)
 	{
+	    D(bug("[AllocBitMap] Allocating screen bitmap\n"));
 	    /* Use the hiddmode instead of depth/friend_bitmap */
 	    if  (INVALID_ID == hiddmode)
     		ReturnPtr("driver_AllocBitMap(Invalid modeID)", struct BitMap *, NULL);
@@ -190,23 +191,41 @@
 	}
 	else
 	{
-    	    SET_TAG(bm_tags, 2, TAG_IGNORE, 0);
+	    HIDDT_StdPixFmt stdpf;
 	    
+	    /* Set friend bitmap if given */
+	    SET_TAG(bm_tags, 2, TAG_IGNORE, 0);
 	    if (NULL != friend_bitmap)
 	    {
-		if (IS_HIDD_BM(friend_bitmap))
-		SET_BM_TAG(bm_tags, 2, Friend, HIDD_BM_OBJ(friend_bitmap));
+		if (IS_HIDD_BM(friend_bitmap)) {
+			D(bug("[AllocBitMap] Setting friend bitmap object: 0x%p\n", HIDD_BM_OBJ(friend_bitmap)));
+		    SET_BM_TAG(bm_tags, 2, Friend, HIDD_BM_OBJ(friend_bitmap));
+		}
 	    }
 
 	    if (flags & BMF_SPECIALFMT)
 	    {
-		HIDDT_StdPixFmt stdpf;
-
 		stdpf = cyber2hidd_pixfmt(DOWNSHIFT_PIXFMT(flags), GfxBase);
+		D(bug("[AllocBitMap] Setting pixelformat to %d\n", stdpf));
 		SET_BM_TAG(bm_tags, 3, StdPixFmt, stdpf);
-	    }
-	    else
-	    {
+	    } else if (!friend_bitmap) {
+		/* If there is neither pixelformat nor friend bitmap specified,
+		   we have to use some default pixelformat depending on the depth */
+	        if (depth > 24)
+		    stdpf = vHidd_StdPixFmt_ARGB32;
+		else if (depth > 16)
+		    stdpf = vHidd_StdPixFmt_0RGB32;
+		else if (depth > 15)
+		    stdpf = vHidd_StdPixFmt_RGB16;
+		else if (depth > 8)
+		    stdpf = vHidd_StdPixFmt_RGB15;
+		else
+		    stdpf = vHidd_StdPixFmt_LUT8;
+		D(bug("[AllocBitMap] Setting pixelformat to %d\n", stdpf));
+		SET_BM_TAG(bm_tags, 3, StdPixFmt, stdpf);
+	    } else {
+		/* If we have a friend bitmap, pixelformat will be
+		   picked up from it */
 		SET_TAG(bm_tags, 3, TAG_IGNORE, 0);
 	    }
 
@@ -214,6 +233,7 @@
 	}
 
 	nbm = AllocMem (sizeof (struct BitMap), MEMF_ANY|MEMF_CLEAR);
+	D(bug("[AllocBitMap] Allocated bitmap structure: 0x%p\n", nbm));
 	if (NULL != nbm)
 	{
 
@@ -225,7 +245,9 @@
     	    /* Create HIDD bitmap object */
     	    if (NULL != gfxhidd)
 	    {
+		D(bug("[AllocBitMap] Creating bitmap object\n"));
     		bm_obj = HIDD_Gfx_NewBitMap(gfxhidd, bm_tags);
+		D(bug("[AllocBitMap] Created bitmap object 0x%p\n", bm_obj));
     		if (NULL != bm_obj)
     		{
 
