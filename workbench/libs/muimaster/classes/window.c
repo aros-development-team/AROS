@@ -1,6 +1,6 @@
 /*
     Copyright  1999, David Le Corfec.
-    Copyright  2002-2006, The AROS Development Team.
+    Copyright  2002-2010, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -672,10 +672,12 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         WA_InnerHeight,         (IPTR) data->wd_Height,
         WA_AutoAdjust,          (IPTR) TRUE,
         WA_NewLookMenus,        (IPTR) TRUE,
-#ifdef __AMIGAOS4__
+/* AmigaOS v4 extension */
+#ifdef WA_ToolBox
         WA_ToolBox,				(IPTR) !!(data->wd_Flags & MUIWF_TOOLBOX),
 #endif
-#ifdef __AROS__
+/* MorphOS extensions */
+#ifdef WA_ExtraGadget_MUI
         WA_ExtraGadget_MUI,     (IPTR) ((buttons & MUIV_Window_Button_MUI) != 0) ? TRUE : FALSE,
         WA_ExtraGadget_PopUp,   (IPTR) ((buttons & MUIV_Window_Button_Popup) != 0) ? TRUE : FALSE,
         WA_ExtraGadget_Snapshot,(IPTR) ((buttons & MUIV_Window_Button_Snapshot) != 0) ? TRUE : FALSE,
