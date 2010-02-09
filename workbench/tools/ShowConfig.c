@@ -91,7 +91,7 @@ int main()
 	bootldr = GetBootInfo(BL_LoaderName);
 
 	if (bootldr)
-    	    printf("BOOTLDR:\t%s\n", bootldr);
+    	    printf("BOOTLDR:%s\n", bootldr);
 
 	args = GetBootInfo(BL_Args);
 	if (args) {
