@@ -74,7 +74,7 @@ AROS_UFHA(APTR, msg, A1))
         NAMEBUFLEN
     );
     pointerprefs[data->pded_oldentry].npp.npp_AlphaValue =
-        XGET(data->pted_alphaSlider, MUIA_Numeric_Value);
+        XGET(data->pted_alphaSlider, MUIA_Numeric_Value) * 0x0101;
     pointerprefs[data->pded_oldentry].npp.npp_X =
         XGET(data->pted_previewImage, MUIA_PPreview_HSpotX);
     pointerprefs[data->pded_oldentry].npp.npp_Y =
@@ -82,7 +82,7 @@ AROS_UFHA(APTR, msg, A1))
 
     // set data of current entry
     NNSET(data->pted_fileString,  MUIA_String_Contents, pointerprefs[entry].filename);
-    NNSET(data->pted_alphaSlider, MUIA_Numeric_Value,   pointerprefs[entry].npp.npp_AlphaValue);
+    NNSET(data->pted_alphaSlider, MUIA_Numeric_Value,   pointerprefs[entry].npp.npp_AlphaValue >> 8);
 
     SetAttrs
     (
@@ -189,7 +189,7 @@ STATIC VOID PTPrefs2Gadgets(struct PTEditor_DATA *data)
     ULONG entry = XGET(data->pted_typeCycle, MUIA_Cycle_Active);
 
     NNSET(data->pted_fileString, MUIA_String_Contents, pointerprefs[entry].filename);
-    NNSET(data->pted_alphaSlider, MUIA_Numeric_Value, pointerprefs[entry].npp.npp_AlphaValue);
+    NNSET(data->pted_alphaSlider, MUIA_Numeric_Value, pointerprefs[entry].npp.npp_AlphaValue >> 8);
 
     SetAttrs
     (
