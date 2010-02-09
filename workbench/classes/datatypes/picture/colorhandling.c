@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -354,13 +354,29 @@ static UBYTE * AllocLineBuffer( long width, long height, int pixelbytes )
     return buffer;
 }
 
+static ULONG pixelformats[] = {
+    PIXFMT_RGB24,
+    PIXFMT_RGBA32,
+    PIXFMT_ARGB32,
+    PIXFMT_LUT8,
+    PIXFMT_LUT8
+};
+
 BOOL AllocDestBM( struct Picture_Data *pd )
 {
+    ULONG flags = BMF_MINPLANES;
+    struct BitMap *friend_bm = NULL;
+    
+    if (pd->UseFriendBM && pd->DestScreen)
+        friend_bm = pd->DestScreen->RastPort.BitMap;
+    else if (pd->TrueColorDest && (pd->SrcPixelFormat != -1))
+        flags |= (BMF_SPECIALFMT | SHIFT_PIXFMT(pixelformats[pd->SrcPixelFormat]));
+    D(bug("[AllocDestBM] Friend: 0x%p, flags: 0x%08lX\n", friend_bm, flags));
     pd->DestBM = AllocBitMap( pd->DestWidth,
 			      pd->DestHeight,
 			      pd->DestDepth,
-			      BMF_MINPLANES,
-			      (pd->UseFriendBM && pd->DestScreen) ? pd->DestScreen->RastPort.BitMap : NULL );
+			      flags,
+			      friend_bm);
     if( !pd->DestBM )
     {
 	D(bug("picture.datatype/AllocDestBM: DestBitmap allocation failed !\n"));
