@@ -70,6 +70,9 @@
 {
     AROS_LIBFUNC_INIT
 
+    if (flags & DMA_ReadFromRAM)
+	CacheClearE(address, *length, CACRF_ClearD);
+
     return address;
 
     AROS_LIBFUNC_EXIT

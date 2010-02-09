@@ -75,6 +75,9 @@
 {
     AROS_LIBFUNC_INIT
 
+    if (caches & CACRF_ClearD)
+	asm volatile("wbinvd");
+
     AROS_LIBFUNC_EXIT
 } /* CacheClearE */
 
