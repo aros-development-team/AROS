@@ -103,7 +103,7 @@ static void LoadPointerFile(STRPTR filename, ULONG which, UWORD installas, UWORD
     UWORD h_which;
 
     D(bug("[PointerPrefs] Load file: %s\n", filename));
-    o = NewDTObject(filename, DTA_GroupID, GID_PICTURE, PDTA_DestMode, PMODE_V43, TAG_DONE);
+    o = NewDTObject(filename, DTA_GroupID, GID_PICTURE, PDTA_Remap, FALSE, TAG_DONE);
     D(bug("[PointerPrefs] Datatype object: 0x%p\n", o));
     /* If datatypes failed, try to load AmigaOS 3.x prefs file */
     if (!o) {
@@ -113,14 +113,11 @@ static void LoadPointerFile(STRPTR filename, ULONG which, UWORD installas, UWORD
 	return;
     }
 
-    /* The following doesn't work. Why? */
     if (DoDTMethod(o, NULL, NULL, DTM_PROCLAYOUT, NULL, TRUE)) {
         D(bug("[PointerPrefs] Layout complete\n"));
 
         h_which = AROS_BE2WORD(which);
 	GetDTAttrs(o, PDTA_DestBitMap, &bm, TAG_DONE);
-	if (!bm)
-            GetDTAttrs(o, PDTA_BitMap, &bm, TAG_DONE);
         D(bug("[PointerPrers] BitMap: 0x%p\n", bm));
         D(bug("[PointerPrefs] Which: %d\n", h_which));
         D(bug("[PointerPrefs] Size: %dx%d\n", bm->BytesPerRow * 8, bm->Rows));
