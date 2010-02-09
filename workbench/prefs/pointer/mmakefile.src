@@ -9,7 +9,7 @@ FILES := main locale ppreview pteditor prefs args misc
 
 EXEDIR      := $(AROSDIR)/Prefs
 
-##MM- workbench-prefs : workbench-prefs-pointer
+#MM- workbench-prefs : workbench-prefs-pointer
 #MM workbench-prefs-pointer : includes linklibs workbench-prefs-pointer-catalogs
 
 %build_prog mmake=workbench-prefs-pointer \
