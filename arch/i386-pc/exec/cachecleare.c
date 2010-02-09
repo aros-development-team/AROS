@@ -74,10 +74,15 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    void wbinvd();
 
     if (caches & CACRF_ClearD)
-	asm volatile("wbinvd":::"memory");
+	Supervisor(wbinvd);
 
     AROS_LIBFUNC_EXIT
 } /* CacheClearE */
 
+void wbinvd()
+{
+    asm volatile("wbinvd":::"memory");
+}
