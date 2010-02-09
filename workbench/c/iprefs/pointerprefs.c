@@ -13,16 +13,32 @@
 #define DEBUG 0
 #include <aros/debug.h>
 #include <aros/macros.h>
+#include <datatypes/pictureclass.h>
 #include <prefs/prefhdr.h>
 #include <prefs/pointer.h>
 
 #include <intuition/iprefs.h>
+#include <proto/datatypes.h>
 
 /*********************************************************************************************/
 
-static void InstallPointer(struct PointerPrefs *pp, UWORD which)
+static void InstallBitMap(struct BitMap *bm, UWORD which, UWORD x, UWORD y, UWORD size, UWORD ysize)
 {
     struct IPointerPrefs ip;
+    
+    ip.BitMap      = bm;
+    ip.XOffset     = x;
+    ip.YOffset     = y;
+    ip.BytesPerRow = bm->BytesPerRow;
+    ip.Size        = size;
+    ip.YSize       = ysize;
+    ip.Which       = which;
+    
+    SetIPrefs(&ip, sizeof(struct IPointerPrefs), IPREFS_TYPE_POINTER);
+}
+
+static void InstallPointer(struct PointerPrefs *pp, UWORD which)
+{
     struct BitMap bm;
     struct ColorSpec *ic;
     struct RGBTable *colors = (struct RGBTable *)&pp[1];
@@ -33,21 +49,18 @@ static void InstallPointer(struct PointerPrefs *pp, UWORD which)
     UWORD ncols = (1 << depth) - 1;
     ULONG ic_size = (1 << depth) * sizeof(struct ColorSpec);
     UBYTE *planes;
+    UWORD x = AROS_BE2WORD(pp->pp_X);
+    UWORD y = AROS_BE2WORD(pp->pp_Y);
+    UWORD size = AROS_BE2WORD(pp->pp_Size);
+    UWORD ysize = AROS_BE2WORD(pp->pp_YSize);
 
     InitBitMap(&bm, depth, width, height);
-    ip.BitMap      = &bm;
-    ip.XOffset     = AROS_BE2WORD(pp->pp_X);
-    ip.YOffset     = AROS_BE2WORD(pp->pp_Y);
-    ip.BytesPerRow = bm.BytesPerRow;
-    ip.Size        = AROS_BE2WORD(pp->pp_Size);
-    ip.YSize       = AROS_BE2WORD(pp->pp_YSize);
-    ip.Which       = which;
 
-    D(bug("[PointerPrefs] Which: %d\n", ip.Which));
-    D(bug("[PointerPrefs] Data size: %d\n", ip.Size));
+    D(bug("[PointerPrefs] Which: %d\n", which));
     D(bug("[PointerPrefs] Bitmap: %dx%dx%d\n", width, height, depth));
-    D(bug("[PointerPrefs] YSize: %d\n", ip.YSize));
-    D(bug("[PointerPrefs] Hotspot: (%d, %d)\n", ip.XOffset, ip.YOffset));
+    D(bug("[PointerPrefs] Size: %d\n", size));
+    D(bug("[PointerPrefs] YSize: %d\n", ysize));
+    D(bug("[PointerPrefs] Hotspot: (%d, %d)\n", x, y));
 
     ic = AllocMem(ic_size, MEMF_ANY);
     if (ic) {
@@ -70,7 +83,7 @@ static void InstallPointer(struct PointerPrefs *pp, UWORD which)
         /* First change palette, then image. It is important in order to get correct colors on
            truecolor screens */
         SetIPrefs(ic, ic_size, IPREFS_TYPE_OLD_PALETTE);
-        SetIPrefs(&ip, sizeof(struct IPointerPrefs), IPREFS_TYPE_POINTER);
+	InstallBitMap(&bm, which, x, y, size, ysize);
 	FreeMem(ic, ic_size);
     }
 }
@@ -81,23 +94,52 @@ static LONG stopchunks[] =
     ID_PREF, ID_NPTR
 };
 
-static void LoadPointerPrefs(STRPTR filename, WORD which, WORD installas);
+static void LoadPointerPrefs(STRPTR filename, WORD which, WORD installas, LONG numstopchunks);
 
 static void LoadPointerFile(STRPTR filename, ULONG which, UWORD installas, UWORD x, UWORD y)
 {
-    /* TODO: this may be NOT an IFF IREF file. It may also be raw image file.
-             We need to detect the file format and use datatypes if appropriate. */
-    LoadPointerPrefs(filename, which, installas);
+    Object *o;
+    struct BitMap *bm = NULL;
+    UWORD h_which;
+
+    D(bug("[PointerPrefs] Load file: %s\n", filename));
+    o = NewDTObject(filename, DTA_GroupID, GID_PICTURE, PDTA_DestMode, PMODE_V43, TAG_DONE);
+    D(bug("[PointerPrefs] Datatype object: 0x%p\n", o));
+    /* If datatypes failed, try to load AmigaOS 3.x prefs file */
+    if (!o) {
+	/* Set numstopchunks to 1 because we want to avoid recursion
+	   if someone specifies new pointer prefs file as a target */
+	LoadPointerPrefs(filename, which, installas, 1);
+	return;
+    }
+
+    /* The following doesn't work. Why? */
+    if (DoDTMethod(o, NULL, NULL, DTM_PROCLAYOUT, NULL, TRUE)) {
+        D(bug("[PointerPrefs] Layout complete\n"));
+
+        h_which = AROS_BE2WORD(which);
+	GetDTAttrs(o, PDTA_DestBitMap, &bm, TAG_DONE);
+	if (!bm)
+            GetDTAttrs(o, PDTA_BitMap, &bm, TAG_DONE);
+        D(bug("[PointerPrers] BitMap: 0x%p\n", bm));
+        D(bug("[PointerPrefs] Which: %d\n", h_which));
+        D(bug("[PointerPrefs] Size: %dx%d\n", bm->BytesPerRow * 8, bm->Rows));
+        D(bug("[PointerPrefs] Hotspot: (%d, %d)\n", x, y));
+        /* FIXME: What are actually Size and YSize ? */
+        InstallBitMap(bm, h_which, x, y, 0, 0);
+    }
+
+    DisposeDTObject(o);
 }
 
-static void LoadPointerPrefs(STRPTR filename, WORD which, WORD installas)
+static void LoadPointerPrefs(STRPTR filename, WORD which, WORD installas, LONG numstopchunks)
 {
     struct IFFHandle *iff;
     struct PointerPrefs *pp;
     struct NewPointerPrefs *npp;
 
     D(bug("filename=%s\n",filename));
-    iff = CreateIFF(filename, stopchunks, 1);
+    iff = CreateIFF(filename, stopchunks, numstopchunks);
     if (iff) {
     	while(ParseIFF(iff, IFFPARSE_SCAN) == 0)
 	{
@@ -109,7 +151,7 @@ static void LoadPointerPrefs(STRPTR filename, WORD which, WORD installas)
 	    case ID_PNTR:
 	        pp = LoadChunk(iff, sizeof(struct PointerPrefs), MEMF_CHIP);
 		if (pp) {
-		    D(bug("[PointerPrefs] Got AmigaOS 3.0 pointer chunk, code is %d\n", code));
+		    D(bug("[PointerPrefs] Got AmigaOS 3.0 pointer chunk, code is %d\n", AROS_BE2WORD(pp->pp_Which)));
 		    if ((which == -1) || (which == pp->pp_Which)) {
 		        InstallPointer(pp, AROS_BE2WORD((installas == -1) ? pp->pp_Which : installas));
 		    }
@@ -119,8 +161,11 @@ static void LoadPointerPrefs(STRPTR filename, WORD which, WORD installas)
 	    case ID_NPTR:
 	        npp = LoadChunk(iff, sizeof(struct NewPointerPrefs), MEMF_ANY);
 		if (npp) {
+		    UWORD alpha = AROS_BE2WORD(npp->npp_AlphaValue);
+
 		    D(bug("[PointerPrefs] Got new pointer chunk\n"));
-		    SetIPrefs(&npp->npp_AlphaValue, sizeof(UWORD), IPREFS_TYPE_POINTER_ALPHA);
+		    D(bug("[PointerPrefs] Which %u, alpha: 0x%04X\n", AROS_BE2WORD(npp->npp_Which), alpha));
+		    SetIPrefs(&alpha, sizeof(alpha), IPREFS_TYPE_POINTER_ALPHA);
 		    LoadPointerFile(npp->npp_File, npp->npp_WhichInFile, npp->npp_Which, npp->npp_X, npp->npp_Y);
 		    FreeVec(npp);
 		}
@@ -134,5 +179,5 @@ static void LoadPointerPrefs(STRPTR filename, WORD which, WORD installas)
 void PointerPrefs_Handler(STRPTR filename)
 {
     D(bug("In IPrefs:PointerPrefs_Handler\n"));
-    LoadPointerPrefs(filename, -1, -1);
+    LoadPointerPrefs(filename, -1, -1, 2);
 }
