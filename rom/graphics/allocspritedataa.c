@@ -14,11 +14,53 @@
 #include <cybergraphx/cybergraphics.h>
 #include <graphics/sprite.h>
 #include <graphics/scale.h>
+#include <hidd/graphics.h>
 #include <utility/tagitem.h>
 #include <exec/exec.h>
+#include <proto/oop.h>
 #include <string.h>
 #include "gfxfuncsupport.h"
 #include "graphics_intern.h"
+
+#if DEBUG
+
+#define PRINT_PIXFMT(bitmap)						\
+if (bitmap->Flags & BMF_SPECIALFMT) {					\
+    OOP_Object *pf;							\
+    IPTR stdpf;								\
+									\
+    OOP_GetAttr(bitmap->Planes[0], aHidd_BitMap_PixFmt, (IPTR *)&pf);	\
+    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);			\
+									\
+    bug("[AllocSpriteData] Bitmap pixelformat: %lu\n", stdpf);		\
+}
+
+#else
+#define PRINT_PIXFMT(bitmap)
+#endif
+
+#if DEBUG > 1
+
+#define PRINT_BITMAP(bitmap, xmax, ymax)			\
+bug("[AllocSpriteData] Bitmap contents:\n");			\
+{								\
+    OOP_Object *bm = OBTAIN_HIDD_BM(bitmap);			\
+    ULONG x, y;							\
+								\
+    for (y = 0; y < ymax; y++) {				\
+        for (x = 0; x < xmax; x++) {				\
+            HIDDT_Pixel pix = HIDD_BM_GetPixel(bm, x, y);	\
+								\
+	    bug("0x%08lX ", pix);				\
+	}							\
+	bug("\n");						\
+    }								\
+    RELEASE_HIDD_BM(bm, bitmap);				\
+}
+
+#else
+#define PRINT_BITMAP(bitmap, xmax, ymax)
+#endif
 
 /*****************************************************************************
 
@@ -176,6 +218,10 @@
 	    }
 	}
 
+	D(bug("[AllocSpriteData] Source bitmap depth: %u\n", GetBitMapAttr(bsa.bsa_SrcBitMap, BMA_DEPTH)));
+        PRINT_PIXFMT(bsa.bsa_SrcBitMap);
+	PRINT_BITMAP(bsa.bsa_SrcBitMap, 8, 8);
+
         sprite = AllocVec(sizeof(*sprite), MEMF_PUBLIC | MEMF_CLEAR);
         if (NULL != sprite) {
 
@@ -207,7 +253,10 @@
 		sprite->es_flags               = 0;
 		sprite->es_BitMap              = bsa.bsa_DestBitMap;
             
-		D(bug("Allocated sprite data 0x%08lX: bitmap 0x%08lX, height %u\n", sprite, sprite->es_BitMap, sprite->es_SimpleSprite.height));
+		D(bug("[AllocSpriteData] Allocated sprite data 0x%08lX: bitmap 0x%08lX, height %u\n", sprite, sprite->es_BitMap, sprite->es_SimpleSprite.height));
+		D(bug("[AllocSpriteData] Bitmap depth: %u\n", GetBitMapAttr(bsa.bsa_DestBitMap, BMA_DEPTH)));
+		PRINT_PIXFMT(bsa.bsa_DestBitMap);
+		PRINT_BITMAP(bsa.bsa_DestBitMap, 8, 8);
 	    } else {
 	        FreeVec(sprite);
 		sprite = NULL;

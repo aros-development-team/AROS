@@ -376,12 +376,8 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
         tags[1].ti_Tag  = aHidd_BitMap_ClassPtr;
 	D(bug("[GDI] Displayable: %d, ModeID: 0x%08lX\n", displayable, modeid));
     } else if (friend && (stdpf == vHidd_StdPixFmt_Unknown)) {
-        OOP_Object *gfxhidd;
-
-        OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, (APTR)&gfxhidd);
-	if (gfxhidd == o) {
+	if (OOP_OCLASS(friend) == XSD(cl)->bmclass)
 	    tags[1].ti_Tag  = aHidd_BitMap_ClassPtr;
-	}
     }
     D(if (tags[1].ti_Tag == aHidd_BitMap_ClassPtr) bug("[GDI] Creating GDI bitmap, ClassPtr is %p\n", tags[1].ti_Data);)
 	    
@@ -576,11 +572,7 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	    BITMAP bm;
 	    ULONG i;
 
-#if AROS_BIG_ENDIAN
-	    HIDD_BM_GetImage(msg->shape, (UBYTE *)buf, width * 4, 0, 0, width, height, vHidd_StdPixFmt_ARGB32);
-#else
-	    HIDD_BM_GetImage(msg->shape, (UBYTE *)buf, width * 4, 0, 0, width, height, vHidd_StdPixFmt_BGRA32);
-#endif
+	    HIDD_BM_GetImage(msg->shape, (UBYTE *)buf, width * 4, 0, 0, width, height, Machine_ARGB32);
 	    PRINT_POINTER(buf, width, 8, 8);
 	    /* Construct the mask from alpha channel data. The mask will be used on pre-XP systems or
 	       on LUT screens. Of course there'll be no alpha blending there. */
