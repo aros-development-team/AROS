@@ -556,7 +556,7 @@ enum
     aoHidd_BitMap_ModeID,	 /* 11 [I.G] (HIDDT_ModeID) must be passed on initialization of
 				             aHidd_BitMap_Displayable=TRUE bitmaps. May also be
 				             used with non-displayable bitmaps */
-    aoHidd_BitMap_ClassPtr,	 /* 12 [I..] Only used by subclasses of the gfx hidd */
+    aoHidd_BitMap_ClassPtr,	 /* 12 [I.G] Only used by subclasses of the gfx hidd */
     aoHidd_BitMap_ClassID,	 /* 13 [I..] Only used by subclasses of the gfx hidd */
     aoHidd_BitMap_PixFmtTags,	 /* 14 [I..] Only used by subclasses of BitMap class */
     

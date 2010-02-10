@@ -479,7 +479,7 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	/* Create new cursor pixelbuffer. We multiply size by 4 because we want ARGB data
 	   to fit in. */
 	curs_pixels_len = curs_width * curs_height * 4;
-	new_curs_pixels = AllocMem(curs_pixels_len, MEMF_ANY);
+	new_curs_pixels = AllocMem(curs_pixels_len, MEMF_ANY|MEMF_CLEAR);
 	if (!new_curs_pixels)
 	    return FALSE;
 	new_backup = HIDD_Gfx_NewBitMap(data->gfxhidd, bmtags);
@@ -490,7 +490,9 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	    FreeMem(new_curs_pixels, curs_pixels_len);
 	    return FALSE;
 	}
-	    
+	
+	LFB(data);
+
 	data->curs_bm = shape;
 	
 	/* Erase the old cursor */
@@ -515,6 +517,7 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	data->curs_pixels = new_curs_pixels;
 
 	rethink_cursor(data, CSD(cl));
+	UFB(data);
 	    
 	draw_cursor(data, TRUE, TRUE, CSD(cl));
     }

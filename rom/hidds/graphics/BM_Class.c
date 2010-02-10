@@ -131,7 +131,7 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 	BOOL 	    	    	ok = TRUE;
 
     	DECLARE_ATTRCHECK(bitmap);
-    	IPTR 	    	    	attrs[num_Total_BitMap_Attrs];
+    	IPTR attrs[num_Total_BitMap_Attrs] = {0};
 
         data = OOP_INST_DATA(cl, obj);
 
@@ -250,6 +250,7 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
 	    if (GOT_BM_ATTR(ModeID))
 	    	data->modeid = attrs[AO(ModeID)];
+	    data->classptr = attrs[AO(ClassPtr)];
 
     	#if USE_FAST_PUTPIXEL
 	    data->putpixel = (IPTR (*)(OOP_Class *, OOP_Object *, struct pHidd_BitMap_PutPixel *))
@@ -408,6 +409,10 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 	    case aoHidd_BitMap_LeftEdge:
 	    case aoHidd_BitMap_TopEdge:
 		*msg->storage = 0;
+		break;
+
+	    case aoHidd_BitMap_ClassPtr:
+		*msg->storage = data->classptr;
 		break;
 
             default:
