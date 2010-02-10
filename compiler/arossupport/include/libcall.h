@@ -1029,7 +1029,7 @@ typedef unsigned int (*ULONG_FUNC)();
 
 #ifndef AROS_LVO_CALL2NR
 #define AROS_LVO_CALL2NR(t,a1,a2,bt,bn,o,s) \
-    AROS_CALL2NR(t,AROS_LCA(a1),AROS_LCA(a2),bt,bn)
+    AROS_CALL2NR(t,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),bt,bn)
 #endif
 
 #ifndef AROS_LVO_CALL3
