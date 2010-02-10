@@ -1914,6 +1914,18 @@ BOOL HIDD_PlanarBM_SetBitMap(OOP_Object *obj, struct BitMap *bitMap)
     return (BOOL)OOP_DoMethod(obj, (OOP_Msg)msg);
 }
 
+BOOL HIDD_PlanarBM_GetBitMap(OOP_Object *obj, struct BitMap *bitMap)
+{
+    STATIC_MID;
+    struct pHidd_PlanarBM_GetBitMap p, *msg = &p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_PlanarBM, moHidd_PlanarBM_GetBitMap);
+        
+    p.mID = mid;
+    p.bitMap = bitMap;
+    
+    return (BOOL)OOP_DoMethod(obj, (OOP_Msg)msg);
+}
 
 /********* ColorMap *********************************/
 

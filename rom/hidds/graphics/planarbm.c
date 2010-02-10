@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics planar bitmap class implementation.
@@ -784,3 +784,21 @@ BOOL PBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 }
 
 /****************************************************************************************/
+
+BOOL PBM__Hidd_PlanarBM__GetBitMap(OOP_Class *cl, OOP_Object *o,
+				   struct pHidd_PlanarBM_GetBitMap *msg)
+{
+    struct planarbm_data *data = OOP_INST_DATA(cl, o);
+    ULONG i;
+
+    msg->bitMap->Depth	     = data->depth;
+    msg->bitMap->BytesPerRow = data->bytesperrow;
+    msg->bitMap->Rows	     = data->rows;
+    msg->bitMap->Flags	     = (data->planebuf_size < 8) ? BMF_STANDARD|BMF_MINPLANES : BMF_STANDARD; /* CHECKME */
+    msg->bitMap->pad	     = 0;
+
+    for (i = 0; i < data->planebuf_size; i++)
+        msg->bitMap->Planes[i] = data->planes[i];
+
+    return TRUE;
+}

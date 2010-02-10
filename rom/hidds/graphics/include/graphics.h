@@ -2005,7 +2005,8 @@ extern OOP_AttrBase HiddPlanarBMAttrBase;
 
 enum
 {
-    moHidd_PlanarBM_SetBitMap	/* AROS sepecific method */
+    moHidd_PlanarBM_SetBitMap,
+    moHidd_PlanarBM_GetBitMap,
 };
 
 struct pHidd_PlanarBM_SetBitMap
@@ -2014,7 +2015,14 @@ struct pHidd_PlanarBM_SetBitMap
     struct BitMap   *bitMap;
 };
 
+struct pHidd_PlanarBM_GetBitMap
+{
+    OOP_MethodID    mID;
+    struct BitMap   *bitMap;
+};
+
 BOOL HIDD_PlanarBM_SetBitMap(OOP_Object *obj, struct BitMap *bitMap);
+BOOL HIDD_PlanarBM_GetBitMap(OOP_Object *obj, struct BitMap *bitMap);
 
 enum
 {
