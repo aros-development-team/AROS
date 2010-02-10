@@ -378,7 +378,7 @@ OOP_Object *SDLGfx__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
             aHidd_BitMap_ClassPtr, (IPTR) LIBBASE->bmclass,
             TAG_MORE,              (IPTR) msg->attrList
         );
-	D(bug("[sdl] ClassPtr is 0x%p\n"));
+	D(bug("[sdl] ClassPtr is 0x%p\n", LIBBASE->bmclass));
     } else
         msgtags = msg->attrList;
 
