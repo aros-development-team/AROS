@@ -124,6 +124,14 @@ struct gdiclbase
 #undef XSD
 #define XSD(cl)     	(&((struct gdiclbase *)cl->UserData)->xsd)
 
+#if AROS_BIG_ENDIAN
+#define Machine_ARGB32 vHidd_StdPixFmt_ARGB32
+#define Machine_0RGB32 vHidd_StdPixFmt_0RGB32
+#else
+#define Machine_ARGB32 vHidd_StdPixFmt_BGRA32
+#define Machine_0RGB32 vHidd_StdPixFmt_BGR032
+#endif
+
 #else
 
 #include <windows.h>

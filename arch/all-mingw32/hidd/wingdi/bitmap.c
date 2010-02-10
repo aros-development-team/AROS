@@ -219,7 +219,7 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     case vHidd_StdPixFmt_Native:
         /* TODO: What if we are on < 32 bit ? */
     case vHidd_StdPixFmt_Native32:
-        src_stdpf = vHidd_StdPixFmt_RGB032;
+        src_stdpf = Machine_ARGB32;
     	break;
     default:
         src_stdpf = msg->pixFmt;
@@ -231,8 +231,8 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     if (buf) {
         OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
         src_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, src_stdpf);
-        /* DIB pixels are expected to be 0x00RRGGBB (vHidd_StdPixFmt_BGR032) */
-        dst_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, vHidd_StdPixFmt_BGR032);
+        /* DIB pixels are expected to be 0x00RRGGBB */
+        dst_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, Machine_0RGB32);
         src = msg->pixels;
         dst = buf;
         HIDD_BM_ConvertPixels(o, &src, src_pixfmt, msg->modulo, &dst, dst_pixfmt, bufmod,
@@ -271,6 +271,9 @@ VOID GDIBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 /****************************************************************************************/
 
+/* FIXME: GetImage() and PutImage() here do something wrong with pixelformat.
+   If you let the graphics class to create all objects with friend bitmaps as
+   GDI bitmaps, you'll see that mouse cursor is broken. */
 VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
@@ -297,7 +300,7 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     case vHidd_StdPixFmt_Native:
         /* TODO: What if we are on < 32 bit ? */
     case vHidd_StdPixFmt_Native32:
-        dst_stdpf = vHidd_StdPixFmt_RGB032;
+        dst_stdpf = Machine_ARGB32;
     	break;
     default:
         dst_stdpf = msg->pixFmt;
@@ -327,13 +330,13 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     	}
     	Permit();
         OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-	/* DIB pixels will be 0x00RRGGBB (vHidd_StdPixFmt_BGR032) */        
-        src_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, vHidd_StdPixFmt_BGR032);
+	/* DIB pixels will be 0x00RRGGBB) */
+        src_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, Machine_0RGB32);
         dst_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, dst_stdpf);
         dst = msg->pixels;
         src = buf;
         HIDD_BM_ConvertPixels(o, &src, src_pixfmt, bufmod, &dst, dst_pixfmt, msg->modulo,
-			      msg->width, msg->height, NULL);	
+			      msg->width, msg->height, NULL);
     	FreeMem(buf, bufsize);
     }
     CHECK_STACK
