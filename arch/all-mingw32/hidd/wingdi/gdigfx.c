@@ -41,6 +41,26 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#ifdef DEBUG_POINTER
+
+#define PRINT_POINTER(image, xsize, xmax, ymax)		\
+bug("[GDIGfx] Pointer data:\n");			\
+{							\
+    ULONG *pix = (ULONG *)image;			\
+    ULONG x, y;						\
+							\
+    for (y = 0; y < ymax; y++) {			\
+        for (x = 0; x < xmax; x++)			\
+	    bug("0x%08X ", pix[x]);			\
+	bug("\n");					\
+	pix += xsize;					\
+    }							\
+}
+
+#else
+#define PRINT_POINTER(image, xsize, xmax, ymax)
+#endif
+
 /****************************************************************************************/
 
 /* Some attrbases needed as global vars.
@@ -561,6 +581,7 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
 #else
 	    HIDD_BM_GetImage(msg->shape, (UBYTE *)buf, width * 4, 0, 0, width, height, vHidd_StdPixFmt_BGRA32);
 #endif
+	    PRINT_POINTER(buf, width, 8, 8);
 	    /* Construct the mask from alpha channel data. The mask will be used on pre-XP systems or
 	       on LUT screens. Of course there'll be no alpha blending there. */
 	    for (i = 0; i < width * height; i++)
