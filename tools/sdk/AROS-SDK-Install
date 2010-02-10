@@ -162,6 +162,9 @@ for dir in $all_dirs; do
     fi
 done
 
+# patch path in env.h
+sed -i -e "16 c #define STRIP_NAME \"$aros_sdk_path/bin/${cc_cpu}-aros-strip\"" tools/collect-aros/env.h
+
 if ! make -s -C tools/collect-aros \
     COLLECT-AROS=$aros_sdk_path/${cc_cpu}-aros/lib/gcc-lib/collect-aros; then
     exit 1;
