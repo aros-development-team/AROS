@@ -330,12 +330,10 @@ VOID GDICl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /****************************************************************************************/
 
 OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
-{
-    BOOL    	    	    	 displayable, framebuffer;    
+{  
     HIDDT_ModeID		 modeid;
     struct pHidd_Gfx_NewBitMap   p;
     OOP_Object      	    	*newbm;
-    OOP_Object		  	*friend;
     HIDDT_StdPixFmt		 stdpf;
     
     struct gfx_data 	    	*data;
@@ -349,39 +347,39 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     EnterFunc(bug("GDIGfx::NewBitMap()\n"));
     data = OOP_INST_DATA(cl, o);
     
-    /* Never create a framebuffer */
-    framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);	
-    if (framebuffer)
-    {
-        D(bug("[GDI] Attempt to create a framebuffer, we don't want it\n"));
-        return NULL;
-    }
-
     tags[0].ti_Data = (IPTR)data->display;
     tags[1].ti_Data = (IPTR)XSD(cl)->bmclass;
     tags[2].ti_Data = (IPTR)msg->attrList;
 
-    /* When do we create a GDI bitmap ?
-	- If the bitmap is displayable
-	- If the user supplied a modeid
-	- For 1-plane bitmaps
-	- Bitmaps that have a friend that is a GDI bitmap
-	  and there is no standard pixfmt supplied (this
-	  is now done in the baseclass) */
-    displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
+    /* Create a GDI bitmap if we have a valid ModeID or we want to create
+       a planar bitmap.
+
+       Replacing planar bitmaps with GDI bitmaps speeds up text output.
+       This affects only ExtendFont() function in graphics.library which explicitly
+       creates HIDD bitmap with vHidd_StdPixFmt_Plane format specification. This is
+       the only such place, and it needs to be rewritten. Perhaps the allocated
+       bitmap should be screen's friend or something like that.
+       See fontbm_to_hiddbm() function in rom/graphics/fontsupport.c.
+
+       Also GDI bitmap can be created if there's no explicit
+       pixelformat specification and a friend bitmap is supplied,
+       which is a GDI bitmap. This is handled in the
+       superclass.
+
+       Some day when AROS learns to deal with several display drivers at once, even ModeID check
+       may go away. This should really be handled by graphics.library. We do it here only because
+       display bitmap classes are currently private and only drivers themselves know about them.
+    */
     modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-    friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
     stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
 
-    if (displayable || (modeid != vHidd_ModeID_Invalid) || (stdpf == vHidd_StdPixFmt_Plane)) {
+    if ((modeid != vHidd_ModeID_Invalid) || (stdpf == vHidd_StdPixFmt_Plane)) {
         tags[1].ti_Tag  = aHidd_BitMap_ClassPtr;
 	D(bug("[GDI] Displayable: %d, ModeID: 0x%08lX, ClassPtr: 0x%p\n", displayable, modeid, tags[1].ti_Data));
     }
 	    
-    /* !!! IMPORTANT !!! */
     p.mID = msg->mID;
     p.attrList = tags;
-
     newbm = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
     ReturnPtr("GDIGfx::NewBitMap", OOP_Object *, newbm);
 }
