@@ -563,6 +563,13 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
 	    } /* if (!gadget) */
 
+	    /* If we clicked screen titlebar outside of any gadget, enter drag mode */
+	    if ((!gadget) && stitlebarhit) {
+	        iihdata->ScreenDrag = TRUE;
+	        *keep_event = FALSE;
+		break;
+	    }
+
 	    if (!IsToolbox) {
 	        if (!gadget && stitlebarhit)
 	        {
@@ -1356,8 +1363,8 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 		   FIXME: the whole thing relies on the fact that ViewPort size never
 		          changes and reflects physical display size. On original
 			  AmigaOS this is not true, and in AROS running on Amiga chipset
-			  this may be not true again. Probably we should keep limits in
-			  private screen structure. */
+			  this will be not true again. We need to use DisplayClip in
+			  ViewPortExtra instead. */
 		if (!(GetPrivScreen(scr)->SpecialFlags & SF_HorCompose)) {
 		    /* Calculate limits */
 		    if (scr->Width > scr->ViewPort.DWidth) {
