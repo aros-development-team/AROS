@@ -366,7 +366,8 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 	- If the user supplied a modeid
 	- For 1-plane bitmaps
 	- Bitmaps that have a friend that is a GDI bitmap
-	  and there is no standard pixfmt supplied */
+	  and there is no standard pixfmt supplied (this
+	  is now done in the baseclass) */
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
     modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
     friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
@@ -374,12 +375,8 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 
     if (displayable || (modeid != vHidd_ModeID_Invalid) || (stdpf == vHidd_StdPixFmt_Plane)) {
         tags[1].ti_Tag  = aHidd_BitMap_ClassPtr;
-	D(bug("[GDI] Displayable: %d, ModeID: 0x%08lX\n", displayable, modeid));
-    } else if (friend && (stdpf == vHidd_StdPixFmt_Unknown)) {
-	if (OOP_OCLASS(friend) == XSD(cl)->bmclass)
-	    tags[1].ti_Tag  = aHidd_BitMap_ClassPtr;
+	D(bug("[GDI] Displayable: %d, ModeID: 0x%08lX, ClassPtr: 0x%p\n", displayable, modeid, tags[1].ti_Data));
     }
-    D(if (tags[1].ti_Tag == aHidd_BitMap_ClassPtr) bug("[GDI] Creating GDI bitmap, ClassPtr is %p\n", tags[1].ti_Data);)
 	    
     /* !!! IMPORTANT !!! */
     p.mID = msg->mID;

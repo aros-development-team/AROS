@@ -1,6 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (c) 2007 Robert Norris. All rights reserved.
+ * Copyright (c) 2010 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -348,7 +349,7 @@ VOID SDLGfx__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg) {
 }
 
 OOP_Object *SDLGfx__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg) {
-    OOP_Object *bmclass = NULL, *friend, *gfxhidd;
+    OOP_Object *bmclass = NULL, *friend;
     BOOL displayable;
     HIDDT_ModeID modeid;
     HIDDT_StdPixFmt stdpixfmt;
@@ -372,24 +373,13 @@ OOP_Object *SDLGfx__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
         bmclass = LIBBASE->bmclass;
     }
 
-    else if ((HIDDT_StdPixFmt) GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList) == vHidd_StdPixFmt_Unknown) {
-        friend = (OOP_Object *) GetTagData(aHidd_BitMap_Friend, NULL, msg->attrList);
-        if (friend != NULL) {
-            OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, (APTR) &gfxhidd);
-            if (gfxhidd == o) {
-                D(bug("[sdl] bitmap with unknown pixel format and sdl friend bitmap, we can handle it\n"));
-                bmclass = LIBBASE->bmclass;
-            }
-        }
-    }
-
-    if (bmclass != NULL)
+    if (bmclass != NULL) {
         msgtags = TAGLIST(
             aHidd_BitMap_ClassPtr, (IPTR) LIBBASE->bmclass,
             TAG_MORE,              (IPTR) msg->attrList
         );
-
-    else
+	D(bug("[sdl] ClassPtr is 0x%p\n"));
+    } else
         msgtags = msg->attrList;
 
     supermsg.mID = msg->mID;
@@ -397,6 +387,7 @@ OOP_Object *SDLGfx__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
 
     o = (OOP_Object *) OOP_DoSuperMethod(cl, o, (OOP_Msg) &supermsg);
 
+    D(bug("[sdl] Created bitmap 0x%p\n", o));
     return o;
 }
 
