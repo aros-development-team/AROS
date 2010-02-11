@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -46,9 +46,8 @@ struct bitmap_data
     unsigned char	*VideoData;	/* Pointing to video data */
     unsigned int	width;		/* Width of bitmap */
     unsigned int 	height;		/* Height of bitmap */
-    unsigned int 	cmap[16];	/* ColorMap */
     char		bpp;    	/* 8 -> chunky; planar otherwise */
-    char		disp;		/* !=0 - displayable */
+    BOOL		disp;		/* !=0 - displayed */
 };
 
 struct Box

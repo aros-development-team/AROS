@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES	:=	vga_init vgaclass vgahw offbitmap onbitmap
+FILES	:=	vga_init vgaclass vgahw bitmap
 
 %build_module mmake=kernel-pc-i386-vga \
   modname=vgah modtype=hidd \

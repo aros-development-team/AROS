@@ -12,6 +12,10 @@
 #include <exec/types.h>
 #include <exec/nodes.h>
 
+/* I've tested additional modes on my ThinkPad 365x.
+   The display appears either black or broken.
+   Perhaps LCD controller doesn't recognise them.
+   sonic */
 #define ONLY640 1
 
 #ifdef ONLY640

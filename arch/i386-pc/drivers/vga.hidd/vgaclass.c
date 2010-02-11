@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for VGA and compatible cards.
@@ -35,8 +35,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define ONLY640
-
 /* Some attrbases needed as global vars.
   These are write-once read-many */
 
@@ -68,9 +66,9 @@ struct vgaModeDesc
 		640,480,4,0,
 		0,
 		640,664,760,800,0,
-		480,491,493,525}	//,
+		480,491,493,525}
 #ifndef ONLY640 
-		{"768x576x4 @ 54Hz",	// h: 32.5 kHz v: 54Hz
+	       ,{"768x576x4 @ 54Hz",	// h: 32.5 kHz v: 54Hz
 		768,576,4,1,
 		0,
 		768,795,805,872,0,
@@ -82,23 +80,6 @@ struct vgaModeDesc
 		600,601,603,617}	// 617
 #endif
 		};
-
-/* Default mouse shape */
-
-UBYTE shape[] = 
-{
-     9,11,00,00,00,00,00,00,00,00,00,
-    10, 9,11,11,00,00,00,00,00,00,00,
-    00,10, 9, 9,11,11,00,00,00,00,00,
-    00,10, 9, 9, 9, 9,11,11,00,00,00,
-    00,00,10, 9, 9, 9, 9, 9,11,11,00,
-    00,00,10, 9, 9, 9, 9, 9, 9, 9,00,
-    00,00,00,10, 9, 9, 9,11,00,00,00,
-    00,00,00,10, 9, 9,10, 9,11,00,00,
-    00,00,00,00,10, 9,00,10, 9,11,00,
-    00,00,00,00,10, 9,00,00,10, 9,11,
-    00,00,00,00,00,00,00,00,00,10,11
-};
 
 /*********************
 **  GfxHidd::New()  **
@@ -220,22 +201,8 @@ OOP_Object *PCVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (o)
-    {
-	D(bug("Got object from super\n"));
-
-
-	XSD(cl)->mouseW = 11;
-	XSD(cl)->mouseH = 11;
-	XSD(cl)->mouseShape = shape;
-	XSD(cl)->mouseVisible = 1;
-
-	XSD(cl)->vgahidd = o;
-	
-	ReturnPtr("VGAGfx::New", OOP_Object *, o);
-	
-    }
-    ReturnPtr("VGAGfx::New", OOP_Object *, NULL);
+    XSD(cl)->vgahidd = o;
+    ReturnPtr("VGAGfx::New", OOP_Object *, o);
 }
 
 VOID PCVGA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
@@ -251,6 +218,7 @@ VOID PCVGA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     if (IS_GFX_ATTR(msg->attrID, idx)) {
     	switch (idx) {
 	     case aoHidd_Gfx_SupportsHWCursor:
+	     case aoHidd_Gfx_NoFrameBuffer:
 	     	*msg->storage = (IPTR)TRUE;
 		found = TRUE;
 		break;
@@ -266,27 +234,26 @@ VOID PCVGA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 /********** GfxHidd::NewBitMap()  ****************************/
 OOP_Object *PCVGA__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
-
     BOOL displayable, framebuffer;
-    struct vga_data *data;
+//  struct vga_data *data;
     OOP_Class *classptr = NULL;
     struct TagItem mytags[2];
     struct pHidd_Gfx_NewBitMap mymsg;
     
     EnterFunc(bug("VGAGfx::NewBitMap()\n"));
     
-    data = OOP_INST_DATA(cl, o);
+//  data = OOP_INST_DATA(cl, o);
     
     /* Displayable bitmap ? */
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
     framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
-    
+
+    D(bug("[VGAGfx] Displayable: %d\n", displayable));    
     if (framebuffer) {
-	/* If the user asks for a framebuffer map we must ALLWAYS supply a class */ 
-	classptr = XSD(cl)->onbmclass;
-	
+	/* No more framebuffers */
+	return NULL;
     } else if (displayable) {
-    	classptr = XSD(cl)->offbmclass;
+    	classptr = XSD(cl)->bmclass;
     } else {
 	HIDDT_ModeID modeid;
 	/* 
@@ -316,7 +283,7 @@ OOP_Object *PCVGA__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 	modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
 	if (vHidd_ModeID_Invalid != modeid) {
 	    /* User supplied a valid modeid. We can use our offscreen class */
-	    classptr = XSD(cl)->offbmclass;
+	    classptr = XSD(cl)->bmclass;
 	} else {
 	    /* We may create an offscreen bitmap if the user supplied a friend
 	       bitmap. But we need to check that he did not supplied a StdPixFmt
@@ -333,10 +300,10 @@ OOP_Object *PCVGA__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 		    OOP_Object * gfxhidd;
 		    /* User supplied friend bitmap. Is the friend bitmap a
 		    VGA Gfx hidd bitmap ? */
-		    OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, &gfxhidd);
+		    OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 		    if (gfxhidd == o) {
 			/* Friend was VGA hidd bitmap. Now we can supply our own class */
-			classptr = XSD(cl)->offbmclass;		    
+			classptr = XSD(cl)->bmclass;		    
 		    }
 		}
 	    }
@@ -363,6 +330,53 @@ OOP_Object *PCVGA__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     ReturnPtr("VGAGfx::NewBitMap", OOP_Object *, (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg));
 }
 
+/*********  GfxHidd::Show()  ***************************/
+
+OOP_Object *PCVGA__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+{
+    /* We currently use class static data instead of
+       object tata. In addition we directly access
+       bitmap's private data. This is horrbly wrong
+       and needs further refactoring */
+    struct vga_staticdata *data = XSD(cl);
+
+    D(bug("[VGAGfx] Show(0x%p)\n", msg->bitMap));
+    ObtainSemaphore(&data->sema);
+
+    /* Remove old bitmap from the screen */
+    if (data->visible) {
+	D(bug("[VGAGfx] Old displayed bitmap data: 0x%p\n", data->visible));
+	data->visible->disp = FALSE;
+    }
+
+    if (msg->bitMap) {
+	/* If we have a bitmap to show, set it as visible */
+	IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
+	OOP_Object *pixfmt;
+	IPTR depth;
+
+	OOP_GetAttr(msg->bitMap, aHidd_BitMap_PixFmt, (IPTR *)&pixfmt);
+	OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
+	/* TODO: this should be brought in from SpriteBase of the colormap */
+	data->mouseBase = (depth > 4) ? 16 : (1 << depth) - 8;
+	OOP_SetAttrs(msg->bitMap, tags);
+	data->visible = OOP_INST_DATA(data->bmclass, msg->bitMap);
+    } else {
+	/* Otherwize simply clear the framebuffer */
+	ObtainSemaphore(&data->HW_acc);
+	/* Maximum framebuffer size is 800x600, 4 bits per pixel */
+        memset((unsigned char *)0x000a0000, 0, 400 * 600);
+	draw_mouse(data);
+	ReleaseSemaphore(&data->HW_acc);
+
+	data->visible = NULL;
+    }
+    D(bug("[VGAGfx] New displayed bitmap data: 0x%p\n", data->visible));
+    
+    ReleaseSemaphore(&data->sema);
+    return msg->bitMap;
+}
+
 /*********  GfxHidd::CopyBox()  ***************************/
 
 VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
@@ -373,11 +387,11 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 
     mode = GC_DRMD(msg->gc);
 
-    EnterFunc(bug("VGAGfx.BitMap::CopyBox( %d,%d to %d,%d of dim %d,%d\n",
+    EnterFunc(bug("VGAGfx.BitMap::CopyBox (%d,%d) to (%d,%d) of dim %d,%d\n",
     	msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
-	
-    OOP_GetAttr(msg->src,  aHidd_VGABitMap_Drawable, &src);
-    OOP_GetAttr(msg->dest, aHidd_VGABitMap_Drawable, &dest);
+    D(bug("[VGAGfx] Src: 0x%p, dest: 0x%p\n", msg->src, msg->dest));
+    OOP_GetAttr(msg->src,  aHidd_VGABitMap_Drawable, (IPTR *)&src);
+    OOP_GetAttr(msg->dest, aHidd_VGABitMap_Drawable, (IPTR *)&dest);
 
     if (!dest || !src ||
     	((mode != vHidd_GC_DrawMode_Copy) &&
@@ -712,11 +726,30 @@ VOID PCVGA__Hidd_Gfx__ShowImminentReset(OOP_Class *cl, OOP_Object *o, OOP_Msg ms
 
 BOOL PCVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
 {
-    /* hmm ... moHidd_Gfx_SetCursorShape seems to have a HIDD bitmap in msg->shape, while
-       the old (obsolete?) native moHidd_Gfx_SetMouseShape seems to expect a simple
-       chunky array. So don't do anything for now (it would have to be done similiar as
-       in config/hidd/fakegfxhidd.c I guess */
-       
+    struct vga_staticdata *data = XSD(cl);
+    IPTR curs_width, curs_height;
+    UBYTE *new_curs_pixels;
+
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Width,  &curs_width);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &curs_height);
+
+    new_curs_pixels = AllocMem(curs_width * curs_height, MEMF_ANY);
+    if (!new_curs_pixels)
+	return FALSE;
+
+    HIDD_BM_GetImage(msg->shape, new_curs_pixels, curs_width, 0, 0, curs_width, curs_height, vHidd_StdPixFmt_LUT8);
+
+    ObtainSemaphore(&data->HW_acc);
+    erase_mouse(data);
+    if (data->mouseShape)
+	FreeMem(data->mouseShape, data->mouseW * data->mouseH);
+
+    data->mouseW = curs_width;
+    data->mouseH = curs_height;
+    data->mouseShape = new_curs_pixels;
+    draw_mouse(data);
+
+    ReleaseSemaphore(&data->HW_acc);
     return TRUE;
 }
 
@@ -724,17 +757,9 @@ BOOL PCVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 BOOL PCVGA__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
 {
-    struct Box box = {0, 0, 0, 0};
-
-    box.x1 = XSD(cl)->mouseX;
-    box.y1 = XSD(cl)->mouseY;
-    box.x2 = box.x1 + XSD(cl)->mouseW;
-    box.y2 = box.y1 + XSD(cl)->mouseH;
-
     ObtainSemaphore(&XSD(cl)->HW_acc);
 
-    if (XSD(cl)->visible)
-	vgaRefreshArea(XSD(cl)->visible, 1, &box);
+    erase_mouse(XSD(cl));
 
     XSD(cl)->mouseX = (short)msg->x;
     XSD(cl)->mouseY = (short)msg->y;
@@ -760,7 +785,8 @@ VOID PCVGA__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHid
 {
     XSD(cl)->mouseVisible = msg->visible;
 
-    ObtainSemaphore(&XSD(cl)->HW_acc);    
+    ObtainSemaphore(&XSD(cl)->HW_acc);
+    erase_mouse(XSD(cl));
     draw_mouse(XSD(cl));
     ReleaseSemaphore(&XSD(cl)->HW_acc);
 }
@@ -793,14 +819,14 @@ ADD2EXPUNGELIB(PCVGA_ExpungeAttrs, 0)
 
 /*******************************************************************/
 	       
-#undef XSD
-#define XSD(cl) xsd
-
 void draw_mouse(struct vga_staticdata *xsd)
 {
     int pix;
     unsigned char *ptr, *data;
     int x, y, width, fg, x_i, y_i;
+
+    if (!xsd->mouseShape)
+	return;
     
     if (xsd->mouseVisible)
     {
@@ -830,6 +856,7 @@ void draw_mouse(struct vga_staticdata *xsd)
 
 		    if (fg && (x < width))
 		    {
+			fg += xsd->mouseBase;
 			outw(0x3ce,pix | 8);
 			outw(0x3ce,(fg << 8));
 
@@ -840,5 +867,19 @@ void draw_mouse(struct vga_staticdata *xsd)
 	    
 	    ReleaseSemaphore(&xsd->HW_acc);
 	}
+    }
+}
+
+void erase_mouse(struct vga_staticdata *data)
+{
+    if (data->visible) {
+        struct Box box = {0, 0, 0, 0};
+
+	box.x1 = data->mouseX;
+        box.y1 = data->mouseY;
+        box.x2 = box.x1 + data->mouseW;
+        box.y2 = box.y1 + data->mouseH;
+
+	vgaRefreshArea(data->visible, 1, &box);
     }
 }
