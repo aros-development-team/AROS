@@ -131,7 +131,7 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End,
                 Child, (IPTR)Label2("Alpha"),
                 Child, (IPTR)(alphaSlider = (Object *)SliderObject,
-                    MUIA_Numeric_Min, 0,
+                    MUIA_Numeric_Min, 20,
                     MUIA_Numeric_Max, 255,
                 End),
             End,
