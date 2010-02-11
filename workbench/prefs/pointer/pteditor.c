@@ -44,6 +44,7 @@ struct PTEditor_DATA
     Object *pted_fileString;
     Object *pted_alphaSlider;
     struct Hook pted_cycleHook;
+    struct Hook pted_filenameHook;
 };
 
 STATIC VOID PTPrefs2Gadgets(struct PTEditor_DATA *data);
@@ -98,6 +99,22 @@ AROS_UFHA(APTR, msg, A1))
     AROS_USERFUNC_EXIT
 }
 
+AROS_UFH3(VOID, filenameFunction,
+AROS_UFHA(struct Hook *, h, A0),
+AROS_UFHA(Object *, obj, A2),
+AROS_UFHA(APTR, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct PTEditor_DATA *data = h->h_Data;
+
+    STRPTR filename = (STRPTR)XGET(data->pted_fileString, MUIA_String_Contents);
+    SET(data->pted_previewImage, MUIA_PPreview_FileName, filename);
+    SET(obj, MUIA_PrefsEditor_Changed, TRUE);
+
+    AROS_USERFUNC_EXIT
+}
+
 /*** Methods ****************************************************************/
 Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
@@ -119,6 +136,7 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 Child, (IPTR)Label2("Which"),
                 Child, (IPTR)(typeCycle = (Object *)CycleObject,
                     MUIA_Cycle_Entries, type_entries,
+                    MUIA_CycleChain, 1,
                 End),
                 Child, (IPTR)Label2("Filename"),
                 Child, (IPTR)PopaslObject,
@@ -126,6 +144,7 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     MUIA_Popstring_String, (IPTR)(fileString = (Object *)StringObject,
                         MUIA_String_MaxLen, NAMEBUFLEN,
                         StringFrame,
+                        MUIA_CycleChain, 1,
                     End),
                     MUIA_Popstring_Button, (IPTR)PopButton(MUII_PopUp),
                 End,
@@ -133,6 +152,7 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 Child, (IPTR)(alphaSlider = (Object *)SliderObject,
                     MUIA_Numeric_Min, 20,
                     MUIA_Numeric_Max, 255,
+                    MUIA_CycleChain, 1,
                 End),
             End,
         End,
@@ -145,6 +165,9 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         data->pted_cycleHook.h_Entry = (HOOKFUNC)cycleFunction;
         data->pted_cycleHook.h_Data  = data;
+
+        data->pted_filenameHook.h_Entry = (HOOKFUNC)filenameFunction;
+        data->pted_filenameHook.h_Data  = data;
 
         data->pted_previewImage = previewImage;
         data->pted_typeCycle    = typeCycle;
@@ -160,7 +183,7 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         DoMethod
         (
             data->pted_fileString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+            (IPTR) self, 2, MUIM_CallHook, &data->pted_filenameHook
         );
 
         DoMethod
