@@ -33,7 +33,7 @@
 /* #define DEBUG 1 */
 #include <aros/debug.h>
 
-#define VERSION "$VER: Pointer 1.0 (02.02.2010) AROS Dev Team"
+#define VERSION "$VER: Pointer 1.1 (11.02.2010) AROS Dev Team"
 /*********************************************************************************************/
 
 int main(int argc, char **argv)

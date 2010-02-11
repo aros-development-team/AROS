@@ -291,6 +291,8 @@ BOOL Prefs_Default(VOID)
     for (i = 0; i < MAXPOINTER; i++)
     {
         pointerprefs[i].npp.npp_Which = i;
+        pointerprefs[i].npp.npp_AlphaValue = 0xffff;
+        strcpy(pointerprefs[i].filename, "Images:Pointers/");
     }
 
     return TRUE;
