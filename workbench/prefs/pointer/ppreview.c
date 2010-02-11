@@ -10,16 +10,20 @@
 #include <libraries/asl.h>
 #include <libraries/mui.h>
 #include <prefs/pointer.h>
+#include <datatypes/pictureclass.h>
 
 #define DEBUG 1
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
 
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 #include <proto/graphics.h>
+#include <proto/datatypes.h>
+#include <proto/cybergraphics.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -40,10 +44,88 @@ struct PPreview_DATA
     UWORD                       pprv_hspot_y;
     STRPTR                      pprv_filename;
     struct MUI_EventHandlerNode pprv_ehn;
+    APTR                        pprv_dto;
+    struct BitMapHeader        *pprv_bmhd;
+    struct BitMap              *pprv_bm;
 };
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct PPreview_DATA *data = INST_DATA(cl, obj)
+
+/*** Functions **************************************************************/
+STATIC VOID killdto(struct PPreview_DATA *data)
+{
+    ALIVE
+
+    data->pprv_bm   = NULL;
+    data->pprv_bmhd = NULL;
+
+    if (data->pprv_dto)
+    {
+        DisposeDTObject(data->pprv_dto);
+        data->pprv_dto = NULL;
+    }
+};
+
+STATIC IPTR setup_datatype(Class *cl, Object *obj)
+{
+    ALIVE
+
+    SETUP_INST_DATA;
+
+    if (data->pprv_dto) killdto(data); /* Object already existed */
+
+    if (data->pprv_filename)
+    {
+        /* Prevent DOS Requesters from showing up */
+        struct Process *me = (struct Process *)FindTask(0);
+        APTR            oldwinptr = me->pr_WindowPtr;
+        me->pr_WindowPtr = (APTR)-1;
+
+        data->pprv_dto = NewDTObject(data->pprv_filename,
+                            DTA_GroupID, GID_PICTURE,
+                            OBP_Precision, PRECISION_IMAGE,
+                            PDTA_Screen, _screen(obj),
+                            PDTA_DestMode, PMODE_V43,
+                            PDTA_UseFriendBitMap, TRUE,
+                            TAG_DONE);
+
+        me->pr_WindowPtr = oldwinptr;
+
+        D(bug("[Pointer/setup] dto %p\n", data->pprv_dto));
+        if (data->pprv_dto)
+        {
+            struct FrameInfo fri = {0};
+
+            DoMethod(data->pprv_dto, DTM_FRAMEBOX, 0, &fri, &fri, sizeof(struct FrameInfo), 0);
+            if (fri.fri_Dimensions.Depth > 0)
+            {
+                if (DoMethod(data->pprv_dto, DTM_PROCLAYOUT, 0, 1))
+                {
+                    GET(data->pprv_dto, PDTA_BitMapHeader, &data->pprv_bmhd);
+                    if (data->pprv_bmhd)
+                    {
+                        if (data->pprv_bmhd->bmh_Masking != mskNone)
+                            SET(obj, MUIA_FillArea, TRUE);
+                        else
+                            SET(obj, MUIA_FillArea, FALSE);
+
+                        GetDTAttrs(data->pprv_dto, PDTA_DestBitMap, &data->pprv_bm, TAG_DONE);
+                        if (!data->pprv_bm)
+                        {
+                            GetDTAttrs(data->pprv_dto, PDTA_BitMap, &data->pprv_bm, TAG_DONE);
+                        }
+                        D(bug("[Pointer/setup] BitMap %p\n", data->pprv_bm));
+                        if (data->pprv_bm) return TRUE;
+                    } /* if (data->bmhd) */
+                } /* if (DoMethod(data->dto, DTM_PROCLAYOUT, 0, 1)) */
+            } /* if (fri.fri_Dimensions.Depth > 0) */
+        } /* if (data->dto) */
+    } /* if (data->name) */
+    killdto(data);
+
+    return TRUE;
+}
 
 /*** Methods ****************************************************************/
 Object *PPreview__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
@@ -73,7 +155,8 @@ Object *PPreview__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
                 break;
 
             case MUIA_PPreview_FileName:
-                data->pprv_filename = (STRPTR)tag->ti_Data;
+                FreeVec(data->pprv_filename);
+                data->pprv_filename = StrDup((STRPTR)tag->ti_Data);
                 break;
 
         }
@@ -90,7 +173,9 @@ Object *PPreview__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 
 IPTR PPreview__OM_DISPOSE(Class *cl, Object *obj, Msg msg)
 {
-    //...
+    SETUP_INST_DATA;
+
+    FreeVec(data->pprv_filename);
     return DoSuperMethodA(cl, obj, msg);
 }
 
@@ -100,32 +185,42 @@ IPTR PPreview__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 
     const struct TagItem *tags  = msg->ops_AttrList;
     struct TagItem       *tag;
+    BOOL needs_redraw           = FALSE;
 
     while ((tag = NextTagItem(&tags)) != NULL)
     {
         switch(tag->ti_Tag)
         {
             case MUIA_PPreview_Alpha:
+                needs_redraw = TRUE;
                 data->pprv_alpha = tag->ti_Data;
                 break;
 
             case MUIA_PPreview_HSpotX:
+                needs_redraw = TRUE;
                 data->pprv_hspot_x = tag->ti_Data;
                 break;
 
             case MUIA_PPreview_HSpotY:
+                needs_redraw = TRUE;
                 data->pprv_hspot_y = tag->ti_Data;
                 break;
 
             case MUIA_PPreview_FileName:
-                data->pprv_filename = (STRPTR)tag->ti_Data;
+                needs_redraw = TRUE;
+                FreeVec(data->pprv_filename);
+                data->pprv_filename = StrDup((STRPTR)tag->ti_Data);
+                //if (_flags(obj) & MADF_SETUP) setup_datatype(cl, obj);
+                setup_datatype(cl, obj);
                 break;
 
         } /* switch(tag->ti_Tag) */
-
     } /* while ((tag = NextTagItem(&tags)) != NULL) */
 
-    MUI_Redraw(obj, MADF_DRAWUPDATE);
+    if (needs_redraw)
+    {
+        MUI_Redraw(obj, MADF_DRAWOBJECT);
+    }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
@@ -166,12 +261,14 @@ IPTR PPreview__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 
     data->pprv_prevEditor = (Object *)XGET((Object *)XGET(obj, MUIA_Parent), MUIA_Parent);
 
-    return TRUE;
+    return setup_datatype(cl, obj);
 }
 
 IPTR PPreview__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     SETUP_INST_DATA;
+
+    killdto(data);
 
     DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) &data->pprv_ehn);
 
@@ -184,6 +281,62 @@ IPTR PPreview__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
     DoSuperMethodA(cl, obj, (Msg)msg);
 
+    if ((msg->flags & MADF_DRAWOBJECT) && data->pprv_bm)
+    {
+        /* Note: codes taken from picture.datatype GM_RENDER routine */
+        ULONG depth = (ULONG) GetBitMapAttr(_rp(obj)->BitMap, BMA_DEPTH);
+
+        D(bug("[Pointer/Draw] bitmap %p depth %u\n", data->pprv_bm, depth));
+        if ((depth >= 15) && (data->pprv_bmhd->bmh_Masking == mskHasAlpha))
+        {
+            /* Transparency on high color rast port with alpha channel in picture*/
+            ULONG * img = AllocVec(_mwidth(obj) * _mheight(obj) * 4, MEMF_ANY);
+            if (img)
+            {
+                struct pdtBlitPixelArray pa;
+                pa.MethodID = PDTM_READPIXELARRAY;
+                pa.pbpa_PixelData = (UBYTE *) img;
+                pa.pbpa_PixelFormat = PBPAFMT_ARGB;
+                pa.pbpa_PixelArrayMod = _mwidth(obj) * 4;
+                pa.pbpa_Left = 0;
+                pa.pbpa_Top = 0;
+                pa.pbpa_Width = _mwidth(obj);
+                pa.pbpa_Height = _mheight(obj);
+                if (DoMethodA(data->pprv_dto, (Msg) &pa))
+                {
+                    D(bug("[Pointer/Draw] ReadPixelarray for d>=15 OK\n"));
+                    WritePixelArrayAlpha
+                    (
+                        img, 0, 0, _mwidth(obj) * 4, _rp(obj),
+                        _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), 0xffffffff
+                    );
+                }
+                FreeVec((APTR) img);
+            }
+        }
+        else
+        {
+            if (data->pprv_bmhd->bmh_Masking == mskHasMask)
+            {
+                /* Transparency with mask */
+                APTR mask = NULL;
+
+                GetDTAttrs(data->pprv_dto, PDTA_MaskPlane, (IPTR)&mask, TAG_DONE);
+
+                if (mask)
+                    BltMaskBitMapRastPort(data->pprv_bm, 0, 0, _rp(obj), _mleft(obj),
+                        _mtop(obj), _mwidth(obj), _mheight(obj), 0xE0, (PLANEPTR)mask);
+            }
+            else
+            {
+                /* All other cases */
+                BltBitMapRastPort(data->pprv_bm, 0, 0, _rp(obj), _mleft(obj), _mtop(obj),
+                    _mwidth(obj), _mheight(obj), 0xC0);
+            }
+        }
+    }
+
+#if 0
     SetAPen(_rp(obj), 0);
     RectFill
     (
@@ -194,15 +347,14 @@ IPTR PPreview__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
     SetAPen(_rp(obj), 2);
     WritePixel(_rp(obj), _mleft(obj) + data->pprv_hspot_x, _mtop(obj) + data->pprv_hspot_y);
+#endif
 
     return 0;
 }
 
 IPTR PPreview__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
-    //SETUP_INST_DATA;
-
-    DoSuperMethodA(cl, obj, (Msg)msg);
+    IPTR retval = DoSuperMethodA(cl, obj, (Msg)msg);
 
     msg->MinMaxInfo->MinWidth  += 64;
     msg->MinMaxInfo->MinHeight += 64;
@@ -211,7 +363,7 @@ IPTR PPreview__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg
     msg->MinMaxInfo->MaxWidth   = MUI_MAXMAX;
     msg->MinMaxInfo->MaxHeight  = MUI_MAXMAX;
 
-    return TRUE;
+    return retval;
 }
 
 IPTR PPreview__MUIM_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent *msg)
