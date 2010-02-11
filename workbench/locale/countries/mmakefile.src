@@ -6,8 +6,7 @@ COUNTRIES    := $(basename $(call WILDCARD, *.c))
 COUNTRYDIR   := $(AROS_LOCALE)/Countries
 MAKECOUNTRY  := $(OBJDIR)/makecountry
 OBJDIR 	     := $(GENDIR)/$(CURDIR)
-COUNTIFF     := $(foreach f,$(COUNTRIES),$(COUNTRYDIR)/$(f).country)
-COUNTIFF     := $(shell awk '($$2 == "COUNTRY_NAME") {gsub(/"/,"",$$3); printf "$(COUNTRYDIR)/%s.country ", $$3}' makecountry/makecountry.c)
+COUNTIFF     := $(shell awk '($$2 == "COUNTRY_NAME") {gsub(/"/,"",$$3); printf "$(COUNTRYDIR)/%s.country ", $$3}' $(SRCDIR)/$(CURDIR)/makecountry/makecountry.c)
 OBJS         := $(foreach f,countryprefs $(COUNTRIES),$(OBJDIR)/$(f).o)
 DEPS         := $(foreach f,countryprefs $(COUNTRIES),$(OBJDIR)/$(f).d)
 USER_CFLAGS  := -D_EURO
