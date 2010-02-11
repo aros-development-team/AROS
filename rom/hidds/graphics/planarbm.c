@@ -796,7 +796,7 @@ BOOL PBM__Hidd_PlanarBM__GetBitMap(OOP_Class *cl, OOP_Object *o,
     msg->bitMap->Depth	     = data->depth;
     msg->bitMap->BytesPerRow = data->bytesperrow;
     msg->bitMap->Rows	     = data->rows;
-    msg->bitMap->Flags	     = (data->planebuf_size < 8) ? BMF_STANDARD|BMF_MINPLANES : BMF_STANDARD; /* CHECKME */
+    msg->bitMap->Flags	     = BMF_STANDARD|BMF_MINPLANES; /* CHECKME */
     msg->bitMap->pad	     = 0;
 
     for (i = 0; i < data->planebuf_size; i++)
