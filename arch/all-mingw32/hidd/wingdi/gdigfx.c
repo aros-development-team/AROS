@@ -339,9 +339,10 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     struct gfx_data 	    	*data;
     struct TagItem  	    	 tags[] =
     {
-    	{ aHidd_GDIBitMap_SysDisplay   , 0UL },	/* 0 */
-	{ TAG_IGNORE	    	       , 0UL },	/* 1 */
-	{ TAG_MORE  	    	       , 0UL }  /* 2 */
+    	{ aHidd_GDIBitMap_SysDisplay, 0UL }, /* 0 */
+	{ TAG_IGNORE	    	    , 0UL }, /* 1 */
+	{ TAG_IGNORE		    , 32  }, /* 2 */
+	{ TAG_MORE  	    	    , 0UL }  /* 3 */
     };
     
     EnterFunc(bug("GDIGfx::NewBitMap()\n"));
@@ -349,7 +350,7 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     
     tags[0].ti_Data = (IPTR)data->display;
     tags[1].ti_Data = (IPTR)XSD(cl)->bmclass;
-    tags[2].ti_Data = (IPTR)msg->attrList;
+    tags[3].ti_Data = (IPTR)msg->attrList;
 
     /* Create a GDI bitmap if we have a valid ModeID or we want to create
        a planar bitmap.
@@ -373,10 +374,13 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
     stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
 
-    if ((modeid != vHidd_ModeID_Invalid) || (stdpf == vHidd_StdPixFmt_Plane)) {
+    if (modeid != vHidd_ModeID_Invalid) {
         tags[1].ti_Tag  = aHidd_BitMap_ClassPtr;
 	D(bug("[GDI] Displayable: %d, ModeID: 0x%08lX, ClassPtr: 0x%p\n", displayable, modeid, tags[1].ti_Data));
     }
+    /* longword-align planar bitmaps. This is needed for BlitColorExpansion() to work properly. */
+    if (stdpf == vHidd_StdPixFmt_Plane)
+	tags[2].ti_Tag = aHidd_BitMap_Align;
 	    
     p.mID = msg->mID;
     p.attrList = tags;

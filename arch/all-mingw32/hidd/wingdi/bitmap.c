@@ -31,6 +31,7 @@
 
 #define SDEBUG 0
 #define DEBUG 0
+#define DEBUG_TEXT(x)
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
@@ -43,6 +44,12 @@
 
 #define AO(x) 	    	  (aoHidd_BitMap_ ## x)
 #define GOT_BM_ATTR(code) GOT_ATTR(code, aoHidd_BitMap, bitmap)
+
+struct bitmapinfo_mono
+{ 
+    BITMAPINFOHEADER bmiHeader; 
+    UWORD            bmiColors[2];
+};
 
 static OOP_AttrBase HiddBitMapAttrBase;
 static OOP_AttrBase HiddSyncAttrBase;
@@ -60,6 +67,49 @@ static struct OOP_ABDescr attrbases[] =
 };
 
 /****************************************************************************************/
+
+#ifdef DEBUG_PLANAR
+#define PRINT_PLANE(bm, n, startx, xlim, ylim)						\
+{											\
+    ULONG start = startx / 8;								\
+    ULONG xlimit = xlim / 8;								\
+    ULONG ylimit = (ylim < bm.Rows) ? ylim : bm.Rows;					\
+    UBYTE *plane = bm.Planes[n] + start;						\
+    UBYTE i;										\
+    ULONG x, y;										\
+											\
+    if (xlimit > (start - bm.BytesPerRow))						\
+	xlimit = start - bm.BytesPerRow;						\
+    bug("[GDIBitMap] Plane %u data (%u pixels from %u, address 0x%p):\n", n, xlimit * 8, start * 8, plane); \
+    for (y = 0; y < ylimit; y++) {							\
+        for (x = 0; x < xlimit; x++) {							\
+	    for (i = 0x80; i; i >>= 1)							\
+	        bug((plane[x] & i) ? "#" : ".");					\
+	}										\
+	bug("\n");									\
+	plane += bm.BytesPerRow;							\
+    }											\
+}
+
+#define PRINT_MONO_DC(dc, startx, starty, width, height) \
+{							 \
+    ULONG x, y;						 \
+							 \
+    bug("[GDIBitMap] Device context data:\n");		 \
+    for (y = starty; y < height; y++) {			 \
+	for (x = startx; x < width; x++) {		 \
+	    ULONG pix = GDICALL(GetPixel, dc, x, y);	 \
+							 \
+	    bug(pix ? "." : "#");			 \
+	}						 \
+	bug("\n");					 \
+    }							 \
+}
+
+#else
+#define PRINT_PLANE(bm, n, startx, xlim, ylim)
+#define PRINT_MONO_DC(dc, startx, starty, width, height)
+#endif
 
 #define REFRESH(left, top, right, bottom)					  \
 if (data->window) {								  \
@@ -394,6 +444,7 @@ VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
     APTR buf_dc, buf_bm, buf_dc_bm;
     APTR mask_dc, mask_bm, mask_dc_bm;
     APTR br, dc_br;
+    struct BitMap planar_mask;
     
 /*  EnterFunc(bug("GDIGfx.BitMap::BlitColorExpansion(%p, %d, %d, %d, %d, %d, %d)\n",
     	    	  msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));*/
@@ -403,12 +454,14 @@ VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
     
     if (!d)
     {
-    	/* We know nothing about the source bitmap. Let the superclass handle this */
-    	/* TODO: accelerate this also, generate a bit mask from superclass' bitmap */
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	return;
+	if (!HIDD_PlanarBM_GetBitMap(msg->srcBitMap, &planar_mask)) {
+    	    /* We know nothing about the source bitmap. Let the superclass handle this */
+    	    /* TODO: accelerate this also, generate a bit mask from superclass' bitmap */
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	    return;
+	}
     }
-    
+
     fg = GC_FG(msg->gc);
     bg = GC_BG(msg->gc);
     drmd = GC_DRMD(msg->gc);
@@ -430,12 +483,40 @@ VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
 			if (mask_bm) {
 			    mask_dc_bm = GDICALL(SelectObject, mask_dc, mask_bm);
 			    if (mask_dc_bm) {
-				GDICALL(SetBkColor, d, 0);
-				/* During this first blit, pixels equal to BkColor, become WHITE. Others become BLACK. This converts
-				   our truecolor display-compatible bitmap to a monochrome bitmap. A monochrome bitmap can be effectively
-				   used for masking in blit operations. AND operations with WHITE will leave pixels intact, AND with BLACK
-				   gives black. OR with black also leaves intact. */
-				GDICALL(BitBlt, mask_dc, 0, 0, msg->width, msg->height, d, msg->srcX, msg->srcY, SRCCOPY);
+				if (d) {
+				    GDICALL(SetBkColor, d, 0);
+				    /* During this first blit, pixels equal to BkColor, become WHITE. Others become BLACK. This converts
+				       our truecolor display-compatible bitmap to a monochrome bitmap. A monochrome bitmap can be effectively
+				       used for masking in blit operations. AND operations with WHITE will leave pixels intact, AND with BLACK
+				       gives black. OR with black also leaves intact. */
+				    GDICALL(BitBlt, mask_dc, 0, 0, msg->width, msg->height, d, msg->srcX, msg->srcY, SRCCOPY);
+				} else {
+				    /* Generate a mask from planar data.
+				       TODO: this works correctly only with a monochrome bitmap.
+				       Currently the bitmap is always monochrome, however in future
+				       this may change. */
+				    struct bitmapinfo_mono bitmapinfo = {
+				        {
+					    sizeof(BITMAPINFOHEADER),
+					    0, 0,
+					    1,
+					    1,
+					    BI_RGB,
+					    0, 0, 0, 0, 0
+					},
+					{
+					    1, 0
+					}
+				    };
+				    DEBUG_TEXT(bug("[GDIBitMap] Source bitmap: %ux%u\n", planar_mask.BytesPerRow * 8, planar_mask.Rows));
+				    DEBUG_TEXT(bug("[GDIBitMap] Source rectangle: (%u, %u), %ux%u\n", msg->srcX, msg->srcY, msg->width, msg->height));
+				    PRINT_PLANE(planar_mask, 0, 0, 64, msg->height);
+
+				    bitmapinfo.bmiHeader.biWidth = planar_mask.BytesPerRow * 8;
+				    bitmapinfo.bmiHeader.biHeight = -planar_mask.Rows; /* Minus here means top-down bitmap */
+				    GDICALL(StretchDIBits, mask_dc, 0, 0, msg->width, msg->height, msg->srcX, msg->srcY, msg->width, msg->height, planar_mask.Planes[0], &bitmapinfo, DIB_PAL_COLORS, SRCCOPY);
+				    PRINT_MONO_DC(mask_dc, 0, 0, msg->width, msg->height);
+				}
 				/* Now we are ready to do the actual painting. We will separately create foreground image, background image,
 				   and then merge them.
 				   The first thing is to paint foreground pixels with foreground brush according to draw mode and store them in buffer. */

@@ -570,6 +570,7 @@ enum
 
     aoHidd_BitMap_LeftEdge,      /* 16 [.SG] Left edge position of the bitmap     */
     aoHidd_BitMap_TopEdge,       /* 17 [.SG] Top edge position of the bitmap      */
+    aoHidd_BitMap_Align,         /* 18 [I..] Number of pixels to align bitmap data width to */
 
     num_Hidd_BitMap_Attrs
 };    
@@ -604,6 +605,7 @@ enum
 #define aHidd_BitMap_ClassID	   (HiddBitMapAttrBase + aoHidd_BitMap_ClassID)
 #define aHidd_BitMap_PixFmtTags	   (HiddBitMapAttrBase + aoHidd_BitMap_PixFmtTags)
 #define aHidd_BitMap_FrameBuffer   (HiddBitMapAttrBase + aoHidd_BitMap_FrameBuffer)
+#define aHidd_BitMap_Align	   (HiddBitMapAttrBase + aoHidd_BitMap_Align)
 
 #define IS_BITMAP_ATTR(attr, idx) \
 	( ( ( idx ) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)

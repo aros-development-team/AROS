@@ -206,6 +206,7 @@
 #define BI_RGB 0
 
 #define DIB_RGB_COLORS	0
+#define DIB_PAL_COLORS	1
 
 typedef struct tagRECT { 
   LONG left; 
