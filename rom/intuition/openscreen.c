@@ -801,6 +801,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     else
     {
         DEBUG_OPENSCREEN(dprintf("OpenScreen: no displayinfo\n"));
+	SetError(OSERR_UNKNOWNMODE);
     }
 
     /* Init screen's viewport */
