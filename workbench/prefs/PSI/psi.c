@@ -104,6 +104,9 @@ char *CYA_Overscan[] =
 /* Locale Stuff                                                             */
 /****************************************************************************/
 
+#define CATALOG_NAME     "System/Prefs/PSI.catalog"
+#define CATALOG_VERSION  19
+
 char *GetStr(int num)
 {
 	struct CatCompArrayType *cca = (struct CatCompArrayType *)CatCompArray;
@@ -129,7 +132,7 @@ VOID LocalizeNewMenu(struct NewMenu *nm)
 VOID InitLocale(VOID)
 {
 	if (LocaleBase = OpenLibrary("locale.library",38))
-		Catalog = OpenCatalog(NULL,"psi.catalog",OC_Version,VERSION,TAG_DONE);
+		Catalog = OpenCatalog(NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE);
 
 	LocalizeNewMenu(MainMenu);
 	LocalizeNewMenu(PaletteMenu);
@@ -610,7 +613,7 @@ BOOPSI_DISPATCHER_END
 
 
 /****************************************************************************/
-/* SysPenField class                                                        */
+/* SysPenField class                                                        */
 /****************************************************************************/
 
 struct SysPenField_Data
