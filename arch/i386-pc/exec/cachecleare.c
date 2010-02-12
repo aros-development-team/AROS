@@ -74,15 +74,17 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    void wbinvd();
+/*    void wbinvd(); */
 
-    if (caches & CACRF_ClearD)
-	Supervisor(wbinvd);
+/* FIXME: Calling Supervisor cause CPU execption */
+/* FIXME: Calling wbinvd causes CPU as well */
+/*    if (caches & CACRF_ClearD)
+        Supervisor(wbinvd);*/
 
     AROS_LIBFUNC_EXIT
 } /* CacheClearE */
 
-void wbinvd()
+/* void wbinvd()
 {
     asm volatile("wbinvd; iret;":::"memory");
-}
+} */
