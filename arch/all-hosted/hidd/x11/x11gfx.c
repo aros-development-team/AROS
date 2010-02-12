@@ -460,10 +460,10 @@ OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 	{
 	    if (vHidd_StdPixFmt_Unknown == stdpf)
 	    {
-	    	Drawable d = NULL;
+	    	Drawable d = 0;
 		
 	    	/* Is the friend ann X11 bitmap ? */
-	    	d = (Drawable)OOP_GetAttr(friend, aHidd_X11BitMap_Drawable, (IPTR *)&d);
+	    	OOP_GetAttr(friend, aHidd_X11BitMap_Drawable, (IPTR *)&d);
 	    	if (0 != d)
 		{
 	    	    usex11 = TRUE;
