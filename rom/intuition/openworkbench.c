@@ -112,6 +112,15 @@
 	        { TAG_DONE,             0  	   }
 	    };
 
+	    /* Specifying -1's here causes BestModeIDA() to fail,
+	       fix up the values */
+	    if (width == STDSCREENWIDTH)
+	        modetags[0].ti_Data = AROS_DEFAULT_WBWIDTH;
+	    if (height == STDSCREENHEIGHT)
+	        modetags[1].ti_Data = AROS_DEFAULT_WBHEIGHT;
+	    if (depth == -1)
+	        modetags[2].ti_Data = AROS_DEFAULT_WBDEPTH;
+
 	    modeid     = BestModeIDA(modetags);
 	    D(bug("[OpenWorkbench] Corrected ModeID: 0x%08lX\n", modeid));
 	    disphandle = FindDisplayInfo(modeid);
@@ -135,9 +144,14 @@
 		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height = height;
             }
 	    screenTags[3].ti_Data = modeid;
+	    /* Remember this ModeID because OpenScreen() with SA_LikeWorkbench set to TRUE
+	       looks at this field. We MUST have something valid here. */
+	    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID = modeid;
         }
 	else
-	    screenTags[3].ti_Tag  = TAG_IGNORE;
+	    /* If we have no disphandle here, we are in a real trouble. We have no display modes
+	       in our database and we can't open a screen at all. We're dead. */
+	    Alert(AT_DeadEnd | AN_SysScrnType);
 
 	screenTags[0].ti_Data = width;
         screenTags[1].ti_Data = height;
