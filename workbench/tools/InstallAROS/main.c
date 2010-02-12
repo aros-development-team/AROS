@@ -2265,10 +2265,17 @@ LONG CopyDirArray(Class *CLASS, Object *self, CONST_STRPTR sourcePath, CONST_STR
             /* Check if folder has an icon */
             CopyMem(".info", srcDirs + strlen(srcDirs) , strlen(".info") + 1);
             CopyMem(".info", dstDirs + strlen(dstDirs) , strlen(".info") + 1);
-            if ((lock = Lock(srcDirs, SHARED_LOCK)) != NULL)
-            {
+	    /* If the icon already exists in the destination, don't overwrite it.
+	       It may contain snapshotted position and/or edited tooltypes.
+	       TODO: may be consider replacing icon's image here using icon.library ? */
+	    lock = Lock(dstDirs, SHARED_LOCK);
+	    if (!lock) {
+		UnLock(lock);
+                if ((lock = Lock(srcDirs, SHARED_LOCK)) != NULL)
+                {
 	            UnLock(lock);
 	            DoMethod(self, MUIM_IC_CopyFile, srcDirs, dstDirs);
+		}
             }
         }
 
@@ -2524,9 +2531,23 @@ IPTR Install__MUIM_IC_CopyFile
     /* Check if destination file exists */
 	if((to = Open(message->dstFile, MODE_OLDFILE)))
 	{
-		/* File exists */
-		Close(to);
+	    /* File exists */
+	    ULONG l;
 
+	    Close(to);
+
+	    /* Do not overwrite existing icons and preferences.
+	       TODO: May be ask about it too? */
+	    l = strlen(message->dstFile);
+	    if ((l > 4) && (!stricmp(&message->dstFile[l-5], ".info"))) {
+		/* Count the file as copied because otherwise installer will warn that
+		   not everything was copied. */
+	        filescopied = 1;
+		goto copy_skip;
+	    } else if ((l > 5) && (!stricmp(&message->dstFile[l-6], ".prefs"))) {
+	        filescopied = 1;
+		goto copy_skip;
+	    } else {
 		switch (data->IO_Always_overwrite)
 		{
 		case IIO_Overwrite_Ask:
@@ -2546,6 +2567,7 @@ IPTR Install__MUIM_IC_CopyFile
 		case IIO_Overwrite_Never:
 			goto copy_skip;
 		}
+	    }
 	}
 	else goto copy_retry;
 
