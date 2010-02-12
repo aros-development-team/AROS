@@ -514,7 +514,7 @@ VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
 
 				    bitmapinfo.bmiHeader.biWidth = planar_mask.BytesPerRow * 8;
 				    bitmapinfo.bmiHeader.biHeight = -planar_mask.Rows; /* Minus here means top-down bitmap */
-				    GDICALL(StretchDIBits, mask_dc, 0, 0, msg->width, msg->height, msg->srcX, msg->srcY, msg->width, msg->height, planar_mask.Planes[0], &bitmapinfo, DIB_PAL_COLORS, SRCCOPY);
+				    GDICALL(StretchDIBits, mask_dc, 0, 0, msg->width, msg->height, msg->srcX, msg->srcY, msg->width, msg->height, planar_mask.Planes[0], &bitmapinfo, DIB_PAL_COLORS, SRCINVERT);
 				    PRINT_MONO_DC(mask_dc, 0, 0, msg->width, msg->height);
 				}
 				/* Now we are ready to do the actual painting. We will separately create foreground image, background image,
