@@ -30,6 +30,7 @@ static const char *gdi_func_names[] = {
     "DeleteObject",
     "SelectObject",
     "SetBkColor",
+    "SetTextColor",
     "SetROP2",
     "BitBlt",
     "PatBlt",
