@@ -47,12 +47,21 @@ struct PPreview_DATA
     APTR                        pprv_dto;
     struct BitMapHeader        *pprv_bmhd;
     struct BitMap              *pprv_bm;
+    LONG                        pprv_offset_x;
+    LONG                        pprv_offset_y;
 };
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct PPreview_DATA *data = INST_DATA(cl, obj)
 
 /*** Functions **************************************************************/
+STATIC LONG clip(LONG value, LONG lowerlimit, LONG upperlimit)
+{
+    if (value < lowerlimit) return lowerlimit;
+    if (value > upperlimit) return upperlimit;
+    return value;
+}
+
 STATIC VOID killdto(struct PPreview_DATA *data)
 {
     ALIVE
@@ -161,6 +170,9 @@ Object *PPreview__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 
         }
     }
+
+    data->pprv_offset_x = -1;
+    data->pprv_offset_y = -1;
 
     data->pprv_ehn.ehn_Events   = IDCMP_MOUSEBUTTONS;
     data->pprv_ehn.ehn_Priority = 0;
@@ -281,34 +293,67 @@ IPTR PPreview__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
     DoSuperMethodA(cl, obj, (Msg)msg);
 
+    data->pprv_offset_x = -1;
+    data->pprv_offset_y = -1;
+
     if ((msg->flags & MADF_DRAWOBJECT) && data->pprv_bm)
     {
-        /* Note: codes taken from picture.datatype GM_RENDER routine */
+        ULONG drawwidth, drawheight, drawoffsetx, drawoffsety;
+
         ULONG depth = (ULONG) GetBitMapAttr(_rp(obj)->BitMap, BMA_DEPTH);
+        LONG bmwidth  = data->pprv_bmhd->bmh_Width;
+        LONG bmheight = data->pprv_bmhd->bmh_Height;
+
+        // calculate for centered rendering
+        if (_width(obj) > bmwidth + 2) // two pixels for bounding box
+        {
+            drawwidth = bmwidth;
+            drawoffsetx = (_width(obj) - drawwidth) / 2 + _left(obj);
+        }
+        else
+        {
+            drawwidth = _width(obj);
+            drawoffsetx = _left(obj);
+        }
+
+        if (_height(obj) > bmheight + 2)
+        {
+            drawheight = bmheight;
+            drawoffsety = (_height(obj) - drawheight) / 2 + _top(obj);
+        }
+        else
+        {
+            drawheight = _height(obj);
+            drawoffsety = _top(obj);
+        }
+
+        // remember offset for event handler
+        data->pprv_offset_x = drawoffsetx;
+        data->pprv_offset_y = drawoffsety;
 
         D(bug("[Pointer/Draw] bitmap %p depth %u\n", data->pprv_bm, depth));
         if ((depth >= 15) && (data->pprv_bmhd->bmh_Masking == mskHasAlpha))
         {
             /* Transparency on high color rast port with alpha channel in picture*/
-            ULONG * img = AllocVec(_mwidth(obj) * _mheight(obj) * 4, MEMF_ANY);
+            ULONG * img = AllocVec(bmwidth * bmheight * 4, MEMF_ANY);
             if (img)
             {
                 struct pdtBlitPixelArray pa;
                 pa.MethodID = PDTM_READPIXELARRAY;
                 pa.pbpa_PixelData = (UBYTE *) img;
                 pa.pbpa_PixelFormat = PBPAFMT_ARGB;
-                pa.pbpa_PixelArrayMod = _mwidth(obj) * 4;
+                pa.pbpa_PixelArrayMod = bmwidth * 4;
                 pa.pbpa_Left = 0;
                 pa.pbpa_Top = 0;
-                pa.pbpa_Width = _mwidth(obj);
-                pa.pbpa_Height = _mheight(obj);
+                pa.pbpa_Width = bmwidth;
+                pa.pbpa_Height = bmheight;
                 if (DoMethodA(data->pprv_dto, (Msg) &pa))
                 {
                     D(bug("[Pointer/Draw] ReadPixelarray for d>=15 OK\n"));
                     WritePixelArrayAlpha
                     (
-                        img, 0, 0, _mwidth(obj) * 4, _rp(obj),
-                        _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), 0xffffffff
+                        img, 0, 0, bmwidth * 4, _rp(obj),
+                        drawoffsetx, drawoffsety, drawwidth, drawheight, 0xffffffff
                     );
                 }
                 FreeVec((APTR) img);
@@ -324,30 +369,43 @@ IPTR PPreview__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
                 GetDTAttrs(data->pprv_dto, PDTA_MaskPlane, (IPTR)&mask, TAG_DONE);
 
                 if (mask)
-                    BltMaskBitMapRastPort(data->pprv_bm, 0, 0, _rp(obj), _mleft(obj),
-                        _mtop(obj), _mwidth(obj), _mheight(obj), 0xE0, (PLANEPTR)mask);
+                    BltMaskBitMapRastPort(data->pprv_bm, 0, 0, _rp(obj), drawoffsetx,
+                        drawoffsety, drawwidth, drawheight, 0xE0, (PLANEPTR)mask);
             }
             else
             {
                 /* All other cases */
-                BltBitMapRastPort(data->pprv_bm, 0, 0, _rp(obj), _mleft(obj), _mtop(obj),
-                    _mwidth(obj), _mheight(obj), 0xC0);
+                BltBitMapRastPort(data->pprv_bm, 0, 0, _rp(obj), drawoffsetx, drawoffsety,
+                    drawwidth, drawheight, 0xC0);
             }
         }
+
+        // draw bounding box
+        SetAPen(_rp(obj), 1);
+        Move(_rp(obj), drawoffsetx - 1, drawoffsety - 1);
+        Draw(_rp(obj), drawoffsetx + drawwidth + 1, drawoffsety - 1);
+        Draw(_rp(obj), drawoffsetx + drawwidth + 1, drawoffsety + drawheight + 1);
+        Draw(_rp(obj), drawoffsetx - 1, drawoffsety + drawheight + 1);
+        Draw(_rp(obj), drawoffsetx - 1, drawoffsety - 1);
+
+        // draw hotspot
+        {
+            LONG p1x = clip(drawoffsetx + data->pprv_hspot_x - 5, drawoffsetx, drawoffsetx + drawwidth);
+            LONG p2x = clip(drawoffsetx + data->pprv_hspot_x + 5, drawoffsetx, drawoffsetx + drawwidth);
+            LONG p34x = clip(drawoffsetx + data->pprv_hspot_x, drawoffsetx, drawoffsetx + drawwidth);
+
+            LONG p3y = clip(drawoffsety + data->pprv_hspot_y - 5, drawoffsety, drawoffsety + drawheight);
+            LONG p4y = clip(drawoffsety + data->pprv_hspot_y + 5, drawoffsety, drawoffsety + drawheight);
+            LONG p12y = clip(drawoffsety + data->pprv_hspot_y, drawoffsety, drawoffsety + drawheight);
+
+            SetAPen(_rp(obj), 2);
+            D(bug("[Pointer/Draw] Draw hotspot at %d %d\n", drawoffsetx + data->pprv_hspot_x, drawoffsety + data->pprv_hspot_y));
+            Move(_rp(obj), p1x, p12y);
+            Draw(_rp(obj), p2x, p12y);
+            Move(_rp(obj), p34x, p3y);
+            Draw(_rp(obj), p34x, p4y);
+        }
     }
-
-#if 0
-    SetAPen(_rp(obj), 0);
-    RectFill
-    (
-        _rp(obj),
-        _mleft(obj), _mtop(obj),
-        _mright(obj), _mbottom(obj)
-    );
-
-    SetAPen(_rp(obj), 2);
-    WritePixel(_rp(obj), _mleft(obj) + data->pprv_hspot_x, _mtop(obj) + data->pprv_hspot_y);
-#endif
 
     return 0;
 }
@@ -371,11 +429,9 @@ IPTR PPreview__MUIM_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent 
     SETUP_INST_DATA;
 
     #define _between(a,x,b) ((x)>=(a) && (x)<=(b))
-    #define _isinobject(x,y) (_between(_mleft(obj),(x),_mright(obj)) && _between(_mtop(obj),(y),_mbottom(obj)))
+    #define _isinobject(x,y) (_between(data->pprv_offset_x,(x),_mright(obj)) && _between(data->pprv_offset_y,(y),_mbottom(obj)))
 
-    ALIVE
-
-    if (msg->imsg)
+    if ((data->pprv_offset_x != -1) && msg->imsg)
     {
         switch (msg->imsg->Class)
         {
@@ -385,10 +441,10 @@ IPTR PPreview__MUIM_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent 
                 {
                     if (_isinobject(msg->imsg->MouseX, msg->imsg->MouseY))
                     {
-                        data->pprv_hspot_x = msg->imsg->MouseX - _mleft(obj);
-                        data->pprv_hspot_y = msg->imsg->MouseY - _mtop(obj);
+                        data->pprv_hspot_x = msg->imsg->MouseX - data->pprv_offset_x;
+                        data->pprv_hspot_y = msg->imsg->MouseY - data->pprv_offset_y;
                         D(bug("[PPreview/HandleEvent] X %d Y %d\n", data->pprv_hspot_x, data->pprv_hspot_y));
-                        MUI_Redraw(obj, MADF_DRAWUPDATE);
+                        MUI_Redraw(obj, MADF_DRAWOBJECT);
 
                         SET(data->pprv_prevEditor, MUIA_PrefsEditor_Changed, TRUE);
                     }
