@@ -1,3 +1,5 @@
+#include <ctype.h>
+#include <dirent.h>
 #include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -170,35 +172,35 @@ int main(int argc, char ** argv)
   struct TagItem *tag = km;
 
   tag->ti_Tag = KRN_MEMLower;
-  tag->ti_Data = (unsigned long)memory;
+  tag->ti_Data = (IPTR)memory;
   tag++;
   
   tag->ti_Tag = KRN_MEMUpper;
-  tag->ti_Data = memory + memlen - 1;
+  tag->ti_Data = (IPTR)memory + memlen - 1;
   tag++;
 
   tag->ti_Tag = KRN_KernelLowest;
-  tag->ti_Data = kernel_entry_fun;
+  tag->ti_Data = (IPTR)kernel_entry_fun;
   tag++;
     
   tag->ti_Tag = KRN_KernelHighest;
-  tag->ti_Data = kernel_highest();
+  tag->ti_Data = (IPTR)kernel_highest();
   tag++;
 
   tag->ti_Tag = KRN_KernelBss;
-  tag->ti_Data = (unsigned long)__bss_track;
+  tag->ti_Data = (IPTR)__bss_track;
   tag++;
 
   tag->ti_Tag = KRN_BootLoader;
-  tag->ti_Data = SystemVersion;
+  tag->ti_Data = (IPTR)SystemVersion;
   tag++;
 
   tag->ti_Tag = KRN_CmdLine;
-  tag->ti_Data = KernelArgs;
+  tag->ti_Data = (IPTR)KernelArgs;
   tag++;
   
   tag->ti_Tag = KRN_HostInterface;
-  tag->ti_Data = &HostIFace;
+  tag->ti_Data = (IPTR)&HostIFace;
   tag++;
 
   tag->ti_Tag = TAG_DONE;

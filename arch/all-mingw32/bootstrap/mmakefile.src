@@ -52,15 +52,18 @@ setup-mingw32 :
 	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
 
 $(BINDIR)/boot/aros-mingw32: setup-mingw32 $(KOBJS)
-	$(TARGET_CC) $(GENMAP) $(OSGENDIR)/boot/kernel.map \
+	@$(ECHO) Linking $@...
+	@$(TARGET_CC) $(GENMAP) $(OSGENDIR)/boot/kernel.map \
 	  -o $@ $(KOBJS) $(NOSTARTUP_LDFLAGS)\
 	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lhiddgraphicsstubs
 
 $(TARGETDIR)/icon.o: $(SRCDIR)/$(CURDIR)/icon.rc $(SRCDIR)/$(CURDIR)/icon.ico
-	$(KERNEL_RESCOMP) --output-format=coff $< $@
+	@$(ECHO) Compiling $<...
+	@$(KERNEL_RESCOMP) --output-format=coff $< $@
 
 $(BINDIR)/boot/AROSBootstrap.exe: $(BOBJS)
-	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(BOBJS)
+	@$(ECHO) Linking $@...
+	@$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(BOBJS)
 
 #MM
 clean ::
@@ -73,6 +76,7 @@ DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 -include $(DEPS)
 
 $(TARGETDIR)/%.o : %.c
-	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/rom/exec
+	@$(ECHO) Compiling $<...
+	@$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/rom/exec
 
 %common
