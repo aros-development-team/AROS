@@ -1,3 +1,4 @@
+#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -65,6 +66,9 @@ int main(int argc, char ** argv)
   char *KernelArgs = NULL;
   OSVERSIONINFO winver;
 
+  /* Set current CRT locale. This makes national characters to be output
+     properly into the debug log */
+  setlocale(LC_ALL, "");
   GetCurrentDirectory(MAX_PATH, bootstrapdir);
   bootstrapname = argv[0];
   cmdline = GetCommandLine();
