@@ -337,7 +337,7 @@ D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displ
 		/* Did the user supply a friend bitmap ? */
 		friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
 		if (NULL != friend) {
-		    OOP_Class *friend_class;
+		    OOP_Class *friend_class = NULL;
 		    /* User supplied friend bitmap. Is the friend bitmap a
 		    NVidia Gfx hidd bitmap ? */
 		    OOP_GetAttr(friend, aHidd_BitMap_ClassPtr, (APTR)&friend_class);
