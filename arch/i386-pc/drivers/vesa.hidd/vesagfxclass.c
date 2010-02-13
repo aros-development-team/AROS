@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for Vesa.
@@ -196,10 +196,10 @@ OOP_Object *PCVesa__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
 		friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
 		if (friend != NULL)
 		{
-		    OOP_Object *gfxhidd;
+		    OOP_Class *friend_class = NULL;
 		    
-		    OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, (APTR)&gfxhidd);
-		    if (gfxhidd == o)
+		    OOP_GetAttr(friend, aHidd_BitMap_ClassPtr, (APTR)&friend_class);
+		    if (friend_class == XSD(cl)->onbmclass)
 		    {
 			classptr = XSD(cl)->offbmclass;
 		    }
