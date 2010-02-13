@@ -10,6 +10,8 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 
+void Exec_Wbinvd();
+
 /*****************************************************************************
 
     NAME */
@@ -74,17 +76,10 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-/*    void wbinvd(); */
 
-/* FIXME: Calling Supervisor cause CPU execption */
-/* FIXME: Calling wbinvd causes CPU as well */
-/*    if (caches & CACRF_ClearD)
-        Supervisor(wbinvd);*/
+    if (caches & CACRF_ClearD)
+        Supervisor(Exec_Wbinvd);
 
     AROS_LIBFUNC_EXIT
 } /* CacheClearE */
 
-/* void wbinvd()
-{
-    asm volatile("wbinvd; iret;":::"memory");
-} */

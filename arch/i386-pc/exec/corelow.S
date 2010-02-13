@@ -404,3 +404,9 @@ Exec_Restore_SSE:   movl    %esp,%edi
                     RESTORE_ALL
                     iret
 
+                    .balign 32,0x90
+                    .globl  Exec_Wbinvd
+                    .type   Exec_Wbinvd,@function
+                    
+Exec_Wbinvd:        wbinvd
+                    iret
