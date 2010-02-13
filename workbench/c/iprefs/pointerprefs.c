@@ -116,7 +116,7 @@ static void LoadPointerFile(STRPTR filename, ULONG which, UWORD installas, UWORD
     if (DoDTMethod(o, NULL, NULL, DTM_PROCLAYOUT, NULL, TRUE)) {
         D(bug("[PointerPrefs] Layout complete\n"));
 
-        h_which = AROS_BE2WORD(which);
+        h_which = AROS_BE2WORD(installas);
 	GetDTAttrs(o, PDTA_DestBitMap, &bm, TAG_DONE);
         D(bug("[PointerPrers] BitMap: 0x%p\n", bm));
         D(bug("[PointerPrefs] Which: %d\n", h_which));
