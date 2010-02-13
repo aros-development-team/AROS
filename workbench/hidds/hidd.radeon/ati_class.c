@@ -177,10 +177,10 @@ OOP_Object *METHOD(ATI, Hidd_Gfx, NewBitMap)
                 friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
                 if (NULL != friend)
                 {
-                    OOP_Object * gfxhidd;
+                    OOP_Class *friend_class;
                     /* User supplied friend bitmap. Is the friend bitmap a Ati Gfx hidd bitmap ? */
-                    OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, (APTR)&gfxhidd);
-                    if (gfxhidd == o)
+                    OOP_GetAttr(friend, aHidd_BitMap_ClassPtr, (APTR)&friend_class);
+                    if (friend_class == sd->OnBMClass)
                     {
                         /* Friend was NVidia hidd bitmap. Now we can supply our own class */
                         classptr = sd->OffBMClass;
