@@ -285,9 +285,9 @@ OOP_Object *VMWareSVGA__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct
                 friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, NULL, msg->attrList);
                 if (friend != NULL)
                 {
-                    OOP_Object *gfxhidd;
-                    OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-                    if (gfxhidd == o)
+                    OOP_Class *friend_class = NULL;
+                    OOP_GetAttr(friend, aHidd_BitMap_ClassPtr, (IPTR *)&friend_class);
+                    if (friend_class == XSD(cl)->vmwaresvgaonbmclass)
                     {
                         classptr = XSD(cl)->vmwaresvgaoffbmclass;
                     }
