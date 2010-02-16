@@ -37,12 +37,14 @@ struct KernelInterface
     __attribute__((stdcall)) ULONG (*DeviceIoControl)(void *hDevice, ULONG dwIoControlCode, void *lpInBuffer, ULONG nInBufferSize,
 						       void *lpOutBuffer, ULONG nOutBufferSize, ULONG *lpBytesReturned, LPOVERLAPPED lpOverlapped);
     __attribute__((stdcall)) ULONG (*GetLastError)(void);
+    __attribute__((stdcall)) ULONG (*GetOverlappedResult)(void *hFile, LPOVERLAPPED lpOverlapped, ULONG *lpNumberOfBytesTransferred, ULONG bWait);
 };
 
 struct AROSInterface
 {
     long (*KrnAllocIRQ)(void);
     void (*KrnFreeIRQ)(unsigned char irq);
+    void *(*KrnGetIRQObject)(unsigned char irq);
 };
 
 #define CreateFile  HD(cl)->KernelIFace->CreateFile
@@ -51,11 +53,17 @@ struct AROSInterface
 #define WriteFile HD(cl)->KernelIFace->WriteFile
 #define DeviceIoControl HD(cl)->KernelIFace->DeviceIoControl
 #define GetLastError HD(cl)->KernelIFace->GetLastError
+#define GetOverlappedResult HD(cl)->KernelIFace->GetOverlappedResult
+
+#define KrnAllocIRQ HD(cl)->AROSIFace->KrnAllocIRQ
+#define KrnFreeIRQ HD(cl)->AROSIFace->KrnFreeIRQ
+#define KrnGetIRQObject HD(cl)->AROSIFace->KrnGetIRQObject
 
 /* instance data for the hostioclass */
 struct HostIOData
 {
-    struct MsgPort		* hio_ReplyPort;
+    long irq;
+    void *irqobj;
 };
 
 /* static data for the unixioclass */

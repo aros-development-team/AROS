@@ -18,7 +18,7 @@
 
 #define OOPBase (OOP_OCLASS(o)->OOPBasePtr)
 
-IPTR Hidd_HostIO_Wait(HIDD o, ULONG fd, ULONG mode, APTR callback, APTR callbackdata, struct ExecBase * SysBase)
+IPTR Hidd_HostIO_Wait(HIDD o, APTR fd, ULONG mode, APTR callback, APTR callbackdata, int *errno_ptr, int *raw_errno_ptr)
 {
      static OOP_MethodID mid;
      struct hioMsg  	 p, *msg = &p;
@@ -27,11 +27,12 @@ IPTR Hidd_HostIO_Wait(HIDD o, ULONG fd, ULONG mode, APTR callback, APTR callback
      	mid = OOP_GetMethodID(IID_Hidd_HostIO, moHidd_HostIO_Wait);
 	
      p.hm_MethodID  	= mid;
-     p.hm_Filedesc  	= fd;
-     p.hm_Mode	    	= mode;
+     p.hm_FD	  	= fd;
      p.hm_CallBack  	= callback;
      p.hm_CallBackData  = callbackdata;
-         
+     p.hm_ErrNoPtr	= errno_ptr;
+     p.hm_RawErrNoPtr	= raw_errno_ptr;
+
      return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
@@ -67,7 +68,7 @@ VOID Hidd_HostIO_AbortAsyncIO(HIDD o, ULONG fd, struct ExecBase * SysBase)
      OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
-APTR Hidd_HostIO_OpenFile(HIDD o, const char *filename, int flags, int mode, int *errno_ptr)
+APTR Hidd_HostIO_OpenFile(HIDD o, const char *filename, int flags, int mode, int *errno_ptr, int *raw_errno_ptr)
 {
      static OOP_MethodID    mid;
      struct hioMsgOpenFile  p, *msg = &p;
@@ -80,11 +81,12 @@ APTR Hidd_HostIO_OpenFile(HIDD o, const char *filename, int flags, int mode, int
      p.hm_Flags     = (STACKULONG)flags;
      p.hm_Mode      = (STACKULONG)mode;
      p.hm_ErrNoPtr  = errno_ptr;
+     p.hm_RawErrNoPtr = raw_errno_ptr;
      
      return (APTR)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
-APTR Hidd_HostIO_CloneHandle(HIDD o, APTR fd, int *errno_ptr)
+APTR Hidd_HostIO_CloneHandle(HIDD o, APTR fd, int *errno_ptr, int *raw_errno_ptr)
 {
      static OOP_MethodID    mid;
      struct hioMsgCloneHandle p, *msg = &p;
@@ -95,11 +97,12 @@ APTR Hidd_HostIO_CloneHandle(HIDD o, APTR fd, int *errno_ptr)
      p.hm_MethodID  = mid;
      p.hm_FD 	    = fd;
      p.hm_ErrNoPtr  = errno_ptr;
+     p.hm_RawErrNoPtr = raw_errno_ptr;
  
      return (APTR)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
-VOID Hidd_HostIO_CloseFile(HIDD o, APTR fd, int *errno_ptr)
+VOID Hidd_HostIO_CloseFile(HIDD o, APTR fd, int *errno_ptr, int *raw_errno_ptr)
 {
      static OOP_MethodID    mid;
      struct hioMsgCloseFile p, *msg = &p;
@@ -110,11 +113,12 @@ VOID Hidd_HostIO_CloseFile(HIDD o, APTR fd, int *errno_ptr)
      p.hm_MethodID  = mid;
      p.hm_FD 	    = fd;
      p.hm_ErrNoPtr  = errno_ptr;
+     p.hm_RawErrNoPtr = raw_errno_ptr;
      
      OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
-int Hidd_HostIO_ReadFile(HIDD o, APTR fd, void *buffer, int count, int *errno_ptr)
+int Hidd_HostIO_ReadFile(HIDD o, APTR fd, void *buffer, int count, int *errno_ptr, int *raw_errno_ptr)
 {
      static OOP_MethodID    mid;
      struct hioMsgReadFile p, *msg = &p;
@@ -127,11 +131,12 @@ int Hidd_HostIO_ReadFile(HIDD o, APTR fd, void *buffer, int count, int *errno_pt
      p.hm_Buffer    = buffer;
      p.hm_Count     = count;
      p.hm_ErrNoPtr  = errno_ptr;
+     p.hm_RawErrNoPtr = raw_errno_ptr;
      
      return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
-int Hidd_HostIO_WriteFile(HIDD o, APTR fd, void *buffer, int count, int *errno_ptr)
+int Hidd_HostIO_WriteFile(HIDD o, APTR fd, void *buffer, int count, int *errno_ptr, int *raw_errno_ptr)
 {
      static OOP_MethodID    mid;
      struct hioMsgWriteFile p, *msg = &p;
@@ -144,6 +149,7 @@ int Hidd_HostIO_WriteFile(HIDD o, APTR fd, void *buffer, int count, int *errno_p
      p.hm_Buffer    = buffer;
      p.hm_Count     = count;
      p.hm_ErrNoPtr  = errno_ptr;
+     p.hm_RawErrNoPtr = raw_errno_ptr;
      
      return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }

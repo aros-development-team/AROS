@@ -54,11 +54,11 @@ enum {
 struct hioMsg
 {
     STACKULONG hm_MethodID;
-    STACKULONG hm_Filedesc;
-    STACKULONG hm_Filedesc_Type;
-    STACKULONG hm_Mode;
-    APTR hm_CallBack;
-    APTR hm_CallBackData;
+    APTR       hm_FD;
+    APTR       hm_CallBack;
+    APTR       hm_CallBackData;
+    int        *hm_ErrNoPtr;
+    int	       *hm_RawErrNoPtr; /* Raw untranslated host error code */
 };
 
 struct hioMsgAsyncIO
@@ -83,6 +83,7 @@ struct hioMsgOpenFile
     STACKULONG  hm_Flags;	/* Flags, the same as for open() */
     STACKULONG  hm_Mode;	/* Mode, the same as for open()  */
     int        *hm_ErrNoPtr;
+    int	       *hm_RawErrNoPtr; /* Raw untranslated host error code */
 };
 
 struct hioMsgCloneHandle
@@ -90,6 +91,7 @@ struct hioMsgCloneHandle
     STACKULONG  hm_MethodID;
     APTR        hm_FD;		/* File descriptor */
     int        *hm_ErrNoPtr;
+    int	       *hm_RawErrNoPtr; /* Raw untranslated host error code */
 };
 
 struct hioMsgCloseFile
@@ -97,6 +99,7 @@ struct hioMsgCloseFile
     STACKULONG  hm_MethodID;
     APTR        hm_FD;		/* File descriptor */
     int        *hm_ErrNoPtr;
+    int	       *hm_RawErrNoPtr; /* Raw untranslated host error code */
 };
 
 struct hioMsgWriteFile
@@ -106,6 +109,7 @@ struct hioMsgWriteFile
     APTR        hm_Buffer;	/* Buffer		*/
     STACKULONG  hm_Count;	/* Buffer length	*/
     int        *hm_ErrNoPtr;
+    int	       *hm_RawErrNoPtr; /* Raw untranslated host error code */
 };
 
 struct hioMsgIOControlFile
@@ -128,6 +132,7 @@ struct hioMsgReadFile
     APTR        hm_Buffer;	/* Buffer		*/
     STACKULONG  hm_Count;	/* Buffer length	*/
     int        *hm_ErrNoPtr;
+    int	       *hm_RawErrNoPtr; /* Raw untranslated host error code */
 };
 
 /* HostIO HIDD Values */
@@ -144,18 +149,15 @@ struct hioMsgReadFile
 #define vHidd_HostIO_Invalid_Handle ((APTR)-1)
 
 /* Stubs */
-IPTR Hidd_HostIO_Wait(HIDD h, ULONG fd, ULONG mode, APTR callback,  APTR callbackdata, struct ExecBase *);
+IPTR Hidd_HostIO_Wait(HIDD o, APTR fd, ULONG mode, APTR callback, APTR callbackdata, int *errno_ptr, int *raw_errno_ptr);
 IPTR Hidd_HostIO_AsyncIO(HIDD h, ULONG fd, ULONG fd_type, struct MsgPort *port, ULONG mode, struct ExecBase *);
 VOID Hidd_HostIO_AbortAsyncIO(HIDD h, ULONG fd, struct ExecBase *);
 
-APTR Hidd_HostIO_OpenFile(HIDD o, const char *filename, int flags, int mode, int *errno_ptr);
-VOID Hidd_HostIO_CloseFile(HIDD o, APTR fd, int *errno_ptr);
-int Hidd_HostIO_ReadFile(HIDD o, APTR fd, void *buffer, int count, int *errno_ptr);
-int Hidd_HostIO_WriteFile(HIDD o, APTR fd, void *buffer, int count, int *errno_ptr);
+APTR Hidd_HostIO_OpenFile(HIDD o, const char *filename, int flags, int mode, int *errno_ptr, int *raw_errno_ptr);
+VOID Hidd_HostIO_CloseFile(HIDD o, APTR fd, int *errno_ptr, int *raw_errno_ptr);
+APTR Hidd_HostIO_CloneHandle(HIDD o, APTR fd, int *errno_ptr, int *raw_errno_ptr);
+int Hidd_HostIO_ReadFile(HIDD o, APTR fd, void *buffer, int count, int *errno_ptr, int *raw_errno_ptr);
+int Hidd_HostIO_WriteFile(HIDD o, APTR fd, void *buffer, int count, int *errno_ptr, int *raw_errno_ptr);
 int Hidd_HostIO_IOControlFile(HIDD o, APTR fd, int request, void *param, int count, void *output, int outlen, int *errno_ptr, int *raw_errno_ptr);
 
-
-
 #endif /* HIDD_UNIXIO_H */
-
-
