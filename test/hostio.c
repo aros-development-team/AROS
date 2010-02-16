@@ -67,7 +67,7 @@ int main (int argc, char **argv)
     printf("first, a trivial file read test\n\n");
 
     printf("opening %s for read... ", files[0]);
-    fd = Hidd_HostIO_OpenFile(hostio, files[0], O_RDONLY, 0, &ioerr);
+    fd = Hidd_HostIO_OpenFile(hostio, files[0], O_RDONLY, 0, &ioerr, NULL);
     if (ioerr != 0) {
         printf("failed (ioerr is %d)\n", ioerr);
         goto exit;
@@ -75,7 +75,7 @@ int main (int argc, char **argv)
     printf("ok (fd is 0x%p)\n", fd);
 
     printf("reading... ");
-    nbytes = Hidd_HostIO_ReadFile(hostio, fd, buf, 1024, &ioerr);
+    nbytes = Hidd_HostIO_ReadFile(hostio, fd, buf, 1024, &ioerr, NULL);
     if (ioerr != 0) {
         printf("failed (ioerr is %d)\n", ioerr);
         goto exit;
@@ -83,7 +83,7 @@ int main (int argc, char **argv)
     printf("ok (read %d bytes)\n", nbytes);
 
     printf("closing file... ");
-    Hidd_HostIO_CloseFile(hostio, fd, &ioerr);
+    Hidd_HostIO_CloseFile(hostio, fd, &ioerr, NULL);
     if (ioerr != 0) {
         printf("failed (ioerr is %d)\n", ioerr);
         goto exit;
@@ -94,7 +94,7 @@ int main (int argc, char **argv)
     printf("next, an equally trivial file write test\n\n");
 
     printf("opening %s for write... ", files[1]);
-    fd = Hidd_HostIO_OpenFile(hostio, files[1], O_WRONLY, 0, &ioerr);
+    fd = Hidd_HostIO_OpenFile(hostio, files[1], O_WRONLY, 0, &ioerr, NULL);
     if (ioerr != 0) {
         printf("failed (ioerr is %d)\n", ioerr);
         goto exit;
@@ -102,7 +102,7 @@ int main (int argc, char **argv)
     printf("ok (fd is 0x%p)\n", fd);
 
     printf("writing... ");
-    nbytes = Hidd_HostIO_WriteFile(hostio, fd, buf, 1024, &ioerr);
+    nbytes = Hidd_HostIO_WriteFile(hostio, fd, buf, 1024, &ioerr, NULL);
     if (ioerr != 0) {
         printf("failed (ioerr is %d)\n", ioerr);
         goto exit;
@@ -110,7 +110,7 @@ int main (int argc, char **argv)
     printf("ok (wrote %d bytes)\n", nbytes);
 
     printf("closing file... ");
-    Hidd_HostIO_CloseFile(hostio, fd, &ioerr);
+    Hidd_HostIO_CloseFile(hostio, fd, &ioerr, NULL);
     if (ioerr != 0) {
         printf("failed (ioerr is %d)\n", ioerr);
         goto exit;
@@ -121,7 +121,7 @@ int main (int argc, char **argv)
     printf("just for fun, lets read and print the contents of a file\n\n");
 
     printf("opening %s for read... ", files[2]);
-    fd = Hidd_HostIO_OpenFile(hostio, files[2], O_RDONLY, 0, &ioerr);
+    fd = Hidd_HostIO_OpenFile(hostio, files[2], O_RDONLY, 0, &ioerr, NULL);
     if (ioerr != 0) {
         printf("failed (ioerr is %d)\n", ioerr);
         goto exit;
@@ -129,7 +129,7 @@ int main (int argc, char **argv)
     printf("ok (fd is 0x%p)\n", fd);
 
     printf("reading... ");
-    nbytes = Hidd_HostIO_ReadFile(hostio, fd, buf, 1024, &ioerr);
+    nbytes = Hidd_HostIO_ReadFile(hostio, fd, buf, 1024, &ioerr, NULL);
     if (ioerr != 0) {
         printf("failed (ioerr is %d)\n", ioerr);
         goto exit;
@@ -139,7 +139,7 @@ int main (int argc, char **argv)
     printf("File contents:\n\n%.*s", nbytes, buf);
 
     printf("\nclosing file... ");
-    Hidd_HostIO_CloseFile(hostio, fd, &ioerr);
+    Hidd_HostIO_CloseFile(hostio, fd, &ioerr, NULL);
     if (ioerr != 0) {
         printf("failed (ioerr is %d)\n", ioerr);
         goto exit;
@@ -155,7 +155,7 @@ int main (int argc, char **argv)
     Hidd_HostIO_Wait(hostio, 0, vHidd_HostIO_Read, NULL, NULL, SysBase);
 
     printf("reading it... ");
-    nbytes = Hidd_HostIO_ReadFile(hostio, 0, buf, 1024, &ioerr);
+    nbytes = Hidd_HostIO_ReadFile(hostio, 0, buf, 1024, &ioerr, NULL);
     if (ioerr != 0) {
         printf("failed (ioerr is %d\n)", ioerr);
         goto exit;
@@ -166,7 +166,7 @@ int main (int argc, char **argv)
 */
 
 exit:
-    if (fd != vHidd_HostIO_Invalid_Handle) Hidd_HostIO_CloseFile(hostio, fd, NULL);
+    if (fd != vHidd_HostIO_Invalid_Handle) Hidd_HostIO_CloseFile(hostio, fd, NULL, NULL);
     if (hostio != NULL)  OOP_DisposeObject(hostio);
     if (HostIOBase) CloseLibrary(HostIOBase);
     if (OOPBase != NULL) CloseLibrary(OOPBase);

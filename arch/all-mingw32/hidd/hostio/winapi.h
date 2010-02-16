@@ -86,6 +86,8 @@
 #define ERROR_DIR_NOT_EMPTY 145L
 #define ERROR_IO_PENDING 997L
 
+#define STATUS_PENDING 0x103
+
 typedef struct _OVERLAPPED {
   IPTR Internal;
   IPTR InternalHigh;
