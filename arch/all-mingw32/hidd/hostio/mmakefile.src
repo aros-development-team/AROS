@@ -1,0 +1,29 @@
+# $Id: mmakefile.src 32263 2010-01-02 01:12:16Z verhaegs $
+include $(TOP)/config/make.cfg
+
+%build_module mmake=kernel-hostio \
+    modname=hostio modtype=hidd \
+    files="hostio_class hostio_hostlib" \
+    uselibs="rom oop"
+
+STUBS := hostio_stubs
+
+%make_hidd_stubs hidd=hostio parenttarget=kernel-hostio-hidd
+
+MY_INCLS := $(call WILDCARD, include/*.h)
+DEST_INC := $(foreach f,$(MY_INCLS), $(AROS_INCLUDES)/hidd/$(notdir $f))
+GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
+
+#MM
+includes-copy : $(DEST_INC) $(GEN_INC)
+
+$(AROS_INCLUDES)/hidd/%.h : include/%.h
+	$(CP) $< $@
+
+$(GENINCDIR)/hidd/%.h : include/%.h
+	$(CP) $< $@
+
+#MM
+setup-includes :
+	%mkdirs_q $(GENINCDIR) $(AROS_INCLUDES) $(GENINCDIR)/hidd $(AROS_INCLUDES)/hidd
+
