@@ -77,7 +77,7 @@ int main (int argc, char **argv)
     printf("reading... ");
     nbytes = Hidd_HostIO_ReadFile(hostio, fd, buf, 1024, &ioerr);
     if (ioerr != 0) {
-        printf("failed (ioerr is %d\n)", ioerr);
+        printf("failed (ioerr is %d)\n", ioerr);
         goto exit;
     }
     printf("ok (read %d bytes)\n", nbytes);
@@ -136,9 +136,9 @@ int main (int argc, char **argv)
     }
     printf("ok (read %d bytes)\n", nbytes);
 
-    printf("File contents:\n\n%.*s\n", nbytes, buf);
+    printf("File contents:\n\n%.*s", nbytes, buf);
 
-    printf("closing file... ");
+    printf("\nclosing file... ");
     Hidd_HostIO_CloseFile(hostio, fd, &ioerr);
     if (ioerr != 0) {
         printf("failed (ioerr is %d)\n", ioerr);
