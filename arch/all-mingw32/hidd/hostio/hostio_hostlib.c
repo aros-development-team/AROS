@@ -79,8 +79,6 @@ static int hostio_hostlib_init(LIBBASETYPEPTR LIBBASE) {
 
 static int hostio_hostlib_expunge(LIBBASETYPEPTR LIBBASE) {
     D(bug("[HostIO] hostlib expunge\n"));
-    
-    return FALSE; /* Temporary shutup, otherwise crash */
 
     if (LIBBASE->hio_csd.KernelIFace != NULL)
         HostLib_DropInterface((APTR *)LIBBASE->hio_csd.KernelIFace);
@@ -95,6 +93,5 @@ static int hostio_hostlib_expunge(LIBBASETYPEPTR LIBBASE) {
     return TRUE;
 }
 
-ADD2INITLIB(hostio_hostlib_init, 1)
-ADD2EXPUNGELIB(hostio_hostlib_expunge, 1)
-
+ADD2INITLIB(hostio_hostlib_init, 0)
+ADD2EXPUNGELIB(hostio_hostlib_expunge, 0)
