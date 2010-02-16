@@ -22,7 +22,10 @@ struct File_Handle
 {
     APTR handle;   /* Actual file handle		       */
     OVERLAPPED io; /* Overlapped I/O control structure	       */
+    UBYTE flags;
 };
+
+#define HANDLE_CLONED 0x01
 
 struct KernelInterface
 {

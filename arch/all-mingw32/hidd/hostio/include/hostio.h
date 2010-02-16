@@ -5,7 +5,7 @@
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id: unixio.h 30792 2009-03-07 22:40:04Z neil $
 
-    Desc: Unix filedescriptor/socket IO Include File
+    Desc: Host OS filedescriptor/socket IO Include File
     Lang: english
 */
 
@@ -46,6 +46,7 @@ enum {
     moHidd_HostIO_WriteFile,
     moHidd_HostIO_IOControlFile,    
     moHidd_HostIO_ReadFile,
+    moHidd_HostIO_CloneHandle,
     nhm_Hidd_HostIO_Attrs
     
 };
@@ -81,6 +82,13 @@ struct hioMsgOpenFile
     STRPTR      hm_FileName;	/* File name */
     STACKULONG  hm_Flags;	/* Flags, the same as for open() */
     STACKULONG  hm_Mode;	/* Mode, the same as for open()  */
+    int        *hm_ErrNoPtr;
+};
+
+struct hioMsgCloneHandle
+{
+    STACKULONG  hm_MethodID;
+    APTR        hm_FD;		/* File descriptor */
     int        *hm_ErrNoPtr;
 };
 
