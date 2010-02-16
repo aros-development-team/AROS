@@ -5,6 +5,7 @@
 #include <proto/dos.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
@@ -84,6 +85,7 @@ int main (int argc, char **argv)
 
     printf("closing file... ");
     Hidd_HostIO_CloseFile(hostio, fd, &ioerr, NULL);
+    fd = vHidd_HostIO_Invalid_Handle;
     if (ioerr != 0) {
         printf("failed (ioerr is %d)\n", ioerr);
         goto exit;
@@ -111,6 +113,7 @@ int main (int argc, char **argv)
 
     printf("closing file... ");
     Hidd_HostIO_CloseFile(hostio, fd, &ioerr, NULL);
+    fd = vHidd_HostIO_Invalid_Handle;
     if (ioerr != 0) {
         printf("failed (ioerr is %d)\n", ioerr);
         goto exit;
@@ -140,30 +143,51 @@ int main (int argc, char **argv)
 
     printf("\nclosing file... ");
     Hidd_HostIO_CloseFile(hostio, fd, &ioerr, NULL);
+    fd = vHidd_HostIO_Invalid_Handle;
     if (ioerr != 0) {
         printf("failed (ioerr is %d)\n", ioerr);
         goto exit;
     }
     printf("ok\n\n\n");
 
-    fd = vHidd_HostIO_Invalid_Handle;
-
-/* TODO: Windows console doesn't work with overlapped I/O, so i need to think off something else
-    printf("now type something on the unix console that you\n"
-           "ran aros from, then press enter. I'll wait...\n");
-
-    Hidd_HostIO_Wait(hostio, 0, vHidd_HostIO_Read, NULL, NULL, SysBase);
-
-    printf("reading it... ");
-    nbytes = Hidd_HostIO_ReadFile(hostio, 0, buf, 1024, &ioerr, NULL);
+/* FIXME: it's a very bad test. First, it actually does not do what it should do because
+   reading ordinary file seems always to complete immediately. Second, Wait method should
+   not be called at all here, because the first thing it does is to check if the overlapped
+   I/O is pending. However MSDN docs say do do it *ONLY* if the I/O has actually entered
+   asynchronous mode (in this case Read method would return EWOULDBLOCK). So, it works
+   only by pure luck and demonstrates only that Wait method does not crash in the beginning.
+   May be try to write something to the serial port? */
+    printf("Now read the same file in asynchronous mode\n\n");
+    printf("opening %s for async read... ", files[2]);
+    fd = Hidd_HostIO_OpenFile(hostio, files[2], O_RDONLY|O_NONBLOCK, 0, &ioerr, NULL);
     if (ioerr != 0) {
-        printf("failed (ioerr is %d\n)", ioerr);
+        printf("failed (ioerr is %d)\n", ioerr);
+        goto exit;
+    }
+    printf("ok (fd is 0x%p)\n", fd);
+    printf("requesting read... ");
+    nbytes = Hidd_HostIO_ReadFile(hostio, fd, buf, 1024, &ioerr, NULL);
+    if ((ioerr != 0) && (ioerr != EWOULDBLOCK)) {
+        printf("failed (ioerr is %d)\n", ioerr);
+        goto exit;
+    }
+    printf("ok (read %d bytes, ioerr is %d)\n", nbytes, ioerr);
+    printf("waiting... ");
+    nbytes = Hidd_HostIO_Wait(hostio, fd, NULL, NULL, &ioerr, NULL);
+    if (ioerr != 0) {
+        printf("failed (ioerr is %d)\n", ioerr);
         goto exit;
     }
     printf("ok (read %d bytes)\n", nbytes);
-
-    printf("you typed: %.*s\n\n", nbytes, buf);
-*/
+    printf("File contents:\n\n%.*s", nbytes, buf);
+    printf("\nclosing file... ");
+    Hidd_HostIO_CloseFile(hostio, fd, &ioerr, NULL);
+    fd = vHidd_HostIO_Invalid_Handle;
+    if (ioerr != 0) {
+        printf("failed (ioerr is %d)\n", ioerr);
+        goto exit;
+    }
+    printf("ok\n\n\n");
 
 exit:
     if (fd != vHidd_HostIO_Invalid_Handle) Hidd_HostIO_CloseFile(hostio, fd, NULL, NULL);
@@ -173,4 +197,3 @@ exit:
 
     return failed ? 1 : 0;
 }
-
