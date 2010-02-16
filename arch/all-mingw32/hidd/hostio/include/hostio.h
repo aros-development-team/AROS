@@ -149,7 +149,7 @@ struct hioMsgReadFile
 #define vHidd_HostIO_Invalid_Handle ((APTR)-1)
 
 /* Stubs */
-IPTR Hidd_HostIO_Wait(HIDD o, APTR fd, ULONG mode, APTR callback, APTR callbackdata, int *errno_ptr, int *raw_errno_ptr);
+IPTR Hidd_HostIO_Wait(HIDD o, APTR fd, APTR callback, APTR callbackdata, int *errno_ptr, int *raw_errno_ptr);
 IPTR Hidd_HostIO_AsyncIO(HIDD h, ULONG fd, ULONG fd_type, struct MsgPort *port, ULONG mode, struct ExecBase *);
 VOID Hidd_HostIO_AbortAsyncIO(HIDD h, ULONG fd, struct ExecBase *);
 

@@ -18,7 +18,7 @@
 
 #define OOPBase (OOP_OCLASS(o)->OOPBasePtr)
 
-IPTR Hidd_HostIO_Wait(HIDD o, APTR fd, ULONG mode, APTR callback, APTR callbackdata, int *errno_ptr, int *raw_errno_ptr)
+IPTR Hidd_HostIO_Wait(HIDD o, APTR fd, APTR callback, APTR callbackdata, int *errno_ptr, int *raw_errno_ptr)
 {
      static OOP_MethodID mid;
      struct hioMsg  	 p, *msg = &p;

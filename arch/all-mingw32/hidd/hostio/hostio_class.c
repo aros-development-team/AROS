@@ -60,7 +60,7 @@ ULONG Errno_win2std(ULONG e)
 	}
     }
     DERROR(bug("[HostIO] Unknown error code\n"));
-    return 123;
+    return -1;
 }
 
 #define SetError(err)				\
