@@ -79,6 +79,7 @@ static ULONG errtab[][2]=
   { ERROR_INVALID_NAME		, EINVAL    },
   { ERROR_INVALID_PARAMETER	, EINVAL    },
   { ERROR_IO_PENDING		, EAGAIN    },
+  { ERROR_HANDLE_EOF		, 0	    },
   { 0				, 0	    }
 };
 
@@ -504,10 +505,11 @@ APTR HIO__Hidd_HostIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct hioMsgOpenF
 {
     struct File_Handle *fh = AllocMem(sizeof(struct File_Handle), MEMF_ANY|MEMF_CLEAR);
 
+    D(bug("[HostIO] OpenFile(\"%s\", 0x%04lX, %o)\n", msg->hm_FileName, msg->hm_Flags, msg->hm_Mode));
     if (fh) {
         ULONG access = 0;
         ULONG share = FILE_SHARE_READ;
-        ULONG create = 0;
+        ULONG create = OPEN_EXISTING;
         ULONG flags = 0;
 	ULONG error;
 
@@ -529,6 +531,7 @@ APTR HIO__Hidd_HostIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct hioMsgOpenF
 	    flags |= FILE_ATTRIBUTE_READONLY;
 	/* TODO: process O_APPEND and set file pointer in OVERLAPPED structure */
 
+	D(bug("[HostIO] Translated access: 0x%08lX, share: 0x%08lX, create: %u, flags: 0x%08lX\n", access, share, create, flags));
 	Forbid();
 	fh->handle = CreateFile(msg->hm_FileName, access, share, NULL, create, flags, NULL);
 	error = GetLastError();
@@ -536,6 +539,7 @@ APTR HIO__Hidd_HostIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct hioMsgOpenF
 	SetError(error);
 
 	if (fh->handle == INVALID_HANDLE_VALUE) {
+	    D(bug("[HostIO] Error opening file\n"));
 	    FreeMem(fh, sizeof(struct File_Handle));
 	    fh = vHidd_HostIO_Invalid_Handle;
 	}
@@ -583,7 +587,8 @@ IPTR HIO__Hidd_HostIO__ReadFile(OOP_Class *cl, OOP_Object *o, struct hioMsgReadF
 	err = GetLastError();
 	Permit();
 	if (!res)
-	    retval = -1;
+	    /* EOF is an error in Windows but not an error in libc */
+	    retval = (err == ERROR_HANDLE_EOF) ? 0 : -1;
     }
     SetError(err);    
     return retval;
