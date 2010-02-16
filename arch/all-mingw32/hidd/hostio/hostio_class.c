@@ -178,6 +178,7 @@ IPTR HIO__Hidd_HostIO__Wait(OOP_Class *cl, OOP_Object *o, struct hioMsg *msg)
 IPTR HIO__Hidd_HostIO__AsyncIO(OOP_Class *cl, OOP_Object *o, struct hioMsgAsyncIO *msg)
 {
     IPTR retval = 0UL;
+#if 0 /* TODO */
     struct hioMessage * umsg = AllocMem (sizeof (struct hioMessage), MEMF_CLEAR|MEMF_PUBLIC);
     struct MsgPort  * port = msg->hm_ReplyPort;
     struct hio_data *hd = HD(cl);
@@ -193,9 +194,9 @@ IPTR HIO__Hidd_HostIO__AsyncIO(OOP_Class *cl, OOP_Object *o, struct hioMsgAsyncI
 	*/
 
 	umsg->Message.mn_ReplyPort = port;
-	umsg->fd      = ((struct hioMsg *)msg)->hm_Filedesc;
-	umsg->fd_type = ((struct hioMsg *)msg)->hm_Filedesc_Type;
-	umsg->mode    = ((struct hioMsg *)msg)->hm_Mode;
+	umsg->fd      = msg->hm_Filedesc;
+	umsg->fd_type = msg->hm_Filedesc_Type;
+	umsg->mode    = msg->hm_Mode;
 	umsg->callback = NULL;
 	umsg->callbackdata = NULL;
 
@@ -211,7 +212,7 @@ IPTR HIO__Hidd_HostIO__AsyncIO(OOP_Class *cl, OOP_Object *o, struct hioMsgAsyncI
     }
     else
 	retval = ENOMEM;
-
+#endif
     return retval;
 }
 
@@ -221,6 +222,7 @@ IPTR HIO__Hidd_HostIO__AsyncIO(OOP_Class *cl, OOP_Object *o, struct hioMsgAsyncI
 *****************************/
 VOID HIO__Hidd_HostIO__AbortAsyncIO(OOP_Class *cl, OOP_Object *o, struct hioMsgAbortAsyncIO *msg)
 {
+/* TODO
     struct hioMessage * umsg = AllocMem (sizeof (struct hioMessage), MEMF_CLEAR|MEMF_PUBLIC);
     struct hio_data *hd = HD(cl);
     struct MsgPort  * port = CreateMsgPort();
@@ -243,6 +245,7 @@ VOID HIO__Hidd_HostIO__AbortAsyncIO(OOP_Class *cl, OOP_Object *o, struct hioMsgA
 
     if (port)
         DeleteMsgPort(port);
+*/
 }
 
 /*****************************

@@ -73,8 +73,6 @@ struct hio_data
     APTR		    aros_handle;
     struct KernelInterface *KernelIFace;
     struct AROSInterface   *AROSIFace;
-    struct Task 	   *hd_WaitForIO;
-    struct MsgPort	   *hd_Port;
 };
 
 struct hostio_base
