@@ -18,7 +18,7 @@ char *unix_files[] = {
 };
 
 char *windows_files[] = {
-    "NUL:",
+    "NUL:", /* Reading from NUL: on Windows produces EOF, but i can't invent anything better */
     "NUL:",
     "C:\\Windows\\System32\\EULA.txt"
 };

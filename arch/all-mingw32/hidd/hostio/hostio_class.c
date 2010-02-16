@@ -586,9 +586,11 @@ IPTR HIO__Hidd_HostIO__ReadFile(OOP_Class *cl, OOP_Object *o, struct hioMsgReadF
 	res = ReadFile(fh->handle, msg->hm_Buffer, msg->hm_Count, &retval, &fh->io);
 	err = GetLastError();
 	Permit();
-	if (!res)
+	D(bug("[HostIO] Read result: %d, bytes count: %d\n", res, retval));
+	if (!res) {
 	    /* EOF is an error in Windows but not an error in libc */
 	    retval = (err == ERROR_HANDLE_EOF) ? 0 : -1;
+	}
     }
     SetError(err);    
     return retval;
