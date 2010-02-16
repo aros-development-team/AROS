@@ -102,6 +102,20 @@ APTR Hidd_HostIO_CloneHandle(HIDD o, APTR fd, int *errno_ptr, int *raw_errno_ptr
      return (APTR)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
+APTR HIDD_HostIO_GetRawHandle(HIDD o, APTR fd)
+{
+     static OOP_MethodID    mid;
+     struct hioMsgGetRawHandle p, *msg = &p;
+     
+     if (!mid)
+     	mid = OOP_GetMethodID(IID_Hidd_HostIO, moHidd_HostIO_GetRawHandle);
+
+     p.hm_MethodID  = mid;
+     p.hm_FD 	    = fd;
+
+     return (APTR)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
+}
+
 VOID Hidd_HostIO_CloseFile(HIDD o, APTR fd, int *errno_ptr, int *raw_errno_ptr)
 {
      static OOP_MethodID    mid;

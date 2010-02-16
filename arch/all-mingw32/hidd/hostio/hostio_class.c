@@ -325,6 +325,17 @@ APTR HIO__Hidd_HostIO__CloneHandle(OOP_Class *cl, OOP_Object *o, struct hioMsgCl
 }
 
 /*****************************
+**  HostIO::GetRawHandle()  **
+*****************************/
+
+APTR HIO__Hidd_HostIO__GetRawHandle(OOP_Class *cl, OOP_Object *o, struct hioMsgGetRawHandle *msg)
+{
+    struct File_Handle *fh = msg->hm_FD;
+
+    return fh->handle;
+}
+
+/*****************************
 **  HostIO::CloseFile()      **
 *****************************/
 VOID HIO__Hidd_HostIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct hioMsgCloseFile *msg)
