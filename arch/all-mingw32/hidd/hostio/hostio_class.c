@@ -551,6 +551,25 @@ APTR HIO__Hidd_HostIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct hioMsgOpenF
 }
 
 /*****************************
+**  HostIO::CloneHandle()   **
+*****************************/
+APTR HIO__Hidd_HostIO__CloneHandle(OOP_Class *cl, OOP_Object *o, struct hioMsgCloneHandle *msg)
+{
+    struct File_Handle *fh = msg->hm_FD;
+    struct File_Handle *fh2 = AllocMem(sizeof(struct File_Handle), MEMF_ANY);
+
+    if (fh2) {
+        CopyMem(fh, fh2, sizeof(struct File_Handle));
+	fh2->flags |= HANDLE_CLONED;
+	SetStdError(0);
+    } else {
+        fh2 = vHidd_HostIO_Invalid_Handle;
+	SetStdError(ENOMEM);
+    }
+    return fh2;
+}
+
+/*****************************
 **  HostIO::CloseFile()      **
 *****************************/
 VOID HIO__Hidd_HostIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct hioMsgCloseFile *msg)
@@ -559,11 +578,12 @@ VOID HIO__Hidd_HostIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct hioMsgClos
     ULONG error = 0;
     
     if (fh != vHidd_HostIO_Invalid_Handle) {
-
-	Forbid();
-	CloseHandle(fh->handle);
-	error = GetLastError();
-	Permit();
+	if (!(fh->flags & HANDLE_CLONED)) {
+	    Forbid();
+	    CloseHandle(fh->handle);
+	    error = GetLastError();
+	    Permit();
+	}
 	FreeMem(fh, sizeof(struct File_Handle));
     }
     SetError(error);

@@ -84,6 +84,21 @@ APTR Hidd_HostIO_OpenFile(HIDD o, const char *filename, int flags, int mode, int
      return (APTR)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
+APTR Hidd_HostIO_CloneHandle(HIDD o, APTR fd, int *errno_ptr)
+{
+     static OOP_MethodID    mid;
+     struct hioMsgCloneHandle p, *msg = &p;
+     
+     if (!mid)
+     	mid = OOP_GetMethodID(IID_Hidd_HostIO, moHidd_HostIO_CloneHandle);
+
+     p.hm_MethodID  = mid;
+     p.hm_FD 	    = fd;
+     p.hm_ErrNoPtr  = errno_ptr;
+ 
+     return (APTR)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
+}
+
 VOID Hidd_HostIO_CloseFile(HIDD o, APTR fd, int *errno_ptr)
 {
      static OOP_MethodID    mid;
