@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -104,13 +104,19 @@
                     else
                     {
                         ScreenBuffer->free_bitmap = TRUE;
-
+#ifdef __MORPHOS__
                         bitmap = AllocBitMap(GetBitMapAttr(screen->RastPort.BitMap,BMA_WIDTH),
                                              GetBitMapAttr(screen->RastPort.BitMap,BMA_HEIGHT),
                                              GetBitMapAttr(screen->RastPort.BitMap,BMA_DEPTH),
                                              BMF_MINPLANES|BMF_DISPLAYABLE|BMF_CLEAR,
                                              screen->RastPort.BitMap);
-
+#else
+			bitmap = AllocBitMap(GetBitMapAttr(screen->RastPort.BitMap,BMA_WIDTH),
+                                             GetBitMapAttr(screen->RastPort.BitMap,BMA_HEIGHT),
+                                             GetBitMapAttr(screen->RastPort.BitMap,BMA_DEPTH),
+                                             BMF_MINPLANES|BMF_DISPLAYABLE|BMF_CLEAR|BMF_SCREEN,
+                                             (struct BitMap *)screen->ViewPort.ColorMap->VPModeID);
+#endif
                         if (NULL == bitmap)
                         {
                             FreeDBufInfo(ScreenBuffer->sb.sb_DBufInfo);

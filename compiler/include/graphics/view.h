@@ -123,18 +123,18 @@ struct ColorMap
 };
 
 /* Flags */
-#define CMF_CMTRANS                0
-#define COLORMAP_TRANSPARENCY  (1<<0)
-#define CMF_CPTRANS                1
-#define COLORPLANE_TRANPARENCY (1<<1)
-#define CMF_BRDRBLNK               2
-#define BORDER_BLANKING        (1<<2)
-#define CMF_BRDNTRAN               3
-#define BORDER_NOTRANPARENCY   (1<<3)
-#define VIDEOCONTROL_BATCH     (1<<4)
-#define USER_COPPER_CLIP       (1<<5)
-#define CMF_BRDRSPRT               6
-#define BORDERSPRITES          (1<<6)
+#define CMF_CMTRANS                 0
+#define COLORMAP_TRANSPARENCY   (1<<0)
+#define CMF_CPTRANS                 1
+#define COLORPLANE_TRANSPARENCY (1<<1)
+#define CMF_BRDRBLNK                2
+#define BORDER_BLANKING         (1<<2)
+#define CMF_BRDNTRAN                3
+#define BORDER_NOTRANSPARENCY   (1<<3)
+#define VIDEOCONTROL_BATCH      (1<<4)
+#define USER_COPPER_CLIP        (1<<5)
+#define CMF_BRDRSPRT                6
+#define BORDERSPRITES           (1<<6)
 
 /* Type */
 #define COLORMAP_TYPE_V1_2 0
