@@ -71,6 +71,9 @@
 
 	case VTAG_VIEWPORTEXTRA_SET:
 	    cm->cm_vpe = tag->ti_Data;
+	    /* TODO: May be GfxAssociate() it here with the viewport? Well, anyway
+	       for now we use the ViewPortExtra only in one place and we get it from
+	       a colormap, so we don't need it atm. */
 	    break;
 
 	case VTAG_VIEWPORTEXTRA_GET:

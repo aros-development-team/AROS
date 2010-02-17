@@ -1,11 +1,12 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
 
+#include <aros/debug.h>
 #include <exec/types.h>
 #include <graphics/gfxbase.h>
 #include <graphics/gfxnodes.h>
@@ -65,11 +66,13 @@
                                     sizeof(struct MonitorSpec)
                                   };
 
+  D(bug("GfxFree(0x%p)\n", node));
   if ( SS_GRAPHICS == node->xln_Subsystem &&
        NT_GRAPHICS == node->xln_Type)
   {
     /* take the element out of the hashlist, if it is in the
        hashlist  */
+    D(bug("[GfxFree] xln_Succ 0x%p, xln_Pred 0x%p\n", node->xln_Succ, node->xln_Pred));
 
     /* if the element has a Successor */
     if (NULL != node -> xln_Succ)
@@ -77,7 +80,8 @@
 
     /* if the previous Element is not the hashlist itself */
     /* (the same code works also if the previous entry is the hashlist ) */
-    ((struct ExtendedNode *)(node -> xln_Pred)) -> xln_Succ = (struct Node *) (node -> xln_Succ);
+    if (node->xln_Pred)
+        ((struct ExtendedNode *)(node -> xln_Pred)) -> xln_Succ = (struct Node *) (node -> xln_Succ);
 
     FreeMem((void *) node, GfxNew_memsizes[node->xln_Subtype]);
   }
