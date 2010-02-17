@@ -23,5 +23,6 @@ extern struct MUI_CustomClass *PPreview_CLASS;
 #define MUIA_PPreview_HSpotX    (MUIB_PPreview | 0x00000001) /* ISG  UWORD  */
 #define MUIA_PPreview_HSpotY    (MUIB_PPreview | 0x00000002) /* ISG  UWORD  */
 #define MUIA_PPreview_FileName  (MUIB_PPreview | 0x00000003) /* ISG  STRPTR */
+#define MUIA_PPreview_SetHSpot  (MUIB_PPreview | 0x00000004) /* ISG  BOOL   */
 
 #endif /* _PPREVIEW_H_ */

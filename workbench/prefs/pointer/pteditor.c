@@ -43,6 +43,7 @@ struct PTEditor_DATA
     Object *pted_typeCycle;
     Object *pted_fileString;
     Object *pted_alphaSlider;
+    Object *pted_hotspotButton;
     struct Hook pted_cycleHook;
     struct Hook pted_filenameHook;
 };
@@ -118,7 +119,7 @@ AROS_UFHA(APTR, msg, A1))
 /*** Methods ****************************************************************/
 Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-    Object *previewImage, *typeCycle, *fileString, *alphaSlider;
+    Object *previewImage, *typeCycle, *fileString, *alphaSlider, *hotspotButton;
 
     self = (Object *) DoSuperNewTags
     (
@@ -154,6 +155,16 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     MUIA_Numeric_Max, 255,
                     MUIA_CycleChain, 1,
                 End),
+                Child, (IPTR)Label2("Hotspot"),
+                Child, (IPTR)(hotspotButton = MUI_NewObject(MUIC_Text,
+                    ButtonFrame,
+                    MUIA_Font, MUIV_Font_Button,
+                    MUIA_Text_Contents, "Set / View",
+                    MUIA_Text_PreParse, "\33c",
+                    MUIA_InputMode    , MUIV_InputMode_Toggle,
+                    MUIA_Background   , MUII_ButtonBack,
+                    MUIA_CycleChain   , 1,
+                TAG_DONE)),
             End,
         End,
         TAG_DONE
@@ -173,6 +184,7 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->pted_typeCycle    = typeCycle;
         data->pted_fileString   = fileString;
         data->pted_alphaSlider  = alphaSlider;
+        data->pted_hotspotButton= hotspotButton;
 
         DoMethod
         (
@@ -190,6 +202,12 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         (
             data->pted_alphaSlider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+
+        DoMethod
+        (
+            data->pted_hotspotButton, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) data->pted_previewImage, 3, MUIM_Set, MUIA_PPreview_SetHSpot, MUIV_TriggerValue
         );
 
     }

@@ -49,19 +49,15 @@ struct PPreview_DATA
     struct BitMap              *pprv_bm;
     LONG                        pprv_offset_x;
     LONG                        pprv_offset_y;
+    LONG                        pprv_draw_width;
+    LONG                        pprv_draw_height;
+    BOOL                        pprv_set_hspot;
 };
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct PPreview_DATA *data = INST_DATA(cl, obj)
 
 /*** Functions **************************************************************/
-STATIC LONG clip(LONG value, LONG lowerlimit, LONG upperlimit)
-{
-    if (value < lowerlimit) return lowerlimit;
-    if (value > upperlimit) return upperlimit;
-    return value;
-}
-
 STATIC VOID killdto(struct PPreview_DATA *data)
 {
     ALIVE
@@ -163,6 +159,10 @@ Object *PPreview__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
                 data->pprv_hspot_y = tag->ti_Data;
                 break;
 
+            case MUIA_PPreview_SetHSpot:
+                data->pprv_set_hspot= tag->ti_Data;
+                break;
+
             case MUIA_PPreview_FileName:
                 FreeVec(data->pprv_filename);
                 data->pprv_filename = StrDup((STRPTR)tag->ti_Data);
@@ -218,6 +218,11 @@ IPTR PPreview__OM_SET(Class *cl, Object *obj, struct opSet *msg)
                 data->pprv_hspot_y = tag->ti_Data;
                 break;
 
+            case MUIA_PPreview_SetHSpot:
+                needs_redraw = TRUE;
+                data->pprv_set_hspot = tag->ti_Data;
+                break;
+
             case MUIA_PPreview_FileName:
                 needs_redraw = TRUE;
                 FreeVec(data->pprv_filename);
@@ -253,6 +258,10 @@ IPTR PPreview__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 
         case MUIA_PPreview_HSpotY:
             *msg->opg_Storage = data->pprv_hspot_y;
+            return TRUE;
+
+        case MUIA_PPreview_SetHSpot:
+            *msg->opg_Storage = data->pprv_set_hspot;
             return TRUE;
 
         case MUIA_PPreview_FileName:
@@ -330,6 +339,8 @@ IPTR PPreview__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         // remember offset for event handler
         data->pprv_offset_x = drawoffsetx;
         data->pprv_offset_y = drawoffsety;
+        data->pprv_draw_width = drawwidth;
+        data->pprv_draw_height = drawheight;
 
         D(bug("[Pointer/Draw] bitmap %p depth %u\n", data->pprv_bm, depth));
         if ((depth >= 15) && (data->pprv_bmhd->bmh_Masking == mskHasAlpha))
@@ -389,21 +400,20 @@ IPTR PPreview__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         Draw(_rp(obj), drawoffsetx - 1, drawoffsety - 1);
 
         // draw hotspot
+        if (data->pprv_set_hspot)
         {
-            LONG p1x = clip(drawoffsetx + data->pprv_hspot_x - 5, drawoffsetx, drawoffsetx + drawwidth);
-            LONG p2x = clip(drawoffsetx + data->pprv_hspot_x + 5, drawoffsetx, drawoffsetx + drawwidth);
-            LONG p34x = clip(drawoffsetx + data->pprv_hspot_x, drawoffsetx, drawoffsetx + drawwidth);
-
-            LONG p3y = clip(drawoffsety + data->pprv_hspot_y - 5, drawoffsety, drawoffsety + drawheight);
-            LONG p4y = clip(drawoffsety + data->pprv_hspot_y + 5, drawoffsety, drawoffsety + drawheight);
-            LONG p12y = clip(drawoffsety + data->pprv_hspot_y, drawoffsety, drawoffsety + drawheight);
-
-            SetAPen(_rp(obj), 2);
             D(bug("[Pointer/Draw] Draw hotspot at %d %d\n", drawoffsetx + data->pprv_hspot_x, drawoffsety + data->pprv_hspot_y));
-            Move(_rp(obj), p1x, p12y);
-            Draw(_rp(obj), p2x, p12y);
-            Move(_rp(obj), p34x, p3y);
-            Draw(_rp(obj), p34x, p4y);
+            SetAPen(_rp(obj), 1);
+            if (data->pprv_hspot_x < drawwidth)
+            {
+                Move(_rp(obj), drawoffsetx + data->pprv_hspot_x, drawoffsety);
+                Draw(_rp(obj), drawoffsetx + data->pprv_hspot_x, drawoffsety + drawheight);
+            }
+            if (data->pprv_hspot_y < drawheight)
+            {
+                Move(_rp(obj), drawoffsetx, drawoffsety + data->pprv_hspot_y);
+                Draw(_rp(obj), drawoffsetx + drawwidth, drawoffsety + data->pprv_hspot_y);
+            }
         }
     }
 
@@ -429,16 +439,21 @@ IPTR PPreview__MUIM_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent 
     SETUP_INST_DATA;
 
     #define _between(a,x,b) ((x)>=(a) && (x)<=(b))
-    #define _isinobject(x,y) (_between(data->pprv_offset_x,(x),_mright(obj)) && _between(data->pprv_offset_y,(y),_mbottom(obj)))
+    #define _isinobject(x,y) (_between(data->pprv_offset_x,(x),data->pprv_offset_x+data->pprv_draw_width) && \
+        _between(data->pprv_offset_y,(y),data->pprv_offset_y+data->pprv_draw_height))
 
-    if ((data->pprv_offset_x != -1) && msg->imsg)
+    if (data->pprv_set_hspot && (data->pprv_offset_x != -1) && msg->imsg)
     {
         switch (msg->imsg->Class)
         {
             case IDCMP_MOUSEBUTTONS:
             {
-                if (msg->imsg->Code==SELECTUP)
+                if (msg->imsg->Code == SELECTUP)
                 {
+                    D(bug("[PPreview/HandleEvent] offx %d offy %d w %d h %d mx %d my %d\n",
+                        data->pprv_offset_x, data->pprv_offset_y,
+                        data->pprv_draw_width, data->pprv_draw_height,
+                        msg->imsg->MouseX, msg->imsg->MouseY));
                     if (_isinobject(msg->imsg->MouseX, msg->imsg->MouseY))
                     {
                         data->pprv_hspot_x = msg->imsg->MouseX - data->pprv_offset_x;
