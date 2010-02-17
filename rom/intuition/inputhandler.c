@@ -1358,21 +1358,18 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
 		DEBUG_DRAG(bug("[InputHandler] Screen drag, delta is (%d, %d)\n", dx, dy));
 
-		/* Restrict dragging to a physical display area if the driver does not allow
-		   composition.
-		   FIXME: the whole thing relies on the fact that ViewPort size never
-		          changes and reflects physical display size. On original
-			  AmigaOS this is not true, and in AROS running on Amiga chipset
-			  this will be not true again. We need to use DisplayClip in
-			  ViewPortExtra instead. */
+		/* Restrict dragging to a physical display area if the driver does not allow composition */
 		if (!(GetPrivScreen(scr)->SpecialFlags & SF_HorCompose)) {
 		    /* Calculate limits */
-		    if (scr->Width > scr->ViewPort.DWidth) {
-			min = scr->ViewPort.DWidth - scr->Width;
+		    WORD DWidth = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX + 1;
+
+		    if (scr->Width > DWidth) {
+		        
+			min = DWidth - scr->Width;
 			max = 0;
 		    } else {
 		        min = 0;
-			max = scr->ViewPort.DWidth - scr->Width;
+			max = DWidth - scr->Width;
 		    }
 		    /* The purpose of the following complex check is to prevent jumping if the
 		       screen was positioned out of user drag limits by the program itself using
@@ -1401,14 +1398,16 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 		    }
 		}
 	        if (!(GetPrivScreen(scr)->SpecialFlags & SF_VertCompose)) {
+		    WORD DHeight = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY + 1;
+
 		    DEBUG_DRAG(bug("[Inputhandler] Restricting vertical drag\n"));
 		    DEBUG_DRAG(bug("[Inputhandler] Screen size: %d, display size: %d\n", scr->Height, scr->ViewPort.DHeight));
-		    if (scr->Height > scr->ViewPort.DHeight) {
-			min = scr->ViewPort.DHeight - scr->Height;
+		    if (scr->Height > DHeight) {
+			min = DHeight - scr->Height;
 			max = 0;
 		    } else {
 		        min = 0;
-			max = scr->ViewPort.DHeight - scr->Height;
+			max = DHeight - scr->Height;
 		    }
 		    DEBUG_DRAG(bug("[Inputhandler] Limits: min %d max %d\n", min, max));
 		    val = scr->TopEdge + dy;
