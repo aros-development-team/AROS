@@ -8,9 +8,6 @@
 #include <hidd/graphics.h>
 #include "graphics_intern.h"
 
-#define DEBUG 0
-#include <aros/debug.h>
-
 /****************************************************************************************/
 
 #warning "Does not yet handle SwapPixelBytes flag of HIDDT_PixelFormat structure!"
@@ -77,6 +74,15 @@
 	}	\
 	pix = lut[pix];
 
+#define PUT_PAL_PIX(d, pix, pf)				\
+	switch (pf->bytes_per_pixel) {			\
+		case 4: PUTPIX32(d, pix); break;	\
+		case 3: PUTPIX24(d, pix); break;	\
+		case 2: PUTPIX16(d, pix); break;	\
+		case 1: PUTPIX8 (d, pix); break;	\
+		default: D(bug("RUBBISH BYTES PER PIXEL IN PUT_TRUE_PIX_CM()\n")); break;	\
+	}
+
 #define PUTPIX32(d, pix) \
     do { *(ULONG *)d = pix; d = (UBYTE *)d + 4; } while (0)
 
@@ -106,6 +112,9 @@
 
 #define PUTPIX16OE(d, pix)	\
     do { *(UWORD *)d = AROS_SWAP_BYTES_WORD(pix); d = (UBYTE *)d + 2; } while (0)
+
+#define PUTPIX8(s, pix)	\
+    do { *(BYTE *)s = pix; s = (UBYTE *)s + 1; } while (0)
 
 #define PUT_TRUE_PIX(d, pix, pf)			\
 	switch (pf->bytes_per_pixel) {			\
@@ -229,7 +238,76 @@ bug("destmasks = %p %p %p %p  diffs = %d %d %d %d\n",
 static VOID true_to_pal(OOP_Class *cl, OOP_Object *o,
     	    	    	struct pHidd_BitMap_ConvertPixels *msg)
 {
-    D(bug("BitMap::ConvertPixels() : Truecolor to palette conversion not implemented yet\n"));
+    HIDDT_PixelLUT *lut = msg->pixlut;
+    struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
+    HIDDT_ColorLUT *cmap = data->colmap;
+    INIT_VARS()
+    INIT_FMTVARS()
+    ULONG x, y, c;
+    ULONG cols;
+
+    D(bug("[ConvertPixels] true_to_pal(): pixlut is 0x%p, colormap is 0x%p\n", lut, cmap));
+
+    if (lut)
+        cols = lut->entries;
+    else if (cmap)
+        cols = cmap->entries;
+    else
+        cols = 0;
+
+    for (y = 0; y < msg->height; y ++) {
+    	UBYTE * s = src;
+	UBYTE * d = dst;
+	
+    	for (x = 0; x < msg->width; x ++) {
+	    /* Get the source pixel */
+	    HIDDT_Pixel srcpix = 0;
+	    HIDDT_Pixel dstpix = 0;
+	    ULONG best_distance = (ULONG)-1;
+	    ULONG a, r, g, b;
+
+	    GET_TRUE_PIX(s, srcpix, srcfmt);
+	    a = ALPHA_COMP(srcpix, srcfmt);
+	    r =   RED_COMP(srcpix, srcfmt);
+	    g = GREEN_COMP(srcpix, srcfmt);
+	    b =  BLUE_COMP(srcpix, srcfmt);
+	    
+	    D(bug("[ConvertPixels] Find best match for 0x%08X\n", srcpix));
+	    for (c = 0; c < cols; c++) {
+		ULONG ca, cr, cg, cb;
+		ULONG distance;
+		
+		D(bug("[ConvertPixels] Checking against %u ", c));
+		if (lut) {
+		    D(bug("(0x%08lX)\n", lut->pixels[c]));
+		    ca = ALPHA_COMP(lut->pixels[c], srcfmt);
+		    cr =   RED_COMP(lut->pixels[c], srcfmt);
+		    cg = GREEN_COMP(lut->pixels[c], srcfmt);
+		    cb =  BLUE_COMP(lut->pixels[c], srcfmt);
+		} else {
+		    D(bug("(0x%08lX)\n", cmap->colors[c].pixval));
+		    ca = cmap->colors[c].alpha;
+		    cr = cmap->colors[c].red;
+		    cg = cmap->colors[c].green;
+		    cb = cmap->colors[c].blue;
+		}
+		distance = color_distance(a, r, g, b, ca, cr, cg, cb);
+		D(bug("[ConvertPixels] Distance is %u\n", distance));
+		if (distance < best_distance) {
+		    D(bug("[ConvertPixels] Best distance was %u, new best match is %u\n", best_distance, c));
+		    best_distance = distance;
+		    dstpix = c;
+		}
+	    }
+
+	    D(bug("[ConvertPixels] Found color %u\n", dstpix));
+	    PUT_PAL_PIX(d, dstpix, dstfmt);
+	}
+	src += msg->srcMod;
+	dst += msg->dstMod;
+    } 
+    *msg->srcPixels = src;
+    *msg->dstBuf    = dst;
 }
 
 static VOID pal_to_true(OOP_Class *cl, OOP_Object *o,
