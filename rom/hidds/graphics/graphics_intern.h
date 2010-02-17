@@ -8,6 +8,7 @@
 
 /* Include files */
 
+#include <aros/debug.h>
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif
@@ -360,6 +361,23 @@ struct IntHIDDGraphicsBase
 BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG attrcheck, struct class_static_data *csd);
 BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG attrcheck, struct class_static_data *csd);
 
+static inline ULONG color_distance(UWORD a1, UWORD r1, UWORD g1, UWORD b1, UWORD a2, UWORD r2, UWORD g2, UWORD b2)
+{
+    LONG da = (a1 >> 8) - (a2 >> 8);
+    LONG dr = (r1 >> 8) - (r2 >> 8);
+    LONG dg = (g1 >> 8) - (g2 >> 8);
+    LONG db = (b1 >> 8) - (b2 >> 8);
+
+    DB2(bug("[color_distance] a1 = 0x%04X a2 = 0x%04X da = %d\n", a1, a2, da));
+    DB2(bug("[color_distance] r1 = 0x%04X r2 = 0x%04X dr = %d\n", r1, r2, dr));
+    DB2(bug("[color_distance] g1 = 0x%04X g2 = 0x%04X dg = %d\n", g1, g2, dg));
+    DB2(bug("[color_distance] b1 = 0x%04X b2 = 0x%04X db = %d\n", b1, b2, db));
+
+    /* '4' here is a result of trial and error. The idea behind this is to increase
+       the weight of alpha difference in order to make the function prefer colors with
+       the same alpha value. This is important for correct mouse pointer remapping. */
+    return da*da*4 + dr*dr + dg*dg + db*db;
+}
 
 #define CSD(x) (&((struct IntHIDDGraphicsBase *)x->UserData)->hdg_csd)
 #define csd CSD(cl)

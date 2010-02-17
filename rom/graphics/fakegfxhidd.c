@@ -530,6 +530,7 @@ static BOOL gfx_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetC
     struct gfx_data *data;
     
     data = OOP_INST_DATA(cl, o);
+    D(bug("[FakeGfx] SetCursorPos(%u, %u)\n", msg->x, msg->y));
     LFB_QUICK(data);
     /* erase the old cursor */
     draw_cursor(data, FALSE, TRUE, CSD(cl));
@@ -1344,7 +1345,7 @@ static VOID rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
     OOP_GetAttr(data->curs_bm, aHidd_BitMap_PixFmt, &pf);
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, &curdepth);
 
-#ifndef SIMULATE_LUT_FB
+#ifndef DISABLE_ARGB_POINTER
     /* We can get ARGB data from the pointer bitmap only
        on one of two cases:
        1) Pointer bitmap has more than 256 colors, in this case it
@@ -1442,7 +1443,6 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
     	DB2(bug("RENDERING CURSOR IMAGE\n"));
 	/* Render the cursor image */
 	if (data->curs_pixfmt == vHidd_StdPixFmt_ARGB32)
-	    /* Just for information: PutImage works here too. Which one is faster? */
 	    HIDD_BM_PutAlphaImage(data->framebuffer, data->gc, data->curs_pixels, data->curs_width * data->curs_bpp, data->curs_x, data->curs_y, width, height);
 	else {
 	    /* Unfortunately we don't have any transparent blit function in our HIDD API, so we have to do it by hands. */
