@@ -99,6 +99,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
     struct NewScreen 	     ns;
     struct TagItem   	    *tag, *tagList;
+    IPTR		     vctl = 0;
     struct IntScreen 	    *screen;
     int              	     success;
     struct Hook      	    *layer_info_hook = NULL;
@@ -541,7 +542,8 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
                 break;
 
             case SA_VideoControl:
-                DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_VideoControl 0x%lx\n",tag->ti_Data));
+                DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_VideoControl 0x%p\n",tag->ti_Data));
+		vctl = tag->ti_Data;
                 break;
 
             case SA_FrontChild:
@@ -746,10 +748,9 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
         if(screen->Screen.RastPort.BitMap == NULL)
         {
+	    ULONG Depth = (dimensions.MaxDepth > 8) ? dimensions.MaxDepth : ns.Depth;
 #ifdef __MORPHOS__
             ULONG pixfmt;
-
-            Depth = (dimensions.MaxDepth > 8) ? dimensions.MaxDepth : ns.Depth;
 
             switch(Depth)
             {
@@ -786,7 +787,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 #else
 	    screen->Screen.RastPort.BitMap = AllocBitMap(ns.Width,
                                              ns.Height,
-                                             dimensions.MaxDepth,
+                                             Depth,
                                              allocbitmapflags | BMF_SCREEN,
                                              (struct BitMap *)modeid);
 #endif
@@ -847,24 +848,8 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Colormap Entries %ld\n",
                                  numcolors));
 
-	/* Originally at this point we allocated a ColorMap with at least 32 entries.
-	   This can be needed again in order to store sprite colors if our hardware
-	   allows to use additional palette entries for mouse pointer */
-        if ((screen->Screen.ViewPort.ColorMap = GetColorMap(numcolors)) != NULL)
+        if ((screen->Screen.ViewPort.ColorMap = GetColorMap((numcolors < 32) ? 32 : numcolors)) != NULL)
         {
-
-#ifndef __MORPHOS__ /* Use VideoControl for MorphOS */
-            screen->Screen.ViewPort.ColorMap->VPModeID = modeid;
-	    screen->Screen.ViewPort.ColorMap->cm_vp = &screen->Screen.ViewPort;
-	    screen->Screen.ViewPort.ColorMap->NormalDisplayInfo = displayinfo;
-	    screen->Screen.ViewPort.DxOffset = ns.LeftEdge;
-	    screen->Screen.ViewPort.DyOffset = ns.TopEdge;
-	    screen->Screen.ViewPort.DWidth = dclip->MaxX - dclip->MinX + 1;
-            screen->Screen.ViewPort.DHeight = dclip->MaxY - dclip->MinY + 1;
-	    /* ScrollVPort() will validate initial screen offsets */
-	    ScrollVPort(&screen->Screen.ViewPort);
-#endif
-
             if (0 == AttachPalExtra(screen->Screen.ViewPort.ColorMap,
                                     &screen->Screen.ViewPort))
             {
@@ -903,8 +888,8 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     }
 
 #ifdef __MORPHOS__
-
     screen->ModeID = modeid;
+#endif
 
     if (ok)
     {
@@ -917,6 +902,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         if (vpe)
         {
             struct TagItem tags[6];
+	    ULONG bm_depth;
 
             memcpy(&vpe->DisplayClip, dclip,sizeof(struct Rectangle));
 
@@ -933,8 +919,20 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
             tags[2].ti_Data = (IPTR)displayinfo;
             tags[3].ti_Tag  = VTAG_VPMODEID_SET;
             tags[3].ti_Data = modeid;
-            tags[4].ti_Tag  = VTAG_END_CM;
-            tags[5].ti_Tag  = TAG_END;
+	    tags[4].ti_Tag  = VTAG_SPEVEN_BASE_SET;
+	    tags[4].ti_Data = 0x01;
+	    tags[5].ti_Tag  = VTAG_NEXTBUF_CM; /* if vctl is 0, this will terminate the list */
+	    tags[5].ti_Data = vctl;
+
+	    /* Shift down sprite palette base in case if our hardware doesn't
+	       allow to use additional color registers.
+	       TODO: currently we assume that we never have them, and on current
+	       AROS hardware this is always true. However in future this may change.
+	       I think we should have SpriteBase attribute for the bitmap which
+	       defaults to acceptable value. We should just get its default value here. */
+	    bm_depth = GetBitMapAttr(screen->Screen.RastPort.BitMap, BMA_DEPTH);
+	    if (bm_depth < 5)
+	        tags[4].ti_Data = ((1 << bm_depth) - 8) << 8;
 
             if (VideoControl(screen->Screen.ViewPort.ColorMap, tags) == 0)
             {
@@ -947,8 +945,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
             }
         }
     }
-
-#endif
 
     if (ok)
     {
@@ -1063,6 +1059,8 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
         D(bug("Loaded colors\n"));
 
+	/* ScrollVPort() will validate initial screen offsets */
+	ScrollVPort(&screen->Screen.ViewPort);
 	/* Put validated values into screen structure, this is important */
 	screen->Screen.LeftEdge = screen->Screen.ViewPort.DxOffset;
         screen->Screen.TopEdge = screen->Screen.ViewPort.DyOffset;
@@ -1759,20 +1757,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
         if (screen->Screen.ViewPort.ColorMap)
         {
-#ifdef __MORPHOS__
-            struct TagItem tags[2];
-
-            tags[0].ti_Tag  = VTAG_ATTACH_CM_GET;
-            tags[0].ti_Data = 0;
-            tags[1].ti_Tag  = VTAG_END_CM;
-
-            if (VideoControl(screen->Screen.ViewPort.ColorMap, tags) == 0 &&
-                    tags[0].ti_Data)
-            {
-                GfxFree((APTR)tags[0].ti_Data);
-            }
-#endif
-
             FreeColorMap(screen->Screen.ViewPort.ColorMap);
         }
 

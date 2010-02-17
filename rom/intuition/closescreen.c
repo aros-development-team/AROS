@@ -144,21 +144,8 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
     }
 
     RethinkDisplay();
-#ifdef __MORPHOS__
+
     FreeVPortCopLists(&screen->ViewPort);
-    {
-        struct TagItem tags[2];
-
-        tags[0].ti_Tag = VTAG_ATTACH_CM_GET;
-        tags[0].ti_Data = 0;
-        tags[1].ti_Tag = VTAG_END_CM;
-
-        if (VideoControl(screen->ViewPort.ColorMap, tags))
-        {
-            GfxFree((APTR)tags[0].ti_Data);
-        }
-    }
-#endif
 
 #ifdef USEWINDOWLOCK
     ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
