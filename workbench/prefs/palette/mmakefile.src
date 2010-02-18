@@ -1,0 +1,16 @@
+# $Id$
+# Makefile to make Palette prefs program.
+
+include $(TOP)/config/make.cfg
+
+FILES   := main locale paleditor prefs args misc
+EXEDIR  := $(AROSDIR)/Prefs
+
+##MM- workbench-prefs : workbench-prefs-palette
+#MM workbench-prefs-palette : includes linklibs workbench-prefs-palette-catalogs
+
+%build_prog mmake=workbench-prefs-palette \
+    progname=Palette targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc m"
+
+%common
