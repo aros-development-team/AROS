@@ -159,11 +159,13 @@ static void LoadPointerPrefs(STRPTR filename, WORD which, WORD installas, LONG n
 	        npp = LoadChunk(iff, sizeof(struct NewPointerPrefs), MEMF_ANY);
 		if (npp) {
 		    UWORD alpha = AROS_BE2WORD(npp->npp_AlphaValue);
+		    UWORD x     = AROS_BE2WORD(npp->npp_X);
+		    UWORD y     = AROS_BE2WORD(npp->npp_Y);
 
 		    D(bug("[PointerPrefs] Got new pointer chunk\n"));
 		    D(bug("[PointerPrefs] Which %u, alpha: 0x%04X\n", AROS_BE2WORD(npp->npp_Which), alpha));
 		    SetIPrefs(&alpha, sizeof(alpha), IPREFS_TYPE_POINTER_ALPHA);
-		    LoadPointerFile(npp->npp_File, npp->npp_WhichInFile, npp->npp_Which, npp->npp_X, npp->npp_Y);
+		    LoadPointerFile(npp->npp_File, npp->npp_WhichInFile, npp->npp_Which, x, y);
 		    FreeVec(npp);
 		}
 		break;

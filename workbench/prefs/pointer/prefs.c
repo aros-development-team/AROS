@@ -102,8 +102,8 @@ BOOL Prefs_ImportFH(BPTR fh)
                                 pointerprefs[which].npp.npp_Which = which;
                                 pointerprefs[which].npp.npp_AlphaValue = AROS_BE2WORD(loadprefs.npp.npp_AlphaValue);
                                 pointerprefs[which].npp.npp_WhichInFile = AROS_BE2LONG(loadprefs.npp.npp_WhichInFile);
-                                pointerprefs[which].npp.npp_X = loadprefs.npp.npp_X;
-                                pointerprefs[which].npp.npp_Y = loadprefs.npp.npp_Y;
+                                pointerprefs[which].npp.npp_X = AROS_BE2WORD(loadprefs.npp.npp_X);
+                                pointerprefs[which].npp.npp_Y = AROS_BE2WORD(loadprefs.npp.npp_Y);
                                 strlcpy(pointerprefs[which].filename, loadprefs.filename, NAMEBUFLEN);
 
                                 D(bug("Prefs_ImportFH: which %d name %s\n", which, pointerprefs[which].filename));
@@ -177,8 +177,8 @@ BOOL Prefs_ExportFH(BPTR fh)
                             saveprefs.npp.npp_Which = AROS_WORD2BE(i);
                             saveprefs.npp.npp_AlphaValue = AROS_WORD2BE(pointerprefs[i].npp.npp_AlphaValue);
                             saveprefs.npp.npp_WhichInFile = AROS_LONG2BE(pointerprefs[i].npp.npp_WhichInFile);
-                            saveprefs.npp.npp_X = pointerprefs[i].npp.npp_X;
-                            saveprefs.npp.npp_Y = pointerprefs[i].npp.npp_Y;
+                            saveprefs.npp.npp_X = AROS_WORD2BE(pointerprefs[i].npp.npp_X);
+                            saveprefs.npp.npp_Y = AROS_WORD2BE(pointerprefs[i].npp.npp_Y);
                             strlcpy(saveprefs.filename, pointerprefs[i].filename, NAMEBUFLEN);
 
                             ULONG chunksize = sizeof(struct NewPointerPrefs) + strlen(saveprefs.filename) + 1;
