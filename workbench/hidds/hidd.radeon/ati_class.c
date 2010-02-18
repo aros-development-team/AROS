@@ -68,6 +68,27 @@
         { aHidd_Sync_Description,       (IPTR)descr},   \
         { TAG_DONE, 0UL }}
 
+//#define DEBUG_POINTER
+
+#ifdef DEBUG_POINTER
+
+#define PRINT_POINTER(image, xsize, xmax, ymax)		\
+bug("[ATI] Pointer data:\n");			\
+{							\
+    ULONG *pix = (ULONG *)image;			\
+    ULONG x, y;						\
+							\
+    for (y = 0; y < ymax; y++) {			\
+        for (x = 0; x < xmax; x++)			\
+	    bug("0x%08X ", pix[x]);			\
+	bug("\n");					\
+	pix += xsize;					\
+    }							\
+}
+
+#else
+#define PRINT_POINTER(image, xsize, xmax, ymax)
+#endif
 
 OOP_Object *METHOD(ATI, Hidd_Gfx, Show)
 {
@@ -333,9 +354,9 @@ BOOL METHOD(ATI, Hidd_Gfx, SetCursorShape)
         ULONG       width, height, x;
         ULONG       save1=0, save2=0;
 
-        ULONG       *curimg = (ULONG*)((IPTR)sd->Card.CursorStart + (IPTR)sd->Card.FrameBuffer);
+        volatile ULONG       *curimg = (ULONG*)((IPTR)sd->Card.CursorStart + (IPTR)sd->Card.FrameBuffer);
 
-//      CURSOR_SWAPPING_DECL_MMIO;
+        CURSOR_SWAPPING_DECL_MMIO;
 
         OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
         OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
@@ -357,16 +378,22 @@ BOOL METHOD(ATI, Hidd_Gfx, SetCursorShape)
             OUTREG(RADEON_CRTC2_GEN_CNTL, save2 & (ULONG)~RADEON_CRTC2_CUR_EN);
         }
 
-//      CURSOR_SWAPPING_START();
-
         for (x = 0; x < 64*64; x++)
            curimg[x] = 0;
 
-	/* I always get the image in BGRA32 format (it becomes ARGB32 when picked up as ULONG on little-endian),
-	   so i don't turn on byte swapping */
-	HIDD_BM_GetImage(msg->shape, (UBYTE *)curimg, 64*4, 0, 0, width, height, vHidd_StdPixFmt_BGRA32);
+		/* I always get the image in BGRA32 format (it becomes ARGB32 when picked up as ULONG on little-endian),
+		   so i don't turn on byte swapping */
 
-//      CURSOR_SWAPPING_END();
+        CURSOR_SWAPPING_START();
+
+#if AROS_BIG_ENDIAN
+        HIDD_BM_GetImage(msg->shape, (UBYTE *)curimg, 64*4, 0, 0, width, height, vHidd_StdPixFmt_ARGB32);
+#else
+        HIDD_BM_GetImage(msg->shape, (UBYTE *)curimg, 64*4, 0, 0, width, height, vHidd_StdPixFmt_BGRA32);
+#endif
+        PRINT_POINTER(curimg, 64, 16, 16);
+
+        CURSOR_SWAPPING_END();
 
         if (!sd->Card.IsSecondary)
             OUTREG(RADEON_CRTC_GEN_CNTL, save1);
