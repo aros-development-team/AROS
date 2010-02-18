@@ -857,6 +857,21 @@ ULONG DoRenderFunc(struct RastPort *rp, Point *src, struct Rectangle *rr,
     return res;
 }
 
+ULONG DoPixelFunc(struct RastPort *rp, LONG x, LONG y,
+    	    	    LONG (*render_func)(APTR, OOP_Object *, OOP_Object *, LONG, LONG, struct GfxBase *),
+		    APTR funcdata, BOOL do_update, struct GfxBase *GfxBase)
+{
+    ULONG res;
+
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
+        return -1;
+
+    res = do_pixel_func(rp, x, y, render_func, funcdata, do_update, GfxBase);
+
+    RELEASE_DRIVERDATA(rp, GfxBase);
+    return res;
+}
+
 OOP_Object *GetDriverGC(struct RastPort *rp, struct GfxBase *GfxBase)
 {
     if (!OBTAIN_DRIVERDATA(rp, GfxBase))
