@@ -68,6 +68,8 @@ BOOL DisplayView(struct View *view, struct GfxBase *GfxBase)
     }
     else
     {
+    	IPTR width, height;
+
 	Forbid();
 
 	 /* Set this as the active screen */
@@ -88,8 +90,6 @@ BOOL DisplayView(struct View *view, struct GfxBase *GfxBase)
 
 	if (bitmap)
 	{
-	    IPTR width, height;
-
 	    /* Insert the framebuffer in its place */
 	    OOP_GetAttr(fb, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
 	    OOP_GetAttr(fb, aHidd_BitMap_PixFmt, (IPTR *)&pf);
@@ -98,15 +98,12 @@ BOOL DisplayView(struct View *view, struct GfxBase *GfxBase)
 	    HIDD_BM_OBJ(bitmap)	= fb;
 	    HIDD_BM_COLMOD(bitmap)	= colmod;
 	    HIDD_BM_COLMAP(bitmap)	= cmap;
-
-#if 1 /* CHECKME! */
-            OOP_GetAttr(SDD(GfxBase)->bm_bak, aHidd_BitMap_Width, &width);
-    	    OOP_GetAttr(SDD(GfxBase)->bm_bak, aHidd_BitMap_Height, &height);
-
-	    HIDD_BM_UpdateRect(fb, 0, 0, width, height);
-#endif
-    	    
 	}
+
+        OOP_GetAttr(fb, aHidd_BitMap_Width, &width);
+    	OOP_GetAttr(fb, aHidd_BitMap_Height, &height);
+
+	HIDD_BM_UpdateRect(fb, 0, 0, width, height);
 	Permit();
 	return TRUE;
     }
