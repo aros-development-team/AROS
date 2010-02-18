@@ -121,7 +121,8 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 #endif
     ULONG                    allocbitmapflags = BMF_DISPLAYABLE;
     //ULONG                  lock;
-    WORD                     numcolors;
+    WORD                     numcolors = 0;
+    UWORD		     spritebase;
     BOOL                     workbench = FALSE;
     BOOL		     draggable = TRUE;
     struct TagItem   	     modetags[] =
@@ -526,6 +527,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
             case SA_ColorMapEntries:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_ColorMapEntries 0x%lx\n",tag->ti_Data));
+		numcolors = tag->ti_Data;
                 break;
 
             case SA_Parent:
@@ -571,7 +573,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
     } /* if (tagList) */
 
-    DEBUG_OPENSCREEN(dprintf("OpenScreen(): Requested: Left %d Top %d Width %d Height %d Depth %d Tags 0x%lx\n",
+    DEBUG_OPENSCREEN(dprintf("OpenScreen: Requested: Left %d Top %d Width %d Height %d Depth %d Tags 0x%lx\n",
                              ns.LeftEdge, ns.TopEdge, ns.Width, ns.Height, ns.Depth, tagList));
 
     /* First Init the RastPort then get the BitPlanes!! */
@@ -647,19 +649,18 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         modeid = BestModeIDA(modetags);
         if (INVALID_ID == modeid)
         {
-            DEBUG_OPENSCREEN(dprintf("!!! OpenScreen(): Could not find valid modeid !!!\n");)
+            DEBUG_OPENSCREEN(dprintf("!!! OpenScreen: Could not find valid modeid !!!\n");)
             FireScreenNotifyMessage((IPTR) NULL, SNOTIFY_AFTER_OPENSCREEN, IntuitionBase);
 
             return NULL;
         }
     }
 
-    DEBUG_OPENSCREEN(dprintf("OpenScreen(): Corrected ModeID: 0x%08lx\n", modeid));
+    DEBUG_OPENSCREEN(dprintf("OpenScreen: Corrected ModeID: 0x%08lx\n", modeid));
 
     InitRastPort(&screen->Screen.RastPort);
     rp_inited = TRUE;
     success = FALSE;
-    numcolors = 0;
 
     if ((displayinfo = FindDisplayInfo(modeid)) != NULL &&
         GetDisplayInfoData(displayinfo, (APTR)&dimensions, sizeof(dimensions), DTAG_DIMS, modeid)
@@ -708,7 +709,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 	else if (ns.Height > dimensions.MaxRasterHeight)
 	    ns.Height = dimensions.MaxRasterHeight;
 
-        DEBUG_OPENSCREEN(dprintf("OpenScreen(): Corrected: Width %ld Height %ld\n", ns.Width, ns.Height));
+        DEBUG_OPENSCREEN(dprintf("OpenScreen: Corrected: Width %ld Height %ld\n", ns.Width, ns.Height));
 
         screen->Screen.RastPort.BitMap = NULL;
         if (ns.Type & CUSTOMBITMAP)
@@ -840,15 +841,23 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
          * was asked.
          */
         ns.Depth = GetBitMapAttr(screen->Screen.RastPort.BitMap,BMA_DEPTH);
+	DEBUG_OPENSCREEN(bug("OpenScreen: Real bitmap depth is %u\n", ns.Depth));
 
-        numcolors = (ns.Depth <= 8) ? (1L << ns.Depth) : 256;
+	if (!numcolors) {
+	    if (ns.Depth < 5)
+	        numcolors = 32;
+	    else if (ns.Depth > 8)
+	        numcolors = 256;
+	    else
+                numcolors = 1L << ns.Depth;
+	}
 
         /* Get a color map structure. Sufficient colors?? */
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Colormap Entries %ld\n",
                                  numcolors));
 
-        if ((screen->Screen.ViewPort.ColorMap = GetColorMap((numcolors < 32) ? 32 : numcolors)) != NULL)
+        if ((screen->Screen.ViewPort.ColorMap = GetColorMap(numcolors)) != NULL)
         {
             if (0 == AttachPalExtra(screen->Screen.ViewPort.ColorMap,
                                     &screen->Screen.ViewPort))
@@ -902,7 +911,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         if (vpe)
         {
             struct TagItem tags[6];
-	    ULONG bm_depth;
 
             memcpy(&vpe->DisplayClip, dclip,sizeof(struct Rectangle));
 
@@ -920,19 +928,38 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
             tags[3].ti_Tag  = VTAG_VPMODEID_SET;
             tags[3].ti_Data = modeid;
 	    tags[4].ti_Tag  = VTAG_SPEVEN_BASE_SET;
-	    tags[4].ti_Data = 0x01;
 	    tags[5].ti_Tag  = VTAG_NEXTBUF_CM; /* if vctl is 0, this will terminate the list */
 	    tags[5].ti_Data = vctl;
 
-	    /* Shift down sprite palette base in case if our hardware doesn't
-	       allow to use additional color registers.
-	       TODO: currently we assume that we never have them, and on current
-	       AROS hardware this is always true. However in future this may change.
-	       I think we should have SpriteBase attribute for the bitmap which
-	       defaults to acceptable value. We should just get its default value here. */
-	    bm_depth = GetBitMapAttr(screen->Screen.RastPort.BitMap, BMA_DEPTH);
-	    if (bm_depth < 5)
-	        tags[4].ti_Data = ((1 << bm_depth) - 8) << 8;
+	    /* Originally we could always use palette entries 16-19 for
+	       sprites, even if the screen has less than 32 colors. AROS may
+	       run on hardware that does not allow this (e.g. VGA cards).
+	       In this case we have to shift down sprite colors. Currently
+	       we use 4 colors before last 4 colors. For example on VGA cards
+	       with only 16 colors we use colors 9 - 12. Remember that last 4 colors
+	       of the screen are always used by Intuition.
+	       Remember that the first color of the sprite is always transparent. So actually
+	       we use 3, not 4 colors.
+	       Yes, sprites may look not as expected on screens with low color depth, but at
+	       least they will be seen. It's better than nothing.
+	       
+	       Note that because our base color number doesn't always divide by 16, we use MSB to store
+	       the remainder (offset in the color bank). Yes, it's a bit hacky, but i have no better idea
+	       at the moment.
+
+	       FIXME: this mapping scheme assumes that we always have at least 16 colors.
+               For current display modes supported by AROS it's always true, but in future
+	       we may support more display modes (for example monochrome ones), and we
+	       should take into account that on screens with less than 11 colors this simply
+	       won't work
+
+	       TODO: I think we should have SpriteBase attribute for the bitmap which
+	       defaults to acceptable value. We should just get its default value here.
+	       The same attribute would be set by VideoControl() and MakeVPort() in order
+	       to actually apply the value. */
+	    spritebase = (ns.Depth < 5) ? (1 << ns.Depth) - 8 : 16;
+	    DEBUG_OPENSCREEN(bug("OpenScreen: spritebase is %u\n", spritebase));
+	    tags[4].ti_Data = ((spritebase & 0x0F) << 8 ) | (spritebase >> 4);
 
             if (VideoControl(screen->Screen.ViewPort.ColorMap, tags) == 0)
             {
@@ -952,11 +979,10 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         int 	    	k;
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Set first 4 colors\n"));
-
         p = GetPrivIBase(IntuitionBase)->Colors;
-        for (k = 0; k < 4 && k < numcolors; ++k)
+        for (k = 0; k < 4; ++k)
         {
-            DEBUG_OPENSCREEN(dprintf("OpenScreen: SetRGB32 Viewport 0x%p Index %ld R 0x%lx G 0x%lx B 0x%lx\n",
+            DEBUG_OPENSCREEN(dprintf("OpenScreen: Viewport 0x%p Index %ld R 0x%lx G 0x%lx B 0x%lx\n",
                                      &screen->Screen.ViewPort,
                                      k, p[k].red, p[k].green, p[k].blue));
             SetRGB32(&screen->Screen.ViewPort, k, p[k].red, p[k].green, p[k].blue);
@@ -964,20 +990,22 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
         if (ns.Depth >= 3)
         {
-            DEBUG_OPENSCREEN(dprintf("OpenScreen: Set last 4 colors\n"));
+	    ULONG lastcol = ((ns.Depth > 8) ? 256 : (1 << ns.Depth)) - 4;
 
+            DEBUG_OPENSCREEN(dprintf("OpenScreen: Set last 4 colors (starting from %u)\n", lastcol));
             for (k = 0; k < 4; ++k)
             {
-                DEBUG_OPENSCREEN(dprintf("OpenScreen: SetRGB32 Viewport 0x%p Index %ld R 0x%lx G 0x%lx B 0x%lx\n",
+                DEBUG_OPENSCREEN(dprintf("OpenScreen: Viewport 0x%p Index %u R 0x%08X G 0x%08X B 0x%08X\n",
                                          &screen->Screen.ViewPort,
-                                         numcolors - k - 1, p[k+4].red, p[k+4].green, p[k+4].blue));
+                                         k + lastcol, p[k+4].red, p[k+4].green, p[k+4].blue));
 
-                ObtainPen(screen->Screen.ViewPort.ColorMap,
-                          numcolors - 4 + k,
-                          p[k+4].red,
-                          p[k+4].green,
-                          p[k+4].blue,
-                          0);
+		if (k + lastcol < numcolors)
+                    ObtainPen(screen->Screen.ViewPort.ColorMap, k + lastcol,
+			      p[k+4].red, p[k+4].green, p[k+4].blue, 0);
+		else
+		    /* Can't be allocated, but can still be set. */
+		    SetRGB32(&screen->Screen.ViewPort, k + lastcol,
+			     p[k+4].red, p[k+4].green, p[k+4].blue);
             }
         }
 	/* Allocate pens for mouse pointer sprite only on LUT screens. On hi- and
@@ -988,47 +1016,22 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 	if (ns.Depth < 9)
 #endif
 	{
-	    UWORD c = screen->Screen.ViewPort.ColorMap->SpriteBase_Even;
-
-	    /* Translate bank number and offset to color number - see graphics/getcolormap.c */
-	    c = (c << 4) | (c >> 8);
 	    DEBUG_OPENSCREEN(dprintf("OpenScreen: Obtain Mousepointer colors\n"));
             /* Allocate pens for the mouse pointer */
             for (k = 1; k < 4; ++k)
             {
-    	        DEBUG_OPENSCREEN(dprintf("OpenScreen: ColorMap 0x%lx Pen %ld R 0x%lx G 0x%lx B 0x%lx\n",
-                                         screen->Screen.ViewPort.ColorMap,
-                                         k + c,
+    	        DEBUG_OPENSCREEN(dprintf("OpenScreen: ViewPort 0x%p Index %d R 0x%08X G 0x%08X B 0x%08X\n",
+                                         &screen->Screen.ViewPort,
+                                         k + spritebase,
 					 p[k+7].red,
 					 p[k+7].green,
 					 p[k+7].blue));
-                ObtainPen(screen->Screen.ViewPort.ColorMap,
-                          k + c,
-                          p[k+7].red,
-			  p[k+7].green,
-			  p[k+7].blue,
-                          0);
-/* The following piece is left for reference only. It came from
-   classic Amiga where mouse pointer could use additional DAC registers
-   even for screens with small depth.
-            if (k + 17 < numcolors)
-            {
-                ObtainPen(screen->Screen.ViewPort.ColorMap,
-                          k + 17,
-                          (*q >> 8) * 0x11111111,
-                          ((*q >> 4) & 0xf) * 0x11111111,
-                          (*q & 0xf) * 0x11111111,
-                          PEN_EXCLUSIVE);
-            }
-            else
-            {
-                ** Can't be allocated, but can still be set. **
-                SetRGB32(&screen->Screen.ViewPort,
-                         k + 17,
-                         (*q >> 8) * 0x11111111,
-                         ((*q >> 4) & 0xf) * 0x11111111,
-                         (*q & 0xf) * 0x11111111);
-            }*/
+		if (k + spritebase < numcolors)
+                    ObtainPen(screen->Screen.ViewPort.ColorMap, k + spritebase,
+			      p[k+7].red, p[k+7].green, p[k+7].blue, 0);
+		else
+		    SetRGB32(&screen->Screen.ViewPort, k + spritebase,
+			     p[k+4].red, p[k+4].green, p[k+4].blue);
 	    }
         }
 
@@ -1683,12 +1686,12 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 #endif
 	if (draggable)
 	    screen->SpecialFlags |= SF_Draggable;
-	DEBUG_OPENSCREEN(bug("[OpenScreen] Special flags: 0x%04X\n", screen->SpecialFlags));
+	DEBUG_OPENSCREEN(bug("OpenScreen: Special flags: 0x%04X\n", screen->SpecialFlags));
 
         //jDc: ALL screens MUST have BarLayer!
         CreateScreenBar(&screen->Screen, IntuitionBase);
 
-        D(bug("[intuition] OpenScreen: ScreenBar = %p\n", screen->Screen.BarLayer));
+        DEBUG_OPENSCREEN(bug("OpenScreen: ScreenBar = %p\n", screen->Screen.BarLayer));
 
         if (!screen->Screen.BarLayer) ok = FALSE;
 
