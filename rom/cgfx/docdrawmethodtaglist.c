@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -45,10 +45,8 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    extern void aros_print_not_implemented (char *);
 
-    //aros_print_not_implemented ("DoCDrawMethodTagList");
-    driver_DoCDrawMethodTagList(hook, rp, tags, CyberGfxBase);    
+    driver_DoCDrawMethodTagList(hook, rp, tags, GetCGFXBase(CyberGfxBase));    
 
     AROS_LIBFUNC_EXIT
 } /* DoCDrawMethodTagList */

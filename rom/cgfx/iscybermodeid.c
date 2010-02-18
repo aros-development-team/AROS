@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -46,7 +46,7 @@
 {
     AROS_LIBFUNC_INIT
     
-    return driver_IsCyberModeID(modeID, GfxBase);
+    return driver_IsCyberModeID(modeID, GetCGFXBase(CyberGfxBase));
 
     AROS_LIBFUNC_EXIT
 } /* IsCyberModeID */

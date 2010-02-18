@@ -27,7 +27,7 @@ FUNCS := \
 	writelutpixelarray	\
 	writepixelarray		\
 	writepixelarrayalpha	\
-	writergbpixel		
+	writergbpixel
 
 #MM- kernel-cgfx : linklibs
 #MM- kernel-cgfx-kobj : linklibs
@@ -38,7 +38,8 @@ FUNCS := \
 
 %build_module mmake=kernel-cgfx \
   modname=cybergraphics modtype=library \
-  files=$(FUNCS)
+  files="$(FUNCS) graphics_driver dispinfo gfxfuncsupport cybergraphics_init" \
+  uselibs="hiddgraphicsstubs rom oop"
 
 #MM includes-copy
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -62,7 +62,7 @@
 	, DestX, DestY
 	, SizeX, SizeY
 	, CTabFormat
-	, GfxBase);
+	, GetCGFXBase(CyberGfxBase));
 
     AROS_LIBFUNC_EXIT
 } /* WriteLUTPixelArray */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -50,7 +50,7 @@
 {
     AROS_LIBFUNC_INIT
     
-    return driver_MovePixelArray(SrcX, SrcY, RastPort, DstX, DstY, SizeX, SizeY, GfxBase);
+    return driver_MovePixelArray(SrcX, SrcY, RastPort, DstX, DstY, SizeX, SizeY, GetCGFXBase(CyberGfxBase));
 
     AROS_LIBFUNC_EXIT
 } /* MovePixelArray */
