@@ -111,19 +111,6 @@ static struct OOP_ABDescr attrbases[] =
 #define PRINT_MONO_DC(dc, startx, starty, width, height)
 #endif
 
-#define REFRESH(left, top, right, bottom)					  \
-if (data->window) {								  \
-    RECT r = {									  \
-        left + data->bm_left,							  \
-	top + data->bm_top,							  \
-        right + data->bm_left,							  \
-        bottom + data->bm_top							  \
-    };										  \
-										  \
-    USERCALL(RedrawWindow, data->window, &r, NULL, RDW_INVALIDATE|RDW_UPDATENOW); \
-}										  \
-Permit()
-
 /****************************************************************************************/
 
 VOID GDIBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
@@ -134,7 +121,7 @@ VOID GDIBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     Forbid();
     GDICALL(SetROP2, data->dc, R2_COPYPEN);
     GDICALL(SetPixel, data->dc, msg->x, msg->y, msg->pixel);
-    REFRESH(msg->x, msg->y, msg->x+1, msg->y+1);
+    Permit();
     CHECK_STACK
 }
 
@@ -168,7 +155,7 @@ static void FillRect(struct bitmap_data *data, ULONG col, ULONG mode, ULONG minX
         GDICALL(SelectObject, data->dc, orig_br);
         GDICALL(DeleteObject, br);
     }
-    /* Note the absence of Permit() because we are supposed to REFRESH() after drawing */
+    Permit();
 }
 
 /* Table of raster operations (ROPs) corresponding to AROS GC drawmodes */
@@ -199,7 +186,6 @@ VOID GDIBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 
     D(bug("[GDI] hidd.bitmap.gdibitmap::FillRect(0x%p, %d,%d,%d,%d)\n", o, msg->minX, msg->minY, msg->maxX, msg->maxY));
     FillRect(data, col, mode, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
-    REFRESH(msg->minX, msg->minY, msg->maxX + 1, msg->maxY + 1);
     CHECK_STACK
 }
 
@@ -237,7 +223,7 @@ ULONG GDIBM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_B
     Forbid();
     GDICALL(SetROP2, data->dc, mode);
     GDICALL(SetPixel, data->dc, msg->x, msg->y, col);
-    REFRESH(msg->x, msg->y, msg->x+1, msg->y+1);
+    Permit();
     CHECK_STACK
     return 0;    
 }
@@ -290,8 +276,8 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     	bitmapinfo.biWidth = msg->width;
     	bitmapinfo.biHeight = -msg->height; /* Minus here means top-down bitmap */
     	Forbid();
-        GDICALL(StretchDIBits, data->dc, msg->x, msg->y, msg->width, msg->height, 0, 0, msg->width, msg->height, buf, &bitmapinfo, DIB_RGB_COLORS, SRCCOPY);
-        REFRESH(msg->x, msg->y, msg->x + msg->width, msg->y + msg->height);
+        GDICALL(StretchDIBits, data->dc, msg->x, msg->y, msg->width, msg->height, 0, 0, msg->width, msg->height, buf, (BITMAPINFO *)&bitmapinfo, DIB_RGB_COLORS, SRCCOPY);
+        Permit();
         FreeMem(buf, bufsize);
     }
     CHECK_STACK
@@ -371,7 +357,7 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
                     GDICALL(BitBlt, tmp_dc, 0, 0, msg->width, msg->height, data->dc, msg->x, msg->y, SRCCOPY);
                     bitmapinfo.biWidth = msg->width;
     		    bitmapinfo.biHeight = -msg->height; /* Minus here means top-down bitmap */
-        	    GDICALL(GetDIBits, tmp_dc, tmp_bitmap, 0, msg->height, buf, &bitmapinfo, DIB_RGB_COLORS);
+        	    GDICALL(GetDIBits, tmp_dc, tmp_bitmap, 0, msg->height, buf, (BITMAPINFO *)&bitmapinfo, DIB_RGB_COLORS);
         	    GDICALL(SelectObject, tmp_dc, dc_bitmap);
             	}
             	GDICALL(DeleteObject, tmp_bitmap);
@@ -507,7 +493,7 @@ VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
 
 		    bitmapinfo.bmiHeader.biWidth = planar_mask.BytesPerRow * 8;
 		    bitmapinfo.bmiHeader.biHeight = -planar_mask.Rows; /* Minus here means top-down bitmap */
-		    GDICALL(StretchDIBits, mask_dc, 0, 0, msg->width, msg->height, msg->srcX, msg->srcY, msg->width, msg->height, planar_mask.Planes[0], &bitmapinfo, DIB_PAL_COLORS, SRCINVERT);
+		    GDICALL(StretchDIBits, mask_dc, 0, 0, msg->width, msg->height, msg->srcX, msg->srcY, msg->width, msg->height, planar_mask.Planes[0], (BITMAPINFO *)&bitmapinfo, DIB_PAL_COLORS, SRCINVERT);
 		    PRINT_MONO_DC(mask_dc, 0, 0, msg->width, msg->height);
 		}
 		if (cemd & vHidd_GC_ColExp_Opaque) {
@@ -569,7 +555,7 @@ VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
 	}
 	GDICALL(DeleteDC, mask_dc);
     }
-    REFRESH(msg->destX, msg->destY, msg->destX + msg->width, msg->destY + msg->height);
+    Permit();
     CHECK_STACK
 }
 
@@ -812,7 +798,26 @@ VOID GDIBM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
     OOP_GetAttr(o, aHidd_BitMap_Height, &height);
     
     FillRect(data, GC_BG(msg->gc), PATCOPY, 0, 0, width, height);
-    REFRESH(0, 0, width, height);
+}
+
+/****************************************************************************************/
+
+VOID GDIBM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
+{
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
+
+    Forbid();
+    if (data->window) {
+        RECT r = {
+            data->bm_left + msg->x,
+	    data->bm_top  + msg->y,
+            data->bm_left + msg->x + msg->width,
+            data->bm_top  + msg->y + msg->height
+        };
+
+        USERCALL(RedrawWindow, data->window, &r, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
+    }
+    Permit();
 }
 
 /****************************************************************************************/

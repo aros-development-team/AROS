@@ -480,7 +480,6 @@ extern ULONG Copy_DrawModeTable[];
 VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     APTR src = NULL, dest = NULL;
-    APTR wnd;
     ULONG drmd;
     struct gfx_data *data;
     IPTR xoffset, yoffset;
@@ -507,19 +506,7 @@ VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 
     drmd = GC_DRMD(msg->gc);
     Forbid();
-    OOP_GetAttr(msg->dest, aHidd_GDIBitMap_Window, (IPTR *)&wnd);
     GDICALL(BitBlt, dest, msg->destX, msg->destY, msg->width, msg->height, src, msg->srcX, msg->srcY, Copy_DrawModeTable[drmd]);
-    if (wnd) {
-        RECT r = {
-	    msg->destX + xoffset,
-	    msg->destY + yoffset,
-	    msg->destX + xoffset + msg->width,
-	    msg->destY + yoffset + msg->height
-	};
-
-        D(bug("[GDI] CopyBox(): Refresh\n"));
-        USERCALL(RedrawWindow, wnd, &r, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
-    }
     Permit();
     
 }
