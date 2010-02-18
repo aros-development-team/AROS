@@ -50,7 +50,7 @@
 {
     AROS_LIBFUNC_INIT
     
-    return driver_ExtractColor(RastPort, SingleMap, Colour, sX, sY, Width, Height, GfxBase);
+    return driver_ExtractColor(RastPort, SingleMap, Colour, sX, sY, Width, Height, GetCGFXBase(CyberGfxBase));
 
     AROS_LIBFUNC_EXIT
 } /* ExtractColor */

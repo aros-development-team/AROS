@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$	$Log
 
     Desc: Graphics function Text()
@@ -332,20 +332,6 @@ void BltTemplateBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
 
 /***************************************************************************/
 
-static struct Library *CyberGfxBase = NULL;
-
-static void AROS_SET_LIBFUNC(CGFX_Expunge, LIBBASETYPE, LIBBASE)
-{
-    if (CyberGfxBase != NULL)
-    {
-	CloseLibrary(CyberGfxBase);
-	CyberGfxBase = NULL;
-    }
-}
-
-
-/***************************************************************************/
-
 void BltTemplateAlphaBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
     	    	    	       struct GfxBase *GfxBase)
 {
@@ -354,12 +340,11 @@ void BltTemplateAlphaBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len
     WORD    	    	 raswidth, raswidth_bpr, rasheight, x, y, gx;
     UBYTE   	    	*raster;
     BOOL    	    	 is_bold, is_italic;
+    struct Library	*CyberGfxBase;
 
+    CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
     if (!CyberGfxBase)
-    {
-    	CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
-	if (!CyberGfxBase) return;
-    }
+        return;
     
     TextExtent(rp, text, len, &te);
     
@@ -520,6 +505,7 @@ void BltTemplateAlphaBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len
     	FreeVec(raster);
 	
     } /* if ((raster = AllocVec(raswidth * rasheight, MEMF_CLEAR))) */
+    CloseLibrary(CyberGfxBase);
     
     Move(rp, rp->cp_x + te.te_Width, rp->cp_y);
     
