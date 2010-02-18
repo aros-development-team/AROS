@@ -1158,11 +1158,6 @@ BOOL GFX__Hidd_Gfx__SetMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetMo
 static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm,
     	    	    	       OOP_Object *dst_bm, OOP_Object *dims_bm)
 {
-    struct TagItem  	    gctags[] =
-    {
-    	{ aHidd_GC_DrawMode , vHidd_GC_DrawMode_Copy},
-	{ TAG_DONE  	    , 0UL   	    	    }
-    };
     struct HIDDGraphicsData *data;
     IPTR    	    	    width, height;
     ULONG   	    	    i;
@@ -1188,8 +1183,6 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
 	HIDD_BM_SetColors(dst_bm, &col, i, 1);
     }    
 
-    
-    OOP_SetAttrs(data->gc, gctags);
     HIDD_Gfx_CopyBox(o
     	, src_bm
 	, 0, 0
@@ -1207,6 +1200,12 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
     struct HIDDGraphicsData *data;
     OOP_Object      	    *bm;
     IPTR    	    	    displayable;
+    struct TagItem  	    gctags[] =
+    {
+    	{ aHidd_GC_DrawMode  , vHidd_GC_DrawMode_Copy},
+	{ aHidd_GC_Background, 0		     },
+	{ TAG_DONE  	     , 0UL   	    	     }
+    };
     
     data = OOP_INST_DATA(cl, o);
     bm = msg->bitMap;
@@ -1223,23 +1222,22 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 	
     if (NULL == data->framebuffer)
 	return NULL;
-	
+
+    OOP_SetAttrs(data->gc, gctags);
     if (NULL != data->shownbm && (msg->flags & fHidd_Gfx_Show_CopyBack))
     {
     	/* Copy the framebuffer data back into the old shown bitmap */
 	copy_bm_and_colmap(cl, o, data->framebuffer, data->shownbm, data->shownbm);
     }
 
+    /* Always clear the framebuffer first because it could previously
+       contain a larger image */
+    HIDD_BM_Clear(data->framebuffer, data->gc);
     if (bm)
-    {
     	copy_bm_and_colmap(cl, o, bm, data->framebuffer, bm);
-    }
-    else
-    {
-    	#warning should clear framebuffer to black
-    }
+
     data->shownbm = bm;
-    
+
     return data->framebuffer;
 }
 
