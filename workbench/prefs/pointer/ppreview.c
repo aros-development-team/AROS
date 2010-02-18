@@ -403,7 +403,9 @@ IPTR PPreview__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         if (data->pprv_set_hspot)
         {
             D(bug("[Pointer/Draw] Draw hotspot at %d %d\n", drawoffsetx + data->pprv_hspot_x, drawoffsety + data->pprv_hspot_y));
-            SetAPen(_rp(obj), 1);
+	    /* I experimented with inversion, it looks better IMHO - sonic
+            SetAPen(_rp(obj), 1); */
+	    SetDrMd(_rp(obj), COMPLEMENT);
             if (data->pprv_hspot_x < drawwidth)
             {
                 Move(_rp(obj), drawoffsetx + data->pprv_hspot_x, drawoffsety);
@@ -414,6 +416,8 @@ IPTR PPreview__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
                 Move(_rp(obj), drawoffsetx, drawoffsety + data->pprv_hspot_y);
                 Draw(_rp(obj), drawoffsetx + drawwidth, drawoffsety + data->pprv_hspot_y);
             }
+	    /* Reset drawmode back to JAM2, otherwise shit happens */
+	    SetDrMd(_rp(obj), JAM2);
         }
     }
 
