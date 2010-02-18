@@ -1,6 +1,7 @@
 /*
  * tap - TUN/TAP network driver for AROS
  * Copyright (c) 2007 Robert Norris. All rights reserved.
+ * Copyright (c) 2010 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -23,7 +24,7 @@ static void tap_receive(struct tap_unit *unit) {
     D(bug("[tap] [io:%d] got a packet\n", unit->num));
 
     /* read the packet */
-    nread = Hidd_UnixIO_ReadFile(unixio, unit->fd, buf, ETH_FRAME_LEN, &ioerr);
+    nread = Hidd_HostIO_ReadFile(hostio, unit->fd, buf, ETH_FRAME_LEN, &ioerr);
     if (ioerr != 0) {
         D(bug("[tap] [io:%d] read failed (%d)\n", unit->num, ioerr));
         return;
@@ -222,7 +223,7 @@ static void tap_send(struct tap_unit *unit) {
         D(bug("[tap] [io:%d] packet type: 0x%04x\n", unit->num, AROS_BE2WORD(eth->h_proto)));
 
         /* got a viable buffer, send it out */
-        nwritten = Hidd_UnixIO_WriteFile(unixio, unit->fd, buf, packet_length, &ioerr);
+        nwritten = Hidd_HostIO_WriteFile(hostio, unit->fd, buf, packet_length, &ioerr);
         if (nwritten < 0) {
             D(bug("[tap] [io:%d] write failed (%d)\n", unit->num, ioerr));
             req->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
@@ -267,13 +268,13 @@ AROS_UFH3(void, tap_iotask,
     struct MsgPort *ioport, *reply_port;
     struct Message *msg;
     ULONG write_signal_mask, abort_signal_mask, signal_mask, signaled;
-    struct uioMessage *iomsg;
+    struct hioMessage *iomsg;
     ULONG mode;
     BOOL write_enabled = FALSE;
 
     D(bug("[tap] [io:%d] iotask starting up\n", unit->num));
 
-    /* create the port for unixio to talk to us through */
+    /* create the port for hostio to talk to us through */
     ioport = CreateMsgPort();
 
     /* make some signals, one for them to ask for writes, and one for them to
@@ -288,7 +289,7 @@ AROS_UFH3(void, tap_iotask,
 
     /* start waiting for read events */
     /* XXX check for failure */
-    Hidd_UnixIO_AsyncIO(unixio, unit->fd, vHidd_UnixIO_Terminal, ioport, vHidd_UnixIO_Read, SysBase);
+    Hidd_HostIO_AsyncIO(hostio, unit->fd, vHidd_HostIO_Terminal, ioport, vHidd_HostIO_Read, SysBase);
 
     reply_port = CreateMsgPort();
     msg = (struct Message *) AllocVec(sizeof(struct Message), MEMF_PUBLIC | MEMF_CLEAR);
@@ -311,7 +312,7 @@ AROS_UFH3(void, tap_iotask,
             if (signaled & write_signal_mask) {
                 D(bug("[tap] [io:%d] write requested, enabling\n", unit->num));
                 if (! write_enabled) {
-                    Hidd_UnixIO_AsyncIO(unixio, unit->fd, vHidd_UnixIO_Terminal, ioport, vHidd_UnixIO_Write, SysBase);
+                    Hidd_HostIO_AsyncIO(hostio, unit->fd, vHidd_HostIO_Terminal, ioport, vHidd_HostIO_Write, SysBase);
                     write_enabled = TRUE;
                 }
 
@@ -327,18 +328,18 @@ AROS_UFH3(void, tap_iotask,
         if (IsListEmpty(&(ioport->mp_MsgList)))
             continue;
 
-        iomsg = (struct uioMessage *) GetMsg(ioport);
+        iomsg = (struct hioMessage *) GetMsg(ioport);
         mode = iomsg->mode;
-        FreeMem(iomsg, sizeof(struct uioMessage));
+        FreeMem(iomsg, sizeof(struct hioMessage));
 
         D(bug("[tap] [io:%d] iotask signaled\n", unit->num));
 
-        if (mode & vHidd_UnixIO_Read) {
+        if (mode & vHidd_HostIO_Read) {
             D(bug("[tap] [io:%d] ready for read\n", unit->num));
             tap_receive(unit);
         }
 
-        else if (mode & vHidd_UnixIO_Write) {
+        else if (mode & vHidd_HostIO_Write) {
             D(bug("[tap] [io:%d] ready for write\n", unit->num));
             tap_send(unit);
 
@@ -354,20 +355,20 @@ AROS_UFH3(void, tap_iotask,
 
         D(bug("[tap] [io:%d] resetting async events\n", unit->num));
 
-        /* reset unixio to make sure we get more events. this is horribly
-         * inefficient, but it'll do for now until unixio gets a little love */
+        /* reset hostio to make sure we get more events. this is horribly
+         * inefficient, but it'll do for now until hostio gets a little love */
         /* XXX check for failure */
-        Hidd_UnixIO_AbortAsyncIO(unixio, unit->fd, SysBase);
-        Hidd_UnixIO_AsyncIO(unixio, unit->fd, vHidd_UnixIO_Terminal, ioport, vHidd_UnixIO_Read, SysBase);
+        Hidd_HostIO_AbortAsyncIO(hostio, unit->fd, SysBase);
+        Hidd_HostIO_AsyncIO(hostio, unit->fd, vHidd_HostIO_Terminal, ioport, vHidd_HostIO_Read, SysBase);
         if (write_enabled)
-            Hidd_UnixIO_AsyncIO(unixio, unit->fd, vHidd_UnixIO_Terminal, ioport, vHidd_UnixIO_Write, SysBase);
+            Hidd_HostIO_AsyncIO(hostio, unit->fd, vHidd_HostIO_Terminal, ioport, vHidd_HostIO_Write, SysBase);
 
         D(bug("[tap] [io:%d] event processed, replying and looping\n", unit->num));
     }
 
     D(bug("[tap] [io:%d] iotask exiting\n", unit->num));
 
-    Hidd_UnixIO_AbortAsyncIO(unixio, unit->fd, SysBase);
+    Hidd_HostIO_AbortAsyncIO(hostio, unit->fd, SysBase);
 
     DeleteMsgPort(ioport);
 
