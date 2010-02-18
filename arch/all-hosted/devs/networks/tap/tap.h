@@ -29,7 +29,7 @@
 #include <devices/sana2specialstats.h>
 #include <devices/newstyle.h>
 
-#include <hidd/unixio.h>
+#include <hidd/hostio.h>
 
 #include <proto/oop.h>
 #include <proto/exec.h>
@@ -45,18 +45,12 @@
 #include <sys/ioctl.h>
 
 #include <netinet/in.h>
-#include <linux/if.h>
-#include <linux/if_tun.h>
-#include <linux/if_ether.h>
 
 #include <stdio.h>
-
-#undef timeval
+#include <stdlib.h>
 
 #include LC_LIBDEFS_FILE
 
-/* explicitly prototype rand() so we don't have pull in stdlib.h */
-extern int rand(void);
 
 
 #define MAX_TAP_UNITS (4)
@@ -67,7 +61,7 @@ extern int rand(void);
 #define TAP_TASK_FORMAT "TAP IO: unit %d"
 
 
-extern HIDD *unixio;
+extern HIDD hostio;
 
 struct tap_opener {
     struct MinNode              node;

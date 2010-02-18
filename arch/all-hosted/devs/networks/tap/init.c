@@ -1,6 +1,7 @@
 /*
  * tap - TUN/TAP network driver for AROS
  * Copyright (c) 2007 Robert Norris. All rights reserved.
+ * Copyright (c) 2010 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -10,16 +11,16 @@
 
 #include <proto/alib.h>
 
-HIDD    *unixio = NULL;
+OOP_Object *hostio = NULL;
 
 static int GM_UNIQUENAME(init)(LIBBASETYPEPTR LIBBASE) {
     int i;
 
     D(bug("[tap] in init\n"));
 
-    unixio = (HIDD *) OOP_NewObject(NULL, CLID_Hidd_UnixIO, NULL);
-    if (unixio == NULL) {
-        kprintf("[tap] couldn't create unixio object\n");
+    hostio = OOP_NewObject(NULL, CLID_Hidd_HostIO, NULL);
+    if (hostio == NULL) {
+        kprintf("[tap] couldn't create hostio object\n");
         return FALSE;
     }
 
@@ -34,9 +35,9 @@ static int GM_UNIQUENAME(expunge)(LIBBASETYPEPTR LIBBASE) {
 
     /* XXX kill the tasks and free memory, just in case */
 
-    if (unixio != NULL) {
-        OOP_DisposeObject((OOP_Object *) unixio);
-        unixio = NULL;
+    if (hostio != NULL) {
+        OOP_DisposeObject((OOP_Object *) hostio);
+        hostio = NULL;
     }
 
     return TRUE;
@@ -119,7 +120,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
         D(bug("[tap] [%d] refcount is 0, opening device\n", unit->num));
 
         /* open the tun/tap device */
-        fd = Hidd_UnixIO_OpenFile(unixio, TAP_DEV_NODE, O_RDWR, 0, &ioerr);
+        fd = Hidd_HostIO_OpenFile(hostio, TAP_DEV_NODE, O_RDWR, 0, &ioerr);
         if (fd < 0) {
             kprintf("[tap] couldn't open '" TAP_DEV_NODE "' (%d)\n", ioerr);
             error = IOERR_OPENFAIL;
@@ -133,7 +134,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
             ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
             strncpy(ifr.ifr_name, unit->name, IFNAMSIZ);
 
-            if ((Hidd_UnixIO_IOControlFile(unixio, fd, TUNSETIFF, &ifr, &ioerr)) < 0) {
+            if ((Hidd_HostIO_IOControlFile(hostio, fd, TUNSETIFF, &ifr, &ioerr)) < 0) {
                 kprintf("[tap] couldn't perform TUNSETIFF on TAP device (%d)\n", ioerr);
                 error = IOERR_OPENFAIL;
             }
@@ -235,7 +236,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
 
             /* close the nic */
             if (unit->fd > 0)
-                Hidd_UnixIO_CloseFile(unixio, unit->fd, NULL);
+                Hidd_HostIO_CloseFile(hostio, unit->fd, NULL);
 
             /* fastest way to kill it */
             memset(unit, 0, sizeof(struct tap_unit));
@@ -280,7 +281,7 @@ static int GM_UNIQUENAME(close)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req) 
 
         /* close the nic */
         if (unit->fd > 0)
-            Hidd_UnixIO_CloseFile(unixio, unit->fd, NULL);
+            Hidd_HostIO_CloseFile(hostio, unit->fd, NULL);
 
         /* XXX return outstanding requests? */
 
