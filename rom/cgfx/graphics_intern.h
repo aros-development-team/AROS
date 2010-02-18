@@ -17,7 +17,7 @@ void ReleaseDriverData(struct RastPort *rp, struct GfxBase *GfxBase);
 LONG fillrect_pendrmd(struct RastPort *tp, LONG x1, LONG y1, LONG x2, LONG y2,
     	    	      HIDDT_Pixel pix, HIDDT_DrawMode drmd, BOOL do_update, struct GfxBase *GfxBase);
 
-ULONG do_pixel_func(struct RastPort *rp, LONG x, LONG y,
+ULONG DoPixelFunc(struct RastPort *rp, LONG x, LONG y,
     	    	    LONG (*render_func)(APTR, OOP_Object *, OOP_Object *, LONG, LONG, struct GfxBase *),
 		    APTR funcdata, BOOL do_update, struct GfxBase *GfxBase);
 
@@ -36,6 +36,6 @@ ULONG DoRenderFunc(struct RastPort *rp, Point *src, struct Rectangle *rr,
 
 #define FillRectPenDrMd(rp, x1, y1, x2, y2, pix, drmd, update) fillrect_pendrmd(rp, x1, y1, x2, y2, pix, drmd, update, GfxBase)
 
-#define DoPixelFunc(rp, x, y, func, data, update) do_pixel_func(rp, x, y, func, data, update, GfxBase)
+#define DoPixelFunc(rp, x, y, func, data, update) DoPixelFunc(rp, x, y, func, data, update, GfxBase)
 
 #define DoRenderFunc(rp, src, rr, func, data, update) DoRenderFunc(rp, src, rr, func, data, update, GfxBase)
