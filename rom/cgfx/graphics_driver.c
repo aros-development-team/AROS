@@ -398,8 +398,8 @@ static ULONG dm_render(APTR dmr_data
 	bytesperrow = width * bytesperpixel;
 
 
-kprintf("width %d bytesperrow %d bytesperpixel %d\n", width, bytesperrow, bytesperpixel);
-kprintf(" colormodel %d\n", msg->colormodel);
+	D(kprintf("width %d bytesperrow %d bytesperpixel %d\n", width, bytesperrow, bytesperpixel));
+	D(kprintf(" colormodel %d\n", msg->colormodel));
 
 	if (PIXELBUF_SIZE < bytesperrow) {
 	    D(bug("!!! NOT ENOUGH SPACE IN TEMP BUFFER FOR A SINGLE LINE IN DoCDrawMethodTagList() !!!\n"));
@@ -656,6 +656,7 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
     	/* RECTFMT_BGRA32 on vHidd_StdPixFmt_BGR032 bitmap ==> use vHidd_StdPixFmt_BGR032 */
     	/* RECTFMT_RGBA32 on vHidd_StdPixFmt_RGB032 bitmap ==> use vHidd_StdPixFmt_RGB032 */
     	/* RECTFMT_ABGR32 on vHidd_StdPixFmt_0BGR32 bitmap ==> use vHidd_StdPixFmt_0BGR32 */
+	OOP_Object *gfxhidd;
 	
     	if (morphfmt_hidd != 0)
 	{
@@ -663,9 +664,10 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 
 	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, (IPTR *)&stdpf);	    
 	    if (stdpf == morphfmt_hidd) srcfmt_hidd = morphfmt_hidd;
-    }
+        }
 
-    	pf = HIDD_Gfx_GetPixFmt(GetGfxHidd(), srcfmt_hidd);
+	OOP_GetAttr(HIDD_BM_OBJ(rp->BitMap), aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+    	pf = HIDD_Gfx_GetPixFmt(gfxhidd, srcfmt_hidd);
     }
         
     OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bppix);
@@ -732,18 +734,11 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     IPTR bppix;
     
     LONG pixread = 0;
-    IPTR old_drmd;
-    OOP_Object *gc;
+    BYTE old_drmd;
     
     struct Rectangle rr;
     struct rpa_render_data rpard;
 
-    struct TagItem gc_tags[] =
-    {
-	{ aHidd_GC_DrawMode , vHidd_GC_DrawMode_Copy},
-	{ TAG_DONE  	          	    	    }
-    };
-    
     /* This is cybergraphx. We only work wih HIDD bitmaps */
     if (!IS_HIDD_BM(rp->BitMap))
     {
@@ -751,14 +746,9 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     	return 0;
     }
     
-    gc = GetDriverGC(rp);
-    if (!gc)
-        return 0;
-
-   /* Preserve old drawmode */
-    OOP_GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
-    OOP_SetAttrs(gc, gc_tags);
-    
+    /* Preserve old drawmode */
+    old_drmd = rp->DrawMode;
+    SetDrMd(rp, JAM2);
     
     switch (dstformat)
     {
@@ -803,6 +793,7 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     	/* RECTFMT_BGRA32 on vHidd_StdPixFmt_BGR032 bitmap ==> use vHidd_StdPixFmt_BGR032 */
     	/* RECTFMT_RGBA32 on vHidd_StdPixFmt_RGB032 bitmap ==> use vHidd_StdPixFmt_RGB032 */
     	/* RECTFMT_ABGR32 on vHidd_StdPixFmt_0BGR32 bitmap ==> use vHidd_StdPixFmt_0BGR32 */
+	OOP_Object *gfxhidd;
 	
 	if (morphfmt_hidd != 0)
 	{
@@ -810,9 +801,10 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
 
 	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, (IPTR *)&stdpf);	    
 	    if (stdpf == morphfmt_hidd) dstfmt_hidd = morphfmt_hidd;
-    }
-       
-    	pf = HIDD_Gfx_GetPixFmt(GetGfxHidd(), dstfmt_hidd);
+        }
+
+        OOP_GetAttr(HIDD_BM_OBJ(rp->BitMap), aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+    	pf = HIDD_Gfx_GetPixFmt(gfxhidd, dstfmt_hidd);
     }
     
     OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bppix);
@@ -830,12 +822,9 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     rr.MaxY = srcy + height - 1;
     
     pixread = DoRenderFunc(rp, NULL, &rr, rpa_render, &rpard, FALSE);
-    
-    /* restore old gc values */
-    gc_tags[0].ti_Data = (IPTR)old_drmd;
-    OOP_SetAttrs(gc, gc_tags);
-    
-    ReleaseDriverData(rp);
+
+    /* restore old drawmode */
+    SetDrMd(rp, old_drmd);
 
     return pixread;
 }
@@ -1079,6 +1068,7 @@ VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct 
 {
     struct TagItem *tag, *tstate;
     ULONG dpmslevel = 0;
+    OOP_Object *gfxhidd;
     
     struct TagItem htags[] =
     {
@@ -1150,7 +1140,8 @@ VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct 
     	htags[0].ti_Tag = TAG_IGNORE;
     }
     
-    OOP_SetAttrs(GetGfxHidd(), htags);
+    OOP_GetAttr(HIDD_BM_OBJ(vp->RasInfo->BitMap), aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+    OOP_SetAttrs(gfxhidd, htags);
     
     return;
 }
@@ -1224,7 +1215,6 @@ VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct 
 	return;
     }
 
-	
     /* Get the bitmap std pixfmt */    
     OOP_GetAttr(HIDD_BM_OBJ(rp->BitMap), aHidd_BitMap_PixFmt, (IPTR *)&dmrd.pf);
     OOP_GetAttr(dmrd.pf, aHidd_PixFmt_StdPixFmt, &dmrd.stdpf);
