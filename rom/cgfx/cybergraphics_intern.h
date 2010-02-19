@@ -51,11 +51,11 @@ struct IntCGFXBase
 
 #define GetCGFXBase(base) ((struct IntCGFXBase *)base)
 
-#define __IHidd_BitMap      CyberGfxBase->hiddBitMapAttrBase
-#define __IHidd_GC          CyberGfxBase->hiddGCAttrBase
-#define __IHidd_Sync        CyberGfxBase->hiddSyncAttrBase
-#define __IHidd_PixFmt      CyberGfxBase->hiddPixFmtAttrBase
-#define __IHidd_Gfx         CyberGfxBase->hiddGfxAttrBase
+#define __IHidd_BitMap      GetCGFXBase(CyberGfxBase)->hiddBitMapAttrBase
+#define __IHidd_GC          GetCGFXBase(CyberGfxBase)->hiddGCAttrBase
+#define __IHidd_Sync        GetCGFXBase(CyberGfxBase)->hiddSyncAttrBase
+#define __IHidd_PixFmt      GetCGFXBase(CyberGfxBase)->hiddPixFmtAttrBase
+#define __IHidd_Gfx         GetCGFXBase(CyberGfxBase)->hiddGfxAttrBase
 
 /* Pixelbuffer, the same as in graphics.library */
 

@@ -5,6 +5,9 @@
     Desc:
     Lang: english
 */
+
+#include <cybergraphx/cybergraphics.h>
+#include <proto/exec.h>
 #include <proto/graphics.h>
 
 #include "cybergraphics_intern.h"
@@ -45,8 +48,15 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    driver_FreeCModeList(modeList, GetCGFXBase(CyberGfxBase));
+
+    struct CyberModeNode *node, *safe;
+
+    ForeachNodeSafe(modeList, node, safe) {
+	Remove((struct Node *)node);
+	FreeMem(node, sizeof (struct CyberModeNode));
+    }
+
+    FreeMem(modeList, sizeof (struct List));
 
     AROS_LIBFUNC_EXIT
 } /* FreeCModeList */

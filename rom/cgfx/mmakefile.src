@@ -38,7 +38,7 @@ FUNCS := \
 
 %build_module mmake=kernel-cgfx \
   modname=cybergraphics modtype=library \
-  files="$(FUNCS) graphics_driver dispinfo gfxfuncsupport cybergraphics_init" \
+  files="$(FUNCS) graphics_driver gfxfuncsupport cybergraphics_init" \
   uselibs="hiddgraphicsstubs rom oop"
 
 #MM includes-copy

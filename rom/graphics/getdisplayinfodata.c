@@ -188,8 +188,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    di->PixelSpeed = ?;
 	    di->SpriteResolution.x = ?;
 	    di->SpriteResolution.y = ?;
-*/	    
-	    
+*/
 	    break;
 	}
 	    
@@ -389,6 +388,15 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    {
 	    	snprintf(ni->Name, DISPLAYNAMELEN, "AROS: %ldx%ldx%ld", width, height, depth);
 	    }
+	    break;
+	}
+
+	case DTAG_VEC:
+	{
+	    struct VecInfo *vi = (struct VecInfo *)buf;
+	    
+	    vi->reserved[0] = (IPTR)sync;
+	    vi->reserved[1] = (IPTR)pf;
 	    break;
 	}
 	    

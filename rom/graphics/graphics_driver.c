@@ -879,8 +879,3 @@ OOP_Object *GetDriverGC(struct RastPort *rp, struct GfxBase *GfxBase)
 
     return GetDriverData(rp)->dd_GC;
 }
-
-OOP_Object *GetGfxHidd(struct GfxBase *GfxBase)
-{
-    return SDD(GfxBase)->gfxhidd;
-}

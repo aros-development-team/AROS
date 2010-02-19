@@ -5,9 +5,13 @@
     Desc:
     Lang: english
 */
+
+#include <hidd/graphics.h>
 #include <proto/graphics.h>
+#include <proto/oop.h>
 
 #include "cybergraphics_intern.h"
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -45,8 +49,19 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    BOOL iscyber = FALSE;
+    struct VecInfo info;
     
-    return driver_IsCyberModeID(modeID, GetCGFXBase(CyberGfxBase));
+    if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_VEC, modeID) == sizeof(info)) {
+	HIDDT_StdPixFmt stdpf;
+
+	OOP_GetAttr((OOP_Object *)info.reserved[1], aHidd_PixFmt_StdPixFmt, &stdpf);
+	if (((UWORD)-1) != hidd2cyber_pixfmt(stdpf)) {
+	    	iscyber = TRUE;
+	}
+    }
+    return iscyber;
 
     AROS_LIBFUNC_EXIT
 } /* IsCyberModeID */
