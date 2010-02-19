@@ -3,6 +3,17 @@
 
 include $(TOP)/config/make.cfg
 
+# I disabled gfxcontrol because:
+# 1. It uses some private thing that doesn't work anymore because the related
+#    stuff is moved into cybergraphics.library.
+# 2. Its purpose is strange and weird IMHO.
+# 3. At the moment direct access actually doesn't work because none of bitmap
+#    classes actually implement it.
+# 4. If this feature is needed again for some debugging purposes it can be
+#    implemented in a more straightforward way by patching LockBitMapTags()
+#    function.
+#					sonic.
+
 FILES := \
     AddBuffers \
     AddDatatypes \
@@ -22,7 +33,7 @@ FILES := \
     Eject \
     Eval \
     Filenote \
-    GfxControl \
+#   GfxControl \
     IconX \
     Info \
     Install \

@@ -5,6 +5,13 @@
     Desc:
     Lang: english
 */
+
+#include <aros/debug.h>
+#include <cybergraphx/cybergraphics.h>
+#include <hidd/graphics.h>
+#include <proto/oop.h>
+#include <proto/utility.h>
+
 #include "cybergraphics_intern.h"
 
 /*****************************************************************************
@@ -45,7 +52,38 @@
 {
     AROS_LIBFUNC_INIT
     
-    driver_UnLockBitMapTagList(Handle, Tags, GetCGFXBase(CyberGfxBase));
+    struct TagItem *tag;
+    BOOL reallyunlock = TRUE;
+    
+    while ((tag = NextTagItem((const struct TagItem **)&Tags)))
+    {
+    	switch (tag->ti_Tag)
+	{
+	    case UBMI_REALLYUNLOCK:
+	    	reallyunlock = (BOOL)tag->ti_Data;
+		break;
+		
+	    case UBMI_UPDATERECTS:
+	    {
+	    	struct RectList *rl;
+		
+		rl = (struct RectList *)tag->ti_Data;
+		
+		/* TODO: Call HIDD_BM_UpdateRect() for all the regions */
+		
+	    	break;
+	    }
+	
+	    default:
+	    	D(bug("!!! UNKNOWN TAG PASSED TO UnLockBitMapTagList() !!!\n"));
+		break;
+	}
+    }
+    
+    if (reallyunlock)
+    {
+	HIDD_BM_ReleaseDirectAccess((OOP_Object *)Handle);
+    }
 
     AROS_LIBFUNC_EXIT
 } /* UnLockBitMapTagList */

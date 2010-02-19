@@ -5,6 +5,9 @@
     Desc:
     Lang: english
 */
+
+#include <hidd/graphics.h>
+
 #include "cybergraphics_intern.h"
 
 /*****************************************************************************
@@ -44,7 +47,8 @@
 {
     AROS_LIBFUNC_INIT
     
-    driver_UnLockBitMap(Handle, GetCGFXBase(CyberGfxBase));
+    if (Handle)
+        HIDD_BM_ReleaseDirectAccess((OOP_Object *)Handle);
 
     AROS_LIBFUNC_EXIT
 } /* UnLockBitMap */
