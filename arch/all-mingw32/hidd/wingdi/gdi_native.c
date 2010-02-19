@@ -216,11 +216,9 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
 		    /* Do we already have a window? */
             	    if (!gdata->fbwin) {
 			/* Create it if we don't */
-            	    	gdata->fbwin = CreateWindow((LPCSTR)wcl, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
+            	    	gdata->fbwin = CreateWindow((LPCSTR)wcl, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_VISIBLE,
 					             CW_USEDEFAULT, CW_USEDEFAULT, width,  height, NULL, NULL,
 						     wcl_desc.hInstance, NULL);
-			if (gdata->fbwin)
-            	    	    ShowWindow(gdata->fbwin, SW_SHOW);
             	    } else {
 			/* Otherwise just adjust its position */
 			SetWindowPos(msg.hwnd, HWND_TOP, 0, 0, width, height, SWP_NOMOVE);
