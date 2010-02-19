@@ -2,7 +2,7 @@
 #define GRAPHICS_DISPLAYINFO_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DisplayInfo definitions and structures.
@@ -154,7 +154,7 @@ struct VecInfo
     APTR  Data;
     UWORD Type;
     UWORD pad[3];
-    ULONG reserved[2];
+    IPTR reserved[2];
 };
 
 #endif /* GRAPHICS_DISPLAYINFO_H */
