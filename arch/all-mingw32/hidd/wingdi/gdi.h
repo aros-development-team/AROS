@@ -96,21 +96,7 @@ struct gdi_staticdata
     OOP_Object      	    *mousehidd;
     OOP_Object      	    *kbdhidd;
 
-    ULONG		     red_mask;	  /* Color data */
-    ULONG		     green_mask;
-    ULONG		     blue_mask;
-    ULONG   	    	     red_shift;
-    ULONG   	    	     green_shift;
-    ULONG   	    	     blue_shift;
-    ULONG   	    	     depth;	  /* Size of pixel in bits */
-
     struct Gfx_Control	    *ctl;
-
-/* LUT-specific data seems to be not needed because looks like Windows always pretends to
-   have truecolor bitmaps and deals with palette on itself. 
-    ULONG   	    	     bytes_per_pixel;
-    ULONG   	    	     clut_shift;
-    ULONG   	    	     clut_mask; */
 };
 
 struct gdiclbase
@@ -119,7 +105,6 @@ struct gdiclbase
     
     struct gdi_staticdata xsd;
 };
-
 
 #undef XSD
 #define XSD(cl)     	(&((struct gdiclbase *)cl->UserData)->xsd)

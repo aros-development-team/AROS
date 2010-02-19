@@ -97,23 +97,27 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 {
     struct TagItem pftags[] =
     {
-    	{ aHidd_PixFmt_RedShift     , 0	    }, /* 0 */
-	{ aHidd_PixFmt_GreenShift   , 0	    }, /* 1 */
-	{ aHidd_PixFmt_BlueShift    , 0	    }, /* 2 */
-	{ aHidd_PixFmt_AlphaShift   , 0	    }, /* 3 */
-	{ aHidd_PixFmt_RedMask	    , 0	    }, /* 4 */
-	{ aHidd_PixFmt_GreenMask    , 0	    }, /* 5 */
-	{ aHidd_PixFmt_BlueMask     , 0	    }, /* 6 */
-	{ aHidd_PixFmt_AlphaMask    , 0	    }, /* 7 */
-	{ aHidd_PixFmt_ColorModel   , 0	    }, /* 8 */
-	{ aHidd_PixFmt_Depth	    , 0	    }, /* 9 */
-	{ aHidd_PixFmt_BytesPerPixel, 0	    }, /* 10 */
-	{ aHidd_PixFmt_BitsPerPixel , 0	    }, /* 11 */
-	{ aHidd_PixFmt_StdPixFmt    , 0	    }, /* 12 */
-	{ aHidd_PixFmt_CLUTShift    , 0	    }, /* 13 */
-	{ aHidd_PixFmt_CLUTMask     , 0	    }, /* 14 */ 
-	{ aHidd_PixFmt_BitMapType   , 0	    }, /* 15 */   
-	{ TAG_DONE  	    	    , 0UL   } 
+        /* Shifts are non-obviously calculated from the MSB, not from the LSB.
+           I. e. color value is placed in the most significant byte of the ULONG
+           before shifting (cc000000, not 000000cc) */
+    	{ aHidd_PixFmt_RedShift     , 24			},
+	{ aHidd_PixFmt_GreenShift   , 16			},
+	{ aHidd_PixFmt_BlueShift    , 8				},
+	{ aHidd_PixFmt_AlphaShift   , 0				},
+	{ aHidd_PixFmt_RedMask	    , 0x000000FF		},
+	{ aHidd_PixFmt_GreenMask    , 0x0000FF00		},
+	{ aHidd_PixFmt_BlueMask     , 0x00FF0000		},
+	{ aHidd_PixFmt_AlphaMask    , 0x00000000		},
+	/* Windows effectively hides from us all details of
+	   color management and everything looks like if the
+	   display mode is always truecolor */
+	{ aHidd_PixFmt_ColorModel   , vHidd_ColorModel_TrueColor},
+	{ aHidd_PixFmt_Depth	    , 32			},
+	{ aHidd_PixFmt_BytesPerPixel, 4				},
+	{ aHidd_PixFmt_BitsPerPixel , 32			},
+	{ aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_Native    },
+	{ aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky   },
+	{ TAG_DONE  	    	    , 0UL			} 
     };
     
     struct TagItem tags_160_160[] =
@@ -266,33 +270,6 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     }
 	
     /* Register gfxmodes */
-    pftags[0].ti_Data = XSD(cl)->red_shift;
-    pftags[1].ti_Data = XSD(cl)->green_shift;
-    pftags[2].ti_Data = XSD(cl)->blue_shift;
-    pftags[3].ti_Data = 0;
-	    
-    pftags[4].ti_Data = XSD(cl)->red_mask;
-    pftags[5].ti_Data = XSD(cl)->green_mask;
-    pftags[6].ti_Data = XSD(cl)->blue_mask;
-    pftags[7].ti_Data = 0x00000000;
-	    
-    if (XSD(cl)->depth == 32)
-    {
-        pftags[8].ti_Data = vHidd_ColorModel_TrueColor;
-    }
-/*  else
-    {
-	pftags[8].ti_Data = vHidd_ColorModel_Palette;
-        pftags[13].ti_Data = XSD(cl)->clut_shift;
-	pftags[14].ti_Data = XSD(cl)->clut_mask;		
-    }*/
-    pftags[9].ti_Data = XSD(cl)->depth;
-    pftags[10].ti_Data = XSD(cl)->depth >> 3;
-    pftags[11].ti_Data = XSD(cl)->depth;
-    pftags[12].ti_Data = vHidd_StdPixFmt_Native;
-    /* We assume chunky */
-    pftags[15].ti_Data = vHidd_BitMapType_Chunky;
-
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     if (NULL != o)
     {
@@ -448,7 +425,7 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	   so we pass private data of our bitmap class to it directly.
 	   Don't use such tricks in normal AROS code, this isn't really good. */
 	if (msg->bitMap)
-	    bmdata = OOP_INST_DATA(XSD(cl)->bmclass, msg->bitMap);
+	    bmdata = (IPTR)OOP_INST_DATA(XSD(cl)->bmclass, msg->bitMap);
 	data->bitmap = msg->bitMap;
 
     	/* Hosted system has no real blitter, however we have host-side window service thread that does some work asynchronously,
@@ -590,35 +567,26 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 /****************************************************************************************/
 
-/*
-   Inits sysdisplay, sysscreen, colormap, etc.. */
 static BOOL initgdistuff(struct gdi_staticdata *xsd)
 {
-    BOOL    	     ok = TRUE;
-    int     	     template_mask;
+    struct Task *me;
+    void *gfx_int;
 
-    EnterFunc(bug("initgdistuff()\n"));
+    EnterFunc(bug("[GDI] initgdistuff()\n"));
+    if (xsd->display) {
+        D(bug("[GDI] Already initialized\n"));
+	return TRUE;
+    }
 
     Forbid();
-    xsd->depth = GDICALL(GetDeviceCaps, xsd->display, BITSPIXEL);
+    xsd->display = GDICALL(CreateDC, "DISPLAY", NULL, NULL, NULL);
+    if (xsd->display) {
+	xsd->ctl = NATIVECALL(GDI_Init);
+    }
     Permit();
-    D(bug("Screen depth: %lu\n", xsd->depth));
-/*  if (xsd->depth == 32) {*/
-	/* Get the pixel masks */
-	xsd->red_mask    = 0x000000FF;
-	xsd->green_mask  = 0x0000FF00;
-	xsd->blue_mask   = 0x00FF0000;
-	/* Shifts are non-obviously calculated from the MSB, not from the LSB.
-	   I. e. color value is placed in the most significant byte of the ULONG
-	   before shifting (cc000000, not 000000cc) */
-	xsd->red_shift	 = 24;
-	xsd->green_shift = 16;
-	xsd->blue_shift	 = 8;
-/*  } else {
-	kprintf("!!! GFX HIDD only supports truecolor diplays for now !!!\n");
-	return FALSE;
-    }*/
-    ReturnBool("initgdistuff", TRUE);
+
+    D(bug("[GDI] initgdistuff() done, window controller at 0x%p\n", xsd->ctl));
+    return xsd->ctl ? TRUE : FALSE;
 }
 
 /****************************************************************************************/
@@ -632,6 +600,8 @@ static VOID cleanupgdistuff(struct gdi_staticdata *xsd)
 
 static int gdigfx_init(LIBBASETYPEPTR LIBBASE) 
 {
+    InitSemaphore(&LIBBASE->xsd.sema);
+
     return OOP_ObtainAttrBases(attrbases);
 }
 
@@ -647,5 +617,3 @@ static int gdigfx_expunge(LIBBASETYPEPTR LIBBASE)
 
 ADD2INITLIB(gdigfx_init, 0);
 ADD2EXPUNGELIB(gdigfx_expunge, 0);
-
-/****************************************************************************************/
