@@ -871,11 +871,3 @@ ULONG DoPixelFunc(struct RastPort *rp, LONG x, LONG y,
     RELEASE_DRIVERDATA(rp, GfxBase);
     return res;
 }
-
-OOP_Object *GetDriverGC(struct RastPort *rp, struct GfxBase *GfxBase)
-{
-    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
-        return NULL;
-
-    return GetDriverData(rp)->dd_GC;
-}

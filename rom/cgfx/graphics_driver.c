@@ -322,7 +322,6 @@ struct dm_render_data {
     struct Hook *hook;
     struct RastPort *rp;
     IPTR stdpf;
-    OOP_Object *gc;
     struct IntCGFXBase *CyberGfxBase;
 };
 
@@ -384,9 +383,14 @@ static ULONG dm_render(APTR dmr_data
     	/* We are unable to gain direct access to the framebuffer,
 	   so we have to emulate it
 	*/
+	struct TagItem gc_tags[] = {
+	    { aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy },
+	    { TAG_DONE, 0UL }
+	};
 	ULONG bytesperrow;
 	ULONG tocopy_h, max_tocopy_h;
 	ULONG lines_todo;
+	OOP_Object *gfxhidd, *gc;
     
 	lines_todo = height;
     
@@ -413,16 +417,12 @@ static ULONG dm_render(APTR dmr_data
     	msg->offsetx = 0;
 	msg->offsety = 0;
     #endif
+    
+	OOP_GetAttr(dstbm_obj, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+	gc = HIDD_Gfx_NewGC(gfxhidd, gc_tags);
+    
     	/* Get the maximum number of lines */
     	while (lines_todo != 0) {
-	
-            struct TagItem gc_tags[] = {
-	    	{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy },
-	    	{ TAG_DONE, 0UL }
-	    };
-	    
-	    IPTR old_drmd;
-
     	    tocopy_h = MIN(lines_todo, max_tocopy_h);
     	    msg->memptr = CyberGfxBase->pixel_buf;
 	    msg->bytesperrow = bytesperrow;
@@ -439,23 +439,20 @@ LOCK_PIXBUF
     	    
 	    /* Use the hook to set some pixels */
 	    CallHookPkt(dmrd->hook, dmrd->rp, msg);
-	
-	    OOP_GetAttr(dmrd->gc, aHidd_GC_DrawMode, &old_drmd);
-	    OOP_SetAttrs(dmrd->gc, gc_tags);
-	    HIDD_BM_PutImage(dstbm_obj, dmrd->gc
+
+	    HIDD_BM_PutImage(dstbm_obj, gc
 		, (UBYTE *)CyberGfxBase->pixel_buf
 		, bytesperrow
 		, x1, y1 + height - lines_todo, width, lines_todo
 		, dmrd->stdpf
 	    );
-	    gc_tags[0].ti_Data = (IPTR)old_drmd;
-	    OOP_SetAttrs(dmrd->gc, gc_tags);
-	
+
 ULOCK_PIXBUF
 
     	    lines_todo -= tocopy_h;
 	}
 
+	OOP_DisposeObject(gc);
     }
     
     return width * height;
@@ -589,16 +586,15 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
     
     if (RECTFMT_LUT8 == srcformat)
     {
-    
 	HIDDT_PixelLUT pixlut = { 256, HIDD_BM_PIXTAB(rp->BitMap) };
 	UBYTE * array = (UBYTE *)src;
-	
-	if (rp->BitMap->Flags & BMF_SPECIALFMT)
+
+	if (!HIDD_BM_PIXTAB(rp->BitMap))
 	{
 	    D(bug("!!! No CLUT in driver_WritePixelArray\n"));
 	    return 0;
 	}
-	
+
 	array += CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, srcmod);
 	
     	pixwritten = WritePixels8(rp
@@ -1247,16 +1243,10 @@ VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct 
     	rr.MaxX = rr.MinX + (L->bounds.MaxX - L->bounds.MinX) - 1;
 	rr.MaxY = rr.MinY + (L->bounds.MaxY - L->bounds.MinY) - 1;
     }
-    
-    dmrd.gc = GetDriverGC(rp);
-    if (!dmrd.gc)
-        return;
 
     dmrd.CyberGfxBase = GetCGFXBase(CyberGfxBase);
     DoRenderFunc(rp, NULL, &rr, dm_render, &dmrd, TRUE);
-    
-    ReleaseDriverData(rp);
-    
+
     if (NULL != L)
     {
 	UnlockLayerRom(L);
