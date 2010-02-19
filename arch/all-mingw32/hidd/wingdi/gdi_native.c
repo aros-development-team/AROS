@@ -1,6 +1,6 @@
 /*
     Copyright  1995-2010, The AROS Development Team. All rights reserved.
-    $Id: gdi.c 27757 2008-01-26 15:05:40Z sonic $
+    $Id$
 
     Desc: Host-side part of GDI hidd. Handles windows and receives events.
     Lang: English.
@@ -195,7 +195,6 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
     HHOOK keyhook;
     BOOL res;
     MSG msg;
-    WINDOWPLACEMENT wpos;
     struct gfx_data *gdata;
     struct bitmap_data *bmdata;
     LONG width, height;
@@ -211,7 +210,7 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
                 gdata = (struct gfx_data *)msg.wParam;
 		bmdata = (struct bitmap_data *)msg.lParam;
 		/* Have a bitmap to show? */
-                if (gdata->bitmap) {
+                if (bmdata) {
             	    width = GetSystemMetrics(SM_CXFIXEDFRAME) * 2 + bmdata->win_width;
             	    height = GetSystemMetrics(SM_CYFIXEDFRAME) * 2 + bmdata->win_height + GetSystemMetrics(SM_CYCAPTION);
 		    /* Do we already have a window? */
@@ -224,12 +223,7 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
             	    	    ShowWindow(gdata->fbwin, SW_SHOW);
             	    } else {
 			/* Otherwise just adjust its position */
-            	        wpos.length = sizeof(wpos);
-		        if (GetWindowPlacement(msg.hwnd, &wpos)) {
-            		    wpos.rcNormalPosition.right = wpos.rcNormalPosition.left + width;
-	            	    wpos.rcNormalPosition.bottom = wpos.rcNormalPosition.top + height;
-	            	    SetWindowPlacement(msg.hwnd, &wpos);
-	            	}
+			SetWindowPos(msg.hwnd, HWND_TOP, 0, 0, width, height, SWP_NOMOVE);
 	            }
 	            if (gdata->fbwin) {
 		    	SetWindowLongPtr(gdata->fbwin, GWLP_USERDATA, (LONG_PTR)bmdata);
