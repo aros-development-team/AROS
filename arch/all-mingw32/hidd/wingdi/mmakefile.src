@@ -5,7 +5,7 @@ FLAGS := $(HOST_CFLAGS) -I$(GENINCDIR)
 
 KEYMAPTABLE_FILE := $(AROS_DEVS)/Keymaps/Host/keycode2rawkey.table
 
-FILES := gdi_init gdi_hostlib gdigfx bitmap gdikbd gdimouse
+FILES := gdi_hostlib gdigfx bitmap gdikbd gdimouse
 # gdiclipboard xshm fullscreen
 
 #MM kernel-hidd-wingdi-kobj : kernel-hidd-wingdi-native
