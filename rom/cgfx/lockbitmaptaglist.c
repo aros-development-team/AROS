@@ -67,12 +67,6 @@
 	return NULL;
     }
 
-    /* FIXME: What is it? Why?
-    if (CyberGfxBase->Flags & GFXFLAG_PREVENT_DIRECT_BITMAP_ACCESS)
-    {
-    	return NULL;
-    } */
-    
     OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_PixFmt, (IPTR *)&pf);
     
     OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
