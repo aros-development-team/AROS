@@ -1,7 +1,7 @@
 #ifndef GRAPHICS_INTERN_H
 #define GRAPHICS_INTERN_H
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header file for graphics.library
@@ -232,9 +232,6 @@ struct GfxBase_intern
 #define AREAINFOFLAG_DRAW   	0x01
 #define AREAINFOFLAG_CLOSEDRAW	0x02
 #define AREAINFOFLAG_ELLIPSE	0x03
-
-/* Private flags for GfxBase->GfxFlags. NOTE: C:GfxControl changes these!! */
-#define GFXFLAG_PREVENT_DIRECT_BITMAP_ACCESS 0x8000
 
 /* Forward declaration */
 struct ViewPort;

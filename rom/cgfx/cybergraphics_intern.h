@@ -77,12 +77,6 @@ struct IntCGFXBase
 
 #define XCOORD_TO_MASK(x)   	(128L >> ((x) & 0x07))
 
-extern APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct IntCGFXBase *CyberGfxBase);
-extern VOID driver_FreeCModeList(struct List *modeList, struct IntCGFXBase *CyberGfxBase);
-extern ULONG driver_BestCModeIDTagList(struct TagItem *tags, struct IntCGFXBase *CyberGfxBase);
-extern ULONG driver_GetCyberIDAttr(ULONG attr, ULONG id, struct IntCGFXBase *CyberGfxBase);
-extern BOOL driver_IsCyberModeID(ULONG modeid, struct IntCGFXBase *CyberGfxBase);
-
 extern VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct IntCGFXBase *CyberGfxBase);
 extern ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct IntCGFXBase *CyberGfxBase);
 extern LONG driver_WriteLUTPixelArray(APTR srcrect, 
@@ -124,10 +118,6 @@ extern LONG driver_WritePixelArrayAlpha(APTR src, UWORD srcx, UWORD srcy
 extern void driver_BltTemplateAlpha(UBYTE *src, LONG srcx, LONG srcmod
     	, struct RastPort *rp, LONG destx, LONG desty, LONG width, LONG height
 	, struct IntCGFXBase *CyberGfxBase);
-
-extern VOID driver_UnLockBitMapTagList(APTR handle, struct TagItem *tags, struct IntCGFXBase *CyberGfxBase);
-extern VOID driver_UnLockBitMap(APTR handle, struct IntCGFXBase *CyberGfxBase);
-extern APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct IntCGFXBase *CyberGfxBase);
 
 extern VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct TagItem *tags, struct IntCGFXBase *CyberGfxBase);
 

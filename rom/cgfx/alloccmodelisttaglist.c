@@ -72,7 +72,6 @@
 
     UWORD *cmodelarray = NULL;
     ULONG mode = INVALID_ID;
-    struct TagItem querytags[] = { { TAG_DONE, 0UL } };
 
     for (tstate = tags; (tag = NextTagItem(&tstate)); ) {
 	switch (tag->ti_Tag) {
