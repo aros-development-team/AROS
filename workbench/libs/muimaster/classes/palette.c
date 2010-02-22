@@ -164,10 +164,11 @@ IPTR Palette__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         nnset(data->coloradjust, MUIA_Coloradjust_Green, data->entries[0].mpe_Green);
         nnset(data->coloradjust, MUIA_Coloradjust_Blue, data->entries[0].mpe_Blue);
         nnset(data->list, MUIA_List_Active, 0);
+
+        data->rgb[0] = data->entries[0].mpe_Red;
+        data->rgb[1] = data->entries[0].mpe_Green;
+        data->rgb[2] = data->entries[0].mpe_Blue;
     }
-    data->rgb[0] = data->entries[0].mpe_Red;
-    data->rgb[1] = data->entries[0].mpe_Green;
-    data->rgb[2] = data->entries[0].mpe_Blue;
     
     DoMethod(data->list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime , obj, 5, MUIM_CallHook, &data->setcolor_hook, 1, 0, data);
     DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Red, MUIV_EveryTime, obj, 5, MUIM_CallHook, &data->setcolor_hook, 2, 0, data);
