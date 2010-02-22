@@ -86,8 +86,8 @@ BOOL Prefs_ImportFH(BPTR fh)
     struct PalettePrefs loadprefs;
     struct IFFHandle   *iff;
     BOOL                retval = FALSE;
+    LONG                i;
 
-#if 0
     if ((iff = AllocIFF()))
     {
         iff->iff_Stream = (IPTR)fh;
@@ -96,40 +96,40 @@ BOOL Prefs_ImportFH(BPTR fh)
 
         if (!OpenIFF(iff, IFFF_READ))
         {
-            D(bug("LoadPrefs: OpenIFF okay.\n"));
+            D(bug("Prefs_ImportFH: OpenIFF okay.\n"));
 
-            if (!StopChunk(iff, ID_PREF, ID_SERL))
+            if (!StopChunk(iff, ID_PREF, ID_PALT))
             {
-                D(bug("LoadPrefs: StopChunk okay.\n"));
+                D(bug("Prefs_ImportFH: StopChunk okay.\n"));
 
                 if (!ParseIFF(iff, IFFPARSE_SCAN))
                 {
                     struct ContextNode *cn;
 
-                    D(bug("LoadPrefs: ParseIFF okay.\n"));
+                    D(bug("Prefs_ImportFH: ParseIFF okay.\n"));
 
                     cn = CurrentChunk(iff);
 
-                    if (cn->cn_Size == sizeof(struct SerialPrefs))
+                    if (cn->cn_Size == sizeof(struct PalettePrefs))
                     {
-                        D(bug("LoadPrefs: ID_SERL chunk size okay.\n"));
+                        D(bug("Prefs_ImportFH: ID_PALT chunk size okay.\n"));
 
-                        if (ReadChunkBytes(iff, &loadprefs, sizeof(struct SerialPrefs)) == sizeof(struct SerialPrefs))
+                        if (ReadChunkBytes(iff, &loadprefs, sizeof(struct PalettePrefs)) == sizeof(struct PalettePrefs))
                         {
-                            D(bug("LoadPrefs: Reading chunk successful.\n"));
+                            D(bug("Prefs_ImportFH: Reading chunk successful.\n"));
 
-                            CopyMemQuick(loadprefs.sp_Reserved, serialprefs.sp_Reserved, sizeof(serialprefs.sp_Reserved));
-                            serialprefs.sp_Unit0Map         = GET_LONG(loadprefs.sp_Unit0Map);
-                            serialprefs.sp_BaudRate         = GET_LONG(loadprefs.sp_BaudRate);
-                            serialprefs.sp_InputBuffer      = GET_LONG(loadprefs.sp_InputBuffer);
-                            serialprefs.sp_OutputBuffer     = GET_LONG(loadprefs.sp_OutputBuffer);
-                            serialprefs.sp_InputHandshake   = loadprefs.sp_InputHandshake;
-                            serialprefs.sp_OutputHandshake  = loadprefs.sp_OutputHandshake;
-                            serialprefs.sp_Parity           = loadprefs.sp_Parity;
-                            serialprefs.sp_BitsPerChar      = loadprefs.sp_BitsPerChar;
-                            serialprefs.sp_StopBits         = loadprefs.sp_StopBits;
+                            CopyMemQuick(loadprefs.pap_Reserved, paletteprefs.pap_Reserved, sizeof(paletteprefs.pap_Reserved));
+                            for (i = 0; i < 32; i++)
+                            {
+                                paletteprefs.pap_4ColorPens[i] = AROS_BE2WORD(loadprefs.pap_4ColorPens[i]);
+                                paletteprefs.pap_8ColorPens[i] = AROS_BE2WORD(loadprefs.pap_8ColorPens[i]);
+                                paletteprefs.pap_Colors[i].ColorIndex = AROS_BE2WORD(loadprefs.pap_Colors[i].ColorIndex);
+                                paletteprefs.pap_Colors[i].Red = AROS_BE2WORD(loadprefs.pap_Colors[i].Red);
+                                paletteprefs.pap_Colors[i].Green = AROS_BE2WORD(loadprefs.pap_Colors[i].Green);
+                                paletteprefs.pap_Colors[i].Blue = AROS_BE2WORD(loadprefs.pap_Colors[i].Blue);
+                            }
 
-                            D(bug("LoadPrefs: Everything okay :-)\n"));
+                            D(bug("Prefs_ImportFH: Everything okay :-)\n"));
 
                             retval = TRUE;
                         }
@@ -140,7 +140,7 @@ BOOL Prefs_ImportFH(BPTR fh)
         } /* if (!OpenIFF(iff, IFFF_READ)) */
         FreeIFF(iff);
     } /* if ((iff = AllocIFF())) */
-#endif
+
     return retval;
 }
 
@@ -152,25 +152,25 @@ BOOL Prefs_ExportFH(BPTR fh)
     struct IFFHandle   *iff;
     BOOL                retval = FALSE;
     BOOL                delete_if_error = FALSE;
+    LONG                i;
 
-#if 0
-    CopyMemQuick(serialprefs.sp_Reserved, saveprefs.sp_Reserved, sizeof(serialprefs.sp_Reserved));
-    saveprefs.sp_Unit0Map           = GET_LONG(serialprefs.sp_Unit0Map);
-    saveprefs.sp_BaudRate           = GET_LONG(serialprefs.sp_BaudRate);
-    saveprefs.sp_InputBuffer        = GET_LONG(serialprefs.sp_InputBuffer);
-    saveprefs.sp_OutputBuffer       = GET_LONG(serialprefs.sp_OutputBuffer);
-    saveprefs.sp_InputHandshake     = serialprefs.sp_InputHandshake;
-    saveprefs.sp_OutputHandshake    = serialprefs.sp_OutputHandshake;
-    saveprefs.sp_Parity             = serialprefs.sp_Parity;
-    saveprefs.sp_BitsPerChar        = serialprefs.sp_BitsPerChar;
-    saveprefs.sp_StopBits           = serialprefs.sp_StopBits;
+    CopyMemQuick(paletteprefs.pap_Reserved, saveprefs.pap_Reserved, sizeof(paletteprefs.pap_Reserved));
+    for (i = 0; i < 32; i++)
+    {
+        saveprefs.pap_4ColorPens[i] = AROS_WORD2BE(paletteprefs.pap_4ColorPens[i]);
+        saveprefs.pap_8ColorPens[i] = AROS_WORD2BE(paletteprefs.pap_8ColorPens[i]);
+        saveprefs.pap_Colors[i].ColorIndex = AROS_WORD2BE(paletteprefs.pap_Colors[i].ColorIndex);
+        saveprefs.pap_Colors[i].Red = AROS_WORD2BE(paletteprefs.pap_Colors[i].Red);
+        saveprefs.pap_Colors[i].Green = AROS_WORD2BE(paletteprefs.pap_Colors[i].Green);
+        saveprefs.pap_Colors[i].Blue = AROS_WORD2BE(paletteprefs.pap_Colors[i].Blue);
+    }
 
-    D(bug("SavePrefsFH: fh: %lx\n", fh));
+    D(bug("Prefs_ExportFH: fh: %lx\n", fh));
 
     if ((iff = AllocIFF()))
     {
         iff->iff_Stream = (IPTR) fh;
-        D(bug("SavePrefsFH: stream opened.\n"));
+        D(bug("Prefs_ExportFH: stream opened.\n"));
 
         delete_if_error = TRUE;
 
@@ -178,17 +178,17 @@ BOOL Prefs_ExportFH(BPTR fh)
 
         if (!OpenIFF(iff, IFFF_WRITE))
         {
-            D(bug("SavePrefsFH: OpenIFF okay.\n"));
+            D(bug("Prefs_ExportFH: OpenIFF okay.\n"));
 
             if (!PushChunk(iff, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN))
             {
-                D(bug("SavePrefsFH: PushChunk(FORM) okay.\n"));
+                D(bug("Prefs_ExportFH: PushChunk(FORM) okay.\n"));
 
                 if (!PushChunk(iff, ID_PREF, ID_PRHD, sizeof(struct FilePrefHeader)))
                 {
                     struct FilePrefHeader head;
 
-                    D(bug("SavePrefsFH: PushChunk(PRHD) okay.\n"));
+                    D(bug("Prefs_ExportFH: PushChunk(PRHD) okay.\n"));
 
                     head.ph_Version  = PHV_CURRENT;
                     head.ph_Type     = 0;
@@ -199,18 +199,18 @@ BOOL Prefs_ExportFH(BPTR fh)
 
                     if (WriteChunkBytes(iff, &head, sizeof(head)) == sizeof(head))
                     {
-                        D(bug("SavePrefsFH: WriteChunkBytes(PRHD) okay.\n"));
+                        D(bug("Prefs_ExportFH: WriteChunkBytes(PRHD) okay.\n"));
 
                         PopChunk(iff);
 
-                        if (!PushChunk(iff, ID_PREF, ID_SERL, sizeof(struct SerialPrefs)))
+                        if (!PushChunk(iff, ID_PREF, ID_PALT, sizeof(struct PalettePrefs)))
                         {
-                            D(bug("SavePrefsFH: PushChunk(LCLE) okay.\n"));
+                            D(bug("Prefs_ExportFH: PushChunk(LCLE) okay.\n"));
 
                             if (WriteChunkBytes(iff, &saveprefs, sizeof(saveprefs)) == sizeof(saveprefs))
                             {
-                                D(bug("SavePrefsFH: WriteChunkBytes(SERL) okay.\n"));
-                                D(bug("SavePrefsFH: Everything okay :-)\n"));
+                                D(bug("Prefs_ExportFH: WriteChunkBytes(PALT) okay.\n"));
+                                D(bug("Prefs_ExportFH: Everything okay :-)\n"));
 
                                 retval = TRUE;
                             }
@@ -237,7 +237,6 @@ BOOL Prefs_ExportFH(BPTR fh)
     }
     #endif
 
-#endif
     return retval;
 }
 
@@ -304,26 +303,14 @@ BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
 
 BOOL Prefs_Default(VOID)
 {
-    LONG i;
-
     paletteprefs.pap_Reserved[0] = 0;
     paletteprefs.pap_Reserved[1] = 0;
     paletteprefs.pap_Reserved[2] = 0;
     paletteprefs.pap_Reserved[3] = 0;
 
-    for (i = 0; i < 32; i++)
-    {
-        paletteprefs.pap_4ColorPens[i] = defaultpen[i];
-        paletteprefs.pap_8ColorPens[i] = defaultpen[i];
-    }
-
-    for (i = 0; i < 32; i++)
-    {
-        paletteprefs.pap_Colors[i].ColorIndex = defaultcolor[i].ColorIndex;
-        paletteprefs.pap_Colors[i].Red = defaultcolor[i].Red;
-        paletteprefs.pap_Colors[i].Green = defaultcolor[i].Green;
-        paletteprefs.pap_Colors[i].Blue = defaultcolor[i].Blue;
-    }
+    CopyMem(defaultpen, paletteprefs.pap_4ColorPens, sizeof paletteprefs.pap_4ColorPens);
+    CopyMem(defaultpen, paletteprefs.pap_8ColorPens, sizeof paletteprefs.pap_8ColorPens);
+    CopyMem(defaultcolor, paletteprefs.pap_Colors, sizeof paletteprefs.pap_Colors);
 
     return TRUE;
 }
