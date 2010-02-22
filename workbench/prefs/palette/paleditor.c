@@ -32,11 +32,32 @@
 #include "paleditor.h"
 #include "prefs.h"
 
-/*** Instance Data **********************************************************/
+STATIC CONST_STRPTR pennames[] =
+{
+    "Pen 0", "Pen 1", "Pen 2", "Pen 3", "Pen 4", "Pen 5", "Pen 6", "Pen 7"
+};
 
+/*
+    without this initial palette we can't later set MUIA_Palette_Entries.
+    This is probably a bug in Zune.
+*/
+STATIC const struct MUI_Palette_Entry initialpens[9] =
+{
+    {0, 0, 0, 0, 0},
+    {1, 0, 0, 0, 0},
+    {2, 0, 0, 0, 0},
+    {3, 0, 0, 0, 0},
+    {4, 0, 0, 0, 0},
+    {5, 0, 0, 0, 0},
+    {6, 0, 0, 0, 0},
+    {7, 0, 0, 0, 0},
+    {MUIV_Palette_Entry_End, 0, 0, 0, 0}
+};
+
+/*** Instance Data **********************************************************/
 struct PalEditor_DATA
 {
-
+    Object                     *palpe_palette;
 };
 
 STATIC VOID PalPrefs2Gadgets(struct PalEditor_DATA *data);
@@ -48,6 +69,8 @@ STATIC VOID Gadgets2PalPrefs(struct PalEditor_DATA *data);
 /*** Methods ****************************************************************/
 Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
+    Object *palpe_palette;
+
     self = (Object *) DoSuperNewTags
     (
         CLASS, self, NULL,
@@ -55,6 +78,10 @@ Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_PrefsEditor_Path, (IPTR) "SYS/palette.prefs",
         MUIA_PrefsEditor_IconTool, (IPTR) "SYS:Prefs/Palette",
         Child, HGroup,
+            Child, (IPTR)(palpe_palette = (Object *)PaletteObject,
+                MUIA_Palette_Entries, (IPTR)initialpens,
+                MUIA_Palette_Names, (IPTR)pennames,
+            End),
         End,
         TAG_DONE
     );
@@ -63,38 +90,13 @@ Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     {
         SETUP_INST_DATA;
 
-#if 0
-        DoMethod
-        (
-            data->baudrate, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-        DoMethod
-        (
-            data->stopbits, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-        DoMethod
-        (
-            data->databits, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-        DoMethod
-            (data->parity, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-        DoMethod
-        (
-            data->inputbuffersize, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-        DoMethod
-        (
-            data->outputbuffersize, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
+        data->palpe_palette = palpe_palette;
 
-#endif
+        DoMethod
+        (
+            data->palpe_palette, MUIM_Notify, MUIA_Palette_Entries, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
     }
 
     return self;
@@ -102,15 +104,37 @@ Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
 STATIC VOID Gadgets2PalPrefs (struct PalEditor_DATA *data)
 {
-    //serialprefs.sp_BitsPerChar = XGET(data->databits, MUIA_Cycle_Active);
+    LONG i;
+    struct MUI_Palette_Entry *currentpens =
+        (struct MUI_Palette_Entry *)XGET(data->palpe_palette, MUIA_Palette_Entries);
+
+    for (i = 0; i < 8; i++)
+    {
+        paletteprefs.pap_Colors[i].ColorIndex = currentpens[i].mpe_ID;
+        paletteprefs.pap_Colors[i].Red = currentpens[i].mpe_Red >> 16;
+        paletteprefs.pap_Colors[i].Green = currentpens[i].mpe_Green >> 16;
+        paletteprefs.pap_Colors[i].Blue = currentpens[i].mpe_Blue >> 16;
+    }
 }
 
 STATIC VOID PalPrefs2Gadgets(struct PalEditor_DATA *data)
 {
-    //NNSET(data->databits, MUIA_Cycle_Active, serialprefs.sp_BitsPerChar);
+    LONG i;
+    struct MUI_Palette_Entry currentpens[9];
+
+    for (i = 0; i < 8; i++)
+    {
+        currentpens[i].mpe_ID = paletteprefs.pap_Colors[i].ColorIndex;
+        currentpens[i].mpe_Red = paletteprefs.pap_Colors[i].Red << 16;
+        currentpens[i].mpe_Green = paletteprefs.pap_Colors[i].Green << 16;
+        currentpens[i].mpe_Blue = paletteprefs.pap_Colors[i].Blue << 16;
+    }
+    currentpens[8].mpe_ID = MUIV_Palette_Entry_End;
+    NNSET(data->palpe_palette, MUIA_Palette_Entries, currentpens);
 }
 
-IPTR PalEditor__MUIM_PrefsEditor_ImportFH (
+IPTR PalEditor__MUIM_PrefsEditor_ImportFH
+(
     Class *CLASS, Object *self,
     struct MUIP_PrefsEditor_ImportFH *message
 )
