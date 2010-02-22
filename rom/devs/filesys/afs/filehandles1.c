@@ -468,7 +468,7 @@ ULONG block;
  Descr.: open (lock) a file
  Input : dirah      - a handle filename is
                       relative to
-         filename   - filename to lock
+         name   - filename to lock
          mode       - FMF_...
          protection - bits for new files
  Output: AfsHandle for success; NULL otherwise
