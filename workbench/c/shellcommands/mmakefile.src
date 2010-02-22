@@ -1,6 +1,6 @@
 #   $Id$
 #
-#   Makefile for the C: Programs
+#   Makefile for shell commands
 
 include $(TOP)/config/make.cfg
 
@@ -21,6 +21,7 @@ FILES	:= \
     Getenv \
     If \
     Lab \
+    NewCLI \
     NewShell \
     Path \
     Prompt \
@@ -49,5 +50,9 @@ USER_CFLAGS := -I$(SRCDIR)/rom/dos
     uselibs="arossupport amiga rom m" \
     usestartup=no
 
+$(OBJDIR)/NewCLI.o : $(OBJDIR)/NewShell.o
+	@$(ECHO) Copying $< to $@
+	@$(CP) $< $@
+    
 %common
 
