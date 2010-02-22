@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 /*
@@ -453,7 +453,7 @@ UBYTE buffer[256];
 	CopyMem(name, buffer, end-name);
 	buffer[end-name] = 0;
 	len = strlen(name)+name-end;
-	CopyMem(end, entryname, len);	/* skip backslash or colon */
+	CopyMem(end, entryname, len);	/* skip slash or colon */
 	entryname[len] = 0;
 	return findBlock(afsbase, ah, buffer, &block);
 }
@@ -474,7 +474,7 @@ ULONG renameObject
 		CONST_STRPTR newname
 	)
 {
-struct BlockCache *lastlink,*oldfile, *dirblock;
+struct BlockCache *lastlink,*oldfile,*existingfile,*dirblock;
 ULONG block,dirblocknum,lastblock;
 UBYTE newentryname[34];
 
@@ -486,15 +486,17 @@ UBYTE newentryname[34];
 		return error;
 	dirblocknum = dirblock->blocknum;
 	D(bug("[afs]    dir is on block %ld\n", dirblocknum));
-	if (getHeaderBlock(afsbase, dirah->volume, newentryname, dirblock, &block) != NULL)
-	{
-		dirblock->flags &= ~BCF_USED;
-		return ERROR_OBJECT_EXISTS;
-	}
 	oldfile = findBlock(afsbase, dirah, oname, &lastblock);
 	if (oldfile == NULL)
 		return error;
 	oldfile->flags |= BCF_USED;
+	existingfile = getHeaderBlock(afsbase, dirah->volume, newentryname,
+		dirblock, &block);
+	if (existingfile != NULL && existingfile->blocknum != oldfile->blocknum)
+	{
+		dirblock->flags &= ~BCF_USED;
+		return ERROR_OBJECT_EXISTS;
+	}
 	/* do we move a directory? */
 	if (OS_BE2LONG(oldfile->buffer[BLK_SECONDARY_TYPE(dirah->volume)])==ST_USERDIR)
 	{
