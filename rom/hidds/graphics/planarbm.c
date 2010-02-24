@@ -709,7 +709,8 @@ BOOL PBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 	{ aHidd_PixFmt_RedMask	    , 0x00FF0000		}, 	/* 7 */
 	{ aHidd_PixFmt_GreenMask    , 0x0000FF00		}, 	/* 8 */
 	{ aHidd_PixFmt_BlueMask     , 0x000000FF		}, 	/* 9 */
-    	{ TAG_DONE  	    	    , 0UL   	    	    	}	/* 7 */
+	{ aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_Plane	},
+    	{ TAG_DONE  	    	    , 0UL   	    	    	}
     };
     struct TagItem  	bmtags[] =
     {

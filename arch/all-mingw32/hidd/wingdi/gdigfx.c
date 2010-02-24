@@ -112,10 +112,10 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	   color management and everything looks like if the
 	   display mode is always truecolor */
 	{ aHidd_PixFmt_ColorModel   , vHidd_ColorModel_TrueColor   },
-	{ aHidd_PixFmt_Depth	    , 32			   },
+	{ aHidd_PixFmt_Depth	    , 24			   },
 	{ aHidd_PixFmt_BytesPerPixel, 4				   },
-	{ aHidd_PixFmt_BitsPerPixel , 32			   },
-	{ aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_0BGR32_Native},
+	{ aHidd_PixFmt_BitsPerPixel , 24			   },
+	{ aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_Native	   },
 	{ aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky      },
 	{ TAG_DONE  	    	    , 0UL			   } 
     };

@@ -1576,13 +1576,30 @@ OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o,
 	return FALSE;
     }
 
+    D(bug("Gfx::RegisterPixFmt(): Registering pixelformat:\n"));
+    D(bug("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n"
+	  , PF(&cmp_pf)->red_shift
+	  , PF(&cmp_pf)->green_shift
+	  , PF(&cmp_pf)->blue_shift
+	  , PF(&cmp_pf)->alpha_shift
+	  , PF(&cmp_pf)->red_mask
+	  , PF(&cmp_pf)->green_mask
+	  , PF(&cmp_pf)->blue_mask
+	  , PF(&cmp_pf)->alpha_mask
+	  , PF(&cmp_pf)->bytes_per_pixel
+	  , PF(&cmp_pf)->size
+	  , PF(&cmp_pf)->depth
+	  , PF(&cmp_pf)->stdpixfmt));
+
     ObtainSemaphoreShared(&data->pfsema);
     pfnode = find_pixfmt(&data->pflist, &cmp_pf, CSD(cl));
     ReleaseSemaphore(&data->pfsema);
     
+    D(bug("Found matching custom pixelformat: 0x%p\n", pfnode));
     if (NULL == pfnode)
     {
     	retpf = find_stdpixfmt(&cmp_pf, CSD(cl));
+	D(bug("Found matching standard pixelformat: 0x%p\n", retpf));
     }
     else
     {
@@ -1615,7 +1632,6 @@ OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o,
 		cmp_pf.stdpixfmt = vHidd_StdPixFmt_Unknown;*/
 		memcpy(retpf, &cmp_pf, sizeof (HIDDT_PixelFormat));
 		
-		#define PF(x) ((HIDDT_PixelFormat *)x)
 		D(bug("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n"
 			, PF(&cmp_pf)->red_shift
 			, PF(&cmp_pf)->green_shift
@@ -1628,8 +1644,7 @@ OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o,
 			, PF(&cmp_pf)->bytes_per_pixel
 			, PF(&cmp_pf)->size
 			, PF(&cmp_pf)->depth
-			, PF(&cmp_pf)->stdpixfmt
-			, HIDD_PF_BITMAPTYPE(&cmp_pf)));
+			, PF(&cmp_pf)->stdpixfmt));
 
     	    	ObtainSemaphore(&data->pfsema);
 		AddTail((struct List *)&data->pflist, (struct Node *)newnode);
@@ -1922,14 +1937,19 @@ static OOP_Object *find_stdpixfmt(HIDDT_PixelFormat *tofind,
     	    	    	    	  struct class_static_data *csd)
 {
     OOP_Object *retpf = NULL;
-    OOP_Object *stdpf;
+    HIDDT_PixelFormat *stdpf;
     ULONG   	i;
     
     for (i = 0; i < num_Hidd_StdPixFmt; i ++)
     {
     	stdpf = csd->std_pixfmts[i];
+	D(bug("find_stdpixfmt(): Trying pixelformat %u (0x%p)\n", i, stdpf));
+	D(bug("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n",
+	      stdpf->red_shift, stdpf->green_shift, stdpf->blue_shift, stdpf->alpha_shift,
+	      stdpf->red_mask, stdpf->green_mask, stdpf->blue_mask, stdpf->alpha_mask,
+	      stdpf->bytes_per_pixel, stdpf->size, stdpf->depth, stdpf->stdpixfmt));
 	
-	if (cmp_pfs(tofind, (HIDDT_PixelFormat *)stdpf))
+	if (cmp_pfs(tofind, stdpf))
 	{
 	    retpf =  stdpf;
 	    break;
@@ -2124,8 +2144,8 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
 BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf,
     	    	       ULONG ATTRCHECK(pixfmt), struct class_static_data *csd)
 {
-    IPTR attrs[num_Hidd_PixFmt_Attrs];
-     
+    IPTR attrs[num_Hidd_PixFmt_Attrs] = {0};
+
     if (0 != OOP_ParseAttrs(tags, attrs, num_Hidd_PixFmt_Attrs,
     	    	    	    &ATTRCHECK(pixfmt), HiddPixFmtAttrBase))
     {
@@ -2238,8 +2258,14 @@ static struct pfnode *find_pixfmt(struct MinList *pflist, HIDDT_PixelFormat *tof
     ForeachNode(pflist, n)
     {
     	db_pf = (HIDDT_PixelFormat *)n->pixfmt;
+	D(bug("find_pixfmt(): Trying pixelformat 0x%p\n", db_pf));
+	D(bug("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n",
+	      db_pf->red_shift, db_pf->green_shift, db_pf->blue_shift, db_pf->alpha_shift,
+	      db_pf->red_mask, db_pf->green_mask, db_pf->blue_mask, db_pf->alpha_mask,
+	      db_pf->bytes_per_pixel, db_pf->size, db_pf->depth, db_pf->stdpixfmt));
 	if (cmp_pfs(tofind, db_pf))
 	{
+	    D(bug("Match!\n"));
 	    retpf = (OOP_Object *)db_pf;
 	    break;
 	}
