@@ -329,23 +329,15 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     tags[1].ti_Data = (IPTR)XSD(cl)->bmclass;
     tags[3].ti_Data = (IPTR)msg->attrList;
 
-    /* Create a GDI bitmap if we have a valid ModeID or we want to create
-       a planar bitmap.
-
-       Replacing planar bitmaps with GDI bitmaps speeds up text output.
-       This affects only ExtendFont() function in graphics.library which explicitly
-       creates HIDD bitmap with vHidd_StdPixFmt_Plane format specification. This is
-       the only such place, and it needs to be rewritten. Perhaps the allocated
-       bitmap should be screen's friend or something like that.
-       See fontbm_to_hiddbm() function in rom/graphics/fontsupport.c.
+    /* Create a GDI bitmap if we have a valid ModeID.
 
        Also GDI bitmap can be created if there's no explicit
        pixelformat specification and a friend bitmap is supplied,
        which is a GDI bitmap. This is handled in the
        superclass.
 
-       Some day when AROS learns to deal with several display drivers at once, even ModeID check
-       may go away. This should really be handled by graphics.library. We do it here only because
+       Some day when AROS learns to deal with several display drivers at once, this check may go
+       away completely. This should really be handled by graphics.library. We do it here only because
        display bitmap classes are currently private and only drivers themselves know about them.
     */
     modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
