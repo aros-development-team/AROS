@@ -385,6 +385,27 @@ enum
 
     num_Hidd_AllPf
 };
+
+#if AROS_BIG_ENDIAN
+#define vHidd_StdPixFmt_ARGB32_Native vHidd_StdPixFmt_ARGB32
+#define vHidd_StdPixFmt_BGRA32_Native vHidd_StdPixFmt_BGRA32
+#define vHidd_StdPixFmt_RGBA32_Native vHidd_StdPixFmt_RGBA32
+#define vHidd_StdPixFmt_ABGR32_Native vHidd_StdPixFmt_ABGR32
+#define vHidd_StdPixFmt_0RGB32_Native vHidd_StdPixFmt_0RGB32
+#define vHidd_StdPixFmt_BGR032_Native vHidd_StdPixFmt_BGR032
+#define vHidd_StdPixFmt_RGB032_Native vHidd_StdPixFmt_RGB032
+#define vHidd_StdPixFmt_0BGR32_Native vHidd_StdPixFmt_0BGR32
+#else
+#define vHidd_StdPixFmt_ARGB32_Native vHidd_StdPixFmt_BGRA32
+#define vHidd_StdPixFmt_BGRA32_Native vHidd_StdPixFmt_ARGB32
+#define vHidd_StdPixFmt_RGBA32_Native vHidd_StdPixFmt_ABGR32
+#define vHidd_StdPixFmt_ABGR32_Native vHidd_StdPixFmt_RGBA32
+#define vHidd_StdPixFmt_0RGB32_Native vHidd_StdPixFmt_BGR032
+#define vHidd_StdPixFmt_BGR032_Native vHidd_StdPixFmt_0RGB32
+#define vHidd_StdPixFmt_RGB032_Native vHidd_StdPixFmt_0BGR32
+#define vHidd_StdPixFmt_0BGR32_Native vHidd_StdPixFmt_RGB032
+#endif
+
 #define FIRST_RGB_STDPIXFMT 	    	vHidd_StdPixFmt_RGB24
 #define LAST_RGB_STDPIXFMT  	    	vHidd_StdPixFmt_0BGR32
 #define NUM_RGB_STDPIXFMT   	    	(vHidd_StdPixFmt_0BGR32 - vHidd_StdPixFmt_RGB24 + 1)
