@@ -1,6 +1,6 @@
 /*
     Copyright  1995-2010, The AROS Development Team. All rights reserved.
-    $Id: bitmap.c 26918 2007-10-02 02:55:49Z rob $
+    $Id$
 
     Desc: Bitmap class for GDI hidd.
     Lang: English.
@@ -253,9 +253,8 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     
     switch(msg->pixFmt) {
     case vHidd_StdPixFmt_Native:
-        /* TODO: What if we are on < 32 bit ? */
     case vHidd_StdPixFmt_Native32:
-        src_stdpf = Machine_ARGB32;
+        src_stdpf = vHidd_StdPixFmt_0BGR32_Native;
     	break;
     default:
         src_stdpf = msg->pixFmt;
@@ -268,7 +267,7 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
         OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
         src_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, src_stdpf);
         /* DIB pixels are expected to be 0x00RRGGBB */
-        dst_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, Machine_0RGB32);
+        dst_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, vHidd_StdPixFmt_0RGB32_Native);
         src = msg->pixels;
         dst = buf;
         HIDD_BM_ConvertPixels(o, &src, src_pixfmt, msg->modulo, &dst, dst_pixfmt, bufmod,
@@ -334,9 +333,8 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 
     switch(msg->pixFmt) {
     case vHidd_StdPixFmt_Native:
-        /* TODO: What if we are on < 32 bit ? */
     case vHidd_StdPixFmt_Native32:
-        dst_stdpf = Machine_ARGB32;
+        dst_stdpf = vHidd_StdPixFmt_0BGR32_Native;
     	break;
     default:
         dst_stdpf = msg->pixFmt;
@@ -367,7 +365,7 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     	Permit();
         OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 	/* DIB pixels will be 0x00RRGGBB) */
-        src_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, Machine_0RGB32);
+        src_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, vHidd_StdPixFmt_0RGB32_Native);
         dst_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, dst_stdpf);
         dst = msg->pixels;
         src = buf;

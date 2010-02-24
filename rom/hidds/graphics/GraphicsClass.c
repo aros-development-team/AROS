@@ -1611,12 +1611,12 @@ OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o,
 		newnode->refcount = 1;
 		
 		/* Initialize the pixfmt object the "ugly" way */
-		cmp_pf.stdpixfmt = vHidd_StdPixFmt_Unknown;
+/*		Why??? - sonic
+		cmp_pf.stdpixfmt = vHidd_StdPixFmt_Unknown;*/
 		memcpy(retpf, &cmp_pf, sizeof (HIDDT_PixelFormat));
 		
-		#define PF(x) ((HIDDT_PixelFormat *)x)    
-		/*
-		bug("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n"
+		#define PF(x) ((HIDDT_PixelFormat *)x)
+		D(bug("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n"
 			, PF(&cmp_pf)->red_shift
 			, PF(&cmp_pf)->green_shift
 			, PF(&cmp_pf)->blue_shift
@@ -1629,10 +1629,8 @@ OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o,
 			, PF(&cmp_pf)->size
 			, PF(&cmp_pf)->depth
 			, PF(&cmp_pf)->stdpixfmt
-			, HIDD_BP_BITMAPTYPE(&cmp_pf));
+			, HIDD_PF_BITMAPTYPE(&cmp_pf)));
 
-		*/
-		
     	    	ObtainSemaphore(&data->pfsema);
 		AddTail((struct List *)&data->pflist, (struct Node *)newnode);
     	    	ReleaseSemaphore(&data->pfsema);
@@ -2145,6 +2143,7 @@ BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf,
     pf->depth		= attrs[PFAO(Depth)];
     pf->size		= attrs[PFAO(BitsPerPixel)];
     pf->bytes_per_pixel	= attrs[PFAO(BytesPerPixel)];
+    pf->stdpixfmt	= attrs[PFAO(StdPixFmt)];	/* Fill in StdPixFmt - sonic */
     
     SET_PF_COLMODEL(  pf, attrs[PFAO(ColorModel)]);
     SET_PF_BITMAPTYPE(pf, attrs[PFAO(BitMapType)]);

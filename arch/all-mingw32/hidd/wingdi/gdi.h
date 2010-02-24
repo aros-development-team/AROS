@@ -3,7 +3,7 @@
 
 /*
     Copyright  1995-2010, The AROS Development Team. All rights reserved.
-    $Id: gdi.h 27106 2007-10-28 10:49:03Z sonic $
+    $Id$
 
     Desc: Include for the gdi HIDD.
     Lang: English.
@@ -108,14 +108,6 @@ struct gdiclbase
 
 #undef XSD
 #define XSD(cl)     	(&((struct gdiclbase *)cl->UserData)->xsd)
-
-#if AROS_BIG_ENDIAN
-#define Machine_ARGB32 vHidd_StdPixFmt_ARGB32
-#define Machine_0RGB32 vHidd_StdPixFmt_0RGB32
-#else
-#define Machine_ARGB32 vHidd_StdPixFmt_BGRA32
-#define Machine_0RGB32 vHidd_StdPixFmt_BGR032
-#endif
 
 #else
 

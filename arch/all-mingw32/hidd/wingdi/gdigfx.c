@@ -1,6 +1,6 @@
 /*
     Copyright  1995-2010, The AROS Development Team. All rights reserved.
-    $Id: gdigfx.c 29127 2008-08-10 20:13:22Z sonic $
+    $Id$
 
     Desc: GDI gfx HIDD for AROS.
     Lang: English.
@@ -100,24 +100,24 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         /* Shifts are non-obviously calculated from the MSB, not from the LSB.
            I. e. color value is placed in the most significant byte of the ULONG
            before shifting (cc000000, not 000000cc) */
-    	{ aHidd_PixFmt_RedShift     , 24			},
-	{ aHidd_PixFmt_GreenShift   , 16			},
-	{ aHidd_PixFmt_BlueShift    , 8				},
-	{ aHidd_PixFmt_AlphaShift   , 0				},
-	{ aHidd_PixFmt_RedMask	    , 0x000000FF		},
-	{ aHidd_PixFmt_GreenMask    , 0x0000FF00		},
-	{ aHidd_PixFmt_BlueMask     , 0x00FF0000		},
-	{ aHidd_PixFmt_AlphaMask    , 0x00000000		},
+    	{ aHidd_PixFmt_RedShift     , 24			   },
+	{ aHidd_PixFmt_GreenShift   , 16			   },
+	{ aHidd_PixFmt_BlueShift    , 8				   },
+	{ aHidd_PixFmt_AlphaShift   , 0				   },
+	{ aHidd_PixFmt_RedMask	    , 0x000000FF		   },
+	{ aHidd_PixFmt_GreenMask    , 0x0000FF00		   },
+	{ aHidd_PixFmt_BlueMask     , 0x00FF0000		   },
+	{ aHidd_PixFmt_AlphaMask    , 0x00000000		   },
 	/* Windows effectively hides from us all details of
 	   color management and everything looks like if the
 	   display mode is always truecolor */
-	{ aHidd_PixFmt_ColorModel   , vHidd_ColorModel_TrueColor},
-	{ aHidd_PixFmt_Depth	    , 32			},
-	{ aHidd_PixFmt_BytesPerPixel, 4				},
-	{ aHidd_PixFmt_BitsPerPixel , 32			},
-	{ aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_Native    },
-	{ aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky   },
-	{ TAG_DONE  	    	    , 0UL			} 
+	{ aHidd_PixFmt_ColorModel   , vHidd_ColorModel_TrueColor   },
+	{ aHidd_PixFmt_Depth	    , 32			   },
+	{ aHidd_PixFmt_BytesPerPixel, 4				   },
+	{ aHidd_PixFmt_BitsPerPixel , 32			   },
+	{ aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_0BGR32_Native},
+	{ aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky      },
+	{ TAG_DONE  	    	    , 0UL			   } 
     };
     
     struct TagItem tags_160_160[] =
@@ -509,7 +509,7 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	    BITMAP bm;
 	    ULONG i;
 
-	    HIDD_BM_GetImage(msg->shape, (UBYTE *)buf, width * 4, 0, 0, width, height, Machine_ARGB32);
+	    HIDD_BM_GetImage(msg->shape, (UBYTE *)buf, width * 4, 0, 0, width, height, vHidd_StdPixFmt_ARGB32_Native);
 	    PRINT_POINTER(buf, width, 8, 8);
 	    /* Construct the mask from alpha channel data. The mask will be used on pre-XP systems or
 	       on LUT screens. Of course there'll be no alpha blending there. */
