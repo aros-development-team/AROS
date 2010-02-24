@@ -29,6 +29,7 @@ COMMONTESTFILES := \
     localetest \
     matchtest \
     messagetest \
+    modeid \
     newmatch \
     keymaptest \
     layerstest \
