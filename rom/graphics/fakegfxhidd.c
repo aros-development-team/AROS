@@ -435,16 +435,13 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	}
     }
     else
-    {
-    
+    {    
 	IPTR curs_width, curs_height;
 	IPTR mode_width, mode_height;
-	OOP_Object *mode_sync,* mode_pf;
-	IPTR fbmode;
 	OOP_Object *new_backup;
 	APTR new_curs_pixels;
 	ULONG curs_pixels_len;
-	
+
 	struct TagItem bmtags[] =
 	{
 	    { aHidd_BitMap_Displayable	, FALSE	},
@@ -453,25 +450,11 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	    { aHidd_BitMap_Friend   	, 0	},
 	    { TAG_DONE	    	    	, 0UL 	}
 	};
-	    
+
 	OOP_GetAttr(shape, aHidd_BitMap_Width,  &curs_width);
 	OOP_GetAttr(shape, aHidd_BitMap_Height, &curs_height);
 
-	OOP_GetAttr(data->framebuffer, aHidd_BitMap_ModeID, &fbmode);
-	HIDD_Gfx_GetMode(o, (HIDDT_ModeID)fbmode, &mode_sync, &mode_pf);
-	OOP_GetAttr(mode_sync, aHidd_Sync_HDisp, &mode_width);
-	OOP_GetAttr(mode_sync, aHidd_Sync_VDisp, &mode_height);
-
-	/* Disallow very large cursors, and cursors with higher
-	    depth than the framebuffer bitmap */
-	if (    ( curs_width  > (mode_width  / 2) )
-	     || ( curs_height > (mode_height / 2) ))
-	{
-	     D(bug("!!! FakeGfx::SetCursorShape: CURSOR BM HAS INVALID ATTRS !!!\n"));
-	     return FALSE;
-	}
-	    
-	    /* Create new backup bitmap */
+	/* Create new backup bitmap */
 	bmtags[1].ti_Data = curs_width;
 	bmtags[2].ti_Data = curs_height;
 	bmtags[3].ti_Data = (IPTR)data->framebuffer;
@@ -493,8 +476,6 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	
 	LFB(data);
 
-	data->curs_bm = shape;
-	
 	/* Erase the old cursor */
 	draw_cursor(data, FALSE, TRUE, CSD(cl));
 	    
@@ -508,11 +489,11 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	if (data->curs_pixels)
 	    FreeMem(data->curs_pixels, data->curs_width * data->curs_height * 4);
 
-	data->curs_width	= curs_width;
-	data->curs_height	= curs_height;
-
-	data->curs_maxx	= data->curs_x + curs_width  - 1;
-	data->curs_maxy	= data->curs_y + curs_height - 1;
+	data->curs_bm     = shape;
+	data->curs_width  = curs_width;
+	data->curs_height = curs_height;
+	data->curs_maxx	  = data->curs_x + curs_width  - 1;
+	data->curs_maxy	  = data->curs_y + curs_height - 1;
 	data->curs_backup = new_backup;
 	data->curs_pixels = new_curs_pixels;
 
@@ -1400,9 +1381,8 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
     	return;
     }
     
-    OOP_GetAttr(data->curs_bm, aHidd_BitMap_Width,  &width);
-    OOP_GetAttr(data->curs_bm, aHidd_BitMap_Height, &height);
-    
+    width = data->curs_width;
+    height = data->curs_height;
     OOP_GetAttr(data->framebuffer, aHidd_BitMap_Width,  &fb_width);
     OOP_GetAttr(data->framebuffer, aHidd_BitMap_Height, &fb_height);
     
