@@ -1,4 +1,4 @@
-# Copyright © 2003-2009, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2010, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
@@ -77,7 +77,8 @@ FILES := \
 PURE_FILES := \
     Assign \
     Copy \
-    Dir
+    Dir \
+    GfxControl \
 #   ISApnp
 
 USER_CFLAGS     := -I$(SRCDIR)/rom/dos

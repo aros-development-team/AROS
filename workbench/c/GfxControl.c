@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: CopyToPAR.c 31627 2009-07-26 12:26:01Z mazze $
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    $Id$
 
-    Desc: Change some internal options of graphics.library.
+    Desc: Change some internal options of cybergraphics.library.
     Lang: English
 */
 /*****************************************************************************
@@ -23,7 +23,7 @@
 
     FUNCTION
 
-        Change some internal options of graphics.library
+        Change some internal options of cybergraphics.library
         
     INPUTS
 
@@ -47,15 +47,15 @@
     INTERNALS
 
 ******************************************************************************/
-#include <graphics/gfxbase.h>
+
+#include <dos/dosextens.h>
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/graphics.h>
-
-#include <stdlib.h>
-#include <stdio.h>
 
 /****************************************************************************************/
+
+#define PORT_NAME "GfxControl"
 
 #define ARG_TEMPLATE 	    "PREVENT_DIRECT_BITMAP_ACCESS=PDBA/S,ALLOW_DIRECT_BITMAP_ACCESS=ADBA/S,DUMP/S"
 #define ARG_PDBA   	    0
@@ -65,72 +65,125 @@
 
 /****************************************************************************************/
 
-struct RDArgs 	*myargs;
-IPTR	         args[NUM_ARGS];
-UBYTE	         s[256];
-
-/****************************************************************************************/
-
-static void cleanup(char *msg, ULONG retcode)
+AROS_UFH3(APTR, MyLockBitMapTagList,
+	  AROS_UFHA(struct BitMap *, bitmap, A0),
+	  AROS_UFHA(struct TagItem *, tags, A1),
+	  AROS_UFHA(struct Library *, CyberGfxBase, A6))
 {
-    if (msg) 
-    {
-    	fprintf(stderr, "GfxControl: %s\n", msg);
-    }
-    
-    if (myargs) FreeArgs(myargs);
+    AROS_USERFUNC_INIT
 
-    exit(retcode);
+    return NULL;
+
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-static void getarguments(void)
+AROS_UFH3(LONG, PatchTask,
+	  AROS_UFHA(char *, argstr, A0),
+	  AROS_UFHA(ULONG, argsize, D0),
+	  AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
-    if (!(myargs = ReadArgs(ARG_TEMPLATE, args, 0)))
-    {
-    	Fault(IoErr(), 0, s, 255);
-	cleanup(s, RETURN_FAIL);
+    AROS_USERFUNC_INIT
+
+    struct Library *CyberGfxBase;
+    struct MsgPort *port;
+    APTR orig_func;
+
+    /* Our process opens the library by itself in order to prevent it from being expunged */
+    CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
+    if (!CyberGfxBase)
+        return 0;
+
+    port = CreateMsgPort();
+    if (port) {
+        port->mp_Node.ln_Name = PORT_NAME;
+        AddPort(port);
+        orig_func = SetFunction(CyberGfxBase, -28*LIB_VECTSIZE, MyLockBitMapTagList);
+	
+	/* Just wait for a signal from the port. There's no need to look at message contents */
+	WaitPort(port);
+	SetFunction(CyberGfxBase, -28*LIB_VECTSIZE, orig_func);
+	RemPort(port);
+	DeleteMsgPort(port);
     }
-}
 
-/****************************************************************************************/
-
-/* See rom graphics/graphics_intern.h */
-
-#define GFXFLAG_PREVENT_DIRECT_BITMAP_ACCESS 0x8000
-
-static void action(void)
-{
-    if (args[ARG_PDBA])
-    {
-    	Forbid();
-    	GfxBase->GfxFlags |= GFXFLAG_PREVENT_DIRECT_BITMAP_ACCESS;
-	Permit();
-    }
-
-    if (args[ARG_ADBA])
-    {
-    	Forbid();
-    	GfxBase->GfxFlags &= ~GFXFLAG_PREVENT_DIRECT_BITMAP_ACCESS;
-	Permit();
-    }
-    
-    if (args[ARG_DUMP])
-    {
-    	printf("Prevent Direct BitMap Access: %s\n",
-	       (GfxBase->GfxFlags & GFXFLAG_PREVENT_DIRECT_BITMAP_ACCESS) ? "YES" : "NO");
-    }
-    
-}
-
-/****************************************************************************************/
-
-int main(void)
-{
-    getarguments();
-    action();
-    cleanup(NULL, 0);
-    
+    CloseLibrary(CyberGfxBase);
     return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
+/****************************************************************************************/
+
+AROS_UFH3(__startup static int, Start,
+	  AROS_UFHA(char *, argstr, A0),
+	  AROS_UFHA(ULONG, argsize, D0),
+	  AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    struct RDArgs *myargs;
+    IPTR args[NUM_ARGS] = {0};
+    int	rc = RETURN_OK;
+    struct MsgPort *port;
+    struct CommandLineInterface *cli;
+    struct DosLibrary *DOSBase;
+    
+    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
+    if (!DOSBase)
+        return RETURN_FAIL;
+
+    cli = Cli();
+
+    /* TODO: Is it possible to run without CLI? For example
+       if we were started via "Run command..."? */
+    if (!cli) {
+        PutStr("This program must be run from CLI\n");
+	CloseLibrary((struct Library *)DOSBase);
+	return RETURN_FAIL;
+    }
+
+    myargs = ReadArgs(ARG_TEMPLATE, args, 0);
+    if (myargs) {
+	port = FindPort(PORT_NAME);
+
+	if (args[ARG_PDBA]) {
+	    if (port)
+	        PutStr("Direct bitmap access already disabled");
+	    else {
+		if (CreateNewProcTags(NP_Seglist, cli->cli_Module, NP_Entry, PatchTask, NP_Name, "GfxControl patch", TAG_DONE))
+		    cli->cli_Module = NULL;
+		else {
+		    PrintFault(IoErr(), "GfxControl");
+		    rc = RETURN_FAIL;
+		}
+	    }
+	}
+
+	if (args[ARG_ADBA]) {
+	    if (port) {
+		/* We do a very basic thing: just send a message. The message has no additional data
+		   and therefore does not need to be freed. We even don't look at its contents in the
+		   patch process */
+	        struct Message msg;
+
+		PutMsg(port, &msg);
+	    } else
+	        PutStr("Direct bitmap access already enabled");
+	}
+
+	if (args[ARG_DUMP])
+	    Printf("Prevent Direct BitMap Access: %s\n", port ? "YES" : "NO");
+
+        FreeArgs(myargs);
+    } else {
+    	PrintFault(IoErr(), "GfxControl");
+	rc = RETURN_FAIL;
+    }
+
+    CloseLibrary((struct Library *)DOSBase);
+    return rc;
+
+    AROS_USERFUNC_EXIT
 }
