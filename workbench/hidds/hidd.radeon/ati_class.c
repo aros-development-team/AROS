@@ -417,11 +417,28 @@ void METHOD(ATI, Hidd_Gfx, SetCursorPos)
 {
     D(bug("[ATI] Set cursor pos %d:%d\n", msg->x, msg->y));
 
+    WORD x,y,xoff=0,yoff=0;
+
+    x = (WORD)msg->x;
+    y = (WORD)msg->y;
+
+    if (x < 0)
+    {
+    	xoff = -x;
+    	x = 0;
+    }
+
+    if (y < 0)
+    {
+    	yoff = -y;
+    	y = 0;
+    }
+
     if (!sd->Card.IsSecondary) {
-        OUTREG(RADEON_CUR_HORZ_VERT_OFF,  RADEON_CUR_LOCK);
+        OUTREG(RADEON_CUR_HORZ_VERT_OFF,  RADEON_CUR_LOCK | (xoff << 16) | (yoff & 0xffff));
         OUTREG(RADEON_CUR_HORZ_VERT_POSN, (RADEON_CUR_LOCK
-                                           | (msg->x << 16)
-                                           | (msg->y & 0xffff)));
+                                           | (x << 16)
+                                           | (y & 0xffff)));
         OUTREG(RADEON_CUR_OFFSET, sd->Card.CursorStart);
 
     D(bug("[ATI] OFF=%08x, HV_OFF=%08x, HV_POSN=%08x\n",
@@ -430,10 +447,10 @@ void METHOD(ATI, Hidd_Gfx, SetCursorPos)
         INREG(RADEON_CUR_HORZ_VERT_POSN)));
 
     } else {
-        OUTREG(RADEON_CUR2_HORZ_VERT_OFF,  RADEON_CUR2_LOCK);
+        OUTREG(RADEON_CUR2_HORZ_VERT_OFF,  RADEON_CUR2_LOCK | (xoff << 16) | (yoff & 0xffff));
         OUTREG(RADEON_CUR2_HORZ_VERT_POSN, (RADEON_CUR2_LOCK
-                                           | (msg->x << 16)
-                                           | (msg->y & 0xffff)));
+                                           | (x << 16)
+                                           | (y & 0xffff)));
         OUTREG(RADEON_CUR2_OFFSET, sd->Card.CursorStart /* + addend???? */);
     }
 }
