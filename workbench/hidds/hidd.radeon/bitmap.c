@@ -357,7 +357,9 @@ ULONG mh_Avail(struct MemHeaderExt *mhe, ULONG flags)
 	struct ati_staticdata *sd = mhe->mhe_UserData;
 	ULONG size = 0;
 
-	Forbid();
+//	Forbid();
+
+	ObtainSemaphore(&sd->CardMemLock);
 
 	if (flags & MEMF_TOTAL)
 		size = sd->Card.FbUsableSize;
@@ -382,7 +384,9 @@ ULONG mh_Avail(struct MemHeaderExt *mhe, ULONG flags)
 	else
 		size = bmcntz(sd->CardMemBmp, 0, sd->Card.FbUsableSize >> 10) << 10;
 
-    Permit();
+//    Permit();
+
+	ReleaseSemaphore(&sd->CardMemLock);
 
 	return size;
 }

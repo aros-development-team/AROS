@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2007, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2003-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -254,6 +254,7 @@ static int ATI_Init(LIBBASETYPEPTR LIBBASE)
 
             InitSemaphore(&LIBBASE->sd.HWLock);
             InitSemaphore(&LIBBASE->sd.MultiBMLock);
+            InitSemaphore(&LIBBASE->sd.CardMemLock);
 
             /* Initialize MsgPort */
             LIBBASE->sd.mp.mp_SigBit = SIGB_SINGLE;

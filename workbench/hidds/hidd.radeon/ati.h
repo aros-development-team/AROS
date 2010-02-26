@@ -92,9 +92,10 @@ struct ati_staticdata {
 
     APTR    memPool;
 
+    struct SignalSemaphore CardMemLock;
     struct MemHeader    CardMem;
     ULONG               *CardMemBmp;
-    LONG                CardMemSize;
+    LONG                 CardMemSize;
 
     struct MemHeaderExt		managedMem;
 
