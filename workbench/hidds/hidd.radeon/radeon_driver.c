@@ -2463,9 +2463,11 @@ IPTR AllocBitmapArea(struct ati_staticdata *sd, ULONG width, ULONG height,
 //    if (result == 0) --result;
 //    else result -= (IPTR)sd->Card.FrameBuffer;
 
-    Forbid();
+    //Forbid();
+    ObtainSemaphore(&sd->CardMemLock);
     result = BitmapAlloc(sd, size);
-    Permit();
+    //Permit();
+    ReleaseSemaphore(&sd->CardMemLock);
 
     D(bug("[ATI] AllocBitmapArea(%dx%d@%d) = %p\n", width, height, bpp, result));
 
@@ -2485,10 +2487,12 @@ VOID FreeBitmapArea(struct ati_staticdata *sd, IPTR bmp, ULONG width, ULONG heig
     D(bug("[ATI] FreeBitmapArea(%p,%dx%d@%d)\n",
     bmp, width, height, bpp));
 
-    Forbid();
+//    Forbid();
+    ObtainSemaphore(&sd->CardMemLock);
 //    Deallocate(&sd->CardMem, ptr, size);
     BitmapFree(sd, bmp, size);
-    Permit();
+//    Permit();
+    ReleaseSemaphore(&sd->CardMemLock);
 
     UNLOCK_HW
 }
