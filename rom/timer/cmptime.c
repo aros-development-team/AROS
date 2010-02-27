@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CmpTime() - compare two time values.
@@ -31,9 +31,9 @@
 	src     -   Source timeval
 
     RESULT
-	< 0 if dest has more time than src (ie dest > src)
-	= 0 if dest and src are the same (ie dest == src)
-	> 0 if dest has less time than src (ie dest < src)
+	-1 if dest has more time than src (i.e. dest > src)
+	 0 if dest and src are the same (i.e. dest == src)
+	+1 if dest has less time than src (i.e. dest < src)
 
     NOTES
 	This function is safe to call from interrupts.
@@ -55,10 +55,19 @@
 {
     AROS_LIBFUNC_INIT
 
+    LONG diff;
+
     if(dest->tv_secs == src->tv_secs)
-	return (src->tv_micro - dest->tv_micro);
+	diff = src->tv_micro - dest->tv_micro;
     else
-	return (src->tv_secs - dest->tv_secs);
+	diff = src->tv_secs - dest->tv_secs;
+
+    if (diff < 0)
+	return -1;
+    else if (diff > 0)
+	return 1;
+    else
+	return 0;
 
     AROS_LIBFUNC_EXIT
 } /* CmpTime */
