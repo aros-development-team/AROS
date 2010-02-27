@@ -50,7 +50,11 @@ Endif
 
 Copy >NIL: ENVARC: ENV: ALL NOPRO NOREQ
 
-Assign THEME: $SYS/theme.var
+If EXISTS ENV:SYS/theme.var
+    Assign THEME: $SYS/theme.var
+else
+    Assign THEME: THEMES:OS3.1/
+endif
 
 Touch >NIL: FONTS:__TEST__
 If WARN
@@ -78,7 +82,9 @@ If EXISTS C:RexxMast
 EndIf
 
 If EXISTS C:Decoration
-    C:Decoration <NIL: >NIL: 
+    If EXISTS ENV:SYS/theme.var
+        C:Decoration <NIL: >NIL: 
+    EndIf
 Endif
 
 Assign EXISTS Extras: >NIL:
