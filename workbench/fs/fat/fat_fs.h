@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2008 The AROS Development Team
+ * Copyright © 2007-2010 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -127,8 +127,8 @@ struct GlobalLock {
 
     ULONG               attr;           /* file attributes, from the dir entry */
     ULONG               size;           /* file size, from the dir entry */
-    
-    UBYTE               name[108];      /* copy of the name (bstr) */
+
+    UBYTE name[FAT_MAX_LONG_FILENAME];  /* copy of the name (bstr) */
 
     struct MinList      locks;          /* list of ExtFileLocks opened on this file */
 };
