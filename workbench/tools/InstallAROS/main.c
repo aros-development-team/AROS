@@ -2743,7 +2743,8 @@ IPTR Install__MUIM_Reboot
 	if (option && (data->inst_success == MUIV_Inst_InProgress))
 	{
 		D(bug("[INSTALLER] Cold rebooting...\n"));
-		ColdReboot();
+		ShowImminentReset();
+		ShutdownA(SD_ACTION_COLDREBOOT);
 	}
 	else
 	{
@@ -3016,8 +3017,8 @@ int main(int argc,char *argv[])
 
 	Object *app = ApplicationObject,
 		MUIA_Application_Title,       (IPTR) "AROS Installer",
-		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.6 (19.12.2009)",
-		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2009, The AROS Development Team. All rights reserved.",
+		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.7 (1.3.2010)",
+		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2010, The AROS Development Team. All rights reserved.",
 		MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
 		MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
 		MUIA_Application_Base,        (IPTR) "INSTALLER",
