@@ -439,14 +439,14 @@ D(bug("[IconVolumeList] obj @ %p\n", obj));
 }
 ///
 
-struct IconEntry *FindIconlistIcon(struct List *iconlist, char *icondevname)
+struct IconEntry *FindIconlistVolumeIcon(struct List *iconlist, char *icondevname)
 {
     struct IconEntry *foundEntry = NULL;
 
     ForeachNode(iconlist, foundEntry)
     {
-        if (((strcasecmp(foundEntry->ie_IconNode.ln_Name, icondevname)) == 0) ||
-            ((strcasecmp(foundEntry->ie_IconListEntry.label, icondevname)) == 0))
+        if ((foundEntry->ie_IconListEntry.type == ST_ROOT) && (((strcasecmp(foundEntry->ie_IconNode.ln_Name, icondevname)) == 0) ||
+            ((strcasecmp(foundEntry->ie_IconListEntry.label, icondevname)) == 0)))
             return foundEntry;
     }
     return NULL;
@@ -498,7 +498,7 @@ D(bug("[IconVolumeList] %s: DOSList Entry '%s'\n", __PRETTY_FUNCTION__, dvn->dvn
 
 D(bug("[IconVolumeList] %s: Processing '%s'\n", __PRETTY_FUNCTION__, devname));
 
-                    if ((this_Icon = FindIconlistIcon(iconlist, devname)) != NULL)
+                    if ((this_Icon = FindIconlistVolumeIcon(iconlist, devname)) != NULL)
                     {
                         BOOL entrychanged = FALSE;
                         volDOB = this_Icon->ie_DiskObj;
@@ -578,9 +578,12 @@ D(bug("[IconVolumeList] %s: Failed to Add IconEntry for '%s'\n", __PRETTY_FUNCTI
             IconVolumeList__DestroyDOSList(dvl);
             ForeachNodeSafe(iconlist, this_Icon, tmpNode)
             {
+		if (this_Icon->ie_IconListEntry.type == ST_ROOT)
+		{
 D(bug("[IconVolumeList] %s: Destroying Removed IconEntry for '%s' @ %p\n", __PRETTY_FUNCTION__, this_Icon->ie_IconListEntry.label, this_Icon));
-                Remove((struct Node*)&this_Icon->ie_IconNode);
-                DoMethod(obj, MUIM_IconList_DestroyEntry, this_Icon);
+		    Remove((struct Node*)&this_Icon->ie_IconNode);
+		    DoMethod(obj, MUIM_IconList_DestroyEntry, this_Icon);
+		}
             }
 D(bug("[IconVolumeList] %s: Updating Icon List\n", __PRETTY_FUNCTION__));
             ForeachNodeSafe(&newiconlist, this_Icon, tmpNode)
