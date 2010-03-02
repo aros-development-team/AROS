@@ -551,6 +551,7 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Class *CLASS, Object *self, char *
                                             {
                                                 D(bug("[Wanderer:VolumeList] %s: LEAVEOUT Unknown Entry Type @ 0x%p\n", __PRETTY_FUNCTION__, this_entry));
                                             }
+					    DoMethod(self, MUIM_Family_AddTail, (struct Node*)&this_entry->ie_IconNode);
                                         }
                                         UnLock(fib_lock);
                                     }
