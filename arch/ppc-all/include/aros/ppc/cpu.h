@@ -1,7 +1,7 @@
 #ifndef AROS_PPC_CPU_H
 #define AROS_PPC_CPU_H
 /*
-    Copyright � 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -54,7 +54,7 @@
 #define AROS_SIG_ATOMIC_MIN     (-0x7fffffff-1)
 #define AROS_SIG_ATOMIC_MAX     0x7fffffff
 
-register unsigned char* AROS_GET_SP asm("%sp");
+register unsigned char* AROS_GET_SP __asm__("%sp");
 
 /*
      An offset value sometimes added to
