@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -59,7 +59,7 @@
     SANITY_CHECK(classPtr)
 
     ObtainSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
-    AddTail((struct List *)&GetPrivIBase(IntuitionBase)->ClassList, (struct Node *)classPtr);
+    AddHead((struct List *)&GetPrivIBase(IntuitionBase)->ClassList, (struct Node *)classPtr);
     classPtr->cl_Flags |= CLF_INLIST;
     ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
 
