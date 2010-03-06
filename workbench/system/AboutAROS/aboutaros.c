@@ -229,7 +229,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         MUIA_Application_Title, __(MSG_TITLE),
         MUIA_Application_Version, (IPTR)VERSION,
-        MUIA_Application_Copyright, (IPTR)"© 2006, The AROS Development Team",
+        MUIA_Application_Copyright, (IPTR)"© 2010, The AROS Development Team",
         MUIA_Application_Description, __(MSG_TITLE),
         MUIA_Application_Base, (IPTR) "ABOUTAROS",
         SubWindow, (IPTR) (window = (Object *)WindowObject,
