@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Tool to convert IFF ILBM images into C source.
@@ -80,6 +80,7 @@ static BOOL 	    	    have_bmhd, have_cmap, have_body;
 static UBYTE	    	    red[256], green[256], blue[256];
 static char 	    	    imagename[1000];
 static char 	    	    bigimagename[1000];
+static BOOL		    brush2c;
 
 /****************************************************************************************/
 
@@ -105,17 +106,19 @@ static void getarguments(int argc, char **argv)
     char *imagenamestart, *sp;
     WORD i;
     
-    if (argc != 2)
+    if (argc == 3 && !strcasecmp(argv[1], "-b2c"))
     {
-    	fprintf(stderr, "Wrong number of arguments\n");
+	brush2c = 1;
+	filename = argv[2];
     }
-    
-    if (argc < 2)
+    else if (argc == 2)
     {
-    	cleanup("Usage: ilbmtoc filename", 1);
+	filename = argv[1];
     }
-    
-    filename = argv[1];
+    else
+    {
+    	cleanup("Usage: ilbmtoc [-b2c] filename", 1);
+    }
     
     if (strlen(filename) >= sizeof(imagename)) cleanup("Filename too long!", 1);
     
@@ -631,21 +634,72 @@ static void gensource(void)
 
 /****************************************************************************************/
 
+static void genbrush2csource(void)
+{
+    int i;
+
+    if (have_cmap)
+    {
+	printf("#ifdef USE_%s_COLORS\n", bigimagename);
+	printf("const ULONG %s_colors[%ld] =\n{\n", imagename, cmapentries * 3);
+	for (i = 0; i < cmapentries; i++)
+	    printf("\t0x%08lx,0x%08lx,0x%08lx,\n",
+		red[i] << 24 | red[i] << 16 | red[i] << 8 | red[i],
+		green[i] << 24 | green[i] << 16 | green[i] << 8 | green[i],
+		blue[i] << 24 | blue[i] << 16 | blue[i] << 8 | blue[i]);
+	printf("};\n");
+	printf("#endif\n\n");
+    }
+
+    if (have_body)
+    {
+	printf("#define %s_WIDTH       %3d\n", bigimagename, bmh.bmh_Width);
+	printf("#define %s_HEIGHT      %3d\n", bigimagename, bmh.bmh_Height);
+	printf("#define %s_DEPTH       %3d\n", bigimagename, bmh.bmh_Depth);
+	printf("#define %s_COMPRESSION %3d\n", bigimagename, bmh.bmh_Compression);
+	printf("#define %s_MASKING     %3d\n", bigimagename, bmh.bmh_Masking);
+	printf("\n");
+
+	printf("#ifdef USE_%s_HEADER\n", bigimagename);
+	printf("const struct BitMapHeader %s_header =\n{ %ld,%ld,%ld,%ld,%ld,%ld,%ld,0,%ld,%ld,%ld,%ld,%ld };\n",
+	    imagename, bmh.bmh_Width, bmh.bmh_Height, bmh.bmh_Left, bmh.bmh_Top,
+	    bmh.bmh_Depth, bmh.bmh_Masking, bmh.bmh_Compression, bmh.bmh_Transparent,
+	    bmh.bmh_XAspect, bmh.bmh_YAspect, bmh.bmh_PageWidth, bmh.bmh_PageHeight);
+	printf("#endif\n\n");
+
+	printf("#ifdef USE_%s_BODY\n", bigimagename);
+	printf("const UBYTE %s_body[%ld] = {\n", imagename, bodysize);
+	for (i = 0; i < bodysize; i++)
+	{
+	    printf("0x%02lx,", body[i]);
+	    if (!((i + 1) % 15)) printf("\n");
+	}
+	printf(" };\n");
+	printf("#endif\n");
+    }
+}
+
+/****************************************************************************************/
+
 int main(int argc, char **argv)
 {
     getarguments(argc, argv);
     openfile();
     checkfile();
     scanfile();
-    convertbody();
-    packdata();
-    gensource();
+
+    if (brush2c)
+    {
+	genbrush2csource();
+    }
+    else
+    {
+	convertbody();
+	packdata();
+	gensource();
+    }
     
     cleanup(0, 0);
 }
 
-/****************************************************************************************/
-/****************************************************************************************/
-/****************************************************************************************/
-/****************************************************************************************/
 /****************************************************************************************/
