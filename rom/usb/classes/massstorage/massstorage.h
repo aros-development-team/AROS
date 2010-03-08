@@ -276,6 +276,7 @@ struct NepMSBase
     struct MsgPort     *nh_IOMsgPort;     /* Port for local IO */
     struct IOStdReq     nh_IOReq;         /* Fake IOReq */
     struct Library     *nh_ExpansionBase; /* ExpansionBase */
+    struct Library     *nh_PartitionBase; /* PartitionBase */
     struct Library     *nh_PsdBase;       /* PsdBase */
     struct Library     *nh_DOSBase;       /* DOS base */
     struct MsgPort     *nh_TimerMsgPort;  /* Port for timer.device */

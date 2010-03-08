@@ -95,5 +95,7 @@ AROS_UFP3(LONG, GM_UNIQUENAME(LUNListDisplayHook),
           AROS_UFPA(struct Hook *, hook, A0),
           AROS_UFPA(char **, strarr, A2),
           AROS_UFPA(struct NepClassMS *, ncm, A1));
-          
+
+BOOL CheckPartitions(struct NepClassMS *ncm);
+
 #endif /* MASSSTORAGE_CLASS_H */

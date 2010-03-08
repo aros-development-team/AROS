@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 
-FILES :=    massstorage.class dev debug
+FILES :=    massstorage.class dev debug partitions
 
 #MM- kernel-usb-classes-massstorage : kernel-usb-usbclass kernel-usb-poseidon
 
