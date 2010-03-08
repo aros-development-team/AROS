@@ -2,7 +2,7 @@
 #define _ARGS_H_
 
 /*
-    Copyright © 2004-2008, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,9 +15,11 @@ enum Argument
     UNIT,
     SYSSIZE, /* Size of System partition in MBs */
     SYSTYPE, /* Type of filesystem on System partition [FFSIntl, SFS] */
+    SYSNAME, /* Name of System partition */
     WORKSIZE, /* Size of Work partition in MBs */
     MAXWORK, /* Create maximum-sized Work partition */
     WORKTYPE, /* Type of filesystem on Work partition [FFSIntl, SFS] */
+    WORKNAME, /* Name of Work partition */
     WIPE,   /* Destroy all existing partitions */
     FORCE,  /* Don't ask the user for permission */
     QUIET,  /* Don't print anything */
