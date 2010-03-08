@@ -4,7 +4,7 @@
 static const char KMsgWelcome[] =
 MUIX_B"\nWelcome to the AROS Research OS installer.\n\n" MUIX_N
 "This program allows you to install AROS\n"
-"on your computer's hard drive.\n\n"
+"on your computer's hard disk or an attached USB drive.\n\n"
 "Please be aware that the stability of this software\n"
 "cannot be guaranteed.\n"
 "It is possible that " MUIX_B "loss of data" MUIX_N " may occur\n"
@@ -38,14 +38,14 @@ static const char KMsgBeginWithoutPartition[] =
 "\nSelect Proceed to begin installation.";
 
 static const char KMsgPartitionOptions[] =
-"We will now create AROS partitions on your hard drive\n\n"
-"Please select how you would like to proceed...\n";
+"We will now create AROS partitions on the destination drive.\n\n"
+"Please select how you would like to proceed.\n";
 
 static const char KMsgDestPartition[] =
-"System Partition (DH0)";
+MUIX_B "System Partition:" MUIX_N;
 
 static const char KMsgWorkPartition[] =
-"Work Partition (DH1)";
+MUIX_B "Work Partition:" MUIX_N;
 
 static const char KMsgPartitionTooBig[] =
 "The partition sizes you have requested are too large.\n"
@@ -77,12 +77,12 @@ static const char KMsgPartitioning[] =
 "Partitioning your drives...\n\n";
 
 static const char KMsgInstall[] =
-"Copying files to the hard disk.\n\n"
+"Copying files to the destination drive.\n\n"
 "This may take some time...\n";
 
 static const char KMsgBootLoader[] =
 "Copying the GRUB bootloader to your\n"
-"hard drive, and installing...\n";
+"destination drive, and installing...\n";
 
 static const char KMsgPostInstall[] =
 "Running the external post-install\n"
@@ -97,7 +97,7 @@ static const char KMsgDoneReboot[] =
 
 static const char KMsgDone[] =
 "Congratulations, you now have AROS installed!\n\n"
-"To boot AROS from the hard drive,\n"
+"To boot AROS from the destination drive,\n"
 "remove the installation media and\n"
 "restart your computer using the\n"
 "power switch or reset button.\n\n"
@@ -129,10 +129,10 @@ static const char KMsgPartitioningFailed[] =
 
 static const char KMsgGRUBNonFFSWarning[] =
 "You have selected a filesystem different\n"
-"than FFS-Intl for the DH0 partition. Since\n"
-"this distribution of AROS is compiled  with\n"
-"GRUB bootloader, you will not be able to\n"
-"boot the system after installation\n\n"
+"than FFS-Intl for the system partition. Since\n"
+"this distribution of AROS is compiled with the\n"
+"original GRUB bootloader, you will not be able to\n"
+"boot the system after installation.\n\n"
 "Should the partitioning continue?\n";
 
 /* Unused strings. Kept for reference */
