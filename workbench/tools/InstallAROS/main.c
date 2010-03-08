@@ -45,11 +45,13 @@
 #define kBufSize  		(4*65536)
 #define kExallBufSize  		(4096)
 
-#define kDstPartVol 		"DH0"
-#define kDstWorkVol 		"DH1"
+#define SYS_PART_NAME 		"DH0"
+#define WORK_PART_NAME 		"DH1"
+#define USB_PART_NAME 		"DU0"
 #define package_Path		"SYS:"
-#define kDstPartName 		"AROS"
-#define kDstWorkName 		"Work"
+#define SYS_VOL_NAME 		"AROS"
+#define WORK_VOL_NAME 		"Work"
+#define USB_VOL_NAME 		"AROS Live Drive"
 
 #define MAX_FFS_SIZE (4L * 1024)
 #define MAX_SFS_SIZE (124L * 1024)
@@ -166,6 +168,7 @@ Object* 			dest_volume = NULL;
 Object* 			work_volume = NULL;
 
 Object* 			dest_device = NULL;
+Object*			cycle_drivetype = NULL;
 Object* 			dest_unit = NULL;
 Object* 			show_sizesys = NULL;
 Object* 			show_sizework = NULL;
@@ -174,6 +177,8 @@ Object* 			check_sizework = NULL;
 Object* 			check_creatework = NULL;
 Object* 			sys_size = NULL;
 Object* 			work_size = NULL;
+Object* 			sys_devname = NULL;
+Object* 			work_devname = NULL;
 
 Object* 			grub_device = NULL;
 Object* 			grub_unit = NULL;
@@ -252,6 +257,8 @@ IPTR Install__OM_NEW
 	data->disable_back  		= FALSE;
 
 	data->instc_cflag_driveset     		= (BOOL)DoMethod(self, MUIM_FindDrives);
+	if (getDiskFSSM(USB_PART_NAME ":") != NULL)
+		SET(dest_volume, MUIA_String_Contents, USB_PART_NAME);
     boot_Unit = GuessFirstHD(boot_Device);
 
 	DoMethod(data->proceed, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_IC_NextStep);
@@ -522,6 +529,7 @@ IPTR Install__MUIM_FindDrives
 		devnode = CurBootNode->bn_DeviceNode;
 		StartMess = devnode->dvi_Startup;
 		if (!StartMess) continue;
+		D(bug("[INSTALLER.fd] Drive found [%s unit %d]\n",StartMess->fssm_Device, StartMess->fssm_Unit));
 
 		DriveEnv = StartMess->fssm_Environ;
 
@@ -581,13 +589,13 @@ static struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path)
                     printf("device '%s' doesn't contain a file system\n",
                            dname);
             }
-            else
-                PrintFault(ERROR_OBJECT_NOT_FOUND, dname);
+//            else
+//                PrintFault(ERROR_OBJECT_NOT_FOUND, dname);
         }
     }
     else
         printf("'%s' doesn't contain a device name\n", path);
-    return 0;
+    return NULL;
 }
 
 void w2strcpy(STRPTR name, UWORD *wstr, ULONG len)
@@ -833,8 +841,8 @@ IPTR Install__MUIM_IC_NextStep
                 return 0;
             }
 
-            /* Warn user about partitiong DH0: to non FFS-Intl filesystem
-               on GRUB */
+            /* Warn user about using non FFS-Intl filesystem for system
+               partition with GRUB */
             if ((BootLoaderType == BOOTLOADER_GRUB1) && (systype != 0))
             {
                 if(MUI_RequestA(data->installer, data->window, 0, "Warning", 
@@ -1246,13 +1254,18 @@ IPTR Install__MUIM_Partition
 			sprintf(tmparg, " SYSSIZE=%ld", tmp);
 			strcat(tmpcmd, tmparg);
 		}
-        
-        /* Specify SYS filesystem (defaults to FFSIntl)*/
-        get(cycle_fstypesys, MUIA_Cycle_Active, &tmp);
-        if ((int)tmp == 1)
-            strcat(tmpcmd, " SYSTYPE=SFS");
-        else
-            strcat(tmpcmd, " SYSTYPE=FFSIntl");
+
+		/* Specify SYS name */
+		GET(sys_devname, MUIA_String_Contents, &tmp);
+		sprintf(tmparg, " SYSNAME=\"%s\"", (char *)tmp);
+		strcat(tmpcmd, tmparg);
+
+		/* Specify SYS filesystem (defaults to FFSIntl)*/
+		get(cycle_fstypesys, MUIA_Cycle_Active, &tmp);
+		if ((int)tmp == 1)
+			strcat(tmpcmd, " SYSTYPE=SFS");
+		else
+			strcat(tmpcmd, " SYSTYPE=FFSIntl");
 
 		/* Specify Work size */
 		GET(check_creatework, MUIA_Selected, &option);
@@ -1269,14 +1282,19 @@ IPTR Install__MUIM_Partition
 			{
 				strcat(tmpcmd, " MAXWORK");
 			}
-		}
 
-        /* Specify WORK filesystem (defaults to SFS)*/
-        get(cycle_fstypework, MUIA_Cycle_Active, &tmp);
-        if ((int)tmp == 0)
-            strcat(tmpcmd, " WORKTYPE=FFSIntl");
-        else
-            strcat(tmpcmd, " WORKTYPE=SFS");
+			/* Specify WORK filesystem (defaults to SFS)*/
+			get(cycle_fstypework, MUIA_Cycle_Active, &tmp);
+			if ((int)tmp == 0)
+				strcat(tmpcmd, " WORKTYPE=FFSIntl");
+			else
+				strcat(tmpcmd, " WORKTYPE=SFS");
+
+			/* Specify WORK name */
+			GET(work_devname, MUIA_String_Contents, &tmp);
+			sprintf(tmparg, " WORKNAME=\"%s\"", (char *)tmp);
+			strcat(tmpcmd, tmparg);
+		}
 
 		/* Specify whether to wipe disk or not */
 		GET(data->instc_options_main->opt_partmethod, MUIA_Radio_Active,
@@ -2306,6 +2324,7 @@ IPTR Install__MUIM_Format
 {
 	struct Install_DATA *data    = INST_DATA(CLASS, self);
 	char			dev_nametmp[100];
+	char			vol_nametmp[100];
 	char			fmt_nametmp[100];
 	BOOL			success = FALSE;
 	IPTR 			option = FALSE;
@@ -2316,7 +2335,12 @@ IPTR Install__MUIM_Format
 	D(bug("[INSTALLER] %s\n",fmt_nametmp));
 	SET(data->label, MUIA_Text_Contents, fmt_nametmp);
 	SET(data->gauge2, MUIA_Gauge_Current, 0);
-    
+
+	/* Change volume name if installing to a USB drive */
+	GET(grub_device, MUIA_String_Contents, &option);
+	if (strcmp((char *)option, "usbscsi.device") == 0)
+		strcpy(vol_nametmp, USB_VOL_NAME);
+
 	/* Format Vol0 */
 	sprintf(dev_nametmp,"%s:",dest_Path);
 
@@ -2329,7 +2353,7 @@ IPTR Install__MUIM_Format
          * type when formatting
          */
     	D(bug("[INSTALLER] (info) Using FormatPartition\n"));
-    	success = FormatPartition(dev_nametmp, kDstPartName, ID_INTER_FFS_DISK);
+    	success = FormatPartition(dev_nametmp, vol_nametmp, ID_INTER_FFS_DISK);
 
     	if (success) set(data->gauge2, MUIA_Gauge_Current, 100);
 	}
@@ -2353,7 +2377,7 @@ IPTR Install__MUIM_Format
          * type when formatting (ID_INTER_FFS_DISK or ID_SFS_BE_DISK)
          */
 		D(bug("[INSTALLER] (info) Using FormatPartition\n"));
-		success = FormatPartition(dev_nametmp, kDstWorkName, ID_INTER_FFS_DISK);
+		success = FormatPartition(dev_nametmp, WORK_VOL_NAME, ID_INTER_FFS_DISK);
 
 		if (success)
 		{
@@ -2894,6 +2918,13 @@ int main(int argc,char *argv[])
 	Object* gauge3 = (GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 0, End);
 /**/
 
+	static char *opt_drivetypes[] =
+	{
+		"IDE/SATA",
+		"USB",
+		NULL
+	};
+
 	Object				*label=NULL;
 	static char *opt_partentries[] =
 	{
@@ -2987,10 +3018,10 @@ int main(int argc,char *argv[])
 	FreeVec(source_path);
 
 	dest_Path = dest_path;
-	sprintf(dest_Path,"" kDstPartVol);
+	sprintf(dest_Path,"" SYS_PART_NAME);
 
 	work_Path = work_path;
-	sprintf(work_Path,"" kDstWorkVol);
+	sprintf(work_Path,"" WORK_PART_NAME);
 	
 	FindBootLoader();
 	cycle_fstypesys = CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, FALSE, MUIA_Cycle_Active, BootLoaderType == BOOTLOADER_GRUB1 ? 0 : 1, End;
@@ -3017,7 +3048,7 @@ int main(int argc,char *argv[])
 
 	Object *app = ApplicationObject,
 		MUIA_Application_Title,       (IPTR) "AROS Installer",
-		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.7 (1.3.2010)",
+		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.8 (7.3.2010)",
 		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2010, The AROS Development Team. All rights reserved.",
 		MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
 		MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
@@ -3075,7 +3106,23 @@ int main(int argc,char *argv[])
 										Child, (IPTR) CLabel(KMsgPartitionOptions),
 										Child, (IPTR) HVSpace,
 
-										Child, (IPTR) ColGroup(5),
+										Child, (IPTR) HVSpace,
+										Child, (IPTR) (radio_part = RadioObject,
+											GroupFrame,
+											MUIA_Radio_Entries, (IPTR) opt_partentries,
+										End),
+
+										Child, (IPTR) HVSpace,
+
+										Child, (IPTR) LLabel(MUIX_B "Drive:" MUIX_N),
+										Child, (IPTR) ColGroup(6),
+											Child, (IPTR) LLabel("Type:"),
+											Child, (IPTR) (cycle_drivetype =
+												CycleObject,
+												MUIA_Cycle_Entries, (IPTR) opt_drivetypes,
+												MUIA_Cycle_Active, 0,
+												End),
+											Child, (IPTR) HVSpace,
 											Child, (IPTR) LLabel("Device:"),
 											Child, (IPTR) (dest_device =
 												StringObject,
@@ -3084,7 +3131,6 @@ int main(int argc,char *argv[])
 												MUIA_Frame, MUIV_Frame_String,
 												MUIA_HorizWeight, 200,
 												End),
-											Child, (IPTR) HVSpace,
 											Child, (IPTR) LLabel("Unit:"),
 											Child, (IPTR) (dest_unit =
 												StringObject,
@@ -3096,20 +3142,22 @@ int main(int argc,char *argv[])
 										End,
 
 										Child, (IPTR) HVSpace,
-										Child, (IPTR) (radio_part = RadioObject, 
-											GroupFrame,
-											MUIA_Radio_Entries, (IPTR) opt_partentries,
-										End),
-										Child, (IPTR) HVSpace,
-										Child, (IPTR) ColGroup(2),
-											Child, (IPTR) ColGroup(2),
-												Child, (IPTR) LLabel(KMsgDestPartition),
-												Child, (IPTR) HVSpace,
-											End,
-										End,
+
+										Child, (IPTR) LLabel(KMsgDestPartition),
 										Child, (IPTR) ColGroup(7),
+											Child, (IPTR) LLabel("Name:"),
+											Child, (IPTR) (sys_devname = StringObject,
+												MUIA_String_Contents, SYS_PART_NAME,
+												MUIA_Disabled, TRUE,
+												MUIA_Frame, MUIV_Frame_String,
+											End),
+											Child, (IPTR) HVSpace,
+											Child, (IPTR) HVSpace,
+											Child, (IPTR) HVSpace,
+											Child, (IPTR) HVSpace,
+											Child, (IPTR) HVSpace,
 											Child, (IPTR) LLabel("Filesystem:"),
-                                            Child, (IPTR) cycle_fstypesys,
+											Child, (IPTR) cycle_fstypesys,
 											Child, (IPTR) LLabel("Size:"),
 											Child, (IPTR) (sys_size = StringObject,
 												MUIA_String_Accept, "0123456789",
@@ -3121,14 +3169,22 @@ int main(int argc,char *argv[])
 											Child, (IPTR) check_sizesys,
 											Child, (IPTR) LLabel("Specify Size"),
 										End,
+
 										Child, (IPTR) HVSpace,
-										Child, (IPTR) ColGroup(4),
-											Child, (IPTR) LLabel(KMsgWorkPartition),
+
+										Child, (IPTR) LLabel(KMsgWorkPartition),
+										Child, (IPTR) ColGroup(7),
+											Child, (IPTR) LLabel("Name:"),
+											Child, (IPTR) (work_devname = StringObject,
+												MUIA_String_Contents, WORK_PART_NAME,
+												MUIA_Disabled, TRUE,
+												MUIA_Frame, MUIV_Frame_String,
+											End),
+											Child, (IPTR) HVSpace,
+											Child, (IPTR) HVSpace,
 											Child, (IPTR) HVSpace,
 											Child, (IPTR) check_creatework,
 											Child, (IPTR) LLabel("Create"),
-										End,
-										Child, (IPTR) ColGroup(7),
 											Child, (IPTR) LLabel("Filesystem:"),
                                             Child, (IPTR) cycle_fstypework,
 											Child, (IPTR) LLabel("Size:"),
@@ -3332,7 +3388,7 @@ int main(int argc,char *argv[])
 
 	/* Update GUI in response to certain user actions */
 
-    /* Notifications on partitioning action */
+	/* Notifications on partitioning action */
 	DoMethod(radio_part, MUIM_Notify, (IPTR) MUIA_Radio_Active, 0,
 		(IPTR) check_sizesys, 3, MUIM_Set,
 		MUIA_Disabled, FALSE);
@@ -3342,11 +3398,35 @@ int main(int argc,char *argv[])
 	DoMethod(radio_part, MUIM_Notify, (IPTR) MUIA_Radio_Active, 2,
 		(IPTR) check_sizesys, 3, MUIM_Set,
 		MUIA_Disabled, TRUE);
-    DoMethod(radio_part, MUIM_Notify, (IPTR) MUIA_Radio_Active, 2,
-        (IPTR) check_sizesys, 3, MUIM_Set,
-        MUIA_Selected, FALSE);
+	DoMethod(radio_part, MUIM_Notify, (IPTR) MUIA_Radio_Active, 2,
+		(IPTR) check_sizesys, 3, MUIM_Set,
+		MUIA_Selected, FALSE);
 
-    /* Notifications on change of enable status of 'entry size of sys volume' */
+	/* Notifications upon selection of drive type */
+	DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 0,
+		(IPTR) dest_device, 3, MUIM_Set,
+		MUIA_String_Contents, "ata.device");
+	DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 1,
+		(IPTR) dest_device, 3, MUIM_Set,
+		MUIA_String_Contents, "usbscsi.device");
+	DoMethod(cycle_drivetype, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+		(IPTR) dest_unit, 3, MUIM_Set,
+		MUIA_String_Integer, 0);
+	DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 0,
+		(IPTR) sys_devname, 3, MUIM_Set,
+		MUIA_String_Contents, SYS_PART_NAME);
+	DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 1,
+		(IPTR) sys_devname, 3, MUIM_Set,
+		MUIA_String_Contents, USB_PART_NAME);
+
+	/* Notifications on change of enable status of 'enter size of sys volume'
+	 * (this tells us if we are using existing partitions) */
+	DoMethod(check_sizesys, MUIM_Notify, MUIA_Disabled, MUIV_EveryTime,
+		(IPTR) sys_devname, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_TriggerValue);
+	DoMethod(check_sizesys, MUIM_Notify, MUIA_Disabled, MUIV_EveryTime,
+		(IPTR) cycle_drivetype, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_TriggerValue);
 	DoMethod(check_sizesys, MUIM_Notify, MUIA_Disabled, MUIV_EveryTime,
 		(IPTR) dest_device, 3, MUIM_Set,
 		MUIA_Disabled, MUIV_TriggerValue);
@@ -3357,7 +3437,7 @@ int main(int argc,char *argv[])
 		(IPTR) cycle_fstypesys, 3, MUIM_Set,
 		MUIA_Disabled, MUIV_TriggerValue);
 
-    /* Notifications on change of selected status of 'entry size of sys volume' */
+	/* Notifications on change of selected status of 'enter size of sys volume' */
 	DoMethod(check_sizesys, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
 		(IPTR) check_creatework, 3, MUIM_Set,
 		MUIA_Disabled, MUIV_NotTriggerValue);
@@ -3372,6 +3452,9 @@ int main(int argc,char *argv[])
 		MUIA_Selected, FALSE);
 
     /* Notifications on change of selected status of 'create work volume' */
+	DoMethod(check_creatework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) work_devname, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_NotTriggerValue);
 	DoMethod(check_creatework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
 		(IPTR) check_sizework, 3, MUIM_Set,
 		MUIA_Disabled, MUIV_NotTriggerValue);
