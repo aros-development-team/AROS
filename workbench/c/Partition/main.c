@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,8 +11,8 @@
 
     SYNOPSIS
 
-        DEVICE, UNIT/N, SYSSIZE/K/N, SYSTYPE/K, WORKSIZE/K/N, MAXWORK/S, 
-        WORKTYPE/K, WIPE/S, FORCE/S, QUIET/S
+        DEVICE, UNIT/N, SYSSIZE/K/N, SYSTYPE/K, SYSNAME/K, WORKSIZE/K/N,
+        MAXWORK/S, WORKTYPE/K, WORKNAME/K, WIPE/S, FORCE/S, QUIET/S
 
     LOCATION
 
@@ -39,6 +39,10 @@
         The available options are "SFS" (Smart Filesystem, the default), and
         "FFSIntl" (the traditional so-called Fast Filesystem).
 
+        The DOS device names used for the System and Work partitions may be
+        specified using the SYSNAME and WORKNAME arguments respectively.
+        By default, these are DH0 and DH1.
+
         If you wish to use only AROS on the drive you run this command on,
         you can specify the WIPE option, which destroys all existing
         partitions on the drive. Be very careful with this option: it
@@ -58,12 +62,14 @@
 	SYSSIZE -- The System (boot) partition size in megabytes.
 	SYSTYPE -- The file system to use for the system partition, either
             "SFS" (the default) or "FFSIntl".
+	SYSNAME -- The name to use for the system partition (defaults to DH0).
 	WORKSIZE -- The Work (secondary) partition size in megabytes. To use
             this option, SYSSIZE must also be specified.
 	MAXWORK -- Make the Work partition as large as possible. To use this
             option, SYSSIZE must also be specified.
 	WORKTYPE -- The file system to use for the work partition, either
             "SFS" (the default) or "FFSIntl".
+	WORKNAME -- The name to use for the work partition (defaults to DH1).
 	WIPE -- Destroy all other partitions on the drive, including those
             used by other operating systems (CAUTION!).
 	FORCE -- Do not ask for confirmation before partitioning the drive.
@@ -398,18 +404,18 @@ int main(void)
 
         /* Create partitions in the RDB table */
 
-        /* Create DH0 partition (defaults to FFSIntl) */
-        sysPart = CreateRDBPartition(diskPart, 0, sysHighCyl, "DH0", TRUE,
-            sysType);
+        /* Create System partition (defaults to FFSIntl) */
+        sysPart = CreateRDBPartition(diskPart, 0, sysHighCyl, ARG(SYSNAME),
+            TRUE, sysType);
         if (sysPart == NULL)
             error = ERROR_UNKNOWN;
 
         if (sysSize != 0
             && sysHighCyl < diskPart->de.de_HighCyl - diskPart->de.de_LowCyl)
         {
-            /* Create DH1 partition (defaults to SFS) */
+            /* Create Work partition (defaults to SFS) */
             workPart = CreateRDBPartition(diskPart, sysHighCyl + 1, 0,
-                "DH1", FALSE, workType);
+                ARG(WORKNAME), FALSE, workType);
             if (workPart == NULL)
                 error = ERROR_UNKNOWN;
         }
