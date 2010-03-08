@@ -117,6 +117,8 @@
 #define MAX_SFS_SIZE (124L * 1024)
 #define MAX_SIZE(A) (((A) == &sfs0) ? MAX_SFS_SIZE : MAX_FFS_SIZE)
 
+const TEXT version_string[] = "$VER: Partition 41.2 (8.3.2010)";
+
 static const struct PartitionType dos3 = { "DOS\3", 4 };
 #if AROS_BIG_ENDIAN
 static const struct PartitionType sfs0 = { "SFS\0", 4 };
@@ -405,7 +407,7 @@ int main(void)
         /* Create partitions in the RDB table */
 
         /* Create System partition (defaults to FFSIntl) */
-        sysPart = CreateRDBPartition(diskPart, 0, sysHighCyl, ARG(SYSNAME),
+        sysPart = CreateRDBPartition(diskPart, 0, sysHighCyl, (APTR)ARG(SYSNAME),
             TRUE, sysType);
         if (sysPart == NULL)
             error = ERROR_UNKNOWN;
@@ -415,7 +417,7 @@ int main(void)
         {
             /* Create Work partition (defaults to SFS) */
             workPart = CreateRDBPartition(diskPart, sysHighCyl + 1, 0,
-                ARG(WORKNAME), FALSE, workType);
+                (APTR)ARG(WORKNAME), FALSE, workType);
             if (workPart == NULL)
                 error = ERROR_UNKNOWN;
         }
