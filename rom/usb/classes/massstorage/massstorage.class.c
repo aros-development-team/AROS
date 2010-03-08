@@ -674,7 +674,7 @@ void GM_UNIQUENAME(usbReleaseInterfaceBinding)(struct NepMSBase *nh, struct NepC
             ncm = (struct NepClassMS *) ncm->ncm_Unit.unit_MsgPort.mp_Node.ln_Succ;
         }
         psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                       "'%s' retreated, pitful coward.",
+                       "'%s' retreated, pitiful coward.",
                        devname);
         CloseLibrary(ps);
     }
@@ -1998,23 +1998,6 @@ LONG nGetGeometry(struct NepClassMS *ncm, struct IOStdReq *ioreq)
     }
     KPRINTF(10, ("PatchFlags 0x%lx DeviceType %ld\n",ncm->ncm_CDC->cdc_PatchFlags,ncm->ncm_DeviceType));
 
-    /*
-     * <10000 blocks should cover all kinds of weird floppies...
-     * Let's hope GetModePage works with these floppy controllers
-     * R.S.
-     */
-    if((ncm->ncm_CDC->cdc_PatchFlags & PFF_SIMPLE_SCSI) && (ncm->ncm_Geometry.dg_TotalSectors > 10000))
-    {
-        /*
-         * Just return an LBA layout
-         * R.S.
-         */
-        ncm->ncm_Geometry.dg_Cylinders = ncm->ncm_Geometry.dg_TotalSectors;
-        ncm->ncm_Geometry.dg_CylSectors = 1;
-        ncm->ncm_Geometry.dg_Heads = 1;
-        ncm->ncm_Geometry.dg_TrackSectors = 1;
-        gotcyl = gotheads = gotsect = gotcylsect = TRUE;
-    } else {
         if(!((ncm->ncm_CDC->cdc_PatchFlags & PFF_SIMPLE_SCSI) ||
              (ncm->ncm_DeviceType == PDT_WORM) ||
              (ncm->ncm_DeviceType == PDT_CDROM)))
@@ -2112,7 +2095,6 @@ LONG nGetGeometry(struct NepClassMS *ncm, struct IOStdReq *ioreq)
                 }
             }
         }
-    }
     // missing total blocks?
     if((!gotblks) && gotcyl && gotheads && gotsect)
     {
@@ -3394,10 +3376,10 @@ LONG nScsiDirect(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
                 cmd12[1] = scsicmd->scsi_Command[1] & 0xf7;
                 cmd12[2] = scsicmd->scsi_Command[2];
                 cmd12[3] = scsicmd->scsi_Command[3];
-                // Workaround: Some devices are seriously broken and do not interprete
+                // Workaround: Some devices are seriously broken and do not interpret
                 // the upper byte of the allocation length field.
                 // Hence they return 3 bytes instead of 259 bytes. For this special case,
-                // we will simple truncate the size by four, to get back to a 255 bytes
+                // we will simply truncate the size by four, to get back to a 255 byte
                 // buffer.
                 if((scsicmd->scsi_Command[4] > 251) && (scsicmd->scsi_Length == scsicmd->scsi_Command[4]))
                 {
@@ -4645,12 +4627,10 @@ AROS_UFH0(void, GM_UNIQUENAME(nRemovableTask))
                                 }
                                 ncm->ncm_HasMounted = TRUE;
 
-                                if(ncm->ncm_BlockSize && ncm->ncm_CUC->cuc_AutoMountRDB)
+                                // find and mount partitions
+                                if(!CheckPartitions(ncm) && ncm->ncm_CUC->cuc_AutoMountFAT)
                                 {
-                                    ProcessRDB(ncm);
-                                }
-                                if(ncm->ncm_CUC->cuc_AutoMountFAT)
-                                {
+                                    // check for FAT volume with no partition table
                                     CheckFATPartition(ncm, 0);
                                 }
                                 if((ncm->ncm_BlockSize == 2048) &&
@@ -4737,9 +4717,16 @@ struct NepMSBase * GM_UNIQUENAME(nAllocRT)(void)
     nh = thistask->tc_UserData;
 #undef ExpansionBase
 #define ExpansionBase nh->nh_ExpansionBase
+#undef PartitionBase
+#define PartitionBase nh->nh_PartitionBase
     do
     {
         if(!(ExpansionBase = OpenLibrary("expansion.library", 37)))
+        {
+            Alert(AG_OpenLib);
+            break;
+        }
+        if(!(PartitionBase = OpenLibrary("partition.library", 1)))
         {
             Alert(AG_OpenLib);
             break;
@@ -4778,6 +4765,11 @@ struct NepMSBase * GM_UNIQUENAME(nAllocRT)(void)
     {
         CloseLibrary(ExpansionBase);
         ExpansionBase = NULL;
+    }
+    if(PartitionBase)
+    {
+        CloseLibrary(PartitionBase);
+        PartitionBase = NULL;
     }
     if(ps)
     {
@@ -4829,6 +4821,8 @@ void GM_UNIQUENAME(nFreeRT)(struct NepMSBase *nh)
     }
     CloseLibrary(ExpansionBase);
     ExpansionBase = NULL;
+    CloseLibrary(PartitionBase);
+    PartitionBase = NULL;
     CloseLibrary(ps);
     ps = NULL;
 
@@ -5591,7 +5585,7 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
             params[0] = (IPTR) dosDevice;
             params[1] = (IPTR) DEVNAME;
             params[2] = ncm->ncm_UnitNo;
-            params[3] = 0x00; // Flags für OpenDevice
+            params[3] = 0x00; // Flags for OpenDevice
             CopyMem(rdsk->rdsk_PART.pb_Environment, &params[4], sizeof(struct DosEnvec));
 
             if((node = MakeDosNode(params)))
@@ -5783,50 +5777,6 @@ void CheckPartition(struct NepClassMS *ncm)
 }
 /* \\\ */
 
-/* /// "CheckFATPartType()" */
-BOOL CheckFATPartType(struct PartitionEntry *pe)
-{
-    BOOL result;
-
-    result = (BOOL)(pe->pe_Type == 0x01 ||  // DOS 12bit FAT
-                    pe->pe_Type == 0x04 ||  // DOS 16bit FAT <32M
-                    pe->pe_Type == 0x06 ||  // DOS 16bit FAT >=32M
-                    pe->pe_Type == 0x08 ||  // Commodore DOS 16bit FAT >=32M
-                    pe->pe_Type == 0x0b ||  // Win95 FAT32
-                    pe->pe_Type == 0x0c ||  // Win95 FAT32 LBA
-                    pe->pe_Type == 0x0e ||  // Win95 FAT16 LBA
-                    pe->pe_Type == 0x11 ||  // Logical FAT
-                    pe->pe_Type == 0x24 ||  // NEC Logical FAT
-                    pe->pe_Type == 0x86 ||  // Legacy Fault Tolerant FAT
-                    pe->pe_Type == 0x88 ||  // Legacy Fault Tolerant FAT
-                    pe->pe_Type == 0x8b ||  // Legacy Fault Tolerant FAT
-                    pe->pe_Type == 0x8c);   // Legacy Fault Tolerant FAT
-    return(result);
-}
-/* \\\ */
-
-/* /// "CheckNTFSPartType()" */
-BOOL CheckNTFSPartType(struct PartitionEntry *pe)
-{
-    BOOL result;
-
-    result = (BOOL)(pe->pe_Type == 0x07 ||  // NTFS
-                    pe->pe_Type == 0x87);   // Legacy Fault Tolerant NTFS
-    return(result);
-}
-/* \\\ */
-
-/* /// "CheckExtPartType()" */
-BOOL CheckExtPartType(struct PartitionEntry *pe)
-{
-    BOOL result;
-
-    result = (BOOL)(pe->pe_Type == 0x05 ||  // DOS 3.3 extended partition
-                    pe->pe_Type == 0x0f);   // WIN95: Extended partition, LBA-mapped
-    return(result);
-}
-/* \\\ */
-
 /* /// "IsFATSuperBlock()" */
 BOOL IsFATSuperBlock(struct FATSuperBlock *fsb)
 {
@@ -5867,182 +5817,7 @@ void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
     stdIO->io_Data = mbr;
     if(!nIOCmdTunnel(ncm, stdIO))
     {
-        for(part = 0; part < 4; part++)
-        {
-            // WARNING: Arithmetic will break with partitions beyond 2048 GB offset.
-            mbr->mbr_Partition[part].pe_StartLBA = startblock + AROS_LONG2LE(mbr->mbr_Partition[part].pe_StartLBA);
-            mbr->mbr_Partition[part].pe_SectorCount = AROS_LONG2LE(mbr->mbr_Partition[part].pe_SectorCount);
-            if(CheckExtPartType(&mbr->mbr_Partition[part]))
-            {
-                // recurse
-                if(mbr->mbr_Partition[part].pe_StartLBA != startblock)
-                {
-                    // avoid direct infinite loops
-                    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                                   "Reading extended partition info in block %ld.", mbr->mbr_Partition[part].pe_StartLBA);
-                    CheckFATPartition(ncm, startblock + mbr->mbr_Partition[part].pe_StartLBA);
-                }
-            }
-            else if(CheckFATPartType(&mbr->mbr_Partition[part]))
-            {
-                KPRINTF(5, ("examining partition %ld, start LBA: %ld, sector count: %ld\n",
-                            part, mbr->mbr_Partition[part].pe_StartLBA, mbr->mbr_Partition[part].pe_SectorCount));
-                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Partition %d is (probably) FAT formatted!", part);
-
-                /*if(mbr->mbr_Partition[part].pe_Flags & PE_FLAGF_ACTIVE)
-                {*/
-                    KPRINTF(5, ("partition is active\n"));
-                    stdIO->io_Command = TD_READ64;
-                    stdIO->io_Offset = mbr->mbr_Partition[part].pe_StartLBA<<ncm->ncm_BlockShift;
-                    stdIO->io_Actual = mbr->mbr_Partition[part].pe_StartLBA>>(32-ncm->ncm_BlockShift);
-                    stdIO->io_Length = ncm->ncm_BlockSize;
-                    stdIO->io_Data = fsb;
-
-                    if(!nIOCmdTunnel(ncm, stdIO))
-                    {
-                        //dumpmem(fsb, 512);
-                        if(IsFATSuperBlock(fsb))
-                        {
-                            isfat = TRUE;
-
-                            nh->nh_RDsk.rdsk_PART.pb_DevFlags = 0;
-
-                            if(*(ncm->ncm_CUC->cuc_FATDOSName))
-                            {
-                                c2bstr(ncm->ncm_CUC->cuc_FATDOSName, nh->nh_RDsk.rdsk_PART.pb_DriveName);
-                            } else {
-                                c2bstr("UMSD", nh->nh_RDsk.rdsk_PART.pb_DriveName);
-                            }
-
-                            envec = (struct DosEnvec *) nh->nh_RDsk.rdsk_PART.pb_Environment;
-                            memset(envec, 0x00, sizeof(struct DosEnvec));
-
-                            envec->de_TableSize = DE_BOOTBLOCKS;
-                            envec->de_SizeBlock = ncm->ncm_BlockSize>>2;
-                            envec->de_Surfaces = 1;
-                            envec->de_SectorPerBlock = 1;
-                            envec->de_Reserved = 1;
-                            envec->de_NumBuffers = ncm->ncm_CUC->cuc_FATBuffers;
-                            envec->de_BufMemType = MEMF_PUBLIC;
-                            envec->de_MaxTransfer = (1UL<<(ncm->ncm_CDC->cdc_MaxTransfer+16))-1;
-                            envec->de_Mask = 0xffffffff;
-                            envec->de_BootPri = 0;
-                            envec->de_Baud = 1200;
-                            if(*ncm->ncm_CDC->cdc_FATControl)
-                            {
-                                UBYTE * bptr =  ncm->ncm_FATControlBSTR;
-                                bptr = (UBYTE *) ((((IPTR) bptr) + 3) & (~3));
-                                c2bstr(ncm->ncm_CDC->cdc_FATControl, bptr);
-                                envec->de_Control = (IPTR) MKBADDR(bptr);
-                            } else {
-                                envec->de_Control = 0;
-                            }
-                            envec->de_BootBlocks = 0;
-
-                            // we have no FSHD and LSEG blocks
-                            nh->nh_RDsk.rdsk_RDB.rdb_FileSysHeaderList = NIL_PTR;
-                            nh->nh_RDsk.rdsk_FSHD.fhb_SegListBlocks = 0;
-
-                            KPRINTF(5, ("building FAT95 style environment\n"));
-
-                            envec->de_BlocksPerTrack = (fsb->fsb_SectorsPerTrack[1]<<8) + fsb->fsb_SectorsPerTrack[0];
-                            envec->de_Interleave = 0;
-                            envec->de_DosType = ncm->ncm_CDC->cdc_FATDosType; //0x46415401; // FAT1
-
-#if 0 // this was FAT95 specific
-                            if((ncm->ncm_CDC->cdc_FATDosType & 0xffffff00) == 0x46415400)
-                            {
-                                envec->de_LowCyl = 0;
-                                envec->de_HighCyl = 0xffffffff;
-                                if(ncm->ncm_CUC->cuc_MountAllFAT)
-                                {
-                                    envec->de_DosType = 0x46415401+part ; //0x46415401; // FAT1
-                                }
-                            } else
-#endif
-                            {
-                                envec->de_LowCyl = mbr->mbr_Partition[part].pe_StartLBA / envec->de_BlocksPerTrack;
-                                envec->de_HighCyl = (mbr->mbr_Partition[part].pe_StartLBA + mbr->mbr_Partition[part].pe_SectorCount) / envec->de_BlocksPerTrack - 1;
-                            }
-
-                            strncpy((char *) nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName, ncm->ncm_CDC->cdc_FATFSName, 84);
-                            CheckPartition(ncm);
-                        } else {
-                            KPRINTF(10, ("doesn't seem to be a FAT formatted disk\n"));
-                            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                                           "Partition %ld doesn't seem to be (correctly) FAT formatted.", part);
-                        }
-                    } else {
-                        KPRINTF(10, ("failed to read FATSuperBlock\n"));
-                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                                       "Failed to read FATSuperBlock.");
-                    }
-                /*} else {
-                    KPRINTF(10, ("partition not active!\n"));
-                }*/
-            }
-            else if(CheckNTFSPartType(&mbr->mbr_Partition[part]))
-            {
-                isntfs = TRUE;
-                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Partition %ld is NTFS formatted!", part);
-                KPRINTF(5, ("examining partition %ld, start LBA: %ld, sector count: %ld\n",
-                            part, mbr->mbr_Partition[part].pe_StartLBA, mbr->mbr_Partition[part].pe_SectorCount));
-
-                nh->nh_RDsk.rdsk_PART.pb_DevFlags = 0;
-
-                if(*(ncm->ncm_CUC->cuc_FATDOSName))
-                {
-                    c2bstr(ncm->ncm_CUC->cuc_FATDOSName, nh->nh_RDsk.rdsk_PART.pb_DriveName);
-                } else {
-                    c2bstr("UMSD", nh->nh_RDsk.rdsk_PART.pb_DriveName);
-                }
-
-                envec = (struct DosEnvec *) nh->nh_RDsk.rdsk_PART.pb_Environment;
-                memset(envec, 0x00, sizeof(struct DosEnvec));
-
-                envec->de_TableSize = DE_BOOTBLOCKS;
-                envec->de_SizeBlock = ncm->ncm_BlockSize>>2;
-                envec->de_Surfaces = 1;
-                envec->de_SectorPerBlock = 1;
-                envec->de_Reserved = 1;
-                envec->de_NumBuffers = (ncm->ncm_CUC->cuc_FATBuffers+31)>>5; // use 1/32 buffers from FAT settings.
-                envec->de_BufMemType = MEMF_PUBLIC;
-                envec->de_MaxTransfer = (1UL<<(ncm->ncm_CDC->cdc_MaxTransfer+16))-1;
-                envec->de_Mask = 0xffffffff;
-                envec->de_BootPri = 0;
-                envec->de_Baud = 1200;
-                if(*ncm->ncm_CDC->cdc_NTFSControl)
-                {
-                    UBYTE *bptr = ncm->ncm_FATControlBSTR;
-                    bptr = (UBYTE *) ((((IPTR) bptr) + 3) & (~3));
-                    c2bstr(ncm->ncm_CDC->cdc_NTFSControl, bptr);
-                    envec->de_Control = (IPTR) MKBADDR(bptr);
-                } else {
-                    envec->de_Control = 0;
-                }
-                envec->de_BootBlocks = 0;
-
-                // we have no FSHD and LSEG blocks
-                nh->nh_RDsk.rdsk_RDB.rdb_FileSysHeaderList = NIL_PTR;
-                nh->nh_RDsk.rdsk_FSHD.fhb_SegListBlocks = 0;
-
-                KPRINTF(5, ("building NTFS style environment\n"));
-
-                envec->de_BlocksPerTrack = 1;
-                envec->de_Interleave = 0;
-                envec->de_DosType = ncm->ncm_CDC->cdc_NTFSDosType;
-                envec->de_LowCyl = mbr->mbr_Partition[part].pe_StartLBA / envec->de_BlocksPerTrack;
-                envec->de_HighCyl = (mbr->mbr_Partition[part].pe_StartLBA + mbr->mbr_Partition[part].pe_SectorCount) / envec->de_BlocksPerTrack - 1;
-
-                strncpy((char *) nh->nh_RDsk.rdsk_FSHD.fhb_FileSysName, ncm->ncm_CDC->cdc_NTFSName, 84);
-                CheckPartition(ncm);
-            } else {
-                KPRINTF(10, ("unsuitable partition type 0x%x\n", mbr->mbr_Partition[part].pe_Type));
-                /*psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                               "Unsuitable FAT partition type.");*/
-            }
-        }
-        /* do floppy check */
+        /* do (super)floppy check */
         if(IsFATSuperBlock((struct FATSuperBlock *) mbr))
         {
             psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Media is FAT formatted!");
@@ -6162,36 +5937,6 @@ void CheckISO9660(struct NepClassMS *ncm)
         }
     }
     psdFreeVec(blockbuf);
-}
-/* \\\ */
-
-/* /// "ProcessRDB()" */
-void ProcessRDB(struct NepClassMS *ncm)
-{
-    struct NepMSBase *nh = ncm->ncm_ClsBase;
-    struct RigidDisk *rdsk = &nh->nh_RDsk;
-    ULONG nextPART;
-
-    if(ReadRDSK(ncm, &nh->nh_IOReq, &rdsk->rdsk_RDB))
-    {
-        nextPART = rdsk->rdsk_RDB.rdb_PartitionList;
-        while(nextPART != NIL_PTR)
-        {
-            if(ReadPART(ncm, &nh->nh_IOReq, &rdsk->rdsk_PART, nextPART))
-            {
-                CheckPartition(ncm);
-                if(nextPART == rdsk->rdsk_PART.pb_Next)
-                {
-                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                           "Your RDB is heavily corrupted! You need to fix this ASAP!");
-                    break;
-                }
-                nextPART = rdsk->rdsk_PART.pb_Next;
-            } else {
-                nextPART = NIL_PTR;
-            }
-        }
-    }
 }
 /* \\\ */
 
@@ -6349,71 +6094,71 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
     psdSafeRawDoFmt(ntfsdostypebuf, 10, "%08lx", ncm->ncm_CDC->cdc_NTFSDosType);
     psdSafeRawDoFmt(cddostypebuf, 10, "%08lx", ncm->ncm_CDC->cdc_CDDosType);
 
-    ncm->ncm_App = ApplicationObject,
-        MUIA_Application_Title      , GM_UNIQUENAME(libname),
-        MUIA_Application_Version    , VERSION_STRING,
-        MUIA_Application_Copyright  , "©2002-2009 Chris Hodges",
-        MUIA_Application_Author     , "Chris Hodges <chrisly@platon42.de>",
-        MUIA_Application_Description, "Settings for the massstorage.class",
-        MUIA_Application_Base       , "MASSSTORAGE",
-        MUIA_Application_HelpFile   , "HELP:Poseidon.guide",
-        MUIA_Application_Menustrip  , MenustripObject,
-            Child, MenuObjectT("Project"),
-                Child, ncm->ncm_AboutMI = MenuitemObject,
-                    MUIA_Menuitem_Title, "About...",
-                    MUIA_Menuitem_Shortcut, "?",
-                    End,
+    ncm->ncm_App = (APTR) ApplicationObject,
+        MUIA_Application_Title      , (IPTR) GM_UNIQUENAME(libname),
+        MUIA_Application_Version    , (IPTR) VERSION_STRING,
+        MUIA_Application_Copyright  , (IPTR) "©2002-2009 Chris Hodges",
+        MUIA_Application_Author     , (IPTR) "Chris Hodges <chrisly@platon42.de>",
+        MUIA_Application_Description, (IPTR) "Settings for the massstorage.class",
+        MUIA_Application_Base       , (IPTR) "MASSSTORAGE",
+        MUIA_Application_HelpFile   , (IPTR) "HELP:Poseidon.guide",
+        MUIA_Application_Menustrip  , (IPTR) MenustripObject,
+            Child, (IPTR) MenuObjectT((IPTR) "Project"),
+                Child, (IPTR) (ncm->ncm_AboutMI = (APTR) MenuitemObject,
+                    MUIA_Menuitem_Title, (IPTR) "About...",
+                    MUIA_Menuitem_Shortcut, (IPTR) "?",
+                    End),
                 End,
-            Child, MenuObjectT("Settings"),
-                Child, ncm->ncm_UseMI = MenuitemObject,
-                    MUIA_Menuitem_Title, "Save",
-                    MUIA_Menuitem_Shortcut, "S",
-                    End,
-                Child, ncm->ncm_SetDefaultMI = MenuitemObject,
-                    MUIA_Menuitem_Title, "Save as Default",
-                    MUIA_Menuitem_Shortcut, "D",
-                    End,
+            Child, MenuObjectT((IPTR) "Settings"),
+                Child, (IPTR) (ncm->ncm_UseMI = (APTR) MenuitemObject,
+                    MUIA_Menuitem_Title, (IPTR) "Save",
+                    MUIA_Menuitem_Shortcut, (IPTR) "S",
+                    End),
+                Child, (IPTR) (ncm->ncm_SetDefaultMI = (APTR) MenuitemObject,
+                    MUIA_Menuitem_Title, (IPTR) "Save as Default",
+                    MUIA_Menuitem_Shortcut, (IPTR) "D",
+                    End),
                 Child, MenuitemObject,
-                    MUIA_Menuitem_Title, NM_BARLABEL,
+                    MUIA_Menuitem_Title, (IPTR) NM_BARLABEL,
                     End,
-                Child, ncm->ncm_MUIPrefsMI = MenuitemObject,
-                    MUIA_Menuitem_Title, "MUI Settings",
-                    MUIA_Menuitem_Shortcut, "M",
-                    End,
+                Child, (IPTR) (ncm->ncm_MUIPrefsMI = (APTR) MenuitemObject,
+                    MUIA_Menuitem_Title, (IPTR) "MUI Settings",
+                    MUIA_Menuitem_Shortcut, (IPTR) "M",
+                    End),
                 End,
             End,
 
-        SubWindow, ncm->ncm_MainWindow = WindowObject,
+        SubWindow, (IPTR) (ncm->ncm_MainWindow = (APTR) WindowObject,
             MUIA_Window_ID   , MAKE_ID('M','A','I','N'),
-            MUIA_Window_Title, GM_UNIQUENAME(libname),
-            MUIA_HelpNode, GM_UNIQUENAME(libname),
+            MUIA_Window_Title, (IPTR) GM_UNIQUENAME(libname),
+            MUIA_HelpNode, (IPTR) GM_UNIQUENAME(libname),
 
             WindowContents, VGroup,
                 Child, RegisterGroup(ncm->ncm_Interface ? MainGUIPages : MainGUIPagesDefault),
                     MUIA_CycleChain, 1,
                     MUIA_Register_Frame, TRUE,
                     Child, VGroup,
-                        Child, VSpace(0),
+                        Child, (IPTR) VSpace(0),
                         Child, ColGroup(2),
-                            Child, Label((IPTR) "NAK Timeout:"),
-                            Child, ncm->ncm_NakTimeoutObj = SliderObject, SliderFrame,
+                            Child, (IPTR) Label("NAK Timeout:"),
+                            Child, (IPTR) (ncm->ncm_NakTimeoutObj = (APTR) SliderObject, SliderFrame,
                                 MUIA_CycleChain, 1,
                                 MUIA_Numeric_Min, 0,
                                 MUIA_Numeric_Max, 600,
                                 MUIA_Numeric_Value, ncm->ncm_CDC->cdc_NakTimeout,
-                                MUIA_Numeric_Format, "%ld00ms",
-                                End,
-                            Child, Label((IPTR) "Startup delay:"),
-                            Child, ncm->ncm_StartupDelayObj = SliderObject, SliderFrame,
+                                MUIA_Numeric_Format, (IPTR) "%ld00ms",
+                                End),
+                            Child, (IPTR) Label("Startup delay:"),
+                            Child, (IPTR) (ncm->ncm_StartupDelayObj = (APTR) SliderObject, SliderFrame,
                                 MUIA_CycleChain, 1,
                                 MUIA_Numeric_Min, 0,
                                 MUIA_Numeric_Max, 100,
                                 MUIA_Numeric_Value, ncm->ncm_CDC->cdc_StartupDelay,
-                                MUIA_Numeric_Format, "%ld00ms",
-                                End,
-                            Child, Label((IPTR) "Single LUN:"),
+                                MUIA_Numeric_Format, (IPTR) "%ld00ms",
+                                End),
+                            Child, (IPTR) Label("Single LUN:"),
                             Child, HGroup,
-                                Child, ncm->ncm_SingleLunObj = ImageObject, ImageButtonFrame,
+                                Child, (IPTR) (ncm->ncm_SingleLunObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6421,10 +6166,10 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, ncm->ncm_CDC->cdc_PatchFlags & PFF_SINGLE_LUN,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
-                                Child, HSpace(0),
-                                Child, Label((IPTR) "No Initial Reset:"),
-                                Child, ncm->ncm_InitialResetObj = ImageObject, ImageButtonFrame,
+                                    End),
+                                Child, (IPTR) HSpace(0),
+                                Child, (IPTR) Label("No Initial Reset:"),
+                                Child, (IPTR) (ncm->ncm_InitialResetObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6432,11 +6177,11 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, ncm->ncm_CDC->cdc_PatchFlags & PFF_NO_RESET,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
+                                    End),
                                 End,
-                            Child, Label((IPTR) "Simple SCSI:"),
+                            Child, (IPTR) Label("Simple SCSI:"),
                             Child, HGroup,
-                                Child, ncm->ncm_SimpleSCSIObj = ImageObject, ImageButtonFrame,
+                                Child, (IPTR) (ncm->ncm_SimpleSCSIObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6444,10 +6189,10 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, ncm->ncm_CDC->cdc_PatchFlags & PFF_SIMPLE_SCSI,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
-                                Child, HSpace(0),
-                                Child, Label((IPTR) "Translate CMD6->CMD10:"),
-                                Child, ncm->ncm_XLate610Obj = ImageObject, ImageButtonFrame,
+                                    End),
+                                Child, (IPTR) HSpace(0),
+                                Child, (IPTR) Label("Translate CMD6->CMD10:"),
+                                Child, (IPTR) (ncm->ncm_XLate610Obj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6455,11 +6200,11 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, ncm->ncm_CDC->cdc_PatchFlags & PFF_MODE_XLATE,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
+                                    End),
                                 End,
-                            Child, Label((IPTR) "Fake Inquiry:"),
+                            Child, (IPTR) Label("Fake Inquiry:"),
                             Child, HGroup,
-                                Child, ncm->ncm_FakeInquiryObj = ImageObject, ImageButtonFrame,
+                                Child, (IPTR) (ncm->ncm_FakeInquiryObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6467,10 +6212,10 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, ncm->ncm_CDC->cdc_PatchFlags & PFF_FAKE_INQUIRY,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
-                                Child, HSpace(0),
-                                Child, Label((IPTR) "Better Removable Support:"),
-                                Child, ncm->ncm_RemSupportObj = ImageObject, ImageButtonFrame,
+                                    End),
+                                Child, (IPTR) HSpace(0),
+                                Child, (IPTR) Label("Better Removable Support:"),
+                                Child, (IPTR) (ncm->ncm_RemSupportObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6478,11 +6223,11 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, ncm->ncm_CDC->cdc_PatchFlags & PFF_REM_SUPPORT,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
+                                    End),
                                 End,
-                            Child, Label((IPTR) "Trim Inquiry:"),
+                            Child, (IPTR) Label("Trim Inquiry:"),
                             Child, HGroup,
-                                Child, ncm->ncm_FixInquiryObj = ImageObject, ImageButtonFrame,
+                                Child, (IPTR) (ncm->ncm_FixInquiryObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6490,10 +6235,10 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, ncm->ncm_CDC->cdc_PatchFlags & PFF_FIX_INQ36,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
-                                Child, HSpace(0),
-                                Child, Label((IPTR) "Ignore broken CSS-ID:"),
-                                Child, ncm->ncm_CSSBrokenObj = ImageObject, ImageButtonFrame,
+                                    End),
+                                Child, (IPTR) HSpace(0),
+                                Child, (IPTR) Label("Ignore broken CSS-ID:"),
+                                Child, (IPTR) (ncm->ncm_CSSBrokenObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6501,11 +6246,11 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, ncm->ncm_CDC->cdc_PatchFlags & PFF_CSS_BROKEN,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
+                                    End),
                                 End,
-                            Child, Label((IPTR) "Fix Capacity:"),
+                            Child, (IPTR) Label("Fix Capacity:"),
                             Child, HGroup,
-                                Child, ncm->ncm_FixCapacityObj = ImageObject, ImageButtonFrame,
+                                Child, (IPTR) (ncm->ncm_FixCapacityObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6513,10 +6258,10 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, ncm->ncm_CDC->cdc_PatchFlags & PFF_FIX_CAPACITY,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
-                                Child, HSpace(0),
-                                Child, Label((IPTR) "Emulate on larger block sizes:"),
-                                Child, ncm->ncm_EmulLargeBlkObj = ImageObject, ImageButtonFrame,
+                                    End),
+                                Child, (IPTR) HSpace(0),
+                                Child, (IPTR) Label("Emulate on larger block sizes:"),
+                                Child, (IPTR) (ncm->ncm_EmulLargeBlkObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6524,11 +6269,11 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, ncm->ncm_CDC->cdc_PatchFlags & PFF_EMUL_LARGE_BLK,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
+                                    End),
                                 End,
-                            Child, Label((IPTR) "No Fallback:"),
+                            Child, (IPTR) Label("No Fallback:"),
                             Child, HGroup,
-                                Child, ncm->ncm_NoFallbackObj = ImageObject, ImageButtonFrame,
+                                Child, (IPTR) (ncm->ncm_NoFallbackObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6536,10 +6281,10 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, ncm->ncm_CDC->cdc_PatchFlags & PFF_NO_FALLBACK,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
-                                Child, HSpace(0),
-                                Child, Label((IPTR) "Debug:"),
-                                Child, ncm->ncm_DebugObj = ImageObject, ImageButtonFrame,
+                                    End),
+                                Child, (IPTR) HSpace(0),
+                                Child, (IPTR) Label("Debug:"),
+                                Child, (IPTR) (ncm->ncm_DebugObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6547,138 +6292,138 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, ncm->ncm_CDC->cdc_PatchFlags & PFF_DEBUG,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
+                                    End),
                                 End,
-                            Child, Label((IPTR) "Max Transfer:"),
+                            Child, (IPTR) Label("Max Transfer:"),
                             Child, HGroup,
-                                Child, ncm->ncm_MaxTransferObj = CycleObject,
-                                    MUIA_Cycle_Entries, MaxTransferStrings,
+                                Child, (IPTR) (ncm->ncm_MaxTransferObj = (APTR) CycleObject,
+                                    MUIA_Cycle_Entries, (IPTR) MaxTransferStrings,
                                     MUIA_Cycle_Active, ncm->ncm_CDC->cdc_MaxTransfer,
-                                    End,
+                                    End),
                                 //Child, HSpace(0),
-                                Child, ncm->ncm_AutoDtxMaxTransObj = TextObject, ButtonFrame,
+                                Child, (IPTR) (ncm->ncm_AutoDtxMaxTransObj = (APTR) TextObject, ButtonFrame,
                                     MUIA_Disabled, !ncm->ncm_Interface,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_RelVerify,
-                                    MUIA_Text_Contents, "\33c Auto-detect ",
-                                    End,
+                                    MUIA_Text_Contents, (IPTR) "\33c Auto-detect ",
+                                    End),
                                 End,
                             End,
-                        Child, VSpace(0),
+                        Child, (IPTR) VSpace(0),
 
                         Child, ColGroup(6),
-                            Child, Label((IPTR) "FAT:"),
+                            Child, (IPTR) Label("FAT:"),
                             Child, PopaslObject,
-                                MUIA_Popstring_String, ncm->ncm_FatFSObj = StringObject,
+                                MUIA_Popstring_String, (IPTR) (ncm->ncm_FatFSObj = (APTR) StringObject,
                                     StringFrame,
                                     MUIA_CycleChain, 1,
                                     MUIA_String_AdvanceOnCR, TRUE,
-                                    MUIA_String_Contents, ncm->ncm_CDC->cdc_FATFSName,
+                                    MUIA_String_Contents, (IPTR) ncm->ncm_CDC->cdc_FATFSName,
                                     MUIA_String_MaxLen, 63,
-                                    End,
-                                MUIA_Popstring_Button, PopButton(MUII_PopFile),
-                                ASLFR_TitleText, "Select filesystem to use with FAT partitions...",
+                                    End),
+                                MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopFile),
+                                ASLFR_TitleText, (IPTR) "Select filesystem to use with FAT partitions...",
                                 End,
-                            Child, Label((IPTR) "DosType:"),
-                            Child, ncm->ncm_FatDosTypeObj = StringObject,
+                            Child, (IPTR) Label("DosType:"),
+                            Child, (IPTR) (ncm->ncm_FatDosTypeObj = (APTR) StringObject,
                                 StringFrame,
                                 MUIA_HorizWeight, 50,
                                 MUIA_CycleChain, 1,
                                 MUIA_String_AdvanceOnCR, TRUE,
-                                MUIA_String_Contents, dostypebuf,
-                                MUIA_String_Accept, "0123456789abcdefABCDEF",
+                                MUIA_String_Contents, (IPTR) dostypebuf,
+                                MUIA_String_Accept, (IPTR) "0123456789abcdefABCDEF",
                                 MUIA_String_MaxLen, 9,
-                                End,
-                            Child, Label((IPTR) "Ctrl:"),
-                            Child, ncm->ncm_FatControlObj = StringObject,
+                                End),
+                            Child, (IPTR) Label("Ctrl:"),
+                            Child, (IPTR) (ncm->ncm_FatControlObj = (APTR) StringObject,
                                 StringFrame,
                                 MUIA_HorizWeight, 50,
                                 MUIA_CycleChain, 1,
                                 MUIA_String_AdvanceOnCR, TRUE,
-                                MUIA_String_Contents, ncm->ncm_CDC->cdc_FATControl,
+                                MUIA_String_Contents, (IPTR) ncm->ncm_CDC->cdc_FATControl,
                                 MUIA_String_MaxLen, 63,
-                                End,
-                            Child, Label((IPTR) "NTFS:"),
+                                End),
+                            Child, (IPTR) Label("NTFS:"),
                             Child, PopaslObject,
-                                MUIA_Popstring_String, ncm->ncm_NTFSObj = StringObject,
+                                MUIA_Popstring_String, (IPTR) (ncm->ncm_NTFSObj = (APTR) StringObject,
                                     StringFrame,
                                     MUIA_CycleChain, 1,
                                     MUIA_String_AdvanceOnCR, TRUE,
-                                    MUIA_String_Contents, ncm->ncm_CDC->cdc_NTFSName,
+                                    MUIA_String_Contents, (IPTR) ncm->ncm_CDC->cdc_NTFSName,
                                     MUIA_String_MaxLen, 63,
-                                    End,
-                                MUIA_Popstring_Button, PopButton(MUII_PopFile),
-                                ASLFR_TitleText, "Select filesystem to use with NTFS partitions...",
+                                    End),
+                                MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopFile),
+                                ASLFR_TitleText, (IPTR) "Select filesystem to use with NTFS partitions...",
                                 End,
-                            Child, Label((IPTR) "DosType:"),
-                            Child, ncm->ncm_NTFSDosTypeObj = StringObject,
+                            Child, (IPTR) Label("DosType:"),
+                            Child, (IPTR) (ncm->ncm_NTFSDosTypeObj = (APTR) StringObject,
                                 StringFrame,
                                 MUIA_HorizWeight, 50,
                                 MUIA_CycleChain, 1,
                                 MUIA_String_AdvanceOnCR, TRUE,
-                                MUIA_String_Contents, ntfsdostypebuf,
-                                MUIA_String_Accept, "0123456789abcdefABCDEF",
+                                MUIA_String_Contents, (IPTR) ntfsdostypebuf,
+                                MUIA_String_Accept, (IPTR) "0123456789abcdefABCDEF",
                                 MUIA_String_MaxLen, 9,
-                                End,
-                            Child, Label((IPTR) "Ctrl:"),
-                            Child, ncm->ncm_NTFSControlObj = StringObject,
+                                End),
+                            Child, (IPTR) Label("Ctrl:"),
+                            Child, (IPTR) (ncm->ncm_NTFSControlObj = (APTR) StringObject,
                                 StringFrame,
                                 MUIA_HorizWeight, 50,
                                 MUIA_CycleChain, 1,
                                 MUIA_String_AdvanceOnCR, TRUE,
-                                MUIA_String_Contents, ncm->ncm_CDC->cdc_NTFSControl,
+                                MUIA_String_Contents, (IPTR) ncm->ncm_CDC->cdc_NTFSControl,
                                 MUIA_String_MaxLen, 63,
-                                End,
-                            Child, Label((IPTR) "CD/DVD:"),
+                                End),
+                            Child, (IPTR) Label("CD/DVD:"),
                             Child, PopaslObject,
-                                MUIA_Popstring_String, ncm->ncm_CDFSObj = StringObject,
+                                MUIA_Popstring_String, (IPTR) (ncm->ncm_CDFSObj = (APTR) StringObject,
                                     StringFrame,
                                     MUIA_CycleChain, 1,
                                     MUIA_String_AdvanceOnCR, TRUE,
-                                    MUIA_String_Contents, ncm->ncm_CDC->cdc_CDFSName,
+                                    MUIA_String_Contents, (IPTR) ncm->ncm_CDC->cdc_CDFSName,
                                     MUIA_String_MaxLen, 63,
-                                    End,
-                                MUIA_Popstring_Button, PopButton(MUII_PopFile),
-                                ASLFR_TitleText, "Select filesystem to use with CD/DVD partitions...",
+                                    End),
+                                MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopFile),
+                                ASLFR_TitleText, (IPTR) "Select filesystem to use with CD/DVD partitions...",
                                 End,
-                            Child, Label((IPTR) "DosType:"),
-                            Child, ncm->ncm_CDDosTypeObj = StringObject,
+                            Child, (IPTR) Label("DosType:"),
+                            Child, (IPTR) (ncm->ncm_CDDosTypeObj = (APTR) StringObject,
                                 StringFrame,
                                 MUIA_HorizWeight, 50,
                                 MUIA_CycleChain, 1,
                                 MUIA_String_AdvanceOnCR, TRUE,
-                                MUIA_String_Contents, cddostypebuf,
-                                MUIA_String_Accept, "0123456789abcdefABCDEF",
+                                MUIA_String_Contents, (IPTR) cddostypebuf,
+                                MUIA_String_Accept, (IPTR) "0123456789abcdefABCDEF",
                                 MUIA_String_MaxLen, 9,
-                                End,
-                            Child, Label((IPTR) "Ctrl:"),
-                            Child, ncm->ncm_CDControlObj = StringObject,
+                                End),
+                            Child, (IPTR) Label("Ctrl:"),
+                            Child, (IPTR) (ncm->ncm_CDControlObj = (APTR) StringObject,
                                 StringFrame,
                                 MUIA_HorizWeight, 50,
                                 MUIA_CycleChain, 1,
                                 MUIA_String_AdvanceOnCR, TRUE,
-                                MUIA_String_Contents, ncm->ncm_CDC->cdc_CDControl,
+                                MUIA_String_Contents, (IPTR) ncm->ncm_CDC->cdc_CDControl,
                                 MUIA_String_MaxLen, 63,
-                                End,
+                                End),
                             End,
-                        Child, VSpace(0),
+                        Child, (IPTR) VSpace(0),
                         End,
                     Child, VGroup,
                         Child, ListviewObject,
                             MUIA_CycleChain, 1,
-                            MUIA_Listview_List, ncm->ncm_LunLVObj = ListObject,
+                            MUIA_Listview_List, (IPTR) (ncm->ncm_LunLVObj = (APTR) ListObject,
                                 ReadListFrame,
-                                MUIA_List_Format, bar,
+                                MUIA_List_Format, (IPTR) bar,
                                 MUIA_List_Title, TRUE,
-                                MUIA_List_DisplayHook, &ncm->ncm_LUNListDisplayHook,
-                                End,
+                                MUIA_List_DisplayHook, (IPTR) &ncm->ncm_LUNListDisplayHook,
+                                End),
                             End,
-                        Child, ncm->ncm_LunGroupObj = VGroup,
+                        Child, (IPTR) (ncm->ncm_LunGroupObj = (APTR) VGroup,
                             MUIA_Disabled, TRUE,
-                            Child, VSpace(0),
+                            Child, (IPTR) VSpace(0),
                             Child, HGroup,
-                                Child, ncm->ncm_AutoMountRDBObj = ImageObject, ImageButtonFrame,
+                                Child, (IPTR) (ncm->ncm_AutoMountRDBObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6686,12 +6431,12 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, TRUE,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
-                                Child, Label((IPTR) "AutoMount RDB partitions"),
-                                Child, HSpace(0),
+                                    End),
+                                Child, (IPTR) Label("AutoMount RDB partitions"),
+                                Child, (IPTR) HSpace(0),
                                 End,
                             Child, HGroup,
-                                Child, ncm->ncm_BootRDBObj = ImageObject, ImageButtonFrame,
+                                Child, (IPTR) (ncm->ncm_BootRDBObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6699,13 +6444,13 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, FALSE,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
-                                Child, Label((IPTR) "Boot from RDB partitions"),
-                                Child, HSpace(0),
+                                    End),
+                                Child, (IPTR) Label("Boot from RDB partitions"),
+                                Child, (IPTR) HSpace(0),
                                 End,
-                            Child, VSpace(0),
+                            Child, (IPTR) VSpace(0),
                             Child, HGroup,
-                                Child, ncm->ncm_AutoMountFATObj = ImageObject, ImageButtonFrame,
+                                Child, (IPTR) (ncm->ncm_AutoMountFATObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6713,12 +6458,12 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, TRUE,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
-                                Child, Label((IPTR) "AutoMount FAT/NTFS partitions"),
-                                Child, HSpace(0),
+                                    End),
+                                Child, (IPTR) Label("AutoMount FAT/NTFS partitions"),
+                                Child, (IPTR) HSpace(0),
                                 End,
                            Child, HGroup,
-                                Child, ncm->ncm_MountAllFATObj = ImageObject, ImageButtonFrame,
+                                Child, (IPTR) (ncm->ncm_MountAllFATObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6726,13 +6471,13 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, TRUE,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
-                                Child, Label((IPTR) "Mount all FAT partitions"),
-                                Child, HSpace(0),
+                                    End),
+                                Child, (IPTR) Label("Mount all FAT partitions"),
+                                Child, (IPTR) HSpace(0),
                                 End,
-                            Child, VSpace(0),
+                            Child, (IPTR) VSpace(0),
                             Child, HGroup,
-                                Child, ncm->ncm_AutoMountCDObj = ImageObject, ImageButtonFrame,
+                                Child, (IPTR) (ncm->ncm_AutoMountCDObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6740,13 +6485,13 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, TRUE,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
-                                Child, Label((IPTR) "AutoMount CD/DVD"),
-                                Child, HSpace(0),
+                                    End),
+                                Child, (IPTR) Label("AutoMount CD/DVD"),
+                                Child, (IPTR) HSpace(0),
                                 End,
-                            Child, VSpace(0),
+                            Child, (IPTR) VSpace(0),
                             Child, HGroup,
-                                Child, ncm->ncm_UnmountObj = ImageObject, ImageButtonFrame,
+                                Child, (IPTR) (ncm->ncm_UnmountObj = (APTR) ImageObject, ImageButtonFrame,
                                     MUIA_Background, MUII_ButtonBack,
                                     MUIA_CycleChain, 1,
                                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -6754,70 +6499,70 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                                     MUIA_Image_FreeVert, TRUE,
                                     MUIA_Selected, FALSE,
                                     MUIA_ShowSelState, FALSE,
-                                    End,
+                                    End),
                                 Child, HGroup,
-                                    Child, Label((IPTR) "Unmount partitions after removal"),
-                                    Child, HSpace(0),
+                                    Child, (IPTR) Label("Unmount partitions after removal"),
+                                    Child, (IPTR) HSpace(0),
                                     End,
                                 End,
-                            Child, VSpace(0),
+                            Child, (IPTR) VSpace(0),
                             Child, HGroup,
-                                Child, Label((IPTR) "DOSName:"),
-                                Child, ncm->ncm_FatDOSNameObj = StringObject,
+                                Child, (IPTR) Label("DOSName:"),
+                                Child, (IPTR) (ncm->ncm_FatDOSNameObj = (APTR) StringObject,
                                     StringFrame,
                                     MUIA_CycleChain, 1,
                                     MUIA_String_AdvanceOnCR, TRUE,
-                                    MUIA_String_Contents, "UMSD",
-                                    MUIA_String_Reject, "/ :?#*",
+                                    MUIA_String_Contents, (IPTR) "UMSD",
+                                    MUIA_String_Reject, (IPTR) "/ :?#*",
                                     MUIA_String_MaxLen, 31,
-                                    End,
-                                Child, Label((IPTR) "Buffers:"),
-                                Child, ncm->ncm_FatBuffersObj = StringObject,
+                                    End),
+                                Child, (IPTR) Label("Buffers:"),
+                                Child, (IPTR) (ncm->ncm_FatBuffersObj = (APTR) StringObject,
                                     StringFrame,
                                     MUIA_CycleChain, 1,
                                     MUIA_String_AdvanceOnCR, TRUE,
                                     MUIA_String_Integer, 100,
-                                    MUIA_String_Accept, "0123456789",
-                                    End,
+                                    MUIA_String_Accept, (IPTR) "0123456789",
+                                    End),
                                 End,
-                            Child, VSpace(0),
+                            Child, (IPTR) VSpace(0),
                             Child, HGroup,
-                                Child, Label((IPTR) "Default " DEVNAME " unit:"),
-                                Child, ncm->ncm_UnitObj = StringObject,
+                                Child, (IPTR) Label("Default " DEVNAME " unit:"),
+                                Child, (IPTR) (ncm->ncm_UnitObj = (APTR) StringObject,
                                     StringFrame,
                                     MUIA_CycleChain, 1,
                                     MUIA_String_AdvanceOnCR, TRUE,
                                     MUIA_String_Integer, 0,
-                                    MUIA_String_Accept, "0123456789",
-                                    End,
+                                    MUIA_String_Accept, (IPTR) "0123456789",
+                                    End),
                                 End,
-                            End,
+                            End),
                         End,
                     End,
                 Child, HGroup,
                     MUIA_Group_SameWidth, TRUE,
-                    Child, ncm->ncm_UseObj = TextObject, ButtonFrame,
-                        MUIA_ShowMe, ncm->ncm_Interface,
+                    Child, (IPTR) (ncm->ncm_UseObj = (APTR) TextObject, ButtonFrame,
+                        MUIA_ShowMe, (IPTR) ncm->ncm_Interface,
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
                         MUIA_InputMode, MUIV_InputMode_RelVerify,
-                        MUIA_Text_Contents, "\33c Save ",
-                        End,
-                    Child, ncm->ncm_SetDefaultObj = TextObject, ButtonFrame,
+                        MUIA_Text_Contents, (IPTR) "\33c Save ",
+                        End),
+                    Child, (IPTR) (ncm->ncm_SetDefaultObj = (APTR) TextObject, ButtonFrame,
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
                         MUIA_InputMode, MUIV_InputMode_RelVerify,
-                        MUIA_Text_Contents, ncm->ncm_Interface ? "\33c Save as Default " : "\33c Save Defaults ",
-                        End,
-                    Child, ncm->ncm_CloseObj = TextObject, ButtonFrame,
+                        MUIA_Text_Contents, ncm->ncm_Interface ? (IPTR) "\33c Save as Default " : (IPTR) "\33c Save Defaults ",
+                        End),
+                    Child, (IPTR) (ncm->ncm_CloseObj = (APTR) TextObject, ButtonFrame,
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
                         MUIA_InputMode, MUIV_InputMode_RelVerify,
-                        MUIA_Text_Contents, "\33c Use ",
-                        End,
+                        MUIA_Text_Contents, (IPTR) "\33c Use ",
+                        End),
                     End,
                 End,
-            End,
+            End),
         End;
 
     if(!ncm->ncm_App)
