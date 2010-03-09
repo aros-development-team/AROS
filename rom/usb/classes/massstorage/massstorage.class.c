@@ -1998,103 +1998,103 @@ LONG nGetGeometry(struct NepClassMS *ncm, struct IOStdReq *ioreq)
     }
     KPRINTF(10, ("PatchFlags 0x%lx DeviceType %ld\n",ncm->ncm_CDC->cdc_PatchFlags,ncm->ncm_DeviceType));
 
-        if(!((ncm->ncm_CDC->cdc_PatchFlags & PFF_SIMPLE_SCSI) ||
-             (ncm->ncm_DeviceType == PDT_WORM) ||
-             (ncm->ncm_DeviceType == PDT_CDROM)))
+    if(!((ncm->ncm_CDC->cdc_PatchFlags & PFF_SIMPLE_SCSI) ||
+         (ncm->ncm_DeviceType == PDT_WORM) ||
+         (ncm->ncm_DeviceType == PDT_CDROM)))
+    {
+        KPRINTF(10, ("SIMPLE_SCSI or PDT_WORM/CDROM\n"));
+        // cd roms don't have valid or sensible capacity mode pages
+        if((mpdata = nGetModePage(ncm, 0x03)))
         {
-            KPRINTF(10, ("SIMPLE_SCSI or PDT_WORM/CDROM\n"));
-            // cd roms don't have valid or sensible capacity mode pages
-            if((mpdata = nGetModePage(ncm, 0x03)))
+            if((tmpval = (mpdata[10]<<8)+mpdata[11]))
             {
-                if((tmpval = (mpdata[10]<<8)+mpdata[11]))
+                ncm->ncm_Geometry.dg_TrackSectors = tmpval;
+                gotsect = TRUE;
+                if(!ncm->ncm_Geometry.dg_Cylinders)
                 {
-                    ncm->ncm_Geometry.dg_TrackSectors = tmpval;
-                    gotsect = TRUE;
-                    if(!ncm->ncm_Geometry.dg_Cylinders)
-                    {
-                        ncm->ncm_Geometry.dg_Cylinders = ncm->ncm_Geometry.dg_TotalSectors;
-                    }
-                }
-                if(ncm->ncm_CDC->cdc_PatchFlags & PFF_DEBUG)
-                {
-                    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                                   "Capacity: TrackSectors=%ld",
-                                   ncm->ncm_Geometry.dg_TrackSectors);
+                    ncm->ncm_Geometry.dg_Cylinders = ncm->ncm_Geometry.dg_TotalSectors;
                 }
             }
-        }
-        /*
-         * Cylinder and co are only defined for old 32Bit Totalsectors.
-         * >2TB they have no meaning anyway, so they are calculated based
-         * on 32Bit INT_MAX.
-         */
-        // recheck, could have simple scsi enabled in the meanwhile
-        if(!((ncm->ncm_CDC->cdc_PatchFlags & PFF_SIMPLE_SCSI) ||
-             (ncm->ncm_DeviceType == PDT_WORM) ||
-             (ncm->ncm_DeviceType == PDT_CDROM)))
-        {
-            KPRINTF(10, ("recheck1 SIMPLE_SCSI or PDT_WORM/CDROM\n"));
-            if((mpdata = nGetModePage(ncm, 0x04)))
+            if(ncm->ncm_CDC->cdc_PatchFlags & PFF_DEBUG)
             {
-                if((tmpval = (mpdata[2]<<16)+(mpdata[3]<<8)+mpdata[4]))
-                {
-                    ncm->ncm_Geometry.dg_Cylinders = tmpval;
-                    ncm->ncm_Geometry.dg_Heads = mpdata[5];
-                    gotcyl = gotheads = TRUE;
-                }
-                if(ncm->ncm_CDC->cdc_PatchFlags & PFF_DEBUG)
-                {
-                    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                                   "Capacity: Cylinders=%ld, Heads=%ld",
-                                   ncm->ncm_Geometry.dg_Cylinders, ncm->ncm_Geometry.dg_Heads);
-                }
+                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                               "Capacity: TrackSectors=%ld",
+                               ncm->ncm_Geometry.dg_TrackSectors);
             }
         }
-        // recheck, could have simple scsi enabled in the meanwhile
-        if(!((ncm->ncm_CDC->cdc_PatchFlags & PFF_SIMPLE_SCSI) ||
-             (ncm->ncm_DeviceType == PDT_WORM) ||
-             (ncm->ncm_DeviceType == PDT_CDROM)))
+    }
+    /*
+     * Cylinder and co are only defined for old 32Bit Totalsectors.
+     * >2TB they have no meaning anyway, so they are calculated based
+     * on 32Bit INT_MAX.
+     */
+    // recheck, could have simple scsi enabled in the meanwhile
+    if(!((ncm->ncm_CDC->cdc_PatchFlags & PFF_SIMPLE_SCSI) ||
+         (ncm->ncm_DeviceType == PDT_WORM) ||
+         (ncm->ncm_DeviceType == PDT_CDROM)))
+    {
+        KPRINTF(10, ("recheck1 SIMPLE_SCSI or PDT_WORM/CDROM\n"));
+        if((mpdata = nGetModePage(ncm, 0x04)))
         {
-            KPRINTF(10, ("recheck2 SIMPLE_SCSI or PDT_WORM/CDROM\n"));
-            if((mpdata = nGetModePage(ncm, 0x05)))
+            if((tmpval = (mpdata[2]<<16)+(mpdata[3]<<8)+mpdata[4]))
             {
-                if((tmpval = (mpdata[8]<<8)+mpdata[9]))
+                ncm->ncm_Geometry.dg_Cylinders = tmpval;
+                ncm->ncm_Geometry.dg_Heads = mpdata[5];
+                gotcyl = gotheads = TRUE;
+            }
+            if(ncm->ncm_CDC->cdc_PatchFlags & PFF_DEBUG)
+            {
+                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                               "Capacity: Cylinders=%ld, Heads=%ld",
+                               ncm->ncm_Geometry.dg_Cylinders, ncm->ncm_Geometry.dg_Heads);
+            }
+        }
+    }
+    // recheck, could have simple scsi enabled in the meanwhile
+    if(!((ncm->ncm_CDC->cdc_PatchFlags & PFF_SIMPLE_SCSI) ||
+         (ncm->ncm_DeviceType == PDT_WORM) ||
+         (ncm->ncm_DeviceType == PDT_CDROM)))
+    {
+        KPRINTF(10, ("recheck2 SIMPLE_SCSI or PDT_WORM/CDROM\n"));
+        if((mpdata = nGetModePage(ncm, 0x05)))
+        {
+            if((tmpval = (mpdata[8]<<8)+mpdata[9]))
+            {
+                ncm->ncm_Geometry.dg_Cylinders = tmpval;
+                ncm->ncm_Geometry.dg_Heads = mpdata[4];
+                ncm->ncm_Geometry.dg_TrackSectors = mpdata[5];
+
+                gotcyl = gotheads = gotsect = TRUE;
+
+                if(!gotblks)
                 {
-                    ncm->ncm_Geometry.dg_Cylinders = tmpval;
-                    ncm->ncm_Geometry.dg_Heads = mpdata[4];
-                    ncm->ncm_Geometry.dg_TrackSectors = mpdata[5];
-
-                    gotcyl = gotheads = gotsect = TRUE;
-
-                    if(!gotblks)
+                    ncm->ncm_BlockSize = ncm->ncm_Geometry.dg_SectorSize = (mpdata[6]<<8)+mpdata[7];
+                    ncm->ncm_BlockShift = 0;
+                    while((1<<ncm->ncm_BlockShift) < ncm->ncm_BlockSize)
                     {
-                        ncm->ncm_BlockSize = ncm->ncm_Geometry.dg_SectorSize = (mpdata[6]<<8)+mpdata[7];
-                        ncm->ncm_BlockShift = 0;
-                        while((1<<ncm->ncm_BlockShift) < ncm->ncm_BlockSize)
-                        {
-                            ncm->ncm_BlockShift++;
-                        }
-                        if(ncm->ncm_CDC->cdc_PatchFlags & PFF_DEBUG)
-                        {
-                            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                                           "Capacity: %ld blocks of %ld bytes", ncm->ncm_Geometry.dg_TotalSectors, ncm->ncm_BlockSize);
-                        }
-                    }
-                    else if(ncm->ncm_BlockSize != (mpdata[6]<<8)+mpdata[7])
-                    {
-                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                                       "Inconsistent block size information %ld != %ld!",
-                                       ncm->ncm_BlockSize, (mpdata[6]<<8)+mpdata[7]);
+                        ncm->ncm_BlockShift++;
                     }
                     if(ncm->ncm_CDC->cdc_PatchFlags & PFF_DEBUG)
                     {
                         psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                                       "Capacity: Cylinders=%ld, Heads=%ld, TrackSectors=%ld",
-                                       ncm->ncm_Geometry.dg_Cylinders, ncm->ncm_Geometry.dg_Heads, ncm->ncm_Geometry.dg_TrackSectors);
+                                       "Capacity: %ld blocks of %ld bytes", ncm->ncm_Geometry.dg_TotalSectors, ncm->ncm_BlockSize);
                     }
+                }
+                else if(ncm->ncm_BlockSize != (mpdata[6]<<8)+mpdata[7])
+                {
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "Inconsistent block size information %ld != %ld!",
+                                   ncm->ncm_BlockSize, (mpdata[6]<<8)+mpdata[7]);
+                }
+                if(ncm->ncm_CDC->cdc_PatchFlags & PFF_DEBUG)
+                {
+                    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                   "Capacity: Cylinders=%ld, Heads=%ld, TrackSectors=%ld",
+                                   ncm->ncm_Geometry.dg_Cylinders, ncm->ncm_Geometry.dg_Heads, ncm->ncm_Geometry.dg_TrackSectors);
                 }
             }
         }
+    }
     // missing total blocks?
     if((!gotblks) && gotcyl && gotheads && gotsect)
     {
