@@ -5,7 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 0
+//#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char versionstring[] = "$VER: WBNewDrawer 0.6 (09.03.2010) ©2006 AROS Dev Team";
+char versionstring[] = "$VER: WBNewDrawer 0.6 (09.03.2010) ©2010 AROS Dev Team";
 
 static STRPTR AllocateNameFromLock(BPTR lock);
 static void bt_ok_hook_function(void);
@@ -149,6 +149,11 @@ static void bt_ok_hook_function(void)
     {
         DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     }
+    else
+    {
+        set(window, MUIA_Window_Activate, TRUE);
+        set(window, MUIA_Window_ActiveObject, str_name);
+    }
 }
 
 
@@ -164,7 +169,6 @@ static BOOL doNewDrawer(void)
     // No name specified
     if(strlen(name) == 0)
     {
-        MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_ILLEGAL_CHARS), name);
         return FALSE;
     }
 
