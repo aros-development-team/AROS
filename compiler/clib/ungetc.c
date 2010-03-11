@@ -25,7 +25,7 @@
 	FILE * stream)
 
 /*  FUNCTION
-	Puch the character c character back into the stream.
+	Push the character c character back into the stream.
 
     INPUTS
 	c - Put this character back into the stream. The next read will

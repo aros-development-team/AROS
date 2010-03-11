@@ -75,7 +75,7 @@
 
     /* This is buffered IO, flush the buffer before any Seek */
     Flush (fh);
-    
+
     /* Handling for fseek specific behaviour (not all cases handled) */
     /* Get current position */
     cnt = Seek (fh, 0, OFFSET_CURRENT);
@@ -92,7 +92,7 @@
         errno = IoErr2errno(IoErr());
         return -1;
     }
-        
+
     if (ExamineFH(fh, fib))
         eofposition = fib->fib_Size;
     else
@@ -106,7 +106,7 @@
 
     FreeDosObject(DOS_FIB, fib);
     fib = NULL;
-   
+
     switch(whence)
     {
         case SEEK_SET: finalseekposition = offset; break;
@@ -124,7 +124,7 @@
         errno = EINVAL;
         return -1;
     }
-    
+
     /* Seek beyond end of file and in write mode */
     if (finalseekposition > eofposition)
     {
@@ -132,7 +132,7 @@
         {
             /* Write '0' to fill up to requested size - compatible fseek does not write but allows write */
             int i = 0;
-            int bytestowrite = finalseekposition - eofposition; 
+            int bytestowrite = finalseekposition - eofposition;
             int chunkcount = (bytestowrite)/128;
             char zeroarray[128] = {0};
 
@@ -149,7 +149,13 @@
     if (cnt == -1)
     	errno = IoErr2errno (IoErr ());
     else
+    {
+        /* It's specified that upon success fseek should clear EOF flag
+           so here we go.
+        */
+        stream->flags &= ~(_STDIO_EOF);
     	cnt = 0;
+    }
 
     return cnt;
 } /* fseek */
