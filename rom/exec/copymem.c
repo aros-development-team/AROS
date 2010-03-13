@@ -29,7 +29,7 @@
     INPUTS
 	source - Pointer to source area
 	dest   - Pointer to destination
-	size   - number of bytes to copy
+	size   - number of bytes to copy (may be zero)
 
     RESULT
 

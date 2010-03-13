@@ -53,7 +53,7 @@ char *const inputname = "input.device";
     INPUTS
 	devName    - Pointer to the devices's name.
 	unitNumber - The unit number. Most often 0.
-	iORequest  - Pointer do device specific information.
+	iORequest  - Pointer to device specific information.
 		     Will be filled out by the device.
 		     Must lie in public (or at least shared) memory.
 	flags	   - Some flags to give to the device.
