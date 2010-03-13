@@ -18,7 +18,7 @@
 #elif __x86_64__
 #   define _JMPLEN 15
 #elif __powerpc__ || __ppc__
-#   define _JMPLEN 58
+#   define _JMPLEN 59
 #elif __arm__
 #   define _JMPLEN 63
 #endif
@@ -27,7 +27,7 @@ typedef struct __jmp_buf
 {
     unsigned long retaddr;
     unsigned long regs[_JMPLEN];
-} jmp_buf[1]  __attribute__ ((aligned (16)));
+}  __attribute__ ((aligned (16))) jmp_buf[1];
 
 #if !defined(_ANSI_SOURCE)
 typedef struct __sigjmp_buf
