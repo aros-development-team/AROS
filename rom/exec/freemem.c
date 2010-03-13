@@ -83,7 +83,7 @@
     RT_Free (RTT_MEMORY, memoryBlock, byteSize);
 
     /* The following two lines are necessary because of AllocAbs(),
-       were memoryBlock might not be aligned to a multiple of
+       where memoryBlock might not be aligned to a multiple of
        MEMCHUNK_TOTAL!!!!  */
     
     /* Align size to the requirements (needed because of AllocAbs) */

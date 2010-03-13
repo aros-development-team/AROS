@@ -75,7 +75,7 @@
         return NULL;
     }
 
-    /* If the header is managed, let the mager handle the request.  */    
+    /* If the header is managed, let the manager handle the request.  */    
     if (mh->mh_Attributes & MEMF_MANAGED)
     {
         struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;

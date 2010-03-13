@@ -29,12 +29,13 @@
     INPUTS
 	source - Pointer to source area (must be ULONG aligned)
 	dest   - Pointer to destination (must be ULONG aligned)
-	size   - number of bytes to copy (must be a multiple of sizeof(ULONG))
+	size   - number of bytes to copy (must be a multiple of sizeof(ULONG)).
+	         May be zero.
 
     RESULT
 
     NOTES
-	The source and destination area are not allowed to overlap.
+	The source and destination areas are not allowed to overlap.
 
     EXAMPLE
 

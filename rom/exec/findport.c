@@ -2,7 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Search a port by name.
+    Desc: Search for a port by name.
     Lang: english
 */
 #include <exec/execbase.h>
