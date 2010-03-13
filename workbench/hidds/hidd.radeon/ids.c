@@ -102,7 +102,8 @@ const struct ATIDevice support[] = {
     { 0x1002, 0x5551, R423,     RADEONInit,    FALSE },
     { 0x1002, 0x5552, R423,     RADEONInit,    FALSE },
     { 0x1002, 0x5554, R423,     RADEONInit,    FALSE },
-    { 0x1002, 0x5D57, R423,     RADEONInit,    FALSE } ,
-
+    { 0x1002, 0x5D57, R423,     RADEONInit,    FALSE },
+    { 0x1002, 0x781F, R420,	RADEONInit,    FALSE }, /* Added: X1200, RV410 core */
+    
     { 0x0000, 0x0000, }
 };
