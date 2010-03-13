@@ -110,10 +110,11 @@ AROS_LH3(VOID, Syslog,
      picked up from overflow_arg_area which is our array. Note that we
      don't need va_start() and va_end() in this case. */
   va_list _ap = {
-    8,			/* gpr - no more left */
-    8,			/* fpr - no more left */
-    (char *)ap,		/* overflow_arg_area - here are our data */
-    (char *)0xabadcafe		/* reg_save_area - we should never get there */
+    8,                  /* gpr - no more left */
+    8,                  /* fpr - no more left */
+    0,                  /* reserved - was always zero in my tests */
+    (void *) ap,        /* overflow_arg_area - here is our data */
+    (void *) 0xabadcafe /* reg_save_area - we should never get there */
   };
 #else
 #define _ap ap
