@@ -28,7 +28,6 @@ AROS_LH4(void *, KrnAddIRQHandler,
         goSuper();
 
         handle = Allocate(KernelBase->kb_SupervisorMem, sizeof(struct IntrNode));
-        D(bug("[KRN]   handle=%012p\n", handle));
 
         if (handle)
         {
@@ -57,6 +56,7 @@ AROS_LH4(void *, KrnAddIRQHandler,
         goUser();
     }
 
+    D(bug("[KRN]   handle=%012p\n", handle));
     return handle;
 
     AROS_LIBFUNC_EXIT
@@ -319,6 +319,7 @@ static uint64_t last_calc;
 void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exception, void *self)
 {
     struct KernelBase *KernelBase = getKernelBase();
+    struct ExecBase *SysBase = getSysBase();
 
     /* Clear the DIS bit - we have received decrementer exception */
     wrspr(TSR, TSR_DIS);
@@ -335,6 +336,24 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
         }
     }
 
+    if (SysBase && SysBase->Elapsed)
+    {
+        if (--SysBase->Elapsed == 0)
+        {
+        	if (IsListEmpty(&SysBase->TaskReady))
+        	{
+        		SysBase->Elapsed = SysBase->Quantum;
+        	}
+        	else
+        	{
+        		bug("[KRN] Force reschedule (Task %08x '%s')\n", SysBase->ThisTask, SysBase->ThisTask ? SysBase->ThisTask->tc_Node.ln_Name : "???");
+            	SysBase->SysFlags |= 0x2000;
+            	SysBase->AttnResched |= 0x80;
+            	SysBase->ThisTask->tc_Node.ln_Pri = -128;
+        	}
+        }
+    }
+
     /* Idle time calculator */
 
     uint64_t current = mftbu();
@@ -348,8 +367,10 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
     	KernelBase->kb_CPUUsage = 1000 - ((uint32_t)idle_time) / (total_time / 1000);
 
     	if (KernelBase->kb_CPUUsage > 999)
+    	{
     		D(bug("[KRN] CPU usage: %3d.%d (%s)\n", KernelBase->kb_CPUUsage / 10, KernelBase->kb_CPUUsage % 10,
     				SysBase->ThisTask->tc_Node.ln_Name));
+    	}
     	else
     		D(bug("[KRN] CPU usage: %3d.%d\n", KernelBase->kb_CPUUsage / 10, KernelBase->kb_CPUUsage % 10));
 
@@ -502,6 +523,123 @@ void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void 
         generic_handler(ctx, exception, self);
 }
 
+void __attribute__((noreturn)) alignment_handler(context_t *ctx, uint8_t exception, void *self)
+{
+    struct KernelBase *KernelBase = getKernelBase();
+    int fixed = 1;
+
+    union {
+    	uint8_t		u8[8];
+    	uint16_t	u16[4];
+    	uint32_t 	u32[2];
+    	uint64_t 	u64;
+    	float 		f[2];
+    	double 		d;
+    } conv __attribute__((aligned(16)));
+
+    uint32_t dear = rdspr(DEAR);
+    uint32_t insn = *(uint32_t *)ctx->cpu.srr0;
+
+    uint8_t reg = (insn >> 21) & 0x1f;		// source/dest register
+    uint8_t areg = (insn >> 16) & 0x1f;		// register to be updated with dear value
+
+
+    switch (insn >> 26)
+    {
+    case 50: 	// lfd
+    	conv.u8[0] = ((uint8_t *)dear)[0];
+    	conv.u8[1] = ((uint8_t *)dear)[1];
+    	conv.u8[2] = ((uint8_t *)dear)[2];
+    	conv.u8[3] = ((uint8_t *)dear)[3];
+    	conv.u8[4] = ((uint8_t *)dear)[4];
+    	conv.u8[5] = ((uint8_t *)dear)[5];
+    	conv.u8[6] = ((uint8_t *)dear)[6];
+    	conv.u8[7] = ((uint8_t *)dear)[7];
+    	ctx->fpu.fpr[reg] = conv.d;
+    	break;
+    case 51:	// lfdu
+    	conv.u8[0] = ((uint8_t *)dear)[0];
+    	conv.u8[1] = ((uint8_t *)dear)[1];
+    	conv.u8[2] = ((uint8_t *)dear)[2];
+    	conv.u8[3] = ((uint8_t *)dear)[3];
+    	conv.u8[4] = ((uint8_t *)dear)[4];
+    	conv.u8[5] = ((uint8_t *)dear)[5];
+    	conv.u8[6] = ((uint8_t *)dear)[6];
+    	conv.u8[7] = ((uint8_t *)dear)[7];
+    	ctx->fpu.fpr[reg] = conv.d;
+    	ctx->cpu.gpr[areg] = dear;
+    	break;
+    case 48:	// lfs
+    	conv.u8[0] = ((uint8_t *)dear)[0];
+    	conv.u8[1] = ((uint8_t *)dear)[1];
+    	conv.u8[2] = ((uint8_t *)dear)[2];
+    	conv.u8[3] = ((uint8_t *)dear)[3];
+    	ctx->fpu.fpr[reg] = conv.f[0];
+    	break;
+    case 49:	// lfsu
+    	conv.u8[0] = ((uint8_t *)dear)[0];
+    	conv.u8[1] = ((uint8_t *)dear)[1];
+    	conv.u8[2] = ((uint8_t *)dear)[2];
+    	conv.u8[3] = ((uint8_t *)dear)[3];
+    	ctx->fpu.fpr[reg] = conv.f[0];
+    	ctx->cpu.gpr[areg] = dear;
+    	break;
+    case 54:	// stfd
+    	conv.d = ctx->fpu.fpr[reg];
+    	((uint8_t *)dear)[0] = conv.u8[0];
+    	((uint8_t *)dear)[1] = conv.u8[1];
+    	((uint8_t *)dear)[2] = conv.u8[2];
+    	((uint8_t *)dear)[3] = conv.u8[3];
+    	((uint8_t *)dear)[4] = conv.u8[4];
+    	((uint8_t *)dear)[5] = conv.u8[5];
+    	((uint8_t *)dear)[6] = conv.u8[6];
+    	((uint8_t *)dear)[7] = conv.u8[7];
+    	break;
+    case 55:	// stfdu
+    	conv.d = ctx->fpu.fpr[reg];
+    	((uint8_t *)dear)[0] = conv.u8[0];
+    	((uint8_t *)dear)[1] = conv.u8[1];
+    	((uint8_t *)dear)[2] = conv.u8[2];
+    	((uint8_t *)dear)[3] = conv.u8[3];
+    	((uint8_t *)dear)[4] = conv.u8[4];
+    	((uint8_t *)dear)[5] = conv.u8[5];
+    	((uint8_t *)dear)[6] = conv.u8[6];
+    	((uint8_t *)dear)[7] = conv.u8[7];
+    	ctx->cpu.gpr[areg] = dear;
+    	break;
+    case 52:	// stfs
+    	conv.f[0] = ctx->fpu.fpr[reg];
+    	((uint8_t *)dear)[0] = conv.u8[0];
+    	((uint8_t *)dear)[1] = conv.u8[1];
+    	((uint8_t *)dear)[2] = conv.u8[2];
+    	((uint8_t *)dear)[3] = conv.u8[3];
+    	break;
+    case 53:	// stfsu
+    	conv.f[0] = ctx->fpu.fpr[reg];
+    	((uint8_t *)dear)[0] = conv.u8[0];
+    	((uint8_t *)dear)[1] = conv.u8[1];
+    	((uint8_t *)dear)[2] = conv.u8[2];
+    	((uint8_t *)dear)[3] = conv.u8[3];
+    	ctx->cpu.gpr[areg] = dear;
+    	break;
+//    case 31:	// lfdux, lfdx, lfsux, lfsx, stfdux, stfdx,  stfsux, stfsx
+//    	break;
+    default:
+    	fixed = 0;
+    	break;
+    }
+
+    if (fixed)
+    {
+    	ctx->cpu.srr0 += 4;
+    	core_LeaveInterrupt(ctx);
+    }
+    else
+    {
+        D(bug("[KRN] Alignment exception handler failed to help... INSN=%08x, DEAR=%08x\n", insn, dear));
+    	generic_handler(ctx, exception, self);
+    }
+}
 
 
 static void __attribute__((used)) __EXCEPTION_Prolog_template()
@@ -518,7 +656,7 @@ static void __attribute__((used)) __EXCEPTION_Prolog_template()
     PUT_INTR_TEMPLATE(2, generic_handler);
     PUT_INTR_TEMPLATE(3, generic_handler);
     PUT_INTR_TEMPLATE(4, uic_handler);
-    PUT_INTR_TEMPLATE(5, generic_handler);
+    PUT_INTR_TEMPLATE(5, alignment_handler);
     PUT_INTR_TEMPLATE(6, generic_handler);
     PUT_INTR_TEMPLATE(7, generic_handler);
     PUT_INTR_TEMPLATE(8, syscall_handler);
@@ -527,7 +665,7 @@ static void __attribute__((used)) __EXCEPTION_Prolog_template()
     PUT_INTR_TEMPLATE(11, generic_handler);
     PUT_INTR_TEMPLATE(12, generic_handler); /* crit */
     PUT_INTR_TEMPLATE(13, mmu_handler);
-    PUT_INTR_TEMPLATE(14, generic_handler);
+    PUT_INTR_TEMPLATE(14, mmu_handler);
     PUT_INTR_TEMPLATE(15, generic_handler); /* crit */
 }
 
