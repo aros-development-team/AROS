@@ -67,6 +67,8 @@
 	.globl AROS_CDEFNAME(longjmp)
 	_FUNCTION(longjmp)
 AROS_CDEFNAME(longjmp):
+	addi %r3,%r3,7
+        rlwinm %r3,%r3,0,0,28	
 	cmpi 0,1,%r4,0
 	bne okret
 	li %r4,1
