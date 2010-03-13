@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to format a string like printf().
@@ -168,7 +168,7 @@ const unsigned char *const __decimalpoint = ".";
 	subtype=*ptr++;
 
 #ifdef AROS_HAVE_LONG_LONG
-      if(*ptr=='l')
+      if(*ptr=='l'||*ptr=='q')
       {
         lltype=1;
         ptr++;
