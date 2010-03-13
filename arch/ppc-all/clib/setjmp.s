@@ -64,6 +64,8 @@
 	_FUNCTION(AROS_CDEFNAME(setjmp))
 	
 AROS_CDEFNAME(setjmp):
+	addi %r3,%r3,7
+        rlwinm %r3,%r3,0,0,28
 	stw  %r1,   4(3)
 	mflr %r0
 	stw  %r2,   8(3)
