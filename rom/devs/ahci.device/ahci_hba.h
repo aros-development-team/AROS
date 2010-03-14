@@ -117,7 +117,7 @@ enum {
 	PORT_INT_DHR	= (1 << 0),		// Device to Host Register FIS Interrupt
 };
 
-struct ahci_port {
+struct ahci_hwport {
 	volatile ULONG      clb;			// Port x Command List Base Address (alignment 1024 byte)
 	volatile ULONG      clbu;			// Port x Command List Base Address Upper 32-Bits
 	volatile ULONG      fb;				// Port x FIS Base Address (alignment 256 byte)
@@ -139,7 +139,7 @@ struct ahci_port {
 	volatile ULONG      vendor[4];		// Port x Vendor Specific
 } __attribute__((__packed__));
 
-struct ahci_hba {
+struct ahci_hwhba {
     volatile ULONG      cap;			// 0x00 Host Capabilities
     volatile ULONG      ghc;			// 0x04 Global Host Control
     volatile ULONG      is;				// 0x08 Interrupt Status
@@ -153,7 +153,7 @@ struct ahci_hba {
     volatile ULONG      bohc;           // 0x28 BIOS/OS Handoff Control and Status
     volatile ULONG      res[29];        // 0x2c-0x9f Reserved
     volatile ULONG      vendor[24];     // 0xa0-0xff Vendor Specific registers
-    struct ahci_port    port[32];       // 0x100
+    struct ahci_hwport  port[32];       // 0x100
 } __attribute__((__packed__));
 
 #endif // _AHCI_HBA_H
