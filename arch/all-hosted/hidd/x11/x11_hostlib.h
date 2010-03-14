@@ -10,6 +10,10 @@
 #include <sys/shm.h>
 #endif
 
+// Set to 1 if you want to disable the asynchronic nature of the X11 HIDD.
+// This makes it easier to find the real reason of a misbehavior.
+#define DEBUG_X11_SYNCHRON 0
+
 struct x11_func {
     XImage * (*XCreateImage) ( Display* , Visual* , unsigned int , int , int , char* , unsigned int , unsigned int , int , int );
     int (*XInitImage) ( XImage* );
@@ -86,6 +90,9 @@ struct x11_func {
     int (*XAllocColor) ( Display* , Colormap , XColor* );
     int (*XLookupString) ( XKeyEvent* , char* , int , KeySym* , XComposeStatus* );
     int (*XQueryExtension) (Display *, char*, int*, int*, int*);
+#if DEBUG_X11_SYNCHRON
+    void (*XSynchronize)(Display *, Bool );
+#endif
 };
 
 struct libc_func {

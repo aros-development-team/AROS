@@ -94,9 +94,16 @@ static const char *x11_func_names[] = {
     "XAllocColor",
     "XLookupString",
     "XQueryExtension"
+#if DEBUG_X11_SYNCHRON
+    , "XSynchronize"
+#endif
 };
 
+#if DEBUG_X11_SYNCHRON
+#define X11_NUM_FUNCS (76)
+#else
 #define X11_NUM_FUNCS (75)
+#endif
 
 static const char *libc_func_names[] = {
 #if USE_XSHM

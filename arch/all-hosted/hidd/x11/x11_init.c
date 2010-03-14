@@ -97,7 +97,7 @@ static int MyErrorHandler (Display * display, XErrorEvent * errevent)
 	return 0;
     }
 #endif
-    
+
     XCALL(XGetErrorText, display, errevent->error_code, buffer, sizeof (buffer));
 
     kprintf("XError %d (Major=%d, Minor=%d) task = %s\n%s\n",
@@ -147,6 +147,9 @@ static int X11_Init(LIBBASETYPEPTR LIBBASE)
 	struct x11task_params 	 xtp;
 	struct Task 	    	*x11task;
 
+#if DEBUG_X11_SYNCHRON
+	XCALL(XSynchronize, xsd->display, True);
+#endif
 	XCALL(XSetErrorHandler, MyErrorHandler);
 	XCALL(XSetIOErrorHandler, MySysErrorHandler);
 
