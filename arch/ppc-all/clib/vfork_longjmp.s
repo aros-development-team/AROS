@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,8 +14,6 @@
 	_FUNCTION(vfork_longjmp)
 
 AROS_CDEFNAME(vfork_longjmp):
-	addi %r3,%r3,7
-        rlwinm %r3,%r3,0,0,28
 	lwz %r1,(0*4)(%r3)
 	lwz %r2,(1*4)(%r3)
 	lwz %r0,(2*4)(%r3)
