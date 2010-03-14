@@ -523,6 +523,152 @@ void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void 
         generic_handler(ctx, exception, self);
 }
 
+double lfd(intptr_t addr)
+{
+	union {
+		uint8_t		u8[8];
+		uint16_t	u16[4];
+		uint32_t	u32[2];
+		uint64_t	u64;
+		float		f[2];
+		double		d;
+	} conv;
+
+	switch ((intptr_t)addr & 3)
+	{
+	case 0:
+		conv.u32[0] = ((uint32_t *)addr)[0];
+		conv.u32[1] = ((uint32_t *)addr)[1];
+		break;
+
+	case 2:
+		conv.u16[0] = ((uint16_t *)addr)[0];
+		conv.u16[1] = ((uint16_t *)addr)[1];
+		conv.u16[2] = ((uint16_t *)addr)[2];
+		conv.u16[3] = ((uint16_t *)addr)[3];
+		break;
+
+	default:
+		conv.u8[0] = ((uint8_t *)addr)[0];
+		conv.u8[1] = ((uint8_t *)addr)[1];
+		conv.u8[2] = ((uint8_t *)addr)[2];
+		conv.u8[3] = ((uint8_t *)addr)[3];
+		conv.u8[4] = ((uint8_t *)addr)[4];
+		conv.u8[5] = ((uint8_t *)addr)[5];
+		conv.u8[6] = ((uint8_t *)addr)[6];
+		conv.u8[7] = ((uint8_t *)addr)[7];
+		break;
+	}
+
+	return conv.d;
+}
+
+float lfs(intptr_t addr)
+{
+	union {
+		uint8_t		u8[8];
+		uint16_t	u16[4];
+		uint32_t	u32[2];
+		uint64_t	u64;
+		float		f[2];
+		double		d;
+	} conv;
+
+	switch ((intptr_t)addr & 3)
+	{
+	case 0:
+		conv.u32[0] = ((uint32_t *)addr)[0];
+		break;
+
+	case 2:
+		conv.u16[0] = ((uint16_t *)addr)[0];
+		conv.u16[1] = ((uint16_t *)addr)[1];
+		break;
+
+	default:
+		conv.u8[0] = ((uint8_t *)addr)[0];
+		conv.u8[1] = ((uint8_t *)addr)[1];
+		conv.u8[2] = ((uint8_t *)addr)[2];
+		conv.u8[3] = ((uint8_t *)addr)[3];
+		break;
+	}
+
+	return conv.f[0];
+}
+
+void stfd(double v, intptr_t addr)
+{
+	union {
+		uint8_t		u8[8];
+		uint16_t	u16[4];
+		uint32_t	u32[2];
+		uint64_t	u64;
+		float		f[2];
+		double		d;
+	} conv;
+
+	conv.d = v;
+
+	switch ((intptr_t)addr & 3)
+	{
+	case 0:
+		((uint32_t *)addr)[0] = conv.u32[0];
+		((uint32_t *)addr)[1] = conv.u32[1];
+		break;
+
+	case 2:
+		((uint16_t *)addr)[0] = conv.u16[0];
+		((uint16_t *)addr)[1] = conv.u16[1];
+		((uint16_t *)addr)[2] = conv.u16[2];
+		((uint16_t *)addr)[3] = conv.u16[3];
+		break;
+
+	default:
+		((uint8_t *)addr)[0] = conv.u8[0];
+		((uint8_t *)addr)[1] = conv.u8[1];
+		((uint8_t *)addr)[2] = conv.u8[2];
+		((uint8_t *)addr)[3] = conv.u8[3];
+		((uint8_t *)addr)[4] = conv.u8[4];
+		((uint8_t *)addr)[5] = conv.u8[5];
+		((uint8_t *)addr)[6] = conv.u8[6];
+		((uint8_t *)addr)[7] = conv.u8[7];
+		break;
+	}
+}
+
+void stfs(float v, intptr_t addr)
+{
+	union {
+		uint8_t		u8[8];
+		uint16_t	u16[4];
+		uint32_t	u32[2];
+		uint64_t	u64;
+		float		f[2];
+		double		d;
+	} conv;
+
+	conv.f[0] = v;
+
+	switch ((intptr_t)addr & 3)
+	{
+	case 0:
+		((uint32_t *)addr)[0] = conv.u32[0];
+		break;
+
+	case 2:
+		((uint16_t *)addr)[0] = conv.u16[0];
+		((uint16_t *)addr)[1] = conv.u16[1];
+		break;
+
+	default:
+		((uint8_t *)addr)[0] = conv.u8[0];
+		((uint8_t *)addr)[1] = conv.u8[1];
+		((uint8_t *)addr)[2] = conv.u8[2];
+		((uint8_t *)addr)[3] = conv.u8[3];
+		break;
+	}
+}
+
 void __attribute__((noreturn)) alignment_handler(context_t *ctx, uint8_t exception, void *self)
 {
     struct KernelBase *KernelBase = getKernelBase();
@@ -537,7 +683,7 @@ void __attribute__((noreturn)) alignment_handler(context_t *ctx, uint8_t excepti
     	double 		d;
     } conv __attribute__((aligned(16)));
 
-    uint32_t dear = rdspr(DEAR);
+    intptr_t dear = rdspr(DEAR);
     uint32_t insn = *(uint32_t *)ctx->cpu.srr0;
 
     uint8_t reg = (insn >> 21) & 0x1f;		// source/dest register
@@ -547,83 +693,69 @@ void __attribute__((noreturn)) alignment_handler(context_t *ctx, uint8_t excepti
     switch (insn >> 26)
     {
     case 50: 	// lfd
-    	conv.u8[0] = ((uint8_t *)dear)[0];
-    	conv.u8[1] = ((uint8_t *)dear)[1];
-    	conv.u8[2] = ((uint8_t *)dear)[2];
-    	conv.u8[3] = ((uint8_t *)dear)[3];
-    	conv.u8[4] = ((uint8_t *)dear)[4];
-    	conv.u8[5] = ((uint8_t *)dear)[5];
-    	conv.u8[6] = ((uint8_t *)dear)[6];
-    	conv.u8[7] = ((uint8_t *)dear)[7];
-    	ctx->fpu.fpr[reg] = conv.d;
+    	ctx->fpu.fpr[reg] = lfd(dear);
     	break;
     case 51:	// lfdu
-    	conv.u8[0] = ((uint8_t *)dear)[0];
-    	conv.u8[1] = ((uint8_t *)dear)[1];
-    	conv.u8[2] = ((uint8_t *)dear)[2];
-    	conv.u8[3] = ((uint8_t *)dear)[3];
-    	conv.u8[4] = ((uint8_t *)dear)[4];
-    	conv.u8[5] = ((uint8_t *)dear)[5];
-    	conv.u8[6] = ((uint8_t *)dear)[6];
-    	conv.u8[7] = ((uint8_t *)dear)[7];
-    	ctx->fpu.fpr[reg] = conv.d;
+    	ctx->fpu.fpr[reg] = lfd(dear);
     	ctx->cpu.gpr[areg] = dear;
     	break;
     case 48:	// lfs
-    	conv.u8[0] = ((uint8_t *)dear)[0];
-    	conv.u8[1] = ((uint8_t *)dear)[1];
-    	conv.u8[2] = ((uint8_t *)dear)[2];
-    	conv.u8[3] = ((uint8_t *)dear)[3];
-    	ctx->fpu.fpr[reg] = conv.f[0];
+    	ctx->fpu.fpr[reg] = lfs(dear);
     	break;
     case 49:	// lfsu
-    	conv.u8[0] = ((uint8_t *)dear)[0];
-    	conv.u8[1] = ((uint8_t *)dear)[1];
-    	conv.u8[2] = ((uint8_t *)dear)[2];
-    	conv.u8[3] = ((uint8_t *)dear)[3];
-    	ctx->fpu.fpr[reg] = conv.f[0];
+    	ctx->fpu.fpr[reg] = lfs(dear);
     	ctx->cpu.gpr[areg] = dear;
     	break;
     case 54:	// stfd
-    	conv.d = ctx->fpu.fpr[reg];
-    	((uint8_t *)dear)[0] = conv.u8[0];
-    	((uint8_t *)dear)[1] = conv.u8[1];
-    	((uint8_t *)dear)[2] = conv.u8[2];
-    	((uint8_t *)dear)[3] = conv.u8[3];
-    	((uint8_t *)dear)[4] = conv.u8[4];
-    	((uint8_t *)dear)[5] = conv.u8[5];
-    	((uint8_t *)dear)[6] = conv.u8[6];
-    	((uint8_t *)dear)[7] = conv.u8[7];
+    	stfd(ctx->fpu.fpr[reg], dear);
     	break;
     case 55:	// stfdu
-    	conv.d = ctx->fpu.fpr[reg];
-    	((uint8_t *)dear)[0] = conv.u8[0];
-    	((uint8_t *)dear)[1] = conv.u8[1];
-    	((uint8_t *)dear)[2] = conv.u8[2];
-    	((uint8_t *)dear)[3] = conv.u8[3];
-    	((uint8_t *)dear)[4] = conv.u8[4];
-    	((uint8_t *)dear)[5] = conv.u8[5];
-    	((uint8_t *)dear)[6] = conv.u8[6];
-    	((uint8_t *)dear)[7] = conv.u8[7];
+		stfd(ctx->fpu.fpr[reg], dear);
     	ctx->cpu.gpr[areg] = dear;
     	break;
     case 52:	// stfs
-    	conv.f[0] = ctx->fpu.fpr[reg];
-    	((uint8_t *)dear)[0] = conv.u8[0];
-    	((uint8_t *)dear)[1] = conv.u8[1];
-    	((uint8_t *)dear)[2] = conv.u8[2];
-    	((uint8_t *)dear)[3] = conv.u8[3];
+    	stfs(ctx->fpu.fpr[reg], dear);
     	break;
     case 53:	// stfsu
-    	conv.f[0] = ctx->fpu.fpr[reg];
-    	((uint8_t *)dear)[0] = conv.u8[0];
-    	((uint8_t *)dear)[1] = conv.u8[1];
-    	((uint8_t *)dear)[2] = conv.u8[2];
-    	((uint8_t *)dear)[3] = conv.u8[3];
+    	stfs(ctx->fpu.fpr[reg], dear);
     	ctx->cpu.gpr[areg] = dear;
     	break;
-//    case 31:	// lfdux, lfdx, lfsux, lfsx, stfdux, stfdx,  stfsux, stfsx
-//    	break;
+    case 31:	// lfdux, lfdx, lfsux, lfsx, stfdux, stfdx,  stfsux, stfsx
+    	switch ((insn & 0x00001ffe) >> 1)
+    	{
+    	case 631: // lfdux
+    		ctx->fpu.fpr[reg] = lfd(dear);
+    		ctx->cpu.gpr[areg] = dear;
+    		break;
+    	case 599: // lfdx
+    		ctx->fpu.fpr[reg] = lfd(dear);
+    		break;
+    	case 567: // lfsux
+    		ctx->fpu.fpr[reg] = lfs(dear);
+    		ctx->cpu.gpr[areg] = dear;
+    		break;
+    	case 535: // lfsx
+    		ctx->fpu.fpr[reg] = lfs(dear);
+    		break;
+    	case 759: // stfdux
+    		stfd(ctx->fpu.fpr[reg], dear);
+    		ctx->cpu.gpr[areg] = dear;
+    		break;
+    	case 727: // stfdx
+    		stfd(ctx->fpu.fpr[reg], dear);
+    		break;
+    	case 695: // stfsux
+    		stfs(ctx->fpu.fpr[reg], dear);
+    		ctx->cpu.gpr[areg] = dear;
+    		break;
+    	case 663: // stfsx
+    		stfs(ctx->fpu.fpr[reg], dear);
+    		break;
+    	default:
+    		fixed = 0;
+    		break;
+    	}
+    	break;
     default:
     	fixed = 0;
     	break;
