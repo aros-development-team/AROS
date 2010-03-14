@@ -57,15 +57,16 @@ struct ahci_staticdata {
     /* Memory pool */
     APTR    ahci_MemPool;
 
-    /* List of all found AHCI host devices (referred to as host bus adapters, or HBA) */
+    /* List of all found AHCI host devices (referred to as host bus adapters, or HBA's) */
     struct  MinList ahci_hba_list;
 
 };
 
 /* One instance of HBA */
 struct ahci_hba_chip {
+    struct  MinNode ahci_hba_chip_Node;
 
-    struct  MinNode hba_Node;
+    struct  MinList ahci_port_list;
 
     IPTR    ProductID, VendorID;
 
@@ -74,6 +75,10 @@ struct ahci_hba_chip {
 
     ULONG   Version;
     ULONG   PortCount;
+};
+
+struct ahci_port {
+    struct  MinNode ahci_port_Node;
 };
 
 /* ahci.device base */
