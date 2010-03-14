@@ -10,7 +10,9 @@
 #include <aros/system.h>
 #endif
 
+#if 0
 #include <clib/dtclass_protos.h>
 #include <defines/dtclass.h>
+#endif
 
 #endif /* PROTO_DTCLASS_H */
