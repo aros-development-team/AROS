@@ -23,8 +23,8 @@
 
 #define LANGSTR     "polski"    /* String version of above */
 #define LANGVER     41          /* Version number of language */
-#define LANGREV     0           /* Revision number of language */
-#define LANGTAG     "\0$VER: polski.language 41.0 (25.07.1999)"
+#define LANGREV     1           /* Revision number of language */
+#define LANGTAG     "\0$VER: polski.language 41.1 (14.03.2010)"
 
 AROS_LD1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
@@ -278,11 +278,15 @@ const STRPTR __polish_strings[] =
         In English this would be Sunday, this depends upon the settings
         of Locale->CalendarType.
     */
-    "Poniedzia³ek", "Wtorek", "¦roda", "Czwartek", "Pi±tek",
-    "Sobota", "Niedziala",
+
+#warning: stegerg: I think this must always start with Sunday and not what comment above says
+#warning: deadwood: I agree
+
+    "Niedziala", "Poniedzia³ek", "Wtorek", "¦roda", "Czwartek",
+    "Pi±tek", "Sobota",
 
     /* Abbreviated days of the week */
-    "Po", "Wt", "¦r", "Cz", "Pi", "So", "Ni",
+    "Ni", "Po", "Wt", "¦r", "Cz", "Pi", "So",
 
     /* Months of the year */
     "Styczeñ", "Luty", "Marzec",
