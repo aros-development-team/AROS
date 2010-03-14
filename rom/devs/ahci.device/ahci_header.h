@@ -19,6 +19,7 @@
 #include <libraries/expansion.h>
 #include <libraries/configvars.h>
 
+#include <dos/dos.h>
 #include <dos/bptr.h>
 #include <dos/filehandler.h>
 
@@ -73,9 +74,6 @@ struct ahci_hba_chip {
 
     ULONG   Version;
     ULONG   PortCount;
-
-    struct Task     *hba_task;
-
 };
 
 /* ahci.device base */
@@ -88,8 +86,8 @@ struct ahciBase {
 BOOL ahci_setup_hbatask(struct ahci_hba_chip *hba_chip);
 void ahci_init_hba(struct ahci_hba_chip *hba_chip);
 void ahci_reset_hba(struct ahci_hba_chip *hba_chip);
-void ahci_enable_hba(struct ahci_hba_chip *hba_chip);
-void ahci_disable_hba(struct ahci_hba_chip *hba_chip);
+BOOL ahci_enable_hba(struct ahci_hba_chip *hba_chip);
+BOOL ahci_disable_hba(struct ahci_hba_chip *hba_chip);
 
 #endif // _AHCI_HEADER_H
 
