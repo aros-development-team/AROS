@@ -18,7 +18,7 @@
 #elif __x86_64__
 #   define _JMPLEN 15
 #elif __powerpc__ || __ppc__
-#   define _JMPLEN 59
+#   define _JMPLEN 58
 #elif __arm__
 #   define _JMPLEN 63
 #endif
