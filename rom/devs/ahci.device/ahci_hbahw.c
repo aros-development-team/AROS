@@ -13,7 +13,7 @@
 */
 
 static void ahci_taskcode_hba(struct ahci_hba_chip *hba_chip, struct Task* parent) {
-    D(bug("[AHCI] (%04x:%04x) Hello! HBA task running...\n", hba_chip->VendorID, hba_chip->ProductID));
+    D(bug("Hello! HBA task running...\n"));
 
     D(bug("Signaling parent %08x\n", parent));
 
@@ -21,8 +21,7 @@ static void ahci_taskcode_hba(struct ahci_hba_chip *hba_chip, struct Task* paren
 
 //    ahci_init_hba( hba_chip );
 
-    while(1){
-    }
+//    for(;;);
 
     D(bug("[AHCI] (%04x:%04x) Bye!\n", hba_chip->VendorID, hba_chip->ProductID));
 }
@@ -30,42 +29,55 @@ static void ahci_taskcode_hba(struct ahci_hba_chip *hba_chip, struct Task* paren
 BOOL ahci_setup_hbatask(struct ahci_hba_chip *hba_chip) {
     D(bug("[AHCI] (%04x:%04x) HBA task setup...\n", hba_chip->VendorID, hba_chip->ProductID));
 
-    APTR stack;
+    struct Task     *t;
+    struct MemList  *ml;
 
-    hba_chip->hba_task = AllocMem(sizeof (struct Task), MEMF_PUBLIC|MEMF_CLEAR);
-    if (hba_chip->hba_task) {
-    	NEWLIST(&hba_chip->hba_task->tc_MemEntry);
-    	hba_chip->hba_task->tc_Node.ln_Type =NT_TASK;
-    	hba_chip->hba_task->tc_Node.ln_Name = "HBA Task";
-    	hba_chip->hba_task->tc_Node.ln_Pri  = HBA_TASK_PRI;
 
-    	stack = AllocMem(HBA_TASK_STACKSIZE, MEMF_PUBLIC);
-    	if(stack != NULL) {
-	        struct TagItem tags[] = {
-                {TASKTAG_ARG1, (IPTR)hba_chip},
-                {TASKTAG_ARG2, (IPTR)FindTask(0)},
-                {TAG_DONE}
-	        };
-	    
-	        hba_chip->hba_task->tc_SPLower = stack;
-	        hba_chip->hba_task->tc_SPUpper = (UBYTE *)stack + HBA_TASK_STACKSIZE;
+    struct TagItem tags[] = {
+        { TASKTAG_ARG1, (IPTR)hba_chip },
+        { TASKTAG_ARG2, (IPTR)FindTask(0) },
+        { TAG_DONE,     0 }
+    };
 
-        #if AROS_STACK_GROWS_DOWNWARDS
-	        hba_chip->hba_task->tc_SPReg = (UBYTE *)hba_chip->hba_task->tc_SPUpper-SP_OFFSET;
-        #else
-	        hba_chip->hba_task->tc_SPReg = (UBYTE *)hba_chip->hba_task->tc_SPLower+SP_OFFSET;
-        #endif
+    t = AllocMem(sizeof (struct Task), MEMF_PUBLIC|MEMF_CLEAR);
+    if (t) {
+        ml = AllocMem(sizeof(struct MemList) + sizeof(struct MemEntry), MEMF_PUBLIC | MEMF_CLEAR);
+        if(ml) {
+    	    UBYTE *sp = AllocMem(HBA_TASK_STACKSIZE, MEMF_PUBLIC | MEMF_CLEAR);
+    	    if(sp) {
+                t->tc_SPLower = sp;
+                t->tc_SPUpper = sp + HBA_TASK_STACKSIZE;
+            #if AROS_STACK_GROWS_DOWNWARDS
+		        t->tc_SPReg = (UBYTE *)t->tc_SPUpper-SP_OFFSET;
+            #else
+		        t->tc_SPReg = (UBYTE *)t->tc_SPLower-SP_OFFSET;
+            #endif
+                ml->ml_NumEntries = 2;
+                ml->ml_ME[0].me_Addr = t;
+                ml->ml_ME[0].me_Length = sizeof(struct Task);
+                ml->ml_ME[1].me_Addr = sp;
+                ml->ml_ME[1].me_Length = HBA_TASK_STACKSIZE;
+        
+                NEWLIST(&t->tc_MemEntry);
+                AddHead(&t->tc_MemEntry, &ml->ml_Node);
 
-            if(NewAddTask(hba_chip->hba_task, ahci_taskcode_hba, NULL, tags) != NULL) {
+                t->tc_Node.ln_Name = "HBA task";
+                t->tc_Node.ln_Type = NT_TASK;
+                t->tc_Node.ln_Pri  = HBA_TASK_PRI;
+
+                NewAddTask(t, ahci_taskcode_hba, NULL, tags);
+
+                D(bug("[AHCI] Waiting HBA task signal\n"));
                 Wait(SIGBREAKF_CTRL_C);
+                D(bug("[AHCI] Signal from HBA task received\n"));
                 return TRUE;
-            }	
-
-            FreeMem(stack, HBA_TASK_STACKSIZE);	
+            }else{
+                FreeMem(ml,sizeof(struct MemList) + sizeof(struct MemEntry));
+                FreeMem(t,sizeof(struct Task));
+                return FALSE;
+            }
         }
-        FreeMem(hba_chip->hba_task,sizeof(struct Task));
     }
-    return FALSE;
 }
 
 /*
@@ -148,36 +160,38 @@ void ahci_reset_hba(struct ahci_hba_chip *hba_chip) {
     /*
         Enable AHCI mode
     */
-	ahci_enable_hba( hba_chip );
+	if( ahci_enable_hba( hba_chip ) ) {
 
-    /*
-        Reset HBA
-    */
-    hba->ghc |= GHC_HR;
+        /*
+            Reset HBA
+        */
+        hba->ghc |= GHC_HR;
 
-    Timeout = 5000;
-    while( (hba->ghc && GHC_HR) ) {
-        if( (--Timeout == 0) )
-            D(bug("[AHCI] Timeout while doing HBA reset!\n"));
-            break;
+        Timeout = 5000;
+        while( (hba->ghc && GHC_HR) ) {
+            if( (--Timeout == 0) ) {
+                D(bug("[AHCI] Timeout while doing HBA reset!\n"));
+                break;
+            }
+        }
+
+        /*
+            Re-enable AHCI mode
+        */
+        ahci_enable_hba( hba_chip );
+
+	    /*
+            Clear interrupts
+        */
+
+	    /*
+            Configure CCC, if supporting
+        */
     }
-
-    /*
-        Reenable AHCI mode
-    */
-    ahci_enable_hba( hba_chip );
-
-	/*
-        Clear interrupts
-    */
-
-	/*
-        Configure CCC, if supporting
-    */
 
 }
 
-void ahci_enable_hba(struct ahci_hba_chip *hba_chip) {
+BOOL ahci_enable_hba(struct ahci_hba_chip *hba_chip) {
     D(bug("[AHCI] (%04x:%04x) HBA enable...\n", hba_chip->VendorID, hba_chip->ProductID));
 
     struct ahci_hba *hba;
@@ -190,25 +204,30 @@ void ahci_enable_hba(struct ahci_hba_chip *hba_chip) {
 
     if( !(hba->ghc && GHC_AE) ){
         hba->ghc = GHC_AE;
+        return TRUE;
     }
 
+    return FALSE;
 }
 
-void ahci_disable_hba(struct ahci_hba_chip *hba_chip) {
+BOOL ahci_disable_hba(struct ahci_hba_chip *hba_chip) {
     D(bug("[AHCI] (%04x:%04x) HBA disable...\n", hba_chip->VendorID, hba_chip->ProductID));
 
     struct ahci_hba *hba;
     hba = hba_chip->abar;
 
     /*
-        Check first if bit GHC_AE is set and if so then check whether it is RO or RW (if CAP_SAM not set then HBA can be AHCI or legacy)
-        If bit is RW then clear the bit along with the other bits
+        Check first if bit GHC_AE is set and if so then check whether it is RO or RW
+        If bit CAP_SAM is not set then HBA can be set to AHCI or legacy mode
+        If bit GHC_AE is RW then clear the bit along with the other bits
     */
 
     if( (hba->ghc && GHC_AE) ){
         if( !(hba->ghc && CAP_SAM) ){
             hba->ghc = 0x00000000;
+            return TRUE;
         }
     }
 
+    return FALSE;
 }

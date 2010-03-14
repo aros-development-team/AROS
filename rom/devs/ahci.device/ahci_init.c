@@ -131,11 +131,14 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
                 HIDD_PCI_EnumDevices(asd->PCIObject, &FindHook, Requirements);
 
                 struct ahci_hba_chip *hba_chip;
-
                 ForeachNode(&asd->ahci_hba_list, hba_chip) {
-                    if( ahci_setup_hbatask( hba_chip ) )
-                        return TRUE;
+                    if( ahci_setup_hbatask( hba_chip ) ) {
+                        D(bug("[AHCI] Created HBA task\n"));
+                    }
                 }
+
+                return TRUE;
+
             }else{
                 D(bug("[AHCI] Failed to create memory pool\n"));
             }
