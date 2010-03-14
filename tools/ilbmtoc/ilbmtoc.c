@@ -80,7 +80,8 @@ static BOOL 	    	    have_bmhd, have_cmap, have_body;
 static UBYTE	    	    red[256], green[256], blue[256];
 static char 	    	    imagename[1000];
 static char 	    	    bigimagename[1000];
-static BOOL		    brush2c;
+static BOOL		    brush2c;	// compatibility with brush2c from MUI SDK
+static BOOL		    brush2pix;	// compatibility with brush2pix from JabberWocky
 
 /****************************************************************************************/
 
@@ -111,13 +112,18 @@ static void getarguments(int argc, char **argv)
 	brush2c = 1;
 	filename = argv[2];
     }
+    else if (argc == 3 && !strcasecmp(argv[1], "-b2p"))
+    {
+	brush2pix = 1;
+	filename = argv[2];
+    }
     else if (argc == 2)
     {
 	filename = argv[1];
     }
     else
     {
-    	cleanup("Usage: ilbmtoc [-b2c] filename", 1);
+    	cleanup("Usage: ilbmtoc [-b2c|-b2p] filename", 1);
     }
     
     if (strlen(filename) >= sizeof(imagename)) cleanup("Filename too long!", 1);
@@ -643,10 +649,12 @@ static void genbrush2csource(void)
 	printf("#ifdef USE_%s_COLORS\n", bigimagename);
 	printf("const ULONG %s_colors[%ld] =\n{\n", imagename, cmapentries * 3);
 	for (i = 0; i < cmapentries; i++)
+	{
 	    printf("\t0x%08lx,0x%08lx,0x%08lx,\n",
 		red[i] << 24 | red[i] << 16 | red[i] << 8 | red[i],
 		green[i] << 24 | green[i] << 16 | green[i] << 8 | green[i],
 		blue[i] << 24 | blue[i] << 16 | blue[i] << 8 | blue[i]);
+	}
 	printf("};\n");
 	printf("#endif\n\n");
     }
@@ -681,6 +689,54 @@ static void genbrush2csource(void)
 
 /****************************************************************************************/
 
+static void genbrush2pixsource(void)
+{
+    int i;
+
+    if (have_cmap)
+    {
+	printf("const ULONG %s_colors[%ld] =\n{\n", imagename, cmapentries * 3);
+	for (i = 0; i < cmapentries; i++)
+	{
+	    printf("\t0x%08lx,0x%08lx,0x%08lx,\n",
+		red[i] << 24 | red[i] << 16 | red[i] << 8 | red[i],
+		green[i] << 24 | green[i] << 16 | green[i] << 8 | green[i],
+		blue[i] << 24 | blue[i] << 16 | blue[i] << 8 | blue[i]);
+	}
+	printf("};\n\n");
+    }
+
+    if (have_body)
+    {
+	printf("#define %s_WIDTH       %3d\n", bigimagename, bmh.bmh_Width);
+	printf("#define %s_HEIGHT      %3d\n", bigimagename, bmh.bmh_Height);
+	printf("#define %s_DEPTH       %3d\n", bigimagename, bmh.bmh_Depth);
+	printf("#define %s_COMPRESSION %3d\n", bigimagename, bmh.bmh_Compression);
+	printf("#define %s_MASKING     %3d\n", bigimagename, bmh.bmh_Masking);
+	printf("\n");
+
+	printf("const UBYTE %s_body[%ld] = {\n", imagename, bodysize);
+	for (i = 0; i < bodysize; i++)
+	{
+	    printf("0x%02lx,", body[i]);
+	    if (!((i + 1) % 15)) printf("\n");
+	}
+	printf(" };\n");
+    }
+
+    if (have_cmap && have_body)
+    {
+        printf("\nmuidefpix %s_defpix =\n{\n", imagename);
+        printf("\t%s_body,\n", imagename);
+        printf("\t%s_colors,\n", imagename);
+        printf("\t%s_WIDTH, %s_HEIGHT, %s_DEPTH,\n", bigimagename, bigimagename, bigimagename);
+        printf("\t%s_COMPRESSION, %s_MASKING \n", bigimagename, bigimagename);
+        printf("};\n");
+    }
+}
+
+/****************************************************************************************/
+
 int main(int argc, char **argv)
 {
     getarguments(argc, argv);
@@ -691,6 +747,10 @@ int main(int argc, char **argv)
     if (brush2c)
     {
 	genbrush2csource();
+    }
+    else if (brush2pix)
+    {
+	genbrush2pixsource();
     }
     else
     {
