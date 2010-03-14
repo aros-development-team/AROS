@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI C function longjmp()
@@ -67,8 +67,6 @@
 	.globl AROS_CDEFNAME(longjmp)
 	_FUNCTION(longjmp)
 AROS_CDEFNAME(longjmp):
-	addi %r3,%r3,7
-        rlwinm %r3,%r3,0,0,28	
 	cmpi 0,1,%r4,0
 	bne okret
 	li %r4,1
