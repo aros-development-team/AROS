@@ -1,0 +1,140 @@
+## version $VER: AboutAROS.catalog 1.1 (13.3.2010)
+## language polish
+## codeset 0
+;
+;
+MSG_TITLE
+O systemie AROS
+; About AROS
+;
+MSG_PERSONAL_BUILD
+Personal %s Build
+; Personal %s Build
+;
+MSG_NIGHTLY_BUILD
+Nightly %s Build
+; Nightly %s Build
+;
+MSG_SNAPSHOT
+Snaphot
+; Snapshot
+;
+MSG_MILESTONE
+Kamieñ milowy
+; Milestone
+;
+MSG_RELEASE
+Wydanie
+; Release
+;
+MSG_COPYRIGHT
+Copyright &copy; 1995-2010, The AROS Development Team. Wszystkie prawa zastrze¿one.
+; Copyright &copy; 1995-2009, The AROS Development Team. All rights reserved.
+;
+MSG_LICENSE_1
+Wydany zgodnie z postanowieniami
+; Released under the terms of the
+;
+MSG_LICENSE_2
+AROS Public License
+; AROS Public License
+;
+MSG_LICENSE_3
+, wersja 1.1.
+; , version 1.1.
+;
+MSG_MORE_INFORMATION
+Proszê odwiedziæ http://www.aros.org/ po wiêcej informacji.
+; Please visit http://www.aros.org/ for more information.
+;
+MSG_PAGE_AUTHORS
+Autorzy
+; Authors
+;
+MSG_PAGE_SPONSORS
+Sponsorzy
+; Sponsors
+;
+MSG_PAGE_ACKNOWLEDGEMENTS
+Podziêkowania
+; Acknowledgements
+;
+MSG_SECTION_COORDINATION
+Koordynacja
+; Coordination
+;
+MSG_SECTION_EVANGELISM
+Ewangelizm
+; Evangelism
+;
+MSG_SECTION_HIDD
+Podsystem HIDD 
+; HIDD subsystem
+;
+MSG_SECTION_INTUITION
+Intuition
+; Intuition
+;
+MSG_SECTION_GRAPHICS
+Grafika
+; Graphics
+;
+MSG_SECTION_SHELL_COMMANDS
+Komendy Shella
+; Shell Commands
+;
+MSG_SECTION_WORKBENCH
+Workbench
+; Workbench
+;
+MSG_SECTION_TOOLS
+Narzêdzia
+; Tools
+;
+MSG_SECTION_PREFERENCES
+Preferencje
+; Preferences
+;
+MSG_SECTION_BGUI
+BGUI
+; BGUI
+;
+MSG_SECTION_ZUNE
+Zune
+; Zune
+;
+MSG_SECTION_KERNEL
+Kernel
+; Kernel
+;
+MSG_SECTION_DOS
+DOS
+; DOS
+;
+MSG_SECTION_NETWORK
+Obs³uga sieci
+; Networking Components
+;
+MSG_SECTION_LIBC_POSIX
+Biblioteka C Link i POSIX Layer
+; C link library and POSIX layer
+;
+MSG_SECTION_DOCUMENTATION
+Dokumentacja
+; Documentation
+;
+MSG_SECTION_TRANSLATION
+T³umaczenie
+; Translation
+;
+MSG_SECTION_ARTISTRY
+Design
+; Artistry
+;
+MSG_SECTION_WEBSITE
+Strona internetowa
+; Website
+;
+MSG_SECTION_DATATYPES
+Datatypy
+; Datatypes

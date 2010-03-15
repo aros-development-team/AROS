@@ -1,0 +1,267 @@
+## version $VER: Wanderer.catalog 2.0 (15.3.2010)
+## language polski
+## codeset 0
+;
+;
+MSG_NAME
+Ustawienia Wanderera
+; Wanderer Prefs
+;
+MSG_DESCRIPTION
+Ustawienia Wanderera
+; Wanderer preferences
+;
+MSG_BACKGROUNDS
+T³a
+; Backgrounds
+;
+MSG_BACKGROUND_WORKBENCH
+Pulpit
+; Workbench
+;
+MSG_BACKGROUND_DRAWERS
+Katalogi
+; Drawers
+;
+MSG_SELECT_WORKBENCH_BACKGROUND
+Wybierz t³o pulpitu
+; Select Workbench Background
+;
+MSG_SELECT_DRAWER_BACKGROUND
+Wybierz t³o katalogów
+; Select Drawer Background
+;
+MSG_GENERAL
+Ogólne
+; General
+;
+MSG_APPEARANCE
+Wygl±d
+; Appearance
+;
+MSG_TOOLBAR
+Pasek narzêdzi
+; Toolbar
+;
+MSG_CLASSIC
+Klasyczny
+; Classic
+;
+MSG_ENHANCED
+Rozszerzony
+; Enhanced
+;
+MSG_NAVIGATION
+Nawigacja
+; Navigation
+;
+MSG_METHOD
+Metoda
+; Method
+;
+MSG_OBJECTS
+Obiekty
+; Objects
+;
+MSG_PREVIEW
+Podgl±d
+; Preview
+;
+MSG_TOOLBAR_ENABLED
+Pasek narzêdzi dostêpny
+; Toolbar Enabled
+;
+MSG_ICONSPREFS
+Wygl±d ikon
+; Icons look and feel
+;
+MSG_ICONLISTMODE
+Tryb wy¶wietlania ikon
+; Icon listmode
+;
+MSG_ICONLISTMODE_PLAIN
+Ikony wolne
+; List icons plainly
+;
+MSG_ICONLISTMODE_GRID
+Ikony w sieci
+; List icons by grid
+;
+MSG_ICONTEXTMODE
+Tekst pod ikonami
+; Icons text drawmode
+;
+MSG_ICONTEXTMODE_OUTLINE
+Z obrysem
+; Outline
+;
+MSG_ICONTEXTMODE_PLAIN
+Zwyk³y
+; Plain
+;
+MSG_ICONTEXTMODE_SHADOW
+Cieniowany
+; Drop shadow
+;
+MSG_ICONTEXTLENGTH
+Maksymalna d³ugoœæ tekstu
+; Max icon textlength
+;
+MSG_DOUBLEBUFFERED
+podwójne buforowanie
+; double buffering
+;
+MSG_MISC
+ró¿ne
+; misc
+;
+MSG_BUBBLESCREENTITLE
+%pc = pamiêæ graficzna wolna\n\
+%pf = pamiêæ pozosta³a wolna\n\
+%pt = pamiêæ ca³kowita wolna\n\
+%PC = pamiêæ graficzna\n\
+%PF = pamiêæ pozosta³a\n\
+%PT = pamiêæ ca³kowita\n\
+%os = AROS, wersja\n\
+%wb = Wanderer, wersja\n\
+%ov = AROS, wersja wewnêtrzna\n\
+%wv = workbench.library wersja wewnêtrzna
+; %pc = Chip Ram free\n\
+; %pf = Fast Ram free\n\
+; %pt = Total Ram free\n\
+; %PC = Chip Ram\n\
+; %PF = Fast Ram\n\
+; %PT = Total Ram\n\
+; %os = AROS version\n\
+; %wb = Wanderer version\n\
+; %ov = Exact AROS version\n\
+; %wv = Exact workbench.library version
+;
+MSG_TILEMODE
+Tryb kafelków :
+; Tile mode :
+;
+MSG_XOFFSET
+Odstêp w poziomie :
+; X Offset :
+;
+MSG_YOFFSET
+Odstêp w pionie :
+; Y Offset :
+;
+MSG_ICONLABELFONT
+Czcionka pod ikon±...
+; Icon Label Font...
+;
+MSG_ICONINFOFONT
+Czcionka dla informacji...
+; Icon Info Font...
+;
+MSG_HORIZSPACINGICON
+Poziomy odstêp miêdzy ikonami
+; Horizontal spacing between icons
+;
+MSG_VERTSPACINGICON
+Pionowy odstêp miêdzy ikonami
+; Vertical spacing between icons
+;
+MSG_PADDINGICONIMAGELABEL
+Odstêp miêdzy ikon± a podpisem
+; Padding between Icon Image and Label
+;
+MSG_HORIZPADDINGLABELTEXT
+Poziomy odstêp miêdzy ramk± ikony a tekstem
+; Horizontal Padding between Label Frame and Text
+;
+MSG_VERTPADDINGLABELTEXT
+Pionowy odstêp miêdzy ramk± ikony a tekstem
+; Vertical Padding between Label Frame and Text
+;
+MSG_FRAMEWIDTH
+Szeroko¶æ ramki podpisu
+; Label Frame Width
+;
+MSG_FRAMEHEIGHT
+Wysoko¶æ ramki podpisu
+; Label Frame Height
+;
+MSG_TILED
+Kafelki
+; Tiled
+;
+MSG_SCALED
+Skalowane
+; Scaled
+;
+MSG_FLOATING
+P³ywaj¹ce
+; Floating
+;
+MSG_FIXED
+Sta³e
+; Fixed
+;
+MSG_LABELLINELENGTH
+Maksymalna d³ugo¶æ podpisu...
+; Max. Label line length...
+;
+MSG_USEMULTILINELABELS
+U¿yj podpisów w kilku liniach
+; Use MultiLine Labels
+;
+MSG_SHOWFOCUSEDICON
+U¿yj tylko dla wybranych ikon
+; Only show for Focus(ed) Icon
+;
+MSG_NDISPLAYLINES
+Ilo¶æ pokazywanych linii...
+; No. of lines to display...
+;
+MSG_TILEMODEOPTIONS
+Opcje kafelków...
+; Tile Mode Options...
+;
+MSG_SCALEMODEOPTIONS
+Opcje trybu skalowanego...
+; Scale Mode Options...
+;
+MSG_ADVANCEDOPTIONS
+Opcje zaawansowane...
+; Advanced Options...
+;
+MSG_BACKGROUNDOPTIONS
+Opcje t³a...
+; Background Options...
+;
+MSG_DRAWMODE
+Tryb rysowania :
+; Draw mode :
+;
+MSG_USERFILEONWB
+Katalog u¿ytkownika na pulpicie
+; User Files Folder on Workbench
+;
+MSG_NETWORKONWB
+Przegl±darka na pulpicie
+; Network Browser on Workbench
+;
+MSG_VIEWSETTINGS
+Poka¿ ustawienia
+; View Settings
+;
+MSG_WANDERERSCREENTITLE
+Tytu³ ekranu Wanderera
+; Wanderer ScreenTitle
+;
+MSG_ADVANCED
+Zaawansowane
+; Advanced
+;
+MSG_USE
+U¿yj
+; _Use
+;
+MSG_CANCEL
+Poniechaj
+; C_ancel
+;

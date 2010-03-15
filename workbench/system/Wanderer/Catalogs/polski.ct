@@ -1,0 +1,449 @@
+## version $VER: wanderer.catalog 1.0 (15.3.2010)
+## language polski
+## codeset 0
+;
+;
+MSG_TITLE
+Wanderer
+; Wanderer
+;
+MSG_DESCRIPTION
+Mened¿er plików
+; File manager
+;
+MSG_SCREENTITLE
+Wanderer %s pamiêci graficznej %s pamiêci pozosta³ej
+; Wanderer %s graphics mem %s other mem
+;
+MSG_MEM_B
+B
+; B
+;
+MSG_MEM_K
+K
+; K
+;
+MSG_MEM_M
+M
+; M
+;
+MSG_MEM_G
+G
+; G
+;
+MSG_MEN_WANDERER
+Wanderer
+; Wanderer
+;
+MSG_MEN_BACKDROP
+Wanderer jako t³o
+; Backdrop
+;
+MSG_MEN_SC_BACKDROP
+B
+; B
+;
+MSG_MEN_EXECUTE
+Wykonaj polecenie...
+; Execute...
+;
+MSG_MEN_SC_EXECUTE
+E
+; E
+;
+MSG_MEN_SHELL
+Shell
+; Shell
+;
+MSG_MEN_SC_SHELL
+W
+; W
+;
+MSG_MEN_GUISET
+Ustawienia GUI ...
+; GUI settings...
+;
+MSG_MEN_ABOUT
+O programie ...
+; About...
+;
+MSG_MEN_QUIT
+Skoñcz ...
+; Quit...
+;
+MSG_MEN_SC_QUIT
+Q
+; Q
+;
+MSG_MEN_WINDOW
+Okno
+; Window
+;
+MSG_MEN_NEWDRAW
+Nowy katalog...
+; New drawer...
+;
+MSG_MEN_SC_NEWDRAW
+N
+; N
+;
+MSG_MEN_OPENPAR
+Otwórz nadrzêdny
+; Open parent
+;
+MSG_MEN_CLOSE
+Zamknij okno
+; Close
+;
+MSG_MEN_SC_CLOSE
+K
+; K
+;
+MSG_MEN_UPDATE
+Zaktualizuj zawarto¶æ
+; Update
+;
+MSG_MEN_CONTENTS
+Zaznacz wszystko
+; Select contents
+;
+MSG_MEN_SC_CONTENTS
+A
+; A
+;
+MSG_MEN_CLRSEL
+Odznacz wybrane
+; Clear selection
+;
+MSG_MEN_SC_CLRSEL
+Z
+; Z
+;
+MSG_MEN_SNAPSHT
+Utrwal pozycjê
+; Snapshot
+;
+MSG_MEN_ALL
+wszystko
+; All
+;
+MSG_MEN_VIEW
+Wy¶wietl
+; View
+;
+MSG_MEN_ICVIEW
+Ikony
+; Icon view
+;
+MSG_MEN_DCVIEW
+Poka¿ wszystko
+; Detail view
+;
+MSG_MEN_ALLFIL
+Wszystkie pliki
+; All files
+;
+MSG_MEN_SORTIC
+Sortuj zawarto¶æ
+; Sort
+;
+MSG_MEN_CLNUP
+Uporz±dkuj
+; Clean up
+;
+MSG_MEN_SC_CLNUP
+U
+; U
+;
+MSG_MEN_BYNAME
+wg nazwy
+; By name
+;
+MSG_MEN_BYDATE
+wg daty
+; By date
+;
+MSG_MEN_BYSIZE
+wg wielko¶ci
+; By size
+;
+MSG_MEN_BYTYPE
+wg typu
+; By type
+;
+MSG_MEN_REVERSE
+Odwróæ
+; Reverse
+;
+MSG_MEN_DRWFRST
+Najpierw katalogi
+; Drawers first
+;
+MSG_MEN_ICON
+Ikona
+; Icon
+;
+MSG_MEN_OPEN
+Otwórz
+; Open
+;
+MSG_MEN_SC_OPEN
+O
+; O
+;
+MSG_MEN_RENAME
+Zmieñ nazwê...
+; Rename...
+;
+MSG_MEN_SC_RENAME
+R
+; R
+;
+MSG_MEN_INFO
+Informacje...
+; Information...
+;
+MSG_MEN_SC_INFO
+I
+; I
+;
+MSG_MEN_DELETE
+Skasuj...
+; Delete...
+;
+MSG_MEN_TOOLS
+Narzêdzia
+; Tools
+;
+MSG_MEN_ICONSORTING
+Sortowanie ikon
+; Enable Icon Sorting
+;
+MSG_MEN_GROUPICONS
+Grupowanie ikon
+; Group Icons
+;
+MSG_MEN_ICONSCLOSE
+Zamknij
+; Close
+;
+MSG_REALLYQUIT
+Czy naprawdê chcesz zamkn±æ Wanderera?
+; Do you really want to quit Wanderer?
+;
+MSG_YESNO
+*Tak|Nie
+; *Yes|No
+;
+MSG_DUMMY
+DUMMY
+; DUMMY
+; DUMMY :)
+MSG_USERSCREENTITLE
+Wanderer %pc pamiêci graficznej %pf pamiêci pozosta³ej
+; Wanderer %pc graphics mem %pf other mem
+;
+MSG_MEN_FORMAT
+Sformatuj dysk...
+; Format disk...
+;
+MSG_MEN_SHUTDOWN
+Wy³±cz...
+; Shut down...
+;
+MSG_SHUTDOWN_TITLE
+Wy³±czanie systemu
+; System shutdown
+;
+MSG_SHUTDOWN_BODY
+Co chcesz zrobiæ?
+; What would you like to do?
+;
+MSG_SHUTDOWN_BUTTONS
+Wy³±cz|Uruchom ponownie komputer|Uruchom ponownie system|*Poniechaj
+; Power off|Restart computer|Restart AROS|*Cancel
+;
+MSG_ACTION_NOT_SUPPORTED
+Wybrana opcja jest nieobs³ugiwana przez Twój system
+; The selected action is not supported by your system.
+;
+MSG_OK
+*OK
+; *OK
+;
+MSG_EMPTY_TRASH
+Opró¿nij ¶mietnik
+; Empty trash
+;
+MSG_PUT_AWAY
+Schowaj
+; Put away
+;
+MSG_LEAVE_OUT
+Wyjmij na blat
+; Leave out
+;
+MSG_UNSNAPSHOT
+Uwolnij pozycjê
+; Unsnapshot
+;
+MSG_SNAPSHOT
+Utrwal pozycjê
+; Snapshot
+;
+MSG_REQU_DELETE
+Skasuj...
+; Delete file...
+;
+MSG_REQU_DELETE_YESNO
+_Tak|Tak, _wszystkie|_Nie|Nie, _Pomiñ wszystkie
+; _Yes|Yes to _all|_No|No _to all
+;
+MSG_REQU_DELETE_DRAWER_S
+Katalog
+; Really delete drawer
+;
+MSG_REQU_DELETE_DRAWER_E
+rzeczywi¶cie skasowaæ?
+; ?
+;
+MSG_REQU_DELETE_FILE_S
+Czy rzeczywi¶cie dane
+; Really delete file
+;
+MSG_REQU_DELETE_FILE_M
+w katalogu
+; located in
+;
+MSG_REQU_DELETE_FILE_E
+wmaj± zostac skasowane?
+; ?
+;
+MSG_REQU_OVERWRITE
+Nadpisaæ pliki...
+; Overwrite file...
+;
+MSG_REQU_OVERWRITE_S
+Czy rzeczywi¶cie dane
+; Really overwrite file
+;
+MSG_REQU_OVERWRITE_M
+w katalogu
+; located in
+;
+MSG_REQU_OVERWRITE_E
+maj± zostaæ nadpisane?
+; ?
+;
+MSG_REQU_OVERWRITE_YESNO
+_Tak, nadpisaæ|_Wszystkie|_Nie|Nie, _Pomiñ wszystkie
+; _Overwrite|Overwrite _all|_No|No _to all
+;
+MSG_REQU_OVERWRITE_SKIPABORT
+_Pomiñ|P_rzerwij
+; _Skip|_Abort
+;
+MSG_REQU_PROTECTION
+Zabezpieczenie przed skasowaniem
+; File Protection
+;
+MSG_REQU_PROTECTION_UNPROTECT
+_Odbezpiecz|Odbezpiecz _wszystkie|_Nie|Nie, nie odbezpieczaj _plików
+; _Unprotect|Unprotect _All|_No|No _to ALL
+;
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_S
+Czy katalog
+; Do you wish to unprotect drawer
+;
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
+ma zostaæ odbezpieczony?
+; ?
+;
+MSG_NOFILEACCESS_S
+Dostêp do pliku
+; Can't access file
+;
+MSG_NOFILEACCESS_M
+w katalogu
+; located in
+;
+MSG_NOFILEACCESS_E
+niemo¿liwy
+;  
+;
+MSG_NODRAWERACCESS_S
+Dostêp do katalogu  
+; Can't access drawer
+;
+MSG_NODRAWERACCESS_E
+niemo¿liwy
+;  
+;
+MSG_REQU_FILEUNPROTECT_S
+Czy plik
+; Do you wish to unprotect file
+;
+MSG_REQU_FILEUNPROTECT_M
+w katalogu
+; located in
+;
+MSG_REQU_FILEUNPROTECT_E
+ma zostaæ odbezpieczony?
+; ?
+;
+MSG_WANDERER_FILEACCESS
+Dostêp do pliku
+; Wanderer file access
+;
+MSG_WANDERER_FILEACCESS_PROCESSING
+Przetwarzanie...
+; Processing...
+;
+MSG_WANDERER_FILEACCESS_STOP
+Przerwij
+; Stop
+;
+MSG_WANDERER_FILEACCESS_MOVEFROM
+Przenie¶ z
+; Move from
+;
+MSG_WANDERER_FILEACCESS_MOVETO
+Przenie¶ do
+; Move to
+;
+MSG_WANDERER_FILEACCESS_COPYFROM
+Kopiuj z
+; Copy from
+;
+MSG_WANDERER_FILEACCESS_COPYTO
+Kopiuj do
+; Copy to
+;
+MSG_WANDERER_FILEACCESS_FILE
+plik
+; File
+;
+MSG_WANDERER_FILEACCESS_TRAFFIC
+szybko¶æ transmisji danych
+; Data transfer rate
+;
+MSG_WANDERER_FILEACCESS_DELETEFROM
+Skasuj z katalogu
+; Delete from drawer
+;
+MSG_WANDERER_FILEACCESS_FILETODELETE
+Pliki do skasowania
+; File to delete
+;
+MSG_WANDERER_FILEACCESS_NOOFFILES
+Przetwarzane pliki:
+; Processed files:
+;
+MSG_WANDERER_FILEACCESS_ACTUAL
+Wielko¶æ bie¿±cego pliku:
+; Size of current file:
+;
+MSG_WANDERER_FILEACCESS_TOTAL
+Wielko¶æ ³±czna:
+; Overall size:
+;
