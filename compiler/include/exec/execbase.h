@@ -2,7 +2,7 @@
 #define EXEC_EXECBASE_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: structure of exec.library
@@ -118,6 +118,8 @@ struct ExecBase
 #define AFF_68030   (1L<<2)
 #define AFB_68040        3
 #define AFF_68040   (1L<<3)
+#define AFB_68060        7
+#define AFF_68060   (1L<<7)
 /* Co-Processors */
 #define AFB_68881        4
 #define AFF_68881   (1L<<4)
