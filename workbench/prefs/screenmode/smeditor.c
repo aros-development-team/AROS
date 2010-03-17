@@ -88,6 +88,7 @@ static BOOL ScreenmodePrefs2Gadgets
     SetAttrs
     (
         data->properties,
+	MUIA_NoNotify,			      TRUE,
         MUIA_ScreenModeProperties_DisplayID,  screenmodeprefs.smp_DisplayID,
         MUIA_ScreenModeProperties_Width,      screenmodeprefs.smp_Width,
         MUIA_ScreenModeProperties_Height,     screenmodeprefs.smp_Height,

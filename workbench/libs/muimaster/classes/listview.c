@@ -203,6 +203,7 @@ void ListView__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem        *tag;
     const struct TagItem  *tags;
+    IPTR no_notify = GetTagData(MUIA_NoNotify, FALSE, msg->ops_AttrList);
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
@@ -224,7 +225,7 @@ void ListView__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 	    {
 	        struct MUI_ListviewData *data = INST_DATA(cl, obj);
 	    
-	        SetAttrs(data->list, tag->ti_Tag, tag->ti_Data, TAG_DONE);
+	        SetAttrs(data->list, MUIA_NoNotify, no_notify, tag->ti_Tag, tag->ti_Data, TAG_DONE);
 	    }
 	}
     }
