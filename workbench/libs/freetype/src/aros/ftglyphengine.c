@@ -8,7 +8,9 @@
 #include <aros/debug.h>
 #include <exec/memory.h>
 #include <diskfont/oterrors.h>
+#include <libraries/codesets.h>
 
+#include <proto/codesets.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -20,6 +22,9 @@ int set_last_error(FT_GlyphEngine *ge,int error)
 
 void set_default_codepage(FT_GlyphEngine *ge)
 {
+    struct Library *CodesetsBase;
+    struct codeset *sys_codeset;
+    
     int i;
 
     for(i=0;i<256;++i)
@@ -27,8 +32,21 @@ void set_default_codepage(FT_GlyphEngine *ge)
 
     D(bug("getting codepage environment var\n"));
 
-    GetVar("ftcodepage", (STRPTR)&ge->codepage, 512,
-	   LV_VAR | GVF_BINARY_VAR | GVF_DONT_NULL_TERM);
+    if (GetVar("ftcodepage", (STRPTR)&ge->codepage, 512,
+	   LV_VAR | GVF_BINARY_VAR | GVF_DONT_NULL_TERM) == 512)
+	return;
+
+    CodesetsBase = OpenLibrary("codesets.library", 0);
+    if (!CodesetsBase)
+        return;
+
+    sys_codeset = CodesetsFindA(NULL, NULL);
+    if (sys_codeset) {
+        for (i = 0; i < 256; i++)
+	    ge->codepage[i] = sys_codeset->table[i].ucs4;
+    }
+    
+    CloseLibrary(CodesetsBase);
 }
 
 /* close down and dispose of GlyphEngine */
