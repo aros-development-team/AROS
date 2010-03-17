@@ -21,7 +21,8 @@ FUNCS := \
     unregisterworkbench \
     updateworkbenchobjecta \
     wbinfo \
-    workbenchcontrola
+    workbenchcontrola \
+    uae_integration
 
 #MM kernel-workbench-includes : \
 #MM     kernel-exec-includes \

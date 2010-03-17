@@ -18,7 +18,6 @@ FILES := main \
     iconwindow_drawerlist \
     iconwindow_volumelist \
     iconwindowbackfill \
-    uae_integration \
     wandererprefsinternal
 
 #MM- workbench-system : workbench-system-wanderer

@@ -20,10 +20,11 @@
 #include <workbench/workbench.h>
 
 #ifdef __AROS__
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 #endif
 
+#include "workbench_intern.h"
 #include "uae_integration.h"
 
 /**************************************************************************
@@ -45,11 +46,11 @@ BOOL j_uae_running(void)
 {
     if( get_j_uae_port() != NULL)
     {
-	D(bug("[Wanderer] %s: J-UAE port found\n", __PRETTY_FUNCTION__, filename));
+	D(bug("[WBLIB] %s: J-UAE port found\n", __PRETTY_FUNCTION__));
 	return TRUE;
     }
 
-    D(bug("[Wanderer] %s: J-UAE port *not* found\n", __PRETTY_FUNCTION__, filename));
+    D(bug("[WBLIB] %s: J-UAE port \"%s\" *not* found\n", __PRETTY_FUNCTION__, J_UAE_PORT));
     return FALSE;
 }
 
@@ -73,7 +74,7 @@ BOOL is_68k(STRPTR filename)
 	{
     	    if( (begin[0] == 0x00) && (begin[1] == 0x00) && (begin[2] == 0x03) && (begin[3] == 0xf3) ) 
 	    {
-		D(bug("[Wanderer] %s: Amiga 68k executable found: %s\n", __PRETTY_FUNCTION__, filename));
+		D(bug("[WBLIB] %s: Amiga 68k executable found: %s\n", __PRETTY_FUNCTION__, filename));
 	      	Close(fh);
 	       	return TRUE;
     	    }
@@ -88,7 +89,7 @@ BOOL is_68k(STRPTR filename)
  *
  * count number of TagItems
  **************************************************************************/
-static ULONG tag_list_nr(struct TagItem *tstate) 
+static ULONG tag_list_nr(const struct TagItem *tstate) 
 {
     ULONG count;
 
@@ -98,7 +99,7 @@ static ULONG tag_list_nr(struct TagItem *tstate)
      	count++;
     }
 
-    D(bug("[Wanderer] %s: TagList has %d items.\n", __PRETTY_FUNCTION__, count));
+    D(bug("[WBLIB] %s: TagList has %d items.\n", __PRETTY_FUNCTION__, count));
     return count;
 }
 
@@ -129,7 +130,7 @@ static STRPTR str_dup_vec(void *mempool, char *in)
  *
  * clone the TagList in and also clone all strings, in points to
  **************************************************************************/
-struct TagItem *tag_list_clone(void *mempool, struct TagItem *in) 
+struct TagItem *tag_list_clone(void *mempool, const struct TagItem *in) 
 {
 
     ULONG   nr;
@@ -151,14 +152,14 @@ struct TagItem *tag_list_clone(void *mempool, struct TagItem *in)
     name_from_lock=(char *) AllocVec(LOCK_NAME_BUFFER_SIZE, MEMF_CLEAR); 
     if(!name_from_lock) 
     {
-     	D(bug("[Wanderer] %s: ERROR: AllocVec failed!\n", __PRETTY_FUNCTION__));
+     	D(bug("[WBLIB] %s: ERROR: AllocVec failed!\n", __PRETTY_FUNCTION__));
       	return NULL;
     }
 
     result=(struct TagItem *) AllocVecPooled(mempool, (nr+1) * sizeof(struct TagItem));
     if(!result) 
     {
-     	D(bug("[Wanderer] %s: ERROR: AllocVecPooled failed!\n", __PRETTY_FUNCTION__));
+     	D(bug("[WBLIB] %s: ERROR: AllocVecPooled failed!\n", __PRETTY_FUNCTION__));
       	FreeVec(name_from_lock);
       return NULL;
     }
@@ -173,14 +174,14 @@ struct TagItem *tag_list_clone(void *mempool, struct TagItem *in)
 	      UnLock((BPTR) tag->ti_Data); /* do we have to UnLock it? */
 	      result[t].ti_Tag =WBOPENA_ArgLock;
 	      result[t].ti_Data=(STACKIPTR) str_dup_vec(mempool, name_from_lock);
-	      D(bug("[Wanderer] %s: WBOPENA_ArgLock: %s\n", __PRETTY_FUNCTION__, name_from_lock));
+	      D(bug("[WBLIB] %s: WBOPENA_ArgLock: %s\n", __PRETTY_FUNCTION__, name_from_lock));
 	      t++;
 	  break;
 
 	  case WBOPENA_ArgName:
 	      result[t].ti_Tag =WBOPENA_ArgName;
 	      result[t].ti_Data=(STACKIPTR) str_dup_vec(mempool, (char *) tag->ti_Data);
-	      D(bug("[Wanderer] %s: WBOPENA_ArgName: %s\n", __PRETTY_FUNCTION__, tag->ti_Data));
+	      D(bug("[WBLIB] %s: WBOPENA_ArgName: %s\n", __PRETTY_FUNCTION__, tag->ti_Data));
 	      t++;
 	  break;
       }
@@ -196,7 +197,7 @@ struct TagItem *tag_list_clone(void *mempool, struct TagItem *in)
 }
 
 /**************************************************************************
- * forward_to_uae(struct TagItem *argsTagList, struct IconList_Entry *ent)
+ * forward_to_uae(struct TagItem *argsTagList, char *name)
  *
  * Sends a message to the J-UAE port in order to launch the
  * according m68k amigaOS executeable.
@@ -204,14 +205,14 @@ struct TagItem *tag_list_clone(void *mempool, struct TagItem *in)
  * Errorhandling is completely up to J-UAE!
  * J-UAE has to free all message resources!
  **************************************************************************/
-void forward_to_uae(struct TagItem *argsTagList, struct IconList_Entry *ent) 
+void forward_to_uae(struct TagItem *argsTagList, char *name)
 {
 
     struct MsgPort              *port;
     struct JUAE_Launch_Message  *msg;
     void                        *pool;
 
-    D(bug("[Wanderer] %s: j_uae_running and is_68k!\n", __PRETTY_FUNCTION__));
+    D(bug("[WBLIB] %s: j_uae_running and is_68k!\n", __PRETTY_FUNCTION__));
 
     /* We allocate everything in a pool, so we can free it easily afterwards 
      * J-UAE has to free everything
@@ -224,19 +225,19 @@ void forward_to_uae(struct TagItem *argsTagList, struct IconList_Entry *ent)
 	if(msg) 
 	{
 	    msg->tags   =tag_list_clone(pool, argsTagList);
-	    msg->ln_Name=str_dup_vec(pool, ent->ile_IconEntry->ie_IconNode.ln_Name);
+	    msg->ln_Name=str_dup_vec(pool, name);
 
 	    /* now ensure, that the port stays alive */
 	    Forbid();
 	    port=get_j_uae_port();
 	    if(port) 
 	    {
-		D(bug("[Wanderer] %s: PutMsg %lx to J-UAE\n", __PRETTY_FUNCTION__, msg));
-		PutMsg(port, msg); /* one way */
+		D(bug("[WBLIB] %s: PutMsg %lx to J-UAE\n", __PRETTY_FUNCTION__, msg));
+		PutMsg(port, (struct Message *) msg); /* one way */
 	    }
 	    else {
 		/* argl. someone closed the port inbetween !? */
-		D(bug("[Wanderer] %s: ERROR: someone closed the port inbetween !? \n", __PRETTY_FUNCTION__));
+		D(bug("[WBLIB] %s: ERROR: someone closed the port inbetween !? \n", __PRETTY_FUNCTION__));
 		DeletePool(pool);
 	    }
 	    Permit();

@@ -81,7 +81,6 @@
 #include "Classes/iconlist.h"
 #include "Classes/iconlist_attributes.h"
 #include "locale.h"
-#include "uae_integration.h"
 
 #include "version.h"
 
@@ -573,12 +572,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                     */
                 } /* if (argsCounted > 1) */
 
-
-		if( j_uae_running() && is_68k(ent->ile_IconEntry->ie_IconNode.ln_Name) ) 
-		{
-			forward_to_uae(argsTagList, ent);
-		}
-                else if ( !OpenWorkbenchObjectA(ent->ile_IconEntry->ie_IconNode.ln_Name, argsTagList) )
+                if ( !OpenWorkbenchObjectA(ent->ile_IconEntry->ie_IconNode.ln_Name, argsTagList) )
                 {
                     execute_open_with_command(newwd, FilePart(ent->ile_IconEntry->ie_IconNode.ln_Name));
                 }
