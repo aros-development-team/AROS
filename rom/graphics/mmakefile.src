@@ -15,7 +15,8 @@ FILES	  := \
 	graphics_driver \
 	fakegfxhidd \
 	dispinfo \
-	gfxfuncsupport
+	gfxfuncsupport \
+	cgx_support
 
 
 FUNCTIONS := \

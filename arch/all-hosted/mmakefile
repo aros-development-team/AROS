@@ -1,6 +1,7 @@
 include $(TOP)/config/make.cfg
 
-#MM- workbench-hosted:  kernel-mathieeesingbas \
+#MM- workbench-hosted:  kernel-cgfx	       \
+#MM			kernel-mathieeesingbas \
 #MM			kernel-mathffp	       \
 #MM			kernel-workbench       \
 #MM			$(SDL_HIDD_TARGET)     \

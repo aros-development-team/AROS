@@ -16,7 +16,7 @@ KOBJS_HIDD	:= $(KOBJSDIR)/hiddclass_hidd.o	     $(KOBJSDIR)/graphics_hidd.o	   \
 KOBJS_LIBS	:= $(KOBJSDIR)/exec_library.o	     $(KOBJSDIR)/expansion_library.o	   \
 		   $(KOBJSDIR)/boot_library.o	     $(KOBJSDIR)/dos_library.o		   \
 		   $(KOBJSDIR)/utility_library.o     $(KOBJSDIR)/intuition_library.o	   \
-		   $(KOBJSDIR)/keymap_library.o      $(KOBJSDIR)/cybergraphics_library.o   \
+		   $(KOBJSDIR)/keymap_library.o						   \
 		   $(KOBJSDIR)/oop_library.o	     $(KOBJSDIR)/graphics_library.o	   \
 		   $(KOBJSDIR)/layers_library.o	     $(KOBJSDIR)/aros_library.o
 K_RES		:= $(KOBJSDIR)/kernel_resource.o     $(KOBJSDIR)/hostlib_resource.o	   \

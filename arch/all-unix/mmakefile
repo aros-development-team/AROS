@@ -25,7 +25,7 @@ kernel-link-emul : $(BINDIR)/boot/aros-unix
 kernel-link-emul-quick : kernel-link-emul
 
 KLIBS   := exec boot aros dos graphics utility intuition keymap \
-      	   expansion oop layers cybergraphics
+      	   expansion oop layers
 KDEVS   := timer input keyboard console gameport
 KHNDLRS := con nil packet emul amberram
 KHIDDS  := hiddclass unixio parallel serial graphics
