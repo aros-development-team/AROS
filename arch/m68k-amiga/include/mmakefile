@@ -1,0 +1,53 @@
+# $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES := $(wildcard *.[hi] aros/*.[hi] aros/m68k/*.[hi] asm/*.[hi] exec/*.[hi])
+
+
+ifeq ($(findstring target,host kernel target),)
+$(error %copy_includes: compiler argument (target) has to be host, kernel or target)
+endif
+
+ifneq (,)
+BD_INCL_FILES := $(subst ,$(GENINCDIR)/.,$(INCLUDE_FILES))
+BD_INC_PATH := $(SRCDIR)/$(CURDIR)//
+else
+BD_INCL_FILES := $(addprefix $(GENINCDIR)/./,$(INCLUDE_FILES))
+BD_INC_PATH := $(SRCDIR)/$(CURDIR)/
+endif
+
+$(BD_INCL_FILES) : $(GENINCDIR)/./% : $(BD_INC_PATH)%
+	@$(CP) $< $@
+
+
+ifeq (target,target)
+
+ifneq (,)
+BD_INCL_FILES2 := $(subst ,$(AROS_INCLUDES)/.,$(INCLUDE_FILES))
+else
+BD_INCL_FILES2 := $(addprefix $(AROS_INCLUDES)/./,$(INCLUDE_FILES))
+endif
+
+BD_INCL_FILES += $(BD_INCL_FILES2)
+
+$(BD_INCL_FILES2) : $(AROS_INCLUDES)/./% : $(BD_INC_PATH)%
+	@$(CP) $< $@
+endif
+
+#MM
+includes-amiga-m68k : $(BD_INCL_FILES)
+
+.PHONY: includes-amiga-m68k
+
+$(BD_INCL_FILES) : | $(dir $(BD_INCL_FILES))
+GLOB_MKDIRS += $(dir $(BD_INCL_FILES))
+
+
+# Delete generated makefiles
+#MM
+clean ::
+	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
+
+include $(SRCDIR)/config/make.tail
+
+BDID := $(BDTARGETID)

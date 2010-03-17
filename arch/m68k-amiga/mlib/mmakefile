@@ -1,0 +1,17 @@
+# $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
+#
+include $(TOP)/config/make.cfg
+
+##linklibs-arosm-m68k: arosm-setup-link linklibs-arosm-m68k
+
+#MM- linklibs-arosm-m68k : linklibs-arosm-nofpu
+
+
+# Delete generated makefiles
+#MM
+clean ::
+	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
+
+include $(SRCDIR)/config/make.tail
+
+BDID := $(BDTARGETID)

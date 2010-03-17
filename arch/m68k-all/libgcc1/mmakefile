@@ -1,0 +1,53 @@
+include $(TOP)/config/make.cfg
+
+USER_AFLAGS := -mc68020
+
+
+ifeq (,)
+TMP_TARGETS := $(addsuffix .o,_addsubdf3 _addsubsf3 _divdf3 _divmodsi3 divsf3 _eqdf2 _eqsf2 _extend _extendsfdf2 _fixdfsi _fixsfsi _floatsidf _floatsisf _gedf2 _gesf2 _gtdf2 _gtsf2 _ledf2 _lesf2 _ltdf2 _ltsf2 _muldf3 _mulsf3 _mulsi3 _nedf2 _negdf2 _negsf2 _nesf2 _normdf _normsf _truncdfsf2 _udivmodsi3)
+TMP_WILDCARD := %
+else
+TMP_TARGETS := $(addsuffix .o,$(addprefix /,$(notdir _addsubdf3 _addsubsf3 _divdf3 _divmodsi3 divsf3 _eqdf2 _eqsf2 _extend _extendsfdf2 _fixdfsi _fixsfsi _floatsidf _floatsisf _gedf2 _gesf2 _gtdf2 _gtsf2 _ledf2 _lesf2 _ltdf2 _ltsf2 _muldf3 _mulsf3 _mulsi3 _nedf2 _negdf2 _negsf2 _nesf2 _normdf _normsf _truncdfsf2 _udivmodsi3)))
+TMP_WILDCARD := /%
+
+# Be sure that all .s files are generated
+$(TMP_TARGETS) : | $(addsuffix .s,_addsubdf3 _addsubsf3 _divdf3 _divmodsi3 divsf3 _eqdf2 _eqsf2 _extend _extendsfdf2 _fixdfsi _fixsfsi _floatsidf _floatsisf _gedf2 _gesf2 _gtdf2 _gtsf2 _ledf2 _lesf2 _ltdf2 _ltsf2 _muldf3 _mulsf3 _mulsi3 _nedf2 _negdf2 _negsf2 _nesf2 _normdf _normsf _truncdfsf2 _udivmodsi3)
+
+# Be sure that all .c files are found
+TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+TMP_BASEDIRS := $(shell echo $(sort $(dir _addsubdf3 _addsubsf3 _divdf3 _divmodsi3 divsf3 _eqdf2 _eqsf2 _extend _extendsfdf2 _fixdfsi _fixsfsi _floatsidf _floatsisf _gedf2 _gesf2 _gtdf2 _gtsf2 _ledf2 _lesf2 _ltdf2 _ltsf2 _muldf3 _mulsf3 _mulsi3 _nedf2 _negdf2 _negsf2 _nesf2 _normdf _normsf _truncdfsf2 _udivmodsi3)) | sed 's/\(.\):\//\/\1\//g')
+TMP_DIRS := $(foreach dir, $(TMP_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(TMP_SRCDIR)/$(CURDIR)/$(dir)))
+ifneq ($(TMP_DIRS),)
+    TMP_DIRS := $(shell echo $(TMP_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    vpath %.s $(TMP_DIRS)
+endif
+
+endif
+
+$(TMP_TARGETS) : AFLAGS := -mc68020
+$(TMP_TARGETS) : $(TMP_WILDCARD).o : %.s
+	@$(ECHO) "Assembling $(notdir $<)..."
+	@$(IF) $(CC) $(AFLAGS) $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$(notdir $<): $(CC) $(AFLAGS) $< -o $@" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Assemble failed: $(CC) $(AFLAGS) $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+
+#MM linklibs-gcc1-m68000
+
+# Delete generated makefiles
+#MM
+clean ::
+	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
+
+include $(SRCDIR)/config/make.tail
+
+BDID := $(BDTARGETID)
+

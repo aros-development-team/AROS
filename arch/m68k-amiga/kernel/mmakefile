@@ -1,0 +1,741 @@
+# $Id: mmakefile.src 32362 2010-01-17 14:43:37Z weissms $
+include $(TOP)/config/make.cfg
+
+FILES := kernel_init
+
+#MM kernel-amiga-m68k: setup-amiga-m68k kernel-kernel-amiga-m68k-kobj kernel-exec-kobj 
+kernel-amiga-m68k: $(BINDIR)/boot/aros-amiga-m68k
+
+$(BINDIR)/boot/aros-amiga-m68k: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
+	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o -L$(LIBDIR) -larossupport -lrom -larosm -lautoinit -llibinit
+
+#MM kernel-kernel-amiga-m68k : includes
+#MM kernel-kernel-amiga-m68k-kobj : includes
+
+
+# Define metamake targets and their dependencies
+#MM- includes-all : kernel-kernel-amiga-m68k-includes
+#MM kernel-kernel-amiga-m68k : kernel-kernel-amiga-m68k-includes core-linklibs
+#MM kernel-kernel-amiga-m68k-kobj : kernel-kernel-amiga-m68k-includes core-linklibs
+#MM kernel-kernel-amiga-m68k-linklib : kernel-kernel-amiga-m68k-includes
+#MM kernel-kernel-amiga-m68k-quick : kernel-kernel-amiga-m68k-includes-quick
+#MM kernel-kernel-amiga-m68k-includes : kernel-kernel-amiga-m68k-makefile kernel-kernel-amiga-m68k-includes-dirs \
+#MM     includes-generate-deps
+#MM kernel-kernel-amiga-m68k-includes-quick
+#MM kernel-kernel-amiga-m68k-includes-dirs
+#MM kernel-kernel-amiga-m68k-makefile
+#MM kernel-kernel-amiga-m68k-funclist
+#MM kernel-kernel-amiga-m68k-clean
+
+# All MetaMake targets defined by this macro
+BD_ALLTARGETS := kernel-kernel-amiga-m68k kernel-kernel-amiga-m68k-quick kernel-kernel-amiga-m68k-includes \
+    kernel-kernel-amiga-m68k-includes-quick kernel-kernel-amiga-m68k-includes-dirs kernel-kernel-amiga-m68k-clean \
+    kernel-kernel-amiga-m68k-kobj kernel-kernel-amiga-m68k-funclist kernel-kernel-amiga-m68k-linklib
+
+.PHONY : $(BD_ALLTARGETS) kernel-kernel-amiga-m68k-makefile
+
+ifeq (kernel,)
+$(error using %build_module: modname may not be empty)
+endif
+ifeq (resource,)
+$(error using %build_module: $(MODTYPE) has to be defined with the type of the module)
+endif
+
+# Default values for variables and arguments
+BD_DEFLINKLIBNAME := kernel
+BD_DEFREFFILE := $(OBJDIR)/kernel_ALL.ref
+BD_DEFDFLAGS := $(CFLAGS) -I$(SRCDIR)/rom/exec
+OBJDIR ?= $(GENDIR)/$(CURDIR)
+
+## Create genmodule include Makefile for the module
+##
+kernel-kernel-amiga-m68k-makefile : $(OBJDIR)/Makefile.kernel
+
+
+TMP_TARGET := Makefile.kernel
+TMP_DEPS := $(GENMODULE)
+TMP_OPTS := 
+ifneq (,)
+    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/
+    TMP_DEPS += $(SRCDIR)/$(CURDIR)/
+else
+    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/kernel.conf
+    TMP_DEPS += $(SRCDIR)/$(CURDIR)/kernel.conf
+endif
+ifneq (,)
+    TMP_OPTS += -s 
+endif
+ifneq ($(OBJDIR),)
+    TMP_OPTS += -d $(OBJDIR)
+    TMP_TARGET := $(OBJDIR)/$(TMP_TARGET)
+endif
+
+$(TMP_TARGET) : OPTS := $(TMP_OPTS)
+$(TMP_TARGET) : MODNAME := kernel
+$(TMP_TARGET) : MODTYPE := resource
+$(TMP_TARGET) : $(TMP_DEPS)
+	@$(GENMODULE) $(OPTS) writemakefile $(MODNAME) $(MODTYPE)
+
+$(OBJDIR)/Makefile.kernel : | $(OBJDIR)
+
+GLOB_MKDIRS += $(OBJDIR)
+
+# Do not parse these statements if metatarget is not appropriate
+ifneq ($(filter $(TARGET),$(BD_ALLTARGETS)),)
+
+include $(OBJDIR)/Makefile.kernel
+
+BD_DEFMODDIR := $(kernel_MODDIR)
+
+
+## include files generation
+##
+BD_INCDIR    := $(AROSDIR)/$(AROS_DIR_INCLUDE)
+BD_LIBDEFSINC := $(OBJDIR)/include/kernel_libdefs.h
+BD_DEFLIBDEFSINC := $(OBJDIR)/include/kernel_deflibdefs.h
+
+kernel-kernel-amiga-m68k-includes-quick : kernel-kernel-amiga-m68k-includes
+kernel-kernel-amiga-m68k-includes : $(addprefix $(GENINCDIR)/,$(kernel_INCLUDES)) \
+    $(addprefix $(BD_INCDIR)/,$(kernel_INCLUDES)) \
+    $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC)
+
+ifneq ($(kernel_INCLUDES),)
+
+
+ifneq ($(kernel_INCLUDES),)
+TMP_TARGETS := $(kernel_INCLUDES)
+
+TMP_DEPS := $(GENMODULE)
+ifeq ($(kernel_NEEDREF), yes)
+    ifeq ($(BD_DEFREFFILE),)
+        $(error reffile needed in rule_genmodule_files but none specified)
+    endif
+    TMP_OPTS := -r $(BD_DEFREFFILE)
+    TMP_DEPS += $(BD_DEFREFFILE)
+else
+    TMP_OPTS :=
+endif
+ifneq (,)
+    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/
+    TMP_DEPS += $(SRCDIR)/$(CURDIR)/
+else
+    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/kernel.conf
+    TMP_DEPS += $(SRCDIR)/$(CURDIR)/kernel.conf
+endif
+ifneq (,)
+    TMP_OPTS += -s 
+endif
+ifneq ($(OBJDIR)/include,)
+    TMP_OPTS += -d $(OBJDIR)/include
+    TMP_TARGETS := $(addprefix $(OBJDIR)/include/,$(TMP_TARGETS))
+endif
+
+$(TMP_TARGETS) : OPTS := $(TMP_OPTS)
+$(TMP_TARGETS) : MODNAME := kernel
+$(TMP_TARGETS) : MODTYPE := resource
+$(TMP_TARGETS) : $(TMP_DEPS)
+	@$(ECHO) "Generating include files"
+	@$(GENMODULE) $(OPTS) writeincludes $(MODNAME) $(MODTYPE)
+endif
+
+
+TMP_SRCDIR := $(OBJDIR)/include
+
+$(addprefix $(GENINCDIR)/,$(kernel_INCLUDES)) : | $(OBJDIR)/kernel_geninc
+
+$(OBJDIR)/kernel_geninc : COPYSRCDIR := $(OBJDIR)/include
+$(OBJDIR)/kernel_geninc : TGTDIR := $(GENINCDIR)
+$(OBJDIR)/kernel_geninc : FILES := $(kernel_INCLUDES)
+$(OBJDIR)/kernel_geninc : $(addprefix $(OBJDIR)/include/,$(kernel_INCLUDES))
+	@for f in $(FILES); do \
+	     $(IF) ! $(CMP) -s $(COPYSRCDIR)/$$f $(TGTDIR)/$$f ; then \
+	         $(CP) $(COPYSRCDIR)/$$f $(TGTDIR)/$$f ; \
+	     fi ; \
+	done
+	@$(TOUCH) $@
+
+
+TMP_SRCDIR := $(OBJDIR)/include
+
+$(addprefix $(BD_INCDIR)/,$(kernel_INCLUDES)) : | $(OBJDIR)/kernel_incs
+
+$(OBJDIR)/kernel_incs : COPYSRCDIR := $(OBJDIR)/include
+$(OBJDIR)/kernel_incs : TGTDIR := $(BD_INCDIR)
+$(OBJDIR)/kernel_incs : FILES := $(kernel_INCLUDES)
+$(OBJDIR)/kernel_incs : $(addprefix $(OBJDIR)/include/,$(kernel_INCLUDES))
+	@for f in $(FILES); do \
+	     $(IF) ! $(CMP) -s $(COPYSRCDIR)/$$f $(TGTDIR)/$$f ; then \
+	         $(CP) $(COPYSRCDIR)/$$f $(TGTDIR)/$$f ; \
+	     fi ; \
+	done
+	@$(TOUCH) $@
+
+
+ifneq ($(kernel_INCLUDES),)
+TMP_TARGETS := $(kernel_INCLUDES)
+
+TMP_DEPS := $(GENMODULE)
+TMP_OPTS := 
+ifneq (,)
+    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/
+    TMP_DEPS += $(SRCDIR)/$(CURDIR)/
+else
+    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/kernel.conf
+    TMP_DEPS += $(SRCDIR)/$(CURDIR)/kernel.conf
+endif
+ifneq (,)
+    TMP_OPTS += -s 
+endif
+ifneq ($(OBJDIR)/dummyinc,)
+    TMP_OPTS += -d $(OBJDIR)/dummyinc
+    TMP_TARGETS := $(addprefix $(OBJDIR)/dummyinc/,$(TMP_TARGETS))
+endif
+
+$(TMP_TARGETS) : OPTS := $(TMP_OPTS)
+$(TMP_TARGETS) : MODNAME := kernel
+$(TMP_TARGETS) : MODTYPE := resource
+$(TMP_TARGETS) : $(TMP_DEPS)
+	@$(ECHO) "Generating dummy include files"
+	@$(GENMODULE) $(OPTS) writedummy $(MODNAME) $(MODTYPE)
+endif
+
+BD_INCDIRS := $(filter-out ./,$(sort $(dir $(kernel_INCLUDES))))
+
+TMPkernel_INCDIRS := \
+    $(OBJDIR)/include $(addprefix $(OBJDIR)/include/,$(BD_INCDIRS)) \
+    $(GENINCDIR) $(addprefix $(GENINCDIR)/,$(BD_INCDIRS)) \
+    $(BD_INCDIR) $(addprefix $(BD_INCDIR)/,$(BD_INCDIRS))
+
+kernel-kernel-amiga-m68k-includes-dirs :: $(TMPkernel_INCDIRS)
+
+GLOB_MKDIRS += $(TMPkernel_INCDIRS)
+
+
+$(addprefix $(OBJDIR)/dummyinc/,$(kernel_INCLUDES)) : | $(OBJDIR)/dummyinc $(addprefix $(OBJDIR)/dummyinc/,$(BD_INCDIRS))
+GLOB_MKDIRS += $(OBJDIR)/dummyinc $(addprefix $(OBJDIR)/dummyinc/,$(BD_INCDIRS))
+
+endif
+
+
+TMP_TARGET := kernel_libdefs.h
+TMP_DEPS := $(GENMODULE)
+TMP_OPTS := 
+ifneq (,)
+    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/
+    TMP_DEPS += $(SRCDIR)/$(CURDIR)/
+else
+    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/kernel.conf
+    TMP_DEPS += $(SRCDIR)/$(CURDIR)/kernel.conf
+endif
+ifneq (,)
+    TMP_OPTS += -s 
+endif
+ifneq ($(OBJDIR)/include,)
+    TMP_OPTS += -d $(OBJDIR)/include
+    TMP_TARGET := $(OBJDIR)/include/$(TMP_TARGET)
+endif
+
+$(TMP_TARGET) : OPTS := $(TMP_OPTS)
+$(TMP_TARGET) : MODNAME := kernel
+$(TMP_TARGET) : MODTYPE := resource
+$(TMP_TARGET) : $(TMP_DEPS)
+	@$(ECHO) "Generating $(notdir $@)"
+	@$(GENMODULE) $(OPTS) writelibdefs $(MODNAME) $(MODTYPE)
+
+$(BD_DEFLIBDEFSINC) : FILENAME := $(BD_LIBDEFSINC)
+$(BD_DEFLIBDEFSINC) :
+	@$(ECHO) "generating $@"
+	@$(ECHO) "#define LC_LIBDEFS_FILE \"$(FILENAME)\"" >$@
+
+$(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) : | $(OBJDIR)/include
+GLOB_MKDIRS += $(OBJDIR)/include
+
+## Generation of the funclist file
+##
+kernel-kernel-amiga-m68k-funclist : kernel.funclist
+
+
+TMP_TARGET := kernel.funclist
+TMP_DEPS := $(GENMODULE)
+TMP_OPTS := 
+ifeq ($(BD_DEFREFFILE),)
+    $(error reffile needed in rule_genmodule_funclist but none specified)
+endif
+TMP_OPTS := -r $(BD_DEFREFFILE)
+TMP_DEPS += $(BD_DEFREFFILE)
+ifneq (,)
+    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/
+    TMP_DEPS += $(SRCDIR)/$(CURDIR)/
+else
+    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/kernel.conf
+    TMP_DEPS += $(SRCDIR)/$(CURDIR)/kernel.conf
+endif
+ifneq (,)
+    TMP_OPTS += -s 
+endif
+ifneq (,)
+    TMP_OPTS += -d 
+    TMP_TARGET := /$(TMP_TARGET)
+endif
+
+$(TMP_TARGET) : OPTS := $(TMP_OPTS)
+$(TMP_TARGET) : MODNAME := kernel
+$(TMP_TARGET) : MODTYPE := resource
+$(TMP_TARGET) : $(TMP_DEPS)
+	@$(ECHO) "Generating $(notdir $@)"
+	@$(GENMODULE) $(OPTS) writefunclist $(MODNAME) $(MODTYPE)
+
+
+## Extra genmodule src files generation
+## 
+
+TMP_TARGETS := $(kernel_STARTFILES) $(kernel_ENDFILES) \
+	       $(kernel_LINKLIBFILES)
+TMP_TARGETS := $(addsuffix .c,$(TMP_TARGETS)) $(addsuffix .S, $(kernel_LINKLIBAFILES))
+
+TMP_DEPS := $(GENMODULE)
+ifeq ($(kernel_NEEDREF), yes)
+    ifeq ($(BD_DEFREFFILE),)
+        $(error reffile needed in rule_genmodule_files but none specified)
+    endif
+    TMP_OPTS := -r $(BD_DEFREFFILE)
+    TMP_DEPS += $(BD_DEFREFFILE)
+else
+    TMP_OPTS :=
+endif
+ifneq (,)
+    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/
+    TMP_DEPS += $(SRCDIR)/$(CURDIR)/
+else
+    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/kernel.conf
+    TMP_DEPS += $(SRCDIR)/$(CURDIR)/kernel.conf
+endif
+ifneq (,)
+    TMP_OPTS += -s 
+endif
+ifneq ($(OBJDIR),)
+    TMP_OPTS += -d $(OBJDIR)
+    TMP_TARGETDIR := $(shell echo $(OBJDIR) | sed 's/^\(.\):\//\/\1\//')
+    TMP_TARGETS := $(addprefix $(TMP_TARGETDIR)/,$(TMP_TARGETS))
+endif
+
+$(TMP_TARGETS) : OPTS := $(TMP_OPTS)
+$(TMP_TARGETS) : MODNAME := kernel
+$(TMP_TARGETS) : MODTYPE := resource
+$(TMP_TARGETS) : $(TMP_DEPS)
+	@$(ECHO) "Generating functable and support files for module $(MODNAME$(BDID))"
+ifneq (,lib.conf)
+	@$(IF) $(TEST) -f lib.conf; then \
+	  $(ECHO) "WARNING !!! $(CURDIR)/lib.conf may probably be removed"; \
+	fi
+endif
+	@$(IF) $(TEST) -f libdefs.h; then \
+	  $(ECHO) "WARNING !!! $(CURDIR)/libdefs.h may probably be removed"; \
+	fi
+	@$(GENMODULE) $(OPTS) writefiles $(MODNAME) $(MODTYPE)
+
+## Compilation
+##
+BD_FILES      := $(FILES)
+BD_FDIRS      := $(sort $(dir $(BD_FILES)))
+BD_STARTFILES := $(addprefix $(OBJDIR)/,$(kernel_STARTFILES))
+BD_ENDFILES   := $(addprefix $(OBJDIR)/,$(kernel_ENDFILES))
+
+BD_ARCHOBJS   := $(wildcard $(OBJDIR)/arch/*.o)
+BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
+BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
+
+BD_CFLAGS     := $(CFLAGS) -I$(SRCDIR)/rom/exec -I$(OBJDIR)/include -include $(BD_DEFLIBDEFSINC)
+BD_DFLAGS     := $(BD_DEFDFLAGS) -I$(OBJDIR)/include -include $(BD_DEFLIBDEFSINC)
+
+BD_LINKLIBCFILES := $(addprefix $(OBJDIR)/,$(kernel_LINKLIBFILES))
+BD_LINKLIBAFILES := $(addprefix $(OBJDIR)/,$(kernel_LINKLIBAFILES))
+ifeq ($(strip $(kernel_LINKLIBFILES) ),)
+    BD_LINKLIB :=
+else
+    BD_LINKLIB := $(AROSDIR)/$(AROS_DIR_LIB)/lib$(BD_DEFLINKLIBNAME).a
+endif
+BD_LINKLIBFILES := $(BD_LINKLIBCFILES) $(BD_LINKLIBAFILES)
+
+BD_CCFILES := $(BD_NARCHFILES) 
+BD_TARGETCCFILES := $(BD_STARTFILES) $(BD_ENDFILES) $(BD_LINKLIBCFILES) 
+
+
+ifeq ($(OBJDIR),)
+TMP_TARGETS := $(addsuffix .o,$(BD_CCFILES))
+TMP_DTARGETS := $(addsuffix .d,$(BD_CCFILES))
+TMP_WILDCARD := %
+else
+TMP_TARGETS := $(addsuffix .o,$(addprefix $(OBJDIR)/,$(notdir $(BD_CCFILES))))
+TMP_DTARGETS := $(addsuffix .d,$(addprefix $(OBJDIR)/,$(notdir $(BD_CCFILES))))
+TMP_WILDCARD := $(OBJDIR)/%
+
+# Be sure that all .c files are generated
+$(TMP_TARGETS) $(TMP_DTARGETS) : | $(addsuffix .c,$(BD_CCFILES))
+
+# Be sure that all .c files are found
+TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+TMP_BASEDIRS := $(shell echo $(sort $(dir $(BD_CCFILES))) | sed 's/\(.\):\//\/\1\//g')
+TMP_DIRS := $(foreach dir, $(TMP_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(TMP_SRCDIR)/$(CURDIR)/$(dir)))
+ifneq ($(TMP_DIRS),)
+    TMP_DIRS := $(shell echo $(TMP_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    vpath %.c $(TMP_DIRS)
+endif
+
+endif
+
+ifeq ($(findstring target,host kernel target),)
+  $(error unknown compiler target)
+endif
+ifeq (target,target)
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TARGET_CC)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (target,host)
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(HOST_CC)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(HOST_IQUOTE)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (target,kernel)
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+$(TMP_TARGETS) : CFLAGS := $(BD_CFLAGS)
+$(TMP_TARGETS) : $(TMP_WILDCARD).o : %.c
+	@$(ECHO) "Compiling $<"
+	@$(IF) $(CMD) $(TMP_IQUOTE) $(dir $<) $(TMP_IQUOTE) $(SRCDIR)/$(CURDIR) $(TMP_IQUOTE) . $(TMP_IQUOTE_END) $(CFLAGS) -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$<: $(CMD) $(TMP_IQUOTE) $(dir $<) $(TMP_IQUOTE) $(SRCDIR)/$(CURDIR) $(TMP_IQUOTE) . $(TMP_IQUOTE_END) $(CFLAGS) -c $< -o $@" >> $(GENDIR)/errors ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Compile failed: $(CMD) $(TMP_IQUOTE) $(dir $<) $(TMP_IQUOTE) $(SRCDIR)/$(CURDIR) $(TMP_IQUOTE) . $(TMP_IQUOTE_END) $(CFLAGS) -c $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+
+ifeq ($(BD_DFLAGS),)
+$(TMP_DTARGETS) : DFLAGS:=$(BD_CFLAGS)
+else
+$(TMP_DTARGETS) : DFLAGS:=$(BD_DFLAGS)
+endif
+$(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.c
+	@$(IF) $(TEST) ! -d $(dir $@) ; then $(MKDIR) $(dir $@) ; else $(NOP) ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/$(notdir $<)..."
+	@AROS_CC="$(CMD)" $(MKDEPEND) $(DFLAGS) -I$(SRCDIR)/$(CURDIR) $< -o $@
+
+ifeq ($(OBJDIR),)
+TMP_TARGETS := $(addsuffix .o,$(BD_TARGETCCFILES))
+TMP_DTARGETS := $(addsuffix .d,$(BD_TARGETCCFILES))
+TMP_WILDCARD := %
+else
+TMP_TARGETS := $(addsuffix .o,$(addprefix $(OBJDIR)/,$(notdir $(BD_TARGETCCFILES))))
+TMP_DTARGETS := $(addsuffix .d,$(addprefix $(OBJDIR)/,$(notdir $(BD_TARGETCCFILES))))
+TMP_WILDCARD := $(OBJDIR)/%
+
+# Be sure that all .c files are generated
+$(TMP_TARGETS) $(TMP_DTARGETS) : | $(addsuffix .c,$(BD_TARGETCCFILES))
+
+# Be sure that all .c files are found
+TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+TMP_BASEDIRS := $(shell echo $(sort $(dir $(BD_TARGETCCFILES))) | sed 's/\(.\):\//\/\1\//g')
+TMP_DIRS := $(foreach dir, $(TMP_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(TMP_SRCDIR)/$(CURDIR)/$(dir)))
+ifneq ($(TMP_DIRS),)
+    TMP_DIRS := $(shell echo $(TMP_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    vpath %.c $(TMP_DIRS)
+endif
+
+endif
+
+ifeq ($(findstring target,host kernel target),)
+  $(error unknown compiler target)
+endif
+ifeq (target,target)
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TARGET_CC)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (target,host)
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(HOST_CC)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(HOST_IQUOTE)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (target,kernel)
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+$(TMP_TARGETS) : CFLAGS := $(BD_CFLAGS) -D__AROS__
+$(TMP_TARGETS) : $(TMP_WILDCARD).o : %.c
+	@$(ECHO) "Compiling $<"
+	@$(IF) $(CMD) $(TMP_IQUOTE) $(dir $<) $(TMP_IQUOTE) $(SRCDIR)/$(CURDIR) $(TMP_IQUOTE) . $(TMP_IQUOTE_END) $(CFLAGS) -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$<: $(CMD) $(TMP_IQUOTE) $(dir $<) $(TMP_IQUOTE) $(SRCDIR)/$(CURDIR) $(TMP_IQUOTE) . $(TMP_IQUOTE_END) $(CFLAGS) -c $< -o $@" >> $(GENDIR)/errors ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Compile failed: $(CMD) $(TMP_IQUOTE) $(dir $<) $(TMP_IQUOTE) $(SRCDIR)/$(CURDIR) $(TMP_IQUOTE) . $(TMP_IQUOTE_END) $(CFLAGS) -c $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+
+ifeq ($(BD_DFLAGS),)
+$(TMP_DTARGETS) : DFLAGS:=$(BD_CFLAGS) -D__AROS__
+else
+$(TMP_DTARGETS) : DFLAGS:=$(BD_DFLAGS)
+endif
+$(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.c
+	@$(IF) $(TEST) ! -d $(dir $@) ; then $(MKDIR) $(dir $@) ; else $(NOP) ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/$(notdir $<)..."
+	@AROS_CC="$(CMD)" $(MKDEPEND) $(DFLAGS) -I$(SRCDIR)/$(CURDIR) $< -o $@
+
+ifneq ($(BD_LINKLIBAFILES),)
+
+ifeq ($(OBJDIR),)
+TMP_TARGETS := $(addsuffix .o,$(BD_LINKLIBAFILES))
+TMP_WILDCARD := %
+else
+TMP_TARGETS := $(addsuffix .o,$(addprefix $(OBJDIR)/,$(notdir $(BD_LINKLIBAFILES))))
+TMP_WILDCARD := $(OBJDIR)/%
+
+# Be sure that all .s files are generated
+$(TMP_TARGETS) : | $(addsuffix .S,$(BD_LINKLIBAFILES))
+
+# Be sure that all .c files are found
+TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+TMP_BASEDIRS := $(shell echo $(sort $(dir $(BD_LINKLIBAFILES))) | sed 's/\(.\):\//\/\1\//g')
+TMP_DIRS := $(foreach dir, $(TMP_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(TMP_SRCDIR)/$(CURDIR)/$(dir)))
+ifneq ($(TMP_DIRS),)
+    TMP_DIRS := $(shell echo $(TMP_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    vpath %.S $(TMP_DIRS)
+endif
+
+endif
+
+$(TMP_TARGETS) : AFLAGS := $(AFLAGS)
+$(TMP_TARGETS) : $(TMP_WILDCARD).o : %.S
+	@$(ECHO) "Assembling $(notdir $<)..."
+	@$(IF) $(CC) $(AFLAGS) $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$(notdir $<): $(CC) $(AFLAGS) $< -o $@" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Assemble failed: $(CC) $(AFLAGS) $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+endif
+
+## function reference files generation
+##
+BD_CFLAGS_REF := -I$(dir $(GENMODULE))/genmod_inc -I$(OBJDIR)/dummyinc $(strip $(CFLAGS) -I$(SRCDIR)/rom/exec) -I$(TOP)/$(CURDIR) -I$(OBJDIR)/include -include $(BD_DEFLIBDEFSINC)
+
+ifeq ($(OBJDIR),)
+TMP_TARGETS := $(addsuffix .ref,$(BD_FILES))
+TMP_WILDCARD := %.ref
+else
+TMP_TARGETS := $(addprefix $(OBJDIR)/,$(addsuffix .ref,$(notdir $(BD_FILES))))
+TMP_WILDCARD := $(OBJDIR)/%.ref
+
+# Be sure that all .c files are generated
+$(TMP_TARGETS) : | $(addsuffix .c,$(BD_FILES))
+
+# Be sure that all .c files are found
+TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+TMP_BASEDIRS := $(shell echo $(sort $(dir $(BD_FILES))) | sed 's/\(.\):\//\/\1\//g')
+TMP_DIRS := $(foreach dir, $(TMP_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(TMP_SRCDIR)/$(CURDIR)/$(dir)))
+ifneq ($(TMP_DIRS),)
+    TMP_DIRS := $(shell echo $(TMP_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    vpath %.c $(TMP_DIRS)
+endif
+
+endif
+
+ifeq ($(filter target,target kernel host),)
+$(error use of %rule_ref: compiler has to be 'host', 'kernel' or 'target')
+endif
+
+ifeq (target,target)
+$(TMP_TARGETS) : CC:=$(TARGET_CC)
+endif
+ifeq (target,host)
+$(TMP_TARGETS) : CC:=$(HOST_CC)
+endif
+ifeq (target,kernel)
+$(TMP_TARGETS) : CC:=$(KERNEL_CC) $(KERNEL_CFLAGS)
+endif
+ifeq (,)
+$(TMP_TARGETS) : CFLAGS:=$(BD_CFLAGS_REF)
+else
+$(TMP_TARGETS) : CFLAGS:="$(BD_CFLAGS_REF) -include "
+$(TMP_TARGETS) : 
+endif
+$(TMP_TARGETS) : $(CXREF)
+$(TMP_TARGETS) : $(TMP_WILDCARD) : %.c
+	@$(ECHO) "Generating ref for $(notdir $<)..."
+	@$(CXREF) -raw -CPP '$(CC) -E -C -dD -D__CXREF__ $(CFLAGS)' $< >$@ 2>$(GENDIR)/cerrors
+	@$(IF) $(TEST) -s $@ ; \
+	then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+	        $(ECHO) "$<: $(CXREF) -raw -CPP '$(CC) -E -C -dD -D__CXREF__ $(CFLAGS)' $< >$@" >> $(GENDIR)/errors ; \
+	        tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Reference generation failed: $(CXREF) -raw -CPP '$(CC) -E -C -dD -D__CXREF__ $(CFLAGS)' $< >$@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    $(RM) $@ ; \
+	    exit 1 ; \
+	fi
+
+ifeq (,)
+BD_REFS   := $(addprefix $(OBJDIR)/,$(addsuffix .ref, $(notdir $(BD_FILES))))
+else
+BD_REFS   := $(addprefix $(OBJDIR)/,$(addsuffix .ref, $(notdir $(filter-out ,$(BD_FILES)))))
+endif
+
+
+$(BD_DEFREFFILE) : $(BD_REFS)
+ifneq (Collecting function references for module kernel,)
+	@$(ECHO) Collecting function references for module kernel
+endif
+	@$(CAT) $^ >$@
+
+
+## Linking
+##
+ifeq (,)
+BD_MODULE    := $(AROSDIR)/$(BD_DEFMODDIR)/kernel.resource
+BD_KOBJ      := $(KOBJSDIR)/kernel_resource.o
+else
+BD_MODULE    := $(AROSDIR)/$(BD_DEFMODDIR)/kernel.
+BD_KOBJ      := $(KOBJSDIR)/kernel_.o
+endif
+
+kernel-kernel-amiga-m68k-quick : kernel-kernel-amiga-m68k
+kernel-kernel-amiga-m68k : $(BD_MODULE) $(BD_LINKLIB)
+kernel-kernel-amiga-m68k-kobj : $(BD_KOBJ) $(BD_LINKLIB)
+kernel-kernel-amiga-m68k-linklib : $(BD_LINKLIB)
+
+BD_OBJS       := $(addsuffix .o,$(BD_STARTFILES)) $(BD_ARCHOBJS) \
+	     	 $(addsuffix .o, $(addprefix $(OBJDIR)/,$(notdir $(BD_NARCHFILES))))
+BD_ENDOBJS    := $(addsuffix .o,$(BD_ENDFILES))
+BD_LINKLIBOBJS:= $(addsuffix .o,$(addprefix $(OBJDIR)/,$(notdir )) $(BD_LINKLIBFILES)) \
+                 
+
+# The module is linked from all the compiled .o files
+
+$(BD_MODULE) : OBJS := $(BD_OBJS)
+$(BD_MODULE) : ENDTAG := $(BD_ENDOBJS)
+$(BD_MODULE) : ERR := kernel.err
+$(BD_MODULE) : OBJDIR := $(OBJDIR)
+$(BD_MODULE) : LIBS := $(addprefix -l,rom) -lautoinit -llibinit -L/usr/lib $(addprefix -l,)
+$(BD_MODULE) : $(BD_OBJS) $(BD_ENDOBJS) $(addprefix $(LIBDIR)/lib,$(addsuffix .a,rom libinit autoinit))
+	@$(ECHO) "Building $(notdir $@) ..."
+	@if $(AROS_CC) $(NOSTARTUP_LDFLAGS) $(LDFLAGS) -noarosc \
+	    $(GENMAP) $(OBJDIR)/$(MODULE).map \
+	    $(OBJS) $(LIBS) $(ENDTAG) \
+	    -o $@ 2>&1 > $(OBJDIR)/$(ERR); \
+	then \
+	    cat $(OBJDIR)/$(ERR); \
+	else \
+	    cat $(OBJDIR)/$(ERR); \
+	    exit 1; \
+	fi
+
+	@if $(TEST) ! -s $(OBJDIR)/$(ERR) ; then $(RM) $(OBJDIR)/$(ERR) ; fi
+	@$(STRIP) $@
+
+
+# Link static lib
+ifneq ($(BD_LINKLIB),)
+
+$(AROSDIR)/$(AROS_DIR_LIB)/lib$(BD_DEFLINKLIBNAME).a : $(BD_LINKLIBOBJS)
+	@$(ECHO) "Creating library $@..."
+	@$(AR) $@ $^
+	@$(RANLIB) $@
+
+$(BD_LINKLIB) : | $(AROSDIR)/$(AROS_DIR_LIB)
+GLOB_MKDIRS += $(AROSDIR)/$(AROS_DIR_LIB)
+endif
+
+# Link kernel object file
+BD_KAUTOLIB := workbench dos cybergraphics intuition layers graphics oop utility \
+    expansion keymap
+BD_KBASE := WorkbenchBase DOSBase CyberGfxBase IntuitionBase LayersBase \
+    GfxBase OOPBase UtilityBase ExpansionBase KeymapBase KernelBase
+BD_KLIB := hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit
+BD_KOBJ_LIBS := $(filter-out $(BD_KLIB),rom) $(BD_KAUTOLIB)
+$(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS)
+$(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_KBASE))
+$(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
+	@$(ECHO) "Linking $@"
+	@$(AROS_LD) -Ur -o $@ $^ -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
+	@$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^libraryset_.*$$/) {print "-L " $$3;}'`
+
+## Dependency fine-tuning
+##
+BD_DEPS := $(addsuffix .d,$(addprefix $(OBJDIR)/,$(notdir $(BD_CCFILES) $(BD_TARGETCCFILES))))
+ifneq ($(BD_DEPS),)
+  ifneq (kernel-kernel-amiga-m68k kernel-kernel-amiga-m68k-quick kernel-kernel-amiga-m68k-kobj,)
+    ifneq ($(findstring $(TARGET),kernel-kernel-amiga-m68k kernel-kernel-amiga-m68k-quick kernel-kernel-amiga-m68k-kobj),)
+      -include $(BD_DEPS)
+    endif
+  else
+    ifeq (,$(filter clean% %clean %clean% setup% includes% %setup,$(TARGET)))
+      -include $(BD_DEPS)
+    endif
+  endif
+endif
+
+$(BD_OBJS) $(BD_DEPS) $(BD_REFS) : | $(OBJDIR)
+$(BD_MODULE) : | $(AROSDIR)/$(BD_DEFMODDIR)
+$(BD_KOBJ) : | $(KOBJSDIR)
+GLOB_MKDIRS += $(OBJDIR) $(AROSDIR)/$(BD_DEFMODDIR) $(KOBJSDIR)
+
+# Some include files need to be generated before the .c can be parsed.
+ifneq ($(filter $(TARGET),kernel-kernel-amiga-m68k kernel-kernel-amiga-m68k-includes kernel-kernel-amiga-m68k-quick kernel-kernel-amiga-m68k-kobj),) # Only for this target these deps are wanted
+BD_REFFILE_DEPS := $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) \
+    $(addprefix $(OBJDIR)/dummyinc/,$(kernel_INCLUDES))
+$(BD_REFS) : $(BD_REFFILE_DEPS) $(dir $(GENMODULE))/genmod_inc/aros/libcall.h
+
+BD_DFILE_DEPS := $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) \
+    $(addprefix $(BD_INCDIR)/,$(kernel_INCLUDES))
+$(BD_DEPS) : $(BD_DFILE_DEPS)
+endif
+
+BD_TOCLEAN := $(BD_OBJS) $(BD_DEPS) $(BD_DEFREFFILE) \
+    $(BD_REFS) $(BD_MODULE) $(BD_LINKLIB) $(BD_KOBJ) \
+    $(OBJDIR)/Makefile.kernel \
+    $(addprefix $(OBJDIR)/include/,$(kernel_INCLUDES)) \
+    $(addprefix $(GENINCDIR)/,$(kernel_INCLUDES)) \
+    $(addprefix $(BD_INCDIR)/,$(kernel_INCLUDES)) \
+    $(OBJDIR)/kernel_geninc $(OBJDIR)/kernel_incs \
+    $(addsuffix .c,$(BD_LINKLIBFILES)) $(BD_LINKLIBOBJS) $(BD_LIBDEFSINC) \
+    $(BD_DEFLIBDEFSINC) $(addsuffix .c,$(BD_STARTFILES) $(BD_ENDFILES)) \
+    $(BD_ENDOBJS)
+kernel-kernel-amiga-m68k-clean : FILES := $(BD_TOCLEAN)
+kernel-kernel-amiga-m68k-clean ::
+	@$(ECHO) "Cleaning up for module kernel"
+	@$(RM) $(FILES)
+
+endif # $(TARGET) in $(BD_ALLTARGETS)
+
+# Delete generated makefiles
+#MM
+clean ::
+	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
+
+include $(SRCDIR)/config/make.tail
+
+BDID := $(BDTARGETID)

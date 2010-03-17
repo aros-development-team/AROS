@@ -1,0 +1,140 @@
+# $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
+
+##############################################################################
+# Amiga m68k main mmakefile
+##############################################################################
+
+include $(TOP)/config/make.cfg
+
+OS_INCLUDES   := -I$(GENINCDIR)
+
+##############################################################################
+# Main target
+##############################################################################
+
+#MM- AROS-amiga-m68k : general-setup-amiga-m68k     \
+#MM	kernel-amiga-m68k                        \
+#MM	kernel-link-amiga-m68k
+
+#MM- general-setup-amiga-m68k: setup-amiga-m68k includes includes-amiga-m68k compiler-amiga-m68k
+
+##############################################################################
+# Compiler (no FPU)
+##############################################################################
+#MM- compiler-amiga-m68k : setup includes \
+#MM	linklibs-amiga \
+#MM	linklibs-arosm-m68k \
+#MM	linklibs-arosz \
+#MM	linklibs-arossupport \
+#MM	linklibs-autoinit \
+#MM	linklibs-arosc \
+#MM linklibs-startup
+
+#MM create-mf-inc-again
+create-mf-inc-again :
+	@$(MAKE) -f $(TOP)/config/mmakefile setup
+
+##############################################################################
+# Kernel
+##############################################################################
+#MM- kernel-amiga-m68k :                      \
+#MM	kernel-exec-amiga-m68k                \
+#MM	kernel-expansion-linklib           \
+#MM	kernel-expansion-amiga-m68k           \
+#MM	kernel-utility-linklib             \
+#MM	kernel-aros-linklib                \
+#MM	kernel-oop-linklib                 \
+#MM	kernel-hidd-linklib                \
+#MM	kernel-mathieeesingbas-linklib     \
+#MM	kernel-timer-linklib               \
+#MM	kernel-misc-linklib kernel-misc-amiga-m68k \
+#MM	kernel-battclock-amiga-m68k           \
+#MM	kernel-boot-linklib-quick          \
+#MM	kernel-dos-amiga-m68k                 \
+#MM	kernel-graphics-linklib            \
+##MM	graphics-gfxhidd                   \
+#MM	kernel-graphics-amiga-m68k            \
+#MM	kernel-layers-linklib              \
+#MM	kernel-intuition-amiga-m68k           \
+#MM	kernel-mathffp-linklib             \
+#MM	kernel-workbench-linklib           \
+#MM	kernel-keymap-linklib              \
+#MM	kernel-keyboard-linklib            \
+#MM	kernel-gameport-linklib            \
+#MM	kernel-input-linklib               \
+#MM	kernel-console-linklib             \
+#MM	kernel-fs-con                      \m
+#MM     kernel-misc-kobj \
+#MM     kernel-fs-afs-kobj \
+#MM     workbench-hidd-graphics-kobj \
+#MM	kernel-amiga-m68k-drivers
+
+# Setup
+##############################################################################
+#MM- setup-amiga-m68k : setup-exec-$(ARCH)-$(CPU) \
+#MM	setup-mlib-$(ARCH)-$(CPU) \
+##MM	setup-clib-$(ARCH)-$(CPU) \
+#MM	setup-dos-$(ARCH)-$(CPU)
+
+#MM		setup-intuition-$(CPU) \
+#MM		setup-battclock-$(CPU) \
+#MM		setup-dos-$(CPU)
+
+# Setup includes
+##############################################################################
+
+#MM- includes-amiga-m68k : includes-copy-$(ARCH)-$(CPU) includes-copy
+
+# Setup bootsector and kernel startup code
+##############################################################################
+
+#MM- boot-amiga-m68k : boot-$(CPU)
+
+# Setup the CLIB metatargets...
+##############################################################################
+
+#MM- setup-clib-amiga-m68k : setup-clib-amiga-$(CPU)
+
+#MM- clib-amiga-m68k : clib-$(CPU)
+
+#MM- alib-amiga-m68k : alib-$(CPU)
+
+#MM- kernel-exec-amiga-m68k : exec-$(ARCH)-$(CPU) kernel-exec-linklib
+
+
+#MM- kernel-intuition-amiga-m68k : intuition-$(GFXSYSTEM) \
+#MM	intuition-$(CPU) kernel-intuition-linklib
+
+#MM- kernel-battclock-amiga-m68k : battclock-$(CPU) kernel-battclock-linklib
+
+#MM- kernel-dos-amiga-m68k : dos-amiga-m68k kernel-dos-linklib
+
+#MM
+includes-amiga-m68k : $(INCFILES)
+	@$(NOP)
+
+#MM
+binary-amiga-m68k : build
+	@./build $(OSGENDIR)/boot/bootsect $(OSGENDIR)/boot/setup \
+	    $(OSGENDIR)/boot/kernel >$(OSGENDIR)/boot/aros.bin
+
+##MM- contrib-amiga-m68k : contrib-complete
+
+#MM- workbench-amiga-m68k : workbench-complete workbench
+
+#MM
+clean ::
+	-$(RM) $(amigaHINE_H) $(DISTamigaHINE_H) $(TESTS)
+
+build: build.c $(GENINCDIR)/aros/boot.h
+	@$(HOST_CC) $(CFLAGS) -D__BFD__ -o build $<
+
+# %include_deps
+# Delete generated makefiles
+#MM
+clean ::
+	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
+
+include $(SRCDIR)/config/make.tail
+
+BDID := $(BDTARGETID)
