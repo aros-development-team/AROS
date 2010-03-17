@@ -1,0 +1,164 @@
+# $Id: mmakefile.src 32303 2010-01-12 12:27:11Z sonic $
+include $(TOP)/config/make.cfg
+
+CFILES          := \
+        exec_init
+
+#MM kernel-exec : kernel-exec-amiga-m68k
+#MM kernel-exec-amiga-m68k : kernel-kernel-m68k-includes kernel-exec-includes
+
+USER_CFLAGS     := -I$(SRCDIR)/rom/exec -Os
+USER_AFLAGS     := -I$(SRCDIR)/rom/exec -I$(GENINCDIR) -Os
+
+ifeq ($(CFILES) ,)
+  $(error no files or asmfiles given)
+endif
+
+BDID := $(BDID)_
+ifneq ($(filter $(TARGET),kernel-exec-amiga-m68k),)
+BDTARGETID := $(BDID)
+endif
+
+ifeq ($(AROS_TARGET_VARIANT),)
+#MM- kernel-exec : kernel-exec-$(ARCH)-$(CPU) kernel-exec-$(ARCH) kernel-exec-$(CPU)
+#MM- kernel-exec-linklib : kernel-exec-$(ARCH)-$(CPU) kernel-exec-$(ARCH) kernel-exec-$(CPU)
+#MM- kernel-exec-kobj : kernel-exec-$(ARCH)-$(CPU) kernel-exec-$(ARCH) kernel-exec-$(CPU)
+else
+#MM- kernel-exec : kernel-exec-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) kernel-exec-$(ARCH)-$(CPU) kernel-exec-$(ARCH) kernel-exec-$(CPU)
+#MM- kernel-exec-linklib : kernel-exec-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) kernel-exec-$(ARCH)-$(CPU) kernel-exec-$(ARCH) kernel-exec-$(CPU)
+#MM- kernel-exec-kobj : kernel-exec-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) kernel-exec-$(ARCH)-$(CPU) kernel-exec-$(ARCH) kernel-exec-$(CPU)
+endif
+
+#MM kernel-exec-amiga-m68k : kernel-exec-includes
+
+ifeq (amiga-m68k,)
+  $(error argument arch has to be non empty for the rule_compile_archspecific macro)
+endif
+
+BD_OBJDIR$(BDID)  := $(GENDIR)/rom/exec/arch
+BD_COBJS$(BDID)   := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(CFILES))))
+BD_ASMOBJS$(BDID) := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir )))
+BD_OBJS$(BDID)    := $(BD_COBJS$(BDID)) $(BD_ASMOBJS$(BDID))
+BD_DEPS$(BDID)    := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(CFILES))))
+
+ifeq ($(TARGET),kernel-exec-amiga-m68k)
+TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+vpath %.c $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir $(CFILES)))
+vpath %.s $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir ))
+vpath %.S $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir ))
+endif
+
+$(BD_OBJS$(BDID)) : | $(BD_OBJDIR$(BDID))
+GLOB_MKDIRS += $(BD_OBJDIR$(BDID))
+
+#MM
+kernel-exec-amiga-m68k :: $(BD_OBJS$(BDID))
+
+ifeq ($(findstring target,host kernel target),)
+  $(error unknown compiler target)
+endif
+ifeq (target,target)
+$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_CMD:=$(TARGET_CC)
+$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
+$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (target,host)
+$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_CMD:=$(HOST_CC)
+$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE:=$(HOST_IQUOTE)
+$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (target,kernel)
+$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
+$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
+$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+ifneq (exec,)
+$(BD_COBJS$(BDID)) : TMP_CFLAGS:=$(CFLAGS) -I$(GENDIR)/rom/exec \
+                     -include $(GENDIR)/rom/exec/include/exec_deflibdefs.h
+else
+$(BD_COBJS$(BDID)) : TMP_CFLAGS:=$(CFLAGS)
+endif
+ifeq ($(TARGET),kernel-exec-amiga-m68k)
+$(BD_OBJDIR$(BDID))/%.o : %.c
+	@$(ECHO) "Compiling $<"
+	@$(IF) $(TMP_CMD) $(TMP_IQUOTE) $(dir $<) $(TMP_IQUOTE) $(SRCDIR)/$(CURDIR) $(TMP_IQUOTE) . $(TMP_IQUOTE_END) $(TMP_CFLAGS) -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$<: $(TMP_CMD) $(TMP_IQUOTE) $(dir $<) $(TMP_IQUOTE) $(SRCDIR)/$(CURDIR) $(TMP_IQUOTE) . $(TMP_IQUOTE_END) $(TMP_CFLAGS) -c $< -o $@" >> $(GENDIR)/errors ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Compile failed: $(TMP_CMD) $(TMP_IQUOTE) $(dir $<) $(TMP_IQUOTE) $(SRCDIR)/$(CURDIR) $(TMP_IQUOTE) . $(TMP_IQUOTE_END) $(TMP_CFLAGS) -c $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+endif
+
+ifeq (,)
+$(BD_DEPS$(BDID)) : TMP_DFLAGS:=$(CFLAGS)
+else
+$(BD_DEPS$(BDID)) : TMP_DFLAGS:=
+endif
+ifeq ($(TARGET),kernel-exec-amiga-m68k)
+$(BD_OBJDIR$(BDID))/%.d : %.c
+	@$(IF) $(TEST) ! -d $(dir $@) ; then $(MKDIR) $(dir $@) ; else $(NOP) ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/$(notdir $<)..."
+	@AROS_CC="$(TMP_CMD)" $(MKDEPEND) $(TMP_DFLAGS) -I$(SRCDIR)/$(CURDIR) $< -o $@
+endif
+
+$(BD_ASMOBJS$(BDID)) : AFLAGS:=$(AFLAGS)
+
+ifeq ($(TARGET),kernel-exec-amiga-m68k)
+$(BD_OBJDIR$(BDID))/%.o : %.s
+	@$(ECHO) "Assembling $(notdir $<)..."
+	@$(IF) $(CC) $(AFLAGS) $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$(notdir $<): $(CC) $(AFLAGS) $< -o $@" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Assemble failed: $(CC) $(AFLAGS) $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+$(BD_OBJDIR$(BDID))/%.o : %.S
+	@$(ECHO) "Assembling $(notdir $<)..."
+	@$(IF) $(CC) $(AFLAGS) $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$(notdir $<): $(CC) $(AFLAGS) $< -o $@" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Assemble failed: $(CC) $(AFLAGS) $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+endif
+
+ifneq ($(BD_DEPS$(BDID)),)
+  ifneq (kernel-exec-amiga-m68k,)
+    ifneq ($(findstring $(TARGET),kernel-exec-amiga-m68k),)
+      -include $(BD_DEPS$(BDID))
+    endif
+  else
+    ifeq (,$(filter clean% %clean %clean% setup% includes% %setup,$(TARGET)))
+      -include $(BD_DEPS$(BDID))
+    endif
+  endif
+endif
+
+TARGETDIR = $(BD_OBJDIR$(BDID))
+
+# Delete generated makefiles
+#MM
+clean ::
+	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
+
+include $(SRCDIR)/config/make.tail
+
+BDID := $(BDTARGETID)

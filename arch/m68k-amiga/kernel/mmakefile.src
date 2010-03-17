@@ -1,0 +1,18 @@
+# $Id: mmakefile.src 32362 2010-01-17 14:43:37Z weissms $
+include $(TOP)/config/make.cfg
+
+FILES := kernel_init
+
+#MM kernel-amiga-m68k: setup-amiga-m68k kernel-kernel-amiga-m68k-kobj kernel-exec-kobj 
+kernel-amiga-m68k: $(BINDIR)/boot/aros-amiga-m68k
+
+$(BINDIR)/boot/aros-amiga-m68k: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
+	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o -L$(LIBDIR) -larossupport -lrom -larosm -lautoinit -llibinit
+
+#MM kernel-kernel-amiga-m68k : includes
+#MM kernel-kernel-amiga-m68k-kobj : includes
+
+%build_module mmake=kernel-kernel-amiga-m68k \
+  modname=kernel modtype=resource            \
+  cflags="$(CFLAGS) -I$(SRCDIR)/rom/exec"    \
+  files="$(FILES)" uselibs="rom"

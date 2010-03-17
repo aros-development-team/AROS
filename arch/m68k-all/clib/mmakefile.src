@@ -1,0 +1,19 @@
+# $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
+include $(TOP)/config/make.cfg
+
+USER_AFLAGS  := -I$(GENINCDIR)
+
+%build_archspecific \
+	mainmmake=linklibs-clib maindir=compiler/clib \
+	arch=m68k \
+	asmfiles="longjmp setjmp"
+
+%build_archspecific \
+  mainmmake=linklibs-clib maindir=compiler/clib/shared \
+  arch=m68k \
+  asmfiles="vfork vfork_longjmp"
+
+#MM linklibs-clib-m68k : linklibs-gcc1-m68000 includes-asm_h-m68k
+
+%common
+

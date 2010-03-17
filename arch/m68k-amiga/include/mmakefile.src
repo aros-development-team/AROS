@@ -1,0 +1,7 @@
+# $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES := $(wildcard *.[hi] aros/*.[hi] aros/m68k/*.[hi] asm/*.[hi] exec/*.[hi])
+
+%copy_includes mmake=includes-amiga-m68k
+

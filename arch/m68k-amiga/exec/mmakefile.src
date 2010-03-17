@@ -1,0 +1,16 @@
+# $Id: mmakefile.src 32303 2010-01-12 12:27:11Z sonic $
+include $(TOP)/config/make.cfg
+
+CFILES          := \
+        exec_init
+
+#MM kernel-exec : kernel-exec-amiga-m68k
+#MM kernel-exec-amiga-m68k : kernel-kernel-m68k-includes kernel-exec-includes
+
+USER_CFLAGS     := -I$(SRCDIR)/rom/exec -Os
+USER_AFLAGS     := -I$(SRCDIR)/rom/exec -I$(GENINCDIR) -Os
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec arch=amiga-m68k \
+  files=$(CFILES) modulename=exec
+
+TARGETDIR = $(BD_OBJDIR$(BDID))
