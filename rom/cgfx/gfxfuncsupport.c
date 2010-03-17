@@ -5,7 +5,6 @@
 #include <proto/graphics.h>
 
 #include "gfxfuncsupport.h"
-#include "graphics_intern.h"
 
 /****************************************************************************************/
 

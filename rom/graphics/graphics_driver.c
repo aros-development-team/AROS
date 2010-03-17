@@ -837,37 +837,3 @@ void driver_Text (struct RastPort * rp, CONST_STRPTR string, LONG len,
     return;
 
 }
-
-/******************************************/
-/* Support stuff for cybergfx             */
-/******************************************/
-
-ULONG DoRenderFunc(struct RastPort *rp, Point *src, struct Rectangle *rr,
-			 ULONG (*render_func)(APTR, LONG, LONG, OOP_Object *, OOP_Object *, LONG, LONG, LONG, LONG, struct GfxBase *),
-			 APTR funcdata, BOOL do_update, struct GfxBase *GfxBase)
-{
-    ULONG res;
-
-    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
-        return -1;
-
-    res = do_render_func(rp, src, rr, render_func, funcdata, do_update, FALSE, GfxBase);
-
-    RELEASE_DRIVERDATA(rp, GfxBase);
-    return res;
-}
-
-ULONG DoPixelFunc(struct RastPort *rp, LONG x, LONG y,
-    	    	    LONG (*render_func)(APTR, OOP_Object *, OOP_Object *, LONG, LONG, struct GfxBase *),
-		    APTR funcdata, BOOL do_update, struct GfxBase *GfxBase)
-{
-    ULONG res;
-
-    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
-        return -1;
-
-    res = do_pixel_func(rp, x, y, render_func, funcdata, do_update, GfxBase);
-
-    RELEASE_DRIVERDATA(rp, GfxBase);
-    return res;
-}

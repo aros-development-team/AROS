@@ -42,7 +42,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 #include "cybergraphics_intern.h"
 
