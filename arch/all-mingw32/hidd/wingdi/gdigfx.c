@@ -290,13 +290,11 @@ VOID GDICl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     
     data = OOP_INST_DATA(cl, o);
     
-    if (data->cursor) {
-        Forbid();
+    Forbid();
+    if (data->fbwin)
+        NATIVECALL(GDI_PutMsg, data->fbwin, WM_CLOSE, 0, 0);
+    if (data->cursor)
         USERCALL(DestroyIcon, data->cursor);
-	Permit();
-    }
-    
-    cleanupgdistuff(XSD(cl));
 
     D(bug("GDIGfx::Dispose: calling super\n"));    
     OOP_DoSuperMethod(cl, o, msg);
@@ -394,43 +392,47 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
     struct gfx_data *data;
     struct Task *me;
     void *gfx_int;
-    IPTR bm_win_tags[] = {aHidd_BitMap_Visible, FALSE, TAG_DONE};
-	
+    struct TagItem bm_tags[] = {
+        {aHidd_BitMap_Visible, FALSE},
+	{TAG_DONE		    }
+    };
+
     data = OOP_INST_DATA(cl, o);
 
     D(bug("[GDI] hidd.gfx.wingdi::Show(0x%p)\n", msg->bitMap));
 
     me = FindTask(NULL);
-    gfx_int = KrnAddIRQHandler(XSD(cl)->ctl->IrqNum, GfxIntHandler, data, me);
-    if (gfx_int) {
-	IPTR bmdata = 0;
 
-	Forbid();
+    Forbid();
 
-	if (data->bitmap) {
-	    D(bug("[GDI] Show(): old displayed bitmap 0x%p\n", data->bitmap));
-	    OOP_SetAttrs(data->bitmap, (struct TagItem *)bm_win_tags);
-	}
-
-	/* It's quite not easy to call AROS API from within window service thread,
-	   so we pass private data of our bitmap class to it directly.
-	   Don't use such tricks in normal AROS code, this isn't really good. */
-	if (msg->bitMap)
-	    bmdata = (IPTR)OOP_INST_DATA(XSD(cl)->bmclass, msg->bitMap);
-	data->bitmap = msg->bitMap;
-
-    	/* Hosted system has no real blitter, however we have host-side window service thread that does some work asynchronously,
-	   and this looks like a real blitter. So we use this signal. Before we do it we ensure that it's reset (because it's
-	   the same as SIGF_SINGLE) */
-	SetSignal(0, SIGF_BLIT);
-	NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, bmdata);
-	Permit();
-	Wait(SIGF_BLIT);
-	KrnRemIRQHandler(gfx_int);
-	return msg->bitMap;
+    /* First we hide old bitmap (if there is one) */
+    if (data->bitmap) {
+	D(bug("[GDI] Show(): old displayed bitmap 0x%p\n", data->bitmap));
+	OOP_SetAttrs(data->bitmap, bm_tags);
     }
-    return NULL;
 
+    /* Then we show a new bitmap (if there is one) */
+    data->bitmap = msg->bitMap;
+    if (msg->bitMap) {
+        gfx_int = KrnAddIRQHandler(XSD(cl)->ctl->IrqNum, GfxIntHandler, data, me);
+        if (gfx_int) {
+	    /* It's quite not easy to call AROS API from within window service thread,
+	       so we pass private data of our bitmap class to it directly.
+	       Don't use such tricks in normal AROS code, this isn't really good. */
+	    IPTR bmdata = (IPTR)OOP_INST_DATA(XSD(cl)->bmclass, msg->bitMap);
+
+    	    /* Hosted system has no real blitter, however we have host-side window service thread that does some work asynchronously,
+	       and this looks like a real blitter. So we use this signal. Before we do it we ensure that it's reset (because it's
+	       the same as SIGF_SINGLE) */
+	    SetSignal(0, SIGF_BLIT);
+	    NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, bmdata);
+	    Wait(SIGF_BLIT);
+	    KrnRemIRQHandler(gfx_int);
+	}
+    }
+
+    Permit();
+    return msg->bitMap;
 }
 
 /****************************************************************************************/
@@ -576,7 +578,7 @@ static BOOL initgdistuff(struct gdi_staticdata *xsd)
 
 static VOID cleanupgdistuff(struct gdi_staticdata *xsd)
 {
-    /* Do nothing for now */
+    /* TODO: shutdown the control thread and delete display DC */
 }
 
 /****************************************************************************************/
@@ -592,6 +594,7 @@ static int gdigfx_init(LIBBASETYPEPTR LIBBASE)
 
 static int gdigfx_expunge(LIBBASETYPEPTR LIBBASE)
 {
+    cleanupgdistuff(&LIBBASE->xsd);
     OOP_ReleaseAttrBases(attrbases);
     return TRUE;
 }

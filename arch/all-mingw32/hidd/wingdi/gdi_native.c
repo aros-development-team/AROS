@@ -200,39 +200,34 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
                 gdata = (struct gfx_data *)msg.wParam;
 		bmdata = (struct bitmap_data *)msg.lParam;
 		DWIN(printf("[GDI] NOTY_SHOW, Display data: 0x%p, Bitmap data: 0x%p\n"));
-		/* Have a bitmap to show? */
-                if (bmdata) {
-            	    width = GetSystemMetrics(SM_CXFIXEDFRAME) * 2 + bmdata->win_width;
-            	    height = GetSystemMetrics(SM_CYFIXEDFRAME) * 2 + bmdata->win_height + GetSystemMetrics(SM_CYCAPTION);
-		    /* Do we already have a window? */
-            	    if (!gdata->fbwin) {
-			DWIN(printf("[GDI] Opening display...\n"));
-			/* Create it if we don't */
-            	    	gdata->fbwin = CreateWindow((LPCSTR)display_class, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_VISIBLE,
-					             CW_USEDEFAULT, CW_USEDEFAULT, width,  height, NULL, NULL,
-						     display_class_desc.hInstance, NULL);
-            	    } else {
-			DWIN(printf("[GDI] Resizing display...\n"));
-			/* Otherwise just adjust its size */
-			SetWindowPos(gdata->fbwin, HWND_TOP, 0, 0, width, height, SWP_NOMOVE);
-	            }
-		    DWIN(printf("[GDI] Display window: 0x%p\n", gdata->fbwin));
-	            if (gdata->fbwin) {
-			/* WS_DISABLED here causes forwarding all input to the parent window (i. e. display window) */
-			bmdata->window = CreateWindow((LPCSTR)bitmap_class, NULL, WS_CHILD|WS_DISABLED|WS_VISIBLE, bmdata->bm_left, bmdata->bm_top, bmdata->bm_width, bmdata->bm_height,
-						       gdata->fbwin, NULL, display_class_desc.hInstance, NULL);
-			DWIN(printf("[GDI] Bitmap window: 0x%p\n", bmdata->window));
-			SetWindowLongPtr(bmdata->window, GWLP_USERDATA, (LONG_PTR)bmdata);
-			UpdateWindow(gdata->fbwin);
 
-            	    }
+		/* We MUST get a bitmap */
+            	width = GetSystemMetrics(SM_CXFIXEDFRAME) * 2 + bmdata->win_width;
+            	height = GetSystemMetrics(SM_CYFIXEDFRAME) * 2 + bmdata->win_height + GetSystemMetrics(SM_CYCAPTION);
+		/* Do we already have a window? */
+            	if (!gdata->fbwin) {
+		    /* Create it if we don't */
+		    DWIN(printf("[GDI] Opening display...\n"));
+            	    gdata->fbwin = CreateWindow((LPCSTR)display_class, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_VISIBLE,
+					        CW_USEDEFAULT, CW_USEDEFAULT, width,  height, NULL, NULL,
+						display_class_desc.hInstance, NULL);
             	} else {
-		    /* Close the window if bitmap is NULL */
-            	    if (gdata->fbwin) {
-            	        DestroyWindow(gdata->fbwin);
-            	        window_active = FALSE;
-            	        gdata->fbwin = NULL;
-		    }
+		    /* Otherwise just adjust its size */
+		    DWIN(printf("[GDI] Resizing display...\n"));
+		    SetWindowPos(gdata->fbwin, HWND_TOP, 0, 0, width, height, SWP_NOMOVE);
+	        }
+		DWIN(printf("[GDI] Display window: 0x%p\n", gdata->fbwin));
+	        if (gdata->fbwin) {
+		    /* WS_DISABLED here causes forwarding all input to the parent window (i. e. display window).
+		       In future we may need some more sophisticated input handling because current driver architecture
+		       allows further transformation to rootless mode where every screen will have its own separate window
+		       on a Windows desktop. */
+		    bmdata->window = CreateWindow((LPCSTR)bitmap_class, NULL, WS_CHILD|WS_DISABLED|WS_VISIBLE, bmdata->bm_left, bmdata->bm_top, bmdata->bm_width, bmdata->bm_height,
+						  gdata->fbwin, NULL, display_class_desc.hInstance, NULL);
+		    DWIN(printf("[GDI] Bitmap window: 0x%p\n", bmdata->window));
+		    SetWindowLongPtr(bmdata->window, GWLP_USERDATA, (LONG_PTR)bmdata);
+		    /* Updating root window also updates children where needed */
+		    UpdateWindow(gdata->fbwin);
             	}
             	KrnCauseIRQ(ctl->IrqNum);
             	break;
