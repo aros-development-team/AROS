@@ -1,0 +1,138 @@
+## version $VER: EditorPrefs.catalog 1.0 (17.3.2010)
+## language polski
+## codeset 0
+;
+;
+; Catalog description for JanoPrefs
+; JanoPrefs.cd
+;
+; *****************************
+;  NewMenu strings
+; *****************************
+;
+; Edit Menu
+;
+MSG_RESETDEFAULT
+Ustawienia domy¶lne
+; Default values
+;
+MSG_LASTSAVED
+Ostatnio zapisane ustawienia
+; Last saved values
+;
+; *******************
+;  Preference window
+; *******************
+;
+MSG_TITLEWIN
+Ustawienia edytora
+; Main setup
+;
+MSG_TAB
+Tabulator:
+; Tabulation:
+;
+MSG_SEPARATORS
+Separatory:
+; Separators:
+;
+MSG_TXTFONT
+Czcionka tekstu:
+; Text font:
+;
+MSG_SCRFONT
+Czcionka ekranowa:
+; Screen font:
+;
+MSG_PUBSCREEN
+Tryb ekranowy:
+; Screen mode:
+;
+MSG_BACKDROP
+T³o
+; Backdrop
+;
+MSG_LEFTMARGIN
+Lewy margines
+; Left margin
+;
+MSG_AUTOINDENT
+Automatyczne wciêcie
+; Auto indent
+;
+MSG_EXTEND
+Rozszerzony blok numeryczny
+; Extended numeric pad
+;
+MSG_PREFSSAVE
+Zapisz
+; Save
+;
+MSG_USEPREFS
+U¿yj
+; Use
+;
+MSG_DISCARDPREFS
+Poniechaj
+; Cancel
+;
+MSG_USEDEF
+U¿yj domy¶lnych
+; Use Default
+;
+MSG_CHOOSEIT
+Wybierz...
+; Choose one...
+;
+MSG_CLONEPARENT
+Jak poprzednie
+; Clone parent
+;
+MSG_COLOR_BACK
+Kolor t³a
+; Background
+;
+MSG_COLOR_TEXT
+Tekst standardowy
+; Standard text
+;
+MSG_COLOR_FILLTXT
+T³o zaznaczonego tekstu
+; Selected fill text
+;
+MSG_COLOR_FILLSEL
+Tekst zaznaczony
+; Selected text
+;
+MSG_COLOR_MARGINBACK
+T³o marginesu
+; Margin background
+;
+MSG_COLOR_MARGINTXT
+Tekst na marginesie
+; Margin text
+;
+MSG_COLOR_SHINE
+Pod¶wietlenie panelu
+; Panel shine
+;
+MSG_COLOR_SHADE
+Cieñ panelu
+; Panel shade
+;
+MSG_COLOR_PANELBACK
+T³o panelu
+; Panel back
+;
+MSG_COLOR_PANELTEXT
+Tekst na panelu
+; Panel text
+;
+MSG_COLOR_GLYPH
+T³o wokó³ panelu
+; Panel glyph
+;
+MSG_COLOR_MARKEDLINES
+Aktywny panel
+; Active panel
+;

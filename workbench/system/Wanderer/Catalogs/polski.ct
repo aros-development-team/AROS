@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 1.0 (15.3.2010)
+## version $VER: wanderer.catalog 1.1 (17.3.2010)
 ## language polski
 ## codeset 0
 ;
@@ -264,7 +264,7 @@ Wy³±cz|Uruchom ponownie komputer|Uruchom ponownie system|*Poniechaj
 ; Power off|Restart computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED
-Wybrana opcja jest nieobs³ugiwana przez Twój system
+Wybrana opcja nie jest obs³ugiwana przez Twój system
 ; The selected action is not supported by your system.
 ;
 MSG_OK
@@ -300,15 +300,15 @@ _Tak|Tak, _wszystkie|_Nie|Nie, _Pomiñ wszystkie
 ; _Yes|Yes to _all|_No|No _to all
 ;
 MSG_REQU_DELETE_DRAWER_S
-Katalog
+Czy katalog
 ; Really delete drawer
 ;
 MSG_REQU_DELETE_DRAWER_E
-rzeczywi¶cie skasowaæ?
+ma rzeczywi¶cie zostaæ skasowany?
 ; ?
 ;
 MSG_REQU_DELETE_FILE_S
-Czy rzeczywi¶cie dane
+Czy rzeczywi¶cie plik
 ; Really delete file
 ;
 MSG_REQU_DELETE_FILE_M
@@ -316,15 +316,15 @@ w katalogu
 ; located in
 ;
 MSG_REQU_DELETE_FILE_E
-wmaj± zostac skasowane?
+ma zostaæ skasowany?
 ; ?
 ;
 MSG_REQU_OVERWRITE
-Nadpisaæ pliki...
+Nadpisaæ plik...
 ; Overwrite file...
 ;
 MSG_REQU_OVERWRITE_S
-Czy rzeczywi¶cie dane
+Czy rzeczywi¶cie plik
 ; Really overwrite file
 ;
 MSG_REQU_OVERWRITE_M
@@ -332,7 +332,7 @@ w katalogu
 ; located in
 ;
 MSG_REQU_OVERWRITE_E
-maj± zostaæ nadpisane?
+ma zostaæ nadpisany?
 ; ?
 ;
 MSG_REQU_OVERWRITE_YESNO
@@ -432,7 +432,7 @@ Skasuj z katalogu
 ; Delete from drawer
 ;
 MSG_WANDERER_FILEACCESS_FILETODELETE
-Pliki do skasowania
+Plik do skasowania
 ; File to delete
 ;
 MSG_WANDERER_FILEACCESS_NOOFFILES
