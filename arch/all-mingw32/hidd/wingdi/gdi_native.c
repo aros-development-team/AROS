@@ -17,13 +17,14 @@
 #define DKBD(x)
 #define DWIN(x)
 
-LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp);
+LRESULT CALLBACK display_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp);
+LRESULT CALLBACK bitmap_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp);
 
 /* Global variables shared by all windows (theoretical)	*/
 
-static WNDCLASS wcl_desc = {
+static WNDCLASS display_class_desc = {
     CS_NOCLOSE,
-    window_callback,
+    display_callback,
     0,
     0,
     NULL,
@@ -33,10 +34,23 @@ static WNDCLASS wcl_desc = {
     NULL,
     "AROS_Screen"
 };
-static DWORD thread_id;	   /* Window service thread ID			     */
-static BOOL window_active; /* Flag - AROS window is active		     */
-static ULONG wcl;	   /* Window class		   		     */
-static DWORD last_key;     /* Last pressed key - used to suppress autorepeat */
+static WNDCLASS bitmap_class_desc = {
+    CS_NOCLOSE,
+    bitmap_callback,
+    0,
+    0,
+    NULL,
+    NULL,
+    NULL,
+    (HBRUSH)(COLOR_WINDOW + 1),
+    NULL,
+    "AROS_Bitmap"
+};
+static DWORD thread_id;	    /* Window service thread ID			      */
+static BOOL window_active;  /* Flag - AROS window is active		      */
+static ULONG display_class; /* Display window class		   	      */
+static ULONG bitmap_class;  /* Bitmap window class			      */
+static DWORD last_key;      /* Last pressed key - used to suppress autorepeat */
 
 /* Virtual hardware registers - currently statically allocated */
 __declspec(dllexport) struct MouseData GDI_MouseData;
@@ -80,7 +94,7 @@ LRESULT CALLBACK key_callback(int code, WPARAM wp, KBDLLHOOKSTRUCT *lp)
     return CallNextHookEx(NULL, code, wp, (LPARAM)lp);
 }
 
-LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
+LRESULT CALLBACK display_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
 {
     HDC bitmap_dc, window_dc;
     PAINTSTRUCT ps;
@@ -92,57 +106,6 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
     HBRUSH bkgnd;
 
     switch(msg) {
-    case WM_PAINT:
-        bmdata = (struct bitmap_data *)GetWindowLongPtr(win, GWLP_USERDATA);
-        window_dc = BeginPaint(win, &ps);
-        x = ps.rcPaint.left;
-        y = ps.rcPaint.top;
-	win_xend = ps.rcPaint.right + 1;
-	win_yend = ps.rcPaint.bottom + 1;
-	DWIN(printf("[WM_PAINT] Region from (%d, %d) to (%d, %d)\n", x, y, win_xend, win_yend));
-	bm_xend = bmdata->bm_left + bmdata->bm_width;
-	bm_yend = bmdata->bm_top + bmdata->bm_height;
-
-	/* Perform clipping of the bitmap region and draw background if needed */
-	bkgnd = GetSysColorBrush(COLOR_WINDOW);
-	if (x < bmdata->bm_left) {
-	    bg.left = x;
-	    bg.top = y;
-	    bg.right = bmdata->bm_left;
-	    bg.bottom = ps.rcPaint.bottom;
-	    FillRect(window_dc, &bg, bkgnd);
-	    x = bmdata->bm_left;
-	}
-	if (y < bmdata->bm_top) {
-	    bg.left = x;
-	    bg.top = y;
-	    bg.right = ps.rcPaint.right;
-	    bg.bottom = bmdata->bm_top;
-	    FillRect(window_dc, &bg, bkgnd);
-	    y = bmdata->bm_top;
-	}
-	if (win_xend > bm_xend) {
-	    bg.left = bm_xend;
-	    bg.top = y;
-	    bg.right = ps.rcPaint.right;
-	    bg.bottom = ps.rcPaint.bottom;
-	    FillRect(window_dc, &bg, bkgnd);
-	    xsize = bm_xend - x;
-	} else
-	    xsize = win_xend - x;
-	if (win_yend > bm_yend) {
-	    ysize = bm_yend - y;
-	    bg.left = x;
-	    bg.top = bm_yend;
-	    bg.right = bm_xend;
-	    bg.bottom = ps.rcPaint.bottom;
-	    FillRect(window_dc, &bg, bkgnd);
-	} else
-	    ysize = win_yend - y;
-
-        BitBlt(window_dc, x, y, xsize, ysize, bmdata->dc, x - bmdata->bm_left, y - bmdata->bm_top, SRCCOPY);
-        EndPaint(win, &ps);
-        return 0;
     case WM_SETCURSOR:
 	if (gdictl.cursor) {
 	    SetCursor(gdictl.cursor);
@@ -190,6 +153,33 @@ LRESULT CALLBACK window_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
     return DefWindowProc(win, msg, wp, lp);
 }
 
+LRESULT CALLBACK bitmap_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
+{
+    HDC bitmap_dc, window_dc;
+    PAINTSTRUCT ps;
+    LONG x, y, xsize, ysize;
+    LONG bm_xend, bm_yend;
+    LONG win_xend, win_yend;
+    RECT bg;
+    struct bitmap_data *bmdata;
+    HBRUSH bkgnd;
+
+    switch(msg) {
+    case WM_PAINT:
+        bmdata = (struct bitmap_data *)GetWindowLongPtr(win, GWLP_USERDATA);
+        window_dc = BeginPaint(win, &ps);
+        x = ps.rcPaint.left;
+        y = ps.rcPaint.top;
+	xsize = ps.rcPaint.right - ps.rcPaint.left + 1;
+	ysize = ps.rcPaint.bottom - ps.rcPaint.top + 1;
+        BitBlt(window_dc, x, y, xsize, ysize, bmdata->dc, x, y, SRCCOPY);
+        EndPaint(win, &ps);
+        return 0;
+    default:
+        return DefWindowProc(win, msg, wp, lp);
+    }
+}
+
 DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
 {
     HHOOK keyhook;
@@ -199,33 +189,42 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
     struct bitmap_data *bmdata;
     LONG width, height;
 
-    keyhook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)key_callback, wcl_desc.hInstance, 0);
+    keyhook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)key_callback, display_class_desc.hInstance, 0);
     do {
         res = GetMessage(&msg, NULL, 0, 0);
         D(printf("[GDI] GetMessage returned %ld\n", res));
         if (res > 0) {
-            D(printf("[GDI] Got message %lu\n", msg.message));
+            D(printf("[GDI] Message %lu for window 0x%p\n", msg.message, msg.hwnd));
             switch (msg.message) {
             case NOTY_SHOW:
                 gdata = (struct gfx_data *)msg.wParam;
 		bmdata = (struct bitmap_data *)msg.lParam;
+		DWIN(printf("[GDI] NOTY_SHOW, Display data: 0x%p, Bitmap data: 0x%p\n"));
 		/* Have a bitmap to show? */
                 if (bmdata) {
             	    width = GetSystemMetrics(SM_CXFIXEDFRAME) * 2 + bmdata->win_width;
             	    height = GetSystemMetrics(SM_CYFIXEDFRAME) * 2 + bmdata->win_height + GetSystemMetrics(SM_CYCAPTION);
 		    /* Do we already have a window? */
             	    if (!gdata->fbwin) {
+			DWIN(printf("[GDI] Opening display...\n"));
 			/* Create it if we don't */
-            	    	gdata->fbwin = CreateWindow((LPCSTR)wcl, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_VISIBLE,
+            	    	gdata->fbwin = CreateWindow((LPCSTR)display_class, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_VISIBLE,
 					             CW_USEDEFAULT, CW_USEDEFAULT, width,  height, NULL, NULL,
-						     wcl_desc.hInstance, NULL);
+						     display_class_desc.hInstance, NULL);
             	    } else {
-			/* Otherwise just adjust its position */
-			SetWindowPos(msg.hwnd, HWND_TOP, 0, 0, width, height, SWP_NOMOVE);
+			DWIN(printf("[GDI] Resizing display...\n"));
+			/* Otherwise just adjust its size */
+			SetWindowPos(gdata->fbwin, HWND_TOP, 0, 0, width, height, SWP_NOMOVE);
 	            }
+		    DWIN(printf("[GDI] Display window: 0x%p\n", gdata->fbwin));
 	            if (gdata->fbwin) {
-		    	SetWindowLongPtr(gdata->fbwin, GWLP_USERDATA, (LONG_PTR)bmdata);
-            	        RedrawWindow(gdata->fbwin, NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
+			/* WS_DISABLED here causes forwarding all input to the parent window (i. e. display window) */
+			bmdata->window = CreateWindow((LPCSTR)bitmap_class, NULL, WS_CHILD|WS_DISABLED|WS_VISIBLE, bmdata->bm_left, bmdata->bm_top, bmdata->bm_width, bmdata->bm_height,
+						       gdata->fbwin, NULL, display_class_desc.hInstance, NULL);
+			DWIN(printf("[GDI] Bitmap window: 0x%p\n", bmdata->window));
+			SetWindowLongPtr(bmdata->window, GWLP_USERDATA, (LONG_PTR)bmdata);
+			UpdateWindow(gdata->fbwin);
+
             	    }
             	} else {
 		    /* Close the window if bitmap is NULL */
@@ -269,21 +268,28 @@ struct Gfx_Control *__declspec(dllexport) GDI_Init(void)
 	        GDI_MouseData.IrqNum = irq;
 		gdictl.cursor = NULL;
 		
-		wcl_desc.hInstance = GetModuleHandle(NULL);
-		wcl_desc.hIcon = LoadIcon(wcl_desc.hInstance, MAKEINTRESOURCE(101));
-		wcl_desc.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wcl = RegisterClass(&wcl_desc);
-		D(printf("[GDI] Created window class 0x%04x\n", wcl));
-		if (wcl) {
-		    window_active = FALSE;
-		    last_key = 0;
-		    th = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)gdithread_entry, &gdictl, 0, &thread_id);
-		    D(printf("[GDI] Started thread 0x%p ID 0x%08lX\n", th, thread_id));
-		    if (th) {
-			CloseHandle(th);
-			return &gdictl;
+		display_class_desc.hInstance = GetModuleHandle(NULL);
+		display_class_desc.hIcon = LoadIcon(display_class_desc.hInstance, MAKEINTRESOURCE(101));
+		display_class_desc.hCursor = LoadCursor(NULL, IDC_ARROW);
+		display_class = RegisterClass(&display_class_desc);
+		D(printf("[GDI] Created display window class 0x%04x\n", display_class));
+		if (display_class) {
+		    bitmap_class_desc.hInstance = display_class_desc.hInstance;
+		    bitmap_class = RegisterClass(&bitmap_class_desc);
+		    D(printf("[GDI] Created bitmap window class 0x%04x\n", bitmap_class));
+		    if (bitmap_class) {
+		
+		        window_active = FALSE;
+		        last_key = 0;
+		        th = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)gdithread_entry, &gdictl, 0, &thread_id);
+		        D(printf("[GDI] Started thread 0x%p ID 0x%08lX\n", th, thread_id));
+		        if (th) {
+			    CloseHandle(th);
+			    return &gdictl;
+		        }
+			UnregisterClass((LPCSTR)bitmap_class, bitmap_class_desc.hInstance);
 		    }
-		    UnregisterClass((LPCSTR)wcl, wcl_desc.hInstance);
+		    UnregisterClass((LPCSTR)display_class, display_class_desc.hInstance);
 		}
 	    }
 	    KrnFreeIRQ(GDI_KeyboardData.IrqNum);
@@ -295,7 +301,7 @@ struct Gfx_Control *__declspec(dllexport) GDI_Init(void)
 
 void __declspec(dllexport) GDI_Shutdown(struct Gfx_Control *ctl)
 {
-    UnregisterClass((LPCSTR)wcl, wcl_desc.hInstance);
+    UnregisterClass((LPCSTR)display_class, display_class_desc.hInstance);
     KrnFreeIRQ(GDI_MouseData.IrqNum);
     KrnFreeIRQ(GDI_KeyboardData.IrqNum);
     KrnFreeIRQ(ctl->IrqNum);

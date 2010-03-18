@@ -570,9 +570,6 @@ VOID GDIBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	case aoHidd_GDIBitMap_DeviceContext:
 	    *msg->storage = (IPTR)data->dc;
 	    return;
-	case aoHidd_GDIBitMap_Window:
-	    *msg->storage = (IPTR)data->window;
-	    return;
 	}
     } else if (IS_BM_ATTR(msg->attrID, idx)) {
         switch (idx)
@@ -600,19 +597,19 @@ VOID GDIBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     tstate = msg->attrList;
     while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
-        if(IS_GDIBM_ATTR(tag->ti_Tag, idx)) {
-            switch(idx)
-            {
-            case aoHidd_GDIBitMap_Window:
-		data->window = (APTR)tag->ti_Data;
-		break;
-	    }
-	} else if (IS_BM_ATTR(tag->ti_Tag, idx)) {
-	    /* This is currently a W.I.P. You can enable it, and
-	       it will work, but Intuition's input gets all fucked up
-	       when the screen is shifted. */
+        if (IS_BM_ATTR(tag->ti_Tag, idx)) {
 	    switch(idx)
 	    {
+	    case aoHidd_BitMap_Visible:
+		if (!tag->ti_Data) {
+		    Forbid();
+		    if (data->window) {
+		        NATIVECALL(GDI_PutMsg, data->window, WM_CLOSE, 0, 0);
+		        data->window = NULL;
+		    }
+		    Permit();
+		}
+		break;
 	    case aoHidd_BitMap_LeftEdge:
 	        data->bm_left = tag->ti_Data;
 		change_position = TRUE;
@@ -638,8 +635,8 @@ VOID GDIBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 	    data->bm_top = -data->bm_height;
 
 	Forbid();
-	/* Refresh the whole window */
-	USERCALL(RedrawWindow, data->window, NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
+	if (data->window)
+	    USERCALL(SetWindowPos, data->window, NULL, data->bm_left, data->bm_top, data->bm_width, data->bm_height, SWP_NOSIZE|SWP_NOZORDER);
 	Permit();
     }
 
@@ -807,10 +804,10 @@ VOID GDIBM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_B
     Forbid();
     if (data->window) {
         RECT r = {
-            data->bm_left + msg->x,
-	    data->bm_top  + msg->y,
-            data->bm_left + msg->x + msg->width,
-            data->bm_top  + msg->y + msg->height
+            msg->x,
+	    msg->y,
+            msg->x + msg->width,
+            msg->y + msg->height
         };
 
         USERCALL(RedrawWindow, data->window, &r, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
