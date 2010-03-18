@@ -394,7 +394,7 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
     struct gfx_data *data;
     struct Task *me;
     void *gfx_int;
-    IPTR bm_win_tags[] = {aHidd_GDIBitMap_Window, 0, TAG_DONE};
+    IPTR bm_win_tags[] = {aHidd_BitMap_Visible, FALSE, TAG_DONE};
 	
     data = OOP_INST_DATA(cl, o);
 
@@ -409,7 +409,6 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 
 	if (data->bitmap) {
 	    D(bug("[GDI] Show(): old displayed bitmap 0x%p\n", data->bitmap));
-	    bm_win_tags[1] = 0;
 	    OOP_SetAttrs(data->bitmap, (struct TagItem *)bm_win_tags);
 	}
 
@@ -424,17 +423,9 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	   and this looks like a real blitter. So we use this signal. Before we do it we ensure that it's reset (because it's
 	   the same as SIGF_SINGLE) */
 	SetSignal(0, SIGF_BLIT);
-	Forbid();
 	NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, bmdata);
 	Permit();
 	Wait(SIGF_BLIT);
-
-	if (msg->bitMap) {
-	    bm_win_tags[1] = (IPTR)data->fbwin;
-	    OOP_SetAttrs(msg->bitMap, (struct TagItem *)bm_win_tags);
-	}
-
-	Permit();
 	KrnRemIRQHandler(gfx_int);
 	return msg->bitMap;
     }

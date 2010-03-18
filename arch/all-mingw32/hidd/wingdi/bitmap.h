@@ -13,7 +13,6 @@
 enum
 {
     aoHidd_GDIBitMap_DeviceContext, /* ..G - bitmap's device context	      */
-    aoHidd_GDIBitMap_Window,	    /* .SG - a window the bitmap displayed in */
     aoHidd_GDIBitMap_SysDisplay,    /* I.. - a display to be compatible with  */
 
     num_Hidd_GDIBitMap_Attrs

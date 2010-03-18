@@ -45,6 +45,7 @@ static const char *user_func_names[] = {
     "CreateIconIndirect",
     "DestroyIcon",
     "SetCursor",
+    "SetWindowPos",
     "RedrawWindow",
      NULL
 };
