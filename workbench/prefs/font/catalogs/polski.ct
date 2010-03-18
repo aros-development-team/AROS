@@ -1,0 +1,81 @@
+## version $VER: Font.catalog 1.0 (17.3.2010)
+## language polski
+## codeset 5
+;
+;
+MSG_ERROR_CANT_CREATE_APPLICATION
+Nie mogê stworzyæ obiektu aplikacji.
+; Can't create application object.
+;
+MSG_CANT_CREATE_REQ
+Nie mogê otworzyæ okna dialogowego!
+; Can't open create filerequester!
+;
+MSG_CANT_CREATE_CONTEXT
+Nie mogê stworzyæ kontekstu dla Gadtools!
+; Can't create context for Gadtools!
+;
+MSG_CANT_OPEN_STREAM
+Nie mogê otworzyæ danech w formacie IFF!
+; Can't open IFF stream!
+;
+MSG_CANT_WRITE_PREFFILE
+Nie mogê zapisaæ ustawieñ!
+; Can't write preferences!
+;
+MSG_CANT_READ_PREFFILE
+Nie mogê odczytaæ ustawieñ!
+; Can't read preferences!
+;
+MSG_CANT_ALLOCATE_IFFPTR
+Nie mogê alokowaæ struktury IFF!
+; Can't allocate IFF handle!
+;
+MSG_CANT_ALLOCATE_MEM
+Brak wolnej pamiêci (%s)!
+; Can't allocate application memory (%s)!
+;
+MSG_NAME
+Ustawienia czcionek
+; Font Preferences
+;
+MSG_MENU_PREFERENCES
+Ustawienia
+; Preferences
+;
+MSG_MENU_PREFERENCES_IMPORT
+I\0Import...
+; I\0Import...
+;
+MSG_MENU_PREFERENCES_EXPORT
+E\0Eksport...
+; E\0Export...
+;
+MSG_ASL_OPEN_TITLE
+Wczytaj ustawienia czcionek
+; Load Font Preferences
+;
+MSG_ASL_SAVE_TITLE
+Zapisz ustawienia
+; Save Font Preferences
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_ICONS
+Ikony:
+; Icons:
+;
+MSG_SYSTEM
+System:
+; System:
+;
+MSG_SCREEN
+Ekran:
+; Screen:
+;
+MSG_DESCRIPTION
+Ustawienia czcionek
+; Fonts preferences
+;

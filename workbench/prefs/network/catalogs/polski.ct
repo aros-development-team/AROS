@@ -1,101 +1,136 @@
-## version $VER: networkprefs.catalog 1.0 (11.05.2009)
-## codeset 0
+## version $VER: Network.catalog 2.0 (17.3.2010)
 ## language polski
-;
-; TODO: update me and set version to 2
+## codeset 0
 ;
 MSG_NAME
-Preferencje Sieci
-;Network Preferences
+Ustawienia sieci
+; Network Preferences
 ;
 MSG_DESCRIPTION
 Ustawienia protoko³u TCP/IP
-;TCP/IP Network preferences
+; TCP/IP Network preferences
+;
+MSG_IFNAME
+Nazwa
+; Name
+;
+MSG_UP
+Aktywne
+; Active
 ;
 MSG_DEVICE
-Urz±dzenie
-;Device
+Urz¹dzenie
+; Device
+;
+MSG_UNIT
+Jednostka
+; Unit
 ;
 MSG_IP_MODE
-Tryb IP
-;IP Mode
+Przydzielanie adresu
+; IP Mode
 ;
 MSG_IP
-IP
-;IP
+Adres
+; Address
 ;
 MSG_MASK
 Maska sieci
-;Mask
+; Net Mask
 ;
 MSG_GATE
 Brama
-;Gate
+; Gateway
 ;
 MSG_DNS1
 G³ówny DNS
-;Primary DNS
+; Primary DNS
 ;
 MSG_DNS2
 Pomocniczy DNS
-;Secondary DNS
+; Secondary DNS
 ;
 MSG_HOST_NAME
 Nazwa hosta
-;Host Name
+; Host Name
 ;
 MSG_DOMAIN_NAME
-Nazwa domeny
-;Domain Name
+Domena
+; Domain Name
 ;
 MSG_IP_MODE_MANUAL
-Rêczny
-;Manual
+Rêczne
+; Manual
 ;
 MSG_IP_MODE_DHCP
 Pobierz adres z DCHP
-;Get address from DHCP
+; Get address from DHCP
 ;
 MSG_TAB_IP_CONFIGURATION
-Konfiguracja IP
-;IP Configuration
+Konfiguracja TCP/IP
+; IPv4 Configuration
 ;
 MSG_TAB_COMPUTER_NAME
 Nazwa komputera
-;Computer Name
+; Computer Name
 ;
 MSG_AUTOSTART_STACK
-Automatyczne uruchomienie
-;Autostart
+Automatyczne uruchomienie?
+; Automatically start network during system boot?
 ;
 MSG_ERR_UNKNOWN_ERROR
-Nieznany b³±d
-;Unknown error
+Neznany b³±d
+; Unknown error
 ;
 MSG_ERR_NOT_RESTARTED_STACK
-Urumienie sieci nie powiod³o siê
-;Failed to restart network stack
+Uruchomienie sieci nie powiod³o siê.
+; Failed to restart network stack
 ;
 MSG_BUTTON_OK
-Ok
-;Ok
+OK
+; Ok
+;
+MSG_BUTTON_ADD
+Dodaj
+; Add
+;
+MSG_BUTTON_EDIT
+Edytuj
+; Edit
+;
+MSG_BUTTON_REMOVE
+Usuñ
+; Remove
+;
+MSG_BUTTON_APPLY
+Dodaj
+; Apply
+;
+MSG_BUTTON_CLOSE
+Zamknij
+; Close
 ;
 MSG_ERROR_TITLE
 B³±d
-;Error
+; Error
 ;
 MSG_ERR_NOT_SAVED_PREFS
-Zapis ustawieñ do %s nie powiód³ siê
-;Network preferences not saved to %s
+Zapis ustawieñ do %s nie powiód³ siê.
+; Network preferences not saved to %s
 ;
 MSG_ERR_NOT_COPIED_FILES
-Kopiowanie dodatkowych plików do %s nie powiod³o siê
-;Additional files not copied to %s
+Kopiowanie dodatkowych plików do %s nie powiod³o siê.
+; Additional files not copied to %s
 ;
 MSG_INFO_TITLE
 Informacja
+; Information
 ;
 MSG_PREFS_SAVED_RESTART
 Ustawienia zapisane do %s.\nUruchom ponownie system aby ich u¿yæ.
-;Preferences have been saved to %s.\nRestart AROS for them to take effect.
+; Preferences have been saved to %s.\nRestart AROS for them to take effect.
+;
+MSG_IFWINDOW_TITLE
+Interfejs
+; Interface
 ;
