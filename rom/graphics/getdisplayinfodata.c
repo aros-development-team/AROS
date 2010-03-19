@@ -158,14 +158,18 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	{
 	    struct DisplayInfo *di;
 	    IPTR redmask, greenmask, bluemask;
+	    struct HIDD_ModeProperties HIDDProps = {0};
+	    
+	    HIDD_Gfx_ModeProperties(SDD(GfxBase)->gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
 	    
 	    di = (struct DisplayInfo *)qh;
 	    
 	    /* All modes returned from the HIDD are available */
 	    di->NotAvailable = FALSE;
 	    
-	    /* Set the propertyflags */
-	    di->PropertyFlags = DIPF_IS_FOREIGN | DIPF_IS_WB | DIPF_IS_SPRITES | DIPF_IS_SPRITES_CHNG_BASE | DIPF_IS_DBUFFER;
+	    /* Set the propertyflags,
+	       Note that we enforce some flags because we emulate these features by software */
+	    di->PropertyFlags = DIPF_IS_FOREIGN | DIPF_IS_WB | DIPF_IS_SPRITES | DIPF_IS_DBUFFER | HIDDProps.DisplayInfoFlags;
 	    
 	    /* We simulate AGA. This field is really obsolete */
 	    di->PaletteRange = 4096;
@@ -182,8 +186,9 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    di->Resolution.x = 22;
 	    di->Resolution.y = 22;
 
-	    di->NumStdSprites = 1;
-/*	    
+	    /* We can emulate one sprite via software, because it's necessary for mouse pointer. */
+	    di->NumStdSprites = (HIDDProps.DisplayInfoFlags & DIPF_IS_SPRITES) ? HIDDProps.NumHWSprites : 1;
+/*
 	    di->Resolution.x = ?;
 	    di->Resolution.y = ?;
 	    di->PixelSpeed = ?;
@@ -259,6 +264,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    struct MonitorSpec *mspc;
 	    struct displayinfo_db *db;
 	    ULONG majoridx;
+	    struct HIDD_ModeProperties HIDDProps = {0};
 	    
 	    db = (struct displayinfo_db *)SDD(GfxBase)->dispinfo_db;
     	    
@@ -272,6 +278,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 		return 0;
 	    }
 	    
+	    HIDD_Gfx_ModeProperties(SDD(GfxBase)->gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
 	    
 	    mi = (struct MonitorInfo *)qh;
 	    
@@ -298,8 +305,8 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    
 	    mi->Mspc = mspc;
 	    mi->PreferredModeID = modeid;
-	    mi->Compatibility = MCOMPAT_NOBODY;
-	    
+	    mi->Compatibility = HIDDProps.CompositionFlags ? MCOMPAT_SELF : MCOMPAT_NOBODY;
+
 	    /* Fill info into the monitorspec. It is by default set to all 0s */
 	    mspc->ms_Node.xln_Pred = mspc->ms_Node.xln_Succ = NULL;
 	    mspc->ms_Node.xln_Type = MONITOR_SPEC_TYPE;

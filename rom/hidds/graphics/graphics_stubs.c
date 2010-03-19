@@ -323,6 +323,22 @@ VOID HIDD_Gfx_CopyBox(OOP_Object *obj, OOP_Object *src, WORD srcX, WORD srcY, OO
     OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
+/***************************************************************/
+
+ULONG HIDD_Gfx_ModeProperties(OOP_Object *obj, HIDDT_ModeID modeID, struct HIDD_ModeProperties *props, ULONG propsLen)
+{
+    STATIC_MID;
+    struct pHidd_Gfx_ModeProperties p, *msg = &p;
+    
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ModeProperties);
+    
+    p.mID      = mid;
+    p.modeID   = modeID;
+    p.props    = props;
+    p.propsLen = propsLen;
+
+    return OOP_DoMethod(obj, (OOP_Msg) msg);   
+}
 
 /***************************************************************/
 
@@ -340,7 +356,6 @@ BOOL HIDD_BM_SetColors (OOP_Object *obj, HIDDT_Color *colors, ULONG firstColor, 
 
     return OOP_DoMethod(obj, (OOP_Msg) msg);
 }
-
 
 /***************************************************************/
 
