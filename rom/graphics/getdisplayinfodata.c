@@ -37,7 +37,7 @@ static const struct size_check size_checks[] =
     
 };
 
-static BOOL check_sizes(ULONG tagID, ULONG size);
+static ULONG check_sizes(ULONG tagID, ULONG size);
 static ULONG compute_numbits(HIDDT_Pixel mask);
 
 #define DLONGSZ     	    (sizeof (ULONG) * 2)
@@ -138,17 +138,18 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	
     
     /* Build the queryheader */
-    if (!check_sizes(tagID, size)) return 0;
-    
-    memset(buf, 0, size);
+    structsize = check_sizes(tagID, size);
+    if (!structsize)
+	return 0;
+    qh = AllocMem(structsize, MEMF_CLEAR);
+    if (!qh)
+        return 0;
     
     /* Fill in the queryheader */
-    qh = (struct QueryHeader *)buf;
     qh->StructID  = tagID;
     qh->DisplayID = modeid;
     qh->SkipID	  = TAG_SKIP;
     
-    structsize = size_checks[DTAG_TO_IDX(tagID)].struct_size;
     qh->Length	  = (structsize + (DLONGSZ - 1)) / DLONGSZ;
     
     switch (tagID)
@@ -158,7 +159,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    struct DisplayInfo *di;
 	    IPTR redmask, greenmask, bluemask;
 	    
-	    di = (struct DisplayInfo *)buf;
+	    di = (struct DisplayInfo *)qh;
 	    
 	    /* All modes returned from the HIDD are available */
 	    di->NotAvailable = FALSE;
@@ -207,7 +208,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    OOP_GetAttr(sync, aHidd_Sync_HMax,   &maxwidth);
 	    OOP_GetAttr(sync, aHidd_Sync_VMax,   &maxheight);
 
-	    di = (struct DimensionInfo *)buf;
+	    di = (struct DimensionInfo *)qh;
 	    di->MaxDepth = depth;
 	    
 	    di->MinRasterWidth	= minwidth;
@@ -267,11 +268,12 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    {
 		D(bug("!!! INVALID MODE ID IN GetDisplayInfoData(DTAG_MNTR) !!!\n"));
     	    	ReleaseSemaphore(&db->sema);
+		FreeMem(qh, structsize);
 		return 0;
 	    }
 	    
 	    
-	    mi = (struct MonitorInfo *)buf;
+	    mi = (struct MonitorInfo *)qh;
 	    
 	    mspc = &db->mspecs[majoridx];
 	    
@@ -324,7 +326,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
 	    OOP_GetAttr(sync, aHidd_Sync_VDisp,	&height);
 	    OOP_GetAttr(sync, aHidd_Sync_Description, (IPTR *)&sync_description);
-	    ni = (struct NameInfo *)buf;
+	    ni = (struct NameInfo *)qh;
 
 	    if (sync_description && sync_description[0] &&
 	    	(IS_REAL_STDPIXFMT(stdpixfmt) || (stdpixfmt == vHidd_StdPixFmt_Unknown)))
@@ -393,7 +395,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 
 	case DTAG_VEC:
 	{
-	    struct VecInfo *vi = (struct VecInfo *)buf;
+	    struct VecInfo *vi = (struct VecInfo *)qh;
 	    
 	    vi->reserved[0] = (IPTR)sync;
 	    vi->reserved[1] = (IPTR)pf;
@@ -403,12 +405,16 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	default:
 	    D(bug("!!! UNKNOWN tagID IN CALL TO GetDisplayInfoData() !!!\n"));
 	    break;
-    	
     }
     
     D(bug("GDID: %d\n", structsize));
+    
+    if (size > structsize)
+        size = structsize;
+    CopyMem(qh, buf, size);
+    FreeMem(qh, structsize);
 
-    return structsize;
+    return size;
 
     AROS_LIBFUNC_EXIT
 
@@ -416,7 +422,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 
 /****************************************************************************************/
 
-static BOOL check_sizes(ULONG tagID, ULONG size)
+static ULONG check_sizes(ULONG tagID, ULONG size)
 {
     ULONG idx;
     const struct size_check *sc;
@@ -426,24 +432,17 @@ static BOOL check_sizes(ULONG tagID, ULONG size)
     if (idx > 5)
     {
     	D(bug("!!! INVALID tagID TO GetDisplayInfoData"));
-	return FALSE;
+	return 0;
     }
     
     sc = &size_checks[idx];
     if (sc->struct_id != tagID)
     {
     	D(bug("!!! INVALID tagID TO GetDisplayInfoData"));
-	return FALSE;
+	return 0;
     }
-    
-    if (sc->struct_size > size)
-    {
-    	D(bug("!!! NO SPACE FOR %s IN BUFFER SUPPLIED TO GetDisplayInfoData !!!\n"
-		, sc->struct_name));
-	return FALSE;
-    }
-    
-    return TRUE;
+
+    return sc->struct_size;
 }
 
 /****************************************************************************************/
