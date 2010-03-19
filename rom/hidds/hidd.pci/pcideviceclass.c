@@ -1,14 +1,10 @@
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI device class
     Lang: English
 */
-
-/*
- * 2008-03-30 T. Wiszkowski  Corrected typo and added InterruptStatus, CapabilitiesPresent attributes
- */
 
 #include <exec/types.h>
 #include <hidd/pci.h>
@@ -129,6 +125,38 @@ static UBYTE getByte(OOP_Class *cl, OOP_Object *o, ULONG reg)
     msg.reg = reg;
 
     return OOP_DoMethod(driver, (OOP_Msg)&msg);  
+}
+
+/* Returns offset of capability area in config area or 0 of capability is not present */
+static UBYTE findCapabilityOffset(OOP_Class * cl, OOP_Object *o, UBYTE capability)
+{
+    UWORD where = 0x34; /*  First cap list entry */
+    UBYTE capid = 0;
+    
+    /* Check if capabilities present at all */
+    if ((getWord(cl, o, PCICS_STATUS) & PCISTF_CAPABILITIES) != PCISTF_CAPABILITIES)
+        return 0;
+    
+    /* Iterate over capabilities */
+    while(where < 0xff)
+    {
+        where = getByte(cl, o, where);
+
+        if (where < 0x40)
+            break;
+
+        where &= ~3;
+        capid = getByte(cl, o, where);
+
+        if (capid == 0xff)
+            break;
+
+        if (capid == capability) return (UBYTE)where;
+    
+        where += 1; /* next cap */
+    }
+    
+    return 0;
 }
 
 UBYTE PCIDev__Hidd_PCIDevice__ReadConfigByte(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReadConfigByte *msg)
@@ -524,6 +552,38 @@ static const void dispatch_pci2pcibridge(OOP_Class *cl, OOP_Object *o, struct pR
     }
 }
 
+static const void dispatch_capability(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    ULONG idx;
+    UBYTE capability = 0;
+    tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
+
+    idx = msg->attrID - HiddPCIDeviceAttrBase;
+
+    switch(idx)
+    {
+    case aoHidd_PCIDevice_CapabilityPowerManagement:    capability = PCICAP_POWER_MANAGEMENT;break;
+    case aoHidd_PCIDevice_CapabilityAGP:                capability = PCICAP_AGP;break;
+    case aoHidd_PCIDevice_CapabilityVitalProductData:   capability = PCICAP_VITAL_PRODUCT_DATA;break;
+    case aoHidd_PCIDevice_CapabilitySlotID:             capability = PCICAP_SLOT_ID;break;
+    case aoHidd_PCIDevice_CapabilityMSI:                capability = PCICAP_MSI;break;
+    case aoHidd_PCIDevice_CapabilityCPCIHotSwap:        capability = PCICAP_CPCI_HOT_SWAP;break;
+    case aoHidd_PCIDevice_CapabilityPCIX:               capability = PCICAP_PCIX;break;
+    case aoHidd_PCIDevice_CapabilityHyperTransport:     capability = PCICAP_HYPER_TRANSPORT;break;
+    case aoHidd_PCIDevice_CapabilityVendorSpecific:     capability = PCICAP_VENDOR_SPECIFIC;break;
+    case aoHidd_PCIDevice_CapabilityDebugPort:          capability = PCICAP_DEBUG_PORT;break;
+    case aoHidd_PCIDevice_CapabilityCPCICRC:            capability = PCICAP_CPCI_CR;break;
+    case aoHidd_PCIDevice_CapabilityHotPlugController:  capability = PCICAP_HOT_PLUG_CONTROLLER;break;
+    case aoHidd_PCIDevice_CapabilitySSVPID:             capability = PCICAP_SSVPID;break;
+    case aoHidd_PCIDevice_CapabilityAGP3:               capability = PCICAP_AGP3;break;
+    case aoHidd_PCIDevice_CapabilityPCIE:               capability = PCICAP_PCIE;break;
+    case aoHidd_PCIDevice_CapabilityMSIX:               capability = PCICAP_MSIX;break;
+    case aoHidd_PCIDevice_CapabilityAdvancedFeatures:   capability = PCICAP_ADVANCED_FEATURES;break;
+    }
+
+    *msg->storage = findCapabilityOffset(cl, o, capability);
+}
+
 const static void (*Dispatcher[num_Hidd_PCIDevice_Attrs])(OOP_Class *, OOP_Object *, struct pRoot_Get *) __attribute__((section(".rodata"))) =
 {
     [aoHidd_PCIDevice_Driver]	    = dispatch_generic,
@@ -572,7 +632,25 @@ const static void (*Dispatcher[num_Hidd_PCIDevice_Attrs])(OOP_Class *, OOP_Objec
     [aoHidd_PCIDevice_IOLimit]	    = dispatch_pci2pcibridge,
     [aoHidd_PCIDevice_ISAEnable]    = dispatch_pci2pcibridge,
     [aoHidd_PCIDevice_VGAEnable]    = dispatch_pci2pcibridge,
-
+    
+    /* Capabilities */
+    [aoHidd_PCIDevice_CapabilityPowerManagement]    = dispatch_capability,
+    [aoHidd_PCIDevice_CapabilityAGP]                = dispatch_capability,
+    [aoHidd_PCIDevice_CapabilityVitalProductData]   = dispatch_capability,
+    [aoHidd_PCIDevice_CapabilitySlotID]             = dispatch_capability,
+    [aoHidd_PCIDevice_CapabilityMSI]                = dispatch_capability,
+    [aoHidd_PCIDevice_CapabilityCPCIHotSwap]        = dispatch_capability,
+    [aoHidd_PCIDevice_CapabilityPCIX]               = dispatch_capability,
+    [aoHidd_PCIDevice_CapabilityHyperTransport]     = dispatch_capability,
+    [aoHidd_PCIDevice_CapabilityVendorSpecific]     = dispatch_capability,
+    [aoHidd_PCIDevice_CapabilityDebugPort]          = dispatch_capability,
+    [aoHidd_PCIDevice_CapabilityCPCICRC]            = dispatch_capability,
+    [aoHidd_PCIDevice_CapabilityHotPlugController]  = dispatch_capability,
+    [aoHidd_PCIDevice_CapabilitySSVPID]             = dispatch_capability,
+    [aoHidd_PCIDevice_CapabilityAGP3]               = dispatch_capability,
+    [aoHidd_PCIDevice_CapabilityPCIE]               = dispatch_capability,
+    [aoHidd_PCIDevice_CapabilityMSIX]               = dispatch_capability,
+    [aoHidd_PCIDevice_CapabilityAdvancedFeatures]   = dispatch_capability,
 };
 
 void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
@@ -632,15 +710,13 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    case aoHidd_PCIDevice_InterfaceDesc:
 		*msg->storage = (IPTR)dev->strInterface;
 		break;
-
-            case aoHidd_PCIDevice_IRQStatus:
+        case aoHidd_PCIDevice_IRQStatus:
        		*msg->storage = (
 		    (getWord(cl, o, PCICS_STATUS) &
 			PCISTF_INTERRUPT_STATUS)
 		    == PCISTF_INTERRUPT_STATUS);
 		break;
-
-            case aoHidd_PCIDevice_CapabilitiesPresent:
+        case aoHidd_PCIDevice_CapabilitiesPresent:
        		*msg->storage = (
 		    (getWord(cl, o, PCICS_STATUS) &
 			PCISTF_CAPABILITIES)

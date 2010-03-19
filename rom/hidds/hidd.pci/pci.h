@@ -2,13 +2,9 @@
 #define _PCI_H
 
 /*
-    Copyright © 2004-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
-
-/*
- * 2008-03-30 T. Wiszkowski  Corrected typo and added InterruptStatus, CapabilitiesPresent attributes
- */
 
 #include <exec/types.h>
 #include <exec/libraries.h>
@@ -258,6 +254,25 @@ void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
 
 #define PCICTRLF_ISAENABLE	(1 << PCICTRLB_ISAENABLE)
 #define PCICTRLF_VGAENABLE	(1 << PCICTRLF_ISAENABLE)
+
+/* PCI capabilities */
+#define PCICAP_POWER_MANAGEMENT     0x01
+#define PCICAP_AGP                  0x02
+#define PCICAP_VITAL_PRODUCT_DATA   0x03
+#define PCICAP_SLOT_ID              0x04
+#define PCICAP_MSI                  0x05
+#define PCICAP_CPCI_HOT_SWAP        0x06
+#define PCICAP_PCIX                 0x07
+#define PCICAP_HYPER_TRANSPORT      0x08
+#define PCICAP_VENDOR_SPECIFIC      0x09
+#define PCICAP_DEBUG_PORT           0x0a
+#define PCICAP_CPCI_CR              0x0b
+#define PCICAP_HOT_PLUG_CONTROLLER  0x0c
+#define PCICAP_SSVPID               0x0d
+#define PCICAP_AGP3                 0x0e
+#define PCICAP_PCIE                 0x10
+#define PCICAP_MSIX                 0x11
+#define PCICAP_ADVANCED_FEATURES    0x13
 
 #endif /* _PCI_H */
 
