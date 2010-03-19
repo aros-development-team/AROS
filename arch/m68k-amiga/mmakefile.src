@@ -63,7 +63,7 @@ create-mf-inc-again :
 #MM	kernel-gameport-linklib            \
 #MM	kernel-input-linklib               \
 #MM	kernel-console-linklib             \
-#MM	kernel-fs-con                      \m
+#MM	kernel-fs-con                      \
 #MM     kernel-misc-kobj \
 #MM     kernel-fs-afs-kobj \
 #MM     workbench-hidd-graphics-kobj \
