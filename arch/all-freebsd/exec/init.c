@@ -47,7 +47,6 @@ extern const struct Resident
     Keymap_ROMTag,
     Input_ROMTag,
     Intuition_ROMTag,
-    Cybergraphics_ROMTag,
     Console_ROMTag,
 #if ENABLE_DBUS == 1
     Dbus_ROMTag,
@@ -76,7 +75,7 @@ extern const struct Resident
 static const struct Resident *romtagList[] =
 {
     &Expansion_ROMTag,                  /* SingleTask,  110  */
-    &Exec_resident,                     /* SingleTask,  126  */
+    &Exec_resident,                     /* SingleTask,  105  */
     &Utility_ROMTag,                    /* ColdStart,   103  */
     &Aros_ROMTag,                       /* ColdStart,   102  */
     &Bootloader_ROMTag,			/* ColdStart,	100  */
@@ -97,7 +96,6 @@ static const struct Resident *romtagList[] =
 #if ENABLE_X11 == 1
     &X11Cl_ROMTag,			/* ColdStart,   9    */
 #endif
-    &Cybergraphics_ROMTag,              /* ColdStart,   8    */
     &Console_ROMTag,                    /* ColdStart,   5    */
 #if ENABLE_DBUS == 1
     &Dbus_ROMTag,                       /* ColdStart,   0    */

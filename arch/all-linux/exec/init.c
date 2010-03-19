@@ -61,7 +61,6 @@ extern const struct Resident
     Input_ROMTag,
     Intuition_ROMTag,
     LinuxFB_ROMTag,
-    Cybergraphics_ROMTag,
     Console_ROMTag,
 #if ENABLE_DBUS == 1
     Dbus_ROMTag,
@@ -88,11 +87,8 @@ extern const struct Resident
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
 {
-    /* On other architectures Exec starts up before expansion, but
-       here it renders emul.handler non-functional, so left as is
-       for now. */
     &Expansion_ROMTag,                  /* SingleTask,  110  */
-    &Exec_resident,                     /* SingleTask,  126  */
+    &Exec_resident,                     /* SingleTask,  105  */
 //  &Partition_ROMTag,			/* ColdStart,   104  */
     &Utility_ROMTag,                    /* ColdStart,   103  */
     &Aros_ROMTag,                       /* ColdStart,   102  */
@@ -127,7 +123,6 @@ static const struct Resident *romtagList[] =
 #if ENABLE_X11 == 1
     &X11Cl_ROMTag,			/* ColdStart,   9    */
 #endif
-    &Cybergraphics_ROMTag,              /* ColdStart,   8    */
     &Console_ROMTag,                    /* ColdStart,   5    */
 #if ENABLE_DBUS == 1
     &Dbus_ROMTag,                       /* ColdStart,   0    */
