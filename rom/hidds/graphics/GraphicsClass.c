@@ -11,6 +11,7 @@
 #include <aros/config.h>
 #include <aros/symbolsets.h>
 #include <exec/lists.h>
+#include <graphics/displayinfo.h>
 
 #include "graphics_intern.h"
 
@@ -1745,6 +1746,30 @@ OOP_Object *GFX__Hidd_Gfx__GetPixFmt(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 /****************************************************************************************/
 
+ULONG GFX__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ModeProperties *msg)
+{
+    struct HIDD_ModeProperties props = {0, 0, 0};
+    IPTR has_hw_cursor = FALSE;
+    ULONG len = msg->propsLen;
+
+    D(bug("[GFXHIDD] Hidd::Gfx::ModeProperties(0x%08lX, 0x%p, %u)\n", msg->modeID, msg->props, msg->propsLen));
+    OOP_GetAttr(o, aHidd_Gfx_SupportsHWCursor, &has_hw_cursor);
+    if (has_hw_cursor) {
+	D(bug("[GFXHIDD] Driver has hardware mouse cursor implementation\n"));
+        props.DisplayInfoFlags = DIPF_IS_SPRITES;
+	props.NumHWSprites = 1;
+    }
+
+    if (len > sizeof(props))
+        len = sizeof(props);
+    D(bug("[GFXHIDD] Copying %u bytes\n", len));
+    CopyMem(&props, msg->props, len);
+
+    return len;
+}
+
+/****************************************************************************************/
+
 #undef csd
 
 /****************************************************************************************/
@@ -2322,5 +2347,3 @@ VOID HIDD_Gfx_ReleasePixFmt(OOP_Object *o, OOP_Object *pixFmt)
 }
 
 /****************************************************************************************/
-
-
