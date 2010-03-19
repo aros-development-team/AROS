@@ -688,10 +688,10 @@ struct IntScreen
 #define SF_AppearingBar     (0x0008)
 #define SF_SysFont  	    (0x0010)
 #define SF_Draggable	    (0x0020) /* Screen can be dragged		     */
-#define SF_ComposeAbove	    (0x0040) /* Composition capabilities	     */
-#define SF_ComposeBelow	    (0x0080)
-#define SF_ComposeLeft	    (0x0100)
-#define SF_ComposeRight	    (0x0200)
+#define SF_ComposeAbove	    (0x0100) /* Composition capabilities	     */
+#define SF_ComposeBelow	    (0x0200)
+#define SF_ComposeLeft	    (0x0400)
+#define SF_ComposeRight	    (0x0800)
 
 #define SF_VertCompose (SF_ComposeAbove|SF_ComposeBelow)
 #define SF_HorCompose  (SF_ComposeLeft |SF_ComposeRight)

@@ -36,6 +36,7 @@
 #include "inputhandler_support.h"
 #include "inputhandler_actions.h"
 #include "menus.h"
+#include "../graphics/dispinfo.h"
 
 #ifndef DEBUG_OpenScreen
 #define DEBUG_OpenScreen 0
@@ -116,9 +117,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     LONG                     overscan = OSCAN_TEXT;
     DisplayInfoHandle        displayinfo;
     struct DimensionInfo     dimensions;
-#ifdef __MORPHOS__
     struct MonitorInfo       monitor;
-#endif
     ULONG                    allocbitmapflags = BMF_DISPLAYABLE;
     //ULONG                  lock;
     WORD                     numcolors = 0;
@@ -223,10 +222,8 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
         while((tag = NextTagItem ((const struct TagItem **)&tagList)))
         {
-#if 1
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Tag 0x%08lx Data 0x%08lx\n",
                                      tag->ti_Tag, tag->ti_Data));
-#endif
             switch(tag->ti_Tag)
             {
             case SA_Left:
@@ -664,15 +661,19 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
     if ((displayinfo = FindDisplayInfo(modeid)) != NULL &&
         GetDisplayInfoData(displayinfo, (APTR)&dimensions, sizeof(dimensions), DTAG_DIMS, modeid)
-#ifdef __MORPHOS__
         && GetDisplayInfoData(displayinfo, &monitor, sizeof(monitor), DTAG_MNTR, modeid)
-#endif
     )
     {
-        success = TRUE;
 #ifdef __MORPHOS__
         screen->Monitor = monitor.Mspc;
+#else
+        struct HIDD_ModeProperties modeprops;
+
+	HIDD_Gfx_ModeProperties((OOP_Object *)monitor.reserved[0], AMIGA_TO_HIDD_MODEID(modeid), &modeprops, sizeof(modeprops));
+	screen->SpecialFlags = modeprops.CompositionFlags << 8;
 #endif
+        success = TRUE;
+
         if (dclip == NULL)
         {
             switch (overscan)

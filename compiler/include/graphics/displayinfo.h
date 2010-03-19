@@ -121,7 +121,7 @@ struct MonitorInfo
     Point                MouseTicks;
     Point                DefaultViewPosition;
     ULONG                PreferredModeID;
-    ULONG                reserved[2];
+    IPTR                 reserved[2];
 };
 
 /* Compability */

@@ -307,6 +307,8 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    mi->PreferredModeID = modeid;
 	    mi->Compatibility = HIDDProps.CompositionFlags ? MCOMPAT_SELF : MCOMPAT_NOBODY;
 
+	    mi->reserved[0] = (IPTR)SDD(GfxBase)->gfxhidd;
+
 	    /* Fill info into the monitorspec. It is by default set to all 0s */
 	    mspc->ms_Node.xln_Pred = mspc->ms_Node.xln_Succ = NULL;
 	    mspc->ms_Node.xln_Type = MONITOR_SPEC_TYPE;
