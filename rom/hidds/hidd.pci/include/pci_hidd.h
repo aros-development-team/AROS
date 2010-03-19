@@ -2,12 +2,9 @@
 #define HIDD_PCI_H
 
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
-/*
- * 2008-03-30 T. Wiszkowski  Corrected typo and added InterruptStatus, CapabilitiesPresent attributes
- */
 
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
@@ -173,6 +170,24 @@ enum
     aoHidd_PCIDevice_IRQStatus, /* [..G] Get current irq status (does device request irq?) */
     aoHidd_PCIDevice_CapabilitiesPresent,   /* [..G] Use this to check if PCI features extra capabilities (such as PM, MSI, PCI-X, PCI-E) */
     
+    aoHidd_PCIDevice_CapabilityPowerManagement, /* [..G] Get offset of Power Management capability area or 0 if not present */
+    aoHidd_PCIDevice_CapabilityAGP, /* [..G] Get offset of AGP capability area or 0 if not present */
+    aoHidd_PCIDevice_CapabilityVitalProductData, /* [..G] Get offset of Vital Product Data capability area or 0 if not present */
+    aoHidd_PCIDevice_CapabilitySlotID, /* [..G] Get offset of Slot Indentification capability area or 0 if not present */
+    aoHidd_PCIDevice_CapabilityMSI, /* [..G] Get offset of Message Signalled Interrupts capability area or 0 if not present */
+    aoHidd_PCIDevice_CapabilityCPCIHotSwap, /* [..G] Get offset of CompactPCI HotSwap capability area or 0 if not present */
+    aoHidd_PCIDevice_CapabilityPCIX, /* [..G] Get offset of PCI-X capability area or 0 if not present */
+    aoHidd_PCIDevice_CapabilityHyperTransport, /* [..G] Get offset of Hyper Transport capability area or 0 if not present */
+    aoHidd_PCIDevice_CapabilityVendorSpecific, /* [..G] Get offset of Vendor Specific capability area or 0 if not present */
+    aoHidd_PCIDevice_CapabilityDebugPort, /* [..G] Get offset of Debug Port capability area or 0 if not present */
+    aoHidd_PCIDevice_CapabilityCPCICRC, /* [..G] Get offset of CompactPCI Central Resource Control capability area or 0 if not present */
+    aoHidd_PCIDevice_CapabilityHotPlugController, /* [..G] Get offset of PCI Standard Hot-Plug Controller capability area or 0 if not present */
+    aoHidd_PCIDevice_CapabilitySSVPID, /* [..G] Get offset of Bridge Subsystem VendorID/ProductID capability area or 0 if not present */
+    aoHidd_PCIDevice_CapabilityAGP3, /* [..G] Get offset of AGP3 capability area or 0 if not present */
+    aoHidd_PCIDevice_CapabilityPCIE, /* [..G] Get offset of PCI Express capability area or 0 if not present */
+    aoHidd_PCIDevice_CapabilityMSIX, /* [..G] Get offset of MSI-X capability area or 0 if not present */
+    aoHidd_PCIDevice_CapabilityAdvancedFeatures, /* [..G] Get offset of PCI Advanced Features capability area or 0 if not present */
+    
     num_Hidd_PCIDevice_Attrs
 };
 
@@ -236,6 +251,24 @@ enum
 #define aHidd_PCIDevice_VGAEnable   (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_VGAEnable)
 #define aHidd_PCIDevice_IRQStatus   (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_IRQStatus)
 #define aHidd_PCIDevice_CapabilitiesPresent (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilitiesPresent)
+
+#define aHidd_PCIDevice_CapabilityPowerManagement (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilityPowerManagement)
+#define aHidd_PCIDevice_CapabilityAGP (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilityAGP)
+#define aHidd_PCIDevice_CapabilityVitalProductData (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilityVitalProductData)
+#define aHidd_PCIDevice_CapabilitySlotID (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilitySlotID)
+#define aHidd_PCIDevice_CapabilityMSI (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilityMSI)
+#define aHidd_PCIDevice_CapabilityCPCIHotSwap (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilityCPCIHotSwap)
+#define aHidd_PCIDevice_CapabilityPCIX (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilityPCIX)
+#define aHidd_PCIDevice_CapabilityHyperTransport (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilityHyperTransport)
+#define aHidd_PCIDevice_CapabilityVendorSpecific (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilityVendorSpecific)
+#define aHidd_PCIDevice_CapabilityDebugPort (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilityDebugPort)
+#define aHidd_PCIDevice_CapabilityCPCICRC (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilityCPCICRC)
+#define aHidd_PCIDevice_CapabilityHotPlugController (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilityHotPlugController)
+#define aHidd_PCIDevice_CapabilitySSVPID (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilitySSVPID)
+#define aHidd_PCIDevice_CapabilityAGP3 (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilityAGP3)
+#define aHidd_PCIDevice_CapabilityPCIE (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilityPCIE)
+#define aHidd_PCIDevice_CapabilityMSIX (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilityMSIX)
+#define aHidd_PCIDevice_CapabilityAdvancedFeatures (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilityAdvancedFeatures)
 
 #define IS_PCIDEV_ATTR(attr, idx) \
     (((idx) = (attr) - HiddPCIDeviceAttrBase) < num_Hidd_PCIDevice_Attrs)
