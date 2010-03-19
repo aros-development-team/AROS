@@ -8,18 +8,11 @@
 
 #define __OOP_NOATTRBASES__
 
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#include <signal.h>
-#include <string.h>
-
 #include <exec/libraries.h>
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
+#include <graphics/displayinfo.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
 #include <proto/kernel.h>
@@ -548,6 +541,26 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	FreeMem(buf, bufsize);
     }
     return cursor ? TRUE : FALSE;
+}
+
+/****************************************************************************************/
+
+/* This is simple - all modes have the same properties */
+static struct HIDD_ModeProperties mode_props = {
+    DIPF_IS_SPRITES,
+    1,
+    COMPF_ABOVE|COMPF_BELOW|COMPF_LEFT|COMPF_RIGHT
+};
+
+ULONG GDICl__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ModeProperties *msg)
+{
+    ULONG len = msg->propsLen;
+
+    if (len > sizeof(mode_props))
+        len = sizeof(mode_props);
+    CopyMem(&mode_props, msg->props, len);
+
+    return len;
 }
 
 /****************************************************************************************/
