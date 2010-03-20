@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2006, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -225,7 +225,7 @@ void PCI__Hidd_PCI__AddHardwareDriver(OOP_Class *cl, OOP_Object *o,
     PCI::EnumDevices(struct Hook *Callback, struct TagItem **requirements)
 
     This method calls the callback hook for every PCI device in the system
-    that mets requirements specified (or every device if tags=NULL). It
+    that meets requirements specified (or every device if tags=NULL). It
     iterates not only through one PCI bus, but instead through all buses
     managed by all drivers present in the system.
 */
@@ -258,7 +258,7 @@ void PCI__Hidd_PCI__EnumDevices(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_E
 	/* ...and for every device handled by this driver */
 	ForeachNode(&dn->devices, dev)
 	{
-	    /* check the requirements with it's properties */
+	    /* check the requirements with its properties */
 	    ok = TRUE;
 	    if (VendorID != 0xffffffff)
 	    {

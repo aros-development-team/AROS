@@ -160,7 +160,7 @@ AROS_UFH3(void, display_function,
 	OOP_GetAttr(obj, aHidd_PCIDevice_Dev, (APTR)&dev);
 	OOP_GetAttr(obj, aHidd_PCIDevice_Sub, (APTR)&sub);
 
-	snprintf(buf, 19, "%02x.%02x.%01x", bus, dev, sub);
+	snprintf(buf, 19, "%02lx.%02lx.%01lx", bus, dev, sub);
 	strings[0] = buf;
     }
 
@@ -215,7 +215,7 @@ AROS_UFH3(void, select_function,
 	strcpy(SaveDeviceInfo.Hardware_info, str); //Save Debug Info
 	OOP_GetAttr(drv, aHidd_PCIDriver_DirectBus, (APTR)&val);
 	set(StrDriverDirect, MUIA_Text_Contents, (IPTR)((val)?_(MSG_YES):_(MSG_NO)));
-	strcpy(SaveDeviceInfo.Direct_bus, (IPTR)((val)?_(MSG_YES):_(MSG_NO))); //Save Debug Info
+	strcpy(SaveDeviceInfo.Direct_bus, (val)?_(MSG_YES):_(MSG_NO)); //Save Debug Info
 	OOP_GetAttr(obj, aHidd_PCIDevice_ClassDesc, (APTR)&class);
 	OOP_GetAttr(obj, aHidd_PCIDevice_SubClassDesc, (APTR)&subclass);
 	OOP_GetAttr(obj, aHidd_PCIDevice_InterfaceDesc, (APTR)&interface);
@@ -223,14 +223,14 @@ AROS_UFH3(void, select_function,
 	set(StrDescription, MUIA_Text_Contents, buf);
 	strcpy(SaveDeviceInfo.Description, buf); //Save Debug Info
 	OOP_GetAttr(obj, aHidd_PCIDevice_VendorID, (APTR)&val);
-	snprintf(buf, 79, "0x%04x", val);
+	snprintf(buf, 79, "0x%04lx", val);
 	set(VendorID, MUIA_Text_Contents, buf);
 	strcpy(SaveDeviceInfo.VendorID, buf);
 	set(VendorName, MUIA_Text_Contents, pciids_GetVendorName(val, buf, 79));
 	vendor = val;
 	strcpy(SaveDeviceInfo.Vendor_name, pciids_GetVendorName(val, buf, 79)); //Save Debug Info
 	OOP_GetAttr(obj, aHidd_PCIDevice_ProductID, (APTR)&val);
-	snprintf(buf, 79, "0x%04x", val);
+	snprintf(buf, 79, "0x%04lx", val);
 	set(ProductID, MUIA_Text_Contents, buf);
 	strcpy(SaveDeviceInfo.ProductID, buf); //Save Debug Info
 	set(ProductName, MUIA_Text_Contents,
@@ -248,22 +248,22 @@ AROS_UFH3(void, select_function,
 	strcpy(SaveDeviceInfo.Subsystem, pciids_GetSubDeviceName(vendor, product, subvendor, subdevice, buf, 79));
  
 	OOP_GetAttr(obj, aHidd_PCIDevice_RevisionID, (APTR)&val);
-	snprintf(buf, 79, "0x%04x", val);
+	snprintf(buf, 79, "0x%04lx", val);
 	set(RevisionID, MUIA_Text_Contents, buf);
 	strcpy(SaveDeviceInfo.RevisionID, buf); //Save Debug Info
 
 	OOP_GetAttr(obj, aHidd_PCIDevice_Interface, (APTR)&val);
-	snprintf(buf, 79, "0x%02x", val);
+	snprintf(buf, 79, "0x%02lx", val);
 	set(Interface, MUIA_Text_Contents, buf);
 	strcpy(SaveDeviceInfo.Interface, buf); //Save Debug Info
 
 	OOP_GetAttr(obj, aHidd_PCIDevice_Class, (APTR)&val);
-	snprintf(buf, 79, "0x%02x", val);
+	snprintf(buf, 79, "0x%02lx", val);
 	set(_Class, MUIA_Text_Contents, buf);
 	strcpy(SaveDeviceInfo.Class, buf); //Save Debug Info
 
 	OOP_GetAttr(obj, aHidd_PCIDevice_SubClass, (APTR)&val);
-	snprintf(buf, 79, "0x%02x", val);
+	snprintf(buf, 79, "0x%02lx", val);
 	set(SubClass, MUIA_Text_Contents, buf);
 	strcpy(SaveDeviceInfo.Subclass, buf); //Save Debug Info
 
@@ -271,7 +271,7 @@ AROS_UFH3(void, select_function,
 	OOP_GetAttr(obj, aHidd_PCIDevice_INTLine, (APTR)&val2);
 	if (val)
 	{
-	    snprintf(buf, 79, "%d (%c)", val2, val + 'A' - 1);
+	    snprintf(buf, 79, "%ld (%lc)", val2, val + 'A' - 1);
 	}
 	else snprintf(buf, 79, _(MSG_NA));
 	set(IRQLine, MUIA_Text_Contents, buf);
@@ -279,14 +279,14 @@ AROS_UFH3(void, select_function,
 
 	OOP_GetAttr(obj, aHidd_PCIDevice_RomBase, (APTR)&val);
 	OOP_GetAttr(obj, aHidd_PCIDevice_RomSize, (APTR)&val2);
-	snprintf(buf, 79, "0x%08x", val2);
+	snprintf(buf, 79, "0x%08lx", val2);
 	if (val2)
 	{
 	    set(ROMSize, MUIA_Text_Contents, buf);
 	    strcpy(SaveDeviceInfo.ROM_Size, buf); //Save Debug Info
 	    if (val)
 	    {
-		snprintf(buf, 79, "0x%08x", val);
+		snprintf(buf, 79, "0x%08lx", val);
 		set(ROMBase, MUIA_Text_Contents, buf);
 		strcpy(SaveDeviceInfo.ROM_Base, buf); //Save Debug Info
 	    }

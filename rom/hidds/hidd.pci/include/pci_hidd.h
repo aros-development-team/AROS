@@ -154,7 +154,7 @@ enum
 
     aoHidd_PCIDevice_ClassDesc,	    /* [..G] String description of device Class */
     aoHidd_PCIDevice_SubClassDesc,  /* [..G] String description of device SubClass */
-    aoHidd_PCIDevice_InterfaceDesc, /* [..G] String description of defice Interface */
+    aoHidd_PCIDevice_InterfaceDesc, /* [..G] String description of device Interface */
 
     aoHidd_PCIDevice_isBridge,	/* [..G] Is the device a PCI-PCI bridge? */
     aoHidd_PCIDevice_SubBus,	/* [..G] Bus number managed by bridge */
