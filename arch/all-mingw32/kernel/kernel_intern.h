@@ -20,7 +20,7 @@
    
    IRQs are used to receive events from emulated hardware. Hardware is mostly
    emulated using Windows threads running asynchronously to AROS. When the
-   thread finishes its job it calls host-size KrnCauseIRQ() function in order
+   thread finishes its job it calls host-side KrnCauseIRQ() function in order
    to initiate an IRQ in AROS.
    
    Currently number of IRQs are fixed and they are used as following:

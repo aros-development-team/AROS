@@ -203,7 +203,7 @@ OOP_Object *METHOD(ATI, Hidd_Gfx, NewBitMap)
                     OOP_GetAttr(friend, aHidd_BitMap_ClassPtr, (APTR)&friend_class);
                     if (friend_class == sd->OnBMClass)
                     {
-                        /* Friend was NVidia hidd bitmap. Now we can supply our own class */
+                        /* Friend was ATI hidd bitmap. Now we can supply our own class */
                         classptr = sd->OffBMClass;
                     }
                 }
@@ -239,13 +239,13 @@ void METHOD(ATI, Hidd_Gfx, CopyBox)
     ULONG mode = GC_DRMD(msg->gc);
     IPTR src=0, dst=0;
 
-    /* Check whether we can get Drawable attribute of our nVidia class */
+    /* Check whether we can get Drawable attribute of our ATI class */
     OOP_GetAttr(msg->src,   aHidd_ATIBitMap_Drawable,   &src);
     OOP_GetAttr(msg->dest,  aHidd_ATIBitMap_Drawable,   &dst);
 
     if (!dst || !src)
     {
-        /* No. One of the bitmaps is not nVidia bitmap */
+        /* No. One of the bitmaps is not an ATI bitmap */
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
     else

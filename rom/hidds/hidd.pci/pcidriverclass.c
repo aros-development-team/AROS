@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Base PCI driver class
@@ -254,7 +254,7 @@ VOID PCIDrv__Hidd_PCIDriver__UnmapPCI(OOP_Class *cl, OOP_Object *o,
 }
 
 /*
-    PCIDriver::AllocPCIMemory(Size) allocates memory region available for
+    PCIDriver::AllocPCIMem(Size) allocates memory region available for
     PCI BusMaster devices.
 */
 APTR PCIDrv__Hidd_PCIDriver__AllocPCIMem(OOP_Class *cl, OOP_Object *o,
