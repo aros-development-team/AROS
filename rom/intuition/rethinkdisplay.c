@@ -73,23 +73,17 @@
     else
     {
         /* Find visible screens */
-
         DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: Find visible screens\n"));
 
         screen->ViewPort.Modes |= SPRITES;
 
         screen->ViewPort.Modes &= ~VP_HIDE;
 
-/* This portion is left for reference, it was here originally. Its intention is to
-   prevent other screens except frontmose one from becoming visible. I commented it
-   out in order to let Intuition to build a complete list of ViewPorts. In future
-   this can aid in implementing screen dragging.
-						Pavel Fedin <pavel_fedin@mail.ru>
-        while ((screen = screen->NextScreen))
-        {
-            screen->ViewPort.Modes |= VP_HIDE;
+	if (!(GetPrivScreen(screen)->SpecialFlags & SF_Compose)) {
+            while ((screen = screen->NextScreen))
+                screen->ViewPort.Modes |= VP_HIDE;
         }
-*/
+
         /* Build the list of viewports in the view */
 	DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: Building viewports list\n"));
         viewportptr = &IntuitionBase->ViewLord.ViewPort;
