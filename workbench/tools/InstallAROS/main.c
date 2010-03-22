@@ -2324,44 +2324,44 @@ IPTR Install__MUIM_Format
 {
 	struct Install_DATA *data    = INST_DATA(CLASS, self);
 	char			dev_nametmp[100];
-	char			vol_nametmp[100];
+	char			vol_nametmp[100] = SYS_VOL_NAME;
 	char			fmt_nametmp[100];
 	BOOL			success = FALSE;
 	IPTR 			option = FALSE;
 	BPTR			lock = NULL;
 	char tmp[100];
 
-	sprintf(fmt_nametmp,"Formatting '%s'...",dest_Path);
-	D(bug("[INSTALLER] %s\n",fmt_nametmp));
-	SET(data->label, MUIA_Text_Contents, fmt_nametmp);
-	SET(data->gauge2, MUIA_Gauge_Current, 0);
-
-	/* Change volume name if installing to a USB drive */
-	GET(grub_device, MUIA_String_Contents, &option);
-	if (strcmp((char *)option, "usbscsi.device") == 0)
-		strcpy(vol_nametmp, USB_VOL_NAME);
-
-	/* Format Vol0 */
-	sprintf(dev_nametmp,"%s:",dest_Path);
-
 	if ((BOOL)XGET(check_formatsys,MUIA_Selected))
 	{
-        /* XXX HACK
-         * If partition is FFS -> it will format it for FFS
-         * If partition is SFS -> it will format it for SFS
-         * Correct way of doing things: read type for DH0 and DH1, apply correct
-         * type when formatting
-         */
-    	D(bug("[INSTALLER] (info) Using FormatPartition\n"));
-    	success = FormatPartition(dev_nametmp, vol_nametmp, ID_INTER_FFS_DISK);
+            /* Format Vol0 */
+            sprintf(fmt_nametmp,"Formatting '%s'...",dest_Path);
+            D(bug("[INSTALLER] %s\n",fmt_nametmp));
+            SET(data->label, MUIA_Text_Contents, fmt_nametmp);
+            SET(data->gauge2, MUIA_Gauge_Current, 0);
 
-    	if (success) set(data->gauge2, MUIA_Gauge_Current, 100);
+            /* Change volume name if installing to a USB drive */
+            GET(grub_device, MUIA_String_Contents, &option);
+            if (strcmp((char *)option, "usbscsi.device") == 0)
+                    strcpy(vol_nametmp, USB_VOL_NAME);
+
+            sprintf(dev_nametmp,"%s:",dest_Path);
+
+            /* XXX HACK
+            * If partition is FFS -> it will format it for FFS
+            * If partition is SFS -> it will format it for SFS
+            * Correct way of doing things: read type for DH0 and DH1, apply correct
+            * type when formatting
+            */
+            D(bug("[INSTALLER] (info) Using FormatPartition\n"));
+            success = FormatPartition(dev_nametmp, vol_nametmp, ID_INTER_FFS_DISK);
+
+            if (success) set(data->gauge2, MUIA_Gauge_Current, 100);
 	}
 
 	GET(check_work, MUIA_Selected, &option);
 	if (option && XGET(check_formatwork,MUIA_Selected))
 	{
-		/* Format Vol1, if it's not already formated */
+		/* Format Vol1 */
 		sprintf(fmt_nametmp,"Formatting '%s'...",work_Path);
 		D(bug("[INSTALLER] %s\n",fmt_nametmp));
 		SET(data->label, MUIA_Text_Contents, fmt_nametmp);
