@@ -695,6 +695,7 @@ struct IntScreen
 
 #define SF_VertCompose (SF_ComposeAbove|SF_ComposeBelow)
 #define SF_HorCompose  (SF_ComposeLeft |SF_ComposeRight)
+#define SF_Compose     (SF_ComposeAbove|SF_ComposeBelow|SF_ComposeLeft|SF_ComposeRight)
 
 struct IntIntuiMessage
 {
