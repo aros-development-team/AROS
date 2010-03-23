@@ -48,6 +48,18 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    
+    struct ViewPortExtra *vpe;
+
+    /* Attach a temporary ViewPortExtra if needed */
+    vpe = GfxLookUp(viewport);
+    if (!vpe) {
+        vpe = GfxNew(VIEWPORT_EXTRA_TYPE);
+	if (!vpe)
+	    return MVP_NO_VPE;
+	vpe->Flags = VPXF_FREE_ME;
+	GfxAssociate(viewport, vpe);
+    }
 
     /* Use ScrollVPort() in order to validate offsets */
     ScrollVPort(viewport);

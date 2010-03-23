@@ -146,6 +146,8 @@ struct shared_driverdata
     
     /* The frontmost screen's bitmap */
     struct BitMap   	     *frontbm;
+    /* List of displayed ViewPortExtras */
+    struct MinList           vpe_list;
 
     /* Does the gfx hidd support hardware pointers ? */    
     BOOL    	    	     has_hw_cursor;
@@ -169,6 +171,8 @@ struct shared_driverdata
 #define __IHidd_Gfx         SDD(GfxBase)->hiddGfxAttrBase
 #define __IHidd_FakeGfxHidd SDD(GfxBase)->hiddFakeGfxHiddAttrBase
 
+#define VPE_NODE(vpe) ((struct Node *)vpe->DriverData)
+#define VPE_ADDR(node) ((struct ViewPortExtra *)(((char *)node) - offsetof(struct ViewPortExtra, DriverData))
 
 #define DRIVERDATALIST_HASHSIZE 256
 

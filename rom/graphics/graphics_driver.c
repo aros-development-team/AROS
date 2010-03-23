@@ -7,7 +7,7 @@
 */
 
 
-
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/layers.h>
@@ -559,6 +559,7 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 			    SDD(GfxBase)->framebuffer = create_framebuffer(GfxBase);
 			if (noframebuffer || SDD(GfxBase)->framebuffer) {
 			    D(bug("FRAMEBUFFER OK: %p\n", SDD(GfxBase)->framebuffer));
+			    NewList(&SDD(GfxBase)->vpe_list);
 		            ReturnBool("driver_LateGfxInit", TRUE);
 			}
 			if (SDD(GfxBase)->framebuffer)
