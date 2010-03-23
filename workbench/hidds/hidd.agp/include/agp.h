@@ -58,7 +58,8 @@ extern OOP_AttrBase HiddAGPBridgeDeviceAttrBase;
 
 enum
 {
-    moHidd_AGPBridgeDevice_Enable = 0,
+    moHidd_AGPBridgeDevice_Initialize = 0,    
+    moHidd_AGPBridgeDevice_Enable,
 
     NUM_AGPBRIDGEDEVICE_METHODS
 };
@@ -78,5 +79,15 @@ enum
 
 #define IS_AGPBRIDGEDEV_ATTR(attr, idx) \
     (((idx) = (attr) - HiddAGPBridgeDeviceAttrBase) < num_Hidd_AGPBridgeDevice_Attrs)
+
+struct pHidd_AGPBridgeDevice_Initialize
+{
+    OOP_MethodID    mID;
+};
+
+struct pHidd_AGPBridgeDevice_Enable
+{
+    OOP_MethodID    mID;
+};
 
 #endif
