@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function FreeVPortCopLists()
@@ -49,6 +49,7 @@
 *****************************************************************************/
 {
   AROS_LIBFUNC_INIT
+  struct ViewPortExtra *vpe;
 
   if (NULL != vp->DspIns)
   {
@@ -77,6 +78,9 @@
     vp->UCopIns = NULL;
   }
 
+  vpe = GfxLookUp(vp);
+  if (vpe && (vpe->Flags & VPXF_FREE_ME))
+     GfxFree(vpe);
 
   AROS_LIBFUNC_EXIT
 } /* FreeVPortCopLists */
