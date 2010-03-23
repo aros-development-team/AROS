@@ -6,6 +6,8 @@
     $Id$
 */
 
+#include <exec/lists.h>
+#include <hidd/agp.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -17,10 +19,14 @@ struct agpstaticdata
 {
     OOP_Class       *AGPClass;
     OOP_Class       *genericBridgeDeviceClass;
+    OOP_Class       *agp3BridgeDeviceClass;
+    OOP_Class       *sisAgp3BridgeDeviceClass;
     
     OOP_AttrBase    hiddAGPBridgeDeviceAB;
+    OOP_AttrBase    hiddPCIDeviceAB;
 
     OOP_Object      *bridgedevice;
+    OOP_Object      *pcibus;
 };
 
 LIBBASETYPE 
@@ -36,11 +42,108 @@ LIBBASETYPE
 
 #define SD(cl) (&BASE(cl->UserData)->sd)
 
+/* Non-public methods of AGPBridgeDevice interface*/
+enum
+{
+    moHidd_AGPBridgeDevice_ScanAndDetectDevices = NUM_AGPBRIDGEDEVICE_METHODS,
+    moHidd_AGPBridgeDevice_CreateGattTable,
+};
+
+struct pHidd_AGPBridgeDevice_ScanAndDetectDevices
+{
+    OOP_MethodID    mID;
+};
+
+struct pHidd_AGPBridgeDevice_CreateGattTable
+{
+    OOP_MethodID    mID;
+};
+
+
 /* This is an abstract class. Contains usefull code but is not functional */
 #define CLID_Hidd_GenericBridgeDevice   "hidd.agp.genericbridgedevice"
 
+struct PciAgpDevice
+{
+    struct Node node;
+    OOP_Object  *PciDevice;
+    UBYTE       AgpCapability;          /* Offset to AGP capability in config */
+    UWORD       VendorID;
+    UWORD       ProductID;
+    UBYTE       Class;
+};
+
 struct HIDDGenericBridgeDeviceData
 {
+    struct List         devices;        /* Bridges and AGP devices in system */
+
+    /* Bridge data */  
+    struct PciAgpDevice *bridge;        /* Selected AGP bridge */
+    ULONG               bridgemode;     /* Mode of AGP bridge */
+    IPTR                bridgeaperbase; /* Base address for aperture */
+    IPTR                bridgeapersize; /* Size of aperture */
+    APTR                gatttablebuffer;/* Buffer for gatt table */
+    ULONG               *gatttable;     /* 4096 aligned gatt table */
+    APTR                scratchmembuffer;/* Buffer for scratch mem */
+    ULONG               *scratchmem;    /* 4096 aligned scratch mem */
+
+
+    /* Video card data */
+    struct PciAgpDevice *videocard;     /* Selected AGP card */
 };
+
+/* This is an abstract class. Contains usefull code but is not functional */
+#define CLID_Hidd_Agp3BridgeDevice   "hidd.agp.agp3bridgedevice"
+
+struct HIDDAgp3BridgeDeviceData
+{
+};
+
+/* Supports SiS chipsets compatible with AGP3 */
+#define CLID_Hidd_SiSAgp3BridgeDevice   "hidd.agp.sisagp3bridgedevice"
+
+struct HIDDSiSAgp3BridgeDeviceData
+{
+};
+
+/* Registers defines */
+#define AGP_APER_BASE                   0x10                /* BAR0 */
+#define AGP_VERSION_REG                 0x02
+#define AGP_STATUS_REG                  0x04
+#define AGP_STATUS_REG_AGP_3_0          (1<<3)
+#define AGP_STATUS_REG_FAST_WRITES      (1<<4)
+#define AGP_STATUS_REG_AGP_ENABLED      (1<<8)
+#define AGP_STATUS_REG_SBA              (1<<9)
+#define AGP_STATUS_REG_CAL_MASK         (1<<12|1<<11|1<<10)
+#define AGP_STATUS_REG_ARQSZ_MASK       (1<<15|1<<14|1<<13)
+#define AGP_STATUS_REG_RQ_DEPTH_MASK    0xff000000
+#define AGP_STATUS_REG_AGP2_X1          (1<<0)
+#define AGP_STATUS_REG_AGP2_X2          (1<<1)
+#define AGP_STATUS_REG_AGP2_X4          (1<<2)
+#define AGP_STATUS_REG_AGP3_X4          (1<<0)
+#define AGP_STATUS_REG_AGP3_X8          (1<<1)
+#define AGP_COMMAND_REG                 0x08
+#define AGP_CTRL_REG                    0x10
+#define AGP_CTRL_REG_GTBLEN             (1<<7)
+#define AGP_CTRL_REG_APEREN             (1<<8)
+#define AGP_APER_SIZE_REG               0x14
+#define AGP_GATT_CTRL_LO_REG            0x18
+
+#define AGP2_RESERVED_MASK              0x00fffcc8
+#define AGP3_RESERVED_MASK              0x00ff00c4
+
+
+#define ALIGN(val, align)               (val + align - 1) & (~(align - 1))
+
+#define writel(val, addr)               (*(volatile ULONG*)(addr) = (val))
+#define readl(addr)                     (*(volatile ULONG*)(addr))
+
+/* Config area access */
+UBYTE readconfigbyte(OOP_Object * pciDevice, UBYTE where);
+UWORD readconfigword(OOP_Object * pciDevice, UBYTE where);
+ULONG readconfiglong(OOP_Object * pciDevice, UBYTE where);
+VOID writeconfigbyte(OOP_Object * pciDevice, UBYTE where, UBYTE val);
+VOID writeconfigword(OOP_Object * pciDevice, UBYTE where, UWORD val);
+VOID writeconfiglong(OOP_Object * pciDevice, UBYTE where, ULONG val);
 
 #endif

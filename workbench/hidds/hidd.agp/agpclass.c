@@ -23,9 +23,20 @@ OOP_Object * METHOD(AGP, Hidd_AGP, GetBridgeDevice)
     /* Find bridge device matching hardware */
     if (!SD(cl)->bridgedevice)
     {
-        /* TEMP!!!! */
-        SD(cl)->bridgedevice = OOP_NewObject(NULL, CLID_Hidd_GenericBridgeDevice, NULL);
-        /* TODO: Implement */
+        struct pHidd_AGPBridgeDevice_Initialize imsg = {
+        mID : OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_Initialize)
+        };
+        
+        OOP_Object * bridgedevice;
+        /* TODO: Implement iteration over known classes and selection of device */
+
+        bridgedevice = OOP_NewObject(NULL, CLID_Hidd_SiSAgp3BridgeDevice, NULL);
+        
+        if ((BOOL)OOP_DoMethod(bridgedevice, (OOP_Msg)&imsg))
+            SD(cl)->bridgedevice = bridgedevice;
+        else
+            OOP_DisposeObject(bridgedevice);
+
     }
 
     return SD(cl)->bridgedevice;
