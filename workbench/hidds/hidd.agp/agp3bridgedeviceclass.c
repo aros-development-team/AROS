@@ -14,6 +14,21 @@
 #undef HiddAGPBridgeDeviceAttrBase
 #define HiddAGPBridgeDeviceAttrBase (SD(cl)->hiddAGPBridgeDeviceAB)
 
+/* NON-PUBLIC METHODS */
+VOID METHOD(Agp3BridgeDevice, Hidd_AGPBridgeDevice, FlushGattTable)
+{
+    struct HIDDGenericBridgeDeviceData * gbddata =
+        OOP_INST_DATA(SD(cl)->genericBridgeDeviceClass, o);
+
+    OOP_Object * bridgedev = gbddata->bridge->PciDevice;
+    UBYTE bridgeagpcap = gbddata->bridge->AgpCapability;
+    ULONG ctrlreg;
+    ctrlreg = readconfiglong(bridgedev, bridgeagpcap + AGP_CTRL_REG);
+    writeconfiglong(bridgedev, bridgeagpcap + AGP_CTRL_REG, ctrlreg & ~AGP_CTRL_REG_GTBLEN);
+    writeconfiglong(bridgedev, bridgeagpcap + AGP_CTRL_REG, ctrlreg);
+}
+
+/* PUBLIC METHODS */
 OOP_Object * METHOD(Agp3BridgeDevice, Root, New)
 {
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
