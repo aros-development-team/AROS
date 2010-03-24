@@ -21,11 +21,6 @@ OOP_Object * METHOD(Agp3BridgeDevice, Root, New)
     return o;
 }
 
-BOOL METHOD(Agp3BridgeDevice, Hidd_AGPBridgeDevice, Enable)
-{
-    return TRUE;
-}
-
 BOOL METHOD(Agp3BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
 {
     struct HIDDGenericBridgeDeviceData * gbddata =

@@ -21,11 +21,6 @@ OOP_Object * METHOD(SiSAgp3BridgeDevice, Root, New)
     return o;
 }
 
-BOOL METHOD(SiSAgp3BridgeDevice, Hidd_AGPBridgeDevice, Enable)
-{
-    return TRUE;
-}
-
 BOOL METHOD(SiSAgp3BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
 {
     struct HIDDGenericBridgeDeviceData * gbddata =
@@ -65,5 +60,11 @@ BOOL METHOD(SiSAgp3BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
     D(bug("[AGP] [SiS] Reading mode: 0x%x\n", gbddata->bridgemode));
 
     /* Execute standard AGP3 initialize */
-    return OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
+    if (OOP_DoSuperMethod(cl, o, (OOP_Msg) msg))
+    {
+        gbddata->state = STATE_INITIALIZED;
+        return TRUE;
+    }
+    else
+        return FALSE;
 }
