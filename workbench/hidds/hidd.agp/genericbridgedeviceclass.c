@@ -613,6 +613,11 @@ VOID METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, UnBindMemory)
     ReleaseSemaphore(&gbddata->lock);
 }
 
+VOID METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, FlushChipset)
+{
+    /* This function is a NOOP */
+}
+
 BOOL METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, Initialize)
 {
     bug("[GenericBridgeDevice] abstract Initialize method called\n");

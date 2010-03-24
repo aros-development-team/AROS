@@ -62,6 +62,7 @@ enum
     moHidd_AGPBridgeDevice_Enable,
     moHidd_AGPBridgeDevice_BindMemory,
     moHidd_AGPBridgeDevice_UnBindMemory,
+    moHidd_AGPBridgeDevice_FlushChipset,
 
     NUM_AGPBRIDGEDEVICE_METHODS
 };
@@ -107,6 +108,11 @@ struct pHidd_AGPBridgeDevice_UnBindMemory
     OOP_MethodID    mID;
     ULONG           offset;
     ULONG           size;
+};
+
+struct pHidd_AGPBridgeDevice_FlushChipset
+{
+    OOP_MethodID    mID;
 };
 
 #endif
