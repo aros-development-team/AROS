@@ -8,6 +8,7 @@
 
 #include <exec/lists.h>
 #include <hidd/agp.h>
+#include <exec/semaphores.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -75,6 +76,7 @@ struct PciAgpDevice
 
 struct HIDDGenericBridgeDeviceData
 {
+    struct SignalSemaphore driverlock;  /* Lock for driver operations */
     struct List         devices;        /* Bridges and AGP devices in system */
 
     /* Bridge data */  
@@ -87,10 +89,15 @@ struct HIDDGenericBridgeDeviceData
     APTR                scratchmembuffer;/* Buffer for scratch mem */
     ULONG               *scratchmem;    /* 4096 aligned scratch mem */
 
+    ULONG               state;          /* State of the device */
 
     /* Video card data */
     struct PciAgpDevice *videocard;     /* Selected AGP card */
 };
+
+#define STATE_UNKNOWN       0x00
+#define STATE_INITIALIZED   0x01
+#define STATE_ENABLED       0x02
 
 /* This is an abstract class. Contains usefull code but is not functional */
 #define CLID_Hidd_Agp3BridgeDevice   "hidd.agp.agp3bridgedevice"
@@ -137,6 +144,8 @@ struct HIDDSiSAgp3BridgeDeviceData
 
 #define writel(val, addr)               (*(volatile ULONG*)(addr) = (val))
 #define readl(addr)                     (*(volatile ULONG*)(addr))
+#define min(a,b)                        ((a) < (b) ? (a) : (b))
+#define max(a,b)                        ((a) > (b) ? (a) : (b))
 
 /* Config area access */
 UBYTE readconfigbyte(OOP_Object * pciDevice, UBYTE where);

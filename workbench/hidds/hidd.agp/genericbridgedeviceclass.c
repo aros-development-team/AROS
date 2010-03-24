@@ -7,6 +7,7 @@
 #include <hidd/pci.h>
 #include <proto/oop.h>
 #include <proto/exec.h>
+#include <proto/dos.h> /* FIXME: Remove after removing Delay() */
 #define DEBUG 1
 #include <aros/debug.h>
 
@@ -139,6 +140,165 @@ AROS_UFH3(void, HiddAgpPciDevicesEnumerator,
     AROS_USERFUNC_EXIT
 }
 
+static ULONG HiddAgpGenericAgp3CalibrateModes(ULONG requestedmode, ULONG bridgemode, ULONG vgamode)
+{
+    ULONG calibratedmode = bridgemode;
+    ULONG temp = 0;
+    
+    /* Apply reserved mask to requestedmode */
+    requestedmode &= ~AGP3_RESERVED_MASK;
+    
+    /* Select a speed for requested mode */
+    temp = requestedmode & 0x07;
+    requestedmode &= ~0x07; /* Clear any speed */
+    if (temp & AGP_STATUS_REG_AGP3_X8)
+        requestedmode |= AGP_STATUS_REG_AGP3_X8;
+    else
+        requestedmode |= AGP_STATUS_REG_AGP3_X4;
+    
+    /* Set ARQSZ as max value. Ignore requestedmode */
+    calibratedmode = ((calibratedmode & ~AGP_STATUS_REG_ARQSZ_MASK) |
+        max(calibratedmode & AGP_STATUS_REG_ARQSZ_MASK, vgamode & AGP_STATUS_REG_ARQSZ_MASK));
+    
+    /* Set calibration cycle. Ignore requestedmode */
+    calibratedmode = ((calibratedmode & ~AGP_STATUS_REG_CAL_MASK) |
+        min(calibratedmode & AGP_STATUS_REG_CAL_MASK, vgamode & AGP_STATUS_REG_CAL_MASK));
+    
+    /* Set SBA for AGP3 (always) */
+    calibratedmode |= AGP_STATUS_REG_SBA;
+    
+    /* Select speed based on request and capabilities of bridge and vgacard */
+    calibratedmode &= ~0x07; /* Clear any mode */
+    if ((requestedmode & AGP_STATUS_REG_AGP3_X8) &&
+        (bridgemode & AGP_STATUS_REG_AGP3_X8) &&
+        (vgamode & AGP_STATUS_REG_AGP3_X8))
+        calibratedmode |= AGP_STATUS_REG_AGP3_X8;
+    else
+        calibratedmode |= AGP_STATUS_REG_AGP3_X4;
+
+    return calibratedmode;
+}
+
+static ULONG HiddAgpGenericAgp2CalibrateModes(ULONG requestedmode, ULONG bridgemode, ULONG vgamode)
+{
+    ULONG calibratedmode = bridgemode;
+    ULONG temp = 0;
+
+    /* Apply reserved mask to requestedmode */
+    requestedmode &= ~AGP2_RESERVED_MASK;
+    
+    /* Fix for some bridges reporting only one speed instead of all */
+    if (bridgemode & AGP_STATUS_REG_AGP2_X4)
+        bridgemode |= (AGP_STATUS_REG_AGP2_X2 | AGP_STATUS_REG_AGP2_X1);
+    if (bridgemode & AGP_STATUS_REG_AGP2_X2)
+        bridgemode |= AGP_STATUS_REG_AGP2_X1;
+
+    /* Select speed for requested mode */
+    temp = requestedmode & 0x07;
+    requestedmode &= ~0x07; /* Clear any speed */
+    if (temp & AGP_STATUS_REG_AGP2_X4)
+        requestedmode |= AGP_STATUS_REG_AGP2_X4;
+    else 
+    {
+        if (temp & AGP_STATUS_REG_AGP2_X2)
+            requestedmode |= AGP_STATUS_REG_AGP2_X2;
+        else
+            requestedmode |= AGP_STATUS_REG_AGP2_X1;
+    }
+    
+    /* Disable SBA if not supported/requested */
+    if (!((bridgemode & AGP_STATUS_REG_SBA) && (requestedmode & AGP_STATUS_REG_SBA)
+            && (vgamode & AGP_STATUS_REG_SBA)))
+        calibratedmode &= ~AGP_STATUS_REG_SBA;
+
+    /* Select speed based on request and capabilities of bridge and vgacard */
+    calibratedmode &= ~0x07; /* Clear any mode */
+    if ((requestedmode & AGP_STATUS_REG_AGP2_X4) &&
+        (bridgemode & AGP_STATUS_REG_AGP2_X4) &&
+        (vgamode & AGP_STATUS_REG_AGP2_X4))
+        calibratedmode |= AGP_STATUS_REG_AGP2_X4;
+    else
+    {
+        if ((requestedmode & AGP_STATUS_REG_AGP2_X2) &&
+            (bridgemode & AGP_STATUS_REG_AGP2_X2) &&
+            (vgamode & AGP_STATUS_REG_AGP2_X2))
+            calibratedmode |= AGP_STATUS_REG_AGP2_X2;
+        else
+            calibratedmode |= AGP_STATUS_REG_AGP2_X1;
+    }
+
+    /* Disable fast writed if in X1 mode */
+    if (calibratedmode & AGP_STATUS_REG_AGP2_X1)
+        calibratedmode &= ~AGP_STATUS_REG_FAST_WRITES;
+    
+    return calibratedmode;
+}
+
+static ULONG HiddAgpGenericSelectBestMode(struct HIDDGenericBridgeDeviceData * gbddata, ULONG requestedmode, ULONG bridgemode)
+{
+    OOP_Object * videodev = gbddata->videocard->PciDevice;
+    UBYTE videoagpcap = gbddata->videocard->AgpCapability;    
+    ULONG vgamode = 0;
+
+    /* Get VGA card capability */
+    vgamode = readconfiglong(videodev, videoagpcap + AGP_STATUS_REG);
+    
+    D(bug("[AGP]     VGA mode 0x%x\n", vgamode));
+    
+    /* Set Request Queue */
+    bridgemode = ((bridgemode & ~AGP_STATUS_REG_RQ_DEPTH_MASK) |
+        min(requestedmode & AGP_STATUS_REG_RQ_DEPTH_MASK,
+        min(bridgemode & AGP_STATUS_REG_RQ_DEPTH_MASK, vgamode & AGP_STATUS_REG_RQ_DEPTH_MASK)));
+    
+    /* Fast Writes */
+    if (!(
+        (bridgemode & AGP_STATUS_REG_FAST_WRITES) &&
+        (requestedmode & AGP_STATUS_REG_FAST_WRITES) &&
+        (vgamode & AGP_STATUS_REG_FAST_WRITES)))
+    {
+        bridgemode &= ~AGP_STATUS_REG_FAST_WRITES;
+    }
+        
+    if (gbddata->bridgemode & AGP_STATUS_REG_AGP_3_0)
+    {
+        bridgemode = HiddAgpGenericAgp3CalibrateModes(requestedmode, bridgemode, vgamode);
+    }
+    else
+    {
+        bridgemode = HiddAgpGenericAgp2CalibrateModes(requestedmode, bridgemode, vgamode);
+    }
+    
+    return bridgemode;
+}
+
+static VOID HiddAgpGenericSendCommand(struct HIDDGenericBridgeDeviceData * gbddata, ULONG status)
+{
+    struct PciAgpDevice * pciagpdev = NULL;
+
+    /* Send command to all AGP capable devices */
+    ForeachNode(&gbddata->devices, pciagpdev)
+    {
+        if(pciagpdev->AgpCapability)
+        {
+            ULONG mode = status;
+            
+            mode &= 0x7;
+            if (status & AGP_STATUS_REG_AGP_3_0)
+                mode *= 4;
+            
+            D(bug("[AGP] Set AGP%d device 0x%x/0x%x to speed %dx\n", 
+                (status & AGP_STATUS_REG_AGP_3_0) ? 3 : 2, 
+                pciagpdev->VendorID, pciagpdev->ProductID, mode));
+            
+            writeconfiglong(pciagpdev->PciDevice, pciagpdev->AgpCapability + AGP_COMMAND_REG, status);
+
+            /* FIXME: Change this to timer.device interaction. DOS may not be up when agp.hidd is used */
+            /* Keep this delay here. Some bridges need it. */
+            Delay(10);
+        }
+    }
+}
+
 /* NON-PUBLIC METHODS */
 BOOL METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, ScanAndDetectDevices)
 {
@@ -244,6 +404,8 @@ OOP_Object * METHOD(GenericBridgeDevice, Root, New)
         gbddata->scratchmembuffer = NULL;
         gbddata->videocard = NULL;
         NEWLIST(&gbddata->devices);
+        gbddata->state = STATE_UNKNOWN;
+        InitSemaphore(&gbddata->driverlock);
     }
 
     return o;
@@ -306,6 +468,61 @@ VOID METHOD(GenericBridgeDevice, Root, Get)
 
 BOOL METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, Enable)
 {
+    struct HIDDGenericBridgeDeviceData * gbddata = OOP_INST_DATA(cl, o);
+
+    ObtainSemaphore(&gbddata->driverlock);
+    
+    if (gbddata->state != STATE_INITIALIZED)
+    {
+        ReleaseSemaphore(&gbddata->driverlock);
+        return FALSE;
+    }
+    
+    OOP_Object * bridgedev = gbddata->bridge->PciDevice;
+    UBYTE bridgeagpcap = gbddata->bridge->AgpCapability;
+    ULONG requestedmode = msg->requestedmode;
+    ULONG bridgemode = 0;
+    ULONG major = 0;
+    
+    
+    D(bug("[AGP] Enable AGP:\n"));
+    D(bug("[AGP]     Requested mode 0x%x\n", requestedmode));
+    
+    bridgemode = readconfiglong(bridgedev, bridgeagpcap + AGP_STATUS_REG);
+    D(bug("[AGP]     Bridge mode 0x%x\n", requestedmode));
+    
+    bridgemode = HiddAgpGenericSelectBestMode(gbddata, requestedmode, bridgemode);
+    
+    bridgemode |= AGP_STATUS_REG_AGP_ENABLED;
+    
+    major = (readconfigbyte(bridgedev, bridgeagpcap + AGP_VERSION_REG) >> 4) & 0xf;
+
+    if (major >= 3)
+    {
+        /* Bridge supports version 3 or greater) */
+        if (gbddata->bridgemode & AGP_STATUS_REG_AGP_3_0)
+        {
+            /* Bridge is operating in mode 3.0 */
+        }
+        else
+        {
+            /* Bridge is operating in legacy mode */
+            /* Disable calibration cycle */
+            ULONG temp = 0;
+            bridgemode &= ~(7 << 10);
+            temp = readconfiglong(bridgedev, bridgeagpcap + AGP_CTRL_REG);
+            temp |= (1 << 9);
+            writeconfiglong(bridgedev, bridgeagpcap + AGP_CTRL_REG, temp);           
+        }
+    }
+
+    D(bug("[AGP] Mode to write: 0x%x\n", bridgemode));
+    
+    HiddAgpGenericSendCommand(gbddata, bridgemode);
+    gbddata->state = STATE_ENABLED;
+    
+    ReleaseSemaphore(&gbddata->driverlock);
+    
     return TRUE;
 }
 

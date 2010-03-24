@@ -88,6 +88,7 @@ struct pHidd_AGPBridgeDevice_Initialize
 struct pHidd_AGPBridgeDevice_Enable
 {
     OOP_MethodID    mID;
+    ULONG           requestedmode;
 };
 
 #endif
