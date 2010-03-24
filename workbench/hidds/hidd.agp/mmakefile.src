@@ -27,5 +27,8 @@ USER_CFLAGS := $(FFIXED)
 
 %build_module mmake=hidd-agp modname=agp modtype=hidd \
     files="$(FILES)" uselibs="oop rom"
-    
+
+%build_archspecific mainmmake=hidd-agp asmfiles=wbinvd \
+    maindir=$(CURDIR) arch=i386 modulename=agp
+
 %common
