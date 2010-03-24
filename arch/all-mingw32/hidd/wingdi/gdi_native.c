@@ -211,8 +211,8 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
             	    gdata->fbwin = CreateWindow((LPCSTR)display_class, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_VISIBLE,
 					        CW_USEDEFAULT, CW_USEDEFAULT, width,  height, NULL, NULL,
 						display_class_desc.hInstance, NULL);
-            	} else {
-		    /* Otherwise just adjust its size */
+            	} else if (gdata->bitmaps.mlh_TailPred == &gdata->bitmaps) {
+		    /* If the displayed bitmap is the frontmost one, adjust window size */
 		    DWIN(printf("[GDI] Resizing display...\n"));
 		    SetWindowPos(gdata->fbwin, HWND_TOP, 0, 0, width, height, SWP_NOMOVE);
 	        }
@@ -222,12 +222,13 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
 		       In future we may need some more sophisticated input handling because current driver architecture
 		       allows further transformation to rootless mode where every screen will have its own separate window
 		       on a Windows desktop. */
-		    bmdata->window = CreateWindow((LPCSTR)bitmap_class, NULL, WS_CHILD|WS_DISABLED|WS_VISIBLE, bmdata->bm_left, bmdata->bm_top, bmdata->bm_width, bmdata->bm_height,
-						  gdata->fbwin, NULL, display_class_desc.hInstance, NULL);
+		    if (!bmdata->window)
+		        bmdata->window = CreateWindow((LPCSTR)bitmap_class, NULL, WS_BORDER|WS_CHILD|WS_CLIPSIBLINGS|WS_DISABLED|WS_VISIBLE, bmdata->bm_left - 1, bmdata->bm_top - 1, bmdata->bm_width + 2, bmdata->bm_height + 2,
+						      gdata->fbwin, NULL, display_class_desc.hInstance, NULL);
 		    DWIN(printf("[GDI] Bitmap window: 0x%p\n", bmdata->window));
 		    SetWindowLongPtr(bmdata->window, GWLP_USERDATA, (LONG_PTR)bmdata);
-		    /* Updating root window also updates children where needed */
-		    UpdateWindow(gdata->fbwin);
+		    SetWindowPos(bmdata->window, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE);
+		    UpdateWindow(bmdata->window);
             	}
             	KrnCauseIRQ(ctl->IrqNum);
             	break;

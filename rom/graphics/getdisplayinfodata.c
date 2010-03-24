@@ -5,6 +5,9 @@
     Desc: Graphics function GetDisplayInfoData()
     Lang: english
 */
+
+#define DEBUG 1
+
 #include <aros/debug.h>
 #include <proto/graphics.h>
 #include <graphics/displayinfo.h>
@@ -278,7 +281,9 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 		return 0;
 	    }
 	    
+	    D(bug("[GetDisplayInfoData] Retrieving HIDD mode properties...\n"));
 	    HIDD_Gfx_ModeProperties(SDD(GfxBase)->gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
+	    D(bug("[GetDisplayInfoData] Done, composition flags are 0x%04lX\n", HIDDProps.CompositionFlags));
 	    
 	    mi = (struct MonitorInfo *)qh;
 	    

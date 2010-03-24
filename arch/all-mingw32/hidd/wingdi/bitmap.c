@@ -636,7 +636,7 @@ VOID GDIBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 
 	Forbid();
 	if (data->window)
-	    USERCALL(SetWindowPos, data->window, NULL, data->bm_left, data->bm_top, data->bm_width, data->bm_height, SWP_NOSIZE|SWP_NOZORDER);
+	    USERCALL(SetWindowPos, data->window, NULL, data->bm_left - 1, data->bm_top - 1, 0, 0, SWP_NOSIZE|SWP_NOZORDER);
 	Permit();
     }
 

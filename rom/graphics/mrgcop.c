@@ -69,30 +69,14 @@
     AROS_LIBFUNC_INIT
 
     struct ViewPort *vp;
+    struct ViewPortExtra *vpe;
     struct BitMap *bitmap = NULL;
     OOP_Object      	*cmap, *pf;
     HIDDT_ColorModel 	colmod;
     OOP_Object      	*fb;
 
-    /* Take the first visibme ViewPort from the view. Its bitmap will be the frontmost one.
-       If NULL is passed as a view, or there are no visible ViewPorts, we simply clear the display
-       (bitmap is NULL). */
-    
-    if (view) {
-        for (vp = view->ViewPort; vp; vp = vp->Next) {
-            if (!(vp->Modes & VP_HIDE)) {
-	        bitmap = vp->RasInfo->BitMap;
-	        break;
-	    }
-	}
-    }
-
-    D(bug("MrgCop(): displaying bitmap 0x%p\n", bitmap));
-    if (bitmap && (!(bitmap->Flags & BMF_AROS_HIDD) || !(HIDD_BM_FLAGS(bitmap) & HIDD_BMF_SCREEN_BITMAP)))
-    {
-    	D(bug("!!! MrgCop(): TRYING TO SET NON-DISPLAYABLE BITMAP !!!\n"));
-	return MCOP_NO_MEM;
-    }
+    if (GfxBase->ActiView != view)
+        return MCOP_OK;
 
     #warning THIS IS NOT THREADSAFE
 
@@ -100,34 +84,36 @@
        all gfx access in all the rendering calls
     */
 
-    /* If the given view is not a current one, we don't apply changes.
-       In this case we just tell the result of view validation. */
-    if (GfxBase->ActiView != view)
-        return bitmap ? MCOP_OK : MCOP_NOP;
+    /* Remove the whole bitmap stack from the driver */
+    D(bug("[MrgCop] Clearing display...\n"));
+    /* This Show() returns non-NULL only if we use framebuffer */
+    fb = HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, NULL, fHidd_Gfx_Show_CopyBack);
 
-    /* TODO: Here we should somehow pass view->ViewPort->ColorMap->SpriteBase_Even to the driver. May be add
-       a parameter to Show() method? */
-
-    if ( SDD(GfxBase)->frontbm == bitmap)
-    {
-    	D(bug("!!!!!!!!!!!!!!! SHOWING BITMAP %p TWICE !!!!!!!!!!!\n", bitmap));
-	return MCOP_OK;
+    /* Show new bitmaps */
+    if (view) {
+        for (vp = view->ViewPort; vp; vp = vp->Next) {
+            if (!(vp->Modes & VP_HIDE)) {
+	        /* We don't check against vpe == NULL because MakeVPort() has already took care about this */
+	        vpe = GfxLookUp(vp);
+	        D(bug("[MrgCop] Showing bitmap object 0x%p\n", VPE_BITMAP(vpe)));
+		/* Here we supply a bitmap object, so we will get NULL only on failure */
+	        if (!HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, VPE_BITMAP(vpe), fHidd_Gfx_Show_CopyBack))
+		    return MCOP_NO_MEM;
+		/* If we use framebuffer, we can't perform screen composition. At least currently.
+		   In this case we show only one frontmost bitmap. */
+		if (fb) {
+	            bitmap = vp->RasInfo->BitMap;
+	            break;
+		}
+	    }
+	}
     }
 
-    fb = HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, (bitmap ? HIDD_BM_OBJ(bitmap) : NULL), fHidd_Gfx_Show_CopyBack);
-
-    if (NULL == fb)
-    {
-	if (bitmap) {
-    	    D(bug("!!! MrgCop(): HIDD_Gfx_Show() FAILED !!!\n"));
-	    return MCOP_NO_MEM;
-	} else
-	    return MCOP_OK;
-    }
-    else
-    {
+    
+    if (fb) {
     	IPTR width, height;
 
+	D(bug("[MrgCop] Replacing framebuffer\n"));
 	Forbid();
 
 	 /* Set this as the active screen */
@@ -163,9 +149,9 @@
 
 	HIDD_BM_UpdateRect(fb, 0, 0, width, height);
 	Permit();
-
-	return MCOP_OK;
     }
+
+    return MCOP_OK;
 
     AROS_LIBFUNC_EXIT
 } /* MrgCop */

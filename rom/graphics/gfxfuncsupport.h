@@ -18,6 +18,9 @@
 
 #define FIX_GFXCOORD(x) x = (WORD)x
 
+/* Our own usage of some private fields in ViewPortExtra */
+#define VPE_BITMAP(vpe) (*(OOP_Object **)&(vpe->DriverData[0]))
+
 /* !!!! ONLY USE THE BELOW MACROS IF YOU ARE 100% SURE 
    THAT IT IS A HIDD BITMAP AND NOT ONE THE USER
    HAS CREATED BY HAND !!!. You can use IS_HIDD_BM(bitmap) to test
