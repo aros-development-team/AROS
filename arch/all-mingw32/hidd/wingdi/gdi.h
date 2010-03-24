@@ -114,6 +114,19 @@ struct gdiclbase
 #include <windows.h>
 #define APTR void *
 
+struct MinNode
+{
+    struct MinNode * mln_Succ,
+		   * mln_Pred;
+};
+
+struct MinList
+{
+    struct MinNode * mlh_Head,
+                   * mlh_Tail,
+		   * mlh_TailPred;
+};
+
 #endif
 
 #define NOTY_SHOW WM_USER
@@ -121,10 +134,10 @@ struct gdiclbase
 /* Private instance data for Gfx hidd class */
 struct gfx_data
 {
-    void *display;   /* Windows system display object  */
-    void *cursor;    /* Windows mouse cursor object    */
-    void *bitmap;    /* Currently shown bitmap object  */
-    void *fbwin;     /* Display window		       */
+    struct MinList bitmaps;	/* Currently shown bitmap objects */
+    void *display;		/* Windows system display object  */
+    void *cursor;		/* Windows mouse cursor object    */
+    void *fbwin;		/* Display window		  */
 };
 
 #ifdef __AROS__

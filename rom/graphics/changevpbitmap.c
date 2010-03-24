@@ -60,7 +60,7 @@
        the rest of stuff. */
     vp->RasInfo->BitMap = bm;
     
-    /* On real Amiga we should probably have been called MakeVPort() before this */
+    MakeVPort(GfxBase->ActiView, vp);
     MrgCop(GfxBase->ActiView);
 
     /* Reply both messages - the displayed bitmap has been swapped */

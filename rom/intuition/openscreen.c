@@ -1063,8 +1063,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
         D(bug("Loaded colors\n"));
 
-	/* ScrollVPort() will validate initial screen offsets */
-	ScrollVPort(&screen->Screen.ViewPort);
+	MakeVPort(&IntuitionBase->ViewLord, &screen->Screen.ViewPort);
 	/* Put validated values into screen structure, this is important */
 	screen->Screen.LeftEdge = screen->Screen.ViewPort.DxOffset;
         screen->Screen.TopEdge = screen->Screen.ViewPort.DyOffset;

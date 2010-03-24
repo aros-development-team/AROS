@@ -30,6 +30,7 @@ enum
 
 struct bitmap_data
 {
+    struct MinNode node;
     APTR dc;	     /* Device context							        */
     APTR bitmap;     /* Actual Windows bitmap object						*/
     APTR dc_bitmap;  /* Original DC's bitmap object, needs to be put back before freeing the DC */

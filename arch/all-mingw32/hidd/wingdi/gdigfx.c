@@ -14,6 +14,7 @@
 #include <exec/memory.h>
 #include <graphics/displayinfo.h>
 #include <aros/libcall.h>
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/kernel.h>
 #include <proto/oop.h>
@@ -270,6 +271,7 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
 	D(bug("GDIGfx::New(): Got object from super\n"));
 	data->display = XSD(cl)->display;
+	NewList((struct List *)&data->bitmaps);
     }
     ReturnPtr("GDIGfx::New", OOP_Object *, o);
 }
@@ -385,10 +387,6 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
     struct gfx_data *data;
     struct Task *me;
     void *gfx_int;
-    struct TagItem bm_tags[] = {
-        {aHidd_BitMap_Visible, FALSE},
-	{TAG_DONE		    }
-    };
 
     data = OOP_INST_DATA(cl, o);
 
@@ -398,14 +396,6 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 
     Forbid();
 
-    /* First we hide old bitmap (if there is one) */
-    if (data->bitmap) {
-	D(bug("[GDI] Show(): old displayed bitmap 0x%p\n", data->bitmap));
-	OOP_SetAttrs(data->bitmap, bm_tags);
-    }
-
-    /* Then we show a new bitmap (if there is one) */
-    data->bitmap = msg->bitMap;
     if (msg->bitMap) {
         gfx_int = KrnAddIRQHandler(XSD(cl)->ctl->IrqNum, GfxIntHandler, data, me);
         if (gfx_int) {
@@ -421,7 +411,19 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	    NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, bmdata);
 	    Wait(SIGF_BLIT);
 	    KrnRemIRQHandler(gfx_int);
+	    AddTail((struct List *)&data->bitmaps, (struct Node *)bmdata);
 	}
+    } else {
+	struct bitmap_data *bmdata;
+
+        for (bmdata = (struct bitmap_data *)data->bitmaps.mlh_Head;
+	     bmdata->node.mln_Succ; bmdata = (struct bitmap_data *)bmdata->node.mln_Succ) {
+	    if (bmdata->window) {
+		NATIVECALL(GDI_PutMsg, bmdata->window, WM_CLOSE, 0, 0);
+		bmdata->window = NULL;
+	    }
+	}
+	NewList((struct List *)&data->bitmaps);
     }
 
     Permit();
