@@ -36,6 +36,23 @@ OOP_Object * METHOD(Agp3BridgeDevice, Root, New)
     return o;
 }
 
+VOID Agp3BridgeDevice__Root__Dispose(OOP_Class * cl, OOP_Object * o, OOP_Msg msg)
+{
+    struct HIDDGenericBridgeDeviceData * gbddata =
+        OOP_INST_DATA(SD(cl)->genericBridgeDeviceClass, o);
+    
+    if (gbddata->state != STATE_UNKNOWN)
+    {
+        OOP_Object * bridgedev = gbddata->bridge->PciDevice;
+        UBYTE bridgeagpcap = gbddata->bridge->AgpCapability;
+        ULONG ctrlreg;
+        ctrlreg = readconfiglong(bridgedev, bridgeagpcap + AGP_CTRL_REG);
+        writeconfiglong(bridgedev, bridgeagpcap + AGP_CTRL_REG, ctrlreg & ~AGP_CTRL_REG_APEREN);
+    }
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
 BOOL METHOD(Agp3BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
 {
     struct HIDDGenericBridgeDeviceData * gbddata =
