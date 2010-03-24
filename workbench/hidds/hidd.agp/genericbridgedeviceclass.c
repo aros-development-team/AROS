@@ -85,6 +85,14 @@ VOID writeconfigword(OOP_Object * pciDevice, UBYTE where, UWORD val)
     OOP_DoMethod(pciDevice, (OOP_Msg)msg); 
 }
 
+VOID Wbinvd(); /* Implemented in assembler */
+
+static VOID flushcpucache()
+{
+    /* Don't use clflush here. Both linux and BSD codes use full wbinvd */
+    Supervisor(Wbinvd);
+}
+
 AROS_UFH3(void, HiddAgpPciDevicesEnumerator,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(OOP_Object *, pciDevice, A2),
@@ -213,7 +221,8 @@ BOOL METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, CreateGattTable)
         readl(gbddata->gatttable + i);	/* PCI Posting. */
     }
     
-//FIXME    flush_cpu_cache();
+    flushcpucache();
+
     return TRUE;
 }
 
