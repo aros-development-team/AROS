@@ -386,6 +386,11 @@ BOOL METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, CreateGattTable)
     return TRUE;
 }
 
+VOID METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, FlushGattTable)
+{
+    bug("[GenericBridgeDevice] abstract FlushGattTable method called\n");
+}
+
 /* PUBLIC METHODS */
 OOP_Object * METHOD(GenericBridgeDevice, Root, New)
 {
@@ -405,7 +410,8 @@ OOP_Object * METHOD(GenericBridgeDevice, Root, New)
         gbddata->videocard = NULL;
         NEWLIST(&gbddata->devices);
         gbddata->state = STATE_UNKNOWN;
-        InitSemaphore(&gbddata->driverlock);
+        gbddata->memmask = 0x00000000;
+        InitSemaphore(&gbddata->lock);
     }
 
     return o;
@@ -470,11 +476,11 @@ BOOL METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, Enable)
 {
     struct HIDDGenericBridgeDeviceData * gbddata = OOP_INST_DATA(cl, o);
 
-    ObtainSemaphore(&gbddata->driverlock);
+    ObtainSemaphore(&gbddata->lock);
     
     if (gbddata->state != STATE_INITIALIZED)
     {
-        ReleaseSemaphore(&gbddata->driverlock);
+        ReleaseSemaphore(&gbddata->lock);
         return FALSE;
     }
     
@@ -521,13 +527,95 @@ BOOL METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, Enable)
     HiddAgpGenericSendCommand(gbddata, bridgemode);
     gbddata->state = STATE_ENABLED;
     
-    ReleaseSemaphore(&gbddata->driverlock);
+    ReleaseSemaphore(&gbddata->lock);
     
     return TRUE;
 }
 
+VOID METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, BindMemory)
+{
+    ULONG i;
+    struct HIDDGenericBridgeDeviceData * gbddata = OOP_INST_DATA(cl, o);
+
+    D(bug("Bind address 0x%x into offset %d, size %d\n", (ULONG)msg->address, msg->offset, msg->size));
+
+    if (gbddata->state != STATE_ENABLED)
+        return;
+
+    ObtainSemaphore(&gbddata->lock);
+
+    /* TODO: check if offset + size / 4096 ends before gatt_table end */
+    
+    /* TODO: get mask type */
+    
+    /* TODO: Check if each entry in GATT to be written is unbound */
+    
+    /* Flush incomming memory - will be done in flush_cpu_cache below */
+    
+    /* Insert entries into GATT table */
+    for(i = 0; i < msg->size / 4096; i++)
+    {
+        /* Write masked memory address into GATT */
+        writel((msg->address + (4096 * i)) | gbddata->memmask, 
+            gbddata->gatttable + msg->offset + i);
+    }
+    
+    readl(gbddata->gatttable + msg->offset + i - 1); /* PCI posting */
+
+    /* Flush CPU cache - make sure data in GATT is up to date */
+    flushcpucache();
+
+    /* Flush GATT table at card */
+    struct pHidd_AGPBridgeDevice_FlushGattTable fgtmsg = {
+    mID: OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_FlushGattTable)
+    };
+
+    OOP_DoMethod(o, (OOP_Msg)&fgtmsg);
+
+    ReleaseSemaphore(&gbddata->lock);
+}
+
+VOID METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, UnBindMemory)
+{
+    ULONG i;
+    struct HIDDGenericBridgeDeviceData * gbddata = OOP_INST_DATA(cl, o);
+
+    D(bug("Unbind offset %d, size %d\n", msg->offset, msg->size));
+
+    if (gbddata->state != STATE_ENABLED)
+        return;
+
+    if (msg->size == 0)
+        return;
+
+    ObtainSemaphore(&gbddata->lock);
+
+    /* TODO: get mask type */
+
+    /* Remove entries from GATT table */
+    for(i = 0; i < msg->size / 4096; i++)
+    {
+        writel((ULONG)gbddata->scratchmem, gbddata->gatttable + msg->offset + i);
+    }
+    
+    readl(gbddata->gatttable + msg->offset + i - 1); /* PCI posting */
+    
+    /* Flush CPU cache - make sure data in GATT is up to date */
+    flushcpucache();
+
+    /* Flush GATT table */
+    struct pHidd_AGPBridgeDevice_FlushGattTable fgtmsg = {
+    mID: OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_FlushGattTable)
+    };
+
+    OOP_DoMethod(o, (OOP_Msg)&fgtmsg);
+    
+    ReleaseSemaphore(&gbddata->lock);
+}
+
 BOOL METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, Initialize)
 {
-    bug("[GenericBridgeDevice] abstract initialize method called\n");
+    bug("[GenericBridgeDevice] abstract Initialize method called\n");
     return FALSE;
 }
+

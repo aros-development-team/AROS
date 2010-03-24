@@ -48,6 +48,7 @@ enum
 {
     moHidd_AGPBridgeDevice_ScanAndDetectDevices = NUM_AGPBRIDGEDEVICE_METHODS,
     moHidd_AGPBridgeDevice_CreateGattTable,
+    moHidd_AGPBridgeDevice_FlushGattTable,
 };
 
 struct pHidd_AGPBridgeDevice_ScanAndDetectDevices
@@ -60,6 +61,10 @@ struct pHidd_AGPBridgeDevice_CreateGattTable
     OOP_MethodID    mID;
 };
 
+struct pHidd_AGPBridgeDevice_FlushGattTable
+{
+    OOP_MethodID    mID;
+};
 
 /* This is an abstract class. Contains usefull code but is not functional */
 #define CLID_Hidd_GenericBridgeDevice   "hidd.agp.genericbridgedevice"
@@ -76,7 +81,7 @@ struct PciAgpDevice
 
 struct HIDDGenericBridgeDeviceData
 {
-    struct SignalSemaphore driverlock;  /* Lock for driver operations */
+    struct SignalSemaphore lock;        /* Lock for device operations */
     struct List         devices;        /* Bridges and AGP devices in system */
 
     /* Bridge data */  
@@ -88,6 +93,7 @@ struct HIDDGenericBridgeDeviceData
     ULONG               *gatttable;     /* 4096 aligned gatt table */
     APTR                scratchmembuffer;/* Buffer for scratch mem */
     ULONG               *scratchmem;    /* 4096 aligned scratch mem */
+    ULONG               memmask;        /* Mask for binded memorory */
 
     ULONG               state;          /* State of the device */
 

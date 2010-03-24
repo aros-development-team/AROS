@@ -60,6 +60,8 @@ enum
 {
     moHidd_AGPBridgeDevice_Initialize = 0,    
     moHidd_AGPBridgeDevice_Enable,
+    moHidd_AGPBridgeDevice_BindMemory,
+    moHidd_AGPBridgeDevice_UnBindMemory,
 
     NUM_AGPBRIDGEDEVICE_METHODS
 };
@@ -89,6 +91,22 @@ struct pHidd_AGPBridgeDevice_Enable
 {
     OOP_MethodID    mID;
     ULONG           requestedmode;
+};
+
+struct pHidd_AGPBridgeDevice_BindMemory
+{
+    OOP_MethodID    mID;
+    IPTR            address;
+    ULONG           size;
+    ULONG           offset;
+    UBYTE           type;
+};
+
+struct pHidd_AGPBridgeDevice_UnBindMemory
+{
+    OOP_MethodID    mID;
+    ULONG           offset;
+    ULONG           size;
 };
 
 #endif
