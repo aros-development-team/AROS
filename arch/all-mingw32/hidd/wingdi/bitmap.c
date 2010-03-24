@@ -600,16 +600,6 @@ VOID GDIBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
         if (IS_BM_ATTR(tag->ti_Tag, idx)) {
 	    switch(idx)
 	    {
-	    case aoHidd_BitMap_Visible:
-		if (!tag->ti_Data) {
-		    Forbid();
-		    if (data->window) {
-		        NATIVECALL(GDI_PutMsg, data->window, WM_CLOSE, 0, 0);
-		        data->window = NULL;
-		    }
-		    Permit();
-		}
-		break;
 	    case aoHidd_BitMap_LeftEdge:
 	        data->bm_left = tag->ti_Data;
 		change_position = TRUE;
