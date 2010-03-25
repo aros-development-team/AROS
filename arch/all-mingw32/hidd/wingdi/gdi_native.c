@@ -211,7 +211,7 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
             	    gdata->fbwin = CreateWindow((LPCSTR)display_class, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_VISIBLE,
 					        CW_USEDEFAULT, CW_USEDEFAULT, width,  height, NULL, NULL,
 						display_class_desc.hInstance, NULL);
-            	} else if (gdata->bitmaps.mlh_TailPred == &gdata->bitmaps) {
+            	} else if (gdata->bitmaps.mlh_Head == bmdata) {
 		    /* If the displayed bitmap is the frontmost one, adjust window size */
 		    DWIN(printf("[GDI] Resizing display...\n"));
 		    SetWindowPos(gdata->fbwin, HWND_TOP, 0, 0, width, height, SWP_NOMOVE);

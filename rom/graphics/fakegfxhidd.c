@@ -638,6 +638,14 @@ UFB(data);
     
     return ret;
 }
+
+static ULONG gfx_showviewports(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    /* In future we are going to be able to simulate composition using a framebuffer.
+       For now just return FALSE (not supported). */
+    return FALSE;
+}
+
 static IPTR gfx_fwd(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct gfx_data *data;
@@ -1156,6 +1164,7 @@ static OOP_Class *init_fakegfxhiddclass (struct class_static_data *csd)
 	{(IPTR (*)())gfx_show	    	    , moHidd_Gfx_Show		    },
 	{(IPTR (*)())gfx_copybox    	    , moHidd_Gfx_CopyBox	    },
 	{(IPTR (*)())gfx_fwd	    	    , moHidd_Gfx_ModeProperties	    },
+	{(IPTR (*)())gfx_showviewports	    , moHidd_Gfx_ShowViewPorts	    },
         {NULL	    	    	    	    , 0UL   	    	    	    }
     };
     

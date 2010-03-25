@@ -1244,6 +1244,14 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 
 /****************************************************************************************/
 
+ULONG GFX__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
+{
+    /* By default we don't support screen composition (and this method too) */
+    return FALSE;
+}
+
+/****************************************************************************************/
+
 BOOL GFX__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o,
     	    	    	    	   struct pHidd_Gfx_SetCursorShape *msg)
 {

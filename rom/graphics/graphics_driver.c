@@ -40,8 +40,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "fakegfxhidd.h"
 #include "graphics_intern.h"
+#include "fakegfxhidd.h"
 #include "intregions.h"
 #include "dispinfo.h"
 #include "gfxfuncsupport.h"
@@ -538,7 +538,6 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 	    if (NULL != SDD(GfxBase)->gc_cache) {
 
 		struct TagItem bm_create_tags[] = {
-#warning Maybe make this class private and create the object through the graphicshidd
 			{ aHidd_BitMap_GfxHidd,		(IPTR)SDD(GfxBase)->gfxhidd_orig },
 			{ aHidd_BitMap_Displayable,	FALSE	},
 			{ aHidd_PlanarBM_AllocPlanes,	FALSE },
@@ -834,4 +833,88 @@ void driver_Text (struct RastPort * rp, CONST_STRPTR string, LONG len,
     
     return;
 
+}
+
+void driver_LoadView(struct View *view, struct GfxBase *GfxBase)
+{
+    struct ViewPort *vp;
+    struct HIDD_ViewPortData *vpd = NULL;
+    struct BitMap *bitmap = NULL;
+    OOP_Object *cmap, *pf;
+    HIDDT_ColorModel colmod;
+    OOP_Object *fb;
+
+    #warning THIS IS NOT THREADSAFE
+
+    /* To make this threadsafe we have to lock
+       all gfx access in all the rendering calls
+    */
+
+    /* Find a ViewPortData of the first visible ViewPort. It will be a start of
+       bitmaps chain to show.
+       In future when AROS supports several monitors we will have several such chains,
+       one per monitor. */
+    if (view) {
+        for (vp = view->ViewPort; vp; vp = vp->Next) {
+            if (!(vp->Modes & VP_HIDE)) {
+	        /* We don't check against vpe == NULL because MakeVPort() has already took care about this */
+	        vpd = VPE_DATA((struct ViewPortExtra *)GfxLookUp(vp));
+		bitmap = vp->RasInfo->BitMap;
+		break;
+	    }
+	}
+    }
+
+    /* First try the new method */
+    if (HIDD_Gfx_ShowViewPorts(SDD(GfxBase)->gfxhidd, vpd))
+        return;
+
+    /* If it failed, we may be working with a framebuffer. First check if the bitmap
+       is already displayed. If so, do nothing (because displaying the same bitmap twice may
+       cause some problems */
+    if (SDD(GfxBase)->frontbm == bitmap)
+        return;
+
+    fb = HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, vpd ? vpd->Bitmap : NULL, fHidd_Gfx_Show_CopyBack);
+
+    if (fb) {
+    	IPTR width, height;
+
+	D(bug("[driver_LoadView] Replacing framebuffer\n"));
+	Forbid();
+
+	 /* Set this as the active screen */
+    	if (NULL != SDD(GfxBase)->frontbm)
+	{
+    	    struct BitMap *oldbm;
+    	    /* Put back the old values into the old bitmap */
+	    oldbm = SDD(GfxBase)->frontbm;
+	    HIDD_BM_OBJ(oldbm)		= SDD(GfxBase)->bm_bak;
+	    HIDD_BM_COLMOD(oldbm)	= SDD(GfxBase)->colmod_bak;
+	    HIDD_BM_COLMAP(oldbm)	= SDD(GfxBase)->colmap_bak;
+	}
+
+	SDD(GfxBase)->frontbm		= bitmap;
+	SDD(GfxBase)->bm_bak		= bitmap ? HIDD_BM_OBJ(bitmap) : NULL;
+	SDD(GfxBase)->colmod_bak	= bitmap ? HIDD_BM_COLMOD(bitmap) : NULL;
+	SDD(GfxBase)->colmap_bak	= bitmap ? HIDD_BM_COLMAP(bitmap) : NULL;
+
+	if (bitmap)
+	{
+	    /* Insert the framebuffer in its place */
+	    OOP_GetAttr(fb, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
+	    OOP_GetAttr(fb, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+	    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
+
+	    HIDD_BM_OBJ(bitmap)	= fb;
+	    HIDD_BM_COLMOD(bitmap)	= colmod;
+	    HIDD_BM_COLMAP(bitmap)	= cmap;
+	}
+
+        OOP_GetAttr(fb, aHidd_BitMap_Width, &width);
+    	OOP_GetAttr(fb, aHidd_BitMap_Height, &height);
+
+	HIDD_BM_UpdateRect(fb, 0, 0, width, height);
+	Permit();
+    }
 }

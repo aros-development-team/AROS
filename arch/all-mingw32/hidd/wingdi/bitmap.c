@@ -754,6 +754,8 @@ VOID GDIBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     EnterFunc(bug("GDIGfx.BitMap::Dispose()\n"));
     
     Forbid();
+    if (data->node.mln_Pred)
+        Remove((struct Node *)data);
     if (data->window)
         NATIVECALL(GDI_PutMsg, data->window, WM_CLOSE, 0, 0);
     if (data->dc_bitmap)

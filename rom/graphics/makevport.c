@@ -77,7 +77,7 @@
         D(bug("[MakeVPort] Old bitmap object: 0x%p\n", VPE_BITMAP(vpe)));
         RELEASE_HIDD_BM(VPE_BITMAP(vpe), viewport->RasInfo->BitMap);
     }
-    VPE_BITMAP(vpe) = bm;
+    VPE_DATA(vpe)->Bitmap = bm;
     D(bug("[MakeVPort] New bitmap object: 0x%p\n", VPE_BITMAP(vpe)));
 
     /* Use ScrollVPort() in order to validate offsets */
