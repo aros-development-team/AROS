@@ -9,7 +9,7 @@ INCLUDE_FILES := $(call WILDCARD, include/*.h)
 
 FILES := init agpclass genericbridgedeviceclass agp3bridgedeviceclass \
             sisagp3bridgedeviceclass sisbridgedeviceclass \
-            viabridgedeviceclass
+            viabridgedeviceclass viaagp3bridgedeviceclass
 
 #MM includes-copy
 %copy_includes path=hidd dir=include

@@ -35,6 +35,7 @@ OOP_Object * METHOD(AGP, Root, New)
         NEWLIST(&adata->classes);
         HiddAgpRegisterClass(adata, CLID_Hidd_SiSBridgeDevice);
         HiddAgpRegisterClass(adata, CLID_Hidd_VIABridgeDevice);
+        HiddAgpRegisterClass(adata, CLID_Hidd_VIAAgp3BridgeDevice);
         HiddAgpRegisterClass(adata, CLID_Hidd_SiSAgp3BridgeDevice);
     }
 

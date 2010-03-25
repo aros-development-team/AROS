@@ -25,6 +25,7 @@ struct agpstaticdata
     OOP_Class       *sisAgp3BridgeDeviceClass;
     OOP_Class       *sisBridgeDeviceClass;
     OOP_Class       *viaBridgeDeviceClass;
+    OOP_Class       *viaAgp3BridgeDeviceClass;
     
     OOP_AttrBase    hiddAGPBridgeDeviceAB;
     OOP_AttrBase    hiddPCIDeviceAB;
@@ -133,6 +134,13 @@ struct HIDDSiSBridgeDeviceData
 #define CLID_Hidd_VIABridgeDevice   "hidd.agp.viabridgedevice"
 
 struct HIDDVIABridgeDeviceData
+{
+};
+
+/* Supports VIA chipsets compatible with AGP3 */
+#define CLID_Hidd_VIAAgp3BridgeDevice   "hidd.agp.viaagp3bridgedevice"
+
+struct HIDDVIAAgp3BridgeDeviceData
 {
 };
 
