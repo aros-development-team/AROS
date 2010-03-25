@@ -8,7 +8,7 @@
 #include <proto/oop.h>
 #include <proto/exec.h>
 #include <proto/dos.h> /* FIXME: Remove after removing Delay() */
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "agp_private.h"
@@ -421,8 +421,6 @@ VOID GenericBridgeDevice__Root__Dispose(OOP_Class * cl, OOP_Object * o, OOP_Msg 
 {
     struct HIDDGenericBridgeDeviceData * gbddata = OOP_INST_DATA(cl, o);
     struct PciAgpDevice * pciagpdev = NULL;
-
-    /* TODO: Deinitialize AGP (or maybe in subclasses only)? */
 
     /* Free scanned device information */
     while((pciagpdev = (struct PciAgpDevice *)RemHead(&gbddata->devices)) != NULL)
