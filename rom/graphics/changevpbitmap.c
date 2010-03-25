@@ -5,10 +5,13 @@
     Desc: Graphics function ChangeVPBitMap()
     Lang: english
 */
+
 #include <aros/debug.h>
 #include <graphics/gfx.h>
 #include <graphics/gfxbase.h>
 #include <graphics/view.h>
+
+#include "graphics_intern.h"
 
 /*****************************************************************************
 
@@ -56,12 +59,10 @@
     /* This is a very basic implementation. Screen refresh is completely not in sync with VBlank.
        The main problem here is that AROS completely misses VBlank interrupt. */
 
-    /* Just insert a new bitmap and rebuild current view. MrgCop() is expected to care about
-       the rest of stuff. */
+    /* Insert a new bitmap, rebuild the viewport and reload current view */
     vp->RasInfo->BitMap = bm;
-    
-    MakeVPort(GfxBase->ActiView, vp);
-    MrgCop(GfxBase->ActiView);
+    MakeVPort(NULL, vp);
+    driver_LoadView(GfxBase->ActiView, GfxBase);
 
     /* Reply both messages - the displayed bitmap has been swapped */
     ReplyMsg(&db->dbi_SafeMessage);

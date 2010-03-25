@@ -9,6 +9,8 @@
 #include <aros/debug.h>
 #include <graphics/view.h>
 
+#include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 /*****************************************************************************
 
     NAME */
@@ -47,12 +49,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* If the view is already set as current, everything is already
-       done by MrgCop() */
     if (GfxBase->ActiView != view) {
 	GfxBase->ActiView = view;
-	/* This MrgCop() will take care about refreshing the screen */
-	MrgCop(view);
+	driver_LoadView(view, GfxBase);
     }
 
     AROS_LIBFUNC_EXIT

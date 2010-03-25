@@ -69,89 +69,27 @@
     AROS_LIBFUNC_INIT
 
     struct ViewPort *vp;
-    struct ViewPortExtra *vpe;
-    struct BitMap *bitmap = NULL;
-    OOP_Object      	*cmap, *pf;
-    HIDDT_ColorModel 	colmod;
-    OOP_Object      	*fb;
+    struct HIDD_ViewPortData *vpd = NULL;
+    struct HIDD_ViewPortData *prev_vpd;
 
-    if (GfxBase->ActiView != view)
-        return MCOP_OK;
-
-    #warning THIS IS NOT THREADSAFE
-
-    /* To make this threadsafe we have to lock
-       all gfx access in all the rendering calls
-    */
-
-    /* Remove the whole bitmap stack from the driver */
-    D(bug("[MrgCop] Clearing display...\n"));
-    /* This Show() returns non-NULL only if we use framebuffer */
-    fb = HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, NULL, fHidd_Gfx_Show_CopyBack);
-
-    /* Show new bitmaps */
-    if (view) {
-        for (vp = view->ViewPort; vp; vp = vp->Next) {
-            if (!(vp->Modes & VP_HIDE)) {
-	        /* We don't check against vpe == NULL because MakeVPort() has already took care about this */
-	        vpe = GfxLookUp(vp);
-	        D(bug("[MrgCop] Showing bitmap object 0x%p\n", VPE_BITMAP(vpe)));
-		/* Here we supply a bitmap object, so we will get NULL only on failure */
-	        if (!HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, VPE_BITMAP(vpe), fHidd_Gfx_Show_CopyBack))
-		    return MCOP_NO_MEM;
-		/* If we use framebuffer, we can't perform screen composition. At least currently.
-		   In this case we show only one frontmost bitmap. */
-		if (fb) {
-	            bitmap = vp->RasInfo->BitMap;
-	            break;
-		}
-	    }
+    /* Build the list of displayed bitmaps */
+    for (vp = view->ViewPort; vp; vp = vp->Next) {
+        if (!(vp->Modes & VP_HIDE)) {
+	    /* We don't check against NULL because MakeVPort() has already took care about this.
+	       If MrgCop() was called with some mailformed ViewPorts, it's not our problem, */
+	    prev_vpd = vpd;
+	    vpd = VPE_DATA((struct ViewPortExtra *)GfxLookUp(vp));
+	    vpd->Next = NULL;
+	    if (prev_vpd)
+	        prev_vpd->Next = vpd;
 	}
     }
 
-    
-    if (fb) {
-    	IPTR width, height;
+    /* If the given view is a currently displayed one, refresh immediately */
+    if (GfxBase->ActiView == view)
+        driver_LoadView(view, GfxBase);
 
-	D(bug("[MrgCop] Replacing framebuffer\n"));
-	Forbid();
-
-	 /* Set this as the active screen */
-    	if (NULL != SDD(GfxBase)->frontbm)
-	{
-    	    struct BitMap *oldbm;
-    	    /* Put back the old values into the old bitmap */
-	    oldbm = SDD(GfxBase)->frontbm;
-	    HIDD_BM_OBJ(oldbm)		= SDD(GfxBase)->bm_bak;
-	    HIDD_BM_COLMOD(oldbm)	= SDD(GfxBase)->colmod_bak;
-	    HIDD_BM_COLMAP(oldbm)	= SDD(GfxBase)->colmap_bak;
-	}
-
-	SDD(GfxBase)->frontbm		= bitmap;
-	SDD(GfxBase)->bm_bak		= bitmap ? HIDD_BM_OBJ(bitmap) : NULL;
-	SDD(GfxBase)->colmod_bak	= bitmap ? HIDD_BM_COLMOD(bitmap) : NULL;
-	SDD(GfxBase)->colmap_bak	= bitmap ? HIDD_BM_COLMAP(bitmap) : NULL;
-
-	if (bitmap)
-	{
-	    /* Insert the framebuffer in its place */
-	    OOP_GetAttr(fb, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
-	    OOP_GetAttr(fb, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-	    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
-
-	    HIDD_BM_OBJ(bitmap)	= fb;
-	    HIDD_BM_COLMOD(bitmap)	= colmod;
-	    HIDD_BM_COLMAP(bitmap)	= cmap;
-	}
-
-        OOP_GetAttr(fb, aHidd_BitMap_Width, &width);
-    	OOP_GetAttr(fb, aHidd_BitMap_Height, &height);
-
-	HIDD_BM_UpdateRect(fb, 0, 0, width, height);
-	Permit();
-    }
-
-    return MCOP_OK;
+    return vpd ? MCOP_OK : MCOP_NOP;
 
     AROS_LIBFUNC_EXIT
 } /* MrgCop */

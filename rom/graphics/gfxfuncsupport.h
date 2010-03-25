@@ -18,8 +18,12 @@
 
 #define FIX_GFXCOORD(x) x = (WORD)x
 
-/* Our own usage of some private fields in ViewPortExtra */
-#define VPE_BITMAP(vpe) (*(OOP_Object **)&(vpe->DriverData[0]))
+/* Our own usage of some private fields in ViewPortExtra.
+   Currently we have HIDD_ViewPortData embedded in DriverData field
+   (it has two reserved pointers, just enough for us)
+ */
+#define VPE_DATA(vpe) ((struct HIDD_ViewPortData *)(vpe)->DriverData)
+#define VPE_BITMAP(vpe) (VPE_DATA(vpe)->Bitmap)
 
 /* !!!! ONLY USE THE BELOW MACROS IF YOU ARE 100% SURE 
    THAT IT IS A HIDD BITMAP AND NOT ONE THE USER

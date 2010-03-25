@@ -382,55 +382,68 @@ VOID GDICl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 /****************************************************************************************/
 
-OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+ULONG GDICl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
 {
-    struct gfx_data *data;
-    struct Task *me;
+    struct gfx_data *data = OOP_INST_DATA(cl, o);
+    struct Task *me = FindTask(NULL);;
+    struct HIDD_ViewPortData *vpdata;
     void *gfx_int;
+    struct bitmap_data *bmdata;
+    struct MinList new_bitmaps;
 
-    data = OOP_INST_DATA(cl, o);
+    gfx_int = KrnAddIRQHandler(XSD(cl)->ctl->IrqNum, GfxIntHandler, data, me);
+    if (gfx_int) {
 
-    D(bug("[GDI] hidd.gfx.wingdi::Show(0x%p)\n", msg->bitMap));
+	NewList((struct List *)&new_bitmaps);
+	Forbid();
 
-    me = FindTask(NULL);
+	/* Traverse through bitmaps chain and move them from old displayed list to the new temporary one */
+	for (vpdata = msg->Data; vpdata; vpdata = vpdata->Next) {
+	    bmdata = OOP_INST_DATA(XSD(cl)->bmclass, vpdata->Bitmap);
 
-    Forbid();
-
-    if (msg->bitMap) {
-        gfx_int = KrnAddIRQHandler(XSD(cl)->ctl->IrqNum, GfxIntHandler, data, me);
-        if (gfx_int) {
-	    /* It's quite not easy to call AROS API from within window service thread,
-	       so we pass private data of our bitmap class to it directly.
-	       Don't use such tricks in normal AROS code, this isn't really good. */
-	    IPTR bmdata = (IPTR)OOP_INST_DATA(XSD(cl)->bmclass, msg->bitMap);
-
-    	    /* Hosted system has no real blitter, however we have host-side window service thread that does some work asynchronously,
-	       and this looks like a real blitter. So we use this signal. Before we do it we ensure that it's reset (because it's
-	       the same as SIGF_SINGLE) */
-	    SetSignal(0, SIGF_BLIT);
-	    NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, bmdata);
-	    Wait(SIGF_BLIT);
-	    KrnRemIRQHandler(gfx_int);
-	    D(bug("[GDI] Adding bitmap data 0x%p, window 0x%p\n", bmdata, ((struct bitmap_data *)bmdata)->window));
-	    AddTail((struct List *)&data->bitmaps, (struct Node *)bmdata);
+	    D(bug("[GDI] Will display bitmap data 0x%p, window 0x%p\n", bmdata, bmdata->window));
+	    if (bmdata->node.mln_Pred) {
+	        D(bug("[GDI] This bitmap is already on display\n"));
+	        Remove((struct Node *)bmdata);
+	    }
+	    AddTail((struct List *)&new_bitmaps, (struct Node *)bmdata);
 	}
-    } else {
-	struct bitmap_data *bmdata;
 
-        for (bmdata = (struct bitmap_data *)data->bitmaps.mlh_Head;
+	/* If something left in displayed bitmaps list, close it */
+	for (bmdata = (struct bitmap_data *)data->bitmaps.mlh_Head;
 	     bmdata->node.mln_Succ; bmdata = (struct bitmap_data *)bmdata->node.mln_Succ) {
-	    D(bug("[GDI] Removing bitmap data 0x%p, window 0x%p\n", bmdata, bmdata->window));
+	    D(bug("[GDI] Hiding bitmap data 0x%p, window 0x%p\n", bmdata, bmdata->window));
 	    if (bmdata->window) {
 		NATIVECALL(GDI_PutMsg, bmdata->window, WM_CLOSE, 0, 0);
 		bmdata->window = NULL;
 	    }
+	    bmdata->node.mln_Pred = NULL;
 	}
-	NewList((struct List *)&data->bitmaps);
-    }
 
-    Permit();
-    return msg->bitMap;
+	/* Transfer the contents of our temporary list into display list */
+	data->bitmaps.mlh_Head               = new_bitmaps.mlh_Head;
+	data->bitmaps.mlh_Head->mln_Pred     = (struct MinNode *)&data->bitmaps.mlh_Head;
+	data->bitmaps.mlh_TailPred           = new_bitmaps.mlh_TailPred;
+	data->bitmaps.mlh_TailPred->mln_Succ = (struct MinNode *)&data->bitmaps.mlh_Tail;
+
+	/* Now traverse through the new list and (re)open every bitmap's window. This will
+	   cause rearranging them in the correct Z-order */
+	for (bmdata = (struct bitmap_data *)data->bitmaps.mlh_Head;
+	     bmdata->node.mln_Succ; bmdata = (struct bitmap_data *)bmdata->node.mln_Succ) {
+	    D(bug("[GDI] Showing bitmap data 0x%p, window 0x%p\n", bmdata, bmdata->window));
+	    SetSignal(0, SIGF_BLIT);
+	    NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, bmdata);
+	    Wait(SIGF_BLIT);
+	}
+	
+	Permit();
+	KrnRemIRQHandler(gfx_int);
+    }
+    /* We always return TRUE in order to indicate that we support this method.
+       LoadView() has no return code, so we have no rights for error too. */
+    return TRUE;
 }
+
 
 /****************************************************************************************/
 

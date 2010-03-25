@@ -341,6 +341,20 @@ ULONG HIDD_Gfx_ModeProperties(OOP_Object *obj, HIDDT_ModeID modeID, struct HIDD_
 }
 
 /***************************************************************/
+ULONG HIDD_Gfx_ShowViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data)
+{
+    STATIC_MID;
+    struct pHidd_Gfx_ShowViewPorts p, *msg = &p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ShowViewPorts);
+
+    p.mID  = mid;
+    p.Data = data;
+
+    return OOP_DoMethod(obj, (OOP_Msg) msg);
+}
+
+/***************************************************************/
 
 BOOL HIDD_BM_SetColors (OOP_Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors)
 {
