@@ -406,20 +406,13 @@ static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *
 }
 /****************************************************************************************/
 
-struct Window *GetToolBoxWindow(struct InputEvent *ie, struct IntuitionBase *IntuitionBase)
+struct Window *GetToolBoxWindow(struct InputEvent *ie, struct Screen *scr, struct IntuitionBase *IntuitionBase)
 {
     /* The caller has checked that the input event is a IECLASS_RAWMOUSE, SELECTDOWN event */
     /* NOTE: may be called with NULL ie ptr! */
     struct Layer    *l;
     struct Window   *new_w = NULL;
-    struct Screen   *scr;
     ULONG            lock;
-
-    lock = LockIBase(0UL);
-
-    UnlockIBase(lock);
-
-    scr   = IntuitionBase->FirstScreen;
 
     if (scr)
     {
@@ -472,8 +465,8 @@ IEQUALIFIER_NUMERICPAD)
 
 #define BUTTON_QUALIFIERS (IEQUALIFIER_MIDBUTTON | IEQUALIFIER_RBUTTON | IEQUALIFIER_LEFTBUTTON)
 
-static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *iihdata, struct Window *w,
-				       struct Gadget *gadget, struct GadgetInfo *gi,
+static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *iihdata, struct Screen *screen,
+				       struct Window *w, struct Gadget *gadget, struct GadgetInfo *gi,
 				       ULONG stitlebarhit, BOOL new_active_window, BOOL IsToolbox,
 				       struct InputEvent *orig_ie, BOOL *keep_event, BOOL *reuse_event,
 #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
@@ -494,7 +487,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	    /* Enter screen dragging mode if LAmiga + LButton are pressed.
 	       TODO: handle extra qualifier specified by IControl prefs. */
 	    if ((iihdata->ActQualifier & KEY_QUALIFIERS) == IEQUALIFIER_LCOMMAND) {
-	        iihdata->ScreenDrag = TRUE;
+	        iihdata->ScreenDrag = screen;
 	        *keep_event = FALSE;
 		break;
 	    }
@@ -551,8 +544,10 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	    if (!gadget)
 	    {
 		/* use the *frontmost* screen rather than active one when searching
-		 for sdepth gadget! */
-		gadget = FindGadget (IntuitionBase->FirstScreen,
+		   for sdepth gadget!
+		   FIXME: Why? I've left this comment for informational purposes, however i
+		          use active screen. */
+		gadget = FindGadget (screen,
 			     stitlebarhit ? 0 : w, stitlebarhit ? 0 : req,
 			     IntuitionBase->ActiveScreen ? IntuitionBase->ActiveScreen->MouseX : 0,
 			     IntuitionBase->ActiveScreen ? IntuitionBase->ActiveScreen->MouseY : 0,
@@ -565,7 +560,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
 	    /* If we clicked screen titlebar outside of any gadget, enter drag mode */
 	    if ((!gadget) && stitlebarhit) {
-	        iihdata->ScreenDrag = TRUE;
+	        iihdata->ScreenDrag = screen;
 	        *keep_event = FALSE;
 		break;
 	    }
@@ -575,7 +570,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	        {
 		    struct Window *ww = 0;
 		
-		    if ((ww = FindDesktopWindow(IntuitionBase->FirstScreen,IntuitionBase)))
+		    if ((ww = FindDesktopWindow(screen, IntuitionBase)))
 		    {
 		        ActivateWindow(ww);
 		        w = ww;
@@ -847,7 +842,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
 	/* Ignore this event if screen drag qualifier is pressed */
 	if (iihdata->ScreenDrag) {
-	    iihdata->ScreenDrag = FALSE;
+	    iihdata->ScreenDrag = NULL;
 	    *keep_event = FALSE;
 	    break;
 	}
@@ -1048,11 +1043,11 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	    struct Gadget   	*gad;
 	    struct GadgetInfo 	 ginf;
 	    ULONG   	    	 hit;
-	    struct Window   	*wind = FindActiveWindow(0,&hit,IntuitionBase);
+	    struct Window   	*wind = FindActiveWindow(0, screen, &hit,IntuitionBase);
 
 	    if (wind)
 	    {
-		gad = FindGadget (IntuitionBase->FirstScreen,
+		gad = FindGadget (screen,
 				  hit ? 0 : wind,0,
 				  IntuitionBase->ActiveScreen->MouseX,
 				  IntuitionBase->ActiveScreen->MouseY,
@@ -1344,95 +1339,89 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	    DEBUG_MOUSE(bug("[InputHandler] Delta is (%d, %d)\n", iihdata->DeltaMouseX, iihdata->DeltaMouseY));
 	}
 
-	//jDc: not really necessary to lock this for reading since this ptr is only modified
-	//by functions synced with inputhandler
-	//lock = LockIBase(0);
-	scr = IntuitionBase->FirstScreen;
+	scr = iihdata->ScreenDrag;
+	if (scr) {
+	    WORD dx = iihdata->DeltaMouseX;
+	    WORD dy = iihdata->DeltaMouseY;
+	    WORD min, max, val;
+	    UWORD spFlags = GetPrivScreen(scr)->SpecialFlags;
 
-	if (scr)
-	{
-	    if (iihdata->ScreenDrag) {
-		WORD dx = iihdata->DeltaMouseX;
-		WORD dy = iihdata->DeltaMouseY;
-	        WORD min, max, val;
-		UWORD spFlags = GetPrivScreen(scr)->SpecialFlags;
+	    DEBUG_DRAG(bug("[InputHandler] Screen drag, delta is (%d, %d)\n", dx, dy));
 
-		DEBUG_DRAG(bug("[InputHandler] Screen drag, delta is (%d, %d)\n", dx, dy));
+	    /* Restrict dragging to a physical display area if the driver does not allow composition */
+	    if ((spFlags & SF_HorCompose) != SF_HorCompose) {
+		/* Calculate limits */
+		WORD DWidth = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX + 1;
 
-		/* Restrict dragging to a physical display area if the driver does not allow composition */
-		if ((spFlags & SF_HorCompose) != SF_HorCompose) {
-		    /* Calculate limits */
-		    WORD DWidth = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX + 1;
-
-		    if (scr->Width > DWidth) {
-			min = DWidth - scr->Width;
-			max = 0;
-		    } else {
-		        min = 0;
-			max = DWidth - scr->Width;
-		    }
-		    /* The purpose of the following complex check is to prevent jumping if the
-		       screen was positioned out of user drag limits by the program itself using
-		       ScreenPosition() or OpenScreen(). We apply restrictions in parts depending
-		       on the dragging direction.
-		       May be the user should also be able do drag the screen back off-display in such
-		       a case?
-		       Calculate the position we would go to */
-		    val = scr->LeftEdge + dx;
-		    /* Determine the direction */
-		    if ((dx < 0) && (!(spFlags & SF_ComposeRight))) {
-			/* Can we move at all in this direction ? */
-			if (scr->LeftEdge > min) {
-			    /* If too far, restrict it */
-			    if (val < min)
-				dx = min - scr->LeftEdge;
-			} else
-			    /* Just don't move if we can't */
-			    dx = 0;
-		    } else if (!(spFlags & SF_ComposeLeft)) {
-			if (scr->LeftEdge < max) {
-			    if (val > max)
-				dx = max - scr->LeftEdge;
-			} else
-			    dx = 0;
-		    }
+		if (scr->Width > DWidth) {
+		    min = DWidth - scr->Width;
+		    max = 0;
+		} else {
+		    min = 0;
+		    max = DWidth - scr->Width;
 		}
-	        if ((spFlags & SF_VertCompose) != SF_VertCompose) {
-		    WORD DHeight = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY + 1;
-
-		    DEBUG_DRAG(bug("[Inputhandler] Restricting vertical drag\n"));
-		    DEBUG_DRAG(bug("[Inputhandler] Screen size: %d, display size: %d\n", scr->Height, scr->ViewPort.DHeight));
-		    if (scr->Height > DHeight) {
-			min = DHeight - scr->Height;
-			max = 0;
-		    } else {
-		        min = 0;
-			max = DHeight - scr->Height;
-		    }
-		    DEBUG_DRAG(bug("[Inputhandler] Limits: min %d max %d\n", min, max));
-		    val = scr->TopEdge + dy;
-		    DEBUG_DRAG(bug("[Inputhandler] New position would be %d\n", val));
-		    if ((dy < 0)  && (!(spFlags & SF_ComposeBelow))) {
-			if (scr->TopEdge > min) {
-			    if (val < min)
-				dy = min - scr->TopEdge;
-			} else
-			    dy = 0;
-		    } else if (!(spFlags & SF_ComposeAbove)) {
-			if (scr->TopEdge < max) {
-			    if (val > max)
-				dy = max - scr->TopEdge;
-			} else
-			    dy = 0;
-		    }
-		    DEBUG_DRAG(bug("[Inputhandler] Restricted delta will be %d\n", dy));
+		/* The purpose of the following complex check is to prevent jumping if the
+		   screen was positioned out of user drag limits by the program itself using
+		   ScreenPosition() or OpenScreen(). We apply restrictions in parts depending
+		   on the dragging direction.
+		   May be the user should also be able do drag the screen back off-display in such
+		   a case?
+		   Calculate the position we would go to */
+		val = scr->LeftEdge + dx;
+		/* Determine the direction */
+		if ((dx < 0) && (!(spFlags & SF_ComposeRight))) {
+		    /* Can we move at all in this direction ? */
+		    if (scr->LeftEdge > min) {
+			/* If too far, restrict it */
+			if (val < min)
+			    dx = min - scr->LeftEdge;
+		    } else
+			/* Just don't move if we can't */
+			dx = 0;
+		} else if (!(spFlags & SF_ComposeLeft)) {
+		    if (scr->LeftEdge < max) {
+			if (val > max)
+			    dx = max - scr->LeftEdge;
+		    } else
+			dx = 0;
 		}
-	        ScreenPosition(scr, SPOS_RELATIVE, dx, dy, 0, 0);
 	    }
+	    if ((spFlags & SF_VertCompose) != SF_VertCompose) {
+		WORD DHeight = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY + 1;
+
+		DEBUG_DRAG(bug("[Inputhandler] Restricting vertical drag\n"));
+		DEBUG_DRAG(bug("[Inputhandler] Screen size: %d, display size: %d\n", scr->Height, scr->ViewPort.DHeight));
+		if (scr->Height > DHeight) {
+		    min = DHeight - scr->Height;
+		    max = 0;
+		} else {
+		    min = 0;
+		    max = DHeight - scr->Height;
+		}
+		DEBUG_DRAG(bug("[Inputhandler] Limits: min %d max %d\n", min, max));
+		val = scr->TopEdge + dy;
+		DEBUG_DRAG(bug("[Inputhandler] New position would be %d\n", val));
+		if ((dy < 0)  && (!(spFlags & SF_ComposeBelow))) {
+		    if (scr->TopEdge > min) {
+			if (val < min)
+			    dy = min - scr->TopEdge;
+		    } else
+			dy = 0;
+		} else if (!(spFlags & SF_ComposeAbove)) {
+		    if (scr->TopEdge < max) {
+			if (val > max)
+			    dy = max - scr->TopEdge;
+		    } else
+			dy = 0;
+		}
+		DEBUG_DRAG(bug("[Inputhandler] Restricted delta will be %d\n", dy));
+	    }
+	    ScreenPosition(scr, SPOS_RELATIVE, dx, dy, 0, 0);
+	}
 
 /* Some old nonfunctional code - left for better times
-	    if (scr->Flags & AUTOSCROLL)
-	    {
+	if (scr->Flags & AUTOSCROLL)
+	{
 
 #define VWIDTH IntuitionBase->ViewLord.ViewPort->DWidth
 #define VHEIGHT IntuitionBase->ViewLord.ViewPort->DHeight
@@ -1474,10 +1463,18 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
 		    ScrollVPort(IntuitionBase->ViewLord.ViewPort);
 		}
-	    }
+	}
+	
 */
-	    xlimit = scr->ViewPort.DWidth - 1;
-	    ylimit = scr->ViewPort.DHeight - 1;
+	/* Restrict mouse coordinates to the physical display area.
+	   Its size is determined by the frontmost ViewPort, and the frontmost ViewPort
+	   is the frontmost screen */
+	scr = IntuitionBase->FirstScreen;
+
+	if (scr)
+	{
+	    xlimit = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX;
+	    ylimit = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY;
 	}
 	else
 	{
@@ -1489,7 +1486,6 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	if (ie->ie_Y > ylimit) ie->ie_Y = ylimit;
 	if (ie->ie_X < 0) ie->ie_X = 0;
 	if (ie->ie_Y < 0) ie->ie_Y = 0;
-	//UnlockIBase(lock);
 
 #ifdef SKINS
 	if (gadget == iihdata->MasterDragGadget) {
@@ -1533,27 +1529,28 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	iihdata->LastMouseY = ie->ie_Y;
 
 	notify_mousemove_screensandwindows(ie->ie_X, ie->ie_Y, IntuitionBase);
+	screen = FindActiveScreen(IntuitionBase); /* The mouse was moved, so current screen may have changed */
 
 #ifdef SKINS
 	if (!gadget) {
 		if (iihdata->TitlebarOnTop)
 		{
-		    if (IntuitionBase->FirstScreen->MouseY > IntuitionBase->FirstScreen->BarHeight && GetPrivScreen(IntuitionBase->FirstScreen)->SpecialFlags & SF_AppearingBar)
+		    if (screen->MouseY > screen->BarHeight && GetPrivScreen(screen)->SpecialFlags & SF_AppearingBar)
 		    {
 			iihdata->TitlebarOnTop = FALSE;
 			iihdata->TitlebarAppearTime = 0;
 
-			LOCK_REFRESH(IntuitionBase->FirstScreen);
+			LOCK_REFRESH(screen);
 
-			MoveLayer(0,IntuitionBase->FirstScreen->BarLayer,0,-(IntuitionBase->FirstScreen->BarHeight + 1));
-			CheckLayers(IntuitionBase->FirstScreen, IntuitionBase);
+			MoveLayer(0, screen->BarLayer, 0, -(screen->BarHeight + 1));
+			CheckLayers(screen, IntuitionBase);
 
-			UNLOCK_REFRESH(IntuitionBase->FirstScreen);
+			UNLOCK_REFRESH(screen);
 		    }
 		}
 		else
 		{
-		    if (IntuitionBase->FirstScreen->MouseY == 0 && GetPrivScreen(IntuitionBase->FirstScreen)->SpecialFlags & SF_AppearingBar && !MENUS_ACTIVE && !(PeekQualifier() & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_RBUTTON|IEQUALIFIER_MIDBUTTON)))
+		    if (screen->MouseY == 0 && GetPrivScreen(screen)->SpecialFlags & SF_AppearingBar && !MENUS_ACTIVE && !(PeekQualifier() & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_RBUTTON|IEQUALIFIER_MIDBUTTON)))
 		    {
 			if (!(iihdata->TitlebarAppearTime))
 			{
@@ -1628,7 +1625,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 		struct Window *hw;
 		struct Gadget *g;
 
-		hw = FindActiveWindow(ie, 0, IntuitionBase);
+		hw = FindActiveWindow(ie, screen, 0, IntuitionBase);
 
 		if (hw != w &&
 		    (!hw || !(IW(w)->helpflags & HELPF_ISHELPGROUP) ||
@@ -1795,6 +1792,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     struct InputEvent     *ie, *orig_ie, *next_ie, stackie;
     struct Gadget         *gadget = NULL, *boxgadget = NULL;
     struct IntuitionBase  *IntuitionBase = iihdata->IntuitionBase;
+    struct Screen 	  *screen;
     //ULONG                lock;
     struct GadgetInfo     *gi = &iihdata->GadgetInfo;
     struct GadgetInfo     *boxgi = &iihdata->BoxGadgetInfo;
@@ -1807,9 +1805,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 #endif
 
     D(bug("Inside intuition inputhandler, active window=%p\n", IntuitionBase->ActiveWindow));
-
-    //    DEBUG_HANDLER(dprintf("Handler: IBase 0x%lx KeyMapBase 0x%lx\n",IntuitionBase,KeymapBase));
-
     ObtainSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
 
     if (!iihdata->InputDeviceTask) iihdata->InputDeviceTask = FindTask(NULL);
@@ -1841,13 +1836,12 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
     while (reuse_event || next_ie)
     {
-
         struct Window   *old_w;
         BOOL        	 keep_event = TRUE;
         BOOL        	 new_active_window = FALSE;
 
         /* new event, we need to reset this */
-
+        screen = FindActiveScreen(IntuitionBase);
         iihdata->ActEventTablet = 0;
 
         if (!reuse_event)
@@ -1868,7 +1862,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
         /* Use event to find the active window */
 
-        toolbox = GetToolBoxWindow(ie, IntuitionBase);
+        toolbox = GetToolBoxWindow(ie, screen, IntuitionBase);
 
         if (toolbox)
         {
@@ -1877,7 +1871,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             switch (ie->ie_Class) {
 
             case IECLASS_RAWMOUSE:
-	        boxgadget = Process_RawMouse(ie, iihdata, toolbox, boxgadget, boxgi, 0, FALSE, TRUE,
+	        boxgadget = Process_RawMouse(ie, iihdata, screen, toolbox, boxgadget, boxgi, 0, FALSE, TRUE,
 					     orig_ie, &keep_event, &reuse_event,
 #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
 					     &call_setpointerpos,
@@ -1897,7 +1891,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             old_w = w;
             if (ie->ie_Class == IECLASS_RAWMOUSE && ie->ie_Code == SELECTDOWN)
             {
-                w = FindActiveWindow(ie, &stitlebarhit, IntuitionBase);
+                w = FindActiveWindow(ie, screen, &stitlebarhit, IntuitionBase);
                 D(bug("iih:New active window: %p\n", w));
             }
 
@@ -2019,7 +2013,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             req = w->FirstRequest;
         }
 
-        D(bug("w %p req %p gadget %p\n", w, req, gadget));
+        D(bug("[Inputhandler] Screen 0x%p Window 0x%p Requester 0x%p gadget 0x%p\n", screen, w, req, gadget));
 
         switch (ie->ie_Class) {
         case IECLASS_POINTERPOS:
@@ -2053,13 +2047,12 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             case IESUBCLASS_NEWTABLET:
                 {
                     struct IENewTablet *nt = (struct IENewTablet *)ie->ie_EventAddress;
-                    struct Screen *scr = IntuitionBase->FirstScreen;
 
                     if (nt)
                     {
                         iihdata->ActEventTablet = nt; //cache this
-                        ie->ie_X = (scr->Width * nt->ient_TabletX) / nt->ient_RangeX;
-                        ie->ie_Y = (scr->Height * nt->ient_TabletY) / nt->ient_RangeY;
+                        ie->ie_X = (screen->Width * nt->ient_TabletX) / nt->ient_RangeX;
+                        ie->ie_Y = (screen->Height * nt->ient_TabletY) / nt->ient_RangeY;
                     }
                     ie->ie_Class = IECLASS_RAWMOUSE;
                 }
@@ -2072,7 +2065,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             /* fall through */
 
         case IECLASS_RAWMOUSE:
-	    gadget = Process_RawMouse(ie, iihdata, w, gadget, gi, stitlebarhit, new_active_window, FALSE,
+	    gadget = Process_RawMouse(ie, iihdata, screen, w, gadget, gi, stitlebarhit, new_active_window, FALSE,
 				      orig_ie, &keep_event, &reuse_event,
 #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
 				      &call_setpointerpos,
@@ -2594,7 +2587,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             }
 
 #ifdef SKINS
-            if (IntuitionBase->FirstScreen->MouseY <= IntuitionBase->FirstScreen->BarHeight && GetPrivScreen(IntuitionBase->FirstScreen)->SpecialFlags & SF_AppearingBar && !iihdata->TitlebarOnTop && iihdata->TitlebarAppearTime)
+            if (screen->MouseY <= screen->BarHeight && GetPrivScreen(screen)->SpecialFlags & SF_AppearingBar && !iihdata->TitlebarOnTop && iihdata->TitlebarAppearTime)
             {
                 UQUAD currenttime = (((UQUAD)ie->ie_TimeStamp.tv_secs) * 50) + (UQUAD)(ie->ie_TimeStamp.tv_micro / 20000);
                 if (currenttime >= iihdata->TitlebarAppearTime + 10)
@@ -2602,13 +2595,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     iihdata->TitlebarOnTop = TRUE;
                     iihdata->TitlebarAppearTime = 0;
 
-                    LOCK_REFRESH(IntuitionBase->FirstScreen);
+                    LOCK_REFRESH(screen);
 
-                    MoveLayer(0,IntuitionBase->FirstScreen->BarLayer,0,IntuitionBase->FirstScreen->BarHeight + 1);
-                    UpfrontLayer(0,IntuitionBase->FirstScreen->BarLayer);
-                    CheckLayers(IntuitionBase->FirstScreen, IntuitionBase);
+                    MoveLayer(0, screen->BarLayer, 0, screen->BarHeight + 1);
+                    UpfrontLayer(0, screen->BarLayer);
+                    CheckLayers(screen, IntuitionBase);
 
-                    UNLOCK_REFRESH(IntuitionBase->FirstScreen);
+                    UNLOCK_REFRESH(screen);
                 }
             }
 #endif

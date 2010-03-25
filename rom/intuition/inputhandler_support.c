@@ -1407,12 +1407,25 @@ void WindowNeedsRefresh(struct Window * w,
 
 /****************************************************************************************/
 
-struct Window *FindActiveWindow(struct InputEvent *ie,ULONG *stitlebarhit,
+struct Screen *FindActiveScreen(struct IntuitionBase *IntuitionBase)
+{
+    struct Screen *scr;
+    
+    for (scr = IntuitionBase->FirstScreen; scr; scr = scr->NextScreen) {
+        if ((scr->MouseX > 0) && (scr->MouseY > 0) &&
+	   ((scr->MouseX < scr->Width) && scr->MouseY < scr->Height))
+	       break;
+    }
+    return scr;
+}
+
+/****************************************************************************************/
+
+struct Window *FindActiveWindow(struct InputEvent *ie, struct Screen *scr, ULONG *stitlebarhit,
                             struct IntuitionBase *IntuitionBase)
 {
     /* The caller has checked that the input event is a IECLASS_RAWMOUSE, SELECTDOWN event */
     /* NOTE: may be called with NULL ie ptr! */
-    struct Screen   *scr;
     struct Layer    *l;
     struct Window   *new_w;
     ULONG            lock;
@@ -1420,7 +1433,6 @@ struct Window *FindActiveWindow(struct InputEvent *ie,ULONG *stitlebarhit,
     lock = LockIBase(0UL);
 
     new_w = IntuitionBase->ActiveWindow;
-    scr   = IntuitionBase->FirstScreen;
 
     UnlockIBase(lock);
 
