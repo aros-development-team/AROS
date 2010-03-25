@@ -23,6 +23,7 @@ struct agpstaticdata
     OOP_Class       *genericBridgeDeviceClass;
     OOP_Class       *agp3BridgeDeviceClass;
     OOP_Class       *sisAgp3BridgeDeviceClass;
+    OOP_Class       *sisBridgeDeviceClass;
     
     OOP_AttrBase    hiddAGPBridgeDeviceAB;
     OOP_AttrBase    hiddPCIDeviceAB;
@@ -117,6 +118,13 @@ struct HIDDAgp3BridgeDeviceData
 #define CLID_Hidd_SiSAgp3BridgeDevice   "hidd.agp.sisagp3bridgedevice"
 
 struct HIDDSiSAgp3BridgeDeviceData
+{
+};
+
+/* Supports SiS chipsets not compatible with AGP3 */
+#define CLID_Hidd_SiSBridgeDevice   "hidd.agp.sisbridgedevice"
+
+struct HIDDSiSBridgeDeviceData
 {
 };
 
