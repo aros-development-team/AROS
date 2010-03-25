@@ -8,7 +8,8 @@ include $(TOP)/config/make.cfg
 INCLUDE_FILES := $(call WILDCARD, include/*.h)
 
 FILES := init agpclass genericbridgedeviceclass agp3bridgedeviceclass \
-            sisagp3bridgedeviceclass sisbridgedeviceclass
+            sisagp3bridgedeviceclass sisbridgedeviceclass \
+            viabridgedeviceclass
 
 #MM includes-copy
 %copy_includes path=hidd dir=include
