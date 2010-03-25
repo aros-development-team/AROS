@@ -14,6 +14,7 @@
 
 struct HIDDAGPData
 {
+    struct List classes;    /* List of AGPBridgeDevice classes */
 };
 
 struct agpstaticdata 

@@ -6,7 +6,7 @@
 #include <hidd/agp.h>
 #include <proto/oop.h>
 #include <proto/exec.h>
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "agp_private.h"
