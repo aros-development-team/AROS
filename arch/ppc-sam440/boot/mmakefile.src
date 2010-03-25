@@ -24,7 +24,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-pci \
 #MM	kernel-pci-amcc440 \
 #MM	kernel-graphics \
-#MM	kernel-cgfx-kobj \
+#MM	kernel-cgfx \
 #MM	kernel-layers \
 #MM	kernel-keymap \
 #MM	kernel-intuition \
@@ -56,7 +56,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-usb-sam440-ppc \
 #MM	kernel-usb-usbromstartup
 
-PKG_LIBS     := aros mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench dos boot poseidon
+PKG_LIBS     := aros cybergraphics mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench dos boot poseidon
 PKG_RSRC     := misc bootloader battclock bootmenu dosboot usbromstartup
 PKG_DEVS     := input gameport keyboard console timer ata USBHardware/pciusb
 PKG_HANDLERS := con nil amberram packet cdrom sfs afs
@@ -73,26 +73,33 @@ MODULES := \
 	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) \
 	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB_PSD))) \
 
-.PHONY: $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
+TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
+
+.PHONY: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 	
 kernel-package-sam440-ppc:
 	$(RM) -rf $(BINDIR)/boot/modules
 	%mkdirs_q $(BINDIR)/boot/modules
 	@mv $(MODULES) $(BINDIR)/boot/modules/
-	# Dirty hack to link graphics.library with cybergraphics (they use the same graphics_driver!!!)
-	$(KERNEL_LD) -r $(BINDIR)/boot/modules/graphics.library $(KOBJSDIR)/cybergraphics_library.o -o $(BINDIR)/boot/modules/gfx.library
-	$(RM) $(BINDIR)/boot/modules/graphics.library
 	#$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/kernel.pkg $(BINDIR)/.pkg
 	
-bootiso-sam440-ppc: $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
+bootiso-sam440-ppc: $(AROSDIR)/.backdrop $(TARGET_ISO)
 
-$(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso:
+$(AROSDIR)/.backdrop: $(SRCDIR)/workbench/.backdrop
+	@$(CP) $< $@
+
+#MM
+bootiso-sam440-ppc-quick: $(TARGET_ISO)
+
+.PHONY: bootiso-sam440-ppc-quick
+
+$(TARGET_ISO):
 	%mkdirs_q $(AROSDIR)/S
 	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
-	@$(MKDIR) -p "$(PORTSDIR)"
+	@$(MKDIR) -p "$(DISTDIR)"
 	@mkisofs -f \
-		-o $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso \
+		-o $@ \
 		-b Parthenope \
 		-no-emul-boot \
 		-allow-leading-dots \

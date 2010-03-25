@@ -16,12 +16,13 @@ title AROS PowerPC test poseidon
     module boot/modules/cdrom.handler
     module boot/modules/con.handler
     module boot/modules/console.device
+    module boot/modules/cybergraphics.library
     module boot/modules/dosboot.resource
     module boot/modules/dos.library
     module boot/modules/expansion.library
     module boot/modules/gameport.device
-    module boot/modules/gfx.library
     module boot/modules/graphics.hidd
+    module boot/modules/graphics.library
     module boot/modules/hiddclass.hidd
     module boot/modules/i2c.hidd
     module boot/modules/i2c-amcc440.hidd
