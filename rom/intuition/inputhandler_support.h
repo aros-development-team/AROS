@@ -106,7 +106,9 @@ void FixWindowCoords(struct Window *win, LONG *left, LONG *top, LONG *width, LON
 
 void WindowNeedsRefresh(struct Window * w, struct IntuitionBase * IntuitionBase );
 
-struct Window *FindActiveWindow(struct InputEvent *ie,ULONG *stitlebarhit,
+struct Screen *FindActiveScreen(struct IntuitionBase *IntuitionBase);
+
+struct Window *FindActiveWindow(struct InputEvent *ie, struct Screen *scr, ULONG *stitlebarhit,
                     	    	struct IntuitionBase *IntuitionBase);
 
 struct Window *FindDesktopWindow(struct Screen *screen,struct IntuitionBase *IntuitionBase);
