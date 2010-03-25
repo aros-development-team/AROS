@@ -338,7 +338,7 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 
     if (modeid != vHidd_ModeID_Invalid) {
         tags[1].ti_Tag  = aHidd_BitMap_ClassPtr;
-	D(bug("[GDI] Displayable: %d, ModeID: 0x%08lX, ClassPtr: 0x%p\n", displayable, modeid, tags[1].ti_Data));
+	D(bug("[GDI] ModeID: 0x%08lX, ClassPtr: 0x%p\n", modeid, tags[1].ti_Data));
     }
     /* longword-align planar bitmaps. This is needed for BlitColorExpansion() to work properly. */
     if (stdpf == vHidd_StdPixFmt_Plane)
@@ -411,6 +411,7 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	    NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, bmdata);
 	    Wait(SIGF_BLIT);
 	    KrnRemIRQHandler(gfx_int);
+	    D(bug("[GDI] Adding bitmap data 0x%p, window 0x%p\n", bmdata, ((struct bitmap_data *)bmdata)->window));
 	    AddTail((struct List *)&data->bitmaps, (struct Node *)bmdata);
 	}
     } else {
@@ -418,6 +419,7 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 
         for (bmdata = (struct bitmap_data *)data->bitmaps.mlh_Head;
 	     bmdata->node.mln_Succ; bmdata = (struct bitmap_data *)bmdata->node.mln_Succ) {
+	    D(bug("[GDI] Removing bitmap data 0x%p, window 0x%p\n", bmdata, bmdata->window));
 	    if (bmdata->window) {
 		NATIVECALL(GDI_PutMsg, bmdata->window, WM_CLOSE, 0, 0);
 		bmdata->window = NULL;

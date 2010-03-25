@@ -66,10 +66,6 @@
         IntuitionBase->ViewLord.ViewPort = NULL;
         LoadView(NULL);
     }
-    else if (IntuitionBase->ViewLord.ViewPort == &screen->ViewPort)
-    {
-        DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: ViewLord.Viewport == screen->ViewPort,does nothing\n"));
-    }
     else
     {
         /* Find visible screens */
@@ -79,11 +75,12 @@
 
         screen->ViewPort.Modes &= ~VP_HIDE;
 
+	/* Not needed. Perhaps... Pavel Fedin <pavel_fedin@mail.ru>
 	if (!(GetPrivScreen(screen)->SpecialFlags & SF_Compose)) {
             while ((screen = screen->NextScreen))
                 screen->ViewPort.Modes |= VP_HIDE;
         }
-
+	*/
         /* Build the list of viewports in the view */
 	DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: Building viewports list\n"));
         viewportptr = &IntuitionBase->ViewLord.ViewPort;
@@ -91,7 +88,7 @@
         {
             if ((screen->ViewPort.Modes & VP_HIDE) == 0)
             {
-		DEBUG_RETHINKDISPLAY(bug("[RethinkDisplay] Adding ViewPort 0x%p for screen 0x%p\n", &screen->ViewPort, screen));
+		DEBUG_RETHINKDISPLAY(bug("RethinkDisplay: Adding ViewPort 0x%p for screen 0x%p\n", &screen->ViewPort, screen));
                 *viewportptr = &screen->ViewPort;
                 viewportptr = &screen->ViewPort.Next;
             }
