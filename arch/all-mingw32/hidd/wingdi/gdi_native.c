@@ -226,11 +226,17 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
 		        bmdata->window = CreateWindow((LPCSTR)bitmap_class, NULL, WS_BORDER|WS_CHILD|WS_CLIPSIBLINGS|WS_DISABLED, bmdata->bm_left - 1, bmdata->bm_top - 1, bmdata->bm_width + 2, bmdata->bm_height + 2,
 						      gdata->fbwin, NULL, display_class_desc.hInstance, NULL);
 		    DWIN(printf("[GDI] Bitmap window: 0x%p\n", bmdata->window));
-		    SetWindowLongPtr(bmdata->window, GWLP_USERDATA, (LONG_PTR)bmdata);
-		    /* We actually show the window only now, because otherwise it will pop up in front of all windows, and then
-		       immediately jump backwards, causing irritating flicker */
-		    SetWindowPos(bmdata->window, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE|SWP_SHOWWINDOW);
-		    UpdateWindow(bmdata->window);
+		    if (bmdata->window) {
+			/* Find out previous window */
+		        struct bitmap_data *prev_bitmap = (struct bitmap_data *)bmdata->node.mln_Pred;
+			HWND prev_win = prev_bitmap->node.mln_Pred ? prev_bitmap->window : HWND_TOP;
+			
+		        SetWindowLongPtr(bmdata->window, GWLP_USERDATA, (LONG_PTR)bmdata);
+		        /* We actually show the window only now, because otherwise it will pop up in front of all windows, and then
+		           immediately jump backwards, causing irritating flicker */
+		        SetWindowPos(bmdata->window, prev_win, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE|SWP_SHOWWINDOW);
+		        UpdateWindow(bmdata->window);
+		    }
             	}
             	KrnCauseIRQ(ctl->IrqNum);
             	break;
