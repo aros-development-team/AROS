@@ -193,8 +193,8 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access, struct ExtFileLoc
         D(bug("[fat] created new global lock\n"));
 
         /* look through the notify list. if there's any in there that aren't
-         * currently attached to a global lock, expand them and are for this
-         * file, fill them in */
+         * currently attached to a global lock, expand them and if they are
+         * for this file, fill them in */
         {
             struct NotifyNode *nn;
 
