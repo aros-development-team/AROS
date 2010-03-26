@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2008 The AROS Development Team
+ * Copyright © 2007-2010 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -68,7 +68,7 @@ static void fat_hexdump(unsigned char *buf, int bufsz) {
 
 LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *data, ULONG *nread) {
     LONG err = 0;
-    ULONG sector_offset, byte_offset, cluster_offset;
+    ULONG sector_offset, byte_offset, cluster_offset, old_sector;
     struct cache_block *b;
     ULONG pos, ncopy;
 
@@ -100,7 +100,8 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
                 ioh->cluster_offset = 0;
             }
 
-            D(bug("[fat] moving forward %ld clusters from cluster %ld\n", cluster_offset - ioh->cluster_offset, ioh->cur_cluster));
+            D(bug("[fat] moving forward %ld clusters from cluster %ld\n",
+                cluster_offset - ioh->cluster_offset, ioh->cur_cluster));
 
             /* find it */
             for (i = 0; i < cluster_offset - ioh->cluster_offset; i++) {
@@ -128,6 +129,7 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
         }
 
         /* recalculate the sector location if we moved */
+        old_sector = ioh->cur_sector;
         if (ioh->sector_offset != (sector_offset & (ioh->sb->cluster_sectors-1))
             || ioh->first_cluster == 0) {
 
@@ -146,14 +148,13 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
 
                 D(bug("[fat] adjusted for cluster 0, chunk starts in sector %ld\n", ioh->cur_sector));
             }
-            
             else
                 D(bug("[fat] chunk starts %ld sectors into the cluster, which is sector %ld\n", ioh->sector_offset, ioh->cur_sector));
         }
 
         /* if we don't have the wanted block kicking around, we need to bring it
          * in from the cache */
-        if (ioh->block == NULL || ioh->cur_sector != ioh->block->num) {
+        if (ioh->block == NULL || ioh->cur_sector != old_sector) {
             if (ioh->block != NULL) {
                 cache_put_block(ioh->sb->cache, ioh->block, 0);
                 ioh->block = NULL;
@@ -204,7 +205,7 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
 
 LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *data, ULONG *nwritten) {
     LONG err = 0;
-    ULONG sector_offset, byte_offset, cluster_offset;
+    ULONG sector_offset, byte_offset, cluster_offset, old_sector;
     struct cache_block *b;
     ULONG pos, ncopy;
 
@@ -294,6 +295,7 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
         }
 
         /* recalculate the sector location if we moved */
+        old_sector = ioh->cur_sector;
         if (ioh->sector_offset != (sector_offset & (ioh->sb->cluster_sectors-1))
             || ioh->first_cluster == 0) {
 
@@ -312,14 +314,13 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
 
                 D(bug("[fat] adjusted for cluster 0, chunk starts in sector %ld\n", ioh->cur_sector));
             }
-            
             else
                 D(bug("[fat] chunk starts %ld sectors into the cluster, which is sector %ld\n", ioh->sector_offset, ioh->cur_sector));
         }
 
         /* if we don't have the wanted block kicking around, we need to bring it
          * in from the cache */
-        if (ioh->block == NULL || ioh->cur_sector != ioh->block->num) {
+        if (ioh->block == NULL || ioh->cur_sector != old_sector) {
             if (ioh->block != NULL) {
                 cache_put_block(ioh->sb->cache, ioh->block, 0);
                 ioh->block = NULL;
@@ -327,7 +328,8 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
 
             D(bug("[fat] requesting sector %ld from cache\n", ioh->cur_sector));
 
-            err = cache_get_block(ioh->sb->cache, ioh->sb->first_device_sector + ioh->cur_sector, 0, &b);
+            err = cache_get_block(ioh->sb->cache, ioh->sb->first_device_sector
+                + ioh->cur_sector, 0, &b);
             if (err > 0) {
                 RESET_HANDLE(ioh);
 
