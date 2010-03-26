@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2009, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -588,7 +588,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
          *  to open on the default public screen that way 
          */
 
-    if (!nw.Screen && (pubScreenName || (nw.Type == PUBLICSCREEN)))
+    if (pubScreenName || (nw.Type == PUBLICSCREEN))
     {
         struct Screen *pubs = 0;
 
@@ -606,7 +606,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
         if (nw.Screen) nw.Flags |= WFLG_VISITOR;
     }
 
-    if (!nw.Screen && nw.Type == WBENCHSCREEN)
+    if (nw.Type == WBENCHSCREEN)
     {
         nw.Screen = LockPubScreen("Workbench");
         if (nw.Screen)
