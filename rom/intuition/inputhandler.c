@@ -52,8 +52,10 @@
 #define DEBUG_HANDLER(x)    ;
 #define DEBUG_KEY(x)        ;
 #define DEBUG_SCREENKEY(x)  ;
+#define DEBUG_CLICK(x)
 #define DEBUG_DRAG(x)
 #define DEBUG_MOUSE(x)
+#define DEBUG_WIN(x)
 
 /****************************************************************************************/
 
@@ -482,6 +484,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	    BOOL new_gadget = FALSE;
 	    BOOL sizeverify = FALSE;
 
+	    DEBUG_CLICK(bug("[Inputhandler] Screen 0x%p, Window 0x%p, Gadget 0x%p, screen titlebar %d, new active window %d\n", screen, w, gadget, stitlebarhit, new_active_window));
 	    iihdata->ActQualifier |= IEQUALIFIER_LEFTBUTTON;
 
 	    /* Enter screen dragging mode if LAmiga + LButton are pressed.
@@ -547,19 +550,17 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 		   for sdepth gadget!
 		   FIXME: Why? I've left this comment for informational purposes, however i
 		          use active screen. */
-		gadget = FindGadget (screen,
-			     stitlebarhit ? 0 : w, stitlebarhit ? 0 : req,
-			     IntuitionBase->ActiveScreen ? IntuitionBase->ActiveScreen->MouseX : 0,
-			     IntuitionBase->ActiveScreen ? IntuitionBase->ActiveScreen->MouseY : 0,
-			     gi, FALSE, IntuitionBase);
-
-		D(bug("Click on gadget %p\n", gadget));
+		if (screen)
+		    gadget = FindGadget (screen, stitlebarhit ? NULL : w, stitlebarhit ? NULL : req,
+					 screen->MouseX, screen->MouseY, gi, FALSE, IntuitionBase);
+		DEBUG_CLICK(bug("Click on gadget %p\n", gadget));
 		new_gadget = TRUE;
 
 	    } /* if (!gadget) */
 
 	    /* If we clicked screen titlebar outside of any gadget, enter drag mode */
 	    if ((!gadget) && stitlebarhit) {
+		DEBUG_CLICK(bug("[Inputhandler] Entering drag state for screen 0x%p\n", screen));
 	        iihdata->ScreenDrag = screen;
 	        *keep_event = FALSE;
 		break;
@@ -570,8 +571,9 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	        {
 		    struct Window *ww = 0;
 		
-		    if ((ww = FindDesktopWindow(screen, IntuitionBase)))
-		    {
+		    ww = FindDesktopWindow(screen, IntuitionBase);
+		    DEBUG_CLICK(bug("[Inputhandler] Clicked on backdrop window 0x%p\n", ww));
+		    if (ww) {
 		        ActivateWindow(ww);
 		        w = ww;
 		    }
@@ -592,6 +594,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	        }
 	        else
 	        {
+		    DEBUG_CLICK(bug("[Inputhandler] Resetting doubleclick counter\n"));
 		    GetPrivIBase(IntuitionBase)->DoubleClickButton = SELECTDOWN;
 		    GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
 	        }
@@ -1892,7 +1895,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             if (ie->ie_Class == IECLASS_RAWMOUSE && ie->ie_Code == SELECTDOWN)
             {
                 w = FindActiveWindow(ie, screen, &stitlebarhit, IntuitionBase);
-                D(bug("iih:New active window: %p\n", w));
+                DEBUG_CLICK(bug("iih:New active window: %p\n", w));
             }
 
 
@@ -1900,13 +1903,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             {
                 if (w)
                 {
-                    D(bug("Activating new window (title %s)\n", w->Title ? w->Title : "<noname>"));
+                    DEBUG_WIN(bug("Activating new window (title %s)\n", w->Title ? w->Title : "<noname>"));
 
-                    D(bug("Window activated\n"));
+                    DEBUG_WIN(bug("Window activated\n"));
                 }
                 else
                 {
-                    D(bug("Making active window inactive. Now there's no active window\n"));
+                    DEBUG_WIN(bug("Making active window inactive. Now there's no active window\n"));
                 }
                 new_active_window = TRUE;
                 iihdata->NewActWindow = w;
