@@ -33,6 +33,8 @@ OOP_Object * METHOD(AGP, Root, New)
     {
         struct HIDDAGPData * adata = OOP_INST_DATA(cl, o);
         NEWLIST(&adata->classes);
+        HiddAgpRegisterClass(adata, CLID_Hidd_i845BridgeDevice);
+        HiddAgpRegisterClass(adata, CLID_Hidd_i7505BridgeDevice);
         HiddAgpRegisterClass(adata, CLID_Hidd_SiSBridgeDevice);
         HiddAgpRegisterClass(adata, CLID_Hidd_VIABridgeDevice);
         HiddAgpRegisterClass(adata, CLID_Hidd_VIAAgp3BridgeDevice);

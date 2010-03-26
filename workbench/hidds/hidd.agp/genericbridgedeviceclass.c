@@ -88,7 +88,7 @@ VOID writeconfigword(OOP_Object * pciDevice, UBYTE where, UWORD val)
 
 VOID Wbinvd(); /* Implemented in assembler */
 
-static VOID flushcpucache()
+VOID flushcpucache()
 {
     /* Don't use clflush here. Both linux and BSD codes use full wbinvd */
     Supervisor(Wbinvd);

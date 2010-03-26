@@ -26,6 +26,9 @@ struct agpstaticdata
     OOP_Class       *sisBridgeDeviceClass;
     OOP_Class       *viaBridgeDeviceClass;
     OOP_Class       *viaAgp3BridgeDeviceClass;
+    OOP_Class       *i8XXBridgeDeviceClass;
+    OOP_Class       *i845BridgeDeviceClass;
+    OOP_Class       *i7505BridgeDeviceClass;
     
     OOP_AttrBase    hiddAGPBridgeDeviceAB;
     OOP_AttrBase    hiddPCIDeviceAB;
@@ -144,6 +147,27 @@ struct HIDDVIAAgp3BridgeDeviceData
 {
 };
 
+/* Abstract class with support for most i8XX chipsets */
+#define CLID_Hidd_i8XXBridgeDevice   "hidd.agp.i8xxbridgedevice"
+
+struct HIDDi8XXBridgeDeviceData
+{
+};
+
+/* Supports i845 chipsets */
+#define CLID_Hidd_i845BridgeDevice   "hidd.agp.i845bridgedevice"
+
+struct HIDDi845BridgeDeviceData
+{
+};
+
+/* Supports i7505 chipsets */
+#define CLID_Hidd_i7505BridgeDevice   "hidd.agp.i7505bridgedevice"
+
+struct HIDDi7505BridgeDeviceData
+{
+};
+
 /* Registers defines */
 #define AGP_APER_BASE                   0x10                /* BAR0 */
 #define AGP_VERSION_REG                 0x02
@@ -177,6 +201,8 @@ struct HIDDVIAAgp3BridgeDeviceData
 #define readl(addr)                     (*(volatile ULONG*)(addr))
 #define min(a,b)                        ((a) < (b) ? (a) : (b))
 #define max(a,b)                        ((a) > (b) ? (a) : (b))
+
+VOID flushcpucache();
 
 /* Config area access */
 UBYTE readconfigbyte(OOP_Object * pciDevice, UBYTE where);
