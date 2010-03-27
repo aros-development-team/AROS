@@ -29,6 +29,9 @@ struct agpstaticdata
     OOP_Class       *i8XXBridgeDeviceClass;
     OOP_Class       *i845BridgeDeviceClass;
     OOP_Class       *i7505BridgeDeviceClass;
+    OOP_Class       *i915BridgeDeviceClass;
+    OOP_Class       *i965BridgeDeviceClass;
+    OOP_Class       *g33BridgeDeviceClass;
     
     OOP_AttrBase    hiddAGPBridgeDeviceAB;
     OOP_AttrBase    hiddPCIDeviceAB;
@@ -168,6 +171,48 @@ struct HIDDi7505BridgeDeviceData
 {
 };
 
+/* Intel IGPs support: i915, i965, g33 */
+/* These classes implement the AGPBridgeDevice interface but do not
+ * inherit from GenericBridgeDevice */
+ 
+/* FIXME: these classes are not completly implemented and are not tested.
+ * They are also not registered with the AGP class. */
+ 
+#define CLID_Hidd_i915BridgeDevice   "hidd.agp.i915bridgedevice"
+
+struct HIDDi915BridgeDeviceData
+{
+    struct SignalSemaphore lock;        /* Lock for device operations */
+
+    /* Bridge data */
+    ULONG               bridgemode;     /* Mode of AGP bridge */
+    IPTR                bridgeaperbase; /* Base address for aperture */
+    IPTR                bridgeapersize; /* Size of aperture */
+    APTR                flushpage;
+    ULONG               *gatttable;
+    APTR                scratchmembuffer;/* Buffer for scratch mem */
+    ULONG               *scratchmem;    /* 4096 aligned scratch mem */
+    UBYTE               *regs;
+    ULONG               firstgattentry;
+
+    ULONG               state;          /* State of the device */
+
+
+    /* IGP data */
+    OOP_Object          *igp;           /* IGP video device */
+};
+
+#define CLID_Hidd_i965BridgeDevice   "hidd.agp.i965bridgedevice"
+
+struct HIDDi965BridgeDeviceData
+{
+};
+
+#define CLID_Hidd_g33BridgeDevice   "hidd.agp.g33bridgedevice"
+
+struct HIDDg33BridgeDeviceData
+{
+};
 /* Registers defines */
 #define AGP_APER_BASE                   0x10                /* BAR0 */
 #define AGP_VERSION_REG                 0x02
