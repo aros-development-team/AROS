@@ -11,7 +11,8 @@ FILES := init agpclass genericbridgedeviceclass agp3bridgedeviceclass \
             sisagp3bridgedeviceclass sisbridgedeviceclass \
             viabridgedeviceclass viaagp3bridgedeviceclass \
             i8xxbridgedeviceclass i845bridgedeviceclass \
-            i7505bridgedeviceclass
+            i7505bridgedeviceclass i915bridgedeviceclass \
+            i965bridgedeviceclass g33bridgedeviceclass
 
 #MM includes-copy
 %copy_includes path=hidd dir=include
