@@ -12,7 +12,7 @@
     SYNOPSIS
 
         DEVICE, UNIT/N, SYSSIZE/K/N, SYSTYPE/K, SYSNAME/K, WORKSIZE/K/N,
-        MAXWORK/S, WORKTYPE/K, WORKNAME/K, WIPE/S, FORCE/S, QUIET/S
+        MAXWORK/S, WORKTYPE/K, WORKNAME/K, WIPE/S, FORCE/S, QUIET/S, RDB/S
 
     LOCATION
 
@@ -75,6 +75,8 @@
 	FORCE -- Do not ask for confirmation before partitioning the drive.
         QUIET -- Do not print any output. This option can only be used when
             FORCE is also specified.
+        RDB -- Create only RDB partitions, no MBR or EBR partitions will be
+            created.
 
     RESULT
 
@@ -147,7 +149,7 @@ int main(void)
         *root = NULL, *partition, *extPartition = NULL, *parent = NULL;
     TEXT choice = 'N';
     CONST_STRPTR device;
-    const struct PartitionType *sysType, *workType;
+    const struct PartitionType *sysType = NULL, *workType = NULL;
     LONG error = 0, sysSize = 0, workSize = 0, sysHighCyl, lowCyl, highCyl,
         reqHighCyl, unit, hasActive = FALSE;
     QUAD rootLowBlock = 1, rootHighBlock = 0, extLowBlock = 1,
@@ -246,6 +248,7 @@ int main(void)
 
     if (error == 0)
     {
+        D(bug("[C:Partition] Open root partition\n"));
         if ((root = OpenRootPartition(device, unit)) == NULL)
         {
             error = ERROR_UNKNOWN;
@@ -257,23 +260,33 @@ int main(void)
     if (error == 0 && ARG(WIPE))
     {
         if (OpenPartitionTable(root) == 0)
+        {
+            D(bug("[C:Partition] WIPE root partition table\n"));
             error = DestroyPartitionTable(root);
+        }
     }
 
     if (error == 0)
     {
         /* Open the existing partition table, or create it if none exists */
+        D(bug("[C:Partition] Opening existing root partition table..."));
         if (OpenPartitionTable(root) != 0)
         {
-            /* Create a root MBR partition table */
-            if (CreatePartitionTable(root, PHPTT_MBR) != 0)
+            D(bug("failed\n[C:Partition] Creating %s root partition table\n",
+                  ARG(RDB) ? "RDB" : "MBR"));
+
+            ULONG type = ARG(RDB) ? PHPTT_RDB : PHPTT_MBR;
+            /* Create a root partition table */
+            if (CreatePartitionTable(root, type) != 0)
             {
                 error = ERROR_UNKNOWN;
-                PutStr("*** ERROR: Creating MBR partition table failed.\n");
+                PutStr("*** ERROR: Creating root partition table failed.\n");
                 CloseRootPartition(root);
                 root = NULL;
             }
         }
+        else
+            D(bug("ok\n"));
     }
 
     if (error == 0)
@@ -281,44 +294,48 @@ int main(void)
         /* Find largest gap in root partition */
         FindLargestGap(root, &rootLowBlock, &rootHighBlock);
 
-        /* Look for extended partition and count partitions */
-        ForeachNode(&root->table->list, partition)
+        if (!ARG(RDB))
         {
-            if (OpenPartitionTable(partition) == 0)
+            /* Look for extended partition and count partitions */
+            ForeachNode(&root->table->list, partition)
             {
-                if (partition->table->type == PHPTT_EBR)
-                    extPartition = partition;
-                else
-                    ClosePartitionTable(partition);
+                if (OpenPartitionTable(partition) == 0)
+                {
+                    if (partition->table->type == PHPTT_EBR)
+                        extPartition = partition;
+                    else
+                        ClosePartitionTable(partition);
+                }
+
+                if (!hasActive)
+                    GetPartitionAttrsTags(partition,
+                        PT_ACTIVE, (IPTR) &hasActive, TAG_DONE);
+
+                partCount++;
             }
 
-            if (!hasActive)
-                GetPartitionAttrsTags(partition,
-                    PT_ACTIVE, (IPTR) &hasActive, TAG_DONE);
-
-            partCount++;
-        }
-
-        /* Create extended partition if it doesn't exist */
-        if (extPartition == NULL)
-        {
-            lowCyl = (rootLowBlock - 1)
-                / (LONG)(root->de.de_Surfaces * root->de.de_BlocksPerTrack)
-                + 1;
-            highCyl = (rootHighBlock + 1)
-                / (root->de.de_Surfaces * root->de.de_BlocksPerTrack) - 1;
-            extPartition =
-                CreateMBRPartition(root, lowCyl, highCyl, 0x5);
-            if (extPartition != NULL)
+            /* Create extended partition if it doesn't exist */
+            if (extPartition == NULL)
             {
-                if (CreatePartitionTable(extPartition, PHPTT_EBR) != 0)
+                D(bug("[C:Partition] Creating EBR partition\n"));
+                lowCyl = (rootLowBlock - 1)
+                    / (LONG)(root->de.de_Surfaces * root->de.de_BlocksPerTrack)
+                    + 1;
+                highCyl = (rootHighBlock + 1)
+                    / (root->de.de_Surfaces * root->de.de_BlocksPerTrack) - 1;
+                extPartition = 
+                    CreateMBRPartition(root, lowCyl, highCyl, 0x5);
+                if (extPartition != NULL)
                 {
-                    PutStr("*** ERROR: Creating extended partition table failed.\n");
-                    extPartition = NULL;
+                    if (CreatePartitionTable(extPartition, PHPTT_EBR) != 0)
+                    {
+                        PutStr("*** ERROR: Creating extended partition table failed.\n");
+                        extPartition = NULL;
+                    }
+                    rootLowBlock = 1;
+                    rootHighBlock = 0;
+                    partCount++;
                 }
-                rootLowBlock = 1;
-                rootHighBlock = 0;
-                partCount++;
             }
         }
     }
@@ -350,8 +367,8 @@ int main(void)
         /* Convert block range to cylinders */
         lowCyl = ((LONG)lowBlock - 1)
             / (LONG)(parent->de.de_Surfaces * parent->de.de_BlocksPerTrack) + 1;
-        highCyl = (highBlock + 1)
-            / (parent->de.de_Surfaces * parent->de.de_BlocksPerTrack) - 1;
+        highCyl = ((LONG)highBlock + 1)
+            / (LONG)(parent->de.de_Surfaces * parent->de.de_BlocksPerTrack) - 1;
 
         /* Ensure neither partition is too large for its filesystem */
         if ((sysSize == 0 &&
@@ -373,14 +390,15 @@ int main(void)
             && reqHighCyl < highCyl)
             highCyl = reqHighCyl;
         if (reqHighCyl > highCyl
-            || highCyl - lowCyl + 1 < MBsToCylinders(MIN_SIZE, &parent->de)
-            && workSize == 0)
+            || (highCyl - lowCyl + 1 < MBsToCylinders(MIN_SIZE, &parent->de)
+            && workSize == 0))
             error = ERROR_DISK_FULL;
     }
 
-    if (error == 0)
+    if (error == 0 && !ARG(RDB))
     {
         /* Create RDB virtual disk */
+        D(bug("[C:Partition] Creating RDB virtual disk\n"));
         diskPart = CreateMBRPartition(parent, lowCyl, highCyl, 0x30);
         if (diskPart == NULL)
         {
@@ -389,9 +407,10 @@ int main(void)
         }
     }
 
-    if (error == 0)
+    if (error == 0 && !ARG(RDB))
     {
         /* Create RDB partition table inside virtual-disk partition */
+        D(bug("[C:Partition] Creating RDB partition table\n"));
         error = CreatePartitionTable(diskPart, PHPTT_RDB);
         if (error != 0)
         {
@@ -402,24 +421,52 @@ int main(void)
 
     if (error == 0)
     {
-        sysHighCyl = MBsToCylinders(sysSize, &diskPart->de);
-
-        /* Create partitions in the RDB table */
-
-        /* Create System partition (defaults to FFSIntl) */
-        sysPart = CreateRDBPartition(diskPart, 0, sysHighCyl, (APTR)ARG(SYSNAME),
-            TRUE, sysType);
-        if (sysPart == NULL)
-            error = ERROR_UNKNOWN;
-
-        if (sysSize != 0
-            && sysHighCyl < diskPart->de.de_HighCyl - diskPart->de.de_LowCyl)
+        if (ARG(RDB))
         {
-            /* Create Work partition (defaults to SFS) */
-            workPart = CreateRDBPartition(diskPart, sysHighCyl + 1, 0,
-                (APTR)ARG(WORKNAME), FALSE, workType);
-            if (workPart == NULL)
+            diskPart = parent;
+
+            /* Create partitions in the RDB table */
+            sysHighCyl = sysSize != 0
+                        ? lowCyl + MBsToCylinders(sysSize, &diskPart->de)
+                        : highCyl;
+
+            /* Create System partition (defaults to FFSIntl) */
+            sysPart = CreateRDBPartition(diskPart, lowCyl, sysHighCyl, (APTR)ARG(SYSNAME),
+                TRUE, sysType);
+            if (sysPart == NULL)
                 error = ERROR_UNKNOWN;
+
+            if (error == 0
+                && workSize != 0
+                && sysHighCyl < diskPart->de.de_HighCyl - diskPart->de.de_LowCyl)
+            {
+                /* Create Work partition (defaults to SFS) */
+                workPart = CreateRDBPartition(diskPart, sysHighCyl + 1, highCyl,
+                    (APTR)ARG(WORKNAME), FALSE, workType);
+                if (workPart == NULL)
+                    error = ERROR_UNKNOWN;
+            }
+        }
+        else
+        {
+            /* Create partitions in the RDB table */
+            sysHighCyl = MBsToCylinders(sysSize, &diskPart->de);
+
+            /* Create System partition (defaults to FFSIntl) */
+            sysPart = CreateRDBPartition(diskPart, 0, sysHighCyl, (APTR)ARG(SYSNAME),
+                TRUE, sysType);
+            if (sysPart == NULL)
+                error = ERROR_UNKNOWN;
+
+            if (sysSize != 0
+                && sysHighCyl < diskPart->de.de_HighCyl - diskPart->de.de_LowCyl)
+            {
+                /* Create Work partition (defaults to SFS) */
+                workPart = CreateRDBPartition(diskPart, sysHighCyl + 1, 0,
+                    (APTR)ARG(WORKNAME), FALSE, workType);
+                if (workPart == NULL)
+                    error = ERROR_UNKNOWN;
+            }
         }
     }
 
@@ -427,7 +474,7 @@ int main(void)
     {
         /* If MBR has no active partition, make extended partition active to
            prevent broken BIOSes from treating disk as unbootable */
-        if (!hasActive)
+        if (!hasActive && !ARG(RDB))
             SetPartitionAttrsTags(extPartition, PT_ACTIVE, TRUE, TAG_DONE);
 
         /* Save to disk and deallocate */
