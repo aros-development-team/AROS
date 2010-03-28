@@ -25,9 +25,9 @@
 
 D(extern void debugmem(void));
 
-int exec_main(struct TagItem *msg, void *entry);
-extern const APTR Exec_FuncTable[];
-extern ULONG Exec_MakeFunctions(APTR, APTR, APTR, APTR);
+void exec_main(struct TagItem *msg, void *entry);
+extern CONST_APTR Exec_FuncTable[];
+extern ULONG Exec_MakeFunctions(APTR, CONST_APTR, CONST_APTR, struct ExecBase *);
 void exec_DefaultTaskExit();
 IPTR **exec_RomTagScanner(struct TagItem *msg);
 extern struct Library * PrepareAROSSupportBase (void);
@@ -58,7 +58,7 @@ const struct __attribute__((section(".text"))) Resident Exec_resident =
 {
         RTC_MATCHWORD,          /* Magic value used to find resident */
         &Exec_resident,         /* Points to Resident itself */
-        &Exec_resident+1,       /* Where could we find next Resident? */
+        (APTR)&Exec_resident+1, /* Where could we find next Resident? */
         0,                      /* There are no flags!! */
         41,                     /* Version */
         NT_LIBRARY,             /* Type */
@@ -68,18 +68,57 @@ const struct __attribute__((section(".text"))) Resident Exec_resident =
         exec_main               /* Library initializer (for exec this value is irrelevant since we've jumped there at the begining to bring the system up */
 };
 
-int exec_main(struct TagItem *msg, void *entry)
+static uint32_t exec_SelectMbs(uint32_t bcr)
+{
+    switch (bcr & SDRAM_SDSZ_MASK)
+    {
+        case SDRAM_SDSZ_256MB: return 256;
+        case SDRAM_SDSZ_128MB: return 128;
+        case  SDRAM_SDSZ_64MB: return  64;
+        case  SDRAM_SDSZ_32MB: return  32;
+        case  SDRAM_SDSZ_16MB: return  16;
+        case   SDRAM_SDSZ_8MB: return   8;
+    }
+
+    return 0;
+}
+
+/* Detect and report amount of available memory in mega bytes via device control register bus */
+static uint32_t exec_GetMemory()
+{
+    uint32_t mem;
+    wrdcr(SDRAM0_CFGADDR, SDRAM0_B0CR);
+    mem = exec_SelectMbs(rddcr(SDRAM0_CFGDATA));
+    //D(bug("[exec] B0CR %08x %uM\n", rddcr(SDRAM0_CFGDATA), mem));
+
+    wrdcr(SDRAM0_CFGADDR, SDRAM0_B1CR);
+    mem += exec_SelectMbs(rddcr(SDRAM0_CFGDATA));
+    //D(bug("[exec] B1CR %08x %uM\n", rddcr(SDRAM0_CFGDATA), mem));
+
+    wrdcr(SDRAM0_CFGADDR, SDRAM0_B2CR);
+    mem += exec_SelectMbs(rddcr(SDRAM0_CFGDATA));
+    //D(bug("[exec] B2CR %08x %uM\n", rddcr(SDRAM0_CFGDATA), mem));
+
+    wrdcr(SDRAM0_CFGADDR, SDRAM0_B3CR);
+    mem += exec_SelectMbs(rddcr(SDRAM0_CFGDATA));
+    //D(bug("[exec] B3CR %08x %uM\n", rddcr(SDRAM0_CFGDATA), mem));
+
+    return mem;
+}
+
+void exec_main(struct TagItem *msg, void *entry)
 {
     struct ExecBase *SysBase = NULL;
     uintptr_t lowmem = 0;
+    uint32_t mem;
     int i;
     
     D(bug("[exec] AROS for Sam440 - The AROS Research OS\n"));
 
     /* Prepare the exec base */
 
-    ULONG   negsize = LIB_VECTSIZE;             /* size of vector table */
-    void  **fp      = Exec_FuncTable; //LIBFUNCTABLE;  /* pointer to a function in the table */
+    ULONG   negsize = LIB_VECTSIZE;   /* size of vector table */
+    CONST_APTR *fp  = Exec_FuncTable; /* pointer to a function in the table */
 
     D(bug("[exec] Preparing the ExecBase...\n"));
 
@@ -184,15 +223,16 @@ int exec_main(struct TagItem *msg, void *entry)
 
     SumLibrary((struct Library *)SysBase);
 
-    D(bug("[exec] Adding memory\n"));
-    
-    AddMemList(0x01000000 - lowmem, 
+    mem = exec_GetMemory();
+    D(bug("[exec] Adding memory (%uM)\n", mem));
+
+    AddMemList(0x01000000 - lowmem,
                MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA,
                -10,
                (APTR)lowmem,
                (STRPTR)exec_chipname);
     
-    AddMemList((512 - 16) * 1024*1024,
+    AddMemList((mem - 16) * 1024*1024,
                MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL,
                0,
                (APTR)0x01000000,
@@ -304,7 +344,7 @@ int exec_main(struct TagItem *msg, void *entry)
 
         AddHead(&t->tc_MemEntry,&ml->ml_Node);
 
-        t->tc_Node.ln_Name = exec_name;
+        t->tc_Node.ln_Name = (char *)exec_name;
         t->tc_Node.ln_Pri = 0;
         t->tc_Node.ln_Type = NT_TASK;
         t->tc_State = TS_RUN;
@@ -444,7 +484,7 @@ IPTR **exec_RomTagScanner(struct TagItem *msg)
 
                     if (node)
                     {
-                        node->node.ln_Name  = res->rt_Name;
+                        node->node.ln_Name  = (char *)res->rt_Name;
                         node->node.ln_Pri   = res->rt_Pri;
                         node->module        = res;
 

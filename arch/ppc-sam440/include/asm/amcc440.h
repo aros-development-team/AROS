@@ -274,6 +274,21 @@ static inline void wrmsr(uint32_t msr) {
 #define SDR0_MFR_ZMII_MODE_RMII_10M     0x20000000
 #define SDR0_MFR_ZMII_MODE_RMII_100M    0x30000000
 
+/* DDR SDRAM Controller */
+#define SDRAM0_CFGADDR  0x0010  /* R/W DDR-SDRAM Address Register */
+#define SDRAM0_CFGDATA  0x0011  /* R/W DDR-SDRAM Data Register */
+#define SDRAM0_B0CR     0x0040  /* R/W DDR SDRAM Bank 0 Configuration */
+#define SDRAM0_B1CR     0x0044  /* R/W DDR SDRAM Bank 1 Configuration */
+#define SDRAM0_B2CR     0x0048  /* R/W DDR SDRAM Bank 2 Configuration */
+#define SDRAM0_B3CR     0x004C  /* R/W DDR SDRAM Bank 3 Configuration */
+
+#define SDRAM_SDSZ_MASK  0x000E0000
+#define SDRAM_SDSZ_256MB 0x000C0000
+#define SDRAM_SDSZ_128MB 0x000A0000
+#define SDRAM_SDSZ_64MB  0x00080000
+#define SDRAM_SDSZ_32MB  0x00060000
+#define SDRAM_SDSZ_16MB  0x00040000
+#define SDRAM_SDSZ_8MB   0x00020000
 
 /* Universal Interrupt Controller 0 */
 #define UIC0_SR         0x00C0 /* R/Clear UIC 0 Status Register */
