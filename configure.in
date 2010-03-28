@@ -1,4 +1,4 @@
-dnl Copyright © 1997-2009, The AROS Development Team. All rights reserved.
+dnl Copyright © 1997-2010, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for configuration file
@@ -685,10 +685,10 @@ case "$target_os" in
 		aros_object_format="elf_i386"
 		aros_flavour="emulation"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
-		aros_config_cflags="$aros_config_cflags -m32"
-		aros_kernel_cflags="$aros_kernel_cflags -m32"
-		aros_config_aflags="$aros_config_aflags -m32"
-		aros_config_ldflags="-m32"
+		aros_config_cflags="$aros_config_cflags -m32 -march=i486"
+		aros_kernel_cflags="$aros_kernel_cflags -m32 -march=i486"
+		aros_config_aflags="$aros_config_aflags -m32 -march=i486"
+		aros_config_ldflags="-m32 -march=i486"
 		aros_kernel_ldflags="-melf_i386"
 		aros_default_wbdepth=8
 		gcc_target_cpu="i386"
@@ -746,10 +746,10 @@ case "$target_os" in
                 fi
 		aros_flavour="standalone"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-		aros_config_cflags="$aros_config_cflags -m32"
-		aros_kernel_cflags="$aros_kernel_cflags -m32"
-		aros_config_aflags="$aros_config_aflags -m32"
-		aros_config_ldflags="-m32"
+		aros_config_cflags="$aros_config_cflags -m32 -march=i486"
+		aros_kernel_cflags="$aros_kernel_cflags -m32 -march=i486"
+		aros_config_aflags="$aros_config_aflags -m32 -march=i486"
+		aros_config_ldflags="-m32 -march=i486"
 		aros_kernel_ldflags="-melf_i386"
 		aros_default_wbwidth=640
 		aros_default_wbheight=480
