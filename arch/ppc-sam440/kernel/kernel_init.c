@@ -20,7 +20,7 @@
 /* forward declarations */
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg);
 
-extern int exec_main(struct TagItem *msg, void *entry);
+extern void exec_main(struct TagItem *msg, void *entry);
 
 /* A very very very.....
  * ... very ugly code.
