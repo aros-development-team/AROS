@@ -172,8 +172,9 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
                 {
 
                     /* this avoids mouse "jump" effect */
+		    /* .. but causes setting wrong coordinates - sonic
                     scr->Screen.MouseX = old->MouseX;
-                    scr->Screen.MouseY = old->MouseY;
+                    scr->Screen.MouseY = old->MouseY;*/
 
                     win = scr->Screen.FirstWindow;
 
