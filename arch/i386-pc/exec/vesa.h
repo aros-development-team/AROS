@@ -1,3 +1,11 @@
+/*
+    Copyright © 2007-2010, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: VBE-related definitions.
+    Lang: english
+*/
+
 #ifndef VESA_H_
 #define VESA_H_
 
@@ -17,7 +25,7 @@ extern short (*getControllerInfo)(void);
 extern short (*getModeInfo)(long mode);
 extern short (*setVbeMode)(long mode);
 extern short (*paletteWidth)(long req, unsigned char *width);
-extern short (*findMode)(int x, int y, int d, BOOL prioritise_depth);
+extern short (*findMode)(int x, int y, int d, int vfreq, BOOL prioritise_depth);
 extern struct vbe_controller *controllerinfo;
 extern struct vbe_mode       *modeinfo;
 
@@ -33,13 +41,28 @@ struct vesa11Info
     unsigned char memory_model;
 };
 
+struct CRTCInfoBlock
+{
+    UWORD h_total;
+    UWORD h_sync_start;
+    UWORD h_sync_end;
+    UWORD v_total;
+    UWORD v_sync_start;
+    UWORD v_sync_end;
+    UBYTE flags;
+    ULONG pixel_clock;
+    UWORD refresh_rate;
+    UBYTE reserved[40];
+} __attribute__((packed));
+
 extern short getControllerInfo(void);
 extern short getModeInfo(long mode);
 extern short setVbeMode(long mode);
 extern short paletteWidth(long req, unsigned char *width);
-extern short findMode(int x, int y, int d, BOOL prioritise_depth);
+extern short findMode(int x, int y, int d, int vfreq, BOOL prioritise_depth);
 extern struct vbe_controller controllerinfo;
 extern struct vbe_mode       modeinfo;
+extern struct CRTCInfoBlock  timings;
 
 #endif /*_IMPLEMENTATION_ */
 

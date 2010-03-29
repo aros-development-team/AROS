@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Early bootup section
@@ -1504,7 +1504,7 @@ unsigned char setupVesa(struct multiboot *mbinfo)
 
     if (vesa)
     {
-        long x=0, y=0, d=0;
+        long x=0, y=0, d=0, vfreq=0;
         long mode, setmode;
         unsigned long vesa_size = (unsigned long)&_binary_vesa_size;
         void *vesa_start = &_binary_vesa_start;
@@ -1527,12 +1527,21 @@ unsigned char setupVesa(struct multiboot *mbinfo)
         else
             d = x, x = 10000, y = 10000, prioritise_depth = TRUE;
 
+        /* Check for user-set refresh rate */
+        if (*(vesa - 1) == '@')
+        {
+            while (*vesa >= '0' && *vesa <= '9')
+                vfreq = vfreq * 10 + *vesa++ - '0';
+        }
+        else
+            vfreq = 60;
+
         rkprintf("[VESA] module (@ %p) size=%d\n", &_binary_vesa_start, &_binary_vesa_size);
         memcpy((void *)0x1000, vesa_start, vesa_size);
         rkprintf("[VESA] Module installed\n");
 
         rkprintf("[VESA] BestModeMatch for %dx%dx%d = ", x, y, d);
-        mode = findMode(x, y, d, prioritise_depth);
+        mode = findMode(x, y, d, vfreq, prioritise_depth);
 
         getModeInfo(mode);
 
