@@ -1,7 +1,7 @@
 #ifndef __EMUL_HANDLER_INTERN_H
 #define __EMUL_HANDLER_INTERN_H
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header-file for emulation-handler.
@@ -23,13 +23,14 @@
 struct emulbase
 {
     struct Device		  device;
-    				/* nlorentz: Cal it ev_std* because std* is reserved */
+    				/* nlorentz: Call it eb_std* because std* is reserved */
     struct Unit       		* eb_stdin;
     struct Unit       		* eb_stdout;
     struct Unit       		* eb_stderr;
     struct SignalSemaphore 	  sem;
     struct SignalSemaphore	  memsem;
     char    	    	    	* current_volume;
+    struct DeviceList           * volnode;
     APTR			  mempool;
     HIDD			  unixio;
 };
