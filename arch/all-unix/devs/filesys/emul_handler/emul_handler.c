@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Filesystem that accesses an underlying POSIX filesystem.
@@ -1039,7 +1039,8 @@ static LONG startup(struct emulbase *emulbase)
 			    len = AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME));
 			    dlv = AllocMem(sizeof(*dlv) + 4 + len, MEMF_CLEAR | MEMF_PUBLIC);
 			    len = AROS_BSTR_MEMSIZE4LEN(strlen(VOLNAME));
-			    dlv2 = AllocMem(sizeof(*dlv2) + 4 + len, MEMF_CLEAR | MEMF_PUBLIC);
+			    emulbase->volnode = dlv2 = AllocMem(sizeof(*dlv2)
+                                + 4 + len, MEMF_CLEAR | MEMF_PUBLIC);
 
 			    if (dlv != NULL && dlv2 != NULL)
 			    {
@@ -2374,7 +2375,7 @@ AROS_LH1(void, beginio,
 	    id->id_NumBlocksUsed = buf.f_blocks - buf.f_bavail;
 	    id->id_BytesPerBlock = buf.f_bsize;
 	    id->id_DiskType = ID_DOS_DISK; /* Well, not really true... */
-	    id->id_VolumeNode = NULL;
+	    id->id_VolumeNode = MKBADDR(emulbase->volnode);
 	    id->id_InUse = TRUE;
 	    
 	    break;
