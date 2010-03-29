@@ -1,3 +1,11 @@
+/*
+    Copyright © 2007-2010, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Real-mode code to set VBE mode.
+    Lang: english
+*/
+
 #define _IMPLEMENTATION_
 
 asm ("begin:");
@@ -12,6 +20,7 @@ asm (".long setVbeMode");
 asm (".long paletteWidth");
 asm (".long controllerinfo");
 asm (".long modeinfo");
+asm (".long timings");
 
 short getControllerInfo(void)
 {
@@ -64,11 +73,18 @@ short getModeInfo(long mode)
 short setVbeMode(long mode)
 {
     short retval;
+
+    /* Enable custom timings if possible */
+    if (controllerinfo.version >= 0x0300)
+        mode |= 0x800;
+    else
+        mode &= 0xf7ff;
+
     asm volatile("call go16 \n\t.code16 \n\t"
                 "movw $0x4f02, %%ax\n\t"
                 "int $0x10\n\t"
                 "movw %%ax, %0\n\t"
-                "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"0"(mode & 0xf7ff):"eax","ecx","cc");
+                "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"0"(mode),"D"(&timings):"eax","ecx","cc");
     return retval;
 }
 
@@ -87,7 +103,97 @@ short paletteWidth(long req, unsigned char* width)
     return retval;
 }
 
-short findMode(int x, int y, int d, BOOL prioritise_depth)
+/* Definitions used in CVT formula */
+#define M 600
+#define C 40
+#define K 128
+#define J 20
+#define DUTY_CYCLE(period) \
+    (((C - J) / 2 + J) * 1000 - (M / 2 * (period) / 1000))
+#define MIN_DUTY_CYCLE 20 /* % */
+#define MIN_V_PORCH 3 /* lines */
+#define MIN_V_PORCH_TIME 550 /* us */
+#define CLOCK_STEP 250000 /* Hz */
+
+/* Partial implementation of CVT formula */
+void calcTimings(int vfreq)
+{
+    ULONG x, y, h_period, h_freq, h_total, h_blank, h_front, h_sync, h_back,
+        v_freq, v_total, v_front, v_sync, v_back, duty_cycle, pixel_freq;
+
+    x = modeinfo.x_resolution;
+    y = modeinfo.y_resolution;
+
+    /* Get horizontal period in microseconds */
+    h_period = (1000000000 / vfreq - MIN_V_PORCH_TIME * 1000)
+        / (y + MIN_V_PORCH);
+
+    /* Vertical front porch is fixed */
+    v_front = MIN_V_PORCH;
+
+    /* Use aspect ratio to determine V-sync lines */
+    if (x == y * 4 / 3)
+        v_sync = 4;
+    else if (x == y * 16 / 9)
+        v_sync = 5;
+    else if (x == y * 16 / 10)
+        v_sync = 6;
+    else if (x == y * 5 / 4)
+        v_sync = 7;
+    else if (x == y * 15 / 9)
+        v_sync = 7;
+    else
+        v_sync = 10;
+
+    /* Get vertical back porch */
+    v_back = MIN_V_PORCH_TIME * 1000 / h_period + 1;
+    if (v_back < MIN_V_PORCH)
+        v_back = MIN_V_PORCH;
+    v_back -= v_sync;
+
+    /* Get total lines per frame */
+    v_total = y + v_front + v_sync + v_back;
+
+    /* Get horizontal blanking pixels */
+    duty_cycle = DUTY_CYCLE(h_period);
+    if (duty_cycle < MIN_DUTY_CYCLE)
+        duty_cycle = MIN_DUTY_CYCLE;
+
+    h_blank = 10 * x * duty_cycle / (100000 - duty_cycle);
+    h_blank /= 2 * 8 * 10;
+    h_blank = h_blank * (2 * 8);
+
+    /* Get total pixels in a line */
+    h_total = x + h_blank;
+
+    /* Calculate frequencies for each pixel, line and field */
+    h_freq = 1000000000 / h_period;
+    pixel_freq = h_freq * h_total / CLOCK_STEP * CLOCK_STEP;
+    h_freq = pixel_freq / h_total;
+    v_freq = 100 * h_freq / v_total;
+
+    /* Back porch is half of H-blank */
+    h_back = h_blank / 2;
+
+    /* H-sync is a fixed percentage of H-total */
+    h_sync = h_total / 100 * 8;
+
+    /* Front porch is whatever's left */
+    h_front = h_blank - h_sync - h_back;
+
+    /* Fill in VBE timings structure */
+    timings.h_total = h_total;
+    timings.h_sync_start = x + h_front;
+    timings.h_sync_end = h_total - h_back;
+    timings.v_total = v_total;
+    timings.v_sync_start = y + v_front;
+    timings.v_sync_end = v_total - v_back;
+    timings.flags = 0x4;
+    timings.pixel_clock = pixel_freq;
+    timings.refresh_rate = v_freq;
+}
+
+short findMode(int x, int y, int d, int vfreq, BOOL prioritise_depth)
 {
     unsigned long match, bestmatch, matchd, bestmatchd;
     unsigned short bestmode = 0xffff, mode_attrs;
@@ -99,7 +205,7 @@ short findMode(int x, int y, int d, BOOL prioritise_depth)
             (((controllerinfo.video_mode & 0xffff0000) >> 12) + (controllerinfo.video_mode & 0xffff));
 
         int i;
-	
+
 	if (controllerinfo.version < 0x0200)
 	    mode_attrs = 0x11;
 	else
@@ -120,7 +226,10 @@ short findMode(int x, int y, int d, BOOL prioritise_depth)
             if (modeinfo.x_resolution == x &&
                 modeinfo.y_resolution == y &&
                 modeinfo.bits_per_pixel == d)
-                return modes[i];
+            {
+                bestmode = modes[i];
+                break;
+            }
 
             match = ABS(modeinfo.x_resolution*modeinfo.y_resolution - x*y);
             matchd = modeinfo.bits_per_pixel >= d ? modeinfo.bits_per_pixel-d: (d-modeinfo.bits_per_pixel)*2;
@@ -154,6 +263,11 @@ short findMode(int x, int y, int d, BOOL prioritise_depth)
             }
         }
     }
+
+    /* Set up timings to achieve the desired refresh rate */
+    if (controllerinfo.version >= 0x0300 && getModeInfo(bestmode) == 0x4f)
+        calcTimings(vfreq);
+
     return bestmode;
 }
 
@@ -224,3 +338,5 @@ GDT_reg = {sizeof(GDT_Table)-1, GDT_Table};
 unsigned long           stack32;
 struct vbe_controller   controllerinfo;
 struct vbe_mode         modeinfo;
+struct CRTCInfoBlock    timings;
+
