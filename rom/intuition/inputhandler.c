@@ -54,8 +54,9 @@
 #define DEBUG_SCREENKEY(x)  ;
 #define DEBUG_CLICK(x)
 #define DEBUG_DRAG(x)
+#define DEBUG_GADGET(x)
 #define DEBUG_MOUSE(x)
-#define DEBUG_WIN(x)
+#define DEBUG_WINDOW(x)
 
 /****************************************************************************************/
 
@@ -485,6 +486,8 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	    BOOL sizeverify = FALSE;
 
 	    DEBUG_CLICK(bug("[Inputhandler] Screen 0x%p, Window 0x%p, Gadget 0x%p, screen titlebar %d, new active window %d\n", screen, w, gadget, stitlebarhit, new_active_window));
+	    DEBUG_CLICK(if (screen) bug("[Inputhandler] Coordinates: (%d, %d)\n", screen->MouseX, screen->MouseY));
+	        
 	    iihdata->ActQualifier |= IEQUALIFIER_LEFTBUTTON;
 
 	    /* Enter screen dragging mode if LAmiga + LButton are pressed.
@@ -546,10 +549,8 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
 	    if (!gadget)
 	    {
-		/* use the *frontmost* screen rather than active one when searching
-		   for sdepth gadget!
-		   FIXME: Why? I've left this comment for informational purposes, however i
-		          use active screen. */
+		/* use the *current* screen rather than active one when searching
+		   for sdepth gadget! */
 		if (screen)
 		    gadget = FindGadget (screen, stitlebarhit ? NULL : w, stitlebarhit ? NULL : req,
 					 screen->MouseX, screen->MouseY, gi, FALSE, IntuitionBase);
@@ -626,6 +627,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	    }
 	    if (gadget && new_gadget)
 	    {
+		DEBUG_GADGET(bug("[Inputhandler] Activate gadget: 0x%p\n", gadget));
 		if (w && (w->IDCMPFlags & IDCMP_SIZEVERIFY) &&
 		    (gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SIZING /*||
 					 (gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WZOOM*/)
@@ -817,6 +819,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 			else
 			{
 			    /* jDc: this is what original intuition does, before crashing after a while ;)*/
+			    DEBUG_CLICK(bug("[Inputhandler] Sending SELECTDOWN (old gadget), window 0x%p\n", w));
 			    ih_fire_intuimessage(w,
 						 IDCMP_MOUSEBUTTONS,
 						 SELECTDOWN,
@@ -830,6 +833,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	    } /* if (a gadget is active) */
 	    else if (w && (!req || req->Flags & NOISYREQ) && !sizeverify && !stitlebarhit)
 	    {
+		DEBUG_CLICK(bug("[Inputhandler] Sending SELECTDOWN, window 0x%p\n", w));
 		ih_fire_intuimessage(w,
 				     IDCMP_MOUSEBUTTONS,
 				     SELECTDOWN,
@@ -1903,13 +1907,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             {
                 if (w)
                 {
-                    DEBUG_WIN(bug("Activating new window (title %s)\n", w->Title ? w->Title : "<noname>"));
+                    DEBUG_WINDOW(bug("Activating new window (title %s)\n", w->Title ? w->Title : "<noname>"));
 
-                    DEBUG_WIN(bug("Window activated\n"));
+                    DEBUG_WINDOW(bug("Window activated\n"));
                 }
                 else
                 {
-                    DEBUG_WIN(bug("Making active window inactive. Now there's no active window\n"));
+                    DEBUG_WINDOW(bug("Making active window inactive. Now there's no active window\n"));
                 }
                 new_active_window = TRUE;
                 iihdata->NewActWindow = w;

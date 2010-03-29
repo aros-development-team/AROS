@@ -52,6 +52,7 @@
 #define DEBUG_HANDLECUSTOMRETVAL(x) ;
 #define DEBUG_ACTIVATEGADGET(x)     ;
 #define DEBUG_FIREINTUIMSG(x)       ;
+#define DEBUG_CLICK(x)
 
 #include <stddef.h>
 
@@ -788,6 +789,7 @@ struct Gadget * FindGadget (struct Screen *scr, struct Window * window,
     WORD            	 xrel, yrel;
     BOOL            	 sys_only = sysonly;
 
+    DEBUG_CLICK(bug("[Inputhandler] FindGadget(0x%p, 0x%p, 0x%p, %d, %d, %d)\n", scr, window, req, x, y, sysonly));
     gpht.MethodID     = GM_HITTEST;
     gpht.gpht_GInfo   = gi;
 
