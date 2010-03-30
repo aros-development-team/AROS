@@ -363,9 +363,9 @@ void *DoOpen(char *path, int mode, int protect)
      is already open with MODE_OLDFILE, even just for reading with FMF_READ */
   lock = (mode & FMF_LOCK) ? 0 : FILE_SHARE_READ|FILE_SHARE_WRITE;
   if (mode & FMF_CREATE)
-      create = (flags & FMF_CLEAR) ? CREATE_ALWAYS : OPEN_ALWAYS;
+      create = (mode & FMF_CLEAR) ? CREATE_ALWAYS : OPEN_ALWAYS;
   else
-      create = (flags & FMF_CLEAR) ? TRUNCATE_EXISTING : OPEN_EXISTING;
+      create = (mode & FMF_CLEAR) ? TRUNCATE_EXISTING : OPEN_EXISTING;
   protect = prot_a2w(protect);
   DOPEN2(bug("[emul] CreateFile: name \"%s\", flags 0x%08lX, lock 0x%08lX, create %lu\n", path, flags, lock, create));
   Forbid();
