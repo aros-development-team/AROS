@@ -1,5 +1,5 @@
 /*
-    Copyright  2003-2008, The AROS Development Team. All rights reserved.
+    Copyright  2003-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,6 +15,7 @@
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
 
+#include <proto/codesets.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
@@ -43,11 +44,16 @@ struct MUI_LanguageData
   Object *child;
   Object *available;
   Object *preferred;
+  Object *charset;
+  Object *cslist;
+  Object *cslistview;
+  Object *popup;
   Object *clear;
   Object *prefs;
 
   char  **strings_available;
   char  **strings_preferred;
+  STRPTR *strings_charsets;
 
   char  *result[10]; /* result array for Gadget2Prefs */
 };
@@ -138,7 +144,7 @@ STATIC VOID init_language_lists(struct MUI_LanguageData *data) {
 STATIC VOID func_move_to_selected(char* selstr, struct MUI_LanguageData *data)
 {
     struct LanguageEntry *entry;
-    unsigned int i;
+    unsigned int i = 0;
     char *test;
 
     D(bug("func_move_to_selected(%s,..)\n",selstr));
@@ -271,12 +277,85 @@ AROS_UFH2(
 
 	AROS_USERFUNC_EXIT
 }
+
+AROS_UFH3(void, charset_popup_to_string,
+	  AROS_UFHA(struct Hook*, hook, A0),
+	  AROS_UFHA(Object *, list, A2),
+	  AROS_UFHA(Object *, string, A1))
+{
+    AROS_USERFUNC_INIT
+
+    STRPTR listentry;
+    STRPTR oldentry;
+
+    GetAttr(MUIA_Text_Contents, string, (IPTR *)&oldentry);
+    DoMethod(list, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, (IPTR)&listentry);
+    if (strcmp(listentry, oldentry)) {
+        SetAttrs(string, MUIA_Text_Contents, listentry, TAG_DONE);
+	SetAttrs(hook->h_Data, MUIA_PrefsEditor_Changed, TRUE, TAG_DONE);
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3(ULONG, charset_string_to_popup,
+	  AROS_UFHA(struct Hook*, hook, A0),
+	  AROS_UFHA(Object *, list, A2),
+	  AROS_UFHA(Object *, str, A1))
+{
+    AROS_USERFUNC_INIT
+
+    STRPTR strtext, listentry;
+    LONG index;
+    
+    GetAttr(MUIA_Text_Contents, str, (IPTR *)&strtext);
+    
+    for(index = 0; ; index++)
+    {
+    	DoMethod(list, MUIM_List_GetEntry, index, (IPTR)&listentry);
+	
+	if (!listentry)
+	{
+	    set(list, MUIA_List_Active, MUIV_List_Active_Off);
+	    break;
+	}
+	
+	if (stricmp(strtext, listentry) == 0)
+	{
+	    set(list, MUIA_List_Active, index);
+	    break;
+	}
+    }
+    
+    return TRUE;
+
+    AROS_USERFUNC_EXIT
+}
+
+static struct Hook charset_popup_to_string_hook = {
+    {NULL, NULL},
+    (HOOKFUNC)AROS_ASMSYMNAME(charset_popup_to_string),
+    NULL,
+    NULL
+};
+
+static struct Hook charset_string_to_popup_hook = {
+    {NULL, NULL},
+    (HOOKFUNC)AROS_ASMSYMNAME(charset_string_to_popup),
+    NULL,
+    NULL
+};
+
 /*** Methods ****************************************************************
  *
  */
 
 static void free_strings(struct MUI_LanguageData *data)
 {
+    if (data->strings_charsets) {
+        CodesetsFreeA(data->strings_charsets, NULL);
+	data->strings_charsets = NULL;
+    }
     if(data->strings_available)
     {
 	FreeVec(data->strings_available);
@@ -327,6 +406,26 @@ static Object *handle_New_error(Object *obj, struct IClass *cl, char *error)
 	data->child=NULL;
     }
 
+    if (data->charset) {
+        DisposeObject(data->charset);
+	data->charset = NULL;
+    }
+    
+    if (data->cslist) {
+	DisposeObject(data->cslist);
+	data->cslist = NULL;
+    }
+
+    if (data->cslistview) {
+	DisposeObject(data->cslistview);
+	data->cslist = NULL;
+    }
+
+    if (data->popup) {
+	DisposeObject(data->popup);
+	data->popup = NULL;
+    }
+
     free_strings(data);
 
     CoerceMethod(cl, obj, OM_DISPOSE);
@@ -372,6 +471,7 @@ Object *Language_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return handle_New_error(obj,cl,"ERROR: MA_PrefsObject not supplied!\n");
 
     init_language_lists(data);
+    data->strings_charsets = CodesetsSupportedA(NULL);
 
     data->clear=MUI_MakeObject(MUIO_Button, (ULONG) MSG(MSG_GAD_CLEAR_LANGUAGES));
 
@@ -389,8 +489,38 @@ Object *Language_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			End,
 		    End;
 
-    if(!data->clear || !data->available || !data->preferred)
+    data->charset = TextObject,
+			TextFrame,
+			MUIA_Background, MUII_TextBack,
+		    End;
+
+    data->cslist = ListObject,
+			MUIA_Frame, MUIV_Frame_InputList,
+			MUIA_Background, MUII_ListBack,
+			MUIA_List_AutoVisible, TRUE,
+			MUIA_List_SourceArray, data->strings_charsets,
+		    End;
+
+    data->cslistview = ListviewObject,
+			MUIA_Listview_List, data->cslist,
+		    End;
+
+    charset_popup_to_string_hook.h_Data = data->prefs;
+
+    data->popup = PopobjectObject,
+		    MUIA_Popobject_Object, data->cslistview,
+		    MUIA_Popobject_StrObjHook, &charset_string_to_popup_hook,
+		    MUIA_Popobject_ObjStrHook, &charset_popup_to_string_hook,
+		    MUIA_Popstring_Button, PopButton(MUII_PopUp),
+		    MUIA_Popstring_String, data->charset,
+		End;
+
+    if(!data->clear || !data->available || !data->preferred || !data->charset || !data->cslist ||
+       !data->cslistview || !data->popup)
 	return handle_New_error(obj,cl,"ERROR: MakeObject failed\n");
+
+    DoMethod(data->cslist, MUIM_List_Sort);
+    DoMethod(data->cslist, MUIM_List_InsertSingle, MSG(MSG_NOT_SPECIFIED), MUIV_List_Insert_Top);
 
     data->child= 
     VGroup,
@@ -413,18 +543,25 @@ Object *Language_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    data->preferred,
 		End,
 	End,
+	Child,
+	    data->clear,
+	Child,
+	HGroup,
+	    Child,
+	        CLabel1(MSG(MSG_CHARACTER_SET)),
+	    Child,
+		data->popup,
+	    End,
     End; 
 
     if(!data->child)
 	return handle_New_error(obj,cl,"ERROR: create child failed\n");
 
-    /* add clear button */
-    DoMethod(data->child,OM_ADDMEMBER,(ULONG) data->clear);
-
     /* add to self */
     DoMethod(obj,OM_ADDMEMBER,(ULONG) data->child);
 
     /* setup hooks */
+    DoMethod(data->cslistview, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE, data->popup, 2, MUIM_Popstring_Close, TRUE);
 
     /* move hooks */
     hook_available.h_Entry    = (HOOKFUNC) hook_func_available;
@@ -466,6 +603,14 @@ static IPTR Language_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	    }
 	    rc = (ULONG) data->result;
 	    break;
+	case MA_CharacterSet:
+	    GetAttr(MUIA_List_Active, data->cslist, (IPTR *)&i);
+	    D(bug("[Language::Get] Active character set entry is %d\n", i));
+	    if ((i == 0) || (i == MUIV_List_Active_Off))
+	    	*msg->opg_Storage = NULL;
+	    else
+	        GetAttr(MUIA_Text_Contents, data->charset, msg->opg_Storage);
+	    return TRUE;
 	default:
 	    return DoSuperMethodA(cl, obj, (Msg)msg);
     }
@@ -502,6 +647,15 @@ static IPTR Language_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
 		update=TRUE;
 		break;
+	    case MA_CharacterSet:
+	    {
+	        char *charset = (char *)tag->ti_Data;
+		
+		if (!charset || !*charset)
+		    DoMethod(data->cslist, MUIM_List_GetEntry, 0, (IPTR *)&charset);
+	        SetAttrs(data->charset, MUIA_Text_Contents, charset, TAG_DONE);
+	    }
+	    break;
 
 	    default:
 		return DoSuperMethodA(cl, obj, (Msg)msg);

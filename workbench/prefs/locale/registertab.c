@@ -1,5 +1,5 @@
 /*
-    Copyright  2003-2008, The AROS Development Team. All rights reserved.
+    Copyright  2003-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -249,6 +249,12 @@ STATIC VOID Gadgets2LocalePrefs (struct LocaleRegister_DATA *data)
 	    }
 	}
     }
+    GetAttr(MA_CharacterSet, data->language, (IPTR *)&tmp);
+    if (tmp)
+        strcpy(character_set, tmp);
+    else
+        character_set[0] = 0;
+    D(bug("[locale prefs] New character set is %s\n", character_set));
 
     get(data->timezone, MA_TimeOffset, &localeprefs.lp_GMTOffset);
 }
@@ -262,6 +268,7 @@ STATIC VOID LocalePrefs2Gadgets(struct LocaleRegister_DATA *data)
     set(data->country, MA_CountryName, localeprefs.lp_CountryName);
 
     set(data->language, MA_Preferred, TRUE);
+    set(data->language, MA_CharacterSet, character_set);
 
     set(data->timezone, MA_TimeOffset, -localeprefs.lp_GMTOffset);
 
@@ -294,10 +301,25 @@ IPTR LocaleRegister__MUIM_PrefsEditor_ExportFH
 )
 {
     SETUP_INST_DATA;
-    D(bug("[register class] SerEdit Class Export\n"));
 
     Gadgets2LocalePrefs(data);
     return SavePrefsFH(message->fh);
+}
+
+IPTR LocaleRegister__MUIM_PrefsEditor_Save(Class *CLASS, Object *self, Msg message)
+{
+    SETUP_INST_DATA;
+
+    Gadgets2LocalePrefs(data);
+    return SaveEnv(TRUE);
+}
+
+IPTR LocaleRegister__MUIM_PrefsEditor_Use(Class *CLASS, Object *self, Msg message)
+{
+    SETUP_INST_DATA;
+
+    Gadgets2LocalePrefs(data);
+    return SaveEnv(FALSE);
 }
 
 IPTR LocaleRegister__MUIM_PrefsEditor_Test
@@ -312,7 +334,7 @@ IPTR LocaleRegister__MUIM_PrefsEditor_Test
 
     Gadgets2LocalePrefs(data);
 
-    result=SaveEnv();
+    result=SaveEnv(FALSE);
 
     if(result) { /* TRUE -> success */
 	SET(self, MUIA_PrefsEditor_Changed, FALSE);
@@ -335,7 +357,7 @@ IPTR LocaleRegister__MUIM_PrefsEditor_Revert
     RestorePrefs();
     LocalePrefs2Gadgets(data);
 
-    result=SaveEnv();
+    result=SaveEnv(FALSE);
 
     if(result) {
 	SET(self, MUIA_PrefsEditor_Changed, FALSE);
@@ -359,13 +381,15 @@ IPTR LocaleRegister__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 }
 
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_6
+ZUNE_CUSTOMCLASS_8
 (
     LocaleRegister, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                    struct opSet *,
     OM_DISPOSE,                Msg,
     MUIM_PrefsEditor_ImportFH, struct MUIP_PrefsEditor_ImportFH *,
     MUIM_PrefsEditor_ExportFH, struct MUIP_PrefsEditor_ExportFH *,
+    MUIM_PrefsEditor_Save,     Msg,
+    MUIM_PrefsEditor_Use,      Msg,
     MUIM_PrefsEditor_Test,     Msg,
     MUIM_PrefsEditor_Revert,   Msg
 );

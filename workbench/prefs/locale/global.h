@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -175,6 +175,7 @@ enum
     MA_CountryName = LP_TAGBASE,
     MA_Preferred,
     MA_TimeOffset,
+    MA_CharacterSet
 };
 
 /*********************************************************************************************/
@@ -197,7 +198,7 @@ BOOL  LoadPrefs   (STRPTR filename);
 BOOL  LoadPrefsFH (BPTR fh);
 BOOL  SavePrefs   (STRPTR filename);
 BOOL  SavePrefsFH (BPTR fh);
-BOOL  SaveEnv     ();
+BOOL  SaveEnv     (BOOL envarc);
 BOOL  DefaultPrefs(void);
 VOID  RestorePrefs(void);
 VOID  BackupPrefs (void);
@@ -230,8 +231,11 @@ struct LanguageEntry
     BOOL                 preferred;
 };
 
+#define CHARACTER_SET_LEN 255
+
 struct List                  country_list, language_list, pref_language_list;
 struct LocalePrefs           localeprefs;
+extern char		     character_set[CHARACTER_SET_LEN];
 APTR   mempool;
 
 #endif /* GLOBAL_H */
