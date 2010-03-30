@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -38,7 +38,7 @@
 #include "page_country.h"
 #include "page_timezone.h"
 
-//#define DEBUG 1 
+//#define DEBUG 1
 #include <aros/debug.h>
 
 #define VERSION "$VER: Locale 2.0 (09.08.2008) AROS Dev Team"
@@ -97,7 +97,7 @@ STATIC ULONG GetArguments(void)
 	ShowMsg(buf);
 	return 0;
     }
-    
+
     if (!args[ARG_FROM]) args[ARG_FROM] = (IPTR)CONFIGNAME_ENV;
 
     return 1;

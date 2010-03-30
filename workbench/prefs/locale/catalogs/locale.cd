@@ -98,3 +98,9 @@ Time Zone: %ld Hours from GMT
 MSG_TIMEZONE_HOURSMINS (//)
 Time Zone: %ld Hours, %ld Minutes from GMT
 ;
+MSG_CHARACTER_SET (//)
+Default character set
+;
+MSG_NOT_SPECIFIED (//)
+Not specified
+;
