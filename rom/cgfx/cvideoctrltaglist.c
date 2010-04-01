@@ -57,7 +57,7 @@
 
     struct TagItem *tag, *tstate;
     ULONG dpmslevel = 0;
-    OOP_Object *gfxhidd;
+    OOP_Object *gfxhidd = NULL;
     
     struct TagItem htags[] =
     {
@@ -130,7 +130,8 @@
     }
     
     OOP_GetAttr(HIDD_BM_OBJ(vp->RasInfo->BitMap), aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-    OOP_SetAttrs(gfxhidd, htags);
+    if (gfxhidd)
+        OOP_SetAttrs(gfxhidd, htags);
 
     AROS_LIBFUNC_EXIT
 } /* CVideoCtrlTagList */
