@@ -54,7 +54,7 @@ static struct pfnode *find_pixfmt(struct MinList *pflist
 static OOP_Object *find_stdpixfmt(HIDDT_PixelFormat *tofind
 	, struct class_static_data *_csd);
 static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
-	, OOP_Object *dst_bm, OOP_Object *dims_bm);
+	, OOP_Object *dst_bm, ULONG width, ULONG height);
 
 BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG attrcheck, struct class_static_data *_csd);
 BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG attrcheck, struct class_static_data *_csd);
@@ -1157,20 +1157,15 @@ BOOL GFX__Hidd_Gfx__SetMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetMo
 /****************************************************************************************/
 
 static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm,
-    	    	    	       OOP_Object *dst_bm, OOP_Object *dims_bm)
+    	    	    	       OOP_Object *dst_bm, ULONG width, ULONG height)
 {
     struct HIDDGraphicsData *data;
-    IPTR    	    	    width, height;
     ULONG   	    	    i;
     IPTR                    numentries;
     OOP_Object      	    *src_colmap;
     APTR		    psrc_colmap = &src_colmap;
     
     data = OOP_INST_DATA(cl, o);
-    
-    /* Copy the displayable bitmap into the framebuffer */
-    OOP_GetAttr(dims_bm, aHidd_BitMap_Width,	&width);
-    OOP_GetAttr(dims_bm, aHidd_BitMap_Height,	&height);
     
     /* We have to copy the colormap into the framebuffer bitmap */
     OOP_GetAttr(src_bm, aHidd_BitMap_ColorMap, (IPTR *)psrc_colmap);
@@ -1201,10 +1196,14 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
     struct HIDDGraphicsData *data;
     OOP_Object      	    *bm;
     IPTR    	    	    displayable;
+    IPTR		    oldwidth  = 0;
+    IPTR		    oldheight = 0;
+    IPTR		    newwidth  = 0;
+    IPTR		    newheight = 0;
     struct TagItem  	    gctags[] =
     {
     	{ aHidd_GC_DrawMode  , vHidd_GC_DrawMode_Copy},
-	{ aHidd_GC_Background, 0		     },
+	{ aHidd_GC_Foreground, 0		     },
 	{ TAG_DONE  	     , 0UL   	    	     }
     };
     
@@ -1225,17 +1224,27 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 	return NULL;
 
     OOP_SetAttrs(data->gc, gctags);
-    if (NULL != data->shownbm && (msg->flags & fHidd_Gfx_Show_CopyBack))
+    if (NULL != data->shownbm)
     {
-    	/* Copy the framebuffer data back into the old shown bitmap */
-	copy_bm_and_colmap(cl, o, data->framebuffer, data->shownbm, data->shownbm);
+	OOP_GetAttr(data->shownbm, aHidd_BitMap_Width, &oldwidth);
+        OOP_GetAttr(data->shownbm, aHidd_BitMap_Height, &oldheight);
+	/* Copy the framebuffer data back into the old shown bitmap */
+	if (msg->flags & fHidd_Gfx_Show_CopyBack)
+	    copy_bm_and_colmap(cl, o, data->framebuffer, data->shownbm, oldwidth, oldheight);
     }
 
-    /* Always clear the framebuffer first because it could previously
-       contain a larger image */
-    HIDD_BM_Clear(data->framebuffer, data->gc);
-    if (bm)
-    	copy_bm_and_colmap(cl, o, bm, data->framebuffer, bm);
+    if (bm) {
+        OOP_GetAttr(bm, aHidd_BitMap_Width, &newwidth);
+        OOP_GetAttr(bm, aHidd_BitMap_Height, &newheight);
+    	copy_bm_and_colmap(cl, o, bm, data->framebuffer, newwidth, newheight);
+    }
+    /* Clear remaining parts of the framebuffer (if previous bitmap was larger than new one) */
+    if (oldheight) {
+        if (newwidth < oldwidth)
+	    HIDD_BM_FillRect(data->framebuffer, data->gc, newwidth, 0, oldwidth - 1, oldheight - 1);
+        if ((newheight < oldheight) && newwidth)
+	    HIDD_BM_FillRect(data->framebuffer, data->gc, 0, newheight, newwidth - 1, oldheight);
+    }
 
     data->shownbm = bm;
 
