@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -65,7 +65,7 @@
 {
   AROS_LIBFUNC_INIT
 
-  LONG * Hash = GfxBase -> hash_table;
+  IPTR *Hash = GfxBase -> hash_table;
   ULONG Index = CalcHashIndex((ULONG)pointer);
 
   /* Whatever structure we get as node we put the pointer in the space
@@ -82,7 +82,7 @@
             ((struct ExtendedNode *)Hash[Index]) -> xln_Pred = (struct Node *)node;
           node -> xln_Succ = (struct Node *)Hash[Index];
           node -> xln_Pred = (struct Node *)&Hash[Index];
-          Hash[Index] = (LONG)node;
+          Hash[Index] = (IPTR)node;
         Permit();
 
   AROS_LIBFUNC_EXIT
