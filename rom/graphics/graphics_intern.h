@@ -115,26 +115,29 @@ struct class_static_data
     
     OOP_Class 	    *fakegfxclass;
     OOP_Class 	    *fakefbclass;
-    OOP_Class 	    *fakedbmclass;
-    
-    OOP_Object      *fakegfxobj;
 };
 
+/* Monitor driver data. Should be somehow attached to a MonitorSpec */
 struct shared_driverdata
 {
-    OOP_Object      	     *gfxhidd;
-    OOP_Object      	     *gfxhidd_orig;
-    OOP_Object      	     *gfxhidd_fake;
-    
-    ObjectCache     	     *gc_cache;
-    ObjectCache     	     *planarbm_cache;
-    
-    OOP_Object	    	     *framebuffer;
-    
-    OOP_Object	    	     *bm_bak;
-    OOP_Object	    	     *colmap_bak;
-    HIDDT_ColorModel 	     colmod_bak;
-    
+    /* Driver objects */
+    OOP_Object      	     *gfxhidd;		/* Graphics driver to use (can be fakegfx object) */
+    OOP_Object      	     *gfxhidd_orig;	/* Real graphics driver object			  */
+    BOOL    	    	     fakegfx_inited;	/* fakegfx HIDD is in use 			  */
+
+    /* Framebuffer stuff */
+    struct BitMap   	     *frontbm;		/* Currently shown bitmap			  */
+    OOP_Object	    	     *framebuffer;	/* Framebuffer bitmap object			  */
+    OOP_Object	    	     *bm_bak;		/* Original shown bitmap object			  */
+    OOP_Object	    	     *colmap_bak;	/* Original colormap object of shown bitmap	  */
+    HIDDT_ColorModel 	     colmod_bak;	/* Original colormodel of shown bitmap		  */
+
+    /* The following should probably stay shared */
+    /* Caches */
+    ObjectCache     	     *gc_cache;		/* GC cache					  */
+    ObjectCache     	     *planarbm_cache;   /* Planar bitmaps cache				  */
+
+    /* Attribute bases */
     OOP_AttrBase    	     hiddBitMapAttrBase;
     OOP_AttrBase    	     hiddGCAttrBase;
     OOP_AttrBase    	     hiddSyncAttrBase;
@@ -143,15 +146,6 @@ struct shared_driverdata
     OOP_AttrBase    	     hiddGfxAttrBase;
     OOP_AttrBase    	     hiddFakeGfxHiddAttrBase;
     OOP_MethodID    	     hiddGfxShowImminentReset_MethodID;
-    
-    /* The frontmost screen's bitmap */
-    struct BitMap   	     *frontbm;
-
-    /* Does the gfx hidd support hardware pointers ? */    
-    BOOL    	    	     has_hw_cursor;
-
-    struct class_static_data fakegfx_staticdata;
-    BOOL    	    	     fakegfx_inited;
 };
 
 #define SDD(base)   	    ((struct shared_driverdata *)&PrivGBase(base)->shared_driverdata)
@@ -170,7 +164,8 @@ struct GfxBase_intern
 {
     struct GfxBase 	 	gfxbase;
 
-    struct shared_driverdata	shared_driverdata; /* Driver data shared between all rastports (allocated once) */
+    struct class_static_data    *fakegfx_staticdata; /* FakeGFX HIDD static data */
+    struct shared_driverdata	shared_driverdata;   /* Driver data shared between all rastports (allocated once) */
 
 #define TFE_HASHTABSIZE   	16 /* This MUST be a power of two */
 

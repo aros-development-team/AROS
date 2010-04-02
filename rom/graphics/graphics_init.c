@@ -24,15 +24,16 @@
 #include <graphics/regions.h>
 #include <proto/graphics.h>
 #include <utility/utility.h>
+
 #include "graphics_intern.h"
 #include "default_font.h"
+#include "fakegfxhidd.h"
+
 #include LC_LIBDEFS_FILE
 
 #include <stdio.h>
 
 extern int  driver_init (struct GfxBase *);
-extern int  driver_open (struct GfxBase *);
-extern void driver_close (struct GfxBase *);
 extern void driver_expunge (struct GfxBase *);
 
 AROS_UFP4(ULONG, TOF_VBlank,
@@ -85,15 +86,7 @@ static int GfxInit(struct GfxBase *LIBBASE)
     
     if (!InitROMFont(LIBBASE)) return FALSE;
 
-    Disable();
-    if (!driver_init (LIBBASE))
-    {
-        Enable();
-        return FALSE;
-    }
-    Enable();
-    
-    return TRUE;
+    return driver_init (LIBBASE);
 }
 
 static int GfxOpen(struct GfxBase *LIBBASE)
@@ -116,14 +109,6 @@ static int GfxOpen(struct GfxBase *LIBBASE)
         sysTA.ta_YSize = def->tf_YSize;
     }
 
-    Disable();
-    if (!driver_open (LIBBASE))
-    {
-        Enable();
-        return 0;
-    }
-    Enable();
-
     /* Allocate 8 IPTR's for a hash list needed by
        GfxAssociate(), GfxLookUp()                  */
 
@@ -132,7 +117,6 @@ static int GfxOpen(struct GfxBase *LIBBASE)
                                            MEMF_CLEAR|MEMF_PUBLIC);
     if (!LIBBASE->hash_table)
 	return 0;
-
 
     if(LIBBASE->LibNode.lib_OpenCnt == 0)
     {
@@ -150,16 +134,8 @@ static int GfxOpen(struct GfxBase *LIBBASE)
     return TRUE;
 }
 
-static int GfxExpunge(struct GfxBase *LIBBASE)
-{
-    driver_expunge(LIBBASE);
-    return TRUE;
-}
-
 ADD2INITLIB(GfxInit, 0);
 ADD2OPENLIB(GfxOpen, 0);
-ADD2CLOSELIB(driver_close, 0);
-ADD2EXPUNGELIB(GfxExpunge, 0);
 
 #undef SysBase
 
