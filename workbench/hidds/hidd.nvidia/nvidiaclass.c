@@ -320,7 +320,7 @@ D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displ
 	modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
 	if (vHidd_ModeID_Invalid != modeid) {
 	    /* User supplied a valid modeid. We can use our offscreen class */
-	    classptr = _sd->onbmclass;
+	    classptr = _sd->offbmclass;
 	} else {
 	    /* We may create an offscreen bitmap if the user supplied a friend
 	       bitmap. But we need to check that he did not supplied a StdPixFmt

@@ -36,51 +36,6 @@ HIDDT_ModeID get_hiddmode_for_amigamodeid(ULONG modeid, struct GfxBase *GfxBase)
     return AMIGA_TO_HIDD_MODEID(modeid);
 }
 
-VOID destroy_dispinfo_db(APTR dispinfo_db, struct GfxBase *GfxBase)
-{
-    struct displayinfo_db *db;
-    
-    db = (struct displayinfo_db *)dispinfo_db;
-    
-    ObtainSemaphore(&db->sema);
-    
-    if (NULL != db->mspecs) {
-	FreeMem(db->mspecs, sizeof (struct MonitorSpec) * db->num_mspecs);
-	db->mspecs = NULL;
-	db->num_mspecs = 0;
-    }
-    
-    ReleaseSemaphore(&db->sema);
-    
-    FreeMem(db, sizeof (*db));
-    
-}
-
-APTR build_dispinfo_db(struct GfxBase *GfxBase)
-{
-    struct displayinfo_db *db;
-    IPTR numsyncs;
-    
-    db = AllocMem(sizeof (struct displayinfo_db), MEMF_PUBLIC | MEMF_CLEAR);
-    if (NULL != db) {
-	
-    	InitSemaphore(&db->sema);
-    
-    	/* Get the number of possible modes in the gfxhidd */
-	OOP_GetAttr(SDD(GfxBase)->gfxhidd, aHidd_Gfx_NumSyncs, &numsyncs);
-	
-	db->num_mspecs = numsyncs;
-	
-    	/* Allocate a table to hold all the monitorspecs  */
-    	db->mspecs = AllocMem(sizeof (struct MonitorSpec) * db->num_mspecs, MEMF_PUBLIC | MEMF_CLEAR);
-    	if (NULL != db->mspecs) {
-	    return (APTR)db;
-	}
-	destroy_dispinfo_db(db, GfxBase);
-    }
-    return NULL;
-}
-
 HIDDT_ModeID get_best_resolution_and_depth(struct GfxBase *GfxBase)
 {
     HIDDT_ModeID ret = vHidd_ModeID_Invalid;

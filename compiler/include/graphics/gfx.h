@@ -76,6 +76,8 @@ struct Rect32
 
 #define BMB_PIXFMT_SHIFTUP 24
 
+#define BMF_REQUESTVMEM (BMF_DISPLAYABLE|BMF_MINPLANES)
+
 /* AROS specific flags */
 #define BMB_AROS_HIDD        7	   /* Obsolete definition, use BMF_SPECIALFMT instead */
 #define BMF_AROS_HIDD	(1L << 7)

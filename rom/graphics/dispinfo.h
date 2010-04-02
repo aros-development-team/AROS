@@ -58,17 +58,6 @@
 
 /****************************************************************************************/
 
-struct displayinfo_db
-{
-    struct MonitorSpec *mspecs;
-    ULONG num_mspecs;
-    struct SignalSemaphore sema;
-};
-
-/****************************************************************************************/
-
-APTR build_dispinfo_db(struct GfxBase *GfxBase);
-VOID destroy_dispinfo_db(APTR dispinfo_db, struct GfxBase *GfxBase);
 HIDDT_ModeID get_hiddmode_for_amigamodeid(ULONG modeid, struct GfxBase *GfxBase);
 HIDDT_ModeID get_best_resolution_and_depth(struct GfxBase *GfxBase);
 

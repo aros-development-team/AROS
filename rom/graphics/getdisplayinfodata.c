@@ -264,31 +264,16 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	case DTAG_MNTR:
 	{
 	    struct MonitorInfo *mi;
-	    struct MonitorSpec *mspc;
-	    struct displayinfo_db *db;
-	    ULONG majoridx;
 	    struct HIDD_ModeProperties HIDDProps = {0};
-	    
-	    db = (struct displayinfo_db *)SDD(GfxBase)->dispinfo_db;
-    	    
-	    ObtainSemaphoreShared(&db->sema);
-	    majoridx = MAJORID2NUM(modeid);
-	    if (majoridx >= db->num_mspecs)
-	    {
-		D(bug("!!! INVALID MODE ID IN GetDisplayInfoData(DTAG_MNTR) !!!\n"));
-    	    	ReleaseSemaphore(&db->sema);
+
+	    if (!HIDD_Gfx_ModeProperties(SDD(GfxBase)->gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps))) {
+	    	D(bug("!!! INVALID MODE ID IN GetDisplayInfoData(DTAG_MNTR) !!!\n"));
 		FreeMem(qh, structsize);
 		return 0;
 	    }
-	    
-	    D(bug("[GetDisplayInfoData] Retrieving HIDD mode properties...\n"));
-	    HIDD_Gfx_ModeProperties(SDD(GfxBase)->gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
-	    D(bug("[GetDisplayInfoData] Done, composition flags are 0x%04lX\n", HIDDProps.CompositionFlags));
-	    
+
 	    mi = (struct MonitorInfo *)qh;
-	    
-	    mspc = &db->mspecs[majoridx];
-	    
+
 	    /*
 	    mi->ViewPosition.X = ?;
 	    mi->ViewPosition.Y = ?;
@@ -298,33 +283,24 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    mi->ViewPositionRange.MinY = ?;
 	    mi->ViewPositionRange.MaxX = ?;
 	    mi->ViewPositionRange.MaxY = ?;
-	    mi->TotalRows = ?;
-	    mi->TotalColorClocks = ?;
-	    mi->MinRow = ?;
 	    mi->MouseTicks.X = ?;
 	    mi->MouseTicks.Y = ?;
 	    mi->DefaultViewPosition.X = ?;
 	    mi->DefaultViewPosition.Y = ?;
 	    */
-	    
-	    
-	    mi->Mspc = mspc;
+
+	    /* HACK!!! Need to lookup MonitorSpec by ModeID using OpenMonitor() */
+	    mi->Mspc = GfxBase->default_monitor;
+
 	    mi->PreferredModeID = modeid;
 	    mi->Compatibility = HIDDProps.CompositionFlags ? MCOMPAT_SELF : MCOMPAT_NOBODY;
 
 	    mi->reserved[0] = (IPTR)SDD(GfxBase)->gfxhidd;
 
-	    /* Fill info into the monitorspec. It is by default set to all 0s */
-	    mspc->ms_Node.xln_Pred = mspc->ms_Node.xln_Succ = NULL;
-	    mspc->ms_Node.xln_Type = MONITOR_SPEC_TYPE;
-	    mspc->ms_Node.xln_Name = "AROS.monitor";
-	    mspc->total_rows = mi->TotalRows;
-	    mspc->total_colorclocks = mi->TotalColorClocks;
-	    mspc->min_row = mi->MinRow;
-	    
-	    /* What to put in here ? */
-	    mspc->ms_Flags = 0;
-    	    ReleaseSemaphore(&db->sema);
+	    mi->TotalRows        = mi->Mspc->total_rows;
+	    mi->TotalColorClocks = mi->Mspc->total_colorclocks = mi->TotalColorClocks;
+	    mi->MinRow           = mi->Mspc->min_row;
+
 	    break;
 	}
 	    
