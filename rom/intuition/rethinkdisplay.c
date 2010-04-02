@@ -102,14 +102,15 @@
             modes |= viewport->Modes & LACE;
 	}
 
-#ifdef __MORPHOS__
         /* Reinitialize the view */
+#ifdef __MORPHOS__
+	/* Under AROS this will cause unneeded screen flicker and even significant slowdown */
         FreeSprite(GetPrivIBase(IntuitionBase)->SpriteNum);
         GetPrivIBase(IntuitionBase)->SpriteNum = -1;
         DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: LoadView(NULL)\n"));
 
-        LoadView(NULL); /* On hosted AROS this LoadView() can cause irritating window reopen */
-#endif
+        LoadView(NULL);
+
         if (IntuitionBase->ViewLord.LOFCprList)
             FreeCprList(IntuitionBase->ViewLord.LOFCprList);
 
@@ -118,6 +119,7 @@
 
         IntuitionBase->ViewLord.LOFCprList = NULL;
         IntuitionBase->ViewLord.SHFCprList = NULL;
+#endif
         IntuitionBase->ViewLord.DxOffset = 0; /***/
         IntuitionBase->ViewLord.DyOffset = 0; /***/
         IntuitionBase->ViewLord.Modes = modes;
