@@ -59,7 +59,7 @@
 /****************************************************************************************/
 
 HIDDT_ModeID get_hiddmode_for_amigamodeid(ULONG modeid, struct GfxBase *GfxBase);
-HIDDT_ModeID get_best_resolution_and_depth(struct GfxBase *GfxBase);
+HIDDT_ModeID get_best_resolution_and_depth(OOP_Object *gfxhidd, struct GfxBase *GfxBase);
 
 /****************************************************************************************/
 

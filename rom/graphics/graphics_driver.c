@@ -161,7 +161,7 @@ BOOL ObtainDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
     	dd = AllocPooled(PrivGBase(GfxBase)->driverdatapool, sizeof(*dd));
 	if (dd)
 	{
-	    struct shared_driverdata *sdd;
+	    struct monitor_driverdata *sdd;
 	    struct TagItem gc_tags[] = {{ TAG_DONE}};
 
 	    sdd = SDD(GfxBase);
@@ -238,7 +238,7 @@ void KillDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
     
     if (dd)
     {
-    	struct shared_driverdata *sdd;
+    	struct monitor_driverdata *sdd;
     	
 	sdd = SDD(GfxBase);
 
@@ -271,7 +271,7 @@ struct gfx_driverdata * obsolete_InitDriverData (struct RastPort * rp, struct Gf
     	    dd = AllocMem (sizeof(struct gfx_driverdata), MEMF_CLEAR);
     	    if (dd)
     	    {
-	        struct shared_driverdata *sdd;
+	        struct monitor_driverdata *sdd;
 		struct TagItem gc_tags[] = {
 		    { TAG_DONE, 	0UL}
 		};
@@ -304,7 +304,7 @@ struct gfx_driverdata * obsolete_InitDriverData (struct RastPort * rp, struct Gf
 void obsolete_DeinitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 {
     struct gfx_driverdata * dd;
-    struct shared_driverdata *sdd;
+    struct monitor_driverdata *sdd;
     
     EnterFunc(bug("DeInitDriverData(rp=%p)\n", rp));
 		
@@ -399,6 +399,9 @@ int driver_init(struct GfxBase * GfxBase)
     {
 	PrivGBase(GfxBase)->pixel_buf=AllocMem(PIXELBUF_SIZE,MEMF_ANY);
 	if (PrivGBase(GfxBase)->pixel_buf) {
+	    /* Get method id here, to avoid any possible semaphore involment when calling the method */ 
+	    CDD(GfxBase)->hiddGfxShowImminentReset_MethodID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ShowImminentReset);
+
 	    ReturnInt("driver_init", int, TRUE);
 	}
 	
@@ -439,7 +442,7 @@ void driver_expunge (struct GfxBase * GfxBase)
 }
 
 /* Called after DOS is up & running */
-static OOP_Object *create_framebuffer(struct GfxBase *GfxBase)
+static OOP_Object *create_framebuffer(OOP_Object *gfxhidd, struct GfxBase *GfxBase)
 {
     struct TagItem fbtags[] = {
     	{ aHidd_BitMap_FrameBuffer,	TRUE	},
@@ -451,30 +454,44 @@ static OOP_Object *create_framebuffer(struct GfxBase *GfxBase)
     OOP_Object *fb = NULL;
 
     /* Get the highest available resolution at the best possible depth */
-    hiddmode = get_best_resolution_and_depth(GfxBase);
+    hiddmode = get_best_resolution_and_depth(gfxhidd, GfxBase);
     if (vHidd_ModeID_Invalid == hiddmode) {
     	D(bug("!!! create_framebuffer(): COULD NOT GET HIDD MODEID !!!\n"));
     } else {
     	/* Create the framebuffer object */
 	fbtags[1].ti_Data = hiddmode;
-	fb = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, fbtags);
+	fb = HIDD_Gfx_NewBitMap(gfxhidd, fbtags);
     }
 
     return fb;
 }
 
+/*
+ * The following function is very badly written. It's not thread safe,
+ * it doesn't check if driver can really be unloaded, etc.
+ * It's really an obsolete hack which will be removed in future
+ */
 BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 {
-
     /* Supplied data is really the classname of a HIDD */
     STRPTR gfxhiddname = (STRPTR)data;
-    struct TagItem tags[] = {
-    	{ TAG_DONE, 0UL },
-    };
     struct MonitorSpec *mspc;
 
     EnterFunc(bug("driver_LateGfxInit(gfxhiddname=%s)\n", gfxhiddname));
 
+    /* First we prepare a MonitorSpec structure and insert it into the list.
+       In future display drivers will need to do this themselves, so LateGfxInit() function
+       will not be needed */
+
+    /* Check if the monitor is already installed */
+    mspc = OpenMonitor(gfxhiddname, 0);
+    if (mspc) {
+        D(bug("[driver_LateGfxInit] Driver is already present\n"));
+        CloseMonitor(mspc);
+	return TRUE;
+    }
+
+    /* Set up a MonitorSpec structure. */
     mspc = GfxNew(MONITOR_SPEC_TYPE);
     if (mspc) {
         mspc->ms_Special = GfxNew(SPECIAL_MONITOR_TYPE);
@@ -485,89 +502,127 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 	    if (mspc->ms_Node.xln_Name) {
 		CopyMem(gfxhiddname, mspc->ms_Node.xln_Name, l);
 		D(bug("[GFX] Adding monitor driver: %s\n", mspc->ms_Node.xln_Name));
-
-		driver_expunge(GfxBase);
-		D(bug("[GFX] Cleanup complete\n"));
-
-		/* Create a new GfxHidd object */
-		SDD(GfxBase)->gfxhidd = SDD(GfxBase)->gfxhidd_orig = OOP_NewObject(NULL, gfxhiddname, tags);
-		D(bug("driver_LateGfxInit: gfxhidd=%p\n", SDD(GfxBase)->gfxhidd));
-
-		if (NULL != SDD(GfxBase)->gfxhidd) {
-		    IPTR hwcursor = 0;
-		    IPTR noframebuffer = 0;
-		    BOOL ok = TRUE;
-
-		    /* Get method id here, to avoid any possible semaphore involment when calling the method */ 
-		    SDD(GfxBase)->hiddGfxShowImminentReset_MethodID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ShowImminentReset);
-
-		    OOP_GetAttr(SDD(GfxBase)->gfxhidd, aHidd_Gfx_SupportsHWCursor, &hwcursor);
-		    OOP_GetAttr(SDD(GfxBase)->gfxhidd, aHidd_Gfx_NoFrameBuffer, &noframebuffer);
-		    if (!hwcursor) {
-			OOP_Object *fgh;
-			D(bug("There's no hardware cursor\n"));
-
-			fgh = init_fakegfxhidd(SDD(GfxBase)->gfxhidd, GfxBase);
-
-			if (NULL != fgh) {
-			    SDD(GfxBase)->gfxhidd = fgh;
-			    SDD(GfxBase)->fakegfx_inited = TRUE;
-			} else
-			    ok = FALSE;
-	            }
-
-		    if (ok) {
-			struct TagItem gc_create_tags[] = { { TAG_DONE, 0UL } };
-			D(bug("Ok\n"));
-			SDD(GfxBase)->gc_cache = create_object_cache(NULL, IID_Hidd_GC, gc_create_tags, GfxBase);
-			if (NULL != SDD(GfxBase)->gc_cache) {
-
-		            struct TagItem bm_create_tags[] = {
-			        { aHidd_BitMap_GfxHidd,		(IPTR)SDD(GfxBase)->gfxhidd_orig },
-			        { aHidd_BitMap_Displayable,	FALSE	},
-			        { aHidd_PlanarBM_AllocPlanes,	FALSE },
-			        { TAG_DONE, 0UL }
-			    };
-
-			    D(bug("Cache created\n"));
-			    SDD(GfxBase)->planarbm_cache = create_object_cache(NULL, CLID_Hidd_PlanarBM, bm_create_tags, GfxBase);
-
-			    if (NULL != SDD(GfxBase)->planarbm_cache) {
-				if (!noframebuffer)
-				    SDD(GfxBase)->framebuffer = create_framebuffer(GfxBase);
-			        if (noframebuffer || SDD(GfxBase)->framebuffer) {
-				    D(bug("FRAMEBUFFER OK: %p\n", SDD(GfxBase)->framebuffer));
-				    AddTail(&GfxBase->MonitorList, (struct Node *)mspc);
-				    GfxBase->default_monitor = mspc;
-				    ReturnBool("driver_LateGfxInit", TRUE);
-				}
-				if (SDD(GfxBase)->framebuffer)
-				    OOP_DisposeObject(SDD(GfxBase)->framebuffer);
-
-		                delete_object_cache(SDD(GfxBase)->planarbm_cache, GfxBase);
-	                        SDD(GfxBase)->planarbm_cache = NULL;
-			    } /* if (planarbm cache created) */
-			    delete_object_cache(SDD(GfxBase)->gc_cache, GfxBase);
-			    SDD(GfxBase)->gc_cache = NULL;
-			} /* if (gc object cache ok) */
-	    
-		    } /* if (fake gfx stuff ok) */
-
-	            if (SDD(GfxBase)->fakegfx_inited) {
-			OOP_DisposeObject(SDD(GfxBase)->gfxhidd);
-			SDD(GfxBase)->fakegfx_inited = FALSE;
-	            }
-	            OOP_DisposeObject(SDD(GfxBase)->gfxhidd_orig);
-	            SDD(GfxBase)->gfxhidd_orig = NULL;
-		}
-		FreeMem(mspc->ms_Node.xln_Name, l);
-	    }
-	    GfxFree(mspc->ms_Special);
-        }
-	GfxFree(mspc);
+	    } else
+	        GfxFree(&mspc->ms_Special->spm_Node);
+	}
     }
-    ReturnBool("driver_LateGfxInit", FALSE);
 
+    if (!mspc || !mspc->ms_Node.xln_Name) {
+        if (mspc)
+	    GfxFree(&mspc->ms_Node);
+	return FALSE;
+    }
+
+    NEWLIST(&mspc->DisplayInfoDataBase);
+    InitSemaphore(&mspc->DisplayInfoDataBaseSemaphore);
+
+    ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
+    AddTail(&GfxBase->MonitorList, (struct Node *)mspc);
+    ReleaseSemaphore(GfxBase->MonitorListSemaphore);
+
+    /* Next we are going to switch over to the new driver. This part is a 100% hack */
+
+    /* This OpenMonitor() will take care about driver setup */
+    if (!OpenMonitor(gfxhiddname, 0))
+        return FALSE;
+
+    /* If everything is ok, unload the old driver.
+       Note that driverdata pointer of its MonitorSpec will not be
+       cleared (and the data itself will not be deallocated), so the
+       driver will never be loaded again, and its object will always
+       be NULL. */
+    if (GfxBase->default_monitor)
+        driver_expunge(GfxBase);
+    D(bug("[GFX] Old driver removed\n"));
+
+    /* It's time to activate the new driver */
+    GfxBase->default_monitor = mspc;
+
+    return TRUE;
+}
+
+BOOL driver_OpenMonitor(struct MonitorSpec *mspc, struct GfxBase *GfxBase)
+{
+    struct TagItem tags[] = {
+    	{ TAG_DONE, 0UL },
+    };
+
+    /* If we already have a driverdata, everything is ok */
+    if (MDD(mspc)) {
+        D(bug("[driver_OpenMonitor] Spec 0x%p already has driverdata\n", mspc));
+        return TRUE;
+    }
+
+    MDD(mspc) = AllocMem(sizeof(struct monitor_driverdata), MEMF_PUBLIC|MEMF_CLEAR);
+    D(bug("[driver_OpenMonitor] Allocated driverdata at 0x%p\n", MDD(mspc)));
+    if (!MDD(mspc))
+        return FALSE;
+
+    /* Create a new GfxHidd object */
+    MDD(mspc)->gfxhidd = MDD(mspc)->gfxhidd_orig = OOP_NewObject(NULL, mspc->ms_Node.xln_Name, tags);
+    D(bug("[driver_OpenMonitor] gfxhidd=%p\n", MDD(mspc)->gfxhidd));
+
+    if (NULL != MDD(mspc)->gfxhidd) {
+	IPTR hwcursor = 0;
+	IPTR noframebuffer = 0;
+	BOOL ok = TRUE;
+
+	OOP_GetAttr(MDD(mspc)->gfxhidd, aHidd_Gfx_SupportsHWCursor, &hwcursor);
+	OOP_GetAttr(MDD(mspc)->gfxhidd, aHidd_Gfx_NoFrameBuffer, &noframebuffer);
+	if (!hwcursor) {
+	    OOP_Object *fgh;
+
+	    D(bug("[driver_OpenMonitor] Hardware mouse cursor is not supported, using fakegfx.hidd\n"));
+
+	    fgh = init_fakegfxhidd(MDD(mspc)->gfxhidd, GfxBase);
+
+	    if (NULL != fgh) {
+		MDD(mspc)->gfxhidd = fgh;
+		MDD(mspc)->fakegfx_inited = TRUE;
+	    } else
+		ok = FALSE;
+	}
+
+	if (ok) {
+	    struct TagItem gc_create_tags[] = { { TAG_DONE, 0UL } };
+
+	    D(bug("[driver_OpenMonitor] Ok\n"));
+	    MDD(mspc)->gc_cache = create_object_cache(NULL, CLID_Hidd_GC, gc_create_tags, GfxBase);
+	    if (NULL != MDD(mspc)->gc_cache) {
+
+		struct TagItem bm_create_tags[] = {
+		    { aHidd_BitMap_GfxHidd	, (IPTR)MDD(mspc)->gfxhidd_orig },
+		    { aHidd_BitMap_Displayable	, FALSE				 },
+		    { aHidd_PlanarBM_AllocPlanes, FALSE				 },
+		    { TAG_DONE			, 0UL				 }
+		};
+
+		D(bug("[driver_OpenMonitor] GC Cache created\n"));
+		MDD(mspc)->planarbm_cache = create_object_cache(NULL, CLID_Hidd_PlanarBM, bm_create_tags, GfxBase);
+
+		if (NULL != MDD(mspc)->planarbm_cache) {
+		    if (!noframebuffer)
+			MDD(mspc)->framebuffer = create_framebuffer(MDD(mspc)->gfxhidd, GfxBase);
+		    if (noframebuffer || MDD(mspc)->framebuffer) {
+			D(bug("[driver_OpenMonitor] FRAMEBUFFER OK: %p\n", MDD(mspc)->framebuffer));
+			ReturnBool("driver_OpenMonitor", TRUE);
+		    }
+
+		    if (MDD(mspc)->framebuffer)
+			OOP_DisposeObject(MDD(mspc)->framebuffer);
+
+		    delete_object_cache(MDD(mspc)->planarbm_cache, GfxBase);
+		} /* if (planarbm cache created) */
+		delete_object_cache(MDD(mspc)->gc_cache, GfxBase);
+	    } /* if (gc object cache ok) */
+	} /* if (fake gfx stuff ok) */
+
+	if (MDD(mspc)->fakegfx_inited)
+	    OOP_DisposeObject(MDD(mspc)->gfxhidd);
+
+	OOP_DisposeObject(MDD(mspc)->gfxhidd_orig);
+    }
+    ReturnBool("driver_OpenMonitor", FALSE);
 }
 
 
@@ -881,7 +936,7 @@ void driver_LoadView(struct View *view, struct GfxBase *GfxBase)
 
 	SDD(GfxBase)->frontbm		= bitmap;
 	SDD(GfxBase)->bm_bak		= bitmap ? HIDD_BM_OBJ(bitmap) : NULL;
-	SDD(GfxBase)->colmod_bak	= bitmap ? HIDD_BM_COLMOD(bitmap) : NULL;
+	SDD(GfxBase)->colmod_bak	= bitmap ? HIDD_BM_COLMOD(bitmap) : 0;
 	SDD(GfxBase)->colmap_bak	= bitmap ? HIDD_BM_COLMAP(bitmap) : NULL;
 
 	if (bitmap)

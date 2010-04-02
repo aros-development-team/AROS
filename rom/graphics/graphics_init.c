@@ -58,6 +58,9 @@ static int GfxInit(struct GfxBase *LIBBASE)
     InitSemaphore( &PrivGBase(GfxBase)->fontsem );
 
     NEWLIST(&LIBBASE->MonitorList);
+    LIBBASE->MonitorList.lh_Type = MONITOR_SPEC_TYPE;
+    GfxBase->MonitorListSemaphore = &PrivGBase(GfxBase)->monitors_sema;
+    InitSemaphore(GfxBase->MonitorListSemaphore);
 
 #if REGIONS_USE_MEMPOOL
     InitSemaphore( &PrivGBase(GfxBase)->regionsem );

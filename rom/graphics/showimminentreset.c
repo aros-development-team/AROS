@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PRIVATE: Indicate that a reset is imminent. 
@@ -45,7 +45,7 @@
 {
     AROS_LIBFUNC_INIT
 	
-    OOP_DoMethod(SDD(GfxBase)->gfxhidd_orig, (OOP_Msg)&SDD(GfxBase)->hiddGfxShowImminentReset_MethodID);
+    OOP_DoMethod(SDD(GfxBase)->gfxhidd_orig, (OOP_Msg)&CDD(GfxBase)->hiddGfxShowImminentReset_MethodID);
     
     AROS_LIBFUNC_EXIT
 	

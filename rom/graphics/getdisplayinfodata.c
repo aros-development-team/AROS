@@ -289,17 +289,19 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    mi->DefaultViewPosition.Y = ?;
 	    */
 
-	    /* HACK!!! Need to lookup MonitorSpec by ModeID using OpenMonitor() */
-	    mi->Mspc = GfxBase->default_monitor;
-
 	    mi->PreferredModeID = modeid;
 	    mi->Compatibility = HIDDProps.CompositionFlags ? MCOMPAT_SELF : MCOMPAT_NOBODY;
 
-	    mi->reserved[0] = (IPTR)SDD(GfxBase)->gfxhidd;
+	    mi->Mspc = OpenMonitor(NULL, modeid);
+	    if (mi->Mspc) {
 
-	    mi->TotalRows        = mi->Mspc->total_rows;
-	    mi->TotalColorClocks = mi->Mspc->total_colorclocks = mi->TotalColorClocks;
-	    mi->MinRow           = mi->Mspc->min_row;
+	        mi->reserved[0]      = (IPTR)MDD(mi->Mspc)->gfxhidd;
+	        mi->TotalRows        = mi->Mspc->total_rows;
+	        mi->TotalColorClocks = mi->Mspc->total_colorclocks = mi->TotalColorClocks;
+	        mi->MinRow           = mi->Mspc->min_row;
+
+		CloseMonitor(mi->Mspc);
+	    }
 
 	    break;
 	}
