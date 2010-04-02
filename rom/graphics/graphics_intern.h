@@ -118,7 +118,7 @@ struct class_static_data
 };
 
 /* Monitor driver data. Should be somehow attached to a MonitorSpec */
-struct shared_driverdata
+struct monitor_driverdata
 {
     /* Driver objects */
     OOP_Object      	     *gfxhidd;		/* Graphics driver to use (can be fakegfx object) */
@@ -132,11 +132,17 @@ struct shared_driverdata
     OOP_Object	    	     *colmap_bak;	/* Original colormap object of shown bitmap	  */
     HIDDT_ColorModel 	     colmod_bak;	/* Original colormodel of shown bitmap		  */
 
-    /* The following should probably stay shared */
     /* Caches */
     ObjectCache     	     *gc_cache;		/* GC cache					  */
     ObjectCache     	     *planarbm_cache;   /* Planar bitmaps cache				  */
+};
 
+#define MDD(mspc)	    (*(struct monitor_driverdata **)&mspc->ms_Special->reserved1)
+#define SDD(base)   	    (MDD(base->default_monitor))
+
+/* Common driver data data to all monitors */
+struct common_driverdata
+{
     /* Attribute bases */
     OOP_AttrBase    	     hiddBitMapAttrBase;
     OOP_AttrBase    	     hiddGCAttrBase;
@@ -148,14 +154,15 @@ struct shared_driverdata
     OOP_MethodID    	     hiddGfxShowImminentReset_MethodID;
 };
 
-#define SDD(base)   	    ((struct shared_driverdata *)&PrivGBase(base)->shared_driverdata)
-#define __IHidd_BitMap      SDD(GfxBase)->hiddBitMapAttrBase
-#define __IHidd_GC          SDD(GfxBase)->hiddGCAttrBase
-#define __IHidd_Sync        SDD(GfxBase)->hiddSyncAttrBase
-#define __IHidd_PixFmt      SDD(GfxBase)->hiddPixFmtAttrBase
-#define __IHidd_PlanarBM    SDD(GfxBase)->hiddPlanarBMAttrBase
-#define __IHidd_Gfx         SDD(GfxBase)->hiddGfxAttrBase
-#define __IHidd_FakeGfxHidd SDD(GfxBase)->hiddFakeGfxHiddAttrBase
+#define CDD(base)   	    ((struct common_driverdata *)&PrivGBase(base)->shared_driverdata)
+
+#define __IHidd_BitMap      CDD(GfxBase)->hiddBitMapAttrBase
+#define __IHidd_GC          CDD(GfxBase)->hiddGCAttrBase
+#define __IHidd_Sync        CDD(GfxBase)->hiddSyncAttrBase
+#define __IHidd_PixFmt      CDD(GfxBase)->hiddPixFmtAttrBase
+#define __IHidd_PlanarBM    CDD(GfxBase)->hiddPlanarBMAttrBase
+#define __IHidd_Gfx         CDD(GfxBase)->hiddGfxAttrBase
+#define __IHidd_FakeGfxHidd CDD(GfxBase)->hiddFakeGfxHiddAttrBase
 
 #define DRIVERDATALIST_HASHSIZE 256
 
@@ -165,23 +172,28 @@ struct GfxBase_intern
     struct GfxBase 	 	gfxbase;
 
     struct class_static_data    *fakegfx_staticdata; /* FakeGFX HIDD static data */
-    struct shared_driverdata	shared_driverdata;   /* Driver data shared between all rastports (allocated once) */
+    struct common_driverdata	shared_driverdata;   /* Driver data shared between all monitors (allocated once) */
+    struct SignalSemaphore	monitors_sema;	     /* Monitor list semaphore */
 
 #define TFE_HASHTABSIZE   	16 /* This MUST be a power of two */
 
+    /* TextFontExtension pool */
     struct tfe_hashnode   	* tfe_hashtab[TFE_HASHTABSIZE];
     struct SignalSemaphore  	tfe_hashtab_sema;
     struct SignalSemaphore  	fontsem;
+
 #if REGIONS_USE_MEMPOOL
+    /* Regions pool */
     struct SignalSemaphore  	regionsem;
     APTR    	    	    	regionpool;
     struct MinList              ChunkPoolList;
 #endif
+
     /* GC driverdata pool */
     struct SignalSemaphore  	driverdatasem;
     APTR    	    	    	driverdatapool;
     struct MinList  	    	driverdatalist[DRIVERDATALIST_HASHSIZE];
-    
+
     /* Pixelbuffer, needed for some operations */
     ULONG                      *pixel_buf;
     struct SignalSemaphore      pixbuf_sema;
@@ -253,6 +265,8 @@ extern BOOL driver_LateGfxInit(APTR, struct GfxBase *GfxBase);
 extern void driver_Text (struct RastPort *, CONST_STRPTR, LONG, struct GfxBase *);
 
 extern void driver_LoadView(struct View *view, struct GfxBase *);
+
+extern BOOL driver_OpenMonitor(struct MonitorSpec *mspc, struct GfxBase *GfxBase);
 
 /* functions in support.c */
 extern BOOL pattern_pen(struct RastPort *rp

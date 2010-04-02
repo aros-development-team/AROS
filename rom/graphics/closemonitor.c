@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function CloseMonitor()
@@ -48,11 +48,19 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    
+    BOOL res = TRUE;
 
-#warning TODO: Write graphics/CloseMonitor()
-    aros_print_not_implemented ("CloseMonitor");
+    ObtainSemaphore(&monitor_spec->DisplayInfoDataBaseSemaphore);
 
-    return FALSE;
+    if (monitor_spec->ms_OpenCount) {
+        monitor_spec->ms_OpenCount--;
+        res = FALSE;
+    }
+
+    ReleaseSemaphore(&monitor_spec->DisplayInfoDataBaseSemaphore);
+
+    return res;
 
     AROS_LIBFUNC_EXIT
 } /* CloseMonitor */

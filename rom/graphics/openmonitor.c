@@ -1,12 +1,15 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function OpenMonitor()
     Lang: english
 */
+
 #include <aros/debug.h>
 #include <graphics/monitor.h>
+
+#include "graphics_intern.h"
 
 /*****************************************************************************
 
@@ -42,6 +45,9 @@
         CloseMonitor(), graphics/monitor.h
 
     INTERNALS
+        Currently display_id parameter is ignored because all display modes
+	are served by the same driver (which is the defailt one).
+	In future this will change.
 
     HISTORY
 
@@ -49,11 +55,47 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    
+    struct MonitorSpec *mspc;
 
-#warning TODO: Write graphics/OpenMonitor()
-    aros_print_not_implemented ("OpenMonitor");
+    D(bug("[GFX] OpenMonitor(%s)\n", monitor_name));
 
-    return NULL;
+    if (monitor_name) {
+
+        ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
+
+        for (mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
+	    if (!strcmp(monitor_name, mspc->ms_Node.xln_Name)) {
+	        D(bug("[OpenMonitor] Found spec 0x%p\n", mspc));
+	        break;
+	    }
+	}
+
+	ReleaseSemaphore(GfxBase->MonitorListSemaphore);
+
+	if (!mspc->ms_Node.xln_Succ) {
+	    D(bug("[OpenMonitor] Monitor not found\n"));
+	    return NULL;
+	}
+	
+    }
+    /* TODO: implement lookup by display_id */
+    else
+        mspc = GfxBase->default_monitor;
+
+    /* Note that we do initialization inside a semaphore. This protects us from
+       potential race condition when several tasks attempt to open the same monitor
+       The semaphore we use here is not exactly for this purpose, but this will not harm */
+    ObtainSemaphore(&mspc->DisplayInfoDataBaseSemaphore);
+
+    if (driver_OpenMonitor(mspc, GfxBase))
+        mspc->ms_OpenCount++;
+    else
+        mspc = NULL;
+
+    ReleaseSemaphore(&mspc->DisplayInfoDataBaseSemaphore);
+
+    return mspc;
 
     AROS_LIBFUNC_EXIT
 } /* OpenMonitor */
