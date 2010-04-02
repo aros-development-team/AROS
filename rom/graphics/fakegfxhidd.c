@@ -1505,45 +1505,42 @@ static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data
 
 #undef GfxBase
 
-OOP_Object *init_fakegfxhidd(OOP_Object *gfxhidd, struct class_static_data *csd, struct GfxBase *GfxBase)
+OOP_Object *init_fakegfxhidd(OOP_Object *gfxhidd, struct GfxBase *GfxBase)
 {
-    OOP_Object *fgo = NULL;
-       
-    csd->gfxbase    	= GfxBase;
-    
-    csd->fakegfxclass	= init_fakegfxhiddclass(csd);
-    csd->fakefbclass	= init_fakefbclass(csd);
-    
-    if (NULL != csd->fakegfxclass && NULL != csd->fakefbclass)
-    {
-	struct TagItem fgh_tags[] =
-	{
-	    { aHidd_FakeGfxHidd_RealGfxHidd , (IPTR)gfxhidd },
-	    { TAG_DONE	    	    	    , 0UL   	    }
-	};
+    struct class_static_data *csd = PrivGBase(GfxBase)->fakegfx_staticdata;
 
-	fgo = OOP_NewObject(NULL, CLID_Hidd_FakeGfxHidd, fgh_tags);
+    if (!csd) {
+        csd = AllocMem(sizeof(struct class_static_data), MEMF_ANY);
+	if (!csd)
+	    return NULL;
+	PrivGBase(GfxBase)->fakegfx_staticdata = csd;
 
-	if (NULL != fgo)
-	{
-	    csd->fakegfxobj = fgo;
+        csd->gfxbase    	= GfxBase;
+        csd->fakegfxclass	= init_fakegfxhiddclass(csd);
+        csd->fakefbclass	= init_fakefbclass(csd);
+    
+        if (!csd->fakegfxclass || !csd->fakefbclass) {
+	    cleanup_fakegfxhidd(GfxBase);
+	    FreeMem(csd, sizeof(struct class_static_data));
+	    return NULL;
 	}
     }
-    
-    if (NULL == fgo)
-    	cleanup_fakegfxhidd(csd, GfxBase);
-	
-    return fgo;
+
+    struct TagItem fgh_tags[] = {
+	{ aHidd_FakeGfxHidd_RealGfxHidd , (IPTR)gfxhidd },
+	{ TAG_DONE	    	    	, 0UL   	 }
+    };
+
+    return OOP_NewObject(NULL, CLID_Hidd_FakeGfxHidd, fgh_tags);
 }
 
-VOID cleanup_fakegfxhidd(struct class_static_data *csd, struct GfxBase *GfxBase)
+VOID cleanup_fakegfxhidd(struct GfxBase *GfxBase)
 {
-    if (NULL != csd->fakegfxobj)
-    {
-    	OOP_DisposeObject(csd->fakegfxobj);
-	csd->fakegfxobj = NULL;
-    }
-    
+    struct class_static_data *csd = PrivGBase(GfxBase)->fakegfx_staticdata;
+
+    if (!csd)
+        return;
+
     if (NULL != csd->fakefbclass)
     {
     	free_fakefbclass(csd->fakefbclass, csd);
@@ -1556,5 +1553,6 @@ VOID cleanup_fakegfxhidd(struct class_static_data *csd, struct GfxBase *GfxBase)
 	csd->fakegfxclass = NULL;
     }
     
-    return;
+    FreeMem(csd, sizeof(struct class_static_data));
+    PrivGBase(GfxBase)->fakegfx_staticdata = NULL;
 }

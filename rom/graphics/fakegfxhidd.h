@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -36,7 +36,7 @@ enum {
 #define aHidd_FakeFB_FakeGfxHidd	(HiddFakeFBAttrBase + aoHidd_FakeFB_FakeGfxHidd	)
 #define aHidd_FakeFB_	(HiddFakeFBAttrBase + aoHidd_FakeFB_)
 
-OOP_Object *init_fakegfxhidd(OOP_Object *gfxhidd, struct class_static_data *csd, struct GfxBase *GfxBase);
-VOID cleanup_fakegfxhidd(struct class_static_data *csd, struct GfxBase *GfxBase);
+OOP_Object *init_fakegfxhidd(OOP_Object *gfxhidd, struct GfxBase *GfxBase);
+VOID cleanup_fakegfxhidd(struct GfxBase *GfxBase);
 
 #endif /* FAKEGFXHIDD_H */

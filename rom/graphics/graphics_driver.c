@@ -407,19 +407,8 @@ int driver_init(struct GfxBase * GfxBase)
     ReturnInt("driver_init", int, FALSE);
 }
 
-int driver_open (struct GfxBase * GfxBase)
-{
-    return TRUE;
-}
-
-void driver_close (struct GfxBase * GfxBase)
-{
-    return;
-}
-
 void driver_expunge (struct GfxBase * GfxBase)
 {
-    
     /* Try to free some other stuff */
     if (SDD(GfxBase)->framebuffer) {
 	OOP_DisposeObject(SDD(GfxBase)->framebuffer);
@@ -437,7 +426,7 @@ void driver_expunge (struct GfxBase * GfxBase)
     }
 
     if ( SDD(GfxBase)->fakegfx_inited ) {
-	cleanup_fakegfxhidd( &SDD(GfxBase)->fakegfx_staticdata, GfxBase);
+        OOP_DisposeObject(SDD(GfxBase)->gfxhidd);
 	SDD(GfxBase)->fakegfx_inited = FALSE;
     }
 
@@ -514,12 +503,11 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 
 		    OOP_GetAttr(SDD(GfxBase)->gfxhidd, aHidd_Gfx_SupportsHWCursor, &hwcursor);
 		    OOP_GetAttr(SDD(GfxBase)->gfxhidd, aHidd_Gfx_NoFrameBuffer, &noframebuffer);
-		    SDD(GfxBase)->has_hw_cursor = (BOOL)hwcursor;
 		    if (!hwcursor) {
 			OOP_Object *fgh;
 			D(bug("There's no hardware cursor\n"));
 
-			fgh = init_fakegfxhidd(SDD(GfxBase)->gfxhidd, &SDD(GfxBase)->fakegfx_staticdata, GfxBase);
+			fgh = init_fakegfxhidd(SDD(GfxBase)->gfxhidd, GfxBase);
 
 			if (NULL != fgh) {
 			    SDD(GfxBase)->gfxhidd = fgh;
@@ -566,7 +554,7 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 		    } /* if (fake gfx stuff ok) */
 
 	            if (SDD(GfxBase)->fakegfx_inited) {
-			cleanup_fakegfxhidd(&SDD(GfxBase)->fakegfx_staticdata, GfxBase);
+			OOP_DisposeObject(SDD(GfxBase)->gfxhidd);
 			SDD(GfxBase)->fakegfx_inited = FALSE;
 	            }
 	            OOP_DisposeObject(SDD(GfxBase)->gfxhidd_orig);
