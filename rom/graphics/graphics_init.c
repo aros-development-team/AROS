@@ -113,7 +113,7 @@ static int GfxOpen(struct GfxBase *LIBBASE)
        GfxAssociate(), GfxLookUp()                  */
 
     if (!LIBBASE->hash_table)
-    	LIBBASE->hash_table = (LONG *)AllocMem(8*sizeof(LONG *), 
+    	LIBBASE->hash_table = AllocMem(8*sizeof(LONG *), 
                                            MEMF_CLEAR|MEMF_PUBLIC);
     if (!LIBBASE->hash_table)
 	return 0;

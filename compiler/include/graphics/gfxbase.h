@@ -2,7 +2,7 @@
 #define GRAPHICS_GFXBASE_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: graphics.library
@@ -96,7 +96,7 @@ struct GfxBase
     UWORD hedley_flags;
     WORD  hedley_tmp;
 
-    LONG * hash_table;
+    IPTR * hash_table;
     UWORD  current_tot_rows;
     UWORD  current_tot_cclks;
     UBYTE  hedley_hint;
