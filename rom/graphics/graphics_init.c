@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics library
@@ -55,6 +55,8 @@ static int GfxInit(struct GfxBase *LIBBASE)
     NEWLIST(&LIBBASE->TextFonts);
     InitSemaphore( &PrivGBase(GfxBase)->tfe_hashtab_sema );
     InitSemaphore( &PrivGBase(GfxBase)->fontsem );
+
+    NEWLIST(&LIBBASE->MonitorList);
 
 #if REGIONS_USE_MEMPOOL
     InitSemaphore( &PrivGBase(GfxBase)->regionsem );

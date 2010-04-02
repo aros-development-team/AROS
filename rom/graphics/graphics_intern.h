@@ -152,12 +152,6 @@ struct shared_driverdata
 
     struct class_static_data fakegfx_staticdata;
     BOOL    	    	     fakegfx_inited;
-    
-#if 0    
-    /* Has the code to handle active screens been activated ? */
-    BOOL    	    	     activescreen_inited;
-#endif    
-    APTR    	    	     dispinfo_db; /* Display info database */
 };
 
 #define SDD(base)   	    ((struct shared_driverdata *)&PrivGBase(base)->shared_driverdata)
@@ -176,9 +170,7 @@ struct GfxBase_intern
 {
     struct GfxBase 	 	gfxbase;
 
-    /* Driver data shared between all rastports (allocated once) */
-    struct shared_driverdata	shared_driverdata;
-
+    struct shared_driverdata	shared_driverdata; /* Driver data shared between all rastports (allocated once) */
 
 #define TFE_HASHTABSIZE   	16 /* This MUST be a power of two */
 
@@ -190,10 +182,13 @@ struct GfxBase_intern
     APTR    	    	    	regionpool;
     struct MinList              ChunkPoolList;
 #endif
+    /* GC driverdata pool */
     struct SignalSemaphore  	driverdatasem;
     APTR    	    	    	driverdatapool;
     struct MinList  	    	driverdatalist[DRIVERDATALIST_HASHSIZE];
-    ULONG                      *pixel_buf;   // used in graphics_driver
+    
+    /* Pixelbuffer, needed for some operations */
+    ULONG                      *pixel_buf;
     struct SignalSemaphore      pixbuf_sema;
     struct SignalSemaphore      blit_sema;
 };

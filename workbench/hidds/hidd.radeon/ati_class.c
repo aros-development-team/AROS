@@ -175,7 +175,7 @@ OOP_Object *METHOD(ATI, Hidd_Gfx, NewBitMap)
         if (vHidd_ModeID_Invalid != modeid)
         {
             /* User supplied a valid modeid. We can use our offscreen class */
-            classptr = sd->OnBMClass;
+            classptr = sd->OffBMClass;
         }
         else
         {

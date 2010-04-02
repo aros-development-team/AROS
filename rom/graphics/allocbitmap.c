@@ -132,10 +132,12 @@
 	FreeBitMap()
 
     INTERNALS
-	Currently AROS ignores BMF_DISPLAYABLE flag at all. In order to
-	allocate a real displayable bitmap, you should pass BMF_SCREEN
-	flag with ModeID specified in friend_bitmap parameter.
-	This is a real difference of AROS, keep it in mind.
+        In order to allocate a displayable bitmap, you need to pass
+	BMF_MINPLANES in addition to BMF_DISPLAYABLE flag. This is
+	standard CGX convention. You may use BMF_REQUESTVMEM definition
+	for this.
+
+	BMF_SCREEN implies these flags.
 
     HISTORY
 
@@ -144,18 +146,19 @@
     AROS_LIBFUNC_INIT
 
     struct BitMap *nbm;
-    ULONG hiddmode = INVALID_ID;
+    HIDDT_ModeID hiddmode = vHidd_ModeID_Invalid;
 
     if (flags & BMF_SCREEN)
     {
-    	hiddmode      = (ULONG)friend_bitmap;
+    	hiddmode      = AMIGA_TO_HIDD_MODEID((ULONG)friend_bitmap);
 	friend_bitmap = NULL;
+	flags |= BMF_REQUESTVMEM;
     }
 
     ASSERT_VALID_PTR_OR_NULL(friend_bitmap);
     D(bug("AllocBitMap(%u, %u, %u, 0x%08lX)\n", sizex, sizey, depth, flags));
     D(bug("[AllocBitMap] ModeID: 0x%08lX, friend_bitmap: 0x%p\n", hiddmode, friend_bitmap));
-    
+
     /*
 	If the depth is too large or the bitmap should be displayable or
 	there is a friend_bitmap bitmap and that's not a normal bitmap, then
@@ -165,87 +168,85 @@
 	depth > 8
 	|| (flags & BMF_SCREEN)
 	|| (friend_bitmap && friend_bitmap->Flags & BMF_AROS_HIDD)
-    	#warning Should	we also check for BMF_MINPLANES ?
 	|| (flags & BMF_SPECIALFMT) /* Cybergfx bitmap */
     )
     {
-
-	struct TagItem bm_tags[8];	/* Tags for offscreen bitmaps */
+	struct TagItem bm_tags[6];
+	HIDDT_StdPixFmt stdpf = vHidd_StdPixFmt_Unknown;
+	OOP_Object *gfxhidd = NULL;
 
 	D(bug("[AllocBitMap] Allocating HIDD bitmap\n"));
 
-
+	/* Set size */
 	SET_BM_TAG( bm_tags, 0, Width,  sizex	);
 	SET_BM_TAG( bm_tags, 1, Height, sizey	);
 
-	if (flags & BMF_SCREEN)
-	{
-	    D(bug("[AllocBitMap] Allocating screen bitmap\n"));
-	    /* Use the hiddmode instead of depth/friend_bitmap */
-	    if  (INVALID_ID == hiddmode)
-    		ReturnPtr("driver_AllocBitMap(Invalid modeID)", struct BitMap *, NULL);
+	/* Set friend bitmap */
+	SET_TAG(bm_tags, 2, TAG_IGNORE, 0);
+	if (friend_bitmap && IS_HIDD_BM(friend_bitmap)) {
+	    D(bug("[AllocBitMap] Setting friend bitmap: 0x%p\n", friend_bitmap));
+	    SET_BM_TAG(bm_tags, 2, Friend, HIDD_BM_OBJ(friend_bitmap));
 
-	    SET_BM_TAG(bm_tags, 2, ModeID, AMIGA_TO_HIDD_MODEID(hiddmode));
-	    SET_BM_TAG(bm_tags, 3, Displayable, TRUE);
-	    SET_TAG(bm_tags, 4, TAG_DONE, 0);
+	    /* If we have no ModeID specified, obtain it from friend */
+	    if (hiddmode == vHidd_ModeID_Invalid)
+	        OOP_GetAttr(HIDD_BM_OBJ(friend_bitmap), aHidd_BitMap_ModeID, &hiddmode);
+
+	    /* Obtain also GFX driver from friend bitmap */
+	    OOP_GetAttr(HIDD_BM_OBJ(friend_bitmap), aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 	}
-	else
-	{
-	    HIDDT_StdPixFmt stdpf;
-	    
-	    /* Set friend bitmap if given */
-	    SET_TAG(bm_tags, 2, TAG_IGNORE, 0);
-	    if (NULL != friend_bitmap)
-	    {
-		if (IS_HIDD_BM(friend_bitmap)) {
-			D(bug("[AllocBitMap] Setting friend bitmap object: 0x%p\n", HIDD_BM_OBJ(friend_bitmap)));
-		    SET_BM_TAG(bm_tags, 2, Friend, HIDD_BM_OBJ(friend_bitmap));
-		}
-	    }
 
-	    if (flags & BMF_SPECIALFMT)
-	    {
-		stdpf = cyber2hidd_pixfmt(DOWNSHIFT_PIXFMT(flags), GfxBase);
-		D(bug("[AllocBitMap] Setting pixelformat to %d\n", stdpf));
-		SET_BM_TAG(bm_tags, 3, StdPixFmt, stdpf);
-	    } else if (!friend_bitmap) {
-		/* If there is neither pixelformat nor friend bitmap specified,
-		   we have to use some default pixelformat depending on the depth */
-	        if (depth > 24)
-		    stdpf = vHidd_StdPixFmt_ARGB32;
-		else if (depth > 16)
-		    stdpf = vHidd_StdPixFmt_0RGB32;
-		else if (depth > 15)
-		    stdpf = vHidd_StdPixFmt_RGB16;
-		else if (depth > 8)
-		    stdpf = vHidd_StdPixFmt_RGB15;
-		else
-		    stdpf = vHidd_StdPixFmt_LUT8;
-		D(bug("[AllocBitMap] Setting pixelformat to %d\n", stdpf));
-		SET_BM_TAG(bm_tags, 3, StdPixFmt, stdpf);
-	    } else {
-		/* If we have a friend bitmap, pixelformat will be
-		   picked up from it */
-		SET_TAG(bm_tags, 3, TAG_IGNORE, 0);
-	    }
-
-	    SET_TAG(bm_tags, 4, TAG_DONE, 0);
+	/* Now let's deal with pixelformat */
+	if (flags & BMF_SPECIALFMT)
+	    stdpf = cyber2hidd_pixfmt(DOWNSHIFT_PIXFMT(flags), GfxBase);
+	else if ((!friend_bitmap) && (hiddmode == vHidd_ModeID_Invalid)) {
+	    /* If there is neither pixelformat nor friend bitmap nor ModeID specified,
+	       we have to use some default pixelformat depending on the depth */
+	    if (depth > 24)
+		stdpf = vHidd_StdPixFmt_ARGB32;
+	    else if (depth > 16)
+		stdpf = vHidd_StdPixFmt_0RGB32;
+	    else if (depth > 15)
+		stdpf = vHidd_StdPixFmt_RGB16;
+	    else if (depth > 8)
+		stdpf = vHidd_StdPixFmt_RGB15;
+	    else
+		stdpf = vHidd_StdPixFmt_LUT8;
 	}
+	/* If we have a friend bitmap, pixelformat will be
+	   picked up from it */
+
+	if (stdpf != vHidd_StdPixFmt_Unknown) {
+	    D(bug("[AllocBitMap] Setting pixelformat to %d\n", stdpf));
+	    SET_BM_TAG(bm_tags, 3, StdPixFmt, stdpf);
+	} else if (hiddmode != vHidd_ModeID_Invalid) {
+	    D(bug("[AllocBitMap] Setting ModeID to 0x%08lX\n", hiddmode));
+	    SET_BM_TAG(bm_tags, 3, ModeID, hiddmode);
+	} else {
+	    /* SET_TAG() is TWO operators, so we absolutely need parenthesis here.
+	       Remember this! */
+	    SET_TAG(bm_tags, 3, TAG_IGNORE, 0);
+	}
+
+	/* Set Displayable attribute */
+	SET_BM_TAG(bm_tags, 4, Displayable, ((flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM));
+	D(bug("[AllocBitMap] Displayable: %d\n", bm_tags[4].ti_Data));
+
+	SET_TAG(bm_tags, 5, TAG_DONE, 0);
 
 	nbm = AllocMem (sizeof (struct BitMap), MEMF_ANY|MEMF_CLEAR);
 	D(bug("[AllocBitMap] Allocated bitmap structure: 0x%p\n", nbm));
 	if (NULL != nbm)
 	{
-
     	    OOP_Object *bm_obj;
-    	    OOP_Object *gfxhidd;
 
-    	    gfxhidd  = SDD(GfxBase)->gfxhidd;
+	    /* If we had no friend bitmap, or our friend bitmap doesn't have attached driver,
+	       use the default driver */
+	    if (!gfxhidd)
+    	        gfxhidd  = SDD(GfxBase)->gfxhidd;
 
     	    /* Create HIDD bitmap object */
     	    if (NULL != gfxhidd)
 	    {
-		D(bug("[AllocBitMap] Creating bitmap object\n"));
     		bm_obj = HIDD_Gfx_NewBitMap(gfxhidd, bm_tags);
 		D(bug("[AllocBitMap] Created bitmap object 0x%p\n", bm_obj));
     		if (NULL != bm_obj)
