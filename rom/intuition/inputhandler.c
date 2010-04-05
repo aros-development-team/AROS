@@ -1352,11 +1352,12 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	    WORD dy = iihdata->DeltaMouseY;
 	    WORD min, max, val;
 	    UWORD spFlags = GetPrivScreen(scr)->SpecialFlags;
+	    UWORD DragMode = GetPrivIBase(IntuitionBase)->IControlPrefs.ic_VDragModes[0];
 
 	    DEBUG_DRAG(bug("[InputHandler] Screen drag, delta is (%d, %d)\n", dx, dy));
 
-	    /* Restrict dragging to a physical display area if the driver does not allow composition */
-	    if ((spFlags & SF_HorCompose) != SF_HorCompose) {
+	    /* Restrict dragging to a physical display area if the driver does not allow composition or if the user wants it*/
+	    if (((spFlags & SF_HorCompose) != SF_HorCompose) || (DragMode & ICVDM_HBOUND)) {
 		/* Calculate limits */
 		WORD DWidth = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX + 1;
 
@@ -1376,7 +1377,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 		   Calculate the position we would go to */
 		val = scr->LeftEdge + dx;
 		/* Determine the direction */
-		if ((dx < 0) && (!(spFlags & SF_ComposeRight))) {
+		if ((dx < 0) && ((!(spFlags & SF_ComposeRight)) || (DragMode & ICVDM_LBOUND))) {
 		    /* Can we move at all in this direction ? */
 		    if (scr->LeftEdge > min) {
 			/* If too far, restrict it */
@@ -1385,7 +1386,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 		    } else
 			/* Just don't move if we can't */
 			dx = 0;
-		} else if (!(spFlags & SF_ComposeLeft)) {
+		} else if ((!(spFlags & SF_ComposeLeft)) || (DragMode & ICVDM_RBOUND)) {
 		    if (scr->LeftEdge < max) {
 			if (val > max)
 			    dx = max - scr->LeftEdge;
@@ -1393,7 +1394,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 			dx = 0;
 		}
 	    }
-	    if ((spFlags & SF_VertCompose) != SF_VertCompose) {
+	    if (((spFlags & SF_VertCompose) != SF_VertCompose) || (DragMode & ICVDM_VBOUND)) {
 		WORD DHeight = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY + 1;
 
 		DEBUG_DRAG(bug("[Inputhandler] Restricting vertical drag\n"));
@@ -1408,13 +1409,13 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 		DEBUG_DRAG(bug("[Inputhandler] Limits: min %d max %d\n", min, max));
 		val = scr->TopEdge + dy;
 		DEBUG_DRAG(bug("[Inputhandler] New position would be %d\n", val));
-		if ((dy < 0)  && (!(spFlags & SF_ComposeBelow))) {
+		if ((dy < 0)  && ((!(spFlags & SF_ComposeBelow)) || (DragMode & ICVDM_TBOUND))) {
 		    if (scr->TopEdge > min) {
 			if (val < min)
 			    dy = min - scr->TopEdge;
 		    } else
 			dy = 0;
-		} else if (!(spFlags & SF_ComposeAbove)) {
+		} else if ((!(spFlags & SF_ComposeAbove)) || (DragMode & ICVDM_BBOUND)) {
 		    if (scr->TopEdge < max) {
 			if (val > max)
 			    dy = max - scr->TopEdge;

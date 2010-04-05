@@ -39,6 +39,7 @@ struct IIControlPrefs
     UBYTE ic_FrontToBack;
     UBYTE ic_ReqTrue;
     UBYTE ic_ReqFalse;
+    UWORD ic_VDragModes[2];
 };
 
 struct IPointerPrefs

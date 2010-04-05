@@ -2,7 +2,7 @@
 #define PREFS_ICONTROL_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Icontrol prefs definitions
@@ -29,6 +29,8 @@ struct IControlPrefs {
     UBYTE ic_FrontToBack;
     UBYTE ic_ReqTrue;
     UBYTE ic_ReqFalse;
+    UWORD ic_Reserved2;
+    UWORD ic_VDragModes[2]; /* Screen drag modes, see below */
 };
 
 /* Values for ic_Flags */
@@ -56,5 +58,15 @@ struct IControlPrefs {
 #define ICF_3DMENUS     	(1<<16)
 #define ICF_POPUPMENUS	    	(1<<15)
 #define ICF_AVOIDWINBORDERERASE (1<<14)
+
+/* Screen drag modes */
+#define ICVDM_TBOUND    0x0001  /* Bounded at the top */
+#define ICVDM_BBOUND    0x0002  /* Bounded at the bottom */
+#define ICVDM_LBOUND    0x0004  /* Bounded at the left */
+#define ICVDM_RBOUND    0x0008  /* Bounded at the right */
+
+/* Drag mode masks */
+#define ICVDM_HBOUND    (ICVDM_LBOUND|ICVDM_RBOUND) /* Horisontal bounding */
+#define ICVDM_VBOUND	(ICVDM_TBOUND|ICVDM_BBOUND) /* Verticak bounding   */
 
 #endif /* PREFS_ICONTROL_H */

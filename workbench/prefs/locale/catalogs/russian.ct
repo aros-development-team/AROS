@@ -101,3 +101,9 @@ MSG_TIMEZONE_HOURS
 MSG_TIMEZONE_HOURSMINS
 Временная зона: %ld часов %ld минут от GMT
 ;
+MSG_CHARACTER_SET (//)
+Кодировка по умолчанию
+;
+MSG_NOT_SPECIFIED (//)
+Не определена
+;

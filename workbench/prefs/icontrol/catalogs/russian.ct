@@ -119,3 +119,7 @@ MSG_FRONTMOST_DEFAULT_DESC
 Самый верхний общий экран\nстановится общим экраном по умолчанию
 ;Make the frontmost public screen\nthe default public screen
 ;
+MSG_BACKWARDS_DRAG (//)
+Запретить протаскивание вверх и влево
+;Disable drag in top-left direction
+;
