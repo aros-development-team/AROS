@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LocDateToStr - locale.library's private replacement
@@ -17,11 +17,7 @@
 #include "locale_intern.h"
 #include <aros/asmcall.h>
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
- #define YEAR_FORMAT "%y"
-#else
- #define YEAR_FORMAT "%Y"
-#endif
+#define YEAR_FORMAT "%y"
 
 #ifndef FORMAT_DEF
 #define FORMAT_DEF 4
