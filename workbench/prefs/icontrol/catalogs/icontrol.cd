@@ -89,3 +89,6 @@ Allow windows to be moved out of\nthe visible area
 MSG_FRONTMOST_DEFAULT_DESC (//)
 Make the frontmost public screen\nthe default public screen
 ;
+MSG_BACKWARDS_DRAG (//)
+Disable drag in top-left direction
+;

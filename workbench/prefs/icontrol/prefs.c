@@ -53,6 +53,9 @@ struct FileIControlPrefs
     UBYTE   ic_FrontToBack;
     UBYTE   ic_ReqTrue;
     UBYTE   ic_ReqFalse;
+    UBYTE   ic_Reserved_2[2];
+    UBYTE   ic_VDragModes0[2];
+    UBYTE   ic_VDragModes1[2];
 };
 
 /*********************************************************************************************/
@@ -91,8 +94,8 @@ void CleanupPrefs(void)
 
 BOOL LoadPrefs(STRPTR filename)
 {
-    static struct FileIControlPrefs loadprefs;
-    struct IFFHandle 	    	    *iff;    
+    static struct FileIControlPrefs loadprefs = {0};
+    struct IFFHandle 	    	    *iff;
     BOOL    	    	    	    retval = FALSE;
     
     D(bug("LoadPrefs: Trying to open \"%s\"\n", filename));
@@ -121,11 +124,11 @@ BOOL LoadPrefs(STRPTR filename)
 			
 			cn = CurrentChunk(iff);
 
-			if (cn->cn_Size == sizeof(loadprefs))
+			if (cn->cn_Size <= sizeof(loadprefs))
 			{
    	    	    	    D(bug("LoadPrefs: ID_ICTL chunk size okay.\n"));
 			    
-		    	    if (ReadChunkBytes(iff, &loadprefs, sizeof(loadprefs)) == sizeof(loadprefs))
+		    	    if (ReadChunkBytes(iff, &loadprefs, cn->cn_Size) == cn->cn_Size)
 			    {
    	    	    	    	D(bug("LoadPrefs: Reading chunk successful.\n"));
 
@@ -140,6 +143,9 @@ BOOL LoadPrefs(STRPTR filename)
 				icontrolprefs.ic_FrontToBack = loadprefs.ic_FrontToBack;
 				icontrolprefs.ic_ReqTrue = loadprefs.ic_ReqTrue;
 				icontrolprefs.ic_ReqFalse = loadprefs.ic_ReqFalse;
+				icontrolprefs.ic_Reserved2 = ARRAY_TO_WORD(loadprefs.ic_Reserved_2);
+				icontrolprefs.ic_VDragModes[0] = ARRAY_TO_WORD(loadprefs.ic_VDragModes0);
+				icontrolprefs.ic_VDragModes[1] = ARRAY_TO_WORD(loadprefs.ic_VDragModes1);
 				
    	    	    	    	D(bug("LoadPrefs: Everything okay :-)\n"));
 				
@@ -185,6 +191,9 @@ BOOL SavePrefs(STRPTR filename)
     saveprefs.ic_FrontToBack = icontrolprefs.ic_FrontToBack;
     saveprefs.ic_ReqTrue = icontrolprefs.ic_ReqTrue;
     saveprefs.ic_ReqFalse = icontrolprefs.ic_ReqFalse;
+    WORD_TO_ARRAY(icontrolprefs.ic_Reserved2, saveprefs.ic_Reserved_2);
+    WORD_TO_ARRAY(icontrolprefs.ic_VDragModes[0], saveprefs.ic_VDragModes0);
+    WORD_TO_ARRAY(icontrolprefs.ic_VDragModes[1], saveprefs.ic_VDragModes1);
 
     D(bug("SavePrefs: Trying to open \"%s\"\n", filename));
     

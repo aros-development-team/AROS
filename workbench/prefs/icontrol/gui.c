@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -65,6 +65,7 @@ struct IPWindow_DATA
     Object  *menulookobj;
     Object  *offscreenobj;
     Object  *defpubscrobj;
+    Object  *scrbackdragobj;
     BOOL    tested;
 };
 
@@ -161,6 +162,9 @@ BOOL Gadgets2Prefs
     	prefs->ic_Flags |= ICF_DEFPUBSCREEN;
     }
 
+    get(data->scrbackdragobj, MUIA_Selected, &active);
+    prefs->ic_VDragModes[0] = active ? (ICVDM_TBOUND|ICVDM_LBOUND) : 0;
+
     prefs->ic_Flags |= ICF_AVOIDWINBORDERERASE;
 
     return TRUE;
@@ -177,6 +181,7 @@ BOOL Prefs2Gadgets
     set(data->menulookobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_3DMENUS) ? 1 : 0);
     set(data->offscreenobj, MUIA_Selected, (prefs->ic_Flags & ICF_OFFSCREENLAYERS) ? 1 : 0);
     set(data->defpubscrobj, MUIA_Selected, (prefs->ic_Flags & ICF_DEFPUBSCREEN) ? 1 : 0);
+    set(data->scrbackdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & (ICVDM_TBOUND|ICVDM_LBOUND));
     return TRUE;
 }
 
@@ -191,6 +196,7 @@ IPTR IPWindow__OM_NEW
     Object *menu, *previewpage, *menutypeobj, *menulookobj;
     Object *offscreenobj;
     Object *defpubscrobj;
+    Object *scrbackdragobj;
 
     extern struct NewMenu nm[];
     
@@ -295,9 +301,12 @@ IPTR IPWindow__OM_NEW
     		    Child, ColGroup(4),
 	                Child, HSpace(0),
     			Child, Label1(MSG(MSG_FRONTMOST_DEFAULT)),
-    			Child, defpubscrobj = MUI_MakeObject(MUIO_Checkmark,
-    						    NULL),
+    			Child, defpubscrobj = MUI_MakeObject(MUIO_Checkmark, NULL),
 	                Child, HSpace(0),
+			Child, HSpace(0),
+			Child, Label1(MSG(MSG_BACKWARDS_DRAG)),
+			Child, scrbackdragobj = MUI_MakeObject(MUIO_Checkmark, NULL),
+			Child, HSpace(0),
     			End,
 	            Child, VSpace(0),
     		    End,
@@ -315,6 +324,7 @@ IPTR IPWindow__OM_NEW
     set(data->offscreenobj, MUIA_ShortHelp,
 	(IPTR)MSG(MSG_OFFSCREEN_DESC));
     data->defpubscrobj = defpubscrobj;
+    data->scrbackdragobj = scrbackdragobj;
     set(data->defpubscrobj, MUIA_ShortHelp,
 	(IPTR)MSG(MSG_FRONTMOST_DEFAULT_DESC));
 

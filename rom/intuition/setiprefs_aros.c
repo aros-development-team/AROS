@@ -61,6 +61,9 @@
             if (length > sizeof(struct IIControlPrefs))
         	length = sizeof(struct IIControlPrefs);
             CopyMem(data, &GetPrivIBase(IntuitionBase)->IControlPrefs, length);
+
+	    DEBUG_SETIPREFS(bug("SetIPrefs: Drag modes: 0x%04lX\n", GetPrivIBase(IntuitionBase)->IControlPrefs.ic_VDragModes[0]));
+
             break;
         
 	case IPREFS_TYPE_SCREENMODE:

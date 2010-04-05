@@ -20,6 +20,12 @@ MSG_DEPTH
 MSG_AUTOSCROLL
 \33lАвтопрокрутка
 ;
-MSG_SELECT
-Выберите разрешение
+MSG_DISPLAY_MODE (//)
+Видеорежим
+;
+MSG_MODE_ID (//)
+ID режима
+;
+MSG_DESCRIPTION (//)
+Описание
 ;
