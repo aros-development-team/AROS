@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function SetRGB32CM()
@@ -61,7 +61,13 @@
 
     if (NULL != cm && n < cm->Count)
     {
-        color_set(cm, r,g,b,n);
+        ((UWORD *)cm->ColorTable)[n] = ((r >> 20) & 0x0f00) |
+                                        ((g >> 24) & 0x00f0) |
+                                        ((b >> 28) & 0x000f);
+        if (cm->Type > COLORMAP_TYPE_V1_2)
+            ((UWORD *)cm->LowColorBits)[n] = ((r >> 16) & 0x0f00) |
+					      ((g >> 20) & 0x00f0) |
+					      ((b >> 24) & 0x000f);
     }
 
     AROS_LIBFUNC_EXIT
