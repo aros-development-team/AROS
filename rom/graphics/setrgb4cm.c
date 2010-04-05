@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function SetRGB4CM()
@@ -56,10 +56,17 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  SetRGB32CM(cm, n, r * 0x11111111, g * 0x11111111, b * 0x11111111);
+    if (NULL != cm && n < cm->Count)
+    {
+        ((UWORD *)cm->ColorTable)[n]   = ((r >> 20) & 0x0f00) |
+                                          ((g >> 24) & 0x00f0) |
+                                          ((b >> 28) & 0x000f);
+        if (cm->Type > COLORMAP_TYPE_V1_2)
+            ((UWORD *)cm->LowColorBits)[n] = 0;
+    }
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
   
 } /* SetRGB4CM */

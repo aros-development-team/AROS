@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -32,16 +32,28 @@ ULONG color_distance(struct ColorMap * cm,
     **
     **   cm->ColorTable[x]   = 0x0135
     **   cm->LowColorBits[x] = 0x0246
+    **
+    **   Note that fields below ColorTable are present only if Type > COLORMAP_TYPE_V1_2
     */
 
     LONG dr,dg,db;
-    UWORD c1,c2;
-    c1 = ((UWORD *)cm->ColorTable)[index];
-    c2 = ((UWORD *)cm->LowColorBits)[index];
 
-    dr = (LONG)(r >> (32-8)) - (LONG)(((c1 >> 4) & 0x00f0) | ((c2 >> 8) & 0x000f));
-    dg = (LONG)(g >> (32-8)) - (LONG)(((c1 >> 0) & 0x00f0) | ((c2 >> 4) & 0x000f));
-    db = (LONG)(b >> (32-8)) - (LONG)(((c1 << 4) & 0x00f0) | ((c2 >> 0) & 0x000f));
+    UWORD c1 = ((UWORD *)cm->ColorTable)[index];
+    LONG r1 = (LONG)(c1 >> 4) & 0x00f0;
+    LONG g1 = (LONG)(c1 >> 0) & 0x00f0;
+    LONG b1 = (LONG)(c1 << 4) & 0x00f0;
+
+    if (cm->Type > COLORMAP_TYPE_V1_2) {
+        UWORD c2 = ((UWORD *)cm->LowColorBits)[index];
+
+	r1 |= (c2 >> 8) & 0x000f;
+	g1 |= (c2 >> 4) & 0x000f;
+	b1 |= (c2 >> 0) & 0x000f;
+    }
+
+    dr = (LONG)(r >> (32-8)) - r1;
+    dg = (LONG)(g >> (32-8)) - g1;
+    db = (LONG)(b >> (32-8)) - b1;
 
     return dr*dr+dg*dg+db*db;
 }
@@ -57,36 +69,19 @@ BOOL color_equal(struct ColorMap * cm,
                  ULONG b,
                  ULONG index)
 {
-    if ( ((UWORD *)cm->ColorTable)  [index] == (((r >> 20) & 0x0f00) |
-                                        	((g >> 24) & 0x00f0) |
-                                        	((b >> 28) & 0x000f))  &&
-	 ((UWORD *)cm->LowColorBits)[index] == (((r >> 16) & 0x0f00) |
+    if (((UWORD *)cm->ColorTable)[index] != (((r >> 20) & 0x0f00) |
+                                              ((g >> 24) & 0x00f0) |
+                                              ((b >> 28) & 0x000f)))
+	return FALSE;
+
+    if ((cm->Type > COLORMAP_TYPE_V1_2) &&
+       ((UWORD *)cm->LowColorBits)[index] != (((r >> 16) & 0x0f00) |
                                         	((g >> 20) & 0x00f0) |
-                                        	((b >> 24) & 0x000f)) )
-        return TRUE;
-    else
+                                        	((b >> 24) & 0x000f)))
         return FALSE;
+
+    return TRUE;
 }
-
-
-/*
-** Set an entry in the color map
-*/
-VOID color_set(struct ColorMap * cm,
-               ULONG r,
-               ULONG g,
-               ULONG b,
-               ULONG index)
-{
-    ((UWORD *)cm->ColorTable)[index]   = ((r >> 20) & 0x0f00) |
-                                         ((g >> 24) & 0x00f0) |
-                                         ((b >> 28) & 0x000f);
-
-    ((UWORD *)cm->LowColorBits)[index] = ((r >> 16) & 0x0f00) |
-                                         ((g >> 20) & 0x00f0) |
-                                         ((b >> 24) & 0x000f);
-}
-
 
 VOID color_get(struct ColorMap *cm,
 		ULONG *r,
@@ -95,15 +90,20 @@ VOID color_get(struct ColorMap *cm,
 		ULONG index)
 {
     UWORD hibits = ((UWORD *)cm->ColorTable)[index];
-    UWORD lobits = ((UWORD *)cm->LowColorBits)[index];
-    
-    ULONG red8   = ((hibits & 0x0f00) >> 4) | ((lobits & 0x0f00) >> 8);
-    ULONG green8 = ((hibits & 0x00f0)     ) | ((lobits & 0x00f0) >> 4);
-    ULONG blue8  = ((hibits & 0x000f) << 4) | ((lobits & 0x000f)     );
-    
+
+    ULONG red8   = (hibits & 0x0f00) >> 4;
+    ULONG green8 = (hibits & 0x00f0);
+    ULONG blue8  = (hibits & 0x000f) << 4;
+
+    if (cm->Type > COLORMAP_TYPE_V1_2) {
+        UWORD lobits = ((UWORD *)cm->LowColorBits)[index];
+
+	red8   |= (lobits & 0x0f00) >> 8;
+        green8 |= (lobits & 0x00f0) >> 4;
+        blue8  |= (lobits & 0x000f);
+    }
+
     *r = red8   * 0x01010101;
     *g = green8 * 0x01010101;
     *b = blue8  * 0x01010101;
-    
 }
-
