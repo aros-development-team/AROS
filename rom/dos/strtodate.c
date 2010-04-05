@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Converts a string into a date
@@ -198,11 +198,10 @@ const char *const Dos_SubstDateTable[]=
 	    {
 		switch (datetime->dat_Format)
 		{
-		case FORMAT_INT: format = "y-m-d"; break;
-		case FORMAT_USA: format = "M-d-y"; break;
-		case FORMAT_CDN: format = "d-M-y"; break;
-		case FORMAT_DEF: format = "d.M.y"; break;
-		default:	 format = "d-m-y"; break;
+		case FORMAT_INT: format = "y-M-d"; break;
+		case FORMAT_USA: format = "m-d-y"; break;
+		case FORMAT_CDN: format = "d-m-y"; break;
+		default:	 format = "d-M-y"; break;
 		}
 
 		while (*format)

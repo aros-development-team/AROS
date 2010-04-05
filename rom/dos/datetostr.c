@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Convert a DateTime struct into strings.
@@ -242,11 +242,10 @@ const char *const Dos_SubstDateTable[]=
 
 	switch (datetime->dat_Format)
 	{
-	case FORMAT_INT: fstring="y-m-d"; break;
-	case FORMAT_USA: fstring="M-d-y"; break;
-	case FORMAT_CDN: fstring="d-M-y"; break;
-	case FORMAT_DEF: fstring="d.M.y"; break;
-	default:	 fstring="d-m-y"; break;
+	case FORMAT_INT: fstring="y-M-d"; break;
+	case FORMAT_USA: fstring="m-d-y"; break;
+	case FORMAT_CDN: fstring="d-m-y"; break;
+	default:	 fstring="d-M-y"; break;
 	}
 
 	if (datetime->dat_Flags & DTF_SUBST)
@@ -277,15 +276,8 @@ const char *const Dos_SubstDateTable[]=
 		switch(*fstring)
 		{
 		case 'y':
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 		    *buf++ = year/10%10+'0';
 		    *buf++ = year%10+'0';
-#else
-		    *buf++ = year/1000%10+'0';
-		    *buf++ = year/100%10+'0';
-		    *buf++ = year/10%10+'0';
-		    *buf++ = year%10+'0';
-#endif
 		    break;
 		case 'm':
 		    name=Dos_MonthTable[month-1];
