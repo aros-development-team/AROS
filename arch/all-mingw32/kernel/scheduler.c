@@ -34,6 +34,10 @@ AROS_LH0(void, KrnCause,
 {
     AROS_LIBFUNC_INIT
     
+     /* This ensures that we are never preempted inside RaiseException().
+        Upon exit from the syscall interrupt state will be restored by
+        core_LeaveInterrupt() */
+    KernelIFace.core_intr_disable();
     KernelIFace.core_syscall(SC_CAUSE);
 
     AROS_LIBFUNC_EXIT
@@ -44,7 +48,7 @@ AROS_LH0(void , KrnDispatch,
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("[KRN] KrnDispatch()\n"));
+    KernelIFace.core_intr_disable();
     KernelIFace.core_syscall(SC_DISPATCH);
 
     AROS_LIBFUNC_EXIT
@@ -55,7 +59,7 @@ AROS_LH0(void, KrnSwitch,
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("[KRN] KrnSwitch()\n"));
+    KernelIFace.core_intr_disable();
     KernelIFace.core_syscall(SC_SWITCH);
     
     AROS_LIBFUNC_EXIT
@@ -66,7 +70,7 @@ AROS_LH0(void, KrnSchedule,
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("[KRN] KrnSchedule()\n"));
+    KernelIFace.core_intr_disable();
     KernelIFace.core_syscall(SC_SCHEDULE);
         
     AROS_LIBFUNC_EXIT
