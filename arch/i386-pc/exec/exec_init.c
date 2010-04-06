@@ -1500,7 +1500,7 @@ unsigned char setupVesa(struct multiboot *mbinfo)
     char *vesa = strstr(str, "vesa=");
     short r;
     unsigned char palwidth = 0;
-    BOOL prioritise_depth = FALSE;
+    BOOL prioritise_depth = FALSE, set_refresh = FALSE;
 
     if (vesa)
     {
@@ -1532,6 +1532,7 @@ unsigned char setupVesa(struct multiboot *mbinfo)
         {
             while (*vesa >= '0' && *vesa <= '9')
                 vfreq = vfreq * 10 + *vesa++ - '0';
+            set_refresh = TRUE;
         }
         else
             vfreq = 60;
@@ -1550,7 +1551,7 @@ unsigned char setupVesa(struct multiboot *mbinfo)
 	    setmode = mode | 0x4000;
 	else
 	    setmode = mode;
-	r = setVbeMode(setmode);
+	r = setVbeMode(setmode, set_refresh);
         if (r == 0x004f) {
 	    rkprintf("\x03");
 	    if (controllerinfo->capabilities & 0x01)

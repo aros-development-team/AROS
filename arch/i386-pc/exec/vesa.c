@@ -70,12 +70,12 @@ short getModeInfo(long mode)
     return retval;
 }
 
-short setVbeMode(long mode)
+short setVbeMode(long mode, BOOL set_refresh)
 {
     short retval;
 
     /* Enable custom timings if possible */
-    if (controllerinfo.version >= 0x0300)
+    if (set_refresh && controllerinfo.version >= 0x0300)
         mode |= 0x800;
     else
         mode &= 0xf7ff;
