@@ -23,7 +23,7 @@ asm (".set modeinfo,0x1018");
 
 extern short (*getControllerInfo)(void);
 extern short (*getModeInfo)(long mode);
-extern short (*setVbeMode)(long mode);
+extern short (*setVbeMode)(long mode, BOOL set_refresh);
 extern short (*paletteWidth)(long req, unsigned char *width);
 extern short (*findMode)(int x, int y, int d, int vfreq, BOOL prioritise_depth);
 extern struct vbe_controller *controllerinfo;
@@ -57,7 +57,7 @@ struct CRTCInfoBlock
 
 extern short getControllerInfo(void);
 extern short getModeInfo(long mode);
-extern short setVbeMode(long mode);
+extern short setVbeMode(long mode, BOOL set_refresh);
 extern short paletteWidth(long req, unsigned char *width);
 extern short findMode(int x, int y, int d, int vfreq, BOOL prioritise_depth);
 extern struct vbe_controller controllerinfo;
