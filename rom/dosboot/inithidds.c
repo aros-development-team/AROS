@@ -85,17 +85,12 @@ BOOL __dosboot_InitHidds(struct ExecBase *sysBase, struct DosLibrary *dosBase, A
 
 	D(bug("[DOSBoot] __dosboot_InitHidds: OOP opened\n"));
 
-/* TODO: graphics.library is not in the kernel on Linux-hosted
-	 version, so we can't do this check because we'll fail.
-	 As a workaround, we load it explicitly in S:hidd.prefs.
-
 	if ((OpenLibrary("graphics.hidd", 0L)) == NULL)
 	{
 	    success = FALSE;
 	    bug("[DOS] InitHidds: Failed to open graphics.hidd\n");
 	    goto end;
-	}*/
-	OpenLibrary("graphics.hidd", 0);
+	}
 
 	BootMenuBase = (struct BootMenuBase *)OpenResource("bootmenu.resource");
 	D(bug("[DOS] __dosboot_InitHidds: BootMenuBase = 0x%p\n", BootMenuBase));
