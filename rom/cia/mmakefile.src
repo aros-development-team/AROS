@@ -1,0 +1,11 @@
+# $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
+include $(TOP)/config/make.cfg
+
+#MM kernel-cia : includes kernel-cia-$(ARCH)-$(CPU)
+#MM kernel-cia-linklib : includes kernel-cia-$(ARCH)-$(CPU)
+
+FUNCTIONS := ableicr addicrvector remicrvector seticr
+
+%build_module_simple mmake=kernel-cia \
+    modname=cia modtype=resource \
+    files="$(FUNCTIONS)"
