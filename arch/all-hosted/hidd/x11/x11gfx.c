@@ -192,6 +192,14 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	{ aHidd_Sync_Description, (IPTR)"X11:1280x1024" },
 	{ TAG_DONE  	    	, 0UL       	    	}
     };
+
+    struct TagItem tags_1400_1050[] = 
+    {
+    	{ aHidd_Sync_HDisp  	, 1400      	    	},
+	{ aHidd_Sync_VDisp  	, 1050       	    	},
+	{ aHidd_Sync_Description, (IPTR)"X11:1400x1050"  },
+	{ TAG_DONE  	    	, 0UL       	    	}
+    };
     
     struct TagItem tags_1600_1200[] = 
     {
@@ -206,6 +214,14 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         { aHidd_Sync_HDisp      , 1680                  },
         { aHidd_Sync_VDisp      , 1050                  },
         { aHidd_Sync_Description, (IPTR)"X11:1680x1050" },
+        { TAG_DONE              , 0UL                   }
+    };
+
+    struct TagItem tags_1920_1080[] =
+    {
+        { aHidd_Sync_HDisp      , 1920                  },
+        { aHidd_Sync_VDisp      , 1080                  },
+        { aHidd_Sync_Description, (IPTR)"X11:1920x1080" },
         { TAG_DONE              , 0UL                   }
     };
 
@@ -242,12 +258,14 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	{ aHidd_Gfx_SyncTags	, (IPTR)tags_800_600	},
 	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1024_768	},
 	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1152_864	},
-        { aHidd_Gfx_SyncTags    , (IPTR)tags_1280_800   },
+    { aHidd_Gfx_SyncTags    , (IPTR)tags_1280_800   },
 	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1280_960	},
 	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1280_1024	},
+	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1400_1050	},
 	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1600_1200	},
-        { aHidd_Gfx_SyncTags    , (IPTR)tags_1680_1050  },
-        { aHidd_Gfx_SyncTags    , (IPTR)tags_1920_1200  },
+    { aHidd_Gfx_SyncTags    , (IPTR)tags_1680_1050  },
+    { aHidd_Gfx_SyncTags    , (IPTR)tags_1920_1080  },
+    { aHidd_Gfx_SyncTags    , (IPTR)tags_1920_1200  },
 	{ TAG_DONE  	    	, 0UL 	    	    	}
     };
     
