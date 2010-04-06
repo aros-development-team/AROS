@@ -79,7 +79,7 @@ struct gdikbd_data
 
 /***** GDIGfx HIDD *******************/
 
-#define CLID_Hidd_GDIGfx	"hidd.gfx.gdi"
+#define CLID_Hidd_GDIGfx	"gdi.monitor"
 
 struct gdi_staticdata
 {
