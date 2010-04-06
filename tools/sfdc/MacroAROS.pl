@@ -58,11 +58,14 @@ BEGIN {
 	my $prototype = $params{'prototype'};
 
 	if ($$prototype{'type'} eq 'function') {
-	    my $argtype   = $params{'argtype'};
-	    my $argname   = $params{'argname'};
-	    my $argreg    = $params{'argreg'};
+	    my $argreg    = uc $params{'argreg'};
 	    
-	    print "	AROS_LCA($argtype, ($argname), " . uc $argreg . "), \\\n";
+	    if ($argreg ne 'A6') {
+	        my $argtype   = $params{'argtype'};
+	        my $argname   = $params{'argname'};
+	    
+	        print "	AROS_LCA($argtype, ($argname), $argreg), \\\n";
+	    }
 	}
         else {
 	    $self->SUPER::function_arg (@_);
