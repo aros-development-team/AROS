@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Resident CLI command
@@ -26,7 +26,7 @@ struct SegNode
 
 static struct SegNode *NewSegNode(struct ExecBase *SysBase, STRPTR name, LONG uc);
 
-AROS_SH7(Resident, 41.1,
+AROS_SH7(Resident, 41.2,
 AROS_SHA(STRPTR, ,NAME, ,NULL),
 AROS_SHA(STRPTR, ,FILE, ,NULL),
 AROS_SHA(BOOL, ,REMOVE,/S,FALSE),
@@ -108,13 +108,13 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
 
 	    if ((lock = Lock(file, SHARED_LOCK)))
 	    {
-	         if (Examine(lock, fib))
-		 {
-		     if (fib->fib_Protection & FIBF_PURE)
-		         SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-		 }
+	        if (Examine(lock, fib))
+		{
+		    if ((fib->fib_Protection & FIBF_PURE) == 0)
+		        SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+		}
 
-		 UnLock(lock);
+		UnLock(lock);
 	    }
 
 	    FreeDosObject(DOS_FIB, fib);
