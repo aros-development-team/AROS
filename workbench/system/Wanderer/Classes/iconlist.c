@@ -5416,7 +5416,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
 
                         GET(message->obj, MUIA_IconDrawerList_Drawer, &path);
 
-                        if (path)
+                        if ((path) && (strcasecmp(dragDropEvent->drop_TargetPath, path) != 0))
                         {
                             fulllen = strlen(path) + strlen(entry->ile_IconEntry->ie_IconNode.ln_Name) + 2;
                             sourceEntry->dropse_Node.ln_Name = AllocVec(fulllen, MEMF_CLEAR);
@@ -5429,13 +5429,14 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
                     }
                     else
                     {
-                        sourceEntry->dropse_Node.ln_Name = AllocVec(strlen(entry->ile_IconEntry->ie_IconNode.ln_Name) + 1, MEMF_CLEAR);
-                        strcpy(sourceEntry->dropse_Node.ln_Name, entry->ile_IconEntry->ie_IconNode.ln_Name);
+                        sourceEntry->dropse_Node.ln_Name = AllocVec(strlen(entry->label) + 1, MEMF_CLEAR);
+                        strcpy(sourceEntry->dropse_Node.ln_Name, entry->label);
 #if defined(DEBUG_ILC_ICONDRAGDROP)
                         D(bug("[IconList] %s: Source Icon = '%s'\n", __PRETTY_FUNCTION__, sourceEntry->dropse_Node.ln_Name));
 #endif
                     }
-                    if ((strcasecmp(dragDropEvent->drop_TargetPath, sourceEntry->dropse_Node.ln_Name)) != 0)
+		    
+                    if ((sourceEntry->dropse_Node.ln_Name != NULL) && (strcasecmp(dragDropEvent->drop_TargetPath, sourceEntry->dropse_Node.ln_Name) != 0))
                     {
                         copycount += 1;
                         AddTail(&dragDropEvent->drop_SourceList, &sourceEntry->dropse_Node);
@@ -5445,7 +5446,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
 #if defined(DEBUG_ILC_ICONDRAGDROP)
                         D(bug("[IconList] %s: Source == Dest, Skipping!\n", __PRETTY_FUNCTION__));
 #endif
-                        FreeVec(sourceEntry->dropse_Node.ln_Name);
+                        if ( sourceEntry->dropse_Node.ln_Name) FreeVec(sourceEntry->dropse_Node.ln_Name);
                         FreeMem(sourceEntry, sizeof(struct IconList_Drop_SourceEntry));
                     }
                 }
