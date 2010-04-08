@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: dos.library function Examine().
@@ -145,6 +145,7 @@
 	fib->fib_Protection	= ead->ed_Prot;
 	fib->fib_EntryType	= ead->ed_Type;
 	fib->fib_Size		= ead->ed_Size;
+	fib->fib_NumBlocks	= (ead->ed_Size - 1) / 512 + 2; /* better than nothing */
 	fib->fib_Date.ds_Days	= ead->ed_Days;
 	fib->fib_Date.ds_Minute	= ead->ed_Mins;
 	fib->fib_Date.ds_Tick	= ead->ed_Ticks;
