@@ -5273,6 +5273,9 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
     if ((entry) && (entry != (IPTR)MUIV_IconList_NextIcon_End))
     {
         /* Ok.. atleast one icon was dropped .. */
+	char     			tmp_dirbuff[256];
+	BPTR    			tmp_dirlock = (BPTR) NULL;
+
         BOOL                            iconMove = FALSE;
         struct IconEntry                *node = NULL;
         struct IconEntry                *drop_target_node = NULL;
@@ -5281,6 +5284,19 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
 
         GET(obj, MUIA_IconDrawerList_Drawer, &directory_path);
 
+	/* Properly expand the name incase it uses devices rather than volumes */
+	if (directory_path != NULL)
+	{
+	    tmp_dirlock = Lock(directory_path, SHARED_LOCK);
+	    if (tmp_dirlock)
+	    {
+		if (NameFromLock(tmp_dirlock, tmp_dirbuff, 256) != 0)
+		{
+		    directory_path = tmp_dirbuff;
+		}
+		UnLock(tmp_dirlock);
+	    }
+	}
         if ((dragDropEvent = AllocMem(sizeof(struct IconList_Drop_Event), MEMF_CLEAR)) == NULL)
         {
 #if defined(DEBUG_ILC_ICONDRAGDROP)
@@ -5299,18 +5315,26 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
         Foreach_Node(&data->icld_IconList, node);
 #endif
         {
-           if ((node->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
-                   (message->x >= (node->ie_IconX - data->icld_ViewX)) && 
-                   (message->x <  (node->ie_IconX - data->icld_ViewX + node->ie_AreaWidth))  &&
-                   (message->y >= (node->ie_IconY - data->icld_ViewY + _mtop(obj)))  && 
-                   (message->y <  (node->ie_IconY - data->icld_ViewY + node->ie_AreaHeight + _mtop(obj))))
-           {
-               drop_target_node = node;
-               break;
-           } 
+	    struct Rectangle iconbox;
+	    LONG click_x = message->x - _mleft(obj);
+	    LONG click_y = message->y - _mtop(obj);
+	    iconbox.MinX = node->ie_IconX - data->icld_ViewX;
+	    iconbox.MaxX = (node->ie_IconX + node->ie_AreaWidth) - data->icld_ViewX;
+	    iconbox.MinY = node->ie_IconY - data->icld_ViewY;
+	    iconbox.MaxY = (node->ie_IconY + node->ie_AreaHeight)- data->icld_ViewY;
+
+            if ((node->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
+	       (click_x >= iconbox.MinX) && 
+	       (click_x <  iconbox.MaxX) &&
+	       (click_y >= iconbox.MinY)  && 
+	       (click_y <  iconbox.MaxY))
+            {
+		drop_target_node = node;
+		break;
+            } 
         }
 
-        if (drop_target_node && 
+        if ((drop_target_node != NULL) && 
             ((drop_target_node->ie_IconListEntry.type == ST_SOFTLINK)   ||
              (drop_target_node->ie_IconListEntry.type == ST_ROOT)       ||
              (drop_target_node->ie_IconListEntry.type == ST_USERDIR)    ||
@@ -5326,9 +5350,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
 
                     if ((dragDropEvent->drop_TargetPath = AllocVec(fulllen, MEMF_CLEAR)) == NULL)
                     {
-#if defined(DEBUG_ILC_ICONDRAGDROP)
-                        D(bug("[IconList] %s: Failed to allocate IconList_Drop_Event->drop_TargetPath Storage!\n", __PRETTY_FUNCTION__));
-#endif
+                        bug("[IconList] %s: Failed to allocate IconList_Drop_Event->drop_TargetPath Storage!\n", __PRETTY_FUNCTION__);
                         goto dragdropdone;
                     }
                     strcpy(dragDropEvent->drop_TargetPath, directory_path);
@@ -5339,9 +5361,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
             {
                 if ((dragDropEvent->drop_TargetPath = AllocVec(strlen(drop_target_node->ie_IconListEntry.label) + 1, MEMF_CLEAR)) == NULL)
                 {
-#if defined(DEBUG_ILC_ICONDRAGDROP)
-                    D(bug("[IconList] %s: Failed to allocate IconList_Drop_Event->drop_TargetPath Storage!\n", __PRETTY_FUNCTION__));
-#endif
+                    bug("[IconList] %s: Failed to allocate IconList_Drop_Event->drop_TargetPath Storage!\n", __PRETTY_FUNCTION__);
                     goto dragdropdone;
                 }
                 strcpy(dragDropEvent->drop_TargetPath, drop_target_node->ie_IconListEntry.label);
@@ -5412,20 +5432,33 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
                     if ((entry->type != ST_ROOT) && (entry->type != ST_SOFTLINK))
                     {
                         int fulllen = 0;
-                        IPTR path = 0;
+                        char *path = NULL;
 
                         GET(message->obj, MUIA_IconDrawerList_Drawer, &path);
+			/* Properly expand the location incase it uses devices rather than volumes */
+			if (path != NULL)
+			{
+			    tmp_dirlock = Lock(path, SHARED_LOCK);
+			    if (tmp_dirlock)
+			    {
+				if (NameFromLock(tmp_dirlock, tmp_dirbuff, 256))
+				{
+				    path = tmp_dirbuff;
+				}
+				UnLock(tmp_dirlock);
+			    }
 
-                        if ((path) && (strcasecmp(dragDropEvent->drop_TargetPath, path) != 0))
-                        {
-                            fulllen = strlen(path) + strlen(entry->ile_IconEntry->ie_IconNode.ln_Name) + 2;
-                            sourceEntry->dropse_Node.ln_Name = AllocVec(fulllen, MEMF_CLEAR);
-                            strcpy(sourceEntry->dropse_Node.ln_Name, path);
-                            AddPart(sourceEntry->dropse_Node.ln_Name, entry->ile_IconEntry->ie_IconNode.ln_Name, fulllen);
+			    if (strcasecmp(dragDropEvent->drop_TargetPath, path) != 0)
+			    {
+				fulllen = strlen(path) + strlen(entry->ile_IconEntry->ie_IconNode.ln_Name) + 2;
+				sourceEntry->dropse_Node.ln_Name = AllocVec(fulllen, MEMF_CLEAR);
+				strcpy(sourceEntry->dropse_Node.ln_Name, path);
+				AddPart(sourceEntry->dropse_Node.ln_Name, entry->label, fulllen);
 #if defined(DEBUG_ILC_ICONDRAGDROP)
-                            D(bug("[IconList] %s: Source Icon (Full Path) = '%s'\n", __PRETTY_FUNCTION__, sourceEntry->dropse_Node.ln_Name));
+				D(bug("[IconList] %s: Source Icon (Full Path) = '%s'\n", __PRETTY_FUNCTION__, sourceEntry->dropse_Node.ln_Name));
 #endif
-                        }
+			    }
+			}
                     }
                     else
                     {
