@@ -47,8 +47,9 @@
 #define RETURNID_TOOLACK    9
 #define RETURNID_STACKACK   10
 #define RETURNID_COMMENTACK 11
-#define RETURNID_VERSION    12
+#define RETURNID_QUERYVERSION    12
 #define RETURNID_PROTECT    13
+#define RETURNID_SCANSIZE   14
 
 #define  MAX_PATH_LEN  1024
 #define  MAX_TOOLTYPE_LINE 256
@@ -56,9 +57,23 @@
 
 #define USE_TEXTEDITOR 1
 
+#define SCANDIE 1
+#define SCANRUN 0
+
 static Object *window, *commentspace, *filename_string, *stackspace, *savebutton;
 static Object *readobject, *writeobject, *executeobject, *deleteobject;
-static Object *scriptobject, *pureobject, *archiveobject;
+static Object *scriptobject, *pureobject, *archiveobject, *sizespace = NULL;
+
+struct DirScanProcess
+{
+    struct Process	*scanProcess;
+    Object 		*scanSizeObj;
+    char		*scanSize;
+    char		*scanDir;
+    IPTR		scanState;
+};
+
+static struct DirScanProcess *scanStruct = NULL;
 
 #if USE_TEXTEDITOR
 static Object *editor, *slider;
@@ -68,6 +83,98 @@ static Object *list, *editor, *liststr;
 
 BOOL file_altered = FALSE;
 BOOL icon_altered = FALSE;
+
+#define kExallBufSize  		(4096)
+
+ULONG calculateDirectorySize(struct DirScanProcess *scan, CONST_STRPTR directory)
+{
+    UBYTE	*buffer = NULL;
+    BPTR	directoryLock = NULL;
+    ULONG	directorySize = 0;
+    BOOL	loop = TRUE;
+
+D(bug("[WBInfo] calculateDirectorySize('%s')\n", directory));
+
+    directoryLock = Lock(directory, SHARED_LOCK);
+
+    /* Allocate buffer for ExAll */
+    if ((buffer = AllocVec(kExallBufSize, MEMF_CLEAR|MEMF_PUBLIC)) == NULL)
+    {
+        UnLock(directoryLock);
+        return 0;
+    }
+
+    struct ExAllData *ead = (struct ExAllData*)buffer;
+    struct ExAllControl  *eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
+    eac->eac_LastKey = 0;
+
+    struct ExAllData *oldEad = ead;
+
+    do
+    {
+	ead = oldEad;
+	loop = ExAll(directoryLock, ead, kExallBufSize, ED_COMMENT, eac);
+
+	if(!loop && IoErr() != ERROR_NO_MORE_ENTRIES) break;
+
+	if(eac->eac_Entries != 0)
+	{
+	    do
+	    {
+                if (ead->ed_Type == ST_FILE)
+                {
+                    directorySize += ead->ed_Size;
+		    sprintf(scan->scanSize, "%d bytes", directorySize);
+		    set(sizespace, MUIA_Text_Contents, (IPTR) scan->scanSize);
+                }
+                else if (ead->ed_Type == ST_USERDIR)
+                {
+		    ULONG subdirlen = strlen(directory) + strlen(ead->ed_Name) + 1;
+                    char * subdirectory = AllocVec(subdirlen + 1, MEMF_CLEAR);
+		    CopyMem(directory, subdirectory, strlen(directory));
+		    AddPart(subdirectory, ead->ed_Name, subdirlen + 1);
+                    directorySize += calculateDirectorySize(scan, subdirectory);
+                }
+		ead = ead->ed_Next;
+	    } while((ead != NULL) && (scan->scanState == SCANRUN)); 
+	}
+    } while((loop) && (scan->scanState == SCANRUN)); 
+
+    FreeDosObject(DOS_EXALLCONTROL, eac);
+    UnLock(directoryLock);
+    FreeVec(buffer);
+
+    return directorySize;
+}
+
+/*
+ * child process to calculate directory content size..
+ */
+AROS_UFH3(void, scanDir_Process,
+	AROS_UFHA(STRPTR,              argPtr, A0),
+	AROS_UFHA(ULONG,               argSize, D0),
+	AROS_UFHA(struct ExecBase *,   SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    struct Task			*taskSelf = FindTask(NULL);
+    struct DirScanProcess	*scan = taskSelf->tc_UserData;
+    ULONG			directorySize = 0;
+
+    if (scan->scanState == SCANRUN)
+    {
+	D(bug("[WBInfo] scanDir_Process('%s')\n", scan->scanDir));
+	scan->scanSize = AllocVec(64, MEMF_CLEAR);
+	directorySize = calculateDirectorySize(scan, scan->scanDir);
+	D(bug("[WBInfo] scanDir_Process: End size = %d bytes\n", directorySize));
+	sprintf(scan->scanSize, "%d bytes", directorySize);
+	set(sizespace, MUIA_Text_Contents, (IPTR) scan->scanSize);
+	FreeVec(scan->scanSize);
+    }
+    scan->scanProcess = NULL;
+    
+    AROS_USERFUNC_EXIT
+}
 
 UBYTE **BuildToolTypes(UBYTE **src_ttypes)
 {
@@ -425,22 +532,22 @@ exit:
 
 int main(int argc, char **argv)
 {
-    Object *application, *group, *toolspace=NULL, *toollabel=NULL;
-    Object *registergroup=NULL, *infomenu=NULL, *protectmenu=NULL, *toolmenu=NULL;
-    Object *stacklabel=NULL, *drawerspace=NULL;
-    Object *sizespace=NULL, *typespace=NULL, *quit=NULL, *aboutmenu=NULL;
-    Object *datespace=NULL, *versionspace=NULL;
-    Object *cancelbutton=NULL;
+    Object *application, *group, *toolspace = NULL, *toollabel = NULL;
+    Object *registergroup = NULL, *infomenu = NULL, *protectmenu = NULL, *toolmenu = NULL;
+    Object *stacklabel = NULL, *drawerspace = NULL;
+    Object *datespace = NULL, *typespace = NULL, *quit = NULL, *aboutmenu = NULL;
+    Object *sizegrp = NULL, *versiongrp = NULL, *versionspace = NULL;
+    Object *cancelbutton = NULL;
 #if !USE_TEXTEDITOR
-    Object *newkey=NULL, *delkey=NULL;
+    Object *newkey = NULL, *delkey = NULL;
 #endif
     struct WBStartup *startup;
-    struct DiskObject *icon=NULL;
-    struct AnchorPath *ap=NULL;
-    struct DateStamp *ds=NULL;
+    struct DiskObject *icon = NULL;
+    struct AnchorPath *ap = NULL;
+    struct DateStamp *ds = NULL;
     struct DateTime dt;
     IPTR dte;
-    STRPTR name=NULL, type=NULL;
+    STRPTR name = NULL, file = NULL, type = NULL;
     BPTR cd, lock, icon_cd;
     LONG  returnid = 0;
     ULONG protection;
@@ -468,11 +575,14 @@ int main(int argc, char **argv)
         _(MSG_APPICON)  /* 8 */
     };
 
+    int retval = RETURN_OK;
+    
     if (argc != 0)
     {
         /* start from wanderer only */
         PrintFault(ERROR_FILE_NOT_OBJECT, argv[0]);
-        return RETURN_FAIL;
+        retval = RETURN_FAIL;
+	goto funcmain_exit;
     }
 
     startup = (struct WBStartup *) argv;
@@ -482,20 +592,37 @@ int main(int argc, char **argv)
         /* need atleast 1 arg */
         PrintFault(ERROR_REQUIRED_ARG_MISSING, argv[0]);
 D(bug("[WBInfo] required arg missing\n"));
-        return RETURN_FAIL;
+        retval = RETURN_FAIL;
+	goto funcmain_exit;
     }
 
     lock = startup->sm_ArgList[1].wa_Lock;
     NameFromLock(lock, lname, MAXFILENAMELENGTH);
-D(bug("[WBInfo] name from lock: %s\n",lname));
-    name = startup->sm_ArgList[1].wa_Name;
+D(bug("[WBInfo] arg parent lock 0x%p: '%s'\n", lock, lname));
+
+    if ((name = startup->sm_ArgList[1].wa_Name) != NULL)
+    {
+	if ((strlen(name) > 5)
+	    && (strcmp(name + strlen(name) - 5, ".info") == 0))
+	{
+	    file = AllocVec(strlen(name) - 4, MEMF_CLEAR);
+	    CopyMem(name, file , strlen(name) - 5);
+	}
+	else
+	{
+	    file = AllocVec(strlen(name) + 1, MEMF_CLEAR);
+	    CopyMem(name, file, strlen(name));
+	}
+D(bug("[WBInfo] arg name 0x%p: '%s', file = '%s'\n", name, name, file));
+    }
     cd = CurrentDir(lock);
     if (name == NULL)
     {
         /* directory not found*/
         PrintFault(ERROR_DIR_NOT_FOUND, argv[0]);
 D(bug("[WBInfo] dir not found\n"));
-        return RETURN_FAIL;
+        retval = RETURN_FAIL;
+	goto funcmain_exit;
     };
 
     ap = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN, MEMF_CLEAR);
@@ -503,7 +630,8 @@ D(bug("[WBInfo] dir not found\n"));
     {
         PrintFault(ERROR_NO_FREE_STORE, argv[0]);
 D(bug("[WBInfo] no free store\n"));
-        return RETURN_FAIL;
+        retval = RETURN_FAIL;
+	goto funcmain_exit;
     }
 
     ap->ap_Strlen = MAX_PATH_LEN;
@@ -516,8 +644,9 @@ D(bug("[WBInfo] pass to diskinfo\n"));
             WBOPENA_ArgLock, (IPTR) startup->sm_ArgList[1].wa_Lock,
             WBOPENA_ArgName, (IPTR) startup->sm_ArgList[1].wa_Name,
             TAG_DONE);
-        FreeVec(ap);
-        return RETURN_OK;
+
+        retval = RETURN_OK;
+	goto funcmain_exit;
     };
 
     ap->ap_BreakBits = SIGBREAKF_CTRL_C;
@@ -557,11 +686,10 @@ D(bug("[WBInfo] scan file\n"));
         flags[5] = protection & FIBF_EXECUTE ? 0 : 1; /* e */
         flags[6] = protection & FIBF_DELETE  ? 0 : 1; /* d */
         flags[7] = 0x00;                              /* h */
-    };
-
+    }
+    
     /* read icon */
-
-    icon = GetIconTags(name,
+    icon = GetIconTags(file,
             ICONGETA_FailIfUnavailable, FALSE,
             ICONGETA_IsDefaultIcon, FALSE,
             TAG_DONE);
@@ -577,30 +705,45 @@ D(bug("[WBInfo] icon type is: %s\n", type));
         else
             *deftool = '\0';
     } else {
-        FreeVec(ap);
         PrintFault(ERROR_OBJECT_WRONG_TYPE, argv[0]);
-        return RETURN_FAIL;
+
+	retval = RETURN_FAIL;
+        goto funcmain_exit;
     }
 
     if (icon->do_Type == 2)
     {
-		sizespace = (Object *)TextObject,
-                                        ButtonFrame,
-                                        MUIA_Background, MUII_TextBack,
-                                        MUIA_Text_PreParse, (IPTR) "\33r",
-                                        MUIA_Text_Contents, (IPTR) NULL,
-                                        MUIA_Text_Contents, (IPTR) "?",
-					MUIA_InputMode, MUIV_InputMode_RelVerify,
-                                    End;
+	sizespace = (Object *)TextObject,
+		ButtonFrame,
+		MUIA_Background, MUII_TextBack,
+		MUIA_Text_PreParse, (IPTR) "\33r",
+		MUIA_Text_Contents, (IPTR) "?",
+		MUIA_InputMode, MUIV_InputMode_RelVerify,
+	    End;
+	
+	versionspace = (Object *)TextObject,
+		TextFrame,
+		MUIA_Background, MUII_TextBack,
+		MUIA_Text_PreParse, (IPTR) "\33r",
+		MUIA_Text_Contents, (IPTR) "N/A",
+	    End;
     }
     else
     {
 	sizespace = (Object *)TextObject,
-                                        TextFrame,
-                                        MUIA_Background, MUII_TextBack,
-                                        MUIA_Text_PreParse, (IPTR) "\33r",
-                                        MUIA_Text_Contents, (IPTR) size,
-                                    End;
+		TextFrame,
+		MUIA_Background, MUII_TextBack,
+		MUIA_Text_PreParse, (IPTR) "\33r",
+		MUIA_Text_Contents, (IPTR) size,
+	    End;
+	
+	versionspace = (Object *)TextObject,
+		ButtonFrame,
+		MUIA_Background, MUII_TextBack,
+		MUIA_Text_PreParse, (IPTR) "\33r",
+		MUIA_Text_Contents, (IPTR) "?",
+		MUIA_InputMode, MUIV_InputMode_RelVerify,
+	    End;
     }
 
     application = (Object *)ApplicationObject,
@@ -634,7 +777,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                     Child, (IPTR) VGroup,
                         Child, (IPTR) IconImageObject,
                             MUIA_InputMode, MUIV_InputMode_Toggle,
-                            MUIA_IconImage_File, (IPTR) name,
+                            MUIA_IconImage_File, (IPTR) file,
                         End,
                     End,
                     Child, (IPTR) VGroup,
@@ -642,7 +785,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                             TextFrame,
                             MUIA_Background, MUII_TextBack,
                             MUIA_Text_PreParse, (IPTR) "\33l",
-                            MUIA_Text_Contents, (IPTR) FilePart(name),
+                            MUIA_Text_Contents, (IPTR) FilePart(file),
                         End,
                     End,
                 End,
@@ -667,16 +810,13 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                                         MUIA_Text_Contents, (IPTR) datetime,
                                     End),
                                     Child, (IPTR) Label2(__(MSG_VERSION)),
-                                    Child, (IPTR) (versionspace = (Object *)TextObject,
-                                        ButtonFrame,
-                                        MUIA_Background, MUII_TextBack,
-                                        MUIA_Text_PreParse, (IPTR) "\33r",
-                                        MUIA_Text_Contents, (IPTR) NULL,
-                                        MUIA_Text_Contents, (IPTR) "?",
-					MUIA_InputMode, MUIV_InputMode_RelVerify,
-                                    End),
+                                    Child, (IPTR) (versiongrp = HGroup,
+					Child, versionspace,
+				    End),
                                     Child, (IPTR) Label2(__(MSG_SIZE)),
-                                    Child, (IPTR) sizespace,
+                                    Child, (IPTR) (sizegrp = HGroup,
+					Child, sizespace,
+				    End),
                                  End,
                             End,
                             Child, (IPTR) HVSpace,
@@ -817,8 +957,10 @@ D(bug("[WBInfo] icon type is: %s\n", type));
             (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_COMMENTACK);
         DoMethod(versionspace, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR) application, 2,
-            MUIM_Application_ReturnID, RETURNID_VERSION);
-
+            MUIM_Application_ReturnID, RETURNID_QUERYVERSION);
+	DoMethod(sizespace, MUIM_Notify, MUIA_Pressed, FALSE,
+	    (IPTR) application, 2,
+	    MUIM_Application_ReturnID, RETURNID_SCANSIZE);
         DoMethod(readobject, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
             (IPTR) application, 2,
             MUIM_Application_ReturnID, RETURNID_PROTECT);
@@ -897,10 +1039,15 @@ D(bug("[WBInfo] icon type is: %s\n", type));
         {
             case WBPROJECT:
                 toolspace = MUI_NewObject(MUIC_Popasl, ASLFR_DoSaveMode, TRUE,
-                    MUIA_Popstring_String, 
-                filename_string = MUI_MakeObject(MUIO_String, NULL, MAX_PATH_LEN),
+		    MUIA_Popstring_String, (filename_string = StringObject,
+			StringFrame,
+			MUIA_String_MaxLen, MAX_PATH_LEN,
+			MUIA_String_Contents, deftool,
+		    End),
                     MUIA_Popstring_Button, PopButton(MUII_PopFile), TAG_DONE);
+
                 toollabel = MUI_MakeObject(MUIO_Label, _(MSG_DEFTOOL), NULL);
+
                 if ((toolspace != NULL)&&(toollabel != NULL)&&(filename_string != NULL))
                 {
                     DoMethod(group, MUIM_Group_InitChange);
@@ -908,7 +1055,6 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                     DoMethod(group, OM_ADDMEMBER, toolspace);
                     DoMethod(group, MUIM_Group_ExitChange);
 
-                    set(filename_string, MUIA_String_Contents, deftool);
                     set(toolspace, MUIA_CycleChain, 1);
                     DoMethod(filename_string, MUIM_Notify,
                         MUIA_String_Acknowledge, MUIV_EveryTime,
@@ -916,17 +1062,23 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                 }
                 break;
             case WBTOOL:
-                stackspace = MUI_MakeObject(MUIO_String, NULL, 16);
+		stackspace = StringObject,
+			StringFrame,
+			MUIA_String_MaxLen, 16,
+			MUIA_String_Contents, stack,
+			MUIA_String_Format, MUIV_String_Format_Right,
+                        MUIA_String_Accept, (IPTR)"0123456789",
+		    End;
+
                 stacklabel = MUI_MakeObject(MUIO_Label, _(MSG_STACK), NULL);
+
                 if ((stackspace != NULL)&&(stacklabel !=NULL))
                 {
                     DoMethod(group, MUIM_Group_InitChange);
                     DoMethod(group, OM_ADDMEMBER, stacklabel);
                     DoMethod(group, OM_ADDMEMBER, stackspace);
                     DoMethod(group, MUIM_Group_ExitChange);
-                    SetAttrs(stackspace, MUIA_String_Contents, stack,
-                        MUIA_CycleChain, 1,
-                        MUIA_String_Accept, (IPTR)"0123456789",TAG_DONE);
+                    SetAttrs(stackspace, MUIA_CycleChain, 1, TAG_DONE);
                     DoMethod(stackspace, MUIM_Notify,
                         MUIA_String_Acknowledge, MUIV_EveryTime,
                         (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_STACKACK);
@@ -1014,9 +1166,74 @@ D(bug("[WBInfo] broker command received: %ld\n", returnid));
                         set(window, MUIA_Window_ActiveObject, (IPTR)savebutton);
                         file_altered = TRUE;
                         break;
-                    case RETURNID_VERSION:
-                        set(versionspace, MUIA_Text_Contents, GetVersion(name, lock));
+                    case RETURNID_QUERYVERSION:
+			{
+			    Object * oldversionspace = versionspace;
+
+D(bug("[WBInfo: RETURNID_QUERYVERSION\n"));
+
+			    versionspace = (Object *)TextObject,
+				    TextFrame,
+				    MUIA_Background, MUII_TextBack,
+				    MUIA_Text_PreParse, (IPTR) "\33r",
+				    MUIA_Text_Contents, (IPTR) GetVersion(name, lock),
+				End;
+
+			    DoMethod(versiongrp, MUIM_Group_InitChange);
+			    DoMethod(versiongrp, OM_REMMEMBER, oldversionspace);
+			    DoMethod(versiongrp, OM_ADDMEMBER, versionspace);
+			    DoMethod(versiongrp, MUIM_Group_ExitChange);
+			}
                         break;
+		    case RETURNID_SCANSIZE:
+			{
+			    Object * oldsizespace = sizespace;
+
+D(bug("[WBInfo]: RETURNID_SCANSIZE\n"));
+			    sizespace = (Object *)TextObject,
+				    TextFrame,
+				    MUIA_Background, MUII_TextBack,
+				    MUIA_Text_PreParse, (IPTR) "\33r",
+				End;
+
+			    DoMethod(sizegrp, MUIM_Group_InitChange);
+			    DoMethod(sizegrp, OM_REMMEMBER, oldsizespace);
+			    DoMethod(sizegrp, OM_ADDMEMBER, sizespace);
+			    DoMethod(sizegrp, MUIM_Group_ExitChange);
+
+			    if (scanStruct == NULL)
+				scanStruct = AllocMem(sizeof(struct DirScanProcess), MEMF_CLEAR);
+
+			    scanStruct->scanState = SCANDIE;
+waitscan:
+
+			    if (scanStruct->scanProcess != NULL)
+				goto waitscan;
+
+			    ULONG dirnamelen = strlen(lname) + strlen(name);
+			    scanStruct->scanState = SCANRUN;
+			    scanStruct->scanDir = AllocVec(dirnamelen + 1, MEMF_CLEAR);
+D(bug("[WBInfo]: lname '%s', name '%s', (%d bytes)\n", lname, name, dirnamelen));
+
+			    CopyMem(lname, scanStruct->scanDir, strlen(lname));
+			    AddPart(scanStruct->scanDir, name, dirnamelen + 1);
+
+			    char * tmp_Name = AllocVec(strlen(scanStruct->scanDir) + 24, MEMF_CLEAR);
+			    sprintf(tmp_Name, "Calculating size of %s ..", scanStruct->scanDir);
+
+			    /* Fire up child process to perform scan of content size .. */
+			    scanStruct->scanProcess = CreateNewProcTags(
+				NP_Entry, (IPTR)scanDir_Process,
+				NP_Name, tmp_Name,
+				NP_Synchronous , FALSE,
+				NP_Priority, 0,
+				NP_UserData, (IPTR)scanStruct,
+				NP_StackSize, 140960,
+				TAG_DONE);
+
+			    FreeVec(tmp_Name);
+			}
+			break;
                     case RETURNID_PROTECT:
                         file_altered = TRUE;
 D(bug("[WBInfo: Protection bits changed\n"));
@@ -1033,13 +1250,25 @@ D(bug("[WBInfo: Protection bits changed\n"));
 
 	    returnid = ((LONG) DoMethod(application, MUIM_Application_NewInput, (IPTR) &signals));
         }
+	if (scanStruct)
+	{
+	    scanStruct->scanState = SCANDIE;
+waitscan2:
+	    if (scanStruct->scanProcess != NULL)
+		goto waitscan2;
+	}
         SetAttrs(window, MUIA_Window_Open, FALSE, TAG_DONE);
         MUI_DisposeObject(application);
     } else {
         PrintFault(ERROR_INVALID_RESIDENT_LIBRARY, argv[0]);
 D(bug("[WBInfo: Couldn't create app\n"));
+	retval = RETURN_FAIL;
     }
-    FreeDiskObject(icon);
-    FreeVec(ap);
-    return RETURN_OK;
+   
+funcmain_exit:
+    if (scanStruct) FreeMem(scanStruct, sizeof(struct DirScanProcess));
+    if (icon) FreeDiskObject(icon);
+    if (ap) FreeVec(ap);
+    if (file) FreeVec(file);
+    return retval;
 }
