@@ -86,7 +86,7 @@ BOOL icon_altered = FALSE;
 
 #define kExallBufSize  		(4096)
 
-ULONG calculateDirectorySize(struct DirScanProcess *scan, CONST_STRPTR directory)
+ULONG calculateDirectorySize(struct DirScanProcess *scan, ULONG base, CONST_STRPTR directory)
 {
     UBYTE	*buffer = NULL;
     BPTR	directoryLock = NULL;
@@ -124,7 +124,7 @@ D(bug("[WBInfo] calculateDirectorySize('%s')\n", directory));
                 if (ead->ed_Type == ST_FILE)
                 {
                     directorySize += ead->ed_Size;
-		    sprintf(scan->scanSize, "%d bytes", directorySize);
+		    sprintf(scan->scanSize, "%d bytes", (base + directorySize));
 		    set(sizespace, MUIA_Text_Contents, (IPTR) scan->scanSize);
                 }
                 else if (ead->ed_Type == ST_USERDIR)
@@ -133,7 +133,7 @@ D(bug("[WBInfo] calculateDirectorySize('%s')\n", directory));
                     char * subdirectory = AllocVec(subdirlen + 1, MEMF_CLEAR);
 		    CopyMem(directory, subdirectory, strlen(directory));
 		    AddPart(subdirectory, ead->ed_Name, subdirlen + 1);
-                    directorySize += calculateDirectorySize(scan, subdirectory);
+                    directorySize += calculateDirectorySize(scan, (base + directorySize), subdirectory);
                 }
 		ead = ead->ed_Next;
 	    } while((ead != NULL) && (scan->scanState == SCANRUN)); 
@@ -165,7 +165,7 @@ AROS_UFH3(void, scanDir_Process,
     {
 	D(bug("[WBInfo] scanDir_Process('%s')\n", scan->scanDir));
 	scan->scanSize = AllocVec(64, MEMF_CLEAR);
-	directorySize = calculateDirectorySize(scan, scan->scanDir);
+	directorySize = calculateDirectorySize(scan, directorySize, scan->scanDir);
 	D(bug("[WBInfo] scanDir_Process: End size = %d bytes\n", directorySize));
 	sprintf(scan->scanSize, "%d bytes", directorySize);
 	set(sizespace, MUIA_Text_Contents, (IPTR) scan->scanSize);
