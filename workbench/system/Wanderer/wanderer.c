@@ -1783,6 +1783,8 @@ void wanderer_menufunc_icon_information()
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
     struct IconList_Entry *entry    = (IPTR)MUIV_IconList_NextIcon_Start;
 
+D(bug("[Wanderer] %s: Window @ %p, IconList @ %p\n", __PRETTY_FUNCTION__, window, iconList));
+	
     do
     {
         DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);
@@ -1790,21 +1792,44 @@ void wanderer_menufunc_icon_information()
         if ((IPTR)entry != MUIV_IconList_NextIcon_End)
         {
             BPTR lock, parent;
-            STRPTR name;
+            STRPTR name, file;
 
-D(bug("[Wanderer] %s: selected = '%s'\n", __PRETTY_FUNCTION__, entry->ile_IconEntry->ie_IconNode.ln_Name));
-            lock = Lock(entry->ile_IconEntry->ie_IconNode.ln_Name, ACCESS_READ);
-            name = FilePart(entry->ile_IconEntry->ie_IconNode.ln_Name);
-            if (name[0]) {
-                parent = ParentDir(lock);
-                UnLock(lock);
-            } else
-                parent = lock;
+	    file = entry->ile_IconEntry->ie_IconNode.ln_Name;
+D(bug("[Wanderer] %s: selected = '%s'\n", __PRETTY_FUNCTION__, file));
+	    
+attemptlock:
+	    
+D(bug("[Wanderer] %s: Trying with '%s'\n", __PRETTY_FUNCTION__, file));
 
-D(bug("[Wanderer] %s: name = '%s' lock = 0x%08lX\n", __PRETTY_FUNCTION__, name, lock));
-            WBInfo(parent, name, NULL);
+            if ((lock = Lock(file, ACCESS_READ)) == NULL)
+	    {
+D(bug("[Wanderer] %s: couldnt lock '%s'\n", __PRETTY_FUNCTION__, file));
+		if ((strlen(file) > 5)
+		    && (strcmp(file + strlen(file) - 5, ".info") != 0)
+		    && (file[strlen(file) -1] != ':'))
+		{
+D(bug("[Wanderer] %s: not a '.info' file or device - check if there is a '.info'..\n"));
+		    file = AllocVec(strlen(entry->ile_IconEntry->ie_IconNode.ln_Name) + 5, MEMF_CLEAR);
+		    sprintf(file, "%s.info", entry->ile_IconEntry->ie_IconNode.ln_Name);
+		    goto attemptlock;
+		}
+	    }
+	    else
+	    {
+		name = FilePart(file);
+		if (name[0]) {
+		    parent = ParentDir(lock);
+		    UnLock(lock);
+		} else
+		    parent = lock;
 
-            UnLock(parent);
+D(bug("[Wanderer] %s: Calling WBInfo(name = '%s' parent lock = 0x%p)\n", __PRETTY_FUNCTION__, name, lock));
+		WBInfo(parent, name, NULL);
+
+		UnLock(parent);
+	    }
+	    if (file != entry->ile_IconEntry->ie_IconNode.ln_Name)
+		FreeVec(file);
         }
         else
         {
