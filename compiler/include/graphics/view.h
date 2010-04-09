@@ -92,32 +92,61 @@ struct ViewPortExtra
     ULONG cop2ptr;
 };
 
+/*          *** ColorMap ***
+ *
+ * This structure is the primary storage for palette data.
+ * 
+ * Color data itself is stored in two tables: ColorTable and LowColorBits.
+ * These fields are actually pointer to arrays of UWORDs. Each UWORD corresponds
+ * to one color.
+ * Number of UWORDs in these array is equal to Count value in this structure.
+ * ColorTable stores upper nibbles of RGB values, LowColorBits stores low nibbles.
+ *
+ * Example:
+ *  color number 4, value: 0x00ABCDEF
+ *  ColorTable  [4] = 0x0ACE,
+ *  LowColorBits[4] = 0x0BDF
+ *
+ * NOTE: m68k graphics.library keeps upper nibble unchanged instead of just zeroing it out
+ * when setting a ColorMap entry. This means that this nibble is used for something by Amiga
+ * chipset (perhaps alpha value for genlock?)
+ *
+ * SpriteBase fields keep bank number, not a color number. On m68k Amiga colors are divided into
+ * banks, 16 per each. So bank number is color number divided by 16. Base color is a number which
+ * is added to all colors of the sprite in order to look up the actual palette entry.
+ * AROS may run on different hardware where sprites may have base colors that do not divide by 16.
+ * In order to cover this bank numbers have a form: ((c & 0x0F) << 8 ) | (c >> 4), where c is actual
+ * color number (i. e. remainder is stored in a high byte of UWORD).
+ * 
+ */
+
 struct ColorMap
 {
-    UBYTE Flags;      /* see below */
-    UBYTE Type;       /* see below */
-    UWORD Count;
-    APTR  ColorTable;
+    UBYTE Flags;      				/* see below */
+    UBYTE Type;       				/* see below */
+    UWORD Count;				/* Number of palette entries */
+    APTR  ColorTable;				/* Table of high nibbles of color values (see description above) */
 
-    struct ViewPortExtra * cm_vpe;
+    /* The following fields are present only if Type >= COLORMAP_TYPE_V36 */
+    struct ViewPortExtra * cm_vpe;		/* ViewPortExtra, for faster access */
 
     APTR  LowColorBits;
     UBYTE TransparencyPlane;
-    UBYTE SpriteResolution;  /* see below */
+    UBYTE SpriteResolution;			/* see below */
     UBYTE SpriteResDefault;
     UBYTE AuxFlags;
 
-    struct ViewPort * cm_vp;
+    struct ViewPort * cm_vp;			/* Points back to a ViewPort this colormap belongs to */
 
     APTR NormalDisplayInfo;
     APTR CoerceDisplayInfo;
 
     struct TagItem      * cm_batch_items;
     ULONG                 VPModeID;
-    struct PaletteExtra * PalExtra;
+    struct PaletteExtra * PalExtra;		/* Structure controlling palette sharing */
 
-    UWORD SpriteBase_Even;
-    UWORD SpriteBase_Odd;
+    UWORD SpriteBase_Even;			/* Color bank for even sprites (see above) */
+    UWORD SpriteBase_Odd;			/* The same for odd sprites		   */
     UWORD Bp_0_base;
     UWORD Bp_1_base;
 };
