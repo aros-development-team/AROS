@@ -123,7 +123,7 @@ struct ViewPortExtra
 struct ColorMap
 {
     UBYTE Flags;      				/* see below */
-    UBYTE Type;       				/* see below */
+    UBYTE Type;       				/* Colormap type (reflects version), see below */
     UWORD Count;				/* Number of palette entries */
     APTR  ColorTable;				/* Table of high nibbles of color values (see description above) */
 
