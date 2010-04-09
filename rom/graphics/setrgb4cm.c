@@ -60,9 +60,13 @@
 
     if (NULL != cm && n < cm->Count)
     {
-        ((UWORD *)cm->ColorTable)[n]   = ((r >> 20) & 0x0f00) |
-                                          ((g >> 24) & 0x00f0) |
-                                          ((b >> 28) & 0x000f);
+	/* Preserve the highest nibble. Needed for interoperability
+	   with m68k graphics.library. Exact purpose is currently
+	   unknown - sonic */
+        UWORD a = ((UWORD *)cm->ColorTable)[n] & 0xF000;
+
+        ((UWORD *)cm->ColorTable)[n]   = a | (r << 16) | (g <<  8) | b;
+
         if (cm->Type > COLORMAP_TYPE_V1_2)
             ((UWORD *)cm->LowColorBits)[n] = 0;
     }

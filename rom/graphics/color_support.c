@@ -33,6 +33,9 @@ ULONG color_distance(struct ColorMap * cm,
     **   cm->ColorTable[x]   = 0x0135
     **   cm->LowColorBits[x] = 0x0246
     **
+    **   m68k graphics.library preserves high nibble of ColorTable value when changing it
+    **   in SetRGB32cm() and SetRGB4cm() functions.
+    **   Perhaps this has something to do with genlock support (alpha value?)
     **   Note that fields below ColorTable are present only if Type > COLORMAP_TYPE_V1_2
     */
 

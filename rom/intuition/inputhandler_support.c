@@ -1414,7 +1414,7 @@ struct Screen *FindActiveScreen(struct IntuitionBase *IntuitionBase)
     struct Screen *scr;
     
     for (scr = IntuitionBase->FirstScreen; scr; scr = scr->NextScreen) {
-        if ((scr->MouseX > 0) && (scr->MouseY > 0) &&
+        if ((scr->MouseX >= 0) && (scr->MouseY >= 0) &&
 	   ((scr->MouseX < scr->Width) && scr->MouseY < scr->Height))
 	       break;
     }
