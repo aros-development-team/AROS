@@ -130,7 +130,7 @@ struct ColorMap
     /* The following fields are present only if Type >= COLORMAP_TYPE_V36 */
     struct ViewPortExtra * cm_vpe;		/* ViewPortExtra, for faster access */
 
-    APTR  LowColorBits;
+    APTR  LowColorBits;				/* Table of low nibbles of color values (see above) */
     UBYTE TransparencyPlane;
     UBYTE SpriteResolution;			/* see below */
     UBYTE SpriteResDefault;
