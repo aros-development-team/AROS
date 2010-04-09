@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Filesystem that uses console device for input/output.
@@ -77,8 +77,8 @@
 #define INP_ECHO_STRING	    	101
 
 struct Task *createConTask(APTR taskparams, struct conbase *conbase);
-void parse_filename(struct conbase *conbase, struct filehandle *fh, struct IOFileSys *iofs, struct NewWindow *nw);
-
+BOOL parse_filename(struct conbase *conbase, struct filehandle *fh,
+    struct IOFileSys *iofs, struct NewWindow *nw);
 
 void do_write(struct conbase *conbase, struct filehandle *fh, APTR data, ULONG length);
 void do_movecursor(struct conbase *conbase, struct filehandle *fh, UBYTE direction, UBYTE howmuch);

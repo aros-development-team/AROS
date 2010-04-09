@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for console handler. 
@@ -177,14 +177,14 @@ struct Task *createConTask(APTR taskparams, struct conbase *conbase)
 
 /******************************************************************************************/
 
-void parse_filename(struct conbase *conbase, struct filehandle *fh,
+BOOL parse_filename(struct conbase *conbase, struct filehandle *fh,
 		    struct IOFileSys *iofs, struct NewWindow *nw)
 {
     UBYTE   *filename;
     UBYTE   *param, c;
     WORD    paramid = 1;
     LONG    paramval = 0;
-    BOOL    done = FALSE, paramok = FALSE;
+    BOOL    ok = TRUE, done = FALSE, paramok = FALSE;
 
     ASSERT_VALID_PTR(conbase);
     ASSERT_VALID_PTR(fh);
@@ -329,14 +329,21 @@ void parse_filename(struct conbase *conbase, struct filehandle *fh,
 		param = filename;
 		break;
 		
-	default:
-	  paramok = TRUE;
-	  break;
-	  
+	    default:
+		if (paramid < 5)
+		{
+		    done = TRUE;
+		    ok = FALSE;
+		}
+		else
+		    paramok = TRUE;
+		break;
+
 	} /* switch(c) */
 	
     } /* while (!done) */
-    
+
+    return ok;
 }
 
 /******************************************************************************************/

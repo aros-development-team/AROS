@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Filesystem that uses console device for input/output.
@@ -421,15 +421,20 @@ AROS_UFH3(VOID, conTaskEntry,
 
 		parse_filename(conbase, fh, iofs, &fh->nw);
 
-    	    	if (!(fh->flags & FHFLG_AUTO))
+		if (parse_filename(conbase, fh, iofs, &fh->nw))
 		{
-		    err = MakeConWindow(fh, conbase);
-		    if (!err) ok = TRUE;
-		}
+                    if (!(fh->flags & FHFLG_AUTO))
+                    {
+                        err = MakeConWindow(fh, conbase);
+                        if (!err) ok = TRUE;
+                    }
+                    else
+                    {
+                        ok = TRUE;
+                    }
+                }
 		else
-		{
-		    ok = TRUE;
-		}
+		    err = ERROR_BAD_STREAM_NAME;
 
 		if (ok)
 		{
@@ -556,7 +561,7 @@ AROS_UFH3(VOID, conTaskEntry,
 
 	if (sigs & contaskmask)
 	{
-	    /* FSA mesages */
+	    /* FSA messages */
 	    D(bug("contask: recevied contask signal\n"));
 	    while((iofs = (struct IOFileSys *)GetMsg(fh->contaskmp)))
 	    {

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Filesystem that uses console device for input/output.
@@ -7,10 +7,6 @@
 */
 
 /****************************************************************************************/
-
-/* 
-   Please always update the version-string below, if you modify the code!
-*/
 
 /* AROS includes */
 
