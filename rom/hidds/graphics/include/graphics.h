@@ -751,7 +751,7 @@ struct pHidd_BitMap_PutTemplate
 {
     OOP_MethodID    mID;
     OOP_Object	    *gc;
-    UBYTE 	    *template;
+    UBYTE 	    *Template;
     ULONG	    modulo;
     WORD    	    srcx;
     WORD	    x, y;
@@ -759,6 +759,11 @@ struct pHidd_BitMap_PutTemplate
     BOOL    	    inverttemplate;
 };
 
+/* Compatibility hack. In C++ template is a reserved keyword, so we
+   can't use it as variable name */
+#ifndef __cplusplus
+#define template Template
+#endif
 
 struct pHidd_BitMap_PutAlphaTemplate
 {
@@ -1181,7 +1186,7 @@ struct pHidd_BitMap_PutMemTemplate8
 {
     OOP_MethodID    mID;
     OOP_Object	    *gc;
-    UBYTE   	    *template;
+    UBYTE   	    *Template;
     ULONG   	    modulo;
     WORD    	    srcx;
     APTR    	    dst;
@@ -1195,7 +1200,7 @@ struct pHidd_BitMap_PutMemTemplate16
 {
     OOP_MethodID    mID;
     OOP_Object	    *gc;
-    UBYTE   	    *template;
+    UBYTE   	    *Template;
     ULONG   	    modulo;
     WORD    	    srcx;
     APTR    	    dst;
@@ -1209,7 +1214,7 @@ struct pHidd_BitMap_PutMemTemplate24
 {
     OOP_MethodID    mID;
     OOP_Object	    *gc;
-    UBYTE   	    *template;
+    UBYTE   	    *Template;
     ULONG   	    modulo;
     WORD    	    srcx;
     APTR    	    dst;
@@ -1223,7 +1228,7 @@ struct pHidd_BitMap_PutMemTemplate32
 {
     OOP_MethodID    mID;
     OOP_Object	    *gc;
-    UBYTE   	    *template;
+    UBYTE   	    *Template;
     ULONG   	    modulo;
     WORD    	    srcx;
     APTR    	    dst;
@@ -1482,7 +1487,7 @@ ULONG       HIDD_BM_DrawPixel       	(OOP_Object *obj, OOP_Object *gc, WORD x, W
 VOID        HIDD_BM_GetImage	    	(OOP_Object *obj, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
 VOID	    HIDD_BM_PutImage 	    	(OOP_Object *obj, OOP_Object *gc, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
 VOID	    HIDD_BM_PutAlphaImage 	(OOP_Object *obj, OOP_Object *gc, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height);
-VOID	    HIDD_BM_PutTemplate 	(OOP_Object *obj, OOP_Object *gc, UBYTE *template, ULONG modulo, WORD srcx, WORD x, WORD y, WORD width, WORD height, BOOL inverttemplate);
+VOID	    HIDD_BM_PutTemplate 	(OOP_Object *obj, OOP_Object *gc, UBYTE *Template, ULONG modulo, WORD srcx, WORD x, WORD y, WORD width, WORD height, BOOL inverttemplate);
 VOID	    HIDD_BM_PutAlphaTemplate 	(OOP_Object *obj, OOP_Object *gc, UBYTE *alpha, ULONG modulo, WORD x, WORD y, WORD width, WORD height, BOOL invertalpha);
 VOID	    HIDD_BM_PutPattern	 	(OOP_Object *obj, OOP_Object *gc, UBYTE *pattern, WORD patternsrcx, WORD patternsrcy, WORD patternheight, WORD patterndepth, HIDDT_PixelLUT *patternlut, BOOL invertpattern, UBYTE *mask, ULONG maskmodulo, WORD masksrcx, WORD x, WORD y, WORD width, WORD height);
 VOID        HIDD_BM_DrawLine        	(OOP_Object *obj, OOP_Object *gc, WORD x1, WORD y1, WORD x2, WORD y2);
@@ -1713,7 +1718,7 @@ VOID	HIDD_BM_GetMem32Image24(OOP_Object *obj,
 
 VOID	HIDD_BM_PutMemTemplate8	(OOP_Object *obj,
     	    	    	    	 OOP_Object *gc,
-				 UBYTE *template,
+				 UBYTE *Template,
 				 ULONG modulo,
 				 WORD srcx,
 				 APTR dst,
@@ -1726,7 +1731,7 @@ VOID	HIDD_BM_PutMemTemplate8	(OOP_Object *obj,
 				 
 VOID	HIDD_BM_PutMemTemplate16(OOP_Object *obj,
     	    	    	    	 OOP_Object *gc,
-				 UBYTE *template,
+				 UBYTE *Template,
 				 ULONG modulo,
 				 WORD srcx,
 				 APTR dst,
@@ -1739,7 +1744,7 @@ VOID	HIDD_BM_PutMemTemplate16(OOP_Object *obj,
 				 
 VOID	HIDD_BM_PutMemTemplate24(OOP_Object *obj,
     	    	    	    	 OOP_Object *gc,
-				 UBYTE *template,
+				 UBYTE *Template,
 				 ULONG modulo,
 				 WORD srcx,
 				 APTR dst,
@@ -1752,7 +1757,7 @@ VOID	HIDD_BM_PutMemTemplate24(OOP_Object *obj,
 				 
 VOID	HIDD_BM_PutMemTemplate32(OOP_Object *obj,
     	    	    	    	 OOP_Object *gc,
-				 UBYTE *template,
+				 UBYTE *Template,
 				 ULONG modulo,
 				 WORD srcx,
 				 APTR dst,
