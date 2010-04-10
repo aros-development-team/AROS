@@ -61,23 +61,26 @@
     D(bug("[GFX] OpenMonitor(%s)\n", monitor_name));
 
     if (monitor_name) {
+	if (stricmp(monitor_name, DEFAULT_MONITOR_NAME)) {
+	    ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
 
-        ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
-
-        for (mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
-	    if (!strcmp(monitor_name, mspc->ms_Node.xln_Name)) {
-	        D(bug("[OpenMonitor] Found spec 0x%p\n", mspc));
-	        break;
+	    /* TODO: use FindName() here, however this is possible only after switch to
+	       ABI v1 (because otherwise struct Node and struct ExtendedNode have different layout */
+	    for (mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
+	    	if (!strcmp(monitor_name, mspc->ms_Node.xln_Name)) {
+	    	    D(bug("[OpenMonitor] Found spec 0x%p\n", mspc));
+	    	    break;
+	    	}
 	    }
-	}
 
-	ReleaseSemaphore(GfxBase->MonitorListSemaphore);
+	    ReleaseSemaphore(GfxBase->MonitorListSemaphore);
 
-	if (!mspc->ms_Node.xln_Succ) {
-	    D(bug("[OpenMonitor] Monitor not found\n"));
-	    return NULL;
-	}
-	
+	    if (!mspc->ms_Node.xln_Succ) {
+	    	D(bug("[OpenMonitor] Monitor not found\n"));
+	    	return NULL;
+	    }
+	} else
+	    mspc = GfxBase->default_monitor;
     }
     /* TODO: implement lookup by display_id */
     else
