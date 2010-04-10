@@ -38,8 +38,8 @@
 #define CLID_Hidd_ChunkyBM "hidd.graphics.bitmap.chunkybm"
 
 
-typedef struct OOP_Object *HIDDT_BitMap;
-typedef struct OOP_Object *HIDDT_GC;
+typedef OOP_Object *HIDDT_BitMap;
+typedef OOP_Object *HIDDT_GC;
 
 
 /* Attrbases */
