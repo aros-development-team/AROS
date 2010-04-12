@@ -2,7 +2,7 @@
 #define GRAPHICS_VIEW_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: View structures
@@ -34,59 +34,88 @@
 #   include <hardware/custom.h>
 #endif
 
+/*          *** View ***
+ *
+ * Describes a physical display. Holds actual copperlists for Amiga(tm) chipset
+ * and some metainformation.
+ *
+ * Since AROS is going to work with multiple physical displays, meaning of this
+ * structure is downgraded to a simple list of ViewPorts to display (there's only
+ * one View despite there can be sevaral monitors and different ViewPorts may be shown
+ * on different displays)
+ */
+
 struct View
 {
-    struct ViewPort * ViewPort;
-    struct cprlist  * LOFCprList;
+    struct ViewPort * ViewPort;	  /* Pointer to a first ViewPort */
+    struct cprlist  * LOFCprList; /* Actual display copperlists (only for Amiga chipset) */
     struct cprlist  * SHFCprList;
 
     WORD DyOffset;
     WORD DxOffset;
 
-    UWORD Modes;
+    UWORD Modes;		  /* See below */
 };
+
+/*          *** ViewExtra ***
+ *
+ * Additional data for Amiga(tm) chipset. Not used by other hardware.
+ */
 
 struct ViewExtra
 {
-    struct ExtendedNode n;
+    struct ExtendedNode n;	  /* Common header */
 
-    struct View        * View;
-    struct MonitorSpec * Monitor;
+    struct View        * View;    /* View it relates to */
+    struct MonitorSpec * Monitor; /* Monitor used for displaying this View */
     UWORD                TopLine;
 };
 
+/*          *** ViewPort ***
+ *
+ * Describes a displayed bitmap (or logical screen).
+ *
+ * Copperlists are relevant only to Amiga(tm) chipset, for other hardware they are NULL.
+ *
+ */
+
 struct ViewPort
 {
-    struct ViewPort * Next;
+    struct ViewPort * Next;	 /* Pointer to a next ViewPort in the view (NULL for the last ViewPort) */
 
-    struct ColorMap * ColorMap;
-    struct CopList  * DspIns;
-    struct CopList  * SprIns;
+    struct ColorMap * ColorMap;  /* Points to a ColorMap */
+    struct CopList  * DspIns;	 /* Preliminary partial display copperlist */
+    struct CopList  * SprIns;    /* Preliminary partial sprite copperlist */
     struct CopList  * ClrIns;
-    struct UCopList * UCopIns;
+    struct UCopList * UCopIns;   /* User-defined part of the copperlist */
 
-    WORD  DWidth;
-    WORD  DHeight;
-    WORD  DxOffset;
+    WORD  DWidth;		 /* Width of currently displayed part in pixels */
+    WORD  DHeight;		 /* Height of currently displayed part in pixels */
+    WORD  DxOffset;		 /* Displacement from the (0, 0) of the physical screen to (0, 0) of the raster */
     WORD  DyOffset;
-    UWORD Modes;
+    UWORD Modes;		 /* The same as in View */
 
     UBYTE SpritePriorities;
     UBYTE ExtendedModes;
 
-    struct RasInfo * RasInfo;
+    struct RasInfo * RasInfo;	/* Playfield specification */
 };
+
+/*          *** ViewPortExtra ***
+ *
+ * Holds additional information about the ViewPort it is associated with
+ */
 
 struct ViewPortExtra
 {
-    struct ExtendedNode n;
+    struct ExtendedNode n;	    /* Common header */
 
-    struct ViewPort  * ViewPort;
-    struct Rectangle   DisplayClip;
+    struct ViewPort  * ViewPort;    /* ViewPort it relates to */
+    struct Rectangle   DisplayClip; /* Total size of displayable part */
 
-    APTR  VecTable;
-    APTR  DriverData[2];
-    UWORD Flags;
+    APTR  VecTable;		    /* Unused by AROS */
+    APTR  DriverData[2];	    /* Private storage for display drivers. Do not touch! */
+    UWORD Flags;		    /* Flags, see below */
     Point Origin[2];
     ULONG cop1ptr;
     ULONG cop2ptr;
@@ -107,10 +136,6 @@ struct ViewPortExtra
  *  ColorTable  [4] = 0x0ACE,
  *  LowColorBits[4] = 0x0BDF
  *
- * NOTE: m68k graphics.library keeps upper nibble unchanged instead of just zeroing it out
- * when setting a ColorMap entry. This means that this nibble is used for something by Amiga
- * chipset (perhaps alpha value for genlock?)
- *
  * SpriteBase fields keep bank number, not a color number. On m68k Amiga colors are divided into
  * banks, 16 per each. So bank number is color number divided by 16. Base color is a number which
  * is added to all colors of the sprite in order to look up the actual palette entry.
@@ -125,12 +150,12 @@ struct ColorMap
     UBYTE Flags;      				/* see below */
     UBYTE Type;       				/* Colormap type (reflects version), see below */
     UWORD Count;				/* Number of palette entries */
-    APTR  ColorTable;				/* Table of high nibbles of color values (see description above) */
+    UWORD *ColorTable;				/* Table of high nibbles of color values (see description above) */
 
     /* The following fields are present only if Type >= COLORMAP_TYPE_V36 */
     struct ViewPortExtra * cm_vpe;		/* ViewPortExtra, for faster access */
 
-    APTR  LowColorBits;				/* Table of low nibbles of color values (see above) */
+    UWORD *LowColorBits;			/* Table of low nibbles of color values (see above) */
     UBYTE TransparencyPlane;
     UBYTE SpriteResolution;			/* see below */
     UBYTE SpriteResDefault;
@@ -177,15 +202,21 @@ struct ColorMap
 #define SPRITERESN_35NS    0x03
 #define SPRITERESN_DEFAULT 0xFF
 
+/*          *** RasInfo ***
+ *
+ * Describes playfield(s) (actually bitmaps)
+ */
+
 struct RasInfo
 {
-    struct RasInfo * Next;
-    struct BitMap  * BitMap;
+    struct RasInfo * Next;   /* Pointer to a next playfield (if there's more than one) */
+    struct BitMap  * BitMap; /* Actual data to display */
 
-    WORD RxOffset;
-    WORD RyOffset;
+    WORD RxOffset;	     /* Offset of the playfield relative to ViewPort */
+    WORD RyOffset;	     /* (So that different playfields may be shifted against each other) */
 };
 
+/* Modes for ViewPort and View */
 #define GENLOCK_VIDEO   (1<<1)
 #define LACE            (1<<2)
 #define DOUBLESCAN      (1<<3)
@@ -200,9 +231,9 @@ struct RasInfo
 #define SPRITES         (1<<14)
 #define HIRES           (1<<15)
 
-/* PRIVATE */
-#define VPXB_FREE_ME          0
-#define VPXF_FREE_ME      (1<<0)
+/* ViewPortExtra Flags */
+#define VPXB_FREE_ME          0  /* Temporary ViewPortExtra allocated during MakeVPort(). ViewPortExtra with this flag */
+#define VPXF_FREE_ME      (1<<0) /* will be automatically found and disposed during FreeVPortCopLists(). Private flag in fact, don't set it by hands */
 #define VPXB_LAST             1
 #define VPXF_LAST         (1<<1)
 #define VPXB_STRADDLES256     4
