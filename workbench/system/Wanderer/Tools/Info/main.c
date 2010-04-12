@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -84,6 +84,97 @@ static Object *list, *editor, *liststr;
 BOOL file_altered = FALSE;
 BOOL icon_altered = FALSE;
 
+#warning "TODO: Use UQUAD for size"
+void getReadableSize(UBYTE *buf, ULONG size)
+{
+    UQUAD d;
+    char *ch;
+    struct
+    {
+	IPTR val;
+	IPTR  dec;
+    } array =
+    {
+	size,
+	0
+    };
+
+    /*
+    if (size >= (1024 * 1024 * 1024 * 1024 * 1024 * 1024))
+    {
+	//Exabytes
+	array.val = size >> 60;
+	d = ((UQUAD)size * 10 + ((1024 * 1024 * 1024 * 1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024 * 1024 * 1024 * 1024);
+	array.dec = d % 10;
+	ch = "EiB";
+    }
+    if (size >= (1024 * 1024 * 1024 * 1024 * 1024))
+    {
+	//Petabytes
+	array.val = size >> 50;
+	d = ((UQUAD)size * 10 + ((1024 * 1024 * 1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024 * 1024 * 1024);
+	array.dec = d % 10;
+	ch = "PiB";
+    }
+    if (size >= (1024 * 1024 * 1024 * 1024))
+    {
+	//Terabytes
+	array.val = size >> 40;
+	d = ((UQUAD)size * 10 + ((1024 * 1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024 * 1024);
+	array.dec = d % 10;
+	ch = "TiB";
+    }*/
+    if (size >= (1024 * 1024 * 1024))
+    {
+	//Gigabytes
+	array.val = size >> 30;
+	d = ((UQUAD)size * 10 + ((1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024);
+	array.dec = d % 10;
+	ch = "GiB";
+    }
+    else if (size >= (1024 * 1024))
+    {
+	//Megabytes
+	array.val = size >> 20;
+	d = ((UQUAD)size * 10 + ((1024 * 1024) / 2)) / (1024 * 1024);
+	array.dec = d % 10;
+	ch = "MiB";
+    }
+    else if (size >= 1024)
+    {
+	//Kilobytes
+	array.val = size >> 10;
+	d = (size * 10 + (1024 / 2)) / 1024;
+	array.dec = d % 10;
+	ch = "KiB";
+    }
+    else
+    {
+	//Bytes
+	array.val = size;
+	array.dec = 0;
+	d = 0;
+	if (size == 1)
+	    ch = "Byte";
+	else
+	    ch = "Bytes";
+    }
+
+    if (!array.dec && (d > array.val * 10))
+    {
+	array.val++;
+    }
+
+    RawDoFmt(array.dec ? "%lu.%lu" : "%lu", &array, NULL, buf);
+
+    while (*buf)
+    {
+	buf++;
+    }
+
+    sprintf((char *)buf," %s\0", ch);
+}
+
 #define kExallBufSize  		(4096)
 
 ULONG calculateDirectorySize(struct DirScanProcess *scan, ULONG base, CONST_STRPTR directory)
@@ -124,7 +215,7 @@ D(bug("[WBInfo] calculateDirectorySize('%s')\n", directory));
                 if (ead->ed_Type == ST_FILE)
                 {
                     directorySize += ead->ed_Size;
-		    sprintf(scan->scanSize, "%d bytes", (base + directorySize));
+		    getReadableSize(scan->scanSize, (base + directorySize));
 		    set(sizespace, MUIA_Text_Contents, (IPTR) scan->scanSize);
                 }
                 else if (ead->ed_Type == ST_USERDIR)
@@ -167,7 +258,7 @@ AROS_UFH3(void, scanDir_Process,
 	scan->scanSize = AllocVec(64, MEMF_CLEAR);
 	directorySize = calculateDirectorySize(scan, directorySize, scan->scanDir);
 	D(bug("[WBInfo] scanDir_Process: End size = %d bytes\n", directorySize));
-	sprintf(scan->scanSize, "%d bytes", directorySize);
+	getReadableSize(scan->scanSize, directorySize);
 	set(sizespace, MUIA_Text_Contents, (IPTR) scan->scanSize);
 	FreeVec(scan->scanSize);
     }
@@ -290,7 +381,7 @@ void SaveIcon(struct DiskObject *icon, STRPTR name, BPTR cd)
 {
     STRPTR tool = NULL, stack = NULL;
     BPTR restored_cd;
-    LONG ls;
+    long int ls;
     UBYTE **ttypes = NULL, **old_ttypes = NULL;
 
     restored_cd = CurrentDir(cd);
@@ -304,7 +395,7 @@ void SaveIcon(struct DiskObject *icon, STRPTR name, BPTR cd)
         case WBTOOL:
             get(stackspace, MUIA_String_Contents, &stack);
             stcd_l(stack, &ls);
-            icon->do_StackSize = ls;
+            icon->do_StackSize = (LONG)ls;
             break;
     }
 
@@ -554,7 +645,7 @@ int main(int argc, char **argv)
     char stack[16];
     char deftool[MAX_PATH_LEN];
     char comment[MAXCOMMENTLENGTH];
-    char size[10];
+    char size[64];
     char date[LEN_DATSTRING];
     char time[LEN_DATSTRING];
     char  dow[LEN_DATSTRING];
@@ -670,17 +761,17 @@ D(bug("[WBInfo] scan file\n"));
         sprintf(datetime, "%s %s", time, date);
 
         /* fill size */
-        sprintf(size, "%d", ap->ap_Info.fib_Size);
+        getReadableSize(size, ap->ap_Info.fib_Size);
 
         /* fill protection */
         protection = ap->ap_Info.fib_Protection;
 
-            /* Convert the protection bits to a boolean */
+	/* Convert the protection bits to a boolean */
         flags[0] = protection & FIBF_SCRIPT  ? 1 : 0; /* s */
         flags[1] = protection & FIBF_PURE    ? 1 : 0; /* p */
         flags[2] = protection & FIBF_ARCHIVE ? 1 : 0; /* a */
 
-            /* The following flags are high-active! */
+	/* The following flags are high-active! */
         flags[3] = protection & FIBF_READ    ? 0 : 1; /* r */
         flags[4] = protection & FIBF_WRITE   ? 0 : 1; /* w */
         flags[5] = protection & FIBF_EXECUTE ? 0 : 1; /* e */
@@ -748,7 +839,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
 
     application = (Object *)ApplicationObject,
         MUIA_Application_Title,  __(MSG_TITLE),
-        MUIA_Application_Version, (IPTR) "$VER: Info 0.4 ("ADATE") © AROS Dev Team",
+        MUIA_Application_Version, (IPTR) "$VER: Info 0.6 ("ADATE") © 2003-2010 The AROS Dev Team",
         MUIA_Application_Description,  __(MSG_DESCRIPTION),
         MUIA_Application_Base, (IPTR) "INFO",
         MUIA_Application_Menustrip, (IPTR) MenuitemObject,
@@ -769,7 +860,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                 End,
             End,
         SubWindow, (IPTR) (window = (Object *)WindowObject,
-            MUIA_Window_Title, (IPTR) __(MSG_ICON),
+            MUIA_Window_Title, (IPTR) __(MSG_TITLE),
             MUIA_Window_ID, MAKE_ID('I','N','F','O'),
             MUIA_Window_Activate, TRUE,
             WindowContents, (IPTR) VGroup,
@@ -811,11 +902,11 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                                     End),
                                     Child, (IPTR) Label2(__(MSG_VERSION)),
                                     Child, (IPTR) (versiongrp = HGroup,
-					Child, versionspace,
+					Child, (IPTR) versionspace,
 				    End),
                                     Child, (IPTR) Label2(__(MSG_SIZE)),
                                     Child, (IPTR) (sizegrp = HGroup,
-					Child, sizespace,
+					Child, (IPTR) sizespace,
 				    End),
                                  End,
                             End,
@@ -1042,16 +1133,16 @@ D(bug("[WBInfo] icon type is: %s\n", type));
         {
             case WBPROJECT:
                 toolspace = MUI_NewObject(MUIC_Popasl, ASLFR_DoSaveMode, TRUE,
-		    MUIA_Popstring_String, (filename_string = StringObject,
+		    MUIA_Popstring_String, (IPTR)(filename_string = StringObject,
 			StringFrame,
 			MUIA_String_MaxLen, MAX_PATH_LEN,
 			MUIA_String_Contents, deftool,
 		    End),
-                    MUIA_Popstring_Button, PopButton(MUII_PopFile), TAG_DONE);
+                    MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopFile), TAG_DONE);
 
                 toollabel = MUI_MakeObject(MUIO_Label, _(MSG_DEFTOOL), NULL);
 
-                if ((toolspace != NULL)&&(toollabel != NULL)&&(filename_string != NULL))
+                if ((toolspace != NULL) && (toollabel != NULL)&&(filename_string != NULL))
                 {
                     DoMethod(group, MUIM_Group_InitChange);
                     DoMethod(group, OM_ADDMEMBER, toollabel);
@@ -1068,14 +1159,14 @@ D(bug("[WBInfo] icon type is: %s\n", type));
 		stackspace = StringObject,
 			StringFrame,
 			MUIA_String_MaxLen, 16,
-			MUIA_String_Contents, stack,
+			MUIA_String_Contents, (IPTR)stack,
 			MUIA_String_Format, MUIV_String_Format_Right,
                         MUIA_String_Accept, (IPTR)"0123456789",
 		    End;
 
                 stacklabel = MUI_MakeObject(MUIO_Label, _(MSG_STACK), NULL);
 
-                if ((stackspace != NULL)&&(stacklabel !=NULL))
+                if ((stackspace != NULL) && (stacklabel !=NULL))
                 {
                     DoMethod(group, MUIM_Group_InitChange);
                     DoMethod(group, OM_ADDMEMBER, stacklabel);
@@ -1129,7 +1220,7 @@ D(bug("[WBInfo] broker command received: %ld\n", returnid));
                         set(window, MUIA_Window_Open, TRUE);
                         break;
                     case RETURNID_ABOUT:
-                        if (MUI_RequestA(application,NULL,0,
+                        if (MUI_RequestA(application, NULL, 0,
                             _(MSG_ABOUT), _(MSG_OK), _(MSG_COPYRIGHT), NULL))
                         break;
 		#if !USE_TEXTEDITOR
