@@ -264,7 +264,7 @@ STATIC CONST IPTR lokeymap[] =
     BYTES(0xA3, 0xB3, 'L', 'l'), 		/* 28 */
     
     BYTES(':', ';', ':', ';'), 		/* 29 */
-    BYTES('"','\'', '"','\'''), 	    	/* 2A */
+    BYTES('"','\'', '"','\''), 	    	/* 2A */
     BYTES('~', '#', '|', '\\'),	    	/* 2B */
     BYTES(0, 0, 0, 0),			/* 2C undefined */
     BYTES('4', '4', '4', '4'),		/* 2D NUM 4 */
