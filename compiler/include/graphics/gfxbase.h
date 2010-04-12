@@ -33,28 +33,27 @@
 
 struct GfxBase
 {
-/* Standard Library Node */
-    struct Library LibNode;
+    struct Library LibNode;				/* Standard Library Node */
 
-    struct View    * ActiView;
-    struct copinit * copinit;
+    struct View    * ActiView;				/* Currently displayed View */
+    struct copinit * copinit;				/* Initial copperlist */
     LONG           * cia;
     LONG           * blitter;
-    UWORD          * LOFlist;
+    UWORD          * LOFlist;				/* Copperlists currently on display (pointers to raw instruction streams) */
     UWORD          * SHFlist;
     struct bltnode * blthd;
     struct bltnode * blttl;
     struct bltnode * bsblthd;
     struct bltnode * bsblttl;
-    struct Interrupt vbsrv;
-    struct Interrupt timsrv;
-    struct Interrupt bltsrv;
+    struct Interrupt vbsrv;				/* VBLank IntServer */
+    struct Interrupt timsrv;				/* Timer IntServer */
+    struct Interrupt bltsrv;				/* Blitter IntServer */
 
 /* Fonts */
     struct List       TextFonts;
-    struct TextFont * DefaultFont;
+    struct TextFont * DefaultFont;			/* System default font */
 
-    UWORD Modes;
+    UWORD Modes;					/* Modes of current display (copy of ActiView->Modes) */
     BYTE  VBlank;
     BYTE  Debug;
     WORD  BeamSync;
@@ -69,7 +68,7 @@ struct GfxBase
     struct Task * BlitOwner;
     struct List   TOF_WaitQ;
 
-    UWORD                  DisplayFlags;  /* see below */
+    UWORD                  DisplayFlags;  		/* see below */
     struct SimpleSprite ** SimpleSprites;
 
     UWORD MaxDisplayRow;
@@ -84,7 +83,7 @@ struct GfxBase
     UWORD * LCMptr;
     UWORD   MicrosPerLine;
     UWORD   MinDisplayColumn;
-    UBYTE   ChipRevBits0;     /* see below */
+    UBYTE   ChipRevBits0;     				/* see below */
     UBYTE   MemType;
     UBYTE   crb_reserved[4];
     UWORD   monitor_id;
@@ -96,7 +95,7 @@ struct GfxBase
     UWORD hedley_flags;
     WORD  hedley_tmp;
 
-    IPTR * hash_table;
+    IPTR * hash_table;					/* Hashtable used for GfxAssociate() and GfxLookup() (private!) */
     UWORD  current_tot_rows;
     UWORD  current_tot_cclks;
     UBYTE  hedley_hint;
@@ -106,17 +105,16 @@ struct GfxBase
     UWORD  control_delta_pal;
     UWORD  control_delta_ntsc;
 
-    struct MonitorSpec     * current_monitor;
-    struct List              MonitorList;
-    struct MonitorSpec     * default_monitor;
-    struct SignalSemaphore * MonitorListSemaphore;
+    struct MonitorSpec     * current_monitor;		/* MonitorSpec used for current display   */
+    struct List              MonitorList;		/* List of all MonitorSpecs in the system */
+    struct MonitorSpec     * default_monitor;		/* MonitorSpec of default.monitor	  */
+    struct SignalSemaphore * MonitorListSemaphore;	/* MonitorList arbiter			  */
 
     VOID                   * DisplayInfoDataBase;
     UWORD                    TopLine;
     struct SignalSemaphore * ActiViewCprSemaphore;
 
-/* Library Bases */
-    struct Library  *UtilBase;
+    struct Library  *UtilBase;				/* Library Bases */
     struct ExecBase *ExecBase;
 
     BYTE  * bwshifts;
@@ -133,7 +131,7 @@ struct GfxBase
     UBYTE   WantChips;
     UBYTE   BoardMemType;
     UBYTE   Bugs;
-    ULONG * gb_LayersBase;
+    ULONG * gb_LayersBase;				/* layers.library base */
     ULONG   ColorMask;
     APTR    IVector;
     APTR    IData;
@@ -144,7 +142,7 @@ struct GfxBase
     UBYTE   BP3Bits;
 
     struct AnalogSignalInterval MonitorVBlank;
-    struct MonitorSpec        * natural_monitor;
+    struct MonitorSpec        * natural_monitor;	/* Default MonitorSpec for view without explicit MonitorSpec in ViewExtra */
 
     APTR  ProgData;
     UBYTE ExtSprites;
@@ -152,7 +150,7 @@ struct GfxBase
     UWORD GfxFlags;
     ULONG VBCounter;
 
-    struct SignalSemaphore * HashTableSemaphore;
+    struct SignalSemaphore * HashTableSemaphore;	/* hash_table arbiter */
     ULONG                  * HWEmul[9];
 };
 #define ChunkyToPlanarPtr HWEmul[0];

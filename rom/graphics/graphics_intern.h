@@ -175,6 +175,8 @@ struct GfxBase_intern
     struct common_driverdata	shared_driverdata;   /* Driver data shared between all monitors (allocated once) */
     struct SignalSemaphore	monitors_sema;	     /* Monitor list semaphore */
 
+    struct SignalSemaphore	hashtab_sema;	     /* hash_table arbitration semaphore */
+
 #define TFE_HASHTABSIZE   	16 /* This MUST be a power of two */
 
     /* TextFontExtension pool */

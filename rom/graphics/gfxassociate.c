@@ -63,27 +63,29 @@
 
 ******************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  IPTR *Hash = GfxBase -> hash_table;
-  ULONG Index = CalcHashIndex((ULONG)pointer);
+    IPTR *Hash = GfxBase -> hash_table;
+    ULONG Index = CalcHashIndex((ULONG)pointer);
 
-  /* Whatever structure we get as node we put the pointer in the space
-     following immediately after the ExtendedNode structure.
-     ViewExtra -> View          is equal to
-     ViewPortExtra -> ViewPort
-  */
+    /* Whatever structure we get as node we put the pointer in the space
+       following immediately after the ExtendedNode structure.
+       ViewExtra -> View          is equal to
+       ViewPortExtra -> ViewPort
+    */
 
-  ((struct ViewExtra *)node) -> View = pointer;
-        Forbid();
-          /* Insert the structure into a hash_list which is to be found
-             in the gfxlibrary */
-          if (0 != Hash[Index])
-            ((struct ExtendedNode *)Hash[Index]) -> xln_Pred = (struct Node *)node;
-          node -> xln_Succ = (struct Node *)Hash[Index];
-          node -> xln_Pred = (struct Node *)&Hash[Index];
-          Hash[Index] = (IPTR)node;
-        Permit();
+    ((struct ViewExtra *)node) -> View = pointer;
+    ObtainSemaphore(GfxBase->HashTableSemaphore);
 
-  AROS_LIBFUNC_EXIT
+    /* Insert the structure into a hash_list which is to be found
+       in the gfxlibrary */
+    if (0 != Hash[Index])
+        ((struct ExtendedNode *)Hash[Index]) -> xln_Pred = (struct Node *)node;
+    node -> xln_Succ = (struct Node *)Hash[Index];
+    node -> xln_Pred = (struct Node *)&Hash[Index];
+    Hash[Index] = (IPTR)node;
+
+    ReleaseSemaphore(GfxBase->HashTableSemaphore);
+
+    AROS_LIBFUNC_EXIT
 } /* GfxAssociate */
