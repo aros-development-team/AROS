@@ -76,6 +76,8 @@
        hashlist  */
     D(bug("[GfxFree] xln_Succ 0x%p, xln_Pred 0x%p\n", node->xln_Succ, node->xln_Pred));
 
+    ObtainSemaphore(GfxBase->HashTableSemaphore);
+
     /* if the element has a Successor */
     if (NULL != node -> xln_Succ)
       ((struct ExtendedNode *)(node -> xln_Succ)) -> xln_Pred = (struct Node *) (node -> xln_Pred);
@@ -84,6 +86,8 @@
     /* (the same code works also if the previous entry is the hashlist ) */
     if (node->xln_Pred)
         ((struct ExtendedNode *)(node -> xln_Pred)) -> xln_Succ = (struct Node *) (node -> xln_Succ);
+
+    ReleaseSemaphore(GfxBase->HashTableSemaphore);
 
     switch(node->xln_Subtype) {
     case VIEWPORT_EXTRA_TYPE:

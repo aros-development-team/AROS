@@ -54,6 +54,7 @@ static int GfxInit(struct GfxBase *LIBBASE)
     WORD i;
     
     NEWLIST(&LIBBASE->TextFonts);
+    InitSemaphore( &PrivGBase(GfxBase)->hashtab_sema );
     InitSemaphore( &PrivGBase(GfxBase)->tfe_hashtab_sema );
     InitSemaphore( &PrivGBase(GfxBase)->fontsem );
 
@@ -120,6 +121,7 @@ static int GfxOpen(struct GfxBase *LIBBASE)
                                            MEMF_CLEAR|MEMF_PUBLIC);
     if (!LIBBASE->hash_table)
 	return 0;
+    LIBBASE->HashTableSemaphore = &PrivGBase(GfxBase)->hashtab_sema;
 
     if(LIBBASE->LibNode.lib_OpenCnt == 0)
     {

@@ -68,17 +68,20 @@
      ViewPortExtra -> ViewPort
   */
 
+  ObtainSemaphoreShared(GfxBase->HashTableSemaphore);
+
   struct ExtendedNode * node = (struct ExtendedNode *)(Hash[Index]);
   while (NULL != node)
   {
     if (pointer == (void *) ((struct ViewExtra *)node)->View )
-      return node;
+      break;
     else
       /* examine the next element */
       node = (struct ExtendedNode *)node -> xln_Succ;
   }
-  /* no associated pointer was found! */
-  return NULL;
+  
+  ReleaseSemaphore(GfxBase->HashTableSemaphore);
+  return node;
 
   AROS_LIBFUNC_EXIT
 } /* GfxFree */
