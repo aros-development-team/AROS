@@ -219,10 +219,10 @@ STATIC CONST UBYTE hikeymaptypes[] =
 
 STATIC CONST IPTR lokeymap[] =
 {
-    BYTES('¬', '`', '¬', '`'), 		/* 00 Left of 1 Key */
+    BYTES('¬', '`', '~', '`'), 		/* 00 Left of 1 Key */
     BYTES('!', '1', '!', '1'), 		/* 01 1 */
-    BYTES('²', '²', '"', '2'), 		/* 02 2 */
-    BYTES('³', '³', '£', '3'), 		/* 03 3 */
+    BYTES('²', '²', '@', '2'), 		/* 02 2 */
+    BYTES('³', '³', '#', '3'), 		/* 03 3 */
     BYTES(EUR, EUR, '$', '4'),	 	/* 04 4 */
     BYTES('%', '5', '%', '5'), 		/* 05 5 */
     BYTES('^', '6', '^', '6'), 		/* 06 6 */
@@ -264,8 +264,8 @@ STATIC CONST IPTR lokeymap[] =
     BYTES(0xA3, 0xB3, 'L', 'l'), 		/* 28 */
     
     BYTES(':', ';', ':', ';'), 		/* 29 */
-    BYTES('@','\'', '@','\''), 	    	/* 2A */
-    BYTES('~', '#', '~', '#'),	    	/* 2B */
+    BYTES('"','\'', '"','\'''), 	    	/* 2A */
+    BYTES('~', '#', '|', '\\'),	    	/* 2B */
     BYTES(0, 0, 0, 0),			/* 2C undefined */
     BYTES('4', '4', '4', '4'),		/* 2D NUM 4 */
     BYTES('5', '5', '5', '5'), 		/* 2E NUM 5 */
