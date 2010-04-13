@@ -147,9 +147,6 @@ static int X11_Init(LIBBASETYPEPTR LIBBASE)
 		struct x11task_params 	 xtp;
 		struct Task 	    	*x11task;
 
-		xsd->screen = XCALL(XDefaultScreen, xsd->display);
-		xsd->rootwin = XCALL(XRootWindow, xsd->display, xsd->screen);
-		xsd->res = XRRCALL(XRRGetScreenResources, xsd->display, xsd->rootwin);
 
 #if DEBUG_X11_SYNCHRON
 		XCALL(XSynchronize, xsd->display, True);
