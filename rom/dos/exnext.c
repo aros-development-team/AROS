@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -41,8 +41,8 @@
 
     NOTES
 
-    If scanning a filesystem tree recursively, you'll need to allocated a
-    new FilInfoBlock for each directory level.
+    If scanning a filesystem tree recursively, you'll need to allocate a
+    new FileInfoBlock for each directory level.
 
     EXAMPLE
 
@@ -57,9 +57,6 @@
 	to make sure that there was no real failure (ERROR_NO_MORE_ENTRIES).
 
     BUGS
-        At the moment it is necessary that the lock passed to this
-        function is a directory(!!) that has previously been 
-        assigned (i.e. assign env: env).
 
     SEE ALSO
 
