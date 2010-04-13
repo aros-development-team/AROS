@@ -1,4 +1,4 @@
-## version $VER: IControl.catalog 1.2 (7.12.2007)
+## version $VER: IControl.catalog 1.3 (13.4.2010)
 ## language czech
 ## codeset 5
 ;
@@ -16,7 +16,7 @@ Nelze vytvoøit po¾adovanou tøídu objektu.
 ; Can't create custom preferenceswindow class
 ;
 MSG_WINTITLE
-Vzhled programù (editor IControl)
+Vzhled a chování rozhraní (editor IControl)
 ; IControl Preferences
 ;
 MSG_MEN_PROJECT
@@ -104,7 +104,7 @@ Okna
 ; Windows
 ;
 MSG_OFFSCREEN_MOVE
-Pøesun oken mimo plochu
+Povolit pøesun oken mimo plochu
 ; Offscreen move:
 ;
 MSG_SCREENS
@@ -112,14 +112,18 @@ Obrazovky
 ; Screens
 ;
 MSG_FRONTMOST_DEFAULT
-Aktivní obrazovka = výchozí veøejná
+Nastavit aktivní obrazovku jako výchozí
 ; Frontmost set as DefaultPubScreen:
 ;
 MSG_OFFSCREEN_DESC
-Povolit vysunutí oken mimo viditelnou\nplochu obrazovky
+Umo¾ní vysunování oken mimo viditelnou\nplochu obrazovky
 ; Allow windows to be moved out of\nthe visible area
 ;
 MSG_FRONTMOST_DEFAULT_DESC
-Pøiøadit právì aktivní obrazovce funkci\nvýchozí veøejné obrazovky
+Pøiøadí právì aktivní obrazovce funkci\nvýchozí veøejné obrazovky
 ; Make the frontmost public screen\nthe default public screen
+;
+MSG_BACKWARDS_DRAG
+Zakázat pøesun obrazovky smìrem nahoru doleva
+; Disable drag in top-left direction
 ;
