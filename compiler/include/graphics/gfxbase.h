@@ -53,7 +53,7 @@ struct GfxBase
     struct List       TextFonts;
     struct TextFont * DefaultFont;			/* System default font */
 
-    UWORD Modes;					/* Modes of current display (copy of ActiView->Modes) */
+    UWORD Modes;					/* Modes of current display (taken from ActiView->Modes) */
     BYTE  VBlank;
     BYTE  Debug;
     WORD  BeamSync;
@@ -107,8 +107,8 @@ struct GfxBase
 
     struct MonitorSpec     * current_monitor;		/* MonitorSpec used for current display   */
     struct List              MonitorList;		/* List of all MonitorSpecs in the system */
-    struct MonitorSpec     * default_monitor;		/* MonitorSpec of default.monitor	  */
-    struct SignalSemaphore * MonitorListSemaphore;	/* MonitorList arbiter			  */
+    struct MonitorSpec     * default_monitor;		/* MonitorSpec of "default.monitor"	  */
+    struct SignalSemaphore * MonitorListSemaphore;	/* Semaphore for MonitorList access       */
 
     VOID                   * DisplayInfoDataBase;
     UWORD                    TopLine;
@@ -150,18 +150,21 @@ struct GfxBase
     UWORD GfxFlags;
     ULONG VBCounter;
 
-    struct SignalSemaphore * HashTableSemaphore;	/* hash_table arbiter */
+    struct SignalSemaphore * HashTableSemaphore;	/* Semaphore for hash_table access, private in fact */
     ULONG                  * HWEmul[9];
 };
 #define ChunkyToPlanarPtr HWEmul[0];
 
-/* DisplayFlags */
-#define NTSC             (1<<0)
-#define GENLOC           (1<<1)
-#define PAL              (1<<2)
+/* DisplayFlags
+ * 
+ * Specify some system-wide options for Amiga(tm) chipset
+ */
+#define NTSC             (1<<0) /* Default mode is NTSC */
+#define GENLOC           (1<<1) /* Genlock is in use	*/
+#define PAL              (1<<2) /* Default mode is PAL  */
 #define TODA_SAFE        (1<<3)
 #define REALLY_PAL       (1<<4)
-#define LPEN_SWAP_FRAMES (1<<5)
+#define LPEN_SWAP_FRAMES (1<<5) /* When light pen is being used on interlaced screens, swap even and odd frames */
 
 /* ChipRevBits */
 #define GFXB_BIG_BLITS     0
