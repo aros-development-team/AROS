@@ -84,17 +84,9 @@
 
   vpe = GfxLookUp(vp);
   D(bug("[FreeVPortCopLists] ViewPort 0x%p, ViewPortExtra 0x%p\n", vp, vpe));
-  if (vpe) {
-    if (VPE_BITMAP(vpe)) {
-        D(bug("[FReeVPortCopLists] Releasing bitmap object 0x%p\n", VPE_BITMAP(vpe)));
-        RELEASE_HIDD_BM(VPE_BITMAP(vpe), vp->RasInfo->BitMap);
-	VPE_BITMAP(vpe) = NULL;
-    }
-
-    if (vpe->Flags & VPXF_FREE_ME) {
-        D(bug("[FreeVPortCopLists] Freeing temporary ViewPortExtra\n"));
-        GfxFree(vpe);
-    }
+  if (vpe && (vpe->Flags & VPXF_FREE_ME)) {
+    D(bug("[FreeVPortCopLists] Freeing temporary ViewPortExtra\n"));
+    GfxFree(vpe);
   }
 
   AROS_LIBFUNC_EXIT
