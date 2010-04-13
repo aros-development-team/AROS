@@ -15,6 +15,8 @@
 
 #include <exec/types.h>
 
+#include <aros/bootloader.h>
+#include <proto/bootloader.h>
 #include <proto/exec.h>
 #include <proto/oop.h>
 
@@ -146,7 +148,7 @@ static int X11_Init(LIBBASETYPEPTR LIBBASE)
     {
 		struct x11task_params 	 xtp;
 		struct Task 	    	*x11task;
-
+		APTR BootLoaderBase;
 
 #if DEBUG_X11_SYNCHRON
 		XCALL(XSynchronize, xsd->display, True);
@@ -154,25 +156,31 @@ static int X11_Init(LIBBASETYPEPTR LIBBASE)
 		XCALL(XSetErrorHandler, MyErrorHandler);
 		XCALL(XSetIOErrorHandler, MySysErrorHandler);
 
+		BootLoaderBase = OpenResource("bootloader.resource");
+
         /*
-         * XXX on my system, getenv() is declared:
-         *
-         * extern char *getenv (__const char *__name) __THROW __nonnull ((1)) * __wur;
-         *
-         * the attributes appear to change the calling convention, so a naive
-         * prototype like char *getenv(char *) causes carshes as the returned
-         * address is not a valid pointer.
-         *
-         * ideally this configration variable would be brought in via a
-         * bootloader.resource, which hosted doesn't have yet
-         */
-        /*
-		if (getenv, "AROS_X11_FULLSCREEN")
-		{
-			xsd->fullscreen = x11_fullscreen_supported(xsd->display);
-		}
+		 *	Argument parsing from bootloader.resource 
         */
-	
+
+		if (BootLoaderBase)
+		{
+			struct List *args;
+			struct Node *n;
+			args = GetBootInfo(BL_Args);
+			if (args) {
+				for (n = args->lh_Head; n->ln_Succ; n = n->ln_Succ)
+				{
+					/* do we have fullscreen flag ? */
+					if(!strcmp("-fullscreen", n->ln_Name))
+					{
+						/*xsd->fullscreen = x11_fullscreen_supported(xsd->display);*/
+						/* Force fullscreen. */
+						xsd->fullscreen = TRUE;
+					}
+				}
+			}
+        }
+        
 		xsd->delete_win_atom         = XCALL(XInternAtom, xsd->display, "WM_DELETE_WINDOW", FALSE);
 		xsd->clipboard_atom          = XCALL(XInternAtom, xsd->display, "CLIPBOARD", FALSE);
 		xsd->clipboard_property_atom = XCALL(XInternAtom, xsd->display, "AROS_HOSTCLIP", FALSE);
