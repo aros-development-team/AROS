@@ -16,6 +16,7 @@
 #include <X11/Xlib.h>
 #include <X11/cursorfont.h>
 #include <X11/Xutil.h>
+#include <X11/extensions/Xrandr.h>
 
 #include <signal.h>
 #include <string.h>
@@ -86,232 +87,182 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 {
     struct TagItem pftags[] =
     {
-    	{ aHidd_PixFmt_RedShift     , 0	    }, /* 0 */
-	{ aHidd_PixFmt_GreenShift   , 0	    }, /* 1 */
-	{ aHidd_PixFmt_BlueShift    , 0	    }, /* 2 */
-	{ aHidd_PixFmt_AlphaShift   , 0	    }, /* 3 */
-	{ aHidd_PixFmt_RedMask	    , 0	    }, /* 4 */
-	{ aHidd_PixFmt_GreenMask    , 0	    }, /* 5 */
-	{ aHidd_PixFmt_BlueMask     , 0	    }, /* 6 */
-	{ aHidd_PixFmt_AlphaMask    , 0	    }, /* 7 */
-	{ aHidd_PixFmt_ColorModel   , 0	    }, /* 8 */
-	{ aHidd_PixFmt_Depth	    , 0	    }, /* 9 */
-	{ aHidd_PixFmt_BytesPerPixel, 0	    }, /* 10 */
-	{ aHidd_PixFmt_BitsPerPixel , 0	    }, /* 11 */
-	{ aHidd_PixFmt_StdPixFmt    , 0	    }, /* 12 */
-	{ aHidd_PixFmt_CLUTShift    , 0	    }, /* 13 */
-	{ aHidd_PixFmt_CLUTMask     , 0	    }, /* 14 */ 
-	{ aHidd_PixFmt_BitMapType   , 0	    }, /* 15 */   
-	{ TAG_DONE  	    	    , 0UL   }
+		{ aHidd_PixFmt_RedShift     , 0	    }, /* 0 */
+		{ aHidd_PixFmt_GreenShift   , 0	    }, /* 1 */
+		{ aHidd_PixFmt_BlueShift    , 0	    }, /* 2 */
+		{ aHidd_PixFmt_AlphaShift   , 0	    }, /* 3 */
+		{ aHidd_PixFmt_RedMask	    , 0	    }, /* 4 */
+		{ aHidd_PixFmt_GreenMask    , 0	    }, /* 5 */
+		{ aHidd_PixFmt_BlueMask     , 0	    }, /* 6 */
+		{ aHidd_PixFmt_AlphaMask    , 0	    }, /* 7 */
+		{ aHidd_PixFmt_ColorModel   , 0	    }, /* 8 */
+		{ aHidd_PixFmt_Depth	    , 0	    }, /* 9 */
+		{ aHidd_PixFmt_BytesPerPixel, 0	    }, /* 10 */
+		{ aHidd_PixFmt_BitsPerPixel , 0	    }, /* 11 */
+		{ aHidd_PixFmt_StdPixFmt    , 0	    }, /* 12 */
+		{ aHidd_PixFmt_CLUTShift    , 0	    }, /* 13 */
+		{ aHidd_PixFmt_CLUTMask     , 0	    }, /* 14 */ 
+		{ aHidd_PixFmt_BitMapType   , 0	    }, /* 15 */   
+		{ TAG_DONE  	    	    , 0UL   }
     };
-    
-    struct TagItem tags_160_160[] =
-    {
-    	{ aHidd_Sync_HDisp  	, 160 	    	    	},
-	{ aHidd_Sync_VDisp  	, 160 	    	    	},
-	{ aHidd_Sync_Description, (IPTR)"X11:160x160" 	},
-	{ TAG_DONE  	    	, 0UL 	    	    	}
-    };
-    
-    struct TagItem tags_240_320[] =
-    {
-    	{ aHidd_Sync_HDisp  	, 240 	    	    	},
-	{ aHidd_Sync_VDisp  	, 320 	    	    	},
-	{ aHidd_Sync_Description, (IPTR)"X11:240x320" 	},
-	{ TAG_DONE  	    	, 0UL 	    	    	} 
-    };
+     
+	struct TagItem *mode_tags;
 
-    struct TagItem tags_320_240[] = 
-    {
-    	{ aHidd_Sync_HDisp  	, 320 	    	    	},
-	{ aHidd_Sync_VDisp  	, 240 	    	    	},
-	{ aHidd_Sync_Description, (IPTR)"X11:320x240" 	},
-	{ TAG_DONE  	    	, 0UL 	    	    	}
-    };
-
-    struct TagItem tags_512_384[] = 
-    {
-    	{ aHidd_Sync_HDisp  	, 512 	    	    	},
-	{ aHidd_Sync_VDisp  	, 384 	    	    	},
-	{ aHidd_Sync_Description, (IPTR)"X11:512x384" 	},
-	{ TAG_DONE  	    	, 0UL 	    	    	}
-    };
-
-    struct TagItem tags_640_480[] = 
-    {
-    	{ aHidd_Sync_HDisp  	, 640 	    	    	},
-	{ aHidd_Sync_VDisp  	, 480 	    	    	},
-	{ aHidd_Sync_Description, (IPTR)"X11:640x480" 	},
-	{ TAG_DONE  	    	, 0UL 	    	    	}
-    };
-
-    struct TagItem tags_800_600[] = 
-    {
-    	{ aHidd_Sync_HDisp  	, 800 	    	    	},
-	{ aHidd_Sync_VDisp  	, 600 	    	    	},
-	{ aHidd_Sync_Description, (IPTR)"X11:800x600" 	},
-	{ TAG_DONE  	    	, 0UL 	    	    	}
-    };
-
-    struct TagItem tags_1024_768[] = 
-    {
-    	{ aHidd_Sync_HDisp  	, 1024      	    	},
-	{ aHidd_Sync_VDisp  	, 768       	    	},
-	{ aHidd_Sync_Description, (IPTR)"X11:1024x768"  },
-	{ TAG_DONE  	    	, 0UL       	    	}
-    };
-    
-    struct TagItem tags_1152_864[] = 
-    {
-    	{ aHidd_Sync_HDisp  	, 1152      	    	},
-	{ aHidd_Sync_VDisp  	, 864       	    	},
-	{ aHidd_Sync_Description, (IPTR)"X11:1152x864"  },
-	{ TAG_DONE  	    	, 0UL       	    	}
-    };
-    
-    struct TagItem tags_1280_800[] =
-    {
-        { aHidd_Sync_HDisp      , 1280                  },
-        { aHidd_Sync_VDisp      , 800                   },
-        { aHidd_Sync_Description, (IPTR)"X11:1280x800"  },
-        { TAG_DONE              , 0UL                   }
-    };
-
-    struct TagItem tags_1280_960[] = 
-    {
-    	{ aHidd_Sync_HDisp  	, 1280      	    	},
-	{ aHidd_Sync_VDisp  	, 960       	    	},
-	{ aHidd_Sync_Description, (IPTR)"X11:1280x960"  },
-	{ TAG_DONE  	    	, 0UL       	    	}
-    };
-    
-    struct TagItem tags_1280_1024[] =
-    {
-    	{ aHidd_Sync_HDisp  	, 1280      	    	},
-	{ aHidd_Sync_VDisp  	, 1024      	    	},
-	{ aHidd_Sync_Description, (IPTR)"X11:1280x1024" },
-	{ TAG_DONE  	    	, 0UL       	    	}
-    };
-
-    struct TagItem tags_1400_1050[] = 
-    {
-    	{ aHidd_Sync_HDisp  	, 1400      	    	},
-	{ aHidd_Sync_VDisp  	, 1050       	    	},
-	{ aHidd_Sync_Description, (IPTR)"X11:1400x1050"  },
-	{ TAG_DONE  	    	, 0UL       	    	}
-    };
-    
-    struct TagItem tags_1600_1200[] = 
-    {
-    	{ aHidd_Sync_HDisp  	, 1600      	    	},
-	{ aHidd_Sync_VDisp  	, 1200      	    	},
-	{ aHidd_Sync_Description, (IPTR)"X11:1600x1200" },
-	{ TAG_DONE  	    	, 0UL       	    	}
-    };
-    
-    struct TagItem tags_1680_1050[] =
-    {
-        { aHidd_Sync_HDisp      , 1680                  },
-        { aHidd_Sync_VDisp      , 1050                  },
-        { aHidd_Sync_Description, (IPTR)"X11:1680x1050" },
-        { TAG_DONE              , 0UL                   }
-    };
-
-    struct TagItem tags_1920_1080[] =
-    {
-        { aHidd_Sync_HDisp      , 1920                  },
-        { aHidd_Sync_VDisp      , 1080                  },
-        { aHidd_Sync_Description, (IPTR)"X11:1920x1080" },
-        { TAG_DONE              , 0UL                   }
-    };
-
-    struct TagItem tags_1920_1200[] =
-    {
-        { aHidd_Sync_HDisp      , 1920                  },
-        { aHidd_Sync_VDisp      , 1200                  },
-        { aHidd_Sync_Description, (IPTR)"X11:1920x1200" },
-        { TAG_DONE              , 0UL                   }
-    };
-
-    struct TagItem mode_tags[] =
-    {
-	{ aHidd_Gfx_PixFmtTags	, (IPTR)pftags		},
-	
-	/* Default values for the sync attributes */
-	{ aHidd_Sync_PixelClock , 100000000	    	}, /* Oh boy,  this X11 pixelclock is fast ;-) */
-	{ aHidd_Sync_LeftMargin , 0		    	},
-	{ aHidd_Sync_RightMargin, 0		    	},
-	{ aHidd_Sync_HSyncLength, 0		    	},
-	{ aHidd_Sync_UpperMargin, 0		    	},
-	{ aHidd_Sync_LowerMargin, 0		    	},
-	{ aHidd_Sync_VSyncLength, 0		    	},
-	
-	/* The different syncmodes. The default attribute values above 
-	    will be applied to each of these. Note that
-	    you can alter the defaults between the tags bewlow 
-	*/
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_160_160	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_240_320	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_320_240	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_512_384	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_640_480	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_800_600	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1024_768	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1152_864	},
-    { aHidd_Gfx_SyncTags    , (IPTR)tags_1280_800   },
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1280_960	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1280_1024	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1400_1050	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1600_1200	},
-    { aHidd_Gfx_SyncTags    , (IPTR)tags_1680_1050  },
-    { aHidd_Gfx_SyncTags    , (IPTR)tags_1920_1080  },
-    { aHidd_Gfx_SyncTags    , (IPTR)tags_1920_1200  },
-	{ TAG_DONE  	    	, 0UL 	    	    	}
-    };
-    
     struct TagItem mytags[] =
     {
-	{ aHidd_Gfx_ModeTags	, (IPTR)mode_tags	},
-	{ TAG_MORE  	    	, (IPTR)msg->attrList 	}
+		{ aHidd_Gfx_ModeTags	, (IPTR)mode_tags		},
+		{ TAG_MORE  	    	, (IPTR)msg->attrList 	}
     };
+ 
     struct pRoot_New mymsg = { msg->mID, mytags };
 
+	struct TagItem *resolution;
+	XRRScreenResources *res;
+	ULONG i, realmode, screen;
+	Display *disp;
+	Window rootwin;
+	
     EnterFunc(bug("X11Gfx::New()\n"));
 
     /* Do GfxHidd initalization here */
     if (!initx11stuff(XSD(cl)))
     {
-	kprintf("!!! initx11stuff() FAILED IN X11Gfx::New() !!!\n");
-	ReturnPtr("X11Gfx::New()", OOP_Object *, NULL);
+		kprintf("!!! initx11stuff() FAILED IN X11Gfx::New() !!!\n");
+		ReturnPtr("X11Gfx::New()", OOP_Object *, NULL);
     }
+    
+	/* Get supported X11 resolution from RandR resources */
 	
-    /* Register gfxmodes */
-    pftags[0].ti_Data = XSD(cl)->red_shift;
-    pftags[1].ti_Data = XSD(cl)->green_shift;
-    pftags[2].ti_Data = XSD(cl)->blue_shift;
-    pftags[3].ti_Data = 0;
+    disp = XCALL(XOpenDisplay, NULL);
+	screen = XCALL(XDefaultScreen, disp);	
+ 	rootwin = XCALL(XRootWindow, disp, screen);
+	res = XRRCALL(XRRGetScreenResources, disp, rootwin);
+
+    if((resolution = AllocMem(res->nmode * sizeof(struct TagItem) * 4, MEMF_PUBLIC)) == NULL)
+    {
+		XRRCALL(XRRFreeScreenResources, res);
+		XCALL(XCloseDisplay, disp);
+		kprintf("!!! Couldn't allocate resolution memory in X11Gfx:New(): %d !!!\n", XSD(cl)->vi.class);
+		cleanupx11stuff(XSD(cl));
+		ReturnPtr("X11Gfx::New", OOP_Object *, NULL);		
+	}
+
+	realmode = 0;
+	
+	for(i = 0; i < res->nmode; i++)
+	{
+		XRRModeInfo *mode;
+		ULONG j;
+		BOOL insert;
+		
+		mode = &res->modes[i];
+		insert = TRUE;
+
+		/* avoid duplicated resolution */
+		for(j = 0; j < realmode; j++)
+		{
+			if(resolution[j * 4].ti_Data == mode->width && resolution[j * 4 + 1].ti_Data == mode->height)
+			{ /* Found a matching resolution. Don't insert ! */
+				insert = FALSE;
+			}
+		}
+		
+		if(insert)
+		{
+			resolution[realmode * 4 + 0].ti_Tag = aHidd_Sync_HDisp;
+			resolution[realmode * 4 + 0].ti_Data = mode->width;
+	
+			resolution[realmode * 4 + 1].ti_Tag = aHidd_Sync_VDisp;
+			resolution[realmode * 4 + 1].ti_Data = mode->height;
+			
+			resolution[realmode * 4 + 2].ti_Tag = aHidd_Sync_Description;
+			resolution[realmode * 4 + 2].ti_Data = (IPTR)mode->name;
+
+			resolution[realmode * 4 + 3].ti_Tag = TAG_DONE;
+			resolution[realmode * 4 + 3].ti_Data = 0UL;
+			
+			realmode++;
+		}
+	}
+											
+	if((mode_tags = AllocMem(sizeof(struct TagItem) * (realmode + 9), MEMF_PUBLIC)) == NULL)
+	{	
+		FreeMem(resolution, res->nmode * sizeof(struct TagItem) * 4);
+		XRRCALL(XRRFreeScreenResources, res);
+		XCALL(XCloseDisplay, disp);
+		kprintf("!!! Couldn't allocate mode_tags memory in X11Gfx:New(): %d !!!\n", XSD(cl)->vi.class);
+		cleanupx11stuff(XSD(cl));
+		ReturnPtr("X11Gfx::New", OOP_Object *, NULL);
+	}
+
+	mode_tags[0].ti_Tag = aHidd_Gfx_PixFmtTags;
+	mode_tags[0].ti_Data = (IPTR)pftags;
+
+	/* Default values for the sync attributes */
+	mode_tags[1].ti_Tag = aHidd_Sync_PixelClock;
+	mode_tags[1].ti_Data = 100000000;  /* Oh boy,  this X11 pixelclock is fast ;-) */
+	
+	mode_tags[2].ti_Tag = aHidd_Sync_LeftMargin;
+	mode_tags[2].ti_Data = 0; 
+
+	mode_tags[3].ti_Tag = aHidd_Sync_RightMargin;
+	mode_tags[3].ti_Data = 0;
+	
+	mode_tags[4].ti_Tag = aHidd_Sync_HSyncLength;
+	mode_tags[4].ti_Data = 0;
+	
+	mode_tags[5].ti_Tag = aHidd_Sync_UpperMargin;
+	mode_tags[5].ti_Data = 0;
+	
+	mode_tags[6].ti_Tag = aHidd_Sync_LowerMargin;
+	mode_tags[6].ti_Data = 0;
+	
+	mode_tags[7].ti_Tag = aHidd_Sync_VSyncLength;
+	mode_tags[7].ti_Data = 0;
+	
+	/* The different syncmodes coming from RandR. */
+	for(i=0; i < realmode; i++)
+	{
+		mode_tags[8 + i].ti_Tag = aHidd_Gfx_SyncTags;
+		mode_tags[8 + i].ti_Data = resolution + i*4;
+	}
+	
+	mode_tags[8 + i].ti_Tag = TAG_DONE;
+	mode_tags[8 + i].ti_Data = 0UL;
+
+	mytags[0].ti_Data = (IPTR)mode_tags;
+	
+	/* Register gfxmodes */
+	pftags[0].ti_Data = XSD(cl)->red_shift;
+	pftags[1].ti_Data = XSD(cl)->green_shift;
+	pftags[2].ti_Data = XSD(cl)->blue_shift;
+	pftags[3].ti_Data = 0;
 	    
-    pftags[4].ti_Data = XSD(cl)->vi.red_mask;
-    pftags[5].ti_Data = XSD(cl)->vi.green_mask;
-    pftags[6].ti_Data = XSD(cl)->vi.blue_mask;
-    pftags[7].ti_Data = 0x00000000;
+	pftags[4].ti_Data = XSD(cl)->vi.red_mask;
+	pftags[5].ti_Data = XSD(cl)->vi.green_mask;
+	pftags[6].ti_Data = XSD(cl)->vi.blue_mask;
+	pftags[7].ti_Data = 0x00000000;
 	    
-    if (XSD(cl)->vi.class == TrueColor)
-    {
-        pftags[8].ti_Data = vHidd_ColorModel_TrueColor;
-    }
-    else if (XSD(cl)->vi.class == PseudoColor)
-    {
-	pftags[8].ti_Data = vHidd_ColorModel_Palette;
-        pftags[13].ti_Data = XSD(cl)->clut_shift;
-	pftags[14].ti_Data = XSD(cl)->clut_mask;		
-    }
-    else
-    {
-	kprintf("!!! UNHANDLED COLOR MODEL IN X11Gfx:New(): %d !!!\n", XSD(cl)->vi.class);
-	cleanupx11stuff(XSD(cl));
-	ReturnPtr("X11Gfx::New", OOP_Object *, NULL);
-    }
+	if (XSD(cl)->vi.class == TrueColor)
+	{
+		pftags[8].ti_Data = vHidd_ColorModel_TrueColor;
+	}	
+	else if (XSD(cl)->vi.class == PseudoColor)
+	{
+		pftags[8].ti_Data = vHidd_ColorModel_Palette;
+		pftags[13].ti_Data = XSD(cl)->clut_shift;
+		pftags[14].ti_Data = XSD(cl)->clut_mask;		
+	}
+	else
+	{
+		FreeMem(resolution, res->nmode * sizeof(struct TagItem) * 4);
+		FreeMem(mode_tags, sizeof(struct TagItem) * (realmode + 9));
+		XRRCALL(XRRFreeScreenResources, res);
+		XCALL(XCloseDisplay, disp);
+		kprintf("!!! UNHANDLED COLOR MODEL IN X11Gfx:New(): %d !!!\n", XSD(cl)->vi.class);
+		cleanupx11stuff(XSD(cl));
+		ReturnPtr("X11Gfx::New", OOP_Object *, NULL);
+	}
 	    
     pftags[9].ti_Data = XSD(cl)->depth;
     pftags[10].ti_Data = XSD(cl)->bytes_per_pixel;
@@ -324,42 +275,48 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     pftags[15].ti_Data = vHidd_BitMapType_Chunky;
 
     D(bug("Calling super method\n"));
-
+	
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
-
+	
     D(bug("Super method called\n"));
+
+	/* Don't free them before, strings used inside XModeInfo from XRRScreenResources */
+	FreeMem(resolution, res->nmode * sizeof(struct TagItem) * 4);
+	FreeMem(mode_tags, sizeof(struct TagItem) * (realmode + 9));
+	XRRCALL(XRRFreeScreenResources, res);
+	XCALL(XCloseDisplay, disp);
 
     if (NULL != o)
     {
-	XColor      	 bg, fg;
-	struct gfx_data *data = OOP_INST_DATA(cl, o);
+		XColor      	 bg, fg;
+		struct gfx_data *data = OOP_INST_DATA(cl, o);
 	
     	LOCK_X11
-	data->display	= XSD(cl)->display;
-	data->screen	= DefaultScreen( data->display );
-	data->depth	= DisplayPlanes( data->display, data->screen );
-	data->colmap	= DefaultColormap( data->display, data->screen );
+		data->display	= XSD(cl)->display;
+		data->screen	= DefaultScreen( data->display );
+		data->depth	= DisplayPlanes( data->display, data->screen );
+		data->colmap	= DefaultColormap( data->display, data->screen );
         D(bug("x11_func.XCreateFontCursor(%x), display(%x)\n", x11_func.XCreateFontCursor, data->display));
-	/* Create cursor */
+		/* Create cursor */
         data->cursor = XCALL(XCreateFontCursor,  data->display, XC_top_left_arrow);
 
-	fg.pixel = BlackPixel(data->display, data->screen);
-	fg.red = 0x0000; fg.green = 0x0000; fg.blue = 0x0000;
-	fg.flags = (DoRed | DoGreen | DoBlue);
-	bg.pixel = WhitePixel(data->display, data->screen);
-	bg.red = 0xFFFF; bg.green = 0xFFFF; bg.blue = 0xFFFF;
-	bg.flags = (DoRed | DoGreen | DoBlue);
+		fg.pixel = BlackPixel(data->display, data->screen);
+		fg.red = 0x0000; fg.green = 0x0000; fg.blue = 0x0000;
+		fg.flags = (DoRed | DoGreen | DoBlue);
+		bg.pixel = WhitePixel(data->display, data->screen);
+		bg.red = 0xFFFF; bg.green = 0xFFFF; bg.blue = 0xFFFF;
+		bg.flags = (DoRed | DoGreen | DoBlue);
 
-	XCALL(XRecolorCursor, data->display, data->cursor, &fg, &bg);
+		XCALL(XRecolorCursor, data->display, data->cursor, &fg, &bg);
 	
-	switch(DoesBackingStore(ScreenOfDisplay(data->display, data->screen)))
-	{
-	    case WhenMapped:
-   	    case Always:
-	    	break;
+		switch(DoesBackingStore(ScreenOfDisplay(data->display, data->screen)))
+		{
+			case WhenMapped:
+			case Always:
+				break;
 		
-	    case NotUseful:
-	    	bug("\n"
+			case NotUseful:
+				bug("\n"
 		    "+----------------------------------------------------------|\n"
 		    "| Your X Server seems to have backing store disabled!      |\n"
 		    "| ===================================================      |\n"
@@ -385,15 +342,15 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 		    "\n");
 	    	break;
 		
-	}
+		}
 	
-    	UNLOCK_X11
+   		UNLOCK_X11
 	
-	D(bug("X11Gfx::New(): Got object from super\n"));
+		D(bug("X11Gfx::New(): Got object from super\n"));
 
-	data->display = XSD(cl)->display;
-	
+		data->display = XSD(cl)->display;
     }
+   
     ReturnPtr("X11Gfx::New", OOP_Object *, o);
 }
 
