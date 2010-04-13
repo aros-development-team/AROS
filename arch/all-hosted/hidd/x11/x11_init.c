@@ -171,7 +171,7 @@ static int X11_Init(LIBBASETYPEPTR LIBBASE)
 				for (n = args->lh_Head; n->ln_Succ; n = n->ln_Succ)
 				{
 					/* do we have fullscreen flag ? */
-					if(!strcmp("-fullscreen", n->ln_Name))
+					if(!strcmp("--fullscreen", n->ln_Name))
 					{
 						/*xsd->fullscreen = x11_fullscreen_supported(xsd->display);*/
 						/* Force fullscreen. */
