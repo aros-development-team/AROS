@@ -12,11 +12,20 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+void *xrandr_handle = NULL;
 void *x11_handle = NULL;
 void *libc_handle = NULL;
 
+struct xrandr_func xrandr_func;
 struct x11_func x11_func;
 struct libc_func libc_func;
+
+static const char *xrandr_func_names[] = {
+	"XRRGetScreenResources", 
+	"XRRFreeScreenResources"
+};
+
+#define XRANDR_NUM_FUNCS (2)
 
 static const char *x11_func_names[] = {
     "XCreateImage",
@@ -93,17 +102,20 @@ static const char *x11_func_names[] = {
     "XSync",
     "XAllocColor",
     "XLookupString",
-    "XQueryExtension"
+    "XQueryExtension",
+    "XDefaultScreen",
+    "XRootWindow"
 #if DEBUG_X11_SYNCHRON
     , "XSynchronize"
 #endif
 };
 
 #if DEBUG_X11_SYNCHRON
-#define X11_NUM_FUNCS (76)
+#define X11_NUM_FUNCS (78)
 #else
-#define X11_NUM_FUNCS (75)
+#define X11_NUM_FUNCS (77)
 #endif
+
 
 static const char *libc_func_names[] = {
 #if USE_XSHM
@@ -140,7 +152,7 @@ void *x11_hostlib_load_so(const char *sofile, const char **names, int nfuncs, vo
         funcptr[i] = HostLib_GetPointer(handle, names[i], &err);
         D(bug("%s(%x)\n", names[i], funcptr[i]));
         if (err != NULL) {
-            kprintf("[x11] couldn't get symbol '%s' from '%s': %s\n");
+            kprintf("[x11] couldn't get symbol '%s' from '%s': %s\n", names[i], sofile, err);
             HostLib_Close(handle, NULL);
             return NULL;
         }
@@ -159,6 +171,9 @@ static int x11_hostlib_init(LIBBASETYPEPTR LIBBASE) {
         return FALSE;
     }
 
+    if ((xrandr_handle = x11_hostlib_load_so(XRANDR_SOFILE, xrandr_func_names, XRANDR_NUM_FUNCS, (void **) &xrandr_func)) == NULL)
+        return FALSE;
+
     if ((x11_handle = x11_hostlib_load_so(X11_SOFILE, x11_func_names, X11_NUM_FUNCS, (void **) &x11_func)) == NULL)
         return FALSE;
 
@@ -172,6 +187,9 @@ static int x11_hostlib_init(LIBBASETYPEPTR LIBBASE) {
 
 static int x11_hostlib_expunge(LIBBASETYPEPTR LIBBASE) {
     D(bug("[x11] hostlib expunge\n"));
+
+    if (xrandr_handle != NULL)
+        HostLib_Close(xrandr_handle, NULL);
 
     if (x11_handle != NULL)
         HostLib_Close(x11_handle, NULL);

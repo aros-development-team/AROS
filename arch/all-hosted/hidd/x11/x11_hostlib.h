@@ -4,6 +4,7 @@
 #include <aros/config.h>
 
 #include <X11/Xlib.h>
+#include <X11/extensions/Xrandr.h>
 
 #if USE_XSHM
 #include <sys/types.h>
@@ -13,6 +14,11 @@
 // Set to 1 if you want to disable the asynchronic nature of the X11 HIDD.
 // This makes it easier to find the real reason of a misbehavior.
 #define DEBUG_X11_SYNCHRON 0
+
+struct xrandr_func {
+	XRRScreenResources* (*XRRGetScreenResources) (Display*, Window);
+	void (*XRRFreeScreenResources) (XRRScreenResources*);	
+};
 
 struct x11_func {
     XImage * (*XCreateImage) ( Display* , Visual* , unsigned int , int , int , char* , unsigned int , unsigned int , int , int );
@@ -90,6 +96,8 @@ struct x11_func {
     int (*XAllocColor) ( Display* , Colormap , XColor* );
     int (*XLookupString) ( XKeyEvent* , char* , int , KeySym* , XComposeStatus* );
     int (*XQueryExtension) (Display *, char*, int*, int*, int*);
+    int (*XDefaultScreen) (Display *);
+    Window (*XRootWindow) (Display *, int);
 #if DEBUG_X11_SYNCHRON
     void (*XSynchronize)(Display *, Bool );
 #endif
@@ -106,6 +114,9 @@ struct libc_func {
     int (*raise) (int);
 };
 
+extern void *xrandr_handle;
+extern struct xrandr_func xrandr_func;
+
 extern void *x11_handle;
 extern struct x11_func x11_func;
 
@@ -113,13 +124,16 @@ extern void *libc_handle;
 extern struct libc_func libc_func;
 
 #if defined __FreeBSD__
+#	define XRANDR_SOFILE "libXrandr.so" 
 #   define X11_SOFILE   "libX11.so"
 #   define LIBC_SOFILE  "libc.so"
 #else
+#	define XRANDR_SOFILE "libXrandr.so.2"
 #   define X11_SOFILE  "libX11.so.6"
 #   define LIBC_SOFILE "libc.so.6"
 #endif
 
+#define XRRCALL(func,...) (xrandr_func.func(__VA_ARGS__))
 #define XCALL(func,...) (x11_func.func(__VA_ARGS__))
 #define CCALL(func,...) (libc_func.func(__VA_ARGS__))
 
