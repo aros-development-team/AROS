@@ -370,7 +370,7 @@ int main(int argc, char **argv)
             " --tickrate <value> same as '-t <value>'\n"
             " --hostmem          Let AROS use the host operating system's facilities to\n"
             "                    manage memory, rather than the AROS' builtin ones.\n"
-            "--fullscreen        start AROS in fullscreen mode\n"
+            " --fullscreen       start AROS in fullscreen mode\n"
             "\n"
             "Please report bugs to the AROS development team. http://www.aros.org/\n",
             argv[0]
