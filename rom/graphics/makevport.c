@@ -54,9 +54,9 @@
     AROS_LIBFUNC_INIT
     
     struct ViewPortExtra *vpe;
-    OOP_Object *bm = OBTAIN_HIDD_BM(viewport->RasInfo->BitMap);
-
-    if (!bm)
+    
+    /* TODO: in future we should be able to handle planar bitmaps by calculating real copperlists for them */
+    if (!IS_HIDD_BM(viewport->RasInfo->BitMap))
         return MVP_NO_MEM;
 
     /* Attach a temporary ViewPortExtra if needed */
@@ -64,21 +64,15 @@
     D(bug("[MakeVPort] ViewPort 0x%p, ViewPortExtra 0x%p\n", viewport, vpe));
     if (!vpe) {
         vpe = GfxNew(VIEWPORT_EXTRA_TYPE);
-	if (!vpe) {
-	    RELEASE_HIDD_BM(bm, viewport->RasInfo->BitMap);
+	if (!vpe)
 	    return MVP_NO_VPE;
-	}
 	vpe->Flags = VPXF_FREE_ME;
 	GfxAssociate(viewport, vpe);
     }
 
     /* Store bitmap object in the ViewPortExtra */
-    if (!VPE_BITMAP(vpe)) {
-        D(bug("[MakeVPort] Old bitmap object: 0x%p\n", VPE_BITMAP(vpe)));
-        RELEASE_HIDD_BM(VPE_BITMAP(vpe), viewport->RasInfo->BitMap);
-    }
-    VPE_DATA(vpe)->Bitmap = bm;
-    D(bug("[MakeVPort] New bitmap object: 0x%p\n", VPE_BITMAP(vpe)));
+    VPE_DATA(vpe)->Bitmap = HIDD_BM_OBJ(viewport->RasInfo->BitMap);
+    D(bug("[MakeVPort] Bitmap object: 0x%p\n", VPE_BITMAP(vpe)->Bitmap));
 
     /* Use ScrollVPort() in order to validate offsets */
     ScrollVPort(viewport);
