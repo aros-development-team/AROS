@@ -1,6 +1,6 @@
-## version $VER: Locale.catalog 1.2 (26.3.2009)
+## version $VER: Locale.catalog 1.3 (13.4.2010)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 ;
 MSG_CANT_OPEN_LIB
@@ -134,4 +134,12 @@ MSG_TIMEZONE_HOURS
 MSG_TIMEZONE_HOURSMINS
 Èasové pásmo: %ld hod., %ld min. od UTC
 ; Time Zone: %ld Hours, %ld Minutes from GMT
+;
+MSG_CHARACTER_SET
+Výchozí kódování
+; Default character set
+;
+MSG_NOT_SPECIFIED
+není urèeno
+; Not specified
 ;
