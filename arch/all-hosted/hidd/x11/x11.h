@@ -37,7 +37,6 @@
 #define X11_LOAD_KEYMAPTABLE	    1
 
 #include "x11_hostlib.h"
-#include "xrandr_hostlib.h"
 
 /***** X11Mouse HIDD *******************/
 
@@ -154,9 +153,6 @@ struct x11_staticdata
     struct MsgPort  	    *x11task_notify_port;
     
     Display 	    	    *display;
-    int						screen;
-    Window					rootwin;
-    XRRScreenResources		*res;
     BOOL    	    	     local_display;
     
     ULONG   	    	     refcount;
