@@ -1,0 +1,440 @@
+## version $VER: Editor.catalog 1.4 (15.4.2010)
+## language polski
+## codeset 0
+;
+;
+; Catalog description for JanoEditor
+; JanoEditor.cd
+;
+;
+; *****************************
+;  NewMenu strings
+; *****************************
+;
+; Project Menu
+;
+MSG_PROJECTTITLE
+Projekt
+; Project
+;
+MSG_NEWEMPTYFILE
+Nowy
+; New
+;
+MSG_OPENNEWFILE
+Otwórz...
+; Open file...
+;
+MSG_LOADINPRJ
+£aduj...
+; Load file...
+;
+MSG_SAVEFILE
+Zapisz
+; Save
+;
+MSG_SAVEFILEAS
+Zapisz jako...
+; Save as...
+;
+MSG_SAVECHANGES
+Zapisz zmiany
+; Save changes
+;
+MSG_PRINTFILE
+Drukuj
+; Print
+;
+MSG_INFORMATION
+Informacja...
+; Information...
+;
+MSG_CLOSE
+Zamknij
+; Close
+;
+MSG_QUIT
+Skoñcz
+; Quit
+;
+; Edit Menu
+;
+MSG_EDITTITLE
+Edytuj
+; Edit
+;
+MSG_CUT
+Wytnij
+; Cut
+;
+MSG_COPY
+Kopiuj
+; Copy
+;
+MSG_PASTE
+Wklej
+; Paste
+;
+MSG_MARK
+Zaznacz
+; Mark
+;
+MSG_MARKCOLUMN
+Zaznacz kolumnê
+; Mark column
+;
+MSG_SELECTALL
+Zaznacz wszystko
+; Select all
+;
+MSG_DELLINE
+Usuñ liniê
+; Delete line
+;
+MSG_SUBTOOLS
+Narzêdzia
+; Tools
+;
+MSG_INDENT
+Wciêcie
+; Indent
+;
+MSG_UNINDENT
+Anuluj wciêcie
+; Unindent
+;
+MSG_UPPERCASE
+Wielkie litery
+; Upper case
+;
+MSG_LOWERCASE
+Ma³e litery
+; Lower case
+;
+MSG_TOGGLECASE
+Prze³±cz litery
+; Toggle case
+;
+MSG_INSERTFILE
+Wstaw plik...
+; Insert file...
+;
+MSG_UNDO
+Cofnij
+; Undo
+;
+MSG_REDO
+Ponów
+; Redo
+;
+; Search Menu
+;
+MSG_SEARCHTITLE
+Szukaj
+; Search
+;
+MSG_FIND
+Znajd¼...
+; Find...
+;
+MSG_REPLACE
+Zast±p...
+; Replace...
+;
+MSG_SUBFIND
+Znajd¼
+; Find
+;
+MSG_NEXTFIND
+Nastêpny
+; Next
+;
+MSG_PREVFIND
+Poprzedni
+; Previous
+;
+MSG_NEXTREPLACE
+Zast±p
+; Replace
+;
+MSG_PREVPAGE
+Poprzednia strona
+; Previous page
+;
+MSG_NEXTPAGE
+Poprzednia strona
+; Next page
+;
+MSG_GOTOLINE
+Przejd¼ do linii...
+; Goto line...
+;
+MSG_FINDBRACKET
+Nawias
+; Matching bracket
+;
+MSG_LASTMODIF
+Ostatnia zmiana
+; Last modification
+;
+MSG_BEGOFLINE
+Pocz±tek linii
+; Start of line
+;
+MSG_ENDOFLINE
+Koniec linii
+; End of line
+;
+; Macro Menu
+;
+MSG_MACROTITLE
+Makro
+; Macro
+;
+MSG_STARTRECORD
+Rozpocznij rejestracjê
+; Start recording
+;
+MSG_STOPRECORD
+Zatrzymaj rejestracjê
+; Stop recording
+;
+MSG_PLAYMACRO
+Uruchom makro
+; Execute macro
+;
+MSG_REPEATMACRO
+Powtórz makro...
+; Repeat macro...
+;
+; Environment Menu
+;
+MSG_ENVTITLE
+Ustawienia
+; Environment
+;
+MSG_SCRMODE
+Tryb ekranu...
+; Screen mode...
+;
+MSG_FONTS
+Czcionki...
+; Fonts...
+;
+MSG_PREFS
+Ustawienia g³ówne...
+; General preferences...
+;
+MSG_LOADPREFS
+£aduj ustawienia...
+; Load preferences..
+;
+MSG_SAVEPREFS
+Zapisz ustawienia
+; Save preferences
+;
+MSG_SAVEPREFSAS
+ZApisz jako...
+; Save preferences as...
+;
+;
+;
+; *****************************
+;  Possible error messages
+; *****************************
+;
+ERR_BADOS
+Program wymaga nowszej wersji systemu.
+; Obsolete OS. Install v2.0 or better.
+;
+ERR_NOASLREQ
+Nie mogê zaalokowaæ requestera ASL!
+; Cannot alloc ASL requester!
+;
+ERR_NOMEM
+Brak pamiêci!
+; Out of memory!
+;
+ERR_NOGUI
+Nie mogê otworzyæ interfejsu programu!
+; Main interface failed to open!
+;
+ERR_NONAME
+brak nazwy
+; No title
+; Not really an error but simplify translation
+;
+ERR_WRITECLIP
+B³±d zapisu do schowka.
+; Write error into clipboard device
+;
+ERR_OPENCLIP
+Nie mogê otworzyæ schowka!
+; Unable to open clipboard!
+;
+ERR_LOADFILE
+Nie mogê otworzyæ pliku.
+; Unable to load requested file
+;
+ERR_NOTXTINCLIP
+Brak tekstu w schowku.
+; No text in clipboard
+;
+ERR_WRONG_TYPE
+Obiekt jest katalogiem!
+; Object is a directory!
+;
+ERR_READCLIP
+Operacja odczytu zakoñczona niepowodzeniem.
+; Read operation incomplete
+;
+ERR_NOBRACKET
+Brak nawiasu pod kursorem!
+; No parenthesis under cursor!
+;
+ERR_NOT_FOUND
+Tekst dla zadanej maski "%s" nie zosta³ znaleziony.
+; Pattern `%s' not found
+;
+ERR_LOADFONT
+Nie mogê otworzyæ czcionki!
+; Can't open desired font!
+;
+ERR_NOPREFEDITOR
+Nie mogê odnale¼æ edytora preferencji!
+; Can't find preference editor!
+;
+ERR_BADPREFSFILE
+Z³y format pliku preferencji.
+; Bad preference file format.
+;
+ERR_FILEMODIFIED
+%s by³ zmieniony.\nCzy rzeczywi¶cie chcesz go zamkn±æ?
+; %s has been modified.\nAre you sure want to close it?
+;
+ERR_SLC
+Zapisz|Zamknij|Poniechaj
+; Save|Close|Cancel
+;
+ERR_NOSEARCHTEXT
+Nie podano tekstu do wyszukania!
+; No text to search for!
+;
+ERR_FILEEXISTS
+Plik istnieje. Nadpisaæ?
+; This file already exists. Overwrite it?
+;
+ERR_OC
+Tak|Nie
+; Yes|No!
+;
+WARN_RECORD
+Pocz±tek rejestracji makra
+; Start recording macro
+;
+WARN_RECORDED
+Makro zapisane
+; Macro recorded
+;
+WARN_REC
+[REC]
+; [REC]
+;
+;
+; *************************************
+;  Information window related messages
+; *************************************
+;
+MSG_ABOUT
+Informacja
+; Information
+;
+MSG_FORMATINFO
+%s\nAutorzy: T.Pierron i C.Guillaume\nCopyright (C) 2000\n\nEdytowany: %s\Statystyka: %ld %s, %ld %s.
+; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
+;
+MSG_CONTINUE
+Kontynuuj
+; Continue
+;
+MSG_BYTE
+bajt
+; byte
+;
+MSG_BYTES
+bajty
+; bytes
+;
+MSG_LINE
+linia
+; line
+;
+MSG_LINES
+linie
+; lines
+;
+;
+; *************************
+;  Search & replace window
+; *************************
+;
+MSG_SEARCHWINDOW
+Szukanie tekstu
+; Search pattern
+;
+MSG_REPLACEWINDOW
+Zamiana tekstu
+; Search & Replace
+;
+MSG_SEARCHSTRING
+Znajd¼:
+; Locate:
+;
+MSG_REPLACESTRING
+Zamieñ:
+; Replace:
+;
+MSG_OPTCASE
+Rozró¿nianie ma³a/WIELKA
+; Match case
+;
+MSG_OPTWORDS
+Ca³e s³owa
+; Whole words
+;
+MSG_BUTTONREPLACE
+Zamieñ
+; _Replace
+;
+MSG_BUTTONREPALL
+Z_amieñ wszystkie
+; Replace _All
+;
+MSG_BUTTONSEARCH
+Znajd¼
+; Search
+;
+MSG_NEXTSEARCH
+_Poprzedni
+; _Previous
+;
+MSG_USESEARCH
+_U¿yj
+; _Use
+;
+MSG_CANCELSEARCH
+Poniechaj
+; _Cancel
+;
+MSG_REPLACEALL
+Zmieniono %ld %s tekstu "%s".
+; %ld %s of `%s' replaced
+;
+MSG_OCCURENCY
+polozycja
+; occurency
+;
+MSG_OCCURENCIES
+pozycje
+; occurencies
+;
