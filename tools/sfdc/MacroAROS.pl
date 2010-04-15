@@ -38,10 +38,14 @@ BEGIN {
 	my %params    = @_;
 	my $prototype = $params{'prototype'};
 	my $sfd       = $self->{SFD};
+	my $numargs   = $$prototype{'numargs'};
 
+	if ($prototype->{nb}) {
+	    $numargs--;
+	}
 	if ($$prototype{'type'} eq 'function') {
 	    printf "	AROS_LC%d%s(%s, %s, \\\n",
-	    $$prototype{'numargs'},
+	    $numargs,
 	    $$prototype{'return'} eq 'void'
 		|| $$prototype{'return'} eq 'VOID' ? "NR" : "",
 	    $$prototype{'return'}, $$prototype{'funcname'};
