@@ -16,6 +16,8 @@ This is a user's guide to FD2Inline @value{version}, a parser
 converting FD files to GCC ``inlines''.
 
 Copyright @copyright{} 1996, 1997, 1998 Kamil Iskra
+Copyright @copyright{} 1999 - 2003 Martin Blom
+Copyright @copyritht{} 2010 AROS development team
 
 Permission is granted to make and distribute verbatim copies of this
 manual provided the copyright notice and this permission notice are
