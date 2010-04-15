@@ -21,7 +21,7 @@ AROS_LH2(void, RemICRVector,
 
     struct CIABase *CiaBase = (struct CIABase *)resource;
 
-    AbleICR(1 << iCRBit);
+    AbleICR(resource, 1 << iCRBit);
 
     Disable();
     if (CiaBase->Vectors[iCRBit] == interrupt)

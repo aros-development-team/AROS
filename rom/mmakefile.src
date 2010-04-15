@@ -26,6 +26,7 @@
 #MM- includes-generate : \
 #MM      kernel-exec-includes \
 #MM      kernel-aros-includes \
+#MM	 kernel-cia-includes \
 #MM      kernel-dos-includes \
 #MM      kernel-boot-includes \
 #MM      kernel-graphics-includes \
