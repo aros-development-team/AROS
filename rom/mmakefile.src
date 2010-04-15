@@ -29,6 +29,7 @@
 #MM	 kernel-cia-includes \
 #MM      kernel-dos-includes \
 #MM      kernel-boot-includes \
+#MM      kernel-bootloader-includes \
 #MM      kernel-graphics-includes \
 #MM      kernel-utility-includes \
 #MM      kernel-intuition-includes \
