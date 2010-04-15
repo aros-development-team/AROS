@@ -21,6 +21,8 @@
  * Version 1.3x	by Martin Blom
  *              See fd2inline.guide/fd2inline.info for details.
  *
+ * version 1.38 by AROS development team
+ *
  *****************************************************************************/
 
 #include <ctype.h>
@@ -2768,12 +2770,30 @@ void output_proto(FILE* outfile)
       "#ifndef PROTO_%s_H\n"
       "#define PROTO_%s_H\n\n"
       "#include <clib/%s_protos.h>\n\n"
-      "#ifndef _NO_INLINE\n"
       "#ifdef __GNUC__\n"
+      "#ifdef __AROS__\n"
+      "#ifndef NOLIBDEFINES\n"
+      "#ifndef %s_NOLIBDEFINES\n"
+      "#include <defines/%s.h>\n"
+      "#endif /* %s_NOLIBDEFINES */\n"
+      "#endif /* NOLIBDEFINES */\n"
+      "#else\n"
+      "#ifdef __PPC__\n"
+      "#ifndef _NO_PPCINLINE\n"
+      "#include <ppcinline/%s.h>\n"
+      "#endif /* _NO_PPCINLINE */\n"
+      "#else\n"
+      "#ifndef _NO_INLINE\n"
       "#include <inline/%s.h>\n"
-      "#endif /* __GNUC__ */\n"
-      "#endif /* !_NO_INLINE */\n\n",
-      BaseNamU, BaseNamU, BaseNamL, BaseNamL);
+      "#endif /* _NO_INLINE */\n"
+      "#endif /* __PPC__ */\n"
+      "#endif /* __AROS__ */\n"
+      "#else\n"
+      "#include <pragmas/%s_pragmas.h>\n"
+      "#endif /* __GNUC__ */\n",
+      BaseNamU, BaseNamU, BaseNamL,
+      BaseNamU, BaseNamL, BaseNamU,
+      BaseNamL, BaseNamL, BaseNamL);
 
    if (BaseName[0])
       fprintf(outfile,
