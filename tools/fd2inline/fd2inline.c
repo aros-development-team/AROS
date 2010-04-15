@@ -2768,8 +2768,34 @@ void output_proto(FILE* outfile)
    fprintf(outfile,
       "/* Automatically generated header! Do not edit! */\n\n"
       "#ifndef PROTO_%s_H\n"
-      "#define PROTO_%s_H\n\n"
-      "#include <clib/%s_protos.h>\n\n"
+      "#define PROTO_%s_H\n\n",
+      BaseNamU, BaseNamU);
+      
+   if (BaseName[0])
+       fprintf(outfile,
+	 "#ifndef __NOLIBBASE__\n"
+	 "extern struct %s *\n"
+	 "#ifdef __CONSTLIBBASEDECL__\n"
+	 "__CONSTLIBBASEDECL__\n"
+	 "#endif /* __CONSTLIBBASEDECL__ */\n"
+	 "%s;\n"
+	 "#endif /* !__NOLIBBASE__ */\n\n",
+	 StdLib, BaseName);
+      
+   fprintf(outfile,
+      "#ifdef __amigaos4__\n"
+      "#include <interfaces/%s.h>\n"
+      "#ifdef __USE_INLINE__\n"
+      "#include <inline4/%s.h>\n"
+      "#endif /* __USE_INLINE__ */\n"
+      "#ifndef CLIB_%s_PROTOS_H\n"
+      "#define CLIB_%s_PROTOS_H\n"
+      "#endif /* CLIB_%s_PROTOS_H */\n"
+      "#ifndef __NOGLOBALIFACE__\n"
+      "extern struct %sIFace *I%s;\n"
+      "#endif /* __NOGLOBALIFACE__ */\n"
+      "#else /* __amigaos4__ */\n"
+      "#include <clib/%s_protos.h>\n"
       "#ifdef __GNUC__\n"
       "#ifdef __AROS__\n"
       "#ifndef NOLIBDEFINES\n"
@@ -2790,24 +2816,14 @@ void output_proto(FILE* outfile)
       "#endif /* __AROS__ */\n"
       "#else\n"
       "#include <pragmas/%s_pragmas.h>\n"
-      "#endif /* __GNUC__ */\n",
-      BaseNamU, BaseNamU, BaseNamL,
+      "#endif /* __GNUC__ */\n"
+      "#endif /* __amigaos4__ */\n\n"
+      "#endif /* !PROTO_%s_H */\n",
+      BaseNamL, BaseNamL, BaseNamU, BaseNamU, BaseNamU, BaseNamC, BaseNamC,
+      BaseNamL,
       BaseNamU, BaseNamL, BaseNamU,
-      BaseNamL, BaseNamL, BaseNamL);
-
-   if (BaseName[0])
-      fprintf(outfile,
-	 "#ifndef __NOLIBBASE__\n"
-	 "extern struct %s *\n"
-	 "#ifdef __CONSTLIBBASEDECL__\n"
-	 "__CONSTLIBBASEDECL__\n"
-	 "#endif /* __CONSTLIBBASEDECL__ */\n"
-	 "%s;\n"
-	 "#endif /* !__NOLIBBASE__ */\n\n",
-	 StdLib, BaseName);
-
-   fprintf(outfile,
-      "#endif /* !PROTO_%s_H */\n", BaseNamU);
+      BaseNamL, BaseNamL, BaseNamL,
+      BaseNamU);
 }
 
 /******************************************************************************/
