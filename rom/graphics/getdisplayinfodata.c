@@ -265,12 +265,19 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	{
 	    struct MonitorInfo *mi;
 	    struct HIDD_ModeProperties HIDDProps = {0};
+	    IPTR pixTime   = 0;
+	    IPTR hTotal = 0;
+	    IPTR vTotal = 0;
 
 	    if (!HIDD_Gfx_ModeProperties(SDD(GfxBase)->gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps))) {
 	    	D(bug("!!! INVALID MODE ID IN GetDisplayInfoData(DTAG_MNTR) !!!\n"));
 		FreeMem(qh, structsize);
 		return 0;
 	    }
+	    
+	    OOP_GetAttr(sync, aHidd_Sync_PixelTime, &pixTime);
+	    OOP_GetAttr(sync, aHidd_Sync_HTotal, &hTotal);
+	    OOP_GetAttr(sync, aHidd_Sync_VTotal, &vTotal);
 
 	    mi = (struct MonitorInfo *)qh;
 
@@ -283,25 +290,22 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    mi->ViewPositionRange.MinY = ?;
 	    mi->ViewPositionRange.MaxX = ?;
 	    mi->ViewPositionRange.MaxY = ?;
+	    mi->MinRow = ?;
 	    mi->MouseTicks.X = ?;
 	    mi->MouseTicks.Y = ?;
 	    mi->DefaultViewPosition.X = ?;
 	    mi->DefaultViewPosition.Y = ?;
 	    */
 
+	    mi->TotalRows = vTotal;
+	    mi->TotalColorClocks = pixTime / 1000 / 280 * hTotal; /* CHECKME !!! */
 	    mi->PreferredModeID = modeid;
 	    mi->Compatibility = HIDDProps.CompositionFlags ? MCOMPAT_SELF : MCOMPAT_NOBODY;
 
-	    mi->Mspc = OpenMonitor(NULL, modeid);
-	    if (mi->Mspc) {
-
+	    /* TODO: implement a lookup function */
+	    mi->Mspc = GfxBase->default_monitor;
+	    if (mi->Mspc)
 	        mi->reserved[0]      = (IPTR)MDD(mi->Mspc)->gfxhidd;
-	        mi->TotalRows        = mi->Mspc->total_rows;
-	        mi->TotalColorClocks = mi->Mspc->total_colorclocks = mi->TotalColorClocks;
-	        mi->MinRow           = mi->Mspc->min_row;
-
-		CloseMonitor(mi->Mspc);
-	    }
 
 	    break;
 	}
