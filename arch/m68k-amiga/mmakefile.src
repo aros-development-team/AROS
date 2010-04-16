@@ -76,9 +76,9 @@ create-mf-inc-again :
 ##MM	setup-clib-$(ARCH)-$(CPU) \
 #MM	setup-dos-$(ARCH)-$(CPU)
 
-#MM		setup-intuition-$(CPU) \
-#MM		setup-battclock-$(CPU) \
-#MM		setup-dos-$(CPU)
+##MM		setup-intuition-$(CPU) \
+##MM		setup-battclock-$(CPU) \
+##MM		setup-dos-$(CPU)
 
 # Setup includes
 ##############################################################################
