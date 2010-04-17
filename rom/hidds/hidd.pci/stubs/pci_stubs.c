@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Stub functions for PCI subsystem
@@ -155,3 +155,89 @@ VOID HIDD_PCIDriver_FreePCIMem(OOP_Object *obj, APTR address)
     OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
+UBYTE HIDD_PCIDevice_ReadConfigByte(OOP_Object *obj, UBYTE reg)
+{
+    STATIC_MID;
+
+    struct pHidd_PCIDevice_ReadConfigByte p, *msg = &p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+
+    p.mID = mid;
+    p.reg = reg;
+
+    return OOP_DoMethod(obj, (OOP_Msg) msg);
+}
+
+UWORD HIDD_PCIDevice_ReadConfigWord(OOP_Object *obj, UBYTE reg)
+{
+    STATIC_MID;
+
+    struct pHidd_PCIDevice_ReadConfigWord p, *msg = &p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
+
+    p.mID = mid;
+    p.reg = reg;
+
+    return OOP_DoMethod(obj, (OOP_Msg) msg);
+}
+
+ULONG HIDD_PCIDevice_ReadConfigLong(OOP_Object *obj, UBYTE reg)
+{
+    STATIC_MID;
+
+    struct pHidd_PCIDevice_ReadConfigLong p, *msg = &p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong);
+
+    p.mID = mid;
+    p.reg = reg;
+
+    return OOP_DoMethod(obj, (OOP_Msg) msg);
+}
+
+VOID HIDD_PCIDevice_WriteConfigByte(OOP_Object *obj, UBYTE reg, UBYTE val)
+{
+    STATIC_MID;
+
+    struct pHidd_PCIDevice_WriteConfigByte p, *msg = &p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+
+    p.mID = mid;
+    p.reg = reg;
+    p.val = val;
+
+    OOP_DoMethod(obj, (OOP_Msg) msg);
+}
+
+VOID HIDD_PCIDevice_WriteConfigWord(OOP_Object *obj, UBYTE reg, UWORD val)
+{
+    STATIC_MID;
+
+    struct pHidd_PCIDevice_WriteConfigWord p, *msg = &p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
+
+    p.mID = mid;
+    p.reg = reg;
+    p.val = val;
+
+    OOP_DoMethod(obj, (OOP_Msg) msg);
+}
+
+VOID HIDD_PCIDevice_WriteConfigLong(OOP_Object *obj, UBYTE reg, ULONG val)
+{
+    STATIC_MID;
+
+    struct pHidd_PCIDevice_WriteConfigLong p, *msg = &p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigLong);
+
+    p.mID = mid;
+    p.reg = reg;
+    p.val = val;
+
+    OOP_DoMethod(obj, (OOP_Msg) msg);
+}
