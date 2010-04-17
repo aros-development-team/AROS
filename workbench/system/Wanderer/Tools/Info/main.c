@@ -691,20 +691,24 @@ D(bug("[WBInfo] required arg missing\n"));
     NameFromLock(lock, lname, MAXFILENAMELENGTH);
 D(bug("[WBInfo] arg parent lock 0x%p: '%s'\n", lock, lname));
 
-    if ((name = startup->sm_ArgList[1].wa_Name) != NULL)
+    if (startup->sm_ArgList[1].wa_Name != NULL)
     {
-	if ((strlen(name) > 5)
-	    && (strcmp(name + strlen(name) - 5, ".info") == 0))
+	if ((name = AllocVec(strlen(startup->sm_ArgList[1].wa_Name) + 1, MEMF_CLEAR)) != NULL)
 	{
-	    file = AllocVec(strlen(name) - 4, MEMF_CLEAR);
-	    CopyMem(name, file , strlen(name) - 5);
+	    CopyMem(startup->sm_ArgList[1].wa_Name, name, strlen(startup->sm_ArgList[1].wa_Name));
+	    if ((strlen(name) > 5)
+		&& (strcmp(name + strlen(name) - 5, ".info") == 0))
+	    {
+		file = AllocVec(strlen(name) - 4, MEMF_CLEAR);
+		CopyMem(name, file , strlen(name) - 5);
+	    }
+	    else
+	    {
+		file = AllocVec(strlen(name) + 1, MEMF_CLEAR);
+		CopyMem(name, file, strlen(name));
+	    }
+    D(bug("[WBInfo] arg name 0x%p: '%s', file = '%s'\n", name, name, file));
 	}
-	else
-	{
-	    file = AllocVec(strlen(name) + 1, MEMF_CLEAR);
-	    CopyMem(name, file, strlen(name));
-	}
-D(bug("[WBInfo] arg name 0x%p: '%s', file = '%s'\n", name, name, file));
     }
     cd = CurrentDir(lock);
     if (name == NULL)
@@ -1365,5 +1369,6 @@ funcmain_exit:
     if (icon) FreeDiskObject(icon);
     if (ap) FreeVec(ap);
     if (file) FreeVec(file);
+    if (name) FreeVec(name);
     return retval;
 }
