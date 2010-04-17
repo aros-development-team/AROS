@@ -1247,7 +1247,7 @@ D(bug("[WBInfo] broker command received: %ld\n", returnid));
 		    #if !USE_TEXTEDITOR
                         if (icon_altered)
 		    #endif
-                            SaveIcon(icon, name, lock);
+                            SaveIcon(icon, file, lock);
                         if (file_altered)
                             SaveFile(ap, lock);
                         DoMethod(application, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
