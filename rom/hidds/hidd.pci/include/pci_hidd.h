@@ -2,7 +2,7 @@
 #define HIDD_PCI_H
 
 /*
-    Copyright © 2003-2010, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2003-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -464,6 +464,14 @@ APTR HIDD_PCIDriver_MapPCI(OOP_Object *obj, APTR address, ULONG length);
 VOID HIDD_PCIDriver_UnmapPCI(OOP_Object *obj, APTR address, ULONG length);
 APTR HIDD_PCIDriver_AllocPCIMem(OOP_Object *obj, ULONG length);
 VOID HIDD_PCIDriver_FreePCIMem(OOP_Object *obj, APTR address);
+
+UBYTE HIDD_PCIDevice_ReadConfigByte(OOP_Object *obj, UBYTE reg);
+UWORD HIDD_PCIDevice_ReadConfigWord(OOP_Object *obj, UBYTE reg);
+ULONG HIDD_PCIDevice_ReadConfigLong(OOP_Object *obj, UBYTE reg);
+
+VOID HIDD_PCIDevice_WriteConfigByte(OOP_Object *obj, UBYTE reg, UBYTE val);
+VOID HIDD_PCIDevice_WriteConfigWord(OOP_Object *obj, UBYTE reg, UWORD val);
+VOID HIDD_PCIDevice_WriteConfigLong(OOP_Object *obj, UBYTE reg, ULONG val);
 
 #endif
 
