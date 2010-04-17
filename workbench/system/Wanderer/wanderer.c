@@ -487,7 +487,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                     }
                 } 
                 /* Check if the window for this drawer is already opened */
-                DoMethod(_WandererIntern_AppObj, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf);
+                DoMethod(_app(obj), MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf);
                 // FIXME: error handling
             }
             else
@@ -510,7 +510,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                 int                    argsCounted = 0,
                                        i           = 0;
                 struct TagItem        *argsTagList = NULL;
-                Object                *firstWindow = (Object *) (((struct List*)XGET(_WandererIntern_AppObj, MUIA_Application_WindowList))->lh_Head);
+                Object                *firstWindow = (Object *) (((struct List*)XGET(_app(obj), MUIA_Application_WindowList))->lh_Head);
                 Object                *windowItem,
                                       *iconList;
 
@@ -540,7 +540,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                 if ( argsCounted > 1 ) /* "ent" is selected and has been counted */
                 {
                     argsTagList = AllocateTagItems(argsCounted);
-                    firstWindow = (Object *) (((struct List*)XGET(_WandererIntern_AppObj, MUIA_Application_WindowList))->lh_Head);
+                    firstWindow = (Object *) (((struct List*)XGET(_app(obj), MUIA_Application_WindowList))->lh_Head);
                     while ( (windowItem = NextObject(&firstWindow)) )
                     {
                         iconList = (Object *) XGET(windowItem, MUIA_IconWindow_IconList);
@@ -611,7 +611,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
     {
         if (!msg->click->shift)
         {
-            Object *cstate = (Object*)(((struct List*)XGET(_WandererIntern_AppObj, MUIA_Application_WindowList))->lh_Head);
+            Object *cstate = (Object*)(((struct List*)XGET(_app(obj), MUIA_Application_WindowList))->lh_Head);
             Object *child;
 
             while ((child = NextObject(&cstate)))
@@ -1808,8 +1808,8 @@ D(bug("[Wanderer] %s: couldnt lock '%s'\n", __PRETTY_FUNCTION__, file));
 		    && (strcmp(file + strlen(file) - 5, ".info") != 0)
 		    && (file[strlen(file) -1] != ':'))
 		{
-D(bug("[Wanderer] %s: not a '.info' file or device - check if there is a '.info'..\n"));
-		    file = AllocVec(strlen(entry->ile_IconEntry->ie_IconNode.ln_Name) + 5, MEMF_CLEAR);
+D(bug("[Wanderer] %s: not a '.info' file or device - check if there is a '.info'..\n", __PRETTY_FUNCTION__));
+		    file = AllocVec(strlen(entry->ile_IconEntry->ie_IconNode.ln_Name) + 6, MEMF_CLEAR);
 		    sprintf(file, "%s.info", entry->ile_IconEntry->ie_IconNode.ln_Name);
 		    goto attemptlock;
 		}
@@ -1817,11 +1817,15 @@ D(bug("[Wanderer] %s: not a '.info' file or device - check if there is a '.info'
 	    else
 	    {
 		name = FilePart(file);
-		if (name[0]) {
+		if (name[0])
+		{
 		    parent = ParentDir(lock);
 		    UnLock(lock);
-		} else
+		}
+		else
+		{
 		    parent = lock;
+		}
 
 D(bug("[Wanderer] %s: Calling WBInfo(name = '%s' parent lock = 0x%p)\n", __PRETTY_FUNCTION__, name, lock));
 		WBInfo(parent, name, NULL);
@@ -1829,7 +1833,9 @@ D(bug("[Wanderer] %s: Calling WBInfo(name = '%s' parent lock = 0x%p)\n", __PRETT
 		UnLock(parent);
 	    }
 	    if (file != entry->ile_IconEntry->ie_IconNode.ln_Name)
+	    {
 		FreeVec(file);
+	    }
         }
         else
         {
@@ -3194,7 +3200,7 @@ D(bug("[Wanderer] %s: WBHM_TYPE_OPEN\n", __PRETTY_FUNCTION__));
 
                     DoMethod
                     (
-                        _WandererIntern_AppObj, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf
+                        self, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf
                     );
                 }
                 break;
