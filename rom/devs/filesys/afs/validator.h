@@ -1,6 +1,6 @@
 /*
-	 Copyright Â© 1995-2007, The AROS Development Team. All rights reserved.
-	 $Id: validator.h 25683 2007-04-09 05:45:37Z sonic $
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 /*

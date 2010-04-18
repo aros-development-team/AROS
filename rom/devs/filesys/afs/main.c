@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -74,13 +74,17 @@ LONG retval;
 				struct Volume *volume, *tail;
 				struct BlockCache *blockbuffer;
 
-				D(bug("[afs] Flush alarm rang.\n"));
+				D(bug("[afs] Alarm rang.\n"));
 				volume = (struct Volume *)afsbase->device_list.lh_Head;
 				tail = (struct Volume *)&afsbase->device_list.lh_Tail;
 				while(volume != tail)
 				{
 					if ((volume->dostype == 0x444f5300) && mediumPresent(&volume->ioh))
 					{
+						/* Check if adding volume node needs to be retried */
+						if (volume->volumenode == NULL)
+							attemptAddDosVolume(afsbase, volume);
+
 						flushCache(afsbase, volume);
 						blockbuffer = getBlock(afsbase, volume, volume->rootblock);
 						if ((blockbuffer->flags & BCF_WRITE) != 0)
@@ -109,7 +113,7 @@ LONG retval;
 				case (UWORD)-1 :
 					{
 						struct Volume *volume;
-						 volume = initVolume
+						volume = initVolume
 							(
 								afsbase,
 								iofs->IOFS.io_Device,

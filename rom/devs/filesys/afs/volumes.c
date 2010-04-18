@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -95,7 +95,8 @@ LONG error;
 	{
 		blockbuffer->flags |= BCF_USED;	// won't be cleared until volume is ejected
 		volume->usedblockscount=countUsedBlocks(afsbase, volume);
-		volume->state = (volume->dosflags & 0xFC) ? ID_WRITE_PROTECTED : ID_VALIDATED;
+		volume->state = diskWritable(afsbase, &volume->ioh) ?
+			ID_VALIDATED : ID_WRITE_PROTECTED;
 	}
 	error = osMediumInit(afsbase, volume, blockbuffer);
 	if (error != 0)

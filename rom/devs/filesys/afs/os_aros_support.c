@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,26 +25,13 @@
 #include "baseredef.h"
 
 /*
- * XXX Notes about SendEvent() and LockDosList()
- *
- * InstallAROS has been hanging during format. Georg figured out why, see here
- * for the details:
- * 
- *   https://mail.aros.org/mailman/prvate/aros-dev/2007-June/050263.html
- *
- * The quick-and-dirty fix is to remove calls to SendEvent(). This does mean
- * that Wanderer doesn't get diskchange updates and so doesn't refresh the
- * volume list, but it avoids the hang.
- *
- * The correct way to fix is it to call AttemptLockDosList() when
- * adding/removing the device node. If the list lock can't be obtained right
- * now, the handler should schedule a retry. fat.handler has a good example of
- * how to do this.
- *
- * --rob 2007-06-18
+ * The deadlock bug caused by calling LockDosList() when adding avolume node
+ * has now been fixed, but a deadlock still occurs when trying to mount an
+ * AFS disk image with fdsk.device if the image file is on an AFS volume.
+ * This is because of there only being one filesystem process that is shared
+ * between all AFS devices.
  */
 
-// copy pasted from fat.handler,
 // pushes an IECLASS event in the input stream.
 static void SendEvent(struct AFSBase *afsbase, LONG event) {
     struct IOStdReq *InputRequest;
@@ -124,12 +111,12 @@ UBYTE i;
 }
 
 /*******************************************
- Name  : addDosVolume
+ Name  : attemptAddDosVolume
  Descr.: adds a new volume to dos
  Input : volume - volume to add
  Output: DOSTRUE for success; DOSFALSE otherwise
 ********************************************/
-LONG addDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
+LONG attemptAddDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
 struct DosList *doslist;
 struct DosList *dl=NULL;
 char string[32];
@@ -146,7 +133,7 @@ UBYTE i;
 	string[AROS_BSTR_strlen(bname)] = 0;
 	D(bug("[afs 0x%08lX] Processing inserted volume %s\n", volume, string));
 	/* is the volume already in the list? */
-	doslist = LockDosList(LDF_WRITE | LDF_VOLUMES);
+	doslist = AttemptLockDosList(LDF_WRITE | LDF_VOLUMES);
 	if (doslist != NULL)
 	{
 		dl = FindDosEntry(doslist,string,LDF_VOLUMES);
@@ -170,6 +157,9 @@ UBYTE i;
 		}
 		UnLockDosList(LDF_WRITE | LDF_VOLUMES);
 	}
+	else
+		return TRUE;
+
 	/* if not create a new doslist */
 	if (dl == NULL)
 	{
@@ -191,7 +181,7 @@ UBYTE i;
 		dl = doslist;
 	}
 	volume->volumenode = dl;
-    //SendEvent(afsbase, IECLASS_DISKINSERTED);
+	SendEvent(afsbase, IECLASS_DISKINSERTED);
 	return DOSTRUE;
 }
 
@@ -233,16 +223,15 @@ void remDosNode(struct AFSBase *afsbase, struct DosList *dl)
 {
 	RemDosEntry(dl);
 	FreeDosEntry(dl);
-//	SendEvent(afsbase, IECLASS_DISKREMOVED);
+	SendEvent(afsbase, IECLASS_DISKREMOVED);
 }
 
 LONG osMediumInit
 	(struct AFSBase *afsbase, struct Volume *volume, struct BlockCache *block)
 {
-
 	if (!initDeviceList(afsbase, volume, block))
 		return ERROR_NO_FREE_STORE;
-	if (!addDosVolume(afsbase, volume))
+	if (!attemptAddDosVolume(afsbase, volume))
 	{
 		showError(afsbase, ERR_DOSENTRY);
 		remDosVolume(afsbase, volume);
@@ -350,6 +339,13 @@ UBYTE diskPresent(struct AFSBase *afsbase, struct IOHandle *ioh) {
 	return ioh->ioreq->iotd_Req.io_Actual == 0;
 }
 
+BOOL diskWritable(struct AFSBase *afsbase, struct IOHandle *ioh)
+{
+	ioh->ioreq->iotd_Req.io_Command = TD_PROTSTATUS;
+	DoIO((struct IORequest *)&ioh->ioreq->iotd_Req);
+	return ioh->ioreq->iotd_Req.io_Actual == 0;
+}
+
 struct IOHandle *openBlockDevice(struct AFSBase *afsbase, struct IOHandle *ioh)
 {
 
@@ -403,7 +399,7 @@ struct IOHandle *ioh;
 		if ((ioh->ioflags & IOHF_MEDIA_CHANGE) && (!volume->inhibitcounter))
 		{
 			D(bug("[afs 0x%08lX] Media change signalled\n", volume));
-			if (diskPresent(afsbase, ioh)) 
+			if (diskPresent(afsbase, ioh))
 			{
 			    if (!(ioh->ioflags & IOHF_DISK_IN))
 			    {

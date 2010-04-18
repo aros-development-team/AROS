@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -115,6 +115,11 @@ UBYTE diskPresent(struct AFSBase *afsbase, struct IOHandle *ioh) {
 	return ioh->fh ? 1 : 0;
 }
 
+BOOL diskWritable(struct AFSBase *afsbase, struct IOHandle *ioh)
+{
+	return ioh->fh ? 1 : 0;
+}
+
 void check64BitSupport(struct AFSBase *afsbase, struct Volume *volume) {
 	printf("%s: We just support 64Bit (or not ...)\n", __FUNCTION__);
 }
@@ -141,6 +146,11 @@ BOOL flush(struct AFSBase *afsbase, struct Volume *volume) {
 	flushCache(afsbase, volume);
 	clearCache(afsbase, volume->blockcache);
 	return DOSFALSE;
+}
+
+LONG attemptAddDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
+	printf("%s: Don't know what to do here\n", __FUNCTION__);
+	return 0;
 }
 
 LONG osMediumInit(struct AFSBase *afsbase, struct Volume *volume, struct BlockCache *blockbuffer) {

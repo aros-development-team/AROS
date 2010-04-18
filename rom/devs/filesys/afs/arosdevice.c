@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -132,7 +132,7 @@ static int GM_UNIQUENAME(Open)
 		afsbase->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
 		iofs->IOFS.io_Error = 0;
 
-		return;
+		return TRUE;
 	}
 #else
 	iofs->IOFS.io_Command = -1;

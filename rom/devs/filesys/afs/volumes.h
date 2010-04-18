@@ -2,7 +2,7 @@
 #define VOLUMES_H
 
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -45,8 +45,6 @@ struct Volume {
 	UWORD bootblocks;
 	UBYTE dosflags;
 };
-
-#define VOLF_TRACKDISK    (1 <<  8)
 
 BOOL mediumPresent(struct IOHandle *);
 struct Volume *initVolume(struct AFSBase *, struct Device *, CONST_STRPTR,
