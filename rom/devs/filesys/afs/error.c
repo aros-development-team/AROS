@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -108,6 +108,7 @@ LONG showError(struct AFSBase *afsbase, ULONG error, ...)
 		{"Repairing disk structure will lead to data loss.\n"
 			"It's best to make a backup before proceeding.\n\n"
 			"Please select what to do.", Req_ContinueCancel },
+		{"Volume\n%s\nis write protected", Req_RetryCancel },
 		{NULL, Req_Cancel },
 		{"Unknown error", Req_Cancel}
 	};

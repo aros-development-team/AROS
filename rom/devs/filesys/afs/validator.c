@@ -1,6 +1,6 @@
 /*
-	 Copyright Â© 1995-2007, The AROS Development Team. All rights reserved.
-	 $Id: validator.c 25132 2007-01-03 01:43:09Z neil $
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 /*
@@ -38,7 +38,7 @@
 
 /*******************************************
  Name  : checkValid
- Descr : verify whether disk is validated and therefore writable
+ Descr : verify whether disk is validated and writable.
          since we need at least a stub function, it has to be
          declared outside __AROS__ scope
  Input : afsbase, volume
@@ -48,15 +48,20 @@
 LONG checkValid(struct AFSBase *afs, struct Volume *vol)
 {
 #ifdef __AROS__
-	if (vol->state == ID_VALIDATED)
-		return 1;
+	while (vol->state == ID_WRITE_PROTECTED
+		&& showError(afs, ERR_WRITEPROTECT, "")); /* TO DO: insert volume name */
 
-	if (showError(afs, ERR_DISKNOTVALID))
+	if (vol->state == ID_VALIDATING)
 	{
-		if (vr_OK == launchValidator(afs, vol))
-			return 1;
-	}		  
-	return 0;
+		if (showError(afs, ERR_DISKNOTVALID))
+		{
+			if (vr_OK == launchValidator(afs, vol))
+				return 1;
+		}
+		return 0;
+	}
+
+	return vol->state == ID_VALIDATED ? 1 : 0;
 #else
 	return 1;
 #endif
