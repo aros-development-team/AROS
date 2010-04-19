@@ -2,7 +2,7 @@
 #define FDSK_DEVICE_GCC_H
 
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -30,6 +30,7 @@ struct unit
     ULONG			usecount;
     struct MsgPort 		port;
     BPTR 			file;
+    BOOL			writable;
     ULONG			changecount;
     struct MinList 		changeints;
 };

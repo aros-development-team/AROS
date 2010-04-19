@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -213,6 +213,7 @@ AROS_LH1(void, beginio,
 	case TD_REMCHANGEINT:
 	case TD_GETGEOMETRY:
 	case TD_EJECT:
+	case TD_PROTSTATUS:
 	    /* Forward to unit thread */
 	    PutMsg(&((struct unit *)iotd->iotd_Req.io_Unit)->port, 
 		   &iotd->iotd_Req.io_Message);
@@ -333,6 +334,9 @@ static LONG write(struct unit *unit, struct IOExtTD *iotd)
 {
     STRPTR 	buf;
     LONG 	size, subsize;
+
+    if(!unit->writable)
+	return TDERR_WriteProt;
 #if 0
     if(iotd->iotd_SecLabel)
 	return IOERR_NOCMD;
@@ -392,13 +396,14 @@ struct FileInfoBlock fib;
     dg->dg_CylSectors = dg->dg_Heads * dg->dg_TrackSectors;
     dg->dg_BufMemType = MEMF_PUBLIC;
     dg->dg_DeviceType = DG_DIRECT_ACCESS;
-    dg->dg_Flags = 0;
+    dg->dg_Flags = DGF_REMOVABLE;
 }
 
 /**************************************************************************/
 
 void eject(struct unit *unit, BOOL eject) {
 struct IOExtTD *iotd;
+struct FileInfoBlock fib;
 
     if (eject)
     {
@@ -406,7 +411,13 @@ struct IOExtTD *iotd;
         unit->file = (BPTR)NULL;
     }
     else
+    {
         unit->file = Open(unit->filename, MODE_OLDFILE);
+        if (unit->file == (BPTR) NULL)
+            return;
+        Examine(unit->file, &fib);
+        unit->writable = !(fib.fib_Protection & FIBF_WRITE);
+    }
 
     unit->changecount++;
 
@@ -444,6 +455,7 @@ AROS_UFH3(LONG, unitentry,
     struct IOExtTD 	*iotd;
     struct unit 	*unit;
     APTR                win;
+    struct FileInfoBlock fib;
 
     D(bug("fdsk_device/unitentry: just started\n"));
     
@@ -476,6 +488,9 @@ AROS_UFH3(LONG, unitentry,
 	ReplyMsg(&unit->msg);
 	return 0;
     }
+
+    Examine(unit->file, &fib);
+    unit->writable = !(fib.fib_Protection & FIBF_WRITE);
 
     /* enable requesters */
     me->pr_WindowPtr = win;
@@ -534,6 +549,10 @@ AROS_UFH3(LONG, unitentry,
 		    break;
 		case TD_EJECT:
 		    eject(unit, iotd->iotd_Req.io_Length);
+		    err = 0;
+		    break;
+		case TD_PROTSTATUS:
+		    iotd->iotd_Req.io_Actual = !unit->writable;
 		    err = 0;
 		    break;
 		    
