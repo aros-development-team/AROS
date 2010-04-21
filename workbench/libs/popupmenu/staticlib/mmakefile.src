@@ -1,0 +1,24 @@
+# $Id$
+#
+# Generate the popupmenu.lib library (normally called libpopupmenu.a).
+
+include $(TOP)/config/make.cfg
+
+FILES := \
+    pm_exlst \
+    pm_filterimsg \
+    pm_getitemattrs \
+    pm_insertmenuitem \
+    pm_layoutmenu \
+    pm_makeitem \
+    pm_makemenu \
+    pm_openpopupmenu \
+    pm_setitemattrs
+
+#MM- linklibs : linklibs-popupmenu
+#MM- linklibs-core : linklibs-popupmenu
+#MM linklibs-popupmenu : includes
+
+%build_linklib mmake=linklibs-popupmenu libname=popupmenu files=$(FILES)
+	
+%common
