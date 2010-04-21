@@ -41,7 +41,7 @@ FILES :=  pm \
 
 %build_module mmake=workbench-libs-popupmenu \
     modname=popupmenu modtype=library \
-    files="$(FILES)" \
-    uselibs="amiga rom m"
+    files="$(FILES)" linklibname=popupmenu-shared \
+    uselibs="amiga rom m popupmenu"
 
 %common
