@@ -36,7 +36,8 @@
 #MM     workbench-libs-codesets \
 #MM 	workbench-libs-thread \
 #MM     workbench-libs-muiscreen \
-#MM     workbench-libs-openurl
+#MM     workbench-libs-openurl \
+#MM     workbench-libs-popupmenu
 
 #MM- includes-generate : \
 #MM     workbench-libs-amigaguide-includes \
@@ -69,4 +70,5 @@
 #MM     workbench-libs-codesets-lib-includes \
 #MM 	workbench-libs-thread-includes \
 #MM     workbench-libs-muiscreen-includes \
-#MM     workbench-libs-openurl-includes
+#MM     workbench-libs-openurl-includes \
+#MM     workbench-libs-popupmenu-includes
