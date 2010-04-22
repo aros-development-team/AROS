@@ -153,6 +153,7 @@ struct ColorMap
     UWORD *ColorTable;				/* Table of high nibbles of color values (see description above) */
 
     /* The following fields are present only if Type >= COLORMAP_TYPE_V36 */
+
     struct ViewPortExtra * cm_vpe;		/* ViewPortExtra, for faster access */
 
     UWORD *LowColorBits;			/* Table of low nibbles of color values (see above) */
@@ -168,6 +169,9 @@ struct ColorMap
 
     struct TagItem      * cm_batch_items;
     ULONG                 VPModeID;
+
+    /* The following fields are present only if Type >= COLORMAP_TYPE_V39 */
+    
     struct PaletteExtra * PalExtra;		/* Structure controlling palette sharing */
 
     UWORD SpriteBase_Even;			/* Color bank for even sprites (see above) */
