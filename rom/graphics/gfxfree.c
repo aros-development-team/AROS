@@ -89,19 +89,6 @@
 
     ReleaseSemaphore(GfxBase->HashTableSemaphore);
 
-    switch(node->xln_Subtype) {
-    case VIEWPORT_EXTRA_TYPE:
-    {
-        struct ViewPortExtra *vpe = (struct ViewPortExtra *)node;
-	
-        if (VPE_BITMAP(vpe)) {
-	    D(bug("[GfxFree] Freeing bitmap object 0x%p\n", VPE_BITMAP(vpe)));
-	    RELEASE_HIDD_BM(VPE_BITMAP(vpe), vpe->ViewPort->RasInfo->BitMap);
-	}
-    }
-    break;
-    }
-
     FreeMem((void *) node, GfxNew_memsizes[node->xln_Subtype]);
   }
 
