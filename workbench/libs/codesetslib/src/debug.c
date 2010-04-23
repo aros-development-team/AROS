@@ -2,7 +2,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2007 by codesets.library Open Source Team
+ Copyright (C) 2005-2010 by codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -37,10 +37,8 @@
 #include "debug.h"
 #include "macros.h"
 
-#if defined(__MORPHOS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
 #include <exec/rawfmt.h>
-#elif defined(__AROS__)
-#include <proto/arossupport.h>
 #else
 #include <clib/debug_protos.h>
 #endif
@@ -65,13 +63,11 @@ void _DBPRINTF(const char *format, ...)
 
   ObtainSemaphore(&debug_sema);
 
-  #if defined(__MORPHOS__)
+  #if defined(__MORPHOS__) || defined(__AROS__)
   VNewRawDoFmt(format, (APTR)RAWFMTFUNC_SERIAL, NULL, args);
   #elif defined(__amigaos4__)
   vsnprintf(buf, sizeof(buf), format, args);
   DebugPrintF("%s", buf);
-  #elif defined(__AROS__)
-  v_DBPRINTF(format, args);
   #else
   KPutFmt(format, args);
   #endif
