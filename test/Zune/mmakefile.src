@@ -11,6 +11,7 @@ FILES  := test      	    \
 	  dirlist   	    \
           disable           \
 	  dtpic		    \
+	  font		    \
 	  string            \
 	  numericbutton     \
 	  poplist   	    \
