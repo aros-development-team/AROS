@@ -39,10 +39,10 @@ struct Library *UtilityBase = NULL;
 struct Library *LocaleBase = NULL;
 struct Library *DiskfontBase = NULL;
 
-struct DOSIFace*      IDOS = NULL;
-struct UtilityIFace*  IUtility = NULL;
-struct LocaleIFace*   ILocale = NULL;
-struct DiskfontIFace* IDiskfont = NULL;
+struct DOSIFace      *IDOS = NULL;
+struct UtilityIFace  *IUtility = NULL;
+struct LocaleIFace   *ILocale = NULL;
+struct DiskfontIFace *IDiskfont = NULL;
 
 #if !defined(__NEWLIB__)
 extern struct Library *__UtilityBase;
@@ -66,8 +66,7 @@ struct Library *__UtilityBase = NULL; // required by clib2 & libnix
 
 /****************************************************************************/
 
-ULONG
-freeBase(struct LibraryHeader *lib)
+ULONG freeBase(struct LibraryHeader *lib)
 {
   ENTER();
 
@@ -77,7 +76,7 @@ freeBase(struct LibraryHeader *lib)
   codesetsCleanup(&lib->codesets);
 
   // close locale.library
-  if(LocaleBase)
+  if(LocaleBase != NULL)
   {
     DROPINTERFACE(ILocale);
     CloseLibrary((struct Library *)LocaleBase);
@@ -86,7 +85,7 @@ freeBase(struct LibraryHeader *lib)
 
   #if defined(__amigaos4__)
   // close diskfont.library
-  if(DiskfontBase)
+  if(DiskfontBase != NULL)
   {
     DROPINTERFACE(IDiskfont);
     CloseLibrary((struct Library *)DiskfontBase);
@@ -106,7 +105,7 @@ freeBase(struct LibraryHeader *lib)
   }
 
   // close utility.library
-  if(UtilityBase)
+  if(UtilityBase != NULL)
   {
     DROPINTERFACE(IUtility);
     CloseLibrary((struct Library *)UtilityBase);
@@ -114,7 +113,7 @@ freeBase(struct LibraryHeader *lib)
   }
 
   // close dos.library
-  if(DOSBase)
+  if(DOSBase != NULL)
   {
     DROPINTERFACE(IDOS);
     CloseLibrary((struct Library *)DOSBase);
@@ -170,8 +169,7 @@ static const struct loc locs[] =
   { NULL,           0,  NULL                }
 };
 
-static void
-getSystemCodeset(struct LibraryHeader *lib)
+static void getSystemCodeset(struct LibraryHeader *lib)
 {
   struct codeset *foundCodeset = NULL;
 
@@ -180,7 +178,7 @@ getSystemCodeset(struct LibraryHeader *lib)
   // before we go any query the system via locale.library (which
   // might not be so accurate) we try different other means of
   // finding the codeset/charset of the system
-  #ifdef __amigaos4__
+  #if defined(__amigaos4__)
   {
     LONG default_charset = GetDiskFontCtrl(DFCTRL_CHARSET);
     char *charset = (char *)ObtainCharsetInfo(DFCS_NUMBER, default_charset, DFCS_MIMENAME);
@@ -191,12 +189,13 @@ getSystemCodeset(struct LibraryHeader *lib)
   }
   #endif
 
-  #ifdef __MORPHOS__
+  #if defined(__MORPHOS__)
   {
     /* The system maintains CODEPAGE environment variable which defines the preferred codepage for this user. */
-    TEXT codepage[40];
+    char codepage[40];
 
-    if (GetVar("CODEPAGE", codepage, sizeof(codepage), 0) > 0)
+    codepage[0] = '\0';
+    if(GetVar("CODEPAGE", codepage, sizeof(codepage), 0) > 0)
     {
       foundCodeset = codesetsFind(&lib->codesets, codepage);
     }
@@ -206,30 +205,26 @@ getSystemCodeset(struct LibraryHeader *lib)
     /* If CODEPAGE did not work (maybe user deleted it or something) we try a keymap instead. This only works
      * in MorphOS 2 and only if an old Amiga keymap is not used.
      */
-    if (foundCodeset == NULL)
+    if(foundCodeset == NULL)
     {
       struct Library *KeymapBase;
 
-      KeymapBase = OpenLibrary("keymap.library", 51);
-
-      if (KeymapBase)
+      if((KeymapBase = OpenLibrary("keymap.library", 51)) != NULL)
       {
         /* Since we requested V51 it is either V51 or newer */
-        if (KeymapBase->lib_Version > 51 || KeymapBase->lib_Revision >= 4)
+        if(KeymapBase->lib_Version > 51 || KeymapBase->lib_Revision >= 4)
         {
+          CONST_STRPTR codepage;
+
           #ifndef GetKeyMapCodepage
           #define GetKeyMapCodepage(__p0) LP1(78, CONST_STRPTR , GetKeyMapCodepage, CONST struct KeyMap *, __p0, a0, , KEYMAP_BASE_NAME, 0, 0, 0, 0, 0, 0)
           #endif
 
-          CONST_STRPTR codepage;
-
-          codepage = GetKeyMapCodepage(NULL);
-
-          if (codepage)
+          if((codepage = GetKeyMapCodepage(NULL)) != NULL)
           {
             foundCodeset = codesetsFind(&lib->codesets, codepage);
 
-            D(DBF_STARTUP, "%s system default codeset: '%s' (keymap)", foundCodeset ? "found" : "not found", codepage);
+            D(DBF_STARTUP, "%s system default codeset: '%s' (keymap)", foundCodeset ? "found" : "did not find", codepage);
           }
         }
 
@@ -244,14 +239,14 @@ getSystemCodeset(struct LibraryHeader *lib)
   if(foundCodeset == NULL)
   {
     char charset[80];
-    charset[0] = '\0';
 
+    charset[0] = '\0';
     if(GetVar("CHARSET", charset, sizeof(charset), 0) > 0)
     {
       foundCodeset = codesetsFind(&lib->codesets, charset);
     }
 
-    D(DBF_STARTUP, "%s system default codeset: '%s' (ENV:CHARSET)", foundCodeset ? "found" : "not found", charset);
+    D(DBF_STARTUP, "%s system default codeset: '%s' (ENV:CHARSET)", foundCodeset ? "found" : "did not find", charset);
   }
 
   // and if even the CHARSET environment variable didn't work
@@ -261,30 +256,31 @@ getSystemCodeset(struct LibraryHeader *lib)
   {
     char language[80];
 
+    language[0] = '\0';
     if(GetVar("LANGUAGE", language, sizeof(language), 0) > 0)
     {
       int i;
-      struct loc *curLoc = NULL;
+      const struct loc *curLoc = NULL;
       BOOL found = FALSE;
 
       for(i=0;;i++)
       {
-        curLoc = (struct loc *)&locs[i];
+        curLoc = &locs[i];
         if(curLoc == NULL || curLoc->name == NULL)
           break;
 
-        if(!Strnicmp(language, curLoc->name, curLoc->len))
+        if(Strnicmp(language, curLoc->name, curLoc->len) == 0)
         {
           found = TRUE;
           break;
         }
       }
 
-      if(found)
+      if(found == TRUE)
         foundCodeset = codesetsFind(&lib->codesets, curLoc->codesetName);
     }
 
-    D(DBF_STARTUP, "%s system default codeset: '%s' (ENV:LANGUAGE)", foundCodeset ? "found" : "not found",
+    D(DBF_STARTUP, "%s system default codeset: '%s' (ENV:LANGUAGE)", foundCodeset ? "found" : "did not find",
                                                                      foundCodeset ? foundCodeset->name : "?");
   }
 
@@ -294,20 +290,20 @@ getSystemCodeset(struct LibraryHeader *lib)
   {
     struct Locale *locale;
 
-    if((locale = OpenLocale(NULL)))
+    if((locale = OpenLocale(NULL)) != NULL)
     {
       int i;
       char *language = locale->loc_LanguageName;
-      struct loc *curLoc = NULL;
+      const struct loc *curLoc = NULL;
       BOOL found = FALSE;
 
       for(i=0;;i++)
       {
-        curLoc = (struct loc *)&locs[i];
+        curLoc = &locs[i];
         if(curLoc == NULL || curLoc->name == NULL)
           break;
 
-        if(!Strnicmp(language, curLoc->name, curLoc->len))
+        if(Strnicmp(language, curLoc->name, curLoc->len) == 0)
         {
           found = TRUE;
           break;
@@ -316,11 +312,11 @@ getSystemCodeset(struct LibraryHeader *lib)
 
       CloseLocale(locale);
 
-      if(found)
+      if(found == TRUE)
         foundCodeset = codesetsFind(&lib->codesets, curLoc->codesetName);
     }
 
-    D(DBF_STARTUP, "%s system default codeset: '%s' (locale)", foundCodeset ? "found" : "not found",
+    D(DBF_STARTUP, "%s system default codeset: '%s' (locale)", foundCodeset ? "found" : "did not find",
                                                                foundCodeset ? foundCodeset->name : "?");
   }
 
@@ -336,15 +332,14 @@ getSystemCodeset(struct LibraryHeader *lib)
 
 /***********************************************************************/
 
-ULONG
-initBase(struct LibraryHeader *lib)
+ULONG initBase(struct LibraryHeader *lib)
 {
   ENTER();
 
-  if((DOSBase = (APTR)OpenLibrary("dos.library", 37)) &&
+  if((DOSBase = (APTR)OpenLibrary("dos.library", 37)) != NULL &&
      GETINTERFACE(IDOS, DOSBase))
   {
-    if((UtilityBase = (APTR)OpenLibrary("utility.library", 37)) &&
+    if((UtilityBase = (APTR)OpenLibrary("utility.library", 37)) != NULL &&
        GETINTERFACE(IUtility, UtilityBase))
     {
       // we have to please the internal utilitybase
@@ -362,7 +357,7 @@ initBase(struct LibraryHeader *lib)
       #endif
 
       #if defined(__amigaos4__)
-      if((DiskfontBase = OpenLibrary("diskfont.library", 50)) &&
+      if((DiskfontBase = OpenLibrary("diskfont.library", 50)) != NULL &&
         GETINTERFACE(IDiskfont, DiskfontBase))
       {
       #endif
@@ -377,11 +372,11 @@ initBase(struct LibraryHeader *lib)
         #endif
         if(lib->pool != NULL)
         {
-          if(codesetsInit(&lib->codesets))
+          if(codesetsInit(&lib->codesets) == TRUE)
           {
-            lib->systemCodeset = (struct codeset *)lib->codesets.list.mlh_Head;
+            lib->systemCodeset = (struct codeset *)GetHead((struct List *)&lib->codesets);
 
-            if((LocaleBase = (APTR)OpenLibrary("locale.library", 37)) &&
+            if((LocaleBase = (APTR)OpenLibrary("locale.library", 37)) != NULL &&
                GETINTERFACE(ILocale, LocaleBase))
             {
               getSystemCodeset(lib);

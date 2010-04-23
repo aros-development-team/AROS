@@ -191,32 +191,32 @@ static LONG LIBFUNC LibNull(VOID)
 /* ------------------- OS4 Manager Interface ------------------------ */
 STATIC uint32 _manager_Obtain(struct LibraryManagerInterface *Self)
 {
-	uint32 res;
-	__asm__ __volatile__(
-	"1:	lwarx	%0,0,%1\n"
-	"addic	%0,%0,1\n"
-	"stwcx.	%0,0,%1\n"
-	"bne-	1b"
-	: "=&r" (res)
-	: "r" (&Self->Data.RefCount)
-	: "cc", "memory");
+  uint32 res;
+  __asm__ __volatile__(
+  "1: lwarx  %0,0,%1\n"
+  "   addic  %0,%0,1\n"
+  "   stwcx. %0,0,%1\n"
+  "   bne-   1b"
+  : "=&r" (res)
+  : "r" (&Self->Data.RefCount)
+  : "cc", "memory");
 
-	return res;
+  return res;
 }
 
 STATIC uint32 _manager_Release(struct LibraryManagerInterface *Self)
 {
-	uint32 res;
-	__asm__ __volatile__(
-	"1:	lwarx	%0,0,%1\n"
-	"addic	%0,%0,-1\n"
-	"stwcx.	%0,0,%1\n"
-	"bne-	1b"
-	: "=&r" (res)
-	: "r" (&Self->Data.RefCount)
-	: "cc", "memory");
+  uint32 res;
+  __asm__ __volatile__(
+  "1: lwarx  %0,0,%1\n"
+  "   addic  %0,%0,-1\n"
+  "   stwcx. %0,0,%1\n"
+  "   bne-   1b"
+  : "=&r" (res)
+  : "r" (&Self->Data.RefCount)
+  : "cc", "memory");
 
-	return res;
+  return res;
 }
 
 STATIC CONST CONST_APTR lib_manager_vectors[] =
@@ -469,8 +469,9 @@ static BOOL callLibFunction(ULONG (*function)(struct LibraryHeader *), struct Li
 
   return success;
 }
-
-#endif // !__amigaos4__
+#else // MIN_STACKSIZE && !__amigaos4__
+#define callLibFunction(func, arg) func(arg)
+#endif // MIN_STACKSIZE && !__amigaos4__
 
 /****************************************************************************/
 
@@ -510,6 +511,10 @@ static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
   {
     BOOL success = FALSE;
 
+    #if defined(DEBUG)
+    // this must be called ahead of any debug output, otherwise we get stuck
+    InitDebug();
+    #endif
     D(DBF_STARTUP, "LibInit()");
 
     // cleanup the library header structure beginning with the
@@ -539,11 +544,7 @@ static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
     // If we are not running on AmigaOS4 (no stackswap required) we go and
     // do an explicit StackSwap() in case the user wants to make sure we
     // have enough stack for his user functions
-    #if defined(MIN_STACKSIZE) && !defined(__amigaos4__)
     success = callLibFunction(initBase, base);
-    #else
-    success = initBase(base);
-    #endif
 
     // unprotect initBase()
     ReleaseSemaphore(&base->libSem);
@@ -561,11 +562,7 @@ static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
     }
     else
     {
-      #if defined(MIN_STACKSIZE) && !defined(__amigaos4__)
       callLibFunction(freeBase, base);
-      #else
-      freeBase(base);
-      #endif
       CodesetsBase = NULL;
     }
 
@@ -603,8 +600,8 @@ static BPTR LibExpunge(void)
   struct LibraryHeader *base = (struct LibraryHeader*)REG_A6;
 #elif defined(__AROS__)
 static AROS_LH1(BPTR, LibExpunge,
-		AROS_LHA(UNUSED struct LibraryHeader *, __extrabase, D0),
-		struct LibraryHeader *, base, 3, Codesets
+  AROS_LHA(UNUSED struct LibraryHeader *, __extrabase, D0),
+  struct LibraryHeader *, base, 3, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -635,11 +632,7 @@ static BPTR LIBFUNC LibExpunge(REG(a6, struct LibraryHeader *base))
     ObtainSemaphore(&base->libSem);
 
     // make sure we have enough stack here
-    #if defined(MIN_STACKSIZE) && !defined(__amigaos4__)
     callLibFunction(freeBase, base);
-    #else
-    freeBase(base);
-    #endif
 
     // unprotect
     ReleaseSemaphore(&base->libSem);

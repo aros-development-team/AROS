@@ -119,8 +119,7 @@ static const UBYTE dtable[] =
 /****************************************************************************/
 
 #if defined(__amigaos4__)
-static BPTR
-openIn(STRPTR name, int64 *size)
+static BPTR openIn(STRPTR name, int64 *size)
 {
   BPTR file = 0;
   struct ExamineData *exd;
@@ -143,17 +142,16 @@ openIn(STRPTR name, int64 *size)
 }
 
 #elif defined(__MORPHOS__)
-static BPTR
-openIn(STRPTR name, ULONG * size)
+static BPTR openIn(STRPTR name, ULONG *size)
 {
   struct FileInfoBlock fib;
   BPTR file;
 
   ENTER();
 
-  if((file = Open(name,MODE_OLDFILE)))
+  if((file = Open(name, MODE_OLDFILE)))
   {
-    if(!ExamineFH(file,&fib))
+    if(!ExamineFH(file, &fib))
     {
       Close(file);
       file = 0;
@@ -168,19 +166,18 @@ openIn(STRPTR name, ULONG * size)
   return file;
 }
 #else
-static BPTR
-openIn(STRPTR name, ULONG * size)
+static BPTR openIn(STRPTR name, ULONG * size)
 {
   struct FileInfoBlock *fib;
   BPTR file;
 
   ENTER();
 
-  if((fib = AllocDosObject(DOS_FIB,NULL)))
+  if((fib = AllocDosObject(DOS_FIB,NULL)) != NULL)
   {
-    if((file = Open(name,MODE_OLDFILE)))
+    if((file = Open(name, MODE_OLDFILE)))
     {
-      if(!ExamineFH(file,fib))
+      if(!ExamineFH(file, fib))
       {
         Close(file);
         file = 0;
@@ -191,7 +188,7 @@ openIn(STRPTR name, ULONG * size)
       }
     }
 
-    FreeDosObject(DOS_FIB,fib);
+    FreeDosObject(DOS_FIB, fib);
   }
   else
     file = 0;
@@ -203,8 +200,7 @@ openIn(STRPTR name, ULONG * size)
 
 /****************************************************************************/
 
-static int
-inchar(struct b64 *b64)
+static int inchar(struct b64 *b64)
 {
   int c;
 
@@ -212,15 +208,15 @@ inchar(struct b64 *b64)
 
   if(b64->flags & B64FLG_SourceFile)
   {
-    if((c = FGetC((BPTR)b64->in))==EOF)
+    if((c = FGetC((BPTR)b64->in)) == EOF)
     {
-      if(IoErr())
+      if(IoErr() != 0)
         b64->error = CSR_B64_ERROR_DOS;
     }
   }
   else
   {
-    if(!b64->inAvailable)
+    if(b64->inAvailable == 0)
     {
       RETURN(EOF);
       return EOF;
@@ -236,8 +232,7 @@ inchar(struct b64 *b64)
 
 /****************************************************************************/
 
-static int
-ochar(struct b64 *b64,int c)
+static int ochar(struct b64 *b64, int c)
 {
   ENTER();
 
@@ -277,8 +272,7 @@ ochar(struct b64 *b64,int c)
 
 /****************************************************************************/
 
-static int
-ostring(struct b64 *b64,UBYTE * buf,int s)
+static int ostring(struct b64 *b64, UBYTE * buf, int s)
 {
   int i;
 
@@ -313,8 +307,7 @@ ostring(struct b64 *b64,UBYTE * buf,int s)
 
 /****************************************************************************/
 
-static int
-insig(struct b64 *b64)
+static int insig(struct b64 *b64)
 {
   int c;
 
@@ -332,8 +325,7 @@ insig(struct b64 *b64)
 
 /****************************************************************************/
 
-ULONG LIBFUNC
-CodesetsEncodeB64A(REG(a0, struct TagItem *attrs))
+ULONG LIBFUNC CodesetsEncodeB64A(REG(a0, struct TagItem *attrs))
 {
   struct b64     b64;
   struct TagItem *tag;
@@ -349,33 +341,33 @@ CodesetsEncodeB64A(REG(a0, struct TagItem *attrs))
 
   flags = 0;
 
-  if((tag = FindTagItem(CSA_B64SourceFile,attrs)))
+  if((tag = FindTagItem(CSA_B64SourceFile, attrs)) != NULL)
   {
     source = (STRPTR)tag->ti_Data;
     flags |= B64FLG_SourceFile;
   }
   else
   {
-    if((!(source = (STRPTR)GetTagData(CSA_B64SourceString, 0, attrs))))
+    if((source = (STRPTR)GetTagData(CSA_B64SourceString, 0, attrs)) == NULL)
     {
       RETURN(CSR_B64_ERROR_MEM);
       return CSR_B64_ERROR_MEM;
     }
 
-    if((tag = FindTagItem(CSA_B64SourceLen,attrs)))
+    if((tag = FindTagItem(CSA_B64SourceLen, attrs)) != NULL)
       sourceLen = tag->ti_Data;
     else
       sourceLen = strlen(source);
   }
 
-  if((tag = FindTagItem(CSA_B64DestFile,attrs)))
+  if((tag = FindTagItem(CSA_B64DestFile, attrs)) != NULL)
   {
     dest = (APTR)tag->ti_Data;
     flags |= B64FLG_DestFile;
   }
   else
   {
-    if((!(dest = (APTR)GetTagData(CSA_B64DestPtr, 0, attrs))))
+    if((dest = (APTR)GetTagData(CSA_B64DestPtr, 0, attrs)) == NULL)
     {
       RETURN(CSR_B64_ERROR_MEM);
       return CSR_B64_ERROR_MEM;
@@ -423,7 +415,7 @@ CodesetsEncodeB64A(REG(a0, struct TagItem *attrs))
     if(!totSize)
       totSize = 8;
 
-    if(!(out = allocArbitrateVecPooled(totSize)))
+    if((out = allocArbitrateVecPooled(totSize)) == NULL)
     {
       if(flags & B64FLG_SourceFile)
         Close((BPTR)in);
@@ -448,7 +440,7 @@ CodesetsEncodeB64A(REG(a0, struct TagItem *attrs))
 
   /* encode */
   stop = FALSE;
-  while(!stop)
+  while(stop == FALSE)
   {
     UBYTE    igroup[3], ogroup[4];
     int i, c, n;
@@ -529,8 +521,7 @@ CodesetsEncodeB64A(REG(a0, struct TagItem *attrs))
 
 /****************************************************************************/
 
-ULONG LIBFUNC
-CodesetsDecodeB64A(REG(a0, struct TagItem *attrs))
+ULONG LIBFUNC CodesetsDecodeB64A(REG(a0, struct TagItem *attrs))
 {
   struct b64              b64;
   struct TagItem *tag;
@@ -548,33 +539,33 @@ CodesetsDecodeB64A(REG(a0, struct TagItem *attrs))
 
   flags = 0;
 
-  if((tag = FindTagItem(CSA_B64SourceFile,attrs)))
+  if((tag = FindTagItem(CSA_B64SourceFile, attrs)) != NULL)
   {
     source = (STRPTR)tag->ti_Data;
     flags |= B64FLG_SourceFile;
   }
   else
   {
-    if (!(source = (STRPTR)GetTagData(CSA_B64SourceString,0,attrs)))
+    if ((source = (STRPTR)GetTagData(CSA_B64SourceString, 0, attrs)) == NULL)
     {
       RETURN(CSR_B64_ERROR_MEM);
       return CSR_B64_ERROR_MEM;
     }
 
-    if((tag = FindTagItem(CSA_B64SourceLen,attrs)))
+    if((tag = FindTagItem(CSA_B64SourceLen, attrs)) != NULL)
       sourceLen = tag->ti_Data;
     else
       sourceLen = strlen(source);
   }
 
-  if((tag = FindTagItem(CSA_B64DestFile,attrs)))
+  if((tag = FindTagItem(CSA_B64DestFile, attrs)) != NULL)
   {
     dest = (APTR)tag->ti_Data;
     flags |= B64FLG_DestFile;
   }
   else
   {
-    if(!(dest = (APTR)GetTagData(CSA_B64DestPtr, 0, attrs)))
+    if((dest = (APTR)GetTagData(CSA_B64DestPtr, 0, attrs)) == NULL)
     {
       RETURN(CSR_B64_ERROR_MEM);
       return CSR_B64_ERROR_MEM;
@@ -584,7 +575,7 @@ CodesetsDecodeB64A(REG(a0, struct TagItem *attrs))
   /* source */
   if(flags & B64FLG_SourceFile)
   {
-    if(!(in = (APTR)openIn(source,&size)))
+    if(!(in = (APTR)openIn(source, &size)))
     {
       RETURN(CSR_B64_ERROR_DOS);
       return CSR_B64_ERROR_DOS;
@@ -604,7 +595,7 @@ CodesetsDecodeB64A(REG(a0, struct TagItem *attrs))
   /* dest */
   if(flags & B64FLG_DestFile)
   {
-    if(!(out = (APTR)Open(dest,MODE_NEWFILE)))
+    if(!(out = (APTR)Open(dest, MODE_NEWFILE)))
     {
       RETURN(CSR_B64_ERROR_DOS);
       return CSR_B64_ERROR_DOS;
@@ -638,7 +629,7 @@ CodesetsDecodeB64A(REG(a0, struct TagItem *attrs))
   b64.error       = 0;
 
   /* parse error check */
-  errcheck = !GetTagData(CSA_B64FLG_NtCheckErr,FALSE,attrs);
+  errcheck = !GetTagData(CSA_B64FLG_NtCheckErr, FALSE, attrs);
 
   /* decode */
   for(;;)
