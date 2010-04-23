@@ -139,7 +139,7 @@ LIBSTUBVA(CodesetsFindBest, struct codeset *, ...)
   return cs;
 }
 
-LIBSTUB(CodesetsUTF8Len, ULONG, REG(a0, UTF8* str))
+LIBSTUB(CodesetsUTF8Len, ULONG, REG(a0, UTF8 *str))
 {
   return CodesetsUTF8Len(str);
 }

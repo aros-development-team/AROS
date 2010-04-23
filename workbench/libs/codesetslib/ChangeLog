@@ -5,6 +5,70 @@ codesets.library - Library for handling different codesets
 $Id$
 $URL$
 
+2010-04-23 Pavel Fedin <pavel_fedin@mail.ru>
+
+  * src/libinit.c: use NewStackSwap() under AROS, re-enabled stack swapping under MorphOS
+  * src/debug.c: use VNewRawDoFmt() for debugging output under AROS, the same as in MorphOS
+
+2010-04-23 Thore Böckelmann <tboeckel@gmx.de>
+
+  * src/libinit.c: replaced some #ifdef's by macros.
+
+2010-01-22 Thore Böckelmann <tboeckel@gmx.de>
+
+  * charsets/windows-1253.txt: added greek Windows-1253 codepage as this one is
+    documented to be incompatible to ISO8859-7 (see http://de.wikipedia.org/wiki/
+    Windows-1253).
+
+#### 6.10 RELEASE ########################################################
+
+2009-12-21  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 6.10 release preparations.
+
+2009-12-10 Thore Böckelmann <tboeckel@gmx.de>
+
+  * init.c: removed some unnecessary type casts.
+  * codesets.c: adding the fake UTF8, UTF16 and UTF32 codesets now makes sure
+    that the code tables of these codesets only contain zero values. Otherwise
+    CodesetsFindBestCodeset() might choose one of these by accident, even if
+    they are just fake entries.
+  * codesets.c: excluded the UTF16 and UTF32 codesets from the "find best" check
+    completely, like the UTF8 codeset was excluded before already.
+
+2009-12-09 Thore Böckelmann <tboeckel@gmx.de>
+
+  * codesets.c: added some debug output when adding the individual internal and
+    external codesets.
+  * codesets.c: broke down the text check against a single codeset into smaller
+    functions to make things easier to understand and maintain.
+  * codesets.c: asking MorphOS for system codesets could fail if there is either
+    no default keymap or the keymap has no codepage. This let the complete
+    initial codeset scanning fail. Now only failed memory allocations will be
+    treated as errors. This conforms with treatment of all other codesets. I
+    guess this caused much of the recent trouble with MorphOS and codesets.lib
+    V6.9.
+
+2009-12-08 Thore Böckelmann <tboeckel@gmx.de>
+
+  * misc: cleaned up several parts of the source code for better readability and
+    maintainability. The pool semaphore was often used to protect some code
+    parts against concurrent execution where it was not needed at all. The pool
+    semaphore is for meant to protect the memory pool and nothing else!
+    Added the GetHead/Tail/Succ/Pred functions to navigate within the codeset
+    lists to make things more safe.
+
+2009-11-02 Thore Böckelmann <tboeckel@gmx.de>
+
+  * debug.c, libinit.c: reworked the debug system to use the same stuff as YAM
+    does. Furthermore we now have a semaphore to prevent several concurring
+    applications from screwing up the log by writing out debug messages at the
+    same time.
+
+2009-10-29 Thore Böckelmann <tboeckel@gmx.de>
+
+  * codesets.c: removed a superflous LF from a debug message.
+
 #### 6.9 RELEASE #########################################################
 
 2009-10-24  Jens Langner <Jens.Langner@light-speed.de>

@@ -26,8 +26,7 @@
 /****************************************************************************/
 
 #if !defined(HAVE_ALLOCVECPOOLED)
-APTR
-allocVecPooled(APTR pool,ULONG size)
+APTR allocVecPooled(APTR pool,ULONG size)
 {
   ULONG *mem;
 
@@ -45,8 +44,7 @@ allocVecPooled(APTR pool,ULONG size)
 /****************************************************************************/
 
 #if !defined(HAVE_FREEVECPOOLED)
-void
-freeVecPooled(APTR pool,APTR mem)
+void freeVecPooled(APTR pool,APTR mem)
 {
   ENTER();
 
@@ -58,8 +56,7 @@ freeVecPooled(APTR pool,APTR mem)
 
 /****************************************************************************/
 
-APTR
-reallocVecPooled(APTR pool, APTR mem, ULONG oldSize, ULONG newSize)
+APTR reallocVecPooled(APTR pool, APTR mem, ULONG oldSize, ULONG newSize)
 {
   ULONG *newMem;
 
@@ -78,8 +75,7 @@ reallocVecPooled(APTR pool, APTR mem, ULONG oldSize, ULONG newSize)
 
 /****************************************************************************/
 
-APTR
-allocArbitrateVecPooled(ULONG size)
+APTR allocArbitrateVecPooled(ULONG size)
 {
   ULONG *mem;
 
@@ -95,8 +91,7 @@ allocArbitrateVecPooled(ULONG size)
 
 /****************************************************************************/
 
-void
-freeArbitrateVecPooled(APTR mem)
+void freeArbitrateVecPooled(APTR mem)
 {
   ENTER();
 
@@ -109,8 +104,7 @@ freeArbitrateVecPooled(APTR mem)
 
 /****************************************************************************/
 
-APTR
-reallocArbitrateVecPooled(APTR mem, ULONG oldSize, ULONG newSize)
+APTR reallocArbitrateVecPooled(APTR mem, ULONG oldSize, ULONG newSize)
 {
   ENTER();
 
@@ -141,3 +135,67 @@ ULONG utf32_strlen(UTF32 *ptr)
   for (l=0; ptr[l]; l++);
   return l<<2;
 }
+
+/****************************************************************************/
+
+// GetHead()
+// get the head element of a list
+#if !defined(HAVE_GETHEAD)
+struct Node *GetHead(struct List *list)
+{
+  struct Node *result = NULL;
+
+  if(list != NULL && IsListEmpty(list) == FALSE)
+    result = list->lh_Head;
+
+  return result;
+}
+#endif
+
+/****************************************************************************/
+
+// GetPred()
+// get a node's predecessor
+#if !defined(HAVE_GETPRED)
+struct Node *GetPred(struct Node *node)
+{
+  struct Node *result = NULL;
+
+  if(node != NULL && node->ln_Pred != NULL && node->ln_Pred->ln_Pred != NULL)
+    result = node->ln_Pred;
+
+  return result;
+}
+#endif
+
+/****************************************************************************/
+
+// GetSucc()
+// get a node's sucessor
+#if !defined(HAVE_GETSUCC)
+struct Node *GetSucc(struct Node *node)
+{
+  struct Node *result = NULL;
+
+  if(node != NULL && node->ln_Succ != NULL && node->ln_Succ->ln_Succ != NULL)
+    result = node->ln_Succ;
+
+  return result;
+}
+#endif
+
+/****************************************************************************/
+
+// GetTail()
+// get the tail element of a list
+#if !defined(HAVE_GETTAIL)
+struct Node *GetTail(struct List *list)
+{
+  struct Node *result = NULL;
+
+  if(list != NULL && IsListEmpty(list) == FALSE)
+    result = list->lh_TailPred;
+
+  return result;
+}
+#endif

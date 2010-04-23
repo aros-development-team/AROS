@@ -30,9 +30,23 @@ ULONG freeBase(struct LibraryHeader* lib);
 ULONG initBase(struct LibraryHeader* lib);
 
 /* utils.c */
-#if defined(__amigaos4__) || defined(__MORPHOS__)
+#if defined(__amigaos4__)
   #define HAVE_ALLOCVECPOOLED 1
   #define HAVE_FREEVECPOOLED  1
+  #define HAVE_GETHEAD        1
+  #define HAVE_GETTAIL        1
+  #define HAVE_GETPRED        1
+  #define HAVE_GETSUCC        1
+#elif defined(__MORPHOS__)
+  #define HAVE_ALLOCVECPOOLED 1
+  #define HAVE_FREEVECPOOLED  1
+#elif defined(__AROS__)
+  #define HAVE_ALLOCVECPOOLED 1
+  #define HAVE_FREEVECPOOLED  1
+  #define HAVE_GETHEAD        1
+  #define HAVE_GETTAIL        1
+  #define HAVE_GETPRED        1
+  #define HAVE_GETSUCC        1
 #endif
 
 #if defined(HAVE_ALLOCVECPOOLED)
@@ -51,6 +65,18 @@ void freeArbitrateVecPooled(APTR mem);
 APTR reallocArbitrateVecPooled(APTR mem, ULONG oldSize, ULONG newSize);
 ULONG utf16_strlen(UTF16 *ptr);
 ULONG utf32_strlen(UTF32 *ptr);
+#if !defined(HAVE_GETHEAD)
+struct Node *GetHead(struct List *list);
+#endif
+#if !defined(HAVE_GETPRED)
+struct Node *GetPred(struct Node *node);
+#endif
+#if !defined(HAVE_GETSUCC)
+struct Node *GetSucc(struct Node *node);
+#endif
+#if !defined(HAVE_GETTAIL)
+struct Node *GetTail(struct List *list);
+#endif
 
 /* base64.c */
 LIBPROTO(CodesetsEncodeB64A, ULONG, REG(a0, struct TagItem *attrs));

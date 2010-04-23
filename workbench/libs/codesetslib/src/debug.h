@@ -41,28 +41,7 @@
 
 #if defined(DEBUG)
 
-#ifndef EXEC_TYPES_H
-#include <exec/types.h>
-#endif
-
-#if defined(__amigaos4__)
-  #include <proto/exec.h>
-  #ifdef __USE_INLINE__
-    #ifdef DebugPrintF
-      #undef DebugPrintF
-    #endif
-  #endif
-  #ifndef kprintf
-    #define kprintf(format, args...)  ((struct ExecIFace *)((*(struct ExecBase **)4)->MainInterface))->DebugPrintF(format, ## args)
-  #endif
-#elif defined(__MORPHOS__)
-  #include <exec/rawfmt.h>
-  #include <proto/exec.h>
-  #define KPutFmt(format, args)  VNewRawDoFmt(format, (APTR)RAWFMTFUNC_SERIAL, NULL, args)
-  void kprintf(const char *formatString,...);
-#else
-  void kprintf(const char *formatString,...);
-#endif
+#include <stdarg.h>
 
 // debug classes
 #define DBC_CTRACE   (1<<0) // call tracing (ENTER/LEAVE etc.)
@@ -80,6 +59,7 @@
 #define DBF_UTF      (1<<2)     // for the UTF conversion routines.
 #define DBF_ALL      0xffffffff
 
+void InitDebug(void);
 void SetupDebug(void);
 
 void _ENTER(unsigned long dclass, const char *file, int line, const char *function);
@@ -120,17 +100,17 @@ void _DPRINTF(unsigned long dclass, unsigned long dflags, const char *file, int 
 
 #else // DEBUG
 
-#define ENTER()							((void)0)
-#define LEAVE()							((void)0)
-#define RETURN(r)						((void)0)
-#define SHOWVALUE(f, v)			((void)0)
-#define SHOWPOINTER(f, p)		((void)0)
-#define SHOWSTRING(f, s)		((void)0)
-#define SHOWMSG(f, m)			  ((void)0)
-#define D(f, s, vargs...)		((void)0)
-#define E(f, s, vargs...)		((void)0)
-#define W(f, s, vargs...)		((void)0)
-#define ASSERT(expression)	((void)0)
+#define ENTER()                 ((void)0)
+#define LEAVE()                 ((void)0)
+#define RETURN(r)               ((void)0)
+#define SHOWVALUE(f, v)         ((void)0)
+#define SHOWPOINTER(f, p)       ((void)0)
+#define SHOWSTRING(f, s)        ((void)0)
+#define SHOWMSG(f, m)           ((void)0)
+#define D(f, s, vargs...)       ((void)0)
+#define E(f, s, vargs...)       ((void)0)
+#define W(f, s, vargs...)       ((void)0)
+#define ASSERT(expression)      ((void)0)
 
 #endif // DEBUG
 

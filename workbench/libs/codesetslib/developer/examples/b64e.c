@@ -75,6 +75,6 @@ int main(int argc,char **argv)
         printf("Usage: b64e <in_file> <out_file>\n");
         res = 10;
     }
-    
+
     return res;
 }
