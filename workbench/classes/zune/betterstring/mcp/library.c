@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2010 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -72,6 +72,27 @@ static VOID ClassExpunge(UNUSED struct Library *base);
 /******************************************************************************/
 #define USE_IMAGE_COLORS
 #define USE_IMAGE_BODY
+
+#ifdef MUIA_Bitmap_RawData
+
+#define PREFSIMAGEOBJECT \
+  BodychunkObject,\
+    MUIA_FixWidth,              IMAGE_WIDTH,\
+    MUIA_FixHeight,             IMAGE_HEIGHT,\
+    MUIA_Bitmap_Width,          IMAGE_WIDTH ,\
+    MUIA_Bitmap_Height,         IMAGE_HEIGHT,\
+    MUIA_Bodychunk_Depth,       IMAGE_DEPTH,\
+    MUIA_Bodychunk_Body,        (UBYTE *)image_body,\
+    MUIA_Bodychunk_Compression, IMAGE_COMPRESSION,\
+    MUIA_Bodychunk_Masking,     IMAGE_MASKING,\
+    MUIA_Bitmap_SourceColors,   (ULONG *)image_colors,\
+    MUIA_Bitmap_Transparent,    0,\
+    MUIA_Bitmap_RawData,        icon32,\
+    MUIA_Bitmap_RawDataFormat,  MUIV_Bitmap_RawDataFormat_ARGB32,\
+  End
+
+#else
+
 #define PREFSIMAGEOBJECT \
   BodychunkObject,\
     MUIA_FixWidth,              IMAGE_WIDTH,\
@@ -85,7 +106,11 @@ static VOID ClassExpunge(UNUSED struct Library *base);
     MUIA_Bitmap_SourceColors,   (ULONG *)image_colors,\
     MUIA_Bitmap_Transparent,    0,\
   End
+
+#endif
+
 #include "icon.bh"
+#include "icon32.h"
 #include "mccinit.c"
 
 /******************************************************************************/
