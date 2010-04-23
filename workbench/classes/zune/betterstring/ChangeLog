@@ -2,15 +2,37 @@
 MUI BetterString MCC class - ChangeLog
 --------------------------------------
 
-$Id: ChangeLog 213 2009-10-24 16:26:31Z damato $
-$URL: https://bstring-mcc.svn.sourceforge.net/svnroot/bstring-mcc/releases/11.17/ChangeLog $
+$Id: ChangeLog 222 2010-04-23 12:16:31Z sonic_amiga $
+$URL: https://bstring-mcc.svn.sourceforge.net/svnroot/bstring-mcc/trunk/ChangeLog $
+
+2010-04-23 Pavel Fedin <pavel_fedin@mail.ru>
+
+  * include/mccinit.c: use NewStackSwap() under AROS, do not crash any more
+  * mcp/library.c: Fixed building on systems without PNG support in Bodychunk.mui
+
+2010-04-12 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/misc: added 32bit truecolor prefs image done by Martin 'Mason' Merz.
+    This requires at least MUI3.9 and AmigaOS 4.1.
+
+2010-02-10 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/AllocBitMap.c: the CyberGraphics semaphore check was done without the
+    necessary Forbid()/Permit() pair. Although it is absolutely unlikely that
+    the semaphore will be removed it is better to follow the rules. This fixes
+    bug #2948533 of TextEditor.mcc.
+
+2009-11-28 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/ClipboardServer.c: decreased the stack size from 16K to 8K as the server
+    process doesn't really need much stack.
 
 #### v11.17 RELEASE ###########################################################
 
 2009-10-24 Jens Langner <Jens.Langner@light-speed.de>
 
   * misc: final 11.17 release preparations
- 
+
 2009-09-24 Thore Böckelmann <tboeckel@gmx.de>
 
   * mcc/misc: renamed all pool function to "*Shared*" as this describes what

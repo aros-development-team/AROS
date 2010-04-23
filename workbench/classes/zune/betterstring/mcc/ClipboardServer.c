@@ -407,8 +407,17 @@ BOOL StartClipboardServer(void)
   #endif
   if(serverLock != NULL)
   {
-    #if !defined(__amigaos4__)
+    #if defined(__amigaos4__)
+    uint32 oldStackSize;
+    #else
     InitSemaphore(serverLock);
+    #endif
+
+    #if defined(__amigaos4__)
+    // set a minimum stack size of 8K, no matter what the user has set
+    DosControlTags(DC_MinProcStackR, &oldStackSize,
+                   DC_MinProcStackW, 8192,
+                   TAG_DONE);
     #endif
 
     // create the server process
@@ -416,7 +425,7 @@ BOOL StartClipboardServer(void)
     serverProcess = CreateNewProcTags(NP_Entry, ClipboardServer,
                                       NP_Name, "BetterString.mcc clipboard server",
                                       NP_Priority, 1,
-                                      NP_StackSize, 16384,
+                                      NP_StackSize, 8192,
                                       NP_WindowPtr, ~0L,
                                       #if defined(__amigaos4__)
                                       NP_Child, FALSE,
@@ -424,6 +433,7 @@ BOOL StartClipboardServer(void)
                                       NP_CodeType, CODETYPE_PPC,
                                       #endif
                                       TAG_DONE);
+
     if(serverProcess !=  NULL)
     {
       // we use one global reply port with a static signal bit
@@ -445,6 +455,12 @@ BOOL StartClipboardServer(void)
         success = TRUE;
       }
     }
+
+    #if defined(__amigaos4__)
+    // restore the old minimum stack size
+    DosControlTags(DC_MinProcStackW, oldStackSize,
+                   TAG_DONE);
+    #endif
   }
 
   RETURN(success);
