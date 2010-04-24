@@ -239,6 +239,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
                         goto do_number;
 
 		    case 'd':
+		    case 'D':
 		        base   = 10;
   		        number = fetch_number(size, -1);
 			minus  = (SIPTR)number < 0;
@@ -248,6 +249,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 			goto do_number;
 
 		    case 'u':
+		    case 'U':
 		        base = 10;
   		        number = fetch_number(size, 1);
 
