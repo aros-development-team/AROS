@@ -1,3 +1,18 @@
+# Creates C files with function prototypes from FD and clib/*_proto.h files.
+
+# Example usage:
+#
+# Required directory structure:
+# amiga/include/fd/mylib_lib.fd
+# amiga/include/clib/mylib_protos.h
+
+# Usage: awk -f cint2.awk mylib
+
+# Result:
+# mylib/func1.c
+# mylib/func2.c
+# ...
+
 BEGIN {
     date="27-11-96";
 
@@ -227,7 +242,7 @@ print "Working on " part_name "..."
 		    }
 
 		    printf ("/*\n") > file;
-		    print "        Copyright © 1995-2001, The AROS Development Team. All rights reserved." >> file
+		    print "    Copyright © 2010, The AROS Development Team. All rights reserved." >> file
 		    printf ("    %sId$\n", "$") >> file;
 		    printf ("\n") >> file;
 		    printf ("    Desc:\n") >> file;
@@ -236,7 +251,7 @@ print "Working on " part_name "..."
 		    printf ("#include \"%s_intern.h\"\n\n", part_name) >> file;
 		    print "/*****************************************************************************\n" >> file
 		    print "    NAME */" >>file
-		    print "#include <clib/" part_name "_protos.h>\n">>file
+		    print "#include <proto/" part_name ".h>\n">>file
 
 		    if (offset!=-1)
 		    {
@@ -324,14 +339,10 @@ print "Working on " part_name "..."
 		    }
 		    print "\n/*  FUNCTION\n\n    INPUTS\n\n    RESULT\n\n    NOTES\n">>file
 		    print "    EXAMPLE\n\n    BUGS\n\n    SEE ALSO\n\n    INTERNALS\n">>file
-		    print "    HISTORY\n\t" date "    digulla automatically created from">>file
-		    print "\t\t\t    "part_name"_lib.fd and clib/"part_name"_protos.h\n">>file;
+		    print "    HISTORY\n\n">>file;
 		    print "*****************************************************************************/" > file
 		    print "{">>file;
 		    print "    AROS_LIBFUNC_INIT">>file;
-		    if (Base!="")
-			print "    AROS_LIBBASE_EXT_DECL(struct "struct_name" *,"Base")">>file;
-		    print "    extern void aros_print_not_implemented (char *);\n">>file;
 		    print "    aros_print_not_implemented (\"" fname "\");\n">>file;
 		    print "    AROS_LIBFUNC_EXIT">>file;
 		    print "} /* " fname " */">>file;
