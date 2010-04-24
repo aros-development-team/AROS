@@ -391,6 +391,9 @@ void SaveIcon(struct DiskObject *icon, STRPTR name, BPTR cd)
         case WBPROJECT:
             get(filename_string, MUIA_String_Contents, &tool);
             icon->do_DefaultTool = tool;
+            get(stackspace, MUIA_String_Contents, &stack);
+            stcd_l(stack, &ls);
+            icon->do_StackSize = (LONG)ls;
             break;
         case WBTOOL:
             get(stackspace, MUIA_String_Contents, &stack);
@@ -621,11 +624,74 @@ exit:
     return retval;
 }
 
+static void AddStackField(Object * application, Object * group, STRPTR stack)
+{
+    Object * stacklabel = NULL;
+
+    stackspace = (Object *)StringObject,
+        StringFrame,
+        MUIA_String_MaxLen, 16,
+        MUIA_String_Contents, (IPTR)stack,
+        MUIA_String_Format, MUIV_String_Format_Right,
+        MUIA_String_Accept, (IPTR)"0123456789",
+        End;
+
+    stacklabel = MUI_MakeObject(MUIO_Label, _(MSG_STACK), NULL);
+
+    if ((stackspace != NULL) && (stacklabel != NULL))
+    {
+        DoMethod(group, MUIM_Group_InitChange);
+        DoMethod(group, OM_ADDMEMBER, stacklabel);
+        DoMethod(group, OM_ADDMEMBER, stackspace);
+        DoMethod(group, MUIM_Group_ExitChange);
+        SetAttrs(stackspace, MUIA_CycleChain, 1, TAG_DONE);
+        DoMethod(stackspace, MUIM_Notify,
+        MUIA_String_Acknowledge, MUIV_EveryTime,
+        (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_STACKACK);
+    }
+}
+
+static void AddToolField(Object * application, Object * group, STRPTR tool)
+{
+    Object * toolspace = MUI_NewObject(MUIC_Popasl, ASLFR_DoSaveMode, TRUE,
+        MUIA_Popstring_String, (IPTR)(filename_string = StringObject,
+        StringFrame,
+        MUIA_String_MaxLen, MAX_PATH_LEN,
+        MUIA_String_Contents, (IPTR)tool,
+        End),
+        MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopFile), TAG_DONE);
+
+    Object * toollabel = MUI_MakeObject(MUIO_Label, _(MSG_DEFTOOL), NULL);
+
+    if ((toolspace != NULL) && (toollabel != NULL)&&(filename_string != NULL))
+    {
+        DoMethod(group, MUIM_Group_InitChange);
+        DoMethod(group, OM_ADDMEMBER, toollabel);
+        DoMethod(group, OM_ADDMEMBER, toolspace);
+        DoMethod(group, MUIM_Group_ExitChange);
+
+        set(toolspace, MUIA_CycleChain, 1);
+        DoMethod(filename_string, MUIM_Notify,
+        MUIA_String_Acknowledge, MUIV_EveryTime,
+        (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_TOOLACK);
+    }
+}
+
+static void AddEmptySpace(Object * group)
+{
+    Object * emptyspace = MUI_NewObject(MUIC_Rectangle, TAG_DONE);
+    if ((emptyspace != NULL))
+    {
+        DoMethod(group, MUIM_Group_InitChange);
+        DoMethod(group, OM_ADDMEMBER, emptyspace);
+        DoMethod(group, MUIM_Group_ExitChange);
+    }
+}
+
 int main(int argc, char **argv)
 {
-    Object *application, *group, *toolspace = NULL, *toollabel = NULL;
+    Object *application, *grouptool, *groupstack = NULL;
     Object *registergroup = NULL, *infomenu = NULL, *protectmenu = NULL, *toolmenu = NULL;
-    Object *stacklabel = NULL, *drawerspace = NULL;
     Object *datespace = NULL, *typespace = NULL, *quit = NULL, *aboutmenu = NULL;
     Object *sizegrp = NULL, *versiongrp = NULL, *versionspace = NULL;
     Object *cancelbutton = NULL;
@@ -650,7 +716,7 @@ int main(int argc, char **argv)
     char time[LEN_DATSTRING];
     char  dow[LEN_DATSTRING];
     char datetime[2*LEN_DATSTRING];
-    UBYTE flags[8], lname[MAXFILENAMELENGTH];
+    UBYTE flags[8] = {0}, lname[MAXFILENAMELENGTH];
 
     char *pages[] = {_(MSG_INFORMATION),_(MSG_PROTECTION),_(MSG_TOOLTYPES),NULL};
     char * typeNames[] =
@@ -915,7 +981,9 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                                  End,
                             End,
                             Child, (IPTR) HVSpace,
-                            Child, (IPTR) (group = (Object *)HGroup,
+                            Child, (IPTR) (grouptool = (Object *)HGroup,
+                            End),
+                            Child, (IPTR) (groupstack = (Object *)HGroup,
                             End),
                             Child, (IPTR) HGroup,
                                 Child, (IPTR) Label2(__(MSG_COMMENT)),
@@ -1136,60 +1204,16 @@ D(bug("[WBInfo] icon type is: %s\n", type));
         switch(icon->do_Type)
         {
             case WBPROJECT:
-                toolspace = MUI_NewObject(MUIC_Popasl, ASLFR_DoSaveMode, TRUE,
-		    MUIA_Popstring_String, (IPTR)(filename_string = StringObject,
-			StringFrame,
-			MUIA_String_MaxLen, MAX_PATH_LEN,
-			MUIA_String_Contents, deftool,
-		    End),
-                    MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopFile), TAG_DONE);
-
-                toollabel = MUI_MakeObject(MUIO_Label, _(MSG_DEFTOOL), NULL);
-
-                if ((toolspace != NULL) && (toollabel != NULL)&&(filename_string != NULL))
-                {
-                    DoMethod(group, MUIM_Group_InitChange);
-                    DoMethod(group, OM_ADDMEMBER, toollabel);
-                    DoMethod(group, OM_ADDMEMBER, toolspace);
-                    DoMethod(group, MUIM_Group_ExitChange);
-
-                    set(toolspace, MUIA_CycleChain, 1);
-                    DoMethod(filename_string, MUIM_Notify,
-                        MUIA_String_Acknowledge, MUIV_EveryTime,
-                        (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_TOOLACK);
-                }
+                AddToolField(application, grouptool, deftool);
+                AddStackField(application, groupstack, stack);
                 break;
             case WBTOOL:
-		stackspace = StringObject,
-			StringFrame,
-			MUIA_String_MaxLen, 16,
-			MUIA_String_Contents, (IPTR)stack,
-			MUIA_String_Format, MUIV_String_Format_Right,
-                        MUIA_String_Accept, (IPTR)"0123456789",
-		    End;
-
-                stacklabel = MUI_MakeObject(MUIO_Label, _(MSG_STACK), NULL);
-
-                if ((stackspace != NULL) && (stacklabel !=NULL))
-                {
-                    DoMethod(group, MUIM_Group_InitChange);
-                    DoMethod(group, OM_ADDMEMBER, stacklabel);
-                    DoMethod(group, OM_ADDMEMBER, stackspace);
-                    DoMethod(group, MUIM_Group_ExitChange);
-                    SetAttrs(stackspace, MUIA_CycleChain, 1, TAG_DONE);
-                    DoMethod(stackspace, MUIM_Notify,
-                        MUIA_String_Acknowledge, MUIV_EveryTime,
-                        (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_STACKACK);
-                }
+                AddEmptySpace(grouptool);
+                AddStackField(application, groupstack, stack);
                 break;
             case WBDRAWER:
-                drawerspace = MUI_NewObject(MUIC_Rectangle, TAG_DONE);
-                if ((drawerspace != NULL))
-                {
-                    DoMethod(group, MUIM_Group_InitChange);
-                    DoMethod(group, OM_ADDMEMBER, drawerspace);
-                    DoMethod(group, MUIM_Group_ExitChange);
-                }
+                AddEmptySpace(grouptool);
+                AddEmptySpace(groupstack);
                 break;
         }
 
