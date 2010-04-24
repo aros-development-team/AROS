@@ -143,7 +143,7 @@
     }
     
     /* OK, now we try to search for a mode that has the supplied charateristics */
-    
+
     hiddmode = vHidd_ModeID_Invalid;
     for (;;)
     {
@@ -163,7 +163,8 @@
 	OOP_GetAttr(pf, aHidd_PixFmt_Depth,		&gm_depth);
 	OOP_GetAttr(sync, aHidd_Sync_HDisp,		&gm_width);
 	OOP_GetAttr(sync, aHidd_Sync_VDisp,		&gm_height);
-	
+
+    /* Check if mode is not worse than requested */	
 	if ( /*   compute_numbits(redmask)   >= redbits
 	     && compute_numbits(greenmask) >= greenbits
 	     && compute_numbits(bluemask)  >= bluebits
@@ -172,18 +173,14 @@
 	     && gm_width  >= desired_width
 	     && gm_height >= desired_height)
 	{
-#warning Fix this 	    
-	    	/* We return the first modeid that fulfill the criterias.
-	 	      Instead we should find the mode that has:
-		           - largest possible depth.
-	    	*/
+	    /* Check if this mode matches closer than the one we already found */
 	    if (
 		    (found_id == INVALID_ID) ||
 		    (
 			(found_id != INVALID_ID) &&
-			(gm_depth < found_depth) &&
-			(gm_width < found_width) &&
-			(gm_height < found_height)
+			(gm_depth <= found_depth) &&
+			(gm_width <= found_width) &&
+			(gm_height <= found_height)
 		    )
 		)
 	    {
@@ -200,3 +197,4 @@
 
     AROS_LIBFUNC_EXIT
 } /* BestModeIDA */
+
