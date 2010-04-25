@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: i386unix version of PrepareContext().
+    Desc: unix version of PrepareContext().
     Lang: english
 */
 
@@ -17,7 +17,7 @@
 #include <aros/libcall.h>
 
 AROS_LH4(BOOL, PrepareContext,
-    AROS_LHA(struct Task *, task, A0),
+    AROS_LHA(VOLATILE struct Task *, task, A0),
     AROS_LHA(APTR, entryPoint, A1),
     AROS_LHA(APTR, fallBack, A2),
     AROS_LHA(struct TagItem *, tagList, A3),
