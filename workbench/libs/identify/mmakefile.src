@@ -1,0 +1,35 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+FILES := \
+    idalert  \
+    idestimateformatsize  \
+    idexpansion  \
+    idformatstring  \
+    idfunction  \
+    idhardware  \
+    idhardwarenum  \
+    idhardwareupdate
+
+##MM workbench-libs-identify-includes : \
+##MM     kernel-exec-includes \
+##MM     kernel-dos-includes \
+##MM     kernel-graphics-includes \
+##MM     kernel-utility-includes \
+##MM     kernel-intuition-includes \
+##MM     kernel-cgfx-includes \
+##MM     kernel-layers-includes \
+##MM     workbench-libs-locale-includes \
+##MM     workbench-libs-iffparse-includes \
+##MM     workbench-libs-diskfont-includes \
+##MM     workbench-libs-gadtools-includes \
+##MM     includes-copy
+
+#MM workbench-libs-identify : linklibs
+
+%build_module mmake=workbench-libs-identify \
+    modname=identify modtype=library \
+    files="$(FILES)" \
+    uselibs="amiga rom"
+
+%common
