@@ -342,7 +342,8 @@ print "Working on " part_name "..."
 		    print "    HISTORY\n\n">>file;
 		    print "*****************************************************************************/" > file
 		    print "{">>file;
-		    print "    AROS_LIBFUNC_INIT">>file;
+		    print "    AROS_LIBFUNC_INIT\n">>file;
+		    print "    extern void aros_print_not_implemented (char *);">>file;
 		    print "    aros_print_not_implemented (\"" fname "\");\n">>file;
 		    print "    AROS_LIBFUNC_EXIT">>file;
 		    print "} /* " fname " */">>file;
