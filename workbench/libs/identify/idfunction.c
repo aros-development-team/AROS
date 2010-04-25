@@ -10,6 +10,7 @@
 
 #include "identify_intern.h"
 #include "identify.h"
+#include "modulefunctions.h"
 
 /*****************************************************************************
 
