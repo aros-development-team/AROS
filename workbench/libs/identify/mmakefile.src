@@ -11,25 +11,33 @@ FILES := \
     idhardwarenum  \
     idhardwareupdate
 
-##MM workbench-libs-identify-includes : \
-##MM     kernel-exec-includes \
-##MM     kernel-dos-includes \
-##MM     kernel-graphics-includes \
-##MM     kernel-utility-includes \
-##MM     kernel-intuition-includes \
-##MM     kernel-cgfx-includes \
-##MM     kernel-layers-includes \
-##MM     workbench-libs-locale-includes \
-##MM     workbench-libs-iffparse-includes \
-##MM     workbench-libs-diskfont-includes \
-##MM     workbench-libs-gadtools-includes \
-##MM     includes-copy
+#MM workbench-libs-identify-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-utility-includes \
+#MM     includes-copy
 
-#MM workbench-libs-identify : linklibs
+#MM workbench-libs-identify : linklibs workbench-libs-identify-generated
 
 %build_module mmake=workbench-libs-identify \
     modname=identify modtype=library \
     files="$(FILES)" \
     uselibs="amiga rom"
+
+GENERATED   := $(TOP)/$(CURDIR)/modulefunctions.h
+
+.PHONY : $(TOP)/$(CURDIR)/modulefunctions.h
+
+#MM
+workbench-libs-identify-generated : $(GENERATED)
+
+$(TOP)/$(CURDIR)/modulefunctions.h :
+	@$(ECHO) Generating $@
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/getmodulefunctions.py $(SRCDIR) >$@
+
+
+#MM
+identify-clean :
+	-$(RM) $(GENERATED)
 
 %common

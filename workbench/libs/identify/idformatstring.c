@@ -46,9 +46,6 @@
 {
     AROS_LIBFUNC_INIT
 
-    extern void aros_print_not_implemented (char *);
-    aros_print_not_implemented ("IdFormatString");
-
     // no tags
 
     return 0;

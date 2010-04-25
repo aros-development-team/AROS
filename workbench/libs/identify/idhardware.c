@@ -213,10 +213,10 @@
 
     if ((result == NULL) && (null4na == FALSE))
     {
-        retval = "not available";
+        result = "not available";
     }
 
-    return retval;
+    return result;
 
     AROS_LIBFUNC_EXIT
 } /* IdHardware */

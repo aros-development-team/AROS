@@ -44,9 +44,6 @@
 {
     AROS_LIBFUNC_INIT
 
-    extern void aros_print_not_implemented (char *);
-    aros_print_not_implemented ("IdEstimateFormatSize");
-
     // no tags
 
     return 0;
