@@ -63,9 +63,10 @@ struct IOHandle {
     ULONG               cur_sector;     /* sector number our block is currently in */
 
     ULONG               sector_offset;  /* current sector as an offset in the current cluster
-                                           ie cur = sector(cur_cluster) + offset */
+                                           i.e. cur = sector(cur_cluster) + offset */
 
-    struct cache_block  *block;         /* current block from the cache */
+    APTR block;         /* current block from the cache */
+    UBYTE *data;         /* current data buffer (from cache) */
 };
 
 /* a handle on a directory */
@@ -179,8 +180,9 @@ struct FSSuper {
     ULONG type;
     ULONG eoc_mark;
 
-    struct cache_block  **fat_blocks;
-    ULONG               fat_blocks_count;
+    APTR  *fat_blocks;
+    UBYTE **fat_buffers;
+    ULONG fat_blocks_count;
 
     ULONG fat_cachesize;
     ULONG fat_cachesize_bits;
@@ -222,7 +224,7 @@ struct Globals {
     struct MsgPort *diskport;
     struct timerequest *timereq;
     struct MsgPort *timerport;
-    ULONG last_num;
+    ULONG last_num;    /* last block number that was outside boundaries */
     UWORD readcmd;
     UWORD writecmd;
     char timer_active;
@@ -256,10 +258,16 @@ struct Globals {
     do {                                                           \
         (ioh)->cluster_offset = (ioh)->sector_offset = 0xffffffff; \
         if ((ioh)->block != NULL) {                                \
-            cache_put_block((ioh)->sb->cache, (ioh)->block, 0);    \
+            Cache_FreeBlock((ioh)->sb->cache, (ioh)->block);       \
             (ioh)->block = NULL;                                   \
         }                                                          \
     } while (0);
+
+#define RESET_DIRHANDLE(dh)         \
+    do {                            \
+        RESET_HANDLE(&((dh)->ioh));   \
+        (dh)->cur_index = 0xffffffff; \
+    } while(0);
 
 #define GET_NEXT_CLUSTER(sb,cl)     (sb->func_get_fat_entry(sb,cl))
 #define SET_NEXT_CLUSTER(sb,cl,val) (sb->func_set_fat_entry(sb,cl,val))

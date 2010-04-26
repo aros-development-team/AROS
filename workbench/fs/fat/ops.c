@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2008 The AROS Development Team
+ * Copyright © 2007-2010 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -36,7 +36,7 @@
 
 /*
  * this takes a full path and moves to the directory that would contain the
- * last file in the path. ie calling with (dh, "foo/bar/baz", 11) will move to
+ * last file in the path. e.g. calling with (dh, "foo/bar/baz", 11) will move to
  * directory "foo/bar" under the dir specified by dh. dh will become a handle
  * to the new dir. after the return name will be "baz" and namelen will be 3
  */
@@ -436,13 +436,6 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, st
         return err;
     }
 
-    /* make sure we can delete it */
-    if (sde.e.entry.attr & ATTR_READ_ONLY) {
-        D(bug("[fat] source file is write protected, doing nothing\n"));
-        ReleaseDirHandle(&sdh);
-        return ERROR_DELETE_PROTECTED;
-    }
-
     /* now get a handle on the passed dest dir */
     if ((err = InitDirHandle(glob->sb, ddirlock != NULL ? ddirlock->ioh.first_cluster : 0, &ddh, FALSE)) != 0) {
         ReleaseDirHandle(&sdh);
@@ -456,7 +449,7 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, st
         return err;
     }
 
-    /* check the source and dest dirs. if either are readonly, do nothing */
+    /* check the source and dest dirs. if either is read-only, do nothing */
     GetDirEntry(&sdh, 0, &dde);
     if (dde.e.entry.attr & ATTR_READ_ONLY) {
         D(bug("[fat] source dir is read only, doing nothing\n"));
@@ -711,7 +704,7 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written) 
 
             lock->gl->first_cluster = lock->ioh.first_cluster;
 
-	    InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh, FALSE);
+            InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh, FALSE);
             GetDirEntry(&dh, lock->gl->dir_entry, &de);
 
             de.e.entry.file_size = lock->gl->size;
@@ -886,14 +879,6 @@ LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, ULONG
     struct DirHandle dh;
     struct DirEntry de;
 
-    /* fat barely supports anything. all protection bits must be 0, except
-     * ARCHIVE, DELETE and WRITE. additionally, DELETE and WRITE must be the
-     * same */
-    if ((prot & ~(FIBF_ARCHIVE | FIBF_DELETE | FIBF_WRITE)) ||
-        (!(prot & FIBF_DELETE) ^ !(prot & FIBF_WRITE)))
-
-        return ERROR_BAD_NUMBER;
-
     /* get the dir handle */
     if ((err = InitDirHandle(glob->sb, dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh, FALSE)) != 0)
         return err;
@@ -920,7 +905,10 @@ LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, ULONG
     /* set the attributes */
     de.e.entry.attr &= ~(ATTR_ARCHIVE | ATTR_READ_ONLY);
     de.e.entry.attr |= (prot & FIBF_ARCHIVE ? ATTR_ARCHIVE : 0);
-    de.e.entry.attr |= (prot & FIBF_WRITE ? ATTR_READ_ONLY : 0);
+
+    /* only set read-only if neither writable nor deletable */
+    if ((prot & (FIBF_WRITE | FIBF_DELETE)) == (FIBF_WRITE | FIBF_DELETE))
+        de.e.entry.attr |= ATTR_READ_ONLY;
     UpdateDirEntry(&de);
 
     D(bug("[fat] new protection is 0x%08x\n", de.e.entry.attr));

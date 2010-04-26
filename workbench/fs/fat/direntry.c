@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2008 The AROS Development Team
+ * Copyright © 2007-2010 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -26,12 +26,6 @@
 #define DEBUG DEBUG_DIRENTRY
 #include "debug.h"
 
-#define RESET_DIRHANDLE(dh)         \
-    do {                            \
-        RESET_HANDLE(&(dh->ioh));   \
-        dh->cur_index = 0xffffffff; \
-    } while(0);
-
 LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh, BOOL reuse) {
     /* dh may or may not be initialised when this is called. if it is, then it
      * probably has a valid cache block that we need to free, but we wouldn't
@@ -40,7 +34,7 @@ LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh, BOOL
     if (reuse && (dh->ioh.sb == sb)) {
         D(bug("[fat] reusing directory handle\n"));
         if (dh->ioh.block != NULL) {
-            cache_put_block(sb->cache, dh->ioh.block, 0);
+            Cache_FreeBlock(sb->cache, dh->ioh.block);
             dh->ioh.block = NULL;
         }
     }
@@ -150,6 +144,9 @@ LONG GetNextDirEntry(struct DirHandle *dh, struct DirEntry *de) {
 }
 
 LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de) {
+    LONG err = 0;
+    ULONG cluster;
+
     D(bug("[fat] getting parent for directory at cluster %ld\n", dh->ioh.first_cluster));
 
     /* if we're already at the root, then we can't go any further */
@@ -174,7 +171,40 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de) {
     /* take us up */
     InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(de), dh, TRUE);
 
-    return 0;
+    /* get handle on grandparent dir so we can find entry with parent's
+     * name */
+    if (dh->ioh.first_cluster != dh->ioh.sb->rootdir_cluster) {
+        cluster = dh->ioh.first_cluster;
+        GetDirEntry(dh, 1, de);
+        InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(de), dh, TRUE);
+
+        err = GetDirEntryByCluster(dh, cluster, de);
+    }
+
+    return err;
+}
+
+LONG GetDirEntryByCluster(struct DirHandle *dh, ULONG cluster,
+    struct DirEntry *de) {
+    LONG err;
+
+    D(bug("[fat] looking for dir entry with first cluster %lu\n", cluster));
+
+    /* start at the start */
+    RESET_DIRHANDLE(dh);
+
+    /* loop through the entries until we find a match */
+    while ((err = GetNextDirEntry(dh, de)) == 0) {
+        if (de->e.entry.first_cluster_hi == (cluster >> 16) &&
+            de->e.entry.first_cluster_lo == (cluster & 0xffff)) {
+            D(bug("[fat] matched starting cluster at entry %ld, returning\n",
+                 dh->cur_index));
+            return 0;
+        }
+    }
+
+    D(bug("[fat] dir entry with first cluster %lu not found\n", cluster));
+    return err;
 }
 
 LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen, struct DirEntry *de) {
@@ -192,7 +222,7 @@ LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen, struct 
         /* compare with the short name first, since we already have it */
         GetDirEntryShortName(de, buf, &buflen);
         if (namelen == buflen && strnicmp((char *) name, (char *) buf, buflen) == 0) {
-	    D(bug("[fat] matched short name '%s' at entry %ld, returning\n", buf, dh->cur_index));
+            D(bug("[fat] matched short name '%s' at entry %ld, returning\n", buf, dh->cur_index));
             return 0;
         }
 
@@ -383,7 +413,7 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr
             break;
         }
 
-        /* anything else is a in-use entry, so reset our count */
+        /* anything else is an in-use entry, so reset our count */
         nfound = 0;
     }
 

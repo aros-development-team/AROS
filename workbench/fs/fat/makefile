@@ -31,21 +31,21 @@ $(OBJS): %.o: %.c
 $(PROG): $(OBJS)
 	gcc $(NOIXEMUL) -nostartfiles $^ -o $@ $(LIBS)
 
-cache.o: cache.h debug.h fat_fs.h fat_struct.h fat_protos.h timer.h
+cache.o: cache.h debug.h fat_fs.h fat_struct.h fat_protos.h
 charset.o: fat_fs.h fat_struct.h cache.h support.h charset.h
 direntry.o: cache.h fat_fs.h fat_struct.h support.h fat_protos.h debug.h
 disk.o: fat_fs.h fat_struct.h cache.h support.h fat_protos.h debug.h
-fat.o: fat_fs.h fat_struct.h cache.h support.h fat_protos.h debug.h timer.h
+fat.o: fat_fs.h fat_struct.h cache.h support.h fat_protos.h debug.h
 file.o: fat_fs.h fat_struct.h cache.h support.h fat_protos.h debug.h
 lock.o: fat_fs.h fat_struct.h cache.h support.h fat_protos.h debug.h
-main.o: fat_fs.h fat_struct.h cache.h support.h fat_protos.h charset.h debug.h timer.h
+main.o: fat_fs.h fat_struct.h cache.h support.h fat_protos.h charset.h debug.h
 names.o: fat_fs.h fat_struct.h cache.h support.h fat_protos.h debug.h
 notify.o: fat_fs.h fat_struct.h cache.h support.h fat_protos.h debug.h
 ops.o: fat_fs.h fat_struct.h cache.h support.h fat_protos.h debug.h
 packet.o: fat_fs.h fat_struct.h cache.h support.h fat_protos.h debug.h
 startup.o: debug.h
 support.o: fat_fs.h fat_struct.h cache.h support.h
-timer.o: fat_fs.h fat_struct.h fat_protos.h timer.h debug.h
+timer.o: fat_fs.h fat_struct.h fat_protos.h debug.h
 
 clean:
 	Delete $(OBJS)

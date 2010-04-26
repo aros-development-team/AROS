@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2009 The AROS Development Team
+ * Copyright © 2007-2010 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -121,7 +121,8 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG acce
     }
 
     /* found it, do the locking proper */
-    if (de.e.entry.attr & ATTR_DIRECTORY && FIRST_FILE_CLUSTER(&de) == 0)
+    if (de.e.entry.attr & ATTR_DIRECTORY && FIRST_FILE_CLUSTER(&de)
+        == glob->sb->rootdir_cluster)
         err = LockRoot(access, lock);
     else
         err = LockFile(dh.ioh.first_cluster, de.index, access, lock);
@@ -329,7 +330,7 @@ void FreeLock(struct ExtFileLock *fl) {
 
     DumpLocks(fl->sb);
     if (fl->ioh.block != NULL)
-	cache_put_block(fl->sb->cache, fl->ioh.block, 0);
+	Cache_FreeBlock(fl->sb->cache, fl->ioh.block);
 
     FreeVecPooled(glob->mempool, fl);
 }
@@ -367,7 +368,7 @@ LONG FreeLockSB(struct ExtFileLock *fl, struct FSSuper *sb) {
         fl->fl_Task = NULL;
 
         if (fl->ioh.block != NULL)
-            cache_put_block(sb->cache, fl->ioh.block, 0);
+            Cache_FreeBlock(sb->cache, fl->ioh.block);
 
         FreeVecPooled(glob->mempool, fl);
 

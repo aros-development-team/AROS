@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2008 The AROS Development Team
+ * Copyright © 2007-2010 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -32,7 +32,6 @@
 
 #include "fat_fs.h"
 #include "fat_protos.h"
-#include "timer.h"
 
 #define DEBUG DEBUG_MISC
 #include "debug.h"
@@ -185,6 +184,7 @@ void DoDiskInsert(void) {
                 SendEvent(IECLASS_DISKINSERTED);
 
             glob->sb = sb;
+            glob->last_num = -1;
 
             D(bug("\tDisk successfully initialised\n"));
 
@@ -261,20 +261,20 @@ void ProcessDiskChange(void) {
     D(bug("Done\n"));
 }
 
-void UpdateDisk(void)
-{
-	struct cache *c;
+void UpdateDisk(void) {
+    Cache_Flush(glob->sb->cache);
 
-	c = glob->sb->cache;
-	if (c && (c->flags & CACHE_WRITEBACK))
-		cache_flush(c);
+    glob->diskioreq->iotd_Req.io_Command = CMD_UPDATE;
+    DoIO((struct IORequest *)glob->diskioreq);
 
-	glob->diskioreq->iotd_Req.io_Command = CMD_UPDATE;
-	DoIO((struct IORequest *)glob->diskioreq);
-
-	glob->diskioreq->iotd_Req.io_Command = TD_MOTOR;
-	glob->diskioreq->iotd_Req.io_Length = 0;
-	DoIO((struct IORequest *)glob->diskioreq);
+    /* Turn off motor (where applicable) if nothing has happened during the
+     * last timer period */
+    if (!glob->restart_timer) {
+    D(bug("Stopping drive motor\n"));
+        glob->diskioreq->iotd_Req.io_Command = TD_MOTOR;
+        glob->diskioreq->iotd_Req.io_Length = 0;
+        DoIO((struct IORequest *)glob->diskioreq);
+    }
 }
 
 /* probe the device to determine 64-bit support */
@@ -314,18 +314,27 @@ void Probe_64bit_support(void) {
         }
 }
 
-ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data)
-{
+ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
+    UBYTE *data) {
     UQUAD off;
     ULONG err;
-    ULONG end;
+    ULONG start, end;
 
+#if DEBUG_CACHESTATS > 1
+    ErrorMessage("Accessing %lu sector(s) starting at %lu.\n"
+        "First volume sector is %lu, sector size is %lu.\n", nblocks, num,
+	glob->sb->first_device_sector, block_size);
+#endif
+
+    /* Adjust parameters if range is partially outside boundaries, or
+     * warn user and bale out if completely outside boundaries */
     if (glob->sb) {
-	if (num < glob->sb->first_device_sector) {
+        start = glob->sb->first_device_sector;
+	if (num + nblocks <= glob->sb->first_device_sector) {
 	    if (num != glob->last_num) {
 		glob->last_num = num;
 	        ErrorMessage("A handler attempted to %s %lu sector(s) starting\n"
-		    	     "from %lu before the actual volume space.\n"
+		    	     "from %lu, before the actual volume space.\n"
 		    	     "First volume sector is %lu, sector size is %lu.\n"
 		    	     "Either your disk is damaged or it is a bug in\n"
 		    	     "the handler. Please check your disk and/or\n"
@@ -335,12 +344,18 @@ ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYT
 	    }
 	    return IOERR_BADADDRESS;
 	}
+        else if (num < start) {
+            nblocks -= start - num;
+            data += (start - num) * block_size;
+            num = start;
+        }
+
 	end = glob->sb->first_device_sector + glob->sb->total_sectors;
-	if (num + nblocks > end) {
+	if (num >= end) {
 	    if (num != glob->last_num) {
 		glob->last_num = num;
 	        ErrorMessage("A handler attempted to %s %lu sector(s) starting\n"
-		    	     "from %lu beyond the actual volume space.\n"
+		    	     "from %lu, beyond the actual volume space.\n"
 		    	     "Last volume sector is %lu, sector size is %lu.\n"
 		    	     "Either your disk is damaged or it is a bug in\n"
 		    	     "the handler. Please check your disk and/or\n"
@@ -350,6 +365,8 @@ ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYT
 	    }
 	    return IOERR_BADADDRESS;
 	}
+        else if (num + nblocks > end)
+            nblocks = end - num;
     }
 
     off = ((UQUAD) num) * block_size;
@@ -365,7 +382,6 @@ ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYT
     glob->diskioreq->iotd_Req.io_Command = do_write ? glob->writecmd : glob->readcmd;
 
     err = DoIO((struct IORequest *) glob->diskioreq);
-    RestartTimer();
 
     return err;
 }
