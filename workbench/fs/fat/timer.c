@@ -1,3 +1,14 @@
+/*
+ * fat.handler - FAT12/16/32 filesystem handler
+ *
+ * Copyright   2008-2010 The AROS Development Team
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the same terms as AROS itself.
+ *
+ * $Id: main.c 32572 2010-02-04 16:09:52Z NicJA $
+ */
+
 #define DEBUG 0
 
 #include <devices/timer.h>
@@ -7,7 +18,6 @@
 #include "debug.h"
 #include "fat_fs.h"
 #include "fat_protos.h"
-#include "timer.h"
 
 LONG InitTimer(void)
 {
@@ -19,16 +29,16 @@ LONG InitTimer(void)
             sizeof(struct timerequest));
         if (glob->timereq) {
             if (OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)glob->timereq, 0))
-            err = ERROR_DEVICE_NOT_MOUNTED;
-        else {
-            glob->timer_active = 0;
-            glob->restart_timer = 1;
-            D(bug("[fat] Timer ready\n"));
-            return 0;
+                err = ERROR_DEVICE_NOT_MOUNTED;
+            else {
+                glob->timer_active = 0;
+                glob->restart_timer = 1;
+                D(bug("[fat] Timer ready\n"));
+                return 0;
+            }
+            DeleteIORequest((struct IORequest *)glob->timereq);
         }
-        DeleteIORequest((struct IORequest *)glob->timereq);
-    }
-    DeleteMsgPort(glob->timerport);
+        DeleteMsgPort(glob->timerport);
     }
     return err;
 }
@@ -54,7 +64,7 @@ void RestartTimer(void)
     } else {
         D(bug("Immediate timer restart\n"));
         glob->timereq->tr_node.io_Command = TR_ADDREQUEST;
-        glob->timereq->tr_time.tv_secs = 2;
+        glob->timereq->tr_time.tv_secs = 1;
         glob->timereq->tr_time.tv_micro = 0;
         SendIO((struct IORequest *)glob->timereq);
         glob->timer_active = 1;

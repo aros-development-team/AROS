@@ -44,7 +44,7 @@ LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
     /* copy the chars into the return string */
     c = name;
     for (i = 0; i < 11; i++) {
-        *c = raw[i];
+        *c = tolower(raw[i]);
 
         /*
          * fat names are weird. the name FOO.BAR is stored as "FOO     BAR".
@@ -185,7 +185,7 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name, ULONG *len) {
     return ERROR_OBJECT_NOT_FOUND;
 }
 
-/* set the name of an entry. this will also set the long name too. it assumes
+/* set the name of an entry. this will set the long name too. it assumes
  * that there is room before the entry to store the long filename. if there
  * isn't the whole thing will fail */
 LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
@@ -270,7 +270,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
         }
     }
 
-    /* if there was more bytes available, then we'll need a tail later */
+    /* if there were more bytes available, then we'll need a tail later */
     if (src < len)
         seq = 1;
 
@@ -313,14 +313,18 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
             }
 
             /* compare the two names */
+            D(bug("[fat] comparing '%.11s' with '%.11s'\n", basis,
+                de.e.entry.name));
             for (i = 0; i < 11; i++)
                 if (de.e.entry.name[i] != basis[i])
                     break;
 
-            /* if we reached the end, then our current basis is in use and we need
-             * to generate a new one next time round */
-            if (src == 11)
+            /* if we reached the end, then our current basis is in use and we
+             * need to generate a new one and start again */
+            if (i == 11) {
                 seq++;
+                RESET_DIRHANDLE(&dh)
+            }
         }
 
         D(bug("[fat] basis name '%.11s' not in use, using it\n", basis));
@@ -414,6 +418,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
 
 /* return the number of long name entries that are required to store this name */
 ULONG NumLongNameEntries(STRPTR name, ULONG len) {
+#if UPPERCASE_SHORT_NAMES
     ULONG i, left;
 
     /* XXX because we don't handle unicode this is pretty simple - thirteen
@@ -446,6 +451,7 @@ ULONG NumLongNameEntries(STRPTR name, ULONG len) {
                 return 0;
         }
     }
+#endif
 
     return ((len-1) / 13) + 1;
 }

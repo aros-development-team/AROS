@@ -27,16 +27,17 @@
 
 #include "fat_fs.h"
 #include "fat_protos.h"
-#include "timer.h"
 
 #define DEBUG DEBUG_MISC
 #include "debug.h"
 
 /* helper function to get the location of a fat entry for a cluster. it used
  * to be a define until it got too crazy */
-static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, struct cache_block **rb) {
+static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb) {
     ULONG entry_cache_block = offset >> sb->fat_cachesize_bits;
     ULONG entry_cache_offset = offset & (sb->fat_cachesize - 1);
+    ULONG num;
+    UWORD i;
 
     /* if the target cluster is not within the currently loaded chunk of fat,
      * we need to get the right data in */
@@ -44,15 +45,16 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, struct cache_bloc
         D(bug("[fat] loading %ld FAT sectors starting at sector %ld\n", sb->fat_blocks_count, entry_cache_block << (sb->fat_cachesize_bits - sb->sectorsize_bits)));
         /* put the old ones back */
         if (sb->fat_cache_block != 0xffffffff)
-            cache_put_blocks(sb->cache, sb->fat_blocks, sb->fat_blocks_count, 0);
+            for (i = 0; i < sb->fat_blocks_count; i++)
+                Cache_FreeBlock(sb->cache, sb->fat_blocks[i]);
 
         /* load some more */
-        cache_get_blocks(sb->cache,
-                         sb->first_device_sector + sb->first_fat_sector +
-                            (entry_cache_block << (sb->fat_cachesize_bits - sb->sectorsize_bits)),
-                         sb->fat_blocks_count,
-                         0,
-                         sb->fat_blocks);
+        num = sb->first_device_sector + sb->first_fat_sector
+            + (entry_cache_block
+            << (sb->fat_cachesize_bits - sb->sectorsize_bits));
+        for (i = 0; i < sb->fat_blocks_count; i++)
+            sb->fat_blocks[i] =
+                Cache_GetBlock(sb->cache, num + i, &sb->fat_buffers[i]);
 
         /* remember where we are for next time */
         sb->fat_cache_block = entry_cache_block;
@@ -64,8 +66,8 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, struct cache_bloc
         *rb = sb->fat_blocks[entry_cache_offset >> sb->sectorsize_bits];
 
     /* compute the pointer location and return it */
-    return sb->fat_blocks[entry_cache_offset >> sb->sectorsize_bits]->data +
-           (entry_cache_offset & (sb->sectorsize-1));
+    return sb->fat_buffers[entry_cache_offset >> sb->sectorsize_bits] +
+        (entry_cache_offset & (sb->sectorsize - 1));
 }
 
 /* FAT12 has, as the name suggests, 12-bit FAT entries. This means that two
@@ -120,10 +122,10 @@ static ULONG GetFat32Entry(struct FSSuper *sb, ULONG n) {
 }
 
 static void SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val) {
-    struct cache_block *b;
+    APTR b;
     ULONG offset = n + n/2;
     BOOL boundary = FALSE;
-    UWORD *fat, newval;
+    UWORD *fat = NULL, newval;
 
     if ((offset & (sb->sectorsize-1)) == sb->sectorsize-1) {
         boundary = TRUE;
@@ -152,31 +154,31 @@ static void SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val) {
          * invalid after a call to GetFatEntryPtr, as it may have swapped the
          * previous cache out. This is probably safe enough. */
         *GetFatEntryPtr(sb, offset+1, &b) = newval >> 8;
-        cache_mark_block_dirty(sb->cache, b);
+        Cache_MarkBlockDirty(sb->cache, b);
         *GetFatEntryPtr(sb, offset, &b) = newval & 0xff;
-        cache_mark_block_dirty(sb->cache, b);
+        Cache_MarkBlockDirty(sb->cache, b);
     }
     else {
         *fat = AROS_WORD2LE(newval);
-        cache_mark_block_dirty(sb->cache, b);
+        Cache_MarkBlockDirty(sb->cache, b);
     }
 }
 
 static void SetFat16Entry(struct FSSuper *sb, ULONG n, ULONG val) {
-    struct cache_block *b;
+    APTR b;
 
     *((UWORD *) GetFatEntryPtr(sb, n << 1, &b)) = AROS_WORD2LE((UWORD) val);
 
-    cache_mark_block_dirty(sb->cache, b);
+    Cache_MarkBlockDirty(sb->cache, b);
 }
 
 static void SetFat32Entry(struct FSSuper *sb, ULONG n, ULONG val) {
-    struct cache_block *b;
+    APTR b;
     ULONG *fat = (ULONG *) GetFatEntryPtr(sb, n << 2, &b);
 
     *fat = (*fat & 0xf0000000) | val;
 
-    cache_mark_block_dirty(sb->cache, b);
+    Cache_MarkBlockDirty(sb->cache, b);
 }
 
 LONG ReadFATSuper(struct FSSuper *sb ) {
@@ -192,13 +194,13 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     boot = AllocMem(bsize, MEMF_ANY);
     if (!boot)
 	return ERROR_NO_FREE_STORE;
+
     /*
      * Read the boot sector. We go direct because we don't have a cache yet,
      * and can't create one until we know the sector size, which is held in
-     * the boot sector. In practice it doesn't matter - we're going use this
-     * once and once only.
+     * the boot sector. In practice it doesn't matter - we're going to use
+     * this once and once only.
      */
-
     sb->first_device_sector = de->de_BlocksPerTrack *
                               de->de_LowCyl;
 
@@ -298,8 +300,8 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
 	return IOERR_BADADDRESS;
     }
 
-    sb->cache = cache_new(64, 256, sb->sectorsize, CACHE_WRITETHROUGH);
- 
+    sb->cache = Cache_CreateCache(64, 64, sb->sectorsize);
+
     if (sb->clusters_count < 4085) {
         D(bug("\tFAT12 filesystem detected\n"));
         sb->type = 12;
@@ -327,8 +329,12 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     sb->fat_cachesize_bits = log2(sb->fat_cachesize);
     sb->fat_cache_block = 0xffffffff;
 
-    sb->fat_blocks_count = MIN(sb->fat_size, sb->fat_cachesize >> sb->sectorsize_bits);
-    sb->fat_blocks = AllocVecPooled(glob->mempool, sizeof(struct cache_block *) * sb->fat_blocks_count);
+    sb->fat_blocks_count =
+        MIN(sb->fat_size, sb->fat_cachesize >> sb->sectorsize_bits);
+    sb->fat_blocks = AllocVecPooled(glob->mempool,
+        sizeof(APTR) * sb->fat_blocks_count);
+    sb->fat_buffers = AllocVecPooled(glob->mempool,
+        sizeof(APTR) * sb->fat_blocks_count);
 
     if (sb->type != 32) { /* FAT 12/16 */
         /* setup volume id */
@@ -528,7 +534,9 @@ LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster) {
 
 void FreeFATSuper(struct FSSuper *sb) {
     D(bug("\tRemoving Super Block from memory\n"));
-    cache_free(sb->cache);
+    Cache_DestroyCache(sb->cache);
+    FreeVecPooled(glob->mempool, sb->fat_buffers);
+    sb->fat_buffers = NULL;
     FreeVecPooled(glob->mempool, sb->fat_blocks);
     sb->fat_blocks = NULL;
 }
@@ -542,15 +550,10 @@ LONG CompareFATSuper(struct FSSuper *s1, struct FSSuper *s2) {
     return s1->volume_id - s2->volume_id;
 }
 
-
 /* see how many unused clusters are available */
 void CountFreeClusters(struct FSSuper *sb) {
     ULONG cluster = 0;
     ULONG free = 0;
-
-    /* don't calculate this if we already have it */
-    if (sb->free_clusters != 0xffffffff)
-        return;
 
     /* loop over all the data clusters */
     for (cluster = 2; cluster < sb->clusters_count + 2; cluster++)

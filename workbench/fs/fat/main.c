@@ -29,7 +29,6 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 #include "charset.h"
-#include "timer.h"
 
 #define DEBUG DEBUG_MISC
 #include "debug.h"
@@ -44,7 +43,6 @@ struct Globals *glob = &global_data;
 void handler(void) {
     struct Message *msg;
     struct DosPacket *startuppacket;
-    struct DosList *dl;
     LONG error = ERROR_NO_FREE_STORE;
 
     glob->ourtask = FindTask(NULL);

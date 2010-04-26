@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2008 The AROS Development Team
+ * Copyright © 2007-2010 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -172,19 +172,13 @@ void ProcessPackets(void) {
                     break;
                 }
 
-                if ((err = FillFIB(lock, fib))) {
-                    FreeLock(lock);
-                    ReleaseDirHandle(&dh);
-                    break;
+                if (!(err = FillFIB(lock, fib))) {
+                    fib->fib_DiskKey = dh.cur_index;
+                    res = DOSTRUE;
                 }
 
-                fib->fib_DiskKey = dh.cur_index;
-
                 FreeLock(lock);
-
                 ReleaseDirHandle(&dh);
-
-                res = DOSTRUE;
 
                 break;
             }
@@ -668,8 +662,6 @@ void ProcessPackets(void) {
             PutMsg(rp, pkt->dp_Link);
         }
 
-#if defined(DEBUG_CACHESTATS) && DEBUG_CACHESTATS != 0
-        cache_stats(glob->sb->cache);
-#endif
+        RestartTimer();
     }
 }

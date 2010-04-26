@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2008 The AROS Development Team
+ * Copyright © 2007-2010 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -41,14 +41,14 @@ void FillDiskInfo (struct InfoData *id);
 /* packet.c */
 void ProcessPackets(void);
 
-/* new definitions as we refactor the code */
-
 /* direntry.c */
 LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh, BOOL reuse);
 LONG ReleaseDirHandle(struct DirHandle *dh);
 
 LONG GetDirEntry(struct DirHandle *dh, ULONG index, struct DirEntry *de);
 LONG GetNextDirEntry(struct DirHandle *dh, struct DirEntry *de);
+LONG GetDirEntryByCluster(struct DirHandle *dh, ULONG cluster,
+    struct DirEntry *de);
 
 LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen, struct DirEntry *de);
 LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct DirEntry *de);
@@ -108,5 +108,11 @@ void SendNotify(struct NotifyRequest *nr);
 void SendNotifyByLock(struct FSSuper *sb, struct GlobalLock *gl);
 void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de);
 void ProcessNotify(void); 
+
+/* timer.c */
+LONG InitTimer(void);
+void CleanupTimer(void);
+void RestartTimer(void);
+void HandleTimer(void);
 
 #endif
