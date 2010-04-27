@@ -48,11 +48,7 @@
    %L<type> and %ll<type>. 1 = yes. 0 = no. Current implementation use
    QUAD and UQUAD types. */
 
-#ifdef __MORPHOS__
 #define USE_QUADFMT                  1
-#else
-#define USE_QUADFMT                  0
-#endif
 
 struct IntLocaleBase
 {
@@ -171,6 +167,8 @@ void dispose_catalog(struct IntCatalog * cat,
 void SetLocaleLanguage(struct IntLocale *, struct LocaleBase *);
 
 void InstallPatches(void);
+
+APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate, CONST_APTR dataStream, const struct Hook *putCharFunc, va_list VaListStream);
 
 extern const struct Locale defLocale;
 

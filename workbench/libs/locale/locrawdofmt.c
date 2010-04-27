@@ -15,6 +15,7 @@
 #include <proto/locale.h>
 #include "locale_intern.h"
 #include <aros/asmcall.h>
+#include <stdarg.h>
 
 
 #ifdef __MORPHOS__
@@ -245,6 +246,76 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
     REPLACEMENT_UNLOCK;
 
     //kprintf("LocRawDoFmt: FormatString: returning %x\n", retval);
+
+    return retval;
+
+    AROS_LIBFUNC_EXIT
+
+} /* LocRawDoFmt */
+
+ /*****************************************************************************
+
+    NAME */
+#include <proto/locale.h>
+
+	AROS_PLH4(APTR, LocVNewRawDoFmt,
+
+/*  SYNOPSIS */
+	AROS_LHA(CONST_STRPTR, FormatString, A0),
+	AROS_LHA(VOID_FUNC   , PutChProc, A2),
+	AROS_LHA(APTR        , PutChData, A3),
+	AROS_LHA(va_list     , DataStream, A1),
+
+/*  LOCATION */
+	struct ExecBase *, SysBase, 87, Locale)
+
+/*  FUNCTION
+    	See exec.library/VNewRawDoFmt
+
+    INPUTS
+    	See exec.library/VNewRawDoFmt
+
+    RESULT
+
+    NOTES
+    	This function is not called by apps directly. Instead exec.library/VNewRawDoFmt
+	is patched to use this function. This means, that the library base parameter above
+	actually points to SysBase, so we make use of the global LocaleBase variable.
+	This function is marked as private, thus the headers generator won't mind the
+	different basename in the header.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	RawDoFmt(), FormatString().
+
+    INTERNALS
+
+    HISTORY
+	27-11-96    digulla automatically created from
+			    locale_lib.fd and clib/locale_protos.h
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct Hook       hook;
+    APTR    	      retval;
+
+    hook.h_Entry    = (HOOKFUNC)AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc);
+    hook.h_SubEntry = (HOOKFUNC)PutChProc;
+    hook.h_Data     = PutChData;
+
+    REPLACEMENT_LOCK;
+
+    retval = InternalFormatString(&(IntLB(LocaleBase)->lb_CurrentLocale->il_Locale),
+    	    	    	  (STRPTR)FormatString,
+			  NULL,
+			  &hook, DataStream);
+
+    REPLACEMENT_UNLOCK;
 
     return retval;
 

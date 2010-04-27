@@ -1,11 +1,12 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
 
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <exec/types.h>
@@ -28,42 +29,21 @@ typedef ULONG UFMTLARGESTTYPE;
 static const UBYTE hexarray [] = "0123456789abcdef";
 static const UBYTE HEXarray [] = "0123456789ABCDEF";
 
-/*****************************************************************************
+#ifdef __PPC__
+#define NUM_GPR 8
+#endif
+#ifdef __x86_64__
+#define NUM_GPR 6
+#endif
 
-    NAME */
-#include <proto/locale.h>
+#ifdef NUM_GPR
+#define va_base(args, n) ((n < NUM_GPR) ? args->reg_save_area : args->overflow_arg_area)
+#else
+#define va_base(args, n) args
+#endif
 
-	AROS_LH4(APTR, FormatString,
-
-/*  SYNOPSIS */
-	AROS_LHA(const struct Locale *, locale, A0),
-	AROS_LHA(CONST_STRPTR, fmtTemplate, A1),
-	AROS_LHA(CONST_APTR           , dataStream, A2),
-	AROS_LHA(const struct Hook   *, putCharFunc, A3),
-
-/*  LOCATION */
-	struct LocaleBase *, LocaleBase, 11, Locale)
-
-/*  FUNCTION
-
-    INPUTS
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************/
+APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate, CONST_APTR dataStream, const struct Hook *putCharFunc, va_list VaListStream)
 {
-  AROS_LIBFUNC_INIT
-
   enum {OUTPUT = 0,
         FOUND_FORMAT} state;
 
@@ -71,11 +51,10 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
   BOOL  end;
   ULONG max_argpos;
   ULONG arg_counter;
-  IPTR *stream;
   BOOL  scanning;
 
 #define INDICES 256
-  UWORD indices[INDICES];
+  IPTR indices[INDICES];
 
   if (!fmtTemplate)
     return (APTR)dataStream;
@@ -85,15 +64,10 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
   end          = FALSE;
   max_argpos   = 0;
   arg_counter  = 0;
-  stream       = (IPTR *) dataStream;
   scanning     = TRUE;   /* The first time I will go through
                                   and determine the width of the data in the dataStream */
 
-#ifdef __MORPHOS__
-  memclr(indices, sizeof(indices));
-#else
-  memset(indices, 0, sizeof(indices));
-#endif
+  memset(indices, sizeof(APTR), sizeof(indices));
 
   while (!end)
   {
@@ -130,29 +104,26 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
             /*
             ** The scanning phase is over. Next time we do the output.
             */
-            int i, sum;
+            int i;
+	    int sum = 0;
             scanning = FALSE;
             template_pos = 0;
             arg_counter = 0;
             /*
             ** prepare the indices array
             */
-            sum = indices[0];
-            indices[0] = 0;
 
-            i = 1;
-
-            while (i <= max_argpos)
+            for (i = 0; i <= max_argpos; i++)
             {
-              int _sum;
-              if (indices[i] != 0)
-                _sum =  sum + indices[i];
-              else
-                _sum =  sum + sizeof(IPTR);
+	      int _sum;
 
-              indices[i] =  sum;
-              sum        = _sum;
-              i++;
+	      _sum = sum + indices[i];
+	      if (dataStream)
+	        indices[i] = (IPTR)dataStream + sum;
+	      else
+	        /* FIXME: this does not take into account alignment of UQUAD on PPC */
+	        indices[i] = (IPTR)va_base(VaListStream, i) + sum;
+              sum = _sum;
             }
           }
           else
@@ -338,7 +309,7 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
               */
               if (!scanning)
               {
-                BSTR s = (BSTR)*(UBYTE **)(((IPTR)stream)+indices[arg_pos-1]);
+                BSTR s = (BSTR)*(UBYTE **)indices[arg_pos-1];
 
                 buffer = AROS_BSTR_ADDR(s);
                 buflen = AROS_BSTR_strlen(s);
@@ -363,7 +334,7 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
                 {
 #if USE_QUADFMT
                   case 8:
-                    tmp = *(UQUAD *)(((IPTR)stream)+indices[arg_pos-1]);
+                    tmp = *(UQUAD *)indices[arg_pos-1];
                     //buffer = &buf[16+1];
                     minus *= (FMTLARGESTTYPE) tmp < 0;
                     if (minus)
@@ -372,7 +343,7 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
 #endif /* USE_QUADFMT */
 
                   case 4:
-                    tmp = *(ULONG *)(((IPTR)stream)+indices[arg_pos-1]);
+                    tmp = *(ULONG *)indices[arg_pos-1];
                     //buffer = &buf[8+1];
                     minus *= (LONG) tmp < 0;
                     if (minus)
@@ -380,7 +351,7 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
                     break;
 
                   default: /* 2 */
-                    tmp = *(UWORD *)(((IPTR)stream)+indices[arg_pos-1]);
+                    tmp = *(UWORD *)indices[arg_pos-1];
                     //buffer = &buf[4+1];
                     minus *= (WORD) tmp < 0;
                     if (minus)
@@ -421,7 +392,7 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
                 {
 #if USE_QUADFMT
                   case 8:
-                    tmp = *(UQUAD *)(((IPTR)stream)+indices[arg_pos-1]);
+                    tmp = *(UQUAD *)indices[arg_pos-1];
                     minus *= (FMTLARGESTTYPE) tmp < 0;
                     if (minus)
                       tmp = -tmp;
@@ -429,14 +400,14 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
 #endif /* USE_QUADFMT */
 
                   case 4:
-                    tmp = *(ULONG *)(((IPTR)stream)+indices[arg_pos-1]);
+                    tmp = *(ULONG *)indices[arg_pos-1];
                     minus *= (LONG) tmp < 0;
                     if (minus)
                       tmp = (ULONG) -tmp;
                     break;
 
                   default: /* 2 */
-                    tmp = *(UWORD *)(((IPTR)stream)+indices[arg_pos-1]);
+                    tmp = *(UWORD *)indices[arg_pos-1];
                     minus *= (WORD) tmp < 0;
                     if (minus)
                       tmp = (UWORD) -tmp;
@@ -510,18 +481,18 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
                 {
 #if USE_QUADFMT
                   case 8:
-                    tmp = *(UQUAD *)(((IPTR)stream)+indices[arg_pos-1]);
+                    tmp = *(UQUAD *)indices[arg_pos-1];
                     //buffer = &buf[16+1];
                     break;
 #endif /* USE_QUADFMT */
 
                   case 4:
-                    tmp = *(ULONG *)(((IPTR)stream)+indices[arg_pos-1]);
+                    tmp = *(ULONG *)indices[arg_pos-1];
                     //buffer = &buf[8+1];
                     break;
 
                   default: /* 2 */
-                    tmp = *(UWORD *)(((IPTR)stream)+indices[arg_pos-1]);
+                    tmp = *(UWORD *)indices[arg_pos-1];
                     //buffer = &buf[4+1];
                     break;
                 }
@@ -547,7 +518,7 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
             {
               if (!scanning)
               {
-                buffer = *(UBYTE **)(((IPTR)stream)+indices[arg_pos-1]);
+                buffer = *(UBYTE **)indices[arg_pos-1];
                 if (!buffer)
                 {
                     buffer = "(null)";
@@ -573,16 +544,16 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
                 {
 #if USE_QUADFMT
                   case 8:
-                    buf[0] = (UBYTE)*(UQUAD *)(((IPTR)stream)+indices[arg_pos-1]);
+                    buf[0] = (UBYTE)*(UQUAD *)indices[arg_pos-1];
                     break;
 #endif /* USE_QUADFMT */
 
                   case 4:
-                    buf[0] = (UBYTE)*(ULONG *)(((IPTR)stream)+indices[arg_pos-1]);
+                    buf[0] = (UBYTE)*(ULONG *)indices[arg_pos-1];
                     break;
 
                   default: /* 2 */
-                    buf[0] = (UBYTE)*(WORD  *)(((IPTR)stream)+indices[arg_pos-1]);
+                    buf[0] = (UBYTE)*(WORD  *)indices[arg_pos-1];
                     break;
                 }
 
@@ -666,7 +637,46 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
     }
   }
 
-  return (APTR) (((IPTR)stream) + indices[max_argpos]);
+  return (APTR) indices[max_argpos];
+}
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/locale.h>
+
+	AROS_LH4(APTR, FormatString,
+
+/*  SYNOPSIS */
+	AROS_LHA(const struct Locale *, locale, A0),
+	AROS_LHA(CONST_STRPTR, fmtTemplate, A1),
+	AROS_LHA(CONST_APTR           , dataStream, A2),
+	AROS_LHA(const struct Hook   *, putCharFunc, A3),
+
+/*  LOCATION */
+	struct LocaleBase *, LocaleBase, 11, Locale)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************/
+{
+  AROS_LIBFUNC_INIT
+
+  return InternalFormatString(locale, fmtTemplate, dataStream, putCharFunc, NULL);
 
   AROS_LIBFUNC_EXIT
 } /* FormatString */
