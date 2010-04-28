@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics hidd initialization code.
@@ -29,6 +29,8 @@ static int GFX_Init(LIBBASETYPEPTR LIBBASE)
     
     EnterFunc(bug("GfxHIDD_Init()\n"));
 
+    NEWLIST(&csd->pflist);
+    InitSemaphore(&csd->pfsema);
     InitSemaphore(&csd->rgbconvertfuncs_sem);
 
     ReturnInt("GfxHIDD_Init", ULONG, TRUE);

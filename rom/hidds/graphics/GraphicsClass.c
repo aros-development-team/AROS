@@ -8,6 +8,7 @@
 
 /****************************************************************************************/
 
+#include <aros/atomic.h>
 #include <aros/config.h>
 #include <aros/symbolsets.h>
 #include <exec/lists.h>
@@ -34,10 +35,12 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#define DPF(x)
+
 /****************************************************************************************/
 
 static BOOL create_std_pixfmts(struct class_static_data *_csd);
-static VOID delete_std_pixfmts(struct class_static_data *_csd);
+static VOID delete_pixfmts(struct class_static_data *_csd);
 static VOID free_objectlist(struct List *list, BOOL OOP_DisposeObjects,
     	    	    	    struct class_static_data *_csd);
 static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetags);
@@ -47,8 +50,7 @@ static VOID free_mode_db(struct mode_db *mdb, OOP_Class *cl);
 static OOP_Object *create_and_init_object(OOP_Class *cl, UBYTE *data, ULONG datasize,
     	    	    	    	    	  struct class_static_data *_csd);
 
-static struct pfnode *find_pixfmt(struct MinList *pflist
-	, HIDDT_PixelFormat *tofind
+static struct pixfmt_data *find_pixfmt(HIDDT_PixelFormat *tofind
 	, struct class_static_data *_csd);
 
 static OOP_Object *find_stdpixfmt(HIDDT_PixelFormat *tofind
@@ -89,12 +91,9 @@ OOP_Object *GFX__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     data = OOP_INST_DATA(cl, o);
     
-    NEWLIST(&data->pflist);
-    
     InitSemaphore(&data->mdb.sema);
-    InitSemaphore(&data->pfsema);
-    data->curmode = vHidd_ModeID_Invalid;
-    
+/*  data->curmode = vHidd_ModeID_Invalid; */
+
     /* Get the mode tags */
     modetags = (struct TagItem *)GetTagData(aHidd_Gfx_ModeTags, NULL, msg->attrList);
     if (NULL != modetags)
@@ -146,11 +145,11 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     
     /* free the mode db stuff */
     free_mode_db(&data->mdb, cl);
-      
-    ObtainSemaphore(&data->pfsema);
-    free_objectlist((struct List *)&data->pflist, TRUE, CSD(cl));
-    ReleaseSemaphore(&data->pfsema);
-    
+
+    /* Here we should unregister pixelformats registered in our New().
+       However gfx drivers aren't supposed to be removed, so it's okay
+       not to do it at all for now. */
+
     if (NULL != data->gc)
 	OOP_DisposeObject(data->gc);
 
@@ -1579,23 +1578,20 @@ OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o,
     	    	    	    	    	  struct pHidd_Gfx_RegisterPixFmt *msg)
 {
     HIDDT_PixelFormat 	    cmp_pf;
-    struct HIDDGraphicsData *data;
-    
-    struct pfnode   	    *pfnode;
-    
-    OOP_Object      	    *retpf = NULL;
+    struct class_static_data *data;
+    struct pixfmt_data 	    *retpf = NULL;
 
     memset(&cmp_pf, 0, sizeof(cmp_pf));
-    
-    data = OOP_INST_DATA(cl, o);
+
+    data = CSD(cl);
     if (!parse_pixfmt_tags(msg->pixFmtTags, &cmp_pf, 0, CSD(cl)))
     {
     	D(bug("!!! FAILED PARSING TAGS IN Gfx::RegisterPixFmt() !!!\n"));
 	return FALSE;
     }
 
-    D(bug("Gfx::RegisterPixFmt(): Registering pixelformat:\n"));
-    D(bug("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n"
+    DPF(bug("Gfx::RegisterPixFmt(): Registering pixelformat:\n"));
+    DPF(bug("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n"
 	  , PF(&cmp_pf)->red_shift
 	  , PF(&cmp_pf)->green_shift
 	  , PF(&cmp_pf)->blue_shift
@@ -1609,48 +1605,24 @@ OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o,
 	  , PF(&cmp_pf)->depth
 	  , PF(&cmp_pf)->stdpixfmt));
 
-    ObtainSemaphoreShared(&data->pfsema);
-    pfnode = find_pixfmt(&data->pflist, &cmp_pf, CSD(cl));
-    ReleaseSemaphore(&data->pfsema);
-    
-    D(bug("Found matching custom pixelformat: 0x%p\n", pfnode));
-    if (NULL == pfnode)
-    {
-    	retpf = find_stdpixfmt(&cmp_pf, CSD(cl));
-	D(bug("Found matching standard pixelformat: 0x%p\n", retpf));
-    }
-    else
-    {
-    	retpf = pfnode->pixfmt;
-	/* Increase pf refcount */
-	pfnode->refcount ++;
-    }
-    
+    retpf = find_pixfmt(&cmp_pf, CSD(cl));
 
-    if (NULL == retpf)
-    {
-    	struct pfnode *newnode;
-    	/* Could not find an alike pf, Create a new pfdb node  */
-	
-	newnode = AllocMem(sizeof (struct pfnode), MEMF_ANY);
-	if (NULL != newnode)
-	{
-	    
-	    /* Since we pass NULL as the taglist below, the PixFmt class will just create a dummy pixfmt */
-	    retpf = OOP_NewObject(CSD(cl)->pixfmtclass, NULL, NULL);
-	    if (NULL != retpf)
-	    {
-	    	newnode->pixfmt = retpf;
+    DPF(bug("Found matching pixelformat: 0x%p\n", retpf));
+    if (retpf)
+	/* Increase pf refcount */
+	AROS_ATOMIC_INC(retpf->refcount);
+    else {
+    	/* Could not find an alike pf, Create a new pfdb node  */	    
+	/* Since we pass NULL as the taglist below, the PixFmt class will just create a dummy pixfmt */
+	retpf = OOP_NewObject(CSD(cl)->pixfmtclass, NULL, NULL);
+	if (retpf) {
+	    /* We have one user */
+	    retpf->refcount = 1;
 		
-		/* We have one user */
-		newnode->refcount = 1;
+	    /* Initialize the pixfmt object the "ugly" way */
+	    memcpy(retpf, &cmp_pf, sizeof (HIDDT_PixelFormat));
 		
-		/* Initialize the pixfmt object the "ugly" way */
-/*		Why??? - sonic
-		cmp_pf.stdpixfmt = vHidd_StdPixFmt_Unknown;*/
-		memcpy(retpf, &cmp_pf, sizeof (HIDDT_PixelFormat));
-		
-		D(bug("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n"
+	    DPF(bug("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n"
 			, PF(&cmp_pf)->red_shift
 			, PF(&cmp_pf)->green_shift
 			, PF(&cmp_pf)->blue_shift
@@ -1664,21 +1636,14 @@ OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o,
 			, PF(&cmp_pf)->depth
 			, PF(&cmp_pf)->stdpixfmt));
 
-    	    	ObtainSemaphore(&data->pfsema);
-		AddTail((struct List *)&data->pflist, (struct Node *)newnode);
-    	    	ReleaseSemaphore(&data->pfsema);
+    	    ObtainSemaphore(&data->pfsema);
+	    AddTail((struct List *)&data->pflist, (struct Node *)&retpf->node);
+    	    ReleaseSemaphore(&data->pfsema);
 	    
-	    }
-	    else
-	    {
-	    	FreeMem(newnode, sizeof (struct pfnode));
-	    
-	    }
 	}
     }
-    
-    return retpf;
-      
+    DPF(bug("New refcount is %u\n", retpf->refcount));
+    return (OOP_Object *)retpf; 
 }
 
 /****************************************************************************************/
@@ -1686,40 +1651,25 @@ OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, OOP_Object *o,
 VOID GFX__Hidd_Gfx__ReleasePixFmt(OOP_Class *cl, OOP_Object *o,
     	    	    	    	  struct pHidd_Gfx_ReleasePixFmt *msg)
 {
-    struct HIDDGraphicsData *data;
-    
-    struct objectnode 	    *n, *safe;
+    struct class_static_data *data;
+    struct pixfmt_data *pixfmt = (struct pixfmt_data *)msg->pixFmt;
 
+    DPF(bug("release_pixfmt 0x%p\n", pixfmt));
 
-/*    bug("release_pixfmt\n");
-*/    
+    data = CSD(cl);
 
-    data = OOP_INST_DATA(cl, o);
-    
-    /* Go through the pixfmt list trying to find the object */
     ObtainSemaphore(&data->pfsema);
-      
-    ForeachNodeSafe(&data->pflist, n, safe)
-    {
-    	if (msg->pixFmt == n->object)
-	{
-	    n->refcount --;
-	    if (0 == n->refcount)
-	    {	    
-	    	/* Remove the node */
-		Remove((struct Node *)n);
-		
-		/* Dispose the pixel format */
-		OOP_DisposeObject(n->object);
-		
-		/* Free the node */
-		FreeMem(n, sizeof (struct objectnode));
-		
-	    }
-	    break;
+
+    /* If refcount is already 0, this object was never registered in the database,
+       don't touch it */
+    DPF(bug("Old reference count is %u\n", pixfmt->refcount));
+    if (pixfmt->refcount) {
+        if (--pixfmt->refcount == 0) {
+	    Remove((struct Node *)&pixfmt->node);
+	    OOP_DisposeObject(pixfmt);
 	}
     }
-    
+
     ReleaseSemaphore(&data->pfsema);
 }
 
@@ -1847,7 +1797,7 @@ static int GFX_ClassFree(LIBBASETYPEPTR LIBBASE)
     
     if(NULL != csd)
     {
-	delete_std_pixfmts(csd);
+	delete_pixfmts(csd);
         
     	OOP_ReleaseAttrBase(IID_Hidd_PixFmt);
     	OOP_ReleaseAttrBase(IID_Hidd_BitMap);
@@ -1883,87 +1833,45 @@ ADD2EXPUNGELIB(GFX_ClassFree, 0)
 static BOOL create_std_pixfmts(struct class_static_data *csd)
 {
     ULONG i;
+    struct pixfmt_data *pf;
     
     memset(csd->std_pixfmts, 0, sizeof (OOP_Object *) * num_Hidd_StdPixFmt);
     
     for (i = 0; i < num_Hidd_StdPixFmt; i ++)
     {
-    	csd->std_pixfmts[i] = create_and_init_object(csd->pixfmtclass
-		    , (UBYTE *)&stdpfs[i],  sizeof (stdpfs[i]), csd);
-		    
-	if (NULL == csd->std_pixfmts[i])
+        pf = (struct pixfmt_data *)create_and_init_object(csd->pixfmtclass, (UBYTE *)&stdpfs[i],  sizeof (stdpfs[i]), csd);
+
+	if (!pf)
 	{
 	    D(bug("FAILED TO CREATE PIXEL FORMAT %d\n", i));
-	    delete_std_pixfmts(csd);
+	    delete_pixfmts(csd);
 	    ReturnBool("create_stdpixfmts", FALSE);
 	}
+
+	csd->std_pixfmts[i] = &pf->pf;
+	/* We don't use semaphore protection here because we do this only during class init stage */
+	pf->refcount = 1;
+	AddTail((struct List *)&csd->pflist, (struct Node *)&pf->node);
     }
     ReturnBool("create_stdpixfmts", TRUE);
-
 }
 
 /****************************************************************************************/
 
-static VOID delete_std_pixfmts(struct class_static_data *csd)
+static VOID delete_pixfmts(struct class_static_data *csd)
 {
-    ULONG i;
-    
-    for (i = 0; i < num_Hidd_StdPixFmt; i ++)
-    {
-    
-        if (NULL != csd->std_pixfmts[i])
-	{
-	    OOP_DisposeObject(csd->std_pixfmts[i]);
-	    csd->std_pixfmts[i] = NULL;
-	}
-    }
-}
+    struct Node *n, *safe;
 
-/****************************************************************************************/
-
-static VOID free_objectlist(struct List *list, BOOL OOP_DisposeObjects,
-    	    	    	    struct class_static_data *csd)
-{
-    struct objectnode *n, *safe;
-    
-    ForeachNodeSafe(list, n, safe)
-    {
-    	Remove(( struct Node *)n);
-	
-	if (NULL != n->object && OOP_DisposeObjects)
-	{
-	    OOP_DisposeObject(n->object);
-	}
-	
-	FreeMem(n, sizeof (struct objectnode));
-    }
-
+    ForeachNodeSafe(&csd->pflist, n, safe)
+	OOP_DisposeObject(PIXFMT_OBJ(n));
 }
 
 /****************************************************************************************/
 
 static inline BOOL cmp_pfs(HIDDT_PixelFormat *tmppf, HIDDT_PixelFormat *dbpf)
 {
-    if (    dbpf->depth == tmppf->depth 
-	 && HIDD_PF_COLMODEL(dbpf) == HIDD_PF_COLMODEL(tmppf))
-    {
-    	/* The pixfmts are very alike, check all attrs */
-	     
-    	HIDDT_PixelFormat *old;
-	
-	old = (HIDDT_PixelFormat *)tmppf->stdpixfmt;
-	
-	tmppf->stdpixfmt = ((HIDDT_PixelFormat *)dbpf)->stdpixfmt;
-	     
-	if (0 == memcmp(tmppf, dbpf, sizeof (HIDDT_PixelFormat)))
-	{
-	    return TRUE;
-	}
-	
-	tmppf->stdpixfmt = old;
-    }
-    
-    return FALSE;
+    /* Just compare everything except stdpixfmt and flags */
+    return !memcmp(tmppf, dbpf, offsetof(HIDDT_PixelFormat, stdpixfmt));
 }
 
 /****************************************************************************************/
@@ -1980,7 +1888,7 @@ static OOP_Object *find_stdpixfmt(HIDDT_PixelFormat *tofind,
 {
     OOP_Object *retpf = NULL;
     HIDDT_PixelFormat *stdpf;
-    ULONG   	i;
+    ULONG i;
     
     for (i = 0; i < num_Hidd_StdPixFmt; i ++)
     {
@@ -2289,34 +2197,33 @@ static OOP_Object *create_and_init_object(OOP_Class *cl, UBYTE *data, ULONG data
 	
 /****************************************************************************************/
 
-static struct pfnode *find_pixfmt(struct MinList *pflist, HIDDT_PixelFormat *tofind,
-    	    	    	    	  struct class_static_data *csd)
+static struct pixfmt_data *find_pixfmt(HIDDT_PixelFormat *tofind, struct class_static_data *csd)
 {
-    OOP_Object      	*retpf = NULL;
+    struct pixfmt_data 	*retpf = NULL;
     HIDDT_PixelFormat 	*db_pf;
-    struct pfnode   	*n;
-    
+    struct Node   	*n;
+
     /* Go through the pixel format list to see if a similar pf allready exists */
-    ForeachNode(pflist, n)
+    ObtainSemaphoreShared(&csd->pfsema);
+
+    ForeachNode(&csd->pflist, n)
     {
-    	db_pf = (HIDDT_PixelFormat *)n->pixfmt;
-	D(bug("find_pixfmt(): Trying pixelformat 0x%p\n", db_pf));
-	D(bug("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n",
+    	db_pf = PIXFMT_OBJ(n);
+	DPF(bug("find_pixfmt(): Trying pixelformat 0x%p\n", db_pf));
+	DPF(bug("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n",
 	      db_pf->red_shift, db_pf->green_shift, db_pf->blue_shift, db_pf->alpha_shift,
 	      db_pf->red_mask, db_pf->green_mask, db_pf->blue_mask, db_pf->alpha_mask,
 	      db_pf->bytes_per_pixel, db_pf->size, db_pf->depth, db_pf->stdpixfmt));
 	if (cmp_pfs(tofind, db_pf))
 	{
-	    D(bug("Match!\n"));
-	    retpf = (OOP_Object *)db_pf;
+	    DPF(bug("Match!\n"));
+	    retpf = (struct pixfmt_data *)db_pf;
 	    break;
 	}
     }
-    
-    if (NULL != retpf)
-    	return n;
-	
-    return NULL;
+
+    ReleaseSemaphore(&csd->pfsema);
+    return retpf;
 }
 
 /****************************************************************************************/
