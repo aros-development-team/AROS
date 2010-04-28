@@ -494,8 +494,8 @@ enum
 typedef struct
 {
     UWORD	    depth;
-    UWORD	    size;	/* Size of pixel in bits */
-    UWORD   	    bytes_per_pixel;	
+    UWORD	    size;		/* Size of pixel in bits */
+    UWORD   	    bytes_per_pixel;
 
     HIDDT_Pixel     red_mask;
     HIDDT_Pixel     green_mask;
@@ -510,8 +510,8 @@ typedef struct
     HIDDT_Pixel     clut_mask;
     UBYTE   	    clut_shift;
 
-    HIDDT_StdPixFmt stdpixfmt;
-    ULONG   	    flags;
+    HIDDT_StdPixFmt stdpixfmt;		/* Number of corresponging standard format */
+    ULONG   	    flags;		/* Reserved, do not use */
 	
 } HIDDT_PixelFormat;
 

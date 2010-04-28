@@ -59,8 +59,14 @@ struct colormap_data
 
 struct pixfmt_data
 {
-     HIDDT_PixelFormat pf; 
+     HIDDT_PixelFormat pf; /* Public portion in the beginning    */
+
+     struct MinNode node;  /* Node for linking into the database */
+     ULONG refcount;	   /* Reference count			 */
 };
+
+/* Use this macro in order to transform node pointer to pixfmt pointer */
+#define PIXFMT_OBJ(n) ((HIDDT_PixelFormat *)((char *)(n) - offsetof(struct pixfmt_data, node)))
 
 struct planarbm_data
 {
@@ -100,27 +106,6 @@ struct sync_data {
     ULONG vmax;
 };
 
-
-/* This is the pixfmts DB. */
-
-#warning Find a way to optimize searching in the pixfmt database
-
-/* Organize the pf db in some other way that makes it quicker to find a certain PF */
-
-struct pfnode {
-    struct MinNode node;
-    OOP_Object *pixfmt;
-    ULONG   refcount;
-};
-
-/* This is used as an alias for both pfnode and ModeNode */
-struct objectnode {
-   struct MinNode node;
-   OOP_Object *object;
-   ULONG refcount;
-};
-
-
 struct mode_bm {
     UBYTE *bm;
     UWORD bpr;
@@ -156,35 +141,15 @@ struct HIDDGraphicsData
 	/* Gfx mode "database" */
 	struct mode_db mdb;
 
-	
-	/*
-	   Pixel format "database". This is a list
-	   of all pixelformats currently used bu some bitmap.
-	   The point of having this as a central db in the gfx hidd is
-	   that if several bitmaps are of the same pixel format
-	   they may point to the same PixFmt object instead
-	   of allocating their own instance. Thus we are saving mem
-	*/
-	struct SignalSemaphore pfsema;
-	struct MinList pflist;
-
-#if 0	
-	/* Software cursor stuff */
-	OOP_Object *curs_bm;
-	BOOL curs_on;
-	ULONG curs_x;
-	ULONG curs_y;
-	OOP_Object *curs_backup;
-#endif	
+	/* Framebuffer control stuff */
 	OOP_Object *framebuffer;
-	
 	OOP_Object *shownbm;
 	
 	/* gc used for stuff like rendering cursor */
 	OOP_Object *gc;
 	
-	/* The mode currently used */
-	HIDDT_ModeID curmode;
+	/* The mode currently used (obsolete ?)
+	HIDDT_ModeID curmode; */
 };
 
 /* Private gfxhidd methods */
@@ -321,9 +286,20 @@ struct class_static_data
     
     OOP_Class		 *planarbmclass;
     OOP_Class		 *chunkybmclass;
-    
-    OOP_Object		 *std_pixfmts[num_Hidd_StdPixFmt];
-    
+
+    /*
+       Pixel format "database". This is a list
+       of all pixelformats currently used bu some bitmap.
+       The point of having this as a central db in the gfx hidd is
+       that if several bitmaps are of the same pixel format
+       they may point to the same PixFmt object instead
+       of allocating their own instance. Thus we are saving mem
+     */
+    struct SignalSemaphore pfsema;
+    struct MinList pflist;
+    /* Index of standard pixelformats for quick access */
+    HIDDT_PixelFormat	 *std_pixfmts[num_Hidd_StdPixFmt];
+
     /* Thes calls are optimized by calling the method functions directly	*/
 #if USE_FAST_PUTPIXEL
     OOP_MethodID	 putpixel_mid;
