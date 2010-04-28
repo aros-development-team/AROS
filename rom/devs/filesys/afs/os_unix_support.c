@@ -120,6 +120,11 @@ BOOL diskWritable(struct AFSBase *afsbase, struct IOHandle *ioh)
 	return ioh->fh ? 1 : 0;
 }
 
+ULONG sectorSize(struct AFSBase *afsbase, struct IOHandle *ioh)
+{
+	return 512;
+}
+
 void check64BitSupport(struct AFSBase *afsbase, struct Volume *volume) {
 	printf("%s: We just support 64Bit (or not ...)\n", __FUNCTION__);
 }

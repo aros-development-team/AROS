@@ -2,7 +2,7 @@
 #define OS_AROS_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -35,6 +35,7 @@ struct IOHandle {
 	struct Interrupt mc_int;
 	struct Interrupt vbl_int;
 	struct AFSBase *afsbase; /* for interrupt code */
+	ULONG sectorsize;
 	ULONG ioflags;
 	UWORD cmdread;
 	UWORD cmdwrite;

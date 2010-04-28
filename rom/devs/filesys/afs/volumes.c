@@ -46,7 +46,11 @@ LONG error;
 		return ERROR_UNKNOWN;
 	if (calcChkSum(volume->SizeBlock, blockbuffer->buffer) != 0 ||
 		OS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)]) != ST_ROOT)
+	{
+		D(bug("[afs] newMedium: incorrect checksum or root block type (%ld)\n",
+			OS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)])));
 		return ERROR_NOT_A_DOS_DISK;
+	}
 
 	blockbuffer=getBlock(afsbase, volume,0);
 	if (blockbuffer == NULL)
@@ -59,7 +63,11 @@ LONG error;
 	}
 	volume->dosflags = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
 	if (volume->dostype != 0x444F5300)
+	{
+		D(bug("[afs] newMedium: incorrect DOS type (0x%lx)\n",
+			volume->dostype));
 		return ERROR_NOT_A_DOS_DISK;
+	}
 	blockbuffer=getBlock(afsbase, volume,volume->rootblock);
 	if (blockbuffer == NULL)
 		return ERROR_UNKNOWN;
@@ -152,6 +160,12 @@ struct Volume *volume;
 						(
 							devicedef->de_HighCyl-devicedef->de_LowCyl+1
 						)*devicedef->de_Surfaces*devicedef->de_BlocksPerTrack
+						/
+						(
+							(devicedef->de_SizeBlock << 2)
+							/
+							sectorSize(afsbase, &volume->ioh)
+						)
 					);
 				volume->rootblock =(volume->countblocks-1+devicedef->de_Reserved)/2;
 				volume->startblock=

@@ -22,6 +22,7 @@ LONG readDisk(struct AFSBase *, struct Volume *, ULONG, ULONG, APTR);
 LONG writeDisk(struct AFSBase *, struct Volume *, ULONG, ULONG, APTR);
 UBYTE diskPresent(struct AFSBase *, struct IOHandle *);
 BOOL diskWritable(struct AFSBase *, struct IOHandle *);
+ULONG sectorSize(struct AFSBase *, struct IOHandle *);
 BOOL flush(struct AFSBase *, struct Volume *);
 struct IOHandle *openBlockDevice(struct AFSBase *, struct IOHandle *);
 void closeBlockDevice(struct AFSBase *, struct IOHandle *);

@@ -329,6 +329,7 @@ struct DriveGeometry dg;
 				addChangeInt(afsbase, ioh);
 			}
 		}
+		ioh->sectorsize = dg.dg_SectorSize;
 	}
 }
 
@@ -344,6 +345,11 @@ BOOL diskWritable(struct AFSBase *afsbase, struct IOHandle *ioh)
 	ioh->ioreq->iotd_Req.io_Command = TD_PROTSTATUS;
 	DoIO((struct IORequest *)&ioh->ioreq->iotd_Req);
 	return ioh->ioreq->iotd_Req.io_Actual == 0;
+}
+
+ULONG sectorSize(struct AFSBase *afsbase, struct IOHandle *ioh)
+{
+	return ioh->sectorsize;
 }
 
 struct IOHandle *openBlockDevice(struct AFSBase *afsbase, struct IOHandle *ioh)
