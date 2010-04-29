@@ -1746,9 +1746,26 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
                                             BMF_CLEAR,
                                             data->icld_DisplayRastPort->BitMap))!=NULL)
                         {
-                            if ((data->icld_BufferRastPort = CreateRastPort())!=NULL)
+			    struct TagItem lay_tags[] =
+			    {
+				{LA_Visible     , (IPTR)FALSE		},
+				{TAG_DONE					}
+			    };
+
+			    struct Layer * buffLayer = CreateLayerTagList(&_screen(obj)->LayerInfo,
+					   tmp_BuffBitMap,
+					   0,
+					   0,
+					   data->icld_ViewWidth,
+					   data->icld_ViewHeight,
+					   LAYERSIMPLE,
+					   lay_tags);
+
+                            if (buffLayer != NULL)
                             {
-                                data->icld_BufferRastPort->BitMap = tmp_BuffBitMap;
+				bug("[IconList] %s: FrontRastPort @ %p, BackLayer @ %p, BackRastport @ %p\n", __PRETTY_FUNCTION__, data->icld_DisplayRastPort, buffLayer, buffLayer->rp);
+				data->icld_BufferRastPort = buffLayer->rp;
+
                                 SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
                                 data->icld_DrawOffsetX = 0;
                                 data->icld_DrawOffsetY = 0;
@@ -1766,9 +1783,8 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
                     {
                         if ((data->icld_BufferRastPort) && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
                         {
-                            //Free up the buffers rastport and bitmap since they are no longer needed ..
-                            FreeBitMap(data->icld_BufferRastPort->BitMap);
-                            FreeRastPort(data->icld_BufferRastPort);
+                            //Free up the buffers layer, rastport and bitmap since they are no longer needed ..
+                            DeleteLayer(NULL, data->icld_BufferRastPort->Layer);
                             data->icld_BufferRastPort = data->icld_DisplayRastPort;
                             data->icld_DrawOffsetX = _mleft(obj);
                             data->icld_DrawOffsetY = _mtop(obj);
