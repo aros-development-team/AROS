@@ -1580,7 +1580,7 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
 #if defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList] %s: MaxLineLen : %ld\n", __PRETTY_FUNCTION__, data->icld__Option_LabelTextMaxLen));
 #endif
-    data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
+    data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY | IDCMP_NEWSIZE;
     data->ehn.ehn_Priority = 0;
     data->ehn.ehn_Flags    = 0;
     data->ehn.ehn_Object   = obj;
@@ -1726,65 +1726,82 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 
                     if (data->icld_DisplayFlags & ICONLIST_DISP_BUFFERED)
                     {
-                        struct BitMap *tmp_BuffBitMap = NULL;
+                        struct BitMap *bitmap_New = NULL;
                         ULONG tmp_RastDepth;
 
 #if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
                         D(bug("[IconList] %s: MUIA_IconList_DisplayFlags & ICONLIST_DISP_BUFFERED\n", __PRETTY_FUNCTION__));
 #endif
-                        if ((data->icld_BufferRastPort) && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
-                        {
-                            //Free up the buffers Layer, rastport and bitmap so we can replace them ..
-                            DeleteLayer(NULL, data->icld_BufferRastPort->Layer);
-                            SET(obj, MUIA_IconList_BufferRastport, NULL);
-                        }
-                        tmp_RastDepth = GetCyberMapAttr(data->icld_DisplayRastPort->BitMap, CYBRMATTR_DEPTH);
-                        if ((tmp_BuffBitMap = AllocBitMap(data->icld_ViewWidth,
-                                            data->icld_ViewHeight,
-                                            tmp_RastDepth,
-                                            BMF_CLEAR,
-                                            data->icld_DisplayRastPort->BitMap))!=NULL)
-                        {
-			    struct TagItem lay_tags[] =
+			if ((data->icld_BufferRastPort != NULL)
+			    && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
+			{
+#if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
+			    D(bug("[IconList] %s: BackLayer @ %p for BackRastport @ %p\n", __PRETTY_FUNCTION__, data->icld_BufferRastPort->Layer, data->icld_BufferRastPort));
+#endif
+			    if ((GetBitMapAttr(data->icld_BufferRastPort->BitMap, BMA_WIDTH) != data->icld_ViewWidth)
+			        || (GetBitMapAttr(data->icld_BufferRastPort->BitMap, BMA_HEIGHT) != data->icld_ViewHeight))
 			    {
-				{LA_Visible     , (IPTR)FALSE		},
-				{TAG_DONE					}
-			    };
+				struct Layer *oldLayer = data->icld_BufferRastPort->Layer;
+#if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
+				D(bug("[IconList] %s: Destroying old BackLayer\n", __PRETTY_FUNCTION__));
+#endif
+				data->icld_BufferRastPort = data->icld_DisplayRastPort;
+				DeleteLayer(0, oldLayer);
+			    }
+			}
 
-			    struct Layer * buffLayer = CreateLayerTagList(&_screen(obj)->LayerInfo,
-					   tmp_BuffBitMap,
-					   0,
-					   0,
-					   data->icld_ViewWidth,
-					   data->icld_ViewHeight,
-					   LAYERSIMPLE,
-					   lay_tags);
+                        if ((data->icld_BufferRastPort == NULL) || (data->icld_BufferRastPort == data->icld_DisplayRastPort))
+                        {
+			    tmp_RastDepth = GetCyberMapAttr(data->icld_DisplayRastPort->BitMap, CYBRMATTR_DEPTH);
+			    if ((bitmap_New = AllocBitMap(data->icld_ViewWidth,
+						data->icld_ViewHeight,
+						tmp_RastDepth,
+						BMF_CLEAR,
+						data->icld_DisplayRastPort->BitMap))!=NULL)
+			    {
+				struct TagItem lay_tags[] =
+				{
+				    {LA_Visible     , (IPTR)FALSE	},
+				    {TAG_DONE				}
+				};
 
-                            if (buffLayer != NULL)
-                            {
-				bug("[IconList] %s: FrontRastPort @ %p, BackLayer @ %p, BackRastport @ %p\n", __PRETTY_FUNCTION__, data->icld_DisplayRastPort, buffLayer, buffLayer->rp);
-				data->icld_BufferRastPort = buffLayer->rp;
+				struct Layer * buffLayer = CreateLayerTagList(&_screen(obj)->LayerInfo,
+					       bitmap_New,
+					       0,
+					       0,
+					       data->icld_ViewWidth,
+					       data->icld_ViewHeight,
+					       LAYERSIMPLE,
+					       lay_tags);
 
-                                SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
-                                data->icld_DrawOffsetX = 0;
-                                data->icld_DrawOffsetY = 0;
-                            }
-                            else
-                            {
-                                FreeBitMap(tmp_BuffBitMap);
-                                data->icld_BufferRastPort = data->icld_DisplayRastPort;
-                                data->icld_DrawOffsetX = _mleft(obj);
-                                data->icld_DrawOffsetY = _mtop(obj);
-                            }
-                        }
+				if (buffLayer != NULL)
+				{
+				    data->icld_BufferRastPort = buffLayer->rp;
+#if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
+				    D(bug("[IconList] %s: FrontRastPort @ %p, New BackLayer @ %p, BackRastport @ %p\n", __PRETTY_FUNCTION__, data->icld_DisplayRastPort, data->icld_BufferRastPort->Layer, data->icld_BufferRastPort));
+#endif
+				    SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
+				    data->icld_DrawOffsetX = 0;
+				    data->icld_DrawOffsetY = 0;
+				}
+				else
+				{
+				    FreeBitMap(bitmap_New);
+				    data->icld_BufferRastPort = data->icld_DisplayRastPort;
+				    data->icld_DrawOffsetX = _mleft(obj);
+				    data->icld_DrawOffsetY = _mtop(obj);
+				}
+			    }
+			}
                     }
                     else
                     {
                         if ((data->icld_BufferRastPort) && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
                         {
                             //Free up the buffers layer, rastport and bitmap since they are no longer needed ..
-                            DeleteLayer(NULL, data->icld_BufferRastPort->Layer);
-                            data->icld_BufferRastPort = data->icld_DisplayRastPort;
+			    struct Layer *oldLayer = data->icld_BufferRastPort->Layer;
+			    data->icld_BufferRastPort = data->icld_DisplayRastPort;
+			    DeleteLayer(0, oldLayer);
                             data->icld_DrawOffsetX = _mleft(obj);
                             data->icld_DrawOffsetY = _mtop(obj);
                         }
@@ -2259,27 +2276,46 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
         if (data->icld_DisplayFlags & ICONLIST_DISP_BUFFERED)
         {
-            struct BitMap *tmp_BuffBitMap = NULL;
+            struct BitMap *bitmap_New = NULL;
             ULONG tmp_RastDepth = GetCyberMapAttr(data->icld_DisplayRastPort->BitMap, CYBRMATTR_DEPTH);
-            if ((tmp_BuffBitMap = AllocBitMap(data->icld_ViewWidth,
+            if ((bitmap_New = AllocBitMap(data->icld_ViewWidth,
                                 data->icld_ViewHeight,
                                 tmp_RastDepth,
                                 BMF_CLEAR,
                                 data->icld_DisplayRastPort->BitMap))!=NULL)
             {
-                if ((data->icld_BufferRastPort = CreateRastPort())!=NULL)
-                {
-                    data->icld_BufferRastPort->BitMap = tmp_BuffBitMap;
-                    data->icld_DrawOffsetX = 0;
-                    data->icld_DrawOffsetY = 0;
-                }
-                else
-                {
-                    FreeBitMap(tmp_BuffBitMap);
-                    data->icld_BufferRastPort = data->icld_DisplayRastPort;
-                    data->icld_DrawOffsetX = _mleft(obj);
-                    data->icld_DrawOffsetY = _mtop(obj);
-                }
+		struct TagItem lay_tags[] =
+		{
+		    {LA_Visible     , (IPTR)FALSE	},
+		    {TAG_DONE				}
+		};
+
+		struct Layer * buffLayer = CreateLayerTagList(&_screen(obj)->LayerInfo,
+			       bitmap_New,
+			       0,
+			       0,
+			       data->icld_ViewWidth,
+			       data->icld_ViewHeight,
+			       LAYERSIMPLE,
+			       lay_tags);
+
+		if (buffLayer != NULL)
+		{
+		    data->icld_BufferRastPort = buffLayer->rp;
+#if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
+		    D(bug("[IconList] %s: FrontRastPort @ %p, New BackLayer @ %p, BackRastport @ %p\n", __PRETTY_FUNCTION__, data->icld_DisplayRastPort, data->icld_BufferRastPort->Layer, data->icld_BufferRastPort));
+#endif
+		    SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
+		    data->icld_DrawOffsetX = 0;
+		    data->icld_DrawOffsetY = 0;
+		}
+		else
+		{
+		    FreeBitMap(bitmap_New);
+		    data->icld_BufferRastPort = data->icld_DisplayRastPort;
+		    data->icld_DrawOffsetX = _mleft(obj);
+		    data->icld_DrawOffsetY = _mtop(obj);
+		}
             }
         }
         else
@@ -2288,6 +2324,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
             data->icld_DrawOffsetX = _mleft(obj);
             data->icld_DrawOffsetY = _mtop(obj);
         }
+
         if (data->icld_IconLabelFont == NULL)       data->icld_IconLabelFont = _font(obj);
         if (data->icld_IconInfoFont == NULL)        data->icld_IconInfoFont = data->icld_IconLabelFont;
 #if defined(DEBUG_ILC_ICONRENDERING)
@@ -2318,8 +2355,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     {
         if ((data->icld_BufferRastPort) && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
         {
-            FreeBitMap(data->icld_BufferRastPort->BitMap);
-            FreeRastPort(data->icld_BufferRastPort);
+            DeleteLayer(0, data->icld_BufferRastPort->Layer);
         }
 
         data->icld_BufferRastPort = NULL;
@@ -2753,15 +2789,12 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 
             if ((data->icld_BufferRastPort) && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
             {
-                //Free up the buffers rastport and bitmap so we can replace them ..
-                struct Bitmap *bitmap_Old = (struct Bitmap *)data->icld_BufferRastPort->BitMap;
+                //Free up the buffers Layer, rastport and bitmap so we can replace them ..
                 struct Bitmap *bitmap_New;
 
                 ULONG tmp_RastDepth;
 
-                data->icld_BufferRastPort->BitMap = NULL;
-
-                FreeRastPort(data->icld_BufferRastPort);
+                DeleteLayer(0, data->icld_BufferRastPort->Layer);
                 SET(obj, MUIA_IconList_BufferRastport, NULL);
 
                 tmp_RastDepth = GetCyberMapAttr(data->icld_DisplayRastPort->BitMap, CYBRMATTR_DEPTH);
@@ -2771,24 +2804,39 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
                                     BMF_CLEAR,
                                     data->icld_DisplayRastPort->BitMap))!=NULL)
                 {
-                    if ((data->icld_BufferRastPort = CreateRastPort())!=NULL)
-                    {
-                        data->icld_BufferRastPort->BitMap = (struct BitMap *)bitmap_New;
-                        SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
-                        data->icld_DrawOffsetX = 0;
-                        data->icld_DrawOffsetY = 0;
-                    }
-                    else
-                    {
-                        FreeBitMap((struct BitMap *)bitmap_New);
-                        data->icld_BufferRastPort = data->icld_DisplayRastPort;
-                        data->icld_DrawOffsetX = _mleft(obj);
-                        data->icld_DrawOffsetY = _mtop(obj);
-                    }
-                }
+		    struct TagItem lay_tags[] =
+		    {
+			{LA_Visible     , (IPTR)FALSE	},
+			{TAG_DONE				}
+		    };
 
-                if (bitmap_Old != (struct Bitmap *)data->icld_BufferRastPort->BitMap)
-                    FreeBitMap((struct BitMap *)bitmap_Old);
+		    struct Layer * buffLayer = CreateLayerTagList(&_screen(obj)->LayerInfo,
+				   bitmap_New,
+				   0,
+				   0,
+				   data->icld_ViewWidth,
+				   data->icld_ViewHeight,
+				   LAYERSIMPLE,
+				   lay_tags);
+
+		    if (buffLayer != NULL)
+		    {
+			data->icld_BufferRastPort = buffLayer->rp;
+#if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
+			D(bug("[IconList] %s: FrontRastPort @ %p, New BackLayer @ %p, BackRastport @ %p\n", __PRETTY_FUNCTION__, data->icld_DisplayRastPort, data->icld_BufferRastPort->Layer, data->icld_BufferRastPort));
+#endif
+			SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
+			data->icld_DrawOffsetX = 0;
+			data->icld_DrawOffsetY = 0;
+		    }
+		    else
+		    {
+			FreeBitMap(bitmap_New);
+			data->icld_BufferRastPort = data->icld_DisplayRastPort;
+			data->icld_DrawOffsetX = _mleft(obj);
+			data->icld_DrawOffsetY = _mtop(obj);
+		    }
+                }
             }
 
             data->icld_UpdateMode = 0;
@@ -3503,6 +3551,10 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 
         switch (message->imsg->Class)
         {
+	    case IDCMP_NEWSIZE:
+		bug("[IconList] %s: IDCMP_NEWSIZE\n", __PRETTY_FUNCTION__);
+		break;
+
             case IDCMP_RAWKEY:
                 {
 #if defined(DEBUG_ILC_EVENTS)
