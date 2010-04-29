@@ -1734,9 +1734,8 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 #endif
                         if ((data->icld_BufferRastPort) && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
                         {
-                            //Free up the buffers rastport and bitmap so we can replace them ..
-                            FreeBitMap(data->icld_BufferRastPort->BitMap);
-                            FreeRastPort(data->icld_BufferRastPort);
+                            //Free up the buffers Layer, rastport and bitmap so we can replace them ..
+                            DeleteLayer(NULL, data->icld_BufferRastPort->Layer);
                             SET(obj, MUIA_IconList_BufferRastport, NULL);
                         }
                         tmp_RastDepth = GetCyberMapAttr(data->icld_DisplayRastPort->BitMap, CYBRMATTR_DEPTH);
