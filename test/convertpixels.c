@@ -1,7 +1,14 @@
+#define __OOP_NOATTRBASES__
+
 #include <hidd/graphics.h>
 #include <proto/graphics.h>
+#include <proto/oop.h>
 
 #include <stdio.h>
+
+#undef ConvertPixels
+
+static OOP_AttrBase HiddBitMapAttrBase;
 
 #if AROS_BIG_ENDIAN
 #define SRC_PIXFMT vHidd_StdPixFmt_ARGB32
@@ -25,17 +32,62 @@ static ULONG argb[8] =
 static UWORD rgb15[8];
 static ULONG argb_inv[8];
 
+static void ConvertPixels(APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFmt,
+		   APTR dstPixels, ULONG dstMod, HIDDT_StdPixFmt dstPixFmt,
+		   ULONG width, ULONG height, OOP_Object *bm)
+{
+    OOP_Object *gfxhidd = NULL;
+    OOP_Object *srcpf, *dstpf;
+    APTR src = srcPixels;
+    APTR dst = dstPixels;
+
+    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &gfxhidd);
+
+    if (!gfxhidd) {
+        printf("ConvertPixels(): Failed to obtain graphics driver\n");
+	return;
+    }
+
+    srcpf = HIDD_Gfx_GetPixFmt(gfxhidd, srcPixFmt);
+    dstpf = HIDD_Gfx_GetPixFmt(gfxhidd, dstPixFmt);
+
+    if (!srcpf || !dstpf)
+    {
+    	printf("ConvertPixels(): Bad source (%ld) or dest (%ld) pixfmt!\n", srcPixFmt, dstPixFmt);
+	return;
+    }
+
+    HIDD_BM_ConvertPixels(bm, &src, (HIDDT_PixelFormat *)srcpf, srcMod, 
+    	    	    	  &dst, (HIDDT_PixelFormat *)dstpf, dstMod,
+			  width, height, NULL);
+}
+
 int main(void)
 {
-    ConvertPixelsA(argb, 0, SRC_PIXFMT, rgb15, 0, DST_PIXFMT, 8, 1, 0);
-    ConvertPixelsA(rgb15, 0, DST_PIXFMT, argb_inv, 0, SRC_PIXFMT, 8, 1, 0);
+    struct BitMap *bitmap;
+    
+    HiddBitMapAttrBase = OOP_ObtainAttrBase(IID_Hidd_BitMap);
+    if (!HiddBitMapAttrBase) {
+        printf("Failed to obtain IID_Hidd_BitMap\n");
+	return RETURN_FAIL;
+    }
+    
+    bitmap = AllocBitMap(1, 1, 16, 0, NULL);
+    if (!bitmap) {
+        printf("Failed to allocate a placeholder bitmap!\n");
+	OOP_ReleaseAttrBase(IID_Hidd_BitMap);
+	return RETURN_FAIL;
+    }
+
+    ConvertPixels(argb, 0, SRC_PIXFMT, rgb15, 0, DST_PIXFMT, 8, 1, (OOP_Object *)bitmap->Planes[0]);
+    ConvertPixels(rgb15, 0, DST_PIXFMT, argb_inv, 0, SRC_PIXFMT, 8, 1, (OOP_Object *)bitmap->Planes[0]);
     
     {
     	int i;
 	
 	for(i = 0; i < 8; i++)
 	{
-	    printf("ARGB32 %08lx = RGB15 %04x (%02x %02x %02x) (%3d%% %3d%% %3d%%) [%08x]\n",
+	    printf("ARGB32 %08x = RGB15 %04x (%02x %02x %02x) (%3d%% %3d%% %3d%%) [%08x]\n",
 	    	    argb[i], rgb15[i],
 		    (rgb15[i] & 0x7C00) >> 10,
 		    (rgb15[i] & 0x03E0) >> 5,
@@ -48,6 +100,7 @@ int main(void)
 	}
     }
     
+    OOP_ReleaseAttrBase(IID_Hidd_BitMap);
     return 0;
 }
 
