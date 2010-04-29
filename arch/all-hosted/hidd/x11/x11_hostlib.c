@@ -12,20 +12,19 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-void *xrandr_handle = NULL;
 void *x11_handle = NULL;
 void *libc_handle = NULL;
+void *xf86vm_handle = NULL;
 
-struct xrandr_func xrandr_func;
 struct x11_func x11_func;
 struct libc_func libc_func;
+struct xf86vm_func xf86vm_func;
 
-static const char *xrandr_func_names[] = {
-	"XRRGetScreenResources", 
-	"XRRFreeScreenResources"
+static const char *xf86vm_func_names[] = {
+	"XF86VidModeGetAllModeLines"
 };
 
-#define XRANDR_NUM_FUNCS (2)
+#define XF86VM_NUM_FUNCS (1)
 
 static const char *x11_func_names[] = {
     "XCreateImage",
@@ -170,8 +169,7 @@ static int x11_hostlib_init(LIBBASETYPEPTR LIBBASE) {
         kprintf("[x11] couldn't open hostlib.resource");
         return FALSE;
     }
-
-    if ((xrandr_handle = x11_hostlib_load_so(XRANDR_SOFILE, xrandr_func_names, XRANDR_NUM_FUNCS, (void **) &xrandr_func)) == NULL)
+    if ((xf86vm_handle = x11_hostlib_load_so(XF86VM_SOFILE, xf86vm_func_names, XF86VM_NUM_FUNCS, (void **) &xf86vm_func)) == NULL)
         return FALSE;
 
     if ((x11_handle = x11_hostlib_load_so(X11_SOFILE, x11_func_names, X11_NUM_FUNCS, (void **) &x11_func)) == NULL)
@@ -188,8 +186,8 @@ static int x11_hostlib_init(LIBBASETYPEPTR LIBBASE) {
 static int x11_hostlib_expunge(LIBBASETYPEPTR LIBBASE) {
     D(bug("[x11] hostlib expunge\n"));
 
-    if (xrandr_handle != NULL)
-        HostLib_Close(xrandr_handle, NULL);
+    if (xf86vm_handle != NULL)
+        HostLib_Close(xf86vm_handle, NULL);
 
     if (x11_handle != NULL)
         HostLib_Close(x11_handle, NULL);

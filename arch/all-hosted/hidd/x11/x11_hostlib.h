@@ -4,7 +4,6 @@
 #include <aros/config.h>
 
 #include <X11/Xlib.h>
-#include <X11/extensions/Xrandr.h>
 
 #if USE_XSHM
 #include <sys/types.h>
@@ -14,11 +13,6 @@
 // Set to 1 if you want to disable the asynchronic nature of the X11 HIDD.
 // This makes it easier to find the real reason of a misbehavior.
 #define DEBUG_X11_SYNCHRON 0
-
-struct xrandr_func {
-	XRRScreenResources* (*XRRGetScreenResources) (Display*, Window);
-	void (*XRRFreeScreenResources) (XRRScreenResources*);	
-};
 
 struct x11_func {
     XImage * (*XCreateImage) ( Display* , Visual* , unsigned int , int , int , char* , unsigned int , unsigned int , int , int );
@@ -103,6 +97,27 @@ struct x11_func {
 #endif
 };
 
+/* Taken from xf86vmode.h */
+typedef struct {
+    unsigned int	dotclock;
+    unsigned short	hdisplay;
+    unsigned short	hsyncstart;
+    unsigned short	hsyncend;
+    unsigned short	htotal;
+    unsigned short	hskew;
+    unsigned short	vdisplay;
+    unsigned short	vsyncstart;
+    unsigned short	vsyncend;
+    unsigned short	vtotal;
+    unsigned int	flags;
+    int			privsize;
+    long		*c_private;
+} XF86VidModeModeInfo;
+
+struct xf86vm_func {
+	void (*XF86VidModeGetAllModeLines) (Display *, int, int *, XF86VidModeModeInfo***);
+};
+
 struct libc_func {
 #if USE_XSHM
     key_t (*ftok) (const char *, int);
@@ -114,8 +129,8 @@ struct libc_func {
     int (*raise) (int);
 };
 
-extern void *xrandr_handle;
-extern struct xrandr_func xrandr_func;
+extern void *xf86vm_handle;
+extern struct xf86vm_func xf86vm_func;
 
 extern void *x11_handle;
 extern struct x11_func x11_func;
@@ -124,16 +139,16 @@ extern void *libc_handle;
 extern struct libc_func libc_func;
 
 #if defined __FreeBSD__
-#	define XRANDR_SOFILE "libXrandr.so" 
 #   define X11_SOFILE   "libX11.so"
 #   define LIBC_SOFILE  "libc.so"
+#	define XF86VM_SOFILE "libXxf86vm.so"
 #else
-#	define XRANDR_SOFILE "libXrandr.so.2"
 #   define X11_SOFILE  "libX11.so.6"
 #   define LIBC_SOFILE "libc.so.6"
+#	define XF86VM_SOFILE "libXxf86vm.so.1"
 #endif
 
-#define XRRCALL(func,...) (xrandr_func.func(__VA_ARGS__))
+#define XVMCALL(func,...) (xf86vm_func.func(__VA_ARGS__))
 #define XCALL(func,...) (x11_func.func(__VA_ARGS__))
 #define CCALL(func,...) (libc_func.func(__VA_ARGS__))
 

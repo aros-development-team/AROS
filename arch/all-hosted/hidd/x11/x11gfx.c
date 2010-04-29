@@ -16,7 +16,6 @@
 #include <X11/Xlib.h>
 #include <X11/cursorfont.h>
 #include <X11/Xutil.h>
-#include <X11/extensions/Xrandr.h>
 
 #include <signal.h>
 #include <string.h>
@@ -117,10 +116,12 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     struct pRoot_New mymsg = { msg->mID, mytags };
 
 	struct TagItem *resolution;
-	XRRScreenResources *res;
+	XF86VidModeModeInfo**	modes;
+	static int		modeNum;
+	STRPTR modename;
+	
 	ULONG i, realmode, screen;
 	Display *disp;
-	Window rootwin;
 	
     EnterFunc(bug("X11Gfx::New()\n"));
 
@@ -135,12 +136,12 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	
     disp = XCALL(XOpenDisplay, NULL);
 	screen = XCALL(XDefaultScreen, disp);	
- 	rootwin = XCALL(XRootWindow, disp, screen);
-	res = XRRCALL(XRRGetScreenResources, disp, rootwin);
-
-    if((resolution = AllocMem(res->nmode * sizeof(struct TagItem) * 4, MEMF_PUBLIC)) == NULL)
+// 	rootwin = XCALL(XRootWindow, disp, screen);
+	
+	XVMCALL(XF86VidModeGetAllModeLines, disp, screen, &modeNum, &modes);
+	
+    if((resolution = AllocMem(modeNum * sizeof(struct TagItem) * 4, MEMF_PUBLIC)) == NULL)
     {
-		XRRCALL(XRRFreeScreenResources, res);
 		XCALL(XCloseDisplay, disp);
 		kprintf("!!! Couldn't allocate resolution memory in X11Gfx:New(): %d !!!\n", XSD(cl)->vi.class);
 		cleanupx11stuff(XSD(cl));
@@ -149,19 +150,16 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
 	realmode = 0;
 	
-	for(i = 0; i < res->nmode; i++)
+	for(i = 0; i < modeNum; i++)
 	{
-		XRRModeInfo *mode;
 		ULONG j;
 		BOOL insert;
-		
-		mode = &res->modes[i];
 		insert = TRUE;
-
+		
 		/* avoid duplicated resolution */
 		for(j = 0; j < realmode; j++)
 		{
-			if(resolution[j * 4].ti_Data == mode->width && resolution[j * 4 + 1].ti_Data == mode->height)
+			if(resolution[j * 4].ti_Data == modes[i]->hdisplay && resolution[j * 4 + 1].ti_Data == modes[i]->vdisplay)
 			{ /* Found a matching resolution. Don't insert ! */
 				insert = FALSE;
 			}
@@ -170,25 +168,35 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 		if(insert)
 		{
 			resolution[realmode * 4 + 0].ti_Tag = aHidd_Sync_HDisp;
-			resolution[realmode * 4 + 0].ti_Data = mode->width;
+			resolution[realmode * 4 + 0].ti_Data = modes[i]->hdisplay;
 	
 			resolution[realmode * 4 + 1].ti_Tag = aHidd_Sync_VDisp;
-			resolution[realmode * 4 + 1].ti_Data = mode->height;
+			resolution[realmode * 4 + 1].ti_Data = modes[i]->vdisplay;
 			
-			resolution[realmode * 4 + 2].ti_Tag = aHidd_Sync_Description;
-			resolution[realmode * 4 + 2].ti_Data = (IPTR)mode->name;
-
+			modename = AllocMem(64, MEMF_PUBLIC);
+			
+			if(modename)
+			{
+				sprintf(modename, "X11: %dx%d", modes[i]->hdisplay, modes[i]->vdisplay);
+				resolution[realmode * 4 + 2].ti_Tag = aHidd_Sync_Description;
+				resolution[realmode * 4 + 2].ti_Data = modename;
+			} 
+			else
+			{
+				resolution[realmode * 4 + 2].ti_Tag = aHidd_Sync_Description;
+				resolution[realmode * 4 + 2].ti_Data = "Failed to allocate memory";				
+			}
+	
 			resolution[realmode * 4 + 3].ti_Tag = TAG_DONE;
 			resolution[realmode * 4 + 3].ti_Data = 0UL;
 			
 			realmode++;
 		}
 	}
-											
+			
 	if((mode_tags = AllocMem(sizeof(struct TagItem) * (realmode + 9), MEMF_PUBLIC)) == NULL)
 	{	
-		FreeMem(resolution, res->nmode * sizeof(struct TagItem) * 4);
-		XRRCALL(XRRFreeScreenResources, res);
+		FreeMem(resolution, modeNum * sizeof(struct TagItem) * 4);
 		XCALL(XCloseDisplay, disp);
 		kprintf("!!! Couldn't allocate mode_tags memory in X11Gfx:New(): %d !!!\n", XSD(cl)->vi.class);
 		cleanupx11stuff(XSD(cl));
@@ -220,7 +228,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	mode_tags[7].ti_Tag = aHidd_Sync_VSyncLength;
 	mode_tags[7].ti_Data = 0;
 	
-	/* The different syncmodes coming from RandR. */
+	/* The different screenmode from XF86VMODE */
 	for(i=0; i < realmode; i++)
 	{
 		mode_tags[8 + i].ti_Tag = aHidd_Gfx_SyncTags;
@@ -255,9 +263,8 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	}
 	else
 	{
-		FreeMem(resolution, res->nmode * sizeof(struct TagItem) * 4);
+		FreeMem(resolution, modeNum * sizeof(struct TagItem) * 4);
 		FreeMem(mode_tags, sizeof(struct TagItem) * (realmode + 9));
-		XRRCALL(XRRFreeScreenResources, res);
 		XCALL(XCloseDisplay, disp);
 		kprintf("!!! UNHANDLED COLOR MODEL IN X11Gfx:New(): %d !!!\n", XSD(cl)->vi.class);
 		cleanupx11stuff(XSD(cl));
@@ -280,10 +287,14 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	
     D(bug("Super method called\n"));
 
-	/* Don't free them before, strings used inside XModeInfo from XRRScreenResources */
-	FreeMem(resolution, res->nmode * sizeof(struct TagItem) * 4);
+	/* Free strings for modename */
+	for(i=0; i < realmode; i++)
+	{
+		FreeMem(resolution[4*i + 2].ti_Data, 64);
+	}
+	
+	FreeMem(resolution, modeNum * sizeof(struct TagItem) * 4);
 	FreeMem(mode_tags, sizeof(struct TagItem) * (realmode + 9));
-	XRRCALL(XRRFreeScreenResources, res);
 	XCALL(XCloseDisplay, disp);
 
     if (NULL != o)
