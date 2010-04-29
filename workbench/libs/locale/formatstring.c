@@ -29,17 +29,72 @@ typedef ULONG UFMTLARGESTTYPE;
 static const UBYTE hexarray [] = "0123456789abcdef";
 static const UBYTE HEXarray [] = "0123456789ABCDEF";
 
-#ifdef __PPC__
-#define NUM_GPR 8
-#endif
-#ifdef __x86_64__
-#define NUM_GPR 6
-#endif
+static inline APTR stream_addr(APTR *args, ULONG len)
+{
+    APTR ret = *args;
 
-#ifdef NUM_GPR
-#define va_base(args, n) ((n < NUM_GPR) ? args->reg_save_area : args->overflow_arg_area)
+    *args += len;
+    return ret;
+}
+
+/* The stuff below is based on old gcc includes (where you can actually read how
+   varargs work) and ABI documentation.
+   It works in the same way as traditional va_arg() except it fetches
+   pointers to arguments, not arguments themselves (since on 32-bit machines
+   argument values may be larger than pointers). */
+
+#if defined(__PPC__)
+
+static inline APTR va_addr(va_list args, ULONG len)
+{
+    APTR ret;
+
+    if (len == sizeof(UQUAD)) {
+        /* On PPC UQUAD is aligned. and occupies 2 registers (plus may waste one more for alignment) */
+	if (args->gpr < 7) {
+	    ULONG *regsave = (ULONG *)args->reg_save_area;
+
+            args->gpr += args->gpr & 1;
+	    ret = regsave[args->gpr];
+	    args->gpr += 2;
+	} else	{
+	    args->gpr = 8;
+	    ret = (args->overflow_arg_area + 7) & ~7);
+	    args->overflow_arg_area = ret + sizeof(UQUAD);
+	}
+    } else {
+	if (args->gpr < 8) {								   \
+	    ULONG *regsave = (ULONG *)args->reg_save_area;
+
+	    ret = regsave[args->gpr++];
+	} else {
+	    ret = args->overflow_ard_area;
+	    args->overflow_arg_area += sizeof(ULONG);
+	}
+    }
+    return ret;
+}
+
+#elif defined(__x86_64__)
+
+static inline APTR va_addr(va_list args, ULONG len)
+{
+    APTR ret;
+
+    if (args->gp_offset < 48) {
+	ret = args->reg_save_area + args->gp_offset;
+	args->gp_offset += sizeof(IPTR);
+    } else {
+	ret = args->overflow_ard_area;
+	args->overflow_arg_area += sizeof(IPTR);
+    }
+    return ret;
+}
+
 #else
-#define va_base(args, n) args
+
+#define va_addr(args, len) stream_addr(&args, len)
+
 #endif
 
 APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate, CONST_APTR dataStream, const struct Hook *putCharFunc, va_list VaListStream)
@@ -105,7 +160,6 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
             ** The scanning phase is over. Next time we do the output.
             */
             int i;
-	    int sum = 0;
             scanning = FALSE;
             template_pos = 0;
             arg_counter = 0;
@@ -113,18 +167,14 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
             ** prepare the indices array
             */
 
-            for (i = 0; i <= max_argpos; i++)
-            {
-	      int _sum;
-
-	      _sum = sum + indices[i];
-	      if (dataStream)
-	        indices[i] = (IPTR)dataStream + sum;
-	      else
-	        /* FIXME: this does not take into account alignment of UQUAD on PPC */
-	        indices[i] = (IPTR)va_base(VaListStream, i) + sum;
-              sum = _sum;
-            }
+	    if (dataStream) {
+                for (i = 0; i <= max_argpos; i++)
+		    indices[i] = (IPTR)stream_addr(&dataStream, indices[i]);
+	    } else {
+		for (i = 0; i <= max_argpos; i++)
+		    indices[i] = (IPTR)va_addr(VaListStream, indices[i]);
+	    }
+	    
           }
           else
           {
