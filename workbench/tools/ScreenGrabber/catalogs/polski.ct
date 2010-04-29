@@ -1,0 +1,93 @@
+## version $VER: screengrabber.catalog 1.0 (29.04.2010)
+## codeset 5
+## language polski
+;
+MSG_WINDOW_TITLE
+ScreenGrabber
+; ScreenGrabber
+;
+MSG_REFRESH
+Od¶wie¿ listê
+; Refresh list
+;
+MSG_SCREEN_INFO
+Informacje o ekranie
+; Screen info
+;
+MSG_SIZE
+Wielko¶æ
+; Size
+;
+MSG_TITLE
+Nazwa
+; Title
+;
+MSG_DEFAULT_TITLE
+Domy¶lna nazwa
+; Default title
+;
+MSG_GRABBING_OPTIONS
+Opcje zrzucania
+; Grabbing options
+;
+MSG_DELAY
+Opó¼nienie (s)
+; Delay (s)
+;
+MSG_HIDE
+Ukryj okno grabbera
+; Hide the grabber window
+;
+MSG_SAVE_OPTIONS
+Zapisz opcje
+; Save options
+;
+MSG_SAVE_FILE
+Zapisz plik
+; Save file
+;
+MSG_SCREENSHOT
+Zrzut ekranu
+; Screenshot
+;
+MSG_SCREEN_PARM
+%d x %d, g³êbia=%d
+; %d x %d, depth=%d
+;
+MSG_OVERWRITE
+Plik \"%s\" ju¿ istnieje.\n\
+Czy na pewno chcesz go nadpisaæ?
+; File '%s' already exists.\nDo you really want to overwrite it?
+;
+MSG_ERROR_TITLE
+B³±d programu ScreenGrabber
+; Screengrabber Error
+;
+MSG_GAD_OK
+_OK
+; _OK
+;
+MSG_GAD_YESNO
+TAK|NIE
+; YES|NO
+;
+MSG_ERR_DATATYPE
+Nie mo¿na utworzyæ obiektu datatype!
+; Can't create datatype object!
+;
+MSG_NORAM
+Nie mo¿na przydzieliæ pamiêci RAM!
+; Can't allocate RAM!
+;
+MSG_ERR_DATATYPEIO
+Zapisywanie \"%s\" zakoñczone b³êdem we/wy %ld!
+; Writing of '%s' failed with IO Error %ld!
+;
+MSG_ERR_OPENFILE
+Nie mo¿na otworzyæ pliku \"%s\" do zapisu!
+; Can't open file '%s' for output!
+;
+MSG_ERR_APP
+Nie mo¿na utworzyæ obiektu aplikacji!
+; Can't create application object!
+;

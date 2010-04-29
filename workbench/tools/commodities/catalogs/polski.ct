@@ -1,0 +1,324 @@
+## version $VER: commodities.catalog 1.0 (29.04.2010)
+## codeset 5
+## language polski
+;
+MSG_CANT_OPEN_LIB
+Nie mo¿na otworzyæ %s w wersji %ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_OPEN_INPUTDEVICE
+Nie mo¿na otworzyæ \"input.device\"
+; Can't open 'input.device'
+;
+MSG_CANT_OPEN_CLIPDEVICE
+Nie mo¿na otworzyæ \"clipboard.device\"
+; Can't open 'clipboard.device'
+;
+MSG_CANT_LOCK_SCR
+Nie mo¿na uzyskaæ dostêpu do ekranu!\n
+; Can't lock public screen!\n
+;
+MSG_CANT_GET_VI
+Nie mo¿na pobraæ VisualInfo!\n
+; Can't get VisualInfo!\n
+;
+MSG_CANT_CREATE_GADGET
+Nie mo¿na utworzyæ gad¿etów!\n
+; Can't create gadgets!\n
+;
+MSG_CANT_CREATE_MENUS
+Nie mo¿na utworzyæ menu!\n
+; Can't create menus!\n
+;
+MSG_CANT_LAYOUT_MENUS
+Nie mo¿na utworzyæ uk³adu menu!\n
+; Can't layout menus!\n
+;
+MSG_CANT_CREATE_WIN
+Nie mo¿na utworzyæ okna!\n
+; Can't create window!\n
+;
+MSG_CANT_ALLOCATE_MEM
+Nie mo¿na zaalokowaæ pamiêci aplikacji!\n
+; Can't allocate application memory!\n
+;
+MSG_CANT_CREATE_MSGPORT
+Nie mo¿na utworzyæ portu wiadomo¶ci!\n
+; Can't create message port!\n
+;
+MSG_CANT_ALLOCATE_SIGNAL
+Nie mo¿na zaalokowaæ sygna³ów!\n
+; Can't allocate signal!\n
+;
+MSG_CANT_CREATE_BROKER
+Nie mo¿na utworzyæ obiektu CxBroker!\n
+; Can't create CxBroker object!\n
+;
+MSG_CANT_CREATE_CUSTOM
+Nie mo¿na utworzyæ obiektu CxCustom!\n
+; Can't create CxCustom object!\n
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_HIDE
+H\0Ukryj
+; H\0Hide
+;
+MSG_MEN_PROJECT_ICONIFY
+I\0Ikonifikuj
+; I\0Iconify
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Skoñcz
+; Q\0Quit
+;
+MSG_EXCHANGE_CXNAME
+Exchange
+; Exchange
+;
+MSG_EXCHANGE_CXTITLE
+Exchange
+; Commodities Exchange
+;
+MSG_EXCHANGE_CXDESCR
+Mened¿er programów typu commodity.
+; Controls system commodities
+;
+MSG_EXCHANGE_WINTITLE
+Exchange: klawisz wywo³uj±cy = <%s>
+; Exchange: Hot Key = <%s>
+;
+MSG_EXCHANGE_LISTVIEW
+Dostêpne programy
+; Available commodities
+;
+MSG_EXCHANGE_INFO
+Informacje
+; Information
+;
+MSG_EXCHANGE_GAD_SHOW
+Poka¿
+; Show
+;
+MSG_EXCHANGE_GAD_HIDE
+Ukryj
+; Hide
+;
+MSG_EXCHANGE_GAD_REMOVE
+Usuñ
+; Remove
+;
+MSG_EXCHANGE_CYCLE_ACTIVE
+Aktywny
+; Active
+;
+MSG_EXCHANGE_CYCLE_INACTIVE
+Nieaktywny
+; Inactive
+;
+MSG_BLANKER_CXNAME
+Blanker
+; Blanker
+;
+MSG_BLANKER_CXTITLE
+Systemowy wygaszacz ekranu
+; System Screen Blanker
+;
+MSG_BLANKER_CXDESCR
+Wygasza ekran gdy system nieaktywny
+; Blanks screen when system inactive
+;
+MSG_CLICK2FNT_CXNAME
+ClickToFront
+; ClickToFront
+;
+MSG_CLICK2FNT_CXTITLE
+ClickToFront
+; Click To Front Utility
+;
+MSG_CLICK2FNT_CXDESCR
+Klikniêcie przenosi okienka do przodu.
+; Click windows to front
+;
+MSG_OPAQUE_CXNAME
+Opaque
+; Opaque
+;
+MSG_OPAQUE_CXTITLE
+Wype³nione okna
+; Solid Windows
+;
+MSG_OPAQUE_CXDESCR
+Przesuwanie pe³nych okien
+; Realtime moving of windows
+;
+MSG_AUTOPOINT_CXNAME
+AutoPoint
+; AutoPoint
+;
+MSG_AUTOPOINT_CXTITLE
+Automatyczny aktywator okienek
+; Autopointer
+;
+MSG_AUTOPOINT_CXDESCR
+Aktywuje okno pod wska¼nikiem myszki.
+; Activates the window under the mouse
+;
+MSG_STARTMENU_CXNAME
+StartMenu
+; StartMenu
+;
+MSG_STARTMENU_CXTITLE
+Systemowe menu start
+; System Program Starter
+;
+MSG_STARTMENU_CXDESCR
+Program uruchoamiaj±cy inne programy.
+; Program launch commodity
+;
+MSG_FKEY_CXNAME
+FKey
+; FKey
+;
+MSG_FKEY_CXTITLE
+Funkcje klawiszy:
+; Function To Keys:
+;
+MSG_FKEY_CXDESCR
+Dodaje specjalne funkcje klawiszom.
+; Attach special functions to keys
+;
+MSG_FKEY_WINTITLE
+FKey: klawisz wywo³uj±cy = <%s>
+; FKey: Hot Key = <%s>
+;
+MSG_FKEY_DEFINED_KEYS
+Zdefiniowane klawisze
+; Defined Keys
+;
+MSG_FKEY_NEW_KEY
+_Nowy klawisz
+; _New Key
+;
+MSG_FKEY_DELETE_KEY
+Usuñ _klawisz
+; _Delete Key
+;
+MSG_FKEY_SAVE_KEY
+Zapisz zdefiniowane klawisze
+; Save Defined Keys
+;
+MSG_FKEY_COMMAND
+Polecenie
+; Command
+;
+MSG_FKEY_COMMAND_PARAMS
+Parametry polecenia
+; Command Parameters
+;
+MSG_FKEY_CMD_CYCLE_WIN
+Prze³±czanie okien
+; Cycle Windows
+;
+MSG_FKEY_CMD_CYCLE_SCR
+Prze³±czanie ekranów
+; Cycle Screens
+;
+MSG_FKEY_CMD_ENLARGE_WIN
+Powiêkszanie okien
+; Enlarge Window
+;
+MSG_FKEY_CMD_SHRINK_WIN
+Zmniejszanie okien
+; Shrink Window
+;
+MSG_FKEY_CMD_TOGGLE_WIN_SIZE
+Prze³±czanie wymiarów okna
+; Toggle Window Size
+;
+MSG_FKEY_CMD_RESCUE_WIN
+Okno ratunkowe
+; Rescue Window
+;
+MSG_FKEY_CMD_INSERT_TEXT
+Wprowadzanie tekstu
+; Insert Text
+;
+MSG_FKEY_CMD_RUN_PROG
+Uruchamianie programu
+; Run Program
+;
+MSG_FKEY_CMD_RUN_AREXX
+Uruchamianie skryptu ARexx'a
+; Run Arexx Script
+;
+MSG_FKEY_MEN_PROJECT_SAVE
+S\0Zapisz definicjê klawiszy
+; S\0Save Defined Keys
+;
+MSG_NOCAPSLOCK_CXNAME
+NoCapsLock
+; NoCapsLock
+;
+MSG_NOCAPSLOCK_CXTITLE
+NoCapsLock:
+; NoCapsLock:
+;
+MSG_NOCAPSLOCK_CXDESCR
+Dezaktywuje klawisz CapsLock.
+; Renders the CAPS LOCK key ineffective
+;
+MSG_DEPTHMENU_CXNAME
+DepthMenu
+; DepthMenu
+;
+MSG_DEPTHMENU_CXTITLE
+SepthMenu:
+; DepthMenu:
+;
+MSG_DEPTHMENU_CXDESCR
+Menu podrêczne ga gad¿ecie g³êbii.
+; Popup menu for depth gadgets
+;
+MSG_ALTKEYQ_CXNAME
+AltKeyQ
+; AltKeyQ
+;
+MSG_ALTKEYQ_CXTITLE
+Wprowadzanie znaków przy pomocy cyfr
+; Character input by number
+;
+MSG_ALTKEYQ_CXDESCR
+U¿ywanie klawisza Alt w stylu MS-DOS.
+; MS-DOS Style Alt key usage
+;
+MSG_ASCIITABLE_CXNAME
+ASCIITable
+; ASCIITable
+;
+MSG_ASCIITABLE_CXTITLE
+ASCIITable:
+; ASCIITable:
+;
+MSG_ASCIITABLE_CXDESCR
+Wybiera klawisze z GUI.
+; Select keys from a GUI
+;
+MSG_ASCIITABLE_WINTITLE
+ASCIITable: klawisz wywo³uj±cy = <%s>
+; ASCIITable: Hot Key = <%s>
+;
+MSG_ASCIITABLE_GAD_COPY
+Skopiuj
+; Copy
+;
+MSG_ASCIITABLE_GAD_CLEAR
+Wyczy¶æ
+; Clear
+;

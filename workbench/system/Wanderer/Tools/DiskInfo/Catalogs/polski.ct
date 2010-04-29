@@ -1,0 +1,116 @@
+## version $VER: diskinfo.catalog 1.0 (29.04.2010)
+## codeset 5
+## language polski
+;
+MSG_TITLE
+Disk Info
+; Disk Info
+;
+MSG_ERROR_HEADER
+B£¡D
+; ERROR
+;
+MSG_ERROR_OK
+_OK
+; _OK
+;
+MSG_ERROR_LOCALE
+Nie mo¿na zainicjalizowaæ systemu lokalizacji.
+; Can't initialize locale.
+;
+MSG_ERROR_CLASSES
+Nie mo¿na zainicjalizowaæ klas w³asnych.
+; Can't initialize custom classes.
+;
+MSG_DESCRIPTION
+Informacje o ikonce dysku
+; Disk Icon Informations
+;
+MSG_PERCENTFULL
+Zajête %ld %%
+; %ld %% Full
+;
+MSG_FORMAT
+Format
+; Format
+;
+MSG_UNKNOWN
+nieznany
+; Unknown
+;
+MSG_AUTHOR
+Olivier Adam
+; Olivier Adam
+;
+MSG_COPYRIGHT
+(c) 2006-2010 AROS Dev Team
+; ©2006-2009 AROS Dev Team
+;
+MSG_USED
+Zajête
+; Used space
+;
+MSG_FREE
+Wolne
+; Free space
+;
+MSG_SIZE
+Pojemno¶æ
+; Capacity
+;
+MSG_BLOCK_SIZE
+Wielko¶æ bloku
+; Block size
+;
+MSG_BLOCKS
+bloków
+; blocks
+;
+MSG_BYTES
+bajtów
+; bytes
+;
+MSG_STATUS
+Stan
+; Status
+;
+MSG_READABLE
+odczytywalny
+; Readable
+;
+MSG_READABLE_WRITABLE
+odczytywalny/zapisywalny
+; Readable/writable
+;
+MSG_VALIDATING
+uaktualniany
+; Validating
+;
+MSG_NAME
+Nazwa wolumenu
+; Volume Name
+;
+MSG_UNIT
+jednostka
+; unit
+;
+MSG_DOSDEVICE
+Sterownik DOS-u:
+; DOS Device:
+;
+MSG_DEVICEINFO
+Pod³±czony na:
+; Connected on:
+;
+MSG_FILESYSTEM
+System plików:
+; FileSystem:
+;
+MSG_PACKETDEVICE
+Urz±dzenie pakietowe
+; Packet Style device
+;
+MSG_IOFSDEVICE
+Urz±dzenie we/wy
+; IOFS Style device
+;

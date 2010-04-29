@@ -1,0 +1,12 @@
+## version $VER: pointer.catalog 1.0 (29.04.2010)
+## codeset 5
+## language polski
+;
+MSG_WINTITLE
+Preferencje - Pointer
+; Pointer Preferences
+;
+MSG_OK
+OK
+; Ok
+;

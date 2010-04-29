@@ -1,0 +1,40 @@
+## version $VER: screenmode.catalog 1.0 (29.04.2010)
+## codeset 5
+## language polski
+;
+MSG_NAME
+Preferencje - ScreenMode
+; ScreenMode Preferences
+;
+MSG_WIDTH
+\33lSzeroko¶æ:
+; \33lWidth:
+;
+MSG_DEFAULT
+\33l_domy¶lna
+; \33l_default
+;
+MSG_HEIGHT
+\33lWysoko¶æ:
+; \33lHeight:
+;
+MSG_DEPTH
+\33lG³êbia:
+; \33lDepth:
+;
+MSG_AUTOSCROLL
+\33lAutomatyczne przewijanie
+; \33lAutoscroll
+;
+MSG_DISPLAY_MODE
+Tryb wy¶wietlania
+; Display Mode
+;
+MSG_MODE_ID
+Identyfikator
+; Mode ID
+;
+MSG_DESCRIPTION
+Opis
+; Description
+;

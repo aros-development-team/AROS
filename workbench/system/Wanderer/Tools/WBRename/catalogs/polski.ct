@@ -1,0 +1,73 @@
+## version $VER: wbrename.catalog 1.0 (29.04.2010)
+## codeset 5
+## language polski
+;
+MSG_TITLE
+WBRename
+; WBRename
+;
+MSG_DESCRIPTION
+Zmienia nazwy plików i katalogów
+; Renames files and drawers
+;
+MSG_COPYRIGHT
+(C)2006, AROS dev Team
+; ©2006, AROS Dev Team
+;
+MSG_WINDOW_TITLE
+Zmiana nazwy
+; Rename
+;
+MSG_LINE
+Wprowad¼ now± nazwê
+; Enter a new name
+;
+MSG_NAME
+Nowa nazwa:
+; New name:
+;
+MSG_OK
+_OK
+; _OK
+;
+MSG_CANCEL
+Ponie_chaj
+; Ca_ncel
+;
+MSG_ERROR_TITLE
+B³±d
+; Error
+;
+MSG_ALREADY_EXIST
+\"%s\" ju¿ istnieje!
+; '%s' already exists!
+;
+MSG_FAILED
+Zmiana nazwy elementu \"%s\" nie powiod³a siê, zakoñczono b³êdem:\n\
+\"%s\"!
+; Rename of '%s' failed with error:\n'%s'!
+;
+MSG_ILLEGAL_CHARS
+\"%s\" zawiera niedozwolone znaki!
+; '%s' contains illegal characters!
+;
+MSG_NEEDS_MORE_ARGS
+Wymagane 2 argumenty!
+; Need 2 arguments!
+;
+MSG_INVALID_LOCK
+Niew³a¶ciwe zablokowanie katalogu!
+; Invalid directory lock!
+;
+MSG_WB_ONLY
+Nie mo¿na uruchomiæ z linii poleceñ!\n
+; Cannot be started from shell!\n
+;
+MSG_FAILED_CREATE_APP
+Nie mo¿na utworzyæ aplikacji!
+; Failed to create Application!
+;
+MSG_OUTOFMEMORY
+Nie mo¿na zaalokowaæ pamiêci RAM!
+; Can't allocate RAM!
+;

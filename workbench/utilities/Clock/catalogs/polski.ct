@@ -1,10 +1,9 @@
-## version $VER: clock.catalog (17.02.2006) by Camelek.AmigaRulez@wp.pl ( AROS Polska Team )
+## version $VER: clock.catalog 1.0 (29.04.2010)
 ## language polski
-## codeset 0
-;
+## codeset 5
 ;
 MSG_ERROR_CANT_CREATE_APPLICATION
-B³±d: Nie mogê stowrzyæ aplikacji.
+B³±d: Nie mo¿na utworzyæ aplikacji.
 ; Error: Can't create application object.
 ;
 MSG_WINDOW_TITLE
@@ -18,3 +17,8 @@ Zegar Wanderer'a
 MSG_OK
 OK
 ; Ok
+;
+MSG_ERROR_DISKOBJECT
+B³±d: nie mo¿na utworzyæ tarczy zegara
+; Error: Can't create diskobject
+;

@@ -1,22 +1,21 @@
-## version $VER: IControl.catalog 1.0 (17.3.2010)
+## version $VER: icontrol.catalog 1.0 (29.04.2010)
 ## language polski
 ## codeset 5
 ;
-;
 MSG_CANT_OPEN_LIB
-Nie mogê otworzyæ biblioteki %s V%ld!\n
+Nie mo¿na otworzyæ biblioteki %s w wersji %ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_CREATE_APP
-Nie mogê stworzyæ obiektu aplikacji!
+Nie mo¿na uworzyæ obiektu aplikacji!
 ; Can't create application object!
 ;
 MSG_CANT_CREATE_CUSTOM_CLASS
-Nie mogê stworzyæ klasy okna ustawieñ.
+Nie mo¿na uworzyæ klasy okna ustawieñ.
 ; Can't create custom preferenceswindow class
 ;
 MSG_WINTITLE
-Ustawienia programu IControl
+Preferencje -  IControl
 ; IControl Preferences
 ;
 MSG_MEN_PROJECT
@@ -36,11 +35,11 @@ Q\0Skoñcz
 ; Q\0Quit
 ;
 MSG_MEN_EDIT
-Edytuj
+Edycja
 ; Edit
 ;
 MSG_MEN_EDIT_DEFAULT
-D\0Przywróæ domy¶lne
+D\0Przywróæ ustawienia domy¶lne
 ; D\0Reset to Defaults
 ;
 MSG_MEN_EDIT_LASTSAVED
@@ -56,11 +55,11 @@ Ustawienia
 ; Settings
 ;
 MSG_MEN_SETTINGS_CREATEICONS
-I\0Tworzyæ ikony?
+I\0Twórz ikonki
 ; I\0Create Icons?
 ;
 MSG_ASL_OPEN_TITLE
-Wczytaj ustawienia IControl
+Wczytaj ustawienia
 ; Load IControl Preferences
 ;
 MSG_ASL_SAVE_TITLE
@@ -80,11 +79,11 @@ Typ
 ; Type
 ;
 MSG_MENUS_TYPE_PULLDOWN
-Globalne
+Rozwijane
 ; Pull-Down
 ;
 MSG_MENUS_TYPE_POPUP
-Lokalne
+Podrêczne
 ; Pop-Up
 ;
 MSG_MENUS_LOOK
@@ -92,7 +91,7 @@ Wygl±d
 ; Look
 ;
 MSG_MENUS_LOOK_CLASSIC
-Klasyczne
+klasyczny
 ; Classic
 ;
 MSG_MENUS_LOOK_3D
@@ -104,7 +103,7 @@ Okna
 ; Windows
 ;
 MSG_OFFSCREEN_MOVE
-Przesuwanie poza ekran
+Przesuwanie poza ekran:
 ; Offscreen move:
 ;
 MSG_SCREENS
@@ -112,14 +111,20 @@ Ekrany
 ; Screens
 ;
 MSG_FRONTMOST_DEFAULT
-Aktywny ekran ustaw jako domy¶lny publiczny
+Ustaw aktywny ekran jako domy¶lny ekran publiczny
 ; Frontmost set as DefaultPubScreen:
 ;
 MSG_OFFSCREEN_DESC
-Pozwala przesuwaæ okna poza widzialny obszar ekranu
+Pozwala przesuwaæ okna poza\n\
+widzialny obszar ekranu
 ; Allow windows to be moved out of\nthe visible area
 ;
 MSG_FRONTMOST_DEFAULT_DESC
-Ustawia aktywny ekran jako domy¶lny ekran publiczny
+Ustawia aktywny ekran\n\
+jako domy¶lny ekran publiczny
 ; Make the frontmost public screen\nthe default public screen
+;
+MSG_BACKWARDS_DRAG
+Wy³±cz przeci±ganie w kierunku w górê/w lewo
+; Disable drag in top-left direction
 ;

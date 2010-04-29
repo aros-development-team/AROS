@@ -1,62 +1,61 @@
-## version $VER: Input.catalog 1.0 (17.3.2010)
+## version $VER: input.catalog 1.0 (29.04.2010)
 ## language polski
 ## codeset 5
 ;
-;
 MSG_ERROR_CANT_CREATE_APPLICATION
-Nie mogê stworzyæ obiektu aplikacji.
+Nie mo¿na utworzyæ obiektu aplikacji.
 ; Can't create application object.
 ;
 MSG_CANT_CREATE_REQ
-Nie mogê otworzyæ okna dialogowego!
+Nie mo¿na otworzyæ okna dialogowego!
 ; Can't open create filerequester!
 ;
 MSG_CANT_CREATE_CONTEXT
-Nie mogê stworzyæ kontekstu dla Gadtools!
+Nie mo¿na utworzyæ kontekstu dla Gadtools!
 ; Can't create context for Gadtools!
 ;
 MSG_CANT_OPEN_STREAM
-Nie mogê otworzyæ danech w formacie IFF!
+Nie mo¿na otworzyæ danych w formacie IFF!
 ; Can't open IFF stream!
 ;
 MSG_CANT_WRITE_PREFFILE
-Nie mogê zapisaæ ustawieñ!
+Nie mo¿na zapisaæ preferencji!
 ; Can't write preferences!
 ;
 MSG_CANT_READ_PREFFILE
-Nie mogê odczytaæ ustawieñ!
+Nie mo¿na odczytaæ preferencji!
 ; Can't read preferences!
 ;
 MSG_CANT_ALLOCATE_IFFPTR
-Nie mogê alokowaæ struktury IFF!
+Nie mo¿na zaalokowaæ struktury IFF!
 ; Can't allocate IFF handle!
 ;
 MSG_CANT_ALLOCATE_MEM
-Brak wolnej pamiêci (%s)!
+Nie mo¿na zaalokowaæ pamiêci aplikacji (%s)!
 ; Can't allocate application memory (%s)!
 ;
 MSG_NAME
-Klawiatura i mysz
+Preferencje - Input
 ; Input Preferences
 ;
 MSG_MENU_PREFERENCES
-Ustawienia
+Preferencje
 ; Preferences
 ;
 MSG_MENU_PREFERENCES_IMPORT
-I\0Import...
+I\0Importuj...
 ; I\0Import...
 ;
 MSG_MENU_PREFERENCES_EXPORT
-E\0Eksport...
+E\0Eksportuj...
 ; E\0Export...
 ;
 MSG_ASL_OPEN_TITLE
-Wczytaj ustawienia
+Wczytaj preferencje
 ; Load Input Preferences
 ;
 MSG_ASL_SAVE_TITLE
-Zapisz ustawienia
+Zapisz preferencje
 ; Save Input Preferences
 ;
 MSG_OK
@@ -88,7 +87,7 @@ Opó¼nienie dwukrotnego klikniêcia
 ; Double-Click Delay
 ;
 MSG_GAD_KEY_REPEAT_DELAY
-Opó¼nienie powtarzania
+Opó¼nienie powtarzania klawiszy
 ; Key Repeat Delay
 ;
 MSG_GAD_KEY_REPEAT_RATE
@@ -96,7 +95,7 @@ Czêstotliwo¶æ powtarzania
 ; Key Repeat Rate
 ;
 MSG_GAD_KEY_TEST
-Test
+Testuj
 ; Test
 ;
 MSG_GAD_KEY_TYPE
@@ -124,30 +123,30 @@ Trzeci
 ; Third
 ;
 MSG_GAD_MOUSE_DOUBLECLICK_DELAY
-Szybko¶æ dwukrotnego klikniêcia
+Opó¼nienie dwukrotnego klikniêcia
 ; Double-Click Delay
 ;
 MSG_GAD_MOUSE_SPEED_SLOW
-Wolno
+wolna
 ; Slow
 ;
 MSG_GAD_MOUSE_SPEED_NORMAL
-Normalnie
+normalna
 ; Normal
 ;
 MSG_GAD_MOUSE_SPEED_FAST
-Szybko
+szybka
 ; Fast
 ;
 MSG_GAD_MOUSE_LEFT
-Przycisk lewy
+Lewy przycisk
 ; Left Button
 ;
 MSG_GAD_MOUSE_MIDDLE
-Przycisk ¶rodkowy
+¦rodkowy przycisk
 ; Middle Button
 ;
 MSG_GAD_MOUSE_RIGHT
-Przycisk prawy
+Prawy przycisk
 ; Right Button
 ;

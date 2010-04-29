@@ -1,7 +1,6 @@
-## version $VER: wanderer.catalog 1.1 (17.3.2010)
+## version $VER: wanderer.catalog 1.2 (29.04.2010)
 ## language polski
-## codeset 0
-;
+## codeset 5
 ;
 MSG_TITLE
 Wanderer
@@ -16,11 +15,11 @@ Wanderer %s pamiêci graficznej %s pamiêci pozosta³ej
 ; Wanderer %s graphics mem %s other mem
 ;
 MSG_MEM_B
-B
+b
 ; B
 ;
 MSG_MEM_K
-K
+k
 ; K
 ;
 MSG_MEM_M
@@ -60,15 +59,15 @@ W
 ; W
 ;
 MSG_MEN_GUISET
-Ustawienia GUI ...
+Ustawienia GUI...
 ; GUI settings...
 ;
 MSG_MEN_ABOUT
-O programie ...
+O programie...
 ; About...
 ;
 MSG_MEN_QUIT
-Skoñcz ...
+Skoñcz...
 ; Quit...
 ;
 MSG_MEN_SC_QUIT
@@ -132,11 +131,11 @@ Wy¶wietl
 ; View
 ;
 MSG_MEN_ICVIEW
-Ikony
+ikonki
 ; Icon view
 ;
 MSG_MEN_DCVIEW
-Poka¿ wszystko
+Poka¿ szczegó³y
 ; Detail view
 ;
 MSG_MEN_ALLFIL
@@ -172,7 +171,7 @@ wg typu
 ; By type
 ;
 MSG_MEN_REVERSE
-Odwróæ
+Kolejno¶æ odwrotna
 ; Reverse
 ;
 MSG_MEN_DRWFRST
@@ -180,7 +179,7 @@ Najpierw katalogi
 ; Drawers first
 ;
 MSG_MEN_ICON
-Ikona
+Ikonka
 ; Icon
 ;
 MSG_MEN_OPEN
@@ -238,7 +237,7 @@ MSG_YESNO
 MSG_DUMMY
 DUMMY
 ; DUMMY
-; DUMMY :)
+;
 MSG_USERSCREENTITLE
 Wanderer %pc pamiêci graficznej %pf pamiêci pozosta³ej
 ; Wanderer %pc graphics mem %pf other mem
@@ -264,7 +263,7 @@ Wy³±cz|Uruchom ponownie komputer|Uruchom ponownie system|*Poniechaj
 ; Power off|Restart computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED
-Wybrana opcja nie jest obs³ugiwana przez Twój system
+Wybrana opcja nie jest obs³ugiwana przez Twój system.
 ; The selected action is not supported by your system.
 ;
 MSG_OK
@@ -296,7 +295,7 @@ Skasuj...
 ; Delete file...
 ;
 MSG_REQU_DELETE_YESNO
-_Tak|Tak, _wszystkie|_Nie|Nie, _Pomiñ wszystkie
+_Tak|Tak, _wszystkie|_Nie|Nie, _pomiñ wszystkie
 ; _Yes|Yes to _all|_No|No _to all
 ;
 MSG_REQU_DELETE_DRAWER_S
@@ -308,7 +307,7 @@ ma rzeczywi¶cie zostaæ skasowany?
 ; ?
 ;
 MSG_REQU_DELETE_FILE_S
-Czy rzeczywi¶cie plik
+Czy plik
 ; Really delete file
 ;
 MSG_REQU_DELETE_FILE_M
@@ -324,7 +323,7 @@ Nadpisaæ plik...
 ; Overwrite file...
 ;
 MSG_REQU_OVERWRITE_S
-Czy rzeczywi¶cie plik
+Czy plik
 ; Really overwrite file
 ;
 MSG_REQU_OVERWRITE_M
@@ -336,7 +335,7 @@ ma zostaæ nadpisany?
 ; ?
 ;
 MSG_REQU_OVERWRITE_YESNO
-_Tak, nadpisaæ|_Wszystkie|_Nie|Nie, _Pomiñ wszystkie
+_Tak, nadpisaæ|_Wszystkie|_Nie|Nie, _pomiñ wszystkie
 ; _Overwrite|Overwrite _all|_No|No _to all
 ;
 MSG_REQU_OVERWRITE_SKIPABORT
@@ -344,7 +343,7 @@ _Pomiñ|P_rzerwij
 ; _Skip|_Abort
 ;
 MSG_REQU_PROTECTION
-Zabezpieczenie przed skasowaniem
+Zabezpieczenie pliku
 ; File Protection
 ;
 MSG_REQU_PROTECTION_UNPROTECT

@@ -1,13 +1,13 @@
-## version $VER: locale.catalog 1.0 (29.04.2010)
-## language polski
+## version $VER: serial.catalog 1.0 (29.04.2010)
 ## codeset 5
+## language polski
 ;
 MSG_CANT_OPEN_LIB
 Nie mo¿na otworzyæ %s w wersji %ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_LOCK_SCR
-Nie mo¿na uzyskaæ dostêpu do ekranu!
+Nie mo¿na przydzieliæ ekranu publicznego!
 ; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
@@ -31,8 +31,8 @@ Nie mo¿na utworzyæ okna!
 ; Can't create window!
 ;
 MSG_WINTITLE
-Preferencje - Locale 
-; Locale Preferences
+Preferencje - Serial
+; Serial Preferences
 ;
 MSG_MEN_PROJECT
 Projekt
@@ -63,7 +63,7 @@ L\0Ostatnio zapisane
 ; L\0Last Saved
 ;
 MSG_MEN_EDIT_RESTORE
-R\0Przywróæ
+R\0Odtwórz
 ; R\0Restore
 ;
 MSG_MEN_SETTINGS
@@ -76,27 +76,15 @@ I\0Twórz ikonki
 ;
 MSG_ASL_OPEN_TITLE
 Wczytaj preferencje
-; Load Locale Preferences
+; Load Serial Preferences
 ;
 MSG_ASL_SAVE_TITLE
 Zapisz preferencje
-; Save Locale Preferences
+; Save Serial Preferences
 ;
 MSG_OK
 OK
 ; Ok
-;
-MSG_GAD_AVAIL_LANGUAGES
-Dostêpne jêzyki
-; Available Languages
-;
-MSG_GAD_PREF_LANGUAGES
-Preferowane jêzyki
-; Preferred Languages
-;
-MSG_GAD_CLEAR_LANGUAGES
-Wyczy¶æ jêzyki
-; Clear Languages
 ;
 MSG_GAD_SAVE
 Zapisz
@@ -110,35 +98,47 @@ MSG_GAD_CANCEL
 Poniechaj
 ; Cancel
 ;
-MSG_GAD_TAB_LANGUAGE
-Jêzyk
-; Language
+MSG_GAD_BAUDRATE
+Prêdko¶æ transmisji
+; Baudrate
 ;
-MSG_GAD_TAB_COUNTRY
-Kraj
-; Country
+MSG_GAD_PARITY
+Parzysto¶æ
+; Parity
 ;
-MSG_GAD_TAB_TIMEZONE
-Strefa czasowa
-; Time Zone
+MSG_GAD_STOPBITS
+Bity stopu
+; Stop Bits
 ;
-MSG_TIMEZONE_1HOUR
-Strefa czasowa: 1 godzina od GMT
-; Time Zone: 1 Hour from GMT
+MSG_GAD_DATABITS
+Bity danych
+; Data Bits
 ;
-MSG_TIMEZONE_HOURS
-Strefa czasowa: %ld godzin od GMT
-; Time Zone: %ld Hours from GMT
+MSG_GAD_INPUTBUFFERSIZE
+Wielko¶æ bufora wej¶ciowego
+; Input Buffer Size
 ;
-MSG_TIMEZONE_HOURSMINS
-Strefa czasowa: %ld godzin, %ld minut od GMT
-; Time Zone: %ld Hours, %ld Minutes from GMT
+MSG_GAD_OUTPUTBUFFERSIZE
+Wielko¶æ bufora wyj¶ciowego
+; Output Buffer Size
 ;
-MSG_CHARACTER_SET
-Domy¶lny zestaw znaków
-; Default character set
+MSG_PARITY_NONE
+brak
+; None
 ;
-MSG_NOT_SPECIFIED
-nieokre¶lony
-; Not specified
+MSG_PARITY_EVEN
+parzyste
+; Even
+;
+MSG_PARITY_ODD
+nieparzyste
+; Odd
+;
+MSG_PARITY_MARK
+znacznik
+; Mark
+;
+MSG_PARITY_SPACE
+odstêp
+; Space
 ;
