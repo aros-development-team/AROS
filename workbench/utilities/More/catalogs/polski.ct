@@ -1,10 +1,9 @@
-## version $VER: more.catalog (17.02.2006) by Camelek.AmigaRulez@wp.pl ( AROS Polska Team )
+## version $VER: more.catalog 1.0 (29.04.2010)
 ## language polski
-## codeset 0
-;
+## codeset 5
 ;
 MSG_CANT_OPEN_LIB
-Nie mogê otworzyæ %s V%ld!
+Nie mo¿na otworzyæ %s w wersji %ld!
 ; Can't open %s V%ld!
 ;
 MSG_NO_MEM
@@ -12,32 +11,40 @@ Brak pamiêci!
 ; Out of memory!
 ;
 MSG_CANT_LOCK_SCR
-Nie mogê udostêpniæ ekranu!
+Nie mo¿na uzyskaæ dostêpu do ekranu!
 ; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
-Nie mogê pobraæ DrawInfo!
+Nie mo¿na pobraæ DrawInfo!
 ; Can't get DrawInfo!
 ;
 MSG_CANT_GET_VI
-Nie mogê pobraæ VisualInfo!
+Nie mo¿na pobraæ VisualInfo!
 ; Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_SYSIMAGE
-Nie mogê utowrzyæ obrazów SYSICLASS!
+Nie mo¿na utowrzyæ obrazów SYSICLASS!
 ; Can't create SYSICLASS images!
 ;
 MSG_CANT_CREATE_GADGET
-Nie mogê utworzyæ gad¿etów!
+Nie mo¿na utworzyæ gad¿etów!
 ; Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
-Nie mogê utowrzyæ menu!
+Nie mo¿na utowrzyæ menu!
 ; Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
-Nie mogê utworzyæ okna!
+Nie mo¿na utworzyæ okna!
 ; Can't create window!
+;
+MSG_CANT_CREATE_MSGPORT
+Nie mo¿na utworzyæ portu wiadomo¶ci
+; Can't create message port!
+;
+MSG_CANT_ADD_APPWINDOW
+Nie mo¿na przekszta³ciæ okna w okno AppWindow!
+; Can't turn the window into an AppWindow!
 ;
 MSG_MEN_PROJECT
 Projekt
@@ -56,11 +63,11 @@ P\0Drukuj
 ; P\0Print
 ;
 MSG_MEN_PROJECT_ABOUT
-?\0Informacje...
+?\0O programie...
 ; ?\0About...
 ;
 MSG_MEN_PROJECT_QUIT
-Q\0Zakoñcz
+Q\0Skoñcz
 ; Q\0Quit
 ;
 MSG_MEN_NAVIGATION
@@ -80,23 +87,23 @@ MSG_MEN_NAVIGATION_FIND_PREV
 ; ,\0Find Prev
 ;
 MSG_MEN_NAVIGATION_JUMP
-J\0Skok...
+J\0Skocz...
 ; J\0Jump...
 ;
 MSG_ASL_OPEN_TITLE
-Wybierz plik do otwarcia
+Wybierz plik do otworzenia
 ; Select File to Open
 ;
 MSG_ASL_SAVE_TITLE
-Wybierz plik do zapisu
+Wybierz plik do zapisania
 ; Select File to Save to
 ;
 MSG_ABOUT
-Wiêcej V%ld.%ld\n (%s)\nPrawa autorskie © %s przez %s
+More V%ld.%ld\n (%s)\nCopyright (c) %s by %s
 ; More V%ld.%ld\n (%s)\nCopyright © %s by %s
 ;
 MSG_ABOUT_TITLE
-Wiêcej
+More
 ; More
 ;
 MSG_CONTINUE
@@ -120,7 +127,7 @@ Poniechaj
 ; Cancel
 ;
 MSG_WIN_TITLE
-Wiêcej: %s (%ld Linii - %ld Bajtów)
+More: %s (%ld Linii - %ld Bajtów)
 ; More: %s (%ld Lines - %ld Bytes)
 ;
 MSG_SHORTCUT_TOP
@@ -146,4 +153,8 @@ N
 MSG_SHORTCUT_PREV
 P
 ; P
+;
+MSG_SHORTCUT_EDITOR
+E
+; E
 ;

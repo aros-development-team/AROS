@@ -1,22 +1,21 @@
-## version $VER: systemprefswindow.catalog (17.02.2006) by Camelek.AmigaRulez@wp.pl ( AROS Polska Team )
+## version $VER: systemprefswindow.catalog 1.0 (29.04.2010)
 ## language polski
-## codeset 0
-;
+## codeset 5
 ;
 MSG_MENU_PREFS
 Preferencje
 ; Preferences
 ;
 MSG_MENU_PREFS_IMPORT
-I\0Import...
+I\0Importuj...
 ; I\0Import...
 ;
 MSG_MENU_PREFS_EXPORT
-E\0Eksport...
+E\0Eksportuj...
 ; E\0Export...
 ;
 MSG_MENU_PREFS_TEST
-T\0Test
+T\0Testuj
 ; T\0Test
 ;
 MSG_MENU_PREFS_REVERT

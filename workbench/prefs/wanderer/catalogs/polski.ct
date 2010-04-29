@@ -1,10 +1,9 @@
-## version $VER: Wanderer.catalog 2.0 (15.3.2010)
+## version $VER: Wanderer.catalog 2.0 (29.04.2010)
 ## language polski
-## codeset 0
-;
+## codeset 5
 ;
 MSG_NAME
-Ustawienia Wanderera
+Preferencje - Wanderer
 ; Wanderer Prefs
 ;
 MSG_DESCRIPTION
@@ -44,11 +43,11 @@ Pasek narzêdzi
 ; Toolbar
 ;
 MSG_CLASSIC
-Klasyczny
+klasyczna
 ; Classic
 ;
 MSG_ENHANCED
-Rozszerzony
+rozszerzona
 ; Enhanced
 ;
 MSG_NAVIGATION
@@ -68,7 +67,7 @@ Podgl±d
 ; Preview
 ;
 MSG_TOOLBAR_ENABLED
-Pasek narzêdzi dostêpny
+W³±cz pasek narzêdzi
 ; Toolbar Enabled
 ;
 MSG_ICONSPREFS
@@ -80,11 +79,11 @@ Tryb wy¶wietlania ikon
 ; Icon listmode
 ;
 MSG_ICONLISTMODE_PLAIN
-Ikony wolne
+wolne
 ; List icons plainly
 ;
 MSG_ICONLISTMODE_GRID
-Ikony w sieci
+uszeregowane
 ; List icons by grid
 ;
 MSG_ICONTEXTMODE
@@ -92,15 +91,15 @@ Tekst pod ikonami
 ; Icons text drawmode
 ;
 MSG_ICONTEXTMODE_OUTLINE
-Z obrysem
+z obrysem
 ; Outline
 ;
 MSG_ICONTEXTMODE_PLAIN
-Zwyk³y
+zwyk³y
 ; Plain
 ;
 MSG_ICONTEXTMODE_SHADOW
-Cieniowany
+z cieniem
 ; Drop shadow
 ;
 MSG_ICONTEXTLENGTH
@@ -116,16 +115,16 @@ ró¿ne
 ; misc
 ;
 MSG_BUBBLESCREENTITLE
-%pc = pamiêæ graficzna wolna\n\
-%pf = pamiêæ pozosta³a wolna\n\
-%pt = pamiêæ ca³kowita wolna\n\
+%pc = wolna pamiêæ graficzna\n\
+%pf = wolna pamiêæ pozosta³a\n\
+%pt = wolna pamiêæ ca³kowita\n\
 %PC = pamiêæ graficzna\n\
 %PF = pamiêæ pozosta³a\n\
 %PT = pamiêæ ca³kowita\n\
-%os = AROS, wersja\n\
-%wb = Wanderer, wersja\n\
-%ov = AROS, wersja wewnêtrzna\n\
-%wv = workbench.library wersja wewnêtrzna
+%os = wersja AROS-a\n\
+%wb = wersja Wanderera\n\
+%ov = dok³adna wersja AROS-a\n\
+%wv = dok³adna wersja workbench.library
 ; %pc = Chip Ram free\n\
 ; %pf = Fast Ram free\n\
 ; %pt = Total Ram free\n\
@@ -138,23 +137,23 @@ MSG_BUBBLESCREENTITLE
 ; %wv = Exact workbench.library version
 ;
 MSG_TILEMODE
-Tryb kafelków :
+Tryb powielania:
 ; Tile mode :
 ;
 MSG_XOFFSET
-Odstêp w poziomie :
+Odstêpy poziome:
 ; X Offset :
 ;
 MSG_YOFFSET
-Odstêp w pionie :
+Odstêpy pionowe:
 ; Y Offset :
 ;
 MSG_ICONLABELFONT
-Czcionka pod ikon±...
+Czcionka podpisów ikonek...
 ; Icon Label Font...
 ;
 MSG_ICONINFOFONT
-Czcionka dla informacji...
+Czcionka informacji ikonek...
 ; Icon Info Font...
 ;
 MSG_HORIZSPACINGICON
@@ -166,15 +165,15 @@ Pionowy odstêp miêdzy ikonami
 ; Vertical spacing between icons
 ;
 MSG_PADDINGICONIMAGELABEL
-Odstêp miêdzy ikon± a podpisem
+Odstêpy miêdzy ikonami i podpisami
 ; Padding between Icon Image and Label
 ;
 MSG_HORIZPADDINGLABELTEXT
-Poziomy odstêp miêdzy ramk± ikony a tekstem
+Poziomy odstêp miêdzy ramk± ikonki i tekstem
 ; Horizontal Padding between Label Frame and Text
 ;
 MSG_VERTPADDINGLABELTEXT
-Pionowy odstêp miêdzy ramk± ikony a tekstem
+Pionowy odstêp miêdzy ramk± ikonki i tekstem
 ; Vertical Padding between Label Frame and Text
 ;
 MSG_FRAMEWIDTH
@@ -186,19 +185,19 @@ Wysoko¶æ ramki podpisu
 ; Label Frame Height
 ;
 MSG_TILED
-Kafelki
+powielanie
 ; Tiled
 ;
 MSG_SCALED
-Skalowane
+skalowanie
 ; Scaled
 ;
 MSG_FLOATING
-P³ywaj±ce
+wolne
 ; Floating
 ;
 MSG_FIXED
-Sta³e
+uszeregowane
 ; Fixed
 ;
 MSG_LABELLINELENGTH
@@ -206,15 +205,15 @@ Maksymalna d³ugo¶æ podpisu...
 ; Max. Label line length...
 ;
 MSG_USEMULTILINELABELS
-U¿yj podpisów w kilku liniach
+U¿yj podpisów wielolinijkowych
 ; Use MultiLine Labels
 ;
 MSG_SHOWFOCUSEDICON
-U¿yj tylko dla wybranych ikon
+Pokazuj tylko dla zaznaczonych ikonek
 ; Only show for Focus(ed) Icon
 ;
 MSG_NDISPLAYLINES
-Ilo¶æ pokazywanych linii...
+Ilo¶æ wy¶wietlanych linii...
 ; No. of lines to display...
 ;
 MSG_TILEMODEOPTIONS
@@ -222,7 +221,7 @@ Opcje kafelków...
 ; Tile Mode Options...
 ;
 MSG_SCALEMODEOPTIONS
-Opcje trybu skalowanego...
+Opcje trybu skalowania...
 ; Scale Mode Options...
 ;
 MSG_ADVANCEDOPTIONS
@@ -234,7 +233,7 @@ Opcje t³a...
 ; Background Options...
 ;
 MSG_DRAWMODE
-Tryb rysowania :
+Tryb rysowania:
 ; Draw mode :
 ;
 MSG_USERFILEONWB
@@ -258,10 +257,10 @@ Zaawansowane
 ; Advanced
 ;
 MSG_USE
-U¿yj
+_U¿yj
 ; _Use
 ;
 MSG_CANCEL
-Poniechaj
+Ponie_chaj
 ; C_ancel
 ;

@@ -1,0 +1,24 @@
+## version $VER: aboutwindow.catalog 1.0 (29.04.2010)
+## codeset 5
+## language polski
+;
+MSG_ABOUT
+O programie
+; About
+;
+MSG_AUTHORS
+Autorzy
+; Authors
+;
+MSG_SPONSORS
+Sponsorzy
+; Sponsors
+;
+MSG_SECTION_PROGRAMMING
+Programi¶ci
+; Programming
+;
+MSG_SECTION_TRANSLATING
+T³umacze
+; Translating
+;

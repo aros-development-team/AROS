@@ -1,8 +1,6 @@
-## version $VER: installer.catalog (17.02.2006) by Camelek.AmigaRulez@wp.pl ( AROS Polska Team )
+## version $VER: installer.catalog 1.0 (29.04.2010)
 ## language polski
-## codeset 0
-;
-;
+## codeset 5
 ;
 MSG_OK
 OK

@@ -1,0 +1,169 @@
+## version $VER: hdtoolbox.catalog 1.0 (29.04.2010)
+## codeset 5
+## language polski
+;
+WORD_Active
+Aktywna
+; Active
+;
+WORD_AddEntry
+Dodaj wpis
+; Add Entry
+;
+WORD_All
+Wszystkie
+; All
+;
+WORD_Automount
+Przy³±czana automatycznie
+; Automount
+;
+WORD_Bootable
+Botowalna
+; Bootable
+;
+WORD_BootPri
+Priorytet botowania
+; Boot Priority
+;
+WORD_Cancel
+Poniechaj
+; Cancel
+;
+WORD_Changed
+Zmieniona
+; Changed
+;
+WORD_Change_Type
+Rodzaj zmiany
+; Change Type
+;
+WORD_Create_Table
+Utwórz tabelê
+; Create Table
+;
+WORD_Devices
+Urz±dzenia
+; Devices
+;
+WORD_DosEnvec
+DosEnvec
+; DosEnvec
+;
+WORD_Exit
+Wyj¶cie
+; Exit
+;
+WORD_Geometry
+Geometria
+; Geometry
+;
+WORD_Name
+Nazwa
+; Name
+;
+WORD_Switches
+Prze³±czniki
+; Switches
+;
+WORD_Ok
+OK
+; Ok
+;
+WORD_Parent
+Nadrzêdny
+; Parent
+;
+WORD_Partitions
+Partycje
+; Partitions
+;
+WORD_Partition_Table
+Tabela partycji
+; Partition Table
+;
+WORD_Partition_Table_Type
+Typ tabeli partycji
+; Partition Table Type
+;
+WORD_Partition_Type
+Typ partycji
+; Partition Type
+;
+WORD_RemoveEntry
+Usuñ wpis
+; Remove Entry
+;
+WORD_Rename
+Zmieñ nazwê
+; Rename
+;
+WORD_Resize_Move
+Zmieñ wielko¶æ/pzrenie¶
+; Resize/Move
+;
+WORD_Save_Changes
+Zapisz zmiany
+; Save Changes
+;
+WORD_Size
+Wielko¶æ
+; Size
+;
+WORD_Unit
+Jednostka
+; Unit
+;
+WORD_Units
+Jednostki
+; Units
+;
+WORD_Unknown
+Nieznany
+; Unknown
+;
+WORD_MENU_Project
+Projekt
+; Project
+;
+WORD_MENU_About
+O programie
+; About
+;
+WORD_MENU_Quit
+Skoñcz
+; Quit
+;
+MSG_ASK_SAVE
+Wszystkie dane na modyfikowanych parycjach zostan± usuniête!\n\
+Czy na pewno zapisaæ zmiany w tabeli partycji \"%s\"?
+; All Data on modified partitions will be destroyed!\nAre you sure to write changes of partition table '%s'?
+;
+MSG_NO_MEMORY
+Brak pamiêci
+; Not enough memory
+;
+MSG_PARTITION_TABLE_FULL
+Tabela partycji pe³na
+; Partition table full
+;
+MSG_Select_Empty_Area
+Wybierz pusty obszar
+; Select empty area
+;
+MSG_Select_Partition_Resize_Move
+Wybierz partycjê i zmieñ jej rozmiar/przenie¶ j±
+; Select a partition and resize/move it
+;
+MSG_Welcome
+Witamy w programie do partycjonowania
+; Welcome to the partitioning tool
+;
+MSG_WriteTableError
+B³±d podczas odczytu tabeli partycji
+; Error while writing partition table
+;
+MSG_CreateTableError
+B³±d podczas tworzenia tabeli partycji
+; Error while creating partition table
+;

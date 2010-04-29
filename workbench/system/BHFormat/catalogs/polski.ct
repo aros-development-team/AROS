@@ -1,0 +1,286 @@
+## version $VER:format.catalog 1.0 (29.04.2010)
+## codeset 5
+## language polski
+;
+MSG_OK
+OK
+; OK
+;
+MSG_CANCEL
+Poniechaj
+; Cancel
+;
+MSG_INSERT_DISK
+W³ó¿ dysk do sformatowania w urz±dzenie %s.\nNaci¶nij ENTER aby rozpocz±æ formatowanie\nlub CTRL-C aby przerwaæ: \0
+; Insert disk to be formatted in device %s\n\
+; Press RETURN to begin formatting or CTRL-C to abort: 
+;
+MSG_FORMATTING
+\rFormatowanie cylindra %lu, %lu do koñca  \0
+; \rFormatting cylinder %lu, %lu to go 
+;
+MSG_VERIFYING
+\rWeryfikacja \0
+; \rVerifying 
+;
+MSG_INITIALIZING
+Inicjalizowanie dysku...\n
+; Initializing disk...\n
+;
+MSG_SELECTDEVICE
+Wybierz urz±dzenie do sformatowania
+; Select Device To Format
+;
+MSG_GUI_FORMATTING
+Formatowanie dysku...
+; Formatting Disk...
+;
+MSG_GUI_INITIALIZING
+Inicjalizowanie dysku...
+; Initializing Disk...
+;
+MSG_IN_DEVICE
+w urz±dzieniu %s
+; in device %s
+;
+MSG_FORMAT_REQUEST_TITLE
+Formatowanie
+; Format Request
+;
+MSG_FORMAT_REQUEST_GADGETS
+Sformatuj|Poniechaj
+; Format|Cancel
+;
+MSG_FORMAT_REQUEST_TEXT
+Czy na pewno sformatowaæ wolumen\n\
+%s?\n\n\
+OSTRZE¯ENIE!\n\n\
+Wszystkie dane zostan± utracone!\n\
+(%s)
+; OK to format volume\n\
+; %s?\n\n\
+; WARNING!\n\n\
+; All data will be lost!\n\
+; (%s)
+;
+MSG_UNITS
+kMGTPE
+; KMGTPE
+;
+MSG_CAPACITY_USED
+pojemno¶æ %lu%lc, wykorzystane %lu%%
+; %lu%lc capacity, %lu%% used
+;
+MSG_CAPACITY
+pojemno¶æ %lu%lc
+; %lu%lc capacity
+;
+MSG_ERROR_WANDERER
+Program musi zostaæ uruchomiony z poziomu Wanderera z zaznaczon± ikonk±\n
+; Must be started from Wanderer with a selected icon\n
+;
+MSG_WINDOW_TITLE
+Formatowanie - %s
+; Format - %s
+;
+MSG_DEVICE
+Urz±dzenie \"%s\"
+; Device '%s'
+;
+MSG_VOLUME
+Wolumen \"%b\"
+; Volume '%b'
+;
+MSG_APPLICATION_TITLE
+Formatowanie
+; Format
+;
+MSG_DESCRIPTION
+Narzêdzie do formatowania dysków
+; Disk Formatting Utility
+;
+MSG_COPYRIGHT
+Copyright (c) 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
+; Copyright © 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
+;
+MSG_AUTHOR
+Ben Hutchings, Pavel Fedin, The AROS Development Team
+; Ben Hutchings, Pavel Fedin, The AROS Development Team
+;
+MSG_LABEL_CURRENT_INFORMATION
+Informacje:
+; Current Information:
+;
+MSG_LABEL_NEW_VOLUME_NAME
+Nowa nazwa wolumenu:
+; New Volume Name:
+;
+MSG_DEFAULT_VOLUME_NAME
+Pusty
+; Empty
+;
+MSG_LABEL_PUT_TRASHCAN
+Umie¶æ ¶mietnik:
+; Put Trashcan:
+;
+MSG_LABEL_FFS
+FFS:
+; Fast File System:
+;
+MSG_LABEL_INTL
+Tryb miêdzynarodowy:
+; International Mode:
+;
+MSG_LABEL_CACHE
+DC:
+; Directory Cache:
+;
+MSG_BTN_FORMAT
+Sformatuj
+; Format
+;
+MSG_BTN_QFORMAT
+Sformatuj szybko
+; Quick Format
+;
+MSG_BTN_CANCEL
+Poniechaj
+; Cancel
+;
+MSG_BTN_STOP
+Zatrzymaj
+; Stop
+;
+MSG_ERROR_NO_APPLICATION
+Nie mo¿na utworzyæ aplikacji\n
+; Can't create application\n
+;
+MSG_ERROR_NO_WINDOW
+Nie mo¿na otworzyæ okna\n
+; Can't open window\n
+;
+MSG_REQ_ERROR_TITLE
+B³±d
+; Error
+;
+MSG_ERRORS_WARNING
+Ostrze¿enie
+; Warning
+;
+MSG_ERRORS_ERROR
+B³±d
+; Error
+;
+MSG_ERRORS_FAILURE
+Niepowodzenie
+; Failure
+;
+MSG_FORMAT
+Format
+; Format 
+;
+MSG_ERROR_INVALID_DOSTYPE
+Niew³a¶ciwe okre¶lenie DosType'u
+; Invalid DosType specification
+;
+MSG_ERROR_TOO_LARGE_1
+Ta partycja jest wiêksza ni¿ 4 GB. \
+Amigowy system plików nie mo¿e obs³ugiwaæ tak du¿ych partycji.
+; This device is larger than 4 gigabytes in size. The\
+;  Amiga file-system cannot handle a device this large.
+;
+MSG_ERROR_TOO_LARGE_2
+Ta partycja znajduje siê poza pierwszymi 4 GB dysku. Aby jej u¿ywaæ \
+musisz zainstalowaæ co najmniej wersjê 43 amigowego systemu plików.
+; This device extends beyond the first 4 gigabytes of the\
+;  disk it is on.  In order to use it, you must install\
+;  version 43 or later of the Amiga file-system.
+;
+MSG_ERROR_TOO_LARGE_3
+Ta partycja jest wiêksza ni¿ 2 GB. \
+Aby jej u¿ywaæ musisz zainstalowaæ co najmniej wersjê 40 amigowego systemu plików.
+; This device is larger than 2 gigabytes in size. In order to\
+;  use it, you must install version 40 or later of the Amiga\
+;  file-system.
+;
+MSG_ERROR_TOO_LARGE_4
+Ta partycja jest ustawiona do u¿ywania buforów pamiêci, które mog± \
+byæ niepubliczne. To mo¿e powodowaæ nie3stabilno¶æ pracy komputera \
+podczas u¿ywania systemu pamiêci wirtualnej. By temu zapobiec powiniene¶ dodaæ 1 do \
+ustawienia BufMemType dla tej partycji.
+; This device is set to use buffers in memory that may not be\
+;  \"public\". This can cause your computer to crash if you use a\
+;  virtual memory system. You should add 1 to the BufMemType\
+;  setting for this device to avoid this.
+;
+MSG_ERROR_DEVICE
+Próba otwarcia urz±dzenia zwróci³a b³±d %ld
+; Device open returned error %ld
+;
+MSG_ERROR_IDE
+Ta partycja znajduje siê na dysku IDE pod³±czonym \
+do starego kontrolera IDE firmy Commodore. Kontroler ten \
+mo¿e próbowaæ przesy³aæ du¿e pakiety danych, które s± niepoprawnie \
+obs³ugiwane przez niektóre dyski. Aby zapobiec ryzyku utraty danych \
+powiniene¶ ustawiæ parametr \"Maksymalny transfer\" dla tej partycji na \
+0x10000.
+; This device appears to be on an IDE drive\
+;  using an old Commodore IDE driver.  This driver may\
+;  attempt to perform long data transfers that some IDE\
+;  drives do not carry out correctly.  To avoid the risk\
+;  of data loss, you should change this device's\
+;  MaxTransfer setting to 0x10000.
+;
+MSG_ERROR_DEVICE_QUERY
+Próba odpytania urz±dzenia (NSCMD_DEVICEQUERY) zwróci³a b³±d %ld
+; Device query (NSCMD_DEVICEQUERY) returned error %ld
+;
+MSG_ERROR_64BIT
+Ta partycja wykracza poza pierwsze 4GB dysku. \
+Aby z niej korzystaæ musisz u¿ywaæ sterownika obs³uguj±cego \
+polecenia 64-bitowe NSD lub zainstalowaæ program NSDPatch.
+; This device extends beyond the first 4 gigabytes of the disk.\
+;  In order to use this device, you must either use a driver\
+;  that supports the NSD 64-bit commands or install and run the\
+;  NSDPatch program.
+;
+MSG_ERROR_DEVICE_RETURN
+%s zwróci³o b³±d %ld
+; Device %s returned error %ld
+;
+MSG_ERROR_FLUSH
+B³±d podczas oczyszczania urz±dzenia, polecenie CMD_UPDATE
+; flush (CMD_UPATE)
+;
+MSG_ERROR_INVALIDATE
+Urz±dzenie nieuaktualnione, polecenie CMD_CLEAR
+; invalidate (CMD_CLEAR)
+;
+MSG_ERROR_VERIFY
+B³±d weryfikacji
+; Verify error
+;
+MSG_COMMAND_FORMAT64
+B³±d formatowania, polecenie NSCMD_TD_FORMAT64
+; format (NSCMD_TD_FORMAT64)
+;
+MSG_COMMAND_FORMAT
+B³±d formatowania, polecenie TD_FORMAT
+; format (TD_FORMAT)
+;
+MSG_COMMAND_READ64
+B³±d odczytu, polecenie NSCMD_TD_READ64
+; read (NSCMD_TD_READ64)
+;
+MSG_COMMAND_READ
+B³±d odczytu, polecenie READ
+; read (CMD_READ)
+;
+MSG_ERROR_TRASHCAN
+Nie mo¿na utworzyæ ikonki ¶mietnika na wolumenie\n%s
+; Couldn't create trashcan on volume\n%s
+;
+MSG_ERROR_ICON
+Nie mo¿na utworzyæ ikonki dysku na wolumenie\n%s
+; Couldn't create disk icon on volume\n%s
+;

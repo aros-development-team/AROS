@@ -1,216 +1,225 @@
-;
-## version $VER: reqtools.catalog 38.2 (21.11.95)
-## codeset 0
+## version $VER: reqtools.catalog 38.3 (29.04.2010)
 ## language polski
-;## charset ISO 8859-2
+## codeset 5
 ;
 MSG_OK
  _Ok
-;  _Ok ;
+;  _Ok
+;
 MSG_CANCEL
 Ponie_chaj
-; _Cancel;
-;
-;
-;
-;
+; _Cancel
 ;
 MSG_OK_BAR_CANCEL
  _Ok |Ponie_chaj
-;  _Ok |_Cancel;
+;  _Ok |_Cancel
+;
 MSG_LAST_BAR_CANCEL
 _Ostani|Ponie_chaj
-; _Last|_Cancel;
+; _Last|_Cancel
+;
 MSG_REQUEST
 Komunikat
-; Request;
+; Request
+;
 MSG_INFORMATION
 Informacje
-; Information;
-;
-;
-;
-;
-;
+; Information
 ;
 MSG_MIN_FMT
- Min: %ld
-;  Min: %ld ;
+ Min.: %ld
+;  Min: %ld
+;
 MSG_MAX_FMT
- Maks: %ld
-;  Max: %ld ;
+Maks.: %ld
+;  Max: %ld
+;
 MSG_MIN_MAX_FMT
- Min: %ld, Maks: %ld
-;  Min: %ld, Max: %ld ;
+ Min.: %ld, maks.: %ld
+;  Min: %ld, Max: %ld
+;
 MSG_TOO_SMALL
 Za ma³o!
-; Too small!;
+; Too small!
+;
 MSG_TOO_BIG
 Za du¿o!
-; Too big!;
-;
-;
-;
-;
-;
-;
+; Too big!
 ;
 MSG_PALETTE_COLORS
-_Paleta kolorów
-; _Palette Colors:;
+_Paleta kolorów:
+; _Palette Colors:
+;
 MSG_RED
-Cze_rwony
-; _Red:;
+Cze_rwony:
+; _Red:
+;
 MSG_GREEN
-Zi_elony
-; _Green:;
+Zi_elony:
+; _Green:
+;
 MSG_BLUE
-Nie_bieski
-; _Blue:;
+Nie_bieski:
+; _Blue:
+;
 MSG_COPY
 Sko_piuj
-; Cop_y;
+; Cop_y
+;
 MSG_SWAP
 Z_amieñ
-; _Swap;
+; _Swap
+;
 MSG_SPREAD
 Ro_z³ó¿
-; Spr_ead;
+; Spr_ead
+;
 MSG_UNDO
 An_uluj
-; _Undo;
-;
-; ** 2.5 **
+; _Undo
 ;
 MSG_COPY_TITLE
 Skopiuj do...
+; Copy to...
 ;
 MSG_SWAP_TITLE
 Zamieñ z...
+; Swap with...
 ;
 MSG_SPREAD_TITLE
 Roz³ó¿ do...
-;
-;
-;
-; File Requester
-;
-;
-;
+; Spread to...
 ;
 MSG_CREATE_DRAWER
-Katalog "%s"\n\
+Katalog \"%s\"\n\
 nie istnieje. Czy mam go utworzyæ?
-; Drawer '%s' does\nnot exist. Create it?;
+; Drawer '%s' does\nnot exist. Create it?
+;
 MSG_DIR_ERROR
 B³êdna nazwa katalogu!
-; Directory error!;
+; Directory error!
+;
 MSG_MATCH_WINTITLE
-Zaznacz...
-; Match...;
+Dopasuj...
+; Match...
+;
 MSG_DRAWER
 Katalog
-; Drawer;
+; Drawer
+;
 MSG_ASSIGN
 Przypisanie
-; Assign;
+; Assign
+;
 MSG_ALL
 Wszy_stko
-; _All;
+; _All
+;
 MSG_MATCH
 Wzó_r...
-; _Match..;
+; _Match..
+;
 MSG_CLEAR
 Anu_luj
-; C_lear;
+; C_lear
+;
 MSG_VOLUMES
 _Wolumeny
-; _Volumes;
+; _Volumes
+;
 MSG_PARENT
 _Nadrzêdny
-; _Parent;
+; _Parent
+;
 MSG_PATTERN
 Fil_tr:
-; Pa_ttern:;
+; Pa_ttern:
+;
 MSG_GET
 O_dczytaj
-; _Get;
+; _Get
+;
 MSG_DOT_INFO
 ._info
-; ._info;
+; ._info
+;
 MSG_SELECTED
 Zaznaczonych:
-; Selected:;
+; Selected:
+;
 MSG_FULL
 %ld%% zajête
-; %ld%% full;
-;
-;
-;
-; Font Requester
-;
-;
-;
+; %ld%% full
 ;
 MSG_COULDNT_OPEN_FONT
-Nie mogê znale¼æ kroju czcionki!
-; Couldn't open font!;
+Nie mog¿na odnale¼æ czcionki!
+; Couldn't open font!
+;
 MSG_BOLD
 Pogru_biona
-; _Bold;
+; _Bold
+;
 MSG_ITALIC
 Pochy_lona
-; _Italic;
+; _Italic
+;
 MSG_UNDERLINE
 Po_dkre¶lona
-; _Underline;
-;
-;
-;
-;
-; Screen Mode Requester
-;
-;
+; _Underline
 ;
 MSG_DASH_INTERLACED
 -Z przeplotem
-; -Interlaced;
+; -Interlaced
+;
 MSG_DASH_HAM
 -HAM
-; -HAM;
+; -HAM
+;
 MSG_DASH_EHB
 -EHB
-; -EHB;
+; -EHB
+;
 MSG_REGULAR_SIZE
 Wielko¶æ normalna
-; Regular Size;
+; Regular Size
+;
 MSG_TEXT_SIZE
-Rozmiar tekstu
-; Text Size;
+Wielko¶æ tekstu
+; Text Size
+;
 MSG_GFX_SIZE
-Rozmiar grafiki
-; Graphics Size;
+Wielko¶æ grafiki
+; Graphics Size
+;
 MSG_MAX_SIZE
 Maksymalna wielko¶æ
-; Maximum Size;
+; Maximum Size
+;
 MSG_OVERSCAN
 O_verscan:
-; O_verscan:;
+; O_verscan:
+;
 MSG_WIDTH
 _Szeroko¶æ:
-; _Width:;
+; _Width:
+;
 MSG_HEIGHT
 _Wysoko¶æ:
-; _Height:;
+; _Height:
+;
 MSG_DEFAULT
-Standard
-; Default;
+domy¶lna
+; Default
+;
 MSG_COLORS
 _Kolorów:
-; Co_lors:;
+; Co_lors:
+;
 MSG_MAX
-Maks:
-; Max:;
+Maks.:
+; Max:
+;
 MSG_AUTOSCROLL
-_AutoScroll:
-; _AutoScroll:;
+_Automatyczne przewijanie:
+; _AutoScroll:
+;

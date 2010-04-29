@@ -1,0 +1,186 @@
+## version $VER: Snoopy.catalog 2.0 (29.04.2010)
+## codeset 5
+## language polski
+;
+MSG_TITLE
+Snoopy
+; Snoopy
+;
+MSG_COPYRIGHT
+(c) 2006-2010, The AROS Development Team
+; © 2006-2008, The AROS Development Team
+;
+MSG_AUTHOR
+The AROS Development Team
+; The AROS Development Team
+;
+MSG_PORTNAME
+SNOPPY
+; SNOOPY
+;
+MSG_DESCRIPTION
+Prosty monitor systemu
+; Simple system monitor
+;
+MSG_SETTINGS
+Ustawienia
+; Settings
+;
+MSG_SHOW_FAILS
+Pokazuj tylko niepowodzenia
+; Only show fails
+;
+MSG_CLI_NUMBER
+Pokazuj numery CLI
+; Show CLI number
+;
+MSG_FULL_PATH
+Pokazuj pe³ne ¶cie¿ki dostêpu
+; Show full paths
+;
+MSG_DEVICE
+U¿ywaj nazw urz±dzeñ
+; Use device names
+;
+MSG_IGNORE_WB
+Ignoruj Workbencha/Shella
+; Ignore Workbench/Shell
+;
+MSG_BREAKPOINT
+Ustaw punkty przerwañ
+; Set breakpoint
+;
+MSG_MATCH
+Pasuj±ce nazwy
+; Match name
+;
+MSG_SYSTEM_FUNC
+Funkcje systemowe
+; System Functions
+;
+MSG_DOS_FUNC
+Funkcje AmigaDOS-u
+; AmigaDOS Functions
+;
+MSG_SAVE
+Zapisz
+; Save
+;
+MSG_OPEN
+Otwórz
+; Open
+;
+MSG_USE
+U¿yj
+; Use
+;
+MSG_UNDO
+Cofnij
+; Undo
+;
+MSG_RESET
+Zresetuj
+; Reset
+;
+MSG_CANCEL
+Poniechaj
+; Cancel
+;
+MSG_OUTPUT_FIELD
+Szeroko¶æ pola wyj¶ciowego
+; Output Field Width
+;
+MSG_NAME
+Nazwa
+; Name
+;
+MSG_ACTION
+Dzia³anie
+; Action
+;
+MSG_TARGET
+Cel
+; Target
+;
+MSG_OPTION
+Opcja
+; Option
+;
+MSG_OK
+OK
+; OK
+;
+MSG_FAIL
+Niepowodzenie
+; Fail
+;
+MSG_ERROR_SAVE
+Podczas zapisywania %s wyst±pi³ b³±d.
+; An error happened when saving to %s
+;
+MSG_ERROR_LOAD
+Podczas wczytywania %s wyst±pi³ b³±d.
+; An error happened when loading from %s
+;
+MSG_RESET_PATCHES
+Wyzeruj ³atki|Poniechaj
+; Reset Patches|Cancel
+;
+MSG_ASK_RESET
+Czy na pewno chcesz wyzerowaæ ³atki do ich oryginalnych funkcji?
+; Do you really want to reset the patches to their original functions?
+;
+MSG_REMOVE_SNOOP
+Usuñ|Zachowaj
+; Remove|Keep
+;
+MSG_ASK_REMOVE
+Czy na pewno chcesz usun±æ proces programu SNoppy?\n\
+Mo¿e to byæ niebezpieczne, je¶li inne zadanie za³ata³o ³atki Snoppy'ego.
+; Do you really want to remove the Snoopy process?\n\
+; This can be quite dangerous when another task has patched Snoopy's patches.
+;
+MSG_GLOBAL
+Globalne
+; Global
+;
+MSG_LOCAL
+Lokalne
+; Local
+;
+MSG_ALIAS
+Alias
+; Alias
+;
+MSG_UNKNOWN
+Nieznany
+; Unknown
+;
+MSG_ANY
+Dowolny
+; Any
+;
+MSG_READ
+Odczyt
+; Read
+;
+MSG_WRITE
+Zapis
+; Write
+;
+MSG_READ_ASK
+Odczyt?
+; Read???
+;
+MSG_MODIFY
+Modyfikacja
+; Modify
+;
+MSG_VERSION
+Wersja %ld
+; Version %ld
+;
+MSG_SIZE
+Wielko¶æ %d
+; Size %d
+;

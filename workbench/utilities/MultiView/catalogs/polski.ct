@@ -1,43 +1,50 @@
-## version $VER: multiview.catalog (17.02.2006) by Camelek.AmigaRulez@wp.pl ( AROS Polska Team )
+## version $VER: multiview.catalog 1.0 (29.04.2010)
 ## language polski
-## codeset 0
-;
+## codeset 5
 ;
 MSG_CANT_OPEN_LIB
-Nie mogê otworzyæ %s V%ld!
+Nie mo¿na otworzyæ %s w wersji %ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_CREATE_IC
-Nie mogê utworzyæ wewn±trzpo³±czeniowych obiektów!
+Nie mo¿na utworzyæ po³±czonych wewnêtrznie obiektów!
 ; Can't create interconnection objects!
 ;
 MSG_CANT_LOCK_SCR
-Nie mogê udostêpniæ ekranu!
+Nie mo¿na uzyskaæ dostêpu do ekranu!
 ; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
-Nie mogê pobraæ DrawInfo!
+Nie mo¿na pobraæ DrawInfo!
 ; Can't get DrawInfo!
 ;
 MSG_CANT_GET_VI
-Nie mogê pobraæ VisualInfo!
+Nie mo¿na pobraæ VisualInfo!
 ; Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_SYSIMAGE
-Nie mogê utowrzyæ obrazów SYSICLASS!
+Nie mo¿na utowrzyæ obrazów SYSICLASS!
 ; Can't create SYSICLASS images!
 ;
 MSG_CANT_CREATE_GADGET
-Nie mogê utworzyæ gad¿etów!
+Nie mo¿na utworzyæ gad¿etów!
 ; Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
-Nie mogê utowrzyæ menu!
+Nie mo¿na utowrzyæ menu!
 ; Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
-Nie mogê utworzyæ okna!
+Nie mo¿na utworzyæ okna!
 ; Can't create window!
+;
+MSG_CANT_CREATE_MSGPORT
+Nie mo¿na utworzyæ portu wiadomo¶ci!
+; Can't create message port!
+;
+MSG_CANT_ADD_APPWINDOW
+Nie mo¿na wypromowaæ okna jako okno AppWindow!
+; Can't promote window as an AppWindow!
 ;
 MSG_SAVE_FAILED
 Zapis pliku zakoñczony b³êdem!
@@ -64,11 +71,11 @@ P\0Drukuj
 ; P\0Print
 ;
 MSG_MEN_PROJECT_ABOUT
-?\0Informacje...
+?\0O programie...
 ; ?\0About...
 ;
 MSG_MEN_PROJECT_QUIT
-Q\0Zakoñcz
+Q\0Skoñcz
 ; Q\0Quit
 ;
 MSG_MEN_EDIT
@@ -76,11 +83,11 @@ Edycja
 ; Edit
 ;
 MSG_MEN_EDIT_MARK
-B\0Zaznaczenie
+B\0Zaznacz
 ; B\0Mark
 ;
 MSG_MEN_EDIT_COPY
-C\0Kopiuj
+C\0Skopiuj
 ; C\0Copy
 ;
 MSG_MEN_EDIT_SELECTALL
@@ -140,7 +147,7 @@ MSG_MEN_PICT_FIT_WIN
 ;  \0Fit to Window
 ;
 MSG_MEN_PICT_KEEP_ASPECT
- \0Skaluj
+ \0Zachowaj proporcje
 ;  \0Keep Aspect Ratio
 ;
 MSG_MEN_PICT_FORCE_MAP
@@ -156,7 +163,7 @@ Tekst
 ; Text
 ;
 MSG_MEN_TEXT_WORDWRAP
- \0Zwijanie s³ów
+ \0Zawijanie wierszy
 ;  \0Enable Word Wrap
 ;
 MSG_MEN_TEXT_SEARCH
@@ -164,15 +171,15 @@ MSG_MEN_TEXT_SEARCH
 ;  \0Search for...
 ;
 MSG_MEN_TEXT_SEARCH_PREV
- \0Szukaj wcze¶niej
+ \0Wyszukaj poprzednie
 ;  \0Search for previous
 ;
 MSG_MEN_TEXT_SEARCH_NEXT
- \0Szukaj dalej
+ \0Wyszukaj nastêpne
 ;  \0Search for next
 ;
 MSG_ASL_OPEN_TITLE
-Wybierz plik do otwarcia
+Wybierz plik do otworzenia
 ; Select File to Open
 ;
 MSG_ASL_SAVE_TITLE
@@ -194,4 +201,8 @@ Kontynuuj
 MSG_OK
 OK
 ; Ok
+;
+MSG_SHORTCUT_EDITOR
+E
+; E
 ;

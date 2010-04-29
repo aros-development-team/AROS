@@ -1,0 +1,52 @@
+## version $VER: delete.catalog 1.0 (29.04.2010)
+## codeset 5
+## language polski
+;
+MSG_TITLE
+Delete
+; Delete
+;
+MSG_DELETE_REQUEST
+Skasowaæ?
+; Delete?
+;
+MSG_DELETE_CHOICE
+Skasuj|Poniechaj
+; Delete|Cancel
+;
+MSG_REQUEST
+Czy na pewno chcesz skasowaæ \"%s\"?
+; Are you sure you want to delete '%s'?
+;
+MSG_ERROR
+B³±d
+; Error
+;
+MSG_OK
+OK
+; OK
+;
+MSG_COULDNT_DELETE
+Nie mo¿na skasowaæ pliku.
+; Could not delete file.
+;
+MSG_COULDNT_ALLOCATE
+Nie mo¿na zaalokowaæ pamiêci.
+; Could not allocate memory.
+;
+MSG_COULDNT_LOCK
+Nie mo¿na uzyskaæ dostêpu do pliku.
+; Could not lock file for deletion.
+;
+MSG_INFO
+Informacja
+; Info
+;
+MSG_WRONG_ARGS
+B³±d: niew³a¶ciwa ilo¶æ parametrów.
+; Error: Wrong number of arguments.
+;
+MSG_WB_ONLY
+B³±d: program musi byæ wywo³any przez Wanderera.\n
+; Error: Must be started from Wanderer.\n
+;

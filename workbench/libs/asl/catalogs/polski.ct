@@ -1,14 +1,13 @@
-## version $VER: asl.catalog 1.0 (12.03.2001)
-## codeset 0
+## version $VER: asl.catalog 1.0 (29.04.2010)
 ## language polski
-;## charset ISO 8859-2
+## codeset 5
 ;
 MSG_FILEREQ_TITLE
 Wybierz plik
 ; Select File
 ;
 MSG_FILEREQ_POSITIVE_GAD
-Ok
+OK
 ; Ok
 ;
 MSG_FILEREQ_NEGATIVE_GAD
@@ -24,7 +23,7 @@ Nadrzêdny
 ; Parent
 ;
 MSG_FILEREQ_PATTERN_LABEL
-Szablon
+Wzorzec
 ; Pattern
 ;
 MSG_FILEREQ_DRAWER_LABEL
@@ -40,7 +39,7 @@ Katalog
 ; Drawer
 ;
 MSG_FILEREQ_LV_ASSIGN
-Assign
+Przypis
 ; Assign
 ;
 MSG_FILEREQ_DELETE_TITLE
@@ -48,8 +47,8 @@ Skasuj plik
 ; Delete File
 ;
 MSG_FILEREQ_DELETE_MSG
-Uwaga: Odzyskanie skasowanych\n\
-Plików jest bardzo trudne!\n\
+Ostrze¿enie: nie bêdziesz móg³\n\
+tego, co skasujesz!\n\
 Na pewno skasowaæ\n\
 %s?
 ; Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
@@ -83,11 +82,11 @@ Poniechaj
 ; Cancel
 ;
 MSG_FILEREQ_CREATEDRAWER_DEFNAME
-Zmieñ_Nazwê
+zmien_nazwe
 ; Rename_Me
 ;
 MSG_FILEREQ_SELECT_TITLE
-Wybierz wg szablonu
+Zaznacz wg wzorca
 ; Select by pattern
 ;
 MSG_FILEREQ_SELECT_OK
@@ -123,27 +122,27 @@ V\0Wolumeny
 ; V\0Volumes
 ;
 MSG_FILEREQ_MEN_CONTROL_UPDATE
-A\0Aktualizacja
+A\0Uaktualnij
 ; U\0Update
 ;
 MSG_FILEREQ_MEN_CONTROL_DELETE
-D\0Usuwanie
+D\0Skasuj
 ; D\0Delete
 ;
 MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER
- \0Tworzenie nowego katalogu...
+ \0Utwórz nowy katalog...
 ; T\0Create new drawer...
 ;
 MSG_FILEREQ_MEN_CONTROL_RENAME
-M\0Zmiana nazwy...
+M\0Zmieñ nazwê...
 ; E\0Rename...
 ;
 MSG_FILEREQ_MEN_CONTROL_SELECT
-#\0Zaznaczanie...
+#\0Zaznacz...
 ; #\0Select...
 ;
 MSG_FILEREQ_MEN_CONTROL_OK
-O\0Ok
+O\0OK
 ; O\0Ok
 ;
 MSG_FILEREQ_MEN_CONTROL_CANCEL
@@ -155,15 +154,15 @@ Lista plików
 ; File list
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTNAME
-1\0Sortuj wed³ug nazw
+1\0Sortuj wg nazw
 ; 1\0Sort by name
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDATE
-2\0Sortuj wed³ug dat
+2\0Sortuj wg dat
 ; 2\0Sort by date
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTSIZE
-3\0Sortuj wed³ug rozmiarów
+3\0Sortuj wg wielko¶ci
 ; 3\0Sort by size
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTUP
@@ -179,7 +178,7 @@ MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST
 ; 4\0Show drawers first
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
-5\0Wymieszaj katalogi i pliki
+5\0Wymieszane katalogi i pliki
 ; 5\0Show drawers with files
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
@@ -187,10 +186,11 @@ MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
 ; 6\0Show drawers last
 ;
 MSG_MODEREQ_TITLE
-Wybór trybu ekranu
+Wybór trybu wy¶wietlania
+; Select Screen Mode
 ;
 MSG_MODEREQ_POSITIVE_GAD
-Ok
+OK
 ; Ok
 ;
 MSG_MODEREQ_NEGATIVE_GAD
@@ -202,7 +202,7 @@ Overscan
 ; Overscan
 ;
 MSG_MODEREQ_OVERSCAN_TEXT
-Obszar tekstów
+Obszar tekstu
 ; Text Size
 ;
 MSG_MODEREQ_OVERSCAN_GRAPHICS
@@ -210,11 +210,11 @@ Obszar grafiki
 ; Graphics Size
 ;
 MSG_MODEREQ_OVERSCAN_EXTREME
-Ekstremalny rozmiar
+Obszar ekstremalny
 ; Extreme Size
 ;
 MSG_MODEREQ_OVERSCAN_MAXIMUM
-Maksymalny rozmiar
+Obszar maksymalny
 ; Maximum Size
 ;
 MSG_MODEREQ_WIDTH_LABEL
@@ -230,15 +230,15 @@ Kolory
 ; Colors
 ;
 MSG_MODEREQ_AUTOSCROLL_LABEL
-Autoprzesuw
+Automatyczne przewijanie
 ; AutoScroll
 ;
 MSG_MODEREQ_AUTOSCROLL_OFF
-WY£
+WY£.
 ; OFF
 ;
 MSG_MODEREQ_AUTOSCROLL_ON
-ZA£
+W£.
 ; ON
 ;
 MSG_MODEREQ_PROPERTIES_TITLE
@@ -250,19 +250,19 @@ Nie wspiera Workbencha
 ; Does not support Workbench
 ;
 MSG_MODEREQ_PROPERTIES_NOTGENLOCK
-Nie wspiera Genlocka
+Nie wspiera genlocka
 ; Does not support genlock
 ;
 MSG_MODEREQ_PROPERTIES_NOTDRAG
-Nie mo¿na ¶ci±gaæ
+Nie mo¿na przeci±gaæ
 ; Not draggable
 ;
 MSG_MODEREQ_PROPERTIES_HAM
-Hold And Modify
+HAM
 ; Hold & Modify
 ;
 MSG_MODEREQ_PROPERTIES_EHB
-Extra-Halfbright
+EHB
 ; Extra-HalfBright
 ;
 MSG_MODEREQ_PROPERTIES_LACE
@@ -274,15 +274,15 @@ Wymaga ECS
 ; Requires ECS
 ;
 MSG_MODEREQ_PROPERTIES_WB
-Wspiera Workbench
+Wspiera Workbencha
 ; Supports Workbench
 ;
 MSG_MODEREQ_PROPERTIES_GENLOCK
-Wspiera Genlock
+Wspiera genlocka
 ; Supports genlock
 ;
 MSG_MODEREQ_PROPERTIES_DRAG
-Mo¿na ¶ci±gaæ
+Mo¿na przeci±gaæ
 ; Draggable
 ;
 MSG_MODEREQ_PROPERTIES_DPFPRI2
@@ -314,7 +314,7 @@ R\0Przywróæ
 ; R\0Restore
 ;
 MSG_MODEREQ_MEN_CONTROL_OK
-O\0Ok
+O\0OK
 ; O\0Ok
 ;
 MSG_MODEREQ_MEN_CONTROL_CANCEL
@@ -322,11 +322,11 @@ C\0Poniechaj
 ; C\0Cancel
 ;
 MSG_FONTREQ_TITLE
-Wybierz krój czcionki
+Wybierz czcionkê
 ; Select Font
 ;
 MSG_FONTREQ_POSITIVE_GAD
-Ok
+OK
 ; Ok
 ;
 MSG_FONTREQ_NEGATIVE_GAD
@@ -338,11 +338,11 @@ Sterowanie
 ; Control
 ;
 MSG_FONTREQ_MEN_CONTROL_LASTFONT
-L\0Poprzedni krój
+L\0Poprzednia czcionka
 ; L\0Last Font
 ;
 MSG_FONTREQ_MEN_CONTROL_NEXTFONT
-N\0Nastêpny krój
+N\0Nastêpna czcionka
 ; N\0Next Font
 ;
 MSG_FONTREQ_MEN_CONTROL_RESTORE
@@ -354,7 +354,7 @@ D\0Ponowny odczyt
 ; D\0Rescan Disk
 ;
 MSG_FONTREQ_MEN_CONTROL_OK
-O\0Ok
+O\0OK
 ; O\0Ok
 ;
 MSG_FONTREQ_MEN_CONTROL_CANCEL
@@ -362,23 +362,23 @@ C\0Poniechaj
 ; C\0Cancel
 ;
 MSG_FONTREQ_MODE_LABEL
-Mode
+Tryb
 ; Mode
 ;
 MSG_FONTREQ_MODE_TEXT
-Text
+Tekst
 ; Text
 ;
 MSG_FONTREQ_MODE_TEXTANDFIELD
-Text+Field
+Tekst + t³o
 ; Text+Field
 ;
 MSG_FONTREQ_MODE_COMPLEMENT
-Complement
+Dope³nienie
 ; Complement
 ;
 MSG_FONTREQ_STYLE_LABEL
-Style
+Styl
 ; Style
 ;
 MSG_FONTREQ_STYLE_BOLD
@@ -394,14 +394,14 @@ U
 ; U
 ;
 MSG_FONTREQ_COLOR_LABEL_FG
-Color
+Kolor
 ; Color
 ;
 MSG_FONTREQ_COLOR_LABEL_BG
-BG Color
+Kolor t³a
 ; BG Color
 ;
 MSG_FONTREQ_COLOR_LABEL_FGBG
-Colors
+Kolory
 ; Colors
 ;

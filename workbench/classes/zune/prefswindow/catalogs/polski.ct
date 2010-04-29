@@ -1,10 +1,9 @@
-## version $VER: prefswindow.catalog (17.02.2006) by Camelek.AmigaRulez@wp.pl ( AROS Polska Team )
+## version $VER: prefswindow.catalog 1.0 (29.04.2010)
 ## language polski
-## codeset 0
-;
+## codeset 5
 ;
 MSG_TEST
-_Test
+_Testuj
 ; _Test
 ;
 MSG_REVERT
@@ -12,7 +11,7 @@ _Cofnij
 ; _Revert
 ;
 MSG_SAVE
-_Zapisz
+Zapi_sz
 ; _Save
 ;
 MSG_USE
@@ -20,6 +19,6 @@ _U¿yj
 ; _Use
 ;
 MSG_CANCEL
-_Poniechaj
+Ponie_chaj
 ; _Cancel
 ;

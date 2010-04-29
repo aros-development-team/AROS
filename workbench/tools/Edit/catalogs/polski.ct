@@ -1,17 +1,6 @@
-## version $VER: Editor.catalog 1.4 (15.4.2010)
+## version $VER: Editor.catalog 1.4 (29.04.2010)
 ## language polski
-## codeset 0
-;
-;
-; Catalog description for JanoEditor
-; JanoEditor.cd
-;
-;
-; *****************************
-;  NewMenu strings
-; *****************************
-;
-; Project Menu
+## codeset 5
 ;
 MSG_PROJECTTITLE
 Projekt
@@ -26,7 +15,7 @@ Otwórz...
 ; Open file...
 ;
 MSG_LOADINPRJ
-£aduj...
+Wczytaj...
 ; Load file...
 ;
 MSG_SAVEFILE
@@ -46,7 +35,7 @@ Drukuj
 ; Print
 ;
 MSG_INFORMATION
-Informacja...
+Informacje...
 ; Information...
 ;
 MSG_CLOSE
@@ -57,10 +46,8 @@ MSG_QUIT
 Skoñcz
 ; Quit
 ;
-; Edit Menu
-;
 MSG_EDITTITLE
-Edytuj
+Edycja
 ; Edit
 ;
 MSG_CUT
@@ -68,7 +55,7 @@ Wytnij
 ; Cut
 ;
 MSG_COPY
-Kopiuj
+Skopiuj
 ; Copy
 ;
 MSG_PASTE
@@ -100,7 +87,7 @@ Wciêcie
 ; Indent
 ;
 MSG_UNINDENT
-Anuluj wciêcie
+Cofnij wciêcie
 ; Unindent
 ;
 MSG_UPPERCASE
@@ -112,7 +99,7 @@ Ma³e litery
 ; Lower case
 ;
 MSG_TOGGLECASE
-Prze³±cz litery
+Zamieñ wielko¶æ liter
 ; Toggle case
 ;
 MSG_INSERTFILE
@@ -124,10 +111,8 @@ Cofnij
 ; Undo
 ;
 MSG_REDO
-Ponów
+Przywróæ
 ; Redo
-;
-; Search Menu
 ;
 MSG_SEARCHTITLE
 Szukaj
@@ -162,7 +147,7 @@ Poprzednia strona
 ; Previous page
 ;
 MSG_NEXTPAGE
-Poprzednia strona
+Nastêpna strona
 ; Next page
 ;
 MSG_GOTOLINE
@@ -170,7 +155,7 @@ Przejd¼ do linii...
 ; Goto line...
 ;
 MSG_FINDBRACKET
-Nawias
+Pasuj±ce nawiasy
 ; Matching bracket
 ;
 MSG_LASTMODIF
@@ -184,8 +169,6 @@ Pocz±tek linii
 MSG_ENDOFLINE
 Koniec linii
 ; End of line
-;
-; Macro Menu
 ;
 MSG_MACROTITLE
 Makro
@@ -207,14 +190,12 @@ MSG_REPEATMACRO
 Powtórz makro...
 ; Repeat macro...
 ;
-; Environment Menu
-;
 MSG_ENVTITLE
-Ustawienia
+¦rodowisko
 ; Environment
 ;
 MSG_SCRMODE
-Tryb ekranu...
+Tryb wy¶wietlania...
 ; Screen mode...
 ;
 MSG_FONTS
@@ -222,33 +203,27 @@ Czcionki...
 ; Fonts...
 ;
 MSG_PREFS
-Ustawienia g³ówne...
+G³ówne...
 ; General preferences...
 ;
 MSG_LOADPREFS
-£aduj ustawienia...
+Wczytaj preferencje...
 ; Load preferences..
 ;
 MSG_SAVEPREFS
-Zapisz ustawienia
+Zapisz preferencje
 ; Save preferences
 ;
 MSG_SAVEPREFSAS
-ZApisz jako...
+Zapisz preferencje jako...
 ; Save preferences as...
 ;
-;
-;
-; *****************************
-;  Possible error messages
-; *****************************
-;
 ERR_BADOS
-Program wymaga nowszej wersji systemu.
+Przestarza³a wersja systemu. Zainstaluj wersjê v2.0 lub nowsz±.
 ; Obsolete OS. Install v2.0 or better.
 ;
 ERR_NOASLREQ
-Nie mogê zaalokowaæ requestera ASL!
+Nie mo¿na zaalokowaæ komunikatu ASL!
 ; Cannot alloc ASL requester!
 ;
 ERR_NOMEM
@@ -256,24 +231,23 @@ Brak pamiêci!
 ; Out of memory!
 ;
 ERR_NOGUI
-Nie mogê otworzyæ interfejsu programu!
+Nie mo¿na otworzyæ interfejsu programu!
 ; Main interface failed to open!
 ;
 ERR_NONAME
 brak nazwy
 ; No title
-; Not really an error but simplify translation
 ;
 ERR_WRITECLIP
 B³±d zapisu do schowka.
 ; Write error into clipboard device
 ;
 ERR_OPENCLIP
-Nie mogê otworzyæ schowka!
+Nie mo¿na otworzyæ schowka!
 ; Unable to open clipboard!
 ;
 ERR_LOADFILE
-Nie mogê otworzyæ pliku.
+Nie mo¿na otworzyæ pliku.
 ; Unable to load requested file
 ;
 ERR_NOTXTINCLIP
@@ -293,15 +267,15 @@ Brak nawiasu pod kursorem!
 ; No parenthesis under cursor!
 ;
 ERR_NOT_FOUND
-Tekst dla zadanej maski "%s" nie zosta³ znaleziony.
+Wzorzec \"%s\" nie zosta³ znaleziony.
 ; Pattern `%s' not found
 ;
 ERR_LOADFONT
-Nie mogê otworzyæ czcionki!
+Nie mo¿na otworzyæ czcionki!
 ; Can't open desired font!
 ;
 ERR_NOPREFEDITOR
-Nie mogê odnale¼æ edytora preferencji!
+Nie mo¿na odnale¼æ edytora preferencji!
 ; Can't find preference editor!
 ;
 ERR_BADPREFSFILE
@@ -309,7 +283,7 @@ Z³y format pliku preferencji.
 ; Bad preference file format.
 ;
 ERR_FILEMODIFIED
-%s by³ zmieniony.\nCzy rzeczywi¶cie chcesz go zamkn±æ?
+Plik %s zosta³ zmieniony.\nCzy rzeczywi¶cie chcesz go zamkn±æ?
 ; %s has been modified.\nAre you sure want to close it?
 ;
 ERR_SLC
@@ -340,17 +314,12 @@ WARN_REC
 [REC]
 ; [REC]
 ;
-;
-; *************************************
-;  Information window related messages
-; *************************************
-;
 MSG_ABOUT
 Informacja
 ; Information
 ;
 MSG_FORMATINFO
-%s\nAutorzy: T.Pierron i C.Guillaume\nCopyright (C) 2000\n\nEdytowany: %s\Statystyka: %ld %s, %ld %s.
+%s\nAutorzy: T.Pierron i C.Guillaume\nCopyright (C) 2000\n\nEdytowany plik: %s\Wielko¶æ: %ld %s, %ld %s.
 ; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
 ;
 MSG_CONTINUE
@@ -362,7 +331,7 @@ bajt
 ; byte
 ;
 MSG_BYTES
-bajty
+bajtów
 ; bytes
 ;
 MSG_LINE
@@ -370,20 +339,15 @@ linia
 ; line
 ;
 MSG_LINES
-linie
+linii
 ; lines
 ;
-;
-; *************************
-;  Search & replace window
-; *************************
-;
 MSG_SEARCHWINDOW
-Szukanie tekstu
+Wzorzec szukania
 ; Search pattern
 ;
 MSG_REPLACEWINDOW
-Zamiana tekstu
+Znajd¼ i zamieñ
 ; Search & Replace
 ;
 MSG_SEARCHSTRING
@@ -395,7 +359,7 @@ Zamieñ:
 ; Replace:
 ;
 MSG_OPTCASE
-Rozró¿nianie ma³a/WIELKA
+Rozró¿niaj wielko¶æ znaków
 ; Match case
 ;
 MSG_OPTWORDS
@@ -403,7 +367,7 @@ Ca³e s³owa
 ; Whole words
 ;
 MSG_BUTTONREPLACE
-Zamieñ
+_Zamieñ
 ; _Replace
 ;
 MSG_BUTTONREPALL
@@ -423,18 +387,18 @@ _U¿yj
 ; _Use
 ;
 MSG_CANCELSEARCH
-Poniechaj
+Ponie_chaj
 ; _Cancel
 ;
 MSG_REPLACEALL
-Zmieniono %ld %s tekstu "%s".
+Zmieniono %ld %s tekstu \"%s\".
 ; %ld %s of `%s' replaced
 ;
 MSG_OCCURENCY
-polozycja
+wyst±pienie
 ; occurency
 ;
 MSG_OCCURENCIES
-pozycje
+wyst±pienia
 ; occurencies
 ;

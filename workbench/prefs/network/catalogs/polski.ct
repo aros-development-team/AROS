@@ -1,9 +1,9 @@
-## version $VER: Network.catalog 2.0 (17.3.2010)
+## version $VER: network.catalog 2.0 (29.04.2010)
 ## language polski
-## codeset 0
+## codeset 5
 ;
 MSG_NAME
-Ustawienia sieci
+Preferencje - Network
 ; Network Preferences
 ;
 MSG_DESCRIPTION
@@ -19,7 +19,7 @@ Aktywne
 ; Active
 ;
 MSG_DEVICE
-Urz¹dzenie
+Urz±dzenie
 ; Device
 ;
 MSG_UNIT
@@ -51,7 +51,7 @@ Pomocniczy DNS
 ; Secondary DNS
 ;
 MSG_HOST_NAME
-Nazwa hosta
+Nazwa wêz³a
 ; Host Name
 ;
 MSG_DOMAIN_NAME
@@ -59,11 +59,11 @@ Domena
 ; Domain Name
 ;
 MSG_IP_MODE_MANUAL
-Rêczne
+rêczne
 ; Manual
 ;
 MSG_IP_MODE_DHCP
-Pobierz adres z DCHP
+automatyczne przez DHCP
 ; Get address from DHCP
 ;
 MSG_TAB_IP_CONFIGURATION
@@ -75,7 +75,7 @@ Nazwa komputera
 ; Computer Name
 ;
 MSG_AUTOSTART_STACK
-Automatyczne uruchomienie?
+Automatycznie w³±czaj sieæ podczas wczytywania systemu.
 ; Automatically start network during system boot?
 ;
 MSG_ERR_UNKNOWN_ERROR
@@ -103,7 +103,7 @@ Usuñ
 ; Remove
 ;
 MSG_BUTTON_APPLY
-Dodaj
+Zastosuj
 ; Apply
 ;
 MSG_BUTTON_CLOSE
@@ -115,11 +115,11 @@ B³±d
 ; Error
 ;
 MSG_ERR_NOT_SAVED_PREFS
-Zapis ustawieñ do %s nie powiód³ siê.
+Zapisywanie ustawieñ w %s zakoñczone niepowodzeniem.
 ; Network preferences not saved to %s
 ;
 MSG_ERR_NOT_COPIED_FILES
-Kopiowanie dodatkowych plików do %s nie powiod³o siê.
+Kopiowanie dodatkowych plików do %s zakoñczone niepowodzeniem.
 ; Additional files not copied to %s
 ;
 MSG_INFO_TITLE
@@ -127,7 +127,7 @@ Informacja
 ; Information
 ;
 MSG_PREFS_SAVED_RESTART
-Ustawienia zapisane do %s.\nUruchom ponownie system aby ich u¿yæ.
+Ustawienia zapisano w %s.\nAby ich u¿yæ uruchom ponownie system.
 ; Preferences have been saved to %s.\nRestart AROS for them to take effect.
 ;
 MSG_IFWINDOW_TITLE

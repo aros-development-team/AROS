@@ -1,22 +1,21 @@
-## version $VER: info.catalog (17.02.2006) by Camelek.AmigaRulez@wp.pl ( AROS Polska Team )
+## version $VER: info.catalog 1.0 (29.04.2010)
 ## language polski
-## codeset 0
-;
+## codeset 5
 ;
 MSG_TITLE
 Informacje
-; Informations
+; Information
 ;
 MSG_DESCRIPTION
-W³a¶ciwo¶ci ikony
-; Icon informations
+W³a¶ciwo¶ci ikonki
+; Display Icon information
 ;
 MSG_COPYRIGHT
-W³a¶ciwo¶ci ikony\nAROS Dev Team
-; Icon informations\n©AROS Dev Team
+W³a¶ciwo¶ci ikonkiy\n(c) 2003-2010 The AROS Dev Team
+; Icon information\n© 2003-2010 The AROS Dev Team
 ;
 MSG_ICON
-Ikona
+Ikonka
 ; Icon
 ;
 MSG_NAME
@@ -36,7 +35,7 @@ Narzêdzie
 ; Tool
 ;
 MSG_ICONTYPE
-Typ ikony
+Typ ikonki
 ; Icon type
 ;
 MSG_DISK
@@ -68,7 +67,7 @@ Kick
 ; Kick
 ;
 MSG_APPICON
-AppIcon
+AppIkonka
 ; AppIcon
 ;
 MSG_INFORMATION
@@ -80,19 +79,19 @@ Bity ochronne
 ; Protection
 ;
 MSG_TOOLTYPES
-Tooltypes
+Parametry
 ; Tooltypes
 ;
 MSG_ERROR_SHELLSTART
-B³±d: Nie mo¿na uruchamiaæ z konsoli
+B³±d: nie mo¿na uruchomiæ z poziomu konsoli
 ; Error: Cannot be started from shell
 ;
 MSG_ABOUT
-Informacje...
+O programie...
 ; About...
 ;
 MSG_QUIT
-Zakoñcz
+Skoñcz
 ; Quit
 ;
 MSG_READ
@@ -128,7 +127,7 @@ Przyklejony
 ; Sticky
 ;
 MSG_SIZE
-Rozmiar
+Wielko¶æ
 ; Size
 ;
 MSG_VERSION
@@ -168,11 +167,11 @@ Usuñ klucz
 ; Delete key
 ;
 MSG_SAVE
-_Zapisz
+Zapi_sz
 ; _Save
 ;
 MSG_CANCEL
-_Poniechaj
+Ponie_chaj
 ; _Cancel
 ;
 MSG_OK

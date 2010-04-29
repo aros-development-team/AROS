@@ -1,0 +1,884 @@
+## version $VER: zune.catalog 1.0 (29.04.2010)
+## codeset 5
+## language polski
+;
+MSG_GENERAL
+G³ówne
+; General
+;
+MSG_BACKGROUND_COLON
+T³o:
+; Background:
+;
+MSG_BACKGROUND_PRESSED
+T³o wci¶niête:
+; Background in\npressed state:
+;
+MSG_TEXT_BUTTONS
+Przyciski tekstowe
+; Text Buttons
+;
+MSG_FRAME_COLON
+Ramka:
+; Frame:
+;
+MSG_FONT
+Czcionka:
+; Font:
+;
+MSG_IMAGE_BUTTONS
+Przyciski graficzne
+; Image Buttons
+;
+MSG_ADJUST_FRAME
+Dostosuj ramkê
+; Adjust Frame
+;
+MSG_CHECKMARKS
+Znaczniki
+; Checkmarks
+;
+MSG_LOOK_COLON
+Wygl±d:
+; Look:
+;
+MSG_CHECKMARK
+Znacznik
+; Checkmark
+;
+MSG_RADIO_BUTTONS
+Przyciski radiowe
+; Radio Buttons
+;
+MSG_RADIOBUTTON
+Przycisk radiowy
+; Radiobutton
+;
+MSG_LOOK
+Wygl±d
+; Look
+;
+MSG_H
+Poziome
+; H
+;
+MSG_V
+Pionowe
+; V
+;
+MSG_SPACING
+Odstêpy
+; Spacing
+;
+MSG_BELOW
+poni¿ej
+; below
+;
+MSG_ON_ACTIVE
+na aktywnym
+; on active
+;
+MSG_CYCLE_GADGET_DESIGN
+Wygl±d przycisku cyklicznego
+; Cycle Gadget Design
+;
+MSG_CYCLE
+Gad¿et cykliczny
+; Cycle
+;
+MSG_POPUP_MENU_CONTROL
+Kontrola menu podrêcznego
+; Popup Menu Control
+;
+MSG_POSITION
+Pozycja:
+; Position:
+;
+MSG_LEVEL
+Poziom:
+; Level:
+;
+MSG_SPEED
+Szybko¶æ:
+; Speed:
+;
+MSG_POPUP_MENU_DESIGN
+Wygl±d menu podrêcznego
+; Popup Menu Design
+;
+MSG_FRAME
+Ramka
+; Frame
+;
+MSG_ADJUST_BACKGROUND
+Dostosuj t³o
+; Adjust Background
+;
+MSG_BACKGROUND
+T³o
+; Background
+;
+MSG_RECESSED_ENTRIES
+Elementy wci¶niête:
+; Recessed Entries:
+;
+MSG_ABOVE
+powy¿ej
+; above
+;
+MSG_CENTERED
+wycentrowane
+; centered
+;
+MSG_STANDARD
+domy¶lne
+; standard
+;
+MSG_HILITE
+pod¶wietlone
+; hilite
+;
+MSG_3D
+3D
+; 3d
+;
+MSG_OUTLINE
+obrysowane
+; outline
+;
+MSG_TITLE
+Nazwa
+; Title
+;
+MSG_COLOR
+Kolor:
+; Color:
+;
+MSG_HORIZONTAL
+Poziomy:
+; Horizontal:
+;
+MSG_VERTICAL
+Pionowy:
+; Vertical:
+;
+MSG_REGISTER
+Zarejestruj
+; Register
+;
+MSG_DEFAULT_SIZE_TRUNCATE_TITLES
+Domy¶lna wielko¶æ przyciêtych nazw:
+; Default size truncate titles:
+;
+MSG_NORMAL
+Normalny
+; Normal
+;
+MSG_VIRTUAL
+Wirtualny
+; Virtual
+;
+MSG_FRAMED
+Obramowany
+; Framed
+;
+MSG_PAGE
+Strona
+; Page
+;
+MSG_SHIFTED
+przesuniête
+; shifted
+;
+MSG_ALWAYS
+zawsze
+; always
+;
+MSG_LINEAR
+liniowe
+; linear
+;
+MSG_MIXED
+mieszane
+; mixed
+;
+MSG_CONTROL
+Kontrola
+; Control
+;
+MSG_MULTI
+Wiele:
+; Multi:
+;
+MSG_REFRESH
+Od¶wie¿anie:
+; Refresh:
+;
+MSG_SMOOTH
+Wyg³adzanie:
+; Smooth:
+;
+MSG_FONTS
+Czcionki
+; Fonts
+;
+MSG_NORMAL_COLON
+Normalne:
+; Normal:
+;
+MSG_FIXED
+Nieproporcjonalne:
+; Fixed:
+;
+MSG_LEADING
+Odstêpy
+; Leading
+;
+MSG_DESIGN
+Wygl±d
+; Design
+;
+MSG_INPUT_LISTS
+Listy\nwprowadzania:
+; Input \nLists:
+;
+MSG_READONLY_LISTS
+Listy tylko\ndo odczytu:
+; Readonly \nLists:
+;
+MSG_CURSOR
+Kursor
+; Cursor
+;
+MSG_ACTIVE
+Aktywne:
+; Active:
+;
+MSG_ACTIVE_SELECTED
+Aktywne\ni zaznaczone:
+; Active &\nSelected:
+;
+MSG_SELECTED
+Zaznaczone:
+; Selected:
+;
+MSG_ALWAYS_SOLID
+zawsze wype³niony
+; always solid
+;
+MSG_GHOSTED_ON_BOX
+przezroczysty na polach
+; ghosted on box
+;
+MSG_GHOSTED_OUTSIDE_BOX
+przezroczysty poza polami
+; ghosted outside box
+;
+MSG_ALWAYS_GHOSTED
+zawsze przezroczysty
+; always ghosted
+;
+MSG_SHOW_FRAMES
+pokazuj ramki
+; show frames
+;
+MSG_SHOW_OBJECTS
+pokazuj obiekty
+; show objects
+;
+MSG_KL_PRESS
+Wci¶niêcie:
+; Press:
+;
+MSG_KL_TOGGLE
+Prze³±czenie:
+; Toggle:
+;
+MSG_KL_UP
+Kursor w górê:
+; Up:
+;
+MSG_KL_DOWN
+Kursor w dó³:
+; Down:
+;
+MSG_KL_PAGE_UP
+Strona w górê:
+; Page up:
+;
+MSG_KL_PAGE_DOWN
+Strona w dó³:
+; Page down:
+;
+MSG_KL_TOP
+Pocz±tek pliku:
+; Top:
+;
+MSG_KL_BOTTOM
+Koniec pliku:
+; Bottom:
+;
+MSG_KL_LEFT
+Kursor w lewo:
+; Left:
+;
+MSG_KL_RIGHT
+Kursor w prawo:
+; Right:
+;
+MSG_KL_WORD_LEFT
+Poprzednie s³owo:
+; Word left:
+;
+MSG_KL_WORD_RIGHT
+Nastêpne s³owo:
+; Word right:
+;
+MSG_KL_LINE_START
+Pocz±tek linii:
+; Line start:
+;
+MSG_KL_LINE_END
+Koniec linii:
+; Line end:
+;
+MSG_KL_NEXT_GADGET
+Nastêpny gad¿et:
+; Next gadget:
+;
+MSG_KL_PREV_GADGET
+Poprzedni gad¿et:
+; Prev. gadget:
+;
+MSG_KL_GADGET_OFF
+Wy³±czenie gad¿etu:
+; Gadget off:
+;
+MSG_KL_CLOSE_WINDOW
+Zamkniêcie okna:
+; Close window:
+;
+MSG_KL_NEXT_WINDOW
+Nastêpne okno:
+; Next window:
+;
+MSG_KL_PREV_WINDOW
+Poprzednie okno:
+; Prev. window:
+;
+MSG_KL_HELP
+Pomoc:
+; Help:
+;
+MSG_KL_POPUP
+Lista podrêczna:
+; Popup:
+;
+MSG_DRAG_DROP
+Przeci±ganie i upuszczanie
+; Drag & Drop
+;
+MSG_LEFT_BUTTON
+Lewy przycisk:
+; Left Button:
+;
+MSG_MIDDLE_BUTTON
+¦rodkowy przycisk:
+; Middle Button:
+;
+MSG_AUTOSTART
+Automatyczne rozpoczêcie:
+; Autostart:
+;
+MSG_PIXEL
+%ld pikseli
+; %ld pixel
+;
+MSG_BALANCING_GROUPS
+Grupy regulowane
+; Balancing Groups
+;
+MSG_EXAMPLE
+Przyk³ad:
+; Example:
+;
+MSG_TRY_WITH
+Spróbuj równie¿
+; Try with
+;
+MSG_SHIFT
+z klawiszem
+; shift
+;
+MSG_TOO
+shift!
+; too!
+;
+MSG_KEYBOARD_CONTROL
+Sterowanie klawiatur±
+; Keyboard Control
+;
+MSG_COLOR_ACTIVE_OBJ
+Kolor aktywnego obiektu:
+; Color of active object:
+;
+MSG_NEWLOOK
+newlook
+; newlook
+;
+MSG_CUSTOM
+w³asny
+; custom
+;
+MSG_ARROWS
+Strza³ki
+; Arrows
+;
+MSG_UP
+góra
+; up
+;
+MSG_ARROW_UP
+Strza³ka w górê
+; Arrow up
+;
+MSG_ARROW_DOWN
+Strza³ka w dó³
+; Arrow down
+;
+MSG_DOWN
+dó³
+; down
+;
+MSG_LEFT
+lewo
+; left
+;
+MSG_ARROW_LEFT
+Strza³ka w lewo
+; Arrow left
+;
+MSG_ARROW_RIGHT
+Strza³ka w prawo
+; Arrow right
+;
+MSG_RIGHT
+prawo
+; right
+;
+MSG_BAR
+Belka
+; Bar
+;
+MSG_GADGET_TYPE
+Typ gad¿etu:
+; Gadget Type:
+;
+MSG_SCROLLER
+Suwak
+; Scroller
+;
+MSG_KNOB
+Ga³ka
+; Knob
+;
+MSG_ARRANGEMENT
+Roz³o¿enie
+; Arrangement
+;
+MSG_CONTAINER_DESIGN
+Wygl±d kontenera
+; Container Design
+;
+MSG_KNOB_DESIGN
+Wygl±d ga³ki
+; Knob Design
+;
+MSG_EXAMPLE_SLIDERS
+Przyk³adowe suwaki
+; Example Sliders
+;
+MSG_TEXT_FIELDS
+Pola tekstowe
+; Text fields
+;
+MSG_EXAMPLE_TEXTFIELD
+Przyk³adowe pole tekstowe
+; Example Textfield
+;
+MSG_PROGRESS_INDICATOR
+Pasek postêpu
+; Progress Indicator
+;
+MSG_DEVICE_IMAGES
+Obrazki urz±dzeñ
+; Device Images
+;
+MSG_DRAWER
+Katalog
+; Drawer
+;
+MSG_HARDDISK
+Dysk twardy
+; Harddisk
+;
+MSG_DISK
+Dysk
+; Disk
+;
+MSG_RAM
+RAM
+; RAM
+;
+MSG_VOLUME
+Wolumen
+; Volume
+;
+MSG_NETWORK
+Sieæ
+; Network
+;
+MSG_ASSIGN
+Przypis
+; Assign
+;
+MSG_TAPE_IMAGES
+Obrazki magnetofonowe
+; Tape Images
+;
+MSG_TAPE_PLAY
+Odtwarzaj
+; Tape play
+;
+MSG_TAPE_PLAYBACK
+Odtwarzaj
+; Tape playback
+;
+MSG_TAPE_PAUSE
+Pauza
+; Tape pause
+;
+MSG_TAPE_STOP
+Zatrzymaj
+; Tape stop
+;
+MSG_TAPE_RECORD
+Nagrywaj
+; Tape record
+;
+MSG_TAPE_UP
+W górê
+; Tape up
+;
+MSG_TAPE_DOWN
+W dó³
+; Tape down
+;
+MSG_STRING_FRAME
+Ramka ci±gu
+; String Frame
+;
+MSG_SPECIAL_POPUP_BUTTONS
+Specjalne przyciski podrêczne
+; Special Popup Buttons
+;
+MSG_POPUP
+Podrêczne
+; Popup
+;
+MSG_DEFAULT
+Domy¶lne
+; Default
+;
+MSG_FILE
+Plik
+; File
+;
+MSG_POPUP_FILE
+Plik podrêczny
+; Popup file
+;
+MSG_POPUP_DRAWER
+Katalog podrêczny
+; Popup drawer
+;
+MSG_INACTIVE_STRING_COLORS
+Kolory nieaktywnego ci±gu
+; Inactive String Colors
+;
+MSG_TEXT
+Tekst
+; Text
+;
+MSG_ACTIVE_STRING_COLORS
+Kolory aktywnego ci±gu
+; Active String Colors
+;
+MSG_MARKED_STRING_COLORS
+Kolory zaznaczonego ci±gu
+; Marked String Colors
+;
+MSG_EXAMPLE_STRING_GADGET
+Przyk³adowy gad¿et ci±gu
+; Example String Gadget
+;
+MSG_FORGET_ON_EXIT
+zapomnij przy wyj¶ciu
+; forget on exit
+;
+MSG_REMEMBER_ON_EXIT
+zapamiêtaj przy wyj¶ciu
+; remember on exit
+;
+MSG_SAVE_ON_EXIT
+zapisz przy wyj¶ciu
+; save on exit
+;
+MSG_SMART
+oszczêdne
+; smart
+;
+MSG_SIMPLE
+proste
+; simple
+;
+MSG_WITHOUT_CLEAR
+bez czyszczenia
+; without clear
+;
+MSG_WITH_CLEAR
+z czyszczeniem
+; with clear
+;
+MSG_POSITIONS
+Pozycje:
+; Positions:
+;
+MSG_REDRAW
+Odrysowywanie:
+; Redraw:
+;
+MSG_TINY
+Ma³a:
+; Tiny:
+;
+MSG_BIG
+Du¿a:
+; Big:
+;
+MSG_WINDOW
+Okno
+; Window
+;
+MSG_REQUESTER
+Okno wyboru
+; Requester
+;
+MSG_L
+L
+; L
+;
+MSG_T
+G
+; T
+;
+MSG_R
+P
+; R
+;
+MSG_B
+D
+; B
+;
+MSG_BUTTONS
+Przyciski
+; Buttons
+;
+MSG_WINTITLE1
+Zune - preferencje globalne
+; Zune - Global Prefs
+;
+MSG_WINTITLE2
+Zune - preferencje dla: %s
+; Zune - Prefs for : %s
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_OPEN
+Otwórz...
+; Open ...
+;
+MSG_MEN_OPEN_SC
+O
+; O
+;
+MSG_MEN_APPEND
+Do³±cz...
+; Append ...
+;
+MSG_MEN_SAVEAS
+Zapisz jako...
+; Save As ...
+;
+MSG_MEN_SAVEAS_SC
+A
+; A
+;
+MSG_MEN_ABOUT
+O Zune...
+; About Zune ...
+;
+MSG_MEN_ABOUT_SC
+?
+; ?
+;
+MSG_MEN_QUIT
+Skoñcz
+; Quit
+;
+MSG_MEN_QUIT_SC
+Q
+; Q
+;
+MSG_FRAME_CLIPBOARD
+Schowek ramek
+; Frame Clipboard
+;
+MSG_IMAGE_CLIPBOARD
+Schowek obrazków
+; Image Clipboard
+;
+MSG_GAD_TEST
+_Testuj
+; _Test
+;
+MSG_GAD_SAVE
+Zapi_sz
+; _Save
+;
+MSG_GAD_USE
+_U¿yj
+; _Use
+;
+MSG_GAD_CANCEL
+Ponie_chaj
+; _Cancel
+;
+MSG_DSC_SYSTEM
+System
+; System
+;
+MSG_DSC_WINDOWS
+Okna
+; Windows
+;
+MSG_DSC_GROUPS
+Grupy
+; Groups
+;
+MSG_DSC_BUTTONS
+Przyciski
+; Buttons
+;
+MSG_DSC_CYCLES
+Gad¿ety cykliczne
+; Cycles
+;
+MSG_DSC_SLIDERS
+Suwaki
+; Sliders
+;
+MSG_DSC_SCROLLBARS
+Paski przewijania
+; Scrollbars
+;
+MSG_DSC_LISTVIEWS
+Listy
+; Listviews
+;
+MSG_DSC_STRINGS
+Ci±gi
+; Strings
+;
+MSG_DSC_NAVIGATION
+Nawigacja
+; Navigation
+;
+MSG_DSC_SPECIAL
+Specjalne
+; Special
+;
+MSG_DSC_FRAMES
+Ramki
+; Frames
+;
+MSG_ADJUST_PEN
+Dostosuj pisak
+; Adjust Pen
+;
+MSG_CUSTOMFRAMES
+W³asne ramki
+; Customframes
+;
+MSG_PUBLIC_SCREEN
+Ekran publiczny
+; Public Screen
+;
+MSG_NAME
+Nazwa:
+; Name:
+;
+MSG_CALL_INSPECTOR
+Przywo³aj inspektora
+; Call Inspector
+;
+MSG_POP_TO_FRONT
+Przerzuæ na wierzch:
+; Pop to front:
+;
+MSG_ICONIFICATION
+Ikonifikacja
+; Iconification
+;
+MSG_HOTKEY
+Klawisz:
+; Hotkey:
+;
+MSG_SHOW
+Poka¿:
+; Show:
+;
+MSG_ICON
+ikonkê
+; Icon
+;
+MSG_MENU
+menu
+; Menu
+;
+MSG_ON_STARTUP
+Przy uruchomieniu:
+; On Startup:
+;
+MSG_INTERFACES
+Interfejsy
+; Interfaces
+;
+MSG_AREXX
+ARexx:
+; ARexx:
+;
+MSG_BUBBLE_HELP
+Dymki pomocy
+; Bubble Help
+;
+MSG_FIRST_BUBBLE
+Pierwszy dymek:
+; First Bubble:
+;
+MSG_NEXT_BUBBLE
+Nastêpny dymek:
+; Next Bubble:
+;

@@ -1,17 +1,17 @@
-## version $VER: timeprefs.catalog 1.0 (14.03.2010)
-## codeset 0
+## version $VER: time.catalog 1.0 (29.04.2010)
 ## language polski
+## codeset 5
 ;
 MSG_CANT_OPEN_LIB
-Nie mogê otworzyæ %s V%ld!\n
+Nie mo¿na otworzyæ %s w wersji %ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_CREATE_APP
-Nie mogê stworzyæ obiektu aplikacji!
+Nie mo¿na uworzyæ obiektu aplikacji!
 ; Can't create application object!
 ;
 MSG_WINTITLE
-Ustawienia czasu
+Preferencje - Time
 ; Time Preferences
 ;
 MSG_MEN_PROJECT
@@ -23,7 +23,7 @@ Q\0Skoñcz
 ; Q\0Quit
 ;
 MSG_MEN_EDIT
-Edytuj
+Edycja
 ; Edit
 ;
 MSG_MEN_EDIT_RESTORE
@@ -31,7 +31,7 @@ R\0Przywróæ
 ; R\0Restore
 ;
 MSG_OK
-Ok
+OK
 ; Ok
 ;
 MSG_GAD_SAVE
