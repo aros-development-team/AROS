@@ -1,6 +1,9 @@
+#define __OOP_NOATTRBASES__
+
 #include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
+#include <proto/oop.h>
 #include <dos/rdargs.h>
 #include <hidd/graphics.h>
 #include <aros/macros.h>
@@ -42,6 +45,10 @@ static BOOL noisy;
 #define ARG_NOISY 2
 #define ARG_NUM 3
 
+#undef ConvertPixels
+
+static OOP_AttrBase HiddBitMapAttrBase;
+
 static IPTR args[ARG_NUM];
 
 static ULONG dstbuf_orig[VERIFY_SIZE * 4 + 10];
@@ -75,15 +82,45 @@ static void dumpmem(UBYTE *buf, ULONG num, ULONG size, STRPTR info)
     bug("\n\n");
 }
 
+void ConvertPixels(APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFmt,
+		   APTR dstPixels, ULONG dstMod, HIDDT_StdPixFmt dstPixFmt,
+		   ULONG width, ULONG height, OOP_Object *bm)
+{
+    OOP_Object *gfxhidd = NULL;
+    OOP_Object *srcpf, *dstpf;
+    APTR src = srcPixels;
+    APTR dst = dstPixels;
+
+    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &gfxhidd);
+
+    if (!gfxhidd) {
+        bug("ConvertPixels(): Failed to obtain graphics driver\n");
+	return;
+    }
+
+    srcpf = HIDD_Gfx_GetPixFmt(gfxhidd, srcPixFmt);
+    dstpf = HIDD_Gfx_GetPixFmt(gfxhidd, dstPixFmt);
+
+    if (!srcpf || !dstpf)
+    {
+    	bug("ConvertPixels(): Bad source (%d) or dest (%d) pixfmt!\n", srcPixFmt, dstPixFmt);
+	return;
+    }
+
+    HIDD_BM_ConvertPixels(bm, &src, (HIDDT_PixelFormat *)srcpf, srcMod, 
+    	    	    	  &dst, (HIDDT_PixelFormat *)dstpf, dstMod,
+			  width, height, NULL);
+}
+
 typedef void (*DOFUNC)(ULONG srcfmt, ULONG dstfmt, ULONG srcbits, ULONG dstbits,
     	    	       HIDDT_RGBConversionFunction f, BOOL verify, ULONG bench,
 		       APTR testpixels, ULONG numtestpixels, char *srcfmt_string,
-		       char *dstfmt_string);
+		       char *dstfmt_string, OOP_Object *bm);
 
 static void uninstallfunc(ULONG srcfmt, ULONG dstfmt, ULONG srcbits, ULONG dstbits,
     	    	    	  HIDDT_RGBConversionFunction f, BOOL verify, ULONG bench,
 			  APTR testpixels, ULONG numtestpixels, char *srcfmt_string,
-			  char *dstfmt_string)
+			  char *dstfmt_string, OOP_Object *bm)
 {
     (void)srcbits;
     (void)dstbits;
@@ -94,15 +131,15 @@ static void uninstallfunc(ULONG srcfmt, ULONG dstfmt, ULONG srcbits, ULONG dstbi
     (void)numtestpixels;
     (void)srcfmt_string;
     (void)dstfmt_string;
-    
-    SetRGBConversionFunctionA(srcfmt, dstfmt, 0, 0);
+
+    HIDD_BM_SetRGBConversionFunction(bm, srcfmt, dstfmt, NULL);
 }
 
 			
 static void installfunc(ULONG srcfmt, ULONG dstfmt, ULONG srcbits, ULONG dstbits,
     	    	    	HIDDT_RGBConversionFunction f, BOOL verify, ULONG bench,
 			APTR testpixels, ULONG numtestpixels, char *srcfmt_string,
-			char *dstfmt_string)
+			char *dstfmt_string, OOP_Object *bm)
 {
     ULONG srcbytes, dstbytes;
     ULONG sec1, sec2, micro1, micro2, time1 = 0, time2;
@@ -112,36 +149,36 @@ static void installfunc(ULONG srcfmt, ULONG dstfmt, ULONG srcbits, ULONG dstbits
     
     if (verify)
     {
-    	ConvertPixelsA(testpixels, 0, srcfmt,
+    	ConvertPixels(testpixels, 0, srcfmt,
 	    	       dstbuf_orig, numtestpixels * dstbytes, dstfmt,
 		       numtestpixels,
 		       VERIFY_SIZE / numtestpixels,
-		       0);
+		       bm);
 	 
     }
     
     if (bench && benchmem)
     {
     	CurrentTime(&sec1, &micro1);
-	ConvertPixelsA(benchmem, 0, srcfmt,
+	ConvertPixels(benchmem, 0, srcfmt,
 	    	       benchmem, 0, dstfmt,
 		       bench, 1,
-		       0);
+		       bm);
 		       
     	CurrentTime(&sec2, &micro2);
 	
 	time1 = (sec2 - sec1) * 1000000 + (((LONG)micro2) - ((LONG)micro1));
     }
-    
-    SetRGBConversionFunctionA(srcfmt, dstfmt, f, 0);
+
+    HIDD_BM_SetRGBConversionFunction(bm, srcfmt, dstfmt, f);
 
     if (verify)
     {
-    	ConvertPixelsA(testpixels, 0, srcfmt,
+    	ConvertPixels(testpixels, 0, srcfmt,
 	    	       dstbuf_new, numtestpixels * dstbytes, dstfmt,
 		       numtestpixels,
 		       VERIFY_SIZE / numtestpixels,
-		       0);
+		       bm);
 	
 	if (memcmp(dstbuf_orig, dstbuf_new, (VERIFY_SIZE / numtestpixels) * (numtestpixels * dstbytes)) != 0)
 	{
@@ -164,16 +201,16 @@ static void installfunc(ULONG srcfmt, ULONG dstfmt, ULONG srcbits, ULONG dstbits
     	static char sbuf[256];
 	
     	CurrentTime(&sec1, &micro1);
-	ConvertPixelsA(benchmem, 0, srcfmt,
+	ConvertPixels(benchmem, 0, srcfmt,
 	    	       benchmem, 0, dstfmt,
 		       bench, 1,
-		       0);
+		       bm);
 		       
     	CurrentTime(&sec2, &micro2);
 	
 	time2 = (sec2 - sec1) * 1000000 + (((LONG)micro2) - ((LONG)micro1));
 	
-	sprintf(sbuf, " Benchmark %s to %s (%s to %s): before %ld (%f) after %ld (%f) (%ld %%)\n", 
+	sprintf(sbuf, " Benchmark %s to %s (%s to %s): before %d (%f) after %d (%f) (%d %%)\n", 
 	    	      srcfmt_string, dstfmt_string,
 		      pf_to_string[srcfmt], pf_to_string[dstfmt],
 	    	      time1, time1 / 1000000.0, 
@@ -186,7 +223,7 @@ static void installfunc(ULONG srcfmt, ULONG dstfmt, ULONG srcbits, ULONG dstbits
 
 #define PATCHFUNC(a,b) \
     (*func)(FMT_ ## a, FMT_ ## b, a ## _ ## BITS, b ## _ ## BITS, convert_ ## a ## _ ## b, \
-    	    	verify, bench, testpixels_ ## a, NUMTESTPIXELS_ ## a, # a, # b);
+    	    	verify, bench, testpixels_ ## a, NUMTESTPIXELS_ ## a, # a, # b, (OOP_Object *)bitmap->Planes[0]);
 
 int main(int argc, char **argv)
 {
@@ -195,7 +232,15 @@ int main(int argc, char **argv)
     ULONG   	   bench = 0;
     DOFUNC  	   func = installfunc;
     int     	   i;
-        
+    struct BitMap  *bitmap;
+
+    HiddBitMapAttrBase = OOP_ObtainAttrBase(IID_Hidd_BitMap);
+    if (!HiddBitMapAttrBase) {
+        printf("Failed to obtain IID_Hidd_BitMap\n");
+	
+	return RETURN_FAIL;
+    }
+
     if ((myargs = ReadArgs((STRPTR)ARG_TEMPLATE, args, NULL)))
     {
     	if (args[ARG_VERIFY]) verify = TRUE;
@@ -207,7 +252,7 @@ int main(int argc, char **argv)
     else
     {
     	PrintFault(IoErr(), (STRPTR)argv[0]);
-	
+	OOP_ReleaseAttrBase(IID_Hidd_BitMap);
 	return RETURN_FAIL;
     }
         
@@ -217,11 +262,19 @@ int main(int argc, char **argv)
 	if (!benchmem)
 	{
 	    PrintFault(ERROR_NO_FREE_STORE, (STRPTR)argv[0]);	
-    	
+    	    OOP_ReleaseAttrBase(IID_Hidd_BitMap);
 	    return RETURN_FAIL;
 	}
     }
-    
+
+    /* We need a placeholder bitmap object in order to talk to bitmap class */
+    bitmap = AllocBitMap(1, 1, 16, 0, NULL);
+    if (!bitmap) {
+	PrintFault(ERROR_NO_FREE_STORE, (STRPTR)argv[0]);
+        OOP_ReleaseAttrBase(IID_Hidd_BitMap);
+	return RETURN_FAIL;
+    }
+
     #define P(a,b) PATCHFUNC(a,b)
         
     for(i = 0; i < 2; i++)
@@ -361,7 +414,10 @@ int main(int argc, char **argv)
 	
     } /* for(int i= 0; i < 2; i++) */
 
-    #undef P    
+    #undef P
+    
+    FreeBitMap(bitmap);
+    OOP_ReleaseAttrBase(IID_Hidd_BitMap);
              
     return RETURN_OK;
 }

@@ -98,6 +98,7 @@ COMMONTESTFILES := \
     runcommand \
     aroscprivdata \
     childwait \
+    convertpixels \
     patchrgbconv \
     childstatus \
     joystick \
@@ -115,6 +116,6 @@ USER_CFLAGS := -I$(SRCDIR)/workbench/libs
 
 %build_progs mmake=test \
     files=$(COMMONTESTFILES) targetdir=$(EXEDIR) \
-    uselibs="coolimagesstatic arossupport amiga arosc m hiddstubs"
+    uselibs="coolimagesstatic arossupport amiga arosc m hiddstubs hiddgraphicsstubs oop"
 
 %common
