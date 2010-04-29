@@ -10,4 +10,5 @@
 #MM     devs-networks-drivers-etherlink3 \
 #MM     devs-networks-drivers-intelpro100 \
 #MM     devs-networks-drivers-prism2 \
-#MM     devs-networks-drivers-rtl8029
+#MM     devs-networks-drivers-rtl8029 \
+#MM     devs-networks-drivers-ppp
