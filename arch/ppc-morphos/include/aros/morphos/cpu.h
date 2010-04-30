@@ -105,7 +105,8 @@ struct JumpVec
 #define __AROS_GETJUMPVEC(lib,n)        (&((struct JumpVec *)lib)[-(n)])
 #define __AROS_GETVECADDR(lib,n)        (__AROS_GET_VEC(__AROS_GETJUMPVEC(lib,n)))
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_SET_VEC(__AROS_GETJUMPVEC(lib,n),(APTR)(addr)))
-#define __AROS_INITVEC(lib,n)		__AROS_SETVECADDR(lib,n,_aros_not_implemented)
+#define __AROS_INITVEC(lib,n)		__AROS_GETJUMPVEC(lib,n)->jmp = TRAP_LIB, \
+					__AROS_SETVECADDR(lib,n,_aros_not_implemented)
 
 /*
    Code used to generate stub functions.
