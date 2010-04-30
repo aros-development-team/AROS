@@ -10,7 +10,7 @@
 
 #include "identify_intern.h"
 #include "identify.h"
-#include "modulefunctions.h"
+//#include "modulefunctions.h"
 
 /*****************************************************************************
 
@@ -25,7 +25,7 @@
         AROS_LHA(struct TagItem *, taglist, A1),
 
 /*  LOCATION */
-        struct Library *, IdentifyBase, 8, Identify)
+        struct IdentifyBaseIntern *, IdentifyBase, 8, Identify)
 
 /*  FUNCTION
 

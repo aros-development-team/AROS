@@ -5,6 +5,9 @@
     Desc:
     Lang: english
 */
+
+#include <strings.h>
+
 #include "identify_intern.h"
 
 /*****************************************************************************
@@ -18,7 +21,7 @@
         /* void */
 
 /*  LOCATION */
-        struct Library *, IdentifyBase, 10, Identify)
+        struct IdentifyBaseIntern *, IdentifyBase, 10, Identify)
 
 /*  FUNCTION
 
@@ -43,7 +46,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    // no-op
+    // FIXME: need Semaphore?
+    IdentifyBase->dirtyflag = TRUE;
+    memset(&IdentifyBase->hwb, 0, sizeof IdentifyBase->hwb);
 
     AROS_LIBFUNC_EXIT
 } /* IdHardwareUpdate */

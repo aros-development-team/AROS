@@ -150,6 +150,8 @@ struct IdentifyBase {
 #define IDSYS_AMIGA4000T  (13)    /*  Amiga 4000 Tower */
 #define IDSYS_AMIGAXL     (14)    /*  AmigaXL */
 
+#define IDSYS_AROS        (100)   /*  AROS */
+
 /* ------------------------------------------------------------------------ *
 **  IDHW_CPU numerical result codes
 */
@@ -192,6 +194,8 @@ struct IdentifyBase {
 #define IDOS_3_1        (5)       /*  OS3.1  (V40) */
 #define IDOS_3_5        (6)       /*  OS3.5  (V44) */
 #define IDOS_3_9        (7)       /*  OS3.9  (V45) */
+
+#define IDOS_AROS       (100)       /*  AROS */
 
 /* ------------------------------------------------------------------------ *
 **  IDHW_CHIPSET numerical result codes
