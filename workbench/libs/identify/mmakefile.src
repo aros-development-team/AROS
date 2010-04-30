@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := \
+FILES := library \
     idalert  \
     idestimateformatsize  \
     idexpansion  \
@@ -22,7 +22,7 @@ FILES := \
 %build_module mmake=workbench-libs-identify \
     modname=identify modtype=library \
     files="$(FILES)" \
-    uselibs="amiga rom"
+    uselibs="amiga rom identify"
 
 GENERATED   := $(TOP)/$(CURDIR)/modulefunctions.h
 

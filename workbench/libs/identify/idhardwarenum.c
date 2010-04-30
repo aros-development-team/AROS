@@ -6,6 +6,16 @@
     Lang: english
 */
 
+#include <exec/execbase.h>
+#include <graphics/gfxbase.h>
+#include <aros/inquire.h>
+#include <resources/battclock.h>
+
+#include <proto/exec.h>
+#include <proto/aros.h>
+#include <proto/graphics.h>
+#include <proto/battclock.h>
+
 #include "identify_intern.h"
 #include "identify.h"
 
@@ -21,7 +31,7 @@
         AROS_LHA(struct TagItem *, taglist, A0),
 
 /*  LOCATION */
-        struct Library *, IdentifyBase, 9, Identify)
+        struct IdentifyBaseIntern *, IdentifyBase, 9, Identify)
 
 /*  FUNCTION
 
@@ -46,155 +56,187 @@
 {
     AROS_LIBFUNC_INIT
 
-    ULONG result = 0;
-
     // no tags
 
     switch(type)
     {
         case IDHW_SYSTEM:
-            break;
+            return IDSYS_AROS;
 
         case IDHW_CPU:
-            break;
+            return IDCPU_68000; // FIXME: original identify.library assumes
+                                // there's always a X68.
 
         case IDHW_FPU:
-            break;
+            return IDFPU_NONE;
 
         case IDHW_MMU:
-            break;
+            return IDMMU_NONE;
 
         case IDHW_OSVER:
-            break;
+        {
+            IPTR version = 0;
+            IPTR revision = 0;
+            ArosInquire
+            (
+                AI_ArosReleaseMajor, &version,
+                AI_ArosReleaseMinor, &revision,
+                TAG_DONE
+            );
+            return version || (revision << 16);
+        }
 
         case IDHW_EXECVER:
-            break;
+            return
+                ((struct Library *)SysBase)->lib_Version
+                ||
+                (((struct Library *)SysBase)->lib_Revision << 16);
 
         case IDHW_WBVER:
-            break;
+            return 0;
 
         case IDHW_ROMSIZE:
-            break;
+        {
+            ULONG storage = 0;
+            ArosInquire(AI_KickstartSize, &storage, TAG_DONE);
+            return storage;
+        }
 
         case IDHW_CHIPSET:
-            break;
+            return IDCS_OCS; // FIXME: there's no IDCS_NONE
 
         case IDHW_GFXSYS:
-            break;
+            return IDGOS_CGX;
 
         case IDHW_CHIPRAM:
-            break;
+            return AvailMem(MEMF_CHIP|MEMF_TOTAL);
 
         case IDHW_FASTRAM:
-            break;
+            return AvailMem(MEMF_FAST|MEMF_TOTAL);
 
         case IDHW_RAM:
-            break;
+            return AvailMem(MEMF_ANY|MEMF_TOTAL);
 
         case IDHW_SETPATCHVER:
-            break;
+            return 0;
 
         case IDHW_AUDIOSYS:
-            break;
+            return IDAOS_AHI;
 
         case IDHW_OSNR:
-            break;
+            return IDOS_UNKNOWN;
 
         case IDHW_VMMCHIPRAM:
-            break;
+            return 0;
 
         case IDHW_VMMFASTRAM:
-            break;
+            return 0;
 
         case IDHW_VMMRAM:
-            break;
+            return 0;
 
         case IDHW_PLNCHIPRAM:
-            break;
+            return AvailMem(MEMF_CHIP|MEMF_TOTAL);
 
         case IDHW_PLNFASTRAM:
-            break;
+            return AvailMem(MEMF_FAST|MEMF_TOTAL);
 
         case IDHW_PLNRAM:
-            break;
+            return AvailMem(MEMF_ANY|MEMF_TOTAL);
 
         case IDHW_VBR:
-            break;
+            return 0;
 
         case IDHW_LASTALERT:
-            break;
+            return -1;
 
         case IDHW_VBLANKFREQ:
-            break;
+            return SysBase->VBlankFrequency;
 
         case IDHW_POWERFREQ:
-            break;
+            return SysBase->PowerSupplyFrequency;
 
         case IDHW_ECLOCK:
-            break;
+            return SysBase->ex_EClockFrequency;
 
         case IDHW_SLOWRAM:
-            break;
+            return 0;
 
         case IDHW_GARY:
-            break;
+            return IDGRY_NONE;
 
         case IDHW_RAMSEY:
-            break;
+            return IDRSY_NONE;
 
         case IDHW_BATTCLOCK:
-            break;
+        {
+            struct Library *BattClockBase = OpenResource(BATTCLOCKNAME);
+            if (BattClockBase)
+            {
+                return ReadBattClock() ? TRUE : FALSE;
+            }
+            return FALSE;
+        }
 
         case IDHW_CHUNKYPLANAR:
-            break;
+            //return (GfxBase->ChunkyToPlanarPtr) ? FALSE : TRUE;
+            return GfxBase->HWEmul[0] ? FALSE : TRUE;
 
         case IDHW_POWERPC:
-            break;
+            #ifdef __powerpc__
+                return IDPPC_OTHER;
+            #else
+                return IDPPC_NONE;
+            #endif
 
         case IDHW_PPCCLOCK:
-            break;
+            return 0;
 
         case IDHW_CPUREV:
-            break;
+            return -1;
 
         case IDHW_CPUCLOCK:
-            break;
+            return 0;
 
         case IDHW_FPUCLOCK:
-            break;
+            return 0;
 
         case IDHW_RAMACCESS:
-            break;
+            return 0;
 
         case IDHW_RAMWIDTH:
-            break;
+            #ifdef __x86_64__
+                return 64;
+            #else
+                return 32;
+            #endif
 
         case IDHW_RAMCAS:
-            break;
+            return IDCAS_NONE;
 
         case IDHW_RAMBANDWIDTH:
-            break;
+            return 0;
 
         case IDHW_TCPIP:
-            break;
+            return IDTCP_AMITCP; // FIXME: AROSTCP ?
 
         case IDHW_PPCOS:
-            break;
+            return IDPOS_NONE;
 
         case IDHW_AGNUS:
-            break;
+            return IDAG_NONE;
 
         case IDHW_AGNUSMODE:
-            break;
+            return IDAM_NONE;
 
         case IDHW_DENISE:
-            break;
+            return IDDN_NONE;
 
         case IDHW_DENISEREV:
-            break;
+            return -1;
     }
 
-    return result;
+    return 0;
 
     AROS_LIBFUNC_EXIT
 } /* IdHardwareNum */

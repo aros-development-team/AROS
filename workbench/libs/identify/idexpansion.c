@@ -22,7 +22,7 @@
         AROS_LHA(struct TagItem *, taglist, A0),
 
 /*  LOCATION */
-        struct Library *, IdentifyBase, 5, Identify)
+        struct IdentifyBaseIntern *, IdentifyBase, 5, Identify)
 
 /*  FUNCTION
 

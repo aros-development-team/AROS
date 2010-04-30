@@ -8,22 +8,26 @@
 
 #include <proto/utility.h>
 
+#include <stdio.h>
+
 #include "identify_intern.h"
 #include "identify.h"
+
+static CONST_STRPTR handle_osver(struct IdentifyBaseIntern *);
 
 /*****************************************************************************
 
     NAME */
 #include <proto/identify.h>
 
-        AROS_LH2(STRPTR, IdHardware,
+        AROS_LH2(CONST_STRPTR, IdHardware,
 
 /*  SYNOPSIS */
         AROS_LHA(ULONG           , type   , D0),
         AROS_LHA(struct TagItem *, taglist, A0),
 
 /*  LOCATION */
-        struct Library *, IdentifyBase, 6, Identify)
+        struct IdentifyBaseIntern *, IdentifyBase, 6, Identify)
 
 /*  FUNCTION
 
@@ -51,8 +55,9 @@
     struct TagItem *tag;
     const struct TagItem *tags;
 
-    STRPTR result = NULL;
+    CONST_STRPTR result = NULL;
     BOOL null4na = FALSE;
+    BOOL localize = TRUE;
 
     for (tags = taglist; (tag = NextTagItem(&tags)); )
     {
@@ -63,6 +68,7 @@
                 break;
 
             case IDTAG_Localize:
+                localize = tag->ti_Data ? TRUE : FALSE;
                 break;
         }
     }
@@ -70,6 +76,7 @@
     switch(type)
     {
         case IDHW_SYSTEM:
+            result = "AROS";
             break;
 
         case IDHW_CPU:
@@ -82,6 +89,7 @@
             break;
 
         case IDHW_OSVER:
+            result = handle_osver(IdentifyBase);
             break;
 
         case IDHW_EXECVER:
@@ -220,3 +228,19 @@
 
     AROS_LIBFUNC_EXIT
 } /* IdHardware */
+
+
+static CONST_STRPTR handle_osver(struct IdentifyBaseIntern *library)
+{
+    CONST_STRPTR result = NULL;
+    if (*library->hwb.buf_OsVer == '\0')
+    {
+        ULONG num;
+        //ULONG num = IdHardwareNum(IDHW_OSVER, NULL);
+        ULONG version = num & 0xffff;
+        ULONG revision = num >> 16;
+        snprintf(library->hwb.buf_OsVer, STRBUFSIZE, "%u.%u", version, revision);
+        result = library->hwb.buf_OsVer;
+    }
+    return result;
+}
