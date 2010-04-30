@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free memory allocated by AllocMem()
@@ -109,8 +109,8 @@
 	if (header->mwh_magicid != MUNGWALL_HEADER_ID)
 	{
 	    struct Task *__t = FindTask(NULL);	\
-	    kprintf("\x07MUNGWALL_HEADER_ID mismatch (%s) mem = %x"
-		    "allocsize = %d  freesize = %d   Task: 0x%x, Name: %s\n", \
+	    kprintf("\x07" "MUNGWALL_HEADER_ID mismatch (%s) mem = %x "
+		    "allocsize = %u  freesize = %u   Task: 0x%x, Name: %s\n", \
 		    __FUNCTION__,
 		    memoryBlock + MUNGWALL_SIZE + MUNGWALLHEADER_SIZE,
 		    *(ULONG *)memoryBlock,
@@ -122,8 +122,8 @@
 	if (header->mwh_allocsize != origsize)
 	{
 	    struct Task *__t = FindTask(NULL);	\
-	    kprintf("\x07FreeMem size mismatches AllocMem size (%s) mem = %x"
-		    "allocsize = %d  freesize = %d   Task: 0x%x, Name: %s\n", \
+	    kprintf("\x07" "FreeMem size mismatches AllocMem size (%s) mem = %x "
+		    "allocsize = %u  freesize = %u   Task: 0x%x, Name: %s\n", \
 		    __FUNCTION__,
 		    memoryBlock + MUNGWALL_SIZE + MUNGWALLHEADER_SIZE,
 		    *(ULONG *)memoryBlock,
