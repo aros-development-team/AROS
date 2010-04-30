@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: SetClock - set/save the date from/to the BBU clock.
@@ -79,7 +79,7 @@ int main(int argc, char **av)
 {
     IPTR args[TOTAL_ARGS] = { 0, 0, 0 };
     struct RDArgs *rda, *rd;
-    APTR BattClockBase = NULL;
+    struct Library *BattClockBase = NULL;
     struct Device *TimerBase = NULL;
     ULONG time, error = 0;
     struct timerequest *tr;
