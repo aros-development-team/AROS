@@ -77,8 +77,8 @@ struct Resident const Cia_ROMTag =
     RESIDENT_VERSION,
     NT_RESOURCE,
     RESIDENT_PRIORITY,
-    (CONST_STRPTR)resident_name,
-    (CONST_STRPTR)&resident_id[6],
+    resident_name,
+    &resident_id[6],
     (APTR)Cia_Init
 };
 
@@ -93,24 +93,20 @@ static const APTR Cia_FuncTable[]=
 
 static struct CIABase *InitResource(char *Name, struct ExecBase *SysBase)
 {
-    int vecsize;
-    APTR mem;
     struct CIABase *base;
 
-    vecsize = 4*LIB_VECTSIZE;
-    if (vecsize > 0)
-        vecsize = ((vecsize-1)/sizeof(IPTR) + 1)*sizeof(IPTR);
-    mem = AllocMem(vecsize+sizeof(struct CIABase), MEMF_PUBLIC|MEMF_CLEAR);
-    if (!mem)
-         return NULL;
+    base = (struct CIABase *)MakeLibrary((APTR)Cia_FuncTable, NULL, NULL, sizeof(struct CIABase), NULL);
 
-    base = (struct CIABase *)(mem + vecsize);
-    base->lib.lib_Node.ln_Type = NT_RESOURCE;
-    base->lib.lib_Node.ln_Pri = RESIDENT_PRIORITY;
-    base->lib.lib_Node.ln_Name = Name;
-    MakeFunctions(base, (APTR)Cia_FuncTable, NULL);
+    if (base) {
+	base->lib.lib_Node.ln_Type = NT_RESOURCE;
+	base->lib.lib_Node.ln_Name = Name;
+	base->lib.lib_Version      = RESIDENT_VERSION;
+	base->lib.lib_IdString     = (STRPTR)&resident_id[6];
+	base->lib.lib_Flags        = LIBF_SUMUSED|LIBF_CHANGED;
+	base->lib.lib_Revision     = RESIDENT_REVISION;
 
-    AddResource(base);
+	AddResource(base);
+    }
     return base;
 }
 
