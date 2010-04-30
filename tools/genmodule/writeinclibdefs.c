@@ -25,7 +25,7 @@ void writeinclibdefs(struct config *cfg)
     else if (cfg->residentpri < -120)
 	strcpy(residentflags, "RTF_AFTERDOS");
 
-    if (cfg->modtype != RESOURCE)
+    if (cfg->options & OPTION_RESAUTOINIT)
     {
 	if(strlen(residentflags) > 0)
 	    strcat(residentflags, "|");

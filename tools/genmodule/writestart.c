@@ -375,11 +375,17 @@ static void writedeclsets(FILE *out, struct config *cfg)
 	    "DECLARESET(DTORS)\n"
 	    "DECLARESET(INITLIB)\n"
 	    "DECLARESET(EXPUNGELIB)\n"
+    );
+    if (cfg->modtype != RESOURCE)
+        fprintf(out,
 	    "DECLARESET(OPENLIB)\n"
 	    "DECLARESET(CLOSELIB)\n"
+	);
+    if (cfg->modtype == DEVICE)
+        fprintf(out,
 	    "DECLARESET(OPENDEV)\n"
 	    "DECLARESET(CLOSEDEV)\n"
-    );
+	);
     if (cfg->classlist != NULL)
 	fprintf(out,
 		"DECLARESET(CLASSESINIT)\n"
@@ -397,7 +403,7 @@ static void writeresident(FILE *out, struct config *cfg)
 	    "extern const int GM_UNIQUENAME(End);\n"
 	    "extern const APTR GM_UNIQUENAME(FuncTable)[];\n"
     );
-    if (cfg->modtype != RESOURCE)
+    if (cfg->options & OPTION_RESAUTOINIT)
 	fprintf(out, "static const struct InitTable GM_UNIQUENAME(InitTable);\n");
     fprintf(out,
 	    "\n"
@@ -407,7 +413,7 @@ static void writeresident(FILE *out, struct config *cfg)
 	    "\n"
     );
 
-    if (cfg->modtype != RESOURCE)
+    if (cfg->options & OPTION_RESAUTOINIT)
     {
         if (!(cfg->options & OPTION_DUPPERID))
         {
@@ -524,7 +530,7 @@ static void writeresident(FILE *out, struct config *cfg)
 	    "    (CONST_STRPTR)&GM_UNIQUENAME(LibName)[0],\n"
 	    "    (CONST_STRPTR)&GM_UNIQUENAME(LibID)[6],\n"
     );
-    if (cfg->modtype != RESOURCE)
+    if (cfg->options & OPTION_RESAUTOINIT)
     {
 	fprintf(out,
 		"    (APTR)&GM_UNIQUENAME(InitTable)\n"
@@ -546,7 +552,7 @@ static void writeresident(FILE *out, struct config *cfg)
 		"};\n"
 	);
     }
-    else /* RESOURCE */
+    else
 	fprintf(out, "    (APTR)GM_UNIQUENAME(InitLib)\n};\n");
     
     fprintf(out,
@@ -582,7 +588,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
             "#endif\n"
     );
     
-    if (cfg->modtype == RESOURCE)
+    if (!(cfg->options & OPTION_RESAUTOINIT))
     {
 	unsigned int funccount;
 	struct functionhead *funclistit = cfg->funclist;
@@ -651,7 +657,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE), -1, 0, lh);\n");
     if (!(cfg->options & OPTION_NOAUTOLIB))
 	fprintf(out, "        set_close_libraries();\n");
-    if (cfg->modtype != RESOURCE)
+    if (cfg->options & OPTION_RESAUTOINIT)
     {
 	fprintf(out,
 		"\n"
@@ -672,7 +678,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    "    {\n"
     );
     
-    if (cfg->modtype == RESOURCE)
+    if (!(cfg->options & OPTION_RESAUTOINIT))
     {
     	fprintf(out,
 	    	    "        AddResource(lh);\n"
@@ -1215,11 +1221,17 @@ static void writesets(FILE *out, struct config *cfg)
 	    "DEFINESET(DTORS)\n"
 	    "DEFINESET(INITLIB)\n"
 	    "DEFINESET(EXPUNGELIB)\n"
+    );
+    if (cfg->modtype != RESOURCE)
+        fprintf(out,
 	    "DEFINESET(OPENLIB)\n"
 	    "DEFINESET(CLOSELIB)\n"
+	);
+    if (cfg->modtype == DEVICE)
+        fprintf(out,
 	    "DEFINESET(OPENDEV)\n"
 	    "DEFINESET(CLOSEDEV)\n"
-    );
+        );
     if (cfg->classlist != NULL)
 	fprintf(out,
 		"DEFINESET(CLASSESINIT)\n"

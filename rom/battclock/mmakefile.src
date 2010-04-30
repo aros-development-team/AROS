@@ -1,6 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+# Do not remove this! It allows to override battclock_intern.h in arch-specific
+# directory (currently used by Windows-hosted port)
+USER_CFLAGS := -I $(SRCDIR)/arch/all-$(ARCH)/battclock
+
 #MM kernel-battclock : includes kernel-battclock-$(ARCH)-$(CPU)
 #MM kernel-battclock-linklib : includes kernel-battclock-$(ARCH)-$(CPU)
 
