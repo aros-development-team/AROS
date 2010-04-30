@@ -1,0 +1,5 @@
+# $Id: mmakefile.src 32263 2010-01-02 01:12:16Z verhaegs $
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES := aros/m68k/cpu.h aros/m68k/_fpmath.h aros/m68k/fenv.h
+%copy_includes mmake=compiler-includes

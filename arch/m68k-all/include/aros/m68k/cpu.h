@@ -2,7 +2,7 @@
 #define AROS_M68K_CPU_H
 
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id: cpu.h 30792 2009-03-07 22:40:04Z neil $
 
     NOTE: This file must compile *without* any other header !
@@ -20,24 +20,17 @@
 #define AROS_SIZEOFULONG	   4 /* Size of an ULONG */
 #define AROS_SIZEOFPTR		   4 /* Size of a PTR */
 #define AROS_WORDALIGN		   2 /* Alignment for WORD */
-#define AROS_LONGALIGN		   4 /* Alignment for LONG */
-#define AROS_QUADALIGN		   8 /* Alignment for QUAD */
-#define AROS_PTRALIGN		   4 /* Alignment for PTR */
-#define AROS_IPTRALIGN		   4 /* Alignment for IPTR */
-#define AROS_DOUBLEALIGN	   4 /* Alignment for double */
+#define AROS_LONGALIGN		   2 /* Alignment for LONG */
+#define AROS_QUADALIGN		   2 /* Alignment for QUAD */
+#define AROS_PTRALIGN		   2 /* Alignment for PTR */
+#define AROS_IPTRALIGN		   2 /* Alignment for IPTR */
+#define AROS_DOUBLEALIGN	   2 /* Alignment for double */
 #define AROS_WORSTALIGN 	   8 /* Worst case alignment */
 
 #define AROS_NOFPU 1
 
 /* do we need a function attribute to get parameters on the stack? */
 #define __stackparm
-
-/* Use C pointer and string for the BCPL pointers and strings
- * For a normal ABI these should not be defined for maximum source code
- * compatibility.
- */
-#define AROS_FAST_BPTR 1
-#define AROS_FAST_BSTR 1
 
 /* types and limits for sig_atomic_t */
 #define AROS_SIG_ATOMIC_T       int
@@ -180,21 +173,21 @@ extern void aros_not_implemented ();
 */
 
 /* What to do with the library base in header, prototype and call */
-#define __AROS_LH_BASE(basetype,basename)   basetype basename
-#define __AROS_LP_BASE(basetype,basename)   void *
+#define __AROS_LH_BASE(basetype,basename)   register basetype basename __asm("a6")
+#define __AROS_LP_BASE(basetype,basename)   register void * __asm("a6")
 #define __AROS_LC_BASE(basetype,basename)   basename
-#define __AROS_LD_BASE(basetype,basename)   basetype
+#define __AROS_LD_BASE(basetype,basename)   register basetype __asm("a6")
 
 /* How to transform an argument in header, opt prototype, call and forced
    prototype. */
-#define __AROS_LHA(type,name,reg)     type name
-#define __AROS_LPA(type,name,reg)     type
+#define __AROS_LHA(type,name,reg)     register type name __asm(reg)
+#define __AROS_LPA(type,name,reg)     register type __asm(reg)
 #define __AROS_LCA(type,name,reg)     name
-#define __AROS_LDA(type,name,reg)     type
-#define __AROS_UFHA(type,name,reg)    type name
-#define __AROS_UFPA(type,name,reg)    type
+#define __AROS_LDA(type,name,reg)     register type __asm(reg)
+#define __AROS_UFHA(type,name,reg)    register type name __asm(reg)
+#define __AROS_UFPA(type,name,reg)    register type __asm(reg)
 #define __AROS_UFCA(type,name,reg)    name
-#define __AROS_UFDA(type,name,reg)    type
+#define __AROS_UFDA(type,name,reg)    register type __asm(reg)
 #define __AROS_LHAQUAD(type,name,reg1,reg2)     type name
 #define __AROS_LPAQUAD(type,name,reg1,reg2)     type
 #define __AROS_LCAQUAD(type,name,reg1,reg2)     name
@@ -231,5 +224,45 @@ extern void aros_not_implemented ();
     (t)_re;\
 })
 #define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
+
+/* Library prototypes expand to nothing */
+#define __AROS_CPU_SPECIFIC_LP
+
+#define AROS_LPQUAD1(t,n,a1,bt,bn,o,s)
+#define AROS_LPQUAD2(t,n,a1,a2,bt,bn,o,s)
+
+#define AROS_LP0(t,n,bt,bn,o,s)
+#define AROS_LP1(t,n,a1,bt,bn,o,s)
+#define AROS_LP2(t,n,a1,a2,bt,bn,o,s)
+#define AROS_LP3(t,n,a1,a2,a3,bt,bn,o,s)
+#define AROS_LP4(t,n,a1,a2,a3,a4,bt,bn,o,s)
+#define AROS_LP5(t,n,a1,a2,a3,a4,a5,bt,bn,o,s)
+#define AROS_LP6(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s)
+#define AROS_LP7(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s)
+#define AROS_LP8(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s)
+#define AROS_LP9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s)
+#define AROS_LP10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s)
+#define AROS_LP11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s)
+#define AROS_LP12(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s)
+#define AROS_LP13(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s)
+#define AROS_LP14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s)
+#define AROS_LP15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s)
+
+#define AROS_LP0I(t,n,bt,bn,o,s)
+#define AROS_LP1I(t,n,a1,bt,bn,o,s)
+#define AROS_LP2I(t,n,a1,a2,bt,bn,o,s)
+#define AROS_LP3I(t,n,a1,a2,a3,bt,bn,o,s)
+#define AROS_LP4I(t,n,a1,a2,a3,a4,bt,bn,o,s)
+#define AROS_LP5I(t,n,a1,a2,a3,a4,a5,bt,bn,o,s)
+#define AROS_LP6I(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s)
+#define AROS_LP7I(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s)
+#define AROS_LP8I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s)
+#define AROS_LP9I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s)
+#define AROS_LP10I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s)
+#define AROS_LP11I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s)
+#define AROS_LP12I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s)
+#define AROS_LP13I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s)
+#define AROS_LP14I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s)
+#define AROS_LP15I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s)
 
 #endif /* AROS_M68K_CPU_H */
