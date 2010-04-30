@@ -85,7 +85,7 @@ static inline APTR va_addr(va_list args, ULONG len)
 	ret = args->reg_save_area + args->gp_offset;
 	args->gp_offset += sizeof(IPTR);
     } else {
-	ret = args->overflow_ard_area;
+	ret = args->overflow_arg_area;
 	args->overflow_arg_area += sizeof(IPTR);
     }
     return ret;
