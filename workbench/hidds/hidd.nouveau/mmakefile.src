@@ -1,0 +1,32 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+include $(SRCDIR)/contrib/gfx/libs/mesa/src/gallium/winsys/aros/drm/sources.drm.mak
+
+DRM_PATH = $(SRCDIR)/contrib/gfx/libs/mesa/src/gallium/winsys/aros/drm/
+
+NOUVEAU_HIDD_SOURCES := \
+            nouveauclass \
+            nouveau_init \
+            nouveaubitmapclass \
+            $(SRCDIR)/contrib/gfx/libs/mesa/src/mesa/arosc_emul \
+            $(addprefix $(DRM_PATH),$(AROS_DRM_NVIDIA_SOURCES)) \
+            $(addprefix $(DRM_PATH),$(AROS_DRM_CORE_SOURCES)) \
+            $(addprefix $(DRM_PATH),$(AROS_LIBDRM_NVIDIA_SOURCES)) \
+            $(addprefix $(DRM_PATH),$(AROS_LIBDRM_CORE_SOURCES)) \
+
+USER_INCLUDES := \
+            -I$(DRM_PATH)/libdrm \
+            -I$(DRM_PATH)/drm-aros \
+            -I$(DRM_PATH)/drm-aros/nouveau \
+            -I$(DRM_PATH)/drm-changed \
+            -I$(DRM_PATH)/drm-changed/nouveau \
+            -I$(DRM_PATH)/drm-unchanged \
+            -I$(DRM_PATH)/drm-unchanged/nouveau \
+
+%build_module mmake=hidd-nouveau2d \
+    modname=nouveau2d modtype=hidd \
+    files="$(NOUVEAU_HIDD_SOURCES)" \
+    uselibs="oop rom amiga hiddgraphicsstubs"
+
+%build_archspecific mainmmake=hidd-nouveau2d asmfiles=aros_wbinvd_hack \
+    maindir=$(CURDIR) arch=i386 modulename=nouveau2d
