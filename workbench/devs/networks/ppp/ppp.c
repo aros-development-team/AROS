@@ -1,4 +1,6 @@
-
+/*
+ * $Id$
+ */
 
 #include "ppp.h"
 #include "device_protos.h"
