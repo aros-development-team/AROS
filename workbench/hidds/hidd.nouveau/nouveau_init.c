@@ -18,7 +18,7 @@ static ULONG Novueau_Init(LIBBASETYPEPTR LIBBASE)
     { IID_Hidd_Sync,        &LIBBASE->sd.syncAttrBase },
     { IID_Hidd_Gfx,         &LIBBASE->sd.gfxAttrBase },
 //    { IID_Hidd_nvBitMap,    &HiddNVidiaBitMapAttrBase },
-//    { IID_Hidd_PlanarBM,    &__IHidd_PlanarBM },
+    { IID_Hidd_PlanarBM,    &LIBBASE->sd.planarAttrBase },
     { NULL, NULL }
     };
 

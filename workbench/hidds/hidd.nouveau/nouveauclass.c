@@ -15,6 +15,7 @@
 
 #include "nouveau/nouveau_drmif.h"
 #include "nouveau/nouveau_bo.h"
+#include "arosdrmmode.h"
 
 APTR fbptr = NULL;
 
@@ -245,7 +246,7 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, NewBitMap)
             stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
             if (vHidd_StdPixFmt_Plane == stdpf) 
             {
-                //FIXME classptr = SD(cl)->planarbmclass;
+                classptr = SD(cl)->planarbmclass;
             }
             else if (vHidd_StdPixFmt_Unknown == stdpf) 
             {
