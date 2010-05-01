@@ -31,8 +31,8 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define SDEBUG 0
-#define DEBUG 0
+#define SDEBUG 1
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define DPF(x)
@@ -659,11 +659,82 @@ static VOID init_def_tags(struct TagItem *tags, ULONG numtags)
 
 /****************************************************************************************/
 
+#define MAKE_SYNC(name,clock,hdisp,hstart,hend,htotal,vdisp,vstart,vend,vtotal,descr)   \
+    struct TagItem sync_ ## name[]={            \
+        { aHidd_Sync_PixelClock,    clock*1000  },  \
+        { aHidd_Sync_HDisp,         hdisp   },  \
+        { aHidd_Sync_HSyncStart,    hstart  },  \
+        { aHidd_Sync_HSyncEnd,      hend    },  \
+        { aHidd_Sync_HTotal,        htotal  },  \
+        { aHidd_Sync_VDisp,         vdisp   },  \
+        { aHidd_Sync_VSyncStart,    vstart  },  \
+        { aHidd_Sync_VSyncEnd,      vend    },  \
+        { aHidd_Sync_VTotal,        vtotal  },  \
+        { aHidd_Sync_Description,       (IPTR)descr},   \
+        { TAG_DONE, 0UL }}
+
 static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetags)
 {
     struct TagItem  	    *tag, *tstate;
     struct HIDDGraphicsData *data;
     
+    MAKE_SYNC(640x480_60,   25174,
+         640,  656,  752,  800,
+         480,  490,  492,  525,
+         "Default:640x480");
+
+    MAKE_SYNC(800x600_56,   36000,  // 36000
+         800,  824,  896, 1024,
+         600,  601,  603,  625,
+         "Default:800x600");
+
+    MAKE_SYNC(1024x768_60, 65000,   //78654=60kHz, 75Hz. 65000=50kHz,62Hz
+        1024, 1048, 1184, 1344,
+         768,  771,  777,  806,
+        "Default:1024x768");
+
+    MAKE_SYNC(1152x864_60, 80000,
+        1152, 1216, 1328, 1456,
+         864,  870,  875,  916,
+        "Default:1152x864");
+
+    MAKE_SYNC(1280x1024_60, 108880,
+        1280, 1360, 1496, 1712,
+        1024, 1025, 1028, 1060,
+        "Default:1280x1024");
+
+    MAKE_SYNC(1600x1200_60, 155982,
+        1600, 1632, 1792, 2048,
+        1200, 1210, 1218, 1270,
+        "Default:1600x1200");
+
+    /* "new" 16:10 modes */
+
+    MAKE_SYNC(1280x800_60, 83530,
+    	1280, 1344, 1480, 1680,
+    	800, 801, 804, 828,
+    	"Default:1280x800");
+
+    MAKE_SYNC(1440x900_60, 106470,
+		1440, 1520, 1672, 1904,
+		900, 901, 904, 932,
+		"Default:1440x900");
+
+    MAKE_SYNC(1680x1050_60, 147140,
+		1680, 1784, 1968, 2256,
+		1050, 1051, 1054, 1087,
+		"Default:1680x1050");
+
+    MAKE_SYNC(1920x1080_60, 173000,
+		1920, 2048, 2248, 2576,
+		1080, 1083, 1088, 1120,
+		"Default:1920x1080");
+
+    MAKE_SYNC(1920x1200_60, 154000,
+		1920, 1968, 2000, 2080,
+		1200, 1203, 1209, 1235,
+		"Default:1920x1200");
+
     DECLARE_ATTRCHECK(sync);
     
     struct mode_db  	    *mdb;
@@ -677,6 +748,21 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
     ULONG   	    	    numpfs = 0,numsyncs	= 0;
     ULONG   	    	    pfidx = 0, syncidx = 0;
     
+    struct TagItem temporary_tags[] = {
+        { aHidd_Gfx_SyncTags,   (IPTR)sync_640x480_60   },
+        { aHidd_Gfx_SyncTags,   (IPTR)sync_800x600_56   },
+        { aHidd_Gfx_SyncTags,   (IPTR)sync_1024x768_60  },
+        { aHidd_Gfx_SyncTags,   (IPTR)sync_1152x864_60  },
+        { aHidd_Gfx_SyncTags,   (IPTR)sync_1280x1024_60 },
+        { aHidd_Gfx_SyncTags,   (IPTR)sync_1600x1200_60 },
+        { aHidd_Gfx_SyncTags,   (IPTR)sync_1280x800_60 },
+        { aHidd_Gfx_SyncTags,   (IPTR)sync_1440x900_60 },
+        { aHidd_Gfx_SyncTags,   (IPTR)sync_1680x1050_60 },
+        { aHidd_Gfx_SyncTags,   (IPTR)sync_1920x1080_60 },
+        { aHidd_Gfx_SyncTags,   (IPTR)sync_1920x1200_60 },
+        { TAG_MORE, 0UL }
+    };
+
     data = OOP_INST_DATA(cl, o);
     mdb = &data->mdb;
     InitSemaphore(&mdb->sema);
@@ -712,9 +798,18 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
 	}
     }
     
-    if (0 == numpfs || 0 == numsyncs)
+    if (0 == numpfs)
     {
-	D(bug("!!! WE MUST AT LEAST HAVE ONE PIXFMT AND ONE SYNC IN Gfx::RegisterModes() !!!\n"));
+    	D(bug("!!! WE MUST AT LEAST HAVE ONE PIXFMT IN Gfx::RegisterModes() !!!\n"));
+    }
+
+    if (0 == numsyncs)
+    {
+    	D(bug("!!! NO SYNC IN Gfx::RegisterModes() !!!\n!!! USING DEFAULT MODES !!!\n"));
+    	temporary_tags[11].ti_Tag = TAG_MORE;
+    	temporary_tags[11].ti_Data = (IPTR)modetags;
+    	modetags = &temporary_tags[0];
+    	numsyncs = 11;
     }
 
     ObtainSemaphore(&mdb->sema);
