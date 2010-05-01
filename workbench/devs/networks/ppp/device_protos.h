@@ -1,4 +1,6 @@
-
+/*
+ * $Id$
+ */
 
 struct PPP_DevUnit *InitPPPUnit(LIBBASETYPEPTR LIBBASE,ULONG s2unit);
 VOID ExpungeUnit(LIBBASETYPEPTR LIBBASE);

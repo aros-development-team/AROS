@@ -1,3 +1,7 @@
+/*
+ * $Id$
+ */
+
 #ifndef _PPP_H
 #define _PPP_H
 
