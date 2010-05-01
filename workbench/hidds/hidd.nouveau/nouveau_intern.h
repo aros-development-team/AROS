@@ -9,14 +9,15 @@
 
 #include LC_LIBDEFS_FILE
 
-#define CLID_Hidd_Gfx_Nouveau   "hidd.gfx.nouveau"
+#define CLID_Hidd_Gfx_Nouveau           "hidd.gfx.nouveau"
 
 struct HIDDNouveauData
 {
 };
 
-#define CLID_Hidd_BitMap_Nouveau    "hidd.bitmap.nouveau"
-#define CLID_Hidd_BitMap_NouveauOff "hidd.bitmap.nouveauoff"
+#define CLID_Hidd_BitMap_Nouveau        "hidd.bitmap.nouveau"
+#define CLID_Hidd_BitMap_NouveauOff     "hidd.bitmap.nouveauoff"
+#define CLID_Hidd_BitMap_NouveauPlanar  "hidd.bitmap.nouveauplanar"
 
 struct HIDDNouveauBitMapData
 {
@@ -26,16 +27,28 @@ struct HIDDNouveauBitMapData
     APTR buffer; /* TEMP FIELD */
 };
 
+struct planarbm_data
+{
+    UBYTE   **planes;
+    ULONG   planebuf_size;
+    ULONG   bytesperrow;
+    ULONG   rows;
+    UBYTE   depth;
+    BOOL    planes_alloced;
+};
+
 struct staticdata
 {
     OOP_Class       *gfxclass;
     OOP_Class       *bmclass;
     OOP_Class       *offbmclass;
+    OOP_Class       *planarbmclass;
     
     OOP_AttrBase    pixFmtAttrBase;
     OOP_AttrBase    gfxAttrBase;
     OOP_AttrBase    syncAttrBase;
     OOP_AttrBase    bitMapAttrBase;
+    OOP_AttrBase    planarAttrBase;
 };
 
 LIBBASETYPE 
