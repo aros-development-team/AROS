@@ -2220,6 +2220,8 @@ enum
     aoHidd_Sync_VMin,		/* [I.G] ULONG - minimum acceptable bitmap height */
     aoHidd_Sync_VMax,		/* [I.G] ULONG - maximum acceptable bitmap height */
     
+    aoHidd_Sync_Flags,		/* [I.G] ULONG - mode tags */
+
     num_Hidd_Sync_Attrs
     
 };
@@ -2253,6 +2255,13 @@ enum
 #define aHidd_Sync_HMax 	(HiddSyncAttrBase + aoHidd_Sync_HMax)
 #define aHidd_Sync_VMin		(HiddSyncAttrBase + aoHidd_Sync_VMin)
 #define aHidd_Sync_VMax		(HiddSyncAttrBase + aoHidd_Sync_VMax)
+
+#define aHidd_Sync_Flags		(HiddSyncAttrBase + aoHidd_Sync_Flags)
+
+#define vHidd_Sync_HSyncPlus		0x0001	/* HSYNC + if set */
+#define vHidd_Sync_VSyncPlus		0x0002	/* VSYNC + if set */
+#define vHidd_Sync_Interlaced		0x0004 	/* Interlaced mode */
+#define vHidd_Sync_DblScan			0x0008 	/* Double scanline */
 
 #define IS_SYNC_ATTR(attr, idx) \
 	( ( ( idx ) = (attr) - HiddSyncAttrBase) < num_Hidd_Sync_Attrs)

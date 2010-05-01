@@ -173,6 +173,10 @@ VOID Sync__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		*msg->storage = data->vmax;
 		break;
 
+	    case aoHidd_Sync_Flags:
+	    *msg->storage = data->flags;
+		break;
+
 	    default:
 	     	D(bug("!!! TRYING TO GET UNKNOWN ATTR FROM SYNC OBJECT !!!\n"));
     		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

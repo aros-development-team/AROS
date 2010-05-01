@@ -1977,6 +1977,11 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
 	D(bug("!!! MISSING PIXELTIME/CLOCK ATTR !!!\n"));
 	return FALSE;
     }
+
+    if (GOT_SYNC_ATTR(Flags))
+    {
+	data->flags = attrs[SYAO(Flags)];
+    }
     
     if (GOT_SYNC_ATTR(Description))
     {
