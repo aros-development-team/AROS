@@ -97,6 +97,8 @@ struct sync_data {
     ULONG upper_margin;
     ULONG lower_margin;
     ULONG vsync_length;
+
+    ULONG flags;
     
     UBYTE description[32];
     
