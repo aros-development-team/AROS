@@ -4,20 +4,22 @@
 */
 
 #include "nouveau_intern.h"
+#include "nouveau/nouveau_class.h"
 
 #include <proto/utility.h>
 
+#define DEBUG 0
 #include <aros/debug.h>
 #include <proto/oop.h>
 
-
 /* HACK HACK HACK HACK */
 
-#include "nouveau/nouveau_drmif.h"
-#include "nouveau/nouveau_bo.h"
+
+
 #include "arosdrmmode.h"
 
-APTR fbptr = NULL;
+struct nouveau_bo * hackfbo = NULL;
+struct nouveau_device * hackdev = NULL;
 
 int nouveau_init(void);
 
@@ -26,22 +28,20 @@ static void init_nouveau_and_set_video_mode()
     bug("Before init\n");
     nouveau_init();
     
-    struct nouveau_device *dev = NULL;
     uint32_t fb_id;
-    nouveau_device_open(&dev, "");
-    struct nouveau_device_priv *nvdev = nouveau_device(dev);
+    nouveau_device_open(&hackdev, "");
+    struct nouveau_device_priv *nvdev = nouveau_device(hackdev);
 
     /* create buffer */
-  	struct nouveau_bo * fbo = NULL;
-	nouveau_bo_new_tile(dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP,
+
+	nouveau_bo_new_tile(hackdev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP,
 				  0, 1024 * 4 * 768, 0, 0,
-				  &fbo);
-	nouveau_bo_map(fbo, NOUVEAU_BO_RDWR);
-	fbptr = fbo->map;
+				  &hackfbo);
+	nouveau_bo_map(hackfbo, NOUVEAU_BO_RDWR);
     
     /* add as frame buffer */
 	drmModeAddFB(nvdev->fd, 1024, 768, 24,
-			   32, 1024 * 4, fbo->handle,
+			   32, 1024 * 4, hackfbo->handle,
 			   &fb_id);
 			   
     bug("Added as framebuffer\n");			   
@@ -84,6 +84,82 @@ static void init_nouveau_and_set_video_mode()
 #define HiddSyncAttrBase    (SD(cl)->syncAttrBase)
 #define HiddBitMapAttrBase  (SD(cl)->bitMapAttrBase)
 
+/* HELPER FUNCTIONS */
+static BOOL HIDDNouveauNV04CopySameFormat(struct HIDDNouveauData * gfxdata,
+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+    ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height)
+{
+    struct nouveau_channel * chan = gfxdata->chan;
+    struct nouveau_bo * src_bo = srcdata->bo;
+    struct nouveau_bo * dst_bo = destdata->bo;
+    struct nouveau_grobj *surf2d = gfxdata->NvContextSurfaces;
+    struct nouveau_grobj *blit = gfxdata->NvImageBlit;
+    LONG fmt;
+
+    if (srcdata->bytesperpixel != destdata->bytesperpixel)
+        return FALSE;
+
+    if (!NVAccelGetCtxSurf2DFormatFromPixmap(destdata, &fmt))
+        return FALSE;
+    
+    /* Prepare copy */
+    if (MARK_RING(chan, 64, 2))
+        return FALSE;
+
+    /* TODO: Understand what planemask is used for */
+//  	planemask |= ~0 << pDstPixmap->drawable.bitsPerPixel;
+//	if (planemask != ~0 || alu != GXcopy) {
+//		if (pDstPixmap->drawable.bitsPerPixel == 32) {
+//			MARK_UNDO(chan);
+//			return FALSE;
+//		}
+
+//		BEGIN_RING(chan, blit, NV04_IMAGE_BLIT_SURFACE, 1);
+//		OUT_RING  (chan, pNv->NvContextSurfaces->handle);
+//		BEGIN_RING(chan, blit, NV01_IMAGE_BLIT_OPERATION, 1);
+//		OUT_RING  (chan, 1); /* ROP_AND */
+
+//		NV04EXASetROP(pScrn, alu, planemask);
+//	} else {
+        BEGIN_RING(chan, blit, NV04_IMAGE_BLIT_SURFACE, 1);
+        OUT_RING  (chan, gfxdata->NvContextSurfaces->handle);
+        BEGIN_RING(chan, blit, NV01_IMAGE_BLIT_OPERATION, 1);
+        OUT_RING  (chan, 3); /* SRCCOPY */
+//	}
+
+    BEGIN_RING(chan, surf2d, NV04_CONTEXT_SURFACES_2D_FORMAT, 4);
+    OUT_RING  (chan, fmt);
+    OUT_RING  (chan, destdata->pitch << 16 | srcdata->pitch );
+    if (OUT_RELOCl(chan, src_bo, 0, NOUVEAU_BO_VRAM | NOUVEAU_BO_RD) ||
+        OUT_RELOCl(chan, dst_bo, 0, NOUVEAU_BO_VRAM | NOUVEAU_BO_WR)) {
+        MARK_UNDO(chan);
+        return FALSE;
+    }
+
+    /* TODO: State resubmit preparation. What does it do? */
+
+    /* Execute copy */
+    WAIT_RING (chan, 4);
+    BEGIN_RING(chan, blit, NV01_IMAGE_BLIT_POINT_IN, 3);
+    OUT_RING  (chan, (srcY << 16) | srcX);
+    OUT_RING  (chan, (destY << 16) | destX);
+    OUT_RING  (chan, (height  << 16) | width);
+
+    /* FIXME: !!!!!VERY WRONG - SOMEONE CAN READ/WRITE AT THE SAME TIME USING MAP */
+    nouveau_bo_unmap(src_bo);
+    nouveau_bo_unmap(dst_bo);
+
+    /* FIXME: Make sure operations are done on unmapped bo */
+    FIRE_RING (chan);
+
+    /* FIXME: !!!!!VERY WRONG - SOMEONE CAN READ/WRITE AT THE SAME TIME USING MAP */
+    nouveau_bo_map(src_bo, NOUVEAU_BO_RDWR);
+    nouveau_bo_map(dst_bo, NOUVEAU_BO_RDWR);
+
+    return TRUE;
+}
+
+/* PUBLIC METHODS */
 #define MAKE_SYNC(name,clock,hdisp,hstart,hend,htotal,vdisp,vstart,vend,vtotal,descr)	\
 	struct TagItem sync_ ## name[]={			\
 		{ aHidd_Sync_PixelClock,	clock*1000	},	\
@@ -98,7 +174,6 @@ static void init_nouveau_and_set_video_mode()
 		{ aHidd_Sync_Description,   	(IPTR)descr},	\
 		{ TAG_DONE, 0UL }}
 
-/* PUBLIC METHODS */
 OOP_Object * METHOD(Nouveau, Root, New)
 {
     bug("Nouveau::New\n");
@@ -154,16 +229,6 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
     struct pRoot_New mymsg;
 
-
-
-    
-    
-    init_nouveau_and_set_video_mode();
-
-
-
-
-
     mymsg.mID = msg->mID;
     mymsg.attrList = mytags;
 
@@ -171,14 +236,63 @@ OOP_Object * METHOD(Nouveau, Root, New)
     
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
+    if (o)
+    {
+        struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
+        LONG ret;
+        
+        /* HACK */
+        init_nouveau_and_set_video_mode();
+        /* HACK */
+
+        /* Acquire device object FIXME: should be done directly via nouvea_open_device */
+        gfxdata->dev = hackdev;
+
+        /* Check chipset architecture */
+        switch (gfxdata->dev->chipset & 0xf0) 
+        {
+        case 0x00:
+            gfxdata->architecture = NV_ARCH_04;
+            break;
+        case 0x10:
+            gfxdata->architecture = NV_ARCH_10;
+            break;
+        case 0x20:
+            gfxdata->architecture = NV_ARCH_20;
+            break;
+        case 0x30:
+            gfxdata->architecture = NV_ARCH_30;
+            break;
+        case 0x40:
+        case 0x60:
+            gfxdata->architecture = NV_ARCH_40;
+            break;
+        case 0x50:
+        case 0x80:
+        case 0x90:
+        case 0xa0:
+            gfxdata->architecture = NV_ARCH_50;
+            break;
+        default:
+            /* TODO: report error, how to handle it? */
+            return NULL;
+        }
+
+        /* Allocate dma channel */
+        ret = nouveau_channel_alloc(gfxdata->dev, NvDmaFB, NvDmaTT, &gfxdata->chan);
+        /* TODO: Check ret, how to handle ? */
+
+        /* Initialize acceleration objects */
+        ret = NVAccelCommonInit(gfxdata);
+        /* TODO: Check ret, how to handle ? */
+
+    }
+
     return o;
 }
 
-OOP_Object * METHOD(Nouveau, Hidd_Gfx, Show)
-{
-    bug("Nouveau::Show\n");
-    return NULL;
-}
+/* FIXME: IMPLEMENT DISPOSE */
+
 
 OOP_Object * METHOD(Nouveau, Hidd_Gfx, NewBitMap)
 {
@@ -187,13 +301,11 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, NewBitMap)
     struct TagItem mytags[2];
     struct pHidd_Gfx_NewBitMap mymsg;
 
-    bug("Nouveau::NewBitMap\n");
-
     /* Displayable bitmap ? */
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
     framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
 
-    bug("[Nouveau] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displayable);
+    D(bug("[Nouveau] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displayable));
 
     if (framebuffer)
     {
@@ -290,6 +402,38 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, NewBitMap)
     }
 
     return (OOP_Object*)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+#define IS_NOUVEAU_CLASS(x) ((x == SD(cl)->bmclass) || (x == SD(cl)->offbmclass))
+
+VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
+{
+    OOP_Class * srcclass = OOP_OCLASS(msg->src);
+    OOP_Class * destclass = OOP_OCLASS(msg->dest);
+    
+    if (IS_NOUVEAU_CLASS(srcclass) && IS_NOUVEAU_CLASS(destclass))
+    {
+        /* FIXME: add checks for pixel format, etc */
+        struct HIDDNouveauBitMapData * srcdata = OOP_INST_DATA(srcclass, msg->src);
+        struct HIDDNouveauBitMapData * destdata = OOP_INST_DATA(destclass, msg->dest);
+        struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
+        
+        if (gfxdata->architecture < NV_ARCH_50)
+        {
+            BOOL ret = HIDDNouveauNV04CopySameFormat(gfxdata, srcdata, destdata, 
+                        msg->srcX, msg->srcY, msg->destX, msg->destY, 
+                        msg->width, msg->height);
+            if (ret)
+                return;
+            /* If operation failed, fallback to default method */
+        }
+        else
+        {
+            /* TODO: Implement copying for NV50. Fall through for now */
+        }
+    }
+    
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 BOOL METHOD(Nouveau, Hidd_Gfx, SetCursorShape)
