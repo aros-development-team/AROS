@@ -5923,7 +5923,8 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
 
                 while (icon1)
                 {
-                    if((icon1->ie_IconListEntry.type == ST_ROOT)||(data->icld_SortFlags & ICONLIST_SORT_DRAWERS_MIXED))
+                    if(((icon1->ie_IconListEntry.type == ST_ROOT) || (icon1->ie_IconListEntry.type == ST_LINKDIR) || (icon1->ie_IconListEntry.type == ST_LINKFILE))
+			|| (data->icld_SortFlags & ICONLIST_SORT_DRAWERS_MIXED))
                     {
                         /*volume list or drawers mixed*/
                         sortme = TRUE;
@@ -5969,7 +5970,7 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
                             /* Sort by Size .. */
                             i = entry->ie_FileInfoBlock->fib_Size - icon1->ie_FileInfoBlock->fib_Size;
                         }
-                        else if (((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK) && (entry->ie_IconListEntry.type != ST_ROOT))
+                        else if (((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK) && ((entry->ie_IconListEntry.type == ST_FILE) || (entry->ie_IconListEntry.type == ST_USERDIR)))
                         {
                            /* Sort by Type .. */
 #warning "TODO: Sort icons based on type using datatypes"

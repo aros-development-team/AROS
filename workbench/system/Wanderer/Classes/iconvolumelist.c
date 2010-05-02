@@ -564,7 +564,7 @@ D(bug("[IconVolumeList] %s: Setting '%s' icon node priority to 5\n", __PRETTY_FU
                             }
                             else
                             {
-                                this_Icon->ie_IconNode.ln_Pri = 1;   // Fixed Media get Priority 1
+                                this_Icon->ie_IconNode.ln_Pri = 2;   // Fixed Media get Priority 2
                             }
                             AddTail(&newiconlist, (struct Node*)&this_Icon->ie_IconNode);
                         }

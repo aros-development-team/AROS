@@ -593,7 +593,7 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bd
 			    {
 				if ((this_entry = (struct IconEntry *)DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)bdrp_fullfile, (IPTR)bdrp_namepart, (IPTR)NULL, (IPTR)bdrp_currfile_dob, 0)))
 				{
-				    this_entry->ie_IconNode.ln_Pri = 0;
+				    this_entry->ie_IconNode.ln_Pri = 1;
 				    this_entry->ie_IconListEntry.type = lofTYPE;
 				    this_entry->ie_IconListEntry.udata = bdrp_direntry;
 				    DoMethod(self, MUIM_Family_AddTail, (struct Node*)&this_entry->ie_IconNode);
@@ -1130,7 +1130,7 @@ D(bug("[Wanderer:VolumeList] %s: left-out List @ %p\n", __PRETTY_FUNCTION__, &le
 	    {
 D(bug("[Wanderer:VolumeList] %s: Marking volume entry '%s' (pri = %d)\n", __PRETTY_FUNCTION__, entry->ie_IconNode.ln_Name, entry->ie_IconNode.ln_Pri));
 		if (entry->ie_IconNode.ln_Pri == 5) entry->ie_IconNode.ln_Pri = -5;
-		else entry->ie_IconNode.ln_Pri = -1;
+		else entry->ie_IconNode.ln_Pri = -2;
 	    }
 	    if ((entry->ie_IconListEntry.type == ST_LINKFILE) || (entry->ie_IconListEntry.type == ST_LINKDIR))
 	    {
@@ -1156,10 +1156,10 @@ D(bug("[Wanderer:VolumeList] %s: Removing NetworkBrowser entry\n", __PRETTY_FUNC
 
 	ForeachNode(iconList, volentry)
 	{
-	    if ((volentry->ie_IconListEntry.type == ST_ROOT) && ((volentry->ie_IconNode.ln_Pri == -1) || (volentry->ie_IconNode.ln_Pri == -5)))
+	    if ((volentry->ie_IconListEntry.type == ST_ROOT) && ((volentry->ie_IconNode.ln_Pri == -2) || (volentry->ie_IconNode.ln_Pri == -5)))
 	    {
 		if (entry->ie_IconNode.ln_Pri == -5) entry->ie_IconNode.ln_Pri = 5;
-		else entry->ie_IconNode.ln_Pri = 1;
+		else entry->ie_IconNode.ln_Pri = 2;
 
 		D(bug("[Wanderer:VolumeList] %s: Re-Parsing backdrop file for '%s'\n", __PRETTY_FUNCTION__, volentry->ie_IconNode.ln_Name));
 
@@ -1211,7 +1211,7 @@ D(bug("[Wanderer:VolumeList] %s: Removing NetworkBrowser entry\n", __PRETTY_FUNC
 		    {
 			if ((Obj_NetworkIcon = (struct Node *)DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)"?wanderer.networkbrowse?", (IPTR)"Network Access..", (IPTR)NULL, (IPTR)_nb_dob, 0)))
 			{
-			    Obj_NetworkIcon->ln_Pri = 3;   /// Network Access gets Priority 3 so its displayed after special dirs
+			    Obj_NetworkIcon->ln_Pri = 4;   /// Network Access gets Priority 4 so its displayed after special dirs
 			    D(bug("[Wanderer:VolumeList] %s: NetworkBrowser Icon Entry @ 0x%p\n", __PRETTY_FUNCTION__, this_entry));
 			}
 		    }
@@ -1420,9 +1420,12 @@ IPTR IconWindowVolumeList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Obje
 
     if ((message->icon->ie_IconListEntry.type == ST_ROOT) && (volPrivate && ((volPrivate->vip_FLags & (ICONENTRY_VOL_OFFLINE|ICONENTRY_VOL_DISABLED)) == 0)))
     {
-	EndNotify(&volPrivate->vip_FSNotifyRequest);
-	//Remove(&_volumeIcon__FSNotifyHandler->fshn_Node);
-	
+	if (volPrivate->vip_FSNotifyRequest.nr_Name != NULL)
+	{
+	    EndNotify(&volPrivate->vip_FSNotifyRequest);
+	    //Remove(&_volumeIcon__FSNotifyHandler->fshn_Node);
+	}
+
 	// Remove all the icons left out for this volume ..
 	struct List		*iconList = NULL;
 	struct IconEntry	*entry = NULL;
