@@ -68,7 +68,7 @@ static inline APTR va_addr(va_list args, ULONG len)
 
 	    ret = regsave[args->gpr++];
 	} else {
-	    ret = args->overflow_ard_area;
+	    ret = args->overflow_arg_area;
 	    args->overflow_arg_area += sizeof(ULONG);
 	}
     }
