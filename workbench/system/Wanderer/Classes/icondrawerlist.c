@@ -318,6 +318,7 @@ IPTR IconDrawerList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *mes
 
                     data->drawer = StrDup((char*)tag->ti_Data);
                     DoMethod(obj, MUIM_IconList_Update);
+		    DoMethod(obj, MUIM_IconList_Sort);
 
                     break;
         }
@@ -365,9 +366,6 @@ IPTR IconDrawerList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, str
     DoMethod(obj, MUIM_IconList_Clear);
 
     IconDrawerList__ParseContents(CLASS, obj);
-
-    /*_Sort takes care of icon placement and redrawing for us*/
-    DoMethod(obj, MUIM_IconList_Sort);
 
     DoSuperMethodA(CLASS, obj, (Msg) message);
 

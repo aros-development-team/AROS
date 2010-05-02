@@ -440,6 +440,7 @@ HOOKPROTO(IconWindowIconList__HookFunc_ProcessIconListPrefsFunc, void, APTR *obj
             {
                 D(bug("[IconWindowIconList] %s: IconList Options have changed, causing an update ..\n", __PRETTY_FUNCTION__));
                 DoMethod(self, MUIM_IconList_Update);
+		DoMethod(self, MUIM_IconList_Sort);
             }
             else if (data->iwcd_IconWindow)
             {
@@ -513,6 +514,7 @@ HOOKPROTO(IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc, void, APTR *obj, 
         {
             D(bug("[IconWindowIconList] %s: Network prefs changed, causing an update ..\n", __PRETTY_FUNCTION__));
             DoMethod(self, MUIM_IconList_Update);
+	    DoMethod(self, MUIM_IconList_Sort);
         }
         else if (data->iwcd_IconWindow)
         {
@@ -1045,12 +1047,14 @@ IPTR IconWindowIconList__MUIM_HandleEvent
     {
         D(bug("[IconWindowIconList] IconWindowIconList__MUIM_HandleEvent: IDCMP_DISKINSERTED\n"));
         DoMethod(self, MUIM_IconList_Update);
+	DoMethod(self, MUIM_IconList_Sort);
         return(MUI_EventHandlerRC_Eat);
     }
     else if (imsg->Class == IDCMP_DISKREMOVED) 
     {
         D(bug("[IconWindowIconList] IconWindowIconList__MUIM_HandleEvent: IDCMP_DISKREMOVED\n"));
         DoMethod(self, MUIM_IconList_Update);
+	DoMethod(self, MUIM_IconList_Sort);
         return(MUI_EventHandlerRC_Eat);
     }
     return 0;
