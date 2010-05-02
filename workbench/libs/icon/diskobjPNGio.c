@@ -36,6 +36,8 @@
 #define ATTR_DD_CURRENTX    0x8000100d  //OS4 PNG use that
 #define ATTR_DD_CURRENTY    0x8000100e  //OS4 PNG use that
 #define ATTR_TYPE           0x8000100f  //OS4 PNG use that
+#define ATTR_UNKNOWN2       0x80001011  //hexdump showed 4 bytes following
+#define ATTR_UNKNOWN3       0x80001012  //hexdump showed 4 bytes following
 #define ATTR_DRAWERFLAGS2   0x80001107  //writen from AFA to store needed dopus Magellan settings
 
 #define EFFECT_NONE      (0)
@@ -345,6 +347,8 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 		    case ATTR_ICONY:
 		    case ATTR_STACKSIZE:
 		    case ATTR_TYPE:
+		    case ATTR_UNKNOWN2:
+		    case ATTR_UNKNOWN3:
 		    	if (chunksize >= 4)
 			{
 			    val = (chunkdata[0] << 24) | (chunkdata[1] << 16) | (chunkdata[2] << 8) | chunkdata[3];
