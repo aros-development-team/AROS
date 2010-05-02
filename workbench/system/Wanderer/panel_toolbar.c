@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2009, The AROS Development Team. All rights reserved.
+  Copyright  2004-2010, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -201,7 +201,7 @@ MakeStaticHook(ToolBar_locationstrHook, panelToolBar__HookFunc_LocationStringFun
 #endif
 
 #define TOOLBAR_PREFSSIZE     1024
-IPTR panelToolBar__HandleFSUpdate()
+IPTR panelToolBar__HandleFSUpdate(Object *WandererObj, struct NotifyMessage *msg)
 {
     if (GetVar(extension_PrefsFile, extension_PrefsData, TOOLBAR_PREFSSIZE, GVF_GLOBAL_ONLY) != -1)
     {

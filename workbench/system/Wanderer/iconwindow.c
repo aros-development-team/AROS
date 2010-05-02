@@ -137,6 +137,7 @@ HOOKPROTO(IconWindow__HookFunc_PrefsUpdatedFunc, void, APTR *obj, APTR param)
     {
         D(bug("[Wanderer:IconWindow] %s: Window contents have changed .. updating display ..\n", __PRETTY_FUNCTION__));
         DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
+	DoMethod(data->iwd_IconListObj, MUIM_IconList_Sort);
         SET(self, MUIA_IconWindow_Changed, FALSE);
     }
 
@@ -931,6 +932,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 
                 D(bug("[Wanderer:IconWindow] %s: Force an update of the list ..\n", __PRETTY_FUNCTION__));
                 DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
+		DoMethod(data->iwd_IconListObj, MUIM_IconList_Sort);
                 return rv;
             }
             break;
@@ -980,7 +982,10 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
     }
 
     if (UpdateIconlist)
+    {
         DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
+	DoMethod(data->iwd_IconListObj, MUIM_IconList_Sort);
+    }
 
     if (focusicon)
     {

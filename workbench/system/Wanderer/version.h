@@ -1,6 +1,6 @@
 #define WANDERERVERS    0
-#define WANDERERREV     82
-#define WANDERERSTR     "Wanderer 0.82 (20.03.2009)"
+#define WANDERERREV     85
+#define WANDERERSTR     "Wanderer 0.85 (02.05.2010)"
 #define WANDERERAUTH    "The AROS Dev Team"
 #define WANDERERCOPY    "© " WANDERERAUTH
 #define VERSION "$VER:  " WANDERERSTR " " WANDERERCOPY
