@@ -334,17 +334,17 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 		    case ATTR_DRAWERWIDTH:
 		    case ATTR_DRAWERHEIGHT:
 		    case ATTR_DRAWERFLAGS:
-            case ATTR_DRAWERFLAGS2:
-            case ATTR_VIEWMODES:
-            case ATTR_DD_CURRENTX:
-            case ATTR_DD_CURRENTY:
+		    case ATTR_DRAWERFLAGS2:
+		    case ATTR_VIEWMODES:
+		    case ATTR_DD_CURRENTX:
+		    case ATTR_DD_CURRENTY:
 		    	need_drawerdata = TRUE;
 			/* Fall through */
 			
 		    case ATTR_ICONX:
 		    case ATTR_ICONY:
-            case ATTR_STACKSIZE:
-            case ATTR_TYPE:
+		    case ATTR_STACKSIZE:
+		    case ATTR_TYPE:
 		    	if (chunksize >= 4)
 			{
 			    val = (chunkdata[0] << 24) | (chunkdata[1] << 16) | (chunkdata[2] << 8) | chunkdata[3];
