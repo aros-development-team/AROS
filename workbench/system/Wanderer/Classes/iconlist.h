@@ -137,7 +137,8 @@ struct IconEntry
 
 struct VolumeIcon_Private
 {
-    ULONG			vip_FLags;
+    ULONG				vip_FLags;
+    struct NotifyRequest	vip_FSNotifyRequest;
 };
 
 extern const struct __MUIBuiltinClass _MUI_IconList_desc; /* PRIV */

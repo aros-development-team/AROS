@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2009, The AROS Development Team. All rights reserved.
+  Copyright  2004-2010, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -474,7 +474,7 @@ static STRPTR ExpandEnvName(STRPTR env_path)
 ///
 
 
-IPTR WandererPrefs__HandleFSUpdate()
+IPTR WandererPrefs__HandleFSUpdate(Object *WandererObj, struct NotifyMessage *msg)
 {
     DoMethod(wandererPrefs_PrefsObject, MUIM_WandererPrefs_Reload);
     return NULL;

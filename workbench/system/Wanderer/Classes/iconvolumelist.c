@@ -1,5 +1,5 @@
 /*
-Copyright  2002-2009, The AROS Development Team. All rights reserved.
+Copyright  2002-2010, The AROS Development Team. All rights reserved.
 $Id$
 */
 
@@ -594,7 +594,6 @@ D(bug("[IconVolumeList] %s: Updating Icon List\n", __PRETTY_FUNCTION__));
         }
     }
     /* default display/sorting flags */
-    DoMethod(obj, MUIM_IconList_Sort);
 
     DoSuperMethodA(CLASS, obj, (Msg) message);
 

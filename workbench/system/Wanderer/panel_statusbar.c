@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2009, The AROS Development Team. All rights reserved.
+  Copyright  2004-2010, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -298,7 +298,7 @@ MakeStaticHook(StatusBar_updateHook, panelStatusBar__HookFunc_UpdateStatusFunc);
 /*** Main Functions ****************************************************************/
 
 #define STATUSBAR_PREFSSIZE     1024
-static IPTR panelStatusBar__HandleFSUpdate()
+static IPTR panelStatusBar__HandleFSUpdate(Object *WandererObj, struct NotifyMessage *msg)
 {
     if (GetVar(extension_PrefsFile, extension_PrefsData, STATUSBAR_PREFSSIZE, GVF_GLOBAL_ONLY) != -1)
     {

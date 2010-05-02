@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2009, The AROS Development Team. All rights reserved.
+  Copyright  2004-2010, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -83,7 +83,7 @@
 extern struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active;
 
 #define WIWVLVERS       1
-#define WIWVLREV        0
+#define WIWVLREV        2
 
 #define BG_DRAWFLAG     0xf00dd00f
 
@@ -397,6 +397,7 @@ HOOKPROTO(IconWindowVolumeList__HookFunc_ProcessIconListPrefsFunc, void, APTR *o
             {
                 D(bug("[Wanderer:VolumeList] %s: IconList Options have changed, causing an update ..\n", __PRETTY_FUNCTION__));
                 DoMethod(self, MUIM_IconList_Update);
+		DoMethod(self, MUIM_IconList_Sort);
             }
             else if (data->iwcd_IconWindow)
             {
@@ -467,6 +468,7 @@ HOOKPROTO(IconWindowVolumeList__HookFunc_UpdateNetworkPrefsFunc, void, APTR *obj
         {
             D(bug("[Wanderer:VolumeList] %s: Network prefs changed, causing an update ..\n", __PRETTY_FUNCTION__));
             DoMethod(self, MUIM_IconList_Update);
+	    DoMethod(self, MUIM_IconList_Sort);
         }
         else if (data->iwcd_IconWindow)
         {
@@ -480,17 +482,19 @@ MakeStaticHook(Hook_UpdateNetworkPrefsFunc,IconWindowVolumeList__HookFunc_Update
 #endif
 
 #define BDRPLINELEN_MAX 1024
-BOOL IconWindowVolumeList__Func_ParseBackdrop(Class *CLASS, Object *self, char *bdrp_dir)
+BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bdrp_direntry, struct List* entryList)
 {
     BPTR                bdrp_lock = (BPTR)NULL;
     char                *bdrp_file = NULL, *linebuf = NULL, *bdrp_fullfile = NULL, *bdrp_namepart = NULL;
     struct DiskObject   *bdrp_currfile_dob = NULL;
     BOOL                retVal = FALSE;
 
+    char *bdrp_dir = bdrp_direntry->ie_IconListEntry.label;
+    
     if ((bdrp_dir == NULL) || (bdrp_dir[strlen(bdrp_dir) - 1] != ':'))
         return retVal;
 
-    D(bug("[Wanderer:VolumeList] %s: Checking '%s' for .backdrop file .. \n", __PRETTY_FUNCTION__, bdrp_dir));
+    D(bug("[Wanderer:VolumeList] %s('%s')\n", __PRETTY_FUNCTION__, bdrp_dir));
 
     if ((bdrp_file = AllocVec(strlen(bdrp_dir) + 9 + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
     {
@@ -512,54 +516,92 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Class *CLASS, Object *self, char *
 
                     if ((bdrp_fullfile = AllocVec(linelen + strlen(bdrp_dir), MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
                     {
+			ULONG lofTYPE = 0;
+
                         sprintf(bdrp_fullfile, "%s%s", bdrp_dir, &linebuf[1]);
-                        bdrp_namepart = FilePart(bdrp_fullfile);
-                        bdrp_currfile_dob = GetIconTags
-                          (
-                            bdrp_fullfile, 
-                            ICONGETA_FailIfUnavailable, FALSE,
-                            ICONGETA_Label,             bdrp_namepart,
-                            TAG_DONE
-                          );
+			
+			struct FileInfoBlock	*lofFIB = AllocDosObject(DOS_FIB, NULL);
+			if (lofFIB)
+			{
+			    BPTR		lofLock = (BPTR)NULL;
+			    if ((lofLock = Lock(bdrp_fullfile, SHARED_LOCK)) != NULL)
+			    {
+				char	*tmpbdrp_file = NULL;
+				int	tmpbdrp_len = strlen(bdrp_fullfile) + 128;
+				if ((tmpbdrp_file = AllocVec(tmpbdrp_len, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+				{
+				    if (NameFromLock(lofLock, tmpbdrp_file, tmpbdrp_len) != 0)
+				    {
+					FreeVec(bdrp_fullfile);
+					bdrp_fullfile = tmpbdrp_file;
+				    }
+				    else
+					FreeVec(tmpbdrp_file);
+				}
+				if (Examine(lofLock, lofFIB))
+				{
+				    if (lofFIB->fib_DirEntryType == ST_FILE)
+				    {
+					lofTYPE = ST_LINKFILE;
+				    }
+				    else if (lofFIB->fib_DirEntryType == ST_USERDIR)
+				    {
+					lofTYPE = ST_LINKDIR;
+				    }
+				}
+				UnLock(lofLock);
+			    }
+			    FreeDosObject(DOS_FIB, lofFIB);
+			}
+			
+			bdrp_namepart = FilePart(bdrp_fullfile);
 
-                        D(bug("[Wanderer:VolumeList] %s: LEAVEOUT Icon '%s' ('%s') DOB @ 0x%p\n", __PRETTY_FUNCTION__, bdrp_fullfile, bdrp_namepart, bdrp_currfile_dob));
+			struct IconEntry *this_entry = NULL, *iconNode = NULL, *tmpentry = NULL;
 
-                        if (bdrp_currfile_dob)
-                        {
-                            struct IconEntry *this_entry = NULL;
-                            if ((this_entry = (struct IconEntry *)DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)bdrp_fullfile, (IPTR)bdrp_namepart, (IPTR)NULL, (IPTR)bdrp_currfile_dob, 0)))
-                            {
-                                struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
-                                if (fib)
-                                {
-                                    BPTR 				fib_lock = (BPTR)NULL;
-                                    if ((fib_lock = Lock(bdrp_fullfile, SHARED_LOCK)) != NULL)
-                                    {
-                                        if (Examine(fib_lock, fib))
-                                        {
-                                            if (fib->fib_DirEntryType == ST_FILE)
-                                            {
-                                                this_entry->ie_IconListEntry.type = ST_LINKFILE;
-                                                D(bug("[Wanderer:VolumeList] %s: LEAVEOUT ST_LINKFILE Entry @ 0x%p\n", __PRETTY_FUNCTION__, this_entry));
-                                            }
-                                            else if (fib->fib_DirEntryType == ST_USERDIR)
-                                            {
-                                                this_entry->ie_IconListEntry.type = ST_LINKDIR;
-                                                D(bug("[Wanderer:VolumeList] %s: LEAVEOUT ST_LINKDIR Entry @ 0x%p\n", __PRETTY_FUNCTION__, this_entry));
-                                            }
-                                            else
-                                            {
-                                                D(bug("[Wanderer:VolumeList] %s: LEAVEOUT Unknown Entry Type @ 0x%p\n", __PRETTY_FUNCTION__, this_entry));
-                                            }
-					    DoMethod(self, MUIM_Family_AddTail, (struct Node*)&this_entry->ie_IconNode);
-                                        }
-                                        UnLock(fib_lock);
-                                    }
-                                    FreeDosObject(DOS_FIB, fib);
-                                }
-                                retVal = TRUE;
-                            }
-                        }
+			if (entryList != NULL)
+			{
+			    D(bug("[Wanderer:VolumeList] %s: Checking for existing entry in list @ 0x%p\n", __PRETTY_FUNCTION__, entryList));
+			    ForeachNodeSafe(entryList, iconNode, tmpentry)
+			    {
+				if (strcmp(iconNode->ie_IconNode.ln_Name, bdrp_fullfile) == 0)
+				{
+				    this_entry = iconNode;
+				    Remove((struct Node*)&iconNode->ie_IconNode);
+				    iconNode->ie_IconListEntry.udata = bdrp_direntry;
+				    D(bug("[Wanderer:VolumeList] %s: Reinserting '%s'\n", __PRETTY_FUNCTION__, iconNode->ie_IconNode.ln_Name));
+				    DoMethod(self, MUIM_Family_AddTail, (struct Node*)&iconNode->ie_IconNode);
+				    break;
+				}
+			    }
+			}
+
+			if (this_entry == NULL)
+			{
+			    //bug("[Wanderer:VolumeList] %s: Checking for existing entry in iconlist\n", __PRETTY_FUNCTION__);
+
+			    bdrp_currfile_dob = GetIconTags
+			      (
+				bdrp_fullfile, 
+				ICONGETA_FailIfUnavailable, FALSE,
+				ICONGETA_Label,             bdrp_namepart,
+				TAG_DONE
+			      );
+
+			    D(bug("[Wanderer:VolumeList] %s: LEAVEOUT Icon '%s' ('%s') DOB @ 0x%p\n", __PRETTY_FUNCTION__, bdrp_fullfile, bdrp_namepart, bdrp_currfile_dob));
+
+			    if (bdrp_currfile_dob)
+			    {
+				if ((this_entry = (struct IconEntry *)DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)bdrp_fullfile, (IPTR)bdrp_namepart, (IPTR)NULL, (IPTR)bdrp_currfile_dob, 0)))
+				{
+				    this_entry->ie_IconNode.ln_Pri = 0;
+				    this_entry->ie_IconListEntry.type = lofTYPE;
+				    this_entry->ie_IconListEntry.udata = bdrp_direntry;
+				    DoMethod(self, MUIM_Family_AddTail, (struct Node*)&this_entry->ie_IconNode);
+
+				    retVal = TRUE;
+				}
+			    }
+			}
                     }
                 }
                 FreeMem(linebuf, BDRPLINELEN_MAX);
@@ -959,12 +1001,14 @@ IPTR IconWindowVolumeList__MUIM_HandleEvent
     {
         D(bug("[Wanderer:VolumeList] %s: IDCMP_DISKINSERTED\n", __PRETTY_FUNCTION__));
         DoMethod(self, MUIM_IconList_Update);
+	DoMethod(self, MUIM_IconList_Sort);
         return(MUI_EventHandlerRC_Eat);
     }
     else if (imsg->Class == IDCMP_DISKREMOVED) 
     {
         D(bug("[Wanderer:VolumeList] %s: IDCMP_DISKREMOVED\n", __PRETTY_FUNCTION__));
         DoMethod(self, MUIM_IconList_Update);
+	DoMethod(self, MUIM_IconList_Sort);
         return(MUI_EventHandlerRC_Eat);
     }
     return 0;
@@ -1068,11 +1112,72 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
     {
 	struct IconList_Entry *icon_entry    = (IPTR)MUIV_IconList_NextIcon_Start;
         Object *prefs = NULL;
-        BOOL    sort_list = FALSE;
+        struct Node *Obj_NetworkIcon = NULL;
+        struct Node *Obj_UserFilesIcon = NULL;
+	
+	struct List		leftoutList, *iconList = NULL;
+	struct IconEntry	*volentry = NULL, *entry = NULL, *tmpentry = NULL;
+
+	NEWLIST(&leftoutList);
+	
+D(bug("[Wanderer:VolumeList] %s: left-out List @ %p\n", __PRETTY_FUNCTION__, &leftoutList));
+	
+	GET(self, MUIA_Family_List, &iconList);
+
+	ForeachNodeSafe(iconList, entry, tmpentry)
+	{
+	    if (entry->ie_IconListEntry.type == ST_ROOT)
+	    {
+D(bug("[Wanderer:VolumeList] %s: Marking volume entry '%s' (pri = %d)\n", __PRETTY_FUNCTION__, entry->ie_IconNode.ln_Name, entry->ie_IconNode.ln_Pri));
+		if (entry->ie_IconNode.ln_Pri == 5) entry->ie_IconNode.ln_Pri = -5;
+		else entry->ie_IconNode.ln_Pri = -1;
+	    }
+	    if ((entry->ie_IconListEntry.type == ST_LINKFILE) || (entry->ie_IconListEntry.type == ST_LINKDIR))
+	    {
+D(bug("[Wanderer:VolumeList] %s: Removing left out entry '%s'\n", __PRETTY_FUNCTION__, entry->ie_IconNode.ln_Name));
+		Remove(&entry->ie_IconNode);
+		AddTail(&leftoutList, &entry->ie_IconNode);
+	    }
+	    else if (strcmp(entry->ie_IconNode.ln_Name, "?wanderer.networkbrowse?") == 0)
+	    {
+D(bug("[Wanderer:VolumeList] %s: Removing NetworkBrowser entry\n", __PRETTY_FUNCTION__));
+		Remove(&entry->ie_IconNode);
+		Obj_NetworkIcon = entry;
+	    }
+	    /*else if (strcmp(, "User Files..") == 0)
+	    {
+		Remove(&entry->ie_IconNode);
+		Obj_UserFilesIcon = entry;
+	    }*/
+	}
 
         D(bug("[Wanderer:VolumeList] %s: Causing parent to update\n", __PRETTY_FUNCTION__));
         retVal = DoSuperMethodA(CLASS, self, (Msg) message);
 
+	ForeachNode(iconList, volentry)
+	{
+	    if ((volentry->ie_IconListEntry.type == ST_ROOT) && ((volentry->ie_IconNode.ln_Pri == -1) || (volentry->ie_IconNode.ln_Pri == -5)))
+	    {
+		if (entry->ie_IconNode.ln_Pri == -5) entry->ie_IconNode.ln_Pri = 5;
+		else entry->ie_IconNode.ln_Pri = 1;
+
+		D(bug("[Wanderer:VolumeList] %s: Re-Parsing backdrop file for '%s'\n", __PRETTY_FUNCTION__, volentry->ie_IconNode.ln_Name));
+
+		IconWindowVolumeList__Func_ParseBackdrop(self, volentry, &leftoutList);
+
+		ForeachNodeSafe(&leftoutList, entry, tmpentry)
+		{
+		    if (((entry->ie_IconListEntry.type == ST_LINKFILE) || (entry->ie_IconListEntry.type == ST_LINKDIR))
+			&& (entry->ie_IconListEntry.udata == volentry))
+		    {
+			D(bug("[Wanderer:VolumeList] %s: Destroying orphaned left-out entry '%s'\n", __PRETTY_FUNCTION__, entry->ie_IconNode.ln_Name));
+			Remove(&entry->ie_IconNode);
+			DoMethod(self, MUIM_IconList_DestroyEntry, entry);
+		    }
+		}
+	    }
+	}
+	
         D(bug("[Wanderer:VolumeList] %s: Check if we should show NetworkBrowser Icon ..\n", __PRETTY_FUNCTION__));
 
         GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
@@ -1089,28 +1194,36 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
 
             if (volumel_data->iwvcd_ShowNetworkBrowser)
             {
-                struct DiskObject    *_nb_dob = NULL;
-                _nb_dob = GetIconTags
-                  (
-                    "ENV:SYS/def_NetworkHost", 
-                    ICONGETA_FailIfUnavailable, FALSE,
-                    ICONGETA_Label,             (IPTR)"Network Access..",
-                    TAG_DONE
-                  );
+		if (Obj_NetworkIcon == NULL)
+		{
+		    struct DiskObject    *_nb_dob = NULL;
+		    _nb_dob = GetIconTags
+		      (
+			"ENV:SYS/def_NetworkHost", 
+			ICONGETA_FailIfUnavailable, FALSE,
+			ICONGETA_Label,             (IPTR)"Network Access..",
+			TAG_DONE
+		      );
 
-                D(bug("[Wanderer:VolumeList] %s: NetworkBrowser Icon DOB @ 0x%p\n", __PRETTY_FUNCTION__, _nb_dob));
+		    D(bug("[Wanderer:VolumeList] %s: NetworkBrowser Icon DOB @ 0x%p\n", __PRETTY_FUNCTION__, _nb_dob));
 
-                if (_nb_dob)
-                {
-                    struct Node *this_entry = NULL;
-                    if ((this_entry = (struct Node *)DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)"?wanderer.networkbrowse?", (IPTR)"Network Access..", (IPTR)NULL, (IPTR)_nb_dob, 0)))
-                    {
-                        this_entry->ln_Pri = 3;   /// Network Access gets Priority 3 so its displayed after special dirs
-                        sort_list = TRUE;
-                        D(bug("[Wanderer:VolumeList] %s: NetworkBrowser Icon Entry @ 0x%p\n", __PRETTY_FUNCTION__, this_entry));
-                    }
-                }
+		    if (_nb_dob)
+		    {
+			if ((Obj_NetworkIcon = (struct Node *)DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)"?wanderer.networkbrowse?", (IPTR)"Network Access..", (IPTR)NULL, (IPTR)_nb_dob, 0)))
+			{
+			    Obj_NetworkIcon->ln_Pri = 3;   /// Network Access gets Priority 3 so its displayed after special dirs
+			    D(bug("[Wanderer:VolumeList] %s: NetworkBrowser Icon Entry @ 0x%p\n", __PRETTY_FUNCTION__, this_entry));
+			}
+		    }
+		}
             }
+	    else
+	    {
+		if (Obj_NetworkIcon != NULL)
+		{
+		    DoMethod(self, MUIM_IconList_DestroyEntry, Obj_NetworkIcon);
+		}
+	    }
 
             GET(prefs, MUIA_IconWindowExt_UserFiles_ShowFilesFolder, &volumel_data->iwvcd_ShowUserFolder);
 
@@ -1119,47 +1232,54 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
 #endif
             if (volumel_data->iwvcd_ShowUserFolder)
             {
-                if (GetVar("SYS/Wanderer/userfiles.prefs", __icwc_intern_TxtBuff, TXTBUFF_LEN, GVF_GLOBAL_ONLY) != -1)
-                {
-                    char * userfiles_path = NULL;
+		if (Obj_UserFilesIcon == NULL)
+		{
+		    if (GetVar("SYS/Wanderer/userfiles.prefs", __icwc_intern_TxtBuff, TXTBUFF_LEN, GVF_GLOBAL_ONLY) != -1)
+		    {
+			char * userfiles_path = NULL;
 
-                    D(bug("[Wanderer:VolumeList] %s: SYS/UserFilesLocation = '%s'\n", __PRETTY_FUNCTION__, __icwc_intern_TxtBuff));
+			D(bug("[Wanderer:VolumeList] %s: SYS/UserFilesLocation = '%s'\n", __PRETTY_FUNCTION__, __icwc_intern_TxtBuff));
 
-                    if ((userfiles_path = AllocVec(strlen(__icwc_intern_TxtBuff) + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
-                    {
-                        struct DiskObject    *_nb_dob = NULL;
+			if ((userfiles_path = AllocVec(strlen(__icwc_intern_TxtBuff) + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+			{
+			    struct DiskObject    *_nb_dob = NULL;
 
-                        volumel_data->iwvcd_UserFolderPath = userfiles_path;
+			    volumel_data->iwvcd_UserFolderPath = userfiles_path;
 
-                        D(bug("[Wanderer:VolumeList] %s: UserFilesLocation Path storage @ 0x%p\n", __PRETTY_FUNCTION__, userfiles_path));
+			    D(bug("[Wanderer:VolumeList] %s: UserFilesLocation Path storage @ 0x%p\n", __PRETTY_FUNCTION__, userfiles_path));
 
-                        strcpy(userfiles_path, __icwc_intern_TxtBuff);
+			    strcpy(userfiles_path, __icwc_intern_TxtBuff);
 
-                        D(bug("[Wanderer:VolumeList] %s: UserFilesLocation Path storage contains '%s'\n", __PRETTY_FUNCTION__, userfiles_path));
+			    D(bug("[Wanderer:VolumeList] %s: UserFilesLocation Path storage contains '%s'\n", __PRETTY_FUNCTION__, userfiles_path));
 
-                        _nb_dob = GetIconTags
-                          (
-                            "ENV:SYS/def_UserHome", 
-                            ICONGETA_FailIfUnavailable, FALSE,
-                            ICONGETA_Label,             (IPTR)"User Files..",
-                            TAG_DONE
-                          );
+			    _nb_dob = GetIconTags
+			      (
+				"ENV:SYS/def_UserHome", 
+				ICONGETA_FailIfUnavailable, FALSE,
+				ICONGETA_Label,             (IPTR)"User Files..",
+				TAG_DONE
+			      );
 
-                        D(bug("[Wanderer:VolumeList] %s: UserFiles Icon DOB @ 0x%p\n", __PRETTY_FUNCTION__, _nb_dob));
+			    D(bug("[Wanderer:VolumeList] %s: UserFiles Icon DOB @ 0x%p\n", __PRETTY_FUNCTION__, _nb_dob));
 
-                        if (_nb_dob)
-                        {
-                            struct Node *this_entry = NULL;
-                            if ((this_entry = (struct Node *)DoMethod(self, MUIM_IconList_CreateEntry, userfiles_path, (IPTR)"User Files..", (IPTR)NULL, (IPTR)_nb_dob, 0)))
-                            {
-                                this_entry->ln_Pri = 5;   /// Special dirs get Priority 5
-                                sort_list = TRUE;
-                            }
-                        }
-                    }
-                }
+			    if (_nb_dob)
+			    {
+				if ((Obj_UserFilesIcon = (struct Node *)DoMethod(self, MUIM_IconList_CreateEntry, userfiles_path, (IPTR)"User Files..", (IPTR)NULL, (IPTR)_nb_dob, 0)))
+				{
+				    Obj_UserFilesIcon->ln_Pri = 5;   /// Special dirs get Priority 5
+				}
+			    }
+			}
+		    }
+		}
             }
-            if (sort_list) DoMethod(self, MUIM_IconList_Sort);
+	    else
+	    {
+		if (Obj_UserFilesIcon != NULL)
+		{
+		    DoMethod(self, MUIM_IconList_DestroyEntry, Obj_UserFilesIcon);
+		}
+	    }
         }
     }
     else
@@ -1172,10 +1292,67 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
 }
 
 
+IPTR IconWindowVolumeList__HandleFSUpdate(Object *WandererObj, struct NotifyMessage *msg)
+{
+    Object		*rootwindow   = (Object *) XGET(WandererObj, MUIA_Wanderer_WorkbenchWindow);
+    Object		*rooticonList = (Object *) XGET(rootwindow, MUIA_IconWindow_IconList);
+    struct List		*iconList = NULL, fsLeftOutList;
+    struct IconEntry	*entry = NULL, *tmpEntry = NULL, *fsEntry = NULL;
+
+    D(bug("[Wanderer:VolumeList]: %s(NotifyMessage @ %p -> '%s')\n", __PRETTY_FUNCTION__, msg, msg->nm_NReq->nr_Name));
+
+    NEWLIST(&fsLeftOutList);
+    
+    D(bug("[Wanderer:VolumeList] %s: Desktop Window @ %p, IconList @ %p\n", __PRETTY_FUNCTION__, rootwindow, rooticonList));
+
+    GET(rooticonList, MUIA_Family_List, &iconList);
+    ForeachNode(iconList, entry)
+    {
+	if ((entry->ie_IconListEntry.type == ST_ROOT)
+	    && (strncmp(entry->ie_IconNode.ln_Name, msg->nm_NReq->nr_Name, strlen(entry->ie_IconNode.ln_Name)) == 0))
+	{
+	    fsEntry = entry;
+	    break;
+	}
+    }
+    
+    if (fsEntry != NULL)
+    {
+	D(bug("[Wanderer:VolumeList] %s: Processing .backdrop for icon @ %p '%s'\n", __PRETTY_FUNCTION__, fsEntry, fsEntry->ie_IconNode.ln_Name));
+
+	ForeachNodeSafe(iconList, entry,tmpEntry)
+	{
+	    if (((entry->ie_IconListEntry.type == ST_LINKFILE) || (entry->ie_IconListEntry.type == ST_LINKDIR)) && (entry->ie_IconListEntry.udata == fsEntry))
+	    {
+		D(bug("[Wanderer:VolumeList] %s: existing left-out icon @ %p '%s' for this volume\n", __PRETTY_FUNCTION__, entry, entry->ie_IconNode.ln_Name));
+		Remove(&entry->ie_IconNode);
+		AddTail(&fsLeftOutList, &entry->ie_IconNode);
+	    }
+	}
+
+	IconWindowVolumeList__Func_ParseBackdrop(rooticonList, fsEntry, &fsLeftOutList);
+
+	ForeachNodeSafe(&fsLeftOutList, entry, tmpEntry)
+	{
+	    D(bug("[Wanderer:VolumeList] %s: Destroying orphaned icon @ %p '%s'\n", __PRETTY_FUNCTION__, entry, entry->ie_IconNode.ln_Name));
+	    Remove(&entry->ie_IconNode);
+	    DoMethod(rooticonList, MUIM_IconList_DestroyEntry, entry);
+	}
+
+	DoMethod(rooticonList, MUIM_IconList_Sort);
+    }
+    
+    return NULL;
+}
+
+
 IPTR IconWindowVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_CreateEntry *message)
 {
     struct IconEntry  		*this_Icon = NULL;
     struct VolumeIcon_Private   *volPrivate = NULL;
+    IPTR                	_volumeIcon__FSNotifyPort = 0;
+    struct List         	*_volumeIcon__FSNotifyList = NULL;
+    struct Wanderer_FSHandler	*_volumeIcon__FSNotifyHandler = NULL
 
     D(bug("[Wanderer:VolumeList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -1183,13 +1360,36 @@ IPTR IconWindowVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Objec
 
     if (this_Icon)
     {
-        D(bug("[Wanderer:VolumeList] %s: IconEntry Allocated @ %p\n", __PRETTY_FUNCTION__, this_Icon));
-
         volPrivate = this_Icon->ie_IconListEntry.udata;
+
+        D(bug("[Wanderer:VolumeList] %s: IconEntry '%s' Allocated @ %p, volPrivate @ %p\n", __PRETTY_FUNCTION__, this_Icon->ie_IconNode.ln_Name, this_Icon, volPrivate));
 
         if ((this_Icon->ie_IconListEntry.type == ST_ROOT) && (volPrivate && ((volPrivate->vip_FLags & (ICONENTRY_VOL_OFFLINE|ICONENTRY_VOL_DISABLED)) == 0)))
         {
-            IconWindowVolumeList__Func_ParseBackdrop(CLASS, obj, this_Icon->ie_IconListEntry.label);
+	    GET(_app(obj), MUIA_Wanderer_FileSysNotifyPort, &_volumeIcon__FSNotifyPort);
+	    GET(_app(obj), MUIA_Wanderer_FileSysNotifyList, &_volumeIcon__FSNotifyList);
+
+	    if (_volumeIcon__FSNotifyList && ((_volumeIcon__FSNotifyHandler = AllocMem(sizeof(struct Wanderer_FSHandler), MEMF_CLEAR)) != NULL))
+	    {
+		_volumeIcon__FSNotifyHandler->fshn_Node.ln_Name         	= this_Icon->ie_IconNode.ln_Name;
+		volPrivate->vip_FSNotifyRequest.nr_Name				= _volumeIcon__FSNotifyHandler->fshn_Node.ln_Name;
+		volPrivate->vip_FSNotifyRequest.nr_Flags			= NRF_SEND_MESSAGE;
+		volPrivate->vip_FSNotifyRequest.nr_stuff.nr_Msg.nr_Port		= _volumeIcon__FSNotifyPort;
+		_volumeIcon__FSNotifyHandler->HandleFSUpdate			= IconWindowVolumeList__HandleFSUpdate;
+
+		if (StartNotify(&volPrivate->vip_FSNotifyRequest))
+		{
+		    D(bug("[Wanderer:VolumeList] %s: FSNotification setup", __PRETTY_FUNCTION__));
+		}
+		else
+		{
+		    D(bug("[Wanderer:VolumeList] %s: FAILED to setup FSNotification", __PRETTY_FUNCTION__));
+		    volPrivate->vip_FSNotifyRequest.nr_Name = NULL;
+		}
+		D(bug(" for Volume '%s'\n", this_Icon->ie_IconNode.ln_Name));
+		AddTail(_volumeIcon__FSNotifyList, &_volumeIcon__FSNotifyHandler->fshn_Node);
+	    }
+            IconWindowVolumeList__Func_ParseBackdrop(obj, this_Icon, NULL);
         }
     }
     return this_Icon;
@@ -1218,6 +1418,30 @@ IPTR IconWindowVolumeList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Obje
 
     volPrivate = message->icon->ie_IconListEntry.udata;
 
+    if ((message->icon->ie_IconListEntry.type == ST_ROOT) && (volPrivate && ((volPrivate->vip_FLags & (ICONENTRY_VOL_OFFLINE|ICONENTRY_VOL_DISABLED)) == 0)))
+    {
+	EndNotify(&volPrivate->vip_FSNotifyRequest);
+	//Remove(&_volumeIcon__FSNotifyHandler->fshn_Node);
+	
+	// Remove all the icons left out for this volume ..
+	struct List		*iconList = NULL;
+	struct IconEntry	*entry = NULL;
+
+	GET(obj, MUIA_Family_List, &iconList);
+	ForeachNode(iconList, entry)
+	{
+	    if (((entry->ie_IconListEntry.type == ST_LINKFILE) || (entry->ie_IconListEntry.type == ST_LINKDIR)) && (entry->ie_IconListEntry.udata == message->icon))
+	    {
+		D(bug("[Wanderer:VolumeList] %s: Removing child entry '%s'\n", __PRETTY_FUNCTION__, entry->ie_IconNode.ln_Name));
+		DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
+	    }
+	}
+    }
+    else if ((message->icon->ie_IconListEntry.type == ST_LINKFILE) || (message->icon->ie_IconListEntry.type == ST_LINKDIR))
+	message->icon->ie_IconListEntry.udata = NULL;
+
+    D(bug("[Wanderer:VolumeList] %s: causing parent class to dispose of '%s'\n", __PRETTY_FUNCTION__, message->icon->ie_IconNode.ln_Name));
+    
     rv = DoSuperMethodA(CLASS, obj, (Msg) message);
     
     return rv;

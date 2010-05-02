@@ -1,5 +1,5 @@
 /*
-Copyright  2002-2009, The AROS Development Team. All rights reserved.
+Copyright  2002-2010, The AROS Development Team. All rights reserved.
 $Id$
 */
 
@@ -1761,7 +1761,7 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 			    {
 				struct TagItem lay_tags[] =
 				{
-				    {LA_Visible     , (IPTR)FALSE	},
+				    //{LA_Visible     , (IPTR)FALSE	},
 				    {TAG_DONE				}
 				};
 
@@ -2099,6 +2099,8 @@ IPTR IconList__MUIM_Family_AddTail(struct IClass *CLASS, Object *obj, struct MUI
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
+    D(bug("[IconList] %s: list @ 0x%p, icon @ 0x%p '%s'\n", __PRETTY_FUNCTION__, &(data->icld_IconList), message->obj, ((struct IconEntry *)message->obj)->ie_IconNode.ln_Name));
+    
     if (message->obj)
     {
 #warning "TODO: Use the correct _OBJECT() code when we switch to icon.mui"
@@ -2124,6 +2126,8 @@ IPTR IconList__MUIM_Family_Remove(struct IClass *CLASS, Object *obj, struct MUIP
 #if defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
+
+    D(bug("[IconList] %s: icon @ 0x%p '%s'\n", __PRETTY_FUNCTION__, message->obj, ((struct IconEntry *)message->obj)->ie_IconNode.ln_Name));
 
     if (message->obj)
     {
@@ -2286,7 +2290,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
             {
 		struct TagItem lay_tags[] =
 		{
-		    {LA_Visible     , (IPTR)FALSE	},
+		    //{LA_Visible     , (IPTR)FALSE	},
 		    {TAG_DONE				}
 		};
 
@@ -2815,7 +2819,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 		    {
 			struct TagItem lay_tags[] =
 			{
-			    {LA_Visible     , (IPTR)FALSE	},
+			    //{LA_Visible     , (IPTR)FALSE	},
 			    {TAG_DONE				}
 			};
 
