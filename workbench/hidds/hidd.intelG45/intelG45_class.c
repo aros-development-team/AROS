@@ -115,7 +115,7 @@ ModeLine "1920x1440" 234.00 1920 2048 2256 2600 1440 1441 1444 1500 -Hsync +Vsyn
 ModeLine "1920x1440" 297.00 1920 2064 2288 2640 1440 1441 1444 1500 -Hsync +Vsync
 #endif
 
-static int G45_parse_ddc(OOP_Class *cl, OOP_Object *obj)
+static int G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr, OOP_Object *obj)
 {
 	MAKE_SYNC(640x350_85, 31.50, 640, 672, 736, 832, 350, 382, 385, 445, "GMA: 640x350 @ 85 Hz (VESA)");
 	MAKE_SYNC(640x400_85, 31.50, 640, 672, 736, 832, 400, 401, 404, 445, "GMA: 640x400 @ 85 Hz (VESA)");
@@ -125,6 +125,7 @@ static int G45_parse_ddc(OOP_Class *cl, OOP_Object *obj)
 	MAKE_SYNC(640x480_85, 36.00, 640, 696, 752, 832, 480, 481, 484, 509, "GMA: 640x480 @ 85 Hz (VESA)");
 	MAKE_SYNC(720x400_85, 35.50, 720, 756, 828, 936, 400, 401, 404, 446, "GMA: 720x400 @ 85 Hz (VESA)");
 
+	struct TagItem *tags = *tagsptr;
 	struct pHidd_I2CDevice_WriteRead msg;
 	uint8_t edid[128];
 	char wb[2] = {0, 0};
@@ -274,6 +275,8 @@ static int G45_parse_ddc(OOP_Class *cl, OOP_Object *obj)
 	}
 	else
 		D(bug("[GMA] Not a valid EDID data\n"));
+
+	*tagsptr = tags;
 }
 
 OOP_Object *METHOD(INTELG45, Root, New)
@@ -343,8 +346,8 @@ OOP_Object *METHOD(INTELG45, Root, New)
 	pool = poolptr = AllocVecPooled(sd->MemPool, sizeof(struct TagItem) * 11 * 60);
 
 	struct TagItem i2c_attrs[] = {
-			{ aHidd_I2C_HoldTime,   	40 },
-			{ aHidd_I2C_RiseFallTime,   40 },
+//			{ aHidd_I2C_HoldTime,   	40 },
+//			{ aHidd_I2C_RiseFallTime,   40 },
 			{ TAG_DONE, 0UL }
 	};
 
@@ -381,7 +384,7 @@ OOP_Object *METHOD(INTELG45, Root, New)
 
 			if (obj)
 			{
-				automode_count = G45_parse_ddc(cl, obj);
+				G45_parse_ddc(cl, &tags, obj);
 
 				OOP_DisposeObject(obj);
 			}
@@ -389,16 +392,30 @@ OOP_Object *METHOD(INTELG45, Root, New)
 		OOP_DisposeObject(i2c);
 	}
 
-	tags += automode_count;
+	tags->ti_Tag = TAG_DONE;
+	tags->ti_Data = 0;
 
-	if (automode_count == 0)
-	{
-		D(bug("[GMA] No valid EDID data. Adding few standard modes\n"));
-	}
+    struct TagItem mytags[] = {
+        { aHidd_Gfx_ModeTags,   (IPTR)modetags  },
+        { TAG_MORE, (IPTR)msg->attrList }
+    };
 
+    struct pRoot_New mymsg;
 
+    mymsg.mID = msg->mID;
+    mymsg.attrList = mytags;
 
-    return NULL;
+    msg = &mymsg;
+
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    if (o)
+    {
+        sd->GMAObject = o;
+    }
+
+    D(bug("[GMA] INTELG45::New() = %p\n", o));
+
+    return o;
 }
 
 void METHOD(INTELG45, Root, Get)
@@ -456,4 +473,152 @@ void METHOD(INTELG45, Root, Set)
 	}
 
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+
+OOP_Object *METHOD(INTELG45, Hidd_Gfx, Show)
+{
+    OOP_Object *fb = NULL;
+    if (msg->bitMap)
+    {
+    	GMABitMap_t *bm = OOP_INST_DATA(OOP_OCLASS(msg->bitMap), msg->bitMap);
+#if 0
+        if (bm->state)
+        {
+            /* Suppose bm has properly allocated state structure */
+            if (bm->fbgfx)
+            {
+                bm->usecount++;
+
+                LOCK_HW
+                LoadState(sd, bm->state);
+                DPMS(sd, sd->dpms);
+
+                fb = bm->BitMap;
+                ShowHideCursor(sd, sd->Card.cursorVisible);
+
+                RADEONEngineReset(sd);
+                RADEONEngineRestore(sd);
+
+                UNLOCK_HW
+            }
+        }
+#endif
+    }
+
+    if (!fb)
+        fb = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    return fb;
+}
+
+OOP_Object *METHOD(INTELG45, Hidd_Gfx, NewBitMap)
+{
+    BOOL displayable, framebuffer;
+    OOP_Class *classptr = NULL;
+    struct TagItem mytags[2];
+    struct pHidd_Gfx_NewBitMap mymsg;
+
+    /* Displayable bitmap ? */
+    displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
+    framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
+
+    if (framebuffer)
+    {
+        /* If the user asks for a framebuffer map we must ALLWAYS supply a class */
+        classptr = sd->OnBMClass;
+    }
+    else if (displayable)
+    {
+        classptr = sd->OnBMClass;   //offbmclass;
+    }
+    else
+    {
+        HIDDT_ModeID modeid;
+        /*
+            For the non-displayable case we can either supply a class ourselves
+            if we can optimize a certain type of non-displayable bitmaps. Or we
+            can let the superclass create on for us.
+
+            The attributes that might come from the user deciding the bitmap
+            pixel format are:
+            - aHidd_BitMap_ModeID:  a modeid. create a nondisplayable
+                bitmap with the size  and pixelformat of a gfxmode.
+            - aHidd_BitMap_StdPixFmt: a standard pixelformat as described in
+                hidd/graphics.h
+            - aHidd_BitMap_Friend: if this is supplied and none of the two above
+                are supplied, then the pixel format of the created bitmap
+                will be the same as the one of the friend bitmap.
+
+            These tags are listed in prioritized order, so if
+            the user supplied a ModeID tag, then you should not care about StdPixFmt
+            or Friend. If there is no ModeID, but a StdPixFmt tag supplied,
+            then you should not care about Friend because you have to
+            create the correct pixelformat. And as said above, if only Friend
+            is supplied, you can create a bitmap with same pixelformat as Frien
+        */
+
+        modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+
+        if (vHidd_ModeID_Invalid != modeid)
+        {
+            /* User supplied a valid modeid. We can use our offscreen class */
+            classptr = sd->OffBMClass;
+        }
+        else
+        {
+            /*
+               We may create an offscreen bitmap if the user supplied a friend
+               bitmap. But we need to check that he did not supplied a StdPixFmt
+            */
+            HIDDT_StdPixFmt stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
+
+//            if (vHidd_StdPixFmt_Plane == stdpf)
+//            {
+//                classptr = sd->PlanarBMClass;
+//            }
+//            else
+            if (vHidd_StdPixFmt_Unknown == stdpf)
+            {
+                /* No std pixfmt supplied */
+                OOP_Object *friend;
+
+                /* Did the user supply a friend bitmap ? */
+                friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
+                if (NULL != friend)
+                {
+                    OOP_Class *friend_class = NULL;
+                    /* User supplied friend bitmap. Is the friend bitmap a Ati Gfx hidd bitmap ? */
+                    OOP_GetAttr(friend, aHidd_BitMap_ClassPtr, (APTR)&friend_class);
+                    if (friend_class == sd->OnBMClass)
+                    {
+                        /* Friend was ATI hidd bitmap. Now we can supply our own class */
+                        classptr = sd->OffBMClass;
+                    }
+                }
+            }
+        }
+    }
+
+    D(bug("[GMA] classptr = %p\n", classptr));
+
+    /* Do we supply our own class ? */
+    if (NULL != classptr)
+    {
+        /* Yes. We must let the superclass not that we do this. This is
+           done through adding a tag in the frot of the taglist */
+        mytags[0].ti_Tag    = aHidd_BitMap_ClassPtr;
+        mytags[0].ti_Data   = (IPTR)classptr;
+        mytags[1].ti_Tag    = TAG_MORE;
+        mytags[1].ti_Data   = (IPTR)msg->attrList;
+
+        /* Like in Gfx::New() we init a new message struct */
+        mymsg.mID       = msg->mID;
+        mymsg.attrList  = mytags;
+
+        /* Pass the new message to the superclass */
+        msg = &mymsg;
+    }
+
+    return (OOP_Object*)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }

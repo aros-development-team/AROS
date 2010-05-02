@@ -202,6 +202,8 @@ static int G45_Init(struct intelg45base *intelg45base)
 			}
 		}
 	}
+
+	return FALSE;
 }
 
 ADD2INITLIB(G45_Init, 0)

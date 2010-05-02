@@ -37,11 +37,19 @@ extern OOP_AttrBase HiddI2CAttrBase;
 extern OOP_AttrBase HiddI2CDeviceAttrBase;
 extern OOP_AttrBase __IHidd_PlanarBM;
 
+typedef struct {
+	uint8_t		h_min;		/* Minimal horizontal frequency in kHz */
+	uint8_t		h_max;		/* Maximal horizontal frequency in kHz */
+	uint8_t		v_min;		/* Minimal vertical frequency in Hz */
+	uint8_t		v_max;		/* Maximal vertical frequency in Hz */
+	uint8_t		pixel_max;	/* Maximal pixelclock/10 in MHz (multiply by 10 to get MHz value) */
+} GMA_MonitorSpec_t;
+
 struct g45chip {
-	char *		Framebuffer;
-	uint32_t	fb_size;
-	char *		MMIO;
-	uint32_t *	GATT;
+	char *			Framebuffer;
+	uint32_t		fb_size;
+	char *			MMIO;
+	uint32_t *		GATT;
 };
 
 struct g45staticdata {
@@ -58,9 +66,13 @@ struct g45staticdata {
 
 	OOP_Class *				IntelG45Class;
 	OOP_Class *				IntelI2C;
+	OOP_Class *				OnBMClass;
+	OOP_Class *				OffBMClass;
 
 	OOP_Object *			PCIObject;
 	OOP_Object *			PCIDevice;
+	OOP_Object * 			GMAObject;
+
 
 	OOP_AttrBase			pciAttrBase;
 	OOP_AttrBase			atiBitMapAttrBase;
@@ -78,6 +90,30 @@ struct intelg45base {
 	struct g45staticdata	g45_sd;
 };
 
+typedef struct {
+	uint32_t	htotal;
+	uint32_t	hblank;
+	uint32_t	hsync;
+	uint32_t	vtotal;
+	uint32_t	vblank;
+	uint32_t	vsync;
+} GMAState_t;
+
+typedef struct {
+    struct SignalSemaphore bmLock;
+
+    OOP_Object *bitmap;    // BitMap OOP Object
+    intptr_t	framebuffer;    // Points to pixel data
+    uint16_t	width;      // Bitmap width
+    uint16_t	height;     // Bitmap height
+    uint16_t	pitch;      // BytesPerRow aligned
+    uint8_t		depth;      // Bitmap depth
+    uint8_t		bpp;        // BytesPerPixel
+    uint8_t		onbm;       // is onbitmap?
+    uint8_t		fbgfx;      // is framebuffer in gfx memory
+    uint64_t	usecount;   // counts BitMap accesses
+    GMAState_t *state;
+} GMABitMap_t;
 
 #define BASE(lib) ((struct intelg45base*)(lib))
 
