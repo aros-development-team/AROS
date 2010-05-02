@@ -1154,12 +1154,14 @@ D(bug("[Wanderer:VolumeList] %s: Removing NetworkBrowser entry\n", __PRETTY_FUNC
         D(bug("[Wanderer:VolumeList] %s: Causing parent to update\n", __PRETTY_FUNCTION__));
         retVal = DoSuperMethodA(CLASS, self, (Msg) message);
 
+	GET(self, MUIA_Family_List, &iconList);
+
 	ForeachNode(iconList, volentry)
 	{
 	    if ((volentry->ie_IconListEntry.type == ST_ROOT) && ((volentry->ie_IconNode.ln_Pri == -2) || (volentry->ie_IconNode.ln_Pri == -5)))
 	    {
-		if (entry->ie_IconNode.ln_Pri == -5) entry->ie_IconNode.ln_Pri = 5;
-		else entry->ie_IconNode.ln_Pri = 2;
+		if (volentry->ie_IconNode.ln_Pri == -5) volentry->ie_IconNode.ln_Pri = 5;
+		else volentry->ie_IconNode.ln_Pri = 2;
 
 		D(bug("[Wanderer:VolumeList] %s: Re-Parsing backdrop file for '%s'\n", __PRETTY_FUNCTION__, volentry->ie_IconNode.ln_Name));
 
