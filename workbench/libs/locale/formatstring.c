@@ -59,7 +59,7 @@ static inline APTR va_addr(va_list args, ULONG len)
 	    args->gpr += 2;
 	} else	{
 	    args->gpr = 8;
-	    ret = (args->overflow_arg_area + 7) & ~7);
+	    ret = (args->overflow_arg_area + 7) & ~7;
 	    args->overflow_arg_area = ret + sizeof(UQUAD);
 	}
     } else {
