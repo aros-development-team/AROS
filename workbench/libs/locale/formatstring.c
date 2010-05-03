@@ -55,18 +55,18 @@ static inline APTR va_addr(va_list args, ULONG len)
 	    ULONG *regsave = (ULONG *)args->reg_save_area;
 
             args->gpr += args->gpr & 1;
-	    ret = regsave[args->gpr];
+	    ret = &regsave[args->gpr];
 	    args->gpr += 2;
 	} else	{
 	    args->gpr = 8;
-	    ret = (args->overflow_arg_area + 7) & ~7;
+	    ret = (APTR)(((IPTR)(args->overflow_arg_area + 7)) & ~7);
 	    args->overflow_arg_area = ret + sizeof(UQUAD);
 	}
     } else {
 	if (args->gpr < 8) {								   \
 	    ULONG *regsave = (ULONG *)args->reg_save_area;
 
-	    ret = regsave[args->gpr++];
+	    ret = &regsave[args->gpr++];
 	} else {
 	    ret = args->overflow_arg_area;
 	    args->overflow_arg_area += sizeof(ULONG);
