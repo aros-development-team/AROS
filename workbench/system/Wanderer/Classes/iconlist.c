@@ -129,9 +129,8 @@ static struct TagItem		__iconList_BackBuffLayerTags[] =
 #define NO_ICON_POSITION                               (0x8000000) /* belongs to workbench/workbench.h */
 #endif
 
-#define UPDATE_SINGLEICON                              1
+#define UPDATE_SINGLEENTRY                             1
 #define UPDATE_SCROLL                                  2
-#define UPDATE_SORT                                    3
 #define UPDATE_RESIZE                                  4
 
 #define LEFT_BUTTON                                    1
@@ -2492,40 +2491,40 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
             }
         )
 #endif
-        if ((data->icld_UpdateMode == UPDATE_SINGLEICON) && (data->update_icon != NULL)) /* draw only a single icon at update_icon */
+        if ((data->icld_UpdateMode == UPDATE_SINGLEENTRY) && (data->update_entry != NULL)) /* draw only a single icon at update_entry */
         {
             struct Rectangle rect;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-            D(bug("[IconList] %s#%d: UPDATE_SINGLEICON (icon @ 0x%p)\n", __PRETTY_FUNCTION__, draw_id, data->update_icon));
+            D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY (icon @ 0x%p)\n", __PRETTY_FUNCTION__, draw_id, data->update_entry));
 #endif
 
-            IconList_GetIconAreaRectangle(obj, data, data->update_icon, &rect);
+            IconList_GetIconAreaRectangle(obj, data, data->update_entry, &rect);
 
-            rect.MinX += _mleft(obj) + (data->update_icon->ie_IconX - data->icld_ViewX);
-            rect.MaxX += _mleft(obj) + (data->update_icon->ie_IconX - data->icld_ViewX);
-            rect.MinY += _mtop(obj) + (data->update_icon->ie_IconY - data->icld_ViewY);
-            rect.MaxY += _mtop(obj) + (data->update_icon->ie_IconY - data->icld_ViewY);
+            rect.MinX += _mleft(obj) + (data->update_entry->ie_IconX - data->icld_ViewX);
+            rect.MaxX += _mleft(obj) + (data->update_entry->ie_IconX - data->icld_ViewX);
+            rect.MinY += _mtop(obj) + (data->update_entry->ie_IconY - data->icld_ViewY);
+            rect.MaxY += _mtop(obj) + (data->update_entry->ie_IconY - data->icld_ViewY);
 
             if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
             {
-                if (data->update_icon->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+                if (data->update_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
                 {
-                    rect.MinX += ((data->icld_IconAreaLargestWidth - data->update_icon->ie_AreaWidth)/2);
-                    rect.MaxX += ((data->icld_IconAreaLargestWidth - data->update_icon->ie_AreaWidth)/2);
+                    rect.MinX += ((data->icld_IconAreaLargestWidth - data->update_entry->ie_AreaWidth)/2);
+                    rect.MaxX += ((data->icld_IconAreaLargestWidth - data->update_entry->ie_AreaWidth)/2);
                 }
 
-                if (data->update_icon->ie_AreaHeight < data->icld_IconAreaLargestHeight)
+                if (data->update_entry->ie_AreaHeight < data->icld_IconAreaLargestHeight)
                 {
-                    rect.MinY += ((data->icld_IconAreaLargestHeight - data->update_icon->ie_AreaHeight)/2);
-                    rect.MaxY += ((data->icld_IconAreaLargestHeight - data->update_icon->ie_AreaHeight)/2);
+                    rect.MinY += ((data->icld_IconAreaLargestHeight - data->update_entry->ie_AreaHeight)/2);
+                    rect.MaxY += ((data->icld_IconAreaLargestHeight - data->update_entry->ie_AreaHeight)/2);
                 }
             }
 
             clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-            D(bug("[IconList] %s#%d: UPDATE_SINGLEICON: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__, draw_id));
+            D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__, draw_id));
 #endif
             DoMethod(obj, MUIM_DrawBackground, 
                 rect.MinX, rect.MinY,
@@ -2540,7 +2539,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
             Foreach_Node(&data->icld_IconList, icon);
 #endif
             {
-                if ((icon != data->update_icon) && (icon->ie_Flags & ICONENTRY_FLAG_VISIBLE))
+                if ((icon != data->update_entry) && (icon->ie_Flags & ICONENTRY_FLAG_VISIBLE))
                 {
                     struct Rectangle rect2;
                     IconList_GetIconAreaRectangle(obj, data, icon, &rect2);
@@ -2577,16 +2576,16 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
             }
 
             icon->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
-            DoMethod(obj, MUIM_IconList_DrawEntry, data->update_icon, ICONENTRY_DRAWMODE_PLAIN);
-            DoMethod(obj, MUIM_IconList_DrawEntryLabel, data->update_icon, ICONENTRY_DRAWMODE_PLAIN);
+            DoMethod(obj, MUIM_IconList_DrawEntry, data->update_entry, ICONENTRY_DRAWMODE_PLAIN);
+            DoMethod(obj, MUIM_IconList_DrawEntryLabel, data->update_entry, ICONENTRY_DRAWMODE_PLAIN);
             icon->ie_Flags &= ~ICONENTRY_FLAG_NEEDSUPDATE;
             data->icld_UpdateMode = 0;
-            data->update_icon = NULL;
+            data->update_entry = NULL;
 
             if (data->icld_DisplayRastPort != data->icld_BufferRastPort)
             {
 #if defined(DEBUG_ILC_ICONRENDERING)
-                D(bug("[IconList] %s#%d: UPDATE_SINGLEICON Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
+                D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
 #endif 
                 BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
                           rect.MinX - _mleft(obj), rect.MinY - _mtop(obj),
@@ -3609,8 +3608,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                     {
                                         active_entry->ie_Flags |= ICONENTRY_FLAG_SELECTED;
                                         AddTail(&data->icld_SelectionList, &active_entry->ie_SelectionNode);
-                                        data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                        data->update_icon = active_entry;
+                                        data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                        data->update_entry = active_entry;
                                         MUI_Redraw(obj, MADF_DRAWUPDATE);
                                     }
                                     data->icld_SelectionLastClicked = active_entry;
@@ -3654,8 +3653,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 
                                     data->icld_FocusIcon = active_entry;
 
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = active_entry;
+                                    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                    data->update_entry = active_entry;
                                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                                 }
                                 break;
@@ -3715,8 +3714,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 #endif
 
                                     start_entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = start_entry;
+                                    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                    data->update_entry = start_entry;
                                     MUI_Redraw(obj, MADF_DRAWUPDATE);
 
                                     start_X = start_entry->ie_IconX;
@@ -3893,8 +3892,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                     if (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
                                     {
                                         active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                                        data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                        data->update_icon = active_entry;
+                                        data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                        data->update_entry = active_entry;
                                         MUI_Redraw(obj, MADF_DRAWUPDATE);
                                     }
                                 }
@@ -3915,8 +3914,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 #endif
 
                                     start_entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = start_entry;
+                                    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                    data->update_entry = start_entry;
                                     MUI_Redraw(obj, MADF_DRAWUPDATE);
 
                                     start_X = start_entry->ie_IconX;
@@ -4096,8 +4095,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                     if (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
                                     {
                                         active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                                        data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                        data->update_icon = active_entry;
+                                        data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                        data->update_entry = active_entry;
                                         MUI_Redraw(obj, MADF_DRAWUPDATE);
                                     }
                                 }
@@ -4118,8 +4117,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 #endif
 
                                     start_entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = start_entry;
+                                    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                    data->update_entry = start_entry;
                                     MUI_Redraw(obj, MADF_DRAWUPDATE);
 
                                     start_X = start_entry->ie_IconX;
@@ -4309,8 +4308,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                     if (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
                                     {
                                         active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                                        data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                        data->update_icon = active_entry;
+                                        data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                        data->update_entry = active_entry;
                                         MUI_Redraw(obj, MADF_DRAWUPDATE);
                                     }
                                 }
@@ -4331,8 +4330,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                     D(bug("[IconList] %s: RIGHT: Clearing existing focused icon @ 0x%p\n", __PRETTY_FUNCTION__, start_entry));
 #endif
                                     start_entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = start_entry;
+                                    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                    data->update_entry = start_entry;
                                     MUI_Redraw(obj, MADF_DRAWUPDATE);
 
                                     start_X = start_entry->ie_IconX;
@@ -4498,8 +4497,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                     if (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
                                     {
                                         active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                                        data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                        data->update_icon = active_entry;
+                                        data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                        data->update_entry = active_entry;
                                         MUI_Redraw(obj, MADF_DRAWUPDATE);
                                     }
                                 }
@@ -4516,8 +4515,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                 if (data->icld_FocusIcon)
                                 {
                                     data->icld_FocusIcon->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = data->icld_FocusIcon;
+                                    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                    data->update_entry = data->icld_FocusIcon;
                                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                                 }
 
@@ -4526,8 +4525,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                 if ((active_entry) && (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS)))
                                 {
                                     active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = active_entry;
+                                    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                    data->update_entry = active_entry;
                                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                                 }
                                 data->icld_FocusIcon = active_entry;
@@ -4543,8 +4542,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                 if (data->icld_FocusIcon)
                                 {
                                     data->icld_FocusIcon->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = data->icld_FocusIcon;
+                                    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                    data->update_entry = data->icld_FocusIcon;
                                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                                 }
 
@@ -4553,8 +4552,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                 if ((active_entry) && (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS)))
                                 {
                                     active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = active_entry;
+                                    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                    data->update_entry = active_entry;
                                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                                 }
                                 data->icld_FocusIcon = active_entry;
@@ -4590,7 +4589,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                         {
                             if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
                             {
-                                BOOL update_icon = FALSE;
+                                BOOL update_entry = FALSE;
 
                                 rect.MinX = node->ie_IconX;
                                 rect.MaxX = node->ie_IconX + node->ie_AreaWidth - 1;
@@ -4621,20 +4620,20 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                     {
                                         Remove(&node->ie_SelectionNode);
                                         node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
-                                        update_icon = TRUE;
+                                        update_entry = TRUE;
                                     }
                                 }
 
                                 if ((node->ie_Flags & ICONENTRY_FLAG_FOCUS) && (new_selected != node))
                                 {
                                     node->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                                    update_icon = TRUE;
+                                    update_entry = TRUE;
                                 }
 
-                                if (update_icon)
+                                if (update_entry)
                                 {
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = node;
+                                    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                    data->update_entry = node;
                                     MUI_Redraw(obj, MADF_DRAWUPDATE);
 #if defined(DEBUG_ILC_EVENTS)
                                     D(bug("[IconList] %s: Rendered icon '%s'\n", __PRETTY_FUNCTION__, node->ie_IconListEntry.label));
@@ -4688,7 +4687,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                         }
                         else
                         {
-                            struct IconEntry      *update_icon = NULL;
+                            struct IconEntry      *update_entry = NULL;
 
                             data->icld_LassoActive = FALSE;
 
@@ -4696,12 +4695,12 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                             {
                                 AddTail(&data->icld_SelectionList, &new_selected->ie_SelectionNode);
                                 new_selected->ie_Flags |= ICONENTRY_FLAG_SELECTED;
-                                update_icon = new_selected;
+                                update_entry = new_selected;
 
                                 if (!(new_selected->ie_Flags & ICONENTRY_FLAG_FOCUS))
                                 {
                                     new_selected->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                                    update_icon = new_selected;
+                                    update_entry = new_selected;
                                     data->icld_FocusIcon = new_selected;
                                 }
                             }
@@ -4709,17 +4708,17 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                             {
                                 Remove(&new_selected->ie_SelectionNode);
                                 new_selected->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
-                                update_icon = new_selected;
+                                update_entry = new_selected;
                                 new_selected = NULL;
                             }
 
-                            if (update_icon != NULL)
+                            if (update_entry != NULL)
                             {
-                                data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                data->update_icon = update_icon;
+                                data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                data->update_entry = update_entry;
                                 MUI_Redraw(obj, MADF_DRAWUPDATE);
 #if defined(DEBUG_ILC_EVENTS)
-                                D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__, update_icon->ie_IconListEntry.label));
+                                D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__, update_entry->ie_IconListEntry.label));
 #endif
                             }
                         }                       
@@ -4932,7 +4931,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                         Foreach_Node(&data->icld_IconList, node);
 #endif
                         {
-                            IPTR update_icon = (IPTR)NULL;
+                            IPTR update_entry = (IPTR)NULL;
 
                             if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
                             {
@@ -4965,7 +4964,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                             node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
                                         }
                                         node->ie_Flags |= ICONENTRY_FLAG_LASSO;
-                                        update_icon = (IPTR)node;
+                                        update_entry = (IPTR)node;
                                      }
                                 } 
                                 else if (node->ie_Flags & ICONENTRY_FLAG_LASSO)
@@ -4982,13 +4981,13 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                         node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
                                     }
                                     node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
-                                    update_icon = (IPTR)node;
+                                    update_entry = (IPTR)node;
                                 }
 
-                                if (update_icon)
+                                if (update_entry)
                                 {
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = (struct IconEntry *)update_icon;
+                                    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                    data->update_entry = (struct IconEntry *)update_entry;
                                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                                 }
                             }
@@ -5423,8 +5422,8 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
 #endif
             /* mark the Icon the selection was dropped on*/
             //drop_target_node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
-            //data->icld_UpdateMode = UPDATE_SINGLEICON;
-            //data->update_icon = drop_target_node;
+            //data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+            //data->update_entry = drop_target_node;
             //MUI_Redraw(obj,MADF_DRAWUPDATE);
         }
         else
@@ -5588,7 +5587,7 @@ IPTR IconList__MUIM_IconList_UnselectAll(struct IClass *CLASS, Object *obj, Msg 
 #endif
     {
         struct IconEntry    *entry = (struct IconEntry *)((IPTR)node - ((IPTR)&entry->ie_SelectionNode - (IPTR)entry));
-        BOOL                update_icon = FALSE;
+        BOOL                update_entry = FALSE;
 
         if (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
         {
@@ -5596,20 +5595,20 @@ IPTR IconList__MUIM_IconList_UnselectAll(struct IClass *CLASS, Object *obj, Msg 
             {
                 Remove(node);
                 entry->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
-                update_icon = TRUE;
+                update_entry = TRUE;
             }
             if (entry->ie_Flags & ICONENTRY_FLAG_FOCUS)
             {
                 entry->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                update_icon = TRUE;
+                update_entry = TRUE;
             }
         }
 
-        if (update_icon)
+        if (update_entry)
         {
 			changed = TRUE;
-            data->icld_UpdateMode = UPDATE_SINGLEICON;
-            data->update_icon = entry;
+            data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+            data->update_entry = entry;
             MUI_Redraw(obj, MADF_DRAWUPDATE);
         }
     }
@@ -5641,27 +5640,27 @@ IPTR IconList__MUIM_IconList_SelectAll(struct IClass *CLASS, Object *obj, Msg me
     {
         if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
         {
-            BOOL update_icon = FALSE;
+            BOOL update_entry = FALSE;
 
             if (!(node->ie_Flags & ICONENTRY_FLAG_SELECTED))
             {
                 AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
                 node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
-                update_icon = TRUE;
+                update_entry = TRUE;
 
                 data->icld_SelectionLastClicked = node;
             }
             else if (node->ie_Flags & ICONENTRY_FLAG_FOCUS)
             {
                 node->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                update_icon = TRUE;
+                update_entry = TRUE;
             }
 
-            if (update_icon)
+            if (update_entry)
             {
                 changed = TRUE;
-                data->icld_UpdateMode = UPDATE_SINGLEICON;
-                data->update_icon = node;
+                data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                data->update_entry = node;
                 MUI_Redraw(obj, MADF_DRAWUPDATE);
             }
         }
@@ -5675,8 +5674,8 @@ IPTR IconList__MUIM_IconList_SelectAll(struct IClass *CLASS, Object *obj, Msg me
         {
             data->icld_FocusIcon->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
             data->icld_FocusIcon->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-            data->icld_UpdateMode = UPDATE_SINGLEICON;
-            data->update_icon = data->icld_FocusIcon;
+            data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+            data->update_entry = data->icld_FocusIcon;
             MUI_Redraw(obj, MADF_DRAWUPDATE);
         }
     }

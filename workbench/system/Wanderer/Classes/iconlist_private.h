@@ -64,7 +64,7 @@ struct IconList_DATA
     WORD                          update_oldwidth;
     WORD                          update_oldheight;
 
-    struct IconEntry              *update_icon;
+    struct IconEntry              *update_entry;
     struct Rectangle              *update_rect1;
     struct Rectangle              *update_rect2;
     struct Rectangle              view_rect;
