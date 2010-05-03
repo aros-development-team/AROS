@@ -112,11 +112,17 @@ extern struct Library   *MUIMasterBase;
 static struct Hook      __iconlist_UpdateLabels_hook;
 
 // N.B: We Handle frame/background rendering so make sure icon.library doesnt do it ..
-struct TagItem          __iconList_DrawIconStateTags[] = {
+static struct TagItem          __iconList_DrawIconStateTags[] = {
     { ICONDRAWA_Frameless, TRUE},
     { ICONDRAWA_Borderless, TRUE},
     { ICONDRAWA_EraseBackground, FALSE},
     { TAG_DONE, }
+};
+
+static struct TagItem		__iconList_BackBuffLayerTags[] =
+{
+    //{LA_Visible     , (IPTR)FALSE	},
+    {TAG_DONE				}
 };
 
 #ifndef NO_ICON_POSITION
@@ -1739,11 +1745,7 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 						BMF_CLEAR,
 						data->icld_DisplayRastPort->BitMap))!=NULL)
 			    {
-				struct TagItem lay_tags[] =
-				{
-				    //{LA_Visible     , (IPTR)FALSE	},
-				    {TAG_DONE				}
-				};
+
 
 				struct Layer * buffLayer = CreateLayerTagList(&_screen(obj)->LayerInfo,
 					       bitmap_New,
@@ -1752,7 +1754,7 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 					       data->icld_ViewWidth,
 					       data->icld_ViewHeight,
 					       LAYERSIMPLE,
-					       lay_tags);
+					       __iconList_BackBuffLayerTags);
 
 				if (buffLayer != NULL)
 				{
@@ -2268,12 +2270,6 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
                                 BMF_CLEAR,
                                 data->icld_DisplayRastPort->BitMap))!=NULL)
             {
-		struct TagItem lay_tags[] =
-		{
-		    //{LA_Visible     , (IPTR)FALSE	},
-		    {TAG_DONE				}
-		};
-
 		struct Layer * buffLayer = CreateLayerTagList(&_screen(obj)->LayerInfo,
 			       bitmap_New,
 			       0,
@@ -2281,7 +2277,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 			       data->icld_ViewWidth,
 			       data->icld_ViewHeight,
 			       LAYERSIMPLE,
-			       lay_tags);
+			       __iconList_BackBuffLayerTags);
 
 		if (buffLayer != NULL)
 		{
@@ -2797,12 +2793,6 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 					BMF_CLEAR,
 					data->icld_DisplayRastPort->BitMap))!=NULL)
 		    {
-			struct TagItem lay_tags[] =
-			{
-			    //{LA_Visible     , (IPTR)FALSE	},
-			    {TAG_DONE				}
-			};
-
 			struct Layer * buffLayer = CreateLayerTagList(&_screen(obj)->LayerInfo,
 				       bitmap_New,
 				       0,
@@ -2810,7 +2800,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 				       data->icld_ViewWidth,
 				       data->icld_ViewHeight,
 				       LAYERSIMPLE,
-				       lay_tags);
+				       __iconList_BackBuffLayerTags);
 
 			if (buffLayer != NULL)
 			{
