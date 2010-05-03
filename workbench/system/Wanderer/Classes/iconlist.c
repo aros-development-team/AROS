@@ -685,32 +685,19 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
     iconX = iconrect.MinX - objX + data->icld_DrawOffsetX;
     iconY = iconrect.MinY - objY + data->icld_DrawOffsetY;
 
-    if ((data->icld_BufferRastPort == data->icld_DisplayRastPort) || 
-         ((data->icld_BufferRastPort != data->icld_DisplayRastPort) && 
-          ((iconX > objX) && (iconX < (objX + objW)) && (iconY > objY) && (iconY < (objY + objH))) &&
-          (((iconX + iconW) > objX) && ((iconX + iconW)< (objX + objW)) && ((iconY + iconH) > objY) && ((iconY + iconH) < (objY + objH)))
-         ))
-    {
 #if defined(DEBUG_ILC_ICONRENDERING)
-        D(bug("[IconList] %s: DrawIconState('%s') .. %d, %d\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label, iconX, iconY));
+    D(bug("[IconList] %s: DrawIconState('%s') .. %d, %d\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label, iconX, iconY));
 #endif
-        DrawIconStateA
-          (
-            data->icld_BufferRastPort, message->icon->ie_DiskObj, NULL,
-            iconX, 
-            iconY, 
-            (message->icon->ie_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
-            __iconList_DrawIconStateTags
-          );
+    DrawIconStateA
+      (
+	data->icld_BufferRastPort, message->icon->ie_DiskObj, NULL,
+	iconX, 
+	iconY, 
+	(message->icon->ie_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
+	__iconList_DrawIconStateTags
+      );
 #if defined(DEBUG_ILC_ICONRENDERING)
-        D(bug("[IconList] %s: DrawIconState Done\n", __PRETTY_FUNCTION__));
-#endif
-    }
-#if defined(DEBUG_ILC_ICONRENDERING)
-    else
-    {
-        D(bug("[IconList] %s: DrawIconState('%s') NEEDS CLIPPED!\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label));
-    }
+    D(bug("[IconList] %s: DrawIconState Done\n", __PRETTY_FUNCTION__));
 #endif
 
     return TRUE;
@@ -1114,212 +1101,205 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
 
     txtarea_width = txtbox_width - ((data->icld__Option_LabelTextBorderWidth + data->icld__Option_LabelTextHorizontalPadding) * 2);
 
-    if ((data->icld_BufferRastPort == data->icld_DisplayRastPort) || 
-         ((data->icld_BufferRastPort != data->icld_DisplayRastPort) && 
-          ((iconlabelrect.MinX > objX) && (iconlabelrect.MinX < (objX + objW)) && (iconlabelrect.MinY > objY) && (iconlabelrect.MinY < (objY + objH))) &&
-          ((iconlabelrect.MaxX > objX) && (iconlabelrect.MaxX < (objX + objW)) && (iconlabelrect.MaxY > objY) && (iconlabelrect.MaxY < (objY + objH)))
-         ))
+#if defined(DEBUG_ILC_ICONRENDERING)
+    D(bug("[IconList] %s: Drawing Label '%s' .. %d, %d\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label, labelX, labelY));
+#endif
+    if (message->icon->ie_IconListEntry.label && message->icon->ie_TxtBuf_DisplayedLabel)
     {
-#if defined(DEBUG_ILC_ICONRENDERING)
-        D(bug("[IconList] %s: Drawing Label '%s' .. %d, %d\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label, labelX, labelY));
-#endif
-        if (message->icon->ie_IconListEntry.label && message->icon->ie_TxtBuf_DisplayedLabel)
-        {
-            char *curlabel_StrPtr;
+	char *curlabel_StrPtr;
 
-            if ((message->icon->ie_Flags & ICONENTRY_FLAG_FOCUS) && ((BOOL)XGET(_win(obj), MUIA_Window_Activate)))
-            {
-                //Draw the focus box around the selected label ..
-                if (data->icld__Option_LabelTextBorderHeight > 0)
-                {
-                    InvertPixelArray(data->icld_BufferRastPort,
-                                iconlabelrect.MinX, iconlabelrect.MinY,
-                                (iconlabelrect.MaxX - iconlabelrect.MinX) + 1, data->icld__Option_LabelTextBorderHeight);
+	if ((message->icon->ie_Flags & ICONENTRY_FLAG_FOCUS) && ((BOOL)XGET(_win(obj), MUIA_Window_Activate)))
+	{
+	    //Draw the focus box around the selected label ..
+	    if (data->icld__Option_LabelTextBorderHeight > 0)
+	    {
+		InvertPixelArray(data->icld_BufferRastPort,
+			    iconlabelrect.MinX, iconlabelrect.MinY,
+			    (iconlabelrect.MaxX - iconlabelrect.MinX) + 1, data->icld__Option_LabelTextBorderHeight);
 
-                    InvertPixelArray(data->icld_BufferRastPort,
-                                iconlabelrect.MinX, iconlabelrect.MaxY - (data->icld__Option_LabelTextBorderHeight - 1),
-                                (iconlabelrect.MaxX - iconlabelrect.MinX) + 1, data->icld__Option_LabelTextBorderHeight);
-                }
-                if (data->icld__Option_LabelTextBorderWidth > 0)
-                {
-                    InvertPixelArray(data->icld_BufferRastPort,
-                                iconlabelrect.MinX, iconlabelrect.MinY + data->icld__Option_LabelTextBorderHeight,
-                                data->icld__Option_LabelTextBorderWidth, (((iconlabelrect.MaxY - iconlabelrect.MinY) + 1) - (data->icld__Option_LabelTextBorderHeight *  2)));
+		InvertPixelArray(data->icld_BufferRastPort,
+			    iconlabelrect.MinX, iconlabelrect.MaxY - (data->icld__Option_LabelTextBorderHeight - 1),
+			    (iconlabelrect.MaxX - iconlabelrect.MinX) + 1, data->icld__Option_LabelTextBorderHeight);
+	    }
+	    if (data->icld__Option_LabelTextBorderWidth > 0)
+	    {
+		InvertPixelArray(data->icld_BufferRastPort,
+			    iconlabelrect.MinX, iconlabelrect.MinY + data->icld__Option_LabelTextBorderHeight,
+			    data->icld__Option_LabelTextBorderWidth, (((iconlabelrect.MaxY - iconlabelrect.MinY) + 1) - (data->icld__Option_LabelTextBorderHeight *  2)));
 
-                    InvertPixelArray(data->icld_BufferRastPort,
-                                iconlabelrect.MaxX - (data->icld__Option_LabelTextBorderWidth - 1), iconlabelrect.MinY  + data->icld__Option_LabelTextBorderHeight,
-                                data->icld__Option_LabelTextBorderWidth, (((iconlabelrect.MaxY - iconlabelrect.MinY) + 1) - (data->icld__Option_LabelTextBorderHeight * 2)));
-                }
-            }
+		InvertPixelArray(data->icld_BufferRastPort,
+			    iconlabelrect.MaxX - (data->icld__Option_LabelTextBorderWidth - 1), iconlabelrect.MinY  + data->icld__Option_LabelTextBorderHeight,
+			    data->icld__Option_LabelTextBorderWidth, (((iconlabelrect.MaxY - iconlabelrect.MinY) + 1) - (data->icld__Option_LabelTextBorderHeight * 2)));
+	    }
+	}
 
-            SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
+	SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
 
-            curlabel_TotalLines = message->icon->ie_SplitParts;
-            curlabel_CurrentLine = 0;
+	curlabel_TotalLines = message->icon->ie_SplitParts;
+	curlabel_CurrentLine = 0;
 
-            if (curlabel_TotalLines == 0)
-                curlabel_TotalLines = 1;
+	if (curlabel_TotalLines == 0)
+	    curlabel_TotalLines = 1;
 
-            if (!(data->icld__Option_LabelTextMultiLineOnFocus) || (data->icld__Option_LabelTextMultiLineOnFocus && (message->icon->ie_Flags & ICONENTRY_FLAG_FOCUS)))
-            {
-                if (curlabel_TotalLines > data->icld__Option_LabelTextMultiLine)
-                    curlabel_TotalLines = data->icld__Option_LabelTextMultiLine;
-            }
-            else
-                curlabel_TotalLines = 1;
+	if (!(data->icld__Option_LabelTextMultiLineOnFocus) || (data->icld__Option_LabelTextMultiLineOnFocus && (message->icon->ie_Flags & ICONENTRY_FLAG_FOCUS)))
+	{
+	    if (curlabel_TotalLines > data->icld__Option_LabelTextMultiLine)
+		curlabel_TotalLines = data->icld__Option_LabelTextMultiLine;
+	}
+	else
+	    curlabel_TotalLines = 1;
 
-            curlabel_StrPtr = message->icon->ie_TxtBuf_DisplayedLabel;
+	curlabel_StrPtr = message->icon->ie_TxtBuf_DisplayedLabel;
 
-            ty = labelY - 1;
+	ty = labelY - 1;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-            D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->icld_IconLabelFont->tf_YSize, data->icld_IconLabelFont->tf_Baseline));
+	D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->icld_IconLabelFont->tf_YSize, data->icld_IconLabelFont->tf_Baseline));
 #endif
-            for (curlabel_CurrentLine = 0; curlabel_CurrentLine < curlabel_TotalLines; curlabel_CurrentLine++)
-            {
-                ULONG ie_LabelLength;
+	for (curlabel_CurrentLine = 0; curlabel_CurrentLine < curlabel_TotalLines; curlabel_CurrentLine++)
+	{
+	    ULONG ie_LabelLength;
 
-                if (curlabel_CurrentLine > 0) curlabel_StrPtr = curlabel_StrPtr + strlen(curlabel_StrPtr) + 1;
-                if ((curlabel_CurrentLine >= (curlabel_TotalLines -1)) && (curlabel_TotalLines < message->icon->ie_SplitParts))
-                {
-                    char *tmpLine = curlabel_StrPtr;
-                    ULONG tmpLen = strlen(tmpLine);
+	    if (curlabel_CurrentLine > 0) curlabel_StrPtr = curlabel_StrPtr + strlen(curlabel_StrPtr) + 1;
+	    if ((curlabel_CurrentLine >= (curlabel_TotalLines -1)) && (curlabel_TotalLines < message->icon->ie_SplitParts))
+	    {
+		char *tmpLine = curlabel_StrPtr;
+		ULONG tmpLen = strlen(tmpLine);
 
-                    if ((curlabel_StrPtr = AllocVecPooled(data->icld_Pool, tmpLen + 1)) != NULL)
-                    {
-                        memset(curlabel_StrPtr, 0, tmpLen + 1);
-                        strncpy(curlabel_StrPtr, tmpLine, tmpLen - 3);
-                        strcat(curlabel_StrPtr , " ..");
-                    }
-                    else
-                        return FALSE;
-                    
-                }
+		if ((curlabel_StrPtr = AllocVecPooled(data->icld_Pool, tmpLen + 1)) != NULL)
+		{
+		    memset(curlabel_StrPtr, 0, tmpLen + 1);
+		    strncpy(curlabel_StrPtr, tmpLine, tmpLen - 3);
+		    strcat(curlabel_StrPtr , " ..");
+		}
+		else
+		    return FALSE;
+		
+	    }
 
-                ie_LabelLength = strlen(curlabel_StrPtr);
-                offset_y = 0;
+	    ie_LabelLength = strlen(curlabel_StrPtr);
+	    offset_y = 0;
 
-                // Center message->icon's label
-                tx = (labelX + (message->icon->ie_TxtBuf_DisplayedLabelWidth / 2) - (TextLength(data->icld_BufferRastPort, curlabel_StrPtr, strlen(curlabel_StrPtr)) / 2));
+	    // Center message->icon's label
+	    tx = (labelX + (message->icon->ie_TxtBuf_DisplayedLabelWidth / 2) - (TextLength(data->icld_BufferRastPort, curlabel_StrPtr, strlen(curlabel_StrPtr)) / 2));
 
-                if (message->icon->ie_TxtBuf_DisplayedLabelWidth < txtarea_width)
-                    tx += ((txtarea_width - message->icon->ie_TxtBuf_DisplayedLabelWidth)/2);
+	    if (message->icon->ie_TxtBuf_DisplayedLabelWidth < txtarea_width)
+		tx += ((txtarea_width - message->icon->ie_TxtBuf_DisplayedLabelWidth)/2);
 
-                ty = ty + data->icld_IconLabelFont->tf_YSize;
+	    ty = ty + data->icld_IconLabelFont->tf_YSize;
 
-                switch ( data->icld__Option_LabelTextMode )
-                {
-                    case ICON_TEXTMODE_DROPSHADOW:
-                        SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
-                        Move(data->icld_BufferRastPort, tx + 1, ty + 1); 
-                        Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
-                        offset_y = 1;
-                    case ICON_TEXTMODE_PLAIN:
-                        SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
-                        Move(data->icld_BufferRastPort, tx, ty); 
-                        Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
-                        break;
+	    switch ( data->icld__Option_LabelTextMode )
+	    {
+		case ICON_TEXTMODE_DROPSHADOW:
+		    SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
+		    Move(data->icld_BufferRastPort, tx + 1, ty + 1); 
+		    Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
+		    offset_y = 1;
+		case ICON_TEXTMODE_PLAIN:
+		    SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
+		    Move(data->icld_BufferRastPort, tx, ty); 
+		    Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
+		    break;
 
-                    default:
-                        // Outline mode:
-                        SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
+		default:
+		    // Outline mode:
+		    SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
 
-                        SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
-                        Move(data->icld_BufferRastPort, tx + 1, ty ); 
-                        Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
-                        Move(data->icld_BufferRastPort, tx - 1, ty ); 
-                        Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
-                        Move(data->icld_BufferRastPort, tx, ty + 1);  
-                        Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
-                        Move(data->icld_BufferRastPort, tx, ty - 1);
-                        Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
+		    SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
+		    Move(data->icld_BufferRastPort, tx + 1, ty ); 
+		    Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
+		    Move(data->icld_BufferRastPort, tx - 1, ty ); 
+		    Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
+		    Move(data->icld_BufferRastPort, tx, ty + 1);  
+		    Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
+		    Move(data->icld_BufferRastPort, tx, ty - 1);
+		    Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
 
-                        SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
-                        Move(data->icld_BufferRastPort, tx , ty ); 
-                        Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
+		    SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
+		    Move(data->icld_BufferRastPort, tx , ty ); 
+		    Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
 
-                        SetSoftStyle(data->icld_BufferRastPort, FS_NORMAL, AskSoftStyle(data->icld_BufferRastPort));
-                        offset_y = 2;
-                        break;
-                }
-                if ((curlabel_CurrentLine >= (curlabel_TotalLines -1)) && (curlabel_TotalLines < message->icon->ie_SplitParts))
-                {
-                    FreeVecPooled(data->icld_Pool, curlabel_StrPtr);
-                }
-                ty = ty + offset_y;
-            }
+		    SetSoftStyle(data->icld_BufferRastPort, FS_NORMAL, AskSoftStyle(data->icld_BufferRastPort));
+		    offset_y = 2;
+		    break;
+	    }
+	    if ((curlabel_CurrentLine >= (curlabel_TotalLines -1)) && (curlabel_TotalLines < message->icon->ie_SplitParts))
+	    {
+		FreeVecPooled(data->icld_Pool, curlabel_StrPtr);
+	    }
+	    ty = ty + offset_y;
+	}
 
-            /*date/size sorting has the date/size appended under the message->icon label*/
+	/*date/size sorting has the date/size appended under the message->icon label*/
 
-            if ((message->icon->ie_IconListEntry.type != ST_USERDIR) && ((data->icld_SortFlags & (ICONLIST_SORT_BY_SIZE|ICONLIST_SORT_BY_DATE)) != 0))
-            {
-                buf = NULL;
-                SetFont(data->icld_BufferRastPort, data->icld_IconInfoFont);
+	if ((message->icon->ie_IconListEntry.type != ST_USERDIR) && ((data->icld_SortFlags & (ICONLIST_SORT_BY_SIZE|ICONLIST_SORT_BY_DATE)) != 0))
+	{
+	    buf = NULL;
+	    SetFont(data->icld_BufferRastPort, data->icld_IconInfoFont);
 
-                if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_SIZE)
-                {
-                    buf = message->icon->ie_TxtBuf_SIZE;
-                    txwidth = message->icon->ie_TxtBuf_SIZEWidth;
-                }
-                else if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_DATE)
-                {
-                    if (message->icon->ie_Flags & ICONENTRY_FLAG_TODAY)
-                    {
-                        buf  = message->icon->ie_TxtBuf_TIME;
-                        txwidth = message->icon->ie_TxtBuf_TIMEWidth;
-                    }
-                    else
-                    {
-                        buf = message->icon->ie_TxtBuf_DATE;
-                        txwidth = message->icon->ie_TxtBuf_DATEWidth;
-                    }
-                }
+	    if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_SIZE)
+	    {
+		buf = message->icon->ie_TxtBuf_SIZE;
+		txwidth = message->icon->ie_TxtBuf_SIZEWidth;
+	    }
+	    else if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_DATE)
+	    {
+		if (message->icon->ie_Flags & ICONENTRY_FLAG_TODAY)
+		{
+		    buf  = message->icon->ie_TxtBuf_TIME;
+		    txwidth = message->icon->ie_TxtBuf_TIMEWidth;
+		}
+		else
+		{
+		    buf = message->icon->ie_TxtBuf_DATE;
+		    txwidth = message->icon->ie_TxtBuf_DATEWidth;
+		}
+	    }
 
-                if (buf)
-                {
-                    ULONG ie_LabelLength = strlen(buf);
-                    tx = labelX;
+	    if (buf)
+	    {
+		ULONG ie_LabelLength = strlen(buf);
+		tx = labelX;
 
-                    if (txwidth < txtarea_width)
-                        tx += ((txtarea_width - txwidth)/2);
+		if (txwidth < txtarea_width)
+		    tx += ((txtarea_width - txwidth)/2);
 
-                    ty = labelY + ((data->icld__Option_LabelTextVerticalPadding + data->icld_IconLabelFont->tf_YSize ) * curlabel_TotalLines) + data->icld_IconInfoFont->tf_YSize;
+		ty = labelY + ((data->icld__Option_LabelTextVerticalPadding + data->icld_IconLabelFont->tf_YSize ) * curlabel_TotalLines) + data->icld_IconInfoFont->tf_YSize;
 
-                    switch ( data->icld__Option_LabelTextMode )
-                    {
-                        case ICON_TEXTMODE_DROPSHADOW:
-                            SetAPen(data->icld_BufferRastPort, data->icld_InfoShadowPen);
-                            Move(data->icld_BufferRastPort, tx + 1, ty + 1); Text(data->icld_BufferRastPort, buf, ie_LabelLength);
-                        case ICON_TEXTMODE_PLAIN:
-                            SetAPen(data->icld_BufferRastPort, data->icld_InfoPen);
-                            Move(data->icld_BufferRastPort, tx, ty); Text(data->icld_BufferRastPort, buf, ie_LabelLength);
-                            break;
+		switch ( data->icld__Option_LabelTextMode )
+		{
+		    case ICON_TEXTMODE_DROPSHADOW:
+			SetAPen(data->icld_BufferRastPort, data->icld_InfoShadowPen);
+			Move(data->icld_BufferRastPort, tx + 1, ty + 1); Text(data->icld_BufferRastPort, buf, ie_LabelLength);
+		    case ICON_TEXTMODE_PLAIN:
+			SetAPen(data->icld_BufferRastPort, data->icld_InfoPen);
+			Move(data->icld_BufferRastPort, tx, ty); Text(data->icld_BufferRastPort, buf, ie_LabelLength);
+			break;
 
-                        default:
-                            // Outline mode..
-                            SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
-                            SetAPen(data->icld_BufferRastPort, data->icld_InfoShadowPen);
+		    default:
+			// Outline mode..
+			SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
+			SetAPen(data->icld_BufferRastPort, data->icld_InfoShadowPen);
 
-                            Move(data->icld_BufferRastPort, tx + 1, ty ); 
-                            Text(data->icld_BufferRastPort, buf, ie_LabelLength);
-                            Move(data->icld_BufferRastPort, tx - 1, ty );  
-                            Text(data->icld_BufferRastPort, buf, ie_LabelLength);
-                            Move(data->icld_BufferRastPort, tx, ty - 1 );  
-                            Text(data->icld_BufferRastPort, buf, ie_LabelLength);
-                            Move(data->icld_BufferRastPort, tx, ty + 1 );  
-                            Text(data->icld_BufferRastPort, buf, ie_LabelLength);
+			Move(data->icld_BufferRastPort, tx + 1, ty ); 
+			Text(data->icld_BufferRastPort, buf, ie_LabelLength);
+			Move(data->icld_BufferRastPort, tx - 1, ty );  
+			Text(data->icld_BufferRastPort, buf, ie_LabelLength);
+			Move(data->icld_BufferRastPort, tx, ty - 1 );  
+			Text(data->icld_BufferRastPort, buf, ie_LabelLength);
+			Move(data->icld_BufferRastPort, tx, ty + 1 );  
+			Text(data->icld_BufferRastPort, buf, ie_LabelLength);
 
-                            SetAPen(data->icld_BufferRastPort, data->icld_InfoPen);
+			SetAPen(data->icld_BufferRastPort, data->icld_InfoPen);
 
-                            Move(data->icld_BufferRastPort, tx, ty );
-                            Text(data->icld_BufferRastPort, buf, ie_LabelLength);
+			Move(data->icld_BufferRastPort, tx, ty );
+			Text(data->icld_BufferRastPort, buf, ie_LabelLength);
 
-                            SetSoftStyle(data->icld_BufferRastPort, FS_NORMAL, AskSoftStyle(data->icld_BufferRastPort));
-                            break;
-                    }
-                }
-            }
-        }
+			SetSoftStyle(data->icld_BufferRastPort, FS_NORMAL, AskSoftStyle(data->icld_BufferRastPort));
+			break;
+		}
+	    }
+	}
     }
 
     return TRUE;
