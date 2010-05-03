@@ -113,16 +113,16 @@ static struct Hook      __iconlist_UpdateLabels_hook;
 
 // N.B: We Handle frame/background rendering so make sure icon.library doesnt do it ..
 static struct TagItem          __iconList_DrawIconStateTags[] = {
-    { ICONDRAWA_Frameless, TRUE},
-    { ICONDRAWA_Borderless, TRUE},
-    { ICONDRAWA_EraseBackground, FALSE},
-    { TAG_DONE, }
+    { ICONDRAWA_Frameless, TRUE		},
+    { ICONDRAWA_Borderless, TRUE	},
+    { ICONDRAWA_EraseBackground, FALSE	},
+    { TAG_DONE, 			}
 };
 
 static struct TagItem		__iconList_BackBuffLayerTags[] =
 {
-    //{LA_Visible     , (IPTR)FALSE	},
-    {TAG_DONE				}
+    { LA_Visible, FALSE			},
+    { TAG_DONE,				}
 };
 
 #ifndef NO_ICON_POSITION
@@ -491,19 +491,19 @@ static void IconList_GetIconLabelRectangle(Object *obj, struct IconList_DATA *da
             only list regular files like this (drawers have no size/date output) */
         if(
             icon->ie_IconListEntry.type != ST_USERDIR && 
-            ((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) || (data->icld_SortFlags & ICONLIST_SORT_BY_DATE))
+            ((data->icld_SortFlags & MUIV_IconList_Sort_BySize) || (data->icld_SortFlags & MUIV_IconList_Sort_ByDate))
         )
         {
             SetFont(data->icld_BufferRastPort, data->icld_IconInfoFont);
 
-            if( (data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
+            if( (data->icld_SortFlags & MUIV_IconList_Sort_BySize) && !(data->icld_SortFlags & MUIV_IconList_Sort_ByDate) )
             {
                 icon->ie_TxtBuf_SIZEWidth = TextLength(data->icld_BufferRastPort, icon->ie_TxtBuf_SIZE, strlen(icon->ie_TxtBuf_SIZE));
                 textwidth = icon->ie_TxtBuf_SIZEWidth;
             }
             else
             {
-                if( !(data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && (data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
+                if( !(data->icld_SortFlags & MUIV_IconList_Sort_BySize) && (data->icld_SortFlags & MUIV_IconList_Sort_ByDate) )
                 {
                     if( icon->ie_Flags & ICONENTRY_FLAG_TODAY )
                     {
@@ -1238,17 +1238,17 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
 
 	/*date/size sorting has the date/size appended under the message->icon label*/
 
-	if ((message->icon->ie_IconListEntry.type != ST_USERDIR) && ((data->icld_SortFlags & (ICONLIST_SORT_BY_SIZE|ICONLIST_SORT_BY_DATE)) != 0))
+	if ((message->icon->ie_IconListEntry.type != ST_USERDIR) && ((data->icld_SortFlags & (MUIV_IconList_Sort_BySize|MUIV_IconList_Sort_ByDate)) != 0))
 	{
 	    buf = NULL;
 	    SetFont(data->icld_BufferRastPort, data->icld_IconInfoFont);
 
-	    if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_SIZE)
+	    if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_BySize)
 	    {
 		buf = message->icon->ie_TxtBuf_SIZE;
 		txwidth = message->icon->ie_TxtBuf_SIZEWidth;
 	    }
-	    else if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_DATE)
+	    else if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_ByDate)
 	    {
 		if (message->icon->ie_Flags & ICONENTRY_FLAG_TODAY)
 		{
@@ -1572,7 +1572,7 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = CLASS;
 
-    data->icld_SortFlags    = ICONLIST_SORT_BY_NAME;
+    data->icld_SortFlags    = MUIV_IconList_Sort_ByName;
     data->icld_DisplayFlags = ICONLIST_DISP_SHOWINFO;
 
     __iconlist_UpdateLabels_hook.h_Entry = (HOOKFUNC)IconList__HookFunc_UpdateLabelsFunc;
@@ -5801,10 +5801,10 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
     data->icld_IconLargestHeight = 0;
     data->icld_LabelLargestHeight = 0;
 
-    if ((data->icld_SortFlags & ICONLIST_SORT_MASK) != 0)
+    if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) != 0)
     {
 #if defined(DEBUG_ILC_ICONSORTING)
-        D(bug("[IconList] %s: Sorting (Flags %x)\n", __PRETTY_FUNCTION__, (data->icld_SortFlags & ICONLIST_SORT_MASK)));
+        D(bug("[IconList] %s: Sorting (Flags %x)\n", __PRETTY_FUNCTION__, (data->icld_SortFlags & MUIV_IconList_Sort_MASK)));
 #endif
         NewList((struct List*)&list_VisibleIcons);
         NewList((struct List*)&list_SortedIcons);
@@ -5818,13 +5818,13 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
                 if (entry->ie_IconX != entry->ie_DiskObj->do_CurrentX)
                 {
                     entry->ie_IconX = entry->ie_DiskObj->do_CurrentX;
-                    if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == 0)
+                    if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == 0)
                         entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
                 }
                 if (entry->ie_IconY != entry->ie_DiskObj->do_CurrentY)
                 {
                     entry->ie_IconY = entry->ie_DiskObj->do_CurrentY;
-                    if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == 0)
+                    if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == 0)
                         entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
                 }
             }
@@ -5859,7 +5859,7 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
                 if(entry->ie_IconHeight > data->icld_IconLargestHeight) data->icld_IconLargestHeight = entry->ie_IconHeight;
                 if((entry->ie_AreaHeight - entry->ie_IconHeight) > data->icld_LabelLargestHeight) data->icld_LabelLargestHeight = entry->ie_AreaHeight - entry->ie_IconHeight;
 
-                if (((data->icld_SortFlags & ICONLIST_SORT_MASK) == 0) && (entry->ie_IconX == NO_ICON_POSITION))
+                if (((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == 0) && (entry->ie_IconX == NO_ICON_POSITION))
                     AddTail((struct List*)&list_VisibleIcons, (struct Node *)&entry->ie_IconNode);
                 else
                     AddHead((struct List*)&list_VisibleIcons, (struct Node *)&entry->ie_IconNode);
@@ -5894,7 +5894,7 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
                 while (icon1)
                 {
                     if(((icon1->ie_IconListEntry.type == ST_ROOT) || (icon1->ie_IconListEntry.type == ST_LINKDIR) || (icon1->ie_IconListEntry.type == ST_LINKFILE))
-			|| (data->icld_SortFlags & ICONLIST_SORT_DRAWERS_MIXED))
+			|| (data->icld_SortFlags & MUIV_IconList_Sort_DrawersMixed))
                     {
                         /*volume list or drawers mixed*/
                         sortme = TRUE;
@@ -5930,17 +5930,17 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
                     {
                         i = 0;
                 
-                        if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_DATE)
+                        if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_ByDate)
                         {
                             /* Sort by Date */
                             i = CompareDates((const struct DateStamp *)&entry->ie_FileInfoBlock->fib_Date,(const struct DateStamp *)&icon1->ie_FileInfoBlock->fib_Date);
                         }
-                        else if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_SIZE)
+                        else if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_BySize)
                         {
                             /* Sort by Size .. */
                             i = entry->ie_FileInfoBlock->fib_Size - icon1->ie_FileInfoBlock->fib_Size;
                         }
-                        else if (((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK) && ((entry->ie_IconListEntry.type == ST_FILE) || (entry->ie_IconListEntry.type == ST_USERDIR)))
+                        else if (((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_MASK) && ((entry->ie_IconListEntry.type == ST_FILE) || (entry->ie_IconListEntry.type == ST_USERDIR)))
                         {
                            /* Sort by Type .. */
 #warning "TODO: Sort icons based on type using datatypes"
@@ -5948,14 +5948,14 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
                         else
                         {
                             if (
-                                    ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK) || 
-                                    ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_NAME) ||
+                                    ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_MASK) || 
+                                    ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_ByName) ||
                                     (entry->ie_IconX == NO_ICON_POSITION)
                                )
                             {
                                 /* Sort by Name .. */
                                 i = Stricmp(entry->ie_IconListEntry.label, icon1->ie_IconListEntry.label);
-                                if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK)
+                                if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_MASK)
                                     enqueue = TRUE;
                             }
                             else
@@ -5965,7 +5965,7 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
                             }
                         }
 
-                        if (data->icld_SortFlags & ICONLIST_SORT_REVERSE)
+                        if (data->icld_SortFlags & MUIV_IconList_Sort_Reverse)
                         {
                             if (i > 0)
                                 break;
@@ -6006,7 +6006,7 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
     DoMethod(obj, MUIM_IconList_PositionIcons);
     MUI_Redraw(obj, MADF_DRAWOBJECT);
 
-    if ((data->icld_SortFlags & ICONLIST_SORT_MASK) != 0)
+    if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) != 0)
     {
         DoMethod(obj, MUIM_IconList_CoordsSort);
 
