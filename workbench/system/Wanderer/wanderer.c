@@ -1375,8 +1375,8 @@ D(bug("[Wanderer] %s: ICONLIST_DISP_SHOWINFO\n", __PRETTY_FUNCTION__));
 }
 ///
 
-///wanderer_menufunc_window_view_icons(Object **pstrip)
-void wanderer_menufunc_window_view_icons(Object **pstrip)
+///wanderer_menufunc_window_view_iconsonly(Object **pstrip)
+void wanderer_menufunc_window_view_iconsonly(Object **pstrip)
 {
     Object *strip = *pstrip;
     Object *item = FindMenuitem(strip, MEN_WINDOW_VIEW_ALL);
@@ -1406,6 +1406,65 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
     }
 }
 ///
+
+void wanderer_menufunc_window_view_modeicon(Object **pstrip)
+{
+    Object *strip = *pstrip;
+    Object *item = FindMenuitem(strip, MEN_WINDOW_VIEW_ICON);
+    Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
+    Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+
+bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__);
+
+    if ((item != NULL) && (iconList != NULL))
+    {
+        IPTR display_bits = 0, menu_view_state = 0;
+        GET(iconList, MUIA_IconList_DisplayFlags, &display_bits);
+	
+	display_bits &= ~(ICONLIST_DISP_MODEDEFAULT | ICONLIST_DISP_MODELABELRIGHT | ICONLIST_DISP_MODELIST);
+
+        GET(item, MUIA_Menuitem_Checked, &menu_view_state);
+
+        if (menu_view_state == TRUE)
+        {
+//	    if ( != LABELRIGHT)
+		display_bits |= ICONLIST_DISP_MODEDEFAULT;
+//	    else
+//	    	display_bits |= ICONLIST_DISP_MODELABELRIGHT;
+        }
+
+        SET(iconList, MUIA_IconList_DisplayFlags, display_bits);
+        DoMethod(iconList, MUIM_IconList_Sort);
+    }
+}
+
+void wanderer_menufunc_window_view_modelist(Object **pstrip)
+{
+    Object *strip = *pstrip;
+    Object *item = FindMenuitem(strip, MEN_WINDOW_VIEW_DETAIL);
+    Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
+    Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+
+bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__);
+
+    if ((item != NULL) && (iconList != NULL))
+    {
+        IPTR display_bits = 0, menu_view_state = 0;
+        GET(iconList, MUIA_IconList_DisplayFlags, &display_bits);
+	
+	display_bits &= ~(ICONLIST_DISP_MODEDEFAULT | ICONLIST_DISP_MODELABELRIGHT | ICONLIST_DISP_MODELIST);
+
+        GET(item, MUIA_Menuitem_Checked, &menu_view_state);
+
+        if (menu_view_state == TRUE)
+        {
+            display_bits |= ICONLIST_DISP_MODELIST;
+        }
+
+        SET(iconList, MUIA_IconList_DisplayFlags, display_bits);
+        DoMethod(iconList, MUIM_IconList_Sort);
+    }
+}
 
 ///wanderer_menufunc_window_view_hidden(Object **pstrip)
 void wanderer_menufunc_window_view_hidden(Object **pstrip)
@@ -2741,10 +2800,16 @@ VOID SetMenuDefaultNotifies(Object *wanderer, Object *strip, STRPTR path)
 
     DoMenuNotify(strip, MEN_WINDOW_SELECT, MUIA_Menuitem_Trigger,
 				wanderer_menufunc_window_select, NULL);
+				
+    DoMenuNotify(strip, MEN_WINDOW_VIEW_ICON, MUIA_Menuitem_Trigger,
+				wanderer_menufunc_window_view_modeicon, strip);
+    DoMenuNotify(strip, MEN_WINDOW_VIEW_DETAIL, MUIA_Menuitem_Trigger,
+				wanderer_menufunc_window_view_modelist, strip);
     DoMenuNotify(strip, MEN_WINDOW_VIEW_ALL, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_view_icons, strip);
+				wanderer_menufunc_window_view_iconsonly, strip);
 //    DoMenuNotify(strip, MEN_WINDOW_VIEW_HIDDEN, MUIA_Menuitem_Trigger,
 //				wanderer_menufunc_window_view_hidden, strip);
+
     DoMenuNotify(strip, MEN_WINDOW_SORT_ENABLE, MUIA_Menuitem_Trigger,
 				wanderer_menufunc_window_sort_enable, strip);
     DoMenuNotify(strip, MEN_WINDOW_SORT_NAME, MUIA_Menuitem_Trigger,
@@ -3633,7 +3698,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
                 {NM_ITEM,       NM_BARLABEL },
                 {NM_ITEM,       _(MSG_MEN_VIEW)},
                     {NM_SUB,    _(MSG_MEN_ICVIEW),      NULL                    , CHECKIT|CHECKED                       ,~((1 << 0)|(1 << 3)), (APTR) MEN_WINDOW_VIEW_ICON },
-                    {NM_SUB,    _(MSG_MEN_DCVIEW),      NULL                    , CHECKIT|NM_ITEMDISABLED               ,~((1 << 1)|(1 << 3)), (APTR) MEN_WINDOW_VIEW_DETAIL },
+                    {NM_SUB,    _(MSG_MEN_DCVIEW),      NULL                    , CHECKIT	               		,~((1 << 1)|(1 << 3)), (APTR) MEN_WINDOW_VIEW_DETAIL },
                     {NM_SUB,    NM_BARLABEL },
                     {NM_SUB,    _(MSG_MEN_ALLFIL),      NULL                    , _NewWandIntMenu__OPTION_SHOWALL       , 0, (APTR) MEN_WINDOW_VIEW_ALL },
                 {NM_ITEM,       _(MSG_MEN_SORTIC)},
