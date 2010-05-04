@@ -3,7 +3,30 @@
 
 #include "iconlist.h"
 
+#define NUM_COLUMNS 6
+
 /*** Instance data **********************************************************/
+
+struct IconViewModeAttribs
+{
+    IPTR			ivma_Temp;
+};
+
+struct ListViewModeAttribs
+{
+    LONG			lmva_HeaderHeight;
+    LONG			lmva_RowHeight;
+    BYTE			lmva_SortColumn;
+    LONG    	    	    	lmva_ColumnPos[NUM_COLUMNS];
+    LONG    	    	    	lmva_ColumnMaxWidth[NUM_COLUMNS];
+    LONG    	    	    	lmva_ColumnWidth[NUM_COLUMNS];
+    BYTE    	    	    	lmva_ColumnVisible[NUM_COLUMNS];
+    BYTE    	    	    	lmva_ColumnAlign[NUM_COLUMNS];
+    BYTE    	    	    	lmva_ColumnClickable[NUM_COLUMNS];
+    BYTE    	    	    	lmva_ColumnSortable[NUM_COLUMNS];
+    STRPTR  	    	    	lmva_ColumnTitle[NUM_COLUMNS];
+};
+
 struct IconList_DATA
 {
     APTR                          icld_Pool;                          /* Pool to allocate data from */
@@ -71,6 +94,10 @@ struct IconList_DATA
 
     struct Rectangle              icld_LassoRectangle;                /* lasso data */
     BOOL                          icld_LassoActive;
+
+
+    struct IconViewModeAttribs    *icld_IVMAttribs;
+    struct ListViewModeAttribs    *icld_LVMAttribs;
 
 #warning "TODO: move config options to a seperate struct"
     /* IconList configuration settings ... */
