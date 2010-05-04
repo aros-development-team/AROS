@@ -41,15 +41,15 @@ int __nocommandline = 1;
 
 static void PrintList(struct List *l)
 {
-    printf("    lh_Head     0x%p\n", l->lh_Head);
-    printf("    lh_Tail     0x%p\n", l->lh_Tail);
-    printf("    lh_TailPred 0x%p\n", l->lh_TailPred);
-    printf("    lh_Type     %u\n"  , l->lh_Type);
+    printf("    lh_Head     %p\n", l->lh_Head);
+    printf("    lh_Tail     %p\n", l->lh_Tail);
+    printf("    lh_TailPred %p\n", l->lh_TailPred);
+    printf("    lh_Type     %u\n", l->lh_Type);
 }
 
 static void PrintName(char *name, struct ExtendedNode *n)
 {
-    printf("%s 0x%p", name, n);
+    printf("%s %p", name, n);
     if (n)
         printf(" %s", n->xln_Name);
     printf("\n");
@@ -57,15 +57,15 @@ static void PrintName(char *name, struct ExtendedNode *n)
 
 static void PrintNode(char *name, struct ExtendedNode *n)
 {
-    printf("%s 0x%p %s\n", name, n, n->xln_Name);
-    printf("  xln_Succ      0x%p\n", n->xln_Succ);
-    printf("  xln_Pred      0x%p\n", n->xln_Pred);
-    printf("  xln_Type      %d\n"  , n->xln_Type);
-    printf("  xln_Pri       %d\n"  , n->xln_Pri);
-    printf("  xln_Subsystem %d\n"  , n->xln_Subsystem);
-    printf("  xln_Subtype   %d\n"  , n->xln_Subtype);
-    printf("  xln_Library   0x%p\n", n->xln_Library);
-    printf("  xln_Init      0x%p\n", n->xln_Init);
+    printf("%s %p %s\n", name, n, n->xln_Name);
+    printf("  xln_Succ      %p\n", n->xln_Succ);
+    printf("  xln_Pred      %p\n", n->xln_Pred);
+    printf("  xln_Type      %d\n", n->xln_Type);
+    printf("  xln_Pri       %d\n", n->xln_Pri);
+    printf("  xln_Subsystem %d\n", n->xln_Subsystem);
+    printf("  xln_Subtype   %d\n", n->xln_Subtype);
+    printf("  xln_Library   %p\n", n->xln_Library);
+    printf("  xln_Init      %p\n", n->xln_Init);
 }
 
 static inline void PrintPoint(char *name, Point *p)
@@ -94,32 +94,32 @@ static void PrintMonitorSpec(struct MonitorSpec *mspc)
     printf        ("  DeniseMaxDisplayColumn %u\n"    ,  mspc->DeniseMaxDisplayColumn);
     printf        ("  BeamCon0               0x%04X\n",  mspc->BeamCon0);
     printf        ("  min_row                0x%u\n"  ,  mspc->min_row);
-    printf        ("  ms_Special             0x%p\n"  ,  mspc->ms_Special);
+    printf        ("  ms_Special             %p\n"    ,  mspc->ms_Special);
     printf        ("  ms_OpenCount           %u\n"    ,  mspc->ms_OpenCount);
-    printf        ("  ms_transform           0x%p\n"  ,  mspc->ms_transform);
-    printf        ("  ms_translate           0x%p\n"  ,  mspc->ms_translate);
-    printf        ("  ms_scale               0x%p\n"  ,  mspc->ms_scale);
+    printf        ("  ms_transform           %p\n"    ,  mspc->ms_transform);
+    printf        ("  ms_translate           %p\n"    ,  mspc->ms_translate);
+    printf        ("  ms_scale               %p\n"    ,  mspc->ms_scale);
     printf        ("  ms_xoffset             %u\n"    ,  mspc->ms_xoffset);
     printf        ("  ms_yoffset             %u\n"    ,  mspc->ms_yoffset);
     PrintRectangle("  ms_LegalView          "         , &mspc->ms_LegalView);
-    printf        ("  ms_maxoscan            0x%p\n"  ,  mspc->ms_maxoscan);
-    printf        ("  ms_videoscan           0x%p\n"  ,  mspc->ms_videoscan);
+    printf        ("  ms_maxoscan            %p\n"    ,  mspc->ms_maxoscan);
+    printf        ("  ms_videoscan           %p\n"    ,  mspc->ms_videoscan);
     printf        ("  DeniseMinDisplayColumn %u\n"    ,  mspc->DeniseMinDisplayColumn);
     printf        ("  DisplayCompatible      0x%08X\n",  mspc->DisplayCompatible);
-    printf        ("  DisplayInfoDataBase    0x%p\n"  , &mspc->DisplayInfoDataBase);
+    printf        ("  DisplayInfoDataBase    %p\n"    , &mspc->DisplayInfoDataBase);
     PrintList(&mspc->DisplayInfoDataBase);
-    printf        ("  ms_MrgCop              0x%p\n"  ,  mspc->ms_MrgCop);
-    printf        ("  ms_LoadView            0x%p\n"  ,  mspc->ms_LoadView);
+    printf        ("  ms_MrgCop              %p\n"    ,  mspc->ms_MrgCop);
+    printf        ("  ms_LoadView            %p\n"    ,  mspc->ms_LoadView);
     if (GfxBase->LibNode.lib_Version > 38)
-        printf    ("  ms_KillView            0x%p\n"  ,  mspc->ms_KillView);
+        printf    ("  ms_KillView            %p\n"    ,  mspc->ms_KillView);
 
     if (mspc->ms_Special) {
 	PrintNode("SpecialMonitor", &mspc->ms_Special->spm_Node);
         printf   ("  spm_Flags  0x%04X\n",  mspc->ms_Special->spm_Flags);
-        printf   ("  do_monitor 0x%p\n"  ,  mspc->ms_Special->do_monitor);
-        printf   ("  reserved1  0x%p\n"  ,  mspc->ms_Special->reserved1);
-	printf   ("  reserved2  0x%p\n"  ,  mspc->ms_Special->reserved2);
-	printf   ("  reserved3  0x%p\n"  ,  mspc->ms_Special->reserved3);
+        printf   ("  do_monitor %p\n"    ,  mspc->ms_Special->do_monitor);
+        printf   ("  reserved1  %p\n"    ,  mspc->ms_Special->reserved1);
+	printf   ("  reserved2  %p\n"    ,  mspc->ms_Special->reserved2);
+	printf   ("  reserved3  %p\n"    ,  mspc->ms_Special->reserved3);
 	PrintASI ("  hblank    "         , &mspc->ms_Special->hblank);
 	PrintASI ("  vblank    "         , &mspc->ms_Special->vblank);
 	PrintASI ("  hsync     "         , &mspc->ms_Special->hsync);
@@ -138,7 +138,7 @@ static void PrintMonitorSpec(struct MonitorSpec *mspc)
 	if (n) {
 	    printf("DisplayInfoDataBase\n");
 	    for (; n->ln_Succ; n = n->ln_Succ) {
-	        printf("  Node 0x%p %s\n", n, n->ln_Name);
+	        printf("  Node %p %s\n", n, n->ln_Name);
 	        printf("    ln_Type %d\n", n->ln_Type);
                 printf("    ln_Pri  %d\n", n->ln_Pri);
 	    }
@@ -179,7 +179,7 @@ int main(void)
         printf("Picasso96API.library  v%u.%u\n", p96Base->lib_Version, p96Base->lib_Revision);
     printf("\n");
 
-    printf("GfxBase 0x%p\n", GfxBase);
+    printf("GfxBase %p\n", GfxBase);
     printf   ("  DisplayFlags    0x%04X\n",  GfxBase->DisplayFlags);
     printf   ("  ChipRevBits0    0x%02X\n",  GfxBase->ChipRevBits0);
     printf   ("  MemType         0x%02X\n",  GfxBase->MemType);
@@ -193,8 +193,8 @@ int main(void)
     printf   ("  GfxFlags        0x%04X\n",  GfxBase->GfxFlags);
     printf   ("\n");
 
-    printf("CyberGfxBase 0x%p\n", CyberGfxBase);
-    printf("p96Base      0x%p\n", p96Base);
+    printf("CyberGfxBase %p\n", CyberGfxBase);
+    printf("p96Base      %p\n", p96Base);
     printf("\n");
 
     if (!args.nospecs) {
@@ -228,7 +228,7 @@ int main(void)
 	else
 	    printf("\nFailed to obtain NameInfo\n");
 
-	printf("DisplayInfo handle: 0x%p\n", FindDisplayInfo(modeid));
+	printf("DisplayInfo handle: %p\n", FindDisplayInfo(modeid));
 #ifndef NO_CGX_API
 	printf("IsCyberModeID: %d\n", IsCyberModeID(modeid));
 #endif
