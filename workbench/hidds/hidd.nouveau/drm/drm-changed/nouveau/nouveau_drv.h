@@ -523,10 +523,7 @@ struct drm_nouveau_private {
 	void __iomem *ramin;
 	uint32_t ramin_size;
 
-#if !defined(__AROS__)
-    /* AROS creates its own bo covering whole screen */
 	struct nouveau_bo *vga_ram;
-#endif
 
 //FIXME	struct workqueue_struct *wq;
 //FIXME	struct work_struct irq_work;
