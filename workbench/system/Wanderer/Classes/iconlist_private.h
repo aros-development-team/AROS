@@ -14,6 +14,7 @@ struct IconViewModeAttribs
 
 struct ListViewModeAttribs
 {
+    ULONG			lvma_Flags;
     LONG			lmva_HeaderHeight;
     LONG			lmva_RowHeight;
     BYTE			lmva_SortColumn;
@@ -26,6 +27,10 @@ struct ListViewModeAttribs
     BYTE    	    	    	lmva_ColumnSortable[NUM_COLUMNS];
     STRPTR  	    	    	lmva_ColumnTitle[NUM_COLUMNS];
 };
+
+#define LVMAF_NOHEADER 		(1<<0)
+#define LVMAF_HEADERDRAWTOEND	(1<<1)
+#define LVMAF_ROWDRAWTOEND	(1<<2)
 
 struct IconList_DATA
 {
