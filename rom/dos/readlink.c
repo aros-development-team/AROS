@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Read the soft-link information.
@@ -100,7 +100,7 @@ struct ReadLinkDeviceUnit
 	for (
 	    dl = LockDosList(LDF_DEVICES | LDF_READ); 
 	    dl != NULL; 
-	    dl = dl->dol_Next
+	    dl = BADDR(dl->dol_Next)
 	)
 	{
 	    if(

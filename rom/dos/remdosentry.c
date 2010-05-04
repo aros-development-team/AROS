@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -58,13 +58,15 @@
 
     while(TRUE)
     {
-        if(dl->dol_Next == dlist)
+        struct DosList *dl2 = BADDR(dl->dol_Next);
+
+        if(dl2 == dlist)
 	{
 	    dl->dol_Next = dlist->dol_Next;
 	    break;
 	}
 
-	dl = dl->dol_Next;
+	dl = dl2;
     }
 
     UnLockDosList(LDF_ALL | LDF_WRITE);

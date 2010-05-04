@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -83,7 +83,7 @@
     for (;;)
     {
 	/* Get next entry. Return NULL if there is none. */
-	dlist = dlist->dol_Next;
+	dlist = BADDR(dlist->dol_Next);
 
 	if (dlist == NULL)
 	{

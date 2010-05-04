@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Remove a segment from the system list.
@@ -60,8 +60,10 @@
 #endif
     {
 	struct Segment *next, *prev;
+	struct DosInfo *dinf = BADDR(DOSBase->dl_Root->rn_Info);
+
 	prev = NULL;
-	next = BADDR(DOSBase->dl_ResList);
+	next = BADDR(dinf->di_ResList);
 	while (next != NULL)
 	{
 	    if (next == seg)
@@ -72,7 +74,7 @@
 		}
 		else
 		{
-		    DOSBase->dl_ResList = MKBADDR(next->seg_Next);
+		    dinf->di_ResList = MKBADDR(next->seg_Next);
 		}
 
 		return DOSTRUE;

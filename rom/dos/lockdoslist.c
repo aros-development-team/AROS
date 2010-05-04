@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -91,7 +91,7 @@
 /* This strange thing came from MorphOS.
     Forbid(); */
 
-    return (struct DosList *)&DOSBase->dl_DevInfo;
+    return (struct DosList *)&di->di_DevInfo;
 
     AROS_LIBFUNC_EXIT
 } /* LockDosList */

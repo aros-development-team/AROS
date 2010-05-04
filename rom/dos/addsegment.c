@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a segment to the resident list.
@@ -64,6 +64,7 @@
     AROS_LIBFUNC_INIT
 
     struct Segment *sptr;
+    struct DosInfo *dinf;
     int namelen = strlen(name)+1;
 
     sptr = AllocVec(sizeof(struct Segment) + namelen - 4,
@@ -71,6 +72,8 @@
 
     if( sptr != NULL )
     {
+        dinf = BADDR(DOSBase->dl_Root->rn_Info);
+
 	sptr->seg_UC = type;
 	sptr->seg_Seg = seg;
 
@@ -84,8 +87,8 @@
 	/* Sigh, we just add the segment to the start of the list */
 	Forbid();
 
-	sptr->seg_Next = DOSBase->dl_ResList;
-	DOSBase->dl_ResList = MKBADDR(sptr);
+	sptr->seg_Next = dinf->di_ResList;
+	dinf->di_ResList = MKBADDR(sptr);
 
 	Permit();
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetDeviceProc() - Find the filesystem for a path.
@@ -150,7 +150,7 @@ static BOOL VolumeIsOffline(struct DosList *dl);
             while (dl != NULL
                 && ((struct MsgPort *)dl->dol_Ext.dol_AROS.dol_Device
                 != dp->dvp_Port))
-                dl = dl->dol_Next;
+                dl = BADDR(dl->dol_Next);
 
             UnLockDosList(LDF_READ | LDF_ALL);
 

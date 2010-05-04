@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -97,7 +97,7 @@
      * it if and when it happens.
      */
     if (dlist->dol_Task != NULL) {
-        for (scan = dl; scan != NULL; scan = scan->dol_Next)
+        for (scan = dl; scan != NULL; scan = BADDR(scan->dol_Next))
             if (scan->dol_Task == dlist->dol_Task && scan->dol_Type == DLT_DEVICE) {
                 /* Do patching only if found DeviceNode belongs to packet.handler. Otherwise do not touch anything.
                    This lets filesystems with own IOFS wrappers to set up dol_Task field on their own. This can be
@@ -125,7 +125,7 @@
     {
 	while(TRUE)
 	{
-	    dl = dl->dol_Next;
+	    dl = BADDR(dl->dol_Next);
 
 	    if(dl == NULL)
 		break;
@@ -142,8 +142,10 @@
 
     if(success)
     {
-	dlist->dol_Next = DOSBase->dl_DevInfo;
-	DOSBase->dl_DevInfo = dlist;
+        struct DosInfo *dinf = BADDR(DOSBase->dl_Root->rn_Info);
+
+	dlist->dol_Next = dinf->di_DevInfo;
+	dinf->di_DevInfo = MKBADDR(dlist);
     }
 
     UnLockDosList(LDF_ENTRY|LDF_WRITE);

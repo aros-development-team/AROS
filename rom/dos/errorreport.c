@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -195,7 +195,7 @@
                 dol = LockDosList(LDF_READ | LDF_ALL);
                 while (dol != NULL && (dol->dol_Type != DLT_VOLUME ||
                                        dol->dol_Ext.dol_AROS.dol_Device != handler))
-                    dol = dol->dol_Next;
+                    dol = BADDR(dol->dol_Next);
 
                 /* found it, steal its unit */
                 if (dol != NULL)
@@ -307,7 +307,7 @@
         while (dol != NULL && (dol->dol_Type != DLT_DEVICE ||
                                dol->dol_Ext.dol_AROS.dol_Device != (struct Device *) dvp->dvp_Port ||
                                dol->dol_Ext.dol_AROS.dol_Unit != dvp->dvp_DevNode->dol_Ext.dol_AROS.dol_Unit))
-            dol = dol->dol_Next;
+            dol = BADDR(dol->dol_Next);
 
         /* found it */
         if (dol != NULL)
