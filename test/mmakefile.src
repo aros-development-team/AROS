@@ -21,6 +21,7 @@ COMMONTESTFILES := \
     fstest \
     getcybermapattr \
     gfx \
+    gfxinfo \
     gfxtest \
     screentest \
     hostcb \

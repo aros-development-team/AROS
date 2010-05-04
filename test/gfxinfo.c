@@ -1,0 +1,308 @@
+/* A very hacky testcase which dumps lots of graphics subsystem internal things.
+   Please do not rely on the information you obtain using this program! Remember
+   that it some of things it will print are really private and internal! Do not
+   use techniques used by this program in common user software! */
+
+/* Define this if you have no CGX SDK for some reason. You'll miss one bit of information then.
+#define NO_CGX_API */
+
+#include <graphics/gfxbase.h>
+#include <graphics/displayinfo.h>
+#include <proto/dos.h>
+#include <proto/exec.h>
+#include <proto/graphics.h>
+
+#include <stdio.h>
+
+#ifndef NO_CGX_API
+#include <proto/cybergraphics.h>
+#endif
+
+#ifndef IPTR
+#define IPTR ULONG
+#endif
+
+struct myargs
+{
+    IPTR nospecs;
+    IPTR nomodes;
+    IPTR allspecs;
+    IPTR displaydb;
+};
+
+/* This stuff is made static in order to reduce stack usage */
+static struct myargs args = {FALSE, FALSE};
+static struct NameInfo ni;
+static struct DisplayInfo di;
+static struct DimensionInfo dims;
+static struct MonitorInfo mon;
+
+int __nocommandline = 1;
+
+static void PrintList(struct List *l)
+{
+    printf("    lh_Head     0x%p\n", l->lh_Head);
+    printf("    lh_Tail     0x%p\n", l->lh_Tail);
+    printf("    lh_TailPred 0x%p\n", l->lh_TailPred);
+    printf("    lh_Type     %u\n"  , l->lh_Type);
+}
+
+static void PrintName(char *name, struct ExtendedNode *n)
+{
+    printf("%s 0x%p", name, n);
+    if (n)
+        printf(" %s", n->xln_Name);
+    printf("\n");
+}
+
+static void PrintNode(char *name, struct ExtendedNode *n)
+{
+    printf("%s 0x%p %s\n", name, n, n->xln_Name);
+    printf("  xln_Succ      0x%p\n", n->xln_Succ);
+    printf("  xln_Pred      0x%p\n", n->xln_Pred);
+    printf("  xln_Type      %d\n"  , n->xln_Type);
+    printf("  xln_Pri       %d\n"  , n->xln_Pri);
+    printf("  xln_Subsystem %d\n"  , n->xln_Subsystem);
+    printf("  xln_Subtype   %d\n"  , n->xln_Subtype);
+    printf("  xln_Library   0x%p\n", n->xln_Library);
+    printf("  xln_Init      0x%p\n", n->xln_Init);
+}
+
+static inline void PrintPoint(char *name, Point *p)
+{
+    printf("%s (%u, %u)\n", name, p->x, p->y);
+}
+
+static inline void PrintRectangle(char *name, struct Rectangle *r)
+{
+    printf("%s (%u, %u) - (%u, %u)\n", name, r->MinX, r->MinY, r->MaxX, r->MaxY);
+}
+
+static inline void PrintASI(char *name, struct AnalogSignalInterval *sig)
+{
+    printf("%s Start %u Stop %u\n", name, sig->asi_Start, sig->asi_Stop);
+}
+
+static void PrintMonitorSpec(struct MonitorSpec *mspc)
+{
+    PrintNode("MonitorSpec", &mspc->ms_Node);
+    printf        ("  ms_Flags               0x%04X\n",  mspc->ms_Flags);
+    printf        ("  ratioh                 %d\n"    ,  mspc->ratioh);
+    printf        ("  ratiov                 %d\n"    ,  mspc->ratiov);
+    printf        ("  total_rows             %u\n"    ,  mspc->total_rows);
+    printf        ("  total_colorclocks      %u\n"    ,  mspc->total_colorclocks);
+    printf        ("  DeniseMaxDisplayColumn %u\n"    ,  mspc->DeniseMaxDisplayColumn);
+    printf        ("  BeamCon0               0x%04X\n",  mspc->BeamCon0);
+    printf        ("  min_row                0x%u\n"  ,  mspc->min_row);
+    printf        ("  ms_Special             0x%p\n"  ,  mspc->ms_Special);
+    printf        ("  ms_OpenCount           %u\n"    ,  mspc->ms_OpenCount);
+    printf        ("  ms_transform           0x%p\n"  ,  mspc->ms_transform);
+    printf        ("  ms_translate           0x%p\n"  ,  mspc->ms_translate);
+    printf        ("  ms_scale               0x%p\n"  ,  mspc->ms_scale);
+    printf        ("  ms_xoffset             %u\n"    ,  mspc->ms_xoffset);
+    printf        ("  ms_yoffset             %u\n"    ,  mspc->ms_yoffset);
+    PrintRectangle("  ms_LegalView          "         , &mspc->ms_LegalView);
+    printf        ("  ms_maxoscan            0x%p\n"  ,  mspc->ms_maxoscan);
+    printf        ("  ms_videoscan           0x%p\n"  ,  mspc->ms_videoscan);
+    printf        ("  DeniseMinDisplayColumn %u\n"    ,  mspc->DeniseMinDisplayColumn);
+    printf        ("  DisplayCompatible      0x%08X\n",  mspc->DisplayCompatible);
+    printf        ("  DisplayInfoDataBase    0x%p\n"  , &mspc->DisplayInfoDataBase);
+    PrintList(&mspc->DisplayInfoDataBase);
+    printf        ("  ms_MrgCop              0x%p\n"  ,  mspc->ms_MrgCop);
+    printf        ("  ms_LoadView            0x%p\n"  ,  mspc->ms_LoadView);
+    if (GfxBase->LibNode.lib_Version > 38)
+        printf    ("  ms_KillView            0x%p\n"  ,  mspc->ms_KillView);
+
+    if (mspc->ms_Special) {
+	PrintNode("SpecialMonitor", &mspc->ms_Special->spm_Node);
+        printf   ("  spm_Flags  0x%04X\n",  mspc->ms_Special->spm_Flags);
+        printf   ("  do_monitor 0x%p\n"  ,  mspc->ms_Special->do_monitor);
+        printf   ("  reserved1  0x%p\n"  ,  mspc->ms_Special->reserved1);
+	printf   ("  reserved2  0x%p\n"  ,  mspc->ms_Special->reserved2);
+	printf   ("  reserved3  0x%p\n"  ,  mspc->ms_Special->reserved3);
+	PrintASI ("  hblank    "         , &mspc->ms_Special->hblank);
+	PrintASI ("  vblank    "         , &mspc->ms_Special->vblank);
+	PrintASI ("  hsync     "         , &mspc->ms_Special->hsync);
+	PrintASI ("  vsync     "         , &mspc->ms_Special->vsync);
+    }
+    
+    if (args.displaydb) {
+        /* We don't use DisplayInfoDataBaseSemaphore here because it may be
+	   not initialized in fake MonitorSpecs.
+	   What is done here is actually hack. I even don't know if this
+	   will work at all (i expect to get a listing of mode names here).
+	   These nodes are entirely system-private, do not use this in
+	   a usual user software!!! */
+        struct Node *n = mspc->DisplayInfoDataBase.lh_Head;
+	
+	if (n) {
+	    printf("DisplayInfoDataBase\n");
+	    for (; n->ln_Succ; n = n->ln_Succ) {
+	        printf("  Node 0x%p %s\n", n, n->ln_Name);
+	        printf("    ln_Type %d\n", n->ln_Type);
+                printf("    ln_Pri  %d\n", n->ln_Pri);
+	    }
+	}
+    }
+}
+
+int main(void)
+{
+    struct Library *CyberGfxBase;
+    struct Library *p96Base;
+    struct RDArgs *rda;
+    struct MonitorSpec *mspc;
+    ULONG modeid = INVALID_ID;
+
+    rda = ReadArgs("NOSPECS/S,NOMODES/S,FORCESPECS/S,DISPLAYDB/S", (IPTR *)&args, NULL);
+    if (!rda) {
+        printf("You may supply the following switches:\n"
+	       "NOSPECS    - Do not list MonitorSpecs in GfxBase\n"
+	       "NOMODES    - Do not list Mode IDs\n"
+	       "FORCESPECS - When listing Mode IDs, list MonitorSpec contents even if this MonitorSpec\n"
+	       "             is found in the GfxBase list. Use this in conjunction with NOSPECS to get\n"
+	       "             a valid information\n"
+	       "DISPLAYDB  - attempt to list internal nodes of DisplayInfoDataBase lists inside MonitorSpecs.\n"
+	       "             May crash or output garbage since it is not proven yet that these nodes actually\n"
+	       "             have names.\n");
+	return RETURN_FAIL;
+    }
+
+    CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
+    p96Base = OpenLibrary("Picasso96API.library", 0);
+
+    printf("******** System information ********\n\n");
+    printf    ("graphics.library      v%u.%u\n", GfxBase->LibNode.lib_Version, GfxBase->LibNode.lib_Revision);
+    if (CyberGfxBase)
+        printf("cybergraphics.library v%u.%u\n", CyberGfxBase->lib_Version, CyberGfxBase->lib_Revision);
+    if (p96Base)
+        printf("Picasso96API.library  v%u.%u\n", p96Base->lib_Version, p96Base->lib_Revision);
+    printf("\n");
+
+    printf("GfxBase 0x%p\n", GfxBase);
+    printf   ("  DisplayFlags    0x%04X\n",  GfxBase->DisplayFlags);
+    printf   ("  ChipRevBits0    0x%02X\n",  GfxBase->ChipRevBits0);
+    printf   ("  MemType         0x%02X\n",  GfxBase->MemType);
+    printf   ("  monitor_id      0x%04X\n",  GfxBase->monitor_id);
+    PrintName("  current_monitor"         , &GfxBase->current_monitor->ms_Node);
+    PrintName("  default_monitor"         , &GfxBase->default_monitor->ms_Node);
+    printf   ("  WantChips       0x%02X\n",  GfxBase->WantChips);
+    printf   ("  BoardMemType    0x%02X\n",  GfxBase->BoardMemType);
+    printf   ("  Bugs            0x%02X\n",  GfxBase->Bugs);
+    PrintName("  natural_monitor"         , &GfxBase->natural_monitor->ms_Node);
+    printf   ("  GfxFlags        0x%04X\n",  GfxBase->GfxFlags);
+    printf   ("\n");
+
+    printf("CyberGfxBase 0x%p\n", CyberGfxBase);
+    printf("p96Base      0x%p\n", p96Base);
+    printf("\n");
+
+    /* It's a good tone to lock this semaphore. It seems to be present in all OSes
+       (at least in AmigaOS v3, MorphOS and AROS) */
+    ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
+
+    if (!args.nospecs) {
+        printf("*********** MonitorSpecs ***********\n\n");
+
+        for (mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
+            PrintMonitorSpec(mspc);
+	    printf("\n");
+        }
+    }
+    
+    if (!args.nomodes) {
+      printf("*********** Display modes **********\n\n");
+      for (;;) {
+	ULONG len;
+
+        modeid = NextDisplayInfo(modeid);
+        if (modeid == INVALID_ID)
+            break;
+
+	printf("ModeID 0x%08X", modeid);
+	len = GetDisplayInfoData(NULL, &ni, sizeof(ni), DTAG_NAME, modeid);
+	if (len == sizeof(ni))
+	    printf(" %s\n", ni.Name);
+	else
+	    printf("\nFailed to obtain NameInfo\n");
+
+	printf("DisplayInfo handle: 0x%p\n", FindDisplayInfo(modeid));
+#ifndef NO_CGX_API
+	printf("IsCyberModeID: %d\n", IsCyberModeID(modeid));
+#endif
+
+	len = GetDisplayInfoData(NULL, &di, sizeof(di), DTAG_DISP, modeid);
+	if (len == sizeof(di)) {
+	    printf    ("DisplayInfo\n");
+	    printf    ("  NotAvailable     0x%04X\n",  di.NotAvailable);
+	    printf    ("  PropertyFlags    0x%08X\n",  di.PropertyFlags);
+	    PrintPoint("  Resolution      "         , &di.Resolution);
+	    printf    ("  PixelSpeed       %u\n"    ,  di.PixelSpeed);
+	    printf    ("  NumStdSprites    %u\n"    ,  di.NumStdSprites);
+	    printf    ("  PaletteRange     %u\n"    ,  di.PaletteRange);
+	    PrintPoint("  SpriteResolution"         , &di.SpriteResolution);
+	    printf    ("  RedBits          %u\n"    ,  di.RedBits);
+	    printf    ("  GreenBits        %u\n"    ,  di.GreenBits);
+	    printf    ("  BlueBits         %u\n"    ,  di.BlueBits);
+	} else
+	    printf("Failed to obtain DisplayInfo\n");
+
+	len = GetDisplayInfoData(NULL, &dims, sizeof(dims), DTAG_DIMS, modeid);
+	if (len == sizeof(dims)) {
+	    printf        ("DimensionInfo\n");
+	    printf        ("  MaxDepth        %u\n",  dims.MaxDepth);
+	    printf        ("  MinRasterWidth  %u\n",  dims.MinRasterWidth);
+	    printf        ("  MinRasterHeight %u\n",  dims.MinRasterHeight);
+	    printf        ("  MaxRasterWidth  %u\n",  dims.MaxRasterWidth);
+	    printf        ("  MaxRasterHeight %u\n",  dims.MaxRasterHeight);
+	    PrintRectangle("  Nominal        "     , &dims.Nominal);
+	    PrintRectangle("  MaxOScan       "     , &dims.MaxOScan);
+	    PrintRectangle("  VideoOScan     "     , &dims.VideoOScan);
+	    PrintRectangle("  TxtOScan       "     , &dims.TxtOScan);
+	    PrintRectangle("  StdOScan       "     , &dims.StdOScan);
+	} else
+	    printf("Failed to obtain DimensionInfo\n");
+
+	len = GetDisplayInfoData(NULL, &mon, sizeof(mon), DTAG_MNTR, modeid);
+	if (len == sizeof(mon)) {
+	    printf        ("MonitorInfo\n");
+	    PrintName     ("  Mspc               "         , &mon.Mspc->ms_Node);
+	    PrintPoint    ("  ViewPosition       "         , &mon.ViewPosition);
+	    PrintPoint    ("  ViewResolution     "         , &mon.ViewResolution);
+	    PrintRectangle("  ViewPositionRange  "         , &mon.ViewPositionRange);
+	    printf        ("  TotalRows           %u\n"    ,  mon.TotalRows);
+	    printf        ("  TotalColorClocks    %u\n"    ,  mon.TotalColorClocks);
+	    printf        ("  MinRow              %u\n"    ,  mon.MinRow);
+            printf        ("  Compatibility       %d\n"    ,  mon.Compatibility);
+	    PrintPoint    ("  MouseTicks         "         , &mon.MouseTicks);
+	    PrintPoint    ("  DefaultViewPosition"         , &mon.DefaultViewPosition);
+	    printf        ("  PreferredModeID     0x%08X\n",  mon.PreferredModeID);
+
+	    if (args.allspecs)
+	        mspc = NULL;
+	    else {
+	        for (mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
+	            if (mspc == mon.Mspc)
+		        break;
+		}
+	    }
+	    if ((mspc != mon.Mspc) && mon.Mspc)
+	        PrintMonitorSpec(mon.Mspc);
+
+	} else
+	    printf("Failed to obtain MonitorInfo\n");
+
+	printf("\n");
+      }
+    }
+    ReleaseSemaphore(GfxBase->MonitorListSemaphore);
+
+    printf("*************** End ****************\n");
+    if (p96Base)
+        CloseLibrary(p96Base);
+    if (CyberGfxBase)
+        CloseLibrary(CyberGfxBase);
+    
+    FreeArgs(rda);
+    return 0;
+}
