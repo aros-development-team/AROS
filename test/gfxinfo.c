@@ -13,6 +13,7 @@
 #include <proto/graphics.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #ifndef NO_CGX_API
 #include <proto/cybergraphics.h>
@@ -92,7 +93,7 @@ static void PrintMonitorSpec(struct MonitorSpec *mspc)
     printf        ("  total_rows             %u\n"    ,  mspc->total_rows);
     printf        ("  total_colorclocks      %u\n"    ,  mspc->total_colorclocks);
     printf        ("  DeniseMaxDisplayColumn %u\n"    ,  mspc->DeniseMaxDisplayColumn);
-    printf        ("  BeamCon0               0x%04X\n",  mspc->BeamCon0);
+    printf        ("  Bea`mCon0               0x%04X\n",  mspc->BeamCon0);
     printf        ("  min_row                0x%u\n"  ,  mspc->min_row);
     printf        ("  ms_Special             %p\n"    ,  mspc->ms_Special);
     printf        ("  ms_OpenCount           %u\n"    ,  mspc->ms_OpenCount);
@@ -222,8 +223,9 @@ int main(void)
             break;
 
 	printf("ModeID 0x%08X", modeid);
+	memset(&ni, 0, sizeof(ni));
 	len = GetDisplayInfoData(NULL, &ni, sizeof(ni), DTAG_NAME, modeid);
-	if (len == sizeof(ni))
+	if (len > 0)
 	    printf(" %s\n", ni.Name);
 	else
 	    printf("\nFailed to obtain NameInfo\n");
@@ -233,9 +235,10 @@ int main(void)
 	printf("IsCyberModeID: %d\n", IsCyberModeID(modeid));
 #endif
 
+	memset(&di, 0, sizeof(di));
 	len = GetDisplayInfoData(NULL, &di, sizeof(di), DTAG_DISP, modeid);
-	if (len == sizeof(di)) {
-	    printf    ("DisplayInfo\n");
+	if (len > 0) {
+	    printf    ("DisplayInfo (%u bytes)\n", len);
 	    printf    ("  NotAvailable     0x%04X\n",  di.NotAvailable);
 	    printf    ("  PropertyFlags    0x%08X\n",  di.PropertyFlags);
 	    PrintPoint("  Resolution      "         , &di.Resolution);
@@ -249,9 +252,10 @@ int main(void)
 	} else
 	    printf("Failed to obtain DisplayInfo\n");
 
+	memset(&dims, 0, sizeof(dims));
 	len = GetDisplayInfoData(NULL, &dims, sizeof(dims), DTAG_DIMS, modeid);
-	if (len == sizeof(dims)) {
-	    printf        ("DimensionInfo\n");
+	if (len > 0) {
+	    printf        ("DimensionInfo (%u bytes)\n", len);
 	    printf        ("  MaxDepth        %u\n",  dims.MaxDepth);
 	    printf        ("  MinRasterWidth  %u\n",  dims.MinRasterWidth);
 	    printf        ("  MinRasterHeight %u\n",  dims.MinRasterHeight);
@@ -265,9 +269,10 @@ int main(void)
 	} else
 	    printf("Failed to obtain DimensionInfo\n");
 
+	memset(&mon, 0, sizeof(mon));
 	len = GetDisplayInfoData(NULL, &mon, sizeof(mon), DTAG_MNTR, modeid);
-	if (len == sizeof(mon)) {
-	    printf        ("MonitorInfo\n");
+	if (len > 0) {
+	    printf        ("MonitorInfo (%u bytes)\n", len);
 	    PrintName     ("  Mspc               "         , &mon.Mspc->ms_Node);
 	    PrintPoint    ("  ViewPosition       "         , &mon.ViewPosition);
 	    PrintPoint    ("  ViewResolution     "         , &mon.ViewResolution);
