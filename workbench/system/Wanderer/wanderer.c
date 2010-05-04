@@ -1414,7 +1414,7 @@ void wanderer_menufunc_window_view_modeicon(Object **pstrip)
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__);
+D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
 
     if ((item != NULL) && (iconList != NULL))
     {
@@ -1445,7 +1445,7 @@ void wanderer_menufunc_window_view_modelist(Object **pstrip)
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__);
+D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
 
     if ((item != NULL) && (iconList != NULL))
     {

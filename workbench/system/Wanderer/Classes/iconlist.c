@@ -140,6 +140,55 @@ static struct TagItem		__iconList_BackBuffLayerTags[] =
 #define ICONLIST_DRAWMODE_NORMAL                       1
 #define ICONLIST_DRAWMODE_FAST                         2
 
+/* Values used for List View-Mode */
+#define COLOR_COLUMN_BACKGROUND     	    	0
+#define COLOR_COLUMN_BACKGROUND_SORTED	    	1
+#define COLOR_COLUMN_BACKGROUND_LASSO	    	2
+#define COLOR_COLUMN_BACKGROUND_LASSO_SORTED	3
+
+#define COLOR_SELECTED_BACKGROUND   	    	4
+#define COLOR_SELECTED_BACKGROUND_SORTED    	5
+
+#define MIN_COLUMN_WIDTH 10
+
+#define COLUMN_ALIGN_LEFT   0
+#define COLUMN_ALIGN_CENTER 1
+#define COLUMN_ALIGN_RIGHT  2
+
+#define LINE_SPACING_TOP    2
+#define LINE_SPACING_BOTTOM 2
+#define LINE_EXTRAHEIGHT    (LINE_SPACING_TOP + LINE_SPACING_BOTTOM)
+
+#define LINE_SPACING_LEFT   1
+#define LINE_SPACING_RIGHT  1
+#define LINE_EXTRAWIDTH     (LINE_SPACING_LEFT + LINE_SPACING_RIGHT)
+
+#define ENTRY_SPACING_LEFT  1
+#define ENTRY_SPACING_RIGHT 1
+#define ENTRY_EXTRAWIDTH    (ENTRY_SPACING_LEFT + ENTRY_SPACING_RIGHT)
+
+#define HEADERLINE_SPACING_TOP	    	3
+#define HEADERLINE_SPACING_BOTTOM   	3
+#define HEADERLINE_EXTRAHEIGHT	    	(HEADERLINE_SPACING_TOP + HEADERLINE_SPACING_BOTTOM)
+
+#define HEADERLINE_SPACING_LEFT 	1
+#define HEADERLINE_SPACING_RIGHT	1
+#define HEADERLINE_EXTRAWIDTH 	    	(HEADERLINE_SPACING_LEFT + HEADERLINE_SPACING_RIGHT)
+
+#define HEADERENTRY_SPACING_LEFT	4
+#define HEADERENTRY_SPACING_RIGHT   	4
+#define HEADERENTRY_EXTRAWIDTH	    	(HEADERENTRY_SPACING_LEFT + HEADERENTRY_SPACING_RIGHT)
+
+enum
+{
+    INDEX_NAME,
+    INDEX_SIZE,
+    INDEX_PROTECTION,
+    INDEX_DATE,
+    INDEX_TIME,
+    INDEX_COMMENT
+};
+
 /**************************************************************************
                          Support Functions
 **************************************************************************/
@@ -573,6 +622,131 @@ static void IconList_GetIconAreaRectangle(Object *obj, struct IconList_DATA *dat
     if (icon->ie_AreaHeight > data->icld_IconAreaLargestHeight) data->icld_IconAreaLargestHeight = icon->ie_AreaHeight;
 }
 ///
+
+static LONG FirstVisibleColumnNumber(struct IconList_DATA *data)
+{
+    LONG i;
+    LONG retval = -1;
+
+    if (data->icld_LVMAttribs != NULL)
+    {
+	for(i = 0; i < NUM_COLUMNS; i++)
+	{
+	    LONG index = data->icld_LVMAttribs->lmva_ColumnPos[i];
+
+	    if (data->icld_LVMAttribs->lmva_ColumnVisible[index])
+	    {
+		retval = i;
+		break;
+	    }
+	}
+    }
+
+    return retval;
+}
+
+static LONG LastVisibleColumnNumber(struct IconList_DATA *data)
+{
+    LONG i;
+    LONG retval = -1;
+
+    if (data->icld_LVMAttribs != NULL)
+    {
+	for(i = 0; i < NUM_COLUMNS; i++)
+	{
+	    LONG index = data->icld_LVMAttribs->lmva_ColumnPos[i];
+
+	    if (data->icld_LVMAttribs->lmva_ColumnVisible[index])
+	    {
+		retval = i;
+	    }
+	}
+    }
+
+    return retval;
+    
+}
+
+static void RenderEntryField(Object *obj, struct IconList_DATA *data,
+    	    	    	     struct IconEntry *entry, struct Rectangle *rect,
+			     LONG index, BOOL firstvis, BOOL lastvis)
+{
+    STRPTR text;
+    struct TextExtent te;
+    ULONG fit;
+
+    if (entry->ie_Flags & ICONENTRY_FLAG_SELECTED)
+    {
+	FillPixelArray(data->icld_BufferRastPort, rect->MinX, rect->MinY, rect->MaxX - rect->MinX + 1, rect->MaxY - rect->MinY + 1, 0x0A246A);
+    }
+
+    rect->MinX += ENTRY_SPACING_LEFT;
+    rect->MaxX -= ENTRY_SPACING_RIGHT;
+    rect->MinY += LINE_SPACING_TOP;
+    rect->MaxY -= LINE_SPACING_BOTTOM;
+
+    if (firstvis) rect->MinX += LINE_SPACING_LEFT;
+    if (lastvis)  rect->MaxX -= LINE_SPACING_RIGHT;
+
+    if (!entry) return;
+
+    switch(index)
+    {
+	case INDEX_NAME:
+	    text = entry->ie_IconListEntry.label;
+	    break;
+
+	case INDEX_SIZE:
+	    text = entry->ie_TxtBuf_SIZE;
+	    break;
+
+	case INDEX_DATE:
+	    text = entry->ie_TxtBuf_DATE;
+	    break;
+
+	case INDEX_TIME:
+	    text = entry->ie_TxtBuf_TIME;
+	    break;
+
+	case INDEX_COMMENT:
+	    text = entry->ie_FileInfoBlock->fib_Comment;
+	    break;
+
+	case INDEX_PROTECTION:
+	    text = entry->ie_TxtBuf_PROT;
+	    break;			    
+    }
+
+    if (!text) return;
+    if (!text[0]) return;
+
+    fit = TextFit(data->icld_BufferRastPort, text, strlen(text), &te, NULL, 1,
+    	    	   rect->MaxX - rect->MinX + 1,
+		   rect->MaxY - rect->MinY + 1);
+
+    if (!fit) return;
+    
+    SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[(entry->ie_Flags & ICONENTRY_FLAG_SELECTED) ? MPEN_SHINE : MPEN_TEXT], 0, JAM1);
+    
+    switch(data->icld_LVMAttribs->lmva_ColumnAlign[index])
+    {
+    	case COLUMN_ALIGN_LEFT:
+    	    Move(data->icld_BufferRastPort, rect->MinX, rect->MinY + data->icld_BufferRastPort->TxBaseline);
+	    break;
+	    
+	case COLUMN_ALIGN_RIGHT:
+    	    Move(data->icld_BufferRastPort, rect->MaxX - te.te_Width, rect->MinY + data->icld_BufferRastPort->TxBaseline);
+	    break;
+	    
+	case COLUMN_ALIGN_CENTER:
+    	    Move(data->icld_BufferRastPort, rect->MinX + (rect->MaxX - rect->MinX + 1 + 1 - te.te_Width) / 2,
+	    	    	   rect->MinY + data->icld_BufferRastPort->TxBaseline);
+	    break;
+	    
+    }
+    Text(data->icld_BufferRastPort, text, fit);
+}
+
 /**************************************************************************
 Draw the icon at its position
 **************************************************************************/
@@ -618,92 +792,152 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
         return FALSE;
     }
 
-    /* Get the dimensions and affected area of message->icon */
-    IconList_GetIconImageRectangle(obj, data, message->icon, &iconrect);
-    iconW = iconrect.MaxX - iconrect.MinX + 1;
-    iconH = iconrect.MaxY - iconrect.MinY + 1;
-
-    /* Add the relative position offset of the message->icon */
-    offsetx = objX - data->icld_ViewX + message->icon->ie_IconX;
-    /* Centre our image with our text */
-    if (message->icon->ie_IconWidth < message->icon->ie_AreaWidth)
-        offsetx += (message->icon->ie_AreaWidth - message->icon->ie_IconWidth)/2;
-
-    if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
-        (message->icon->ie_AreaWidth < data->icld_IconAreaLargestWidth))
-        offsetx += ((data->icld_IconAreaLargestWidth - message->icon->ie_AreaWidth)/2);
-
-    iconrect.MinX += offsetx;
-    iconrect.MaxX += offsetx;
-
-    offsety = objY - data->icld_ViewY + message->icon->ie_IconY;
-    iconrect.MinY += offsety;
-    iconrect.MaxY += offsety;
-
-    /* Add the relative position of the window */
-    objrect.MinX = objX;
-    objrect.MinY = objY;
-    objrect.MaxX = objX + objW;
-    objrect.MaxY = objY + objH;
-
-    if (!RectAndRect(&iconrect, &objrect))
+    if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
     {
+	struct Rectangle linerect;
+	LONG    	     x, i;
+	LONG    	     firstvis, lastvis;
+	
+	linerect.MinX = objX - data->icld_ViewX;
+	linerect.MaxX = objX + objW; //linerect.MinX + data->width - 1;
+	linerect.MinY = (objY  - data->icld_ViewY) + data->icld_LVMAttribs->lmva_HeaderHeight + (message->drawmode * data->icld_LVMAttribs->lmva_RowHeight);
+	linerect.MaxY = linerect.MinY + data->icld_LVMAttribs->lmva_RowHeight - 1;
+	
+//	if (!AndRectRect(&linerect, &data->view_rect, NULL)) return;
+//	if (!MustRenderRect(data, &linerect)) return;
+	
+	SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
+	
+	x = linerect.MinX + LINE_SPACING_LEFT;
+
+	firstvis = FirstVisibleColumnNumber(data);
+	lastvis = LastVisibleColumnNumber(data);
+	
+	for(i = 0; i < NUM_COLUMNS; i++)
+	{
+	    struct Rectangle field_rect;
+	    LONG 	    	 index = data->icld_LVMAttribs->lmva_ColumnPos[i];
+	    
+	    if (!data->icld_LVMAttribs->lmva_ColumnVisible[i]) continue;
+	    
+	    field_rect.MinX = (i == firstvis) ? linerect.MinX : x;
+	    field_rect.MinY = linerect.MinY;
+	    field_rect.MaxX = x + data->icld_LVMAttribs->lmva_ColumnWidth[index] - 1 + ((i == lastvis) ? LINE_SPACING_RIGHT : 0);
+	    field_rect.MaxY = linerect.MaxY;
+	    
+/*	    if (MustRenderRect(data, &field_rect))
+	    {
+		if (AndRectRect(&field_rect, &data->view_rect, NULL))
+		{*/
+		    RenderEntryField(obj, data, message->icon, &field_rect, index,
+				     (i == firstvis), (i == lastvis));
+		/*}
+	    }*/
+	    x += data->icld_LVMAttribs->lmva_ColumnWidth[index];
+	}
+
+	/* Clear after the last column? */
+/*
+	x += LINE_SPACING_RIGHT;
+
+	if (x < linerect.MaxX)
+	{
+	    linerect.MinX = x;
+
+	    SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[MPEN_SHINE], 0, JAM1);
+	    RectFill(data->icld_BufferRastPort, linerect.MinX, linerect.MinY, linerect.MaxX, linerect.MaxY);
+	}
+*/
+    }
+    else
+    {
+	/* Get the dimensions and affected area of message->icon */
+	IconList_GetIconImageRectangle(obj, data, message->icon, &iconrect);
+	iconW = iconrect.MaxX - iconrect.MinX + 1;
+	iconH = iconrect.MaxY - iconrect.MinY + 1;
+
+	/* Add the relative position offset of the message->icon */
+	offsetx = objX - data->icld_ViewX + message->icon->ie_IconX;
+	/* Centre our image with our text */
+	if (message->icon->ie_IconWidth < message->icon->ie_AreaWidth)
+	    offsetx += (message->icon->ie_AreaWidth - message->icon->ie_IconWidth)/2;
+
+	if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
+	    (message->icon->ie_AreaWidth < data->icld_IconAreaLargestWidth))
+	    offsetx += ((data->icld_IconAreaLargestWidth - message->icon->ie_AreaWidth)/2);
+
+	iconrect.MinX += offsetx;
+	iconrect.MaxX += offsetx;
+
+	offsety = objY - data->icld_ViewY + message->icon->ie_IconY;
+	iconrect.MinY += offsety;
+	iconrect.MaxY += offsety;
+
+	/* Add the relative position of the window */
+	objrect.MinX = objX;
+	objrect.MinY = objY;
+	objrect.MaxX = objX + objW;
+	objrect.MaxY = objY + objH;
+
+	if (!RectAndRect(&iconrect, &objrect))
+	{
 #if defined(DEBUG_ILC_ICONRENDERING)
-        D(bug("[IconList] %s: Icon '%s' image outside of visible area .. skipping\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label));
+	D(bug("[IconList] %s: Icon '%s' image outside of visible area .. skipping\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label));
 #endif
-        return FALSE;
-    }
+	    return FALSE;
+	}
 
-    /* data->update_rect1 and data->update_rect2 may
-       point to rectangles to indicate that only icons
-       in any of this rectangles need to be drawn      */
-    if (data->update_rect1)
-    {
-        if (!RectAndRect(&iconrect, data->update_rect1)) outside = TRUE;
-    }
+	/* data->update_rect1 and data->update_rect2 may
+	   point to rectangles to indicate that only icons
+	   in any of this rectangles need to be drawn      */
+	if (data->update_rect1)
+	{
+	    if (!RectAndRect(&iconrect, data->update_rect1)) outside = TRUE;
+	}
 
-    if (data->update_rect2)
-    {
-        if (data->update_rect1)
-        {
-            if ((outside == TRUE) && RectAndRect(&iconrect, data->update_rect2))
-                outside = FALSE;
-        }
-        else
-        {
-            if (!RectAndRect(&iconrect, data->update_rect2))
-                outside = TRUE;
-        }
-    }
+	if (data->update_rect2)
+	{
+	    if (data->update_rect1)
+	    {
+		if ((outside == TRUE) && RectAndRect(&iconrect, data->update_rect2))
+		    outside = FALSE;
+	    }
+	    else
+	    {
+		if (!RectAndRect(&iconrect, data->update_rect2))
+		    outside = TRUE;
+	    }
+	}
 
-    if (outside == TRUE)
-    {
+	if (outside == TRUE)
+	{
 #if defined(DEBUG_ILC_ICONRENDERING)
-        D(bug("[IconList] %s: Icon '%s' image outside of update area .. skipping\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label));
+	D(bug("[IconList] %s: Icon '%s' image outside of update area .. skipping\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label));
 #endif
-        return FALSE;
-    }
+	    return FALSE;
+	}
 
-    if (message->drawmode == ICONENTRY_DRAWMODE_NONE) return TRUE;
+	if (message->drawmode == ICONENTRY_DRAWMODE_NONE) return TRUE;
 
-    // Center icon image
-    iconX = iconrect.MinX - objX + data->icld_DrawOffsetX;
-    iconY = iconrect.MinY - objY + data->icld_DrawOffsetY;
+	// Center icon image
+	iconX = iconrect.MinX - objX + data->icld_DrawOffsetX;
+	iconY = iconrect.MinY - objY + data->icld_DrawOffsetY;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
     D(bug("[IconList] %s: DrawIconState('%s') .. %d, %d\n", __PRETTY_FUNCTION__, message->icon->ie_IconListEntry.label, iconX, iconY));
 #endif
-    DrawIconStateA
-      (
-	data->icld_BufferRastPort, message->icon->ie_DiskObj, NULL,
-	iconX, 
-	iconY, 
-	(message->icon->ie_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
-	__iconList_DrawIconStateTags
-      );
+	DrawIconStateA
+	  (
+	    data->icld_BufferRastPort, message->icon->ie_DiskObj, NULL,
+	    iconX, 
+	    iconY, 
+	    (message->icon->ie_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
+	    __iconList_DrawIconStateTags
+	  );
 #if defined(DEBUG_ILC_ICONRENDERING)
     D(bug("[IconList] %s: DrawIconState Done\n", __PRETTY_FUNCTION__));
 #endif
+    }
 
     return TRUE;
 }
@@ -985,6 +1219,9 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
     ULONG                       objX, objY, objW, objH;
     LONG                        labelX, labelY;
     ULONG                       labelW, labelH;
+
+    if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
+	return FALSE;
 
     if (data->icld_BufferRastPort == data->icld_DisplayRastPort)
     {
@@ -1516,6 +1753,7 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
     struct IconList_DATA        *data = NULL;
     struct TextFont             *icl_WindowFont = NULL;
 //    struct RastPort             *icl_RastPort = NULL;
+    int i;
 
 #if defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
@@ -1545,7 +1783,62 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
 #endif
     NewList((struct List*)&data->icld_IconList);
     NewList((struct List*)&data->icld_SelectionList);
+
     data->icld_IconLabelFont = icl_WindowFont;  
+
+/* Setup Icon View-Mode options */
+    data->icld_IVMAttribs = AllocMem(sizeof(struct IconViewModeAttribs), MEMF_CLEAR);
+/* Setup List View-Mode options */
+    if ((data->icld_LVMAttribs = AllocMem(sizeof(struct ListViewModeAttribs), MEMF_CLEAR)) != NULL)
+    {
+	for(i = 0; i < NUM_COLUMNS; i++)
+	{
+	    data->icld_LVMAttribs->lmva_ColumnPos[i] = i;
+	    data->icld_LVMAttribs->lmva_ColumnVisible[i] = TRUE;
+	    data->icld_LVMAttribs->lmva_ColumnWidth[i] = 100;
+	    data->icld_LVMAttribs->lmva_ColumnAlign[i] = COLUMN_ALIGN_LEFT;
+	    data->icld_LVMAttribs->lmva_ColumnSortable[i] = FALSE;
+	    switch (i)
+	    {
+		case INDEX_NAME:
+		    data->icld_LVMAttribs->lmva_ColumnClickable[i] = TRUE;
+		    data->icld_LVMAttribs->lmva_ColumnSortable[i] = TRUE;
+		    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Name";
+		    break;
+
+		case INDEX_SIZE:
+		    data->icld_LVMAttribs->lmva_ColumnAlign[i] = COLUMN_ALIGN_RIGHT;
+		    data->icld_LVMAttribs->lmva_ColumnSortable[i] = TRUE;
+		    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Size";
+		    break;
+
+		case INDEX_DATE:
+		    data->icld_LVMAttribs->lmva_ColumnSortable[i] = TRUE;
+		    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Date";
+		    break;
+
+		case INDEX_TIME:
+		    data->icld_LVMAttribs->lmva_ColumnSortable[i] = TRUE;
+		    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Time";
+		    break;
+
+		case INDEX_COMMENT:
+		    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Comment";
+		    break;
+
+		case INDEX_PROTECTION:
+		    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Protection";
+		    break;
+
+		default:
+		    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "<Unknown>";
+		    break;
+	    }
+	}
+	data->icld_LVMAttribs->lmva_SortColumn = INDEX_NAME;
+	data->icld_LVMAttribs->lmva_HeaderHeight = HEADERLINE_EXTRAHEIGHT + data->icld_IconLabelFont->tf_YSize;
+	data->icld_LVMAttribs->lmva_RowHeight = LINE_EXTRAHEIGHT + data->icld_IconLabelFont->tf_YSize;
+    }
 
     /* Get/Set initial values */
 #warning "TODO: TrimVolumeNames should be prefs settable"
@@ -2427,6 +2720,182 @@ IPTR IconList__MUIM_Layout(struct IClass *CLASS, Object *obj,struct MUIP_Layout 
 }
 ///
 
+static LONG FirstVisibleLine(struct IconList_DATA *data)
+{
+    return data->icld_ViewY / data->icld_LVMAttribs->lmva_RowHeight;
+}
+
+static LONG NumVisibleLines(struct IconList_DATA *data)
+{
+    LONG visible = data->icld_ViewHeight + data->icld_LVMAttribs->lmva_RowHeight - 1 +
+    	    	   (data->icld_ViewY % data->icld_LVMAttribs->lmva_RowHeight);
+		   
+    visible /= data->icld_LVMAttribs->lmva_RowHeight;
+    
+    return visible;		   
+}
+
+static void RenderListViewModeHeaderField(Object *obj, struct IconList_DATA *data,
+    	    	    	    struct Rectangle *rect, LONG index)
+{
+    STRPTR text;
+    struct TextExtent te;
+    ULONG fit;
+    BOOL  sel = FALSE;
+
+#if defined(DEBUG_ILC_FUNCS)
+D(bug("[IconList]: %s(obj @ 0x%p)\n", __PRETTY_FUNCTION__, obj));
+#endif
+
+/*    if ((data->inputstate == INPUTSTATE_COL_HEADER_CLICK) &&
+    	(data->click_column == index))
+    	
+    {
+    	if (ColumnHeaderUnderMouse(data, data->click_x, data->click_y) == index)
+	{
+	    sel = TRUE;
+	}
+    }*/
+
+    text = data->icld_LVMAttribs->lmva_ColumnTitle[index];
+
+    SetAPen(data->icld_BufferRastPort, _pens(obj)[sel ? MPEN_HALFSHADOW : MPEN_HALFSHINE]);
+    RectFill(data->icld_BufferRastPort, rect->MinX + 1, rect->MinY + 1,
+    	    	       rect->MaxX - 1, rect->MaxY - 1);
+    SetAPen(data->icld_BufferRastPort, _pens(obj)[sel ? MPEN_SHADOW : MPEN_SHINE]);
+    RectFill(data->icld_BufferRastPort, rect->MinX, rect->MinY, rect->MinX, rect->MaxY);
+    RectFill(data->icld_BufferRastPort, rect->MinX + 1, rect->MinY, rect->MaxX - 1, rect->MinY);
+    SetAPen(data->icld_BufferRastPort, _pens(obj)[sel ? MPEN_HALFSHINE : MPEN_HALFSHADOW]);
+    RectFill(data->icld_BufferRastPort, rect->MaxX, rect->MinY, rect->MaxX, rect->MaxY);
+    RectFill(data->icld_BufferRastPort, rect->MinX + 1, rect->MaxY, rect->MaxX - 1, rect->MaxY);
+
+    if (index == data->icld_LVMAttribs->lmva_SortColumn)
+    {
+    	LONG x = rect->MaxX - 4 - 6;
+	LONG y = (rect->MinY + rect->MaxY + 1) / 2 - 3;
+	
+	if (x > rect->MinX)
+	{
+	    SetAPen(data->icld_BufferRastPort, _pens(obj)[sel ? MPEN_SHADOW : MPEN_HALFSHADOW]);
+	    if (data->icld_SortFlags & MUIV_IconList_Sort_Reverse)
+	    {
+		RectFill(data->icld_BufferRastPort, x, y, x + 5, y + 1);
+		RectFill(data->icld_BufferRastPort, x + 1, y + 2, x + 4, y + 3);
+		RectFill(data->icld_BufferRastPort, x + 2, y + 4, x + 3, y + 5);
+	    }
+	    else
+	    {
+		RectFill(data->icld_BufferRastPort, x, y + 4, x + 5, y + 5);
+		RectFill(data->icld_BufferRastPort, x + 1, y + 2, x + 4, y + 3);
+		RectFill(data->icld_BufferRastPort, x + 2, y, x + 3, y + 1);
+	    }
+	}
+    }
+
+    rect->MinX += HEADERENTRY_SPACING_LEFT;
+    rect->MinY += HEADERLINE_SPACING_TOP;
+    rect->MaxX -= HEADERENTRY_SPACING_RIGHT;
+    rect->MaxY -= HEADERLINE_SPACING_BOTTOM;
+
+    if (text && text[0])
+    {
+
+	fit = TextFit(data->icld_BufferRastPort, text, strlen(text), &te, NULL, 1,
+    	    	       rect->MaxX - rect->MinX + 1,
+		       rect->MaxY - rect->MinY + 1);
+
+	if (!fit) return;
+
+	SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[MPEN_TEXT], 0, JAM1);
+	Move(data->icld_BufferRastPort, rect->MinX, rect->MinY + data->icld_BufferRastPort->TxBaseline);
+	Text(data->icld_BufferRastPort, text, fit);
+    }
+}
+
+static void RenderListViewModeHeader(Object *obj, struct IconList_DATA *data)
+{
+    struct Rectangle linerect;
+    LONG    	     x, i;
+    LONG    	     firstvis, lastvis;
+
+#if defined(DEBUG_ILC_FUNCS)
+D(bug("[IconList]: %s(obj @ 0x%p)\n", __PRETTY_FUNCTION__, obj));
+#endif
+
+    linerect.MinX = _mleft(obj) - data->icld_ViewX;
+    linerect.MaxX = _mright(obj);
+    linerect.MinY = _mtop(obj);
+    linerect.MaxY = _mtop(obj) + data->icld_LVMAttribs->lmva_HeaderHeight - 1;
+
+    SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
+
+    x = linerect.MinX + HEADERLINE_SPACING_LEFT;
+
+    firstvis = FirstVisibleColumnNumber(data);
+    lastvis = LastVisibleColumnNumber(data);
+
+    for(i = 0; i < NUM_COLUMNS; i++)
+    {
+   	LONG 	    	 	index = data->icld_LVMAttribs->lmva_ColumnPos[i];
+
+	if (!data->icld_LVMAttribs->lmva_ColumnVisible[index]) continue;
+
+	BOOL			outside = FALSE;
+	struct Rectangle 	field_rect;
+
+	field_rect.MinX = (i == firstvis) ? linerect.MinX : x;
+	field_rect.MinY = linerect.MinY;
+    	field_rect.MaxX = x + data->icld_LVMAttribs->lmva_ColumnWidth[index] - 1 + ((i == lastvis) ? HEADERLINE_SPACING_RIGHT : 0);
+	field_rect.MaxY = linerect.MaxY;
+
+	/* data->update_rect1 and data->update_rect2 may
+	   point to rectangles to indicate that only icons
+	   in any of this rectangles need to be drawn      */
+	if (data->update_rect1)
+	{
+	    if (!RectAndRect(&field_rect, data->update_rect1))
+		outside = TRUE;
+	}
+
+	if (data->update_rect2)
+	{
+	    if (data->update_rect1)
+	    {
+		if ((outside == TRUE) && RectAndRect(&field_rect, data->update_rect2))
+		    outside = FALSE;
+	    }
+	    else
+	    {
+		if (!RectAndRect(&field_rect, data->update_rect2))
+		    outside = TRUE;
+	    }
+	}
+
+	if (outside != TRUE)
+	{
+	    RenderListViewModeHeaderField(obj, data, &field_rect, index);
+	    x += data->icld_LVMAttribs->lmva_ColumnWidth[index];
+	}
+	else
+	{
+	    D(bug("[IconList] %s: Column '%s' outside of update area .. skipping\n", __PRETTY_FUNCTION__, data->icld_LVMAttribs->lmva_ColumnTitle[i]));
+	}
+    }
+
+    x += HEADERLINE_SPACING_RIGHT;
+
+    if (x < linerect.MaxX)
+    {
+    	linerect.MinX = x;
+
+//	if (MustRenderRect(data, &linerect))
+//	{
+    	    SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[MPEN_HALFSHINE], 0, JAM1);
+	    RectFill(data->icld_BufferRastPort, linerect.MinX, linerect.MinY, linerect.MaxX, linerect.MaxY);
+//	}
+    }
+}
+
 ///MUIM_Draw()
 /**************************************************************************
 MUIM_Draw - draw the IconList
@@ -2435,9 +2904,9 @@ IPTR DrawCount;
 IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *message)
 {   
     struct IconList_DATA        *data = INST_DATA(CLASS, obj);
-    struct IconEntry            *icon = NULL;
+    struct IconEntry            *entry = NULL;
 
-    APTR                        clip;
+    APTR                        clip = NULL;
 
     ULONG                       update_oldwidth = 0,
                                 update_oldheight = 0;
@@ -2491,112 +2960,156 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
             }
         )
 #endif
-        if ((data->icld_UpdateMode == UPDATE_SINGLEENTRY) && (data->update_entry != NULL)) /* draw only a single icon at update_entry */
+        if ((data->icld_UpdateMode == UPDATE_SINGLEENTRY) && (data->update_entry != NULL)) /* draw only a single entry at update_entry */
         {
-            struct Rectangle rect;
+	    struct Rectangle rect;
+
+	    if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
+	    {
+		LONG count = 0, index = -1;
+
+D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY + ICONLIST_DISP_MODELIST\n", __PRETTY_FUNCTION__, draw_id));
+		
+		rect.MinX = _mleft(obj);
+		rect.MaxX = _mleft(obj) + _mwidth(obj);
+
+		ForeachNode(&data->icld_IconList, entry)
+		{
+		    if (entry == data->update_entry)
+		    {
+			index = count;
+			break;
+		    }
+		    if (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+		    {
+			count++;
+		    }
+		}
+
+		if (index != -1)
+		{
+		    rect.MinY = _mtop(obj) + data->icld_LVMAttribs->lmva_HeaderHeight - data->icld_ViewY + (index * data->icld_LVMAttribs->lmva_RowHeight);
+		    rect.MaxY = rect.MinY + data->icld_LVMAttribs->lmva_RowHeight;
+
+		    clip = MUI_AddClipping(muiRenderInfo(obj), rect.MinX, rect.MinY, rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1);
+
+		    DoMethod(obj, MUIM_DrawBackground, 
+			rect.MinX, rect.MinY,
+			rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
+			clear_xoffset, clear_yoffset, 
+			0);
+		    
+		    entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
+		    DoMethod(obj, MUIM_IconList_DrawEntry, data->update_entry, index);
+		    entry->ie_Flags &= ~ICONENTRY_FLAG_NEEDSUPDATE;
+		    data->icld_UpdateMode = 0;
+		    data->update_entry = NULL;
+		}
+	    }
+	    else
+	    {
+		D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY (entry @ 0x%p)\n", __PRETTY_FUNCTION__, draw_id, data->update_entry));
+
+		IconList_GetIconAreaRectangle(obj, data, data->update_entry, &rect);
+
+		rect.MinX += _mleft(obj) + (data->update_entry->ie_IconX - data->icld_ViewX);
+		rect.MaxX += _mleft(obj) + (data->update_entry->ie_IconX - data->icld_ViewX);
+		rect.MinY += _mtop(obj) + (data->update_entry->ie_IconY - data->icld_ViewY);
+		rect.MaxY += _mtop(obj) + (data->update_entry->ie_IconY - data->icld_ViewY);
+
+		if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+		{
+		    if (data->update_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+		    {
+			rect.MinX += ((data->icld_IconAreaLargestWidth - data->update_entry->ie_AreaWidth)/2);
+			rect.MaxX += ((data->icld_IconAreaLargestWidth - data->update_entry->ie_AreaWidth)/2);
+		    }
+
+		    if (data->update_entry->ie_AreaHeight < data->icld_IconAreaLargestHeight)
+		    {
+			rect.MinY += ((data->icld_IconAreaLargestHeight - data->update_entry->ie_AreaHeight)/2);
+			rect.MaxY += ((data->icld_IconAreaLargestHeight - data->update_entry->ie_AreaHeight)/2);
+		    }
+		}
+
+		clip = MUI_AddClipping(muiRenderInfo(obj), rect.MinX, rect.MinY, rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1);
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-            D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY (icon @ 0x%p)\n", __PRETTY_FUNCTION__, draw_id, data->update_entry));
+		D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__, draw_id));
 #endif
+		DoMethod(obj, MUIM_DrawBackground, 
+		    rect.MinX, rect.MinY,
+		    rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
+		    clear_xoffset, clear_yoffset, 
+		    0);
 
-            IconList_GetIconAreaRectangle(obj, data, data->update_entry, &rect);
-
-            rect.MinX += _mleft(obj) + (data->update_entry->ie_IconX - data->icld_ViewX);
-            rect.MaxX += _mleft(obj) + (data->update_entry->ie_IconX - data->icld_ViewX);
-            rect.MinY += _mtop(obj) + (data->update_entry->ie_IconY - data->icld_ViewY);
-            rect.MaxY += _mtop(obj) + (data->update_entry->ie_IconY - data->icld_ViewY);
-
-            if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-            {
-                if (data->update_entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                {
-                    rect.MinX += ((data->icld_IconAreaLargestWidth - data->update_entry->ie_AreaWidth)/2);
-                    rect.MaxX += ((data->icld_IconAreaLargestWidth - data->update_entry->ie_AreaWidth)/2);
-                }
-
-                if (data->update_entry->ie_AreaHeight < data->icld_IconAreaLargestHeight)
-                {
-                    rect.MinY += ((data->icld_IconAreaLargestHeight - data->update_entry->ie_AreaHeight)/2);
-                    rect.MaxY += ((data->icld_IconAreaLargestHeight - data->update_entry->ie_AreaHeight)/2);
-                }
-            }
-
-            clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
-
-#if defined(DEBUG_ILC_ICONRENDERING)
-            D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__, draw_id));
-#endif
-            DoMethod(obj, MUIM_DrawBackground, 
-                rect.MinX, rect.MinY,
-                rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
-                clear_xoffset, clear_yoffset, 
-                0);
-
-            /* We could have deleted also other icons so they must be redrawn */
+		/* We could have deleted also other icons so they must be redrawn */
 #if defined(__AROS__)
-            ForeachNode(&data->icld_IconList, icon)
+		ForeachNode(&data->icld_IconList, entry)
 #else
-            Foreach_Node(&data->icld_IconList, icon);
+		Foreach_Node(&data->icld_IconList, entry);
 #endif
-            {
-                if ((icon != data->update_entry) && (icon->ie_Flags & ICONENTRY_FLAG_VISIBLE))
-                {
-                    struct Rectangle rect2;
-                    IconList_GetIconAreaRectangle(obj, data, icon, &rect2);
+		{
+		    if ((entry != data->update_entry) && (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
+		    {
+			struct Rectangle rect2;
+			IconList_GetIconAreaRectangle(obj, data, entry, &rect2);
 
-                    rect2.MinX += _mleft(obj) - data->icld_ViewX + icon->ie_IconX;
-                    rect2.MaxX += _mleft(obj) - data->icld_ViewX + icon->ie_IconX;
-                    rect2.MinY += _mtop(obj) - data->icld_ViewY + icon->ie_IconY;
-                    rect2.MaxY += _mtop(obj) - data->icld_ViewY + icon->ie_IconY;
+			rect2.MinX += _mleft(obj) - data->icld_ViewX + entry->ie_IconX;
+			rect2.MaxX += _mleft(obj) - data->icld_ViewX + entry->ie_IconX;
+			rect2.MinY += _mtop(obj) - data->icld_ViewY + entry->ie_IconY;
+			rect2.MaxY += _mtop(obj) - data->icld_ViewY + entry->ie_IconY;
 
-                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                    {
-                        if (icon->ie_AreaWidth < data->icld_IconAreaLargestWidth)
-                        {
-                            rect2.MinX += ((data->icld_IconAreaLargestWidth - icon->ie_AreaWidth)/2);
-                            rect2.MaxX += ((data->icld_IconAreaLargestWidth - icon->ie_AreaWidth)/2);
-                        }
+			if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+			{
+			    if (entry->ie_AreaWidth < data->icld_IconAreaLargestWidth)
+			    {
+				rect2.MinX += ((data->icld_IconAreaLargestWidth - entry->ie_AreaWidth)/2);
+				rect2.MaxX += ((data->icld_IconAreaLargestWidth - entry->ie_AreaWidth)/2);
+			    }
 
-                        if (icon->ie_AreaHeight < data->icld_IconAreaLargestHeight)
-                        {
-                            rect2.MinY += ((data->icld_IconAreaLargestHeight - icon->ie_AreaHeight)/2);
-                            rect2.MaxY += ((data->icld_IconAreaLargestHeight - icon->ie_AreaHeight)/2);
-                        }
-                    }
+			    if (entry->ie_AreaHeight < data->icld_IconAreaLargestHeight)
+			    {
+				rect2.MinY += ((data->icld_IconAreaLargestHeight - entry->ie_AreaHeight)/2);
+				rect2.MaxY += ((data->icld_IconAreaLargestHeight - entry->ie_AreaHeight)/2);
+			    }
+			}
 
-                    if (RectAndRect(&rect, &rect2))
-                    {  
-                        // Update icon here
-                        icon->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
-                        DoMethod(obj, MUIM_IconList_DrawEntry, icon, ICONENTRY_DRAWMODE_PLAIN);
-                        DoMethod(obj, MUIM_IconList_DrawEntryLabel, icon, ICONENTRY_DRAWMODE_PLAIN);
-                        icon->ie_Flags &= ~ICONENTRY_FLAG_NEEDSUPDATE;
-                    }
-                }
-            }
+			if (RectAndRect(&rect, &rect2))
+			{  
+			    // Update entry here
+			    entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
+			    DoMethod(obj, MUIM_IconList_DrawEntry, entry, ICONENTRY_DRAWMODE_PLAIN);
+			    DoMethod(obj, MUIM_IconList_DrawEntryLabel, entry, ICONENTRY_DRAWMODE_PLAIN);
+			    entry->ie_Flags &= ~ICONENTRY_FLAG_NEEDSUPDATE;
+			}
+		    }
+		}
 
-            icon->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
-            DoMethod(obj, MUIM_IconList_DrawEntry, data->update_entry, ICONENTRY_DRAWMODE_PLAIN);
-            DoMethod(obj, MUIM_IconList_DrawEntryLabel, data->update_entry, ICONENTRY_DRAWMODE_PLAIN);
-            icon->ie_Flags &= ~ICONENTRY_FLAG_NEEDSUPDATE;
-            data->icld_UpdateMode = 0;
-            data->update_entry = NULL;
-
-            if (data->icld_DisplayRastPort != data->icld_BufferRastPort)
-            {
+		entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
+		DoMethod(obj, MUIM_IconList_DrawEntry, data->update_entry, ICONENTRY_DRAWMODE_PLAIN);
+		DoMethod(obj, MUIM_IconList_DrawEntryLabel, data->update_entry, ICONENTRY_DRAWMODE_PLAIN);
+		entry->ie_Flags &= ~ICONENTRY_FLAG_NEEDSUPDATE;
+		data->icld_UpdateMode = 0;
+		data->update_entry = NULL;
+	    }
+	    if (data->update_entry == NULL)
+	    {
+		if (data->icld_DisplayRastPort != data->icld_BufferRastPort)
+		{
 #if defined(DEBUG_ILC_ICONRENDERING)
-                D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
+		    D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
 #endif 
-                BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
-                          rect.MinX - _mleft(obj), rect.MinY - _mtop(obj),
-                          data->icld_DisplayRastPort,
-                          rect.MinX, rect.MinY,
-                          rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
-                          0xC0);
-            }
-
-            MUI_RemoveClipping(muiRenderInfo(obj),clip);
-            goto draw_done;
+		    BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
+			      rect.MinX - _mleft(obj), rect.MinY - _mtop(obj),
+			      data->icld_DisplayRastPort,
+			      rect.MinX, rect.MinY,
+			      rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
+			      0xC0);
+		}
+		MUI_RemoveClipping(muiRenderInfo(obj), clip);
+	    }
+	    goto draw_done;
         }
         else if (data->icld_UpdateMode == UPDATE_SCROLL)
         {
@@ -2895,6 +3408,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
     if (message->flags & MADF_DRAWOBJECT)
     {
         struct Rectangle viewrect;
+	int current = 0, first = 0, visible = 0;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
         D(bug("[IconList] %s#%d: MADF_DRAWOBJECT\n", __PRETTY_FUNCTION__, draw_id));
@@ -2902,43 +3416,69 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 
         clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
+	if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
+	{
+	    RenderListViewModeHeader(obj, data);
+	    viewrect.MinY = _mtop(obj) + data->icld_LVMAttribs->lmva_HeaderHeight;
+
+	    first   = FirstVisibleLine(data);
+	    visible = NumVisibleLines(data);
+	}
+	else
+	{
+	    viewrect.MinY = _mtop(obj);
+	}
+
+	viewrect.MaxY = _mtop(obj) + _mheight(obj);
         viewrect.MinX = _mleft(obj);
         viewrect.MaxX = _mleft(obj) + _mwidth(obj);
-        viewrect.MinY = _mtop(obj);
-        viewrect.MaxY = _mtop(obj) + _mheight(obj);
 
 #if defined(DEBUG_ILC_ICONRENDERING)
         D(bug("[IconList] %s#%d: MADF_DRAWOBJECT: Calling MUIM_DrawBackground (B)\n", __PRETTY_FUNCTION__, draw_id));
 #endif
         DoMethod(
-            obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj),
+            obj, MUIM_DrawBackground, viewrect.MinX, viewrect.MinY, (viewrect.MaxX - viewrect.MinX), (viewrect.MaxY - viewrect.MinY),
             clear_xoffset, clear_yoffset, 0
         );
 #if defined(__AROS__)
-        ForeachNode(&data->icld_IconList, icon)
+        ForeachNode(&data->icld_IconList, entry)
 #else
-        Foreach_Node(&data->icld_IconList, icon);
+        Foreach_Node(&data->icld_IconList, entry);
 #endif
         {
-            if ((icon->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
-                (icon->ie_DiskObj) &&
-                (icon->ie_IconX != NO_ICON_POSITION) &&
-                (icon->ie_IconY != NO_ICON_POSITION))
-            {
-                struct Rectangle iconrect;
-                IconList_GetIconAreaRectangle(obj, data, icon, &iconrect);
+	    if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
+	    {
+		if (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+		{
+		    if ((current >= first) && (current < visible))
+		    {
+			DoMethod(obj, MUIM_IconList_DrawEntry, entry, current);
+			current++;
+		    }
+		}
+	    }
+	    else
+	    {
+		if ((entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
+		    (entry->ie_DiskObj) &&
+		    (entry->ie_IconX != NO_ICON_POSITION) &&
+		    (entry->ie_IconY != NO_ICON_POSITION))
+		{
+		    struct Rectangle iconrect;
+		    IconList_GetIconAreaRectangle(obj, data, entry, &iconrect);
 
-                iconrect.MinX += _mleft(obj) - data->icld_ViewX + icon->ie_IconX;
-                iconrect.MaxX += _mleft(obj) - data->icld_ViewX + icon->ie_IconX;
-                iconrect.MinY += _mtop(obj) - data->icld_ViewY + icon->ie_IconY;
-                iconrect.MaxY += _mtop(obj) - data->icld_ViewY + icon->ie_IconY;
+		    iconrect.MinX += viewrect.MinX - data->icld_ViewX + entry->ie_IconX;
+		    iconrect.MaxX += viewrect.MinX - data->icld_ViewX + entry->ie_IconX;
+		    iconrect.MinY += viewrect.MinY - data->icld_ViewY + entry->ie_IconY;
+		    iconrect.MaxY += viewrect.MinY - data->icld_ViewY + entry->ie_IconY;
 
-                if (RectAndRect(&viewrect, &iconrect))
-                {
-                    DoMethod(obj, MUIM_IconList_DrawEntry, icon, ICONENTRY_DRAWMODE_PLAIN);
-                    DoMethod(obj, MUIM_IconList_DrawEntryLabel, icon, ICONENTRY_DRAWMODE_PLAIN);
-                }
-            }
+		    if (RectAndRect(&viewrect, &iconrect))
+		    {
+			DoMethod(obj, MUIM_IconList_DrawEntry, entry, ICONENTRY_DRAWMODE_PLAIN);
+			DoMethod(obj, MUIM_IconList_DrawEntryLabel, entry, ICONENTRY_DRAWMODE_PLAIN);
+		    }
+		}
+	    }
         }
 
         if (data->icld_DisplayRastPort != data->icld_BufferRastPort)
@@ -4573,192 +5113,342 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                     /* check if mouse pressed on iconlist area */
                     if (mx >= 0 && mx < _width(obj) && my >= 0 && my < _height(obj))
                     {
-                        struct IconEntry      *node = NULL;
-                        struct IconEntry      *new_selected = NULL;
-                        struct Rectangle     rect;
+			BOOL 			icon_doubleclicked = FALSE;
+			BOOL 			update_entry;
+			struct IconEntry      	*node = NULL;
+			struct IconEntry     	*new_selected = NULL;
 
-//                        int selections = 0;
-                        BOOL icon_doubleclicked;
+			if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
+			{
+			    LONG clickColumn = -1, clickRow = -1;
+    
+			    LONG x = _mleft(obj) - data->icld_ViewX + LINE_SPACING_LEFT;
+			    LONG w, i;
 
-                        /* check if clicked on icon */
-#if defined(__AROS__)
-                        ForeachNode(&data->icld_IconList, node)
-#else
-                        Foreach_Node(&data->icld_IconList, node);
-#endif
-                        {
-                            if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-                            {
-                                BOOL update_entry = FALSE;
+			    for(i = 0; i < NUM_COLUMNS; i++)
+			    {
+				LONG index = data->icld_LVMAttribs->lmva_ColumnPos[i];
+				
+				if (!data->icld_LVMAttribs->lmva_ColumnVisible[index]) continue;
+				
+				w = data->icld_LVMAttribs->lmva_ColumnWidth[index];
+				
+				if ((mx >= x) && (mx < x + w))
+				{
+				    clickColumn = index;
+				    break;
+				}
+				x += w;
+			    }
+	
 
-                                rect.MinX = node->ie_IconX;
-                                rect.MaxX = node->ie_IconX + node->ie_AreaWidth - 1;
-                                rect.MinY = node->ie_IconY;
-                                rect.MaxY = node->ie_IconY + node->ie_AreaHeight - 1;
+			    if (my <= data->icld_LVMAttribs->lmva_HeaderHeight)
+			    {
+				D(bug("[IconList] %s: Clicked on Header Column %d..\n", __PRETTY_FUNCTION__, clickColumn));
+			    }
+			    else
+			    {
+				LONG current = 0, index = (my - data->icld_LVMAttribs->lmva_HeaderHeight + data->icld_ViewY) / data->icld_LVMAttribs->lmva_RowHeight;
 
-                                if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
-                                    (node->ie_AreaWidth < data->icld_IconAreaLargestWidth))
-                                {
-                                    rect.MinX += ((data->icld_IconAreaLargestWidth - node->ie_AreaWidth)/2);
-                                    rect.MaxX += ((data->icld_IconAreaLargestWidth - node->ie_AreaWidth)/2);
-                                }
+				ForeachNode(&data->icld_IconList, node)
+				{
+				    if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+				    {
+					update_entry = FALSE;
 
-                                if ((((mx + data->icld_ViewX) >= rect.MinX) && ((mx + data->icld_ViewX) <= rect.MaxX )) &&
-                                    (((my + data->icld_ViewY) >= rect.MinY) && ((my + data->icld_ViewY) <= rect.MaxY )) &&
-                                    !new_selected)
-                                {
-                                    new_selected = node;
-#if defined(DEBUG_ILC_EVENTS)
-                                    D(bug("[IconList] %s: Icon '%s' clicked on ..\n", __PRETTY_FUNCTION__, node->ie_IconListEntry.label));
-#endif
-                                }
+					if (current == index)
+					{
+					    clickRow = current;
+					    new_selected = node;
+					}
+					else
+					{
+					    if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
+					    {
+						if (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
+						{
+						    Remove(&node->ie_SelectionNode);
+						    node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
+						    update_entry = TRUE;
+						}
+					    }
 
-                                if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
-                                {
-                                    if ((new_selected != node) &&
-                                        (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))))
-                                    {
-                                        Remove(&node->ie_SelectionNode);
-                                        node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
-                                        update_entry = TRUE;
-                                    }
-                                }
+					    if (node->ie_Flags & ICONENTRY_FLAG_FOCUS)
+					    {
+						node->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
+						update_entry = TRUE;
+					    }
+					}
+					if (update_entry)
+					{
+					    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+					    data->update_entry = node;
+					    MUI_Redraw(obj, MADF_DRAWUPDATE);
+					    D(bug("[IconList] %s: Rendered entry '%s'\n", __PRETTY_FUNCTION__, node->ie_IconListEntry.label));
 
-                                if ((node->ie_Flags & ICONENTRY_FLAG_FOCUS) && (new_selected != node))
-                                {
-                                    node->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                                    update_entry = TRUE;
-                                }
+					}
 
-                                if (update_entry)
-                                {
-                                    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
-                                    data->update_entry = node;
-                                    MUI_Redraw(obj, MADF_DRAWUPDATE);
-#if defined(DEBUG_ILC_EVENTS)
-                                    D(bug("[IconList] %s: Rendered icon '%s'\n", __PRETTY_FUNCTION__, node->ie_IconListEntry.label));
-#endif
-                                }
-                            }
-                        }
+					current++;
+				    }
+				}
 
-                        icon_doubleclicked = FALSE;
+				if ((DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros)) && (data->icld_SelectionLastClicked == new_selected))
+				{
+				    D(bug("[IconList] %s: Icon double-clicked\n", __PRETTY_FUNCTION__));
+				    icon_doubleclicked = TRUE;
+				}
+				
+				if ((new_selected != NULL) && (clickRow != -1) && (clickColumn != -1))
+				{
+				    D(bug("[IconList] %s: Clicked on Row %d Column %d ..\n", __PRETTY_FUNCTION__, clickRow, clickColumn));
 
-                        if ((DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros)) && (data->icld_SelectionLastClicked == new_selected))
-                        {
-#if defined(DEBUG_ILC_EVENTS)
-                            D(bug("[IconList] %s: Icon double-clicked\n", __PRETTY_FUNCTION__));
-#endif
-                            icon_doubleclicked = TRUE;
-                        }
+				    data->icld_LassoActive = FALSE;
+				    update_entry = FALSE;
 
-                        if (new_selected == NULL)
-                        {
-                            struct Window * thisWindow = NULL;
+				    if (!(new_selected->ie_Flags & ICONENTRY_FLAG_SELECTED))
+				    {
+					AddTail(&data->icld_SelectionList, &new_selected->ie_SelectionNode);
+					new_selected->ie_Flags |= ICONENTRY_FLAG_SELECTED;
+					update_entry = TRUE;
+
+					if (!(new_selected->ie_Flags & ICONENTRY_FLAG_FOCUS))
+					{
+					    new_selected->ie_Flags |= ICONENTRY_FLAG_FOCUS;
+					    data->icld_FocusIcon = new_selected;
+					}
+				    }
+				    else if ((icon_doubleclicked == FALSE) && (message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
+				    {
+					Remove(&new_selected->ie_SelectionNode);
+					new_selected->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
+					update_entry = TRUE;
+				    }
+
+				    if (update_entry)
+				    {
+					data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+					data->update_entry = new_selected;
+					MUI_Redraw(obj, MADF_DRAWUPDATE);
+					D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__, new_selected->ie_IconListEntry.label));
+				    }
+				}
+				else
+				{
+				    struct Window * thisWindow = NULL;
 #if defined(DEBUG_ILC_EVENTS) && defined(DEBUG_ILC_LASSO)
-                            D(bug("[IconList] %s: Starting Lasso\n", __PRETTY_FUNCTION__));
+				    D(bug("[IconList] %s: Starting Lasso\n", __PRETTY_FUNCTION__));
 #endif
-                            /* No icon clicked on ... Start Lasso-selection */
-                            data->icld_LassoActive = TRUE;
-                            if (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
-                            {
-                                data->icld_SelectionLastClicked = NULL;
-                                data->icld_FocusIcon = NULL;
-                            }
-                            data->icld_LassoRectangle.MinX = mx - data->view_rect.MinX + data->icld_ViewX;  
-                            data->icld_LassoRectangle.MinY = my - data->view_rect.MinY + data->icld_ViewY;
-                            data->icld_LassoRectangle.MaxX = mx - data->view_rect.MinX + data->icld_ViewX;
-                            data->icld_LassoRectangle.MaxY = my - data->view_rect.MinY + data->icld_ViewY; 
+				    /* No icon clicked on ... Start Lasso-selection */
+				    data->icld_LassoActive = TRUE;
+				    if (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
+				    {
+					data->icld_SelectionLastClicked = NULL;
+					data->icld_FocusIcon = NULL;
+				    }
+				    data->icld_LassoRectangle.MinX = mx - data->view_rect.MinX + data->icld_ViewX;  
+				    data->icld_LassoRectangle.MinY = my - data->view_rect.MinY + data->icld_ViewY;
+				    data->icld_LassoRectangle.MaxX = mx - data->view_rect.MinX + data->icld_ViewX;
+				    data->icld_LassoRectangle.MaxY = my - data->view_rect.MinY + data->icld_ViewY; 
 
-                            /* Draw initial Lasso frame */
-                            IconList_InvertLassoOutlines(obj, &data->icld_LassoRectangle);
+				    /* Draw initial Lasso frame */
+				    IconList_InvertLassoOutlines(obj, &data->icld_LassoRectangle);
 
-                            GET(obj, MUIA_Window, &thisWindow);
-                            if (thisWindow)
-                            {
-                                ModifyIDCMP(thisWindow, (thisWindow->IDCMPFlags|IDCMP_INTUITICKS));
-                                if (!(data->ehn.ehn_Events & IDCMP_INTUITICKS))
-                                {
-                                    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-                                    data->ehn.ehn_Events |= IDCMP_INTUITICKS;
-                                    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            struct IconEntry      *update_entry = NULL;
+				    GET(obj, MUIA_Window, &thisWindow);
+				    if (thisWindow)
+				    {
+					ModifyIDCMP(thisWindow, (thisWindow->IDCMPFlags|IDCMP_INTUITICKS));
+					if (!(data->ehn.ehn_Events & IDCMP_INTUITICKS))
+					{
+					    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+					    data->ehn.ehn_Events |= IDCMP_INTUITICKS;
+					    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+					}
+				    }
+				}
+			    }
+			}
+			else
+			{
+			    struct Rectangle     rect;
 
-                            data->icld_LassoActive = FALSE;
+			    /* check if clicked on icon */
+#if defined(__AROS__)
+			    ForeachNode(&data->icld_IconList, node)
+#else
+			    Foreach_Node(&data->icld_IconList, node);
+#endif
+			    {
+				if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+				{
+				    update_entry = FALSE;
 
-                            if (!(new_selected->ie_Flags & ICONENTRY_FLAG_SELECTED))
-                            {
-                                AddTail(&data->icld_SelectionList, &new_selected->ie_SelectionNode);
-                                new_selected->ie_Flags |= ICONENTRY_FLAG_SELECTED;
-                                update_entry = new_selected;
+				    rect.MinX = node->ie_IconX;
+				    rect.MaxX = node->ie_IconX + node->ie_AreaWidth - 1;
+				    rect.MinY = node->ie_IconY;
+				    rect.MaxY = node->ie_IconY + node->ie_AreaHeight - 1;
 
-                                if (!(new_selected->ie_Flags & ICONENTRY_FLAG_FOCUS))
-                                {
-                                    new_selected->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                                    update_entry = new_selected;
-                                    data->icld_FocusIcon = new_selected;
-                                }
-                            }
-                            else if ((icon_doubleclicked == FALSE) && (message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
-                            {
-                                Remove(&new_selected->ie_SelectionNode);
-                                new_selected->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
-                                update_entry = new_selected;
-                                new_selected = NULL;
-                            }
+				    if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
+					(node->ie_AreaWidth < data->icld_IconAreaLargestWidth))
+				    {
+					rect.MinX += ((data->icld_IconAreaLargestWidth - node->ie_AreaWidth)/2);
+					rect.MaxX += ((data->icld_IconAreaLargestWidth - node->ie_AreaWidth)/2);
+				    }
 
-                            if (update_entry != NULL)
-                            {
-                                data->icld_UpdateMode = UPDATE_SINGLEENTRY;
-                                data->update_entry = update_entry;
-                                MUI_Redraw(obj, MADF_DRAWUPDATE);
+				    if ((((mx + data->icld_ViewX) >= rect.MinX) && ((mx + data->icld_ViewX) <= rect.MaxX )) &&
+					(((my + data->icld_ViewY) >= rect.MinY) && ((my + data->icld_ViewY) <= rect.MaxY )) &&
+					!new_selected)
+				    {
+					new_selected = node;
 #if defined(DEBUG_ILC_EVENTS)
-                                D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__, update_entry->ie_IconListEntry.label));
+					D(bug("[IconList] %s: Icon '%s' clicked on ..\n", __PRETTY_FUNCTION__, node->ie_IconListEntry.label));
 #endif
-                            }
-                        }                       
+				    }
 
-                        data->icld_ClickEvent.shift = !!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT));
-                        data->icld_ClickEvent.entry = new_selected ? &new_selected->ie_IconListEntry : NULL;
-                        SET(obj, MUIA_IconList_Clicked, (IPTR)&data->icld_ClickEvent);
+				    if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
+				    {
+					if ((new_selected != node) &&
+					    (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))))
+					{
+					    Remove(&node->ie_SelectionNode);
+					    node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
+					    update_entry = TRUE;
+					}
+				    }
 
-                        if (icon_doubleclicked)
-                        {
-                            SET(obj, MUIA_IconList_DoubleClick, TRUE);
-                        }
-                        else if (!data->mouse_pressed)
-                        {
-                            data->last_secs = message->imsg->Seconds;
-                            data->last_mics = message->imsg->Micros;
-            
-                            /* After a double click you often open a new window
-                            * and since Zune doesn't not support the faking
-                            * of SELECTUP events only change the Events
-                            * if not doubleclicked */
+				    if ((node->ie_Flags & ICONENTRY_FLAG_FOCUS) && (new_selected != node))
+				    {
+					node->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
+					update_entry = TRUE;
+				    }
 
-                            data->mouse_pressed |= LEFT_BUTTON;
+				    if (update_entry)
+				    {
+					data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+					data->update_entry = node;
+					MUI_Redraw(obj, MADF_DRAWUPDATE);
+#if defined(DEBUG_ILC_EVENTS)
+					D(bug("[IconList] %s: Rendered icon '%s'\n", __PRETTY_FUNCTION__, node->ie_IconListEntry.label));
+#endif
+				    }
+				}
+			    }
 
-                            if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
-                            {
-                                DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-                                data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-                                DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-                            }
-                        }
+			    if ((DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros)) && (data->icld_SelectionLastClicked == new_selected))
+			    {
+#if defined(DEBUG_ILC_EVENTS)
+				D(bug("[IconList] %s: Icon double-clicked\n", __PRETTY_FUNCTION__));
+#endif
+				icon_doubleclicked = TRUE;
+			    }
 
-                        data->icld_SelectionLastClicked = new_selected;
+			    if (new_selected != NULL)
+			    {
+				data->icld_LassoActive = FALSE;
+				update_entry = FALSE;
 
-                        data->click_x = mx;
-                        data->click_y = my;
+				if (!(new_selected->ie_Flags & ICONENTRY_FLAG_SELECTED))
+				{
+				    AddTail(&data->icld_SelectionList, &new_selected->ie_SelectionNode);
+				    new_selected->ie_Flags |= ICONENTRY_FLAG_SELECTED;
+				    update_entry = TRUE;
 
-                        SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+				    if (!(new_selected->ie_Flags & ICONENTRY_FLAG_FOCUS))
+				    {
+					new_selected->ie_Flags |= ICONENTRY_FLAG_FOCUS;
+					data->icld_FocusIcon = new_selected;
+				    }
+				}
+				else if ((icon_doubleclicked == FALSE) && (message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
+				{
+				    Remove(&new_selected->ie_SelectionNode);
+				    new_selected->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
+				    update_entry = TRUE;
+				}
 
-                        return MUI_EventHandlerRC_Eat;
+				if (update_entry != NULL)
+				{
+				    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+				    data->update_entry = new_selected;
+				    MUI_Redraw(obj, MADF_DRAWUPDATE);
+#if defined(DEBUG_ILC_EVENTS)
+				    D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__, new_selected->ie_IconListEntry.label));
+#endif
+				}
+			    }
+			    else
+			    {
+				struct Window * thisWindow = NULL;
+#if defined(DEBUG_ILC_EVENTS) && defined(DEBUG_ILC_LASSO)
+				D(bug("[IconList] %s: Starting Lasso\n", __PRETTY_FUNCTION__));
+#endif
+				/* No icon clicked on ... Start Lasso-selection */
+				data->icld_LassoActive = TRUE;
+				if (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
+				{
+				    data->icld_SelectionLastClicked = NULL;
+				    data->icld_FocusIcon = NULL;
+				}
+				data->icld_LassoRectangle.MinX = mx - data->view_rect.MinX + data->icld_ViewX;  
+				data->icld_LassoRectangle.MinY = my - data->view_rect.MinY + data->icld_ViewY;
+				data->icld_LassoRectangle.MaxX = mx - data->view_rect.MinX + data->icld_ViewX;
+				data->icld_LassoRectangle.MaxY = my - data->view_rect.MinY + data->icld_ViewY; 
+
+				/* Draw initial Lasso frame */
+				IconList_InvertLassoOutlines(obj, &data->icld_LassoRectangle);
+
+				GET(obj, MUIA_Window, &thisWindow);
+				if (thisWindow)
+				{
+				    ModifyIDCMP(thisWindow, (thisWindow->IDCMPFlags|IDCMP_INTUITICKS));
+				    if (!(data->ehn.ehn_Events & IDCMP_INTUITICKS))
+				    {
+					DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+					data->ehn.ehn_Events |= IDCMP_INTUITICKS;
+					DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+				    }
+				}
+			    }
+			}
+		
+			if (new_selected && (new_selected->ie_Flags & ICONENTRY_FLAG_SELECTED))
+			    data->icld_SelectionLastClicked = new_selected;
+			else
+			    data->icld_SelectionLastClicked = NULL;
+
+			data->click_x = mx;
+			data->click_y = my;
+
+			SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+
+			data->icld_ClickEvent.shift = !!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT));
+			data->icld_ClickEvent.entry = data->icld_SelectionLastClicked ? &data->icld_SelectionLastClicked->ie_IconListEntry : NULL;
+			SET(obj, MUIA_IconList_Clicked, (IPTR)&data->icld_ClickEvent);
+
+			if (icon_doubleclicked)
+			{
+			    SET(obj, MUIA_IconList_DoubleClick, TRUE);
+			}
+			else if (!data->mouse_pressed)
+			{
+			    data->last_secs = message->imsg->Seconds;
+			    data->last_mics = message->imsg->Micros;
+	    
+			    /* After a double click you often open a new window
+			    * and since Zune doesn't not support the faking
+			    * of SELECTUP events only change the Events
+			    * if not doubleclicked */
+
+			    data->mouse_pressed |= LEFT_BUTTON;
+
+			    if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
+			    {
+				DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+				data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+				DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+			    }
+			}
+			
+			return MUI_EventHandlerRC_Eat;
                     }
                 }
                 else if (message->imsg->Code == MIDDLEDOWN)
@@ -4925,72 +5615,137 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                         /* get absolute Lasso coordinates */
                         GetAbsoluteLassoRect(data, &new_lasso);
 
+			LONG current = 0, startIndex = 0, endIndex = 0;
+			
+			if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
+			{
+			    startIndex = ((data->icld_LassoRectangle.MinY + 1) - data->icld_LVMAttribs->lmva_HeaderHeight + data->icld_ViewY) / data->icld_LVMAttribs->lmva_RowHeight;
+			    endIndex = ((data->icld_LassoRectangle.MaxY - 1) - data->icld_LVMAttribs->lmva_HeaderHeight + data->icld_ViewY) / data->icld_LVMAttribs->lmva_RowHeight;
+
+			    if (startIndex > endIndex)
+			    {
+				startIndex ^= endIndex;
+				endIndex ^= startIndex;
+				startIndex ^= endIndex;
+			    }
+
+			    D(bug("[IconList] %s: Start Index : %d, End Index %d\n", __PRETTY_FUNCTION__, startIndex, endIndex));
+			}
+
 #if defined(__AROS__)
                         ForeachNode(&data->icld_IconList, node)
 #else
                         Foreach_Node(&data->icld_IconList, node);
 #endif
                         {
-                            IPTR update_entry = (IPTR)NULL;
+			    IPTR update_entry = (IPTR)NULL;
 
-                            if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-                            {
-                                iconrect.MinX = node->ie_IconX;
-                                iconrect.MaxX = node->ie_IconX + node->ie_AreaWidth - 1;
-                                iconrect.MinY = node->ie_IconY;
-                                iconrect.MaxY = node->ie_IconY + node->ie_AreaHeight - 1;
-                                if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
-                                    (node->ie_AreaWidth < data->icld_IconAreaLargestWidth))
-                                {
-                                    iconrect.MinX += ((data->icld_IconAreaLargestWidth - node->ie_AreaWidth)/2);
-                                    iconrect.MaxX += ((data->icld_IconAreaLargestWidth - node->ie_AreaWidth)/2);
-                                }
+			    if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
+			    {
+				if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+				{
+				    update_entry = FALSE;
 
-                                if ((((new_lasso.MaxX + data->icld_ViewX) >= iconrect.MinX) && ((new_lasso.MinX + data->icld_ViewX) <= iconrect.MaxX)) &&
-                                    (((new_lasso.MaxY + data->icld_ViewY) >= iconrect.MinY) && ((new_lasso.MinY + data->icld_ViewY) <= iconrect.MaxY)))
-                                {
-                                    //Icon is inside our lasso ..
-                                     if (!(node->ie_Flags & ICONENTRY_FLAG_LASSO))
-                                     {
-                                         /* check if icon was already selected before */
-                                        if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
-                                        {
-                                            Remove(&node->ie_SelectionNode);
-                                            node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
-                                        }
-                                        else
-                                        {
-                                            AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
-                                            node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
-                                        }
-                                        node->ie_Flags |= ICONENTRY_FLAG_LASSO;
-                                        update_entry = (IPTR)node;
-                                     }
-                                } 
-                                else if (node->ie_Flags & ICONENTRY_FLAG_LASSO)
-                                {
-                                    //Icon is no longer inside our lasso - revert its selected state
-                                    if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
-                                    {
-                                        Remove(&node->ie_SelectionNode);
-                                        node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
-                                    }
-                                    else
-                                    {
-                                        AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
-                                        node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
-                                    }
-                                    node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
-                                    update_entry = (IPTR)node;
-                                }
+				    if ((current >= startIndex) && (current <= endIndex))
+				    {
+					//Icon is inside our lasso ..
+					 if (!(node->ie_Flags & ICONENTRY_FLAG_LASSO))
+					 {
+					     /* check if icon was already selected before */
+					    if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
+					    {
+						Remove(&node->ie_SelectionNode);
+						node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
+					    }
+					    else
+					    {
+						AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
+						node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
+					    }
+					    node->ie_Flags |= ICONENTRY_FLAG_LASSO;
+					    update_entry = (IPTR)node;
+					 }
+				    }
+				    else if (node->ie_Flags & ICONENTRY_FLAG_LASSO)
+				    {
+					//Icon is no longer inside our lasso - revert its selected state
+					if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
+					{
+					    Remove(&node->ie_SelectionNode);
+					    node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
+					}
+					else
+					{
+					    AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
+					    node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
+					}
+					node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
+					update_entry = (IPTR)node;
+				    }
 
-                                if (update_entry)
-                                {
-                                    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
-                                    data->update_entry = (struct IconEntry *)update_entry;
-                                    MUI_Redraw(obj, MADF_DRAWUPDATE);
-                                }
-                            }
+				    current++;
+				}
+			    }
+			    else
+			    {
+				if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+				{
+				    iconrect.MinX = node->ie_IconX;
+				    iconrect.MaxX = node->ie_IconX + node->ie_AreaWidth - 1;
+				    iconrect.MinY = node->ie_IconY;
+				    iconrect.MaxY = node->ie_IconY + node->ie_AreaHeight - 1;
+				    if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
+					(node->ie_AreaWidth < data->icld_IconAreaLargestWidth))
+				    {
+					iconrect.MinX += ((data->icld_IconAreaLargestWidth - node->ie_AreaWidth)/2);
+					iconrect.MaxX += ((data->icld_IconAreaLargestWidth - node->ie_AreaWidth)/2);
+				    }
+
+				    if ((((new_lasso.MaxX + data->icld_ViewX) >= iconrect.MinX) && ((new_lasso.MinX + data->icld_ViewX) <= iconrect.MaxX)) &&
+					(((new_lasso.MaxY + data->icld_ViewY) >= iconrect.MinY) && ((new_lasso.MinY + data->icld_ViewY) <= iconrect.MaxY)))
+				    {
+					//Icon is inside our lasso ..
+					 if (!(node->ie_Flags & ICONENTRY_FLAG_LASSO))
+					 {
+					     /* check if icon was already selected before */
+					    if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
+					    {
+						Remove(&node->ie_SelectionNode);
+						node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
+					    }
+					    else
+					    {
+						AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
+						node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
+					    }
+					    node->ie_Flags |= ICONENTRY_FLAG_LASSO;
+					    update_entry = (IPTR)node;
+					 }
+				    } 
+				    else if (node->ie_Flags & ICONENTRY_FLAG_LASSO)
+				    {
+					//Icon is no longer inside our lasso - revert its selected state
+					if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
+					{
+					    Remove(&node->ie_SelectionNode);
+					    node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
+					}
+					else
+					{
+					    AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
+					    node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
+					}
+					node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
+					update_entry = (IPTR)node;
+				    }
+				}
+			    }
+			    if (update_entry)
+			    {
+				data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+				data->update_entry = (struct IconEntry *)update_entry;
+				MUI_Redraw(obj, MADF_DRAWUPDATE);
+			    }
                         }
                         /* Draw Lasso frame */                         
                         IconList_InvertLassoOutlines(obj, &new_lasso);                        
@@ -5166,20 +5921,33 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
             entry = (struct IconEntry *)((IPTR)node - ((IPTR)&entry->ie_SelectionNode - (IPTR)entry));
             if ((entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) && (entry->ie_Flags & ICONENTRY_FLAG_SELECTED))
             {
-                if ((first_x == -1) || ((first_x != -1) && (entry->ie_IconX < first_x))) first_x = entry->ie_IconX;
-                if ((first_y == -1) || ((first_y != -1) && (entry->ie_IconY < first_y))) first_y = entry->ie_IconY;
-                if ((entry->ie_IconX + entry->ie_IconWidth) > img->width)   img->width = entry->ie_IconX + entry->ie_IconWidth;
-                if ((entry->ie_IconY + entry->ie_IconHeight) > img->height) img->height = entry->ie_IconY + entry->ie_IconHeight;
+		if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) != ICONLIST_DISP_MODELIST)
+		{
+		    if ((first_x == -1) || ((first_x != -1) && (entry->ie_IconX < first_x))) first_x = entry->ie_IconX;
+		    if ((first_y == -1) || ((first_y != -1) && (entry->ie_IconY < first_y))) first_y = entry->ie_IconY;
+		    if ((entry->ie_IconX + entry->ie_IconWidth) > img->width)   img->width = entry->ie_IconX + entry->ie_IconWidth;
+		    if ((entry->ie_IconY + entry->ie_IconHeight) > img->height) img->height = entry->ie_IconY + entry->ie_IconHeight;
+		}
             }
         }
         img->width = (img->width - first_x) + 2;
         img->height = (img->height - first_y) + 2;
 #else
         entry = data->icld_SelectionLastClicked;
-        img->width = entry->ie_IconWidth;
-        img->height = entry->ie_IconHeight;
-        first_x = entry->ie_IconX;
-        first_y = entry->ie_IconY;
+	if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
+	{
+	    img->width = 10;
+	    img->height = 10;
+	    first_x = 0;
+	    first_y = 0;
+	}
+	else
+	{
+	    img->width = entry->ie_IconWidth;
+	    img->height = entry->ie_IconHeight;
+	    first_x = entry->ie_IconX;
+	    first_y = entry->ie_IconY;
+	}
 #endif
 
         img->touchx = data->click_x - first_x;
@@ -5197,23 +5965,35 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
                 entry = (struct IconEntry *)((IPTR)node - ((IPTR)&entry->ie_SelectionNode - (IPTR)entry));
                 if ((entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) && (entry->ie_Flags & ICONENTRY_FLAG_SELECTED))
                 {
-                    DrawIconStateA
-                        (
-                            &temprp, entry->ie_DiskObj, NULL,
-                            (entry->ie_IconX + 1) - first_x, (entry->ie_IconY + 1) - first_y,
-                            IDS_SELECTED,
-                            __iconList_DrawIconStateTags
-                        );
+		    if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
+		    {
+		    }
+		    else
+		    {
+			DrawIconStateA
+			    (
+				&temprp, entry->ie_DiskObj, NULL,
+				(entry->ie_IconX + 1) - first_x, (entry->ie_IconY + 1) - first_y,
+				IDS_SELECTED,
+				__iconList_DrawIconStateTags
+			    );
+		    }
                 }
             }
 #else
-            DrawIconStateA
-                (
-                    &temprp, entry->ie_DiskObj, NULL,
-                    0, 0,
-                    IDS_SELECTED,
-                    __iconList_DrawIconStateTags
-                );
+	    if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
+	    {
+	    }
+	    else
+	    {
+		DrawIconStateA
+		    (
+			&temprp, entry->ie_DiskObj, NULL,
+			0, 0,
+			IDS_SELECTED,
+			__iconList_DrawIconStateTags
+		    );
+	    }
 #endif
             RastPortSetAlpha(&temprp, data->click_x, data->click_y, img->width, img->height, 0x80, RPALPHAFLAT);
             DeinitRastPort(&temprp);
