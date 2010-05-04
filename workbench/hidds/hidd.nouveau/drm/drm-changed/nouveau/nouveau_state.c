@@ -377,8 +377,6 @@ out_err:
 	return ret;
 }
 
-struct nouveau_bo * screen_bo = NULL;
-
 int
 nouveau_card_init(struct drm_device *dev)
 {
@@ -479,20 +477,6 @@ DRM_IMPL("Calling vga_client_register(dev->pdev, dev, NULL, nouveau_vga_set_deco
 DRM_IMPL("Calling drm_vblank_init\n");
 #endif
 
-#if defined(__AROS__)
-    {
-        /* Create buffer object to protect visible screen. */
-        /* FIXME: Allocate FullHD buffer size for now, should read real resolution later */
-        nouveau_gem_new(dev, NULL, 1920 * 1080 * 4, 0, TTM_PL_FLAG_VRAM, 0, 0, false, false, &screen_bo);
-
-        /* Create global name == 1 */
-        idr_pre_get(&dev->object_name_idr, GFP_KERNEL);
-        spin_lock(&dev->object_name_lock);
-        idr_get_new_above(&dev->object_name_idr, screen_bo->gem, 1, &screen_bo->gem->name);
-        spin_unlock(&dev->object_name_lock);
-    }
-#endif
-
 	/* what about PVIDEO/PCRTC/PRAMDAC etc? */
 
 	if (!engine->graph.accel_blocked) {
@@ -570,12 +554,6 @@ static void nouveau_card_takedown(struct drm_device *dev)
 			dev_priv->channel = NULL;
 		}
 		
-#if defined(__AROS__)
-        /* Release screen buffer object */
-        if (screen_bo != NULL)
-            drm_gem_object_unreference(screen_bo->gem);
-#endif        
-
 		if (!nouveau_noaccel) {
 			engine->fifo.takedown(dev);
 			engine->graph.takedown(dev);

@@ -414,11 +414,8 @@ void nouveau_mem_close(struct drm_device *dev)
 {
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 
-#if !defined(__AROS__)
-    /* AROS creates its own bo covering whole screen */
 	nouveau_bo_unpin(dev_priv->vga_ram);
 	nouveau_bo_ref(NULL, &dev_priv->vga_ram);
-#endif
 
 	ttm_bo_device_release(&dev_priv->ttm.bdev);
 
@@ -674,8 +671,6 @@ DRM_IMPL("Calling pci_set_dma_mask\n");
 		return ret;
 	}
 
-#if !defined(__AROS__)
-    /* AROS creates its own bo covering whole screen */
 	ret = nouveau_bo_new(dev, NULL, 256*1024, 0, TTM_PL_FLAG_VRAM,
 			     0, 0, true, true, &dev_priv->vga_ram);
 	if (ret == 0)
@@ -684,7 +679,6 @@ DRM_IMPL("Calling pci_set_dma_mask\n");
 		NV_WARN(dev, "failed to reserve VGA memory\n");
 		nouveau_bo_ref(NULL, &dev_priv->vga_ram);
 	}
-#endif
 
 	/* GART */
 #if !defined(__powerpc__) && !defined(__ia64__)
