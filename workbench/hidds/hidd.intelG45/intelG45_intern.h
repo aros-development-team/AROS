@@ -91,6 +91,10 @@ struct intelg45base {
 };
 
 typedef struct {
+	uint32_t	dpll_ctrl;
+	uint32_t	pipeconf;
+	uint32_t	dispconf;
+
 	uint32_t	htotal;
 	uint32_t	hblank;
 	uint32_t	hsync;
@@ -139,5 +143,11 @@ typedef struct {
 
 #define LOCK_MULTI_BITMAP    { ObtainSemaphore(&sd->MultiBMLock); }
 #define UNLOCK_MULTI_BITMAP  { ReleaseSemaphore(&sd->MultiBMLock); }
+
+
+void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
+		uint16_t width, uint16_t height, uint8_t depth, uint32_t pixelclock, intptr_t framebuffer,
+        uint16_t hdisp, uint16_t vdisp, uint16_t hstart, uint16_t hend, uint16_t htotal,
+        uint16_t vstart, uint16_t vend, uint16_t vtotal, uint32_t flags);
 
 #endif /* INTELG45_INTERN_H_ */

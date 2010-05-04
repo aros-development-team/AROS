@@ -152,8 +152,6 @@ OOP_Object *METHOD(GMAOnBM, Root, New)
 //            D(bug("[GMABitMap] PITCH_OFFSET=%08x\n", bm->pitch_offset));
         }
 
-#if 0
-
         if (cl == sd->OnBMClass)
         {
             if (fb && bm->framebuffer != -1)
@@ -161,16 +159,17 @@ OOP_Object *METHOD(GMAOnBM, Root, New)
                 bm->state = (GMAState_t *)AllocPooled(sd->MemPool,
                             sizeof(GMAState_t));
 
-                bzero((APTR)(sd->Card.FrameBuffer + bm->framebuffer), 640*480*2);
+//                bzero((APTR)(sd->Card.FrameBuffer + bm->framebuffer), 640*480*2);
 
                 if (bm->state)
                 {
                     LOCK_HW
 
-                    InitMode(sd, bm->state, 640, 480, 16, 25200, bm->framebuffer,
+                    G45_InitMode(sd, bm->state, 640, 480, 16, 25200, bm->framebuffer,
                         640, 480,
                         656, 752, 800,
-                        490, 492, 525);
+                        490, 492, 525, 0);
+#if 0
 
                     LoadState(sd, bm->state);
                     //LoadState(sd, sd->poweron_state);
@@ -178,6 +177,7 @@ OOP_Object *METHOD(GMAOnBM, Root, New)
 
                     RADEONEngineReset(sd);
                     RADEONEngineRestore(sd);
+#endif
 
                     UNLOCK_HW
 
@@ -192,12 +192,12 @@ OOP_Object *METHOD(GMAOnBM, Root, New)
                 /* We should be able to get modeID from the bitmap */
                 OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
 
-                D(bug("[ATIBitMap] BM_ModeID=%x\n", modeid));
+                D(bug("[GMABitMap] BM_ModeID=%x\n", modeid));
 
                 if (modeid != vHidd_ModeID_Invalid)
                 {
                     ULONG pixel;
-                    ULONG hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal;
+                    ULONG hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal, flags;
 
                     /* Get Sync and PixelFormat properties */
                     struct pHidd_Gfx_GetMode __getmodemsg = {
@@ -207,7 +207,7 @@ OOP_Object *METHOD(GMAOnBM, Root, New)
                     }, *getmodemsg = &__getmodemsg;
 
                     getmodemsg->mID = OOP_GetMethodID((STRPTR)CLID_Hidd_Gfx, moHidd_Gfx_GetMode);
-                    OOP_DoMethod(sd->AtiObject, (OOP_Msg)getmodemsg);
+                    OOP_DoMethod(sd->GMAObject, (OOP_Msg)getmodemsg);
 
                     OOP_GetAttr(sync, aHidd_Sync_PixelClock,    &pixel);
                     OOP_GetAttr(sync, aHidd_Sync_HDisp,         &hdisp);
@@ -218,9 +218,10 @@ OOP_Object *METHOD(GMAOnBM, Root, New)
                     OOP_GetAttr(sync, aHidd_Sync_VSyncEnd,      &vend);
                     OOP_GetAttr(sync, aHidd_Sync_HTotal,        &htotal);
                     OOP_GetAttr(sync, aHidd_Sync_VTotal,        &vtotal);
+                    OOP_GetAttr(sync, aHidd_Sync_Flags,			&flags);
 
-                    bm->state = (struct CardState *)AllocPooled(sd->memPool,
-                            sizeof(struct CardState));
+                    bm->state = (GMAState_t *)AllocPooled(sd->MemPool,
+                            sizeof(GMAState_t));
 
                     pixel /= 1000;
 
@@ -228,17 +229,17 @@ OOP_Object *METHOD(GMAOnBM, Root, New)
                     {
                         LOCK_HW
 
-                        InitMode(sd, bm->state, width, height, depth, pixel, bm->framebuffer,
+                        G45_InitMode(sd, bm->state, width, height, depth, pixel, bm->framebuffer,
                                     hdisp, vdisp,
                                     hstart, hend, htotal,
-                                    vstart, vend, vtotal);
-
+                                    vstart, vend, vtotal, flags);
+/*
                         LoadState(sd, bm->state);
                         DPMS(sd, sd->dpms);
 
                         RADEONEngineReset(sd);
                         RADEONEngineRestore(sd);
-
+*/
                         UNLOCK_HW
 
                         return o;
@@ -255,8 +256,8 @@ OOP_Object *METHOD(GMAOnBM, Root, New)
                             MEMF_PUBLIC | MEMF_CLEAR);
                 bm->fbgfx = FALSE;
 
-                for (__tmp=0; __tmp < height; __tmp++)
-                	bm->addresses[__tmp] = (void*)(bm->framebuffer + __tmp*bm->pitch);
+//                for (__tmp=0; __tmp < height; __tmp++)
+//                	bm->addresses[__tmp] = (void*)(bm->framebuffer + __tmp*bm->pitch);
             }
             else
                 bm->fbgfx = TRUE;
@@ -266,7 +267,7 @@ OOP_Object *METHOD(GMAOnBM, Root, New)
                 return o;
             }
         }
-#endif
+
         OOP_MethodID disp_mid = OOP_GetMethodID((STRPTR)IID_Root, moRoot_Dispose);
         OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
     }
@@ -309,4 +310,26 @@ VOID METHOD(GMAOnBM, Root, Dispose)
     UNLOCK_BITMAP
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+
+VOID METHOD(GMAOffBM, Hidd_BitMap, PutPixel)
+    __attribute__((alias(METHOD_NAME_S(GMAOnBM, Hidd_BitMap, PutPixel))));
+
+VOID METHOD(GMAOnBM, Hidd_BitMap, PutPixel)
+{
+}
+
+VOID METHOD(GMAOffBM, Hidd_BitMap, GetPixel)
+    __attribute__((alias(METHOD_NAME_S(GMAOnBM, Hidd_BitMap, GetPixel))));
+
+VOID METHOD(GMAOnBM, Hidd_BitMap, GetPixel)
+{
+}
+
+VOID METHOD(GMAOffBM, Hidd_BitMap, DrawPixel)
+    __attribute__((alias(METHOD_NAME_S(GMAOnBM, Hidd_BitMap, DrawPixel))));
+
+VOID METHOD(GMAOnBM, Hidd_BitMap, DrawPixel)
+{
 }
