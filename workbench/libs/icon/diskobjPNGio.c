@@ -28,17 +28,19 @@
 #define ATTR_DRAWERWIDTH    0x80001005
 #define ATTR_DRAWERHEIGHT   0x80001006
 #define ATTR_DRAWERFLAGS    0x80001007
-#define ATTR_UNKNOWN	    0x80001008 /* probably toolwindow? */
+#define ATTR_TOOLWINDOW     0x80001008  //OS4: STRPTR, tool window string, length including the tag
+                                        //must be a multiple of 8
 #define ATTR_STACKSIZE	    0x80001009
 #define ATTR_DEFAULTTOOL    0x8000100a
 #define ATTR_TOOLTYPE	    0x8000100b
 #define ATTR_VIEWMODES      0x8000100c  //OS4 PNG use that
-#define ATTR_DD_CURRENTX    0x8000100d  //OS4 PNG use that
-#define ATTR_DD_CURRENTY    0x8000100e  //OS4 PNG use that
-#define ATTR_TYPE           0x8000100f  //OS4 PNG use that
-#define ATTR_UNKNOWN2       0x80001011  //hexdump showed 4 bytes following
-#define ATTR_UNKNOWN3       0x80001012  //hexdump showed 4 bytes following
-#define ATTR_DRAWERFLAGS2   0x80001107  //writen from AFA to store needed dopus Magellan settings
+#define ATTR_DD_CURRENTX    0x8000100d  //OS4 ULONG, drawer view X offset
+#define ATTR_DD_CURRENTY    0x8000100e  //OS4 ULONG, drawer view Y offset
+#define ATTR_TYPE           0x8000100f  //OS4 icon type (WBDISK...WBKICK)
+#define ATTR_FRAMELESS      0x80001010  //OS4 ULONG, frameless property
+#define ATTR_DRAWERFLAGS3   0x80001011  //OS4 ULONG, drawer flags
+#define ATTR_VIEWMODES2     0x80001012  //OS4 ULONG, drawer view modes
+#define ATTR_DRAWERFLAGS2   0x80001107  //written from AFA to store needed dopus Magellan settings
 
 #define EFFECT_NONE      (0)
 #define EFFECT_LIGHTEN   (1)
@@ -337,7 +339,9 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 		    case ATTR_DRAWERHEIGHT:
 		    case ATTR_DRAWERFLAGS:
 		    case ATTR_DRAWERFLAGS2:
+		    case ATTR_DRAWERFLAGS3:
 		    case ATTR_VIEWMODES:
+		    case ATTR_VIEWMODES2:
 		    case ATTR_DD_CURRENTX:
 		    case ATTR_DD_CURRENTY:
 		    	need_drawerdata = TRUE;
@@ -347,8 +351,7 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 		    case ATTR_ICONY:
 		    case ATTR_STACKSIZE:
 		    case ATTR_TYPE:
-		    case ATTR_UNKNOWN2:
-		    case ATTR_UNKNOWN3:
+		    case ATTR_FRAMELESS:
 		    	if (chunksize >= 4)
 			{
 			    val = (chunkdata[0] << 24) | (chunkdata[1] << 16) | (chunkdata[2] << 8) | chunkdata[3];
