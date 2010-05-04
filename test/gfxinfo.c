@@ -197,17 +197,19 @@ int main(void)
     printf("p96Base      0x%p\n", p96Base);
     printf("\n");
 
-    /* It's a good tone to lock this semaphore. It seems to be present in all OSes
-       (at least in AmigaOS v3, MorphOS and AROS) */
-    ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
-
     if (!args.nospecs) {
         printf("*********** MonitorSpecs ***********\n\n");
 
+        /* It's a good idea to lock this semaphore. It seems to be present in all OSes
+           (at least in AmigaOS v3, MorphOS and AROS)
+	   However at least on AmigaOS v3 we can't call NextDisplayInfo() and such
+	   while the lock is held. */
+        ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
         for (mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
             PrintMonitorSpec(mspc);
 	    printf("\n");
         }
+	ReleaseSemaphore(GfxBase->MonitorListSemaphore);
     }
     
     if (!args.nomodes) {
@@ -281,10 +283,12 @@ int main(void)
 	    if (args.allspecs)
 	        mspc = NULL;
 	    else {
+	        ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
 	        for (mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
 	            if (mspc == mon.Mspc)
 		        break;
 		}
+		ReleaseSemaphore(GfxBase->MonitorListSemaphore);
 	    }
 	    if ((mspc != mon.Mspc) && mon.Mspc)
 	        PrintMonitorSpec(mon.Mspc);
@@ -295,7 +299,6 @@ int main(void)
 	printf("\n");
       }
     }
-    ReleaseSemaphore(GfxBase->MonitorListSemaphore);
 
     printf("*************** End ****************\n");
     if (p96Base)
