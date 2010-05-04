@@ -836,18 +836,18 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
 	    x += data->icld_LVMAttribs->lmva_ColumnWidth[index];
 	}
 
-	/* Clear after the last column? */
-/*
-	x += LINE_SPACING_RIGHT;
-
-	if (x < linerect.MaxX)
+	if ((data->icld_LVMAttribs->lvma_Flags & LVMAF_ROWDRAWTOEND) == LVMAF_ROWDRAWTOEND)
 	{
-	    linerect.MinX = x;
+	    x += LINE_SPACING_RIGHT;
 
-	    SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[MPEN_SHINE], 0, JAM1);
-	    RectFill(data->icld_BufferRastPort, linerect.MinX, linerect.MinY, linerect.MaxX, linerect.MaxY);
+	    if (x < linerect.MaxX)
+	    {
+		linerect.MinX = x;
+
+		SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[MPEN_SHINE], 0, JAM1);
+		RectFill(data->icld_BufferRastPort, linerect.MinX, linerect.MinY, linerect.MaxX, linerect.MaxY);
+	    }
 	}
-*/
     }
     else
     {
@@ -1838,6 +1838,7 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
 	data->icld_LVMAttribs->lmva_SortColumn = INDEX_NAME;
 	data->icld_LVMAttribs->lmva_HeaderHeight = HEADERLINE_EXTRAHEIGHT + data->icld_IconLabelFont->tf_YSize;
 	data->icld_LVMAttribs->lmva_RowHeight = LINE_EXTRAHEIGHT + data->icld_IconLabelFont->tf_YSize;
+	data->icld_LVMAttribs->lvma_Flags = LVMAF_HEADERDRAWTOEND;
     }
 
     /* Get/Set initial values */
@@ -2747,68 +2748,73 @@ static void RenderListViewModeHeaderField(Object *obj, struct IconList_DATA *dat
 D(bug("[IconList]: %s(obj @ 0x%p)\n", __PRETTY_FUNCTION__, obj));
 #endif
 
-/*    if ((data->inputstate == INPUTSTATE_COL_HEADER_CLICK) &&
-    	(data->click_column == index))
-    	
+    if ((data->icld_LVMAttribs->lvma_Flags & LVMAF_NOHEADER) == 0)
     {
-    	if (ColumnHeaderUnderMouse(data, data->click_x, data->click_y) == index)
+/*
+        if ((data->inputstate == INPUTSTATE_COL_HEADER_CLICK) &&
+	    (data->click_column == index))
+	    
 	{
-	    sel = TRUE;
-	}
-    }*/
-
-    text = data->icld_LVMAttribs->lmva_ColumnTitle[index];
-
-    SetAPen(data->icld_BufferRastPort, _pens(obj)[sel ? MPEN_HALFSHADOW : MPEN_HALFSHINE]);
-    RectFill(data->icld_BufferRastPort, rect->MinX + 1, rect->MinY + 1,
-    	    	       rect->MaxX - 1, rect->MaxY - 1);
-    SetAPen(data->icld_BufferRastPort, _pens(obj)[sel ? MPEN_SHADOW : MPEN_SHINE]);
-    RectFill(data->icld_BufferRastPort, rect->MinX, rect->MinY, rect->MinX, rect->MaxY);
-    RectFill(data->icld_BufferRastPort, rect->MinX + 1, rect->MinY, rect->MaxX - 1, rect->MinY);
-    SetAPen(data->icld_BufferRastPort, _pens(obj)[sel ? MPEN_HALFSHINE : MPEN_HALFSHADOW]);
-    RectFill(data->icld_BufferRastPort, rect->MaxX, rect->MinY, rect->MaxX, rect->MaxY);
-    RectFill(data->icld_BufferRastPort, rect->MinX + 1, rect->MaxY, rect->MaxX - 1, rect->MaxY);
-
-    if (index == data->icld_LVMAttribs->lmva_SortColumn)
-    {
-    	LONG x = rect->MaxX - 4 - 6;
-	LONG y = (rect->MinY + rect->MaxY + 1) / 2 - 3;
-	
-	if (x > rect->MinX)
-	{
-	    SetAPen(data->icld_BufferRastPort, _pens(obj)[sel ? MPEN_SHADOW : MPEN_HALFSHADOW]);
-	    if (data->icld_SortFlags & MUIV_IconList_Sort_Reverse)
+	    if (ColumnHeaderUnderMouse(data, data->click_x, data->click_y) == index)
 	    {
-		RectFill(data->icld_BufferRastPort, x, y, x + 5, y + 1);
-		RectFill(data->icld_BufferRastPort, x + 1, y + 2, x + 4, y + 3);
-		RectFill(data->icld_BufferRastPort, x + 2, y + 4, x + 3, y + 5);
-	    }
-	    else
-	    {
-		RectFill(data->icld_BufferRastPort, x, y + 4, x + 5, y + 5);
-		RectFill(data->icld_BufferRastPort, x + 1, y + 2, x + 4, y + 3);
-		RectFill(data->icld_BufferRastPort, x + 2, y, x + 3, y + 1);
+		sel = TRUE;
 	    }
 	}
-    }
+*/
 
-    rect->MinX += HEADERENTRY_SPACING_LEFT;
-    rect->MinY += HEADERLINE_SPACING_TOP;
-    rect->MaxX -= HEADERENTRY_SPACING_RIGHT;
-    rect->MaxY -= HEADERLINE_SPACING_BOTTOM;
+	text = data->icld_LVMAttribs->lmva_ColumnTitle[index];
 
-    if (text && text[0])
-    {
+	SetAPen(data->icld_BufferRastPort, _pens(obj)[sel ? MPEN_HALFSHADOW : MPEN_HALFSHINE]);
+	RectFill(data->icld_BufferRastPort, rect->MinX + 1, rect->MinY + 1,
+			   rect->MaxX - 1, rect->MaxY - 1);
+	SetAPen(data->icld_BufferRastPort, _pens(obj)[sel ? MPEN_SHADOW : MPEN_SHINE]);
+	RectFill(data->icld_BufferRastPort, rect->MinX, rect->MinY, rect->MinX, rect->MaxY);
+	RectFill(data->icld_BufferRastPort, rect->MinX + 1, rect->MinY, rect->MaxX - 1, rect->MinY);
+	SetAPen(data->icld_BufferRastPort, _pens(obj)[sel ? MPEN_HALFSHINE : MPEN_HALFSHADOW]);
+	RectFill(data->icld_BufferRastPort, rect->MaxX, rect->MinY, rect->MaxX, rect->MaxY);
+	RectFill(data->icld_BufferRastPort, rect->MinX + 1, rect->MaxY, rect->MaxX - 1, rect->MaxY);
 
-	fit = TextFit(data->icld_BufferRastPort, text, strlen(text), &te, NULL, 1,
-    	    	       rect->MaxX - rect->MinX + 1,
-		       rect->MaxY - rect->MinY + 1);
+	if (index == data->icld_LVMAttribs->lmva_SortColumn)
+	{
+	    LONG x = rect->MaxX - 4 - 6;
+	    LONG y = (rect->MinY + rect->MaxY + 1) / 2 - 3;
+	    
+	    if (x > rect->MinX)
+	    {
+		SetAPen(data->icld_BufferRastPort, _pens(obj)[sel ? MPEN_SHADOW : MPEN_HALFSHADOW]);
+		if (data->icld_SortFlags & MUIV_IconList_Sort_Reverse)
+		{
+		    RectFill(data->icld_BufferRastPort, x, y, x + 5, y + 1);
+		    RectFill(data->icld_BufferRastPort, x + 1, y + 2, x + 4, y + 3);
+		    RectFill(data->icld_BufferRastPort, x + 2, y + 4, x + 3, y + 5);
+		}
+		else
+		{
+		    RectFill(data->icld_BufferRastPort, x, y + 4, x + 5, y + 5);
+		    RectFill(data->icld_BufferRastPort, x + 1, y + 2, x + 4, y + 3);
+		    RectFill(data->icld_BufferRastPort, x + 2, y, x + 3, y + 1);
+		}
+	    }
+	}
 
-	if (!fit) return;
+	rect->MinX += HEADERENTRY_SPACING_LEFT;
+	rect->MinY += HEADERLINE_SPACING_TOP;
+	rect->MaxX -= HEADERENTRY_SPACING_RIGHT;
+	rect->MaxY -= HEADERLINE_SPACING_BOTTOM;
 
-	SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[MPEN_TEXT], 0, JAM1);
-	Move(data->icld_BufferRastPort, rect->MinX, rect->MinY + data->icld_BufferRastPort->TxBaseline);
-	Text(data->icld_BufferRastPort, text, fit);
+	if (text && text[0])
+	{
+
+	    fit = TextFit(data->icld_BufferRastPort, text, strlen(text), &te, NULL, 1,
+			   rect->MaxX - rect->MinX + 1,
+			   rect->MaxY - rect->MinY + 1);
+
+	    if (!fit) return;
+
+	    SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[MPEN_TEXT], 0, JAM1);
+	    Move(data->icld_BufferRastPort, rect->MinX, rect->MinY + data->icld_BufferRastPort->TxBaseline);
+	    Text(data->icld_BufferRastPort, text, fit);
+	}
     }
 }
 
@@ -2822,77 +2828,83 @@ static void RenderListViewModeHeader(Object *obj, struct IconList_DATA *data)
 D(bug("[IconList]: %s(obj @ 0x%p)\n", __PRETTY_FUNCTION__, obj));
 #endif
 
-    linerect.MinX = _mleft(obj) - data->icld_ViewX;
-    linerect.MaxX = _mright(obj);
-    linerect.MinY = _mtop(obj);
-    linerect.MaxY = _mtop(obj) + data->icld_LVMAttribs->lmva_HeaderHeight - 1;
-
-    SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
-
-    x = linerect.MinX + HEADERLINE_SPACING_LEFT;
-
-    firstvis = FirstVisibleColumnNumber(data);
-    lastvis = LastVisibleColumnNumber(data);
-
-    for(i = 0; i < NUM_COLUMNS; i++)
+    if ((data->icld_LVMAttribs->lvma_Flags & LVMAF_NOHEADER) == 0)
     {
-   	LONG 	    	 	index = data->icld_LVMAttribs->lmva_ColumnPos[i];
+	linerect.MinX = _mleft(obj) - data->icld_ViewX;
+	linerect.MaxX = _mright(obj);
+	linerect.MinY = _mtop(obj);
+	linerect.MaxY = _mtop(obj) + data->icld_LVMAttribs->lmva_HeaderHeight - 1;
 
-	if (!data->icld_LVMAttribs->lmva_ColumnVisible[index]) continue;
+	SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
 
-	BOOL			outside = FALSE;
-	struct Rectangle 	field_rect;
+	x = linerect.MinX + HEADERLINE_SPACING_LEFT;
 
-	field_rect.MinX = (i == firstvis) ? linerect.MinX : x;
-	field_rect.MinY = linerect.MinY;
-    	field_rect.MaxX = x + data->icld_LVMAttribs->lmva_ColumnWidth[index] - 1 + ((i == lastvis) ? HEADERLINE_SPACING_RIGHT : 0);
-	field_rect.MaxY = linerect.MaxY;
+	firstvis = FirstVisibleColumnNumber(data);
+	lastvis = LastVisibleColumnNumber(data);
 
-	/* data->update_rect1 and data->update_rect2 may
-	   point to rectangles to indicate that only icons
-	   in any of this rectangles need to be drawn      */
-	if (data->update_rect1)
+	for(i = 0; i < NUM_COLUMNS; i++)
 	{
-	    if (!RectAndRect(&field_rect, data->update_rect1))
-		outside = TRUE;
-	}
+	    LONG 	    	 	index = data->icld_LVMAttribs->lmva_ColumnPos[i];
 
-	if (data->update_rect2)
-	{
+	    if (!data->icld_LVMAttribs->lmva_ColumnVisible[index]) continue;
+
+	    BOOL			outside = FALSE;
+	    struct Rectangle 	field_rect;
+
+	    field_rect.MinX = (i == firstvis) ? linerect.MinX : x;
+	    field_rect.MinY = linerect.MinY;
+	    field_rect.MaxX = x + data->icld_LVMAttribs->lmva_ColumnWidth[index] - 1 + ((i == lastvis) ? HEADERLINE_SPACING_RIGHT : 0);
+	    field_rect.MaxY = linerect.MaxY;
+
+	    /* data->update_rect1 and data->update_rect2 may
+	       point to rectangles to indicate that only icons
+	       in any of this rectangles need to be drawn      */
 	    if (data->update_rect1)
 	    {
-		if ((outside == TRUE) && RectAndRect(&field_rect, data->update_rect2))
-		    outside = FALSE;
+		if (!RectAndRect(&field_rect, data->update_rect1))
+		    outside = TRUE;
+	    }
+
+	    if (data->update_rect2)
+	    {
+		if (data->update_rect1)
+		{
+		    if ((outside == TRUE) && RectAndRect(&field_rect, data->update_rect2))
+			outside = FALSE;
+		}
+		else
+		{
+		    if (!RectAndRect(&field_rect, data->update_rect2))
+			outside = TRUE;
+		}
+	    }
+
+	    if (outside != TRUE)
+	    {
+		RenderListViewModeHeaderField(obj, data, &field_rect, index);
+		x += data->icld_LVMAttribs->lmva_ColumnWidth[index];
 	    }
 	    else
 	    {
-		if (!RectAndRect(&field_rect, data->update_rect2))
-		    outside = TRUE;
+		D(bug("[IconList] %s: Column '%s' outside of update area .. skipping\n", __PRETTY_FUNCTION__, data->icld_LVMAttribs->lmva_ColumnTitle[i]));
 	    }
 	}
 
-	if (outside != TRUE)
+	if ((data->icld_LVMAttribs->lvma_Flags & LVMAF_HEADERDRAWTOEND) == LVMAF_HEADERDRAWTOEND)
 	{
-	    RenderListViewModeHeaderField(obj, data, &field_rect, index);
-	    x += data->icld_LVMAttribs->lmva_ColumnWidth[index];
+	    x += HEADERLINE_SPACING_RIGHT;
+
+	    if (x < linerect.MaxX)
+	    {
+		linerect.MinX = x;
+
+//		if (MustRenderRect(data, &linerect))
+//		{
+		    SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[MPEN_HALFSHINE], 0, JAM1);
+		    RectFill(data->icld_BufferRastPort, linerect.MinX, linerect.MinY, linerect.MaxX, linerect.MaxY);
+//		}
+	    }
 	}
-	else
-	{
-	    D(bug("[IconList] %s: Column '%s' outside of update area .. skipping\n", __PRETTY_FUNCTION__, data->icld_LVMAttribs->lmva_ColumnTitle[i]));
-	}
-    }
-
-    x += HEADERLINE_SPACING_RIGHT;
-
-    if (x < linerect.MaxX)
-    {
-    	linerect.MinX = x;
-
-//	if (MustRenderRect(data, &linerect))
-//	{
-    	    SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[MPEN_HALFSHINE], 0, JAM1);
-	    RectFill(data->icld_BufferRastPort, linerect.MinX, linerect.MinY, linerect.MaxX, linerect.MaxY);
-//	}
     }
 }
 
