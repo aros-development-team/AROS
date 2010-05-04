@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -50,7 +50,7 @@
     AROS_LIBFUNC_INIT
 
     struct DosInfo *di = BADDR(DOSBase->dl_Root->rn_Info);
-    struct DosList *dl = (struct DosList *)&DOSBase->dl_DevInfo;
+    struct DosList *dl = (struct DosList *)&di->di_DevInfo;
     ULONG DevSem = FALSE, EntrySem = FALSE, DelSem = FALSE;
 
     D(bug("AttemptLockDosList: flags = $%lx\n", flags));

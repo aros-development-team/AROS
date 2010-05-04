@@ -2,7 +2,7 @@
 #define DOS_DOSEXTENS_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LibBase and some important structures
@@ -90,9 +90,6 @@ struct DosLibrary
       /* The flags are the same, as they were in RootNode->rn_Flags. See below
          for definitions. */
     ULONG		   dl_Flags;
-
-    /* Resident segment list **PRIVATE** */
-    BPTR		   dl_ResList;
 };
 
 /* dl_Flags/rn_Flags */
@@ -142,11 +139,11 @@ struct CLIInfo
 
 struct DosInfo
 {
-    BPTR di_McName;   /* PRIVATE */
-    BPTR di_DevInfo;
-    BPTR di_Devices;
-    BPTR di_Handlers;
-    APTR di_NetHand;
+    BPTR di_McName;   /* Used as resident segment list */
+    BPTR di_DevInfo;  /* Devices list                  */
+    BPTR di_Devices;  /* Reserved	               */
+    BPTR di_Handlers; /* Reserved	               */
+    APTR di_NetHand;  /* Reserved	               */
 
     /* The following semaphores are PRIVATE. */
     struct SignalSemaphore di_DevLock;
@@ -395,7 +392,7 @@ struct FileLock
 struct DosList
 {
       /* PRIVATE pointer to next entry. In AmigaOS this used to be a BPTR. */
-    struct DosList * dol_Next;
+    BPTR dol_Next;
       /* Type of the current node (see below). */
     LONG             dol_Type;
       /* Filesystem task handling this entry (for old-style filesystems) */
@@ -458,8 +455,8 @@ struct DosList
 
 struct DeviceList
 {
-    struct DeviceList * dl_Next;
-    LONG                dl_Type; /* see above, always = DLT_VOLUME */
+    BPTR             dl_Next;
+    LONG             dl_Type; /* see above, always = DLT_VOLUME */
 
     struct MsgPort * dl_Task;
     BPTR             dl_Lock;
@@ -499,7 +496,7 @@ struct DeviceList
    as DeviceNode, defined in <dos/filehandler.h>. */
 struct DevInfo
 {
-    struct DevInfo * dvi_Next;
+    BPTR             dvi_Next;
     LONG             dvi_Type; /* see above, always = DLT_DEVICE */
 
     struct MsgPort * dvi_Task;

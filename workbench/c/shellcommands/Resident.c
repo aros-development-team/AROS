@@ -165,12 +165,13 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
 	struct MinList l;
 	struct Segment *curr;
 	struct SegNode *n;
+	struct DosInfo *dinf = BADDR(DOSBase->dl_Root->rn_Info);
 
 	NEWLIST((struct List *)&l);
 
 	SetIoErr(0);
 	Forbid();
-	curr = (struct Segment *)BADDR(DOSBase->dl_ResList);
+	curr = (struct Segment *)BADDR(dinf->di_ResList);
 	while (curr)
 	{
  	    n = NewSegNode(SysBase, AROS_BSTR_ADDR(curr->seg_Name), curr->seg_UC);

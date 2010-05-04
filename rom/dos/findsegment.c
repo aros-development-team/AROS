@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Find a resident segment.
@@ -60,11 +60,13 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct DosInfo *dinf = BADDR(DOSBase->dl_Root->rn_Info);
+
     /* Segment seg was the last match, lets start from the next one */
     if( seg != NULL )
 	seg = BADDR(seg->seg_Next);
     else
-	seg = BADDR(DOSBase->dl_ResList);
+	seg = BADDR(dinf->di_ResList);
 
     while( seg != NULL )
     {

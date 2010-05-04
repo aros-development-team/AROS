@@ -2,7 +2,7 @@
 #define DOS_FILEHANDLER_H
 
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Constants for filehandlers.
@@ -109,8 +109,8 @@ struct FileSysStartupMsg
     dn_Startup and dn_Handler fields. */
 struct DeviceNode
 {
-      /* PRIVATE pointer to next entry. In AmigaOS this used to be a BPTR. */
-    struct DosList * dn_Next;
+      /* PRIVATE pointer to next entry */
+    BPTR  dn_Next;
       /* Type of this node. Has to be DLT_DEVICE. */
     ULONG dn_Type;
 
