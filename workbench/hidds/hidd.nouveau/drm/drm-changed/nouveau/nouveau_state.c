@@ -23,12 +23,16 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-//FIXME: #include <linux/swab.h>
+#if !defined(__AROS__)
+#include <linux/swab.h>
+#endif
 #include "drmP.h"
 #include "drm.h"
 #include "drm_sarea.h"
-//FIXME: #include "drm_crtc_helper.h"
-//FIXME: #include <linux/vgaarb.h>
+#include "drm_crtc_helper.h"
+#if !defined(__AROS__)
+#include <linux/vgaarb.h>
+#endif
 
 #include "nouveau_drv.h"
 #include "nouveau_drm.h"
@@ -390,7 +394,7 @@ nouveau_card_init(struct drm_device *dev)
 #if !defined(__AROS__)
 	vga_client_register(dev->pdev, dev, NULL, nouveau_vga_set_decode);
 #else
-DRM_IMPL("Calling vga_client_register\n");
+DRM_IMPL("Calling vga_client_register(dev->pdev, dev, NULL, nouveau_vga_set_decode);\n");
 #endif
 
 	/* Initialise internal driver API hooks */
@@ -401,16 +405,14 @@ DRM_IMPL("Calling vga_client_register\n");
 	dev_priv->init_state = NOUVEAU_CARD_INIT_FAILED;
 	spin_lock_init(&dev_priv->context_switch_lock);
 
-#if !defined(__AROS__)
 	/* Parse BIOS tables / Run init tables if card not POSTed */
 	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
 		ret = nouveau_bios_init(dev);
+#if !defined(HOSTED_BUILD)
 		if (ret)
 			goto out;
-	}
-#else
-DRM_IMPL("Calling nouveau_bios_init\n");
 #endif
+	}
 
 	ret = nouveau_gpuobj_early_init(dev);
 	if (ret)
@@ -499,18 +501,15 @@ DRM_IMPL("Calling drm_vblank_init\n");
 			goto out_irq;
 	}
 
-#if !defined(__AROS__)
 	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
 		if (dev_priv->card_type >= NV_50)
 			ret = nv50_display_create(dev);
 		else
 			ret = nv04_display_create(dev);
+
 		if (ret)
 			goto out_irq;
 	}
-#else
-DRM_IMPL("Calling *_display_create\n");
-#endif
 
 	ret = nouveau_backlight_init(dev);
 	if (ret)
@@ -518,12 +517,8 @@ DRM_IMPL("Calling *_display_create\n");
 
 	dev_priv->init_state = NOUVEAU_CARD_INIT_DONE;
 
-#if !defined(__AROS__)
 	if (drm_core_check_feature(dev, DRIVER_MODESET))
 		drm_helper_initial_config(dev);
-#else
-DRM_IMPL("Calling drm_helper_initial_config\n");
-#endif
 
 	return 0;
 
@@ -550,16 +545,12 @@ out_instmem:
 out_gpuobj_early:
 	nouveau_gpuobj_late_takedown(dev);
 out_bios:
-#if !defined(__AROS__)
 	nouveau_bios_takedown(dev);
-#else
-IMPLEMENT("Calling nouveau_bios_takedown\n");
-#endif	
 out:
 #if !defined(__AROS__)
 	vga_client_register(dev->pdev, NULL, NULL, NULL);
 #else
-DRM_IMPL("Calling vga_client_register\n");
+DRM_IMPL("Calling vga_client_register(dev->pdev, NULL, NULL, NULL);\n");
 #endif
 	return ret;
 }
@@ -607,11 +598,7 @@ static void nouveau_card_takedown(struct drm_device *dev)
 			drm_irq_uninstall(dev);
 
 		nouveau_gpuobj_late_takedown(dev);
-#if !defined(__AROS__)        
 		nouveau_bios_takedown(dev);
-#else
-IMPLEMENT("Calling nouveau_bios_takedown\n");
-#endif
 
 #if !defined(__AROS__)
 		vga_client_register(dev->pdev, NULL, NULL, NULL);
@@ -683,14 +670,10 @@ int nouveau_load(struct drm_device *dev, unsigned long flags)
 		 dev->pci_vendor, dev->pci_device);
 #endif
 
-#if !defined(__AROS__)
 	dev_priv->acpi_dsm = nouveau_dsm_probe(dev);
 
 	if (dev_priv->acpi_dsm)
 		nouveau_hybrid_setup(dev);
-#else
-DRM_IMPL("Calling nouveau_dsm_probe and nouveau_hybrid_setup\n");
-#endif
 
 #if !defined(__AROS__)
 	dev_priv->wq = create_workqueue("nouveau");
@@ -839,14 +822,10 @@ int nouveau_unload(struct drm_device *dev)
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 
 	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
-#if !defined(__AROS__)        
 		if (dev_priv->card_type >= NV_50)
 			nv50_display_destroy(dev);
 		else
 			nv04_display_destroy(dev);
-#else
-DRM_IMPL("Calling *_display_destroy\n");
-#endif
 		nouveau_close(dev);
 	}
 
