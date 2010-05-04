@@ -1,0 +1,237 @@
+diff -ur -x .svn /data/deadwood/source/drm-2.4.18/intel/intel_atomic.h libdrm/intel/intel_atomic.h
+--- /data/deadwood/source/drm-2.4.18/intel/intel_atomic.h	2010-02-16 12:12:40.000000000 +0100
++++ libdrm/intel/intel_atomic.h	2010-02-20 14:30:21.000000000 +0100
+@@ -38,6 +38,12 @@
+ #include "config.h"
+ #endif
+ 
++#if defined(__AROS__)
++/* FIXME: dependency on drm */
++#include "drm_compat_funcs.h"
++#define HAS_ATOMIC_OPS 1
++#endif
++
+ #if HAVE_INTEL_ATOMIC_PRIMITIVES
+ 
+ #define HAS_ATOMIC_OPS 1
+diff -ur -x .svn /data/deadwood/source/drm-2.4.18/intel/intel_bufmgr_gem.c libdrm/intel/intel_bufmgr_gem.c
+--- /data/deadwood/source/drm-2.4.18/intel/intel_bufmgr_gem.c	2010-02-16 12:12:40.000000000 +0100
++++ libdrm/intel/intel_bufmgr_gem.c	2010-02-28 12:35:42.000000000 +0100
+@@ -38,18 +38,40 @@
+ #include "config.h"
+ #endif
+ 
++#if !defined(__AROS__)
+ #include <xf86drm.h>
+ #include <fcntl.h>
++#else
++#include <arosdrm.h>
++#endif
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <unistd.h>
+ #include <assert.h>
++#if !defined(__AROS__)
+ #include <pthread.h>
+ #include <sys/ioctl.h>
+ #include <sys/mman.h>
+ #include <sys/stat.h>
+ #include <sys/types.h>
++#else
++#include <sys/time.h>
++#include <proto/exec.h>
++#include <exec/semaphores.h>
++#define pthread_mutex_t             struct SignalSemaphore
++static int 
++pthread_mutex_init(pthread_mutex_t *mutex, void *attr)
++{
++    InitSemaphore(mutex);
++    return 0;
++}
++#define pthread_mutex_lock(x)       ObtainSemaphore(x)
++#define pthread_mutex_unlock(x)     ReleaseSemaphore(x)
++#define pthread_mutex_destroy(x)
++#undef ioctl
++#define ioctl                       drmIntelIoctlEmul
++#endif
+ 
+ #include "errno.h"
+ #include "libdrm_lists.h"
+@@ -484,7 +506,11 @@
+ {
+ 	drm_intel_bufmgr_gem *bufmgr_gem = (drm_intel_bufmgr_gem *) bufmgr;
+ 	drm_intel_bo_gem *bo_gem;
++#if !defined(__AROS__)	
+ 	unsigned int page_size = getpagesize();
++#else
++    unsigned int page_size = PAGE_SIZE;
++#endif
+ 	int ret;
+ 	struct drm_intel_gem_bo_bucket *bucket;
+ 	int alloc_from_cache;
+@@ -722,10 +748,14 @@
+ 	struct drm_gem_close close;
+ 	int ret;
+ 
++#if !defined(__AROS__)
+ 	if (bo_gem->mem_virtual)
+ 		munmap(bo_gem->mem_virtual, bo_gem->bo.size);
+ 	if (bo_gem->gtt_virtual)
+ 		munmap(bo_gem->gtt_virtual, bo_gem->bo.size);
++#else
++IMPLEMENT("calling munmap\n");
++#endif
+ 
+ 	/* Close this object */
+ 	memset(&close, 0, sizeof(close));
+@@ -833,6 +863,7 @@
+ 	if (atomic_dec_and_test(&bo_gem->refcount)) {
+ 		drm_intel_bufmgr_gem *bufmgr_gem =
+ 		    (drm_intel_bufmgr_gem *) bo->bufmgr;
++#if !defined(__AROS__)
+ 		struct timespec time;
+ 
+ 		clock_gettime(CLOCK_MONOTONIC, &time);
+@@ -840,6 +871,16 @@
+ 		pthread_mutex_lock(&bufmgr_gem->lock);
+ 		drm_intel_gem_bo_unreference_final(bo, time.tv_sec);
+ 		pthread_mutex_unlock(&bufmgr_gem->lock);
++#else
++        /* CLOCK_MONOTONIC cannot be changed. Value returned by
++        time() is real time clock, so can be changed */
++        struct timeval tv;
++        gettimeofday(&tv, NULL);
++        
++		pthread_mutex_lock(&bufmgr_gem->lock);
++		drm_intel_gem_bo_unreference_final(bo, tv.tv_sec);
++		pthread_mutex_unlock(&bufmgr_gem->lock);
++#endif
+ 	}
+ }
+ 
+@@ -946,6 +987,7 @@
+ 		}
+ 
+ 		/* and mmap it */
++#if !defined(__AROS__)
+ 		bo_gem->gtt_virtual = mmap(0, bo->size, PROT_READ | PROT_WRITE,
+ 					   MAP_SHARED, bufmgr_gem->fd,
+ 					   mmap_arg.offset);
+@@ -960,6 +1002,9 @@
+ 			pthread_mutex_unlock(&bufmgr_gem->lock);
+ 			return ret;
+ 		}
++#else
++IMPLEMENT("calling mmap\n");
++#endif
+ 	}
+ 
+ 	bo->virtual = bo_gem->gtt_virtual;
+@@ -1067,10 +1112,10 @@
+ static int
+ drm_intel_gem_get_pipe_from_crtc_id(drm_intel_bufmgr *bufmgr, int crtc_id)
+ {
++#if !defined(__AROS__)
+ 	drm_intel_bufmgr_gem *bufmgr_gem = (drm_intel_bufmgr_gem *) bufmgr;
+ 	struct drm_i915_get_pipe_from_crtc_id get_pipe_from_crtc_id;
+ 	int ret;
+-
+ 	get_pipe_from_crtc_id.crtc_id = crtc_id;
+ 	ret = ioctl(bufmgr_gem->fd, DRM_IOCTL_I915_GET_PIPE_FROM_CRTC_ID,
+ 		    &get_pipe_from_crtc_id);
+@@ -1083,8 +1128,11 @@
+ 		 */
+ 		return -1;
+ 	}
+-
+ 	return get_pipe_from_crtc_id.pipe;
++#else
++IMPLEMENT("\n");
++    return 0;
++#endif
+ }
+ 
+ static int
+diff -ur -x .svn /data/deadwood/source/drm-2.4.18/intel/intel_bufmgr_priv.h libdrm/intel/intel_bufmgr_priv.h
+--- /data/deadwood/source/drm-2.4.18/intel/intel_bufmgr_priv.h	2010-02-16 12:12:40.000000000 +0100
++++ libdrm/intel/intel_bufmgr_priv.h	2010-02-28 12:37:42.000000000 +0100
+@@ -261,7 +261,9 @@
+ 	int debug;
+ };
+ 
++#if !defined(__AROS__)
+ #define ALIGN(value, alignment)	((value + alignment - 1) & ~(alignment - 1))
++#endif
+ #define ROUND_UP_TO(x, y)	(((x) + (y) - 1) / (y) * (y))
+ #define ROUND_UP_TO_MB(x)	ROUND_UP_TO((x), 1024*1024)
+ 
+diff -ur -x .svn /data/deadwood/source/drm-2.4.18/nouveau/nouveau_bo.c libdrm/nouveau/nouveau_bo.c
+--- /data/deadwood/source/drm-2.4.18/nouveau/nouveau_bo.c	2010-02-16 12:12:40.000000000 +0100
++++ libdrm/nouveau/nouveau_bo.c	2010-02-20 14:30:21.000000000 +0100
+@@ -28,7 +28,9 @@
+ #include <errno.h>
+ #include <assert.h>
+ 
++#if !defined(__AROS__)
+ #include <sys/mman.h>
++#endif
+ 
+ #include "nouveau_private.h"
+ 
+@@ -99,7 +101,11 @@
+ 		return;
+ 
+ 	if (nvbo->map) {
++#if !defined(__AROS__)        
+ 		munmap(nvbo->map, nvbo->size);
++#else
++        drmMUnmap(nvdev->fd, nvbo->handle);
++#endif
+ 		nvbo->map = NULL;
+ 	}
+ 
+@@ -161,13 +167,18 @@
+ 	if (!nvbo->map_handle)
+ 		return -EINVAL;
+ 
++#if !defined(__AROS__)
+ 	nvbo->map = mmap(0, nvbo->size, PROT_READ | PROT_WRITE,
+ 			 MAP_SHARED, nvdev->fd, nvbo->map_handle);
+ 	if (nvbo->map == MAP_FAILED) {
+ 		nvbo->map = NULL;
+ 		return -errno;
+ 	}
+-
++#else
++    nvbo->map = drmMMap(nvdev->fd, nvbo->handle);
++    if (nvbo->map == NULL)
++        return -EINVAL;
++#endif
+ 	return 0;
+ }
+ 
+diff -ur -x .svn /data/deadwood/source/drm-2.4.18/nouveau/nouveau_drmif.h libdrm/nouveau/nouveau_drmif.h
+--- /data/deadwood/source/drm-2.4.18/nouveau/nouveau_drmif.h	2010-02-16 12:12:40.000000000 +0100
++++ libdrm/nouveau/nouveau_drmif.h	2010-02-20 14:30:21.000000000 +0100
+@@ -24,7 +24,7 @@
+ #define __NOUVEAU_DRMIF_H__
+ 
+ #include <stdint.h>
+-#include <xf86drm.h>
++#include <arosdrm.h>
+ 
+ #include "nouveau_device.h"
+ 
+diff -ur -x .svn /data/deadwood/source/drm-2.4.18/nouveau/nouveau_private.h libdrm/nouveau/nouveau_private.h
+--- /data/deadwood/source/drm-2.4.18/nouveau/nouveau_private.h	2010-02-16 12:12:40.000000000 +0100
++++ libdrm/nouveau/nouveau_private.h	2010-02-20 14:33:08.000000000 +0100
+@@ -24,7 +24,7 @@
+ #define __NOUVEAU_PRIVATE_H__
+ 
+ #include <stdint.h>
+-#include <xf86drm.h>
++#include <arosdrm.h>
+ #include <nouveau_drm.h>
+ 
+ #include "nouveau_drmif.h"
