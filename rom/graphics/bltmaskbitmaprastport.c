@@ -180,7 +180,8 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     ULONG   	    	    	x, y, width, height;
     LONG    	    	    	lines_done, lines_per_step, doing_lines;
     BOOL    	    	    	pal_to_true = FALSE;
-    
+    ULONG			pixfmt = vHidd_StdPixFmt_Native32;
+
     width  = x2 - x1 + 1;
     height = y2 - y1 + 1;
 
@@ -213,8 +214,7 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     {
     	if (brd->srcpf != dest_pf)
 	{
-	    D(bug("BltMaskBitMapRastPort not supporting blit between truecolor bitmaps of different formats yet"));
-	    return width * height;
+	    pixfmt = vHidd_StdPixFmt_ARGB32;
 	}
     }
     else if ((brd->src_colmod == vHidd_ColorModel_TrueColor) && (dest_colmod == vHidd_ColorModel_Palette))
@@ -248,14 +248,14 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
 			     width * sizeof(HIDDT_Pixel),
 			     srcx, srcy + lines_done,
 			     width, doing_lines,
-			     vHidd_StdPixFmt_Native32);
+			     pixfmt);
 			     
 	    HIDD_BM_GetImage(dstbm_obj,
 	    	    	     destbuf,
 			     width * sizeof(HIDDT_Pixel),
 			     x1, y1 + lines_done,
 			     width, doing_lines,
-			     vHidd_StdPixFmt_Native32);
+			     pixfmt);
 		
 	    mask = &brd->mask[COORD_TO_BYTEIDX(0, srcy + lines_done, brd->mask_bpr)];
 	    
@@ -314,7 +314,7 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
 			     width * sizeof(HIDDT_Pixel),
 			     x1, y1 + lines_done,
 			     width, doing_lines,
-			     vHidd_StdPixFmt_Native32);
+			     pixfmt);
 			     
 	} /* for(lines_done = 0; lines_done != height; lines_done += doing_lines) */
 
