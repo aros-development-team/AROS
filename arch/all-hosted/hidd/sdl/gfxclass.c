@@ -287,28 +287,21 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         synctags[i][3].ti_Tag = TAG_DONE;
     }
 
-    modetags = AllocPooled(tagpool, sizeof(struct TagItem) * (nmodes+9));
+    modetags = AllocPooled(tagpool, sizeof(struct TagItem) * (nmodes+2));
 
     modetags[0].ti_Tag = aHidd_Gfx_PixFmtTags;   modetags[0].ti_Data = (IPTR) pftags;
-    modetags[1].ti_Tag = aHidd_Sync_PixelClock;  modetags[1].ti_Data = 100000000;
-    modetags[2].ti_Tag = aHidd_Sync_LeftMargin;  modetags[2].ti_Data = 0;
-    modetags[3].ti_Tag = aHidd_Sync_RightMargin; modetags[3].ti_Data = 0;
-    modetags[4].ti_Tag = aHidd_Sync_UpperMargin; modetags[4].ti_Data = 0;
-    modetags[5].ti_Tag = aHidd_Sync_LowerMargin; modetags[5].ti_Data = 0;
-    modetags[6].ti_Tag = aHidd_Sync_HSyncLength; modetags[6].ti_Data = 0;
-    modetags[7].ti_Tag = aHidd_Sync_VSyncLength; modetags[7].ti_Data = 0;
 
     for (i = 0; i < nmodes; i++) {
         if (synctags[i] == NULL) {
-            modetags[8+i].ti_Tag = TAG_IGNORE;
+            modetags[1+i].ti_Tag = TAG_IGNORE;
             continue;
         }
 
-        modetags[8+i].ti_Tag = aHidd_Gfx_SyncTags;
-        modetags[8+i].ti_Data = (IPTR) synctags[i];
+        modetags[1+i].ti_Tag = aHidd_Gfx_SyncTags;
+        modetags[1+i].ti_Data = (IPTR) synctags[i];
     }
 
-    modetags[8+i].ti_Tag = TAG_DONE;
+    modetags[1+i].ti_Tag = TAG_DONE;
 
     msgtags = TAGLIST(
         aHidd_Gfx_ModeTags, (IPTR) modetags,
