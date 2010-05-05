@@ -537,6 +537,7 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 
     /* It's time to activate the new driver */
     GfxBase->default_monitor = mspc;
+    GfxBase->natural_monitor = mspc;
 
     return TRUE;
 }
