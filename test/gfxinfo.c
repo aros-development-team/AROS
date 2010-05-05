@@ -93,7 +93,7 @@ static void PrintMonitorSpec(struct MonitorSpec *mspc)
     printf        ("  total_rows             %u\n"    ,  mspc->total_rows);
     printf        ("  total_colorclocks      %u\n"    ,  mspc->total_colorclocks);
     printf        ("  DeniseMaxDisplayColumn %u\n"    ,  mspc->DeniseMaxDisplayColumn);
-    printf        ("  Bea`mCon0               0x%04X\n",  mspc->BeamCon0);
+    printf        ("  BeamCon0               0x%04X\n",  mspc->BeamCon0);
     printf        ("  min_row                0x%u\n"  ,  mspc->min_row);
     printf        ("  ms_Special             %p\n"    ,  mspc->ms_Special);
     printf        ("  ms_OpenCount           %u\n"    ,  mspc->ms_OpenCount);
