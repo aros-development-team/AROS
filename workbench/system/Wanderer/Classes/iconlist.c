@@ -3565,11 +3565,11 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY + ICONLIST_DISP_MODELIST\n", __PRETT
 	    {
 		if (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
 		{
-		    if ((current >= first) && (current < visible))
+		    if ((current >= first) && (current <= (first + visible)))
 		    {
 			DoMethod(obj, MUIM_IconList_DrawEntry, entry, current);
-			current++;
 		    }
+		    current++;
 		}
 	    }
 	    else
