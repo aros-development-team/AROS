@@ -13,7 +13,7 @@
 #include <proto/graphics.h>
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
 
 #ifndef NO_CGX_API
 #include <proto/cybergraphics.h>
@@ -32,7 +32,7 @@ struct myargs
 };
 
 /* This stuff is made static in order to reduce stack usage */
-static struct myargs args = {FALSE, FALSE};
+static struct myargs args = {FALSE, FALSE, FALSE, FALSE};
 static struct NameInfo ni;
 static struct DisplayInfo di;
 static struct DimensionInfo dims;
@@ -65,7 +65,7 @@ static void PrintNode(char *name, struct ExtendedNode *n)
     printf("  xln_Pri       %d\n", n->xln_Pri);
     printf("  xln_Subsystem %d\n", n->xln_Subsystem);
     printf("  xln_Subtype   %d\n", n->xln_Subtype);
-    printf("  xln_Library   %p\n", n->xln_Library);
+    printf("  xln_Library   %p\n", (void *)n->xln_Library);
     printf("  xln_Init      %p\n", n->xln_Init);
 }
 
@@ -224,7 +224,7 @@ int main(void)
 
 	printf("ModeID 0x%08X", modeid);
 	memset(&ni, 0, sizeof(ni));
-	len = GetDisplayInfoData(NULL, &ni, sizeof(ni), DTAG_NAME, modeid);
+	len = GetDisplayInfoData(NULL, (UBYTE *)&ni, sizeof(ni), DTAG_NAME, modeid);
 	if (len > 0)
 	    printf(" %s\n", ni.Name);
 	else
@@ -232,11 +232,12 @@ int main(void)
 
 	printf("DisplayInfo handle: %p\n", FindDisplayInfo(modeid));
 #ifndef NO_CGX_API
-	printf("IsCyberModeID: %d\n", IsCyberModeID(modeid));
+	if (CyberGfxBase)
+	    printf("IsCyberModeID: %d\n", IsCyberModeID(modeid));
 #endif
 
 	memset(&di, 0, sizeof(di));
-	len = GetDisplayInfoData(NULL, &di, sizeof(di), DTAG_DISP, modeid);
+	len = GetDisplayInfoData(NULL, (UBYTE *)&di, sizeof(di), DTAG_DISP, modeid);
 	if (len > 0) {
 	    printf    ("DisplayInfo (%u bytes)\n", len);
 	    printf    ("  NotAvailable     0x%04X\n",  di.NotAvailable);
@@ -253,7 +254,7 @@ int main(void)
 	    printf("Failed to obtain DisplayInfo\n");
 
 	memset(&dims, 0, sizeof(dims));
-	len = GetDisplayInfoData(NULL, &dims, sizeof(dims), DTAG_DIMS, modeid);
+	len = GetDisplayInfoData(NULL, (UBYTE *)&dims, sizeof(dims), DTAG_DIMS, modeid);
 	if (len > 0) {
 	    printf        ("DimensionInfo (%u bytes)\n", len);
 	    printf        ("  MaxDepth        %u\n",  dims.MaxDepth);
@@ -270,7 +271,7 @@ int main(void)
 	    printf("Failed to obtain DimensionInfo\n");
 
 	memset(&mon, 0, sizeof(mon));
-	len = GetDisplayInfoData(NULL, &mon, sizeof(mon), DTAG_MNTR, modeid);
+	len = GetDisplayInfoData(NULL, (UBYTE *)&mon, sizeof(mon), DTAG_MNTR, modeid);
 	if (len > 0) {
 	    printf        ("MonitorInfo (%u bytes)\n", len);
 	    PrintName     ("  Mspc               "         , &mon.Mspc->ms_Node);
