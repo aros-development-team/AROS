@@ -942,7 +942,7 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
 ///
 
 ///IconList__LabelFunc_SplitLabel()
-void IconList__LabelFunc_SplitLabel(Object *obj, struct IconList_DATA *data, struct IconEntry *entry)
+static void IconList__LabelFunc_SplitLabel(Object *obj, struct IconList_DATA *data, struct IconEntry *entry)
 {
     ULONG       labelSplit_MaxLabelLineLength = data->icld__Option_LabelTextMaxLen;
     ULONG       labelSplit_LabelLength = strlen(entry->ie_IconListEntry.label);
@@ -1097,7 +1097,7 @@ void IconList__LabelFunc_SplitLabel(Object *obj, struct IconList_DATA *data, str
 ///
 
 ///IconList__LabelFunc_CreateLabel()
-IPTR IconList__LabelFunc_CreateLabel(Object *obj, struct IconList_DATA *data, struct IconEntry *entry)
+static IPTR IconList__LabelFunc_CreateLabel(Object *obj, struct IconList_DATA *data, struct IconEntry *entry)
 {
 #if defined(DEBUG_ILC_ICONRENDERING) && defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s('%s')\n", __PRETTY_FUNCTION__, entry->ie_IconListEntry.label));
@@ -5784,17 +5784,18 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 			
 			if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
 			{
-			    startIndex = ((data->icld_LassoRectangle.MinY + 1) - data->icld_LVMAttribs->lmva_HeaderHeight + data->icld_ViewY) / data->icld_LVMAttribs->lmva_RowHeight;
-			    endIndex = ((data->icld_LassoRectangle.MaxY - 1) - data->icld_LVMAttribs->lmva_HeaderHeight + data->icld_ViewY) / data->icld_LVMAttribs->lmva_RowHeight;
+			    LONG    minY = data->icld_LassoRectangle.MinY,
+				    maxY = data->icld_LassoRectangle.MaxY;
 
-			    if (startIndex > endIndex)
+			    if (minY > maxY)
 			    {
-				startIndex ^= endIndex;
-				endIndex ^= startIndex;
-				startIndex ^= endIndex;
+				minY ^= maxY;
+				maxY ^= minY;
+				minY ^= maxY;
 			    }
 
-			    D(bug("[IconList] %s: Start Index : %d, End Index %d\n", __PRETTY_FUNCTION__, startIndex, endIndex));
+			    startIndex = ((minY + 1) - data->icld_LVMAttribs->lmva_HeaderHeight) / data->icld_LVMAttribs->lmva_RowHeight;
+			    endIndex = ((maxY - 1) - data->icld_LVMAttribs->lmva_HeaderHeight) / data->icld_LVMAttribs->lmva_RowHeight;
 			}
 
 #if defined(__AROS__)
