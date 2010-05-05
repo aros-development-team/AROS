@@ -507,7 +507,7 @@ D(bug("[IconVolumeList] %s: Processing '%s'\n", __PRETTY_FUNCTION__, devname));
 
 D(bug("[IconVolumeList] %s: Found existing IconEntry for '%s' @ %p\n", __PRETTY_FUNCTION__, this_Icon->ie_IconListEntry.label, this_Icon));
 
-                        /* Compare the Icon and update as needed ... */
+                        /* Compare the Entry and update as needed ... */
                         if (strcmp(this_Icon->ie_IconListEntry.label, dvn->dvn_VolName) != 0)
                             entrychanged = TRUE;
 
@@ -559,7 +559,7 @@ D(bug("[IconVolumeList] %s: Created IconEntry for '%s' @ %p\n", __PRETTY_FUNCTIO
 
                             if ((strcasecmp(dvn->dvn_VolName, "Ram Disk:")) == 0)
                             {
-D(bug("[IconVolumeList] %s: Setting '%s' icon node priority to 5\n", __PRETTY_FUNCTION__, this_Icon->ie_IconListEntry.label));
+D(bug("[IconVolumeList] %s: Setting '%s' entry node priority to 5\n", __PRETTY_FUNCTION__, this_Icon->ie_IconListEntry.label));
                                 this_Icon->ie_IconNode.ln_Pri = 5;   // Special dirs get Priority 5
                             }
                             else
@@ -585,7 +585,7 @@ D(bug("[IconVolumeList] %s: Destroying Removed IconEntry for '%s' @ %p\n", __PRE
 		    DoMethod(obj, MUIM_IconList_DestroyEntry, this_Icon);
 		}
             }
-D(bug("[IconVolumeList] %s: Updating Icon List\n", __PRETTY_FUNCTION__));
+D(bug("[IconVolumeList] %s: Updating IconList\n", __PRETTY_FUNCTION__));
             ForeachNodeSafe(&newiconlist, this_Icon, tmpNode)
             {
                 Remove((struct Node*)&this_Icon->ie_IconNode);
@@ -609,9 +609,9 @@ IPTR IconVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj
     D(
         bug("[IconVolumeList]: %s()\n", __PRETTY_FUNCTION__);
 
-        if (message->icon_dob)
+        if (message->entry_dob)
         {
-            bug("[IconVolumeList] %s: Icon DiskObj @ %p\n", __PRETTY_FUNCTION__, message->icon_dob);
+            bug("[IconVolumeList] %s: Entry DiskObj @ %p\n", __PRETTY_FUNCTION__, message->entry_dob);
         }
     )
 
@@ -649,7 +649,7 @@ IPTR IconVolumeList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Object *ob
 
     D(bug("[IconVolumeList]: %s()\n", __PRETTY_FUNCTION__));
 
-    volPrivate = message->icon->ie_IconListEntry.udata;
+    volPrivate = message->entry->ie_IconListEntry.udata;
 
     rv = DoSuperMethodA(CLASS, obj, (Msg) message);
 

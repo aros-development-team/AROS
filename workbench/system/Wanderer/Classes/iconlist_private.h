@@ -18,19 +18,23 @@ struct ListViewModeAttribs
     LONG			lmva_HeaderHeight;
     LONG			lmva_RowHeight;
     BYTE			lmva_SortColumn;
+    BYTE			lmva_LastSelectedColumn;
+#warning "TODO: Convert Column arrays into a list .."
     LONG    	    	    	lmva_ColumnPos[NUM_COLUMNS];
     LONG    	    	    	lmva_ColumnMaxWidth[NUM_COLUMNS];
     LONG    	    	    	lmva_ColumnWidth[NUM_COLUMNS];
-    BYTE    	    	    	lmva_ColumnVisible[NUM_COLUMNS];
+    ULONG			lmva_ColumnFlags[NUM_COLUMNS];
     BYTE    	    	    	lmva_ColumnAlign[NUM_COLUMNS];
-    BYTE    	    	    	lmva_ColumnClickable[NUM_COLUMNS];
-    BYTE    	    	    	lmva_ColumnSortable[NUM_COLUMNS];
     STRPTR  	    	    	lmva_ColumnTitle[NUM_COLUMNS];
 };
 
 #define LVMAF_NOHEADER 		(1<<0)
 #define LVMAF_HEADERDRAWTOEND	(1<<1)
 #define LVMAF_ROWDRAWTOEND	(1<<2)
+
+#define LVMCF_COLVISIBLE	(1<<0)
+#define LVMCF_COLCLICKABLE	(1<<1)
+#define LVMCF_COLSORTABLE	(1<<2)
 
 struct IconList_DATA
 {
@@ -80,11 +84,18 @@ struct IconList_DATA
     ULONG                         icld_IconLargestHeight;
     ULONG                         icld_LabelLargestHeight;
 
-    /* values for icld_UpdateMode - :
+    /*
+	Valid values for icld_UpdateMode - :
 
-       UPDATE_SINGLEICON = draw the given single icon only
-       UPDATE_SCROLL     = scroll the view by update_scrolldx/update_scrolldy
-       UPDATE_RESIZE    = resizing window                                   */
+	UPDATE_SINGLEENTRY = draw the given single icon only
+	UPDATE_SCROLL     = scroll the view by update_scrolldx/update_scrolldy
+	UPDATE_RESIZE    = resizing window
+	
+	list view-mode additionaly accepts -:
+	
+	UPDATE_HEADERENTRY
+
+    */
 
     ULONG                         icld_UpdateMode;
     WORD                          update_scrolldx;
