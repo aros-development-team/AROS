@@ -25,6 +25,24 @@
 
 #include <drm.h>
 
+typedef struct _drmModeRes {
+
+	int count_fbs;
+	uint32_t *fbs;
+
+	int count_crtcs;
+	uint32_t *crtcs;
+
+	int count_connectors;
+	uint32_t *connectors;
+
+	int count_encoders;
+	uint32_t *encoders;
+
+	uint32_t min_width, max_width;
+	uint32_t min_height, max_height;
+} drmModeRes, *drmModeResPtr;
+
 typedef struct _drmModeModeInfo {
     uint32_t clock;
     uint16_t hdisplay, hsync_start, hsync_end, htotal, hskew;
@@ -37,6 +55,41 @@ typedef struct _drmModeModeInfo {
     char name[DRM_DISPLAY_MODE_LEN];
 } drmModeModeInfo, *drmModeModeInfoPtr;
 
+typedef enum {
+	DRM_MODE_CONNECTED         = 1,
+	DRM_MODE_DISCONNECTED      = 2,
+	DRM_MODE_UNKNOWNCONNECTION = 3
+} drmModeConnection;
+
+typedef enum {
+	DRM_MODE_SUBPIXEL_UNKNOWN        = 1,
+	DRM_MODE_SUBPIXEL_HORIZONTAL_RGB = 2,
+	DRM_MODE_SUBPIXEL_HORIZONTAL_BGR = 3,
+	DRM_MODE_SUBPIXEL_VERTICAL_RGB   = 4,
+	DRM_MODE_SUBPIXEL_VERTICAL_BGR   = 5,
+	DRM_MODE_SUBPIXEL_NONE           = 6
+} drmModeSubPixel;
+
+typedef struct _drmModeConnector {
+	uint32_t connector_id;
+	uint32_t encoder_id; /**< Encoder currently connected to */
+	uint32_t connector_type;
+	uint32_t connector_type_id;
+	drmModeConnection connection;
+	uint32_t mmWidth, mmHeight; /**< HxW in millimeters */
+	drmModeSubPixel subpixel;
+
+	int count_modes;
+	drmModeModeInfoPtr modes;
+
+	int count_props;
+	uint32_t *props; /**< List of property ids */
+	uint64_t *prop_values; /**< List of property values */
+
+	int count_encoders;
+	uint32_t *encoders; /**< List of encoder ids */
+} drmModeConnector, *drmModeConnectorPtr;
+
 /* Add passed bo (handle) to list of frame buffers */
 extern int drmModeAddFB(int fd, uint32_t width, uint32_t height, uint8_t depth,
             uint8_t bpp, uint32_t pitch, uint32_t bo_handle,
@@ -47,4 +100,14 @@ extern int drmModeSetCrtc(int fd, uint32_t crtcId, uint32_t bufferId,
             uint32_t x, uint32_t y, uint32_t *connectors, int count,
             drmModeModeInfoPtr mode);
 
+/* Gets information about all resources of card:
+    framebuffers
+    crtcs
+    connectors
+    encoders */
+extern drmModeResPtr drmModeGetResources(int fd);
 
+/* Gets information about selected connector */
+extern drmModeConnectorPtr drmModeGetConnector(int fd,
+		uint32_t connectorId);
+extern void drmModeFreeConnector(drmModeConnectorPtr ptr);
