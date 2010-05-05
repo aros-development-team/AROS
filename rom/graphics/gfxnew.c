@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -78,7 +78,7 @@
       Result->xln_Type = NT_GRAPHICS;
       Result->xln_Subsystem = SS_GRAPHICS;
       Result->xln_Subtype = (BYTE)node_type;
-      /* Result->xln_Library = (APTR)GfxBase; */
+      Result->xln_Library = GfxBase;
 
       /* the following pointer has to point to some unknown routine */
       /* Result->xln_Init = ???; */
@@ -87,8 +87,9 @@
       switch(node_type)
       {
         case VIEW_EXTRA_TYPE:
-          ((struct ViewExtra *)Result)->Monitor = (struct MonitorSpec *)
-             FindName((struct List *)(&(GfxBase -> MonitorList)), DEFAULT_MONITOR_NAME);
+          ((struct ViewExtra *)Result)->Monitor = GfxBase->natural_monitor;
+	     /* FindName() can't work here until ABI v1 release
+             FindName((struct List *)(&(GfxBase -> MonitorList)), DEFAULT_MONITOR_NAME);*/
           break;
         case VIEWPORT_EXTRA_TYPE:
           break;
