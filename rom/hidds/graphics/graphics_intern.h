@@ -86,20 +86,20 @@ struct chunkybm_data
 };
 
 struct sync_data {
-    ULONG pixtime; /* pixel time in pico seconds */
-    
+    ULONG pixelclock; /* pixel time in Hz */
+
     ULONG hdisp;
-    ULONG left_margin;
-    ULONG right_margin;
-    ULONG hsync_length;
-    
+    ULONG hsync_start;
+    ULONG hsync_end;
+    ULONG htotal;
+
     ULONG vdisp;
-    ULONG upper_margin;
-    ULONG lower_margin;
-    ULONG vsync_length;
+    ULONG vsync_start;
+    ULONG vsync_end;
+    ULONG vtotal;
 
     ULONG flags;
-    
+
     UBYTE description[32];
     
     ULONG hmin;

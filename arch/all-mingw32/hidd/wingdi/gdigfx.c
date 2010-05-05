@@ -213,21 +213,13 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     struct TagItem mode_tags[] =
     {
 	{ aHidd_Gfx_PixFmtTags	, (IPTR)pftags		},
-	
+
 	/* Default values for the sync attributes */
-	{ aHidd_Sync_PixelClock , 100000000	    	}, /* Oh boy, this pixelclock is fast ;-) */
-	{ aHidd_Sync_LeftMargin , 0		    	},
-	{ aHidd_Sync_RightMargin, 0		    	},
-	{ aHidd_Sync_HSyncLength, 0		    	},
-	{ aHidd_Sync_UpperMargin, 0		    	},
-	{ aHidd_Sync_LowerMargin, 0		    	},
-	{ aHidd_Sync_VSyncLength, 0		    	},
 	{ aHidd_Sync_HMin	, 112			}, /* In fact these can be even smaller, and */
 	{ aHidd_Sync_VMin	, 112			}, /* maximum can be even bigger...	     */
 	{ aHidd_Sync_HMax	, 16384			},
 	{ aHidd_Sync_VMax	, 16384			},
 
-	
 	/* The different syncmodes. The default attribute values above 
 	    will be applied to each of these. Note that
 	    you can alter the defaults between the tags bewlow 

@@ -2186,26 +2186,23 @@ extern OOP_AttrBase HiddSyncAttrBase;
 enum
 {
     
-    /* Linux framebuffer device alike specification */
-    aoHidd_Sync_PixelTime = 0,  /* [I.G] ULONG - pixel clock in picoseconds (1E-12 second)
-						ie. time it takes to draw one pixel */
+    /* Linux framebuffer device alike specification, deprecated */
+    aoHidd_Sync_PixelTime = 0,  /* [I.G] ULONG - pixel clock in picoseconds (1E-12 second) ie. time it takes to draw one pixel */
 
     aoHidd_Sync_LeftMargin,	/* [I.G] ULONG */
     aoHidd_Sync_RightMargin,	/* [I.G] ULONG */
     aoHidd_Sync_HSyncLength,	/* [I.G] ULONG */
-    
+
     aoHidd_Sync_UpperMargin,	/* [I.G] ULONG */
     aoHidd_Sync_LowerMargin,	/* [I.G] ULONG */
     aoHidd_Sync_VSyncLength,	/* [I.G] ULONG */
     
-    
-    /* Alternative XF86Config Modeline like description
-    */
+    /* Alternative description used by newer drivers. Use this one. */
     aoHidd_Sync_PixelClock,	/* [I.G] ULONG - Pixel clock in Hz */
     
     aoHidd_Sync_HDisp,		/* [I.G] ULONG - displayed pixels per line */
     aoHidd_Sync_HSyncStart,	/* [I.G] ULONG - time to the start of the horizontal sync */
-    aoHidd_Sync_HSyncEnd,	/* [I.G] ULONG - time to the end of the horizontal synf */
+    aoHidd_Sync_HSyncEnd,	/* [I.G] ULONG - time to the end of the horizontal sync */
     aoHidd_Sync_HTotal,		/* [I.G] ULONG - total time to draw one line + the hsync time	*/
     
     aoHidd_Sync_VDisp,		/* [I.G] ULONG - displayed rows */
