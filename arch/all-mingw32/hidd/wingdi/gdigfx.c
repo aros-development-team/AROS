@@ -215,6 +215,9 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	{ aHidd_Gfx_PixFmtTags	, (IPTR)pftags		},
 
 	/* Default values for the sync attributes */
+	{ aHidd_Sync_PixelClock , 0			},
+	{ aHidd_Sync_HTotal	, 0			},
+	{ aHidd_Sync_VTotal	, 0			},
 	{ aHidd_Sync_HMin	, 112			}, /* In fact these can be even smaller, and */
 	{ aHidd_Sync_VMin	, 112			}, /* maximum can be even bigger...	     */
 	{ aHidd_Sync_HMax	, 16384			},
@@ -245,6 +248,8 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	{ TAG_MORE  	    	, (IPTR)msg->attrList 	}
     };
     struct pRoot_New mymsg = { msg->mID, mytags };
+    APTR display;
+    ULONG vfreq, htotal, vtotal;
 
     EnterFunc(bug("GDIGfx::New()\n"));
 
@@ -254,7 +259,24 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	D(kprintf("!!! initgdistuff() FAILED IN GDIGfx::New() !!!\n"));
 	ReturnPtr("GDIGfx::New()", OOP_Object *, NULL);
     }
-	
+
+    /* Fill in sync data */
+    display = XSD(cl)->display;
+    Forbid();
+    vfreq  = GDICALL(GetDeviceCaps, display, VREFRESH);
+    htotal = GDICALL(GetDeviceCaps, display, HORZRES);
+    vtotal = GDICALL(GetDeviceCaps, display, VERTRES);
+    Permit();
+
+    D(bug("[GDI] Display size is %u x %u, Vertical refresh rate is %d Hz\n", htotal, vtotal, vfreq));
+    /* Sometimes Windows may refuse to provide us with the valid refresh rate.
+       In this case it returns either 0 or 1 (which means "hardware default").
+       Perhaps we should assume two standard VGA clocks for 0 and 1 ? */
+    if (vfreq > 1)
+        mode_tags[1].ti_Data = vfreq * htotal * vtotal;
+    mode_tags[2].ti_Data = htotal;
+    mode_tags[3].ti_Data = vtotal;
+
     /* Register gfxmodes */
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     if (NULL != o)
@@ -262,7 +284,7 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	struct gfx_data *data = OOP_INST_DATA(cl, o);
 
 	D(bug("GDIGfx::New(): Got object from super\n"));
-	data->display = XSD(cl)->display;
+	data->display = display;
 	NewList((struct List *)&data->bitmaps);
     }
     ReturnPtr("GDIGfx::New", OOP_Object *, o);
