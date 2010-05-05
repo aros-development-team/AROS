@@ -77,82 +77,77 @@ VOID Sync__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     	switch (idx)
 	{
 	    case aoHidd_Sync_PixelTime:
-		*msg->storage = (IPTR)data->pixtime;
-		break;
-		
+	        if (data->pixelclock) {
+	            /* According to the HOWTO, PixelTime is one million divided by pixelclock in mHz.
+		       Pixelclock is not always a multiple of 1 mHz, but it seems to always be a multiple
+		       of 1 kHz. We rely on this fact in order to be able to calculate everything in integers.
+		       Anyway, this attribute is deprecated, don't use it. */
+		    ULONG khz = data->pixelclock / 1000;
+
+		    *msg->storage = 1000000000 / khz;
+	        } else
+		    *msg->storage = 0;
+
 	    case aoHidd_Sync_PixelClock:
-	    {
-    	    #if AROS_NOFPU
-    	    	#warning Find code for non-FPU!
-		*msg->storage = (ULONG)0x12345678;
-    	    #else
-		DOUBLE pixtime, pixclock;
-		
-		pixtime = (DOUBLE)data->pixtime;
-		
-		pixtime /= 1000000000000.0;	/* pixtime is in 10E-12 secs */
-		pixclock = 1.0 / pixtime;		/* convert to Hz */
-		*msg->storage = (ULONG)pixclock;
-    	    #endif
+	        *msg->storage = data->pixelclock;
 		break;
-	    }
-		
+
 	    case aoHidd_Sync_LeftMargin:
-		*msg->storage = (IPTR)data->left_margin;
+		*msg->storage = data->htotal - data->hsync_end;
 		break;
-		
+
 	    case aoHidd_Sync_RightMargin:
-		*msg->storage = (IPTR)data->right_margin;
+		*msg->storage = data->hsync_start - data->hdisp;
 		break;
-		
+
 	    case aoHidd_Sync_HSyncLength:
-		*msg->storage = (IPTR)data->hsync_length;
+		*msg->storage = data->hsync_end - data->hsync_start;
 		break;
-		
+
 	    case aoHidd_Sync_UpperMargin:
-		*msg->storage = (IPTR)data->upper_margin;
+		*msg->storage = data->vtotal - data->vsync_end;
 		break;
-		
+
 	    case aoHidd_Sync_LowerMargin:
-		*msg->storage = (IPTR)data->lower_margin;
+		*msg->storage = data->vsync_end - data->vdisp;
 		break;
-		
+
 	    case aoHidd_Sync_VSyncLength:
-		*msg->storage = (IPTR)data->vsync_length;
+		*msg->storage = data->vsync_end - data->vsync_start;
 		break;
-		
+
 	    case aoHidd_Sync_HDisp:
-		*msg->storage = (IPTR)data->hdisp;
+		*msg->storage = data->hdisp;
 		break;
-		
+
 	    case aoHidd_Sync_VDisp:
-		*msg->storage = (IPTR)data->vdisp;
+		*msg->storage = data->vdisp;
 		break;
-		
+
 	    case aoHidd_Sync_HSyncStart:
-		*msg->storage = (IPTR)(data->hdisp + data->right_margin);
+		*msg->storage = data->hsync_start;
 		break;
-		
+
 	    case aoHidd_Sync_HSyncEnd:
-		*msg->storage = (IPTR)(data->hdisp + data->right_margin + data->hsync_length);
+		*msg->storage = data->hsync_end;
 		break;
-		
+
 	    case aoHidd_Sync_HTotal:
-		*msg->storage = (IPTR)(data->hdisp + data->right_margin + data->hsync_length + data->left_margin);
+		*msg->storage = data->htotal;
 		break;
-		
+
 	    case aoHidd_Sync_VSyncStart:
-		*msg->storage = (IPTR)(data->vdisp + data->lower_margin);
+		*msg->storage = data->vsync_start;
 		break;
-		
+
 	    case aoHidd_Sync_VSyncEnd:
-		*msg->storage = (IPTR)(data->vdisp + data->lower_margin + data->vsync_length);
+		*msg->storage = data->vsync_end;
 		break;
-		
+
 	    case aoHidd_Sync_VTotal:
-		*msg->storage = (IPTR)(data->vdisp + data->lower_margin + data->vsync_length + data->upper_margin);
+		*msg->storage = data->vtotal;
 		break;
-				
+
 	    case aoHidd_Sync_Description:
 	    	*msg->storage = (IPTR)data->description;
 		break;

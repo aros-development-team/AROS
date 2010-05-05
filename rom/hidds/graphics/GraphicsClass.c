@@ -36,6 +36,7 @@
 #include <aros/debug.h>
 
 #define DPF(x)
+#define DSYNC(x)
 
 /****************************************************************************************/
 
@@ -2042,37 +2043,6 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
 	return FALSE;
     }
 
-    /* Check that we have all attrs */
-    if (GOT_SYNC_ATTR(PixelTime))
-    {
-	data->pixtime = attrs[SYAO(PixelTime)];
-    }
-    else if (GOT_SYNC_ATTR(PixelClock))
-    {
-    #if !AROS_BOCHS_HACK
-    #if AROS_NOFPU
-    	#warning Write code for non-FPU!
-	data->pixtime = 0x12345678;
-    	#else
-	/* Something in there makes Bochs freeze */
-	DOUBLE pixclock, pixtime;
-		    
-	/* Compute the pixtime */
-	pixclock =(DOUBLE)attrs[SYAO(PixelClock)];
-	pixtime = 1 / pixclock;
-	pixtime *= 1000000000000.0;
-	data->pixtime = (ULONG)pixtime;
-    #endif
-    #else
-	data->pixtime = 0x12345678;
-    #endif	
-    }
-    else
-    {
-	D(bug("!!! MISSING PIXELTIME/CLOCK ATTR !!!\n"));
-	return FALSE;
-    }
-
     if (GOT_SYNC_ATTR(Flags))
     {
 	data->flags = attrs[SYAO(Flags)];
@@ -2094,58 +2064,61 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
     {
 	data->hdisp = attrs[SYAO(HDisp)];
 	data->vdisp = attrs[SYAO(VDisp)];
-
-	/* Test that the user has not supplied both X11 style and fbdev style attrs */
-	if ( (LINUXFB_SYNC_AF & ATTRCHECK(sync)) != 0 && (X11_SYNC_AF & ATTRCHECK(sync)) != 0 )
-	{
-	    D(bug("!!! BOTH LINUXFB-STYLE AND X11-STYLE ATTRS WERE SUPPLIED !!!\n"));
-	    D(bug("!!! YOU MAY ONLY SUPPLY ONE OF THEM !!!\n"));
-	}
-	else
-	{
-	    
-	    /* Test that we have all attrs of either the X11 style or the Linux FB style */
-	    if ((LINUXFB_SYNC_AF & ATTRCHECK(sync)) == LINUXFB_SYNC_AF)
-	    {
-		/* Set the data struct */
-		data->left_margin	= attrs[SYAO(LeftMargin)];
-		data->right_margin	= attrs[SYAO(RightMargin)];
-		data->hsync_length	= attrs[SYAO(HSyncLength)];
-		
-		data->upper_margin	= attrs[SYAO(UpperMargin)];
-		data->lower_margin	= attrs[SYAO(LowerMargin)];
-		data->vsync_length	= attrs[SYAO(VSyncLength)];
-		ok = TRUE;
-		
-	    }
-	    else if ((X11_SYNC_AF & ATTRCHECK(sync)) == X11_SYNC_AF)
-	    {
-		ULONG hsync_start, hsync_end, htotal;
-		ULONG vsync_start, vsync_end, vtotal;
-		
-		hsync_start	= attrs[SYAO(HSyncStart)];
-		hsync_end	= attrs[SYAO(HSyncEnd)];
-		htotal		= attrs[SYAO(HTotal)];
-		
-		vsync_start	= attrs[SYAO(VSyncStart)];
-		vsync_end	= attrs[SYAO(VSyncEnd)];
-		vtotal		= attrs[SYAO(VTotal)];
-
-		data->left_margin  = htotal      - hsync_end;
-		data->right_margin = hsync_start - data->hdisp;
-		data->hsync_length = hsync_end   - hsync_start;
-
-		data->upper_margin = vtotal      - vsync_end;
-		data->lower_margin = vsync_start - data->vdisp;
-		data->vsync_length = vsync_end   - vsync_start;
-		ok = TRUE;
-	    }
-	    else
-	    {
-		D(bug("!!! UNSUFFICIENT ATTRS PASSED TO parse_sync_tags: %x !!!\n", ATTRCHECK(sync)));
-	    }
-	}
+	
+	ok = TRUE;
     }
+
+    /* Now parse sync signal parameters. They may come either as start, stop and total
+       values (which most of drivers use), or as LinuxFB-style specification (margins and
+       sync length.
+       The latter specification is deprecated since no drivers except LinuxFB (which is
+       broken anyway) use it. */
+    if (GOT_SYNC_ATTR(PixelClock))
+	data->pixelclock = attrs[SYAO(PixelClock)];
+    else if (GOT_SYNC_ATTR(PixelTime)) {
+        /* See comment in sync.c, where getting is processed */
+        ULONG khz = 1000000000 / attrs[SYAO(PixelTime)];
+	
+	data->pixelclock = khz * 1000;
+    }
+    DSYNC(bug("PixelClock is set to %u\n", data->pixelclock));
+
+    if (GOT_SYNC_ATTR(HSyncStart))
+        data->hsync_start = attrs[SYAO(HSyncStart)];
+    else if (GOT_SYNC_ATTR(RightMargin))
+	data->hsync_start = data->hdisp + attrs[SYAO(RightMargin)];
+
+    if (GOT_SYNC_ATTR(HSyncEnd))
+	data->hsync_end = attrs[SYAO(HSyncEnd)];
+    else if (GOT_SYNC_ATTR(HSyncLength))
+	data->hsync_end = data->hsync_start + attrs[SYAO(HSyncLength)];
+
+    if (GOT_SYNC_ATTR(HTotal))
+	data->htotal = attrs[SYAO(HTotal)];
+    else if (GOT_SYNC_ATTR(LeftMargin))
+	data->htotal = data->hsync_end + attrs[SYAO(LeftMargin)];
+    else
+        /* Kludge for poor man's drivers which can't provide complete sync information
+	   (like hosted drivers, especially SDL). In this case total = disp, it's better than nothing.
+	   The same is done below with vtotal. */
+        data->htotal = data->hdisp;
+
+    if (GOT_SYNC_ATTR(VSyncStart))
+	data->vsync_start = attrs[SYAO(VSyncStart)];
+    else if (GOT_SYNC_ATTR(LowerMargin))
+	data->vsync_start = data->vdisp + attrs[SYAO(LowerMargin)];
+
+    if (GOT_SYNC_ATTR(VSyncEnd))
+	data->vsync_end = attrs[SYAO(VSyncEnd)];
+    else if (GOT_SYNC_ATTR(VSyncLength))
+	data->vsync_end = data->vsync_start + attrs[SYAO(VSyncLength)];
+
+    if (GOT_SYNC_ATTR(VTotal))
+	data->vtotal = attrs[SYAO(VTotal)];
+    else if (GOT_SYNC_ATTR(UpperMargin))
+	data->vtotal = data->vsync_end + attrs[SYAO(UpperMargin)];
+    else
+        data->vtotal = data->vdisp;
 
     /* By default minimum/maximum bitmap size is equal to display size */
     if (GOT_SYNC_ATTR(HMin))

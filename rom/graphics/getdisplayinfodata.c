@@ -265,7 +265,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	{
 	    struct MonitorInfo *mi;
 	    struct HIDD_ModeProperties HIDDProps = {0};
-	    IPTR pixTime   = 0;
+	    IPTR pixelClock = 0;
 	    IPTR hTotal = 0;
 	    IPTR vTotal = 0;
 
@@ -274,10 +274,12 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 		FreeMem(qh, structsize);
 		return 0;
 	    }
-	    
-	    OOP_GetAttr(sync, aHidd_Sync_PixelTime, &pixTime);
+
+	    OOP_GetAttr(sync, aHidd_Sync_PixelClock, &pixelClock);
 	    OOP_GetAttr(sync, aHidd_Sync_HTotal, &hTotal);
 	    OOP_GetAttr(sync, aHidd_Sync_VTotal, &vTotal);
+	    
+	    D(bug("[GetDisplayInfoData] PixelClock %u, HTotal %u, VTotal %u\n", pixelClock, hTotal, vTotal));
 
 	    mi = (struct MonitorInfo *)qh;
 
@@ -298,7 +300,16 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    */
 
 	    mi->TotalRows = vTotal;
-	    mi->TotalColorClocks = pixTime / 1000 / 280 * hTotal; /* CHECKME !!! */
+	    /* Some poor man's drivers (like SDL hosted) can't provide any sync signal values
+	       just because host system doesn't provide them. However Amiga software expects to
+	       have something valid here. vTotal is dealt with by the driver (as a failback it's
+	       equal to VDisp). There's no reasonable substitution for PixelClock, so we handle
+	       it here. This value has nothing to do with real refresh rate, but we can do nothing
+	       with it */
+	    if (pixelClock)
+	        mi->TotalColorClocks = 100000000 / (pixelClock / hTotal * 28);
+	    else
+	        mi->TotalColorClocks = VGA_COLORCLOCKS;
 	    mi->PreferredModeID = modeid;
 	    mi->Compatibility = HIDDProps.CompositionFlags ? MCOMPAT_SELF : MCOMPAT_NOBODY;
 
