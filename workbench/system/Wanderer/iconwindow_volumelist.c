@@ -1320,13 +1320,13 @@ IPTR IconWindowVolumeList__HandleFSUpdate(Object *WandererObj, struct NotifyMess
     
     if (fsEntry != NULL)
     {
-	D(bug("[Wanderer:VolumeList] %s: Processing .backdrop for icon @ %p '%s'\n", __PRETTY_FUNCTION__, fsEntry, fsEntry->ie_IconNode.ln_Name));
+	D(bug("[Wanderer:VolumeList] %s: Processing .backdrop for entry @ %p '%s'\n", __PRETTY_FUNCTION__, fsEntry, fsEntry->ie_IconNode.ln_Name));
 
 	ForeachNodeSafe(iconList, entry,tmpEntry)
 	{
 	    if (((entry->ie_IconListEntry.type == ST_LINKFILE) || (entry->ie_IconListEntry.type == ST_LINKDIR)) && (entry->ie_IconListEntry.udata == fsEntry))
 	    {
-		D(bug("[Wanderer:VolumeList] %s: existing left-out icon @ %p '%s' for this volume\n", __PRETTY_FUNCTION__, entry, entry->ie_IconNode.ln_Name));
+		D(bug("[Wanderer:VolumeList] %s: existing left-out entry @ %p '%s' for this volume\n", __PRETTY_FUNCTION__, entry, entry->ie_IconNode.ln_Name));
 		Remove(&entry->ie_IconNode);
 		AddTail(&fsLeftOutList, &entry->ie_IconNode);
 	    }
@@ -1336,7 +1336,7 @@ IPTR IconWindowVolumeList__HandleFSUpdate(Object *WandererObj, struct NotifyMess
 
 	ForeachNodeSafe(&fsLeftOutList, entry, tmpEntry)
 	{
-	    D(bug("[Wanderer:VolumeList] %s: Destroying orphaned icon @ %p '%s'\n", __PRETTY_FUNCTION__, entry, entry->ie_IconNode.ln_Name));
+	    D(bug("[Wanderer:VolumeList] %s: Destroying orphaned entry @ %p '%s'\n", __PRETTY_FUNCTION__, entry, entry->ie_IconNode.ln_Name));
 	    Remove(&entry->ie_IconNode);
 	    DoMethod(rooticonList, MUIM_IconList_DestroyEntry, entry);
 	}
@@ -1404,7 +1404,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_UpdateEntry(struct IClass *CLASS, Objec
 
     D(bug("[Wanderer:VolumeList]: %s()\n", __PRETTY_FUNCTION__));
 
-    volPrivate = message->icon->ie_IconListEntry.udata;
+    volPrivate = message->entry->ie_IconListEntry.udata;
 
     this_Icon = DoSuperMethodA(CLASS, obj, (Msg) message);
 
@@ -1418,9 +1418,9 @@ IPTR IconWindowVolumeList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Obje
 
     D(bug("[Wanderer:VolumeList]: %s()\n", __PRETTY_FUNCTION__));
 
-    volPrivate = message->icon->ie_IconListEntry.udata;
+    volPrivate = message->entry->ie_IconListEntry.udata;
 
-    if ((message->icon->ie_IconListEntry.type == ST_ROOT) && (volPrivate && ((volPrivate->vip_FLags & (ICONENTRY_VOL_OFFLINE|ICONENTRY_VOL_DISABLED)) == 0)))
+    if ((message->entry->ie_IconListEntry.type == ST_ROOT) && (volPrivate && ((volPrivate->vip_FLags & (ICONENTRY_VOL_OFFLINE|ICONENTRY_VOL_DISABLED)) == 0)))
     {
 	if (volPrivate->vip_FSNotifyRequest.nr_Name != NULL)
 	{
@@ -1435,17 +1435,17 @@ IPTR IconWindowVolumeList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Obje
 	GET(obj, MUIA_Family_List, &iconList);
 	ForeachNode(iconList, entry)
 	{
-	    if (((entry->ie_IconListEntry.type == ST_LINKFILE) || (entry->ie_IconListEntry.type == ST_LINKDIR)) && (entry->ie_IconListEntry.udata == message->icon))
+	    if (((entry->ie_IconListEntry.type == ST_LINKFILE) || (entry->ie_IconListEntry.type == ST_LINKDIR)) && (entry->ie_IconListEntry.udata == message->entry))
 	    {
 		D(bug("[Wanderer:VolumeList] %s: Removing child entry '%s'\n", __PRETTY_FUNCTION__, entry->ie_IconNode.ln_Name));
 		DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
 	    }
 	}
     }
-    else if ((message->icon->ie_IconListEntry.type == ST_LINKFILE) || (message->icon->ie_IconListEntry.type == ST_LINKDIR))
-	message->icon->ie_IconListEntry.udata = NULL;
+    else if ((message->entry->ie_IconListEntry.type == ST_LINKFILE) || (message->entry->ie_IconListEntry.type == ST_LINKDIR))
+	message->entry->ie_IconListEntry.udata = NULL;
 
-    D(bug("[Wanderer:VolumeList] %s: causing parent class to dispose of '%s'\n", __PRETTY_FUNCTION__, message->icon->ie_IconNode.ln_Name));
+    D(bug("[Wanderer:VolumeList] %s: causing parent class to dispose of '%s'\n", __PRETTY_FUNCTION__, message->entry->ie_IconNode.ln_Name));
     
     rv = DoSuperMethodA(CLASS, obj, (Msg) message);
     

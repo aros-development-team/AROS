@@ -2,7 +2,7 @@
 #define _MUI_CLASSES_ICONLIST_H
 
 /*
-	Copyright  2002-2007, The AROS Development Team. All rights reserved.
+	Copyright  2002-2010, The AROS Development Team. All rights reserved.
 	$Id$
 */
 
@@ -42,7 +42,7 @@
 #define MUIM_IconList_DestroyEntry      (MUIB_IconList | 0x00000012)
 #define MUIM_IconList_DrawEntry         (MUIB_IconList | 0x00000020)
 #define MUIM_IconList_DrawEntryLabel    (MUIB_IconList | 0x00000021)
-#define MUIM_IconList_MakeIconVisible   (MUIB_IconList | 0x00000024)
+#define MUIM_IconList_MakeEntryVisible   (MUIB_IconList | 0x00000024)
 #define MUIM_IconList_SelectAll         (MUIB_IconList | 0x00000030)
 #define MUIM_IconList_UnselectAll       (MUIB_IconList | 0x00000031)
 #define MUIM_IconList_NextIcon          (MUIB_IconList | 0x00000034)
@@ -54,15 +54,15 @@
 struct MUIP_IconList_Clear              {STACKED ULONG MethodID;};
 struct MUIP_IconList_Update             {STACKED ULONG MethodID;};
 struct MUIP_IconList_RethinkDimensions  {STACKED ULONG MethodID; STACKED struct IconEntry *singleicon;};
-struct MUIP_IconList_CreateEntry        {STACKED ULONG MethodID; STACKED STRPTR filename; STACKED STRPTR label; STACKED struct FileInfoBlock *fib; STACKED struct DiskObject *icon_dob; STACKED ULONG type;};
-struct MUIP_IconList_UpdateEntry        {STACKED ULONG MethodID; STACKED struct IconEntry *icon; STACKED STRPTR filename; STACKED STRPTR label; STACKED struct FileInfoBlock *fib; STACKED struct DiskObject *icon_dob; STACKED ULONG type;};
-struct MUIP_IconList_DestroyEntry       {STACKED ULONG MethodID; STACKED struct IconEntry *icon;};
-struct MUIP_IconList_DrawEntry          {STACKED ULONG MethodID; STACKED struct IconEntry *icon; STACKED IPTR drawmode;};
-struct MUIP_IconList_DrawEntryLabel     {STACKED ULONG MethodID; STACKED struct IconEntry *icon; STACKED IPTR drawmode;};
+struct MUIP_IconList_CreateEntry        {STACKED ULONG MethodID; STACKED STRPTR filename; STACKED STRPTR label; STACKED struct FileInfoBlock *fib; STACKED struct DiskObject *entry_dob; STACKED ULONG type;};
+struct MUIP_IconList_UpdateEntry        {STACKED ULONG MethodID; STACKED struct IconEntry *entry; STACKED STRPTR filename; STACKED STRPTR label; STACKED struct FileInfoBlock *fib; STACKED struct DiskObject *entry_dob; STACKED ULONG type;};
+struct MUIP_IconList_DestroyEntry       {STACKED ULONG MethodID; STACKED struct IconEntry *entry;};
+struct MUIP_IconList_DrawEntry          {STACKED ULONG MethodID; STACKED struct IconEntry *entry; STACKED IPTR drawmode;};
+struct MUIP_IconList_DrawEntryLabel     {STACKED ULONG MethodID; STACKED struct IconEntry *entry; STACKED IPTR drawmode;};
 struct MUIP_IconList_NextIcon           {STACKED ULONG MethodID; STACKED IPTR nextflag; STACKED struct IconList_Entry **entry;};
 struct MUIP_IconList_Sort               {STACKED ULONG MethodID;};
 struct MUIP_IconList_PositionIcons      {STACKED ULONG MethodID;};
-struct MUIP_IconList_MakeIconVisible    {STACKED ULONG MethodID; STACKED struct IconEntry *icon;};
+struct MUIP_IconList_MakeEntryVisible    {STACKED ULONG MethodID; STACKED struct IconEntry *entry;};
 struct MUIP_IconList_GetIconPrivate     {STACKED ULONG MethodID; STACKED struct IconList_Entry *entry;}; /* *entry must be a valid Icon */
 
 /* used by MUIM_IconList_NextIcon */
