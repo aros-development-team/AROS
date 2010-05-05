@@ -3093,6 +3093,13 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY + ICONLIST_DISP_MODELIST\n", __PRETT
 		    rect.MinY = _mtop(obj) + data->icld_LVMAttribs->lmva_HeaderHeight - data->icld_ViewY + (index * data->icld_LVMAttribs->lmva_RowHeight);
 		    rect.MaxY = rect.MinY + data->icld_LVMAttribs->lmva_RowHeight - 1;
 
+		    if ((rect.MaxY < (_mtop(obj) + data->icld_LVMAttribs->lmva_HeaderHeight))
+			|| (rect.MinY > (_mtop(obj) + _mheight(obj) - 1)))
+			goto draw_done;
+
+		    if (rect.MinY < (_mtop(obj) + data->icld_LVMAttribs->lmva_HeaderHeight)) rect.MinY = _mtop(obj) + data->icld_LVMAttribs->lmva_HeaderHeight;
+		    if (rect.MaxY > (_mtop(obj) + _mheight(obj) - 1)) rect.MaxY = _mtop(obj) + _mheight(obj) - 1;
+
 		    clip = MUI_AddClipping(muiRenderInfo(obj), rect.MinX, rect.MinY, rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1);
 
 		    DoMethod(obj, MUIM_DrawBackground, 
