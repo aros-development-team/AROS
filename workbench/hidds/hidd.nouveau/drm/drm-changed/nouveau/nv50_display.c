@@ -889,7 +889,6 @@ nv50_display_error_handler(struct drm_device *dev)
 	nv_wr32(dev, NV50_PDISPLAY_TRAPPED_ADDR, 0x90000000);
 }
 
-#if !defined(__AROS__)
 static void
 nv50_display_irq_hotplug(struct drm_device *dev)
 {
@@ -947,20 +946,15 @@ nv50_display_irq_hotplug(struct drm_device *dev)
 	if (dev_priv->chipset >= 0x90)
 		nv_wr32(dev, 0xe074, nv_rd32(dev, 0xe074));
 }
-#endif
 
 void
 nv50_display_irq_handler(struct drm_device *dev)
 {
-//FIXME	struct drm_nouveau_private *dev_priv = dev->dev_private;
+	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	uint32_t delayed = 0;
 
-#if !defined(__AROS__)
 	while (nv_rd32(dev, NV50_PMC_INTR_0) & NV50_PMC_INTR_0_HOTPLUG)
 		nv50_display_irq_hotplug(dev);
-#else
-DRM_IMPL("Calling nv50_display_irq_hotplug\n");
-#endif
 
 	while (nv_rd32(dev, NV50_PMC_INTR_0) & NV50_PMC_INTR_0_DISPLAY) {
 		uint32_t intr0 = nv_rd32(dev, NV50_PDISPLAY_INTR_0);
