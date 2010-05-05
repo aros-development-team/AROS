@@ -159,6 +159,12 @@ int drmIoctl(int fd, unsigned long request, void *arg)
             case(DRM_IOCTL_MODE_SETCRTC):
                 ret = drm_mode_setcrtc(current_drm_driver->dev, arg, drm_files[fd]);
                 break;
+            case(DRM_IOCTL_MODE_GETRESOURCES):
+                ret = drm_mode_getresources(current_drm_driver->dev, arg, drm_files[fd]);
+                break;
+            case(DRM_IOCTL_MODE_GETCONNECTOR):
+                ret = drm_mode_getconnector(current_drm_driver->dev, arg, drm_files[fd]);
+                break;
             default:
                 DRM_IMPL("GEM COMMAND %d\n", request);
         }
@@ -168,3 +174,13 @@ int drmIoctl(int fd, unsigned long request, void *arg)
     return ret;
 }
 
+void *drmMalloc(int size)
+{
+    return AllocVec(size, MEMF_ANY | MEMF_CLEAR);
+}
+
+void drmFree(void *pt)
+{
+    if (pt)
+        FreeVec(pt);
+}

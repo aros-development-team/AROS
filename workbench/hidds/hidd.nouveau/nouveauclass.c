@@ -29,9 +29,53 @@ static void init_nouveau_and_set_video_mode()
     nouveau_init();
     
     uint32_t fb_id;
+    int i;
     nouveau_device_open(&hackdev, "");
     struct nouveau_device_priv *nvdev = nouveau_device(hackdev);
+    drmModeResPtr drmmode = drmModeGetResources(nvdev->fd);
+    
+    bug("CRTC count = %d ", drmmode->count_crtcs);
+    for (i = 0; i < drmmode->count_crtcs; i++)
+        bug("{%d} ", drmmode->crtcs[i]);
+    bug(" \n");
+            
+    bug("Connectors count = %d", drmmode->count_connectors);
+    for (i = 0; i < drmmode->count_connectors; i++)
+        bug("{%d} ", drmmode->connectors[i]);
+    bug(" \n");
+    bug("Encoders count = %d\n", drmmode->count_encoders);
 
+    /* Selecting connector */
+    uint32_t output_ids[] = {0};
+    uint32_t output_count = 1;
+    BOOL connectorfound = FALSE;
+    
+    bug("Selecting connectors...\n");
+    for (i = 0; i < drmmode->count_connectors; i++)
+    {
+        drmModeConnectorPtr connector = drmModeGetConnector(nvdev->fd, drmmode->connectors[i]);
+
+        if (connector)
+        {
+            if (connector->connection == DRM_MODE_CONNECTED)
+            {
+                /* Found connected connector */
+                output_ids[0] = drmmode->connectors[i];
+                bug("Selected connector - %d\n", output_ids[0]);
+                connectorfound = TRUE;
+            }
+            
+            drmModeFreeConnector(connector);
+            
+            if (connectorfound)
+                break;
+        }
+    }
+    
+    if (!connectorfound)
+        bug("Connector NOT SELECTED!\n");
+    
+    
     /* create buffer */
 
 	nouveau_bo_new_tile(hackdev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP,
@@ -45,8 +89,6 @@ static void init_nouveau_and_set_video_mode()
 			   &fb_id);
 			   
     bug("Added as framebuffer\n");			   
-    uint32_t output_ids[] = {10};
-    uint32_t output_count = 1;
     
     drmModeModeInfo mode =
     {
@@ -67,7 +109,7 @@ static void init_nouveau_and_set_video_mode()
     
     bug("Before switch mode\n");
     /* switch mode */
- 	drmModeSetCrtc(nvdev->fd, 5 /*drmmode_crtc->mode_crtc->crtc_id*/,
+ 	drmModeSetCrtc(nvdev->fd, drmmode->crtcs[0],
 			     fb_id, 0, 0, output_ids, output_count, &mode /*&kmode*/);
 
 }

@@ -1039,7 +1039,6 @@ void drm_crtc_convert_umode(struct drm_display_mode *out,
 	out->name[DRM_DISPLAY_MODE_LEN-1] = 0;
 }
 
-#if !defined(__AROS__)
 /**
  * drm_mode_getresources - get graphics configuration
  * @inode: inode from the ioctl
@@ -1088,8 +1087,12 @@ int drm_mode_getresources(struct drm_device *dev, void *data,
 	list_for_each(lh, &file_priv->fbs)
 		fb_count++;
 
+#if !defined(__AROS__)
 	mode_group = &file_priv->master->minor->mode_group;
 	if (file_priv->master->minor->type == DRM_MINOR_CONTROL) {
+#else
+    if (1) {
+#endif
 
 		list_for_each(lh, &dev->mode_config.crtc_list)
 			crtc_count++;
@@ -1130,7 +1133,11 @@ int drm_mode_getresources(struct drm_device *dev, void *data,
 	if (card_res->count_crtcs >= crtc_count) {
 		copied = 0;
 		crtc_id = (uint32_t __user *)(unsigned long)card_res->crtc_id_ptr;
+#if !defined(__AROS__)
 		if (file_priv->master->minor->type == DRM_MINOR_CONTROL) {
+#else
+        if (1) {
+#endif
 			list_for_each_entry(crtc, &dev->mode_config.crtc_list,
 					    head) {
 				DRM_DEBUG_KMS("CRTC ID is %d\n", crtc->base.id);
@@ -1157,7 +1164,11 @@ int drm_mode_getresources(struct drm_device *dev, void *data,
 	if (card_res->count_encoders >= encoder_count) {
 		copied = 0;
 		encoder_id = (uint32_t __user *)(unsigned long)card_res->encoder_id_ptr;
+#if !defined(__AROS__)
 		if (file_priv->master->minor->type == DRM_MINOR_CONTROL) {
+#else
+        if (1) {
+#endif
 			list_for_each_entry(encoder,
 					    &dev->mode_config.encoder_list,
 					    head) {
@@ -1188,7 +1199,11 @@ int drm_mode_getresources(struct drm_device *dev, void *data,
 	if (card_res->count_connectors >= connector_count) {
 		copied = 0;
 		connector_id = (uint32_t __user *)(unsigned long)card_res->connector_id_ptr;
+#if !defined(__AROS__)
 		if (file_priv->master->minor->type == DRM_MINOR_CONTROL) {
+#else
+        if (1) {
+#endif
 			list_for_each_entry(connector,
 					    &dev->mode_config.connector_list,
 					    head) {
@@ -1224,6 +1239,7 @@ out:
 	return ret;
 }
 
+#if !defined(__AROS__)
 /**
  * drm_mode_getcrtc - get CRTC configuration
  * @inode: inode from the ioctl
@@ -1280,6 +1296,7 @@ out:
 	mutex_unlock(&dev->mode_config.mutex);
 	return ret;
 }
+#endif
 
 /**
  * drm_mode_getconnector - get connector configuration
@@ -1428,6 +1445,7 @@ out:
 	return ret;
 }
 
+#if !defined(__AROS__)
 int drm_mode_getencoder(struct drm_device *dev, void *data,
 			struct drm_file *file_priv)
 {

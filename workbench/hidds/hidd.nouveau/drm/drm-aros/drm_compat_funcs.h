@@ -52,6 +52,7 @@
 #define KHZ2PICOS(x)                    (1000000000UL/(x))
 #define uninitialized_var(x)            x
 #define get_user(x, p)                  ({u32 ret = 0; x = *(p); ret;})
+#define put_user(x, p)                  ({u32 ret = 0; *(p) = x; ret;})
 
 
 #define MODULE_FIRMWARE(x)
