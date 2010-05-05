@@ -3253,10 +3253,6 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY + ICONLIST_DISP_MODELIST\n", __PRETT
                 {
                     xrect.MinX = _mright(obj) - data->update_scrolldx;
                     xrect.MinY = _mtop(obj);
-		    if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
-		    {
-			xrect.MinY += data->icld_LVMAttribs->lmva_HeaderHeight;
-		    }
                     xrect.MaxX = _mright(obj);
                     xrect.MaxY = _mbottom(obj);
 
@@ -3268,10 +3264,6 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY + ICONLIST_DISP_MODELIST\n", __PRETT
                 {
                     xrect.MinX = _mleft(obj);
                     xrect.MinY = _mtop(obj);
-		    if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
-		    {
-			xrect.MinY += data->icld_LVMAttribs->lmva_HeaderHeight;
-		    }
                     xrect.MaxX = _mleft(obj) - data->update_scrolldx;
                     xrect.MaxY = _mbottom(obj);
 
@@ -3321,7 +3313,7 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY + ICONLIST_DISP_MODELIST\n", __PRETT
                                             data->update_scrolldx,
                                             data->update_scrolldy,
                                             _mleft(obj),
-                                            ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST) ? (_mtop(obj) + data->icld_LVMAttribs->lmva_HeaderHeight) : _mtop(obj),
+                                            _mtop(obj),
                                             _mright(obj),
                                             _mbottom(obj));
                 }
@@ -3331,7 +3323,7 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY + ICONLIST_DISP_MODELIST\n", __PRETT
                                             data->update_scrolldx,
                                             data->update_scrolldy,
                                             0,
-                                            ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST) ? data->icld_LVMAttribs->lmva_HeaderHeight : 0,
+                                            0,
                                             _mwidth(obj) - 1,
                                             _mheight(obj) - 1);
                 }
@@ -3533,30 +3525,34 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY + ICONLIST_DISP_MODELIST\n", __PRETT
         D(bug("[IconList] %s#%d: MADF_DRAWOBJECT\n", __PRETTY_FUNCTION__, draw_id));
 #endif
 
-        clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
-
 	if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
 	{
+	    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), data->icld_LVMAttribs->lmva_HeaderHeight);
 	    RenderListViewModeHeader(obj, data);
+	    MUI_RemoveClipping(muiRenderInfo(obj), clip);
+
 	    viewrect.MinY = _mtop(obj) + data->icld_LVMAttribs->lmva_HeaderHeight;
 
 	    first   = FirstVisibleLine(data);
 	    visible = NumVisibleLines(data);
+
+	    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj) + data->icld_LVMAttribs->lmva_HeaderHeight, _mwidth(obj), _mheight(obj) - data->icld_LVMAttribs->lmva_HeaderHeight);
 	}
 	else
 	{
 	    viewrect.MinY = _mtop(obj);
+	    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 	}
 
-	viewrect.MaxY = _mtop(obj) + _mheight(obj);
+	viewrect.MaxY = _mtop(obj) + _mheight(obj) - 1;
         viewrect.MinX = _mleft(obj);
-        viewrect.MaxX = _mleft(obj) + _mwidth(obj);
+        viewrect.MaxX = _mleft(obj) + _mwidth(obj) - 1;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
         D(bug("[IconList] %s#%d: MADF_DRAWOBJECT: Calling MUIM_DrawBackground (B)\n", __PRETTY_FUNCTION__, draw_id));
 #endif
         DoMethod(
-            obj, MUIM_DrawBackground, viewrect.MinX, viewrect.MinY, (viewrect.MaxX - viewrect.MinX), (viewrect.MaxY - viewrect.MinY),
+            obj, MUIM_DrawBackground, viewrect.MinX, viewrect.MinY, (viewrect.MaxX - viewrect.MinX) + 1, (viewrect.MaxY - viewrect.MinY) + 1,
             clear_xoffset, clear_yoffset, 0
         );
 #if defined(__AROS__)
