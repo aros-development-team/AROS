@@ -174,8 +174,8 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	       Note that we enforce some flags because we emulate these features by software */
 	    di->PropertyFlags = DIPF_IS_FOREIGN | DIPF_IS_WB | DIPF_IS_SPRITES | DIPF_IS_DBUFFER | HIDDProps.DisplayInfoFlags;
 	    
-	    /* We simulate AGA. This field is really obsolete */
-	    di->PaletteRange = 4096;
+	    /* Too many colors to count here. This field is really obsolete */
+	    di->PaletteRange = 65535;
 
 	    /* Compute red green and blue bits */
 	    OOP_GetAttr(pf, aHidd_PixFmt_RedMask,	&redmask);
