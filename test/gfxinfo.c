@@ -222,13 +222,13 @@ int main(void)
         if (modeid == INVALID_ID)
             break;
 
-	printf("ModeID 0x%08X", modeid);
+	printf("ModeID 0x%08X ", modeid);
 	memset(&ni, 0, sizeof(ni));
 	len = GetDisplayInfoData(NULL, (UBYTE *)&ni, sizeof(ni), DTAG_NAME, modeid);
 	if (len > 0)
-	    printf(" %s\n", ni.Name);
+	    printf("%s\n", ni.Name);
 	else
-	    printf("\nFailed to obtain NameInfo\n");
+	    printf("no NameInfo\n");
 
 	printf("DisplayInfo handle: %p\n", FindDisplayInfo(modeid));
 #ifndef NO_CGX_API
@@ -251,7 +251,7 @@ int main(void)
 	    printf    ("  GreenBits        %u\n"    ,  di.GreenBits);
 	    printf    ("  BlueBits         %u\n"    ,  di.BlueBits);
 	} else
-	    printf("Failed to obtain DisplayInfo\n");
+	    printf("No DisplayInfo\n");
 
 	memset(&dims, 0, sizeof(dims));
 	len = GetDisplayInfoData(NULL, (UBYTE *)&dims, sizeof(dims), DTAG_DIMS, modeid);
@@ -268,7 +268,7 @@ int main(void)
 	    PrintRectangle("  TxtOScan       "     , &dims.TxtOScan);
 	    PrintRectangle("  StdOScan       "     , &dims.StdOScan);
 	} else
-	    printf("Failed to obtain DimensionInfo\n");
+	    printf("No DimensionInfo\n");
 
 	memset(&mon, 0, sizeof(mon));
 	len = GetDisplayInfoData(NULL, (UBYTE *)&mon, sizeof(mon), DTAG_MNTR, modeid);
@@ -300,7 +300,7 @@ int main(void)
 	        PrintMonitorSpec(mon.Mspc);
 
 	} else
-	    printf("Failed to obtain MonitorInfo\n");
+	    printf("No MonitorInfo\n");
 
 	printf("\n");
       }
