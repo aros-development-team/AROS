@@ -133,6 +133,19 @@ void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
 	{
 		D(bug("[GMA] PixelClock: Found: %d kHz, Requested: %d kHz\n", clock.PixelClock, pixelclock));
 
+		state->fp = clock.N << 16 | clock.M1 << 8 | clock.M2;
+
+		state->dpll = (6 << G45_DPLL_PHASE_SHIFT) | G45_DPLL_VGA_MODE_DISABLE | G45_DPLL_MODE_DAC_SERIAL;
+		if (clock.P2 >= 10)
+			state->dpll |= G45_DPLL_DAC_SERIAL_P2_DIV_10;
+		else
+			state->dpll |= G45_DPLL_DAC_SERIAL_P2_DIV_5;
+		state->dpll |= (1 << (clock.P1 - 1)) << G45_DPLL_P1_SHIFT;
+
+
+		state->dspcntr = 0; // <- TODO!
+		state->pipeconf = 0; // <- TODO!
+
 	}
 }
 

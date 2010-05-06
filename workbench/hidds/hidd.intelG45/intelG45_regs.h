@@ -48,6 +48,24 @@
 
 #define G45_GMBUS			0x5100
 
+#define G45_VGACNTRL		0x71400
+
+#define G45_DPLLA_CTRL		0x6014
+
+#define G45_DPLL_VCO_ENABLE		0x80000000
+#define G45_DPLL_DVO_HIGH_SPEED	0x40000000
+#define G45_DPLL_VGA_MODE_DISABLE	0x10000000
+#define G45_DPLL_MODE_LVDS			0x08000000
+#define G45_DPLL_MODE_DAC_SERIAL	0x04000000
+#define G45_DPLL_DAC_SERIAL_P2_DIV_5	0x01000000
+#define G45_DPLL_DAC_SERIAL_P2_DIV_10	0x00000000
+#define G45_DPLL_LVDS_P2_DIV_7		0x01000000
+#define G45_DPLL_LVDS_P2_DIV_14	0x00000000
+#define G45_DPLL_P1_MASK			0x00ff0000
+#define G45_DPLL_P1_SHIFT			16
+#define G45_DPLL_PHASE_MASK		0x00001e00
+#define G45_DPLL_PHASE_SHIFT		9
+
 #define readl(addr) ( *(volatile uint32_t *) (addr) )
 #define readw(addr) ( *(volatile uint16_t *) (addr) )
 #define readb(addr) ( *(volatile uint8_t *)  (addr) )

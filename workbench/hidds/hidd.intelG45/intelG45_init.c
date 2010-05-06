@@ -121,6 +121,9 @@ AROS_UFH3(void, Enumerator,
     	writel(val, sd->Card.MMIO + G45_GPIOA);
     	writel(0, sd->Card.MMIO + G45_GMBUS);
 
+    	/* Disable VGA */
+    	writel(0x80000000, sd->Card.MMIO + G45_VGACNTRL);
+
     }
 
     AROS_LIBFUNC_EXIT
