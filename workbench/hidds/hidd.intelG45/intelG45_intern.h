@@ -66,8 +66,7 @@ struct g45staticdata {
 
 	OOP_Class *				IntelG45Class;
 	OOP_Class *				IntelI2C;
-	OOP_Class *				OnBMClass;
-	OOP_Class *				OffBMClass;
+	OOP_Class *				BMClass;
 
 	OOP_Object *			PCIObject;
 	OOP_Object *			PCIDevice;
@@ -91,16 +90,20 @@ struct intelg45base {
 };
 
 typedef struct {
-	uint32_t	dpll_ctrl;
-	uint32_t	pipeconf;
-	uint32_t	dispconf;
-
-	uint32_t	htotal;
-	uint32_t	hblank;
-	uint32_t	hsync;
-	uint32_t	vtotal;
-	uint32_t	vblank;
-	uint32_t	vsync;
+	uint32_t	fp;				// G45_FPA0
+	uint32_t	dpll;			// G45_DPLL_A
+	uint32_t	dpll_md_reg;	// G45_DPLL_A_MD
+	uint32_t	pipeconf;		// G45_PIPEACONF
+	uint32_t	pipesrc;		// G45_PIPEASRC
+	uint32_t	dspcntr;		// G45_DSPACNTR
+	uint32_t	dsppos;			// G45_DSPAPOS
+	uint32_t	dspsize;		// G45_DSPASIZE
+	uint32_t	htotal;			// G45_HTOTAL_A
+	uint32_t	hblank;			// G45_HBLANK_A
+	uint32_t	hsync;			// G45_HSYNC_A
+	uint32_t	vtotal;			// G45_VTOTAL_A
+	uint32_t	vblank;			// G45_VBLANK_A
+	uint32_t	vsync;			// G45_VSYNC_A
 } GMAState_t;
 
 typedef struct {

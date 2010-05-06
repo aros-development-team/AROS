@@ -433,6 +433,11 @@ void METHOD(INTELG45, Root, Get)
     		found = TRUE;
     		break;
 
+    	case aoHidd_Gfx_NoFrameBuffer:
+    		*msg->storage = (IPTR)TRUE;
+    		found = TRUE;
+    		break;
+
     	case aoHidd_Gfx_DPMSLevel:
     		*msg->storage = SD(cl)->dpms;
     		found = TRUE;
@@ -478,10 +483,11 @@ void METHOD(INTELG45, Root, Set)
 
 OOP_Object *METHOD(INTELG45, Hidd_Gfx, Show)
 {
-    OOP_Object *fb = NULL;
     if (msg->bitMap)
     {
     	GMABitMap_t *bm = OOP_INST_DATA(OOP_OCLASS(msg->bitMap), msg->bitMap);
+
+    	D(bug("[GMA] Show()"));
 #if 0
         if (bm->state)
         {
@@ -505,11 +511,12 @@ OOP_Object *METHOD(INTELG45, Hidd_Gfx, Show)
         }
 #endif
     }
+    else
+    {
+    	/* Blank screen */
+    }
 
-    if (!fb)
-        fb = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-
-    return fb;
+    return msg->bitMap;
 }
 
 OOP_Object *METHOD(INTELG45, Hidd_Gfx, NewBitMap)
@@ -526,11 +533,11 @@ OOP_Object *METHOD(INTELG45, Hidd_Gfx, NewBitMap)
     if (framebuffer)
     {
         /* If the user asks for a framebuffer map we must ALLWAYS supply a class */
-        classptr = sd->OnBMClass;
+        classptr = sd->BMClass;
     }
     else if (displayable)
     {
-        classptr = sd->OnBMClass;   //offbmclass;
+        classptr = sd->BMClass;   //offbmclass;
     }
     else
     {
@@ -563,7 +570,7 @@ OOP_Object *METHOD(INTELG45, Hidd_Gfx, NewBitMap)
         if (vHidd_ModeID_Invalid != modeid)
         {
             /* User supplied a valid modeid. We can use our offscreen class */
-            classptr = sd->OffBMClass;
+            classptr = sd->BMClass;
         }
         else
         {
@@ -590,10 +597,10 @@ OOP_Object *METHOD(INTELG45, Hidd_Gfx, NewBitMap)
                     OOP_Class *friend_class = NULL;
                     /* User supplied friend bitmap. Is the friend bitmap a Ati Gfx hidd bitmap ? */
                     OOP_GetAttr(friend, aHidd_BitMap_ClassPtr, (APTR)&friend_class);
-                    if (friend_class == sd->OnBMClass)
+                    if (friend_class == sd->BMClass)
                     {
                         /* Friend was ATI hidd bitmap. Now we can supply our own class */
-                        classptr = sd->OffBMClass;
+                        classptr = sd->BMClass;
                     }
                 }
             }

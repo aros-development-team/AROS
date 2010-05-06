@@ -53,16 +53,9 @@ struct pRoot_Dispose {
     OOP_MethodID mID;
 };
 
-
-OOP_Object *METHOD(GMAOffBM, Root, New)
-    __attribute__((alias(METHOD_NAME_S(GMAOnBM, Root, New))));
-
-OOP_Object *METHOD(GMAOnBM, Root, New)
+OOP_Object *METHOD(GMABM, Root, New)
 {
-    if (cl == sd->OnBMClass)
-        EnterFunc(bug("[GMABitMap] OnBitmap::New()\n"));
-    else
-        EnterFunc(bug("[GMABitMap] OffBitmap::New()\n"));
+	EnterFunc(bug("[GMABitMap] Bitmap::New()\n"));
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
@@ -71,7 +64,7 @@ OOP_Object *METHOD(GMAOnBM, Root, New)
 
         ULONG width, height, depth;
         UBYTE bytesPerPixel;
-        ULONG fb;
+        IPTR displayable;
 
         OOP_Object *pf;
 
@@ -79,13 +72,13 @@ OOP_Object *METHOD(GMAOnBM, Root, New)
 
         D(bug("[GMABitMap] Super called. o=%p\n", o));
 
-        bm->onbm = (cl == sd->OnBMClass);
-
         OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
         OOP_GetAttr(o, aHidd_BitMap_Height, &height);
         OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&pf);
         OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
-        fb = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
+        OOP_GetAttr(o, aHidd_BitMap_Displayable, &displayable);
+
+        bm->onbm = displayable;
 
         D(bug("[GMABitmap] width=%d height=%d depth=%d\n", width, height, depth));
 
@@ -103,14 +96,6 @@ OOP_Object *METHOD(GMAOnBM, Root, New)
             bytesPerPixel = 2;
         else
             bytesPerPixel = 4;
-
-        if (fb)
-        {
-            width = 640;
-            height = 480;
-            bytesPerPixel = 4;
-            depth = 32;
-        }
 
         bm->width = width;
         bm->height = height;
@@ -152,39 +137,11 @@ OOP_Object *METHOD(GMAOnBM, Root, New)
 //            D(bug("[GMABitMap] PITCH_OFFSET=%08x\n", bm->pitch_offset));
         }
 
-        if (cl == sd->OnBMClass)
+        if (displayable)
         {
-            if (fb && bm->framebuffer != -1)
-            {
-                bm->state = (GMAState_t *)AllocPooled(sd->MemPool,
-                            sizeof(GMAState_t));
+        	bm->state = AllocVecPooled(sd->MemPool, sizeof(GMAState_t));
 
-//                bzero((APTR)(sd->Card.FrameBuffer + bm->framebuffer), 640*480*2);
-
-                if (bm->state)
-                {
-                    LOCK_HW
-
-                    G45_InitMode(sd, bm->state, 640, 480, 16, 25200, bm->framebuffer,
-                        640, 480,
-                        656, 752, 800,
-                        490, 492, 525, 0);
-#if 0
-
-                    LoadState(sd, bm->state);
-                    //LoadState(sd, sd->poweron_state);
-					DPMS(sd, sd->dpms);
-
-                    RADEONEngineReset(sd);
-                    RADEONEngineRestore(sd);
-#endif
-
-                    UNLOCK_HW
-
-                    return o;
-                }
-            }
-            else if (bm->framebuffer != -1)
+			if (bm->state && (bm->framebuffer != -1))
             {
                 HIDDT_ModeID modeid;
                 OOP_Object *sync;
@@ -255,9 +212,6 @@ OOP_Object *METHOD(GMAOnBM, Root, New)
                 bm->framebuffer = (IPTR)AllocMem(bm->pitch * bm->height,
                             MEMF_PUBLIC | MEMF_CLEAR);
                 bm->fbgfx = FALSE;
-
-//                for (__tmp=0; __tmp < height; __tmp++)
-//                	bm->addresses[__tmp] = (void*)(bm->framebuffer + __tmp*bm->pitch);
             }
             else
                 bm->fbgfx = TRUE;
@@ -276,15 +230,13 @@ OOP_Object *METHOD(GMAOnBM, Root, New)
 }
 
 
-VOID METHOD(GMAOffBM, Root, Dispose)
-    __attribute__((alias(METHOD_NAME_S(GMAOnBM, Root, Dispose))));
-
-VOID METHOD(GMAOnBM, Root, Dispose)
+VOID METHOD(GMABM, Root, Dispose)
 {
     GMABitMap_t *bm = OOP_INST_DATA(cl, o);
 
     LOCK_BITMAP
     LOCK_HW
+
 #if 0
     RADEONWaitForIdleMMIO(sd);
 
@@ -313,23 +265,15 @@ VOID METHOD(GMAOnBM, Root, Dispose)
 }
 
 
-VOID METHOD(GMAOffBM, Hidd_BitMap, PutPixel)
-    __attribute__((alias(METHOD_NAME_S(GMAOnBM, Hidd_BitMap, PutPixel))));
-
-VOID METHOD(GMAOnBM, Hidd_BitMap, PutPixel)
+VOID METHOD(GMABM, Hidd_BitMap, PutPixel)
 {
 }
 
-VOID METHOD(GMAOffBM, Hidd_BitMap, GetPixel)
-    __attribute__((alias(METHOD_NAME_S(GMAOnBM, Hidd_BitMap, GetPixel))));
-
-VOID METHOD(GMAOnBM, Hidd_BitMap, GetPixel)
+VOID METHOD(GMABM, Hidd_BitMap, GetPixel)
 {
 }
 
-VOID METHOD(GMAOffBM, Hidd_BitMap, DrawPixel)
-    __attribute__((alias(METHOD_NAME_S(GMAOnBM, Hidd_BitMap, DrawPixel))));
-
-VOID METHOD(GMAOnBM, Hidd_BitMap, DrawPixel)
+VOID METHOD(GMABM, Hidd_BitMap, DrawPixel)
 {
 }
+
