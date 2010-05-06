@@ -76,7 +76,7 @@ static inline void PrintPoint(char *name, Point *p)
 
 static inline void PrintRectangle(char *name, struct Rectangle *r)
 {
-    printf("%s (%u, %u) - (%u, %u)\n", name, r->MinX, r->MinY, r->MaxX, r->MaxY);
+    printf("%s (%d, %d) - (%d, %d)\n", name, r->MinX, r->MinY, r->MaxX, r->MaxY);
 }
 
 static inline void PrintASI(char *name, struct AnalogSignalInterval *sig)
@@ -94,7 +94,7 @@ static void PrintMonitorSpec(struct MonitorSpec *mspc)
     printf        ("  total_colorclocks      %u\n"    ,  mspc->total_colorclocks);
     printf        ("  DeniseMaxDisplayColumn %u\n"    ,  mspc->DeniseMaxDisplayColumn);
     printf        ("  BeamCon0               0x%04X\n",  mspc->BeamCon0);
-    printf        ("  min_row                0x%u\n"  ,  mspc->min_row);
+    printf        ("  min_row                %u\n"    ,  mspc->min_row);
     printf        ("  ms_Special             %p\n"    ,  mspc->ms_Special);
     printf        ("  ms_OpenCount           %u\n"    ,  mspc->ms_OpenCount);
     printf        ("  ms_transform           %p\n"    ,  mspc->ms_transform);
