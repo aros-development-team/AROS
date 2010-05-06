@@ -2,7 +2,7 @@
 #define GADTOOLS_INTERN_H
 
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for gadtools.library.
@@ -347,12 +347,8 @@ struct GT_GenericGadget
 #define TAG_AmigaKey		4
 #define TAG_FrontPen		5
 
-#define BORDERPROPSPACINGX 	4
-#ifdef __MORPHOS__
+#define BORDERPROPSPACINGX 	2
 #define BORDERPROPSPACINGY 	2
-#else
-#define BORDERPROPSPACINGY 	4
-#endif
 
 #define BORDERSTRINGSPACINGX 	4
 #define BORDERSTRINGSPACINGY 	2

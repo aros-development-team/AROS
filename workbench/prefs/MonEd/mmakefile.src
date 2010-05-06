@@ -1,0 +1,17 @@
+# $Id:$
+
+include $(TOP)/config/make.cfg
+
+FILES := moned
+
+##MM- workbench-prefs : workbench-prefs-moned
+#MM workbench-prefs-moned : includes linklibs
+
+
+%build_prog mmake=workbench-prefs-moned \
+    progname=Monitor targetdir=$(AROS_PREFS) \
+    files=$(FILES) uselibs="arossupport amiga arosc m"
+    
+
+%common
+

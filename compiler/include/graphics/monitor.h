@@ -2,7 +2,7 @@
 #define GRAPHICS_MONITOR_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Monitor definitions
@@ -140,7 +140,7 @@ struct SpecialMonitor
     struct ExtendedNode spm_Node;
 
     UWORD    spm_Flags;
-    LONG  (* do_monitor)();
+    LONG  (* do_monitor)(struct MonitorSpec *);
     LONG  (* reserved1)();
     LONG  (* reserved2)();
     LONG  (* reserved3)();
