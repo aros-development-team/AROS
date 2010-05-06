@@ -46,7 +46,7 @@
 
 #include "compiler.h"
 
-#define D(x) x
+#define D(x)
 #define DIDCMP(x)
 #define DMSG(x)
 
@@ -732,7 +732,7 @@ long OpenDisplay( void ){
 
 		if ( g ) {
 			//ReqTags[6].ti_Data	=	(Tag)sp_GList;
-			offy = MainScreen->WBorTop + MainScreen->RastPort.TxHeight + 1;
+			offy = MainScreen->WBorTop + MainScreen->RastPort.TxHeight + MainScreen->WBorBottom;
 			ReqTags[3].ti_Data = 164+offy;
 			D(printf("Opening window, size %ld x %ld...\n", ReqTags[2].ti_Data, ReqTags[3].ti_Data));
 			if ((sp_Wnd = OpenWindowTagList( NULL, ReqTags ))) {
