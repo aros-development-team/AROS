@@ -536,6 +536,7 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
     D(bug("[GFX] Old driver removed\n"));
 
     /* It's time to activate the new driver */
+    GfxBase->current_monitor = mspc;
     GfxBase->default_monitor = mspc;
     GfxBase->natural_monitor = mspc;
 
