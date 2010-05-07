@@ -28,26 +28,26 @@ struct MonitorSpec
 {
     struct ExtendedNode ms_Node;
 
-    UWORD ms_Flags; /* see below */
+    UWORD ms_Flags;			/* Flags, see below */
 
     LONG  ratioh;
     LONG  ratiov;
-    UWORD total_rows;
-    UWORD total_colorclocks;
+    UWORD total_rows;			/* Total number of scanlines per frame */
+    UWORD total_colorclocks;		/* Total number of color clocks per line (in 1/280 ns units) */
     UWORD DeniseMaxDisplayColumn;
-    UWORD BeamCon0;
+    UWORD BeamCon0;			/* Value for beamcon0 Amiga(tm) chipset register */
     UWORD min_row;
 
-    struct SpecialMonitor * ms_Special;
+    struct SpecialMonitor * ms_Special; /* Synchro signal timings description (optional) */
 
-    UWORD    ms_OpenCount;
+    UWORD    ms_OpenCount;		/* Driver open count */
     LONG  (* ms_transform)();
     LONG  (* ms_translate)();
     LONG  (* ms_scale)();
     UWORD    ms_xoffset;
     UWORD    ms_yoffset;
 
-    struct Rectangle ms_LegalView;
+    struct Rectangle ms_LegalView;	/* Allowed range for view positioning (right-bottom position included) */
 
     LONG  (* ms_maxoscan)();
     LONG  (* ms_videoscan)();
@@ -57,7 +57,7 @@ struct MonitorSpec
     struct List            DisplayInfoDataBase;
     struct SignalSemaphore DisplayInfoDataBaseSemaphore;
 
-    LONG (* ms_MrgCop)();
+    LONG (* ms_MrgCop)();		/* Driver call vectors, unused by AROS */
     LONG (* ms_LoadView)();
     LONG (* ms_KillView)();
 };
@@ -82,6 +82,7 @@ struct MonitorSpec
 #define STANDARD_XOFFSET 9
 #define STANDARD_YOFFSET 0
 
+/* Some standard/default constants for Amiga(tm) chipset */
 #define STANDARD_NTSC_ROWS    262
 #define MIN_NTSC_ROW          21
 #define STANDARD_PAL_ROWS     312
@@ -139,13 +140,13 @@ struct SpecialMonitor
 {
     struct ExtendedNode spm_Node;
 
-    UWORD    spm_Flags;
-    LONG  (* do_monitor)(struct MonitorSpec *);
-    LONG  (* reserved1)();
+    UWORD    spm_Flags;				 /* Reserved, set to 0		             */
+    LONG  (* do_monitor)(struct MonitorSpec *); /* Driver call vector - set up a video mode */
+    LONG  (* reserved1)();			 /* Private data, do not touch               */
     LONG  (* reserved2)();
     LONG  (* reserved3)();
 
-    struct AnalogSignalInterval hblank;
+    struct AnalogSignalInterval hblank;		 /* Signal timings by themselves	      */
     struct AnalogSignalInterval vblank;
     struct AnalogSignalInterval hsync;
     struct AnalogSignalInterval vsync;
