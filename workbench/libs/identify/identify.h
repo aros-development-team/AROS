@@ -131,7 +131,8 @@ struct IdentifyBase {
 #define IDHW_HOSTMACHINE  (52)    /*  when emulated: Host Machine (see autodocs!) */
 #define IDHW_HOSTCPU      (53)    /*  when emulated: Host CPU (see autodocs!) */
 #define IDHW_HOSTSPEED    (54)    /*  when emulated: Host CPU speed (unit MHz, see autodocs!) */
-#define IDHW_NUMBEROF     (55)    /*  Number of types, PRIVATE! */
+#define IDHW_LASTALERTTASK (55)   /*  Last Alert task */
+#define IDHW_NUMBEROF     (56)    /*  Number of types, PRIVATE! */
 
 /* ------------------------------------------------------------------------ *
 **  IDHW_SYSTEM numerical result codes
