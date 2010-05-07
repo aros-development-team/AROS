@@ -18,7 +18,6 @@
 
 #include "arosdrmmode.h"
 
-struct nouveau_bo * hackfbo = NULL;
 struct nouveau_device * hackdev = NULL;
 
 int nouveau_init(void);
@@ -28,89 +27,9 @@ static void init_nouveau_and_set_video_mode()
     bug("Before init\n");
     nouveau_init();
     
-    uint32_t fb_id;
-    int i;
+
     nouveau_device_open(&hackdev, "");
-    struct nouveau_device_priv *nvdev = nouveau_device(hackdev);
-    drmModeResPtr drmmode = drmModeGetResources(nvdev->fd);
-    
-    bug("CRTC count = %d ", drmmode->count_crtcs);
-    for (i = 0; i < drmmode->count_crtcs; i++)
-        bug("{%d} ", drmmode->crtcs[i]);
-    bug(" \n");
-            
-    bug("Connectors count = %d", drmmode->count_connectors);
-    for (i = 0; i < drmmode->count_connectors; i++)
-        bug("{%d} ", drmmode->connectors[i]);
-    bug(" \n");
-    bug("Encoders count = %d\n", drmmode->count_encoders);
 
-    /* Selecting connector */
-    uint32_t output_ids[] = {0};
-    uint32_t output_count = 1;
-    BOOL connectorfound = FALSE;
-    
-    bug("Selecting connectors...\n");
-    for (i = 0; i < drmmode->count_connectors; i++)
-    {
-        drmModeConnectorPtr connector = drmModeGetConnector(nvdev->fd, drmmode->connectors[i]);
-
-        if (connector)
-        {
-            if (connector->connection == DRM_MODE_CONNECTED)
-            {
-                /* Found connected connector */
-                output_ids[0] = drmmode->connectors[i];
-                bug("Selected connector - %d\n", output_ids[0]);
-                connectorfound = TRUE;
-            }
-            
-            drmModeFreeConnector(connector);
-            
-            if (connectorfound)
-                break;
-        }
-    }
-    
-    if (!connectorfound)
-        bug("Connector NOT SELECTED!\n");
-    
-    
-    /* create buffer */
-
-	nouveau_bo_new_tile(hackdev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP,
-				  0, 1024 * 4 * 768, 0, 0,
-				  &hackfbo);
-	nouveau_bo_map(hackfbo, NOUVEAU_BO_RDWR);
-    
-    /* add as frame buffer */
-	drmModeAddFB(nvdev->fd, 1024, 768, 24,
-			   32, 1024 * 4, hackfbo->handle,
-			   &fb_id);
-			   
-    bug("Added as framebuffer\n");			   
-    
-    drmModeModeInfo mode =
-    {
-    .clock = 65000,
-	.hdisplay = 1024,
-	.hsync_start = 1048,
-	.hsync_end = 1184, 
-	.htotal = 1344, 
-	.hskew = 0,
-	.vdisplay = 768, 
-	.vsync_start = 771, 
-	.vsync_end=777, 
-	.vtotal=806, 
-	.vscan=0,
-
-    .flags=   (1<<1) | (1<<3)
-    };
-    
-    bug("Before switch mode\n");
-    /* switch mode */
- 	drmModeSetCrtc(nvdev->fd, drmmode->crtcs[0],
-			     fb_id, 0, 0, output_ids, output_count, &mode /*&kmode*/);
 
 }
 
@@ -199,6 +118,81 @@ static BOOL HIDDNouveauNV04CopySameFormat(struct HIDDNouveauData * gfxdata,
     nouveau_bo_map(dst_bo, NOUVEAU_BO_RDWR);
 
     return TRUE;
+}
+
+static VOID HIDDNouveauSwitchToVideoMode(struct HIDDNouveauData * gfxdata,
+    OOP_Object * bm)
+{
+    struct nouveau_device_priv *nvdev = nouveau_device(gfxdata->dev);
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
+    uint32_t output_ids[] = {0};
+    uint32_t output_count = 1;
+    LONG i;
+    uint32_t fb_id;
+    drmModeConnectorPtr selectedconnector = NULL;
+    
+    /* Get all components information */
+    drmModeResPtr drmmode = drmModeGetResources(nvdev->fd);
+    
+    /* Selecting connector */
+    for (i = 0; i < drmmode->count_connectors; i++)
+    {
+        drmModeConnectorPtr connector = drmModeGetConnector(nvdev->fd, drmmode->connectors[i]);
+
+        if (connector)
+        {
+            if (connector->connection == DRM_MODE_CONNECTED)
+            {
+                /* Found connected connector */
+                selectedconnector = connector;
+                break;
+            }
+            
+            drmModeFreeConnector(connector);
+        }
+    }
+    
+    if (!selectedconnector)
+    {
+        D(bug("No connected connector\n"));
+        return;
+    }
+
+    output_ids[0] = selectedconnector->connector_id;
+
+    /* FIXME: For screen switching the bitmap might already one been a framebuffer 
+       - needs to check for a ID somehow so that it is not added twice. Also the
+       bitmap itself should not whether it is added as framebuffer so that it can
+       unregister itself in Dispose */
+
+    /* Add as frame buffer */
+	drmModeAddFB(nvdev->fd, bmdata->width, bmdata->height, 
+	        bmdata->depth, bmdata->bytesperpixel * 8, 
+	        bmdata->pitch, bmdata->bo->handle, &fb_id);
+
+    /* FIXME: find a closes matching mode in retrieve modes list */			   
+    drmModeModeInfo mode =
+    {
+    .clock = 65000,
+	.hdisplay = 1024,
+	.hsync_start = 1048,
+	.hsync_end = 1184, 
+	.htotal = 1344, 
+	.hskew = 0,
+	.vdisplay = 768, 
+	.vsync_start = 771, 
+	.vsync_end=777, 
+	.vtotal=806, 
+	.vscan=0,
+
+    .flags=   (1<<1) | (1<<3)
+    };
+    
+    /* switch mode */
+ 	drmModeSetCrtc(nvdev->fd, drmmode->crtcs[0],
+	        fb_id, 0, 0, output_ids, output_count, &mode);
+
+    drmModeFreeConnector(selectedconnector);
 }
 
 /* PUBLIC METHODS */
@@ -388,8 +382,8 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, NewBitMap)
         modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
         if (vHidd_ModeID_Invalid != modeid) 
         {
-            /* User supplied a valid modeid. We can use our offscreen class */
-            classptr = SD(cl)->offbmclass;
+            /* User supplied a valid modeid. We can use our bitmap class */
+            classptr = SD(cl)->bmclass;
         } 
         else 
         {
@@ -418,7 +412,7 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, NewBitMap)
                     if (friend_class == SD(cl)->bmclass) 
                     {
                         /* Friend was NVidia hidd bitmap. Now we can supply our own class */
-                        classptr = SD(cl)->offbmclass;
+                        classptr = SD(cl)->bmclass;
                     }
                 }
             }
@@ -446,7 +440,7 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, NewBitMap)
     return (OOP_Object*)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-#define IS_NOUVEAU_CLASS(x) ((x == SD(cl)->bmclass) || (x == SD(cl)->offbmclass))
+#define IS_NOUVEAU_CLASS(x) (x == SD(cl)->bmclass)
 
 VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
 {
@@ -476,6 +470,41 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
     }
     
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+VOID METHOD(Nouveau, Root, Get)
+{
+    ULONG idx;
+
+    if (IS_GFX_ATTR(msg->attrID, idx))
+    {
+        switch (idx)
+        {
+        case aoHidd_Gfx_NoFrameBuffer:
+            *msg->storage = (IPTR)TRUE;
+            return;
+        }
+    }
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+OOP_Object * METHOD(Nouveau, Hidd_Gfx, Show)
+{
+    if (msg->bitMap)
+    {
+        OOP_Class * bmclass = OOP_OCLASS(msg->bitMap);
+        
+        if (IS_NOUVEAU_CLASS(bmclass))
+        {
+            struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
+            
+            HIDDNouveauSwitchToVideoMode(gfxdata, msg->bitMap);
+        }
+    }
+
+    /* DO NOT CALL superclass Show - it relies on framebuffer */
+    return msg->bitMap;
 }
 
 BOOL METHOD(Nouveau, Hidd_Gfx, SetCursorShape)
