@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
     
@@ -1161,6 +1161,19 @@ IPTR SizeButtonClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *m
 
             data->drag_canceled = FALSE;
 
+            /* size mouse bounds such that mouse pointer cannot move if window cannot size, if offscreenlayers is turned off */
+	    if (!(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OFFSCREENLAYERS)) {
+            	struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+		LONG mousex = data->mouseoffsetx - data->LeftEdge;
+		LONG mousey = data->mouseoffsety - data->TopEdge;
+
+		iihd->MouseBoundsActiveFlag = TRUE;
+            	iihd->MouseBoundsLeft = 0;
+            	iihd->MouseBoundsRight = w->WScreen->Width - (w->Width - mousex);
+            	iihd->MouseBoundsTop = 0;
+            	iihd->MouseBoundsBottom = w->WScreen->Height - (w->Height - mousey);
+	    }
+
             return GMR_MEACTIVE;
         }
 
@@ -1564,6 +1577,9 @@ IPTR SizeButtonClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInac
         FreeRastPort(data->rp);
         data->rp = NULL;
     }
+
+    /* shut off mouse bounds checking.  */
+    ((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->MouseBoundsActiveFlag = FALSE;
 
     return TRUE;
 }
