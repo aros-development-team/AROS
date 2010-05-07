@@ -120,19 +120,70 @@ static BOOL HIDDNouveauNV04CopySameFormat(struct HIDDNouveauData * gfxdata,
     return TRUE;
 }
 
-static VOID HIDDNouveauSwitchToVideoMode(struct HIDDNouveauData * gfxdata,
-    OOP_Object * bm)
+static VOID HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_Object * bm)
 {
-    struct nouveau_device_priv *nvdev = nouveau_device(gfxdata->dev);
+    struct HIDDNouveauData * gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
+    struct nouveau_device_priv *nvdev = nouveau_device(gfxdata->dev);
     uint32_t output_ids[] = {0};
     uint32_t output_count = 1;
     LONG i;
     uint32_t fb_id;
     drmModeConnectorPtr selectedconnector = NULL;
+    drmModeModeInfoPtr  selectedmode = NULL;
+    drmModeCrtcPtr      selectedcrtc = NULL;
+    HIDDT_ModeID modeid;
+    OOP_Object * sync;
+    OOP_Object * pf;
+    IPTR pixel;
+    IPTR hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal;
+
+    /* We should be able to get modeID from the bitmap */
+    OOP_GetAttr(bm, aHidd_BitMap_ModeID, &modeid);
+
+    if (modeid == vHidd_ModeID_Invalid)
+    {
+        D(bug("[nouveau] Invalid ModeID\n"));
+        return; /* FIXME: Report some kind of error */
+    }
+
+    /* Get Sync and PixelFormat properties */
+    struct pHidd_Gfx_GetMode __getmodemsg = 
+    {
+        modeID:	modeid,
+        syncPtr:	&sync,
+        pixFmtPtr:	&pf,
+    }, *getmodemsg = &__getmodemsg;
+
+    getmodemsg->mID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
+    OOP_DoMethod(gfx, (OOP_Msg)getmodemsg);
+
+    OOP_GetAttr(sync, aHidd_Sync_PixelClock,    &pixel);
+    OOP_GetAttr(sync, aHidd_Sync_HDisp,         &hdisp);
+    OOP_GetAttr(sync, aHidd_Sync_VDisp,         &vdisp);
+    OOP_GetAttr(sync, aHidd_Sync_HSyncStart,    &hstart);
+    OOP_GetAttr(sync, aHidd_Sync_VSyncStart,    &vstart);
+    OOP_GetAttr(sync, aHidd_Sync_HSyncEnd,      &hend);
+    OOP_GetAttr(sync, aHidd_Sync_VSyncEnd,      &vend);
+    OOP_GetAttr(sync, aHidd_Sync_HTotal,        &htotal);
+    OOP_GetAttr(sync, aHidd_Sync_VTotal,        &vtotal);    
     
+    D(bug("[nouveau] Sync: %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+    pixel, hdisp, hstart, hend, htotal, vdisp, vstart, vend, vtotal));
+
+
+
     /* Get all components information */
     drmModeResPtr drmmode = drmModeGetResources(nvdev->fd);
+    
+    /* Get information about selected crtc */
+    selectedcrtc = drmModeGetCrtc(nvdev->fd, drmmode->crtcs[0]);
+    
+    if (!selectedcrtc)
+    {
+        D(bug("[nouveau] Not able to get crtc information\n"));
+        return; /* FIXME: Report some error */
+    }
     
     /* Selecting connector */
     for (i = 0; i < drmmode->count_connectors; i++)
@@ -154,11 +205,34 @@ static VOID HIDDNouveauSwitchToVideoMode(struct HIDDNouveauData * gfxdata,
     
     if (!selectedconnector)
     {
-        D(bug("No connected connector\n"));
-        return;
+        D(bug("[nouveau] No connected connector\n"));
+        return; /* FIXME: Report some error */
     }
 
     output_ids[0] = selectedconnector->connector_id;
+
+    /* Select mode */
+    for (i = 0; i < selectedconnector->count_modes; i++)
+    {
+        drmModeModeInfoPtr mode = &selectedconnector->modes[i];
+        
+        /* TODO: This selection seems naive - clock not taken into account */
+        if ((mode->hdisplay == hdisp) && (mode->vdisplay == vdisp) &&
+            (mode->hsync_start == hstart) && (mode->hsync_end == hend) &&
+            (mode->vsync_start == vstart) && (mode->vsync_end == vend))
+        {
+            selectedmode = mode;
+            break;
+        }
+    }
+    
+    if (!selectedmode)
+    {
+        D(bug("[nouveau] Not able to select mode\n"));
+        return; /* FIXME: Report some error */
+    }
+
+
 
     /* FIXME: For screen switching the bitmap might already one been a framebuffer 
        - needs to check for a ID somehow so that it is not added twice. Also the
@@ -170,30 +244,17 @@ static VOID HIDDNouveauSwitchToVideoMode(struct HIDDNouveauData * gfxdata,
 	        bmdata->depth, bmdata->bytesperpixel * 8, 
 	        bmdata->pitch, bmdata->bo->handle, &fb_id);
 
-    /* FIXME: find a closes matching mode in retrieve modes list */			   
-    drmModeModeInfo mode =
-    {
-    .clock = 65000,
-	.hdisplay = 1024,
-	.hsync_start = 1048,
-	.hsync_end = 1184, 
-	.htotal = 1344, 
-	.hskew = 0,
-	.vdisplay = 768, 
-	.vsync_start = 771, 
-	.vsync_end=777, 
-	.vtotal=806, 
-	.vscan=0,
-
-    .flags=   (1<<1) | (1<<3)
-    };
-    
-    /* switch mode */
- 	drmModeSetCrtc(nvdev->fd, drmmode->crtcs[0],
-	        fb_id, 0, 0, output_ids, output_count, &mode);
+    /* Switch mode */
+    drmModeSetCrtc(nvdev->fd, selectedcrtc->crtc_id,
+	        fb_id, selectedcrtc->x, selectedcrtc->y, output_ids, 
+	        output_count, selectedmode);
 
     drmModeFreeConnector(selectedconnector);
+    drmModeFreeCrtc(selectedcrtc);
+    /* TODO: Free drmmode */
 }
+
+
 
 /* PUBLIC METHODS */
 #define MAKE_SYNC(name,clock,hdisp,hstart,hend,htotal,vdisp,vstart,vend,vtotal,descr)	\
@@ -238,12 +299,22 @@ OOP_Object * METHOD(Nouveau, Root, New)
          768,  771,  777,  806,
 	 "Nouveau:1024x768");
 	 
+    MAKE_SYNC(640x480_60,   25175,
+         640,  656,  752,  800,
+         480,  489,  492,  525,
+	 "Nouveau:640x480");
+
+    MAKE_SYNC(800x600_56,	36000,	// 36000
+         800,  824,  896, 1024,
+         600,  601,  603,  625,
+	 "Nouveau:800x600");
+	 
     struct TagItem modetags[] = {
 	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags_24bpp	},
 //	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags_16bpp	},
 //	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags_15bpp	},
-//	{ aHidd_Gfx_SyncTags,	(IPTR)sync_640x480_60	},
-//	{ aHidd_Gfx_SyncTags,	(IPTR)sync_800x600_56	},
+	{ aHidd_Gfx_SyncTags,	(IPTR)sync_640x480_60	},
+	{ aHidd_Gfx_SyncTags,	(IPTR)sync_800x600_56	},
 	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1024x768_60	},
 //	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1152x864_60  },
 //	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1280x1024_60 },
@@ -329,6 +400,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
 /* FIXME: IMPLEMENT DISPOSE */
 
+/* FIXME: IMPLEMENT DISPOSE BITMAP - REMOVE FROM FB IF MARKED AS SUCH */
 
 OOP_Object * METHOD(Nouveau, Hidd_Gfx, NewBitMap)
 {
@@ -342,6 +414,9 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, NewBitMap)
     framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
 
     D(bug("[Nouveau] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displayable));
+
+    /* FIXME: The framebuffer bitmap for NV50 is created in a different way than
+    all other bitmaps */
 
     if (framebuffer)
     {
@@ -497,9 +572,7 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, Show)
         
         if (IS_NOUVEAU_CLASS(bmclass))
         {
-            struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
-            
-            HIDDNouveauSwitchToVideoMode(gfxdata, msg->bitMap);
+            HIDDNouveauSwitchToVideoMode(cl, o, msg->bitMap);
         }
     }
 

@@ -1239,7 +1239,6 @@ out:
 	return ret;
 }
 
-#if !defined(__AROS__)
 /**
  * drm_mode_getcrtc - get CRTC configuration
  * @inode: inode from the ioctl
@@ -1296,7 +1295,6 @@ out:
 	mutex_unlock(&dev->mode_config.mutex);
 	return ret;
 }
-#endif
 
 /**
  * drm_mode_getconnector - get connector configuration
