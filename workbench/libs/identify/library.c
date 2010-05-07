@@ -14,10 +14,16 @@
 
 #include "identify_intern.h"
 
+struct Library *IdentifyBase;
+
 static int InitFunc(struct IdentifyBaseIntern *lh)
 {
+    IdentifyBase = (struct Library *)lh;
+
     lh->dirtyflag = TRUE;
-    memset(&lh->hwb, 0, sizeof lh->hwb);
+    //memset(&lh->hwb, 0, sizeof lh->hwb);
+    //memset(&lh->sem, 0, sizeof lh->sem);
+    InitSemaphore(&lh->sem);
 
     return TRUE;
 }

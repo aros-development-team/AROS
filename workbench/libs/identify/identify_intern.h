@@ -4,6 +4,8 @@
 #include <exec/types.h>
 #include <exec/libraries.h>
 
+#include <proto/exec.h>
+
 #define STRBUFSIZE (30)
 
 struct HardwareBuffer
@@ -63,6 +65,8 @@ struct HardwareBuffer
 struct IdentifyBaseIntern
 {
     struct Library base;
+
+    struct SignalSemaphore sem;
     BOOL dirtyflag;
     struct HardwareBuffer hwb;
 };

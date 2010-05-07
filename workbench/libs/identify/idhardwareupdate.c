@@ -46,9 +46,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    // FIXME: need Semaphore?
+    ObtainSemaphore(&IdentifyBase->sem);
+
     IdentifyBase->dirtyflag = TRUE;
     memset(&IdentifyBase->hwb, 0, sizeof IdentifyBase->hwb);
+
+    ReleaseSemaphore(&IdentifyBase->sem);
 
     AROS_LIBFUNC_EXIT
 } /* IdHardwareUpdate */

@@ -22,7 +22,7 @@ FILES := library \
 %build_module mmake=workbench-libs-identify \
     modname=identify modtype=library \
     files="$(FILES)" \
-    uselibs="amiga rom identify"
+    uselibs="rom"
 
 GENERATED   := $(TOP)/$(CURDIR)/modulefunctions.h
 
@@ -34,6 +34,9 @@ workbench-libs-identify-generated : $(GENERATED)
 $(TOP)/$(CURDIR)/modulefunctions.h :
 	@$(ECHO) Generating $@
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/getmodulefunctions.py $(SRCDIR) >$@
+
+
+%copy_includes mmake=includes-copy includes=identify.h path=libraries
 
 
 #MM
