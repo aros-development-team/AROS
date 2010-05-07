@@ -75,24 +75,30 @@ IPTR GTSlider__OM_SET(Class * cl, Object * o, struct opSet * msg)
     tstate = msg->ops_AttrList;
     while ((tag = NextTagItem(&tstate)))
     {
-    	IPTR tidata = tag->ti_Data;
+    	WORD tidata = tag->ti_Data;
     	
     	switch (tag->ti_Tag)
     	{
     	    case GTSL_Min:
-    	    	data->min = (WORD)tidata;
+    	    	data->min = tidata;
 		val_set = TRUE;
 		break;
 		
     	    case GTSL_Max:
-    	    	data->max = (WORD)tidata;
+    	    	data->max = tidata;
     	    	val_set = TRUE;
     	    	break;
     	    	
     	    case GTSL_Level:	/* [ISN] */
+	        /* Ensure that the value is within limits */
+	        if (tidata < data->min)
+		    tidata = data->min;
+		if (tidata > data->max)
+		    tidata = data->max;
+
     	    	if (tidata != data->level)
     	    	{
-    	    	    data->level = data->freedom==FREEHORIZ?(WORD)tidata:data->max-(WORD)tidata+data->min;
+    	    	    data->level = data->freedom == FREEHORIZ ? tidata : data->max - tidata + data->min;
     	    	    notifylevel(cl, o, data->level, msg->ops_GInfo, GadToolsBase);
 		    val_set = TRUE;
 		    
@@ -154,6 +160,7 @@ IPTR GTSlider__OM_NEW(Class * cl, Object * o, struct opSet *msg)
 	    data->min   = 0;
 	    data->max   = 15;
 	    data->level = data->freedom==FREEHORIZ?data->min:data->max;
+	    notifylevel(cl, o, data->level, msg->ops_GInfo, GadToolsBase);
 
 	    GTSlider__OM_SET(cl, o, msg);
 	    
