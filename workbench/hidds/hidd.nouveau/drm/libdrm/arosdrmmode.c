@@ -90,6 +90,43 @@ int drmModeSetCrtc(int fd, uint32_t crtcId, uint32_t bufferId,
     return drmIoctl(fd, DRM_IOCTL_MODE_SETCRTC, &crtc);
 }
 
+drmModeCrtcPtr drmModeGetCrtc(int fd, uint32_t crtcId)
+{
+	struct drm_mode_crtc crtc;
+	drmModeCrtcPtr r;
+
+	crtc.crtc_id = crtcId;
+
+	if (drmIoctl(fd, DRM_IOCTL_MODE_GETCRTC, &crtc))
+		return 0;
+
+	/*
+	 * return
+	 */
+
+	if (!(r = drmMalloc(sizeof(*r))))
+		return 0;
+
+	r->crtc_id         = crtc.crtc_id;
+	r->x               = crtc.x;
+	r->y               = crtc.y;
+	r->mode_valid      = crtc.mode_valid;
+	if (r->mode_valid)
+		memcpy(&r->mode, &crtc.mode, sizeof(struct drm_mode_modeinfo));
+	r->buffer_id       = crtc.fb_id;
+	r->gamma_size      = crtc.gamma_size;
+	return r;
+}
+
+void drmModeFreeCrtc(drmModeCrtcPtr ptr)
+{
+	if (!ptr)
+		return;
+
+	drmFree(ptr);
+
+}
+
 drmModeResPtr drmModeGetResources(int fd)
 {
 	struct drm_mode_card_res res, counts;

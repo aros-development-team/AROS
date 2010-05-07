@@ -90,6 +90,19 @@ typedef struct _drmModeConnector {
 	uint32_t *encoders; /**< List of encoder ids */
 } drmModeConnector, *drmModeConnectorPtr;
 
+typedef struct _drmModeCrtc {
+	uint32_t crtc_id;
+	uint32_t buffer_id; /**< FB id to connect to 0 = disconnect */
+
+	uint32_t x, y; /**< Position on the framebuffer */
+	uint32_t width, height;
+	int mode_valid;
+	drmModeModeInfo mode;
+
+	int gamma_size; /**< Number of gamma stops */
+
+} drmModeCrtc, *drmModeCrtcPtr;
+
 /* Add passed bo (handle) to list of frame buffers */
 extern int drmModeAddFB(int fd, uint32_t width, uint32_t height, uint8_t depth,
             uint8_t bpp, uint32_t pitch, uint32_t bo_handle,
@@ -99,6 +112,9 @@ extern int drmModeAddFB(int fd, uint32_t width, uint32_t height, uint8_t depth,
 extern int drmModeSetCrtc(int fd, uint32_t crtcId, uint32_t bufferId,
             uint32_t x, uint32_t y, uint32_t *connectors, int count,
             drmModeModeInfoPtr mode);
+/* Get information about crtc */
+extern drmModeCrtcPtr drmModeGetCrtc(int fd, uint32_t crtcId);
+extern void drmModeFreeCrtc( drmModeCrtcPtr ptr );
 
 /* Gets information about all resources of card:
     framebuffers
