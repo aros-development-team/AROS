@@ -891,26 +891,26 @@ int main( int argc,char *argv[] )
 						switch ( Code ) {
 							case	'[':
 								if( Monitor_Editable ){
-									GT_SetGadgetAttrs(sp_TOTCLKS,sp_Wnd,0,GTSL_Level,currmonitor->total_colorclocks--,TAG_DONE);
+									GT_SetGadgetAttrs(sp_TOTCLKS,sp_Wnd,0,GTSL_Level, --currmonitor->total_colorclocks,TAG_DONE);
 									UpDateDisplay();
 								}
 								break;
 							case	']':
 								if( Monitor_Editable ){
-									GT_SetGadgetAttrs(sp_TOTCLKS,sp_Wnd,0,GTSL_Level,currmonitor->total_colorclocks++,TAG_DONE);
+									GT_SetGadgetAttrs(sp_TOTCLKS,sp_Wnd,0,GTSL_Level, ++currmonitor->total_colorclocks,TAG_DONE);
 									UpDateDisplay();
 								}
 								break;
 
 							case	'{':
 								if( Monitor_Editable ){
-									GT_SetGadgetAttrs(sp_TOTROWS,sp_Wnd,0,GTSL_Level,currmonitor->total_rows--,TAG_DONE);
+									GT_SetGadgetAttrs(sp_TOTROWS,sp_Wnd,0,GTSL_Level, --currmonitor->total_rows,TAG_DONE);
 									UpDateDisplay();
 								}
 								break;
 							case	'}':
 								if( Monitor_Editable ){
-									GT_SetGadgetAttrs(sp_TOTROWS,sp_Wnd,0,GTSL_Level,currmonitor->total_rows++,TAG_DONE);
+									GT_SetGadgetAttrs(sp_TOTROWS,sp_Wnd,0,GTSL_Level, ++currmonitor->total_rows,TAG_DONE);
 									UpDateDisplay();
 								}
 								break;
