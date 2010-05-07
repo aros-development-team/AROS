@@ -73,6 +73,8 @@ static CONST_STRPTR handle_osver(struct IdentifyBaseIntern *);
         }
     }
 
+    ObtainSemaphore(&IdentifyBase->sem);
+
     switch(type)
     {
         case IDHW_SYSTEM:
@@ -219,6 +221,8 @@ static CONST_STRPTR handle_osver(struct IdentifyBaseIntern *);
             break;
     }
 
+    ReleaseSemaphore(&IdentifyBase->sem);
+
     if ((result == NULL) && (null4na == FALSE))
     {
         result = "not available";
@@ -232,15 +236,13 @@ static CONST_STRPTR handle_osver(struct IdentifyBaseIntern *);
 
 static CONST_STRPTR handle_osver(struct IdentifyBaseIntern *library)
 {
-    CONST_STRPTR result = NULL;
+    CONST_STRPTR result = library->hwb.buf_OsVer;
     if (*library->hwb.buf_OsVer == '\0')
     {
-        ULONG num;
-        //ULONG num = IdHardwareNum(IDHW_OSVER, NULL);
+        ULONG num = IdHardwareNum(IDHW_OSVER, NULL);
         ULONG version = num & 0xffff;
         ULONG revision = num >> 16;
         snprintf(library->hwb.buf_OsVer, STRBUFSIZE, "%u.%u", version, revision);
-        result = library->hwb.buf_OsVer;
     }
     return result;
 }

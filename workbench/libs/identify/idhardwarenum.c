@@ -83,13 +83,13 @@
                 AI_ArosReleaseMinor, &revision,
                 TAG_DONE
             );
-            return version || (revision << 16);
+            return version | (revision << 16);
         }
 
         case IDHW_EXECVER:
             return
                 ((struct Library *)SysBase)->lib_Version
-                ||
+                |
                 (((struct Library *)SysBase)->lib_Revision << 16);
 
         case IDHW_WBVER:
