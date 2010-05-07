@@ -54,8 +54,6 @@ static OOP_Object *create_and_init_object(OOP_Class *cl, UBYTE *data, ULONG data
 static struct pixfmt_data *find_pixfmt(HIDDT_PixelFormat *tofind
 	, struct class_static_data *_csd);
 
-static OOP_Object *find_stdpixfmt(HIDDT_PixelFormat *tofind
-	, struct class_static_data *_csd);
 static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
 	, OOP_Object *dst_bm, ULONG width, ULONG height);
 
@@ -1973,42 +1971,6 @@ static inline BOOL cmp_pfs(HIDDT_PixelFormat *tmppf, HIDDT_PixelFormat *dbpf)
 /****************************************************************************************/
 
 /*
-     Matches the supplied pixelformat against all standard pixelformats
-     to see if there allready exsts a pixelformat object for this pixelformat
-*/
-
-/****************************************************************************************/
-
-static OOP_Object *find_stdpixfmt(HIDDT_PixelFormat *tofind,
-    	    	    	    	  struct class_static_data *csd)
-{
-    OOP_Object *retpf = NULL;
-    HIDDT_PixelFormat *stdpf;
-    ULONG i;
-    
-    for (i = 0; i < num_Hidd_StdPixFmt; i ++)
-    {
-    	stdpf = csd->std_pixfmts[i];
-	D(bug("find_stdpixfmt(): Trying pixelformat %u (0x%p)\n", i, stdpf));
-	D(bug("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n",
-	      stdpf->red_shift, stdpf->green_shift, stdpf->blue_shift, stdpf->alpha_shift,
-	      stdpf->red_mask, stdpf->green_mask, stdpf->blue_mask, stdpf->alpha_mask,
-	      stdpf->bytes_per_pixel, stdpf->size, stdpf->depth, stdpf->stdpixfmt));
-	
-	if (cmp_pfs(tofind, stdpf))
-	{
-	    retpf =  stdpf;
-	    break;
-	}
-	
-    }
-   
-    return retpf;
-}
-
-/****************************************************************************************/
-
-/*
     Parses the tags supplied in 'tags' and puts the result into 'sync'.
     It also checks to see if all needed attrs are supplied.
     It uses 'attrcheck' for this, so you may find attrs outside
@@ -2186,7 +2148,10 @@ BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf,
     pf->depth		= attrs[PFAO(Depth)];
     pf->size		= attrs[PFAO(BitsPerPixel)];
     pf->bytes_per_pixel	= attrs[PFAO(BytesPerPixel)];
-    pf->stdpixfmt	= attrs[PFAO(StdPixFmt)];	/* Fill in StdPixFmt - sonic */
+    /* Fill in only real StdPixFmt specification. Special values (Native and Native32)
+       are not allowed here */
+    if (attrs[PFAO(StdPixFmt)] >= num_Hidd_PseudoStdPixFmt)
+        pf->stdpixfmt = attrs[PFAO(StdPixFmt)];
     
     SET_PF_COLMODEL(  pf, attrs[PFAO(ColorModel)]);
     SET_PF_BITMAPTYPE(pf, attrs[PFAO(BitMapType)]);
