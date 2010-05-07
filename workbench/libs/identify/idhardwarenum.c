@@ -179,8 +179,7 @@
         }
 
         case IDHW_CHUNKYPLANAR:
-            //return (GfxBase->ChunkyToPlanarPtr) ? FALSE : TRUE;
-            return GfxBase->HWEmul[0] ? FALSE : TRUE;
+            return GfxBase->ChunkyToPlanarPtr ? FALSE : TRUE;
 
         case IDHW_POWERPC:
             #ifdef __powerpc__
@@ -205,14 +204,16 @@
             return 0;
 
         case IDHW_RAMWIDTH:
-            #ifdef __x86_64__
-                return 64;
-            #else
+            if (GfxBase->MemType & 1)
                 return 32;
-            #endif
+            else
+                return 16;
 
         case IDHW_RAMCAS:
-            return IDCAS_NONE;
+            if (GfxBase->MemType & 2)
+                return 2;
+            else
+                return 1;
 
         case IDHW_RAMBANDWIDTH:
             return 0;
