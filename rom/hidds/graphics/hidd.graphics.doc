@@ -1,0 +1,505 @@
+The gfx HIDD API consists of three interfaces ?
+IID_Hidd_Gfx, IID_Hidd_GC and IID_Hidd_BitMap, and there
+are correspondent classes for each interface.
+
+Gfx class.
+=========
+
+When working with gfx.hidd this is the first object you get.
+It allows you to create BitMap and GC (graphics context)
+object. The class' methods must be overidden by HW-specific
+subclasses where documented to do so.
+
+Class ID: CLID_Hidd_Gfx
+Include: <hidd/graphics.h>
+
+Interfaces:
+
+IID_Hidd_Gfx
+------------
+
+Methods:
+
+NAME
+    Hidd_Gfx_NewCG
+	
+SYNOPSIS
+    OOP_Object *HIDD_Gfx_NewGC(OOP_Object *gfxHidd, struct TagItem *tagList);
+
+FUNCTION
+    Create a GC (gfx context) object that may be used for rendering
+    into a bitmap.
+
+INPUTS
+    gfxHidd - A graphics driver object with which the GC will perform
+    	      the rendering operations.
+    
+    tagList - A list of GC attributes. See hidd.graphics.gc class
+	      documentation for their description.
+
+RESULT
+    gc - pointer to the newly created GC, ready for use for rendering
+         operations.
+    
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+    Hidd_GC_DisposeGC()
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+NAME
+    Hidd_Gfx_DeleteGC()
+	
+SYNOPSIS
+    VOID Hidd_Gfx_DeleteGC(OOP_Object *gfxHidd, OOP_Object *gc)
+
+FUNCTION
+    Deletes a GC (Grpahics Contect) object previously created
+    by Hidd_Gfx_NewGC().
+
+    Subclasses does not have to override this method
+    unless they allocate anything additional to a gc object in
+    their Hidd_Gfx_NewGC() implementation.
+
+INPUTS
+    gfxHidd - A driver object which was used for creating a GC.
+    gc      - Pointer to gc object to delete.
+
+RESULT
+    None.
+    
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+     Hidd_Gfx_NewGC()
+
+INTERNALS
+    Basically just does DisposeObject(gc);
+
+HISTORY
+
+/*************************/
+
+NAME
+    Hidd_Gfx_NewBitMap()
+	
+sYNOPSIS
+    OOP_Object *HIDD_Gfx_NewBitMap(OOP_Object *gfxHidd, struct TagItem *tagList);
+
+FUNCTION
+    Create a bitmap object.
+
+    One graphics driver represents at least one displayable bitmap class. Additionally
+    it may represent more classes (for example some old drivers use separate class for
+    nondisplayable bitmaps).
+
+    These classes are private to the driver. In order to be able to use them bitmap
+    objects are never created directly. Instead they are created using HIDD_Gfx_NewBitMap()
+    call. An implementation of this method in the driver should examine bitmap attributes
+    supplied and make a decision if the bitmap should be created using driver's own class
+    or one of system classes.
+
+    A typical implementation should pay attention to the following bitmap attributes:
+    
+    aHidd_BitMap_ModeID - If this attribute is supplied, the bitmap needs to be either
+			  displayable by this driver, or be a friend of displayable bitmap.
+			  A friend bitmap usually repeats the internal layout of its friend
+			  so that the driver may perform blitting operations quickly.
+
+    aHidd_BitMap_Displayable - If this attribute is supplied, the bitmap NEEDS to be displayable
+			       by this driver. Usually this means that bitmap object will contain
+			       video hardware state information. This attribute will always be
+			       accompanied by aHidd_BitMap_ModeID.
+
+    aHidd_BitMap_FrameBuffer - The bitmap needs to be a framebuffer bitmap. A framebuffer bitmap
+			       is necessary for some kinds of hardware which have a small fixed
+			       amount of video RAM which can hold only one screen at a time.
+
+    aHidd_BitMap_Friend - If there's no ModeID supplied, you may wish to check class of friend
+			  bitmap. This can be useful if your driver uses different classes for
+			  displayable and non-displayable bitmaps. By default superclass will
+			  pick up friend's class and use it for new bitmap if nothing is specified,
+			  here you may override this behavior.
+
+    If your driver wants to specify own class for the bitmap being created, it should prepend an
+    aHidd_BitMap_ClassPtr attribute to the supplied taglist and pass it to superclass. It's not
+    allowed to create bitmap objects directly since they need some more extra information which is
+    added by the superclass!
+
+INPUTS
+    gfxHidd - A graphics driver object with which the GC will perform
+    	      the rendering operations.
+
+    tagList - A list of bitmap attributes. See hidd.graphics.bitmap class
+	      documentation for their description.
+
+RESULT
+    gc - pointer to the newly created GC, ready for use for rendering
+         operations.
+    
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+    Hidd_GC_DisposeBitMap()
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+NAME
+    Hidd_Gfx_DisposeBitMap()
+	
+SYNOPSIS
+    VOID HIDD_Gfx_DisposeBitMap(OOP_Object *gfxHidd, OOP_Object *bitMap);
+
+FUNCTION
+    Deletes a bitmap object previously created
+    by Hidd_Gfx_NewGC().
+
+    Subclasses does not have to override this method
+    unless they allocate anything additional to a bitmap object in
+    their Hidd_Gfx_NewBitMap() implementation.
+
+INPUTS
+    gfxHidd - A driver object which was used for creating a bitmap.
+    bitMap  - Pointer to a bitmap object to delete.
+
+RESULT
+    None.
+    
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+     Hidd_Gfx_NewBitMap()
+
+INTERNALS
+    Basically just does DisposeObject(bitMap);
+
+HISTORY
+
+/*************************/
+
+NAME
+    HIDD_Gfx_QueryModeIDs
+
+SYNOPSIS
+    HIDDT_ModeID *HIDD_Gfx_QueryModeIDs(OOP_Object *gfxHidd, struct TagItem *queryTags);
+
+FUNCTION
+
+INPUTS
+    gfxHidd   - A driver object which was used for creating a bitmap.
+    querytags -
+
+RESULT
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+     Hidd_Gfx_ReleaseModeIDs()
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+NAME
+
+SYNOPSIS
+    VOID HIDD_Gfx_ReleaseModeIDs(OOP_Object *gfxHidd, HIDDT_ModeID *modeIDs);
+
+RESULT
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+     Hidd_Gfx_QueryModeIDs()
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+NAME
+
+SYNOPSIS
+    OOP_Object *HIDD_Gfx_GetPixFmt(OOP_Object *gfxHidd, HIDDT_StdPixFmt pixFmt);
+
+RESULT
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+NAME
+
+SYNOPSIS
+    BOOL HIDD_Gfx_CheckMode(OOP_Object *gfxHidd, HIDDT_ModeID modeID, OOP_Object *sync, OOP_Object *pixFmt);
+
+RESULT
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+NAME
+
+SYNOPSIS
+    BOOL HIDD_Gfx_GetMode(OOP_Object *gfxHidd, HIDDT_ModeID modeID, OOP_Object **syncPtr, OOP_Object **pixFmtPtr);
+
+RESULT
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+NAME
+
+SYNOPSIS
+    HIDDT_ModeID HIDD_Gfx_NextModeID(OOP_Object *gfxHidd, HIDDT_ModeID modeID, OOP_Object **syncPtr, OOP_Object **pixFmtPtr);
+
+RESULT
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+NAME
+
+SYNOPSIS
+    BOOL HIDD_Gfx_SetCursorShape(OOP_Object *gfxHidd, OOP_Object *shape, LONG xoffset, LONG yoffset);
+
+RESULT
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+NAME
+
+SYNOPSIS
+    BOOL HIDD_Gfx_SetCursorPos(OOP_Object *gfxHidd, LONG x, LONG y);
+
+RESULT
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+NAME
+
+SYNOPSIS
+    VOID HIDD_Gfx_SetCursorVisible(OOP_Object *gfxHidd, BOOL visible);
+
+RESULT
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+NAME
+
+SYNOPSIS
+    OOP_Object *HIDD_Gfx_Show(OOP_Object *gfxHidd, OOP_Object *bitMap, ULONG flags);
+
+RESULT
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+NAME
+
+SYNOPSIS
+    BOOL HIDD_Gfx_SetMode(OOP_Object *gfxHidd, HIDDT_ModeID modeID);
+
+RESULT
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+NAME
+
+SYNOPSIS
+    VOID HIDD_Gfx_CopyBox(OOP_Object *gfxHidd, OOP_Object *src, WORD srcX, WORD srcY, OOP_Object *dest, WORD destX, WORD destY, UWORD width, UWORD height, OOP_Object *gc);
+
+RESULT
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+NAME
+
+SYNOPSIS
+    ULONG HIDD_Gfx_ModeProperties(OOP_Object *gfxHidd, HIDDT_ModeID modeID, struct HIDD_ModeProperties *props, ULONG propsLen);
+
+RESULT
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+     Hidd_Gfx_ReleaseModeIDs()
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+NAME
+
+SYNOPSIS
+    ULONG HIDD_Gfx_ShowViewPorts(OOP_Object *gfxHidd, struct HIDD_ViewPortData *data);
+
+RESULT
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+
+INTERNALS
+
+HISTORY
