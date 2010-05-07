@@ -60,7 +60,6 @@ struct staticdata
 {
     OOP_Class       *gfxclass;
     OOP_Class       *bmclass;
-    OOP_Class       *offbmclass;
     OOP_Class       *planarbmclass;
     
     OOP_AttrBase    pixFmtAttrBase;
