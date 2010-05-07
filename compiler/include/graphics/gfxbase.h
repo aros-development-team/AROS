@@ -153,7 +153,7 @@ struct GfxBase
     struct SignalSemaphore * HashTableSemaphore;	/* Semaphore for hash_table access, private in fact */
     ULONG                  * HWEmul[9];
 };
-#define ChunkyToPlanarPtr HWEmul[0];
+#define ChunkyToPlanarPtr HWEmul[0]
 
 /* DisplayFlags
  * 
