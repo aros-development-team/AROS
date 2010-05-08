@@ -1716,7 +1716,6 @@ out:
 	return ret;
 }
 
-#if !defined(__AROS__)
 /**
  * drm_mode_rmfb - remove an FB from the configuration
  * @inode: inode from the ioctl
@@ -1775,6 +1774,7 @@ out:
 	return ret;
 }
 
+#if !defined(__AROS__)
 /**
  * drm_mode_getfb - get FB info
  * @inode: inode from the ioctl

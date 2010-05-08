@@ -69,6 +69,11 @@ int drmModeAddFB(int fd, uint32_t width, uint32_t height, uint8_t depth,
     return 0;
 }
 
+int drmModeRmFB(int fd, uint32_t bufferId)
+{
+	return drmIoctl(fd, DRM_IOCTL_MODE_RMFB, &bufferId);
+}
+
 int drmModeSetCrtc(int fd, uint32_t crtcId, uint32_t bufferId,
                     uint32_t x, uint32_t y, uint32_t *connectors, int count,
                     drmModeModeInfoPtr mode)

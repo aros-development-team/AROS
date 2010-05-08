@@ -37,13 +37,16 @@ struct HIDDNouveauData
 
 struct HIDDNouveauBitMapData
 {
-    struct nouveau_bo * bo;     /* Buffer object behind bitmap */
+    struct nouveau_bo * bo; /* Buffer object behind bitmap */
 
     ULONG height;
     ULONG width;
     ULONG pitch;
-    UBYTE bytesperpixel;        /* In bytes */
-    UBYTE depth;                /* In bits */
+    UBYTE bytesperpixel;    /* In bytes */
+    UBYTE depth;            /* In bits */
+    
+    ULONG fbid;             /* Contains ID under which bitmap is registered
+                               as framebuffer or 0 otherwise */
 };
 
 struct planarbm_data

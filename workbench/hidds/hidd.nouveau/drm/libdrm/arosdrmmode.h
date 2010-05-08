@@ -107,6 +107,7 @@ typedef struct _drmModeCrtc {
 extern int drmModeAddFB(int fd, uint32_t width, uint32_t height, uint8_t depth,
             uint8_t bpp, uint32_t pitch, uint32_t bo_handle,
             uint32_t *buf_id);
+extern int drmModeRmFB(int fd, uint32_t bufferId);
 
 /* Set a specified crtc and outputs to given mode using bufferId framebuffer */
 extern int drmModeSetCrtc(int fd, uint32_t crtcId, uint32_t bufferId,

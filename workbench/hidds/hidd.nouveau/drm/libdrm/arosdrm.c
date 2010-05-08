@@ -156,6 +156,9 @@ int drmIoctl(int fd, unsigned long request, void *arg)
             case(DRM_IOCTL_MODE_ADDFB):
                 ret = drm_mode_addfb(current_drm_driver->dev, arg, drm_files[fd]);
                 break;
+            case(DRM_IOCTL_MODE_RMFB):
+                ret = drm_mode_rmfb(current_drm_driver->dev, arg, drm_files[fd]);
+                break;
             case(DRM_IOCTL_MODE_SETCRTC):
                 ret = drm_mode_setcrtc(current_drm_driver->dev, arg, drm_files[fd]);
                 break;
