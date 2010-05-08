@@ -171,6 +171,9 @@ int drmIoctl(int fd, unsigned long request, void *arg)
             case(DRM_IOCTL_MODE_GETCONNECTOR):
                 ret = drm_mode_getconnector(current_drm_driver->dev, arg, drm_files[fd]);
                 break;
+            case(DRM_IOCTL_MODE_CURSOR):
+                ret = drm_mode_cursor_ioctl(current_drm_driver->dev, arg, drm_files[fd]);
+                break;
             default:
                 DRM_IMPL("GEM COMMAND %d\n", request);
         }

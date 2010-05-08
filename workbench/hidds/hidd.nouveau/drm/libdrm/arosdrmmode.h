@@ -126,5 +126,10 @@ extern drmModeResPtr drmModeGetResources(int fd);
 
 /* Gets information about selected connector */
 extern drmModeConnectorPtr drmModeGetConnector(int fd,
-		uint32_t connectorId);
+            uint32_t connectorId);
 extern void drmModeFreeConnector(drmModeConnectorPtr ptr);
+
+/* Cursor support */
+extern int drmModeSetCursor(int fd, uint32_t crtcId, uint32_t bo_handle, 
+            uint32_t width, uint32_t height);
+extern int drmModeMoveCursor(int fd, uint32_t crtcId, int x, int y);
