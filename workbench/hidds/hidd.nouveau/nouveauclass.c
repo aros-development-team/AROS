@@ -137,7 +137,7 @@ static VOID HIDDNouveauShowCursor(OOP_Class * cl, OOP_Object * gfx, BOOL visible
     }
 }
 
-static VOID HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_Object * bm)
+static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_Object * bm)
 {
     struct HIDDNouveauData * gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
@@ -153,14 +153,17 @@ static VOID HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
     OOP_Object * pf;
     IPTR pixel;
     IPTR hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal;
+    LONG ret;
 
+    D(bug("[Nouveau] HIDDNouveauSwitchToVideoMode\n"));
+    
     /* We should be able to get modeID from the bitmap */
     OOP_GetAttr(bm, aHidd_BitMap_ModeID, &modeid);
 
     if (modeid == vHidd_ModeID_Invalid)
     {
-        D(bug("[nouveau] Invalid ModeID\n"));
-        return; /* FIXME: Report some kind of error */
+        D(bug("[Nouveau] Invalid ModeID\n"));
+        return FALSE;
     }
 
     /* Get Sync and PixelFormat properties */
@@ -184,7 +187,7 @@ static VOID HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
     OOP_GetAttr(sync, aHidd_Sync_HTotal,        &htotal);
     OOP_GetAttr(sync, aHidd_Sync_VTotal,        &vtotal);    
     
-    D(bug("[nouveau] Sync: %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+    D(bug("[Nouveau] Sync: %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
     pixel, hdisp, hstart, hend, htotal, vdisp, vstart, vend, vtotal));
 
 
@@ -197,8 +200,8 @@ static VOID HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
     
     if (!selectedcrtc)
     {
-        D(bug("[nouveau] Not able to get crtc information\n"));
-        return; /* FIXME: Report some error */
+        D(bug("[Nouveau] Not able to get crtc information\n"));
+        return FALSE;
     }
     
     /* Selecting connector */
@@ -221,8 +224,8 @@ static VOID HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
     
     if (!selectedconnector)
     {
-        D(bug("[nouveau] No connected connector\n"));
-        return; /* FIXME: Report some error */
+        D(bug("[Nouveau] No connected connector\n"));
+        return FALSE;
     }
 
     output_ids[0] = selectedconnector->connector_id;
@@ -245,8 +248,8 @@ static VOID HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
     
     if (!selectedmode)
     {
-        D(bug("[nouveau] Not able to select mode\n"));
-        return; /* FIXME: Report some error */
+        D(bug("[Nouveau] Not able to select mode\n"));
+        return FALSE;
     }
 
 
@@ -258,24 +261,38 @@ static VOID HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
     /* Add as frame buffer */
     if (bmdata->fbid == 0)
     {
-	    drmModeAddFB(nvdev->fd, bmdata->width, bmdata->height, 
-	            bmdata->depth, bmdata->bytesperpixel * 8, 
-	            bmdata->pitch, bmdata->bo->handle, &bmdata->fbid);
-        /* FIXME: check return */
+	    ret = drmModeAddFB(nvdev->fd, bmdata->width, bmdata->height, 
+	                bmdata->depth, bmdata->bytesperpixel * 8, 
+	                bmdata->pitch, bmdata->bo->handle, &bmdata->fbid);
+        if (ret)
+        {
+            drmModeFreeConnector(selectedconnector);
+            drmModeFreeCrtc(selectedcrtc);
+            D(bug("[Nouveau] Not able to add framebuffer\n"));
+            return FALSE;
+        }
     }
 
 
     /* Switch mode */
-    drmModeSetCrtc(nvdev->fd, selectedcrtc->crtc_id,
+    ret = drmModeSetCrtc(nvdev->fd, selectedcrtc->crtc_id,
 	        bmdata->fbid, selectedcrtc->x, selectedcrtc->y, output_ids, 
 	        output_count, selectedmode);
-    /* FIXME: check return */
+    if (ret)
+    {
+        drmModeFreeConnector(selectedconnector);
+        drmModeFreeCrtc(selectedcrtc);
+        D(bug("[Nouveau] Not able to set crtc\n"));
+        return FALSE;        
+    }
 
     HIDDNouveauShowCursor(cl , gfx, TRUE);
         
     drmModeFreeConnector(selectedconnector);
     drmModeFreeCrtc(selectedcrtc);
     /* TODO: Free drmmode */
+    
+    return TRUE;
 }
 
 /* PUBLIC METHODS */
@@ -538,7 +555,7 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, NewBitMap)
         msg = &mymsg;
     }
 
-    return (OOP_Object*)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 #define IS_NOUVEAU_CLASS(x) (x == SD(cl)->bmclass)
@@ -595,18 +612,23 @@ VOID METHOD(Nouveau, Root, Get)
 
 OOP_Object * METHOD(Nouveau, Hidd_Gfx, Show)
 {
+    D(bug("[Nouveau] Show enter BM %x\n", msg->bitMap));
+
     if (msg->bitMap)
     {
         OOP_Class * bmclass = OOP_OCLASS(msg->bitMap);
         
         if (IS_NOUVEAU_CLASS(bmclass))
         {
-            HIDDNouveauSwitchToVideoMode(cl, o, msg->bitMap);
+            if (!HIDDNouveauSwitchToVideoMode(cl, o, msg->bitMap))
+            {
+                bug("[Nouveau] Video mode not set\n");
+                return NULL;
+            }
         }
     }
 
-    /* DO NOT CALL superclass Show - it relies on framebuffer */
-    return msg->bitMap;
+    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 #if AROS_BIG_ENDIAN
