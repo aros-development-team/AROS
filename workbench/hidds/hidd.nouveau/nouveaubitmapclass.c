@@ -73,12 +73,12 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
 	    /* FIXME: nouveau_device should not be global */
 	    /* FIXME: check result of call */
 	    /* FIXME: take pitch/bpp when calculating size */
-	    nouveau_bo_new(hackdev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 
+        nouveau_bo_new(hackdev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 
 	            bmdata->pitch * bmdata->height,
 	            &bmdata->bo);
 
         /* FIXME: if (!bmdata->bo) */
-	    nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR);
+        nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR);
     }
     
     return o;

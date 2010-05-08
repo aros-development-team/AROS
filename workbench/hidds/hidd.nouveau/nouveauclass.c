@@ -120,6 +120,23 @@ static BOOL HIDDNouveauNV04CopySameFormat(struct HIDDNouveauData * gfxdata,
     return TRUE;
 }
 
+static VOID HIDDNouveauShowCursor(OOP_Class * cl, OOP_Object * gfx, BOOL visible)
+{
+    struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, gfx);
+    struct nouveau_device_priv * nvdev = nouveau_device(gfxdata->dev);
+
+    if (visible)
+    {
+        drmModeSetCursor(nvdev->fd, gfxdata->selectedcrtcid, 
+            gfxdata->cursor->handle, 64, 64);
+    }
+    else
+    {
+        drmModeSetCursor(nvdev->fd, gfxdata->selectedcrtcid, 
+            0, 64, 64);
+    }
+}
+
 static VOID HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_Object * bm)
 {
     struct HIDDNouveauData * gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
@@ -209,6 +226,7 @@ static VOID HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
     }
 
     output_ids[0] = selectedconnector->connector_id;
+    gfxdata->selectedcrtcid = selectedcrtc->crtc_id;
 
     /* Select mode */
     for (i = 0; i < selectedconnector->count_modes; i++)
@@ -253,12 +271,12 @@ static VOID HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
 	        output_count, selectedmode);
     /* FIXME: check return */
 
+    HIDDNouveauShowCursor(cl , gfx, TRUE);
+        
     drmModeFreeConnector(selectedconnector);
     drmModeFreeCrtc(selectedcrtc);
     /* TODO: Free drmmode */
 }
-
-
 
 /* PUBLIC METHODS */
 #define MAKE_SYNC(name,clock,hdisp,hstart,hend,htotal,vdisp,vstart,vend,vtotal,descr)	\
@@ -397,6 +415,10 @@ OOP_Object * METHOD(Nouveau, Root, New)
         ret = NVAccelCommonInit(gfxdata);
         /* TODO: Check ret, how to handle ? */
 
+        /* Allocate buffer object for cursor */
+        nouveau_bo_new(gfxdata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 
+            0, 64 * 64 * 4, &gfxdata->cursor);
+        /* TODO: Check return, hot to handle */
     }
 
     return o;
@@ -562,6 +584,9 @@ VOID METHOD(Nouveau, Root, Get)
         case aoHidd_Gfx_NoFrameBuffer:
             *msg->storage = (IPTR)TRUE;
             return;
+        case aoHidd_Gfx_SupportsHWCursor:
+            *msg->storage = (IPTR)TRUE;
+            return;
         }
     }
 
@@ -584,20 +609,70 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, Show)
     return msg->bitMap;
 }
 
+#if AROS_BIG_ENDIAN
+#define Machine_ARGB32 vHidd_StdPixFmt_ARGB32
+#else
+#define Machine_ARGB32 vHidd_StdPixFmt_BGRA32
+#endif
+
 BOOL METHOD(Nouveau, Hidd_Gfx, SetCursorShape)
 {
-    bug("Nouveau::SetCursorShape\n");
-    return FALSE;
+    struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
+        
+    if (msg->shape == NULL)
+    {
+        /* Hide cursor */
+        HIDDNouveauShowCursor(cl , o, FALSE);
+    }
+    else
+    {
+        IPTR width, height;
+        ULONG i;
+        ULONG x, y;
+        ULONG curimage[64 * 64];
+        
+        OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
+        OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
+
+
+        if (width > 64) width = 64;
+        if (height > 64) height = 64;
+
+        /* Map the cursor buffer */
+        nouveau_bo_map(gfxdata->cursor, NOUVEAU_BO_WR);
+
+        /* Clear the matrix */
+        for (i = 0; i < 64 * 64; i++)
+            ((ULONG*)gfxdata->cursor->map)[i] = 0;
+
+        /* Get data from the bitmap */
+        HIDD_BM_GetImage(msg->shape, (UBYTE *)curimage, 64 * 4, 0, 0, 
+            width, height, Machine_ARGB32);
+
+        for (y = 0; y < height; y++)
+            for (x = 0; x < width; x++)
+            {
+                ULONG offset = y * 64 + x;
+                writel(curimage[offset], ((ULONG *)gfxdata->cursor->map) + (offset));
+            }
+
+        nouveau_bo_unmap(gfxdata->cursor);
+    }
+
+    return TRUE;   
 }
 
 VOID METHOD(Nouveau, Hidd_Gfx, SetCursorPos)
 {
-    bug("Nouveau::SetCursorPos\n");
+    struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
+    struct nouveau_device_priv * nvdev = nouveau_device(gfxdata->dev);
+
+    drmModeMoveCursor(nvdev->fd, gfxdata->selectedcrtcid, msg->x, msg->y);
 }
 
 VOID METHOD(Nouveau, Hidd_Gfx, SetCursorVisible)
 {
-    bug("Nouveau::SetCursorVisible\n");
+    HIDDNouveauShowCursor(cl, o, msg->visible);
 }
 
 

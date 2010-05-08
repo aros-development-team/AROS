@@ -334,3 +334,27 @@ err_allocs:
 	return r;
 }
 
+int drmModeSetCursor(int fd, uint32_t crtcId, uint32_t bo_handle, uint32_t width, uint32_t height)
+{
+	struct drm_mode_cursor arg;
+
+	arg.flags = DRM_MODE_CURSOR_BO;
+	arg.crtc_id = crtcId;
+	arg.width = width;
+	arg.height = height;
+	arg.handle = bo_handle;
+
+	return drmIoctl(fd, DRM_IOCTL_MODE_CURSOR, &arg);
+}
+
+int drmModeMoveCursor(int fd, uint32_t crtcId, int x, int y)
+{
+	struct drm_mode_cursor arg;
+
+	arg.flags = DRM_MODE_CURSOR_MOVE;
+	arg.crtc_id = crtcId;
+	arg.x = x;
+	arg.y = y;
+
+	return drmIoctl(fd, DRM_IOCTL_MODE_CURSOR, &arg);
+}

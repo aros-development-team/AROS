@@ -29,6 +29,9 @@ struct HIDDNouveauData
     struct nouveau_grobj    *NvContextSurfaces;
     struct nouveau_grobj    *NvRop;
     struct nouveau_grobj    *NvImagePattern;
+    
+    struct nouveau_bo       *cursor;
+    ULONG                   selectedcrtcid;
 };
 
 #define CLID_Hidd_BitMap_Nouveau        "hidd.bitmap.nouveau"
