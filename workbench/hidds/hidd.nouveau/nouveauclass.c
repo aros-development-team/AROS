@@ -128,7 +128,6 @@ static VOID HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
     uint32_t output_ids[] = {0};
     uint32_t output_count = 1;
     LONG i;
-    uint32_t fb_id;
     drmModeConnectorPtr selectedconnector = NULL;
     drmModeModeInfoPtr  selectedmode = NULL;
     drmModeCrtcPtr      selectedcrtc = NULL;
@@ -234,20 +233,25 @@ static VOID HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
 
 
 
-    /* FIXME: For screen switching the bitmap might already one been a framebuffer 
-       - needs to check for a ID somehow so that it is not added twice. Also the
-       bitmap itself should not whether it is added as framebuffer so that it can
-       unregister itself in Dispose */
+    /* For screen switching the bitmap might have already once been a framebuffer 
+       - check bmdata->fbid. Also the bitmap itself needs to know whether it is 
+       added as framebuffer so that it can unregister itself in Dispose */
 
     /* Add as frame buffer */
-	drmModeAddFB(nvdev->fd, bmdata->width, bmdata->height, 
-	        bmdata->depth, bmdata->bytesperpixel * 8, 
-	        bmdata->pitch, bmdata->bo->handle, &fb_id);
+    if (bmdata->fbid == 0)
+    {
+	    drmModeAddFB(nvdev->fd, bmdata->width, bmdata->height, 
+	            bmdata->depth, bmdata->bytesperpixel * 8, 
+	            bmdata->pitch, bmdata->bo->handle, &bmdata->fbid);
+        /* FIXME: check return */
+    }
+
 
     /* Switch mode */
     drmModeSetCrtc(nvdev->fd, selectedcrtc->crtc_id,
-	        fb_id, selectedcrtc->x, selectedcrtc->y, output_ids, 
+	        bmdata->fbid, selectedcrtc->x, selectedcrtc->y, output_ids, 
 	        output_count, selectedmode);
+    /* FIXME: check return */
 
     drmModeFreeConnector(selectedconnector);
     drmModeFreeCrtc(selectedcrtc);

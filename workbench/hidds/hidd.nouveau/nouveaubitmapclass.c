@@ -8,6 +8,8 @@
 #include <aros/debug.h>
 #include <proto/oop.h>
 
+#include "arosdrmmode.h"
+
 #undef HiddBitMapAttrBase
 #undef HiddPixFmtAttrBase
 #define HiddBitMapAttrBase  (SD(cl)->bitMapAttrBase)
@@ -53,6 +55,8 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
 	    OOP_GetAttr(o, aHidd_BitMap_Height, &height);
         OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&pf);
         OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+        
+        /* Initialize properties */
 	    bmdata->width = width;
 	    bmdata->height = height;
 	    bmdata->depth = depth;
@@ -63,6 +67,7 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
         else
             bmdata->bytesperpixel = 4;
         bmdata->pitch = (bmdata->width * bmdata->bytesperpixel + 63) & ~63;
+        bmdata->fbid = 0; /* Default value */
 
 	    /* Creation of buffer object */
 	    /* FIXME: nouveau_device should not be global */
@@ -83,10 +88,25 @@ VOID NouveauBitMap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
 
+    /* Unregister from framebuffer if needed */
+    if (bmdata->fbid != 0)
+    {
+        struct nouveau_device_priv *nvdev = nouveau_device(hackdev);
+        drmModeRmFB(nvdev->fd, bmdata->fbid);   
+//        bmdata->fbid = 0;
+    }
+
     if (bmdata->bo)
     {
         nouveau_bo_unmap(bmdata->bo);
         nouveau_bo_ref(NULL, &bmdata->bo); /* Release reference */
+    }
+
+    if (bmdata->fbid == 0)
+    {
+        /* FIXME: There is some problem with calling this for bitmaps there
+        were once assigned to framebuffer. INVASTIGATE. */
+        OOP_DoSuperMethod(cl, o, msg);
     }
 }
 
