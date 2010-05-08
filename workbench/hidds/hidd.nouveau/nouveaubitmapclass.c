@@ -5,6 +5,7 @@
 
 #include "nouveau_intern.h"
 
+#define DEBUG 0
 #include <aros/debug.h>
 #include <proto/oop.h>
 
@@ -88,12 +89,14 @@ VOID NouveauBitMap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
 
+    D(bug("[Nouveau] Dispose %x\n", o));
+
     /* Unregister from framebuffer if needed */
     if (bmdata->fbid != 0)
     {
         struct nouveau_device_priv *nvdev = nouveau_device(hackdev);
         drmModeRmFB(nvdev->fd, bmdata->fbid);   
-//        bmdata->fbid = 0;
+        bmdata->fbid = 0;
     }
 
     if (bmdata->bo)
@@ -102,11 +105,6 @@ VOID NouveauBitMap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
         nouveau_bo_ref(NULL, &bmdata->bo); /* Release reference */
     }
 
-    if (bmdata->fbid == 0)
-    {
-        /* FIXME: There is some problem with calling this for bitmaps there
-        were once assigned to framebuffer. INVASTIGATE. */
-        OOP_DoSuperMethod(cl, o, msg);
-    }
+    OOP_DoSuperMethod(cl, o, msg);
 }
 
