@@ -186,8 +186,7 @@ enum
     INDEX_NAME,
     INDEX_SIZE,
     INDEX_PROTECTION,
-    INDEX_DATE,
-    INDEX_TIME,
+    INDEX_LASTACCESS,
     INDEX_COMMENT
 };
 
@@ -704,12 +703,9 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
 	    text = entry->ie_TxtBuf_SIZE;
 	    break;
 
-	case INDEX_DATE:
-	    text = entry->ie_TxtBuf_DATE;
-	    break;
-
-	case INDEX_TIME:
-	    text = entry->ie_TxtBuf_TIME;
+	case INDEX_LASTACCESS:
+	    text = AllocVec(strlen(entry->ie_TxtBuf_DATE) + strlen(entry->ie_TxtBuf_TIME) + 5, MEMF_CLEAR);
+	    sprintf(text, "%s at %s", entry->ie_TxtBuf_DATE, entry->ie_TxtBuf_TIME);
 	    break;
 
 	case INDEX_COMMENT:
@@ -800,6 +796,9 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
 	}
 	Text(data->icld_BufferRastPort, text, fit);
     }
+    if ((index == INDEX_LASTACCESS) && text)
+	FreeVec(text);
+
 }
 
 /**************************************************************************
@@ -1922,14 +1921,9 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
 		    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Size";
 		    break;
 
-		case INDEX_DATE:
+		case INDEX_LASTACCESS:
 		    data->icld_LVMAttribs->lmva_ColumnFlags[i] |= LVMCF_COLSORTABLE;
-		    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Date";
-		    break;
-
-		case INDEX_TIME:
-		    data->icld_LVMAttribs->lmva_ColumnFlags[i] |= LVMCF_COLSORTABLE;
-		    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Time";
+		    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Last Accessed";
 		    break;
 
 		case INDEX_COMMENT:
@@ -5855,7 +5849,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 				    data->icld_SortFlags |= MUIV_IconList_Sort_BySize;
 				    break;
 
-				case INDEX_DATE:
+				case INDEX_LASTACCESS:
 				    data->icld_SortFlags &= ~MUIV_IconList_Sort_MASK;
 				    data->icld_SortFlags |= MUIV_IconList_Sort_ByDate;
 				    break;
