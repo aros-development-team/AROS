@@ -226,6 +226,15 @@ err_allocs:
 	return r;
 }
 
+void drmModeFreeResources(drmModeResPtr ptr)
+{
+	if (!ptr)
+		return;
+
+	drmFree(ptr);
+
+}
+
 void drmModeFreeConnector(drmModeConnectorPtr ptr)
 {
 	if (!ptr)
@@ -357,4 +366,34 @@ int drmModeMoveCursor(int fd, uint32_t crtcId, int x, int y)
 	arg.y = y;
 
 	return drmIoctl(fd, DRM_IOCTL_MODE_CURSOR, &arg);
+}
+
+drmModeEncoderPtr drmModeGetEncoder(int fd, uint32_t encoder_id)
+{
+	struct drm_mode_get_encoder enc;
+	drmModeEncoderPtr r = NULL;
+
+	enc.encoder_id = encoder_id;
+	enc.encoder_type = 0;
+	enc.possible_crtcs = 0;
+	enc.possible_clones = 0;
+
+	if (drmIoctl(fd, DRM_IOCTL_MODE_GETENCODER, &enc))
+		return 0;
+
+	if (!(r = drmMalloc(sizeof(*r))))
+		return 0;
+
+	r->encoder_id = enc.encoder_id;
+	r->crtc_id = enc.crtc_id;
+	r->encoder_type = enc.encoder_type;
+	r->possible_crtcs = enc.possible_crtcs;
+	r->possible_clones = enc.possible_clones;
+
+	return r;
+}
+
+void drmModeFreeEncoder(drmModeEncoderPtr ptr)
+{
+	drmFree(ptr);
 }
