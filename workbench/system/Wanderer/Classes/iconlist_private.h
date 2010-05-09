@@ -24,7 +24,7 @@ struct ListViewModeAttribs
     BYTE			lmva_LastSelectedColumn;
 
 #warning "TODO: Convert Column arrays into a list .."
-#define NUM_COLUMNS 7
+#define NUM_COLUMNS 6
     LONG    	    	    	lmva_ColumnPos[NUM_COLUMNS];
     LONG    	    	    	lmva_ColumnMaxWidth[NUM_COLUMNS];
     LONG    	    	    	lmva_ColumnWidth[NUM_COLUMNS];
