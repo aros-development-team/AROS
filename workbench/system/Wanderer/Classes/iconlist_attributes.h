@@ -50,7 +50,7 @@
 
 #define MUIA_IconList_Width                                 (MUIB_IconList | 0x0000000c) 		/* Zune: V1 .SG LONG                      */
 #define MUIA_IconList_Height                                (MUIB_IconList | 0x0000000d) 		/* Zune: V1 .SG LONG                      */
-#define MUIA_IconList_IconsMoved                            (MUIB_IconList | 0x00000010) 		/* Zune: V1 ..G (struct IconList_Entry *) */
+#define MUIA_IconList_IconMoved                            (MUIB_IconList | 0x00000010) 		/* Zune: V1 ..G (struct IconList_Entry *) */
 #define MUIA_IconList_IconsDropped                          (MUIB_IconList | 0x00000011) 		/* Zune: V1 ..G (struct IconList_Entry *) */
 #define MUIA_IconList_AppWindowDrop                         (MUIB_IconList | 0x00000012) 		/* Zune: V1 ..G (struct IconList_Entry *) */
 #define MUIA_IconList_FocusIcon                             (MUIB_IconList | 0x00000013) 		/* Zune: V1 .SG (struct IconList_Entry *) */

@@ -182,6 +182,7 @@ static struct TagItem		__iconList_BackBuffLayerTags[] =
 
 enum
 {
+    INDEX_TYPE,
     INDEX_NAME,
     INDEX_SIZE,
     INDEX_PROTECTION,
@@ -364,7 +365,7 @@ static void GetAbsoluteLassoRect(struct IconList_DATA *data, struct Rectangle *L
     WORD        maxx = data->icld_LassoRectangle.MaxX;
     WORD        maxy = data->icld_LassoRectangle.MaxY;
 
-#if defined(DEBUG_ILC_LASSO) && defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_LASSO) || defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -396,7 +397,7 @@ static void IconList_InvertPixelRect(struct RastPort *rp, WORD minx, WORD miny, 
 {
     struct Rectangle    r, clipped_r;
     
-#if defined(DEBUG_ILC_RENDERING) && defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_RENDERING) || defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -436,7 +437,7 @@ static void IconList_InvertLassoOutlines(Object *obj, struct IconList_DATA *data
     struct Rectangle    lasso;
     struct Rectangle    clip;
     
-#if defined(DEBUG_ILC_LASSO) && defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_LASSO) || defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -469,7 +470,7 @@ static void IconList_InvertLassoOutlines(Object *obj, struct IconList_DATA *data
 //We don't use icon.library's label drawing so we do this by hand
 static void IconList_GetIconImageRectangle(Object *obj, struct IconList_DATA *data, struct IconEntry *entry, struct Rectangle *rect)
 {
-#if defined(DEBUG_ILC_ICONPOSITIONING) && defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_ICONPOSITIONING) || defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s(entry @ %p)\n", __PRETTY_FUNCTION__, entry));
 #endif
 
@@ -492,7 +493,7 @@ static void IconList_GetIconLabelRectangle(Object *obj, struct IconList_DATA *da
     ULONG       outline_offset = 0;
     ULONG       textwidth = 0;
 
-#if defined(DEBUG_ILC_ICONPOSITIONING) && defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_ICONPOSITIONING) || defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -580,7 +581,7 @@ static void IconList_GetIconAreaRectangle(Object *obj, struct IconList_DATA *dat
     ULONG               iconlabel_Width;
     ULONG               iconlabel_Height;
 
-#if defined(DEBUG_ILC_ICONPOSITIONING) && defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_ICONPOSITIONING) || defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -666,7 +667,7 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
     	    	    	     struct IconEntry *entry, struct Rectangle *rect,
 			     LONG index, BOOL firstvis, BOOL lastvis)
 {
-    STRPTR text;
+    STRPTR text, renderflag = "<UHOH>";
     struct TextExtent te;
     ULONG fit;
 
@@ -690,6 +691,11 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
 
     switch(index)
     {
+	case INDEX_TYPE:
+	    /* Special case !! we draw an image instead .. */
+	    text = renderflag;
+	    break;
+
 	case INDEX_NAME:
 	    text = entry->ie_IconListEntry.label;
 	    break;
@@ -718,31 +724,82 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
     if (!text) return;
     if (!text[0]) return;
 
-    fit = TextFit(data->icld_BufferRastPort, text, strlen(text), &te, NULL, 1,
-    	    	   rect->MaxX - rect->MinX + 1,
-		   rect->MaxY - rect->MinY + 1);
-
-    if (!fit) return;
-    
-    SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[(entry->ie_Flags & ICONENTRY_FLAG_SELECTED) ? MPEN_SHINE : MPEN_TEXT], 0, JAM1);
-    
-    switch(data->icld_LVMAttribs->lmva_ColumnAlign[index])
+    if (text == renderflag)
     {
-    	case COLUMN_ALIGN_LEFT:
-    	    Move(data->icld_BufferRastPort, rect->MinX, rect->MinY + data->icld_BufferRastPort->TxBaseline);
-	    break;
-	    
-	case COLUMN_ALIGN_RIGHT:
-    	    Move(data->icld_BufferRastPort, rect->MaxX - te.te_Width, rect->MinY + data->icld_BufferRastPort->TxBaseline);
-	    break;
-	    
-	case COLUMN_ALIGN_CENTER:
-    	    Move(data->icld_BufferRastPort, rect->MinX + (rect->MaxX - rect->MinX + 1 + 1 - te.te_Width) / 2,
-	    	    	   rect->MinY + data->icld_BufferRastPort->TxBaseline);
-	    break;
-	    
+	if (entry->ie_IconListEntry.type == ST_USERDIR)
+	{
+	    if (data->icld_LVMAttribs->lvma_IconDrawer)
+	    {
+		DrawIconStateA
+		  (
+		    data->icld_BufferRastPort, data->icld_LVMAttribs->lvma_IconDrawer, NULL,
+		    rect->MinX + 1, rect->MinY + 1,
+		    (entry->ie_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
+		    __iconList_DrawIconStateTags
+		  );
+	    }
+	    else
+	    {
+		FillPixelArray(data->icld_BufferRastPort,
+		    rect->MinX + 1, rect->MinY + 1,
+		    rect->MaxX - rect->MinX - 1, rect->MaxY - rect->MinY - 1,
+		    0xc0f0f0);
+	    }
+	}
+	else
+	{
+	    if (data->icld_LVMAttribs->lvma_IconFile)
+	    {
+		DrawIconStateA
+		  (
+		    data->icld_BufferRastPort, data->icld_LVMAttribs->lvma_IconFile, NULL,
+		    rect->MinX + 1, rect->MinY + 1,
+		    (entry->ie_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
+		    __iconList_DrawIconStateTags
+		  );
+	    }
+	    else
+	    {
+		FillPixelArray(data->icld_BufferRastPort,
+		    rect->MinX + 1, rect->MinY + 1,
+		    rect->MaxX - rect->MinX - 1, rect->MaxY - rect->MinY - 1,
+		    0xe0e0e0);
+	    }
+	}
     }
-    Text(data->icld_BufferRastPort, text, fit);
+    else
+    {
+	fit = TextFit(data->icld_BufferRastPort, text, strlen(text), &te, NULL, 1,
+		       rect->MaxX - rect->MinX + 1,
+		       rect->MaxY - rect->MinY + 1);
+
+	if (!fit) return;
+	
+	SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[(entry->ie_Flags & ICONENTRY_FLAG_SELECTED) ? MPEN_SHINE : MPEN_TEXT], 0, JAM1);
+
+	if (((rect->MaxY - rect->MinY + 1) - data->icld_IconLabelFont->tf_YSize) > 0)
+	{
+	    rect->MinY += ((rect->MaxY - rect->MinY + 1) - data->icld_IconLabelFont->tf_YSize)/2;
+	}
+	
+	switch(data->icld_LVMAttribs->lmva_ColumnHAlign[index])
+	{
+	    case COLUMN_ALIGN_LEFT:
+		Move(data->icld_BufferRastPort, rect->MinX, rect->MinY + data->icld_BufferRastPort->TxBaseline);
+		break;
+		
+	    case COLUMN_ALIGN_RIGHT:
+		Move(data->icld_BufferRastPort, rect->MaxX - te.te_Width, rect->MinY + data->icld_BufferRastPort->TxBaseline);
+		break;
+		
+	    case COLUMN_ALIGN_CENTER:
+		Move(data->icld_BufferRastPort, rect->MinX + (rect->MaxX - rect->MinX + 1 + 1 - te.te_Width) / 2,
+			       rect->MinY + data->icld_BufferRastPort->TxBaseline);
+		break;
+		
+	}
+	Text(data->icld_BufferRastPort, text, fit);
+    }
 }
 
 /**************************************************************************
@@ -1099,7 +1156,7 @@ static void IconList__LabelFunc_SplitLabel(Object *obj, struct IconList_DATA *da
 ///IconList__LabelFunc_CreateLabel()
 static IPTR IconList__LabelFunc_CreateLabel(Object *obj, struct IconList_DATA *data, struct IconEntry *entry)
 {
-#if defined(DEBUG_ILC_ICONRENDERING) && defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_ICONRENDERING) || defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s('%s')\n", __PRETTY_FUNCTION__, entry->ie_IconListEntry.label));
 #endif
     if (entry->ie_TxtBuf_DisplayedLabel)
@@ -1173,7 +1230,7 @@ AROS_UFH3(
     Class                       *CLASS = *( Class **)param;
     struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 
-#if defined(DEBUG_ILC_LASSO) && defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_LASSO) || defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -1236,7 +1293,7 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
     ULONG txtarea_width;
     ULONG curlabel_TotalLines, curlabel_CurrentLine, offset_y;
 
-#if defined(DEBUG_ILC_ICONRENDERING) && defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_ICONRENDERING) || defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s(message->entry = 0x%p), '%s'\n", __PRETTY_FUNCTION__, message->entry, message->entry->ie_IconListEntry.label));
 #endif
 
@@ -1558,7 +1615,7 @@ IPTR IconList__MUIM_IconList_RethinkDimensions(struct IClass *CLASS, Object *obj
                                 maxy = 0;
     struct Rectangle            icon_rect;
 
-#if defined(DEBUG_ILC_ICONPOSITIONING) && defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_ICONPOSITIONING) || defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -1677,7 +1734,7 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
     BOOL                        next;
     struct Rectangle            iconrect;
 
-#if defined(DEBUG_ILC_ICONPOSITIONING) && defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_ICONPOSITIONING) || defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -1688,56 +1745,64 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
         next = FALSE;
         if ((entry->ie_DiskObj != NULL) && (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
         {
-            next = TRUE;
-            entry->ie_IconX = cur_x;
-            entry->ie_IconY = cur_y;
-    
-            if (entry->ie_Flags & ICONENTRY_FLAG_SELECTED)
-            {
-                if (data->icld_SelectionLastClicked == NULL) data->icld_SelectionLastClicked = entry;
-                if (data->icld_FocusIcon == NULL) data->icld_FocusIcon = entry;
-            }
+	    if (((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == 0)
+		 && (entry->ie_IconX != NO_ICON_POSITION) &&  (entry->ie_IconY != NO_ICON_POSITION))
+	    {
 
-            if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-            {
-                maxw = data->icld_IconAreaLargestWidth + data->icld__Option_IconHorizontalSpacing;
-                maxh = data->icld_IconLargestHeight + data->icld__Option_IconImageSpacing + data->icld_LabelLargestHeight + data->icld__Option_IconVerticalSpacing;
-                gridx = maxw;
-                gridy = maxh;
-            }
-            else
-            {
-                if (!(pass_first)) pass_first = entry;
+	    }
+	    else
+	    {
+		next = TRUE;
+		entry->ie_IconX = cur_x;
+		entry->ie_IconY = cur_y;
 
-                IconList_GetIconAreaRectangle(obj, data, entry, &iconrect);
+		if (entry->ie_Flags & ICONENTRY_FLAG_SELECTED)
+		{
+		    if (data->icld_SelectionLastClicked == NULL) data->icld_SelectionLastClicked = entry;
+		    if (data->icld_FocusIcon == NULL) data->icld_FocusIcon = entry;
+		}
 
-                if (entry->ie_AreaWidth < maxw)
-                    entry->ie_IconX += ( maxw - entry->ie_AreaWidth ) / 2;
+		if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+		{
+		    maxw = data->icld_IconAreaLargestWidth + data->icld__Option_IconHorizontalSpacing;
+		    maxh = data->icld_IconLargestHeight + data->icld__Option_IconImageSpacing + data->icld_LabelLargestHeight + data->icld__Option_IconVerticalSpacing;
+		    gridx = maxw;
+		    gridy = maxh;
+		}
+		else
+		{
+		    if (!(pass_first)) pass_first = entry;
 
-                if ((maxw < entry->ie_AreaWidth) || (maxh < entry->ie_AreaHeight))
-                {
-                    if (maxw < entry->ie_AreaWidth) maxw = entry->ie_AreaWidth;
-                    if (maxh < entry->ie_AreaHeight) maxh = entry->ie_AreaHeight;
-                    if (pass_first != entry)
-                    {
-                        entry = pass_first;
-                        cur_x = entry->ie_IconX;
-                        cur_y = entry->ie_IconY;
-                        continue;
-                    }
-                }
+		    IconList_GetIconAreaRectangle(obj, data, entry, &iconrect);
 
-                if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
-                {
-                    gridx = maxw;
-                    gridy = entry->ie_AreaHeight + data->icld__Option_IconHorizontalSpacing;
-                }
-                else
-                {
-                    gridx = entry->ie_AreaWidth + data->icld__Option_IconVerticalSpacing;
-                    gridy = maxh;
-                }
-            }
+		    if (entry->ie_AreaWidth < maxw)
+			entry->ie_IconX += ( maxw - entry->ie_AreaWidth ) / 2;
+
+		    if ((maxw < entry->ie_AreaWidth) || (maxh < entry->ie_AreaHeight))
+		    {
+			if (maxw < entry->ie_AreaWidth) maxw = entry->ie_AreaWidth;
+			if (maxh < entry->ie_AreaHeight) maxh = entry->ie_AreaHeight;
+			if (pass_first != entry)
+			{
+			    entry = pass_first;
+			    cur_x = entry->ie_IconX;
+			    cur_y = entry->ie_IconY;
+			    continue;
+			}
+		    }
+
+		    if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
+		    {
+			gridx = maxw;
+			gridy = entry->ie_AreaHeight + data->icld__Option_IconHorizontalSpacing;
+		    }
+		    else
+		    {
+			gridx = entry->ie_AreaWidth + data->icld__Option_IconVerticalSpacing;
+			gridy = maxh;
+		    }
+		}
+	    }
         }
         if ((entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode)) != NULL)
         {
@@ -1835,16 +1900,24 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
 	    data->icld_LVMAttribs->lmva_ColumnPos[i] = i;
 	    data->icld_LVMAttribs->lmva_ColumnFlags[i] = LVMCF_COLVISIBLE;
 	    data->icld_LVMAttribs->lmva_ColumnWidth[i] = 100;
-	    data->icld_LVMAttribs->lmva_ColumnAlign[i] = COLUMN_ALIGN_LEFT;
+	    data->icld_LVMAttribs->lmva_ColumnHAlign[i] = COLUMN_ALIGN_LEFT;
 	    switch (i)
 	    {
+		case INDEX_TYPE:
+		    data->icld_LVMAttribs->lmva_ColumnHAlign[i] = COLUMN_ALIGN_RIGHT;
+		    data->icld_LVMAttribs->lmva_ColumnFlags[i] |= (LVMCF_COLCLICKABLE|LVMCF_COLSORTABLE);
+		    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Type";
+#define ICONENTRY_SIZE 16
+		    data->icld_LVMAttribs->lmva_ColumnWidth[i] = ICONENTRY_SIZE + 2;
+		    break;
+
 		case INDEX_NAME:
 		    data->icld_LVMAttribs->lmva_ColumnFlags[i] |= (LVMCF_COLCLICKABLE|LVMCF_COLSORTABLE);
 		    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Name";
 		    break;
 
 		case INDEX_SIZE:
-		    data->icld_LVMAttribs->lmva_ColumnAlign[i] = COLUMN_ALIGN_RIGHT;
+		    data->icld_LVMAttribs->lmva_ColumnHAlign[i] = COLUMN_ALIGN_RIGHT;
 		    data->icld_LVMAttribs->lmva_ColumnFlags[i] | LVMCF_COLSORTABLE;
 		    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Size";
 		    break;
@@ -1875,7 +1948,7 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
 	data->icld_LVMAttribs->lmva_LastSelectedColumn = -1;
 	data->icld_LVMAttribs->lmva_SortColumn = INDEX_NAME;
 	data->icld_LVMAttribs->lmva_HeaderHeight = HEADERLINE_EXTRAHEIGHT + data->icld_IconLabelFont->tf_YSize;
-	data->icld_LVMAttribs->lmva_RowHeight = LINE_EXTRAHEIGHT + data->icld_IconLabelFont->tf_YSize;
+	data->icld_LVMAttribs->lmva_RowHeight = LINE_EXTRAHEIGHT + ((ICONENTRY_SIZE > data->icld_IconLabelFont->tf_YSize) ? ICONENTRY_SIZE : data->icld_IconLabelFont->tf_YSize);
 	data->icld_LVMAttribs->lvma_Flags = LVMAF_HEADERDRAWTOEND;
     }
 
@@ -1974,7 +2047,7 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
                                 //oldwidth = data->icld_ViewWidth,
                                 //oldheight = data->icld_ViewHeight;
 
-#if defined(DEBUG_ILC_FUNCS) && defined(DEBUG_ILC_ATTRIBS)
+#if defined(DEBUG_ILC_FUNCS) || defined(DEBUG_ILC_ATTRIBS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -2047,20 +2120,20 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
                         struct BitMap *bitmap_New = NULL;
                         ULONG tmp_RastDepth;
 
-#if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
+#if defined(DEBUG_ILC_ATTRIBS) || defined(DEBUG_ILC_ICONRENDERING)
                         D(bug("[IconList] %s: MUIA_IconList_DisplayFlags & ICONLIST_DISP_BUFFERED\n", __PRETTY_FUNCTION__));
 #endif
 			if ((data->icld_BufferRastPort != NULL)
 			    && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
 			{
-#if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
+#if defined(DEBUG_ILC_ATTRIBS) || defined(DEBUG_ILC_ICONRENDERING)
 			    D(bug("[IconList] %s: BackLayer @ %p for BackRastport @ %p\n", __PRETTY_FUNCTION__, data->icld_BufferRastPort->Layer, data->icld_BufferRastPort));
 #endif
 			    if ((GetBitMapAttr(data->icld_BufferRastPort->BitMap, BMA_WIDTH) != data->icld_ViewWidth)
 			        || (GetBitMapAttr(data->icld_BufferRastPort->BitMap, BMA_HEIGHT) != data->icld_ViewHeight))
 			    {
 				struct Layer *oldLayer = data->icld_BufferRastPort->Layer;
-#if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
+#if defined(DEBUG_ILC_ATTRIBS) || defined(DEBUG_ILC_ICONRENDERING)
 				D(bug("[IconList] %s: Destroying old BackLayer\n", __PRETTY_FUNCTION__));
 #endif
 				data->icld_BufferRastPort = data->icld_DisplayRastPort;
@@ -2091,7 +2164,7 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 				if (buffLayer != NULL)
 				{
 				    data->icld_BufferRastPort = buffLayer->rp;
-#if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
+#if defined(DEBUG_ILC_ATTRIBS) || defined(DEBUG_ILC_ICONRENDERING)
 				    D(bug("[IconList] %s: FrontRastPort @ %p, New BackLayer @ %p, BackRastport @ %p\n", __PRETTY_FUNCTION__, data->icld_DisplayRastPort, data->icld_BufferRastPort->Layer, data->icld_BufferRastPort));
 #endif
 				    SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
@@ -2256,14 +2329,14 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 
             /* We listen for MUIA_Background and set default values for known types */
             case MUIA_Background:
-#if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
+#if defined(DEBUG_ILC_ATTRIBS) || defined(DEBUG_ILC_ICONRENDERING)
                 D(bug("[IconList] %s: MUIA_Background\n", __PRETTY_FUNCTION__));
 #endif
                 {
                     char *bgmode_string = (char *)tag->ti_Data;
                     BYTE this_mode = bgmode_string[0] - 48;
 
-#if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
+#if defined(DEBUG_ILC_ATTRIBS) || defined(DEBUG_ILC_ICONRENDERING)
                     D(bug("[IconList] %s: MUIA_Background | MUI BG Mode = %d\n", __PRETTY_FUNCTION__, this_mode));
 #endif
                     switch (this_mode)
@@ -2328,7 +2401,7 @@ IPTR IconList__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *message)
 #define STORE                   *(message->opg_Storage)
     struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 
-#if defined(DEBUG_ILC_FUNCS) && defined(DEBUG_ILC_ATTRIBS)
+#if defined(DEBUG_ILC_FUNCS) || defined(DEBUG_ILC_ATTRIBS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -2470,13 +2543,18 @@ IPTR IconList__MUIM_Setup(struct IClass *CLASS, Object *obj, struct MUIP_Setup *
 {
     struct IconList_DATA        *data = INST_DATA(CLASS, obj);
     struct IconEntry            *node = NULL;
-    IPTR                        geticon_error = 0;
+    IPTR                        geticon_error = 0, iconlistScreen;
 
 #if defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     if (!DoSuperMethodA(CLASS, obj, (Msg) message)) return (IPTR)NULL;
+
+    iconlistScreen = _screen(obj);
+#if defined(DEBUG_ILC_ICONRENDERING)
+    D(bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistScreen));
+#endif
 
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
@@ -2509,6 +2587,44 @@ IPTR IconList__MUIM_Setup(struct IClass *CLASS, Object *obj, struct MUIP_Setup *
     data->icld__Option_LabelTextBorderWidth       = ILC_ICONLABEL_BORDERWIDTH_DEFAULT;
     data->icld__Option_LabelTextBorderHeight      = ILC_ICONLABEL_BORDERHEIGHT_DEFAULT;
 
+    if (data->icld_LVMAttribs)
+    {
+	data->icld_LVMAttribs->lvma_IconDrawer = GetIconTags
+	(
+	    "WANDERER:Icons/drawer",
+	    (iconlistScreen) ? ICONGETA_Screen : TAG_IGNORE, iconlistScreen,
+	    (iconlistScreen) ? ICONGETA_RemapIcon : TAG_IGNORE, TRUE,
+	    ICONGETA_FailIfUnavailable,        TRUE,
+	    ICONGETA_GenerateImageMasks,       TRUE,
+	    ICONA_ErrorCode,                   &geticon_error,
+	    TAG_DONE
+	);
+
+#if defined(DEBUG_ILC_ICONRENDERING)
+	if (data->icld_LVMAttribs->lvma_IconDrawer == NULL)
+	{
+	    D(bug("[IconList] %s: Couldnt get drawer DiskObject! (error code = 0x%p)\n", __PRETTY_FUNCTION__, geticon_error));
+	}
+#endif
+	data->icld_LVMAttribs->lvma_IconFile = GetIconTags
+	(
+	    "WANDERER:Icons/file",
+	    (iconlistScreen) ? ICONGETA_Screen : TAG_IGNORE, iconlistScreen,
+	    (iconlistScreen) ? ICONGETA_RemapIcon : TAG_IGNORE, TRUE,
+	    ICONGETA_FailIfUnavailable,        TRUE,
+	    ICONGETA_GenerateImageMasks,       TRUE,
+	    ICONA_ErrorCode,                   &geticon_error,
+	    TAG_DONE
+	);
+
+#if defined(DEBUG_ILC_ICONRENDERING)
+	if (data->icld_LVMAttribs->lvma_IconFile == NULL)
+	{
+	    D(bug("[IconList] %s: Couldnt get file DiskObject! (error code = 0x%p)\n", __PRETTY_FUNCTION__, geticon_error));
+	}
+#endif
+    }
+
 #if defined(__AROS__)
     ForeachNode(&data->icld_IconList, node)
 #else
@@ -2517,10 +2633,6 @@ IPTR IconList__MUIM_Setup(struct IClass *CLASS, Object *obj, struct MUIP_Setup *
     {
         if (!node->ie_DiskObj)
         {
-            IPTR iconlistScreen = _screen(obj);
-#if defined(DEBUG_ILC_ICONRENDERING)
-            D(bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistScreen));
-#endif
             if (!(node->ie_DiskObj = GetIconTags(node->ie_IconNode.ln_Name,
                                                 (iconlistScreen) ? ICONGETA_Screen : TAG_IGNORE, iconlistScreen,
                                                 (iconlistScreen) ? ICONGETA_RemapIcon : TAG_IGNORE, TRUE,
@@ -2614,7 +2726,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 		if (buffLayer != NULL)
 		{
 		    data->icld_BufferRastPort = buffLayer->rp;
-#if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
+#if defined(DEBUG_ILC_ATTRIBS) || defined(DEBUG_ILC_ICONRENDERING)
 		    D(bug("[IconList] %s: FrontRastPort @ %p, New BackLayer @ %p, BackRastport @ %p\n", __PRETTY_FUNCTION__, data->icld_DisplayRastPort, data->icld_BufferRastPort->Layer, data->icld_BufferRastPort));
 #endif
 		    SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
@@ -2928,10 +3040,12 @@ D(bug("[IconList]: %s(obj @ 0x%p)\n", __PRETTY_FUNCTION__, obj));
 		RenderListViewModeHeaderField(obj, data, &field_rect, index, FALSE);
 		x += data->icld_LVMAttribs->lmva_ColumnWidth[index];
 	    }
+#if defined(DEBUG_ILC_ICONRENDERING)
 	    else
 	    {
 		D(bug("[IconList] %s: Column '%s' outside of update area .. skipping\n", __PRETTY_FUNCTION__, data->icld_LVMAttribs->lmva_ColumnTitle[i]));
 	    }
+#endif
 	}
 
 	if ((data->icld_LVMAttribs->lvma_Flags & LVMAF_HEADERDRAWTOEND) == LVMAF_HEADERDRAWTOEND)
@@ -3070,8 +3184,9 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 	    {
 		LONG count = 0, index = -1;
 
-D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY + ICONLIST_DISP_MODELIST\n", __PRETTY_FUNCTION__, draw_id));
-		
+#if defined(DEBUG_ILC_ICONRENDERING)
+		D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY + ICONLIST_DISP_MODELIST\n", __PRETTY_FUNCTION__, draw_id));
+#endif
 		rect.MinX = _mleft(obj);
 		rect.MaxX = _mleft(obj) + _mwidth(obj) - 1;
 
@@ -3117,8 +3232,9 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY + ICONLIST_DISP_MODELIST\n", __PRETT
 	    }
 	    else
 	    {
+#if defined(DEBUG_ILC_ICONRENDERING)
 		D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY (entry @ 0x%p)\n", __PRETTY_FUNCTION__, draw_id, data->update_entry));
-
+#endif
 		IconList_GetIconAreaRectangle(obj, data, data->update_entry, &rect);
 
 		rect.MinX += _mleft(obj) + (data->update_entry->ie_IconX - data->icld_ViewX);
@@ -3141,6 +3257,11 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY + ICONLIST_DISP_MODELIST\n", __PRETT
 		    }
 		}
 
+		if (rect.MinX < _mleft(obj)) rect.MinX = _mleft(obj);
+		if (rect.MaxX > _mright(obj)) rect.MaxX =_mright(obj);
+		if (rect.MinY < _mtop(obj)) rect.MinY = _mtop(obj);
+		if (rect.MaxY > _mbottom(obj)) rect.MaxY = _mbottom(obj);
+		
 		clip = MUI_AddClipping(muiRenderInfo(obj), rect.MinX, rect.MinY, rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1);
 
 #if defined(DEBUG_ILC_ICONRENDERING)
@@ -3404,7 +3525,7 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY + ICONLIST_DISP_MODELIST\n", __PRETT
 		    || (GetBitMapAttr(data->icld_BufferRastPort->BitMap, BMA_HEIGHT) != data->icld_ViewHeight))
 		{
 		    struct Layer *oldLayer = data->icld_BufferRastPort->Layer;
-#if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
+#if defined(DEBUG_ILC_ATTRIBS) || defined(DEBUG_ILC_ICONRENDERING)
 		    D(bug("[IconList] %s: Destroying old BackLayer\n", __PRETTY_FUNCTION__));
 #endif
 		    data->icld_BufferRastPort = data->icld_DisplayRastPort;
@@ -3435,9 +3556,9 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY + ICONLIST_DISP_MODELIST\n", __PRETT
 			if (buffLayer != NULL)
 			{
 			    data->icld_BufferRastPort = buffLayer->rp;
-    #if defined(DEBUG_ILC_ATTRIBS) && defined(DEBUG_ILC_ICONRENDERING)
+#if defined(DEBUG_ILC_ATTRIBS) || defined(DEBUG_ILC_ICONRENDERING)
 			    D(bug("[IconList] %s: FrontRastPort @ %p, New BackLayer @ %p, BackRastport @ %p\n", __PRETTY_FUNCTION__, data->icld_DisplayRastPort, data->icld_BufferRastPort->Layer, data->icld_BufferRastPort));
-    #endif
+#endif
 			    SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
 			    data->icld_DrawOffsetX = 0;
 			    data->icld_DrawOffsetY = 0;
@@ -5361,7 +5482,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 				else
 				{
 				    struct Window * thisWindow = NULL;
-#if defined(DEBUG_ILC_EVENTS) && defined(DEBUG_ILC_LASSO)
+#if defined(DEBUG_ILC_EVENTS) || defined(DEBUG_ILC_LASSO)
 				    D(bug("[IconList] %s: Starting Lasso\n", __PRETTY_FUNCTION__));
 #endif
 				    /* No entry clicked on ... Start Lasso-selection */
@@ -5504,7 +5625,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 			    else
 			    {
 				struct Window * thisWindow = NULL;
-#if defined(DEBUG_ILC_EVENTS) && defined(DEBUG_ILC_LASSO)
+#if defined(DEBUG_ILC_EVENTS) || defined(DEBUG_ILC_LASSO)
 				D(bug("[IconList] %s: Starting Lasso\n", __PRETTY_FUNCTION__));
 #endif
 				/* No entry clicked on ... Start Lasso-selection */
@@ -5600,7 +5721,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                     {
                         if (data->icld_LassoActive == TRUE)
                         {
-#if defined(DEBUG_ILC_EVENTS) && defined(DEBUG_ILC_LASSO)
+#if defined(DEBUG_ILC_EVENTS) || defined(DEBUG_ILC_LASSO)
                             D(bug("[IconList] %s: Removing Lasso\n", __PRETTY_FUNCTION__));
 #endif
                             // End Lasso-selection
@@ -5735,7 +5856,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                     }
                     else if (data->icld_LassoActive == TRUE)
                     {
-#if defined(DEBUG_ILC_EVENTS) && defined(DEBUG_ILC_LASSO)
+#if defined(DEBUG_ILC_EVENTS) || defined(DEBUG_ILC_LASSO)
                         D(bug("[IconList] %s: Update Lasso\n", __PRETTY_FUNCTION__));
 #endif
                         //Lasso active ..
@@ -6063,7 +6184,7 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
     LONG                        first_x = -1,
                                 first_y = -1;
 
-#if defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_FUNCS) || defined(DEBUG_ILC_ICONDRAGDROP)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -6127,9 +6248,6 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
 	    first_y = entry->ie_IconY;
 	}
 #endif
-
-        img->touchx = data->click_x - first_x;
-        img->touchy = data->click_y - first_y;
 
         if ((img->bm = AllocBitMap(img->width, img->height, depth, BMF_CLEAR, _screen(obj)->RastPort.BitMap)))
         {
@@ -6199,7 +6317,7 @@ IPTR IconList__MUIM_DeleteDragImage(struct IClass *CLASS, Object *obj, struct MU
 {
     struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 
-#if defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_FUNCS) || defined(DEBUG_ILC_ICONDRAGDROP)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -6221,7 +6339,7 @@ MUIM_DragQuery
 **************************************************************************/
 IPTR IconList__MUIM_DragQuery(struct IClass *CLASS, Object *obj, struct MUIP_DragQuery *message)
 {
-#if defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_FUNCS) || defined(DEBUG_ILC_ICONDRAGDROP)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
     
@@ -6259,7 +6377,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
 {
     struct IconList_DATA        *data = INST_DATA(CLASS, obj);
 
-#if defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_FUNCS) || defined(DEBUG_ILC_ICONDRAGDROP)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -6318,7 +6436,9 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
 #endif
             goto dragdropdone;
         }
+#if defined(DEBUG_ILC_ICONDRAGDROP)
         D(bug("[IconList] %s: Allocated IconList_Drop_Event @ %p\n", __PRETTY_FUNCTION__, dragDropEvent));
+#endif
 
         NewList(&dragDropEvent->drop_SourceList);
 
@@ -6440,7 +6560,26 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
                 D(bug("[IconList] %s: drop entry: Entry Move detected ..\n", __PRETTY_FUNCTION__));
 #endif
                 iconMove = TRUE;
-                SET(obj, MUIA_IconList_IconsMoved, (IPTR)entry); // Now notify
+
+		/* Adjust entry posiions .. */
+#if defined(DEBUG_ILC_ICONDRAGDROP)
+                D(bug("[IconList] %s: drop entry: message x,y = %d, %d  click = %d, %d..\n", __PRETTY_FUNCTION__,  message->x,  message->y, data->click_x, data->click_y));
+#endif	
+		LONG offset_x = message->x - (data->click_x + _mleft(obj));
+		LONG offset_y = message->y - (data->click_y + _mtop(obj));
+
+		entry = (IPTR)MUIV_IconList_NextIcon_Start;
+		while (entry != (IPTR)MUIV_IconList_NextIcon_End)
+		{
+		    DoMethod(message->obj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);
+
+		    if (entry != (IPTR)MUIV_IconList_NextIcon_End)
+		    {
+			entry->ile_IconEntry->ie_IconX += offset_x;
+			entry->ile_IconEntry->ie_IconY += offset_y;
+		    }
+		    SET(obj, MUIA_IconList_IconMoved, (IPTR)entry); // Now notify
+		}
                 MUI_Redraw(obj,MADF_DRAWOBJECT);
                 DoMethod(obj, MUIM_IconList_CoordsSort);
             }
@@ -6683,12 +6822,13 @@ IPTR IconList__MUIM_IconList_CoordsSort(struct IClass *CLASS, Object *obj, struc
 
     struct List                 list_VisibleIcons;
     struct List                 list_HiddenIcons;
+    struct List                 list_UnplacedIcons;
 
     /*
         perform a quick sort of the iconlist based on entry coords
         this method DOESNT cause any visual output.
     */
-#if defined(DEBUG_ILC_FUNCS) && defined(DEBUG_ILC_ICONSORTING)
+#if defined(DEBUG_ILC_FUNCS) || defined(DEBUG_ILC_ICONSORTING)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -6699,11 +6839,13 @@ IPTR IconList__MUIM_IconList_CoordsSort(struct IClass *CLASS, Object *obj, struc
     while ((entry = (struct IconEntry *)RemTail((struct List*)&data->icld_IconList)))
     {
         if (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-            AddHead((struct List*)&list_VisibleIcons, (struct Node *)&entry->ie_IconNode);
+	{
+	    AddHead((struct List*)&list_VisibleIcons, (struct Node *)&entry->ie_IconNode);
+	}
         else
             AddHead((struct List*)&list_HiddenIcons, (struct Node *)&entry->ie_IconNode);
     }
-
+   
     while ((entry = (struct IconEntry *)RemTail((struct List*)&list_VisibleIcons)))
     {
         if ((test_icon = (struct IconEntry *)GetTail(&data->icld_IconList)) != NULL)
@@ -6773,10 +6915,10 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
                                 list_SortedIcons,
                                 list_HiddenIcons;
 
-    BOOL                        sortme, enqueue = FALSE;
+    BOOL                        sortme, reversable = TRUE, enqueue = FALSE;
     int                         i, visible_count = 0;
 
-#if defined(DEBUG_ILC_FUNCS) && defined(DEBUG_ILC_ICONSORTING)
+#if defined(DEBUG_ILC_FUNCS) || defined(DEBUG_ILC_ICONSORTING)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -6786,206 +6928,199 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
     data->icld_IconLargestHeight = 0;
     data->icld_LabelLargestHeight = 0;
 
-    if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) != 0)
-    {
 #if defined(DEBUG_ILC_ICONSORTING)
-        D(bug("[IconList] %s: Sorting (Flags %x)\n", __PRETTY_FUNCTION__, (data->icld_SortFlags & MUIV_IconList_Sort_MASK)));
+    D(bug("[IconList] %s: Sort-Flags : %x\n", __PRETTY_FUNCTION__, (data->icld_SortFlags & MUIV_IconList_Sort_MASK)));
 #endif
-        NewList((struct List*)&list_VisibleIcons);
-        NewList((struct List*)&list_SortedIcons);
-        NewList((struct List*)&list_HiddenIcons);
+    NewList((struct List*)&list_VisibleIcons);
+    NewList((struct List*)&list_SortedIcons);
+    NewList((struct List*)&list_HiddenIcons);
 
-        /*move list into our local list struct(s)*/
-        while ((entry = (struct IconEntry *)RemTail((struct List*)&data->icld_IconList)))
-        {
-            if (entry->ie_DiskObj)
-            {
-                if (entry->ie_IconX != entry->ie_DiskObj->do_CurrentX)
-                {
-                    entry->ie_IconX = entry->ie_DiskObj->do_CurrentX;
-                    if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == 0)
-                        entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
-                }
-                if (entry->ie_IconY != entry->ie_DiskObj->do_CurrentY)
-                {
-                    entry->ie_IconY = entry->ie_DiskObj->do_CurrentY;
-                    if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == 0)
-                        entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
-                }
-            }
-
-            if (!(entry->ie_Flags & ICONENTRY_FLAG_HASICON))
-            {
-                if (data->icld_DisplayFlags & ICONLIST_DISP_SHOWINFO)
-                {
-                    if (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-                    {
-                        entry->ie_Flags &= ~(ICONENTRY_FLAG_VISIBLE|ICONENTRY_FLAG_NEEDSUPDATE);
-                    }
-                }
-                else if (!(entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
-                {
-                    entry->ie_Flags |= (ICONENTRY_FLAG_VISIBLE|ICONENTRY_FLAG_NEEDSUPDATE);
-                }
-            }
-            else
-            {
-                if (!(entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
-                {
-                    entry->ie_Flags |= (ICONENTRY_FLAG_VISIBLE|ICONENTRY_FLAG_NEEDSUPDATE);
-                }
-            }
-
-            /* Now we have fixed visibility lets dump them into the correct list for sorting */
-            if (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-            {
-                if(entry->ie_AreaWidth > data->icld_IconAreaLargestWidth) data->icld_IconAreaLargestWidth = entry->ie_AreaWidth;
-                if(entry->ie_AreaHeight > data->icld_IconAreaLargestHeight) data->icld_IconAreaLargestHeight = entry->ie_AreaHeight;
-                if(entry->ie_IconHeight > data->icld_IconLargestHeight) data->icld_IconLargestHeight = entry->ie_IconHeight;
-                if((entry->ie_AreaHeight - entry->ie_IconHeight) > data->icld_LabelLargestHeight) data->icld_LabelLargestHeight = entry->ie_AreaHeight - entry->ie_IconHeight;
-
-                if (((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == 0) && (entry->ie_IconX == NO_ICON_POSITION))
-                    AddTail((struct List*)&list_VisibleIcons, (struct Node *)&entry->ie_IconNode);
-                else
-                    AddHead((struct List*)&list_VisibleIcons, (struct Node *)&entry->ie_IconNode);
-                visible_count++;
-            }
-            else
-            {
-                if (entry->ie_Flags & ICONENTRY_FLAG_SELECTED)
-                {
-                    Remove(&entry->ie_SelectionNode);
-                }
-                entry->ie_Flags &= ~(ICONENTRY_FLAG_SELECTED|ICONENTRY_FLAG_FOCUS);
-                if (data->icld_SelectionLastClicked == entry) data->icld_SelectionLastClicked = NULL;
-                if (data->icld_FocusIcon == entry) data->icld_FocusIcon = data->icld_SelectionLastClicked;
-                AddHead((struct List*)&list_HiddenIcons, (struct Node *)&entry->ie_IconNode);
-            }
-        }
-
-        /* Copy each visible entry back to the main list, sorting as we go*/
-
-        while ((entry = (struct IconEntry *)RemHead((struct List*)&list_VisibleIcons)))
-        {
-            icon1 = (struct IconEntry *)GetHead(&list_SortedIcons);
-            icon2 = NULL;
-
-            sortme = FALSE;
-
-            if (visible_count > 1)
-            {
-//                D(bug(" - %s %s %s %i\n",entry->ie_IconListEntry.label,entry->ie_TxtBuf_DATE,entry->ie_TxtBuf_TIME,entry->ie_FileInfoBlock->fib_Size));
-
-                while (icon1)
-                {
-                    if(((icon1->ie_IconListEntry.type == ST_ROOT) || (icon1->ie_IconListEntry.type == ST_LINKDIR) || (icon1->ie_IconListEntry.type == ST_LINKFILE))
-			|| (data->icld_SortFlags & MUIV_IconList_Sort_DrawersMixed))
-                    {
-                        /*volume list or drawers mixed*/
-                        sortme = TRUE;
-                    }
-                    else
-                    {
-                        /*drawers first*/
-                        if ((icon1->ie_IconListEntry.type == ST_USERDIR) && (entry->ie_IconListEntry.type == ST_USERDIR))
-                        {
-                            sortme = TRUE;
-                        }
-                        else
-                        {
-                            if ((icon1->ie_IconListEntry.type != ST_USERDIR) && (entry->ie_IconListEntry.type != ST_USERDIR))
-                                sortme = TRUE;
-                            else
-                            {
-                                /* we are the first drawer to arrive or we need to insert ourselves
-                                   due to being sorted to the end of the drawers*/
-
-                                if ((!icon2 || icon2->ie_IconListEntry.type == ST_USERDIR) &&
-                                    (entry->ie_IconListEntry.type == ST_USERDIR) &&
-                                    (icon1->ie_IconListEntry.type != ST_USERDIR))
-                                {
-//                                    D(bug("force %s\n",entry->ie_IconListEntry.label));
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if (sortme)
-                    {
-                        i = 0;
-                
-                        if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_ByDate)
-                        {
-                            /* Sort by Date */
-                            i = CompareDates((const struct DateStamp *)&entry->ie_FileInfoBlock->fib_Date,(const struct DateStamp *)&icon1->ie_FileInfoBlock->fib_Date);
-                        }
-                        else if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_BySize)
-                        {
-                            /* Sort by Size .. */
-                            i = entry->ie_FileInfoBlock->fib_Size - icon1->ie_FileInfoBlock->fib_Size;
-                        }
-                        else if (((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_MASK) && ((entry->ie_IconListEntry.type == ST_FILE) || (entry->ie_IconListEntry.type == ST_USERDIR)))
-                        {
-                           /* Sort by Type .. */
-#warning "TODO: Sort icons based on type using datatypes"
-                        }
-                        else
-                        {
-                            if (
-                                    ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_MASK) || 
-                                    ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_ByName) ||
-                                    (entry->ie_IconX == NO_ICON_POSITION)
-                               )
-                            {
-                                /* Sort by Name .. */
-                                i = Stricmp(entry->ie_IconListEntry.label, icon1->ie_IconListEntry.label);
-                                if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_MASK)
-                                    enqueue = TRUE;
-                            }
-                            else
-                            {
-                                /* coord sort */
-#warning "TODO: Implement default coord sorting.."
-                            }
-                        }
-
-                        if (data->icld_SortFlags & MUIV_IconList_Sort_Reverse)
-                        {
-                            if (i > 0)
-                                break;
-                        }
-                        else if	(i < 0)
-                            break;
-                    }
-                    icon2 = icon1;
-                    icon1 = (struct IconEntry *)GetSucc(&icon1->ie_IconNode);
-                }
-            }
-            Insert((struct List*)&list_SortedIcons, (struct Node *)&entry->ie_IconNode, (struct Node *)&icon2->ie_IconNode);
-        }
-	if (enqueue)
+    /*move list into our local list struct(s)*/
+    while ((entry = (struct IconEntry *)RemTail((struct List*)&data->icld_IconList)))
+    {
+	if (entry->ie_DiskObj)
 	{
-            /* Quickly resort based on node priorities .. */
-            while ((entry = (struct IconEntry *)RemHead((struct List*)&list_SortedIcons)))
-            {
-                Enqueue((struct List*)&data->icld_IconList, (struct Node *)&entry->ie_IconNode);
-            }
+	    if (entry->ie_IconX != entry->ie_DiskObj->do_CurrentX)
+	    {
+		entry->ie_IconX = entry->ie_DiskObj->do_CurrentX;
+		if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == 0)
+		    entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
+	    }
+	    if (entry->ie_IconY != entry->ie_DiskObj->do_CurrentY)
+	    {
+		entry->ie_IconY = entry->ie_DiskObj->do_CurrentY;
+		if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == 0)
+		    entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
+	    }
+	}
+
+	if (!(entry->ie_Flags & ICONENTRY_FLAG_HASICON))
+	{
+	    if (data->icld_DisplayFlags & ICONLIST_DISP_SHOWINFO)
+	    {
+		if (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+		{
+		    entry->ie_Flags &= ~(ICONENTRY_FLAG_VISIBLE|ICONENTRY_FLAG_NEEDSUPDATE);
+		}
+	    }
+	    else if (!(entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
+	    {
+		entry->ie_Flags |= (ICONENTRY_FLAG_VISIBLE|ICONENTRY_FLAG_NEEDSUPDATE);
+	    }
 	}
 	else
 	{
-            while ((entry = (struct IconEntry *)RemHead((struct List*)&list_SortedIcons)))
-            {
-                AddTail((struct List*)&data->icld_IconList, (struct Node *)&entry->ie_IconNode);
-            }
+	    if (!(entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
+	    {
+		entry->ie_Flags |= (ICONENTRY_FLAG_VISIBLE|ICONENTRY_FLAG_NEEDSUPDATE);
+	    }
+	}
+
+	/* Now we have fixed visibility lets dump them into the correct list for sorting */
+	if (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+	{
+	    if(entry->ie_AreaWidth > data->icld_IconAreaLargestWidth) data->icld_IconAreaLargestWidth = entry->ie_AreaWidth;
+	    if(entry->ie_AreaHeight > data->icld_IconAreaLargestHeight) data->icld_IconAreaLargestHeight = entry->ie_AreaHeight;
+	    if(entry->ie_IconHeight > data->icld_IconLargestHeight) data->icld_IconLargestHeight = entry->ie_IconHeight;
+	    if((entry->ie_AreaHeight - entry->ie_IconHeight) > data->icld_LabelLargestHeight) data->icld_LabelLargestHeight = entry->ie_AreaHeight - entry->ie_IconHeight;
+
+	    if (((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == 0) && (entry->ie_IconX == NO_ICON_POSITION))
+		AddTail((struct List*)&list_VisibleIcons, (struct Node *)&entry->ie_IconNode);
+	    else
+		AddHead((struct List*)&list_VisibleIcons, (struct Node *)&entry->ie_IconNode);
+	    visible_count++;
+	}
+	else
+	{
+	    if (entry->ie_Flags & ICONENTRY_FLAG_SELECTED)
+	    {
+		Remove(&entry->ie_SelectionNode);
+	    }
+	    entry->ie_Flags &= ~(ICONENTRY_FLAG_SELECTED|ICONENTRY_FLAG_FOCUS);
+	    if (data->icld_SelectionLastClicked == entry) data->icld_SelectionLastClicked = NULL;
+	    if (data->icld_FocusIcon == entry) data->icld_FocusIcon = data->icld_SelectionLastClicked;
+	    AddHead((struct List*)&list_HiddenIcons, (struct Node *)&entry->ie_IconNode);
+	}
+    }
+
+    /* Copy each visible entry back to the main list, sorting as we go*/
+    while ((entry = (struct IconEntry *)RemHead((struct List*)&list_VisibleIcons)))
+    {
+	icon1 = (struct IconEntry *)GetHead(&list_SortedIcons);
+	icon2 = NULL;
+
+	sortme = FALSE;
+
+	if (visible_count > 1)
+	{
+#if defined(DEBUG_ILC_ICONSORTING)
+	    D(bug("[IconList] %s:  - %s %s %s %i\n", __PRETTY_FUNCTION__, entry->ie_IconListEntry.label, entry->ie_TxtBuf_DATE, entry->ie_TxtBuf_TIME, entry->ie_FileInfoBlock->fib_Size));
+#endif
+	    while (icon1)
+	    {
+		if(((icon1->ie_IconListEntry.type == ST_ROOT) || (icon1->ie_IconListEntry.type == ST_LINKDIR) || (icon1->ie_IconListEntry.type == ST_LINKFILE))
+		    || (data->icld_SortFlags & MUIV_IconList_Sort_DrawersMixed))
+		{
+		    /*volume list or drawers mixed*/
+		    sortme = TRUE;
+		}
+		else
+		{
+		    /*drawers first*/
+		    if ((icon1->ie_IconListEntry.type == ST_USERDIR) && (entry->ie_IconListEntry.type == ST_USERDIR))
+		    {
+			sortme = TRUE;
+		    }
+		    else
+		    {
+			if ((icon1->ie_IconListEntry.type != ST_USERDIR) && (entry->ie_IconListEntry.type != ST_USERDIR))
+			    sortme = TRUE;
+			else
+			{
+			    /* we are the first drawer to arrive or we need to insert ourselves
+			       due to being sorted to the end of the drawers*/
+
+			    if ((!icon2 || icon2->ie_IconListEntry.type == ST_USERDIR) &&
+				(entry->ie_IconListEntry.type == ST_USERDIR) &&
+				(icon1->ie_IconListEntry.type != ST_USERDIR))
+			    {
+#if defined(DEBUG_ILC_ICONSORTING)
+				D(bug("[IconList] %s: force %s\n", __PRETTY_FUNCTION__, entry->ie_IconListEntry.label));
+#endif
+				break;
+			    }
+			}
+		    }
+		}
+
+		if (sortme)
+		{
+		    i = 0;
+	    
+		    if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == 0)
+		    {
+			if ((entry->ie_IconX != NO_ICON_POSITION) &&  (entry->ie_IconY != NO_ICON_POSITION))
+			{
+			    i = 1;
+			}
+		    }
+		    
+		    if (i == 0)
+		    {
+			if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_ByDate)
+			{
+			    /* Sort by Date */
+			    i = CompareDates((const struct DateStamp *)&entry->ie_FileInfoBlock->fib_Date,(const struct DateStamp *)&icon1->ie_FileInfoBlock->fib_Date);
+			}
+			else if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_BySize)
+			{
+			    /* Sort by Size .. */
+			    i = entry->ie_FileInfoBlock->fib_Size - icon1->ie_FileInfoBlock->fib_Size;
+			}
+			else if (((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_MASK) && ((entry->ie_IconListEntry.type == ST_FILE) || (entry->ie_IconListEntry.type == ST_USERDIR)))
+			{
+			   /* Sort by Type .. */
+#warning "TODO: Sort icons based on type using datatypes"
+			}
+			else
+			{
+			    /* Sort by Name .. */
+			    i = Stricmp(entry->ie_IconListEntry.label, icon1->ie_IconListEntry.label);
+			    if ((data->icld_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_MASK)
+			    {
+				enqueue = TRUE;
+			    }
+			}
+		    }
+
+		    if ((reversable) && data->icld_SortFlags & MUIV_IconList_Sort_Reverse)
+		    {
+			if (i > 0)
+			    break;
+		    }
+		    else if	(i < 0)
+			break;
+		}
+		icon2 = icon1;
+		icon1 = (struct IconEntry *)GetSucc(&icon1->ie_IconNode);
+	    }
+	}
+	Insert((struct List*)&list_SortedIcons, (struct Node *)&entry->ie_IconNode, (struct Node *)&icon2->ie_IconNode);
+    }
+    if (enqueue)
+    {
+	/* Quickly resort based on node priorities .. */
+	while ((entry = (struct IconEntry *)RemHead((struct List*)&list_SortedIcons)))
+	{
+	    Enqueue((struct List*)&data->icld_IconList, (struct Node *)&entry->ie_IconNode);
 	}
     }
     else
     {
-#if defined(DEBUG_ILC_ICONSORTING)
-        D(bug("[IconList] %s: Coord Sorting\n", __PRETTY_FUNCTION__));
-#endif
-        DoMethod(obj, MUIM_IconList_CoordsSort);
+	while ((entry = (struct IconEntry *)RemHead((struct List*)&list_SortedIcons)))
+	{
+	    AddTail((struct List*)&data->icld_IconList, (struct Node *)&entry->ie_IconNode);
+	}
     }
 
     DoMethod(obj, MUIM_IconList_PositionIcons);
@@ -7019,7 +7154,7 @@ IPTR IconList__MUIM_DragReport(struct IClass *CLASS, Object *obj, struct MUIP_Dr
     struct Window       *wnd = _window(obj);
     struct Layer        *l = NULL;
 
-#if defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_FUNCS) || defined(DEBUG_ILC_ICONDRAGDROP)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -7037,10 +7172,12 @@ IPTR IconList__MUIM_DragReport(struct IClass *CLASS, Object *obj, struct MUIP_Dr
 **************************************************************************/
 IPTR IconList__MUIM_UnknownDropDestination(struct IClass *CLASS, Object *obj, struct MUIP_UnknownDropDestination *message)
 {
-#if defined(DEBUG_ILC_FUNCS)
+#if defined(DEBUG_ILC_FUNCS) || defined(DEBUG_ILC_ICONDRAGDROP)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
+#if defined(DEBUG_ILC_ICONDRAGDROP)
     D(bug("[IconList] %s: icons dropped on custom window \n", __PRETTY_FUNCTION__));
+#endif
 
     SET(obj, MUIA_IconList_AppWindowDrop, (IPTR)message); /* Now notify */
 
@@ -7085,17 +7222,23 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
     if (viewmoved)
     {
+#if defined(DEBUG_ILC_ICONRENDERING)
         D(bug("[IconList]: %s: call SetSuperAttrs()\n", __PRETTY_FUNCTION__));
+#endif
         SetSuperAttrs(CLASS, obj, MUIA_Virtgroup_Left, data->icld_ViewX,
                         MUIA_Virtgroup_Top, data->icld_ViewY,
                         TAG_DONE);
 
+#if defined(DEBUG_ILC_ICONRENDERING)
         D(bug("[IconList]: %s: call SetAttrs()\n", __PRETTY_FUNCTION__));
+#endif
         SetAttrs(obj, MUIA_Virtgroup_Left, data->icld_ViewX,
                         MUIA_Virtgroup_Top, data->icld_ViewY,
                         TAG_DONE);
 
+#if defined(DEBUG_ILC_ICONRENDERING)
         D(bug("[IconList]: %s: call MUI_Redraw()\n", __PRETTY_FUNCTION__));
+#endif
         MUI_Redraw(obj,MADF_DRAWOBJECT);
     }
     return 1;

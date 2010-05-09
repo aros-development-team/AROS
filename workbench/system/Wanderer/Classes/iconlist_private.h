@@ -3,8 +3,6 @@
 
 #include "iconlist.h"
 
-#define NUM_COLUMNS 6
-
 /*** Instance data **********************************************************/
 
 struct IconViewModeAttribs
@@ -15,16 +13,23 @@ struct IconViewModeAttribs
 struct ListViewModeAttribs
 {
     ULONG			lvma_Flags;
+
+    struct DiskObject		*lvma_IconDrawer;
+    struct DiskObject		*lvma_IconFile;
+
     LONG			lmva_HeaderHeight;
     LONG			lmva_RowHeight;
+
     BYTE			lmva_SortColumn;
     BYTE			lmva_LastSelectedColumn;
+
 #warning "TODO: Convert Column arrays into a list .."
+#define NUM_COLUMNS 7
     LONG    	    	    	lmva_ColumnPos[NUM_COLUMNS];
     LONG    	    	    	lmva_ColumnMaxWidth[NUM_COLUMNS];
     LONG    	    	    	lmva_ColumnWidth[NUM_COLUMNS];
     ULONG			lmva_ColumnFlags[NUM_COLUMNS];
-    BYTE    	    	    	lmva_ColumnAlign[NUM_COLUMNS];
+    BYTE    	    	    	lmva_ColumnHAlign[NUM_COLUMNS];
     STRPTR  	    	    	lmva_ColumnTitle[NUM_COLUMNS];
 };
 
