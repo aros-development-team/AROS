@@ -1443,7 +1443,6 @@ out:
 	return ret;
 }
 
-#if !defined(__AROS__)
 int drm_mode_getencoder(struct drm_device *dev, void *data,
 			struct drm_file *file_priv)
 {
@@ -1474,7 +1473,6 @@ out:
 	mutex_unlock(&dev->mode_config.mutex);
 	return ret;
 }
-#endif
 
 /**
  * drm_mode_setcrtc - set CRTC configuration

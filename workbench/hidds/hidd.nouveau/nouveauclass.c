@@ -137,6 +137,80 @@ static VOID HIDDNouveauShowCursor(OOP_Class * cl, OOP_Object * gfx, BOOL visible
     }
 }
 
+static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * selectedconnector,
+    drmModeCrtcPtr * selectedcrtc, ULONG prevcrtcid)
+{
+    *selectedconnector = NULL;
+    *selectedcrtc = NULL;
+    drmModeResPtr drmmode = NULL;
+    drmModeEncoderPtr selectedencoder = NULL;
+    LONG i;
+    ULONG crtc_id = prevcrtcid;
+
+    /* Get all components information */
+    drmmode = drmModeGetResources(fd);
+    if (!drmmode)
+    {
+        D(bug("[Nouveau] Not able to get resources information\n"));
+        return FALSE;
+    }
+    
+    /* Selecting connector */
+    for (i = 0; i < drmmode->count_connectors; i++)
+    {
+        drmModeConnectorPtr connector = drmModeGetConnector(fd, drmmode->connectors[i]);
+
+        if (connector)
+        {
+            if (connector->connection == DRM_MODE_CONNECTED)
+            {
+                /* Found connected connector */
+                *selectedconnector = connector;
+                break;
+            }
+            
+            drmModeFreeConnector(connector);
+        }
+    }
+    
+    if (!(*selectedconnector))
+    {
+        D(bug("[Nouveau] No connected connector\n"));
+        drmModeFreeResources(drmmode);
+        return FALSE;
+    }
+
+    /* Selecting crtc (from encoder) */
+    selectedencoder = drmModeGetEncoder(fd, (*selectedconnector)->encoder_id);
+    
+    if (!selectedencoder)
+    {
+        D(bug("[Nouveau] Not able to get encoder information for enc_id %d\n", (*selectedconnector)->encoder_id));
+        drmModeFreeConnector(*selectedconnector);
+        *selectedconnector = NULL;
+        drmModeFreeResources(drmmode);
+        return FALSE;
+    }
+
+    /* HACK: CRTC_ID from encoder seems to be zero after first mode switch */
+    if (selectedencoder->crtc_id != 0)
+        crtc_id = selectedencoder->crtc_id;
+    drmModeFreeEncoder(selectedencoder);
+
+    *selectedcrtc = drmModeGetCrtc(fd, crtc_id);
+    if (!(*selectedcrtc))
+    {
+        D(bug("[Nouveau] Not able to get crtc information for crtc_id %d\n", crtc_id));
+        drmModeFreeConnector(*selectedconnector);
+        *selectedconnector = NULL;
+        drmModeFreeResources(drmmode);
+        return FALSE;
+    }
+    
+    drmModeFreeResources(drmmode);
+    return TRUE;
+}    
+
 static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_Object * bm)
 {
     struct HIDDNouveauData * gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
@@ -190,46 +264,19 @@ static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
     D(bug("[Nouveau] Sync: %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
     pixel, hdisp, hstart, hend, htotal, vdisp, vstart, vend, vtotal));
 
-
-
-    /* Get all components information */
-    drmModeResPtr drmmode = drmModeGetResources(nvdev->fd);
-    
-    /* Get information about selected crtc */
-    selectedcrtc = drmModeGetCrtc(nvdev->fd, drmmode->crtcs[0]);
-    
-    if (!selectedcrtc)
+    /* Select connector and crtc */
+    if (!HIDDNouveauSelectConnectorCrtc(nvdev->fd, &selectedconnector, 
+        &selectedcrtc, gfxdata->selectedcrtcid))
     {
-        D(bug("[Nouveau] Not able to get crtc information\n"));
-        return FALSE;
-    }
-    
-    /* Selecting connector */
-    for (i = 0; i < drmmode->count_connectors; i++)
-    {
-        drmModeConnectorPtr connector = drmModeGetConnector(nvdev->fd, drmmode->connectors[i]);
-
-        if (connector)
-        {
-            if (connector->connection == DRM_MODE_CONNECTED)
-            {
-                /* Found connected connector */
-                selectedconnector = connector;
-                break;
-            }
-            
-            drmModeFreeConnector(connector);
-        }
-    }
-    
-    if (!selectedconnector)
-    {
-        D(bug("[Nouveau] No connected connector\n"));
+        D(bug("[Nouveau] Not able to select connector and crtc\n"));
         return FALSE;
     }
 
     output_ids[0] = selectedconnector->connector_id;
     gfxdata->selectedcrtcid = selectedcrtc->crtc_id;
+
+    D(bug("[Nouveau] Connector %d, CRTC %d\n", selectedconnector->connector_id, 
+        selectedcrtc->crtc_id));
 
     /* Select mode */
     for (i = 0; i < selectedconnector->count_modes; i++)
@@ -290,7 +337,6 @@ static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
         
     drmModeFreeConnector(selectedconnector);
     drmModeFreeCrtc(selectedcrtc);
-    /* TODO: Free drmmode */
     
     return TRUE;
 }
@@ -436,6 +482,8 @@ OOP_Object * METHOD(Nouveau, Root, New)
         nouveau_bo_new(gfxdata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 
             0, 64 * 64 * 4, &gfxdata->cursor);
         /* TODO: Check return, hot to handle */
+        
+        gfxdata->selectedcrtcid = 0;
     }
 
     return o;
