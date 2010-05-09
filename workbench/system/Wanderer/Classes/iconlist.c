@@ -2117,9 +2117,6 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 
                     if (data->icld_DisplayFlags & ICONLIST_DISP_BUFFERED)
                     {
-                        struct BitMap *bitmap_New = NULL;
-                        ULONG tmp_RastDepth;
-
 #if defined(DEBUG_ILC_ATTRIBS) || defined(DEBUG_ILC_ICONRENDERING)
                         D(bug("[IconList] %s: MUIA_IconList_DisplayFlags & ICONLIST_DISP_BUFFERED\n", __PRETTY_FUNCTION__));
 #endif
@@ -2143,6 +2140,10 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 
                         if ((data->icld_BufferRastPort == NULL) || (data->icld_BufferRastPort == data->icld_DisplayRastPort))
                         {
+			    struct BitMap *bitmap_New = NULL;
+			    ULONG tmp_RastDepth;
+			    struct Layer_Info *li;
+
 			    tmp_RastDepth = GetCyberMapAttr(data->icld_DisplayRastPort->BitMap, CYBRMATTR_DEPTH);
 			    if ((bitmap_New = AllocBitMap(data->icld_ViewWidth,
 						data->icld_ViewHeight,
@@ -2150,34 +2151,39 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 						BMF_CLEAR,
 						data->icld_DisplayRastPort->BitMap))!=NULL)
 			    {
-
-
-				struct Layer * buffLayer = CreateLayerTagList(&_screen(obj)->LayerInfo,
-					       bitmap_New,
-					       0,
-					       0,
-					       data->icld_ViewWidth,
-					       data->icld_ViewHeight,
-					       LAYERSIMPLE,
-					       __iconList_BackBuffLayerTags);
-
-				if (buffLayer != NULL)
+				if ((data->icld_BufferRastPort = CreateRastPort())!=NULL)
 				{
-				    data->icld_BufferRastPort = buffLayer->rp;
+				    data->icld_BufferRastPort->BitMap = bitmap_New;
+				    if (li = NewLayerInfo())
+				    {
+					if (data->icld_BufferRastPort->Layer = CreateUpfrontLayer(li, data->icld_BufferRastPort->BitMap, 0, 0, data->icld_ViewWidth - 1, data->icld_ViewHeight - 1, 0, NULL))
+					{
+					   /*
+					    * Mark it as a buffered rastport.
+					    */
+
 #if defined(DEBUG_ILC_ATTRIBS) || defined(DEBUG_ILC_ICONRENDERING)
-				    D(bug("[IconList] %s: FrontRastPort @ %p, New BackLayer @ %p, BackRastport @ %p\n", __PRETTY_FUNCTION__, data->icld_DisplayRastPort, data->icld_BufferRastPort->Layer, data->icld_BufferRastPort));
+					    D(bug("[IconList] %s: FrontRastPort @ %p, New BackLayer @ %p, BackRastport @ %p\n", __PRETTY_FUNCTION__, data->icld_DisplayRastPort, data->icld_BufferRastPort->Layer, data->icld_BufferRastPort));
 #endif
-				    SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
-				    data->icld_DrawOffsetX = 0;
-				    data->icld_DrawOffsetY = 0;
+					    SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
+					    data->icld_DrawOffsetX = 0;
+					    data->icld_DrawOffsetY = 0;
+					}
+					else
+					    data->icld_BufferRastPort = data->icld_DisplayRastPort;
+				    }
+				    else
+					data->icld_BufferRastPort = data->icld_DisplayRastPort;
 				}
 				else
-				{
-				    FreeBitMap(bitmap_New);
 				    data->icld_BufferRastPort = data->icld_DisplayRastPort;
-				    data->icld_DrawOffsetX = _mleft(obj);
-				    data->icld_DrawOffsetY = _mtop(obj);
-				}
+			    }
+			    if (data->icld_BufferRastPort == data->icld_DisplayRastPort)
+			    {
+				if (bitmap_New) FreeBitMap(bitmap_New);
+				if (li) DisposeLayerInfo(li);
+				data->icld_DrawOffsetX = _mleft(obj);
+				data->icld_DrawOffsetY = _mtop(obj);
 			    }
 			}
                     }
@@ -2188,7 +2194,9 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
                             //Free up the buffers layer, rastport and bitmap since they are no longer needed ..
 			    struct Layer *oldLayer = data->icld_BufferRastPort->Layer;
 			    data->icld_BufferRastPort = data->icld_DisplayRastPort;
+			    InstallClipRegion(oldLayer, NULL);
 			    DeleteLayer(0, oldLayer);
+			    FreeBitMap(data->icld_BufferRastPort->BitMap);
                             data->icld_DrawOffsetX = _mleft(obj);
                             data->icld_DrawOffsetY = _mtop(obj);
                         }
@@ -2707,6 +2715,8 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         if (data->icld_DisplayFlags & ICONLIST_DISP_BUFFERED)
         {
             struct BitMap *bitmap_New = NULL;
+	    struct Layer_Info *li;
+
             ULONG tmp_RastDepth = GetCyberMapAttr(data->icld_DisplayRastPort->BitMap, CYBRMATTR_DEPTH);
             if ((bitmap_New = AllocBitMap(data->icld_ViewWidth,
                                 data->icld_ViewHeight,
@@ -2714,33 +2724,40 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
                                 BMF_CLEAR,
                                 data->icld_DisplayRastPort->BitMap))!=NULL)
             {
-		struct Layer * buffLayer = CreateLayerTagList(&_screen(obj)->LayerInfo,
-			       bitmap_New,
-			       0,
-			       0,
-			       data->icld_ViewWidth,
-			       data->icld_ViewHeight,
-			       LAYERSIMPLE,
-			       __iconList_BackBuffLayerTags);
-
-		if (buffLayer != NULL)
+		if ((data->icld_BufferRastPort = CreateRastPort())!=NULL)
 		{
-		    data->icld_BufferRastPort = buffLayer->rp;
+		    data->icld_BufferRastPort->BitMap = bitmap_New;
+		    if (li = NewLayerInfo())
+		    {
+			if (data->icld_BufferRastPort->Layer = CreateUpfrontLayer(li, data->icld_BufferRastPort->BitMap, 0, 0, data->icld_ViewWidth - 1, data->icld_ViewHeight - 1, 0, NULL))
+			{
+			   /*
+			    * Mark it as a buffered rastport.
+			    */
+
 #if defined(DEBUG_ILC_ATTRIBS) || defined(DEBUG_ILC_ICONRENDERING)
-		    D(bug("[IconList] %s: FrontRastPort @ %p, New BackLayer @ %p, BackRastport @ %p\n", __PRETTY_FUNCTION__, data->icld_DisplayRastPort, data->icld_BufferRastPort->Layer, data->icld_BufferRastPort));
+			    D(bug("[IconList] %s: FrontRastPort @ %p, New BackLayer @ %p, BackRastport @ %p\n", __PRETTY_FUNCTION__, data->icld_DisplayRastPort, data->icld_BufferRastPort->Layer, data->icld_BufferRastPort));
 #endif
-		    SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
-		    data->icld_DrawOffsetX = 0;
-		    data->icld_DrawOffsetY = 0;
+			    SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
+			    data->icld_DrawOffsetX = 0;
+			    data->icld_DrawOffsetY = 0;
+			}
+			else
+			    data->icld_BufferRastPort = data->icld_DisplayRastPort;
+		    }
+		    else
+			data->icld_BufferRastPort = data->icld_DisplayRastPort;
 		}
 		else
-		{
-		    FreeBitMap(bitmap_New);
 		    data->icld_BufferRastPort = data->icld_DisplayRastPort;
-		    data->icld_DrawOffsetX = _mleft(obj);
-		    data->icld_DrawOffsetY = _mtop(obj);
-		}
             }
+	    if (data->icld_BufferRastPort == data->icld_DisplayRastPort)
+	    {
+		if (bitmap_New) FreeBitMap(bitmap_New);
+		if (li) DisposeLayerInfo(li);
+		data->icld_DrawOffsetX = _mleft(obj);
+		data->icld_DrawOffsetY = _mtop(obj);
+	    }
         }
         else
         {
@@ -3172,6 +3189,18 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 	    data->icld_UpdateMode = 0;
 	    data->update_entry = NULL;
 
+	    if (data->icld_DisplayRastPort != data->icld_BufferRastPort)
+	    {
+#if defined(DEBUG_ILC_ICONRENDERING)
+		D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
+#endif 
+		BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
+			  field_rect.MinX - _mleft(obj), field_rect.MinY - _mtop(obj),
+			  data->icld_DisplayRastPort,
+			  field_rect.MinX, field_rect.MinY,
+			  field_rect.MaxX - field_rect.MinX + 1, field_rect.MaxY - field_rect.MinY + 1,
+			  0xC0);
+	    }
 	    MUI_RemoveClipping(muiRenderInfo(obj), clip);
 
 	    goto draw_done;
@@ -3536,40 +3565,49 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 		{
 		    struct Bitmap *bitmap_New;
 		    ULONG tmp_RastDepth;
+		    struct Layer_Info *li;
 
 		    tmp_RastDepth = GetCyberMapAttr(data->icld_DisplayRastPort->BitMap, CYBRMATTR_DEPTH);
 		    if ((bitmap_New = (struct Bitmap *)AllocBitMap(data->icld_ViewWidth,
 					data->icld_ViewHeight,
 					tmp_RastDepth,
 					BMF_CLEAR,
-					data->icld_DisplayRastPort->BitMap))!=NULL)
+					data->icld_DisplayRastPort->BitMap)) != NULL)
 		    {
-			struct Layer * buffLayer = CreateLayerTagList(&_screen(obj)->LayerInfo,
-				       bitmap_New,
-				       0,
-				       0,
-				       data->icld_ViewWidth,
-				       data->icld_ViewHeight,
-				       LAYERSIMPLE,
-				       __iconList_BackBuffLayerTags);
-
-			if (buffLayer != NULL)
+			if ((data->icld_BufferRastPort = CreateRastPort()) != NULL)
 			{
-			    data->icld_BufferRastPort = buffLayer->rp;
-#if defined(DEBUG_ILC_ATTRIBS) || defined(DEBUG_ILC_ICONRENDERING)
-			    D(bug("[IconList] %s: FrontRastPort @ %p, New BackLayer @ %p, BackRastport @ %p\n", __PRETTY_FUNCTION__, data->icld_DisplayRastPort, data->icld_BufferRastPort->Layer, data->icld_BufferRastPort));
-#endif
-			    SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
-			    data->icld_DrawOffsetX = 0;
-			    data->icld_DrawOffsetY = 0;
+			    data->icld_BufferRastPort->BitMap = bitmap_New;
+			    if (li = NewLayerInfo())
+			    {
+				if (data->icld_BufferRastPort->Layer = CreateUpfrontLayer(li, data->icld_BufferRastPort->BitMap, 0, 0, data->icld_ViewWidth - 1, data->icld_ViewHeight - 1, 0, NULL))
+				{
+				   /*
+				    * Mark it as a buffered rastport.
+				    */
+
+    #if defined(DEBUG_ILC_ATTRIBS) || defined(DEBUG_ILC_ICONRENDERING)
+				    D(bug("[IconList] %s: FrontRastPort @ %p, New BackLayer @ %p, BackRastport @ %p\n", __PRETTY_FUNCTION__, data->icld_DisplayRastPort, data->icld_BufferRastPort->Layer, data->icld_BufferRastPort));
+    #endif
+				    SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
+				    data->icld_DrawOffsetX = 0;
+				    data->icld_DrawOffsetY = 0;
+				}
+				else
+				    data->icld_BufferRastPort = data->icld_DisplayRastPort;
+			    }
+			    else
+				data->icld_BufferRastPort = data->icld_DisplayRastPort;
 			}
 			else
-			{
-			    FreeBitMap(bitmap_New);
 			    data->icld_BufferRastPort = data->icld_DisplayRastPort;
-			    data->icld_DrawOffsetX = _mleft(obj);
-			    data->icld_DrawOffsetY = _mtop(obj);
-			}
+		    }
+		    
+		    if (data->icld_BufferRastPort == data->icld_DisplayRastPort)
+		    {
+			if (bitmap_New) FreeBitMap(bitmap_New);
+			if (li) DisposeLayerInfo(li);
+			data->icld_DrawOffsetX = _mleft(obj);
+			data->icld_DrawOffsetY = _mtop(obj);
 		    }
 		}
             }
@@ -3657,6 +3695,19 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 	{
 	    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), data->icld_LVMAttribs->lmva_HeaderHeight);
 	    RenderListViewModeHeader(obj, data);
+
+	    if (data->icld_DisplayRastPort != data->icld_BufferRastPort)
+	    {
+#if defined(DEBUG_ILC_ICONRENDERING)
+		D(bug("[IconList] %s#%d: MADF_DRAWOBJECT Blitting Header to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
+#endif 
+		BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
+			  0, 0,
+			  data->icld_DisplayRastPort,
+			  _mleft(obj), _mtop(obj), _mwidth(obj), data->icld_LVMAttribs->lmva_HeaderHeight,
+			  0xC0);
+	    }
+
 	    MUI_RemoveClipping(muiRenderInfo(obj), clip);
 
 	    viewrect.MinY = _mtop(obj) + data->icld_LVMAttribs->lmva_HeaderHeight;
