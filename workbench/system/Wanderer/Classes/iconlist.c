@@ -2908,6 +2908,7 @@ static void RenderListViewModeHeaderField(Object *obj, struct IconList_DATA *dat
     	    	    	    struct Rectangle *rect, LONG index, BOOL sel)
 {
     IPTR		penFill, penText, penDark, penBright;
+    struct Rectangle	rendRect;
     STRPTR		text;
     struct TextExtent	te;
     ULONG		fit;
@@ -2926,6 +2927,19 @@ static void RenderListViewModeHeaderField(Object *obj, struct IconList_DATA *dat
     }
     penText = _pens(obj)[MPEN_TEXT];
 
+    rendRect.MinX = rect->MinX;
+    rendRect.MaxX = rect->MaxX;
+    rendRect.MinY = rect->MinY;
+    rendRect.MaxY = rect->MaxY;
+
+    if (data->icld_DisplayRastPort != data->icld_BufferRastPort)
+    {
+	rendRect.MinX -= _mleft(obj);
+	rendRect.MaxX -= _mleft(obj);
+	rendRect.MinY -= _mtop(obj);
+	rendRect.MaxY -= _mtop(obj);
+    }
+
 #if defined(DEBUG_ILC_FUNCS)
 D(bug("[IconList]: %s(obj @ 0x%p)\n", __PRETTY_FUNCTION__, obj));
 #endif
@@ -2935,24 +2949,24 @@ D(bug("[IconList]: %s(obj @ 0x%p)\n", __PRETTY_FUNCTION__, obj));
 	text = data->icld_LVMAttribs->lmva_ColumnTitle[index];
 
 	SetAPen(data->icld_BufferRastPort, penFill); /* Background */
-	RectFill(data->icld_BufferRastPort, rect->MinX + 1, rect->MinY + 1,
-			   rect->MaxX - 1, rect->MaxY - 1);
+	RectFill(data->icld_BufferRastPort, rendRect.MinX + 1, rendRect.MinY + 1,
+			   rendRect.MaxX - 1, rendRect.MaxY - 1);
 
 	SetAPen(data->icld_BufferRastPort, penBright); /* Top/Left */
-	RectFill(data->icld_BufferRastPort, rect->MinX, rect->MinY, rect->MinX, rect->MaxY);
-	RectFill(data->icld_BufferRastPort, rect->MinX + 1, rect->MinY, rect->MaxX - 1, rect->MinY);
+	RectFill(data->icld_BufferRastPort, rendRect.MinX, rendRect.MinY, rendRect.MinX, rendRect.MaxY);
+	RectFill(data->icld_BufferRastPort, rendRect.MinX + 1, rendRect.MinY, rendRect.MaxX - 1, rendRect.MinY);
 
 	SetAPen(data->icld_BufferRastPort,penDark); /* Bottom/Right */
-	RectFill(data->icld_BufferRastPort, rect->MaxX, rect->MinY, rect->MaxX, rect->MaxY);
-	RectFill(data->icld_BufferRastPort, rect->MinX + 1, rect->MaxY, rect->MaxX - 1, rect->MaxY);
+	RectFill(data->icld_BufferRastPort, rendRect.MaxX, rendRect.MinY, rendRect.MaxX, rendRect.MaxY);
+	RectFill(data->icld_BufferRastPort, rendRect.MinX + 1, rendRect.MaxY, rendRect.MaxX - 1, rendRect.MaxY);
 
 	/* Draw the Sort indicator .. */
 	if (index == data->icld_LVMAttribs->lmva_SortColumn)
 	{
-	    LONG x = rect->MaxX - 4 - 6;
-	    LONG y = (rect->MinY + rect->MaxY + 1) / 2 - 3;
+	    LONG x = rendRect.MaxX - 4 - 6;
+	    LONG y = (rendRect.MinY + rendRect.MaxY + 1) / 2 - 3;
 
-	    if (x > rect->MinX)
+	    if (x > rendRect.MinX)
 	    {
 		SetAPen(data->icld_BufferRastPort, _pens(obj)[sel ? MPEN_SHADOW : MPEN_HALFSHADOW]);
 		if (data->icld_SortFlags & MUIV_IconList_Sort_Reverse)
@@ -2970,22 +2984,22 @@ D(bug("[IconList]: %s(obj @ 0x%p)\n", __PRETTY_FUNCTION__, obj));
 	    }
 	}
 
-	rect->MinX += HEADERENTRY_SPACING_LEFT;
-	rect->MinY += HEADERLINE_SPACING_TOP;
-	rect->MaxX -= HEADERENTRY_SPACING_RIGHT;
-	rect->MaxY -= HEADERLINE_SPACING_BOTTOM;
+	rendRect.MinX += HEADERENTRY_SPACING_LEFT;
+	rendRect.MinY += HEADERLINE_SPACING_TOP;
+	rendRect.MaxX -= HEADERENTRY_SPACING_RIGHT;
+	rendRect.MaxY -= HEADERLINE_SPACING_BOTTOM;
 
 	if (text && text[0])
 	{
 
 	    fit = TextFit(data->icld_BufferRastPort, text, strlen(text), &te, NULL, 1,
-			   rect->MaxX - rect->MinX + 1,
-			   rect->MaxY - rect->MinY + 1);
+			   rendRect.MaxX - rendRect.MinX + 1,
+			   rendRect.MaxY - rendRect.MinY + 1);
 
 	    if (!fit) return;
 
 	    SetABPenDrMd(data->icld_BufferRastPort, penText, 0, JAM1);
-	    Move(data->icld_BufferRastPort, rect->MinX, rect->MinY + data->icld_BufferRastPort->TxBaseline);
+	    Move(data->icld_BufferRastPort, rendRect.MinX, rendRect.MinY + data->icld_BufferRastPort->TxBaseline);
 	    Text(data->icld_BufferRastPort, text, fit);
 	}
     }
@@ -3192,7 +3206,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 	    if (data->icld_DisplayRastPort != data->icld_BufferRastPort)
 	    {
 #if defined(DEBUG_ILC_ICONRENDERING)
-		D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
+		D(bug("[IconList] %s#%d: UPDATE_HEADERENTRY Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
 #endif 
 		BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
 			  field_rect.MinX - _mleft(obj), field_rect.MinY - _mtop(obj),
@@ -3844,17 +3858,23 @@ IPTR IconList__MUIM_IconList_Clear(struct IClass *CLASS, Object *obj, struct MUI
 
     data->icld_ViewX = data->icld_ViewY = data->icld_AreaWidth = data->icld_AreaHeight = 0;
 
+#if defined(DEBUG_ILC_ICONRENDERING)
     D(bug("[IconList]: %s: call SetSuperAttrs()\n", __PRETTY_FUNCTION__));
+#endif
     SetSuperAttrs(CLASS, obj, MUIA_Virtgroup_Left, data->icld_ViewX,
                   MUIA_Virtgroup_Top, data->icld_ViewY,
             TAG_DONE);
 
+#if defined(DEBUG_ILC_ICONRENDERING)
     D(bug("[IconList]: %s: call SetAttrs()\n", __PRETTY_FUNCTION__));
+#endif
     SetAttrs(obj, MUIA_Virtgroup_Left, data->icld_ViewX,
                   MUIA_Virtgroup_Top, data->icld_ViewY,
             TAG_DONE);
 
+#if defined(DEBUG_ILC_ICONRENDERING)
     D(bug("[IconList]: %s: Set MUIA_IconList_Width and MUIA_IconList_Height\n", __PRETTY_FUNCTION__));
+#endif
     SetAttrs(obj, MUIA_IconList_Width, data->icld_AreaWidth,
         MUIA_IconList_Height, data->icld_AreaHeight,
         TAG_DONE);
@@ -6615,7 +6635,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
 		/* Adjust entry posiions .. */
 #if defined(DEBUG_ILC_ICONDRAGDROP)
                 D(bug("[IconList] %s: drop entry: message x,y = %d, %d  click = %d, %d..\n", __PRETTY_FUNCTION__,  message->x,  message->y, data->click_x, data->click_y));
-#endif	
+#endif
 		LONG offset_x = message->x - (data->click_x + _mleft(obj));
 		LONG offset_y = message->y - (data->click_y + _mtop(obj));
 
