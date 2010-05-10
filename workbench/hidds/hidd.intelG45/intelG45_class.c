@@ -488,7 +488,7 @@ OOP_Object *METHOD(INTELG45, Hidd_Gfx, Show)
     	GMABitMap_t *bm = OOP_INST_DATA(OOP_OCLASS(msg->bitMap), msg->bitMap);
 
     	D(bug("[GMA] Show()"));
-#if 0
+
         if (bm->state)
         {
             /* Suppose bm has properly allocated state structure */
@@ -497,7 +497,8 @@ OOP_Object *METHOD(INTELG45, Hidd_Gfx, Show)
                 bm->usecount++;
 
                 LOCK_HW
-                LoadState(sd, bm->state);
+                G45_LoadState(sd, bm->state);
+#if 0
                 DPMS(sd, sd->dpms);
 
                 fb = bm->BitMap;
@@ -505,11 +506,11 @@ OOP_Object *METHOD(INTELG45, Hidd_Gfx, Show)
 
                 RADEONEngineReset(sd);
                 RADEONEngineRestore(sd);
+#endif
 
                 UNLOCK_HW
             }
         }
-#endif
     }
     else
     {
@@ -528,14 +529,8 @@ OOP_Object *METHOD(INTELG45, Hidd_Gfx, NewBitMap)
 
     /* Displayable bitmap ? */
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
-    framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
 
-    if (framebuffer)
-    {
-        /* If the user asks for a framebuffer map we must ALLWAYS supply a class */
-        classptr = sd->BMClass;
-    }
-    else if (displayable)
+    if (displayable)
     {
         classptr = sd->BMClass;   //offbmclass;
     }
@@ -629,3 +624,4 @@ OOP_Object *METHOD(INTELG45, Hidd_Gfx, NewBitMap)
 
     return (OOP_Object*)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
+

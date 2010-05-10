@@ -48,7 +48,19 @@
 
 #define G45_GMBUS			0x5100
 
+#define G45_PIPEACONF		0x70008
+#define G45_PIPECONF_ENABLE		0x80000000
+#define G45_PIPECONF_ENABLED		0x40000000
+#define G45_PIPECONF_DELAY_00		0
+#define G45_PIPECONF_DELAY_01		0x08000000
+#define G45_PIPECONF_DELAY_02		0x10000000
+#define G45_PIPECONF_DELAY_03		0x18000000
+#define G45_PIPECONF_FORCE_BORDER	0x02000000
+#define G45_PIPECONF_10BIT_GAMMA	0x01000000
+#define G45_PIPECONF_INTERLACE		0x00800000
+
 #define G45_VGACNTRL		0x71400
+#define G45_VGACNTRL_VGA_DISABLE	0x80000000
 
 #define G45_DPLLA_CTRL		0x6014
 
@@ -66,12 +78,52 @@
 #define G45_DPLL_PHASE_MASK		0x00001e00
 #define G45_DPLL_PHASE_SHIFT		9
 
+#define G45_FPA0					0x6040
+#define G45_FPA1					0x6044
+
+#define G45_DSPACNTR				0x70180
+#define G45_DSPBCNTR				0x71180
+
+#define G45_DSPCNTR_PLANE_ENABLE	0x80000000
+#define G45_DSPCNTR_GAMMA_ENABLE	0x40000000
+#define G45_DSPCNTR_PIXEL_MASK		(0xf << 26)
+#define G45_DSPCNTR_8BPP			(0x2 << 26)
+#define G45_DSPCNTR_15BPP			(0x4 << 26)
+#define G45_DSPCNTR_16BPP			(0x5 << 26)
+#define G45_DSPCNTR_32BPP			(0x6 << 26)
+
+#define G45_DSPALINOFF				0x70184
+#define G45_DSPASTRIDE				0x70188
+#define G45_DSPASURF				0x7019c
+
+#define G45_HTOTAL_A				0x60000
+#define G45_HBLANK_A				0x60004
+#define G45_HSYNC_A				0x60008
+#define G45_VTOTAL_A				0x6000c
+#define G45_VBLANK_A				0x60010
+#define G45_VSYNC_A				0x60014
+
+#define G45_PIPEASRC				0x6001c
+
+#define G45_ADPA					0x61100
+#define G45_ADPA_MASK				0x3fff43e7
+#define G45_ADPA_ENABLE			0x80000000
+#define G45_ADPA_PIPESEL			0x40000000
+#define G45_ADPA_VGA_SYNC			0x00008000
+#define G45_ADPA_DPMS_ON			0x00000000
+#define G45_ADPA_DPMS_OFF			0x00000c00
+#define G45_ADPA_DPMS_MASK			0x00000c00
+#define G45_ADPA_DPMS_STANDBY		0x00000800
+#define G45_ADPA_DPMS_SUSPEND		0x00000400
+#define G45_ADPA_VSYNC_PLUS		0x00000010
+#define G45_ADPA_HSYNC_PLUS		0x00000008
+
 #define readl(addr) ( *(volatile uint32_t *) (addr) )
 #define readw(addr) ( *(volatile uint16_t *) (addr) )
 #define readb(addr) ( *(volatile uint8_t *)  (addr) )
 
-#define writeb(b,addr) ( (*(volatile uint8_t *)  (addr)) = (b) )
-#define writew(b,addr) ( (*(volatile uint16_t *) (addr)) = (b) )
-#define writel(b,addr) ( (*(volatile uint32_t *) (addr)) = (b) )
+#define writeb(b,addr) do { (*(volatile uint8_t *)  (addr)) = (b); } while (0)
+#define writew(b,addr) do { (*(volatile uint16_t *) (addr)) = (b); } while (0)
+#define writel(b,addr) do { (*(volatile uint32_t *) (addr)) = (b); } while (0)
 
 #endif /* INTELG45_REGS_H_ */

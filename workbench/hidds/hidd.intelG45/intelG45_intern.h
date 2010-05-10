@@ -12,6 +12,7 @@
 #include <exec/semaphores.h>
 #include <exec/libraries.h>
 #include <exec/ports.h>
+#include <exec/memory.h>
 
 #include <devices/timer.h>
 
@@ -58,6 +59,8 @@ struct g45staticdata {
 	struct MsgPort			MsgPort;
 	struct timerequest		tr;
 
+    struct MemHeader	    CardMem;
+
 	void *					MemPool;
 
 	struct g45chip			Card;
@@ -96,8 +99,9 @@ typedef struct {
 	uint32_t	pipeconf;		// G45_PIPEACONF
 	uint32_t	pipesrc;		// G45_PIPEASRC
 	uint32_t	dspcntr;		// G45_DSPACNTR
-	uint32_t	dsppos;			// G45_DSPAPOS
-	uint32_t	dspsize;		// G45_DSPASIZE
+	uint32_t	dspsurf;		// G45_DSPASURF
+	uint32_t	dsplinoff;		// G45_DSPALINOFF
+	uint32_t	dspstride;		// G45_DSPASTRIDE
 	uint32_t	htotal;			// G45_HTOTAL_A
 	uint32_t	hblank;			// G45_HBLANK_A
 	uint32_t	hsync;			// G45_HSYNC_A
@@ -152,5 +156,8 @@ void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
 		uint16_t width, uint16_t height, uint8_t depth, uint32_t pixelclock, intptr_t framebuffer,
         uint16_t hdisp, uint16_t vdisp, uint16_t hstart, uint16_t hend, uint16_t htotal,
         uint16_t vstart, uint16_t vend, uint16_t vtotal, uint32_t flags);
+void G45_LoadState(struct g45staticdata *sd, GMAState_t *state);
+IPTR AllocBitmapArea(struct g45staticdata *sd, ULONG width, ULONG height, ULONG bpp, BOOL must_have);
+VOID FreeBitmapArea(struct g45staticdata *sd, IPTR bmp, ULONG width, ULONG height, ULONG bpp);
 
 #endif /* INTELG45_INTERN_H_ */

@@ -99,6 +99,19 @@ AROS_UFH3(void, Enumerator,
     	sd->Card.MMIO = HIDD_PCIDriver_MapPCI(driver, Bar0, Size0);
     	sd->Card.GATT = HIDD_PCIDriver_MapPCI(driver, Bar3, Size3);
 
+	    struct MemChunk *mc = (struct MemChunk *)sd->Card.Framebuffer;
+
+	    sd->CardMem.mh_Node.ln_Type = NT_MEMORY;
+	    sd->CardMem.mh_Node.ln_Name = "nVidia Framebuffer";
+	    sd->CardMem.mh_First = mc;
+	    sd->CardMem.mh_Lower = (APTR)mc;
+
+	    sd->CardMem.mh_Free = 7192000;
+	    sd->CardMem.mh_Upper = (APTR)(sd->CardMem.mh_Free + (IPTR)mc);
+
+	    mc->mc_Next = NULL;
+	    mc->mc_Bytes = sd->CardMem.mh_Free;
+
     	sd->PCIDevice = pciDevice;
 
     	uint32_t val;
@@ -122,7 +135,7 @@ AROS_UFH3(void, Enumerator,
     	writel(0, sd->Card.MMIO + G45_GMBUS);
 
     	/* Disable VGA */
-    	writel(0x80000000, sd->Card.MMIO + G45_VGACNTRL);
+//    	writel(0x80000000, sd->Card.MMIO + G45_VGACNTRL);
 
     }
 
@@ -198,6 +211,34 @@ static int G45_Init(struct intelg45base *intelg45base)
 					if (sd->PCIDevice)
 					{
 						D(bug("[GMA] Found supported gfx card\n"));
+
+//						int i;
+//
+//						for (i=0x06000; i < 0x06024; i+=4)
+//						{
+//							D(bug("[GMA] 0x%05x = %08x\n", i, readl(sd->Card.MMIO + i)));
+//						}
+//						for (i=0x06040; i <= 0x06050; i+=4)
+//							D(bug("[GMA] 0x%05x = %08x\n", i, readl(sd->Card.MMIO + i)));
+//
+//						for (i=0x0606c; i < 0x06070; i+=4)
+//							D(bug("[GMA] 0x%05x = %08x\n", i, readl(sd->Card.MMIO + i)));
+//
+//						for (i=0x06200; i < 0x06214; i+=4)
+//							D(bug("[GMA] 0x%05x = %08x\n", i, readl(sd->Card.MMIO + i)));
+//
+//						for (i=0x60000; i < 0x60070; i+=4)
+//							D(bug("[GMA] 0x%05x = %08x\n", i, readl(sd->Card.MMIO + i)));
+//
+//						for (i=0x61100; i < 0x61104; i+=4)
+//							D(bug("[GMA] 0x%05x = %08x\n", i, readl(sd->Card.MMIO + i)));
+//
+//						for (i=0x70180; i < 0x701a4; i+=4)
+//							D(bug("[GMA] 0x%05x = %08x\n", i, readl(sd->Card.MMIO + i)));
+//
+//						for (i=0x71400; i < 0x71404; i+=4)
+//							D(bug("[GMA] 0x%05x = %08x\n", i, readl(sd->Card.MMIO + i)));
+
 					}
 
 					return TRUE;

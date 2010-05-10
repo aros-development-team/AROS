@@ -102,7 +102,7 @@ OOP_Object *METHOD(GMABM, Root, New)
         bm->pitch = (width * bytesPerPixel + 63) & ~63;
         bm->depth = depth;
         bm->bpp = bytesPerPixel;
-        bm->framebuffer = 0; //AllocBitmapArea(sd, bm->width, bm->height, bm->bpp, TRUE);
+        bm->framebuffer = AllocBitmapArea(sd, bm->width, bm->height, bm->bpp, TRUE);
         bm->fbgfx = TRUE;
         bm->state = NULL;
         bm->bitmap = o;
@@ -139,9 +139,7 @@ OOP_Object *METHOD(GMABM, Root, New)
 
         if (displayable)
         {
-        	bm->state = AllocVecPooled(sd->MemPool, sizeof(GMAState_t));
-
-			if (bm->state && (bm->framebuffer != -1))
+			if ((bm->framebuffer != -1))
             {
                 HIDDT_ModeID modeid;
                 OOP_Object *sync;
@@ -153,8 +151,8 @@ OOP_Object *METHOD(GMABM, Root, New)
 
                 if (modeid != vHidd_ModeID_Invalid)
                 {
-                    ULONG pixel;
-                    ULONG hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal, flags;
+                    IPTR pixel;
+                    IPTR hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal, flags;
 
                     /* Get Sync and PixelFormat properties */
                     struct pHidd_Gfx_GetMode __getmodemsg = {
@@ -190,8 +188,8 @@ OOP_Object *METHOD(GMABM, Root, New)
                                     hdisp, vdisp,
                                     hstart, hend, htotal,
                                     vstart, vend, vtotal, flags);
-/*
-                        LoadState(sd, bm->state);
+
+                        /*
                         DPMS(sd, sd->dpms);
 
                         RADEONEngineReset(sd);
@@ -253,7 +251,7 @@ VOID METHOD(GMABM, Root, Dispose)
     FreeVecPooled(sd->memPool, bm->addresses);
 
     if (bm->state)
-        FreePooled(sd->memPool, bm->state, sizeof(struct CardState));
+        FreeVecPooled(sd->MemPool, bm->state);
 
     bm->state = NULL;
 #endif
@@ -267,13 +265,51 @@ VOID METHOD(GMABM, Root, Dispose)
 
 VOID METHOD(GMABM, Hidd_BitMap, PutPixel)
 {
+	GMABitMap_t *bm = OOP_INST_DATA(cl, o);
+	void *ptr = bm->framebuffer + sd->Card.Framebuffer + msg->y * bm->pitch;
+
+	LOCK_BITMAP
+
+	switch (bm->bpp)
+	{
+	case 1:
+		((UBYTE *)ptr)[msg->x] = msg->pixel;
+		break;
+	case 2:
+		((UWORD *)ptr)[msg->x] = msg->pixel;
+		break;
+	case 4:
+		((ULONG *)ptr)[msg->x] = msg->pixel;
+		break;
+	}
+
+	UNLOCK_BITMAP
 }
 
-VOID METHOD(GMABM, Hidd_BitMap, GetPixel)
+HIDDT_Pixel METHOD(GMABM, Hidd_BitMap, GetPixel)
 {
+	GMABitMap_t *bm = OOP_INST_DATA(cl, o);
+	void *ptr = bm->framebuffer + sd->Card.Framebuffer + msg->y * bm->pitch;
+	HIDDT_Pixel pixel = 0;
+
+	LOCK_BITMAP
+
+	switch (bm->bpp)
+	{
+	case 1:
+		pixel = ((UBYTE *)ptr)[msg->x];
+		break;
+	case 2:
+		pixel = ((UWORD *)ptr)[msg->x];
+		break;
+	case 4:
+		pixel = ((ULONG *)ptr)[msg->x];
+		break;
+	}
+
+	UNLOCK_BITMAP
+
+	return pixel;
 }
 
-VOID METHOD(GMABM, Hidd_BitMap, DrawPixel)
-{
-}
 
