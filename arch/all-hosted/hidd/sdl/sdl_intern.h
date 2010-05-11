@@ -1,6 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (c) 2007 Robert Norris. All rights reserved.
+ * Copyright (c) 2010 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -24,19 +25,21 @@
 #define CLID_Hidd_SDLGfx    "hidd.gfx.sdl"
 #define IID_Hidd_SDLGFX     "hidd.gfx.sdl"
 
-struct gfxdata {
+struct gfxdata
+{
+    OOP_Object *shownbm;	/* Currently shown bitmap object */
+    OOP_Object *framebuffer;	/* Framebuffer bitmap object */
 };
 
 #define IID_Hidd_SDLBitMap  "hidd.bitmap.sdl"
 
-enum {
+enum
+{
     aoHidd_SDLBitMap_Surface,
-    aoHidd_SDLBitMap_IsOnScreen,
     num_Hidd_SDLBitMap_Attrs
 };
 
 #define aHidd_SDLBitMap_Surface     (((ULONG) HiddSDLBitMapAttrBase) + aoHidd_SDLBitMap_Surface)
-#define aHidd_SDLBitMap_IsOnScreen  (((ULONG) HiddSDLBitMapAttrBase) + aoHidd_SDLBitMap_IsOnScreen)
 
 #define SDLBM_ATTR(id) ((id)-HiddSDLBitMapAttrBase)
 

@@ -1,6 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (c) 2007 Robert Norris. All rights reserved.
+ * Copyright (c) 2010 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -207,14 +208,31 @@ VOID SDLBitMap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg) {
             *msg->storage = (IPTR) bmdata->surface;
             break;
 
-        case aoHidd_SDLBitMap_IsOnScreen:
-            *msg->storage = (IPTR) bmdata->is_onscreen;
-            break;
-
         default:
             OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
             break;
     }
+}
+
+VOID SDLBitMap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+{
+    struct bmdata *data = OOP_INST_DATA(cl, o);
+    struct TagItem  *tag, *tstate;
+    ULONG   	    idx;
+
+    tstate = msg->attrList;
+    while((tag = NextTagItem((const struct TagItem **)&tstate))) {
+        idx = SDLBM_ATTR(tag->ti_Tag);
+        if (idx < num_Hidd_SDLBitMap_Attrs) {
+	    switch(idx) {
+	    case aoHidd_SDLBitMap_Surface:
+	        data->surface = (SDL_Surface *)tag->ti_Data;
+		break;
+	    }
+        }
+    }
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 BOOL SDLBitMap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg) {
@@ -701,7 +719,6 @@ VOID SDLBitMap__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o, struct 
 
 VOID SDLBitMap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg) {
     struct bmdata *bmdata = OOP_INST_DATA(cl, o);
-    SDL_Rect rect;
 
     D(bug("[sdl] SDLBitMap::PutTemplate\n"));
 

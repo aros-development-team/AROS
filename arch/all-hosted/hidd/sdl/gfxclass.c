@@ -30,6 +30,7 @@
 
 static OOP_AttrBase HiddPixFmtAttrBase;
 static OOP_AttrBase HiddBitMapAttrBase;
+static OOP_AttrBase HiddColorMapAttrBase;
 static OOP_AttrBase HiddSyncAttrBase;
 static OOP_AttrBase HiddGfxAttrBase;
 static OOP_AttrBase HiddSDLBitMapAttrBase;
@@ -37,6 +38,7 @@ static OOP_AttrBase HiddSDLBitMapAttrBase;
 static struct OOP_ABDescr attrbases[] = {
     { IID_Hidd_PixFmt,    &HiddPixFmtAttrBase    },
     { IID_Hidd_BitMap,    &HiddBitMapAttrBase    },
+    { IID_Hidd_ColorMap,  &HiddColorMapAttrBase  },
     { IID_Hidd_Sync,      &HiddSyncAttrBase      },
     { IID_Hidd_Gfx,       &HiddGfxAttrBase       },
     { IID_Hidd_SDLBitMap, &HiddSDLBitMapAttrBase },
@@ -342,31 +344,15 @@ VOID SDLGfx__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg) {
 }
 
 OOP_Object *SDLGfx__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg) {
-    OOP_Object *bmclass = NULL, *friend;
-    BOOL displayable;
-    HIDDT_ModeID modeid;
-    HIDDT_StdPixFmt stdpixfmt;
     struct TagItem *msgtags;
     struct pHidd_Gfx_NewBitMap supermsg;
+    struct gfxdata *data = OOP_INST_DATA(cl, o);
 
     D(bug("[sdl] SDLGfx::NewBitMap\n"));
 
-    if (GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList)) {
-        D(bug("[sdl] framebuffer bitmap, we can handle it\n"));
-        bmclass = LIBBASE->bmclass;
-    }
-
-    else if (GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList)) {
-        D(bug("[sdl] displayable bitmap, we can handle it\n"));
-        bmclass = LIBBASE->bmclass;
-    }
-
-    else if ((HIDDT_ModeID) GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList) != vHidd_ModeID_Invalid) {
+    if ((HIDDT_ModeID) GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList) != vHidd_ModeID_Invalid) {
         D(bug("[sdl] bitmap with valid mode, we can handle it\n"));
-        bmclass = LIBBASE->bmclass;
-    }
 
-    if (bmclass != NULL) {
         msgtags = TAGLIST(
             aHidd_BitMap_ClassPtr, (IPTR) LIBBASE->bmclass,
             TAG_MORE,              (IPTR) msg->attrList
@@ -379,6 +365,9 @@ OOP_Object *SDLGfx__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
     supermsg.attrList = msgtags;
 
     o = (OOP_Object *) OOP_DoSuperMethod(cl, o, (OOP_Msg) &supermsg);
+    
+    if (GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList))
+        data->framebuffer = o;
 
     D(bug("[sdl] Created bitmap 0x%p\n", o));
     return o;
@@ -387,7 +376,6 @@ OOP_Object *SDLGfx__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
 VOID SDLGfx__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg) {
     struct SDL_Surface *src, *dest;
     struct SDL_Rect srect, drect;
-    BOOL is_onscreen;
 
     D(bug("[sdl] SDLGfx::CopyBox\n"));
 
@@ -414,12 +402,74 @@ VOID SDLGfx__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Co
 
     S(SDL_BlitSurface, src, &srect, dest, &drect);
 
-    OOP_GetAttr(msg->dest, aHidd_SDLBitMap_IsOnScreen, &is_onscreen);
-    if (is_onscreen) {
-        D(bug("[sdl] refreshing onscreen surface 0x%08x\n", dest));
+    return;
+}
 
-        SV(SDL_UpdateRect, dest, msg->destX, msg->destY, msg->width, msg->height);
+OOP_Object *SDLGfx__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+{
+    struct gfxdata *data = OOP_INST_DATA(cl, o);
+    struct pHidd_Gfx_Show mymsg = {msg->mID, msg->bitMap, 0};
+    IPTR width, height;
+
+    /* Resetting SDL onscreen surface will destroy its old contents.
+       Copy back old bitmap data if there's one and if asked to do so */
+    if (data->shownbm && (msg->flags & fHidd_Gfx_Show_CopyBack)) {
+	OOP_Object *colmap;
+	IPTR numentries, i;
+
+        OOP_GetAttr(data->framebuffer, aHidd_BitMap_Width, &width);
+        OOP_GetAttr(data->framebuffer, aHidd_BitMap_Height, &height);
+	
+        OOP_GetAttr(data->framebuffer, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
+        OOP_GetAttr(colmap, aHidd_ColorMap_NumEntries, &numentries);
+	
+	/* We need also to copy colormap (palette) */
+        for (i = 0; i < numentries; i ++) {
+    	    HIDDT_Color col;
+
+	    HIDD_CM_GetColor(colmap, i, &col);
+	    HIDD_BM_SetColors(data->shownbm, &col, i, 1);
+        }
+
+	/* Our CopyBox() happily ignores the GC, so set it to NULL and don't bother */
+        HIDD_Gfx_CopyBox(o, data->framebuffer, 0, 0, data->shownbm, 0, 0, width, height, NULL);
     }
 
-    return;
+    /* Set up new onscreen surface if there's a new bitmap to show.
+       This will change resolution */
+    if (msg->bitMap) {
+        HIDDT_ModeID modeid = vHidd_ModeID_Invalid;
+	IPTR depth;
+	OOP_Object *sync, *pixfmt;
+        SDL_Surface *s;
+	struct TagItem bmtags[] = {
+	    {aHidd_SDLBitMap_Surface, 0},
+	    {TAG_DONE               , 0}
+	};
+
+        /* Ask ModeID from our bitmap */
+	OOP_GetAttr(msg->bitMap, aHidd_BitMap_ModeID, &modeid);
+	if (modeid == vHidd_ModeID_Invalid)
+	    return NULL;
+
+	HIDD_Gfx_GetMode(o, modeid, &sync, &pixfmt);
+        OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
+        OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
+	OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
+	
+	/* Set up new onscreen surface */
+        s = S(SDL_SetVideoMode, width, height, depth,
+              (LIBBASE->use_hwsurface  ? SDL_HWSURFACE | SDL_HWPALETTE : SDL_SWSURFACE) |
+              (LIBBASE->use_fullscreen ? SDL_FULLSCREEN                : 0) |
+              SDL_ANYFORMAT);
+	if (!s)
+	    return NULL;
+
+	/* Tell it to the bitmap object */
+	bmtags[0].ti_Data = (IPTR)s;
+	OOP_SetAttrs(msg->bitMap, bmtags);
+    }
+
+    /* Framebuffer contents has been destroyed, so call superclass without fHidd_Gfx_Show_CopyBack */
+    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
 }
