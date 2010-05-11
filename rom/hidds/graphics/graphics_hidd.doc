@@ -160,6 +160,18 @@ SEE ALSO
     Hidd_GC_DisposeBitMap()
 
 INTERNALS
+    The superclass implementation currently does the folliwing in order to determine a class for
+    a nondisplayable bitmap (in the listed order):
+    
+    1. Check aHidd_BitMap_ClassPtr and aHidd_BitMap_ClassID. If one of them is supplied, the class
+       is already set by a subclass.
+    2. Check aHidd_BitMap_StdPixFmt. If this attribute is supplied, figure out type of the pixelformat
+       (chunky or planar), and use one of two system's default classes.
+    3. Check aHidd_BitMap_Friend. If friend bitmap is supplied, obtain its class from
+       aHidd_BitMap_ClassPtr value of friend bitmap.
+    4. If everything fails, bitmap creation fails too.
+    
+    This behavior is subject to change, but will maintain backwards compatibility.
 
 HISTORY
 

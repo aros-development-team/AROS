@@ -511,7 +511,7 @@ typedef struct
     UBYTE   	    clut_shift;
 
     HIDDT_StdPixFmt stdpixfmt;		/* Number of corresponging standard format */
-    ULONG   	    flags;		/* Reserved, do not use */
+    ULONG   	    flags;		/* Flags, see below */
 	
 } HIDDT_PixelFormat;
 
@@ -1934,6 +1934,9 @@ typedef struct
 
 
 /****************** PixFmt definitions **************************/
+
+/* Color model, bitmap type, and swapping bytes flag are stored
+   in Flags member of the HIDDT_PixelFormat structure */
 
 /* CM == Color model */
 enum

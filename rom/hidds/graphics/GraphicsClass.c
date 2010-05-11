@@ -1964,7 +1964,11 @@ static VOID delete_pixfmts(struct class_static_data *csd)
 
 static inline BOOL cmp_pfs(HIDDT_PixelFormat *tmppf, HIDDT_PixelFormat *dbpf)
 {
-    /* Just compare everything except stdpixfmt and flags */
+    /* Just compare everything except stdpixfmt */
+    /* Compare flags first (because it's a fast check) */
+    if (tmppf->flags != dbpf->flags)
+        return FALSE;
+    /* If they match, compare the rest of things */
     return !memcmp(tmppf, dbpf, offsetof(HIDDT_PixelFormat, stdpixfmt));
 }
 
