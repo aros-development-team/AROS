@@ -299,7 +299,7 @@ OOP_Object *METHOD(INTELG45, Root, New)
         { aHidd_PixFmt_Depth,       24  }, /* 9 */
         { aHidd_PixFmt_BytesPerPixel,   4   }, /* 10 */
         { aHidd_PixFmt_BitsPerPixel,    24  }, /* 11 */
-        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native }, /* 12 Native */
+        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_BGR032 }, /* 12 Native */
         { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky }, /* 15 */
         { TAG_DONE, 0UL }
     };
@@ -317,28 +317,28 @@ OOP_Object *METHOD(INTELG45, Root, New)
         { aHidd_PixFmt_Depth,       16  }, /* 9 */
         { aHidd_PixFmt_BytesPerPixel,   2   }, /* 10 */
         { aHidd_PixFmt_BitsPerPixel,    16  }, /* 11 */
-        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native }, /* 12 */
+        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_RGB16_LE }, /* 12 */
         { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky }, /* 15 */
         { TAG_DONE, 0UL }
     };
 
-    struct TagItem pftags_15bpp[] = {
-        { aHidd_PixFmt_RedShift,    17  }, /* 0 */
-        { aHidd_PixFmt_GreenShift,  22  }, /* 1 */
-        { aHidd_PixFmt_BlueShift,   27  }, /* 2 */
-        { aHidd_PixFmt_AlphaShift,  0   }, /* 3 */
-        { aHidd_PixFmt_RedMask,     0x00007c00 }, /* 4 */
-        { aHidd_PixFmt_GreenMask,   0x000003e0 }, /* 5 */
-        { aHidd_PixFmt_BlueMask,    0x0000001f }, /* 6 */
-        { aHidd_PixFmt_AlphaMask,   0x00000000 }, /* 7 */
-        { aHidd_PixFmt_ColorModel,  vHidd_ColorModel_TrueColor }, /* 8 */
-        { aHidd_PixFmt_Depth,       15  }, /* 9 */
-        { aHidd_PixFmt_BytesPerPixel,   2   }, /* 10 */
-        { aHidd_PixFmt_BitsPerPixel,    15  }, /* 11 */
-        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native }, /* 12 */
-        { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky }, /* 15 */
-        { TAG_DONE, 0UL }
-    };
+//    struct TagItem pftags_15bpp[] = {
+//        { aHidd_PixFmt_RedShift,    17  }, /* 0 */
+//        { aHidd_PixFmt_GreenShift,  22  }, /* 1 */
+//        { aHidd_PixFmt_BlueShift,   27  }, /* 2 */
+//        { aHidd_PixFmt_AlphaShift,  0   }, /* 3 */
+//        { aHidd_PixFmt_RedMask,     0x00007c00 }, /* 4 */
+//        { aHidd_PixFmt_GreenMask,   0x000003e0 }, /* 5 */
+//        { aHidd_PixFmt_BlueMask,    0x0000001f }, /* 6 */
+//        { aHidd_PixFmt_AlphaMask,   0x00000000 }, /* 7 */
+//        { aHidd_PixFmt_ColorModel,  vHidd_ColorModel_TrueColor }, /* 8 */
+//        { aHidd_PixFmt_Depth,       15  }, /* 9 */
+//        { aHidd_PixFmt_BytesPerPixel,   2   }, /* 10 */
+//        { aHidd_PixFmt_BitsPerPixel,    15  }, /* 11 */
+//        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_RGB15_LE }, /* 12 */
+//        { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky }, /* 15 */
+//        { TAG_DONE, 0UL }
+//    };
 
 	OOP_Object *i2c;
 
