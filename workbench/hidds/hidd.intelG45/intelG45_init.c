@@ -102,7 +102,7 @@ AROS_UFH3(void, Enumerator,
 	    struct MemChunk *mc = (struct MemChunk *)sd->Card.Framebuffer;
 
 	    sd->CardMem.mh_Node.ln_Type = NT_MEMORY;
-	    sd->CardMem.mh_Node.ln_Name = "nVidia Framebuffer";
+	    sd->CardMem.mh_Node.ln_Name = "Intel GMA Framebuffer";
 	    sd->CardMem.mh_First = mc;
 	    sd->CardMem.mh_Lower = (APTR)mc;
 
