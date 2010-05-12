@@ -151,14 +151,16 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 	SysBase->SoftInts[i].sh_List.lh_Type = NT_INTERRUPT;
     }
 
+    NEWLIST(&((struct IntExecBase *)SysBase)->ResetHandlers);
+
     SysBase->SoftVer        = VERSION_NUMBER;
 
     SysBase->ColdCapture    = SysBase->CoolCapture
 	                    = SysBase->WarmCapture
 			    = NULL;
 
-    SysBase->SysStkUpper    = (APTR)0xFFFFFFFF;
-    SysBase->SysStkLower    = (APTR)0x00000000;
+    SysBase->SysStkUpper    = (APTR)~0;
+    SysBase->SysStkLower    = (APTR)0;
 
     SysBase->MaxLocMem      = (ULONG)mh->mh_Upper;
 
