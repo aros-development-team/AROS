@@ -227,9 +227,6 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     SysBase = sysBase;
 #endif
 
-    sysBase->VBlankFrequency = 50;
-    NEWLIST(&((struct IntExecBase *)sysBase)->ResetHandlers);
-
     /*
 	Create boot task.  Sigh, we actually create a Process sized Task,
 	since DOS needs to call things which think it has a Process and
