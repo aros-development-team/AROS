@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Sets up the ExecBase a bit. (Mostly clearing).
@@ -80,10 +80,10 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     
     /* Allocate memory for library base */
     SysBase = (struct ExecBase *)
-	    ((UBYTE *)allocmem(mh, negsize + sizeof(struct ExecBase)) + negsize);
+	    ((UBYTE *)allocmem(mh, negsize + sizeof(struct IntExecBase)) + negsize);
 
     /* Clear the library base */
-    memset(SysBase, 0, sizeof(struct ExecBase));
+    memset(SysBase, 0, sizeof(struct IntExecBase));
 
     /* Setup function vectors */
     i  = 1;
@@ -111,7 +111,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     SysBase->LibNode.lib_Revision     = REVISION_NUMBER;
     SysBase->LibNode.lib_OpenCnt      = 1;
     SysBase->LibNode.lib_NegSize      = negsize;
-    SysBase->LibNode.lib_PosSize      = sizeof(struct ExecBase);
+    SysBase->LibNode.lib_PosSize      = sizeof(struct IntExecBase);
     SysBase->LibNode.lib_Flags        = 0;
 
     NEWLIST(&SysBase->MemList);

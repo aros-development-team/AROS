@@ -1,6 +1,6 @@
 /*
-    Copyright � 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: coldreboot.c 30802 2009-03-08 19:25:45Z neil $
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: ColdReboot() - Reboot the computer.
     Lang: english
@@ -10,6 +10,9 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
+#include "exec_intern.h"
+#include "exec_util.h"
 
 /*****************************************************************************
 
@@ -51,6 +54,8 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    Exec_DoResetCallbacks((struct IntExetBase *)SysBase);
 
     asm volatile("li %%r3,%0; sc"::"i"(0x100 /*SC_REBOOT*/):"memory","r3");
 

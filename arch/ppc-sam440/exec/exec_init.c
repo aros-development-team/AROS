@@ -134,14 +134,14 @@ void exec_main(struct TagItem *msg, void *entry)
     /* And now let's have the SysBase */
     SysBase = (struct ExecBase *)(lowmem + negsize);
     wrspr(SPRG5, SysBase);
-    lowmem = (lowmem + negsize + sizeof(struct ExecBase) + 4095) & ~4095;
+    lowmem = (lowmem + negsize + sizeof(struct IntExecBase) + 4095) & ~4095;
     
     D(bug("[exec] ExecBase at %08x\n", SysBase));
     
     D(bug("[exec] Clearing ExecBase\n"));
 
     /* How about clearing most of ExecBase structure? */
-    bzero(&SysBase->IntVects[0], sizeof(struct ExecBase) - offsetof(struct ExecBase, IntVects[0]));
+    bzero(&SysBase->IntVects[0], sizeof(struct IntExecBase) - offsetof(struct ExecBase, IntVects[0]));
 
     SysBase->KickMemPtr = NULL;
     SysBase->KickTagPtr = NULL;
@@ -207,7 +207,7 @@ void exec_main(struct TagItem *msg, void *entry)
     SysBase->LibNode.lib_Node.ln_Pri = 0;
     SysBase->LibNode.lib_Node.ln_Name = (char *)exec_name;
     SysBase->LibNode.lib_Flags = LIBF_CHANGED | LIBF_SUMUSED;
-    SysBase->LibNode.lib_PosSize = sizeof(struct ExecBase);
+    SysBase->LibNode.lib_PosSize = sizeof(struct IntExecBase);
     SysBase->LibNode.lib_OpenCnt = 1;
     SysBase->LibNode.lib_IdString = (char *)exec_idstring;
     SysBase->LibNode.lib_Version = exec_Version;
@@ -216,6 +216,7 @@ void exec_main(struct TagItem *msg, void *entry)
     SysBase->Quantum = 4;
     SysBase->VBlankFrequency = 50;
     SysBase->PowerSupplyFrequency = 1;
+    NEWLIST(&((struct IntExecBase *)sysBase)->ResetHandlers);
 
     /* Build the jumptable */
     SysBase->LibNode.lib_NegSize =

@@ -159,7 +159,7 @@ void exec_InsertMemory(struct TagItem *msg, uintptr_t lower, uintptr_t upper)
 
     /* Scenario 1: Kernel and ExecBase areas outside the affected range. */
     if ((kernHigh < lower || kernLow > upper) && 
-        ((SysBase + sizeof(struct ExecBase)) < lower || (SysBase - negsize) > upper))
+        ((SysBase + sizeof(struct IntExecBase)) < lower || (SysBase - negsize) > upper))
     {
         rkprintf("[exec]    Adding %012p - %012p\n", lower, upper);
     
@@ -212,18 +212,18 @@ void exec_InsertMemory(struct TagItem *msg, uintptr_t lower, uintptr_t upper)
         return;
     }
     /* Scenario 5: ExecBase completely inside the memory region */
-    else if ((SysBase - negsize) >= (lower+sizeof(struct MemHeader)+sizeof(struct MemChunk)) && (SysBase + sizeof(struct ExecBase)) <= upper)
+    else if ((SysBase - negsize) >= (lower+sizeof(struct MemHeader)+sizeof(struct MemChunk)) && (SysBase + sizeof(struct IntExecBase)) <= upper)
     {
 #warning "TODO: Check if sysbase falls within the region being added"
         // Add 2 chunks ?
     }
     /* Scenario 6: ExecBase in lower portion of memory region */
-    else if ((SysBase - negsize) <= (lower+sizeof(struct MemHeader)+sizeof(struct MemChunk)) && (SysBase + sizeof(struct ExecBase)) <= upper)
+    else if ((SysBase - negsize) <= (lower+sizeof(struct MemHeader)+sizeof(struct MemChunk)) && (SysBase + sizeof(struct IntExecBase)) <= upper)
     {
         // Adjust ..
     }
     /* Scenario 7: ExecBase in upper portion of memory region */
-    else if ((SysBase - negsize) >= (lower+sizeof(struct MemHeader)+sizeof(struct MemChunk)) && (SysBase + sizeof(struct ExecBase)) >= upper)
+    else if ((SysBase - negsize) >= (lower+sizeof(struct MemHeader)+sizeof(struct MemChunk)) && (SysBase + sizeof(struct IntExecBase)) >= upper)
     {
         // Adjust ..
     }
@@ -261,7 +261,7 @@ int exec_main(struct TagItem *msg, void *entry)
 
         if (addr_lower != 0)
         {
-            addr_lower = ((addr_lower - (negsize + sizeof(struct ExecBase))) & ~PAGE_MASK);
+            addr_lower = ((addr_lower - (negsize + sizeof(struct IntExecBase))) & ~PAGE_MASK);
             SysBase = (struct ExecBase *)(addr_lower + negsize);
             krnSetTagData(KRN_MEMLower, ((addr_lower - 1)/1024), msg);
             addr_lower = (krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
@@ -275,14 +275,14 @@ int exec_main(struct TagItem *msg, void *entry)
         rkprintf("[exec] Clearing ExecBase [SysBase = %012p]\n", SysBase);
 
         /* How about clearing most of ExecBase structure? */
-        bzero(&SysBase->IntVects[0], sizeof(struct ExecBase) - offsetof(struct ExecBase, IntVects[0]));
+        bzero(&SysBase->IntVects[0], sizeof(struct IntExecBase) - offsetof(struct ExecBase, IntVects[0]));
 
         SysBase->KickMemPtr = NULL;
         SysBase->KickTagPtr = NULL;
         SysBase->KickCheckSum = NULL;
 
         /* How about clearing most of ExecBase structure? */
-        bzero(&SysBase->IntVects[0], sizeof(struct ExecBase) - offsetof(struct ExecBase, IntVects[0]));
+        bzero(&SysBase->IntVects[0], sizeof(struct IntExecBase) - offsetof(struct ExecBase, IntVects[0]));
 
         /*
          * Now everything is prepared to store ExecBase at the location 4UL and set
@@ -353,7 +353,7 @@ int exec_main(struct TagItem *msg, void *entry)
         SysBase->LibNode.lib_Node.ln_Pri = 0;
         SysBase->LibNode.lib_Node.ln_Name = (char *)exec_name;
         SysBase->LibNode.lib_Flags = LIBF_CHANGED | LIBF_SUMUSED;
-        SysBase->LibNode.lib_PosSize = sizeof(struct ExecBase);
+        SysBase->LibNode.lib_PosSize = sizeof(struct IntExecBase);
         SysBase->LibNode.lib_OpenCnt = 1;
         SysBase->LibNode.lib_IdString = (char *)exec_idstring;
         SysBase->LibNode.lib_Version = exec_Version;
@@ -362,6 +362,7 @@ int exec_main(struct TagItem *msg, void *entry)
         SysBase->Quantum = 4;
         SysBase->VBlankFrequency = 50;
         SysBase->PowerSupplyFrequency = 1;
+	NEWLIST(&((struct IntExecBase *)sysBase)->ResetHandlers);
 
         /* Build the jumptable */
         SysBase->LibNode.lib_NegSize =
@@ -560,7 +561,7 @@ int exec_main(struct TagItem *msg, void *entry)
             mh->mh_Attributes = (MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA);
             mh->mh_First = mh + sizeof(struct MemHeader);
             mh->mh_First->mc_Next = NULL;
-            mh->mh_First->mc_Bytes =  (negsize + sizeof(struct ExecBase));
+            mh->mh_First->mc_Bytes =  (negsize + sizeof(struct IntExecBase));
             mh->mh_Lower = (struct MemChunk *)(SysBase - negsize);
             mh->mh_Upper = (APTR)((UBYTE *)mh->mh_Lower + mh->mh_First->mc_Bytes);
             mh->mh_Free = 0; /* All used! */
