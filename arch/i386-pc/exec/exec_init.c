@@ -738,7 +738,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     ExecBase->Quantum = 4;
     ExecBase->VBlankFrequency = 50;
     ExecBase->PowerSupplyFrequency = 1;
-    NEWLIST(&((struct IntExecBase *)SysBase)->ResetHandlers);
+    NEWLIST(&((struct IntExecBase *)sysBase)->ResetHandlers);
     
     rkprintf("OK\nBuilding JumpTable...");
 
