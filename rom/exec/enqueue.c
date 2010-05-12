@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a node into a sorted list
@@ -89,14 +89,14 @@
     /* Let node point to A: A<-node */
     node->ln_Pred	   = next->ln_Pred;
 
+    /* Make node point to next: A<->node->next<->B */
+    node->ln_Succ	   = next;
+
     /* Let A point to node: A->node */
     next->ln_Pred->ln_Succ = node;
 
     /* Make next point to node: A<->node<-next<->B */
     next->ln_Pred	   = node;
-
-    /* Make node point to next: A<->node->next<->B */
-    node->ln_Succ	   = next;
 
     AROS_LIBFUNC_EXIT
 } /* Enqueue */

@@ -29,7 +29,8 @@ ALL_FUNCTIONS	:= \
 	setsignal setsr settaskpri signal stackswap sumkickdata sumlibrary \
 	superstate supervisor switch taggedopenlibrary typeofmem userstate \
 	vacate wait waitio waitport allocvecpooled freevecpooled newallocentry \
-	newaddtask avl vnewrawdofmt shutdowna useralert
+	newaddtask avl vnewrawdofmt shutdowna useralert \
+	addresetcallback remresetcallback doresetcallbacks
 
 
 INIT_FILE   := exec_init

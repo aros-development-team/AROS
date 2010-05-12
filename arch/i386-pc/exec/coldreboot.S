@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ColdReboot() - Reboot the computer.
@@ -36,10 +36,6 @@
     SEE ALSO
 
     INTERNALS
-	This function is not really necessary, and could be left unimplemented
-	on many systems. It is best when using this function to allow the memory
-	contents to remain as they are, since some programs may use this
-	function when installing resident modules.
 
     HISTORY
 
@@ -55,6 +51,9 @@ AROS_SLIB_ENTRY(ColdReboot,Exec):
 #ifdef DEBUG
 	    hlt
 #else
+	    movl	4,%rdx
+	    pushl	%rdx
+	    call	Exec_DoResetCallbacks
 	    movl	$-1,%eax
 	    int		$0x80
 #endif

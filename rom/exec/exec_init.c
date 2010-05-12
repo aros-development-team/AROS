@@ -227,8 +227,8 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     SysBase = sysBase;
 #endif
 
-#warning FIXME: hack to avoid crash in timer_init.c:118
-sysBase->VBlankFrequency = 50;
+    sysBase->VBlankFrequency = 50;
+    NEWLIST(&((struct IntExecBase *)sysBase)->ResetHandlers);
 
     /*
 	Create boot task.  Sigh, we actually create a Process sized Task,

@@ -80,6 +80,7 @@
 #include LC_LIBDEFS_FILE
 
 #include "etask.h"
+#include "exec_intern.h"
 #include "exec_util.h"
 #include "traps.h"
 #include "vesa.h"
@@ -655,7 +656,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     rkprintf("Clearing ExecBase\n");
 
     /* How about clearing most of ExecBase structure? */
-    bzero(&ExecBase->IntVects[0], sizeof(struct ExecBase) - offsetof(struct ExecBase, IntVects[0]));
+    bzero(&ExecBase->IntVects[0], sizeof(struct IntExecBase) - offsetof(struct ExecBase, IntVects[0]));
 
     ExecBase->KickMemPtr = KickMemPtr;
     ExecBase->KickTagPtr = KickTagPtr;
@@ -729,7 +730,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     ExecBase->LibNode.lib_Node.ln_Pri = 0;
     ExecBase->LibNode.lib_Node.ln_Name = (char *)exec_name;
     ExecBase->LibNode.lib_Flags = LIBF_CHANGED | LIBF_SUMUSED;
-    ExecBase->LibNode.lib_PosSize = sizeof(struct ExecBase);
+    ExecBase->LibNode.lib_PosSize = sizeof(struct IntExecBase);
     ExecBase->LibNode.lib_OpenCnt = 1;
     ExecBase->LibNode.lib_IdString = (char *)exec_idstring;
     ExecBase->LibNode.lib_Version = exec_Version;
@@ -738,6 +739,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     ExecBase->Quantum = 4;
     ExecBase->VBlankFrequency = 50;
     ExecBase->PowerSupplyFrequency = 1;
+    NEWLIST(&((struct IntExecBase *)sysBase)->ResetHandlers);
     
     rkprintf("OK\nBuilding JumpTable...");
 
@@ -750,7 +752,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     /* Add FAST memory at 0x01000000 to free memory lists */
     if (extmem)
     {
-        ULONG base = ((ULONG)ExecBase + sizeof(struct ExecBase) + 15) & ~15;
+        ULONG base = ((ULONG)ExecBase + sizeof(struct IntExecBase) + 15) & ~15;
 
         AddMemList(extmem - (base + 0x10000),
             MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL,
@@ -769,7 +771,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     }
     else
     {
-        ULONG base = ((ULONG)ExecBase + sizeof(struct ExecBase) + 15) & ~15;
+        ULONG base = ((ULONG)ExecBase + sizeof(struct IntExecBase) + 15) & ~15;
         AddMemList(locmem - (base + 0x10000),
             MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA,
             -10,

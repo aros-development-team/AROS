@@ -628,6 +628,9 @@ FUNCTION
     to the superclass.
     
     Always check class of the supplied bitmap before attempting to look at its private data.
+    
+    A GC is used in order to specify raster operation performed between the source and
+    destination according to its aHidd_GC_DrawMode attribute value.
 
 INPUTS
     gfxHidd - a display driver object that you are going to use for copying
@@ -645,6 +648,40 @@ RESULT
     None.
 
 NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+NAME
+    moHidd_Gfx_ShowImminentReset
+
+FUNCTION
+    Indicate upcoming machine reset
+
+    The system calls this method when the machine is about to perform a warm reboot. The driver is expected
+    to blank the screen and reset the hardware to some known idle state. There is no need to preserve an old
+    hardware state and/or current bitmaps data.
+
+INPUTS
+    None.
+
+RESULT
+    None.
+
+NOTES
+    In future there will be some mechanism which will allow any OS component to get an upcoming
+    reboot notification directly from exec.library or kernel.resource, and this method will go
+    obsolete. The driver reset code can be executed on an unstable system suffering from crash,
+    so using an OOP method here is not a very good idea.
 
 EXAMPLE
 
@@ -710,6 +747,9 @@ FUNCTION
     may or may not support hardware-assisted screens composition. Bitmaps are sorted
     in the list in descending z-order. The driver is expected to put at least frontmost
     bitmap on display.
+    
+    It is valid to get NULL pointer as data parameter. This means that there's nothing to
+    show and the screen should go blank.
 
     Bitmaps' display offsets are stored in their aHidd_BitMap_XOffset and aHidd_BitMap_YOffset.
     attributes. This function is not expected to modify their values somehow. They are assumed

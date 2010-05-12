@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: coldreboot.S 30792 2009-03-07 22:40:04Z neil $
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: ColdReboot() - Reboot the computer.
     Lang: english
@@ -55,6 +55,8 @@ AROS_SLIB_ENTRY(ColdReboot,Exec):
 #ifdef DEBUG
 	    hlt
 #else
+	    movl	4,%rbx
+	    call	Exec_DoResetCallbacks
 	    movl	$-1,%eax
 	    int		$0x80
 #endif

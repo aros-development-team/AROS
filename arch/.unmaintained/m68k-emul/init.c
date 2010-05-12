@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -83,7 +83,7 @@ int main(int argc,char *argv[])
 	neg=sizeof(struct JumpVec)*NUMVECT;
 	neg=(neg+LIBALIGN-1)&~(LIBALIGN-1);
 	SysBase=(struct ExecBase *)
-		((UBYTE *)allocmem(neg+sizeof(struct ExecBase))+neg);
+		((UBYTE *)allocmem(neg+sizeof(struct IntExecBase))+neg);
 	for(i=0;i<NUMVECT;i++)
 	{
 	    SET_JMP(&((struct JumpVec *)SysBase)[-i-1]);
@@ -112,6 +112,7 @@ int main(int argc,char *argv[])
 	NEWLIST(&SysBase->PortList);
 	NEWLIST(&SysBase->TaskReady);
 	NEWLIST(&SysBase->TaskWait);
+	NEWLIST(&((struct IntExecBase *)sysBase)->ResetHandlers);
 
 	for(i=0;i<5;i++)
 	{

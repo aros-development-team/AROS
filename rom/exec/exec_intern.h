@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Private data belonging to exec.library
@@ -26,6 +26,13 @@
 #ifndef PROTO_EXEC_H
 #   include <proto/exec.h>
 #endif
+
+/* A private portion of ExecBase */
+struct IntExecBase
+{
+    struct ExecBase pub;
+    struct List ResetHandlers;
+};
 
 #if UseLVOs
 extern void __AROS_InitExecBase (void);

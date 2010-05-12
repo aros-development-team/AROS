@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ColdReboot() - Reboot the computer.
@@ -51,6 +51,8 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    Exec_DoResetCallbacks((struct IntExetBase *)SysBase);
 
     asm volatile("li %%r3,%0; sc"::"i"(0x100 /*SC_REBOOT*/):"memory","r3");
 
