@@ -130,12 +130,12 @@ static void PrintMonitorSpec(struct MonitorSpec *mspc)
     if (args.displaydb) {
         /* We don't use DisplayInfoDataBaseSemaphore here because it may be
 	   not initialized in fake MonitorSpecs.
-	   What is done here is actually hack. I even don't know if this
-	   will work at all (i expect to get a listing of mode names here).
-	   These nodes are entirely system-private, do not use this in
-	   a usual user software!!! */
+	   What is done here is actually hack. Noone will ever need in
+	   a common software. I examined many systems and these lists
+	   were either empty or not initialized at all. However
+	   there can be a theoretical possibility that something uses them. */
         struct Node *n = mspc->DisplayInfoDataBase.lh_Head;
-	
+
 	if (n) {
 	    printf("DisplayInfoDataBase\n");
 	    for (; n->ln_Succ; n = n->ln_Succ) {
@@ -196,23 +196,27 @@ int main(void)
 
     printf("CyberGfxBase %p\n", CyberGfxBase);
     printf("p96Base      %p\n", p96Base);
-    printf("\n");
 
     if (!args.nospecs) {
-        printf("*********** MonitorSpecs ***********\n\n");
+            printf("*********** MonitorSpecs ***********\n\n");
 
-        /* It's a good idea to lock this semaphore. It seems to be present in all OSes
-           (at least in AmigaOS v3, MorphOS and AROS)
-	   However at least on AmigaOS v3 we can't call NextDisplayInfo() and such
-	   while the lock is held. */
-        ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
-        for (mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
-            PrintMonitorSpec(mspc);
-	    printf("\n");
-        }
-	ReleaseSemaphore(GfxBase->MonitorListSemaphore);
+	    /* We don't use MonitorListSemaphore because something crashes on
+	       AmigaOS4. So we use as little of things as possible and do some
+	       additional checks. */
+	    mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head;
+
+	    if (mspc) {
+                for (; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
+                    PrintMonitorSpec(mspc);
+	            printf("\n");
+                }
+	    } else {
+	        printf("MonitorList is not initialized properly:\n");
+		PrintList(&GfxBase->MonitorList);
+		args.allspecs = TRUE;
+	    }
     }
-    
+
     if (!args.nomodes) {
       printf("*********** Display modes **********\n\n");
       for (;;) {
@@ -289,12 +293,10 @@ int main(void)
 	    if (args.allspecs)
 	        mspc = NULL;
 	    else {
-	        ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
 	        for (mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
 	            if (mspc == mon.Mspc)
 		        break;
 		}
-		ReleaseSemaphore(GfxBase->MonitorListSemaphore);
 	    }
 	    if ((mspc != mon.Mspc) && mon.Mspc)
 	        PrintMonitorSpec(mon.Mspc);
