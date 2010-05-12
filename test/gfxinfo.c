@@ -6,11 +6,17 @@
 /* Define this if you have no CGX SDK for some reason. You'll miss one bit of information then.
 #define NO_CGX_API */
 
+#ifdef __amigaos4__
+#define __USE_INLINE__
+#endif
+
 #include <graphics/gfxbase.h>
 #include <graphics/displayinfo.h>
 #include <proto/dos.h>
+#define __USE_BASETYPE__ // For __amigaos4__
 #include <proto/exec.h>
 #include <proto/graphics.h>
+#undef __USE_BASETYPE__
 
 #include <stdio.h>
 #include <string.h>
@@ -150,7 +156,10 @@ static void PrintMonitorSpec(struct MonitorSpec *mspc)
 int main(void)
 {
     struct Library *CyberGfxBase;
-    struct Library *p96Base;
+#ifdef __amigaos4__
+    struct CyberGfxIFace *ICyberGfx;
+#endif
+    struct Library *P96Base;
     struct RDArgs *rda;
     struct MonitorSpec *mspc;
     ULONG modeid = INVALID_ID;
@@ -170,14 +179,19 @@ int main(void)
     }
 
     CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
-    p96Base = OpenLibrary("Picasso96API.library", 0);
+    P96Base = OpenLibrary("Picasso96API.library", 0);
 
     printf("******** System information ********\n\n");
     printf    ("graphics.library      v%u.%u\n", GfxBase->LibNode.lib_Version, GfxBase->LibNode.lib_Revision);
     if (CyberGfxBase)
+    {
         printf("cybergraphics.library v%u.%u\n", CyberGfxBase->lib_Version, CyberGfxBase->lib_Revision);
-    if (p96Base)
-        printf("Picasso96API.library  v%u.%u\n", p96Base->lib_Version, p96Base->lib_Revision);
+#ifdef __amigaos4__
+	ICyberGfx = (struct CyberGfxIFace *)GetInterface((struct Library *)CyberGfxBase, "main", 1, NULL);
+#endif
+    }
+    if (P96Base)
+	printf("Picasso96API.library  v%u.%u\n", P96Base->lib_Version, P96Base->lib_Revision);
     printf("\n");
 
     printf("GfxBase %p\n", GfxBase);
@@ -195,7 +209,7 @@ int main(void)
     printf   ("\n");
 
     printf("CyberGfxBase %p\n", CyberGfxBase);
-    printf("p96Base      %p\n", p96Base);
+    printf("P96Base      %p\n", P96Base);
 
     if (!args.nospecs) {
             printf("*********** MonitorSpecs ***********\n\n");
@@ -309,10 +323,10 @@ int main(void)
     }
 
     printf("*************** End ****************\n");
-    if (p96Base)
-        CloseLibrary(p96Base);
+    if (P96Base)
+	CloseLibrary(P96Base);
     if (CyberGfxBase)
-        CloseLibrary(CyberGfxBase);
+	CloseLibrary(CyberGfxBase);
     
     FreeArgs(rda);
     return 0;
