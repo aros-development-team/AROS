@@ -1,4 +1,3 @@
-/*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
@@ -739,7 +738,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     ExecBase->Quantum = 4;
     ExecBase->VBlankFrequency = 50;
     ExecBase->PowerSupplyFrequency = 1;
-    NEWLIST(&((struct IntExecBase *)sysBase)->ResetHandlers);
+    NEWLIST(&((struct IntExecBase *)SysBase)->ResetHandlers);
     
     rkprintf("OK\nBuilding JumpTable...");
 
