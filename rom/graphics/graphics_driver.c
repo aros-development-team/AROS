@@ -51,6 +51,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#define DEBUG_LOADVIEW(x)
+
 struct ETextFont
 {
     struct TextFont	etf_Font;
@@ -906,23 +908,28 @@ void driver_LoadView(struct View *view, struct GfxBase *GfxBase)
 	    }
 	}
     }
+    DEBUG_LOADVIEW(bug("[driver_LoadView] Showing ViewPort 0x%p, data 0x%p, BitMap 0x%p, BitMap object 0x%p\n", vp, vpd, bitmap, vpd->Bitmap));
 
     /* First try the new method */
-    if (HIDD_Gfx_ShowViewPorts(SDD(GfxBase)->gfxhidd, vpd))
+    if (HIDD_Gfx_ShowViewPorts(SDD(GfxBase)->gfxhidd, vpd)) {
+        DEBUG_LOADVIEW(bug("[driver_LoadView] ShowViewPorts() worked\n"));
         return;
+    }
 
     /* If it failed, we may be working with a framebuffer. First check if the bitmap
        is already displayed. If so, do nothing (because displaying the same bitmap twice may
        cause some problems */
+    DEBUG_LOADVIEW(bug("[driver_LoadView] Old displayed bitmap: 0x%p\n", SDD(GfxBase)->frontbm));
     if (SDD(GfxBase)->frontbm == bitmap)
         return;
 
     fb = HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, vpd ? vpd->Bitmap : NULL, fHidd_Gfx_Show_CopyBack);
+    DEBUG_LOADVIEW(bug("[driver_LoadView] Show() returned 0x%p\n", fb));
 
     if (fb) {
     	IPTR width, height;
 
-	D(bug("[driver_LoadView] Replacing framebuffer\n"));
+	DEBUG_LOADVIEW(bug("[driver_LoadView] Replacing framebuffer\n"));
 	Forbid();
 
 	 /* Set this as the active screen */
@@ -955,6 +962,7 @@ void driver_LoadView(struct View *view, struct GfxBase *GfxBase)
 
         OOP_GetAttr(fb, aHidd_BitMap_Width, &width);
     	OOP_GetAttr(fb, aHidd_BitMap_Height, &height);
+	DEBUG_LOADVIEW(bug("[driver_LoadView] Updating framebuffer, new size: %d x %d\n", width, height));
 
 	HIDD_BM_UpdateRect(fb, 0, 0, width, height);
 	Permit();
