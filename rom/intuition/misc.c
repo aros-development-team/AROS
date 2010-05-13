@@ -14,12 +14,9 @@
 #include <proto/intuition.h>
 #include "intuition_intern.h"
 
-void MySetPointerPos(struct IntuitionBase *IntuitionBase, int x, int y)
+void MySetPointerPos(struct IntuitionBase *IntuitionBase)
 {
     struct IntScreen *scr = GetPrivScreen(IntuitionBase->ActiveScreen);
-
-    IntuitionBase->MouseX = x;
-    IntuitionBase->MouseY = y;
 
     if (scr && scr->Pointer)
     {
@@ -33,8 +30,8 @@ void MySetPointerPos(struct IntuitionBase *IntuitionBase, int x, int y)
                 scr->Pointer->sprite->es_wordwidth,
                 scr->Pointer->sprite->es_flags));
         MoveSprite(&scr->Screen.ViewPort, &scr->Pointer->sprite->es_SimpleSprite,
-                   x + scr->Pointer->xoffset,
-                   y + scr->Pointer->yoffset);
+                   scr->Screen.MouseX + scr->Pointer->xoffset,
+                   scr->Screen.MouseY + scr->Pointer->yoffset);
         D(bug("MoveSprite data 0x%lx, height %ld, x %ld, y %ld, num %ld, wordwidth, 0x%lx, flags 0x%lx\n",
                 scr->Pointer->sprite->es_SimpleSprite.posctldata,
                 scr->Pointer->sprite->es_SimpleSprite.height,

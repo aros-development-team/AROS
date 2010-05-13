@@ -1010,7 +1010,7 @@ void FireScreenNotifyMessage(IPTR data, ULONG flag, struct IntuitionBase *Intuit
 void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct IntuitionBase *IntuitionBase);
 
 /* misc.c */
-extern void MySetPointerPos(struct IntuitionBase *, int, int);
+extern void MySetPointerPos(struct IntuitionBase *);
 struct TextFont *SafeReopenFont(struct IntuitionBase *, struct TextFont **);
 extern Object *MakePointerFromPrefs(struct IntuitionBase *, struct Preferences *);
 extern Object *MakePointerFromData(struct IntuitionBase *, UWORD *, int, int, int, int);

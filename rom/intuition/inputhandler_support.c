@@ -72,6 +72,9 @@ void notify_mousemove_screensandwindows(WORD x,
     LONG    	   lock = LockIBase(0);
     struct Screen *scr = IntuitionBase->FirstScreen;
 
+    IntuitionBase->MouseX = x;
+    IntuitionBase->MouseY = y;
+
     while (NULL != scr)
     {
         struct Window * win = scr->FirstWindow;
