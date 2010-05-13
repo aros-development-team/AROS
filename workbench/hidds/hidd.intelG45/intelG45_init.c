@@ -134,6 +134,10 @@ AROS_UFH3(void, Enumerator,
     	writel(val, sd->Card.MMIO + G45_GPIOA);
     	writel(0, sd->Card.MMIO + G45_GMBUS);
 
+    	/* Reserve some memory for HW cursor */
+    	sd->CursorImage = AllocBitmapArea(sd, 64, 64, 4, TRUE);
+    	sd->CursorVisible = FALSE;
+
     	/* Disable VGA */
 //    	writel(0x80000000, sd->Card.MMIO + G45_VGACNTRL);
 

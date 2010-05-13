@@ -39,7 +39,7 @@ typedef struct {
 	 uint32_t	PixelClock;
 } GMA_PLL_t;
 
-static BOOL delay_ms(struct g45staticdata *sd, uint32_t msec)
+BOOL delay_ms(struct g45staticdata *sd, uint32_t msec)
 {
 	/* Allocate a signal within this task context */
 
@@ -57,7 +57,7 @@ static BOOL delay_ms(struct g45staticdata *sd, uint32_t msec)
 	sd->tr.tr_node.io_Message.mn_ReplyPort->mp_SigTask = NULL;
 }
 
-static BOOL delay_us(struct g45staticdata *sd, uint32_t usec)
+BOOL delay_us(struct g45staticdata *sd, uint32_t usec)
 {
 	/* Allocate a signal within this task context */
 
@@ -241,9 +241,9 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 	writel(readl(sd->Card.MMIO + 0x61140) & ~(1 << 31), sd->Card.MMIO + 0x61140);
 	writel(readl(sd->Card.MMIO + 0x61160) & ~(1 << 31), sd->Card.MMIO + 0x61160);
 
-	/* Stop cursor */
-	writel(0, sd->Card.MMIO + 0x70080);
-	delay_ms(sd, 20);
+//	/* Stop cursor */
+//	writel(0, sd->Card.MMIO + 0x70080);
+//	delay_ms(sd, 20);
 
 	/* Disable pipe */
 	writel(readl(sd->Card.MMIO + G45_PIPEACONF) & ~G45_PIPECONF_ENABLE, sd->Card.MMIO + G45_PIPEACONF);
@@ -376,6 +376,7 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 //	writel(readl(sd->Card.MMIO + 0x7003c) | 0x80000000, sd->Card.MMIO + 0x7003c);
 
 
+	writel(state->dspsurf, sd->Card.MMIO + G45_DSPASURF);
 	writel(state->dspstride, sd->Card.MMIO + G45_DSPASTRIDE);
 	writel(state->dsplinoff, sd->Card.MMIO + G45_DSPALINOFF);
 

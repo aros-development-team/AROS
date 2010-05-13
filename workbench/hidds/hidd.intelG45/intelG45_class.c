@@ -27,6 +27,7 @@
 #include LC_LIBDEFS_FILE
 
 #include "intelG45_intern.h"
+#include "intelG45_regs.h"
 
 #define sd ((struct g45staticdata*)SD(cl))
 
@@ -43,6 +44,28 @@
 #define HiddSyncAttrBase    (sd->syncAttrBase)
 #define HiddI2CAttrBase         (sd->i2cAttrBase)
 #define HiddI2CDeviceAttrBase   (sd->i2cDeviceAttrBase)
+
+#define DEBUG_POINTER 1
+
+#ifdef DEBUG_POINTER
+
+#define PRINT_POINTER(image, xsize, xmax, ymax)		\
+bug("[ATI] Pointer data:\n");			\
+{							\
+    ULONG *pix = (ULONG *)image;			\
+    ULONG x, y;						\
+							\
+    for (y = 0; y < ymax; y++) {			\
+        for (x = 0; x < xmax; x++)			\
+	    bug("0x%08X ", pix[x]);			\
+	bug("\n");					\
+	pix += xsize;					\
+    }							\
+}
+
+#else
+#define PRINT_POINTER(image, xsize, xmax, ymax)
+#endif
 
 #define MAKE_SYNC(name,clock,hdisp,hstart,hend,htotal,vdisp,vstart,vend,vtotal,descr)	\
     struct TagItem sync_ ## name[]={ \
@@ -361,9 +384,9 @@ OOP_Object *METHOD(INTELG45, Root, New)
 	tags->ti_Data = (IPTR)pftags_16bpp;
 	tags++;
 
-	tags->ti_Tag = aHidd_Gfx_PixFmtTags;
-	tags->ti_Data = (IPTR)pftags_15bpp;
-	tags++;
+//	tags->ti_Tag = aHidd_Gfx_PixFmtTags;
+//	tags->ti_Data = (IPTR)pftags_15bpp;
+//	tags++;
 
 	i2c = OOP_NewObject(sd->IntelI2C, NULL, i2c_attrs);
 
@@ -429,7 +452,7 @@ void METHOD(INTELG45, Root, Get)
     	switch (idx)
     	{
     	case aoHidd_Gfx_SupportsHWCursor:
-    		*msg->storage = (IPTR)FALSE;
+    		*msg->storage = (IPTR)TRUE;
     		found = TRUE;
     		break;
 
@@ -625,3 +648,78 @@ OOP_Object *METHOD(INTELG45, Hidd_Gfx, NewBitMap)
     return (OOP_Object*)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
+void METHOD(INTELG45, Hidd_Gfx, SetCursorVisible)
+{
+    sd->CursorVisible = msg->visible;
+    if (msg->visible)
+    {
+    	writel(G45_CURCNTR_PIPE_A | G45_CURCNTR_TYPE_ARGB, sd->Card.MMIO + G45_CURACNTR);
+    	writel(sd->CursorImage+0x7f800000, sd->Card.MMIO + G45_CURABASE);
+    }
+    else
+    {
+    	writel(G45_CURCNTR_PIPE_A | G45_CURCNTR_TYPE_OFF, sd->Card.MMIO + G45_CURACNTR);
+    	writel(sd->CursorImage+0x7f800000, sd->Card.MMIO + G45_CURABASE);
+    }
+}
+
+void METHOD(INTELG45, Hidd_Gfx, SetCursorPos)
+{
+    WORD x,y;
+
+    x = (WORD)msg->x;
+    y = (WORD)msg->y;
+
+    if (x < 0)
+    {
+    	x = G45_CURPOS_SIGN | (-x);
+    }
+
+    if (y < 0)
+    {
+    	y = G45_CURPOS_SIGN | (-y);
+    }
+
+    writel(((ULONG)x << G45_CURPOS_XSHIFT) | ((ULONG)y << G45_CURPOS_YSHIFT), sd->Card.MMIO + G45_CURAPOS);
+    writel(sd->CursorImage+0x7f800000, sd->Card.MMIO + G45_CURABASE);
+}
+
+BOOL METHOD(INTELG45, Hidd_Gfx, SetCursorShape)
+{
+    D(bug("[GMA] Set cursor shape %08x\n", msg->shape));
+
+    if (msg->shape == NULL)
+    {
+        sd->CursorVisible = 0;
+        writel(G45_CURCNTR_PIPE_A | G45_CURCNTR_TYPE_OFF, sd->Card.MMIO + G45_CURACNTR);
+        writel(sd->CursorImage+0x7f800000, sd->Card.MMIO + G45_CURABASE);
+    }
+    else
+    {
+        IPTR       width, height, x;
+
+        ULONG       *curimg = (ULONG*)((IPTR)sd->CursorImage + (IPTR)sd->Card.Framebuffer);
+
+        OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
+        OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
+
+        if (width > 64) width = 64;
+        if (height > 64) height = 64;
+
+        for (x = 0; x < 64*64; x++)
+           curimg[x] = 0;
+
+		/* I always get the image in BGRA32 format (it becomes ARGB32 when picked up as ULONG on little-endian),
+		   so i don't turn on byte swapping */
+
+        HIDD_BM_GetImage(msg->shape, (UBYTE *)curimg, 64*4, 0, 0, width, height, vHidd_StdPixFmt_BGRA32);
+        PRINT_POINTER(curimg, 64, 16, 16);
+
+        writel(G45_CURCNTR_PIPE_A | G45_CURCNTR_TYPE_ARGB, sd->Card.MMIO + G45_CURACNTR);
+        writel(sd->CursorImage+0x7f800000, sd->Card.MMIO + G45_CURABASE);
+        D(bug("[GMA] cursor base: %08x cntr: %08x\n", readl(sd->Card.MMIO + G45_CURABASE), readl(sd->Card.MMIO + G45_CURACNTR)));
+
+    }
+
+    return TRUE;
+}
