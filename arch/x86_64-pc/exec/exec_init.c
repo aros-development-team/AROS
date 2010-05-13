@@ -362,7 +362,7 @@ int exec_main(struct TagItem *msg, void *entry)
         SysBase->Quantum = 4;
         SysBase->VBlankFrequency = 50;
         SysBase->PowerSupplyFrequency = 1;
-	NEWLIST(&((struct IntExecBase *)sysBase)->ResetHandlers);
+	NEWLIST(&((struct IntExecBase *)SysBase)->ResetHandlers);
 
         /* Build the jumptable */
         SysBase->LibNode.lib_NegSize =
