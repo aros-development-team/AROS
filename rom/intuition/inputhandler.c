@@ -484,15 +484,15 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
     {
 	    BOOL new_gadget = FALSE;
 	    BOOL sizeverify = FALSE;
+	    UWORD MetaDrag = GetPrivIBase(IntuitionBase)->IControlPrefs.ic_MetaDrag;
 
 	    DEBUG_CLICK(bug("[Inputhandler] Screen 0x%p, Window 0x%p, Gadget 0x%p, screen titlebar %d, new active window %d\n", screen, w, gadget, stitlebarhit, new_active_window));
 	    DEBUG_CLICK(if (screen) bug("[Inputhandler] Coordinates: (%d, %d)\n", screen->MouseX, screen->MouseY));
 	        
 	    iihdata->ActQualifier |= IEQUALIFIER_LEFTBUTTON;
 
-	    /* Enter screen dragging mode if LAmiga + LButton are pressed.
-	       TODO: handle extra qualifier specified by IControl prefs. */
-	    if ((iihdata->ActQualifier & KEY_QUALIFIERS) == IEQUALIFIER_LCOMMAND) {
+	    /* Enter screen dragging mode if LButton + MetaDrag are pressed. */
+	    if (MetaDrag && ((iihdata->ActQualifier & KEY_QUALIFIERS) == MetaDrag)) {
 	        iihdata->ScreenDrag = screen;
 	        *keep_event = FALSE;
 		break;
