@@ -118,6 +118,25 @@
 #define G45_ADPA_VSYNC_PLUS		0x00000010
 #define G45_ADPA_HSYNC_PLUS		0x00000008
 
+#define G45_CURACNTR				0x70080
+#define G45_CURCNTR_PIPE_A			0x00000000
+#define G45_CURCNTR_PIPE_B			0x10000000
+#define G45_CURCNTR_PIPE_C			0x20000000
+#define G45_CURCNTR_PIPE_D			0x30000000
+#define G45_CURCNTR_PIPE_MASK		0x30000000
+#define G45_CURCNTR_POPUP_ENABLE	0x08000000
+#define G45_CURCNTR_GAMMA_ENABLE	0x04000000
+#define G45_CURCNTR_ROTATE_180		0x00008000
+#define G45_CURCNTR_TYPE_MASK		0x00000027
+#define G45_CURCNTR_TYPE_OFF		0x00000000
+#define G45_CURCNTR_TYPE_ARGB		0x00000027		/* The only one used by AROS. 64x64 ARGB */
+
+#define G45_CURABASE				0x70084			/* Base address of cursor (4K aligned) and trigger for update operations */
+#define G45_CURAPOS				0x70088			/* Cursor position */
+#define G45_CURPOS_XSHIFT			0
+#define G45_CURPOS_YSHIFT			16
+#define G45_CURPOS_SIGN			0x8000
+
 #define readl(addr) ( *(volatile uint32_t *) (addr) )
 #define readw(addr) ( *(volatile uint16_t *) (addr) )
 #define readb(addr) ( *(volatile uint8_t *)  (addr) )

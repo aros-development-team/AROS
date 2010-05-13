@@ -144,6 +144,8 @@ OOP_Object *METHOD(GMABM, Root, New)
                 HIDDT_ModeID modeid;
                 OOP_Object *sync;
 
+                bm->fbgfx = TRUE;
+
                 /* We should be able to get modeID from the bitmap */
                 OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
 
@@ -201,6 +203,14 @@ OOP_Object *METHOD(GMABM, Root, New)
                     }
                 }
             }
+			else
+			{
+				bm->framebuffer = (IPTR)AllocMem(bm->pitch * bm->height,
+						MEMF_PUBLIC | MEMF_CLEAR);
+				bm->fbgfx = FALSE;
+
+				return o;
+			}
         }
         else
         {
@@ -211,8 +221,6 @@ OOP_Object *METHOD(GMABM, Root, New)
                             MEMF_PUBLIC | MEMF_CLEAR);
                 bm->fbgfx = FALSE;
             }
-            else
-                bm->fbgfx = TRUE;
 
             if ((bm->framebuffer != 0xffffffff) && (bm->framebuffer != 0))
             {
@@ -235,9 +243,6 @@ VOID METHOD(GMABM, Root, Dispose)
     LOCK_BITMAP
     LOCK_HW
 
-#if 0
-    RADEONWaitForIdleMMIO(sd);
-
     if (bm->fbgfx)
     {
         FreeBitmapArea(sd, bm->framebuffer, bm->width, bm->height, bm->bpp);
@@ -248,12 +253,17 @@ VOID METHOD(GMABM, Root, Dispose)
     else
         FreeMem((APTR)bm->framebuffer, bm->pitch * bm->height);
 
-    FreeVecPooled(sd->memPool, bm->addresses);
-
     if (bm->state)
         FreeVecPooled(sd->MemPool, bm->state);
 
     bm->state = NULL;
+
+#if 0
+    RADEONWaitForIdleMMIO(sd);
+
+
+    FreeVecPooled(sd->memPool, bm->addresses);
+
 #endif
 
     UNLOCK_HW
@@ -266,7 +276,12 @@ VOID METHOD(GMABM, Root, Dispose)
 VOID METHOD(GMABM, Hidd_BitMap, PutPixel)
 {
 	GMABitMap_t *bm = OOP_INST_DATA(cl, o);
-	void *ptr = bm->framebuffer + sd->Card.Framebuffer + msg->y * bm->pitch;
+	void *ptr;
+
+	if (bm->fbgfx)
+		ptr = bm->framebuffer + sd->Card.Framebuffer + msg->y * bm->pitch;
+	else
+		ptr = bm->framebuffer + msg->y * bm->pitch;
 
 	LOCK_BITMAP
 
@@ -289,8 +304,13 @@ VOID METHOD(GMABM, Hidd_BitMap, PutPixel)
 HIDDT_Pixel METHOD(GMABM, Hidd_BitMap, GetPixel)
 {
 	GMABitMap_t *bm = OOP_INST_DATA(cl, o);
-	void *ptr = bm->framebuffer + sd->Card.Framebuffer + msg->y * bm->pitch;
+	void *ptr;
 	HIDDT_Pixel pixel = 0;
+
+	if (bm->fbgfx)
+		ptr = bm->framebuffer + sd->Card.Framebuffer + msg->y * bm->pitch;
+	else
+		ptr = bm->framebuffer + msg->y * bm->pitch;
 
 	LOCK_BITMAP
 

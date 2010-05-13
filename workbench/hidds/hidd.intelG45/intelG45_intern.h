@@ -75,6 +75,8 @@ struct g45staticdata {
 	OOP_Object *			PCIDevice;
 	OOP_Object * 			GMAObject;
 
+	intptr_t				CursorImage;
+    BOOL					CursorVisible;
 
 	OOP_AttrBase			pciAttrBase;
 	OOP_AttrBase			atiBitMapAttrBase;
@@ -159,5 +161,7 @@ void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
 void G45_LoadState(struct g45staticdata *sd, GMAState_t *state);
 IPTR AllocBitmapArea(struct g45staticdata *sd, ULONG width, ULONG height, ULONG bpp, BOOL must_have);
 VOID FreeBitmapArea(struct g45staticdata *sd, IPTR bmp, ULONG width, ULONG height, ULONG bpp);
+BOOL delay_ms(struct g45staticdata *sd, uint32_t msec);
+BOOL delay_us(struct g45staticdata *sd, uint32_t usec);
 
 #endif /* INTELG45_INTERN_H_ */
