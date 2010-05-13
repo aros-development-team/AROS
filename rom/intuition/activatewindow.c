@@ -217,7 +217,8 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
                     }
 
                     //jDc: fix some weird refresh pbs
-                    MySetPointerPos(IntuitionBase, scr->Screen.MouseX, scr->Screen.MouseY);
+/*		    Seems to be not needed on AROS, disabled - Sonic
+                    MySetPointerPos(IntuitionBase); */
                 }
                 else
                 {

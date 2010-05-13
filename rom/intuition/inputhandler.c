@@ -1528,15 +1528,15 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 		ie->ie_Y = iihdata->MouseBoundsBottom;
 	}
 
+	iihdata->LastMouseX = ie->ie_X;
+	iihdata->LastMouseY = ie->ie_Y;
+	notify_mousemove_screensandwindows(ie->ie_X, ie->ie_Y, IntuitionBase);
 #if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP
-	MySetPointerPos(IntuitionBase, ie->ie_X, ie->ie_Y);
+	MySetPointerPos(IntuitionBase);
 #else
 	*call_setpointerpos = TRUE;
 #endif
-	iihdata->LastMouseX = ie->ie_X;
-	iihdata->LastMouseY = ie->ie_Y;
 
-	notify_mousemove_screensandwindows(ie->ie_X, ie->ie_Y, IntuitionBase);
 	screen = FindActiveScreen(IntuitionBase); /* The mouse was moved, so current screen may have changed */
 
 #ifdef SKINS
@@ -2871,7 +2871,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
     if (call_setpointerpos)
-    	MySetPointerPos(IntuitionBase, iihdata->LastMouseX, iihdata->LastMouseY);
+    	MySetPointerPos(IntuitionBase);
 #endif
 
     /* Terminate the event chain. */
