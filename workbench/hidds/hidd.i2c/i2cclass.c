@@ -127,8 +127,10 @@ BOOL METHOD(I2C, Hidd_I2C, Start)
 
     LOCK_HW
 
-    if (!RaiseSCL(cl, o, 1, msg->timeout))
+    if (!RaiseSCL(cl, o, 1, msg->timeout)) {
+        UNLOCK_HW
         return FALSE;
+    }
 
     I2C_PutBits(o, 1, 0);
     I2C_UDelay(drv, drv->HoldTime);
@@ -152,11 +154,15 @@ BOOL METHOD(I2C, Hidd_I2C, Address)
     if (I2C_Start(o, dev->StartTimeout)) {
         if (I2C_PutByte(o, msg->device, msg->address & 0xFF)) {
             if ((msg->address & 0xF8) != 0xF0 &&
-                (msg->address & 0xFE) != 0x00)
+                (msg->address & 0xFE) != 0x00) {
+                UNLOCK_HW;
                 return TRUE;
+                }
 
-            if (I2C_PutByte(o, msg->device, (msg->address >> 8) & 0xFF))
+            if (I2C_PutByte(o, msg->device, (msg->address >> 8) & 0xFF)) {
+                UNLOCK_HW;
                 return TRUE;
+            }
         }
 
         I2C_Stop(o, msg->device);
