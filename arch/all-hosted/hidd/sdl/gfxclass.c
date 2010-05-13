@@ -366,7 +366,7 @@ OOP_Object *SDLGfx__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
 
     o = (OOP_Object *) OOP_DoSuperMethod(cl, o, (OOP_Msg) &supermsg);
     
-    if (GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList))
+    if (GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList))
         data->framebuffer = o;
 
     D(bug("[sdl] Created bitmap 0x%p\n", o));
@@ -444,6 +444,9 @@ OOP_Object *SDLGfx__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
         SDL_Surface *s;
 	struct TagItem bmtags[] = {
 	    {aHidd_SDLBitMap_Surface, 0},
+	    {aHidd_BitMap_Width	    , 0},
+	    {aHidd_BitMap_Height    , 0},
+	    {aHidd_BitMap_PixFmt    , 0},
 	    {TAG_DONE               , 0}
 	};
 
@@ -456,7 +459,7 @@ OOP_Object *SDLGfx__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
         OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
         OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
 	OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
-	
+
 	/* Set up new onscreen surface */
         s = S(SDL_SetVideoMode, width, height, depth,
               (LIBBASE->use_hwsurface  ? SDL_HWSURFACE | SDL_HWPALETTE : SDL_SWSURFACE) |
@@ -465,10 +468,15 @@ OOP_Object *SDLGfx__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 	if (!s)
 	    return NULL;
 
-	/* Tell it to the bitmap object */
+	/* Tell new parameters to the framebuffer object */
 	bmtags[0].ti_Data = (IPTR)s;
-	OOP_SetAttrs(msg->bitMap, bmtags);
+	bmtags[1].ti_Data = width;
+	bmtags[2].ti_Data = height;
+	bmtags[3].ti_Data = (IPTR)pixfmt;
+	OOP_SetAttrs(data->framebuffer, bmtags);
     }
+    
+    data->shownbm = msg->bitMap;
 
     /* Framebuffer contents has been destroyed, so call superclass without fHidd_Gfx_Show_CopyBack */
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
