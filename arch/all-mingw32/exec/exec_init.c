@@ -39,7 +39,11 @@
 static const UBYTE name[];
 static const UBYTE version[];
 extern const char LIBEND;
-struct ExecBase *GM_UNIQUENAME(init)();
+AROS_UFP3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
+    AROS_UFPA(ULONG, dummy, D0),
+    AROS_UFPA(BPTR, segList, A0),
+    AROS_UFPA(struct ExecBase *, sysBase, A6));
+
 
 const struct Resident Exec_resident =
 {
