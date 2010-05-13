@@ -12,13 +12,12 @@ static ULONG Novueau_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct OOP_ABDescr attrbases[] = 
     {
-//    { IID_Hidd_PCIDevice,   &HiddPCIDeviceAttrBase },
     { IID_Hidd_BitMap,      &LIBBASE->sd.bitMapAttrBase },
     { IID_Hidd_PixFmt,	    &LIBBASE->sd.pixFmtAttrBase },
     { IID_Hidd_Sync,        &LIBBASE->sd.syncAttrBase },
     { IID_Hidd_Gfx,         &LIBBASE->sd.gfxAttrBase },
-//    { IID_Hidd_nvBitMap,    &HiddNVidiaBitMapAttrBase },
     { IID_Hidd_PlanarBM,    &LIBBASE->sd.planarAttrBase },
+    { IID_Hidd_I2C_Nouveau, &LIBBASE->sd.i2cNouveauAttrBase },
     { NULL, NULL }
     };
 

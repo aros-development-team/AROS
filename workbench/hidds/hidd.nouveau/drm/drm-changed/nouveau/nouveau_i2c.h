@@ -33,10 +33,12 @@ struct dcb_i2c_entry;
 struct nouveau_i2c_chan {
  	struct i2c_adapter adapter;
 	struct drm_device *dev;
-//FIXME 	union {
-//FIXME 		struct i2c_algo_bit_data bit;
-//FIXME 		struct i2c_algo_dp_aux_data dp;
-//FIXME 	} algo;
+ 	union {
+ 		struct i2c_algo_bit_data bit;
+#if !defined(__AROS__)
+ 		struct i2c_algo_dp_aux_data dp;
+#endif
+ 	} algo;
 	unsigned rd;
 	unsigned wr;
 	unsigned data;
@@ -46,7 +48,7 @@ int nouveau_i2c_init(struct drm_device *, struct dcb_i2c_entry *, int index);
 void nouveau_i2c_fini(struct drm_device *, struct dcb_i2c_entry *);
 struct nouveau_i2c_chan *nouveau_i2c_find(struct drm_device *, int index);
 
-//FIXME int nouveau_dp_i2c_aux_ch(struct i2c_adapter *, int mode, uint8_t write_byte,
-//FIXME 			  uint8_t *read_byte);
+int nouveau_dp_i2c_aux_ch(struct i2c_adapter *, int mode, uint8_t write_byte,
+ 			  uint8_t *read_byte);
 
 #endif /* __NOUVEAU_I2C_H__ */

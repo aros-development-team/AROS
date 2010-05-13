@@ -284,9 +284,7 @@ static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
         drmModeModeInfoPtr mode = &selectedconnector->modes[i];
         
         /* TODO: This selection seems naive - clock not taken into account */
-        if ((mode->hdisplay == hdisp) && (mode->vdisplay == vdisp) &&
-            (mode->hsync_start == hstart) && (mode->hsync_end == hend) &&
-            (mode->vsync_start == vstart) && (mode->vsync_end == vend))
+        if ((mode->hdisplay == hdisp) && (mode->vdisplay == vdisp))
         {
             selectedmode = mode;
             break;

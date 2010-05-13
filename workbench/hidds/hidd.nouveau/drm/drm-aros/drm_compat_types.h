@@ -135,13 +135,32 @@ struct idr
 /* I2C handling */
 struct i2c_adapter
 {
-    ULONG dummy;
+    IPTR i2cdriver;     /* OOP_Object * */
 };
+
 struct i2c_client;
 struct i2c_board_info;
 struct i2c_driver
 {
     ULONG dummy;
+};
+
+struct i2c_algo_bit_data
+{
+    void (*setsda)(void *data, int state);
+    void (*setscl)(void *data, int state);
+    int  (*getsda)(void *data);
+    int  (*getscl)(void *data);
+};
+
+#define I2C_M_RD    0x0001
+
+struct i2c_msg
+{
+    UWORD addr;
+    UWORD flags;
+    UWORD len;
+    UBYTE *buf;
 };
 
 /* FB handling */
