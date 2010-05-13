@@ -65,6 +65,31 @@ AROS_UFH3(void, Enumerator,
     	ULONG BSM = HIDD_PCIDevice_ReadConfigLong(pciDevice, G45_BSM);
     	UBYTE MSAC = HIDD_PCIDevice_ReadConfigByte(pciDevice, G45_MSAC);
 
+    	switch (MGCC & G45_MGCC_GMS_MASK)
+    	{
+    	case G45_MGCC_GMS_1M:
+    		sd->Card.Stolen_size = 0x00100000;
+    		break;
+    	case G45_MGCC_GMS_4M:
+    		sd->Card.Stolen_size = 0x00400000;
+    		break;
+    	case G45_MGCC_GMS_8M:
+    		sd->Card.Stolen_size = 0x00800000;
+    		break;
+    	case G45_MGCC_GMS_16M:
+    		sd->Card.Stolen_size = 0x01000000;
+    		break;
+    	case G45_MGCC_GMS_32M:
+    		sd->Card.Stolen_size = 0x02000000;
+    		break;
+    	case G45_MGCC_GMS_48M:
+    		sd->Card.Stolen_size = 0x03000000;
+    		break;
+    	case G45_MGCC_GMS_64M:
+    		sd->Card.Stolen_size = 0x04000000;
+    		break;
+    	}
+
     	IPTR Bar0, Bar2, Bar3;
     	IPTR Size0, Size2, Size3;
 
@@ -89,15 +114,25 @@ AROS_UFH3(void, Enumerator,
     	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2, &Size2);
     	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size3, &Size3);
 
-
     	D(bug("[GMA] MGCC=%04x, BSM=%08x, MSAC=%08x\n", MGCC, BSM, MSAC));
     	D(bug("[GMA] Bar0=%08x-%08x, Bar2=%08x-%08x, Bar3=%08x-%08x\n", Bar0, Bar0 + Size0 - 1,
     			Bar2, Bar2 + Size2 - 1, Bar3, Bar3 + Size3 - 1));
 
     	sd->Card.Framebuffer = HIDD_PCIDriver_MapPCI(driver, Bar2, Size2);
-    	sd->Card.fb_size = Size2;
+    	sd->Card.Framebuffer_size = Size2;
     	sd->Card.MMIO = HIDD_PCIDriver_MapPCI(driver, Bar0, Size0);
     	sd->Card.GATT = HIDD_PCIDriver_MapPCI(driver, Bar3, Size3);
+    	sd->Card.GATT_size = Size3;
+
+    	D(bug("[GMA] GATT space for %d entries\n", Size3 / 4));
+
+    	if (Size3 * 1024 < sd->Card.Framebuffer_size)
+    	{
+    		sd->Card.Framebuffer_size = Size3 * 1024;
+    	}
+
+    	D(bug("[GMA] Stolen memory size: %dMB\n", sd->Card.Stolen_size >> 20));
+    	D(bug("[GMA] Framebuffer size: %d MB\n", sd->Card.Framebuffer_size >> 20));
 
 	    struct MemChunk *mc = (struct MemChunk *)sd->Card.Framebuffer;
 
@@ -106,13 +141,36 @@ AROS_UFH3(void, Enumerator,
 	    sd->CardMem.mh_First = mc;
 	    sd->CardMem.mh_Lower = (APTR)mc;
 
-	    sd->CardMem.mh_Free = 7192000;
+	    sd->CardMem.mh_Free = sd->Card.Framebuffer_size;
 	    sd->CardMem.mh_Upper = (APTR)(sd->CardMem.mh_Free + (IPTR)mc);
 
 	    mc->mc_Next = NULL;
 	    mc->mc_Bytes = sd->CardMem.mh_Free;
 
     	sd->PCIDevice = pciDevice;
+
+    	/* Calculate amount of requested memory. Take size of framebuffer... */
+    	intptr_t requested_memory = sd->Card.Framebuffer_size;
+    	/* Substract the size of stolen memory... */
+    	requested_memory -= sd->Card.Stolen_size;
+    	/* GATT table is in stolen memory... */
+    	requested_memory += sd->Card.GATT_size;
+    	/* and a 4K popup is there */
+    	requested_memory += 4096;
+
+    	D(bug("[GMA] Requesting %d KB memory\n", requested_memory >> 10));
+
+    	/* First virtual address of new memory region */
+    	uintptr_t virtual = sd->Card.Stolen_size - sd->Card.GATT_size - 4096;
+    	/* Get memory */
+    	uintptr_t phys_memory = (uintptr_t)AllocMem(requested_memory + 4095, MEMF_REVERSE);
+    	D(bug("[GMA] Got %08x\n", phys_memory));
+
+    	/* Align it to the page size boundary (we allocated one page more already) */
+    	phys_memory = (phys_memory + 4095) &~4095;
+
+    	D(bug("[GMA] Mapping physical %08x to virtual %08x with size %08x\n",phys_memory, virtual, requested_memory));
+    	G45_AttachMemory(sd, phys_memory, virtual, requested_memory);
 
     	uint32_t val;
 
@@ -127,15 +185,18 @@ AROS_UFH3(void, Enumerator,
 
     	/* set SCL */
 
-    		val |= G45_GPIO_CLOCK_DATA_VAL;
-    		val |= G45_GPIO_DATA_VAL;
-
+    	val |= G45_GPIO_CLOCK_DATA_VAL;
+    	val |= G45_GPIO_DATA_VAL;
 
     	writel(val, sd->Card.MMIO + G45_GPIOA);
     	writel(0, sd->Card.MMIO + G45_GMBUS);
 
     	/* Reserve some memory for HW cursor */
     	sd->CursorImage = AllocBitmapArea(sd, 64, 64, 4, TRUE);
+    	sd->CursorBase = G45_VirtualToPhysical(sd, sd->CursorImage);
+
+    	D(bug("[GMA] Using ARGB cursor at graphics address %08x (physical address %08x)\n",
+    			sd->CursorImage, sd->CursorBase));
     	sd->CursorVisible = FALSE;
 
     	/* Disable VGA */

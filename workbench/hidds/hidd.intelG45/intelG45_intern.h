@@ -48,9 +48,11 @@ typedef struct {
 
 struct g45chip {
 	char *			Framebuffer;
-	uint32_t		fb_size;
+	uint32_t		Framebuffer_size;
 	char *			MMIO;
 	uint32_t *		GATT;
+	uint32_t		GATT_size;
+	uint32_t		Stolen_size;
 };
 
 struct g45staticdata {
@@ -76,6 +78,7 @@ struct g45staticdata {
 	OOP_Object * 			GMAObject;
 
 	intptr_t				CursorImage;
+	intptr_t				CursorBase;
     BOOL					CursorVisible;
 
 	OOP_AttrBase			pciAttrBase;
@@ -153,7 +156,8 @@ typedef struct {
 #define LOCK_MULTI_BITMAP    { ObtainSemaphore(&sd->MultiBMLock); }
 #define UNLOCK_MULTI_BITMAP  { ReleaseSemaphore(&sd->MultiBMLock); }
 
-
+intptr_t G45_VirtualToPhysical(struct g45staticdata *sd, intptr_t virtual);
+void G45_AttachMemory(struct g45staticdata *sd, intptr_t physical, intptr_t virtual, intptr_t length);
 void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
 		uint16_t width, uint16_t height, uint8_t depth, uint32_t pixelclock, intptr_t framebuffer,
         uint16_t hdisp, uint16_t vdisp, uint16_t hstart, uint16_t hend, uint16_t htotal,
