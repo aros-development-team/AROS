@@ -654,45 +654,45 @@ void METHOD(INTELG45, Hidd_Gfx, SetCursorVisible)
     if (msg->visible)
     {
     	writel(G45_CURCNTR_PIPE_A | G45_CURCNTR_TYPE_ARGB, sd->Card.MMIO + G45_CURACNTR);
-    	writel(sd->CursorImage+0x7f800000, sd->Card.MMIO + G45_CURABASE);
+    	writel(sd->CursorBase, sd->Card.MMIO + G45_CURABASE);
     }
     else
     {
     	writel(G45_CURCNTR_PIPE_A | G45_CURCNTR_TYPE_OFF, sd->Card.MMIO + G45_CURACNTR);
-    	writel(sd->CursorImage+0x7f800000, sd->Card.MMIO + G45_CURABASE);
+    	writel(sd->CursorBase, sd->Card.MMIO + G45_CURABASE);
     }
 }
 
 void METHOD(INTELG45, Hidd_Gfx, SetCursorPos)
 {
-    WORD x,y;
+    ULONG x,y;
+    WORD mx=msg->x, my=msg->y;
 
-    x = (WORD)msg->x;
-    y = (WORD)msg->y;
-
-    if (x < 0)
+    if (mx < 0)
     {
-    	x = G45_CURPOS_SIGN | (-x);
+    	x = G45_CURPOS_SIGN | (-mx);
     }
+    else
+    	x = mx;
 
-    if (y < 0)
+    if (my < 0)
     {
-    	y = G45_CURPOS_SIGN | (-y);
+    	y = G45_CURPOS_SIGN | (-my);
     }
+    else
+    	y = my;
 
     writel(((ULONG)x << G45_CURPOS_XSHIFT) | ((ULONG)y << G45_CURPOS_YSHIFT), sd->Card.MMIO + G45_CURAPOS);
-    writel(sd->CursorImage+0x7f800000, sd->Card.MMIO + G45_CURABASE);
+    writel(sd->CursorBase, sd->Card.MMIO + G45_CURABASE);
 }
 
 BOOL METHOD(INTELG45, Hidd_Gfx, SetCursorShape)
 {
-    D(bug("[GMA] Set cursor shape %08x\n", msg->shape));
-
     if (msg->shape == NULL)
     {
         sd->CursorVisible = 0;
         writel(G45_CURCNTR_PIPE_A | G45_CURCNTR_TYPE_OFF, sd->Card.MMIO + G45_CURACNTR);
-        writel(sd->CursorImage+0x7f800000, sd->Card.MMIO + G45_CURABASE);
+        writel(sd->CursorBase, sd->Card.MMIO + G45_CURABASE);
     }
     else
     {
@@ -709,16 +709,10 @@ BOOL METHOD(INTELG45, Hidd_Gfx, SetCursorShape)
         for (x = 0; x < 64*64; x++)
            curimg[x] = 0;
 
-		/* I always get the image in BGRA32 format (it becomes ARGB32 when picked up as ULONG on little-endian),
-		   so i don't turn on byte swapping */
-
         HIDD_BM_GetImage(msg->shape, (UBYTE *)curimg, 64*4, 0, 0, width, height, vHidd_StdPixFmt_BGRA32);
-        PRINT_POINTER(curimg, 64, 16, 16);
 
         writel(G45_CURCNTR_PIPE_A | G45_CURCNTR_TYPE_ARGB, sd->Card.MMIO + G45_CURACNTR);
-        writel(sd->CursorImage+0x7f800000, sd->Card.MMIO + G45_CURABASE);
-        D(bug("[GMA] cursor base: %08x cntr: %08x\n", readl(sd->Card.MMIO + G45_CURABASE), readl(sd->Card.MMIO + G45_CURACNTR)));
-
+        writel(sd->CursorBase, sd->Card.MMIO + G45_CURABASE);
     }
 
     return TRUE;
