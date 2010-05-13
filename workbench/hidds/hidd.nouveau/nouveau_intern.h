@@ -6,6 +6,7 @@
 */
 
 #include <hidd/graphics.h>
+#include <hidd/i2c.h>
 
 #include "nouveau/nouveau_drmif.h"
 #include "nouveau/nouveau_bo.h"
@@ -62,17 +63,45 @@ struct planarbm_data
     BOOL    planes_alloced;
 };
 
+#define CLID_Hidd_I2C_Nouveau           "hidd.i2c.nouveau"
+#define IID_Hidd_I2C_Nouveau            "hidd.i2c.nouveau"
+
+#define HiddI2CNouveauAttrBase __IHidd_I2C_Nouveau
+
+#ifndef __OOP_NOATTRBASES__
+extern OOP_AttrBase HiddI2CNouveauAttrBase;
+#endif
+
+enum
+{
+    aoHidd_I2C_Nouveau_Chan,                /* [I..] The nouveau_i2c_chan object */
+    
+    num_Hidd_I2C_Nouveau_Attrs
+};
+
+#define aHidd_I2C_Nouveau_Chan          (HiddI2CNouveauAttrBase + aoHidd_I2C_Nouveau_Chan)
+
+#define IS_I2CNOUVEAU_ATTR(attr, idx) \
+    (((idx) = (attr) - HiddI2CNouveauAttrBase) < num_Hidd_I2C_Nouveau_Attrs)
+
+struct HIDDNouveauI2CData
+{
+    IPTR    i2c_chan;
+};
+
 struct staticdata
 {
     OOP_Class       *gfxclass;
     OOP_Class       *bmclass;
     OOP_Class       *planarbmclass;
+    OOP_Class       *i2cclass;
     
     OOP_AttrBase    pixFmtAttrBase;
     OOP_AttrBase    gfxAttrBase;
     OOP_AttrBase    syncAttrBase;
     OOP_AttrBase    bitMapAttrBase;
     OOP_AttrBase    planarAttrBase;
+    OOP_AttrBase    i2cNouveauAttrBase;
 };
 
 LIBBASETYPE 

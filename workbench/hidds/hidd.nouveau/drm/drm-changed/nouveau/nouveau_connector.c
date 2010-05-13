@@ -142,7 +142,6 @@ static struct nouveau_i2c_chan *
 nouveau_connector_ddc_detect(struct drm_connector *connector,
 			     struct nouveau_encoder **pnv_encoder)
 {
-#if !defined(__AROS__) /* probably used to read nvidia modes (opposed to vesa modes) */
 	struct drm_device *dev = connector->dev;
 	uint8_t out_buf[] = { 0x0, 0x0}, buf[2];
 	int ret, flags, i;
@@ -193,10 +192,6 @@ nouveau_connector_ddc_detect(struct drm_connector *connector,
 	}
 
 	return NULL;
-#else
-IMPLEMENT("\n");
-return NULL;
-#endif
 }
 
 static void

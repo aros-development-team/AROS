@@ -1111,7 +1111,6 @@ static int add_detailed_info_eedid(struct drm_connector *connector,
 	return modes;
 }
 
-#if !defined(__AROS__)
 #define DDC_ADDR 0x50
 /**
  * Get EDID information via I2C.
@@ -1166,7 +1165,6 @@ static int drm_ddc_read_edid(struct drm_connector *connector,
 		 drm_get_connector_name(connector));
 	return -1;
 }
-#endif
 
 /**
  * drm_get_edid - get EDID data, if available
@@ -1180,7 +1178,6 @@ static int drm_ddc_read_edid(struct drm_connector *connector,
 struct edid *drm_get_edid(struct drm_connector *connector,
 			  struct i2c_adapter *adapter)
 {
-#if !defined(__AROS__)
 	int ret;
 	struct edid *edid;
 
@@ -1228,10 +1225,6 @@ clean_up:
 end:
 	return edid;
 
-#else
-IMPLEMENT("\n");
-return NULL;
-#endif
 }
 EXPORT_SYMBOL(drm_get_edid);
 

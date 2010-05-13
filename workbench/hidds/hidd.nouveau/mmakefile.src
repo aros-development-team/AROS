@@ -8,6 +8,7 @@ NOUVEAU_HIDD_SOURCES := \
             nouveauclass \
             nouveau_init \
             nouveaubitmapclass \
+            nouveaui2c \
             planarbm \
             nv_accel_common \
             arosc_emul \
@@ -28,7 +29,7 @@ USER_INCLUDES := \
 %build_module mmake=hidd-nouveau2d \
     modname=nouveau2d modtype=hidd \
     files="$(NOUVEAU_HIDD_SOURCES)" \
-    uselibs="oop rom amiga hiddgraphicsstubs"
+    uselibs="oop rom amiga hiddgraphicsstubs hiddstubs"
 
 %build_archspecific mainmmake=hidd-nouveau2d asmfiles=aros_wbinvd_hack \
     maindir=$(CURDIR) arch=i386 modulename=nouveau2d

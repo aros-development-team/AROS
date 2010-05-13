@@ -27,7 +27,22 @@
 #include "nouveau_i2c.h"
 #include "nouveau_hw.h"
 
-#if !defined(__AROS__)
+#if defined(__AROS__)
+#include <proto/oop.h>
+#include <oop/oop.h>
+
+/* FIXME: Duplicate defines here. Don't include nouveau_intern.h */
+/* Ugly hack actually */
+#define CLID_Hidd_I2C_Nouveau       "hidd.i2c.nouveau"
+#define IID_Hidd_I2C_Nouveau        "hidd.i2c.nouveau"
+
+#define HiddI2CNouveauAttrBase      __IHidd_I2C_Nouveau
+#define aoHidd_I2C_Nouveau_Chan     0
+#define aHidd_I2C_Nouveau_Chan      (HiddI2CNouveauAttrBase + aoHidd_I2C_Nouveau_Chan)
+
+OOP_AttrBase HiddI2CNouveauAttrBase = 0;
+#endif
+
 static void
 nv04_i2c_setscl(void *data, int state)
 {
@@ -153,12 +168,10 @@ static const uint32_t nv50_i2c_port[] = {
 	0x00e79c, 0x00e7b8
 };
 #define NV50_I2C_PORTS ARRAY_SIZE(nv50_i2c_port)
-#endif
 
 int
 nouveau_i2c_init(struct drm_device *dev, struct dcb_i2c_entry *entry, int index)
 {
-#if !defined(__AROS__)
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct nouveau_i2c_chan *i2c;
 	int ret;
@@ -211,25 +224,55 @@ nouveau_i2c_init(struct drm_device *dev, struct dcb_i2c_entry *entry, int index)
 		return -EINVAL;
 	}
 
+#if !defined(__AROS__)
 	snprintf(i2c->adapter.name, sizeof(i2c->adapter.name),
 		 "nouveau-%s-%d", pci_name(dev->pdev), index);
 	i2c->adapter.owner = THIS_MODULE;
 	i2c->adapter.dev.parent = &dev->pdev->dev;
+#endif
 	i2c->dev = dev;
+#if !defined(__AROS__)
 	i2c_set_adapdata(&i2c->adapter, i2c);
+#endif
 
 	if (entry->port_type < 6) {
+#if !defined(__AROS__)
 		i2c->adapter.algo_data = &i2c->algo.bit;
 		i2c->algo.bit.udelay = 40;
 		i2c->algo.bit.timeout = usecs_to_jiffies(5000);
 		i2c->algo.bit.data = i2c;
 		ret = i2c_bit_add_bus(&i2c->adapter);
+#else
+        ret = 0;
+
+	    if (HiddI2CNouveauAttrBase == 0)
+	        HiddI2CNouveauAttrBase = OOP_ObtainAttrBase((STRPTR)IID_Hidd_I2C_Nouveau);
+
+        struct TagItem i2c_attrs[] = 
+        {
+            { aHidd_I2C_Nouveau_Chan,   (IPTR)i2c },
+            { TAG_DONE, 0UL }
+        };
+        
+        i2c->adapter.i2cdriver = (IPTR)OOP_NewObject(NULL, CLID_Hidd_I2C_Nouveau, i2c_attrs);
+        if (i2c->adapter.i2cdriver == (IPTR)0)
+        {
+            NV_ERROR(dev, "Failed to create CLID_Hidd_I2C_Nouveau object\n");
+            kfree(i2c);
+            return -EINVAL;
+        }
+#endif
 	} else {
+#if !defined(__AROS__)
 		i2c->adapter.algo_data = &i2c->algo.dp;
 		i2c->algo.dp.running = false;
 		i2c->algo.dp.address = 0;
 		i2c->algo.dp.aux_ch = nouveau_dp_i2c_aux_ch;
 		ret = i2c_dp_aux_add_bus(&i2c->adapter);
+#else
+        ret = -EINVAL;
+IMPLEMENT("Handling for (entry->port_type >= 6)\n");
+#endif
 	}
 
 	if (ret) {
@@ -239,9 +282,6 @@ nouveau_i2c_init(struct drm_device *dev, struct dcb_i2c_entry *entry, int index)
 	}
 
 	entry->chan = i2c;
-#else
-IMPLEMENT("\n");
-#endif
 	return 0;
 }
 
@@ -251,11 +291,7 @@ nouveau_i2c_fini(struct drm_device *dev, struct dcb_i2c_entry *entry)
 	if (!entry->chan)
 		return;
 
-#if !defined(__AROS__)
 	i2c_del_adapter(&entry->chan->adapter);
-#else
-IMPLEMENT("Calling i2c_del_adapter\n");
-#endif
 	kfree(entry->chan);
 	entry->chan = NULL;
 }

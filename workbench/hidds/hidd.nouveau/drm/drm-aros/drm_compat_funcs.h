@@ -306,6 +306,11 @@ static inline void io_mapping_free(struct io_mapping *mapping)
     FreeVec(mapping);
 }
 
+/* I2C handling */
+int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num);
+int i2c_del_adapter(struct i2c_adapter *);
+
+
 /* jiffies (lame) handling */
 #define jiffies get_jiffies()
 unsigned long get_jiffies();
