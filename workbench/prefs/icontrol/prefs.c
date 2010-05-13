@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -303,6 +303,8 @@ BOOL DefaultPrefs(void)
     icontrolprefs.ic_FrontToBack = 'M';
     icontrolprefs.ic_ReqTrue = 'V';
     icontrolprefs.ic_ReqFalse = 'B';
+    icontrolprefs.ic_VDragModes[0] = 0;
+    icontrolprefs.ic_VDragModes[1] = 0;
     			     
     return TRUE;
 }

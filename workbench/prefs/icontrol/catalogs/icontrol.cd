@@ -81,7 +81,7 @@ MSG_SCREENS (//)
 Screens
 ;
 MSG_FRONTMOST_DEFAULT (//)
-Frontmost set as DefaultPubScreen:
+Frontmost set as default public screen:
 ;
 MSG_OFFSCREEN_DESC (//)
 Allow windows to be moved out of\nthe visible area
@@ -91,4 +91,19 @@ Make the frontmost public screen\nthe default public screen
 ;
 MSG_BACKWARDS_DRAG (//)
 Disable drag in top-left direction
+;
+MSG_BOUND_LEFT_DRAG (//)
+Bound drag in left direction
+;
+MSG_BOUND_RIGHT_DRAG (//)
+Bound drag in right direction
+;
+MSG_BOUND_TOP_DRAG (//)
+Bound drag in top direction
+;
+MSG_BOUND_BOTTOM_DRAG (//)
+Bound drag in bottom direction
+;
+MSG_META_DRAG (//)
+Drag keys
 ;

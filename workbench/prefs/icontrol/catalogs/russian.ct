@@ -123,3 +123,18 @@ MSG_BACKWARDS_DRAG (//)
 Запретить протаскивание вверх и влево
 ;Disable drag in top-left direction
 ;
+MSG_BOUND_LEFT_DRAG (//)
+Ограничить протаскивание влево
+;
+MSG_BOUND_RIGHT_DRAG (//)
+Ограничить протаскивание вправо
+;
+MSG_BOUND_TOP_DRAG (//)
+Ограничить протаскивание вверх
+;
+MSG_BOUND_BOTTOM_DRAG (//)
+Ограничить протаскивание вниз
+;
+MSG_META_DRAG (//)
+Клавиши перетаскивания
+;

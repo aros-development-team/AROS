@@ -17,7 +17,12 @@
 
 /*********************************************************************************************/
 
+#include <devices/rawkeycodes.h>
+#include <mui/HotkeyString_mcc.h>
 #include <zune/prefswindow.h>
+#include <proto/commodities.h>
+
+#include <stdio.h>
 
 #include "menupopup3d_image.c"
 #include "menupopupclassic_image.c"
@@ -65,7 +70,11 @@ struct IPWindow_DATA
     Object  *menulookobj;
     Object  *offscreenobj;
     Object  *defpubscrobj;
-    Object  *scrbackdragobj;
+    Object  *scrleftdragobj;
+    Object  *scrrightdragobj;
+    Object  *scrtopdragobj;
+    Object  *scrbotdragobj;
+    Object  *metadragobj;
     BOOL    tested;
 };
 
@@ -120,7 +129,9 @@ BOOL Gadgets2Prefs
     struct IControlPrefs *prefs, struct IPWindow_DATA *data
 )
 {
-    IPTR active;
+    IPTR active = 0;
+    STRPTR key = NULL;
+    struct InputXpression ix = {IX_VERSION, 0};
     
     get(data->menutypeobj, MUIA_Cycle_Active, &active);
     if (active == 0)
@@ -162,8 +173,23 @@ BOOL Gadgets2Prefs
     	prefs->ic_Flags |= ICF_DEFPUBSCREEN;
     }
 
-    get(data->scrbackdragobj, MUIA_Selected, &active);
-    prefs->ic_VDragModes[0] = active ? (ICVDM_TBOUND|ICVDM_LBOUND) : 0;
+    prefs->ic_VDragModes[0] = 0;
+    get(data->scrleftdragobj, MUIA_Selected, &active);
+    if (active)
+        prefs->ic_VDragModes[0] |= ICVDM_LBOUND;
+    get(data->scrrightdragobj, MUIA_Selected, &active);
+    if (active)
+        prefs->ic_VDragModes[0] |= ICVDM_RBOUND;
+    get(data->scrtopdragobj, MUIA_Selected, &active);
+    if (active)
+        prefs->ic_VDragModes[0] |= ICVDM_TBOUND;
+    get(data->scrbotdragobj, MUIA_Selected, &active);
+    if (active)
+        prefs->ic_VDragModes[0] |= ICVDM_BBOUND;
+
+    get(data->metadragobj, MUIA_String_Contents, (IPTR *)&key);
+    if (!ParseIX(key, &ix))
+        prefs->ic_MetaDrag = ix.ix_Qualifier;
 
     prefs->ic_Flags |= ICF_AVOIDWINBORDERERASE;
 
@@ -177,11 +203,28 @@ BOOL Prefs2Gadgets
     struct IPWindow_DATA *data, struct IControlPrefs *prefs
 )
 {
+    struct InputXpression ix = {
+        IX_VERSION,
+	IECLASS_RAWKEY,
+	RAWKEY_LAMIGA,
+	0,
+	0,
+	IX_NORMALQUALS,
+	0
+    };
+
     set(data->menutypeobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_POPUPMENUS) ? 1 : 0);
     set(data->menulookobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_3DMENUS) ? 1 : 0);
     set(data->offscreenobj, MUIA_Selected, (prefs->ic_Flags & ICF_OFFSCREENLAYERS) ? 1 : 0);
     set(data->defpubscrobj, MUIA_Selected, (prefs->ic_Flags & ICF_DEFPUBSCREEN) ? 1 : 0);
-    set(data->scrbackdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & (ICVDM_TBOUND|ICVDM_LBOUND));
+    set(data->scrleftdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & ICVDM_LBOUND);
+    set(data->scrrightdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & ICVDM_RBOUND);
+    set(data->scrtopdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & ICVDM_TBOUND);
+    set(data->scrbotdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & ICVDM_BBOUND);
+
+    ix.ix_Qualifier = prefs->ic_MetaDrag;
+    set(data->metadragobj, MUIA_HotkeyString_IX, &ix);
+
     return TRUE;
 }
 
@@ -196,7 +239,8 @@ IPTR IPWindow__OM_NEW
     Object *menu, *previewpage, *menutypeobj, *menulookobj;
     Object *offscreenobj;
     Object *defpubscrobj;
-    Object *scrbackdragobj;
+    Object *scrleftdragobj, *scrrightdragobj, *scrtopdragobj, *scrbotdragobj;
+    Object *metadragobj;
 
     extern struct NewMenu nm[];
     
@@ -211,6 +255,8 @@ IPTR IPWindow__OM_NEW
 
     menulook_labels[0] = MSG(MSG_MENUS_LOOK_CLASSIC);
     menulook_labels[1] = MSG(MSG_MENUS_LOOK_3D);
+    
+    D(printf("Creating window object...\n"));
     
     self = (Object *) DoSuperNewTags
     (
@@ -285,7 +331,7 @@ IPTR IPWindow__OM_NEW
 	    Child, VGroup,
     		Child, VGroup,
     		    GroupFrameT(MSG(MSG_WINDOWS)),
-	            Child, VSpace(0),
+//	            Child, VSpace(0),
     		    Child, ColGroup(4),
 	                Child, HSpace(0),
     			Child, Label1(MSG(MSG_OFFSCREEN_MOVE)),
@@ -297,16 +343,37 @@ IPTR IPWindow__OM_NEW
 	            End,
     		Child, VGroup,
     		    GroupFrameT(MSG(MSG_SCREENS)),
-	            Child, VSpace(0),
-    		    Child, ColGroup(4),
-	                Child, HSpace(0),
+//	            Child, VSpace(0),
+    		    Child, ColGroup(2),
     			Child, Label1(MSG(MSG_FRONTMOST_DEFAULT)),
-    			Child, defpubscrobj = MUI_MakeObject(MUIO_Checkmark, NULL),
-	                Child, HSpace(0),
-			Child, HSpace(0),
-			Child, Label1(MSG(MSG_BACKWARDS_DRAG)),
-			Child, scrbackdragobj = MUI_MakeObject(MUIO_Checkmark, NULL),
-			Child, HSpace(0),
+			Child, HGroup,
+    			    Child, defpubscrobj = MUI_MakeObject(MUIO_Checkmark, NULL),
+	                    Child, HSpace(0),
+			End,
+			Child, Label1(MSG(MSG_BOUND_LEFT_DRAG)),
+			Child, HGroup,
+			    Child, scrleftdragobj = MUI_MakeObject(MUIO_Checkmark, NULL),
+			    Child, HSpace(0),
+			End,
+			Child, Label1(MSG(MSG_BOUND_RIGHT_DRAG)),
+			Child, HGroup,
+			    Child, scrrightdragobj = MUI_MakeObject(MUIO_Checkmark, NULL),
+			    Child, HSpace(0),
+			End,
+			Child, Label1(MSG(MSG_BOUND_TOP_DRAG)),
+			Child, HGroup,
+			    Child, scrtopdragobj = MUI_MakeObject(MUIO_Checkmark, NULL),
+			    Child, HSpace(0),
+			End,
+			Child, Label1(MSG(MSG_BOUND_BOTTOM_DRAG)),
+			Child, HGroup,
+			    Child, scrbotdragobj = MUI_MakeObject(MUIO_Checkmark, NULL),
+			    Child, HSpace(0),
+			End,
+			Child, Label1(MSG(MSG_META_DRAG)),
+			Child, metadragobj = MUI_NewObject("HotKeyString.mcc",
+			    MUIA_Frame, MUIV_Frame_String,
+			    TAG_DONE),
     			End,
 	            Child, VSpace(0),
     		    End,
@@ -314,7 +381,9 @@ IPTR IPWindow__OM_NEW
 	    End,
        TAG_DONE
     );
-    
+
+    D(printf("Created prefs window object 0x%p\n", self));
+
     if (self == NULL) goto error;
     
     data = INST_DATA(CLASS, self);
@@ -324,7 +393,11 @@ IPTR IPWindow__OM_NEW
     set(data->offscreenobj, MUIA_ShortHelp,
 	(IPTR)MSG(MSG_OFFSCREEN_DESC));
     data->defpubscrobj = defpubscrobj;
-    data->scrbackdragobj = scrbackdragobj;
+    data->scrleftdragobj = scrleftdragobj;
+    data->scrrightdragobj = scrrightdragobj;
+    data->scrtopdragobj = scrtopdragobj;
+    data->scrbotdragobj = scrbotdragobj;
+    data->metadragobj = metadragobj;
     set(data->defpubscrobj, MUIA_ShortHelp,
 	(IPTR)MSG(MSG_FRONTMOST_DEFAULT_DESC));
 
@@ -621,7 +694,8 @@ static void InitImages(void)
 
 static void PreviewFunc(struct Hook *hook, Object *previewpage, struct IPWindow_DATA **data)
 {
-    IPTR type, look;
+    IPTR type = 0;
+    IPTR look = 0;
     
     get((*data)->menutypeobj, MUIA_Cycle_Active, &type);
     get((*data)->menulookobj, MUIA_Cycle_Active, &look);
