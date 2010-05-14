@@ -93,7 +93,8 @@ struct vgaModeDesc
 VOID init_sync_tags(struct TagItem *tags, struct vgaModeDesc *md, STRPTR name)
 {
     ULONG clock = (md->clock == 1) ? 28322000 : 25175000;
-	SET_SYNC_TAG(tags, 0, PixelClock, 	clock	);
+
+    SET_SYNC_TAG(tags, 0, PixelClock, 	clock	);
     SET_SYNC_TAG(tags, 1, HDisp, 	md->HDisplay	);
     SET_SYNC_TAG(tags, 2, VDisp, 	md->VDisplay	);
     SET_SYNC_TAG(tags, 3, HSyncStart, 	md->HSyncStart	);
@@ -109,23 +110,23 @@ VOID init_sync_tags(struct TagItem *tags, struct vgaModeDesc *md, STRPTR name)
 OOP_Object *PCVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct TagItem pftags[] = {
-    	{ aHidd_PixFmt_RedShift,	0	}, /* 0 */
-	{ aHidd_PixFmt_GreenShift,	0	}, /* 1 */
-	{ aHidd_PixFmt_BlueShift,  	0	}, /* 2 */
-	{ aHidd_PixFmt_AlphaShift,	0	}, /* 3 */
-	{ aHidd_PixFmt_RedMask,		0	}, /* 4 */
-	{ aHidd_PixFmt_GreenMask,	0	}, /* 5 */
-	{ aHidd_PixFmt_BlueMask,	0	}, /* 6 */
-	{ aHidd_PixFmt_AlphaMask,	0	}, /* 7 */
-	{ aHidd_PixFmt_ColorModel,	0	}, /* 8 */
-	{ aHidd_PixFmt_Depth,		0	}, /* 9 */
-	{ aHidd_PixFmt_BytesPerPixel,	0	}, /* 10 */
-	{ aHidd_PixFmt_BitsPerPixel,	0	}, /* 11 */
-	{ aHidd_PixFmt_StdPixFmt,	0	}, /* 12 */
-	{ aHidd_PixFmt_CLUTShift,	0	}, /* 13 */
-	{ aHidd_PixFmt_CLUTMask,	0x0f	}, /* 14 */
-	{ aHidd_PixFmt_BitMapType,	0	}, /* 15 */
-	{ TAG_DONE, 0UL }
+    	{ aHidd_PixFmt_RedShift     , 0			      }, /* 0 */
+	{ aHidd_PixFmt_GreenShift   , 0			      }, /* 1 */
+	{ aHidd_PixFmt_BlueShift    , 0			      }, /* 2 */
+	{ aHidd_PixFmt_AlphaShift   , 0			      }, /* 3 */
+	{ aHidd_PixFmt_RedMask      , 0x000000FC	      }, /* 4 */
+	{ aHidd_PixFmt_GreenMask    , 0x0000FC00	      }, /* 5 */
+	{ aHidd_PixFmt_BlueMask     , 0x00FC0000	      }, /* 6 */
+	{ aHidd_PixFmt_AlphaMask    , 0x00000000	      }, /* 7 */
+	{ aHidd_PixFmt_ColorModel   , vHidd_ColorModel_Palette}, /* 8 */
+	{ aHidd_PixFmt_Depth	    , 4			      }, /* 9 */
+	{ aHidd_PixFmt_BytesPerPixel, 1			      }, /* 10 */
+	{ aHidd_PixFmt_BitsPerPixel , 4			      }, /* 11 */
+	{ aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_LUT8    }, /* 12 */
+	{ aHidd_PixFmt_CLUTShift    , 0			      }, /* 13 */
+	{ aHidd_PixFmt_CLUTMask	    , 0x0f		      }, /* 14 */
+	{ aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky }, /* 15 */
+	{ TAG_DONE		    , 0UL		      }
     };
 
     struct TagItem sync_640_480[NUM_SYNC_TAGS];
@@ -133,13 +134,15 @@ OOP_Object *PCVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     struct TagItem sync_758_576[NUM_SYNC_TAGS];
     struct TagItem sync_800_600[NUM_SYNC_TAGS];
 #endif
-    
+
     struct TagItem modetags[] = {
+	{ aHidd_Sync_HMax     , 16384			},
+	{ aHidd_Sync_VMax     , 16384			},
 	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags		},
-	{ aHidd_Gfx_SyncTags,	(IPTR)sync_640_480	},
+	{ aHidd_Gfx_SyncTags  ,	(IPTR)sync_640_480	},
 #ifndef ONLY640
-	{ aHidd_Gfx_SyncTags,	(IPTR)sync_758_576	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)sync_800_600	},
+	{ aHidd_Gfx_SyncTags  ,	(IPTR)sync_758_576	},
+	{ aHidd_Gfx_SyncTags  ,	(IPTR)sync_800_600	},
 #endif
 	{ TAG_DONE, 0UL }
     };
@@ -149,27 +152,6 @@ OOP_Object *PCVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	{ TAG_MORE, 0UL }
     };
     struct pRoot_New mymsg;
-
-    /* Init the pixel format */
-    pftags[0].ti_Data = 0;
-    pftags[1].ti_Data = 0;
-    pftags[2].ti_Data = 0;
-    pftags[3].ti_Data = 0;
-
-    pftags[4].ti_Data = 0x00003f;
-    pftags[5].ti_Data = 0x003f00;
-    pftags[6].ti_Data = 0x3f0000;
-    pftags[7].ti_Data = 0;
-	
-    pftags[8].ti_Data = vHidd_ColorModel_Palette;
-    pftags[9].ti_Data = 4;
-    pftags[10].ti_Data = 1;
-    pftags[11].ti_Data = 4;
-    pftags[12].ti_Data = vHidd_StdPixFmt_Native;
-
-#warning Is this true in all cases ?
-    pftags[15].ti_Data = vHidd_BitMapType_Chunky;
-
     
     /* First init the sync tags */
     init_sync_tags(sync_640_480, &vgaDefMode[0], "VGA:640x480");
@@ -182,23 +164,20 @@ OOP_Object *PCVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     to the superclass */
     mytags[1].ti_Tag  = TAG_MORE;
     mytags[1].ti_Data = (IPTR)msg->attrList;
-    
+
     /* Init mymsg. We have to use our own message struct because
        one should not alter the one passed to this method.
        message structs passed to a method are allways read-only.
        (The user who called us might want to reuse the same msg struct
-       for several calls, but that will break if som method changes the
+       for several calls, but that will break if some method changes the
        msg struct contents)
     */
     mymsg.mID	= msg->mID;	/* We got New() method and we are sending 
 				   the same method to the superclass	*/
     mymsg.attrList = mytags;
-    
-	
     msg = &mymsg;
 
     EnterFunc(bug("VGAGfx::New()\n"));
-    
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     XSD(cl)->vgahidd = o;
@@ -234,95 +213,22 @@ VOID PCVGA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 /********** GfxHidd::NewBitMap()  ****************************/
 OOP_Object *PCVGA__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
-    BOOL displayable, framebuffer;
-//  struct vga_data *data;
-    OOP_Class *classptr = NULL;
     struct TagItem mytags[2];
     struct pHidd_Gfx_NewBitMap mymsg;
+    HIDDT_ModeID modeid;
     
     EnterFunc(bug("VGAGfx::NewBitMap()\n"));
-    
-//  data = OOP_INST_DATA(cl, o);
-    
-    /* Displayable bitmap ? */
-    displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
-    framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
 
-    D(bug("[VGAGfx] Displayable: %d\n", displayable));    
-    if (framebuffer) {
-	/* No more framebuffers */
-	return NULL;
-    } else if (displayable) {
-    	classptr = XSD(cl)->bmclass;
-    } else {
-	HIDDT_ModeID modeid;
-	/* 
-	    For the non-displayable case we can either supply a class ourselves
-	    if we can optimize a certain type of non-displayable bitmaps. Or we
-	    can let the superclass create on for us.
-	   
-	    The attributes that might come from the user deciding the bitmap
-	    pixel format are:
-		- aHidd_BitMap_ModeID:	a modeid. create a nondisplayable
-			bitmap with the size  and pixelformat of a gfxmode.
-		- aHidd_BitMap_StdPixFmt: a standard pixelformat as described in
-			hidd/graphics.h
-		- aHidd_BitMap_Friend: if this is supplied and none of the two above
-		    are supplied, then the pixel format of the created bitmap
-		    will be the same as the one of the friend bitmap.
-		    
-	    These tags are listed in prioritized order, so if
-	    the user supplied a ModeID tag, then you should not care about StdPixFmt
-	    or Friend. If there is no ModeID, but a StdPixFmt tag supplied,
-	    then you should not care about Friend because you have to
-	    create the correct pixelformat. And as said above, if only Friend
-	    is supplied, you can create a bitmap with same pixelformat as Frien
-	*/
-	
-	
-	modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-	if (vHidd_ModeID_Invalid != modeid) {
-	    /* User supplied a valid modeid. We can use our offscreen class */
-	    classptr = XSD(cl)->bmclass;
-	} else {
-	    /* We may create an offscreen bitmap if the user supplied a friend
-	       bitmap. But we need to check that he did not supplied a StdPixFmt
-	    */
-	    HIDDT_StdPixFmt stdpf;
-	    stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
-	    if (vHidd_StdPixFmt_Unknown == stdpf) {
-		/* No std pixfmt supplied */
-		OOP_Object *friend;
-	    
-		/* Did the user supply a friend bitmap ? */
-		friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
-		if (NULL != friend) {
-		    OOP_Object * gfxhidd;
-		    /* User supplied friend bitmap. Is the friend bitmap a
-		    VGA Gfx hidd bitmap ? */
-		    OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-		    if (gfxhidd == o) {
-			/* Friend was VGA hidd bitmap. Now we can supply our own class */
-			classptr = XSD(cl)->bmclass;		    
-		    }
-		}
-	    }
-	}
-    }
-    
-    /* Do we supply our own class ? */
-    if (NULL != classptr) {
-	/* Yes. We must let the superclass not that we do this. This is
-	   done through adding a tag in the frot of the taglist */
+    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+    if (vHidd_ModeID_Invalid != modeid) {
+	/* User supplied a valid modeid. We can use our class */
 	mytags[0].ti_Tag	= aHidd_BitMap_ClassPtr;
-	mytags[0].ti_Data	= (IPTR)classptr;
+	mytags[0].ti_Data	= (IPTR)XSD(cl)->bmclass;
 	mytags[1].ti_Tag	= TAG_MORE;
 	mytags[1].ti_Data	= (IPTR)msg->attrList;
-	
 	/* Like in Gfx::New() we init a new message struct */
 	mymsg.mID	= msg->mID;
 	mymsg.attrList	= mytags;
-	
 	/* Pass the new message to the superclass */
 	msg = &mymsg;
     }
@@ -339,6 +245,7 @@ OOP_Object *PCVGA__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
        bitmap's private data. This is horrbly wrong
        and needs further refactoring */
     struct vga_staticdata *data = XSD(cl);
+    struct Box box;
 
     D(bug("[VGAGfx] Show(0x%p)\n", msg->bitMap));
     ObtainSemaphore(&data->sema);
@@ -359,19 +266,26 @@ OOP_Object *PCVGA__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
 	/* TODO: this should be brought in from SpriteBase of the colormap */
 	data->mouseBase = (depth > 4) ? 16 : (1 << depth) - 8;
+
 	OOP_SetAttrs(msg->bitMap, tags);
 	data->visible = OOP_INST_DATA(data->bmclass, msg->bitMap);
     } else {
 	/* Otherwize simply clear the framebuffer */
+	box.x1 = 0;
+	box.y1 = 0;
+	box.x2 = 639;
+	box.y2 = 479;
 	ObtainSemaphore(&data->HW_acc);
-	/* Maximum framebuffer size is 800x600, 4 bits per pixel */
-        memset((unsigned char *)0x000a0000, 0, 400 * 600);
+	/* We use old visible bitmap pointer here since this bitmap
+	   contains data about the current video mode */
+        vgaEraseArea(data->visible, &box);
 	draw_mouse(data);
 	ReleaseSemaphore(&data->HW_acc);
 
 	data->visible = NULL;
     }
     D(bug("[VGAGfx] New displayed bitmap data: 0x%p\n", data->visible));
+    D(bug("[VGAGfx] Mouse pointer base color: %u\n", data->mouseBase));
     
     ReleaseSemaphore(&data->sema);
     return msg->bitMap;
@@ -417,14 +331,14 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 
         // start of Source data
         unsigned char *s_start = data->VideoData +
-                                 msg->srcX + (msg->srcY * data->width);
+                                 msg->srcX + (msg->srcY * data->bpr);
         // adder for each line
-        ULONG s_add = data->width - msg->width;
+        ULONG s_add = data->bpr - msg->width;
         ULONG cnt = msg->height;
 
         unsigned char *d_start = ddata->VideoData +
-                                 msg->destX + (msg->destY * ddata->width);
-        ULONG d_add = ddata->width - msg->width;
+                                 msg->destX + (msg->destY * ddata->bpr);
+        ULONG d_add = ddata->bpr - msg->width;
 
 	width = msg->width;
 
@@ -440,8 +354,8 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 	}
 	else
 	{
-	    s_start += (cnt - 1) * data->width + width;
-	    d_start += (cnt - 1) * ddata->width + width;
+	    s_start += (cnt - 1) * data->bpr + width;
+	    d_start += (cnt - 1) * ddata->bpr + width;
 
 	    phase = ((LONG)s_start & 3L);
 	    if (phase > width) phase = width;
@@ -462,8 +376,8 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 				    msg->destY,
 				    msg->width,
 				    msg->height,
-				    data->width,
-				    ddata->width);
+				    data->bpr,
+				    ddata->bpr);
 		break;
 		
 	    case vHidd_GC_DrawMode_And:
@@ -677,26 +591,6 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 		break;
 		
 	} /* switch(mode) */
-	
-	if (ddata->disp)
-	{
-    	    box.x1 = msg->destX;
-    	    box.y1 = msg->destY;
-    	    box.x2 = box.x1 + msg->width;
-    	    box.y2 = box.y1 + msg->height;
- 
-            ObtainSemaphore(&XSD(cl)->HW_acc);
-
-    	    vgaRefreshArea(ddata, 1, &box);
-            if ( (  (XSD(cl)->mouseX + XSD(cl)->mouseW >= box.x1) &&
-                    (XSD(cl)->mouseX <= box.x2) ) ||
-        	(   (XSD(cl)->mouseY + XSD(cl)->mouseH >= box.y1) &&
-                    (XSD(cl)->mouseY <= box.y2) ) )
-        	draw_mouse(XSD(cl));
-
-            ReleaseSemaphore(&XSD(cl)->HW_acc);
-
-	}
     }
     ReturnVoid("VGAGfx.BitMap::CopyBox");
 }
@@ -711,9 +605,7 @@ VOID PCVGA__Hidd_Gfx__ShowImminentReset(OOP_Class *cl, OOP_Object *o, OOP_Msg ms
     {
     	struct Box box = {0, 0, data->width - 1, data->height - 1};
 	
-	memset(data->VideoData, 0, data->width * data->height);
-   	
-	vgaRefreshArea(data, 1, &box);	
+	vgaEraseArea(data, &box);
     }
     Enable();
     
@@ -827,13 +719,13 @@ void draw_mouse(struct vga_staticdata *xsd)
 
     if (!xsd->mouseShape)
 	return;
-    
+
     if (xsd->mouseVisible)
     {
         if (xsd->visible)
 	{
 	    /* Get display width */
-	    width = xsd->visible->width;
+	    width = xsd->visible->disp_width;
 
     	    /* And pointer data */
     	    data = xsd->mouseShape;
@@ -880,6 +772,6 @@ void erase_mouse(struct vga_staticdata *data)
         box.x2 = box.x1 + data->mouseW;
         box.y2 = box.y1 + data->mouseH;
 
-	vgaRefreshArea(data->visible, 1, &box);
+	vgaRefreshArea(data->visible, &box);
     }
 }
