@@ -1,59 +1,15 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#INCLUDES    := -I$(BINDIR)/include -I$(TOP)/amiga/include
-EXEDIR      := $(BINDIR)/Demos
-OBJDIR      := $(GENDIR)/test/HiddGraphics
+EXEDIR      := $(AROS_TESTS)/HiddGraphics
 
-STARTUP = $(LIBDIR)/startup.o
-LIBS    = -L$(LIBDIR) -larossupport -lamiga -lhiddgraphicsstubs $(TOOL).a -larosc -larosm
+FILES := hiddmodeid
 
-FILES	    := \
-	BitMapNewDispose \
-        GCNewDispose     \
-        GCReadWritePixelDirect \
-	GCWritePixel \
-	GCDrawLine \
-	GCCopyArea \
-	GCDrawRect \
-	GCDrawPolygon \
-	GCDrawEllipse \
-	GCDrawText
+#MM- test : test-hidd-graphics
+#MM test-hidd-graphics : includes linklibs
 
-TOOL  := gfxhiddtool
-
-EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
-OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-DEPS := $(foreach f,$(FILES) $(TOOL),$(OBJDIR)/$(f).d)
-
-#MM test-hidd-graphics : includes
-test-hidd-graphics : $(EXES)
-	@$(NOP)
-
-#MM test-hidd-graphics-quick : 
-test-hidd-graphics-quick : $(EXES)
-	@$(NOP)
-
-%rule_makedirs dirs="$(EXEDIR) $(OBJDIR)"
-
-#MM
-clean ::
-	-$(RM) $(EXES)
-
-$(EXEDIR)/% : $(OBJDIR)/%.o $(TOOL).a $(LIBDIR)/startup.o $(DEPLIBS) | $(EXEDIR)
-	%link_q
-
-$(OBJDIR)/%.o : %.c | $(OBJDIR)
-	%compile_q opt=$(APPCFLAGS)
-
-$(OBJDIR)/%.d : %.c | $(OBJDIR)
-	%mkdepend_q
-
-
-$(TOOL).a : $(OBJDIR)/$(TOOL).o
-	%mklib_q from=$(OBJDIR)/$(TOOL).o
-
-$(OBJDIR)/$(TOOL).o : $(TOOL).c | $(OBJDIR)
-	%compile_q 
+%build_progs mmake=test-hidd-graphics \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="arossupport amiga hiddstubs hiddgraphicsstubs oop"
 	
-%include_deps
+%common
