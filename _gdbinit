@@ -6,7 +6,7 @@ define liblist
     printf "Base     OpenC   Name\n"
     printf "---------------------------------------------------------------\n"
     while ($lib->ln_Succ != 0)
-	printf "%08x %5d   %s\n", \
+	printf "%p %5d   %s\n", \
 	    $lib, \
 	    ((struct Library *)$lib)->lib_OpenCnt, \
 	    $lib->ln_Name
@@ -22,7 +22,7 @@ define devlist
     printf "Base     OpenC   Name\n"
     printf "---------------------------------------------------------------\n"
     while ($dev->ln_Succ != 0)
-	printf "%08x %5d   %s\n", \
+	printf "%p %5d   %s\n", \
 	    $dev, \
 	    ((struct Library *)$dev)->lib_OpenCnt, \
 	    $dev->ln_Name
@@ -38,7 +38,7 @@ define resourcelist
     printf "Base     Name\n"
     printf "---------------------------------------------------------------\n"
     while ($res->ln_Succ != 0)
-	printf "%08x %s\n", $res, $res->ln_Name
+	printf "%p %s\n", $res, $res->ln_Name
 	set $res = $res->ln_Succ
     end
 end
@@ -54,7 +54,7 @@ define residentlist
     printf "--------------------------------------------------------------\n"
     while (($resp)[$i] != 0)
 	set $res = ($resp)[$i]
-	printf "%08x  %4d    %02x  %3d  %3d  %s\n", \
+	printf "%p  %4d    %02x  %3d  %3d  %s\n", \
 	    $res, \
 	    ((struct Resident *)$res)->rt_Pri, \
 	    ((struct Resident *)$res)->rt_Flags, \
@@ -74,7 +74,7 @@ define taskready
     printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
     printf "-----------------------------------------------------------------------------\n"
     while ($task->tc_Node.ln_Succ != 0)
-	printf "%08x %08x %08x %8d %8d %3d  %3ld %s\n", \
+	printf "%p %p %p %8d %8d %3d  %3ld %s\n", \
 	    $task, \
 	    $task->tc_SigWait, \
 	    $task->tc_SigRecvd, \
@@ -96,7 +96,7 @@ define taskwait
     printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
     printf "-----------------------------------------------------------------------------\n"
     while ($task->tc_Node.ln_Succ != 0)
-	printf "%08x %08x %08x %8d %8d %3d  %3ld %s\n", \
+	printf "%p %p %p %8d %8d %3d  %3ld %s\n", \
 	    $task, \
 	    $task->tc_SigWait, \
 	    $task->tc_SigRecvd, \
@@ -116,7 +116,7 @@ define thistask
     set $task = (struct Task *)SysBase->ThisTask
     printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
     printf "-----------------------------------------------------------------------------\n"
-    printf "%08x %08x %08x %8d %8d %3d  %3ld %s\n", \
+    printf "%p %p %p %8d %8d %3d  %3ld %s\n", \
 	$task, \
 	$task->tc_SigWait, \
 	$task->tc_SigRecvd, \
@@ -138,7 +138,7 @@ define modlist
         set $segnode = (struct debug_segnode *)debug_seglist.mlh_Head
 
         while ($segnode->node.mln_Succ != 0)
-            printf "%08x %s\n", $segnode->seglist, $segnode->name
+            printf "%p %s\n", $segnode->seglist, $segnode->name
 
             set $segnode = (struct debug_segnode *)$segnode->node.mln_Succ
         end
@@ -161,7 +161,7 @@ define findaddr
 
             while $nextseg && $cont
 	        if $arg0 >= $nextseg && $arg0 <= ($nextseg + *((ULONG *)$nextseg - 1) - sizeof(BPTR))
-                    printf "Address found in %s, which is loaded at 0x%08x.\nIf this is an executable, its .text section starts at 0x%08x.\n", $segnode->name, $segnode->seglist, $segnode->start_address
+                    printf "Address found in %s, which is loaded at 0x%p.\nIf this is an executable, its .text section starts at 0x%p.\n", $segnode->name, $segnode->seglist, $segnode->start_address
 
                     set $cont = 0
                 end
@@ -185,7 +185,7 @@ define findaddr
 	set $res = ($resp)[$i]
 
         if ($arg0 >= $res) && ($arg0 <= $res->rt_EndSkip)
-            printf "Address found in %s, which resides at 0x%08x\n", $res->rt_Name, $res
+            printf "Address found in %s, which resides at 0x%p\n", $res->rt_Name, $res
             set $cont = 0
         end
 
@@ -244,7 +244,7 @@ define printtaglist
 	    printf "TAG_SKIP    %d\n", $list->ti_Data
 	    set $list = $list + $list->ti_Tag + 1
 	else
-	    printf "0x%08x  0x%08x      %9lu\n", $list->ti_Tag, $list->ti_Data, $list->ti_Data
+	    printf "0x%p  0x%p      %9lu\n", $list->ti_Tag, $list->ti_Data, $list->ti_Data
 	    set $list = $list + 1
 	end
     end
@@ -285,10 +285,10 @@ define loadseg
           set $seginfo = (struct seginfo *)$segnode->seginfos.mlh_Head
           while ($seginfo->node.mln_Succ != 0)
             if (strcmp($seginfo->name, ".text") == 0)
-              printf " 0x%08x", $seginfo->addr
+              printf " 0x%p", $seginfo->addr
               set $cont = 0
             else
-              printf " -s %s 0x%08x", $seginfo->name, $seginfo->addr
+              printf " -s %s 0x%p", $seginfo->name, $seginfo->addr
             end
             set $seginfo = (struct seginfo *)$seginfo->node.mln_Succ
           end
@@ -318,7 +318,7 @@ define seglistdump
     printf "Hunk num. | Start addr | Size       \n"
     printf "----------+------------+------------\n"
     while $nextseg
-        printf "%9d | 0x%08x | %10d\n", $count, $nextseg + sizeof(BPTR), *((ULONG *)$nextseg - 1) - sizeof(BPTR)
+        printf "%9d | 0x%p | %10d\n", $count, $nextseg + sizeof(BPTR), *((ULONG *)$nextseg - 1) - sizeof(BPTR)
 
         set $nextseg = *(BPTR *)$nextseg
         set $count = $count+1
