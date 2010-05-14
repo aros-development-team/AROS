@@ -7,54 +7,37 @@
 
 /****************************************************************************************/
 
-/* stegerg: check */
+/* RTG display Mode ID construction:
 
-/* #define NOTNULLMASK 0x10000000 --> trouble with more than 4 gfxmodes: 4 << 26 = 0x10000000 */
-#define NOTNULLMASK 0x0001000
+   nnnn xx yy
 
-#define MAJOR_ID_MSB   30
-#define MAJOR_ID_LSB   26
-#define MAJOR_ID_SHIFT MAJOR_ID_LSB
-#define MAJOR_ID_MASK  (((1 << (MAJOR_ID_MSB - MAJOR_ID_LSB + 1)) - 1) << MAJOR_ID_LSB)
+   nnnn - Number of card in the system, counting starts from 0x0010.
+     xx - sync index
+     yy - pixelformat index
 
-#define MINOR_ID_MSB   25
-#define MINOR_ID_LSB   20
-#define MINOR_ID_SHIFT MINOR_ID_LSB
-#define MINOR_ID_MASK  (((1 << (MINOR_ID_MSB - MINOR_ID_LSB + 1)) - 1) << MINOR_ID_LSB)
+   As i mentioned, RTG mode counting starts from 0x0010. Lower number means
+   Amiga(tm) chipset mode. Modes from 0x0000 to 0x000A are officially defined
+   in include/graphics/modeid.h, modes 0x000B - 0x000F are reserved, just in case.
 
-#define NUM2MAJORID(num) ((num)  << MAJOR_ID_SHIFT)
-/*#define MAJORID2NUM(modeid) ( ((modeid) & ~NOTNULLMASK) >> MAJOR_ID_SHIFT)*/
-#define MAJORID2NUM(modeid) ( ((modeid) & MAJOR_ID_MASK) >> MAJOR_ID_SHIFT)
+   Note that chipset mode IDs store modifier flags instead of sync/pixelformat object
+   indexes. When chipset driver is implemented, this will need to be handled in a special
+   way.
 
-#define NUM2MINORID(num) ((num)  << MINOR_ID_SHIFT)
-/*#define MINORID2NUM(modeid) ( ((modeid) & ~NOTNULLMASK) >> MINOR_ID_SHIFT)*/
-#define MINORID2NUM(modeid) ( ((modeid) & MINOR_ID_MASK) >> MINOR_ID_SHIFT)
+   There is no more difference between Amiga mode ID and HIDD Mode ID. All are the
+   same, except HIDDs need to ignore card number (in future).
 
-/* stegerg: end check */
+   Sonic <pavel_fedin@mail.ru>
 
-
-/* This macro assures that a modeid is never 0 by setting the MSB to 1.
-   This is usefull because FindDisplayInfo just returns the modeid,
-   and FidDisplayInfo returning 0 indicates failure
-*/
-   
-#define GENERATE_MODEID(majoridx, minoridx)	\
-	(NUM2MAJORID(majoridx) | NUM2MINORID(minoridx) | NOTNULLMASK)
-
-/*
-    ModeID construction is really private to the HIDD so
-    this is a hack
 */
 
-#define AMIGA_TO_HIDD_MODEID(modeid)		\
-    ( ((modeid) == INVALID_ID) 			\
-		? vHidd_ModeID_Invalid  	\
-		: ( (MAJORID2NUM(modeid) << 16) | MINORID2NUM(modeid)) )
+/* This macro is obsolete */
+#define AMIGA_TO_HIDD_MODEID(modeid) (modeid)
 
-#define HIDD_TO_AMIGA_MODEID(modeid)			\
-    ( ((modeid) == vHidd_ModeID_Invalid) 	\
-		? INVALID_ID			\
-		: (GENERATE_MODEID((modeid) >> 16, (modeid) & 0x0000FFFF)) )
+/* This is a temporary hack which forcibly adds card number (since currently
+   we work only with RTG and only with one card) */
+
+#define NOTNULLMASK 0x00100000
+#define HIDD_TO_AMIGA_MODEID(modeid) ((modeid) | NOTNULLMASK)
 
 /****************************************************************************************/
 

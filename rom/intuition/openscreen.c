@@ -36,7 +36,6 @@
 #include "inputhandler_support.h"
 #include "inputhandler_actions.h"
 #include "menus.h"
-#include "../graphics/dispinfo.h"
 
 #ifndef DEBUG_OpenScreen
 #define DEBUG_OpenScreen 0
@@ -669,7 +668,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 #else
         struct HIDD_ModeProperties modeprops;
 
-	HIDD_Gfx_ModeProperties((OOP_Object *)monitor.reserved[0], AMIGA_TO_HIDD_MODEID(modeid), &modeprops, sizeof(modeprops));
+	HIDD_Gfx_ModeProperties((OOP_Object *)monitor.reserved[0], modeid, &modeprops, sizeof(modeprops));
 	screen->SpecialFlags = modeprops.CompositionFlags << 8;
 #endif
         success = TRUE;

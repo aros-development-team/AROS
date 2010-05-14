@@ -64,19 +64,7 @@
     hiddmode = HIDD_Gfx_NextModeID(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pixfmt);
     
     id = HIDD_TO_AMIGA_MODEID(hiddmode);
-    
-    if (id != INVALID_ID) {
-        /* Some old software (DirOpus for example) rely on
-           getting HIRES_KEY for modes which are >= 640 pixels wide
-	   and can have a smaller bitmap - sonic */
-	IPTR width, minwidth;
-	
-        OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
-	OOP_GetAttr(sync, aHidd_Sync_HMin, &minwidth);
-        if ((width >= 640) && (minwidth < 640))
-            id |= HIRES_KEY;
-    }
-    
+
     return id;
 
     AROS_LIBFUNC_EXIT
