@@ -228,12 +228,26 @@ SYNOPSIS
     HIDDT_ModeID *HIDD_Gfx_QueryModeIDs(OOP_Object *gfxHidd, struct TagItem *queryTags);
 
 FUNCTION
+    Obtain a table of all supported display mode IDs
+    
+    The returned address points to an array of HIDDT_ModeID containing all ModeIDs
+    supported by this driver. The array is terminated with vHidd_ModeID_Invalid.
 
 INPUTS
-    gfxHidd   - A driver object which was used for creating a bitmap.
-    querytags - An optional taglist containing query options
+    gfxHidd   - A driver object which to query.
+    querytags - An optional taglist containing query options. Can be NULL.
+                The following tags are supported:
+
+	tHidd_GfxMode_MinWidth  (ULONG) - A minimum width of modes you are interested in
+	tHidd_GfxMode_MaxWidth  (ULONG) - A maximum width of modes you are interested in
+	tHidd_GfxMode_MinHeight (ULONG) - A minimum height of modes you are interested in
+	tHidd_GfxMode_MaxHeight (ULONG) - A maximum height of modes you are interested in
+	tHidd_GfxMode_PixFmts   (HIDDT_StdPifXmt *) - A pointer to an array of standard
+		pixelformat indexes. If supplied, only mode IDs whose pixelformat numbers
+		match any of given ones will be returned.
 
 RESULT
+    A pointer to an array of ModeIDs or NULL in case of failure
 
 NOTES
 
@@ -257,8 +271,11 @@ SYNOPSIS
     VOID HIDD_Gfx_ReleaseModeIDs(OOP_Object *gfxHidd, HIDDT_ModeID *modeIDs);
 
 FUNCTION
+    Free array of display mode IDs returned by HIDD_Gfx_QueryModeIDs()
 
 INPUTS
+    gfxHidd - A driver objects used to obtain the array
+    modeIDs - A pointer to an array
 
 RESULT
     None.
@@ -295,8 +312,9 @@ RESULT
     A pointer to a pixelformat objects or NULL if lookup failed
 
 NOTES
-    Pixelformat objects are not linked with a particular driver in any way. They are
-    shared between all drivers.
+    Pixelformat objects are stored in a global system-wide database. They are not
+    linked with a particular driver in any way and completely sharable between all
+    drivers.
 
 EXAMPLE
 
@@ -319,18 +337,38 @@ SYNOPSIS
     BOOL HIDD_Gfx_CheckMode(OOP_Object *gfxHidd, HIDDT_ModeID modeID, OOP_Object *sync, OOP_Object *pixFmt);
 
 FUNCTION
+    Check if given display mode is supported by the driver.
+
+    Normally any resolution (sync) can be used together with any pixelformat. However on some hardware
+    there may be exceptions from this rule. In such a case this method should be implemented, and check
+    should be performed.
+
+    The information provided by this method is used in order to exclude unsupported modes from the database
+
+    Default implementation in the base class just returns TRUE for all supplied values.
+    
+    Note that this method can not be used in order to chech that the given mode is really present in
+    the database and it really refers to the given sync and pixelformat objects. Use HIDD_Gfx_GetMode() for
+    mode ID validation.
 
 INPUTS
+    gfxHidd - A display driver object
+    modeID  - A display mode ID
+    sync    - A pointer to a sync object associated with this mode
+    pixFmt  - A pointer to a pixelformat object associated with this mode
 
 RESULT
+    TRUE if this mode is supported and FALSE if it's not.
 
 NOTES
 
 EXAMPLE
 
 BUGS
+    Currently base class does not call this method after driver object creation. This needs to be fixed.
 
 SEE ALSO
+    HIDD_Gfx_GetMode()
 
 INTERNALS
 
@@ -339,7 +377,7 @@ HISTORY
 /*************************/
 
 NAME
-    HIDD_
+    HIDD_Gfx_GetMode
 
 SYNOPSIS
     BOOL HIDD_Gfx_GetMode(OOP_Object *gfxHidd, HIDDT_ModeID modeID, OOP_Object **syncPtr, OOP_Object **pixFmtPtr);
@@ -353,21 +391,20 @@ INPUTS
     pixFmtPtr - pointer to a storage where pixelformat object pointer will be placed
 
 RESULT
-    TRUE upon success, FALSE in case of failure (e.g. this driver does not support
-    this mode).
+    TRUE upon success, FALSE in case of failure (e.g. given mode does not exist in driver's internal database).
 
 NOTES
+    Every display mode is associated with some sync and pixelformat object. If the method returns TRUE, object
+    pointers are guaranteed to be valid.
 
 EXAMPLE
 
 BUGS
 
 SEE ALSO
-    HIDD_Gfx_CheckMode()
+    HIDD_Gfx_NextModeID()
 
 INTERNALS
-    Sync and pixelformat indexes are encoded right in ModeID value. Do not rely on current
-    encoding scheme, it will change in future.
 
 HISTORY
 
