@@ -13,6 +13,47 @@ subclasses where documented to do so.
 Class ID: CLID_HIDD_Gfx
 Include: <hidd/graphics.h>
 
+Display modes.
+==============
+
+Each display driver object internally stores a database of supported display mode
+IDs. This database is normally managed by base class, the driver does not need to
+reimplement respective methods.
+
+A display mode ID in AROS is a 32-bit integer value, the same as on AmigaOS(tm).
+However mode ID layout introduced by Commodore does not fit well for RTG systems.
+In order to overcome its limitations, display ID on AROS may have two forms:
+
+1. A chipset mode ID. These are standard IDs defined by Commodore. You may find their
+   definitions in graphics/modeid.h.
+
+2. AROS RTG mode ID.
+
+An RTG mode ID is composed of three parts in the form:
+
+nnnn xx yy
+
+nnnn - Order number. This number is maintained by system libraries. Numbers are assigned in the order
+       in which drivers are loaded and display hardware is found. Drivers do not have to care about
+       this part, and should normally mask it out if they for some reason look at mode ID.
+       In order to distinguish between chipset mode IDs and RTG mode IDs, order number starts not from
+       zero, reserving some space for C= chipset mode IDs (which appear to have order numbers from
+       0x0000 to 0x000A). Currently order numbers start from 0x0010, however with time this value may
+       change. So don't rely on some particular values in RTG IDs. Use cybergraphics.library/IsCyberModeID()
+       function if you want to know for sure if the given mode ID belongs to an RTG driver.
+
+  xx - A sync object index in driver's mode database.
+  yy - A pixelformat object in driver's mode database.
+
+Normally the driver does not have to care about mode ID decoding. The mode database is maintained by
+base class. The only useful things for the driver are sync and pixelformat objects, from which it's
+possible to get different information. They can be obtained from the base class using HIDD_Gfx_GetMode().
+
+Note that the driver object by itself does not know its order number. Different displays are served by
+different objects, any of which may belong to any class. So all methods which return mode IDs will set
+order number part to zero. All methods that take mode ID as argument are expected to ignore order
+number and do not make any assumptions about its value.
+
 Interfaces:
 
 IID_HIDD_Gfx
