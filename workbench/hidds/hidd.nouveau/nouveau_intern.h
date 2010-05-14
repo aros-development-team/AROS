@@ -120,6 +120,10 @@ LIBBASETYPE
 
 #define writel(val, addr)               (*(volatile ULONG*)(addr) = (val))
 #define readl(addr)                     (*(volatile ULONG*)(addr))
+#define writew(val, addr)               (*(volatile UWORD*)(addr) = (val))
+#define readw(addr)                     (*(volatile UWORD*)(addr))
+#define writeb(val, addr)               (*(volatile UBYTE*)(addr) = (val))
+#define readb(addr)                     (*(volatile UBYTE*)(addr))
 
 enum DMAObjects 
 {
