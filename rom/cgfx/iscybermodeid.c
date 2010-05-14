@@ -27,10 +27,13 @@
 	struct Library *, CyberGfxBase, 9, Cybergraphics)
 
 /*  FUNCTION
+	Check if the given display mode ID belongs to an RTG driver
 
     INPUTS
+	modeID - a display mode ID to check
 
     RESULT
+        TRUE if the mode belongs to an RTG driver, FALSE otherwise
 
     NOTES
 
@@ -50,18 +53,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    BOOL iscyber = FALSE;
-    struct VecInfo info;
-    
-    if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_VEC, modeID) == sizeof(info)) {
-	HIDDT_StdPixFmt stdpf;
+    /* Check if the given mode really exists and if it belongs to RTG.
+       TODO: remove hardcoded value, use anything else */
+    if (FindDisplayInfo(modeID) && modeID >= 0x00100000)
+        return TRUE;
 
-	OOP_GetAttr((OOP_Object *)info.reserved[1], aHidd_PixFmt_StdPixFmt, &stdpf);
-	if (((UWORD)-1) != hidd2cyber_pixfmt(stdpf)) {
-	    	iscyber = TRUE;
-	}
-    }
-    return iscyber;
+    return FALSE;
 
     AROS_LIBFUNC_EXIT
 } /* IsCyberModeID */
