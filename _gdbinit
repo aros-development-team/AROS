@@ -161,7 +161,7 @@ define findaddr
 
             while $nextseg && $cont
 	        if $arg0 >= $nextseg && $arg0 <= ($nextseg + *((ULONG *)$nextseg - 1) - sizeof(BPTR))
-                    printf "Address found in %s, which is loaded at 0x%p.\nIf this is an executable, its .text section starts at 0x%p.\n", $segnode->name, $segnode->seglist, $segnode->start_address
+                    printf "Address found in %s, which is loaded at %p.\nIf this is an executable, its .text section starts at %p.\n", $segnode->name, $segnode->seglist, $segnode->start_address
 
                     set $cont = 0
                 end
@@ -185,7 +185,7 @@ define findaddr
 	set $res = ($resp)[$i]
 
         if ($arg0 >= $res) && ($arg0 <= $res->rt_EndSkip)
-            printf "Address found in %s, which resides at 0x%p\n", $res->rt_Name, $res
+            printf "Address found in %s, which resides at %p\n", $res->rt_Name, $res
             set $cont = 0
         end
 
@@ -238,13 +238,13 @@ define printtaglist
 	if $list->ti_Tag == 1
 	    printf "TAG_IGNORE\n"
 	else if $list->ti_Tag == 2
-	    printf "TAG_MORE    0x08%x\n", $list->ti_Data
+	    printf "TAG_MORE    %p\n", $list->ti_Data
 	    set $list = (struct TagItem *)$list->ti_Data
 	else if $list->ti_Tag == 3
 	    printf "TAG_SKIP    %d\n", $list->ti_Data
 	    set $list = $list + $list->ti_Tag + 1
 	else
-	    printf "0x%p  0x%p      %9lu\n", $list->ti_Tag, $list->ti_Data, $list->ti_Data
+	    printf "%p  %p      %9lu\n", $list->ti_Tag, $list->ti_Data, $list->ti_Data
 	    set $list = $list + 1
 	end
     end
@@ -285,10 +285,10 @@ define loadseg
           set $seginfo = (struct seginfo *)$segnode->seginfos.mlh_Head
           while ($seginfo->node.mln_Succ != 0)
             if (strcmp($seginfo->name, ".text") == 0)
-              printf " 0x%p", $seginfo->addr
+              printf " %p", $seginfo->addr
               set $cont = 0
             else
-              printf " -s %s 0x%p", $seginfo->name, $seginfo->addr
+              printf " -s %s %p", $seginfo->name, $seginfo->addr
             end
             set $seginfo = (struct seginfo *)$seginfo->node.mln_Succ
           end
@@ -318,7 +318,7 @@ define seglistdump
     printf "Hunk num. | Start addr | Size       \n"
     printf "----------+------------+------------\n"
     while $nextseg
-        printf "%9d | 0x%p | %10d\n", $count, $nextseg + sizeof(BPTR), *((ULONG *)$nextseg - 1) - sizeof(BPTR)
+        printf "%9d | %p | %10d\n", $count, $nextseg + sizeof(BPTR), *((ULONG *)$nextseg - 1) - sizeof(BPTR)
 
         set $nextseg = *(BPTR *)$nextseg
         set $count = $count+1
