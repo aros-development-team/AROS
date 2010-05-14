@@ -22,7 +22,7 @@
 struct HIDDNouveauData
 {
     ULONG                   architecture;
-    struct nouveau_device   *dev;        /* Device object acquired from libdrm */
+    struct nouveau_device   *dev;                   /* Device object acquired from libdrm */
     struct nouveau_channel  *chan;
     struct nouveau_notifier *notify0;
     
@@ -33,6 +33,7 @@ struct HIDDNouveauData
     
     struct nouveau_bo       *cursor;
     ULONG                   selectedcrtcid;
+    ULONG                   selectedconnectorid;
 };
 
 #define CLID_Hidd_BitMap_Nouveau        "hidd.bitmap.nouveau"
