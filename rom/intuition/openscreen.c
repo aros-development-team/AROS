@@ -166,8 +166,8 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     DEBUG_OPENSCREEN(dprintf("OpenScreen: Left %d Top %d Width %d Height %d Depth %d Tags 0x%lx\n",
                              ns.LeftEdge, ns.TopEdge, ns.Width, ns.Height, ns.Depth, tagList));
 
-#ifdef __MORPHOS__
     if (!CyberGfxBase) CyberGfxBase = OpenLibrary("cybergraphics.library",0);
+#ifdef __MORPHOS__
     if (!CyberGfxBase) return NULL;
 
     if (!LocaleBase) LocaleBase = OpenLibrary("locale.library",0);
@@ -593,14 +593,9 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     	modetags[2].ti_Tag = TAG_IGNORE;
     }
 
-#ifdef __MORPHOS__
     /* if default HIRES_KEY or HIRESLACE_KEY is passed, make sure we find a replacement
-       cybergraphx mode.
-
-       In AROS this won't work because of sucky ModeID conversion. 0x00000000 will be
-       found as valid mode, it'll be the first HIDD mode, and it's quite not the best
-       one. */
-    if (INVALID_ID != modeid)
+       cybergraphx mode. */
+    if (CyberGfxBase && (INVALID_ID != modeid))
     {
         if (FindDisplayInfo(modeid) == NULL)
         {
@@ -638,7 +633,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
         }
     }
-#endif
 
     if (INVALID_ID == modeid)
     {
@@ -1517,17 +1511,10 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Font %s/%d\n",
                                  screen->textattr.tta_Name, screen->textattr.tta_YSize));
 
-#ifdef __MORPHOS__
-        screen->Screen.BarVBorder  = 1;
-        screen->Screen.BarHBorder  = 5;
-        screen->Screen.MenuVBorder = 2;
-        screen->Screen.MenuHBorder = 4;
-#else
         screen->Screen.BarVBorder  = 1; /* on the Amiga it is (usually?) 1 */
         screen->Screen.BarHBorder  = 5;
         screen->Screen.MenuVBorder = 2; /* on the Amiga it is (usually?) 2 */
         screen->Screen.MenuHBorder = 4;
-#endif
 
         struct sdpInitScreen       msg;
 
