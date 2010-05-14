@@ -12,29 +12,13 @@
 #include <aros/debug.h>
 #include <proto/oop.h>
 
-/* HACK HACK HACK HACK */
-
-
-
 #include "arosdrmmode.h"
 
+/* Temporary hack to allow bitmap class accessing nouveau_device */
 struct nouveau_device * hackdev = NULL;
 
+/* Declaration of nouveau initialization function */
 int nouveau_init(void);
-
-static void init_nouveau_and_set_video_mode()
-{
-    bug("Before init\n");
-    nouveau_init();
-    
-
-    nouveau_device_open(&hackdev, "");
-
-
-}
-
-/* HACK HACK HACK HACK */ 
-
 
 #undef HiddPixFmtAttrBase
 #undef HiddGfxAttrBase
@@ -138,14 +122,13 @@ static VOID HIDDNouveauShowCursor(OOP_Class * cl, OOP_Object * gfx, BOOL visible
 }
 
 static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * selectedconnector,
-    drmModeCrtcPtr * selectedcrtc, ULONG prevcrtcid)
+    drmModeCrtcPtr * selectedcrtc)
 {
     *selectedconnector = NULL;
     *selectedcrtc = NULL;
     drmModeResPtr drmmode = NULL;
     drmModeEncoderPtr selectedencoder = NULL;
-    LONG i;
-    ULONG crtc_id = prevcrtcid;
+    LONG i; ULONG crtc_id;
 
     /* Get all components information */
     drmmode = drmModeGetResources(fd);
@@ -192,9 +175,8 @@ static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * select
         return FALSE;
     }
 
-    /* HACK: CRTC_ID from encoder seems to be zero after first mode switch */
-    if (selectedencoder->crtc_id != 0)
-        crtc_id = selectedencoder->crtc_id;
+    /* WARNING: CRTC_ID from encoder seems to be zero after first mode switch */
+    crtc_id = selectedencoder->crtc_id;
     drmModeFreeEncoder(selectedencoder);
 
     *selectedcrtc = drmModeGetCrtc(fd, crtc_id);
@@ -216,7 +198,7 @@ static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
     struct HIDDNouveauData * gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
     struct nouveau_device_priv *nvdev = nouveau_device(gfxdata->dev);
-    uint32_t output_ids[] = {0};
+    uint32_t output_ids[] = {gfxdata->selectedconnectorid};
     uint32_t output_count = 1;
     LONG i;
     drmModeConnectorPtr selectedconnector = NULL;
@@ -264,19 +246,25 @@ static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
     D(bug("[Nouveau] Sync: %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
     pixel, hdisp, hstart, hend, htotal, vdisp, vstart, vend, vtotal));
 
-    /* Select connector and crtc */
-    if (!HIDDNouveauSelectConnectorCrtc(nvdev->fd, &selectedconnector, 
-        &selectedcrtc, gfxdata->selectedcrtcid))
+    selectedconnector = drmModeGetConnector(nvdev->fd, gfxdata->selectedconnectorid);
+    if (!selectedconnector)
     {
-        D(bug("[Nouveau] Not able to select connector and crtc\n"));
+        D(bug("[Nouveau] Failed to read connector %d information\n", gfxdata->selectedconnectorid));
+        return FALSE;
+    }
+    
+    selectedcrtc = drmModeGetCrtc(nvdev->fd, gfxdata->selectedcrtcid);
+    if (!selectedcrtc)
+    {
+        drmModeFreeConnector(selectedconnector);
+        D(bug("[Nouveau] Failed to read crtc %d information\n", gfxdata->selectedcrtcid));
         return FALSE;
     }
 
-    output_ids[0] = selectedconnector->connector_id;
-    gfxdata->selectedcrtcid = selectedcrtc->crtc_id;
-
     D(bug("[Nouveau] Connector %d, CRTC %d\n", selectedconnector->connector_id, 
         selectedcrtc->crtc_id));
+
+    
 
     /* Select mode */
     for (i = 0; i < selectedconnector->count_modes; i++)
@@ -356,8 +344,6 @@ static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
 
 OOP_Object * METHOD(Nouveau, Root, New)
 {
-    bug("Nouveau::New\n");
-
     /* FIXME: Temporary - read real values from nouveau */
     struct TagItem pftags_24bpp[] = {
 	{ aHidd_PixFmt_RedShift,	8	}, /* 0 */
@@ -423,20 +409,27 @@ OOP_Object * METHOD(Nouveau, Root, New)
     mymsg.attrList = mytags;
 
     msg = &mymsg;
-    
+
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    D(bug("Nouveau::New\n"));
 
     if (o)
     {
         struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
+        drmModeCrtcPtr selectedcrtc = NULL;
+        drmModeConnectorPtr selectedconnector = NULL;
+        struct nouveau_device_priv * nvdev = NULL;
         LONG ret;
         
-        /* HACK */
-        init_nouveau_and_set_video_mode();
-        /* HACK */
+        nouveau_init();
 
-        /* Acquire device object FIXME: should be done directly via nouvea_open_device */
-        gfxdata->dev = hackdev;
+        nouveau_device_open(&gfxdata->dev, "");
+        nvdev = nouveau_device(gfxdata->dev);
+
+        /* HACK */
+        hackdev = gfxdata->dev;
+        /* HACK */
 
         /* Check chipset architecture */
         switch (gfxdata->dev->chipset & 0xf0) 
@@ -481,13 +474,24 @@ OOP_Object * METHOD(Nouveau, Root, New)
             0, 64 * 64 * 4, &gfxdata->cursor);
         /* TODO: Check return, hot to handle */
         
-        gfxdata->selectedcrtcid = 0;
+        /* Select crtc and connector */
+        if (!HIDDNouveauSelectConnectorCrtc(nvdev->fd, &selectedconnector, &selectedcrtc))
+        {
+            D(bug("[Nouveau] Not able to select connector and crtc\n"));
+            /* TODO: Handle error*/
+        }
+        
+        gfxdata->selectedconnectorid = selectedconnector->connector_id;
+        gfxdata->selectedcrtcid = selectedcrtc->crtc_id;
+        
+        drmModeFreeConnector(selectedconnector);
+        drmModeFreeCrtc(selectedcrtc);
     }
 
     return o;
 }
 
-/* FIXME: IMPLEMENT DISPOSE */
+/* FIXME: IMPLEMENT DISPOSE - calling nouveau_close() */
 
 /* FIXME: IMPLEMENT DISPOSE BITMAP - REMOVE FROM FB IF MARKED AS SUCH */
 
