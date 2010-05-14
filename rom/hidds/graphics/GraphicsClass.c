@@ -63,10 +63,10 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG attrche
 /****************************************************************************************/
 
 #define COMPUTE_HIDD_MODEID(sync, pf)	\
-    ( ((sync) << 16) | (pf) )
+    ( ((sync) << 8) | (pf) )
     
-#define MODEID_TO_SYNCIDX(id) ( (id) >> 16 )
-#define MODEID_TO_PFIDX(id) ( (id) & 0x0000FFFF )
+#define MODEID_TO_SYNCIDX(id) (((id) & 0X0000FF00) >> 8)
+#define MODEID_TO_PFIDX(id)   ( (id) & 0x000000FF)
 
 /****************************************************************************************/
 
