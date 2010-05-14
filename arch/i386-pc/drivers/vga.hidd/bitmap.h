@@ -46,7 +46,12 @@ struct bitmap_data
     unsigned char	*VideoData;	/* Pointing to video data */
     unsigned int	width;		/* Width of bitmap */
     unsigned int 	height;		/* Height of bitmap */
-    char		bpp;    	/* 8 -> chunky; planar otherwise */
+    unsigned int	bpr;		/* Bytes per row */
+    unsigned int	disp_width;	/* Display width */
+    unsigned int	disp_height;	/* Display height */
+    int			xoffset;	/* Logical screen offset */
+    int			yoffset;
+    char		bpp;    	/* bits per pixel */
     BOOL		disp;		/* !=0 - displayed */
 };
 
@@ -62,6 +67,8 @@ VOID bitmap_putpixel(OOP_Class *, OOP_Object *, struct pHidd_BitMap_PutPixel *);
 HIDDT_Pixel bitmap_getpixel(OOP_Class *, OOP_Object *, struct pHidd_BitMap_GetPixel *);
 ULONG bitmap_drawpixel(OOP_Class *, OOP_Object *, struct pHidd_BitMap_DrawPixel *);
 
-void vgaRefreshArea(struct bitmap_data *, int , struct Box *);
+void vgaRefreshPixel(struct bitmap_data *data, unsigned int x, unsigned int y);
+void vgaRefreshArea(struct bitmap_data *, struct Box *);
+void vgaEraseArea(struct bitmap_data *, struct Box *);
 
 #endif /* _BITMAP_H */

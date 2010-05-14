@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VGA Inside...
@@ -14,6 +14,8 @@
 
 #include <proto/exec.h>
 #include <oop/oop.h>
+#include <string.h>
+
 #include "vgahw.h"
 #include "vgaclass.h"
 #include "bitmap.h"
@@ -204,12 +206,10 @@ void vgaDACLoad(struct vgaHWRec *restore, unsigned char start, int num)
 ** vgaRestore --
 **      restore a video mode
 */
-void vgaRestore(struct vgaHWRec *restore, BOOL onlyDac)
+void vgaRestore(struct vgaHWRec *restore)
 {
     int i,tmp;
 
-    if (!onlyDac)
-    {
     tmp = inb(vgaIOBase + 0x0A);		/* Reset flip-flop */
     outb(0x3C0, 0x00);			/* Enables pallete access */
 
@@ -232,80 +232,12 @@ void vgaRestore(struct vgaHWRec *restore, BOOL onlyDac)
     }
 
     outb(0x3C6,0xFF);
-    }
 
     vgaDACLoad(restore, 0, 256);
 
-    if (!onlyDac)
-    {
     /* Turn on PAS bit */
     tmp = inb(vgaIOBase + 0x0A);
     outb(0x3C0, 0x20);
-    }
-}
-
-/****************************************************************************************/
-
-/*
-** vgaSave --
-**      save the current video mode
-*/
-void * vgaSave(struct vgaHWRec *save)
-{
-    int	i,tmp;
-    int	first_time = FALSE;	/* Should be static? */
-
-    /*
-     * Here we are, when we first save the videostate. This means we came here
-     * to save the original Text mode. Because some drivers may depend
-     * on NoClock we set it here to a resonable value.
-     */
-    first_time = TRUE;
-    save->NoClock = (inb(0x3CC) >> 2) & 3;
-    save->MiscOutReg = inb(0x3CC);
-
-    tmp = inb(vgaIOBase + 0x0A); /* reset flip-flop */
-    outb(0x3C0, 0x00);
-
-    /*			 
-     * save the colorlookuptable 
-     */
-    outb(0x3C7,0x01);
-    for (i=3; i<768; i++)
-    {
-	save->DAC[i] = inb(0x3C9); 
-	DACDelay;
-    }
-
-    for (i=0; i<25; i++)
-    {
-    	outb(vgaIOBase + 4,i);
-	save->CRTC[i] = inb(vgaIOBase + 5);
-    }
-
-    for (i=0; i<21; i++)
-    {
-	tmp = inb(vgaIOBase + 0x0A);
-	outb(0x3C0,i);
-	save->Attribute[i] = inb(0x3C1);
-    }
-
-    for (i=0; i<9;  i++)
-    {
-    	outb(0x3CE,i);
-	save->Graphics[i]  = inb(0x3CF);
-    }
-
-    for (i=0; i<5;  i++)
-    {
-    	outb(0x3C4,i);
-	save->Sequencer[i] = inb(0x3C5);
-    }
-
-    tmp = inb(vgaIOBase + 0x0A);
-    outb(0x3C0, 0x20);
-    
-    return ((void *) save);
 }
 
 /****************************************************************************************/
@@ -498,58 +430,139 @@ int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
 
 /****************************************************************************************/
 
-void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
+void vgaRefreshPixel(struct bitmap_data *data, unsigned int x, unsigned int y)
+{
+    int pix;
+    char *ptr, *ptr2;
+    UWORD fg;
+    unsigned int srcx = x - data->xoffset;
+    unsigned int srcy = y - data->yoffset;
+
+    ptr = (char *)(data->VideoData + srcx + (srcy * data->bpr));
+    fg = *ptr;
+    ptr2 = (char *)(0xa0000 + (x + (y * data->disp_width)) / 8);
+    pix = 0x8000 >> (x % 8);
+
+    outw(0x3c4,0x0f02);
+    outw(0x3ce,pix | 8);
+    outw(0x3ce,0x0005);
+    outw(0x3ce,0x0003);
+    outw(0x3ce,(fg << 8));
+    outw(0x3ce,0x0f01);
+
+    *ptr2 |= 1;		// This or'ed value isn't important
+}
+
+/****************************************************************************************/
+
+void vgaRefreshArea(struct bitmap_data *bmap, struct Box *pbox)
 {
     int     	    	    width, height, FBPitch, left, right, i, j, SRCPitch, phase;
     register ULONG          m;
     unsigned char   	    s1, s2, s3, s4;
     ULONG              	    *src, *srcPtr;
     unsigned char   	    *dst, *dstPtr;
-   
-    FBPitch  = bmap->width >> 3;
-    SRCPitch = bmap->width >> 2;
+    unsigned int	    srcx, srcy;
 
-    outw(0x3ce, 0x0005);
-    outw(0x3ce, 0x0001);
-    outw(0x3ce, 0x0000);
-    outw(0x3ce, 0x0003);
-    outw(0x3ce, 0xff08);
+    /* In 640x480x16 mode VRAM data has planar layout .All 4 bitplanes share
+       the same addresses, we use sequencer register in order to select
+       which plane to write to. 
+       is very weird: we have LONGs in which first bytes contain bits 0 of
+       eight pixels, second bytes contain bits 1, third - bits 2 and fourth
+       - bits 3. Despite being planar, this is totally different to Amiga
+       native planar format.       
+       Our pixelbuffer always has a simple chunky format, so we perform a
+       4-step chunky to planar conversion. In order to select VRAM bitplanes
+       we use a sequencer's plane select register */
 
-    left = pbox->x1 & ~7;
-    right = (pbox->x2 & ~7) + 7;
+    /* Start and end coordinates of our box have to be on byte border */
+    left   = pbox->x1 & ~7;	      /* Round down left (start) coordinate */
+    right  = (pbox->x2 & ~7) + 7;     /* Round up right (end) coordinate    */
 
-    while(num--)
-    {
-        width  = (right - left + 1) >> 3;
+    /* Check if refresh region is completely beyond physical display limits.     
+       If so, do noting */
+    if ((left >= bmap->disp_width) || (pbox->y1 >= bmap->disp_height))
+        return;
+    /* Now adjust bottom-right corner */
+    if (right >= bmap->disp_width)
+        right = bmap->disp_width - 1;
+    if (pbox->y2 >= bmap->disp_height)
         height = pbox->y2 - pbox->y1 + 1;
-        src    = (ULONG*)bmap->VideoData + (pbox->y1 * SRCPitch) + (left >> 2); 
-        dst    = (unsigned char*)0x000a0000 + (pbox->y1 * FBPitch) + (left >> 3);
+    else
+        height = bmap->disp_height - pbox->y1;
 
-	if((phase = ((LONG)dst & 3L)))
-	{
+    /* We don't check top-left corne of the display.
+       We assume that refresh region will never have negative
+       coordinates. Also we assume that the entire screen is
+       covered with the bitmap (i. e. bitmap is not smaller than
+       physical display area and is not moved out of the view.
+       We could implement this, but we trade this off for speed */
+
+    FBPitch  = bmap->disp_width >> 3; /* UBYTEs per line for VRAM        */
+    SRCPitch = bmap->bpr >> 2;        /* ULONGs per line for pixelbuffer */
+
+    /* Disable data preprocessing in graphics controller */
+    outw(0x3ce, 0x0005);	/* MDR = 0 (direct write)	       */
+    outw(0x3ce, 0x0001);	/* Disable Set/Reset operation	       */
+    outw(0x3ce, 0x0000);	/* Set/Reset data = 0		       */
+    outw(0x3ce, 0x0003);	/* RFSR = 0 (no shift, no modify)      */
+    outw(0x3ce, 0xff08);	/* Bit mask = 0xFF (all bits from CPU) */
+
+    width  = (right - left + 1) >> 3; /* Width of destination box in UBYTEs */
+    srcx   = left - bmap->xoffset;
+    srcy   = pbox->y1 - bmap->yoffset;
+    src    = (ULONG*)bmap->VideoData + (srcy * SRCPitch) + (srcx >> 2);  /* Calculate start addresses in the pixelbuffer and VRAM */
+    dst    = (unsigned char*)0x000a0000 + (pbox->y1 * FBPitch) + (left >> 3);
+
+    /* In order to speedup we operate on LONGs. However since our start
+       coordinate may be not LONG-aqligned, we probably have to copy
+       some BYTEs before we reach LONG border. phase is a number
+       of these bytes */
+    phase = (LONG)dst & 3L;
+    if (phase) {
 	    phase = 4 - phase;
 	    if(phase > width) phase = width;
-	    width -= phase;
-	}
+	    width    -= phase;
+    }
 
-        while(height--)
-	{
-	    outw(0x3c4, 0x0102);	//pvgaHW->writeSeq(pvgaHW, 0x02, 1);
-	    dstPtr = dst;
-	    srcPtr = src;
-	    i = width;
-	    j = phase;
+    while(height--) /* For each line */
+    {
+        outw(0x3c4, 0x0102); /* Enable write to plane 0 */
+        dstPtr = dst;	 /* Take start pointers */
+        srcPtr = src;
+        i  = width;
+        j  = phase;
 	    
-	    while(j--)
-	    {
+        while(j--)
+        {
+		/* Take bits 0 of the 8 pixels and combine them
+		   (0B0B0B0B and 0A0A0A0A become BABABABA).
+		   We take 8 pixels from source buffer because in one VRAM
+		   plane one byte holds 8 bits for 8 different pixels.
+		   After this we will get the following:
+		   
+		   pixel    3   7    2   6    1   5    0   4
+		   m     76543210 76543210 76543210 76543210
+		   
+		   where bottom line is bitstring stored in m and top line
+		   contains numbers of pixels these bits came from. Other
+		   bits will be 0 (since we masked them out)
+		 */
 		m = (srcPtr[1] & 0x01010101) | ((srcPtr[0] & 0x01010101) << 4);
+		/* And here we recombine the data into single byte and write
+		   them into VRAM. Result of these shift-or operations is:
+		   
+		   pixel 01234567
+		   value 76543210
+		   
+		   again, bottom line is bit number and top one is pixel number 
+		 */
  		*dstPtr++ = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
 		srcPtr += 2;
-	    }
-	    
-	    while(i >= 4)
-	    {
-		m = (srcPtr[1] & 0x01010101) | ((srcPtr[0] & 0x01010101) << 4);
+        }
+
+        while(i >= 4) {
+	        m = (srcPtr[1] & 0x01010101) | ((srcPtr[0] & 0x01010101) << 4);
  		s1 = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
 		m = (srcPtr[3] & 0x01010101) | ((srcPtr[2] & 0x01010101) << 4);
  		s2 = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
@@ -561,30 +574,27 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 		srcPtr += 8;
 		dstPtr += 4;
 		i -= 4;
-	    }
+	}
 	    
-	    while(i--)
-	    {
+	while(i--) {
 		m = (srcPtr[1] & 0x01010101) | ((srcPtr[0] & 0x01010101) << 4);
  		*dstPtr++ = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
 		srcPtr += 2;
-	    }
+	}
 
-	    outw(0x3c4, 0x0202);	//pvgaHW->writeSeq(pvgaHW, 0x02, 1 << 1);
-	    dstPtr = dst;
-	    srcPtr = src;
-	    i = width;
-	    j = phase;
+	outw(0x3c4, 0x0202); /* Enable write to plane 1 */
+	dstPtr = dst;
+	srcPtr = src;
+	i = width;
+	j = phase;
 	    
-	    while(j--)
-	    {
+	while(j--) {
 		m = (srcPtr[1] & 0x02020202) | ((srcPtr[0] & 0x02020202) << 4);
  		*dstPtr++ = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
 		srcPtr += 2;
-	    }
+	}
 	    
-	    while(i >= 4)
-	    {
+	while(i >= 4) {
 		m = (srcPtr[1] & 0x02020202) | ((srcPtr[0] & 0x02020202) << 4);
  		s1 = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
 		m = (srcPtr[3] & 0x02020202) | ((srcPtr[2] & 0x02020202) << 4);
@@ -597,29 +607,27 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 		srcPtr += 8;
 		dstPtr += 4;
 		i -= 4;
-	    }
+	}
 	    
-	    while(i--)
-	    {
+	while(i--) {
 		m = (srcPtr[1] & 0x02020202) | ((srcPtr[0] & 0x02020202) << 4);
  		*dstPtr++ = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
 		srcPtr += 2;
-	    }
+	}
 
-	    outw(0x3c4, 0x0402);	//pvgaHW->writeSeq(pvgaHW, 0x02, 1 << 2);
-	    dstPtr = dst;
-	    srcPtr = src;
-	    i = width;
-	    j = phase;
+	outw(0x3c4, 0x0402); /* Enable write to plane 2 */
+	dstPtr = dst;
+	srcPtr = src;
+	i = width;
+	j = phase;
 	    
-	    while(j--)
-	    {
+	while(j--) {
 		m = (srcPtr[1] & 0x04040404) | ((srcPtr[0] & 0x04040404) << 4);
  		*dstPtr++ = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
 		srcPtr += 2;
-	    }
+	}
 	    
-	    while(i >= 4) {
+	while(i >= 4) {
 		m = (srcPtr[1] & 0x04040404) | ((srcPtr[0] & 0x04040404) << 4);
  		s1 = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
 		m = (srcPtr[3] & 0x04040404) | ((srcPtr[2] & 0x04040404) << 4);
@@ -632,30 +640,27 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 		srcPtr += 8;
 		dstPtr += 4;
 		i -= 4;
-	    }
+	}
 	    
-	    while(i--)
-	    {
+	while(i--) {
 		m = (srcPtr[1] & 0x04040404) | ((srcPtr[0] & 0x04040404) << 4);
  		*dstPtr++ = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
 		srcPtr += 2;
-	    }
+	}
 	    
-	    outw(0x3c4, 0x0802);	//pvgaHW->writeSeq(pvgaHW, 0x02, 1 << 3);
-	    dstPtr = dst;
-	    srcPtr = src;
-	    i = width;
-	    j = phase;
+	outw(0x3c4, 0x0802); /* Enable write to plane 3 */
+	dstPtr = dst;
+	srcPtr = src;
+	i = width;
+	j = phase;
 	    
-	    while(j--)
-	    {
+	while(j--) {
 		m = (srcPtr[1] & 0x08080808) | ((srcPtr[0] & 0x08080808) << 4);
  		*dstPtr++ = (m >> 27) | (m >> 18) | (m >> 9) | m;
 		srcPtr += 2;
-	    }
+	}
 	    
-	    while(i >= 4)
-	    {
+	while(i >= 4) {
 		m = (srcPtr[1] & 0x08080808) | ((srcPtr[0] & 0x08080808) << 4);
  		s1 = (m >> 27) | (m >> 18) | (m >> 9) | m;
 		m = (srcPtr[3] & 0x08080808) | ((srcPtr[2] & 0x08080808) << 4);
@@ -668,22 +673,50 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 		srcPtr += 8;
 		dstPtr += 4;
 		i -= 4;
-	    }
+	}
 	    
-	    while(i--)
-	    {
+	while(i--) {
 		m = (srcPtr[1] & 0x08080808) | ((srcPtr[0] & 0x08080808) << 4);
  		*dstPtr++ = (m >> 27) | (m >> 18) | (m >> 9) | m;
 		srcPtr += 2;
-	    }
+	}
+    
+        dst += FBPitch;
+        src += SRCPitch;
 	    
-            dst += FBPitch;
-            src += SRCPitch;
-	    
-        } /* while(height--) */
-        pbox++;
-	
-    } /* while(num--) */ 
+    } /* while(height--) */
+} 
+
+/****************************************************************************************/
+
+void vgaEraseArea(struct bitmap_data *bmap, struct Box *pbox)
+{
+    int     	    	    width, height, FBPitch, left, right;
+    unsigned char   	    *dst;
+
+    FBPitch  = bmap->disp_width >> 3; /* UBYTEs per line for VRAM        */
+
+    /* Disable data preprocessing in graphics controller */
+    outw(0x3ce, 0x0005);	/* MDR = 0 (direct write)	       */
+    outw(0x3ce, 0x0001);	/* Disable Set/Reset operation	       */
+    outw(0x3ce, 0x0000);	/* Set/Reset data = 0		       */
+    outw(0x3ce, 0x0003);	/* RFSR = 0 (no shift, no modify)      */
+    outw(0x3ce, 0xff08);	/* Bit mask = 0xFF (all bits from CPU) */
+
+    /* Start and end coordinates of our box have to be on byte border */
+    left   = (pbox->x1 & ~7) + 7;     /* Round up left (start) coordinate   */
+    right  = (pbox->x2 & ~7) + 7;     /* Round up right (end) coordinate    */
+    width  = (right - left + 1) >> 3; /* Width of destination box in UBYTEs */
+    height = pbox->y2 - pbox->y1 + 1;
+    dst    = (unsigned char*)0x000a0000 + (pbox->y1 * FBPitch) + (left >> 3);
+
+    outw(0x3c4, 0x0F02); /* Enable write to all planes */
+
+    while(height--) /* For each line */
+    {
+	memset(dst, 0, width);
+        dst += FBPitch;
+    } /* while(height--) */
 } 
 
 /****************************************************************************************/
