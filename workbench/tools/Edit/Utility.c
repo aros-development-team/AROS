@@ -78,7 +78,7 @@ CONST_STRPTR InfoTmpl = "%s%s    (%ld, %ld)";
 /** Update window title **/
 void UpdateTitle(struct Window *W, Project p)
 {
-	struct { TEXT *name; TEXT *modified; ULONG x; ULONG y; } info;
+	struct { TEXT *name; TEXT *modified; IPTR x; IPTR y; } info;
 
 	info.name = p->path? p->path: p->name;
 	info.modified = (p->state & MODIFIED) ? STR_MODIF : "";
