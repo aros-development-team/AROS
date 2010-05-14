@@ -24,22 +24,45 @@ extern struct nouveau_device * hackdev;
 /* PUBLIC METHODS */
 VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPixel)
 {
-    /* FIXME: take format (byte/word/long) into account */
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     IPTR addr = (msg->x * bmdata->bytesperpixel) + (bmdata->pitch * msg->y);
     addr += (IPTR)bmdata->bo->map;
 
-    writel(msg->pixel, (APTR)addr);
+    switch(bmdata->bytesperpixel)
+    {
+    case(1):
+        writeb(msg->pixel, (APTR)addr);
+        break;
+    case(2):
+        writew(msg->pixel, (APTR)addr);
+        break;
+    case(4):
+        writel(msg->pixel, (APTR)addr);
+        break;
+    }
 }
 
 HIDDT_Pixel METHOD(NouveauBitMap, Hidd_BitMap, GetPixel)
 {
-    /* FIXME: take format (byte/word/long) into account */
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     IPTR addr = (msg->x * bmdata->bytesperpixel) + (bmdata->pitch * msg->y);
     addr += (IPTR)bmdata->bo->map;
+    HIDDT_Pixel pixel = 0;
 
-    return readl((APTR)addr);
+    switch(bmdata->bytesperpixel)
+    {
+    case(1):
+        pixel = readb((APTR)addr);
+        break;
+    case(2):
+        pixel = readw((APTR)addr);
+        break;
+    case(4):
+        pixel = readl((APTR)addr);
+        break;
+    }
+    
+    return pixel;
 }
 
 OOP_Object * METHOD(NouveauBitMap, Root, New)
@@ -73,7 +96,6 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
 	    /* Creation of buffer object */
 	    /* FIXME: nouveau_device should not be global */
 	    /* FIXME: check result of call */
-	    /* FIXME: take pitch/bpp when calculating size */
         nouveau_bo_new(hackdev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 
 	            bmdata->pitch * bmdata->height,
 	            &bmdata->bo);

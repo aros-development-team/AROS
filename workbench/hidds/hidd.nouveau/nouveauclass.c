@@ -360,8 +360,8 @@ static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, d
         sync[8].ti_Tag = aHidd_Sync_VTotal;         sync[8].ti_Data = mode->vtotal;
         
         /* Name */
-        STRPTR syncname = AllocVec(64, MEMF_ANY | MEMF_CLEAR);
-        sprintf(syncname, "Nouveau:%dx%d@%d", mode->hdisplay, mode->vdisplay, mode->vrefresh);
+        STRPTR syncname = AllocVec(32, MEMF_ANY | MEMF_CLEAR);
+        sprintf(syncname, "NV:%dx%d@%d", mode->hdisplay, mode->vdisplay, mode->vrefresh);
         
         sync[9].ti_Tag = aHidd_Sync_Description;    sync[9].ti_Data = (IPTR)syncname;
         
@@ -419,7 +419,6 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
     /* Call super contructor */
     {
-        /* TODO: Add other depths */
         struct TagItem pftags_24bpp[] = {
         { aHidd_PixFmt_RedShift,	8	}, /* 0 */
         { aHidd_PixFmt_GreenShift,	16	}, /* 1 */
@@ -437,9 +436,28 @@ OOP_Object * METHOD(Nouveau, Root, New)
         { aHidd_PixFmt_BitMapType,	vHidd_BitMapType_Chunky }, /* 15 */
         { TAG_DONE, 0UL }
         };
-	 
+
+        struct TagItem pftags_16bpp[] = {
+        { aHidd_PixFmt_RedShift,	16	}, /* 0 */
+        { aHidd_PixFmt_GreenShift,	21	}, /* 1 */
+        { aHidd_PixFmt_BlueShift,  	27	}, /* 2 */
+        { aHidd_PixFmt_AlphaShift,	0	}, /* 3 */
+        { aHidd_PixFmt_RedMask,		0x0000f800 }, /* 4 */
+        { aHidd_PixFmt_GreenMask,	0x000007e0 }, /* 5 */
+        { aHidd_PixFmt_BlueMask,	0x0000001f }, /* 6 */
+        { aHidd_PixFmt_AlphaMask,	0x00000000 }, /* 7 */
+        { aHidd_PixFmt_ColorModel,	vHidd_ColorModel_TrueColor }, /* 8 */
+        { aHidd_PixFmt_Depth,		16	}, /* 9 */
+        { aHidd_PixFmt_BytesPerPixel,	2	}, /* 10 */
+        { aHidd_PixFmt_BitsPerPixel,	16	}, /* 11 */
+        { aHidd_PixFmt_StdPixFmt,	vHidd_StdPixFmt_RGB16_LE }, /* 12 */
+        { aHidd_PixFmt_BitMapType,	vHidd_BitMapType_Chunky }, /* 15 */
+        { TAG_DONE, 0UL }
+        };
+
         struct TagItem modetags[] = {
 	    { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_24bpp	},
+	    { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_16bpp	},
         { TAG_MORE, (IPTR)syncs },  /* FIXME: sync tags will leak */
 	    { TAG_DONE, 0UL }
         };
