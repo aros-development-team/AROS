@@ -271,8 +271,10 @@ static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
     {
         drmModeModeInfoPtr mode = &selectedconnector->modes[i];
         
-        /* TODO: This selection seems naive - clock not taken into account */
-        if ((mode->hdisplay == hdisp) && (mode->vdisplay == vdisp))
+        /* FIXME: Maybe tak clock not taken into account */
+        if ((mode->hdisplay == hdisp) && (mode->vdisplay == vdisp) &&
+            (mode->hsync_start == hstart) && (mode->vsync_start == vstart) &&
+            (mode->hsync_end == hend) && (mode->vsync_end == vend))
         {
             selectedmode = mode;
             break;
@@ -327,168 +329,194 @@ static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
     return TRUE;
 }
 
-/* PUBLIC METHODS */
-#define MAKE_SYNC(name,clock,hdisp,hstart,hend,htotal,vdisp,vstart,vend,vtotal,descr)	\
-	struct TagItem sync_ ## name[]={			\
-		{ aHidd_Sync_PixelClock,	clock*1000	},	\
-		{ aHidd_Sync_HDisp,			hdisp 	},	\
-		{ aHidd_Sync_HSyncStart,	hstart	},	\
-		{ aHidd_Sync_HSyncEnd,		hend	},	\
-		{ aHidd_Sync_HTotal,		htotal	},	\
-		{ aHidd_Sync_VDisp,			vdisp	},	\
-		{ aHidd_Sync_VSyncStart,	vstart	},	\
-		{ aHidd_Sync_VSyncEnd,		vend	},	\
-		{ aHidd_Sync_VTotal,		vtotal	},	\
-		{ aHidd_Sync_Description,   	(IPTR)descr},	\
-		{ TAG_DONE, 0UL }}
+#include <stdio.h>
 
+static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, drmModeConnectorPtr connector)
+{
+    struct TagItem * syncs = NULL;
+    ULONG modescount = connector->count_modes;
+    ULONG i;
+    
+    if (modescount == 0)
+        return NULL;
+        
+    /* Allocate enough structures */
+    syncs = AllocVec(sizeof(struct TagItem) * modescount, MEMF_ANY);
+    
+    for (i = 0; i < modescount; i++)
+    {
+        struct TagItem * sync = AllocVec(sizeof(struct TagItem) * 11, MEMF_ANY);
+        
+        drmModeModeInfoPtr mode = &connector->modes[i];
+
+        sync[0].ti_Tag = aHidd_Sync_PixelClock;     sync[0].ti_Data = mode->clock;
+        sync[1].ti_Tag = aHidd_Sync_HDisp;          sync[1].ti_Data = mode->hdisplay;
+        sync[2].ti_Tag = aHidd_Sync_HSyncStart;     sync[2].ti_Data = mode->hsync_start;
+        sync[3].ti_Tag = aHidd_Sync_HSyncEnd;       sync[3].ti_Data = mode->hsync_end;
+        sync[4].ti_Tag = aHidd_Sync_HTotal;         sync[4].ti_Data = mode->htotal;
+        sync[5].ti_Tag = aHidd_Sync_VDisp;          sync[5].ti_Data = mode->vdisplay;
+        sync[6].ti_Tag = aHidd_Sync_VSyncStart;     sync[6].ti_Data = mode->vsync_start;
+        sync[7].ti_Tag = aHidd_Sync_VSyncEnd;       sync[7].ti_Data = mode->vsync_end;
+        sync[8].ti_Tag = aHidd_Sync_VTotal;         sync[8].ti_Data = mode->vtotal;
+        
+        /* Name */
+        STRPTR syncname = AllocVec(64, MEMF_ANY | MEMF_CLEAR);
+        sprintf(syncname, "Nouveau:%dx%d@%d", mode->hdisplay, mode->vdisplay, mode->vrefresh);
+        
+        sync[9].ti_Tag = aHidd_Sync_Description;    sync[9].ti_Data = (IPTR)syncname;
+        
+        sync[10].ti_Tag = TAG_DONE;                 sync[10].ti_Data = 0UL;
+        
+        syncs[i].ti_Tag = aHidd_Gfx_SyncTags;
+        syncs[i].ti_Data = (IPTR)sync;
+    }
+    
+    return syncs;
+}
+
+/* PUBLIC METHODS */
 OOP_Object * METHOD(Nouveau, Root, New)
 {
-    /* FIXME: Temporary - read real values from nouveau */
-    struct TagItem pftags_24bpp[] = {
-	{ aHidd_PixFmt_RedShift,	8	}, /* 0 */
-	{ aHidd_PixFmt_GreenShift,	16	}, /* 1 */
-	{ aHidd_PixFmt_BlueShift,  	24	}, /* 2 */
-	{ aHidd_PixFmt_AlphaShift,	0	}, /* 3 */
-	{ aHidd_PixFmt_RedMask,		0x00ff0000 }, /* 4 */
-	{ aHidd_PixFmt_GreenMask,	0x0000ff00 }, /* 5 */
-	{ aHidd_PixFmt_BlueMask,	0x000000ff }, /* 6 */
-	{ aHidd_PixFmt_AlphaMask,	0x00000000 }, /* 7 */
-	{ aHidd_PixFmt_ColorModel,	vHidd_ColorModel_TrueColor }, /* 8 */
-	{ aHidd_PixFmt_Depth,		24	}, /* 9 */
-	{ aHidd_PixFmt_BytesPerPixel,	4	}, /* 10 */
-	{ aHidd_PixFmt_BitsPerPixel,	24	}, /* 11 */
-	{ aHidd_PixFmt_StdPixFmt,	vHidd_StdPixFmt_BGR032 }, /* 12 Native */
-	{ aHidd_PixFmt_BitMapType,	vHidd_BitMapType_Chunky }, /* 15 */
-	{ TAG_DONE, 0UL }
-    };
+    drmModeCrtcPtr selectedcrtc = NULL;
+    drmModeConnectorPtr selectedconnector = NULL;
+    struct nouveau_device * dev = NULL;
+    struct nouveau_device_priv * nvdev = NULL;
+    struct TagItem * syncs = NULL;
+    LONG ret;
+    ULONG selectedconnectorid;
+    ULONG selectedcrtcid;
     
-    MAKE_SYNC(1024x768_60, 65000,	//78654=60kHz, 75Hz. 65000=50kHz,62Hz
-        1024, 1048, 1184, 1344,
-         768,  771,  777,  806,
-	 "Nouveau:1024x768");
-	 
-    MAKE_SYNC(640x480_60,   25175,
-         640,  656,  752,  800,
-         480,  489,  492,  525,
-	 "Nouveau:640x480");
+    nouveau_init();
 
-    MAKE_SYNC(800x600_56,	36000,	// 36000
-         800,  824,  896, 1024,
-         600,  601,  603,  625,
-	 "Nouveau:800x600");
-	 
-    struct TagItem modetags[] = {
-	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags_24bpp	},
-//	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags_16bpp	},
-//	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags_15bpp	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)sync_640x480_60	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)sync_800x600_56	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1024x768_60	},
-//	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1152x864_60  },
-//	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1280x1024_60 },
-//	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1400x1050_60 },
-//	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1600x1200_60 },
-//	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1280x800_60 },
-//	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1440x900_60 },
-//	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1680x1050_60 },
-//	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1920x1080_60 },
-//	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1920x1200_60 },
+    nouveau_device_open(&dev, "");
+    nvdev = nouveau_device(dev);
 
-	{ TAG_DONE, 0UL }
-    };
+    /* HACK */
+    hackdev = dev;
+    /* HACK */
 
-    struct TagItem mytags[] = {
-	{ aHidd_Gfx_ModeTags,	(IPTR)modetags	},
-	{ TAG_MORE, (IPTR)msg->attrList }
-    };
-
-    struct pRoot_New mymsg;
-
-    mymsg.mID = msg->mID;
-    mymsg.attrList = mytags;
-
-    msg = &mymsg;
-
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-
-    D(bug("Nouveau::New\n"));
-
-    if (o)
+    /* Select crtc and connector */
+    if (!HIDDNouveauSelectConnectorCrtc(nvdev->fd, &selectedconnector, &selectedcrtc))
     {
-        struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
-        drmModeCrtcPtr selectedcrtc = NULL;
-        drmModeConnectorPtr selectedconnector = NULL;
-        struct nouveau_device_priv * nvdev = NULL;
-        LONG ret;
-        
-        nouveau_init();
-
-        nouveau_device_open(&gfxdata->dev, "");
-        nvdev = nouveau_device(gfxdata->dev);
-
-        /* HACK */
-        hackdev = gfxdata->dev;
-        /* HACK */
-
-        /* Check chipset architecture */
-        switch (gfxdata->dev->chipset & 0xf0) 
-        {
-        case 0x00:
-            gfxdata->architecture = NV_ARCH_04;
-            break;
-        case 0x10:
-            gfxdata->architecture = NV_ARCH_10;
-            break;
-        case 0x20:
-            gfxdata->architecture = NV_ARCH_20;
-            break;
-        case 0x30:
-            gfxdata->architecture = NV_ARCH_30;
-            break;
-        case 0x40:
-        case 0x60:
-            gfxdata->architecture = NV_ARCH_40;
-            break;
-        case 0x50:
-        case 0x80:
-        case 0x90:
-        case 0xa0:
-            gfxdata->architecture = NV_ARCH_50;
-            break;
-        default:
-            /* TODO: report error, how to handle it? */
-            return NULL;
-        }
-
-        /* Allocate dma channel */
-        ret = nouveau_channel_alloc(gfxdata->dev, NvDmaFB, NvDmaTT, &gfxdata->chan);
-        /* TODO: Check ret, how to handle ? */
-
-        /* Initialize acceleration objects */
-        ret = NVAccelCommonInit(gfxdata);
-        /* TODO: Check ret, how to handle ? */
-
-        /* Allocate buffer object for cursor */
-        nouveau_bo_new(gfxdata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 
-            0, 64 * 64 * 4, &gfxdata->cursor);
-        /* TODO: Check return, hot to handle */
-        
-        /* Select crtc and connector */
-        if (!HIDDNouveauSelectConnectorCrtc(nvdev->fd, &selectedconnector, &selectedcrtc))
-        {
-            D(bug("[Nouveau] Not able to select connector and crtc\n"));
-            /* TODO: Handle error*/
-        }
-        
-        gfxdata->selectedconnectorid = selectedconnector->connector_id;
-        gfxdata->selectedcrtcid = selectedcrtc->crtc_id;
-        
-        drmModeFreeConnector(selectedconnector);
-        drmModeFreeCrtc(selectedcrtc);
+        D(bug("[Nouveau] Not able to select connector and crtc\n"));
+        return NULL;
     }
+    
+    selectedconnectorid = selectedconnector->connector_id;
+    selectedcrtcid = selectedcrtc->crtc_id;
+        
+    drmModeFreeCrtc(selectedcrtc);
 
-    return o;
+    /* Read connector and build sync tags */
+    syncs = HIDDNouveauCreateSyncTagsFromConnector(cl, selectedconnector);
+    drmModeFreeConnector(selectedconnector);
+    if (syncs == NULL)
+    {
+        D(bug("[Nouveau] Not able to read any sync modes\n"));
+        return NULL;
+    }
+    
+
+    /* Call super contructor */
+    {
+        /* TODO: Add other depths */
+        struct TagItem pftags_24bpp[] = {
+        { aHidd_PixFmt_RedShift,	8	}, /* 0 */
+        { aHidd_PixFmt_GreenShift,	16	}, /* 1 */
+        { aHidd_PixFmt_BlueShift,  	24	}, /* 2 */
+        { aHidd_PixFmt_AlphaShift,	0	}, /* 3 */
+        { aHidd_PixFmt_RedMask,		0x00ff0000 }, /* 4 */
+        { aHidd_PixFmt_GreenMask,	0x0000ff00 }, /* 5 */
+        { aHidd_PixFmt_BlueMask,	0x000000ff }, /* 6 */
+        { aHidd_PixFmt_AlphaMask,	0x00000000 }, /* 7 */
+        { aHidd_PixFmt_ColorModel,	vHidd_ColorModel_TrueColor }, /* 8 */
+        { aHidd_PixFmt_Depth,		24	}, /* 9 */
+        { aHidd_PixFmt_BytesPerPixel,	4	}, /* 10 */
+        { aHidd_PixFmt_BitsPerPixel,	24	}, /* 11 */
+        { aHidd_PixFmt_StdPixFmt,	vHidd_StdPixFmt_BGR032 }, /* 12 Native */
+        { aHidd_PixFmt_BitMapType,	vHidd_BitMapType_Chunky }, /* 15 */
+        { TAG_DONE, 0UL }
+        };
+	 
+        struct TagItem modetags[] = {
+	    { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_24bpp	},
+        { TAG_MORE, (IPTR)syncs },  /* FIXME: sync tags will leak */
+	    { TAG_DONE, 0UL }
+        };
+
+        struct TagItem mytags[] = {
+	    { aHidd_Gfx_ModeTags,	(IPTR)modetags	},
+	    { TAG_MORE, (IPTR)msg->attrList }
+        };
+
+        struct pRoot_New mymsg;
+
+        mymsg.mID = msg->mID;
+        mymsg.attrList = mytags;
+
+        msg = &mymsg;
+
+
+        o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+        D(bug("Nouveau::New\n"));
+
+        if (o)
+        {
+            struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
+            /* Pass local information to class */
+            gfxdata->selectedconnectorid = selectedconnectorid;
+            gfxdata->selectedcrtcid = selectedcrtcid;
+            gfxdata->dev = dev;
+            
+            /* Check chipset architecture */
+            switch (gfxdata->dev->chipset & 0xf0) 
+            {
+            case 0x00:
+                gfxdata->architecture = NV_ARCH_04;
+                break;
+            case 0x10:
+                gfxdata->architecture = NV_ARCH_10;
+                break;
+            case 0x20:
+                gfxdata->architecture = NV_ARCH_20;
+                break;
+            case 0x30:
+                gfxdata->architecture = NV_ARCH_30;
+                break;
+            case 0x40:
+            case 0x60:
+                gfxdata->architecture = NV_ARCH_40;
+                break;
+            case 0x50:
+            case 0x80:
+            case 0x90:
+            case 0xa0:
+                gfxdata->architecture = NV_ARCH_50;
+                break;
+            default:
+                /* TODO: report error, how to handle it? */
+                return NULL;
+            }
+
+            /* Allocate dma channel */
+            ret = nouveau_channel_alloc(gfxdata->dev, NvDmaFB, NvDmaTT, &gfxdata->chan);
+            /* TODO: Check ret, how to handle ? */
+
+            /* Initialize acceleration objects */
+            ret = NVAccelCommonInit(gfxdata);
+            /* TODO: Check ret, how to handle ? */
+
+            /* Allocate buffer object for cursor */
+            nouveau_bo_new(gfxdata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 
+                0, 64 * 64 * 4, &gfxdata->cursor);
+            /* TODO: Check return, hot to handle */
+        }
+
+        return o;
+    }
+    
+    return NULL;
 }
 
 /* FIXME: IMPLEMENT DISPOSE - calling nouveau_close() */
