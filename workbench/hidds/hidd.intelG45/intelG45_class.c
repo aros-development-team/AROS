@@ -20,6 +20,7 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 
+#include <stdio.h>
 #include <stdint.h>
 
 
@@ -67,6 +68,108 @@ bug("[ATI] Pointer data:\n");			\
 #define PRINT_POINTER(image, xsize, xmax, ymax)
 #endif
 
+/* Definitions used in CVT formula */
+#define M 600
+#define C 40
+#define K 128
+#define J 20
+#define DUTY_CYCLE(period) \
+    (((C - J) / 2 + J) * 1000 - (M / 2 * (period) / 1000))
+#define MIN_DUTY_CYCLE 20 /* % */
+#define MIN_V_PORCH 3 /* lines */
+#define MIN_V_PORCH_TIME 550 /* us */
+#define CLOCK_STEP 250000 /* Hz */
+
+typedef struct {
+	uint16_t width;
+	uint16_t height;
+
+	uint16_t hstart;
+	uint16_t hend;
+	uint16_t htotal;
+	uint16_t vstart;
+	uint16_t vend;
+	uint16_t vtotal;
+
+	uint32_t pixel;
+} sync_t;
+
+/* Partial implementation of CVT formula */
+void calcTimings(int x, int y, int vfreq, sync_t *sync)
+{
+    ULONG h_period, h_freq, h_total, h_blank, h_front, h_sync, h_back,
+        v_freq, v_total, v_front, v_sync, v_back, duty_cycle, pixel_freq;
+
+    sync->width = x;
+    sync->height = y;
+
+    /* Get horizontal period in microseconds */
+    h_period = (1000000000 / vfreq - MIN_V_PORCH_TIME * 1000)
+        / (y + MIN_V_PORCH);
+
+    /* Vertical front porch is fixed */
+    v_front = MIN_V_PORCH;
+
+    /* Use aspect ratio to determine V-sync lines */
+    if (x == y * 4 / 3)
+        v_sync = 4;
+    else if (x == y * 16 / 9)
+        v_sync = 5;
+    else if (x == y * 16 / 10)
+        v_sync = 6;
+    else if (x == y * 5 / 4)
+        v_sync = 7;
+    else if (x == y * 15 / 9)
+        v_sync = 7;
+    else
+        v_sync = 10;
+
+    /* Get vertical back porch */
+    v_back = MIN_V_PORCH_TIME * 1000 / h_period + 1;
+    if (v_back < MIN_V_PORCH)
+        v_back = MIN_V_PORCH;
+    v_back -= v_sync;
+
+    /* Get total lines per frame */
+    v_total = y + v_front + v_sync + v_back;
+
+    /* Get horizontal blanking pixels */
+    duty_cycle = DUTY_CYCLE(h_period);
+    if (duty_cycle < MIN_DUTY_CYCLE)
+        duty_cycle = MIN_DUTY_CYCLE;
+
+    h_blank = 10 * x * duty_cycle / (100000 - duty_cycle);
+    h_blank /= 2 * 8 * 10;
+    h_blank = h_blank * (2 * 8);
+
+    /* Get total pixels in a line */
+    h_total = x + h_blank;
+
+    /* Calculate frequencies for each pixel, line and field */
+    h_freq = 1000000000 / h_period;
+    pixel_freq = h_freq * h_total / CLOCK_STEP * CLOCK_STEP;
+    h_freq = pixel_freq / h_total;
+    v_freq = 100 * h_freq / v_total;
+
+    /* Back porch is half of H-blank */
+    h_back = h_blank / 2;
+
+    /* H-sync is a fixed percentage of H-total */
+    h_sync = h_total / 100 * 8;
+
+    /* Front porch is whatever's left */
+    h_front = h_blank - h_sync - h_back;
+
+    /* Fill in VBE timings structure */
+    sync->htotal = h_total;
+    sync->hstart = x + h_front;
+    sync->hend = h_total - h_back;
+    sync->vtotal = v_total;
+    sync->vstart = y + v_front;
+    sync->vend = v_total - v_back;
+    sync->pixel = pixel_freq;
+}
+
 #define MAKE_SYNC(name,clock,hdisp,hstart,hend,htotal,vdisp,vstart,vend,vtotal,descr)	\
     struct TagItem sync_ ## name[]={ \
         { aHidd_Sync_PixelClock,  clock*1000 }, \
@@ -81,79 +184,46 @@ bug("[ATI] Pointer data:\n");			\
         { aHidd_Sync_Description, (IPTR)descr }, \
         { TAG_DONE, 0UL }}
 
-#if 0
-# 800x600 @ 56 Hz (VESA) HSync: 35.1562 kHz
-ModeLine "800x600" 36.00 800 824 896 1024 600 601 603 625 +Hsync +Vsync
-# 800x600 @ 60 Hz (VESA) HSync: 37.8788 kHz
-ModeLine "800x600" 40.00 800 840 968 1056 600 601 605 628 +Hsync +Vsync
-# 800x600 @ 72 Hz (VESA) HSync: 48.0769 kHz
-ModeLine "800x600" 50.00 800 856 976 1040 600 637 643 666 +Hsync +Vsync
-# 800x600 @ 75 Hz (VESA) HSync: 46.875 kHz
-ModeLine "800x600" 49.50 800 816 896 1056 600 601 604 625 +Hsync +Vsync
-# 800x600 @ 85 Hz (VESA) HSync: 53.7214 kHz
-ModeLine "800x600" 56.30 800 832 896 1048 600 601 604 631 +Hsync +Vsync
-# 1024x768 @ 60 Hz (VESA) HSync: 48.3631 kHz
-ModeLine "1024x768" 65.00 1024 1048 1184 1344 768 771 777 806 -Hsync -Vsync
-# 1024x768 @ 70 Hz (VESA) HSync: 56.4759 kHz
-ModeLine "1024x768" 75.00 1024 1048 1184 1328 768 771 777 806 -Hsync -Vsync
-# 1024x768 @ 75 Hz (VESA) HSync: 60.0229 kHz
-ModeLine "1024x768" 78.75 1024 1040 1136 1312 768 769 772 800 +Hsync +Vsync
-# 1024x768 @ 85 Hz (VESA) HSync: 68.6773 kHz
-ModeLine "1024x768" 94.50 1024 1072 1168 1376 768 769 772 808 +Hsync +Vsync
-# 1024x768 @ 87 Hz (VESA) HSync: 35.5222 kHz
-ModeLine "1024x768" 44.90 1024 1032 1208 1264 768 768 776 817 +Hsync +Vsync Interlace
-# 1152x864 @ 75 Hz (VESA) HSync: 67.5 kHz
-ModeLine "1152x864" 108.00 1152 1216 1344 1600 864 865 868 900 +Hsync +Vsync
-# 1280x960 @ 60 Hz (VESA) HSync: 60 kHz
-ModeLine "1280x960" 108.00 1280 1376 1488 1800 960 961 964 1000 +Hsync +Vsync
-# 1280x960 @ 85 Hz (VESA) HSync: 85.9375 kHz
-ModeLine "1280x960" 148.50 1280 1344 1504 1728 960 961 964 1011 +Hsync +Vsync
-# 1280x1024 @ 60 Hz (VESA) HSync: 63.981 kHz
-ModeLine "1280x1024" 108.00 1280 1328 1440 1688 1024 1025 1028 1066 +Hsync +Vsync
-# 1280x1024 @ 75 Hz (VESA) HSync: 79.9763 kHz
-ModeLine "1280x1024" 135.00 1280 1296 1440 1688 1024 1025 1028 1066 +Hsync +Vsync
-# 1280x1024 @ 85 Hz (VESA) HSync: 91.1458 kHz
-ModeLine "1280x1024" 157.50 1280 1344 1504 1728 1024 1025 1028 1072 +Hsync +Vsync
-# 1600x1200 @ 60 Hz (VESA) HSync: 75 kHz
-ModeLine "1600x1200" 162.00 1600 1664 1856 2160 1200 1201 1204 1250 +Hsync +Vsync
-# 1600x1200 @ 65 Hz (VESA) HSync: 81.25 kHz
-ModeLine "1600x1200" 175.50 1600 1664 1856 2160 1200 1201 1204 1250 +Hsync +Vsync
-# 1600x1200 @ 70 Hz (VESA) HSync: 87.5 kHz
-ModeLine "1600x1200" 189.00 1600 1664 1856 2160 1200 1201 1204 1250 +Hsync +Vsync
-# 1600x1200 @ 75 Hz (VESA) HSync: 93.75 kHz
-ModeLine "1600x1200" 202.50 1600 1664 1856 2160 1200 1201 1204 1250 +Hsync +Vsync
-# 1600x1200 @ 85 Hz (VESA) HSync: 106.25 kHz
-ModeLine "1600x1200" 229.50 1600 1664 1856 2160 1200 1201 1204 1250 +Hsync +Vsync
-# 1792x1344 @ 60 Hz (VESA) HSync: 83.6601 kHz
-ModeLine "1792x1344" 204.80 1792 1920 2120 2448 1344 1345 1348 1394 -Hsync +Vsync
-# 1792x1344 @ 75 Hz (VESA) HSync: 106.27 kHz
-ModeLine "1792x1344" 261.00 1792 1888 2104 2456 1344 1345 1348 1417 -Hsync +Vsync
-# 1856x1392 @ 60 Hz (VESA) HSync: 86.3528 kHz
-ModeLine "1856x1392" 218.30 1856 1952 2176 2528 1392 1393 1396 1439 -Hsync +Vsync
-# 1856x1392 @ 75 Hz (VESA) HSync: 112.5 kHz
-ModeLine "1856x1392" 288.00 1856 1984 2208 2560 1392 1393 1396 1500 -Hsync +Vsync
-# 1920x1440 @ 60 Hz (VESA) HSync: 90 kHz
-ModeLine "1920x1440" 234.00 1920 2048 2256 2600 1440 1441 1444 1500 -Hsync +Vsync
-# 1920x1440 @ 75 Hz (VESA) HSync: 112.5 kHz
-ModeLine "1920x1440" 297.00 1920 2064 2288 2640 1440 1441 1444 1500 -Hsync +Vsync
-#endif
+#define PUSH_TAG(ptr, tag, data) do { (*(ptr))->ti_Tag = (tag); (*(ptr))->ti_Data= (IPTR)(data); (*ptr)++; } while(0)
 
-static int G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr, OOP_Object *obj)
+void createSync(OOP_Class *cl, int x, int y, int refresh, struct TagItem **tagsptr, struct TagItem **poolptr)
 {
-	MAKE_SYNC(640x350_85, 31.50, 640, 672, 736, 832, 350, 382, 385, 445, "GMA: 640x350 @ 85 Hz (VESA)");
-	MAKE_SYNC(640x400_85, 31.50, 640, 672, 736, 832, 400, 401, 404, 445, "GMA: 640x400 @ 85 Hz (VESA)");
-	MAKE_SYNC(640x480_60, 25.18, 640, 656, 752, 800, 480, 490, 492, 525, "GMA: 640x480 @ 60 Hz (VESA)");
-	MAKE_SYNC(640x480_73, 31.50, 640, 664, 704, 832, 480, 489, 492, 520, "GMA: 640x480 @ 73 Hz (VESA)");
-	MAKE_SYNC(640x480_75, 31.50, 640, 656, 720, 840, 480, 481, 484, 500, "GMA: 640x480 @ 75 Hz (VESA)");
-	MAKE_SYNC(640x480_85, 36.00, 640, 696, 752, 832, 480, 481, 484, 509, "GMA: 640x480 @ 85 Hz (VESA)");
-	MAKE_SYNC(720x400_85, 35.50, 720, 756, 828, 936, 400, 401, 404, 446, "GMA: 720x400 @ 85 Hz (VESA)");
+	sync_t sync;
+	char *description = AllocVecPooled(sd->MemPool, 30);
+	snprintf(description, 29, "GMA: %dx%d@%d", x, y, refresh);
+	calcTimings(x, y, refresh, &sync);
 
-	struct TagItem *tags = *tagsptr;
+	D(bug("[GMA]  %s %d  %d %d %d %d  %d %d %d %d  -HSync +VSync\n", description+5,
+			sync.pixel / 1000, sync.width, sync.hstart, sync.hend, sync.htotal,
+			sync.height, sync.vstart, sync.vend, sync.vtotal));
+
+	PUSH_TAG(tagsptr, aHidd_Gfx_SyncTags, *poolptr);
+
+	PUSH_TAG(poolptr, aHidd_Sync_Description, description);
+	PUSH_TAG(poolptr, aHidd_Sync_PixelClock, sync.pixel);
+
+	PUSH_TAG(poolptr, aHidd_Sync_HDisp, sync.width);
+	PUSH_TAG(poolptr, aHidd_Sync_HSyncStart, sync.hstart);
+	PUSH_TAG(poolptr, aHidd_Sync_HSyncEnd, sync.hend);
+	PUSH_TAG(poolptr, aHidd_Sync_HTotal, sync.htotal);
+
+	PUSH_TAG(poolptr, aHidd_Sync_VDisp, sync.height);
+	PUSH_TAG(poolptr, aHidd_Sync_VSyncStart, sync.vstart);
+	PUSH_TAG(poolptr, aHidd_Sync_VSyncEnd, sync.vend);
+	PUSH_TAG(poolptr, aHidd_Sync_VTotal, sync.vtotal);
+
+	PUSH_TAG(poolptr, aHidd_Sync_Flags, vHidd_Sync_VSyncPlus);
+	PUSH_TAG(poolptr, TAG_DONE, 0);
+}
+
+static int G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr, struct TagItem *poolptr, OOP_Object *obj)
+{
 	struct pHidd_I2CDevice_WriteRead msg;
 	uint8_t edid[128];
 	char wb[2] = {0, 0};
 	int i;
 	uint8_t chksum = 0;
+	char *description;
 
 	D(bug("[GMA] Trying to parse the DDC data\n"));
 
@@ -176,38 +246,35 @@ static int G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr, OOP_Object *ob
 
 		D(bug("[GMA] Established timing: %02x %02x %02x\n", edid[35], edid[36], edid[37]));
 		if (edid[35] & 0x80)
-			D(bug("[GMA]  720x400@70\n"));
+			createSync(cl, 720, 400, 70, tagsptr, &poolptr);
 		if (edid[35] & 0x40)
-			D(bug("[GMA]  720x400@88\n"));
+			createSync(cl, 720, 400, 88, tagsptr, &poolptr);
 		if (edid[35] & 0x20)
-			D(bug("[GMA]  640x480@60\n"));
+			createSync(cl, 640, 480, 60, tagsptr, &poolptr);
 		if (edid[35] & 0x10)
-			D(bug("[GMA]  640x480@67\n"));
+			createSync(cl, 640, 480, 67, tagsptr, &poolptr);
 		if (edid[35] & 0x08)
-			D(bug("[GMA]  640x480@72\n"));
+			createSync(cl, 640, 480, 72, tagsptr, &poolptr);
 		if (edid[35] & 0x04)
-			D(bug("[GMA]  640x480@75\n"));
+			createSync(cl, 640, 480, 75, tagsptr, &poolptr);
 		if (edid[35] & 0x02)
-			D(bug("[GMA]  800x600@56\n"));
+			createSync(cl, 800, 600, 56, tagsptr, &poolptr);
 		if (edid[35] & 0x01)
-			D(bug("[GMA]  800x600@60\n"));
+			createSync(cl, 800, 600, 60, tagsptr, &poolptr);
 		if (edid[36] & 0x80)
-			D(bug("[GMA]  800x600@72\n"));
+			createSync(cl, 800, 600, 72, tagsptr, &poolptr);
 		if (edid[36] & 0x40)
-			D(bug("[GMA]  800x600@75\n"));
+			createSync(cl, 800, 600, 75, tagsptr, &poolptr);
 		if (edid[36] & 0x20)
-			D(bug("[GMA]  832x624@75\n"));
-		if (edid[36] & 0x10)
-			D(bug("[GMA]  1024x768@87i\n"));
+			createSync(cl, 832, 624, 75, tagsptr, &poolptr);
 		if (edid[36] & 0x08)
-			D(bug("[GMA]  1024x768@60\n"));
+			createSync(cl, 1024, 768, 60, tagsptr, &poolptr);
 		if (edid[36] & 0x04)
-			D(bug("[GMA]  1024x768@70\n"));
+			createSync(cl, 1024, 768, 70, tagsptr, &poolptr);
 		if (edid[36] & 0x02)
-			D(bug("[GMA]  1024x768@75\n"));
+			createSync(cl, 1024, 768, 75, tagsptr, &poolptr);
 		if (edid[36] & 0x01)
-			D(bug("[GMA]  1280x1024@75\n"));
-
+			createSync(cl, 1280, 1024, 75, tagsptr, &poolptr);
 
 		D(bug("[GMA] Standard timing identification:\n"));
 
@@ -233,8 +300,7 @@ static int G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr, OOP_Object *ob
 					h = (w * 9) / 16;
 					break;
 				}
-
-				D(bug("[GMA]  %dx%d@%d\n", w, h, freq));
+				createSync(cl, w, h, freq, tagsptr, &poolptr);
 			}
 		}
 
@@ -266,6 +332,28 @@ static int G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr, OOP_Object *ob
 				D(bug("%dx%d Pixel: %d0 kHz %d %d %d %d   %d %d %d %d\n", ha, va, pixel,
 						ha, hb, hsync_o, hsync_w,
 						va, vb, vsync_o, vsync_w));
+
+				AllocVecPooled(sd->MemPool, 30);
+				snprintf(description, 29, "GMA: %dx%d@%d N", ha, va, ((pixel*10 / (uint32_t)(ha+hb)) * 1000) / ((uint32_t)(va+vb)));
+
+				PUSH_TAG(tagsptr, aHidd_Gfx_SyncTags, poolptr);
+
+				PUSH_TAG(&poolptr, aHidd_Sync_Description, description);
+				PUSH_TAG(&poolptr, aHidd_Sync_PixelClock, pixel*10000);
+
+				PUSH_TAG(&poolptr, aHidd_Sync_HDisp, ha);
+				PUSH_TAG(&poolptr, aHidd_Sync_HSyncStart, ha+hsync_o);
+				PUSH_TAG(&poolptr, aHidd_Sync_HSyncEnd, ha+hsync_o+hsync_w);
+				PUSH_TAG(&poolptr, aHidd_Sync_HTotal, ha+hb);
+
+				PUSH_TAG(&poolptr, aHidd_Sync_VDisp, va);
+				PUSH_TAG(&poolptr, aHidd_Sync_VSyncStart, va+vsync_o);
+				PUSH_TAG(&poolptr, aHidd_Sync_VSyncEnd, va+vsync_o+vsync_w);
+				PUSH_TAG(&poolptr, aHidd_Sync_VTotal, va+vb);
+
+				PUSH_TAG(&poolptr, aHidd_Sync_Flags, vHidd_Sync_VSyncPlus);
+				PUSH_TAG(&poolptr, TAG_DONE, 0);
+
 			}
 			else
 			{
@@ -298,8 +386,6 @@ static int G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr, OOP_Object *ob
 	}
 	else
 		D(bug("[GMA] Not a valid EDID data\n"));
-
-	*tagsptr = tags;
 }
 
 OOP_Object *METHOD(INTELG45, Root, New)
@@ -407,7 +493,7 @@ OOP_Object *METHOD(INTELG45, Root, New)
 
 			if (obj)
 			{
-				G45_parse_ddc(cl, &tags, obj);
+				G45_parse_ddc(cl, &tags, poolptr, obj);
 
 				OOP_DisposeObject(obj);
 			}
@@ -417,6 +503,11 @@ OOP_Object *METHOD(INTELG45, Root, New)
 
 	tags->ti_Tag = TAG_DONE;
 	tags->ti_Data = 0;
+
+	for (tags=modetags; tags->ti_Tag != TAG_DONE; tags++)
+	{
+		D(bug("[GMA]   Tag=%08x, Data=%08x\n", tags->ti_Tag, tags->ti_Data));
+	}
 
     struct TagItem mytags[] = {
         { aHidd_Gfx_ModeTags,   (IPTR)modetags  },
@@ -435,6 +526,9 @@ OOP_Object *METHOD(INTELG45, Root, New)
     {
         sd->GMAObject = o;
     }
+
+    FreeVecPooled(sd->MemPool, modetags);
+    FreeVecPooled(sd->MemPool, poolptr);
 
     D(bug("[GMA] INTELG45::New() = %p\n", o));
 
