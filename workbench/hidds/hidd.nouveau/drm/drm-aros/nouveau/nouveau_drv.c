@@ -28,6 +28,10 @@ hd576p, hd720p, hd1080i
 Default: PAL"
 *NOTE* Ignored for cards with external TV encoders.") */
 char * nouveau_tv_norm = NULL;
+/* LVDS output script table ID (>=GeForce 8) */
+int nouveau_uscript_lvds = -1;
+/* TMDS output script table ID (>=GeForce 8) */
+int nouveau_uscript_tmds = -1;
 
 extern struct drm_ioctl_desc nouveau_ioctls[];
 

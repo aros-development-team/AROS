@@ -849,6 +849,11 @@ nv50_display_irq_handler_bh(struct work_struct *work)
 	struct drm_nouveau_private *dev_priv =
 		container_of(work, struct drm_nouveau_private, irq_work);
 	struct drm_device *dev = dev_priv->dev;
+#else
+void
+nv50_display_irq_handler_bh(struct drm_device * dev)
+{
+#endif
 
 	for (;;) {
 		uint32_t intr0 = nv_rd32(dev, NV50_PDISPLAY_INTR_0);
@@ -870,7 +875,6 @@ nv50_display_irq_handler_bh(struct work_struct *work)
 
 	nv_wr32(dev, NV03_PMC_INTR_EN_0, 1);
 }
-#endif
 
 static void
 nv50_display_error_handler(struct drm_device *dev)
@@ -948,7 +952,9 @@ nv50_display_irq_hotplug(struct drm_device *dev)
 void
 nv50_display_irq_handler(struct drm_device *dev)
 {
+#if !defined(__AROS__)
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
+#endif
 	uint32_t delayed = 0;
 
 	while (nv_rd32(dev, NV50_PMC_INTR_0) & NV50_PMC_INTR_0_HOTPLUG)
@@ -979,9 +985,13 @@ nv50_display_irq_handler(struct drm_device *dev)
 				  NV50_PDISPLAY_INTR_1_CLK_UNK40));
 		if (clock) {
 			nv_wr32(dev, NV03_PMC_INTR_EN_0, 0);
-IMPLEMENT("Should have added work to work queue\n");
-//FIXME			if (!work_pending(&dev_priv->irq_work))
-//FIXME				queue_work(dev_priv->wq, &dev_priv->irq_work);
+#if !defined(__AROS__)
+			if (!work_pending(&dev_priv->irq_work))
+				queue_work(dev_priv->wq, &dev_priv->irq_work);
+#else
+            /* Kind of hackish call but it does its job. */
+            nv50_display_irq_handler_bh(dev);
+#endif
 			delayed |= clock;
 			intr1 &= ~clock;
 		}
