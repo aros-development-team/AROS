@@ -522,8 +522,8 @@ int nv50_display_create(struct drm_device *dev)
 	}
 
 	for (i = 0 ; i < dcb->connector.entries; i++) {
-		if (i != 0 && dcb->connector.entry[i].index ==
-			      dcb->connector.entry[i - 1].index)
+		if (i != 0 && dcb->connector.entry[i].index2 ==
+			      dcb->connector.entry[i - 1].index2)
 			continue;
 		nouveau_connector_create(dev, &dcb->connector.entry[i]);
 	}
@@ -549,7 +549,6 @@ int nv50_display_destroy(struct drm_device *dev)
 	return 0;
 }
 
-#if !defined(__AROS__)
 static inline uint32_t
 nv50_display_mode_ctrl(struct drm_device *dev, bool sor, int or)
 {
@@ -729,7 +728,6 @@ nv50_display_script_select(struct drm_device *dev, struct dcb_entry *dcbent,
 
 	return script;
 }
-#endif
 
 static void
 nv50_display_vblank_crtc_handler(struct drm_device *dev, int crtc)
@@ -763,7 +761,6 @@ nv50_display_vblank_handler(struct drm_device *dev, uint32_t intr)
 	nv_wr32(dev, NV50_PDISPLAY_INTR_1, intr);
 }
 
-#if !defined(__AROS__)
 static void
 nv50_display_unk10_handler(struct drm_device *dev)
 {
@@ -845,6 +842,7 @@ ack:
 	nv_wr32(dev, 0x619494, nv_rd32(dev, 0x619494) | 8);
 }
 
+#if !defined(__AROS__)
 void
 nv50_display_irq_handler_bh(struct work_struct *work)
 {
@@ -981,6 +979,7 @@ nv50_display_irq_handler(struct drm_device *dev)
 				  NV50_PDISPLAY_INTR_1_CLK_UNK40));
 		if (clock) {
 			nv_wr32(dev, NV03_PMC_INTR_EN_0, 0);
+IMPLEMENT("Should have added work to work queue\n");
 //FIXME			if (!work_pending(&dev_priv->irq_work))
 //FIXME				queue_work(dev_priv->wq, &dev_priv->irq_work);
 			delayed |= clock;
@@ -999,3 +998,4 @@ nv50_display_irq_handler(struct drm_device *dev)
 		}
 	}
 }
+
