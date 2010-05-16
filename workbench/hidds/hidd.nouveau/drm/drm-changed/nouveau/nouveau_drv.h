@@ -901,7 +901,7 @@ extern int nouveau_bios_run_display_table(struct drm_device *,
 					  uint32_t script, int pxclk);
 extern void *nouveau_bios_dp_table(struct drm_device *, struct dcb_entry *,
 				   int *length);
-//FIXME:COMMENT extern bool nouveau_bios_fp_mode(struct drm_device *, struct drm_display_mode *);
+extern bool nouveau_bios_fp_mode(struct drm_device *, struct drm_display_mode *);
 extern uint8_t *nouveau_bios_embedded_edid(struct drm_device *);
 extern int nouveau_bios_parse_lvds_table(struct drm_device *, int pxclk,
 					 bool *dl, bool *if_is_24bit);
