@@ -3508,7 +3508,6 @@ static int parse_fp_mode_table(struct drm_device *dev, struct nvbios *bios)
 	return 0;
 }
 
-#if !defined(__AROS__)
 bool nouveau_bios_fp_mode(struct drm_device *dev, struct drm_display_mode *mode)
 {
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
@@ -3554,7 +3553,6 @@ bool nouveau_bios_fp_mode(struct drm_device *dev, struct drm_display_mode *mode)
 	drm_mode_set_name(mode);
 	return bios->fp.mode_ptr;
 }
-#endif
 
 int nouveau_bios_parse_lvds_table(struct drm_device *dev, int pxclk, bool *dl, bool *if_is_24bit)
 {
@@ -5919,7 +5917,6 @@ static int load_nv17_hw_sequencer_ucode(struct drm_device *dev,
 	return load_nv17_hwsq_ucode_entry(dev, bios, hwsq_offset + sz, 0);
 }
 
-#if !defined(__AROS__)
 uint8_t *nouveau_bios_embedded_edid(struct drm_device *dev)
 {
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
@@ -5950,7 +5947,6 @@ uint8_t *nouveau_bios_embedded_edid(struct drm_device *dev)
 
 	return bios->fp.edid = &bios->data[offset];
 }
-#endif
 
 void
 nouveau_bios_run_init_table(struct drm_device *dev, uint16_t table,

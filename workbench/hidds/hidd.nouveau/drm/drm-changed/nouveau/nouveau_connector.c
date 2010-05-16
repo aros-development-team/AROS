@@ -667,7 +667,6 @@ static int
 nouveau_connector_create_lvds(struct drm_device *dev,
 			      struct drm_connector *connector)
 {
-#if !defined(__AROS__)
 	struct nouveau_connector *nv_connector = nouveau_connector(connector);
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct nouveau_i2c_chan *i2c = NULL;
@@ -746,10 +745,6 @@ out:
 
 	drm_mode_connector_update_edid_property(connector, nv_connector->edid);
 	return 0;
-#else
-IMPLEMENT("\n");
-return 0;
-#endif
 }
 
 int
