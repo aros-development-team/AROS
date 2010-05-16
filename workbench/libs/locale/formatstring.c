@@ -163,14 +163,14 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
             scanning = FALSE;
             template_pos = 0;
             arg_counter = 0;
+
             /*
             ** prepare the indices array
             */
-
 	    if (dataStream) {
                 for (i = 0; i <= max_argpos; i++)
 		    indices[i] = (IPTR)stream_addr(&dataStream, indices[i]);
-	    } else {
+	    } else if (VaListStream) {
 		for (i = 0; i <= max_argpos; i++)
 		    indices[i] = (IPTR)va_addr(VaListStream, indices[i]);
 	    }
