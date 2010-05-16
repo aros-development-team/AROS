@@ -152,7 +152,6 @@ nouveau_grctx_fini(struct drm_device *dev)
 void
 nouveau_grctx_vals_load(struct drm_device *dev, struct nouveau_gpuobj *ctx)
 {
-#if !defined(__AROS__)
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct nouveau_pgraph_engine *pgraph = &dev_priv->engine.graph;
 	struct nouveau_ctxvals *cv = pgraph->ctxvals;
@@ -164,7 +163,4 @@ nouveau_grctx_vals_load(struct drm_device *dev, struct nouveau_gpuobj *ctx)
 	for (i = 0; i < le32_to_cpu(cv->length); i++)
 		nv_wo32(dev, ctx, le32_to_cpu(cv->data[i].offset),
 			le32_to_cpu(cv->data[i].value));
-#else
-DRM_IMPL("\n");
-#endif
 }
