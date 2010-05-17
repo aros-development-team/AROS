@@ -31,11 +31,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-HIDDT_ModeID get_hiddmode_for_amigamodeid(ULONG modeid, struct GfxBase *GfxBase)
-{
-    return AMIGA_TO_HIDD_MODEID(modeid);
-}
-
 HIDDT_ModeID get_best_resolution_and_depth(OOP_Object *gfxhidd, struct GfxBase *GfxBase)
 {
     HIDDT_ModeID ret = vHidd_ModeID_Invalid;
