@@ -14,9 +14,6 @@
 
 #include "arosdrmmode.h"
 
-/* Temporary hack to allow bitmap class accessing nouveau_device */
-struct nouveau_device * hackdev = NULL;
-
 /* Declaration of nouveau initialization function */
 int nouveau_init(void);
 
@@ -30,15 +27,15 @@ int nouveau_init(void);
 #define HiddBitMapAttrBase  (SD(cl)->bitMapAttrBase)
 
 /* HELPER FUNCTIONS */
-static BOOL HIDDNouveauNV04CopySameFormat(struct HIDDNouveauData * gfxdata,
+static BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
     struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
     ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height)
 {
-    struct nouveau_channel * chan = gfxdata->chan;
+    struct nouveau_channel * chan = carddata->chan;
     struct nouveau_bo * src_bo = srcdata->bo;
     struct nouveau_bo * dst_bo = destdata->bo;
-    struct nouveau_grobj *surf2d = gfxdata->NvContextSurfaces;
-    struct nouveau_grobj *blit = gfxdata->NvImageBlit;
+    struct nouveau_grobj *surf2d = carddata->NvContextSurfaces;
+    struct nouveau_grobj *blit = carddata->NvImageBlit;
     LONG fmt;
 
     if (srcdata->bytesperpixel != destdata->bytesperpixel)
@@ -67,7 +64,7 @@ static BOOL HIDDNouveauNV04CopySameFormat(struct HIDDNouveauData * gfxdata,
 //		NV04EXASetROP(pScrn, alu, planemask);
 //	} else {
         BEGIN_RING(chan, blit, NV04_IMAGE_BLIT_SURFACE, 1);
-        OUT_RING  (chan, gfxdata->NvContextSurfaces->handle);
+        OUT_RING  (chan, carddata->NvContextSurfaces->handle);
         BEGIN_RING(chan, blit, NV01_IMAGE_BLIT_OPERATION, 1);
         OUT_RING  (chan, 3); /* SRCCOPY */
 //	}
@@ -107,7 +104,8 @@ static BOOL HIDDNouveauNV04CopySameFormat(struct HIDDNouveauData * gfxdata,
 static VOID HIDDNouveauShowCursor(OOP_Class * cl, OOP_Object * gfx, BOOL visible)
 {
     struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, gfx);
-    struct nouveau_device_priv * nvdev = nouveau_device(gfxdata->dev);
+    struct CardData * carddata = &(SD(cl)->carddata);
+    struct nouveau_device_priv * nvdev = nouveau_device(carddata->dev);
 
     if (visible)
     {
@@ -197,7 +195,8 @@ static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
 {
     struct HIDDNouveauData * gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
-    struct nouveau_device_priv *nvdev = nouveau_device(gfxdata->dev);
+    struct CardData * carddata = &(SD(cl)->carddata);
+    struct nouveau_device_priv *nvdev = nouveau_device(carddata->dev);
     uint32_t output_ids[] = {gfxdata->selectedconnectorid};
     uint32_t output_count = 1;
     LONG i;
@@ -271,7 +270,7 @@ static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
     {
         drmModeModeInfoPtr mode = &selectedconnector->modes[i];
         
-        /* FIXME: Maybe tak clock not taken into account */
+        /* FIXME: Maybe take clock into account? */
         if ((mode->hdisplay == hdisp) && (mode->vdisplay == vdisp) &&
             (mode->hsync_start == hstart) && (mode->vsync_start == vstart) &&
             (mode->hsync_end == hend) && (mode->vsync_end == vend))
@@ -382,6 +381,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
     struct nouveau_device * dev = NULL;
     struct nouveau_device_priv * nvdev = NULL;
     struct TagItem * syncs = NULL;
+    struct CardData * carddata = &(SD(cl)->carddata);
     LONG ret;
     ULONG selectedconnectorid;
     ULONG selectedcrtcid;
@@ -390,10 +390,6 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
     nouveau_device_open(&dev, "");
     nvdev = nouveau_device(dev);
-
-    /* HACK */
-    hackdev = dev;
-    /* HACK */
 
     /* Select crtc and connector */
     if (!HIDDNouveauSelectConnectorCrtc(nvdev->fd, &selectedconnector, &selectedcrtc))
@@ -485,32 +481,32 @@ OOP_Object * METHOD(Nouveau, Root, New)
             /* Pass local information to class */
             gfxdata->selectedconnectorid = selectedconnectorid;
             gfxdata->selectedcrtcid = selectedcrtcid;
-            gfxdata->dev = dev;
+            carddata->dev = dev;
             
             /* Check chipset architecture */
-            switch (gfxdata->dev->chipset & 0xf0) 
+            switch (carddata->dev->chipset & 0xf0) 
             {
             case 0x00:
-                gfxdata->architecture = NV_ARCH_04;
+                carddata->architecture = NV_ARCH_04;
                 break;
             case 0x10:
-                gfxdata->architecture = NV_ARCH_10;
+                carddata->architecture = NV_ARCH_10;
                 break;
             case 0x20:
-                gfxdata->architecture = NV_ARCH_20;
+                carddata->architecture = NV_ARCH_20;
                 break;
             case 0x30:
-                gfxdata->architecture = NV_ARCH_30;
+                carddata->architecture = NV_ARCH_30;
                 break;
             case 0x40:
             case 0x60:
-                gfxdata->architecture = NV_ARCH_40;
+                carddata->architecture = NV_ARCH_40;
                 break;
             case 0x50:
             case 0x80:
             case 0x90:
             case 0xa0:
-                gfxdata->architecture = NV_ARCH_50;
+                carddata->architecture = NV_ARCH_50;
                 break;
             default:
                 /* TODO: report error, how to handle it? */
@@ -518,15 +514,15 @@ OOP_Object * METHOD(Nouveau, Root, New)
             }
 
             /* Allocate dma channel */
-            ret = nouveau_channel_alloc(gfxdata->dev, NvDmaFB, NvDmaTT, &gfxdata->chan);
+            ret = nouveau_channel_alloc(carddata->dev, NvDmaFB, NvDmaTT, &carddata->chan);
             /* TODO: Check ret, how to handle ? */
 
             /* Initialize acceleration objects */
-            ret = NVAccelCommonInit(gfxdata);
+            ret = NVAccelCommonInit(carddata);
             /* TODO: Check ret, how to handle ? */
 
             /* Allocate buffer object for cursor */
-            nouveau_bo_new(gfxdata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 
+            nouveau_bo_new(carddata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 
                 0, 64 * 64 * 4, &gfxdata->cursor);
             /* TODO: Check return, hot to handle */
         }
@@ -666,11 +662,11 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
         /* FIXME: add checks for pixel format, etc */
         struct HIDDNouveauBitMapData * srcdata = OOP_INST_DATA(srcclass, msg->src);
         struct HIDDNouveauBitMapData * destdata = OOP_INST_DATA(destclass, msg->dest);
-        struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
+        struct CardData * carddata = &(SD(cl)->carddata);
         
-        if (gfxdata->architecture < NV_ARCH_50)
+        if (carddata->architecture < NV_ARCH_50)
         {
-            BOOL ret = HIDDNouveauNV04CopySameFormat(gfxdata, srcdata, destdata, 
+            BOOL ret = HIDDNouveauNV04CopySameFormat(carddata, srcdata, destdata, 
                         msg->srcX, msg->srcY, msg->destX, msg->destY, 
                         msg->width, msg->height);
             if (ret)
@@ -783,7 +779,8 @@ BOOL METHOD(Nouveau, Hidd_Gfx, SetCursorShape)
 VOID METHOD(Nouveau, Hidd_Gfx, SetCursorPos)
 {
     struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
-    struct nouveau_device_priv * nvdev = nouveau_device(gfxdata->dev);
+    struct CardData * carddata = &(SD(cl)->carddata);
+    struct nouveau_device_priv * nvdev = nouveau_device(carddata->dev);
 
     drmModeMoveCursor(nvdev->fd, gfxdata->selectedcrtcid, msg->x, msg->y);
 }
