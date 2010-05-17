@@ -32,6 +32,9 @@ char * nouveau_tv_norm = NULL;
 int nouveau_uscript_lvds = -1;
 /* TMDS output script table ID (>=GeForce 8) */
 int nouveau_uscript_tmds = -1;
+/* Ignore DCB connector type */
+int nouveau_override_conntype = 0;
+
 
 extern struct drm_ioctl_desc nouveau_ioctls[];
 

@@ -3885,7 +3885,7 @@ int nouveau_bios_parse_lvds_table(struct drm_device *dev, int pxclk, bool *dl, b
 		break;
 	}
 
-#if !defined(__AROS__)
+
 	/* Dell Latitude D620 reports a too-high value for the dual-link
 	 * transition freq, causing us to program the panel incorrectly.
 	 *
@@ -3895,13 +3895,16 @@ int nouveau_bios_parse_lvds_table(struct drm_device *dev, int pxclk, bool *dl, b
 	 *
 	 * For the moment, a quirk will do :)
 	 */
+#if !defined(__AROS__)
 	if ((dev->pdev->device == 0x01d7) &&
 	    (dev->pdev->subsystem_vendor == 0x1028) &&
 	    (dev->pdev->subsystem_device == 0x01c2)) {
 		bios->fp.duallink_transition_clk = 80000;
 	}
 #else
-IMPLEMENT("Quirk for Dell Latitude D620\n");
+    if (dev->pci_device == 0x01d7) {
+        IMPLEMENT("Quirk for Dell Latitude D620\n");
+    }
 #endif
 
 	/* set dual_link flag for EDID case */
@@ -5376,11 +5379,11 @@ divine_connector_type(struct nvbios *bios, int index)
 static void
 apply_dcb_connector_quirks(struct nvbios *bios, int idx)
 {
-#if !defined(__AROS__)
 	struct dcb_connector_table_entry *cte = &bios->dcb.connector.entry[idx];
 	struct drm_device *dev = bios->dev;
 
 	/* Gigabyte NX85T */
+#if !defined(__AROS__)
 	if ((dev->pdev->device == 0x0421) &&
 	    (dev->pdev->subsystem_vendor == 0x1458) &&
 	    (dev->pdev->subsystem_device == 0x344c)) {
@@ -5388,8 +5391,13 @@ apply_dcb_connector_quirks(struct nvbios *bios, int idx)
 			cte->type = DCB_CONNECTOR_DVI_I;
 	}
 #else
-IMPLEMENT("\n");
+    (void)cte;
+    if ((dev->pci_device == 0x0421)) {
+        IMPLEMENT("Gigabyte NX85T\n");
+    }
 #endif
+
+
 }
 
 static void
@@ -5476,15 +5484,11 @@ parse_dcb_connector_table(struct nvbios *bios)
 			break;
 		}
 
-#if !defined(__AROS__)
 		if (nouveau_override_conntype) {
 			int type = divine_connector_type(bios, cte->index);
 			if (type != cte->type)
 				NV_WARN(dev, " -> type 0x%02x\n", cte->type);
 		}
-#else
-IMPLEMENT("nouveau_override_conntype\n");
-#endif
 	}
 }
 
