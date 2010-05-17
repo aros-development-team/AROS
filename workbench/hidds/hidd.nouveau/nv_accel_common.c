@@ -472,6 +472,7 @@ NVAccelInitImageFromCpu(ScrnInfoPtr pScrn)
 
 	return TRUE;
 }
+#endif
 
 static Bool
 NVAccelInit2D_NV50(ScrnInfoPtr pScrn)
@@ -503,10 +504,9 @@ NVAccelInit2D_NV50(ScrnInfoPtr pScrn)
 	BEGIN_RING(chan, eng2d, 0x58c, 1);
 	OUT_RING  (chan, 0x111);
 
-	pNv->currentRop = 0xfffffffa;
+//FIXME	pNv->currentRop = 0xfffffffa;
 	return TRUE;
 }
-#endif
 
 #if !defined(__AROS__)
 #define INIT_CONTEXT_OBJECT(name) do {                                        \
@@ -555,7 +555,7 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 //		INIT_CONTEXT_OBJECT(ClipRectangle);
 //		INIT_CONTEXT_OBJECT(ImageFromCpu);
 	} else {
-//		INIT_CONTEXT_OBJECT(2D_NV50);
+		INIT_CONTEXT_OBJECT(2D_NV50);
 	}
 //	INIT_CONTEXT_OBJECT(MemFormat);
 
@@ -605,7 +605,7 @@ void NVAccelFree(ScrnInfoPtr pScrn)
 //		nouveau_grobj_free(&pNv->NvClipRectangle);
 //		nouveau_grobj_free(&pNv->NvImageFromCpu);
 	} else {
-//		nouveau_grobj_free(&pNv->Nv2D);
+		nouveau_grobj_free(&pNv->Nv2D);
 	}
 //	nouveau_grobj_free(&pNv->NvMemFormat);
 
