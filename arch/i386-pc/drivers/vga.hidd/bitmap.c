@@ -552,7 +552,7 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
     ULONG   	    idx;
-    int xoffset, yoffset;
+    int xoffset, yoffset, limit;
     BOOL do_move = FALSE;
 
     tstate = msg->attrList;
@@ -593,11 +593,23 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 		break;
 	    case aoHidd_BitMap_LeftEdge:
 	        xoffset = tag->ti_Data;
-		do_move = TRUE;
+    		limit = data->disp_width - data->width;
+    		if (xoffset > 0)
+		    xoffset = 0;
+		else if (xoffset < limit)
+		    xoffset = limit;
+		if (xoffset != data->xoffset)
+		    do_move = TRUE;
 		break;
 	    case aoHidd_BitMap_TopEdge:
 	        yoffset = tag->ti_Data;
-		do_move = TRUE;
+		limit = data->disp_height - data->height;
+		if (yoffset > 0)
+		    yoffset = 0;
+		else if (yoffset < limit)
+		    yoffset = limit;
+		if (yoffset != data->yoffset)
+		    do_move = TRUE;
 		break;
 	    }
 	}
@@ -605,18 +617,6 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     if (do_move) {
-        int xlimit = data->disp_width - data->width;
-	int ylimit = data->disp_height - data->height;
-
-        if (xoffset > 0)
-	    xoffset = 0;
-	if (yoffset > 0)
-	    yoffset = 0;
-	if (xoffset < xlimit)
-	    xoffset = xlimit;
-	if (yoffset < ylimit)
-	    yoffset = ylimit;
-
 	data->xoffset = xoffset;
 	data->yoffset = yoffset;
 	    
