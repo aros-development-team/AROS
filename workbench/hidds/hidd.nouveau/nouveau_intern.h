@@ -92,7 +92,7 @@ struct CardData
     struct nouveau_grobj    *NvContextSurfaces;
     struct nouveau_grobj    *NvRop;
     struct nouveau_grobj    *NvImagePattern;
-
+    struct nouveau_grobj    *Nv2D;
 };
 
 struct staticdata

@@ -101,6 +101,145 @@ static BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
     return TRUE;
 }
 
+static BOOL HIDDNouveauNV502DSurfaceFormat(struct HIDDNouveauBitMapData * bmdata, 
+    uint32_t *fmt)
+{
+	switch (bmdata->bytesperpixel * 8) 
+	{
+	case 8 : *fmt = NV50_2D_SRC_FORMAT_R8_UNORM; break;
+	case 15: *fmt = NV50_2D_SRC_FORMAT_X1R5G5B5_UNORM; break;
+	case 16: *fmt = NV50_2D_SRC_FORMAT_R5G6B5_UNORM; break;
+	case 24: *fmt = NV50_2D_SRC_FORMAT_X8R8G8B8_UNORM; break;
+	case 30: *fmt = NV50_2D_SRC_FORMAT_A2B10G10R10_UNORM; break;
+//FIXME	case 32: *fmt = NV50_2D_SRC_FORMAT_A8R8G8B8_UNORM; break;
+	case 32: *fmt = NV50_2D_SRC_FORMAT_X8R8G8B8_UNORM; break;
+	default:
+		 return FALSE;
+	}
+
+	return TRUE;
+}
+
+static VOID HIDDNouveauNV50SetClip(struct CardData * carddata, LONG x, LONG y, 
+    LONG w, LONG h)
+{
+    struct nouveau_channel * chan = carddata->chan;
+    struct nouveau_grobj *eng2d = carddata->Nv2D;
+
+	BEGIN_RING(chan, eng2d, NV50_2D_CLIP_X, 4);
+	OUT_RING  (chan, x);
+	OUT_RING  (chan, y);
+	OUT_RING  (chan, w);
+	OUT_RING  (chan, h);
+}
+
+static BOOL HIDDNouveauNV50AcquireSurface2D(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * bmdata, BOOL issrc)
+{
+    struct nouveau_channel * chan = carddata->chan;
+    struct nouveau_grobj *eng2d = carddata->Nv2D;
+    struct nouveau_bo *bo = bmdata->bo;
+    int mthd = issrc ? NV50_2D_SRC_FORMAT : NV50_2D_DST_FORMAT;
+    uint32_t fmt, bo_flags;
+
+    if (!HIDDNouveauNV502DSurfaceFormat(bmdata, &fmt))
+        return FALSE;
+
+    bo_flags  = NOUVEAU_BO_VRAM;
+    bo_flags |= issrc ? NOUVEAU_BO_RD : NOUVEAU_BO_WR;
+
+//FIXME    if (!nv50_style_tiled_pixmap(ppix)) {
+    if(TRUE) { /* FIXME */
+        BEGIN_RING(chan, eng2d, mthd, 2);
+        OUT_RING  (chan, fmt);
+        OUT_RING  (chan, 1);
+        BEGIN_RING(chan, eng2d, mthd + 0x14, 1);
+//FIXME        OUT_RING  (chan, (uint32_t)exaGetPixmapPitch(ppix));
+        OUT_RING  (chan, (uint32_t)bmdata->pitch);
+    } else {
+        BEGIN_RING(chan, eng2d, mthd, 5);
+        OUT_RING  (chan, fmt);
+        OUT_RING  (chan, 0);
+        OUT_RING  (chan, bo->tile_mode << 4);
+        OUT_RING  (chan, 1);
+        OUT_RING  (chan, 0);
+    }
+
+    BEGIN_RING(chan, eng2d, mthd + 0x18, 4);
+    OUT_RING  (chan, bmdata->width);
+    OUT_RING  (chan, bmdata->height);
+    if (OUT_RELOCh(chan, bo, 0, bo_flags) ||
+        OUT_RELOCl(chan, bo, 0, bo_flags))
+    return FALSE;
+
+    if (!issrc)
+        HIDDNouveauNV50SetClip(carddata, 0, 0, bmdata->width, bmdata->height);
+
+    return TRUE;
+}
+static BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+    ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height)
+{
+    struct nouveau_channel * chan = carddata->chan;
+    struct nouveau_grobj *eng2d = carddata->Nv2D;
+    struct nouveau_bo * src_bo = srcdata->bo;
+    struct nouveau_bo * dst_bo = destdata->bo;
+
+    if (srcdata->bytesperpixel != destdata->bytesperpixel)
+        return FALSE;
+
+    /* Prepare copy */
+    if (MARK_RING(chan, 64, 4))
+        return FALSE;
+    
+    if (!HIDDNouveauNV50AcquireSurface2D(carddata, srcdata, TRUE))
+    {
+        MARK_UNDO(chan);
+        return FALSE;
+    }
+    
+    if (!HIDDNouveauNV50AcquireSurface2D(carddata, destdata, FALSE))
+    {
+        MARK_UNDO(chan);
+        return FALSE;
+    }
+    
+    /* TODO: SET ROP */
+    
+    /* Execute copy */
+    WAIT_RING (chan, 17);
+    BEGIN_RING(chan, eng2d, 0x0110, 1);
+    OUT_RING  (chan, 0);
+    BEGIN_RING(chan, eng2d, 0x088c, 1);
+    OUT_RING  (chan, 0);
+    BEGIN_RING(chan, eng2d, NV50_2D_BLIT_DST_X, 12);
+    OUT_RING  (chan, destX);
+    OUT_RING  (chan, destY);
+    OUT_RING  (chan, width);
+    OUT_RING  (chan, height);
+    OUT_RING  (chan, 0);
+    OUT_RING  (chan, 1);
+    OUT_RING  (chan, 0);
+    OUT_RING  (chan, 1);
+    OUT_RING  (chan, 0);
+    OUT_RING  (chan, srcX);
+    OUT_RING  (chan, 0);
+    OUT_RING  (chan, srcY);
+
+    /* FIXME: !!!!!VERY WRONG - SOMEONE CAN READ/WRITE AT THE SAME TIME USING MAP */
+    nouveau_bo_unmap(src_bo);
+    nouveau_bo_unmap(dst_bo);
+
+    FIRE_RING (chan);
+    
+    /* FIXME: !!!!!VERY WRONG - SOMEONE CAN READ/WRITE AT THE SAME TIME USING MAP */
+    nouveau_bo_map(src_bo, NOUVEAU_BO_RDWR);
+    nouveau_bo_map(dst_bo, NOUVEAU_BO_RDWR);    
+    
+    return TRUE;
+}
+
 static VOID HIDDNouveauShowCursor(OOP_Class * cl, OOP_Object * gfx, BOOL visible)
 {
     struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, gfx);
@@ -663,20 +802,24 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
         struct HIDDNouveauBitMapData * srcdata = OOP_INST_DATA(srcclass, msg->src);
         struct HIDDNouveauBitMapData * destdata = OOP_INST_DATA(destclass, msg->dest);
         struct CardData * carddata = &(SD(cl)->carddata);
+        BOOL ret = FALSE;
         
         if (carddata->architecture < NV_ARCH_50)
         {
-            BOOL ret = HIDDNouveauNV04CopySameFormat(carddata, srcdata, destdata, 
+            ret = HIDDNouveauNV04CopySameFormat(carddata, srcdata, destdata, 
                         msg->srcX, msg->srcY, msg->destX, msg->destY, 
                         msg->width, msg->height);
-            if (ret)
-                return;
-            /* If operation failed, fallback to default method */
         }
         else
         {
-            /* TODO: Implement copying for NV50. Fall through for now */
+            ret = HIDDNouveauNV50CopySameFormat(carddata, srcdata, destdata, 
+                        msg->srcX, msg->srcY, msg->destX, msg->destY, 
+                        msg->width, msg->height);
         }
+
+        if (ret)
+            return;
+        /* If operation failed, fallback to default method */
     }
     
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
