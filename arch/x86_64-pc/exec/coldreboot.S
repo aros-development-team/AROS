@@ -55,7 +55,7 @@ AROS_SLIB_ENTRY(ColdReboot,Exec):
 #ifdef DEBUG
 	    hlt
 #else
-	    movl	4,%rbx
+	    movq	4,%rbx
 	    call	Exec_DoResetCallbacks
 	    movl	$-1,%eax
 	    int		$0x80
