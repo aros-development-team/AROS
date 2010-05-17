@@ -65,8 +65,8 @@
     AROS_LIBFUNC_INIT
 
     if (vp) {
-        sprite->x = x - vp->DxOffset;
-        sprite->y = y - vp->DyOffset;
+        sprite->x = x + vp->DxOffset;
+        sprite->y = y + vp->DyOffset;
     } else {
         sprite->x = x;
 	sprite->y = y;
