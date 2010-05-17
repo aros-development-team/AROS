@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Copy file to parallel.device
@@ -9,11 +9,11 @@
 
     NAME
 
-        CopytoPAR
+        CopyToPAR
 
     SYNOPSIS
 
-        FILE/A,QUIET/S
+        FILE/A,USB/S,QUIET/S
 
     LOCATION
 
@@ -21,11 +21,13 @@
 
     FUNCTION
 
-        Copies (or sends a) file to parallel.device.
+        Copies (or sends) a file to parallel.device or usbparallel.device.
         
     INPUTS
 
         FILE   --  Either a file, a directory or a pattern to match.
+
+        USB    --  Use usbparallel.device.
 
         QUIET  --  Suppresses any output to the shell.
 
@@ -51,10 +53,11 @@
 
 /****************************************************************************************/
 
-#define ARG_TEMPLATE 	    "FILE/A,QUIET/S"
+#define ARG_TEMPLATE 	    "FILE/A,USB/S,QUIET/S"
 #define ARG_FILE    	    0
-#define ARG_QUIET   	    1
-#define NUM_ARGS    	    2
+#define ARG_USB     	    1
+#define ARG_QUIET   	    2
+#define NUM_ARGS    	    3
 
 #define BUFSIZE     	    4096
 
@@ -68,6 +71,7 @@ struct RDArgs 	*myargs;
 IPTR	         args[NUM_ARGS];
 UBYTE	         s[256];
 UBYTE	    	 buf[BUFSIZE];
+STRPTR		 devicename = "parallel.device";
 
 /****************************************************************************************/
 
@@ -108,12 +112,17 @@ static void openpar(void)
     
     ParIO = (struct IOStdReq *)CreateIORequest(ParMP, sizeof(struct IOExtPar));
     if (!ParIO) cleanup("Failed to create IO request", RETURN_ERROR);
-    
-    if (OpenDevice("parallel.device", 0, (struct IORequest *)ParIO, 0))
+
+    if (args[ARG_USB])
     {
-    	cleanup("Failed to open parallel.device", RETURN_ERROR);
+	devicename = "usbparallel.device";
     }
-    
+
+    if (OpenDevice(devicename, 0, (struct IORequest *)ParIO, 0))
+    {
+	cleanup("Failed to open (usb)parallel.device", RETURN_ERROR);
+    }
+
     ParOpen = TRUE;        
 }
 
@@ -157,9 +166,9 @@ static void docopy(void)
 	
 	if (!WritePAR(buf, size))
 	{
-	    cleanup("Error writing to parallel.device", RETURN_FAIL);
+	    cleanup("Error writing to (usb)parallel.device", RETURN_FAIL);
     	}
-		
+
     } while (size == BUFSIZE);
         
 }
