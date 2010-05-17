@@ -115,6 +115,7 @@ struct class_static_data
     
     OOP_Class 	    *fakegfxclass;
     OOP_Class 	    *fakefbclass;
+    ULONG	    fakefb_attr;
 };
 
 /* Monitor driver data. Should be somehow attached to a MonitorSpec */

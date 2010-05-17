@@ -36,7 +36,7 @@ enum {
 #define aHidd_FakeFB_FakeGfxHidd	(HiddFakeFBAttrBase + aoHidd_FakeFB_FakeGfxHidd	)
 #define aHidd_FakeFB_	(HiddFakeFBAttrBase + aoHidd_FakeFB_)
 
-OOP_Object *init_fakegfxhidd(OOP_Object *gfxhidd, struct GfxBase *GfxBase);
+OOP_Object *init_fakegfxhidd(BOOL noframebuffer, OOP_Object *gfxhidd, struct GfxBase *GfxBase);
 VOID cleanup_fakegfxhidd(struct GfxBase *GfxBase);
 
 #endif /* FAKEGFXHIDD_H */
