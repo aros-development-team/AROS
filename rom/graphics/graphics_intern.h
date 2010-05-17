@@ -263,8 +263,6 @@ void internal_ClipBlit(struct RastPort * srcRP,
                        struct GfxBase * GfxBase);
 
 /* Driver prototypes */
-extern BOOL driver_LateGfxInit(APTR, struct GfxBase *GfxBase);
-
 extern void driver_Text (struct RastPort *, CONST_STRPTR, LONG, struct GfxBase *);
 
 extern void driver_LoadView(struct View *view, struct GfxBase *);

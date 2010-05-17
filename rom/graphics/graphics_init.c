@@ -136,6 +136,9 @@ static int GfxOpen(struct GfxBase *LIBBASE)
 	AddIntServer(INTB_VERTB, &LIBBASE->vbsrv);
     }
 
+    if (!GfxBase->gb_LayersBase)
+        GfxBase->gb_LayersBase = (ULONG *)OpenLibrary("layers.library", 0);
+
     return TRUE;
 }
 
