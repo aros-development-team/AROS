@@ -23,6 +23,7 @@
    If you define this, make sure that ALWAYS_ALLOCATE_SPRITE_COLORS in
    intuition/intuition_intern.h is also defined.
 #define DISABLE_ARGB_POINTER */
+
 #include <aros/debug.h>
 
 /******************************************************************************/
@@ -68,7 +69,7 @@ struct gfx_data
 /******************************************************************************/
 
 static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struct class_static_data *csd);
-static VOID rethink_cursor(struct gfx_data *data, struct class_static_data *csd);
+static BOOL rethink_cursor(struct gfx_data *data, struct class_static_data *csd);
 static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data, struct class_static_data *csd);
 
 /******************************************************************************/
@@ -373,7 +374,7 @@ static OOP_Object *gfx_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     BOOL    	     ok = TRUE;
     
     data = OOP_INST_DATA(cl, o);
-    create_fb = (BOOL)GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
+    create_fb = (BOOL)GetTagData(CSD(cl)->fakefb_attr, FALSE, msg->attrList);
     
     realfb = HIDD_Gfx_NewBitMap(data->gfxhidd, msg->attrList);
     
@@ -409,6 +410,7 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 {
     struct gfx_data *data;   
     OOP_Object      *shape;
+    BOOL	     ok = TRUE;
     
     data = OOP_INST_DATA(cl, o);
     shape = msg->shape;
@@ -423,7 +425,7 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	data->curs_x	 = data->curs_y		= 0;
 	data->curs_maxx  = data->curs_maxy	= 0;
 	data->curs_width = data->curs_height	= 0;
-	
+
 	if (NULL != data->curs_backup)
 	{
 	    OOP_DisposeObject(data->curs_backup);
@@ -437,8 +439,6 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
     else
     {    
 	IPTR curs_width, curs_height;
-	IPTR mode_width, mode_height;
-	OOP_Object *new_backup;
 	APTR new_curs_pixels;
 	ULONG curs_pixels_len;
 
@@ -455,6 +455,7 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	OOP_GetAttr(shape, aHidd_BitMap_Height, &curs_height);
 
 	/* Create new backup bitmap */
+	D(bug("[FakeGfx] New cursor size: %lu x %lu, framebuffer 0x%p\n", curs_width, curs_height, data->framebuffer));
 	bmtags[1].ti_Data = curs_width;
 	bmtags[2].ti_Data = curs_height;
 	bmtags[3].ti_Data = (IPTR)data->framebuffer;
@@ -465,14 +466,6 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	new_curs_pixels = AllocMem(curs_pixels_len, MEMF_ANY|MEMF_CLEAR);
 	if (!new_curs_pixels)
 	    return FALSE;
-	new_backup = HIDD_Gfx_NewBitMap(data->gfxhidd, bmtags);
-	    
-	if (NULL == new_backup)
-	{
-	    D(bug("!!! FakeGfx::SetCursorShape: COULD NOT CREATE BACKUP BM !!!\n"));
-	    FreeMem(new_curs_pixels, curs_pixels_len);
-	    return FALSE;
-	}
 	
 	LFB(data);
 
@@ -480,12 +473,11 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	draw_cursor(data, FALSE, TRUE, CSD(cl));
 	    
 	/* Now that we have disposed the old image using the old
-	   backup bm, we can install the new backup bm before
-	   rendering the new cursor
+	   backup bm, we can install the new image and backup bm before
+	   rendering the new cursor.
+	   Backup bitmap is recreated in rethink_cursor()
 	*/
-	    
-	if (NULL != data->curs_backup)
-	    OOP_DisposeObject(data->curs_backup);
+
 	if (data->curs_pixels)
 	    FreeMem(data->curs_pixels, data->curs_width * data->curs_height * 4);
 
@@ -494,30 +486,37 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	data->curs_height = curs_height;
 	data->curs_maxx	  = data->curs_x + curs_width  - 1;
 	data->curs_maxy	  = data->curs_y + curs_height - 1;
-	data->curs_backup = new_backup;
 	data->curs_pixels = new_curs_pixels;
 
-	rethink_cursor(data, CSD(cl));
+	ok = rethink_cursor(data, CSD(cl));
 	UFB(data);
-	    
+	
 	draw_cursor(data, TRUE, TRUE, CSD(cl));
     }
     
-    return TRUE;
+    return ok;
 }
 
 static BOOL gfx_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
 {
     struct gfx_data *data;
+    IPTR xoffset = 0;
+    IPTR yoffset = 0;
     
     data = OOP_INST_DATA(cl, o);
-    D(bug("[FakeGfx] SetCursorPos(%u, %u)\n", msg->x, msg->y));
+    DB2(bug("[FakeGfx] SetCursorPos(%u, %u)\n", msg->x, msg->y));
+    
+    /* We draw our cursor on the bitmap, so we have to convert back
+       from physical to logical coordinates */
+    OOP_GetAttr(data->framebuffer, aHidd_BitMap_LeftEdge, &xoffset);
+    OOP_GetAttr(data->framebuffer, aHidd_BitMap_TopEdge, &yoffset);
+    
     LFB_QUICK(data);
     /* erase the old cursor */
     draw_cursor(data, FALSE, TRUE, CSD(cl));
-	
-    data->curs_x = msg->x;
-    data->curs_y = msg->y;
+
+    data->curs_x = msg->x - xoffset;
+    data->curs_y = msg->y - yoffset;
     data->curs_maxx = data->curs_x + data->curs_width  - 1;
     data->curs_maxy = data->curs_y + data->curs_height - 1;
     
@@ -615,22 +614,28 @@ UFB(data);
     return retval;
 }
 
-static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
-    OOP_Object      *ret;
+    OOP_Object *ret;
     struct gfx_data *data;
     
     data = OOP_INST_DATA(cl, o);
+    ret = msg->bitMap;
+
+    D(bug("[FakeFB] Show(0x%p)\n", ret));
+    if (ret && (OOP_OCLASS(ret) == CSD(cl)->fakefbclass)) {
+        data->fakefb = ret;
+        OOP_GetAttr(msg->bitMap, aHidd_FakeFB_RealBitMap, (IPTR *)&ret);
+        D(bug("[FakeFB] Bitmap is a fakefb object, real bitmap is 0x%p\n", ret));
+    }
 
 LFB(data);   
     draw_cursor(data, FALSE, TRUE, CSD(cl));
     
-    ret = (OOP_Object *)OOP_DoMethod(data->gfxhidd, msg);
+    ret = HIDD_Gfx_Show(data->gfxhidd, ret, msg->flags);
+    data->framebuffer = ret;
     if (NULL != ret)
-    {
-    	data->framebuffer = ret;
     	ret = data->fakefb;
-    }
     rethink_cursor(data, CSD(cl));
     draw_cursor(data, TRUE, TRUE, CSD(cl));
     
@@ -722,6 +727,18 @@ static VOID fakefb_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     	OOP_DisposeObject(data->framebuffer);
     	data->framebuffer = NULL;
     }
+}
+
+static void fakefb_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    struct fakefb_data *data = OOP_INST_DATA(cl, o);
+
+    if (msg->attrID == aHidd_FakeFB_RealBitMap) {
+        *msg->storage = data->framebuffer;
+	return;
+    }
+
+    OOP_DoMethod(data->framebuffer, (OOP_Msg)msg);
 }
 
 static IPTR fakefb_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
@@ -1224,7 +1241,7 @@ static OOP_Class *init_fakefbclass(struct class_static_data *csd)
     {
         {(IPTR (*)())fakefb_new    , moRoot_New     },
         {(IPTR (*)())fakefb_dispose, moRoot_Dispose },
-        {(IPTR (*)())fakefb_fwd    , moRoot_Get     },
+        {(IPTR (*)())fakefb_get    , moRoot_Get     },
         {(IPTR (*)())fakefb_fwd	   , moRoot_Set	    },
         {NULL	    	    	   , 0UL    	    }
     };
@@ -1320,15 +1337,43 @@ static void free_fakefbclass(OOP_Class *cl, struct class_static_data *csd)
 
 }
 
-static VOID rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
+static BOOL rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
 {
     OOP_Object *pf, *cmap;
     IPTR    	fbdepth, curdepth, i;
     UWORD	curs_base;
 
+    struct TagItem bmtags[] = {
+	{ aHidd_BitMap_Width , data->curs_width },
+	{ aHidd_BitMap_Height, data->curs_height},
+	{ aHidd_BitMap_Friend, data->framebuffer},
+	{ TAG_DONE	     , 0UL	 	}
+    };
+
     D(bug("rethink_cursor(), curs_bm is 0x%p\n", data->curs_bm));
+
+    /* The first thing we do is recreating a backup bitmap. We do it every time when either
+       cursor shape changes (because new shape may have different size) or shown bitmap
+       changes (because new bitmap may have different depth). Note that even real framebuffer
+       object may dynamically change its characteristics.
+
+       Delete the old backup bitmap first */
+    if (NULL != data->curs_backup) {
+	OOP_DisposeObject(data->curs_backup);
+	data->curs_backup = NULL;
+    }
+
+    /* If we have no cursor, we have nothing more to do.
+       We also don't need new backup bitmap */
     if (!data->curs_bm)
-        return;
+        return TRUE;
+
+    /* Create new backup bitmap */
+    data->curs_backup = HIDD_Gfx_NewBitMap(data->gfxhidd, bmtags);
+    if (!data->curs_backup) {
+	D(bug("[FakeGfx] rethink_cursor(): COULD NOT CREATE BACKUP BM !!!\n"));
+	return FALSE;
+    }
 
     OOP_GetAttr(data->framebuffer, aHidd_BitMap_PixFmt, &pf);
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, &fbdepth);
@@ -1365,6 +1410,7 @@ static VOID rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
 	        data->curs_pixels[i] += curs_base;
 	}
     }
+    return TRUE;
 }
 
 static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struct class_static_data *csd)
@@ -1505,7 +1551,7 @@ static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data
 
 #undef GfxBase
 
-OOP_Object *init_fakegfxhidd(OOP_Object *gfxhidd, struct GfxBase *GfxBase)
+OOP_Object *init_fakegfxhidd(BOOL noframebuffer, OOP_Object *gfxhidd, struct GfxBase *GfxBase)
 {
     struct class_static_data *csd = PrivGBase(GfxBase)->fakegfx_staticdata;
 
@@ -1524,6 +1570,8 @@ OOP_Object *init_fakegfxhidd(OOP_Object *gfxhidd, struct GfxBase *GfxBase)
 	    FreeMem(csd, sizeof(struct class_static_data));
 	    return NULL;
 	}
+	
+	csd->fakefb_attr = noframebuffer ? aHidd_BitMap_Displayable : aHidd_BitMap_FrameBuffer;
     }
 
     struct TagItem fgh_tags[] = {

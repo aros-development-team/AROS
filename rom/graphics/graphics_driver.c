@@ -53,6 +53,11 @@
 
 #define DEBUG_LOADVIEW(x)
 
+/* Define this if you wish to enforce using software mouse sprite
+   even for drivers that support hardware one. Useful for debugging
+   and testing
+#define FORCE_SOFTWARE_SPRITE */
+
 struct ETextFont
 {
     struct TextFont	etf_Font;
@@ -571,14 +576,16 @@ BOOL driver_OpenMonitor(struct MonitorSpec *mspc, struct GfxBase *GfxBase)
 	IPTR noframebuffer = 0;
 	BOOL ok = TRUE;
 
+#ifndef FORCE_SOFTWARE_SPRITE
 	OOP_GetAttr(MDD(mspc)->gfxhidd, aHidd_Gfx_SupportsHWCursor, &hwcursor);
+#endif
 	OOP_GetAttr(MDD(mspc)->gfxhidd, aHidd_Gfx_NoFrameBuffer, &noframebuffer);
 	if (!hwcursor) {
 	    OOP_Object *fgh;
 
 	    D(bug("[driver_OpenMonitor] Hardware mouse cursor is not supported, using fakegfx.hidd\n"));
 
-	    fgh = init_fakegfxhidd(MDD(mspc)->gfxhidd, GfxBase);
+	    fgh = init_fakegfxhidd(noframebuffer, MDD(mspc)->gfxhidd, GfxBase);
 
 	    if (NULL != fgh) {
 		MDD(mspc)->gfxhidd = fgh;
