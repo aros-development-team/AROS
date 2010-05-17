@@ -16,11 +16,6 @@
 #define HiddBitMapAttrBase  (SD(cl)->bitMapAttrBase)
 #define HiddPixFmtAttrBase  (SD(cl)->pixFmtAttrBase)
 
-/* HACK HACK HACK */
-extern struct nouveau_device * hackdev;
-
-/* HACK HACK HACK */
-
 /* PUBLIC METHODS */
 VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPixel)
 {
@@ -94,9 +89,8 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
         bmdata->fbid = 0; /* Default value */
 
 	    /* Creation of buffer object */
-	    /* FIXME: nouveau_device should not be global */
 	    /* FIXME: check result of call */
-        nouveau_bo_new(hackdev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 
+        nouveau_bo_new(SD(cl)->carddata.dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 
 	            bmdata->pitch * bmdata->height,
 	            &bmdata->bo);
 
@@ -116,7 +110,7 @@ VOID NouveauBitMap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     /* Unregister from framebuffer if needed */
     if (bmdata->fbid != 0)
     {
-        struct nouveau_device_priv *nvdev = nouveau_device(hackdev);
+        struct nouveau_device_priv *nvdev = nouveau_device(SD(cl)->carddata.dev);
         drmModeRmFB(nvdev->fd, bmdata->fbid);   
         bmdata->fbid = 0;
     }

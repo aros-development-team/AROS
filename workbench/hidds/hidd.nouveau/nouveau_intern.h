@@ -21,16 +21,6 @@
 
 struct HIDDNouveauData
 {
-    ULONG                   architecture;
-    struct nouveau_device   *dev;                   /* Device object acquired from libdrm */
-    struct nouveau_channel  *chan;
-    struct nouveau_notifier *notify0;
-    
-    struct nouveau_grobj    *NvImageBlit;
-    struct nouveau_grobj    *NvContextSurfaces;
-    struct nouveau_grobj    *NvRop;
-    struct nouveau_grobj    *NvImagePattern;
-    
     struct nouveau_bo       *cursor;
     ULONG                   selectedcrtcid;
     ULONG                   selectedconnectorid;
@@ -90,6 +80,21 @@ struct HIDDNouveauI2CData
     IPTR    i2c_chan;
 };
 
+struct CardData
+{
+    /* Card controlling objects */
+    ULONG                   architecture;
+    struct nouveau_device   *dev;                   /* Device object acquired from libdrm */
+    struct nouveau_channel  *chan;
+    struct nouveau_notifier *notify0;
+    
+    struct nouveau_grobj    *NvImageBlit;
+    struct nouveau_grobj    *NvContextSurfaces;
+    struct nouveau_grobj    *NvRop;
+    struct nouveau_grobj    *NvImagePattern;
+
+};
+
 struct staticdata
 {
     OOP_Class       *gfxclass;
@@ -103,6 +108,8 @@ struct staticdata
     OOP_AttrBase    bitMapAttrBase;
     OOP_AttrBase    planarAttrBase;
     OOP_AttrBase    i2cNouveauAttrBase;
+
+    struct CardData carddata;
 };
 
 LIBBASETYPE 
@@ -157,8 +164,8 @@ enum DMAObjects
 #define NV_ARCH_40  0x40
 #define NV_ARCH_50  0x50
 
-BOOL NVAccelCommonInit(struct HIDDNouveauData * gfxdata);
-VOID NVAccelFree(struct HIDDNouveauData * gfxdata);
+BOOL NVAccelCommonInit(struct CardData * carddata);
+VOID NVAccelFree(struct CardData * carddata);
 BOOL NVAccelGetCtxSurf2DFormatFromPixmap(struct HIDDNouveauBitMapData * bmdata, LONG *fmt_ret);
 
 #endif /* _NOUVEAU_INTERN_H */

@@ -29,9 +29,9 @@
 
 /* Some overriding defines for AROS */
 #define Bool            BOOL
-#define ScrnInfoPtr     struct HIDDNouveauData *
+#define ScrnInfoPtr     struct CardData *
 #define NVPTR(x)        x
-#define NVPtr           struct HIDDNouveauData *
+#define NVPtr           struct CardData *
 #define Architecture    architecture
 #define PixmapPtr       struct HIDDNouveauBitMapData *
 #endif
