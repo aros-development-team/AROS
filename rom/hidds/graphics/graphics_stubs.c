@@ -362,7 +362,7 @@ OOP_Object *HIDD_Gfx_GetSync(OOP_Object *obj, ULONG num)
     STATIC_MID;
     struct pHidd_Gfx_GetSync p, *msg = &p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ShowViewPorts);
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetSync);
 
     p.mID = mid;
     p.num = num;
