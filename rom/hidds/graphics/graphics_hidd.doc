@@ -91,6 +91,9 @@ NOTES
 EXAMPLE
 
 BUGS
+    At the moment subclassing GCs is not supported because some parts of
+    the operating system create GC objects directly. It is unclear whether
+    subclassing GCs is actually needed.
 
 SEE ALSO
     HIDD_GC_DisposeGC()
@@ -210,7 +213,7 @@ SEE ALSO
 INTERNALS
     The superclass implementation currently does the folliwing in order to determine a class for
     a nondisplayable bitmap (in the listed order):
-    
+
     1. Check aHIDD_BitMap_ClassPtr and aHIDD_BitMap_ClassID. If one of them is supplied, the class
        is already set by a subclass.
     2. Check aHIDD_BitMap_StdPixFmt. If this attribute is supplied, figure out type of the pixelformat
@@ -218,7 +221,7 @@ INTERNALS
     3. Check aHIDD_BitMap_Friend. If friend bitmap is supplied, obtain its class from
        aHIDD_BitMap_ClassPtr value of friend bitmap.
     4. If everything fails, bitmap creation fails too.
-    
+
     This behavior is subject to change, but will maintain backwards compatibility.
 
 HISTORY
@@ -350,7 +353,7 @@ INPUTS
     pixFmt  - An index of pixelformat (one of vHIDD_StdPixFmt_... values)
 
 RESULT
-    A pointer to a pixelformat objects or NULL if lookup failed
+    A pointer to a pixelformat object or NULL if lookup failed
 
 NOTES
     Pixelformat objects are stored in a global system-wide database. They are not
@@ -860,3 +863,35 @@ INTERNALS
     the system to use HIDD_Gfx_Show() instead.
 
 HISTORY
+
+/*************************/
+
+NAME
+    HIDD_Gfx_GetSync
+
+SYNOPSIS
+    OOP_Object *HIDD_Gfx_GetSync(OOP_Object *gfxHidd, ULONG num);
+
+FUNCTION
+    Get a sync object from internal display mode database by index
+
+INPUTS
+    gfxHidd - A display driver object
+    num     - An index of pixelformat starting from 0
+
+RESULT
+    A pointer to a sync object or NULL if there's no such index
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+
+INTERNALS
+
+HISTORY
+
+/*************************/

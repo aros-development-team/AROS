@@ -90,7 +90,9 @@ enum
     
     moHidd_Gfx_ModeProperties,
     moHidd_Gfx_ShowViewPorts,
-    
+
+    moHidd_Gfx_GetSync,
+
     num_Hidd_Gfx_Methods
 };
 
@@ -338,6 +340,12 @@ struct pHidd_Gfx_ShowViewPorts
 {
     OOP_MethodID mID;
     struct HIDD_ViewPortData *Data;
+};
+
+struct pHidd_Gfx_GetSync
+{
+    OOP_MethodID mID;
+    ULONG	 num;
 };
 
 enum
@@ -1471,6 +1479,7 @@ BOOL 	    HIDD_Gfx_SetMode(OOP_Object *obj, HIDDT_ModeID modeID);
 VOID  	    HIDD_Gfx_CopyBox(OOP_Object *obj, OOP_Object *src, WORD srcX, WORD srcY, OOP_Object *dest, WORD destX, WORD destY, UWORD width, UWORD height, OOP_Object *gc);
 ULONG       HIDD_Gfx_ModeProperties(OOP_Object *obj, HIDDT_ModeID modeID, struct HIDD_ModeProperties *props, ULONG propsLen);
 ULONG	    HIDD_Gfx_ShowViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data);
+OOP_Object *HIDD_Gfx_GetSync(OOP_Object *obj, ULONG num);
 
 VOID HIDD_GC_SetClipRect(OOP_Object *gc, LONG x1, LONG y1, LONG x2, LONG y2);
 VOID HIDD_GC_UnsetClipRect(OOP_Object *gc);
