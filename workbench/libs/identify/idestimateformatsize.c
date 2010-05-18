@@ -7,6 +7,8 @@
 */
 #include "identify_intern.h"
 
+static STRPTR finddollar(TEXT *t);
+
 /*****************************************************************************
 
     NAME */
@@ -15,8 +17,8 @@
         AROS_LH2(ULONG, IdEstimateFormatSize,
 
 /*  SYNOPSIS */
-        AROS_LHA(STRPTR          , String, A0),
-        AROS_LHA(struct TagItem *, Tags  , A1),
+        AROS_LHA(STRPTR          , string, A0),
+        AROS_LHA(struct TagItem *, tags  , A1),
 
 /*  LOCATION */
         struct IdentifyBaseIntern *, IdentifyBase, 12, Identify)
@@ -46,7 +48,56 @@
 
     // no tags
 
-    return 0;
+    TEXT *from = string;
+    ULONG result = 1;
+
+    if (from == NULL)
+    {
+        return 0;
+    }
+
+    while (*from)
+    {
+        if (*from == '$')
+        {
+            from++;
+            if (*from == '$')
+            {
+                from++;
+                result++;
+            }
+            else
+            {
+                from = finddollar(from);
+                result += STRBUFSIZE;
+            }
+        }
+        else
+        {
+            result++;
+            from++;
+        }
+    }
+
+    return result;
 
     AROS_LIBFUNC_EXIT
 } /* IdEstimateFormatSize */
+
+
+static STRPTR finddollar(TEXT *t)
+{
+    while (*t && *t != '$')
+    {
+        t++;
+    }
+
+    if (*t) // '$'
+    {
+        return t + 1;
+    }
+    else
+    {
+        return t;
+    }
+}
