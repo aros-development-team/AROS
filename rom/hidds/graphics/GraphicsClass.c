@@ -1809,6 +1809,20 @@ OOP_Object *GFX__Hidd_Gfx__GetPixFmt(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 /****************************************************************************************/
 
+OOP_Object *GFX__Hidd_Gfx__GetSync(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_GetSync *msg) 
+{
+    struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
+    
+    if (msg->num < data->mdb.num_syncs)
+    	return data->mdb.syncs[msg->num];
+    else {
+    	D(bug("!!! Illegal sync index passed to Gfx::GetSync(): %d\n", msg->num));
+	return NULL;
+    }
+}
+
+/****************************************************************************************/
+
 ULONG GFX__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ModeProperties *msg)
 {
     struct HIDD_ModeProperties props = {0, 0, 0};
