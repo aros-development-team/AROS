@@ -155,11 +155,11 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
 	if (ok)
 	{
-	    if (!GOT_BM_ATTR(GfxHidd) || !GOT_BM_ATTR(Displayable))
+	    if (!GOT_BM_ATTR(GfxHidd))
 	    {
     	    	D(bug("!!!! BM CLASS DID NOT GET GFX HIDD !!!\n"));
 	    	D(bug("!!!! The reason for this is that the gfxhidd subclass NewBitmap() method\n"));
-	    	D(bug("!!!! has not left it to the baseclass to avtually create the object,\n"));
+	    	D(bug("!!!! has not left it to the baseclass to actually create the object,\n"));
 	    	D(bug("!!!! but rather done it itself. This MUST be corrected in the gfxhidd subclass\n"));
 		D(bug("!!!! ATTRCHECK: %p !!!!\n", ATTRCHECK(bitmap)));
 
