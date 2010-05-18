@@ -85,7 +85,8 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
             bmdata->bytesperpixel = 2;
         else
             bmdata->bytesperpixel = 4;
-        bmdata->pitch = (bmdata->width * bmdata->bytesperpixel + 63) & ~63;
+        bmdata->pitch = (bmdata->width + 63) & ~63;
+        bmdata->pitch *= bmdata->bytesperpixel;
         bmdata->fbid = 0; /* Default value */
 
 	    /* Creation of buffer object */
