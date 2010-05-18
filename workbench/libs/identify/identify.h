@@ -29,12 +29,6 @@
 */
 #define IDENTIFYVERSION (13)
 
-#if 0
-struct IdentifyBase {
-  struct  Library ifyb_LibNode;
-};
-#endif
-
 #define IDENTIFYBUFLEN  (50)            /*  default buffer length */
 
 /* ------------------------------------------------------------------------ *

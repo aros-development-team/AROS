@@ -149,6 +149,15 @@ static void idalert(void)
     printf("DeadStr %s SpecStr %s\n", buffer1, buffer2);
 }
 
+static void idexpansion(void)
+{
+    puts("\nIdExpansion");
+    puts("-----------");
+    TEXT buffer[30];
+    printf("result %d\n", IdExpansionTags(IDTAG_ManufStr, buffer, IDTAG_StrLength, 30, TAG_DONE));
+    printf("ManufStr %s\n", buffer);
+}
+
 int main(void)
 {
     idhardwarenum();
@@ -156,6 +165,7 @@ int main(void)
     idformatstring();
     idestimateformatsize();
     idalert();
+    idexpansion();
 
     return 0;
 }
