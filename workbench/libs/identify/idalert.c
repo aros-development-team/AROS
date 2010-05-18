@@ -8,6 +8,8 @@
 
 #include <proto/utility.h>
 
+#include <string.h>
+
 #include "identify_intern.h"
 #include "identify.h"
 
@@ -48,6 +50,13 @@
 {
     AROS_LIBFUNC_INIT
 
+    STRPTR deadstr = NULL;
+    STRPTR subsysstr = NULL;
+    STRPTR generalstr = NULL;
+    STRPTR specstr = NULL;
+    BOOL localize = TRUE;
+    ULONG strlength = 50;
+
     struct TagItem *tag;
     const struct TagItem *tags;
 
@@ -56,23 +65,52 @@
         switch (tag->ti_Tag)
         {
             case IDTAG_DeadStr:
+                deadstr = (STRPTR)tag->ti_Data;
                 break;
 
             case IDTAG_SubsysStr:
+                subsysstr = (STRPTR)tag->ti_Data;
                 break;
 
             case IDTAG_GeneralStr:
+                generalstr = (STRPTR)tag->ti_Data;
                 break;
 
             case IDTAG_SpecStr:
+                specstr = (STRPTR)tag->ti_Data;
                 break;
 
             case IDTAG_StrLength:
+                strlength = tag->ti_Data;
                 break;
 
             case IDTAG_Localize:
+                localize = tag->ti_Data ? TRUE : FALSE;
                 break;
         }
+    }
+
+    if (strlength <= 0)
+    {
+        return IDERR_NOLENGTH;
+    }
+
+    // return something to avoid crashes when function is called
+    if (deadstr)
+    {
+        strlcpy(deadstr, "Unknown", strlength);
+    }
+    if (subsysstr)
+    {
+        strlcpy(subsysstr, "Unknown", strlength);
+    }
+    if (generalstr)
+    {
+        strlcpy(generalstr, "Unknown", strlength);
+    }
+    if (specstr)
+    {
+        strlcpy(specstr, "Unknown", strlength);
     }
 
     return 0;
