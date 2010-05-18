@@ -105,9 +105,11 @@ OOP_Object *GFX__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	else
 	    D(bug("Could not register modes\n"));
     }
-    else
+    else {
 	D(bug("Could not get ModeTags\n"));
-    
+	ok = TRUE;
+    }
+
     /* Create a gc that we can use for some rendering */
     if (ok)
     {
