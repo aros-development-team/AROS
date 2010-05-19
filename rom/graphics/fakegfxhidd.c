@@ -1182,6 +1182,7 @@ static OOP_Class *init_fakegfxhiddclass (struct class_static_data *csd)
 	{(IPTR (*)())gfx_copybox    	    , moHidd_Gfx_CopyBox	    },
 	{(IPTR (*)())gfx_fwd	    	    , moHidd_Gfx_ModeProperties	    },
 	{(IPTR (*)())gfx_showviewports	    , moHidd_Gfx_ShowViewPorts	    },
+	{(IPTR (*)())gfx_fwd		    , moHidd_Gfx_GetSync	    },
         {NULL	    	    	    	    , 0UL   	    	    	    }
     };
     

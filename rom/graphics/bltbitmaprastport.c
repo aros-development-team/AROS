@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -154,6 +154,8 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
 {
     struct bitmap_render_data 	*brd;
     ULONG   	    	    	width, height;
+    struct monitor_driverdata *driver;
+    OOP_Object *gfxhidd;
 
     width  = x2 - x1 + 1;
     height = y2 - y1 + 1;
@@ -163,6 +165,12 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
 //    D(bug("bitmap_render(%p, %d, %d, %p, %p, %d, %d, %d, %d, %p)\n"
 //	, bitmap_rd, srcx, srcy, dstbm_obj, dst_gc, x1, y1, x2, y2, GfxBase));
 
+    /* Obtain driver object from either src or dest bitmap.
+       We avoid using memory driver because it's slow */
+    driver = GET_BM_DRIVERDATA(brd->srcbm);
+    gfxhidd = driver->gfxhidd;
+    if (driver == (struct monitor_driverdata *)CDD(GfxBase))
+        OOP_GetAttr(dstbm_obj, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 
     /* Get some info on the colormaps. We have to make sure
        that we have the apropriate mapping tables set.
@@ -176,6 +184,7 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
 	, x1, y1
 	, x2 - x1 + 1, y2 - y1 + 1
 	, brd->minterm
+	, gfxhidd
 	, dst_gc
 	, GfxBase
     ))

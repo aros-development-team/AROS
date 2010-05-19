@@ -69,7 +69,6 @@ FUNCS := \
 	intuitextlength \
 	iswindowvisible \
 	itemaddress \
-	lateintuiinit \
 	lendmenus \
 	lockibase \
 	lockpubscreen \

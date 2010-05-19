@@ -125,7 +125,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 	ULONG wSrc, wDest;
 	ULONG x;
 	ULONG depth;
-
+	struct monitor_driverdata *driver;
 	OOP_Object *tmp_gc;
 
 	EnterFunc(bug("driver_BltBitMap()\n"));
@@ -184,7 +184,13 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 	/* If the size is illegal or we need not copy anything, return */
 	if (ySize <= 0 || xSize <= 0 || !mask) return 0;
 
-	tmp_gc = obtain_cache_object(SDD(GfxBase)->gc_cache, GfxBase);
+	/* Attempt to get real driver object if possible in hope that
+	   it will be able to accelerate the operation */
+	driver = GET_BM_DRIVERDATA(srcBitMap);
+	if (driver == (struct monitor_driverdata *)CDD(GfxBase))
+	    driver = GET_BM_DRIVERDATA(destBitMap);
+
+	tmp_gc = obtain_cache_object(driver->gc_cache, GfxBase);
 	if (NULL != tmp_gc)
 	{
 	    OOP_Object *srcbm_obj;
@@ -204,6 +210,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 			    , xDest, yDest
 			    , xSize, ySize
 			    , minterm
+			    , driver->gfxhidd
 			    , tmp_gc
 			    , GfxBase);
                     HIDD_BM_UpdateRect(dstbm_obj, xDest, yDest, xSize, ySize);
@@ -213,7 +220,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 
 		RELEASE_HIDD_BM(srcbm_obj, srcBitMap);
 	    }
-	    release_cache_object(SDD(GfxBase)->gc_cache, tmp_gc, GfxBase);
+	    release_cache_object(driver->gc_cache, tmp_gc, GfxBase);
 	}
 
     	#warning: dummy return value

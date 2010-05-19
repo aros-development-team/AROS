@@ -30,6 +30,8 @@
 
 */
 
+#define SYNC_IDX(modeid) (((modeid) & 0x0000FF00) >> 8)
+
 /* This macro is obsolete */
 #define AMIGA_TO_HIDD_MODEID(modeid) (modeid)
 
@@ -42,6 +44,10 @@
 /****************************************************************************************/
 
 HIDDT_ModeID get_best_resolution_and_depth(OOP_Object *gfxhidd, struct GfxBase *GfxBase);
+BOOL CreateMonitorSpecs(ULONG card, struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
+struct monitor_driverdata *FindDriver(ULONG modeid, struct GfxBase *GfxBase);
+struct MonitorSpec *FindMonitor(ULONG modeid, struct GfxBase *GfxBase);
+ULONG GetModeID(DisplayInfoHandle handle);
 
 /****************************************************************************************/
 

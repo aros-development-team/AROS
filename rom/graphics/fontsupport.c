@@ -19,13 +19,21 @@
 
 /****************************************************************************************/
 
-ULONG CalcHashIndex(ULONG n)
+ULONG CalcHashIndex(IPTR n, UWORD hashsize)
 {
-    UBYTE Index = (n        & 0xff) +
-        	 ((n >>  8) & 0xff) +
-        	 ((n >> 16) & 0xff) +
-        	 ((n >> 24) & 0xff);
-    Index &= 0x07;
+    UBYTE Index =  (n        & 0xff)
+        	+ ((n >>  8) & 0xff)
+        	+ ((n >> 16) & 0xff)
+        	+ ((n >> 24) & 0xff)
+#if __WORDSIZE == 64
+		+ ((n >> 32) & 0xff)
+		+ ((n >> 40) & 0xff)
+		+ ((n >> 48) & 0xff)
+		+ ((n >> 56) & 0xff)
+#endif
+		;
+
+    Index &= (hashsize - 1);
     
     return Index; 
 }
@@ -37,26 +45,10 @@ ULONG CalcHashIndex(ULONG n)
 
 /****************************************************************************************/
 
-static inline ULONG tfe_calchashidx(APTR ptr)
-{
-    ULONG val = (ULONG)ptr;
-
-    ULONG idx =  (val	     & 0xff) +
-    		((val >> 8)  & 0xff) +
-    		((val >> 16) & 0xff) +
-    		((val >> 24) & 0xff); 
-
-    idx &= (TFE_HASHTABSIZE - 1);
-    
-    return idx;
-}
-
-/****************************************************************************************/
-
 struct tfe_hashnode *tfe_hashlookup(struct TextFont *tf, struct GfxBase *GfxBase)
 {
    
-    ULONG idx = tfe_calchashidx(tf);
+    ULONG idx = CalcHashIndex((IPTR)tf, TFE_HASHTABSIZE);
     struct tfe_hashnode *n = NULL;
     
 
@@ -94,7 +86,7 @@ void tfe_hashadd(struct tfe_hashnode *hn
 		, struct GfxBase *GfxBase)
 
 {
-    ULONG idx = tfe_calchashidx(tf);
+    ULONG idx = CalcHashIndex((IPTR)tf, TFE_HASHTABSIZE);
     
     hn->back = tf;
     hn->ext  = etf;
@@ -113,7 +105,7 @@ void tfe_hashadd(struct tfe_hashnode *hn
 
 void tfe_hashdelete(struct TextFont *tf, struct GfxBase *GfxBase)
 {
-    ULONG idx = tfe_calchashidx(tf);
+    ULONG idx = CalcHashIndex((IPTR)tf, TFE_HASHTABSIZE);
     struct tfe_hashnode *n, *last = NULL;
     
     ObtainSemaphore( &GFBI(GfxBase)->tfe_hashtab_sema );

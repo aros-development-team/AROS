@@ -63,6 +63,11 @@ static int GfxInit(struct GfxBase *LIBBASE)
     GfxBase->MonitorListSemaphore = &PrivGBase(GfxBase)->monitors_sema;
     InitSemaphore(GfxBase->MonitorListSemaphore);
 
+    LIBBASE->hash_table = AllocMem(GFXASSOCIATE_HASHSIZE * sizeof(APTR), MEMF_CLEAR|MEMF_PUBLIC);
+    if (!LIBBASE->hash_table)
+	return FALSE;
+    LIBBASE->HashTableSemaphore = &PrivGBase(GfxBase)->hashtab_sema;
+
 #if REGIONS_USE_MEMPOOL
     InitSemaphore( &PrivGBase(GfxBase)->regionsem );
     if (!(PrivGBase(GfxBase)->regionpool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,
@@ -112,16 +117,6 @@ static int GfxOpen(struct GfxBase *LIBBASE)
         LIBBASE->DefaultFont = def;
         sysTA.ta_YSize = def->tf_YSize;
     }
-
-    /* Allocate 8 IPTR's for a hash list needed by
-       GfxAssociate(), GfxLookUp()                  */
-
-    if (!LIBBASE->hash_table)
-    	LIBBASE->hash_table = AllocMem(8*sizeof(LONG *), 
-                                           MEMF_CLEAR|MEMF_PUBLIC);
-    if (!LIBBASE->hash_table)
-	return 0;
-    LIBBASE->HashTableSemaphore = &PrivGBase(GfxBase)->hashtab_sema;
 
     if(LIBBASE->LibNode.lib_OpenCnt == 0)
     {
