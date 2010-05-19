@@ -58,14 +58,15 @@ struct ahci_staticdata {
     APTR    ahci_MemPool;
 
     /* List of all found AHCI host devices (referred to as host bus adapters, or HBA's) */
+    struct  SignalSemaphore ahci_hba_list_lock;
     struct  MinList ahci_hba_list;
-
 };
 
 /* One instance of HBA */
 struct ahci_hba_chip {
     struct  MinNode ahci_hba_chip_Node;
 
+    struct  SignalSemaphore ahci_port_list_lock;
     struct  MinList ahci_port_list;
 
     IPTR    ProductID, VendorID;
@@ -77,7 +78,7 @@ struct ahci_hba_chip {
     ULONG   PortCount;
 };
 
-struct ahci_port {
+struct ahci_hba_port {
     struct  MinNode ahci_port_Node;
 };
 
@@ -89,8 +90,8 @@ struct ahciBase {
 
 /* ahci_hbahw prototypes */
 BOOL ahci_setup_hbatask(struct ahci_hba_chip *hba_chip);
-void ahci_init_hba(struct ahci_hba_chip *hba_chip);
-void ahci_reset_hba(struct ahci_hba_chip *hba_chip);
+BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip);
+BOOL ahci_reset_hba(struct ahci_hba_chip *hba_chip);
 BOOL ahci_enable_hba(struct ahci_hba_chip *hba_chip);
 BOOL ahci_disable_hba(struct ahci_hba_chip *hba_chip);
 
