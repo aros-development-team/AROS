@@ -111,10 +111,15 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
         if ((asd->PCIObject = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL))) {
             if((asd->ahci_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096))) {
 
+                /* HBA linked list is semaphore protected */
+                InitSemaphore(&asd->ahci_hba_list_lock);
+
                 /* Initialize the list of found host bus adapters */
+                ObtainSemaphore(&asd->ahci_hba_list_lock);
                 asd->ahci_hba_list.mlh_Head     = (struct MinNode*) &asd->ahci_hba_list.mlh_Tail;
                 asd->ahci_hba_list.mlh_Tail     = NULL;
                 asd->ahci_hba_list.mlh_TailPred = (struct MinNode*) &asd->ahci_hba_list.mlh_Head;
+                ReleaseSemaphore(&asd->ahci_hba_list_lock);
 
                 struct Hook FindHook = {
                     h_Entry:    (IPTR (*)())ahci_Enumerator,
@@ -131,11 +136,21 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
                 HIDD_PCI_EnumDevices(asd->PCIObject, &FindHook, Requirements);
 
                 struct ahci_hba_chip *hba_chip;
+                ObtainSemaphore(&asd->ahci_hba_list_lock);
                 ForeachNode(&asd->ahci_hba_list, hba_chip) {
                     if( ahci_setup_hbatask( hba_chip ) ) {
                         D(bug("[AHCI] Created HBA task\n"));
+                    } else {
+                        /*
+                            Something failed while setting up the HBA task code
+                            Release all allocated memory and other resources for this HBA
+                            and remove us from the list
+                        */
+
+                        D(bug("[AHCI] Failed to create HBA task\n"));
                     }
                 }
+                ReleaseSemaphore(&asd->ahci_hba_list_lock);
 
                 return TRUE;
 
@@ -168,12 +183,13 @@ ADD2INITLIB(GM_UNIQUENAME(Init),0)
 ADD2OPENDEV(GM_UNIQUENAME(Open),0)
 ADD2CLOSEDEV(GM_UNIQUENAME(Close),0)
 
-
 AROS_LH1(void, BeginIO,
     AROS_LHA(struct IORequest *, iorq, A1),
     LIBBASETYPEPTR, LIBBASE, 5, ahci)
 {
 	AROS_LIBFUNC_INIT
+
+    D(bug("[AHCI] BeginIO\n"));
 
 	AROS_LIBFUNC_EXIT
 }
@@ -183,6 +199,8 @@ AROS_LH1(LONG, AbortIO,
 	LIBBASETYPEPTR, LIBBASE, 6, ahci)
 {
 	AROS_LIBFUNC_INIT
+
+    D(bug("[AHCI] AbortIO\n"));
 
 	return 0;
 
