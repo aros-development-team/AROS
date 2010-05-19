@@ -1433,7 +1433,6 @@ init_pll2(struct nvbios *bios, uint16_t offset, struct init_exec *iexec)
 static int
 init_i2c_byte(struct nvbios *bios, uint16_t offset, struct init_exec *iexec)
 {
-#if !defined(__AROS__)
 	/*
 	 * INIT_I2C_BYTE   opcode: 0x4C ('L')
 	 *
@@ -1462,6 +1461,7 @@ init_i2c_byte(struct nvbios *bios, uint16_t offset, struct init_exec *iexec)
 	if (!iexec->execute)
 		return len;
 
+#if !defined(__AROS__)
 	BIOSLOG(bios, "0x%04X: DCBI2CIndex: 0x%02X, I2CAddress: 0x%02X, "
 		      "Count: 0x%02X\n",
 		offset, i2c_index, i2c_address, count);
@@ -1508,7 +1508,6 @@ return 0;
 static int
 init_zm_i2c_byte(struct nvbios *bios, uint16_t offset, struct init_exec *iexec)
 {
-#if !defined(__AROS__)
 	/*
 	 * INIT_ZM_I2C_BYTE   opcode: 0x4D ('M')
 	 *
@@ -1535,6 +1534,7 @@ init_zm_i2c_byte(struct nvbios *bios, uint16_t offset, struct init_exec *iexec)
 	if (!iexec->execute)
 		return len;
 
+#if !defined(__AROS__)
 	BIOSLOG(bios, "0x%04X: DCBI2CIndex: 0x%02X, I2CAddress: 0x%02X, "
 		      "Count: 0x%02X\n",
 		offset, i2c_index, i2c_address, count);
