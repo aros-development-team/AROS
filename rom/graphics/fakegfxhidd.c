@@ -49,7 +49,9 @@ struct gfx_data
     OOP_Object      	    *framebuffer;
     OOP_Object      	    *fakefb;
     OOP_Object      	    *gc;
-    
+
+    ULONG		    fakefb_attr;
+
     OOP_Object      	    *curs_bm;
     OOP_Object      	    *curs_backup;
     UBYTE     	    	    *curs_pixels;
@@ -298,6 +300,7 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     OOP_Object      *realgfxhidd;
     struct gfx_data *data;
     BOOL    	     ok = FALSE;
+    IPTR	     noframebuffer = FALSE;
     
     realgfxhidd = (OOP_Object *)GetTagData(aHidd_FakeGfxHidd_RealGfxHidd, (IPTR)NULL, msg->attrList);
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -307,6 +310,9 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     data = OOP_INST_DATA(cl, o);
     memset(data, 0, sizeof (*data));
     InitSemaphore(&data->fbsema);
+    
+    OOP_GetAttr(realgfxhidd, aHidd_Gfx_NoFrameBuffer, &noframebuffer);
+    data->fakefb_attr = noframebuffer ? aHidd_BitMap_Displayable : aHidd_BitMap_FrameBuffer;
     
     data->gfxhidd = realgfxhidd;
 
@@ -374,7 +380,7 @@ static OOP_Object *gfx_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     BOOL    	     ok = TRUE;
     
     data = OOP_INST_DATA(cl, o);
-    create_fb = (BOOL)GetTagData(CSD(cl)->fakefb_attr, FALSE, msg->attrList);
+    create_fb = (BOOL)GetTagData(data->fakefb_attr, FALSE, msg->attrList);
     
     realfb = HIDD_Gfx_NewBitMap(data->gfxhidd, msg->attrList);
     
@@ -623,6 +629,9 @@ static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show 
     ret = msg->bitMap;
 
     D(bug("[FakeFB] Show(0x%p)\n", ret));
+    /* If we are attempting to show a fake bitmap, we are working
+       in NoFrameBuffer mode where each displayable bitmap is
+       intercepted by us */
     if (ret && (OOP_OCLASS(ret) == CSD(cl)->fakefbclass)) {
         data->fakefb = ret;
         OOP_GetAttr(msg->bitMap, aHidd_FakeFB_RealBitMap, (IPTR *)&ret);
@@ -1552,7 +1561,7 @@ static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data
 
 #undef GfxBase
 
-OOP_Object *init_fakegfxhidd(BOOL noframebuffer, OOP_Object *gfxhidd, struct GfxBase *GfxBase)
+OOP_Object *init_fakegfxhidd(OOP_Object *gfxhidd, struct GfxBase *GfxBase)
 {
     struct class_static_data *csd = PrivGBase(GfxBase)->fakegfx_staticdata;
 
@@ -1572,7 +1581,6 @@ OOP_Object *init_fakegfxhidd(BOOL noframebuffer, OOP_Object *gfxhidd, struct Gfx
 	    return NULL;
 	}
 	
-	csd->fakefb_attr = noframebuffer ? aHidd_BitMap_Displayable : aHidd_BitMap_FrameBuffer;
     }
 
     struct TagItem fgh_tags[] = {

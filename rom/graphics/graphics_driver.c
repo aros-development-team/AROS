@@ -477,7 +477,7 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
     } else {
 	D(bug("[driver_Setup] Hardware mouse cursor is not supported, using fakegfx.hidd\n"));
 
-	mdd->gfxhidd = init_fakegfxhidd(noframebuffer, gfxhidd, GfxBase);
+	mdd->gfxhidd = init_fakegfxhidd(gfxhidd, GfxBase);
 	if (mdd->gfxhidd) {
 	    mdd->fakegfx_inited = TRUE;
 	} else
