@@ -101,6 +101,7 @@ static const struct Resident *romtagList[] =
     &PCI_ROMTag,                        /* ColdStart,   90   */
 //  &PCILx_ROMTag,                      /* ColdStart,   89   */
 #endif
+    &GFX_ROMTag,			/* ColdStart,   66   */
     &Graphics_ROMTag,                   /* ColdStart,   65   */
     &Layers_ROMTag,                     /* ColdStart,   60   */
     &Timer_ROMTag,                      /* ColdStart,   50   */
@@ -110,7 +111,6 @@ static const struct Resident *romtagList[] =
     &Keymap_ROMTag,                     /* ColdStart,   40   */
     &Input_ROMTag,                      /* ColdStart,   30   */
     &Intuition_ROMTag,                  /* ColdStart,   15   */
-    &GFX_ROMTag,			/* ColdStart,   10   */
 /* This driver now causes segmentation fault and trashes the
    display. Probably previously it failed to initialize because
    its superclass was not initialized. Now everything is OK.

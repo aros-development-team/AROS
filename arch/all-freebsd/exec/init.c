@@ -83,6 +83,7 @@ static const struct Resident *romtagList[] =
     &HIDDCl_ROMTag,                     /* ColdStart,   92   */
     &UXIO_ROMTag,                       /* ColdStart,   91   */
     &HostLib_ROMTag,                    /* ColdStart,   91   */
+    &GFX_ROMTag,			/* ColdStart,   66   */
     &Graphics_ROMTag,                   /* ColdStart,   65   */
     &Layers_ROMTag,                     /* ColdStart,   60   */
     &Timer_ROMTag,                      /* ColdStart,   50   */
@@ -92,7 +93,6 @@ static const struct Resident *romtagList[] =
     &Keymap_ROMTag,                     /* ColdStart,   40   */
     &Input_ROMTag,                      /* ColdStart,   30   */
     &Intuition_ROMTag,                  /* ColdStart,   15   */
-    &GFX_ROMTag,			/* ColdStart,   10   */
 #if ENABLE_X11 == 1
     &X11Cl_ROMTag,			/* ColdStart,   9    */
 #endif
