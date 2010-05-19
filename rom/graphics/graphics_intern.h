@@ -115,7 +115,6 @@ struct class_static_data
     
     OOP_Class 	    *fakegfxclass;
     OOP_Class 	    *fakefbclass;
-    ULONG	    fakefb_attr;
 };
 
 /* Monitor driver data */
