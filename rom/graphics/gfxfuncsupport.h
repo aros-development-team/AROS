@@ -31,7 +31,8 @@
    if it is a HIDD bitmap
 */
 
-#define HIDD_BM_OBJ(bitmap)       (*(OOP_Object **)&((bitmap)->Planes[0])) 
+#define HIDD_BM_OBJ(bitmap)       (*(OOP_Object **)&((bitmap)->Planes[0]))
+#define HIDD_BM_DRVDATA(bitmap)   (*(struct monitor_driverdata **)&((bitmap)->Planes[1]))
 #define HIDD_BM_COLMAP(bitmap)	  (*(OOP_Object **)&((bitmap)->Planes[2]))
 #define HIDD_BM_COLMOD(bitmap)    (*(HIDDT_ColorModel *)&((bitmap)->Planes[3]))
 #define HIDD_BM_PIXTAB(bitmap)	  (*(HIDDT_Pixel **)&((bitmap)->Planes[4]))
@@ -48,9 +49,14 @@
 do                                                                             \
 {                                                                              \
     if(! IS_HIDD_BM(bitmap))                                                   \
-        release_cache_object(SDD(GfxBase)->planarbm_cache, (bm_obj), GfxBase); \
+        release_cache_object(CDD(GfxBase)->planarbm_cache, (bm_obj), GfxBase); \
 } while (0)
 
+
+#define GET_BM_DRIVERDATA(bitmap) \
+	((IS_HIDD_BM(bitmap)) \
+		? HIDD_BM_DRVDATA(bitmap) \
+		: (struct monitor_driverdata *)CDD(GfxBase))
 
 #define IS_HIDD_BM(bitmap) (((bitmap)->Flags & BMF_AROS_HIDD) == BMF_AROS_HIDD)
 
@@ -192,7 +198,8 @@ LONG fillrect_pendrmd(struct RastPort *tp, LONG x1, LONG y1, LONG x2, LONG y2,
 
 BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, LONG xSrc, LONG ySrc,
 	    	   struct BitMap *dstBitMap, OOP_Object *dstbm_obj, LONG xDest, LONG yDest,
-		   LONG xSize, LONG ySize, ULONG minterm, OOP_Object *gc, struct GfxBase *GfxBase);
+		   LONG xSize, LONG ySize, ULONG minterm, OOP_Object *gfxhidd, OOP_Object *gc,
+		   struct GfxBase *GfxBase);
 
 
 LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,

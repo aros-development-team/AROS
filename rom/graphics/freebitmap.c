@@ -1,13 +1,15 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free the memory occupied by a BitMap.
     Lang: english
 */
+
 #include <aros/debug.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
+
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 
@@ -57,6 +59,8 @@
 
     if (bm->pad != 0 || (bm->Flags & BMF_AROS_HIDD))
     {
+        OOP_Object *gfxhidd = NULL;
+
     	if (HIDD_BM_FLAGS(bm) & HIDD_BMF_SHARED_PIXTAB)
 	{
 	    /* NULL colormap otherwise bitmap killing also kills
@@ -70,7 +74,7 @@
     	    FreeVec(HIDD_BM_PIXTAB(bm));
 	}
 
-	HIDD_Gfx_DisposeBitMap(SDD(GfxBase)->gfxhidd, (OOP_Object *)HIDD_BM_OBJ(bm));
+	HIDD_Gfx_DisposeBitMap(HIDD_BM_DRVDATA(bm)->gfxhidd, HIDD_BM_OBJ(bm));
 
 	FreeMem(bm, sizeof (struct BitMap));
     }

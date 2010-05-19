@@ -3,12 +3,6 @@
     $Id$
 */
 
-/* !!!! ONLY USE THE BELOW MACROS IF YOU ARE 100% SURE 
-   THAT IT IS A HIDD BITMAP AND NOT ONE THE USER
-   HAS CREATED BY HAND !!!. You can use IS_HIDD_BM(bitmap) to test
-   if it is a HIDD bitmap
-*/
-
 /****************************************************************************************/
 
 #include <cybergraphx/cybergraphics.h>
@@ -16,7 +10,6 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/layers.h>
-//#include <proto/cybergraphics.h>
 #include <proto/oop.h>
 #include <clib/macros.h>
 
@@ -28,36 +21,37 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#define DEBUG_PLANARBM(x)
+
 /****************************************************************************************/
 
 OOP_Object *get_planarbm_object(struct BitMap *bitmap, struct GfxBase *GfxBase)
 {
     OOP_Object *pbm_obj;
 
-    D(bug("get_planarbm_object()\n"));    
-    pbm_obj = obtain_cache_object(SDD(GfxBase)->planarbm_cache, GfxBase);
+    DEBUG_PLANARBM(bug("get_planarbm_object()\n"));    
+    pbm_obj = obtain_cache_object(CDD(GfxBase)->planarbm_cache, GfxBase);
     
     if (NULL != pbm_obj)
     {
 	
-	D(bug("Got cache object %p, class=%s, domethod=%p, instoffset=%d\n"
+	DEBUG_PLANARBM(bug("Got cache object %p, class=%s, instoffset=%d\n"
 		, pbm_obj
 		, OOP_OCLASS(pbm_obj)->ClassNode.ln_Name
-		, OOP_OCLASS(pbm_obj)->DoMethod
 		, OOP_OCLASS(pbm_obj)->InstOffset
 	));
 	
     	if (!HIDD_PlanarBM_SetBitMap(pbm_obj, bitmap))
 	{
-	     D(bug("!!! get_planarbm_object: HIDD_PlanarBM_SetBitMap FAILED !!!\n"));
-	     release_cache_object(SDD(GfxBase)->planarbm_cache, pbm_obj, GfxBase);
+	     DEBUG_PLANARBM(bug("!!! get_planarbm_object: HIDD_PlanarBM_SetBitMap FAILED !!!\n"));
+	     release_cache_object(CDD(GfxBase)->planarbm_cache, pbm_obj, GfxBase);
 	     pbm_obj = NULL;
 	}
 		
     }
     else
     {
-    	D(bug("!!! get_planarbm_object: obtain_cache_object FAILED !!!\n"));
+    	DEBUG_PLANARBM(bug("!!! get_planarbm_object: obtain_cache_object FAILED !!!\n"));
     }
     
     return pbm_obj;
@@ -498,7 +492,8 @@ LONG fillrect_pendrmd(struct RastPort *rp, LONG x1, LONG y1, LONG x2, LONG y2,
 
 BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, LONG xSrc, LONG ySrc,
 	    	   struct BitMap *dstBitMap, OOP_Object *dstbm_obj, LONG xDest, LONG yDest,
-		   LONG xSize, LONG ySize, ULONG minterm, OOP_Object *gc, struct GfxBase *GfxBase)
+		   LONG xSize, LONG ySize, ULONG minterm, OOP_Object *gfxhidd, OOP_Object *gc,
+		   struct GfxBase *GfxBase)
 {
     HIDDT_DrawMode drmd;
 
@@ -653,7 +648,7 @@ BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, LONG xSrc, L
 	    cbtags[0].ti_Data = drmd;
 	    
 	    OOP_SetAttrs(gc, cbtags);
-    	    HIDD_Gfx_CopyBox(SDD(GfxBase)->gfxhidd
+    	    HIDD_Gfx_CopyBox(gfxhidd
 	    	, srcbm_obj
     		, xSrc, ySrc
     		, dstbm_obj

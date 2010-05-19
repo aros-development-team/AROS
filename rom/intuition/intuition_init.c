@@ -216,6 +216,26 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     GetPrivIBase(LIBBASE)->DefMenuDecorObj = GetPrivIBase(LIBBASE)->MenuDecorObj;
     LIBBASE->ViewLord_ok = FALSE;
 
+    DEBUG_INIT(dprintf("LIB_Init: Setting up pointers...\n"));
+
+    GetPrivIBase(IntuitionBase)->DefaultPointer = MakePointerFromPrefs
+    (
+        IntuitionBase, GetPrivIBase(IntuitionBase)->ActivePreferences
+    );
+    GetPrivIBase(IntuitionBase)->BusyPointer = MakePointerFromPrefs
+    (
+        IntuitionBase, GetPrivIBase(IntuitionBase)->ActivePreferences
+    );
+
+    if
+    (
+           !GetPrivIBase(IntuitionBase)->DefaultPointer 
+        || !GetPrivIBase(IntuitionBase)->BusyPointer
+    )
+    {
+        return FALSE;
+    }
+
     DEBUG_INIT(dprintf("LIB_Init: done\n"));
 
     return TRUE;

@@ -303,19 +303,9 @@ static BOOL __dosboot_InitGfx(STRPTR gfxclassname, struct initbase *base)
     	D(bug("[DOS] __dosboot_InitGfx: calling private gfx LateGfxInit() ...\n"));
 	if (LateGfxInit(gfxclassname))
 	{
-	    struct IntuitionBase *IntuitionBase;
             D(bug("[DOS] __dosboot_InitGfx:    ... success\n"));
-
 	    /* Now that gfx. is guaranteed to be up & working, let intuition open WB screen */
-	    IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
-	    if (IntuitionBase)
-	    {
-	    	if (LateIntuiInit(NULL))
-	    	{
-	    	    success = TRUE;
-		}
-		CloseLibrary((struct Library *)IntuitionBase);
-	    }
+	    success = TRUE;
 	}
 	D(bug("[DOS] __dosboot_InitGfx: Closing gfx\n"));
 

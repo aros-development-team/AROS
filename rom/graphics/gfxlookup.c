@@ -60,7 +60,7 @@
   AROS_LIBFUNC_INIT
 
   IPTR *Hash = GfxBase -> hash_table;
-  ULONG Index = CalcHashIndex((ULONG)pointer);
+  ULONG Index = CalcHashIndex((IPTR)pointer, GFXASSOCIATE_HASHSIZE);
 
   /* Whatever structure we get as node we put the pointer in the space
      following immediately after the ExtendedNode structure.

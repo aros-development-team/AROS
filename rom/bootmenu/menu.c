@@ -47,15 +47,7 @@ static BOOL init_gfx(STRPTR gfxclassname, struct BootMenuBase *BootMenuBase)
     if (LateGfxInit(gfxclassname))
     {
         D(bug("[BootMenu] init_gfx: calling private LateGfxInit Succeeded\n"));
-        if (LateIntuiInit(NULL))
-        {
-            D(bug("[BootMenu] init_gfx: calling private LateIntuiInit Succeeded\n"));
-            success = TRUE;
-        }
-        else
-        {
-            D(bug("[BootMenu] init_gfx: calling private LateIntuiInit Failed!\n"));
-        }
+        success = TRUE;
     }
     else
     {

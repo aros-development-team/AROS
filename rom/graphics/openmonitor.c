@@ -6,10 +6,12 @@
     Lang: english
 */
 
+#include <aros/atomic.h>
 #include <aros/debug.h>
 #include <graphics/monitor.h>
 
 #include "graphics_intern.h"
+#include "dispinfo.h"
 
 /*****************************************************************************
 
@@ -56,7 +58,7 @@
 {
     AROS_LIBFUNC_INIT
     
-    struct MonitorSpec *mspc;
+    struct MonitorSpec *mspc = NULL;
 
     D(bug("[GFX] OpenMonitor(%s)\n", monitor_name));
 
@@ -81,22 +83,13 @@
 	    }
 	} else
 	    mspc = GfxBase->default_monitor;
-    }
-    /* TODO: implement lookup by display_id */
-    else
+    } else if (display_id != INVALID_ID) {
+	mspc = FindMonitor(display_id, GfxBase);
+    } else
         mspc = GfxBase->default_monitor;
 
-    /* Note that we do initialization inside a semaphore. This protects us from
-       potential race condition when several tasks attempt to open the same monitor
-       The semaphore we use here is not exactly for this purpose, but this will not harm */
-    ObtainSemaphore(&mspc->DisplayInfoDataBaseSemaphore);
-
-    if (driver_OpenMonitor(mspc, GfxBase))
-        mspc->ms_OpenCount++;
-    else
-        mspc = NULL;
-
-    ReleaseSemaphore(&mspc->DisplayInfoDataBaseSemaphore);
+    if (mspc)
+        AROS_ATOMIC_INC(mspc->ms_OpenCount);
 
     return mspc;
 

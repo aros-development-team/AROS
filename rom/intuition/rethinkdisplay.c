@@ -153,8 +153,7 @@
                 DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: LoadView ViewLord 0x%lx\n",&IntuitionBase->ViewLord));
                 LoadView(&IntuitionBase->ViewLord);
 
-                DEBUG_INIT(dprintf("RethinkDisplay: SpriteNum %ld ActiveScreen %p Pointer %p Sprite %p\n",
-                            GetPrivIBase(IntuitionBase)->SpriteNum,
+                DEBUG_INIT(dprintf("RethinkDisplay: ActiveScreen %p Pointer %p Sprite %p\n",
                             IntuitionBase->ActiveScreen,
                             GetPrivScreen(IntuitionBase->ActiveScreen)->Pointer,
                             GetPrivScreen(IntuitionBase->ActiveScreen)->Pointer->sprite));

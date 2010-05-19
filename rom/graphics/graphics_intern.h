@@ -118,11 +118,13 @@ struct class_static_data
     ULONG	    fakefb_attr;
 };
 
-/* Monitor driver data. Should be somehow attached to a MonitorSpec */
+/* Monitor driver data */
 struct monitor_driverdata
 {
-    /* Driver objects */
     OOP_Object      	     *gfxhidd;		/* Graphics driver to use (can be fakegfx object) */
+    ObjectCache     	     *gc_cache;		/* GC cache					  */
+
+    /* FakeGfx-related */
     OOP_Object      	     *gfxhidd_orig;	/* Real graphics driver object			  */
     BOOL    	    	     fakegfx_inited;	/* fakegfx HIDD is in use 			  */
 
@@ -133,17 +135,22 @@ struct monitor_driverdata
     OOP_Object	    	     *colmap_bak;	/* Original colormap object of shown bitmap	  */
     HIDDT_ColorModel 	     colmod_bak;	/* Original colormodel of shown bitmap		  */
 
-    /* Caches */
-    ObjectCache     	     *gc_cache;		/* GC cache					  */
-    ObjectCache     	     *planarbm_cache;   /* Planar bitmaps cache				  */
+    /* Sync modes */
+    struct MonitorSpec	     **specs;		/* MonitorSpecs array				  */
+    ULONG		     numspecs;		/* Number of MonitorSpecs			  */
 };
 
-#define MDD(mspc)	    (*(struct monitor_driverdata **)&mspc->ms_Special->reserved1)
-#define SDD(base)   	    (MDD(base->default_monitor))
+#define SDD(base)   	    (PrivGBase(base)->current_display)
 
 /* Common driver data data to all monitors */
 struct common_driverdata
 {
+    /* The order of these two must match struct monitor_driverdata */
+    OOP_Object		    *memorygfx;		/* Memory graphics driver */
+    ObjectCache     	    *gc_cache;		/* GC cache		  */
+
+    ObjectCache     	    *planarbm_cache;	/* Planar bitmaps cache	  */
+
     /* Attribute bases */
     OOP_AttrBase    	     hiddBitMapAttrBase;
     OOP_AttrBase    	     hiddGCAttrBase;
@@ -165,6 +172,9 @@ struct common_driverdata
 #define __IHidd_Gfx         CDD(GfxBase)->hiddGfxAttrBase
 #define __IHidd_FakeGfxHidd CDD(GfxBase)->hiddFakeGfxHiddAttrBase
 
+/* Hashtable sizes. Must be powers of two */
+#define GFXASSOCIATE_HASHSIZE   8
+#define TFE_HASHTABSIZE   	16
 #define DRIVERDATALIST_HASHSIZE 256
 
 /* Internal GFXBase struct */
@@ -172,13 +182,13 @@ struct GfxBase_intern
 {
     struct GfxBase 	 	gfxbase;
 
-    struct class_static_data    *fakegfx_staticdata; /* FakeGFX HIDD static data */
+    struct class_static_data    *fakegfx_staticdata; /* FakeGFX HIDD static data				 */
+    struct monitor_driverdata   *current_display;    /* Current display driver, temporary hack			 */
+    ULONG			displays;	     /* Number of display drivers installed in the system	 */
     struct common_driverdata	shared_driverdata;   /* Driver data shared between all monitors (allocated once) */
-    struct SignalSemaphore	monitors_sema;	     /* Monitor list semaphore */
+    struct SignalSemaphore	monitors_sema;	     /* Monitor list semaphore					 */
 
-    struct SignalSemaphore	hashtab_sema;	     /* hash_table arbitration semaphore */
-
-#define TFE_HASHTABSIZE   	16 /* This MUST be a power of two */
+    struct SignalSemaphore	hashtab_sema;	     /* hash_table arbitration semaphore			 */
 
     /* TextFontExtension pool */
     struct tfe_hashnode   	* tfe_hashtab[TFE_HASHTABSIZE];
@@ -240,8 +250,8 @@ struct GfxBase_intern
 /* Forward declaration */
 struct ViewPort;
 
-/* a function needed by GfxAssocate(), GfxLookUp(), GfxFree() */
-extern ULONG CalcHashIndex(ULONG n);
+/* Hash index calculation */
+extern ULONG CalcHashIndex(IPTR n, UWORD size);
 
 BOOL obsolete_CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase);
 #if NEW_DRIVERDATA_CODE
@@ -267,7 +277,9 @@ extern void driver_Text (struct RastPort *, CONST_STRPTR, LONG, struct GfxBase *
 
 extern void driver_LoadView(struct View *view, struct GfxBase *);
 
-extern BOOL driver_OpenMonitor(struct MonitorSpec *mspc, struct GfxBase *GfxBase);
+extern struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *GfxBase);
+
+extern void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
 
 /* functions in support.c */
 extern BOOL pattern_pen(struct RastPort *rp

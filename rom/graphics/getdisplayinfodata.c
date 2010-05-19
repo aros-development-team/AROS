@@ -12,11 +12,11 @@
 #include <proto/graphics.h>
 #include <graphics/displayinfo.h>
 #include <hidd/graphics.h>
-#include "dispinfo.h"
 #include <proto/oop.h>
 #include <stdio.h>
 #include <string.h>
 #include "graphics_intern.h"
+#include "dispinfo.h"
 
 /****************************************************************************************/
 
@@ -98,7 +98,8 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
+    struct monitor_driverdata *mdd;
     struct QueryHeader  *qh;
     ULONG   	    	structsize;
     OOP_Object      	*sync, *pf;
@@ -118,24 +119,28 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    return 0;
 	}
     }
-    
+
     if (NULL == handle)
     {
 	D(bug("!!! COULD NOT GET HANDLE IN GetDisplayInfoData()\n"));
 	return 0;
     }
-    
-    modeid = (ULONG)handle;
+
+    modeid = GetModeID(handle);
+
     hiddmode = (HIDDT_ModeID)AMIGA_TO_HIDD_MODEID(modeid);
-    
+
+    mdd = FindDriver(modeid, GfxBase);
+    if (!mdd)
+        return 0;
+
     /* Get mode info from the HIDD */
-    if (!HIDD_Gfx_GetMode(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pf))
+    if (!HIDD_Gfx_GetMode(mdd->gfxhidd, hiddmode, &sync, &pf))
     {
 	D(bug("NO VALID MODE PASSED TO GetDisplayInfoData() !!!\n"));
 	return 0;
     }
-    
-    
+
     D(bug("GetDisplayInfoData(handle=%d, modeid=%x, tagID=%x)\n"
     	, (ULONG)handle, modeid, tagID));
 	
@@ -163,7 +168,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    IPTR redmask, greenmask, bluemask;
 	    struct HIDD_ModeProperties HIDDProps = {0};
 	    
-	    HIDD_Gfx_ModeProperties(SDD(GfxBase)->gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
+	    HIDD_Gfx_ModeProperties(mdd->gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
 	    
 	    di = (struct DisplayInfo *)qh;
 	    
@@ -178,9 +183,9 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    di->PaletteRange = 65535;
 
 	    /* Compute red green and blue bits */
-	    OOP_GetAttr(pf, aHidd_PixFmt_RedMask,	&redmask);
+	    OOP_GetAttr(pf, aHidd_PixFmt_RedMask,   &redmask);
 	    OOP_GetAttr(pf, aHidd_PixFmt_GreenMask, &greenmask);
-	    OOP_GetAttr(pf, aHidd_PixFmt_BlueMask,	&bluemask);
+	    OOP_GetAttr(pf, aHidd_PixFmt_BlueMask,  &bluemask);
 	    
 	    di->RedBits	  = compute_numbits(redmask);
 	    di->GreenBits = compute_numbits(greenmask);
@@ -228,14 +233,12 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    di->Nominal.MinY	= 0;
 	    di->Nominal.MaxX	= width  - 1;
 	    di->Nominal.MaxY	= height - 1;
-	  
-	  
+
 #warning What about the OSCAN stuff ??
 	    di->MaxOScan	= di->Nominal;
 	    di->VideoOScan	= di->Nominal;
 	    di->TxtOScan	= di->Nominal;
 	    di->StdOScan	= di->Nominal;
-
 /* 
 	    di->MaxOScan.MinX	= di->Nominal.MinX;
 	    di->MaxOScan.MinY	= di->Nominal.MinY;
@@ -260,38 +263,27 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 */	    
 	    break;
 	}
-	    
+
 	case DTAG_MNTR:
 	{
 	    struct MonitorInfo *mi;
 	    struct HIDD_ModeProperties HIDDProps = {0};
-	    IPTR pixelClock = 0;
-	    IPTR hTotal = 0;
-	    IPTR vTotal = 0;
 
-	    if (!HIDD_Gfx_ModeProperties(SDD(GfxBase)->gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps))) {
+	    if (!HIDD_Gfx_ModeProperties(mdd->gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps))) {
 	    	D(bug("!!! INVALID MODE ID IN GetDisplayInfoData(DTAG_MNTR) !!!\n"));
 		FreeMem(qh, structsize);
 		return 0;
 	    }
 
-	    OOP_GetAttr(sync, aHidd_Sync_PixelClock, &pixelClock);
-	    OOP_GetAttr(sync, aHidd_Sync_HTotal, &hTotal);
-	    OOP_GetAttr(sync, aHidd_Sync_VTotal, &vTotal);
-	    
-	    D(bug("[GetDisplayInfoData] PixelClock %u, HTotal %u, VTotal %u\n", pixelClock, hTotal, vTotal));
-
 	    mi = (struct MonitorInfo *)qh;
+
+	    mi->Mspc = FindMonitor(modeid, GfxBase);
 
 	    /*
 	    mi->ViewPosition.X = ?;
 	    mi->ViewPosition.Y = ?;
 	    mi->ViewResolution.X = ?;
 	    mi->ViewResolution.Y = ?;
-	    mi->ViewPositionRange.MinX = ?;
-	    mi->ViewPositionRange.MinY = ?;
-	    mi->ViewPositionRange.MaxX = ?;
-	    mi->ViewPositionRange.MaxY = ?;
 	    mi->MinRow = ?;
 	    mi->MouseTicks.X = ?;
 	    mi->MouseTicks.Y = ?;
@@ -299,24 +291,14 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    mi->DefaultViewPosition.Y = ?;
 	    */
 
-	    mi->TotalRows = vTotal;
-	    /* Some poor man's drivers (like SDL hosted) can't provide any sync signal values
-	       just because host system doesn't provide them. However Amiga software expects to
-	       have something valid here. vTotal is dealt with by the driver (as a failback it's
-	       equal to VDisp). There's no reasonable substitution for PixelClock, so we handle
-	       it here. This value has nothing to do with real refresh rate, but we can do nothing
-	       with it */
-	    if (pixelClock)
-	        mi->TotalColorClocks = 100000000 / (pixelClock / hTotal * 28);
-	    else
-	        mi->TotalColorClocks = VGA_COLORCLOCKS;
-	    mi->PreferredModeID = modeid;
-	    mi->Compatibility = HIDDProps.CompositionFlags ? MCOMPAT_SELF : MCOMPAT_NOBODY;
+	    mi->TotalRows         = mi->Mspc->total_rows;
+	    mi->TotalColorClocks  = mi->Mspc->total_colorclocks;
+	    mi->ViewPositionRange = mi->Mspc->ms_LegalView;
 
-	    /* TODO: implement a lookup function */
-	    mi->Mspc = GfxBase->default_monitor;
-	    if (mi->Mspc)
-	        mi->reserved[0]      = (IPTR)MDD(mi->Mspc)->gfxhidd;
+	    mi->PreferredModeID   = modeid;
+	    mi->Compatibility     = HIDDProps.CompositionFlags ? MCOMPAT_SELF : MCOMPAT_NOBODY;
+
+	    mi->reserved[0] = mdd->gfxhidd;
 
 	    break;
 	}
@@ -324,14 +306,12 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	case DTAG_NAME:
 	{
 	    struct NameInfo *ni;
-	    IPTR depth, width, height, stdpixfmt;
+	    IPTR depth, stdpixfmt;
 	    STRPTR sync_description;
 	    
 	    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
 	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpixfmt);
 
-	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
-	    OOP_GetAttr(sync, aHidd_Sync_VDisp,	&height);
 	    OOP_GetAttr(sync, aHidd_Sync_Description, (IPTR *)&sync_description);
 	    ni = (struct NameInfo *)qh;
 
@@ -389,12 +369,17 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 			break;
 			
 		}
-		
+
 		snprintf(ni->Name, DISPLAYNAMELEN, "%s %2dbit %s",
 		    	 sync_description, (int)depth, pixfmt_name);
 	    }
 	    else
 	    {
+	        IPTR width = 0;
+		IPTR height = 0;
+
+		OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
+		OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
 	    	snprintf(ni->Name, DISPLAYNAMELEN, "AROS: %ldx%ldx%ld", width, height, depth);
 	    }
 	    break;
