@@ -64,7 +64,11 @@ static void PrintName(char *name, struct ExtendedNode *n)
 
 static void PrintNode(char *name, struct ExtendedNode *n)
 {
-    printf("%s %p %s\n", name, n, n->xln_Name);
+    char *nodename = "<no name>";
+
+    if (n->xln_Name)
+        nodename = n->xln_Name;
+    printf("%s %p %s\n", name, n, nodename);
     printf("  xln_Succ      %p\n", n->xln_Succ);
     printf("  xln_Pred      %p\n", n->xln_Pred);
     printf("  xln_Type      %d\n", n->xln_Type);
@@ -214,21 +218,16 @@ int main(void)
     if (!args.nospecs) {
             printf("*********** MonitorSpecs ***********\n\n");
 
-	    /* We don't use MonitorListSemaphore because something crashes on
-	       AmigaOS4. So we use as little of things as possible and do some
-	       additional checks. */
-	    mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head;
-
-	    if (mspc) {
-                for (; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
-                    PrintMonitorSpec(mspc);
-	            printf("\n");
-                }
-	    } else {
-	        printf("MonitorList is not initialized properly:\n");
-		PrintList(&GfxBase->MonitorList);
-		args.allspecs = TRUE;
-	    }
+	  /* It's a good idea to lock this semaphore. It seems to be present in all OSes
+            (at least in AmigaOS v3, MorphOS and AROS)
+	    However at least on AmigaOS v3 we can't call NextDisplayInfo() and such
+	    while the lock is held. */
+            ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
+            for (mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
+                PrintMonitorSpec(mspc);
+	        printf("\n");
+            }
+	    ReleaseSemaphore(GfxBase->MonitorListSemaphore);
     }
 
     if (!args.nomodes) {
@@ -307,10 +306,12 @@ int main(void)
 	    if (args.allspecs)
 	        mspc = NULL;
 	    else {
+	        ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
 	        for (mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
 	            if (mspc == mon.Mspc)
 		        break;
 		}
+		ReleaseSemaphore(GfxBase->MonitorListSemaphore);
 	    }
 	    if ((mspc != mon.Mspc) && mon.Mspc)
 	        PrintMonitorSpec(mon.Mspc);
