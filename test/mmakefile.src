@@ -48,6 +48,7 @@ COMMONTESTFILES := \
     opendiskfont \
     openfromlock \
     partition \
+    rawdofmt \
     scantest \
     semaphoretest \
     showvisregion \
