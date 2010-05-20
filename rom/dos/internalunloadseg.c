@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -68,8 +68,8 @@
 	while ((si = (struct seginfo *)REMHEAD(&segnode->seginfos)))
 	{
 	  AROS_CALL2NR(void, freefunc,
-	    AROS_LCA(APTR ,  (APTR)si, A1),
-	    AROS_LCA(ULONG,  (ULONG)sizeof(struct seginfo), D0),
+	    AROS_LCA(APTR ,  si, A1),
+	    AROS_LCA(ULONG,  sizeof(struct seginfo), D0),
 	    struct Library *, (struct Library *)SysBase
           );
 	}
@@ -87,8 +87,8 @@
       next = *(BPTR *)BADDR(seglist);
 
       AROS_CALL2NR(void, freefunc,
-        AROS_LCA(APTR ,  (BPTR *)((LONG)BADDR(seglist) - sizeof(ULONG)), A1),
-        AROS_LCA(ULONG, *(LONG *)((LONG)BADDR(seglist) - sizeof(ULONG)), D0),
+        AROS_LCA(APTR ,  BADDR(seglist) - sizeof(ULONG), A1),
+        AROS_LCA(ULONG, *(LONG *)(BADDR(seglist) - sizeof(ULONG)), D0),
         struct Library *, (struct Library *)SysBase
       );
       
