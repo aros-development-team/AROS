@@ -38,6 +38,8 @@
 
 #include "ahci_hba.h"
 
+#define HBAHW_D(fmt, ...) D(bug("[HBAHW%d] " fmt, hba_chip->HBANumber, ##__VA_ARGS__))
+
 #define HBA_TASK_STACKSIZE  16*1024
 #define HBA_TASK_PRI        10
 

@@ -115,9 +115,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
 
             /* Initialize the list of found host bus adapters */
             ObtainSemaphore(&LIBBASE->chip_list_lock);
-//            LIBBASE->chip_list.mlh_Head     = (struct MinNode*) &LIBBASE->chip_list.mlh_Tail;
-//            LIBBASE->chip_list.mlh_Tail     = NULL;
-//            LIBBASE->chip_list.mlh_TailPred = (struct MinNode*) &LIBBASE->chip_list.mlh_Head;
             NEWLIST((struct MinList *)&LIBBASE->chip_list);
 
             struct Hook FindHook = {
@@ -134,25 +131,32 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
 
             HIDD_PCI_EnumDevices(PCIObject, &FindHook, Requirements);
 
-            struct ahci_hba_chip *hba_chip;
-
-            ForeachNode(&LIBBASE->chip_list, hba_chip) {
-
-                if( ahci_setup_hbatask( hba_chip ) ) {
-                    D(bug("[AHCI] Created HBA task\n"));
-                }else{
-                    D(bug("[AHCI] Failed to create HBA task!\n"));
+            if ( !IsListEmpty(&LIBBASE->chip_list) ) {
+                struct ahci_hba_chip *hba_chip;
+                ForeachNode(&LIBBASE->chip_list, hba_chip) {
+                    if( ahci_setup_hbatask(hba_chip) ) {
+                        D(bug("[AHCI] Created HBA task\n"));
+                    }else{
+                        // de-allocate everything relating to this HBA-chip and remove it from the list
+                        D(bug("[AHCI] Failed to create HBA task!\n"));
+                        REMOVE(hba_chip);
+                    }
                 }
+                ReleaseSemaphore(&LIBBASE->chip_list_lock);
+            }else{
+                /*
+                    No AHCI controller found
+                */
+                ReleaseSemaphore(&LIBBASE->chip_list_lock);
+                DeletePool(LIBBASE->ahci_MemPool);
+                return FALSE;
             }
-
-            ReleaseSemaphore(&LIBBASE->chip_list_lock);
 
             return TRUE;
         }else{
             D(bug("[AHCI] Failed to create memory pool\n"));
         }
         OOP_DisposeObject(PCIObject); 
-  
     }else{
         D(bug("[AHCI] Failed to open PCI class\n"));
     }
