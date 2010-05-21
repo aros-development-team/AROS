@@ -353,6 +353,7 @@ struct drm_pciid nouveau_pciids [] =
     { 0x10de, 0x0652 }, /* G96 [GeForce GT 130M] */
     { 0x10de, 0x0658 }, /* G96 [Quadro FX 380] */
     { 0x10de, 0x0659 }, /* G96 [Quadro FX 580] */
+    { 0x10de, 0x065b }, /* GeForce 9400 GT */
     { 0x10de, 0x065c }, /* G96M [Quadro FX 770M] */
     { 0x10de, 0x06e2 }, /* GeForce 8400 GS */
     { 0x10de, 0x06e4 }, /* GeForce 8400 GS */
