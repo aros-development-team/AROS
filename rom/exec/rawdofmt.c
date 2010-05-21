@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Format a string and emit it.
     Lang: english
 */
+
 #include <dos/dos.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
@@ -327,8 +328,10 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
                 PutCh('-');
 
 	    /* Print body upto width */
-	    for(i=0; i<width; i++)
-	        PutCh(*buf++);
+	    for(i=0; i<width; i++) {
+	        PutCh(*buf);
+		buf++;
+	    }
 
 	    /* Pad right if left aligned */
 	    if(left)
@@ -338,7 +341,8 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 	else
 	{
 	    /* No '%' sign? Put the formatstring out */
-	    PutCh(*FormatString++);
+	    PutCh(*FormatString);
+	    FormatString++;
 	}
     }
     /* All done. Put the terminator out. */
