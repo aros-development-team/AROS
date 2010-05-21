@@ -8,11 +8,6 @@
 
 #include LC_LIBDEFS_FILE
 
-#define __OOP_NOATTRBASES__
-
-#undef HiddPCIDeviceAttrBase
-#define HiddPCIDeviceAttrBase           (asd->PCIDeviceAB)
-
 /*
 
 Game plan so far...
@@ -51,18 +46,19 @@ AROS_UFH3(void, ahci_Enumerator,
 
     IPTR    intline;
 
-    struct ahci_staticdata *asd = hook->h_Data;
+    LIBBASETYPE *LIBBASE = (LIBBASETYPE *)hook->h_Data;
+
+    OOP_AttrBase HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
 
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base5, (APTR)&abar);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size5, &size);
     if( !(abar == 0) ) {
 
         struct ahci_hba_chip *hba_chip;
-        if((hba_chip = (struct ahci_hba_chip*) AllocVecPooled(asd->ahci_MemPool, sizeof(struct ahci_hba_chip)))) {
+        if((hba_chip = (struct ahci_hba_chip*) AllocVecPooled(LIBBASE->ahci_MemPool, sizeof(struct ahci_hba_chip)))) {
 
             OOP_Object *PCIDriver;
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&PCIDriver);
-	        asd->PCIDriver = PCIDriver;
 
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorID);
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
@@ -89,81 +85,65 @@ AROS_UFH3(void, ahci_Enumerator,
             };
             OOP_SetAttrs(pciDevice, (struct TagItem*)&attrs);
 
-            AddTail((struct List*)&asd->ahci_hba_list, (struct Node*)hba_chip);
+            AddTail((struct List*)&LIBBASE->chip_list, (struct Node*)hba_chip);
 
         }
     }
-	AROS_USERFUNC_EXIT
 
+    OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
+
+	AROS_USERFUNC_EXIT
 }
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
     D(bug("[AHCI] Init\n"));
 
-    struct ahci_staticdata *asd = &LIBBASE->asd;
+    OOP_Object *PCIObject;
 
-    struct OOP_ABDescr attrbases[] = {
-        { (STRPTR)IID_Hidd_PCIDevice,     &HiddPCIDeviceAttrBase },
-        { NULL, NULL }
-    }; 
+    if ((PCIObject = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL))) {
+        if((LIBBASE->ahci_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096))) {
 
-    if (OOP_ObtainAttrBases(attrbases)) {
-        if ((asd->PCIObject = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL))) {
-            if((asd->ahci_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096))) {
+            /* HBA linked list is semaphore protected */
+            InitSemaphore(&LIBBASE->chip_list_lock);
 
-                /* HBA linked list is semaphore protected */
-                InitSemaphore(&asd->ahci_hba_list_lock);
+            /* Initialize the list of found host bus adapters */
+            ObtainSemaphore(&LIBBASE->chip_list_lock);
+            LIBBASE->chip_list.mlh_Head     = (struct MinNode*) &LIBBASE->chip_list.mlh_Tail;
+            LIBBASE->chip_list.mlh_Tail     = NULL;
+            LIBBASE->chip_list.mlh_TailPred = (struct MinNode*) &LIBBASE->chip_list.mlh_Head;
+            ReleaseSemaphore(&LIBBASE->chip_list_lock);
 
-                /* Initialize the list of found host bus adapters */
-                ObtainSemaphore(&asd->ahci_hba_list_lock);
-                asd->ahci_hba_list.mlh_Head     = (struct MinNode*) &asd->ahci_hba_list.mlh_Tail;
-                asd->ahci_hba_list.mlh_Tail     = NULL;
-                asd->ahci_hba_list.mlh_TailPred = (struct MinNode*) &asd->ahci_hba_list.mlh_Head;
-                ReleaseSemaphore(&asd->ahci_hba_list_lock);
+            struct Hook FindHook = {
+                h_Entry:    (IPTR (*)())ahci_Enumerator,
+                h_Data:     LIBBASE,
+            };
 
-                struct Hook FindHook = {
-                    h_Entry:    (IPTR (*)())ahci_Enumerator,
-                    h_Data:     asd,
-                };
+            struct TagItem Requirements[] = {
+                {tHidd_PCI_Class,       0x01},
+                {tHidd_PCI_SubClass,    0x06},
+                {tHidd_PCI_Interface,   0x01},
+                {TAG_DONE,              0x00}
+            };
 
-                struct TagItem Requirements[] = {
-                    {tHidd_PCI_Class,       0x01},
-                    {tHidd_PCI_SubClass,    0x06},
-                    {tHidd_PCI_Interface,   0x01},
-                    {TAG_DONE,              0x00}
-                };
+            HIDD_PCI_EnumDevices(PCIObject, &FindHook, Requirements);
 
-                HIDD_PCI_EnumDevices(asd->PCIObject, &FindHook, Requirements);
-
-                struct ahci_hba_chip *hba_chip;
-                ObtainSemaphore(&asd->ahci_hba_list_lock);
-                ForeachNode(&asd->ahci_hba_list, hba_chip) {
-                    if( ahci_setup_hbatask( hba_chip ) ) {
-                        D(bug("[AHCI] Created HBA task\n"));
-                    } else {
-                        /*
-                            Something failed while setting up the HBA task code
-                            Release all allocated memory and other resources for this HBA
-                            and remove us from the list
-                        */
-
-                        D(bug("[AHCI] Failed to create HBA task\n"));
-                    }
+            struct ahci_hba_chip *hba_chip;
+            ObtainSemaphore(&LIBBASE->chip_list_lock);
+            ForeachNode(&LIBBASE->chip_list, hba_chip) {
+                if( ahci_setup_hbatask( hba_chip ) ) {
+                    D(bug("[AHCI] Created HBA task\n"));
                 }
-                ReleaseSemaphore(&asd->ahci_hba_list_lock);
-
-                return TRUE;
-
-            }else{
-                D(bug("[AHCI] Failed to create memory pool\n"));
             }
-            OOP_DisposeObject(asd->PCIObject);   
+            ReleaseSemaphore(&LIBBASE->chip_list_lock);
+
+            return TRUE;
         }else{
-            D(bug("[AHCI] Failed to open PCI class\n"));
+            D(bug("[AHCI] Failed to create memory pool\n"));
         }
-        OOP_ReleaseAttrBases(attrbases);
+        OOP_DisposeObject(PCIObject); 
+  
     }else{
-        D(bug("[AHCI] Failed to obtain AttrBases\n"));
+        D(bug("[AHCI] Failed to open PCI class\n"));
     }
 
     return FALSE;

@@ -38,36 +38,27 @@
 
 #include "ahci_hba.h"
 
-#define __OOP_NOATTRBASES__
-
-#undef HiddPCIDeviceAttrBase
-#define HiddPCIDeviceAttrBase (XSD(cl)->PCIDeviceAB)
-
-#define XSD(cl) (&((LIBBASETYPEPTR)cl->UserData)->asd)
-
 #define HBA_TASK_STACKSIZE  16*1024
 #define HBA_TASK_PRI        10
 
-struct ahci_staticdata {
-
-    OOP_Object         *PCIObject;
-    OOP_Object         *PCIDriver;
-    OOP_AttrBase        PCIDeviceAB;
+/* ahci.device base */
+struct ahciBase {
+    struct Device device;
 
     /* Memory pool */
     APTR    ahci_MemPool;
 
-    /* List of all found AHCI host devices (referred to as host bus adapters, or HBA's) */
-    struct  SignalSemaphore ahci_hba_list_lock;
-    struct  MinList ahci_hba_list;
+    /*
+        List of all found AHCI host devices (referred to as host bus adapters, or HBA's)
+        Semaphore protects ONLY the integrity of the list, not individual HBA-chip struct
+    */
+    struct  SignalSemaphore chip_list_lock;
+    struct  MinList chip_list;
 };
 
-/* One instance of HBA */
+/* HBA-chip struct */
 struct ahci_hba_chip {
-    struct  MinNode ahci_hba_chip_Node;
-
-    struct  SignalSemaphore ahci_port_list_lock;
-    struct  MinList ahci_port_list;
+    struct  MinNode hba_chip_Node;
 
     IPTR    ProductID, VendorID;
 
@@ -76,16 +67,19 @@ struct ahci_hba_chip {
 
     ULONG   Version;
     ULONG   PortCount;
+
+    /*
+        List of all implemented ports on a given HBA
+        Semaphore protects ONLY the integrity of the list, not individual HBA-port struct
+    */
+    struct  SignalSemaphore port_list_lock;
+    struct  MinList port_list;
 };
 
+/* HBA-port struct */
 struct ahci_hba_port {
     struct  MinNode ahci_port_Node;
-};
 
-/* ahci.device base */
-struct ahciBase {
-    struct Device device;
-    struct ahci_staticdata asd;
 };
 
 /* ahci_hbahw prototypes */
