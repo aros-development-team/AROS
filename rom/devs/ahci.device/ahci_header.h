@@ -1,5 +1,5 @@
-#ifndef _AHCI_HEADER_H
-#define _AHCI_HEADER_H
+#ifndef AHCI_HEADER_H
+#define AHCI_HEADER_H
 
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved
@@ -66,7 +66,11 @@ struct ahci_hba_chip {
     IPTR    intline;
 
     ULONG   Version;
-    ULONG   PortCount;
+
+    ULONG   HBANumber;
+
+    ULONG   PortsImplemented;
+    ULONG   StartingPortNumber;
 
     /*
         List of all implemented ports on a given HBA
@@ -80,14 +84,21 @@ struct ahci_hba_chip {
 struct ahci_hba_port {
     struct  MinNode ahci_port_Node;
 
+    ULONG   PORTNumber;
+
+    /*
+        The port belongs to this HBA-chip
+    */
+    struct  ahci_hba_chip *parent_hba;
+
 };
 
 /* ahci_hbahw prototypes */
 BOOL ahci_setup_hbatask(struct ahci_hba_chip *hba_chip);
 BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip);
 BOOL ahci_reset_hba(struct ahci_hba_chip *hba_chip);
-BOOL ahci_enable_hba(struct ahci_hba_chip *hba_chip);
+void ahci_enable_hba(struct ahci_hba_chip *hba_chip);
 BOOL ahci_disable_hba(struct ahci_hba_chip *hba_chip);
 
-#endif // _AHCI_HEADER_H
+#endif // AHCI_HEADER_H
 

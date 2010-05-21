@@ -46,6 +46,8 @@ AROS_UFH3(void, ahci_Enumerator,
 
     IPTR    intline;
 
+    static ULONG HBACounter;
+
     LIBBASETYPE *LIBBASE = (LIBBASETYPE *)hook->h_Data;
 
     OOP_AttrBase HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
@@ -77,6 +79,8 @@ AROS_UFH3(void, ahci_Enumerator,
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &intline);
             hba_chip->intline = intline;
 
+            hba_chip->HBANumber = ++HBACounter;
+
             struct TagItem attrs[] = {
                 { aHidd_PCIDevice_isIO,    FALSE },
                 { aHidd_PCIDevice_isMEM,    TRUE },
@@ -85,6 +89,9 @@ AROS_UFH3(void, ahci_Enumerator,
             };
             OOP_SetAttrs(pciDevice, (struct TagItem*)&attrs);
 
+            /*
+                HBA-chip list is protected for us in Init
+            */
             AddTail((struct List*)&LIBBASE->chip_list, (struct Node*)hba_chip);
 
         }
@@ -108,10 +115,10 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
 
             /* Initialize the list of found host bus adapters */
             ObtainSemaphore(&LIBBASE->chip_list_lock);
-            LIBBASE->chip_list.mlh_Head     = (struct MinNode*) &LIBBASE->chip_list.mlh_Tail;
-            LIBBASE->chip_list.mlh_Tail     = NULL;
-            LIBBASE->chip_list.mlh_TailPred = (struct MinNode*) &LIBBASE->chip_list.mlh_Head;
-            ReleaseSemaphore(&LIBBASE->chip_list_lock);
+//            LIBBASE->chip_list.mlh_Head     = (struct MinNode*) &LIBBASE->chip_list.mlh_Tail;
+//            LIBBASE->chip_list.mlh_Tail     = NULL;
+//            LIBBASE->chip_list.mlh_TailPred = (struct MinNode*) &LIBBASE->chip_list.mlh_Head;
+            NEWLIST((struct MinList *)&LIBBASE->chip_list);
 
             struct Hook FindHook = {
                 h_Entry:    (IPTR (*)())ahci_Enumerator,
@@ -128,12 +135,16 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
             HIDD_PCI_EnumDevices(PCIObject, &FindHook, Requirements);
 
             struct ahci_hba_chip *hba_chip;
-            ObtainSemaphore(&LIBBASE->chip_list_lock);
+
             ForeachNode(&LIBBASE->chip_list, hba_chip) {
+
                 if( ahci_setup_hbatask( hba_chip ) ) {
                     D(bug("[AHCI] Created HBA task\n"));
+                }else{
+                    D(bug("[AHCI] Failed to create HBA task!\n"));
                 }
             }
+
             ReleaseSemaphore(&LIBBASE->chip_list_lock);
 
             return TRUE;
