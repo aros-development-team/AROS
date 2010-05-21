@@ -1,5 +1,5 @@
-#ifndef _AHCI_HBA_H
-#define _AHCI_HBA_H
+#ifndef AHCI_HBA_H
+#define AHCI_HBA_H
 
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved
@@ -136,6 +136,6 @@ struct ahci_hwhba {
     struct ahci_hwport  port[32];       // 0x100
 } __attribute__((__packed__));
 
-#endif // _AHCI_HBA_H
+#endif // AHCI_HBA_H
 
 

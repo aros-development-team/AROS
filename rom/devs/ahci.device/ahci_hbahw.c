@@ -18,8 +18,9 @@ static void ahci_taskcode_hba(struct ahci_hba_chip *hba_chip, struct Task* paren
     D(bug("[HBATASK] Signaling parent %08x\n", parent));
     Signal(parent, SIGBREAKF_CTRL_C);
 
-    if ( ahci_init_hba( hba_chip ) ) {
-        for(;;);
+    if ( ahci_init_hba(hba_chip) ) {
+        D(bug("[HBATASK] ahci_init_hba done!\n"));
+        Wait(0);
     } else {
         D(bug("[HBATASK] ahci_init_hba failed!\n"));
         /*
@@ -33,10 +34,11 @@ static void ahci_taskcode_hba(struct ahci_hba_chip *hba_chip, struct Task* paren
 }
 
 BOOL ahci_setup_hbatask(struct ahci_hba_chip *hba_chip) {
-    D(bug("[AHCI] (%04x:%04x) Setting up HBA task...\n", hba_chip->VendorID, hba_chip->ProductID));
+    D(bug("[HBAHW] (%04x:%04x) Setting up HBA task...\n", hba_chip->VendorID, hba_chip->ProductID));
 
     struct Task     *t;
     struct MemList  *ml;
+    UBYTE *sp = NULL;
 
     struct TagItem tags[] = {
         { TASKTAG_ARG1, (IPTR)hba_chip },
@@ -48,7 +50,7 @@ BOOL ahci_setup_hbatask(struct ahci_hba_chip *hba_chip) {
     if (t) {
         ml = AllocMem(sizeof(struct MemList) + sizeof(struct MemEntry), MEMF_PUBLIC | MEMF_CLEAR);
         if(ml) {
-    	    UBYTE *sp = AllocMem(HBA_TASK_STACKSIZE, MEMF_PUBLIC | MEMF_CLEAR);
+    	    sp = AllocMem(HBA_TASK_STACKSIZE, MEMF_PUBLIC | MEMF_CLEAR);
     	    if(sp) {
                 t->tc_SPLower = sp;
                 t->tc_SPUpper = sp + HBA_TASK_STACKSIZE;
@@ -60,6 +62,7 @@ BOOL ahci_setup_hbatask(struct ahci_hba_chip *hba_chip) {
                 ml->ml_NumEntries = 2;
                 ml->ml_ME[0].me_Addr = t;
                 ml->ml_ME[0].me_Length = sizeof(struct Task);
+
                 ml->ml_ME[1].me_Addr = sp;
                 ml->ml_ME[1].me_Length = HBA_TASK_STACKSIZE;
         
@@ -72,17 +75,18 @@ BOOL ahci_setup_hbatask(struct ahci_hba_chip *hba_chip) {
 
                 NewAddTask(t, ahci_taskcode_hba, NULL, tags);
 
-                D(bug("[AHCI] Waiting HBA task signal\n"));
+                D(bug("[HBAHW] Waiting HBA task signal\n"));
                 Wait(SIGBREAKF_CTRL_C);
-                D(bug("[AHCI] Signal from HBA task received\n"));
-
-                return TRUE;
+                D(bug("[HBAHW] Signal from HBA task received\n"));
             }
+        }else{
             FreeMem(ml,sizeof(struct MemList) + sizeof(struct MemEntry));
         }
+    }else{
         FreeMem(t,sizeof(struct Task));
     }
-    return FALSE;
+
+    return (sp != NULL);
 }
 
 /*
@@ -103,58 +107,82 @@ BOOL ahci_setup_hbatask(struct ahci_hba_chip *hba_chip) {
 */
 
 BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip) {
-    D(bug("[AHCI] (%04x:%04x) HBA init...\n", hba_chip->VendorID, hba_chip->ProductID));
+    D(bug("[HBAHW] (%04x:%04x) HBA init...\n", hba_chip->VendorID, hba_chip->ProductID));
 
     struct ahci_hwhba *hwhba;
     hwhba = hba_chip->abar;
 
     /*
-        Enable AHCI mode
+        BIOS handoff if HBA supports it and BIOS is the current owner of HBA
     */
-    if ( ahci_enable_hba(hba_chip) ) {
+    hba_chip->Version = hwhba->vs;
+    D(bug("[HBAHW] AHCI Version %x.%02x\n",
+        ((hba_chip->Version >> 20) & 0xf0) + ((hba_chip->Version >> 16) & 0x0f),
+        ((hba_chip->Version >> 4) & 0xf0) + (hba_chip->Version & 0x0f) ));
 
-        hba_chip->Version = hwhba->vs;
-        D(bug("[AHCI] Version %x.%02x\n",
-            ((hba_chip->Version >> 20) & 0xf0) + ((hba_chip->Version >> 16) & 0x0f),
-            ((hba_chip->Version >> 4) & 0xf0) + (hba_chip->Version & 0x0f) ));
-
-        /*
-            BIOS handoff if HBA supports it and BIOS is the current owner of HBA
-        */
-    	if ( (hba_chip->Version >= AHCI_VERSION_1_20) ) {
-	    	if( (hwhba->cap2 && CAP2_BOH) ) {
-                D(bug("[AHCI] HBA supports BIOS/OS handoff\n"));
-                if( (hwhba->bohc && BOHC_BOS) ) {
-                    hwhba->bohc |= BOHC_OOS;
-                    while( (hwhba->bohc && BOHC_BOS) );
-                    //wait 25ms
-                    if( (hwhba->bohc && BOHC_BB) ) {
-                        //Wait minimum of 2 seconds to give BIOS time for finishing outstanding commands.
-                    }
+    if ( (hba_chip->Version >= AHCI_VERSION_1_20) ) {
+        if( (hwhba->cap2 && CAP2_BOH) ) {
+            D(bug("[HBAHW] HBA supports BIOS/OS handoff\n"));
+            if( (hwhba->bohc && BOHC_BOS) ) {
+                hwhba->bohc |= BOHC_OOS;
+                while( (hwhba->bohc && BOHC_BOS) );
+                //wait 25ms
+                if( (hwhba->bohc && BOHC_BB) ) {
+                    //Wait minimum of 2 seconds to give BIOS time for finishing outstanding commands.
                 }
             }
-        }
-
-        /*
-            Reset the HBA
-        */
-        if ( ahci_reset_hba( hba_chip ) ) {
-            D(bug("[AHCI] HBA reset succeeded!\n"));
-
-            ULONG i;
-            hba_chip->PortCount = 0;
-            for (i = 0; i <= 31; i++) {
-                if( ((hwhba->pi) & (1<<i)) ) {
-                    hba_chip->PortCount++;
-                }
-            }
-            return TRUE;
         }
     }
-    return FALSE;
+
+    /*
+        Enable AHCI mode of communication to the HBA
+    */
+    ahci_enable_hba(hba_chip);
+
+    /*
+        Reset the HBA
+    */
+    if ( ahci_reset_hba(hba_chip) ) {
+        D(bug("[HBAHW] HBA reseted...\n"));
+
+        /*
+            Get the pointer to previous HBA-chip struct in the list (if any)
+            Port numbering starts from 1 if no previous HBA exist else the port number will be
+            starting number for previous HBA-chips ports + the number of implemented ports in that (previous) HBA-chip
+            Port number 0 (e.g. unit number 0) is reserved/not implemented
+        */
+        struct ahci_hba_chip *prev_hba_chip = (struct ahci_hba_chip*) GetPred(hba_chip);
+
+        if ( prev_hba_chip != NULL ) {
+            hba_chip->StartingPortNumber = (prev_hba_chip->StartingPortNumber) + (prev_hba_chip->PortsImplemented);
+        }else{
+            hba_chip->StartingPortNumber = 1;
+        }
+        D(bug("[HBAHW] Port numbers start at %d\n",hba_chip->StartingPortNumber));
+        D(bug("[HBAHW] Ports implemented\n        ["));
+
+        hba_chip->PortsImplemented = 0;
+        LONG i;
+
+        for (i = 31; i >= 0; i--) {
+            if( ((hwhba->pi) & (1<<i)) ) {
+                hba_chip->PortsImplemented = hba_chip->PortsImplemented++;
+                D(bug("x"));
+            }else{
+                D(bug("."));
+            }
+        }
+        D(bug("] %d\n",hba_chip->PortsImplemented));
+
+    }else{
+        return FALSE;
+    }
+
+    return TRUE;
 }
+
 BOOL ahci_reset_hba(struct ahci_hba_chip *hba_chip) {
-    D(bug("[AHCI] (%04x:%04x) HBA reset...\n", hba_chip->VendorID, hba_chip->ProductID));
+    D(bug("[HBAHW] (%04x:%04x) HBA reset...\n", hba_chip->VendorID, hba_chip->ProductID));
 
     struct ahci_hwhba *hwhba;
     hwhba = hba_chip->abar;
@@ -165,70 +193,57 @@ BOOL ahci_reset_hba(struct ahci_hba_chip *hba_chip) {
 	ULONG savePI = hwhba->pi;
 
     /*
-        Enable AHCI mode
+        Enable AHCI mode of communication to the HBA
     */
-	if( ahci_enable_hba( hba_chip ) ) {
+	ahci_enable_hba(hba_chip);
 
-        /*
-            Reset HBA
-        */
-        hwhba->ghc |= GHC_HR;
+    /*
+        Reset HBA
+    */
+    hwhba->ghc |= GHC_HR;
 
-        Timeout = 5000;
-        while( (hwhba->ghc && GHC_HR) ) {
-            if( (--Timeout == 0) ) {
-                D(bug("[AHCI] Resetting HBA timed out!\n"));
-                return FALSE;
-                break;
-            }
-        }
-
-        /*
-            Re-enable AHCI mode
-        */
-	    if( ahci_enable_hba( hba_chip ) ) {
-
-            /*
-                Write back values of CAP & PI that were saved before reset, maybe useless
-            */
-	        hwhba->cap |= saveCaps;
-	        hwhba->pi = savePI;
-
-	        /*
-                Clear interrupts
-            */
-
-	        /*
-                Configure CCC, if supporting
-            */
-
-            return TRUE;
+    Timeout = 5000;
+    while( (hwhba->ghc && GHC_HR) ) {
+        if( (--Timeout == 0) ) {
+            D(bug("[AHCI] Resetting HBA timed out!\n"));
+            return FALSE;
+            break;
         }
     }
-    return FALSE;
+
+    /*
+        Re-enable AHCI mode
+    */
+    ahci_enable_hba(hba_chip);
+
+    /*
+        Write back values of CAP & PI that were saved before reset, maybe useless
+    */
+    hwhba->cap |= saveCaps;
+    hwhba->pi = savePI;
+
+    return TRUE;
 }
 
-BOOL ahci_enable_hba(struct ahci_hba_chip *hba_chip) {
-    D(bug("[AHCI] (%04x:%04x) HBA enable...\n", hba_chip->VendorID, hba_chip->ProductID));
+void ahci_enable_hba(struct ahci_hba_chip *hba_chip) {
+    D(bug("[HBAHW] (%04x:%04x) HBA enable...\n", hba_chip->VendorID, hba_chip->ProductID));
 
     struct ahci_hwhba *hwhba;
     hwhba = hba_chip->abar;
 
     /*
-        Check first if bit GHC_AE is not set (HBA acts as legacy) otherwise we may not be allowed to touch the bit as it may be RO (AHCI mode only)
-        Clear other bits while setting GHC_AE (GHC_MRSM, GHC_IE and GHC_HR)
+        Check if HBA supports legacy mode, otherwise GHC_AE(31) may be RO and the bit GHC_AE(31) is set
+        Leave bits MRSM(2), IE(1) and HR(0) untouched
+        Rest of the GHC registers are RO (AHCI v1.3) do not set/clr other bits
     */
-
-    if( !(hwhba->ghc && GHC_AE) ){
-        hwhba->ghc = GHC_AE;
-        return TRUE;
+    if( !(hwhba->ghc && CAP_SAM) ){
+        hwhba->ghc |= GHC_AE;
     }
 
-    return FALSE;
 }
 
 BOOL ahci_disable_hba(struct ahci_hba_chip *hba_chip) {
-    D(bug("[AHCI] (%04x:%04x) HBA disable...\n", hba_chip->VendorID, hba_chip->ProductID));
+    D(bug("[HBAHW] (%04x:%04x) HBA disable...\n", hba_chip->VendorID, hba_chip->ProductID));
 
     struct ahci_hwhba *hwhba;
     hwhba = hba_chip->abar;
@@ -236,9 +251,8 @@ BOOL ahci_disable_hba(struct ahci_hba_chip *hba_chip) {
     /*
         Check first if bit GHC_AE is set and if so then check whether it is RO or RW
         If bit CAP_SAM is not set then HBA can be set to AHCI or legacy mode
-        If bit GHC_AE is RW then clear the bit along with the other bits
+        If bit GHC_AE is RW then clear the bit along with the other bits (no bits are allowed to be set at the same time)
     */
-
     if( (hwhba->ghc && GHC_AE) ){
         if( !(hwhba->ghc && CAP_SAM) ){
             hwhba->ghc = 0x00000000;
