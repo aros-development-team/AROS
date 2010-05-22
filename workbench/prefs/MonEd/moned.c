@@ -29,7 +29,7 @@
 #include <intuition/gadgetclass.h>
 #include <intuition/intuitionbase.h>
 
-#include "MonED_globals.h"			// my private data
+#include "moned_globals.h"			// my private data
 
 #include <proto/exec.h>				// use amiga library stuff
 #include <proto/dos.h>
@@ -75,7 +75,7 @@ struct	MonitorSpec	*currmonitor;
 struct	MonitorSpec	oldmonitor;
 struct	SpecialMonitor	oldspecial;
 
-#include	"MonED_rev.h"
+#include	"moned_rev.h"
 
 UBYTE verstr[]={ VERSTAG };
 
