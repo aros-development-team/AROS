@@ -19,7 +19,7 @@ FILES := library \
 
 #MM workbench-libs-identify : workbench-libs-identify-test linklibs workbench-libs-identify-generated
 
-#MM workbench-libs-identify-test workbench-libs-identify includes linklibs
+#MM workbench-libs-identify-test : workbench-libs-identify includes linklibs
 
 %build_module mmake=workbench-libs-identify \
     modname=identify modtype=library \
