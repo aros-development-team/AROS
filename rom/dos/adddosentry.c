@@ -65,7 +65,7 @@
 	using an LDF_ENTRY lock in LDF_WRITE mode.
 	
 	LDF_ENTRY is NOT touched when a handler is started up in this
-	dos.library implmentation. LDF_DELETE is not used at all.
+	dos.library implementation. LDF_DELETE is not used at all.
 
 *****************************************************************************/
 {

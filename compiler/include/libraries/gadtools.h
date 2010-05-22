@@ -113,7 +113,7 @@ struct NewGadget
 #define CHECKBOX_WIDTH  26
 #define CHECKBOX_HEIGHT 11
 
-/* Indicate that gadget is an gadtools-gadget (PRIVATE) */
+/* Indicate that gadget is a gadtools gadget (PRIVATE) */
 #define GTYP_GADTOOLS 0x0100
 
                                /* Menus */

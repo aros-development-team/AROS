@@ -167,7 +167,7 @@ OOP_Object *PCVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
     /* Init mymsg. We have to use our own message struct because
        one should not alter the one passed to this method.
-       message structs passed to a method are allways read-only.
+       message structs passed to a method are always read-only.
        (The user who called us might want to reuse the same msg struct
        for several calls, but that will break if some method changes the
        msg struct contents)

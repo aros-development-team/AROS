@@ -45,7 +45,7 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
 	struct GfxBase *, GfxBase, 101, Graphics)
 	    
 /*  FUNCTION
-	Moves a part of a bitmap around or into another bitmaps.
+	Moves part of a bitmap around or into another bitmap.
 
     INPUTS
 	srcBitMap - Copy from this bitmap.
@@ -59,7 +59,7 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
 	TRUE.
 
     NOTES
-	If a special hardware is available, this function will use it.
+	If special hardware is available, this function will use it.
 
     EXAMPLE
 
@@ -75,10 +75,6 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
     NOTES
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
