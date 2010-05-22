@@ -590,7 +590,7 @@ static IPTR Language_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_LanguageData *data = INST_DATA(cl, obj);
     ULONG rc;
-    ULONG i;
+    IPTR i;
 
     switch (msg->opg_AttrID)
     {
