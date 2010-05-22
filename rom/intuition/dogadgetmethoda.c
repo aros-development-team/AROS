@@ -65,8 +65,8 @@
 
     One thing to note, the Amiga Rom routine causes some form of
     (layer?) locking. I presume the point of the lock is to avoid
-    removing the gadget from the window durring a refresh, or to avoid
-    resizing the window durring refresh, etc.
+    removing the gadget from the window during a refresh, or to avoid
+    resizing the window during refresh, etc.
 
     This locking is fairly obvious within Workbench itself. When
     refreshing most any boopsi gadget(s) via RefreshGList() and you try

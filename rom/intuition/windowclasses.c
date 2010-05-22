@@ -46,7 +46,7 @@
 
 /*
 
-jDc: opaque resize code is NOT sutiable for other apps than MUI, I have no intentions in fixing it so that
+jDc: opaque resize code is NOT suitable for other apps than MUI, I have no intentions in fixing it so that
 it would work with all apps out there. Use mui or die :)
 
 The idea behind the trick is that we use a func that checks if apps reply to idcmps in some period
