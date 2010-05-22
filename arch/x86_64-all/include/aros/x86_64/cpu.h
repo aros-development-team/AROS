@@ -83,6 +83,19 @@ do \
     *((unsigned int *)(_v->vec))=(unsigned int)(a)-(unsigned int)(_v)-5;\
 } while (0)
 
+
+/*
+    Extracts and stores the start address from a loaded
+    executable segment. start_address may then be used by gdb.
+    It is calculated from _v->vec set in __AROS_SET_FULLJMP.
+*/
+#define __AROS_SET_START_ADDR(debug_segnode)\
+do \
+{  \
+    (debug_segnode)->start_address \
+	= (IPTR)(BADDR((debug_segnode)->seglist) + 8) + 5 + *(IPTR *)((char *)(BADDR((debug_segnode)->seglist) + 8) + 1); \
+} while (0)
+
 struct JumpVec
 {
     unsigned char vec[8];
