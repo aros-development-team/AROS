@@ -44,3 +44,4 @@ relevant "LEGAL" files that accompanies these components' sources.
 + Fonts/TrueType/#?.ttf [workbench/fonts/truetype/bitstream]
 + [tools/fd2pragma]
 + [workbench/hidds/hidd.nouveau/drm]
++ [workbench/libs/mesa]
