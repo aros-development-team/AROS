@@ -1,0 +1,10 @@
+#   $Id: mmakefile.src 32765 2010-03-08 18:10:59Z deadwood $
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES := $(call WILDCARD, *.h)
+
+#MM- includes-copy
+%copy_includes path=gallium/pipe includes=$(INCLUDE_FILES)
+
+%common
+
