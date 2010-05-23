@@ -1,0 +1,125 @@
+#   $Id$
+#
+#   Generate libgalliumauxiliary.a
+#
+
+include $(TOP)/config/make.cfg
+
+#MM linklibs-galliumauxiliary : includes
+
+ifeq ($(AROS_TARGET_CPU), i386)
+  FFIXED = -ffixed-ebx
+endif
+
+ifeq ($(AROS_TARGET_CPU), x86_64)
+  FFIXED = -ffixed-rbx
+endif
+
+ifeq ($(AROS_TARGET_CPU), ppc)
+  FFIXED = -ffixed-r14
+endif
+
+GALLIUM_AUXILIARY_SOURCES = \
+            util/u_debug \
+            util/u_debug_symbol \
+            util/u_debug_stack \
+            util/u_blit \
+            util/u_cache \
+            util/u_draw_quad \
+            util/u_format_access \
+            util/u_format_table \
+            util/u_gen_mipmap \
+            util/u_handle_table \
+            util/u_hash_table \
+            util/u_hash \
+            util/u_keymap \
+            util/u_linear \
+            util/u_mm \
+            util/u_math \
+            util/u_rect \
+            util/u_simple_shaders \
+            util/u_snprintf \
+            util/u_surface \
+            util/u_texture \
+            util/u_tile \
+            util/u_timed_winsys \
+            util/u_upload_mgr \
+            util/u_simple_screen \
+            draw/draw_context \
+            draw/draw_gs \
+            draw/draw_pipe \
+            draw/draw_pipe_aaline \
+            draw/draw_pipe_aapoint \
+            draw/draw_pipe_clip \
+            draw/draw_pipe_cull \
+            draw/draw_pipe_flatshade \
+            draw/draw_pipe_offset \
+            draw/draw_pipe_pstipple \
+            draw/draw_pipe_stipple \
+            draw/draw_pipe_twoside \
+            draw/draw_pipe_unfilled \
+            draw/draw_pipe_util \
+            draw/draw_pipe_validate \
+            draw/draw_pipe_vbuf \
+            draw/draw_pipe_wide_line \
+            draw/draw_pipe_wide_point \
+            draw/draw_pt \
+            draw/draw_pt_elts \
+            draw/draw_pt_emit \
+            draw/draw_pt_fetch \
+            draw/draw_pt_fetch_emit \
+            draw/draw_pt_fetch_shade_emit \
+            draw/draw_pt_fetch_shade_pipeline \
+            draw/draw_pt_post_vs \
+            draw/draw_pt_util \
+            draw/draw_pt_varray \
+            draw/draw_pt_vcache \
+            draw/draw_vertex \
+            draw/draw_vs \
+            draw/draw_vs_varient \
+            draw/draw_vs_aos \
+            draw/draw_vs_aos_io \
+            draw/draw_vs_aos_machine \
+            draw/draw_vs_exec \
+            draw/draw_vs_llvm \
+            draw/draw_vs_ppc  \
+            draw/draw_vs_sse  \
+            tgsi/tgsi_sanity \
+            tgsi/tgsi_build \
+            tgsi/tgsi_dump \
+            tgsi/tgsi_exec \
+            tgsi/tgsi_info \
+            tgsi/tgsi_iterate \
+            tgsi/tgsi_parse \
+            tgsi/tgsi_ppc \
+            tgsi/tgsi_scan \
+            tgsi/tgsi_sse2 \
+            tgsi/tgsi_text \
+            tgsi/tgsi_transform \
+            tgsi/tgsi_ureg \
+            tgsi/tgsi_util \
+            rtasm/rtasm_cpu \
+            rtasm/rtasm_execmem \
+            rtasm/rtasm_x86sse \
+            rtasm/rtasm_ppc \
+            rtasm/rtasm_ppc_spe \
+            translate/translate_generic \
+            translate/translate_sse \
+            translate/translate \
+            translate/translate_cache \
+            cso_cache/cso_context \
+            cso_cache/cso_cache \
+            cso_cache/cso_hash \
+            os/os_misc \
+            os/os_time \
+
+USER_INCLUDES := \
+            -I$(AROS_DEVELOPMENT)/include/gallium \
+
+USER_CFLAGS := -ffast-math $(FFIXED)
+
+%build_linklib mmake=linklibs-galliumauxiliary libname=galliumauxiliary \
+    files="$(GALLIUM_AUXILIARY_SOURCES)" \
+    objdir=$(GENDIR)/$(CURDIR)/linklibs-galliumauxiliary
+
+%common
