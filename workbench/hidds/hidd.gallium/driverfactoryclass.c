@@ -38,7 +38,7 @@ static VOID HiddGalliumLoadDriverHidd(struct galliumstaticdata * sd)
     /* This function is designed to contain all the ugly hardcodes */
 
     /* Try loading nouveau.hidd */
-    if (!HiddGalliumIsLibLoaded("nvidia.hidd"))
+    if (!HiddGalliumIsLibLoaded("nvidia.hidd") && !HiddGalliumIsLibLoaded("nouveau2d.hidd"))
     {
         /* nvidia.hidd is not loaded so we might try loading nouveau.hidd */
         if (!sd->loadedDriverHidd)
