@@ -2,7 +2,7 @@
 #define GRAPHICS_GFXNODES_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Extended node for graphics.library.
@@ -18,12 +18,12 @@ struct ExtendedNode
     struct Node * xln_Succ;
     struct Node * xln_Pred;
 
-    UBYTE   xln_Type;      /* see below */
+    UBYTE   xln_Type;	      /* NT_GRAPHICS */
     BYTE    xln_Pri;
     char  * xln_Name;
-    UBYTE   xln_Subsystem;
-    UBYTE   xln_Subtype;
-    LONG    xln_Library;
+    UBYTE   xln_Subsystem;    /* see below */
+    UBYTE   xln_Subtype;      /* see below */
+    APTR    xln_Library;
     LONG (* xln_Init)();
 };
 
@@ -33,6 +33,7 @@ struct ExtendedNode
 #define SPECIAL_MONITOR_TYPE 3
 #define MONITOR_SPEC_TYPE    4
 
+/* xln_Subsystem */
 #define SS_GRAPHICS 0x02
 
 #endif /* GRAPHICS_GFXNODES_H */
