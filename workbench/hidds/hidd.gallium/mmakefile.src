@@ -1,0 +1,31 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+
+FILES := driverfactoryclass init
+
+#MM includes-copy
+%copy_includes path=hidd dir=include
+
+#MM- workbench-hidds: hidd-gallium
+#MM hidd-gallium : includes
+
+ifeq ($(AROS_TARGET_CPU), i386)
+  FFIXED = -ffixed-ebx
+endif
+
+ifeq ($(AROS_TARGET_CPU), x86_64)
+  FFIXED = -ffixed-rbx
+endif
+
+ifeq ($(AROS_TARGET_CPU), ppc)
+  FFIXED = -ffixed-r14
+endif
+
+USER_CFLAGS := $(FFIXED)
+
+%build_module mmake=hidd-gallium modname=gallium modtype=hidd \
+    files="$(FILES)" uselibs="oop rom"
+    
+%common
