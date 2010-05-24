@@ -106,6 +106,8 @@ struct sync_data {
     ULONG hmax;
     ULONG vmin;
     ULONG vmax;
+
+    BOOL variable;
 };
 
 struct mode_bm {
