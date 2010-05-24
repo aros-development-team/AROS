@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 include $(SRCDIR)/$(CURDIR)/drm/sources.drm.mak
 
-#MM hidd-nouveau2d : hidd-i2c
+#MM hidd-nouveau2d : hidd-i2c hidd-agp
 
 DRM_PATH = $(SRCDIR)/$(CURDIR)/drm/
 
