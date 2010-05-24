@@ -1847,6 +1847,20 @@ ULONG GFX__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_G
 
 /****************************************************************************************/
 
+BOOL GFX__Hidd_Gfx__GetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Gamma *msg)
+{
+    return FALSE;
+}
+
+/****************************************************************************************/
+
+BOOL GFX__Hidd_Gfx__SetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Gamma *msg)
+{
+    return FALSE;
+}
+
+/****************************************************************************************/
+
 #undef csd
 
 /****************************************************************************************/
@@ -2017,7 +2031,7 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
     	    	     struct class_static_data *csd)
 {
     IPTR attrs[num_Hidd_Sync_Attrs];
-    BOOL ok = FALSE;
+    BOOL ok = TRUE;
     
     if (0 != OOP_ParseAttrs(tags, attrs, num_Hidd_Sync_Attrs, &ATTRCHECK(sync), HiddSyncAttrBase))
     {
@@ -2037,18 +2051,19 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
 		sizeof(data->description));
     }
     
-    /* Check that we have HDisp and VDisp */
-    if (SYNC_DISP_AF != (SYNC_DISP_AF & ATTRCHECK(sync)))
-    {
-	D(bug("!!! MISSING HDISP OR VDISP ATTR !!!\n"));
-    }
-    else
-    {
+
+    /* During init we must get HDisp and VDisp, so we set the
+       returncode to FALSE if we don't get them.
+       During Set returncode will be ignored. */
+    if (GOT_SYNC_ATTR(HDisp))
 	data->hdisp = attrs[SYAO(HDisp)];
+    else
+        ok = FALSE;
+
+    if (GOT_SYNC_ATTR(VDisp))
 	data->vdisp = attrs[SYAO(VDisp)];
-	
-	ok = TRUE;
-    }
+    else
+	ok = FALSE;
 
     /* Now parse sync signal parameters. They may come either as start, stop and total
        values (which most of drivers use), or as LinuxFB-style specification (margins and
@@ -2060,7 +2075,7 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
     else if (GOT_SYNC_ATTR(PixelTime)) {
         /* See comment in sync.c, where getting is processed */
         ULONG khz = 1000000000 / attrs[SYAO(PixelTime)];
-	
+
 	data->pixelclock = khz * 1000;
     }
     DSYNC(bug("PixelClock is set to %u\n", data->pixelclock));
@@ -2119,6 +2134,9 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
 	data->vmax = attrs[SYAO(VMax)];
     else
 	data->vmax = data->vdisp;
+
+    if (GOT_SYNC_ATTR(Variable))
+        data->variable = attrs[SYAO(Variable)];
 
     return ok;
 }

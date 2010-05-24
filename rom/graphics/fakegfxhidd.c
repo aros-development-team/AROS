@@ -1183,15 +1183,17 @@ static OOP_Class *init_fakegfxhiddclass (struct class_static_data *csd)
         {(IPTR (*)())gfx_fwd	    	    , moHidd_Gfx_ReleasePixFmt	    },
 #endif	
 	{(IPTR (*)())gfx_fwd	    	    , moHidd_Gfx_GetPixFmt	    },
-	{(IPTR (*)())gfx_setcursorshape     , moHidd_Gfx_SetCursorShape	    },
+	{(IPTR (*)())gfx_setcursorshape    , moHidd_Gfx_SetCursorShape	    },
 	{(IPTR (*)())gfx_setcursorpos	    , moHidd_Gfx_SetCursorPos	    },
-	{(IPTR (*)())gfx_setcursorvisible   , moHidd_Gfx_SetCursorVisible   },
+	{(IPTR (*)())gfx_setcursorvisible  , moHidd_Gfx_SetCursorVisible   },
 	{(IPTR (*)())gfx_fwd	    	    , moHidd_Gfx_SetMode	    },
 	{(IPTR (*)())gfx_show	    	    , moHidd_Gfx_Show		    },
 	{(IPTR (*)())gfx_copybox    	    , moHidd_Gfx_CopyBox	    },
 	{(IPTR (*)())gfx_fwd	    	    , moHidd_Gfx_ModeProperties	    },
 	{(IPTR (*)())gfx_showviewports	    , moHidd_Gfx_ShowViewPorts	    },
 	{(IPTR (*)())gfx_fwd		    , moHidd_Gfx_GetSync	    },
+	{(IPTR (*)())gfx_fwd		    , moHidd_Gfx_GetGamma	    },
+	{(IPTR (*)())gfx_fwd		    , moHidd_Gfx_SetGamma	    },
         {NULL	    	    	    	    , 0UL   	    	    	    }
     };
     

@@ -77,6 +77,32 @@ HIDDT_ModeID get_best_resolution_and_depth(OOP_Object *gfxhidd, struct GfxBase *
     
 }
 
+void do_monitor(struct MonitorSpec *mspc)
+{
+    struct GfxBase *GfxBase = mspc->ms_Node.xln_Library;
+    OOP_Object *sync = (OOP_Object *)mspc->ms_Special->reserved1;
+    OOP_Object *gfxhidd = (OOP_Object *)mspc->ms_Special->reserved2;
+    IPTR total = 0;
+    struct TagItem sync_attrs[] = {
+	{aHidd_Sync_PixelClock, 0				  },
+        {aHidd_Sync_VTotal    , mspc->total_rows		  },
+	{aHidd_Sync_HSyncStart, mspc->ms_Special->hsync.asi_Start},
+	{aHidd_Sync_HSyncEnd  , mspc->ms_Special->hsync.asi_Stop },
+	{aHidd_Sync_VSyncStart, mspc->ms_Special->vsync.asi_Start},
+	{aHidd_Sync_VSyncEnd  , mspc->ms_Special->vsync.asi_Stop },
+	{TAG_DONE	      , 0				  }
+    };
+
+    /* We assume that we are going to change PixelClock and not HTotal.
+       Perhaps this API is not that good for AROS and we should prefer
+       direct access to sync object in applications */
+    OOP_GetAttr(sync, aHidd_Sync_HTotal, &total);
+    sync_attrs[0].ti_Data = (100000000 / mspc->total_colorclocks) / 28 * total;
+    OOP_SetAttrs(sync, sync_attrs);
+
+    HIDD_Gfx_SetMode(gfxhidd, sync);
+}
+
 BOOL CreateMonitorSpecs(ULONG card, struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
     IPTR nsyncs = 0;
@@ -120,7 +146,7 @@ BOOL CreateMonitorSpecs(ULONG card, struct monitor_driverdata *mdd, struct GfxBa
 	}
 	NewRawDoFmt("display%u:%s", (VOID_FUNC)RAWFMTFUNC_STRING, mspc->ms_Node.xln_Name, card, syncname);
 
-	OOP_GetAttr(sync, aHidd_Sync_HTotal, &total);
+	OOP_GetAttr(sync, aHidd_Sync_VTotal, &total);
 	mspc->total_rows = total;
 
 	OOP_GetAttr(sync, aHidd_Sync_PixelClock, &pixelClock);
@@ -144,6 +170,8 @@ BOOL CreateMonitorSpecs(ULONG card, struct monitor_driverdata *mdd, struct GfxBa
 	if (hsstart || hsstop || vsstart || vsstop) {
 	    mspc->ms_Special = GfxNew(SPECIAL_MONITOR_TYPE);
 	    if (mspc->ms_Special) {
+	        IPTR varsync = FALSE;
+
 	        mspc->ms_Flags |= MSF_REQUEST_SPECIAL;
 
 	        mspc->ms_Special->hsync.asi_Start = hsstart;
@@ -152,9 +180,11 @@ BOOL CreateMonitorSpecs(ULONG card, struct monitor_driverdata *mdd, struct GfxBa
 		mspc->ms_Special->vsync.asi_Stop  = vsstop;
 
 		mspc->ms_Special->reserved1 = sync;
+		mspc->ms_Special->reserved2 = mdd->gfxhidd;
 
-		/* TODO: check if sync can be modified and install do_monitor() callback */
-
+		OOP_GetAttr(sync, aHidd_Sync_Variable, &varsync);
+		if (varsync)
+		    mspc->ms_Special->do_monitor = do_monitor;
 	    }
 	}
 

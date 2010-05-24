@@ -190,3 +190,12 @@ VOID Sync__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 }
 
 /****************************************************************************************/
+
+void Sync__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+{
+    struct sync_data *data = OOP_INST_DATA(cl, o);
+    DECLARE_ATTRCHECK(sync);
+
+    if (data->variable)
+        parse_sync_tags(msg->attrList, data, ATTRCHECK(sync), CSD(cl));
+}

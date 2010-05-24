@@ -93,6 +93,9 @@ enum
 
     moHidd_Gfx_GetSync,
 
+    moHidd_Gfx_GetGamma,
+    moHidd_Gfx_SetGamma,
+
     num_Hidd_Gfx_Methods
 };
 
@@ -324,7 +327,7 @@ struct pHidd_Gfx_CopyBox
 struct pHidd_Gfx_SetMode
 {
     OOP_MethodID mID;
-    HIDDT_ModeID modeID;
+    OOP_Object   *Sync;
 };
 
 
@@ -346,6 +349,14 @@ struct pHidd_Gfx_GetSync
 {
     OOP_MethodID mID;
     ULONG	 num;
+};
+
+struct pHidd_Gfx_Gamma
+{
+    OOP_MethodID mID;
+    UBYTE	 *Red;
+    UBYTE	 *Green;
+    UBYTE	 *Blue;
 };
 
 enum
@@ -1475,11 +1486,13 @@ BOOL HIDD_Gfx_SetCursorPos(OOP_Object *obj, LONG x, LONG y);
 VOID HIDD_Gfx_SetCursorVisible(OOP_Object *obj, BOOL visible);
 
 OOP_Object *HIDD_Gfx_Show(OOP_Object *obj, OOP_Object *bitMap, ULONG flags);
-BOOL 	    HIDD_Gfx_SetMode(OOP_Object *obj, HIDDT_ModeID modeID);
+BOOL 	    HIDD_Gfx_SetMode(OOP_Object *obj, OOP_Object *sync);
 VOID  	    HIDD_Gfx_CopyBox(OOP_Object *obj, OOP_Object *src, WORD srcX, WORD srcY, OOP_Object *dest, WORD destX, WORD destY, UWORD width, UWORD height, OOP_Object *gc);
 ULONG       HIDD_Gfx_ModeProperties(OOP_Object *obj, HIDDT_ModeID modeID, struct HIDD_ModeProperties *props, ULONG propsLen);
 ULONG	    HIDD_Gfx_ShowViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data);
 OOP_Object *HIDD_Gfx_GetSync(OOP_Object *obj, ULONG num);
+BOOL HIDD_Gfx_GetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
+BOOL HIDD_Gfx_SetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
 
 VOID HIDD_GC_SetClipRect(OOP_Object *gc, LONG x1, LONG y1, LONG x2, LONG y2);
 VOID HIDD_GC_UnsetClipRect(OOP_Object *gc);
@@ -2208,7 +2221,7 @@ enum
     aoHidd_Sync_UpperMargin,	/* [I.G] ULONG */
     aoHidd_Sync_LowerMargin,	/* [I.G] ULONG */
     aoHidd_Sync_VSyncLength,	/* [I.G] ULONG */
-    
+
     /* Alternative description used by newer drivers. Use this one. */
     aoHidd_Sync_PixelClock,	/* [I.G] ULONG - Pixel clock in Hz */
     
@@ -2230,6 +2243,8 @@ enum
     aoHidd_Sync_VMax,		/* [I.G] ULONG - maximum acceptable bitmap height */
     
     aoHidd_Sync_Flags,		/* [I.G] ULONG - mode tags */
+
+    aoHidd_Sync_Variable,	/* [I..] BOOL  - data can be modified */
 
     num_Hidd_Sync_Attrs
     
@@ -2265,12 +2280,15 @@ enum
 #define aHidd_Sync_VMin		(HiddSyncAttrBase + aoHidd_Sync_VMin)
 #define aHidd_Sync_VMax		(HiddSyncAttrBase + aoHidd_Sync_VMax)
 
-#define aHidd_Sync_Flags		(HiddSyncAttrBase + aoHidd_Sync_Flags)
+#define aHidd_Sync_Flags	(HiddSyncAttrBase + aoHidd_Sync_Flags)
 
+#define aHidd_Sync_Variable	(HiddSyncAttrBase + aoHidd_Sync_Variable)
+
+/* Sync flags */
 #define vHidd_Sync_HSyncPlus		0x0001	/* HSYNC + if set */
 #define vHidd_Sync_VSyncPlus		0x0002	/* VSYNC + if set */
 #define vHidd_Sync_Interlaced		0x0004 	/* Interlaced mode */
-#define vHidd_Sync_DblScan			0x0008 	/* Double scanline */
+#define vHidd_Sync_DblScan		0x0008 	/* Double scanline */
 
 #define IS_SYNC_ATTR(attr, idx) \
 	( ( ( idx ) = (attr) - HiddSyncAttrBase) < num_Hidd_Sync_Attrs)

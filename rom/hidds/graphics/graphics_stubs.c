@@ -267,7 +267,7 @@ VOID HIDD_Gfx_SetCursorVisible(OOP_Object *obj, BOOL visible)
 
 /***************************************************************/
 
-BOOL HIDD_Gfx_SetMode(OOP_Object *obj, HIDDT_ModeID modeID)
+BOOL HIDD_Gfx_SetMode(OOP_Object *obj, OOP_Object *sync)
 {
     STATIC_MID;
     struct pHidd_Gfx_SetMode p, *msg = &p;
@@ -275,13 +275,10 @@ BOOL HIDD_Gfx_SetMode(OOP_Object *obj, HIDDT_ModeID modeID)
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetMode);
         
     p.mID = mid;
-    
-    p.modeID = modeID;
+    p.Sync = sync;
 
     return (BOOL)OOP_DoMethod(obj, (OOP_Msg) msg);
-    
 }
-
 
 /***************************************************************/
 
@@ -366,6 +363,40 @@ OOP_Object *HIDD_Gfx_GetSync(OOP_Object *obj, ULONG num)
 
     p.mID = mid;
     p.num = num;
+
+    return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) msg);
+}
+
+/***************************************************************/
+
+BOOL HIDD_Gfx_GetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue)
+{
+    STATIC_MID;
+    struct pHidd_Gfx_Gamma p, *msg = &p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetGamma);
+
+    p.mID   = mid;
+    p.Red   = Red;
+    p.Green = Green;
+    p.Blue  = Blue;
+
+    return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) msg);
+}
+
+/***************************************************************/
+
+BOOL HIDD_Gfx_SetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue)
+{
+    STATIC_MID;
+    struct pHidd_Gfx_Gamma p, *msg = &p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetGamma);
+
+    p.mID   = mid;
+    p.Red   = Red;
+    p.Green = Green;
+    p.Blue  = Blue;
 
     return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) msg);
 }

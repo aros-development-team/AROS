@@ -895,3 +895,81 @@ INTERNALS
 HISTORY
 
 /*************************/
+
+NAME
+    HIDD_Gfx_GetGamma
+
+SYNOPSIS
+    BOOL HIDD_Gfx_GetGamma(OOP_Object *gfxHidd, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
+
+FUNCTION
+    Get current gamma table for the display.
+
+    A gamma table consists of three 256-byte tables: one for red component, one for green
+    and one for blue.
+
+    A user should supply three pointers to preallocated 256-byte tables which will be filled in.
+    Any ot these pointers may have NULL value, in this case the respective component will be ignored.
+
+INPUTS
+    gfxHidd - A display driver object
+    Red     - A pointer to a 256-byte array for red component or NULL
+    Green   - A pointer to a 256-byte array for green component or NULL
+    Blue    - A pointer to a 256-byte array for blue component or NULL
+
+RESULT
+    FALSE if the driver doesn't support gamma correction, otherwise TRUE
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+
+INTERNALS
+
+HISTORY
+
+/*************************/
+
+
+NAME
+    HIDD_Gfx_SetGamma
+
+SYNOPSIS
+    BOOL HIDD_Gfx_SetGamma(OOP_Object *gfxHidd, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
+
+FUNCTION
+    Set current gamma table for the display.
+
+    A gamma table consists of three 256-byte tables: one for red component, one for green
+    and one for blue.
+
+    A user should supply three pointers to 256-byte tables from which gamma values will
+    be picked up. Any ot these pointers may have NULL value, in this case the respective
+    component will be ignored.
+
+INPUTS
+    gfxHidd - A display driver object
+    Red     - A pointer to a 256-byte array for red component or NULL
+    Green   - A pointer to a 256-byte array for green component or NULL
+    Blue    - A pointer to a 256-byte array for blue component or NULL
+
+RESULT
+    FALSE if the driver doesn't support gamma correction, otherwise TRUE
+
+NOTES
+
+EXAMPLE
+
+BUGS
+
+SEE ALSO
+
+INTERNALS
+
+HISTORY
+
+/*************************/
