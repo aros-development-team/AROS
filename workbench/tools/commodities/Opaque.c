@@ -51,7 +51,7 @@
 
 /************************************************************************************/
 
-UBYTE version[] = "$VER: Opaque 0.5 (15.04.2006)";
+UBYTE version[] = "$VER: Opaque 0.6 (25.5.2010)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K"
 
@@ -226,7 +226,7 @@ void SetMouseBounds(struct Window *win)
 	    if (maxwidth <= 0) maxwidth = win->WScreen->Width;
 	    if (maxheight <= 0) maxheight = win->WScreen->Height;
 
-	    if ((minwidth < MINWINDOWWIDTH) || (minheight < MINWINDOWHEIGHT) || /* if any dimention too small, or */
+	    if ((minwidth < MINWINDOWWIDTH) || (minheight < MINWINDOWHEIGHT) || /* if any dimension too small, or */
 		    (minwidth > maxwidth) || (minheight > maxheight) || /* either min/max value pairs are inverted, or */
 		    (minwidth > win->Width) || (minheight > win->Height) || /* the window is already smaller than minwidth/height, or */
 		    (maxwidth < win->Width) || (maxheight < win->Height)) { /* the window is already bigger than maxwidth/height */
@@ -273,7 +273,7 @@ BOOL GetOFFSCREENLAYERSPref()
 
 			cn = CurrentChunk(iff);
 
-			if (cn->cn_Size == sizeof(loadprefs))
+			if (cn->cn_Size >= sizeof(loadprefs))
 			{
 			    if (ReadChunkBytes(iff, &loadprefs, sizeof(loadprefs)) == sizeof(loadprefs))
 			    {
@@ -555,7 +555,8 @@ static void InitCX(void)
 
     if (!(cxbroker = CxBroker(&nb, 0)))
     {
-	Cleanup(_(MSG_CANT_CREATE_BROKER));
+	//Cleanup(_(MSG_CANT_CREATE_BROKER));
+	Cleanup(NULL); // TO DO: show error if commodity wasn't running
     }
 
     if (!(cxcust = CxCustom(OpaqueAction, 0)))
@@ -677,7 +678,7 @@ int main(int argc, char **argv)
     GetArguments(argc, argv);
     InitCX();
     HandleAll();
-    Cleanup(0);
+    Cleanup(NULL);
     return 0;
 }
 
