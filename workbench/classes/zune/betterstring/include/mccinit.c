@@ -1,7 +1,7 @@
 /*******************************************************************************
 
         Name:           mccinit.c
-        Versionstring:  $VER: mccinit.c 1.17 (02.06.2009)
+        Versionstring:  $VER: mccinit.c 1.19 (25.05.2010)
         Author:         Jens Langner <Jens.Langner@light-speed.de>
         Distribution:   PD (public domain)
         Description:    library init file for easy generation of a MUI
@@ -50,6 +50,8 @@
   1.15  24.05.2009 : fixed some compiler warnings appear on AROS compile
   1.16  25.05.2009 : fixed some compiler warnings appear on OS3/MOS compile
   1.17  02.06.2009 : more fixes to better comply for AROS compilation
+  1.18  24.04.2010 : fixed stack swapping for AROS
+  1.19  25.05.2010 : updated for compatibility with AROS V1 API
 
  About:
 
@@ -675,8 +677,9 @@ static BOOL callMccFunction(ULONG (*function)(struct LibraryHeader *), struct Li
 
   return success;
 }
-
-#endif // !__amigaos4__
+#else // MIN_STACKSIZE && __amigaos4__
+#define callMccFunction(func, arg) func(arg)
+#endif // MIN_STACKSIZE && __amigaos4__
 
 /******************************************************************************/
 /* Wrapper functions to perform certain tasks in our LibInit/LibOpen etc.     */
@@ -957,11 +960,7 @@ static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
     // If we are not running on AmigaOS4 (no stackswap required) we go and
     // do an explicit StackSwap() in case the user wants to make sure we
     // have enough stack for his user functions
-    #if defined(MIN_STACKSIZE) && !defined(__amigaos4__)
     success = callMccFunction(mccLibInit, base);
-    #else
-    success = mccLibInit(base);
-    #endif
 
     // unprotect
     ReleaseSemaphore(&base->lh_Semaphore);
@@ -1042,11 +1041,7 @@ static BPTR LIBFUNC LibExpunge(REG(a6, struct LibraryHeader *base))
     ObtainSemaphore(&base->lh_Semaphore);
 
     // make sure we have enough stack here
-    #if defined(MIN_STACKSIZE) && !defined(__amigaos4__)
     callMccFunction(mccLibExpunge, base);
-    #else
-    mccLibExpunge(base);
-    #endif
 
     // unprotect
     ReleaseSemaphore(&base->lh_Semaphore);
@@ -1123,11 +1118,7 @@ static struct LibraryHeader * LIBFUNC LibOpen(REG(d0, UNUSED ULONG version), REG
     ObtainSemaphore(&base->lh_Semaphore);
 
     // make sure we have enough stack here
-    #if defined(MIN_STACKSIZE) && !defined(__amigaos4__)
     success = callMccFunction(mccLibOpen, base);
-    #else
-    success = mccLibOpen(base);
-    #endif
 
     // here we call the user-specific function for LibOpen() where
     // he can do whatever he wants because of the semaphore protection.
@@ -1188,11 +1179,7 @@ static BPTR LIBFUNC LibClose(REG(a6, struct LibraryHeader *base))
     ObtainSemaphore(&base->lh_Semaphore);
 
     // make sure we have enough stack here
-    #if defined(MIN_STACKSIZE) && !defined(__amigaos4__)
     success = callMccFunction(mccLibClose, base);
-    #else
-    mccLibClose(base);
-    #endif
 
     // release the semaphore
     ReleaseSemaphore(&base->lh_Semaphore);
