@@ -306,9 +306,9 @@ struct TextFont *change_fonts(struct TextAttr *buf, void *Wnd, BOOL fixed)
 	if((fr = (void *) AllocAslRequestTags(ASL_FontRequest,
 				ASLFO_FixedWidthOnly, fixed,
 				ASLFO_SleepWindow,    TRUE,
-				ASLFO_InitialName,    (ULONG)buf->ta_Name,
+				ASLFO_InitialName,    (IPTR)buf->ta_Name,
 				ASLFO_InitialSize,    buf->ta_YSize,
-				ASLFO_Window,         (ULONG)Wnd,
+				ASLFO_Window,         (IPTR)Wnd,
 				TAG_DONE)))
 	{
 		if( AslRequest(fr, NULL) )
@@ -348,7 +348,7 @@ ULONG change_screen_mode(WORD *whd, ULONG ModeID)
 					ASLSM_DoOverscanType,   FALSE,
 					ASLSM_DoDepth,          TRUE,
 					ASLSM_InitialDisplayID, ModeID,
-					ASLFR_Screen,	        (ULONG)Scr,
+					ASLFR_Screen,	        (IPTR)Scr,
 					TAG_DONE) ))
 	{
 		if( AslRequest(smr,NULL) )

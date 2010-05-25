@@ -328,7 +328,7 @@ struct Scroll *add_prop(struct Window *win)
 		/* We need to get size-gadget height, to adjust properly arrows */
 		if((dummy = (struct Image *) NewObject(NULL, "sysiclass",
 								SYSIA_Which, SIZEIMAGE,
-								SYSIA_DrawInfo, (ULONG)di,
+								SYSIA_DrawInfo, (IPTR)di,
 								TAG_END) ))
 		{
 			size_width	= dummy->Width;		/* width of up/down-gadgets */
@@ -340,7 +340,7 @@ struct Scroll *add_prop(struct Window *win)
 			/* Get the boopsi image of the up and down arrow */
 			if((pg->upimage = (struct Image *) NewObject(NULL, "sysiclass",
 								SYSIA_Which, UPIMAGE,
-								SYSIA_DrawInfo, (ULONG)di,
+								SYSIA_DrawInfo, (IPTR)di,
 								TAG_END) ))
 			{
 				pg->up.GadgetRender = pg->up.SelectRender = (APTR)pg->upimage;
@@ -348,7 +348,7 @@ struct Scroll *add_prop(struct Window *win)
 
 				if((pg->downimage = (struct Image *) NewObject(NULL, "sysiclass",
 								SYSIA_Which, DOWNIMAGE,
-								SYSIA_DrawInfo, (ULONG)di,
+								SYSIA_DrawInfo, (IPTR)di,
 								TAG_END) ))
 				{
 					struct Gadget *G = (void *)pg;
@@ -417,13 +417,13 @@ struct Screen *SetupScreen( ULONG ModeID )
 	return (struct Screen *) OpenScreenTags( NULL, SA_Left, 0,
 					SA_Top,        0,
 					SA_Depth,      prefs.depth,
-					SA_Font,       (ULONG)&prefs.attrscr,
+					SA_Font,       (IPTR)&prefs.attrscr,
 					SA_Type,       CUSTOMSCREEN,
 					SA_DisplayID,  ModeID,
 					SA_Overscan,   OSCAN_TEXT,
 					SA_AutoScroll, TRUE,
-					SA_Pens,       (ULONG)&DriPens,
-					SA_Title,      (ULONG)ScrTitle,
+					SA_Pens,       (IPTR)&DriPens,
+					SA_Title,      (IPTR)ScrTitle,
 					TAG_DONE );
 }
 
@@ -436,12 +436,12 @@ struct Screen *clone_screen(void)
 					SA_Depth,      prefs.scrd,
 					SA_Width,      prefs.scrw,
 					SA_Height,     prefs.scrh,
-					SA_Font,       (ULONG)&prefs.attrscr,
+					SA_Font,       (IPTR)&prefs.attrscr,
 					SA_Type,       CUSTOMSCREEN,
 					SA_DisplayID,  prefs.vmd,
 					SA_AutoScroll, TRUE,
-					SA_Pens,       (ULONG)&DriPens,
-					SA_Title,      (ULONG)ScrTitle,
+					SA_Pens,       (IPTR)&DriPens,
+					SA_Title,      (IPTR)ScrTitle,
 					TAG_DONE );
 }
 
@@ -494,7 +494,7 @@ void load_pens( void )
 		/* Get screen depth-arrange image width */
 		if((dummy = (struct Image *) NewObject(NULL, "sysiclass",
 							SYSIA_Which, SDEPTHIMAGE,
-							SYSIA_DrawInfo, (ULONG)di,
+							SYSIA_DrawInfo, (IPTR)di,
 							TAG_END) ) )
 			gui.depthwid = dummy->Width,DisposeObject(dummy);
 		else
@@ -532,7 +532,7 @@ long setup( void )
 		/* Build the menu-strip and compute menu items size */
 		if(Menu || (Menu = (void *) CreateMenusA(newmenu, MenuTags)))
 		{
-			if( LayoutMenus(Menu, Vi, GTMN_TextAttr, (ULONG)&prefs.attrscr, TAG_DONE) )
+			if( LayoutMenus(Menu, Vi, GTMN_TextAttr, (IPTR)&prefs.attrscr, TAG_DONE) )
 			{
 				Template.Screen = Scr;
 				/* Force to do not use a backdroped window on a pubscreen */

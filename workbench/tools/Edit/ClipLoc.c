@@ -68,7 +68,7 @@ static BOOL CBOpen(ULONG unit)
 
 	if( IFFParseBase != NULL && (clip = (APTR) AllocIFF() ) )
 	{
-		if( (clip->iff_Stream = (ULONG) OpenClipboard(unit)) )
+		if( (clip->iff_Stream = (IPTR) OpenClipboard(unit)) )
 		{
 			InitIFFasClip(clip);
 
