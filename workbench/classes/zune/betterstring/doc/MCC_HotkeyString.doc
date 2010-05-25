@@ -6,8 +6,8 @@ HotkeyString.mcc/MUIA_HotkeyString_Snoop
 HotkeyString.mcc/HotkeyString.mcc
 
     *******************************************************************
-    Copyright (C) 2005-2007 by BetterString.mcc Open Source Team
-    $Id: MCC_HotkeyString.doc 99 2007-08-25 22:45:41Z damato $
+    Copyright (C) 2005-2010 by BetterString.mcc Open Source Team
+    $Id: MCC_HotkeyString.doc 242 2010-05-01 07:29:36Z damato $
 
     HotkeyString.mcc is a subclass of BetterString.mcc, it overloads
     the input method, and converts inputevents to the alphabetical

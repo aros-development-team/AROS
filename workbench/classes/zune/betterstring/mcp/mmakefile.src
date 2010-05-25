@@ -13,6 +13,7 @@ FILES := library \
         locale \
         CreatePrefsGroup \
         Dispatcher \
+		icon \
         Debug \
         vastubs
 	 

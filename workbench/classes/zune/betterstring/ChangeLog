@@ -2,13 +2,45 @@
 MUI BetterString MCC class - ChangeLog
 --------------------------------------
 
-$Id: ChangeLog 222 2010-04-23 12:16:31Z sonic_amiga $
-$URL: https://bstring-mcc.svn.sourceforge.net/svnroot/bstring-mcc/trunk/ChangeLog $
+$Id: ChangeLog 242 2010-05-01 07:29:36Z damato $
+$URL: https://bstring-mcc.svn.sourceforge.net/svnroot/bstring-mcc/releases/11.18/ChangeLog $
+
+#### v11.18 RELEASE ###########################################################
+
+2010-05-01 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 11.18 release preparations
+
+2010-04-30 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/library.c: added version check for NBitmap.mcc. Only version V15.8+ can
+    handle raw image data.
+
+2010-04-27 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/library.c: all systems now try to create a truecolor prefs image using
+    Rawimage.mcc first before falling back to the old 8bit images.
+
+2010-04-26 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/misc: merged all converted image data into one file, moved the image
+    files to a separate subdirectory.
+  * mcp/library.c: combined then prefs icon generation for all platform into one
+    function.
+
+2010-04-24 Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/mccinit.c: replaced some #ifdef's by macros.
+
+2010-04-23 Ilkka Lehtoranta <ilkleht@yahoo.com>
+
+  * mcp/misc: use bzip2 compressed 32bit prefs image on MorphOS 2.
 
 2010-04-23 Pavel Fedin <pavel_fedin@mail.ru>
 
   * include/mccinit.c: use NewStackSwap() under AROS, do not crash any more
   * mcp/library.c: Fixed building on systems without PNG support in Bodychunk.mui
+  * mcp/locale/french.ct: Updated french translation (from AROS developers)
 
 2010-04-12 Thore Böckelmann <tboeckel@gmx.de>
 

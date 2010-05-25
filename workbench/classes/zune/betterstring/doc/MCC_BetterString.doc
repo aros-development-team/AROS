@@ -17,8 +17,8 @@ BetterString.mcc/MUIM_BetterString_Insert
 BetterString.mcc/BetterString.mcc
 
     *******************************************************************
-    Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
-    $Id: MCC_BetterString.doc 163 2009-02-01 13:07:52Z thboeckel $
+    Copyright (C) 2005-2010 by BetterString.mcc Open Source Team
+    $Id: MCC_BetterString.doc 242 2010-05-01 07:29:36Z damato $
 
     BetterString is a stringgadget replacement. It is created for MUI,
     so using it should eliminate the problems with the original BOOPSI
