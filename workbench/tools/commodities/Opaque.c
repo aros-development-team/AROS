@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,6 +20,8 @@
 #include <proto/alib.h>
 #include <proto/iffparse.h>
 #include <proto/icon.h>
+#include <prefs/prefhdr.h>
+#include <prefs/icontrol.h>
 
 #define  DEBUG 0
 #include <aros/debug.h>
@@ -82,23 +84,48 @@ static struct Task *maintask;
 
 static struct RDArgs *myargs;
 static CxObj *cxbroker, *cxcust;
-static ULONG cxmask, actionmask;
+static ULONG cxmask, actionmask, icontrolmask;
 static WORD  winoffx, winoffy, winwidth, winheight;
 #if !USE_CHANGEWINDOWBOX
 static WORD actionstart_winx, actionstart_winy;
 #endif
+static struct Rectangle mousebounds;
 static LONG  gadgetLeft, gadgetTop;
 static LONG  gadgetWidth, gadgetHeight;
-static BYTE  actionsig;
+static BYTE  actionsig, icontrolsig;
 static UBYTE actiontype;
 static BOOL quitme, disabled;
+static BOOL offScreenLayersFlag;
+static struct NotifyRequest *IControlChangeNR;
 
 static IPTR args[NUM_ARGS];
 static char s[256];
 
 static void HandleAction(void);
+static void HandleIControl(void);
 
 /**********************************************************************************************/
+
+#define ARRAY_TO_LONG(x) ( ((x)[0] << 24UL) + ((x)[1] << 16UL) + ((x)[2] << 8UL) + ((x)[3]) )
+#define ARRAY_TO_WORD(x) ( ((x)[0] << 8UL) + ((x)[1]) )
+
+#define CONFIGNAME_ENV	    	"ENV:Sys/icontrol.prefs"
+
+struct FileIControlPrefs
+{
+    UBYTE   ic_Reserved0[4];
+    UBYTE   ic_Reserved1[4];
+    UBYTE   ic_Reserved2[4];
+    UBYTE   ic_Reserved3[4];
+    UBYTE   ic_TimeOut[2];
+    UBYTE   ic_MetaDrag[2];
+    UBYTE   ic_Flags[4];
+    UBYTE   ic_WBtoFront;
+    UBYTE   ic_FrontToBack;
+    UBYTE   ic_ReqTrue;
+    UBYTE   ic_ReqFalse;
+};
+/************************************************************************************/
 
 static CONST_STRPTR _(ULONG id)
 {
@@ -162,6 +189,119 @@ static void showSimpleMessage(CONST_STRPTR msgString)
 
 /************************************************************************************/
 
+#define MINWINDOWWIDTH (5)
+#define MINWINDOWHEIGHT (5)
+
+#define mouseLeft    mousebounds.MinX
+#define mouseTop     mousebounds.MinY
+#define mouseRight   mousebounds.MaxX
+#define mouseBottom  mousebounds.MaxY
+
+void SetMouseBounds(struct Window *win)
+{
+    WORD minheight, minwidth, maxheight, maxwidth;
+
+    if (win) {
+	if (actiontype == ACTIONTYPE_DRAGGING) {
+	    if (offScreenLayersFlag) {
+		mouseLeft = 0; /* as left as you want */
+		mouseTop = winoffy; /* keep the titlebar visible */
+		mouseRight = win->WScreen->Width; /* as far right as you want */
+		mouseBottom = win->WScreen->Height - (gadgetHeight - (winoffy + 1));
+	    }
+	    else { /* bounds such that the window never goes offscreen */
+		mouseLeft = winoffx;
+		mouseTop = winoffy;
+		mouseRight = (win->WScreen->Width - winwidth) + winoffx;
+		mouseBottom = (win->WScreen->Height - winheight) + winoffy;
+	    }
+	}
+	else {  /* actiontype == ACTIONTYPE_RESIZING) */
+	    /* force legal min/max values */
+	    minwidth = win->MinWidth;
+	    maxwidth = win->MaxWidth; 
+	    minheight = win->MinHeight;
+	    maxheight = win->MaxHeight; 
+
+	    if (maxwidth <= 0) maxwidth = win->WScreen->Width;
+	    if (maxheight <= 0) maxheight = win->WScreen->Height;
+
+	    if ((minwidth < MINWINDOWWIDTH) || (minheight < MINWINDOWHEIGHT) || /* if any dimention too small, or */
+		    (minwidth > maxwidth) || (minheight > maxheight) || /* either min/max value pairs are inverted, or */
+		    (minwidth > win->Width) || (minheight > win->Height) || /* the window is already smaller than minwidth/height, or */
+		    (maxwidth < win->Width) || (maxheight < win->Height)) { /* the window is already bigger than maxwidth/height */
+		minwidth = MINWINDOWWIDTH; /* then put sane values in */
+		minheight = MINWINDOWHEIGHT;
+		maxwidth = win->WScreen->Width;
+		maxheight = win->WScreen->Height;
+	    }
+
+	    /* set new mouse bounds */
+	    mouseLeft = win->LeftEdge + minwidth - (win->Width - winoffx);
+	    mouseTop = win->TopEdge + minheight - (win->Height - winoffy);
+	    mouseRight = (win->LeftEdge + maxwidth) - (win->Width - winoffx);
+	    mouseBottom = (win->TopEdge + maxheight) - (win->Height - winoffy);
+	    if ((win->WScreen->Width - (win->Width - winoffx)) < mouseRight)
+		mouseRight = (win->WScreen->Width - (win->Width - winoffx));
+	    if ((win->WScreen->Height - (win->Height - winoffy)) < mouseBottom) 
+		mouseBottom = (win->WScreen->Height - (win->Height - winoffy));
+	}
+    }
+}
+
+/************************************************************************************/
+
+BOOL GetOFFSCREENLAYERSPref()
+{
+    static struct FileIControlPrefs loadprefs;
+    struct IFFHandle 	    	    *iff;    
+    BOOL                      retval = TRUE;
+
+    if ((iff = AllocIFF()))
+    {
+	if ((iff->iff_Stream = (IPTR)Open(CONFIGNAME_ENV, MODE_OLDFILE)))
+	{
+	    InitIFFasDOS(iff);
+
+	    if (!OpenIFF(iff, IFFF_READ))
+	    {
+		if (!StopChunk(iff, ID_PREF, ID_ICTL))
+		{
+		    if (!ParseIFF(iff, IFFPARSE_SCAN))
+		    {
+			struct ContextNode *cn;
+
+			cn = CurrentChunk(iff);
+
+			if (cn->cn_Size == sizeof(loadprefs))
+			{
+			    if (ReadChunkBytes(iff, &loadprefs, sizeof(loadprefs)) == sizeof(loadprefs))
+			    {
+				if ( ! (ARRAY_TO_LONG(loadprefs.ic_Flags) & ICF_OFFSCREENLAYERS) ) retval = FALSE;
+			    }
+			}
+
+		    } /* if (!ParseIFF(iff, IFFPARSE_SCAN)) */
+
+		} /* if (!StopChunk(iff, ID_PREF, ID_INPT)) */
+
+		CloseIFF(iff);
+
+	    } /* if (!OpenIFF(iff, IFFF_READ)) */
+
+	    Close((BPTR)iff->iff_Stream);
+
+	} /* if ((iff->iff_Stream = (IPTR)Open(CONFIGNAME_ENV, MODE_OLDFILE))) */
+
+	FreeIFF(iff);
+
+    } /* if ((iff = AllocIFF())) */
+
+    return retval;
+}
+
+/************************************************************************************/
+
 static void Cleanup(CONST_STRPTR msg)
 {
     struct Message *cxmsg;
@@ -188,6 +328,12 @@ static void Cleanup(CONST_STRPTR msg)
     if (myargs) FreeArgs(myargs);
 
     if (actionsig) FreeSignal(actionsig);
+    if (icontrolsig) FreeSignal(icontrolsig);
+
+    if (IControlChangeNR != NULL) {
+	EndNotify(IControlChangeNR);
+	FreeMem(IControlChangeNR, sizeof(struct NotifyRequest));
+    }
 
     exit(0);
 }
@@ -210,6 +356,26 @@ static void Init(void)
     if((actionsig = AllocSignal(-1L)) != -1)
     {
 	actionmask = 1L << actionsig;
+
+	/* create "IControl pref changes" signal */
+	if((icontrolsig = AllocSignal(-1L)) != -1)
+	{
+	    icontrolmask = 1L << icontrolsig;
+	    if ((IControlChangeNR = AllocMem(sizeof(struct NotifyRequest), MEMF_CLEAR)))
+	    {
+		IControlChangeNR->nr_Name = CONFIGNAME_ENV;
+		IControlChangeNR->nr_Flags = NRF_SEND_SIGNAL;
+		IControlChangeNR->nr_stuff.nr_Signal.nr_Task = maintask;
+		IControlChangeNR->nr_stuff.nr_Signal.nr_SignalNum = icontrolsig;
+
+		StartNotify(IControlChangeNR);
+
+		/* set inital value for offscreenlayers */
+		offScreenLayersFlag = GetOFFSCREENLAYERSPref();
+	    } else {
+		showSimpleMessage(_(MSG_CANT_ALLOCATE_MEM));
+	    }
+	}
     }
 }
 
@@ -330,6 +496,11 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 			actionstart_winy = win->TopEdge;
 #endif
 			DisposeCxMsg(msg);
+			/* reset mouse bounds */
+			SetMouseBounds(actionwin);
+			if (!offScreenLayersFlag) SetPointerBounds(actionwin->WScreen, &mousebounds, 0, NULL);
+
+			//Signal(maintask, icontrolmask);
 		    }
 
 		} /* if (!opaque_active && scr) */
@@ -339,6 +510,7 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 		if (opaque_active)
 		{
 		    opaque_active = FALSE;
+		    if (!offScreenLayersFlag) SetPointerBounds(actionwin->WScreen, NULL, 0, NULL);
 		    DisposeCxMsg(msg);
 		}
 		break;
@@ -346,6 +518,8 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 	    case IECODE_NOBUTTON:
 		if (opaque_active)
 		{ 
+		    if (!offScreenLayersFlag) SetPointerBounds(actionwin->WScreen, &mousebounds, 0, NULL);
+
 #if CALL_WINDOWFUNCS_IN_INPUTHANDLER
 		    HandleAction();
 #else
@@ -357,6 +531,13 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 	} /* switch(ie->ie_Code) */
 
     } /* if (ie->ie_Class == IECLASS_RAWMOUSE) */
+    else if (ie->ie_Class == IECLASS_TIMER)
+    {
+	if (opaque_active && !offScreenLayersFlag)
+	{
+	    SetPointerBounds(actionwin->WScreen, &mousebounds, 0, NULL);
+	}
+    }
 }
 
 /************************************************************************************/
@@ -385,6 +566,16 @@ static void InitCX(void)
     AttachCxObj(cxbroker, cxcust);
     ActivateCxObj(cxbroker, 1);
 
+}
+
+/************************************************************************************/
+
+/* Handle the case where the IControl Prefs have changed */
+static void HandleIControl(void)
+{
+    D(bug("[Opaque] notified of icontrol.prefs change\n"));
+    offScreenLayersFlag = GetOFFSCREENLAYERSPref();
+    //SetMouseBounds();
 }
 
 /************************************************************************************/
@@ -464,10 +655,11 @@ static void HandleAll(void)
 
     while(!quitme)
     {
-	sigs = Wait(cxmask | actionmask | SIGBREAKF_CTRL_C);
+	sigs = Wait(cxmask | actionmask | icontrolmask | SIGBREAKF_CTRL_C);
 
 	if (sigs & cxmask) HandleCx();
 	if (sigs & actionmask) HandleAction(); /* "Action" == window moving or resizing */
+	if (sigs & icontrolmask) HandleIControl();
 	if (sigs & SIGBREAKF_CTRL_C) quitme = TRUE;
     } /* while(!quitme) */
 }
