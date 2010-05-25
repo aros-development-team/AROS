@@ -2,7 +2,7 @@
 
 include $(TOP)/config/make.cfg
 
-#MM workbench-hidds : hidd-softpipe
+#MM- workbench-hidds : hidd-softpipe
 
 #MM hidd-softpipe : includes hidd-gallium linklibs-galliumauxiliary
 
