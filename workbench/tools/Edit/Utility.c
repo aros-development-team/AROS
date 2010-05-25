@@ -311,7 +311,7 @@ void show_info(Project p)
 	bytes = size_count(p->the_line, szEOL[ p->eol ]);
 	split_path((AskArgs *)&p->path, NULL, &file);
 
-	EasyRequest(Wnd,&request,NULL,(ULONG)WinTitle,file,
+	EasyRequest(Wnd,&request,NULL,(IPTR)WinTitle,file,
 		p->max_lines,MsgAbout[ p->max_lines!=1 ? 6:5 ],
 		bytes,MsgAbout[ bytes!=1 ? 4:3 ]);
 	WakeUp(Wnd);
@@ -328,7 +328,7 @@ char warn_modif(Project p)
 		request.es_TextFormat   = ErrMsg(ERR_FILEMODIFIED);
 		request.es_GadgetFormat = ErrMsg(ERR_SLC);
 		split_path((AskArgs *)&p->path, NULL, &file);
-		switch( EasyRequest(Wnd,&request,0,(ULONG)file) )
+		switch( EasyRequest(Wnd,&request,0,(IPTR)file) )
 		{
 			case 0:  return 0;
 			case 1:  return save_project(p, FALSE, FALSE);
@@ -373,10 +373,10 @@ int get_number( Project p, CONST_STRPTR title, LONG * result )
 			WA_InnerHeight, prefs.scrfont->tf_YSize+2,
 			WA_Left,        Wnd->LeftEdge + (Wnd->Width  - 160) / 2,
 			WA_Top,         Wnd->TopEdge  + (Wnd->Height - 30)  / 2,
-			WA_Title,       (ULONG) title,
+			WA_Title,       (IPTR) title,
 			WA_IDCMP,       IDCMP_CLOSEWINDOW | IDCMP_GADGETUP,
 			WA_Flags,       WFLG_CLOSEGADGET  | WFLG_ACTIVATE | WFLG_RMBTRAP | WFLG_DRAGBAR,
-			WA_PubScreen,   (ULONG) Scr,
+			WA_PubScreen,   (IPTR) Scr,
 			TAG_DONE)))
 	{
 		extern struct IntuiMessage msgbuf,*msg;

@@ -92,7 +92,7 @@ static struct Hook hook;
 BYTE setup_winsearch(Project p, UBYTE replace)
 {
 	static struct NewGadget NG;
-	static ULONG  SGadTags[] = {
+	static IPTR SGadTags[] = {
 		GTCB_Checked,  0,
 		GTST_MaxChars, sizeof(SearchStr)-1,
 		GT_Underscore, '_',
@@ -190,7 +190,7 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 		NG.ng_GadgetID   = 0;
 		search = sg = (void *)
 #ifdef	__GNUC__
-			CreateGadget(STRING_KIND, sg, &NG, GTST_EditHook, (ULONG)&hook, TAG_MORE, (ULONG)(SGadTags+2));
+			CreateGadget(STRING_KIND, sg, &NG, GTST_EditHook, (IPTR)&hook, TAG_MORE, (IPTR)(SGadTags+2));
 #else
 			CreateGadgetA(STRING_KIND, sg, &NG, (ULONG)(SGadTags+2));
 #endif
@@ -210,7 +210,7 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 			NG.ng_GadgetID = 1;
 			rep = sg = (void *)
 #ifdef	__GNUC__
-				CreateGadget(STRING_KIND, sg, &NG, GTST_EditHook, (ULONG)&hook, TAG_MORE, (ULONG)(SGadTags+2));
+				CreateGadget(STRING_KIND, sg, &NG, GTST_EditHook, (IPTR)&hook, TAG_MORE, (IPTR)(SGadTags+2));
 #else
 				CreateGadgetA(STRING_KIND, sg, &NG, (ULONG)(SGadTags+2));
 #endif
@@ -359,7 +359,7 @@ void handle_search()
 		switch( msgbuf.Class )
 		{
 			case IDCMP_CLOSEWINDOW:	close_searchwnd(FALSE); return;
-			case IDCMP_MENUPICK:    handle_menu((ULONG)GTMENUITEM_USERDATA(ItemAddress(Menu,msgbuf.Code))); break;
+			case IDCMP_MENUPICK:    handle_menu((IPTR)GTMENUITEM_USERDATA(ItemAddress(Menu,msgbuf.Code))); break;
 			case IDCMP_VANILLAKEY:  if( handle_swinkey( msgbuf.Code ) ) return; break;
 			case IDCMP_NEWSIZE:     if( swin->Height <= swin->BorderTop ) ActivateWindow( Wnd ); return;
 			case IDCMP_GADGETUP:
@@ -621,7 +621,7 @@ char HilitePattern(Project p, STRPTR pattern, BYTE direction, BYTE quiet)
 		p->nbrwc = x2pos(ln,search - ln->stream);
 
 		/* Does the keyword remain on visible area? */
-		search = (UBYTE *)p->nbl; p->nbl = nbl;
+		search = (STRPTR)p->nbl; p->nbl = nbl;
 		nb = center_vert( p ); p->nbl = (LONG)search;
 
 		if(quiet != VERB_BUT_NO_HIDE_CURS) inv_curs(p,FALSE);
@@ -686,7 +686,7 @@ void match_bracket( Project p )
 
 		/* Can't use HilitePattern because of nested char */
 		ln     = p->edited;
-		cch    = Brackets[ NbBrak-i ];
+		cch    = (UBYTE *)Brackets[ NbBrak-i ];
 		i      = (i <= (NbBrak>>1) ? 1 : -1);
 		search = ln->stream + p->nbc + i;
 		nb     = (i>0 ? ln->size - p->nbc - 1 : p->nbc);

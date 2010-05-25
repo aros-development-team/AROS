@@ -25,7 +25,7 @@ extern struct Screen *Scr;
 struct FileRequester *fr=NULL;
 
 /* ASL load or save requester tags */
-static ULONG tags[] = {
+static IPTR tags[] = {
 	ASLFR_InitialLeftEdge,        0,
 	ASLFR_InitialTopEdge,         0,
 	ASLFR_InitialWidth,           320,
@@ -149,8 +149,8 @@ struct TagItem *init_tags(struct Window *wnd, ULONG flags)
 	/* TopEdge */
 	tags[3] = wnd->TopEdge + wnd->BorderTop;
 	/* Window, Screen, Flags */
-	tags[9]  = (ULONG) wnd;
-	tags[11] = (ULONG) wnd->WScreen;
+	tags[9]  = (IPTR) wnd;
+	tags[11] = (IPTR) wnd->WScreen;
 	tags[13] = flags;
 	tags[21] = (IPTR) "#?";
 	return (struct TagItem *)tags;
@@ -160,7 +160,7 @@ struct TagItem *init_tags(struct Window *wnd, ULONG flags)
 STRPTR ask_save(struct Window *wnd, AskArgs *path, CONST_STRPTR title)
 {
 	split_path(path, (STRPTR *)&tags[17], (STRPTR *)&tags[19]);
-	tags[23] = (ULONG)title;
+	tags[23] = (IPTR)title;
 
 	/* If requester hasn't been allocated yet */
 	if(fr==NULL && !(fr = (void *)AllocAslRequest(ASL_FileRequest,NULL)))
@@ -289,7 +289,7 @@ STRPTR ask_load(struct Window *wnd, AskArgs *path, BYTE set_file, CONST_STRPTR t
 {
 	split_path(path, (STRPTR *)&tags[17], (STRPTR *)&tags[19]);
 	if(set_file == 0) tags[19] = 0;
-	tags[23] = (ULONG)title;
+	tags[23] = (IPTR)title;
 
 	/* Alloc a file requester, if it hasn't been done yet */
 	if(fr==NULL && !(fr = (void *)AllocAslRequest(ASL_FileRequest,NULL)))
