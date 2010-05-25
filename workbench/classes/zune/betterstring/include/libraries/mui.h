@@ -28,6 +28,7 @@
 ** !     +--Image              (image display)
 ** !     +--Bitmap             (draws bitmaps)
 ** !     !  \--Bodychunk       (makes bitmap from ILBM body chunk)
+** !     +--Rawimage           (draws raw image data)
 ** !     +--Text               (text display)
 ** !     +--Gadget             (base class for intuition gadgets)
 ** !     !  +--String          (string gadget)
@@ -736,6 +737,9 @@ struct MUI_List_TestPos_Result
 #define ImageObject         MUI_NewObject(MUIC_Image
 #define BitmapObject        MUI_NewObject(MUIC_Bitmap
 #define BodychunkObject     MUI_NewObject(MUIC_Bodychunk
+#if !defined(__MORPHOS__)
+#define RawimageObject      MUI_NewObject(MUIC_Rawimage
+#endif
 #define NotifyObject        MUI_NewObject(MUIC_Notify
 #define ApplicationObject   MUI_NewObject(MUIC_Application
 #define TextObject          MUI_NewObject(MUIC_Text
@@ -1874,17 +1878,12 @@ extern char MUIC_Bitmap[];
 #define MUIA_Bitmap_Height                  0x80421560 /* V8  isg LONG              */
 #define MUIA_Bitmap_MappingTable            0x8042e23d /* V8  isg UBYTE *           */
 #define MUIA_Bitmap_Precision               0x80420c74 /* V11 isg LONG              */
-#define MUIA_Bitmap_RawData                 0x8042f61a /* V20 isg APTR              */
-#define MUIA_Bitmap_RawDataFormat           0x80429b85 /* V20 isg ULONG             */
 #define MUIA_Bitmap_RemappedBitmap          0x80423a47 /* V11 ..g struct BitMap *   */
 #define MUIA_Bitmap_SourceColors            0x80425360 /* V8  isg ULONG *           */
 #define MUIA_Bitmap_Transparent             0x80422805 /* V8  isg LONG              */
 #define MUIA_Bitmap_UseFriend               0x804239d8 /* V11 i.. BOOL              */
 #define MUIA_Bitmap_Width                   0x8042eb3a /* V8  isg LONG              */
 
-#define MUIV_Bitmap_RawDataFormat_CLUT8 0
-#define MUIV_Bitmap_RawDataFormat_RGB24 1
-#define MUIV_Bitmap_RawDataFormat_ARGB32 2
 
 
 /****************************************************************************/
@@ -3211,6 +3210,31 @@ extern char MUIC_Popmenu[];
 #define MUIV_Popmenu_Type_Popup 3
 #define MUIV_Popmenu_Type_Other 255
 
+
+/****************************************************************************/
+/** Rawimage                                                               **/
+/****************************************************************************/
+
+#if !defined(__MORPHOS__)
+#ifdef _DCC
+extern char MUIC_Rawimage[];
+#else
+#define MUIC_Rawimage "Rawimage.mui"
+#endif
+
+/* Attributes */
+
+#define MUIA_Rawimage_Alpha                 0x8042e72e /* V20 isg ULONG             */
+#define MUIA_Rawimage_CLUT                  0x8042be74 /* V20 isg ULONG *           */
+#define MUIA_Rawimage_Data                  0x80422919 /* V20 isg APTR              */
+#define MUIA_Rawimage_DataFormat            0x8042a6e8 /* V20 isg ULONG             */
+#define MUIA_Rawimage_Height                0x8042f5bd /* V20 isg LONG              */
+#define MUIA_Rawimage_Width                 0x8042f98c /* V20 isg LONG              */
+
+#define MUIV_Rawimage_DataFormat_CLUT8 0
+#define MUIV_Rawimage_DataFormat_RGB24 1
+#define MUIV_Rawimage_DataFormat_ARGB32 2
+#endif
 
 /*****************************************/
 /* End of automatic header file creation */

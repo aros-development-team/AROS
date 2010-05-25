@@ -10,6 +10,10 @@ AllocFunctions.o: AllocFunctions.c private.h ../include/libraries/mui.h \
   ../include/muiextra.h ../include/mcc_common.h ../include/SDI_compiler.h \
   ../include/SDI_hook.h ../include/SDI_lib.h ../include/SDI_stdarg.h \
   BetterString_mcc.h Debug.h
+ClipboardServer.o: ClipboardServer.c private.h ../include/libraries/mui.h \
+  ../include/muiextra.h ../include/mcc_common.h ../include/SDI_compiler.h \
+  ../include/SDI_hook.h ../include/SDI_lib.h ../include/SDI_stdarg.h \
+  BetterString_mcc.h Debug.h
 Dispatcher.o: Dispatcher.c ../include/proto/muimaster.h \
   ../include/libraries/mui.h ../include/interfaces/muimaster.h \
   ../include/inline4/muimaster.h BetterString_mcc.h private.h \
