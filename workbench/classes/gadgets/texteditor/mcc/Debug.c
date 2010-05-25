@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -127,6 +127,8 @@ void SetupDebug(void)
       { "style",     DBF_STYLE     },
       { "spell",     DBF_SPELL     },
       { "block",     DBF_BLOCK     },
+      { "import",    DBF_IMPORT    },
+      { "export",    DBF_IMPORT    },
       { "all",       DBF_ALL       },
       { NULL,        0             }
     };

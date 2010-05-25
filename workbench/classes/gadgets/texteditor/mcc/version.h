@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -29,9 +29,9 @@
 
 // for setting all necessary version information
 #define LIB_VERSION    15
-#define LIB_REVISION   31
-#define LIB_DATE       "24.10.2009"
-#define LIB_COPYRIGHT  "Copyright (C) 2005-2009 TextEditor.mcc Open Source Team"
+#define LIB_REVISION   33
+#define LIB_DATE       "16.05.2010"
+#define LIB_COPYRIGHT  "Copyright (C) 2005-2010 TextEditor.mcc Open Source Team"
 
 // set the LIB_REV_STRING
 #define LIB_REV_STRING STR(LIB_VERSION) "." STR(LIB_REVISION)

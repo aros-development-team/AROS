@@ -2,8 +2,172 @@
 MUI TextEditor MCC class - ChangeLog
 ------------------------------------
 
-$Id: ChangeLog 583 2009-10-24 22:18:47Z damato $
-$URL: https://texteditor-mcc.svn.sourceforge.net/svnroot/texteditor-mcc/releases/15.31/ChangeLog $
+$Id: ChangeLog 647 2010-05-16 11:46:34Z damato $
+$URL: https://texteditor-mcc.svn.sourceforge.net/svnroot/texteditor-mcc/releases/15.33/ChangeLog $
+
+#### v15.33 RELEASE ############################################################
+
+2010-05-16 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final v15.33 release preparations
+
+2010-05-10 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/AllocBitMap.c: fixed wrong freeing of a memory block in case another
+    allocation failed. This only could affect classic systems.
+  * mcc/AllocFunctions.c: integrated the OS3.0 Alloc/FreeVecPooled() functions
+    as well as the AllocLine()/FreeLine() functions into the memory tracking
+    framework.
+
+2010-05-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/InitConfig.c: fixed wrong pen allocation.
+
+2010-05-05 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/EditorStuff.c: fixed a wrong deallocation which might have lead to a
+    crash (FreeVec instead of FreeVecPooled).
+  * mcc/EditorStuff.c: after converting a text clip from UTF8 the line content
+    pointer is now updated correctly. This fixes bug #2995825.
+
+#### v15.32 RELEASE ############################################################
+
+2010-04-30 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final v15.32 release preparations
+
+2010-04-30 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/library.c: added version check for NBitmap.mcc. Only version V15.8+ can
+    handle raw image data.
+
+2010-04-28 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcp/icon.c: now the new NBitmap.mcc is explicitly used for displaying the
+    32bit raw image data on OS3 and OS4.
+
+2010-04-28 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/library: implemented experimental fallback to NBitmap.mcc for raw image
+    data in case Rawimage.mui is not available.
+
+2010-04-27 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/library: all systems now try to create a truecolor prefs image using
+    Rawimage.mcc first before falling back to the old 8bit images.
+
+2010-04-26 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/misc: merged all converted image data into one file, moved the image
+    files to a separate subdirectory, combined the prefs icon generation for
+    all platform into one function.
+
+2010-04-24 Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/mccinit.c: updated to latest version. This fixes the stack swapping
+    for AROS.
+
+2010-04-23 Ilkka Lehtoranta <ilkleht@yahoo.com>
+
+  * mcp/misc: use bzip2 compressed 32bit prefs image on MorphOS 2.
+
+2010-04-22 Thore Böckelmann <tboeckel@gmx.de>
+
+  * ColorOperators.c, StyleOperators.c: the GetColor() and GetStyle() functions
+    now handle invalid positions internally.
+  * ExportHook.c: cleaned up the plain export function a bit for better under-
+    standing.
+  * BlockOperators.c: deleting a multiline block would have dropped any coloring
+    information and thus the block would be restored uncolored at an Undo
+    operation.
+  * HandleInput.c, UndoFunctions.c: erasing a single character using the
+    Backspace key is now handled like erasing a marked block. This seems to be
+    overkill on the first sight. But the former backspace handling did not take
+    any coloring into account and undoing such an operation resulted in lost
+    colors.
+  * HandleInput.c: erasing a single character using the DEL is now handled like
+    erasing a marked block for the same reasons as for the Backspace key.
+  * UndoFunctions.c: correctly free a ET_DELETEBLOCK_NOMOVE clip like it is done
+    for ET_DELETEBLOCK clips.
+  * HandleInput.c, UndoFunctions.c: erasing a character with DEL will leave the
+    cursor at the same position when undoing this operation.
+
+2010-04-21 Thore Böckelmann <tboeckel@gmx.de>
+
+  * EditorStuff.c: slight optimization to shift style and color changes only if
+    they need to be shifted when deleting text.
+  * BlockOperators.c: fixed the increasing amount of color changes without real
+    color changes being applied. Blocks with color changes must be correctly
+    terminated with a color change back to the default color.
+  * EditorStuff.c: finally fixed a long standing coloring bug. This one occured
+    when inserting a colored clip into a line without any color changes yet.
+    After undoing and redoing this operation the line was colored until the end,
+    because the implict color change at the end of the clip was not correctly
+    handled. This is really weird stuff!
+
+2010-04-20 Thore Böckelmann <tboeckel@gmx.de>
+
+  * Debug.c: added new debug flags DBF_IMPORT and DBF_EXPORT to debug the import
+    and export hook functions.
+  * ImportHook.c: added some debug messages to the plain text import hook.
+  * BlockOperators.c: added the missing color handling when deleting a marked
+    block and restoring it afterwards using the Undo function. I hope I didn't
+    miss any case. This stuff is still far from being easy to understand.
+  * UndoFunctions.c: a pointer was not cleared after a FreeVecPooled() call and
+    might have been freed a second time and thus causing crashes.
+  * ImportHook.c: optimized the import hook a bit to only apply real style
+    changes instead of every style operation. Furthermore we ensure that all
+    applied styles are unapplied at the end of the imported text.
+  * BlockOperators.c: all applied colors changes are unapplied correctly.
+
+2010-04-17 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/EditorStuff.c, mcc/UndoFunctions.c: removed the "highlight" warnings by
+    implementing the undo/redo of highlighted lines as well. However, Does this
+    really change something? And what about colored text? How can be undo/redo
+    colored text as well?
+
+2010-04-12 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/misc: added 32bit truecolor prefs image done by Martin 'Mason' Merz.
+    This requires at least MUI3.9 and AmigaOS 4.1.
+
+2010-04-12 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/SetBlock.c: reworked the whole text boundary checking before the SetBlock
+    operations because it was largely broken and potentially caused crashed in case
+    a developer requested operations outside avaiable text areas. In addition two
+    new special values MUIV_TextEditor_SetBlock_Min/Max allow now to specify the
+    start/stop values for minimum and maximum.
+  * mcc/StyleOperators.c: fixed a minor compiler warning where the in-place
+    invertation via '~' caused a compiler warning with GCC 4.4+
+
+2010-02-10 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/AllocBitMap.c: the CyberGraphics semaphore check was done without the
+    necessary Forbid()/Permit() pair. Although it is absolutely unlikely that
+    the semaphore will be removed it is better to follow the rules. This fixes
+    bug #2948533.
+
+2009-11-28 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/ClipboardServer.c: decreased the stack size from 16K to 8K as the server
+    process doesn't really need much stack.
+
+2009-11-09 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/misc: implemented MUIA_TextEditor_PasteColors/Styles to enable/disable
+    pasting text with color and style information. This fulfils feature request
+    #2807448.
+  * mcc/GetSetAttrs.c: modifying the MUIA_TextEditor_AutoClip attribute treated
+    the tag as if it was TRUE always thus making it impossible to deactivate it.
+    This fixes YAM bug #2894042.
+
+2009-10-26 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/UndoFunctions.c: adding a new entry to the undo buffer will erase any
+    previously done redo action. This is what all text editors do. Additionally
+    this fixes a double free of memory upon cleanup.
 
 #### v15.31 RELEASE ############################################################
 

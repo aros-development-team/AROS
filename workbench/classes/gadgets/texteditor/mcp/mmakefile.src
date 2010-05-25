@@ -19,6 +19,7 @@ FILES := library \
 	 Dispatcher \
 	 Keybindings \
 	 KeyStorage \
+	 icon \
 	 ObjectCreator \
 	 Debug \
 	 vastubs

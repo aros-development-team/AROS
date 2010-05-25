@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -133,27 +133,38 @@ static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, con
     switch(function)
     {
       case CLEAR:
+      {
         DoMethod(data->object, MUIM_TextEditor_ClearText);
-        break;
+      }
+      break;
 
       case CUT:
+      {
         Key_Cut(data);
-        break;
+      }
+      break;
 
       case COPY:
+      {
         Key_Copy(data);
-        break;
+      }
+      break;
 
       case PASTE:
+      {
         Key_Paste(data);
-        break;
+      }
+      break;
 
       case ERASE:
+      {
         if(Enabled(data))
           Key_Clear(data);
-        break;
+      }
+      break;
 
       case GOTOLINE:
+      {
         if(*args)
         {
           STRPTR buffer;
@@ -167,9 +178,11 @@ static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, con
             result = (ULONG)buffer;
           }
         }
-        break;
+      }
+      break;
 
       case GOTOCOLUMN:
+      {
         if(*args)
         {
           STRPTR buffer;
@@ -182,7 +195,8 @@ static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, con
             result = (ULONG)buffer;
           }
         }
-        break;
+      }
+      break;
 
       case CURSOR:
       {
@@ -198,6 +212,7 @@ static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, con
       break;
 
       case LINE:
+      {
         if(*args)
         {
           LONG line;
@@ -206,9 +221,11 @@ static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, con
           line += *(LONG *)*args;
           set(data->object, MUIA_TextEditor_CursorY, (line < 0) ? 0 : line);
         }
-        break;
+      }
+      break;
 
       case COLUMN:
+      {
         if(*args)
         {
           LONG column;
@@ -217,9 +234,11 @@ static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, con
           column += *(LONG *)*args;
           set(data->object, MUIA_TextEditor_CursorX, (column < 0) ? 0 : column);
         }
-        break;
+      }
+      break;
 
       case NEXT:
+      {
         if(*args++)
           GoNextWord(data);
         if(*args++)
@@ -228,9 +247,11 @@ static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, con
           GoNextLine(data);
         if(*args)
           GoNextPage(data);
-        break;
+      }
+      break;
 
       case PREVIOUS:
+      {
         if(*args++)
           GoPreviousWord(data);
         if(*args++)
@@ -239,9 +260,11 @@ static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, con
           GoPreviousLine(data);
         if(*args)
           GoPreviousPage(data);
-        break;
+      }
+      break;
 
       case POSITION:
+      {
         if(*args++)
           GoTop(data);
         if(*args++)
@@ -258,9 +281,11 @@ static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, con
           GoPreviousPage(data);
         if(*args)
           GoNextPage(data);
-        break;
+      }
+      break;
 
       case InsTEXT:
+      {
         if(*txtargs)
         {
             struct Hook *oldhook = data->ImportHook;
@@ -269,15 +294,20 @@ static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, con
           DoMethod(data->object, MUIM_TextEditor_InsertText, txtargs, MUIV_TextEditor_InsertText_Cursor);
           data->ImportHook = oldhook;
         }
-        break;
+      }
+      break;
 
       case UNDO:
+      {
         Undo(data);
-        break;
+      }
+      break;
 
       case REDO:
+      {
         Redo(data);
-        break;
+      }
+      break;
 
       case GETLINE:
       {
@@ -315,16 +345,21 @@ static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, con
       }
 
       case SETBOOKMARK:
+      {
         if(*args)
           SetBookmark(data, *(ULONG *)*args-1);
-        break;
+      }
+      break;
 
       case GOTOBOOKMARK:
+      {
         if(*args)
           GotoBookmark(data, *(ULONG *)*args-1);
-        break;
+      }
+      break;
 
       case MARK:
+      {
         if(*++args)
         {
           data->flags &= ~FLG_ARexxMark;
@@ -338,27 +373,38 @@ static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, con
         {
           setFlag(data->flags, FLG_ARexxMark);
         }
-        break;
+      }
+      break;
 
       case DELETE:
+      {
         Key_Delete(data);
-        break;
+      }
+      break;
 
       case BACKSPACE:
+      {
         Key_Backspace(data);
-        break;
+      }
+      break;
 
       case KILLLINE:
+      {
         Key_DelLine(data);
-        break;
+      }
+      break;
 
       case TOUPPER:
+      {
         Key_ToUpper(data);
-        break;
+      }
+      break;
 
       case TOLOWER:
+      {
         Key_ToLower(data);
-        break;
+      }
+      break;
 
       case SELECTALL:
       {

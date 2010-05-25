@@ -63,6 +63,10 @@ struct LocaleBase *LocaleBase = NULL;
 struct LocaleIFace *ILocale = NULL;
 #endif
 
+#if !defined(__MORPHOS__)
+static BOOL nbitmapCanHandleRawData;
+#endif
+
 /******************************************************************************/
 /* define the functions used by the startup code ahead of including mccinit.c */
 /******************************************************************************/
@@ -72,22 +76,66 @@ static VOID ClassExpunge(UNUSED struct Library *base);
 /******************************************************************************/
 /* include the lib startup code for the mcc/mcp  (and muimaster inlines)      */
 /******************************************************************************/
-#define USE_IMAGE_COLORS
-#define USE_IMAGE_BODY
-#define PREFSIMAGEOBJECT \
-  BodychunkObject,\
-    MUIA_FixWidth,              IMAGE_WIDTH,\
-    MUIA_FixHeight,             IMAGE_HEIGHT,\
-    MUIA_Bitmap_Width,          IMAGE_WIDTH ,\
-    MUIA_Bitmap_Height,         IMAGE_HEIGHT,\
-    MUIA_Bodychunk_Depth,       IMAGE_DEPTH,\
-    MUIA_Bodychunk_Body,        (UBYTE *)image_body,\
-    MUIA_Bodychunk_Compression, IMAGE_COMPRESSION,\
-    MUIA_Bodychunk_Masking,     IMAGE_MASKING,\
-    MUIA_Bitmap_SourceColors,   (ULONG *)image_colors,\
-    MUIA_Bitmap_Transparent,    0,\
-  End
-#include "icon.bh"
+#define USE_ICON8_COLORS
+#define USE_ICON8_BODY
+
+#include "icon.h"
+
+#if defined(__MORPHOS__)
+#include <mui/Rawimage_mcc.h>
+#else
+#include <mui/NBitmap_mcc.h>
+#endif
+
+static Object *get_prefs_image(void)
+{
+  Object *obj;
+
+  #if !defined(__MORPHOS__)
+  if(nbitmapCanHandleRawData == TRUE)
+  {
+    obj = NBitmapObject,
+      MUIA_FixWidth,       ICON32_WIDTH,
+      MUIA_FixHeight,      ICON32_HEIGHT,
+      MUIA_NBitmap_Type,   MUIV_NBitmap_Type_ARGB32,
+      MUIA_NBitmap_Normal, icon32,
+      MUIA_NBitmap_Width,  ICON32_WIDTH,
+      MUIA_NBitmap_Height, ICON32_HEIGHT,
+    End;
+  }
+  else
+  {
+    obj = NULL;
+  }
+  #else
+  obj = RawimageObject,
+    MUIA_Rawimage_Data, icon32,
+  End;
+  #endif
+
+  // if the 32bit image data couldn't be loaded
+  // we fall back to the 8bit icon
+  if(obj == NULL)
+  {
+    obj = BodychunkObject,\
+      MUIA_FixWidth,              ICON8_WIDTH,\
+      MUIA_FixHeight,             ICON8_HEIGHT,\
+      MUIA_Bitmap_Width,          ICON8_WIDTH ,\
+      MUIA_Bitmap_Height,         ICON8_HEIGHT,\
+      MUIA_Bodychunk_Depth,       ICON8_DEPTH,\
+      MUIA_Bodychunk_Body,        (UBYTE *)icon8_body,\
+      MUIA_Bodychunk_Compression, ICON8_COMPRESSION,\
+      MUIA_Bodychunk_Masking,     ICON8_MASKING,\
+      MUIA_Bitmap_SourceColors,   (ULONG *)icon8_colors,\
+      MUIA_Bitmap_Transparent,    0,\
+    End;
+  }
+
+  return obj;
+}
+
+#define PREFSIMAGEOBJECT get_prefs_image()
+
 #include "mccinit.c"
 
 /******************************************************************************/
@@ -101,6 +149,28 @@ static BOOL ClassInit(UNUSED struct Library *base)
     // open the TextEditor.mcp catalog
     OpenCat();
 
+    #if !defined(__MORPHOS__)
+    {
+      struct Library *nbitmapMcc;
+
+      nbitmapCanHandleRawData = FALSE;
+
+      // we need at least NBitmap.mcc V15.8 to be able to let it handle raw image data
+      if((nbitmapMcc = OpenLibrary("mui/NBitmap.mcc", 0)) != NULL)
+      {
+        SHOWVALUE(DBF_ALWAYS, nbitmapMcc->lib_Version);
+        SHOWVALUE(DBF_ALWAYS, nbitmapMcc->lib_Revision);
+
+        if(nbitmapMcc->lib_Version > 15 || (nbitmapMcc->lib_Version == 15 && nbitmapMcc->lib_Revision >= 8))
+          nbitmapCanHandleRawData = TRUE;
+
+        CloseLibrary(nbitmapMcc);
+      }
+
+      SHOWVALUE(DBF_ALWAYS, nbitmapCanHandleRawData);
+    }
+    #endif
+
     // Initialize the subclasses
     if(CreateSubClasses())
       return TRUE;
@@ -110,7 +180,7 @@ static BOOL ClassInit(UNUSED struct Library *base)
     LocaleBase  = NULL;
   }
 
-  return FALSE ;
+  return FALSE;
 }
 
 

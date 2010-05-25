@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -145,7 +145,7 @@ void InitConfig(struct InstData *data, Object *obj)
         struct MUI_PenSpec *spec = (struct MUI_PenSpec *)(bg_setting+2);
 
         data->backgroundcolor = MUI_ObtainPen(muiRenderInfo(obj), spec, 0L);
-        data->allocatedpens |= 1<<5;
+        data->allocatedpens |= 1<<8;
       }
       else if(bg_setting[0] != '\0')
         data->fastbackground = FALSE;
@@ -409,24 +409,24 @@ void FreeConfig(struct InstData *data, struct MUI_RenderInfo *mri)
   if(data->RawkeyBindings != NULL)
     FreeVecPooled(data->mypool, data->RawkeyBindings);
 
-  if(data->allocatedpens & 1)
+  if(data->allocatedpens & (1<<0))
     MUI_ReleasePen(mri, data->textcolor);
-  if(data->allocatedpens & 2)
+  if(data->allocatedpens & (1<<1))
     MUI_ReleasePen(mri, data->cursorcolor);
-  if(data->allocatedpens & 4)
+  if(data->allocatedpens & (1<<2))
     MUI_ReleasePen(mri, data->cursortextcolor);
-  if(data->allocatedpens & 8)
+  if(data->allocatedpens & (1<<3))
     MUI_ReleasePen(mri, data->highlightcolor);
-  if(data->allocatedpens & 16)
+  if(data->allocatedpens & (1<<4))
     MUI_ReleasePen(mri, data->markedcolor);
-  if(data->allocatedpens & 32)
-    MUI_ReleasePen(mri, data->backgroundcolor);
-  if(data->allocatedpens & 64)
+  if(data->allocatedpens & (1<<5))
     MUI_ReleasePen(mri, data->separatorshine);
-  if(data->allocatedpens & 128)
+  if(data->allocatedpens & (1<<6))
     MUI_ReleasePen(mri, data->separatorshadow);
-  if(data->allocatedpens & 256)
+  if(data->allocatedpens & (1<<7))
     MUI_ReleasePen(mri, data->inactivecolor);
+  if(data->allocatedpens & (1<<8))
+    MUI_ReleasePen(mri, data->backgroundcolor);
 
   if(data->normalfont != NULL)
     CloseFont(data->normalfont);

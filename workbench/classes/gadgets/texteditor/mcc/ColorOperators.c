@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -26,16 +26,16 @@
 #include "Debug.h"
 
 /// GetColor()
-UWORD GetColor(UWORD x, struct line_node *line)
+UWORD GetColor(LONG x, struct line_node *line)
 {
   UWORD color = 0;
   struct LineColor *colors = line->line.Colors;
 
   ENTER();
 
-  if(colors != NULL)
+  if(colors != NULL && x >= 0)
   {
-    while(colors->column <= x+1)
+    while(colors->column != EOC && colors->column <= x+1)
     {
       color = colors->color;
       colors++;

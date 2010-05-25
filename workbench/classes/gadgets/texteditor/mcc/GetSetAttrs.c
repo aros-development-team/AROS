@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -192,6 +192,14 @@ IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg)
       ti_Data = data->maxUndoSteps;
       break;
 
+    case MUIA_TextEditor_PasteStyles:
+      ti_Data = isFlagSet(data->flags, FLG_PasteStyles);
+    break;
+
+    case MUIA_TextEditor_PasteColors:
+      ti_Data = isFlagSet(data->flags, FLG_PasteColors);
+    break;
+
     default:
       LEAVE();
       return(DoSuperMethodA(cl, obj, (Msg)msg));
@@ -266,12 +274,13 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
         if(ti_Data)
           setFlag(data->flags, FLG_AutoClip);
         else
-          setFlag(data->flags, FLG_AutoClip);
+          clearFlag(data->flags, FLG_AutoClip);
       break;
 
       case MUIA_TextEditor_ColorMap:
         data->colormap = (ULONG *)ti_Data;
         break;
+
       case MUIA_TextEditor_InVirtualGroup:
         if(ti_Data)
           setFlag(data->flags, FLG_InVGrp);
@@ -689,6 +698,20 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
         data->userUndoBufferSize = TRUE;
         ResizeUndoBuffer(data, ti_Data);
         break;
+
+      case MUIA_TextEditor_PasteStyles:
+        if(ti_Data)
+          setFlag(data->flags, FLG_PasteStyles);
+        else
+          clearFlag(data->flags, FLG_PasteStyles);
+      break;
+
+      case MUIA_TextEditor_PasteColors:
+        if(ti_Data)
+          setFlag(data->flags, FLG_PasteColors);
+        else
+          clearFlag(data->flags, FLG_PasteColors);
+      break;
     }
   }
 

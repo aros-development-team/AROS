@@ -1,11 +1,11 @@
 @DataBase TextEditor.guide
-@$VER: TextEditor.Guide 15.31 (24.10.2009)
+@$VER: TextEditor.Guide 15.332 (16.05.2010)
 
 @Node Main "TextEditor - AmigaGuide(R) documentation"
 
 Welcome to the @{b}TextEditor @{ub}AmigaGuide(R) documentation.
 
-(C) 2005-2009 by the TextEditor.mcc Open Source team
+(C) 2005-2010 by the TextEditor.mcc Open Source team
 (C) 1997-2000 by Allan Odgaard
 
 
@@ -339,6 +339,19 @@ History
 list of changes since 15.9)
 
 Quick summary:
+
+15.33 (16.05.2010)
+
+- fixed wrong pen allocation.
+- fixed broken UTF-8 driven text pasting in the MorphOS build.
+
+15.32 (21.04.2010)
+
+- fixed another bunch of minor bugs related to block handling.
+- fix bug where an undo/redo operation didn't restore colored text.
+- implemented new MUIA_TextEditor_PasteColors/Styles attribute to enable/disable
+  pasting text with color and style information.
+- fixed bug where the MUIA_TextEditor_AutoClip attribute didn't work as expected.
 
 15.31 (24.10.2009)
 

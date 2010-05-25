@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2007 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: TODO 283 2007-01-02 12:21:51Z damato $
+ $Id: TODO 612 2010-04-21 15:54:05Z damato $
 
 ***************************************************************************/
 
@@ -30,3 +30,7 @@ Items that ought to be implemented in future TextEditor.mcc releases:
 * Change all import/export hooks to use a flex template whereever possible.
 * Inline image display
 * Fix background rendering when certain types of gradients are used.
+
+
+Items that ought to be fixed in future TextEditor.mcc releases:
+--------------------------------------------------------------------

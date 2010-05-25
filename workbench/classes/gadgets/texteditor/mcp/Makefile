@@ -2,7 +2,7 @@
 #
 # TextEditor.mcc - Textediting MUI Custom Class
 # Copyright (C) 1997-2000 Allan Odgaard
-# Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+# Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -182,6 +182,7 @@ COBJS = locale.o \
         KeyStorage.o \
         ObjectCreator.o \
         Debug.o \
+        icon.o \
         vastubs.o
 
 TOBJS = Preference.o
