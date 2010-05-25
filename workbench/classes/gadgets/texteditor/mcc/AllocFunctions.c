@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -24,7 +24,7 @@
 
 #include "private.h"
 
-#define DEBUG_USE_MALLOC_REDEFINE
+#define DEBUG_USE_MALLOC_REDEFINE 1
 #include "Debug.h"
 
 /// AllocVecPooled()
@@ -36,8 +36,11 @@ APTR AllocVecPooled(APTR pool, ULONG length)
   ENTER();
 
   length += sizeof(ULONG);
-  if((mem = AllocPooled(pool, length)))
+  if((mem = AllocPooled(pool, length)) != NULL)
+  {
     *mem++ = length;
+    MEMTRACK("AllocVecPooled", mem, length);
+  }
 
   RETURN(mem);
   return(mem);
@@ -53,6 +56,7 @@ void FreeVecPooled(APTR pool, APTR mem)
 
   ENTER();
 
+  UNMEMTRACK(mem);
   memptr = &((ULONG *)mem)[-1];
   length = *memptr;
 
@@ -71,6 +75,7 @@ struct line_node *AllocLine(struct InstData *data)
   ENTER();
 
   newline = AllocVecPooled(data->mypool, sizeof(struct line_node));
+  MEMTRACK("AllocLine", newline, sizeof(struct line_node));
 
   RETURN(newline);
   return newline;
@@ -78,7 +83,7 @@ struct line_node *AllocLine(struct InstData *data)
 
 ///
 /// FreeLine()
-void FreeLine(struct InstData *data, struct line_node* line)
+void FreeLine(struct InstData *data, struct line_node *line)
 {
   ENTER();
 
@@ -107,6 +112,7 @@ void FreeLine(struct InstData *data, struct line_node* line)
   }
 
   // finally free the line itself
+  UNMEMTRACK(line);
   FreeVecPooled(data->mypool, line);
 
   LEAVE();

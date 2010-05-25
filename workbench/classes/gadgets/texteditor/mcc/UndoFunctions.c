@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -31,16 +31,17 @@
 #include "Debug.h"
 
 /// FreeUndoStep()
-// free the memory occupated an undo step
+// free the memory occupated by an undo step
 static void FreeUndoStep(struct InstData *data, struct UserAction *step)
 {
   ENTER();
 
-  if(step->type == ET_DELETEBLOCK || step->type == ET_PASTEBLOCK)
+  if(step->type == ET_DELETEBLOCK || step->type == ET_DELETEBLOCK_NOMOVE || step->type == ET_PASTEBLOCK)
   {
     if(step->clip != NULL)
     {
       FreeVecPooled(data->mypool, step->clip);
+      // clear the pointer
       step->clip = NULL;
     }
   }
@@ -98,16 +99,8 @@ BOOL Undo(struct InstData *data)
         action->del.style = GetStyle(data->CPos_X, data->actualline);
         action->del.flow = data->actualline->line.Flow;
         action->del.separator = data->actualline->line.Separator;
-        #warning is buffer->del.highlight missing here?
+        action->del.highlight = data->actualline->line.Highlight;
         RemoveChars(data, data->CPos_X, data->actualline, 1);
-      }
-      break;
-
-      case ET_BACKSPACECHAR:
-      {
-        D(DBF_UNDO, "undo BACKSPACECHAR");
-        PasteChars(data, data->CPos_X, data->actualline, 1, (char *)&action->del.character, action);
-        data->CPos_X++;
       }
       break;
 
@@ -266,10 +259,9 @@ BOOL Redo(struct InstData *data)
       }
       break;
 
-      case ET_BACKSPACECHAR:
       case ET_DELETECHAR:
       {
-        D(DBF_UNDO, "redo BACKSPACECHAR/DELETECHAR");
+        D(DBF_UNDO, "redo DELETECHAR");
         RemoveChars(data, data->CPos_X, data->actualline, 1);
       }
       break;
@@ -298,6 +290,8 @@ BOOL Redo(struct InstData *data)
         InsertText(data, action->clip, TRUE);
         data->ImportHook = oldhook;
         FreeVecPooled(data->mypool, action->clip);
+        // clear the pointer
+        action->clip = NULL;
 
         action->blk.x = data->CPos_X;
         action->blk.y = LineNr(data, data->actualline);
@@ -370,6 +364,7 @@ BOOL AddToUndoBuffer(struct InstData *data, enum EventType eventtype, void *even
       ULONG i;
 
       // free the oldest stored action and forget about it
+      D(DBF_UNDO, "undo buffer is full, loose the oldest step");
       FreeUndoStep(data, &data->undoSteps[0]);
       data->nextUndoStep--;
       data->usedUndoSteps--;
@@ -380,7 +375,19 @@ BOOL AddToUndoBuffer(struct InstData *data, enum EventType eventtype, void *even
 
       // signal the user that something in the undo buffer was lost
       setFlag(data->flags, FLG_UndoLost);
-      D(DBF_UNDO, "one undo step was lost");
+    }
+    else
+    {
+      ULONG i;
+
+      // adding something new to the undo buffer will erase all previously
+      // performed redo's
+      for(i = data->nextUndoStep; i < data->usedUndoSteps; i++)
+      {
+        D(DBF_UNDO, "free not yet redone step %ld", i);
+        FreeUndoStep(data, &data->undoSteps[i]);
+      }
+      data->usedUndoSteps = data->nextUndoStep;
     }
 
     action = &data->undoSteps[data->nextUndoStep];
@@ -396,11 +403,10 @@ BOOL AddToUndoBuffer(struct InstData *data, enum EventType eventtype, void *even
     // as we are about to set something new for an undo
     // operation we have to signal that redo operation
     // is cleared now.
-    if(data->nextUndoStep == data->usedUndoSteps)
-      set(data->object, MUIA_TextEditor_RedoAvailable, FALSE);
-
     // and we definitely have something to undo now
-    set(data->object, MUIA_TextEditor_UndoAvailable, TRUE);
+    SetAttrs(data->object, MUIA_TextEditor_RedoAvailable, FALSE,
+                           MUIA_TextEditor_UndoAvailable, TRUE,
+                           TAG_DONE);
 
     action->x = data->CPos_X;
     action->y = LineNr(data, data->actualline);
@@ -419,16 +425,15 @@ BOOL AddToUndoBuffer(struct InstData *data, enum EventType eventtype, void *even
       break;
 
       case ET_DELETECHAR:
-      case ET_BACKSPACECHAR:
       {
         STRPTR str = (STRPTR)eventData;
 
-        D(DBF_UNDO, "add undo DELETECHAR/BACKSPACECHAR");
+        D(DBF_UNDO, "add undo DELETECHAR");
         action->del.character = str[0];
         action->del.style = GetStyle(data->CPos_X, data->actualline);
         action->del.flow = data->actualline->line.Flow;
         action->del.separator = data->actualline->line.Separator;
-        #warning is buffer->del.highlight missing here?
+        action->del.highlight = data->actualline->line.Highlight;
       }
       break;
 
@@ -445,6 +450,7 @@ BOOL AddToUndoBuffer(struct InstData *data, enum EventType eventtype, void *even
       break;
 
       case ET_DELETEBLOCK:
+      case ET_DELETEBLOCK_NOMOVE:
       {
         STRPTR text;
         struct marking *block = (struct marking *)eventData;
@@ -456,7 +462,7 @@ BOOL AddToUndoBuffer(struct InstData *data, enum EventType eventtype, void *even
           action->y = LineNr(data, block->startline);
           action->clip = text;
 
-          if(isFlagSet(data->flags, FLG_FreezeCrsr))
+          if(eventtype == ET_DELETEBLOCK && isFlagSet(data->flags, FLG_FreezeCrsr))
             action->type = ET_DELETEBLOCK_NOMOVE;
         }
         else

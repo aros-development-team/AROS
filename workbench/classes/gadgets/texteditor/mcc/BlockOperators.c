@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -103,14 +103,16 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
     {
       if(startline->line.Styles != NULL && startline->line.Styles[0].column != EOS)
       {
-        UWORD startstyle = GetStyle(startx, startline);
+        D(DBF_BLOCK, "export styles");
 
         // allocate space for all old styles and up to 4 new styles
         if((emsg.Styles = (struct LineStyle *)AllocVecPooled(data->mypool, (startline->line.usedStyles+4) * sizeof(struct LineStyle))) != NULL)
         {
+          UWORD startstyle = GetStyle(startx, startline);
           struct LineStyle *styles = emsg.Styles;
           struct LineStyle *oldstyles = startline->line.Styles;
 
+          // apply any active style
           if(isFlagSet(startstyle, BOLD))
           {
             styles->column = 1;
@@ -130,9 +132,11 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
             styles++;
           }
 
+          // skip all styles until the block starts
           while(oldstyles->column <= startx)
             oldstyles++;
 
+          // copy all styles until the end of the line
           while(oldstyles->column != EOS)
           {
             styles->column = oldstyles->column - startx;
@@ -140,13 +144,66 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
             styles++;
             oldstyles++;
           }
+
+          // terminate the style array
           styles->column = EOS;
         }
       }
       else
         emsg.Styles = NULL;
 
-      emsg.Colors = NULL;
+      if(startline->line.Colors != NULL && startline->line.Colors[0].column != EOC)
+      {
+        D(DBF_BLOCK, "export colors");
+
+        // allocate space for all old colors and up to 3 new colors
+        if((emsg.Colors = (struct LineColor *)AllocVecPooled(data->mypool, (startline->line.usedColors+3) * sizeof(struct LineColor))) != NULL)
+        {
+          UWORD lastcolor = GetColor(startx, startline);
+          struct LineColor *colors = emsg.Colors;
+          struct LineColor *oldcolors = startline->line.Colors;
+
+          // apply the active color
+          if(lastcolor != 0)
+          {
+            colors->column = 1;
+            colors->color = lastcolor;
+            colors++;
+          }
+
+          // skip all colors until the block starts
+          while(oldcolors->column <= startx)
+            oldcolors++;
+
+          // copy all colors until the end of the line
+          while(oldcolors->column != EOC)
+          {
+            // apply real color changes only
+          	if(oldcolors->color != lastcolor)
+          	{
+              colors->column = oldcolors->column - startx;
+              colors->color = oldcolors->color;
+              colors++;
+              // remember this color change
+              lastcolor = oldcolors->color;
+            }
+            oldcolors++;
+          }
+
+          // unapply the last active color
+          if(lastcolor != 0)
+          {
+            colors->column = strlen(startline->line.Contents)-startx+1;
+            colors->color = 0;
+            colors++;
+          }
+
+          // terminate the color array
+          colors->column = EOC;
+        }
+      }
+      else
+        emsg.Colors = NULL;
 
       strlcpy(emsg.Contents, &startline->line.Contents[startx], startline->line.Length-startx+1);
       emsg.Length = startline->line.Length - startx;
@@ -158,7 +215,15 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
       FreeVecPooled(data->mypool, emsg.Contents);
 
       if(emsg.Styles != NULL)
+      {
         FreeVecPooled(data->mypool, emsg.Styles);
+        emsg.Styles = NULL;
+      }
+      if(emsg.Colors != NULL)
+      {
+        FreeVecPooled(data->mypool, emsg.Colors);
+        emsg.Colors = NULL;
+      }
     }
 
     // Start iterating...
@@ -181,16 +246,18 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
     D(DBF_BLOCK, "exporting last line, stopping at %ld", stopx);
     if(emsg.failure == FALSE && stopx > 0 && (emsg.Contents = AllocVecPooled(data->mypool, stopx+1)) != NULL)
     {
-      if(stopline->line.Styles != NULL && stopline->line.Styles->column != EOS)
-      {
-        UWORD stopstyle = GetStyle(stopx, stopline);
+      D(DBF_BLOCK, "export styles");
 
+      if(stopline->line.Styles != NULL && stopline->line.Styles[0].column != EOS)
+      {
         // allocate space for all old styles and up to 4 new styles
         if((emsg.Styles = AllocVecPooled(data->mypool, (stopline->line.usedStyles+4) * sizeof(struct LineStyle))) != NULL)
         {
+          UWORD stopstyle = GetStyle(stopx, stopline);
           struct LineStyle *styles = emsg.Styles;
           struct LineStyle *oldstyles = stopline->line.Styles;
 
+          // copy all styles until the end of the block
           while(oldstyles->column <= stopx)
           {
             styles->column = oldstyles->column;
@@ -199,6 +266,7 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
             oldstyles++;
           }
 
+          // unapply any still active styles
           if(isFlagSet(stopstyle, BOLD))
           {
             styles->column = stopx+1;
@@ -217,13 +285,54 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
             styles->style = ~UNDERLINE;
             styles++;
           }
+
+          // terminate the style array
           styles->column = EOS;
         }
       }
       else
         emsg.Styles = NULL;
 
-      emsg.Colors = NULL;
+      if(stopline->line.Colors != NULL && stopline->line.Colors[0].column != EOC)
+      {
+        D(DBF_BLOCK, "export colors");
+
+        // allocate space for all old colors and 2 new colors
+        if((emsg.Colors = (struct LineColor *)AllocVecPooled(data->mypool, (startline->line.usedColors+2) * sizeof(struct LineColor))) != NULL)
+        {
+          UWORD lastcolor = 0;
+          struct LineColor *colors = emsg.Colors;
+          struct LineColor *oldcolors = stopline->line.Colors;
+
+          // copy all colors until the end of the block
+          while(oldcolors->column <= stopx)
+          {
+            // apply real color changes only
+          	if(oldcolors->color != lastcolor)
+          	{
+              colors->column = oldcolors->column;
+              colors->color = oldcolors->color;
+              colors++;
+              // remember this color change
+              lastcolor = oldcolors->color;
+            }
+            oldcolors++;
+          }
+
+          // unapply the last active color
+          if(lastcolor != 0)
+          {
+            colors->column = stopx+1;
+            colors->color = 0;
+            colors++;
+          }
+
+          // terminate the color array
+          colors->column = EOC;
+        }
+      }
+      else
+        emsg.Colors = NULL;
 
       strlcpy(emsg.Contents, stopline->line.Contents, stopx+1);
       emsg.Length = stopx;
@@ -236,7 +345,15 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
       FreeVecPooled(data->mypool, emsg.Contents);
 
       if(emsg.Styles != NULL)
+      {
         FreeVecPooled(data->mypool, emsg.Styles);
+        emsg.Styles = NULL;
+      }
+      if(emsg.Colors != NULL)
+      {
+        FreeVecPooled(data->mypool, emsg.Colors);
+        emsg.Colors = NULL;
+      }
 
       // clear the state pointer
       emsg.UserData = NULL;
@@ -250,15 +367,15 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
     {
       if(startline->line.Styles != NULL && startline->line.Styles->column != EOS)
       {
-        UWORD startstyle = GetStyle(startx, startline);
-        UWORD stopstyle = GetStyle(stopx, stopline);
-
-        // allocate space for all old styles and up to 4 new styles
-        if((emsg.Styles = (struct LineStyle *)AllocVecPooled(data->mypool, (startline->line.usedStyles+4) * sizeof(struct LineStyle))) != NULL)
+        // allocate space for all old styles and up to 7 new styles
+        if((emsg.Styles = (struct LineStyle *)AllocVecPooled(data->mypool, (startline->line.usedStyles+7) * sizeof(struct LineStyle))) != NULL)
         {
+          UWORD startstyle = GetStyle(startx, startline);
+          UWORD stopstyle = GetStyle(stopx, stopline);
           struct LineStyle *styles = emsg.Styles;
           struct LineStyle *oldstyles = startline->line.Styles;
 
+          // apply any active style
           if(isFlagSet(startstyle, BOLD))
           {
             styles->column = 1;
@@ -278,9 +395,11 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
             styles++;
           }
 
+          // skip all styles until the block starts
           while(oldstyles->column <= startx)
             oldstyles++;
 
+          // copy all styles until the end of the block
           while(oldstyles->column <= stopx)
           {
             styles->column = oldstyles->column - startx;
@@ -289,6 +408,7 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
             oldstyles++;
           }
 
+          // unapply any still active styles
           if(isFlagSet(stopstyle, BOLD))
           {
             styles->column = stopx-startx+1;
@@ -307,13 +427,64 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
             styles->style = ~UNDERLINE;
             styles++;
           }
+
+          // terminate the style array
           styles->column = EOS;
         }
       }
       else
         emsg.Styles = NULL;
 
-      emsg.Colors = NULL;
+      if(startline->line.Colors != NULL && startline->line.Colors[0].column != EOC)
+      {
+        // allocate space for all old colors and up to 3 new colors
+        if((emsg.Colors = (struct LineColor *)AllocVecPooled(data->mypool, (startline->line.usedColors+3) * sizeof(struct LineColor))) != NULL)
+        {
+          UWORD lastcolor = GetColor(startx, startline);
+          struct LineColor *colors = emsg.Colors;
+          struct LineColor *oldcolors = startline->line.Colors;
+
+          // apply the active color
+          if(lastcolor != 0)
+          {
+            colors->column = 1;
+            colors->color = lastcolor;
+            colors++;
+          }
+
+          // skip all colors until the block starts
+          while(oldcolors->column <= startx)
+            oldcolors++;
+
+          // copy all colors until the end of the block
+          while(oldcolors->column <= stopx)
+          {
+            // apply real color changes only
+          	if(oldcolors->color != lastcolor)
+          	{
+              colors->column = oldcolors->column - startx;
+              colors->color = oldcolors->color;
+              colors++;
+              // remember this color change
+              lastcolor = oldcolors->color;
+            }
+            oldcolors++;
+          }
+
+          // unapply the last active color
+          if(lastcolor != 0)
+          {
+            colors->column = stopx-startx+1;
+            colors->color = 0;
+            colors++;
+          }
+
+          // terminate the color array
+          colors->column = EOC;
+        }
+      }
+      else
+        emsg.Colors = NULL;
 
       strlcpy(emsg.Contents, &startline->line.Contents[startx], stopx-startx+1);
       emsg.Length = stopx-startx;
@@ -326,7 +497,15 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
       FreeVecPooled(data->mypool, emsg.Contents);
 
       if(emsg.Styles != NULL)
+      {
         FreeVecPooled(data->mypool, emsg.Styles);
+        emsg.Styles = NULL;
+      }
+      if(emsg.Colors != NULL)
+      {
+        FreeVecPooled(data->mypool, emsg.Colors);
+        emsg.Colors = NULL;
+      }
 
       // clear the state pointer
       emsg.UserData = NULL;
@@ -350,6 +529,8 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
     emsg.failure = FALSE;
     text = (STRPTR)CallHookA(&ExportHookPlain, NULL, &emsg);
   }
+
+  SHOWSTRING(DBF_ALWAYS, text);
 
   RETURN(text);
   return text;

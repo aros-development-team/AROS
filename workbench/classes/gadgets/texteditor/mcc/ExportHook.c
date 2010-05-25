@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -125,7 +125,7 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
       STRPTR startx;
 
       // if this hook is of plain type we have consider highlighting as well.
-      if(emsg->Highlight == TRUE && hookType == MUIV_TextEditor_ExportHook_Plain)
+      if(hookType == MUIV_TextEditor_ExportHook_Plain && emsg->Highlight == TRUE)
       {
         *buf->pointer++ = '\033';
         *buf->pointer++ = 'h';
@@ -176,25 +176,46 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
         WORD style;
         BOOL coloured = FALSE;
         UWORD colour_state = 7;
+        UWORD nextStyleColumn;
+        UWORD nextColorColumn;
 
-        while(length > 0 && ((styles != NULL && styles->column != EOS) || (colors != NULL && colors->column != EOC)))
+        if(styles == NULL)
+          nextStyleColumn = EOS;
+        else
+          nextStyleColumn = styles[0].column;
+
+        if(colors == NULL)
+          nextColorColumn = EOC;
+        else
+          nextColorColumn = colors[0].column;
+
+        while(length > 0 && (nextStyleColumn != EOS || nextColorColumn != EOC))
         {
-          BOOL color;
+          BOOL isColorChange;
           LONG len;
 
-          if(colors == NULL || (styles != NULL && (coloured ? styles->column < colors->column : styles->column <= colors->column)))
+          SHOWVALUE(DBF_EXPORT, nextStyleColumn);
+          SHOWVALUE(DBF_EXPORT, nextColorColumn);
+
+          // check whether a style change or a color change is first to be handled
+          if((coloured == TRUE  && nextStyleColumn <  nextColorColumn) ||
+             (coloured == FALSE && nextStyleColumn <= nextColorColumn))
           {
             pos = styles->column - 1;
             style = styles->style;
+            isColorChange = FALSE;
+            // remember the next style change column
             styles++;
-            color = FALSE;
+            nextStyleColumn = styles->column;
           }
           else
           {
             pos = colors->column - 1;
             style = colors->color;
+            isColorChange = TRUE;
+            // remember the next style change column
             colors++;
-            color = TRUE;
+            nextColorColumn = colors->column;
           }
 
           // skip styles&colors which below lastpos
@@ -211,7 +232,7 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
 
             if(hookType == MUIV_TextEditor_ExportHook_EMail)
             {
-              if(color == TRUE)
+              if(isColorChange == TRUE)
               {
                 if((coloured = (style == colour_state ? TRUE : FALSE)))
                 {
@@ -248,8 +269,9 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
             }
             else if(hookType == MUIV_TextEditor_ExportHook_Plain)
             {
-              if(color == TRUE)
+              if(isColorChange == TRUE)
               {
+                D(DBF_EXPORT, "exporting color %ld of column %ld", style, pos+1);
                 snprintf(buf->pointer, buf->size-(buf->pointer-buf->buffer), "\033p[%d]", style);
                 buf->pointer += strlen(buf->pointer);
               }
@@ -257,16 +279,9 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
               {
                 switch(style)
                 {
-                  case UNDERLINE:
-                  {
-                    *buf->pointer++ = '\033';
-                    *buf->pointer++ = 'u';
-                    setFlag(currentstyle, UNDERLINE);
-                  }
-                  break;
-
                   case BOLD:
                   {
+                    D(DBF_EXPORT, "exporting bold style of column %ld", pos+1);
                     *buf->pointer++ = '\033';
                     *buf->pointer++ = 'b';
                     setFlag(currentstyle, BOLD);
@@ -275,20 +290,31 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
 
                   case ITALIC:
                   {
+                    D(DBF_EXPORT, "exporting italic style of column %ld", pos+1);
                     *buf->pointer++ = '\033';
                     *buf->pointer++ = 'i';
                     setFlag(currentstyle, ITALIC);
                   }
                   break;
 
-                  case ~UNDERLINE:
+                  case UNDERLINE:
+                  {
+                    D(DBF_EXPORT, "exporting underline style of column %ld", pos+1);
+                    *buf->pointer++ = '\033';
+                    *buf->pointer++ = 'u';
+                    setFlag(currentstyle, UNDERLINE);
+                  }
+                  break;
+
                   case ~BOLD:
                   case ~ITALIC:
+                  case ~UNDERLINE:
                   {
                     currentstyle &= style;
 
                     if(pos+1 != styles->column || styles->style < 0x8000)
                     {
+                      D(DBF_EXPORT, "exporting plain style of column %ld", pos+1);
                       *buf->pointer++ = '\033';
                       *buf->pointer++ = 'n';
 

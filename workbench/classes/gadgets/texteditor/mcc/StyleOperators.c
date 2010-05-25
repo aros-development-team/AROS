@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -81,11 +81,11 @@ UWORD GetStyle(LONG x, struct line_node *line)
 
   ENTER();
 
-  if(line->line.Styles != NULL)
+  if(line->line.Styles != NULL && x >= 0)
   {
     struct LineStyle *styles = line->line.Styles;
 
-    while(styles->column <= x+1)
+    while(styles->column != EOS && styles->column <= x+1)
     {
       if(styles->style > 0xff)
         style &= styles->style;
@@ -163,11 +163,14 @@ void AddStyleToLine(struct InstData *data, LONG x, struct line_node *line, LONG 
         usedStyles++;
       }
     }
+
     if(styles != NULL)
     {
       while(styles->column != EOS && styles->column <= x+length)
       {
-        if(styles->style != style && styles->style != (UWORD)~style)
+        UWORD invstyle = ~style;
+
+        if(styles->style != style && styles->style != invstyle)
         {
           newstyles->column = styles->column;
           newstyles->style = styles->style;

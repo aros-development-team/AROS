@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -51,11 +51,14 @@ struct BitMap * SAVEDS ASM MUIG_AllocBitMap(REG(d0, LONG width), REG(d1, LONG he
   {
     if(friend != NULL)
     {
+      // FindSemaphore() must be called in Forbid()den state
+      Forbid();
       if(FindSemaphore((char *)"cybergraphics.library") != NULL &&
          (GetBitMapAttr(friend,BMA_FLAGS) & BMF_INTERLEAVED) == 0)
         flags |= BMF_MINPLANES;
       else
         friend = NULL;
+      Permit();
     }
 
     bm = AllocBitMap(width,height,depth,flags,friend);
@@ -75,7 +78,7 @@ struct BitMap * SAVEDS ASM MUIG_AllocBitMap(REG(d0, LONG width), REG(d1, LONG he
       }
       else
       {
-        FreeMem(bm,sizeof(*bm));
+        FreeVec(bm);
         bm = NULL;
       }
     }

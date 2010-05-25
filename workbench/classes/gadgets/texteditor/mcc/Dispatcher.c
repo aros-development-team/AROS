@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -156,6 +156,8 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
             data->ExportHook = &ExportHookPlain;
             setFlag(data->flags, FLG_AutoClip);
             setFlag(data->flags, FLG_ActiveOnClick);
+            setFlag(data->flags, FLG_PasteStyles);
+            setFlag(data->flags, FLG_PasteColors);
 
             if(FindTagItem(MUIA_Background, msg->ops_AttrList))
               setFlag(data->flags, FLG_OwnBackground);

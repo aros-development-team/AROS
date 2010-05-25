@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -361,9 +361,7 @@ void CleanupSelectPointer(struct InstData *data)
       E(DBF_ALWAYS, "pointer was still active upon MUIM_Cleanup!!");
     #endif
 
-    #if defined(__amigaos4__) || defined(__MORPHOS__)
-    DisposeObject(data->PointerObj);
-    #elif defined(__MORPHOS__)
+    #if defined(__amigaos4__)
     DisposeObject(data->PointerObj);
     #else
     if(((struct Library *)IntuitionBase)->lib_Version >= 39)

@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -16,12 +16,23 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: icon.bh 493 2009-01-04 18:19:14Z damato $
+ $Id: icon.h 634 2010-04-28 13:42:45Z damato $
 
 ***************************************************************************/
 
-#ifdef USE_IMAGE_COLORS
-const ULONG image_colors[24] =
+#if !defined(__MORPHOS__)
+// uncompressed ARGB data
+extern const unsigned long icon32[];
+#define ICON32_WIDTH  24
+#define ICON32_HEIGHT 20
+#define ICON32_DEPTH  32
+#else
+// bzip2 compressed ARGB data
+extern const unsigned char icon32[];
+#endif
+
+#ifdef USE_ICON8_COLORS
+const ULONG icon8_colors[24] =
 {
 	0x00000000,0x00000000,0x00000000,
 	0x43434343,0x5b5b5b5b,0x97979797,
@@ -34,19 +45,19 @@ const ULONG image_colors[24] =
 };
 #endif
 
-#define IMAGE_WIDTH        23
-#define IMAGE_HEIGHT       14
-#define IMAGE_DEPTH         3
-#define IMAGE_COMPRESSION   0
-#define IMAGE_MASKING       2
+#define ICON8_WIDTH        24
+#define ICON8_HEIGHT       14
+#define ICON8_DEPTH         3
+#define ICON8_COMPRESSION   0
+#define ICON8_MASKING       2
 
-#ifdef USE_IMAGE_HEADER
-const struct BitMapHeader image_header =
+#ifdef USE_ICON8_HEADER
+const struct BitMapHeader icon8_header =
 { 23, 14, 364, 388, 3, 2, 0, 0, 0, 14, 14, 23, 14 };
 #endif
 
-#ifdef USE_IMAGE_BODY
-const UBYTE image_body[168] = {
+#ifdef USE_ICON8_BODY
+const UBYTE icon8_body[168] = {
 0x00,0x00,0x16,0x00,0x00,0x00,0x08,0x00,0x00,0x00,0x0c,0x00,0x00,0x60,0x3c,
 0x00,0x00,0x00,0x10,0x00,0x00,0x00,0x1c,0x00,0x00,0xf0,0x68,0x00,0x00,0x60,
 0x30,0x00,0x00,0x60,0x38,0x00,0x01,0xd8,0xd0,0x00,0x00,0xf0,0x60,0x00,0x00,
@@ -61,11 +72,13 @@ const UBYTE image_body[168] = {
 0x55,0x54,0x00, };
 #endif
 
-const struct BitMap image_bitmap =
+#ifdef USE_ICON8_BITMAP
+const struct BitMap icon8_bitmap =
 {
-  4, 14, 0, IMAGE_DEPTH, 0,
-  { (UBYTE *)image_body+(0*14*4),
-    (UBYTE *)image_body+(1*14*4),
-    (UBYTE *)image_body+(2*14*4),
+  4, 14, 0, ICON8_DEPTH, 0,
+  { (UBYTE *)icon8_body+(0*14*4),
+    (UBYTE *)icon8_body+(1*14*4),
+    (UBYTE *)icon8_body+(2*14*4),
     NULL, NULL, NULL, NULL, NULL }
 };
+#endif

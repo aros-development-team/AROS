@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,7 @@
 #include <proto/locale.h>
 
 ///utf8_to_ansi()
-static char *utf8_to_ansi(struct InstData *data, STRPTR src)
+static char *utf8_to_ansi(STRPTR src)
 {
    static struct KeyMap *keymap;
    CONST_STRPTR ptr;
@@ -81,7 +81,9 @@ static char *utf8_to_ansi(struct InstData *data, STRPTR src)
    }
    while (octets > 0);
 
-   dst = AllocVecPooled(data->mypool, strlength);
+   // the new string must be AllocVec()'d instead of AllocVecPooled()'d, because
+   // we handle data from the clipboard server which also uses AllocVec()
+   dst = AllocVec(strlength, SHARED_MEMFLAG);
 
    if (dst)
    {
@@ -117,7 +119,8 @@ static char *utf8_to_ansi(struct InstData *data, STRPTR src)
       }
       while (octets > 0);
 
-      FreeVecPooled(data->mypool, src);   // Free original buffer
+      // free original buffer
+      FreeVec(src);
    }
 
    if(dst == NULL)
@@ -161,6 +164,9 @@ void DumpLine(struct line_node *line)
       colors++;
     }
   }
+
+  if(line->line.Highlight == TRUE)
+    D(DBF_DUMP, "line is highlighted");
 
   LEAVE();
 }
@@ -209,13 +215,18 @@ BOOL PasteClip(struct InstData *data, LONG x, struct line_node *actline)
         SHOWVALUE(DBF_CLIPBOARD, line->line.Styles);
         if(line->line.Styles != NULL)
         {
-          allocatedStyles = line->line.allocatedStyles;
+          // check whether styles are wanted when pasting the clip
+          if(isFlagSet(data->flags, FLG_PasteStyles))
+          {
+            allocatedStyles = line->line.allocatedStyles;
 
-          if((styles = AllocVecPooled(data->mypool, allocatedStyles * sizeof(*styles))) != NULL)
-            memcpy(styles, line->line.Styles, allocatedStyles * sizeof(*styles));
+            if((styles = AllocVecPooled(data->mypool, allocatedStyles * sizeof(*styles))) != NULL)
+              memcpy(styles, line->line.Styles, allocatedStyles * sizeof(*styles));
 
-          FreeVec(line->line.Styles);
-          line->line.Styles = NULL;
+            // the clipboard server used AllocVec() before
+            FreeVec(line->line.Styles);
+            line->line.Styles = NULL;
+          }
 
           // we found styles, this mean the clip was created by ourselves
           ownclip = TRUE;
@@ -224,18 +235,26 @@ BOOL PasteClip(struct InstData *data, LONG x, struct line_node *actline)
         SHOWVALUE(DBF_CLIPBOARD, line->line.Colors);
         if(line->line.Colors != NULL)
         {
-          allocatedColors = line->line.allocatedColors;
+          // check whether colors are wanted when pasting the clip
+          if(isFlagSet(data->flags, FLG_PasteColors))
+          {
+            allocatedColors = line->line.allocatedColors;
 
-          if((colors = AllocVecPooled(data->mypool, allocatedColors * sizeof(*colors))) != NULL)
-            memcpy(colors, line->line.Colors, allocatedColors * sizeof(*colors));
+            if((colors = AllocVecPooled(data->mypool, allocatedColors * sizeof(*colors))) != NULL)
+              memcpy(colors, line->line.Colors, allocatedColors * sizeof(*colors));
 
-          FreeVec(line->line.Colors);
-          line->line.Colors = NULL;
+            // the clipboard server used AllocVec() before
+            FreeVec(line->line.Colors);
+            line->line.Colors = NULL;
+          }
 
           // we found colors, this mean the clip was created by ourselves
           ownclip = TRUE;
         }
 
+        SHOWVALUE(DBF_CLIPBOARD, line->line.Highlight);
+        SHOWVALUE(DBF_CLIPBOARD, line->line.Flow);
+        SHOWVALUE(DBF_CLIPBOARD, line->line.Separator);
         SHOWVALUE(DBF_CLIPBOARD, line->line.Contents);
         if(line->line.Contents != NULL)
         {
@@ -255,7 +274,12 @@ BOOL PasteClip(struct InstData *data, LONG x, struct line_node *actline)
 
             #if defined(__MORPHOS__)
             if(codeset == CODESET_UTF8 && IS_MORPHOS2)
-              contents = utf8_to_ansi(data, contents);
+            {
+              // convert UTF8 string to ANSI
+              line->line.Contents = utf8_to_ansi(line->line.Contents);
+              // and update the contents pointer as well
+              contents = line->line.Contents;
+            }
             #endif
 
             SHOWSTRING(DBF_CLIPBOARD, contents);
@@ -333,6 +357,7 @@ BOOL PasteClip(struct InstData *data, LONG x, struct line_node *actline)
             }
           }
 
+          // the clipboard server used AllocVec() before
           FreeVec(line->line.Contents);
           line->line.Contents = NULL;
         }
@@ -511,88 +536,88 @@ BOOL MergeLines(struct InstData *data, struct line_node *line)
     }
     else
     {
-      struct LineStyle *styles;
-      struct LineStyle *styles1 = line->line.Styles;
-      struct LineStyle *styles2 = line->next->line.Styles;
-      struct LineColor *colors;
-      struct LineColor *colors1 = line->line.Colors;
-      struct LineColor *colors2 = line->next->line.Colors;
+      struct LineStyle *mergedStyles;
+      struct LineStyle *line1Styles = line->line.Styles;
+      struct LineStyle *line2Styles = line->next->line.Styles;
+      struct LineColor *mergedColors;
+      struct LineColor *line1Colors = line->line.Colors;
+      struct LineColor *line2Colors = line->next->line.Colors;
       ULONG allocStyles;
       ULONG allocColors;
 
       allocStyles = 3 + line->line.usedStyles + line->next->line.usedStyles;
 
-      if((styles = AllocVecPooled(data->mypool, allocStyles * sizeof(*styles))) != NULL)
+      if((mergedStyles = AllocVecPooled(data->mypool, allocStyles * sizeof(*mergedStyles))) != NULL)
       {
-        struct LineStyle *t_styles = styles;
+        struct LineStyle *t_mergedStyles = mergedStyles;
         ULONG usedStyles = 0;
         UWORD style = 0;
 
-        if(styles2 != NULL)
+        if(line2Styles != NULL)
         {
-          struct LineStyle *t_styles2 = styles2;
+          struct LineStyle *t_line2Styles = line2Styles;
 
           // collect all styles which start at the beginning of the line to be appended
-          while(t_styles2->column == 1)
+          while(t_line2Styles->column == 1)
           {
-            D(DBF_STYLE, "appending style 0x%04lx", t_styles->style);
-            if(t_styles->style > 0xff)
-              style &= t_styles2->style;
+            D(DBF_STYLE, "collecting style 0x%04lx", t_mergedStyles->style);
+            if(t_mergedStyles->style > 0xff)
+              style &= t_line2Styles->style;
             else
-              style |= t_styles2->style;
+              style |= t_line2Styles->style;
 
-            t_styles2++;
+            t_line2Styles++;
           }
         }
 
-        if(styles1 != NULL)
+        if(line1Styles != NULL)
         {
-          while(styles1->column != EOS)
+          while(line1Styles->column != EOS)
           {
-            if(styles1->column == line->line.Length && ((~styles1->style & style) == (styles1->style ^ 0xffff)))
+            if(line1Styles->column == line->line.Length && ((~line1Styles->style & style) == (line1Styles->style ^ 0xffff)))
             {
-              D(DBF_STYLE, "ignoring style 0x%04lx at column %ld (1)", styles1->style, styles1->column);
-              style &= styles1->style;
-              styles1++;
+              D(DBF_STYLE, "ignoring style 0x%04lx at column %ld (1)", line1Styles->style, line1Styles->column);
+              style &= line1Styles->style;
+              line1Styles++;
             }
             else
             {
-              D(DBF_STYLE, "prepending style 0x%04lx at column %ld", styles1->style, styles1->column);
-              styles->column = styles1->column;
-              styles->style = styles1->style;
-              styles1++;
-              styles++;
+              D(DBF_STYLE, "prepending style 0x%04lx at column %ld", line1Styles->style, line1Styles->column);
+              mergedStyles->column = line1Styles->column;
+              mergedStyles->style = line1Styles->style;
+              line1Styles++;
+              mergedStyles++;
               usedStyles++;
             }
           }
           FreeVecPooled(data->mypool, line->line.Styles);
         }
 
-        if(styles2 != NULL)
+        if(line2Styles != NULL)
         {
-          while(styles2->column != EOS)
+          while(line2Styles->column != EOS)
           {
-            if(styles2->column == 1 && (styles2->style & style) == 0)
+            if(line2Styles->column == 1 && (line2Styles->style & style) == 0)
             {
-              D(DBF_STYLE, "ignoring style 0x%04lx at column %ld (2)", styles2->style, styles2->column);
-              styles2++;
+              D(DBF_STYLE, "ignoring style 0x%04lx at column %ld (2)", line2Styles->style, line2Styles->column);
+              line2Styles++;
             }
             else
             {
-              D(DBF_STYLE, "appending style 0x%04lx at column %ld from column %ld", styles2->style, styles2->column + line->line.Length - 1, styles2->column);
-              styles->column = styles2->column + line->line.Length - 1;
-              styles->style = styles2->style;
-              styles2++;
-              styles++;
+              D(DBF_STYLE, "appending style 0x%04lx at column %ld from column %ld", line2Styles->style, line2Styles->column + line->line.Length - 1, line2Styles->column);
+              mergedStyles->column = line2Styles->column + line->line.Length - 1;
+              mergedStyles->style = line2Styles->style;
+              line2Styles++;
+              mergedStyles++;
               usedStyles++;
             }
           }
           FreeVecPooled(data->mypool, line->next->line.Styles);
         }
-        styles->column = EOS;
+        mergedStyles->column = EOS;
         usedStyles++;
 
-        line->line.Styles = t_styles;
+        line->line.Styles = t_mergedStyles;
         line->line.allocatedStyles = allocStyles;
         line->line.usedStyles = usedStyles;
         if(usedStyles > allocStyles)
@@ -602,55 +627,74 @@ BOOL MergeLines(struct InstData *data, struct line_node *line)
         }
       }
 
-      allocColors = 3 + line->line.usedColors + line->next->line.usedColors;
+      allocColors = 4 + line->line.usedColors + line->next->line.usedColors;
 
-      if((colors = AllocVecPooled(data->mypool, allocColors * sizeof(*colors))) != NULL)
+      if((mergedColors = AllocVecPooled(data->mypool, allocColors * sizeof(*mergedColors))) != NULL)
       {
-        struct LineColor *t_colors = colors;
+        struct LineColor *t_mergedColors = mergedColors;
         ULONG usedColors = 0;
         UWORD end_color = 0;
 
-        if(colors1 != NULL)
+        if(line1Colors != NULL)
         {
-          while(colors1->column < line->line.Length && colors1->column != EOC)
+          while(line1Colors->column != EOC && line1Colors->column < line->line.Length)
           {
-            colors->column = colors1->column;
-            end_color = colors1->color;
-            colors->color = colors1->color;
-            colors1++;
-            colors++;
+            D(DBF_STYLE, "applying color change from %ld to %ld in column %ld (1)", end_color, line1Colors->color, line1Colors->column);
+            mergedColors->column = line1Colors->column;
+            end_color = line1Colors->color;
+            mergedColors->color = line1Colors->color;
+            line1Colors++;
+            mergedColors++;
             usedColors++;
           }
           FreeVecPooled(data->mypool, line->line.Colors);
         }
 
-        if(end_color != 0 && (colors2 == NULL || colors2->column != 1))
+        if(end_color != 0 && (line2Colors == NULL || (line2Colors->column != 1 && line2Colors->column != EOC)))
         {
-          colors->column = line->line.Length;
-          colors->color = 0;
-          colors++;
+          D(DBF_STYLE, "resetting color in column %ld (1)", line->line.Length - 1);
+          mergedColors->column = line->line.Length;
+          mergedColors->color = 0;
+          end_color = 0;
+          mergedColors++;
           usedColors++;
         }
 
-        if(colors2 != NULL)
+        if(line2Colors != NULL)
         {
-          if(colors2->column == 1 && colors2->color == end_color)
-            colors2++;
-
-          while(colors2->column != EOC)
+          if(line2Colors->column == 1 && line2Colors->color == end_color)
           {
-            colors->column = colors2->column + line->line.Length - 1;
-            colors->color = colors2->color;
-            colors2++;
-            colors++;
+            D(DBF_STYLE, "skipping 1st color change of 2nd line");
+            line2Colors++;
+          }
+
+          while(line2Colors->column != EOC)
+          {
+            D(DBF_STYLE, "applying color change from %ld to %ld in column %ld (2)", end_color, line2Colors->color, line2Colors->column + line->line.Length - 1);
+            mergedColors->column = line2Colors->column + line->line.Length - 1;
+            end_color = line2Colors->color;
+            mergedColors->color = line2Colors->color;
+            line2Colors++;
+            mergedColors++;
             usedColors++;
           }
           FreeVecPooled(data->mypool, line->next->line.Colors);
+
+          if(end_color != 0)
+          {
+            D(DBF_STYLE, "resetting color in column %ld (2)", newbufferSize - line->next->line.Length - 1);
+            mergedColors->column = newbufferSize - line->next->line.Length - 1;
+            mergedColors->color = 0;
+            end_color = 0;
+            mergedColors++;
+            usedColors++;
+          }
         }
-        colors->column = EOC;
+
+        mergedColors->column = EOC;
         usedColors++;
 
-        line->line.Colors = t_colors;
+        line->line.Colors = t_mergedColors;
         line->line.allocatedColors = allocColors;
         line->line.usedColors = usedColors;
         if(usedColors > allocColors)
@@ -662,7 +706,7 @@ BOOL MergeLines(struct InstData *data, struct line_node *line)
     }
 
     line->line.Contents = newbuffer;
-    line->line.Length  = strlen(newbuffer);
+    line->line.Length = strlen(newbuffer);
     line->line.allocatedContents = newbufferSize;
 
     next = line->next;
@@ -1223,7 +1267,7 @@ static void UpdateChange(struct InstData *data, LONG x, struct line_node *line, 
       AddStyleToLine(data, x, line, 1, isFlagSet(style, UNDERLINE) ? UNDERLINE : ~UNDERLINE);
       line->line.Flow = buffer->del.flow;
       line->line.Separator = buffer->del.separator;
-      #warning is buffer->del.highlight missing here?
+      line->line.Highlight = buffer->del.highlight;
     }
   }
   else
@@ -1289,35 +1333,35 @@ BOOL PasteChars(struct InstData *data, LONG x, struct line_node *line, LONG leng
 {
   ENTER();
 
-  if(line->line.Styles != NULL)
+  if(line->line.Styles != NULL && line->line.Styles[0].column != EOS)
   {
-    if(line->line.Styles[0].column != EOS)
-    {
-      ULONG c = 0;
+    ULONG c = 0;
 
-      while(line->line.Styles[c].column <= x+1)
-        c++;
-      while(line->line.Styles[c].column != EOS)
-      {
-        line->line.Styles[c].column += length;
-        c++;
-      }
+    // skip all styles up to the given position
+    while(line->line.Styles[c].column <= x+1)
+      c++;
+
+    // move all style positions by the given length
+    while(line->line.Styles[c].column != EOS)
+    {
+      line->line.Styles[c].column += length;
+      c++;
     }
   }
 
-  if(line->line.Colors != NULL)
+  if(line->line.Colors != NULL && line->line.Colors[0].column != EOC)
   {
-    if(line->line.Colors[0].column != EOC)
-    {
-      ULONG c = 0;
+    ULONG c = 0;
 
-      while(line->line.Colors[c].column <= x+1)
-        c++;
-      while(line->line.Colors[c].column != EOC)
-      {
-        line->line.Colors[c].column += length;
-        c++;
-      }
+    // skip all colors up to the given position
+    while(line->line.Colors[c].column <= x+1)
+      c++;
+
+    // move all color positions by the given length
+    while(line->line.Colors[c].column != EOC)
+    {
+      line->line.Colors[c].column += length;
+      c++;
     }
   }
 
@@ -1345,15 +1389,22 @@ BOOL RemoveChars(struct InstData *data, LONG x, struct line_node *line, LONG len
 {
   ENTER();
 
+  D(DBF_DUMP, "before remove %ld %ld", x, length);
+  DumpLine(line);
+
+  // check if there are any style changes at all
   if(line->line.Styles != NULL && line->line.Styles[0].column != EOS)
   {
     UWORD start_style = GetStyle(x-1, line);
     UWORD end_style = GetStyle(x+length, line);
     ULONG c = 0, store;
 
+    // skip all styles before the the starting column
     while(line->line.Styles[c].column <= x)
       c++;
 
+    // if the style differs between the start and the end of the range
+    // then we must add style changes accordingly
     if(start_style != end_style)
     {
       UWORD turn_off = start_style & ~end_style;
@@ -1397,10 +1448,13 @@ BOOL RemoveChars(struct InstData *data, LONG x, struct line_node *line, LONG len
       }
     }
 
+    // remember the current style change column
     store = c;
+    // skip all style changes until we reach the end of the range
     while(line->line.Styles[c].column <= x+length+1)
       c++;
 
+    // move all remaining style changes towards the beginning
     while(line->line.Styles[c].column != EOS)
     {
       line->line.Styles[store].column = line->line.Styles[c].column-length;
@@ -1408,18 +1462,24 @@ BOOL RemoveChars(struct InstData *data, LONG x, struct line_node *line, LONG len
       c++;
       store++;
     }
+
+    // put a new style termination
     line->line.Styles[store].column = EOS;
   }
 
+  // check if there are any color changes at all
   if(line->line.Colors != NULL && line->line.Colors[0].column != EOC)
   {
-    UWORD start_color = (x != 0) ? GetColor(x-1, line) : 0;
+    UWORD start_color = GetColor(x-1, line);
     UWORD end_color = GetColor(x+length, line);
     ULONG c = 0, store;
 
+    // skip all colors before the the starting column
     while(line->line.Colors[c].column <= x)
       c++;
 
+    // if the colors differs between the start and the end of the range
+    // then we must add color changes accordingly
     if(start_color != end_color)
     {
       line->line.Colors[c].column = x+1;
@@ -1427,10 +1487,13 @@ BOOL RemoveChars(struct InstData *data, LONG x, struct line_node *line, LONG len
       c++;
     }
 
+    // remember the current color change column
     store = c;
+    // skip all color changes until we reach the end of the range
     while(line->line.Colors[c].column <= x+length+1)
       c++;
 
+    // move all remaining color changes towards the beginning
     while(line->line.Colors[c].column != EOC)
     {
       line->line.Colors[store].column = line->line.Colors[c].column-length;
@@ -1438,10 +1501,15 @@ BOOL RemoveChars(struct InstData *data, LONG x, struct line_node *line, LONG len
       c++;
       store++;
     }
+
+    // put a new color termination
     line->line.Colors[store].column = EOC;
   }
 
   UpdateChange(data, x, line, length, NULL, NULL);
+
+  D(DBF_DUMP, "after remove");
+  DumpLine(line);
 
   RETURN(TRUE);
   return(TRUE);

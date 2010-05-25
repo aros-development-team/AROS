@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -1263,20 +1263,33 @@ void Key_Backspace(struct InstData *data)
   {
     if(data->CPos_X > 0)
     {
+      struct marking block;
+
+      // move the cursor position one to the left
       data->CPos_X--;
-      AddToUndoBuffer(data, ET_BACKSPACECHAR, &data->actualline->line.Contents[data->CPos_X]);
+
+      // define a block which consists of a single character only
+      block.enabled = TRUE;
+      block.startline = data->actualline;
+      block.startx = data->CPos_X;
+      block.stopline = data->actualline;
+      block.stopx = data->CPos_X+1;
+
+      // add this single character block to the Undo buffer
+      AddToUndoBuffer(data, ET_DELETEBLOCK, &block);
+
+      // erase the character
       RemoveChars(data, data->CPos_X, data->actualline, 1);
     }
-    else
+    else if(data->actualline->previous != NULL)
     {
-      if(data->actualline->previous)
-      {
-        data->actualline = data->actualline->previous;
-        data->CPos_X = data->actualline->line.Length-1;
-        AddToUndoBuffer(data, ET_BACKSPACEMERGE, NULL);
-        ScrollIntoDisplay(data);
-        MergeLines(data, data->actualline);
-      }
+      // merge two lines to a single line by appending
+      // the current line to the previous
+      data->actualline = data->actualline->previous;
+      data->CPos_X = data->actualline->line.Length-1;
+      AddToUndoBuffer(data, ET_BACKSPACEMERGE, NULL);
+      ScrollIntoDisplay(data);
+      MergeLines(data, data->actualline);
     }
 
     ScrollIntoDisplay(data);
@@ -1299,16 +1312,25 @@ void Key_Delete(struct InstData *data)
 
     if(data->actualline->line.Length > (ULONG)(data->CPos_X+1))
     {
-      AddToUndoBuffer(data, ET_DELETECHAR, &data->actualline->line.Contents[data->CPos_X]);
+      struct marking block;
+
+      // define a block which consists of a single character only
+      block.enabled = TRUE;
+      block.startline = data->actualline;
+      block.startx = data->CPos_X;
+      block.stopline = data->actualline;
+      block.stopx = data->CPos_X+1;
+
+      // add this single character block to the Undo buffer
+      AddToUndoBuffer(data, ET_DELETEBLOCK_NOMOVE, &block);
+
+      // erase the character
       RemoveChars(data, data->CPos_X, data->actualline, 1);
     }
-    else
+    else if(data->actualline->next != NULL)
     {
-      if(data->actualline->next != NULL)
-      {
-        AddToUndoBuffer(data, ET_MERGELINES, NULL);
-        MergeLines(data, data->actualline);
-      }
+      AddToUndoBuffer(data, ET_MERGELINES, NULL);
+      MergeLines(data, data->actualline);
     }
   }
 

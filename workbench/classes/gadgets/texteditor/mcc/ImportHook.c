@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -154,6 +154,24 @@ static char *FindEOL(char *src, int *tabs_ptr)
 }
 
 ///
+/// InitGrow()
+/************************************************************************
+ Initialize a grow structure
+*************************************************************************/
+static void InitGrow(struct grow *grow, APTR pool, int itemSize)
+{
+  ENTER();
+
+  grow->array = NULL;
+  grow->itemSize = itemSize;
+  grow->itemCount = 0;
+  grow->maxItemCount = 0;
+  grow->pool = pool;
+
+  LEAVE();
+}
+
+///
 /// AddToGrow()
 /************************************************************************
  Adds two new values to the given grow. This function guarantees
@@ -287,14 +305,8 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
       struct LineStyle newStyle;
       struct LineColor newColor;
 
-      memset(&color_grow,0,sizeof(color_grow));
-      memset(&style_grow,0,sizeof(style_grow));
-
-      color_grow.pool = msg->PoolHandle;
-      color_grow.itemSize = sizeof(newColor);
-
-      style_grow.pool = msg->PoolHandle;
-      style_grow.itemSize = sizeof(newStyle);
+      InitGrow(&style_grow, msg->PoolHandle, sizeof(newStyle));
+      InitGrow(&color_grow, msg->PoolHandle, sizeof(newColor));
 
       // remember the allocation size
       line->allocatedContents = allocatedContents;
@@ -319,28 +331,40 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
           {
             case 'b':
             {
-              newStyle.column = dest - dest_start + 1;
-              newStyle.style = BOLD;
-              AddToGrow(&style_grow, &newStyle);
-              setFlag(state, BOLD);
+              if(isFlagClear(state, BOLD))
+              {
+                newStyle.column = dest - dest_start + 1;
+                newStyle.style = BOLD;
+                D(DBF_IMPORT, "adding bold style at column %ld", newStyle.column);
+                AddToGrow(&style_grow, &newStyle);
+                setFlag(state, BOLD);
+              }
             }
             break;
 
             case 'i':
             {
-              newStyle.column = dest - dest_start + 1;
-              newStyle.style = ITALIC;
-              AddToGrow(&style_grow, &newStyle);
-              setFlag(state, ITALIC);
+              if(isFlagClear(state, ITALIC))
+              {
+                newStyle.column = dest - dest_start + 1;
+                newStyle.style = ITALIC;
+                D(DBF_IMPORT, "adding italic style at column %ld", newStyle.column);
+                AddToGrow(&style_grow, &newStyle);
+                setFlag(state, ITALIC);
+              }
             }
             break;
 
             case 'u':
             {
-              newStyle.column = dest - dest_start + 1;
-              newStyle.style = UNDERLINE;
-              AddToGrow(&style_grow, &newStyle);
-              setFlag(state, UNDERLINE);
+              if(isFlagClear(state, UNDERLINE))
+              {
+                newStyle.column = dest - dest_start + 1;
+                newStyle.style = UNDERLINE;
+                D(DBF_IMPORT, "adding underline style at column %ld", newStyle.column);
+                AddToGrow(&style_grow, &newStyle);
+                setFlag(state, UNDERLINE);
+              }
             }
             break;
 
@@ -356,6 +380,7 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
               {
                 newStyle.column = dest - dest_start + 1;
                 newStyle.style = ~BOLD;
+                D(DBF_IMPORT, "removing bold style at column %ld", newStyle.column);
                 AddToGrow(&style_grow, &newStyle);
                 clearFlag(state, BOLD);
               }
@@ -363,6 +388,7 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
               {
                 newStyle.column = dest - dest_start + 1;
                 newStyle.style = ~ITALIC;
+                D(DBF_IMPORT, "removing italic style at column %ld", newStyle.column);
                 AddToGrow(&style_grow, &newStyle);
                 clearFlag(state, ITALIC);
               }
@@ -370,6 +396,7 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
               {
                 newStyle.column = dest - dest_start + 1;
                 newStyle.style = ~UNDERLINE;
+                D(DBF_IMPORT, "removing italic style at column %ld", newStyle.column);
                 AddToGrow(&style_grow, &newStyle);
                 clearFlag(state, UNDERLINE);
               }
@@ -379,18 +406,21 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
             case 'l':
             {
               line->Flow = MUIV_TextEditor_Flow_Left;
+              D(DBF_IMPORT, "left aligned text flow");
             }
             break;
 
             case 'c':
             {
               line->Flow = MUIV_TextEditor_Flow_Center;
+              D(DBF_IMPORT, "centered flow");
             }
             break;
 
             case 'r':
             {
               line->Flow = MUIV_TextEditor_Flow_Right;
+              D(DBF_IMPORT, "right aligned text flow");
             }
             break;
 
@@ -408,6 +438,7 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
                   {
                     newColor.column = dest - dest_start + 1;
                     newColor.color = pen;
+                    D(DBF_IMPORT, "adding color %ld at column %ld", newColor.color, newColor.column);
                     AddToGrow(&color_grow, &newColor);
 
                     if(pen == 0)
@@ -477,11 +508,21 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
       // terminate the color array, but only if there are any colors at all
       if(color_grow.itemCount > 0)
       {
+        // ensure that we terminate the clip with color 0
+        if(isFlagSet(state, COLOURED))
+        {
+          D(DBF_IMPORT, "removing color as termination");
+          newColor.column = strlen(line->Contents)+1;
+          newColor.color = 0;
+          AddToGrow(&color_grow, &newColor);
+        }
+
         newColor.column = EOC;
         newColor.color = 0;
         AddToGrow(&color_grow, &newColor);
       }
 
+      D(DBF_IMPORT, "added %ld color sections", color_grow.itemCount);
       line->Colors = (struct LineColor *)color_grow.array;
       line->allocatedColors = color_grow.maxItemCount;
       line->usedColors = color_grow.itemCount;
@@ -489,11 +530,37 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
       // terminate the style array, but only if there are any styles at all
       if(style_grow.itemCount > 0)
       {
+        UWORD lastColumn = strlen(line->Contents)+1;
+
+        // ensure that we terminate the clip with plain style
+        if(isFlagSet(state, BOLD))
+        {
+          D(DBF_IMPORT, "removing bold style as termination");
+          newStyle.column = lastColumn;
+          newStyle.style = ~BOLD;
+          AddToGrow(&style_grow, &newStyle);
+        }
+        if(isFlagSet(state, ITALIC))
+        {
+          D(DBF_IMPORT, "removing italic style as termination");
+          newStyle.column = lastColumn;
+          newStyle.style = ~ITALIC;
+          AddToGrow(&style_grow, &newStyle);
+        }
+        if(isFlagSet(state, UNDERLINE))
+        {
+          D(DBF_IMPORT, "removing underline style as termination");
+          newStyle.column = lastColumn;
+          newStyle.style = ~UNDERLINE;
+          AddToGrow(&style_grow, &newStyle);
+        }
+
         newStyle.column = EOS;
         newStyle.style = 0;
         AddToGrow(&style_grow, &newStyle);
       }
 
+      D(DBF_IMPORT, "added %ld style sections", style_grow.itemCount);
       line->Styles = (struct LineStyle *)style_grow.array;
       line->allocatedStyles = style_grow.maxItemCount;
       line->usedStyles = style_grow.itemCount;
@@ -586,14 +653,8 @@ static STRPTR MimeImport(struct ImportMessage *msg, LONG type)
       struct LineStyle newStyle;
       struct LineColor newColor;
 
-      memset(&color_grow,0,sizeof(color_grow));
-      memset(&style_grow,0,sizeof(style_grow));
-
-      color_grow.pool = msg->PoolHandle;
-      color_grow.itemSize = sizeof(newColor);
-
-      style_grow.pool = msg->PoolHandle;
-      style_grow.itemSize = sizeof(newStyle);
+      InitGrow(&style_grow, msg->PoolHandle, sizeof(newStyle));
+      InitGrow(&color_grow, msg->PoolHandle, sizeof(newColor));
 
       // remember the allocation size
       line->allocatedContents = allocatedContents;
