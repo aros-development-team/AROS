@@ -2,7 +2,7 @@
 #define GRAPHICS_MODEID_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Display mode definitions
@@ -324,6 +324,8 @@
 #define MONITOR_ID_MASK 0xFFFF1000
 
                            /* BestModeID() */
+
+#define SPECIAL_FLAGS (DIPF_IS_DUALPF | DIPF_IS_PF2PRI | DIPF_IS_HAM | DIPF_IS_EXTRAHALFBRITE)
 
 /* Tags */
 #define BIDTAG_DIPFMustHave    0x80000001
