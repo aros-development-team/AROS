@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function GetVPModeID()
@@ -10,7 +10,10 @@
 #include <graphics/modeid.h>
 #include <hidd/graphics.h>
 #include <proto/graphics.h>
+
+#include "graphics_intern.h"
 #include "dispinfo.h"
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -55,12 +58,17 @@
     AROS_LIBFUNC_INIT
     
     ULONG modeid;
-    
-    D(bug(" GetVPModeID returning %x\n", vp->ColorMap->VPModeID));
-    modeid = vp->ColorMap->VPModeID;
-    
-    D(bug("RETURNING\n"));
-    
+
+    if (vp->ColorMap)
+        /* If we have a colormap, get ModeID from it */
+        modeid = vp->ColorMap->VPModeID;
+    else if (IS_HIDD_BM(vp->RasInfo->BitMap))
+        /* We also can try to obtain mode ID from HIDD bitmap */
+	modeid = HIDD_BM_HIDDMODE(vp->RasInfo->BitMap);
+    else
+        modeid = INVALID_ID;
+
+    D(bug(" GetVPModeID returning %x\n", modeid));
     return modeid;
 
     AROS_LIBFUNC_EXIT

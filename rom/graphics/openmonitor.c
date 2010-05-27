@@ -9,6 +9,7 @@
 #include <aros/atomic.h>
 #include <aros/debug.h>
 #include <graphics/monitor.h>
+#include <proto/oop.h>
 
 #include "graphics_intern.h"
 #include "dispinfo.h"
@@ -84,7 +85,10 @@
 	} else
 	    mspc = GfxBase->default_monitor;
     } else if (display_id != INVALID_ID) {
-	mspc = FindMonitor(display_id, GfxBase);
+        struct MonitorInfo info;
+	
+	if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_MNTR, display_id) >= offsetof(struct MonitorInfo, ViewPosition))
+	    mspc = info.Mspc;
     } else
         mspc = GfxBase->default_monitor;
 

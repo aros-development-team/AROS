@@ -30,24 +30,15 @@
 
 */
 
-#define SYNC_IDX(modeid) (((modeid) & 0x0000FF00) >> 8)
+#define AROS_RTG_MONITOR_ID   0x00100000 /* First RTG monitor ID     */
+#define AROS_MONITOR_ID_MASK  0xFFFF0000 /* Internal monitor ID mask */
+#define AROS_MONITOR_ID_SHIFT 16
 
-/* This macro is obsolete */
-#define AMIGA_TO_HIDD_MODEID(modeid) (modeid)
-
-/* This is a temporary hack which forcibly adds card number (since currently
-   we work only with RTG and only with one card) */
-
-#define NOTNULLMASK 0x00100000
-#define HIDD_TO_AMIGA_MODEID(modeid) ((modeid) | NOTNULLMASK)
+#define SYNC_IDX(mode) ((mode & 0x0000FF00) >> 8)
 
 /****************************************************************************************/
 
 HIDDT_ModeID get_best_resolution_and_depth(OOP_Object *gfxhidd, struct GfxBase *GfxBase);
-BOOL CreateMonitorSpecs(ULONG card, struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
-struct monitor_driverdata *FindDriver(ULONG modeid, struct GfxBase *GfxBase);
-struct MonitorSpec *FindMonitor(ULONG modeid, struct GfxBase *GfxBase);
-ULONG GetModeID(DisplayInfoHandle handle);
 
 /****************************************************************************************/
 

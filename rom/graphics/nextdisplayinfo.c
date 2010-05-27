@@ -53,19 +53,36 @@
 {
     AROS_LIBFUNC_INIT
 
-    OOP_Object *sync, *pixfmt;
-    
-    HIDDT_ModeID hiddmode;
-    ULONG id;
-    
-    hiddmode = (HIDDT_ModeID)AMIGA_TO_HIDD_MODEID(last_ID);
-    
-    /* Get the next modeid */
-    hiddmode = HIDD_Gfx_NextModeID(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pixfmt);
-    
-    id = HIDD_TO_AMIGA_MODEID(hiddmode);
+    struct monitor_driverdata *mdd = NULL;
+    struct DisplayInfoHandle *dh = NULL;
 
-    return id;
+    if (last_ID == INVALID_ID)
+        /* Start from the beginning */
+        mdd = CDD(GfxBase)->monitors;
+    else {
+        /* Find handle and driver of current mode */
+        dh = FindDisplayInfo(last_ID);
+	if (dh)
+	    mdd = dh->drv;
+    }
+
+    while (mdd) {
+        /* Take next (or first) mode handle */
+        if (dh)
+	    dh++;
+	else
+	    dh = mdd->modes;
+
+	/* If it's not the last handle, return it */
+        if (dh->id != vHidd_ModeID_Invalid)
+            return dh->drv->id | dh->id;
+
+	/* Next driver, first handle */
+        mdd = mdd->next;
+	dh = NULL;
+    }
+
+    return INVALID_ID;
 
     AROS_LIBFUNC_EXIT
 } /* NextDisplayInfo */

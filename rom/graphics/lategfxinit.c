@@ -90,6 +90,8 @@
     if (!gfxhidd)
         return FALSE;
 
+    /* Future new driver insertion function will start from here */
+
     /* Attach system structures to it */
     mdd = driver_Setup(gfxhidd, GfxBase);
     D(bug("[LateGfxInit] monitor_driverdata 0x%p\n", mdd));
@@ -98,18 +100,18 @@
 	return FALSE;
     }
 
-    /* Create MonitorSpecs for the driver.
-       Note that old specs will not be deleted!
-       For now they will just stay laying around */
-    ObtainSemaphore(GfxBase->MonitorListSemaphore);
-    CreateMonitorSpecs(PrivGBase(GfxBase)->displays++, mdd, GfxBase);
-    ReleaseSemaphore(GfxBase->MonitorListSemaphore);
+    mdd->mask = AROS_MONITOR_ID_MASK;
 
-    /* Poke the new driver into GfxBase (HACK!!!) */
+    /* The following is a temporary hack. We still have SDD(GfxBase)
+       in some places and we still use only one driver */
     if (SDD(GfxBase)) {
         driver_Expunge(SDD(GfxBase), GfxBase);
         D(bug("[LateGfxInit] Old driver removed\n"));
     }
+
+    /* Add display modes from the new driver. Perhaps will go into to driver_Setup() in future */
+    driver_Add(mdd, 1, GfxBase);
+
     D(bug("[LateGfxInit] Installing new driver\n"));
     SDD(GfxBase) = mdd;
 

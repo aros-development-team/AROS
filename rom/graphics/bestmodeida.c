@@ -1,18 +1,20 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function BestModeIDA()
     Lang: english
 */
+
 #include <aros/debug.h>
 #include <graphics/modeid.h>
 #include <hidd/graphics.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
-#include "dispinfo.h"
+
 #include "graphics_intern.h"
+#include "dispinfo.h"
 
 /*****************************************************************************
 
@@ -80,121 +82,139 @@
 {
     AROS_LIBFUNC_INIT
 
-/*    ULONG dipf_must_have = 0;
-    ULONG dipf_must_not_have = 0;
-    */
-    struct ViewPort *vp = NULL;
-    UWORD nominal_width		= 640
-    	, nominal_height	= 200
-	, desired_width		= 640
-	, desired_height	= 200;
-    UBYTE depth = 1;
-    ULONG monitorid = INVALID_ID, sourceid = INVALID_ID;
-    UBYTE redbits	= 4
-    	, greenbits	= 4
-	, bluebits	= 4;
-    ULONG dipf_musthave = 0
-    	, dipf_mustnothave = 0;
-    
-    ULONG found_id = INVALID_ID;
-    HIDDT_ModeID hiddmode;
+    struct ViewPort *vp;
+    UWORD nominal_width, nominal_height;
+    UWORD desired_width, desired_height;
+    UBYTE depth;
+    ULONG sourceid, monitorid;
+    UBYTE redbits, greenbits, bluebits;
+    ULONG dipf_musthave, dipf_mustnothave;
+    ULONG modeid;
+    struct DisplayInfo disp;
+    struct DimensionInfo dims;
+    ULONG found_id     = INVALID_ID;
+    UWORD found_depth  = -1;
+    UWORD found_width  = -1;
+    UWORD found_height = -1;
 
-/*    ULONG maxdepth = 0;
-    ULONG maxwidth = 0, maxheight = 0;
-    UBYTE maxrb = 0, maxgb = 0, maxbb = 0;
-*/    
-    /* First try to get viewport */
-    vp			= (struct ViewPort *)GetTagData(BIDTAG_ViewPort, (IPTR)NULL	, TagItems);
-    monitorid		= GetTagData(BIDTAG_MonitorID		, monitorid		, TagItems);
-    sourceid		= GetTagData(BIDTAG_SourceID		, sourceid		, TagItems);
-    depth		= GetTagData(BIDTAG_Depth		, depth			, TagItems);
-    nominal_width	= GetTagData(BIDTAG_NominalWidth	, nominal_width		, TagItems);
-    nominal_height	= GetTagData(BIDTAG_NominalHeight	, nominal_height	, TagItems);
-    desired_width	= GetTagData(BIDTAG_DesiredWidth	, desired_width		, TagItems);
-    desired_height	= GetTagData(BIDTAG_DesiredHeight	, desired_height	, TagItems);
-    redbits		= GetTagData(BIDTAG_RedBits		, redbits		, TagItems);
-    greenbits		= GetTagData(BIDTAG_GreenBits		, greenbits		, TagItems);
-    bluebits		= GetTagData(BIDTAG_BlueBits		, bluebits		, TagItems);
-    dipf_musthave	= GetTagData(BIDTAG_DIPFMustHave	, dipf_musthave		, TagItems);
-    dipf_mustnothave	= GetTagData(BIDTAG_DIPFMustNotHave	, dipf_mustnothave	, TagItems);
-    
-    if (NULL != vp)
-    {
-    	/* Set some new default values */
-	nominal_width  = desired_width  = vp->DWidth;
-	nominal_height = desired_height = vp->DHeight;
+    /* Get defaults which can be overriden */
+    dipf_musthave    = GetTagData(BIDTAG_DIPFMustHave   , 0		, TagItems);
+    dipf_mustnothave = GetTagData(BIDTAG_DIPFMustNotHave, SPECIAL_FLAGS	, TagItems);
+    monitorid	     = GetTagData(BIDTAG_MonitorID      , INVALID_ID	, TagItems);
+    redbits	     = GetTagData(BIDTAG_RedBits        , 4		, TagItems);
+    greenbits	     = GetTagData(BIDTAG_GreenBits      , 4		, TagItems);
+    bluebits	     = GetTagData(BIDTAG_BlueBits       , 4		, TagItems);
+
+    /* Try to get viewport */
+    vp = (struct ViewPort *)GetTagData(BIDTAG_ViewPort, 0, TagItems);
+    if (vp) {
+        nominal_width  = vp->DWidth;
+	nominal_height = vp->DHeight;
+	sourceid = GetVPModeID(vp);
+	depth = vp->RasInfo->BitMap->Depth;
+    } else {
+        sourceid       = INVALID_ID;
+	nominal_width  = 640;
+	nominal_height = 200;
+	depth          = 1;
+    }
+
+    /* Then process SourceID, it overrides ViewPort size and mode */
+    sourceid = GetTagData(BIDTAG_SourceID, sourceid, TagItems);
+    if (sourceid != INVALID_ID) {
+        if (GetDisplayInfoData(NULL, (UBYTE *)&disp, sizeof(disp), DTAG_DISP, sourceid) >= offsetof(struct DisplayInfo, Resolution))
+	    dipf_musthave |= (disp.PropertyFlags & SPECIAL_FLAGS);
 	
-	if (NULL != vp->RasInfo->BitMap)
-	{
-	    depth = GetBitMapAttr(vp->RasInfo->BitMap, BMA_DEPTH);
-	}
-	else
-	{
-	    D(bug("!!! Passing viewport with NULL vp->RasInfo->BitMap to BestModeIDA() !!!\n"));
+	if (GetDisplayInfoData(NULL, (UBYTE *)&dims, sizeof(dims), DTAG_DIMS, sourceid) >= offsetof(struct DimensionInfo, MaxOScan)) {
+	    nominal_width  = dims.Nominal.MaxX - dims.Nominal.MinX + 1;
+	    nominal_height = dims.Nominal.MaxY - dims.Nominal.MinY + 1;
 	}
     }
-    
-    if (INVALID_ID != sourceid)
-    {
-#warning Fix this
 
-/* I do not understand what the docs state about this */
-	
-    }
-    
+    /* Get high-priority parameters */
+    nominal_width  = GetTagData(BIDTAG_NominalWidth , nominal_width , TagItems);
+    nominal_height = GetTagData(BIDTAG_NominalHeight, nominal_height, TagItems);
+    desired_width  = GetTagData(BIDTAG_DesiredWidth , nominal_width , TagItems);
+    desired_height = GetTagData(BIDTAG_DesiredHeight, nominal_height, TagItems);
+    depth	   = GetTagData(BIDTAG_Depth        , depth         , TagItems);
+
+    /* Exclude flags in MustHave from MustNotHave (CHECKME: if this correct?) */
+    dipf_mustnothave &= ~dipf_musthave;
+    /* Mask out bit 12 in monitorid because the user may (and will) pass in IDs defined in include/graphics/modeid.h
+       (like PAL_MONITOR_ID, VGA_MONITOR_ID, etc) which have bit 12 set) */
+    if (monitorid != INVALID_ID)
+        monitorid &= AROS_MONITOR_ID_MASK;
+
+    D(bug("[BestModeIDA] Desired mode: %dx%dx%d, MonitorID 0x%08lX, MustHave 0x%08lX, MustNotHave 0x%08lX\n",
+	  desired_width, desired_height, depth, monitorid, dipf_musthave, dipf_mustnothave));
+
     /* OK, now we try to search for a mode that has the supplied charateristics */
-
-    hiddmode = vHidd_ModeID_Invalid;
-    for (;;)
+    for (modeid = INVALID_ID;;)
     {
-	OOP_Object *sync, *pf;
-	
-	IPTR redmask, greenmask, bluemask;
-	IPTR gm_depth, gm_width, gm_height;
-	ULONG found_depth, found_width, found_height;
-	hiddmode = HIDD_Gfx_NextModeID(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pf);
-	if (vHidd_ModeID_Invalid == hiddmode)
+	UWORD gm_width, gm_height;
+
+        modeid = NextDisplayInfo(modeid);
+	if (modeid == INVALID_ID)
 	    break;
 
-	OOP_GetAttr(pf, aHidd_PixFmt_RedMask,	&redmask);
-	OOP_GetAttr(pf, aHidd_PixFmt_GreenMask,	&greenmask);
-	OOP_GetAttr(pf, aHidd_PixFmt_BlueMask,	&bluemask);
-	
-	OOP_GetAttr(pf, aHidd_PixFmt_Depth,		&gm_depth);
-	OOP_GetAttr(sync, aHidd_Sync_HDisp,		&gm_width);
-	OOP_GetAttr(sync, aHidd_Sync_VDisp,		&gm_height);
+	D(bug("[BestModeIDA] Checking ModeID 0x%08lX... ", modeid));
 
-    /* Check if mode is not worse than requested */	
-	if ( /*   compute_numbits(redmask)   >= redbits
-	     && compute_numbits(greenmask) >= greenbits
-	     && compute_numbits(bluemask)  >= bluebits
-	    
-	     && */gm_depth  >= depth
+	if ((monitorid != INVALID_ID) && ((modeid & AROS_MONITOR_ID_MASK) != monitorid)) {
+	    D(bug("MonitorID does not match\n"));
+	    continue;
+	}
+
+	if (GetDisplayInfoData(NULL, (UBYTE *)&disp, sizeof(disp), DTAG_DISP, modeid) < offsetof(struct DisplayInfo, pad2)) {
+	    D(bug("No DisplayInfo!\n"));
+	    continue;
+	}
+	if (disp.NotAvailable) { /* Filter out not available modes */
+	    D(bug("Not available: %u\n", disp.NotAvailable));
+	    continue;
+	}
+	if (disp.PropertyFlags & dipf_mustnothave) { /* Filter out modes which do not meet out special needs */
+	    D(bug("Has MustNotHave flags: 0x%08lX\n", disp.PropertyFlags));
+	    continue;
+	}
+	if ((disp.PropertyFlags & dipf_musthave) != dipf_musthave) {
+	    D(bug("Does not have MustHave flags: 0x%08lX\n", disp.PropertyFlags));
+	    continue;
+	}
+
+	if (GetDisplayInfoData(NULL, (UBYTE *)&dims, sizeof(dims), DTAG_DIMS, modeid) < offsetof(struct DimensionInfo, MaxOScan)) {
+	    D(bug("No DimensionInfo!\n"));
+	    continue;
+	}
+	gm_width  = dims.Nominal.MaxX - dims.Nominal.MinX + 1;
+	gm_height = dims.Nominal.MaxY - dims.Nominal.MinY + 1;
+	D(bug("%ux%ux%u", gm_width, gm_height, dims.MaxDepth));
+
+	/* FIXME: Take aspect ratio into account (nominal_width : nominal_height) */
+
+        /* Check if mode is not worse than requested */
+	if (    disp.RedBits   >= redbits
+	     && disp.GreenBits >= greenbits
+	     && disp.BlueBits  >= bluebits
+	     && dims.MaxDepth  >= depth
 	     && gm_width  >= desired_width
 	     && gm_height >= desired_height)
 	{
 	    /* Check if this mode matches closer than the one we already found */
-	    if (
-		    (found_id == INVALID_ID) ||
-		    (
-			(found_id != INVALID_ID) &&
-			(gm_depth <= found_depth) &&
-			(gm_width <= found_width) &&
-			(gm_height <= found_height)
-		    )
-		)
-	    {
-		found_id = HIDD_TO_AMIGA_MODEID(hiddmode);
-		found_depth = gm_depth;
-		found_width = gm_width;
+	    if ((dims.MaxDepth <= found_depth) &&
+	        (gm_width <= found_width) && (gm_height <= found_height)) {
+		found_id     = modeid;
+		found_depth  = dims.MaxDepth;
+		found_width  = gm_width;
 		found_height = gm_height;
+		D(bug(" Match!\n"));
 	    }
-	} 
+	}
+	D(bug("\n"));
 	
-    } /* for (each HIDD modeid) */
-    
+    } /* for (each modeid) */
+
+    D(bug("[BestModeIDA] Returning mode ID 0x%08lX\n", found_id));
     return found_id;
 
     AROS_LIBFUNC_EXIT
 } /* BestModeIDA */
-

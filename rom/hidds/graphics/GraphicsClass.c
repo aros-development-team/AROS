@@ -36,7 +36,6 @@
 #include <aros/debug.h>
 
 #define DPF(x)
-#define DSYNC(x)
 
 /****************************************************************************************/
 
@@ -58,7 +57,6 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
 	, OOP_Object *dst_bm, ULONG width, ULONG height);
 
 BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG attrcheck, struct class_static_data *_csd);
-BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG attrcheck, struct class_static_data *_csd);
 
 /****************************************************************************************/
 
@@ -585,20 +583,7 @@ static VOID free_mode_db(struct mode_db *mdb, OOP_Class *cl)
     if (NULL != mdb->pixfmts)
     {
     
-/****** !!! NB !!! The Pixel formats are registerd in the
-  GfxMode Database and is freed in the
-  free_object_list functions
-
-    	for (i = 0; i < mdb->num_pixfmts; i ++)
-	{
-	    if (NULL != mdb->pixfmts[i])
-	    {
-	    	OOP_DisposeObject(mdb->pixfmts[i]);
-		mdb->pixfmts[i] = NULL;
-	    }
-	}
-*/
-
+	/* Pixelformats are shared objects and never freed */
 	FreeMem(mdb->pixfmts, sizeof (OOP_Object *) * mdb->num_pixfmts);
 	mdb->pixfmts = NULL; mdb->num_pixfmts = 0;
     }
@@ -741,8 +726,7 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
     struct mode_db  	    *mdb;
     
     HIDDT_PixelFormat 	    pixfmt_data;
-    struct sync_data 	    sync_data;
-    
+
     struct TagItem  	    def_sync_tags[num_Hidd_Sync_Attrs     + 1];
     struct TagItem  	    def_pixfmt_tags[num_Hidd_PixFmt_Attrs + 1];
     
@@ -767,12 +751,14 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
     data = OOP_INST_DATA(cl, o);
     mdb = &data->mdb;
     InitSemaphore(&mdb->sema);
-    
+
     memset(&pixfmt_data, 0, sizeof (pixfmt_data));
-    memset(&sync_data,   0, sizeof (sync_data));
-    
+
     init_def_tags(def_sync_tags,	num_Hidd_Sync_Attrs);
     init_def_tags(def_pixfmt_tags,	num_Hidd_PixFmt_Attrs);
+
+    def_sync_tags[aoHidd_Sync_GfxHidd].ti_Tag = aHidd_Sync_GfxHidd;
+    def_sync_tags[aoHidd_Sync_GfxHidd].ti_Data = o;
     
     /* First we need to calculate how much memory we are to allocate by counting supplied
        pixel formats and syncs */
@@ -841,31 +827,17 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
 		    
 		    pfidx ++;
 		    break;
-		    
+
 		case aoHidd_Gfx_SyncTags:
 		    def_sync_tags[num_Hidd_Sync_Attrs].ti_Data = tag->ti_Data;
-		    if (!parse_sync_tags(def_sync_tags
-			    , &sync_data
-			    , ATTRCHECK(sync)
-			    , CSD(cl) ))
-		    {
-			D(bug("!!! ERROR PARSING SYNC TAGS IN Gfx::RegisterModes() !!!\n"));
+
+		    mdb->syncs[syncidx] = OOP_NewObject(CSD(cl)->syncclass, NULL, def_sync_tags);
+		    if (!mdb->syncs[syncidx]) {
+			D(bug("!!! UNABLE TO CREATE SYNC OBJECT IN Gfx::RegisterModes() !!!\n"));
 			goto failure;
 		    }
-		    else
-		    {
-			mdb->syncs[syncidx] = create_and_init_object(CSD(cl)->syncclass
-			    , (UBYTE *)&sync_data
-			    , sizeof (sync_data)
-			    , CSD(cl) );
-			    
-			if (NULL == mdb->syncs[syncidx])
-			{
-			    D(bug("!!! UNABLE TO CREATE PIXFMT OBJECT IN Gfx::RegisterModes() !!!\n"));
-			    goto failure;
-			}
-			syncidx ++;
-		    }
+
+		    syncidx ++;
 		    break;
 	    }
 	    
@@ -2000,145 +1972,6 @@ static inline BOOL cmp_pfs(HIDDT_PixelFormat *tmppf, HIDDT_PixelFormat *dbpf)
         return FALSE;
     /* If they match, compare the rest of things */
     return !memcmp(tmppf, dbpf, offsetof(HIDDT_PixelFormat, stdpixfmt));
-}
-
-/****************************************************************************************/
-
-/*
-    Parses the tags supplied in 'tags' and puts the result into 'sync'.
-    It also checks to see if all needed attrs are supplied.
-    It uses 'attrcheck' for this, so you may find attrs outside
-    of this function, and mark them as found before calling this function
-*/
-
-#define SYNC_AF(code) (1L << aoHidd_Sync_ ## code)
-#define SYAO(x) (aoHidd_Sync_ ## x)
-
-#define X11_SYNC_AF	( \
-	  SYNC_AF(HSyncStart) | SYNC_AF(HSyncEnd) | SYNC_AF(HTotal) \
-	| SYNC_AF(VSyncStart) | SYNC_AF(VSyncEnd) | SYNC_AF(VTotal) ) 
-
-#define LINUXFB_SYNC_AF ( \
-	  SYNC_AF(LeftMargin)  | SYNC_AF(RightMargin) | SYNC_AF(HSyncLength) \
-	| SYNC_AF(UpperMargin) | SYNC_AF(LowerMargin) | SYNC_AF(VSyncLength) )
-
-#define SYNC_DISP_AF ( \
-	SYNC_AF(HDisp) | SYNC_AF(VDisp) )
-
-/****************************************************************************************/
-
-BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHECK(sync),
-    	    	     struct class_static_data *csd)
-{
-    IPTR attrs[num_Hidd_Sync_Attrs];
-    BOOL ok = TRUE;
-    
-    if (0 != OOP_ParseAttrs(tags, attrs, num_Hidd_Sync_Attrs, &ATTRCHECK(sync), HiddSyncAttrBase))
-    {
-	D(bug("!!! parse_sync_tags: ERROR PARSING ATTRS !!!\n"));
-	return FALSE;
-    }
-
-    if (GOT_SYNC_ATTR(Flags))
-    {
-	data->flags = attrs[SYAO(Flags)];
-    }
-    
-    if (GOT_SYNC_ATTR(Description))
-    {
-    	strlcpy(data->description,
-	    	(STRPTR)attrs[SYAO(Description)],
-		sizeof(data->description));
-    }
-    
-
-    /* During init we must get HDisp and VDisp, so we set the
-       returncode to FALSE if we don't get them.
-       During Set returncode will be ignored. */
-    if (GOT_SYNC_ATTR(HDisp))
-	data->hdisp = attrs[SYAO(HDisp)];
-    else
-        ok = FALSE;
-
-    if (GOT_SYNC_ATTR(VDisp))
-	data->vdisp = attrs[SYAO(VDisp)];
-    else
-	ok = FALSE;
-
-    /* Now parse sync signal parameters. They may come either as start, stop and total
-       values (which most of drivers use), or as LinuxFB-style specification (margins and
-       sync length.
-       The latter specification is deprecated since no drivers except LinuxFB (which is
-       broken anyway) use it. */
-    if (GOT_SYNC_ATTR(PixelClock))
-	data->pixelclock = attrs[SYAO(PixelClock)];
-    else if (GOT_SYNC_ATTR(PixelTime)) {
-        /* See comment in sync.c, where getting is processed */
-        ULONG khz = 1000000000 / attrs[SYAO(PixelTime)];
-
-	data->pixelclock = khz * 1000;
-    }
-    DSYNC(bug("PixelClock is set to %u\n", data->pixelclock));
-
-    if (GOT_SYNC_ATTR(HSyncStart))
-        data->hsync_start = attrs[SYAO(HSyncStart)];
-    else if (GOT_SYNC_ATTR(RightMargin))
-	data->hsync_start = data->hdisp + attrs[SYAO(RightMargin)];
-
-    if (GOT_SYNC_ATTR(HSyncEnd))
-	data->hsync_end = attrs[SYAO(HSyncEnd)];
-    else if (GOT_SYNC_ATTR(HSyncLength))
-	data->hsync_end = data->hsync_start + attrs[SYAO(HSyncLength)];
-
-    if (GOT_SYNC_ATTR(HTotal))
-	data->htotal = attrs[SYAO(HTotal)];
-    else if (GOT_SYNC_ATTR(LeftMargin))
-	data->htotal = data->hsync_end + attrs[SYAO(LeftMargin)];
-    else
-        /* Kludge for poor man's drivers which can't provide complete sync information
-	   (like hosted drivers, especially SDL). In this case total = disp, it's better than nothing.
-	   The same is done below with vtotal. */
-        data->htotal = data->hdisp;
-
-    if (GOT_SYNC_ATTR(VSyncStart))
-	data->vsync_start = attrs[SYAO(VSyncStart)];
-    else if (GOT_SYNC_ATTR(LowerMargin))
-	data->vsync_start = data->vdisp + attrs[SYAO(LowerMargin)];
-
-    if (GOT_SYNC_ATTR(VSyncEnd))
-	data->vsync_end = attrs[SYAO(VSyncEnd)];
-    else if (GOT_SYNC_ATTR(VSyncLength))
-	data->vsync_end = data->vsync_start + attrs[SYAO(VSyncLength)];
-
-    if (GOT_SYNC_ATTR(VTotal))
-	data->vtotal = attrs[SYAO(VTotal)];
-    else if (GOT_SYNC_ATTR(UpperMargin))
-	data->vtotal = data->vsync_end + attrs[SYAO(UpperMargin)];
-    else
-        data->vtotal = data->vdisp;
-
-    /* By default minimum/maximum bitmap size is equal to display size */
-    if (GOT_SYNC_ATTR(HMin))
-        data->hmin = attrs[SYAO(HMin)];
-    else
-        data->hmin = data->hdisp;
-    if (GOT_SYNC_ATTR(HMax))
-	data->hmax = attrs[SYAO(HMax)];
-    else
-	data->hmax = data->hdisp;
-    if (GOT_SYNC_ATTR(VMin))
-        data->vmin = attrs[SYAO(VMin)];
-    else
-        data->vmin = data->vdisp;
-    if (GOT_SYNC_ATTR(VMax))
-	data->vmax = attrs[SYAO(VMax)];
-    else
-	data->vmax = data->vdisp;
-
-    if (GOT_SYNC_ATTR(Variable))
-        data->variable = attrs[SYAO(Variable)];
-
-    return ok;
 }
 
 /****************************************************************************************/

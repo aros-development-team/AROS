@@ -22,6 +22,8 @@
 #   include <hidd/graphics.h>
 #endif
 #include <dos/dos.h>
+#include <graphics/gfxbase.h>
+#include <graphics/monitor.h>
 
 
 #define USE_FAST_PUTPIXEL		1
@@ -86,29 +88,33 @@ struct chunkybm_data
 };
 
 struct sync_data {
-    ULONG pixelclock; /* pixel time in Hz */
+    struct MonitorSpec *mspc;	/* Associated MonitorSpec */
 
-    ULONG hdisp;
-    ULONG hsync_start;
-    ULONG hsync_end;
+    ULONG pixelclock;		/* pixel time in Hz */
+
+    ULONG hdisp;		/* Data missing from MonitorSpec */
     ULONG htotal;
-
     ULONG vdisp;
-    ULONG vsync_start;
-    ULONG vsync_end;
-    ULONG vtotal;
 
-    ULONG flags;
+    ULONG flags;		/* Flags */
 
     UBYTE description[32];
     
-    ULONG hmin;
+    ULONG hmin;			/* Minimum and maximum allowed bitmap size */
     ULONG hmax;
     ULONG vmin;
     ULONG vmax;
 
-    BOOL variable;
+    OOP_Object *sync;		/* Backpointer to sync object */
+    OOP_Object *gfxhidd;	/* Graphics driver that owns this sync */
+    ULONG InternalFlags;	/* Internal flags, see below */
 };
+
+/* Sync internal flags */
+#define SYNC_FREE_MONITORSPEC    0x0001 /* Allocated own MonitorSpec 				*/
+#define SYNC_FREE_SPECIALMONITOR 0x0002 /* Allocated own SpecialMonitor				*/
+#define SYNC_VARIABLE		 0x0004 /* Signal timings can be changed			*/
+#define SYNC_REMOVE_MONITORSPEC  0x0008 /* MonitorSpec was added to the graphics.library list	*/
 
 struct mode_bm {
     UBYTE *bm;
@@ -269,8 +275,9 @@ struct HIDDGCData
 
 struct class_static_data
 {
-    struct Library       * utilitybase;
- 
+    struct GfxBase	 *GfxBase;
+    struct SignalSemaphore sema;
+
     OOP_AttrBase    	 hiddPixFmtAttrBase;
     OOP_AttrBase    	 hiddBitMapAttrBase;
     OOP_AttrBase    	 hiddGfxAttrBase;
@@ -339,7 +346,6 @@ struct IntHIDDGraphicsBase
 /* pre declarations */
 
 BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG attrcheck, struct class_static_data *csd);
-BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG attrcheck, struct class_static_data *csd);
 
 static inline ULONG color_distance(UWORD a1, UWORD r1, UWORD g1, UWORD b1, UWORD a2, UWORD r2, UWORD g2, UWORD b2)
 {
