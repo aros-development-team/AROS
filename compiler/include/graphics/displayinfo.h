@@ -52,7 +52,7 @@ struct DisplayInfo
     UBYTE GreenBits;
     UBYTE BlueBits;
     UBYTE pad2[5];
-    ULONG reserved[2];
+    IPTR reserved[2];
 };
 
 /* NotAvailable */
@@ -102,7 +102,7 @@ struct DimensionInfo
     struct Rectangle StdOScan;
 
     UBYTE pad[14];
-    ULONG reserved[2];
+    IPTR reserved[2];
 };
 
 struct MonitorInfo
@@ -135,7 +135,7 @@ struct NameInfo
     struct QueryHeader Header;
 
     UBYTE Name[DISPLAYNAMELEN];
-    ULONG reserved[2];
+    IPTR reserved[2];
 };
 
 /* Tags */
