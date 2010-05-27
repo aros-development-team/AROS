@@ -251,7 +251,11 @@ int driver_init(struct GfxBase * GfxBase)
 {
 
     EnterFunc(bug("driver_init()\n"));
-    
+
+    /* Our underlying RTG subsystem core must be already up and running */
+    if (!OpenLibrary("graphics.hidd", 0))
+        return FALSE;
+
     /* Initialize the semaphore used for the chunky buffer */
     InitSemaphore(&(PrivGBase(GfxBase)->pixbuf_sema));
     InitSemaphore(&(PrivGBase(GfxBase)->blit_sema));
