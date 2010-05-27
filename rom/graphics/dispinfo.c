@@ -33,46 +33,34 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-HIDDT_ModeID get_best_resolution_and_depth(OOP_Object *gfxhidd, struct GfxBase *GfxBase)
+HIDDT_ModeID get_best_resolution_and_depth(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
     HIDDT_ModeID ret = vHidd_ModeID_Invalid;
-    HIDDT_ModeID *modes, *m;
-    struct TagItem querytags[] = { { TAG_DONE, 0UL } };
-    
-    /* Query the gfxhidd for all modes */
-    modes = HIDD_Gfx_QueryModeIDs(gfxhidd, querytags);
+    struct DisplayInfoHandle *dh;
+    ULONG best_resolution = 0;
+    ULONG best_depth = 0;
 
-    if (NULL != modes) {
-	ULONG best_resolution = 0;
-	ULONG best_depth = 0;
-	
-	for (m = modes; vHidd_ModeID_Invalid != *m; m ++) {
-    	    OOP_Object *sync, *pf;
-	    IPTR depth;
-	    HIDD_Gfx_GetMode(gfxhidd, *m, &sync, &pf);
-	    
-	    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
-	    if (depth >= best_depth) {
-	    	IPTR width, height;
-		ULONG res;
-		
-		OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
-		OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
-		
-		res = width * height;
-		if (res > best_resolution) {
-		    ret = *m;
-                    best_resolution = res;
-		}
-		
-	    	best_depth = depth;
+    for (dh = mdd->modes; dh->id != vHidd_ModeID_Invalid; dh++) {
+	OOP_Object *sync, *pf;
+	IPTR depth;
+
+	HIDD_Gfx_GetMode(mdd->gfxhidd, dh->id, &sync, &pf);
+	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+
+	if (depth >= best_depth) {
+	    IPTR width, height;
+	    ULONG res;
+
+	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
+	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
+
+	    res = width * height;
+	    if (res > best_resolution) {
+		ret = dh->id;
+                best_resolution = res;
 	    }
-	    
+	    best_depth = depth;
 	}
-	
-	HIDD_Gfx_ReleaseModeIDs(gfxhidd, modes);
     }
-    
     return ret;
-    
 }

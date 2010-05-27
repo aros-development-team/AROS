@@ -322,7 +322,7 @@ int driver_init(struct GfxBase * GfxBase)
 }
 
 /* Called after DOS is up & running */
-static OOP_Object *create_framebuffer(OOP_Object *gfxhidd, struct GfxBase *GfxBase)
+static OOP_Object *create_framebuffer(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
     struct TagItem fbtags[] = {
     	{ aHidd_BitMap_FrameBuffer,	TRUE	},
@@ -334,13 +334,13 @@ static OOP_Object *create_framebuffer(OOP_Object *gfxhidd, struct GfxBase *GfxBa
     OOP_Object *fb = NULL;
 
     /* Get the highest available resolution at the best possible depth */
-    hiddmode = get_best_resolution_and_depth(gfxhidd, GfxBase);
+    hiddmode = get_best_resolution_and_depth(mdd, GfxBase);
     if (vHidd_ModeID_Invalid == hiddmode) {
     	D(bug("!!! create_framebuffer(): COULD NOT GET HIDD MODEID !!!\n"));
     } else {
     	/* Create the framebuffer object */
 	fbtags[1].ti_Data = hiddmode;
-	fb = HIDD_Gfx_NewBitMap(gfxhidd, fbtags);
+	fb = HIDD_Gfx_NewBitMap(mdd->gfxhidd, fbtags);
     }
 
     return fb;
@@ -421,7 +421,7 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 	    if (!noframebuffer)
 	        /* Note that we perform this operation on fakegfx.hidd if it was
 		   plugged in */
-		mdd->framebuffer = create_framebuffer(mdd->gfxhidd, GfxBase);
+		mdd->framebuffer = create_framebuffer(mdd, GfxBase);
 
 	    if (noframebuffer || mdd->framebuffer) {
 		D(bug("[driver_OpenMonitor] FRAMEBUFFER OK: %p\n", mdd->framebuffer));
