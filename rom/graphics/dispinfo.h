@@ -38,7 +38,7 @@
 
 /****************************************************************************************/
 
-HIDDT_ModeID get_best_resolution_and_depth(OOP_Object *gfxhidd, struct GfxBase *GfxBase);
+HIDDT_ModeID get_best_resolution_and_depth(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
 
 /****************************************************************************************/
 
