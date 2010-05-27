@@ -11,6 +11,7 @@
 #include <oop/oop.h>
 
 #include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -49,6 +50,10 @@
 	AROS currently supports only one sprite #0 for mouse pointer.
 	Other sprite numbers are ignored by this function.
 
+	ViewPort is also used in order to specify the physical display.
+	If it's not specified, Amiga(tm) chipset display is assumed.
+	This is available only on Amiga(tm) architecture.
+
     EXAMPLE
 
     BUGS
@@ -64,20 +69,23 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct monitor_driverdata *mdd;
+
     if (vp) {
         sprite->x = x + vp->DxOffset;
         sprite->y = y + vp->DyOffset;
+	mdd = GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
     } else {
         sprite->x = x;
 	sprite->y = y;
+	/* TODO: obviously this should use a chipset driver. Currently we have no one. */
+	return;
     }
 
     if (sprite->num) /* We have only sprite #0 for the mouse cursor */
         return;
 
-    if (SDD(GfxBase)->gfxhidd) {
-    	HIDD_Gfx_SetCursorPos(SDD(GfxBase)->gfxhidd, sprite->x, sprite->y);
-    }
+    HIDD_Gfx_SetCursorPos(mdd->gfxhidd, sprite->x, sprite->y);
 
     AROS_LIBFUNC_EXIT
 } /* MoveSprite */

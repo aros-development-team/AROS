@@ -69,8 +69,6 @@ struct ETextFont
 /* AreaPtrns, UpdateAreaPtrn() has to allocate the memory for the       */
 /* Pattern itself (and free previously used memory!)                    */
 
-#if NEW_DRIVERDATA_CODE
-
 static inline void AddDriverDataToList(struct gfx_driverdata *dd, struct GfxBase * GfxBase)
 {
     LONG hash;
@@ -156,8 +154,11 @@ BOOL ObtainDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
 	    struct monitor_driverdata *sdd;
 	    struct TagItem gc_tags[] = {{ TAG_DONE}};
 
-	    sdd = SDD(GfxBase);
-		
+	    if (rp->BitMap)
+	        sdd = GET_BM_DRIVERDATA(rp->BitMap);
+	    else
+	        sdd = (struct monitor_driverdata *)CDD(GfxBase);
+
 	    dd->dd_GC = HIDD_Gfx_NewGC(sdd->gfxhidd, gc_tags);
 	    if (dd->dd_GC)
 	    {
@@ -231,8 +232,11 @@ void KillDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
     if (dd)
     {
     	struct monitor_driverdata *sdd;
-    	
-	sdd = SDD(GfxBase);
+
+	if (rp->BitMap)
+	    sdd = GET_BM_DRIVERDATA(rp->BitMap);
+	else
+	    sdd = (struct monitor_driverdata *)CDD(GfxBase);
 
     	HIDD_Gfx_DisposeGC(sdd->gfxhidd, dd->dd_GC);
 	FreePooled(PrivGBase(GfxBase)->driverdatapool, dd, sizeof(*dd)); 
@@ -242,124 +246,6 @@ void KillDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
     }
         
 }
-
-#else
-
-struct gfx_driverdata * obsolete_InitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
-{
-    struct gfx_driverdata * dd;
-    EnterFunc(bug("InitDriverData(rp=%p)\n", rp));
-
-    /* Does this rastport have a bitmap ? */
-    //if (rp->BitMap)
-    {
-        D(bug("Got bitmap\n"));
-        /* Displayable ? (== rastport of a screen) */
-	//if (IS_HIDD_BM(rp->BitMap))
-	{
-            D(bug("Has HIDD bitmap (displayable)\n"));
-
-	    /* We can use this rastport. Allocate driverdata */
-    	    dd = AllocMem (sizeof(struct gfx_driverdata), MEMF_CLEAR);
-    	    if (dd)
-    	    {
-	        struct monitor_driverdata *sdd;
-		struct TagItem gc_tags[] = {
-		    { TAG_DONE, 	0UL}
-		};
-		
-		
-		D(bug("Got driverdata\n"));
-		sdd = SDD(GfxBase);
-		
-		dd->dd_GC = HIDD_Gfx_NewGC(sdd->gfxhidd, gc_tags);
-		if (dd->dd_GC)
-		{
-
-		    D(bug("Got GC HIDD object\n"));
-    		    dd->dd_RastPort = rp;
-    		    SetDriverData(rp, dd);
-    		    rp->Flags |= RPF_DRIVER_INITED;
-
-		    ReturnPtr("InitDriverData", struct gfx_driverdata *, dd);
-	        }
-
-		FreeMem(dd, sizeof (struct gfx_driverdata));
-	
-    	    }
-	}
-    }
-
-    ReturnPtr("InitDriverData", struct gfx_driverdata *, NULL);
-}
-
-void obsolete_DeinitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
-{
-    struct gfx_driverdata * dd;
-    struct monitor_driverdata *sdd;
-    
-    EnterFunc(bug("DeInitDriverData(rp=%p)\n", rp));
-		
-    sdd = SDD(GfxBase);
-
-    dd = RP_DRIVERDATA(rp);;
-    RP_DRIVERDATA(rp) = 0;
-
-    HIDD_Gfx_DisposeGC(sdd->gfxhidd, dd->dd_GC);
-
-    FreeMem (dd, sizeof(struct gfx_driverdata));
-    rp->Flags &= ~RPF_DRIVER_INITED;
-
-    ReturnVoid("DeinitDriverData");
-}
-
-BOOL obsolete_CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
-{
-    BOOL retval = TRUE;
-    struct gfx_driverdata * dd, * old;
-
-    if (!rp)
-    {
-	retval = FALSE;
-    }
-    else
-    {
-	old = GetDriverData(rp);
-	if (!old)
-	{
-	    old = obsolete_InitDriverData(rp, GfxBase);
-
-/* stegerg: ???? would have returned TRUE even if old == NULL
-	    if (old)
-	    	retval = TRUE;
-*/
-	    if (!old) retval = FALSE;
-	}
-	else if (rp != old->dd_RastPort)
-	{
-	    /* stegerg: cloned rastport?	    
-	    ** Make sure to clear driverdata pointer and flag
-	    ** in case InitDriverData fail
-	    */
-	    RP_DRIVERDATA(rp) = 0;
-	    rp->Flags &= ~RPF_DRIVER_INITED;
-
-	    dd = obsolete_InitDriverData(rp, GfxBase);
-
-/* stegerg: ???? would have returned TRUE even if dd = NULL
-	    if (dd)
-	   	 retval = TRUE;
-*/
-
-	    if (!dd) retval = FALSE;
-
-	}
-    }
-    
-    return retval;
-}
-
-#endif
 
 int driver_init(struct GfxBase * GfxBase)
 {
@@ -391,6 +277,12 @@ int driver_init(struct GfxBase * GfxBase)
     {
 	PrivGBase(GfxBase)->pixel_buf=AllocMem(PIXELBUF_SIZE,MEMF_ANY);
 	if (PrivGBase(GfxBase)->pixel_buf) {
+
+	    /* Init display mode database */
+	    InitSemaphore(&CDD(GfxBase)->displaydb_sem);
+	    CDD(GfxBase)->last_id = AROS_RTG_MONITOR_ID;
+
+	    /* Init memory driver */
 	    CDD(GfxBase)->memorygfx = OOP_NewObject(NULL, CLID_Hidd_Gfx, NULL);
 	    DEBUG_INIT(bug("[driver_init] Memory driver object 0x%p\n", CDD(GfxBase)->memorygfx));
 	    if (CDD(GfxBase)->memorygfx) {
@@ -450,22 +342,50 @@ static OOP_Object *create_framebuffer(OOP_Object *gfxhidd, struct GfxBase *GfxBa
     return fb;
 }
 
+/*
+ * Set up graphics display driver.
+ * Creates necessary OS structures around it.
+ *
+ * gfxhidd - newly created driver object
+ * result  - master driver structure
+ */
+
 struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *GfxBase)
 {
+    ULONG cnt = 0;
     IPTR hwcursor = 0;
     IPTR noframebuffer = 0;
     BOOL ok = TRUE;
-
+    ULONG i;
+    HIDDT_ModeID *modes, *m;
     struct monitor_driverdata *mdd;
 
     D(bug("[driver_Setup] gfxhidd=0x%p\n", gfxhidd));
 
-    mdd = AllocMem(sizeof(struct monitor_driverdata), MEMF_PUBLIC|MEMF_CLEAR);
-    D(bug("[driver_Setup] Allocated driverdata at 0x%p\n", mdd));
-    if (!mdd)
+    modes = HIDD_Gfx_QueryModeIDs(gfxhidd, NULL);
+    if (!modes)
         return NULL;
 
+    /* Count number of display modes */
+    for (m = modes; *m != vHidd_ModeID_Invalid; m ++)
+	cnt++;
+
+    mdd = AllocVec(sizeof(struct monitor_driverdata) + cnt * sizeof(struct DisplayInfoHandle), MEMF_PUBLIC|MEMF_CLEAR);
+    D(bug("[driver_Setup] Allocated driverdata at 0x%p\n", mdd));
+    if (!mdd) {
+        HIDD_Gfx_ReleaseModeIDs(gfxhidd, modes);
+        return NULL;
+    }
+
     mdd->gfxhidd_orig = gfxhidd;
+
+    /* Fill in ModeID database in the driverdata */
+    for (i = 0; i <= cnt; i++) {
+        mdd->modes[i].id = modes[i];
+	mdd->modes[i].drv = mdd;
+    }
+
+    HIDD_Gfx_ReleaseModeIDs(gfxhidd, modes);
 
 #ifndef FORCE_SOFTWARE_SPRITE
     OOP_GetAttr(gfxhidd, aHidd_Gfx_SupportsHWCursor, &hwcursor);
@@ -478,9 +398,9 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 	D(bug("[driver_Setup] Hardware mouse cursor is not supported, using fakegfx.hidd\n"));
 
 	mdd->gfxhidd = init_fakegfxhidd(gfxhidd, GfxBase);
-	if (mdd->gfxhidd) {
+	if (mdd->gfxhidd)
 	    mdd->fakegfx_inited = TRUE;
-	} else
+	else
 	    ok = FALSE;
     }
 
@@ -514,24 +434,78 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
     if (mdd->fakegfx_inited)
 	OOP_DisposeObject(mdd->gfxhidd);
 
-    FreeMem(mdd, sizeof(struct monitor_driverdata));
+    FreeVec(mdd);
 
     return NULL;
 }
 
-/* This routine is a hack. It will go away in future */
+/*
+ * Insert the ready-to-use driver with all its modes into the display mode database
+ *
+ * mdd    - A pointer to driver descriptor
+ * numIDs - A number of subsequent monitor IDs to reserve
+ */
+
+void driver_Add(struct monitor_driverdata *mdd, ULONG numIDs, struct GfxBase *GfxBase)
+{
+    struct monitor_driverdata *last;
+
+    ObtainSemaphore(&CDD(GfxBase)->displaydb_sem);
+
+    mdd->id = CDD(GfxBase)->last_id;
+    CDD(GfxBase)->last_id += (numIDs << AROS_MONITOR_ID_SHIFT); /* Next available monitor ID */
+
+    /* Insert the driverdata into chain, sorted by ID */
+    for (last = (struct monitor_driverdata *)CDD(GfxBase); last->next; last = last->next) {
+	if (mdd->id < last->next->id)
+	    break;
+    }
+    mdd->next = last->next;
+    last->next = mdd;
+    
+    ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
+}
+
+/*
+ * Remove the driver from the database
+ *
+ * mdd - Driver structure to remove
+ */
+
+void driver_Remove(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
+{
+    struct monitor_driverdata *prev;
+
+    ObtainSemaphore(&CDD(GfxBase)->displaydb_sem);
+
+    /* Insert the driverdata into chain, sorted by ID */
+    for (prev = (struct monitor_driverdata *)CDD(GfxBase); prev->next; prev = prev->next) {
+        if (prev->next == mdd) {
+	    prev->next = mdd->next;
+	    break;
+	}
+    }
+    
+    ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
+}    
+
+/*
+ * Completely remove a driver from the OS.
+ *
+ * mdd - Driver structure to remove.
+ *
+ * Note that removing a driver is very unsafe operation. You must be
+ * sure that no bitmaps of this driver exist at the moment.
+ *
+ * It is unclear whether unloading drivers will be supported in future.
+ */
+
 void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
     ULONG i;
 
-    /* Destroy sync object references in MonitorSpecs since those
-       objects will not exist any more */
-    for (i = 0; i < mdd->numspecs; i++) {
-        if (mdd->specs[i]->ms_Special) {
-	    mdd->specs[i]->ms_Special->do_monitor = NULL;
-	    mdd->specs[i]->ms_Special->reserved1 = NULL;
-	}
-    }
+    /* Remove the driver from the list. This will remove its modes from the database. */
+    driver_Remove(mdd, GfxBase);
 
     if (mdd->framebuffer)
 	OOP_DisposeObject(mdd->framebuffer);
@@ -542,10 +516,11 @@ void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
     if (mdd->fakegfx_inited)
         OOP_DisposeObject(mdd->gfxhidd);
 
+    /* Dispose driver object. This will take care about syncs etc */
     if (mdd->gfxhidd_orig)
 	OOP_DisposeObject(mdd->gfxhidd_orig );
 
-    FreeMem(mdd, sizeof(struct monitor_driverdata));
+    FreeVec(mdd);
 }
 
 #if 0 /* Unused? */

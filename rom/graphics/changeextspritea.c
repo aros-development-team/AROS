@@ -72,12 +72,13 @@
     AROS_LIBFUNC_INIT
     
     OOP_Object *bitmap;
+    struct monitor_driverdata *mdd;
     LONG res;
     LONG xoffset = GetTagData(POINTERA_XOffset, 0, tags);
     LONG yoffset = GetTagData(POINTERA_YOffset, 0, tags);
 
     D(bug("ChangeExtSpriteA(0x%p, 0x%p, 0x%p)\n", vp, oldsprite, newsprite));
-    
+
     /* We have only sprite #0 for the mouse pointer */
     if (newsprite->es_SimpleSprite.num)
         return 0;
@@ -87,12 +88,21 @@
     newsprite->es_SimpleSprite.y = oldsprite->es_SimpleSprite.y;
     D(bug("Sprite position: (%d, %d)\n", newsprite->es_SimpleSprite.x, newsprite->es_SimpleSprite.y));
 
+    /* Pick up display driver from ViewPort's bitmap */
+    if (vp)
+        mdd = GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
+    else
+        /* TODO: vp == NULL suggests Amiga(tm) chipset display */
+        return FALSE;
+
     /* Set the cursor shape and make sure it is visible */
     bitmap = OBTAIN_HIDD_BM(newsprite->es_BitMap);
     D(bug("HIDD bitmap object: 0x%p\n", bitmap));
-    res = HIDD_Gfx_SetCursorShape(SDD(GfxBase)->gfxhidd, bitmap, xoffset, yoffset);
+    res = HIDD_Gfx_SetCursorShape(mdd->gfxhidd, bitmap, xoffset, yoffset);
+    RELEASE_HIDD_BM(bitmap, newsprite->es_BitMap);
+
     if (res)
-        HIDD_Gfx_SetCursorVisible(SDD(GfxBase)->gfxhidd, TRUE);
+        HIDD_Gfx_SetCursorVisible(mdd->gfxhidd, TRUE);
     return res;
 
     AROS_LIBFUNC_EXIT

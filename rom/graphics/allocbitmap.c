@@ -151,13 +151,15 @@
 
     if (flags & BMF_SCREEN)
     {
-    	hiddmode      = (HIDDT_ModeID)friend_bitmap;
+        struct DisplayInfoHandle *dh = FindDisplayInfo((ULONG)friend_bitmap);
+	
+	if (!dh)
+	    return NULL;
+
+	drv           = dh->drv;
+    	hiddmode      = dh->id;
 	friend_bitmap = NULL;
-	flags |= BMF_REQUESTVMEM;
-	/* Force current display driver for screen bitmaps.
-	   This is a temporary hack, in future the driver will be looked up
-	   by card index in ModeID */
-	drv = SDD(GfxBase);
+	flags        |= BMF_REQUESTVMEM;
     }
 
     ASSERT_VALID_PTR_OR_NULL(friend_bitmap);
@@ -282,7 +284,7 @@
     		HIDD_BM_COLMOD(nbm)     = colmod;
     		HIDD_BM_COLMAP(nbm)     = colmap;
 		HIDD_BM_REALDEPTH(nbm)  = depth;
-		HIDD_BM_HIDDMODE(nbm)   = hiddmode;
+		HIDD_BM_HIDDMODE(nbm)   = drv->id | hiddmode; /* Store full ModeID here */
 
     		nbm->Rows   = height;
     		nbm->BytesPerRow = WIDTH_TO_BYTES(width);

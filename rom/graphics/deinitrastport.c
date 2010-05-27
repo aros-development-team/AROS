@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$	$Log
 
     Desc: AROS Graphics function DeinitRastPort()
@@ -57,22 +57,9 @@ void obsolete_DeinitDriverData(struct RastPort *, struct GfxBase *);
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("DeInitRP()\n"));
+    D(bug("DeInitRastPort()\n"));
 
-#if NEW_DRIVERDATA_CODE
-    KILL_DRIVERDATA(rp, GfxBase);
-#else
-    if ( rp->Flags & RPF_DRIVER_INITED )
-    {
-    	D(bug("RP inited, rp=%p, %flags=%d=\n", rp, rp->Flags));
-		 
-        if (GetDriverData(rp)->dd_RastPort == rp) 
-	{
-	    D(bug("Calling DeInitDriverData\n"));
-	    obsolete_DeinitDriverData (rp, GfxBase);
-	}
-    }
-#endif
+    KillDriverData(rp, GfxBase);
  
     AROS_LIBFUNC_EXIT
     

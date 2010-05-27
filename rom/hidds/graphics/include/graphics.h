@@ -2212,39 +2212,41 @@ enum
 {
     
     /* Linux framebuffer device alike specification, deprecated */
-    aoHidd_Sync_PixelTime = 0,  /* [I.G] ULONG - pixel clock in picoseconds (1E-12 second) ie. time it takes to draw one pixel */
+    aoHidd_Sync_PixelTime = 0,  /* [ISG] ULONG - pixel clock in picoseconds (1E-12 second) ie. time it takes to draw one pixel */
 
-    aoHidd_Sync_LeftMargin,	/* [I.G] ULONG */
-    aoHidd_Sync_RightMargin,	/* [I.G] ULONG */
-    aoHidd_Sync_HSyncLength,	/* [I.G] ULONG */
+    aoHidd_Sync_LeftMargin,	/* [ISG] ULONG */
+    aoHidd_Sync_RightMargin,	/* [ISG] ULONG */
+    aoHidd_Sync_HSyncLength,	/* [ISG] ULONG */
 
-    aoHidd_Sync_UpperMargin,	/* [I.G] ULONG */
-    aoHidd_Sync_LowerMargin,	/* [I.G] ULONG */
-    aoHidd_Sync_VSyncLength,	/* [I.G] ULONG */
+    aoHidd_Sync_UpperMargin,	/* [ISG] ULONG */
+    aoHidd_Sync_LowerMargin,	/* [ISG] ULONG */
+    aoHidd_Sync_VSyncLength,	/* [ISG] ULONG */
 
     /* Alternative description used by newer drivers. Use this one. */
-    aoHidd_Sync_PixelClock,	/* [I.G] ULONG - Pixel clock in Hz */
-    
+    aoHidd_Sync_PixelClock,	/* [ISG] ULONG - Pixel clock in Hz */
+
     aoHidd_Sync_HDisp,		/* [I.G] ULONG - displayed pixels per line */
-    aoHidd_Sync_HSyncStart,	/* [I.G] ULONG - time to the start of the horizontal sync */
-    aoHidd_Sync_HSyncEnd,	/* [I.G] ULONG - time to the end of the horizontal sync */
-    aoHidd_Sync_HTotal,		/* [I.G] ULONG - total time to draw one line + the hsync time	*/
-    
+    aoHidd_Sync_HSyncStart,	/* [ISG] ULONG - time to the start of the horizontal sync */
+    aoHidd_Sync_HSyncEnd,	/* [ISG] ULONG - time to the end of the horizontal sync */
+    aoHidd_Sync_HTotal,		/* [ISG] ULONG - total time to draw one line + the hsync time	*/
+
     aoHidd_Sync_VDisp,		/* [I.G] ULONG - displayed rows */
-    aoHidd_Sync_VSyncStart,	/* [I.G] ULONG - rows to the start of the horizontal sync */
-    aoHidd_Sync_VSyncEnd,	/* [I.G] ULONG - rows to the end of the horizontal synf */
-    aoHidd_Sync_VTotal,		/* [I.G] ULONG - number of rows in the screen includeing vsync 	*/
-    
+    aoHidd_Sync_VSyncStart,	/* [ISG] ULONG - rows to the start of the horizontal sync */
+    aoHidd_Sync_VSyncEnd,	/* [ISG] ULONG - rows to the end of the horizontal synf */
+    aoHidd_Sync_VTotal,		/* [ISG] ULONG - number of rows in the screen includeing vsync 	*/
+
     aoHidd_Sync_Description,	/* [I.G] STRPTR - guess what */
-    
-    aoHidd_Sync_HMin,		/* [I.G] ULONG - minimum acceptable bitmap width */
-    aoHidd_Sync_HMax,		/* [I.G] ULONG - maximum acceptable bitmap width */
-    aoHidd_Sync_VMin,		/* [I.G] ULONG - minimum acceptable bitmap height */
-    aoHidd_Sync_VMax,		/* [I.G] ULONG - maximum acceptable bitmap height */
-    
+
+    aoHidd_Sync_HMin,		/* [ISG] ULONG - minimum acceptable bitmap width */
+    aoHidd_Sync_HMax,		/* [ISG] ULONG - maximum acceptable bitmap width */
+    aoHidd_Sync_VMin,		/* [ISG] ULONG - minimum acceptable bitmap height */
+    aoHidd_Sync_VMax,		/* [ISG] ULONG - maximum acceptable bitmap height */
+
     aoHidd_Sync_Flags,		/* [I.G] ULONG - mode tags */
 
-    aoHidd_Sync_Variable,	/* [I..] BOOL  - data can be modified */
+    aoHidd_Sync_Variable,	/* [I.G] BOOL  - data can be modified */
+    aoHidd_Sync_MonitorSpec,	/* [ISG] struct MonitorSpec *	- MonitorSpec structure		     */
+    aoHidd_Sync_GfxHidd,	/* [ISG] OOP_Object *		- Driver to which the object belongs */
 
     num_Hidd_Sync_Attrs
     
@@ -2283,6 +2285,8 @@ enum
 #define aHidd_Sync_Flags	(HiddSyncAttrBase + aoHidd_Sync_Flags)
 
 #define aHidd_Sync_Variable	(HiddSyncAttrBase + aoHidd_Sync_Variable)
+#define aHidd_Sync_MonitorSpec	(HiddSyncAttrBase + aoHidd_Sync_MonitorSpec)
+#define aHidd_Sync_GfxHidd	(HiddSyncAttrBase + aoHidd_Sync_GfxHidd)
 
 /* Sync flags */
 #define vHidd_Sync_HSyncPlus		0x0001	/* HSYNC + if set */

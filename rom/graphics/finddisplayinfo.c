@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function FindDisplayInfo()
@@ -53,29 +53,34 @@
 {
     AROS_LIBFUNC_INIT
 
-    DisplayInfoHandle ret = NULL;
+    struct monitor_driverdata *mdd;
+    struct DisplayInfoHandle *ret = NULL;
     HIDDT_ModeID hiddmode;
-    OOP_Object *sync, *pixfmt;
-    
-    D(bug("FindDisplayInfo(id=%x)\n", ID));
-    
-    /* Check for the NOTNULLMASK */
-    if ((ID & NOTNULLMASK) != NOTNULLMASK) {
-    	D(bug("!!! NO AROS MODEID IN FindDisplayInfo() !!!\n"));
-    	return NULL;
-    }
-    
-    hiddmode = AMIGA_TO_HIDD_MODEID(ID);
-    
-    /* Try to get mode info for the mode */
-    if (!HIDD_Gfx_GetMode(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pixfmt)) {
-	D(bug("!!! NO AROS MODEID IN FindDisplayInfo() !!!\n"));
-	return NULL;
-    }
-    
-    ret = (DisplayInfoHandle)ID;
 
-    return ret;
+    D(bug("FindDisplayInfo(id=%x)\n", ID));
+
+    /* The database may fail on INVALID_ID, so handle this explicitly */
+    if (ID == INVALID_ID)
+        return NULL;
+
+    /* Find display driver data */
+    for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next) {
+        if (mdd->id == (ID & mdd->mask))
+	    break;
+    }
+    if (!mdd)
+        return NULL;
+
+    /* Calculate HIDD part of ModeID */
+    hiddmode = ID & (~mdd->mask);
+
+    /* Go through all mode records of this driver */
+    for (ret = mdd->modes; ret->id != vHidd_ModeID_Invalid; ret++) {
+	if (ret->id == hiddmode)
+	    return ret;
+    }
+
+    return NULL;
 
     AROS_LIBFUNC_EXIT
 } /* FindDisplayInfo */

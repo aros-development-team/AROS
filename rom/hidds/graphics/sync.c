@@ -8,9 +8,12 @@
 
 /****************************************************************************************/
 
+#include <proto/alib.h>
+#include <proto/graphics.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <exec/memory.h>
+#include <graphics/gfxnodes.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 #include <hidd/graphics.h>
@@ -20,68 +23,108 @@
 
 #include "graphics_intern.h"
 
+#undef csd
+#define GfxBase csd->GfxBase
+
+/****************************************************************************************/
+
+static BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, BOOL init, struct class_static_data *);
+
 /****************************************************************************************/
 
 OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct sync_data 	*data;
-    BOOL    	    	ok = FALSE;
-    
-    DECLARE_ATTRCHECK(sync);
-    
+    struct class_static_data *csd = CSD(cl);
+    BOOL    	    	ok = TRUE;
+
     EnterFunc(bug("Sync::New()\n"));
-    
+
+    /* We need graphics.library in order to be able to create MonitorSpec.
+       we do it here because graphics.hidd is initialized before
+       graphics.library */
+    ObtainSemaphore(&csd->sema);
+    if (!GfxBase) {
+        GfxBase = OpenLibrary("graphics.library", 41);
+        if (!GfxBase)
+	    ok = FALSE;
+    }
+    ReleaseSemaphore(&csd->sema);
+
+    if (!ok)
+        return NULL;
+
     /* Get object from superclass */
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
 	return NULL;
 
-    /* If we got a NULL attrlist we just allocate an empty object an exit */
-    if (NULL == msg->attrList)
-	return o;
-
     data = OOP_INST_DATA(cl, o);
-    
-    if (!parse_sync_tags(msg->attrList, data, ATTRCHECK(sync), CSD(cl) ))
-    {
-	D(bug("!!! ERROR PARSING SYNC ATTRS IN Sync::New() !!!\n"));
-    }
-    else
-    {
-	ok = TRUE;
-    }
-    
-    if (!ok)
-    {
+
+    ok = parse_sync_tags(msg->attrList, data, TRUE, csd);
+    if (ok)
+        data->sync = o;
+    else {
 	OOP_MethodID dispose_mid;
-	
+
+	D(bug("!!! ERROR PARSING SYNC ATTRS IN Sync::New() !!!\n"));
 	dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 	OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
 	o = NULL;
     }
-    
+
     return o;
+}
+
+/****************************************************************************************/
+
+VOID Sync__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    struct sync_data *data = OOP_INST_DATA(cl, o);
+    struct class_static_data *csd = CSD(cl);
+
+    if (data->InternalFlags & SYNC_REMOVE_MONITORSPEC)
+        Remove((struct Node *)data->mspc);
+    if (data->InternalFlags & SYNC_FREE_SPECIALMONITOR)
+        GfxFree(&data->mspc->ms_Special->spm_Node);
+    if (data->InternalFlags & SYNC_FREE_MONITORSPEC)
+        GfxFree(&data->mspc->ms_Node);
+
+    OOP_DoSuperMethod(cl, o, msg);
 }
 
 /****************************************************************************************/
 
 VOID Sync__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    struct sync_data 	*data;    
+    struct sync_data 	*data;
+    struct class_static_data *csd;
     ULONG   	    	idx;
-    
+
     data = OOP_INST_DATA(cl, o);
-    
+    csd = CSD(cl);
+
     if (IS_SYNC_ATTR(msg->attrID, idx))
     {
+        UWORD hsync_start, hsync_end, vsync_start, vsync_end;
+
+	if (data->mspc->ms_Special) {
+	    hsync_start = data->mspc->ms_Special->hsync.asi_Start;
+	    hsync_end   = data->mspc->ms_Special->hsync.asi_Stop;
+	    vsync_start = data->mspc->ms_Special->vsync.asi_Start;
+	    vsync_end   = data->mspc->ms_Special->vsync.asi_Stop;
+	} else {
+	    /* Special failback values that will result in zero margins and sync lengths */
+	    hsync_start = data->hdisp;
+	    hsync_end   = data->hdisp;
+	    vsync_start = data->vdisp;
+	    vsync_end   = data->vdisp;
+	}
+
     	switch (idx)
 	{
 	    case aoHidd_Sync_PixelTime:
 	        if (data->pixelclock) {
-	            /* According to the HOWTO, PixelTime is one million divided by pixelclock in mHz.
-		       Pixelclock is not always a multiple of 1 mHz, but it seems to always be a multiple
-		       of 1 kHz. We rely on this fact in order to be able to calculate everything in integers.
-		       Anyway, this attribute is deprecated, don't use it. */
 		    ULONG khz = data->pixelclock / 1000;
 
 		    *msg->storage = 1000000000 / khz;
@@ -93,27 +136,27 @@ VOID Sync__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		break;
 
 	    case aoHidd_Sync_LeftMargin:
-		*msg->storage = data->htotal - data->hsync_end;
+		*msg->storage = data->htotal - hsync_end;
 		break;
 
 	    case aoHidd_Sync_RightMargin:
-		*msg->storage = data->hsync_start - data->hdisp;
+		*msg->storage = hsync_start - data->hdisp;
 		break;
 
 	    case aoHidd_Sync_HSyncLength:
-		*msg->storage = data->hsync_end - data->hsync_start;
+		*msg->storage = hsync_end - hsync_start;
 		break;
 
 	    case aoHidd_Sync_UpperMargin:
-		*msg->storage = data->vtotal - data->vsync_end;
+		*msg->storage = data->mspc->total_rows - vsync_end;
 		break;
 
 	    case aoHidd_Sync_LowerMargin:
-		*msg->storage = data->vsync_end - data->vdisp;
+		*msg->storage = vsync_end - data->vdisp;
 		break;
 
 	    case aoHidd_Sync_VSyncLength:
-		*msg->storage = data->vsync_end - data->vsync_start;
+		*msg->storage = vsync_end - vsync_start;
 		break;
 
 	    case aoHidd_Sync_HDisp:
@@ -125,11 +168,11 @@ VOID Sync__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		break;
 
 	    case aoHidd_Sync_HSyncStart:
-		*msg->storage = data->hsync_start;
+		*msg->storage = hsync_start;
 		break;
 
 	    case aoHidd_Sync_HSyncEnd:
-		*msg->storage = data->hsync_end;
+		*msg->storage = hsync_end;
 		break;
 
 	    case aoHidd_Sync_HTotal:
@@ -137,15 +180,15 @@ VOID Sync__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		break;
 
 	    case aoHidd_Sync_VSyncStart:
-		*msg->storage = data->vsync_start;
+		*msg->storage = vsync_start;
 		break;
 
 	    case aoHidd_Sync_VSyncEnd:
-		*msg->storage = data->vsync_end;
+		*msg->storage = vsync_end;
 		break;
 
 	    case aoHidd_Sync_VTotal:
-		*msg->storage = data->vtotal;
+		*msg->storage = data->mspc->total_rows;
 		break;
 
 	    case aoHidd_Sync_Description:
@@ -169,7 +212,19 @@ VOID Sync__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		break;
 
 	    case aoHidd_Sync_Flags:
-	    *msg->storage = data->flags;
+	        *msg->storage = data->flags;
+		break;
+
+	    case aoHidd_Sync_Variable:
+	        *msg->storage = (data->InternalFlags & SYNC_VARIABLE) ? TRUE : FALSE;
+	        break;
+
+	    case aoHidd_Sync_MonitorSpec:
+	        *msg->storage = (IPTR)data->mspc;
+		break;
+
+	    case aoHidd_Sync_GfxHidd:
+		*msg->storage = (IPTR)data->gfxhidd;
 		break;
 
 	    default:
@@ -181,12 +236,7 @@ VOID Sync__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     
     }
     else
-    {
-    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    }
-    
-    return;
-    
+    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg); 
 }
 
 /****************************************************************************************/
@@ -194,8 +244,248 @@ VOID Sync__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 void Sync__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     struct sync_data *data = OOP_INST_DATA(cl, o);
-    DECLARE_ATTRCHECK(sync);
 
-    if (data->variable)
-        parse_sync_tags(msg->attrList, data, ATTRCHECK(sync), CSD(cl));
+    parse_sync_tags(msg->attrList, data, FALSE, CSD(cl));
+}
+
+/****************************************************************************************/
+
+/*
+ * A backwards compatibility callback that recalculates new htotal value from
+ * MonitorSpec->total_colorclocks.
+ * Future sync editor for AROS will not have to use this API. Instead it is
+ * suggested to use OOP API on a sync object, obtained via VecInfo. It is
+ * more straightforward and flexible.
+ */
+
+static void do_monitor(struct MonitorSpec *mspc)
+{
+    struct sync_data *data = (struct sync_data *)mspc->ms_Special->reserved1;
+
+    data->htotal = 100000000 / mspc->total_colorclocks / 28 / data->pixelclock;
+
+    if (data->gfxhidd)
+        HIDD_Gfx_SetMode(data->gfxhidd, data->sync);
+}
+
+/****************************************************************************************/
+
+/*
+    Parses the tags supplied in 'tags' and puts the result into 'data'.
+    It also checks to see if all needed attrs are supplied.
+*/
+
+#define SYAO(x) (aoHidd_Sync_ ## x)
+
+static BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, BOOL init, struct class_static_data *csd)
+{
+    DECLARE_ATTRCHECK(sync);
+    IPTR attrs[num_Hidd_Sync_Attrs] = {0};
+    BOOL ok = TRUE;
+    UWORD hsync_start, hsync_end, vsync_start, vsync_end;
+    BOOL have_hsync_start, have_hsync_end, have_vsync_start, have_vsync_end;
+    BOOL change_totclk = init;
+    BOOL notify_driver = FALSE;
+
+    if (0 != OOP_ParseAttrs(tags, attrs, num_Hidd_Sync_Attrs, &ATTRCHECK(sync), csd->hiddSyncAttrBase))
+    {
+	D(bug("!!! parse_sync_tags: ERROR PARSING ATTRS !!!\n"));
+	return FALSE;
+    }
+
+    /* The only attribute that can be always set */
+    if (attrs[SYAO(GfxHidd)])
+        data->gfxhidd = (OOP_Object *)attrs[SYAO(GfxHidd)];
+
+    if (init) {
+	/* The following can be processed only during init */
+
+	/* We must have a MonitorSpec. Either it's pre-cooked by the driver (useful for Amiga(tm)
+	   chipset), or we create it ourselves */
+	if (GOT_SYNC_ATTR(MonitorSpec))
+            data->mspc = (struct MonitorSpec *)attrs[SYAO(MonitorSpec)];
+	else {
+	    data->mspc = (struct MonitorSpec *)GfxNew(MONITOR_SPEC_TYPE);
+	    if (!data->mspc)
+	        return FALSE;
+	    data->mspc->ms_Node.xln_Name = data->description;
+	    InitSemaphore(&data->mspc->DisplayInfoDataBaseSemaphore);
+	    NewList(&data->mspc->DisplayInfoDataBase);
+
+	    data->InternalFlags |= SYNC_FREE_MONITORSPEC;
+	}
+
+	if (GOT_SYNC_ATTR(Flags))
+	    data->flags = attrs[SYAO(Flags)];
+
+	if (GOT_SYNC_ATTR(Description))
+    	    strlcpy(data->description, (STRPTR)attrs[SYAO(Description)], sizeof(data->description));
+
+	/* During init we must get HDisp and VDisp, so we set the
+           returncode to FALSE if we don't get them */
+	if (GOT_SYNC_ATTR(HDisp))
+	    data->hdisp = attrs[SYAO(HDisp)];
+	else
+            ok = FALSE;
+
+	if (GOT_SYNC_ATTR(VDisp))
+	    data->vdisp = attrs[SYAO(VDisp)];
+	else
+	    ok = FALSE;
+
+	/* By default minimum/maximum bitmap size is equal to display size */
+	if (GOT_SYNC_ATTR(HMin))
+            data->hmin = attrs[SYAO(HMin)];
+	else
+            data->hmin = data->hdisp;
+	if (GOT_SYNC_ATTR(HMax))
+	    data->hmax = attrs[SYAO(HMax)];
+	else
+	    data->hmax = data->hdisp;
+	if (GOT_SYNC_ATTR(VMin))
+            data->vmin = attrs[SYAO(VMin)];
+	else
+            data->vmin = data->vdisp;
+	if (GOT_SYNC_ATTR(VMax))
+	    data->vmax = attrs[SYAO(VMax)];
+	else
+	    data->vmax = data->vdisp;
+
+	if (attrs[SYAO(Variable)])
+	    data->InternalFlags |= SYNC_VARIABLE;
+	
+	if (ok) {
+	    ObtainSemaphore(GfxBase->MonitorListSemaphore);
+	    /* FIXME: use Enqueue() here after switch to ABI v1 */
+	    AddTail(&GfxBase->MonitorList, (struct Node*)data->mspc);
+	    ReleaseSemaphore(GfxBase->MonitorListSemaphore);
+	    data->InternalFlags |= SYNC_REMOVE_MONITORSPEC;
+	}
+	
+    } else if (!(data->InternalFlags & SYNC_VARIABLE))
+        /* During set, we don't process further data if the object
+	   is marked as non-variable */
+        return ok;
+
+    /* Now parse sync signal parameters. They may come either as start, stop and total
+       values (which most of drivers use), or as LinuxFB-style specification (margins and
+       sync length.
+       The latter specification is deprecated since no drivers except LinuxFB (which is
+       broken anyway) use it. */
+    if (GOT_SYNC_ATTR(PixelClock)) {
+	data->pixelclock = attrs[SYAO(PixelClock)];
+	change_totclk = TRUE;
+    } else if (GOT_SYNC_ATTR(PixelTime)) {
+	/* According to the HOWTO, PixelTime is one million divided by pixelclock in mHz.
+	   Pixelclock is not always a multiple of 1 mHz, but it seems to always be a multiple
+	   of 1 kHz. We rely on this fact in order to be able to calculate everything in integers.
+	   Anyway, this attribute is deprecated, don't use it. */
+        ULONG khz = 1000000000 / attrs[SYAO(PixelTime)];
+
+	data->pixelclock = khz * 1000;
+	change_totclk = TRUE;
+    }
+    D(bug("[sync] PixelClock is set to %u\n", data->pixelclock));
+
+    /* Process sync start/stop */
+    have_hsync_start = GOT_SYNC_ATTR(HSyncStart);
+    if (have_hsync_start) {
+        hsync_start = attrs[SYAO(HSyncStart)];
+    } else if (GOT_SYNC_ATTR(RightMargin)) {
+	hsync_start = data->hdisp + attrs[SYAO(RightMargin)];
+	have_hsync_start = TRUE;
+    }
+
+    have_hsync_end = GOT_SYNC_ATTR(HSyncEnd);
+    if (have_hsync_end)
+	hsync_end = attrs[SYAO(HSyncEnd)];
+    else if (GOT_SYNC_ATTR(HSyncLength)) {
+	hsync_end = hsync_start + attrs[SYAO(HSyncLength)];
+        have_hsync_end = TRUE;
+    } else
+        hsync_end = data->hdisp;
+
+    have_vsync_start = GOT_SYNC_ATTR(VSyncStart);
+    if (have_vsync_start)
+	vsync_start = attrs[SYAO(VSyncStart)];
+    else if (GOT_SYNC_ATTR(LowerMargin)) {
+	vsync_start = data->vdisp + attrs[SYAO(LowerMargin)];
+        have_vsync_start = TRUE;
+    }
+
+    have_vsync_end = GOT_SYNC_ATTR(VSyncEnd);
+    if (have_vsync_end)
+	vsync_end = attrs[SYAO(VSyncEnd)];
+    else if (GOT_SYNC_ATTR(VSyncLength)) {
+	vsync_end = vsync_start + attrs[SYAO(VSyncLength)];
+        have_vsync_end = TRUE;
+    } else
+        vsync_end = data->vdisp;
+
+    if (have_hsync_start || have_hsync_end || have_vsync_start || have_vsync_end) {
+	if (init) {
+	    if (!data->mspc->ms_Special) {
+		data->mspc->ms_Special = (struct SpecialMonitor *)GfxNew(SPECIAL_MONITOR_TYPE);
+		if (data->mspc->ms_Special) {
+		    data->mspc->ms_Special->reserved1 = data;
+		    data->mspc->ms_Flags |= MSF_REQUEST_SPECIAL;
+		    data->InternalFlags |= SYNC_FREE_SPECIALMONITOR;
+		} else
+		    ok = FALSE;
+	    }
+	}
+	notify_driver = TRUE;
+    }
+
+    if (data->mspc->ms_Special) {
+        if (have_hsync_start)
+	    data->mspc->ms_Special->hsync.asi_Start = hsync_start;
+	if (have_hsync_end)
+	    data->mspc->ms_Special->hsync.asi_Stop  = hsync_end;
+	if (have_vsync_start)
+	    data->mspc->ms_Special->vsync.asi_Start = vsync_start;
+	if (have_vsync_end)
+	    data->mspc->ms_Special->vsync.asi_Stop  = vsync_end;
+    }
+
+    if (GOT_SYNC_ATTR(HTotal)) {
+	data->htotal = attrs[SYAO(HTotal)];
+	change_totclk = TRUE;
+    } else {
+        if (GOT_SYNC_ATTR(LeftMargin))
+	    change_totclk = TRUE;
+        /* If we have neither HTotal nor LeftMargin, htotal will be equal to hsync_end here.
+	   Previously, hsync_end gets equal to hdisp if no horizontal sync data was specified.
+           This is done for poor man's drivers which can't provide complete sync information
+	   (like hosted drivers, especially SDL). In this case total = disp, it's better than
+	   nothing. The same is done below with vtotal. */
+        data->htotal = hsync_end + attrs[SYAO(LeftMargin)];
+    }
+
+    if (GOT_SYNC_ATTR(VTotal)) {
+	data->mspc->total_rows = attrs[SYAO(VTotal)];
+	notify_driver = TRUE;
+    } else {
+	data->mspc->total_rows = vsync_end + attrs[SYAO(UpperMargin)];
+	if (GOT_SYNC_ATTR(UpperMargin))
+	    notify_driver = TRUE;
+    }
+
+    if (change_totclk) {
+        if (data->pixelclock)
+            data->mspc->total_colorclocks = 100000000 / (data->pixelclock / data->htotal * 28);
+	else
+	    /* Another kludge for drivers without sync data. Amiga software never expects
+	       to get zero in total_colorclocks, so we have to fill it in with something.
+	       This value will have totally nothing to do with real display refresh rate,
+	       but we can do nothing with it */
+	    data->mspc->total_colorclocks = VGA_COLORCLOCKS;
+	notify_driver = TRUE;
+    }
+
+    /* Notification is needed only during Set() */
+    if ((!init) && notify_driver)
+        HIDD_Gfx_SetMode(data->gfxhidd, data->sync);
+
+    return ok;
 }

@@ -34,6 +34,9 @@
     EXAMPLE
 
     BUGS
+        This function can't work reliably by design. It is subject to removal.
+	Don't use it, use exec reset callbacks from within display drivers
+	instead.
 
     SEE ALSO
 
@@ -44,9 +47,13 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-	
-    OOP_DoMethod(SDD(GfxBase)->gfxhidd_orig, (OOP_Msg)&CDD(GfxBase)->hiddGfxShowImminentReset_MethodID);
+
+    struct monitor_driverdata *mdd;
     
+    /* Call ShowImminentReset() on all drivers */
+    for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next)
+        OOP_DoMethod(mdd->gfxhidd_orig, (OOP_Msg)&CDD(GfxBase)->hiddGfxShowImminentReset_MethodID);
+
     AROS_LIBFUNC_EXIT
-	
+
 } /* ShowImminentReset */

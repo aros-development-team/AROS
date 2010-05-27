@@ -29,7 +29,9 @@ static int GFX_Init(LIBBASETYPEPTR LIBBASE)
     
     EnterFunc(bug("GfxHIDD_Init()\n"));
 
+    csd->GfxBase = NULL;
     NEWLIST(&csd->pflist);
+    InitSemaphore(&csd->sema);
     InitSemaphore(&csd->pfsema);
     InitSemaphore(&csd->rgbconvertfuncs_sem);
 

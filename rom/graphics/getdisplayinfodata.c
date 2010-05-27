@@ -20,31 +20,20 @@
 
 /****************************************************************************************/
 
-struct size_check
+static const ULONG size_checks[] = 
 {
-    ULONG struct_id;
-    ULONG struct_size;
-    STRPTR struct_name;
-};
-
-#define PRIV_DTAG_QHDR 0x80005000
-
-static const struct size_check size_checks[] = 
-{
-    { DTAG_DISP,	sizeof(struct DisplayInfo),	"DisplayInfo"	},
-    { DTAG_DIMS,	sizeof(struct DimensionInfo),	"DimensionInfo"	},
-    { DTAG_MNTR,	sizeof(struct MonitorInfo),	"MonitorInfo"	},
-    { DTAG_NAME,	sizeof(struct NameInfo), 	"NameInfo"	},
-    { DTAG_VEC,		sizeof(struct VecInfo), 	"VecInfo"	},
-    { PRIV_DTAG_QHDR,	sizeof(struct QueryHeader), 	"QueryHeader"	}
-    
+    sizeof(struct DisplayInfo),
+    sizeof(struct DimensionInfo),
+    sizeof(struct MonitorInfo),
+    sizeof(struct NameInfo),
+    sizeof(struct VecInfo)
 };
 
 static ULONG check_sizes(ULONG tagID, ULONG size);
 static ULONG compute_numbits(HIDDT_Pixel mask);
 
 #define DLONGSZ     	    (sizeof (ULONG) * 2)
-#define DTAG_TO_IDX(dtag)   (((dtag) & 0x0000F000) >> 12)
+#define DTAG_TO_IDX(dtag)   (((dtag) & 0x7FFFF000) >> 12)
 
 /*****************************************************************************
 
@@ -99,43 +88,26 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 {
     AROS_LIBFUNC_INIT
 
-    struct monitor_driverdata *mdd;
     struct QueryHeader  *qh;
     ULONG   	    	structsize;
-    OOP_Object      	*sync, *pf;
+    OOP_Object      	*gfxhidd, *sync, *pf;
     HIDDT_ModeID    	hiddmode;
-    ULONG   	    	modeid;
+    struct HIDD_ModeProperties HIDDProps = {0};
 
     if (NULL == handle)
-    {
-	if ((ULONG)INVALID_ID != ID)
-	{
-	    /* Check that ID is a valid modeid */
-	    handle = FindDisplayInfo(ID);
-	} 
-	else
-	{
-	    D(bug("!!! INVALID MODE ID IN GetDisplayInfoData()\n"));
-	    return 0;
-	}
-    }
-
+        /* FindDisplayInfo() handles INVALID_ID itself */
+	handle = FindDisplayInfo(ID);
     if (NULL == handle)
     {
 	D(bug("!!! COULD NOT GET HANDLE IN GetDisplayInfoData()\n"));
 	return 0;
     }
 
-    modeid = GetModeID(handle);
-
-    hiddmode = (HIDDT_ModeID)AMIGA_TO_HIDD_MODEID(modeid);
-
-    mdd = FindDriver(modeid, GfxBase);
-    if (!mdd)
-        return 0;
+    gfxhidd  = DIH(handle)->drv->gfxhidd;
+    hiddmode = DIH(handle)->id;
 
     /* Get mode info from the HIDD */
-    if (!HIDD_Gfx_GetMode(mdd->gfxhidd, hiddmode, &sync, &pf))
+    if (!HIDD_Gfx_GetMode(gfxhidd, hiddmode, &sync, &pf))
     {
 	D(bug("NO VALID MODE PASSED TO GetDisplayInfoData() !!!\n"));
 	return 0;
@@ -143,8 +115,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 
     D(bug("GetDisplayInfoData(handle=%d, modeid=%x, tagID=%x)\n"
     	, (ULONG)handle, modeid, tagID));
-	
-    
+
     /* Build the queryheader */
     structsize = check_sizes(tagID, size);
     if (!structsize)
@@ -152,24 +123,23 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
     qh = AllocMem(structsize, MEMF_CLEAR);
     if (!qh)
         return 0;
-    
+
     /* Fill in the queryheader */
     qh->StructID  = tagID;
-    qh->DisplayID = modeid;
+    qh->DisplayID = ID;
     qh->SkipID	  = TAG_SKIP;
-    
+
     qh->Length	  = (structsize + (DLONGSZ - 1)) / DLONGSZ;
-    
+
     switch (tagID)
     {
     	case DTAG_DISP:
 	{
 	    struct DisplayInfo *di;
 	    IPTR redmask, greenmask, bluemask;
-	    struct HIDD_ModeProperties HIDDProps = {0};
 	    
-	    HIDD_Gfx_ModeProperties(mdd->gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
-	    
+	    HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
+
 	    di = (struct DisplayInfo *)qh;
 	    
 	    /* All modes returned from the HIDD are available */
@@ -234,7 +204,6 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    di->Nominal.MaxX	= width  - 1;
 	    di->Nominal.MaxY	= height - 1;
 
-#warning What about the OSCAN stuff ??
 	    di->MaxOScan	= di->Nominal;
 	    di->VideoOScan	= di->Nominal;
 	    di->TxtOScan	= di->Nominal;
@@ -267,17 +236,12 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	case DTAG_MNTR:
 	{
 	    struct MonitorInfo *mi;
-	    struct HIDD_ModeProperties HIDDProps = {0};
 
-	    if (!HIDD_Gfx_ModeProperties(mdd->gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps))) {
-	    	D(bug("!!! INVALID MODE ID IN GetDisplayInfoData(DTAG_MNTR) !!!\n"));
-		FreeMem(qh, structsize);
-		return 0;
-	    }
+	    HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
 
 	    mi = (struct MonitorInfo *)qh;
 
-	    mi->Mspc = FindMonitor(modeid, GfxBase);
+	    OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&mi->Mspc);
 
 	    /*
 	    mi->ViewPosition.X = ?;
@@ -291,18 +255,20 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    mi->DefaultViewPosition.Y = ?;
 	    */
 
-	    mi->TotalRows         = mi->Mspc->total_rows;
-	    mi->TotalColorClocks  = mi->Mspc->total_colorclocks;
-	    mi->ViewPositionRange = mi->Mspc->ms_LegalView;
+	    if (mi->Mspc) {
+	        mi->TotalRows         = mi->Mspc->total_rows;
+	        mi->TotalColorClocks  = mi->Mspc->total_colorclocks;
+	        mi->ViewPositionRange = mi->Mspc->ms_LegalView;
+	    }
 
-	    mi->PreferredModeID   = modeid;
+	    mi->PreferredModeID   = ID;
 	    mi->Compatibility     = HIDDProps.CompositionFlags ? MCOMPAT_SELF : MCOMPAT_NOBODY;
 
-	    mi->reserved[0] = mdd->gfxhidd;
+	    mi->reserved[0] = (IPTR)gfxhidd;
 
 	    break;
 	}
-	    
+
 	case DTAG_NAME:
 	{
 	    struct NameInfo *ni;
@@ -388,7 +354,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	case DTAG_VEC:
 	{
 	    struct VecInfo *vi = (struct VecInfo *)qh;
-	    
+
 	    vi->reserved[0] = (IPTR)sync;
 	    vi->reserved[1] = (IPTR)pf;
 	    break;
@@ -417,24 +383,16 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 static ULONG check_sizes(ULONG tagID, ULONG size)
 {
     ULONG idx;
-    const struct size_check *sc;
-    
+
     idx = DTAG_TO_IDX(tagID);
-    
+
     if (idx > 5)
     {
     	D(bug("!!! INVALID tagID TO GetDisplayInfoData"));
 	return 0;
     }
-    
-    sc = &size_checks[idx];
-    if (sc->struct_id != tagID)
-    {
-    	D(bug("!!! INVALID tagID TO GetDisplayInfoData"));
-	return 0;
-    }
 
-    return sc->struct_size;
+    return size_checks[idx];
 }
 
 /****************************************************************************************/
@@ -451,8 +409,5 @@ static ULONG compute_numbits(HIDDT_Pixel mask)
     
     return numbits;
 }
-
-/****************************************************************************************/
-
 
 /****************************************************************************************/
