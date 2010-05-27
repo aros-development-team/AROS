@@ -150,7 +150,7 @@ AROS_UFH3(__startup static int, Start,
 
 	if (args[ARG_PDBA]) {
 	    if (port)
-	        PutStr("Direct bitmap access already disabled");
+	        PutStr("Direct bitmap access already disabled\n");
 	    else {
 		if (CreateNewProcTags(NP_Seglist, cli->cli_Module, NP_Entry, PatchTask, NP_Name, "GfxControl patch", TAG_DONE))
 		    cli->cli_Module = NULL;
@@ -170,7 +170,7 @@ AROS_UFH3(__startup static int, Start,
 
 		PutMsg(port, &msg);
 	    } else
-	        PutStr("Direct bitmap access already enabled");
+	        PutStr("Direct bitmap access already enabled\n");
 	}
 
 	if (args[ARG_DUMP])
