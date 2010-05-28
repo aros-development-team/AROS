@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2009, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     $Id: x11kbd.c 26918 2007-10-02 02:55:49Z rob $
 
     Desc: GDI hidd handling keypresses.
@@ -35,7 +35,7 @@
 
 /****************************************************************************************/
 
-static VOID KbdIntHandler(struct gdikbd_data *data, void *p);
+static VOID KbdIntHandler(struct gdikbd_data *data, struct GDI_Control *ctl);
 
 static OOP_AttrBase HiddKbdAB;
 
@@ -101,8 +101,9 @@ OOP_Object * GDIKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     if (o)
     {
 	struct gdikbd_data *data = OOP_INST_DATA(cl, o);
+	struct GDI_Control *ctl = XSD(cl)->ctl;
 	
-	data->interrupt = KrnAddIRQHandler(KEYBOARDDATA->IrqNum, KbdIntHandler, data, NULL);
+	data->interrupt = KrnAddIRQHandler(ctl->KbdIrq, KbdIntHandler, data, ctl);
 	if (data->interrupt) {
 	    data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
 	    data->callbackdata = callbackdata;
@@ -136,12 +137,12 @@ VOID GDIKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
-static VOID KbdIntHandler(struct gdikbd_data *data, void *p)
+static VOID KbdIntHandler(struct gdikbd_data *data, struct GDI_Control *KEYBOARDDATA)
 {
-    WORD *keytable;
+    const WORD *keytable;
     UBYTE numkeys;
     WORD keycode;
-    UWORD eventcode = KEYBOARDDATA->EventCode;
+    UWORD eventcode = KEYBOARDDATA->KbdEvent;
     UWORD rawcode = KEYBOARDDATA->KeyCode;
     
     if (rawcode & 0x0100) {

@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2009, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     $Id: gdimouse.c 24652 2006-08-21 10:35:08Z verhaegs $
 
     Desc: GDI hidd handling mouse events.
@@ -35,7 +35,7 @@ static struct OOP_ABDescr attrbases[] =
     { NULL  	    , NULL  	    }
 };
 
-static VOID MouseIntHandler(struct gdimouse_data *data, void *p);
+static VOID MouseIntHandler(struct gdimouse_data *data, struct GDI_Control *ctl);
 
 /****************************************************************************************/
 
@@ -62,10 +62,11 @@ OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     if (o)
     {
 	struct gdimouse_data *data = OOP_INST_DATA(cl, o);
+	struct GDI_Control   *ctl = XSD(cl)->ctl;
 	struct TagItem       *tag, *tstate;
 	
 	data->buttons = 0;
-	data->interrupt = KrnAddIRQHandler(MOUSEDATA->IrqNum, MouseIntHandler, data, NULL);
+	data->interrupt = KrnAddIRQHandler(ctl->MouseIrq, MouseIntHandler, data, ctl);
 	D(bug("[GDIMouse] Mouse interrupt object: 0x%p\n", data->interrupt));
     	if (data->interrupt) {
 	    tstate = msg->attrList;
@@ -130,19 +131,19 @@ static BOOL check_button(UWORD new, UWORD mask, UWORD arosbutton, struct pHidd_M
         return FALSE;
 }
 
-static VOID MouseIntHandler(struct gdimouse_data *data, void *p)
+static VOID MouseIntHandler(struct gdimouse_data *data, struct GDI_Control *MOUSEDATA)
 {
     struct pHidd_Mouse_Event e;
     UWORD new_buttons;
     BOOL button;
-    /* Due to asynchronous nature of host-side window service thread MOUSEDATA structure acts like hardware registers.
+    /* Due to asynchronous nature of host-side window service thread GDI_Control structure acts like hardware registers.
        There can be many pending events before we get here and the structure will hold a summary of all states, however
-       EventCode will contain only last event. Because of this we read it ASAP and pay as little attention to EventCode
+       MouseEvent will contain only last event. Because of this we read it ASAP and pay as little attention to MouseEvent
        as possible.
     */
-    
+
     D(bug("[GDIMouse] Interrupt\n"));
-    switch(MOUSEDATA->EventCode) {
+    switch(MOUSEDATA->MouseEvent) {
     case WM_MOUSEWHEEL:
         /* Wheel delta comes only with WM_MOUSEWHEEL, otherwise it's zero */
         e.y = -MOUSEDATA->WheelDelta; /* Windows gives us inverted data */

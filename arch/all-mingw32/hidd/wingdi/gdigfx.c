@@ -76,10 +76,6 @@ static struct OOP_ABDescr attrbases[] =
     { NULL  	    	, NULL      	    	}
 };
 
-
-static VOID cleanupgdistuff(struct gdi_staticdata *xsd);
-static BOOL initgdistuff(struct gdi_staticdata *xsd);
-
 void GfxIntHandler(struct gfx_data *data, struct Task *task)
 {
     Signal(task, SIGF_BLIT);
@@ -253,19 +249,22 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
     EnterFunc(bug("GDIGfx::New()\n"));
 
-    /* Do GfxHidd initalization here */
-    if (!initgdistuff(XSD(cl)))
-    {
-	D(kprintf("!!! initgdistuff() FAILED IN GDIGfx::New() !!!\n"));
+    Forbid();
+
+    /* TODO: If we replace "DISPLAY" with something else here,
+       we get a possibility to select on which monitor to work.
+       Perhaps we should have some kind of preferences for this. */
+    display = GDICALL(CreateDC, "DISPLAY", NULL, NULL, NULL);
+    if (!display) {
+        Permit();
 	ReturnPtr("GDIGfx::New()", OOP_Object *, NULL);
     }
-
+    
     /* Fill in sync data */
-    display = XSD(cl)->display;
-    Forbid();
     vfreq  = GDICALL(GetDeviceCaps, display, VREFRESH);
     htotal = GDICALL(GetDeviceCaps, display, HORZRES);
     vtotal = GDICALL(GetDeviceCaps, display, VERTRES);
+
     Permit();
 
     D(bug("[GDI] Display size is %u x %u, Vertical refresh rate is %d Hz\n", htotal, vtotal, vfreq));
@@ -304,6 +303,8 @@ VOID GDICl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
         NATIVECALL(GDI_PutMsg, data->fbwin, WM_CLOSE, 0, 0);
     if (data->cursor)
         USERCALL(DestroyIcon, data->cursor);
+
+    GDICALL(DeleteDC, data->display);
 
     D(bug("GDIGfx::Dispose: calling super\n"));    
     OOP_DoSuperMethod(cl, o, msg);
@@ -436,7 +437,7 @@ static void ShowList(struct gfx_data *data, struct MinList *list)
 	bmdata->node.mln_Succ; bmdata = (struct bitmap_data *)bmdata->node.mln_Succ) {
 	D(bug("[GDI] Showing bitmap data 0x%p, window 0x%p\n", bmdata, bmdata->window));
 	SetSignal(0, SIGF_BLIT);
-	NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, bmdata);
+	NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, (IPTR)bmdata);
 	Wait(SIGF_BLIT);
     }
 }
@@ -449,7 +450,7 @@ ULONG GDICl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_
     void *gfx_int;
     struct MinList new_bitmaps;
 
-    gfx_int = KrnAddIRQHandler(XSD(cl)->ctl->IrqNum, GfxIntHandler, data, me);
+    gfx_int = KrnAddIRQHandler(XSD(cl)->ctl->GfxIrq, GfxIntHandler, data, me);
     if (gfx_int) {
 
 	NewList((struct List *)&new_bitmaps);
@@ -470,14 +471,14 @@ ULONG GDICl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 /****************************************************************************************/
 
-ULONG GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
     struct gfx_data *data = OOP_INST_DATA(cl, o);
     struct Task *me = FindTask(NULL);;
     void *gfx_int;
     struct MinList new_bitmaps;
 
-    gfx_int = KrnAddIRQHandler(XSD(cl)->ctl->IrqNum, GfxIntHandler, data, me);
+    gfx_int = KrnAddIRQHandler(XSD(cl)->ctl->GfxIrq, GfxIntHandler, data, me);
     if (gfx_int) {
 
 	NewList((struct List *)&new_bitmaps);
@@ -588,14 +589,13 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
 		    };
 		    cursor = USERCALL(CreateIconIndirect, &curs);
 		    if (cursor) {
-		        D(bug("[GDI] Created cursor 0x%p\n", cursor));
-			XSD(cl)->ctl->cursor = cursor;
-			USERCALL(SetCursor, cursor);
-		        if (data->cursor) {
-			    D(bug("[GDI] Deleting old cursor 0x%p\n", data->cursor));
-			    USERCALL(DestroyIcon, data->cursor);
-			}
+		        APTR old_cursor = data->cursor;
+			
+			D(bug("[GDI] Created cursor 0x%p, old cursor 0x%p\n", cursor, old_cursor));
 			data->cursor = cursor;
+			USERCALL(SetCursor, cursor);
+		        if (old_cursor)
+			    USERCALL(DestroyIcon, old_cursor);
 		    }
 		    GDICALL(DeleteObject, mask_bm);
 		}
@@ -631,50 +631,31 @@ ULONG GDICl__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd
 
 /****************************************************************************************/
 
-static BOOL initgdistuff(struct gdi_staticdata *xsd)
-{
-    struct Task *me;
-    void *gfx_int;
-
-    EnterFunc(bug("[GDI] initgdistuff()\n"));
-    if (xsd->display) {
-        D(bug("[GDI] Already initialized\n"));
-	return TRUE;
-    }
-
-    Forbid();
-    xsd->display = GDICALL(CreateDC, "DISPLAY", NULL, NULL, NULL);
-    if (xsd->display) {
-	xsd->ctl = NATIVECALL(GDI_Init);
-    }
-    Permit();
-
-    D(bug("[GDI] initgdistuff() done, window controller at 0x%p\n", xsd->ctl));
-    return xsd->ctl ? TRUE : FALSE;
-}
-
-/****************************************************************************************/
-
-static VOID cleanupgdistuff(struct gdi_staticdata *xsd)
-{
-    /* TODO: shutdown the control thread and delete display DC */
-}
-
-/****************************************************************************************/
-
 static int gdigfx_init(LIBBASETYPEPTR LIBBASE) 
 {
     InitSemaphore(&LIBBASE->xsd.sema);
 
-    return OOP_ObtainAttrBases(attrbases);
+    if (OOP_ObtainAttrBases(attrbases)) {
+        D(bug("[GDI] Starting up GDI controller\n"));
+
+	Forbid();
+        LIBBASE->xsd.ctl = NATIVECALL(GDI_Init);
+	Permit();
+	
+	if (LIBBASE->xsd.ctl)
+	    return TRUE;
+    }
+    return FALSE;
 }
 
 /****************************************************************************************/
 
 static int gdigfx_expunge(LIBBASETYPEPTR LIBBASE)
 {
-    cleanupgdistuff(&LIBBASE->xsd);
+    /* TODO: shutdown the control thread */
+
     OOP_ReleaseAttrBases(attrbases);
+
     return TRUE;
 }
 

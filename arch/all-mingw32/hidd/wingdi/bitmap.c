@@ -686,7 +686,7 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
        also get aHidd_BitMap_ModeID with valid value. Currently this seems to be true and i
        beleive it should stay so */
     if (modeid != vHidd_ModeID_Invalid) {
-	OOP_Object *gfx = attrs[AO(GfxHidd)];
+	OOP_Object *gfx = (OOP_Object *)attrs[AO(GfxHidd)];
 	OOP_Object *sync, *pixfmt;
 
 	D(bug("[GDI] Display driver object: 0x%p\n", gfx));

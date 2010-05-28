@@ -11,7 +11,7 @@ void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase)
     bootcfg->self = bootcfg;
     bootcfg->boot = NULL;
     strcpy(bootcfg->defaultgfx.libname,    "wingdi.hidd");
-    strcpy(bootcfg->defaultgfx.hiddname,   "gdi.monitor");
+    strcpy(bootcfg->defaultgfx.hiddname,   "hidd.gfx.gdi");
     strcpy(bootcfg->defaultkbd.libname,    "wingdi.hidd");
     strcpy(bootcfg->defaultkbd.hiddname,   "hidd.kbd.gdi");
     strcpy(bootcfg->defaultmouse.libname,  "wingdi.hidd");

@@ -52,19 +52,18 @@ static ULONG display_class; /* Display window class		   	      */
 static ULONG bitmap_class;  /* Bitmap window class			      */
 static DWORD last_key;      /* Last pressed key - used to suppress autorepeat */
 
-/* Virtual hardware registers - currently statically allocated */
-__declspec(dllexport) struct MouseData GDI_MouseData;
-__declspec(dllexport) struct KeyboardData GDI_KeyboardData;
-struct Gfx_Control gdictl;
+/* Virtual hardware registers */
+static struct GDI_Control gdictl;
 
 /****************************************************************************************/
 
 static ULONG SendKbdIRQ(UINT msg, DWORD key)
 {
     DKBD(printf("[GDI] Keyboard event 0x%04lX key 0x%04lX\n", msg, key));
-    GDI_KeyboardData.EventCode = msg;
-    GDI_KeyboardData.KeyCode = key;
-    return KrnCauseIRQ(GDI_KeyboardData.IrqNum);
+    gdictl.KbdEvent = msg;
+    gdictl.KeyCode = key;
+
+    return KrnCauseIRQ(gdictl.KbdIrq);
 }
 
 /* We have to use this weird hook technique because there's no other way to prevent "Win" keys
@@ -96,19 +95,14 @@ LRESULT CALLBACK key_callback(int code, WPARAM wp, KBDLLHOOKSTRUCT *lp)
 
 LRESULT CALLBACK display_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
 {
-    HDC bitmap_dc, window_dc;
-    PAINTSTRUCT ps;
-    LONG x, y, xsize, ysize;
-    LONG bm_xend, bm_yend;
-    LONG win_xend, win_yend;
-    RECT bg;
-    struct bitmap_data *bmdata;
-    HBRUSH bkgnd;
+    struct gfx_data *gdata;
 
     switch(msg) {
     case WM_SETCURSOR:
-	if (gdictl.cursor) {
-	    SetCursor(gdictl.cursor);
+        gdata = (struct gfx_data *)GetWindowLongPtr(win, GWLP_USERDATA);
+
+	if (gdata->cursor) {
+	    SetCursor(gdata->cursor);
 	    return 0;
 	}
 	break;
@@ -120,12 +114,12 @@ LRESULT CALLBACK display_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
     case WM_MBUTTONDOWN:
     case WM_MBUTTONUP:
     case WM_MOUSEWHEEL:
-        GDI_MouseData.EventCode = msg;
-        GDI_MouseData.MouseX = GET_X_LPARAM(lp);
-    	GDI_MouseData.MouseY = GET_Y_LPARAM(lp);
-    	GDI_MouseData.Buttons = wp & 0x0000FFFF;
-    	GDI_MouseData.WheelDelta = wp >> 16;
-        KrnCauseIRQ(GDI_MouseData.IrqNum);
+        gdictl.MouseEvent = msg;
+        gdictl.MouseX = GET_X_LPARAM(lp);
+    	gdictl.MouseY = GET_Y_LPARAM(lp);
+    	gdictl.Buttons = wp & 0x0000FFFF;
+    	gdictl.WheelDelta = wp >> 16;
+        KrnCauseIRQ(gdictl.MouseIrq);
     	return 0;
 /* This keyboard-related fragment is not used on Windows NT because keyboard hook intercepts all keyboard messages.
    It is left here for Windows 9x. */
@@ -155,14 +149,11 @@ LRESULT CALLBACK display_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
 
 LRESULT CALLBACK bitmap_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
 {
-    HDC bitmap_dc, window_dc;
+    HDC window_dc;
     PAINTSTRUCT ps;
     LONG x, y, xsize, ysize;
     LONG bm_xend, bm_yend;
-    LONG win_xend, win_yend;
-    RECT bg;
     struct bitmap_data *bmdata;
-    HBRUSH bkgnd;
 
     switch(msg) {
     case WM_PAINT:
@@ -180,7 +171,7 @@ LRESULT CALLBACK bitmap_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
     }
 }
 
-DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
+DWORD WINAPI gdithread_entry(struct GDI_Control *ctl)
 {
     HHOOK keyhook;
     BOOL res;
@@ -211,7 +202,9 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
             	    gdata->fbwin = CreateWindow((LPCSTR)display_class, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_VISIBLE,
 					        CW_USEDEFAULT, CW_USEDEFAULT, width,  height, NULL, NULL,
 						display_class_desc.hInstance, NULL);
-            	} else if (gdata->bitmaps.mlh_Head == bmdata) {
+		    if (gdata->fbwin)
+		        SetWindowLongPtr(gdata->fbwin, GWLP_USERDATA, (LONG_PTR)gdata);
+            	} else if ((struct bitmap_data *)gdata->bitmaps.mlh_Head == bmdata) {
 		    /* If the displayed bitmap is the frontmost one, adjust window size */
 		    DWIN(printf("[GDI] Resizing display...\n"));
 		    SetWindowPos(gdata->fbwin, HWND_TOP, 0, 0, width, height, SWP_NOMOVE);
@@ -238,7 +231,7 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
 		        UpdateWindow(bmdata->window);
 		    }
             	}
-            	KrnCauseIRQ(ctl->IrqNum);
+            	KrnCauseIRQ(ctl->GfxIrq);
             	break;
             default:
             	DispatchMessage(&msg);
@@ -256,22 +249,21 @@ DWORD WINAPI gdithread_entry(struct Gfx_Control *ctl)
 
 /****************************************************************************************/
 
-struct Gfx_Control *__declspec(dllexport) GDI_Init(void)
+struct GDI_Control *__declspec(dllexport) GDI_Init(void)
 {
     long irq;
     HANDLE th;
 
     irq = KrnAllocIRQ();
     if (irq != -1) {
-        gdictl.IrqNum = irq;
+        gdictl.GfxIrq = irq;
         irq = KrnAllocIRQ();
 	if (irq != -1) {
-	    GDI_KeyboardData.IrqNum = irq;
+	    gdictl.KbdIrq = irq;
 	    irq = KrnAllocIRQ();
 	    if (irq != -1) {
-	        GDI_MouseData.IrqNum = irq;
-		gdictl.cursor = NULL;
-		
+	        gdictl.MouseIrq = irq;
+
 		display_class_desc.hInstance = GetModuleHandle(NULL);
 		display_class_desc.hIcon = LoadIcon(display_class_desc.hInstance, MAKEINTRESOURCE(101));
 		display_class_desc.hCursor = LoadCursor(NULL, IDC_ARROW);
@@ -295,20 +287,21 @@ struct Gfx_Control *__declspec(dllexport) GDI_Init(void)
 		    }
 		    UnregisterClass((LPCSTR)display_class, display_class_desc.hInstance);
 		}
+		KrnFreeIRQ(gdictl.MouseIrq);
 	    }
-	    KrnFreeIRQ(GDI_KeyboardData.IrqNum);
+	    KrnFreeIRQ(gdictl.KbdIrq);
 	}
-	KrnFreeIRQ(gdictl.IrqNum);
+	KrnFreeIRQ(gdictl.GfxIrq);
     }
     return NULL;
 }
 
-void __declspec(dllexport) GDI_Shutdown(struct Gfx_Control *ctl)
+void __declspec(dllexport) GDI_Shutdown(struct GDI_Control *ctl)
 {
     UnregisterClass((LPCSTR)display_class, display_class_desc.hInstance);
-    KrnFreeIRQ(GDI_MouseData.IrqNum);
-    KrnFreeIRQ(GDI_KeyboardData.IrqNum);
-    KrnFreeIRQ(ctl->IrqNum);
+    KrnFreeIRQ(ctl->MouseIrq);
+    KrnFreeIRQ(ctl->KbdIrq);
+    KrnFreeIRQ(ctl->GfxIrq);
 }
 
 ULONG __declspec(dllexport) GDI_PutMsg(void *window, UINT msg, WPARAM wp, LPARAM lp)
