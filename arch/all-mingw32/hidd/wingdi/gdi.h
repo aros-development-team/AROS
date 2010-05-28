@@ -14,26 +14,22 @@
 #endif
 
 /* GDI virtual hardware registers */
-struct Gfx_Control
+struct GDI_Control
 {
-    unsigned char IrqNum;
-    void *cursor;
-};
+    /* Display */
+    unsigned char  GfxIrq;
 
-struct MouseData
-{
-    unsigned char  IrqNum;
-    unsigned short EventCode;
+    /* Mouse */
+    unsigned char  MouseIrq;
+    unsigned short MouseEvent;
     unsigned short MouseX;
     unsigned short MouseY;
     unsigned short Buttons;
     unsigned short WheelDelta;
-};
 
-struct KeyboardData
-{
-    unsigned char IrqNum;
-    unsigned short EventCode;
+    /* Keyboard */
+    unsigned char  KbdIrq;
+    unsigned short KbdEvent;
     unsigned short KeyCode;
 };
 
@@ -79,24 +75,21 @@ struct gdikbd_data
 
 /***** GDIGfx HIDD *******************/
 
-#define CLID_Hidd_GDIGfx	"gdi.monitor"
+#define CLID_Hidd_GDIGfx	"hidd.gfx.gdi"
 
 struct gdi_staticdata
 {
     struct SignalSemaphore   sema; /* Protecting this whole struct */
-     
-    APTR 	    	     display;	  /* System display object */
-    
+
     OOP_Class 	    	    *gfxclass;
     OOP_Class 	    	    *bmclass;
     OOP_Class 	    	    *mouseclass;
     OOP_Class 	    	    *kbdclass;
     
-    OOP_Object      	    *gfxhidd;
     OOP_Object      	    *mousehidd;
     OOP_Object      	    *kbdhidd;
 
-    struct Gfx_Control	    *ctl;
+    struct GDI_Control	    *ctl;
 };
 
 struct gdiclbase

@@ -37,11 +37,9 @@ struct user_func {
 };
 
 struct native_func {
-    struct Gfx_Control *(*GDI_Init)(void);
-    void (*GDI_Shutdown)(struct Gfx_Control *ctl);
+    struct GDI_Control *(*GDI_Init)(void);
+    void (*GDI_Shutdown)(struct GDI_Control *ctl);
     ULONG (*GDI_PutMsg)(void *win, ULONG msg, IPTR wp, IPTR lp);
-    struct MouseData *GDI_MouseData;
-    struct KeyboardData *GDI_KeyboardData;
 };
 
 extern void *gdi_handle;
@@ -60,7 +58,5 @@ extern struct native_func *native_func;
 #define GDICALL(func,...) (gdi_func->func(__VA_ARGS__))
 #define USERCALL(func,...) (user_func->func(__VA_ARGS__))
 #define NATIVECALL(func,...) (native_func->func(__VA_ARGS__))
-#define MOUSEDATA (native_func->GDI_MouseData)
-#define KEYBOARDDATA (native_func->GDI_KeyboardData)
 
 #endif
