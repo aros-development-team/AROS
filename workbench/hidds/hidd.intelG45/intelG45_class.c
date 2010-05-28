@@ -5,7 +5,7 @@
  *      Author: misc
  */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
@@ -38,7 +38,7 @@
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
 #define HiddPCIDeviceAttrBase   (sd->pciAttrBase)
-#define HiddATIBitMapAttrBase   (sd->atiBitMapAttrBase)
+#define HiddGMABitMapAttrBase   (sd->gmaBitMapAttrBase)
 #define HiddBitMapAttrBase  (sd->bitMapAttrBase)
 #define HiddPixFmtAttrBase  (sd->pixFmtAttrBase)
 #define HiddGfxAttrBase     (sd->gfxAttrBase)
@@ -276,6 +276,8 @@ static int G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr, struct TagItem
 		if (edid[36] & 0x01)
 			createSync(cl, 1280, 1024, 75, tagsptr, &poolptr);
 
+		//createSync(cl, 736, 566, 60, tagsptr, &poolptr);
+
 		D(bug("[GMA] Standard timing identification:\n"));
 
 		for (i=38; i < 54; i+=2)
@@ -504,11 +506,6 @@ OOP_Object *METHOD(INTELG45, Root, New)
 	tags->ti_Tag = TAG_DONE;
 	tags->ti_Data = 0;
 
-	for (tags=modetags; tags->ti_Tag != TAG_DONE; tags++)
-	{
-		D(bug("[GMA]   Tag=%08x, Data=%08x\n", tags->ti_Tag, tags->ti_Data));
-	}
-
     struct TagItem mytags[] = {
         { aHidd_Gfx_ModeTags,   (IPTR)modetags  },
         { TAG_MORE, (IPTR)msg->attrList }
@@ -584,8 +581,23 @@ void METHOD(INTELG45, Root, Set)
 			{
 			case aoHidd_Gfx_DPMSLevel:
 				LOCK_HW
-// TODO: Add DPMS function
-				//DPMS(sd, tag->ti_Data);
+				uint32_t adpa = readl(sd->Card.MMIO + G45_ADPA) & ~G45_ADPA_DPMS_MASK;
+				switch (tag->ti_Data)
+				{
+				case vHidd_Gfx_DPMSLevel_On:
+					adpa |= G45_ADPA_DPMS_ON;
+					break;
+				case vHidd_Gfx_DPMSLevel_Off:
+					adpa |= G45_ADPA_DPMS_OFF;
+					break;
+				case vHidd_Gfx_DPMSLevel_Standby:
+					adpa |= G45_ADPA_DPMS_STANDBY;
+					break;
+				case vHidd_Gfx_DPMSLevel_Suspend:
+					adpa |= G45_ADPA_DPMS_SUSPEND;
+					break;
+				}
+				writel(adpa, sd->Card.MMIO + G45_ADPA);
 				sd->dpms = tag->ti_Data;
 
 				UNLOCK_HW
@@ -604,9 +616,9 @@ OOP_Object *METHOD(INTELG45, Hidd_Gfx, Show)
     {
     	GMABitMap_t *bm = OOP_INST_DATA(OOP_OCLASS(msg->bitMap), msg->bitMap);
 
-    	D(bug("[GMA] Show()"));
+    	D(bug("[GMA] Show(%p)\n", msg->bitMap));
 
-        if (bm->state)
+        if (bm->state && sd->VisibleBitmap != bm)
         {
             /* Suppose bm has properly allocated state structure */
             if (bm->fbgfx)
@@ -625,6 +637,8 @@ OOP_Object *METHOD(INTELG45, Hidd_Gfx, Show)
                 RADEONEngineRestore(sd);
 #endif
 
+                sd->VisibleBitmap = bm;
+
                 UNLOCK_HW
             }
         }
@@ -634,7 +648,7 @@ OOP_Object *METHOD(INTELG45, Hidd_Gfx, Show)
     	/* Blank screen */
     }
 
-    return msg->bitMap;
+    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 OOP_Object *METHOD(INTELG45, Hidd_Gfx, NewBitMap)
@@ -810,4 +824,106 @@ BOOL METHOD(INTELG45, Hidd_Gfx, SetCursorShape)
     }
 
     return TRUE;
+}
+
+void METHOD(INTELG45, Hidd_Gfx, CopyBox)
+{
+    ULONG mode = GC_DRMD(msg->gc);
+    IPTR src=0, dst=0;
+
+    /* Check whether we can get Drawable attribute of our ATI class */
+    OOP_GetAttr(msg->src,   aHidd_GMABitMap_Drawable,   &src);
+    OOP_GetAttr(msg->dest,  aHidd_GMABitMap_Drawable,   &dst);
+
+    if (!dst || !src)
+    {
+        /* No. One of the bitmaps is not an ATI bitmap */
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    }
+    else
+    {
+        /* Yes. Get the instance data of both bitmaps */
+        GMABitMap_t *bm_src = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
+        GMABitMap_t *bm_dst = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
+
+//        D(bug("[GMA] CopyBox(src(%p,%d:%d@%d),dst(%p,%d:%d@%d),%d:%d\n",
+//                bm_src->framebuffer,msg->srcX,msg->srcY,bm_src->depth,
+//                bm_dst->framebuffer,msg->destX,msg->destY,bm_dst->depth,
+//                msg->width, msg->height));
+
+        /* Case -1: (To be fixed) one of the bitmaps have chunky outside GFX mem */
+        if (!bm_src->fbgfx || !bm_dst->fbgfx)
+        {
+        	D(bug("[GMA] one of bitmaps outside VRAM! CopyBox(src(%p,%d:%d@%d),dst(%p,%d:%d@%d),%d:%d\n",
+        			bm_src->framebuffer,msg->srcX,msg->srcY,bm_src->depth,
+        			bm_dst->framebuffer,msg->destX,msg->destY,bm_dst->depth,
+        			msg->width, msg->height));
+
+        	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        }
+        /* Case 0: one of bitmaps is 8bpp, whereas the other is TrueColor one */
+        else if ((bm_src->depth <= 8 || bm_dst->depth <= 8) &&
+            (bm_src->depth != bm_dst->depth))
+        {
+            /* Unsupported case */
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            return;
+        }
+        /* Case 1: both bitmaps have the same depth - use Blit engine */
+        else if (bm_src->depth == bm_dst->depth)
+        {
+        	LOCK_MULTI_BITMAP
+            LOCK_BITMAP_BM(bm_src)
+            LOCK_BITMAP_BM(bm_dst)
+            UNLOCK_MULTI_BITMAP
+
+            LOCK_HW
+
+            uint32_t br00, br13, br22, br23, br09, br11, br26, br12;
+
+            br00 = (2 << 29) | (0x53 << 22) | (6);
+            if (bm_dst->bpp == 4)
+            	br00 |= 3 << 20;
+
+            br13 = bm_dst->pitch | ROP_table[mode].rop;
+            if (bm_dst->bpp == 4)
+            	br13 |= 3 << 24;
+            else if (bm_dst->bpp == 2)
+            	br13 |= 1 << 24;
+
+            br22 = msg->destX | (msg->destY << 16);
+            br23 = (msg->destX + msg->width) | (msg->destY + msg->height) << 16;
+            br09 = bm_dst->framebuffer;
+            br11 = bm_src->pitch;
+            br26 = msg->srcX | (msg->srcY << 16);
+            br12 = bm_src->framebuffer;
+
+            START_RING(8);
+
+            OUT_RING(br00);
+            OUT_RING(br13);
+            OUT_RING(br22);
+            OUT_RING(br23);
+            OUT_RING(br09);
+            OUT_RING(br26);
+            OUT_RING(br11);
+            OUT_RING(br12);
+
+            ADVANCE_RING();
+
+            UNLOCK_HW
+
+            UNLOCK_BITMAP_BM(bm_src)
+            UNLOCK_BITMAP_BM(bm_dst)
+        }
+        else /* Case 2: different bitmaps. HELP? */
+        {
+        	D(bug("[GMA] Depth mismatch! CopyBox(src(%p,%d:%d@%d),dst(%p,%d:%d@%d),%d:%d\n",
+        			bm_src->framebuffer,msg->srcX,msg->srcY,bm_src->depth,
+        			bm_dst->framebuffer,msg->destX,msg->destY,bm_dst->depth,
+        			msg->width, msg->height));
+
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        }
+    }
 }

@@ -8,7 +8,7 @@
 #include "intelG45_intern.h"
 #include "intelG45_regs.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <aros/symbolsets.h>

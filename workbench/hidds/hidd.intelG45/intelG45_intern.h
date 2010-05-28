@@ -33,10 +33,46 @@ extern OOP_AttrBase HiddBitMapAttrBase;
 extern OOP_AttrBase HiddPixFmtAttrBase;
 extern OOP_AttrBase HiddSyncAttrBase;
 extern OOP_AttrBase HiddGfxAttrBase;
-extern OOP_AttrBase HiddIntelG45BitMapAttrBase;
+extern OOP_AttrBase HiddGMABitMapAttrBase;
 extern OOP_AttrBase HiddI2CAttrBase;
 extern OOP_AttrBase HiddI2CDeviceAttrBase;
 extern OOP_AttrBase __IHidd_PlanarBM;
+
+typedef struct {
+	uint32_t	fp;				// G45_FPA0
+	uint32_t	dpll;			// G45_DPLL_A
+	uint32_t	dpll_md_reg;	// G45_DPLL_A_MD
+	uint32_t	pipeconf;		// G45_PIPEACONF
+	uint32_t	pipesrc;		// G45_PIPEASRC
+	uint32_t	dspcntr;		// G45_DSPACNTR
+	uint32_t	dspsurf;		// G45_DSPASURF
+	uint32_t	dsplinoff;		// G45_DSPALINOFF
+	uint32_t	dspstride;		// G45_DSPASTRIDE
+	uint32_t	htotal;			// G45_HTOTAL_A
+	uint32_t	hblank;			// G45_HBLANK_A
+	uint32_t	hsync;			// G45_HSYNC_A
+	uint32_t	vtotal;			// G45_VTOTAL_A
+	uint32_t	vblank;			// G45_VBLANK_A
+	uint32_t	vsync;			// G45_VSYNC_A
+	uint32_t	adpa;			// G45_ADPA
+} GMAState_t;
+
+
+typedef struct {
+    struct SignalSemaphore bmLock;
+
+    OOP_Object *bitmap;    // BitMap OOP Object
+    intptr_t	framebuffer;    // Points to pixel data
+    uint16_t	width;      // Bitmap width
+    uint16_t	height;     // Bitmap height
+    uint16_t	pitch;      // BytesPerRow aligned
+    uint8_t		depth;      // Bitmap depth
+    uint8_t		bpp;        // BytesPerPixel
+    uint8_t		onbm;       // is onbitmap?
+    uint8_t		fbgfx;      // is framebuffer in gfx memory
+    uint64_t	usecount;   // counts BitMap accesses
+    GMAState_t *state;
+} GMABitMap_t;
 
 typedef struct {
 	uint8_t		h_min;		/* Minimal horizontal frequency in kHz */
@@ -69,6 +105,19 @@ struct g45staticdata {
 
 	HIDDT_DPMSLevel			dpms;
 
+	GMABitMap_t *			Engine2DOwner;
+
+	GMABitMap_t *			VisibleBitmap;
+
+	GMAState_t *			initialState;
+	intptr_t				initialBitMap;
+
+	intptr_t				RingBuffer;
+	uint32_t				RingBufferSize;
+	uint32_t				RingBufferTail;
+	char *					RingBufferPhys;
+	char					RingActive;
+
 	OOP_Class *				IntelG45Class;
 	OOP_Class *				IntelI2C;
 	OOP_Class *				BMClass;
@@ -77,12 +126,18 @@ struct g45staticdata {
 	OOP_Object *			PCIDevice;
 	OOP_Object * 			GMAObject;
 
+	intptr_t				ScratchArea;
+	intptr_t				AttachedMemory;
+	intptr_t				AttachedSize;
+
+	volatile uint32_t *	HardwareStatusPage;
+
 	intptr_t				CursorImage;
 	intptr_t				CursorBase;
     BOOL					CursorVisible;
 
 	OOP_AttrBase			pciAttrBase;
-	OOP_AttrBase			atiBitMapAttrBase;
+	OOP_AttrBase			gmaBitMapAttrBase;
 	OOP_AttrBase			bitMapAttrBase;
 	OOP_AttrBase			pixFmtAttrBase;
 	OOP_AttrBase			gfxAttrBase;
@@ -90,6 +145,26 @@ struct g45staticdata {
 	OOP_AttrBase			i2cAttrBase;
 	OOP_AttrBase			i2cDeviceAttrBase;
 	OOP_AttrBase			planarAttrBase;
+
+    OOP_MethodID    mid_ReadLong;
+    OOP_MethodID    mid_CopyMemBox8;
+    OOP_MethodID    mid_CopyMemBox16;
+    OOP_MethodID    mid_CopyMemBox32;
+    OOP_MethodID    mid_PutMem32Image8;
+    OOP_MethodID    mid_PutMem32Image16;
+    OOP_MethodID    mid_GetMem32Image8;
+    OOP_MethodID    mid_GetMem32Image16;
+    OOP_MethodID    mid_GetImage;
+    OOP_MethodID    mid_Clear;
+    OOP_MethodID    mid_PutMemTemplate8;
+    OOP_MethodID    mid_PutMemTemplate16;
+    OOP_MethodID    mid_PutMemTemplate32;
+    OOP_MethodID    mid_PutMemPattern8;
+    OOP_MethodID    mid_PutMemPattern16;
+    OOP_MethodID    mid_PutMemPattern32;
+    OOP_MethodID    mid_CopyLUTMemBox16;
+    OOP_MethodID    mid_CopyLUTMemBox32;
+
 };
 
 struct intelg45base {
@@ -97,39 +172,17 @@ struct intelg45base {
 	struct g45staticdata	g45_sd;
 };
 
-typedef struct {
-	uint32_t	fp;				// G45_FPA0
-	uint32_t	dpll;			// G45_DPLL_A
-	uint32_t	dpll_md_reg;	// G45_DPLL_A_MD
-	uint32_t	pipeconf;		// G45_PIPEACONF
-	uint32_t	pipesrc;		// G45_PIPEASRC
-	uint32_t	dspcntr;		// G45_DSPACNTR
-	uint32_t	dspsurf;		// G45_DSPASURF
-	uint32_t	dsplinoff;		// G45_DSPALINOFF
-	uint32_t	dspstride;		// G45_DSPASTRIDE
-	uint32_t	htotal;			// G45_HTOTAL_A
-	uint32_t	hblank;			// G45_HBLANK_A
-	uint32_t	hsync;			// G45_HSYNC_A
-	uint32_t	vtotal;			// G45_VTOTAL_A
-	uint32_t	vblank;			// G45_VBLANK_A
-	uint32_t	vsync;			// G45_VSYNC_A
-} GMAState_t;
+enum {
+    aoHidd_GMABitMap_Drawable,
 
-typedef struct {
-    struct SignalSemaphore bmLock;
+    num_Hidd_GMABitMap_Attrs
+};
 
-    OOP_Object *bitmap;    // BitMap OOP Object
-    intptr_t	framebuffer;    // Points to pixel data
-    uint16_t	width;      // Bitmap width
-    uint16_t	height;     // Bitmap height
-    uint16_t	pitch;      // BytesPerRow aligned
-    uint8_t		depth;      // Bitmap depth
-    uint8_t		bpp;        // BytesPerPixel
-    uint8_t		onbm;       // is onbitmap?
-    uint8_t		fbgfx;      // is framebuffer in gfx memory
-    uint64_t	usecount;   // counts BitMap accesses
-    GMAState_t *state;
-} GMABitMap_t;
+#define aHidd_GMABitMap_Drawable (HiddGMABitMapAttrBase + aoHidd_GMABitMap_Drawable)
+
+#define IS_BM_ATTR(attr, idx) (((idx)=(attr)-HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
+#define IS_GMABM_ATTR(attr, idx) (((idx)=(attr)-HiddGMABitMapAttrBase) < num_Hidd_GMABitMap_Attrs)
+
 
 #define BASE(lib) ((struct intelg45base*)(lib))
 
@@ -158,6 +211,9 @@ typedef struct {
 
 intptr_t G45_VirtualToPhysical(struct g45staticdata *sd, intptr_t virtual);
 void G45_AttachMemory(struct g45staticdata *sd, intptr_t physical, intptr_t virtual, intptr_t length);
+void G45_AttachCacheableMemory(struct g45staticdata *sd, intptr_t physical, intptr_t virtual, intptr_t length);
+void G45_DetachMemory(struct g45staticdata *sd, intptr_t virtual, intptr_t length);
+
 void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
 		uint16_t width, uint16_t height, uint8_t depth, uint32_t pixelclock, intptr_t framebuffer,
         uint16_t hdisp, uint16_t vdisp, uint16_t hstart, uint16_t hend, uint16_t htotal,
