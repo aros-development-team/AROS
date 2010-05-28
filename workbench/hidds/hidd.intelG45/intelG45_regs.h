@@ -27,6 +27,26 @@
 #define G45_MSAC			0x62
 
 
+/* Ring buffer registers */
+#define G45_RING_TAIL					0x2030
+#define G45_RING_TAIL_MASK				0x1ffff8
+
+#define G45_RING_HEAD					0x2034
+#define G45_RING_HEAD_WRAP_MASK		0x7ff
+#define G45_RING_HEAD_WRAP_SHIFT		21
+#define G45_RING_HEAD_MASK				0x1ffffc
+
+#define G45_RING_BASE					0x2038
+#define G45_RING_BASE_MASK				0xfffff000
+
+#define G45_RING_CONTROL				0x203c
+#define G45_RING_CONTROL_LENGTH_MASK	0x1ff
+#define G45_RING_CONTROL_LENGTH_SHIFT	12
+#define G45_RING_CONTROL_WAIT			0x00000800
+#define G45_RING_CONTROL_REPORT_OFF	0x00000000
+#define G45_RING_CONTROL_REPORT_64K	0x00000002
+#define G45_RING_CONTROL_REPORT_128K	0x00000006
+#define G45_RING_CONTROL_ENABLE		0x00000001
 
 #define G45_GPIOA			0x5010
 #define G45_GPIOB			0x5014
@@ -144,5 +164,74 @@
 #define writeb(b,addr) do { (*(volatile uint8_t *)  (addr)) = (b); } while (0)
 #define writew(b,addr) do { (*(volatile uint16_t *) (addr)) = (b); } while (0)
 #define writel(b,addr) do { (*(volatile uint32_t *) (addr)) = (b); } while (0)
+
+#define OUT_RING(n) do { \
+	writel((n), &sd->RingBufferPhys[sd->RingBufferTail]); \
+	sd->RingBufferTail += 4; \
+	sd->RingBufferTail %= sd->RingBufferSize; \
+} while(0)
+
+#define START_RING(n) do { \
+	uint32_t head, tail, space; \
+	do { \
+		head = readl(sd->Card.MMIO + G45_RING_HEAD) & G45_RING_HEAD_MASK; \
+		tail = sd->RingBufferTail; \
+		if (tail >= head) \
+			space = sd->RingBufferSize - (tail - head); \
+		else \
+			space = head - tail; \
+		if (space > 256) space-= 256; \
+		else space = 0; \
+	} while(space < (n)*4); \
+} while(0)
+
+#define ADVANCE_RING() do { sd->RingActive = 1; writel(sd->RingBufferTail, sd->Card.MMIO + G45_RING_TAIL); } while(0)
+
+#define WAIT_IDLE() if (sd->RingActive) do { \
+	uint32_t head, tail; \
+	do { \
+		head = readl(sd->Card.MMIO + G45_RING_HEAD) & G45_RING_HEAD_MASK; \
+		tail = readl(sd->Card.MMIO + G45_RING_TAIL) & G45_RING_TAIL_MASK; \
+	} while(head != tail); sd->RingActive = 0; \
+} while(0)
+
+struct __ROP {
+    int rop;
+    int pattern;
+};
+
+extern struct __ROP ROP_table[];
+
+#define ROP3_ZERO             0x00000000
+#define ROP3_DSa              0x00880000
+#define ROP3_SDna             0x00440000
+#define ROP3_S                0x00cc0000
+#define ROP3_DSna             0x00220000
+#define ROP3_D                0x00aa0000
+#define ROP3_DSx              0x00660000
+#define ROP3_DSo              0x00ee0000
+#define ROP3_DSon             0x00110000
+#define ROP3_DSxn             0x00990000
+#define ROP3_Dn               0x00550000
+#define ROP3_SDno             0x00dd0000
+#define ROP3_Sn               0x00330000
+#define ROP3_DSno             0x00bb0000
+#define ROP3_DSan             0x00770000
+#define ROP3_ONE              0x00ff0000
+#define ROP3_DPa              0x00a00000
+#define ROP3_PDna             0x00500000
+#define ROP3_P                0x00f00000
+#define ROP3_DPna             0x000a0000
+#define ROP3_D                0x00aa0000
+#define ROP3_DPx              0x005a0000
+#define ROP3_DPo              0x00fa0000
+#define ROP3_DPon             0x00050000
+#define ROP3_PDxn             0x00a50000
+#define ROP3_PDno             0x00f50000
+#define ROP3_Pn               0x000f0000
+#define ROP3_DPno             0x00af0000
+#define ROP3_DPan             0x005f0000
+ //  | (1 << 4) | (1 << 0)
+#define DO_FLUSH() do { if (sd->RingActive) { START_RING(2); OUT_RING((4 << 23)); OUT_RING(0); ADVANCE_RING(); WAIT_IDLE(); } } while(0)
 
 #endif /* INTELG45_REGS_H_ */

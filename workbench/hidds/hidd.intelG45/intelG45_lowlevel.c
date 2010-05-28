@@ -5,7 +5,7 @@
  *      Author: misc
  */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
@@ -224,6 +224,13 @@ void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
 		state->dsplinoff = framebuffer;
 		state->dspstride = (state->dspstride + 63) & ~63;
 
+		state->adpa = 0;
+
+		if (flags & vHidd_Sync_HSyncPlus)
+			state->adpa |= G45_ADPA_HSYNC_PLUS;
+		if (flags & vHidd_Sync_VSyncPlus)
+			state->adpa |= G45_ADPA_VSYNC_PLUS;
+
 		D(bug("[GMA] dpll=%08x\n", state->dpll));
 	}
 }
@@ -232,6 +239,9 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 {
 	int i;
 	D(bug("[GMA] LoadState\n"));
+
+	LOCK_HW
+	DO_FLUSH();
 
 	uint32_t tmp;
 
@@ -336,25 +346,6 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 	D(bug("[GMA] writing dpll=%08x, got %08x\n", state->dpll, readl(sd->Card.MMIO + G45_DPLLA_CTRL)));
 	delay_us(sd, 150);
 
-//	(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
-//	delay_ms(sd, 1);
-//
-//	writel(state->dpll, sd->Card.MMIO + G45_DPLLA_CTRL);
-//	(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
-//	delay_ms(sd, 1);
-//
-//	writel(state->dpll, sd->Card.MMIO + G45_DPLLA_CTRL);
-//	(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
-//	delay_ms(sd, 150);
-//	writel(state->dpll, sd->Card.MMIO + G45_DPLLA_CTRL);
-//	(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
-//	delay_ms(sd, 150);
-//	writel(state->dpll, sd->Card.MMIO + G45_DPLLA_CTRL);
-//	(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
-//	delay_ms(sd, 150);
-
-
-
 	/* protect on again */
 	writel(0x00000000, sd->Card.MMIO + 0x61204);
 
@@ -373,15 +364,15 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 	writel(state->pipeconf, sd->Card.MMIO + G45_PIPEACONF);
 	(void)readl(sd->Card.MMIO + G45_PIPEACONF);
 
-//	writel(readl(sd->Card.MMIO + 0x7003c) | 0x80000000, sd->Card.MMIO + 0x7003c);
-
-
 	writel(state->dspsurf, sd->Card.MMIO + G45_DSPASURF);
 	writel(state->dspstride, sd->Card.MMIO + G45_DSPASTRIDE);
 	writel(state->dsplinoff, sd->Card.MMIO + G45_DSPALINOFF);
 
-	/* Enable DAC*/
+	/* Enable DAC */
 	writel((readl(sd->Card.MMIO + G45_ADPA) & ~G45_ADPA_DPMS_MASK) | G45_ADPA_DPMS_ON, sd->Card.MMIO + G45_ADPA);
+
+	/* Adjust Sync pulse polarity */
+	writel((readl(sd->Card.MMIO + G45_ADPA) & ~(G45_ADPA_VSYNC_PLUS | G45_ADPA_HSYNC_PLUS)) | state->adpa, sd->Card.MMIO + G45_ADPA);
 
 	D(bug("[GMA] Loaded state. dpll=%08x %08x %08x %08x %08x %08x %08x\n", state->dpll,
 			readl(sd->Card.MMIO + G45_HTOTAL_A),
@@ -402,31 +393,7 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 
 	writel(state->dspcntr, sd->Card.MMIO + G45_DSPACNTR);
 
-
-//	for (i=0x06000; i < 0x06024; i+=4)
-//	{
-//		D(bug("[GMA] 0x%05x = %08x\n", i, readl(sd->Card.MMIO + i)));
-//	}
-//	for (i=0x06040; i <= 0x06050; i+=4)
-//		D(bug("[GMA] 0x%05x = %08x\n", i, readl(sd->Card.MMIO + i)));
-//
-//	for (i=0x0606c; i < 0x06070; i+=4)
-//		D(bug("[GMA] 0x%05x = %08x\n", i, readl(sd->Card.MMIO + i)));
-//
-//	for (i=0x06200; i < 0x06214; i+=4)
-//		D(bug("[GMA] 0x%05x = %08x\n", i, readl(sd->Card.MMIO + i)));
-//
-//	for (i=0x60000; i < 0x60070; i+=4)
-//		D(bug("[GMA] 0x%05x = %08x\n", i, readl(sd->Card.MMIO + i)));
-//
-//	for (i=0x61100; i < 0x61104; i+=4)
-//		D(bug("[GMA] 0x%05x = %08x\n", i, readl(sd->Card.MMIO + i)));
-//
-//	for (i=0x70180; i < 0x701a4; i+=4)
-//		D(bug("[GMA] 0x%05x = %08x\n", i, readl(sd->Card.MMIO + i)));
-//
-//	for (i=0x71400; i < 0x71404; i+=4)
-//		D(bug("[GMA] 0x%05x = %08x\n", i, readl(sd->Card.MMIO + i)));
+	UNLOCK_HW
 }
 
 void G45_SaveState(struct g45staticdata *sd, GMAState_t *state)
@@ -442,8 +409,11 @@ IPTR AllocBitmapArea(struct g45staticdata *sd, ULONG width, ULONG height,
     LOCK_HW
 
     Forbid();
-    result = (IPTR)Allocate(&sd->CardMem, ((width * bpp + 63) & ~63) * height);
+    result = (IPTR)Allocate(&sd->CardMem, 1024+((width * bpp + 63) & ~63) * height);
     Permit();
+
+    if (result)
+    	result +=512;
 
     D(bug("[GMA] AllocBitmapArea(%dx%d@%d) = %p\n",
 	width, height, bpp, result));
@@ -451,7 +421,7 @@ IPTR AllocBitmapArea(struct g45staticdata *sd, ULONG width, ULONG height,
 	If Allocate failed, make the 0xffffffff as return. If it succeeded, make
 	the memory pointer relative to the begin of GFX memory
     */
-    if (result == 0) --result;
+    if (result == 0) result--;
     else result -= (IPTR)sd->Card.Framebuffer;
 
     UNLOCK_HW
@@ -463,7 +433,7 @@ IPTR AllocBitmapArea(struct g45staticdata *sd, ULONG width, ULONG height,
 VOID FreeBitmapArea(struct g45staticdata *sd, IPTR bmp, ULONG width, ULONG height,
     ULONG bpp)
 {
-    APTR ptr = (APTR)(bmp + sd->Card.Framebuffer);
+    APTR ptr = (APTR)(bmp + sd->Card.Framebuffer-512);
 
     LOCK_HW
 
@@ -471,9 +441,8 @@ VOID FreeBitmapArea(struct g45staticdata *sd, IPTR bmp, ULONG width, ULONG heigh
 	bmp, width, height, bpp));
 
     Forbid();
-    Deallocate(&sd->CardMem, ptr, ((width * bpp + 63) & ~63) * height);
+    Deallocate(&sd->CardMem, ptr, 1024+((width * bpp + 63) & ~63) * height);
     Permit();
 
     UNLOCK_HW
 }
-
