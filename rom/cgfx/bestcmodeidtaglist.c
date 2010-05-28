@@ -16,7 +16,7 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/cybergraphics_protos.h>
+#include <proto/cybergraphics.h>
 
 	AROS_LH1(ULONG, BestCModeIDTagList,
 
@@ -52,34 +52,34 @@
 
     const struct TagItem *tstate;
     struct TagItem *tag;
-      
-    ULONG nominal_width, nominal_height, depth;
-    ULONG monitorid;
+    struct TagItem modetags[] = {
+	{ BIDTAG_NominalWidth,	800	},
+	{ BIDTAG_NominalHeight,	600	},
+	{ BIDTAG_Depth,		8	},
+	{ BIDTAG_MonitorID,	INVALID_ID},
+	{ TAG_DONE, 0UL }
+    };
+
     STRPTR boardname;
-    ULONG modeid;
-      
-    nominal_width	= 800;
-    nominal_height	= 600;
-    depth		= 8;
-    monitorid		= 0;
+ 
     boardname		= "Blah";
       
     for (tstate = tags; (tag = NextTagItem(&tstate)); ) {
     	switch (tag->ti_Tag) {
 	    case CYBRBIDTG_Depth:
-	    	depth = tag->ti_Data;
+	    	modetags[2].ti_Data = tag->ti_Data;
 	    	break;
 	
 	    case CYBRBIDTG_NominalWidth:
-	        nominal_width = tag->ti_Data;
+	        modetags[0].ti_Data = tag->ti_Data;
 	    	break;
 
 	    case CYBRBIDTG_NominalHeight:
-	        nominal_height = tag->ti_Data;
+	        modetags[1].ti_Data = tag->ti_Data;
 	    	break;
 
 	    case CYBRBIDTG_MonitorID:
-	        monitorid = tag->ti_Data;
+	        modetags[3].ti_Data = tag->ti_Data;
 	    	break;
 
 	    case CYBRBIDTG_BoardName:
@@ -94,28 +94,8 @@
       
     } /* for (each tag in the taglist) */
     
-    if (depth < 8 )  {
-    
-    	/* No request for a cgfx mode */
-    	modeid = INVALID_ID;
-    
-    } else {
-	/* Get the best modeid */
-	struct TagItem modetags[] = {
-	    { BIDTAG_NominalWidth,	nominal_width	},
-	    { BIDTAG_NominalHeight,	nominal_height	},
-	    { BIDTAG_DesiredWidth,	nominal_width	},
-	    { BIDTAG_DesiredHeight,	nominal_height	},
-	    { BIDTAG_Depth,		depth		},
-	    { BIDTAG_MonitorID,		monitorid	},
-	    { TAG_DONE, 0UL }
-	};
-	
-	modeid = BestModeIDA(modetags);
-    }
-    
-    /* Use the data to select a mode */
-    return modeid;
+    /* Get the best modeid */
+    return BestModeIDA(modetags);
 
     AROS_LIBFUNC_EXIT
 } /* BestCModeIDTagList */
