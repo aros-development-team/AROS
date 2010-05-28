@@ -28,7 +28,7 @@
 
 /****************************************************************************************/
 
-static BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, BOOL init, struct class_static_data *);
+static BOOL parse_sync_tags(OOP_Class *cl, OOP_Object *o, struct TagItem *tags, BOOL init);
 
 /****************************************************************************************/
 
@@ -61,10 +61,8 @@ OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     data = OOP_INST_DATA(cl, o);
 
-    ok = parse_sync_tags(msg->attrList, data, TRUE, csd);
-    if (ok)
-        data->sync = o;
-    else {
+    ok = parse_sync_tags(cl, o, msg->attrList, TRUE);
+    if (!ok) {
 	OOP_MethodID dispose_mid;
 
 	D(bug("!!! ERROR PARSING SYNC ATTRS IN Sync::New() !!!\n"));
@@ -83,8 +81,17 @@ VOID Sync__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct sync_data *data = OOP_INST_DATA(cl, o);
     struct class_static_data *csd = CSD(cl);
 
-    if (data->InternalFlags & SYNC_REMOVE_MONITORSPEC)
+    /* First we remove the MonitorSpec from the list, if it's our MonitorSpec
+       and it's in the list */
+    if ((data->InternalFlags & SYNC_FREE_MONITORSPEC) &&
+        data->mspc->ms_Node.xln_Succ) {
+
+	ObtainSemaphore(GfxBase->MonitorListSemaphore);
         Remove((struct Node *)data->mspc);
+	ReleaseSemaphore(GfxBase->MonitorListSemaphore);
+    }
+
+    /* Then we dispose things that we created */
     if (data->InternalFlags & SYNC_FREE_SPECIALMONITOR)
         GfxFree(&data->mspc->ms_Special->spm_Node);
     if (data->InternalFlags & SYNC_FREE_MONITORSPEC)
@@ -236,16 +243,16 @@ VOID Sync__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     
     }
     else
-    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg); 
+    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 /****************************************************************************************/
 
 void Sync__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
-    struct sync_data *data = OOP_INST_DATA(cl, o);
+    parse_sync_tags(cl, o, msg->attrList, FALSE);
 
-    parse_sync_tags(msg->attrList, data, FALSE, CSD(cl));
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg); 
 }
 
 /****************************************************************************************/
@@ -265,7 +272,7 @@ static void do_monitor(struct MonitorSpec *mspc)
     data->htotal = 100000000 / mspc->total_colorclocks / 28 / data->pixelclock;
 
     if (data->gfxhidd)
-        HIDD_Gfx_SetMode(data->gfxhidd, data->sync);
+        HIDD_Gfx_SetMode(data->gfxhidd, (OOP_Object *)mspc->ms_Object);
 }
 
 /****************************************************************************************/
@@ -277,7 +284,7 @@ static void do_monitor(struct MonitorSpec *mspc)
 
 #define SYAO(x) (aoHidd_Sync_ ## x)
 
-static BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, BOOL init, struct class_static_data *csd)
+static BOOL parse_sync_tags(OOP_Class *cl, OOP_Object *o, struct TagItem *tags, BOOL init)
 {
     DECLARE_ATTRCHECK(sync);
     IPTR attrs[num_Hidd_Sync_Attrs] = {0};
@@ -286,16 +293,14 @@ static BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, BOOL i
     BOOL have_hsync_start, have_hsync_end, have_vsync_start, have_vsync_end;
     BOOL change_totclk = init;
     BOOL notify_driver = FALSE;
+    struct sync_data *data = OOP_INST_DATA(cl, o);
+    struct class_static_data *csd = CSD(cl);
 
     if (0 != OOP_ParseAttrs(tags, attrs, num_Hidd_Sync_Attrs, &ATTRCHECK(sync), csd->hiddSyncAttrBase))
     {
 	D(bug("!!! parse_sync_tags: ERROR PARSING ATTRS !!!\n"));
 	return FALSE;
     }
-
-    /* The only attribute that can be always set */
-    if (attrs[SYAO(GfxHidd)])
-        data->gfxhidd = (OOP_Object *)attrs[SYAO(GfxHidd)];
 
     if (init) {
 	/* The following can be processed only during init */
@@ -310,13 +315,10 @@ static BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, BOOL i
 	        return FALSE;
 	    data->mspc->ms_Node.xln_Name = data->description;
 	    InitSemaphore(&data->mspc->DisplayInfoDataBaseSemaphore);
-	    NewList(&data->mspc->DisplayInfoDataBase);
+	    data->mspc->ms_Object = o;
 
 	    data->InternalFlags |= SYNC_FREE_MONITORSPEC;
 	}
-
-	if (GOT_SYNC_ATTR(Flags))
-	    data->flags = attrs[SYAO(Flags)];
 
 	if (GOT_SYNC_ATTR(Description))
     	    strlcpy(data->description, (STRPTR)attrs[SYAO(Description)], sizeof(data->description));
@@ -330,6 +332,11 @@ static BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, BOOL i
 
 	if (GOT_SYNC_ATTR(VDisp))
 	    data->vdisp = attrs[SYAO(VDisp)];
+	else
+	    ok = FALSE;
+	
+	if (GOT_SYNC_ATTR(GfxHidd))
+	    data->gfxhidd = (OOP_Object *)attrs[SYAO(GfxHidd)];
 	else
 	    ok = FALSE;
 
@@ -351,17 +358,11 @@ static BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, BOOL i
 	else
 	    data->vmax = data->vdisp;
 
+	data->flags = attrs[SYAO(Flags)];
+
 	if (attrs[SYAO(Variable)])
 	    data->InternalFlags |= SYNC_VARIABLE;
-	
-	if (ok) {
-	    ObtainSemaphore(GfxBase->MonitorListSemaphore);
-	    /* FIXME: use Enqueue() here after switch to ABI v1 */
-	    AddTail(&GfxBase->MonitorList, (struct Node*)data->mspc);
-	    ReleaseSemaphore(GfxBase->MonitorListSemaphore);
-	    data->InternalFlags |= SYNC_REMOVE_MONITORSPEC;
-	}
-	
+
     } else if (!(data->InternalFlags & SYNC_VARIABLE))
         /* During set, we don't process further data if the object
 	   is marked as non-variable */
@@ -483,9 +484,18 @@ static BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, BOOL i
 	notify_driver = TRUE;
     }
 
-    /* Notification is needed only during Set() */
-    if ((!init) && notify_driver)
-        HIDD_Gfx_SetMode(data->gfxhidd, data->sync);
+    /* Post-processing after success */
+    if (ok) {
+        if (init) {
+            if (data->InternalFlags & SYNC_FREE_MONITORSPEC) {
+		ObtainSemaphore(GfxBase->MonitorListSemaphore);
+		/* FIXME: use Enqueue() here after switch to ABI v1 */
+		AddTail(&GfxBase->MonitorList, (struct Node*)data->mspc);
+		ReleaseSemaphore(GfxBase->MonitorListSemaphore);
+	    }
+	} else if (notify_driver)
+	    HIDD_Gfx_SetMode(data->gfxhidd, (OOP_Object *)data->mspc->ms_Object);
+    }
 
     return ok;
 }

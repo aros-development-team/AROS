@@ -62,6 +62,9 @@ struct MonitorSpec
     LONG (* ms_KillView)();
 };
 
+/* An alias for pointer to associated sync object, AROS-specific */
+#define ms_Object DisplayInfoDataBase.lh_Head
+
 /* ms_Flags */
 #define MSB_REQUEST_NTSC        0
 #define MSF_REQUEST_NTSC    (1<<0)

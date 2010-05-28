@@ -105,7 +105,6 @@ struct sync_data {
     ULONG vmin;
     ULONG vmax;
 
-    OOP_Object *sync;		/* Backpointer to sync object */
     OOP_Object *gfxhidd;	/* Graphics driver that owns this sync */
     ULONG InternalFlags;	/* Internal flags, see below */
 };
@@ -114,7 +113,6 @@ struct sync_data {
 #define SYNC_FREE_MONITORSPEC    0x0001 /* Allocated own MonitorSpec 				*/
 #define SYNC_FREE_SPECIALMONITOR 0x0002 /* Allocated own SpecialMonitor				*/
 #define SYNC_VARIABLE		 0x0004 /* Signal timings can be changed			*/
-#define SYNC_REMOVE_MONITORSPEC  0x0008 /* MonitorSpec was added to the graphics.library list	*/
 
 struct mode_bm {
     UBYTE *bm;

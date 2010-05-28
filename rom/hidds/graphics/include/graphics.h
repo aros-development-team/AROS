@@ -2246,7 +2246,7 @@ enum
 
     aoHidd_Sync_Variable,	/* [I.G] BOOL  - data can be modified */
     aoHidd_Sync_MonitorSpec,	/* [ISG] struct MonitorSpec *	- MonitorSpec structure		     */
-    aoHidd_Sync_GfxHidd,	/* [ISG] OOP_Object *		- Driver to which the object belongs */
+    aoHidd_Sync_GfxHidd,	/* [I.G] OOP_Object *		- Driver to which the object belongs */
 
     num_Hidd_Sync_Attrs
     
