@@ -221,7 +221,7 @@ BOOL __dosboot_InitHidds(struct ExecBase *sysBase, struct DosLibrary *dosBase, A
 	    goto end;
 	}
 
-	if (def_gfx)
+	if (def_gfx && gfxname[0])
 	{
 	    if (!OpenLibrary(BootMenuBase->bm_BootConfig.defaultgfx.libname, 0)) {
 	        success = FALSE;
@@ -281,32 +281,30 @@ static BOOL __dosboot_InitGfx(STRPTR gfxclassname, struct initbase *base)
     struct GfxBase *GfxBase;
     BOOL success = FALSE;
 
-    D(bug("[DOSBoot] __dosboot_InitGfx(hiddbase='%s')\n", gfxclassname)); 
+    D(bug("[DOSBoot] __dosboot_InitGfx(hiddname='%s')\n", gfxclassname));
 
-    GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
+    if (!gfxclassname[0])
+        return TRUE;
+
+    GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
     if (GfxBase)
     {
-    	D(bug("[DOS] __dosboot_InitGfx: gfx.library opened\n"));
+        OOP_Object *gfxhidd;
 
-	/*  Call private gfx.library call to init the HIDD.
-	    Gfx library is responsable for closing the HIDD
-	    library (although it will probably not be neccesary).
-	*/
+    	D(bug("[DOS] __dosboot_InitGfx: graphics.library opened\n"));
 
-    	D(bug("[DOS] __dosboot_InitGfx: calling private gfx LateGfxInit() ...\n"));
-	if (LateGfxInit(gfxclassname))
-	{
-            D(bug("[DOS] __dosboot_InitGfx:    ... success\n"));
-	    /* Now that gfx. is guaranteed to be up & working, let intuition open WB screen */
-	    success = TRUE;
+	gfxhidd = OOP_NewObject(NULL, gfxclassname, NULL);
+	if (gfxhidd) {
+            if (AddDisplayDriverA(gfxhidd, NULL))
+		OOP_DisposeObject(gfxhidd);
+	    else
+		success = TRUE;
 	}
-	D(bug("[DOS] __dosboot_InitGfx: Closing gfx\n"));
 
 	CloseLibrary((struct Library *)GfxBase);
     }
     ReturnBool ("__dosboot_InitGfx", success);
 }
-
 
 static BOOL __dosboot_InitDevice( STRPTR hiddclassname, STRPTR devicename,  struct initbase *base)
 {

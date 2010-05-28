@@ -3,10 +3,7 @@ include $(TOP)/config/make.cfg
 
 FLAGS := $(HOST_CFLAGS) -I$(GENINCDIR)
 
-KEYMAPTABLE_FILE := $(AROS_DEVS)/Keymaps/Host/keycode2rawkey.table
-
-FILES := gdi_hostlib gdigfx bitmap gdikbd gdimouse
-# gdiclipboard xshm fullscreen
+FILES := startup gdi_hostlib gdigfx bitmap gdikbd gdimouse
 
 #MM kernel-hidd-wingdi-kobj : kernel-hidd-wingdi-native
 #MM kernel-hidd-wingdi : kernel-hidd-wingdi-native
