@@ -22,6 +22,7 @@ FILES	  := \
 FUNCTIONS := \
 	addanimob \
 	addbob \
+	adddisplaydrivera \
 	addfont \
 	addvsprite \
 	allocbitmap \
@@ -126,7 +127,6 @@ FUNCTIONS := \
 	initview \
 	initvport \
         ispointinregion \
-	lategfxinit \
 	loadrgb32 \
 	loadrgb4 \
 	loadview \

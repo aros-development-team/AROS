@@ -1,5 +1,5 @@
 /*
-   Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2010, The AROS Development Team. All rights reserved.
    $Id$
 
    Desc: Main bootmenu code
@@ -13,6 +13,7 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
+#include <proto/oop.h>
 #include <devices/keyboard.h>
 #include <devices/rawkeycodes.h>
 #include <devices/timer.h>
@@ -35,24 +36,19 @@
 
 static BOOL init_gfx(STRPTR gfxclassname, struct BootMenuBase *BootMenuBase)
 {
+    OOP_Object *gfxhidd;
     BOOL success = FALSE; 
-    D(bug("[BootMenu] init_gfx(hiddbase='%s')\n", gfxclassname));
 
-    /*  Call private gfx.library call to init the HIDD.
-            Gfx library is responsible for closing the HIDD
-            library (although it will probably not be necessary).
-    */
+    D(bug("[BootMenu] init_gfx('%s')\n", gfxclassname));
 
-    D(bug("[BootMenu] init_gfx: calling private LateGfxInit() ..\n"));
-    if (LateGfxInit(gfxclassname))
-    {
-        D(bug("[BootMenu] init_gfx: calling private LateGfxInit Succeeded\n"));
-        success = TRUE;
+    gfxhidd = OOP_NewObject(NULL, gfxclassname, NULL);
+    if (gfxhidd) {
+        if (AddDisplayDriverA(gfxhidd, NULL))
+	    OOP_DisposeObject(gfxhidd);
+	else
+	    success = TRUE;
     }
-    else
-    {
-        D(bug("[BootMenu] init_gfx: calling private LateGfxInit Failed!\n"));
-    }
+
     ReturnBool ("init_gfxhidd", success);
 }
 
@@ -94,26 +90,22 @@ static BOOL initHidds(struct BootConfig *bootcfg, struct BootMenuBase *BootMenuB
 {
     D(bug("[BootMenu] initHidds()\n"));
 
-    if ((OpenLibrary(bootcfg->defaultgfx.libname, 0)) != NULL)
-    {
-        if ((init_gfx(bootcfg->defaultgfx.hiddname, BootMenuBase)) == TRUE)
-        {
+    if (bootcfg->defaultgfx.hiddname[0]) {
+	if (!OpenLibrary(bootcfg->defaultgfx.libname, 0))
+	    return FALSE;
 
-            if (!bootcfg->defaultmouse.hiddname[0])
-            {
-                    return TRUE;
-            }
+        if (!init_gfx(bootcfg->defaultgfx.hiddname, BootMenuBase))
+	    return FALSE;
+    }
 
-            if ((OpenLibrary(bootcfg->defaultmouse.libname, 0)) != NULL)
-            {
-                if ((init_device(bootcfg->defaultmouse.hiddname, "gameport.device", BootMenuBase)) == TRUE)
-                {
+    if (!bootcfg->defaultmouse.hiddname[0])
+        return TRUE;
 
-                    D(bug("[BootMenu] initHidds: Hidds initialised\n"));
+    if (OpenLibrary(bootcfg->defaultmouse.libname, 0)) {
+        if (init_device(bootcfg->defaultmouse.hiddname, "gameport.device", BootMenuBase)) {
+            D(bug("[BootMenu] initHidds: Hidds initialised\n"));
 
-                    return TRUE;
-                }
-            }
+            return TRUE;
         }
     }
     return FALSE;
