@@ -44,12 +44,14 @@ typedef struct
 
 typedef struct
 {
-    atomic_t lock;
+    /* atomic_t lock; Does not work - causes deadlock */
+    struct SignalSemaphore semaphore;
 } spinlock_t;
 
 typedef struct
 {
-    atomic_t lock;
+    /* atomic_t lock; Does not work - causes deadlock */
+    struct SignalSemaphore semaphore;
 } rwlock_t;
 
 /* Page handling */
