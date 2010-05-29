@@ -210,15 +210,18 @@ static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
 /* Lock handling */
 static inline void spin_lock_init(spinlock_t * lock)
 {
-    atomic_set(&lock->lock, 0);
+    /* atomic_set(&lock->lock, 0); Does not work - causes deadlock */
+    InitSemaphore(&lock->semaphore);
 }
 static inline void spin_lock(spinlock_t * lock)
 {
-    while(atomic_cmpxchg(&lock->lock, 0, 1) != 0);
+    /* while(atomic_cmpxchg(&lock->lock, 0, 1) != 0); Does not work - causes deadlock */
+    ObtainSemaphore(&lock->semaphore);
 }
 static inline void spin_unlock(spinlock_t * lock)
 {
-    atomic_set(&lock->lock, 0);
+    /* atomic_set(&lock->lock, 0); Does not work - causes deadlock */
+    ReleaseSemaphore(&lock->semaphore);
 }
 static inline void spin_lock_irqsave(spinlock_t * lock, unsigned long flags)
 {
@@ -226,11 +229,13 @@ static inline void spin_lock_irqsave(spinlock_t * lock, unsigned long flags)
     
     Disable();
     
-    while(atomic_cmpxchg(&lock->lock, 0, 1) != 0);
+    /* while(atomic_cmpxchg(&lock->lock, 0, 1) != 0);  Does not work - causes deadlock */
+    ObtainSemaphore(&lock->semaphore);
 }
 static inline void spin_unlock_irqrestore(spinlock_t * lock, unsigned long flags)
 {
-    atomic_set(&lock->lock, 0);
+    /* atomic_set(&lock->lock, 0);  Does not work - causes deadlock */
+    ReleaseSemaphore(&lock->semaphore);
 
     Enable();
     
@@ -242,15 +247,18 @@ static inline void spin_unlock_irqrestore(spinlock_t * lock, unsigned long flags
    read_lock allows concurent readers as lock as there is no writer */
 static inline void rwlock_init(rwlock_t * lock)
 {
-    atomic_set(&lock->lock, 0);
+    /* atomic_set(&lock->lock, 0); Does not work - causes deadlock */
+    InitSemaphore(&lock->semaphore);
 }
 static inline void write_lock(rwlock_t * lock)
 {
-    while(atomic_cmpxchg(&lock->lock, 0, 1) != 0);
+    /* while(atomic_cmpxchg(&lock->lock, 0, 1) != 0); Does not work - causes deadlock */
+    ObtainSemaphore(&lock->semaphore);
 }
 static inline void write_unlock(rwlock_t * lock)
 {
-    atomic_set(&lock->lock, 0);
+    /* atomic_set(&lock->lock, 0); Does not work - causes deadlock */
+    ReleaseSemaphore(&lock->semaphore);
 }
 
 /* Reference counted objects implementation */
