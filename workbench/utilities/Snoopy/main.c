@@ -60,7 +60,7 @@ static void SNOOPY_breakpoint(void)
 }
 
 
-void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option, LONG result, BOOL canInterrupt)
+void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option, IPTR result, BOOL canInterrupt)
 {
     struct Task *thistask = SysBase->ThisTask;
     STRPTR name = thistask->tc_Node.ln_Name;

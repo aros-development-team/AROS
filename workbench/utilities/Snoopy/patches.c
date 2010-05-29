@@ -27,41 +27,41 @@
 #define MIN(x,y)      ((x) < (y) ? (x) : (y))
 
 // dos.library
-#define LVO_CreateDir      ( -20  * LIB_VECTSIZE)
-#define LVO_CurrentDir     ( -21  * LIB_VECTSIZE)
-#define LVO_DeleteFile     ( -12  * LIB_VECTSIZE)
-#define LVO_DeleteVar      ( -152 * LIB_VECTSIZE)
-#define LVO_Execute        ( -37  * LIB_VECTSIZE)
-#define LVO_FindVar        ( -153 * LIB_VECTSIZE)
-#define LVO_GetVar         ( -151 * LIB_VECTSIZE)
-#define LVO_LoadSeg        ( -25  * LIB_VECTSIZE)
-#define LVO_Lock           ( -14  * LIB_VECTSIZE)
-#define LVO_MakeLink       ( -74  * LIB_VECTSIZE)
-#define LVO_NewLoadSeg     ( -128 * LIB_VECTSIZE)
-#define LVO_Open           ( -5   * LIB_VECTSIZE)
-#define LVO_Rename         ( -13  * LIB_VECTSIZE)
-#define LVO_RunCommand     ( -84  * LIB_VECTSIZE)
-#define LVO_SetVar         ( -150 * LIB_VECTSIZE)
-#define LVO_SystemTagList  ( -101 * LIB_VECTSIZE)
+#define LVO_CreateDir      ( -20  * (WORD)LIB_VECTSIZE)
+#define LVO_CurrentDir     ( -21  * (WORD)LIB_VECTSIZE)
+#define LVO_DeleteFile     ( -12  * (WORD)LIB_VECTSIZE)
+#define LVO_DeleteVar      ( -152 * (WORD)LIB_VECTSIZE)
+#define LVO_Execute        ( -37  * (WORD)LIB_VECTSIZE)
+#define LVO_FindVar        ( -153 * (WORD)LIB_VECTSIZE)
+#define LVO_GetVar         ( -151 * (WORD)LIB_VECTSIZE)
+#define LVO_LoadSeg        ( -25  * (WORD)LIB_VECTSIZE)
+#define LVO_Lock           ( -14  * (WORD)LIB_VECTSIZE)
+#define LVO_MakeLink       ( -74  * (WORD)LIB_VECTSIZE)
+#define LVO_NewLoadSeg     ( -128 * (WORD)LIB_VECTSIZE)
+#define LVO_Open           ( -5   * (WORD)LIB_VECTSIZE)
+#define LVO_Rename         ( -13  * (WORD)LIB_VECTSIZE)
+#define LVO_RunCommand     ( -84  * (WORD)LIB_VECTSIZE)
+#define LVO_SetVar         ( -150 * (WORD)LIB_VECTSIZE)
+#define LVO_SystemTagList  ( -101 * (WORD)LIB_VECTSIZE)
 
 // exec.library
-#define LVO_FindPort       ( -65  * LIB_VECTSIZE)
-#define LVO_FindResident   ( -16  * LIB_VECTSIZE)
-#define LVO_FindSemaphore  ( -99  * LIB_VECTSIZE)
-#define LVO_FindTask       ( -49  * LIB_VECTSIZE)
-#define LVO_OpenDevice     ( -74  * LIB_VECTSIZE)
-#define LVO_OpenLibrary    ( -92  * LIB_VECTSIZE)
-#define LVO_OpenResource   ( -83  * LIB_VECTSIZE)
+#define LVO_FindPort       ( -65  * (WORD)LIB_VECTSIZE)
+#define LVO_FindResident   ( -16  * (WORD)LIB_VECTSIZE)
+#define LVO_FindSemaphore  ( -99  * (WORD)LIB_VECTSIZE)
+#define LVO_FindTask       ( -49  * (WORD)LIB_VECTSIZE)
+#define LVO_OpenDevice     ( -74  * (WORD)LIB_VECTSIZE)
+#define LVO_OpenLibrary    ( -92  * (WORD)LIB_VECTSIZE)
+#define LVO_OpenResource   ( -83  * (WORD)LIB_VECTSIZE)
 
 // intuition.library
-#define LVO_LockPubScreen  ( -85  * LIB_VECTSIZE)
+#define LVO_LockPubScreen  ( -85  * (WORD)LIB_VECTSIZE)
 
 // graphics.library
-#define LVO_OpenFont       ( -12  * LIB_VECTSIZE)
+#define LVO_OpenFont       ( -12  * (WORD)LIB_VECTSIZE)
 
 // icon.library
-#define LVO_FindToolType   ( -16  * LIB_VECTSIZE)
-#define LVO_MatchToolValue ( -17  * LIB_VECTSIZE)
+#define LVO_FindToolType   ( -16  * (WORD)LIB_VECTSIZE)
+#define LVO_MatchToolValue ( -17  * (WORD)LIB_VECTSIZE)
 
 struct Library *libbases[LIB_last];
 
@@ -126,7 +126,7 @@ AROS_UFH2(BPTR, New_CreateDir,
 
     if (patches[PATCH_CreateDir].enabled)
     {
-	main_output("CreateDir", name, 0, (LONG)result, TRUE);
+	main_output("CreateDir", name, 0, (IPTR)result, TRUE);
     }
 
     return result;
@@ -278,7 +278,7 @@ AROS_UFH3(struct LocalVar *, New_FindVar,
 	else if ((type & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
 	else                             opt = MSG(MSG_UNKNOWN);
 
-	main_output("FindVar", name, opt, (LONG)result, TRUE);
+	main_output("FindVar", name, opt, (IPTR)result, TRUE);
     }
 
     return result;
@@ -336,7 +336,7 @@ AROS_UFH2(BPTR, New_LoadSeg,
 
     if (patches[PATCH_LoadSeg].enabled)
     {
-	main_output("LoadSeg", name, 0, (LONG)result, TRUE);
+	main_output("LoadSeg", name, 0, (IPTR)result, TRUE);
     }
 
     return result;
@@ -376,7 +376,7 @@ AROS_UFH3(BPTR, New_Lock,
 	    curname = "\"\"";
 	}
 
-	main_output("Lock", curname, opt, (LONG)result, TRUE);
+	main_output("Lock", curname, opt, (IPTR)result, TRUE);
     }
 
     return result;
@@ -460,7 +460,7 @@ AROS_UFH3(BPTR, New_NewLoadSeg,
 
     if (patches[PATCH_NewLoadSeg].enabled)
     {
-	main_output("NewLoadSeg", file, 0, (LONG)result, TRUE);
+	main_output("NewLoadSeg", file, 0, (IPTR)result, TRUE);
     }
 
     return result;
@@ -501,7 +501,7 @@ AROS_UFH3 (BPTR, New_Open,
 	}
 	else                                   opt = MSG(MSG_UNKNOWN);
 
-	main_output("Open", name, opt ? opt : (STRPTR)optstr, (LONG)result, TRUE);
+	main_output("Open", name, opt ? opt : (STRPTR)optstr, (IPTR)result, TRUE);
     }
 
     return result;
@@ -674,7 +674,7 @@ AROS_UFH2(struct MsgPort *, New_FindPort,
 
     if (patches[PATCH_FindPort].enabled)
     {
-	main_output("FindPort", name, 0, (LONG)result, TRUE);
+	main_output("FindPort", name, 0, (IPTR)result, TRUE);
     }
     
     return result;
@@ -697,7 +697,7 @@ AROS_UFH2(struct Resident *, New_FindResident,
 
     if (patches[PATCH_FindResident].enabled)
     {
-	main_output("FindResident", name, 0, (LONG)result, TRUE);
+	main_output("FindResident", name, 0, (IPTR)result, TRUE);
     }
     
     return result;
@@ -720,7 +720,7 @@ AROS_UFH2(struct SignalSemaphore *, New_FindSemaphore,
 
     if (patches[PATCH_FindSemaphore].enabled)
     {
-	main_output("FindSemaphore", name, 0, (LONG)result, TRUE);
+	main_output("FindSemaphore", name, 0, (IPTR)result, TRUE);
     }
     
     return result;
@@ -743,7 +743,7 @@ AROS_UFH2(struct Task *, New_FindTask,
 
     if (patches[PATCH_FindTask].enabled)
     {
-	main_output("FindTask", name, 0, (LONG)result, TRUE);
+	main_output("FindTask", name, 0, (IPTR)result, TRUE);
     }
     
     return result;
@@ -801,7 +801,7 @@ AROS_UFH3(struct Library *, New_OpenLibrary,
     {
 	char verstr[20];
 	sprintf(verstr, MSG(MSG_VERSION), version);
-	main_output("OpenLibrary", libName, verstr, (LONG)result, TRUE);
+	main_output("OpenLibrary", libName, verstr, (IPTR)result, TRUE);
     }
     
     return result;
@@ -824,7 +824,7 @@ AROS_UFH2(APTR, New_OpenResource,
 
     if (patches[PATCH_OpenResource].enabled)
     {
-	main_output("OpenLibrary", resName, 0, (LONG)result, TRUE);
+	main_output("OpenLibrary", resName, 0, (IPTR)result, TRUE);
     }
     
     return result;
@@ -847,7 +847,7 @@ AROS_UFH2(struct Screen *, New_LockPubScreen,
 
     if (patches[PATCH_LockPubScreen].enabled)
     {
-	main_output("LockPubScreen", name, 0, (LONG)result, TRUE);
+	main_output("LockPubScreen", name, 0, (IPTR)result, TRUE);
     }
     
     return result;
@@ -880,7 +880,7 @@ AROS_UFH2(struct TextFont *, New_OpenFont,
 	    *sizestr = '\0';
 	    name = "\"\"";
 	}
-	main_output("OpenFont", name, sizestr, (LONG)result, TRUE);
+	main_output("OpenFont", name, sizestr, (IPTR)result, TRUE);
     }
 
     return result;
@@ -905,7 +905,7 @@ AROS_UFH3(UBYTE *, New_FindToolType,
 
     if (patches[PATCH_FindToolType].enabled)
     {
-	main_output("FindToolType", typeName, 0, (LONG)result, TRUE);
+	main_output("FindToolType", typeName, 0, (IPTR)result, TRUE);
     }
 
     return result;
