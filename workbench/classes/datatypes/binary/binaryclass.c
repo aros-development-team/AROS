@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -52,9 +52,11 @@ const UBYTE hexstring[] = "0123456789ABCDEF";
 
 /**************************************************************************************************/
 
-static IPTR NotifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1,...)
+IPTR NotifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, Tag tag1, ...)
 {
-    return DoMethod(o, OM_NOTIFY, (IPTR) &tag1, (IPTR) ginfo, flags);
+    AROS_SLOWSTACKTAGS_PRE(tag1)
+    DoMethod(o, OM_NOTIFY, AROS_SLOWSTACKTAGS_ARG(tag1), (IPTR) ginfo, flags);
+    AROS_SLOWSTACKTAGS_POST
 }
 
 /**************************************************************************************************/

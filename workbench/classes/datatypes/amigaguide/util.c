@@ -216,10 +216,11 @@ void UnInstallClipRegionSafe(struct ClassBase *cb, struct GadgetInfo *ginfo,
 /* ----------------------------- tags support ----------------------------- */
 
 #ifdef __AROS__
-#warning "FIXME: Stupid NotifyAttrs() relying on stack based function param passing, etc."
-ULONG NotifyAttrs(Object * o, void * ginfo, ULONG flags, ...)
+IPTR NotifyAttrs(Object * o, void * ginfo, ULONG flags, Tag tag1, ...)
 {
-	return DoMethod(o, OM_NOTIFY, (IPTR)(&flags + 1), (IPTR)ginfo, flags);
+    AROS_SLOWSTACKTAGS_PRE(tag1)
+    DoMethod(o, OM_NOTIFY, AROS_SLOWSTACKTAGS_ARG(tag1), (IPTR)ginfo, flags);
+    AROS_SLOWSTACKTAGS_POST
 }
 #else
 ULONG NotifyAttrs(Object * obj, void * ginfo, ULONG flags, ...)
@@ -418,7 +419,7 @@ void FreeAGObject(Class *cl, Object *obj, struct AmigaGuideObject *agobj)
          if(agobj->ago_AGNode != NULL && name != NULL)
          {
             BPTR handle = NULL;
-            if(GetDTAttrs(agobj->ago_Object, DTA_Handle, (ULONG) &handle, TAG_DONE) == 1 &&
+            if(GetDTAttrs(agobj->ago_Object, DTA_Handle, (IPTR) &handle, TAG_DONE) == 1 &&
                handle != NULL)
             {
                NameFromFH(handle, name, 1024);
@@ -540,11 +541,15 @@ static BPTR GetObjectDir(Class *cl, Object *obj)
    ULONG type;
    BPTR dir = NULL;
 
-   if(GetDTAttrs(obj,DTA_DataType,  (ULONG) &dt,
-		     DTA_SourceType,(ULONG) &type,
-		     DTA_Handle,    (ULONG) &handle,
+   IPTR val;
+
+   if(GetDTAttrs(obj,DTA_DataType,  (IPTR) &dt,
+		     DTA_SourceType,(IPTR) &val,
+		     DTA_Handle,    (IPTR) &handle,
 		     TAG_DONE) == 3)
    {
+      type = val;
+
       if(handle != NULL && type == DTST_FILE)
       {
          DB(("handle : %lx, type : %ld\n",handle,type));
@@ -681,7 +686,6 @@ LONG mysprintf(struct ClassBase *cb, STRPTR buf, LONG len, STRPTR format,...)
 #elif defined(__AROS__)
 
 #include <stdarg.h>
-#warning "FIXME: stupid mysprintf() relying on vararg params being passed on stack etc."
 
 struct spf
 {
@@ -710,7 +714,7 @@ LONG mysprintf(struct ClassBase *cb, STRPTR buf, LONG len, STRPTR format,...)
 
    va_start(ap, format);
 
-   RawDoFmt(format,ap,(void (*)()) mysprintf_hook, &data);
+   VNewRawDoFmt(format,(void (*)()) mysprintf_hook, &data, ap);
 
    va_end(ap);
 
@@ -823,7 +827,7 @@ ULONG SystemCommand(Class *cl, Object *obj, STRPTR command)
       olddir = CurrentDir(dir);
 
    if((cos = Open("CON:////Output/WAIT/CLOSE/AUTO", MODE_NEWFILE)) != NULL)
-      tags[0].ti_Data = (ULONG) cos;
+      tags[0].ti_Data = (IPTR) cos;
    else
       tags[0].ti_Tag = TAG_IGNORE;
 

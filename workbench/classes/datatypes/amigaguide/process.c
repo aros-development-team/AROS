@@ -168,7 +168,7 @@ ULONG agdtm_rexxcmd(Class *cl, Object *obj, struct RexxMsg *msg)
       {
          UBYTE numbuf[32];
          mysprintf(cb, numbuf, sizeof(numbuf), "%ld", data->ag_File->agf_NodeCount);
-	 msg->rm_Result2 = (ULONG) CreateArgstring(numbuf,strlen(numbuf));
+	 msg->rm_Result2 = (IPTR) CreateArgstring(numbuf,strlen(numbuf));
       } else if(!Stricmp(cmd, "BEEP"))
       {
          DisplayBeep(NULL);
@@ -442,7 +442,7 @@ struct Process *CreateAGProcess(Class *cl, Object *obj)
 #ifdef __AROS__
    if((proc = CreateNewProcTags(NP_Entry, (IPTR)AROS_ASMSYMNAME(asyncmethodfunc),
 				NP_StackSize, 2*8192,
-				NP_Name, (ULONG) "AmigaGuide process",
+				NP_Name, (IPTR) "AmigaGuide process",
 				TAG_DONE)) != NULL)
 #else
    if((proc = CreateNewProcTags(NP_Entry, (ULONG) &GATE_ProcFunc,

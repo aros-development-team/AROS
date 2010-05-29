@@ -434,6 +434,8 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
     struct Line *mark_line1, *mark_line2;
     LONG curlinelen = 0;
 
+    IPTR val1, val2, val3; // storage variables for Get...
+
     fillpen = td->fillpen;
     filltextpen = td->filltextpen;
 
@@ -481,11 +483,15 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
     old_region = installclipregion(rp->Layer,new_region);
 
     GetRPAttrs(rp,
-	       RPTAG_APen, (IPTR) &apen,
-	       RPTAG_BPen, (IPTR) &bpen,
-	       RPTAG_DrMd, (IPTR) &mode,
+	       RPTAG_APen, (IPTR) &val1,
+	       RPTAG_BPen, (IPTR) &val2,
+	       RPTAG_DrMd, (IPTR) &val3,
 	       RPTAG_Font, (IPTR) &oldfont,
 	       TAG_DONE);
+
+    apen = val1;
+    bpen = val2;
+    mode = val3;
 
     SetFont(rp, td->font);
 
@@ -739,6 +745,8 @@ static void DrawMarkedText(struct Text_Data *td, struct RastPort *rp, LONG marke
     struct Line *mark_line1, *mark_line2;
     LONG curlinelen = 0;
 
+    IPTR val1, val2, val3; // storage variables for Get...
+
     fillpen = td->fillpen;
     filltextpen = td->filltextpen;
 
@@ -763,11 +771,15 @@ static void DrawMarkedText(struct Text_Data *td, struct RastPort *rp, LONG marke
     old_region = installclipregion(rp->Layer,new_region);
 
     GetRPAttrs(rp,
-	       RPTAG_APen, (IPTR) &apen,
-	       RPTAG_BPen, (IPTR) &bpen,
-	       RPTAG_DrMd, (IPTR) &mode,
+	       RPTAG_APen, (IPTR) &val1,
+	       RPTAG_BPen, (IPTR) &val2,
+	       RPTAG_DrMd, (IPTR) &val3,
 	       RPTAG_Font, (IPTR) &oldfont,
 	       TAG_DONE);
+
+    apen = val1;
+    bpen = val2;
+    mode = val3;
 
     SetFont(rp, td->font);
 
@@ -2057,9 +2069,11 @@ ULONG	result;
 #ifndef MORPHOS_AG_EXTENSION
 static
 #endif
-VARARGS IPTR notifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1,...)
+VARARGS IPTR notifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, Tag tag1, ...)
 {
-	return DoMethod(o, OM_NOTIFY, (IPTR)&tag1, (IPTR)ginfo, flags);
+    AROS_SLOWSTACKTAGS_PRE(tag1)
+    DoMethod(o, OM_NOTIFY, AROS_SLOWSTACKTAGS_ARG(tag1), (IPTR)ginfo, flags);
+    AROS_SLOWSTACKTAGS_POST
 }
 #endif
 
@@ -2469,11 +2483,16 @@ STATIC ULONG _OM_SET(struct IClass * cl, struct Gadget * g, struct opSet * msg)
 	    LONG visible;
 	    LONG total;
 
+	    IPTR val1, val2;
+
 	    if(GetDTAttrs((Object *) g, 
-                          DTA_TotalVert, (ULONG) &total,
-			  DTA_VisibleVert, (ULONG) &visible,
+                          DTA_TotalVert, (IPTR) &val1,
+			  DTA_VisibleVert, (IPTR) &val2,
 			  TAG_DONE) == 2)
 	    {
+		total = val1;
+		visible = val2;
+
 		if(visible + top_vert > total)
 		    top_vert = total - visible;
 		if(top_vert < 0)
@@ -2485,11 +2504,16 @@ STATIC ULONG _OM_SET(struct IClass * cl, struct Gadget * g, struct opSet * msg)
 	    LONG visible;
 	    LONG total;
 
+	    IPTR val1, val2;
+
 	    if(GetDTAttrs((Object *) g, 
-                          DTA_TotalHoriz, (ULONG) &total,
-			  DTA_VisibleHoriz, (ULONG) &visible,
+                          DTA_TotalHoriz, (IPTR) &val1,
+			  DTA_VisibleHoriz, (IPTR) &val2,
 			  TAG_DONE) == 2)
 	    {
+		total = val1;
+		visible = val2;
+
 		if(visible + top_horiz > total)
 		    top_horiz = total - visible;
 		if(top_horiz < 0)
@@ -2528,14 +2552,14 @@ STATIC ULONG _OM_SET(struct IClass * cl, struct Gadget * g, struct opSet * msg)
     return retval;
 }
 
-ULONG DT_NewMethod(struct IClass *cl, Object * o, struct opSet *msg)
+IPTR DT_NewMethod(struct IClass *cl, Object * o, struct opSet *msg)
 {
     struct Gadget *retval = _OM_NEW(cl, o, msg);
 #ifdef MORPHOS_AG_EXTENSION
     if (retval != NULL)
 	_OM_SET(cl, retval, msg);
 #endif
-    return (ULONG)retval;
+    return (IPTR)retval;
 }
 
 VOID DT_DisposeMethod(struct IClass * cl, Object * o, Msg msg)
@@ -2554,17 +2578,17 @@ ULONG DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
     {
     case TDTA_Buffer:
 	D(bug("text.datatype/DT_GetMethod: TDTA_Buffer 0x%lx\n", td->buffer_allocated));
-	*msg->opg_Storage = (ULONG) td->buffer_allocated;
+	*msg->opg_Storage = (IPTR) td->buffer_allocated;
 	break;
 
     case TDTA_BufferLen:
 	D(bug("text.datatype/DT_GetMethod: TDTA_BufferLen  %ld\n", td->buffer_allocated_len));
-	*msg->opg_Storage = (ULONG) td->buffer_allocated_len;
+	*msg->opg_Storage = (IPTR) td->buffer_allocated_len;
 	break;
 
     case TDTA_LineList:
 	D(bug("text.datatype/DT_GetMethod: TDTA_LineList\n"));
-	*msg->opg_Storage = (ULONG) &td->line_list;
+	*msg->opg_Storage = (IPTR) &td->line_list;
 	break;
 
     case TDTA_WordWrap:
@@ -2574,27 +2598,27 @@ ULONG DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 
     case DTA_TextAttr:
 	D(bug("text.datatype/DT_GetMethod: DTA_TextAttr (%s)\n", td->attr.ta_Name));
-	*msg->opg_Storage = (ULONG) & td->attr;
+	*msg->opg_Storage = (IPTR) & td->attr;
 	break;
 
     case DTA_TextFont:
 	D(bug("text.datatype/DT_GetMethod: DTA_TextFont\n"));
-	*msg->opg_Storage = (ULONG) td->font;
+	*msg->opg_Storage = (IPTR) td->font;
 	break;
 
     case DTA_ObjName:
 	D(bug("text.datatype/DT_GetMethod: DTA_ObjName\n"));
-	*msg->opg_Storage = (ULONG) td->title;
+	*msg->opg_Storage = (IPTR) td->title;
 	break;
 
     case DTA_Methods:
 	D(bug("text.datatype/DT_GetMethod: DTA_Methods\n"));
-	*msg->opg_Storage = (ULONG) supported_methods;
+	*msg->opg_Storage = (IPTR) supported_methods;
 	break;
 
     case DTA_TriggerMethods:
     	D(bug("text.datatype/DT_GetMethod: DTA_TriggerMethods\n"));
-    	*msg->opg_Storage = (ULONG) trigger_methods;
+    	*msg->opg_Storage = (IPTR) trigger_methods;
     	break;
 
     default:
@@ -2640,12 +2664,17 @@ ULONG DT_Render(struct IClass * cl, struct Gadget * g, struct gpRender * msg)
 	struct IBox *domain;
 	LONG vh, vv;
 
+	IPTR val1, val2;
+
 	if (GetDTAttrs((Object *) g,
 		       DTA_Domain, (IPTR) &domain,
-		       DTA_VisibleHoriz, (IPTR) &vh,
-		       DTA_VisibleVert, (IPTR) &vv,
+		       DTA_VisibleHoriz, (IPTR) &val1,
+		       DTA_VisibleVert, (IPTR) &val2,
 		       TAG_DONE) == 3)
 	{
+	    vh = val1;
+	    vv = val2;
+
 	    ULONG redraw_type;
 
 	    if (!AttemptSemaphoreShared(&(si->si_Lock)))
@@ -3091,7 +3120,7 @@ STATIC VOID DT_SearchString(Class *cl,Object *obj,LONG direction, struct GadgetI
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, obj);
     struct List *list;
 
-    if (GetAttr(TDTA_LineList,obj,(ULONG *) &list))
+    if (GetAttr(TDTA_LineList,obj,(IPTR *) &list))
     {
 	struct Line *line;
 	LONG found = td->search_line;
@@ -3099,13 +3128,16 @@ STATIC VOID DT_SearchString(Class *cl,Object *obj,LONG direction, struct GadgetI
 	LONG y = 0;
 	int search_offx = 0;
 
+	IPTR val;
+
 	line = (struct Line *)list->lh_Head;
 
 	if (direction == -1)
 	{
             if (found == -1)
 	    {
-		GetAttr(DTA_TotalVert,obj,(ULONG*)&found);
+		GetAttr(DTA_TotalVert,obj,(IPTR *)&val);
+		found = val;
 	    }
 /*	    found++;*/
 	}
@@ -3257,12 +3289,19 @@ STATIC VOID DT_SearchString(Class *cl,Object *obj,LONG direction, struct GadgetI
 	    	LONG top_vert;
 	    	LONG new_x1 = line->ln_XOffset/td->horiz_unit + found_x;
 
+		IPTR val1, val2, val3, val4;
+
 		GetDTAttrs(obj,
-			DTA_TopVert, &top_vert,
-			DTA_TopHoriz, &top_horiz,
-			DTA_VisibleVert, &visible_vert,
-			DTA_VisibleHoriz, &visible_horiz,
+			DTA_TopVert, &val1,
+			DTA_TopHoriz, &val2,
+			DTA_VisibleVert, &val3,
+			DTA_VisibleHoriz, &val4,
 			TAG_DONE);
+
+		top_vert = val1;
+		top_horiz = val1;
+		visible_vert = val1;
+		visible_horiz = val1;
 
 		D(bug("new_x1: %ld  top_horiz: %ld  vis: %ld\n",new_x1,top_horiz,visible_horiz));
 

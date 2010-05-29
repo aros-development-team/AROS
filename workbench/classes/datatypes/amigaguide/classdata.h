@@ -332,7 +332,7 @@ void UnInstallClipRegionSafe(struct ClassBase *cb, struct GadgetInfo *ginfo,
 			     struct Region *oldreg);
 
 #ifdef __AROS__
-ULONG NotifyAttrs(Object * obj, void * ginfo, ULONG flags, ...);
+IPTR NotifyAttrs(Object * obj, void * ginfo, ULONG flags, Tag tag1, ...);
 #else
 ULONG NotifyAttrs(Object * obj, void * ginfo, ULONG flags, ...) __attribute__((varargs68k));
 #endif

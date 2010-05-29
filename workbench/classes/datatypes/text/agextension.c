@@ -107,6 +107,8 @@ void DrawLineBevel(struct Text_Data *td, struct RastPort *rp,
     struct Region *old_region = NULL;
     struct Rectangle rect;
 
+    IPTR val1, val2, val3; // storage variables for Get...
+
     if (text)
     {
 
@@ -143,11 +145,15 @@ void DrawLineBevel(struct Text_Data *td, struct RastPort *rp,
 	    bgpen = td->fillpen;
 
 	GetRPAttrs(rp,
-		   RPTAG_APen, (ULONG) &apen,
-		   RPTAG_BPen, (ULONG) &bpen,
-		   RPTAG_DrMd, (ULONG) &mode,
-		   RPTAG_Font, (ULONG) &oldfont,
+		   RPTAG_APen, (IPTR) &val1,
+		   RPTAG_BPen, (IPTR) &val2,
+		   RPTAG_DrMd, (IPTR) &val3,
+		   RPTAG_Font, (IPTR) &oldfont,
 		   TAG_DONE);
+	
+	apen = val1;
+	bpen = val2;
+	mode = val3;
 
 	SetFont(rp, td->font);
 	SetABPenDrMd(rp, line->ln_FgPen, bgpen, JAM2);
@@ -156,8 +162,9 @@ void DrawLineBevel(struct Text_Data *td, struct RastPort *rp,
     } else
     {
 	GetRPAttrs(rp,
-		   RPTAG_APen, (ULONG) &apen,
+		   RPTAG_APen, (IPTR) &val1,
 		   TAG_DONE);
+	apen = val1;
     }
 
     SetAPen(rp,above);
@@ -352,11 +359,13 @@ void DT_AGTrigger(struct IClass *cl, Object *o, struct dtTrigger *msg)
     LONG topy;
     LONG objtop = td->vert_top;
 
+    IPTR val; // storage variable for Get...
+
     if (select == NULL)
 	return;
 
-    GetDTAttrs(o, DTA_TopVert, (ULONG) &objtop, TAG_DONE);
-    newtopy = objtop;
+    GetDTAttrs(o, DTA_TopVert, (IPTR) &val, TAG_DONE);
+    newtopy = objtop = val;
 
     D(bug("%ld\n",function));
 
