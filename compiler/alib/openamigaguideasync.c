@@ -46,6 +46,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = OpenAmigaGuideAsyncA (nag, AROS_SLOWSTACKTAGS_ARG(tag1));
+    OpenAmigaGuideAsyncA (nag, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* OpenAmigaGuideAsync */

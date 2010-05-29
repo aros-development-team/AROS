@@ -48,6 +48,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = AddAppWindowA (id, userdata, window, msgport, AROS_SLOWSTACKTAGS_ARG(tag1));
+    AddAppWindowA (id, userdata, window, msgport, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* AddAppWindow */

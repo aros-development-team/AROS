@@ -50,6 +50,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = ObtainBestPenA (cm, R,G,B, AROS_SLOWSTACKTAGS_ARG(tag1));
+    ObtainBestPenA (cm, R,G,B, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* ObtainBestPen */

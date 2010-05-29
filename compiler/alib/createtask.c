@@ -92,7 +92,7 @@ static const struct newMemList MemTemplate =
 	newtask->tc_Node.ln_Pri  = pri;
 	newtask->tc_Node.ln_Name = name;
 
-	newtask->tc_SPReg   = (APTR)((ULONG)ml->ml_ME[1].me_Addr + stacksize);
+	newtask->tc_SPReg   = (APTR)((IPTR)ml->ml_ME[1].me_Addr + stacksize);
 	newtask->tc_SPLower = ml->ml_ME[1].me_Addr;
 	newtask->tc_SPUpper = newtask->tc_SPReg;
 

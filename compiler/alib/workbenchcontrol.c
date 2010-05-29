@@ -47,6 +47,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = WorkbenchControlA( name, AROS_SLOWSTACKTAGS_ARG(tag1));
+    WorkbenchControlA( name, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* WorkbenchControl */

@@ -47,6 +47,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = SendAmigaGuideCmdA (handle, cmd, AROS_SLOWSTACKTAGS_ARG(tag1));
+    SendAmigaGuideCmdA (handle, cmd, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* SendAmigaGuideCmd */

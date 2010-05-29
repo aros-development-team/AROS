@@ -50,7 +50,7 @@ extern struct Library *AslBase;
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 
-    retval = AslRequest(requester, AROS_SLOWSTACKTAGS_ARG(tag1));
+    AslRequest(requester, AROS_SLOWSTACKTAGS_ARG(tag1));
 
     AROS_SLOWSTACKTAGS_POST
 } /* AslRequestTags */
