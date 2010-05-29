@@ -189,7 +189,7 @@ static ULONG Popasl_Close_Function(struct Hook *hook, Object *obj, void **msg)
 {
     struct Popasl_DATA *data= (struct Popasl_DATA *)hook->h_Data;
     Object *string = (Object*)msg[0];
-    LONG suc = (LONG)msg[1];
+    IPTR suc = (IPTR)msg[1];
 
     if (suc)
     {

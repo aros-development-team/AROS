@@ -83,8 +83,8 @@ ULONG Listview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_Layout
 ULONG Listview_Function(struct Hook *hook, APTR dummyobj, void **msg)
 {
     struct MUI_ListviewData *data = (struct MUI_ListviewData *)hook->h_Data;
-    int type = (int)msg[0];
-    LONG val = (LONG)msg[1];
+    SIPTR type = (SIPTR)msg[0];
+    SIPTR val = (SIPTR)msg[1];
 
     switch (type)
     {
@@ -258,7 +258,7 @@ IPTR ListView__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 	}
     }
 
-    return DoSuperMethodA(cl, obj, msg);
+    return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
 BOOPSI_DISPATCHER(IPTR, Listview_Dispatcher, cl, obj, msg)

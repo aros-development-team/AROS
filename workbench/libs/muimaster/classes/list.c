@@ -1915,7 +1915,7 @@ IPTR List__MUIM_Construct(struct IClass *cl, Object *obj, struct MUIP_List_Const
 
     if (NULL == data->construct_hook)
 	return (IPTR)msg->entry;
-    if ((ULONG)data->construct_hook == MUIV_List_ConstructHook_String)
+    if ((IPTR)data->construct_hook == MUIV_List_ConstructHook_String)
     {
     	int len = msg->entry ? strlen((STRPTR)msg->entry) : 0;
     	ULONG *mem = AllocPooled(msg->pool, len+5);
@@ -1942,7 +1942,7 @@ IPTR List__MUIM_Destruct(struct IClass *cl, Object *obj, struct MUIP_List_Destru
     if (NULL == data->destruct_hook)
 	return 0;
 
-    if ((ULONG)data->destruct_hook == MUIV_List_DestructHook_String)
+    if ((IPTR)data->destruct_hook == MUIV_List_DestructHook_String)
     {
     	ULONG *mem = ((ULONG*)msg->entry) - 1;
 	FreePooled(msg->pool, mem, mem[0]);

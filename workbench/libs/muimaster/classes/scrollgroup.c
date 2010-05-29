@@ -217,8 +217,8 @@ AROS_UFH3(ULONG,Scrollgroup_Function,
     AROS_USERFUNC_INIT
 
     struct Scrollgroup_DATA *data = (struct Scrollgroup_DATA *)hook->h_Data;
-    int type = (int)msg[0];
-    LONG val = (LONG)msg[1];
+    SIPTR type = (SIPTR)msg[0];
+    SIPTR val = (SIPTR)msg[1];
 
     switch (type)
     {

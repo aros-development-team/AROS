@@ -101,10 +101,10 @@ static IPTR MuipenDisplayFunc(struct Hook *hook, char **array, char *entry)
     LONG line;
     static char buf[16];
 
-    line = (LONG)array[-1];
+    line = (SIPTR)array[-1];
     if (line < 0 || line > 7)
 	line = 0;
-    snprintf(buf, sizeof(buf), "\33I[2:m%ld]", line);
+    snprintf(buf, sizeof(buf), "\33I[2:m%d]", line);
 
     *array++ = buf;
     *array++ = "";

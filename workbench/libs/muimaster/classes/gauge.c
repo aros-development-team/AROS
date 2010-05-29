@@ -194,7 +194,7 @@ IPTR Gauge__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 IPTR Gauge__OM_GET(struct IClass *cl, Object * obj, struct opGet *msg)
 {
     struct Gauge_DATA *data = INST_DATA(cl, obj);
-    ULONG *store               = msg->opg_Storage;
+    IPTR  *store               = msg->opg_Storage;
     ULONG    tag               = msg->opg_AttrID;
 
     switch (tag)
@@ -208,7 +208,7 @@ IPTR Gauge__OM_GET(struct IClass *cl, Object * obj, struct opGet *msg)
 	    break;
 
 	case MUIA_Gauge_InfoText:
-	    *store = (ULONG)data->info;
+	    *store = (IPTR)data->info;
 	    break;
 
 	case MUIA_Gauge_Max:
@@ -216,7 +216,7 @@ IPTR Gauge__OM_GET(struct IClass *cl, Object * obj, struct opGet *msg)
 	    break;
 
 	case MUIA_Gauge_DupInfoText:
-	    *store = (ULONG)data->dupinfo;
+	    *store = (IPTR)data->dupinfo;
 	    break;
 
     	default:

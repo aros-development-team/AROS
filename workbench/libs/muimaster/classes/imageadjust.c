@@ -102,7 +102,7 @@ static void GradientSwap_Function(struct Hook *hook, Object *obj, APTR msg)
 static VOID Pattern_Select_Function(struct Hook *hook, Object *obj, void **msg)
 {
     struct Imageadjust_DATA *data = (struct Imageadjust_DATA *)hook->h_Data;
-    int new_selected = (int)msg[0];
+    SIPTR new_selected = (SIPTR)msg[0];
 
     if (data->last_pattern_selected != -1)
 	set(data->pattern_image[data->last_pattern_selected],MUIA_Selected,FALSE);
@@ -113,7 +113,7 @@ static VOID Pattern_Select_Function(struct Hook *hook, Object *obj, void **msg)
 static VOID Vector_Select_Function(struct Hook *hook, Object *obj, void **msg)
 {
     struct Imageadjust_DATA *data = (struct Imageadjust_DATA *)hook->h_Data;
-    int new_selected = (int)msg[0];
+    SIPTR new_selected = (SIPTR)msg[0];
 
     if (data->last_vector_selected != -1)
 	set(data->vector_image[data->last_vector_selected],MUIA_Selected,FALSE);
@@ -914,8 +914,8 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 				data->imagespec = StrDup(data->gradient_imagespec);
 				break;
 		    }
-		    if (data->imagespec) *msg->opg_Storage = (ULONG)data->imagespec;
-		    else *msg->opg_Storage = (ULONG)"0:128";
+		    if (data->imagespec) *msg->opg_Storage = (IPTR)data->imagespec;
+		    else *msg->opg_Storage = (IPTR)"0:128";
 		}
 		return TRUE;
     }

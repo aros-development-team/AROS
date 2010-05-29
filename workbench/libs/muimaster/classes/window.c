@@ -1893,7 +1893,7 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
     ie.ie_SubClass  	    	= 0;
     ie.ie_Code      	    	= event->Code;
     ie.ie_Qualifier 	    	= event->Qualifier;
-    ie.ie_EventAddress      	= (APTR)*(ULONG *)event->IAddress;
+    ie.ie_EventAddress      	= (APTR)*(IPTR *)event->IAddress;
 #ifdef __AMIGAOS4__
     ie.ie_TimeStamp.Seconds      = event->Seconds;
     ie.ie_TimeStamp.Microseconds = event->Micros;

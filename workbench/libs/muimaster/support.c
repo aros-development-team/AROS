@@ -46,7 +46,7 @@ ULONG ConvertKey(struct IntuiMessage *imsg)
    event.ie_SubClass     = 0;
    event.ie_Code         = imsg->Code;
    event.ie_Qualifier    = imsg->Qualifier;
-   event.ie_EventAddress = (APTR *) *((ULONG *)imsg->IAddress);
+   event.ie_EventAddress = (APTR *) *((IPTR *)imsg->IAddress);
    MapRawKey(&event, &code, 1, NULL);
    return code;
 }

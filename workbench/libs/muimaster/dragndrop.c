@@ -605,7 +605,7 @@ struct BitMapNode *CreateBitMapNodeA( struct TagItem *tagList )
 		while(( tag = NextTagItem((const struct TagItem **) &tl )))
 		{
 			ULONG id = tag->ti_Tag;
-			ULONG data = tag->ti_Data;
+			IPTR data = tag->ti_Data;
 
 			switch( id )
 			{
@@ -618,19 +618,19 @@ struct BitMapNode *CreateBitMapNodeA( struct TagItem *tagList )
 							break;
 
 				case	GUI_LeftOffset:
-							bmn->bmn_Left = (LONG)data;
+							bmn->bmn_Left = data;
 							break;
 
 				case	GUI_TopOffset:
-							bmn->bmn_Top = (LONG)data;
+							bmn->bmn_Top = data;
 							break;
 
 				case	GUI_Width:
-							bmn->bmn_Width = (LONG)data;
+							bmn->bmn_Width = data;
 							break;
 
 				case	GUI_Height:
-							bmn->bmn_Height = (LONG)data;
+							bmn->bmn_Height = data;
 							break;
 
 			}
