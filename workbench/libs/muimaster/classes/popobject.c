@@ -108,7 +108,7 @@ AROS_UFH3(ULONG,Popobject_Close_Function,
 
     struct Popobject_DATA *data= (struct Popobject_DATA *)hook->h_Data;
     Object  	    	  *string = (Object*)msg[0];
-    LONG    	    	   suc = (LONG)msg[1];
+    SIPTR    	    	   suc = (SIPTR)msg[1];
 
     if (data->wnd)
     {

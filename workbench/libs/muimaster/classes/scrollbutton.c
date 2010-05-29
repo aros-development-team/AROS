@@ -51,11 +51,11 @@ IPTR Scrollbutton__OM_GET(struct IClass * cl, Object * o, struct opGet * msg)
 		return TRUE;
 
 	case	MUIA_Scrollbutton_HorizProp:
-		*msg->opg_Storage = (ULONG)data->horiz_prop;
+		*msg->opg_Storage = (IPTR)data->horiz_prop;
 		return TRUE;
 
 	case	MUIA_Scrollbutton_VertProp:
-		*msg->opg_Storage = (ULONG)data->horiz_prop;
+		*msg->opg_Storage = (IPTR)data->horiz_prop;
 		return TRUE;
 
         default:

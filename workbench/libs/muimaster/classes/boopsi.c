@@ -212,7 +212,7 @@ IPTR Boopsi__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
     switch (msg->opg_AttrID)
     {
-    	case MUIA_Boopsi_Object: STORE = (LONG)data->boopsi_object;
+    	case MUIA_Boopsi_Object: STORE = (IPTR)data->boopsi_object;
 
     	default:
     	{

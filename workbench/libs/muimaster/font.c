@@ -104,5 +104,5 @@ struct TextFont *zune_font_get(Object *obj, LONG preset)
 	}
 	return mri->mri_Fonts[-preset];
     }
-    return (struct TextFont *)preset;
+    return (struct TextFont *)(IPTR)preset;
 }

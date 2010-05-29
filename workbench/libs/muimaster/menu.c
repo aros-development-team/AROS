@@ -612,7 +612,7 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd)
     win_tags[5].ti_Tag = WA_Borderless;
     win_tags[5].ti_Data = TRUE;
     win_tags[6].ti_Tag = WA_CustomScreen;
-    win_tags[6].ti_Data = (ULONG)mhd->scr;
+    win_tags[6].ti_Data = (IPTR)mhd->scr;
     win_tags[7].ti_Tag = WA_BackFill;
     win_tags[7].ti_Tag = (IPTR)LAYERS_NOBACKFILL;
     win_tags[8].ti_Tag = TAG_DONE;
@@ -804,7 +804,7 @@ static void MakeMenuWin(struct MenuHandlerData *mhd)
     win_tags[5].ti_Tag = WA_Borderless;
     win_tags[5].ti_Data = TRUE;
     win_tags[6].ti_Tag = WA_CustomScreen;
-    win_tags[6].ti_Data = (ULONG)mhd->scr;
+    win_tags[6].ti_Data = (IPTR)mhd->scr;
     win_tags[7].ti_Tag = WA_BackFill;
     win_tags[7].ti_Tag = (IPTR)LAYERS_NOBACKFILL;
     win_tags[8].ti_Tag = TAG_DONE;
@@ -900,7 +900,7 @@ static void MakeSubMenuWin(struct MenuHandlerData *mhd)
     win_tags[5].ti_Tag = WA_Borderless;
     win_tags[5].ti_Data = TRUE;
     win_tags[6].ti_Tag = WA_CustomScreen;
-    win_tags[6].ti_Data = (ULONG)mhd->scr;
+    win_tags[6].ti_Data = (IPTR)mhd->scr;
     win_tags[7].ti_Tag = WA_BackFill;
     win_tags[7].ti_Tag = (IPTR)LAYERS_NOBACKFILL;
     win_tags[8].ti_Tag = TAG_DONE;

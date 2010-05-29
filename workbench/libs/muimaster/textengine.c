@@ -317,7 +317,7 @@ static CONST_STRPTR parse_escape_code (ZTextLine *ztl, struct zune_context *zc, 
         if (HexToLong(s,&tmp) != -1)
         {
             D(bug("listimage = %lx\n", tmp));
-            if (tmp == NULL)
+            if (tmp == 0)
             {
                 /* According to the MUI autodocs, the result of
                  * CreateImage may be NULL, but then \33O[] has to

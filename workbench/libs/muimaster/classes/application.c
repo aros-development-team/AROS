@@ -347,12 +347,12 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
     if (!data->app_SingleTask)
     {
 	/* must append .1, .2, ... to the base name */
-	int i;
+	LONG i;
 	char portname[255];
 
 	for (i = 1; i < 1000; i++)
 	{
-	    snprintf(portname, 255, "%s.%ld", data->app_Base, (LONG)i);
+	    snprintf(portname, 255, "%s.%d", data->app_Base, i);
 	    if (!find_application_by_base(cl, obj, portname))
 		break;
 	}
@@ -1575,7 +1575,7 @@ static IPTR Application__MUIM_OpenConfigWindow(struct IClass *cl, Object *obj,
     };
     char cmd[255];
 
-    snprintf(cmd, 255, "sys:prefs/Zune %s %d", data->app_Base ? data->app_Base : (STRPTR) "", (int) obj);
+    snprintf(cmd, 255, "sys:prefs/Zune %s %ld", data->app_Base ? data->app_Base : (STRPTR) "", (long) obj);
     
 	if (SystemTagList(cmd, tags) == -1)
     {

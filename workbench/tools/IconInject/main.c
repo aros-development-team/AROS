@@ -69,8 +69,8 @@ int main(int argc, char **argv)
             {
                 struct DiskObject       *sourceIconDOB = NULL;
                 struct DiskObject       *targetIconDOB = NULL;
-                IPTR                    tmpGadRender = NULL;
-                IPTR                    tmpSelRender = NULL;
+                IPTR                    tmpGadRender = 0;
+                IPTR                    tmpSelRender = 0;
 
                 D(bug("[IconInject] '%s' -> '%s'\n", IISourceIcon, IITargetIcon));
 
@@ -95,8 +95,8 @@ int main(int argc, char **argv)
                         if (IIArgList->verbose)
                             printf("Replacing ICON IMAGERY in %s.info from %s.info\n", IITargetIcon, IISourceIcon);
 
-                        tmpGadRender = targetIconDOB->do_Gadget.GadgetRender;
-                        tmpSelRender = targetIconDOB->do_Gadget.SelectRender;
+                        tmpGadRender = (IPTR)targetIconDOB->do_Gadget.GadgetRender;
+                        tmpSelRender = (IPTR)targetIconDOB->do_Gadget.SelectRender;
 
                         targetIconDOB->do_Gadget.GadgetRender = sourceIconDOB->do_Gadget.GadgetRender;
                         targetIconDOB->do_Gadget.SelectRender = sourceIconDOB->do_Gadget.SelectRender;
@@ -107,8 +107,8 @@ int main(int argc, char **argv)
 
                     if (IIArgList->replaceimages)
                     {
-                        targetIconDOB->do_Gadget.GadgetRender = tmpGadRender;
-                        targetIconDOB->do_Gadget.SelectRender = tmpSelRender;
+                        targetIconDOB->do_Gadget.GadgetRender = (APTR)tmpGadRender;
+                        targetIconDOB->do_Gadget.SelectRender = (APTR)tmpSelRender;
                     }
                 }
                 {

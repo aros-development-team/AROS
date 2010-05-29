@@ -172,7 +172,7 @@ void getReadableSize(UBYTE *buf, ULONG size)
 	buf++;
     }
 
-    sprintf((char *)buf," %s\0", ch);
+    sprintf((char *)buf," %s", ch);
 }
 
 #define kExallBufSize  		(4096)
@@ -654,7 +654,7 @@ static void AddStackField(Object * application, Object * group, STRPTR stack)
 static void AddToolField(Object * application, Object * group, STRPTR tool)
 {
     Object * toolspace = MUI_NewObject(MUIC_Popasl, ASLFR_DoSaveMode, TRUE,
-        MUIA_Popstring_String, (IPTR)(filename_string = StringObject,
+        MUIA_Popstring_String, (IPTR)(filename_string = (Object *)StringObject,
         StringFrame,
         MUIA_String_MaxLen, MAX_PATH_LEN,
         MUIA_String_Contents, (IPTR)tool,
@@ -971,11 +971,11 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                                         MUIA_Text_Contents, (IPTR) datetime,
                                     End),
                                     Child, (IPTR) Label2(__(MSG_VERSION)),
-                                    Child, (IPTR) (versiongrp = HGroup,
+                                    Child, (IPTR) (versiongrp = (Object *)HGroup,
 					Child, (IPTR) versionspace,
 				    End),
                                     Child, (IPTR) Label2(__(MSG_SIZE)),
-                                    Child, (IPTR) (sizegrp = HGroup,
+                                    Child, (IPTR) (sizegrp = (Object *)HGroup,
 					Child, (IPTR) sizespace,
 				    End),
                                  End,
