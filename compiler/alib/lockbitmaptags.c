@@ -43,6 +43,6 @@ extern struct Library * CyberGfxBase;
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = LockBitMapTagList(handle, AROS_SLOWSTACKTAGS_ARG(tag1));
+    LockBitMapTagList(handle, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* LockBitMapTags */

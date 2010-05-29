@@ -48,6 +48,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = AddAppWindowDropZoneA( aw, id, userdata, AROS_SLOWSTACKTAGS_ARG(tag1));
+    AddAppWindowDropZoneA( aw, id, userdata, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* AddAppWindowDropZone */

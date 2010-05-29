@@ -85,7 +85,7 @@
     msg2->rm_Private2 = msg->rm_Private2;
     msg2->rm_Action = RXGETVAR | 1;
     msg2->rm_Args[0] = (IPTR)CreateArgstring(varname, strlen(varname));
-    if (msg2->rm_Args[0]==NULL) goto cleanup;
+    if (msg2->rm_Args[0]==0) goto cleanup;
     
     PutMsg(rexxport, (struct Message *)msg2);
     msg3 = NULL;
@@ -106,7 +106,7 @@
 cleanup:
     if (msg2!=NULL)
     {
-	if (msg2->rm_Args[0]!=NULL) DeleteArgstring((UBYTE *)msg2->rm_Args[0]);
+	if (msg2->rm_Args[0]!=0) DeleteArgstring((UBYTE *)msg2->rm_Args[0]);
 	DeleteRexxMsg(msg2);
     }
     if (port!=NULL) DeletePort(port);

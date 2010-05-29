@@ -44,6 +44,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = BestModeIDA (AROS_SLOWSTACKTAGS_ARG(tag1));
+    BestModeIDA (AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* BestModeID */

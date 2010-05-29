@@ -46,6 +46,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = AddAmigaGuideHostA (hook, name, AROS_SLOWSTACKTAGS_ARG(tag1));
+    AddAmigaGuideHostA (hook, name, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* AddAmigaGuideHost */

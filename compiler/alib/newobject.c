@@ -71,6 +71,6 @@ extern struct IntuitionBase * IntuitionBase;
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = NewObjectA (classPtr, classID, AROS_SLOWSTACKTAGS_ARG(tag1));
+    NewObjectA (classPtr, classID, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* NewObject */
