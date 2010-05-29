@@ -139,7 +139,7 @@ void ReportErrSz( ErrorType ert, LONG err, const char * pszMessage, ... )
 	es.es_GadgetFormat = (ert == ertFailure) ? _(MSG_CANCEL) : _(MSG_OK);
 	RawDoVFmtSz( szOutput, pszBodyFormat, args );
 	WordWrapSz(szOutput);
-	(void) EasyRequest( 0, &es, 0, (ULONG)szOutput );
+	(void) EasyRequest( 0, &es, 0, (IPTR)szOutput );
     }
     /* else we can't report the error */
     va_end(args);
@@ -853,7 +853,7 @@ BOOL bMakeFiles( BOOL bDiskIcon )
 		ReportErrSz( ertFailure,
 			     -1,
 			     _(MSG_ERROR_TRASHCAN),
-			     (ULONG)(szVolume + 1) );
+			     (IPTR)(szVolume + 1) );
 	    else if( bDiskIcon )
 	    {
 		struct DiskObject * pdo;
@@ -891,7 +891,7 @@ BOOL bMakeFiles( BOOL bDiskIcon )
 		    ReportErrSz( ertFailure,
 				 -1,
 				 _(MSG_ERROR_ICON),
-				 (ULONG)(szVolume + 1) );
+				 (IPTR)(szVolume + 1) );
 	    }
 
 	    CurrentDir(bpflOldCD);

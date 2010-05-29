@@ -342,8 +342,8 @@ struct SFormatEntry* SelectDevice(void)
  
     // Main loop
     struct SFormatEntry* selectedEntry = NULL;
-    LONG returnId;
-    while((returnId = (LONG)DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs))
+    IPTR returnId;
+    while((returnId = (IPTR)DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs))
 	!= MUIV_Application_ReturnID_Quit)
     {
 	if (sigs)
