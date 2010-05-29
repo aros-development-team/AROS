@@ -43,7 +43,7 @@ extern struct PopupMenuBase * PopupMenuBase;
 {
     AROS_SLOWSTACKTAGS_PRE(id)
 
-    retval = PM_ExLstA(AROS_SLOWSTACKTAGS_ARG(id));
+    PM_ExLstA(AROS_SLOWSTACKTAGS_ARG(id));
     
     AROS_SLOWSTACKTAGS_POST
 } /* PM_ExLst */

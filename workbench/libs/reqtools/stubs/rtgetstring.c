@@ -50,7 +50,7 @@ extern struct ReqToolsBase * ReqToolsBase;
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 
-    retval = rtGetStringA(buffer, maxchars, title, reqinfo, AROS_SLOWSTACKTAGS_ARG(tag1));
+    rtGetStringA(buffer, maxchars, title, reqinfo, AROS_SLOWSTACKTAGS_ARG(tag1));
 
     AROS_SLOWSTACKTAGS_POST
     

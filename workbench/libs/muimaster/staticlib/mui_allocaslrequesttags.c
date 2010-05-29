@@ -45,7 +45,7 @@ extern struct Library * MUIMasterBase;
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 
-    retval = MUI_AllocAslRequest(reqType, AROS_SLOWSTACKTAGS_ARG(tag1));
+    MUI_AllocAslRequest(reqType, AROS_SLOWSTACKTAGS_ARG(tag1));
 
     AROS_SLOWSTACKTAGS_POST
     
