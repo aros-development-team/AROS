@@ -202,7 +202,8 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
-	struct TagItem *tags, *tag;
+	const struct TagItem *tags;
+	struct TagItem *tag;
 	tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl, o);
 	OOP_Object *driver = NULL;
 	
@@ -211,7 +212,7 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	/*
 	    Get all information passed by pci class calling OOP_NewObject()
 	*/
-	while((tag = NextTagItem((struct TagItem **)&tags)))
+	while((tag = NextTagItem(tags)))
 	{
 	    ULONG idx;
 
@@ -331,7 +332,7 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     PCIDevice::Get method splitted into few parts in order to make switch'es shorter.
 */
 
-static const void dispatch_generic(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+static void dispatch_generic(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
@@ -406,7 +407,7 @@ static const void dispatch_generic(OOP_Class *cl, OOP_Object *o, struct pRoot_Ge
 	}
 }
 
-static const void dispatch_base(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+static void dispatch_base(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx,id;
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
@@ -438,7 +439,7 @@ static const void dispatch_base(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *
     }
 }
 
-static const void dispatch_type(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+static void dispatch_type(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx,id;
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
@@ -470,7 +471,7 @@ static const void dispatch_type(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *
     }
 }
 
-static const void dispatch_size(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+static void dispatch_size(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx,id;
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
@@ -494,7 +495,7 @@ static const void dispatch_size(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *
     *msg->storage = (IPTR)dev->BaseReg[id].size;
 }
 
-static const void dispatch_pci2pcibridge(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+static void dispatch_pci2pcibridge(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
@@ -552,11 +553,11 @@ static const void dispatch_pci2pcibridge(OOP_Class *cl, OOP_Object *o, struct pR
     }
 }
 
-static const void dispatch_capability(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+static void dispatch_capability(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
     UBYTE capability = 0;
-    tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
+    //tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
     idx = msg->attrID - HiddPCIDeviceAttrBase;
 
@@ -738,7 +739,8 @@ void PCIDev__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     ULONG idx;
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
-    struct TagItem *tags, *tag;
+    const struct TagItem *tags;
+    struct TagItem *tag;
 
     tags = msg->attrList;
 
