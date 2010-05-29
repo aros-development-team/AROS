@@ -30,4 +30,5 @@ include $(TOP)/config/make.cfg
 #MM    hidd-vmwaresvga \
 #MM    hidd-nvidia \
 #MM    hidd-radeon \
-#MM    hidd-nouveau2d
+#MM    hidd-nouveau2d \
+#MM    hidd-intelG45
