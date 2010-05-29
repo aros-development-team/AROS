@@ -110,7 +110,7 @@ int rcCliMain(void)
     /* Get confirmation before we start the process */
     *pchDosDeviceColon = 0;
     Printf( _(MSG_INSERT_DISK),
-	    (ULONG)szDosDevice );
+	    (IPTR)szDosDevice );
     Flush(bpfhStdOut);
     SetMode( bpfhStdIn, 1 ); /* raw input */
     {
