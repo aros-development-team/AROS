@@ -233,11 +233,11 @@ const struct AmigaGuideAttr amigaguide_attrs[] =
 
 /* ------------------------------ prototypes ------------------------------ */
 
-static ULONG om_new(Class *cl, Object *obj, struct opSet *msg);
-static ULONG om_dispose(Class *cl, Object *obj, Msg msg);
-static ULONG om_set(Class *cl, Object *obj, struct opSet *msg);
+static IPTR om_new(Class *cl, Object *obj, struct opSet *msg);
+static IPTR om_dispose(Class *cl, Object *obj, Msg msg);
+static IPTR om_set(Class *cl, Object *obj, struct opSet *msg);
 
-static ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg);
+static IPTR dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg);
 
 /* -------------------------- private functions --------------------------- */
 
@@ -870,9 +870,9 @@ LONG ParseNode(Class *cl, Object *obj, struct ParseNodeData *pd)
 
    if(pd != NULL &&
       GetDTAttrs(obj,
- 	         TDTA_LineList, (ULONG) &pd->p_List,
-                 DTA_TextFont,  (ULONG) &pd->p_Font,
- 	         DTA_Domain,    (ULONG) &pd->p_Domain,
+ 	         TDTA_LineList, (IPTR) &pd->p_List,
+                 DTA_TextFont,  (IPTR) &pd->p_Font,
+ 	         DTA_Domain,    (IPTR) &pd->p_Domain,
  	         TAG_DONE) == 3 &&
                  pd->p_List != NULL && pd->p_Domain != NULL && pd->p_Font != NULL)
    {
@@ -1217,15 +1217,17 @@ void ScanNode(Class *cl, Object *obj)
 /* ------------------------------ functions ------------------------------- */
 
 static
-ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
+IPTR om_new(Class *cl, Object *obj, struct opSet *msg)
 {
-   ULONG rv = (ULONG) obj;
+   IPTR rv = (IPTR) obj;
    INSTDATA;
 
    ULONG sourcetype = DTST_FILE;
 
    struct TagItem *tstate = msg->ops_AttrList;
    struct TagItem *tag;
+
+   IPTR val;
 
    data->n_TabWidth = 8;
    data->n_WordDelim = " ,.;";
@@ -1275,15 +1277,16 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
    case DTST_FILE:
       /* obtain buffer and buffer length from textclass */
       GetDTAttrs(obj,
-                 TDTA_Buffer,    (ULONG) &data->n_Buffer,
-                 TDTA_BufferLen, (ULONG) &data->n_BufferLen,
+                 TDTA_Buffer,    (IPTR) &data->n_Buffer,
+                 TDTA_BufferLen, (IPTR) &val,
                  TAG_DONE);
+      data->n_BufferLen = val;
       break;
    case DTST_MEMORY:
       /* source type memory attribute are set during tagitem loop above. */
       break;
    default:
-      rv = (ULONG) NULL;
+      rv = 0;
    }
 
    /* in any case check if there is a valid buffer and buffer length */
@@ -1292,31 +1295,31 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
       DB(("buffer and/or buffer length are missing (buf=%lx, len=%ld)\n",
           data->n_Buffer, data->n_BufferLen));
       /* not all needed tags were passed so OM_NEW will fail */
-      rv = (ULONG) NULL;
+      rv = 0;
    }
 
    if(data->n_AGFile == NULL)
    {
       DB(("No AmigaGuideFile structure passed\n"));
-      rv = (ULONG) NULL;
+      rv = 0;
    }
 
-   if(rv != (ULONG) NULL)
+   if(rv != 0)
    {
       ScanNode(cl, obj);
 
       /* let the textclass know about our word delimiters */
-      SetAttrs(obj, TDTA_WordDelim, (ULONG) data->n_WordDelim, TAG_DONE);
+      SetAttrs(obj, TDTA_WordDelim, (IPTR) data->n_WordDelim, TAG_DONE);
    }
 
    return rv;
 }
 
 static
-ULONG om_dispose(Class *cl,Object *obj,Msg msg)
+IPTR om_dispose(Class *cl,Object *obj,Msg msg)
 {
    INSTDATA;
-   ULONG rv;
+   IPTR rv;
 
    /* cleanup our data here */
    if(data->n_LinePool != NULL)
@@ -1331,31 +1334,31 @@ ULONG om_dispose(Class *cl,Object *obj,Msg msg)
 }
 
 static
-ULONG om_get(Class *cl,Object *obj,struct opGet *msg)
+IPTR om_get(Class *cl,Object *obj,struct opGet *msg)
 {
-   ULONG rv;
+   IPTR rv;
    INSTDATA;
 
    rv = 1;
    switch(msg->opg_AttrID)
    {
    case DTA_Title:
-      *msg->opg_Storage = (ULONG) data->n_Title;
+      *msg->opg_Storage = (IPTR) data->n_Title;
       break;
    case AGNA_Contents:
-      *msg->opg_Storage = (ULONG) data->n_TOC;
+      *msg->opg_Storage = (IPTR) data->n_TOC;
       break;
    case AGNA_Help:
-      *msg->opg_Storage = (ULONG) data->n_Help;
+      *msg->opg_Storage = (IPTR) data->n_Help;
       break;
    case AGNA_Index:
-      *msg->opg_Storage = (ULONG) data->n_Index;
+      *msg->opg_Storage = (IPTR) data->n_Index;
       break;
    case AGNA_Previous:
-      *msg->opg_Storage = (ULONG) data->n_Prev;
+      *msg->opg_Storage = (IPTR) data->n_Prev;
       break;
    case AGNA_Next:
-      *msg->opg_Storage = (ULONG) data->n_Next;
+      *msg->opg_Storage = (IPTR) data->n_Next;
       break;
    case TDTA_WordWrap:
       *msg->opg_Storage = data->n_Flags.WordWrap;
@@ -1369,10 +1372,10 @@ ULONG om_get(Class *cl,Object *obj,struct opGet *msg)
 
 
 static
-ULONG om_set(Class *cl,Object *obj,struct opSet *msg)
+IPTR om_set(Class *cl,Object *obj,struct opSet *msg)
 {
    INSTDATA;
-   ULONG rv = 0;
+   IPTR rv = 0;
 
    struct TagItem *tstate = msg->ops_AttrList;
    struct TagItem *tag;
@@ -1403,7 +1406,7 @@ ULONG om_set(Class *cl,Object *obj,struct opSet *msg)
 
 
 static
-ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
+IPTR dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
 {
    INSTDATA;
    struct DTSpecialInfo *si= CAST_GAD(obj)->SpecialInfo;
@@ -1414,8 +1417,8 @@ ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
    ObtainSemaphore(&si->si_Lock);
 
    if(GetDTAttrs(obj,
-                 DTA_Domain,    (ULONG) &domain,
-                 TDTA_LineList, (ULONG) &list,
+                 DTA_Domain,    (IPTR) &domain,
+                 TDTA_LineList, (IPTR) &list,
                  TAG_DONE) == 2)
    {
       BOOL clear = FALSE;
@@ -1626,10 +1629,10 @@ ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
 }
 
 static
-ULONG dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg)
+IPTR dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg)
 {
    INSTDATA;
-   ULONG rv;
+   IPTR rv;
 
    switch(msg->dtt_Function & STMF_METHOD_MASK)
    {
@@ -1644,9 +1647,9 @@ ULONG dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg)
 }
 
 static
-ULONG nodeclass_dispatcher(Class *cl, Object *obj, Msg msg)
+IPTR nodeclass_dispatcher(Class *cl, Object *obj, Msg msg)
 {
-   ULONG rv = 0;
+   IPTR rv = 0;
 
    switch(msg->MethodID)
    {
@@ -1655,7 +1658,7 @@ ULONG nodeclass_dispatcher(Class *cl, Object *obj, Msg msg)
       {
 	 Object *newobj = (Object *) rv;
 
-	 if((rv = om_new(cl, newobj, CAST_SET(msg))) == (ULONG) NULL)
+	 if((rv = om_new(cl, newobj, CAST_SET(msg))) == 0)
 	    CoerceMethod(cl, newobj, OM_DISPOSE);
       }
       break;
@@ -1740,7 +1743,7 @@ Class *MakeNodeClass(struct ClassBase *cb)
 #else
          cl->cl_Dispatcher.h_Entry = (HOOKFUNC) dispatcher;
 #endif
-	 cl->cl_UserData = (ULONG) cb;
+	 cl->cl_UserData = (IPTR) cb;
 
 	 AddClass(cl);
       }

@@ -14,17 +14,17 @@
 
 /* ------------------------------ prototypes ------------------------------ */
 
-ULONG om_new(Class *cl, Object *obj, struct opSet *msg);
-ULONG om_dispose(Class *cl, Object *obj, Msg msg);
-ULONG _om_set(Class *cl, Object *obj, struct opSet *msg);
-ULONG _om_update(Class *cl, Object *obj, struct opSet *msg);
+IPTR om_new(Class *cl, Object *obj, struct opSet *msg);
+IPTR om_dispose(Class *cl, Object *obj, Msg msg);
+IPTR _om_set(Class *cl, Object *obj, struct opSet *msg);
+IPTR _om_update(Class *cl, Object *obj, struct opSet *msg);
 
-ULONG gm_render(Class *cl, Object *obj, struct gpRender *msg);
-ULONG gm_layout(Class *cl, Object *obj, struct gpLayout *msg);
-ULONG gm_input(Class *cl, Object *obj, struct gpInput *msg);
+IPTR gm_render(Class *cl, Object *obj, struct gpRender *msg);
+IPTR gm_layout(Class *cl, Object *obj, struct gpLayout *msg);
+IPTR gm_input(Class *cl, Object *obj, struct gpInput *msg);
 
-ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg);
-ULONG dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg);
+IPTR dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg);
+IPTR dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg);
 
 
 static void ActivateAGObject(Class *cl, Object *obj, struct GadgetInfo *ginfo,
@@ -126,10 +126,10 @@ void MakeNavGadget(Class *cl, Object *obj, struct IBox *domain)
 	        ((CAST_GAD(obj)->Flags & GFLG_RELBOTTOM) == GFLG_RELBOTTOM) ? GA_RelBottom : GA_Top, domain->Top,
 	        GA_RelWidth, CAST_GAD(obj)->Width,
 	        GA_Height, 10,
-	        NA_Buttons, (ULONG) data->ag_Buttons,
-	        NA_Target, (ULONG) obj,
-	        ICA_MAP, (ULONG) navmap,
-	        ICA_TARGET, (ULONG) obj,
+	        NA_Buttons, (IPTR) data->ag_Buttons,
+	        NA_Target, (IPTR) obj,
+	        ICA_MAP, (IPTR) navmap,
+	        ICA_TARGET, (IPTR) obj,
 	        TAG_DONE);
 }
 
@@ -164,14 +164,16 @@ void MakeNavGadget(Class *cl, Object *obj, struct IBox *domain)
 *
 */
 
-ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
+IPTR om_new(Class *cl, Object *obj, struct opSet *msg)
 {
-   ULONG rv;
+   IPTR rv;
    INSTDATA;
 
    STRPTR nodename = "main";
    ULONG sourcetype;
    BPTR handle;
+
+   IPTR val;
 
    struct TagItem *tstate = msg->ops_AttrList;
    struct TagItem *tag;
@@ -220,7 +222,7 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
 
    data->ag_File = AllocAGFile(cl, obj);
    if(data->ag_File == NULL)
-      rv = (ULONG) NULL;
+      rv = 0;
    else
    {
       /* set attributes provided by the user */
@@ -229,13 +231,15 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
       /* now get the source type only DTST_FILE is supported.
          Then start scanning the AmigaGuide file */
       if(GetDTAttrs(obj,
-   		    DTA_SourceType, (ULONG) &sourcetype,
-   		    DTA_Handle, (ULONG) &handle,
+   		    DTA_SourceType, (IPTR) &val,
+   		    DTA_Handle, (IPTR) &handle,
    		    TAG_DONE) != 2)
       {
-         rv = (ULONG) NULL;
+         rv = 0;
       } else
       {
+         sourcetype = val;
+
          switch(sourcetype)
          {
          case DTST_FILE:
@@ -245,16 +249,16 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
 
             if(data->ag_File->agf_OnOpen != NULL)
                if(SendRexxCommand(cl, obj, data->ag_File->agf_OnOpen, AGRX_RX) != RC_OK)
-                  rv = (ULONG) NULL;
+                  rv = 0;
    	    break;
          default:
             DB(("sourcetype unsupported : %ld\n",sourcetype));
-   	    rv = (ULONG) NULL;
+   	    rv = 0;
          }
       }
 
       /* now create navigation bar */
-      if(rv != (ULONG) NULL)
+      if(rv != 0)
       {
          struct IBox domain;
 
@@ -271,11 +275,11 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
 
          /* create external process for this object */
          if(CreateAGProcess(cl, obj) != data->ag_Process)
-            rv = (ULONG) NULL;
+            rv = 0;
       }
    }
 
-   if (rv == (ULONG)NULL)
+   if (rv == 0)
 	CoerceMethod(cl, obj, OM_DISPOSE);
 
    return rv;
@@ -301,10 +305,10 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
 *
 */
 
-ULONG om_dispose(Class *cl,Object *obj,Msg msg)
+IPTR om_dispose(Class *cl,Object *obj,Msg msg)
 {
    INSTDATA;
-   ULONG rv;
+   IPTR rv;
    struct AmigaGuideObject *ago;
    struct AmigaGuideFile *agf;
 
@@ -376,16 +380,16 @@ ULONG om_dispose(Class *cl,Object *obj,Msg msg)
 *
 */
 
-ULONG om_get(Class *cl,Object *obj,struct opGet *msg)
+IPTR om_get(Class *cl,Object *obj,struct opGet *msg)
 {
-   ULONG rv;
+   IPTR rv;
    INSTDATA;
 
    rv = 1;
    switch(msg->opg_AttrID)
    {
    case DTA_Title:
-      *msg->opg_Storage = (ULONG) data->ag_File->agf_Name;
+      *msg->opg_Storage = (IPTR) data->ag_File->agf_Name;
       break;
    case DTA_NominalHoriz:
       {
@@ -402,30 +406,30 @@ ULONG om_get(Class *cl,Object *obj,struct opGet *msg)
       }
       break;
    case DTA_ARexxPortName:
-      *msg->opg_Storage = (ULONG) data->ag_RexxName;
+      *msg->opg_Storage = (IPTR) data->ag_RexxName;
       break;
    case DTA_TriggerMethods:
-      *msg->opg_Storage = (ULONG) triggermethods;
+      *msg->opg_Storage = (IPTR) triggermethods;
       break;
 
    case AGNA_Contents:
       if(data->ag_File->agf_TOC != NULL)
-	 *msg->opg_Storage = (ULONG) data->ag_File->agf_TOC;
+	 *msg->opg_Storage = (IPTR) data->ag_File->agf_TOC;
       else
-	 *msg->opg_Storage = (ULONG) "main";
+	 *msg->opg_Storage = (IPTR) "main";
       break;
    case AGNA_Help:
       if(data->ag_File->agf_Help != NULL)
-	 *msg->opg_Storage = (ULONG) data->ag_File->agf_Help;
+	 *msg->opg_Storage = (IPTR) data->ag_File->agf_Help;
       else
-	 *msg->opg_Storage = (ULONG) "sys/amigaguide.guide";
+	 *msg->opg_Storage = (IPTR) "sys/amigaguide.guide";
       break;
    case AGNA_Index:
-      *msg->opg_Storage = (ULONG) data->ag_File->agf_Index;
+      *msg->opg_Storage = (IPTR) data->ag_File->agf_Index;
       break;
    case DTA_Methods:
       if(data->ag_Actual == obj)
-         *msg->opg_Storage = (ULONG) supported_methods;
+         *msg->opg_Storage = (IPTR) supported_methods;
       else
          /* get methods from sub object. */
          if(DoMethodA(data->ag_Actual, (Msg) msg) == 0)
@@ -438,9 +442,9 @@ ULONG om_get(Class *cl,Object *obj,struct opGet *msg)
    return rv;
 }
 
-ULONG _om_update(Class *cl, Object *obj, struct opSet *msg)
+IPTR _om_update(Class *cl, Object *obj, struct opSet *msg)
 {
-   ULONG rv = 0;
+   IPTR rv = 0;
 
    struct TagItem *tstate = msg->ops_AttrList;
    struct TagItem *tag;
@@ -490,10 +494,10 @@ ULONG _om_update(Class *cl, Object *obj, struct opSet *msg)
 */
 
 
-ULONG _om_set(Class *cl,Object *obj,struct opSet *msg)
+IPTR _om_set(Class *cl,Object *obj,struct opSet *msg)
 {
    INSTDATA;
-   ULONG rv = 0;
+   IPTR rv = 0;
 
    struct TagItem *tstate = msg->ops_AttrList;
    struct TagItem *tag;
@@ -537,10 +541,10 @@ ULONG _om_set(Class *cl,Object *obj,struct opSet *msg)
 }
 
 
-ULONG gm_layout(Class *cl, Object *obj, struct gpLayout *msg)
+IPTR gm_layout(Class *cl, Object *obj, struct gpLayout *msg)
 {
    INSTDATA;
-   ULONG rc;
+   IPTR rc;
 
    /* remember window pointer to be used by ARexx commands */
    if(data->ag_Window == NULL)
@@ -625,11 +629,11 @@ ULONG gm_layout(Class *cl, Object *obj, struct gpLayout *msg)
    return rc;
 }
 
-ULONG gm_render(Class *cl, Object *obj, struct gpRender *msg)
+IPTR gm_render(Class *cl, Object *obj, struct gpRender *msg)
 {
    INSTDATA;
    struct DTSpecialInfo *si= CAST_GAD(obj)->SpecialInfo;
-   ULONG rv = 0;
+   IPTR rv = 0;
 
    /* do not render in busy state */
    if(si->si_Flags & DTSIF_LAYOUT)
@@ -727,11 +731,11 @@ ULONG gm_render(Class *cl, Object *obj, struct gpRender *msg)
 *
 */
 
-ULONG gm_input(Class *cl, Object *obj, struct gpInput *msg)
+IPTR gm_input(Class *cl, Object *obj, struct gpInput *msg)
 {
    INSTDATA;
    struct DTSpecialInfo *si= CAST_GAD(obj)->SpecialInfo;
-   ULONG rv = GMR_MEACTIVE;
+   IPTR rv = GMR_MEACTIVE;
 
    /* do not handle input in busy state */
    if(si->si_Flags & DTSIF_LAYOUT)
@@ -777,7 +781,7 @@ ULONG gm_input(Class *cl, Object *obj, struct gpInput *msg)
    return rv;
 }
 
-ULONG dtm_removedtobject(Class *cl, Object *obj, Msg msg)
+IPTR dtm_removedtobject(Class *cl, Object *obj, Msg msg)
 {
    INSTDATA;
 
@@ -797,7 +801,7 @@ ULONG dtm_removedtobject(Class *cl, Object *obj, Msg msg)
    return DoSuperMethodA(cl, obj, msg);
 }
 
-ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
+IPTR dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
 {
    INSTDATA;
    struct DTSpecialInfo *si = (struct DTSpecialInfo *) CAST_GAD(obj)->SpecialInfo;
@@ -806,6 +810,8 @@ ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
    LONG topv,totv,unitv;
    LONG toph,toth,unith;
    STRPTR title = "amigaguide.datatype";
+
+   IPTR val1, val2, val3, val4, val5, val6; // storage variables for Get...
 
    GetDTDomain(cl, obj, &domain);
 
@@ -846,19 +852,26 @@ ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
    }
 
    if(GetDTAttrs(data->ag_Actual,
-		 DTA_TopVert,    (ULONG) &topv,
-		 DTA_TotalVert,  (ULONG) &totv,
-		 DTA_TopHoriz,   (ULONG) &toph,
-		 DTA_TotalHoriz, (ULONG) &toth,
-		 DTA_VertUnit,   (ULONG) &unitv,
-		 DTA_HorizUnit,  (ULONG) &unith,
+		 DTA_TopVert,    (IPTR) &val1,
+		 DTA_TotalVert,  (IPTR) &val2,
+		 DTA_TopHoriz,   (IPTR) &val3,
+		 DTA_TotalHoriz, (IPTR) &val4,
+		 DTA_VertUnit,   (IPTR) &val5,
+		 DTA_HorizUnit,  (IPTR) &val6,
 		 TAG_DONE) == 6)
    {
+      topv = val1;
+      totv = val2;
+      toph = val3;
+      toth = val4;
+      unitv = val5;
+      unith = val6;
+
       unitv = (unitv == 0) ? 1 : unitv;
       unith = (unith == 0) ? 1 : unith;
 
-      if(GetDTAttrs(data->ag_Actual, DTA_Title, (ULONG) &title, TAG_DONE) == 0)
-         if(GetDTAttrs(data->ag_Actual, DTA_Name, (ULONG) &title, TAG_DONE) == 0)
+      if(GetDTAttrs(data->ag_Actual, DTA_Title, (IPTR) &title, TAG_DONE) == 0)
+         if(GetDTAttrs(data->ag_Actual, DTA_Name, (IPTR) &title, TAG_DONE) == 0)
             title = "unknown";
       /* these values must be set explicitly
        * possible error in datatypesclass ?
@@ -981,10 +994,10 @@ ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
 */
 
 
-ULONG dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg)
+IPTR dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg)
 {
    INSTDATA;
-   ULONG rv = 0;
+   IPTR rv = 0;
 
    /* make sure any trigger command is only executed in our external
     * process context!
@@ -1144,11 +1157,11 @@ void UpdateNavigator(Class *cl, Object *obj, struct GadgetInfo *ginfo)
    STRPTR help = NULL;
 
    GetDTAttrs(data->ag_Actual,
-	      AGNA_Contents, (ULONG) &toc,
-	      AGNA_Index,    (ULONG) &index,
-	      AGNA_Previous, (ULONG) &prev,
-	      AGNA_Next,     (ULONG) &next,
-	      AGNA_Help,     (ULONG) &help,
+	      AGNA_Contents, (IPTR) &toc,
+	      AGNA_Index,    (IPTR) &index,
+	      AGNA_Previous, (IPTR) &prev,
+	      AGNA_Next,     (IPTR) &next,
+	      AGNA_Help,     (IPTR) &help,
 	      TAG_DONE);
 
    if(help == NULL)
@@ -1160,7 +1173,7 @@ void UpdateNavigator(Class *cl, Object *obj, struct GadgetInfo *ginfo)
          UnLock(lock);
          help = "sys/amigaguide.guide";
          SetAttrs(data->ag_Actual,
-                  AGNA_Help, (ULONG) help,
+                  AGNA_Help, (IPTR) help,
                   TAG_DONE);
       }
    }
@@ -1275,11 +1288,11 @@ void ActivateAGObject(Class *cl, Object *obj, struct GadgetInfo *ginfo,
 */
 
 
-ULONG dtm_goto(Class *cl, Object *obj, struct dtGoto *msg)
+IPTR dtm_goto(Class *cl, Object *obj, struct dtGoto *msg)
 {
    CLASSBASE;
    INSTDATA;
-   ULONG rv = 0;
+   IPTR rv = 0;
    struct DataType *dt;
    struct AmigaGuideNode *agnode;
    struct AmigaGuideObject *agobj = NULL;
@@ -1413,10 +1426,10 @@ ULONG dtm_goto(Class *cl, Object *obj, struct dtGoto *msg)
          		     	        GA_RelWidth,      CAST_GAD(obj)->Width,
          		                GA_RelHeight,     CAST_GAD(obj)->Height - data->ag_NavHeight,
          		                GA_ID,            CAST_GAD(obj)->GadgetID,
-                                        ICA_TARGET,       (ULONG) data->ag_ICTarget,
-                                        ICA_MAP,          (ULONG) data->ag_ICMap,
+                                        ICA_TARGET,       (IPTR) data->ag_ICTarget,
+                                        ICA_MAP,          (IPTR) data->ag_ICMap,
                                         DTA_TopVert,      agobj->ago_TopVert,
-         			        (textattr != NULL) ? DTA_TextAttr : TAG_IGNORE, (ULONG) textattr,
+         			        (textattr != NULL) ? DTA_TextAttr : TAG_IGNORE, (IPTR) textattr,
          			        TAG_DONE);
                      data->ag_Flags.InitialLayout = TRUE;
                   } else
@@ -1496,18 +1509,18 @@ ULONG dtm_goto(Class *cl, Object *obj, struct dtGoto *msg)
    		                 GA_RelWidth,      CAST_GAD(obj)->Width,
    		                 GA_RelHeight,     CAST_GAD(obj)->Height - data->ag_NavHeight,
    		                 GA_ID,            CAST_GAD(obj)->GadgetID,
-   		                 DTA_DataType,     (ULONG) dt,
-   		                 DTA_Name,         (ULONG) buf,
+   		                 DTA_DataType,     (IPTR) dt,
+   		                 DTA_Name,         (IPTR) buf,
    		                 DTA_SourceType,   DTST_FILE,
-   		                 DTA_Handle,       (ULONG) agobj->ago_TmpHandle,
-                                 ICA_TARGET,       (ULONG) data->ag_ICTarget,
-                                 ICA_MAP,          (ULONG) data->ag_ICMap,
+   		                 DTA_Handle,       (IPTR) agobj->ago_TmpHandle,
+                                 ICA_TARGET,       (IPTR) data->ag_ICTarget,
+                                 ICA_MAP,          (IPTR) data->ag_ICMap,
                                  /* special attributes for amigagudienode class */
-                                 AGNA_RootObject,  (ULONG) obj,
-                                 AGNA_AGFile,      (ULONG) data->ag_File,
+                                 AGNA_RootObject,  (IPTR) obj,
+                                 AGNA_AGFile,      (IPTR) data->ag_File,
 
-   		                 (textattr != NULL) ? DTA_TextAttr : TAG_IGNORE, (ULONG) textattr,
-   		                 (msg->dtg_AttrList != NULL) ? TAG_MORE : TAG_DONE, (ULONG) msg->dtg_AttrList);
+   		                 (textattr != NULL) ? DTA_TextAttr : TAG_IGNORE, (IPTR) textattr,
+   		                 (msg->dtg_AttrList != NULL) ? TAG_MORE : TAG_DONE, (IPTR) msg->dtg_AttrList);
                if(dtobj != NULL)
                {
                   agobj->ago_TmpHandle = NULL;
@@ -1555,16 +1568,16 @@ ULONG dtm_goto(Class *cl, Object *obj, struct dtGoto *msg)
 #ifdef __AROS__
 IPTR om_update(Class *cl, Object *obj, struct opSet *msg)
 {
-    ULONG rv;
+    IPTR rv;
     
     /* avoid update loops */
     if(DoMethod(obj, ICM_CHECKLOOP))
-	return (IPTR)0;
+	return 0;
 
     rv = _om_update(cl, obj, msg);
     rv += _om_set(cl, obj, msg);
 
-    rv += (ULONG)DoSuperMethodA(cl, obj, (Msg) msg);
+    rv += (IPTR)DoSuperMethodA(cl, obj, (Msg) msg);
 
     DB(("set returned %ld\n", rv));
     /* this class is derived from the gadgetclass, check
@@ -1585,12 +1598,12 @@ IPTR om_update(Class *cl, Object *obj, struct opSet *msg)
 	}
     }
 
-    return (IPTR)rv;
+    return rv;
 }
 
 IPTR om_set(Class *cl, Object *obj, struct opSet *msg)
 {
-    ULONG rv = _om_set(cl, obj, CAST_SET(msg));
+    IPTR rv = _om_set(cl, obj, CAST_SET(msg));
 
     rv += (ULONG)DoSuperMethodA(cl, obj, (Msg) msg);
 
@@ -1613,7 +1626,7 @@ IPTR om_set(Class *cl, Object *obj, struct opSet *msg)
 	}
     }
     
-    return (IPTR)rv;
+    return rv;
 }
 
 IPTR dtm_proclayout(Class *cl, Object *obj, struct gpLayout *msg)

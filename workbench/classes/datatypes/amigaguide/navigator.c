@@ -49,7 +49,7 @@ struct NavigatorData
 
 /* --------------------------- public interface --------------------------- */
 
-static ULONG navclass_dispatcher(Class *cl, Object *obj, Msg msg);
+static IPTR navclass_dispatcher(Class *cl, Object *obj, Msg msg);
 
 static ClassCall
 ULONG dispatcher REGARGS((REG(a0,Class *cl),
@@ -80,7 +80,7 @@ Class *MakeNavigatorClass(struct ClassBase *cb)
 #else
       cl->cl_Dispatcher.h_Entry = (HOOKFUNC) dispatcher;
 #endif
-      cl->cl_UserData = (ULONG) cb;
+      cl->cl_UserData = (IPTR) cb;
    }
 
    return cl;
@@ -191,27 +191,27 @@ BOOL gi_draw_button(Class *cl, Object *obj,
 }
 
 static
-ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
+IPTR om_new(Class *cl, Object *obj, struct opSet *msg)
 {
    INSTDATA;
-   ULONG rv = 0;
+   IPTR rv = 0;
 
    CAST_GAD(obj)->Flags |= GFLG_RELSPECIAL;
 
-   data->nd_Target     = (Object *) GetTagData(NA_Target,(ULONG) NULL,CAST_SET(msg)->ops_AttrList);
+   data->nd_Target     = (Object *) GetTagData(NA_Target,0,CAST_SET(msg)->ops_AttrList);
    data->nd_XDistance  = GetTagData(NA_Distance,10,CAST_SET(msg)->ops_AttrList);
    data->nd_MaxWidth   = 0;
    data->nd_Pressed    = -1;
    data->nd_Selected   = -1;
 
    if((data->nd_Buttons    = (struct NavigatorButton *)
-       GetTagData(NA_Buttons,(ULONG) NULL,CAST_SET(msg)->ops_AttrList)) != NULL)
+       GetTagData(NA_Buttons,0,CAST_SET(msg)->ops_AttrList)) != NULL)
    {
       if((CAST_GAD(obj)->GadgetRender = NewObject(NULL,"frameiclass",
 						IA_FrameType,FRAME_BUTTON,
 						TAG_DONE)) != NULL)
       {
-	 rv = (ULONG) obj;
+	 rv = (IPTR) obj;
       }
    }
 
@@ -219,7 +219,7 @@ ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
 }
 
 static
-ULONG om_get(Class *cl, Object *obj, struct opGet *msg)
+IPTR om_get(Class *cl, Object *obj, struct opGet *msg)
 {
    INSTDATA;
 
@@ -234,10 +234,10 @@ ULONG om_get(Class *cl, Object *obj, struct opGet *msg)
    return 1;
 }
 static
-ULONG gm_input(Class *cl, Object *obj, struct gpInput *msg)
+IPTR gm_input(Class *cl, Object *obj, struct gpInput *msg)
 {
    struct InputEvent *ie = msg->gpi_IEvent;
-   ULONG rv;
+   IPTR rv;
 
    if(ie->ie_Class == IECLASS_RAWMOUSE)
    {
@@ -304,21 +304,21 @@ ULONG gm_input(Class *cl, Object *obj, struct gpInput *msg)
    return rv;
 }
 static
-ULONG gm_layout(Class *cl, Object *obj, struct gpLayout *msg)
+IPTR gm_layout(Class *cl, Object *obj, struct gpLayout *msg)
 {
    INSTDATA;
 
    struct GadgetInfo *ginfo = msg->gpl_GInfo;
    struct IBox *domain;
 
-   if(GetAttr(DTA_Domain, data->nd_Target, (ULONG *) &domain))
+   if(GetAttr(DTA_Domain, data->nd_Target, (IPTR *) &domain))
       data->nd_DomainWidth = domain->Width - 1;
 
    /* change left edge according to master object */
    CAST_GAD(obj)->TopEdge  = CAST_GAD(data->nd_Target)->TopEdge;
    CAST_GAD(obj)->LeftEdge = CAST_GAD(data->nd_Target)->LeftEdge;
 
-   DB(("Domain Width : %lx , %ld\n", (ULONG) data->nd_Target, data->nd_DomainWidth));
+   DB(("Domain Width : %lx , %ld\n", (IPTR) data->nd_Target, data->nd_DomainWidth));
 
    if(msg->gpl_Initial)
    {
@@ -362,7 +362,7 @@ ULONG gm_layout(Class *cl, Object *obj, struct gpLayout *msg)
    return 0;
 }
 static
-ULONG gm_render(Class *cl, Object *obj, struct gpRender *msg)
+IPTR gm_render(Class *cl, Object *obj, struct gpRender *msg)
 {
    INSTDATA;
 
@@ -472,9 +472,9 @@ ULONG nvm_changed(Class *cl, Object *obj, Msg msg)
 }
 
 static
-ULONG navclass_dispatcher(Class *cl, Object *obj, Msg msg)
+IPTR navclass_dispatcher(Class *cl, Object *obj, Msg msg)
 {
-   LONG rv = 0;
+   IPTR rv = 0;
 
    switch(msg->MethodID)
    {
@@ -483,7 +483,7 @@ ULONG navclass_dispatcher(Class *cl, Object *obj, Msg msg)
       {
 	 Object *newobj = (Object *) rv;
 
-	 if((rv = om_new(cl, newobj, CAST_SET(msg))) == (ULONG) NULL)
+	 if((rv = om_new(cl, newobj, CAST_SET(msg))) == 0)
 	    CoerceMethod(cl, newobj, OM_DISPOSE);
       }
       break;

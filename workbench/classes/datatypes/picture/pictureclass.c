@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -119,9 +119,11 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 
 /**************************************************************************************************/
 
-STATIC ULONG NotifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1,...)
+IPTR NotifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, Tag tag1, ...)
 {
-    return(DoMethod(o, OM_NOTIFY, (IPTR) &tag1, (IPTR) ginfo, flags));
+    AROS_SLOWSTACKTAGS_PRE(tag1)
+    DoMethod(o, OM_NOTIFY, AROS_SLOWSTACKTAGS_ARG(tag1), (IPTR) ginfo, flags);
+    AROS_SLOWSTACKTAGS_POST
 }
 
 /**************************************************************************************************/
@@ -430,7 +432,7 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 
 	case PDTA_BitMapHeader:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_BitMapHeader: 0x%lx\n", (long)&pd->bmhd));
-	    *(msg->opg_Storage)=(ULONG) &pd->bmhd;
+	    *(msg->opg_Storage)=(IPTR) &pd->bmhd;
 	    break;
 
 	case PDTA_ClassBitMap:
@@ -439,38 +441,38 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 	    if( !pd->SrcBM )
 		ConvertChunky2Bitmap( pd );
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_BitMap: 0x%lx\n", (long)pd->SrcBM));
-	    *(msg->opg_Storage)=(ULONG) pd->SrcBM;
+	    *(msg->opg_Storage)=(IPTR) pd->SrcBM;
 	    break;
 
 	case PDTA_DestBitMap:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_DestBitMap: 0x%lx\n", (long)pd->DestBM));
-	    *(msg->opg_Storage)=(ULONG) pd->DestBM;
+	    *(msg->opg_Storage)=(IPTR) pd->DestBM;
 	    break;
 
 	case PDTA_MaskPlane:
 	    CreateMaskPlane( pd );
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_MaskPlane: 0x%lx\n", (long)pd->MaskPlane));
-	    *(msg->opg_Storage)=(ULONG) pd->MaskPlane;
+	    *(msg->opg_Storage)=(IPTR) pd->MaskPlane;
 	    break;
 
 	case PDTA_Screen:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_Screen: 0x%lx\n", (long)pd->DestScreen));
-	    *(msg->opg_Storage)=(ULONG) pd->DestScreen;
+	    *(msg->opg_Storage)=(IPTR) pd->DestScreen;
 	    break;
 
 	case PDTA_ColorRegisters:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_ColorRegisters: 0x%lx\n", (long)&pd->ColMap));
-	    *(msg->opg_Storage)=(ULONG) &pd->ColMap;
+	    *(msg->opg_Storage)=(IPTR) &pd->ColMap;
 	    break;
 
 	case PDTA_CRegs:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_CRegs: 0x%lx\n", (long)&pd->SrcColRegs));
-	    *(msg->opg_Storage)=(ULONG) &pd->SrcColRegs;
+	    *(msg->opg_Storage)=(IPTR) &pd->SrcColRegs;
 	    break;
 
 	case PDTA_GRegs:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_GRegs: 0x%lx\n", (long)&pd->DestColRegs));
-	    *(msg->opg_Storage)=(ULONG) &pd->DestColRegs;
+	    *(msg->opg_Storage)=(IPTR) &pd->DestColRegs;
 	    break;
 
 	case PDTA_AllocatedPens:
@@ -479,69 +481,69 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_ColorTable2: Handled by PDTA_ColorTable\n"));
 	case PDTA_ColorTable:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_ColorTable: 0x%lx\n", (long)&pd->ColTable));
-	    *(msg->opg_Storage)=(ULONG) &pd->ColTable;
+	    *(msg->opg_Storage)=(IPTR) &pd->ColTable;
 	    break;
 
 	case PDTA_NumColors:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_NumColors: %ld\n", (long)pd->NumColors));
-	    *(msg->opg_Storage)=(ULONG) pd->NumColors;
+	    *(msg->opg_Storage)=(IPTR) pd->NumColors;
 	    break;
 
 	case PDTA_NumAlloc:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_NumAlloc: %ld\n", (long)pd->NumAlloc));
-	    *(msg->opg_Storage)=(ULONG) pd->NumAlloc;
+	    *(msg->opg_Storage)=(IPTR) pd->NumAlloc;
 	    break;
 
 	case PDTA_Grab:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_Grab: 0x%lx\n", (long)&pd->Grab));
-	    *(msg->opg_Storage)=(ULONG) &pd->Grab;
+	    *(msg->opg_Storage)=(IPTR) &pd->Grab;
 	    break;
 
 	case PDTA_SourceMode:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_SourceMode: 0x%lx\n", (long)PMODE_V43));
-	    *(msg->opg_Storage)=(ULONG) PMODE_V43;
+	    *(msg->opg_Storage)=(IPTR) PMODE_V43;
 	    break;
 
 	case PDTA_DestMode:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_DestMode: 0x%lx\n", (long)pd->DestMode));
-	    *(msg->opg_Storage)=(ULONG) pd->DestMode;
+	    *(msg->opg_Storage)=(IPTR) pd->DestMode;
 	    break;
 
 	case PDTA_FreeSourceBitMap:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_FreeSourceBitMap: 0x%lx\n", (long)pd->FreeSource));
-	    *(msg->opg_Storage)=(ULONG) pd->FreeSource;
+	    *(msg->opg_Storage)=(IPTR) pd->FreeSource;
 	    break;
 
 	case PDTA_UseFriendBitMap:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_UseFriendBitMap: 0x%lx\n", (long)pd->UseFriendBM));
-	    *(msg->opg_Storage)=(ULONG) pd->UseFriendBM;
+	    *(msg->opg_Storage)=(IPTR) pd->UseFriendBM;
 	    break;
 
 	case PDTA_MaxDitherPens:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_MaxDitherPens: 0x%lx\n", (long)pd->MaxDitherPens));
-	    *(msg->opg_Storage)=(ULONG) pd->MaxDitherPens;
+	    *(msg->opg_Storage)=(IPTR) pd->MaxDitherPens;
 	    break;
 
 	case PDTA_DitherQuality:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_DitherQuality: 0x%lx\n", (long)pd->DitherQuality));
-	    *(msg->opg_Storage)=(ULONG) pd->DitherQuality;
+	    *(msg->opg_Storage)=(IPTR) pd->DitherQuality;
 	    break;
 
 	case PDTA_ScaleQuality:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_ScaleQuality: 0x%lx\n", (long)pd->ScaleQuality));
-	    *(msg->opg_Storage)=(ULONG) pd->ScaleQuality;
+	    *(msg->opg_Storage)=(IPTR) pd->ScaleQuality;
 	    break;
 
 #ifdef __AROS__
 	case PDTA_DelayedRead:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_DelayedRead: 0x%lx\n", (long)pd->DelayedRead));
-	    *(msg->opg_Storage)=(ULONG) pd->DelayedRead;
+	    *(msg->opg_Storage)=(IPTR) pd->DelayedRead;
 	    break;
 #endif
 
 	case DTA_Methods:
 	    DGS(bug("picture.datatype/OM_GET: Tag DTA_Methods: 0x%lx\n", (long)SupportedMethods));
-	    *(msg->opg_Storage)=(ULONG) SupportedMethods;
+	    *(msg->opg_Storage)=(IPTR) SupportedMethods;
 	    break;
 
 	default:

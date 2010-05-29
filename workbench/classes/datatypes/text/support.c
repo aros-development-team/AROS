@@ -154,7 +154,7 @@ struct IFFHandle *PrepareClipboard(void)
 
     if(iff)
     {
-	if((iff->iff_Stream = (ULONG) OpenClipboard (0)))
+	if((iff->iff_Stream = (IPTR) OpenClipboard (0)))
 	{
 	    InitIFFasClip(iff);
 	    if(!OpenIFF(iff,IFFF_WRITE))

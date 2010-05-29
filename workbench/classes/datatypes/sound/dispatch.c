@@ -248,7 +248,7 @@ ULONG Methods[] = {
 	DTM_OBTAINDRAWINFO,
 	DTM_DRAW,
 	DTM_RELEASEDRAWINFO,
-	~0UL
+	~0
 };
 
 #if defined(__MAXON__) || defined(__AROS__)
@@ -1492,7 +1492,7 @@ IPTR __regargs Sound_UPDATE( Class *cl, Object *o, struct opUpdate *opu )
 		return FALSE;
 	}	
 
-	dbug( kprintf("no loop %08lx\n", (ULONG)opu); )
+	dbug( kprintf("no loop %16lx\n", (IPTR)opu); )
 
 	return Sound_SET( cl, o, (struct opSet *) opu );
 }

@@ -18,6 +18,6 @@ struct HtmlData
 	ULONG		style;
 	UBYTE		fgpen;
 	UBYTE		bgpen;
-	int		linenum;
+	long		linenum;
 };
 
