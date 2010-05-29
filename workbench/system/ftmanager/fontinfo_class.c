@@ -139,7 +139,7 @@ AROS_UFH3(void, Metric,
 struct Hook MetricHook = { {NULL, NULL}, UFHN(Metric) };
 
 
-ULONG fiNew(Class *cl, Object *o, struct opSet *msg)
+IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 {
 	struct opSet method;
 	struct TagItem tags[3];
@@ -280,7 +280,7 @@ ULONG fiNew(Class *cl, Object *o, struct opSet *msg)
 	os2 = FT_Get_Sfnt_Table(face, ft_sfnt_os2);
 
 	tags[0].ti_Tag = MUIA_Group_Child;
-	tags[0].ti_Data = (ULONG)ColGroup(2),
+	tags[0].ti_Data = (IPTR)ColGroup(2),
 		Child, Label2("Extra file"),
 		Child, attached_file = PopaslObject,
 			MUIA_Popasl_Type, ASL_FileRequest,
@@ -372,7 +372,7 @@ ULONG fiNew(Class *cl, Object *o, struct opSet *msg)
 			MUIA_String_Accept, "0123456789",
 			MUIA_String_AdvanceOnCR, TRUE,
 			MUIA_String_MaxLen, 6,
-			MUIA_String_Integer, (ULONG)(face->max_advance_width * 250.0 / 72.307),
+			MUIA_String_Integer, (IPTR)(face->max_advance_width * 250.0 / 72.307),
 			MUIA_CycleChain, TRUE,
 			End,
 		Child, Label1("Fixed width"),
@@ -434,7 +434,7 @@ ULONG fiNew(Class *cl, Object *o, struct opSet *msg)
 			End,*/
 		End;
 	tags[1].ti_Tag = MUIA_Group_Child;
-	tags[1].ti_Data = (ULONG)VGroup,
+	tags[1].ti_Data = (IPTR)VGroup,
 		GroupFrameT("Preview"),
 		Child, test_string = StringObject,
 			StringFrame,
@@ -465,7 +465,7 @@ ULONG fiNew(Class *cl, Object *o, struct opSet *msg)
 			End,
 		End;
 	tags[2].ti_Tag = TAG_MORE;
-	tags[2].ti_Data = (ULONG)msg->ops_AttrList;
+	tags[2].ti_Data = (IPTR)msg->ops_AttrList;
 
 	method.MethodID = OM_NEW;
 	method.ops_AttrList = tags;
@@ -570,11 +570,11 @@ ULONG fiNew(Class *cl, Object *o, struct opSet *msg)
 
 	DEBUG_FONTINFO(dprintf("FontInfo: created object 0x%lx\n", o));
 
-	return (ULONG)o;
+	return (IPTR)o;
 }
 
 #if 0
-ULONG fiDispose(Class *cl, Object *o)
+IPTR fiDispose(Class *cl, Object *o)
 {
 	FontInfoData *dat = INST_DATA(cl, o);
 
@@ -582,7 +582,7 @@ ULONG fiDispose(Class *cl, Object *o)
 }
 #endif
 
-ULONG fiSetOTags(Class *cl, Object *o)
+IPTR fiSetOTags(Class *cl, Object *o)
 {
 	FontInfoData *dat = INST_DATA(cl, o);
 	struct TagItem *tag = dat->OTags;
@@ -592,7 +592,7 @@ ULONG fiSetOTags(Class *cl, Object *o)
 	++tag;
 
 	tag->ti_Tag = OT_Engine;
-	tag->ti_Data = (ULONG)"freetype2";
+	tag->ti_Data = (IPTR)"freetype2";
 	++tag;
 
 	tag->ti_Tag = OT_Family;
@@ -652,7 +652,7 @@ ULONG fiSetOTags(Class *cl, Object *o)
 	++tag;
 
 	tag->ti_Tag = OT_Spec1_FontFile;
-	tag->ti_Data = (ULONG)dat->Filename;
+	tag->ti_Data = (IPTR)dat->Filename;
 	++tag;
 
 	tag->ti_Tag = OT_Spec3_AFMFile;
@@ -680,7 +680,7 @@ ULONG fiSetOTags(Class *cl, Object *o)
 	if (!IsDefaultCodePage())
 	{
 		tag->ti_Tag = OT_Spec2_CodePage;
-		tag->ti_Data = (ULONG)codepage;
+		tag->ti_Data = (IPTR)codepage;
 		++tag;
 	}
 
