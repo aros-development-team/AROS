@@ -34,7 +34,7 @@ AROS_UFH3(void, CloseWinFunc,
 
 struct Hook CloseWinHook = {{NULL, NULL}, UFHN(CloseWinFunc) };
 
-ULONG fwNew(Class *cl, Object *o, struct opSet *msg)
+IPTR fwNew(Class *cl, Object *o, struct opSet *msg)
 {
 	struct opSet method;
 	struct TagItem tags[4];
@@ -67,9 +67,9 @@ ULONG fwNew(Class *cl, Object *o, struct opSet *msg)
 	tags[0].ti_Tag = MUIA_Window_ID;
 	tags[0].ti_Data = MAKE_ID('F','O','N','T');
 	tags[1].ti_Tag = MUIA_Window_Title;
-	tags[1].ti_Data = (ULONG)filename;
+	tags[1].ti_Data = (IPTR)filename;
 	tags[2].ti_Tag = MUIA_Window_RootObject;
-	tags[2].ti_Data = (ULONG)VGroup,
+	tags[2].ti_Data = (IPTR)VGroup,
 		Child, info = FontInfoObject,
 			MUIA_FontInfo_Filename, filename,
 			MUIA_FontInfo_Face, face,
@@ -82,7 +82,7 @@ ULONG fwNew(Class *cl, Object *o, struct opSet *msg)
 			End,
 		End;
 	tags[3].ti_Tag = TAG_MORE;
-	tags[3].ti_Data = (ULONG)msg->ops_AttrList;
+	tags[3].ti_Data = (IPTR)msg->ops_AttrList;
 
 	method.MethodID = OM_NEW;
 	method.ops_AttrList = tags;
@@ -108,10 +108,10 @@ ULONG fwNew(Class *cl, Object *o, struct opSet *msg)
 
 	DEBUG_FONTWINDOW(dprintf("FontWindow: created object 0x%lx.\n", o));
 
-	return (ULONG)o;
+	return (IPTR)o;
 }
 
-ULONG fwDispose(Class *cl, Object *o)
+IPTR fwDispose(Class *cl, Object *o)
 {
 	FontWindowData *dat = INST_DATA(cl, o);
 

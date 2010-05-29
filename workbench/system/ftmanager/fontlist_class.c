@@ -125,7 +125,7 @@ AROS_UFH3(LONG, flCompareFunc,
 struct Hook flCompareHook = {{NULL, NULL}, UFHN(flCompareFunc) };
 
 
-ULONG flNew(Class *cl, Object *o, struct opSet *msg)
+IPTR flNew(Class *cl, Object *o, struct opSet *msg)
 {
 	struct opSet method;
 	struct TagItem tags[8];
@@ -135,19 +135,19 @@ ULONG flNew(Class *cl, Object *o, struct opSet *msg)
 	tags[1].ti_Tag = MUIA_Background;
 	tags[1].ti_Data = MUII_ListBack;
 	tags[2].ti_Tag = MUIA_List_ConstructHook;
-	tags[2].ti_Data = (ULONG)&flConstructHook;
+	tags[2].ti_Data = (IPTR)&flConstructHook;
 	tags[3].ti_Tag = MUIA_List_DestructHook;
-	tags[3].ti_Data = (ULONG)&flDestructHook;
+	tags[3].ti_Data = (IPTR)&flDestructHook;
 	tags[4].ti_Tag = MUIA_List_DisplayHook;
-	tags[4].ti_Data = (ULONG)&flDisplayHook;
+	tags[4].ti_Data = (IPTR)&flDisplayHook;
 	tags[4].ti_Tag = MUIA_List_DisplayHook;
-	tags[4].ti_Data = (ULONG)&flDisplayHook;
+	tags[4].ti_Data = (IPTR)&flDisplayHook;
 	tags[5].ti_Tag = MUIA_List_CompareHook;
-	tags[5].ti_Data = (ULONG)&flCompareHook;
+	tags[5].ti_Data = (IPTR)&flCompareHook;
 	tags[6].ti_Tag = MUIA_List_Format;
-	tags[6].ti_Data = (ULONG)",";
+	tags[6].ti_Data = (IPTR)",";
 	tags[7].ti_Tag = TAG_MORE;
-	tags[7].ti_Data = (ULONG)msg->ops_AttrList;
+	tags[7].ti_Data = (IPTR)msg->ops_AttrList;
 
 	method.MethodID = OM_NEW;
 	method.ops_AttrList = tags;
@@ -162,11 +162,11 @@ ULONG flNew(Class *cl, Object *o, struct opSet *msg)
 
 	DEBUG_FONTWINDOW(dprintf("FontList: created object 0x%lx.\n", o));
 
-	return (ULONG)o;
+	return (IPTR)o;
 }
 
 
-ULONG flDispose(Class *cl, Object *o, Msg msg)
+IPTR flDispose(Class *cl, Object *o, Msg msg)
 {
 	FontListData *dat = INST_DATA(cl, o);
 	struct ScanDirTaskInfo *info;

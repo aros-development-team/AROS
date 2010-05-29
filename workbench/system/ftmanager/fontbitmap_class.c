@@ -24,12 +24,12 @@ struct FontBitmapData
 
 typedef struct FontBitmapData FontBitmapData;
 
-ULONG fbNew(Class *cl, Object *o, struct opSet *msg)
+IPTR fbNew(Class *cl, Object *o, struct opSet *msg)
 {
 	struct opSet method;
 	struct TagItem tags[5];
 	STRPTR filename = (STRPTR)GetTagData(MUIA_FontBitmap_Filename, (IPTR) NULL, msg->ops_AttrList);
-	STRPTR string = (STRPTR)GetTagData(MUIA_FontBitmap_String, (ULONG) "?", msg->ops_AttrList);
+	STRPTR string = (STRPTR)GetTagData(MUIA_FontBitmap_String, (IPTR) "?", msg->ops_AttrList);
 	struct TagItem *otags = (struct TagItem *)GetTagData(MUIA_FontBitmap_OTags,
 			(IPTR) NULL, msg->ops_AttrList);
 	struct
@@ -66,7 +66,7 @@ ULONG fbNew(Class *cl, Object *o, struct opSet *msg)
 	gray = GetTagData(MUIA_FontBitmap_Gray, FALSE, msg->ops_AttrList);
 
 	SetInfo(engine,
-			OT_OTagList, (ULONG) otags,
+			OT_OTagList, (IPTR) otags,
 			OT_DeviceDPI, 72 | (72 << 16),
 			OT_PointHeight, size << 16,
 			TAG_END);
@@ -102,7 +102,7 @@ ULONG fbNew(Class *cl, Object *o, struct opSet *msg)
 					OT_GlyphCode2, code,
 					TAG_END);
 			ObtainInfo(engine,
-					OT_TextKernPair, (ULONG)&kerning,
+					OT_TextKernPair, (IPTR)&kerning,
 					TAG_END);
 
 			x -= (int)(kerning / 65536.0 * size);
@@ -115,7 +115,7 @@ ULONG fbNew(Class *cl, Object *o, struct opSet *msg)
 				OT_GlyphCode, code,
 				TAG_END);
 		ObtainInfo(engine,
-				tag, (ULONG)&info[k].glyph,
+				tag, (IPTR)&info[k].glyph,
 				TAG_END);
 
 		g = info[k].glyph;
@@ -306,7 +306,7 @@ ULONG fbNew(Class *cl, Object *o, struct opSet *msg)
 		tags[3].ti_Tag = MUIA_FixHeight;
 		tags[3].ti_Data = height;
 		tags[4].ti_Tag = TAG_MORE;
-		tags[4].ti_Data = (ULONG)msg->ops_AttrList;
+		tags[4].ti_Data = (IPTR)msg->ops_AttrList;
 
 		method.MethodID = OM_NEW;
 		method.ops_AttrList = tags;
@@ -371,7 +371,7 @@ ULONG fbNew(Class *cl, Object *o, struct opSet *msg)
 		if (info[k].glyph)
 		{
 			ReleaseInfo(engine,
-					tag, (ULONG)info[k].glyph,
+					tag, (IPTR)info[k].glyph,
 					TAG_END);
 		}
 	}
@@ -382,10 +382,10 @@ ULONG fbNew(Class *cl, Object *o, struct opSet *msg)
 
 	DEBUG_FONTBITMAP(dprintf("FontBitmap: created object 0x%lx.\n", o));
 
-	return (ULONG)o;
+	return (IPTR)o;
 }
 
-ULONG fbDispose(Class *cl, Object *o)
+IPTR fbDispose(Class *cl, Object *o)
 {
 	FontBitmapData *dat = INST_DATA(cl, o);
 
