@@ -27,7 +27,6 @@ static int GalliumHidd_ExpungeLib(LIBBASETYPEPTR LIBBASE)
 static int GalliumHidd_InitLib(LIBBASETYPEPTR LIBBASE)
 {
     LIBBASE->sd.loadedDriverHidd = NULL;
-    LIBBASE->sd.loadedDriverClassName = NULL;
     LIBBASE->sd.driver = NULL;
 
     LIBBASE->sd.hiddGalliumBaseDriverAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_GalliumBaseDriver);

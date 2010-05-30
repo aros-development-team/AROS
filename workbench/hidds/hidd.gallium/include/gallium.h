@@ -75,12 +75,14 @@ struct pHidd_GalliumBaseDriver_DisplaySurface
     APTR            context;
     APTR            rastport;
     ULONG           left;
-    ULONG           right;
     ULONG           top;
-    ULONG           bottom;
     ULONG           width;
     ULONG           height;
     APTR            surface;
+    ULONG           absx;
+    ULONG           absy;
+    ULONG           relx;
+    ULONG           rely;
 };
 
 struct pHidd_GalliumBaseDriver_DestroyPipeScreen
