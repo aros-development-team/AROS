@@ -234,12 +234,12 @@ VOID METHOD(GALLIUMSOFTPIPEDRIVER, Hidd_GalliumBaseDriver, DisplaySurface)
 
     WritePixelArray(
         hiddsoftpipebuffer->data, 
-        0,
-        0,
+        msg->left,
+        msg->top,
         spt->stride[surf->level],
         rp, 
-        msg->left, 
-        msg->top, 
+        msg->relx, 
+        msg->rely, 
         msg->width, 
         msg->height, 
         AROS_PIXFMT);
