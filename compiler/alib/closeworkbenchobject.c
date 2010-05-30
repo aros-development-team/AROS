@@ -46,6 +46,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    CloseWorkbenchObjectA( name, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = CloseWorkbenchObjectA( name, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* CloseWorkbenchObject */

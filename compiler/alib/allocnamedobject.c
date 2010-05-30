@@ -55,7 +55,7 @@
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 
-    AllocNamedObjectA(name, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = AllocNamedObjectA(name, AROS_SLOWSTACKTAGS_ARG(tag1));
 
     AROS_SLOWSTACKTAGS_POST
 } /* AllocNamedObject */

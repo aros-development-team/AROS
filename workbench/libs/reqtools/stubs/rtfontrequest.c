@@ -48,7 +48,7 @@ extern struct ReqToolsBase * ReqToolsBase;
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 
-    rtFontRequestA(fontreq, title, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = rtFontRequestA(fontreq, title, AROS_SLOWSTACKTAGS_ARG(tag1));
 
     AROS_SLOWSTACKTAGS_POST
     

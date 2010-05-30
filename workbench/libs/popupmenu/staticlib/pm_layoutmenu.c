@@ -45,7 +45,7 @@ extern struct PopupMenuBase * PopupMenuBase;
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 
-    PM_LayoutMenuA(window, pm, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = PM_LayoutMenuA(window, pm, AROS_SLOWSTACKTAGS_ARG(tag1));
     
     AROS_SLOWSTACKTAGS_POST
 } /* PM_LayoutMenu */

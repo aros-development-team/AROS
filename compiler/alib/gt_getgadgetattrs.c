@@ -54,6 +54,6 @@ extern struct Library * GadToolsBase;
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    GT_GetGadgetAttrsA (gad, win, req, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = GT_GetGadgetAttrsA (gad, win, req, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* GT_GetGadgetAttrs */

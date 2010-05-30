@@ -66,6 +66,6 @@ extern struct IntuitionBase * IntuitionBase;
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    SetAttrsA (object, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = SetAttrsA (object, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* SetAttrs */

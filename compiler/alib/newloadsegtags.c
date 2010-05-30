@@ -47,6 +47,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    NewLoadSeg (file, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = NewLoadSeg (file, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* NewLoadSegTags */

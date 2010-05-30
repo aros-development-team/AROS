@@ -50,7 +50,7 @@ extern struct ReqToolsBase * ReqToolsBase;
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 
-    rtEZRequestA(bodyfmt, gadfmt, reqinfo, argarray, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = rtEZRequestA(bodyfmt, gadfmt, reqinfo, argarray, AROS_SLOWSTACKTAGS_ARG(tag1));
 
     AROS_SLOWSTACKTAGS_POST
     
