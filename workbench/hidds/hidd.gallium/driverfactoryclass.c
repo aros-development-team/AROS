@@ -13,57 +13,26 @@
 #undef HiddGalliumBaseDriverAttrBase
 #define HiddGalliumBaseDriverAttrBase   (SD(cl)->hiddGalliumBaseDriverAB)
 
-static BOOL HiddGalliumIsLibLoaded(STRPTR libname)
+static VOID HiddGalliumCreateDriverObject(struct galliumstaticdata * sd)
 {
-    struct Library * library = NULL;
+    /* Contains ugly hardcodes/hacks */
     
-    Forbid();
+    /* 1. Let see if we can create hidd.gallium.nouveau object. This will
+        only work if the nouveau.hidd is actually loaded and used */
+    sd->driver = OOP_NewObject(NULL, "hidd.gallium.nouveau", NULL);
+    if (sd->driver)
+        return;
+
+    /* 2. Everything else failed. Let's try loading softpipe */
+    /* TODO: what if loadedDriverHidd was already set by previous attempt? */
+    sd->loadedDriverHidd = OpenLibrary("softpipe.hidd", 3);
+    if (sd->loadedDriverHidd)
+        sd->driver = OOP_NewObject(NULL, "hidd.gallium.softpipedriver", NULL);
     
-    for(library = (struct Library *)SysBase->LibList.lh_Head; library->lib_Node.ln_Succ != NULL;
-            library = (struct Library *)library->lib_Node.ln_Succ)
-    {
-        if (strcmp(library->lib_Node.ln_Name, libname) == 0)
-        {
-            Permit();
-            return TRUE;
-        }
-    }
-    
-    Permit();
-    return FALSE;
+    /* Final check */
+    if (!sd->driver)
+        bug("[GalliumDriverFactory] Error - no driver implementation available\n");
 }
-
-static VOID HiddGalliumLoadDriverHidd(struct galliumstaticdata * sd)
-{
-    /* This function is designed to contain all the ugly hardcodes */
-
-    /* Try loading nouveau.hidd */
-    if (!HiddGalliumIsLibLoaded("nvidia.hidd") && !HiddGalliumIsLibLoaded("nouveau2d.hidd"))
-    {
-        /* nvidia.hidd is not loaded so we might try loading nouveau.hidd */
-        if (!sd->loadedDriverHidd)
-        {
-            sd->loadedDriverHidd = OpenLibrary("nouveau.hidd", 3);
-            if (sd->loadedDriverHidd)
-            {
-                /* If the nouveau.hidd loaded, it means compatible nvidia card
-                   was found */
-                sd->loadedDriverClassName = "hidd.gallium.nouveaudriver";
-            }
-        }
-    }
-
-    /* Last option - softpipe.hidd */
-    if (!sd->loadedDriverHidd)
-    {
-        sd->loadedDriverHidd = OpenLibrary("softpipe.hidd", 3);
-        if (sd->loadedDriverHidd)
-        {
-            sd->loadedDriverClassName = "hidd.gallium.softpipedriver";
-        }
-    }
-}
-
 
 OOP_Object * METHOD(GALLIUMDRIVERFACTORY, Root, New)
 {
@@ -82,18 +51,9 @@ OOP_Object * METHOD(GALLIUMDRIVERFACTORY, Hidd_GalliumDriverFactory, GetDriver)
     
     /* TODO: Use semaphore lock the operation */
 
-    /* Load driver hidd */
-    if (!SD(cl)->loadedDriverHidd)
-        HiddGalliumLoadDriverHidd(SD(cl));
-
-    /* Create driver from selected driver implementation */
+    /* Create driver */
     if (!SD(cl)->driver)
-    {
-        if (SD(cl)->loadedDriverHidd)
-            SD(cl)->driver = OOP_NewObject(NULL, SD(cl)->loadedDriverClassName, NULL);
-        else
-            bug("[GalliumDriverFactory] Error - no driver implementation available\n");
-    }
+        HiddGalliumCreateDriverObject(SD(cl));
     
     /* Check driver interface version in relation to client version. This check
        needs to happen for each request, not only for the first one! */

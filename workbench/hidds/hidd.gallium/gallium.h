@@ -22,7 +22,6 @@ struct galliumstaticdata
     OOP_Class       *galliumDriverFactoryClass;
     OOP_AttrBase    hiddGalliumBaseDriverAB;
     struct Library  *loadedDriverHidd;
-    STRPTR          loadedDriverClassName;
     OOP_Object      *driver;
 };
 
