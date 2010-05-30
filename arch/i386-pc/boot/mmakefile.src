@@ -53,7 +53,7 @@ KLIBS   := exec boot aros dos graphics utility intuition keymap \
       	   expansion oop layers cybergraphics partition
 KDEVS   := timer input keyboard console gameport ata trackdisk
 KHNDLRS := con nil packet amberram cdrom afs sfs
-KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah pci pcipc i2c intelG45
+KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah pci pcipc
 KUSB    := poseidon_library.o hub_class.o hid_class.o massstorage_class.o pciusb_device.o usbromstartup_resource.o
 ##Disabled RSRC cpu isapnp
 ##Disabled HIDD vmwaregfx usbuhci
