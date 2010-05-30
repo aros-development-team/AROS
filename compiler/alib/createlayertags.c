@@ -54,6 +54,6 @@ extern struct Library * LayersBase;
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    CreateLayerTagList(li,bm,x0,y0,x1,y1,flags,AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = CreateLayerTagList(li,bm,x0,y0,x1,y1,flags,AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* CreateLayerTags */

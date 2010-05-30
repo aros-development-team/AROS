@@ -56,7 +56,7 @@ extern struct Library * BulletBase;
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
     
-    ObtainInfoA (glyphEngine, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = ObtainInfoA (glyphEngine, AROS_SLOWSTACKTAGS_ARG(tag1));
     
     AROS_SLOWSTACKTAGS_POST
     

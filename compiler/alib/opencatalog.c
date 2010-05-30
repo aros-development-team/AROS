@@ -62,7 +62,7 @@ extern struct LocaleBase *LocaleBase;
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 
-    OpenCatalogA(locale, name, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = OpenCatalogA(locale, name, AROS_SLOWSTACKTAGS_ARG(tag1));
 
     AROS_SLOWSTACKTAGS_POST
 } /* OpenCatalog */

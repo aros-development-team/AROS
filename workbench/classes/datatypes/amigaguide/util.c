@@ -219,7 +219,7 @@ void UnInstallClipRegionSafe(struct ClassBase *cb, struct GadgetInfo *ginfo,
 IPTR NotifyAttrs(Object * o, void * ginfo, ULONG flags, Tag tag1, ...)
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    DoMethod(o, OM_NOTIFY, AROS_SLOWSTACKTAGS_ARG(tag1), (IPTR)ginfo, flags);
+    retval = DoMethod(o, OM_NOTIFY, AROS_SLOWSTACKTAGS_ARG(tag1), (IPTR)ginfo, flags);
     AROS_SLOWSTACKTAGS_POST
 }
 #else

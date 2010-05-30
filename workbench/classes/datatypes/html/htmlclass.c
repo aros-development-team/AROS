@@ -222,7 +222,7 @@ void linelist_free( layout_struct *ldata )
 IPTR NotifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, Tag tag1, ...)
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    DoMethod(o, OM_NOTIFY, AROS_SLOWSTACKTAGS_ARG(tag1), (IPTR) ginfo, flags);
+    retval = DoMethod(o, OM_NOTIFY, AROS_SLOWSTACKTAGS_ARG(tag1), (IPTR) ginfo, flags);
     AROS_SLOWSTACKTAGS_POST
 }
 

@@ -48,6 +48,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    AddAppMenuItemA (id, userdata, text, msgport, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = AddAppMenuItemA (id, userdata, text, msgport, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* AddAppMenuItem */

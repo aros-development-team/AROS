@@ -51,6 +51,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    AddAppIconA (id, userdata, text, msgport, lock, diskobj, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = AddAppIconA (id, userdata, text, msgport, lock, diskobj, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* AddAppIcon */

@@ -50,6 +50,6 @@ extern struct Library *DataTypesBase;
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    SetDTAttrsA (o, win, req, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = SetDTAttrsA (o, win, req, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* SetDTAttrs */

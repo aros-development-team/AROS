@@ -47,6 +47,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    VideoControl (cm, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = VideoControl (cm, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* VideoControlTags */

@@ -84,8 +84,7 @@ __END_DECLS
 	    va_start (args, arg);			\
 							\
 	    if ((tags = GetTagsFromStack (arg, args)))	\
-	    {						\
-		retval =
+	    {
 
 #	define AROS_SLOWSTACKTAGS_ARG(arg) tags
 

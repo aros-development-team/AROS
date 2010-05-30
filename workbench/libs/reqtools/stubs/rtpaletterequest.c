@@ -48,7 +48,7 @@ extern struct ReqToolsBase * ReqToolsBase;
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 
-    rtPaletteRequestA(title, reqinfo, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = rtPaletteRequestA(title, reqinfo, AROS_SLOWSTACKTAGS_ARG(tag1));
 
     AROS_SLOWSTACKTAGS_POST
     

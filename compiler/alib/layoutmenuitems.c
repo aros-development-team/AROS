@@ -53,6 +53,6 @@ extern struct Library * GadToolsBase;
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    LayoutMenuItemsA (menuitem, vi, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = LayoutMenuItemsA (menuitem, vi, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* LayoutMenuItems */
