@@ -212,7 +212,7 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	/*
 	    Get all information passed by pci class calling OOP_NewObject()
 	*/
-	while((tag = NextTagItem(tags)))
+	while((tag = NextTagItem((struct TagItem **)&tags)))
 	{
 	    ULONG idx;
 
@@ -744,7 +744,7 @@ void PCIDev__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 
     tags = msg->attrList;
 
-    while ((tag = NextTagItem(&tags)))
+    while ((tag = NextTagItem((struct TagItem **)&tags)))
     {
 	if (IS_PCIDEV_ATTR(tag->ti_Tag, idx))
 	{
