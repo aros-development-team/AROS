@@ -6,6 +6,7 @@
 #include "nouveau_intern.h"
 
 #include <proto/oop.h>
+#include <proto/exec.h>
 #include <aros/symbolsets.h>
 
 static ULONG Novueau_Init(LIBBASETYPEPTR LIBBASE)
@@ -18,13 +19,18 @@ static ULONG Novueau_Init(LIBBASETYPEPTR LIBBASE)
     { IID_Hidd_Gfx,         &LIBBASE->sd.gfxAttrBase },
     { IID_Hidd_PlanarBM,    &LIBBASE->sd.planarAttrBase },
     { IID_Hidd_I2C_Nouveau, &LIBBASE->sd.i2cNouveauAttrBase },
+    { IID_Hidd_GalliumBaseDriver,   &LIBBASE->sd.galliumAttrBase },
     { NULL, NULL }
     };
 
     if (!OOP_ObtainAttrBases(attrbases))
         return FALSE;
+    
+    InitSemaphore(&LIBBASE->sd.multibitmapsemaphore);
 
     return TRUE;
 }
 
 ADD2INITLIB(Novueau_Init, 0);
+
+ADD2LIBS((STRPTR)"gallium.hidd", 0, static struct Library *, GalliumBase);

@@ -21,8 +21,20 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPixel)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     IPTR addr = (msg->x * bmdata->bytesperpixel) + (bmdata->pitch * msg->y);
-    addr += (IPTR)bmdata->bo->map;
-
+    
+    /* FIXME "Optimistics" synchronization (yes, I know it's wrong) */
+    IPTR map = (IPTR)bmdata->bo->map;
+    
+    /* If the current map was NULL, wait until bitmap lock is released. 
+       When it happens, it is guaranteed that bo->map is not NULL */
+    if (map == (IPTR)NULL)
+    {
+        LOCK_BITMAP;
+        addr += (IPTR)bmdata->bo->map;
+    }
+    else
+        addr += map;
+    
     switch(bmdata->bytesperpixel)
     {
     case(1):
@@ -35,15 +47,30 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPixel)
         writel(msg->pixel, (APTR)addr);
         break;
     }
+
+    if (map == (IPTR)NULL)    
+        UNLOCK_BITMAP;
 }
 
 HIDDT_Pixel METHOD(NouveauBitMap, Hidd_BitMap, GetPixel)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     IPTR addr = (msg->x * bmdata->bytesperpixel) + (bmdata->pitch * msg->y);
-    addr += (IPTR)bmdata->bo->map;
     HIDDT_Pixel pixel = 0;
-
+    
+    /* FIXME "Optimistics" synchronization (yes, I know it's wrong) */
+    IPTR map = (IPTR)bmdata->bo->map;
+    
+    /* If the current map was NULL, wait until bitmap lock is released. 
+       When it happens, it is guaranteed that bo->map is not NULL */
+    if (map == (IPTR)NULL)
+    {
+        LOCK_BITMAP;
+        addr += (IPTR)bmdata->bo->map;
+    }
+    else
+        addr += map;
+    
     switch(bmdata->bytesperpixel)
     {
     case(1):
@@ -56,6 +83,9 @@ HIDDT_Pixel METHOD(NouveauBitMap, Hidd_BitMap, GetPixel)
         pixel = readl((APTR)addr);
         break;
     }
+    
+    if (map == (IPTR)NULL)    
+        UNLOCK_BITMAP;
     
     return pixel;
 }
@@ -88,6 +118,7 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
         bmdata->pitch = (bmdata->width + 63) & ~63;
         bmdata->pitch *= bmdata->bytesperpixel;
         bmdata->fbid = 0; /* Default value */
+        InitSemaphore(&bmdata->semaphore);
 
 	    /* Creation of buffer object */
 	    /* FIXME: check result of call */

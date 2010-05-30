@@ -7,6 +7,7 @@
 
 #include <hidd/graphics.h>
 #include <hidd/i2c.h>
+#include <hidd/gallium.h>
 
 #include "nouveau/nouveau_drmif.h"
 #include "nouveau/nouveau_bo.h"
@@ -27,21 +28,23 @@ struct HIDDNouveauData
 };
 
 #define CLID_Hidd_BitMap_Nouveau        "hidd.bitmap.nouveau"
-#define CLID_Hidd_BitMap_NouveauOff     "hidd.bitmap.nouveauoff"
 #define CLID_Hidd_BitMap_NouveauPlanar  "hidd.bitmap.nouveauplanar"
 
+/* Synchoronization note: when semaphore is not obtained, it is guranteed that
+   bo->map is correct */
 struct HIDDNouveauBitMapData
 {
-    struct nouveau_bo * bo; /* Buffer object behind bitmap */
+    struct SignalSemaphore  semaphore;
+    struct nouveau_bo       *bo; /* Buffer object behind bitmap */
 
-    ULONG height;
-    ULONG width;
-    ULONG pitch;
-    UBYTE bytesperpixel;    /* In bytes */
-    UBYTE depth;            /* In bits */
+    ULONG                   height;
+    ULONG                   width;
+    ULONG                   pitch;
+    UBYTE                   bytesperpixel;    /* In bytes */
+    UBYTE                   depth;            /* In bits */
     
-    ULONG fbid;             /* Contains ID under which bitmap is registered
-                               as framebuffer or 0 otherwise */
+    ULONG                   fbid;             /* Contains ID under which bitmap 
+                                                is registered as framebuffer or 0 otherwise */
 };
 
 struct planarbm_data
@@ -80,6 +83,12 @@ struct HIDDNouveauI2CData
     IPTR    i2c_chan;
 };
 
+#define CLID_Hidd_Gallium_Nouveau       "hidd.gallium.nouveau"
+
+struct HIDDGalliumNouveauData
+{
+};
+
 struct CardData
 {
     /* Card controlling objects */
@@ -101,6 +110,7 @@ struct staticdata
     OOP_Class       *bmclass;
     OOP_Class       *planarbmclass;
     OOP_Class       *i2cclass;
+    OOP_Class       *galliumclass;
     
     OOP_AttrBase    pixFmtAttrBase;
     OOP_AttrBase    gfxAttrBase;
@@ -108,8 +118,15 @@ struct staticdata
     OOP_AttrBase    bitMapAttrBase;
     OOP_AttrBase    planarAttrBase;
     OOP_AttrBase    i2cNouveauAttrBase;
+    OOP_AttrBase    galliumAttrBase;
 
     struct CardData carddata;
+    
+    /* TEMP - FIXME HACK FOR GALLIUM */
+    struct HIDDNouveauBitMapData * screenbitmap;
+    /* TEMP - FIXME HACK FOR GALLIUM */
+    
+    struct SignalSemaphore multibitmapsemaphore;
 };
 
 LIBBASETYPE 
@@ -124,6 +141,15 @@ LIBBASETYPE
 #define BASE(lib) ((LIBBASETYPEPTR)(lib))
 
 #define SD(cl) (&BASE(cl->UserData)->sd)
+
+#define LOCK_BITMAP      { ObtainSemaphore(&bmdata->semaphore); }
+#define UNLOCK_BITMAP        { ReleaseSemaphore(&bmdata->semaphore); }
+
+#define LOCK_BITMAP_BM(bmdata)   { ObtainSemaphore(&(bmdata)->semaphore); }
+#define UNLOCK_BITMAP_BM(bmdata) { ReleaseSemaphore(&(bmdata)->semaphore); }
+
+#define LOCK_MULTI_BITMAP    { ObtainSemaphore(&(SD(cl))->multibitmapsemaphore); }
+#define UNLOCK_MULTI_BITMAP  { ReleaseSemaphore(&(SD(cl))->multibitmapsemaphore); }
 
 #define writel(val, addr)               (*(volatile ULONG*)(addr) = (val))
 #define readl(addr)                     (*(volatile ULONG*)(addr))
