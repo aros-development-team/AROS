@@ -154,7 +154,6 @@ static BOOL HIDDNouveauNV50AcquireSurface2D(struct CardData * carddata,
         OUT_RING  (chan, fmt);
         OUT_RING  (chan, 1);
         BEGIN_RING(chan, eng2d, mthd + 0x14, 1);
-//FIXME        OUT_RING  (chan, (uint32_t)exaGetPixmapPitch(ppix));
         OUT_RING  (chan, (uint32_t)bmdata->pitch);
     } else {
         BEGIN_RING(chan, eng2d, mthd, 5);
@@ -227,13 +226,12 @@ static BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
     OUT_RING  (chan, 0);
     OUT_RING  (chan, srcY);
 
-    /* FIXME: !!!!!VERY WRONG - SOMEONE CAN READ/WRITE AT THE SAME TIME USING MAP */
+    /* NOTE: Reads/writes via bo->map need to be protected where they exist (PutPixel/GetPixel) */
     nouveau_bo_unmap(src_bo);
     nouveau_bo_unmap(dst_bo);
 
     FIRE_RING (chan);
     
-    /* FIXME: !!!!!VERY WRONG - SOMEONE CAN READ/WRITE AT THE SAME TIME USING MAP */
     nouveau_bo_map(src_bo, NOUVEAU_BO_RDWR);
     nouveau_bo_map(dst_bo, NOUVEAU_BO_RDWR);    
     
@@ -758,6 +756,7 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, NewBitMap)
                     /* User supplied friend bitmap. Is the friend bitmap a
                     NVidia Gfx hidd bitmap ? */
                     OOP_GetAttr(friend, aHidd_BitMap_ClassPtr, (APTR)&friend_class);
+
                     if (friend_class == SD(cl)->bmclass) 
                     {
                         /* Friend was NVidia hidd bitmap. Now we can supply our own class */
@@ -804,6 +803,11 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
         struct CardData * carddata = &(SD(cl)->carddata);
         BOOL ret = FALSE;
         
+        LOCK_MULTI_BITMAP;
+        LOCK_BITMAP_BM(srcdata);
+        LOCK_BITMAP_BM(destdata);
+        UNLOCK_MULTI_BITMAP;
+        
         if (carddata->architecture < NV_ARCH_50)
         {
             ret = HIDDNouveauNV04CopySameFormat(carddata, srcdata, destdata, 
@@ -817,12 +821,17 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
                         msg->width, msg->height);
         }
 
+        UNLOCK_BITMAP_BM(destdata);
+        UNLOCK_BITMAP_BM(srcdata);
+
         if (ret)
             return;
+        
         /* If operation failed, fallback to default method */
     }
-    
+
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    
 }
 
 VOID METHOD(Nouveau, Root, Get)
@@ -859,6 +868,12 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, Show)
             {
                 bug("[Nouveau] Video mode not set\n");
                 return NULL;
+            }
+            else
+            {
+                /* TEMP - FIXME HACK FOR GALLIUM */
+                SD(cl)->screenbitmap = (struct HIDDNouveauBitMapData *)OOP_INST_DATA(bmclass, msg->bitMap);
+                /* TEMP - FIXME HACK FOR GALLIUM */
             }
         }
     }
