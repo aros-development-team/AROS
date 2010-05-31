@@ -296,7 +296,7 @@ VOID CMD_READ_Ready(LIBBASETYPEPTR LIBBASE, struct IOExtSer *ioSer)
         ptr++;
     }
 
-    QueueSerRequest(LIBBASE);
+    QueueSerRequest( LIBBASE ,  PPP_MAXBUFF );
 }
 
 

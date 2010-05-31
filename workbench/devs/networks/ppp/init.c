@@ -52,7 +52,7 @@ BOOL GetToken(BYTE *b,BYTE *t){
   BYTE *tok;
   ULONG tlen; 
   for( tok = b ; ( *tok == ' ' )&&( *tok != 0 ) ; tok++ );    
-  for( tlen=0 ; ( tok[tlen] != ' ' )&&( tok[tlen] != 0 )&&( tok[tlen] != '\n' ) ; tlen++ ); //nice!
+  for( tlen=0 ; ( tok[tlen] != ' ' )&&( tok[tlen] != 0 )&&( tok[tlen] != '\n' ) ; tlen++ ); // I am sorry
   tok[tlen] = 0; 
   if( tlen < 1 || tlen >= PPP_MAXARGLEN ) return FALSE;
   strcpy(t,tok);
@@ -90,12 +90,6 @@ BOOL ReadConfig(LIBBASETYPEPTR LIBBASE)
      LIBBASE->SerUnitNum = 0;
      LIBBASE->enable_dns = FALSE;
       
-     /*
-     sdu->sdu_BaudRate = 9600;
-     sdu->sdu_State = 0;
-     sdu->sdu_StAddr = 0;
-     sdu->sdu_HwAddr = 0;
-     */
   
     for(i=0;i<PPP_MAXATCOM; i++) LIBBASE->atc[i].command = 0;// zeroing commands
      
@@ -139,6 +133,7 @@ BOOL ReadConfig(LIBBASETYPEPTR LIBBASE)
                  
                if( strcasecmp("SEND",tok) == 0 ){  
                  if( GetLineEnd(linebuff,tok) ){
+					 strcat( tok , "\r" );
                      strcpy( LIBBASE->atc[comnum].str , tok );
                      LIBBASE->atc[comnum].command = COM_SEND;
                 //   bug("send=%s\n",LIBBASE->atc[comnum].str );
@@ -160,7 +155,7 @@ BOOL ReadConfig(LIBBASETYPEPTR LIBBASE)
               }
             
                else if( strcasecmp("DELAY",tok) == 0 ){      
-                  LIBBASE->atc[comnum].command = COM_WAIT;
+                  LIBBASE->atc[comnum].command = COM_DELAY;
                   if( GetToken(linebuff,tok) ){ 
                        LIBBASE->atc[comnum].arg = atoi( tok );
                      }else{
@@ -210,8 +205,8 @@ BOOL DialUp(LIBBASETYPEPTR LIBBASE)
       
      if( LIBBASE->atc[i].command == COM_SEND ){
          bug("SEND \"%s\"\n",LIBBASE->atc[i].str); 
-         DoStr( LIBBASE, LIBBASE->atc[i].str);
-         DoStr( LIBBASE, "\r");
+         DoStr( LIBBASE, LIBBASE->atc[i].str);	 
+	   //  SendStr( LIBBASE, LIBBASE->atc[i].str ,15 );
       } 
      
       i++; 
@@ -307,10 +302,9 @@ VOID PPP_Process(VOID)
         signals = Wait(waitmask);
     
       if(GetMsg(LIBBASE->TimeMsg)){
+		  
         // bug("PPP process: Timer\n");
         //bug(" ser %d,ppp %d,dev %d\n",LIBBASE->serial_ok,LIBBASE->ppp_online,LIBBASE->device_up );
-        
-        SetTimer(LIBBASE,0);  
     
        if( LIBBASE->device_up && ( ! LIBBASE->serial_ok ) ){
            
@@ -319,14 +313,6 @@ VOID PPP_Process(VOID)
           if( OpenSerial(LIBBASE) ){                           
               D(bug("[PPP] ModemDemonProcess: Serial OK !\n"));                                         
 
-                   AbortIO((struct IORequest *)LIBBASE->sdu_SerRx);
-                   WaitIO((struct IORequest *)LIBBASE->sdu_SerRx);
-                   while(GetMsg(LIBBASE->sdu_RxPort));
-                 
-                   AbortIO((struct IORequest *)LIBBASE->sdu_SerTx);
-                   WaitIO((struct IORequest *)LIBBASE->sdu_SerTx);
-                   while(GetMsg(LIBBASE->sdu_TxPort)); 
-                   
                    if( ! DialUp(LIBBASE) ){  
                        
                        CloseSerial(LIBBASE);
@@ -335,18 +321,8 @@ VOID PPP_Process(VOID)
                    } else {
                          
                    init_ppp( LIBBASE );
-                     
-                   // bug("cleaning rx & tx\n");
-                     AbortIO((struct IORequest *)LIBBASE->sdu_SerRx);
-                     WaitIO((struct IORequest *)LIBBASE->sdu_SerRx);
-                     while(GetMsg(LIBBASE->sdu_RxPort));
-                 
-                     AbortIO((struct IORequest *)LIBBASE->sdu_SerTx);
-                     WaitIO((struct IORequest *)LIBBASE->sdu_SerTx);
-                     while(GetMsg(LIBBASE->sdu_TxPort));
-                   // bug("cleaning OK\n");
-                   
-                    QueueSerRequest(LIBBASE);   
+
+                   QueueSerRequest(LIBBASE , PPP_MAXBUFF );   
                   
                  }         
              }  
@@ -431,7 +407,7 @@ struct PPP_DevUnit *InitPPPUnit(LIBBASETYPEPTR LIBBASE,ULONG s2unit)
         /* Allocate a new Unit structure */
      if(sdu = AllocMem(sizeof(struct Unit), MEMF_CLEAR|MEMF_PUBLIC)){ 
         
-        LIBBASE->sd_Unit = sdu;
+        LIBBASE->sd_Unit = (struct Unit *)sdu;
                  
         ReadConfig(LIBBASE);
         
@@ -516,18 +492,16 @@ static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 D(bug("[PPP] Expunge()\n"));
   
     return FALSE;
-  
+   /* 
     if(LIBBASE->sd_OpenCnt)
     {
     // Sorry, we're busy.  We'll expunge later on if we can. 
        LIBBASE->sd_Flags |= LIBF_DELEXP;
        D(bug("[PPP] Expunge,busy\n"));
        return FALSE;
-      
     }
-  
-    
-    return TRUE;    
+    return TRUE;   
+	*/ 
 }
 
 
@@ -561,9 +535,9 @@ static int GM_UNIQUENAME(Open)
     if(unitnum == 0 ){  
       if(sdu = InitPPPUnit(LIBBASE,unitnum)){        
         if(bufftag = FindTagItem(S2_CopyToBuff, (struct TagItem *)req->ios2_BufferManagement)){   
-          LIBBASE->CopyToBuffer =  bufftag->ti_Data;
+          LIBBASE->CopyToBuffer =  (APTR)bufftag->ti_Data;
           if(bufftag = FindTagItem(S2_CopyFromBuff, (struct TagItem *)req->ios2_BufferManagement)){  
-             LIBBASE->CopyFromBuffer =  bufftag->ti_Data;
+             LIBBASE->CopyFromBuffer =  (APTR)bufftag->ti_Data;
               
              status = TRUE;
              LIBBASE->sd_OpenCnt++;
@@ -686,15 +660,12 @@ AROS_LH1(void, beginio,
     LIBBASETYPEPTR, LIBBASE, 5, PPPDev)
 {
     AROS_LIBFUNC_INIT
-//D(bug("[PPP] beginio()\n"));
-
 
    if(  ( ! LIBBASE->sdu_RxPort ) &&  LIBBASE->sdu_TxPort ){ // PPP_process is busy because openserial wait and wait...
        req->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
        req->ios2_WireError = S2WERR_UNIT_OFFLINE;
        TermIO(LIBBASE,req);
    }else{
- //   D(bug("[PPP] PutMsg \n"));
        req->ios2_Req.io_Flags &= ~IOF_QUICK;
        PutMsg(  (struct MsgPort *) req->ios2_Req.io_Unit , (struct Message *)req );
     }

@@ -270,7 +270,7 @@ void ConfNetWork(){
   } 
 }   
 
-void RunRoute(){      // called from ifconfig -> S2_ONLINE -> handler.c Online() 
+void RunRoute(){    // called from ConfNetWork() -> ifconfig -> S2_ONLINE -> handler.c Online() 
  BPTR InFile, OutFile;
  UBYTE *buff;
  if( buff = AllocMem( FILEBUFFSIZE , MEMF_CLEAR|MEMF_PUBLIC ) ){                       
