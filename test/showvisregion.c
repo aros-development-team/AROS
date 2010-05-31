@@ -37,7 +37,7 @@ static struct Screen *scr;
 static struct Window *win;
 static struct Layer *lay;
 static struct RDArgs *MyArgs;
-static LONG Args[NUM_ARGS];
+static IPTR Args[NUM_ARGS];
 static char s[256];
 
 static void Cleanup(char *msg)
