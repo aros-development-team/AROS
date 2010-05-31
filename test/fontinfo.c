@@ -34,7 +34,7 @@ struct TextFont *font;
 STRPTR fontname;
 ULONG fontsize, xdpi, ydpi;
 struct RDArgs *myargs;
-ULONG args[NUM_ARGS];
+IPTR args[NUM_ARGS];
 char s[256];
 
 static void cleanup(char *msg)

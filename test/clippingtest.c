@@ -25,7 +25,7 @@ static struct RastPort *rp;
 static struct Layer *lay;
 
 static struct RDArgs *myargs;
-static LONG args[NUM_ARGS];
+static IPTR args[NUM_ARGS];
 static char s[256];
 
 static void Cleanup(char *msg)

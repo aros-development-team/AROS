@@ -822,7 +822,7 @@ static char s[300];
 static char *filename;
 static BOOL all;
 static struct RDArgs *myargs;
-static LONG args[NUM_ARGS];
+static IPTR args[NUM_ARGS];
 
 /****************************************************************************************/
 
