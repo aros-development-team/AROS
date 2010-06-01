@@ -188,7 +188,7 @@ void * linelist_store( layout_struct *ldata, string textseg, u_short textlen,
 	line->ln_FgPen = (softstyle & FSF_UNDERLINED) ? 3 : data->fgpen;
 	line->ln_BgPen = data->bgpen;
 	line->ln_Style = softstyle;
-	D(bug("%08p => num=%2d xo=%2d yo=%2d w=%2d h=%2d flag=%d style=%d\n", line, (int)line->ln_Data,
+	D(bug("%08p => num=%2d xo=%2d yo=%2d w=%2d h=%2d flag=%d style=%d\n", line, (long)line->ln_Data,
 		line->ln_XOffset, line->ln_YOffset, line->ln_Width, line->ln_Height, line->ln_Flags, line->ln_Style);)
 
 	/* Add the line to the list */
@@ -209,7 +209,7 @@ void * linelist_addlf( layout_struct *ldata, void * myline )
     line = myline;
     data = ldata->userdata;
     line->ln_Flags |= LNF_LF;
-    D(bug("%08p => num=%2d addlf\n", line, (int)line->ln_Data);)
+    D(bug("%08p => num=%2d addlf\n", line, (long)line->ln_Data);)
     return line;
 }
 
