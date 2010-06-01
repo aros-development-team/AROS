@@ -226,7 +226,7 @@ AROS_UFH3(void, hexidedit_function,
 
 AROS_UFH3(void, display_function,
     AROS_UFHA(struct Hook *, h, A0),
-    AROS_UFHA(char **, strings, A2),
+    AROS_UFHA(const char **, strings, A2),
     AROS_UFHA(struct ListNode *, entry, A1))
 {
     AROS_USERFUNC_INIT
@@ -1379,7 +1379,7 @@ AROS_UFH3(void, lv_click,
         switch (iln->ln.ln_Type)
         {
         case LNT_Device:
-            sprintf(str, "%s: %ld", MSG(WORD_Units),countNodes(&iln->list, LNT_Harddisk));
+            sprintf(str, "%s: %d", MSG(WORD_Units),countNodes(&iln->list, LNT_Harddisk));
             DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, (IPTR)str, MUIV_List_Insert_Bottom);
             enableObject(gadgets.buttons[GB_REMOVE_ENTRY]);
             if (iln->change_count > 0)
@@ -1411,7 +1411,7 @@ AROS_UFH3(void, lv_click,
                     ttn = findTableTypeNode(partition->table->type);
                     strcat(str, ttn->pti->pti_Name);
                     DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, (IPTR)str, MUIV_List_Insert_Bottom);
-                    sprintf(str, "%s: %ld", MSG(WORD_Partitions), countNodes(&iln->list, LNT_Partition));
+                    sprintf(str, "%s: %d", MSG(WORD_Partitions), countNodes(&iln->list, LNT_Partition));
                     DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, (IPTR)str, MUIV_List_Insert_Bottom);
                 }
                 else

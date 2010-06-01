@@ -142,7 +142,7 @@ void getSizeStr(STRPTR str, ULONG size)
         size = size / 1024;
     }
     r = r*10/1024;
-    sprintf(str, "%ld.%ld%c",size,r,c);
+    sprintf(str, "%d.%d%c",size,r,c);
 }
 
 /* size in kB */

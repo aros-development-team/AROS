@@ -143,9 +143,9 @@ STATIC struct SashimiResource * GlobalSashimiResource;
 
 /****************************************************************************/
 
-#define LVORawIOInit	 (-84 * LIB_VECTSIZE)
-#define LVORawMayGetChar (-85 * LIB_VECTSIZE)
-#define LVORawPutChar	 (-86 * LIB_VECTSIZE)
+#define LVORawIOInit	 (-84 * (WORD)LIB_VECTSIZE)
+#define LVORawMayGetChar (-85 * (WORD)LIB_VECTSIZE)
+#define LVORawPutChar	 (-86 * (WORD)LIB_VECTSIZE)
 
 /****************************************************************************/
 

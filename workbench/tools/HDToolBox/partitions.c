@@ -30,7 +30,7 @@ void setPartitionName(struct HDTBPartition *pnode)
     D(bug("[HDToolBox] setPartitionName()\n"));
 
     if (pnode->pos != -1)
-        sprintf(pnode->listnode.ln.ln_Name, "Partition %ld", pnode->pos);
+        sprintf(pnode->listnode.ln.ln_Name, "Partition %d", pnode->pos);
     else
     {
         sprintf
@@ -279,13 +279,10 @@ BOOL validValue(struct HDTBPartition *table, struct HDTBPartition *current, ULON
 struct PartitionHandle *AddPartitionA(struct PartitionHandle *root, IPTR tag, ...)
 {
 //    D(bug("[HDToolBox] AddPartitionA()\n"));
-#warning "TODO: Check varargs usage is correct"
 #ifdef __AROS__
     AROS_SLOWSTACKMETHODS_PRE(tag)
     retval = (IPTR)AddPartition(root, (struct TagItem *)AROS_SLOWSTACKMETHODS_ARG(tag));
     AROS_SLOWSTACKMETHODS_POST
-
-    //return retval;  return is already done by AROS_SLOWSTACKMETHODS_POST
 #else
     return AddPartition(root, (struct TagItem *)&tag);
 #endif
