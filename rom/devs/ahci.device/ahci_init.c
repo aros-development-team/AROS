@@ -74,6 +74,15 @@ AROS_UFH3(void, ahci_Enumerator,
                 /* HBA-chip list is protected for us in Init */
                 AddTail((struct List*)&LIBBASE->chip_list, (struct Node*)hba_chip);
 
+                /* HBA-port linked list is semaphore protected */
+                InitSemaphore(&hba_chip->port_list_lock);
+
+                /* Initialize the HBA-chip list */
+                NEWLIST((struct MinList *)&hba_chip->port_list);
+
+                D(bug("[AHCI] hba%d_chip @ %p\n",HBACounter, hba_chip));
+                D(bug("[AHCI] hba%d IntHandler @ %p\n",HBACounter, hba_chip->IntHandler));
+
             }else{
                 /* Failed to allocate HIDDT_IRQ_Handler */
                 FreeVec(hba_chip->IntHandler);
@@ -92,11 +101,10 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
 
     if ((PCIObject = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL))) {
 
-        /* HBA linked list is semaphore protected */
+        /* HBA-chip linked list is semaphore protected */
         InitSemaphore(&LIBBASE->chip_list_lock);
 
-        /* Initialize the list of found host bus adapters */
-        ObtainSemaphore(&LIBBASE->chip_list_lock);
+        /* Initialize the HBA-chip list */
         NEWLIST((struct MinList *)&LIBBASE->chip_list);
 
         struct Hook FindHook = {
@@ -113,6 +121,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
 
         HIDD_PCI_EnumDevices(PCIObject, &FindHook, Requirements);
 
+        ObtainSemaphore(&LIBBASE->chip_list_lock);
         if ( !IsListEmpty(&LIBBASE->chip_list) ) {
 
             struct ahci_hba_chip *hba_chip;
