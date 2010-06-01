@@ -23,7 +23,7 @@ BPTR CreateTemporary(STRPTR buffer, CONST_STRPTR prefix)
     
     while (TRUE)
     {
-        sprintf(buffer, "%s%08lx", prefix, GetUniqueID());
+        sprintf(buffer, "%s%08x", prefix, GetUniqueID());
         fh = Open(buffer, MODE_NEWFILE);
         
         if (fh != NULL)
