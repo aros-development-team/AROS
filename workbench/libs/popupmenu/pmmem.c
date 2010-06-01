@@ -39,11 +39,11 @@ void PM_FreeVecPooled(APTR mem)
 
 ULONG PM_String_Length(STRPTR s)
 {
-	ULONG r=(ULONG)s;
+	IPTR r=(IPTR)s;
 	
 	while(*s++);
 	
-	return ((ULONG)s)-r;
+	return ((IPTR)s)-r;
 }
 
 STRPTR PM_String_Copy(STRPTR Source, STRPTR Dest, LONG Len)

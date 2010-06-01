@@ -70,7 +70,8 @@ struct PopupMenu *__saveds ASM PM_MakeItemA(register __a1 struct TagItem *tags G
 
 struct PopupMenu * __saveds ASM PM_MakeMenuA(register __a1 struct TagItem *tags GNUCREG(a1))
 {
-    struct TagItem *tag, *tstate;
+    struct TagItem *tag;
+    const struct TagItem *tstate;
     struct PopupMenu *first=0L, *last=0L;
     BOOL error=0;
 
@@ -100,7 +101,8 @@ struct PopupMenu * __saveds ASM PM_MakeMenuA(register __a1 struct TagItem *tags 
 
 struct PM_IDLst * __saveds ASM PM_MakeIDListA(register __a1 struct TagItem *tags GNUCREG(a1))
 {
-    struct TagItem *tag, *tstate;
+    struct TagItem *tag;
+    const struct TagItem *tstate;
     struct PM_IDLst *first=0L, *last=0L, *n=0L;
     BOOL error=0;
 
@@ -182,7 +184,7 @@ struct PM_IDLst * __saveds ASM PM_MakeIDListA(register __a1 struct TagItem *tags
     return first;
 }
 
-struct PM_IDLst * __saveds ASM PM_ExLstA(register __a1 ULONG *id GNUCREG(a1))
+struct PM_IDLst * __saveds ASM PM_ExLstA(register __a1 IPTR *id GNUCREG(a1))
 {
     struct PM_IDLst *first=0L, *last=0L, *n=0L;
     BOOL error=0;

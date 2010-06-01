@@ -792,7 +792,7 @@ APTR __saveds ASM PM_FilterIMsgA(register __a0 struct Window *w GNUCREG(a0),
     register __a2 struct IntuiMessage *im GNUCREG(a2),
     register __a3 struct TagItem *tags GNUCREG(a3))
 {
-        struct TagItem          *tstate;
+        const struct TagItem    *tstate;
         struct TagItem          *tag;
         struct Hook             *MenuHandler=NULL;
         BOOL                    autpd = FALSE, rawkey = FALSE;
@@ -820,15 +820,15 @@ APTR __saveds ASM PM_FilterIMsgA(register __a0 struct Window *w GNUCREG(a0),
                         if(im->Code==MENUDOWN || im->Code==MENUUP) {
                                 struct TagItem  opmtags[6];
 
-                                opmtags[0].ti_Tag=PM_Menu;              opmtags[0].ti_Data=(ULONG)pm;
+                                opmtags[0].ti_Tag=PM_Menu;              opmtags[0].ti_Data=(IPTR)pm;
                                 opmtags[1].ti_Tag=PM_Code;              opmtags[1].ti_Data=im->Code;
                                 opmtags[2].ti_Tag=PM_PullDown;          opmtags[2].ti_Data=TRUE;
                                 if(MenuHandler) {
-                                        opmtags[3].ti_Tag=PM_MenuHandler;       opmtags[3].ti_Data=(ULONG)MenuHandler;
+                                        opmtags[3].ti_Tag=PM_MenuHandler;       opmtags[3].ti_Data=(IPTR)MenuHandler;
                                 } else {
                                         opmtags[3].ti_Tag=PM_Dummy;             opmtags[3].ti_Data=0;
                                 }
-                                opmtags[4].ti_Tag=TAG_MORE;             opmtags[4].ti_Data=(ULONG)tags;
+                                opmtags[4].ti_Tag=TAG_MORE;             opmtags[4].ti_Data=(IPTR)tags;
                                 opmtags[5].ti_Tag=TAG_DONE;             opmtags[5].ti_Data=0;
 
                                 return PM_OpenPopupMenuA(w, opmtags);
@@ -923,7 +923,7 @@ APTR __saveds ASM PM_OpenPopupMenuA(register __a1 struct Window *prevwnd GNUCREG
 {
         APTR			ret = 0L;
         BOOL			shut_down = FALSE;
-        struct TagItem          *tstate;
+        const struct TagItem    *tstate;
         struct TagItem          *tag;
 #if 1
 #warning "trying to get rid of global p"
@@ -1120,7 +1120,8 @@ APTR __saveds ASM PM_OpenPopupMenuA(register __a1 struct Window *prevwnd GNUCREG
 LONG __saveds ASM PM_InsertMenuItemA(register __a0 struct PopupMenu *base GNUCREG(a0),
     register __a1 struct TagItem *tags GNUCREG(a1))
 {
-    struct TagItem *tag, *tstate;
+    struct TagItem *tag;
+    const struct TagItem *tstate;
     LONG count=0;
     ULONG method=0; // insertion method
     struct PopupMenu *pointer, *pm;
