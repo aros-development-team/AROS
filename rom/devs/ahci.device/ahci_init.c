@@ -37,8 +37,8 @@ AROS_UFH3(void, ahci_Enumerator,
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size5, &Base5size);
     if( !(Base5 == 0) ) {
         struct ahci_hba_chip *hba_chip;
-        if( (hba_chip = (struct ahci_hba_chip*) AllocVecPooled(LIBBASE->ahci_MemPool, sizeof(struct ahci_hba_chip))) ) {
-            if( (hba_chip->IntHandler = (HIDDT_IRQ_Handler *)AllocVecPooled(LIBBASE->ahci_MemPool, sizeof(HIDDT_IRQ_Handler))) ){
+        if( (hba_chip = (struct ahci_hba_chip*) AllocVec(sizeof(struct ahci_hba_chip), MEMF_CLEAR|MEMF_PUBLIC)) ) {
+            if( (hba_chip->IntHandler = (HIDDT_IRQ_Handler *)AllocVec(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC)) ){
 
                 OOP_Object *PCIDriver;
                 OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&PCIDriver);
@@ -75,8 +75,8 @@ AROS_UFH3(void, ahci_Enumerator,
                 AddTail((struct List*)&LIBBASE->chip_list, (struct Node*)hba_chip);
 
             }else{
-                /* Failed to allocate HIDDT_IRQ_Handler, should not happen */
-                FreeVecPooled(LIBBASE->ahci_MemPool, hba_chip->IntHandler);
+                /* Failed to allocate HIDDT_IRQ_Handler */
+                FreeVec(hba_chip->IntHandler);
             }
         }
     }
@@ -91,58 +91,51 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
     OOP_Object *PCIObject;
 
     if ((PCIObject = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL))) {
-        /* Create memory pool */
-        if((LIBBASE->ahci_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096))) {
 
-            /* HBA linked list is semaphore protected */
-            InitSemaphore(&LIBBASE->chip_list_lock);
+        /* HBA linked list is semaphore protected */
+        InitSemaphore(&LIBBASE->chip_list_lock);
 
-            /* Initialize the list of found host bus adapters */
-            ObtainSemaphore(&LIBBASE->chip_list_lock);
-            NEWLIST((struct MinList *)&LIBBASE->chip_list);
+        /* Initialize the list of found host bus adapters */
+        ObtainSemaphore(&LIBBASE->chip_list_lock);
+        NEWLIST((struct MinList *)&LIBBASE->chip_list);
 
-            struct Hook FindHook = {
-                h_Entry:    (IPTR (*)())ahci_Enumerator,
-                h_Data:     LIBBASE,
-            };
+        struct Hook FindHook = {
+            h_Entry:    (IPTR (*)())ahci_Enumerator,
+            h_Data:     LIBBASE,
+        };
 
-            struct TagItem Requirements[] = {
-                {tHidd_PCI_Class,       0x01},
-                {tHidd_PCI_SubClass,    0x06},
-                {tHidd_PCI_Interface,   0x01},
-                {TAG_DONE,              0x00}
-            };
+        struct TagItem Requirements[] = {
+            {tHidd_PCI_Class,       0x01},
+            {tHidd_PCI_SubClass,    0x06},
+            {tHidd_PCI_Interface,   0x01},
+            {TAG_DONE,              0x00}
+        };
 
-            HIDD_PCI_EnumDevices(PCIObject, &FindHook, Requirements);
+        HIDD_PCI_EnumDevices(PCIObject, &FindHook, Requirements);
 
-            if ( !IsListEmpty(&LIBBASE->chip_list) ) {
+        if ( !IsListEmpty(&LIBBASE->chip_list) ) {
 
-                struct ahci_hba_chip *hba_chip;
-                ForeachNode(&LIBBASE->chip_list, hba_chip) {
-                    if( ahci_setup_hba(hba_chip) ) {
-                        D(bug("[AHCI] HBA-setup succeed!\n"));
-                    }else{
-                        // de-allocate everything relating to this HBA-chip and remove it from the list
-                        D(bug("[AHCI] HBA-setup failed!\n"));
-                        REMOVE(hba_chip);
-                    }
+            struct ahci_hba_chip *hba_chip;
+            ForeachNode(&LIBBASE->chip_list, hba_chip) {
+                if( ahci_setup_hba(hba_chip) ) {
+                    D(bug("[AHCI] HBA-setup succeed!\n"));
+                }else{
+                    // de-allocate everything relating to this HBA-chip and remove it from the list
+                    D(bug("[AHCI] HBA-setup failed!\n"));
+                    REMOVE(hba_chip);
                 }
-                ReleaseSemaphore(&LIBBASE->chip_list_lock);
-                return TRUE;
-
-            }else{
-
-                /* Not a single AHCI HBA controller found */
-                ReleaseSemaphore(&LIBBASE->chip_list_lock);
-                DeletePool(LIBBASE->ahci_MemPool);
-                OOP_DisposeObject(PCIObject); 
-                return FALSE;
             }
-
+            ReleaseSemaphore(&LIBBASE->chip_list_lock);
+            return TRUE;
         }else{
-            D(bug("[AHCI] Failed to create memory pool\n"));
+            /* Not a single AHCI HBA controller found */
+            ReleaseSemaphore(&LIBBASE->chip_list_lock);
+            OOP_DisposeObject(PCIObject); 
+            return FALSE;
         }
+
         OOP_DisposeObject(PCIObject); 
+
     }else{
         D(bug("[AHCI] Failed to open PCI class\n"));
     }

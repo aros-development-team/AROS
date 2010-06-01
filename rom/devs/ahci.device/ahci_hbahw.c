@@ -328,6 +328,14 @@ BOOL ahci_disable_hba(struct ahci_hba_chip *hba_chip) {
 
 BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, ULONG portnum) {
     HBAHW_D("HBA-add_port...%ld\n",portnum);
-    return TRUE;
+
+    struct ahci_hba_port *hba_port;
+    if( (hba_port = (struct ahci_hba_port*) AllocVec(sizeof(struct ahci_hba_port), MEMF_CLEAR|MEMF_PUBLIC)) ) {
+        hba_port->parent_hba = hba_chip;
+        hba_port->PORTNumber = portnum;
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
