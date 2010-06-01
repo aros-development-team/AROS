@@ -258,12 +258,12 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
                 if (!DeleteFile(name))
                 {
                     LONG ioerr = IoErr();
-                    Printf("%s  Not Deleted", (ULONG)name);
+                    Printf("%s  Not Deleted", (IPTR)name);
                     PrintFault(ioerr, "");
                 }
                 else if (!quiet)
                 {
-                    Printf("%s  Deleted\n", (ULONG)name);
+                    Printf("%s  Deleted\n", (IPTR)name);
                 }
 
                 deletedfile = TRUE;
@@ -318,7 +318,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
                     SetProtection(ap->ap_Buf, 0);
                 else
                 {
-                    Printf("%s  Not Deleted", (ULONG)ap->ap_Buf);
+                    Printf("%s  Not Deleted", (IPTR)ap->ap_Buf);
                     PrintFault(ERROR_DELETE_PROTECTED, "");
                     deleteit = FALSE;
                 }
@@ -333,12 +333,12 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
             if (!DeleteFile(name))
             {
                 LONG ioerr = IoErr();
-                Printf("%s  Not Deleted", (ULONG)name);
+                Printf("%s  Not Deleted", (IPTR)name);
                 PrintFault(ioerr, "");
             }
             else if (!quiet)
             {
-                Printf("%s  Deleted\n", (ULONG)name);
+                Printf("%s  Deleted\n", (IPTR)name);
             }
 
             deletedfile = TRUE;

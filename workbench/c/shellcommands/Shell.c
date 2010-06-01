@@ -1796,7 +1796,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
 
 	if (__debug_mem)
 	{
-	    FreeVec(AllocVec(~0ul/2, MEMF_ANY)); /* Flush memory */
+	    FreeVec(AllocVec((ULONG)(~0ul/2), MEMF_ANY)); /* Flush memory */
 
 	    mem_before = AvailMem(MEMF_ANY);
 	    Printf("Available total memory before command execution: %10ld\n", mem_before);
@@ -1807,7 +1807,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
 	if (__debug_mem)
 	{
 	    LONG mem_after;
-	    FreeVec(AllocVec(~0ul/2, MEMF_ANY)); /* Flush memory */
+	    FreeVec(AllocVec((ULONG)(~0ul/2), MEMF_ANY)); /* Flush memory */
 
 	    mem_after = AvailMem(MEMF_ANY);
 	    Printf("Available total memory after command execution:  %10ld\n", mem_after);

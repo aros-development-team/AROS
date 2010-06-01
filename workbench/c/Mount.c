@@ -251,7 +251,7 @@ char *FlagsString = NULL;
 ULONG StackSize;
 ULONG Priority;
 ULONG Activate;
-int   GlobalVec;
+SIPTR GlobalVec;
 ULONG ForceLoad;
 char *HandlerString;
 char *DeviceString;
@@ -372,7 +372,7 @@ int main(void)
                     LONG err;
 
                     UBYTE stack_ap[sizeof(struct AnchorPath) + 3];
-                    struct AnchorPath	*MyAp = (struct AnchorPath *) (((ULONG) stack_ap + 3) & ~3);
+                    struct AnchorPath	*MyAp = (struct AnchorPath *) (((IPTR) stack_ap + 3) & ~3);
 
                     DEBUG_MOUNT(Printf("Mount: search for mountfile <%s>\n",
                                        (ULONG)*MyDevPtr));
@@ -1466,7 +1466,7 @@ ULONG			MyPatchFlags;
 
       PatchFileSysEntry		=(ULONG*) &MyFileSysEntry->fse_Type;
       PatchDeviceNode		=(ULONG*) &MyDeviceNode->dn_Type;
-      PatchDeviceNodeEnd	=(ULONG*) ((ULONG) MyDeviceNode + sizeof(struct DeviceNode));
+      PatchDeviceNodeEnd	=(ULONG*) ((IPTR) MyDeviceNode + sizeof(struct DeviceNode));
 
       while (MyPatchFlags)
       {

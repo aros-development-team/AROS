@@ -99,11 +99,11 @@ AROS_UFH3(LONG, PatchTask,
     if (port) {
         port->mp_Node.ln_Name = PORT_NAME;
         AddPort(port);
-        orig_func = SetFunction(CyberGfxBase, -28*LIB_VECTSIZE, MyLockBitMapTagList);
+        orig_func = SetFunction(CyberGfxBase, -28 * (WORD)LIB_VECTSIZE, MyLockBitMapTagList);
 	
 	/* Just wait for a signal from the port. There's no need to look at message contents */
 	WaitPort(port);
-	SetFunction(CyberGfxBase, -28*LIB_VECTSIZE, orig_func);
+	SetFunction(CyberGfxBase, -28 * (WORD)LIB_VECTSIZE, orig_func);
 	RemPort(port);
 	DeleteMsgPort(port);
     }

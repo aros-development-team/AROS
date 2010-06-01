@@ -157,7 +157,7 @@ UWORD i;
 			);
 		if (retval)
 		{
-			printf("ReadError %ld\n", retval);
+			printf("ReadError %d\n", retval);
 			return 0;
 		}
 		while ((i>=6) && (volume->blockbuffer[i]))
@@ -294,10 +294,10 @@ STRPTR errstr=NULL;
 												volume->blockbuffer, 512, volume->writecommand
 											);
 										if (retval)
-											printf("WriteError %ld\n", retval);
+											printf("WriteError %d\n", retval);
 									}
 									else
-										printf("WriteErrro %ld\n", retval);
+										printf("WriteErrro %d\n", retval);
 								}
 								else
 									error = IoErr();
@@ -387,7 +387,7 @@ UWORD *cmdcheck;
 	}
 }
 
-struct Volume *initVolume(STRPTR drivename, LONG use_mbr) {
+struct Volume *initVolume(STRPTR drivename, IPTR use_mbr) {
 struct Volume *volume=0;
 struct FileSysStartupMsg *fssm;
 struct DosList *dl;
@@ -566,7 +566,7 @@ ULONG retval;
 			volume->blockbuffer, 512, volume->readcommand
 		);
 	if (retval)
-		printf("ReadError %ld\n", retval);
+		printf("ReadError %d\n", retval);
 	else
 	{
 		if ((AROS_BE2LONG(volume->blockbuffer[0]) & 0xFFFFFF00)==0x444F5300)
@@ -577,13 +577,13 @@ ULONG retval;
 					volume->blockbuffer, 512, volume->writecommand
 				);
 			if (retval)
-				printf("WriteError %ld\n", retval);
+				printf("WriteError %d\n", retval);
 		}
 	}
 }
 
 int main(void) {
-LONG myargs[5]={0,0,0,0,0};
+IPTR myargs[5]={0,0,0,0,0};
 struct RDArgs *rdargs;
 struct Volume *volume;
 

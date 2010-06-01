@@ -458,7 +458,7 @@ int main (void)
 			{
 				if (*names && error != ERROR_BREAK)
 				{
-					Printf("TYPE: can't open %s\n", (LONG) *names);
+					Printf("TYPE: can't open %s\n", (IPTR) *names);
 				}
 
 				if (error != -1)

@@ -69,7 +69,7 @@ AROS_SHA(STRPTR,   , TO,     /K,   NULL))
     AROS_SHCOMMAND_INIT
 
     STRPTR *a, b;
-    ULONG l, max=~0ul;
+    ULONG l, max = ~0;
     BPTR out=Output();
     LONG error=0;
 
