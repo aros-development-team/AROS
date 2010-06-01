@@ -48,9 +48,6 @@
 struct ahciBase {
     struct Device device;
 
-    /* Memory pool */
-    APTR    ahci_MemPool;
-
     /*
         List of all found AHCI host devices (referred to as host bus adapters, or HBA's)
         Semaphore protects ONLY the integrity of the list, not individual HBA-chip struct
@@ -95,7 +92,7 @@ struct ahci_hba_chip {
 struct ahci_hba_port {
     struct  MinNode ahci_port_Node;
 
-    ULONG   PortUnitNumber;
+    ULONG   PORTNumber;
 
     /*
         The port belongs to this HBA-chip
