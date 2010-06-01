@@ -14,7 +14,7 @@
 
 static void ahci_hba_Interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw) {
     struct ahci_hba_chip *hba_chip = (struct ahci_hba_chip *)irq->h_Data;
-
+    HBAHW_D("IRQ-Handler!\n");
 }
 
 BOOL ahci_create_interrupt(struct ahci_hba_chip *hba_chip) {
@@ -152,9 +152,7 @@ BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip) {
     struct ahci_hwhba *hwhba;
     hwhba = hba_chip->abar;
 
-    /*
-        BIOS handoff if HBA supports it and BIOS is the current owner of HBA
-    */
+    /* BIOS handoff if HBA supports it and BIOS is the current owner of HBA */
     hba_chip->Version = hwhba->vs;
 
     if ( (hba_chip->Version >= AHCI_VERSION_1_20) ) {
@@ -171,20 +169,16 @@ BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip) {
         }
     }
 
-    /*
-        Enable AHCI mode of communication to the HBA
-    */
+    /* Enable AHCI mode of communication to the HBA */
     ahci_enable_hba(hba_chip);
 
-#if defined(__i386__)
-    hwhba->cap = ~CAP_S64A;
-#endif
-
-    /*
-        Reset the HBA
-    */
+    /* Reset the HBA */
     if ( ahci_reset_hba(hba_chip) ) {
         HBAHW_D("Reset done\n");
+
+    #if defined(__i386__)
+        hwhba->cap = ~CAP_S64A;
+    #endif
 
         hba_chip->CommandSlotCount = 1 + ((hwhba->cap >> CAP_NCS_SHIFT) & CAP_NCS_MASK);
         hba_chip->PortCountMax = 1 + ((hwhba->cap >> CAP_NP_SHIFT) & CAP_NP_MASK);
@@ -196,27 +190,27 @@ BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip) {
 	    }
 
 	    hba_chip->PortCount = count_bits_set(hba_chip->PortImplementedMask);
-
-        HBAHW_D("cap: Interface Speed Support: generation %lu\n",   (hwhba->cap >> CAP_ISS_SHIFT) & CAP_ISS_MASK);
-        HBAHW_D("cap: Number of Command Slots: %d (raw %lx)\n",     hba_chip->CommandSlotCount, (hwhba->cap >> CAP_NCS_SHIFT) & CAP_NCS_MASK);
-        HBAHW_D("cap: Supports Port Multiplier: %s\n",              (hwhba->cap & CAP_SPM) ? "yes" : "no");
-        HBAHW_D("cap: Supports External SATA: %s\n",                (hwhba->cap & CAP_SXS) ? "yes" : "no");
-        HBAHW_D("cap: Enclosure Management Supported: %s\n",        (hwhba->cap & CAP_EMS) ? "yes" : "no");
-        HBAHW_D("cap: Supports Command List Override: %s\n",        (hwhba->cap & CAP_SCLO) ? "yes" : "no");
-        HBAHW_D("cap: Supports Staggered Spin-up: %s\n",            (hwhba->cap & CAP_SSS) ? "yes" : "no");
-        HBAHW_D("cap: Supports Mechanical Presence Switch: %s\n",   (hwhba->cap & CAP_SMPS) ? "yes" : "no");
-        HBAHW_D("cap: Supports 64-bit Addressing: %s\n",            (hwhba->cap & CAP_S64A) ? "yes" : "no");
-        HBAHW_D("cap: Supports Native Command Queuing: %s\n",       (hwhba->cap & CAP_SNCQ) ? "yes" : "no");
-        HBAHW_D("cap: Supports SNotification Register: %s\n",       (hwhba->cap & CAP_SSNTF) ? "yes" : "no");
-        HBAHW_D("cap: Supports Command List Override: %s\n",        (hwhba->cap & CAP_SCLO) ? "yes" : "no");
-        HBAHW_D("AHCI Version %lu.%lu (raw %lx)\n",                 ((hba_chip->Version >> 24) & 0xf)*10 + ((hba_chip->Version >> 16) & 0xf),
-                                                                    ((hba_chip->Version >> 8) & 0xf)*10 + (hba_chip->Version & 0xf), hwhba->vs );
-        HBAHW_D("Interrupt %u\n",                                   hba_chip->IRQ);
-
+/*
+        HBAHW_D("Interface Speed Support: generation %lu\n",    (hwhba->cap >> CAP_ISS_SHIFT) & CAP_ISS_MASK);
+        HBAHW_D("Number of Command Slots: %d (raw %lx)\n",      hba_chip->CommandSlotCount, (hwhba->cap >> CAP_NCS_SHIFT) & CAP_NCS_MASK);
+        HBAHW_D("Supports Port Multiplier: %s\n",               (hwhba->cap & CAP_SPM) ? "yes" : "no");
+        HBAHW_D("Supports External SATA: %s\n",                 (hwhba->cap & CAP_SXS) ? "yes" : "no");
+        HBAHW_D("Enclosure Management Supported: %s\n",         (hwhba->cap & CAP_EMS) ? "yes" : "no");
+        HBAHW_D("Supports Command List Override: %s\n",         (hwhba->cap & CAP_SCLO) ? "yes" : "no");
+        HBAHW_D("Supports Staggered Spin-up: %s\n",             (hwhba->cap & CAP_SSS) ? "yes" : "no");
+        HBAHW_D("Supports Mechanical Presence Switch: %s\n",    (hwhba->cap & CAP_SMPS) ? "yes" : "no");
+        HBAHW_D("Supports 64-bit Addressing: %s\n",             (hwhba->cap & CAP_S64A) ? "yes" : "no");
+        HBAHW_D("Supports Native Command Queuing: %s\n",        (hwhba->cap & CAP_SNCQ) ? "yes" : "no");
+        HBAHW_D("Supports SNotification Register: %s\n",        (hwhba->cap & CAP_SSNTF) ? "yes" : "no");
+        HBAHW_D("Supports Command List Override: %s\n",         (hwhba->cap & CAP_SCLO) ? "yes" : "no");
+        HBAHW_D("AHCI Version %lu.%lu (raw %lx)\n",             ((hba_chip->Version >> 24) & 0xf)*10 + ((hba_chip->Version >> 16) & 0xf),
+                                                                ((hba_chip->Version >> 8) & 0xf)*10 + (hba_chip->Version & 0xf), hwhba->vs );
+        HBAHW_D("Interrupt %u\n",                               hba_chip->IRQ);
+*/
         if( !ahci_create_interrupt(hba_chip) )
             return FALSE;
 
-        HBAHW_D("ports count %ld\n", hba_chip->PortCount);
+        HBAHW_D("port count %ld\n", hba_chip->PortCount);
 
         /*
             Get the pointer to previous HBA-chip struct in the list (if any)
@@ -235,7 +229,7 @@ BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip) {
 
         for (int i = 0; i <= hba_chip->PortCountMax; i++) {
     		if (hba_chip->PortImplementedMask & (1 << i)) {
-                ahci_add_port(hba_chip, i, hba_chip->StartingPortNumber+i);
+                ahci_add_port(hba_chip, hba_chip->StartingPortNumber+i, i);
     		}
     	}
 
@@ -259,14 +253,10 @@ BOOL ahci_reset_hba(struct ahci_hba_chip *hba_chip) {
 	ULONG saveCaps = hwhba->cap & (CAP_SMPS | CAP_SSS | CAP_SPM | CAP_EMS | CAP_SXS);
 	ULONG savePI = hwhba->pi;
 
-    /*
-        Enable AHCI mode of communication to the HBA
-    */
+    /* Enable AHCI mode of communication to the HBA */
 	ahci_enable_hba(hba_chip);
 
-    /*
-        Reset HBA
-    */
+    /* Reset HBA */
     hwhba->ghc |= GHC_HR;
 
     Timeout = 5000;
@@ -278,14 +268,10 @@ BOOL ahci_reset_hba(struct ahci_hba_chip *hba_chip) {
         }
     }
 
-    /*
-        Re-enable AHCI mode
-    */
+    /* Re-enable AHCI mode */
     ahci_enable_hba(hba_chip);
 
-    /*
-        Write back values of CAP & PI that were saved before reset, maybe useless
-    */
+    /* Write back values of CAP & PI that were saved before reset, maybe useless */
     hwhba->cap |= saveCaps;
     hwhba->pi = savePI;
 
@@ -331,7 +317,7 @@ BOOL ahci_disable_hba(struct ahci_hba_chip *hba_chip) {
 }
 
 BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, ULONG port_unit_num, ULONG port_hba_num) {
-    HBAHW_D("HBA-add_port...");
+    HBAHW_D("HBA-add_port...\n");
 
     HBAHW_D("added HBA-port %d as UNIT:%d\n",port_hba_num, port_unit_num);
 
@@ -339,9 +325,19 @@ BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, ULONG port_unit_num, ULONG po
     if( (hba_port = (struct ahci_hba_port*) AllocVec(sizeof(struct ahci_hba_port), MEMF_CLEAR|MEMF_PUBLIC)) ) {
         HBAHW_D("hba_port @ %p\n",hba_port);
 
+        struct ahci_hwhba *hwhba;
+        hwhba = hba_chip->abar;
+
         hba_port->parent_hba = hba_chip;
         hba_port->Port_HBA_Number = port_hba_num;
         hba_port->Port_Unit_Number = port_unit_num;
+
+        /* These bits in port command register should all be cleared if the port is free */
+        HBAHW_D("P%dCMD = %lx\n", port_hba_num);
+        HBAHW_D("Start DMA? %s\n",              (hwhba->port[port_hba_num].cmd & PORT_CMD_ST) ? "yes" : "no");
+        HBAHW_D("Command List Running? %s\n",   (hwhba->port[port_hba_num].cmd & PORT_CMD_CR) ? "yes" : "no");
+        HBAHW_D("FIS Receive Enable? %s\n",     (hwhba->port[port_hba_num].cmd & PORT_CMD_FRE) ? "yes" : "no");
+        HBAHW_D("FIS Receive Running? %s\n",    (hwhba->port[port_hba_num].cmd & PORT_CMD_FR) ? "yes" : "no");
 
         AddTail((struct List*)&hba_chip->port_list, (struct Node*)hba_port);
 
