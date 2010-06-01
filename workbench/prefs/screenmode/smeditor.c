@@ -107,12 +107,12 @@ static Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messag
     (
         CLASS, self, NULL,
         
-        MUIA_PrefsEditor_Name, (IPTR) __(MSG_NAME),
+        MUIA_PrefsEditor_Name, __(MSG_NAME),
         MUIA_PrefsEditor_Path, (IPTR)"SYS/screenmode.prefs",
         MUIA_PrefsEditor_IconTool, (IPTR)"SYS:Prefs/Screenmode",
 
         Child, (IPTR)VGroup,
-            Child, CLabel(_(MSG_DISPLAY_MODE)),
+            Child, (IPTR) CLabel(_(MSG_DISPLAY_MODE)),
             Child, (IPTR)(selector   = (Object *)ScreenModeSelectorObject, End),
             Child, (IPTR)(properties = (Object *)ScreenModePropertiesObject, GroupFrame, End),
         End,

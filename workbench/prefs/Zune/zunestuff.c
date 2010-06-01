@@ -45,7 +45,7 @@ long aslfilerequest(char *msg,char *dirpart,char *filepart,char *fullname, struc
         }; 
   
     
-        if ( (int)(fr = (struct FileRequester *) AllocAslRequest(ASL_FileRequest, frtags) ) )
+        if ( (fr = (struct FileRequester *) AllocAslRequest(ASL_FileRequest, frtags) ) )
         {
             if (AslRequest(fr, NULL))
             {

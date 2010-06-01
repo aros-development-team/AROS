@@ -84,9 +84,9 @@ LONG PopPublicScreenStrObjFunc(struct Hook *hook, Object *popup, Object *str)
     DoMethod(data->list, MUIM_List_InsertSingle, PSD_NAME_DEFAULT, MUIV_List_Insert_Bottom);
     DoMethod(data->list, MUIM_List_InsertSingle, PSD_NAME_FRONTMOST, MUIV_List_Insert_Bottom);
 
-    if (pfh = MUIS_OpenPubFile(PSD_FILENAME_USE, MODE_OLDFILE))
+    if ( (pfh = MUIS_OpenPubFile(PSD_FILENAME_USE, MODE_OLDFILE)) )
     {
-	while (desc = MUIS_ReadPubFile(pfh))
+	while ( (desc = MUIS_ReadPubFile(pfh)) )
 	{
 	    DoMethod(data->list, MUIM_List_InsertSingle, desc->Name, MUIV_List_Insert_Bottom);
 	}

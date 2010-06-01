@@ -40,7 +40,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            app = ApplicationObject,
+            app = (Object *) ApplicationObject,
                 MUIA_Application_Title, (IPTR) __(MSG_NAME),
                 MUIA_Application_Version, (IPTR) vers,
                 MUIA_Application_Copyright, (IPTR) COPYRIGHT,
@@ -48,7 +48,7 @@ int main(int argc, char **argv)
                 MUIA_Application_Description, (IPTR) __(MSG_NAME),
                 MUIA_Application_SingleTask, TRUE,
                 MUIA_Application_Base, (IPTR) "SCREENMODEPREF",
-                SubWindow, (IPTR)(win = SystemPrefsWindowObject,
+                SubWindow, (IPTR)(win = (Object *) SystemPrefsWindowObject,
                 MUIA_Window_ID, MAKE_ID('S','W','I','N'),
                     WindowContents, (IPTR) SMEditorObject,
                     End,
