@@ -70,7 +70,7 @@ enum {
 	PORT_CMD_ATAPI	= (1 << 24),	// Device is ATAPI
 	PORT_CMD_CR		= (1 << 15),	// Command List Running (DMA active)
 	PORT_CMD_FR		= (1 << 14),	// FIS Receive Running
-	PORT_CMD_FER	= (1 << 4),		// FIS Receive Enable
+	PORT_CMD_FRE	= (1 << 4),		// FIS Receive Enable
 	PORT_CMD_CLO	= (1 << 3),		// Command List Override
 	PORT_CMD_POD	= (1 << 2),		// Power On Device
 	PORT_CMD_SUD	= (1 << 1),		// Spin-up Device
