@@ -965,7 +965,7 @@ static void HandleAll(void)
     {
 	sigs = Wait(msgmask | winmask );
 //        if ( (sigs & winmask) || (sigs & msgmask) )
-        LONG                editorvarbuffer[300];
+        TEXT                editorvarbuffer[300];
         struct AppMessage  *appmsg;
 
         while ((appmsg = (struct AppMessage *) GetMsg(msgport)))
@@ -1153,7 +1153,7 @@ static void HandleAll(void)
 			if ((item = ItemAddress(menus, men)))
 			{
 //			    D(bug(" * MV: item %08lx  menus %08lx\n", (long)item, (long)menus));
-			    switch((ULONG)GTMENUITEM_USERDATA(item))
+			    switch((IPTR)GTMENUITEM_USERDATA(item))
 			    {
 				case MSG_MEN_PROJECT_OPEN:
 				    filename = GetFileName(MSG_ASL_OPEN_TITLE);

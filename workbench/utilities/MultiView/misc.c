@@ -82,12 +82,12 @@ static struct MenuItem * FindMenuItem( struct Menu *menu, ULONG msgid )
     
     while( menu )
     {
-	if( (ULONG)GTMENU_USERDATA(menu) == msgid )
+	if( (IPTR)GTMENU_USERDATA(menu) == msgid )
 	    return (struct MenuItem *)menu;
 	item = menu->FirstItem;
 	while( item )
 	{
-	    if( (ULONG)GTMENUITEM_USERDATA(item) == msgid )
+	    if( (IPTR)GTMENUITEM_USERDATA(item) == msgid )
 		return item;
 	    item = item->NextItem;
 	}
@@ -119,7 +119,7 @@ void InitMenus(struct NewMenu *newm)
     {
 	if (actnm->nm_Label != NM_BARLABEL)
 	{
-	    ULONG  id = (ULONG)actnm->nm_Label;
+	    ULONG  id = (IPTR)actnm->nm_Label;
 	    CONST_STRPTR str = MSG(id);
 	    
 	    if (actnm->nm_Type == NM_TITLE)
@@ -129,7 +129,7 @@ void InitMenus(struct NewMenu *newm)
 		actnm->nm_Label = str + 2;
 		if (str[0] != ' ') actnm->nm_CommKey = str;
 	    }
-	    actnm->nm_UserData = (APTR)id;
+	    actnm->nm_UserData = (APTR)(IPTR)id;
 	    
 	} /* if (actnm->nm_Label != NM_BARLABEL) */
 	

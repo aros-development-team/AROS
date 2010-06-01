@@ -135,13 +135,13 @@ int main(int argc, char **argv)
     Locale_Initialize();
     GetArguments(argc, argv);
     
-    application = ApplicationObject,
+    application = (Object *)ApplicationObject,
         MUIA_Application_Title, (IPTR) MSG(MSG_WINDOW_TITLE),
         MUIA_Application_Version, (IPTR) versionString,
         MUIA_Application_Copyright, (IPTR)"© 2006, The AROS Development Team",
         MUIA_Application_Description, (IPTR) MSG(MSG_DESCRIPTION),
         MUIA_Application_Base, (IPTR) "CLOCK",
-        SubWindow, (IPTR) (window = WindowObject,
+        SubWindow, (IPTR) (window = (Object *)WindowObject,
             MUIA_Window_Title,    (IPTR) MSG(MSG_WINDOW_TITLE),
             MUIA_Window_Activate,        TRUE,
             MUIA_Window_NoMenus,         TRUE,
