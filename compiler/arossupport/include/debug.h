@@ -298,8 +298,8 @@
        the return-value might have side effects (like return x++;). */
 #   define ReturnVoid(name)         { ExitFunc kprintf ("Exit " name "()\n"); return; }
 #   define ReturnPtr(name,type,val) {  type __aros_val = (type)val; \
-				    ExitFunc kprintf ("Exit " name "=%08lx\n", \
-				    (ULONG)__aros_val); return __aros_val; }
+				    ExitFunc kprintf ("Exit " name "=%p\n", \
+				    (APTR)__aros_val); return __aros_val; }
 #   define ReturnStr(name,type,val) { type __aros_val = (type)val; \
 				    ExitFunc kprintf ("Exit " name "=\"%s\"\n", \
 				    __aros_val); return __aros_val; }
