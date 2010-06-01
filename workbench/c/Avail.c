@@ -299,7 +299,7 @@ LONG printm(CONST_STRPTR head, ULONG *array, LONG num)
                 UBYTE tmp[10];
 
                 fmtlarge(tmp, *array);
-                res = Printf(fmt, (ULONG) tmp);
+                res = Printf(fmt, (IPTR) tmp);
                 if (res < 0)
                     break;
 

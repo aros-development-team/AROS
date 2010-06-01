@@ -126,7 +126,7 @@ main(void)
 			}
 			else if (args[ARG_NAME])
 			{
-				pr = (struct Process *) FindTask(args[ARG_NAME]);
+				pr = (struct Process *) FindTask((UBYTE *)args[ARG_NAME]);
 			}
 			if (pr != NULL)
 			{

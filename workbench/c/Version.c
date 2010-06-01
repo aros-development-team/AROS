@@ -867,7 +867,7 @@ void printverstring(void)
 
 	if (parsedver.pv_flags & PVF_NOVERSION)
 	{
-		Printf("%s\n", (LONG) parsedver.pv_name);
+		Printf("%s\n", (IPTR) parsedver.pv_name);
 	}
 	else
 	{
@@ -880,17 +880,17 @@ void printverstring(void)
 			}
 
 			Printf("%s%s%s%s%s%s%s\n",
-			       (LONG) parsedver.pv_name, (LONG) (*parsedver.pv_name ? " " : ""),
-			       (LONG) parsedver.pv_vername, (LONG) parsedver.pv_revname,
-			       (LONG) parsedver.pv_datestr,
-			       parsedver.pv_extralf ? (LONG) parsedver.pv_extralf : (LONG) "\n",
-			       parsedver.pv_extrastr ? (LONG) parsedver.pv_extrastr : (LONG) "");
+			       (IPTR) parsedver.pv_name, (IPTR) (*parsedver.pv_name ? " " : ""),
+			       (IPTR) parsedver.pv_vername, (IPTR) parsedver.pv_revname,
+			       (IPTR) parsedver.pv_datestr,
+			       parsedver.pv_extralf ? (IPTR) parsedver.pv_extralf : (IPTR) "\n",
+			       parsedver.pv_extrastr ? (IPTR) parsedver.pv_extrastr : (IPTR) "");
 		}
 		else
 		{
 			Printf("%s%s%s%s\n",
-			       (LONG) parsedver.pv_name, (LONG) (*parsedver.pv_name ? " " : ""),
-			       (LONG) parsedver.pv_vername, (LONG) parsedver.pv_revname);
+			       (IPTR) parsedver.pv_name, (IPTR) (*parsedver.pv_name ? " " : ""),
+			       (IPTR) parsedver.pv_vername, (IPTR) parsedver.pv_revname);
 		}
 	}
 }
@@ -1021,7 +1021,7 @@ struct Resident *findresident(CONST_STRPTR name)
 
 	while ((resident = *rp++))
 	{
-		if (((LONG) resident) > 0)
+		if (((IPTR) resident) > 0)
 		{
 			if (!Stricmp(resident->rt_Name, (STRPTR) name))
 			{
@@ -1216,8 +1216,8 @@ int createdefvers(CONST_STRPTR name)
 	    parsedver.pv_vername &&
 	    parsedver.pv_revname)
 	{
-		sprintf(parsedver.pv_vername, "%ld", parsedver.pv_version);
-		sprintf(parsedver.pv_revname, ".%ld", parsedver.pv_revision);
+		sprintf(parsedver.pv_vername, "%d", parsedver.pv_version);
+		sprintf(parsedver.pv_revname, ".%d", parsedver.pv_revision);
 
 		return RETURN_OK;
 	}
@@ -1498,7 +1498,7 @@ int makefilever(CONST_STRPTR name)
 						*/
 						if (!args.arg_md5sum || (!(parsedver.pv_flags & PVF_MD5SUM)))
 						{
-							Printf("Could not find version information for '%s'\n", (LONG) name);
+							Printf("Could not find version information for '%s'\n", (IPTR) name);
 						}
 					}
 				}
@@ -1589,7 +1589,7 @@ int setvervar(CONST_STRPTR name, LONG ver, LONG rev)
 {
 	UBYTE buf[32];
 
-	sprintf(buf, "%ld.%ld", (LONG) ver, (LONG) rev);
+	sprintf(buf, "%d.%d", (LONG) ver, (LONG) rev);
 
 	return SetVar((STRPTR) name, buf, -1, GVF_LOCAL_ONLY | LV_VAR) ? RETURN_OK : -1;
 }

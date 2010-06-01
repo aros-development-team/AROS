@@ -233,8 +233,8 @@ LONG append(BPTR destfile, STRPTR srcfilename)
             if (actualLength == -1)
             {
                 PrintFault(IoErr(), NULL);
-                Printf( "%s: %s.\n", (ULONG)ERROR_HEADER,
-                       (ULONG)getstring(STR_ERR_READING));
+                Printf( "%s: %s.\n", (IPTR)ERROR_HEADER,
+                       (IPTR)getstring(STR_ERR_READING));
                 rc = RETURN_FAIL;
             }
 

@@ -530,7 +530,7 @@ int printFileData(struct AnchorPath *ap,
 		    int  fill;
 		    int  i;	/* Loop variable */
 
-		    sprintf(key, "%ld", diskKey);
+		    sprintf(key, "%d", diskKey);
 		    fill = 7 - strlen(key) - 2;
 
 		    for (i = 0; i < fill; i++)
@@ -822,7 +822,7 @@ int main(void)
                FALSE,   // ARG_LFORMAT
                FALSE    // ARG_ALL
     };
-    static const STRPTR *default_directories[] = {"", 0};
+    static const STRPTR *default_directories[] = {(STRPTR)"", 0};
     struct RDArgs *rda;		       
 
     LONG     error = RETURN_OK;
@@ -974,7 +974,7 @@ int main(void)
 	
 	if ((directories == NULL) || (*directories == NULL))
 	{
-	    directories = default_directories;
+	    directories = (STRPTR *)default_directories;
 	}
 	
 	for (i = 0; directories[i] != NULL; i++)

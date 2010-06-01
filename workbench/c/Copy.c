@@ -2547,7 +2547,7 @@ void makeversionfromstring( STRPTR buffer, struct VersionData *vd, struct CopyDa
 	name = buffer;
 	buffer = skipnonspaces( buffer ); /* skip name of tool */
 
-	if( (tmp = ((int) buffer - (int) name) ) && *buffer )
+	if( (tmp = ((long) buffer - (long) name) ) && *buffer )
 	{
 		CopyMem( name, vd->vd_Name, MIN( tmp, VDNAMESIZE-1) );
 		vd->vd_Name[MIN( tmp, VDNAMESIZE-1)] = '\0'; /* terminate name string inside target buffer */

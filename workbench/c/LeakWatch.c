@@ -414,7 +414,7 @@ static struct TrackedResources *NewResourcesState(void)
 	return NULL;
 
     /* flush */
-    FreeVec(AllocVec(~0ul/2, MEMF_ANY));
+    FreeVec(AllocVec((ULONG)(~0ul/2), MEMF_ANY));
 
     /* opencount-based stuff */
     NEWLIST(&tr->opened);

@@ -18,7 +18,7 @@
 
 int bz_internal_error;
 
-void *malloc( ULONG size )
+void *malloc( size_t size )
 {
     return AllocVec( size, MEMF_ANY );
 }

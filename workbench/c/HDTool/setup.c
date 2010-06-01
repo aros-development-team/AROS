@@ -17,7 +17,7 @@ struct RDArgs rda = {{args, strlen(args), 0}, 0, 0, 0, NULL, 0};
 	{
 		printf
 		(
-			"setup\n\tdevice=%s unit=%ld\n",
+			"setup\n\tdevice=%s unit=%d\n",
 			(STRPTR)myargs[0], *(LONG *)myargs[1]
 		);
 		if (myargs[2])

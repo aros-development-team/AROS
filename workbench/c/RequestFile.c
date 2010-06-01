@@ -141,19 +141,19 @@ int main(void)
         rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
         if(rda != NULL)
         {
-            FileTags[ARG_DRAWER].ti_Data        = (ULONG)args[ARG_DRAWER];
-            FileTags[ARG_FILE].ti_Data          = (ULONG)args[ARG_FILE];
-            FileTags[ARG_PATTERN].ti_Data       = (ULONG)args[ARG_PATTERN];
-            FileTags[ARG_TITLE].ti_Data         = (ULONG)args[ARG_TITLE];
-            FileTags[ARG_POSITIVE].ti_Data      = (ULONG)args[ARG_POSITIVE];
-            FileTags[ARG_NEGATIVE].ti_Data      = (ULONG)args[ARG_NEGATIVE];
-            FileTags[ARG_ACCEPTPAT].ti_Data     = (ULONG)args[ARG_ACCEPTPAT];
-            FileTags[ARG_REJECTPAT].ti_Data     = (ULONG)args[ARG_REJECTPAT];
+            FileTags[ARG_DRAWER].ti_Data        = (IPTR)args[ARG_DRAWER];
+            FileTags[ARG_FILE].ti_Data          = (IPTR)args[ARG_FILE];
+            FileTags[ARG_PATTERN].ti_Data       = (IPTR)args[ARG_PATTERN];
+            FileTags[ARG_TITLE].ti_Data         = (IPTR)args[ARG_TITLE];
+            FileTags[ARG_POSITIVE].ti_Data      = (IPTR)args[ARG_POSITIVE];
+            FileTags[ARG_NEGATIVE].ti_Data      = (IPTR)args[ARG_NEGATIVE];
+            FileTags[ARG_ACCEPTPAT].ti_Data     = (IPTR)args[ARG_ACCEPTPAT];
+            FileTags[ARG_REJECTPAT].ti_Data     = (IPTR)args[ARG_REJECTPAT];
             FileTags[ARG_SAVEMODE].ti_Data      = DoSave;
             FileTags[ARG_MULTISELECT].ti_Data   = DoMulti;
             FileTags[ARG_DRAWERSONLY].ti_Data   = DoDrawers;
             FileTags[ARG_NOICONS].ti_Data       = DoIcons;
-            FileTags[ARG_PUBSCREEN].ti_Data     = (ULONG)args[ARG_PUBSCREEN];
+            FileTags[ARG_PUBSCREEN].ti_Data     = (IPTR)args[ARG_PUBSCREEN];
             FileTags[ARG_PUBSCREEN + 1].ti_Data = DoPattern;
 	    if (!args[ARG_INITIALVOLUMES])
 	    {
@@ -174,7 +174,7 @@ int main(void)
 			
                         /* FileReq->fr_File is NULL when using DRAWERSONLY */
                         Success = AddPart(Buffer,
-                                          FileReq->fr_File ? FileReq->fr_File : "",
+                                          FileReq->fr_File ? FileReq->fr_File : (STRPTR)"",
                                           MAX_PATH_LEN);
 
                         if(Success != FALSE)
