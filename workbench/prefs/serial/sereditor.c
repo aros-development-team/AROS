@@ -183,7 +183,7 @@ Object *SerEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 #endif
         End;
 
-        DoMethod(self, OM_ADDMEMBER, (ULONG) data->child);
+        DoMethod(self, OM_ADDMEMBER, (IPTR) data->child);
 
         DoMethod
         (

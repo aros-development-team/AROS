@@ -62,7 +62,7 @@ AROS_UFHA(STRPTR, entry, A1))
     if (entry)
     {
         ULONG *ids_array = hook->h_Data;
-        ULONG num = (ULONG)array[-1];
+        ULONG num = (ULONG)(IPTR)array[-1];
         IPTR modeid = ids_array[num];
         static char modeid_str[9];
     
