@@ -10,25 +10,6 @@
 
 /*
 
-Game plan so far...
-
-AHCI compromises of HBA's or host bus adapters which in turn can have upto 32 ports with independant DMA's and "c/d" que's
-HBA's can implement less than 32 ports and by looking at the HBA's registers we know which ports it implements.
-
-ahci.device collects all HBA's from PCI bus (class 1, subclass 6 and pi 1) via pci enumerator and sets up interrupt
-and HBA_task code for each of them (or one).
-
-Every implemented port gets a unit number even if no device sits on the port because of hotplugging.
-In case of multiple HBA's first found HBA and its first implemented port gets unit number 0 and so on.
-
-ahci_init.c
-    - Enumerator
-    - Device init code
-ahci_device.c
-    - Open, Close, BeginIO, AbortIO, etc... or append init code to device
-ahci_hbahw
-    - HBA specific code 
-
 */
 
 static
@@ -41,8 +22,8 @@ AROS_UFH3(void, ahci_Enumerator,
 
     IPTR    VendorID, ProductID;
 
-    APTR    abar;
-    IPTR    size;
+    APTR    Base5;
+    IPTR    Base5size;
 
     IPTR    intline;
 
@@ -52,54 +33,56 @@ AROS_UFH3(void, ahci_Enumerator,
 
     OOP_AttrBase HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
 
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base5, (APTR)&abar);
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size5, &size);
-    if( !(abar == 0) ) {
-
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base5, (APTR)&Base5);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size5, &Base5size);
+    if( !(Base5 == 0) ) {
         struct ahci_hba_chip *hba_chip;
-        if((hba_chip = (struct ahci_hba_chip*) AllocVecPooled(LIBBASE->ahci_MemPool, sizeof(struct ahci_hba_chip)))) {
+        if( (hba_chip = (struct ahci_hba_chip*) AllocVecPooled(LIBBASE->ahci_MemPool, sizeof(struct ahci_hba_chip))) ) {
+            if( (hba_chip->IntHandler = (HIDDT_IRQ_Handler *)AllocVecPooled(LIBBASE->ahci_MemPool, sizeof(HIDDT_IRQ_Handler))) ){
 
-            OOP_Object *PCIDriver;
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&PCIDriver);
+                OOP_Object *PCIDriver;
+                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&PCIDriver);
 
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorID);
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
-            hba_chip->VendorID = VendorID;
-            hba_chip->ProductID = ProductID;
+                OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorID);
+                OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
 
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base5, (APTR)&abar);
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size5, &size);
+                hba_chip->PCIVendorID = VendorID;
+                hba_chip->PCIProductID = ProductID;
 
-            struct pHidd_PCIDriver_MapPCI mappci,*msg = &mappci;
-	        mappci.mID = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_MapPCI);
-	        mappci.PCIAddress = abar;
-	        mappci.Length = size;
-	        hba_chip->abar = (APTR)OOP_DoMethod(PCIDriver, (OOP_Msg)msg);
+                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base5, (APTR)&Base5);
+                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size5, &Base5size);
 
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &intline);
-            hba_chip->intline = intline;
+                struct pHidd_PCIDriver_MapPCI mappci,*msg = &mappci;
+    	        mappci.mID = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_MapPCI);
+    	        mappci.PCIAddress = Base5;
+    	        mappci.Length = Base5size;
+    	        hba_chip->abar = (APTR)OOP_DoMethod(PCIDriver, (OOP_Msg)msg);
 
-            hba_chip->HBANumber = ++HBACounter;
+                OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &intline);
+                hba_chip->IRQ = intline;
 
-            struct TagItem attrs[] = {
-                { aHidd_PCIDevice_isIO,    FALSE },
-                { aHidd_PCIDevice_isMEM,    TRUE },
-                { aHidd_PCIDevice_isMaster, TRUE },
-                { TAG_DONE, 0UL },
-            };
-            OOP_SetAttrs(pciDevice, (struct TagItem*)&attrs);
+                hba_chip->HBANumber = ++HBACounter;
 
-            /*
-                HBA-chip list is protected for us in Init
-            */
-            AddTail((struct List*)&LIBBASE->chip_list, (struct Node*)hba_chip);
+                struct TagItem attrs[] = {
+                    { aHidd_PCIDevice_isIO,    FALSE },
+                    { aHidd_PCIDevice_isMEM,    TRUE },
+                    { aHidd_PCIDevice_isMaster, TRUE },
+                    { TAG_DONE, 0UL },
+                };
+                OOP_SetAttrs(pciDevice, (struct TagItem*)&attrs);
 
+                /* HBA-chip list is protected for us in Init */
+                AddTail((struct List*)&LIBBASE->chip_list, (struct Node*)hba_chip);
+
+            }else{
+                /* Failed to allocate HIDDT_IRQ_Handler, should not happen */
+                FreeVecPooled(LIBBASE->ahci_MemPool, hba_chip->IntHandler);
+            }
         }
     }
-
     OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
 
-	AROS_USERFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
@@ -108,6 +91,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
     OOP_Object *PCIObject;
 
     if ((PCIObject = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL))) {
+        /* Create memory pool */
         if((LIBBASE->ahci_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096))) {
 
             /* HBA linked list is semaphore protected */
@@ -132,27 +116,29 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
             HIDD_PCI_EnumDevices(PCIObject, &FindHook, Requirements);
 
             if ( !IsListEmpty(&LIBBASE->chip_list) ) {
+
                 struct ahci_hba_chip *hba_chip;
                 ForeachNode(&LIBBASE->chip_list, hba_chip) {
-                    if( ahci_setup_hbatask(hba_chip) ) {
-                        D(bug("[AHCI] Created HBA task\n"));
+                    if( ahci_setup_hba(hba_chip) ) {
+                        D(bug("[AHCI] HBA-setup succeed!\n"));
                     }else{
                         // de-allocate everything relating to this HBA-chip and remove it from the list
-                        D(bug("[AHCI] Failed to create HBA task!\n"));
+                        D(bug("[AHCI] HBA-setup failed!\n"));
                         REMOVE(hba_chip);
                     }
                 }
                 ReleaseSemaphore(&LIBBASE->chip_list_lock);
+                return TRUE;
+
             }else{
-                /*
-                    No AHCI controller found
-                */
+
+                /* Not a single AHCI HBA controller found */
                 ReleaseSemaphore(&LIBBASE->chip_list_lock);
                 DeletePool(LIBBASE->ahci_MemPool);
+                OOP_DisposeObject(PCIObject); 
                 return FALSE;
             }
 
-            return TRUE;
         }else{
             D(bug("[AHCI] Failed to create memory pool\n"));
         }
