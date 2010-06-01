@@ -31,6 +31,7 @@
 
 #include <oop/oop.h>
 #include <hidd/pci.h>
+#include <hidd/irq.h>
 
 #include <aros/symbolsets.h>
 
@@ -62,16 +63,21 @@ struct ahciBase {
 struct ahci_hba_chip {
     struct  MinNode hba_chip_Node;
 
-    IPTR    ProductID, VendorID;
+    IPTR    PCIProductID, PCIVendorID;
 
     APTR    abar;
-    IPTR    intline;
+    IPTR    IRQ;
 
     ULONG   Version;
 
     ULONG   HBANumber;
 
-    ULONG   PortsImplemented;
+    ULONG   CommandSlotCount;
+
+    ULONG   PortImplementedMask;
+    ULONG   PortCountMax;
+    ULONG   PortCount;
+
     ULONG   StartingPortNumber;
 
     /*
@@ -80,13 +86,16 @@ struct ahci_hba_chip {
     */
     struct  SignalSemaphore port_list_lock;
     struct  MinList port_list;
+
+    HIDDT_IRQ_Handler *IntHandler;
+
 };
 
 /* HBA-port struct */
 struct ahci_hba_port {
     struct  MinNode ahci_port_Node;
 
-    ULONG   PORTNumber;
+    ULONG   PortUnitNumber;
 
     /*
         The port belongs to this HBA-chip
@@ -96,11 +105,17 @@ struct ahci_hba_port {
 };
 
 /* ahci_hbahw prototypes */
-BOOL ahci_setup_hbatask(struct ahci_hba_chip *hba_chip);
+BOOL ahci_create_interrupt(struct ahci_hba_chip *hba_chip);
+BOOL ahci_create_hbatask(struct ahci_hba_chip *hba_chip);
+BOOL ahci_setup_hba(struct ahci_hba_chip *hba_chip);
 BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip);
 BOOL ahci_reset_hba(struct ahci_hba_chip *hba_chip);
 void ahci_enable_hba(struct ahci_hba_chip *hba_chip);
 BOOL ahci_disable_hba(struct ahci_hba_chip *hba_chip);
+BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, ULONG portnum);
+
+/* ahci_misc prototypes */
+ULONG count_bits_set(ULONG x);
 
 #endif // AHCI_HEADER_H
 
