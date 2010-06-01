@@ -333,7 +333,7 @@ BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, ULONG port_unit_num, ULONG po
         hba_port->Port_Unit_Number = port_unit_num;
 
         /* These bits in port command register should all be cleared if the port is free */
-        HBAHW_D("P%dCMD = %lx\n", port_hba_num);
+        HBAHW_D("P%dCMD = %lx\n", port_hba_num, hwhba->port[port_hba_num].cmd);
         HBAHW_D("Start DMA? %s\n",              (hwhba->port[port_hba_num].cmd & PORT_CMD_ST) ? "yes" : "no");
         HBAHW_D("Command List Running? %s\n",   (hwhba->port[port_hba_num].cmd & PORT_CMD_CR) ? "yes" : "no");
         HBAHW_D("FIS Receive Enable? %s\n",     (hwhba->port[port_hba_num].cmd & PORT_CMD_FRE) ? "yes" : "no");
