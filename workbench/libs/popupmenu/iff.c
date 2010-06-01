@@ -32,7 +32,7 @@ struct IFFHandle *OpenIFFFile(STRPTR name, LONG type, ULONG mode, LONG *error, s
 
       if ((iffh = AllocIFF()))
       {
-         iffh->iff_Stream = (ULONG)file;
+         iffh->iff_Stream = (IPTR)file;
          InitIFFasDOS(iffh);
 
          *error = OpenIFF(iffh,mode);

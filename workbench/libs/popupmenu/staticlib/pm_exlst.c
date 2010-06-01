@@ -18,7 +18,7 @@ extern struct PopupMenuBase * PopupMenuBase;
 	struct PM_IDLst *PM_ExLst(
 
 /*  SYNOPSIS */
-	ULONG id, 
+	IPTR id, 
 	...)
 
 /*  FUNCTION
@@ -43,7 +43,7 @@ extern struct PopupMenuBase * PopupMenuBase;
 {
     AROS_SLOWSTACKTAGS_PRE(id)
 
-    retval = PM_ExLstA(AROS_SLOWSTACKTAGS_ARG(id));
+    retval = (IPTR)PM_ExLstA(AROS_SLOWSTACKTAGS_ARG(id));
     
     AROS_SLOWSTACKTAGS_POST
 } /* PM_ExLst */
