@@ -1278,9 +1278,9 @@ static BOOL HandleWin(void)
     UWORD		men, code;
     UBYTE		key;
     BOOL 		pagescroll, maxscroll, quitme = FALSE;
-    LONG                editorvarbuffer[300];
+    TEXT                editorvarbuffer[300];
     struct AppMessage  *appmsg;
-    struct WBArg       *argptr;
+    //struct WBArg       *argptr;
     
     while ((appmsg = (struct AppMessage *) GetMsg(msgport)))
     {
@@ -1432,7 +1432,7 @@ static BOOL HandleWin(void)
 		}
 		else if (strchr(MSG(MSG_SHORTCUT_EDITOR), key))
 		{
-                    if ( (GetVar("editor", (STRPTR) editorvarbuffer, 299, GVF_GLOBAL_ONLY)) != -1L )
+                    if ( (GetVar("editor", editorvarbuffer, 299, GVF_GLOBAL_ONLY)) != -1L )
                     {
                         sprintf(s, "Run QUIET \"%s\" \"%s\"", editorvarbuffer, filenamebuffer );
 		        if (SystemTags(s, TAG_END))
@@ -1521,7 +1521,7 @@ static BOOL HandleWin(void)
 		{
 		    if ((item = ItemAddress(menus, men)))
 		    {
-			switch((ULONG)GTMENUITEM_USERDATA(item))
+			switch((IPTR)GTMENUITEM_USERDATA(item))
 			{
 			    case MSG_MEN_PROJECT_SAVEAS:
 			    	fillename_dest = GetFile(FALSE);
