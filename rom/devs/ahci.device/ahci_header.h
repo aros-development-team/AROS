@@ -33,6 +33,7 @@
 #include <hidd/pci.h>
 #include <hidd/irq.h>
 
+#include <aros/system.h>
 #include <aros/symbolsets.h>
 
 #include <string.h>
@@ -92,11 +93,13 @@ struct ahci_hba_chip {
 struct ahci_hba_port {
     struct  MinNode ahci_port_Node;
 
-    ULONG   PORTNumber;
+    /* Physical HBA-port number of controller, Used in e.g. PxCMD */
+    ULONG   Port_HBA_Number;
 
-    /*
-        The port belongs to this HBA-chip
-    */
+    /* Port and it's device is unit number x in Aros system */
+    ULONG   Port_Unit_Number;
+
+    /* Port belongs to this HBA-chip */
     struct  ahci_hba_chip *parent_hba;
 
 };
@@ -109,7 +112,7 @@ BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip);
 BOOL ahci_reset_hba(struct ahci_hba_chip *hba_chip);
 void ahci_enable_hba(struct ahci_hba_chip *hba_chip);
 BOOL ahci_disable_hba(struct ahci_hba_chip *hba_chip);
-BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, ULONG portnum);
+BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, ULONG port_unit_num, ULONG port_hba_num);
 
 /* ahci_misc prototypes */
 ULONG count_bits_set(ULONG x);

@@ -136,7 +136,7 @@ BOOL ahci_setup_hba(struct ahci_hba_chip *hba_chip) {
         * Determine number of ports implemented by the HBA
         * Ensure that all implemented ports are in IDLE state
         * Determine how many command slots the HBA supports, by reading CAP.NCS
-        * Set CAP.S64A to ‘0’, no 64bit address support for now...
+        * Set CAP.S64A to ‘0’, if not compiled for x86_64...
         * For each implemented port, allocate memory for and program registers:
             - PxCLB (and PxCLBU=0, upper 32bits of 64bit address space)
             - PxFB (and PxFBU=0, upper 32bits of 64bit address space)
@@ -175,6 +175,10 @@ BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip) {
         Enable AHCI mode of communication to the HBA
     */
     ahci_enable_hba(hba_chip);
+
+#if defined(__i386__)
+    hwhba->cap = ~CAP_S64A;
+#endif
 
     /*
         Reset the HBA
@@ -231,11 +235,11 @@ BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip) {
 
         for (int i = 0; i <= hba_chip->PortCountMax; i++) {
     		if (hba_chip->PortImplementedMask & (1 << i)) {
-                ahci_add_port(hba_chip, hba_chip->StartingPortNumber+i);
+                ahci_add_port(hba_chip, i, hba_chip->StartingPortNumber+i);
     		}
     	}
 
-    	/* Enable interrupts for this HBA*/
+    	/* Enable interrupts for this HBA */
     	hwhba->ghc |= GHC_IE;
 
         return TRUE;
@@ -326,13 +330,21 @@ BOOL ahci_disable_hba(struct ahci_hba_chip *hba_chip) {
     return FALSE;
 }
 
-BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, ULONG portnum) {
-    HBAHW_D("HBA-add_port...%ld\n",portnum);
+BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, ULONG port_unit_num, ULONG port_hba_num) {
+    HBAHW_D("HBA-add_port...");
+
+    HBAHW_D("added HBA-port %d as UNIT:%d\n",port_hba_num, port_unit_num);
 
     struct ahci_hba_port *hba_port;
     if( (hba_port = (struct ahci_hba_port*) AllocVec(sizeof(struct ahci_hba_port), MEMF_CLEAR|MEMF_PUBLIC)) ) {
+        HBAHW_D("hba_port @ %p\n",hba_port);
+
         hba_port->parent_hba = hba_chip;
-        hba_port->PORTNumber = portnum;
+        hba_port->Port_HBA_Number = port_hba_num;
+        hba_port->Port_Unit_Number = port_unit_num;
+
+        AddTail((struct List*)&hba_chip->port_list, (struct Node*)hba_port);
+
         return TRUE;
     }
 
