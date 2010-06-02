@@ -89,9 +89,9 @@ struct ahci_hba_chip {
 
 };
 
-/* HBA-port struct */
-struct ahci_hba_port {
-    struct  MinNode ahci_port_Node;
+struct ahci_hba_port_unit {
+    /* exec's unit */
+    struct  Unit port_exec_unit;
 
     /* Physical HBA-port number of controller, Used in e.g. PxCMD */
     ULONG   Port_HBA_Number;
@@ -101,6 +101,13 @@ struct ahci_hba_port {
 
     /* Port belongs to this HBA-chip */
     struct  ahci_hba_chip *parent_hba;
+};
+
+/* HBA-port struct */
+struct ahci_hba_port {
+    struct  MinNode ahci_port_Node;
+
+    struct  ahci_hba_port_unit port_unit;
 
 };
 

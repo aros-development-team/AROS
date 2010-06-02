@@ -227,11 +227,13 @@ BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip) {
         }
         HBAHW_D("Port numbering starts at %d\n", hba_chip->StartingPortNumber);
 
+        ObtainSemaphore(&hba_chip->port_list_lock);
         for (int i = 0; i <= hba_chip->PortCountMax; i++) {
     		if (hba_chip->PortImplementedMask & (1 << i)) {
                 ahci_add_port(hba_chip, hba_chip->StartingPortNumber+i, i);
     		}
     	}
+        ReleaseSemaphore(&hba_chip->port_list_lock);
 
     	/* Enable interrupts for this HBA */
     	hwhba->ghc |= GHC_IE;
@@ -328,9 +330,9 @@ BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, ULONG port_unit_num, ULONG po
         struct ahci_hwhba *hwhba;
         hwhba = hba_chip->abar;
 
-        hba_port->parent_hba = hba_chip;
-        hba_port->Port_HBA_Number = port_hba_num;
-        hba_port->Port_Unit_Number = port_unit_num;
+        hba_port->port_unit.parent_hba = hba_chip;
+        hba_port->port_unit.Port_HBA_Number = port_hba_num;
+        hba_port->port_unit.Port_Unit_Number = port_unit_num;
 
         /* These bits in port command register should all be cleared if the port is free */
         HBAHW_D("P%dCMD = %lx\n", port_hba_num, hwhba->port[port_hba_num].cmd);
@@ -339,6 +341,7 @@ BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, ULONG port_unit_num, ULONG po
         HBAHW_D("FIS Receive Enable? %s\n",     (hwhba->port[port_hba_num].cmd & PORT_CMD_FRE) ? "yes" : "no");
         HBAHW_D("FIS Receive Running? %s\n",    (hwhba->port[port_hba_num].cmd & PORT_CMD_FR) ? "yes" : "no");
 
+        /* HBA-port list is protected for us in ahci_init_hba */
         AddTail((struct List*)&hba_chip->port_list, (struct Node*)hba_port);
 
         return TRUE;

@@ -77,7 +77,7 @@ AROS_UFH3(void, ahci_Enumerator,
                 /* HBA-port linked list is semaphore protected */
                 InitSemaphore(&hba_chip->port_list_lock);
 
-                /* Initialize the HBA-chip list */
+                /* Initialize the HBA-port list */
                 NEWLIST((struct MinList *)&hba_chip->port_list);
 
                 D(bug("[AHCI] hba%d_chip @ %p\n",HBACounter, hba_chip));
@@ -154,11 +154,48 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
 
 static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR LIBBASE, struct IORequest *iorq, ULONG unitnum, ULONG flags) {
     D(bug("[AHCI] Open\n"));
+   
+    /* Assume it failed */
+    iorq->io_Error = IOERR_OPENFAIL;
+
+    /* Overly complex way of finding port unit... */
+    ObtainSemaphore(&LIBBASE->chip_list_lock);
+    struct ahci_hba_chip *hba_chip;
+    ForeachNode(&LIBBASE->chip_list, hba_chip) {
+        ObtainSemaphore(&hba_chip->port_list_lock);
+        struct ahci_hba_port *hba_port;
+        ForeachNode(&hba_chip->port_list, hba_port) {
+            if( (hba_port->port_unit.Port_Unit_Number == unitnum) ) {
+                /* set up iorequest */
+                iorq->io_Device     = &LIBBASE->device;
+                iorq->io_Unit       = &hba_port->port_unit.port_exec_unit;
+                iorq->io_Error      = 0;
+
+                hba_port->port_unit.port_exec_unit.unit_OpenCnt++;
+
+                ReleaseSemaphore(&hba_chip->port_list_lock);
+                ReleaseSemaphore(&LIBBASE->chip_list_lock);
+                return TRUE;
+            }
+        }
+        ReleaseSemaphore(&hba_chip->port_list_lock);
+    }
+    ReleaseSemaphore(&LIBBASE->chip_list_lock);
+
     return TRUE;
 }
 
 static int GM_UNIQUENAME(Close)(LIBBASETYPEPTR LIBBASE, struct IORequest *iorq) {
     D(bug("[AHCI] Close\n"));
+
+    struct  Unit *port_exec_unit = (struct Unit *)iorq->io_Unit;
+
+    /* First of all make the important fields of struct IORequest invalid! */
+    iorq->io_Unit = (struct Unit *)~0;
+    
+    /* Decrease use counters of unit */
+    port_exec_unit->unit_OpenCnt--;
+
     return TRUE;
 }
 
