@@ -1,6 +1,6 @@
 /*
     Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: czech.c 30792 2009-03-07 22:40:04Z neil $
+    $Id$
 
     Desc: hrvatski.language description file.
     Lang: english
@@ -23,7 +23,7 @@
 
 #define LANGSTR     "hrvatski"    /* String version of above */
 #define LANGVER     41          /* Version number of language */
-#define LANGREV     0           /* Revision number of language */
+#define LANGREV     1           /* Revision number of language */
 #define LANGTAG     "\0$VER: hrvatski.language 41.1 (19.12.2009)"
 
 AROS_LD1(STRPTR, getlangstring,
@@ -278,30 +278,30 @@ const STRPTR __croatian_strings[] =
         In English this would be Sunday, this depends upon the settings
         of Locale->CalendarType.
     */
-    "ponedjeljak", "utorak", "srijeda", "Äetvrtak", "petak",
-    "subota", "nedelja",
+    "nedelja", "ponedjeljak", "utorak", "srijeda", "èetvrtak",
+    "petak", "subota",
 
     /* Abbreviated days of the week */
-    "po", "ut", "sr", "Ät", "pe", "su", "ne",
+    "ne", "po", "ut", "sr", "èt", "pe", "su",
 
     /* Months of the year */
-    "sijeÄanj", "veljaÄa", "oÅ¾ujak",
+    "sijeèanj", "veljaèa", "o¾ujak",
     "travanj", "svibanj", "lipanj",
     "srpanj", "kolovoz", "rujan",
     "listopad", "studeni", "prosinac",
 
     /* Abbreviated months of the year */
-    "sij", "velj", "oÅ¾u", "tra", "svi", "lip",
+    "sij", "velj", "o¾u", "tra", "svi", "lip",
     "srp", "kol", "ruj", "lis", "stu", "pro",
 
     "Da", /* Yes, affirmative response */
     "Ne", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
-    "dop.", "odp.",
+    "jutro", "popodne",
 
     /* Soft and hard hyphens */
-    "-", "-",
+    "\xAD", "-",
 
     /* Open and close quotes */
     "\"", "\"",
@@ -312,7 +312,7 @@ const STRPTR __croatian_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "JuÄer", "Danas", "Sutra", "BuduÄnost"
+    "Juèer", "Danas", "Sutra", "Buduænost"
 };
 
 /* This is the end of ROMtag marker. */
