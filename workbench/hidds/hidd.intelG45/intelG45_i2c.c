@@ -53,8 +53,8 @@ void METHOD(INTELI2C, Hidd_I2C, PutBits)
 
 	//D(bug("[GMA_I2C] Put: %08x -> %08x\n", val, sd->Card.MMIO + G45_GPIOA));
 
-	writel(val, sd->Card.MMIO + G45_GPIOA);
-	val = readl(sd->Card.MMIO + G45_GPIOA);
+	writel(val, sd->Card.MMIO + sd->DDCPort);
+	val = readl(sd->Card.MMIO + sd->DDCPort);
 }
 
 void METHOD(INTELI2C, Hidd_I2C, GetBits)
@@ -66,7 +66,7 @@ void METHOD(INTELI2C, Hidd_I2C, GetBits)
 //	writel(/*G45_GPIO_CLOCK_DIR_MASK |*/ G45_GPIO_DATA_DIR_MASK, sd->Card.MMIO + G45_GPIOA);
 //	writel(0, sd->Card.MMIO + G45_GPIOA);
 
-	val = readl(sd->Card.MMIO + G45_GPIOA);
+	val = readl(sd->Card.MMIO + sd->DDCPort);
 
 	//D(bug("[GMA_I2C] Get: %08x <- %08x\n", val, sd->Card.MMIO + G45_GPIOA));
 	*msg->scl = (val & G45_GPIO_CLOCK_DATA_IN) != 0;
