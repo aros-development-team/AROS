@@ -118,6 +118,8 @@ struct g45staticdata {
 	char *					RingBufferPhys;
 	char					RingActive;
 
+	uint32_t				DDCPort;
+
 	OOP_Class *				IntelG45Class;
 	OOP_Class *				IntelI2C;
 	OOP_Class *				BMClass;
