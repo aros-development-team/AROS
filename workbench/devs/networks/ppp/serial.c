@@ -252,9 +252,6 @@ void SerDelay(LIBBASETYPEPTR LIBBASE, LONG timeout)
 
 BOOL OpenSerial(LIBBASETYPEPTR LIBBASE)
 {
-  
-   
-    
     D(bug("OpenSerial\n"));
      
     if( ! (LIBBASE->sdu_TxPort = CreateMsgPort())){
@@ -270,20 +267,7 @@ BOOL OpenSerial(LIBBASETYPEPTR LIBBASE)
        LIBBASE->sdu_SerTx = NULL;
        goto OpenSerial_fail;
     }
-        /*
-     LIBBASE->sdu_SerTx->IOSer.io_Command = CMD_RESET;    
-     D(bug("  CMD_RESET  --> Tx\n"));
-     if( DoIO((struct IORequest *)LIBBASE->sdu_SerTx)){ 
-        goto OpenSerial_fail;
-     }  
-     */
-	
-     LIBBASE->sdu_SerTx->IOSer.io_Command = CMD_CLEAR;    
-     D(bug("  CMD_CLEAR  --> Tx\n"));
-     if( DoIO((struct IORequest *)LIBBASE->sdu_SerTx)){ 
-        goto OpenSerial_fail;
-     }  
-     
+   
      // Set up our serial parameters 
      LIBBASE->sdu_SerTx->IOSer.io_Command = SDCMD_SETPARAMS;
     // LIBBASE->sdu_SerTx->io_Baud = 9600;
@@ -379,7 +363,7 @@ VOID CloseSerial(LIBBASETYPEPTR LIBBASE)
 VOID QueueSerRequest(LIBBASETYPEPTR LIBBASE , LONG maxlength)
 {
 
-    if( ! ( LIBBASE->serial_ok ) ) return;
+    if( ! LIBBASE->serial_ok ) return;
     if( maxlength < 1 ) return;
 	
     LIBBASE->sdu_SerRx->IOSer.io_Command = SDCMD_QUERY;

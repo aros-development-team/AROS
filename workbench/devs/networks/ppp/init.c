@@ -133,7 +133,7 @@ BOOL ReadConfig(LIBBASETYPEPTR LIBBASE)
                  
                if( strcasecmp("SEND",tok) == 0 ){  
                  if( GetLineEnd(linebuff,tok) ){
-					 strcat( tok , "\r" );
+					 //strcat( tok , "\r" );
                      strcpy( LIBBASE->atc[comnum].str , tok );
                      LIBBASE->atc[comnum].command = COM_SEND;
                 //   bug("send=%s\n",LIBBASE->atc[comnum].str );
@@ -205,8 +205,8 @@ BOOL DialUp(LIBBASETYPEPTR LIBBASE)
       
      if( LIBBASE->atc[i].command == COM_SEND ){
          bug("SEND \"%s\"\n",LIBBASE->atc[i].str); 
-         DoStr( LIBBASE, LIBBASE->atc[i].str);	 
-	   //  SendStr( LIBBASE, LIBBASE->atc[i].str ,15 );
+         DoStr( LIBBASE, LIBBASE->atc[i].str);	
+	     DoStr( LIBBASE,  "\r" );	 
       } 
      
       i++; 
@@ -257,7 +257,6 @@ VOID PPP_Process(VOID)
 
     proc = (struct Process *)FindTask(0L);
 
-   
     signalbit = AllocSignal(-1L);
     if(signalbit != -1){
      
@@ -488,20 +487,17 @@ D(bug("[PPP] Init()\n"));
 
 static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
-    
-D(bug("[PPP] Expunge()\n"));
+   
+    D(bug("[PPP] Expunge()\n"));
   
-    return FALSE;
-   /* 
     if(LIBBASE->sd_OpenCnt)
-    {
-    // Sorry, we're busy.  We'll expunge later on if we can. 
+    {   // Sorry, we're busy.  We'll expunge later on if we can. 
        LIBBASE->sd_Flags |= LIBF_DELEXP;
        D(bug("[PPP] Expunge,busy\n"));
        return FALSE;
     }
     return TRUE;   
-	*/ 
+	 
 }
 
 
@@ -540,7 +536,7 @@ static int GM_UNIQUENAME(Open)
              LIBBASE->CopyFromBuffer =  (APTR)bufftag->ti_Data;
               
              status = TRUE;
-             LIBBASE->sd_OpenCnt++;
+			 
              LIBBASE->sd_Flags &=~LIBF_DELEXP;
              LIBBASE->sd_Unit->unit_OpenCnt++;
             
@@ -577,7 +573,7 @@ VOID ExpungeUnit(LIBBASETYPEPTR LIBBASE)
     D(bug("[PPP] ExpungeUnit \n"));
     
     D(bug("[PPP] ExpungeUnit Signal\n"));
-    Signal( LIBBASE->sdu_Proc , SIGBREAKF_CTRL_F ); 
+    Signal( (struct Task*)LIBBASE->sdu_Proc , SIGBREAKF_CTRL_F ); 
     D(bug("[PPP] ExpungeUnit Wait\n")); 
     while(  LIBBASE->sdu_Proc_run ) Delay(5);
     
@@ -596,13 +592,11 @@ static int GM_UNIQUENAME(Close)
 )
 {
  
-  //  BPTR seglist = 0L;
     D(bug("[PPP] Close\n"));
     ObtainSemaphore(&LIBBASE->sd_Lock);
     
     CloseSerial(LIBBASE);
     
-
     /* Trash the io_Device and io_Unit fields so that any attempt to use this
        request will die immediatly. */
 
@@ -620,10 +614,7 @@ static int GM_UNIQUENAME(Close)
 
     LIBBASE->sd_OpenCnt--;
     ReleaseSemaphore(&LIBBASE->sd_Lock);
-
-    /* Check to see if we've been asked to expunge. */
-    //if(LIBBASE->sd_Flags & LIBF_DELEXP)
-      // seglist = DevExpunge(LIBBASE);
+			 
     D(bug("[PPP] Close OK\n"));
     return TRUE;
 }

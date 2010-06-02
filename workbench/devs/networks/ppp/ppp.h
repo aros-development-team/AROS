@@ -64,7 +64,6 @@ struct PPPBase {
     struct Device sd_Device;
     ULONG        sd_OpenCnt;
     UBYTE        sd_Flags;
-    BPTR         sd_SegList;
     
     BOOL ppp_online;
     BOOL serial_ok;
@@ -75,8 +74,7 @@ struct PPPBase {
     struct SignalSemaphore sd_Lock;
     
     struct Process      *sdu_Proc;
-    
-    
+      
     struct MsgPort     *TimeMsg;
     struct timerequest *TimeReq;
     
