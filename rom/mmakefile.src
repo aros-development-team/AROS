@@ -5,7 +5,6 @@
 #MM	    kernel-dos-kobj \
 #MM	    kernel-boot-kobj \
 #MM	    kernel-dosboot-kobj \
-#MM	    kernel-bootmenu-kobj \
 #MM	    kernel-graphics-kobj \
 #MM	    kernel-utility-kobj \
 #MM	    kernel-intuition-kobj \
@@ -20,7 +19,6 @@
 #MM	    kernel-oop-kobj \
 #MM	    kernel-layers-kobj \
 #MM	    kernel-workbench-kobj \
-#MM	    kernel-cgfx-kobj \
 #MM         kernel-usb-kobj-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
 #MM- includes-generate : \

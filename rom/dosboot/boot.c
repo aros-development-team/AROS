@@ -19,14 +19,15 @@
 #include <aros/asmcall.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
-#include <libraries/expansionbase.h>
 #include <utility/tagitem.h>
 
 #include <proto/bootloader.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-void __dosboot_Boot(struct ExecBase *SysBase, BOOL hidds_ok, APTR BootLoaderBase)
+#include "dosboot_intern.h"
+
+void __dosboot_Boot(BOOL hidds_ok, APTR BootLoaderBase, ULONG Flags)
 {
     LONG rc = RETURN_FAIL;
     BPTR cis = NULL;
@@ -50,9 +51,7 @@ void __dosboot_Boot(struct ExecBase *SysBase, BOOL hidds_ok, APTR BootLoaderBase
 	kprintf("Failed to load system HIDDs\n");
     if (cis)
     {
-        struct ExpansionBase *ExpansionBase;
         BPTR sseq = NULL;
-        BOOL opensseq = TRUE;
 
         struct TagItem tags[] =
             {
@@ -65,15 +64,9 @@ void __dosboot_Boot(struct ExecBase *SysBase, BOOL hidds_ok, APTR BootLoaderBase
                 { TAG_DONE,       0           }
             };
 
-        if ((ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0)) != NULL)
-        {
-            opensseq = !(ExpansionBase->Flags & EBF_DOSFLAG);
-            CloseLibrary((struct Library*) ExpansionBase);
-        }
-
         D(bug("[DOSBoot] __dosboot_Boot: Open Startup Sequence = %d\n", opensseq));
 
-        if (opensseq)
+        if (!(Flags & BF_NO_STARTUP_SEQUENCE))
         {
             sseq = Open("S:Startup-Sequence", FMF_READ);
             tags[5].ti_Data = (IPTR)sseq;
@@ -85,7 +78,7 @@ void __dosboot_Boot(struct ExecBase *SysBase, BOOL hidds_ok, APTR BootLoaderBase
              * select to boot without startup sequence but there might be other places to do this
              * selection in the future.
              */
-            
+
             if (BootLoaderBase)
             {
                 /* TODO: create something like ExistsBootArg("enableusb") in bootloader.resource */

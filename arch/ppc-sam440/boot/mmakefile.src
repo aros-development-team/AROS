@@ -39,7 +39,6 @@ include $(TOP)/config/make.cfg
 #MM	kernel-bootloader-sam440-ppc \
 #MM	kernel-dos \
 #MM	kernel-boot \
-#MM	kernel-bootmenu \
 #MM	kernel-dosboot \
 #MM	kernel-ata \
 #MM	hidd-i2c \
@@ -57,7 +56,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-usb-usbromstartup
 
 PKG_LIBS     := aros cybergraphics mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench dos boot poseidon
-PKG_RSRC     := misc bootloader battclock bootmenu dosboot usbromstartup
+PKG_RSRC     := misc bootloader battclock dosboot usbromstartup
 PKG_DEVS     := input gameport keyboard console timer ata USBHardware/pciusb
 PKG_HANDLERS := con nil amberram packet cdrom sfs afs
 PKG_HIDDS    := graphics hiddclass pci pci-amcc440 i2c i2c-amcc440 radeon irq usb ohci

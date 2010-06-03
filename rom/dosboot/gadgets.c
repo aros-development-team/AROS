@@ -6,8 +6,7 @@
 #include <exec/memory.h>
 #include <intuition/gadgetclass.h>
 
-#include "gadgets.h"
-#include "bootmenu_intern.h"
+#include "dosboot_intern.h"
 
 struct ButtonGadget *createButton
 	(
@@ -15,7 +14,7 @@ struct ButtonGadget *createButton
 		struct Gadget *prev,
 		STRPTR name,
 		UWORD id,
-		struct BootMenuBase *BootMenuBase
+		struct DOSBootBase *DOSBootBase
 	)
 {
 	struct TagItem tags[] =
@@ -80,7 +79,7 @@ struct ButtonGadget *createButton
 	return NULL;
 }
 
-void freeButtonGadget(struct ButtonGadget *button, struct BootMenuBase *BootMenuBase) 
+void freeButtonGadget(struct ButtonGadget *button, struct DOSBootBase *DOSBootBase) 
 {
         D(bug("[BootMenu] freeButtonGadget()\n"));
 

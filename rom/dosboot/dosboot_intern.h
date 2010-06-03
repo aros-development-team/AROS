@@ -2,37 +2,67 @@
 #define DOSBOOT_INTERN_H
 
 /*
-	Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+	Copyright © 1995-2010, The AROS Development Team. All rights reserved.
    $Id$
 
    Desc: Internal definitions for dosboot
    Lang: english
 */
 
-#include <aros/libcall.h>
+#include <dos/dosextens.h>
 #include <exec/libraries.h>
 #include <exec/lists.h>
-#include <libcore/base.h>
-#include <libraries/expansionbase.h>
-#include <libraries/bootmenu.h>
-//#include "gadgets.h"
-#include LC_LIBDEFS_FILE
 
-LIBBASETYPE {
-    struct Node         db_Node;
-    char                *db_BootDevice;
-    BOOL                db_attemptingboot;
+#include "gadgets.h"
 
+#define BUFSIZE 100
+
+struct DefaultHidd
+{
+	TEXT libname [BUFSIZE];
+	TEXT hiddname[BUFSIZE];
 };
 
-//#undef ExpansionBase
-//#define ExpansionBase DOSBootBase->bm_ExpansionBase
-//#undef GfxBase
-//#define GfxBase DOSBootBase->bm_GfxBase
-//#undef IntuitionBase
-//#define IntuitionBase DOSBootBase->bm_IntuitionBase
+struct BootConfig
+{
+	/* preferred boot device */
+	struct BootNode *boot;
+	/* default hidds used in bootmenu and for fallback mode */
+	struct DefaultHidd defaultgfx;
+	struct DefaultHidd defaultkbd;
+	struct DefaultHidd defaultmouse;
+};
 
-//void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase);
+struct DOSBootBase
+{
+    struct Node           db_Node;		/* Node for linking into the list */
+    char                 *db_BootDevice;	/* Device to boot up from	  */
+    BOOL                  db_attemptingboot;	/* Reserved for animation	  */
+
+    struct GfxBase       *bm_GfxBase;		/* Library bases	  	  */
+    struct IntuitionBase *bm_IntuitionBase;
+    struct Screen        *bm_Screen;		/* Screen, window and gadgets     */
+    struct Window        *bm_Window;
+    struct MainGadgets    bm_MainGadgets;
+
+    struct BootConfig     bm_BootConfig;	/* Current HIDD configuration     */
+    ULONG		  BootFlags;		/* Bootup flags			  */
+};
+
+/* Boot flags */
+#define BF_NO_STARTUP_SEQUENCE 0x0001
+
+void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase);
+BOOL __dosboot_InitHidds(struct DosLibrary *dosBase, APTR BootLoaderBase, struct BootConfig *cfg);
+void __dosboot_Boot(BOOL hidds_ok, APTR BootLoaderBase, ULONG Flags);
+
+BOOL init_device(STRPTR hiddclassname, STRPTR devicename);
+BOOL init_gfx(STRPTR gfxclassname, struct GfxBase *GfxBase);
+
+#undef GfxBase
+#define GfxBase DOSBootBase->bm_GfxBase
+#undef IntuitionBase
+#define IntuitionBase DOSBootBase->bm_IntuitionBase
 
 #endif /* DOSBOOT_INTERN_H */
 

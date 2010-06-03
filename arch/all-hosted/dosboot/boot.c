@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     $Id: boot.c 29897 2008-10-27 09:27:10Z sonic $
 
     Desc: Boot your operating system.
@@ -25,6 +25,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
+#include "dosboot_intern.h"
+
 struct emulbase
 {
     struct Device eb_device;
@@ -33,7 +35,7 @@ struct emulbase
     APTR eb_stderr;
 };
 
-void __dosboot_Boot(struct ExecBase *SysBase, BOOL hidds_ok)
+void __dosboot_Boot(BOOL hidds_ok, APTR BootLoaderBase, ULONG Flags)
 {
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. We do this by calling the submain()
@@ -127,19 +129,9 @@ void __dosboot_Boot(struct ExecBase *SysBase, BOOL hidds_ok)
         PutStr("Failed to load system HIDDs\n");
     if (cis)
     {
-        struct ExpansionBase *ExpansionBase;
-        BOOL opensseq = TRUE;
-
-	D(bug("[DOSBoot.hosted] __dosboot_Boot: Boot shell opened\n"));
-        if ((ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0)) != NULL)
-        {
-            opensseq = !(ExpansionBase->Flags & EBF_DOSFLAG);
-            CloseLibrary((struct Library *)ExpansionBase);
-        }
-
         D(bug("[DOSBoot.hosted] __dosboot_Boot: Open Startup Sequence = %d\n", opensseq));
 
-        if (opensseq)
+        if (!(Flags & BF_NO_STARTUP_SEQUENCE))
         {
             sseq = Open("S:Startup-Sequence", FMF_READ);
             tags[2].ti_Data = (IPTR)sseq;

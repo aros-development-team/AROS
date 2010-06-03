@@ -1,10 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := dosboot_init inithidds boot
+FILES := dosboot_init inithidds boot menu gadgets
 
-#MM- kernel-dosboot-includes : kernel-bootloader-includes kernel-bootmenu-includes
-#MM- kernel-dosboot : includes linklibs kernel-bootloader-includes kernel-bootmenu-includes
+#MM- kernel-dosboot-includes : kernel-bootloader-includes
+#MM- kernel-dosboot : includes linklibs kernel-bootloader-includes
 
 USER_INCLUDES := -I$(SRCDIR)/rom/devs
 USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\""

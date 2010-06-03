@@ -41,7 +41,7 @@ endif
 ifeq ("$(X11_HIDD_TARGET)", "kernel-x11gfx-kobj")
     KHIDDS += x11gfx
 endif
-KRSRCS  := battclock dosboot hostlib bootloader bootmenu
+KRSRCS  := battclock dosboot hostlib bootloader
 ifeq ($(ENABLE_DBUS),1)
 KLIBS	+= dbus
 endif

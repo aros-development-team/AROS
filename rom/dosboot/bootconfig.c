@@ -1,9 +1,8 @@
 #include <aros/bootloader.h>
-#include <libraries/bootmenu.h>
 #include <proto/bootloader.h>
 #include <string.h>
 
-#include "bootmenu_intern.h"
+#include "dosboot_intern.h"
 
 /* This file contains architecture-dependent defaults */
 
@@ -11,8 +10,6 @@ void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase)
 {
     struct VesaInfo *vi;
 
-    bootcfg->self = bootcfg;
-    bootcfg->boot = NULL;
     strcpy(bootcfg->defaultgfx.libname,    "vgah.hidd");
     strcpy(bootcfg->defaultgfx.hiddname,   "hidd.gfx.vga");
     strcpy(bootcfg->defaultkbd.libname,    "kbd.hidd");

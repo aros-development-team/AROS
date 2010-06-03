@@ -15,7 +15,6 @@
 #include <exec/alerts.h>
 #include <exec/io.h>
 #include <dos/filesystem.h>
-#include <libraries/bootmenu.h>
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
 #include <hidd/hidd.h>
@@ -31,25 +30,13 @@
 #include <string.h>
 
 #include "devs_private.h"
+#include "dosboot_intern.h"
 
 #include <aros/asmcall.h>
 
-struct initbase
-{
-    struct ExecBase	*sysbase;
-    struct DosLibrary	*dosbase;
-    struct Library	*oopbase;
-};
-
-#define DOSBase (base->dosbase)
-#define OOPBase (base->oopbase)
-
-static BOOL __dosboot_InitGfx   ( STRPTR gfxclassname,   struct initbase *base);
-static BOOL __dosboot_InitDevice( STRPTR hiddclassname, STRPTR devicename,  struct initbase *base);
-
 /************************************************************************/
 
-#define BUFSIZE 100
+#undef GfxBase
 
 #define HIDDPREFSFILE "SYS:S/hidd.prefs"
 
@@ -59,296 +46,220 @@ static BOOL __dosboot_InitDevice( STRPTR hiddclassname, STRPTR devicename,  stru
 #define isspace(c) \
 	(c == '\t' || c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\v')
 
-BOOL __dosboot_InitHidds(struct ExecBase *sysBase, struct DosLibrary *dosBase, APTR BootLoaderBase)
+BOOL __dosboot_InitHidds(struct DosLibrary *dosBase, APTR BootLoaderBase, struct BootConfig *cfg)
 {
     /* This is the initialisation code for InitHIDDs module */
-    struct initbase stack_b, *base = &stack_b;
     BOOL success = TRUE;
     UBYTE buf[BUFSIZE];
-    UBYTE gfxname[BUFSIZE], kbdname[BUFSIZE], mousename[BUFSIZE];
     BOOL def_gfx = TRUE, def_kbd = TRUE, def_mouse = TRUE;
-    struct BootMenuBase *BootMenuBase;
-
-    base->sysbase = sysBase;
-    base->dosbase = dosBase;
+    BPTR fh;
 
     D(bug("[DOSBoot] __dosboot_InitHidds()\n")); 
 
-    OOPBase = OpenLibrary(AROSOOP_NAME, 0);
-    if (!OOPBase)
-    {
-    	success = FALSE;
-    }
-    else
-    {
-	BPTR fh;
+    /* Open the hidd prefsfile */	
+    fh = Open(HIDDPREFSFILE, FMF_READ);
+    if (fh) {
+        D(bug("[DOS] __dosboot_InitHidds: hiddprefs file opened\n"));
 
-	D(bug("[DOSBoot] __dosboot_InitHidds: OOP opened\n"));
+        while (FGets(fh, buf, BUFSIZE)) {
+	    STRPTR keyword = buf, arg, end;
+	    STRPTR s;
 
-	BootMenuBase = (struct BootMenuBase *)OpenResource("bootmenu.resource");
-	D(bug("[DOS] __dosboot_InitHidds: BootMenuBase = 0x%p\n", BootMenuBase));
-	if (BootMenuBase) {
-	    strcpy(gfxname, BootMenuBase->bm_BootConfig.defaultgfx.hiddname);
-	    strcpy(kbdname, BootMenuBase->bm_BootConfig.defaultkbd.hiddname);
-	    strcpy(mousename, BootMenuBase->bm_BootConfig.defaultmouse.hiddname);
-	}
+	    if (*buf == '#')
+		continue;
 
-	/* Open the hidd prefsfile */	
-	fh = Open(HIDDPREFSFILE, FMF_READ);
-	if (fh)
-	{    
-            D(bug("[DOS] __dosboot_InitHidds: hiddprefs file opened\n"));
-            while (FGets(fh, buf, BUFSIZE))
-	    {
-	        STRPTR keyword = buf, arg, end;
-		STRPTR s;
+	    s = buf;
+	    if (*s) {
+		for (; *s; s ++);
 
-		if (*buf == '#')
-		    continue;
+		if (s[-1] == 10)
+		    s[-1] = 0;
+	    }		    
 
-		s = buf;
-		if (*s) {
-		    for (; *s; s ++)
-		    	;
-		    if (s[-1] == 10) {
-		    	s[-1] = 0;
-		    }
-		}		    
+	    D(bug("[DOS] __dosboot_InitHidds: Got line: %s\n", buf));
 
-		D(bug("[DOS] __dosboot_InitHidds: Got line: %s\n", buf));
+	    /* Get keyword */
+	    while ((*keyword != 0) && isspace(*keyword))
+		keyword ++;
 
-		/* Get keyword */
-		while ((*keyword != 0) && isspace(*keyword))
-		    keyword ++;
+	    if (*keyword == 0)
+		continue;
 
-		if (*keyword == 0)
-		    continue;
+	    /* terminate keyword */
+	    arg = keyword;
+	    while ((*arg != 0) && (!isblank(*arg)))
+		arg ++;
+	    if (*arg == 0)
+		continue;
+	    *arg++ = 0;
 
-		  /* terminate keyword */
-		arg = keyword;
-		while ((*arg != 0) && (!isblank(*arg)))
-		{
-		    arg ++;
-		}
-		if (*arg == 0)
-		    continue;
-
-		*arg = 0;
-
+	    /* Find start of argument */
+	    D(bug("[DOS] __dosboot_InitHidds: Find argument at %s\n", arg));
+	    while ((*arg != 0) && isblank(*arg))
 		arg ++;
 
-		  /* Find start of argument */
-		D(bug("[DOS] __dosboot_InitHidds: Find argument at %s\n", arg));
-		while ((*arg != 0) && isblank(*arg))
-		    arg ++;
+	    if (*arg == 0)
+		continue;
 
-		if (*arg == 0)
-		    continue;
+	    D(bug("[DOS] __dosboot_InitHidds: Terminate argument at %s\n", arg));
+	    /* terminate argument */
+	    end = arg;
+	    while ( (*end != 0) && (!isblank(*end)))
+		end ++;
+	    if (*end != 0)
+		*end = 0;
 
-		D(bug("[DOS] __dosboot_InitHidds: Terminate argument at %s\n", arg));
-		  /* terminate argument */
-		end = arg;
-		while ( (*end != 0) && (!isblank(*end)))
-		    end ++;
-		if (*end != 0)
-		    *end = 0;
+	    D(bug("[DOS] __dosboot_InitHidds: Got keyword \"%s\" arg \"%s\"\n", keyword, arg));
 
-		D(bug("[DOS] __dosboot_InitHidds: Got keyword \"%s\" arg \"%s\"\n", keyword, arg));
+	    if (0 == strcmp(keyword, "library")) {
+		D(bug("Opening library\n"));
+		/* Open a specified library */
+		OpenLibrary(arg, 0);
+	    } else if (0 == strcmp(keyword, "gfx")) {
+		strncpy(cfg->defaultgfx.hiddname, arg, BUFSIZE - 1);
+		def_gfx = FALSE;
+	    } else if (0 == strcmp(keyword, "mouse")) {
+		strncpy(cfg->defaultmouse.hiddname, arg, BUFSIZE - 1);
+		def_mouse = FALSE;
+	    } else if (0 == strcmp(keyword, "kbd")) {
+		strncpy(cfg->defaultkbd.hiddname, arg, BUFSIZE - 1);
+		def_kbd = FALSE;
+	    }
+	}
+	Close(fh);
+    }
 
-		if (0 == strcmp(keyword, "library"))
-		{
-		    D(bug("Opening library\n"));
-		    /* Open a specified library */
-		    OpenLibrary(arg, 0);
-		}
-		else if (0 == strcmp(keyword, "gfx"))
-		{
-		    strncpy(gfxname, arg, BUFSIZE - 1);
+    if (BootLoaderBase) {
+	struct List *list;
+	struct Node *node;
+
+	list = (struct List *)GetBootInfo(BL_Args);
+	if (list) {
+	    ForeachNode(list,node) {
+		if (0 == strncmp(node->ln_Name,"lib=",4)) {
+		    D(bug("[DOS] __dosboot_InitHidds: Opening library %s\n",&node->ln_Name[4]));
+		    OpenLibrary(&node->ln_Name[4],0L);
+		} else if (0 == strncmp(node->ln_Name,"gfx=",4)) {
+		    strncpy(cfg->defaultgfx.hiddname, &node->ln_Name[4], BUFSIZE-1);
 		    def_gfx = FALSE;
-		}
-		else if (0 == strcmp(keyword, "mouse"))
-		{
-		    strncpy(mousename, arg, BUFSIZE - 1);
+		} else if (0 == strncmp(node->ln_Name,"kbd=",4)) {
+		    strncpy(cfg->defaultkbd.hiddname, &node->ln_Name[4], BUFSIZE-1);
+		    def_kbd = FALSE;
+		} else if (0 == strncmp(node->ln_Name,"mouse=",6)) {
+		    strncpy(cfg->defaultmouse.hiddname, &node->ln_Name[6], BUFSIZE-1);
 		    def_mouse = FALSE;
 		}
-		else if (0 == strcmp(keyword, "kbd"))
-		{
-		    strncpy(kbdname, arg, BUFSIZE - 1);
-		    def_kbd = FALSE;
-		}
-	    }
-	    Close(fh);
-	}
-
-	if (BootLoaderBase)
-	{
-	    struct List *list;
-	    struct Node *node;
-
-	    list = (struct List *)GetBootInfo(BL_Args);
-	    if (list)
-	    {
-		ForeachNode(list,node)
-		{
-		    if (0 == strncmp(node->ln_Name,"gfx=",4))
-		    {
-			D(bug("[DOS] __dosboot_InitHidds: Using %s as graphics driver\n",&node->ln_Name[4]));
-			strncpy(gfxname,&(node->ln_Name[4]),BUFSIZE-1);
-			def_gfx = FALSE;
-		    }
-		    if (0 == strncmp(node->ln_Name,"lib=",4))
-		    {
-			D(bug("[DOS] __dosboot_InitHidds: Opening library %s\n",&node->ln_Name[4]));
-			OpenLibrary(&node->ln_Name[4],0L);
-		    }
-		    if (0 == strncmp(node->ln_Name,"kbd=",4))
-		    {
-			strncpy(kbdname, &node->ln_Name[4], BUFSIZE-1);
-			def_kbd = FALSE;
-		    }
-		    if (0 == strncmp(node->ln_Name,"mouse=",6))
-		    {
-			strncpy(mousename, &node->ln_Name[6], BUFSIZE-1);
-			def_mouse = FALSE;
-		    }
-		}
 	    }
 	}
+    }
 
-	if ((!BootMenuBase) && (def_gfx || def_mouse || def_kbd)) {
+    /* TODO: Run everything from DEVS:Monitors here */
+
+    if (cfg->defaultgfx.hiddname[0]) {
+        struct GfxBase *GfxBase;
+	BOOL ok;
+
+	if (def_gfx && (!OpenLibrary(cfg->defaultgfx.libname, 0))) {
 	    success = FALSE;
-	    kprintf("You must specify drivers for this system!\n");
+	    kprintf("Unable to load graphics hidd %s\n", cfg->defaultgfx.libname);
 	    goto end;
 	}
 
-	if (def_gfx && gfxname[0])
-	{
-	    if (!OpenLibrary(BootMenuBase->bm_BootConfig.defaultgfx.libname, 0)) {
-	        success = FALSE;
-	    	kprintf("Unable to load gfx hidd %s\n",
-			BootMenuBase->bm_BootConfig.defaultgfx.libname);
-		goto end;
-	    }
-	}
-	if (def_mouse && mousename[0])
-	{
-	    if (!OpenLibrary(BootMenuBase->bm_BootConfig.defaultmouse.libname, 0)) {
-	        success = FALSE;
-	    	kprintf("Unable to load mouse hidd %s\n",
-			BootMenuBase->bm_BootConfig.defaultmouse.libname);
-		goto end;
-	    }
-	}
-	if (def_kbd && kbdname[0])
-	{
-	    if (!OpenLibrary(BootMenuBase->bm_BootConfig.defaultkbd.libname, 0)) {
-	        success = FALSE;
-	    	kprintf("Unable to load keyboard hidd %s\n", BootMenuBase->bm_BootConfig.defaultkbd.libname);
-		goto end;
-	    }
+	GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
+	if (!GfxBase) {
+	    success = FALSE;
+	    kprintf("Unable to open graphics.library v41\n");
+	    goto end;
 	}
 
-	if (!__dosboot_InitGfx(gfxname, base))
-	{
-	    kprintf("Could not init gfx hidd %s\n", gfxname);
+	ok = init_gfx(cfg->defaultgfx.hiddname, GfxBase);
+	CloseLibrary(&GfxBase->LibNode);
+	if (!ok) {
+	    success = FALSE;
+	    kprintf("Could not init graphics hidd %s\n", cfg->defaultgfx.hiddname);
+	    goto end;
+	}
+    }
+
+    if (cfg->defaultmouse.hiddname[0]) {
+        if (def_mouse && (!OpenLibrary(cfg->defaultmouse.libname, 0))) {
+	    success = FALSE;
+	    kprintf("Unable to load mouse hidd %s\n", cfg->defaultmouse.libname);
+	    goto end;
+	}
+	if (!init_device(cfg->defaultmouse.hiddname, "gameport.device")) {
+	    kprintf("Could not init mouse hidd %s\n", cfg->defaultmouse.hiddname);
 	    success = FALSE;
 	    goto end;
 	}
-	if (!__dosboot_InitDevice(kbdname, "keyboard.device", base))
-	{
-	    kprintf("Could not init keyboard hidd %s\n", kbdname);
+    }
+
+    if (cfg->defaultkbd.hiddname[0]) {
+	if (def_kbd && (!OpenLibrary(cfg->defaultkbd.libname, 0))) {
+	    success = FALSE;
+	    kprintf("Unable to load keyboard hidd %s\n", cfg->defaultkbd.libname);
+	    goto end;
+	}
+	if (!init_device(cfg->defaultkbd.hiddname, "keyboard.device")) {
+	    kprintf("Could not init keyboard hidd %s\n", cfg->defaultkbd.hiddname);
 	    success = FALSE;
 	    goto end;
 	}
-	if (!__dosboot_InitDevice(mousename, "gameport.device", base))
-	{
-	    kprintf("Could not init mouse hidd %s\n", mousename);
-	    success = FALSE;
-	    goto end;
-	}
-end:    
-	CloseLibrary(OOPBase);
-    }    
+    }
+
+end:
     ReturnBool("__dosboot_InitHidds", success);
 }
 
-/*****************
-**  __dosboot_InitGfx()  **
-*****************/
 
-static BOOL __dosboot_InitGfx(STRPTR gfxclassname, struct initbase *base)
+BOOL init_gfx(STRPTR gfxclassname, struct GfxBase *GfxBase)
 {
-    struct GfxBase *GfxBase;
+    OOP_Object *gfxhidd;
     BOOL success = FALSE;
 
-    D(bug("[DOSBoot] __dosboot_InitGfx(hiddname='%s')\n", gfxclassname));
+    D(bug("[BootMenu] init_gfx('%s')\n", gfxclassname));
 
-    if (!gfxclassname[0])
-        return TRUE;
-
-    GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
-    if (GfxBase)
-    {
-        OOP_Object *gfxhidd;
-
-    	D(bug("[DOS] __dosboot_InitGfx: graphics.library opened\n"));
-
-	gfxhidd = OOP_NewObject(NULL, gfxclassname, NULL);
-	if (gfxhidd) {
-            if (AddDisplayDriverA(gfxhidd, NULL))
-		OOP_DisposeObject(gfxhidd);
-	    else
-		success = TRUE;
-	}
-
-	CloseLibrary((struct Library *)GfxBase);
+    gfxhidd = OOP_NewObject(NULL, gfxclassname, NULL);
+    if (gfxhidd) {
+        if (AddDisplayDriverA(gfxhidd, NULL))
+	    OOP_DisposeObject(gfxhidd);
+	else
+	    success = TRUE;
     }
-    ReturnBool ("__dosboot_InitGfx", success);
+
+    ReturnBool ("init_gfxhidd", success);
 }
 
-static BOOL __dosboot_InitDevice( STRPTR hiddclassname, STRPTR devicename,  struct initbase *base)
+BOOL init_device(STRPTR hiddclassname, STRPTR devicename)
 {
     BOOL success = FALSE;
-    struct MsgPort *mp;
+    struct MsgPort *mp = NULL;
 
-    D(bug("[DOSBoot] __dosboot_InitDevice(classname='%s')\n", hiddclassname)); 
+    D(bug("[BootMenu] init_device(classname='%s', devicename='%s')\n", hiddclassname, devicename));
 
-    if (!hiddclassname[0])
-        return TRUE;
-    mp = CreateMsgPort();
-    if (mp)
+    if ((mp = CreateMsgPort()) != NULL)
     {
-    	struct IORequest *io;
-	io = CreateIORequest(mp, sizeof ( struct IOStdReq));
-	{
-	    if (0 == OpenDevice(devicename, 0, io, 0))
-	    {
-		UBYTE *data;
+        struct IORequest *io = NULL;
+        if ((io = CreateIORequest(mp, sizeof ( struct IOStdReq))) != NULL)
+        {
+            if (0 == OpenDevice(devicename, 0, io, 0))
+            {
+                #define ioStd(x) ((struct IOStdReq *)x)
+                ioStd(io)->io_Command = CMD_HIDDINIT;
+                ioStd(io)->io_Data = hiddclassname;
+                ioStd(io)->io_Length = strlen(hiddclassname);
 
-	        /* Allocate message data */
-		data = AllocMem(BUFSIZE, MEMF_PUBLIC);
-		if (data)
-		{
-		    #define ioStd(x) ((struct IOStdReq *)x)
-		    strcpy(data, hiddclassname);
-		    ioStd(io)->io_Command = CMD_HIDDINIT;
-		    ioStd(io)->io_Data = data;
-		    ioStd(io)->io_Length = strlen(data);
-
-		    /* Let the device init the HIDD */
-		    DoIO(io);
-		    if (0 == io->io_Error)
-		    {
-			success = TRUE;
-		    }
-
-		    FreeMem(data, BUFSIZE);
-		}
-		CloseDevice(io);
-	    }
-	    DeleteIORequest(io);
-	}
-	DeleteMsgPort(mp);
-    }
-    ReturnBool("__dosboot_InitDevice", success);
+                /* Let the device init the HIDD */
+                DoIO(io);
+                if (0 == io->io_Error)
+                {
+                    success = TRUE;
+                }
+                CloseDevice(io);
+            }
+            DeleteIORequest(io); 
+        }
+        DeleteMsgPort(mp);
+    } 
+    ReturnBool("init_device", success);
 }
