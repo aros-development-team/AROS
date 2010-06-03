@@ -1,17 +1,12 @@
 #include <aros/bootloader.h>
-#include <libraries/bootmenu.h>
-#include <proto/bootloader.h>
 #include <string.h>
 
-#include "bootmenu_intern.h"
+#include "dosboot_intern.h"
 
 /* This file contains architecture-dependent defaults */
 
 void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase)
 {
-    bootcfg->self = bootcfg;
-    bootcfg->boot = NULL;
-
     /* TODO: We may have also framebuffer HIDD and we should choose it if X11
        isn't up and running. */
     strcpy(bootcfg->defaultgfx.libname,  "x11gfx.hidd");
