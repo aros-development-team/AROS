@@ -35,15 +35,14 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "dosboot_intern.h"
-
 #include LC_LIBDEFS_FILE
+
+#include "menu.h"
+#include "dosboot_intern.h"
 
 #define BNF_RETRY 0x8000 /* Private flag for the BootNode */
 #define BNF_MOUNTED 0x4000 /* Private flag for the BootNode */
 
-extern BOOL __dosboot_InitHidds(struct ExecBase *SysBase, struct DosLibrary *DosBase, APTR BootLoaderBase);
-extern void __dosboot_Boot(struct ExecBase *SysBase, BOOL hidds_ok, APTR BootLoaderBase);
 
 /** Support Functions **/
 /* Attempt to start a handler for the DeviceNode */
@@ -502,10 +501,10 @@ AROS_UFH3(void, __dosboot_BootProcess,
         CloseLibrary( (struct Library *) ExpansionBase );
 
         /* Initialize HIDDs */
-        hidds_ok = __dosboot_InitHidds(SysBase, DOSBase, BootLoaderBase);
+        hidds_ok = __dosboot_InitHidds(DOSBase, BootLoaderBase, &LIBBASE->bm_BootConfig);
 
         /* We now call the system dependant boot - should NEVER return! */
-        __dosboot_Boot(SysBase, hidds_ok, BootLoaderBase);
+        __dosboot_Boot(hidds_ok, BootLoaderBase, LIBBASE->BootFlags);
     }
 
     //We Should NEVER reach here!
@@ -535,6 +534,9 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
 
     LIBBASE->db_BootDevice = NULL;
     LIBBASE->db_attemptingboot = FALSE;
+    LIBBASE->BootFlags = 0;
+
+    bootmenu_Init(LIBBASE);
 
     if (CreateNewProc(bootprocess) == NULL)
     {
@@ -544,4 +546,4 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
     return TRUE;
 }
 
-ADD2INITLIB(dosboot_Init, 0)
+ADD2INITLIB(dosboot_Init, 1)

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: $(ARCH) init code for emulated (Unix) systems.
@@ -64,12 +64,11 @@ extern const struct Resident
     Con_ROMTag,
     Nil_ROMTag,
     Ram_ROMTag,
-    Dosboot_ROMTag,
     GFX_ROMTag,
 #if ENABLE_X11 == 1
     X11Cl_ROMTag,
 #endif
-    Bootmenu_ROMTag;
+    Dosboot_ROMTag;
 
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
@@ -116,7 +115,6 @@ static const struct Resident *romtagList[] =
     &Packet_ROMTag,                     /* AfterDOS,   -124  */
     &Nil_ROMTag,                        /* AfterDOS,   -125  */
     &Ram_ROMTag,                        /* AfterDOS,   -125  */    
-    &Bootmenu_ROMTag,                   /* AfterDOS,   -127  */
     &Dosboot_ROMTag,                    /* AfterDOS,   -128  */
     NULL
 };

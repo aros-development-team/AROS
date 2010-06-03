@@ -16,8 +16,8 @@
 #include "gfxfuncsupport.h"
 
 /* Experimental option. Define this in order to use
-   BltTemplate() for text rendering.
-#define USE_BLTTEMPLATE */
+   BltTemplate() for text rendering. */
+#define USE_BLTTEMPLATE
 
 void BltTemplateBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
     	    	    	  struct GfxBase *GfxBase);

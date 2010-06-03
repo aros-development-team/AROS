@@ -4,7 +4,7 @@
 #include <intuition/classusr.h>
 #include <intuition/intuition.h>
 
-struct BootMenuBase;
+struct DOSBootBase;
 
 struct ButtonGadget {
 	struct Gadget *gadget;
@@ -30,6 +30,6 @@ struct MainGadgets {
 #define BUTTON_DISPLAY_OPTIONS 4
 #define BUTTON_EXPBOARDDIAG    5
 
-struct ButtonGadget *createButton(ULONG, ULONG, ULONG, ULONG, struct Gadget *, STRPTR, UWORD, struct BootMenuBase *);
-void freeButtonGadget(struct ButtonGadget *, struct BootMenuBase *);
+struct ButtonGadget *createButton(ULONG, ULONG, ULONG, ULONG, struct Gadget *, STRPTR, UWORD, struct DOSBootBase *);
+void freeButtonGadget(struct ButtonGadget *, struct DOSBootBase *);
 #endif
