@@ -27,7 +27,7 @@ FUNCS := allocfilerequest	\
 #MM     kernel-graphics-includes \
 #MM     kernel-utility-includes \
 #MM     kernel-intuition-includes \
-#MM     kernel-cgfx-includes \
+#MM     workbench-libs-cgfx-includes \
 #MM     kernel-layers-includes \
 #MM     workbench-libs-locale-includes \
 #MM     workbench-libs-iffparse-includes \

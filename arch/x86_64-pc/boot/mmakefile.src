@@ -18,7 +18,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-keymap \
 #MM	kernel-intuition \
 #MM	kernel-input \
-#MM	kernel-cgfx-kobj \
+#MM	workbench-libs-cgfx-kobj \
 #MM	kernel-dos \
 #MM	kernel-console \
 #MM	kernel-fs-packet \

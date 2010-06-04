@@ -159,7 +159,7 @@ USER_INCLUDES := -I$(SRCDIR)/rom/dos
 #MM     kernel-exec-includes \
 #MM     kernel-utlity-includes \
 #MM     kernel-graphics-includes \
-#MM     kernel-cgfx-includes \
+#MM     workbench-libs-cgfx-includes \
 #MM     kernel-timer-includes \
 #MM     kernel-layers-includes \
 #MM     kernel-keymap-includes \

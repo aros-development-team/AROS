@@ -24,7 +24,6 @@ include $(TOP)/config/make.cfg
 #MM	kernel-pci \
 #MM	kernel-pci-amcc440 \
 #MM	kernel-graphics \
-#MM	kernel-cgfx \
 #MM	kernel-layers \
 #MM	kernel-keymap \
 #MM	kernel-intuition \

@@ -41,7 +41,7 @@ endif
 #MM      kernel-graphics-linklib \
 #MM      kernel-layers-linklib \
 #MM      kernel-intuition-linklib \
-#MM      kernel-cgfx-linklib \
+#MM      workbench-libs-cgfx-linklib \
 #MM      kernel-dos-linklib \
 #MM      kernel-workbench-linklib \
 #MM      kernel-keymap-linklib
@@ -53,7 +53,7 @@ endif
 #MM      kernel-graphics-includes \
 #MM      kernel-layers-includes \
 #MM      kernel-intuition-includes \
-#MM      kernel-cgfx-includes \
+#MM      workbench-libs-cgfx-includes \
 #MM      kernel-dos-includes \
 #MM      kernel-workbench-includes
 

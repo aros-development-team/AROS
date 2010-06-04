@@ -33,7 +33,7 @@ CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec $(CFLAGS)
 #MM	kernel-oop-linklib \
 #MM	kernel-layers-linklib \
 #MM	kernel-workbench-linklib	\
-#MM	kernel-cgfx-linklib
+#MM	workbench-libs-cgfx-linklib
 
 # Setup the CLIB metatargets...
 #MM- setup-clib-solaris : setup-clib-solaris-$(CPU)
