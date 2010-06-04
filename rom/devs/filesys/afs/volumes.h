@@ -16,6 +16,8 @@ struct Volume {
 	struct DeviceList devicelist;
 	struct DosList *volumenode;
 	ULONG SizeBlock;             /* Block size in words */
+	ULONG blocksectors;          /* nr of sectors per block */
+	ULONG sectorsize;            /* nr of bytes per sector */
 	
 	struct AfsHandle *locklist;
 	struct AfsHandle ah;         /* root handle (unfilled except header_block) */

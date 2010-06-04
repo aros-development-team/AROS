@@ -519,17 +519,14 @@ LONG retval;
 struct IOHandle *ioh = &volume->ioh;
 UQUAD offset;
 
-	if (
-			((volume->startblock+start) <= volume->lastblock) &&
-			((volume->startblock+start+count-1) <= volume->lastblock)
-		)
+	if (start + count <= volume->countblocks)
 	{
 		ioh->ioreq->iotd_Req.io_Command = cmd;
 		ioh->ioreq->iotd_Req.io_Length = count*BLOCK_SIZE(volume);
 		ioh->ioreq->iotd_Req.io_Data = mem;
 
-		offset  = start+volume->startblock;
-		offset *= BLOCK_SIZE(volume);
+		offset  = (UQUAD)volume->startblock * volume->sectorsize
+			+ (UQUAD)start * BLOCK_SIZE(volume);
 
 		ioh->ioreq->iotd_Req.io_Offset = 0xFFFFFFFF & offset;
 		ioh->ioreq->iotd_Req.io_Actual = offset>>32;
@@ -540,7 +537,9 @@ UQUAD offset;
 	{
 		showText(afsbase, "Attempted to read/write block outside range!\n\n"
 			"range: %lu-%lu, start: %lu, count: %lu",
-			volume->startblock, volume->lastblock, start, count);
+			volume->startblock, volume->lastblock,
+			volume->startblock + start * volume->blocksectors,
+			count * volume->blocksectors);
 		retval = 1;
 	}
 	return retval;
