@@ -3,8 +3,6 @@
     $Id$
 */
 
-#define DEBUG 1
-
 #define __OOP_NOATTRBASES__
 
 #include <aros/debug.h>
@@ -44,7 +42,7 @@ OOP_Object *KBD__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     data->callback = NULL;
 
     tstate = msg->attrList;
-    D(bug("tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));
+    D(bug("tstate: %p\n", tstate));
 
     while ((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
