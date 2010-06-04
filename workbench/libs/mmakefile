@@ -17,6 +17,7 @@
 #MM     workbench-libs-icon \
 #MM     workbench-libs-iffparse \
 #MM     workbench-libs-locale \
+#MM	workbench-libs-lowlevel \
 #MM     workbench-libs-mathieeesingtrans \
 #MM     workbench-libs-mathtrans \
 #MM     workbench-libs-mathieeedoubbas \
@@ -53,6 +54,7 @@
 #MM     workbench-libs-icon-includes \
 #MM     workbench-libs-iffparse-includes \
 #MM     workbench-libs-locale-includes \
+#MM	workbench-libs-lowlevel-includes \
 #MM     workbench-libs-mathieeesingtrans-includes \
 #MM     workbench-libs-mathtrans-includes \
 #MM     workbench-libs-mathieeedoubbas-includes \
