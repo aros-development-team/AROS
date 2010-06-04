@@ -27,18 +27,24 @@
 	struct Library *, CyberGfxBase, 10, Cybergraphics)
 
 /*  FUNCTION
+	Finds best RTG display mode ID which matches parameters specified
+	by the taglist.
 
     INPUTS
+	tags - A pointer to a TagList
 
     RESULT
+	Best matchind display mode ID or INVALID_ID if there is no match
 
     NOTES
 
     EXAMPLE
 
     BUGS
+	At the moment MonitorID and BoardName tags are not implemented
 
     SEE ALSO
+	graphics.library/BestModeIDA()
 
     INTERNALS
 
@@ -56,13 +62,8 @@
 	{ BIDTAG_NominalWidth,	800	},
 	{ BIDTAG_NominalHeight,	600	},
 	{ BIDTAG_Depth,		8	},
-	{ BIDTAG_MonitorID,	INVALID_ID},
 	{ TAG_DONE, 0UL }
     };
-
-    STRPTR boardname;
- 
-    boardname		= "Blah";
       
     for (tstate = tags; (tag = NextTagItem(&tstate)); ) {
     	switch (tag->ti_Tag) {
@@ -77,14 +78,12 @@
 	    case CYBRBIDTG_NominalHeight:
 	        modetags[1].ti_Data = tag->ti_Data;
 	    	break;
-
+/* FIXME: These two need to be implemented
 	    case CYBRBIDTG_MonitorID:
-	        modetags[3].ti_Data = tag->ti_Data;
 	    	break;
 
 	    case CYBRBIDTG_BoardName:
-	    	boardname = (STRPTR)tag->ti_Data;
-	    	break;
+	    	break;*/
 		
 	    default:
 	    	D(bug("!!! UNKOWN ATTR PASSED TO BestCModeIDTagList(): %x !!!\n", tag->ti_Tag));

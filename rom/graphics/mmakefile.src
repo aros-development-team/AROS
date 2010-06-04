@@ -217,7 +217,7 @@ FUNCTIONS := \
 #MM     kernel-exec-includes \
 #MM     kernel-oop-includes \
 #MM     kernel-utility-includes \
-#MM     kernel-cgfx-includes \
+#MM     workbench-libs-cgfx-includes \
 #MM     includes-copy
 
 %build_module mmake=kernel-graphics \

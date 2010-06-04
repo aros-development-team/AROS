@@ -8,7 +8,7 @@
 #MM- workbench-libs-complete : \
 #MM     workbench-libs-amigaguide \
 #MM     workbench-libs-asl \
-#MM	kernel-cgfx \
+#MM	workbench-libs-cgfx-cgfx \
 #MM     workbench-libs-commodities \
 #MM     workbench-libs-camd \
 #MM     workbench-libs-datatypes \
@@ -47,6 +47,7 @@
 ##MM     workbench-libs-bsdsocket-includes \
 #MM     workbench-libs-commodities-includes \
 #MM     workbench-libs-camd-includes \
+#MM	workbench-libs-cgfx-includes \
 #MM     workbench-libs-datatypes-includes \
 #MM     workbench-libs-diskfont-includes \
 #MM     workbench-libs-gadtools-includes \
