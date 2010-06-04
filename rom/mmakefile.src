@@ -5,7 +5,10 @@
 #MM	    kernel-dos-kobj \
 #MM	    kernel-boot-kobj \
 #MM	    kernel-dosboot-kobj \
+#MM	    kernel-fs-packet-kobj \
 #MM	    kernel-graphics-kobj \
+#MM	    kernel-hidd-graphics-kobj \
+#MM	    kernel-hidd-kbd-kobj \
 #MM	    kernel-utility-kobj \
 #MM	    kernel-intuition-kobj \
 #MM	    kernel-keymap-kobj \
