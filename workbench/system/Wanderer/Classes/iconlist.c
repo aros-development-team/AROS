@@ -1917,7 +1917,7 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
 
 		case INDEX_SIZE:
 		    data->icld_LVMAttribs->lmva_ColumnHAlign[i] = COLUMN_ALIGN_RIGHT;
-		    data->icld_LVMAttribs->lmva_ColumnFlags[i] | LVMCF_COLSORTABLE;
+		    data->icld_LVMAttribs->lmva_ColumnFlags[i] |= LVMCF_COLSORTABLE;
 		    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Size";
 		    break;
 
