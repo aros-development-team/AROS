@@ -1,6 +1,6 @@
 ## version $VER: clock.catalog 1.1 (21.11.2007)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 ;
 MSG_ERROR_CANT_CREATE_APPLICATION
