@@ -145,7 +145,10 @@ struct Volume *volume;
 		volume->ioh.blockdevice = blockdevice;
 		volume->ioh.unit = unit;
 		volume->ioh.flags = 0;
-		volume->SizeBlock=devicedef->de_SizeBlock;
+		volume->SizeBlock = devicedef->de_SizeBlock
+			* devicedef->de_SectorPerBlock;
+		volume->sectorsize = devicedef->de_SizeBlock << 2;
+		volume->blocksectors = devicedef->de_SectorPerBlock;
 		if (devicedef->de_TableSize>=20)
 			volume->bootblocks=devicedef->de_BootBlocks;
 		else
@@ -161,11 +164,7 @@ struct Volume *volume;
 							devicedef->de_HighCyl-devicedef->de_LowCyl+1
 						)*devicedef->de_Surfaces*devicedef->de_BlocksPerTrack
 						/
-						(
-							(devicedef->de_SizeBlock << 2)
-							/
-							sectorSize(afsbase, &volume->ioh)
-						)
+						devicedef->de_SectorPerBlock
 					);
 				volume->rootblock =(volume->countblocks-1+devicedef->de_Reserved)/2;
 				volume->startblock=
