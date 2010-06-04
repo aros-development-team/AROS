@@ -10,10 +10,13 @@ clean ::
 	-$(RM) $(OBJDIR) *.err $(LIB) *.s
 
 FILES	:= kbdclass
+STUBS	:= kbd_stubs
 
 %build_module mmake=kernel-hidd-kbd \
     modname=keyboard modtype=hidd \
     files="$(FILES)" \
     uselibs="oop rom amiga"
+
+%make_hidd_stubs hidd=keyboard
 
 %common
