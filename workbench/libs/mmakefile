@@ -8,6 +8,7 @@
 #MM- workbench-libs-complete : \
 #MM     workbench-libs-amigaguide \
 #MM     workbench-libs-asl \
+#MM	kernel-cgfx \
 #MM     workbench-libs-commodities \
 #MM     workbench-libs-camd \
 #MM     workbench-libs-datatypes \
