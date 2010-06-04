@@ -12,6 +12,7 @@ KOBJS_DEVICES   := $(KOBJSDIR)/timer_device.o	     $(KOBJSDIR)/gameport_device.o
 		   $(KOBJSDIR)/input_device.o	     $(KOBJSDIR)/console_device.o	   \
 		   $(KOBJSDIR)/keyboard_device.o
 KOBJS_HIDD	:= $(KOBJSDIR)/hiddclass_hidd.o	     $(KOBJSDIR)/graphics_hidd.o	   \
+		   $(KOBJSDIR)/keyboard_hidd.o						   \
 		   $(KOBJSDIR)/wingdi_hidd.o
 KOBJS_LIBS	:= $(KOBJSDIR)/exec_library.o	     $(KOBJSDIR)/expansion_library.o	   \
 		   $(KOBJSDIR)/boot_library.o	     $(KOBJSDIR)/dos_library.o		   \
@@ -35,8 +36,6 @@ KOBJS := $(K_RES) $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(KOBJS_HIDD)
 #MM			 kernel-hostlib-mingw32-kobj	    \
 #MM			 kernel				    \
 #MM			 kernel-fs-emul-mingw32-kobj	    \
-#MM			 kernel-fs-packet-kobj		    \
-#MM			 kernel-hidd-graphics-kobj	    \
 #MM			 kernel-hidd-wingdi-kobj	    \
 #MM			 contrib-amberram-kobj
 

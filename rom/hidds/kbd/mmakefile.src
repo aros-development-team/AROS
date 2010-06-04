@@ -9,4 +9,11 @@ INCLUDE_FILES := $(call WILDCARD, include/*.h)
 clean ::
 	-$(RM) $(OBJDIR) *.err $(LIB) *.s
 
+FILES	:= kbdclass
+
+%build_module mmake=kernel-hidd-kbd \
+    modname=keyboard modtype=hidd \
+    files="$(FILES)" \
+    uselibs="oop rom amiga"
+
 %common
