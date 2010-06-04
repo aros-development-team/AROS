@@ -9,6 +9,7 @@
 #MM	    kernel-utility-kobj \
 #MM	    kernel-intuition-kobj \
 #MM	    kernel-keymap-kobj \
+#MM	    kernel-lowlevel-kobj \
 #MM	    kernel-mathffp-kobj \
 #MM	    kernel-mathieeesingbas-kobj \
 #MM	    kernel-devs \
@@ -32,6 +33,7 @@
 #MM      kernel-utility-includes \
 #MM      kernel-intuition-includes \
 #MM      kernel-keymap-includes \
+#MM	 kernel-lowlevel-includes \
 #MM      kernel-mathffp-includes \
 #MM      kernel-mathieeesingbas-includes \
 #MM      kernel-expansion-includes \
