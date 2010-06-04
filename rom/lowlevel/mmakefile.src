@@ -17,13 +17,13 @@ FUNCS	:= \
 	starttimerint \
 	stoptimerint
 
-#MM workbench-libs-lowlevel-includes : \
+#MM kernel-lowlevel-includes : \
 #MM     kernel-exec-includes \
 #MM     workbench-libs-locale-includes \
 #MM     includes-copy
-#MM- workbench-libs-lowlevel : linklibs
+#MM- kernel-lowlevel : linklibs
 
-%build_module mmake=workbench-libs-lowlevel \
+%build_module mmake=kernel-lowlevel \
     modname=lowlevel modtype=library \
     files="lowlevel_init $(FUNCS)" \
     uselibs=rom
