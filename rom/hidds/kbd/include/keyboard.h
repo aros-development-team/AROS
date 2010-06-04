@@ -9,9 +9,8 @@
     Lang: English.
 */
 
-#ifndef OOP_OOP_H
-#   include <oop/oop.h>
-#endif
+#include <oop/oop.h>
+#include <utility/tagitem.h>
 
 #define CLID_Hidd_Kbd "hidd.kbd"
 #define IID_Hidd_Kbd "hidd.kbd"
@@ -55,5 +54,8 @@ struct pHidd_Kbd_RemHardwareDriver
     OOP_MethodID    mID;
     OOP_Object	    *driverObject;
 };
+
+OOP_Object *HIDD_Kbd_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass, STRPTR driverId, struct TagItem *tags);
+void HIDD_Kbd_RemHardwareDriver(OOP_Object *obj, OOP_Object *driver);
 
 #endif /* HIDD_KEYBOARD_H */
