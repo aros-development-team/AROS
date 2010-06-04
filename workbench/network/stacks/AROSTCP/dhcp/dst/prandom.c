@@ -335,7 +335,7 @@ unix_cmd(dst_work *work)
 		cnt += do_time(work);
 	}
 	while ((n = fread(buffer, sizeof(char), sizeof(buffer), pipe)) > 0)
-		NULL; /* drain the pipe */
+		; /* drain the pipe */
 	pclose(pipe);
 	return (cnt);		/* read how many bytes where read in */
 }
