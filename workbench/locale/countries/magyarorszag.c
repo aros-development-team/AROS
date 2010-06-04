@@ -59,7 +59,7 @@ struct CountryPrefs magyarorszagPrefs =
     */
     2, 2,
 
-#ifdef _EURO
+#ifdef 0
     /* Currency symbol, Small currency symbol */
     "Euro", "Cent",
 
