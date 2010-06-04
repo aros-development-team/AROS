@@ -47,7 +47,7 @@ DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
 KRSRCS  := battclock bootloader dosboot misc
 KLIBS   := exec boot aros dos graphics utility intuition keymap \
-      	   expansion oop layers cybergraphics partition
+      	   expansion oop layers partition
 KDEVS   := timer input keyboard console gameport ata trackdisk
 KHNDLRS := con nil packet amberram cdrom afs sfs
 KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah pci pcipc
