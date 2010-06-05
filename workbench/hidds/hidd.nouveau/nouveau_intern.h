@@ -221,4 +221,7 @@ BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
     struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
     ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,
     ULONG drawmode);
+BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * bmdata, ULONG minX, ULONG minY, ULONG maxX,
+    ULONG maxY, ULONG drawmode, ULONG color);
 #endif /* _NOUVEAU_INTERN_H */
