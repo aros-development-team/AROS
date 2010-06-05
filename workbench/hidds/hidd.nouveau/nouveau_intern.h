@@ -101,6 +101,7 @@ struct CardData
     struct nouveau_grobj    *NvContextSurfaces;
     struct nouveau_grobj    *NvRop;
     struct nouveau_grobj    *NvImagePattern;
+    struct nouveau_grobj    *NvRectangle;
     struct nouveau_grobj    *Nv2D;
 };
 
@@ -119,6 +120,20 @@ struct staticdata
     OOP_AttrBase    planarAttrBase;
     OOP_AttrBase    i2cNouveauAttrBase;
     OOP_AttrBase    galliumAttrBase;
+    
+    OOP_MethodID    mid_CopyMemBox8;
+    OOP_MethodID    mid_CopyMemBox16;
+    OOP_MethodID    mid_CopyMemBox32;
+    OOP_MethodID    mid_PutMem32Image8;
+    OOP_MethodID    mid_PutMem32Image16;
+    OOP_MethodID    mid_GetMem32Image8;
+    OOP_MethodID    mid_GetMem32Image16;
+    OOP_MethodID    mid_PutMemTemplate8;
+    OOP_MethodID    mid_PutMemTemplate16;
+    OOP_MethodID    mid_PutMemTemplate32;
+    OOP_MethodID    mid_PutMemPattern8;
+    OOP_MethodID    mid_PutMemPattern16;
+    OOP_MethodID    mid_PutMemPattern32;
 
     struct CardData carddata;
     
@@ -194,4 +209,16 @@ BOOL NVAccelCommonInit(struct CardData * carddata);
 VOID NVAccelFree(struct CardData * carddata);
 BOOL NVAccelGetCtxSurf2DFormatFromPixmap(struct HIDDNouveauBitMapData * bmdata, LONG *fmt_ret);
 
+BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+    ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,
+    ULONG drawmode);
+BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * bmdata, ULONG minX, ULONG minY, ULONG maxX,
+    ULONG maxY, ULONG drawmode, ULONG color);
+    
+BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+    ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,
+    ULONG drawmode);
 #endif /* _NOUVEAU_INTERN_H */
