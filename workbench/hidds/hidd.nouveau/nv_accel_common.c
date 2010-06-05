@@ -241,7 +241,6 @@ NVAccelInitRasterOp(ScrnInfoPtr pScrn)
 	return TRUE;
 }
 
-#if !defined(__AROS__)
 static Bool
 NVAccelInitRectangle(ScrnInfoPtr pScrn)
 {
@@ -279,7 +278,6 @@ NVAccelInitRectangle(ScrnInfoPtr pScrn)
 
 	return TRUE;
 }
-#endif
 
 static Bool
 NVAccelInitImageBlit(ScrnInfoPtr pScrn)
@@ -549,7 +547,7 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 //		INIT_CONTEXT_OBJECT(ContextBeta4);
 		INIT_CONTEXT_OBJECT(ImagePattern);
 		INIT_CONTEXT_OBJECT(RasterOp);
-//		INIT_CONTEXT_OBJECT(Rectangle);
+		INIT_CONTEXT_OBJECT(Rectangle);
 		INIT_CONTEXT_OBJECT(ImageBlit);
 //		INIT_CONTEXT_OBJECT(ScaledImage);
 //		INIT_CONTEXT_OBJECT(ClipRectangle);
@@ -599,7 +597,7 @@ void NVAccelFree(ScrnInfoPtr pScrn)
 //		nouveau_grobj_free(&pNv->NvContextBeta4);
 		nouveau_grobj_free(&pNv->NvImagePattern);
 		nouveau_grobj_free(&pNv->NvRop);
-//		nouveau_grobj_free(&pNv->NvRectangle);
+		nouveau_grobj_free(&pNv->NvRectangle);
 		nouveau_grobj_free(&pNv->NvImageBlit);
 //		nouveau_grobj_free(&pNv->NvScaledImage);
 //		nouveau_grobj_free(&pNv->NvClipRectangle);
