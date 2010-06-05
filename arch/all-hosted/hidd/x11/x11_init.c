@@ -125,18 +125,13 @@ static int MySysErrorHandler (Display * display)
 
 /****************************************************************************************/
 
-static int X11_Init(LIBBASETYPEPTR LIBBASE)
+int X11_Init(struct x11_staticdata *xsd)
 {
-    struct x11_staticdata *xsd = &LIBBASE->xsd;
-
     D(bug("Entering X11_Init\n"));
-    if (LIBBASE->library.lib_OpenCnt) {
+    if (xsd->display) {
 	D(bug("[X11GFX] Already initialized\n"));
 	return TRUE;
     }
-    
-    InitSemaphore( &xsd->sema );
-    InitSemaphore( &xsd->x11sema );
 		
     /* Do not need to singlethead this
      * since no other tasks are using X currently
@@ -214,5 +209,3 @@ static int X11_Init(LIBBASETYPEPTR LIBBASE)
 }
 
 /****************************************************************************************/
-
-ADD2OPENLIB(X11_Init, 0);
