@@ -263,6 +263,8 @@ VOID  x11clipboard_handle_commands(struct x11_staticdata *);
 BOOL  x11clipboard_want_event(XEvent *);
 VOID  x11clipboard_handle_event(struct x11_staticdata *, XEvent *);
 
+int X11_Init(struct x11_staticdata *xsd);
+
 #undef XSD
 #define XSD(cl)     	(&((struct x11clbase *)cl->UserData)->xsd)
 

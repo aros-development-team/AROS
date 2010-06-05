@@ -105,7 +105,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 		{ TAG_DONE  	    	    , 0UL   }
     };
      
-	struct TagItem *mode_tags;
+    struct TagItem *mode_tags;
 
     struct TagItem mytags[] =
     {
@@ -115,13 +115,13 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
  
     struct pRoot_New mymsg = { msg->mID, mytags };
 
-	struct TagItem *resolution;
-	XF86VidModeModeInfo**	modes;
-	static int		modeNum;
-	STRPTR modename;
+    struct TagItem *resolution;
+    XF86VidModeModeInfo**	modes;
+    static int		modeNum;
+    STRPTR modename;
 	
-	ULONG i, realmode, screen;
-	Display *disp;
+    ULONG i, realmode, screen;
+    Display *disp;
 	
     EnterFunc(bug("X11Gfx::New()\n"));
 
@@ -739,6 +739,9 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
 
     EnterFunc(bug("initx11stuff()\n"));
 
+    if (!X11_Init(xsd))
+        return FALSE;
+
     LOCK_X11	
 
     /* Get some info on the display */
@@ -913,12 +916,16 @@ static VOID cleanupx11stuff(struct x11_staticdata *xsd)
 
 /****************************************************************************************/
 
-#define xsd (&LIBBASE->xsd)
+//#define xsd (&LIBBASE->xsd)
 
 /****************************************************************************************/
 
 static int x11gfx_init(LIBBASETYPEPTR LIBBASE) 
 {
+
+    InitSemaphore(&LIBBASE->xsd.sema);
+    InitSemaphore(&LIBBASE->xsd.x11sema);
+
     return OOP_ObtainAttrBases(attrbases);
 }
 
