@@ -1,0 +1,111 @@
+diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.c ./mesa/glapi/glapi.c
+--- /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.c	2010-04-05 10:05:16.000000000 +0200
++++ ./mesa/glapi/glapi.c	2010-04-08 20:15:14.000000000 +0200
+@@ -120,9 +120,12 @@
+ 
+ #endif /* defined(THREADS) */
+ 
++#if defined(__AROS__) && defined(AROS_MESA_SHARED)
++#else
+ PUBLIC struct _glapi_table *_glapi_Dispatch = (struct _glapi_table *) __glapi_noop_table;
+ 
+ PUBLIC void *_glapi_Context = NULL;
++#endif
+ 
+ #endif /* defined(GLX_USE_TLS) */
+ /*@}*/
+diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.h ./mesa/glapi/glapi.h
+--- /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.h	2010-04-05 10:05:16.000000000 +0200
++++ ./mesa/glapi/glapi.h	2010-04-08 20:12:52.000000000 +0200
+@@ -49,6 +49,38 @@
+ 
+ struct _glapi_table;
+ 
++#if defined(__AROS__) 
++#if defined(AROS_MESA_SHARED)
++
++#if defined(__i386__)
++register struct MesaBase * REGMesaBase __asm__("ebx");
++#elif defined(__x86_64__)
++register struct MesaBase * REGMesaBase __asm__("rbx");
++#elif defined(PPC) || defined (__powerpc__)
++/*
++ * r11 or r12 emit call clobbered register warnings
++ * r13 works as well, but is small data area pointer
++ * in SysV ABI, which we might use in the future
++ */
++register struct MesaBase * REGMesaBase __asm__("r14");
++#else
++#error Select register for your architecture
++#endif
++
++#define SAVE_REG            struct MesaBase * reg = REGMesaBase;
++#define PUT_MESABASE_IN_REG REGMesaBase = (struct MesaBase *)MesaBase;
++#define RESTORE_REG         REGMesaBase = reg;
++extern void                     **GETMESABASECTX(void);
++extern struct _glapi_table      **GETMESABASEDDISPATCH(void);
++#else
++
++#define SAVE_REG
++#define PUT_MESABASE_IN_REG
++#define RESTORE_REG
++
++#endif
++#endif
++
+ typedef void (*_glapi_proc)(void); /* generic function pointer */
+ 
+ 
+@@ -94,9 +126,19 @@
+ 
+ #else
+ 
++#if defined(__AROS__) && defined(AROS_MESA_SHARED)
++# if defined(USE_MGL_NAMESPACE)
++#  define _mglapi_Context *(GETMESABASECTX())
++# define _mglapi_Dispatch *(GETMESABASEDDISPATCH())
++# else
++#  define _glapi_Context *(GETMESABASECTX())
++#  define _glapi_Dispatch *(GETMESABASEDDISPATCH())
++# endif
++#else
+ extern struct _glapi_table *_glapi_Dispatch;
+ 
+ extern void *_glapi_Context;
++#endif
+ 
+ # ifdef THREADS
+ 
+diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/compiler.h ./mesa/main/compiler.h
+--- /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/compiler.h	2010-04-04 17:46:26.000000000 +0200
++++ ./mesa/main/compiler.h	2010-04-08 20:08:28.000000000 +0200
+@@ -234,6 +234,8 @@
+ #elif defined(__APPLE__)
+ #include <CoreFoundation/CFByteOrder.h>
+ #define CPU_TO_LE32( x )	CFSwapInt32HostToLittle( x )
++#elif defined(__AROS__)
++#define CPU_TO_LE32( x )    AROS_BE2LONG( x )
+ #elif (defined(_AIX) || defined(__blrts))
+ static INLINE GLuint CPU_TO_LE32(GLuint x)
+ {
+diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/imports.c ./mesa/main/imports.c
+--- /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/imports.c	2010-04-04 17:46:26.000000000 +0200
++++ ./mesa/main/imports.c	2010-04-08 23:09:15.000000000 +0200
+@@ -501,7 +501,7 @@
+ int
+ _mesa_ffs(int32_t i)
+ {
+-#if (defined(_WIN32) ) || defined(__IBMC__) || defined(__IBMCPP__)
++#if (defined(_WIN32) ) || defined(__IBMC__) || defined(__IBMCPP__) || defined(__AROS__)
+    register int bit = 0;
+    if (i != 0) {
+       if ((i & 0xffff) == 0) {
+@@ -564,7 +564,7 @@
+ unsigned int
+ _mesa_bitcount(unsigned int n)
+ {
+-#if defined(__GNUC__)
++#if !defined(__AROS__) && defined(__GNUC__)
+    return __builtin_popcount(n);
+ #else
+    unsigned int bits;
