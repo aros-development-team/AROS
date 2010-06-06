@@ -47,7 +47,8 @@
 
 #define SYS_PART_NAME 		"DH0"
 #define WORK_PART_NAME 		"DH1"
-#define USB_PART_NAME 		"DU0"
+#define USB_SYS_PART_NAME 	"DU0"
+#define USB_WORK_PART_NAME 	"DU1"
 #define package_Path		"SYS:"
 #define SYS_VOL_NAME 		"AROS"
 #define WORK_VOL_NAME 		"Work"
@@ -168,7 +169,7 @@ Object* 			dest_volume = NULL;
 Object* 			work_volume = NULL;
 
 Object* 			dest_device = NULL;
-Object*			cycle_drivetype = NULL;
+Object*				cycle_drivetype = NULL;
 Object* 			dest_unit = NULL;
 Object* 			show_sizesys = NULL;
 Object* 			show_sizework = NULL;
@@ -202,6 +203,7 @@ IPTR Install__OM_NEW
 
 	struct Install_DATA		*data = INST_DATA(CLASS, self);
 	BPTR					lock=NULL;
+	char sys_path[100];
 
 /* We will generate this info shortly */
 
@@ -257,8 +259,22 @@ IPTR Install__OM_NEW
 	data->disable_back  		= FALSE;
 
 	data->instc_cflag_driveset     		= (BOOL)DoMethod(self, MUIM_FindDrives);
-	if (getDiskFSSM(USB_PART_NAME ":") != NULL)
-		SET(dest_volume, MUIA_String_Contents, USB_PART_NAME);
+
+	/* Default to USB if a USB system volume appears to be present and we
+	 * haven't booted from it */
+
+	lock = Lock("SYS:", SHARED_LOCK);
+	NameFromLock(lock, sys_path, 100);
+	if (getDiskFSSM(USB_SYS_PART_NAME ":") != NULL
+		&& strncmp(sys_path, USB_VOL_NAME ":", strlen(USB_VOL_NAME) + 1))
+	{
+		SET(dest_volume, MUIA_String_Contents, USB_SYS_PART_NAME);
+		SET(work_volume, MUIA_String_Contents, USB_WORK_PART_NAME);
+
+		SET(cycle_drivetype, MUIA_Cycle_Active, 1);
+	}
+	UnLock(lock);
+
     boot_Unit = GuessFirstHD(boot_Device);
 
 	DoMethod(data->proceed, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_IC_NextStep);
@@ -733,8 +749,10 @@ IPTR Install__MUIM_IC_NextStep
 					char						*tmp_device=NULL;
 					char						*tmp_grub=NULL;
 					char						*tmp_kernel=NULL;
+#if 0
 					struct	IOStdReq			*ioreq=NULL;
 					struct	MsgPort 			*mp=NULL;
+#endif
                     struct FileSysStartupMsg *fssm;
 
 					data->instc_options_grub->bootinfo = TRUE;
@@ -873,9 +891,13 @@ IPTR Install__MUIM_IC_NextStep
                 data->instc_options_main->partitioned = TRUE;
 				next_stage = EDoneStage;
 				DoMethod(data->page, MUIM_Group_InitChange);
-				SET(data->doneMsg,MUIA_Text_Contents,KMsgDoneReboot);
+				if (XGET(cycle_drivetype, MUIA_Cycle_Active) == 0)
+					SET(data->doneMsg,MUIA_Text_Contents,KMsgDoneReboot);
+				else
+					SET(data->doneMsg,MUIA_Text_Contents,KMsgDoneUSB);
 				SET(reboot_group, MUIA_ShowMe, TRUE);
-				SET(data->instc_options_main->opt_reboot, MUIA_Selected, TRUE);
+				if (XGET(cycle_drivetype, MUIA_Cycle_Active) == 0)
+					SET(data->instc_options_main->opt_reboot, MUIA_Selected, TRUE);
 				DoMethod(data->page, MUIM_Group_ExitChange);
 				SET(data->back, MUIA_Disabled, TRUE);
 				SET(data->cancel, MUIA_Disabled, TRUE);
@@ -2062,7 +2084,8 @@ localecopydone:
                 }
 
 	        /* Add entry to boot MS Windows if present */
-	        if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1) {
+	        if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1
+                && XGET(cycle_drivetype, MUIA_Cycle_Active) == 0) {
 		    sprintf(tmp, "%s", dstPath);
                     AddPart(tmp, "grub.cfg", 256);
 
@@ -3048,7 +3071,7 @@ int main(int argc,char *argv[])
 
 	Object *app = ApplicationObject,
 		MUIA_Application_Title,       (IPTR) "AROS Installer",
-		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.8 (7.3.2010)",
+		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.9 (6.6.2010)",
 		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2010, The AROS Development Team. All rights reserved.",
 		MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
 		MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
@@ -3129,7 +3152,7 @@ int main(int argc,char *argv[])
 												MUIA_String_Contents, (IPTR) boot_Device,
 												MUIA_String_Reject, " \"\'*",
 												MUIA_Frame, MUIV_Frame_String,
-												MUIA_HorizWeight, 200,
+												MUIA_HorizWeight, 300,
 												End),
 											Child, (IPTR) LLabel("Unit:"),
 											Child, (IPTR) (dest_unit =
@@ -3417,7 +3440,13 @@ int main(int argc,char *argv[])
 		MUIA_String_Contents, SYS_PART_NAME);
 	DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 1,
 		(IPTR) sys_devname, 3, MUIM_Set,
-		MUIA_String_Contents, USB_PART_NAME);
+		MUIA_String_Contents, USB_SYS_PART_NAME);
+	DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 0,
+		(IPTR) work_devname, 3, MUIM_Set,
+		MUIA_String_Contents, WORK_PART_NAME);
+	DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 1,
+		(IPTR) work_devname, 3, MUIM_Set,
+		MUIA_String_Contents, USB_WORK_PART_NAME);
 
 	/* Notifications on change of enable status of 'enter size of sys volume'
 	 * (this tells us if we are using existing partitions) */
