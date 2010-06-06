@@ -1,0 +1,77 @@
+#   $Id$
+#
+#   Generate libGL.a
+#
+
+include $(TOP)/config/make.cfg
+
+include $(SRCDIR)/$(CURDIR)/sources.mak
+
+#MM- workbench-libs-complete : workbench-libs-mesa
+#MM workbench-libs-mesa : includes linklibs-galliumauxiliary
+
+AROS_STATE_TRACKER_HIDD_SOURCES = \
+            state_trackers/aros/arosmesa_api_hidd \
+
+SHARED_LIB_SOURCES = \
+            aros_libapi \
+            aros_libinit \
+            arosc_emul \
+            
+GLSL_SOURCES = \
+            ../glsl/cl/sl_cl_parse \
+            ../glsl/pp/sl_pp_context \
+            ../glsl/pp/sl_pp_define \
+            ../glsl/pp/sl_pp_dict \
+            ../glsl/pp/sl_pp_error \
+            ../glsl/pp/sl_pp_expression \
+            ../glsl/pp/sl_pp_extension \
+            ../glsl/pp/sl_pp_if \
+            ../glsl/pp/sl_pp_line \
+            ../glsl/pp/sl_pp_macro \
+            ../glsl/pp/sl_pp_pragma \
+            ../glsl/pp/sl_pp_process \
+            ../glsl/pp/sl_pp_purify \
+            ../glsl/pp/sl_pp_token \
+            ../glsl/pp/sl_pp_token_util \
+            ../glsl/pp/sl_pp_version \
+
+GALLIUM_SUBPATH = ../gallium
+
+ifeq ($(AROS_TARGET_CPU), i386)
+  FFIXED = -ffixed-ebx
+endif
+
+ifeq ($(AROS_TARGET_CPU), x86_64)
+  FFIXED = -ffixed-rbx
+endif
+
+ifeq ($(AROS_TARGET_CPU), ppc)
+  FFIXED = -ffixed-r14
+endif
+
+USER_INCLUDES := \
+            -I$(SRCDIR)/$(CURDIR)/../../include \
+            -I$(SRCDIR)/$(CURDIR)/../../include/GL \
+            -I$(SRCDIR)/$(CURDIR) \
+            -I$(SRCDIR)/$(CURDIR)/main \
+            -I$(SRCDIR)/$(CURDIR)/glapi \
+            -I$(SRCDIR)/$(CURDIR)/shader \
+            -I$(SRCDIR)/$(CURDIR)/shader/slang \
+            -I$(SRCDIR)/$(CURDIR)/shader/grammar \
+            -I$(AROS_DEVELOPMENT)/include/gallium \
+
+USER_CFLAGS := -DUSE_MGL_NAMESPACE -DAROS_MESA_SHARED -ffast-math $(FFIXED)
+
+LIB_MESA_SOURCES = \
+            $(MESA_GALLIUM_SOURCES:.c=) \
+            $(GLAPI_SOURCES:.c=) \
+            $(addprefix $(GALLIUM_SUBPATH)/,$(AROS_STATE_TRACKER_HIDD_SOURCES)) \
+            $(GLSL_SOURCES) \
+
+%build_module mmake=workbench-libs-mesa \
+    modname=mesa modtype=library linklibname=GL conffile=arosmesa.conf linklibfiles="arosmesa_getprocaddress" \
+    files="$(SHARED_LIB_SOURCES) $(LIB_MESA_SOURCES)" \
+    uselibs="galliumauxiliary rom"
+
+%common

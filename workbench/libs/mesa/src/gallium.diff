@@ -1,0 +1,96 @@
+diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/gallium/auxiliary/os/os_time.c ./gallium/auxiliary/os/os_time.c
+--- /data/deadwood/source/Mesa-7.8.1-staging/src/gallium/auxiliary/os/os_time.c	2010-04-04 17:46:26.000000000 +0200
++++ ./gallium/auxiliary/os/os_time.c	2010-04-08 19:42:16.000000000 +0200
+@@ -37,7 +37,7 @@
+ 
+ #if !defined(PIPE_OS_EMBEDDED)
+ 
+-#if defined(PIPE_OS_LINUX) || defined(PIPE_OS_BSD) || defined(PIPE_OS_SOLARIS) || defined(PIPE_OS_APPLE) || defined(PIPE_OS_HAIKU)
++#if defined(PIPE_OS_LINUX) || defined(PIPE_OS_BSD) || defined(PIPE_OS_SOLARIS) || defined(PIPE_OS_APPLE) || defined(PIPE_OS_HAIKU) || defined(PIPE_OS_AROS)
+ #  include <sys/time.h> /* timeval */
+ #elif defined(PIPE_SUBSYSTEM_WINDOWS_DISPLAY)
+ #  include <windows.h>
+@@ -57,7 +57,7 @@
+ int64_t
+ os_time_get(void)
+ {
+-#if defined(PIPE_OS_UNIX)
++#if defined(PIPE_OS_UNIX) || defined(PIPE_OS_AROS)
+ 
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/gallium/auxiliary/util/u_math.c ./gallium/auxiliary/util/u_math.c
+--- /data/deadwood/source/Mesa-7.8.1-staging/src/gallium/auxiliary/util/u_math.c	2010-02-04 16:10:40.000000000 +0100
++++ ./gallium/auxiliary/util/u_math.c	2010-04-08 19:42:43.000000000 +0200
+@@ -42,6 +42,13 @@
+       pow2_table[i] = (float) pow(2.0, (i - POW2_TABLE_OFFSET) / POW2_TABLE_SCALE);
+ }
+ 
++#if defined(PIPE_OS_AROS)
++/*
++ * NOTE: log_base_2(x) = log(x) / log(2)
++ * NOTE: 1.442695 = 1/log(2).
++ */
++#define log2(x)  ((float) (log(x) * 1.442695f))
++#endif
+ 
+ /** log2(x), for x in [1.0, 2.0) */
+ float log2_table[LOG2_TABLE_SIZE];
+diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/gallium/auxiliary/util/u_math.h ./gallium/auxiliary/util/u_math.h
+--- /data/deadwood/source/Mesa-7.8.1-staging/src/gallium/auxiliary/util/u_math.h	2010-04-04 17:46:26.000000000 +0200
++++ ./gallium/auxiliary/util/u_math.h	2010-04-08 19:43:43.000000000 +0200
+@@ -392,6 +392,8 @@
+ }
+ #elif defined(__MINGW32__)
+ #define ffs __builtin_ffs
++#elif defined(PIPE_OS_AROS)
++#define ffs __builtin_ffs
+ #endif
+ 
+ #ifdef __MINGW32__
+diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/gallium/drivers/nouveau/nouveau_screen.c ./gallium/drivers/nouveau/nouveau_screen.c
+--- /data/deadwood/source/Mesa-7.8.1-staging/src/gallium/drivers/nouveau/nouveau_screen.c	2010-04-05 10:05:16.000000000 +0200
++++ ./gallium/drivers/nouveau/nouveau_screen.c	2010-04-08 19:45:01.000000000 +0200
+@@ -61,6 +61,20 @@
+ 	if (usage & NOUVEAU_BUFFER_USAGE_TRANSFER)
+ 		flags |= NOUVEAU_BO_GART;
+ 	else
++#if defined(__AROS__)
++    /* Put the buffers in VRAM instead of GART. This solved graphics
++       curruption of vertices. Reason for this curruption is unknown
++       but similar errors have been reported also on nouveau mailing
++       list which suggests general bug in nouveau not bug in port */
++	if (usage & PIPE_BUFFER_USAGE_VERTEX) {
++		if (pscreen->get_param(pscreen, NOUVEAU_CAP_HW_VTXBUF))
++			flags |= NOUVEAU_BO_VRAM/* NOUVEAU_BO_GART */;
++	} else
++	if (usage & PIPE_BUFFER_USAGE_INDEX) {
++		if (pscreen->get_param(pscreen, NOUVEAU_CAP_HW_IDXBUF))
++			flags |= NOUVEAU_BO_VRAM/* NOUVEAU_BO_GART */;
++	}
++#else
+ 	if (usage & PIPE_BUFFER_USAGE_VERTEX) {
+ 		if (pscreen->get_param(pscreen, NOUVEAU_CAP_HW_VTXBUF))
+ 			flags |= NOUVEAU_BO_GART;
+@@ -69,6 +83,7 @@
+ 		if (pscreen->get_param(pscreen, NOUVEAU_CAP_HW_IDXBUF))
+ 			flags |= NOUVEAU_BO_GART;
+ 	}
++#endif
+ 
+ 	if (usage & PIPE_BUFFER_USAGE_PIXEL) {
+ 		if (usage & NOUVEAU_BUFFER_USAGE_TEXTURE)
+diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/gallium/include/pipe/p_config.h ./gallium/include/pipe/p_config.h
+--- /data/deadwood/source/Mesa-7.8.1-staging/src/gallium/include/pipe/p_config.h	2010-04-04 17:46:26.000000000 +0200
++++ ./gallium/include/pipe/p_config.h	2010-04-08 19:38:14.000000000 +0200
+@@ -165,6 +165,10 @@
+ #define PIPE_OS_UNIX
+ #endif
+ 
++#if defined(__AROS__)
++#define PIPE_OS_AROS
++#endif
++
+ /*
+  * Try to auto-detect the subsystem.
+  * 
