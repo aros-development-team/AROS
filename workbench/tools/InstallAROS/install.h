@@ -95,6 +95,13 @@ static const char KMsgDoneReboot[] =
 "this installer application\n\n"
 "Select Proceed to finish\n";
 
+static const char KMsgDoneUSB[] =
+"AROS partitions have now been created!\n"
+"To continue installation, you must remove\n"
+"and re-attach your USB drive, and re-run\n"
+"this installer application\n\n"
+"Select Proceed to finish\n";
+
 static const char KMsgDone[] =
 "Congratulations, you now have AROS installed!\n\n"
 "To boot AROS from the destination drive,\n"
