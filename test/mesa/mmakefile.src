@@ -1,0 +1,19 @@
+#   $Id$
+#
+
+include $(TOP)/config/make.cfg
+
+FILES 	    :=  mesasimplerendering \
+                mesagetprocaddress
+                
+EXEDIR      := $(AROSDIR)/Tests
+
+#MM- test : test-mesa
+
+#MM test-mesa : workbench-libs-mesa
+
+%build_progs mmake=test-mesa \
+    targetdir=$(EXEDIR) \
+    files="$(FILES)" uselibs="GL"
+
+%common
