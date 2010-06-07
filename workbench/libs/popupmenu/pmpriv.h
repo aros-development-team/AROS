@@ -478,7 +478,7 @@ void __saveds ASM PM_AlterState(register __a1 struct PopupMenu *base GNUCREG(a1)
     register __a2 struct PM_IDLst *ids GNUCREG(a2),
     register __d1 UWORD action GNUCREG(d1));
 
-struct PM_IDLst * __saveds ASM PM_ExLstA(register __a1 IPTR *id GNUCREG(a1));
+struct PM_IDLst * __saveds ASM PM_ExLstA(register __a1 ULONG *id GNUCREG(a1));
 
 APTR __asm __saveds LIBPM_FilterIMsgA(register __a0 struct Window *w GNUCREG(a0),
     register __a1 struct PopupMenu *pm GNUCREG(a1),

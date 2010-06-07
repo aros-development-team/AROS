@@ -184,7 +184,7 @@ struct PM_IDLst * __saveds ASM PM_MakeIDListA(register __a1 struct TagItem *tags
     return first;
 }
 
-struct PM_IDLst * __saveds ASM PM_ExLstA(register __a1 IPTR *id GNUCREG(a1))
+struct PM_IDLst * __saveds ASM PM_ExLstA(register __a1 ULONG *id GNUCREG(a1))
 {
     struct PM_IDLst *first=0L, *last=0L, *n=0L;
     BOOL error=0;
