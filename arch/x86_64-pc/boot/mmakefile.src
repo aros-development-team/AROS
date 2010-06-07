@@ -13,6 +13,8 @@ include $(TOP)/config/make.cfg
 #MM	kernel-mathieeesingbas \
 #MM	workbench-libs-partition \
 #MM	kernel-hidd-graphics \
+#MM	kernel-hidd-keyboard \
+#MM	kernel-hidd-mouse \
 #MM	kernel-graphics \
 #MM	kernel-layers \
 #MM	kernel-keymap \
@@ -38,7 +40,7 @@ PKG_LIBS := aros boot dos graphics intuition keymap layers mathieeesingbas parti
 PKG_RSRC := battclock bootloader dosboot misc
 PKG_DEVS := ata console gameport input keyboard timer
 PKG_HANDLERS := afs cdrom con nil packet amberram
-PKG_HIDDS:= graphics parallel pci pcipc serial vesagfx vgah
+PKG_HIDDS:= graphics keyboard mouse parallel pci pcipc serial vesagfx vgah
 
 MODULES := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
@@ -51,9 +53,6 @@ kernel-package-pc-x86_64:
 	$(RM) -rf $(BINDIR)/.pkg
 	%mkdirs_q $(BINDIR)/.pkg
 	@mv $(MODULES) $(BINDIR)/.pkg/
-	# Dirty hack to link graphics.library with cybergraphics (they use the same graphics_driver!!!)
-	$(TARGET_LD) -r $(BINDIR)/.pkg/graphics.library $(KOBJSDIR)/cybergraphics_library.o -o $(BINDIR)/.pkg/gfx.library
-	$(RM) $(BINDIR)/.pkg/graphics.library
 	$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/kernel-pc-x86_64.pkg $(BINDIR)/.pkg  
 	$(RM) -rf $(BINDIR)/.pkg
 
