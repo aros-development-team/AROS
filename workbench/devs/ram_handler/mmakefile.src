@@ -1,8 +1,0 @@
-# $Id$
-include $(TOP)/config/make.cfg
-
-#MM- workbench-fs-ram : includes linklibs
-
-%build_module mmake=workbench-fs-ram \
-    modname=ram modtype=device modsuffix=handler \
-    files="ram_handler HashTable" uselibs="amiga rom"
