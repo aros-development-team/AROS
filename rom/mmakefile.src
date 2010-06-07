@@ -9,6 +9,7 @@
 #MM	    kernel-graphics-kobj \
 #MM	    kernel-hidd-graphics-kobj \
 #MM	    kernel-hidd-kbd-kobj \
+#MM	    kernel-hidd-mouse-kobj \
 #MM	    kernel-utility-kobj \
 #MM	    kernel-intuition-kobj \
 #MM	    kernel-keymap-kobj \
