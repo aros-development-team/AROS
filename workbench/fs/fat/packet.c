@@ -31,7 +31,6 @@
 void ProcessPackets(void) {
     struct Message *msg;
     struct DosPacket *pkt;
-    struct MsgPort *rp;
 
     while ((msg = GetMsg(glob->ourport)) != NULL) {
         LONG res = DOSFALSE;
@@ -422,6 +421,7 @@ void ProcessPackets(void) {
                 DoDiskRemove(); /* risky, because of async. volume remove, but works */
 
                 glob->quit = TRUE;
+                glob->death_packet = pkt;
                 glob->devnode->dol_Task = NULL;
 
                 res = DOSTRUE;
@@ -651,17 +651,26 @@ void ProcessPackets(void) {
         }
 
         if (pkt != NULL) {
-            D(bug("[fat] replying to packet: result 0x%x, error 0x%x\n", res, err));
-
-            rp = pkt->dp_Port;
-
-            pkt->dp_Port = glob->ourport;
             pkt->dp_Res1 = res;
             pkt->dp_Res2 = err;
-
-            PutMsg(rp, pkt->dp_Link);
+            if (!glob->quit) {
+                D(bug("[fat] replying to packet: result 0x%x, error 0x%x\n",
+                    res, err));
+                ReplyPacket(pkt);
+            }
         }
 
         RestartTimer();
     }
 }
+
+void ReplyPacket(struct DosPacket *pkt) {
+    struct MsgPort *rp;
+
+            rp = pkt->dp_Port;
+
+            pkt->dp_Port = glob->ourport;
+
+            PutMsg(rp, pkt->dp_Link);
+}
+

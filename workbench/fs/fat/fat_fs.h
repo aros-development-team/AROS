@@ -216,6 +216,7 @@ struct Globals {
     struct DosList *devnode;
     struct FileSysStartupMsg *fssm;
     LONG quit;
+    struct DosPacket *death_packet;
     BOOL autodetect;
 
     /* io */

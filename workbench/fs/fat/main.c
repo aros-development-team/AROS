@@ -45,6 +45,7 @@ void handler(void) {
     struct DosPacket *startuppacket;
     LONG error = ERROR_NO_FREE_STORE;
 
+    memset(glob, 0, sizeof(struct Globals));
     glob->ourtask = FindTask(NULL);
     glob->ourport = &((struct Process *)glob->ourtask)->pr_MsgPort;
     WaitPort(glob->ourport);
@@ -136,6 +137,9 @@ void handler(void) {
 
     DeleteMsgPort(glob->notifyport);
 
+    if (glob->death_packet != NULL)
+        ReplyPacket(glob->death_packet);
+
     D(bug("The end.\n"));
 
     if (startuppacket != NULL) {
@@ -143,11 +147,9 @@ void handler(void) {
 
         D(bug("[fat] returning startup packet\n"));
 
-        rp = startuppacket->dp_Port;
-        startuppacket->dp_Port = glob->ourport;
         startuppacket->dp_Res1 = DOSTRUE;
         startuppacket->dp_Res2 = 0;
-        PutMsg(rp, startuppacket->dp_Link);
+        ReplyPacket(startuppacket);
     }
 
     return;
