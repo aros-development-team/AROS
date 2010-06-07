@@ -298,6 +298,7 @@ struct GDI_Control *__declspec(dllexport) GDI_Init(void)
 
 void __declspec(dllexport) GDI_Shutdown(struct GDI_Control *ctl)
 {
+    PostThreadMessage(thread_id, WM_QUIT, 0, 0);
     UnregisterClass((LPCSTR)display_class, display_class_desc.hInstance);
     KrnFreeIRQ(ctl->MouseIrq);
     KrnFreeIRQ(ctl->KbdIrq);

@@ -652,8 +652,11 @@ static int gdigfx_init(LIBBASETYPEPTR LIBBASE)
 
 static int gdigfx_expunge(LIBBASETYPEPTR LIBBASE)
 {
-    /* TODO: shutdown the control thread */
-
+    if (LIBBASE->xsd.ctl) {
+        Forbid();
+	NATIVECALL(GDI_Shutdown, LIBBASE->xsd.ctl);
+	Permit();
+    }
     OOP_ReleaseAttrBases(attrbases);
 
     return TRUE;
