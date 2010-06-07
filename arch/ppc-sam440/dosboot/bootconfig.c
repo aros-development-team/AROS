@@ -1,5 +1,3 @@
-#include <aros/bootloader.h>
-#include <libraries/bootmenu.h>
 #include <string.h>
 
 #include "dosboot_intern.h"
