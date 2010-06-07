@@ -28,7 +28,7 @@ KLIBS   := exec boot aros dos graphics utility intuition keymap \
       	   expansion oop layers
 KDEVS   := timer input keyboard console gameport
 KHNDLRS := con nil packet emul amberram
-KHIDDS  := hiddclass unixio parallel serial graphics keyboard
+KHIDDS  := hiddclass unixio parallel serial graphics keyboard mouse
 ifeq ("$(AROS_HOST_ARCH)","linux")
 KHIDDS  += linux
     ifeq ("$(AROS_HOST_CPU)","i386")
