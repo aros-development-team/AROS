@@ -6,6 +6,7 @@ FILES	  :=	hash hiddmetaclass metaclass   \
 	
 FUNCS :=    addclass		\
 	    disposeobject	\
+	    findclass		\
 	    getattr		\
 	    getattrbase		\
 	    getmethod		\

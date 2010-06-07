@@ -105,7 +105,7 @@ OOP_Object *KBD__Hidd_Kbd__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, struc
 	{ TAG_MORE		  , (IPTR)Msg->tags		}
     };
 
-    return OOP_NewObject(Msg->driverClass, Msg->driverId, tags);
+    return OOP_NewObject(Msg->driverClass, NULL, tags);
 }
 
 void KBD__Hidd_Kbd__RemHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_RemHardwareDriver *Msg)

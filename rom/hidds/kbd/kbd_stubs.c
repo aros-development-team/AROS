@@ -10,7 +10,7 @@
 #undef OOPBase
 #define OOPBase	(OOP_OOPBASE(obj))
 
-OOP_Object *HIDD_Kbd_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass, STRPTR driverId, struct TagItem *tags)
+OOP_Object *HIDD_Kbd_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass, struct TagItem *tags)
 {
     STATIC_MID;
     struct pHidd_Kbd_AddHardwareDriver p, *msg = &p;
@@ -19,7 +19,6 @@ OOP_Object *HIDD_Kbd_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass, 
 
     p.mID = mid;
     p.driverClass = driverClass;
-    p.driverId = driverId;
     p.tags = tags;
 
     OOP_DoMethod(obj, (OOP_Msg) msg);
