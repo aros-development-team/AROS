@@ -1,6 +1,6 @@
 /*
     Copyright  1995-2010, The AROS Development Team. All rights reserved.
-    $Id: inithidds.c 33438 2010-06-03 06:57:56Z sonic $
+    $Id$
 
     Desc: Backwards compatibility display driver loader.
     Lang: english
