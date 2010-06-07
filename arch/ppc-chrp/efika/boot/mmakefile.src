@@ -50,13 +50,15 @@ include $(TOP)/config/make.cfg
 #MM contrib-sfs \
 #MM contrib-amberram \
 #MM	kernel-hidd-graphics \
+#MM	kernel-hidd-keyboard \
+#MM	kernel-hidd-mouse \
 #MM	devs-networks-drivers-fec-powerpc
 
 PKG_GEN_LIBS 	:= aros partition expansion utility oop graphics layers intuition keymap workbench boot dos
 PKG_GEN_RSRC 	:= dosboot bestcomm
 PKG_GEN_DEVS 	:= input gameport keyboard console
 PKG_GEN_HANDLERS:= con nil amberram cdrom
-PKG_GEN_HIDDS	:= graphics hiddclass i2c pci
+PKG_GEN_HIDDS	:= graphics keyboard mouse hiddclass i2c pci
 
 PKG_EFI_LIBS 	:= 
 PKG_EFI_RSRC 	:= battclock bootloader openfirmware
@@ -93,9 +95,6 @@ kernel-package-chrp-ppc-efika:
 	%mkdirs_q $(BINDIR)/boot/modules
 	%mkdirs_q $(BINDIR)/.pkg
 	@mv $(MODULES_GENERIC) $(BINDIR)/.pkg
-	# Dirty hack to link graphics.library with cybergraphics (they use the same graphics_driver!!!)
-	$(KERNEL_LD) -r $(BINDIR)/.pkg/graphics.library $(KOBJSDIR)/cybergraphics_library.o -o $(BINDIR)/.pkg/gfx.library
-	$(RM) $(BINDIR)/.pkg/graphics.library
 	$(TOP)/tools/package/pkg c $(BINDIR)/boot/modules/aros-ppc-generic.pkg $(BINDIR)/.pkg
 	$(RM) -rf $(BINDIR)/.pkg/*
 	@mv $(MODULES_EFIKA) $(BINDIR)/.pkg

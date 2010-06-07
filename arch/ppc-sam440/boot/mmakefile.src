@@ -51,14 +51,16 @@ include $(TOP)/config/make.cfg
 #MM	contrib-sfs \
 #MM	contrib-amberram \
 #MM	kernel-hidd-graphics \
+#MM	kernel-hidd-keyboard \
+#MM	kernel-hidd-mouse \
 #MM	kernel-usb-sam440-ppc \
 #MM	kernel-usb-usbromstartup
 
-PKG_LIBS     := aros cybergraphics mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench dos boot poseidon
+PKG_LIBS     := aros mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench dos boot poseidon
 PKG_RSRC     := misc bootloader battclock dosboot usbromstartup
 PKG_DEVS     := input gameport keyboard console timer ata USBHardware/pciusb
 PKG_HANDLERS := con nil amberram packet cdrom sfs afs
-PKG_HIDDS    := graphics hiddclass pci pci-amcc440 i2c i2c-amcc440 radeon irq usb ohci
+PKG_HIDDS    := graphics mouse keyboard hiddclass pci pci-amcc440 i2c i2c-amcc440 radeon irq usb ohci
 PKG_USB      := hid
 PKG_USB_PSD  := hid hub bootmouse bootkeyboard massstorage
 
