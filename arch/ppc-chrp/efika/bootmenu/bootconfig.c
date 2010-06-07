@@ -1,6 +1,3 @@
-#include <aros/bootloader.h>
-#include <libraries/bootmenu.h>
-#include <proto/bootloader.h>
 #include <string.h>
 
 #include "bootmenu_intern.h"
