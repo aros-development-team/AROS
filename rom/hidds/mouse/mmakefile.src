@@ -25,5 +25,14 @@ setup-includes :
 clean ::
 	-$(RM) $(OBJDIR) *.err $(LIB) *.s
 
+FILES	:= mouseclass
+STUBS	:= mouse_stubs
+
+%build_module mmake=kernel-hidd-mouse \
+    modname=mouse modtype=hidd \
+    files="$(FILES)" \
+    uselibs="oop rom amiga"
+
+%make_hidd_stubs hidd=mouse
 
 %common

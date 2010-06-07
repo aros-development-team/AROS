@@ -20,7 +20,7 @@
 #undef HiddKbdAB
 #define	HiddKbdAB		(CSD(cl)->hiddKbdAB)
 
-void GlobalCallback(struct kbd_staticdata *csd, UWORD code)
+static void GlobalCallback(struct kbd_staticdata *csd, UWORD code)
 {
     struct kbd_data *data;
     
