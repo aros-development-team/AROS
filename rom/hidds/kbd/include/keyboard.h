@@ -45,7 +45,6 @@ struct pHidd_Kbd_AddHardwareDriver
 {
     OOP_MethodID    mID;
     OOP_Class	    *driverClass;
-    STRPTR	    driverId;
     struct TagItem  *tags;
 };
 
@@ -55,7 +54,7 @@ struct pHidd_Kbd_RemHardwareDriver
     OOP_Object	    *driverObject;
 };
 
-OOP_Object *HIDD_Kbd_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass, STRPTR driverId, struct TagItem *tags);
+OOP_Object *HIDD_Kbd_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass, struct TagItem *tags);
 void HIDD_Kbd_RemHardwareDriver(OOP_Object *obj, OOP_Object *driver);
 
 #endif /* HIDD_KEYBOARD_H */

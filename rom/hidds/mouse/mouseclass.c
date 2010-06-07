@@ -156,7 +156,7 @@ OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, s
 	return NULL;
 
     tags[1].ti_Data = (IPTR)drvnode;
-    drvnode->drv = OOP_NewObject(Msg->driverClass, Msg->driverId, tags);
+    drvnode->drv = OOP_NewObject(Msg->driverClass, NULL, tags);
     if (drvnode->drv) {
         struct mouse_staticdata *csd = CSD(cl);
         IPTR val = FALSE;

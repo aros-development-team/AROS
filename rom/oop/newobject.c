@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new OOP object
     Lang: english
 */
+
+#include <aros/atomic.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
 #include "intern.h"
@@ -71,26 +73,18 @@
 // bug("OOP_NewObject(class=%s, classptr=%p, tags=%p)\n", classID, classPtr, tagList);    
     EnterFunc(bug("OOP_NewObject(classPtr=%p, classID=%s, tagList=%p)\n",
     		classPtr, ((classID != NULL) ? classID : (UBYTE *)"(null)"), tagList));
-		
-    /* Class list is public, so we must avoid race conditions */
-    ObtainSemaphore(&GetOBase(OOPBase)->ob_ClassListLock);
     
     if (!classPtr)
     {
 	/* If a public ID was given, find pointer to class */
-	if (classID) {
-	    
-	    classPtr = (OOP_Class *)FindName((struct List *)&(GetOBase(OOPBase)->ob_ClassList), classID);
-	    if (classPtr)
-		MD(classPtr)->objectcount ++; /* We don't want the class to be freed while we work on it */
-	}
+	if (classID)
+	    classPtr = OOP_FindClass(classID);
     }
-    
-    /* Release lock on list */
-    ReleaseSemaphore(&GetOBase(OOPBase)->ob_ClassListLock);
 
     if (!classPtr)
 	ReturnPtr ("OOP_NewObject[No classPtr]", OOP_Object *, NULL);
+
+    AROS_ATOMIC_INC(MD(classPtr)->objectcount); /* We don't want the class to be freed while we work on it */
 
     /* Create a new instance */
     
@@ -109,7 +103,7 @@
     o = (OOP_Object *)OOP_CoerceMethod(classPtr, (OOP_Object *)classPtr, (OOP_Msg)&p);
     if (!o)
     {
-	MD(classPtr)->objectcount --; /* Object creation failed, release lock */
+	AROS_ATOMIC_DEC(MD(classPtr)->objectcount); /* Object creation failed, release lock */
     }
 /*    print_table(GetOBase(OOPBase)->ob_IIDTable, GetOBase(OOPBase));
 */    
