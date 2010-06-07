@@ -40,6 +40,7 @@ void FillDiskInfo (struct InfoData *id);
  
 /* packet.c */
 void ProcessPackets(void);
+void ReplyPacket(struct DosPacket *pkt);
 
 /* direntry.c */
 LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh, BOOL reuse);
