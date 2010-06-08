@@ -432,7 +432,6 @@ struct IntIntuitionBase
 #endif
 
     /* Put local shit here, invisible for the user */
-    struct Library          	*CyberGfxBase;
 #ifdef __MORPHOS__
     struct Library          	*MUIMasterBase;
 #endif
@@ -721,10 +720,6 @@ struct IntIntuiMessage
 #define GetPubIBase(ib)     	((struct IntuitionBase *)ib)
 #define GetPrivIBase(ib)    	((struct IntIntuitionBase *)ib)
 
-#ifdef CyberGfxBase
-#undef CyberGfxBase
-#endif
-#define CyberGfxBase 	    	(GetPrivIBase(IntuitionBase)->CyberGfxBase)
 #ifdef __MORPHOS__
 #ifdef MUIMasterBase
 #undef MUIMasterBase
