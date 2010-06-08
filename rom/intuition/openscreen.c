@@ -166,10 +166,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     DEBUG_OPENSCREEN(dprintf("OpenScreen: Left %d Top %d Width %d Height %d Depth %d Tags 0x%lx\n",
                              ns.LeftEdge, ns.TopEdge, ns.Width, ns.Height, ns.Depth, tagList));
 
-    if (!CyberGfxBase) CyberGfxBase = OpenLibrary("cybergraphics.library",0);
 #ifdef __MORPHOS__
-    if (!CyberGfxBase) return NULL;
-
     if (!LocaleBase) LocaleBase = OpenLibrary("locale.library",0);
     if (!LocaleBase) return NULL;
 #endif
@@ -593,9 +590,8 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     	modetags[2].ti_Tag = TAG_IGNORE;
     }
 
-    /* if default HIRES_KEY or HIRESLACE_KEY is passed, make sure we find a replacement
-       cybergraphx mode. */
-    if (CyberGfxBase && (INVALID_ID != modeid))
+    /* if default HIRES_KEY or HIRESLACE_KEY is passed, make sure we find a replacement mode. */
+    if (INVALID_ID != modeid)
     {
         if (FindDisplayInfo(modeid) == NULL)
         {
@@ -604,33 +600,20 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
             case HIRES_KEY:
             case HIRESLACE_KEY:
                 {
-                    struct TagItem   bestmodetags[] =
-                    {
-                        { CYBRBIDTG_Depth     	    , 0UL   },
-                        { CYBRBIDTG_NominalWidth    , 0UL   },
-                        { CYBRBIDTG_NominalHeight   , 0UL   },
-                        { TAG_DONE  	    	    	    }
-                    };
-
-                    bestmodetags[0].ti_Data = 8;
-                    bestmodetags[1].ti_Data = ns.Width;
-                    bestmodetags[2].ti_Data = ns.Height;
+                    modetags[1].ti_Data = ns.Width;
+                    modetags[2].ti_Data = ns.Height;
 
                     DEBUG_OPENSCREEN(dprintf("resetting native mode id !!\n");)
                     DEBUG_OPENSCREEN(dprintf("ns.Width %ld ns.Height %ld ns.Depth %ld !!\n",
                             (LONG) ns.Width, (LONG) ns.Height, (LONG) ns.Depth);)
 
-
-                    modeid = BestCModeIDTagList(bestmodetags);
-
-                    DEBUG_OPENSCREEN(dprintf("BestCModeIDTagList returned %ld\n",modeid);)
+		    modeid = INVALID_ID;
                 }
                 break;
 
             default:
                 break;
             }
-
         }
     }
 
