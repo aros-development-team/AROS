@@ -98,7 +98,8 @@ static int MUIMasterExpunge(LIBBASETYPEPTR lh)
 {
     MUIMasterBase = (struct Library *)lh;
     
-    CloseFont(((struct MUIMasterBase_intern *)MUIMasterBase)->topaz8font);
+    if (((struct MUIMasterBase_intern *)MUIMasterBase)->topaz8font)
+        CloseFont(((struct MUIMasterBase_intern *)MUIMasterBase)->topaz8font);
 
     return TRUE;
 }
