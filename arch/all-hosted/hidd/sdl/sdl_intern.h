@@ -18,8 +18,6 @@
 #include <hidd/graphics.h>
 #include <hidd/mouse.h>
 
-#include LC_LIBDEFS_FILE
-
 #include "sdl_hostlib.h"
 
 #define CLID_Hidd_SDLGfx    "hidd.gfx.sdl"
@@ -48,7 +46,6 @@ struct bmdata {
     BOOL            is_onscreen;
 };
 
-#define CLID_Hidd_SDLMouse  "hidd.mouse.sdl"
 #define IID_Hidd_SDLMouse   "hidd.mouse.sdl"
 
 struct mousedata {
@@ -67,7 +64,6 @@ struct pHidd_SDLMouse_HandleEvent {
 
 VOID Hidd_SDLMouse_HandleEvent(OOP_Object *o, SDL_Event *e);
 
-#define CLID_Hidd_SDLKbd    "hidd.kbd.sdl"
 #define IID_Hidd_SDLKbd     "hidd.kbd.sdl"
 
 struct kbddata {
@@ -86,11 +82,8 @@ struct pHidd_SDLKbd_HandleEvent {
 
 VOID Hidd_SDLMouse_HandleEvent(OOP_Object *o, SDL_Event *e);
 
-LIBBASETYPE {
-    struct Library          lib;
-
-    struct SignalSemaphore  lock;
-
+struct sdlhidd
+{
     APTR                    sdl_handle;
 
     OOP_Class               *gfxclass;
@@ -103,14 +96,33 @@ LIBBASETYPE {
     OOP_Object              *mousehidd;
     OOP_Object              *kbdhidd;
 
+
     UBYTE                   keycode[SDLK_LAST];
 
     BOOL                    use_hwsurface;
     BOOL                    use_fullscreen;
 };
 
+#define LIBBASETYPEPTR struct sdlhidd *
+
 /* these should be handled by some sort of configuration
  * and/or commandline switches */
 #define CFG_WANT_FULLSCREEN (0)
+
+/* Class descriptors */
+extern struct OOP_InterfaceDescr SDLGfx_ifdescr[];
+extern struct OOP_InterfaceDescr SDLBitMap_ifdescr[];
+extern struct OOP_InterfaceDescr SDLMouse_ifdescr[];
+extern struct OOP_InterfaceDescr SDLKbd_ifdescr[];
+
+extern OOP_AttrBase MetaAttrBase;
+extern OOP_AttrBase HiddSDLBitMapAttrBase;
+
+extern struct sdlhidd xsd;
+
+void sdl_keymap_init(LIBBASETYPEPTR LIBBASE);
+int sdl_hidd_init(LIBBASETYPEPTR LIBBASE);
+int sdl_event_init(LIBBASETYPEPTR LIBBASE);
+void sdl_event_expunge(LIBBASETYPEPTR LIBBASE);
 
 #endif

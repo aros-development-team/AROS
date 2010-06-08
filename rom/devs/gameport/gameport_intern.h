@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -18,9 +18,9 @@
 #include <oop/oop.h>
 #include <devices/gameport.h>
 
-/* Must always be a multiple of 3 since one event consists of code, x and y */
+/* Must always be a multiple of 4 since one event consists of code, x, y and flags */
 
-#define  GP_NUMELEMENTS 	(100 * 3)
+#define  GP_NUMELEMENTS 	(100 * 4)
 #define  GP_BUFFERSIZE  	(sizeof (WORD) * GP_NUMELEMENTS) 
 
 #define  GP_NUNITS        	2 /* Number of units supported by gameport.device */
@@ -30,7 +30,7 @@
 struct GameportBase
 {
     struct Device      		gp_device;
-    struct Library    		*gp_LowLevelBase;
+    struct Library    		*gp_MouseHiddBase;
 
     struct MinList          	gp_PendingQueue; 	/* IOrequests (GPD_READEVENT)
 						    	   not done quick */
@@ -51,7 +51,6 @@ struct GameportBase
     
     UBYTE   			gp_cTypes[GP_NUNITS];
 
-    BOOL    	    	    	gp_RelativeMouse;
     OOP_AttrBase                HiddMouseAB_;
 };
 

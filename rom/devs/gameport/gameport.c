@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Gameport device
@@ -30,7 +30,6 @@
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
 #include "gameport_intern.h"
-#include "devs_private.h"
 
 #ifdef  __GNUC__
 #include "gameport_gcc.h"
@@ -88,7 +87,6 @@ static const UWORD SupportedCommands[] =
     GPD_ASKTRIGGER,
     GPD_SETTRIGGER,
     GPD_READEVENT,
-    CMD_HIDDINIT,
     NSCMD_DEVICEQUERY,
     0
 };
@@ -99,7 +97,7 @@ static const UWORD SupportedCommands[] =
 
 static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportBase *GPBase);
 static VOID mouseCallback(struct GameportBase *GPBase,
-			  struct pHidd_Mouse_Event *ev);
+			  struct pHidd_Mouse_ExtEvent *ev);
 AROS_UFP3S(VOID, gpSendQueuedEvents,
 	   AROS_UFPA(struct GameportBase *, GPBase  , A1),
 	   AROS_UFPA(APTR                 , thisfunc, A5),
@@ -227,6 +225,36 @@ static int GM_UNIQUENAME(open)
     D(bug("gameport.device: Attrbase: %x\n", HiddMouseAB));
         
 /******* nlorentz: End of stuff added by me ********/
+
+    if(!GPBase->gp_MouseHiddBase)
+    {
+	GPBase->gp_MouseHiddBase = OpenLibrary("mouse.hidd", 0);
+
+	/* Install our own keyboard handler if opened for the first time */
+	if(GPBase->gp_MouseHiddBase) {
+	    struct TagItem tags[] = {
+		{ aHidd_Mouse_IrqHandler    , (IPTR)mouseCallback},
+		{ aHidd_Mouse_IrqHandlerData, (IPTR)GPBase	 },
+		{ TAG_DONE					 }
+	    };
+
+	    GPBase->gp_Hidd = OOP_NewObject(NULL, CLID_Hidd_Mouse, tags);
+	    D(bug("keyboard.device: keyboard HIDD object 0x%p\n", GPBase->gp_Hidd));
+ 	    if(!GPBase->gp_Hidd)
+	    {
+	        CloseLibrary(GPBase->gp_MouseHiddBase);
+		GPBase->gp_MouseHiddBase = NULL; /* Do cleanup below. */
+            }
+	}
+
+    }
+
+    if(!GPBase->gp_MouseHiddBase)
+    {
+	ioreq->io_Error = IOERR_OPENFAIL;
+	return FALSE;
+	/* TODO: Clean up. */
+    }
 
     return TRUE;
 }
@@ -387,50 +415,6 @@ AROS_LH1(void, beginio,
 	Enable();
 	
 	break;
-	
-	
-	/* nlorentz: This command lets the gameport.device initialize
-	   the HIDD to use. It must be done this way, because
-	   HIDDs might be loaded from disk, and gameport.device is
-	   inited before DOS is up and running.
-	   The name of the HIDD class is in
-	   ioStd(rew)->io_Data. Note that maybe we should
-	   receive a pointer to an allreay created HIDD object instead.
-	   Also note that the below is just a temporary hack, should
-	   probably use IRQ HIDD instead to set the IRQ handler.
-	*/   
-	
-    case CMD_HIDDINIT:
-    {
-	struct TagItem tags[] =
-	{
-	    { aHidd_Mouse_IrqHandler	, (IPTR)mouseCallback	},
-	    { aHidd_Mouse_IrqHandlerData	, (IPTR)GPBase 		},
-	    { TAG_DONE						}
-	};
-	IPTR relativecoords = FALSE;
-	
-	D(bug("gameport.device: Received CMD_HIDDINIT, hiddname=\"%s\"\n",
-	      (STRPTR)ioStd(ioreq)->io_Data ));
-	
-	if (GPBase->gp_Hidd != NULL)
-	    OOP_DisposeObject(GPBase->gp_Hidd);
-	
-	GPBase->gp_Hidd = OOP_NewObject(NULL, (STRPTR)ioStd(ioreq)->io_Data, tags);	
-	if (!GPBase->gp_Hidd)
-	{
-	    D(bug("gameport.device: Failed to open hidd\n"));
-	    ioreq->io_Error = IOERR_OPENFAIL;
-	}
-	
-	OOP_GetAttr(GPBase->gp_Hidd, aHidd_Mouse_RelativeCoords, &relativecoords);
-
-	if (relativecoords)
-	{
-    	    GPBase->gp_RelativeMouse = TRUE;
-	}
-	break;
-    }
     
     default:
 	ioreq->io_Error = IOERR_NOCMD;
@@ -488,7 +472,7 @@ AROS_LH1(LONG, abortio,
 /****************************************************************************************/
 
 static VOID mouseCallback(struct GameportBase *GPBase,
-			  struct pHidd_Mouse_Event *ev)
+			  struct pHidd_Mouse_ExtEvent *ev)
 {
     UWORD amigacode = 0;
     
@@ -531,6 +515,7 @@ static VOID mouseCallback(struct GameportBase *GPBase,
     GPBase->gp_eventBuffer[GPBase->gp_writePos++] = amigacode;
     GPBase->gp_eventBuffer[GPBase->gp_writePos++] = ev->x;
     GPBase->gp_eventBuffer[GPBase->gp_writePos++] = ev->y;
+    GPBase->gp_eventBuffer[GPBase->gp_writePos++] = ev->flags;
     
     D(bug("Wrote to buffer\n"));
     
@@ -642,10 +627,12 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged,
     	UWORD code;
 	WORD  x;
 	WORD  y;
+	WORD  flags;
 		
 	code = GPBase->gp_eventBuffer[gpUn->gpu_readPos++];
 	x = GPBase->gp_eventBuffer[gpUn->gpu_readPos++];
 	y = GPBase->gp_eventBuffer[gpUn->gpu_readPos++];
+	flags = GPBase->gp_eventBuffer[gpUn->gpu_readPos++];
 	
 	down = up = wheel = FALSE;	/* Reset states */
 
@@ -745,7 +732,7 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged,
 	    event->ie_SubClass  = 0;          /* Only port 0 for now */
 	    event->ie_Code  	= code;
 	    event->ie_Qualifier = gpUn->gpu_Qualifiers;
-	    if (GPBase->gp_RelativeMouse) event->ie_Qualifier |= IEQUALIFIER_RELATIVEMOUSE;
+	    if (flags & vHidd_Mouse_Relative) event->ie_Qualifier |= IEQUALIFIER_RELATIVEMOUSE;
 	    
 	    event->ie_X = x;
 	    event->ie_Y = y;

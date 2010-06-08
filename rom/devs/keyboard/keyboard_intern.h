@@ -25,7 +25,7 @@
 struct KeyboardBase
 {
     struct Device      kb_device;
-    struct Library    *kb_LowLevelBase;
+    struct Library    *kb_KbdHiddBase;
 
     struct MinList          kb_PendingQueue;  /* IOrequests (KBD_READEVENT) not done quick */
     struct SignalSemaphore  kb_QueueLock;
@@ -33,7 +33,6 @@ struct KeyboardBase
 
     struct Interrupt  kb_Interrupt;     /* Interrupt to invoke in case of keypress (or
 					   releases) and there are pending requests */
-    APTR    kb_kbIrqHandle;             /* Handle from AddKBInt() */
 
     UWORD   kb_nHandlers;      		/* Number of reset handlers added */
     UWORD  *kb_keyBuffer;
@@ -72,6 +71,7 @@ typedef struct KBUnit
 
 #define KBUF_PENDING 0x01
 
+#undef HiddKbdAB
 #define HiddKbdAB KBBase->HiddKbdAB_
 
 #endif /* KEYBOARD_INTERN_H */

@@ -1,12 +1,11 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (c) 2007 Robert Norris. All rights reserved.
+ * Copyright (c) 2010 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
  */
-
-#define __OOP_NOATTRBASES__
 
 #include <exec/types.h>
 #include <exec/semaphores.h>
@@ -22,51 +21,13 @@
 
 #include "sdl_intern.h"
 
-#include LC_LIBDEFS_FILE
-
 #define DEBUG 0
 #include <aros/debug.h>
 
-static OOP_AttrBase HiddMouseAB;
-
-static struct OOP_ABDescr attrbases[] = {
-    { IID_Hidd_Mouse, &HiddMouseAB },
-    { NULL,           NULL         }
-};
-
-static int sdl_mouseclass_init(LIBBASETYPEPTR LIBBASE) {
-    D(bug("[sdl] sdl_mouseclass_init\n"));
-
-    return OOP_ObtainAttrBases(attrbases);
-}
-
-static int sdl_mouseclass_expunge(LIBBASETYPEPTR LIBBASE) {
-    D(bug("[sdl] sdl_mouseclass_expunge\n"));
-
-    OOP_ReleaseAttrBases(attrbases);
-    return TRUE;
-}
-
-ADD2INITLIB(sdl_mouseclass_init , 0)
-ADD2EXPUNGELIB(sdl_mouseclass_expunge, 0)
-
-#define SDLGfxBase ((LIBBASETYPEPTR) cl->UserData)
-
 OOP_Object *SDLMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg) {
-    BOOL has_mouse_hidd = FALSE;
     struct mousedata *mousedata;
 
     D(bug("[sdl] SDLMouse::New\n"));
-
-    ObtainSemaphoreShared(&LIBBASE->lock);
-    if (LIBBASE->mousehidd != NULL)
-        has_mouse_hidd = TRUE;
-    ReleaseSemaphore(&LIBBASE->lock);
-
-    if (has_mouse_hidd) {
-        D(bug("[sdl] mouse hidd already present, can't make another one\n"));
-        return NULL;
-    }
 
     if ((o = (OOP_Object *) OOP_DoSuperMethod(cl, o, (OOP_Msg) msg)) == NULL) {
         D(bug("[sdl] supermethod failed, bailing out\n"));
@@ -75,26 +36,12 @@ OOP_Object *SDLMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
     mousedata = OOP_INST_DATA(cl, o);
 
-    mousedata->callback = GetTagData(aHidd_Mouse_IrqHandler, NULL, msg->attrList);
-    mousedata->callbackdata = GetTagData(aHidd_Mouse_IrqHandlerData, NULL, msg->attrList);
-
-    ObtainSemaphore(&LIBBASE->lock);
-    LIBBASE->mousehidd = o;
-    ReleaseSemaphore(&LIBBASE->lock);
+    mousedata->callback = (APTR)GetTagData(aHidd_Mouse_IrqHandler, 0, msg->attrList);
+    mousedata->callbackdata = (APTR)GetTagData(aHidd_Mouse_IrqHandlerData, 0, msg->attrList);
 
     D(bug("[sdl] created mouse hidd, callback 0x%08x, data 0x%08x\n", mousedata->callback, mousedata->callbackdata));
 
     return (OOP_Object *) o;
-}
-
-VOID SDLMouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg) {
-    D(bug("[sdl] SDLMouse::Dispose\n"));
-
-    ObtainSemaphore(&LIBBASE->lock);
-    LIBBASE->mousehidd = NULL;
-    ReleaseSemaphore(&LIBBASE->lock);
-
-    OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
 }
 
 VOID SDLMouse__Hidd_SDLMouse__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_SDLMouse_HandleEvent *msg) {
@@ -166,3 +113,21 @@ VOID Hidd_SDLMouse_HandleEvent(OOP_Object *o, SDL_Event *e) {
 
     OOP_DoMethod(o, (OOP_Msg) &msg);
 }
+
+static struct OOP_MethodDescr SDLMouse_Root_descr[] = {
+    {(OOP_MethodFunc)SDLMouse__Root__New, moRoot_New},
+    {NULL                               , 0         }
+};
+#define NUM_SDLMouse_Root_METHODS 1
+
+static struct OOP_MethodDescr SDLMouse_Hidd_SDLMouse_descr[] = {
+    {(OOP_MethodFunc)SDLMouse__Hidd_SDLMouse__HandleEvent, moHidd_SDLMouse_HandleEvent},
+    {NULL, 0}
+};
+#define NUM_SDLMouse_Hidd_SDLMouse_METHODS 1
+
+struct OOP_InterfaceDescr SDLMouse_ifdescr[] = {
+    {SDLMouse_Root_descr         , IID_Root         , NUM_SDLMouse_Root_METHODS         },
+    {SDLMouse_Hidd_SDLMouse_descr, IID_Hidd_SDLMouse, NUM_SDLMouse_Hidd_SDLMouse_METHODS},
+    {NULL                        , NULL                                                 }
+};

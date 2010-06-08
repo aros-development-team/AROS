@@ -7,10 +7,6 @@
  * under the same terms as AROS itself.
  */
 
-#define __OOP_NOATTRBASES__
-
-#include <aros/symbolsets.h>
-
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
 #include <utility/tagitem.h>
@@ -22,39 +18,10 @@
 
 #include "sdl_intern.h"
 
-#include LC_LIBDEFS_FILE
-
 #define DEBUG 0
 #include <aros/debug.h>
 
 #include "icon.h"
-
-static OOP_AttrBase HiddPixFmtAttrBase;
-static OOP_AttrBase HiddBitMapAttrBase;
-static OOP_AttrBase HiddSDLBitMapAttrBase;
-
-static struct OOP_ABDescr attrbases[] = {
-    { IID_Hidd_PixFmt,    &HiddPixFmtAttrBase    },
-    { IID_Hidd_BitMap,    &HiddBitMapAttrBase    },
-    { IID_Hidd_SDLBitMap, &HiddSDLBitMapAttrBase },
-    { NULL,               NULL                   }
-};
-
-static int sdl_bmclass_init(LIBBASETYPEPTR LIBBASE) {
-    D(bug("[sdl] sdl_bmclass_init\n"));
-
-    return OOP_ObtainAttrBases(attrbases);
-}
-
-static int sdl_bmclass_expunge(LIBBASETYPEPTR LIBBASE) {
-    D(bug("[sdl] sdl_bmclass_expunge\n"));
-
-    OOP_ReleaseAttrBases(attrbases);
-    return TRUE;
-}
-
-ADD2INITLIB(sdl_bmclass_init , 0)
-ADD2EXPUNGELIB(sdl_bmclass_expunge, 0)
 
 #define LOCK(s)                     \
     do {                            \
@@ -67,6 +34,8 @@ ADD2EXPUNGELIB(sdl_bmclass_expunge, 0)
         if (SDL_MUSTLOCK(s))          \
             SV(SDL_UnlockSurface, s); \
     } while(0)
+
+#define LIBBASE (&xsd)
 
 static SDL_Surface *icon;
 static void load_icon(LIBBASETYPEPTR SDLGfxBase) {
@@ -93,10 +62,10 @@ static void load_icon(LIBBASETYPEPTR SDLGfxBase) {
 OOP_Object *SDLBitMap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg) {
     struct bmdata *bmdata;
     BOOL framebuffer;
-    int width, height, depth;
+    IPTR width, height, depth;
     OOP_Object *pixfmt;
     SDL_Surface *s;
-    ULONG red_mask, green_mask, blue_mask, alpha_mask;
+    IPTR red_mask, green_mask, blue_mask, alpha_mask;
 
     D(bug("[sdl] SDLBitMap::New\n"));
 
@@ -108,11 +77,11 @@ OOP_Object *SDLBitMap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
     bmdata = OOP_INST_DATA(cl, o);
 
-    OOP_GetAttr(o, aHidd_BitMap_Width,  (IPTR) &width);
-    OOP_GetAttr(o, aHidd_BitMap_Height, (IPTR) &height);
-    OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR) &pixfmt);
+    OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
+    OOP_GetAttr(o, aHidd_BitMap_Height, &height);
+    OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)&pixfmt);
 
-    OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, (IPTR) &depth);
+    OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
 
     D(bug("[sdl] width %d height %d depth %d\n", width, height, depth));
 
@@ -150,10 +119,10 @@ OOP_Object *SDLBitMap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     }
 
     else {
-        OOP_GetAttr(pixfmt, aHidd_PixFmt_RedMask,   (IPTR) &red_mask);
-        OOP_GetAttr(pixfmt, aHidd_PixFmt_GreenMask, (IPTR) &green_mask);
-        OOP_GetAttr(pixfmt, aHidd_PixFmt_BlueMask,  (IPTR) &blue_mask);
-        OOP_GetAttr(pixfmt, aHidd_PixFmt_AlphaMask, (IPTR) &alpha_mask);
+        OOP_GetAttr(pixfmt, aHidd_PixFmt_RedMask,   &red_mask);
+        OOP_GetAttr(pixfmt, aHidd_PixFmt_GreenMask, &green_mask);
+        OOP_GetAttr(pixfmt, aHidd_PixFmt_BlueMask,  &blue_mask);
+        OOP_GetAttr(pixfmt, aHidd_PixFmt_AlphaMask, &alpha_mask);
 
         D(bug("[sdl] creating new offscreen surface; masks: red 0x%08x green 0x%08x blue 0x%08x alpha 0x%08x\n", red_mask, green_mask, blue_mask, alpha_mask));
 
@@ -331,7 +300,7 @@ HIDDT_Pixel SDLBitMap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o, struc
     struct bmdata *bmdata = OOP_INST_DATA(cl, o);
     int bytesperpixel = bmdata->surface->format->BytesPerPixel;
     Uint8 *p = (Uint8 *) bmdata->surface->pixels + msg->y * bmdata->surface->pitch + msg->x * bytesperpixel;
-    Uint32 c;
+    Uint32 c = 0;
 
     //D(bug("[sdl] SDLBitMap::GetPixel\n"));
     //D(bug("[sdl] x %d y %d bytesperpixel %d\n", msg->x, msg->y, bytesperpixel));
@@ -376,8 +345,8 @@ VOID SDLBitMap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHi
 
 VOID SDLBitMap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg) {
     struct bmdata *bmdata = OOP_INST_DATA(cl, o);
-    int depth;
-    Uint32 red_mask, green_mask, blue_mask, alpha_mask;
+    IPTR depth;
+    IPTR red_mask, green_mask, blue_mask, alpha_mask;
     BOOL native32 = FALSE;
     SDL_Surface *s;
     SDL_Rect srect, drect;
@@ -404,15 +373,15 @@ VOID SDLBitMap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd
             D(bug("[sdl] pixel format %d, asking the gfxhidd for attributes\n", msg->pixFmt));
 
             OOP_Object *gfxhidd;
-            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR) &gfxhidd);
+            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 
             OOP_Object *pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
 
-            OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth,     (IPTR) &depth);
-            OOP_GetAttr(pixfmt, aHidd_PixFmt_RedMask,   (IPTR) &red_mask);
-            OOP_GetAttr(pixfmt, aHidd_PixFmt_GreenMask, (IPTR) &green_mask);
-            OOP_GetAttr(pixfmt, aHidd_PixFmt_BlueMask,  (IPTR) &blue_mask);
-            OOP_GetAttr(pixfmt, aHidd_PixFmt_AlphaMask, (IPTR) &alpha_mask);
+            OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth,     &depth);
+            OOP_GetAttr(pixfmt, aHidd_PixFmt_RedMask,   &red_mask);
+            OOP_GetAttr(pixfmt, aHidd_PixFmt_GreenMask, &green_mask);
+            OOP_GetAttr(pixfmt, aHidd_PixFmt_BlueMask,  &blue_mask);
+            OOP_GetAttr(pixfmt, aHidd_PixFmt_AlphaMask, &alpha_mask);
 
             break;
     }
@@ -442,8 +411,8 @@ VOID SDLBitMap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd
 
 VOID SDLBitMap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg) {
     struct bmdata *bmdata = OOP_INST_DATA(cl, o);
-    int depth;
-    Uint32 red_mask, green_mask, blue_mask, alpha_mask;
+    IPTR depth;
+    IPTR red_mask, green_mask, blue_mask, alpha_mask;
     BOOL native32 = FALSE;
     SDL_Surface *s;
     SDL_Rect srect;
@@ -470,15 +439,15 @@ VOID SDLBitMap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd
             D(bug("[sdl] pixel format %d, asking the gfxhidd for attributes\n", msg->pixFmt));
 
             OOP_Object *gfxhidd;
-            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR) &gfxhidd);
+            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 
             OOP_Object *pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
 
-            OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth,     (IPTR) &depth);
-            OOP_GetAttr(pixfmt, aHidd_PixFmt_RedMask,   (IPTR) &red_mask);
-            OOP_GetAttr(pixfmt, aHidd_PixFmt_GreenMask, (IPTR) &green_mask);
-            OOP_GetAttr(pixfmt, aHidd_PixFmt_BlueMask,  (IPTR) &blue_mask);
-            OOP_GetAttr(pixfmt, aHidd_PixFmt_AlphaMask, (IPTR) &alpha_mask);
+            OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth,     &depth);
+            OOP_GetAttr(pixfmt, aHidd_PixFmt_RedMask,   &red_mask);
+            OOP_GetAttr(pixfmt, aHidd_PixFmt_GreenMask, &green_mask);
+            OOP_GetAttr(pixfmt, aHidd_PixFmt_BlueMask,  &blue_mask);
+            OOP_GetAttr(pixfmt, aHidd_PixFmt_AlphaMask, &alpha_mask);
 
             break;
     }
@@ -569,7 +538,6 @@ VOID SDLBitMap__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o, st
     int x, y;
     HIDDT_Pixel fg, bg;
     ULONG ce;
-    Uint32 pixel;
     ULONG *srcline;
     
     D(bug("[sdl] SDLBitMap::BlitColorExpansion\n"));
@@ -593,7 +561,7 @@ VOID SDLBitMap__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o, st
 
                 case 1:
                     for (y = 0; y < msg->height; y++) {
-                        HIDD_BM_GetImage(msg->srcBitMap, srcline, msg->width * sizeof(ULONG), msg->srcX, msg->srcY + y, msg->width, 1, vHidd_StdPixFmt_Native32);
+                        HIDD_BM_GetImage(msg->srcBitMap, (UBYTE *)srcline, msg->width * sizeof(ULONG), msg->srcX, msg->srcY + y, msg->width, 1, vHidd_StdPixFmt_Native32);
                         for (x = 0; x < msg->width; x++) {
                             if (srcline[x] != 0)
                                 PUTPIXEL8(&p[x], fg);
@@ -604,7 +572,7 @@ VOID SDLBitMap__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o, st
 
                 case 2:
                     for (y = 0; y < msg->height; y++) {
-                        HIDD_BM_GetImage(msg->srcBitMap, srcline, msg->width * sizeof(ULONG), msg->srcX, msg->srcY + y, msg->width, 1, vHidd_StdPixFmt_Native32);
+                        HIDD_BM_GetImage(msg->srcBitMap, (UBYTE *)srcline, msg->width * sizeof(ULONG), msg->srcX, msg->srcY + y, msg->width, 1, vHidd_StdPixFmt_Native32);
                         for (x = 0; x < msg->width; x++) {
                             if (srcline[x] != 0)
                                 PUTPIXEL16(&(((Uint16 *) p)[x]), fg);
@@ -615,7 +583,7 @@ VOID SDLBitMap__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o, st
 
                 case 3:
                     for (y = 0; y < msg->height; y++) {
-                        HIDD_BM_GetImage(msg->srcBitMap, srcline, msg->width * sizeof(ULONG), msg->srcX, msg->srcY + y, msg->width, 1, vHidd_StdPixFmt_Native32);
+                        HIDD_BM_GetImage(msg->srcBitMap, (UBYTE *)srcline, msg->width * sizeof(ULONG), msg->srcX, msg->srcY + y, msg->width, 1, vHidd_StdPixFmt_Native32);
                         for (x = 0; x < msg->width; x++) {
                             if (srcline[x] != 0)
                                 PUTPIXEL24(&(((Uint32 *) p)[x]), fg);
@@ -626,7 +594,7 @@ VOID SDLBitMap__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o, st
 
                 case 4:
                     for (y = 0; y < msg->height; y++) {
-                        HIDD_BM_GetImage(msg->srcBitMap, srcline, msg->width * sizeof(ULONG), msg->srcX, msg->srcY + y, msg->width, 1, vHidd_StdPixFmt_Native32);
+                        HIDD_BM_GetImage(msg->srcBitMap, (UBYTE *)srcline, msg->width * sizeof(ULONG), msg->srcX, msg->srcY + y, msg->width, 1, vHidd_StdPixFmt_Native32);
                         for (x = 0; x < msg->width; x++) {
                             if (srcline[x] != 0)
                                 PUTPIXEL32(&(((Uint32 *) p)[x]), fg);
@@ -646,7 +614,7 @@ VOID SDLBitMap__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o, st
 
                 case 1:
                     for (y = 0; y < msg->height; y++) {
-                        HIDD_BM_GetImage(msg->srcBitMap, srcline, msg->width * sizeof(ULONG), msg->srcX, msg->srcY + y, msg->width, 1, vHidd_StdPixFmt_Native32);
+                        HIDD_BM_GetImage(msg->srcBitMap, (UBYTE *)srcline, msg->width * sizeof(ULONG), msg->srcX, msg->srcY + y, msg->width, 1, vHidd_StdPixFmt_Native32);
                         for (x = 0; x < msg->width; x++)
                             PUTPIXEL8(&p[x], srcline[x] != 0 ? fg : bg);
                         p += bmdata->surface->pitch;
@@ -655,7 +623,7 @@ VOID SDLBitMap__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o, st
 
                 case 2:
                     for (y = 0; y < msg->height; y++) {
-                        HIDD_BM_GetImage(msg->srcBitMap, srcline, msg->width * sizeof(ULONG), msg->srcY, msg->srcY + y, msg->width, 1, vHidd_StdPixFmt_Native32);
+                        HIDD_BM_GetImage(msg->srcBitMap, (UBYTE *)srcline, msg->width * sizeof(ULONG), msg->srcY, msg->srcY + y, msg->width, 1, vHidd_StdPixFmt_Native32);
                         for (x = 0; x < msg->width; x++)
                             PUTPIXEL16(&(((Uint16 *) p)[x]), srcline[x] != 0 ? fg : bg);
                         p += bmdata->surface->pitch;
@@ -664,7 +632,7 @@ VOID SDLBitMap__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o, st
 
                 case 3:
                     for (y = 0; y < msg->height; y++) {
-                        HIDD_BM_GetImage(msg->srcBitMap, srcline, msg->width * sizeof(ULONG), msg->srcX, msg->srcY + y, msg->width, 1, vHidd_StdPixFmt_Native32);
+                        HIDD_BM_GetImage(msg->srcBitMap, (UBYTE *)srcline, msg->width * sizeof(ULONG), msg->srcX, msg->srcY + y, msg->width, 1, vHidd_StdPixFmt_Native32);
                         for (x = 0; x < msg->width; x++)
                             PUTPIXEL24(&(((Uint32 *) p)[x]), srcline[x] != 0 ? fg : bg);
                         p += bmdata->surface->pitch;
@@ -673,7 +641,7 @@ VOID SDLBitMap__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o, st
 
                 case 4:
                     for (y = 0; y < msg->height; y++) {
-                        HIDD_BM_GetImage(msg->srcBitMap, srcline, msg->width * sizeof(ULONG), msg->srcX, msg->srcY + y, msg->width, 1, vHidd_StdPixFmt_Native32);
+                        HIDD_BM_GetImage(msg->srcBitMap, (UBYTE *)srcline, msg->width * sizeof(ULONG), msg->srcX, msg->srcY + y, msg->width, 1, vHidd_StdPixFmt_Native32);
                         for (x = 0; x < msg->width; x++)
                             PUTPIXEL32(&(((Uint32 *) p)[x]), srcline[x] != 0 ? fg : bg);
                         p += bmdata->surface->pitch;
@@ -744,3 +712,34 @@ VOID SDLBitMap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pH
 
     UNLOCK(bmdata->surface);
 }
+
+static struct OOP_MethodDescr SDLBitMap_Root_descr[] = {
+    {(OOP_MethodFunc)SDLBitMap__Root__New, moRoot_New},
+    {(OOP_MethodFunc)SDLBitMap__Root__Dispose, moRoot_Dispose},
+    {(OOP_MethodFunc)SDLBitMap__Root__Get, moRoot_Get},
+    {(OOP_MethodFunc)SDLBitMap__Root__Set, moRoot_Set},
+    {NULL, 0}
+};
+#define NUM_SDLBitMap_Root_METHODS 4
+
+static struct OOP_MethodDescr SDLBitMap_Hidd_BitMap_descr[] = {
+    {(OOP_MethodFunc)SDLBitMap__Hidd_BitMap__SetColors, moHidd_BitMap_SetColors},
+    {(OOP_MethodFunc)SDLBitMap__Hidd_BitMap__PutPixel, moHidd_BitMap_PutPixel},
+    {(OOP_MethodFunc)SDLBitMap__Hidd_BitMap__GetPixel, moHidd_BitMap_GetPixel},
+    {(OOP_MethodFunc)SDLBitMap__Hidd_BitMap__UpdateRect, moHidd_BitMap_UpdateRect},
+    {(OOP_MethodFunc)SDLBitMap__Hidd_BitMap__PutImage, moHidd_BitMap_PutImage},
+    {(OOP_MethodFunc)SDLBitMap__Hidd_BitMap__GetImage, moHidd_BitMap_GetImage},
+    {(OOP_MethodFunc)SDLBitMap__Hidd_BitMap__FillRect, moHidd_BitMap_FillRect},
+    {(OOP_MethodFunc)SDLBitMap__Hidd_BitMap__Clear, moHidd_BitMap_Clear},
+    {(OOP_MethodFunc)SDLBitMap__Hidd_BitMap__BlitColorExpansion, moHidd_BitMap_BlitColorExpansion},
+    {(OOP_MethodFunc)SDLBitMap__Hidd_BitMap__PutAlphaImage, moHidd_BitMap_PutAlphaImage},
+    {(OOP_MethodFunc)SDLBitMap__Hidd_BitMap__PutTemplate, moHidd_BitMap_PutTemplate},
+    {NULL, 0}
+};
+#define NUM_SDLBitMap_Hidd_BitMap_METHODS 11
+
+struct OOP_InterfaceDescr SDLBitMap_ifdescr[] = {
+    {SDLBitMap_Root_descr       , IID_Root       , NUM_SDLBitMap_Root_METHODS       },
+    {SDLBitMap_Hidd_BitMap_descr, IID_Hidd_BitMap, NUM_SDLBitMap_Hidd_BitMap_METHODS},
+    {NULL                       , NULL                                              }
+};

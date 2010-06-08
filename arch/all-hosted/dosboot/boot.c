@@ -5,27 +5,23 @@
     Desc: Boot your operating system.
     Lang: english
 */
+
 #define DEBUG 0
 
-#include <exec/types.h>
 #include <exec/alerts.h>
-#include <exec/libraries.h>
-#include <exec/devices.h>
-#include <exec/execbase.h>
-#include <aros/libcall.h>
-#include <aros/asmcall.h>
 #include <dos/dosextens.h>
-#include <dos/filesystem.h>
 #include <dos/stdio.h>
-#include <libraries/expansionbase.h>
+#include <graphics/modeid.h>
 #include <utility/tagitem.h>
-#include <aros/arossupportbase.h>
 #include <aros/debug.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/graphics.h>
 
 #include "dosboot_intern.h"
+
+#undef GfxBase
 
 struct emulbase
 {
@@ -35,7 +31,7 @@ struct emulbase
     APTR eb_stderr;
 };
 
-void __dosboot_Boot(BOOL hidds_ok, APTR BootLoaderBase, ULONG Flags)
+void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags)
 {
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. We do this by calling the submain()
@@ -51,7 +47,7 @@ void __dosboot_Boot(BOOL hidds_ok, APTR BootLoaderBase, ULONG Flags)
     	b) Don't have a working console.device/CON: handler.
     */
 
-    struct DosLibrary *DOSBase;
+    struct GfxBase *GfxBase;
     struct emulbase *emulbase;
     struct TagItem fhtags[]= { { TAG_END, 0 } };
     struct FileHandle *fh_stdin, *fh_stdout;
@@ -68,15 +64,9 @@ void __dosboot_Boot(BOOL hidds_ok, APTR BootLoaderBase, ULONG Flags)
     BPTR cis = NULL;
     BPTR sseq = NULL;
     LONG rc = RETURN_FAIL;
+    BOOL hidds_ok = FALSE;
 
     D(bug("[DOSBoot.hosted] __dosboot_Boot()\n")); 
-
-    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
-    if( DOSBase == NULL )
-    {
-    	/* BootStrap couldn't open dos.library */
-    	Alert(AT_DeadEnd | AN_BootStrap | AG_OpenLib | AO_DOSLib );
-    }
 
     /*
 	This is quite naughty, but I know what I'm doing here, since
@@ -122,9 +112,19 @@ void __dosboot_Boot(BOOL hidds_ok, APTR BootLoaderBase, ULONG Flags)
     D(bug("[DOSBoot.hosted] __dosboot_Boot: Selecting output for AROSSupport\n"));
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->StdOut = fh_stdout;
 
+    /* The trick is to query if we have at least one display mode in the database.
+       This means that we actually can open a display. If not, we enter emergency
+       shell on host's console. */
+    GfxBase = OpenLibrary("graphics.library", 36);
+    if (GfxBase) {
+        if (NextDisplayInfo(INVALID_ID) != INVALID_ID)
+	    hidds_ok = TRUE;
+	CloseLibrary(&GfxBase->LibNode);
+    }
+
     if (hidds_ok) {
         D(bug("[DOSBoot.hosted] __dosboot_Boot: Opening boot shell\n"));
-        cis  = Open("CON:20/20///Boot Shell/AUTO", FMF_READ);
+        cis  = Open("CON:20/20///Boot Shell/AUTO", MODE_OLDFILE);
     } else
         PutStr("Failed to load system HIDDs\n");
     if (cis)
@@ -133,7 +133,7 @@ void __dosboot_Boot(BOOL hidds_ok, APTR BootLoaderBase, ULONG Flags)
 
         if (!(Flags & BF_NO_STARTUP_SEQUENCE))
         {
-            sseq = Open("S:Startup-Sequence", FMF_READ);
+            sseq = Open("S:Startup-Sequence", MODE_OLDFILE);
             tags[2].ti_Data = (IPTR)sseq;
         }
         tags[3].ti_Data = (IPTR)cis;

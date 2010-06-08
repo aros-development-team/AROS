@@ -12,11 +12,14 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
+#include <proto/oop.h>
 #include <devices/keyboard.h>
 #include <devices/rawkeycodes.h>
 #include <devices/timer.h>
 #include <exec/memory.h>
 #include <graphics/gfxbase.h>
+#include <hidd/keyboard.h>
+#include <hidd/mouse.h>
 #include <libraries/expansionbase.h>
 #include <aros/bootloader.h>
 #include <aros/symbolsets.h>
@@ -24,20 +27,93 @@
 
 #include LC_LIBDEFS_FILE
 
-#include "devs_private.h"
 #include "dosboot_intern.h"
 #include "menu.h"
 
-
-static BOOL initHidds(struct BootConfig *bootcfg, LIBBASETYPEPTR DOSBootBase) 
+static BOOL init_kbd(STRPTR classid)
 {
+    OOP_Class *cl;
+    OOP_Object *kbd;
+    OOP_Object *drv = NULL;
+    
+    D(bug("[BootMenu] Adding keyboard HIDD %s\n", classid));
+    
+    cl = OOP_FindClass(classid);
+    if (!cl)
+        return FALSE;
+
+    kbd = OOP_NewObject(NULL, CLID_Hidd_Kbd, NULL);
+    if (kbd) {
+        drv = HIDD_Kbd_AddHardwareDriver(kbd, cl, NULL);
+	OOP_DisposeObject(kbd);
+    }
+    
+    return drv ? TRUE : FALSE;
+}
+
+static BOOL init_mouse(STRPTR classid)
+{
+    OOP_Class *cl;
+    OOP_Object *ms;
+    OOP_Object *drv = NULL;
+    
+    D(bug("[BootMenu] Adding mouse HIDD %s\n", classid));
+    
+    cl = OOP_FindClass(classid);
+    if (!cl)
+        return FALSE;
+    
+    ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
+    if (ms) {
+        drv = HIDD_Kbd_AddHardwareDriver(ms, cl, NULL);
+	OOP_DisposeObject(ms);
+    }
+    
+    return drv ? TRUE : FALSE;
+}
+
+BOOL init_gfx(STRPTR gfxclassname, LIBBASETYPEPTR DOSBootBase)
+{
+    OOP_Object *gfxhidd;
+    BOOL success = FALSE;
+
+    D(bug("[BootMenu] init_gfx('%s')\n", gfxclassname));
+    
+    GfxBase = OpenLibrary("graphics.library", 41);
+    if (!GfxBase)
+        return FALSE;
+
+    gfxhidd = OOP_NewObject(NULL, gfxclassname, NULL);
+    if (gfxhidd) {
+        if (AddDisplayDriverA(gfxhidd, NULL))
+	    OOP_DisposeObject(gfxhidd);
+	else
+	    success = TRUE;
+    }
+    
+    CloseLibrary(&GfxBase->LibNode);
+
+    ReturnBool ("init_gfxhidd", success);
+}
+
+static BOOL initHidds(LIBBASETYPEPTR DOSBootBase)
+{
+    struct BootConfig *bootcfg = &DOSBootBase->bm_BootConfig;
     D(bug("[BootMenu] initHidds()\n"));
 
     if (bootcfg->defaultgfx.hiddname[0]) {
 	if (!OpenLibrary(bootcfg->defaultgfx.libname, 0))
 	    return FALSE;
 
-        if (!init_gfx(bootcfg->defaultgfx.hiddname, GfxBase))
+        if (!init_gfx(bootcfg->defaultgfx.hiddname, DOSBootBase))
+	    return FALSE;
+    }
+
+    if (bootcfg->defaultkbd.hiddname[0]) {
+        if (!OpenLibrary(bootcfg->defaultkbd.libname, 0))
+	    return FALSE;
+
+	if (!init_kbd(bootcfg->defaultkbd.hiddname))
 	    return FALSE;
     }
 
@@ -45,7 +121,7 @@ static BOOL initHidds(struct BootConfig *bootcfg, LIBBASETYPEPTR DOSBootBase)
         return TRUE;
 
     if (OpenLibrary(bootcfg->defaultmouse.libname, 0)) {
-        if (init_device(bootcfg->defaultmouse.hiddname, "gameport.device")) {
+        if (init_mouse(bootcfg->defaultmouse.hiddname)) {
             D(bug("[BootMenu] initHidds: Hidds initialised\n"));
 
             return TRUE;
@@ -285,10 +361,15 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
 
     D(bug("[BootMenu] bootmenu_Init()\n"));
 
-    BootLoaderBase = OpenResource("bootloader.resource");
+    /* Initialize default HIDDs */
+    if (!initHidds(LIBBASE))
+	return FALSE;
+
     LIBBASE->bm_BootConfig.boot = NULL;
     InitBootConfig(&LIBBASE->bm_BootConfig, BootLoaderBase);
 
+    /* Check for command line argument */
+    BootLoaderBase = OpenResource("bootloader.resource");
     if (BootLoaderBase) {
         struct List *list = NULL;
         struct Node *node = NULL;
@@ -303,35 +384,20 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
         }
     }
 
-    /* Initialize keyboard HIDD first */
-    D(bug("[BootMenu] bootmenu_Init: keyboard HIDD: %s\n", LIBBASE->bm_BootConfig.defaultkbd.hiddname));
-    if (!LIBBASE->bm_BootConfig.defaultkbd.hiddname[0])
-	bmi_RetVal = TRUE;
-    else if (OpenLibrary(LIBBASE->bm_BootConfig.defaultkbd.libname, 0) != NULL) {
-	if (init_device(LIBBASE->bm_BootConfig.defaultkbd.hiddname, "keyboard.device"))
-	    bmi_RetVal = TRUE;
-    }
-    if (!bmi_RetVal)
-        return FALSE;
-
     /* check keyboard if needed */
     if (!WantBootMenu)
         WantBootMenu = buttonsPressed(LIBBASE);
 
     /* Bring up early startup menu if requested */
     if (WantBootMenu) {
-        D(kprintf("[BootMenu] bootmenu_Init: Entering Boot Menu ...\n"));
-	bmi_RetVal = FALSE;
+        bmi_RetVal = FALSE;
 
+        D(kprintf("[BootMenu] bootmenu_Init: Entering Boot Menu ...\n"));
 	GfxBase = OpenLibrary("graphics.library", 37);
 	if (GfxBase) {
 	    IntuitionBase = OpenLibrary("intuition.library", 37);
 	    if (IntuitionBase) {		    
-		/* init mouse + gfx */
-		if (initHidds(&LIBBASE->bm_BootConfig, LIBBASE)) {
-		    D(bug("[BootMenu] bootmenu_Init: Hidds Initialised\n"));
-		    bmi_RetVal = initScreen(LIBBASE, &LIBBASE->bm_BootConfig);
-		}
+		bmi_RetVal = initScreen(LIBBASE, &LIBBASE->bm_BootConfig);
 		CloseLibrary((struct Library *)IntuitionBase);
 	    }
 	    CloseLibrary((struct Library *)GfxBase);

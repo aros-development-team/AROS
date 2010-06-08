@@ -1,6 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (c) 2007 Robert Norris. All rights reserved.
+ * Copyright (c) 2010 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -10,11 +11,7 @@
 
 #include <devices/rawkeycodes.h>
 
-#include <aros/symbolsets.h>
-
 #include "sdl_intern.h"
-
-#include LC_LIBDEFS_FILE
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -132,9 +129,9 @@ static const struct keymap keymap[] = {
     { 0xff,           0xff             }
 };
 
-static int sdl_keymap_init(LIBBASETYPEPTR LIBBASE) {
+void sdl_keymap_init(LIBBASETYPEPTR LIBBASE) {
     int i;
-    struct keymap *pair;
+    const struct keymap *pair;
 
     D(bug("[sdl] sdl_keymap_init\n"));
 
@@ -143,8 +140,4 @@ static int sdl_keymap_init(LIBBASETYPEPTR LIBBASE) {
 
     for (pair = keymap; pair->sdl != 0xff && pair->aros != 0xff; pair++)
         LIBBASE->keycode[pair->sdl] = pair->aros;
-
-    return TRUE;
 }
-
-ADD2INITLIB(sdl_keymap_init, 0)

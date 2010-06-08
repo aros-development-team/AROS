@@ -259,7 +259,6 @@ AROS_UFH3(void, __dosboot_BootProcess,
     STRPTR                      bootName;
     LONG                        bootNameLength;
     BPTR                        lock;
-    BOOL                        hidds_ok;
     APTR                        BootLoaderBase = OpenResource("bootloader.resource");
 
     struct MsgPort *mp;         // Message port used with timer.device
@@ -501,10 +500,10 @@ AROS_UFH3(void, __dosboot_BootProcess,
         CloseLibrary( (struct Library *) ExpansionBase );
 
         /* Initialize HIDDs */
-        hidds_ok = __dosboot_InitHidds(DOSBase, BootLoaderBase, &LIBBASE->bm_BootConfig);
+        __dosboot_InitHidds(DOSBase);
 
         /* We now call the system dependant boot - should NEVER return! */
-        __dosboot_Boot(hidds_ok, BootLoaderBase, LIBBASE->BootFlags);
+        __dosboot_Boot(BootLoaderBase, DOSBase, LIBBASE->BootFlags);
     }
 
     //We Should NEVER reach here!

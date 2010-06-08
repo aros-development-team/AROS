@@ -27,7 +27,7 @@
 
 #include "dosboot_intern.h"
 
-void __dosboot_Boot(BOOL hidds_ok, APTR BootLoaderBase, ULONG Flags)
+void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags)
 {
     LONG rc = RETURN_FAIL;
     BPTR cis = NULL;
@@ -35,20 +35,10 @@ void __dosboot_Boot(BOOL hidds_ok, APTR BootLoaderBase, ULONG Flags)
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. */
 
-    struct DosLibrary *DOSBase;
-    D(bug("[DOSBoot] __dosboot_Boot()\n")); 
+    
+    D(bug("[DOSBoot] __dosboot_Boot()\n"));
 
-    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
-    if( DOSBase == NULL )
-    {
-    	/* BootStrap couldn't open dos.library */
-    	Alert(AT_DeadEnd | AN_BootStrap | AG_OpenLib | AO_DOSLib );
-    }
-
-    if (hidds_ok)
-	cis = Open("CON:20/20///Boot Shell/AUTO", FMF_READ);
-    else
-	kprintf("Failed to load system HIDDs\n");
+    cis = Open("CON:20/20///Boot Shell/AUTO", FMF_READ);
     if (cis)
     {
         BPTR sseq = NULL;

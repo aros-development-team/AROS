@@ -10,6 +10,9 @@
  * driver objects as possible. Every object needs to be given
  * to AddDisplayDriverA() in order to become functional.
  *
+ * Hosted drivers are also responsible for registering own input
+ * drivers if needed.
+ *
  * When the transition completes, kludges from bootmenu and
  * dosboot will be removed. Noone will care about library
  * open etc.
@@ -17,7 +20,8 @@
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
-
+#include <hidd/keyboard.h>
+#include <hidd/mouse.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>
@@ -28,19 +32,42 @@ static int gdi_Startup(LIBBASETYPEPTR LIBBASE)
 {
     struct GfxBase *GfxBase;
     OOP_Object *gfxhidd;
+    OOP_Object *kbd, *ms;
+    OOP_Object *kbdriver;
+    OOP_Object *msdriver = NULL;
 
     D(bug("[GDI] gdi_Startup()\n"));
 
+    /* Add keyboard and mouse driver to the system */
+    kbd = OOP_NewObject(NULL, CLID_Hidd_Kbd, NULL);
+    if (kbd) {
+        ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
+	if (ms) {
+            kbdriver = HIDD_Kbd_AddHardwareDriver(kbd, LIBBASE->xsd.kbdclass, NULL);
+	    if (kbdriver) {
+		msdriver = HIDD_Mouse_AddHardwareDriver(ms, LIBBASE->xsd.mouseclass, NULL);
+		if (!msdriver)
+		    HIDD_Kbd_RemHardwareDriver(kbd, kbdriver);
+	    }
+	    OOP_DisposeObject(ms);
+	}    
+	OOP_DisposeObject(kbd);
+    }
+
+    /* If we got no input, we can't work, fail */
+    if (!msdriver)
+        return FALSE;
+
+    /* Now proceed to adding display modes */
     GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
     D(bug("[gdi_Startup] GfxBase 0x%p\n", GfxBase));
     if (!GfxBase)
         return FALSE;
 
-    /* We use ourselves, and noone else */
-    LIBBASE->library.lib_OpenCnt = 1;
-
     /* In future we will be able to call this several times in a loop.
-       This will allow us to create several displays. */
+       This will allow us to create several displays.
+       In fact we already can do it, however our graphics.library can't
+       handle several displays. */
     gfxhidd = OOP_NewObject(LIBBASE->xsd.gfxclass, NULL, NULL);
     D(bug("[gdi_Startup] gfxhidd 0x%p\n", gfxhidd));
 
@@ -50,16 +77,19 @@ static int gdi_Startup(LIBBASETYPEPTR LIBBASE)
 	D(bug("[gdi_Startup] AddDisplayDriver() result: %u\n", err));
 	if (err) {
 	    OOP_DisposeObject(gfxhidd);
-	} else
-	    return TRUE;
+	    gfxhidd = NULL;
+	}
     }
 
     CloseLibrary(&GfxBase->LibNode);
-    
-    /* FIXME: if we return FALSE here, expunge will be caused.
-       This means that DLL containing keyboard hook will be unloaded,
-       which means crash as soon as any key pressed. */
-    return TRUE;
+
+    if (gfxhidd) {
+        /* We use ourselves, and noone else */
+	LIBBASE->library.lib_OpenCnt = 1;
+	return TRUE;
+    }
+
+    return FALSE;
 }
 
 /* This routine must be called AFTER everything all other initialization was run */

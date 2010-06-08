@@ -1,6 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (c) 2007 Robert Norris. All rights reserved.
+ * Copyright (c) 2010 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -17,8 +18,6 @@
 #include <proto/graphics.h>
 
 #include "sdl_intern.h"
-
-#include LC_LIBDEFS_FILE
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -74,10 +73,8 @@ VOID sdl_event_task(struct Task *creator, ULONG sync, LIBBASETYPEPTR LIBBASE) {
                     case SDL_MOUSEBUTTONUP:
                         D(bug("[sdl] got mouse event, sending to mouse hidd\n"));
 
-                        ObtainSemaphoreShared(&LIBBASE->lock);
                         if (LIBBASE->mousehidd)
                             Hidd_SDLMouse_HandleEvent(LIBBASE->mousehidd, &e[i]);
-                        ReleaseSemaphore(&LIBBASE->lock);
                         
                         break;
 
@@ -85,10 +82,8 @@ VOID sdl_event_task(struct Task *creator, ULONG sync, LIBBASETYPEPTR LIBBASE) {
                     case SDL_KEYDOWN:
                         D(bug("[sdl] got keyboard event, sending to keyboard hidd\n"));
 
-                        ObtainSemaphoreShared(&LIBBASE->lock);
                         if (LIBBASE->kbdhidd)
                             Hidd_SDLMouse_HandleEvent(LIBBASE->kbdhidd, &e[i]);
-                        ReleaseSemaphore(&LIBBASE->lock);
 
                         break;
                 }
@@ -97,7 +92,7 @@ VOID sdl_event_task(struct Task *creator, ULONG sync, LIBBASETYPEPTR LIBBASE) {
     }
 }
 
-static int sdl_event_init(LIBBASETYPEPTR LIBBASE) {
+int sdl_event_init(LIBBASETYPEPTR LIBBASE) {
     struct Task *task;
     APTR stack;
     ULONG sync;
@@ -106,13 +101,13 @@ static int sdl_event_init(LIBBASETYPEPTR LIBBASE) {
 
     if ((task = AllocMem(sizeof(struct Task), MEMF_PUBLIC | MEMF_CLEAR)) == NULL) {
         D(bug("[sdl] couldn't allocate task memory\n"));
-        return NULL;
+        return FALSE;
     }
 
     if ((stack = AllocMem(AROS_STACKSIZE, MEMF_PUBLIC)) == NULL) {
         D(bug("[sdl] couldn't allocate task stack memory\n"));
         FreeMem(task, sizeof(struct Task));
-        return NULL;
+        return FALSE;
     }
 
     task->tc_Node.ln_Type = NT_TASK;
@@ -139,7 +134,7 @@ static int sdl_event_init(LIBBASETYPEPTR LIBBASE) {
         D(bug("[sdl] new task creation failed\n"));
         FreeMem(stack, AROS_STACKSIZE);
         FreeMem(task, sizeof(struct Task));
-        return NULL;
+        return FALSE;
     }
 
     D(bug("[sdl] task created, waiting for it to start up\n"));
@@ -149,15 +144,12 @@ static int sdl_event_init(LIBBASETYPEPTR LIBBASE) {
     D(bug("[sdl] event loop task up and running\n"));
 
     LIBBASE->eventtask = task;
+    
+    return TRUE;
 }
 
-static int sdl_event_expunge(LIBBASETYPEPTR LIBBASE) {
-    if (LIBBASE->eventtask == NULL)
-        return TRUE;
-
+void sdl_event_expunge(LIBBASETYPEPTR LIBBASE)
+{
     RemTask(LIBBASE->eventtask);
     LIBBASE->eventtask = NULL;
 }
-
-ADD2INITLIB(sdl_event_init, 1)
-ADD2EXPUNGELIB(sdl_event_expunge, 1)

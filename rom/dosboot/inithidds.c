@@ -7,259 +7,145 @@
 */
 
 #define DEBUG 0
+
 #include <aros/debug.h>
-
-#include <aros/bootloader.h>
-#include <exec/memory.h>
-#include <exec/resident.h>
-#include <exec/alerts.h>
-#include <exec/io.h>
-#include <dos/filesystem.h>
-#include <utility/tagitem.h>
-#include <utility/hooks.h>
-#include <hidd/hidd.h>
-
-#include <proto/bootloader.h>
+#include <dos/dosextens.h>
+#include <workbench/icon.h>
+#include <proto/alib.h>
 #include <proto/exec.h>
-#include <proto/oop.h>
-#include <proto/utility.h>
 #include <proto/dos.h>
-#include <proto/graphics.h>
-#include <proto/intuition.h>
-#include <oop/oop.h>
+#include <proto/icon.h>
+
+#include <stdlib.h>
 #include <string.h>
 
-#include "devs_private.h"
 #include "dosboot_intern.h"
 
-#include <aros/asmcall.h>
+#define MONITORS_DIR "DEVS:Monitors"
 
 /************************************************************************/
 
-#undef GfxBase
+/* This code does almost the same thing as C:LoadMonDrvs does on other systems.
+   However, additionally we support priority-based sorting for display drivers.
+   This is needed in order to make monitor ID assignment more predictable */
 
-#define HIDDPREFSFILE "SYS:S/hidd.prefs"
-
-/* We don't link with c library so I must implement this separately */
-#define isblank(c) \
-	(c == '\t' || c == ' ')
-#define isspace(c) \
-	(c == '\t' || c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\v')
-
-BOOL __dosboot_InitHidds(struct DosLibrary *dosBase, APTR BootLoaderBase, struct BootConfig *cfg)
+static BYTE checkIcon(STRPTR name, struct Library *IconBase)
 {
-    /* This is the initialisation code for InitHIDDs module */
-    BOOL success = TRUE;
-    UBYTE buf[BUFSIZE];
-    BOOL def_gfx = TRUE, def_kbd = TRUE, def_mouse = TRUE;
-    BPTR fh;
+    LONG pri = 0;
+    struct DiskObject *dobj = GetDiskObject(name);
 
-    D(bug("[DOSBoot] __dosboot_InitHidds()\n")); 
+    if (dobj == NULL)
+	return 0;
 
-    /* Open the hidd prefsfile */	
-    fh = Open(HIDDPREFSFILE, FMF_READ);
-    if (fh) {
-        D(bug("[DOS] __dosboot_InitHidds: hiddprefs file opened\n"));
-
-        while (FGets(fh, buf, BUFSIZE)) {
-	    STRPTR keyword = buf, arg, end;
-	    STRPTR s;
-
-	    if (*buf == '#')
-		continue;
-
-	    s = buf;
-	    if (*s) {
-		for (; *s; s ++);
-
-		if (s[-1] == 10)
-		    s[-1] = 0;
-	    }		    
-
-	    D(bug("[DOS] __dosboot_InitHidds: Got line: %s\n", buf));
-
-	    /* Get keyword */
-	    while ((*keyword != 0) && isspace(*keyword))
-		keyword ++;
-
-	    if (*keyword == 0)
-		continue;
-
-	    /* terminate keyword */
-	    arg = keyword;
-	    while ((*arg != 0) && (!isblank(*arg)))
-		arg ++;
-	    if (*arg == 0)
-		continue;
-	    *arg++ = 0;
-
-	    /* Find start of argument */
-	    D(bug("[DOS] __dosboot_InitHidds: Find argument at %s\n", arg));
-	    while ((*arg != 0) && isblank(*arg))
-		arg ++;
-
-	    if (*arg == 0)
-		continue;
-
-	    D(bug("[DOS] __dosboot_InitHidds: Terminate argument at %s\n", arg));
-	    /* terminate argument */
-	    end = arg;
-	    while ( (*end != 0) && (!isblank(*end)))
-		end ++;
-	    if (*end != 0)
-		*end = 0;
-
-	    D(bug("[DOS] __dosboot_InitHidds: Got keyword \"%s\" arg \"%s\"\n", keyword, arg));
-
-	    if (0 == strcmp(keyword, "library")) {
-		D(bug("Opening library\n"));
-		/* Open a specified library */
-		OpenLibrary(arg, 0);
-	    } else if (0 == strcmp(keyword, "gfx")) {
-		strncpy(cfg->defaultgfx.hiddname, arg, BUFSIZE - 1);
-		def_gfx = FALSE;
-	    } else if (0 == strcmp(keyword, "mouse")) {
-		strncpy(cfg->defaultmouse.hiddname, arg, BUFSIZE - 1);
-		def_mouse = FALSE;
-	    } else if (0 == strcmp(keyword, "kbd")) {
-		strncpy(cfg->defaultkbd.hiddname, arg, BUFSIZE - 1);
-		def_kbd = FALSE;
-	    }
-	}
-	Close(fh);
-    }
-
-    if (BootLoaderBase) {
-	struct List *list;
-	struct Node *node;
-
-	list = (struct List *)GetBootInfo(BL_Args);
-	if (list) {
-	    ForeachNode(list,node) {
-		if (0 == strncmp(node->ln_Name,"lib=",4)) {
-		    D(bug("[DOS] __dosboot_InitHidds: Opening library %s\n",&node->ln_Name[4]));
-		    OpenLibrary(&node->ln_Name[4],0L);
-		} else if (0 == strncmp(node->ln_Name,"gfx=",4)) {
-		    strncpy(cfg->defaultgfx.hiddname, &node->ln_Name[4], BUFSIZE-1);
-		    def_gfx = FALSE;
-		} else if (0 == strncmp(node->ln_Name,"kbd=",4)) {
-		    strncpy(cfg->defaultkbd.hiddname, &node->ln_Name[4], BUFSIZE-1);
-		    def_kbd = FALSE;
-		} else if (0 == strncmp(node->ln_Name,"mouse=",6)) {
-		    strncpy(cfg->defaultmouse.hiddname, &node->ln_Name[6], BUFSIZE-1);
-		    def_mouse = FALSE;
-		}
-	    }
-	}
-    }
-
-    /* TODO: Run everything from DEVS:Monitors here */
-
-    if (cfg->defaultgfx.hiddname[0]) {
-        struct GfxBase *GfxBase;
-	BOOL ok;
-
-	if (def_gfx && (!OpenLibrary(cfg->defaultgfx.libname, 0))) {
-	    success = FALSE;
-	    kprintf("Unable to load graphics hidd %s\n", cfg->defaultgfx.libname);
-	    goto end;
-	}
-
-	GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
-	if (!GfxBase) {
-	    success = FALSE;
-	    kprintf("Unable to open graphics.library v41\n");
-	    goto end;
-	}
-
-	ok = init_gfx(cfg->defaultgfx.hiddname, GfxBase);
-	CloseLibrary(&GfxBase->LibNode);
-	if (!ok) {
-	    success = FALSE;
-	    kprintf("Could not init graphics hidd %s\n", cfg->defaultgfx.hiddname);
-	    goto end;
-	}
-    }
-
-    if (cfg->defaultmouse.hiddname[0]) {
-        if (def_mouse && (!OpenLibrary(cfg->defaultmouse.libname, 0))) {
-	    success = FALSE;
-	    kprintf("Unable to load mouse hidd %s\n", cfg->defaultmouse.libname);
-	    goto end;
-	}
-	if (!init_device(cfg->defaultmouse.hiddname, "gameport.device")) {
-	    kprintf("Could not init mouse hidd %s\n", cfg->defaultmouse.hiddname);
-	    success = FALSE;
-	    goto end;
-	}
-    }
-
-    if (cfg->defaultkbd.hiddname[0]) {
-	if (def_kbd && (!OpenLibrary(cfg->defaultkbd.libname, 0))) {
-	    success = FALSE;
-	    kprintf("Unable to load keyboard hidd %s\n", cfg->defaultkbd.libname);
-	    goto end;
-	}
-	if (!init_device(cfg->defaultkbd.hiddname, "keyboard.device")) {
-	    kprintf("Could not init keyboard hidd %s\n", cfg->defaultkbd.hiddname);
-	    success = FALSE;
-	    goto end;
-	}
-    }
-
-end:
-    ReturnBool("__dosboot_InitHidds", success);
-}
-
-
-BOOL init_gfx(STRPTR gfxclassname, struct GfxBase *GfxBase)
-{
-    OOP_Object *gfxhidd;
-    BOOL success = FALSE;
-
-    D(bug("[BootMenu] init_gfx('%s')\n", gfxclassname));
-
-    gfxhidd = OOP_NewObject(NULL, gfxclassname, NULL);
-    if (gfxhidd) {
-        if (AddDisplayDriverA(gfxhidd, NULL))
-	    OOP_DisposeObject(gfxhidd);
-	else
-	    success = TRUE;
-    }
-
-    ReturnBool ("init_gfxhidd", success);
-}
-
-BOOL init_device(STRPTR hiddclassname, STRPTR devicename)
-{
-    BOOL success = FALSE;
-    struct MsgPort *mp = NULL;
-
-    D(bug("[BootMenu] init_device(classname='%s', devicename='%s')\n", hiddclassname, devicename));
-
-    if ((mp = CreateMsgPort()) != NULL)
+    if ((dobj->do_Type == WBTOOL) || (dobj->do_Type == WBPROJECT))
     {
-        struct IORequest *io = NULL;
-        if ((io = CreateIORequest(mp, sizeof ( struct IOStdReq))) != NULL)
-        {
-            if (0 == OpenDevice(devicename, 0, io, 0))
-            {
-                #define ioStd(x) ((struct IOStdReq *)x)
-                ioStd(io)->io_Command = CMD_HIDDINIT;
-                ioStd(io)->io_Data = hiddclassname;
-                ioStd(io)->io_Length = strlen(hiddclassname);
+	const STRPTR *toolarray = (const STRPTR *)dobj->do_ToolTypes;
+	STRPTR s;
 
-                /* Let the device init the HIDD */
-                DoIO(io);
-                if (0 == io->io_Error)
-                {
-                    success = TRUE;
-                }
-                CloseDevice(io);
-            }
-            DeleteIORequest(io); 
-        }
-        DeleteMsgPort(mp);
-    } 
-    ReturnBool("init_device", success);
+	if ((s = FindToolType(toolarray, "STARTPRI")))
+	{
+	    pri = atol(s);
+	    if (pri < -128)
+	        pri = -128;
+	    else if (pri > 127)
+	        pri = 127;
+	}
+	FreeDiskObject(dobj);
+    }
+    return pri;
+}
+
+static BOOL findMonitors(struct List *monitorsList, struct DosLibrary *DOSBase, struct Library *IconBase, APTR poolmem)
+{
+    BOOL retvalue = TRUE;
+    LONG error;
+    struct AnchorPath *ap = AllocPooled(poolmem, sizeof(struct AnchorPath));
+
+    if (ap)
+    {
+	error = MatchFirst("~(#?.info)", ap);
+	while (!error)
+	{
+	    struct Node *newnode = AllocPooled(poolmem, sizeof (struct Node));
+
+	    if (newnode == NULL) {
+		retvalue = FALSE;
+		goto exit;
+	    }
+	    newnode->ln_Name = AllocPooled(poolmem, strlen(ap->ap_Info.fib_FileName) + 1);
+	    if (newnode->ln_Name == NULL) {
+		retvalue = FALSE;
+		goto exit;
+	    }
+
+	    strcpy(newnode->ln_Name, ap->ap_Info.fib_FileName);
+	    if (IconBase)
+	        newnode->ln_Pri = checkIcon(ap->ap_Info.fib_FileName, IconBase);
+	    else
+	        newnode->ln_Pri = 0;
+	    Enqueue(monitorsList, newnode);
+
+	    error = MatchNext(ap);
+	}
+	if (error != ERROR_NO_MORE_ENTRIES)
+	{
+	    retvalue = FALSE;
+	    goto exit;
+	}
+	MatchEnd(ap);
+    }
+    else
+	retvalue = FALSE;
+exit:
+    return retvalue;
+}
+
+static void loadMonitors(struct List *monitorsList, struct DosLibrary *DOSBase)
+{
+    struct Node *node;
+
+    D(bug("[DOSBoot] Loading monitor drivers...\n"));
+    D(bug(" Pri Name\n"));
+
+    ForeachNode(monitorsList, node)
+    {
+	D(bug("%4d %s\n", node->ln_Pri, node->ln_Name));
+	Execute(node->ln_Name, NULL, NULL);
+    }
+
+    D(bug("--------------------------\n"));
+}
+
+BOOL __dosboot_InitHidds(struct DosLibrary *dosBase)
+{
+    APTR pool;
+    struct Library *IconBase;
+    BPTR dir, olddir;
+    BOOL res = TRUE;
+
+    dir = Lock(MONITORS_DIR, SHARED_LOCK);
+    D(bug("[DOSBoot] Monitors directory 0x%p\n", dir));
+    if (dir) {
+        olddir = CurrentDir(dir);
+
+        pool = CreatePool(MEMF_ANY, sizeof(struct Node) * 10, sizeof(struct Node) * 5);
+        if (pool) {
+	    struct List MonitorsList;
+
+	    NewList(&MonitorsList);
+	    IconBase = OpenLibrary("icon.library", 0);
+
+            findMonitors(&MonitorsList, dosBase, IconBase, pool);
+            loadMonitors(&MonitorsList, dosBase);
+
+	    if (IconBase)
+		CloseLibrary(IconBase);
+	    DeletePool(pool);
+	} else
+	    res = FALSE;
+
+	CurrentDir(olddir);
+	UnLock(dir);
+    }
+    return res;
 }
