@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Misc font help funcs
@@ -129,60 +129,6 @@ void tfe_hashdelete(struct TextFont *tf, struct GfxBase *GfxBase)
     
     return;
     
-}
-
-/****************************************************************************************/
-
-OOP_Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase)
-{
-    ULONG width, height;
-    OOP_Object *bm_obj;
-    OOP_Object *tmp_gc;
-    
-    /* Caclulate sizes for the font bitmap */
-    struct TagItem bm_tags[] =
-    {
-	{ aHidd_BitMap_Width	, 0	    	    	},
-	{ aHidd_BitMap_Height	, 0	    	    	},
-	{ aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Plane	},
-	{ TAG_DONE  	    	    	    	    	}
-    };
-    
-    tmp_gc = obtain_cache_object(SDD(GfxBase)->gc_cache, GfxBase);
-    if (NULL == tmp_gc)
-    	return NULL;
-
-    width  = font->tf_Modulo * 8;
-    height = font->tf_YSize;
-    
-    bm_tags[0].ti_Data = width;
-    bm_tags[1].ti_Data = height;
-	    
-    #warning Handle color textfonts
-    
-    bm_obj = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, bm_tags);
-    if (NULL != bm_obj)
-    {
-	struct TagItem gc_tags[] =
-	{
-	    { aHidd_GC_DrawMode     	    , vHidd_GC_DrawMode_Copy	},
-	    { aHidd_GC_Foreground   	    , 1	    	    	    	},
-	    { aHidd_GC_Background   	    , 0 	    	    	},
-	    { aHidd_GC_ColorExpansionMode   , vHidd_GC_ColExp_Opaque    },
-	    { TAG_DONE	    	    	    	    	    	    	}
-	};
-
-	/* Copy the character data into the bitmap */
-	OOP_SetAttrs(tmp_gc, gc_tags);
-	
-	HIDD_BM_PutTemplate(bm_obj, tmp_gc, font->tf_CharData, font->tf_Modulo,
-	    	    	    0, 0, 0, width, height, FALSE);
-
-    }
-    
-    release_cache_object(SDD(GfxBase)->gc_cache, tmp_gc, GfxBase);
-    
-    return bm_obj;
 }
 
 /****************************************************************************************/
