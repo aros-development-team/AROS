@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 gfx HIDD for AROS.
@@ -385,11 +385,11 @@ VOID X11Cl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
-    BOOL    	    	    	 displayable, framebuffer;    
+    BOOL    	    	    	 framebuffer;    
     struct pHidd_Gfx_NewBitMap   p;
     OOP_Object      	    	*newbm;
     IPTR    	    	    	 drawable;
-    
+    HIDDT_ModeID		 modeid;
     struct gfx_data 	    	*data;
     struct TagItem  	    	 tags[] =
     {
@@ -414,27 +414,26 @@ OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     tags[6].ti_Data = (IPTR)msg->attrList;
     
     /* Displayable bitmap ? */
-    displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
     framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
-    
+    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+		
     if (framebuffer)
     {
     	tags[5].ti_Tag	= aHidd_BitMap_ClassPtr;
 	tags[5].ti_Data	= (IPTR)XSD(cl)->onbmclass;
     }
-    else if (displayable)
+    /* When do we create an x11 offscreen bitmap ?
+	- If the user supplied a modeid.
+	- Bitmaps that have a friend that is an X11 bitmap
+	  and there is no standard pixfmt supplied
+    */
+    else if (modeid != vHidd_ModeID_Invalid)
     {
     	tags[5].ti_Tag	= aHidd_BitMap_ClassPtr;
 	tags[5].ti_Data	= (IPTR)XSD(cl)->offbmclass;
     }
     else
     {
-    	/* When do we create an x11 offscreen bitmap ?
-	    - For 1-plane bitmaps.
-	    - Bitmaps that have a friend that is an X11 bitmap
-	      and there is no standard pixfmt supplied
-	    - If the user supplied a modeid.
-	*/
 	OOP_Object  	*friend;
 	BOOL 	    	 usex11 = FALSE;
     	HIDDT_StdPixFmt  stdpf;
@@ -446,45 +445,19 @@ OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 	{
 	    if (vHidd_StdPixFmt_Unknown == stdpf)
 	    {
-	    	Drawable d = 0;
-		
-	    	/* Is the friend ann X11 bitmap ? */
-	    	OOP_GetAttr(friend, aHidd_X11BitMap_Drawable, (IPTR *)&d);
+	    	IPTR d = 0;
+
+	    	/* Is the friend an X11 bitmap ? */
+	    	OOP_GetAttr(friend, aHidd_X11BitMap_Drawable, &d);
 	    	if (0 != d)
 		{
-	    	    usex11 = TRUE;
+		    tags[5].ti_Tag  = aHidd_BitMap_ClassPtr;
+		    tags[5].ti_Data = (IPTR)XSD(cl)->offbmclass;
 		}
 	    }
 	}
-	
-	if (!usex11)
-	{
-	    if (vHidd_StdPixFmt_Plane == stdpf)
-	    {
-	    	usex11 = TRUE;
-	    }
-	    else
-	    {
-	    	HIDDT_ModeID modeid;
-		
-	    	modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-		
-		if (vHidd_ModeID_Invalid != modeid)
-		{
-		    usex11 = TRUE;
-		}
-	    }
-	}
-	
-	if (usex11)
-	{
-	    tags[5].ti_Tag  = aHidd_BitMap_ClassPtr;
-	    tags[5].ti_Data = (IPTR)XSD(cl)->offbmclass;
-	    
-	}
-	    D(else kprintf("x11 hidd: Could not create offscreen bitmap for supplied attrs! Superclass hopefully can.\n");)
     }
-    
+
     /* !!! IMPORTANT !!! */
     
     p.mID = msg->mID;
