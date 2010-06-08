@@ -17,7 +17,8 @@
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
-
+#include <hidd/keyboard.h>
+#include <hidd/mouse.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>
@@ -28,6 +29,9 @@ static int X11_Startup(LIBBASETYPEPTR LIBBASE)
 {
     struct GfxBase *GfxBase;
     OOP_Object *gfxhidd;
+    OOP_Object *kbd, *ms;
+    OOP_Object *kbdriver;
+    OOP_Object *msdriver = NULL;
 
     D(bug("[X11] X11_Startup()\n"));
 
@@ -35,6 +39,28 @@ static int X11_Startup(LIBBASETYPEPTR LIBBASE)
     D(bug("[X11_Startup] GfxBase 0x%p\n", GfxBase));
     if (!GfxBase)
         return FALSE;
+
+    /* Add keyboard and mouse driver to the system */
+    kbd = OOP_NewObject(NULL, CLID_Hidd_Kbd, NULL);
+    if (kbd) {
+        ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
+	if (ms) {
+            kbdriver = HIDD_Kbd_AddHardwareDriver(kbd, LIBBASE->xsd.kbdclass, NULL);
+	    if (kbdriver) {
+		msdriver = HIDD_Mouse_AddHardwareDriver(ms, LIBBASE->xsd.mouseclass, NULL);
+		if (!msdriver)
+		    HIDD_Kbd_RemHardwareDriver(kbd, kbdriver);
+	    }
+	    OOP_DisposeObject(ms);
+	}    
+	OOP_DisposeObject(kbd);
+    }
+
+    /* If we got no input, we can't work, fail */
+    if (!msdriver) {
+	CloseLibrary(&GfxBase->LibNode);
+        return FALSE;
+    }
 
     /* We use ourselves, and noone else */
     LIBBASE->library.lib_OpenCnt = 1;
@@ -50,15 +76,14 @@ static int X11_Startup(LIBBASETYPEPTR LIBBASE)
 	D(bug("[X11_Startup] AddDisplayDriver() result: %u\n", err));
 	if (err) {
 	    OOP_DisposeObject(gfxhidd);
-	} else
-	    return TRUE;
+	    gfxhidd = NULL;
+	}
     }
 
     CloseLibrary(&GfxBase->LibNode);
-    
-    /* FIXME: if we return FALSE here, expunge will be caused.
-       This means that DLL containing keyboard hook will be unloaded,
-       which means crash as soon as any key pressed. */
+
+    /* We always return TRUE because we added
+       keyboard and mouse drivers */
     return TRUE;
 }
 

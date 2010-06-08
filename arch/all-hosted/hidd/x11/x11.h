@@ -50,7 +50,6 @@ struct x11mouse_data
 
 /* IDs */
 #define IID_Hidd_X11Mouse	"hidd.mouse.x11"
-#define CLID_Hidd_X11Mouse	"hidd.mouse.x11"
 
 
 /* Methods */
@@ -79,7 +78,6 @@ struct x11kbd_data
 
 /* IDs */
 #define IID_Hidd_X11Kbd		"hidd.kbd.x11"
-#define CLID_Hidd_X11Kbd	"hidd.kbd.x11"
 
 /* Methods */
 enum
