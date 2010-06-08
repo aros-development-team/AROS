@@ -361,12 +361,11 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
 
     D(bug("[BootMenu] bootmenu_Init()\n"));
 
+    LIBBASE->bm_BootConfig.boot = NULL;
+    InitBootConfig(&LIBBASE->bm_BootConfig, BootLoaderBase);
     /* Initialize default HIDDs */
     if (!initHidds(LIBBASE))
 	return FALSE;
-
-    LIBBASE->bm_BootConfig.boot = NULL;
-    InitBootConfig(&LIBBASE->bm_BootConfig, BootLoaderBase);
 
     /* Check for command line argument */
     BootLoaderBase = OpenResource("bootloader.resource");
