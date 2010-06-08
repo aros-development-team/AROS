@@ -2,13 +2,12 @@
 
 #include "dosboot_intern.h"
 
-/* This file contains architecture-dependent defaults */
+/* This file contains architecture-dependent defaults.
+   Our HIDDs don't need hepler code any more */
 
 void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase)
 {
     bootcfg->defaultgfx.hiddname[0] = 0;
-    strcpy(bootcfg->defaultkbd.libname,    "wingdi.hidd");
-    strcpy(bootcfg->defaultkbd.hiddname,   "hidd.kbd.gdi");
-    strcpy(bootcfg->defaultmouse.libname,  "wingdi.hidd");
-    strcpy(bootcfg->defaultmouse.hiddname, "hidd.mouse.gdi");
+    bootcfg->defaultkbd.hiddname[0] = 0;
+    bootcfg->defaultmouse.hiddname[0] = 0;
 }

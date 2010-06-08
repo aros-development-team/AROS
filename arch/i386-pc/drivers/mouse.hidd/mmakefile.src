@@ -6,7 +6,7 @@ FILES	:=	mouse_init mouseclass drv_usb drv_ps2 drv_com
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../../include
 %build_module mmake=kernel-pc-i386-mouse \
-  modname=mouse modtype=hidd \
+  modname=ps2mouse modtype=hidd \
   files=$(FILES) \
   uselibs="hiddstubs oop"
 

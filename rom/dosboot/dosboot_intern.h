@@ -53,11 +53,8 @@ struct DOSBootBase
 #define BF_NO_STARTUP_SEQUENCE 0x0001
 
 void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase);
-BOOL __dosboot_InitHidds(struct DosLibrary *dosBase, APTR BootLoaderBase, struct BootConfig *cfg);
-void __dosboot_Boot(BOOL hidds_ok, APTR BootLoaderBase, ULONG Flags);
-
-BOOL init_device(STRPTR hiddclassname, STRPTR devicename);
-BOOL init_gfx(STRPTR gfxclassname, struct GfxBase *GfxBase);
+BOOL __dosboot_InitHidds(struct DosLibrary *dosBase);
+void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags);
 
 #undef GfxBase
 #define GfxBase DOSBootBase->bm_GfxBase

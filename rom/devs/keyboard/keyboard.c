@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Keyboard device
@@ -8,6 +8,7 @@
 
 /* HISTORY:  12.04.98  SDuvan  Began work
              xx.06.98  SDuvan  Fixes, added amigakeyboard.HIDD
+	     04.06.10  Sonic   Use keyboard.hidd
  */
 
 /****************************************************************************************/
@@ -31,7 +32,6 @@
 #include <aros/symbolsets.h>
 #include "abstractkeycodes.h"
 #include "keyboard_intern.h"
-#include "devs_private.h"
 
 #ifdef  __GNUC__
 #include "keyboard_gcc.h"
@@ -98,7 +98,6 @@ static const UWORD SupportedCommands[] =
     KBD_RESETHANDLERDONE,
     KBD_READMATRIX,
     KBD_READEVENT,
-    CMD_HIDDINIT,
     NSCMD_DEVICEQUERY,
     0
 };
@@ -191,33 +190,37 @@ static int GM_UNIQUENAME(Open)
     KBBase->kb_Interrupt.is_Node.ln_Pri = 0;
     KBBase->kb_Interrupt.is_Data = (APTR)KBBase;
     KBBase->kb_Interrupt.is_Code = kbdSendQueuedEvents;
-	
-/******* nlorentz: End of stuff added by me ********/
-    
-
-/* nlorentz: No lowlevel library yet */
-#if 0
-    if(!KBBase->kb_LowLevelBase)
+	    
+    if(!KBBase->kb_KbdHiddBase)
     {
-	KBBase->kb_LowLevelBase = OpenLibrary("lowlevel.library", 41);
+	KBBase->kb_KbdHiddBase = OpenLibrary("keyboard.hidd", 0);
+	D(bug("keyboard.device: keyboard.hidd base 0x%p\n", KBBase->kb_KbdHiddBase));
 
 	/* Install our own keyboard handler if opened for the first time */
-	if(KBBase->kb_LowLevelBase)
- 	    if((KBBase->kb_kbIrqHandle = AddKBInt(keyCallback, KBBase)) == NULL)
+	if(KBBase->kb_KbdHiddBase) {
+	    struct TagItem tags[] = {
+		{ aHidd_Kbd_IrqHandler		, (IPTR)keyCallback	},
+		{ aHidd_Kbd_IrqHandlerData	, (IPTR)KBBase 		},
+		{ TAG_DONE						}
+	    };
+
+	    KBBase->kb_Hidd = OOP_NewObject(NULL, CLID_Hidd_Kbd, tags);
+	    D(bug("keyboard.device: keyboard HIDD object 0x%p\n", KBBase->kb_Hidd));
+ 	    if(!KBBase->kb_Hidd)
 	    {
-	        CloseLibrary(KBBase->kb_LowLevelBase);
-		KBBase->kb_LowLevelBase = NULL; /* Do cleanup below. */
+	        CloseLibrary(KBBase->kb_KbdHiddBase);
+		KBBase->kb_KbdHiddBase = NULL; /* Do cleanup below. */
             }
+	}
 
     }
-    
-    if(!KBBase->kb_LowLevelBase)
+
+    if(!KBBase->kb_KbdHiddBase)
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
 	return FALSE;
 	/* TODO: Clean up. */
     }
-#endif
 
     return TRUE;
 }
@@ -358,38 +361,6 @@ AROS_LH1(void, beginio,
 	    Enable();
 
 	    break;
-
-	/* nlorentz: This command lets the keyboard.device initialize
-	   the HIDD to use. It must be done this way, because
-	   HIDDs might be loaded from disk, and keyboard.device is
-	   inited before DOS is up and running.
-	   The name of the HIDD class is in
-	   ioStd(rew)->io_Data. Note that maybe we should
-	   receive a pointer to an already created HIDD object instead.
-	   Also note that the below is just a temporary hack, should
-	   probably use IRQ HIDD instead to set the IRQ handler.
-	*/   
-
-	case CMD_HIDDINIT: {
-            struct TagItem tags[] =
-	    {
-		{ aHidd_Kbd_IrqHandler		, (IPTR)keyCallback	},
-		{ aHidd_Kbd_IrqHandlerData	, (IPTR)KBBase 		},
-		{ TAG_DONE						}
-	    };
-	    
-	    D(bug("keyboard.device: Received CMD_HIDDINIT, hiddname=\"%s\"\n"
-		    , (STRPTR)ioStd(ioreq)->io_Data ));
-
-	    if (KBBase->kb_Hidd != NULL)
-		OOP_DisposeObject(KBBase->kb_Hidd);
-	    KBBase->kb_Hidd = OOP_NewObject(NULL, (STRPTR)ioStd(ioreq)->io_Data, tags);
-	    if (!KBBase->kb_Hidd)
-	    {
-		D(bug("keyboard.device: Failed to open hidd.\n"));
-		ioreq->io_Error = IOERR_OPENFAIL;
-	    }
-	    break; }
 
 	default:
 	    ioreq->io_Error = IOERR_NOCMD;

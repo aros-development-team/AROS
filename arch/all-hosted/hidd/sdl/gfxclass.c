@@ -7,10 +7,6 @@
  * under the same terms as AROS itself.
  */
 
-#define __OOP_NOATTRBASES__
-
-#include <aros/symbolsets.h>
-
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
 #include <utility/tagitem.h>
@@ -23,45 +19,10 @@
 
 #include "sdl_intern.h"
 
-#include LC_LIBDEFS_FILE
-
 #define DEBUG 0
 #include <aros/debug.h>
 
-static OOP_AttrBase HiddPixFmtAttrBase;
-static OOP_AttrBase HiddBitMapAttrBase;
-static OOP_AttrBase HiddColorMapAttrBase;
-static OOP_AttrBase HiddSyncAttrBase;
-static OOP_AttrBase HiddGfxAttrBase;
-static OOP_AttrBase HiddSDLBitMapAttrBase;
-
-static struct OOP_ABDescr attrbases[] = {
-    { IID_Hidd_PixFmt,    &HiddPixFmtAttrBase    },
-    { IID_Hidd_BitMap,    &HiddBitMapAttrBase    },
-    { IID_Hidd_ColorMap,  &HiddColorMapAttrBase  },
-    { IID_Hidd_Sync,      &HiddSyncAttrBase      },
-    { IID_Hidd_Gfx,       &HiddGfxAttrBase       },
-    { IID_Hidd_SDLBitMap, &HiddSDLBitMapAttrBase },
-    { NULL,               NULL                   }
-};
-
-static int sdl_gfxclass_init(LIBBASETYPEPTR LIBBASE) {
-    D(bug("[sdl] sdl_gfxclass_init\n"));
-
-    return OOP_ObtainAttrBases(attrbases);
-}
-
-static int sdl_gfxclass_expunge(LIBBASETYPEPTR LIBBASE) {
-    D(bug("[sdl] sdl_gfxclass_expunge\n"));
-
-    OOP_ReleaseAttrBases(attrbases);
-    return TRUE;
-}
-
-ADD2INITLIB(sdl_gfxclass_init , 0)
-ADD2EXPUNGELIB(sdl_gfxclass_expunge, 0)
-
-#define SDLGfxBase ((LIBBASETYPEPTR) cl->UserData)
+#define LIBBASE (&xsd)
 
 static const SDL_Rect mode_1600_1200 = { .w = 1600, .h = 1200 };
 static const SDL_Rect mode_1280_1024 = { .w = 1280, .h = 1024 };
@@ -348,9 +309,9 @@ OOP_Object *SDLGfx__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
     struct pHidd_Gfx_NewBitMap supermsg;
     struct gfxdata *data = OOP_INST_DATA(cl, o);
 
-    D(bug("[sdl] SDLGfx::NewBitMap\n"));
+    D(bug("[sdl] SDLGfx::NewBitMap, UtilityBase is 0x%p\n", UtilityBase));
 
-    if ((HIDDT_ModeID) GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList) != vHidd_ModeID_Invalid) {
+    if (GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList) != vHidd_ModeID_Invalid) {
         D(bug("[sdl] bitmap with valid mode, we can handle it\n"));
 
         msgtags = TAGLIST(
@@ -364,8 +325,9 @@ OOP_Object *SDLGfx__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
     supermsg.mID = msg->mID;
     supermsg.attrList = msgtags;
 
+    D(bug("[sdl] Calling DoSuperMethod()\n"));
     o = (OOP_Object *) OOP_DoSuperMethod(cl, o, (OOP_Msg) &supermsg);
-    
+
     if (GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList))
         data->framebuffer = o;
 
@@ -374,13 +336,14 @@ OOP_Object *SDLGfx__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
 }
 
 VOID SDLGfx__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg) {
-    struct SDL_Surface *src, *dest;
+    struct SDL_Surface *src = NULL;
+    struct SDL_Surface *dest = NULL;
     struct SDL_Rect srect, drect;
 
     D(bug("[sdl] SDLGfx::CopyBox\n"));
 
-    OOP_GetAttr(msg->src,  aHidd_SDLBitMap_Surface, &src);
-    OOP_GetAttr(msg->dest, aHidd_SDLBitMap_Surface, &dest);
+    OOP_GetAttr(msg->src,  aHidd_SDLBitMap_Surface, (IPTR *)&src);
+    OOP_GetAttr(msg->dest, aHidd_SDLBitMap_Surface, (IPTR *)&dest);
 
     if (src == NULL || dest == NULL) {
         D(bug("[sdl] missing a surface: src is 0x%08x, dest is 0x%08x. letting the superclass deal with it\n", src, dest));
@@ -481,3 +444,24 @@ OOP_Object *SDLGfx__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     /* Framebuffer contents has been destroyed, so call superclass without fHidd_Gfx_Show_CopyBack */
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
 }
+
+static struct OOP_MethodDescr SDLGfx_Root_descr[] = {
+    {(OOP_MethodFunc)SDLGfx__Root__New, moRoot_New},
+    {(OOP_MethodFunc)SDLGfx__Root__Dispose, moRoot_Dispose},
+    {NULL, 0}
+};
+#define NUM_SDLGfx_Root_METHODS 2
+
+static struct OOP_MethodDescr SDLGfx_Hidd_Gfx_descr[] = {
+    {(OOP_MethodFunc)SDLGfx__Hidd_Gfx__NewBitMap, moHidd_Gfx_NewBitMap},
+    {(OOP_MethodFunc)SDLGfx__Hidd_Gfx__Show, moHidd_Gfx_Show},
+    {(OOP_MethodFunc)SDLGfx__Hidd_Gfx__CopyBox, moHidd_Gfx_CopyBox},
+    {NULL, 0}
+};
+#define NUM_SDLGfx_Hidd_Gfx_METHODS 3
+
+struct OOP_InterfaceDescr SDLGfx_ifdescr[] = {
+    {SDLGfx_Root_descr    , IID_Root    , NUM_SDLGfx_Root_METHODS    },
+    {SDLGfx_Hidd_Gfx_descr, IID_Hidd_Gfx, NUM_SDLGfx_Hidd_Gfx_METHODS},
+    {NULL                 , NULL                                     }
+};

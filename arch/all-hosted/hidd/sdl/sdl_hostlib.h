@@ -52,7 +52,7 @@ extern struct sdl_funcs sdl_funcs;
 #define S(name, ...) \
     ({ \
         Forbid(); \
-        typeof (sdl_funcs.name) __sdlret = sdl_funcs.name(__VA_ARGS__); \
+        APTR __sdlret = (APTR)sdl_funcs.name(__VA_ARGS__); \
         Permit(); \
         __sdlret; \
     })
@@ -63,3 +63,8 @@ extern struct sdl_funcs sdl_funcs;
         sdl_funcs.name(__VA_ARGS__); \
         Permit(); \
     } while (0)
+
+struct sdlhidd;
+
+int sdl_hostlib_init(struct sdlhidd *LIBBASE);
+int sdl_hostlib_expunge(struct sdlhidd *LIBBASE);

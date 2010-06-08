@@ -25,13 +25,10 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #MM- kernel-pc-i386 : general-setup-pc-i386
 
 #MM- kernel-pc-i386 : \
-#MM	kernel-misc-kobj \
 #MM	kernel-bootloader-pc-i386-kobj \
-#MM	kernel-dosboot-kobj \
 #MM	kernel-isapnp-kobj \
 #MM     workbench-libs-partition-kobj \
 #MM     kernel-fs-afs-kobj \
-#MM     kernel-hidd-graphics-kobj \
 ##MM     kernel-cpu-pc-i386-kobj \
 #MM	kernel-pc-i386-drivers \
 #MM     kernel-contrib-necessary-pc-i386 \
@@ -45,15 +42,14 @@ USELIBS	:= hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libi
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
-KRSRCS  := battclock bootloader dosboot misc
+KRSRCS  := battclock bootloader dosboot
 KLIBS   := exec boot aros dos graphics utility intuition keymap \
       	   expansion oop layers partition
 KDEVS   := timer input keyboard console gameport ata trackdisk
 KHNDLRS := con nil packet amberram cdrom afs sfs
-KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah pci pcipc
+KHIDDS  := hiddclass serial keyboard mouse irq graphics kbd ps2mouse vesagfx vgah pci pcipc
 KUSB    := poseidon_library.o hub_class.o hid_class.o massstorage_class.o pciusb_device.o usbromstartup_resource.o
 ##Disabled RSRC cpu isapnp
-##Disabled HIDD vmwaregfx usbuhci
 
 KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
          $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \

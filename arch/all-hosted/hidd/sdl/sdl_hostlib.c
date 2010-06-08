@@ -1,7 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (c) 2007 Robert Norris. All rights reserved.
- * Copyright (c) 2007-2009 The AROS Development Team
+ * Copyright (c) 2007-2010 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -16,8 +16,6 @@
 #include <proto/bootloader.h>
 #include <proto/exec.h>
 #include <proto/hostlib.h>
-
-#include LC_LIBDEFS_FILE
 
 #include "sdl_intern.h"
 
@@ -82,7 +80,7 @@ static void *sdl_hostlib_load_so(const char *sofile, const char **names, void **
     return handle;
 }
 
-static int sdl_hostlib_init(LIBBASETYPEPTR LIBBASE)
+int sdl_hostlib_init(LIBBASETYPEPTR LIBBASE)
 {
     STRPTR LibraryFile = SDL_SOFILE;
     APTR BootLoaderBase;
@@ -111,7 +109,7 @@ static int sdl_hostlib_init(LIBBASETYPEPTR LIBBASE)
     return TRUE;
 }
 
-static int sdl_hostlib_expunge(LIBBASETYPEPTR LIBBASE) {
+int sdl_hostlib_expunge(LIBBASETYPEPTR LIBBASE) {
     D(bug("[sdl] hostlib expunge\n"));
 
     if (LIBBASE->sdl_handle != NULL)
@@ -119,6 +117,3 @@ static int sdl_hostlib_expunge(LIBBASETYPEPTR LIBBASE) {
 
     return TRUE;
 }
-
-ADD2INITLIB(sdl_hostlib_init, 0)
-ADD2EXPUNGELIB(sdl_hostlib_expunge, 0)
