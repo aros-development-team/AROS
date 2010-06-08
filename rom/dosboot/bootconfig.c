@@ -14,7 +14,7 @@ void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase)
     strcpy(bootcfg->defaultgfx.hiddname,   "hidd.gfx.vga");
     strcpy(bootcfg->defaultkbd.libname,    "kbd.hidd");
     strcpy(bootcfg->defaultkbd.hiddname,   "hidd.kbd.hw");
-    strcpy(bootcfg->defaultmouse.libname,  "mouse.hidd");
+    strcpy(bootcfg->defaultmouse.libname,  "ps2mouse.hidd");
     strcpy(bootcfg->defaultmouse.hiddname, "hidd.bus.mouse");
 
     if (!BootLoaderBase)
