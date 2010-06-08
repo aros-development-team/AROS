@@ -117,6 +117,7 @@ int main(void)
     /* If SDLGfx class is already registered, the user attempts to run us twice.
        Just ignore this. */
     if (OOP_FindClass(CLID_Hidd_SDLGfx)) {
+        D(bug("[SDL] Driver already registered\n"));
 	CloseLibrary(OOPBase);
         return RETURN_OK;
     }
@@ -174,6 +175,9 @@ int main(void)
 			    if (sdl_event_init(&xsd)) {
 			        if (sdl_hidd_init(&xsd)) {
 				    if (sdl_Startup(&xsd)) {
+					/* Register our gfx class as public, we use it as a
+					   protection against double start */
+				        OOP_AddClass(xsd.gfxclass);
 					/* Everything is okay, stay resident and exit */
 					struct Process *me = (struct Process *)FindTask(NULL);
 
