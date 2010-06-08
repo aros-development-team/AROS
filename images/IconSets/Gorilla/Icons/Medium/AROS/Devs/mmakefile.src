@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-STORAGEICONS := DataTypes DOSDrivers Drivers Keymaps
+STORAGEICONS := DataTypes DOSDrivers Drivers Keymaps Monitors
 DEVSICONS := $(STORAGEICONS) Midi
 
 #MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-devs-clean iconset-Gorilla-icons-aros-storage-clean
