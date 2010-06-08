@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function StripFont()
@@ -67,7 +67,6 @@
     {
     	tfe = hn->ext;
 	
-	if (hn->font_bitmap) OOP_DisposeObject(hn->font_bitmap);
 	if (hn->chunky_colorfont) FreeVec(hn->chunky_colorfont);
 	
     	/* Remove the hashitem (tfe_hashdelete() has semaphore protection) */

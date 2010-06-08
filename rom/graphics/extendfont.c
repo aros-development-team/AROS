@@ -1,13 +1,13 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function ExtendFont()
     Lang: english
 */
+
 #include <proto/exec.h>
 #include <proto/utility.h>
-#include <proto/oop.h>
 #include <exec/memory.h>
 #include "graphics_intern.h"
 #include "fontsupport.h"
@@ -112,50 +112,30 @@
 	    tfe->tfe_BackPtr		= font;
 	    tfe->tfe_OrigReplyPort	= font->tf_Message.mn_ReplyPort;
 							
-	    if (!hn->font_bitmap)
-	    {
-	    	hn->font_bitmap = fontbm_to_hiddbm(font, GfxBase);
-	    }
-	    
-	    if (hn->font_bitmap)
-	    {
-	    	BOOL ok = TRUE;
+	    BOOL ok = TRUE;
 		
-	    	if ((font->tf_Style & FSF_COLORFONT) &&
-		    ((CTF(font)->ctf_Flags & CT_COLORMASK) != CT_ANTIALIAS))
-		{
-		    /* Real colorfont */
+	    if ((font->tf_Style & FSF_COLORFONT) &&
+		((CTF(font)->ctf_Flags & CT_COLORMASK) != CT_ANTIALIAS)) {
+		/* Real colorfont */
 		    
-		    if (!(hn->chunky_colorfont = colorfontbm_to_chunkybuffer(font, GfxBase)))
-		    {
+		if (!(hn->chunky_colorfont = colorfontbm_to_chunkybuffer(font, GfxBase)))
 		    	ok = FALSE;
-		    }
-		}
+	    }
 		
-		if (ok)
-		{
-	    	    if (new_hashnode)
-		    {
-			tfe_hashadd(hn, font, tfe, GfxBase);
-		    }
-		    else
-		    {
-			hn->ext = tfe;
-		    }
+	    if (ok) {
+	    	if (new_hashnode)
+		    tfe_hashadd(hn, font, tfe, GfxBase);
+		else
+		    hn->ext = tfe;
 
-    	            font->tf_Extension = (void *)tfe;
-    	            font->tf_Style |= FSF_TAGGED;
+    	        font->tf_Extension = (void *)tfe;
+    	        font->tf_Style |= FSF_TAGGED;
 
-		    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);
+		ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);
 
-    		    return TRUE;
+    		return TRUE;
 		    
-		} /* if (ok) */
-		
-		OOP_DisposeObject(hn->font_bitmap);
-		    
-	    } /* if (hn->font_bitmap) */
-
+	    } /* if (ok) */
 	    
 	    FreeTagItems(tfe->tfe_Tags);
 

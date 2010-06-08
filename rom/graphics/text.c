@@ -15,10 +15,6 @@
 
 #include "gfxfuncsupport.h"
 
-/* Experimental option. Define this in order to use
-   BltTemplate() for text rendering. */
-#define USE_BLTTEMPLATE
-
 void BltTemplateBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
     	    	    	  struct GfxBase *GfxBase);
 
@@ -94,18 +90,9 @@ void ColorFontBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
 	{
 	    ColorFontBasedText(rp, string, count, GfxBase);
 	}
-    	else if ((rp->DrawMode & INVERSVID) ||
-	    	 (rp->AlgoStyle & (FSF_BOLD | FSF_ITALIC | FSF_UNDERLINED)))
-	{
-    	    BltTemplateBasedText(rp, string, count, GfxBase);
-	}
 	else
 	{
-#ifdef USE_BLTTEMPLATE
 	    BltTemplateBasedText(rp, string, count, GfxBase);
-#else
-    	    driver_Text (rp, string, count, GfxBase);
-#endif
 	}
     }
 
@@ -348,9 +335,10 @@ void BltTemplateAlphaBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len
     WORD    	    	 raswidth, raswidth_bpr, rasheight, x, y, gx;
     UBYTE   	    	*raster;
     BOOL    	    	 is_bold, is_italic;
-    struct Library	*CyberGfxBase;
 
-    CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
+    /* CyberGfxBase is placed inside GfxBase, so it's static */
+    if (!CyberGfxBase)
+	CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
     if (!CyberGfxBase)
         return;
     
@@ -513,7 +501,6 @@ void BltTemplateAlphaBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len
     	FreeVec(raster);
 	
     } /* if ((raster = AllocVec(raswidth * rasheight, MEMF_CLEAR))) */
-    CloseLibrary(CyberGfxBase);
     
     Move(rp, rp->cp_x + te.te_Width, rp->cp_y);
     

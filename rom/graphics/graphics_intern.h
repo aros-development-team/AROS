@@ -218,12 +218,15 @@ struct GfxBase_intern
     ULONG                      *pixel_buf;
     struct SignalSemaphore      pixbuf_sema;
     struct SignalSemaphore      blit_sema;
+    
+    struct Library	       *CyberGfxBase;
 };
 
 
 /* Macros */
 
 #define PrivGBase(x)   	    	((struct GfxBase_intern *)x)
+#define CyberGfxBase		(PrivGBase(GfxBase)->CyberGfxBase)
 
 #define WIDTH_TO_BYTES(width) 	((( (width) + 15) & ~15) >> 3)
 #define WIDTH_TO_WORDS(width) 	((( (width) + 15) & ~15) >> 4)
@@ -277,8 +280,6 @@ void internal_ClipBlit(struct RastPort * srcRP,
                        struct GfxBase * GfxBase);
 
 /* Driver prototypes */
-extern void driver_Text (struct RastPort *, CONST_STRPTR, LONG, struct GfxBase *);
-
 extern void driver_LoadView(struct View *view, struct GfxBase *);
 
 extern struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *GfxBase);
