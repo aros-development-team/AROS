@@ -2,7 +2,7 @@
 #define X11GFX_INTERN_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 gfx HIDD for AROS.
@@ -33,7 +33,7 @@ VOID free_ximage(XImage *image);
 /****************************************************************************************/
 
 #define USE_X11_DRAWFUNCS  	1
-#define X11SOFTMOUSE		1
+#define X11SOFTMOUSE		0
 #define ADJUST_XWIN_SIZE	1	/* Resize the xwindow to the size of the actual visible screen */
 #define DELAY_XWIN_MAPPING  	1       /* Do not map (show) X window as long as there's no screen */
 
