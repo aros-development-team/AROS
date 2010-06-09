@@ -1,4 +1,4 @@
-## version $VER: pcitool.catalog 1.1 (6.2.2004)
+## version $VER: pcitool.catalog 1.1 (21.5.2010)
 ## language deutsch
 ## codeset 0
 ;
@@ -32,7 +32,7 @@ Treiber Information
 ;Driver info
 ;
 MSG_DRIVER_NAME
-Treiber Name:
+Treibername:
 ;Driver name:
 ;
 MSG_DIRECT_BUS
@@ -64,19 +64,19 @@ Subsystem:
 ;Subsystem:
 ;
 MSG_VENDORID
-Hersteller ID:
+Herstellernr.:
 ;VendorID:
 ;
 MSG_PRODUCTID
-Produkt ID:
+Produktnr.:
 ;ProductID:
 ;
 MSG_REVISIONID
-Revisionsnummer:
+Revisionsnr.:
 ;RevisionID:
 ;
 MSG_INTERFACE
-Interface:
+Schnittstelle:
 ;Interface:
 ;
 MSG_CLASS
@@ -140,7 +140,7 @@ nein
 ;no
 ;
 MSG_NA
-N/A
+n.v.
 ;N/A
 ;
 MSG_NOT
@@ -148,11 +148,11 @@ in
 ;not
 ;
 MSG_SIZE4
-%s%s bei 0x04x (Größe 0x%04x)
+%s%s bei 0x%04x (Größe 0x%04x)
 ;%s%s at 0x%04x (size 0x%04x)
 ;
 MSG_SIZE8
-%s%s bei 0x08x (Größe 0x%08x)
+%s%s bei 0x%08x (Größe 0x%08x)
 ;%s%s at 0x%08x (size 0x%08x)
 ;
 MSG_SAVETORAMDISK 
