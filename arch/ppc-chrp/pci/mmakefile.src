@@ -1,7 +1,0 @@
-# $Id$
-include $(TOP)/config/make.cfg
-
-%build_archspecific \
-  mainmmake=kernel-pci maindir=arch/common/hidd.pci \
-  arch=chrp-ppc \
-  files="atomic"

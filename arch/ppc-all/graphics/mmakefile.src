@@ -2,6 +2,6 @@
 include $(TOP)/config/make.cfg
 
 %build_archspecific \
-  mainmmake=kernel-pci maindir=rom/hidds/hidd.pci \
-  arch=sam440-ppc \
+  mainmmake=kernel-graphics maindir=rom/graphics \
+  arch=ppc \
   files="atomic"
