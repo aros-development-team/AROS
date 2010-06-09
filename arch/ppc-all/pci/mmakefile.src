@@ -2,6 +2,6 @@
 include $(TOP)/config/make.cfg
 
 %build_archspecific \
-  mainmmake=kernel-intuition maindir=rom/intuition \
-  arch=chrp-ppc \
+  mainmmake=kernel-pci maindir=arch/common/hidd.pci \
+  arch=ppc \
   files="atomic"

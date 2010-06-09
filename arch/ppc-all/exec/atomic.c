@@ -1,5 +1,5 @@
 /*
-    Copyright © 1997-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1997-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Atomic access functions to be used by macros in atomic.h.
@@ -9,7 +9,7 @@
 #include <proto/exec.h>
 #include <aros/atomic.h>
 
-BOOL set_atomic(
+static BOOL set_atomic(
     IPTR* addr,
     IPTR  old,
     IPTR  new)
