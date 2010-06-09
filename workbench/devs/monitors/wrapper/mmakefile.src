@@ -5,6 +5,8 @@ include $(TOP)/config/make.cfg
 FILES  := wrapper
 EXEDIR := $(AROSDIR)/Storage/Monitors
 
+#MM- workbench-devs-monitors: devs-monitors-wrapper
+
 #MM devs-monitors-wrapper : includes linklibs
 
 %build_prog mmake=devs-monitors-wrapper \
