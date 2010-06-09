@@ -38,6 +38,11 @@ static int gdi_Startup(LIBBASETYPEPTR LIBBASE)
 
     D(bug("[GDI] gdi_Startup()\n"));
 
+    GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
+    D(bug("[gdi_Startup] GfxBase 0x%p\n", GfxBase));
+    if (!GfxBase)
+        return FALSE;
+
     /* Add keyboard and mouse driver to the system */
     kbd = OOP_NewObject(NULL, CLID_Hidd_Kbd, NULL);
     if (kbd) {
@@ -55,16 +60,16 @@ static int gdi_Startup(LIBBASETYPEPTR LIBBASE)
     }
 
     /* If we got no input, we can't work, fail */
-    if (!msdriver)
+    if (!msdriver) {
+	CloseLibrary(&GfxBase->LibNode);
         return FALSE;
+    }
 
-    /* Now proceed to adding display modes */
-    GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
-    D(bug("[gdi_Startup] GfxBase 0x%p\n", GfxBase));
-    if (!GfxBase)
-        return FALSE;
+    /* We use ourselves, and noone else */
+    LIBBASE->library.lib_OpenCnt = 1;
 
-    /* In future we will be able to call this several times in a loop.
+    /* Now proceed to adding display modes.
+       In future we will be able to call this several times in a loop.
        This will allow us to create several displays.
        In fact we already can do it, however our graphics.library can't
        handle several displays. */
@@ -82,14 +87,7 @@ static int gdi_Startup(LIBBASETYPEPTR LIBBASE)
     }
 
     CloseLibrary(&GfxBase->LibNode);
-
-    if (gfxhidd) {
-        /* We use ourselves, and noone else */
-	LIBBASE->library.lib_OpenCnt = 1;
-	return TRUE;
-    }
-
-    return FALSE;
+    return TRUE;
 }
 
 /* This routine must be called AFTER everything all other initialization was run */
