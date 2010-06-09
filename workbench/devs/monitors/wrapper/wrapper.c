@@ -6,144 +6,101 @@
     Lang: english
 */
 
-#include <aros/bootloader.h>
-#include <dos/dos.h>
-#include <hidd/hidd.h>
-#include <proto/bootloader.h>
-#include <proto/exec.h>
-#include <proto/oop.h>
-#include <proto/dos.h>
-#include <proto/graphics.h>
+#include <aros/debug.h>
+#include <dos/dosextens.h>
 #include <oop/oop.h>
-
-#include <ctype.h>
-#include <string.h>
+#include <workbench/startup.h>
+#include <workbench/workbench.h>
+#include <proto/dos.h>
+#include <proto/exec.h>
+#include <proto/graphics.h>
+#include <proto/oop.h>
+#include <proto/icon.h>
 
 /************************************************************************/
 
-#define HIDDPREFSFILE "SYS:S/hidd.prefs"
-#define BUFSIZE 256
+struct MyArgs
+{
+    STRPTR hidd;
+    STRPTR lib;
+};
 
-static UBYTE buf[BUFSIZE];
-static UBYTE hiddname[BUFSIZE];
+extern struct WBStartup *WBenchMsg;
 
 int __nocommandline = 1;
 
-/*
- * Currently this code does what dosboot resident previously did:
- * 1. Opens S:hidd.prefs, opens specified libraries and picks up specified display driver name
- * 2. Opens bootloader.resource and processes its arguments in the same way.
- * 3. Creates a single object of obtained display driver HIDD class and adds it to the system.
- *
- * In future S:hidd.prefs and bootloader arguments will completely go away. This program will
- * have to process its tooltypes (there will be a possibility to have several copies of this
- * program with different icons in order to load several different drivers)
- */
-
 int main(void)
 {
-    BPTR fh;
-    APTR BootLoaderBase;
+    BPTR olddir = NULL;
+    STRPTR myname;
+    struct DiskObject *icon;
+    struct RDArgs *rdargs = NULL;
+    int res = RETURN_OK;
+    struct MyArgs args = {NULL};
 
-    hiddname[0] = 0;
+    if (WBenchMsg) {
+        olddir = CurrentDir(WBenchMsg->sm_ArgList[0].wa_Lock);
+	myname = WBenchMsg->sm_ArgList[0].wa_Name;
+    } else {
+	struct Process *me = (struct Process *)FindTask(NULL);
+    
+	if (me->pr_CLI) {
+            struct CommandLineInterface *cli = BADDR(me->pr_CLI);
+	
+	    myname = cli->cli_CommandName;
+	} else
+	    myname = me->pr_Task.tc_Node.ln_Name;
+    }   
+    D(Printf("Command name: %s\n", myname));
 
-    /* Open the hidd prefsfile */	
-    fh = Open(HIDDPREFSFILE, MODE_OLDFILE);
-    if (fh) {
+    icon = GetDiskObject(myname);
+    D(Printf("Icon 0x%p\n", icon));
 
-        while (FGets(fh, buf, BUFSIZE)) {
-	    STRPTR keyword = buf, arg, end;
-	    STRPTR s;
-
-	    if (*buf == '#')
-		continue;
-
-	    s = buf;
-	    if (*s) {
-		for (; *s; s ++);
-
-		if (s[-1] == 10)
-		    s[-1] = 0;
-	    }		    
-
-	    /* Get keyword */
-	    while ((*keyword != 0) && isspace(*keyword))
-		keyword ++;
-
-	    if (*keyword == 0)
-		continue;
-
-	    /* terminate keyword */
-	    arg = keyword;
-	    while ((*arg != 0) && (!isblank(*arg)))
-		arg ++;
-	    if (*arg == 0)
-		continue;
-	    *arg++ = 0;
-
-	    /* Find start of argument */
-	    while ((*arg != 0) && isblank(*arg))
-		arg ++;
-
-	    if (*arg == 0)
-		continue;
-
-	    /* terminate argument */
-	    end = arg;
-	    while ( (*end != 0) && (!isblank(*end)))
-		end ++;
-	    if (*end != 0)
-		*end = 0;
-
-	    if (0 == strcmp(keyword, "library")) {
-		/* Open a specified library */
-		OpenLibrary(arg, 0);
-	    } else if (0 == strcmp(keyword, "gfx")) {
-		strncpy(hiddname, arg, BUFSIZE - 1);
-	    }
-	}
-	Close(fh);
+    if (icon) {
+	args.hidd = FindToolType(icon->do_ToolTypes, "CLASS");
+        args.lib = FindToolType(icon->do_ToolTypes, "LIBRARY");
     }
 
-    BootLoaderBase = OpenResource("bootloader.resource");
-    if (BootLoaderBase) {
-	struct List *list;
-	struct Node *node;
-
-	list = (struct List *)GetBootInfo(BL_Args);
-	if (list) {
-	    ForeachNode(list,node) {
-		if (0 == strncmp(node->ln_Name,"lib=",4)) {
-		    OpenLibrary(&node->ln_Name[4],0L);
-		} else if (0 == strncmp(node->ln_Name,"gfx=",4)) {
-		    strncpy(hiddname, &node->ln_Name[4], BUFSIZE-1);
-		}
-	    }
-	}
+    if (!WBenchMsg) {
+        rdargs = ReadArgs("CLASS=HIDD/A,LIBRARY=LIB", (IPTR *)&args, NULL);
+	D(Printf("RDArgs 0x%p\n", rdargs));
     }
-
-    if (hiddname[0]) {
-        struct GfxBase *GfxBase;
+ 
+    D(Printf("CLASS=%s, LIBRARY=%s\n", args.hidd ? args.hidd : "<none>",
+	     args.lib ? args.lib : "<none>"));
+ 
+    if (args.hidd) {
+        OOP_Class *cl;
 	OOP_Object *gfxhidd;
-	int res = RETURN_ERROR;
 
-	GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
-	if (!GfxBase)
-	    return RETURN_FAIL;
+	cl = OOP_FindClass(args.hidd);
+	if (!cl) {
+	    if (args.lib) {
+	        if (!OpenLibrary(args.lib, 0))
+		    res = RETURN_ERROR;
+	    }
+	    
+	    if (res == RETURN_OK) {
 
-	gfxhidd = OOP_NewObject(NULL, hiddname, NULL);
-	if (gfxhidd) {
-	    if (AddDisplayDriverA(gfxhidd, NULL))
-		OOP_DisposeObject(gfxhidd);
-	    else
-		res = RETURN_OK;
+		gfxhidd = OOP_NewObject(NULL, args.hidd, NULL);
+		if (gfxhidd) {
+		    if (AddDisplayDriverA(gfxhidd, NULL)) {
+			OOP_DisposeObject(gfxhidd);
+			res = RETURN_FAIL;
+		    }
+		} else
+		    res = RETURN_ERROR;
+	    }
 	}
-	
-	CloseLibrary(&GfxBase->LibNode);
-	
-	return res;
-    }
+    } else
+	res = RETURN_ERROR;
 
-    return RETURN_OK;
+    if (rdargs)
+        FreeArgs(rdargs);
+    if (icon)
+        FreeDiskObject(icon);
+    if (olddir)
+        CurrentDir(olddir);
+
+    return res;
 }
-
