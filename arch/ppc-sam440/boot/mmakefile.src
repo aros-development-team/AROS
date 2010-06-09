@@ -51,7 +51,7 @@ include $(TOP)/config/make.cfg
 #MM	contrib-sfs \
 #MM	contrib-amberram \
 #MM	kernel-hidd-graphics \
-#MM	kernel-hidd-keyboard \
+#MM	kernel-hidd-kbd \
 #MM	kernel-hidd-mouse \
 #MM	kernel-usb-sam440-ppc \
 #MM	kernel-usb-usbromstartup
