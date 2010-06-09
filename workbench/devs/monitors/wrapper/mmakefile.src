@@ -3,7 +3,7 @@
 include $(TOP)/config/make.cfg
 
 FILES  := wrapper
-EXEDIR := $(AROS_STORAGE)/Monitors
+EXEDIR := $(AROSDIR)/Storage/Monitors
 
 #MM devs-monitors-wrapper : includes linklibs
 
