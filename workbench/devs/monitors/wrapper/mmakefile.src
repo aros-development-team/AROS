@@ -1,11 +1,9 @@
-#   $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
-#
-#   Makefile to make Decoration.
+#   $Id$
 
 include $(TOP)/config/make.cfg
 
 FILES  := wrapper
-EXEDIR := $(AROS_DEVS)/Monitors
+EXEDIR := $(AROS_STORAGE)/Monitors
 
 #MM devs-monitors-wrapper : includes linklibs
 
