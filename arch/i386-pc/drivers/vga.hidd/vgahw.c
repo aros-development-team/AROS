@@ -509,9 +509,11 @@ void vgaRefreshArea(struct bitmap_data *bmap, struct Box *pbox)
     outw(0x3ce, 0xff08);	/* Bit mask = 0xFF (all bits from CPU) */
 
     width  = (right - left + 1) >> 3; /* Width of destination box in UBYTEs */
+    /* Calculate start addresses in the pixelbuffer and VRAM */
     srcx   = left - bmap->xoffset;
     srcy   = pbox->y1 - bmap->yoffset;
-    src    = (ULONG*)bmap->VideoData + (srcy * SRCPitch) + (srcx >> 2);  /* Calculate start addresses in the pixelbuffer and VRAM */
+    /* src is not ULONG-aligned here */
+    src    = (ULONG *)(bmap->VideoData + srcx) + srcy * SRCPitch;
     dst    = (unsigned char*)0x000a0000 + (pbox->y1 * FBPitch) + (left >> 3);
 
     /* In order to speedup we operate on LONGs. However since our start
