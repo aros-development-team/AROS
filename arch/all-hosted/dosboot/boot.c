@@ -65,6 +65,7 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
     BPTR sseq = NULL;
     LONG rc = RETURN_FAIL;
     BOOL hidds_ok = FALSE;
+    struct Process *me;
 
     D(bug("[DOSBoot.hosted] __dosboot_Boot()\n")); 
 
@@ -107,7 +108,8 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
     D(bug("[DOSBoot.hosted] __dosboot_Boot: Selecting input and output for DOS\n"));
     SelectInput(MKBADDR(fh_stdin));
     SelectOutput(MKBADDR(fh_stdout));
-    SelectError(MKBADDR(fh_stdout));
+    me = (struct Process *)FindTask(NULL);
+    me->pr_CES = MKBADDR(fh_stdout);
 
     D(bug("[DOSBoot.hosted] __dosboot_Boot: Selecting output for AROSSupport\n"));
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->StdOut = fh_stdout;
@@ -164,7 +166,7 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
 
     SelectInput(0);
     SelectOutput(0);
-    ((struct Process *)FindTask(NULL))->pr_CES = 0;
+    me->pr_CES = 0;
 
     /* No RemTask() here, otherwise the process cleanup routines
        are not called. And that would for example mean, that the
