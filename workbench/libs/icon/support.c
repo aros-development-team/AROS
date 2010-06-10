@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Miscellaneous support functions.
@@ -11,8 +11,7 @@
 #include "icon_intern.h"
 #include "support.h"
 
-#define DEBUG 1
-#   include <aros/debug.h>
+#include <aros/debug.h>
 
 extern const IPTR IconDesc[];
 
@@ -131,7 +130,10 @@ struct DiskObject *__ReadIcon_WB(BPTR file, struct IconBase *IconBase)
     
     if (!icon)
     {
-    	if (!PNGBase) PNGBase = OpenLibrary("datatypes/png.datatype", 0);
+    	if (!PNGBase) {
+	    PNGBase = OpenLibrary("SYS:Classes/datatypes/png.datatype", 0);
+	    D(bug("[ReadIcon] PNGBase is 0x%p\n", PNGBase));
+	}
 	
     	if (PNGBase && ReadIconPNG(&temp, file, IconBase))
 	{
@@ -147,11 +149,13 @@ struct DiskObject *__ReadIcon_WB(BPTR file, struct IconBase *IconBase)
         	TAG_DONE
             );
 	    
+	    D(bug("[ReadIcon] Freeing PNG icon\n"));
 	    FreeIconPNG(temp, IconBase);
 	}
 	
     }
     
+    D(bug("[ReadIcon] Returning 0x%p\n", icon));
     return icon;
 }
 
