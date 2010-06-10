@@ -78,9 +78,9 @@ fi
 
 #-- Generate report ----------------------------------------------------------
 if [ "$CFG_MAIL_ENABLE" = "yes" ]; then
-    if   [ -z $failed ]; then
+    if   [ -z "$failed" ]; then
         RESULT="completed successfully"
-    elif [ -z $succeeded ]; then
+    elif [ -z "$succeeded" ]; then
         RESULT="FAILED COMPLETELY"
     else
         RESULT="FAILED PARTLY"
@@ -89,7 +89,7 @@ if [ "$CFG_MAIL_ENABLE" = "yes" ]; then
     mail_start $RESULT
     
     ATTACH=()
-    if [ ! -z $failed ]; then
+    if [ ! -z "$failed" ]; then
         mail_write ""
         mail_write "The following packages FAILED to build completely:"
         for package in $failed; do
@@ -101,7 +101,7 @@ if [ "$CFG_MAIL_ENABLE" = "yes" ]; then
         mail_write "Please see the attached shortened logs or the full logs at"
         mail_write "http://www.aros.org/downloads/nightly/$VERSION/logs/ for details."
     fi
-    if [ ! -z $succeeded ]; then
+    if [ ! -z "$succeeded" ]; then
         mail_write ""
         mail_write "The following packages were built successfully:"
         for package in $succeeded; do
@@ -116,7 +116,7 @@ if [ "$CFG_MAIL_ENABLE" = "yes" ]; then
     
     mail_send $ATTACH
     
-    if [ ! -z $failed ]; then
+    if [ ! -z "$failed" ]; then
         rm -rf /tmp/_aros_build_log_*
     fi
     mail_stop
