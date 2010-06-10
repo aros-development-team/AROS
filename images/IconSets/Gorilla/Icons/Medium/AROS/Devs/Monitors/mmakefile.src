@@ -1,0 +1,16 @@
+# Copyright © 2010, The AROS Development Team. All rights reserved.
+# $Id: $
+
+include $(TOP)/config/make.cfg
+
+STORAGEICONS := Wrapper
+DEVSICONS    := Default
+
+#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-devs-monitors-clean iconset-Gorilla-icons-storage-monitors-clean
+#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-devs-monitors iconset-Gorilla-icons-storage-monitors
+
+#%build_icons mmake=iconset-Gorilla-icons-devs-monitors icons=$(DEVSICONS) \
+#             dir=$(AROS_DEVS)/Monitors
+
+%build_icons mmake=iconset-Gorilla-icons-storage-monitors icons=$(STORAGEICONS) \
+             dir=$(AROSDIR)/Storage/Monitors
