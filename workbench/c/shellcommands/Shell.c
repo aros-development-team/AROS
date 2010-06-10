@@ -1561,6 +1561,14 @@ BOOL appendString(struct CSource *cs, CONST_STRPTR fromStr, LONG size)
 
 void unloadCommand(BPTR commandSeg, struct ShellState *ss)
 {
+#if SET_HOMEDIR
+    if (ss->homeDirChanged)
+    {
+        UnLock(SetProgramDir(ss->oldHomeDir));
+	ss->homeDirChanged = FALSE;
+    }
+#endif
+
     if (!cli->cli_Module) return;
     
     if(ss->residentCommand)
@@ -1579,14 +1587,6 @@ void unloadCommand(BPTR commandSeg, struct ShellState *ss)
     }
     else
 	UnLoadSeg(commandSeg);
-
-#if SET_HOMEDIR
-    if (ss->homeDirChanged)
-    {
-        UnLock(SetProgramDir(ss->oldHomeDir));
-	ss->homeDirChanged = FALSE;
-    }
-#endif
 }
 
 
