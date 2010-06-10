@@ -17,20 +17,12 @@
 
 #define BUFSIZE 100
 
-struct DefaultHidd
-{
-	TEXT libname [BUFSIZE];
-	TEXT hiddname[BUFSIZE];
-};
-
 struct BootConfig
 {
-	/* preferred boot device */
-	struct BootNode *boot;
-	/* default hidds used in bootmenu and for fallback mode */
-	struct DefaultHidd defaultgfx;
-	struct DefaultHidd defaultkbd;
-	struct DefaultHidd defaultmouse;
+    /* default hidds used in bootmenu and for fallback mode */
+    STRPTR gfxlib;
+    STRPTR gfxhidd;
+    BOOL bootmode;
 };
 
 struct DOSBootBase

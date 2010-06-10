@@ -55,6 +55,7 @@ static int GfxInit(struct GfxBase *LIBBASE)
     
     NEWLIST(&LIBBASE->TextFonts);
     InitSemaphore( &PrivGBase(GfxBase)->hashtab_sema );
+    InitSemaphore( &PrivGBase(GfxBase)->view_sema );
     InitSemaphore( &PrivGBase(GfxBase)->tfe_hashtab_sema );
     InitSemaphore( &PrivGBase(GfxBase)->fontsem );
 
@@ -66,7 +67,9 @@ static int GfxInit(struct GfxBase *LIBBASE)
     LIBBASE->hash_table = AllocMem(GFXASSOCIATE_HASHSIZE * sizeof(APTR), MEMF_CLEAR|MEMF_PUBLIC);
     if (!LIBBASE->hash_table)
 	return FALSE;
+
     LIBBASE->HashTableSemaphore = &PrivGBase(GfxBase)->hashtab_sema;
+    LIBBASE->ActiViewCprSemaphore = &PrivGBase(GfxBase)->view_sema;
 
 #if REGIONS_USE_MEMPOOL
     InitSemaphore( &PrivGBase(GfxBase)->regionsem );

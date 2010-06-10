@@ -23,7 +23,6 @@
    (it has two reserved pointers, just enough for us)
  */
 #define VPE_DATA(vpe) ((struct HIDD_ViewPortData *)(vpe)->DriverData)
-#define VPE_BITMAP(vpe) (VPE_DATA(vpe)->Bitmap)
 
 /* !!!! ONLY USE THE BELOW MACROS IF YOU ARE 100% SURE 
    THAT IT IS A HIDD BITMAP AND NOT ONE THE USER
@@ -57,6 +56,17 @@ do                                                                             \
 	((IS_HIDD_BM(bitmap)) \
 		? HIDD_BM_DRVDATA(bitmap) \
 		: (struct monitor_driverdata *)CDD(GfxBase))
+
+#define GET_BM_MODEID(bitmap) \
+	(HIDD_BM_DRVDATA(bitmap)->id | HIDD_BM_HIDDMODE(bitmap))
+
+/* An idea for future Amiga(tm) chipset driver: it should be implemented in
+   architecture-specific part of graphics.hidd. In this case many things will
+   start working automatically */
+#define GET_VP_DRIVERDATA(vp) \
+	((vp->ColorMap && vp->ColorMap->NormalDisplayInfo) \
+		? DIH(vp->ColorMap->NormalDisplayInfo)->drv \
+		: GET_BM_DRIVERDATA(vp->RasInfo->BitMap))
 
 #define IS_HIDD_BM(bitmap) (((bitmap)->Flags & BMF_AROS_HIDD) == BMF_AROS_HIDD)
 

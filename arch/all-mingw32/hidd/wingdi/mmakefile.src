@@ -1,19 +1,32 @@
-# $Id: mmakefile.src 28824 2008-05-25 12:35:42Z mazze $
+# $Id$
 include $(TOP)/config/make.cfg
 
 FLAGS := $(HOST_CFLAGS) -I$(GENINCDIR)
 
 FILES := startup gdi_hostlib gdigfx bitmap gdikbd gdimouse
 
-#MM kernel-hidd-wingdi-kobj : kernel-hidd-wingdi-native
-#MM kernel-hidd-wingdi : kernel-hidd-wingdi-native
+#MM kernel-hidd-wingdi-kobj  : kernel-hidd-wingdi-native devs-monitors-gdi
+#MM kernel-hidd-wingdi       : kernel-hidd-wingdi-native
 #MM kernel-hidd-wingdi-quick : kernel-hidd-wingdi-native
-#gdikeymaptable
 
 %build_module mmake=kernel-hidd-wingdi \
   modname=wingdi modtype=hidd \
   files=$(FILES) cflags=$(FLAGS) \
   uselibs="oop hiddgraphicsstubs"
+
+DISK_FILES  := disk_startup
+DISK_EXEDIR := $(AROS_DEVS)/Monitors
+
+#MM devs-monitors-gdi : devs-monitors-gdi-icon
+
+%build_prog mmake=devs-monitors-gdi \
+    progname=GDI targetdir=$(DISK_EXEDIR) \
+    files=$(DISK_FILES) uselibs="oop"
+
+ICONS := GDI
+
+%build_icons mmake=devs-monitors-gdi-icon icons=$(ICONS) \
+             dir=$(DISK_EXEDIR)
 
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
 NATIVE_DIR := $(GENDIR)/native

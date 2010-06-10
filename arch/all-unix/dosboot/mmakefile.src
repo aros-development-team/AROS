@@ -1,9 +1,0 @@
-# $Id: mmakefile.src 29725 2008-10-11 23:48:13Z neil $
-include $(TOP)/config/make.cfg
-
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/dosboot
-
-%build_archspecific \
-  mainmmake=kernel-dosboot maindir=rom/dosboot \
-  arch=unix \
-  files="bootconfig" modulename=dosboot
