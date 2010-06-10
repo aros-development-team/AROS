@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -430,7 +430,8 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
     struct CompoundDatatype *cdt_asc = NULL;
 
     UWORD        type;
-    struct List *list  = NULL;
+/* Used only below
+    struct List *list  = NULL;*/
 
     ULONG IFF_ID   = AROS_BE2LONG(*((ULONG*)CheckArray));
     ULONG IFF_Size = AROS_BE2LONG(*((ULONG*)(CheckArray+4)));
@@ -439,6 +440,7 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
 	    (((Size*3/4 < IFF_Size) && (Size*4/3 > IFF_Size)) &&
 	     (IFF_ID==ID_FORM || IFF_ID==ID_CAT || IFF_ID==ID_LIST)) )
     {
+        D(bug("[ExamineData] IFF detected\n"));
 	type = DTF_IFF;
 	cdt = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_IFFList, CheckArray, CheckSize, Filename);
     }
@@ -464,15 +466,20 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
 	    }
 	}
 
+	D(bug("[ExamineData] ASCII characters: %u of %u\n", ascii, CheckSize));
 	if (ascii > CheckSize*3/4)
 	{
+	    D(bug("[ExamineData] Recognized as ASCII\n"));
 	    type = DTF_ASCII;
 	    cdt_asc = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_ASCIIList, CheckArray, CheckSize, Filename);
+	    D(bug("[ExamineData] ASCII datatype: 0x%p\n", cdt_asc));
 	    cdt = cdt_asc;
 	    /* if the found datatype is 'only' ascii we have to look additionally in the binary list */
 	    if (cdt_asc && !strcmp(cdt_asc->DTH.dth_Name, "ascii"))
 	    {
+	        D(bug("[ExamineData] Trying binary list\n"));
 		cdt_bin = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_BinaryList, CheckArray, CheckSize, Filename);
+		D(bug("[[ExamineData] Binary datatype: 0x%p\n"));
 		/* if we find in the binary list something which is better than just 'binary' we use it */
 		if (cdt_bin && strcmp(cdt_bin->DTH.dth_Name, "binary"))
 		{
@@ -482,10 +489,15 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
 	}
 	else
 	{
+	    D(bug("[ExamineData] Recognized as binary\n"));
 	    type = DTF_BINARY;
 	    cdt = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_BinaryList, CheckArray, CheckSize, Filename);
 	}
     }
+    D(bug("[ExamineData] Found datatype 0x%p, type 0x%u\n", cdt, type));
+
+/* The following caused crashes with empty datatypes lists. What was it supposed to to?
+   list pointer is initialized to NULL and never changes - sonic
 
     if(!cdt)
     {
@@ -506,7 +518,7 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
 			"iff");
 		break;
 	}
-    }
+    }*/
     return cdt;
 }
 
