@@ -430,8 +430,6 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
     struct CompoundDatatype *cdt_asc = NULL;
 
     UWORD        type;
-/* Used only below
-    struct List *list  = NULL;*/
 
     ULONG IFF_ID   = AROS_BE2LONG(*((ULONG*)CheckArray));
     ULONG IFF_Size = AROS_BE2LONG(*((ULONG*)(CheckArray+4)));
@@ -494,31 +492,8 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
 	    cdt = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_BinaryList, CheckArray, CheckSize, Filename);
 	}
     }
+
     D(bug("[ExamineData] Found datatype 0x%p, type 0x%u\n", cdt, type));
-
-/* The following caused crashes with empty datatypes lists. What was it supposed to to?
-   list pointer is initialized to NULL and never changes - sonic
-
-    if(!cdt)
-    {
-	switch(type)
-	{
-	    case DTF_BINARY:
-		cdt = (struct CompoundDatatype *)FindNameNoCase(DataTypesBase, list,
-			"binary");
-		break;
-
-	    case DTF_ASCII:
-		cdt = (struct CompoundDatatype *)FindNameNoCase(DataTypesBase, list,
-			"ascii");
-		break;
-
-	    case DTF_IFF:
-		cdt = (struct CompoundDatatype *)FindNameNoCase(DataTypesBase, list,
-			"iff");
-		break;
-	}
-    }*/
     return cdt;
 }
 
