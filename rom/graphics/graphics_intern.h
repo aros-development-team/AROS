@@ -126,6 +126,9 @@ struct monitor_driverdata
     OOP_Object      	      *gfxhidd;		/* Graphics driver to use (can be fakegfx object) */
     ObjectCache     	      *gc_cache;	/* GC cache					  */
 
+    BOOL		       boot;		/* "Boot driver" flag				  */
+    struct HIDD_ViewPortData  *display;		/* What is currently displayed			  */
+
     /* FakeGfx-related */
     OOP_Object      	      *gfxhidd_orig;	/* Real graphics driver object			  */
     BOOL		       fakegfx_inited;	/* fakegfx.hidd is in use			  */
@@ -141,15 +144,13 @@ struct monitor_driverdata
     struct DisplayInfoHandle  modes[1];		/* Display modes array				  */
 };
 
-#define SDD(base)   	    (PrivGBase(base)->current_display)
-
 /* Common driver data data to all monitors */
 struct common_driverdata
 {
     /* The order of these fields match struct monitor_driverdata */
     struct monitor_driverdata *monitors;		/* First monitor driver		   */
+    ULONG		       invalid_id;		/* INVALID_ID, for GET_BM_MODEID() */
     ULONG		       last_id;			/* Last card ID		           */
-    ULONG		       reserved;		/* Just skip			   */
     OOP_Object		      *memorygfx;		/* Memory graphics driver	   */
     ObjectCache     	      *gc_cache;		/* GC cache			   */
 
@@ -190,12 +191,11 @@ struct GfxBase_intern
     struct GfxBase 	 	gfxbase;
 
     struct class_static_data    *fakegfx_staticdata; /* FakeGFX HIDD static data				 */
-    struct monitor_driverdata   *current_display;    /* Current display driver, temporary hack			 */
     ULONG			displays;	     /* Number of display drivers installed in the system	 */
     struct common_driverdata	shared_driverdata;   /* Driver data shared between all monitors (allocated once) */
     struct SignalSemaphore	monitors_sema;	     /* Monitor list semaphore					 */
-
     struct SignalSemaphore	hashtab_sema;	     /* hash_table arbitration semaphore			 */
+    struct SignalSemaphore	view_sema;	     /* ActiView arbitration semaphore				 */
 
     /* TextFontExtension pool */
     struct tfe_hashnode   	* tfe_hashtab[TFE_HASHTABSIZE];
@@ -218,7 +218,8 @@ struct GfxBase_intern
     ULONG                      *pixel_buf;
     struct SignalSemaphore      pixbuf_sema;
     struct SignalSemaphore      blit_sema;
-    
+
+    /* Private library bases */
     struct Library	       *CyberGfxBase;
 };
 
@@ -284,7 +285,6 @@ extern void driver_LoadView(struct View *view, struct GfxBase *);
 
 extern struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *GfxBase);
 extern void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
-extern void driver_Add(struct monitor_driverdata *mdd, ULONG numIDs, struct GfxBase *GfxBase);
 
 /* functions in support.c */
 extern BOOL pattern_pen(struct RastPort *rp

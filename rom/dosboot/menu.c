@@ -17,13 +17,12 @@
 #include <devices/rawkeycodes.h>
 #include <devices/timer.h>
 #include <exec/memory.h>
-#include <graphics/gfxbase.h>
+#include <graphics/driver.h>
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>
 #include <libraries/expansionbase.h>
 #include <aros/bootloader.h>
 #include <aros/symbolsets.h>
-#include <string.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -72,7 +71,7 @@ static BOOL init_mouse(STRPTR classid)
     return drv ? TRUE : FALSE;
 }
 
-BOOL init_gfx(STRPTR gfxclassname, LIBBASETYPEPTR DOSBootBase)
+static BOOL init_gfx(STRPTR gfxclassname, BOOL bootmode, LIBBASETYPEPTR DOSBootBase)
 {
     OOP_Object *gfxhidd;
     BOOL success = FALSE;
@@ -85,12 +84,12 @@ BOOL init_gfx(STRPTR gfxclassname, LIBBASETYPEPTR DOSBootBase)
 
     gfxhidd = OOP_NewObject(NULL, gfxclassname, NULL);
     if (gfxhidd) {
-        if (AddDisplayDriverA(gfxhidd, NULL))
+        if (AddDisplayDriver(gfxhidd, DDRV_BootMode, bootmode, TAG_DONE))
 	    OOP_DisposeObject(gfxhidd);
 	else
 	    success = TRUE;
     }
-    
+
     CloseLibrary(&GfxBase->LibNode);
 
     ReturnBool ("init_gfxhidd", success);
@@ -99,35 +98,30 @@ BOOL init_gfx(STRPTR gfxclassname, LIBBASETYPEPTR DOSBootBase)
 static BOOL initHidds(LIBBASETYPEPTR DOSBootBase)
 {
     struct BootConfig *bootcfg = &DOSBootBase->bm_BootConfig;
+
     D(bug("[BootMenu] initHidds()\n"));
 
-    if (bootcfg->defaultgfx.hiddname[0]) {
-	if (!OpenLibrary(bootcfg->defaultgfx.libname, 0))
+    if (bootcfg->gfxhidd) {
+	if (!OpenLibrary(bootcfg->gfxlib, 0))
 	    return FALSE;
 
-        if (!init_gfx(bootcfg->defaultgfx.hiddname, DOSBootBase))
-	    return FALSE;
-    }
-
-    if (bootcfg->defaultkbd.hiddname[0]) {
-        if (!OpenLibrary(bootcfg->defaultkbd.libname, 0))
-	    return FALSE;
-
-	if (!init_kbd(bootcfg->defaultkbd.hiddname))
+        if (!init_gfx(bootcfg->gfxhidd, bootcfg->bootmode, DOSBootBase))
 	    return FALSE;
     }
 
-    if (!bootcfg->defaultmouse.hiddname[0])
-        return TRUE;
-
-    if (OpenLibrary(bootcfg->defaultmouse.libname, 0)) {
-        if (init_mouse(bootcfg->defaultmouse.hiddname)) {
-            D(bug("[BootMenu] initHidds: Hidds initialised\n"));
-
-            return TRUE;
-        }
+    /* Only these poor input HIDDs still need external initialization */
+    if (OpenLibrary("kbd.hidd", 0)) {
+	if (!init_kbd("hidd.kbd.hw"))
+	    return FALSE;
     }
-    return FALSE;
+
+    if (OpenLibrary("ps2mouse.hidd", 0)) {
+        if (!init_mouse("hidd.bus.mouse"))
+	    return FALSE;
+    }
+
+    D(bug("[BootMenu] initHidds: Hidds initialised\n"));
+    return TRUE;
 }
 
 static struct Gadget *createGadgets(LIBBASETYPEPTR DOSBootBase) 
@@ -361,8 +355,13 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
 
     D(bug("[BootMenu] bootmenu_Init()\n"));
 
-    LIBBASE->bm_BootConfig.boot = NULL;
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+   /* Hosted ports have their HIDDs rewritten. Native still don't,
+      and native drivers still need external initialization. This is
+      going to change. */
     InitBootConfig(&LIBBASE->bm_BootConfig, BootLoaderBase);
+#endif
+
     /* Initialize default HIDDs */
     if (!initHidds(LIBBASE))
 	return FALSE;

@@ -1,6 +1,5 @@
 #include <aros/bootloader.h>
 #include <proto/bootloader.h>
-#include <string.h>
 
 #include "dosboot_intern.h"
 
@@ -10,12 +9,11 @@ void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase)
 {
     struct VesaInfo *vi;
 
-    strcpy(bootcfg->defaultgfx.libname,    "vgah.hidd");
-    strcpy(bootcfg->defaultgfx.hiddname,   "hidd.gfx.vga");
-    strcpy(bootcfg->defaultkbd.libname,    "kbd.hidd");
-    strcpy(bootcfg->defaultkbd.hiddname,   "hidd.kbd.hw");
-    strcpy(bootcfg->defaultmouse.libname,  "ps2mouse.hidd");
-    strcpy(bootcfg->defaultmouse.hiddname, "hidd.bus.mouse");
+    bootcfg->gfxlib  = "vgah.hidd";
+    bootcfg->gfxhidd = "hidd.gfx.vga";
+    
+    /* VGA and VESA drivers need to be unloaded when another GFX driver is found */
+    bootcfg->bootmode = TRUE;
 
     if (!BootLoaderBase)
 	return;
@@ -24,8 +22,8 @@ void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase)
     {
         if (vi->ModeNumber != 3)
         {
-            strcpy(bootcfg->defaultgfx.libname, "vesagfx.hidd");
-            strcpy(bootcfg->defaultgfx.hiddname, "hidd.gfx.vesa");
+            bootcfg->gfxlib  = "vesagfx.hidd";
+            bootcfg->gfxhidd = "hidd.gfx.vesa";
         }
     }
 }

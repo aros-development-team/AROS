@@ -40,6 +40,7 @@ struct GDI_Control
 #include <exec/semaphores.h>
 
 #include "winapi.h"
+#include "gdi_class.h"
 #include "gdi_hostlib.h"
 
 /***** GDIMouse HIDD *******************/
@@ -74,8 +75,6 @@ struct gdikbd_data
 
 
 /***** GDIGfx HIDD *******************/
-
-#define CLID_Hidd_GDIGfx	"hidd.gfx.gdi"
 
 struct gdi_staticdata
 {

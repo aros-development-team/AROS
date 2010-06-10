@@ -284,6 +284,7 @@ int driver_init(struct GfxBase * GfxBase)
 
 	    /* Init display mode database */
 	    InitSemaphore(&CDD(GfxBase)->displaydb_sem);
+	    CDD(GfxBase)->invalid_id = INVALID_ID;
 	    CDD(GfxBase)->last_id = AROS_RTG_MONITOR_ID;
 
 	    /* Init memory driver */
@@ -444,73 +445,18 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 }
 
 /*
- * Insert the ready-to-use driver with all its modes into the display mode database
- *
- * mdd    - A pointer to driver descriptor
- * numIDs - A number of subsequent monitor IDs to reserve
- */
-
-void driver_Add(struct monitor_driverdata *mdd, ULONG numIDs, struct GfxBase *GfxBase)
-{
-    struct monitor_driverdata *last;
-
-    ObtainSemaphore(&CDD(GfxBase)->displaydb_sem);
-
-    mdd->id = CDD(GfxBase)->last_id;
-    CDD(GfxBase)->last_id += (numIDs << AROS_MONITOR_ID_SHIFT); /* Next available monitor ID */
-
-    /* Insert the driverdata into chain, sorted by ID */
-    for (last = (struct monitor_driverdata *)CDD(GfxBase); last->next; last = last->next) {
-	if (mdd->id < last->next->id)
-	    break;
-    }
-    mdd->next = last->next;
-    last->next = mdd;
-    
-    ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
-}
-
-/*
- * Remove the driver from the database
- *
- * mdd - Driver structure to remove
- */
-
-void driver_Remove(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
-{
-    struct monitor_driverdata *prev;
-
-    ObtainSemaphore(&CDD(GfxBase)->displaydb_sem);
-
-    /* Insert the driverdata into chain, sorted by ID */
-    for (prev = (struct monitor_driverdata *)CDD(GfxBase); prev->next; prev = prev->next) {
-        if (prev->next == mdd) {
-	    prev->next = mdd->next;
-	    break;
-	}
-    }
-    
-    ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
-}    
-
-/*
  * Completely remove a driver from the OS.
  *
  * mdd - Driver structure to remove.
  *
  * Note that removing a driver is very unsafe operation. You must be
- * sure that no bitmaps of this driver exist at the moment.
+ * sure that no bitmaps of this driver exist at the moment. Perhaps
+ * something should be done with it.
  *
- * It is unclear whether unloading drivers will be supported in future.
  */
 
 void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
-    ULONG i;
-
-    /* Remove the driver from the list. This will remove its modes from the database. */
-    driver_Remove(mdd, GfxBase);
-
     if (mdd->framebuffer)
 	OOP_DisposeObject(mdd->framebuffer);
 
@@ -569,74 +515,68 @@ static ULONG getbitmappixel(struct BitMap *bm
 
 #endif
 
-void driver_LoadView(struct View *view, struct GfxBase *GfxBase)
+static void driver_LoadViewPorts(struct ViewPort *vp, struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
-    struct ViewPort *vp;
-    struct HIDD_ViewPortData *vpd = NULL;
-    struct BitMap *bitmap = NULL;
+    struct HIDD_ViewPortData *vpd;
+    struct BitMap *bitmap;
+    OOP_Object *bm, *fb;
     OOP_Object *cmap, *pf;
     HIDDT_ColorModel colmod;
-    OOP_Object *fb;
 
-    #warning THIS IS NOT THREADSAFE
-
-    /* To make this threadsafe we have to lock
-       all gfx access in all the rendering calls
-    */
-
-    /* Find a ViewPortData of the first visible ViewPort. It will be a start of
-       bitmaps chain to show.
-       In future when AROS supports several monitors we will have several such chains,
-       one per monitor. */
-    if (view) {
-        for (vp = view->ViewPort; vp; vp = vp->Next) {
-            if (!(vp->Modes & VP_HIDE)) {
-	        /* We don't check against vpe == NULL because MakeVPort() has already took care about this */
-	        vpd = VPE_DATA((struct ViewPortExtra *)GfxLookUp(vp));
-		bitmap = vp->RasInfo->BitMap;
-		break;
-	    }
-	}
-    }
-    DEBUG_LOADVIEW(bug("[driver_LoadView] Showing ViewPort 0x%p, data 0x%p, BitMap 0x%p, BitMap object 0x%p\n", vp, vpd, bitmap, vpd->Bitmap));
+    vpd = vp ? VPE_DATA((struct ViewPortExtra *)GfxLookUp(vp)) : NULL;
+    DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Showing ViewPort 0x%p, data 0x%p, BitMap 0x%p, BitMap object 0x%p\n", vp, vpd, bitmap, vpd->Bitmap));
+    mdd->display = vpd;
 
     /* First try the new method */
-    if (HIDD_Gfx_ShowViewPorts(SDD(GfxBase)->gfxhidd, vpd)) {
-        DEBUG_LOADVIEW(bug("[driver_LoadView] ShowViewPorts() worked\n"));
+    if (HIDD_Gfx_ShowViewPorts(mdd->gfxhidd, vpd)) {
+        DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] ShowViewPorts() worked\n"));
         return;
     }
 
     /* If it failed, we may be working with a framebuffer. First check if the bitmap
        is already displayed. If so, do nothing (because displaying the same bitmap twice may
        cause some problems */
-    DEBUG_LOADVIEW(bug("[driver_LoadView] Old displayed bitmap: 0x%p\n", SDD(GfxBase)->frontbm));
-    if (SDD(GfxBase)->frontbm == bitmap)
+    if (vp) {
+	bitmap = vp->RasInfo->BitMap;
+	bm = vpd->Bitmap;
+    } else {
+        bitmap = NULL;
+	bm = NULL;
+    }
+    DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Old bitmap 0x%p, New bitmap 0x%p, object 0x%p\n", mdd->frontbm, bitmap, bm));
+
+    if (mdd->frontbm == bitmap)
         return;
 
-    fb = HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, vpd ? vpd->Bitmap : NULL, fHidd_Gfx_Show_CopyBack);
-    DEBUG_LOADVIEW(bug("[driver_LoadView] Show() returned 0x%p\n", fb));
+    fb = HIDD_Gfx_Show(mdd->gfxhidd, bm, fHidd_Gfx_Show_CopyBack);
+    DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Show() returned 0x%p\n", fb));
 
     if (fb) {
     	IPTR width, height;
 
-	DEBUG_LOADVIEW(bug("[driver_LoadView] Replacing framebuffer\n"));
-	Forbid();
+#warning THIS IS NOT THREADSAFE
+
+	/* To make this threadsafe we have to lock
+	   all gfx access in all the rendering calls
+	*/
+
+	DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Replacing framebuffer\n"));
 
 	 /* Set this as the active screen */
-    	if (NULL != SDD(GfxBase)->frontbm)
+    	if (NULL != mdd->frontbm)
 	{
     	    struct BitMap *oldbm;
     	    /* Put back the old values into the old bitmap */
-	    oldbm = SDD(GfxBase)->frontbm;
-	    HIDD_BM_OBJ(oldbm)		= SDD(GfxBase)->bm_bak;
-	    HIDD_BM_COLMOD(oldbm)	= SDD(GfxBase)->colmod_bak;
-	    HIDD_BM_COLMAP(oldbm)	= SDD(GfxBase)->colmap_bak;
+	    oldbm = mdd->frontbm;
+	    HIDD_BM_OBJ(oldbm)		= mdd->bm_bak;
+	    HIDD_BM_COLMOD(oldbm)	= mdd->colmod_bak;
+	    HIDD_BM_COLMAP(oldbm)	= mdd->colmap_bak;
 	}
 
-	SDD(GfxBase)->frontbm		= bitmap;
-	SDD(GfxBase)->bm_bak		= bitmap ? HIDD_BM_OBJ(bitmap) : NULL;
-	SDD(GfxBase)->colmod_bak	= bitmap ? HIDD_BM_COLMOD(bitmap) : 0;
-	SDD(GfxBase)->colmap_bak	= bitmap ? HIDD_BM_COLMAP(bitmap) : NULL;
+	mdd->frontbm		= bitmap;
+	mdd->bm_bak		= bm;
+	mdd->colmod_bak	= bitmap ? HIDD_BM_COLMOD(bitmap) : 0;
+	mdd->colmap_bak	= bitmap ? HIDD_BM_COLMAP(bitmap) : NULL;
 
 	if (bitmap)
 	{
@@ -652,9 +592,34 @@ void driver_LoadView(struct View *view, struct GfxBase *GfxBase)
 
         OOP_GetAttr(fb, aHidd_BitMap_Width, &width);
     	OOP_GetAttr(fb, aHidd_BitMap_Height, &height);
-	DEBUG_LOADVIEW(bug("[driver_LoadView] Updating framebuffer, new size: %d x %d\n", width, height));
+	DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Updating framebuffer, new size: %d x %d\n", width, height));
 
 	HIDD_BM_UpdateRect(fb, 0, 0, width, height);
-	Permit();
     }
+}
+
+void driver_LoadView(struct View *view, struct GfxBase *GfxBase)
+{
+    struct monitor_driverdata *mdd;
+
+    ObtainSemaphoreShared(&CDD(GfxBase)->displaydb_sem);
+
+    for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next) {
+        struct ViewPort *vp = NULL;
+
+        /* Find the first visible ViewPort for this display. It
+	   will be a start of bitmaps chain to show. */
+	if (view) {
+            for (vp = view->ViewPort; vp; vp = vp->Next) {
+		if (!(vp->Modes & VP_HIDE)) {
+		    if (GET_VP_DRIVERDATA(vp) == mdd)
+			break;
+		}
+	    }
+	}
+
+	driver_LoadViewPorts(vp, mdd, GfxBase);
+    }
+    
+    ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
 }

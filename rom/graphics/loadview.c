@@ -25,12 +25,14 @@
         struct GfxBase *, GfxBase, 37, Graphics)
 
 /*  FUNCTION
+	Display a new view
 
     INPUTS
         view - pointer to the View structure which contains the pointer to the
                constructed coprocessor instructions list, or NULL
 
     RESULT
+	None.
 
     NOTES
 
@@ -49,10 +51,14 @@
 {
     AROS_LIBFUNC_INIT
 
+    ObtainSemaphore(GfxBase->ActiViewCprSemaphore);
+
     if (GfxBase->ActiView != view) {
 	GfxBase->ActiView = view;
 	driver_LoadView(view, GfxBase);
     }
+
+    ReleaseSemaphore(GfxBase->ActiViewCprSemaphore);
 
     AROS_LIBFUNC_EXIT
 } /* LoadView */

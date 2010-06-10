@@ -284,7 +284,7 @@
     		HIDD_BM_COLMOD(nbm)     = colmod;
     		HIDD_BM_COLMAP(nbm)     = colmap;
 		HIDD_BM_REALDEPTH(nbm)  = depth;
-		HIDD_BM_HIDDMODE(nbm)   = drv->id | hiddmode; /* Store full ModeID here */
+		HIDD_BM_HIDDMODE(nbm)   = hiddmode;
 
     		nbm->Rows   = height;
     		nbm->BytesPerRow = WIDTH_TO_BYTES(width);
