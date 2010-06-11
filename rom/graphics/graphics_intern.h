@@ -126,12 +126,11 @@ struct monitor_driverdata
     OOP_Object      	      *gfxhidd;		/* Graphics driver to use (can be fakegfx object) */
     ObjectCache     	      *gc_cache;	/* GC cache					  */
 
-    BOOL		       boot;		/* "Boot driver" flag				  */
+    UWORD		       flags;		/* Flags, see below				  */
     struct HIDD_ViewPortData  *display;		/* What is currently displayed			  */
 
     /* FakeGfx-related */
     OOP_Object      	      *gfxhidd_orig;	/* Real graphics driver object			  */
-    BOOL		       fakegfx_inited;	/* fakegfx.hidd is in use			  */
 
     /* Framebuffer stuff */
     struct BitMap   	      *frontbm;		/* Currently shown bitmap			  */
@@ -143,6 +142,10 @@ struct monitor_driverdata
     /* Display mode database. */
     struct DisplayInfoHandle  modes[1];		/* Display modes array				  */
 };
+
+/* Driver flags */
+#define DF_BootMode   0x0001
+#define DF_UseFakeGfx 0x0002
 
 /* Common driver data data to all monitors */
 struct common_driverdata

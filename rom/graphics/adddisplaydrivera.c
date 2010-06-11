@@ -120,15 +120,16 @@
 
 	    mdd->id   = FirstID;
 	    mdd->mask = AROS_MONITOR_ID_MASK;
-	    mdd->boot = GetTagData(DDRV_BootMode, FALSE, tags);
-	    keep_boot = GetTagData(DDRV_KeepBootMode, FALSE, tags);
+	    if (GetTagData(DDRV_BootMode, FALSE, tags))
+	        mdd->flags |= DF_BootMode;
 
 	    /* Remove boot mode drivers if needed */
+	    keep_boot = GetTagData(DDRV_KeepBootMode, FALSE, tags);
 	    if (!keep_boot) {
 		for (last = (struct monitor_driverdata *)CDD(GfxBase); last->next; last = last->next) {
 		    /* Do not shut down the driver if it displays something.
 		       Experimental and will cause problems in certain cases. */
-		    while (last->next && last->next->boot && (!last->next->display)) {
+		    while (last->next && (last->next->flags & DF_BootMode) && (!last->next->display)) {
 			driver_Expunge(last->next, GfxBase);
 			last->next = last->next->next;
 		    }
