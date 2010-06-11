@@ -404,7 +404,7 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 
 	mdd->gfxhidd = init_fakegfxhidd(gfxhidd, GfxBase);
 	if (mdd->gfxhidd)
-	    mdd->fakegfx_inited = TRUE;
+	    mdd->flags |= DF_UseFakeGfx;
 	else
 	    ok = FALSE;
     }
@@ -436,7 +436,7 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 	} /* if (gc object cache ok) */
     } /* if (fake gfx stuff ok) */
 
-    if (mdd->fakegfx_inited)
+    if (mdd->flags & DF_UseFakeGfx)
 	OOP_DisposeObject(mdd->gfxhidd);
 
     FreeVec(mdd);
@@ -463,7 +463,7 @@ void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
     if (mdd->gc_cache)
 	delete_object_cache(mdd->gc_cache, GfxBase );
 
-    if (mdd->fakegfx_inited)
+    if (mdd->flags & DF_UseFakeGfx)
         OOP_DisposeObject(mdd->gfxhidd);
 
     /* Dispose driver object. This will take care about syncs etc */
