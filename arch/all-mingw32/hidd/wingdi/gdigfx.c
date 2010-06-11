@@ -221,7 +221,7 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
 	/* The different syncmodes. The default attribute values above 
 	    will be applied to each of these. Note that
-	    you can alter the defaults between the tags bewlow 
+	    you can alter the defaults between the tags below 
 	*/
 	{ aHidd_Gfx_SyncTags	, (IPTR)tags_160_160	},
 	{ aHidd_Gfx_SyncTags	, (IPTR)tags_240_320	},
@@ -413,6 +413,7 @@ static void AddToList(struct MinList *list, OOP_Object *bitmap)
 static void ShowList(struct gfx_data *data, struct MinList *list)
 {
     struct bitmap_data *bmdata;
+    BOOL empty = TRUE;
 
     /* If something left in displayed bitmaps list, close it */
     for (bmdata = (struct bitmap_data *)data->bitmaps.mlh_Head;
@@ -435,10 +436,19 @@ static void ShowList(struct gfx_data *data, struct MinList *list)
 	cause rearranging them in the correct Z-order */
     for (bmdata = (struct bitmap_data *)data->bitmaps.mlh_Head;
 	bmdata->node.mln_Succ; bmdata = (struct bitmap_data *)bmdata->node.mln_Succ) {
+
 	D(bug("[GDI] Showing bitmap data 0x%p, window 0x%p\n", bmdata, bmdata->window));
 	SetSignal(0, SIGF_BLIT);
 	NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, (IPTR)bmdata);
 	Wait(SIGF_BLIT);
+
+	empty = FALSE;
+    }
+    
+    /* Close empty display window */
+    if (empty && data->fbwin) {
+        NATIVECALL(GDI_PutMsg, data->fbwin, WM_CLOSE, 0, 0);
+	data->fbwin = NULL;
     }
 }
 
