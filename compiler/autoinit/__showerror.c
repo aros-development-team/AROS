@@ -1,11 +1,12 @@
 /*
-    Copyright � 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: autoinit library - support function for showing errors to the user
     Lang: english
 */
 
+#include <exec/rawfmt.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
@@ -36,11 +37,13 @@ void __showerror(char *format, const IPTR *args)
 	}
 
         if (args)
-            VPrintf(format, args);
+            VPrintf(format, (IPTR*)args);
         else
             PutStr(format);
 
         PutStr("\n");
+
+        CloseLibrary((struct Library *)DOSBase);
     }
     else
     if ((IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 0)))
@@ -54,7 +57,7 @@ void __showerror(char *format, const IPTR *args)
 	    "Exit"
 	};
 
-	EasyRequestArgs(NULL, &es, NULL, args);
+	EasyRequestArgs(NULL, &es, NULL, (APTR)args);
 
 	CloseLibrary((struct Library *)IntuitionBase);
     }
@@ -63,16 +66,12 @@ void __showerror(char *format, const IPTR *args)
         if (name)
             kprintf("%s: ", name);
 
-//        if (args) {
-//            vkprintf(format, args);
-//            kprintf("\n");
-//        }
-//        else
+        if (args)
+        {
+            RawDoFmt(format, (APTR)args, (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);
+            kprintf("\n");
+        }
+        else
             kprintf("%s\n", format);
     }
-
-    if (DOSBase != NULL)
-        CloseLibrary((struct Library *)DOSBase);
-
 }
-
