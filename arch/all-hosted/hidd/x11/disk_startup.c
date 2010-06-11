@@ -207,6 +207,10 @@ int main(void)
  *	   to driver instance data.
  *	 - event task should be able to handle several display windows
  *	 - display windows should close when not needed (empty).
+ *	 - invent what to do with host clipboard handling. The idea is nice but:
+ *	   a) It should be somehow integrated with clipboard.device
+ *         b) Several X11 displays might mean several clipboards (if they run on different
+ *	      X servers).
  *
     if (old_displays)
         AddDisplays(args.displays, old_displays); */
