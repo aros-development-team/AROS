@@ -476,8 +476,8 @@ static VOID mouseCallback(struct GameportBase *GPBase,
 {
     UWORD amigacode = 0;
     
-    D(bug("mouseCallBack(GPBase=%p, button=%d, x=%d, y=%d, type=%d)\n",
-	  GPBase, ev->button, ev->x, ev->y, ev->type));
+    D(bug("mouseCallBack(GPBase=%p, button=%d, x=%d, y=%d, type=%d, flags=0x%04X)\n",
+	  GPBase, ev->button, ev->x, ev->y, ev->type, ev->flags));
     
     /* Convert the event */
     switch (ev->button)
