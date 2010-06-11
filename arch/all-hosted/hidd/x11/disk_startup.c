@@ -1,6 +1,6 @@
 /*
     Copyright  1995-2010, The AROS Development Team. All rights reserved.
-    $Id: wrapper.c 33518 2010-06-09 13:36:09Z sonic $
+    $Id$
 
     Desc: Disk-resident part of X11 display driver
     Lang: english
