@@ -146,7 +146,7 @@ static void PrintMonitorSpec(struct MonitorSpec *mspc)
 	   there can be a theoretical possibility that something uses them. */
         struct Node *n = mspc->DisplayInfoDataBase.lh_Head;
 
-	if (n) {
+	if (n && mspc->DisplayInfoDataBase.lh_TailPred) {
 	    printf("DisplayInfoDataBase\n");
 	    for (; n->ln_Succ; n = n->ln_Succ) {
 	        printf("  Node %p %s\n", n, n->ln_Name);
