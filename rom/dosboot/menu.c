@@ -355,6 +355,7 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
 
     D(bug("[BootMenu] bootmenu_Init()\n"));
 
+    BootLoaderBase = OpenResource("bootloader.resource");
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
    /* Hosted ports have their HIDDs rewritten. Native still don't,
       and native drivers still need external initialization. This is
@@ -367,7 +368,6 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
 	return FALSE;
 
     /* Check for command line argument */
-    BootLoaderBase = OpenResource("bootloader.resource");
     if (BootLoaderBase) {
         struct List *list = NULL;
         struct Node *node = NULL;
