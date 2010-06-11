@@ -137,7 +137,8 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	{
 	    struct DisplayInfo *di;
 	    IPTR redmask, greenmask, bluemask;
-	    
+	    IPTR pixclk = 0;
+
 	    HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
 
 	    di = (struct DisplayInfo *)qh;
@@ -160,19 +161,22 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    di->RedBits	  = compute_numbits(redmask);
 	    di->GreenBits = compute_numbits(greenmask);
 	    di->BlueBits  = compute_numbits(bluemask);
-	    
+
+	    OOP_GetAttr(sync, aHidd_Sync_PixelClock, &pixclk);
+
+	    /* FIXME: don't know what to put here */
 	    di->Resolution.x = 22;
 	    di->Resolution.y = 22;
 
+	    if (pixclk)
+	        di->PixelSpeed = 1000000000 / pixclk;
+
 	    /* We can emulate one sprite via software, because it's necessary for mouse pointer. */
 	    di->NumStdSprites = (HIDDProps.DisplayInfoFlags & DIPF_IS_SPRITES) ? HIDDProps.NumHWSprites : 1;
-/*
-	    di->Resolution.x = ?;
-	    di->Resolution.y = ?;
-	    di->PixelSpeed = ?;
-	    di->SpriteResolution.x = ?;
-	    di->SpriteResolution.y = ?;
-*/
+
+	    /* At the moment sprites always have the same resolution as display */
+	    di->SpriteResolution = di->Resolution;
+
 	    break;
 	}
 	    
@@ -371,6 +375,9 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
         size = structsize;
     CopyMem(qh, buf, size);
     FreeMem(qh, structsize);
+    /* NULL-terminate the name in case if it was trimmed */
+    if (tagID == DTAG_NAME)
+        buf[size - 1] = 0;
 
     return size;
 
