@@ -225,16 +225,23 @@ static void msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win)
         ReplyMsg(&msg->ExecMessage);
 }
 
-struct NewScreen ns =
+static struct TagItem screen_tags[] =
+{
+    {SA_Draggable, FALSE},
+    {TAG_DONE	 , 0    }
+};
+
+struct ExtNewScreen ns =
 {
     0, 0, 640, 256, 4, /* left, top, width, height, depth */
     0, 1,              /* DetailPen, BlockPen */
     HIRES,             /* ViewModes */
-    CUSTOMSCREEN,      /* Type */
+    CUSTOMSCREEN|NS_EXTENDED, /* Type */
     NULL,              /* Font */
     NULL,              /* DefaultTitle */
     NULL,              /* Gadgets */
     NULL,              /* CustomBitMap */
+    screen_tags
 };
 
 static BOOL initScreen(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg)
