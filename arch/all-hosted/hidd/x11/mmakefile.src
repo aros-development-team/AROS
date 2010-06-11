@@ -15,13 +15,23 @@ X11KEYMAPTABLE_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey.table
 
 FILES	   := startup x11_hostlib x11_init x11 support x11gfx onbitmap offbitmap x11kbd x11mouse x11clipboard xshm fullscreen
 
-#MM kernel-x11gfx : x11keymaptable
+#MM kernel-x11gfx : x11keymaptable 
+#MM kernel-x11gfx-kobj : x11keymaptable devs-monitors-x11
 
 %build_module mmake=kernel-x11gfx \
   modname=x11gfx modtype=hidd \
   files=$(FILES) compiler=kernel \
   cflags=$(FLAGS) \
   uselibs="oop hiddgraphicsstubs"
+
+DISK_FILES  := disk_startup
+DISK_EXEDIR := $(AROS_DEVS)/Monitors
+
+#MM devs-monitors-x11 : iconset-$(AROS_TARGET_ICONSET)-x11
+
+%build_prog mmake=devs-monitors-x11 \
+    progname=X11 targetdir=$(DISK_EXEDIR) \
+    files=$(DISK_FILES) uselibs="oop"
 
 #MM x11keymaptable
 x11keymaptable : setup-x11keymaptable $(TOOLDIR)/makexkeytable $(X11KEYMAPTABLE_FILE)

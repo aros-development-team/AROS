@@ -24,6 +24,8 @@
 
 #include <X11/Xlib.h>
 
+#include "x11_class.h"
+
 /****************************************************************************************/
 
 ULONG map_x11_to_hidd(long *penarray, ULONG x11pixel);
@@ -40,8 +42,6 @@ VOID free_ximage(XImage *image);
 /****************************************************************************************/
 
 /* Private Attrs and methods for the X11Gfx Hidd */
-
-#define CLID_Hidd_X11Gfx	"hidd.gfx.x11"
 
 #define IID_Hidd_X11Gfx     	"hidd.gfx.x11gfx"
 

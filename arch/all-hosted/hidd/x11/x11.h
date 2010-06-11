@@ -34,8 +34,6 @@
 
 #include "xshm.h"
 
-#define X11_LOAD_KEYMAPTABLE	    1
-
 #include "x11_hostlib.h"
 
 /***** X11Mouse HIDD *******************/
@@ -142,6 +140,11 @@ struct notify_msg
 
 struct x11_staticdata
 {
+    /* These two members MUST be in the beginning of this structure
+       because they are exposed to disk-based part (see x11_class.h) */
+    UBYTE	   	     keycode2rawkey[256];
+    BOOL	   	     havetable;
+
     struct SignalSemaphore   sema; /* Protecting this whole struct */
     struct SignalSemaphore   x11sema;
     

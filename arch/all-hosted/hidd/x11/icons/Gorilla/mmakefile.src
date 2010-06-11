@@ -1,0 +1,9 @@
+include $(TOP)/config/make.cfg
+
+DEVS_ICONS := X11
+DEVS_DIR   := $(AROS_DEVS)/Monitors
+
+%build_icons mmake=iconset-Gorilla-x11 icons=$(DEVS_ICONS) \
+             dir=$(DEVS_DIR)
+
+%common
