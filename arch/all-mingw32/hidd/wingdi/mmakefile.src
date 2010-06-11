@@ -17,16 +17,11 @@ FILES := startup gdi_hostlib gdigfx bitmap gdikbd gdimouse
 DISK_FILES  := disk_startup
 DISK_EXEDIR := $(AROS_DEVS)/Monitors
 
-#MM devs-monitors-gdi : devs-monitors-gdi-icon
+#MM devs-monitors-gdi : iconset-$(AROS_TARGET_ICONSET)-gdi
 
 %build_prog mmake=devs-monitors-gdi \
     progname=GDI targetdir=$(DISK_EXEDIR) \
     files=$(DISK_FILES) uselibs="oop"
-
-ICONS := GDI
-
-%build_icons mmake=devs-monitors-gdi-icon icons=$(ICONS) \
-             dir=$(DISK_EXEDIR)
 
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
 NATIVE_DIR := $(GENDIR)/native
