@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 1
+
 #include <aros/debug.h>
 #include <graphics/driver.h>
 #include <oop/oop.h>
@@ -126,12 +128,17 @@
 	    /* Remove boot mode drivers if needed */
 	    keep_boot = GetTagData(DDRV_KeepBootMode, FALSE, tags);
 	    if (!keep_boot) {
+		D(bug("[AddDisplayDriverA] Shutting down boot mode drivers\n"));
 		for (last = (struct monitor_driverdata *)CDD(GfxBase); last->next; last = last->next) {
 		    /* Do not shut down the driver if it displays something.
 		       Experimental and will cause problems in certain cases. */
 		    while (last->next && (last->next->flags & DF_BootMode) && (!last->next->display)) {
-			driver_Expunge(last->next, GfxBase);
-			last->next = last->next->next;
+		        struct monitor_driverdata *exp = last->next;
+
+			D(bug("[AddDisplayDriverA] Shutting down driver 0x%p (ID 0x%08lX, next 0x%p)\n", exp, exp->id, exp->next));
+			last->next = exp->next;
+			driver_Expunge(exp, GfxBase);
+			D(bug("[AddDisplayDriverA] Shutdown OK\n"));
 		    }
 		}
 	    }
@@ -153,6 +160,7 @@
 
     ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
 
+    D(bug("[AddDisplayDriverA] Returning %u\n", ret));
     return ret;
 
     AROS_LIBFUNC_EXIT
