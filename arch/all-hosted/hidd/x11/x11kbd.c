@@ -40,14 +40,7 @@
 
 /****************************************************************************************/
 
-static UBYTE keycode2rawkey[256];
-static BOOL  havetable;
-
 long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd);
-
-#if X11_LOAD_KEYMAPTABLE
-static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd);
-#endif
 
 static OOP_AttrBase HiddKbdAB;
 
@@ -501,18 +494,6 @@ OOP_Object * X11Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     	ReturnPtr("X11Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
     }
 
-#if X11_LOAD_KEYMAPTABLE
-    /* During bootmenu initialization we are still task, not a process,
-       so we can't call DOS at that moment. Anyway there are no mounted
-       devices yet. */
-    me = FindTask(NULL);
-    if (me->tc_Node.ln_Type == NT_PROCESS) {
-	D(bug("[X11Kbd] Trying to load X keymap\n"));
-	LoadKeyCode2RawKeyTable(XSD(cl));
-    }
-	D(else bug("[X11Kbd] Early init, don't try to load X keymap\n");)
-#endif
-
     tstate = msg->attrList;
     D(bug("tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));	
     
@@ -638,12 +619,12 @@ long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
 
     D(bug("xkey2hidd\n"));
    
-    if (havetable)
+    if (xsd->havetable)
     {
         result = -1;
 	if ((xk->keycode >= 0) && (xk->keycode < 256))
 	{
-	    result = keycode2rawkey[xk->keycode];
+	    result = xsd->keycode2rawkey[xk->keycode];
 	    if (result == 255) result = -1;
 	}
 	
@@ -673,79 +654,6 @@ long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
     
 } /* XKeyToAmigaCode */
 
-/****************************************************************************************/
-
-#if X11_LOAD_KEYMAPTABLE
-
-/****************************************************************************************/
-
-static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd)
-{
-    char *filename = "DEVS:Keymaps/X11/keycode2rawkey.table";
-    BPTR  fh;
-    struct DosLibrary *DOSBase;
-    
-    DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 37);
-    D(bug("[X11Kbd] DOSBase is %p\n", DOSBase));
-    if (DOSBase == NULL)
-    {
-	bug("LoadKeyCode2RawKeyTable: Opening %s failed\n", DOSNAME);
-	return;
-    }
-	
-    if ((fh = Open(filename, MODE_OLDFILE)))
-    {
-	D(bug("[X11Kbd] X keymap file handle: %p\n", fh));
-	if ((256 == Read(fh, keycode2rawkey, 256)))
-	{
-		D(bug("LoadKeyCode2RawKeyTable: keycode2rawkey.table successfully loaded!\n"));
-		havetable = TRUE;
-	}
-	else
-	{
-		bug("LoadKeyCode2RawKeyTable: Reading from \"%s\" failed!\n", filename);
-	}
-	Close(fh);
-    }
-    else
-    {
-	bug("\nLoadKeyCode2RawKeyTable: Loading \"%s\" failed!\n"
-	    "\n"
-	    "This means that many/most/all keys on your keyboard won't work as you\n"
-	    "would expect in AROS. Therefore you should create this table by either\n"
-	    "using the default table:\n"
-	    "\n"
-	    "    make default-x11keymaptable\n"
-	    "\n"
-	    "or generating your own one:\n"
-	    "\n"
-	    "    make change-x11keymaptable\n"
-	    "\n"
-	    "The default keymaptable probably works with most PCs having a 105 key\n"
-	    "keyboard if you are using XFree86 as X Server (might also work with\n"
-	    "others). So try that one first!\n"
-	    "\n"
-	    "Since the keymap table will be deleted when you do a \"make clean\" you\n"
-	    "might want to make a backup of it. Then you will be able to restore it later:\n"
-	    "\n"
-	    "    make backup-x11keymaptable\n"
-	    "    make restore-x11keymaptable\n"
-	    "\n"
-	    "The keymap table will be backed up in your HOME directory.\n"
-	    "\n"
-	    "Note that the keymaptable only makes sure that your keyboard looks as\n"
-	    "much as possible like an Amiga keyboard to AROS. So with the keymaptable\n"
-	    "alone the keyboard will behave like an Amiga keyboard with American layout\n."
-	    "For other layouts you must activate the correct keymap just like in AmigaOS.\n", 
-            filename);
-    }
-    
-    CloseLibrary((struct Library *)DOSBase);
-}
-
-/****************************************************************************************/
-
-#endif
 
 /****************************************************************************************/
 
