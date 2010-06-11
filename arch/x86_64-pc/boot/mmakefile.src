@@ -13,7 +13,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-mathieeesingbas \
 #MM	workbench-libs-partition \
 #MM	kernel-hidd-graphics \
-#MM	kernel-hidd-keyboard \
+#MM	kernel-hidd-kbd \
 #MM	kernel-hidd-mouse \
 #MM	kernel-graphics \
 #MM	kernel-layers \
