@@ -3,6 +3,8 @@
     $Id$
 */
 
+#define DEBUG 1
+
 #define __OOP_NOATTRBASES__
 
 #include <aros/debug.h>
@@ -150,13 +152,16 @@ OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, s
     };
     struct driverNode *drvnode;
 
-    drvnode = AllocMem(sizeof(struct driverNode), MEMF_PUBLIC);
-    
+    D(bug("[Mouse] AddHardwareDriver(0x%p)\n", Msg->driverClass));
+
+    drvnode = AllocMem(sizeof(struct driverNode), MEMF_PUBLIC);  
     if (!drvnode)
 	return NULL;
 
     tags[1].ti_Data = (IPTR)drvnode;
     drvnode->drv = OOP_NewObject(Msg->driverClass, NULL, tags);
+    D(bug("[Mouse] Driver node 0x%p, driver 0x%p\n", drvnode, drvnode->drv));
+
     if (drvnode->drv) {
         struct mouse_staticdata *csd = CSD(cl);
         IPTR val = FALSE;
@@ -164,10 +169,12 @@ OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, s
 	drvnode->callbacks = &csd->callbacks;
 
 	OOP_GetAttr(drvnode->drv, aHidd_Mouse_Extended, &val);
+	D(bug("[Mouse] Extended event: %d\n", val));
 	if (val)
 	    drvnode->flags = vHidd_Mouse_Extended;
 	else {
             OOP_GetAttr(drvnode->drv, aHidd_Mouse_RelativeCoords, &val);
+	    D(bug("[Mouse] Relative coordinates: %d\n", val));
             drvnode->flags = val ? vHidd_Mouse_Relative : 0;
 	}
 
