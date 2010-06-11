@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2010, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -180,6 +180,7 @@ BOOL NetworkPrefs2Gadgets
 {
     LONG i;
     LONG entries = GetInterfaceCount();
+
     SET(data->netped_interfaceList, MUIA_List_Quiet, TRUE);
     DoMethod(data->netped_interfaceList, MUIM_List_Clear);
     for(i = 0; i < entries; i++)
@@ -685,26 +686,42 @@ IPTR NetPEditor__MUIM_NetPEditor_IPModeChanged
 )
 {
     struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
-
+    STRPTR str;
     IPTR lng = 0;
+    struct Interface *iface;
 
     if (message->interface)
     {
+        DoMethod
+        (
+            data->netped_interfaceList,
+            MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &iface
+        );
         GetAttr(MUIA_Cycle_Active, data->netped_ifDHCPState, &lng);
 
         if (lng == 1)
         {
+            /* Clear and disable text boxes, but keep their values for later */
+
             SET(data->netped_IPString, MUIA_Disabled, TRUE);
+            GET(data->netped_IPString, MUIA_String_Contents, &str);
+            SetIP(iface, str);
             SET(data->netped_IPString, MUIA_String_Contents, "");
+
             SET(data->netped_maskString, MUIA_Disabled, TRUE);
+            GET(data->netped_maskString, MUIA_String_Contents, &str);
+            SetMask(iface, str);
             SET(data->netped_maskString, MUIA_String_Contents, "");
         }
         else
         {
+            /* Enable text boxes, and reset their previous values */
+
             SET(data->netped_IPString, MUIA_Disabled, FALSE);
-            SET(data->netped_IPString, MUIA_String_Contents, DEFAULTIP);
+            SET(data->netped_IPString, MUIA_String_Contents, GetIP(iface));
+
             SET(data->netped_maskString, MUIA_Disabled, FALSE);
-            SET(data->netped_maskString, MUIA_String_Contents, DEFAULTMASK);
+            SET(data->netped_maskString, MUIA_String_Contents, GetMask(iface));
         }
     }
     else
@@ -713,21 +730,35 @@ IPTR NetPEditor__MUIM_NetPEditor_IPModeChanged
 
         if (lng == 1)
         {
+            /* Clear and disable text boxes, but keep their values for later */
+
             SET(data->netped_gateString, MUIA_Disabled, TRUE);
+            GET(data->netped_gateString, MUIA_String_Contents, &str);
+            SetGate(str);
             SET(data->netped_gateString, MUIA_String_Contents, "");
+
             SET(data->netped_DNSString[0], MUIA_Disabled, TRUE);
+            GET(data->netped_DNSString[0], MUIA_String_Contents, &str);
+            SetDNS(0, str);
             SET(data->netped_DNSString[0], MUIA_String_Contents, "");
+
             SET(data->netped_DNSString[1], MUIA_Disabled, TRUE);
+            GET(data->netped_DNSString[1], MUIA_String_Contents, &str);
+            SetDNS(1, str);
             SET(data->netped_DNSString[1], MUIA_String_Contents, "");
         }
         else
         {
+            /* Enable text boxes, and reset their previous values */
+
             SET(data->netped_gateString, MUIA_Disabled, FALSE);
-            SET(data->netped_gateString, MUIA_String_Contents, DEFAULTGATE);
+            SET(data->netped_gateString, MUIA_String_Contents, GetGate());
+
             SET(data->netped_DNSString[0], MUIA_Disabled, FALSE);
-            SET(data->netped_DNSString[0], MUIA_String_Contents, DEFAULTDNS);
+            SET(data->netped_DNSString[0], MUIA_String_Contents, GetDNS(0));
+
             SET(data->netped_DNSString[1], MUIA_Disabled, FALSE);
-            SET(data->netped_DNSString[1], MUIA_String_Contents, DEFAULTDNS);
+            SET(data->netped_DNSString[1], MUIA_String_Contents, GetDNS(1));
         }
     }
 

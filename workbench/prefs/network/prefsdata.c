@@ -497,7 +497,7 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
     STRPTR tstring;
     struct Tokenizer tok;
     LONG interfacecount;
-    struct Interface *iface;
+    struct Interface *iface = NULL;
 
     /* This function will not fail. It will load as much data as possible. Rest will be default values */
 
