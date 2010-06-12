@@ -15,7 +15,7 @@
 #include "util/u_math.h"
 #include "util/u_inlines.h"
 
-#include "softpipe.h"
+#include "softpipe_intern.h"
 
 #include <proto/cybergraphics.h>
 #include <proto/graphics.h>
@@ -29,8 +29,8 @@
 
 #define CyberGfxBase    (&BASE(cl->UserData)->sd)->SoftpipeCyberGfxBase
 
-#undef HiddGalliumBaseDriverAttrBase
-#define HiddGalliumBaseDriverAttrBase   (SD(cl)->hiddGalliumBaseDriverAB)
+#undef HiddGalliumAttrBase
+#define HiddGalliumAttrBase   (SD(cl)->hiddGalliumAB)
 
 struct HiddSoftpipeBuffer
 {
@@ -171,23 +171,23 @@ HiddSoftpipeCreateSoftpipeWinsys( void )
     return ws;
 }
 
-OOP_Object *METHOD(GALLIUMSOFTPIPEDRIVER, Root, New)
+OOP_Object *METHOD(SoftpipeGallium, Root, New)
 {
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
 
     return o;
 }
 
-VOID METHOD(GALLIUMSOFTPIPEDRIVER, Root, Get)
+VOID METHOD(SoftpipeGallium, Root, Get)
 {
     ULONG idx;
 
-    if (IS_GALLIUMBASEDRIVER_ATTR(msg->attrID, idx))
+    if (IS_GALLIUM_ATTR(msg->attrID, idx))
     {
         switch (idx)
         {
             /* Overload the property */
-            case aoHidd_GalliumBaseDriver_GalliumInterfaceVersion:
+            case aoHidd_Gallium_GalliumInterfaceVersion:
                 *msg->storage = GALLIUM_INTERFACE_VERSION;
                 return;
         }
@@ -197,7 +197,7 @@ VOID METHOD(GALLIUMSOFTPIPEDRIVER, Root, Get)
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-APTR METHOD(GALLIUMSOFTPIPEDRIVER, Hidd_GalliumBaseDriver, CreatePipeScreen)
+APTR METHOD(SoftpipeGallium, Hidd_Gallium, CreatePipeScreen)
 {
     struct pipe_winsys *winsys;
     struct pipe_screen *screen;
@@ -219,13 +219,13 @@ fail:
     return NULL;
 }
 
-VOID METHOD(GALLIUMSOFTPIPEDRIVER, Hidd_GalliumBaseDriver, QueryDepthStencil)
+VOID METHOD(SoftpipeGallium, Hidd_Gallium, QueryDepthStencil)
 {
     *msg->depthbits = 24;
     *msg->stencilbits = 8;
 }
 
-VOID METHOD(GALLIUMSOFTPIPEDRIVER, Hidd_GalliumBaseDriver, DisplaySurface)
+VOID METHOD(SoftpipeGallium, Hidd_Gallium, DisplaySurface)
 {
     struct pipe_surface * surf = (struct pipe_surface *)msg->surface;
     struct softpipe_texture *spt = softpipe_texture(surf->texture);
@@ -247,7 +247,7 @@ VOID METHOD(GALLIUMSOFTPIPEDRIVER, Hidd_GalliumBaseDriver, DisplaySurface)
     FreeRastPort(rp);
 }
 
-VOID METHOD(GALLIUMSOFTPIPEDRIVER, Hidd_GalliumBaseDriver, DestroyPipeScreen)
+VOID METHOD(SoftpipeGallium, Hidd_Gallium, DestroyPipeScreen)
 {
     struct pipe_screen * screen = (struct pipe_screen *)msg->screen;
 

@@ -8,10 +8,10 @@
 #include <proto/exec.h>
 #include <aros/debug.h>
 
-#include "gallium.h"
+#include "gallium_intern.h"
 
-#undef HiddGalliumBaseDriverAttrBase
-#define HiddGalliumBaseDriverAttrBase   (SD(cl)->hiddGalliumBaseDriverAB)
+#undef HiddGalliumAttrBase
+#define HiddGalliumAttrBase   (SD(cl)->hiddGalliumAB)
 
 static VOID HiddGalliumCreateDriverObject(struct galliumstaticdata * sd)
 {
@@ -25,9 +25,9 @@ static VOID HiddGalliumCreateDriverObject(struct galliumstaticdata * sd)
 
     /* 2. Everything else failed. Let's try loading softpipe */
     /* TODO: what if loadedDriverHidd was already set by previous attempt? */
-    sd->loadedDriverHidd = OpenLibrary("softpipe.hidd", 3);
+    sd->loadedDriverHidd = OpenLibrary("softpipe.hidd", 4);
     if (sd->loadedDriverHidd)
-        sd->driver = OOP_NewObject(NULL, "hidd.gallium.softpipedriver", NULL);
+        sd->driver = OOP_NewObject(NULL, "hidd.gallium.softpipe", NULL);
     
     /* Final check */
     if (!sd->driver)
@@ -61,7 +61,7 @@ OOP_Object * METHOD(GALLIUMDRIVERFACTORY, Hidd_GalliumDriverFactory, GetDriver)
     {
         /* Check interface version */
         IPTR galliuminterfaceversion = 0;
-        OOP_GetAttr(SD(cl)->driver, aHidd_GalliumBaseDriver_GalliumInterfaceVersion, &galliuminterfaceversion);
+        OOP_GetAttr(SD(cl)->driver, aHidd_Gallium_GalliumInterfaceVersion, &galliuminterfaceversion);
         
         /* Only matching version is allowed */
         if (msg->galliuminterfaceversion != (ULONG)galliuminterfaceversion)

@@ -23,53 +23,53 @@
 #include <gallium/pipe/p_aros_version.h>
 #endif
 
-/* Gallium BaseDriver interface */
+/* Gallium interface */
 
-#define IID_Hidd_GalliumBaseDriver    "hidd.gallium.basedriver"
+#define IID_Hidd_Gallium    "hidd.gallium"
 
-#define HiddGalliumBaseDriverAttrBase	__IHidd_GalliumBaseDriver
+#define HiddGalliumAttrBase __IHidd_Gallium
 
 #ifndef __OOP_NOATTRBASES__
-extern OOP_AttrBase HiddGalliumBaseDriverAttrBase;
+extern OOP_AttrBase HiddGalliumAttrBase;
 #endif
 
-/* Gallium BaseDriver Class methods */
+/* Gallium Class methods */
 
 enum
 {
-    moHidd_GalliumBaseDriver_CreatePipeScreen = 0,
-    moHidd_GalliumBaseDriver_QueryDepthStencil,
-    moHidd_GalliumBaseDriver_DisplaySurface,
-    moHidd_GalliumBaseDriver_DestroyPipeScreen,
+    moHidd_Gallium_CreatePipeScreen = 0,
+    moHidd_Gallium_QueryDepthStencil,
+    moHidd_Gallium_DisplaySurface,
+    moHidd_Gallium_DestroyPipeScreen,
 
-    NUM_GALLIUMBASEDRIVER_METHODS
+    NUM_GALLIUM_METHODS
 };
 
 enum
 {
-    aoHidd_GalliumBaseDriver_GalliumInterfaceVersion = 0,
+    aoHidd_Gallium_GalliumInterfaceVersion = 0,
     
-    num_Hidd_GalliumBaseDriver_Attrs
+    num_Hidd_Gallium_Attrs
 };
 
-#define aHidd_GalliumBaseDriver_GalliumInterfaceVersion  (HiddGalliumBaseDriverAttrBase + aoHidd_GalliumBaseDriver_GalliumInterfaceVersion)
+#define aHidd_Gallium_GalliumInterfaceVersion  (HiddGalliumAttrBase + aoHidd_Gallium_GalliumInterfaceVersion)
 
-#define IS_GALLIUMBASEDRIVER_ATTR(attr, idx) \
-    (((idx) = (attr) - HiddGalliumBaseDriverAttrBase) < num_Hidd_GalliumBaseDriver_Attrs)
+#define IS_GALLIUM_ATTR(attr, idx) \
+    (((idx) = (attr) - HiddGalliumAttrBase) < num_Hidd_Gallium_Attrs)
 
-struct pHidd_GalliumBaseDriver_CreatePipeScreen
+struct pHidd_Gallium_CreatePipeScreen
 {
     OOP_MethodID    mID;
 };
 
-struct pHidd_GalliumBaseDriver_QueryDepthStencil
+struct pHidd_Gallium_QueryDepthStencil
 {
     OOP_MethodID    mID;
     UBYTE           *depthbits;
     UBYTE           *stencilbits;
 };
 
-struct pHidd_GalliumBaseDriver_DisplaySurface
+struct pHidd_Gallium_DisplaySurface
 {
     OOP_MethodID    mID;
     APTR            context;
@@ -85,7 +85,7 @@ struct pHidd_GalliumBaseDriver_DisplaySurface
     ULONG           rely;
 };
 
-struct pHidd_GalliumBaseDriver_DestroyPipeScreen
+struct pHidd_Gallium_DestroyPipeScreen
 {
     OOP_MethodID    mID;
     APTR            screen;

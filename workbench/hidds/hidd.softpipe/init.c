@@ -8,15 +8,15 @@
 #include <proto/oop.h>
 #include <proto/exec.h>
 
-#include "softpipe.h"
+#include "softpipe_intern.h"
 
 static int SoftpipeHidd_ExpungeLib(LIBBASETYPEPTR LIBBASE)
 {
     if (LIBBASE->sd.SoftpipeCyberGfxBase)
         CloseLibrary(LIBBASE->sd.SoftpipeCyberGfxBase);
 
-    if (LIBBASE->sd.hiddGalliumBaseDriverAB)
-        OOP_ReleaseAttrBase((STRPTR)IID_Hidd_GalliumBaseDriver);
+    if (LIBBASE->sd.hiddGalliumAB)
+        OOP_ReleaseAttrBase((STRPTR)IID_Hidd_Gallium);
 
     return TRUE;
 }
@@ -25,9 +25,9 @@ static int SoftpipeHidd_InitLib(LIBBASETYPEPTR LIBBASE)
 {
     LIBBASE->sd.SoftpipeCyberGfxBase = OpenLibrary((STRPTR)"cybergraphics.library",0);
 
-    LIBBASE->sd.hiddGalliumBaseDriverAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_GalliumBaseDriver);
+    LIBBASE->sd.hiddGalliumAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_Gallium);
 
-    if (LIBBASE->sd.SoftpipeCyberGfxBase && LIBBASE->sd.hiddGalliumBaseDriverAB)
+    if (LIBBASE->sd.SoftpipeCyberGfxBase && LIBBASE->sd.hiddGalliumAB)
         return TRUE;
 
     return FALSE;
