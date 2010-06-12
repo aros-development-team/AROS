@@ -4,11 +4,13 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := psi
+FILES := psi displayidinfo_class displayidlist_class editpanel_class editwindow_class \
+         mainwindow_class screenlist_class screenpanel_class syspenfield_class
 
 EXEDIR := $(AROSDIR)/Prefs
 
 #MM- workbench-prefs : workbench-prefs-psi
+
 #MM workbench-prefs-psi : includes linklibs workbench-prefs-psi-catalogs
 
 %build_prog mmake=workbench-prefs-psi \
