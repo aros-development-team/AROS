@@ -1,5 +1,5 @@
-#ifndef _GALLIUM_H
-#define _GALLIUM_H
+#ifndef _SOFTPIPE_INTERN_H
+#define _SOFTPIPE_INTERN_H
 
 /*
     Copyright 2010, The AROS Development Team. All rights reserved.
@@ -9,26 +9,23 @@
 
 #include LC_LIBDEFS_FILE
 
-struct HIDDGalliumBaseDriverData
+#define CLID_Hidd_Gallium_Softpipe  "hidd.gallium.softpipe"
+
+struct HIDDGalliumSoftpipeData
 {
 };
 
-struct HIDDGalliumDriverFactoryData
+struct softpipestaticdata 
 {
-};
-
-struct galliumstaticdata 
-{
-    OOP_Class       *galliumDriverFactoryClass;
-    OOP_AttrBase    hiddGalliumBaseDriverAB;
-    struct Library  *loadedDriverHidd;
-    OOP_Object      *driver;
+    OOP_Class       *galliumclass;
+    OOP_AttrBase    hiddGalliumAB;
+    struct Library  *SoftpipeCyberGfxBase;
 };
 
 LIBBASETYPE 
 {
     struct Library              LibNode;
-    struct galliumstaticdata    sd;
+    struct softpipestaticdata   sd;
 };
 
 #define METHOD(base, id, name) \

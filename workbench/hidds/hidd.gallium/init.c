@@ -8,7 +8,7 @@
 #include <proto/oop.h>
 #include <proto/exec.h>
 
-#include "gallium.h"
+#include "gallium_intern.h"
 
 static int GalliumHidd_ExpungeLib(LIBBASETYPEPTR LIBBASE)
 {
@@ -18,8 +18,8 @@ static int GalliumHidd_ExpungeLib(LIBBASETYPEPTR LIBBASE)
     if (LIBBASE->sd.loadedDriverHidd)
         CloseLibrary(LIBBASE->sd.loadedDriverHidd);
 
-    if (LIBBASE->sd.hiddGalliumBaseDriverAB)
-        OOP_ReleaseAttrBase((STRPTR)IID_Hidd_GalliumBaseDriver);
+    if (LIBBASE->sd.hiddGalliumAB)
+        OOP_ReleaseAttrBase((STRPTR)IID_Hidd_Gallium);
 
     return TRUE;
 }
@@ -29,9 +29,9 @@ static int GalliumHidd_InitLib(LIBBASETYPEPTR LIBBASE)
     LIBBASE->sd.loadedDriverHidd = NULL;
     LIBBASE->sd.driver = NULL;
 
-    LIBBASE->sd.hiddGalliumBaseDriverAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_GalliumBaseDriver);
+    LIBBASE->sd.hiddGalliumAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_Gallium);
 
-    if (LIBBASE->sd.hiddGalliumBaseDriverAB)
+    if (LIBBASE->sd.hiddGalliumAB)
         return TRUE;
 
     return FALSE;

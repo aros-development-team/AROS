@@ -39,7 +39,7 @@ static BOOL AROSMesaHiddInit()
     /* Open required libraries and hidds */
     AROSMesaCyberGfxBase = OpenLibrary((STRPTR)"cybergraphics.library",0);
     AROSMesaOOPBase = OpenLibrary((STRPTR)"oop.library", 0);
-    AROSMesaHIDDGalliumBase = OpenLibrary((STRPTR)"gallium.hidd", 3);
+    AROSMesaHIDDGalliumBase = OpenLibrary((STRPTR)"gallium.hidd", 4);
 
     if ((!AROSMesaCyberGfxBase) || (!AROSMesaOOPBase) || (!AROSMesaHIDDGalliumBase))
         return FALSE;
@@ -86,8 +86,8 @@ static AROSMesaVisual AROSMesaHiddNewVisual(GLint bpp, struct TagItem *tagList)
     GLvisual * vis = NULL;
     GLint  redBits, greenBits, blueBits, alphaBits, accumBits;
     UBYTE depthBits, stencilBits;
-    struct pHidd_GalliumBaseDriver_QueryDepthStencil qdsmsg = {
-    mID : OOP_GetMethodID(IID_Hidd_GalliumBaseDriver, moHidd_GalliumBaseDriver_QueryDepthStencil),
+    struct pHidd_Gallium_QueryDepthStencil qdsmsg = {
+    mID : OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_QueryDepthStencil),
     depthbits : &depthBits,
     stencilbits : &stencilBits
     };
@@ -497,8 +497,8 @@ static VOID HACK_BlitSurcaceOnRastport(AROSMesaContext amesa, struct pipe_surfac
             if (AndRectRect(&renderableLayerRect, &CR->bounds, &result))
             {
                 /* This clip rect intersects renderable layer rect */
-                struct pHidd_GalliumBaseDriver_DisplaySurface dsmsg = {
-                mID : OOP_GetMethodID(IID_Hidd_GalliumBaseDriver, moHidd_GalliumBaseDriver_DisplaySurface),
+                struct pHidd_Gallium_DisplaySurface dsmsg = {
+                mID : OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_DisplaySurface),
                 context : amesa->st->pipe,
                 rastport : amesa->visible_rp,
                 left : result.MinX - L->bounds.MinX - amesa->left, /* x in the source buffer */
@@ -554,7 +554,7 @@ AROSMesaContext AROSMesaCreateContext(struct TagItem *tagList)
     AROSMesaContext amesa = NULL;
     struct pipe_screen * screen = NULL;
     struct pipe_context * pipe = NULL;
-    struct pHidd_GalliumBaseDriver_CreatePipeScreen cpsmsg;
+    struct pHidd_Gallium_CreatePipeScreen cpsmsg;
 
     if (driver == NULL)
     {
@@ -604,7 +604,7 @@ AROSMesaContext AROSMesaCreateContext(struct TagItem *tagList)
         return NULL;
     }
 
-    cpsmsg.mID = OOP_GetMethodID(IID_Hidd_GalliumBaseDriver, moHidd_GalliumBaseDriver_CreatePipeScreen);
+    cpsmsg.mID = OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_CreatePipeScreen);
     screen = (struct pipe_screen *)OOP_DoMethod(driver, (OOP_Msg)&cpsmsg);
     
     if (!screen)
@@ -737,8 +737,8 @@ void AROSMesaDestroyContext(AROSMesaContext amesa)
 
     if (ctx)
     {
-        struct pHidd_GalliumBaseDriver_DestroyPipeScreen dpsmsg = {
-        mID : OOP_GetMethodID(IID_Hidd_GalliumBaseDriver, moHidd_GalliumBaseDriver_DestroyPipeScreen),
+        struct pHidd_Gallium_DestroyPipeScreen dpsmsg = {
+        mID : OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_DestroyPipeScreen),
         screen : ctx->st->pipe->screen
         };
         

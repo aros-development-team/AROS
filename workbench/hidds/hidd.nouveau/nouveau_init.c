@@ -19,7 +19,7 @@ static ULONG Novueau_Init(LIBBASETYPEPTR LIBBASE)
     { IID_Hidd_Gfx,         &LIBBASE->sd.gfxAttrBase },
     { IID_Hidd_PlanarBM,    &LIBBASE->sd.planarAttrBase },
     { IID_Hidd_I2C_Nouveau, &LIBBASE->sd.i2cNouveauAttrBase },
-    { IID_Hidd_GalliumBaseDriver,   &LIBBASE->sd.galliumAttrBase },
+    { IID_Hidd_Gallium,     &LIBBASE->sd.galliumAttrBase },
     { NULL, NULL }
     };
 

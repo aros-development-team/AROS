@@ -14,8 +14,8 @@
 #include "nouveau/nouveau_drmif.h"
 #include "nouveau/nouveau_winsys.h"
 
-#undef HiddGalliumBaseDriverAttrBase
-#define HiddGalliumBaseDriverAttrBase   (SD(cl)->galliumAttrBase)
+#undef HiddGalliumAttrBase
+#define HiddGalliumAttrBase   (SD(cl)->galliumAttrBase)
 
 struct HiddNouveauWinSys {
     struct pipe_winsys base;
@@ -150,12 +150,12 @@ VOID METHOD(NouveauGallium, Root, Get)
 {
     ULONG idx;
 
-    if (IS_GALLIUMBASEDRIVER_ATTR(msg->attrID, idx))
+    if (IS_GALLIUM_ATTR(msg->attrID, idx))
     {
         switch (idx)
         {
             /* Overload the property */
-            case aoHidd_GalliumBaseDriver_GalliumInterfaceVersion:
+            case aoHidd_Gallium_GalliumInterfaceVersion:
                 *msg->storage = GALLIUM_INTERFACE_VERSION;
                 return;
         }
@@ -165,7 +165,7 @@ VOID METHOD(NouveauGallium, Root, Get)
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-APTR METHOD(NouveauGallium, Hidd_GalliumBaseDriver, CreatePipeScreen)
+APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
 {
     struct HiddNouveauWinSys *nvws;
     struct pipe_winsys *ws;
@@ -213,13 +213,13 @@ APTR METHOD(NouveauGallium, Hidd_GalliumBaseDriver, CreatePipeScreen)
     return nvws->pscreen;
 }
 
-VOID METHOD(NouveauGallium, Hidd_GalliumBaseDriver, QueryDepthStencil)
+VOID METHOD(NouveauGallium, Hidd_Gallium, QueryDepthStencil)
 {
     *msg->depthbits = 24;
     *msg->stencilbits = 8;
 }
 
-VOID METHOD(NouveauGallium, Hidd_GalliumBaseDriver, DisplaySurface)
+VOID METHOD(NouveauGallium, Hidd_Gallium, DisplaySurface)
 {
     /* unmap screenbitmap */
     /* get screen surface */
@@ -262,7 +262,7 @@ VOID METHOD(NouveauGallium, Hidd_GalliumBaseDriver, DisplaySurface)
     UNLOCK_BITMAP_BM(SD(cl)->screenbitmap);
 }
 
-VOID METHOD(NouveauGallium, Hidd_GalliumBaseDriver, DestroyPipeScreen)
+VOID METHOD(NouveauGallium, Hidd_Gallium, DestroyPipeScreen)
 {
     struct pipe_screen * screen = (struct pipe_screen *)msg->screen;
 
