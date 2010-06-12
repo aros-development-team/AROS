@@ -6,6 +6,9 @@
     $Id$
 */
 
+#define DEBUG 1
+#include "aros/debug.h"
+
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
@@ -195,6 +198,7 @@ IPTR DispIDlist_Change(struct IClass *cl, Object *obj, Msg msg)
 {
     struct NameInfo *ni;
     DoMethod(obj, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &ni);
+    D(bug("[PSI/DispIDlist_Change] ni %p id %d\n", ni, ni ? ni->Header.DisplayID : INVALID_ID));
     SetAttrs(obj,
         MUIA_DispIDlist_Quiet, TRUE,
         MUIA_DispIDlist_CurrentID, ni ? ni->Header.DisplayID : INVALID_ID,
