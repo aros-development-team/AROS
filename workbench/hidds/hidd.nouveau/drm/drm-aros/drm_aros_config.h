@@ -15,7 +15,6 @@
 #if defined(HOSTED_BUILD)
 /* Which type of hardware */
 #define HOSTED_BUILD_HARDWARE_NVIDIA    1
-#define HOSTED_BUILD_HARDWARE_I915      2
 
 #define HOSTED_BUILD_HARDWARE           HOSTED_BUILD_HARDWARE_NVIDIA 
 
@@ -35,9 +34,6 @@
 #define HOSTED_BUILD_CHIPSET    67      /* NV43 chip GeForce 6200 */
 //#define HOSTED_BUILD_CHIPSET    132     /* G84 chip GeForce 8600 GT */
 //#define HOSTED_BUILD_CHIPSET    134     /* G86 chip GeForce 8400 GS */
-
-/* I915 defines */
-#define HOSTED_BUILD_PRODUCT_ID 0x2772 /* I945G */
 
 #endif
 /* HACK ENDS */
